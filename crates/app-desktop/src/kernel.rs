@@ -12,13 +12,13 @@
 //! persisted derive cache (`None` ⇒ Unknown), feeds are real records, stage
 //! methodology text is `StageKind`'s own static metadata.
 
-use bw_app::{ActionState, App, Command, Event, Panel, Scope, SettleReq, View};
+use bw_app::{ActionState, App, Command, Event, Panel, RemoteProjectProbe, Scope, SettleReq, View};
 use bw_core::model::{
-    AgentRef, Author, HubCard, MaturityPeriod, Readiness, SessionStatus, Signal, SkillRef,
-    StageKind,
+    CronMode, HubCard, IssueStatus, MaturityPeriod, Readiness, SessionStatus, Signal, StageKind,
+    CONNECTOR_KIND_SCRIPT,
 };
-use bw_core::{MetricId, SessionId};
-use bw_engine::{ClaudeCliConfig, Engine, GithubRepoSummary, MockExecutor, PermissionMode};
+use bw_core::{ConversationId, MetricId, SessionId};
+use bw_engine::{resolve_claude_binary, ClaudeCliConfig, CodehubRepoSummary, GithubRepoSummary};
 use bw_store::{MetricRole, SqliteStore, Store};
 use std::collections::HashMap;
 use std::sync::Arc;
@@ -26,10 +26,11 @@ use std::time::Duration;
 use time::OffsetDateTime;
 use tokio::sync::{broadcast, mpsc, watch};
 use ui::vm::{
-    activity_row, agent_card, attention_from_rows, cadence_label, connector_card, cron_row,
-    hub_overview, issue_card, knowledge_row, metric_vm, notify_feed, observation_feed,
-    project_card, session_status_label, settings_vm, skill_card, stage_detail, stage_nav,
-    version_log_vm, week_plan_rows, workflow_hub_row, ActivityRowVm, ActivitySource, AgentCardVm,
+    activity_row, agent_card, attention_from_rows, cadence_label, collect_label, connector_card,
+    cron_row, hub_overview, is_intrinsic_metric, issue_card, knowledge_row, last_week_has_real_obs,
+    metric_vm, notify_feed, observation_feed, project_card, session_status_label, settings_vm,
+    skill_card, stage_detail, stage_nav, version_log_vm, week_plan_rows, weekly_delta,
+    weekly_spark, workflow_hub_row, ActivityRowVm, ActivitySource, AgentCardVm, CollectionChainVm,
     ConnectorCardVm, CronRowVm, FeedItemVm, FeedSource, IssueVm, KnowledgeRowVm, MetricVm,
     NotifyItemVm, ProjectCardVm, SessionCardVm, SettingsVm, SkillCardVm, StageDetailVm,
     StageNavItemVm, WeekPlanRowVm, WorkflowHubRowVm,
@@ -53,21 +54,39 @@ pub struct Vm {
     pub hub: HubVm,
     /// The real, editable `ClaudeCliConfig` (Settings hub) — also global.
     pub settings: SettingsVm,
-    /// L1(plan/11): last-loaded cron task's real fire history — lives at the
-    /// top level (not `OpVm`) because the component-detail overlay that
-    /// shows it is rendered outside any one project's `Op` tree, same as
-    /// `hub`. `None` until `Command::LoadCronEffectiveness` runs for a task.
-    pub cron_effectiveness: Option<(bw_core::CronTaskId, ui::vm::CronEffectivenessVm)>,
     /// GitHub 为主体的创建流: last `Command::ListGithubRepos` result — lives
     /// at the top level (not `CreateVm`) because the Repo 卡片 renders before
     /// any project row exists. Empty until the Repo 卡片 first dispatches
     /// `ListGithubRepos` (switching to "接入已有仓").
     pub github_repos: Vec<GithubRepoSummary>,
+    /// CodeHub 为主体的创建流: last `Command::ListCodehubRepos` result —
+    /// same process-internal cache pattern as `github_repos`, populated by
+    /// the Repo 卡片's「接入已有仓」refresh button dispatching
+    /// `ListCodehubRepos{host}`.
+    pub codehub_repos: Vec<CodehubRepoSummary>,
+    /// V2-② Intent UX: remote `.bw/project.toml` probe for「接入已有仓」.
+    pub remote_project_probe: RemoteProjectProbe,
     /// plan/17 S3: the in-flight backgrounded run's (project, issue), or
     /// `None` when nothing's running. The issue board uses this to show a
     /// 「⬇ 终止」 button on exactly the issue whose run is in flight, and to
     /// keep 「▶ 跑」 greyed for same-project siblings (serial lock).
     pub active_run: Option<(bw_core::ProjectId, bw_core::IssueId)>,
+    /// 是否有活着的 PTY 连接。
+    pub pty_active: bool,
+    /// 当前焦点会话(驱动可见 xterm)。
+    pub pty_conversation_id: Option<ConversationId>,
+    /// 所有活着的会话(多 xterm 常驻用)。
+    pub pty_live_ids: Vec<ConversationId>,
+    /// 点卡 resume 进行中(「恢复中…」);首包字节后清空。
+    pub pty_restoring: Option<ConversationId>,
+    /// 焦点对应的 issue(看板「当前会话」)。
+    pub focused_issue: Option<bw_core::IssueId>,
+    /// Done/InReview 且有可 resume 会话的 issue(看板「续聊」)。
+    pub consultable_issues: Vec<bw_core::IssueId>,
+    /// 任意状态、有非空 claude_session_id 的 issue(重启后点卡可 resume)。
+    pub resumable_issues: Vec<bw_core::IssueId>,
+    /// 项目墙本机环境探测（未测 = Unknown）。
+    pub local_env: bw_app::LocalEnvProbe,
 }
 
 /// The Workflow/Skill/Agent hub library, plus the 3-card "从 Hub 导入"
@@ -136,20 +155,6 @@ pub struct StageVm {
 }
 
 #[derive(Clone, PartialEq)]
-pub struct MsgVm {
-    pub agent: bool,
-    pub text: String,
-}
-
-#[derive(Clone, PartialEq)]
-pub struct ChatVm {
-    pub id: SessionId,
-    pub title: String,
-    pub status_label: &'static str,
-    pub msgs: Vec<MsgVm>,
-}
-
-#[derive(Clone, PartialEq)]
 pub struct OpVm {
     pub id: bw_core::ProjectId,
     pub name: String,
@@ -169,8 +174,8 @@ pub struct OpVm {
     /// `create.rs`, unreachable post-creation).
     pub benchmark: String,
     pub opportunity: String,
-    /// Real-executor target directory. Empty = unconfigured — this project
-    /// only ever runs `RunWorkflow` on `MockExecutor`.
+    /// Real-executor target directory. Empty = unconfigured — this project's
+    /// Issue runs go through the mock interactive executor (self-labelled).
     pub workspace_path: String,
     pub allow_commands: bool,
     /// "owner/repo" — empty = this project isn't attached to GitHub (local-
@@ -189,13 +194,15 @@ pub struct OpVm {
     pub stages: Vec<StageVm>,
     pub metrics: Vec<MetricVm>,
     pub week_plan: Vec<WeekPlanRowVm>,
-    pub stats: ui::vm::StatCardsVm,
     pub overall: u8,
     pub sessions: Vec<SessionCardVm>,
     /// The project's Issues (R1) — assignable work units scoped to a stage,
     /// the multica-style board the operating view now surfaces.
     pub issues: Vec<IssueVm>,
-    pub chat: Option<ChatVm>,
+    /// The session the left rail's「阶段记录」highlights (`App.state.
+    /// active_session`) — an index into the sidebar, nothing more; the run
+    /// itself lives in the embedded terminal keyed by conversation.
+    pub active_session: Option<SessionId>,
     /// Threaded down for the "从 Hub 导入" overview strip in the Workflow
     /// panel — same data as the top-level `Vm.hub`, just also reachable from
     /// deep inside `Op`'s component tree without re-prop-drilling `Vm` itself.
@@ -218,27 +225,21 @@ pub struct OpVm {
     pub active_run: Option<(bw_core::ProjectId, bw_core::IssueId)>,
     /// P5: weekly-review card (top of the progress panel).
     pub week_review: ui::vm::WeekReviewVm,
+    pub pty_active: bool,
+    pub pty_conversation_id: Option<ConversationId>,
+    pub pty_live_ids: Vec<ConversationId>,
+    /// 点卡 resume 进行中 → UI「恢复中…」。
+    pub pty_restoring: Option<ConversationId>,
+    pub focused_issue: Option<bw_core::IssueId>,
+    pub consultable_issues: Vec<bw_core::IssueId>,
+    /// 有可 `--resume` 会话的 issue(含 InProgress;点卡「恢复中…」用)。
+    pub resumable_issues: Vec<bw_core::IssueId>,
 }
 
-/// Transient, non-persistent notices (live run progress, dispatch errors).
+/// Transient, non-persistent notices (run failures, dispatch errors, toasts).
 #[derive(Clone, Debug, PartialEq)]
 pub enum UiNote {
-    /// A run is really about to begin — the canonical "new run, reset the
-    /// banner" signal (not the `PhaseStarted{idx:0}` heuristic this replaced),
-    /// carrying the spec's own real name/agents/skills.
-    RunStarted {
-        workflow_name: String,
-        agents: Vec<AgentRef>,
-        skills: Vec<SkillRef>,
-    },
-    PhaseStarted {
-        idx: usize,
-        name: String,
-    },
-    PhaseCompleted {
-        idx: usize,
-    },
-    RunDone,
+    /// An Issue run failed or was aborted (`Event::RunFailed`) — a toast.
     RunFailed(String),
     Handoff {
         from: StageKind,
@@ -248,8 +249,8 @@ pub enum UiNote {
     Error(String),
     /// A real, unattended scheduler auto-fire just finished (see
     /// `App::tick_scheduler`) — surfaced as a toast, never a navigation:
-    /// unlike a manual "▶ 立即执行", nothing about the user's current screen
-    /// should change just because a background task ran.
+    /// nothing about the user's current screen should change just because
+    /// a background task ran.
     CronAutoFired {
         name: String,
         ok: bool,
@@ -271,62 +272,6 @@ pub enum UiNote {
         name: String,
         state: ActionState,
     },
-}
-
-/// Folded run-progress state the UI renders as the live banner. Fed purely by
-/// [`UiNote`]s — it reflects what the engine actually reported, nothing more.
-#[derive(Clone, PartialEq, Default)]
-pub struct RunVm {
-    pub running: bool,
-    /// The spec name currently (or most recently) running — empty until the
-    /// first `RunStarted`.
-    pub workflow_name: String,
-    /// Real `AgentRef`/`SkillRef` from the spec that's running — empty is
-    /// honest ("this run declared none"), not a loading state.
-    pub agents: Vec<AgentRef>,
-    pub skills: Vec<SkillRef>,
-    /// (phase name, completed) in start order.
-    pub phases: Vec<(String, bool)>,
-    pub failed: Option<String>,
-}
-
-impl RunVm {
-    pub fn apply(&mut self, note: &UiNote) {
-        match note {
-            UiNote::RunStarted {
-                workflow_name,
-                agents,
-                skills,
-            } => {
-                self.running = true;
-                self.workflow_name = workflow_name.clone();
-                self.agents = agents.clone();
-                self.skills = skills.clone();
-                self.phases.clear();
-                self.failed = None;
-            }
-            UiNote::PhaseStarted { name, .. } => {
-                self.running = true;
-                self.phases.push((name.clone(), false));
-            }
-            UiNote::PhaseCompleted { idx } => {
-                if let Some(p) = self.phases.get_mut(*idx) {
-                    p.1 = true;
-                }
-            }
-            UiNote::RunDone => self.running = false,
-            UiNote::RunFailed(e) => {
-                self.running = false;
-                self.failed = Some(e.clone());
-            }
-            UiNote::Handoff { .. }
-            | UiNote::Error(_)
-            | UiNote::CronAutoFired { .. }
-            | UiNote::ArtifactsRegistered { .. }
-            | UiNote::ConnectorSynced { .. }
-            | UiNote::ActionProgress { .. } => {}
-        }
-    }
 }
 
 // ─────────────────────── plan/14 C14 · action progress ───────────────────────
@@ -409,6 +354,9 @@ pub struct Kernel {
     tx: mpsc::UnboundedSender<Command>,
     vm_rx: watch::Receiver<Vm>,
     notes: broadcast::Sender<UiNote>,
+    /// V1 终端会话重构·底座: 带 conversation_id 的 PTY 字节批次(dedicated
+    /// watch,NOT the Vm)。pty_ticker 发送;UI 按 id 写入对应 xterm。
+    pty_rx: watch::Receiver<Vec<(ConversationId, Vec<u8>)>>,
 }
 
 impl Kernel {
@@ -420,6 +368,10 @@ impl Kernel {
     }
     pub fn notes(&self) -> broadcast::Receiver<UiNote> {
         self.notes.subscribe()
+    }
+    /// V1 终端会话重构·底座: 带 conversation_id 的字节批次 watch。
+    pub fn pty_bytes(&self) -> watch::Receiver<Vec<(ConversationId, Vec<u8>)>> {
+        self.pty_rx.clone()
     }
 }
 
@@ -463,20 +415,15 @@ fn workspaces_root() -> std::path::PathBuf {
     }
 }
 
-/// Process-wide `ClaudeCliExecutor` config, env-override-else-default (same
-/// pattern as [`db_path`]). Per-project data (`workspace_path`/
-/// `allow_commands`) lives in the store instead — see `Command::SetWorkspace`.
+/// Process-wide `claude` CLI config, env-override-else-default (same pattern
+/// as [`db_path`]): `BW_CLAUDE_BIN` overrides the binary resolved from PATH.
 fn claude_config_from_env() -> ClaudeCliConfig {
-    let mut config = ClaudeCliConfig::default();
-    if let Ok(bin) = std::env::var("BW_CLAUDE_BIN") {
-        config.binary = Some(bin);
+    // Prefer a file that exists (`BW_CLAUDE_BIN` first, then the Windows
+    // installer's exe, then npm claude.cmd). A stale BW_CLAUDE_BIN pointing
+    // at a missing bin\claude.exe must not win. `None` → PATH lookup.
+    ClaudeCliConfig {
+        binary: resolve_claude_binary(None),
     }
-    if let Ok(cap) = std::env::var("BW_CLAUDE_MAX_BUDGET_USD") {
-        if let Ok(v) = cap.parse() {
-            config.max_budget_usd = v;
-        }
-    }
-    config
 }
 
 /// Spawn the kernel thread. Returns immediately; the first real [`Vm`] arrives
@@ -492,6 +439,8 @@ pub fn spawn() -> Kernel {
     let (vm_tx, vm_rx) = watch::channel(Vm::default());
     let (note_tx, _keep) = broadcast::channel::<UiNote>(256);
     let notes = note_tx.clone();
+    // V1 终端会话重构·底座: 带 conversation_id 的字节通道(替代无身份单槽)。
+    let (pty_tx, pty_rx) = watch::channel(Vec::<(ConversationId, Vec<u8>)>::new());
 
     std::thread::Builder::new()
         .name("bw-kernel".into())
@@ -513,28 +462,20 @@ pub fn spawn() -> Kernel {
                         return;
                     }
                 };
-                // MockExecutor with visible latency: the run flow must *stream*
-                // in the UI (per-phase), not land as one burst. This is the
-                // shared, long-lived engine every project without a configured
-                // workspace_path runs on; a configured project instead gets a
-                // fresh ClaudeCliExecutor built per-call inside bw-app's
-                // RunWorkflow dispatch.
-                let mut app = App::new(
-                    store.clone(),
-                    Engine::new(Arc::new(MockExecutor::with_delay(Duration::from_millis(
-                        450,
-                    )))),
-                    claude_config_from_env(),
-                )
-                // All-in-one-codebase default: projects born through the
-                // creation flow get their own real git repo next to the DB.
-                .with_workspaces_root(workspaces_root())
-                // plan/17 S3: wire the back-channel that turns `RunIssue`
-                // from a blocking inline call into a backgrounded one. The
-                // matching `settle_rx` is polled in the `select!` loop
-                // below; examples / headless drivers never wire this →
-                // `RunIssue` stays inline there.
-                .with_settle_channel(settle_tx);
+                let mut app = App::new(store.clone(), claude_config_from_env())
+                    // All-in-one-codebase default: projects born through the
+                    // creation flow get their own real git repo next to the DB.
+                    .with_workspaces_root(workspaces_root())
+                    // plan/17 S3: wire the back-channel that turns `RunIssue`
+                    // from a blocking inline call into a backgrounded one. The
+                    // matching `settle_rx` is polled in the `select!` loop
+                    // below; examples / headless drivers never wire this →
+                    // `RunIssue` stays inline there.
+                    .with_settle_channel(settle_tx)
+                    // V1 Issue2 Phase2b: enable PTY mode — interactive issue runs
+                    // spawn claude in a PTY (portable-pty) instead of a system
+                    // terminal, streaming bytes to the UI's xterm.js widget.
+                    .with_pty();
 
                 // Live event → transient note forwarding. Runs concurrently with
                 // dispatch (progress events are emitted mid-run).
@@ -543,27 +484,7 @@ pub fn spawn() -> Kernel {
                 tokio::spawn(async move {
                     while let Ok(e) = ev.recv().await {
                         let note = match e {
-                            Event::RunStarted {
-                                workflow_name,
-                                agents,
-                                skills,
-                            } => UiNote::RunStarted {
-                                workflow_name,
-                                agents,
-                                skills,
-                            },
-                            Event::WorkflowProgress { phase_idx, status } => {
-                                if let Some(name) = status.strip_prefix("started:") {
-                                    UiNote::PhaseStarted {
-                                        idx: phase_idx,
-                                        name: name.to_string(),
-                                    }
-                                } else {
-                                    UiNote::PhaseCompleted { idx: phase_idx }
-                                }
-                            }
-                            Event::WorkflowDone => UiNote::RunDone,
-                            Event::WorkflowFailed(err) => UiNote::RunFailed(err),
+                            Event::RunFailed(err) => UiNote::RunFailed(err),
                             Event::StageHandoff { from, to, risky } => {
                                 UiNote::Handoff { from, to, risky }
                             }
@@ -588,29 +509,10 @@ pub fn spawn() -> Kernel {
                 if let Err(e) = app.dispatch(Command::Boot).await {
                     let _ = note_tx.send(UiNote::Error(e.to_string()));
                 }
-
-                // T14 (2026-07-24, plan/12 §10 v1.1): real-daily-DB one-shot
-                // legacy-shell migration — dispatched right after `Boot` with
-                // the real DB path this thread already opened the store
-                // from (see `Command::MigrateLegacyShellsIfNeeded`'s doc
-                // comment for why it's threaded in rather than read off the
-                // store). A fresh DB, or one already migrated, is a true
-                // no-op inside the handler; failure surfaces as a
-                // `UiNote::Error` the same way any other dispatch failure
-                // does — never a boot-blocking panic. `[BW_MIGRATE]` stderr
-                // line is this ticket's own render/readback proof, same
-                // discipline as `[BW_OPEN]`/`[BW_HUB]` below and in
-                // `main.rs`.
-                if let Err(e) = app
-                    .dispatch(Command::MigrateLegacyShellsIfNeeded {
-                        db_path: real_db_path.clone(),
-                    })
-                    .await
-                {
-                    let _ = note_tx.send(UiNote::Error(e.to_string()));
-                }
+                // Boot readback proof (same discipline as `[BW_OPEN]`/`[BW_HUB]`
+                // below and in `main.rs`): the hub library the UI will render.
                 eprintln!(
-                    "[BW_MIGRATE] skills={} agents={}",
+                    "[BW_BOOT] skills={} agents={}",
                     app.snapshot().skills.len(),
                     app.snapshot().agents.len()
                 );
@@ -636,6 +538,21 @@ pub fn spawn() -> Kernel {
                             };
                             let _ = app.dispatch(Command::SetPanel(panel)).await;
                         }
+                        // BW_SCOPE=prototype|build|optimize|growth|ops — stage
+                        // axis selection. Prototype progress embeds Open Design.
+                        if let Ok(sc) = std::env::var("BW_SCOPE") {
+                            let scope = match sc.trim() {
+                                "prototype" => Some(Scope::Stage(StageKind::Prototype)),
+                                "build" => Some(Scope::Stage(StageKind::Build)),
+                                "optimize" => Some(Scope::Stage(StageKind::Optimize)),
+                                "growth" => Some(Scope::Stage(StageKind::Growth)),
+                                "ops" => Some(Scope::Stage(StageKind::Ops)),
+                                _ => None,
+                            };
+                            if let Some(scope) = scope {
+                                let _ = app.dispatch(Command::SetScope(scope)).await;
+                            }
+                        }
                         let s = app.snapshot();
                         eprintln!(
                             "[BW_OPEN] {name:?} -> view={:?} panel={:?} projects={} issues={}",
@@ -654,11 +571,20 @@ pub fn spawn() -> Kernel {
                 // this loop (no `Arc<Mutex<_>>`), so an auto-fire tick has to
                 // interleave with command dispatch via `select!` rather than
                 // run on its own spawned task — same thread, same `&mut app`,
-                // no synchronization needed. A quiet tick (nothing due) is
-                // free: `Vm` is only rebuilt when `tick_scheduler` actually
-                // fired something, so idle polling costs nothing extra.
+                // no synchronization needed. A quiet tick (nothing due AND no
+                // InReview-poll / hook mutation) stays free: Vm rebuilds when
+                // cron fired *or* `scheduler_ui_dirty` (MR detection can move
+                // issues to InReview without any cron).
                 let mut ticker = tokio::time::interval(Duration::from_secs(5));
                 ticker.set_missed_tick_behavior(tokio::time::MissedTickBehavior::Delay);
+                // V1 Issue2 Phase2b: fast timer for PTY terminal bytes —
+                // drains `pty_bytes_rx` and rebuilds the Vm with the bytes.
+                // 100ms = 10fps, sufficient for terminal output (the human
+                // eye reads text at ~10 chars/sec; 8KB chunks every 100ms
+                // is plenty). Not a `tick_scheduler` call — this is a
+                // dedicated drain that bypasses cron/scheduler logic.
+                let mut pty_ticker = tokio::time::interval(Duration::from_millis(100));
+                pty_ticker.set_missed_tick_behavior(tokio::time::MissedTickBehavior::Delay);
 
                 loop {
                     tokio::select! {
@@ -683,13 +609,29 @@ pub fn spawn() -> Kernel {
                         }
                         _ = ticker.tick() => {
                             match app.tick_scheduler().await {
-                                Ok(fired) if !fired.is_empty() => {
-                                    let _ = vm_tx.send(build_vm(&app, &store).await);
+                                Ok(fired) => {
+                                    let dirty = app.take_scheduler_ui_dirty();
+                                    if !fired.is_empty() || dirty {
+                                        let _ = vm_tx.send(build_vm(&app, &store).await);
+                                    }
                                 }
-                                Ok(_) => {}
                                 Err(e) => {
                                     let _ = note_tx.send(UiNote::Error(e.to_string()));
                                 }
+                            }
+                        }
+                        // V1 终端会话重构·底座: drain 带 id 的批次 → watch。
+                        // 重启恢复:首包到达清 pty_restoring 时重建 Vm,让「恢复中…」消失。
+                        _ = pty_ticker.tick() => {
+                            let was_restoring = app.pty_restoring().is_some();
+                            let batches = app.drain_pty_events();
+                            let cleared_restoring =
+                                was_restoring && app.pty_restoring().is_none();
+                            if !batches.is_empty() {
+                                let _ = pty_tx.send(batches);
+                            }
+                            if cleared_restoring {
+                                let _ = vm_tx.send(build_vm(&app, &store).await);
                             }
                         }
                     }
@@ -702,6 +644,7 @@ pub fn spawn() -> Kernel {
         tx: cmd_tx,
         vm_rx,
         notes,
+        pty_rx,
     }
 }
 
@@ -739,6 +682,7 @@ async fn build_vm(app: &App, store: &Arc<dyn Store>) -> Vm {
             p.signal,
             &stage_progresses,
             open_issues,
+            &p.workspace_path,
         ));
     }
 
@@ -791,11 +735,26 @@ async fn build_vm(app: &App, store: &Arc<dyn Store>) -> Vm {
         .iter()
         .map(|p| (p.id, p.name.clone()))
         .collect();
-    let cron_tasks: Vec<CronRowVm> = state
-        .cron_tasks
-        .iter()
-        .map(|c| cron_row(c, &project_names, &state.skills, now))
-        .collect();
+    // PF1-3a: CollectMetrics 任务的副标题从该项目 collect_kind='script' 的
+    // metric name 派生(对仗 mode_label/mode_icon 同源)。卡只读 VM 无 store
+    // 访问,所以这里(kernel build_vm)填。best-effort:读失败空 Vec。
+    let mut cron_tasks: Vec<CronRowVm> = Vec::with_capacity(state.cron_tasks.len());
+    for c in state.cron_tasks.iter() {
+        let mut row = cron_row(c, &project_names, now);
+        if matches!(c.mode, CronMode::CollectMetrics) {
+            if let Some(pid) = c.project_id {
+                if let Ok(sigs) = store.persisted_signals(pid).await {
+                    row.collect_targets = sigs
+                        .metrics
+                        .iter()
+                        .filter(|m| m.collect_kind == "script")
+                        .map(|m| m.name.clone())
+                        .collect();
+                }
+            }
+        }
+        cron_tasks.push(row);
+    }
     let connectors: Vec<ConnectorCardVm> = state.connectors.iter().map(connector_card).collect();
     let knowledge_sources: Vec<KnowledgeRowVm> =
         state.knowledge_sources.iter().map(knowledge_row).collect();
@@ -838,19 +797,7 @@ async fn build_vm(app: &App, store: &Arc<dyn Store>) -> Vm {
         activity,
         notifications,
     };
-    let settings = settings_vm(
-        state.claude_config.binary.as_deref(),
-        state.claude_config.max_budget_usd,
-        state.claude_config.default_mode == PermissionMode::BypassPermissions,
-        state.claude_config.commands_mode == PermissionMode::BypassPermissions,
-    );
-
-    // L1(plan/11): pre-format the last-loaded cron task's fire history, if
-    // any — same explicit single-slot pattern as `version_log`/`artifacts`.
-    let cron_effectiveness = state
-        .cron_effectiveness
-        .as_ref()
-        .map(|(id, e)| (*id, ui::vm::cron_effectiveness_vm(e)));
+    let settings = settings_vm(state.claude_config.binary.as_deref());
 
     let mut vm = Vm {
         ready: true,
@@ -861,9 +808,18 @@ async fn build_vm(app: &App, store: &Arc<dyn Store>) -> Vm {
         op: None,
         hub: hub.clone(),
         settings,
-        cron_effectiveness,
         github_repos: state.github_repos.clone(),
+        codehub_repos: state.codehub_repos.clone(),
+        remote_project_probe: state.remote_project_probe.clone(),
         active_run: app.active_run(),
+        pty_active: app.pty_active(),
+        pty_conversation_id: app.focused_pty_conversation(),
+        pty_live_ids: app.live_pty_ids(),
+        pty_restoring: app.pty_restoring(),
+        focused_issue: app.focused_pty_issue(),
+        consultable_issues: Vec::new(),
+        resumable_issues: Vec::new(),
+        local_env: state.local_env.clone(),
     };
 
     let Some(pid) = state.active_project else {
@@ -888,15 +844,60 @@ async fn build_vm(app: &App, store: &Arc<dyn Store>) -> Vm {
     // Observation series per metric (ASC) — the honest trend + feed source.
     let mut series: HashMap<MetricId, Vec<String>> = HashMap::new();
     let mut latest_ts: HashMap<MetricId, OffsetDateTime> = HashMap::new();
+    // V1-Issue3 · per-metric (ts, raw) pairs for ISO-week sparkline bucketing.
+    let mut series_ts: HashMap<MetricId, Vec<(i64, String)>> = HashMap::new();
     for o in &observations {
         series.entry(o.metric_id).or_default().push(o.raw.clone());
         latest_ts.insert(o.metric_id, o.ts);
+        series_ts
+            .entry(o.metric_id)
+            .or_default()
+            .push((o.ts.unix_timestamp(), o.raw.clone()));
     }
+
+    // V1-Issue3 · the project's CollectMetrics cron last tick + script
+    // connector name — shared across all this project's metrics'
+    // collection_chain. Read from AppState's cached rows (already loaded by
+    // `refresh_cron_tasks`/`refresh_connectors`), no new store call.
+    let now_unix = now.unix_timestamp();
+    let cron_last_tick: Option<i64> = state
+        .cron_tasks
+        .iter()
+        .filter(|c| c.project_id == Some(pid) && matches!(c.mode, CronMode::CollectMetrics))
+        .filter_map(|c| c.last_run_at)
+        .map(|t| t.unix_timestamp())
+        .max();
+    let script_connector: Option<String> = state
+        .connectors
+        .iter()
+        .find(|c| c.project_id == Some(pid) && c.kind == CONNECTOR_KIND_SCRIPT)
+        .map(|c| c.name.clone());
 
     let metrics: Vec<MetricVm> = sigs
         .metrics
         .iter()
         .map(|m| {
+            let mid = m.id;
+            let obs_ts = series_ts.get(&mid).map(Vec::as_slice).unwrap_or(&[]);
+            let wk_spark = weekly_spark(obs_ts, now_unix);
+            // V1-quickfix(W3-8): if the latest week has no real observation
+            // (only carry-forward), delta is meaningless — show "—" not "0.0".
+            let wk_delta = if last_week_has_real_obs(obs_ts, now_unix) {
+                weekly_delta(&wk_spark)
+            } else {
+                None
+            };
+            let is_intrinsic = is_intrinsic_metric(&m.name);
+            let chain = CollectionChainVm {
+                collect_label: collect_label(&m.collect_kind, is_intrinsic).to_string(),
+                connector_name: if m.collect_kind == "script" {
+                    script_connector.clone()
+                } else {
+                    None
+                },
+                cron_last_tick,
+                has_observation: latest_ts.contains_key(&mid),
+            };
             metric_vm(
                 m.id,
                 &m.name,
@@ -911,7 +912,12 @@ async fn build_vm(app: &App, store: &Arc<dyn Store>) -> Vm {
                 m.hit,
                 m.source,
                 &m.collect_kind,
+                m.archived,
+                m.origin == bw_store::MetricOrigin::File,
                 series.get(&m.id).map(Vec::as_slice).unwrap_or(&[]),
+                &wk_spark,
+                wk_delta,
+                chain,
             )
         })
         .collect();
@@ -927,8 +933,20 @@ async fn build_vm(app: &App, store: &Arc<dyn Store>) -> Vm {
             win: row.opportunity.clone(),
             north_star: row.north_star.clone(),
             ns_def: row.ns_def.clone(),
-            leading: metrics.iter().filter(|m| m.leading).cloned().collect(),
-            lagging: metrics.iter().filter(|m| !m.leading).cloned().collect(),
+            // 创建流的指标表单里不出现已停用的指标:这是一张「这个项目
+            // 要用哪些指标」的编辑表,一条已经判定不再用的行留在里面,
+            // 提交时会被 UpsertManualMetric 原样写回去、等于悄悄复活它。
+            // (运营视图有「已停用」折叠区可看可恢复,那是它的去处。)
+            leading: metrics
+                .iter()
+                .filter(|m| m.leading && !m.archived)
+                .cloned()
+                .collect(),
+            lagging: metrics
+                .iter()
+                .filter(|m| !m.leading && !m.archived)
+                .cloned()
+                .collect(),
             remote_path: row.remote_path.clone(),
             remote_host: row.remote_host.clone(),
         });
@@ -1026,33 +1044,6 @@ async fn build_vm(app: &App, store: &Arc<dyn Store>) -> Vm {
         })
         .collect();
 
-    let chat = match state.active_session {
-        Some(sid) => {
-            let title = session_cards
-                .iter()
-                .find(|s| s.id == sid)
-                .map(|s| (s.title.clone(), s.status_label))
-                .unwrap_or_else(|| ("会话".to_string(), "进行中"));
-            let msgs = store
-                .session_messages(sid)
-                .await
-                .unwrap_or_default()
-                .into_iter()
-                .map(|m| MsgVm {
-                    agent: m.role == Author::Agent,
-                    text: m.text,
-                })
-                .collect();
-            Some(ChatVm {
-                id: sid,
-                title: title.0,
-                status_label: title.1,
-                msgs,
-            })
-        }
-        None => None,
-    };
-
     let version_log = version_log_vm(state.version_log.as_ref().and_then(|(vpid, result)| {
         (*vpid == pid).then(|| {
             result
@@ -1080,23 +1071,10 @@ async fn build_vm(app: &App, store: &Arc<dyn Store>) -> Vm {
         .and_then(|(apid, rows)| (*apid == pid).then(|| ui::vm::artifact_rows(rows, now)));
 
     let overall = overall_progress(&stages.iter().map(|s| s.progress).collect::<Vec<_>>());
-    let stats = ui::vm::stat_cards(
-        stages.len(),
-        &sessions
-            .iter()
-            .map(|s| {
-                (
-                    s.kind == bw_store::SessionKind::Create,
-                    s.status == SessionStatus::Active,
-                )
-            })
-            .collect::<Vec<_>>(),
-    );
 
     // P5: weekly-review card — a pure read of already-recorded facts. Counts
     // come off `state.issues` + the per-metric latest-observation-ts map built
     // above; the date math (ISO week, 90-day line) lives in the VM.
-    let now_unix = now.unix_timestamp();
     let week_start = ui::vm::iso_week_start_unix(now_unix);
     let week_review = ui::vm::week_review_vm(
         now_unix,
@@ -1113,13 +1091,20 @@ async fn build_vm(app: &App, store: &Arc<dyn Store>) -> Vm {
             .count() as u32,
         sigs.metrics
             .iter()
+            // 停用的指标不再计入「久没数据」——它本来就不该再有新数据了,
+            // 把它数进去等于用一条已退役的指标制造一个假的待办。
             .filter(|m| {
-                latest_ts
-                    .get(&m.id)
-                    .map_or(true, |t| t.unix_timestamp() < week_start)
+                !m.archived
+                    && latest_ts
+                        .get(&m.id)
+                        .map_or(true, |t| t.unix_timestamp() < week_start)
             })
             .count() as u32,
     );
+    let resumable = store
+        .list_resumable_conversation_issue_ids(pid)
+        .await
+        .unwrap_or_default();
 
     vm.op = Some(OpVm {
         id: pid,
@@ -1149,7 +1134,6 @@ async fn build_vm(app: &App, store: &Arc<dyn Store>) -> Vm {
         stages: stage_vms,
         metrics,
         week_plan,
-        stats,
         overall,
         sessions: session_cards,
         issues: state
@@ -1157,17 +1141,46 @@ async fn build_vm(app: &App, store: &Arc<dyn Store>) -> Vm {
             .iter()
             .map(|i| issue_card(i, &state.agents))
             .collect(),
-        chat,
+        active_session: state.active_session,
         hub,
         version_log,
         artifacts,
         // P4: the explicitly-opened Issue detail — assembled by
         // `Command::OpenIssueDetail`, mapped 1:1 here, `None` = no overlay.
         issue_detail: state.issue_detail.as_ref().map(|d| {
-            ui::vm::issue_detail_vm(&d.issue, &d.runs, &d.changes, &d.artifacts, &state.agents)
+            ui::vm::issue_detail_vm(
+                &d.issue,
+                &d.runs,
+                &d.changes,
+                &d.artifacts,
+                &state.agents,
+                d.is_interactive,
+            )
         }),
         active_run: app.active_run(),
         week_review,
+        pty_active: app.pty_active(),
+        pty_conversation_id: app.focused_pty_conversation(),
+        pty_live_ids: app.live_pty_ids(),
+        pty_restoring: app.pty_restoring(),
+        focused_issue: app.focused_pty_issue(),
+        consultable_issues: {
+            state
+                .issues
+                .iter()
+                .filter(|i| {
+                    matches!(i.status, IssueStatus::Done | IssueStatus::InReview)
+                        && resumable.contains(&i.id)
+                })
+                .map(|i| i.id)
+                .collect()
+        },
+        resumable_issues: resumable,
     });
+    vm.pty_active = app.pty_active();
+    vm.pty_conversation_id = app.focused_pty_conversation();
+    vm.pty_live_ids = app.live_pty_ids();
+    vm.pty_restoring = app.pty_restoring();
+    vm.focused_issue = app.focused_pty_issue();
     vm
 }

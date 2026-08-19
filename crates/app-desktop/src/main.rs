@@ -5,18 +5,18 @@
 //! (signals, trends, feeds, transcripts) arrives pre-derived in the [`Vm`].
 
 #![forbid(unsafe_code)]
+#![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 mod flow;
 mod kernel;
+mod open_design;
 mod screens;
 mod theme;
 
 use bw_app::{Command, View};
-use bw_core::model::{CronStatus, HubKind, StageKind};
-use bw_core::{CronTaskId, SessionId};
-use bw_store::SessionKind;
+use bw_core::model::HubKind;
 use dioxus::prelude::*;
-use kernel::{ActionsVm, RunVm, UiNote, Vm};
+use kernel::{ActionsVm, UiNote, Vm};
 use screens::activity_hub::ActivityHub;
 use screens::agent_hub::AgentHub;
 use screens::chrome::{BootFrame, FatalFrame, Hub, IconRail, Toast};
@@ -35,6 +35,23 @@ use screens::workflow_hub::WorkflowHub;
 use tokio::sync::broadcast::error::RecvError;
 
 fn main() {
+    // Prototype progress iframes Open Design's loopback page. WebView2's
+    // local-network checks can refuse that; OD itself disables the same
+    // feature. Set before the webview process starts.
+    #[cfg(windows)]
+    {
+        const FLAG: &str = "--disable-features=LocalNetworkAccessChecks";
+        match std::env::var("WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS") {
+            Ok(existing) if existing.contains("LocalNetworkAccessChecks") => {}
+            Ok(existing) if !existing.trim().is_empty() => {
+                std::env::set_var(
+                    "WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS",
+                    format!("{existing} {FLAG}"),
+                );
+            }
+            _ => std::env::set_var("WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS", FLAG),
+        }
+    }
     dioxus::LaunchBuilder::new()
         .with_cfg(
             dioxus::desktop::Config::new().with_window(
@@ -112,18 +129,18 @@ fn Root() -> Element {
     }
     let mut sel = use_signal(move || initial_sel);
     let mut creating = use_signal(|| false);
-    // Bug B: the末卡「确认·建立项目」button's local pending guard — set true
+    // Bug B: the末卡「确认·建立项目」button's pending guard — set true
     // the instant the user clicks (so a fast second click is a no-op, not a
-    // second `CompleteCreation` dispatch), released when that creation
-    // attempt truly ends. Success ends it by the kernel flipping `view` to
-    // App (the Create screen unmounts, same optimistic-flip spirit as
-    // IntentCard); failure ends it here, on the real `UiNote::Error` that
-    // the dispatch-error path already raises — re-enabling the button for an
-    // honest retry. Sibling to `creating`/`pending_cron`: client-side
-    // orchestration knowledge the kernel doesn't carry.
+    // second `CompleteCreation` dispatch). Released on `UiNote::Error`,
+    // when Create is not showing (success / cancel / wall), or on "+ 新建".
+    // Lives here (not inside Create) so the notes listener can clear it;
+    // unmounting Create does not drop this signal.
     let mut submitting = use_signal(|| false);
     let mut toast = use_signal(|| None::<String>);
-    let mut run = use_signal(RunVm::default);
+    // PF1-5: toast 自清的 epoch —— 每次 set_toast 自增,spawn 的 8s timer
+    // 到点只在 epoch 仍匹配时清(新 toast 替换重置)。决议 5:所有 toast 8s
+    // 自动清,不区分关键/非关键。
+    let mut toast_epoch = use_signal(|| 0u64);
     // plan/14 C14: raw Started/Ok/Fail facts for the creation flow's
     // background actions (repo create/clone, repo list, standard-Issue
     // trio, landing push) — `screens::create::ActionsBanner` turns this into
@@ -131,13 +148,6 @@ fn Root() -> Element {
     // `kernel::ACTION_PENDING_THRESHOLD` itself (render-time, from real
     // `Instant`s — see that component).
     let mut actions = use_signal(ActionsVm::default);
-    // Set right before a Cron Hub "▶ 立即执行" trigger fires; consumed (and
-    // cleared) by the notes listener below once that run's real `RunDone`/
-    // `RunFailed` arrives, closing the loop with a real `MarkCronRun`. Lives
-    // here (not in `RunVm`) because "which cron task triggered this" is
-    // client-side orchestration knowledge the kernel doesn't have.
-    let mut pending_cron = use_signal(|| None::<CronTaskId>);
-
     // Latest kernel snapshot → the one rendering source of truth.
     use_future({
         let kernel = kernel.clone();
@@ -154,22 +164,30 @@ fn Root() -> Element {
         }
     });
 
-    // Transient notes: live run progress + dispatch errors. Also the one
-    // place that closes the Cron Hub trigger loop: if this run was fired by
-    // "▶ 立即执行" (`pending_cron` is set), the real `RunDone`/`RunFailed`
-    // that ends it becomes a real `Command::MarkCronRun` with the real
-    // outcome — never optimistically marked at trigger time.
+    // Transient notes: live run progress + dispatch errors.
     use_future({
         let kernel = kernel.clone();
         move || {
             let mut rx = kernel.notes();
-            let kernel = kernel.clone();
             async move {
+                // PF1-5: 所有 toast 8s 自动清(spawn 8s timer,到点 epoch 仍
+                // 匹配才清;新 toast 替换重置 epoch)。失败/非关键 toast 不滞留。
+                let mut set_toast = move |msg: String| {
+                    toast.set(Some(msg));
+                    toast_epoch.set(toast_epoch() + 1);
+                    let epoch = toast_epoch();
+                    spawn(async move {
+                        tokio::time::sleep(std::time::Duration::from_secs(8)).await;
+                        if toast_epoch() == epoch {
+                            toast.set(None);
+                        }
+                    });
+                };
                 loop {
                     match rx.recv().await {
                         Ok(note) => match &note {
                             UiNote::Error(e) => {
-                                toast.set(Some(e.clone()));
+                                set_toast(e.clone());
                                 // Bug B: a dispatch error during creation is
                                 // the real "this attempt failed" signal —
                                 // re-enable the button so the user can retry,
@@ -181,41 +199,22 @@ fn Root() -> Element {
                                 }
                             }
                             UiNote::RunFailed(e) => {
-                                toast.set(Some(format!("工作流失败:{e}")));
-                                run.with_mut(|r| r.apply(&note));
-                                if let Some(cid) = pending_cron() {
-                                    kernel.send(Command::MarkCronRun {
-                                        id: cid,
-                                        status: CronStatus::Failed,
-                                    });
-                                    pending_cron.set(None);
-                                }
+                                set_toast(format!("运行失败:{e}"));
                             }
-                            UiNote::RunDone => {
-                                run.with_mut(|r| r.apply(&note));
-                                if let Some(cid) = pending_cron() {
-                                    kernel.send(Command::MarkCronRun {
-                                        id: cid,
-                                        status: CronStatus::Normal,
-                                    });
-                                    pending_cron.set(None);
-                                }
-                            }
-                            // A real, unattended scheduler fire (not this
-                            // click-driven `pending_cron` flow at all) — a
-                            // toast, deliberately never a navigation. See
+                            // A real, unattended scheduler fire — a toast,
+                            // deliberately never a navigation. See
                             // `App::tick_scheduler`'s own doc comment for why
                             // it must not touch the user's current screen.
                             UiNote::CronAutoFired { name, ok } => {
                                 let mark = if *ok { "✓" } else { "✕" };
-                                toast.set(Some(format!("⏰ 定时任务自动运行 {mark} · {name}")));
+                                set_toast(format!("⏰ 定时任务自动运行 {mark} · {name}"));
                             }
                             UiNote::ArtifactsRegistered { fresh } => {
-                                toast.set(Some(format!("📦 新登记 {fresh} 个产物版本")));
+                                set_toast(format!("📦 新登记 {fresh} 个产物版本"));
                             }
                             UiNote::ConnectorSynced { name, ok, detail } => {
                                 let mark = if *ok { "✓" } else { "✕" };
-                                toast.set(Some(format!("🔌 {name} 同步 {mark} · {detail}")));
+                                set_toast(format!("🔌 {name} 同步 {mark} · {detail}"));
                             }
                             // plan/14 C14: raw fact only — `ActionsBanner`
                             // decides at render time whether enough real
@@ -226,7 +225,7 @@ fn Root() -> Element {
                             UiNote::ActionProgress { .. } => {
                                 actions.with_mut(|a| a.apply(&note));
                             }
-                            _ => run.with_mut(|r| r.apply(&note)),
+                            UiNote::Handoff { .. } => {}
                         },
                         Err(RecvError::Lagged(_)) => continue,
                         Err(RecvError::Closed) => break,
@@ -257,46 +256,17 @@ fn Root() -> Element {
         creating.set(false);
     }
     let show_create = creating() || v.view == View::Create;
+    // Bug B leftover: `submitting` lives on this parent so the notes
+    // listener can release it on `UiNote::Error`. Success / cancel unmount
+    // Create but do not drop this signal — a later visit (new project or
+    // cold-start resume) inherited `true` and showed「建立中…」before
+    // anyone clicked confirm. Clone soft-fail is `ConnectorSynced`, not
+    // `UiNote::Error`, so the first failed attempt never released it.
+    // Release whenever Create is not showing.
+    if !show_create && submitting() {
+        submitting.set(false);
+    }
     let show_op = !show_create && v.view == View::App;
-
-    // Cron Hub's "▶ 立即执行": resolve the real project + workflow from this
-    // render's hub snapshot, dispatch the exact same real Command sequence
-    // WorkflowHub's "确认导入" uses, mark the task Running for real, then
-    // navigate to go watch it (same as any other real run).
-    let hub_for_cron = v.hub.clone();
-    let kernel_for_cron = kernel.clone();
-    let on_trigger_cron = move |cron_id: CronTaskId| {
-        let Some(c) = hub_for_cron.cron_tasks.iter().find(|x| x.id == cron_id) else {
-            return;
-        };
-        let Some(pid) = c.project_id else {
-            return;
-        };
-        let Some(wf) = hub_for_cron.workflows.iter().find(|w| w.name == c.target) else {
-            return;
-        };
-        let session = SessionId::new();
-        kernel_for_cron.send(Command::OpenProject(pid));
-        kernel_for_cron.send(Command::StartSession {
-            id: session,
-            stage_kind: wf
-                .stage_ref
-                .and_then(|n| StageKind::ALL.into_iter().find(|s| s.index() == n)),
-            kind: SessionKind::Optimize,
-            title: format!("⏰ 定时触发 · {}", c.name),
-        });
-        kernel_for_cron.send(Command::MarkCronRun {
-            id: cron_id,
-            status: CronStatus::Running,
-        });
-        kernel_for_cron.send(Command::RunHubWorkflow {
-            session,
-            workflow_id: wf.id,
-        });
-        kernel_for_cron.send(Command::SelectSession(Some(session)));
-        pending_cron.set(Some(cron_id));
-        hub.set(Hub::Workspace);
-    };
 
     rsx! {
         GlobalChrome {}
@@ -331,7 +301,6 @@ fn Root() -> Element {
                     WorkflowHub {
                         hub: v.hub.clone(),
                         projects: v.projects.clone(),
-                        on_run: move |_| hub.set(Hub::Workspace),
                         // T16 (plan/12 §10 v1.1#3): a phase's agent/skill
                         // chip click — same `sel`/`hub` navigation
                         // `ProjectRail`'s `on_pick` below already drives.
@@ -345,11 +314,7 @@ fn Root() -> Element {
                 } else if hub() == Hub::Agent {
                     AgentHub { hub: v.hub.clone(), projects: v.projects.clone() }
                 } else if hub() == Hub::Cron {
-                    CronHub {
-                        hub: v.hub.clone(),
-                        projects: v.projects.clone(),
-                        on_trigger: on_trigger_cron,
-                    }
+                    CronHub { hub: v.hub.clone(), projects: v.projects.clone() }
                 } else if hub() == Hub::Connector {
                     ConnectorHub { hub: v.hub.clone() }
                 } else if hub() == Hub::Knowledge {
@@ -365,7 +330,8 @@ fn Root() -> Element {
                         sel: sel().unwrap(),
                         hub: v.hub.clone(),
                         projects: v.projects.clone(),
-                        cron_effectiveness: v.cron_effectiveness.clone(),
+                        // plan/20 R5: 「引入本项目」按钮的归宿——当前打开的项目。
+                        active_project: v.op.as_ref().map(|o| o.id),
                         on_close: move |_| sel.set(None),
                         // T16: a workflow phase's agent/skill chip click
                         // re-points this same `sel` at the clicked component.
@@ -374,16 +340,16 @@ fn Root() -> Element {
                 } else if show_create {
                     Create {
                         vm: v.create.clone(),
-                        run: run(),
-                        // Bug B: pending guard for the末卡 confirm button —
-                        // set on click in ReviewCard, released on real
-                        // Error (above) or by the screen unmounting on
-                        // success.
+                        // Bug B: pending guard for the Intent card's confirm
+                        // button — set on click, released on real Error (above)
+                        // or when Create is not showing / "+ 新建".
                         submitting,
                         // plan/14 C14: raw action-progress facts — `Create`
                         // renders the pending/ok/fail strip from these.
                         actions: actions().items,
                         github_repos: v.github_repos.clone(),
+                        codehub_repos: v.codehub_repos.clone(),
+                        remote_project_probe: v.remote_project_probe.clone(),
                         // C12(plan/14): every card/state of the creation flow
                         // routes its exit here — including after a project row
                         // already exists (kernel `state.view` is already
@@ -397,13 +363,13 @@ fn Root() -> Element {
                         on_cancel: move |_| {
                             kernel.send(Command::BackToProjects);
                             creating.set(false);
+                            submitting.set(false);
                         },
                     }
                 } else if show_op {
                     if v.op.is_some() {
                         Op {
                             op: v.op.clone().unwrap(),
-                            run: run(),
                             on_pick_hub: move |hk: HubKind| {
                                 hub.set(match hk {
                                     HubKind::Workflow => Hub::Workflow,
@@ -418,7 +384,11 @@ fn Root() -> Element {
                 } else {
                     Wall {
                         projects: v.projects.clone(),
-                        on_new: move |_| creating.set(true),
+                        local_env: v.local_env.clone(),
+                        on_new: move |_| {
+                            submitting.set(false);
+                            creating.set(true);
+                        },
                     }
                 }
             }

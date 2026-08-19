@@ -19,7 +19,7 @@ pub enum ProvisionError {
 }
 
 pub(crate) async fn git_in(dir: &Path, args: &[&str]) -> Result<(), ProvisionError> {
-    let output = tokio::process::Command::new("git")
+    let output = crate::win_cmd::tokio_cmd("git")
         .current_dir(dir)
         .args(args)
         .stdin(Stdio::null())
@@ -109,7 +109,7 @@ pub async fn commit_file(
     git_in(dir, &["add", "--", rel_path]).await?;
     // `git commit` exits non-zero when nothing is staged; that is the
     // idempotent re-confirm case, not a failure.
-    let out = tokio::process::Command::new("git")
+    let out = crate::win_cmd::tokio_cmd("git")
         .current_dir(dir)
         .args([
             "-c",
@@ -140,6 +140,24 @@ pub async fn commit_file(
     }
 }
 
+/// 纯写盘,**不** git add/commit —— 与 `commit_file` 的区别就在这里。
+///
+/// 用于 BW 托管的派生文件(技能物化):它们每次 run 都可能重写,提交进 git 会
+/// 把工作区的历史刷成噪音,而且这些文件的正本在库里,不在仓里。父目录不存在
+/// 就建。
+pub async fn write_file(dir: &Path, rel_path: &str, content: &str) -> Result<(), ProvisionError> {
+    let path = dir.join(rel_path);
+    if let Some(parent) = path.parent() {
+        tokio::fs::create_dir_all(parent)
+            .await
+            .map_err(|e| ProvisionError::Write(e.to_string()))?;
+    }
+    tokio::fs::write(&path, content)
+        .await
+        .map_err(|e| ProvisionError::Write(e.to_string()))?;
+    Ok(())
+}
+
 /// Stage **all** of a run's edits on its work branch, commit them (idempotent
 /// — a clean tree left by an executor that committed its own work is *not* a
 /// failure), and push the branch to `origin` so a PR/MR can be opened on it.
@@ -156,8 +174,27 @@ pub(crate) async fn stage_commit_push(
     issue_number: u32,
     title: &str,
 ) -> Result<(), ProvisionError> {
+    stage_commit_push_msg(
+        workspace,
+        branch,
+        &format!("issue #{issue_number}: {title}"),
+    )
+    .await
+}
+
+/// General form of [`stage_commit_push`] — takes an arbitrary commit message
+/// instead of formatting one from an issue number. Used by the project.toml
+/// PR path ([`crate::github::open_project_init_pr`] /
+/// [`crate::codehub::create_project_init_mr`]) where there is no issue number
+/// (the commit is `chore: …`, not `issue #<n>: …`). Same idempotent
+/// nothing-to-commit semantics, same authorship, same push.
+pub(crate) async fn stage_commit_push_msg(
+    workspace: &Path,
+    branch: &str,
+    commit_message: &str,
+) -> Result<(), ProvisionError> {
     git_in(workspace, &["add", "-A"]).await?;
-    let commit = tokio::process::Command::new("git")
+    let commit = crate::win_cmd::tokio_cmd("git")
         .current_dir(workspace)
         .args([
             "-c",
@@ -166,7 +203,7 @@ pub(crate) async fn stage_commit_push(
             "user.email=workbench@local",
             "commit",
             "-qm",
-            &format!("issue #{issue_number}: {title}"),
+            commit_message,
         ])
         .stdin(Stdio::null())
         .stdout(Stdio::piped())
@@ -175,9 +212,6 @@ pub(crate) async fn stage_commit_push(
         .await
         .map_err(|e| ProvisionError::Git(e.to_string()))?;
     if !commit.status.success() {
-        // git prints "nothing to commit, working tree clean" on STDOUT, not
-        // stderr — an executor that committed its own work leaves a clean
-        // tree, and that idempotent case must not read as a failure (F5).
         let stderr = String::from_utf8_lossy(&commit.stderr);
         let stdout = String::from_utf8_lossy(&commit.stdout);
         let combined = format!("{stdout}\n{stderr}");
@@ -234,7 +268,7 @@ impl Drop for IssueWorktreeGuard {
             ["worktree", "remove", "--force", s].as_slice(),
             ["worktree", "prune"].as_slice(),
         ] {
-            let _ = std::process::Command::new("git")
+            let _ = crate::win_cmd::std_cmd("git")
                 .current_dir(&self.main_workspace)
                 .args(args)
                 .stdin(Stdio::null())
@@ -277,7 +311,7 @@ pub async fn provision_issue_worktree(
     // prune with a `.git` worktree file, it's a live worktree for this branch
     // — reuse it (idempotent retry, mirroring `checkout_issue_branch`).
     if sibling.exists() {
-        let _ = tokio::process::Command::new("git")
+        let _ = crate::win_cmd::tokio_cmd("git")
             .current_dir(main_workspace)
             .args(["worktree", "prune"])
             .stdin(Stdio::null())
@@ -315,7 +349,7 @@ pub async fn is_owned_workspace(dir: &Path) -> bool {
     if !dir.join(".git").exists() {
         return false;
     }
-    let out = match tokio::process::Command::new("git")
+    let out = match crate::win_cmd::tokio_cmd("git")
         .current_dir(dir)
         .args(["log", "--max-parents=0", "--format=%an"])
         .output()
@@ -350,7 +384,7 @@ pub async fn diff_numstat(
     from: &str,
     to: &str,
 ) -> Result<Vec<FileChange>, String> {
-    let output = tokio::process::Command::new("git")
+    let output = crate::win_cmd::tokio_cmd("git")
         .current_dir(workspace)
         .args(["diff", "--numstat", &format!("{from}..{to}")])
         .stdin(Stdio::null())

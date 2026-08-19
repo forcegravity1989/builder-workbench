@@ -3,12 +3,17 @@
 //! a real project the user created through the creation flow.
 
 use crate::theme;
-use bw_app::Command;
+use bw_app::{Command, EnvCheck, LocalEnvProbe};
+use bw_core::model::Signal;
 use dioxus::prelude::*;
 use ui::vm::ProjectCardVm;
 
 #[component]
-pub fn Wall(projects: Vec<ProjectCardVm>, on_new: EventHandler<()>) -> Element {
+pub fn Wall(
+    projects: Vec<ProjectCardVm>,
+    local_env: LocalEnvProbe,
+    on_new: EventHandler<()>,
+) -> Element {
     let serif = theme::SERIF;
     let ink2 = theme::INK_2;
     let clay = theme::CLAY;
@@ -25,6 +30,11 @@ pub fn Wall(projects: Vec<ProjectCardVm>, on_new: EventHandler<()>) -> Element {
                 span { style: "font-size:13px;color:{ink2};", "Builders' 工作台" }
             }
             h1 { style: "font-family:{serif};font-weight:600;font-size:30px;margin:0 0 6px;", "我的项目" }
+            LocalEnvBar { local_env }
+            // V1-Issue3 · cross-project health overview — moved here from the
+            // ProgressAll page (where it was per-project). The wall is the entry
+            // point: a glance at all projects' signals before you pick one.
+            HealthOverviewBar { projects: projects.clone() }
             p { style: "color:{ink2};font-size:13px;margin:0 0 30px;",
                 if empty {
                     "还没有项目。每个项目都从一句话意图开始,走完五段一环的创建引导 —— 从右侧虚线卡起步。"
@@ -38,6 +48,116 @@ pub fn Wall(projects: Vec<ProjectCardVm>, on_new: EventHandler<()>) -> Element {
                     ProjectCard { card: p }
                 }
                 NewCard { on_new }
+            }
+        }
+    }
+}
+
+fn env_line(check: &EnvCheck) -> (String, String) {
+    match check {
+        EnvCheck::Unknown => ("未测".into(), theme::INK_3.to_string()),
+        EnvCheck::Probing => ("探测中…".into(), theme::INK_2.to_string()),
+        EnvCheck::Ok(v) => (v.clone(), theme::INK.to_string()),
+        EnvCheck::Fail(v) => (v.clone(), theme::ALERT_DEEP.to_string()),
+    }
+}
+
+/// 项目墙本机探测。未点「测一下」= Unknown，不装绿。
+#[component]
+fn LocalEnvBar(local_env: LocalEnvProbe) -> Element {
+    let k = use_context::<crate::kernel::Kernel>();
+    let card = theme::card();
+    let ink3 = theme::INK_3;
+    let mono = theme::MONO;
+    let (claude_text, claude_color) = env_line(&local_env.claude);
+    let (codehub_text, codehub_color) = env_line(&local_env.codehub);
+    let probing = matches!(local_env.claude, EnvCheck::Probing)
+        || matches!(local_env.codehub, EnvCheck::Probing);
+    rsx! {
+        div {
+            style: "{card} padding:14px 18px;margin-bottom:18px;",
+            div {
+                style: "display:flex;align-items:center;gap:14px;flex-wrap:wrap;",
+                span { style: "font-family:{mono};font-size:10px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:{ink3};", "本机环境" }
+                span { style: "font-size:13px;color:{claude_color};", "claude · {claude_text}" }
+                span { style: "font-size:13px;color:{codehub_color};", "codehub-cli · {codehub_text}" }
+                button {
+                    disabled: probing,
+                    style: "margin-left:auto;cursor:pointer;background:transparent;color:{theme::CLAY};border:1px solid {theme::CLAY};border-radius:6px;padding:5px 11px;font-size:11.5px;",
+                    onclick: move |_| k.send(Command::ProbeLocalEnv),
+                    if probing { "探测中…" } else { "测一下" }
+                }
+            }
+            p { style: "font-size:12px;color:{ink3};line-height:1.55;margin:10px 0 0;",
+                "未测是灰、不是绿。装完请：关安装器从开始菜单重开 · 按自己的区 `codehub-cli -H green|open|yellow auth login` · 配 SSH 公钥 · clone host 与 API host 不是同一个 · claude 网关在 ~/.claude.json"
+            }
+        }
+    }
+}
+
+/// V1-Issue3 · cross-project health summary bar — shows the signal distribution
+/// across all projects on the wall. "Green hides, only red/amber/unknown speak"
+/// (plan §6): green projects fold into a count, non-green ones speak. This is
+/// the entry-page health overview — the per-project cross-stage detail lives on
+/// the ProgressAll page's 阶段轴 (one dot per stage).
+#[component]
+fn HealthOverviewBar(projects: Vec<ProjectCardVm>) -> Element {
+    let ink3 = theme::INK_3;
+    let mono = theme::MONO;
+    let total = projects.len();
+    let green = projects
+        .iter()
+        .filter(|p| p.signal == Signal::Green)
+        .count();
+    let amber = projects
+        .iter()
+        .filter(|p| p.signal == Signal::Amber)
+        .count();
+    let red = projects.iter().filter(|p| p.signal == Signal::Red).count();
+    let unknown = projects
+        .iter()
+        .filter(|p| p.signal == Signal::Unknown)
+        .count();
+    let card = theme::card();
+    rsx! {
+        div {
+            style: "{card} padding:14px 18px;margin-bottom:18px;display:flex;align-items:center;gap:14px;flex-wrap:wrap;",
+            span { style: "font-family:{mono};font-size:10px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:{ink3};", "健康概览" }
+            if total == 0 {
+                span { style: "font-size:13px;color:{ink3};", "尚无项目" }
+            } else {
+                div {
+                    style: "display:flex;align-items:center;gap:12px;flex-wrap:wrap;font-size:13px;",
+                    if green > 0 {
+                        span {
+                            style: "display:inline-flex;align-items:center;gap:6px;",
+                            span { style: "{theme::dot(ui::signal_color(Signal::Green), 8)}" }
+                            span { style: "color:{ink3};", "{green} 平稳" }
+                        }
+                    }
+                    if amber > 0 {
+                        span {
+                            style: "display:inline-flex;align-items:center;gap:6px;",
+                            span { style: "{theme::dot(ui::signal_color(Signal::Amber), 8)}" }
+                            span { "需要关注 {amber}" }
+                        }
+                    }
+                    if red > 0 {
+                        span {
+                            style: "display:inline-flex;align-items:center;gap:6px;",
+                            span { style: "{theme::dot(ui::signal_color(Signal::Red), 8)}" }
+                            span { "阻塞 {red}" }
+                        }
+                    }
+                    if unknown > 0 {
+                        span {
+                            style: "display:inline-flex;align-items:center;gap:6px;",
+                            span { style: "{theme::dot(ui::signal_color(Signal::Unknown), 8)}" }
+                            span { style: "color:{ink3};", "无数据 {unknown}" }
+                        }
+                    }
+                }
+                span { style: "margin-left:auto;font-size:12px;color:{ink3};", "共 {total} 个项目" }
             }
         }
     }
@@ -62,6 +182,12 @@ fn ProjectCard(card: ProjectCardVm) -> Element {
     let progress = card.progress;
     let id = card.id;
     let desc_preview: String = card.desc.chars().take(72).collect();
+    let ws = card.workspace_path.trim();
+    let delete_hint = if ws.is_empty() {
+        "将删除项目数据（工作目录未配置）".to_string()
+    } else {
+        format!("将删除项目数据 + 工作目录 {ws}（buddy 自建会一并删，你绑的目录保留）")
+    };
     let mut confirming_delete = use_signal(|| false);
     rsx! {
         div {
@@ -107,7 +233,7 @@ fn ProjectCard(card: ProjectCardVm) -> Element {
             if confirming_delete() {
                 div {
                     style: "margin-top:12px;padding-top:12px;border-top:1px dashed {ink3};display:flex;align-items:center;gap:8px;",
-                    span { style: "font-size:11.5px;color:{ink3};flex:1;", "删除后不可恢复" }
+                    span { style: "font-size:11.5px;color:{ink3};flex:1;line-height:1.5;", "{delete_hint}" }
                     button {
                         style: "cursor:pointer;background:{theme::ALERT_DEEP};color:#FFF;border:none;border-radius:6px;padding:5px 11px;font-size:11.5px;",
                         onclick: {

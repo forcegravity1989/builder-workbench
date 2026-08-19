@@ -48,6 +48,10 @@ pub struct ProjectCardVm {
     /// the A4 handoff risky-guard) — the wall's "open work" badge. `0` means
     /// the badge doesn't render; this field just carries the honest number.
     pub open_issues: usize,
+    /// W3-9: the project's real-executor target directory (empty = unconfigured).
+    /// Surfaced so the delete-confirm UI can show the path the user is about
+    /// to lose (or keep, if it's a user-bound dir).
+    pub workspace_path: String,
 }
 
 /// Build one wall card. `stage_progresses` = the project's real stage progress
@@ -64,6 +68,7 @@ pub fn project_card(
     signal: Option<Signal>,
     stage_progresses: &[u8],
     open_issues: usize,
+    workspace_path: &str,
 ) -> ProjectCardVm {
     let running = phase == Readiness::Running;
     let progress = if running {
@@ -95,6 +100,7 @@ pub fn project_card(
         meta,
         cycle_label: cycle.label(),
         open_issues,
+        workspace_path: workspace_path.into(),
     }
 }
 
@@ -187,11 +193,139 @@ pub struct MetricVm {
     pub trend: Vec<f32>,
     /// Sparkline geometry over the trend (empty polyline when <1 point).
     pub spark: SparkPath,
+    /// V1-Issue3 · true = 项目指标层B (intrinsic buddy-seeded code-stats:
+    /// 开放Issue/已合入MR/阶段完成), false = 业务指标层A (user's own
+    /// north-star / leading / lagging). Drives the 项目指标 strip vs 业务指标
+    /// section split. Name-based whitelist — no schema column added.
+    pub is_intrinsic: bool,
+    /// V1-Issue3 · week-over-week delta (latest ISO-week value − prior week).
+    /// None when <2 weeks of history — renders as "—".
+    pub weekly_delta: Option<f32>,
+    /// V1-Issue3 · last ~8 ISO weeks, one value per week (carry-forward when a
+    /// week has no observation). Empty when no parseable history at all.
+    pub weekly_spark: Vec<f32>,
+    /// V1-Issue3 · collection-chain status for the v2 card footer.
+    pub collection_chain: CollectionChainVm,
+    /// 已停用(归档):退出默认视图,只在「已停用」折叠区里灰显。`signal`
+    /// 是停用那一刻冻结的缓存,不是当下重算的值 —— 展示时要如实说明,
+    /// 不能让人以为这是它此刻的健康状态。
+    pub archived: bool,
+    /// 这条指标是不是从项目正本 `.bw/metrics.toml` 同步来的。决定界面给不
+    /// 给「停用」按钮:正本行的去留由正本说了算(从文件里删掉即自动停用,
+    /// 写回去即自动恢复),界面上再给个按钮只会被下次同步推翻;手建行正本
+    /// 里本来就没有,只能在界面上停用。
+    pub from_file: bool,
+}
+
+/// V1-Issue3 · collection-chain status: how this metric is collected — drives
+/// the per-card collection-chain footer in the v2 业务指标 section.
+#[derive(Clone, PartialEq, Debug, Default)]
+pub struct CollectionChainVm {
+    /// Two-kind forward-correct label:
+    /// - "script" (script connector, live)
+    /// - "manual" (手填 / 界面手建, no collection plan)
+    /// - "machine" (buddy auto-feeds an intrinsic metric, e.g. stage-done count)
+    /// - "legacy·迁script" (github/bw/connector — W2 Phase3 collapses to script)
+    pub collect_label: String,
+    /// The project's script connector name if this metric is script-collected.
+    pub connector_name: Option<String>,
+    /// The project's CollectMetrics cron task last tick (unix sec), if any.
+    pub cron_last_tick: Option<i64>,
+    /// Whether this metric has at least one observation.
+    pub has_observation: bool,
 }
 
 /// Sparkline box used by the stage KPI cards (matches prototype wsMetrics).
 pub const SPARK_W: f32 = 120.0;
 pub const SPARK_H: f32 = 34.0;
+
+/// V1-Issue3 · whitelist of W1-seeded intrinsic metric names (buddy's own
+/// code-stats, not the user's business metrics). Hits = layer-B 项目指标条,
+/// misses = layer-A 业务指标卡. Name-based — no schema column added. The three
+/// names come from `seed_stage_done_metrics` (`bw-app/src/lib.rs:2491` =
+/// "阶段完成 Issue 数") + `seed_codehub_public_metrics` PAIR (`lib.rs:2566` =
+/// "开放 Issue 数" / "已合入 MR 数"). A user metric whose name collides is a
+/// low-risk edge case (V1 accepts — see issue3 design §2).
+pub fn is_intrinsic_metric(name: &str) -> bool {
+    matches!(name, "阶段完成 Issue 数" | "开放 Issue 数" | "已合入 MR 数")
+}
+
+/// V1-Issue3 · forward-correct two-kind label from the raw `collect_kind`
+/// column. Empty collect_kind on an intrinsic metric = buddy auto-feeds it
+/// ("machine"); on a user metric = "manual" (界面手建). Legacy kinds
+/// (github/codehub/bw/connector) are all headed for script under W2 Phase 3,
+/// labeled "legacy·迁script" — honest about the migration direction without
+/// touching the enum (W2's scope).
+pub fn collect_label(collect_kind: &str, is_intrinsic: bool) -> &'static str {
+    match collect_kind {
+        "script" => "script",
+        "manual" => "manual",
+        "github" | "codehub" | "bw" | "connector" => "legacy·迁script",
+        _ => {
+            if is_intrinsic {
+                "machine"
+            } else {
+                "manual"
+            }
+        }
+    }
+}
+
+/// V1-Issue3 · bucket observations by ISO week, take the latest value per
+/// week for the last 8 weeks (carry-forward when a week has none). Empty when
+/// no parseable observation exists in the window. `obs` = `(unix_ts, raw)`
+/// pairs oldest→newest (caller ensures ASC — later values overwrite earlier
+/// within the same week bucket).
+pub fn weekly_spark(obs: &[(i64, String)], now_unix: i64) -> Vec<f32> {
+    let week_start = iso_week_start_unix(now_unix);
+    const DAY: i64 = 86_400;
+    const WEEK: i64 = 7 * DAY;
+    let mut latest: [Option<f32>; 8] = [None; 8];
+    for &(ts, ref raw) in obs {
+        let val = match parse_magnitude(raw) {
+            Some(m) => m as f32,
+            None => continue,
+        };
+        for (i, slot) in latest.iter_mut().enumerate() {
+            let bucket_start = week_start - (7 - i as i64) * WEEK;
+            if ts >= bucket_start && ts < bucket_start + WEEK {
+                *slot = Some(val);
+                break;
+            }
+        }
+    }
+    // Carry-forward: weeks with no observation inherit the last known value,
+    // so the sparkline reads as a continuous line (no gaps to misread as 0).
+    let mut spark = Vec::with_capacity(8);
+    let mut last: Option<f32> = None;
+    for v in latest.iter() {
+        if let Some(val) = v {
+            last = Some(*val);
+        }
+        if let Some(val) = last {
+            spark.push(val);
+        }
+    }
+    spark
+}
+
+/// V1-quickfix · whether the latest (current) week bucket has a real
+/// observation (not a carry-forward). Used so `weekly_delta` doesn't read
+/// 0.0 off a carry-forward-filled last bucket when the week was unmeasured.
+pub fn last_week_has_real_obs(obs: &[(i64, String)], now_unix: i64) -> bool {
+    let week_start = iso_week_start_unix(now_unix);
+    const WEEK: i64 = 7 * 86_400;
+    obs.iter()
+        .any(|(ts, _)| *ts >= week_start && *ts < week_start + WEEK)
+}
+
+/// V1-Issue3 · latest week − prior week. None when <2 weeks of history.
+pub fn weekly_delta(spark: &[f32]) -> Option<f32> {
+    match spark {
+        [.., a, b] => Some(*b - *a),
+        _ => None,
+    }
+}
 
 #[allow(clippy::too_many_arguments)]
 pub fn metric_vm(
@@ -208,12 +342,18 @@ pub fn metric_vm(
     hit: Option<bool>,
     source: Option<SourceKind>,
     collect_kind: &str,
+    archived: bool,
+    from_file: bool,
     observation_raws: &[String],
+    weekly_spark: &[f32],
+    weekly_delta: Option<f32>,
+    collection_chain: CollectionChainVm,
 ) -> MetricVm {
     let trend: Vec<f32> = observation_raws
         .iter()
         .filter_map(|raw| parse_magnitude(raw).map(|m| m as f32))
         .collect();
+    let is_intrinsic = is_intrinsic_metric(name);
     MetricVm {
         id,
         name: name.into(),
@@ -228,8 +368,14 @@ pub fn metric_vm(
         hit,
         manual: source.map(|s| s.is_manual()).unwrap_or(false),
         collect_kind: collect_kind.into(),
+        archived,
+        from_file,
         spark: sparkline_path(&trend, SPARK_W, SPARK_H),
         trend,
+        is_intrinsic,
+        weekly_delta,
+        weekly_spark: weekly_spark.to_vec(),
+        collection_chain,
     }
 }
 
@@ -249,7 +395,9 @@ pub struct WeekPlanRowVm {
 pub fn week_plan_rows(metrics: &[MetricVm]) -> Vec<WeekPlanRowVm> {
     metrics
         .iter()
-        .filter(|m| m.leading)
+        // 停用的引领指标退出本周计划:本周计划是"这周要拧哪几个把手",
+        // 一条已经判定不再用的指标留在里面就是虚的待办。
+        .filter(|m| m.leading && !m.archived)
         .map(|m| WeekPlanRowVm {
             metric: m.id,
             name: m.name.clone(),
@@ -380,33 +528,6 @@ pub fn signal_label(s: Signal) -> &'static str {
 
 // ───────────────────────── stat cards ─────────────────────────
 
-/// The three showProgAll stat cards, from real rows.
-#[derive(Clone, Copy, PartialEq, Eq, Debug, Default)]
-pub struct StatCardsVm {
-    /// 工作流累计 = create sessions ever run.
-    pub workflows_total: u32,
-    /// 定时任务运行中 = materialized stages (each carries a standing routine
-    /// once the project is running).
-    pub routines_active: u32,
-    /// 优化中待验收 = active optimize sessions.
-    pub optimizing: u32,
-}
-
-pub fn stat_cards(
-    materialized_stage_count: usize,
-    // (kind is create?, is_active)
-    sessions: &[(bool, bool)],
-) -> StatCardsVm {
-    StatCardsVm {
-        workflows_total: sessions.iter().filter(|(create, _)| *create).count() as u32,
-        routines_active: materialized_stage_count as u32,
-        optimizing: sessions
-            .iter()
-            .filter(|(create, live)| !*create && *live)
-            .count() as u32,
-    }
-}
-
 // ───────────────────────── chat ─────────────────────────
 
 #[derive(Clone, PartialEq, Debug)]
@@ -511,7 +632,6 @@ pub struct WorkflowHubRowVm {
     pub primary_agent: String,
     /// Pre-formatted, e.g. `"v3"`.
     pub version_label: String,
-    pub uses: u32,
     pub goal: String,
     pub phases_count: usize,
     /// Pre-formatted, e.g. `"重试1·迭代3"`.
@@ -573,7 +693,6 @@ pub fn workflow_hub_row(spec: &WorkflowSpec) -> Option<WorkflowHubRowVm> {
     let WorkflowKind::Static {
         maturity,
         version,
-        uses,
         source,
         trigger,
         ..
@@ -593,7 +712,6 @@ pub fn workflow_hub_row(spec: &WorkflowSpec) -> Option<WorkflowHubRowVm> {
             .map(|a| a.name.clone())
             .unwrap_or_else(|| "—".into()),
         version_label: format!("v{version}"),
-        uses: *uses,
         goal: spec.goal.clone(),
         phases_count: spec.phases.len(),
         loop_label: format!(
@@ -654,51 +772,119 @@ pub fn source_chip_counts(rows: &[WorkflowHubRowVm]) -> Vec<(&'static str, usize
     counts
 }
 
-/// T7 (2026-07-23, plan/12 §0/§2/§3): the shared five-role classification
-/// filter every Hub screen (Skill/Agent/Workflow) now applies to its rows —
-/// one pure predicate instead of three copy-pasted per-screen closures.
-/// `General` is a real, selectable state (not merely "no filter"), matching
-/// the ticket's chip row 全部/原型师/构建师/优化师/运营推广师/运维师/通用 —
-/// a user can ask "show me only the honestly-unclassified rows" the same
-/// way they can ask for a specific stage.
+/// 一行 Hub 记录在五角色维度上的**归属状态**,三个 Hub 屏共用。
+///
+/// Skill 侧是多值(2026-08-05 起,`skill_stage` 关联表);Agent / Workflow 侧
+/// 本轮仍是单值 `Option<StageKind>`,经 [`RoleTag::from_single`] 收敛到同一
+/// 个类型 —— 三屏共用一个筛选谓词的格局因此保住,不分叉。
+#[derive(Clone, PartialEq, Eq, Debug)]
+pub enum RoleTag {
+    /// 挂 1..=4 个阶段。
+    Stages(Vec<StageKind>),
+    /// 五个全挂 = 全阶段通用。
+    Universal,
+    /// **已判定**不属任何阶段(判过了,跟五阶段无关)。
+    NoStage,
+    /// 还没人归过类(Unknown)。
+    Unclassified,
+}
+
+impl RoleTag {
+    /// Skill 侧:多值 + 「判过没有」。`classified` 来自
+    /// `SkillCard::stage_origin != StageOrigin::Unclassified`。
+    pub fn from_skill(stages: &[StageKind], classified: bool) -> RoleTag {
+        if stages.len() >= StageKind::ALL.len() {
+            RoleTag::Universal
+        } else if stages.is_empty() {
+            if classified {
+                RoleTag::NoStage
+            } else {
+                RoleTag::Unclassified
+            }
+        } else {
+            RoleTag::Stages(stages.to_vec())
+        }
+    }
+
+    /// Agent / Workflow 侧:单值。`None` 一律是「还没人归类」——那两侧今天
+    /// 没有「已判定不属任何阶段」这个概念,不假装有。
+    pub fn from_single(stage: Option<StageKind>) -> RoleTag {
+        match stage {
+            Some(k) => RoleTag::Stages(vec![k]),
+            None => RoleTag::Unclassified,
+        }
+    }
+}
+
+/// 五角色筛选 chip 的选中态。`Universal`/`NoStage`/`Unclassified` 都是**可选
+/// 中的真实状态**,不只是「无筛选」——用户可以专门问「只给我看还没归类的」。
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub enum RoleFilter {
     All,
     Stage(StageKind),
-    General,
+    Universal,
+    NoStage,
+    Unclassified,
 }
 
 impl RoleFilter {
-    /// Does `stage_ref` pass this filter?
-    pub fn matches(self, stage_ref: Option<StageKind>) -> bool {
-        match self {
-            RoleFilter::All => true,
-            RoleFilter::Stage(k) => stage_ref == Some(k),
-            RoleFilter::General => stage_ref.is_none(),
+    pub fn matches(self, tag: &RoleTag) -> bool {
+        match (self, tag) {
+            (RoleFilter::All, _) => true,
+            (RoleFilter::Stage(k), RoleTag::Stages(v)) => v.contains(&k),
+            // 全阶段通用的技能对每个阶段 chip 都算命中 —— 它确实属于那个阶段,
+            // 这与注入候选集的口径(本阶段的 + 全阶段通用的)是同一条规则。
+            (RoleFilter::Stage(_), RoleTag::Universal) => true,
+            (RoleFilter::Universal, RoleTag::Universal) => true,
+            (RoleFilter::NoStage, RoleTag::NoStage) => true,
+            (RoleFilter::Unclassified, RoleTag::Unclassified) => true,
+            _ => false,
         }
     }
 }
 
-/// Real per-role counts for a stage-role filter chip row — shared by all
-/// three Hub screens now that Skill/Agent/Workflow carry the identical
-/// `Option<StageKind>` classification dimension (T7). Returns the five real
-/// stages in loop order plus a trailing 通用 (unclassified) count — never
-/// invented: a row with no `stage_ref` is honestly tallied there, never
-/// folded into a stage it was never assigned to.
-pub fn role_chip_counts(stage_refs: &[Option<StageKind>]) -> (Vec<(StageKind, usize)>, usize) {
+/// chip 行的真实计数。
+///
+/// `per_stage` 里已包含「全阶段通用」的行(与 `RoleFilter::matches` 同口径),
+/// 因此各项之和会大于总行数 —— 这在多值维度下是正确的,一件挂两个阶段的技能
+/// 本来就该在两个 chip 里各数一次。
+pub struct RoleChipCounts {
+    pub per_stage: Vec<(StageKind, usize)>,
+    pub universal: usize,
+    pub no_stage: usize,
+    pub unclassified: usize,
+}
+
+pub fn role_chip_counts(tags: &[RoleTag]) -> RoleChipCounts {
     let mut per_stage: Vec<(StageKind, usize)> = StageKind::ALL.iter().map(|&k| (k, 0)).collect();
-    let mut general = 0usize;
-    for sr in stage_refs {
-        match sr {
-            Some(k) => {
-                if let Some(slot) = per_stage.iter_mut().find(|(s, _)| s == k) {
+    let mut universal = 0usize;
+    let mut no_stage = 0usize;
+    let mut unclassified = 0usize;
+    for tag in tags {
+        match tag {
+            RoleTag::Stages(v) => {
+                for k in v {
+                    if let Some(slot) = per_stage.iter_mut().find(|(s, _)| s == k) {
+                        slot.1 += 1;
+                    }
+                }
+            }
+            RoleTag::Universal => {
+                universal += 1;
+                for slot in per_stage.iter_mut() {
                     slot.1 += 1;
                 }
             }
-            None => general += 1,
+            RoleTag::NoStage => no_stage += 1,
+            RoleTag::Unclassified => unclassified += 1,
         }
     }
-    (per_stage, general)
+    RoleChipCounts {
+        per_stage,
+        universal,
+        no_stage,
+        unclassified,
+    }
 }
 
 #[derive(Clone, PartialEq, Debug)]
@@ -799,6 +985,16 @@ pub struct IssueDetailVm {
     pub runs: Vec<IssueRunRowVm>,
     /// (path, short commit, bytes) per registered artifact version.
     pub artifacts: Vec<(String, String, u64)>,
+    /// V2-①: the issue's explicit skill slug (empty = stage default will
+    /// be used at run time). Shown in the detail popup so the user can
+    /// see what method will be loaded.
+    pub standard_skill: String,
+    /// P2 (2026-08-06 cowelink 验证): 交互式活(找指标/绑数据)不写
+    /// `workflow_run` 行(§2.6 设计决定——过程在嵌入终端/`session.jsonl`
+    /// 里,不解析成摘要),`runs` 因此对交互式活恒为空。弹窗此前对空
+    /// `runs` 一律显示「还没有运行」,对交互式活是假话——已经跑过甚至跑
+    /// 完了,只是这条活从不产生这种记录。
+    pub is_interactive: bool,
 }
 
 fn duration_label(ms: Option<i64>) -> String {
@@ -818,6 +1014,9 @@ pub fn issue_detail_vm(
     changes: &[RunChanges],
     artifacts: &[Artifact],
     agents: &[AgentCard],
+    // V1 终端会话重构(阶段1): claude_conversation 行存在与否(替代旧
+    // issue.interactive_started,调用方查 conversation 传入)。
+    is_interactive: bool,
 ) -> IssueDetailVm {
     let run_rows = runs
         .iter()
@@ -873,6 +1072,8 @@ pub fn issue_detail_vm(
                 (a.path.clone(), short, a.bytes)
             })
             .collect(),
+        standard_skill: issue.standard_skill.clone(),
+        is_interactive,
     }
 }
 
@@ -883,11 +1084,9 @@ pub struct SkillCardVm {
     pub maturity_label: &'static str,
     pub desc: String,
     pub category: String,
-    /// T7 (plan/12 §0/§2): the stage-role classification dimension shared
-    /// with `AgentCardVm`/`WorkflowHubRowVm` — `None` = 通用/跨阶段. Kept as
-    /// the real `StageKind` (not `WorkflowHubRowVm`'s `Option<u8>`), since
-    /// `SkillCard.stage_ref` already is one — no round-trip needed here.
-    pub stage_ref: Option<StageKind>,
+    /// 五角色归属(2026-08-05 起多值)。与 `AgentCardVm`/`WorkflowHubRowVm` 的
+    /// 单值 `stage_ref` 经 `RoleTag` 收敛到同一筛选谓词。
+    pub role_tag: RoleTag,
     pub source_label: &'static str,
     /// plan/渠道6: `true` iff scanned in from the project's own workspace
     /// (`BW_PROJECT_ASSETS_LIBRARY`) — 种A, registered-visible only, excluded
@@ -947,7 +1146,10 @@ pub fn skill_card(s: &SkillCard, files: Vec<SkillFileVm>) -> SkillCardVm {
         maturity_label: maturity_label(s.maturity),
         desc: s.desc.clone(),
         category: s.category.clone(),
-        stage_ref: s.stage_ref,
+        role_tag: RoleTag::from_skill(
+            &s.stages,
+            s.stage_origin != bw_core::stage_catalog::StageOrigin::Unclassified,
+        ),
         source_label: s.source.label(),
         is_project_assets: s.source.is_project_assets(),
         adapted_from: s.adapted_from.clone(),
@@ -1045,7 +1247,8 @@ pub struct AgentCardVm {
     pub name: String,
     pub initial: String,
     pub role: String,
-    /// T7 (plan/12 §0/§3): same dimension as `SkillCardVm::stage_ref`.
+    /// T7 (plan/12 §0/§3): same classification dimension as `SkillCardVm`'s
+    /// `role_tag`(Agent 侧本轮仍单值,经 `RoleTag::from_single` 收敛)。
     pub stage_ref: Option<StageKind>,
     pub maturity_label: &'static str,
     pub skills: Vec<String>,
@@ -1247,55 +1450,31 @@ pub struct CronRowVm {
     /// L1(plan/11): 到点做什么——`bw_core::model::CronMode` 一直在 domain
     /// struct 上,此前从没有一个 VM 字段读出来过。
     pub mode_label: &'static str,
-    /// T10(plan/12 §5): row-front icon distinguishing all four modes at a
-    /// glance (🔄/⚙/💬; `CreateIssue` deliberately keeps no icon — see
-    /// `CronMode::icon`'s doc).
+    /// Row-front icon (📈 for `CollectMetrics`; `CreateIssue` deliberately
+    /// keeps no icon — see `CronMode::icon`'s doc).
     pub mode_icon: &'static str,
-    /// `CreateIssue` 任务的 Issue 作用阶段;`RunWorkflow` 任务恒 `None`。
+    /// `CreateIssue` 任务的 Issue 作用阶段;`None` = 到点取项目当前阶段。
     pub issue_stage_label: Option<&'static str>,
     /// `CreateIssue` 任务的 Issue 指派对象名(自由文本,同全仓 by-name 约定)。
     pub issue_assignee: Option<String>,
-    /// T10: `RunSkill`'s target line — the real skill's current name, or the
-    /// honest `"(技能已删除)"` when the referenced `SkillId` no longer
-    /// resolves against the live Skill Hub. `None` for every other mode.
-    pub skill_target_label: Option<String>,
-    /// T10: `true` only for a `RunSkill` task whose referenced skill no
-    /// longer exists — CronHub's honest "失联" marker. The row still
-    /// renders, still lets the task be paused; it just can't fire for real
-    /// until re-pointed at a live skill (or deleted).
-    pub skill_missing: bool,
-    /// T10: `RunPrompt`'s first-40-character preview (a real truncation of
-    /// `prompt_full`, never a placeholder). `None` for every other mode.
-    pub prompt_preview: Option<String>,
-    /// T10: `RunPrompt`'s full text, for the "点击展开全文" affordance.
-    /// `None` for every other mode.
-    pub prompt_full: Option<String>,
-}
-
-/// A real, honest first-40-character preview — counts chars (not bytes), so
-/// CJK text truncates at a sane visual length instead of mid-codepoint.
-/// Appends `…` only when something was actually cut.
-fn preview_chars(s: &str, max: usize) -> String {
-    let trimmed = s.trim();
-    if trimmed.chars().count() <= max {
-        return trimmed.to_string();
-    }
-    let mut out: String = trimmed.chars().take(max).collect();
-    out.push('…');
-    out
+    /// PF1-3a: `CollectMetrics` 任务的采集目标名(从该项目
+    /// `collect_kind='script'` 的 metric name 派生,kernel 填)。cron 卡
+    /// 用它显示「采集代码仓指标(开放 Issue / 已合入 MR)· 每日」副标题。
+    /// 非 CollectMetrics 模式为空 Vec。
+    pub collect_targets: Vec<String>,
+    /// PF1-3a fixup: `true` only for `CronMode::CollectMetrics` — a stable
+    /// discriminant for the card's collect-metrics branch, so a label-text
+    /// rename can't silently drop the `collect_targets` subtitle (review F1).
+    pub is_collect_metrics: bool,
 }
 
 /// `project_names` resolves `CronTask.project_id` to a display name — pass
 /// the real project rows' `(id, name)` pairs, not a hand-maintained lookup.
-/// `skills` resolves a `RunSkill` task's real `SkillId` to its current name
-/// (or an honest "deleted" reading if it no longer exists) — pass the live
-/// Skill Hub rows, not a cached/stale list. `now` feeds `cron_next_run_label`
-/// — the real scheduler's own due-check, not the always-empty
-/// `CronTask.next_run` column (nothing ever wrote it).
+/// `now` feeds `cron_next_run_label` — the real scheduler's own due-check,
+/// not the always-empty `CronTask.next_run` column (nothing ever wrote it).
 pub fn cron_row(
     c: &CronTask,
     project_names: &[(ProjectId, String)],
-    skills: &[SkillCard],
     now: OffsetDateTime,
 ) -> CronRowVm {
     let project_label = match c.project_id {
@@ -1305,17 +1484,6 @@ pub fn cron_row(
             .find(|(id, _)| *id == pid)
             .map(|(_, name)| name.clone())
             .unwrap_or_else(|| "(项目已删除)".to_string()),
-    };
-    let (skill_target_label, skill_missing) = match &c.mode {
-        CronMode::RunSkill { skill_id } => match skills.iter().find(|s| s.id == *skill_id) {
-            Some(s) => (Some(s.name.clone()), false),
-            None => (Some("(技能已删除)".to_string()), true),
-        },
-        _ => (None, false),
-    };
-    let (prompt_preview, prompt_full) = match &c.mode {
-        CronMode::RunPrompt { prompt } => (Some(preview_chars(prompt, 40)), Some(prompt.clone())),
-        _ => (None, None),
     };
     CronRowVm {
         id: c.id,
@@ -1332,46 +1500,11 @@ pub fn cron_row(
         mode_icon: c.mode.icon(),
         issue_stage_label: c.issue_stage.map(|s| s.label()),
         issue_assignee: c.issue_assignee.clone(),
-        skill_target_label,
-        skill_missing,
-        prompt_preview,
-        prompt_full,
-    }
-}
-
-/// L1(plan/11): a cron task's real fire history — `bw_core::model::
-/// CronEffectiveness` computed by the store (`Store::cron_effectiveness`) but
-/// never surfaced past it. Pre-formatted the same "no evidence, never a fake
-/// 0%" way every other rate in this app already reads.
-#[derive(Clone, PartialEq, Debug)]
-pub struct CronEffectivenessVm {
-    pub fires: u32,
-    pub ok_fires: u32,
-    pub failed_fires: u32,
-    /// `"67%"`, or `"—(尚无触发)"` when `fires == 0`.
-    pub effectiveness_label: String,
-    pub avg_duration_label: String,
-    /// `"最近 07-21"`, empty when never fired.
-    pub last_fire_label: String,
-}
-
-pub fn cron_effectiveness_vm(e: &bw_core::model::CronEffectiveness) -> CronEffectivenessVm {
-    let effectiveness_label = match e.effectiveness {
-        Some(r) => format!("{:.0}%", r * 100.0),
-        None => "—(尚无触发)".to_string(),
-    };
-    let last_fire_label = e
-        .last_fire_at
-        .and_then(|ts| time::OffsetDateTime::from_unix_timestamp(ts).ok())
-        .map(|t| format!("最近 {:02}-{:02}", u8::from(t.month()), t.day()))
-        .unwrap_or_default();
-    CronEffectivenessVm {
-        fires: e.fires,
-        ok_fires: e.ok_fires,
-        failed_fires: e.failed_fires,
-        effectiveness_label,
-        avg_duration_label: duration_label(e.avg_duration_ms),
-        last_fire_label,
+        // PF1-3a: cron_row 无 store 访问,kernel 在 build_vm 里按项目指标派生后
+        // 覆盖;这里先空,保证非 CollectMetrics 模式与未填充时为零 Vec。
+        collect_targets: Vec::new(),
+        // PF1-3a fixup: 稳定判别,不靠 mode_label 字符串(文案改不失效)。
+        is_collect_metrics: matches!(c.mode, CronMode::CollectMetrics),
     }
 }
 
@@ -1407,7 +1540,7 @@ pub fn connector_card(c: &Connector) -> ConnectorCardVm {
             .next()
             .map(|ch| ch.to_string())
             .unwrap_or_default(),
-        kind: c.kind.clone(),
+        kind: connector_kind_label(c),
         status: c.status,
         status_label: c.status.label(),
         last_sync: c.last_sync.clone(),
@@ -1421,6 +1554,51 @@ pub fn connector_card(c: &Connector) -> ConnectorCardVm {
         ),
         project_id: c.project_id,
     }
+}
+
+/// PF1-3b: 连接器 kind → 角色人话标签(VM 层派生,存储仍原 kind)。
+/// 心智:script 也是连接器(kind=script,塞进 connector 表当一种 kind),
+/// 只是角色不同(对外连代码仓 vs 内部采集)。其余 kind 原样显示。
+fn connector_kind_label(c: &Connector) -> String {
+    match c.kind.as_str() {
+        bw_core::model::CONNECTOR_KIND_CODEHUB_REPO => "对外连接器 · 连 CodeHub 仓".to_string(),
+        bw_core::model::CONNECTOR_KIND_GITHUB_REPO => "对外连接器 · 连 GitHub 仓".to_string(),
+        bw_core::model::CONNECTOR_KIND_SCRIPT => script_connector_kind_label(c),
+        bw_core::model::CONNECTOR_KIND_CLAUDE_CLI => "对外连接器 · claude CLI".to_string(),
+        bw_core::model::CONNECTOR_KIND_GIT_REPO => "本地工作区(legacy)".to_string(),
+        _ => c.kind.clone(),
+    }
+}
+
+/// P12 (2026-08-06 cowelink 验证): 此前所有 `kind=script` 连接器一律标
+/// 「采集 Issue/MR」,连业务侧自采脚本(如 changelog 特性数)也被贴上这个
+/// 跟自己毫不相干的标签——用户看着连接器 Hub 会以为一个明明是采业务数据
+/// 的脚本在采 Issue/MR。CreateProject 建的仓统计脚本连接器固定命名
+/// `"{项目名} · 仓统计"`(`bw-app/lib.rs`),按这个名字识别；其余按
+/// `config` JSON 里的 `script` 字段抽脚本文件名,给一个真实反映内容的标签
+/// (无法解析时退化成通用「业务指标脚本」,不再乱贴"Issue/MR")。
+fn script_connector_kind_label(c: &Connector) -> String {
+    if c.name.contains("仓统计") {
+        return "脚本连接器 · 采集 Issue/MR".to_string();
+    }
+    match script_file_name_from_config(&c.config) {
+        Some(file) => format!("脚本连接器 · {file}"),
+        None => "脚本连接器 · 业务指标脚本".to_string(),
+    }
+}
+
+/// Best-effort `"script"` field extraction from a connector's raw JSON
+/// `config` string, without pulling in a JSON parser dependency just for a
+/// display label — safe because `config` is buddy's own serialized shape
+/// (`{"script": "...", ...}`, written by `sync_connectors_file_for`/
+/// `create_connector`), never untrusted external input.
+fn script_file_name_from_config(config: &str) -> Option<&str> {
+    let idx = config.find("\"script\"")?;
+    let rest = &config[idx + "\"script\"".len()..];
+    let after_colon = rest.split_once(':')?.1.trim_start();
+    let quoted = after_colon.strip_prefix('"')?;
+    let value = quoted.split('"').next()?;
+    value.rsplit(['/', '\\']).next().filter(|s| !s.is_empty())
 }
 
 #[derive(Clone, PartialEq, Debug)]
@@ -1531,19 +1709,10 @@ pub fn notify_feed(
     let mut items = Vec::new();
     for c in cron_tasks {
         if c.status == CronStatus::Failed {
-            // T10: `target` is a real `SkillId`/full prompt text for the two
-            // new modes — never dump that raw payload into a notify line;
-            // `mode.label()` says honestly what kind of task this is instead.
-            let target_display = match &c.mode {
-                CronMode::RunSkill { .. } | CronMode::RunPrompt { .. } => {
-                    c.mode.label().to_string()
-                }
-                _ => c.target.clone(),
-            };
             items.push(NotifyItemVm {
                 level: NotifyLevel::Alert,
                 title: format!("定时任务「{}」失败", c.name),
-                detail: format!("目标：{} · 上次运行 {}", target_display, c.last_run),
+                detail: format!("{} · 上次运行 {}", c.mode.label(), c.last_run),
                 time_label: c.last_run.clone(),
             });
         }
@@ -1585,35 +1754,20 @@ pub fn notify_feed(
 
 // ───────────────────────── settings hub ─────────────────────────
 
-/// The real, process-wide `ClaudeCliExecutor` config — `ui` can't depend on
+/// The real, process-wide `claude` CLI config — `ui` can't depend on
 /// `bw-engine` (must stay wasm32-clean), so `app-desktop` unpacks
-/// `ClaudeCliConfig`/`PermissionMode` into primitives before calling
-/// [`settings_vm`]. No new table: this mirrors how the value already lived
-/// only in memory (env-var-seeded at boot), just now editable at runtime via
-/// `Command::SetClaudeConfig` instead of frozen for the process's lifetime.
+/// `ClaudeCliConfig` into primitives before calling [`settings_vm`]. No new
+/// table: the value lives only in memory (env-var-seeded at boot), editable
+/// at runtime via `Command::SetClaudeConfig`.
 #[derive(Clone, PartialEq, Debug, Default)]
 pub struct SettingsVm {
     /// Raw text for the edit field — empty means "resolve from PATH".
     pub binary_raw: String,
     /// Display copy for the read-only summary row.
     pub binary_label: String,
-    pub max_budget_usd: f64,
-    pub max_budget_label: String,
-    /// `true` iff the mode used when a project has NOT opted into command
-    /// execution is `BypassPermissions` — off by default and flagged in the
-    /// UI, never silently defaulted on.
-    pub bypass_default: bool,
-    /// Same, for the mode used when a project HAS opted into command
-    /// execution (`allow_commands = true`).
-    pub bypass_commands: bool,
 }
 
-pub fn settings_vm(
-    binary: Option<&str>,
-    max_budget_usd: f64,
-    bypass_default: bool,
-    bypass_commands: bool,
-) -> SettingsVm {
+pub fn settings_vm(binary: Option<&str>) -> SettingsVm {
     let binary_raw = binary.unwrap_or_default().to_string();
     let binary_label = if binary_raw.trim().is_empty() {
         "自动从 PATH 解析".to_string()
@@ -1623,10 +1777,6 @@ pub fn settings_vm(
     SettingsVm {
         binary_raw,
         binary_label,
-        max_budget_usd,
-        max_budget_label: format!("${max_budget_usd:.2}"),
-        bypass_default,
-        bypass_commands,
     }
 }
 

@@ -10,957 +10,74 @@
 //! [`ClaudeCliExecutor`] per call for any project that HAS configured a
 //! workspace — `workspace_path`/`allow_commands` are per-project runtime data
 //! read from the store, not something fixed at [`App::new`] time.
-//! [`Command::RunDraftWorkflow`] is the one deliberate exception: the
-//! creation flow's 体系起草 run, hard-locked to the shared Mock `Engine`
-//! forever, independent of the project's `workspace_path` (plan/14 C13, D8
-//! 回锁 — real system-drafting work belongs to the standard-Issue trio, run
-//! through the ordinary `RunIssue`/`run_workflow_inner` route instead).
+//!
+//! File layout (2026-08-17 mechanical split; `impl App` is spread over the
+//! child modules, each `use super::*` and adds nothing new):
+//! - `lib.rs` — module docs, imports, [`AppState`]/[`App`] and their private
+//!   run/settle types, `App::new` + builders + `refresh_*`, free helper fns.
+//! - `command.rs` — [`Command`]/[`Event`] and the view enums (`pub use`d here).
+//! - `dispatch.rs` — [`App::dispatch`], the single Command → use-case router.
+//! - `issue_run.rs` — Issue run lifecycle (prepare → interactive run → settle → cancel).
+//! - `terminal.rs` — embedded terminal / session focus / hook events / in-review poll.
+//! - `scheduler.rs` — cron tick, autopilot (creates issues, never completes them).
+//! - `metrics.rs` — metric seeding, `.bw/metrics.toml` sync, connector collection.
+//! - `project_sync.rs` — workspace probe, GitHub/CodeHub issue sync, assets, artifacts.
+//! - `prompts.rs` — prompt blocks injected into teammate sessions.
+//! - `workflow_engine.rs` — the old chat-style workflow engine (deleted 2026-08-18; receipt: docs/LEFTOVERS.md 减负-1).
 
 #![forbid(unsafe_code)]
 
 mod agent_import;
+mod buddy_materialize;
 mod bw_canon;
-mod legacy_migration;
+mod hook_listener;
 mod skill_import;
+mod skill_materialize;
 
-pub use legacy_migration::LegacyMigrationReport;
+mod command;
+pub use command::*;
+mod dispatch;
+mod issue_run;
+mod metrics;
+mod project_sync;
+mod prompts;
+mod scheduler;
+mod terminal;
 
 use bw_core::derive::AmberBand;
 use bw_core::model::{
-    classify_artifact_path, cron_due, parse_phase_outcome, parse_workflow_phases,
-    stage_template_workflow, stage_workflow, stage_workflow_with_playbook,
-    workflow_parse_contract_suffix, AgentCard, AgentRef, Artifact, Author, Cadence, Connector,
-    ConnectorStatus, CronMode, CronStatus, CronTask, HubSource, Issue, IssuePriority, IssueStatus,
-    KnowledgeSource, LoopConfig, Maturity, MaturityPeriod, PhaseMeta, PhaseRole, Readiness,
-    RunStatus, RunTrigger, Signal, SkillCard, SkillRef, SourceKind, StageKind, Verdict,
-    WorkflowKind, WorkflowSpec, BW_PROJECT_ASSETS_LIBRARY, BW_STANDARD_LIBRARY,
-    CONNECTOR_KIND_CLAUDE_CLI, CONNECTOR_KIND_CODEHUB_REPO, CONNECTOR_KIND_GITHUB_REPO,
-    CONNECTOR_KIND_GIT_REPO, CONNECTOR_KIND_SCRIPT,
+    classify_artifact_path, cron_due, stage_workflow_with_playbook, AgentCard, AgentRef, Artifact,
+    Cadence, Connector, ConnectorStatus, CronMode, CronStatus, CronTask, HubSource, Issue,
+    IssuePriority, IssueStatus, KnowledgeSource, LoopConfig, Maturity, MaturityPeriod, PhaseMeta,
+    Readiness, RunStatus, RunTrigger, SkillCard, SkillRef, SourceKind, StageKind, WorkflowKind,
+    WorkflowSpec, BW_PROJECT_ASSETS_LIBRARY, BW_STANDARD_LIBRARY, CONNECTOR_KIND_CLAUDE_CLI,
+    CONNECTOR_KIND_CODEHUB_REPO, CONNECTOR_KIND_GITHUB_REPO, CONNECTOR_KIND_GIT_REPO,
+    CONNECTOR_KIND_SCRIPT,
 };
+use bw_core::stage_catalog::StageOrigin;
 use bw_core::{
-    AgentId, ArtifactId, ConnectorId, CronTaskId, IssueId, KnowledgeSourceId, MetricId, ProjectId,
-    SessionId, SkillId, WorkflowId, WorkflowRunId,
+    AgentId, ArtifactId, ConnectorId, ConversationId, CronTaskId, IssueId, KnowledgeSourceId,
+    MetricId, ProjectId, SessionId, SkillId, WorkflowId, WorkflowRunId,
 };
 use bw_engine::{
-    allowed_tools_arg, evidence, ClaudeCliConfig, ClaudeCliExecutor, Engine, GitCommit,
-    GithubRepoSummary, PermissionMode, PhaseNode, RunCtx, RunEvent, UnsupportedCliExecutor,
+    build_consultation_resume_plan, build_project_context_block, build_resume_plan,
+    build_startup_plan, evidence, resolve_claude_binary, ClaudeCliConfig, CodehubRepoSummary,
+    ConversationMeta, GitCommit, GithubRepoSummary, InteractiveCliExecutor, InteractiveExecutor,
+    MockInteractiveExecutor, ProjectFile, RunCtx, SkillOutput, TerminalManager, CLAUDE,
 };
 use bw_store::{
-    AgentEdit, GlobalHandoffRow, MetricDefSync, MetricRole, MetricsFileSync, NewAgent, NewArtifact,
-    NewConnector, NewCronTask, NewIssue, NewKnowledgeSource, NewMetric, NewProject, NewSession,
-    NewSkill, NewSkillFile, NewStage, NewWorkflowSpec, ProjectRow, SessionKind, SkillEdit, Store,
-    WorkflowEdit,
+    AgentEdit, ConnectorDefSync, ConnectorsFileSync, GlobalHandoffRow, MetricDefSync, MetricRole,
+    MetricsFileSync, NewAgent, NewArtifact, NewConnector, NewCronTask, NewIssue,
+    NewKnowledgeSource, NewMetric, NewProject, NewSession, NewSkill, NewSkillFile, NewStage,
+    NewWorkflowSpec, ProjectFileSync, ProjectRow, SessionKind, SkillEdit, Store, WorkflowEdit,
 };
+use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
 use std::time::Instant;
-use time::OffsetDateTime;
+use time::{Date, Month, OffsetDateTime, Time};
 use tokio::sync::{broadcast, mpsc};
 use tokio::task::JoinHandle;
-
-/// Top-level workspace view (only meaningful for `hub == workspace`).
-#[derive(Clone, Copy, PartialEq, Eq, Debug, Default)]
-pub enum View {
-    #[default]
-    Projects,
-    /// The creation card-flow (意图 → 快答 → 起草 → 审阅确认).
-    Create,
-    App,
-}
-
-/// Operating-view toolbar tab.
-#[derive(Clone, Copy, PartialEq, Eq, Debug)]
-pub enum Panel {
-    Progress,
-    Workflow,
-    Routine,
-    Artifact,
-    Version,
-    /// Issue 看板 (R1) — assignable work units scoped to a stage, the
-    /// multica-style board the operating view now surfaces.
-    Issues,
-}
-
-/// Stage-axis selection: all stages or one of the five.
-#[derive(Clone, Copy, PartialEq, Eq, Debug)]
-pub enum Scope {
-    All,
-    Stage(StageKind),
-}
-
-/// Where a newly-created project's git remote comes from — the Repo 卡片的
-/// 选择,carried into `Command::CreateProject`. `New` mints a fresh GitHub
-/// repo (`gh repo create --clone`); `Existing` clones one the user already
-/// owns. `None` on the command (every pre-2026-07-22 caller) keeps every
-/// existing behavior — pure local mint or bound-local-path — untouched.
-#[derive(Clone, Debug)]
-pub enum GithubOrigin {
-    New { slug: String, private: bool },
-    Existing { owner: String, repo: String },
-}
-
-/// CodeHub 为主体的创建流(2026-07-28):Repo 卡片选 codehub 平台时的远端
-/// 身份。`host` = API 域名(open.codehub.huawei.com 等,绿/黄/内源三域名);
-/// `path` = org/repo(innersource/AI-Coding_G/maas)。身份用户输入即已知,
-/// clone 不回 ref(区别于 GithubOrigin.Existing 的 owner/repo 拆分)。
-#[derive(Clone, Debug)]
-pub struct CodehubOrigin {
-    pub host: String,
-    pub path: String,
-}
-
-/// UI → kernel intents.
-pub enum Command {
-    /// App start: load the project wall and re-derive every running project's
-    /// signals against the *current* clock (staleness must show on the wall).
-    Boot,
-    /// Creation flow step 1 (意图): mints the project row immediately so the
-    /// rest of the flow (drafting run, resume-if-interrupted) has somewhere
-    /// real to attach to. `desc` carries the free-text brief.
-    CreateProject {
-        /// C16(plan/14 规范条 4): 仓平台选择器的选中值 —— 今天恒 `"github"`
-        /// (唯一可选项,GitLab/Gitcode 灰置「未接」),从 `RepoCard` 顶部的平台
-        /// chip 传入,不在这里硬编码。留好字段语义:第二个平台真接时,这里
-        /// 已经是"选出来的"而不需要改 Command 形状。落进 `project.provider`。
-        provider: String,
-        id: ProjectId,
-        name: String,
-        kind: String,
-        desc: String,
-        /// P1: optional pre-existing *local* repo to bind (must contain
-        /// `.git`). Mutually exclusive with `github` — the Repo 卡片 is the
-        /// sole UI entry point and only ever sets one of the two.
-        workspace: Option<String>,
-        /// GitHub 为主体(2026-07-22): Repo 卡片的选择. `None` = neither
-        /// bound (`workspace` also `None`) → today's local-mint-if-configured
-        /// default, unchanged.
-        github: Option<GithubOrigin>,
-        /// CodeHub 为主体(2026-07-28):Repo 卡片选 codehub 平台时的远端身份。
-        /// 与 `github`/`workspace` 三选一(UI 只设其一)。`None` = 没选 codehub
-        /// (走 github 或本地)。maas 这类已有 codehub 仓走这条(clone,不建新)。
-        codehub: Option<CodehubOrigin>,
-    },
-    /// GitHub 为主体的创建流(2026-07-22): 读一次当前用户可接入的仓列表,
-    /// 填充 `AppState.github_repos`(Repo 卡片"接入已有仓"下拉的数据源)。
-    /// 显式加载,同 `LoadVersionLog`/`LoadArtifacts` 惯例——不在每次
-    /// rebuild 里打 GitHub API。
-    ListGithubRepos,
-    /// Creation flow step 2 (快速问题 · 周期).
-    SetCycle {
-        cycle: MaturityPeriod,
-    },
-    /// 对标竞品 + 三个月成功标准 (creation flow's free-text questions).
-    UpdateBrief {
-        benchmark: String,
-        opportunity: String,
-    },
-    UpdateNorthStar {
-        value: String,
-        def: String,
-    },
-    /// P9(项目编辑缺口): `name`/`kind`/`descr` — the three fields
-    /// `CreateProject` writes once and, before this command existed, had no
-    /// setter anywhere in `bw-store`, so a typo'd name was permanently
-    /// stuck (only `DeleteProject` could touch it, and that takes every
-    /// Issue/run/artifact with it). Same duplicate-name policy as
-    /// `CreateProject`: names aren't unique in this product (no `UNIQUE`
-    /// constraint, no dedup check at either the command or UI layer), so
-    /// renaming to a name that collides with another project is allowed —
-    /// rejecting it here would be a stricter bar than creation itself.
-    /// `name` is still required non-empty (creation's UI-only `can_send`
-    /// gate, enforced here for real since a UI button being disabled is not
-    /// a guard). Writes through `self.active()`, same as `UpdateBrief`/
-    /// `SetCycle`/`UpdateNorthStar`.
-    UpdateProjectIdentity {
-        name: String,
-        kind: String,
-        descr: String,
-    },
-    /// Record a metric + its current value as an append-only Manual observation
-    /// (creation-flow review, or later while operating a stage). Signal is
-    /// derived, never set here.
-    UpsertManualMetric {
-        id: MetricId,
-        name: String,
-        def: String,
-        role: MetricRole,
-        stage_kind: Option<StageKind>,
-        target: String,
-        amber: AmberBand,
-        value: String,
-    },
-    /// Week-plan edit: new target + this week's driver. No value is touched;
-    /// recompute re-derives against the new target.
-    UpdateWeekPlan {
-        metric: MetricId,
-        new_target: String,
-        last_target: String,
-        driver: String,
-    },
-    /// The monitoring loop's heartbeat: a new Manual value is born as an
-    /// observation, then every signal is re-derived. Never sets a signal.
-    RecordObservation {
-        metric: MetricId,
-        value: String,
-    },
-    /// A **machine-collected** observation — same append-only path as
-    /// `RecordObservation`, but the source is the collector that really
-    /// measured it (`Ci` / `GitPr` / …), never `Manual`. This is the evidence
-    /// collector's write path (`bw_engine::evidence` → metric), the first
-    /// non-Manual L0 producer (Tier D's minimal down payment).
-    RecordCollectedObservation {
-        metric: MetricId,
-        value: String,
-        source: SourceKind,
-    },
-    /// Hand-set plan progress for one stage (plan data, not a signal — the
-    /// derive chain is untouched).
-    SetStageProgress {
-        stage_kind: StageKind,
-        progress: u8,
-    },
-    /// Flip one handoff/DoD checklist box.
-    ToggleDod {
-        stage_kind: StageKind,
-        index: usize,
-    },
-    /// Advance the project's active stage (or reflux `Ops → Prototype`).
-    /// `risky` and `note` are the caller's honest account of the checklist
-    /// state — a handoff is never silently blocked on an unchecked box.
-    HandoffStage {
-        risky: bool,
-        note: String,
-    },
-    /// Confirms the creation-flow draft: materializes the five stages (each
-    /// on the chosen review cadence) and switches the project into `Running`.
-    /// This is the creation flow's real *landing* point (读源码定,写明选择
-    /// — 不是 Repo/Intent 卡提交,是末卡「确认 · 建立项目」): a
-    /// remote_path-backed project gets its standard Issue trio
-    /// (竞品分析→找指标→绑数据, plan/13 D8) minted here, right alongside
-    /// `set_project_phase(Running)`.
-    CompleteCreation {
-        cadence: Cadence,
-        /// C8 · 末卡「立即让队友开工第一件?」勾选(plan/13 D8). Default
-        /// `false` — every pre-C8 caller. `true` dispatches a real
-        /// `RunIssue` against the standard trio's 竞品分析 Issue right after
-        /// landing, same explicit-authorization shape as any other
-        /// human-triggered run (never autopilot, never on a project with no
-        /// standard trio to run).
-        run_first: bool,
-    },
-    /// Configure (or, with an empty `path`, clear) the real-executor target
-    /// directory + whether it may also run shell commands. `path` must be a
-    /// real, existing directory unless empty — a bad path fails fast here
-    /// rather than surfacing only when a workflow is next run.
-    SetWorkspace {
-        path: String,
-        allow_commands: bool,
-    },
-    /// P1(loop-buddy↔aihot 接线 spec):给一个**存量**项目补上 GitHub 远端
-    /// —— `CreateProject` 的「绑定本地目录」分支([lib.rs:3121] 附近)只
-    /// `set_workspace`,从不写 `remote_path`,产品里此前没有补救入口。
-    /// 对活跃项目生效(`self.active()`)。`gh repo view` 先探活,探不到就
-    /// 如实报错、一个字节不写库;探到之后依次写 `remote_path`、补建
-    /// (幂等)`github-repo` connector、再接线本地工作区的 `origin`(工作区
-    /// 已有 remote 且不符目标 → 拒绝覆盖,不静默改写用户的 git 配置)。
-    /// `push_local=true` 时额外推当前分支。
-    AttachRepo {
-        owner: String,
-        repo: String,
-        push_local: bool,
-    },
-    /// Replace the process-wide `ClaudeCliConfig` outright (Settings hub).
-    /// In-memory only — same persistence tier it already had (env-var-seeded
-    /// once at boot); this just makes it editable for the rest of the
-    /// process's lifetime instead of frozen.
-    SetClaudeConfig {
-        binary: Option<String>,
-        max_budget_usd: f64,
-        default_mode: PermissionMode,
-        commands_mode: PermissionMode,
-    },
-    /// Real `git log` on the active project's `workspace_path` (Version
-    /// panel). Explicit, user-triggered — never fetched eagerly on `Boot`,
-    /// since it's per-project, potentially slow, and most projects have no
-    /// `workspace_path` configured at all.
-    LoadVersionLog,
-    /// Load the active project's registered artifacts into state (Artifact
-    /// panel). Same explicit-load pattern as `LoadVersionLog`.
-    LoadArtifacts,
-    /// L1(plan/11): load one cron task's real fire history
-    /// (`Store::cron_effectiveness` — always existed, never had a caller).
-    /// Same explicit-load pattern as `LoadArtifacts`.
-    LoadCronEffectiveness(CronTaskId),
-    /// P4: assemble one Issue's detail (its runs + each run's real file
-    /// changes + its artifacts) into state for the board overlay. Read-only.
-    OpenIssueDetail(IssueId),
-    /// P4: close the overlay (clears the assembled detail).
-    CloseIssueDetail,
-    /// Re-scan the active project's workspace right now and register any new
-    /// artifact versions (the manual counterpart to the automatic post-run
-    /// scan). Requires a configured workspace.
-    CollectArtifacts,
-    /// Run a connector's *real* probe: `git-repo` collects live workspace
-    /// evidence (and feeds it to the bound project's matching metrics as
-    /// `SourceKind::Connector` observations — Tier D for real); `claude-cli`
-    /// checks the executor binary. Any other kind errors honestly — there is
-    /// no fake "synced" state.
-    SyncConnector {
-        id: ConnectorId,
-    },
-    /// C6 (plan/13 D5+D6): read the active project's `.bw/metrics.toml`
-    /// (metrics source of truth) and sync it into the SQLite cache — north
-    /// star name/def/collect plan updated in place, every lagging/leading
-    /// metric upserted by name (idempotent: re-syncing an unchanged file
-    /// inserts zero new rows). No configured workspace, or a workspace with
-    /// no file yet, is a deliberate silent no-op — same "nothing to report"
-    /// stance as a project that was never wired to GitHub. A file that fails
-    /// to parse emits `Event::ConnectorSynced { ok: false, .. }` and writes
-    /// nothing (parse succeeds in full or the cache stays untouched). Never
-    /// appends an observation or calls `recompute_signals` — this syncs
-    /// *definitions*, not values (collection execution is a later ticket,
-    /// C7).
-    SyncMetricsFile,
-    /// C7 · 采集器 (plan/13 D7): pull real data into the active project's
-    /// metrics *right now* — the manual「立即采集」counterpart to the standard
-    /// daily collect cron. For every `collect.kind = "github"` metric it runs
-    /// a real `gh` count query against the project's remote and appends an
-    /// append-only observation *only when the value changed* (change-guard),
-    /// then re-derives signals. `bw`/`connector` kinds are v1 未接 — left
-    /// blank, their signal stays Unknown (无数据 ≠ 绿). A `gh` failure writes
-    /// nothing and surfaces an honest `ConnectorSynced { ok: false, .. }`
-    /// toast; the signal degrades on staleness instead of flashing a fake
-    /// zero. Never settles or runs anything — collection is observation, not
-    /// work.
-    CollectMetrics,
-    StartSession {
-        id: SessionId,
-        stage_kind: Option<StageKind>,
-        kind: SessionKind,
-        title: String,
-    },
-    RunWorkflow {
-        session: SessionId,
-        spec: WorkflowSpec,
-    },
-    /// The creation flow's 体系起草 run (plan/14 C13, D8 回锁). Looks
-    /// identical to `RunWorkflow` from the UI's point of view — same
-    /// `Engine`/progress-event stream, same session-message trail — but
-    /// `run_workflow_inner` is told `force_mock = true`: the shared
-    /// `MockExecutor` runs it regardless of whether the active project
-    /// already has a real configured `workspace_path`.
-    ///
-    /// Without this, a project born through the GitHub-主体 creation flow
-    /// (P1 建项目即建仓, plan/13) already has a real workspace by the time
-    /// the Questions 卡 submits, so the ordinary `agent_cli == "claude-code"
-    /// && workspace_path non-empty` rule in `run_workflow_inner` would route
-    /// the drafting run to a *real* `claude -p` call — one real invocation
-    /// per phase, through the gateway, up to the $0.5/30min budget cap. That
-    /// silently violated plan/13 D8's "创建流不跑真 agent" ruling (root cause
-    /// plan/14 §「技术成因」). Real system-drafting work belongs to the
-    /// standard-Issue trio (竞品分析→找指标→绑数据, D8) instead, dispatched
-    /// through the ordinary `RunIssue`/`run_workflow_inner` route — this
-    /// command is the creation flow's *only* run path and stays mock-locked
-    /// on purpose, forever, independent of project workspace state.
-    RunDraftWorkflow {
-        session: SessionId,
-        spec: WorkflowSpec,
-    },
-    /// Run one stage's **playbook** workflow for the active project: the
-    /// kernel assembles the real project context (brief/north star/last
-    /// handoff note/workspace state) into `stage_workflow_with_playbook`'s
-    /// per-phase instructions, then executes through the same
-    /// `run_workflow_inner` path as any other run. This is the "五角色真实
-    /// 执行" entry point — the UI/conductor names the stage; the kernel owns
-    /// what the role actually gets told.
-    RunStagePlaybook {
-        session: SessionId,
-        stage_kind: StageKind,
-    },
-    /// A3: run an Issue — assemble the issue's title/desc + its stage's role
-    /// playbook + any distilled (compounded) skills from the same project into
-    /// one real run through `run_workflow_inner`. The run records the issue_id,
-    /// so the issue's detail answers "which runs/产物 did this produce?". The
-    /// issue is pushed `InProgress` at start, `InReview` on success, and left
-    /// `InProgress` on failure — **never auto-Done** (Done is a human
-    /// `TransitionIssue` only; one work item, one human-confirmed credit).
-    RunIssue {
-        session: SessionId,
-        id: IssueId,
-    },
-    /// plan/17 S3 (① 中止): abort the in-flight backgrounded run on an Issue
-    /// (the desktop kernel's settle channel path). No-op when there's no
-    /// in-flight run on that issue (a normal completion already settled, or
-    /// the run was inline-only — examples / headless never background). The
-    /// issue STAYS `InProgress` (retryable); `settled_at` stays empty —
-    /// **never auto-Done** (铁律). Inlined issue runs (no `settle_tx`) have
-    /// no `JoinHandle` to abort, so `CancelRun` is a no-op there too (the
-    /// inline `await` is already blocking the kernel loop — nothing to
-    /// cancel, the run either completes or fails on its own).
-    CancelRun {
-        id: IssueId,
-    },
-    /// Reload the hub library (`workflow_specs`/`skills`/`agents`) from the
-    /// store. Called at `Boot`; also dispatchable standalone for a manual
-    /// refresh. Deliberately separate from `Boot` — hub data has nothing to
-    /// do with project-signal staleness, so this keeps `Boot`'s own contract
-    /// unchanged.
-    RefreshHubs,
-    CreateWorkflowSpec {
-        id: WorkflowId,
-        name: String,
-        prompt: String,
-        goal: String,
-        stage_ref: Option<u8>,
-        phases: Vec<String>,
-        /// Per-phase real instructions (playbook), index-aligned with
-        /// `phases`; empty = every phase shares `prompt` (legacy behavior).
-        phase_prompts: Vec<String>,
-        agents: Vec<AgentRef>,
-        skills: Vec<SkillRef>,
-        loop_config: LoopConfig,
-        maturity: Maturity,
-        scope: String,
-        source: HubSource,
-        trigger: Option<String>,
-    },
-    /// Promote the workflow most recently run in `session` (reconstructed
-    /// from the session's `stage_kind`, since a `Dynamic` spec is never
-    /// itself persisted) into a new `Static` hub entry.
-    PromoteWorkflow {
-        new_id: WorkflowId,
-        session: SessionId,
-        source: HubSource,
-    },
-    /// Run a workflow already stored in the hub. Looks the spec up, bumps its
-    /// `uses` counter, then executes identically to `RunWorkflow`.
-    RunHubWorkflow {
-        session: SessionId,
-        workflow_id: WorkflowId,
-    },
-    /// "优化" an existing **Static** hub workflow — revise its authored
-    /// content in place (bumps `version`; `uses`/`maturity`/`source` are
-    /// untouched). Distinct from `PromoteWorkflow` (mints a brand-new row
-    /// from a session run) and `CreateWorkflowSpec` (a fresh spec).
-    UpdateWorkflowSpec {
-        id: WorkflowId,
-        prompt: String,
-        goal: String,
-        phases: Vec<String>,
-        /// Per-phase instructions (may be empty — dropping back to a single
-        /// shared `prompt` is a legal edit).
-        phase_prompts: Vec<String>,
-        agents: Vec<AgentRef>,
-        skills: Vec<SkillRef>,
-        /// Why this "优化" happened — frozen onto the version snapshot (iter 5).
-        note: String,
-    },
-    /// T17 (plan/12 §10 v1.1#4): "🔍 解析为流程图" — read `WorkflowSpec.content`
-    /// (the workflow's real authored MD document) through the SAME
-    /// Executor/agent_cli routing seam every real run goes through, and
-    /// strict-parse the executor's real output for a structured `phases`
-    /// list (name/role/reject_to_phase/agent/skills), same output-contract
-    /// discipline as T9's evaluator verdict. On a valid contract block that
-    /// passes every value-domain check, the workflow's `phases` are
-    /// overwritten (with a `WorkflowVersion` snapshot taken first, reusing
-    /// the same mechanism `UpdateWorkflowSpec` already uses — "解析一次用
-    /// 一世", re-running this command later re-parses and snapshots again).
-    /// On ANY problem (missing content, executor failure, missing/malformed
-    /// contract block, an out-of-domain field) this returns `Err` and
-    /// leaves `phases` completely untouched — an honest "未解析,仅文本",
-    /// never a partial or guessed adoption.
-    ParseWorkflowContent {
-        workflow_id: WorkflowId,
-    },
-    CreateSkill {
-        id: SkillId,
-        name: String,
-        desc: String,
-        category: String,
-        source: HubSource,
-        /// Executable body (may be empty — a catalog reference entry).
-        content: String,
-    },
-    /// Distill a new skill from a completed, assigned Issue — the "every
-    /// solution compounds into a reusable skill" link. Provenance + Done/
-    /// assignee validation lives in the store; this is a thin wrapper that
-    /// delegates and refreshes, like `CreateSkill`. `content` is the distilled
-    /// method body itself — a skill minted from real work must be executable
-    /// content, not another empty catalog card.
-    DistillSkillFromIssue {
-        skill_id: SkillId,
-        issue_id: IssueId,
-        name: String,
-        desc: String,
-        category: String,
-        content: String,
-    },
-    /// Copy-on-import a real, on-disk skill folder (T2, plan/12 §2):
-    /// `source_path` must contain a `SKILL.md` whose frontmatter has
-    /// `name`/`description`; every other file underneath lands in
-    /// `skill_file` verbatim (real relative paths, no predetermined
-    /// category). Once imported, the new skill has zero dependency on
-    /// `source_path` — it can move, change, or vanish afterward.
-    ///
-    /// `official_library` is not part of plan/12 §2's headline
-    /// `{ source_path, project_id }` shorthand, but this command still needs
-    /// it: without an explicit sub-tag, a generic "import any SKILL.md
-    /// folder" command has no honest way to know whether the folder came
-    /// from a BW-curated library — inventing "mattpocock-skills" from a path
-    /// convention would be the exact kind of guessing this ticket's own
-    /// frontmatter-parsing rule forbids. `None` = ad-hoc personal import →
-    /// `HubSource::SelfBuilt`; `Some(lib)` → `HubSource::Official {
-    /// official_library: lib }`. T3's `ImportSkillLibrary` (batch) threads a
-    /// real `Some(..)` through this same field for every package it finds
-    /// under a library root.
-    ImportSkillPackage {
-        source_path: String,
-        project_id: Option<ProjectId>,
-        official_library: Option<String>,
-    },
-    /// Batch-import every real skill folder under a library root (T3,
-    /// plan/12 §1/§2): finds every directory that directly contains a
-    /// `SKILL.md` (`node_modules`/`.git`/`target` pruned without
-    /// descending — real libraries don't nest skills inside these, it's
-    /// pure efficiency/safety insurance), and each hit goes through the
-    /// exact same disk-parsing path `ImportSkillPackage` uses — a batch
-    /// import and a hand-run single-package import of the same folder
-    /// produce byte-identical rows.
-    ///
-    /// Idempotent by `(name, official_library)`: a name already imported
-    /// from the same `official_library` is skipped, never overwritten —
-    /// re-running this (e.g. a library version bump) can't silently clobber
-    /// a row a user has since hand-edited (T11 territory: editing flips a
-    /// row to `SelfBuilt`, which this check's `official_library` filter
-    /// naturally no longer matches, so an edited row is never skipped-away
-    /// from re-import consideration by name collision with itself) or
-    /// double-insert a duplicate. `official_library` is required (not
-    /// `Option`, unlike `ImportSkillPackage`) — a library import is by
-    /// definition an official-selection provenance, never an ad-hoc
-    /// personal one. Emits `Event::SkillLibraryImported` with the real
-    /// imported/skipped tally.
-    ImportSkillLibrary {
-        root_path: String,
-        official_library: String,
-        project_id: Option<ProjectId>,
-    },
-    /// SkillHub's detail-panel edit — content only (`maturity`/`uses` are
-    /// lifecycle data, untouched).
-    UpdateSkill {
-        id: SkillId,
-        name: String,
-        desc: String,
-        category: String,
-        content: String,
-    },
-    CreateAgent {
-        id: AgentId,
-        name: String,
-        role: String,
-        skills: Vec<String>,
-        model: String,
-        /// Standing instructions (may be empty — a catalog reference entry).
-        instructions: String,
-    },
-    /// AgentHub's detail-panel edit — content only (`maturity`/`runs`/
-    /// `win_rate` are lifecycle data, untouched).
-    UpdateAgent {
-        id: AgentId,
-        name: String,
-        role: String,
-        skills: Vec<String>,
-        model: String,
-        instructions: String,
-    },
-    /// Import a real, on-disk AGENT.md (T5, plan/12 §3): `source_path` must
-    /// be a file whose frontmatter has `name`/`description`, and may have
-    /// `tools` (→ AllowedTools)/`model`; the body becomes `instructions`.
-    /// Every other frontmatter key is read and silently ignored (same rule
-    /// `ImportSkillPackage` follows for SKILL.md). No file-tree concept here
-    /// unlike Skill — one AGENT.md is the entire definition, so this maps
-    /// straight onto `Store::create_agent`, no new store method needed.
-    ///
-    /// `official_library`: same shape as `ImportSkillPackage`'s field —
-    /// `None` = ad-hoc personal import → `HubSource::SelfBuilt`;
-    /// `Some(lib)` → `HubSource::Official { official_library: lib }`. The
-    /// 67-file ECC batch import threads `Some("ecc")` through this same
-    /// field for every file.
-    ///
-    /// T11 (2026-07-23, plan/12 §7): unlike `ImportSkillPackage` (which stays
-    /// purely additive — dedup is `ImportSkillLibrary`'s job, a separate
-    /// batch command), Skill has no standalone "import one AGENT.md" caller
-    /// driving a real 67-file batch the way this command does (there is no
-    /// `ImportAgentLibrary`; the vendored-ECC example dispatches this command
-    /// once per file in a loop). So *this* singular command is where an
-    /// `official_library: Some(lib)` re-import's own idempotency has to
-    /// live: a name that already exists under `lib` (still `Official`, or
-    /// hand-edited and flipped to `SelfBuilt` — see `AgentCard::adapted_from`)
-    /// is silently skipped, never overwritten or duplicated. An ad-hoc
-    /// `None` import stays purely additive (no batch-reimport concept for a
-    /// personal one-off), matching `ImportSkillPackage`'s own rule.
-    ImportAgentDefinition {
-        source_path: String,
-        official_library: Option<String>,
-    },
-    /// T14 (2026-07-24, plan/12 §10 v1.1): the real-daily-DB one-shot
-    /// migration — clears pre-T1 empty-body OMC/ECC catalog shells (see
-    /// `bw_store::seed_hub_if_empty`'s doc comment: T1 stopped *seeding* new
-    /// ones but a database seeded by an older binary still has the old rows
-    /// sitting in it) and auto-imports the real content that
-    /// replaced them: the two on-disk skill libraries (T2/T3's
-    /// `ImportSkillLibrary`) + the 67 vendored ECC agents (T5's
-    /// `ImportAgentDefinition`, one dispatch per file).
-    ///
-    /// `db_path` — the raw DB file path — is threaded in explicitly rather
-    /// than read off `self.store` because `Store` is deliberately
-    /// engine-agnostic (no `db_path()` method); the caller (`app-desktop`'s
-    /// `kernel.rs`, or a headless verification example) already has this
-    /// path from its own `SqliteStore::open(&db_path)` call moments earlier,
-    /// so passing it along costs nothing and matches the existing precedent
-    /// of `Command` variants carrying real filesystem paths
-    /// (`ImportSkillPackage::source_path`, `ImportSkillLibrary::root_path`).
-    ///
-    /// Deliberately its OWN command, dispatched by a caller right after
-    /// `Command::Boot` rather than folded into `Boot` itself: `Boot` is a
-    /// unit variant dispatched unconditionally by ~20 existing headless
-    /// examples (including `verify_goal`'s 18-hypothesis fresh-DB run) that
-    /// have no `db_path` to give it and must stay byte-for-byte unaffected —
-    /// this ticket's own acceptance criterion. A fresh DB dispatching this
-    /// command anyway is still a correct, harmless no-op (see the dispatch
-    /// handler): the trigger check finds no empty-content/-instructions
-    /// rows and returns without writing anything, `app_meta` included — but
-    /// no existing example dispatches it at all, so the question never
-    /// arises for them.
-    ///
-    /// Idempotent by design, not just by accident: a first successful run
-    /// (whether it deleted 0 or N rows) stamps
-    /// `app_meta[legacy_shells_migration_v1] = "done"`; every later
-    /// dispatch — including one against a DB whose retained "有痕迹" shells
-    /// still look empty-bodied, since deletion is deliberately conservative
-    /// — short-circuits on that flag before touching a single skill/agent
-    /// row again.
-    ///
-    /// T16.5 (2026-07-24, GH#54) folds in a second, independent step: the
-    /// five built-in stage-template `workflow_spec` rows' `phases` are
-    /// pre-T8 plain string arrays on a real daily DB (seeding only ever runs
-    /// on an *empty* library, so an existing DB's rows never pick up T8's
-    /// real `role`/`reject_to_phase` or T16's `agent`/`skills`). Any row
-    /// whose name exactly matches one of the five
-    /// `stage_template_workflow` names AND whose current `phases` are all
-    /// still the honest Neutral/no-binding default (no human trace at all —
-    /// see `legacy_migration::is_pure_legacy_phases`) gets its `phases`/
-    /// `phase_prompts` overwritten with the current playbook's real values;
-    /// every other column on that row (`uses`/`version`/`name`/`prompt`/
-    /// `goal`/…) is left untouched, and any row with even one real trace is
-    /// never touched. Guarded by its OWN app_meta flag
-    /// (`legacy_migration::TEMPLATE_PHASE_REFRESH_DONE_KEY`) rather than the
-    /// shell-migration flag above — see that constant's own doc comment for
-    /// why a single shared flag would be wrong (a DB that already ran the
-    /// shell pass must still be able to pick up this one independently).
-    ///
-    /// T14.5 (2026-07-24, GH#59) folds in a third, independent step: T14
-    /// only ever looked at `skill`/`agent` shells, but a real daily DB's
-    /// `workflow_spec` table carries the same kind of stale zero-trace
-    /// catalog-import row — a directory-imported (`HubSource::Official`/
-    /// `Adopted`) `Static` spec with zero `workflow_run` rows, zero `uses`,
-    /// and no `run_workflow`-mode `cron_task` referencing it by name — and
-    /// this pass deletes those rows outright (not just overwrites a column,
-    /// unlike Pass B). A row whose name matches one of the five built-in
-    /// stage templates is never eligible (defense-in-depth; its `source` is
-    /// already `SelfBuilt`, so Gate 1 alone already excludes it) and neither
-    /// is any row carrying even one real trace. Guarded by its OWN app_meta
-    /// flag (`legacy_migration::WORKFLOW_SHELL_PURGE_DONE_KEY`) for the same
-    /// independence reason as Pass B's own flag.
-    MigrateLegacyShellsIfNeeded {
-        db_path: String,
-    },
-    CreateCronTask {
-        id: CronTaskId,
-        name: String,
-        target: String,
-        schedule: Cadence,
-        project_id: Option<ProjectId>,
-    },
-    /// A1: an autopilot cron task — when due, it mints a stage-scoped Issue
-    /// (Todo, optionally assigned) instead of running a workflow. No-hijack: it
-    /// never auto-runs anything. `assignee` is an agent NAME matched at fire
-    /// time (no match ⇒ honest unassigned Issue, not a failure).
-    CreateAutopilotTask {
-        id: CronTaskId,
-        name: String,
-        schedule: Cadence,
-        project_id: Option<ProjectId>,
-        stage: StageKind,
-        assignee: Option<String>,
-    },
-    /// T10 (plan/12 §5): a cron task that, when due, really runs a Skill's
-    /// `content` as the prompt — a genuine `SkillId` reference, resolved at
-    /// *fire* time (never at creation time), so an honest "技能已删除"
-    /// failure is possible without ever crashing.
-    CreateRunSkillCronTask {
-        id: CronTaskId,
-        name: String,
-        schedule: Cadence,
-        project_id: Option<ProjectId>,
-        skill_id: SkillId,
-    },
-    /// T10: a cron task that, when due, really runs a bare prompt — no
-    /// entity involved at all.
-    CreateRunPromptCronTask {
-        id: CronTaskId,
-        name: String,
-        schedule: Cadence,
-        project_id: Option<ProjectId>,
-        prompt: String,
-    },
-    /// Pause/resume a cron task — the "人工介入" lever. Pure status flip;
-    /// never touches `last_run` since nothing actually ran.
-    SetCronStatus {
-        id: CronTaskId,
-        status: CronStatus,
-    },
-    /// Record that a cron task's target really ran just now (this app has no
-    /// background scheduler — manually triggered from Cron Hub's "▶ 立即执行").
-    /// `status` is the real outcome (`Running` when the caller fires this
-    /// before dispatching the actual run, `Normal`/`Failed` once it's known).
-    MarkCronRun {
-        id: CronTaskId,
-        status: CronStatus,
-    },
-    CreateConnector {
-        id: ConnectorId,
-        name: String,
-        kind: String,
-        scope: String,
-        /// Project this connector feeds (`git-repo` is always bound).
-        project_id: Option<ProjectId>,
-        /// Kind-specific real config (`git-repo`: workspace path;
-        /// `claude-cli`: binary override, empty = PATH).
-        config: String,
-    },
-    CreateKnowledgeSource {
-        id: KnowledgeSourceId,
-        name: String,
-        kind: String,
-        used_by: String,
-    },
-    /// Create a new issue in the active project (defaults to `Backlog`,
-    /// auto-assigned per-project number). Scoped to the given stage.
-    ///
-    /// P3 (loop-buddy↔aihot spec): `standard_skill` names a skill-library
-    /// slug to carry on the issue from the moment it's created — the same
-    /// field `seed_standard_issue_trio` sets for the three creation-flow
-    /// standard cards, now reachable from this manual entry too (the
-    /// op-panel create strip; `autopilot_fire`'s cron-minted issues still
-    /// call `store.create_issue` directly and are untouched by this field).
-    /// Empty (every pre-existing call site) means "no method chosen",
-    /// byte-identical to today's behavior. Resolution is honest-by-name at
-    /// run time via `standard_skill_block` — an unknown or content-less
-    /// slug never fails issue creation, it just injects nothing.
-    CreateIssue {
-        id: IssueId,
-        stage: StageKind,
-        title: String,
-        desc: String,
-        priority: IssuePriority,
-        standard_skill: String,
-    },
-    /// Move an issue to a new kanban status (the kanban lifecycle transition).
-    TransitionIssue {
-        id: IssueId,
-        status: IssueStatus,
-    },
-    /// C5 · PR 验收环 (plan/13 D3): the **human验收** entry point for an Issue
-    /// whose run opened a PR — merge the PR, which (via `Closes #<n>`) closes
-    /// the GitHub issue, then settle the Issue Done through the *existing*
-    /// `TransitionIssue` InReview→Done accounting path (settle-once reused, no
-    /// second accounting path). The executor never merges — this command is the
-    /// only place `gh pr merge` is ever called. Idempotent: a re-dispatch after
-    /// the Issue is already Done is a no-op that never re-merges or re-accounts.
-    /// Issues with no PR (no-repo/存量) keep using bare `TransitionIssue` to
-    /// Done — 全活 PR 化是纪律不是硬闸 (只留痕不拦人).
-    MergeIssuePr {
-        id: IssueId,
-    },
-    /// Assign (or, with `None`, unassign) an issue to an agent teammate.
-    AssignIssue {
-        id: IssueId,
-        assignee: Option<AgentId>,
-    },
-    /// A5-F: the only path into `Blocked` — `reason` must be non-empty.
-    /// `TransitionIssue { status: Blocked }` is rejected; this is how a stuck
-    /// issue leaves a record of *why*, not just *that*.
-    BlockIssue {
-        id: IssueId,
-        reason: String,
-    },
-    /// P7-7B (plan/13 D22): for a repo-attached project, first pulls real
-    /// GitHub state (open PRs / issue state) for its mapped, unsettled
-    /// Issues and backfills `pr_number` / derives `InReview` — **read-only**,
-    /// never rewrites GitHub, never reaches `Done` — then reloads from the
-    /// store (mirrors `RefreshHubs` for the hub library, but project-scoped).
-    /// No active project / no `remote_path` ⇒ the GitHub step is skipped
-    /// and this is the same bare local reload it always was.
-    RefreshIssues,
-    SendSessionMessage {
-        session: SessionId,
-        text: String,
-    },
-    AnnotateWeeklyReview {
-        human_override: Option<Signal>,
-        reason: String,
-    },
-    OpenProject(ProjectId),
-    /// Delete a project and everything scoped to it. The CRUD-completeness
-    /// counterpart to `CreateProject` — irreversible; the UI is responsible
-    /// for confirming with the user before dispatching this.
-    DeleteProject(ProjectId),
-    BackToProjects,
-    SetPanel(Panel),
-    SetScope(Scope),
-    /// Select (or clear) the chat-focused session in the operating view.
-    SelectSession(Option<SessionId>),
-}
-
-/// Kernel → UI facts (already happened).
-#[derive(Clone, Debug)]
-pub enum Event {
-    ProjectsChanged,
-    ProjectUpdated(ProjectId),
-    ViewChanged(View),
-    SessionMessageAdded {
-        session: SessionId,
-        role: Author,
-        text: String,
-    },
-    /// A run is really about to begin — carries the spec's own name/agents/
-    /// skills so the UI can show what's actually behind this run (real
-    /// `AgentRef`/`SkillRef` data from the spec, never invented) before the
-    /// first `WorkflowProgress` phase event arrives. Emitted once, first,
-    /// ahead of any `WorkflowProgress` for the same run.
-    RunStarted {
-        workflow_name: String,
-        agents: Vec<AgentRef>,
-        skills: Vec<SkillRef>,
-    },
-    WorkflowProgress {
-        phase_idx: usize,
-        status: String,
-    },
-    WorkflowDone,
-    WorkflowFailed(String),
-    WeeklyReviewAnnotated,
-    StageHandoff {
-        from: StageKind,
-        to: StageKind,
-        risky: bool,
-    },
-    WorkflowSpecsChanged,
-    SkillsChanged,
-    /// A batch `Command::ImportSkillLibrary` just finished — the real tally,
-    /// not an assumption: `imported` = new rows this run actually inserted,
-    /// `skipped` = `(name, official_library)` matches that already existed
-    /// and were left untouched (idempotent re-run safety).
-    SkillLibraryImported {
-        official_library: String,
-        imported: u32,
-        skipped: u32,
-    },
-    AgentsChanged,
-    CronTasksChanged,
-    /// A real, unattended auto-fire from `App::tick_scheduler` just finished
-    /// (not a manual "▶ 立即执行") — the live "monitoring" signal for the
-    /// scheduler: a subscriber can toast/notify without the run having
-    /// stolen `active_project`/the user's current screen to get there.
-    CronAutoFired {
-        id: CronTaskId,
-        name: String,
-        ok: bool,
-    },
-    ConnectorsChanged,
-    /// A connector's real probe just finished — `detail` is the probe's
-    /// honest summary (e.g. "3 提交 · 12 文件" or the error text).
-    ConnectorSynced {
-        name: String,
-        ok: bool,
-        detail: String,
-    },
-    /// plan/14 C14 · a creation-flow background action (repo create/clone,
-    /// repo-list fetch, standard-Issue mint, landing push) really started or
-    /// finished — the "is this real or stuck" visibility the creation flow's
-    /// slow `gh`-backed calls lacked (体验规范条 2:后台动作永远有状态回显).
-    /// Emitted as a Started → Ok/Fail pair around each real network call,
-    /// `name` stable across the pair so a subscriber can correlate them.
-    /// Purely additive visibility, never a gate — 乐观推进哲学不变
-    /// (CLAUDE.md): the card the user sees has already advanced before this
-    /// fires, same as the pre-existing `ConnectorSynced` toasts these sit
-    /// alongside (kept unchanged — this doesn't replace them).
-    ActionProgress {
-        name: String,
-        state: ActionState,
-    },
-    KnowledgeSourcesChanged,
-    IssuesChanged,
-    ActivityChanged,
-    ClaudeConfigChanged,
-    VersionLogChanged,
-    /// New artifact versions were registered (post-run auto-scan or a manual
-    /// `CollectArtifacts`). Carries the honest count of *genuinely new* rows.
-    ArtifactsRegistered {
-        fresh: u32,
-    },
-    /// The `AppState.artifacts` snapshot was (re)loaded.
-    ArtifactsChanged,
-    /// L1(plan/11): the `AppState.cron_effectiveness` snapshot was (re)loaded.
-    CronEffectivenessChanged,
-    /// The self-driving optimization cycle (iter 18) just ran. Carries the
-    /// full report — scanned workflows, proposals generated, what was
-    /// auto-applied (safe/positive), and what was deferred to a human. A
-    /// subscriber can surface "N opportunities found" without the cycle
-    /// having changed anything destructive.
-    OptimizationCycleReported {
-        report: OptimizationReport,
-    },
-    /// T14 (2026-07-24, plan/12 §10 v1.1): `Command::MigrateLegacyShellsIfNeeded`
-    /// actually ran the migration this dispatch (not the already-done/
-    /// nothing-to-do no-op path) — carries the real tally.
-    LegacyShellsMigrated {
-        report: LegacyMigrationReport,
-    },
-}
-
-/// Three-state visibility for one `Event::ActionProgress` — see that
-/// variant's doc comment. `bw-app`-local (not `bw-core`): this is UI-facing
-/// transient signal, not domain state, so it never touches the wasm-clean
-/// kernel crates.
-#[derive(Clone, Debug, PartialEq)]
-pub enum ActionState {
-    /// The real call just started.
-    Started,
-    /// The real call really succeeded — a short honest summary, never
-    /// invented (e.g. the repo slug `gh` actually minted).
-    Ok(String),
-    /// The real call really failed — the real error text.
-    Fail(String),
-}
-
-/// The outcome of one self-driving optimization cycle (iter 18) — the
-/// measure→propose→gate loop's receipt. Every count is real (derived from the
-/// store), never asserted. `auto_applied`/`defer_to_human` carry the human-
-/// readable titles so a UI can render them directly.
-#[derive(Clone, Debug)]
-pub struct OptimizationReport {
-    /// Hub workflows scanned this cycle.
-    pub scanned: u32,
-    /// Total proposals generated across all workflows.
-    pub proposals: u32,
-    /// Safe/positive proposals the loop applied on its own (titles).
-    pub auto_applied: Vec<String>,
-    /// Proposals needing a human's judgement before acting (titles).
-    pub defer_to_human: Vec<String>,
-    /// Proposals rejected for insufficient evidence (count only).
-    pub rejected: u32,
-}
 
 #[derive(Debug, thiserror::Error)]
 pub enum AppError {
@@ -1001,138 +118,108 @@ fn guard_skill_name(name: &str) -> Result<(), AppError> {
     Ok(())
 }
 
-/// How a `run_workflow_inner` call resolved once its adversarial review loop
-/// settled (T9, plan/12 §4). An honest *failure* (executor error, or a review
-/// output with no parseable verdict) is NOT an outcome here — it surfaces as
-/// `Err(AppError)`, leaving any associated Issue untouched (RunIssue keeps it
-/// `InProgress` for a retry).
-#[derive(Clone, Debug, PartialEq, Eq)]
-pub enum RunOutcome {
-    /// The workflow ran to completion — a straight pipeline with no gate, or a
-    /// gated one whose Evaluator finally rendered `PASS`. The caller advances a
-    /// bound Issue to `InReview` (never `Done` — that stays a human decision).
-    Completed,
-    /// The Evaluator kept rejecting up to `loop_config.max_iter` rounds. Not a
-    /// failure and never auto-`Failed`: the caller parks a bound Issue in
-    /// `Blocked` (with this reason) for a human to decide (retry / rework the
-    /// workflow / drop). A run with no bound Issue just leaves its honest
-    /// per-round rows — no fabricated Issue (plan/12 §4).
-    BlockedAtCap { reason: String },
-}
-
-/// How the adversarial review loop in `run_workflow_inner` terminated —
-/// internal to that function (the outward-facing shape is [`RunOutcome`] /
-/// `Err`). Carried out of the `loop` as its break value so the after-loop
-/// accounting runs exactly once for every terminal path.
-enum LoopEnd {
-    /// The workflow passed (a gate rendered `PASS`, or there was no gate).
-    Passed,
-    /// The gate kept rejecting up to `max_iter` rounds — a Blocked outcome
-    /// (never auto-`Failed`).
-    Blocked(String),
-    /// An honest failure: an executor error, or a review output with no
-    /// parseable verdict. Surfaces as `Err`.
-    Failed(AppError),
-}
-
-/// plan/17 S3: everything `run_round_loop` needs to drive one issue-run's
-/// adversarial round loop, and everything `finalize_run` needs to settle the
-/// after-loop accounting. Built once on the main thread (`prepare_run`) so the
-/// long round loop can run on a `tokio::spawn` with NO `&mut App` (the loop
-/// only ever touched `self.store`/`self.emit` — shared borrows — per the
-/// long-standing `lib.rs` comment; S3 just makes that structural). The owned
-/// `Engine` is what unblocked the extraction: mock path clones the shared
-/// `mock_engine`'s `Arc`, real path clones a fresh one-shot executor's `Arc`.
-#[derive(Clone)]
-struct PreparedRun {
-    engine: Engine,
-    spec: WorkflowSpec,
-    ctx: RunCtx,
-    params_json: String,
-    eval_idx: Option<usize>,
-    num_phases: usize,
-    max_iter: u32,
-    /// One past the last phase index the loop runs each round (through the
-    /// gate, inclusive; or `num_phases` when there's no gate).
-    range_end: usize,
-    heads_workspace: String,
-    head_before: Option<String>,
-    proj: ProjectRow,
-    p: ProjectId,
-    session: SessionId,
-    issue_id: Option<IssueId>,
-    trigger: RunTrigger,
-    cron_task_id: Option<CronTaskId>,
-}
-
-/// plan/17 S3: the slice of [`PreparedRun`] that `finalize_run` reads after
-/// the loop returns — kept on the main thread (in [`ActiveRun`]) so the
-/// after-loop accounting (change window, agent/skill usage, artifact scan)
-/// runs under `&mut self`, exactly as it did inline. The `Engine` + loop
-/// locals are NOT here — they lived inside the spawn and are gone by settle.
+/// Everything `finalize_run_interactive` / `run_issue_settle` needs to close
+/// out one Issue run on the main thread (under `&mut self`) after the
+/// interactive session ends: the stage spec + project (for agent/skill
+/// accounting and the artifact scan) plus the `workflow_run` row this run
+/// opened at start — `run_id` / `started` / `head_before` let settle write the
+/// honest Ok/Failed row (duration, before→after heads) instead of leaving the
+/// run table empty.
 #[derive(Clone)]
 struct FinalizeCtx {
     spec: WorkflowSpec,
-    heads_workspace: String,
-    head_before: Option<String>,
     proj: ProjectRow,
     p: ProjectId,
     issue_id: Option<IssueId>,
+    /// The `workflow_run` row opened by `record_workflow_run_start` when the
+    /// interactive session began. Settled exactly once (Ok / Failed).
+    run_id: WorkflowRunId,
+    started: Instant,
+    /// Workspace whose git head is compared before/after (empty = no
+    /// workspace, mock run — heads stay `None`, never invented).
+    heads_workspace: String,
+    head_before: Option<String>,
+    /// Who gets the teammate credit for this work item — see
+    /// [`App::credited_agent`]. Snapshotted at start so a reassignment
+    /// mid-run doesn't move the loss onto someone else.
+    assignee: Option<AgentId>,
+}
+
+/// plan/17 S3 + V1 Issue2 Phase1: outcome a backgrounded run reports back
+/// to the main thread via the settle mpsc. The phase-loop variant carries
+/// `LoopEnd` + the last round's `workflow_run` id + `final_run_ok`; the
+/// interactive variant carries a `SkillOutput` (one-shot interactive
+/// session, no phase loop). `Err` in either is a `?`-early-bail.
+/// `pub(crate)` — the kernel only ever MOVES a `SettleReq` value, never
+/// names/constructs `SettleOutcome`.
+pub(crate) enum SettleOutcome {
+    Interactive(Result<SkillOutput, AppError>),
+    /// 咨询 PTY 退出:不占 active_run、不改状态、不 settle-once。
+    ConsultationEnded {
+        conversation_id: ConversationId,
+    },
 }
 
 /// plan/17 S3: outcome a backgrounded round loop reports back to the main
-/// thread via the settle mpsc. `Ok` carries the `LoopEnd` + the last round's
-/// `workflow_run` id + `final_run_ok` (exactly what `run_round_loop` returns);
-/// `Err` is a `?`-early-bail mid-round (a store error before any settle —
-/// the round's row stays "started, never settled", honest). Sent from the
-/// spawned task; received by the kernel's `select!` settle arm.
+/// thread via the settle mpsc. Sent from the spawned task; received by the
+/// kernel's `select!` settle arm.
 pub struct SettleReq {
     pub(crate) project: ProjectId,
     pub(crate) issue: IssueId,
-    // Private-typed on purpose: `LoopEnd` is an internal enum. The kernel
-    // only ever MOVES a `SettleReq` value (channel → `run_issue_settle`),
-    // never names/constructures it — so the fields stay crate-internal while
-    // the type itself is pub (the kernel names it for the mpsc type param).
-    pub(crate) outcome: Result<(LoopEnd, WorkflowRunId, bool), AppError>,
+    // Private-typed on purpose: `SettleOutcome` carries internal types
+    // (`LoopEnd`). The kernel only ever MOVES a `SettleReq` value
+    // (channel → `run_issue_settle`), never names/constructures it — so
+    // the fields stay crate-internal while the type itself is pub (the
+    // kernel names it for the mpsc type param).
+    pub(crate) outcome: SettleOutcome,
 }
 
-/// plan/17 S3: an in-flight backgrounded issue-run. Held in `AppState
-/// .active_run` so:
-///  - the same-project serial lock holds across dispatch returns (a second
-///    `RunIssue` on the same project sees `Some` and is rejected);
-///  - `CancelRun` can `abort` the `JoinHandle`;
-///  - `run_issue_settle` has the `FinalizeCtx` + the tail's issue/project/
-///    worktree context + the worktree guard (dropped AFTER `finalize_run`
-///    reads `head_after` and the tail's `create_mr` commits the worktree).
+/// The one in-flight interactive delivery run (issue ▶跑): same-project
+/// serial lock + `CancelRun`'s `abort` + what settle needs on the main
+/// thread + the worktree guard. `finalize` is `Some` for a first run (owns
+/// the `workflow_run` row → `finalize_run_interactive`) and `None` for a
+/// resume (artifact scan only via `finalize_run_interactive_resume` —
+/// settle-once, the first run already counted uses and owns the row).
 struct ActiveRun {
     project: ProjectId,
     /// The bound Issue (id + number + github_number + title) — used to match
-    /// `CancelRun`'s id and to drive the tail's `create_mr` / transition.
+    /// `CancelRun`'s id and settle's conversation lookup.
     issue: Issue,
     handle: JoinHandle<()>,
     guard: bw_engine::workspace::IssueWorktreeGuard,
-    finalize: FinalizeCtx,
-    // tail context (run_issue_settle's create_mr + transition):
+    finalize: Option<FinalizeCtx>,
+    /// The project row (resume settle scans its workspace for artifacts).
     proj: ProjectRow,
-    issue_ws: Option<PathBuf>,
-    pr_eligible: bool,
 }
 
-/// plan/17 S3: the shared 起手 prefix of an issue-run, returned by
-/// `prepare_issue_run` so the inline path (`run_issue_body`) and the
-/// backgrounded path (`run_issue_backgrounded`) start from the exact same
-/// setup — get+validate the Issue, build the stage-playbook `WorkflowSpec`
-/// (+ standard/distilled skill injection), transition to InProgress, and
-/// provision the isolated issue worktree behind an RAII guard. The guard is
-/// owned here so each caller can place it where the worktree must outlive
-/// (the inline path's local, or the backgrounded path's `ActiveRun`).
+/// 咨询态 PTY(Done/InReview 续聊)。不进 active_run。
+struct ConsultationRun {
+    issue_id: IssueId,
+    #[allow(dead_code)] // 后续若加「关咨询」可 abort
+    handle: JoinHandle<()>,
+    guard: bw_engine::workspace::IssueWorktreeGuard,
+}
+
+/// V1 收口:the shared 起手 prefix of an issue-run, returned by
+/// `prepare_issue_run` so the interactive path (`run_issue_interactive`,
+/// first-run + resume branches) starts from the right setup — get+validate
+/// the Issue, build the stage-playbook `WorkflowSpec` (+ standard/distilled
+/// skill injection), transition to InProgress, and provision the isolated
+/// issue worktree behind an RAII guard. The guard is owned here so the caller
+/// can place it where the worktree must outlive (the interactive path's
+/// `ActiveRun`, or the consultation path's `ConsultationRun`).
 struct IssueRunPrep {
     issue: Issue,
     proj: ProjectRow,
     spec: WorkflowSpec,
     issue_ws: Option<PathBuf>,
-    pr_eligible: bool,
     guard: bw_engine::workspace::IssueWorktreeGuard,
+    /// 同阶段蒸馏技能块(最多 3 条,经验复利)。V1 收口:interactive 路径
+    /// 并进系统提示词(原来只进 phase-loop 的 spec.prompt,issue 全转终端
+    /// 后会静默丢失)。
+    distilled_block: String,
+    /// 本阶段技能目录块(工作区为空时为空,守「不假装物化」)。同上并入系统提示词。
+    catalog_block: String,
 }
 
 /// plan/17 S3: `AppState` no longer `derive(Clone, Debug)` — `active_run`
@@ -1189,9 +276,6 @@ pub struct AppState {
     /// Registered artifacts of the active project (Artifact panel) — same
     /// explicit-load, project-tagged pattern as `version_log`.
     pub artifacts: Option<(ProjectId, Vec<Artifact>)>,
-    /// L1(plan/11): last-loaded cron task's real fire history — same single-
-    /// slot, task-tagged explicit-load pattern as `artifacts`/`version_log`.
-    pub cron_effectiveness: Option<(CronTaskId, bw_core::model::CronEffectiveness)>,
     /// P4: the explicitly-opened Issue detail (board overlay) — same
     /// explicit-load pattern as `artifacts`. `None` = no overlay open.
     pub issue_detail: Option<IssueDetailData>,
@@ -1199,6 +283,56 @@ pub struct AppState {
     /// internal cache of live GitHub data, not persisted — it's a direct
     /// read-through, not one of this app's own derived Signals.
     pub github_repos: Vec<GithubRepoSummary>,
+    /// V2-② Intent UX: last remote `.bw/project.toml` probe for the create
+    /// flow's「接入已有仓」path. Process-local; cleared on「新建仓」.
+    pub remote_project_probe: RemoteProjectProbe,
+    /// V1 Issue2 Phase2a: unix ts of the last InReview poll for interactive
+    /// issues. The poller checks codehub/github for open MRs on interactive
+    /// issues that are InProgress + have a claude_conversation row (interactive) + `pr_number == 0`.
+    /// Adaptive throttle: ~15s while candidates wait for an open MR, 5 min
+    /// when idle — so a just-opened MR is not stuck behind a multi-minute
+    /// backstop. `0` = never polled (first tick runs it).
+    pub last_inreview_poll: i64,
+    /// Set when `tick_scheduler` mutates UI-visible state without firing a
+    /// cron (notably InReview poll / Stop-triggered MR detection). The
+    /// desktop kernel rebuilds Vm when this is true even if `fired` is empty
+    /// — otherwise the board stays stale while toasts already say「评审中」.
+    pub scheduler_ui_dirty: bool,
+    /// V1 Issue2 Phase2b: cwd → IssueId map for hook event routing. When
+    /// `run_issue_interactive` spawns a session, it registers the worktree
+    /// cwd here. When the hook listener receives a SessionStart/Stop event
+    /// (which carries `cwd`), `poll_hook_events` looks up the issue by cwd
+    /// to store `session_id` or trigger InReview detection. Entries are
+    /// dropped by `forget_interactive_session` when the run settles or is
+    /// cancelled — a session that's over must not keep a cwd registered, or a
+    /// late/forged hook event could still rewrite that issue's session id.
+    pub interactive_sessions: HashMap<String, IssueId>,
+    /// V1 Issue2 Phase2b: a `Stop` hook event was received since the last
+    /// `tick_scheduler` fire. `true` → run `poll_interactive_inreview` on
+    /// this tick (the tick's cadence is the natural throttle — no additional
+    /// debounce needed within a single tick; the 5-minute poller remains as
+    /// backstop for Stop events processed with delay).
+    pub pending_stop_check: bool,
+    pub terminal_manager: TerminalManager,
+    /// UI 焦点会话(切卡只改这个,不杀其它 PTY)。
+    pub focused_conversation: Option<ConversationId>,
+    pub focused_issue: Option<IssueId>,
+    /// 咨询态活连接;与 active_run 并存,不占交付名额。
+    consultation_runs: HashMap<ConversationId, ConsultationRun>,
+    /// V1-TermRefactor4 · 重启恢复:点卡 resume 进行中(重建 worktree →
+    /// spawn PTY → 首包字节前)。UI 显示「恢复中…」;Boot 绝不批量唤醒。
+    pub pty_restoring: Option<ConversationId>,
+    /// V1 Issue2 Phase2b: whether PTY mode is enabled (the desktop kernel
+    /// wires it via `App::with_pty`). When `true`, `run_issue_interactive`
+    /// uses `run_skill_pty` (in-app terminal). When `false`, it uses the
+    /// old `run_skill` (system terminal / mock).
+    pub pty_enabled: bool,
+    /// CodeHub 为主体的创建流: last `Command::ListCodehubRepos` result. Same
+    /// process-internal cache pattern as `github_repos` — a direct read-through
+    /// of `codehub-cli project list --mine`, not a derived Signal.
+    pub codehub_repos: Vec<CodehubRepoSummary>,
+    /// 项目墙「测一下」最近一次结果。未测过是 Unknown。
+    pub local_env: LocalEnvProbe,
 }
 
 /// P4: everything the Issue-detail overlay shows, assembled read-only at
@@ -1211,6 +345,10 @@ pub struct IssueDetailData {
     pub runs: Vec<bw_core::model::WorkflowRun>,
     pub changes: Vec<bw_core::model::RunChanges>,
     pub artifacts: Vec<Artifact>,
+    /// V1 终端会话重构(阶段1): 该活是否已有交互式会话(claude_conversation
+    /// 行存在与否)。替代旧 `issue.interactive_started` —— P2 诚实文案用它
+    /// 判断「过程在嵌入终端里」还是「还没有运行」。
+    pub is_interactive: bool,
 }
 
 impl Default for AppState {
@@ -1234,9 +372,21 @@ impl Default for AppState {
             claude_config: ClaudeCliConfig::default(),
             version_log: None,
             artifacts: None,
-            cron_effectiveness: None,
             issue_detail: None,
             github_repos: Vec::new(),
+            remote_project_probe: RemoteProjectProbe::Idle,
+            last_inreview_poll: 0,
+            scheduler_ui_dirty: false,
+            interactive_sessions: HashMap::new(),
+            pending_stop_check: false,
+            terminal_manager: TerminalManager::new(),
+            focused_conversation: None,
+            focused_issue: None,
+            consultation_runs: HashMap::new(),
+            pty_restoring: None,
+            pty_enabled: false,
+            codehub_repos: Vec::new(),
+            local_env: LocalEnvProbe::default(),
         }
     }
 }
@@ -1244,7 +394,6 @@ impl Default for AppState {
 /// The orchestration brain.
 pub struct App {
     store: Arc<dyn Store>,
-    mock_engine: Engine,
     state: AppState,
     events: broadcast::Sender<Event>,
     /// Root under which `CompleteCreation` auto-provisions each new project's
@@ -1261,14 +410,54 @@ pub struct App {
     /// returns immediately, and the kernel's `select!` settle arm later
     /// drives `run_issue_settle` under `&mut self` — the UI never freezes.
     settle_tx: Option<mpsc::UnboundedSender<SettleReq>>,
+    /// V1 Issue2 Phase2b: hook event receiver from the hook listener
+    /// (localhost HTTP server). `None` when the listener failed to start
+    /// (port in use, no home dir) — the app works without real-time hooks,
+    /// falling back to 2a's 5-minute InReview poller. Drained in
+    /// [`App::poll_hook_events`] (called from `tick_scheduler`).
+    hook_event_rx: Option<mpsc::UnboundedReceiver<hook_listener::HookEvent>>,
+    /// V1 Issue2 Phase2b: the port the hook listener bound to. Written into
+    /// `~/.claude/settings.json`'s curl commands. `None` when the listener
+    /// isn't running.
+    hook_port: Option<u16>,
 }
 
 impl App {
-    pub fn new(store: Arc<dyn Store>, mock_engine: Engine, claude_config: ClaudeCliConfig) -> Self {
+    pub fn new(store: Arc<dyn Store>, claude_config: ClaudeCliConfig) -> Self {
         let (tx, _rx) = broadcast::channel(256);
+        // V1 Issue2 Phase2b: start the hook listener (localhost HTTP server
+        // that receives claude SessionStart/Stop hook events). Best-effort —
+        // if it fails (port in use, no home dir, no tokio runtime), the app
+        // works without real-time hooks (falls back to 2a's 5-minute InReview
+        // poller). Sync `bind()` gets the port immediately (no `block_on`
+        // needed — safe to call inside a tokio runtime like the desktop
+        // kernel). The accept loop is spawned if a runtime is available.
+        let (hook_tx, hook_rx) = mpsc::unbounded_channel::<hook_listener::HookEvent>();
+        let (hook_port, hook_event_rx) = match hook_listener::HookListener::bind() {
+            Ok((port, listener)) => {
+                // Write hooks config to ~/.claude/settings.json (idempotent
+                // merge — preserves user hooks). If this fails, the listener
+                // is useless (curl has nowhere to POST).
+                if hook_listener::install_hooks_config(port).is_ok() {
+                    // Spawn the accept loop (needs a tokio runtime). Inside
+                    // the desktop kernel's runtime, this works; in
+                    // examples/headless (no runtime), the listener is dropped.
+                    if let Ok(handle) = tokio::runtime::Handle::try_current() {
+                        handle.spawn(async move {
+                            hook_listener::HookListener::spawn(listener, hook_tx);
+                        });
+                        (Some(port), Some(hook_rx))
+                    } else {
+                        (None, None)
+                    }
+                } else {
+                    (None, None)
+                }
+            }
+            Err(_) => (None, None),
+        };
         Self {
             store,
-            mock_engine,
             state: AppState {
                 claude_config,
                 ..AppState::default()
@@ -1276,6 +465,8 @@ impl App {
             events: tx,
             workspaces_root: None,
             settle_tx: None,
+            hook_event_rx,
+            hook_port,
         }
     }
 
@@ -1299,6 +490,16 @@ impl App {
     /// so the five roles have a real substrate from birth instead of Mock.
     pub fn with_workspaces_root(mut self, root: PathBuf) -> Self {
         self.workspaces_root = Some(root);
+        self
+    }
+
+    /// V1 Issue2 Phase2b: enable PTY mode — `run_issue_interactive` spawns
+    /// `claude` in a PTY (portable-pty) instead of a system terminal, and
+    /// streams bytes via a dedicated `watch` channel / `Command::TerminalInput`.
+    /// The desktop kernel calls this; examples / headless drivers don't
+    /// (they use the old system-terminal / mock path).
+    pub fn with_pty(mut self) -> Self {
+        self.state.pty_enabled = true;
         self
     }
 
@@ -1330,6 +531,20 @@ impl App {
         &self.store
     }
 
+    /// V1 Issue2 Phase2b: the port the hook listener is bound to, or `None`
+    /// when the listener isn't running (port in use, no home dir, no runtime).
+    /// The UI can show this for debugging; `~/.claude/settings.json`'s curl
+    /// commands embed it.
+    pub fn hook_port(&self) -> Option<u16> {
+        self.hook_port
+    }
+
+    /// Desktop kernel: after `tick_scheduler`, rebuild Vm if the tick mutated
+    /// issues/connectors without returning a non-empty cron `fired` list.
+    pub fn take_scheduler_ui_dirty(&mut self) -> bool {
+        std::mem::take(&mut self.state.scheduler_ui_dirty)
+    }
+
     fn emit(&self, e: Event) {
         // Ignore "no receivers" — events are fire-and-forget facts.
         let _ = self.events.send(e);
@@ -1354,15 +569,20 @@ impl App {
         Ok(())
     }
 
-    /// plan/16 §2 防线 1 (S2): the skill name is the hub-wide join key
+    /// plan/16 §2 防线 1 (S2): the skill name is the join key
     /// (`SkillRef` / `agent.skills` / 蒸馏溯源 all match by name), so a
     /// duplicate is ambiguity, not a style problem. `exempt` = the row being
     /// renamed itself (an unchanged-name `UpdateSkill` must not self-collide).
     /// Read against the store, not `self.state` — same stale-UI reasoning as
     /// `UpdateSkill`'s T11 flip check.
+    ///
+    /// plan/20 R4: 唯一性按**作用域**强制——全局一池、每项目一池(`scope` =
+    /// 这行将要落在的池)。跨作用域允许同名:那是「收录=复制归我」的天然
+    /// 结果,按名引用处由就近规则(R2 `scope::scoped_pick`)确定性消歧。
     async fn guard_skill_name_unique(
         &self,
         name: &str,
+        scope: Option<ProjectId>,
         exempt: Option<SkillId>,
     ) -> Result<(), AppError> {
         let taken = self
@@ -1370,10 +590,10 @@ impl App {
             .list_skills()
             .await?
             .iter()
-            .any(|s| s.name == name && Some(s.id) != exempt);
+            .any(|s| s.name == name && s.project_id == scope && Some(s.id) != exempt);
         if taken {
             return Err(AppError::Invalid(format!(
-                "技能名「{name}」已存在——名字是联合键,不容歧义(plan/16 S2)"
+                "技能名「{name}」已存在——名字在同一作用域内是联合键,不容歧义(plan/16 S2 · plan/20 R4)"
             )));
         }
         Ok(())
@@ -1411,6042 +631,32 @@ impl App {
         Ok(())
     }
 
-    /// P7-7B(plan/13 用户故事 22, D22 「BW 与 GitHub 永不打架」): `RefreshIssues`
-    /// used to be a bare local reload — it never looked at GitHub, so a PR a
-    /// teammate opened on its own (executors may run `gh pr create`; only
-    /// `gh pr merge` is disallowed) was invisible to BW and `MergeIssuePr`'s
-    /// two guards (`pr_number == 0` / `status != InReview`) blocked the
-    /// human's only accounting-safe merge path. This pulls real GitHub state
-    /// for the project's repo-mapped Issues and backfills it — **read-only**:
-    /// it never calls a GitHub write endpoint, never reopens/closes anything,
-    /// and never rewrites what a human did on github.com (D22: 漂移只采集、
-    /// 只展示,不反向改写). It also never reaches `Done` — that edge stays
-    /// exclusively a human `MergeIssuePr`/`TransitionIssue`; this collector's
-    /// only write is a `pr_number` backfill plus, at most, one push to
-    /// `InReview` (D3: 评审中由存在开放 PR 派生).
-    ///
-    /// 采集范围(性能口径,如实写清楚,不是"少采装作采全"): 只查
-    /// `github_number != 0 && settled_at.is_none()` 的 Issue —— 未映射到
-    /// GitHub 的 Issue 没有可采的远端状态,已 settle(Done/Cancelled 走过
-    /// 结算)的 Issue 无论采到什么都不会再改变任何东西,采了也是白跑
-    /// `gh`。这不是采样,是这个命令定义下的**全部**有意义范围;项目里
-    /// 未结算的挂仓 Issue 再多,也是逐个真实查询,不做上限截断。
-    ///
-    /// 每张候选 Issue 最多打两次 `gh`:先查活分支(`issue_branch`)是否有
-    /// 开放 PR(`open_pr_for_branch`,`--repo` 寻址,不碰本地工作区);只有
-    /// 「查到开放 PR 且当前是 InProgress」这一条真分支才会再查一次
-    /// `issue_state` 来确认 GitHub 侧的 issue 本身仍是 OPEN(不是被绕过 BW
-    /// 直接在网页关闭/wontfix)——这一步只在真要做转移判断时才发生,不对
-    /// 每张 Issue 都白打第二枪。
-    async fn collect_github_issue_drift(&mut self, project: ProjectId) -> Result<(), AppError> {
-        let proj = self
-            .store
-            .get_project(project)
-            .await?
-            .ok_or(AppError::NotFound)?;
-        let remote = proj.remote_path.trim().to_string();
-        if remote.is_empty() {
-            // 无仓项目:整段跳过,今天的行为逐字节不变。
-            return Ok(());
-        }
-        let candidates: Vec<_> = self
-            .store
-            .list_issues(project, None, None)
-            .await?
-            .into_iter()
-            .filter(|i| i.github_number != 0 && i.settled_at.is_none())
-            .collect();
-        for issue in candidates {
-            let branch = bw_engine::github::issue_branch(issue.github_number);
-            let open_pr = match bw_engine::github::open_pr_for_branch(&remote, &branch).await {
-                Ok(v) => v,
-                Err(e) => {
-                    // gh 调用失败 = 如实降级:该 issue 保持原状,诚实 toast,
-                    // 不阻断这一轮其它 issue 的采集(同 sync_issue_to_github
-                    // 的软降级口径)。
-                    self.emit(Event::ConnectorSynced {
-                        name: format!("#{} · GitHub 采集", issue.number),
-                        ok: false,
-                        detail: format!("查活分支 PR 状态失败,该活保持原状:{e}"),
-                    });
-                    continue;
-                }
-            };
-            let Some(pr) = open_pr else {
-                continue; // 没有开放 PR——真实状态,什么都不改。
-            };
-            if pr != issue.pr_number {
-                self.store.set_issue_pr_number(issue.id, pr).await?;
-            }
-            if issue.status != IssueStatus::InProgress {
-                // 已经在评审中/其它状态,pr_number 已经如实回填,不需要再
-                // 判断转移(且绝不会从这里走到 Done)。
-                continue;
-            }
-            match bw_engine::github::issue_state(&remote, issue.github_number).await {
-                Ok(state) if state.eq_ignore_ascii_case("OPEN") => {
-                    // D3: 评审中由「存在开放 PR」派生。走既有 TransitionIssue
-                    // 命令复用其 can_transition_to 守卫,不新开一条转移路径。
-                    Box::pin(self.dispatch(Command::TransitionIssue {
-                        id: issue.id,
-                        status: IssueStatus::InReview,
-                    }))
-                    .await?;
-                }
-                Ok(_) => {
-                    // GitHub 侧 issue 已经不是 OPEN(例如被人绕过 BW 直接在
-                    // 网页关闭)——只展示、不处理:D22 铁律,漂移只采集不
-                    // 反向改写,也不擅自把它推进 InReview。
-                }
-                Err(e) => {
-                    self.emit(Event::ConnectorSynced {
-                        name: format!("#{} · GitHub 采集", issue.number),
-                        ok: false,
-                        detail: format!(
-                            "pr_number 已回填,但核对 issue 状态失败,暂不转评审中,可重试:{e}"
-                        ),
-                    });
-                }
-            }
-        }
-        Ok(())
-    }
-
     async fn refresh_activity(&mut self) -> Result<(), AppError> {
         self.state.recent_activity = self.store.list_recent_handoffs(50).await?;
-        Ok(())
-    }
-
-    /// Shared by `Command::RunWorkflow`, `Command::RunHubWorkflow`,
-    /// `Command::RunDraftWorkflow`, and `tick_scheduler`'s real auto-fire —
-    /// they differ only in how `spec` was obtained (a hub lookup + a `uses`
-    /// bump, or a hard mock lock) and look identical once they have one.
-    /// `project` is explicit (not read off `self.state.active_project`) so a
-    /// background scheduler fire can run a workflow against its *bound*
-    /// project without touching — let alone hijacking — whatever project the
-    /// user currently has open.
-    ///
-    /// `force_mock` (plan/14 C13, D8 回锁): when `true`, the engine-selection
-    /// step below is skipped entirely and this run executes on the shared
-    /// `MockExecutor` no matter what `agent_cli`/`workspace_path` would
-    /// otherwise select — the creation flow's *only* caller of this bool.
-    /// Every other caller passes `false`, preserving the pre-existing
-    /// "workspace configured → real executor" routing byte-for-byte (most
-    /// notably `RunIssue`, which must keep routing to the real executor).
-    #[allow(clippy::too_many_arguments)]
-    async fn run_workflow_inner(
-        &mut self,
-        project: ProjectId,
-        session: SessionId,
-        spec: WorkflowSpec,
-        trigger: RunTrigger,
-        cron_task_id: Option<CronTaskId>,
-        issue_id: Option<IssueId>,
-        force_mock: bool,
-        // plan/17 S2: isolated per-issue worktree for the executor + evidence
-        // + PR tail. None = main workspace (pre-S2 behavior; every caller
-        // except run_issue_body passes None). run_issue_body passes its
-        // provisioned IssueWorktreeGuard's path so the agent works + commits
-        // in isolation, decoupling InReview-window collisions.
-        issue_worktree: Option<&Path>,
-    ) -> Result<RunOutcome, AppError> {
-        // plan/17 S3: this is now a thin inline composition of three stages —
-        // `prepare_run` (起手, `&self` only) → `run_round_loop` (the long
-        // adversarial loop, self-contained, `tokio::spawn`-able) →
-        // `finalize_run` (收尾, `&mut self`). Inline callers (cron / stage
-        // playbook / creation drafting) await all three in sequence here,
-        // byte-for-byte the pre-S3 behavior. The issue path instead spawns
-        // `run_round_loop` and defers `finalize_run` to `run_issue_settle`
-        // (see `run_issue_now`'s `settle_tx` branch) — same three stages, a
-        // different execution topology. `mut spec` moved into `prepare_run`,
-        // which owns the skills-prompt mutation.
-        let prep = self
-            .prepare_run(
-                project,
-                session,
-                spec,
-                trigger,
-                cron_task_id,
-                issue_id,
-                force_mock,
-                issue_worktree,
-            )
-            .await?;
-        let (end, last_run_log, final_run_ok) = Self::run_round_loop(
-            self.store.clone(),
-            self.events.clone(),
-            &prep.engine,
-            &prep.spec,
-            &prep.ctx,
-            prep.session,
-            prep.p,
-            prep.issue_id,
-            prep.trigger,
-            prep.cron_task_id,
-            &prep.params_json,
-            prep.eval_idx,
-            prep.num_phases,
-            prep.max_iter,
-            prep.range_end,
-        )
-        .await?;
-        self.finalize_run(
-            &prep.spec,
-            &prep.heads_workspace,
-            &prep.head_before,
-            &prep.proj,
-            prep.p,
-            prep.issue_id,
-            end,
-            last_run_log,
-            final_run_ok,
-        )
-        .await
-    }
-
-    /// plan/17 S3: the 起手 stage of [`run_workflow_inner`] — everything up to
-    /// (but not including) the round loop. `&self` only (every touch here is a
-    /// shared borrow: `self.store` / `self.skills_prompt_block` /
-    /// `self.resolve_agent_route` / `self.emit` / `self.state.claude_config`),
-    /// which is precisely why the long round loop could be peeled off without
-    /// needing `&mut self` (the comment that has lived at the old engine-
-    /// selection site since iter 3). Returns an owned [`PreparedRun`] so the
-    /// issue path can move `engine` + `spec` into a `tokio::spawn`.
-    #[allow(clippy::too_many_arguments)]
-    async fn prepare_run(
-        &self,
-        project: ProjectId,
-        session: SessionId,
-        mut spec: WorkflowSpec,
-        trigger: RunTrigger,
-        cron_task_id: Option<CronTaskId>,
-        issue_id: Option<IssueId>,
-        force_mock: bool,
-        issue_worktree: Option<&Path>,
-    ) -> Result<PreparedRun, AppError> {
-        let p = project;
-        let proj = self.store.get_project(p).await?.ok_or(AppError::NotFound)?;
-
-        // Skill refs become *operative* here: for a non-playbook spec (a
-        // playbook already bakes its skill bodies into every phase prompt in
-        // bw-core), resolve each ref against the Skill Hub and append the
-        // real bodies to the shared prompt. Name-only refs with no stored
-        // content contribute nothing — never a fabricated placeholder.
-        if spec.phase_prompts.is_empty() && !spec.skills.is_empty() {
-            let block = self.skills_prompt_block(&spec.skills).await?;
-            if !block.is_empty() {
-                spec.prompt = format!("{}{block}", spec.prompt);
-            }
-        }
-
-        let ctx = RunCtx {
-            project: p,
-            workflow: spec.id,
-        };
-
-        // Record the run's start *before* the engine runs — so even a crash
-        // mid-run leaves an honest "started, never settled" row instead of a
-        // fabricated success (iter 1 telemetry foundation). `params_json`
-        // snapshots what the spec *was* at run time (phases/loop/agents/
-        // skills) — so after a later "优化" changes the spec, history still
-        // shows what each past run actually executed (iter 3 param capture).
-        // P4: capture the workspace HEAD before the engine touches anything —
-        // the "before" half of this run's recorded change window. Mock runs
-        // (no workspace) record nothing: no files were ever at stake.
-        let heads_workspace = match issue_worktree {
-            Some(p) => p.to_string_lossy().to_string(),
-            None => proj.workspace_path.trim().to_string(),
-        };
-        let head_before = if heads_workspace.is_empty() {
-            None
-        } else {
-            evidence::head_commit(&heads_workspace).await.ok().flatten()
-        };
-
-        // T6 (plan/12 §3): resolve the executing Agent's CLI + tools BEFORE
-        // anything runs — routing is real, not a display label, and the
-        // decision must apply identically whether this project runs on the
-        // real `ClaudeCliExecutor` or the shared Mock engine (an unsupported
-        // CLI is never silently allowed through on a mock project).
-        let (agent_cli, agent_tools) = self.resolve_agent_route(issue_id).await?;
-        // The literal `--allowedTools` value `ClaudeCliExecutor` would pass —
-        // computed here, before any subprocess spawn, so it's recorded in
-        // `params_json` independent of whether the real `claude -p` call
-        // ever succeeds (gateway 抖动 is never a verification gate).
-        let allowed_tools = allowed_tools_arg(&agent_tools, proj.allow_commands);
-
-        let params_json = run_params_snapshot(
-            &spec,
-            trigger,
-            &agent_cli,
-            &agent_tools,
-            allowed_tools.as_deref(),
-            force_mock,
-        );
-
-        // The review gate: the FIRST Evaluator phase (T8's real `role`, not a
-        // name guess). A workflow with none is a straight pipeline — one round,
-        // all phases, byte-for-byte the pre-T9 behavior. (A single review gate
-        // per workflow is all the built-in playbooks model today; a second
-        // Evaluator, if authored, runs as a plain tail phase.)
-        let eval_idx = spec
-            .phases
-            .iter()
-            .position(|ph| ph.role == PhaseRole::Evaluator);
-        let num_phases = spec.phases.len();
-        let max_iter = spec.loop_config.max_iter.max(1) as u32;
-        let range_end = match eval_idx {
-            Some(e) => e + 1, // through the gate, inclusive
-            None => num_phases,
-        };
-
-        // Announce once, before the first round — real name/agents/skills off
-        // `spec`, so a live subscriber can render "this run uses X/Y".
-        self.emit(Event::RunStarted {
-            workflow_name: spec.name.clone(),
-            agents: spec.agents.clone(),
-            skills: spec.skills.clone(),
-        });
-
-        // `workspace_path` is per-project runtime data, not baked into a
-        // long-lived Engine: unconfigured projects run on the shared Mock engine
-        // (byte-for-byte today's behavior); a configured one gets a fresh
-        // one-shot real executor for THIS call (shared across the call's rounds).
-        // Held immutably across the loop — every in-loop `self` touch is a shared
-        // borrow (`self.store` / `self.emit`), never `&mut self`, so this holds.
-        //
-        // plan/17 S3: `Engine` is now `Clone`; `prepare_run` returns an OWNED
-        // engine so the issue path can move it into `tokio::spawn`. The mock
-        // path clones the shared `mock_engine`'s `Arc` (cheap); the real path
-        // builds the same fresh one-shot executor, just owned rather than
-        // borrowed. Inline path passes it by `&` into `run_round_loop`.
-        //
-        // plan/14 C13 (D8 回锁): `force_mock` short-circuits everything below —
-        // checked BEFORE the `agent_cli` match, so the creation flow's drafting
-        // run never reaches real-executor selection no matter what workspace
-        // the active project has. Every other caller (`RunIssue` included)
-        // passes `force_mock = false` and falls through unchanged.
-        //
-        // T6 (plan/12 §3): the `agent_cli` match happens FIRST (once past the
-        // force_mock gate), before the mock/real branch below — an unsupported
-        // CLI ("codex"/"cursor"/…) routes to the honest `UnsupportedCliExecutor`
-        // regardless of whether this project even has a real workspace
-        // configured. Only `"claude-code"` (the default for an unassigned
-        // issue or any other caller) reaches the existing mock-vs-real split,
-        // unchanged.
-        let engine: Engine = if force_mock {
-            self.mock_engine.clone()
-        } else {
-            match agent_cli.as_str() {
-                "claude-code" => {
-                    if proj.workspace_path.trim().is_empty() {
-                        self.mock_engine.clone()
-                    } else {
-                        let executor = ClaudeCliExecutor::new(
-                            self.state.claude_config.clone(),
-                            issue_worktree
-                                .map(PathBuf::from)
-                                .unwrap_or_else(|| PathBuf::from(proj.workspace_path.trim())),
-                            proj.allow_commands,
-                            agent_tools.clone(),
-                        );
-                        Engine::new(Arc::new(executor))
-                    }
-                }
-                other => {
-                    // 诚实报错,绝不静默回落到 claude-code:本机没有为 codex/cursor
-                    // 等值接好真实执行器。Reuses the `Executor` trait seam — this
-                    // executor's first (and only) call errors, and the existing
-                    // "executor failed → settle Failed" path records it honestly.
-                    let executor = UnsupportedCliExecutor::new(other.to_string());
-                    Engine::new(Arc::new(executor))
-                }
-            }
-        };
-
-        Ok(PreparedRun {
-            engine,
-            spec,
-            ctx,
-            params_json,
-            eval_idx,
-            num_phases,
-            max_iter,
-            range_end,
-            heads_workspace,
-            head_before,
-            proj,
-            p,
-            session,
-            issue_id,
-            trigger,
-            cron_task_id,
-        })
-    }
-
-    /// plan/17 S3: the long adversarial round loop, extracted verbatim from
-    /// `run_workflow_inner` so it can run on a `tokio::spawn` with NO `&mut
-    /// App` — it only ever touched `self.store` / `self.emit` / `engine` /
-    /// `live`, all shared borrows or owned/move-able. `self.emit(X)` became
-    /// `live.send(X)` (emit IS `self.events.send`, and `live` is exactly
-    /// `self.events.clone()`). `self.store` became the `store: Arc<dyn
-    /// Store>` param. Returns the `LoopEnd` + the last round's
-    /// `workflow_run` id + `final_run_ok`; `Err` is a `?`-early-bail (a
-    /// store error before any settle — the round's row stays "started,
-    /// never settled", honest, never a fabricated success).
-    #[allow(clippy::too_many_arguments)]
-    async fn run_round_loop(
-        store: Arc<dyn Store>,
-        live: broadcast::Sender<Event>,
-        engine: &Engine,
-        spec: &WorkflowSpec,
-        ctx: &RunCtx,
-        session: SessionId,
-        p: ProjectId,
-        issue_id: Option<IssueId>,
-        trigger: RunTrigger,
-        cron_task_id: Option<CronTaskId>,
-        params_json: &str,
-        eval_idx: Option<usize>,
-        num_phases: usize,
-        max_iter: u32,
-        range_end: usize,
-    ) -> Result<(LoopEnd, WorkflowRunId, bool), AppError> {
-        // ── Adversarial review loop (plan/12 §4, T9) ────────────────────────
-        // Each round is its OWN settled `workflow_run` row: "多轮 run 记录" reads
-        // back as multiple rows, and settle-once holds because each row is
-        // settled exactly once. Round 1 runs from phase 0; each Evaluator打回
-        // restarts from the reject target and increments the round.
-        let mut start = 0usize;
-        let mut round: u32 = 1;
-        let mut baton: Option<String> = None;
-        // Set at the top of every round (before any `break`), so it is
-        // definitely-assigned for the after-loop accounting — the last round's
-        // row is the one that produced the final state.
-        let mut last_run_log: WorkflowRunId;
-        let mut final_run_ok = false;
-
-        let end: LoopEnd = loop {
-            // Record this round's row start *before* the engine runs — a crash
-            // mid-round leaves an honest "started, never settled" row, never a
-            // fabricated success.
-            let started_at = OffsetDateTime::now_utc().unix_timestamp();
-            let t0 = Instant::now();
-            let run_log_id = store
-                .record_workflow_run_start(bw_store::NewWorkflowRun {
-                    workflow_id: spec.id,
-                    workflow_name: &spec.name,
-                    project_id: Some(p),
-                    session_id: Some(session),
-                    trigger,
-                    started_at,
-                    cron_task_id,
-                    params_json,
-                })
-                .await?;
-            // A3: bind this round's run to the Issue it executes (RunIssue passes
-            // Some; every other caller None). Every round of an issue-run is
-            // bound, so `list_runs_for_issue` reads the whole loop back.
-            if let Some(iid) = issue_id {
-                store.set_run_issue(run_log_id, iid).await?;
-            }
-            last_run_log = run_log_id;
-
-            // Execute this round's phase range: through the gate for a gated
-            // workflow, or all phases for an ungated one. Outputs come back on
-            // the return value; live events stream via the callback.
-            let range_res = engine
-                .run_phase_range(spec, ctx, start..range_end, baton.clone(), |e| {
-                    forward_progress(&live, e)
-                })
-                .await;
-
-            let finished_at = OffsetDateTime::now_utc().unix_timestamp();
-            let duration_ms = t0.elapsed().as_millis() as i64;
-
-            let outputs = match range_res {
-                Ok(o) => o,
-                Err(e) => {
-                    // Honest executor failure — settle Failed, stop the loop.
-                    store
-                        .settle_workflow_run(
-                            run_log_id,
-                            RunStatus::Failed,
-                            finished_at,
-                            duration_ms,
-                            0,
-                            &e.to_string(),
-                        )
-                        .await?;
-                    break LoopEnd::Failed(AppError::Engine(e.to_string()));
-                }
-            };
-
-            // Persist this round's phase outputs as session messages (每阶段留痕).
-            let phases_completed = outputs.len() as u32;
-            for output in &outputs {
-                store
-                    .append_message(session, Author::Agent, &output.text)
-                    .await?;
-                let _ = live.send(Event::SessionMessageAdded {
-                    session,
-                    role: Author::Agent,
-                    text: output.text.clone(),
-                });
-            }
-
-            // Ungated pipeline: this single round is the whole run.
-            let Some(e_idx) = eval_idx else {
-                store
-                    .settle_workflow_run(
-                        run_log_id,
-                        RunStatus::Ok,
-                        finished_at,
-                        duration_ms,
-                        phases_completed,
-                        "",
-                    )
-                    .await?;
-                let _ = live.send(Event::WorkflowDone);
-                final_run_ok = true;
-                break LoopEnd::Passed;
-            };
-
-            // Parse the gate's real verdict from its output (the range's last
-            // phase). No parseable verdict = honest review failure, NEVER a
-            // default pass (plan/12 §4).
-            let eval_text = outputs.last().map(|o| o.text.clone()).unwrap_or_default();
-            let Some(outcome) = parse_phase_outcome(&eval_text) else {
-                let msg = format!(
-                    "评审输出缺结构化裁决(阶段「{}」· 轮次 {round}/{max_iter}):{}",
-                    spec.phases[e_idx].name,
-                    review_tail(&eval_text)
-                );
-                store
-                    .settle_workflow_run(
-                        run_log_id,
-                        RunStatus::Failed,
-                        finished_at,
-                        duration_ms,
-                        phases_completed,
-                        &msg,
-                    )
-                    .await?;
-                break LoopEnd::Failed(AppError::Engine(msg));
-            };
-
-            match outcome.verdict {
-                Verdict::Pass => {
-                    // Gate passed. Run any phases AFTER the gate (built-ins have
-                    // none) in order — a genuine pass proceeds — then settle Ok.
-                    let mut total = phases_completed;
-                    if e_idx + 1 < num_phases {
-                        let tail_res = engine
-                            .run_phase_range(
-                                spec,
-                                ctx,
-                                (e_idx + 1)..num_phases,
-                                Some(review_tail(&eval_text)),
-                                |e| forward_progress(&live, e),
-                            )
-                            .await;
-                        match tail_res {
-                            Ok(tail) => {
-                                for output in &tail {
-                                    store
-                                        .append_message(session, Author::Agent, &output.text)
-                                        .await?;
-                                    let _ = live.send(Event::SessionMessageAdded {
-                                        session,
-                                        role: Author::Agent,
-                                        text: output.text.clone(),
-                                    });
-                                }
-                                total += tail.len() as u32;
-                            }
-                            Err(e) => {
-                                store
-                                    .settle_workflow_run(
-                                        run_log_id,
-                                        RunStatus::Failed,
-                                        OffsetDateTime::now_utc().unix_timestamp(),
-                                        t0.elapsed().as_millis() as i64,
-                                        phases_completed,
-                                        &e.to_string(),
-                                    )
-                                    .await?;
-                                break LoopEnd::Failed(AppError::Engine(e.to_string()));
-                            }
-                        }
-                    }
-                    store
-                        .settle_workflow_run(
-                            run_log_id,
-                            RunStatus::Ok,
-                            OffsetDateTime::now_utc().unix_timestamp(),
-                            t0.elapsed().as_millis() as i64,
-                            total,
-                            "",
-                        )
-                        .await?;
-                    let _ = live.send(Event::WorkflowDone);
-                    final_run_ok = true;
-                    break LoopEnd::Passed;
-                }
-                Verdict::RejectToPhase(proposed) => {
-                    // Effective reject target: a declared `reject_to_phase`
-                    // (Static track) wins and the agent's proposal is IGNORED; an
-                    // undeclared one (Dynamic track) honours the agent's proposal.
-                    let target = match spec.phases[e_idx].reject_to_phase {
-                        Some(t) => t as usize,
-                        None => proposed as usize,
-                    };
-                    let reason = if outcome.reason.trim().is_empty() {
-                        "评审未通过".to_string()
-                    } else {
-                        outcome.reason.clone()
-                    };
-                    // A reject target must be a real phase strictly before the
-                    // gate (loop BACK, not forward/self). Anything else is an
-                    // un-actionable verdict → honest failure (never guess).
-                    if target >= num_phases || target > e_idx {
-                        let msg = format!(
-                            "评审打回目标越界(阶段索引 {target} / 共 {num_phases} 阶段 · 轮次 {round}/{max_iter}):{reason}"
-                        );
-                        store
-                            .settle_workflow_run(
-                                run_log_id,
-                                RunStatus::Failed,
-                                finished_at,
-                                duration_ms,
-                                phases_completed,
-                                &msg,
-                            )
-                            .await?;
-                        break LoopEnd::Failed(AppError::Engine(msg));
-                    }
-                    if round >= max_iter {
-                        // Cap hit: never auto-Failed, never auto-Done. Settle this
-                        // round Failed with the cap reason; hand a Blocked outcome
-                        // up (a bound Issue is parked Blocked by the caller).
-                        let cap_reason = format!("对抗循环 {round}/{max_iter} 仍未通过:{reason}");
-                        store
-                            .settle_workflow_run(
-                                run_log_id,
-                                RunStatus::Failed,
-                                finished_at,
-                                duration_ms,
-                                phases_completed,
-                                &cap_reason,
-                            )
-                            .await?;
-                        break LoopEnd::Blocked(cap_reason);
-                    }
-                    // Loop back: settle this round Failed (deliverable rejected),
-                    // carry the reject feedback forward as the next round's baton
-                    // (the regenerating phase sees WHY), restart from the target.
-                    let row_msg = format!(
-                        "评审打回阶段「{}」(轮次 {round}/{max_iter}):{reason}",
-                        spec.phases[target].name
-                    );
-                    store
-                        .settle_workflow_run(
-                            run_log_id,
-                            RunStatus::Failed,
-                            finished_at,
-                            duration_ms,
-                            phases_completed,
-                            &row_msg,
-                        )
-                        .await?;
-                    baton = Some(review_tail(&eval_text));
-                    start = target;
-                    round += 1;
-                }
-            }
-        };
-
-        Ok((end, last_run_log, final_run_ok))
-    }
-
-    /// plan/17 S3: the 收尾 stage of [`run_workflow_inner`] — change window +
-    /// usage accounting, ONCE per run, attributed to the LAST round's row.
-    /// Extracted verbatim from the old inline tail; `&mut self` so it can run
-    /// on the main thread (it touches `refresh_agents` / `refresh_skills` /
-    /// `scan_and_register_artifacts` — the only `&mut self` parts of the whole
-    /// run). Takes individual refs (not a struct) so the inline path can pass
-    /// them straight out of `PreparedRun` and the backgrounded path out of
-    /// `FinalizeCtx` — no clone needed in either. Inline callers run it right
-    /// after `run_round_loop`; the issue path runs it inside `run_issue_settle`.
-    #[allow(clippy::too_many_arguments)]
-    async fn finalize_run(
-        &mut self,
-        spec: &WorkflowSpec,
-        heads_workspace: &str,
-        head_before: &Option<String>,
-        proj: &ProjectRow,
-        p: ProjectId,
-        issue_id: Option<IssueId>,
-        end: LoopEnd,
-        last_run_log: WorkflowRunId,
-        final_run_ok: bool,
-    ) -> Result<RunOutcome, AppError> {
-        // Attributed to the LAST round's row (the one that produced the final
-        // state). Runs on every terminal outcome (pass / block / honest failure)
-        // — a failed run's partial real output is still real output. Doing this
-        // once per issue-run (not per round) keeps agent win_rate / skill `uses`
-        // honest: one real work item = one agent run, one skill use.
-        let run_ok = final_run_ok;
-        let run_log_id = last_run_log;
-        if !heads_workspace.is_empty() {
-            let head_after = evidence::head_commit(heads_workspace).await.ok().flatten();
-            self.store
-                .set_run_heads(run_log_id, head_before.clone(), head_after)
-                .await?;
-        }
-        for a in &spec.agents {
-            self.store.record_agent_run_by_name(&a.name, run_ok).await?;
-        }
-        for s in &spec.skills {
-            self.store.record_skill_use_by_name(&s.name).await?;
-        }
-        if !spec.agents.is_empty() {
-            self.refresh_agents().await?;
-            self.emit(Event::AgentsChanged);
-        }
-        if !spec.skills.is_empty() {
-            self.refresh_skills().await?;
-            self.emit(Event::SkillsChanged);
-        }
-        // Artifact reflux: scan the real workspace and register new file
-        // versions against the final round's run. Scan errors are a 0-fresh
-        // no-op — they never turn a settled run into an error.
-        if !proj.workspace_path.trim().is_empty() {
-            let stage_kind = spec
-                .stage_ref
-                .and_then(|n| StageKind::ALL.into_iter().find(|s| s.index() == n));
-            if let Ok(fresh) = self
-                .scan_and_register_artifacts(
-                    p,
-                    &proj.workspace_path,
-                    Some(run_log_id),
-                    stage_kind,
-                    // A2: run-time issue归属 — the活's产物 bind to both run
-                    // and issue so the Done edge's idempotent re-scan matches.
-                    issue_id,
-                )
-                .await
-            {
-                if fresh > 0 {
-                    self.emit(Event::ArtifactsRegistered { fresh });
-                }
-            }
-        }
-
-        // The after-loop accounting above runs on EVERY terminal outcome
-        // (pass / block / honest failure) — a failed run's partial real
-        // output is still real output. Only now does the outcome surface:
-        // `Failed` propagates as `Err` so the caller's tail (issue stays
-        // InProgress) mirrors the inline `?`-early-bail path.
-        match end {
-            LoopEnd::Passed => Ok(RunOutcome::Completed),
-            LoopEnd::Blocked(reason) => Ok(RunOutcome::BlockedAtCap { reason }),
-            LoopEnd::Failed(err) => Err(err),
-        }
-    }
-
-    /// T6 (plan/12 §3): resolve which Agent CLI executes an issue-run and
-    /// what `tools` (AllowedTools) it declares. Only `RunIssue` has a
-    /// concrete assignee to route by — an issue with no assignee, an
-    /// assignee row that's since been deleted, or a blank `agent_cli`
-    /// (the five built-in stage-role rows) all read back as the honest
-    /// default: `"claude-code"` with no tools restriction, byte-for-byte
-    /// every other caller's (`RunHubWorkflow`, cron, stage playbook without
-    /// an issue) pre-T6 behavior.
-    async fn resolve_agent_route(
-        &self,
-        issue_id: Option<IssueId>,
-    ) -> Result<(String, Vec<String>), AppError> {
-        const DEFAULT_CLI: &str = "claude-code";
-        let Some(iid) = issue_id else {
-            return Ok((DEFAULT_CLI.to_string(), Vec::new()));
-        };
-        let Some(issue) = self.store.get_issue(iid).await? else {
-            return Ok((DEFAULT_CLI.to_string(), Vec::new()));
-        };
-        let Some(agent_id) = issue.assignee else {
-            return Ok((DEFAULT_CLI.to_string(), Vec::new()));
-        };
-        let Some(agent) = self.store.get_agent(agent_id).await? else {
-            return Ok((DEFAULT_CLI.to_string(), Vec::new()));
-        };
-        let cli = if agent.agent_cli.trim().is_empty() {
-            DEFAULT_CLI.to_string()
-        } else {
-            agent.agent_cli.clone()
-        };
-        Ok((cli, agent.tools.clone()))
-    }
-
-    /// T17 (plan/12 §10 v1.1#4): `Command::ParseWorkflowContent`'s real work —
-    /// see that variant's doc comment for the full contract. One-shot (no
-    /// session, no `workflow_run` row — this isn't a workflow *run*, it's a
-    /// single document-understanding call), routed through the same
-    /// mock/real `Engine` split `run_workflow_inner` uses, keyed off the
-    /// workflow's OWN `project_id` binding rather than `self.active()`:
-    /// this is a Hub-reachable action (`BW_SEL` can deep-link straight into
-    /// a `ComponentDetail` with no project open at all), so it must not
-    /// require one. A hub-library workflow (`project_id: None`) — the
-    /// common case, every built-in template and every hand-authored hub
-    /// entry today — always runs on the shared Mock engine, honestly
-    /// self-labelled; a project-owned workflow with a configured
-    /// `workspace_path` gets a real one-shot `ClaudeCliExecutor`, exactly
-    /// like a real workflow run would.
-    async fn parse_workflow_content(&mut self, workflow_id: WorkflowId) -> Result<(), AppError> {
-        let spec = self
-            .store
-            .get_workflow_spec(workflow_id)
-            .await?
-            .ok_or(AppError::NotFound)?;
-        if spec.content.trim().is_empty() {
-            return Err(AppError::Invalid(
-                "没有原始文档,无可解析(content 为空)".into(),
-            ));
-        }
-
-        // No issue is involved in a Hub-level parse call, so this always
-        // resolves to the honest default ("claude-code", no tools) unless a
-        // future caller threads one through — kept as a real call (not a
-        // hardcoded literal) so a later change to the default lands here
-        // for free, same discipline `run_workflow_inner` follows.
-        let (agent_cli, agent_tools) = self.resolve_agent_route(None).await?;
-        let fresh_engine;
-        let engine: &Engine = match agent_cli.as_str() {
-            "claude-code" => {
-                let real_workspace = match spec.project_id {
-                    Some(pid) => self
-                        .store
-                        .get_project(pid)
-                        .await?
-                        .map(|p| (p.workspace_path, p.allow_commands)),
-                    None => None,
-                };
-                match real_workspace {
-                    Some((path, allow_commands)) if !path.trim().is_empty() => {
-                        let executor = ClaudeCliExecutor::new(
-                            self.state.claude_config.clone(),
-                            PathBuf::from(path.trim()),
-                            allow_commands,
-                            agent_tools.clone(),
-                        );
-                        fresh_engine = Engine::new(Arc::new(executor));
-                        &fresh_engine
-                    }
-                    _ => &self.mock_engine,
-                }
-            }
-            other => {
-                // 诚实报错,同 `run_workflow_inner`:不给未接好的 CLI 静默
-                // 回落到 claude-code。
-                let executor = UnsupportedCliExecutor::new(other.to_string());
-                fresh_engine = Engine::new(Arc::new(executor));
-                &fresh_engine
-            }
-        };
-
-        let mut prompt = spec.content.clone();
-        prompt.push_str(workflow_parse_contract_suffix());
-        let node = PhaseNode {
-            name: "解析工作流文档".to_string(),
-            role: PhaseRole::Neutral,
-            prompt,
-            agents: spec.agents.clone(),
-            skills: spec.skills.clone(),
-            max_iter: 1,
-            retries: 0,
-            prior_summary: None,
-        };
-        let ctx = RunCtx {
-            project: spec.project_id.unwrap_or(ProjectId::nil()),
-            workflow: spec.id,
-        };
-        let output = engine
-            .run_adhoc(node, &ctx)
-            .await
-            .map_err(|e| AppError::Engine(e.to_string()))?;
-
-        // Honest parse: no keyword guessing, no partial adoption. On ANY
-        // problem `phases` stays exactly what it was before this call — the
-        // caller (UI) shows the real reason and lets the user retry.
-        let phases = parse_workflow_phases(&output.text).map_err(AppError::Invalid)?;
-
-        self.store
-            .update_workflow_spec(
-                workflow_id,
-                WorkflowEdit {
-                    prompt: spec.prompt.clone(),
-                    goal: spec.goal.clone(),
-                    phases,
-                    // A freshly-parsed phase carries its own real per-phase
-                    // binding (name/role/reject_to_phase/agent/skills) but
-                    // no per-phase INSTRUCTION text — same "empty = shared
-                    // `prompt`" fallback every other phase-editing path
-                    // already honors (`UpdateWorkflowSpec`'s hand-edit form
-                    // included). A per-phase-instruction authoring UI is
-                    // later work, not this ticket.
-                    phase_prompts: Vec::new(),
-                    agents: spec.agents.clone(),
-                    skills: spec.skills.clone(),
-                    note: "T17 · 解析为流程图".to_string(),
-                },
-            )
-            .await?;
-        self.refresh_workflow_specs().await?;
-        self.emit(Event::WorkflowSpecsChanged);
-        Ok(())
-    }
-
-    /// Resolve skill refs against the hub and render the non-empty bodies as
-    /// a prompt block. Pure read; the honest empty string when nothing
-    /// resolves. Capped so a pathological catalog can't drown the task.
-    async fn skills_prompt_block(&self, refs: &[SkillRef]) -> Result<String, AppError> {
-        const MAX_BLOCK_CHARS: usize = 6000;
-        let catalog = self.store.list_skills().await?;
-        let mut bodies = Vec::new();
-        let mut total = 0usize;
-        for r in refs {
-            let Some(skill) = catalog
-                .iter()
-                .find(|s| s.name == r.name && !s.content.trim().is_empty())
-            else {
-                continue;
-            };
-            // plan/16 S7: bodies are spec-shaped SKILL.md text opening at
-            // `#`; the injector nests them two levels down so they sit
-            // correctly under this block's own H2 (see
-            // `bw_core::skill_body::demote_headings`). 变换**先做**再记账:
-            // 降级每个标题多两个 `#`,按变换前的长度记账会让这道「病态目录
-            // 不许淹掉任务」的护栏不再是它声称的那个硬上限。
-            let body = bw_core::skill_body::demote_headings(skill.content.trim(), 2);
-            let chars = body.chars().count();
-            if total + chars > MAX_BLOCK_CHARS {
-                break;
-            }
-            total += chars;
-            bodies.push(body);
-        }
-        if bodies.is_empty() {
-            return Ok(String::new());
-        }
-        Ok(format!(
-            "\n\n## 技能(工作方法,来自技能库)\n{}\n",
-            bodies.join("\n\n")
-        ))
-    }
-
-    /// A3: render up to 3 distilled (compounded) skills for project `p` as a
-    /// prompt block, same-stage preferred then proven-first (`uses` desc as the
-    /// distill-time proxy — `SkillCard` carries no timestamp). Only skills with
-    /// real `content` distilled from a Done issue in THIS project qualify.
-    /// Returns `(prompt_block, skill_refs)`. The block carries the real content
-    /// (injected into the prompt); the name-led refs are returned separately so
-    /// the caller can put them on `spec.skills` and let `run_workflow_inner`'s
-    /// usage accounting bump each one's `uses` — closing the compounding loop
-    /// (a distilled skill used by a run → uses+1). Honest `(empty, [])` when the
-    /// project has no compounded skill yet.
-    ///
-    /// `exclude_name` skips a skill already carried by another block on the
-    /// same run (in practice: the Issue's `standard_skill`). P3 opened the
-    /// skill-choice dropdown to every content-bearing row, including distilled
-    /// ones (`crates/app-desktop/src/screens/op.rs` `skill_choices`), so a
-    /// project's own distilled skill can now be picked as `standard_skill`
-    /// AND still be the top-scored candidate here (same project, same stage).
-    /// Without this exclusion the caller would push the same name onto
-    /// `spec.skills` twice — `run_workflow_inner`'s by-name, no-dedup
-    /// accounting (`record_skill_use_by_name` in the `for s in &spec.skills`
-    /// loop) would then bump that one skill's `uses` by 2 for one run,
-    /// breaking settle-once, and the prompt would carry its body twice. Fixing
-    /// it here (source) rather than de-duping `spec.skills` after the fact
-    /// keeps the prompt honest too — the body is injected once, not twice.
-    async fn distilled_skills_block(
-        &self,
-        project: ProjectId,
-        stage: StageKind,
-        exclude_name: &str,
-    ) -> Result<(String, Vec<SkillRef>), AppError> {
-        const MAX: usize = 3;
-        let catalog = self.store.list_skills().await?;
-        // (uses, same_stage, skill) — resolve each distilled skill back to its
-        // origin issue's project+stage to scope the compounding to this project.
-        let mut scored: Vec<(u32, bool, SkillCard)> = Vec::new();
-        for s in catalog {
-            if !exclude_name.trim().is_empty() && s.name == exclude_name {
-                continue; // already carried by standard_skill_block — avoid a double count/body
-            }
-            let Some(iid) = s.distilled_from_issue else {
-                continue;
-            };
-            let Some(issue) = self.store.get_issue(iid).await? else {
-                continue;
-            };
-            if issue.project_id != project || s.content.trim().is_empty() {
-                continue; // wrong project, or a content-less catalog reference
-            }
-            scored.push((s.uses, issue.stage == stage, s));
-        }
-        // Same-stage first, then proven-first; stable within ties.
-        scored.sort_by(|a, b| b.1.cmp(&a.1).then_with(|| b.0.cmp(&a.0)));
-        let picked: Vec<&SkillCard> = scored.iter().take(MAX).map(|(_, _, s)| s).collect();
-        if picked.is_empty() {
-            return Ok((String::new(), Vec::new()));
-        }
-        let bodies: Vec<String> = picked
-            .iter()
-            .map(|s| format!("- {}：\n{}", s.name, s.content.trim()))
-            .collect();
-        let block = format!(
-            "\n\n## 复利技能(本项目蒸馏,同阶段优先)\n{}\n",
-            bodies.join("\n\n")
-        );
-        let refs: Vec<SkillRef> = picked
-            .iter()
-            .map(|s| SkillRef {
-                name: s.name.clone(),
-                def: s.desc.clone(),
-                from: s.category.clone(),
-            })
-            .collect();
-        Ok((block, refs))
-    }
-
-    /// C8 · 标配 Issue 三件套的 Skill 注入(plan/13 D8): resolve an Issue's
-    /// `standard_skill` slug (set once by `seed_standard_issue_trio`, C9's
-    /// by-name convention) against the Skill Hub catalog and render its real
-    /// content as a prompt block, same shape as `distilled_skills_block`. An
-    /// empty slug, or a slug that doesn't resolve to a content-bearing row
-    /// (none today — all three standard cards are seeded by C9+C10), is an
-    /// honest `(empty, [])` — never an error, never a fabricated body.
-    /// This always returns at most one ref; `distilled_skills_block` is
-    /// called with this slug as its `exclude_name` so it can't pick the same
-    /// skill again (P3 let a distilled skill be chosen as `standard_skill`
-    /// too — see that function's doc comment). With the exclusion in place,
-    /// `record_skill_use_by_name` accounting sees each skill exactly once
-    /// per run.
-    async fn standard_skill_block(&self, slug: &str) -> Result<(String, Vec<SkillRef>), AppError> {
-        if slug.trim().is_empty() {
-            return Ok((String::new(), Vec::new()));
-        }
-        let catalog = self.store.list_skills().await?;
-        let Some(skill) = catalog
-            .iter()
-            .find(|s| s.name == slug && !s.content.trim().is_empty())
-        else {
-            return Ok((String::new(), Vec::new()));
-        };
-        let block = format!(
-            "\n\n## 标配技能(创建流关联,来自 {})\n{}\n",
-            skill.name,
-            // plan/16 S7: same nesting rule as `skills_prompt_block` — the
-            // stored body is spec-shaped (`#` title), the injector demotes.
-            bw_core::skill_body::demote_headings(skill.content.trim(), 2)
-        );
-        let refs = vec![SkillRef {
-            name: skill.name.clone(),
-            def: skill.desc.clone(),
-            from: skill.category.clone(),
-        }];
-        Ok((block, refs))
-    }
-
-    /// A4: name of the machine-fed "完成 Issue 数" leading metric, seeded per
-    /// project×stage with an EMPTY target so its signal stays Unknown (honest
-    /// "no goal set") — never a fake green from a raw completion count.
-    fn stage_done_metric_name() -> &'static str {
-        "阶段完成 Issue 数"
-    }
-
-    /// A4: idempotently seed the per-stage "完成 Issue 数" leading metric (one
-    /// per stage, empty target). By-name idempotent — a re-seed adds nothing,
-    /// so Boot can backfill pre-A4 projects safely.
-    async fn seed_stage_done_metrics(&self, project: ProjectId) -> Result<(), AppError> {
-        let have: std::collections::HashSet<StageKind> = self
-            .store
-            .persisted_signals(project)
-            .await?
-            .metrics
-            .into_iter()
-            .filter(|m| m.name == Self::stage_done_metric_name())
-            .filter_map(|m| m.stage_kind)
-            .collect();
-        for kind in StageKind::ALL {
-            if have.contains(&kind) {
-                continue;
-            }
-            self.store
-                .upsert_metric(NewMetric {
-                    id: MetricId::new(),
-                    project_id: project,
-                    role: MetricRole::Leading,
-                    stage_kind: Some(kind),
-                    name: Self::stage_done_metric_name().into(),
-                    def: "本阶段已完成的 Issue 数(每次 Done 自动计数,机器源)".into(),
-                    target_raw: String::new(),
-                    amber: AmberBand::default(),
-                    last_target: String::new(),
-                    driver: String::new(),
-                    pos: 100 + kind.index() as i64,
-                    collect_kind: String::new(),
-                    collect_query: String::new(),
-                })
-                .await?;
-        }
-        Ok(())
-    }
-
-    /// P5 · codehub 公共指标 seed(对标 `seed_stage_done_metrics` 的幂等套路):
-    /// 给 `provider=codehub` 且 `remote_path` 非空的项目种两条默认公共指标
-    /// ——开放 Issue 数 + 已合入 MR 数,`kind=codehub` 走 `collect_project_metrics`
-    /// 的 codehub arm 真采(`codehub-cli issue|mr list --jq length`)。**不用
-    /// 定义**——V3 规划里「公共指标默认有」的落地。非 codehub / 没接远端 →
-    /// no-op(留 github 的既有口径不动)。口径先用最小词汇 `issues:opened` /
-    /// `mrs:merged`,复杂窗口(本周合入)留后续按真实需求扩。
-    async fn seed_codehub_public_metrics(&self, project: ProjectId) -> Result<(), AppError> {
-        let proj = self
-            .store
-            .get_project(project)
-            .await?
-            .ok_or(AppError::NotFound)?;
-        if proj.provider != "codehub" || proj.remote_path.trim().is_empty() {
-            return Ok(());
-        }
-        // by-name 幂等:已有同名不重种(不抹既有值)。
-        let have: std::collections::HashSet<String> = self
-            .store
-            .persisted_signals(project)
-            .await?
-            .metrics
-            .into_iter()
-            .map(|m| m.name)
-            .collect();
-        // (name, def, query) —— 公共计数,滞后指标(Lagging),空 target 保持
-        // signal Unknown(计数不是目标,只为点亮「有数据」)。
-        const PAIR: [(&str, &str, &str); 2] = [
-            (
-                "开放 Issue 数",
-                "codehub 仓当前 state=opened 的 issue 计数(机器源,codehub-cli issue list --jq length)",
-                "issues:opened",
-            ),
-            (
-                "已合入 MR 数",
-                "codehub 仓累计 state=merged 的 MR 计数(机器源,codehub-cli mr list --jq length)",
-                "mrs:merged",
-            ),
-        ];
-        for (idx, (name, def, query)) in PAIR.iter().copied().enumerate() {
-            if have.contains(name) {
-                continue;
-            }
-            self.store
-                .upsert_metric(NewMetric {
-                    id: MetricId::new(),
-                    project_id: project,
-                    role: MetricRole::Lagging,
-                    stage_kind: None,
-                    name: name.to_string(),
-                    def: def.to_string(),
-                    target_raw: String::new(),
-                    amber: AmberBand::default(),
-                    last_target: String::new(),
-                    driver: String::new(),
-                    pos: 200 + idx as i64,
-                    collect_kind: "codehub".into(),
-                    collect_query: query.to_string(),
-                })
-                .await?;
-        }
-        Ok(())
-    }
-
-    /// A4: feed the stage's "完成 Issue 数" metric the current count of Done
-    /// issues in that stage, but only when it changed (change-guard — same
-    /// idempotency as a manual re-confirm). Machine source (Telemetry). The
-    /// metric's empty target keeps its signal Unknown: a count is not a goal.
-    async fn feed_stage_done_count(
-        &self,
-        project: ProjectId,
-        stage: StageKind,
-    ) -> Result<(), AppError> {
-        self.seed_stage_done_metrics(project).await?;
-        let done = self
-            .store
-            .list_issues(project, Some(stage), Some(IssueStatus::Done))
-            .await?
-            .len() as i64;
-        let new_raw = done.to_string();
-        let metric = self
-            .store
-            .persisted_signals(project)
-            .await?
-            .metrics
-            .into_iter()
-            .find(|m| m.name == Self::stage_done_metric_name() && m.stage_kind == Some(stage));
-        let Some(m) = metric else {
-            return Ok(()); // metric missing — honest no-op
-        };
-        if m.value_raw == new_raw {
-            return Ok(()); // change-guard: no new fact
-        }
-        self.store
-            .append_observation(m.id, SourceKind::Telemetry, &new_raw, now())
-            .await?;
-        self.store.recompute_signals(project, now()).await?;
-        Ok(())
-    }
-
-    /// Run one connector's real probe. Returns `(healthy, honest detail)`;
-    /// errors only on kinds that have no real probe (there is no fake
-    /// "synced" for those) or store failures.
-    async fn probe_connector(&mut self, c: &Connector) -> Result<(bool, String), AppError> {
-        match c.kind.as_str() {
-            CONNECTOR_KIND_GIT_REPO => {
-                // The bound project's *current* workspace is the live truth;
-                // `config` is the provisioning-time record / fallback.
-                let workspace = match c.project_id {
-                    Some(p) => self
-                        .store
-                        .get_project(p)
-                        .await?
-                        .map(|proj| proj.workspace_path)
-                        .filter(|w| !w.trim().is_empty())
-                        .unwrap_or_else(|| c.config.clone()),
-                    None => c.config.clone(),
-                };
-                match evidence::collect(&workspace).await {
-                    Ok(ev) => {
-                        // Tier D for real: the probe's numbers flow into the
-                        // bound project's matching metrics as machine-source
-                        // observations (only when the metric exists and the
-                        // value really changed — no observation spam).
-                        if let Some(p) = c.project_id {
-                            self.feed_workspace_metrics(p, &ev).await?;
-                            self.sync_project_assets(p, &workspace).await;
-                        }
-                        Ok((
-                            true,
-                            format!(
-                                "{} 提交 · {} 追踪文件 · {} 文档 · {} 未提交路径",
-                                ev.commit_count, ev.tracked_files, ev.docs_files, ev.dirty_paths
-                            ),
-                        ))
-                    }
-                    Err(e) => Ok((false, e.to_string())),
-                }
-            }
-            CONNECTOR_KIND_CLAUDE_CLI => {
-                let binary = if c.config.trim().is_empty() {
-                    self.state
-                        .claude_config
-                        .binary
-                        .clone()
-                        .unwrap_or_else(|| "claude".into())
-                } else {
-                    c.config.trim().to_string()
-                };
-                match claude_version_probe(&binary).await {
-                    Ok(v) => Ok((true, v)),
-                    Err(e) => Ok((false, e)),
-                }
-            }
-            CONNECTOR_KIND_GITHUB_REPO => {
-                // plan/13 D12: 真探针一次,探不通如实 false,绝不伪造「已同步」。
-                // 经 Remote 分发:github-repo 连器 → Remote::Github(config);
-                // codehub-repo 连器(P4)另有 arm → Remote::Codehub{host,path}。
-                let cfg = c.config.trim();
-                if cfg.is_empty() {
-                    return Ok((false, "连接器未记录 owner/repo,无法探活".into()));
-                }
-                let remote = bw_engine::remote::Remote::Github(cfg.to_string());
-                match remote.probe().await {
-                    Ok(detail) => Ok((true, detail)),
-                    Err(e) => Ok((false, e.to_string())),
-                }
-            }
-            CONNECTOR_KIND_CODEHUB_REPO => {
-                // codehub 真探针:`codehub-cli project view` 经 Remote::Codehub。
-                // config = "host/path"(创建时 mint 进来),split_once('/') 拆出
-                // host + path(path 自带 /,只切第一段)。探不通如实 false。
-                let cfg = c.config.trim();
-                let Some((host, path)) = cfg.split_once('/') else {
-                    return Ok((false, "codehub 连器 config 需 'host/path',无法探活".into()));
-                };
-                let remote = bw_engine::remote::Remote::Codehub {
-                    host: host.to_string(),
-                    path: path.to_string(),
-                };
-                match remote.probe().await {
-                    Ok(detail) => Ok((true, detail)),
-                    Err(e) => Ok((false, e.to_string())),
-                }
-            }
-            CONNECTOR_KIND_SCRIPT => {
-                // plan18-③:探活=检查项目仓里脚本文件在位(不真跑,真跑留
-                // collect arm,避免探活就触发长脚本)。config=JSON
-                // {script,output,command}。
-                let workspace = match c.project_id {
-                    Some(p) => self
-                        .store
-                        .get_project(p)
-                        .await?
-                        .map(|proj| proj.workspace_path)
-                        .filter(|w| !w.trim().is_empty())
-                        .unwrap_or_default(),
-                    None => String::new(),
-                };
-                if workspace.trim().is_empty() {
-                    return Ok((false, "script 连接器需项目工作区,无法探活".into()));
-                }
-                let cfg: ScriptConnectorConfig =
-                    match ScriptConnectorConfig::from_config(c.config.trim()) {
-                        Ok(v) => v,
-                        Err(e) => return Ok((false, format!("script 连接器 config 解析失败:{e}"))),
-                    };
-                if cfg.script.trim().is_empty() {
-                    return Ok((false, "script 连接器未记录脚本路径".into()));
-                }
-                if Path::new(cfg.script.trim()).is_absolute() {
-                    return Ok((false, "script 连接器 config 用绝对路径,需相对工作区".into()));
-                }
-                let script_path = Path::new(&workspace).join(&cfg.script);
-                match std::fs::metadata(&script_path) {
-                    Ok(_) => Ok((
-                        true,
-                        format!("脚本 {} 在位(输出 {})", cfg.script, cfg.output),
-                    )),
-                    Err(e) => Ok((
-                        false,
-                        format!("脚本 {} 不存在:{}", script_path.display(), e),
-                    )),
-                }
-            }
-            other => Err(AppError::Invalid(format!(
-                "连接器类型「{other}」没有真实探针——不支持同步(诚实拒绝,不伪造状态)"
-            ))),
-        }
-    }
-
-    /// plan/渠道6 · sync a project's own `skills/` + `agents/` from its
-    /// workspace into the hub as 种A (registered-visible, never injected).
-    /// Re-scanned on every git-repo connector probe (build-time probe-at-
-    /// creation + manual「立即同步」). 项目仓是正本, buddy DB is a mirror, so
-    /// this is a **full rebuild** of the project's project-assets batch:
-    /// delete the existing batch then re-import everything on disk. The
-    /// delete gate is `project_id == project && source.is_project_assets()`
-    /// — never touches distilled `SelfBuilt` rows or global libraries.
-    ///
-    /// 种A rows have no consumers (excluded from every injection picker via
-    /// `is_project_assets`) and `uses`/`runs` stay 0, so the id churn from
-    /// delete+recreate is harmless. Soft-degrade: every store error is
-    /// logged to stderr (`[BW]`) and swallowed — scanning skills is a side-
-    /// product of the connector probe and must never block the主功能 (git
-    /// evidence + workspace metrics). A missing `skills/`/`agents/` dir is a
-    /// normal empty scan, not an error.
-    async fn sync_project_assets(&mut self, project: ProjectId, workspace: &str) {
-        let source = HubSource::Official {
-            official_library: BW_PROJECT_ASSETS_LIBRARY.to_string(),
-        };
-
-        // ── skills: full rebuild (delete the project-assets batch, re-import scanned) ──
-        // `import_skill_package` (not `create_skill`) so the folder's support
-        // files land in `skill_file` too — `create_skill` would drop the file
-        // tree. Maas skills carry references/scripts/knowledge dirs.
-        let scanned_skills = skill_import::scan_project_skills_dir(workspace);
-        let existing_skills: Vec<SkillCard> = match self.store.list_skills().await {
-            Ok(all) => all
-                .into_iter()
-                .filter(|s| s.project_id == Some(project) && s.source.is_project_assets())
-                .collect(),
-            Err(e) => {
-                eprintln!("[BW] sync_project_assets: list_skills 失败,跳过 skill 同步:{e}");
-                return;
-            }
-        };
-        for s in &existing_skills {
-            if let Err(e) = self.store.delete_skill(s.id).await {
-                eprintln!(
-                    "[BW] sync_project_assets: delete_skill「{}」失败:{e}",
-                    s.name
-                );
-            }
-        }
-        for pkg in &scanned_skills {
-            if let Err(e) = self
-                .store
-                .import_skill_package(
-                    NewSkill {
-                        id: SkillId::new(),
-                        name: pkg.name.clone(),
-                        // 同 ImportSkillPackage:外部资产,成熟度由本地真实使用派生,不从外部声誉继承。
-                        maturity: Maturity::Fresh,
-                        desc: pkg.desc.clone(),
-                        category: String::new(),
-                        stage_ref: None,
-                        source: source.clone(),
-                        content: pkg.content.clone(),
-                        project_id: Some(project),
-                    },
-                    pkg.files
-                        .iter()
-                        .map(|(rel_path, content)| NewSkillFile {
-                            rel_path: rel_path.clone(),
-                            content: content.clone(),
-                        })
-                        .collect(),
-                )
-                .await
-            {
-                eprintln!(
-                    "[BW] sync_project_assets: import skill「{}」失败:{e}",
-                    pkg.name
-                );
-            }
-        }
-
-        // ── agents: full rebuild (single AGENT.md files, no skill_file equivalent) ──
-        let scanned_agents = agent_import::scan_project_agents_dir(workspace);
-        let existing_agents: Vec<AgentCard> = self
-            .store
-            .list_agents()
-            .await
-            .unwrap_or_default()
-            .into_iter()
-            .filter(|a| a.project_id == Some(project) && a.source.is_project_assets())
-            .collect();
-        for a in &existing_agents {
-            if let Err(e) = self.store.delete_agent(a.id).await {
-                eprintln!(
-                    "[BW] sync_project_assets: delete_agent「{}」失败:{e}",
-                    a.name
-                );
-            }
-        }
-        for def in &scanned_agents {
-            if let Err(e) = self
-                .store
-                .create_agent(NewAgent {
-                    id: AgentId::new(),
-                    name: def.name.clone(),
-                    role: def.description.clone(),
-                    stage_ref: None,
-                    maturity: Maturity::Fresh,
-                    skills: Vec::new(),
-                    model: def.model.clone(),
-                    instructions: def.instructions.clone(),
-                    tools: def.tools.clone(),
-                    agent_cli: "claude-code".to_string(),
-                    source: source.clone(),
-                    project_id: Some(project),
-                })
-                .await
-            {
-                eprintln!(
-                    "[BW] sync_project_assets: create_agent「{}」失败:{e}",
-                    def.name
-                );
-            }
-        }
-
-        if let Err(e) = self.refresh_skills().await {
-            eprintln!("[BW] sync_project_assets: refresh_skills 失败:{e}");
-        }
-        if let Err(e) = self.refresh_agents().await {
-            eprintln!("[BW] sync_project_assets: refresh_agents 失败:{e}");
-        }
-        self.emit(Event::SkillsChanged);
-        self.emit(Event::AgentsChanged);
-    }
-
-    /// C4 · issue 身份映射(plan/13 D2): a project with a `remote_path`
-    /// gets every BW-minted Issue mirrored as a real GitHub issue — the issue
-    /// number is the Issue's cross-system identity. Called AFTER the Issue
-    /// already exists in `bw-store`, so a `gh` failure never blocks the
-    /// BW-side create (创建不破): the Issue simply keeps `github_number = 0`
-    /// and an honest `ConnectorSynced { ok: false, .. }` toast fires — same
-    /// soft-degrade shape as the Repo 卡片's `create_repo`/`clone_repo`
-    /// paths. `remote_path` empty (no repo, or a 存量项目) short-circuits
-    /// before touching `gh` at all — today's behavior, byte-for-byte.
-    ///
-    /// `announce` (plan/14 C14): only the creation flow's standard-Issue trio
-    /// (`seed_standard_issue_trio`) opts into the pending/ok/fail
-    /// `Event::ActionProgress` triple — this function's other two callers
-    /// (`Command::CreateIssue`'s op-panel manual create, Autopilot's
-    /// cron-fired create) are out of C14's scope (CLAUDE.md: 范围收敛,op
-    /// 面板既有动作不动) and pass `false`, leaving their behavior
-    /// byte-for-byte unchanged.
-    async fn sync_issue_to_github(
-        &mut self,
-        project_id: ProjectId,
-        issue_id: IssueId,
-        title: &str,
-        desc: &str,
-        announce: bool,
-    ) -> Result<(), AppError> {
-        let proj = self
-            .store
-            .get_project(project_id)
-            .await?
-            .ok_or(AppError::NotFound)?;
-        let path = proj.remote_path.trim();
-        if path.is_empty() {
-            return Ok(());
-        }
-        let remote =
-            bw_engine::remote::Remote::for_project(&proj.provider, &proj.remote_host, path)?;
-        let body = if desc.trim().is_empty() {
-            "(BW 建单同步,未填写详情)".to_string()
-        } else {
-            desc.trim().to_string()
-        };
-        let action_name = format!("{title} · 建单");
-        if announce {
-            self.emit(Event::ActionProgress {
-                name: action_name.clone(),
-                state: ActionState::Started,
-            });
-        }
-        match remote.create_issue(title, &body).await {
-            Ok(gh_number) => {
-                self.store
-                    .set_issue_github_number(issue_id, gh_number)
-                    .await?;
-                if announce {
-                    self.emit(Event::ActionProgress {
-                        name: action_name,
-                        state: ActionState::Ok(format!("#{gh_number}")),
-                    });
-                }
-            }
-            Err(e) => {
-                self.emit(Event::ConnectorSynced {
-                    name: format!("{title} · GitHub Issue"),
-                    ok: false,
-                    detail: format!("GitHub 开 issue 失败,BW 侧 Issue 已建立,号未映射:{e}"),
-                });
-                if announce {
-                    self.emit(Event::ActionProgress {
-                        name: action_name,
-                        state: ActionState::Fail(e.to_string()),
-                    });
-                }
-            }
-        }
-        Ok(())
-    }
-
-    /// C8 · 标配 Issue 三件套(plan/13 D8): 创建流落地(`CompleteCreation`)
-    /// 时,挂仓项目自动建三张标配 Issue——竞品分析→找指标→绑数据,依赖序
-    /// 即建单序即编号序(`create_issue` 按项目内 `MAX(number)+1` 分配,这里
-    /// 是这个新项目的头三张 Issue,天然拿到 1/2/3)。每张都走既有
-    /// `sync_issue_to_github` 真开一个 GitHub issue——`remote_path` 为空
-    /// 的项目在那里短路返回,这里的 BW 侧建号仍然发生,只是 `github_number`
-    /// 留 0(和手动建单同一诚实口径),但本函数在调用前就已经用
-    /// `remote_path` 是否非空短路整批——无仓项目连 BW 侧的三张都不建,
-    /// 不给建不了仓的项目发一套没处交付的活(如实留白)。
-    ///
-    /// 每张携带一个稳定 `standard_skill` slug——三张卡均已由 Boot 的
-    /// `seed_bw_standard_skills_if_missing` 按名种下(C9 落地
-    /// `north-star-discovery` / `metrics-binding`,C10 补上
-    /// `competitive-analysis`,plan/17 起统一走包文档解析播种),
-    /// `run_issue_now` 注入时按名查到即真实注入。
-    ///
-    /// 返回①竞品分析那张的 `IssueId`,供「问一句就跑」路径直接开工;无仓
-    /// 项目(未建任何标配票)返回 `None`。
-    async fn seed_standard_issue_trio(
-        &mut self,
-        project: ProjectId,
-    ) -> Result<Option<IssueId>, AppError> {
-        let proj = self
-            .store
-            .get_project(project)
-            .await?
-            .ok_or(AppError::NotFound)?;
-        if proj.remote_path.trim().is_empty() {
-            return Ok(None);
-        }
-        const TRIO: [(&str, &str, &str); 3] = [
-            (
-                "竞品分析",
-                "起草对标名单、各家北极星猜测、差异定位、可借鉴打法,产出报告 PR 进仓\
-                 (docs/competitive-analysis.md)。是「找指标」那张的输入。执行器联网检索\
-                 不通时如实降级为「人喂材料 + agent 整理」,报告绝不由幻觉填充。",
-                "competitive-analysis",
-            ),
-            (
-                "找指标",
-                "结合项目意图与「竞品分析」那张产出的 docs/competitive-analysis.md,\
-                 推导北极星 + 滞后 + 引领三层指标,每条附采集方案——先对后亮,北极星绝不为\
-                 「采得到」退化成工程虚荣指标。挂 Skill: north-star-discovery。",
-                "north-star-discovery",
-            ),
-            (
-                "绑数据",
-                "为「找指标」草拟的、绑不上数据的指标(.bw/metrics.toml)找到点亮的最便宜\
-                 路径——绝不伪造数据、绝不为了点亮而改指标定义。挂 Skill: metrics-binding。",
-                "metrics-binding",
-            ),
-        ];
-        let mut first: Option<IssueId> = None;
-        for (title, desc, skill_slug) in TRIO {
-            let id = IssueId::new();
-            self.store
-                .create_issue(NewIssue {
-                    id,
-                    project_id: project,
-                    stage: StageKind::Prototype,
-                    title: title.to_string(),
-                    desc: desc.to_string(),
-                    priority: IssuePriority::Medium,
-                    standard_skill: skill_slug.to_string(),
-                })
-                .await?;
-            // announce=true (plan/14 C14): this is the creation-flow trio —
-            // the one `sync_issue_to_github` call site that should surface a
-            // pending/ok/fail `ActionProgress` triple.
-            self.sync_issue_to_github(project, id, title, desc, true)
-                .await?;
-            if first.is_none() {
-                first = Some(id);
-            }
-        }
-        Ok(first)
-    }
-
-    /// Feed a real workspace evidence reading into the project's matching
-    /// metrics (`METRIC_WS_COMMITS` / `METRIC_WS_DOCS`) as
-    /// `SourceKind::Connector` observations. Metrics the project hasn't
-    /// defined are skipped — the kernel never invents a metric (targets are
-    /// human intent, not machine output).
-    async fn feed_workspace_metrics(
-        &mut self,
-        project: ProjectId,
-        ev: &evidence::WorkspaceEvidence,
-    ) -> Result<(), AppError> {
-        let sigs = self.store.persisted_signals(project).await?;
-        let mut touched = false;
-        for (name, value) in [
-            (METRIC_WS_COMMITS, ev.commit_count.to_string()),
-            (METRIC_WS_DOCS, ev.docs_files.to_string()),
-        ] {
-            let Some(m) = sigs.metrics.iter().find(|m| m.name == name) else {
-                continue;
-            };
-            if m.value_raw == value {
-                continue; // unchanged — a re-probe is not a new fact
-            }
-            self.store
-                .append_observation(m.id, SourceKind::Connector, &value, now())
-                .await?;
-            touched = true;
-        }
-        if touched {
-            self.store.recompute_signals(project, now()).await?;
-            self.emit(Event::ProjectUpdated(project));
-        }
-        Ok(())
-    }
-
-    /// C7 · 采集器 (plan/13 D7): pull real data into `project`'s metrics as
-    /// append-only observations. Shared by the manual `Command::CollectMetrics`
-    /// and the standard collect cron (`tick_scheduler`), so both entrances walk
-    /// exactly one code path.
-    ///
-    /// v1 只真采一类:每条 `collect.kind = "github"` 指标跑一次真实 `gh` 计数
-    /// 查询,change-guard 命中(值未变)则不重复记点;值变了才 append 一个观测
-    /// 并 `recompute_signals`(唯一派生入口)。`bw`/`connector` 两类**如实留白**
-    /// ——不采集、不写零值,signal 保持既有(无数据即 Unknown,绝不假绿)。
-    /// `gh` 失败:零新观测、如实计入失败(供 ok:false toast),signal 靠既有
-    /// 过期降级自然变灰。北极星的采集方案落在 `project` 列(非 metric 行),没有
-    /// 可挂观测的 metric_id,v1 不采(留白见 docs/metrics-toml-format.md)。
-    /// `.bw/metrics.toml` 正本 → SQLite 缓存的同步本体。两个入口共用:
-    /// `Command::SyncMetricsFile`(手动,active 项目)与 `MergeIssuePr`
-    /// (plan/13 D5「merge 后同步进 SQLite 作缓存」——code-review Spec 轴
-    /// 指出此前管线断在入口,全仓没有任何触发点)。
-    async fn sync_metrics_file_for(&mut self, p: ProjectId) -> Result<(), AppError> {
-        let proj = self.store.get_project(p).await?.ok_or(AppError::NotFound)?;
-        match bw_engine::metrics_file::read(&proj.workspace_path) {
-            // No configured workspace, or a workspace with no file
-            // yet — 文件不存在:零动作零噪音,行为与今日完全一致
-            // (no store write, no event; `read` folds both cases
-            // into the same honest `Ok(None)`).
-            Ok(None) => {}
-            Ok(Some(file)) => {
-                let sync = metrics_file_sync(p, &file);
-                let summary = self.store.sync_metrics_file(sync).await?;
-                self.emit(Event::ProjectUpdated(p));
-                self.emit(Event::ConnectorSynced {
-                    name: "metrics.toml".into(),
-                    ok: true,
-                    detail: format!(
-                        "北极星 · {} 条滞后指标 · {} 条引领指标已同步",
-                        summary.lagging_synced, summary.leading_synced
-                    ),
-                });
-            }
-            Err(e) => {
-                // 坏 toml:如实报错,沿用 ConnectorSynced ok:false 惯例;
-                // `read` only returns `Err` on a parse/IO failure — the
-                // cache is untouched (nothing was written above).
-                self.emit(Event::ConnectorSynced {
-                    name: "metrics.toml".into(),
-                    ok: false,
-                    detail: e.to_string(),
-                });
-            }
-        }
-        Ok(())
-    }
-
-    async fn collect_project_metrics(
-        &mut self,
-        project: ProjectId,
-    ) -> Result<MetricCollectSummary, AppError> {
-        let proj = self
-            .store
-            .get_project(project)
-            .await?
-            .ok_or(AppError::NotFound)?;
-        let remote_path = proj.remote_path.trim().to_string();
-        let remote = bw_engine::remote::Remote::for_project(
-            &proj.provider,
-            &proj.remote_host,
-            &remote_path,
-        )?;
-        let sigs = self.store.persisted_signals(project).await?;
-        let today = now().date();
-        let mut summary = MetricCollectSummary::default();
-        let mut touched = false;
-
-        // plan18-③ · 预跑项目的 `script` connector,把脚本产出 JSON 缓存进
-        // `script_outputs`,供下面 `script` kind 指标按字段路径取值。一个项目
-        // 可有多个 script connector;每个脚本只跑一次(不是每指标跑一次)。
-        // 脚本自身依赖(Playwright/SSO/Chrome)由项目侧保证,buddy 只 shell-out。
-        let mut script_outputs: Vec<serde_json::Value> = Vec::new();
-        if !proj.workspace_path.trim().is_empty()
-            && sigs.metrics.iter().any(|m| m.collect_kind == "script")
-        {
-            let connectors = self.store.list_connectors().await?;
-            for c in connectors.iter().filter(|c| {
-                c.kind.as_str() == CONNECTOR_KIND_SCRIPT && c.project_id == Some(project)
-            }) {
-                let cfg: ScriptConnectorConfig =
-                    match ScriptConnectorConfig::from_config(c.config.trim()) {
-                        Ok(v) => v,
-                        Err(e) => {
-                            summary.failed += 1;
-                            if summary.first_error.is_none() {
-                                summary.first_error =
-                                    Some(format!("script 连接器 config 解析失败:{e}"));
-                            }
-                            continue;
-                        }
-                    };
-                if cfg.script.trim().is_empty() {
-                    continue;
-                }
-                let command = if cfg.command.trim().is_empty() {
-                    "python".to_string()
-                } else {
-                    cfg.command.trim().to_string()
-                };
-                if Path::new(&cfg.script).is_absolute() {
-                    summary.failed += 1;
-                    if summary.first_error.is_none() {
-                        summary.first_error = Some(format!(
-                            "script {} config 用绝对路径,需相对工作区",
-                            cfg.script
-                        ));
-                    }
-                    continue;
-                }
-                let script_path = Path::new(&proj.workspace_path).join(&cfg.script);
-                let run = tokio::process::Command::new(&command)
-                    .arg(&script_path)
-                    .current_dir(&proj.workspace_path)
-                    .stdin(std::process::Stdio::null())
-                    .stdout(std::process::Stdio::piped())
-                    .stderr(std::process::Stdio::piped())
-                    .output();
-                let out = match tokio::time::timeout(std::time::Duration::from_secs(300), run).await
-                {
-                    Ok(Ok(o)) if o.status.success() => o,
-                    Ok(Ok(o)) => {
-                        // 非零退出:stderr 尾部入错因(读回为证,运维能从 buddy 内判根因)
-                        let stderr = String::from_utf8_lossy(&o.stderr);
-                        let tail: String = stderr
-                            .chars()
-                            .rev()
-                            .take(500)
-                            .collect::<String>()
-                            .chars()
-                            .rev()
-                            .collect();
-                        summary.failed += 1;
-                        if summary.first_error.is_none() {
-                            summary.first_error = Some(format!(
-                                "script {} 非零退出:{}",
-                                cfg.script,
-                                tail.trim_end()
-                            ));
-                        }
-                        continue;
-                    }
-                    _ => {
-                        summary.failed += 1;
-                        if summary.first_error.is_none() {
-                            summary.first_error = Some(format!(
-                                "script {} 跑失败(超时>300s 或 spawn 失败)",
-                                cfg.script
-                            ));
-                        }
-                        continue;
-                    }
-                };
-                let _ = out; // stdout 不解析,只看 output 文件
-                let output_path = Path::new(&proj.workspace_path).join(&cfg.output);
-                let raw = match std::fs::read_to_string(&output_path) {
-                    Ok(s) => s,
-                    Err(e) => {
-                        summary.failed += 1;
-                        if summary.first_error.is_none() {
-                            summary.first_error =
-                                Some(format!("script {} 输出读不到:{}", cfg.script, e));
-                        }
-                        continue;
-                    }
-                };
-                match serde_json::from_str::<serde_json::Value>(&raw) {
-                    Ok(v) => script_outputs.push(v),
-                    Err(e) => {
-                        summary.failed += 1;
-                        if summary.first_error.is_none() {
-                            summary.first_error =
-                                Some(format!("script {} 输出非 JSON:{}", cfg.script, e));
-                        }
-                    }
-                }
-            }
-        }
-
-        for m in &sigs.metrics {
-            match m.collect_kind.as_str() {
-                "github" => {
-                    if remote_path.is_empty() {
-                        // No repo to pull from — honest, not a silent success.
-                        summary.no_remote_github = true;
-                        continue;
-                    }
-                    match remote.collect_count(&m.collect_query, today).await {
-                        Ok(count) => {
-                            let value = count.to_string();
-                            // window-guard(code-review Standards #5 修正,取代
-                            // 纯 change-guard):值变了当然记;值没变但本采集
-                            // 窗口(UTC 日)还没有点,也要记——定时采集的每次
-                            // 测量都是真实观测,平台期的新鲜确认不落点的话,
-                            // 过期降级会把「今天测过没变」误判成「久无数据」
-                            // 压绿为黄。同窗口同值才跳过(防手动连点刷屏)。
-                            let last_ts = self.store.latest_observation_ts(m.id).await?;
-                            let same_window = last_ts.is_some_and(|t| {
-                                OffsetDateTime::from_unix_timestamp(t)
-                                    .map(|d| d.date() == today)
-                                    .unwrap_or(false)
-                            });
-                            if m.value_raw == value && same_window {
-                                summary.unchanged += 1;
-                            } else {
-                                self.store
-                                    .append_observation(m.id, SourceKind::Github, &value, now())
-                                    .await?;
-                                summary.changed += 1;
-                                touched = true;
-                            }
-                        }
-                        Err(e) => {
-                            summary.failed += 1;
-                            if summary.first_error.is_none() {
-                                summary.first_error = Some(format!("{}:{e}", m.name));
-                            }
-                        }
-                    }
-                }
-                "codehub" => {
-                    // P5:codehub 采集,镜像 github arm。Remote::Codehub 由 remote
-                    // 变量(project 的 provider 派生)分发到 codehub::collect_count
-                    // (issue|mr list --jq length)。查询口径见 codehub::collect_count
-                    // (issues:<state> / mrs:<state>)。
-                    if remote_path.is_empty() {
-                        summary.no_remote_codehub = true;
-                        continue;
-                    }
-                    match remote.collect_count(&m.collect_query, today).await {
-                        Ok(count) => {
-                            let value = count.to_string();
-                            let last_ts = self.store.latest_observation_ts(m.id).await?;
-                            let same_window = last_ts.is_some_and(|t| {
-                                OffsetDateTime::from_unix_timestamp(t)
-                                    .map(|d| d.date() == today)
-                                    .unwrap_or(false)
-                            });
-                            if m.value_raw == value && same_window {
-                                summary.unchanged += 1;
-                            } else {
-                                self.store
-                                    .append_observation(m.id, SourceKind::Codehub, &value, now())
-                                    .await?;
-                                summary.changed += 1;
-                                touched = true;
-                            }
-                        }
-                        Err(e) => {
-                            summary.failed += 1;
-                            if summary.first_error.is_none() {
-                                summary.first_error = Some(format!("{}:{e}", m.name));
-                            }
-                        }
-                    }
-                }
-                "script" => {
-                    // plan18-③:从预跑的 script connector 输出 JSON 按
-                    // collect_query 字段路径取值。没配 script connector /
-                    // 脚本跑失败(已记 failed)→ 这里 deferred,绝不伪造观测。
-                    if script_outputs.is_empty() {
-                        summary.deferred += 1;
-                        continue;
-                    }
-                    let mut found: Option<String> = None;
-                    for out in &script_outputs {
-                        if let Some(v) = json_field_by_path(out, &m.collect_query) {
-                            let value = match v {
-                                serde_json::Value::Number(n) => n.to_string(),
-                                serde_json::Value::String(s) => s.clone(),
-                                other => other.to_string(),
-                            };
-                            found = Some(value);
-                            break;
-                        }
-                    }
-                    match found {
-                        Some(value) => {
-                            let last_ts = self.store.latest_observation_ts(m.id).await?;
-                            let same_window = last_ts.is_some_and(|t| {
-                                OffsetDateTime::from_unix_timestamp(t)
-                                    .map(|d| d.date() == today)
-                                    .unwrap_or(false)
-                            });
-                            if m.value_raw == value && same_window {
-                                summary.unchanged += 1;
-                            } else {
-                                self.store
-                                    .append_observation(m.id, SourceKind::Script, &value, now())
-                                    .await?;
-                                summary.changed += 1;
-                                touched = true;
-                            }
-                        }
-                        None => {
-                            summary.deferred += 1;
-                            if summary.first_error.is_none() {
-                                summary.first_error = Some(format!(
-                                    "{}:script 输出无字段 {}",
-                                    m.name, m.collect_query
-                                ));
-                            }
-                        }
-                    }
-                }
-                // v1 未接:bw / connector 如实留白——不采集、不写零值。
-                "bw" | "connector" => summary.deferred += 1,
-                // manual(或空 collect_kind = 界面手建)不归采集器管。
-                _ => {}
-            }
-        }
-
-        if touched {
-            self.store.recompute_signals(project, now()).await?;
-            self.emit(Event::ProjectUpdated(project));
-        }
-        Ok(summary)
-    }
-
-    /// Scan `workspace` (real `git ls-files` + `stat` + short HEAD) and
-    /// register every tracked file as an artifact version. Idempotent at the
-    /// store layer — returns only the genuinely-new count.
-    async fn scan_and_register_artifacts(
-        &self,
-        project: ProjectId,
-        workspace: &str,
-        workflow_run_id: Option<WorkflowRunId>,
-        stage_kind: Option<StageKind>,
-        issue_id: Option<IssueId>,
-    ) -> Result<u32, AppError> {
-        let files = evidence::list_workspace_files(workspace)
-            .await
-            .map_err(|e| AppError::Invalid(e.to_string()))?;
-        if files.is_empty() {
-            return Ok(0);
-        }
-        let commit = evidence::head_commit(workspace)
-            .await
-            .map_err(|e| AppError::Invalid(e.to_string()))?
-            .unwrap_or_default();
-        let registered_at = now().unix_timestamp();
-        let items = files
-            .into_iter()
-            .map(|f| NewArtifact {
-                id: ArtifactId::new(),
-                project_id: project,
-                workflow_run_id,
-                issue_id,
-                stage_kind,
-                kind: classify_artifact_path(&f.path),
-                path: f.path,
-                bytes: f.bytes,
-                git_commit: commit.clone(),
-                registered_at,
-            })
-            .collect();
-        Ok(self.store.register_artifacts(items).await?)
-    }
-
-    /// The real scheduler tick — call this on an interval (see
-    /// `app-desktop/src/kernel.rs`) to really auto-fire due cron tasks, no
-    /// click required. Reads cron tasks + hub specs fresh from the store
-    /// (never trusts a possibly-stale in-memory snapshot for a decision this
-    /// consequential), fires each task whose `bw_core::model::cron_due` says
-    /// yes, and returns which ones fired — `[]` on a quiet tick, which is
-    /// the common case and not an error.
-    ///
-    /// Deliberately does **not** touch `self.state.active_project`/`view`/
-    /// `panel`/`scope`/`active_session`: unlike the desktop UI's manual "▶
-    /// 立即执行" (which *does* navigate the caller to go watch, because a
-    /// human just asked for that), an unattended background fire must not
-    /// yank whatever project/screen the user currently has open. Real
-    /// "monitoring" here means `Event::CronAutoFired` + the cron row's own
-    /// persisted status/`last_run`, not a hijacked view.
-    ///
-    /// One task failing (a real `run_workflow_inner` error) is recorded as
-    /// `CronStatus::Failed` and does not stop the rest of this tick from
-    /// evaluating the remaining tasks.
-    pub async fn tick_scheduler(&mut self) -> Result<Vec<CronTaskId>, AppError> {
-        let now_ts = now();
-        let tasks = self.store.list_cron_tasks().await?;
-        let specs = self.store.list_workflow_specs().await?;
-        let mut fired = Vec::new();
-
-        for c in tasks {
-            if c.status != CronStatus::Normal {
-                continue; // Paused/Running/Failed never auto-fire — pause is real human intervention, honored here.
-            }
-            let Some(pid) = c.project_id else {
-                continue; // "全部项目" tasks can't resolve a single project to run in — same rule the manual trigger's `can_run` check uses.
-            };
-            if !cron_due(&c.schedule, c.last_run_at, now_ts) {
-                continue;
-            }
-
-            // A1: autopilot — a create_issue task mints a stage-scoped Issue
-            // (Todo, optionally assigned) instead of running a workflow. No-hijack
-            // by construction: this branch never calls run_workflow_inner.
-            if c.mode == CronMode::CreateIssue {
-                let Some(stage) = c.issue_stage else {
-                    continue; // misconfigured — no stage to scope the Issue to
-                };
-                self.store
-                    .record_cron_run(c.id, CronStatus::Running, run_at_label(now_ts))
-                    .await?;
-                let res = self
-                    .autopilot_fire(pid, &c.name, stage, c.issue_assignee.as_deref(), now_ts)
-                    .await;
-                let (ok, status) = match &res {
-                    Ok(_) => (true, CronStatus::Normal),
-                    Err(_) => (false, CronStatus::Failed),
-                };
-                self.store
-                    .record_cron_run(c.id, status, run_at_label(now()))
-                    .await?;
-                self.refresh_cron_tasks().await?;
-                self.refresh_issues().await?;
-                self.emit(Event::CronTasksChanged);
-                self.emit(Event::IssuesChanged);
-                self.emit(Event::CronAutoFired {
-                    id: c.id,
-                    name: c.name.clone(),
-                    ok,
-                });
-                fired.push(c.id);
-                continue;
-            }
-
-            // C7: the standard collector — pull real data into the project's
-            // metrics as append-only observations. No-hijack by construction:
-            // this branch never calls run_workflow_inner, never settles
-            // anything — collecting is observation, not work, so an unattended
-            // auto-fire can't breach 「Done 永不自动」.
-            if c.mode == CronMode::CollectMetrics {
-                self.store
-                    .record_cron_run(c.id, CronStatus::Running, run_at_label(now_ts))
-                    .await?;
-                let res = self.collect_project_metrics(pid).await;
-                let (ok, status) = match &res {
-                    Ok(s) => (s.failed == 0 && !s.no_remote_github, CronStatus::Normal),
-                    Err(_) => (false, CronStatus::Failed),
-                };
-                self.store
-                    .record_cron_run(c.id, status, run_at_label(now()))
-                    .await?;
-                self.refresh_cron_tasks().await?;
-                self.emit(Event::CronTasksChanged);
-                self.emit(Event::CronAutoFired {
-                    id: c.id,
-                    name: c.name.clone(),
-                    ok,
-                });
-                fired.push(c.id);
-                continue;
-            }
-
-            // T10 (plan/12 §5): RunSkill / RunPrompt — both really execute,
-            // through the identical run_workflow_inner engine/executor path
-            // the RunWorkflow branch below uses, against a single ad-hoc
-            // prompt (`cron_prompt_workflow`) instead of a real hub
-            // workflow's phases. Resolved fresh on every fire, never cached:
-            // a RunSkill task whose skill was deleted since creation fails
-            // honestly right here — no crash, no silent no-op, no fabricated
-            // success.
-            let adhoc_spec = match &c.mode {
-                CronMode::RunSkill { skill_id } => {
-                    Some(match self.store.get_skill(*skill_id).await? {
-                        Some(skill) => Ok(cron_prompt_workflow(
-                            format!("⚙ 定时技能 · {}", skill.name),
-                            skill.content.clone(),
-                        )),
-                        None => Err("引用的技能已删除".to_string()),
-                    })
-                }
-                CronMode::RunPrompt { prompt } => Some(Ok(cron_prompt_workflow(
-                    format!("💬 定时 Prompt · {}", c.name),
-                    prompt.clone(),
-                ))),
-                _ => None,
-            };
-
-            if let Some(adhoc_spec) = adhoc_spec {
-                self.store
-                    .record_cron_run(c.id, CronStatus::Running, run_at_label(now_ts))
-                    .await?;
-                self.refresh_cron_tasks().await?;
-                self.emit(Event::CronTasksChanged);
-
-                let ok = match adhoc_spec {
-                    Err(reason) => {
-                        // Nothing to execute (referenced skill gone) — an
-                        // honest failed fire, recorded as a real workflow_run
-                        // row so CronEffectiveness reflects it exactly like an
-                        // engine failure would (settle-once, never a
-                        // fabricated success or a silently skipped fire).
-                        let started_at = OffsetDateTime::now_utc().unix_timestamp();
-                        let run_id = self
-                            .store
-                            .record_workflow_run_start(bw_store::NewWorkflowRun {
-                                workflow_id: WorkflowId::new(),
-                                workflow_name: &c.name,
-                                project_id: Some(pid),
-                                session_id: None,
-                                trigger: RunTrigger::Scheduled,
-                                started_at,
-                                cron_task_id: Some(c.id),
-                                params_json: "",
-                            })
-                            .await?;
-                        self.store
-                            .settle_workflow_run(
-                                run_id,
-                                RunStatus::Failed,
-                                OffsetDateTime::now_utc().unix_timestamp(),
-                                0,
-                                0,
-                                &reason,
-                            )
-                            .await?;
-                        false
-                    }
-                    Ok(spec) => {
-                        let session = SessionId::new();
-                        self.store
-                            .ensure_session(NewSession {
-                                id: session,
-                                project_id: pid,
-                                stage_kind: None,
-                                kind: SessionKind::Optimize,
-                                title: format!("⏰ 定时触发 · {}", c.name),
-                                snippet: String::new(),
-                            })
-                            .await?;
-                        let result = self
-                            .run_workflow_inner(
-                                pid,
-                                session,
-                                spec,
-                                RunTrigger::Scheduled,
-                                Some(c.id),
-                                None,
-                                false,
-                                None,
-                            )
-                            .await;
-                        matches!(result, Ok(RunOutcome::Completed))
-                    }
-                };
-
-                let outcome = if ok {
-                    CronStatus::Normal
-                } else {
-                    CronStatus::Failed
-                };
-                self.store
-                    .record_cron_run(c.id, outcome, run_at_label(now()))
-                    .await?;
-                self.refresh_cron_tasks().await?;
-                self.emit(Event::CronTasksChanged);
-                self.emit(Event::CronAutoFired {
-                    id: c.id,
-                    name: c.name.clone(),
-                    ok,
-                });
-                fired.push(c.id);
-                continue;
-            }
-
-            let Some(spec) = specs.iter().find(|w| w.name == c.target).cloned() else {
-                continue; // target doesn't (yet) name a real hub workflow — same rule as the manual trigger.
-            };
-
-            self.store
-                .record_cron_run(c.id, CronStatus::Running, run_at_label(now_ts))
-                .await?;
-            self.refresh_cron_tasks().await?;
-            self.emit(Event::CronTasksChanged);
-
-            let session = SessionId::new();
-            self.store
-                .ensure_session(NewSession {
-                    id: session,
-                    project_id: pid,
-                    stage_kind: spec
-                        .stage_ref
-                        .and_then(|n| StageKind::ALL.into_iter().find(|s| s.index() == n)),
-                    kind: SessionKind::Optimize,
-                    title: format!("⏰ 定时触发 · {}", c.name),
-                    snippet: String::new(),
-                })
-                .await?;
-            self.store.record_workflow_use(spec.id).await?;
-            self.refresh_workflow_specs().await?;
-
-            let result = self
-                .run_workflow_inner(
-                    pid,
-                    session,
-                    spec,
-                    RunTrigger::Scheduled,
-                    Some(c.id),
-                    None,
-                    false,
-                    None,
-                )
-                .await;
-            // A scheduled run "succeeds" only when the workflow actually passed.
-            // A hit review cap (`BlockedAtCap`) has no bound Issue to park here
-            // (cron RunWorkflow passes `issue_id = None`) — its honest per-round
-            // rows already record "上限未通过", so we surface it as Failed rather
-            // than a fake green (no fabricated Issue — plan/12 §4).
-            let ok = matches!(result, Ok(RunOutcome::Completed));
-            let outcome = if ok {
-                CronStatus::Normal
-            } else {
-                CronStatus::Failed
-            };
-            self.store
-                .record_cron_run(c.id, outcome, run_at_label(now()))
-                .await?;
-            self.refresh_cron_tasks().await?;
-            self.emit(Event::CronTasksChanged);
-            self.emit(Event::CronAutoFired {
-                id: c.id,
-                name: c.name.clone(),
-                ok,
-            });
-
-            fired.push(c.id);
-        }
-        Ok(fired)
-    }
-
-    /// A1: the create_issue cron path — mint a stage-scoped Issue (Todo,
-    /// optionally assigned by name). No-hijack: never runs a workflow. A missing
-    /// named agent is an honest unassigned Issue, not a failure.
-    async fn autopilot_fire(
-        &mut self,
-        project: ProjectId,
-        name: &str,
-        stage: StageKind,
-        assignee: Option<&str>,
-        fired_at: OffsetDateTime,
-    ) -> Result<IssueId, AppError> {
-        let issue_id = IssueId::new();
-        let title = format!("[auto] {name}");
-        let desc = format!(
-            "Autopilot 建单(定时任务「{name}」于 {} 触发,{} 阶段)。",
-            run_at_label(fired_at),
-            stage.label()
-        );
-        self.store
-            .create_issue(NewIssue {
-                id: issue_id,
-                project_id: project,
-                stage,
-                title: title.clone(),
-                desc: desc.clone(),
-                priority: IssuePriority::Medium,
-                standard_skill: String::new(),
-            })
-            .await?;
-        // C4: Autopilot/cron 建单同样过身份映射 —— 建单入口不止手动创建一
-        // 处,漏一条就是"手动建的有号、定时建的没号"的诚实性缺口。announce=
-        // false(plan/14 C14 范围收敛):Autopilot 建单不在本票覆盖的创建流
-        // 动作里,行为一个字节不变。
-        self.sync_issue_to_github(project, issue_id, &title, &desc, false)
-            .await?;
-        // Todo (committed work), not Backlog (the parking lot) — autopilot建单
-        // is a commitment, and Backlog is the suppress-firing pile in multica.
-        self.store
-            .transition_issue(issue_id, IssueStatus::Todo)
-            .await?;
-        // Assign by name if the named agent exists — honest 0-match otherwise.
-        if let Some(agent_name) = assignee {
-            if let Some(agent) = self
-                .store
-                .list_agents()
-                .await?
-                .into_iter()
-                .find(|a| a.name == agent_name)
-            {
-                self.store.assign_issue(issue_id, Some(agent.id)).await?;
-            }
-        }
-        Ok(issue_id)
-    }
-
-    /// **The self-driving optimization loop (iter 18).** Runs the full
-    /// measure→propose→gate cycle over every hub workflow, once. This is the
-    /// engine the goal asked for: "通过不断的执行 schedule 的 workflow 来优化
-    /// workflow 本身" — a cron task can fire this on a cadence (iter 22 wires
-    /// that) so the hub keeps optimizing *itself* without a click.
-    ///
-    /// What it does, per workflow:
-    ///   1. **Measure** — fetch real analytics + usage rank + the run log +
-    ///      cron effectiveness (every number read from the store, none
-    ///      invented).
-    ///   2. **Propose** — `analysis::propose_optimizations` turns the evidence
-    ///      into ranked, grounded suggestions.
-    ///   3. **Gate** — `analysis::review_proposal` decides AutoApply /
-    ///      DeferToHuman / Reject under the default policy (the autonomy dial).
-    ///      Only the *positive* kind auto-applies; everything content-changing
-    ///      or destructive defers to a human.
-    ///   4. **Report** — returns what was considered, what was auto-applied,
-    ///      what needs a human. Emits `OptimizationCycleReported`.
-    ///
-    /// It deliberately does **not** rewrite specs or retire workflows on its
-    /// own — that's the safety design from iter 13. The loop's autonomy is
-    /// bounded: it measures relentlessly, proposes honestly, and acts only on
-    /// the safe-positive.
-    pub async fn run_optimization_cycle(&mut self) -> Result<OptimizationReport, AppError> {
-        use bw_core::analysis::{propose_optimizations, review_proposal, ApplyPolicy};
-
-        let policy = ApplyPolicy::default();
-        let specs = self.store.list_workflow_specs().await?;
-        let ranking = self.store.hub_usage_ranking().await?;
-        let cron_tasks = self.store.list_cron_tasks().await?;
-        let mut scanned = 0u32;
-        let mut proposals = 0u32;
-        let mut auto_applied = Vec::new();
-        let mut defer_to_human = Vec::new();
-        let mut rejected = 0u32;
-
-        for spec in &specs {
-            scanned += 1;
-            let mut analytics = self.store.workflow_analytics(spec.id).await?;
-            // A cold workflow has no runs, so analytics.workflow_name reads
-            // back empty — fill it from the spec so proposals name it honestly.
-            if analytics.workflow_name.is_empty() {
-                analytics.workflow_name = spec.name.clone();
-            }
-            let usage = ranking
-                .iter()
-                .find(|r| r.workflow_id == spec.id)
-                .cloned()
-                .unwrap_or_else(|| bw_core::model::UsageRank {
-                    workflow_id: spec.id,
-                    workflow_name: spec.name.clone(),
-                    stage_ref: spec.stage_ref,
-                    total_runs: 0,
-                    ok_runs: 0,
-                    failed_runs: 0,
-                    success_rate: None,
-                    last_run_at: None,
-                    cold: true,
-                });
-            let runs = self.store.list_workflow_runs(spec.id).await?;
-            let failures = bw_core::analysis::failure_modes(&runs);
-            // Cron effectiveness: a task targeting this workflow contributes
-            // its real scheduled-fire track record to the proposal inputs.
-            let cron_eff = match cron_tasks.iter().find(|c| c.target == spec.name) {
-                Some(c) => Some(self.store.cron_effectiveness(c.id).await?),
-                None => None,
-            };
-            let ps = propose_optimizations(&analytics, &usage, &failures, cron_eff.as_ref());
-            for p in ps {
-                proposals += 1;
-                let settled = analytics.ok_runs + analytics.failed_runs;
-                match review_proposal(&p, settled, &policy) {
-                    bw_core::analysis::ApplyDecision::AutoApply => {
-                        auto_applied.push(p.title);
-                    }
-                    bw_core::analysis::ApplyDecision::DeferToHuman(_) => {
-                        defer_to_human.push(p.title);
-                    }
-                    bw_core::analysis::ApplyDecision::Reject(_) => {
-                        rejected += 1;
-                    }
-                }
-            }
-        }
-        let report = OptimizationReport {
-            scanned,
-            proposals,
-            auto_applied,
-            defer_to_human,
-            rejected,
-        };
-        self.emit(Event::OptimizationCycleReported {
-            report: report.clone(),
-        });
-        Ok(report)
-    }
-
-    /// plan/17 S1+S3: entry guard + lifecycle for the same-project serial
-    /// run lock (`AppState::active_run`). Backgrounded path (`settle_tx`
-    /// wired — the desktop kernel): `run_issue_backgrounded` sets
-    /// `active_run` after the 起手 prefix succeeds and returns immediately;
-    /// the kernel's settle arm later drives `run_issue_settle`, which clears
-    /// it. Inline path (`settle_tx` = None — examples / headless drivers):
-    /// `run_issue_body` runs the whole run inline; the `await` already
-    /// serializes, so `active_run` stays `None` (dormant). Both callers
-    /// (`Command::RunIssue` and C8 「立即开工」) route here, so the lock
-    /// applies uniformly.
-    async fn run_issue_now(&mut self, session: SessionId, id: IssueId) -> Result<(), AppError> {
-        // Fail fast on a same-project in-flight run before touching anything.
-        let p = self
-            .store
-            .get_issue(id)
-            .await?
-            .ok_or(AppError::NotFound)?
-            .project_id;
-        if let Some(ar) = &self.state.active_run {
-            if ar.project == p {
-                return Err(AppError::Invalid(
-                    "该项目有活正在跑，等它到评审中/干完再开下一张".into(),
-                ));
-            }
-        }
-        if self.settle_tx.is_some() {
-            self.run_issue_backgrounded(session, id).await
-        } else {
-            self.run_issue_body(session, id).await
-        }
-    }
-
-    /// plan/17 S3: the shared 起手 prefix of an issue-run — get + validate
-    /// the Issue, build the stage-playbook `WorkflowSpec` (+ standard /
-    /// distilled skill injection), transition to InProgress (refresh + emit),
-    /// and provision the isolated issue worktree behind an RAII guard.
-    /// `&mut self` (transition + refresh), but returns FAST — the long round
-    /// loop is NOT here. Both the inline path (`run_issue_body`) and the
-    /// backgrounded path (`run_issue_backgrounded`) start here, so the
-    /// spec / worktree / guard setup is never duplicated.
-    async fn prepare_issue_run(&mut self, id: IssueId) -> Result<IssueRunPrep, AppError> {
-        let issue = self.store.get_issue(id).await?.ok_or(AppError::NotFound)?;
-        // A5-F: only work not yet settled/parked/under-review/blocked
-        // can be (re)started this way. InProgress is a legal starting
-        // point too — it's the retry path after an honest failure
-        // (the issue stays InProgress on error, never faked forward).
-        if !matches!(
-            issue.status,
-            IssueStatus::Backlog | IssueStatus::Todo | IssueStatus::InProgress
-        ) {
-            return Err(AppError::Invalid(format!(
-                "#{} 处于{},不能直接运行",
-                issue.number,
-                issue.status.label()
-            )));
-        }
-        let p = issue.project_id;
-        let proj = self.store.get_project(p).await?.ok_or(AppError::NotFound)?;
-
-        // Same stage-playbook scaffolding as RunStagePlaybook (fills the
-        // role preamble + real project context), then the issue is
-        // stamped on top so the agent runs its stage methodology against
-        // THIS concrete work item.
-        let handoff_note = self
-            .store
-            .list_handoffs(p)
-            .await?
-            .first()
-            .map(|h| h.note.clone())
-            .unwrap_or_default();
-        let workspace_hint = if proj.workspace_path.trim().is_empty() {
-            "（未配置真实工作区 —— 本次运行在 MockExecutor 上,产出仅为流程演示）".to_string()
-        } else {
-            format!(
-                "工作区 {}（git 仓库）。产出落于此;先查看现状再动手。",
-                proj.workspace_path.trim()
-            )
-        };
-        let ctx = bw_core::playbook::PlaybookCtx {
-            project_name: proj.name.clone(),
-            project_kind: proj.kind.clone(),
-            project_desc: proj.desc.clone(),
-            benchmark: proj.benchmark.clone(),
-            opportunity: proj.opportunity.clone(),
-            north_star: proj.north_star.clone(),
-            ns_def: proj.ns_def.clone(),
-            handoff_note,
-            workspace_hint,
-        };
-        let mut spec = stage_workflow_with_playbook(issue.stage, &ctx);
-        let issue_brief = format!(
-            "\n\n## 本件活(Issue #{})\n标题:{}\n描述:{}\n请用本阶段方法论完成它,产出落为工作区真实文件。\n",
-            issue.number, issue.title, issue.desc
-        );
-        // C8 · plan/13 D8: 标配 Issue 携带的稳定 Skill 关联(按 C9+C10 种下
-        // 的 slug)。理论上仍可能查不到(例如 seed 尚未跑过的极早期状态),
-        // 那种情况如实跳过、零报错,不是本注入路径的正常状态。
-        let (standard_block, standard_refs) =
-            self.standard_skill_block(&issue.standard_skill).await?;
-        // Distilled (compounded) skills from this project, same-stage
-        // preferred, capped at 3. Exclude `issue.standard_skill` by name —
-        // since P3 a distilled skill can itself be picked as the standard
-        // slug, and without the exclusion it would double-count (see
-        // `distilled_skills_block`'s doc comment).
-        let (distilled_block, distilled_refs) = self
-            .distilled_skills_block(p, issue.stage, &issue.standard_skill)
-            .await?;
-        spec.name = format!("#{} {}", issue.number, issue.title);
-        let extra = format!("{issue_brief}{standard_block}{distilled_block}");
-        // 既有缺口(C8 顺带修复,非本票新增行为):`stage_workflow_with_playbook`
-        // 给每个 phase 都填了非空的 `phase_prompts[idx]`,而
-        // `Engine::run_workflow` 选 phase 的真实 prompt 时——`phase_prompts
-        // [idx]` 非空就直接用它,完全不读 `spec.prompt`(见
-        // bw-engine/src/lib.rs `run_workflow`)。之前这里只改了
-        // `spec.prompt`,对 playbook 跑法是死代码:issue 简介/复利技能从未
-        // 真正到达执行器。把 `extra` 同时贴进每个 `phase_prompts` 项才是真
-        // 注入;`spec.prompt` 仍然一并更新,兜底任何理论上仍为空的 phase。
-        spec.prompt = format!("{}{}", spec.prompt, extra);
-        for pp in spec.phase_prompts.iter_mut() {
-            pp.push_str(&extra);
-        }
-        // Put the injected skills on spec.skills so run_workflow_inner's
-        // usage accounting bumps each one's `uses` — the compounding
-        // loop closes here (a run that rides a distilled/standard skill →
-        // uses+1, exactly once per ref present).
-        spec.skills.extend(standard_refs);
-        spec.skills.extend(distilled_refs);
-
-        // Start: commit to the work (Backlog/Todo → InProgress). A
-        // retry (issue already InProgress from a prior failed run)
-        // skips this — X→X is not a legal table edge, and there's
-        // nothing to change anyway.
-        if issue.status != IssueStatus::InProgress {
-            self.store
-                .transition_issue(id, IssueStatus::InProgress)
-                .await?;
-            self.refresh_issues().await?;
-            self.emit(Event::IssuesChanged);
-        }
-
-        // C5 · PR 验收环 (plan/13 D3): a repo-attached, GitHub-mapped
-        // Issue quarantines the run onto `bw/issue-<n>` BEFORE the
-        // executor touches anything, so the executor never advances the
-        // base branch — only a human merge does. No-repo / unmapped
-        // projects (`pr_eligible` false) never touch git here → today's
-        // behavior byte-for-byte. A branch-checkout failure degrades
-        // honestly: the run proceeds on the current branch, no PR is
-        // opened (提 PR 失败不炸 run).
-        let pr_eligible = !proj.remote_path.trim().is_empty()
-            && issue.github_number != 0
-            && !proj.workspace_path.trim().is_empty();
-        // plan/17 S2: isolate this run in its own git worktree off the main
-        // workspace (master), so concurrent/back-to-back issue runs in one
-        // project never collide on the shared working tree. Main workspace
-        // stays on master; only this worktree carries `bw/issue-<n>`. A
-        // provisioning failure degrades honestly (run on main workspace, no
-        // PR) — same fallback shape as the old `checkout_issue_branch` path,
-        // just isolated when it succeeds.
-        let issue_ws: Option<PathBuf> = if pr_eligible {
-            match bw_engine::workspace::provision_issue_worktree(
-                std::path::Path::new(proj.workspace_path.trim()),
-                issue.github_number,
-            )
-            .await
-            {
-                Ok(p) => Some(p),
-                Err(e) => {
-                    self.emit(Event::ConnectorSynced {
-                        name: format!("#{} · 活分支", issue.number),
-                        ok: false,
-                        detail: format!("开 issue worktree 失败,本次运行在主工作区、不提 PR:{e}"),
-                    });
-                    None
-                }
-            }
-        } else {
-            None
-        };
-        // RAII: remove the worktree on EVERY exit path (early `?`/Ok/Err/
-        // panic). The branch stays on `origin` (pushed by `stage_commit_push`)
-        // for review/merge — only the local working dir is dropped. The
-        // caller owns the guard so it lives as long as the run needs it.
-        let guard = bw_engine::workspace::IssueWorktreeGuard::new(
-            PathBuf::from(proj.workspace_path.trim()),
-            issue_ws.clone(),
-        );
-
-        Ok(IssueRunPrep {
-            issue,
-            proj,
-            spec,
-            issue_ws,
-            pr_eligible,
-            guard,
-        })
-    }
-
-    /// plan/17 S3: the shared tail of an issue-run — `create_mr` /
-    /// `transition InReview` / `refresh_issues` / emit, branching on the run
-    /// outcome. `Ok(Completed)` → InReview (iff a PR opened or the issue
-    /// isn't PR-eligible); `Ok(BlockedAtCap)` → park Blocked; `Err` → stay
-    /// InProgress (never auto-Done, 铁律). The guard is taken BY VALUE so it
-    /// outlives the tail's `create_mr` (which `stage_commit_push`es the
-    /// worktree) and drops at the end — removing the worktree only AFTER the
-    /// branch is pushed to `origin` for review/merge.
-    async fn issue_run_tail(
-        &mut self,
-        issue: Issue,
-        proj: ProjectRow,
-        issue_ws: Option<PathBuf>,
-        pr_eligible: bool,
-        run: Result<RunOutcome, AppError>,
-        _guard: bw_engine::workspace::IssueWorktreeGuard,
-    ) -> Result<(), AppError> {
-        let id = issue.id;
-        let on_issue_branch = issue_ws.is_some();
-        match run {
-            // A completed run only reaches 评审中 — never 完成. Done stays an
-            // explicit human act (merge / TransitionIssue,铁律).
-            Ok(RunOutcome::Completed) => {
-                // C5: on the issue branch → try to open the PR (提 PR).
-                // Success stores the PR number and lets the Issue reach
-                // InReview (which now *derives from an open PR*, D3).
-                // Failure fires an honest toast and leaves the Issue at
-                // InProgress — retryable via RunIssue, never faked into
-                // review with no PR behind it.
-                let opened_pr = if on_issue_branch {
-                    // Bug③ (2026-07-30): route PR/MR creation through the
-                    // Remote factory so codehub projects open a codehub MR
-                    // (`codehub-cli mr create`) instead of crashing `gh pr
-                    // create` (gh doesn't know codehub → issue stuck
-                    // InProgress, no InReview, SyncMetricsFile never ran).
-                    // Github projects delegate to `github::open_pr` unchanged.
-                    let remote = bw_engine::remote::Remote::for_project(
-                        &proj.provider,
-                        &proj.remote_host,
-                        &proj.remote_path,
-                    );
-                    let res: Result<bw_engine::github::PrOpened, String> = match remote {
-                        Ok(r) => r
-                            .create_mr(
-                                // plan/17 S2: open the MR from the issue's
-                                // isolated worktree (guaranteed Some by
-                                // `on_issue_branch`), not the shared main
-                                // workspace — `stage_commit_push` inside
-                                // commits the worktree's edits to `bw/issue-N`.
-                                issue_ws.as_deref().unwrap_or_else(|| {
-                                    std::path::Path::new(proj.workspace_path.trim())
-                                }),
-                                issue.github_number,
-                                &issue.title,
-                            )
-                            .await
-                            .map_err(|e| e.to_string()),
-                        Err(e) => Err(e.to_string()),
-                    };
-                    match res {
-                        Ok(bw_engine::github::PrOpened::Created(pr)) => {
-                            self.store.set_issue_pr_number(id, pr).await?;
-                            self.emit(Event::ConnectorSynced {
-                                name: format!("#{} · PR", issue.number),
-                                ok: true,
-                                detail: format!(
-                                    "已提 PR/MR #{pr}(关联 Issue #{}),等待人工 merge 验收",
-                                    issue.github_number
-                                ),
-                            });
-                            true
-                        }
-                        // 7A(真实践行暴露的缺口): 队友自己在 run 里跑了
-                        // `gh pr create`(允许,禁的只有 `gh pr merge`),BW
-                        // 再提一次时撞见"已存在"——不是失败,是提 PR 幂等。
-                        // 认领到的号是 `open_pr` 独立读回的真实号,诚实告知
-                        // 用户"这是认领来的",不混同成 BW 自己提的。
-                        Ok(bw_engine::github::PrOpened::Adopted(pr)) => {
-                            self.store.set_issue_pr_number(id, pr).await?;
-                            self.emit(Event::ConnectorSynced {
-                                name: format!("#{} · PR", issue.number),
-                                ok: true,
-                                detail: format!(
-                                    "已认领队友提的 PR/MR #{pr}(关联 Issue #{}),等待人工 merge 验收",
-                                    issue.github_number
-                                ),
-                            });
-                            true
-                        }
-                        Err(e) => {
-                            self.emit(Event::ConnectorSynced {
-                                name: format!("#{} · PR", issue.number),
-                                ok: false,
-                                detail: format!("提 PR/MR 失败,活留在进行中可重试:{e}"),
-                            });
-                            false
-                        }
-                    }
-                } else {
-                    false
-                };
-                // InReview iff there's really something to review: an
-                // open PR (pr issues), or — for no-repo/unmapped issues
-                // — the run succeeding (今天的意思,未变). A
-                // pr_eligible issue whose PR failed stays InProgress.
-                if !pr_eligible || opened_pr {
-                    self.store
-                        .transition_issue(id, IssueStatus::InReview)
-                        .await?;
-                }
-                self.refresh_issues().await?;
-                self.emit(Event::IssuesChanged);
-                Ok(())
-            }
-            Ok(RunOutcome::BlockedAtCap { reason }) => {
-                // T9 (plan/12 §4,合流移植): the adversarial loop hit its cap
-                // without passing. Never auto-Done, never auto-Failed: park the
-                // work in Blocked via the SAME guarded path `BlockIssue` uses —
-                // `can_transition_to` is the single source of truth. Re-read
-                // the current status (the run left it InProgress);
-                // InProgress→Blocked is a legal edge. 不提 PR:没通过评审门的
-                // 产出不该进验收队列。
-                let cur = self.store.get_issue(id).await?.ok_or(AppError::NotFound)?;
-                if cur.status.can_transition_to(IssueStatus::Blocked) {
-                    self.store.block_issue(id, &reason).await?;
-                }
-                self.emit(Event::WorkflowFailed(format!(
-                    "Issue #{} {}",
-                    issue.number, reason
-                )));
-                self.refresh_issues().await?;
-                self.emit(Event::IssuesChanged);
-                Ok(())
-            }
-            Err(e) => {
-                // Honest failure: the issue stays InProgress (not faked
-                // to InReview/Done/Blocked). Done remains a human
-                // TransitionIssue; a retry re-runs from InProgress.
-                self.emit(Event::WorkflowFailed(format!(
-                    "Issue #{} 运行失败:{}",
-                    issue.number, e
-                )));
-                self.refresh_issues().await?;
-                self.emit(Event::IssuesChanged);
-                Err(e)
-            }
-        }
-    }
-
-    /// A3: INLINE issue-run path (examples / headless drivers — `settle_tx`
-    /// = None). `prepare_issue_run` → `run_workflow_inner` (起手+loop+
-    /// finalize, awaited inline) → `issue_run_tail`. Byte-for-byte the
-    /// pre-S3 behavior: the whole run completes before `dispatch(RunIssue)`
-    /// returns, so every example that awaits a `RunIssue` dispatch still
-    /// reads back a settled Issue. Extracted out of `Command::RunIssue`'s
-    /// match arm so `Command::CompleteCreation`'s「问一句就跑」(C8) can call
-    /// the exact same real path, not a parallel shortcut. See
-    /// `Command::RunIssue`'s doc for the state-machine contract (InProgress
-    /// at start, InReview on success via the PR-derive rule, never auto-Done).
-    async fn run_issue_body(&mut self, session: SessionId, id: IssueId) -> Result<(), AppError> {
-        let prep = self.prepare_issue_run(id).await?;
-        let IssueRunPrep {
-            issue,
-            proj,
-            spec,
-            issue_ws,
-            pr_eligible,
-            guard,
-        } = prep;
-        let p = issue.project_id;
-        let run = self
-            .run_workflow_inner(
-                p,
-                session,
-                spec,
-                RunTrigger::Manual,
-                None,
-                Some(id),
-                false,
-                issue_ws.as_deref(),
-            )
-            .await;
-        self.issue_run_tail(issue, proj, issue_ws, pr_eligible, run, guard)
-            .await
-    }
-
-    /// plan/17 S3: the BACKGROUNDED issue-run path (`settle_tx` wired — the
-    /// desktop kernel). Same 起手 prefix (`prepare_issue_run`) then
-    /// `prepare_run` (起手 of `run_workflow_inner`, `&self` only) on the
-    /// main thread — so InProgress + RunStarted emit + worktree provisioning
-    /// all land before dispatch returns and the UI re-renders. Then
-    /// `tokio::spawn` the long round loop (it only ever touched `self.store`
-    /// / `self.emit` / `engine` — shared borrows — so it needs NO `&mut
-    /// App`, the whole point of the freeze fix). The spawn reports back via
-    /// the settle mpsc; `run_issue_settle` (kernel settle arm) drives
-    /// `finalize_run` + tail under `&mut self`. The same-project serial lock
-    /// becomes real here — `active_run` stays `Some` across dispatch returns.
-    async fn run_issue_backgrounded(
-        &mut self,
-        session: SessionId,
-        id: IssueId,
-    ) -> Result<(), AppError> {
-        let prep = self.prepare_issue_run(id).await?;
-        let p = prep.issue.project_id;
-        let IssueRunPrep {
-            issue,
-            proj,
-            spec,
-            issue_ws,
-            pr_eligible,
-            guard,
-        } = prep;
-        let prepared = self
-            .prepare_run(
-                p,
-                session,
-                spec,
-                RunTrigger::Manual,
-                None,
-                Some(id),
-                false,
-                issue_ws.as_deref(),
-            )
-            .await?;
-        // Destructure everything `run_round_loop` + `finalize_run` need out
-        // of `prepared`. The engine moves into the spawn (owned); `spec` is
-        // cloned for the spawn because `finalize_run` (main thread, after
-        // settle) also needs `spec.agents` / `spec.skills` / `spec.stage_ref`.
-        let PreparedRun {
-            engine,
-            spec,
-            ctx,
-            params_json,
-            eval_idx,
-            num_phases,
-            max_iter,
-            range_end,
-            heads_workspace,
-            head_before,
-            proj: prepared_proj,
-            p: _prepared_p,
-            session: _prepared_session,
-            issue_id: prepared_issue_id,
-            trigger,
-            cron_task_id,
-        } = prepared;
-        let spec_spawn = spec.clone();
-        let params_json_spawn = params_json.clone();
-        let store = self.store.clone();
-        let live = self.events.clone();
-        let settle_tx = self
-            .settle_tx
-            .clone()
-            .expect("run_issue_backgrounded only called when settle_tx is Some");
-        let handle = tokio::spawn(async move {
-            let outcome = Self::run_round_loop(
-                store,
-                live,
-                &engine,
-                &spec_spawn,
-                &ctx,
-                session,
-                p,
-                prepared_issue_id,
-                trigger,
-                cron_task_id,
-                &params_json_spawn,
-                eval_idx,
-                num_phases,
-                max_iter,
-                range_end,
-            )
-            .await;
-            let _ = settle_tx.send(SettleReq {
-                project: p,
-                issue: id,
-                outcome,
-            });
-        });
-        self.state.active_run = Some(ActiveRun {
-            project: p,
-            issue,
-            handle,
-            guard,
-            finalize: FinalizeCtx {
-                spec,
-                heads_workspace,
-                head_before,
-                proj: prepared_proj,
-                p,
-                issue_id: prepared_issue_id,
-            },
-            proj,
-            issue_ws,
-            pr_eligible,
-        });
-        Ok(())
-    }
-
-    /// plan/17 S3: settle a backgrounded issue-run on the main thread. Called
-    /// by the kernel's settle arm when the spawned round loop reports back.
-    /// `take()` is the double-settle guard: a `CancelRun` that already
-    /// cleared `active_run` makes a late-arriving completion a no-op (and
-    /// vice-versa — the first of cancel/completion to take `active_run` wins,
-    /// the other is an honest no-op). `finalize_run` reads `head_after` from
-    /// the worktree (guard still alive in `ar`), then the tail's `create_mr`
-    /// commits the worktree — guard drops only AFTER both, at the end of
-    /// `issue_run_tail`.
-    pub async fn run_issue_settle(&mut self, req: SettleReq) -> Result<(), AppError> {
-        let Some(ar) = self.state.active_run.take() else {
-            // Already settled (cancel raced ahead, or a stale req for a run
-            // whose settle already ran). Honest no-op.
-            return Ok(());
-        };
-        if ar.issue.id != req.issue || ar.project != req.project {
-            // Not this run — restore and ignore (a different run is in flight;
-            // this req is a straggler from a prior one).
-            self.state.active_run = Some(ar);
-            return Ok(());
-        }
-        // `Err` = `?`-early-bail mid-round (a store error before any settle) —
-        // skip finalize (the round's row stays started-never-settled, honest),
-        // mirror the inline path's early-return. `Ok` = normal loop terminal
-        // → finalize_run does the once-per-run accounting.
-        let outcome = match req.outcome {
-            Ok((end, last_run_log, final_run_ok)) => {
-                self.finalize_run(
-                    &ar.finalize.spec,
-                    &ar.finalize.heads_workspace,
-                    &ar.finalize.head_before,
-                    &ar.finalize.proj,
-                    ar.finalize.p,
-                    ar.finalize.issue_id,
-                    end,
-                    last_run_log,
-                    final_run_ok,
-                )
-                .await
-            }
-            Err(e) => Err(e),
-        };
-        self.issue_run_tail(
-            ar.issue,
-            ar.proj,
-            ar.issue_ws,
-            ar.pr_eligible,
-            outcome,
-            ar.guard,
-        )
-        .await
-    }
-
-    /// plan/17 S3 (① 中止): abort the in-flight backgrounded run on an issue.
-    /// `abort` the `JoinHandle` (the engine's child `claude` subprocess is
-    /// killed via `kill_on_drop`), then run the honest failure tail — the
-    /// issue STAYS `InProgress` (retryable), `settled_at` stays empty (no
-    /// auto-Done, 铁律), the worktree is torn down (guard drops). No
-    /// `finalize_run` accounting: the aborted round's `workflow_run` row stays
-    /// "started, never settled" (honest), and agent/skill `uses` are NOT
-    /// bumped — a cancelled run did not complete, so not counting it as a use
-    /// is the honest call (偏差 vs the normal `Failed` path which does
-    /// finalize with `run_ok=false`; noted in the commit). A normal
-    /// completion that already sent a settle req is a no-op here (`active_run`
-    /// already taken / being taken by the settle arm).
-    async fn cancel_run(&mut self, id: IssueId) -> Result<(), AppError> {
-        let Some(ar) = self.state.active_run.take() else {
-            return Ok(()); // no in-flight run — nothing to cancel
-        };
-        if ar.issue.id != id {
-            // Wrong issue — restore and leave it in flight.
-            self.state.active_run = Some(ar);
-            return Ok(());
-        }
-        ar.handle.abort(); // drop the spawned round-loop future → kill_on_drop
-        self.emit(Event::WorkflowFailed(format!(
-            "Issue #{} 已中止",
-            ar.issue.number
-        )));
-        // The abort already succeeded — `active_run` was cleared by `take()`
-        // above and the guard will clean the worktree when `ar` drops at fn
-        // exit. A `refresh_issues` failure here is NOT the user's cancel
-        // failing (and `state.issues` already shows InProgress, which is the
-        // honest post-cancel state), so swallow it rather than surface a
-        // misleading "cancel failed" toast.
-        let _ = self.refresh_issues().await;
-        self.emit(Event::IssuesChanged);
-        // `ar` drops here → guard removes the worktree. The pushed branch
-        // stays on `origin` if `stage_commit_push` had already run, but a
-        // mid-run abort usually hadn't — either way no fabrication.
-        Ok(())
-    }
-
-    pub async fn dispatch(&mut self, cmd: Command) -> Result<(), AppError> {
-        match cmd {
-            Command::Boot => {
-                // Staleness is clock-relative: what was green last week may be
-                // amber-capped today. Re-derive every running project on boot so
-                // the wall never shows a stale cache as fresh truth.
-                let projects = self.store.list_projects().await?;
-                for p in &projects {
-                    if p.phase == Readiness::Running {
-                        self.store.recompute_signals(p.id, now()).await?;
-                    }
-                }
-                self.refresh_projects().await?;
-                // Real OMC/ECC catalog, not fabricated sample data — a no-op
-                // once the hub tables are non-empty (checked inside).
-                bw_store::seed_hub_if_empty(self.store.as_ref()).await?;
-                // plan/17 · 装载统一: the bw-standard skill library (five
-                // stage working-method skills + the standard-issue trio) is
-                // parsed from its vendored package documents
-                // (`bw_core::bw_library` — the real docs/skills/<slug>/
-                // SKILL.md files compiled in) through THE import parser
-                // (`bw_canon`, name==slug + kernel-desc guards inside), so
-                // BW's own skills and every external import enter through
-                // one loading chain. Seeding is by-name idempotent (an
-                // already-seeded database gains missing rows too).
-                //
-                // A malformed vendored doc must NOT `?` out here. 桌面壳
-                // (`kernel.rs`)把 Boot 的 Err 吞成一条 toast 后照常开窗,
-                // 所以提前返回不是「拒绝启动」,而是静默跳过它后面的全部
-                // 初始化(五角色 agent 播种、阶段吞吐指标回填、workflow/
-                // skill 刷新)——用户看到的会是一个空 Hub 加一条转瞬的提
-                // 示。改为:canon 坏了就跳过 bw-standard 的播种与对账(空
-                // canon 让下面几个循环自然 no-op),其余初始化照跑,错误
-                // 留到 Boot 末尾原样抛出。
-                let (skill_canon, canon_err) = match crate::bw_canon::bw_standard_skill_canon() {
-                    Ok(canon) => (canon, None),
-                    Err(e) => (Vec::new(), Some(e)),
-                };
-                bw_store::seed_bw_standard_skills_if_missing(self.store.as_ref(), &skill_canon)
-                    .await?;
-                // The five stage-role agents (bw_core::playbook projections)
-                // — by-name idempotent, so an already-seeded database gains
-                // them too.
-                bw_store::seed_stage_role_agents_if_missing(self.store.as_ref()).await?;
-                // P8 (2026-07-28, widened by plan/16 §2): the bw-standard
-                // skill library (issue trio + five playbook stage skills) is
-                // reconciled — `desc`+`content` — against its canon (plan/17
-                // 起 = the parsed vendored package documents, `skill_canon`
-                // above) on every Boot, unconditionally — not gated behind a
-                // one-time migration flag. `seed_bw_standard_skills_if_missing`
-                // above is by-name idempotent — it only ever plants a fresh
-                // row, never overwrites an existing one (that function's own
-                // doc comment: "内容对账是 Pass 2,不是重新 seed") — so
-                // an existing row on an older database never picks up a
-                // later edit to the SKILL.md source on its own. P2
-                // originally closed that gap with a one-shot
-                // `STANDARD_SKILL_CONTENT_REFRESH_DONE_KEY` app_meta guard,
-                // but that shape is a treadmill: every future SKILL.md edit
-                // would need its own new guard key (`_v2`, `_v3`, …) to ever
-                // reach existing databases. Replaced with unconditional
-                // reconciliation instead, because the invariant licensing it
-                // is permanent, not one-time: a `skill` row whose
-                // `source == Official { official_library: "bw-standard" }`
-                // is *by definition* stale the moment its `content` diverges
-                // from the compiled-in SKILL.md text — the instant a human
-                // edits that row, T11 ("编辑即脱离源头") flips it to
-                // `SelfBuilt` and it stops being a `bw-standard` row at all.
-                // So there is no legitimate case of an `Official
-                // { official_library: "bw-standard" }` row intentionally
-                // holding content that differs from the source file — no
-                // divergence worth preserving, nothing to gate. Every Boot
-                // re-diffs and, only when different, overwrites. Cost is
-                // negligible: `list_skills()` is a call this same Boot path
-                // already makes right above for
-                // `seed_bw_standard_skills_if_missing`.
-                // The `STANDARD_SKILL_CONTENT_REFRESH_DONE_KEY` app_meta
-                // guard this replaced is gone from `legacy_migration.rs`
-                // entirely (see that module's own historical-note comment at
-                // the old declaration site); the stray `app_meta` row it
-                // left behind in any database that already ran P2 is
-                // harmless and deliberately not migrated away (no
-                // destructive DELETE for a row nothing reads anymore).
-                {
-                    // plan/16 §2 防线 2, plan/17 合流: the reconciled canon
-                    // is the whole bw-standard library — `skill_canon`, the
-                    // same parsed-package-document rows the seed above ate
-                    // (装载与对账不再各建一份) — and the diff covers `desc`
-                    // as well as `content` (a canonical description fix must
-                    // reach existing rows the same way a SKILL.md edit
-                    // does). `CanonicalSkill.content` is the parser's body
-                    // output, frontmatter already gone (plan/16 S7), so what
-                    // Boot compares against is exactly what the hub should
-                    // store and show.
-
-                    // The five playbook skills' pre-plan/16 canonical descs —
-                    // a *bounded* migration aid, not a version treadmill:
-                    // Pass 1 only ever matters for the pre-plan/16 row
-                    // population (fresh seeds are born `Official`), and that
-                    // population's canonical descs are fixed history. A row
-                    // whose desc is neither today's canon nor one of these
-                    // is a real user edit and must not be promoted.
-                    const LEGACY_CANON_DESCS: [&str; 5] = [
-                        "证据先行:只写站得住的内容,标注未核实",
-                        "规格即测试:每条验收标准落成一个可跑的用例",
-                        "先测基线再动手:无基线不优化,删减优先",
-                        "新用户漏斗走查:亲手走一遍,只记录真实摩擦",
-                        "破坏性演练:拿坏输入砸,坏行为当场修",
-                    ];
-
-                    // 同理的**正文**台账,而且没有它 Pass 1 就是死代码:
-                    // plan/16/17 把这五条的正文整个重写了(裸 `###` 提示词 →
-                    // 规范 SKILL.md body),于是「pristine = content 与今日
-                    // canon 逐字节相等」对它要迁移的那批老行永远为假 ——
-                    // 老行既升不了源、也就永远轮不到 Pass 2 对账,会一直顶
-                    // 着旧正文停在 SelfBuilt,还被 SkillHub 点上「规范 ·
-                    // 待校正」黄徽记。这里逐字收录改写前的正本正文(与
-                    // LEGACY_CANON_DESCS 同一性质:一份有界的历史台账,不是
-                    // 版本跑步机——它是固定的历史,不随以后每次改写增长)。
-                    const LEGACY_CANON_CONTENTS: [&str; 5] = [
-                        "### 证据先行 (evidence-first)\n\
-                 1. 只记录两类内容:(a) 你直接验证过的事实(真实命令输出、真实文件内容);\
-                 (b) 你的先验知识——必须标注「未核实」。\n\
-                 2. 每条证据注明来源:文件路径、命令、或「知识截止内记忆,未核实」。\n\
-                 3. 禁止编造统计数字与引用;没有可靠数字就写「无可靠数字」。\n\
-                 4. 结论按「证据 → 洞察 → 假设」链书写,断链处如实标断。",
-                        "### 规格即测试 (spec-to-tests)\n\
-                 1. SPEC 里每条验收标准编号(AC-1, AC-2, …);写实现前先把它翻译成测试名\
-                 (如 `ac1_reports_dead_relative_link`)。\n\
-                 2. 无法翻译成测试的验收标准是坏标准——回头改写它,而不是跳过。\n\
-                 3. 实现只做到让测试通过为止,不做规格外功能。\n\
-                 4. 提交前 `cargo test` 全绿是硬门禁;失败输出原样留档,不美化。",
-                        "### 先测基线再动手 (baseline-before-touch)\n\
-                 1. 动手前先真实测量并落盘:测试数、clippy 警告数、代码行数、构建耗时——\
-                 全部来自真实命令输出的原样摘录。\n\
-                 2. 每步重构保持测试全绿;一步只做一类等价变换。\n\
-                 3. 删减优先:能删的代码是最好的优化,删除行数计入成果。\n\
-                 4. 结束时用与基线完全相同的命令重测,报 delta;无 delta 也如实报。",
-                        "### 新用户漏斗走查 (fresh-eyes-funnel)\n\
-                 1. 以从未见过本项目的人的视角,真实执行「发现 → 安装 → 首次使用 → 再次使用」\
-                 每一步,不跳步、不脑补。\n\
-                 2. 只记录你真实遇到的摩擦(命令报错、文档缺失、参数不明),不臆想用户。\n\
-                 3. 一次实验只改一个变量,改动前后用同一条真实命令对照。\n\
-                 4. 没有真实流量就如实做「前后对照」,不假装有 A/B 分流。",
-                        "### 破坏性演练 (breaking-drill)\n\
-                 1. 系统性地喂坏输入:不存在的路径、空输入、超长输入、坏参数、坏编码——\
-                 逐个真实执行并原样记录行为。\n\
-                 2. 任何 panic 或不知所云的报错都算事故:当场修复成友好报错,修后重测。\n\
-                 3. 健康检查脚本必须一键可跑、任何失败以非零码退出;写完真实执行一遍留档。\n\
-                 4. 复盘只引用真实存在的文件与提交号(写之前 ls / git log 核实)。",
-                    ];
-
-                    // Pass 1 · pristine promotion (plan/16 §4): a stage-skill
-                    // row seeded by a pre-T2/pre-plan/16 binary reads back
-                    // `SelfBuilt` (legacy `official`+空库名 encoding, or the
-                    // T2-era `SelfBuilt` seed). Pristine = `content` equals
-                    // the code canon byte-for-byte AND `desc` is a canonical
-                    // text (today's or the fixed pre-plan/16 one) — then
-                    // nobody made it their own, and it gets the label fresh
-                    // seeds now carry: `Official { "bw-standard" }`, which is
-                    // what licenses Pass 2 to reconcile it. Anything else
-                    // stays `SelfBuilt`, honestly: that's a user edit, never
-                    // to be washed away by Boot. Two hard exclusions:
-                    // distilled rows (provenance beats relabelling), and
-                    // rows carrying `adapted_from` — that trace means a
-                    // human already detached this row from an official
-                    // origin via T11, so re-promoting it would wash a
-                    // desc/category-only edit right back out (the flip loop
-                    // /code-review caught: edit desc → T11 flips SelfBuilt
-                    // with content untouched → naive Pass 1 re-promotes →
-                    // Pass 2 clobbers the desc).
-                    let existing_skills = self.store.list_skills().await?;
-                    for c in &skill_canon {
-                        for row in existing_skills.iter().filter(|s| {
-                            s.name == c.name
-                                && s.source == HubSource::SelfBuilt
-                                && s.adapted_from.is_none()
-                                && s.distilled_from_issue.is_none()
-                                && (s.content == c.content
-                                    || LEGACY_CANON_CONTENTS.contains(&s.content.as_str()))
-                                && (s.desc == c.desc
-                                    || LEGACY_CANON_DESCS.contains(&s.desc.as_str()))
-                        }) {
-                            self.store
-                                .set_skill_source(
-                                    row.id,
-                                    HubSource::Official {
-                                        official_library: BW_STANDARD_LIBRARY.to_string(),
-                                    },
-                                )
-                                .await?;
-                        }
-                    }
-
-                    // Pass 2 · reconcile. Only ever touches the real
-                    // bw-standard row — a user's own self-built or distilled
-                    // skill that happens to share the name is never a
-                    // candidate. Deliberately NOT `Command::UpdateSkill`/
-                    // `self.store.update_skill` with `flip_to_self_built:
-                    // true`: that flip rule (T11, "编辑即脱离源头") exists
-                    // for a *human* diverging a skill from its official
-                    // origin — this is the opposite motion, the official
-                    // origin catching a row back up to itself, so `source`
-                    // must stay `Official { "bw-standard" }` unchanged.
-                    // `filter` 而非 `find`:与 Pass 1 同口径。唯一性守卫
-                    // (S2)是本轮才加的,只管新写入——存量库里若有两行同名
-                    // 且都被 Pass 1 升成 Official{bw-standard},`find` 只会
-                    // 追平其中一行,另一行顶着官方徽记停在旧内容,而 UI 分
-                    // 不出二者。
-                    let existing_skills = self.store.list_skills().await?;
-                    for c in &skill_canon {
-                        for existing in existing_skills.iter().filter(|s| {
-                            s.name == c.name
-                                && matches!(
-                                    &s.source,
-                                    HubSource::Official { official_library }
-                                        if official_library == BW_STANDARD_LIBRARY
-                                )
-                        }) {
-                            if existing.content == c.content && existing.desc == c.desc {
-                                continue;
-                            }
-                            // `uses` / `distilled_from_issue` / `origin_agent`
-                            // are derived lifecycle fields (skill-standards:
-                            // "永不手填") — `SkillEdit` has no fields for them at
-                            // all, so there is no way this call could touch
-                            // them even by accident.
-                            self.store
-                                .update_skill(
-                                    existing.id,
-                                    SkillEdit {
-                                        name: existing.name.clone(),
-                                        desc: c.desc.clone(),
-                                        category: existing.category.clone(),
-                                        content: c.content.clone(),
-                                        flip_to_self_built: false,
-                                    },
-                                )
-                                .await?;
-                        }
-                    }
-                }
-                // A4: backfill the per-stage "完成 Issue 数" metric for every
-                // project — pre-A4 projects gain it; already-seeded ones are
-                // unchanged (by-name idempotent).
-                for p in &projects {
-                    self.seed_stage_done_metrics(p.id).await?;
-                    self.seed_codehub_public_metrics(p.id).await?;
-                }
-                self.refresh_workflow_specs().await?;
-                self.refresh_skills().await?;
-                self.refresh_agents().await?;
-                self.refresh_cron_tasks().await?;
-                self.refresh_connectors().await?;
-                self.refresh_knowledge_sources().await?;
-                self.refresh_activity().await?;
-                self.refresh_issues().await?;
-                self.emit(Event::ProjectsChanged);
-                // vendored 包文档坏了(开发者错误)的诚实归宿:整个 Boot 的
-                // 其余部分已经跑完、状态不半初始化,错误在这里原样抛出,由
-                // 桌面壳呈现。
-                if let Some(e) = canon_err {
-                    return Err(AppError::Invalid(e));
-                }
-            }
-
-            Command::CreateProject {
-                provider,
-                id,
-                name,
-                kind,
-                desc,
-                workspace,
-                github,
-                codehub,
-            } => {
-                self.store
-                    .create_project(NewProject {
-                        id,
-                        name,
-                        kind,
-                        desc,
-                        provider,
-                    })
-                    .await?;
-                self.state.active_project = Some(id);
-                self.state.view = View::Create;
-                // P1: 建项目即建仓 —— 出生那一刻仓就存在(而非走完创建流才有)。
-                // 绑定已有本地仓:只校验含 .git,绝不动原文件。GitHub 为主体
-                // (2026-07-22): github 非空时改走 gh CLI 开仓/接入,新建失败
-                // 软降级回本地 mint,接入失败不兜底(不拿无关空仓冒充)。两条
-                // 路径都绝不让 CreateProject 本身失败——只有本地 bind 校验例外。
-                let bound = workspace
-                    .as_deref()
-                    .map(str::trim)
-                    .filter(|s| !s.is_empty());
-                let proj = self
-                    .store
-                    .get_project(id)
-                    .await?
-                    .ok_or(AppError::NotFound)?;
-                match (bound, github, codehub) {
-                    (Some(path), _, _) => {
-                        if !std::path::Path::new(path).join(".git").exists() {
-                            return Err(AppError::Invalid(format!(
-                                "绑定的工作目录不是 git 仓库(无 .git):{path}"
-                            )));
-                        }
-                        self.store.set_workspace(id, path, true).await?;
-                    }
-                    (None, Some(GithubOrigin::New { slug, private }), _) => {
-                        // plan/14 C14: 建仓是这个命令里最慢的一步(真实
-                        // `gh repo create` 网络调用,数秒)——Started 先发,
-                        // 唯一的 name 贯穿这一步的 Ok/Fail,UI 据此配对。
-                        let action_name = format!("{} · 建仓", proj.name);
-                        self.emit(Event::ActionProgress {
-                            name: action_name.clone(),
-                            state: ActionState::Started,
-                        });
-                        match self.workspaces_root.clone() {
-                            Some(root) => {
-                                let body = if proj.desc.trim().is_empty() {
-                                    "(创建流程未填写 brief)".to_string()
-                                } else {
-                                    proj.desc.trim().to_string()
-                                };
-                                match bw_engine::github::create_repo(
-                                    &slug, private, &root, &proj.name, &body,
-                                )
-                                .await
-                                {
-                                    Ok(r) => {
-                                        let path = root.join(&slug).to_string_lossy().into_owned();
-                                        self.store.set_workspace(id, &path, true).await?;
-                                        self.store
-                                            .set_remote(
-                                                id,
-                                                "github.com",
-                                                &format!("{}/{}", r.owner, r.repo),
-                                            )
-                                            .await?;
-                                        self.store
-                                            .create_connector(NewConnector {
-                                                id: ConnectorId::new(),
-                                                name: format!("{} · 代码仓", proj.name),
-                                                kind: CONNECTOR_KIND_GIT_REPO.into(),
-                                                scope: proj.name.clone(),
-                                                project_id: Some(id),
-                                                config: path.clone(),
-                                            })
-                                            .await?;
-                                        self.store
-                                            .create_connector(NewConnector {
-                                                id: ConnectorId::new(),
-                                                name: format!("{} · GitHub", proj.name),
-                                                kind: CONNECTOR_KIND_GITHUB_REPO.into(),
-                                                scope: proj.name.clone(),
-                                                project_id: Some(id),
-                                                config: format!("{}/{}", r.owner, r.repo),
-                                            })
-                                            .await?;
-                                        self.emit(Event::ActionProgress {
-                                            name: action_name,
-                                            state: ActionState::Ok(format!(
-                                                "{}/{}",
-                                                r.owner, r.repo
-                                            )),
-                                        });
-                                    }
-                                    Err(e) => {
-                                        // plan18-⑧:建仓失败就停、如实报,不兜底
-                                        // 本地 mint 空仓装接上(缺口 E:悄悄本地 mint
-                                        // → remote_path 空 → 不建 trio/不挂 cron/不扫
-                                        // skill,用户以为建好了实际远端没仓)。项目行
-                                        // 已落库但无远端仓,用户看到 Fail 可删项目重
-                                        // 来或重试——和"不假装健康"同精神。
-                                        let detail = format!(
-                                            "GitHub 建仓失败:{e}(未接上,无远端仓,请重试或检查权限)"
-                                        );
-                                        self.emit(Event::ConnectorSynced {
-                                            name: format!("{} · GitHub", proj.name),
-                                            ok: false,
-                                            detail: detail.clone(),
-                                        });
-                                        self.emit(Event::ActionProgress {
-                                            name: action_name,
-                                            state: ActionState::Fail(detail),
-                                        });
-                                    }
-                                }
-                            }
-                            None => {
-                                let detail = "未配置本地工作区根目录,无法建仓".to_string();
-                                self.emit(Event::ConnectorSynced {
-                                    name: format!("{} · GitHub", proj.name),
-                                    ok: false,
-                                    detail: detail.clone(),
-                                });
-                                self.emit(Event::ActionProgress {
-                                    name: action_name,
-                                    state: ActionState::Fail(detail),
-                                });
-                            }
-                        }
-                    }
-                    (None, Some(GithubOrigin::Existing { owner, repo }), _) => {
-                        // plan/14 C14: 克隆同样是真实 `gh repo clone` 网络
-                        // 调用——同一套 Started→Ok/Fail 配对。
-                        let action_name = format!("{} · 克隆仓库", proj.name);
-                        self.emit(Event::ActionProgress {
-                            name: action_name.clone(),
-                            state: ActionState::Started,
-                        });
-                        match self.workspaces_root.clone() {
-                            Some(root) => {
-                                let dir = root.join(workspace_slug(&proj.name, id));
-                                match bw_engine::github::clone_repo(&owner, &repo, &dir).await {
-                                    Ok(r) => {
-                                        let path = dir.to_string_lossy().into_owned();
-                                        self.store.set_workspace(id, &path, true).await?;
-                                        self.store
-                                            .set_remote(
-                                                id,
-                                                "github.com",
-                                                &format!("{}/{}", r.owner, r.repo),
-                                            )
-                                            .await?;
-                                        self.store
-                                            .create_connector(NewConnector {
-                                                id: ConnectorId::new(),
-                                                name: format!("{} · 代码仓", proj.name),
-                                                kind: CONNECTOR_KIND_GIT_REPO.into(),
-                                                scope: proj.name.clone(),
-                                                project_id: Some(id),
-                                                config: path.clone(),
-                                            })
-                                            .await?;
-                                        self.store
-                                            .create_connector(NewConnector {
-                                                id: ConnectorId::new(),
-                                                name: format!("{} · GitHub", proj.name),
-                                                kind: CONNECTOR_KIND_GITHUB_REPO.into(),
-                                                scope: proj.name.clone(),
-                                                project_id: Some(id),
-                                                config: format!("{}/{}", r.owner, r.repo),
-                                            })
-                                            .await?;
-                                        self.emit(Event::ActionProgress {
-                                            name: action_name,
-                                            state: ActionState::Ok(format!(
-                                                "{}/{}",
-                                                r.owner, r.repo
-                                            )),
-                                        });
-                                    }
-                                    Err(e) => {
-                                        // 不兜底本地 mint —— 拿一个跟用户选的仓无关
-                                        // 的空仓冒充"已接入",比"暂不挂仓库"更不诚实。
-                                        let detail = format!("接入 {owner}/{repo} 失败:{e}");
-                                        self.emit(Event::ConnectorSynced {
-                                            name: format!("{} · GitHub", proj.name),
-                                            ok: false,
-                                            detail: detail.clone(),
-                                        });
-                                        self.emit(Event::ActionProgress {
-                                            name: action_name,
-                                            state: ActionState::Fail(detail),
-                                        });
-                                    }
-                                }
-                            }
-                            None => {
-                                let detail = "未配置本地工作区根目录,无法接入".to_string();
-                                self.emit(Event::ConnectorSynced {
-                                    name: format!("{} · GitHub", proj.name),
-                                    ok: false,
-                                    detail: detail.clone(),
-                                });
-                                self.emit(Event::ActionProgress {
-                                    name: action_name,
-                                    state: ActionState::Fail(detail),
-                                });
-                            }
-                        }
-                    }
-                    (None, None, Some(CodehubOrigin { host, path })) => {
-                        // codehub 接入已有仓(对标 github Existing):真实
-                        // `codehub-cli repo clone` 网络调用,同一套 Started→Ok/Fail。
-                        let action_name = format!("{} · 克隆 codehub 仓", proj.name);
-                        self.emit(Event::ActionProgress {
-                            name: action_name.clone(),
-                            state: ActionState::Started,
-                        });
-                        match self.workspaces_root.clone() {
-                            Some(root) => {
-                                let dir = root.join(workspace_slug(&proj.name, id));
-                                match bw_engine::codehub::clone_repo(&host, &path, &dir).await {
-                                    Ok(()) => {
-                                        let p = dir.to_string_lossy().into_owned();
-                                        self.store.set_workspace(id, &p, true).await?;
-                                        self.store.set_remote(id, &host, &path).await?;
-                                        self.store
-                                            .create_connector(NewConnector {
-                                                id: ConnectorId::new(),
-                                                name: format!("{} · 代码仓", proj.name),
-                                                kind: CONNECTOR_KIND_GIT_REPO.into(),
-                                                scope: proj.name.clone(),
-                                                project_id: Some(id),
-                                                config: p.clone(),
-                                            })
-                                            .await?;
-                                        self.store
-                                            .create_connector(NewConnector {
-                                                id: ConnectorId::new(),
-                                                name: format!("{} · CodeHub", proj.name),
-                                                kind: CONNECTOR_KIND_CODEHUB_REPO.into(),
-                                                scope: proj.name.clone(),
-                                                project_id: Some(id),
-                                                config: format!("{host}/{path}"),
-                                            })
-                                            .await?;
-                                        self.emit(Event::ActionProgress {
-                                            name: action_name,
-                                            state: ActionState::Ok(path.clone()),
-                                        });
-                                    }
-                                    Err(e) => {
-                                        let detail = format!("接入 codehub {host}/{path} 失败:{e}");
-                                        self.emit(Event::ConnectorSynced {
-                                            name: format!("{} · CodeHub", proj.name),
-                                            ok: false,
-                                            detail: detail.clone(),
-                                        });
-                                        self.emit(Event::ActionProgress {
-                                            name: action_name,
-                                            state: ActionState::Fail(detail),
-                                        });
-                                    }
-                                }
-                            }
-                            None => {
-                                let detail = "未配置本地工作区根目录,无法克隆".to_string();
-                                self.emit(Event::ConnectorSynced {
-                                    name: format!("{} · CodeHub", proj.name),
-                                    ok: false,
-                                    detail: detail.clone(),
-                                });
-                                self.emit(Event::ActionProgress {
-                                    name: action_name,
-                                    state: ActionState::Fail(detail),
-                                });
-                            }
-                        }
-                    }
-                    (None, None, None) => {
-                        if let Some(root) = self.workspaces_root.clone() {
-                            match provision_workspace(&root, &proj).await {
-                                Ok(path) => {
-                                    self.store.set_workspace(id, &path, true).await?;
-                                    self.store
-                                        .create_connector(NewConnector {
-                                            id: ConnectorId::new(),
-                                            name: format!("{} · 代码仓", proj.name),
-                                            kind: CONNECTOR_KIND_GIT_REPO.into(),
-                                            scope: proj.name.clone(),
-                                            project_id: Some(id),
-                                            config: path.clone(),
-                                        })
-                                        .await?;
-                                }
-                                Err(e) => {
-                                    self.emit(Event::ConnectorSynced {
-                                        name: format!("{} · 代码仓", proj.name),
-                                        ok: false,
-                                        detail: format!("自动开仓失败,项目将以 Mock 模式运行:{e}"),
-                                    });
-                                }
-                            }
-                        }
-                    }
-                }
-                // C7 · 标配采集 cron (plan/13 D7):挂了 GitHub 仓的项目出生即
-                // 带一条每日采集器,由现成 tick_scheduler 到点真实触发,把
-                // GitHub 数据拉成 append-only 观测。只有 github 项目挂(无 remote
-                // 即无 github 源可采);软降级回本地/接入失败的项目 remote_path
-                // 仍空,不挂——不给采不到的东西装一个空跑的 cron。no-hijack:
-                // CollectMetrics 只观测,绝不自动跑活/结算。
-                let github_backed = self
-                    .store
-                    .get_project(id)
-                    .await?
-                    .map(|pr| !pr.remote_path.trim().is_empty())
-                    .unwrap_or(false);
-                if github_backed {
-                    self.store
-                        .create_cron_task(NewCronTask {
-                            id: CronTaskId::new(),
-                            name: format!("{} · 指标采集", proj.name),
-                            target: String::new(),
-                            schedule: Cadence::Daily,
-                            project_id: Some(id),
-                            mode: CronMode::CollectMetrics,
-                            issue_stage: None,
-                            issue_assignee: None,
-                        })
-                        .await?;
-                    self.refresh_cron_tasks().await?;
-                    self.emit(Event::CronTasksChanged);
-                }
-                // 章程开篇(仅 owned 仓写;bound 仓尊重「不动原文件」)。
-                let _ = write_charter(self, id, "开篇").await;
-                // 模板能力(用户 2026-07-20 拍板):四份组件标准文件写进仓里,
-                // 供人与 agent 之后在这个项目里创建 agent/skill/workflow/cron 时
-                // 对照(同一 owned-workspace 门槛,一次性,不随创建流逐步改写)。
-                let _ = write_component_standards(self, id).await;
-                self.refresh_projects().await?;
-                self.refresh_connectors().await?;
-                self.emit(Event::ProjectsChanged);
-                self.emit(Event::ViewChanged(View::Create));
-            }
-
-            Command::ListGithubRepos => {
-                // plan/14 C14: the Repo 卡片's「接入已有仓」picker triggers a
-                // real `gh repo list` call — same Started→Ok/Fail pairing.
-                const ACTION_NAME: &str = "GitHub 仓库列表";
-                self.emit(Event::ActionProgress {
-                    name: ACTION_NAME.into(),
-                    state: ActionState::Started,
-                });
-                match bw_engine::github::list_repos(30).await {
-                    Ok(repos) => {
-                        self.emit(Event::ActionProgress {
-                            name: ACTION_NAME.into(),
-                            state: ActionState::Ok(format!("{} 个仓库", repos.len())),
-                        });
-                        self.state.github_repos = repos;
-                    }
-                    Err(e) => {
-                        self.state.github_repos = Vec::new();
-                        self.emit(Event::ConnectorSynced {
-                            name: ACTION_NAME.into(),
-                            ok: false,
-                            detail: e.to_string(),
-                        });
-                        self.emit(Event::ActionProgress {
-                            name: ACTION_NAME.into(),
-                            state: ActionState::Fail(e.to_string()),
-                        });
-                    }
-                }
-                self.emit(Event::ProjectsChanged);
-            }
-
-            Command::SetCycle { cycle } => {
-                let p = self.active()?;
-                self.store.set_project_cycle(p, cycle).await?;
-                self.emit(Event::ProjectUpdated(p));
-            }
-
-            Command::UpdateBrief {
-                benchmark,
-                opportunity,
-            } => {
-                let p = self.active()?;
-                self.store.set_brief(p, &benchmark, &opportunity).await?;
-                let _ = write_charter(self, p, "定位与机会").await;
-                self.emit(Event::ProjectUpdated(p));
-            }
-
-            Command::UpdateNorthStar { value, def } => {
-                let p = self.active()?;
-                self.store.set_north_star(p, &value, &def).await?;
-                let _ = write_charter(self, p, "北极星").await;
-                self.emit(Event::ProjectUpdated(p));
-            }
-
-            Command::UpdateProjectIdentity { name, kind, descr } => {
-                let p = self.active()?;
-                let name = name.trim().to_string();
-                if name.is_empty() {
-                    return Err(AppError::Invalid("名称不能为空".into()));
-                }
-                self.store
-                    .set_project_identity(p, &name, kind.trim(), descr.trim())
-                    .await?;
-                let _ = write_charter(self, p, "项目信息").await;
-                self.refresh_projects().await?;
-                self.emit(Event::ProjectUpdated(p));
-            }
-
-            Command::UpsertManualMetric {
-                id,
-                name,
-                def,
-                role,
-                stage_kind,
-                target,
-                amber,
-                value,
-            } => {
-                let p = self.active()?;
-                // Idempotency guard: re-confirming a step must not mint a
-                // duplicate observation — only a *changed* value is a new fact.
-                let latest = self
-                    .store
-                    .persisted_signals(p)
-                    .await?
-                    .metrics
-                    .into_iter()
-                    .find(|m| m.id == id)
-                    .map(|m| m.value_raw);
-                self.store
-                    .upsert_metric(NewMetric {
-                        id,
-                        project_id: p,
-                        role,
-                        stage_kind,
-                        name,
-                        def,
-                        target_raw: target,
-                        amber,
-                        last_target: String::new(),
-                        driver: String::new(),
-                        pos: 0,
-                        collect_kind: "manual".into(),
-                        collect_query: String::new(),
-                    })
-                    .await?;
-                // The value is born as an explicit Manual observation; the signal
-                // it implies is computed later by recompute, never set here.
-                let value = value.trim();
-                if !value.is_empty() && latest.as_deref() != Some(value) {
-                    self.store
-                        .append_observation(id, SourceKind::Manual, value, now())
-                        .await?;
-                }
-                self.emit(Event::ProjectUpdated(p));
-            }
-
-            Command::UpdateWeekPlan {
-                metric,
-                new_target,
-                last_target,
-                driver,
-            } => {
-                let p = self.active()?;
-                self.store
-                    .update_week_plan(metric, &new_target, &last_target, &driver)
-                    .await?;
-                // The target moved ⇒ the same value may now mean a different
-                // signal. Re-derive; never patch by hand.
-                self.store.recompute_signals(p, now()).await?;
-                self.emit(Event::ProjectUpdated(p));
-            }
-
-            Command::RecordObservation { metric, value } => {
-                let p = self.active()?;
-                let value = value.trim();
-                if value.is_empty() {
-                    return Err(AppError::Invalid("观测值不能为空".into()));
-                }
-                self.store
-                    .append_observation(metric, SourceKind::Manual, value, now())
-                    .await?;
-                self.store.recompute_signals(p, now()).await?;
-                self.emit(Event::ProjectUpdated(p));
-            }
-
-            Command::RecordCollectedObservation {
-                metric,
-                value,
-                source,
-            } => {
-                let p = self.active()?;
-                let value = value.trim();
-                if value.is_empty() {
-                    return Err(AppError::Invalid("观测值不能为空".into()));
-                }
-                if matches!(source, SourceKind::Manual) {
-                    // A hand-typed value must go through `RecordObservation`
-                    // and wear its `手填` badge — letting a caller stamp
-                    // `Manual` here would blur the one line this command
-                    // exists to draw (machine-measured vs hand-entered).
-                    return Err(AppError::Invalid(
-                        "机器采集观测不能标记为 Manual——请走 RecordObservation".into(),
-                    ));
-                }
-                self.store
-                    .append_observation(metric, source, value, now())
-                    .await?;
-                self.store.recompute_signals(p, now()).await?;
-                self.emit(Event::ProjectUpdated(p));
-            }
-
-            Command::SetStageProgress {
-                stage_kind,
-                progress,
-            } => {
-                let p = self.active()?;
-                self.store
-                    .set_stage_progress(p, stage_kind, progress)
-                    .await?;
-                self.emit(Event::ProjectUpdated(p));
-            }
-
-            Command::ToggleDod { stage_kind, index } => {
-                let p = self.active()?;
-                self.store.toggle_dod(p, stage_kind, index).await?;
-                self.emit(Event::ProjectUpdated(p));
-            }
-
-            Command::HandoffStage { risky, note } => {
-                let p = self.active()?;
-                let proj = self.store.get_project(p).await?.ok_or(AppError::NotFound)?;
-                let from = proj.active_stage;
-                let to = from.next();
-                // A4: leaving a stage with unfinished (non-terminal) issues is a
-                // risky handoff by definition — force it honest + tag the note,
-                // so open work can't slip silently into the next stage.
-                let open_in_stage = self
-                    .store
-                    .list_issues(p, Some(from), None)
-                    .await?
-                    .iter()
-                    .filter(|i| !i.status.is_terminal())
-                    .count();
-                let (risky, note) = if open_in_stage > 0 {
-                    let tag = format!("留 {} 件未完 Issue;", open_in_stage);
-                    let note = if note.trim().is_empty() {
-                        tag
-                    } else {
-                        format!("{tag} {note}")
-                    };
-                    (true, note)
-                } else {
-                    (risky, note)
-                };
-                self.store
-                    .handoff_stage(p, from, to, risky, &note, now())
-                    .await?;
-                self.refresh_projects().await?;
-                self.refresh_activity().await?;
-                self.emit(Event::StageHandoff { from, to, risky });
-                self.emit(Event::ProjectUpdated(p));
-                self.emit(Event::ActivityChanged);
-            }
-
-            Command::CompleteCreation { cadence, run_first } => {
-                let p = self.active()?;
-                self.store.set_project_phase(p, Readiness::Running).await?;
-                self.store
-                    .materialize_stages(five_stages(p, cadence))
-                    .await?;
-                // A4: seed the per-stage "完成 Issue 数" leading metric (empty
-                // target ⇒ honest Unknown) so Done-edge feeds have a home. The
-                // recompute at the end of CompleteCreation derives its signal.
-                self.seed_stage_done_metrics(p).await?;
-                // P5:codehub 公共指标(开放 Issue 数 / 已合入 MR 数)随创建流
-                // 种下,走 collect_project_metrics 的 codehub arm 真采点亮。
-                self.seed_codehub_public_metrics(p).await?;
-                // All-in-one-codebase default: a project completing creation
-                // gets its own real git repo (when a workspaces root is
-                // configured and no workspace was set by hand), plus a bound
-                // `git-repo` connector. Provisioning failure degrades to the
-                // old Mock-only behavior — creation itself never breaks.
-                let proj = self.store.get_project(p).await?.ok_or(AppError::NotFound)?;
-                // plan18-⑧:只对纯本地项目(remote_path 也空)兜底开本地仓;
-                // 挂了远端但 clone 失败导致 workspace_path 空的,不兜底本地
-                // mint 装接上(缺口 C:否则用户以为接了远端实际是个本地空仓,
-                // remote_path 非空还会建 trio/cron 但无 workspace 跑不了)。
-                // 挂远端失败的项目停在"有 remote 无 workspace"——用户看到无
-                // 代码仓 connector 知道没接上,可删项目重来,比悄悄 mint 诚实。
-                if self.workspaces_root.is_some()
-                    && proj.workspace_path.trim().is_empty()
-                    && proj.remote_path.trim().is_empty()
-                {
-                    let root = self.workspaces_root.clone().expect("checked above");
-                    match provision_workspace(&root, &proj).await {
-                        Ok(path) => {
-                            self.store.set_workspace(p, &path, true).await?;
-                            self.store
-                                .create_connector(NewConnector {
-                                    id: ConnectorId::new(),
-                                    name: format!("{} · 代码仓", proj.name),
-                                    kind: CONNECTOR_KIND_GIT_REPO.into(),
-                                    scope: proj.name.clone(),
-                                    project_id: Some(p),
-                                    config: path.clone(),
-                                })
-                                .await?;
-                            self.refresh_connectors().await?;
-                            self.emit(Event::ConnectorsChanged);
-                        }
-                        Err(e) => {
-                            // Loud, honest degradation — never a silent fake.
-                            self.emit(Event::ConnectorSynced {
-                                name: format!("{} · 代码仓", proj.name),
-                                ok: false,
-                                detail: format!("自动开仓失败,项目将以 Mock 模式运行:{e}"),
-                            });
-                        }
-                    }
-                }
-                // C8 · plan/13 D8: 挂仓项目(remote_path 非空)创建流落地
-                // 即建标配 Issue 三件套(竞品分析→找指标→绑数据),依赖序即
-                // 建单序即编号序(1/2/3),都经既有 sync_issue_to_github 真开
-                // GitHub issue。无仓项目(remote_path 空——包括新建/接入
-                // 都失败、软降级回本地 mint 的项目)零标配票:不给建不了
-                // 仓、没有 PR 环可走的项目发一套没处交付的活,如实留白。
-                let first_issue = self.seed_standard_issue_trio(p).await?;
-                self.store.recompute_signals(p, now()).await?;
-                let _ = write_charter(self, p, "完成创建").await;
-                // plan/13 D1(#31 记录的缺口):create_repo 只推了首 commit,
-                // 创建流途中的章程/组件标准提交停在本地——产品信息正本在
-                // 仓里,落地时把 HEAD 一次推齐。失败软降级 toast,不倒灌
-                // 创建(remote_path 非空 ⇒ workspace 在 CreateProject 就
-                // 已绑定,直接用)。
-                if !proj.remote_path.trim().is_empty() && !proj.workspace_path.trim().is_empty() {
-                    // plan/14 C14: 落地推送同样是真实网络调用——Started 先
-                    // 发,pending→ok/fail 配对到底。
-                    let action_name = format!("{} · 落地推送", proj.name);
-                    self.emit(Event::ActionProgress {
-                        name: action_name.clone(),
-                        state: ActionState::Started,
-                    });
-                    match bw_engine::github::push_head(std::path::Path::new(
-                        proj.workspace_path.trim(),
-                    ))
-                    .await
-                    {
-                        Ok(()) => {
-                            self.emit(Event::ActionProgress {
-                                name: action_name,
-                                state: ActionState::Ok("已推送".into()),
-                            });
-                        }
-                        Err(e) => {
-                            let detail =
-                                format!("落地推送失败(章程等提交仍在本地,可稍后手动 git push):{e}");
-                            self.emit(Event::ConnectorSynced {
-                                name: format!("{} · GitHub", proj.name),
-                                ok: false,
-                                detail: detail.clone(),
-                            });
-                            self.emit(Event::ActionProgress {
-                                name: action_name,
-                                state: ActionState::Fail(detail),
-                            });
-                        }
-                    }
-                }
-                self.state.view = View::App;
-                self.refresh_projects().await?;
-                self.refresh_issues().await?;
-                // 创建即探活(§6.5 GAP,用户实践点破):建完的连接器就地 probe
-                // 一遍——git-repo 顺带喂工作区指标(commits/docs)、codehub/github-
-                // repo 翻 Connected。用户不用再为每个项目去 Hub 点「立即同步」。
-                // 探活失败软降级留 Error,如实,不倒灌创建(创建本身已落地)。
-                let minted: Vec<_> = self
-                    .store
-                    .list_connectors()
-                    .await?
-                    .into_iter()
-                    .filter(|c| c.project_id == Some(p))
-                    .collect();
-                for c in minted {
-                    let (ok, detail) = self
-                        .probe_connector(&c)
-                        .await
-                        .unwrap_or((false, "探活异常,跳过".into()));
-                    let status = if ok {
-                        ConnectorStatus::Connected
-                    } else {
-                        ConnectorStatus::Error
-                    };
-                    let _ = self
-                        .store
-                        .set_connector_sync(c.id, status, &run_at_label(now()))
-                        .await;
-                    self.emit(Event::ConnectorSynced {
-                        name: c.name.clone(),
-                        ok,
-                        detail,
-                    });
-                }
-                self.refresh_connectors().await?;
-                self.emit(Event::ConnectorsChanged);
-                self.emit(Event::ProjectUpdated(p));
-                self.emit(Event::ViewChanged(View::App));
-                self.emit(Event::IssuesChanged);
-                // C8 · 末卡「立即让队友开工第一件?」(plan/13 D8): 显式勾选
-                // 才跑,默认不跑——不勾是零摩擦的另一半,真的什么都不发生。
-                // 勾了就对标配三件套里的①竞品分析显式 dispatch 一次
-                // RunIssue(不是 hijack:用户在末卡亲手勾的框)。跑失败只是
-                // 一次诚实的失败 toast,不倒灌回 CompleteCreation 本身
-                // ——项目创建这件事本身已经落地,不能因为紧跟着的第一次
-                // 开工不顺就整体报错(同一份「创建永不因网络失败」的精神,
-                // 只是这次是"起跑"而不是"开仓")。
-                if run_first {
-                    if let Some(issue_id) = first_issue {
-                        let session = SessionId::new();
-                        self.store
-                            .ensure_session(NewSession {
-                                id: session,
-                                project_id: p,
-                                stage_kind: Some(StageKind::Prototype),
-                                kind: SessionKind::Create,
-                                title: "创建 · 立即开工竞品分析".into(),
-                                snippet: String::new(),
-                            })
-                            .await?;
-                        self.state.active_session = Some(session);
-                        if let Err(e) = self.run_issue_now(session, issue_id).await {
-                            self.emit(Event::WorkflowFailed(format!(
-                                "创建流「立即开工」失败,竞品分析活留在可重试状态:{e}"
-                            )));
-                        }
-                    }
-                }
-            }
-
-            Command::SetWorkspace {
-                path,
-                allow_commands,
-            } => {
-                let p = self.active()?;
-                let trimmed = path.trim();
-                if !trimmed.is_empty() && !std::path::Path::new(trimmed).is_dir() {
-                    return Err(AppError::Invalid(format!("工作目录不存在:{trimmed}")));
-                }
-                self.store.set_workspace(p, trimmed, allow_commands).await?;
-                self.refresh_projects().await?;
-                self.emit(Event::ProjectUpdated(p));
-            }
-
-            Command::AttachRepo {
-                owner,
-                repo,
-                push_local,
-            } => {
-                let p = self.active()?;
-                let proj = self.store.get_project(p).await?.ok_or(AppError::NotFound)?;
-                let owner = owner.trim().to_string();
-                let repo = repo.trim().to_string();
-                let owner_repo = format!("{owner}/{repo}");
-                let action_name = format!("{} · 接入仓库", proj.name);
-                self.emit(Event::ActionProgress {
-                    name: action_name.clone(),
-                    state: ActionState::Started,
-                });
-
-                // 1) 先探活——仓不存在或无权限,如实报错、一个字节不写库
-                // (D12 软降级:失败不伪造)。
-                if let Err(e) = bw_engine::github::probe_repo(&owner_repo).await {
-                    let detail = format!("探活失败:{e}");
-                    self.emit(Event::ActionProgress {
-                        name: action_name,
-                        state: ActionState::Fail(detail.clone()),
-                    });
-                    return Err(AppError::Invalid(detail));
-                }
-
-                // 2) P1-fix(复核 P1 时读回发现的重试死路):项目已有工作区时,
-                // 先把本地 origin 接上 —— 必须排在任何写库动作之前。探活通过
-                // 之后,`Mismatch`(工作区已挂着别的 origin)是这条命令唯一
-                // 还可能失败的分支;若先写了 remote_path/建了 connector 再
-                // 撞上 Mismatch,产品侧就没有 UI 重试入口了 ——
-                // `AttachRepoCard`(app-desktop/src/screens/op.rs)只在
-                // `remote_path` 为空时渲染,写库后卡片消失,用户再点不到
-                // 这个动作,只能手改 SQL。先做这步 ⇒ 失败时一个字节都还没
-                // 进库,再次调用同一条命令天然就是重试。没有工作区就跳过整步
-                // (不是错误——纯身份挂靠,后续 SetWorkspace 再补)。
-                let workspace_path = proj.workspace_path.trim().to_string();
-                if !workspace_path.is_empty() {
-                    let workspace = std::path::Path::new(&workspace_path);
-                    if let Err(e) =
-                        bw_engine::github::reconcile_local_remote(workspace, &owner, &repo).await
-                    {
-                        let detail = e.to_string();
-                        self.emit(Event::ActionProgress {
-                            name: action_name,
-                            state: ActionState::Fail(detail.clone()),
-                        });
-                        return Err(AppError::Invalid(detail));
-                    }
-                }
-
-                // 3) 写 remote_path / remote_host。
-                self.store.set_remote(p, "github.com", &owner_repo).await?;
-
-                // 4) 补建 github-repo connector —— 幂等:同项目已有同 kind
-                // 就不重复建(`CreateProject` 的另两条分支都建了它,绑定
-                // 分支此前漏了,这里补齐)。
-                let has_github_connector = self
-                    .store
-                    .list_connectors()
-                    .await?
-                    .iter()
-                    .any(|c| c.kind == CONNECTOR_KIND_GITHUB_REPO && c.project_id == Some(p));
-                if !has_github_connector {
-                    self.store
-                        .create_connector(NewConnector {
-                            id: ConnectorId::new(),
-                            name: format!("{} · GitHub", proj.name),
-                            kind: CONNECTOR_KIND_GITHUB_REPO.into(),
-                            scope: proj.name.clone(),
-                            project_id: Some(p),
-                            config: owner_repo.clone(),
-                        })
-                        .await?;
-                }
-
-                // 5) push_local=true 且第 2 步真的跑过(有工作区)时推当前
-                // 分支。这一步刻意留在写库之后,不是疏漏:推送失败时
-                // remote_path 已经设对是事实正确的(仓确实接上了,只是这
-                // 次本地提交没推上去),用户可以自己 `git push` 补,不必也
-                // 不该把整条「接仓」判失败重来 —— 那样反而会在下次重试时对
-                // 已经正确的 remote_path/connector 做多余的幂等检查。
-                if !workspace_path.is_empty() && push_local {
-                    let workspace = std::path::Path::new(&workspace_path);
-                    let branch = match bw_engine::github::current_branch(workspace).await {
-                        Ok(b) => b,
-                        Err(e) => {
-                            let detail = format!("读取当前分支失败:{e}");
-                            self.emit(Event::ActionProgress {
-                                name: action_name,
-                                state: ActionState::Fail(detail.clone()),
-                            });
-                            return Err(AppError::Invalid(detail));
-                        }
-                    };
-                    if branch.trim().is_empty() {
-                        let detail = "工作区处于 detached HEAD,无法确定要推送的分支".to_string();
-                        self.emit(Event::ActionProgress {
-                            name: action_name,
-                            state: ActionState::Fail(detail.clone()),
-                        });
-                        return Err(AppError::Invalid(detail));
-                    }
-                    if let Err(e) = bw_engine::github::push_current_branch(workspace, &branch).await
-                    {
-                        let detail = format!("推送 {branch} 失败:{e}");
-                        self.emit(Event::ActionProgress {
-                            name: action_name,
-                            state: ActionState::Fail(detail.clone()),
-                        });
-                        return Err(AppError::Invalid(detail));
-                    }
-                }
-
-                // 6) 收尾:成功配对 + 刷新。
-                self.emit(Event::ActionProgress {
-                    name: action_name,
-                    state: ActionState::Ok(owner_repo),
-                });
-                self.refresh_connectors().await?;
-                self.refresh_projects().await?;
-                self.emit(Event::ProjectUpdated(p));
-            }
-
-            Command::SetClaudeConfig {
-                binary,
-                max_budget_usd,
-                default_mode,
-                commands_mode,
-            } => {
-                if max_budget_usd <= 0.0 {
-                    return Err(AppError::Invalid("预算上限必须大于 0".into()));
-                }
-                self.state.claude_config = ClaudeCliConfig {
-                    binary,
-                    max_budget_usd,
-                    default_mode,
-                    commands_mode,
-                };
-                self.emit(Event::ClaudeConfigChanged);
-            }
-
-            Command::LoadVersionLog => {
-                let p = self.active()?;
-                let proj = self.store.get_project(p).await?.ok_or(AppError::NotFound)?;
-                let result = bw_engine::read_commits(&proj.workspace_path, 30)
-                    .await
-                    .map_err(|e| e.to_string());
-                self.state.version_log = Some((p, result));
-                self.emit(Event::VersionLogChanged);
-            }
-
-            Command::LoadArtifacts => {
-                let p = self.active()?;
-                let rows = self.store.list_artifacts(p).await?;
-                self.state.artifacts = Some((p, rows));
-                self.emit(Event::ArtifactsChanged);
-            }
-
-            // L1(plan/11): a real backend function (`cron_effectiveness`)
-            // that has existed since the cron-run-attribution work landed but
-            // never had a caller — this is that caller.
-            Command::LoadCronEffectiveness(id) => {
-                let e = self.store.cron_effectiveness(id).await?;
-                self.state.cron_effectiveness = Some((id, e));
-                self.emit(Event::CronEffectivenessChanged);
-            }
-
-            // P4: assemble one Issue's evidence — its runs, what each run
-            // really changed (diff between the recorded HEAD pair), and its
-            // registered artifacts. Read-only; every number the overlay shows
-            // comes from the store / git, nothing synthesized here.
-            Command::OpenIssueDetail(id) => {
-                let issue = self.store.get_issue(id).await?.ok_or(AppError::NotFound)?;
-                let runs = self.store.list_runs_for_issue(id).await?;
-                let artifacts = self.store.list_artifacts_for_issue(id).await?;
-                let workspace = self
-                    .store
-                    .get_project(issue.project_id)
-                    .await?
-                    .map(|p| p.workspace_path.trim().to_string())
-                    .unwrap_or_default();
-                let mut changes = Vec::with_capacity(runs.len());
-                for r in &runs {
-                    let entry = match (&r.head_before, &r.head_after) {
-                        (Some(b), Some(a)) if !workspace.is_empty() => {
-                            if b == a {
-                                // A real run that committed nothing — an
-                                // honest empty list, not an error.
-                                Ok(Vec::new())
-                            } else {
-                                bw_engine::workspace::diff_numstat(&workspace, b, a)
-                                    .await
-                                    .map(|v| {
-                                        v.into_iter()
-                                            .map(|c| (c.path, c.added, c.deleted))
-                                            .collect::<Vec<_>>()
-                                    })
-                                    .map_err(|e| format!("对比不可用:{e}"))
-                            }
-                        }
-                        _ => Err("无变更记录(演示模式运行,或早于变更追踪)".to_string()),
-                    };
-                    changes.push((r.id, entry));
-                }
-                self.state.issue_detail = Some(IssueDetailData {
-                    issue,
-                    runs,
-                    changes,
-                    artifacts,
-                });
-            }
-
-            Command::CloseIssueDetail => {
-                self.state.issue_detail = None;
-            }
-
-            Command::CollectArtifacts => {
-                let p = self.active()?;
-                let proj = self.store.get_project(p).await?.ok_or(AppError::NotFound)?;
-                if proj.workspace_path.trim().is_empty() {
-                    return Err(AppError::Invalid(
-                        "未配置真实工作区——没有可扫描的代码仓".into(),
-                    ));
-                }
-                let fresh = self
-                    .scan_and_register_artifacts(p, &proj.workspace_path, None, None, None)
-                    .await?;
-                self.emit(Event::ArtifactsRegistered { fresh });
-                // Refresh the panel snapshot in the same dispatch so the UI
-                // sees the scan's result without a second command.
-                let rows = self.store.list_artifacts(p).await?;
-                self.state.artifacts = Some((p, rows));
-                self.emit(Event::ArtifactsChanged);
-            }
-
-            Command::SyncConnector { id } => {
-                let all = self.store.list_connectors().await?;
-                let c = all
-                    .into_iter()
-                    .find(|c| c.id == id)
-                    .ok_or(AppError::NotFound)?;
-                let (ok, detail) = self.probe_connector(&c).await?;
-                let status = if ok {
-                    ConnectorStatus::Connected
-                } else {
-                    ConnectorStatus::Error
-                };
-                self.store
-                    .set_connector_sync(id, status, &run_at_label(now()))
-                    .await?;
-                self.refresh_connectors().await?;
-                self.emit(Event::ConnectorsChanged);
-                self.emit(Event::ConnectorSynced {
-                    name: c.name.clone(),
-                    ok,
-                    detail,
-                });
-            }
-
-            Command::SyncMetricsFile => {
-                let p = self.active()?;
-                self.sync_metrics_file_for(p).await?;
-            }
-
-            Command::CollectMetrics => {
-                let p = self.active()?;
-                let s = self.collect_project_metrics(p).await?;
-                // Honest toast: any gh failure — or a github metric with no
-                // remote to pull from — is ok:false. Never claim a green
-                // collection we didn't actually perform.
-                let ok = s.failed == 0 && !s.no_remote_github;
-                let mut detail = format!(
-                    "采集 · {} 更新 · {} 未变 · {} 未接(bw/connector 留白)",
-                    s.changed, s.unchanged, s.deferred
-                );
-                if s.no_remote_github {
-                    detail.push_str(";项目未挂 GitHub 仓,github 指标无法采集");
-                }
-                if let Some(err) = &s.first_error {
-                    detail.push_str(&format!(";首个失败:{err}"));
-                }
-                self.emit(Event::ConnectorSynced {
-                    name: "指标采集".into(),
-                    ok,
-                    detail,
-                });
-            }
-
-            Command::StartSession {
-                id,
-                stage_kind,
-                kind,
-                title,
-            } => {
-                let p = self.active()?;
-                self.store
-                    .ensure_session(NewSession {
-                        id,
-                        project_id: p,
-                        stage_kind,
-                        kind,
-                        title,
-                        snippet: String::new(),
-                    })
-                    .await?;
-                self.state.active_session = Some(id);
-            }
-
-            Command::RunWorkflow { session, spec } => {
-                let p = self.active()?;
-                self.run_workflow_inner(
-                    p,
-                    session,
-                    spec,
-                    RunTrigger::Manual,
-                    None,
-                    None,
-                    false,
-                    None,
-                )
-                .await?;
-            }
-
-            // plan/14 C13 (D8 回锁): the creation flow's drafting run —
-            // force_mock=true is the ONLY thing that distinguishes this from
-            // `RunWorkflow` above; see the command's doc comment for why.
-            Command::RunDraftWorkflow { session, spec } => {
-                let p = self.active()?;
-                self.run_workflow_inner(
-                    p,
-                    session,
-                    spec,
-                    RunTrigger::Manual,
-                    None,
-                    None,
-                    true,
-                    None,
-                )
-                .await?;
-            }
-
-            Command::RunStagePlaybook {
-                session,
-                stage_kind,
-            } => {
-                let p = self.active()?;
-                let proj = self.store.get_project(p).await?.ok_or(AppError::NotFound)?;
-                // The baton this stage received — the latest real handoff
-                // note (empty on a project's very first stage).
-                // `list_handoffs` is newest-first (ORDER BY created_at DESC),
-                // so the latest note is `.first()`.
-                let handoff_note = self
-                    .store
-                    .list_handoffs(p)
-                    .await?
-                    .first()
-                    .map(|h| h.note.clone())
-                    .unwrap_or_default();
-                let workspace_hint = if proj.workspace_path.trim().is_empty() {
-                    "（未配置真实工作区 —— 本次运行在 MockExecutor 上，产出仅为流程演示）"
-                        .to_string()
-                } else {
-                    format!(
-                        "工作区 {}（git 仓库）。请在其中完成一切产出；之前阶段的产出也在这里，先查看现状再动手。",
-                        proj.workspace_path.trim()
-                    )
-                };
-                let ctx = bw_core::playbook::PlaybookCtx {
-                    project_name: proj.name.clone(),
-                    project_kind: proj.kind.clone(),
-                    project_desc: proj.desc.clone(),
-                    benchmark: proj.benchmark.clone(),
-                    opportunity: proj.opportunity.clone(),
-                    north_star: proj.north_star.clone(),
-                    ns_def: proj.ns_def.clone(),
-                    handoff_note,
-                    workspace_hint,
-                };
-                let spec = stage_workflow_with_playbook(stage_kind, &ctx);
-                self.run_workflow_inner(
-                    p,
-                    session,
-                    spec,
-                    RunTrigger::Manual,
-                    None,
-                    None,
-                    false,
-                    None,
-                )
-                .await?;
-            }
-
-            Command::RefreshHubs => {
-                self.refresh_workflow_specs().await?;
-                self.refresh_skills().await?;
-                self.refresh_agents().await?;
-            }
-
-            Command::CreateWorkflowSpec {
-                id,
-                name,
-                prompt,
-                goal,
-                stage_ref,
-                phases,
-                phase_prompts,
-                agents,
-                skills,
-                loop_config,
-                maturity,
-                scope,
-                source,
-                trigger,
-            } => {
-                if name.trim().is_empty() {
-                    return Err(AppError::Invalid("名称不能为空".into()));
-                }
-                if !phase_prompts.is_empty() && phase_prompts.len() != phases.len() {
-                    return Err(AppError::Invalid(
-                        "phase_prompts 必须为空或与 phases 等长".into(),
-                    ));
-                }
-                self.store
-                    .create_workflow_spec(NewWorkflowSpec {
-                        id,
-                        name,
-                        kind: WorkflowKind::Static {
-                            maturity,
-                            version: 1,
-                            uses: 0,
-                            scope,
-                            source,
-                            trigger,
-                        },
-                        prompt,
-                        goal,
-                        stage_ref,
-                        // The hub create form is still name-only text editing
-                        // (no role-declaration UI yet) — every phase it
-                        // authors is honestly `Neutral`. Built-in stage
-                        // playbooks are the only source of real roles today
-                        // (`bw_core::playbook::phase_metas`).
-                        phases: phases.into_iter().map(PhaseMeta::neutral).collect(),
-                        phase_prompts,
-                        agents,
-                        skills,
-                        loop_config,
-                        // 践行最小切片(2026-07-20):Command 层暂不带 project_id
-                        // 参数(那是 P2 全量的事,见 plan/08 §0)——Hub 创建口径
-                        // 不变,一律全局。
-                        project_id: None,
-                        // T16: 创建表单还没有正文录入 UI(那是未来内容创作路径
-                        // 的事)——如实留空,不假装有原始文档。
-                        content: String::new(),
-                    })
-                    .await?;
-                self.refresh_workflow_specs().await?;
-                self.emit(Event::WorkflowSpecsChanged);
-            }
-
-            Command::PromoteWorkflow {
-                new_id,
-                session,
-                source,
-            } => {
-                let p = self.active()?;
-                let sess = self
-                    .store
-                    .list_sessions(p)
-                    .await?
-                    .into_iter()
-                    .find(|s| s.id == session)
-                    .ok_or(AppError::NotFound)?;
-                let spec = match sess.stage_kind {
-                    Some(kind) => stage_workflow(kind),
-                    None => {
-                        return Err(AppError::Invalid("会话未关联阶段,无法沉淀".into()));
-                    }
-                };
-                self.store.promote_workflow(new_id, &spec, source).await?;
-                self.refresh_workflow_specs().await?;
-                self.emit(Event::WorkflowSpecsChanged);
-            }
-
-            Command::RunHubWorkflow {
-                session,
-                workflow_id,
-            } => {
-                let p = self.active()?;
-                let spec = self
-                    .store
-                    .get_workflow_spec(workflow_id)
-                    .await?
-                    .ok_or(AppError::NotFound)?;
-                self.store.record_workflow_use(workflow_id).await?;
-                self.refresh_workflow_specs().await?;
-                self.run_workflow_inner(
-                    p,
-                    session,
-                    spec,
-                    RunTrigger::Manual,
-                    None,
-                    None,
-                    false,
-                    None,
-                )
-                .await?;
-            }
-
-            Command::RunIssue { session, id } => {
-                self.run_issue_now(session, id).await?;
-            }
-            Command::CancelRun { id } => {
-                self.cancel_run(id).await?;
-            }
-
-            Command::UpdateWorkflowSpec {
-                id,
-                prompt,
-                goal,
-                phases,
-                phase_prompts,
-                agents,
-                skills,
-                note,
-            } => {
-                if !phase_prompts.is_empty() && phase_prompts.len() != phases.len() {
-                    return Err(AppError::Invalid(
-                        "phase_prompts 必须为空或与 phases 等长".into(),
-                    ));
-                }
-                self.store
-                    .update_workflow_spec(
-                        id,
-                        WorkflowEdit {
-                            prompt,
-                            goal,
-                            // Same name-only-text-editing scope as
-                            // `CreateWorkflowSpec` above — an "优化" through
-                            // this form honestly resets every phase to
-                            // `Neutral` (a per-phase role editor is later UI
-                            // work, not this ticket).
-                            phases: phases.into_iter().map(PhaseMeta::neutral).collect(),
-                            phase_prompts,
-                            agents,
-                            skills,
-                            note,
-                        },
-                    )
-                    .await?;
-                self.refresh_workflow_specs().await?;
-                self.emit(Event::WorkflowSpecsChanged);
-            }
-
-            Command::ParseWorkflowContent { workflow_id } => {
-                self.parse_workflow_content(workflow_id).await?;
-            }
-
-            Command::CreateSkill {
-                id,
-                name,
-                desc,
-                category,
-                source,
-                content,
-            } => {
-                if name.trim().is_empty() {
-                    return Err(AppError::Invalid("名称不能为空".into()));
-                }
-                // plan/16 §2 防线 1 (S1+S2): a hand-authored skill must be
-                // born spec-compliant — the name is the hub-wide join key
-                // (SkillRef / agent.skills / 蒸馏溯源), so a bad or
-                // ambiguous one spreads.
-                guard_skill_name(&name)?;
-                self.guard_skill_name_unique(&name, None).await?;
-                self.store
-                    .create_skill(NewSkill {
-                        id,
-                        name,
-                        // A freshly created skill is honestly "just made,
-                        // not yet proven" — Polishing, never Fresh (the
-                        // SkillHub/AgentHub UI has no chip for a 3rd tier).
-                        maturity: Maturity::Polishing,
-                        desc,
-                        category,
-                        // T7: no stage selector on the hand-authored create
-                        // form yet (out of this ticket's scope) — honest
-                        // 通用 until an editor exists to classify it.
-                        stage_ref: None,
-                        source,
-                        content,
-                        project_id: None, // Hub 创建口径不变,一律全局
-                    })
-                    .await?;
-                self.refresh_skills().await?;
-                self.emit(Event::SkillsChanged);
-            }
-
-            Command::DistillSkillFromIssue {
-                skill_id,
-                issue_id,
-                name,
-                desc,
-                category,
-                content,
-            } => {
-                if name.trim().is_empty() {
-                    return Err(AppError::Invalid("名称不能为空".into()));
-                }
-                // plan/16 §2 防线 1 (S1+S2): distilled skills are BW 自产 —
-                // the compounding loop must mint spec-compliant names from
-                // day one (the two legacy Chinese-named rows are exactly the
-                // stock this guard prevents regrowing).
-                guard_skill_name(&name)?;
-                self.guard_skill_name_unique(&name, None).await?;
-                self.store
-                    .distill_skill_from_issue(
-                        NewSkill {
-                            id: skill_id,
-                            name,
-                            maturity: Maturity::Polishing,
-                            desc,
-                            category,
-                            // 忽略:store::distill_skill_from_issue 同样改从源
-                            // Issue 的真实 stage 派生(T7,与 project_id 同一
-                            // provenance-not-input 规则),不采用这里传入的值。
-                            stage_ref: None,
-                            source: HubSource::SelfBuilt,
-                            content,
-                            // 忽略:store::distill_skill_from_issue 改从源 Issue
-                            // 的真实 project_id 派生归属(provenance),不采用
-                            // 这里传入的值。
-                            project_id: None,
-                        },
-                        issue_id,
-                    )
-                    .await?;
-                self.refresh_skills().await?;
-                self.emit(Event::SkillsChanged);
-            }
-
-            Command::ImportSkillPackage {
-                source_path,
-                project_id,
-                official_library,
-            } => {
-                let parsed = skill_import::import_skill_package_from_disk(&source_path)
-                    .map_err(AppError::Invalid)?;
-                if parsed.name.trim().is_empty() {
-                    return Err(AppError::Invalid(
-                        "SKILL.md frontmatter 的 name 不能为空".into(),
-                    ));
-                }
-                let source = match official_library {
-                    Some(lib) => HubSource::Official {
-                        official_library: lib,
-                    },
-                    None => HubSource::SelfBuilt,
-                };
-                self.store
-                    .import_skill_package(
-                        NewSkill {
-                            id: SkillId::new(),
-                            name: parsed.name,
-                            // standards.rs 铁律:maturity 系统派生,新建一律
-                            // fresh——外部库再有名,在 BW 里的成熟度只能由
-                            // BW 本地真实使用挣出来,不从外部声誉继承。
-                            // (/code-review 硬违规修正:原 Mature 引 seed
-                            // 先例,但 seed 是内置角色路径,标准未为导入开例外。)
-                            maturity: Maturity::Fresh,
-                            desc: parsed.desc,
-                            // T2 scope: no category assignment on import (no
-                            // predetermined classification per plan/12 §2);
-                            // stays empty, editable later via `UpdateSkill`.
-                            category: String::new(),
-                            // T7 (plan/12 §0/§2): no stage guessing on import
-                            // either — 通用 until a human classifies it.
-                            stage_ref: None,
-                            source,
-                            content: parsed.content,
-                            project_id,
-                        },
-                        parsed
-                            .files
-                            .into_iter()
-                            .map(|(rel_path, content)| NewSkillFile { rel_path, content })
-                            .collect(),
-                    )
-                    .await?;
-                self.refresh_skills().await?;
-                self.emit(Event::SkillsChanged);
-            }
-
-            Command::ImportSkillLibrary {
-                root_path,
-                official_library,
-                project_id,
-            } => {
-                let dirs =
-                    skill_import::find_skill_package_dirs(&root_path).map_err(AppError::Invalid)?;
-
-                // Idempotency key: (name, official_library). Snapshot what
-                // already exists in this library once up front, then keep it
-                // updated locally as this loop inserts — catches a same-name
-                // collision *within* this run too, not just against rows
-                // that predate it.
-                //
-                // T11 (plan/12 §7): a name counts as "already in this
-                // library" whether the row is still `Official { lib }` *or*
-                // has since been hand-edited and flipped to `SelfBuilt` —
-                // `adapted_from` is exactly the surviving `official_library`
-                // read-back for that second case (see its doc comment). Only
-                // matching the still-`Official` branch (the pre-T11 shape of
-                // this filter) would let a re-import mint a brand-new
-                // `Official` duplicate of a name the user has since made
-                // their own — both an overwrite risk if it raced a later
-                // `UpdateSkill` and a same-name-ambiguity risk either way,
-                // exactly the two failure modes T11 exists to prevent.
-                self.refresh_skills().await?;
-                let mut existing_names: std::collections::HashSet<String> = self
-                    .state
-                    .skills
-                    .iter()
-                    .filter(|s| {
-                        matches!(&s.source, HubSource::Official { official_library: lib } if lib == &official_library)
-                            || s.adapted_from.as_deref() == Some(official_library.as_str())
-                    })
-                    .map(|s| s.name.clone())
-                    .collect();
-
-                let mut imported = 0u32;
-                let mut skipped = 0u32;
-                for dir in dirs {
-                    let source_path = dir.to_string_lossy().into_owned();
-                    let parsed = skill_import::import_skill_package_from_disk(&source_path)
-                        .map_err(AppError::Invalid)?;
-                    if parsed.name.trim().is_empty() {
-                        return Err(AppError::Invalid(format!(
-                            "{source_path}: SKILL.md frontmatter 的 name 不能为空"
-                        )));
-                    }
-                    if existing_names.contains(&parsed.name) {
-                        skipped += 1;
-                        continue;
-                    }
-                    self.store
-                        .import_skill_package(
-                            NewSkill {
-                                id: SkillId::new(),
-                                name: parsed.name.clone(),
-                                // 同 ImportSkillPackage:标准规定新建一律
-                                // fresh,成熟度由 BW 本地使用派生。
-                                maturity: Maturity::Fresh,
-                                desc: parsed.desc,
-                                // T3 scope, same as T2: no predetermined
-                                // category on import.
-                                category: String::new(),
-                                // T7: same 通用-until-classified rule as
-                                // `ImportSkillPackage` — no guessing across
-                                // 55 imported skills either.
-                                stage_ref: None,
-                                source: HubSource::Official {
-                                    official_library: official_library.clone(),
-                                },
-                                content: parsed.content,
-                                project_id,
-                            },
-                            parsed
-                                .files
-                                .into_iter()
-                                .map(|(rel_path, content)| NewSkillFile { rel_path, content })
-                                .collect(),
-                        )
-                        .await?;
-                    existing_names.insert(parsed.name);
-                    imported += 1;
-                }
-
-                self.refresh_skills().await?;
-                self.emit(Event::SkillsChanged);
-                self.emit(Event::SkillLibraryImported {
-                    official_library,
-                    imported,
-                    skipped,
-                });
-            }
-
-            Command::UpdateSkill {
-                id,
-                name,
-                desc,
-                category,
-                content,
-            } => {
-                if name.trim().is_empty() {
-                    return Err(AppError::Invalid("名称不能为空".into()));
-                }
-                // plan/16 §2 防线 1 (S1+S2): renames must land on a
-                // spec-compliant, unoccupied name too — this is also the
-                // exact door the audit's curated corrections walk through
-                // (中文名 → kebab), so the guard and the fix share one rule.
-                guard_skill_name(&name)?;
-                self.guard_skill_name_unique(&name, Some(id)).await?;
-                // T11 (plan/12 §7): "编辑即脱离源头" — an `Official` row whose
-                // substantive fields (content/desc/category; `name` is
-                // identity, not content) really changed flips to `SelfBuilt`
-                // in this same update. Compared against the real pre-edit
-                // row, not the caller's own state cache, so a stale UI still
-                // decides correctly. A no-op edit (identical content
-                // resubmitted) or a rename-only edit never flips.
-                let existing = self.store.get_skill(id).await?;
-                let flip_to_self_built = existing.as_ref().is_some_and(|s| {
-                    matches!(s.source, HubSource::Official { .. })
-                        && (s.content != content || s.desc != desc || s.category != category)
-                });
-                self.store
-                    .update_skill(
-                        id,
-                        SkillEdit {
-                            name,
-                            desc,
-                            category,
-                            content,
-                            flip_to_self_built,
-                        },
-                    )
-                    .await?;
-                self.refresh_skills().await?;
-                self.emit(Event::SkillsChanged);
-            }
-
-            Command::CreateAgent {
-                id,
-                name,
-                role,
-                skills,
-                model,
-                instructions,
-            } => {
-                if name.trim().is_empty() {
-                    return Err(AppError::Invalid("名称不能为空".into()));
-                }
-                self.store
-                    .create_agent(NewAgent {
-                        id,
-                        name,
-                        role,
-                        // T7: no stage selector on the hand-authored create
-                        // form yet (out of this ticket's scope) — honest
-                        // 通用 until an editor exists to classify it.
-                        stage_ref: None,
-                        maturity: Maturity::Polishing,
-                        skills,
-                        model,
-                        instructions,
-                        // T5 (plan/12 §3): a hand-authored Hub agent declares
-                        // no AllowedTools restriction yet (editable later,
-                        // same "empty = unset" honesty `ImportSkillPackage`'s
-                        // category follows) and runs on the one real executor
-                        // this app has; self-authored ⇒ `SelfBuilt`.
-                        tools: Vec::new(),
-                        agent_cli: "claude-code".to_string(),
-                        source: HubSource::SelfBuilt,
-                        project_id: None, // Hub 创建口径不变,一律全局
-                    })
-                    .await?;
-                self.refresh_agents().await?;
-                self.emit(Event::AgentsChanged);
-            }
-
-            Command::UpdateAgent {
-                id,
-                name,
-                role,
-                skills,
-                model,
-                instructions,
-            } => {
-                if name.trim().is_empty() {
-                    return Err(AppError::Invalid("名称不能为空".into()));
-                }
-                // T11 (plan/12 §7): same flip rule as `UpdateSkill` above.
-                // Substantive fields for an Agent are `instructions`/`role`/
-                // `model` — the ticket's own list also names `tools`, but
-                // `UpdateAgent`/`AgentEdit` carry no `tools` field to edit
-                // (AllowedTools isn't wired into this form), so it can never
-                // differ through this path and is correctly left out of the
-                // comparison. `name`/`skills` (tag list) are identity/
-                // structural, not content, same "rename alone doesn't flip"
-                // call `UpdateSkill` makes for its own `name`.
-                let existing = self.store.get_agent(id).await?;
-                let flip_to_self_built = existing.as_ref().is_some_and(|a| {
-                    matches!(a.source, HubSource::Official { .. })
-                        && (a.instructions != instructions || a.role != role || a.model != model)
-                });
-                self.store
-                    .update_agent(
-                        id,
-                        AgentEdit {
-                            name,
-                            role,
-                            skills,
-                            model,
-                            instructions,
-                            flip_to_self_built,
-                        },
-                    )
-                    .await?;
-                self.refresh_agents().await?;
-                self.emit(Event::AgentsChanged);
-            }
-
-            Command::ImportAgentDefinition {
-                source_path,
-                official_library,
-            } => {
-                let parsed = agent_import::import_agent_definition_from_disk(&source_path)
-                    .map_err(AppError::Invalid)?;
-                if parsed.name.trim().is_empty() {
-                    return Err(AppError::Invalid(
-                        "AGENT.md frontmatter 的 name 不能为空".into(),
-                    ));
-                }
-                let source = match &official_library {
-                    Some(lib) => HubSource::Official {
-                        official_library: lib.clone(),
-                    },
-                    None => HubSource::SelfBuilt,
-                };
-                // T11 (plan/12 §7): idempotent re-import, `official_library`
-                // path only — see this Command variant's doc comment for why
-                // the check lives here rather than in a separate batch
-                // command. `adapted_from` catches a name that has since been
-                // hand-edited and flipped away from `Official`, exactly the
-                // same union `ImportSkillLibrary` now checks.
-                let is_duplicate = if let Some(lib) = &official_library {
-                    self.refresh_agents().await?;
-                    self.state.agents.iter().any(|a| {
-                        a.name == parsed.name
-                            && (matches!(&a.source, HubSource::Official { official_library: l } if l == lib)
-                                || a.adapted_from.as_deref() == Some(lib.as_str()))
-                    })
-                } else {
-                    false
-                };
-                if !is_duplicate {
-                    self.store
-                        .create_agent(NewAgent {
-                            id: AgentId::new(),
-                            name: parsed.name,
-                            role: parsed.description,
-                            // T7: same 通用-until-classified rule as the Skill
-                            // import path — no guessing across 67 ECC agents.
-                            stage_ref: None,
-                            // 同 ImportSkillPackage:标准规定新建一律 fresh,
-                            // 成熟度由 BW 本地真实使用派生,不从外部继承。
-                            maturity: Maturity::Fresh,
-                            // ECC AGENT.md files don't declare skill tags of
-                            // their own; no predetermined mapping (no guessing).
-                            skills: Vec::new(),
-                            model: parsed.model,
-                            instructions: parsed.instructions,
-                            tools: parsed.tools,
-                            agent_cli: "claude-code".to_string(),
-                            source,
-                            project_id: None,
-                        })
-                        .await?;
-                }
-                self.refresh_agents().await?;
-                self.emit(Event::AgentsChanged);
-            }
-
-            Command::MigrateLegacyShellsIfNeeded { db_path } => {
-                // 1. Idempotency gates — THREE independent flags (T14.5,
-                // GH#59, adds the third): the T14 shell-migration flag, T16.5's
-                // template-phase-refresh flag, and this ticket's own
-                // workflow-shell-purge flag, checked separately so a DB that
-                // already finished some subset can still pick up the rest
-                // (see `TEMPLATE_PHASE_REFRESH_DONE_KEY`'s own doc comment for
-                // why one shared flag would be wrong). A real Nth boot after
-                // all three are done is a true zero-op: three cheap key
-                // reads, nothing else touched.
-                let shells_done = self
-                    .store
-                    .get_app_meta(legacy_migration::LEGACY_MIGRATION_DONE_KEY)
-                    .await?
-                    .as_deref()
-                    == Some("done");
-                let phase_refresh_done = self
-                    .store
-                    .get_app_meta(legacy_migration::TEMPLATE_PHASE_REFRESH_DONE_KEY)
-                    .await?
-                    .as_deref()
-                    == Some("done");
-                let shell_purge_done = self
-                    .store
-                    .get_app_meta(legacy_migration::WORKFLOW_SHELL_PURGE_DONE_KEY)
-                    .await?
-                    .as_deref()
-                    == Some("done");
-                if shells_done && phase_refresh_done && shell_purge_done {
-                    return Ok(());
-                }
-
-                let mut backup_path: Option<String> = None;
-                let mut deleted_skills = 0u32;
-                let mut kept_skills_with_trace = 0u32;
-                let mut deleted_agents = 0u32;
-                let mut kept_agents_with_trace = 0u32;
-                let mut imported_skills = 0u32;
-                let mut imported_agents = 0u32;
-                let mut skipped_sources: Vec<String> = Vec::new();
-                let mut refreshed_templates: Vec<String> = Vec::new();
-                let mut purged_workflows: Vec<String> = Vec::new();
-
-                // Shared backup helper: at most one real `.bak-<stamp>` file
-                // per dispatch, made lazily right before the first real
-                // write either pass below needs — reused by the second pass
-                // if the first already made one this same dispatch. Same
-                // "backup before the first destructive write, not before a
-                // connection is even opened" tradeoff `backup_db_file`'s own
-                // doc comment already documents.
-                macro_rules! ensure_backup {
-                    () => {
-                        if backup_path.is_none() {
-                            backup_path = Some(
-                                legacy_migration::backup_db_file(&db_path)
-                                    .map_err(AppError::Invalid)?,
-                            );
-                        }
-                    };
-                }
-
-                // ── Pass A (T14): legacy skill/agent catalog-shell cleanup
-                // + real-library import — unchanged logic, now gated on its
-                // own flag rather than a shared one. ──
-                if !shells_done {
-                    // A2. Trigger detection: does this DB actually have any
-                    // empty-body catalog shell at all? Owned reads straight
-                    // off the store (not `self.state`) — same "no self-
-                    // borrow entanglement across an .await" idiom
-                    // `Command::Boot` already uses for its own per-project
-                    // loop above.
-                    let skills = self.store.list_skills().await?;
-                    let agents = self.store.list_agents().await?;
-                    let has_shell_skill = skills.iter().any(|s| s.content.trim().is_empty());
-                    let has_shell_agent = agents.iter().any(|a| a.instructions.trim().is_empty());
-                    if has_shell_skill || has_shell_agent {
-                        ensure_backup!();
-
-                        // A4. Exclusion sets for the delete pass: names
-                        // referenced by any workflow spec (by name — real
-                        // `SkillRef`/`AgentRef` usage, not just an id FK)
-                        // and the 5 built-in stage-role agent names
-                        // (playbook truth, never eligible regardless of
-                        // their real `instructions` — but checked by name
-                        // too as defense-in-depth against a future hand-edit
-                        // that blanks one out).
-                        let specs = self.store.list_workflow_specs().await?;
-                        let mut referenced_skill_names: std::collections::HashSet<String> =
-                            std::collections::HashSet::new();
-                        let mut referenced_agent_names: std::collections::HashSet<String> =
-                            std::collections::HashSet::new();
-                        for spec in &specs {
-                            for s in &spec.skills {
-                                referenced_skill_names.insert(s.name.clone());
-                            }
-                            for a in &spec.agents {
-                                referenced_agent_names.insert(a.name.clone());
-                            }
-                        }
-                        let role_agent_names: std::collections::HashSet<&str> =
-                            bw_core::playbook::role_agents()
-                                .iter()
-                                .map(|(_, ra)| ra.name)
-                                .collect();
-
-                        // A5. Delete pass — skill. Conservative per this
-                        // ticket's own acceptance criterion: only a shell
-                        // (empty `content`) that also has zero real `uses`
-                        // and is unreferenced by any workflow is eligible;
-                        // anything else is a shell with a real trace and
-                        // stays, untouched, honestly counted.
-                        for s in &skills {
-                            if !s.content.trim().is_empty() {
-                                continue;
-                            }
-                            if s.uses == 0 && !referenced_skill_names.contains(&s.name) {
-                                self.store.delete_skill(s.id).await?;
-                                deleted_skills += 1;
-                            } else {
-                                kept_skills_with_trace += 1;
-                            }
-                        }
-
-                        // A6. Delete pass — agent. Same conservatism, plus
-                        // the 5 built-in stage-role names are never
-                        // eligible.
-                        for a in &agents {
-                            if !a.instructions.trim().is_empty() {
-                                continue;
-                            }
-                            let eligible = a.runs == 0
-                                && !referenced_agent_names.contains(&a.name)
-                                && !role_agent_names.contains(a.name.as_str());
-                            if eligible {
-                                self.store.delete_agent(a.id).await?;
-                                deleted_agents += 1;
-                            } else {
-                                kept_agents_with_trace += 1;
-                            }
-                        }
-
-                        // A7. Import pass — the two real on-disk skill
-                        // libraries, reusing T3's `ImportSkillLibrary`
-                        // command path verbatim (its own by-`(name,
-                        // official_library)` idempotency is what makes a
-                        // second migration attempt, or a library re-scan
-                        // after a version bump, safe on its own terms too).
-                        // Missing library root ⇒ an honest skip, never a
-                        // hard failure — a Builder without one of these two
-                        // plugins installed still gets everything else this
-                        // migration does.
-                        let skills_before_import = self.store.list_skills().await?.len();
-                        match legacy_migration::mattpocock_skills_root() {
-                            Some(root) => {
-                                Box::pin(self.dispatch(Command::ImportSkillLibrary {
-                                    root_path: root.to_string_lossy().into_owned(),
-                                    official_library: "mattpocock-skills".to_string(),
-                                    project_id: None,
-                                }))
-                                .await?;
-                            }
-                            None => skipped_sources.push(
-                                "mattpocock-skills: 本机未找到 ~/.claude/plugins/cache/mattpocock/mattpocock-skills/*/skills"
-                                    .to_string(),
-                            ),
-                        }
-                        match legacy_migration::superpowers_skills_root() {
-                            Some(root) => {
-                                Box::pin(self.dispatch(Command::ImportSkillLibrary {
-                                    root_path: root.to_string_lossy().into_owned(),
-                                    official_library: "superpowers".to_string(),
-                                    project_id: None,
-                                }))
-                                .await?;
-                            }
-                            None => skipped_sources.push(
-                                "superpowers: 本机未找到 ~/.claude/plugins/cache/superpowers-dev/superpowers/*/skills"
-                                    .to_string(),
-                            ),
-                        }
-                        let skills_after_import = self.store.list_skills().await?.len();
-                        imported_skills =
-                            skills_after_import.saturating_sub(skills_before_import) as u32;
-
-                        // A8. Import pass — the 67 vendored real ECC
-                        // AGENT.md files (T5's precedent,
-                        // `examples/import_ecc_agents.rs`: one
-                        // `ImportAgentDefinition` dispatch per file). Missing
-                        // vendor dir ⇒ honest skip (defensive; the dir is
-                        // committed to this repo, so this should never
-                        // actually fire), not a failure.
-                        let agents_before_import = self.store.list_agents().await?.len();
-                        let ecc_dir = legacy_migration::ecc_agents_vendor_dir();
-                        let ecc_files = legacy_migration::list_md_files(&ecc_dir);
-                        if ecc_files.is_empty() {
-                            skipped_sources.push(format!(
-                                "ecc agents: vendor 目录为空或不存在:{}",
-                                ecc_dir.display()
-                            ));
-                        }
-                        for f in &ecc_files {
-                            Box::pin(self.dispatch(Command::ImportAgentDefinition {
-                                source_path: f.to_string_lossy().into_owned(),
-                                official_library: Some("ecc".to_string()),
-                            }))
-                            .await?;
-                        }
-                        let agents_after_import = self.store.list_agents().await?.len();
-                        imported_agents =
-                            agents_after_import.saturating_sub(agents_before_import) as u32;
-
-                        // A9. Stamp done — from here on, every future boot's
-                        // check is the one cheap `get_app_meta` read above.
-                        self.store
-                            .set_app_meta(legacy_migration::LEGACY_MIGRATION_DONE_KEY, "done")
-                            .await?;
-                        self.refresh_skills().await?;
-                        self.refresh_agents().await?;
-                        self.emit(Event::SkillsChanged);
-                        self.emit(Event::AgentsChanged);
-                    }
-                    // else: fresh DB (or one that never had shells to begin
-                    // with) — honest no-op, `shells_done` stays unset so
-                    // this dispatch leaves it byte-for-byte as if it had
-                    // never run this pass (T14's own "不改 examples 的种子
-                    // 基线" acceptance criterion).
-                }
-
-                // ── Pass B (T16.5, GH#54): built-in stage-template
-                // `phases`/`phase_prompts` refresh. ──
-                if !phase_refresh_done {
-                    let specs = self.store.list_workflow_specs().await?;
-                    // B2. Trigger + eligibility in one pass: a row is a
-                    // candidate only if its name exactly matches one of the
-                    // five `stage_template_workflow` names; it's actually
-                    // refreshed only if its current `phases` are still the
-                    // pure legacy shape (see `is_pure_legacy_phases`'s doc
-                    // comment — any real trace at all disqualifies it). The
-                    // *presence* of at least one by-name candidate (not
-                    // "was anything actually eligible") is what marks this
-                    // pass as "checked" below — mirrors Pass A's own
-                    // has_shell_skill/has_shell_agent trigger, which stamps
-                    // its flag once real candidate rows exist, independent
-                    // of how many ultimately needed a change.
-                    let mut saw_candidate = false;
-                    let mut to_refresh: Vec<(WorkflowId, String, Vec<PhaseMeta>, Vec<String>)> =
-                        Vec::new();
-                    for spec in &specs {
-                        let Some(kind) = legacy_migration::matching_template_kind(&spec.name)
-                        else {
-                            continue;
-                        };
-                        saw_candidate = true;
-                        if !legacy_migration::is_pure_legacy_phases(&spec.phases) {
-                            // Real trace already present (a prior partial
-                            // refresh, or a genuine human edit) — never
-                            // touched.
-                            continue;
-                        }
-                        let canonical = stage_template_workflow(kind);
-                        if canonical.phases.len() != spec.phases.len() {
-                            // Defensive only — never observed in practice
-                            // (every legacy row's phase count matches the
-                            // playbook's current phase count for that
-                            // stage, since only the metadata grew, not the
-                            // phase names). An honest skip rather than a
-                            // risky index-misaligned overwrite.
-                            continue;
-                        }
-                        to_refresh.push((
-                            spec.id,
-                            spec.name.clone(),
-                            canonical.phases,
-                            canonical.phase_prompts,
-                        ));
-                    }
-
-                    if !to_refresh.is_empty() {
-                        ensure_backup!();
-                        for (id, name, phases, phase_prompts) in to_refresh {
-                            self.store
-                                .refresh_workflow_template_phases(id, phases, phase_prompts)
-                                .await?;
-                            refreshed_templates.push(name);
-                        }
-                        self.refresh_workflow_specs().await?;
-                        self.emit(Event::WorkflowSpecsChanged);
-                    }
-                    if saw_candidate {
-                        // B3. Stamp done — the five templates exist (this DB
-                        // has been seeded) and every one of them has now
-                        // been checked, real or already-current; a fresh DB
-                        // (whose seeded rows already carry current playbook
-                        // values) reaches this same stamp on its very first
-                        // boot with `refreshed_templates` honestly empty —
-                        // zero rows touched, zero backup made (since
-                        // `ensure_backup!()` only ran inside the
-                        // `!to_refresh.is_empty()` branch above).
-                        self.store
-                            .set_app_meta(legacy_migration::TEMPLATE_PHASE_REFRESH_DONE_KEY, "done")
-                            .await?;
-                    }
-                    // else: not even a by-name candidate exists (DB never
-                    // seeded, or the five template names changed) — honest
-                    // no-op, flag stays unset so a future boot (after real
-                    // seeding) can still pick this up.
-                }
-
-                // ── Pass C (T14.5, GH#59): workflow_spec directory-import
-                // shell purge. ──
-                if !shell_purge_done {
-                    let specs = self.store.list_workflow_specs().await?;
-
-                    // C2. Exclusion set #1: every workflow name referenced by
-                    // a `run_workflow`-mode cron task's `target` — same
-                    // by-name matching convention `tick_scheduler`/cron-
-                    // effectiveness already use (`cron_tasks.iter().find(|c|
-                    // c.target == spec.name)`), just collected as a set here
-                    // since Pass C checks every spec against it.
-                    let cron_tasks = self.store.list_cron_tasks().await?;
-                    let run_workflow_targets: std::collections::HashSet<String> = cron_tasks
-                        .iter()
-                        .filter(|c| c.mode == CronMode::RunWorkflow)
-                        .map(|c| c.target.clone())
-                        .collect();
-
-                    // C3. Exclusion set #2: every `workflow_spec.id` with at
-                    // least one real `workflow_run` row — one query for the
-                    // whole DB's run history (this repo's real run history is
-                    // small; a per-candidate `list_workflow_runs` call would
-                    // be N round-trips for the same answer `u32::MAX` gets in
-                    // one).
-                    let run_workflow_ids: std::collections::HashSet<WorkflowId> = self
-                        .store
-                        .list_all_workflow_runs(u32::MAX)
-                        .await?
-                        .iter()
-                        .map(|r| r.workflow_id)
-                        .collect();
-
-                    // C4. Trigger + eligibility in one pass, same
-                    // saw_candidate/to_* shape Pass B already uses: a row is
-                    // even a *candidate* only if Gate 1 (directory-import
-                    // source) holds; it's actually purged only if every
-                    // remaining gate holds too. The *presence* of at least
-                    // one Gate-1 candidate (not "was anything actually
-                    // purged") is what marks this pass as "checked" below.
-                    let mut saw_candidate = false;
-                    let mut to_purge: Vec<(WorkflowId, String)> = Vec::new();
-                    for spec in &specs {
-                        // Gate 1: only a directory-imported (ECC/Adopted)
-                        // Static spec is even a candidate — SelfBuilt (the
-                        // five built-in templates, any hand-authored
-                        // workflow) and WithinSession are never touched no
-                        // matter how zero-trace they look.
-                        if !legacy_migration::is_directory_import_source(&spec.kind) {
-                            continue;
-                        }
-                        saw_candidate = true;
-                        // Gate 2 (defense-in-depth): never purge a row whose
-                        // name exactly matches one of the five built-in stage
-                        // templates. In practice unreachable — a template's
-                        // `source` is always `SelfBuilt`, already excluded by
-                        // Gate 1 — but checked independently anyway, the same
-                        // belt-and-suspenders style Pass A's `role_agent_names`
-                        // check already applies to the five stage-role agents.
-                        if legacy_migration::matching_template_kind(&spec.name).is_some() {
-                            continue;
-                        }
-                        // Gate 3: zero real `workflow_run` rows.
-                        if run_workflow_ids.contains(&spec.id) {
-                            continue;
-                        }
-                        // Gate 4: zero `uses`.
-                        if legacy_migration::workflow_uses(&spec.kind) > 0 {
-                            continue;
-                        }
-                        // Gate 5: not referenced by name from any
-                        // `run_workflow`-mode cron task.
-                        if run_workflow_targets.contains(&spec.name) {
-                            continue;
-                        }
-                        to_purge.push((spec.id, spec.name.clone()));
-                    }
-
-                    if !to_purge.is_empty() {
-                        ensure_backup!();
-                        // C5. Delete pass. Deliberately does NOT touch
-                        // `workflow_run`/`workflow_version` rows for the
-                        // purged ids — both tables already document their own
-                        // no-FK "a run/version outlives its spec being
-                        // deleted" design (`schema.sql`: "the history is the
-                        // point"), and every purge candidate here was already
-                        // gated on zero real `workflow_run` rows (Gate 3)
-                        // above, so no orphan is actually created on the real
-                        // DB this ticket verified against (nor could one be,
-                        // by construction of the gate).
-                        for (id, name) in to_purge {
-                            self.store.delete_workflow_spec(id).await?;
-                            purged_workflows.push(name);
-                        }
-                        self.refresh_workflow_specs().await?;
-                        self.emit(Event::WorkflowSpecsChanged);
-                    }
-                    if saw_candidate {
-                        // C6. Stamp done — at least one directory-import spec
-                        // exists (this DB has real catalog-import content)
-                        // and every one has now been checked, purged or kept
-                        // for cause; a DB with none (never imported ECC/
-                        // Adopted content) leaves the flag unset so a future
-                        // boot (after a real import) can still pick this up.
-                        self.store
-                            .set_app_meta(legacy_migration::WORKFLOW_SHELL_PURGE_DONE_KEY, "done")
-                            .await?;
-                    }
-                }
-
-                // Only emit a report when this dispatch actually did real,
-                // visible work — a DB where none of the three passes found
-                // anything to touch stays silent, same "no report on a
-                // no-op" contract T14 established.
-                if backup_path.is_some() {
-                    let report = LegacyMigrationReport {
-                        backup_path,
-                        deleted_skills,
-                        kept_skills_with_trace,
-                        deleted_agents,
-                        kept_agents_with_trace,
-                        imported_skills,
-                        imported_agents,
-                        skipped_sources,
-                        refreshed_templates,
-                        purged_workflows,
-                    };
-                    self.emit(Event::LegacyShellsMigrated { report });
-                }
-            }
-
-            Command::CreateCronTask {
-                id,
-                name,
-                target,
-                schedule,
-                project_id,
-            } => {
-                if name.trim().is_empty() {
-                    return Err(AppError::Invalid("名称不能为空".into()));
-                }
-                self.store
-                    .create_cron_task(NewCronTask {
-                        id,
-                        name,
-                        target,
-                        schedule,
-                        project_id,
-                        mode: CronMode::RunWorkflow,
-                        issue_stage: None,
-                        issue_assignee: None,
-                    })
-                    .await?;
-                self.refresh_cron_tasks().await?;
-                self.emit(Event::CronTasksChanged);
-            }
-
-            Command::CreateAutopilotTask {
-                id,
-                name,
-                schedule,
-                project_id,
-                stage,
-                assignee,
-            } => {
-                if name.trim().is_empty() {
-                    return Err(AppError::Invalid("名称不能为空".into()));
-                }
-                self.store
-                    .create_cron_task(NewCronTask {
-                        id,
-                        name,
-                        target: String::new(), // unused in create_issue mode
-                        schedule,
-                        project_id,
-                        mode: CronMode::CreateIssue,
-                        issue_stage: Some(stage),
-                        issue_assignee: assignee,
-                    })
-                    .await?;
-                self.refresh_cron_tasks().await?;
-                self.emit(Event::CronTasksChanged);
-            }
-
-            Command::CreateRunSkillCronTask {
-                id,
-                name,
-                schedule,
-                project_id,
-                skill_id,
-            } => {
-                if name.trim().is_empty() {
-                    return Err(AppError::Invalid("名称不能为空".into()));
-                }
-                self.store
-                    .create_cron_task(NewCronTask {
-                        id,
-                        name,
-                        // T10: the real skill id is the payload — round-tripped
-                        // through `target` (see `bw_store::parse_cron_mode`).
-                        target: skill_id.uuid().to_string(),
-                        schedule,
-                        project_id,
-                        mode: CronMode::RunSkill { skill_id },
-                        issue_stage: None,
-                        issue_assignee: None,
-                    })
-                    .await?;
-                self.refresh_cron_tasks().await?;
-                self.emit(Event::CronTasksChanged);
-            }
-
-            Command::CreateRunPromptCronTask {
-                id,
-                name,
-                schedule,
-                project_id,
-                prompt,
-            } => {
-                if name.trim().is_empty() {
-                    return Err(AppError::Invalid("名称不能为空".into()));
-                }
-                if prompt.trim().is_empty() {
-                    return Err(AppError::Invalid("Prompt 不能为空".into()));
-                }
-                self.store
-                    .create_cron_task(NewCronTask {
-                        id,
-                        name,
-                        // T10: the prompt text itself is the payload — same
-                        // `target` column `RunSkill`/`RunWorkflow` reuse.
-                        target: prompt.clone(),
-                        schedule,
-                        project_id,
-                        mode: CronMode::RunPrompt { prompt },
-                        issue_stage: None,
-                        issue_assignee: None,
-                    })
-                    .await?;
-                self.refresh_cron_tasks().await?;
-                self.emit(Event::CronTasksChanged);
-            }
-
-            Command::SetCronStatus { id, status } => {
-                self.store.set_cron_status(id, status).await?;
-                self.refresh_cron_tasks().await?;
-                self.emit(Event::CronTasksChanged);
-            }
-
-            Command::MarkCronRun { id, status } => {
-                self.store
-                    .record_cron_run(id, status, run_at_label(now()))
-                    .await?;
-                self.refresh_cron_tasks().await?;
-                self.emit(Event::CronTasksChanged);
-            }
-
-            Command::CreateConnector {
-                id,
-                name,
-                kind,
-                scope,
-                project_id,
-                config,
-            } => {
-                if name.trim().is_empty() {
-                    return Err(AppError::Invalid("名称不能为空".into()));
-                }
-                self.store
-                    .create_connector(NewConnector {
-                        id,
-                        name,
-                        kind,
-                        scope,
-                        project_id,
-                        config,
-                    })
-                    .await?;
-                self.refresh_connectors().await?;
-                self.emit(Event::ConnectorsChanged);
-            }
-
-            Command::CreateKnowledgeSource {
-                id,
-                name,
-                kind,
-                used_by,
-            } => {
-                if name.trim().is_empty() {
-                    return Err(AppError::Invalid("名称不能为空".into()));
-                }
-                self.store
-                    .create_knowledge_source(NewKnowledgeSource {
-                        id,
-                        name,
-                        kind,
-                        used_by,
-                    })
-                    .await?;
-                self.refresh_knowledge_sources().await?;
-                self.emit(Event::KnowledgeSourcesChanged);
-            }
-
-            Command::CreateIssue {
-                id,
-                stage,
-                title,
-                desc,
-                priority,
-                standard_skill,
-            } => {
-                let p = self.active()?;
-                if title.trim().is_empty() {
-                    return Err(AppError::Invalid("标题不能为空".into()));
-                }
-                // P3: pass the slug through as-is — no validation that could
-                // fail issue creation over it. `standard_skill_block` (run
-                // time) already resolves an unknown/content-less slug to an
-                // honest no-op, so a typo or a since-deleted skill here is
-                // never a reason to reject the issue.
-                self.store
-                    .create_issue(NewIssue {
-                        id,
-                        project_id: p,
-                        stage,
-                        title: title.clone(),
-                        desc: desc.clone(),
-                        priority,
-                        standard_skill,
-                    })
-                    .await?;
-                // C4: 项目挂了 GitHub 仓时,建单同时经 gh 真开一个 GitHub
-                // issue;remote_path 为空的项目在这里直接短路返回,今天的
-                // 行为一个字节不变。announce=false(plan/14 C14 范围收敛):
-                // op 面板的手动建单不在本票覆盖范围,行为一个字节不变。
-                self.sync_issue_to_github(p, id, &title, &desc, false)
-                    .await?;
-                self.refresh_issues().await?;
-                self.emit(Event::IssuesChanged);
-            }
-
-            Command::TransitionIssue { id, status } => {
-                // Read the prior state first: the accounting below must fire
-                // exactly once per work item, on its FIRST …→Done edge.
-                // `settled_at` is the persistent settle-once marker — without
-                // it, a Done → reopen → Done bounce (reachable through this
-                // public command even though the desktop only offers forward
-                // moves) would credit the same work twice.
-                let prev = self.store.get_issue(id).await?.ok_or(AppError::NotFound)?;
-                // A5-F: `Blocked` has its own entry point (`BlockIssue`) that
-                // forces a reason — bare `TransitionIssue` never reaches it,
-                // even though the edge is graph-legal (`can_transition_to`
-                // says so); this command-level rule sits on top of the table.
-                if status == IssueStatus::Blocked {
-                    return Err(AppError::Invalid(format!(
-                        "#{} 转 Blocked 需要阻塞原因;请使用 BlockIssue 命令",
-                        prev.number
-                    )));
-                }
-                // A re-dispatch of the SAME status (e.g. a duplicated Done
-                // command) is a harmless re-affirmation, not a transition —
-                // `can_transition_to` has no self-loops by design, so it's
-                // checked only for a genuine state change. The settle-once
-                // guard below (keyed on `prev.status != Done`) already makes
-                // this safe: re-affirming Done fires no accounting twice.
-                if status != prev.status && !prev.status.can_transition_to(status) {
-                    return Err(AppError::Invalid(format!(
-                        "非法转移:#{} {}→{}",
-                        prev.number,
-                        prev.status.label(),
-                        status.label()
-                    )));
-                }
-                self.store.transition_issue(id, status).await?;
-                let newly_done = status == IssueStatus::Done
-                    && prev.status != IssueStatus::Done
-                    && prev.settled_at.is_none();
-                if newly_done {
-                    let issue = prev;
-                    self.store
-                        .mark_issue_settled(id, now().unix_timestamp())
-                        .await?;
-                    // The Done edge is the issue-side settle: the same real
-                    // accounting a workflow-run settle does, fed by the same
-                    // store functions. An issue completed by an agent teammate
-                    // is one real run + one real win for that agent —
-                    // `win_rate` derives from these counters, never hand-set.
-                    // (Cancelled records nothing: dropping an issue is not
-                    // evidence about the agent's work, and inventing a loss
-                    // would fabricate a metric. Reopen-and-redo also records
-                    // nothing new: one work item, one credit — the first win
-                    // stands in the append-only history.)
-                    if let Some(agent_id) = issue.assignee {
-                        if let Some(agent) = self.store.get_agent(agent_id).await? {
-                            self.store
-                                .record_agent_run_by_name(&agent.name, true)
-                                .await?;
-                            self.refresh_agents().await?;
-                            self.emit(Event::AgentsChanged);
-                        }
-                    }
-                    // Artifact reflux, issue-scoped: whatever real files exist
-                    // in the workspace at completion time get registered
-                    // against the issue's stage (idempotent — an unchanged
-                    // workspace registers 0 fresh rows).
-                    if let Ok(Some(proj)) = self.store.get_project(issue.project_id).await {
-                        if !proj.workspace_path.trim().is_empty() {
-                            if let Ok(fresh) = self
-                                .scan_and_register_artifacts(
-                                    issue.project_id,
-                                    &proj.workspace_path,
-                                    None,
-                                    Some(issue.stage),
-                                    Some(id),
-                                )
-                                .await
-                            {
-                                if fresh > 0 {
-                                    self.emit(Event::ArtifactsRegistered { fresh });
-                                }
-                            }
-                        }
-                    }
-                    // A4: feed the stage's machine "完成 Issue 数" metric —
-                    // change-guarded; empty target ⇒ Unknown (no fake green).
-                    self.feed_stage_done_count(issue.project_id, issue.stage)
-                        .await?;
-                }
-                self.refresh_issues().await?;
-                self.emit(Event::IssuesChanged);
-            }
-
-            Command::MergeIssuePr { id } => {
-                let issue = self.store.get_issue(id).await?.ok_or(AppError::NotFound)?;
-                // Idempotent short-circuit BEFORE any gh call: an already-Done
-                // / already-settled Issue is a no-op — a re-dispatch never
-                // re-merges (so `gh pr merge` stays called exactly once) and
-                // never re-accounts (settle-once already stands).
-                if issue.status == IssueStatus::Done || issue.settled_at.is_some() {
-                    return Ok(());
-                }
-                if issue.pr_number == 0 {
-                    return Err(AppError::Invalid(format!(
-                        "#{} 没有 PR,无法 merge;无 PR 的活用 TransitionIssue 显式完成",
-                        issue.number
-                    )));
-                }
-                // 评审中由开放 PR 派生 (D3): only an InReview PR issue is
-                // merge-acceptable.
-                if issue.status != IssueStatus::InReview {
-                    return Err(AppError::Invalid(format!(
-                        "#{} 处于{},不在评审中,不能 merge",
-                        issue.number,
-                        issue.status.label()
-                    )));
-                }
-                let proj = self
-                    .store
-                    .get_project(issue.project_id)
-                    .await?
-                    .ok_or(AppError::NotFound)?;
-                if proj.remote_path.trim().is_empty() {
-                    return Err(AppError::Invalid(format!(
-                        "#{} 的项目未挂远端仓,无法 merge PR/MR",
-                        issue.number
-                    )));
-                }
-                // merge PR/MR — the human验收 action, the ONLY place a merge is
-                // ever called (never from any executor/run path; plan/13
-                // D3+D11). Routed through the Remote factory (bug③ 2026-07-30):
-                // codehub projects merge via `codehub-cli mr merge`, github via
-                // `gh pr merge` — before this, MergeIssuePr crashed `gh pr
-                // merge` on codehub.
-                let merge_result = match bw_engine::remote::Remote::for_project(
-                    &proj.provider,
-                    &proj.remote_host,
-                    &proj.remote_path,
-                ) {
-                    Ok(r) => r.merge_mr(issue.pr_number).await,
-                    Err(e) => Err(e),
-                };
-                if let Err(e) = merge_result {
-                    // 绝不反向改写:a merge failure (including the drift case of
-                    // a PR/MR already merged on the web) is only reflected — the
-                    // Issue stays InReview and retryable, nothing is settled.
-                    self.emit(Event::ConnectorSynced {
-                        name: format!("#{} · merge", issue.number),
-                        ok: false,
-                        detail: format!("merge PR/MR #{} 失败,活留在评审中:{e}", issue.pr_number),
-                    });
-                    return Ok(());
-                }
-                // Settle Done through the EXISTING TransitionIssue InReview→Done
-                // path — settle-once accounting reused verbatim, no second
-                // accounting path. (Box::pin: `dispatch` recurses into itself;
-                // TransitionIssue never re-enters MergeIssuePr, so it's bounded.)
-                Box::pin(self.dispatch(Command::TransitionIssue {
-                    id,
-                    status: IssueStatus::Done,
-                }))
-                .await?;
-                // issue 关闭是 merge 的后果. github: `Closes #<n>` should have
-                // closed it; verify + 补关 idempotently if GitHub didn't.
-                // codehub: the MR body's `Closes #<n>` auto-closes on merge
-                // (GitLab standard, set in `codehub::create_mr`); `--issue-nums`
-                // only links, doesn't auto-close (2026-07-31 实测). So codehub
-                // issues close via the MR body, not this gh-only补关 block —
-                // skip it for codehub (never reopen, never fight drift). Bug③:
-                // was unconditional → `gh issue` crashed on codehub; now github-only.
-                if matches!(proj.provider.as_str(), "github" | "") {
-                    let remote = proj.remote_path.trim().to_string();
-                    match bw_engine::github::issue_state(&remote, issue.github_number).await {
-                        Ok(state) if state.eq_ignore_ascii_case("OPEN") => {
-                            if let Err(e) =
-                                bw_engine::github::close_issue(&remote, issue.github_number).await
-                            {
-                                self.emit(Event::ConnectorSynced {
-                                    name: format!("#{} · 关单", issue.number),
-                                    ok: false,
-                                    detail: format!("PR 已 merge,但补关 GitHub issue 失败:{e}"),
-                                });
-                            }
-                        }
-                        _ => {}
-                    }
-                }
-                self.emit(Event::ConnectorSynced {
-                    name: format!("#{} · 验收", issue.number),
-                    ok: true,
-                    detail: format!(
-                        "已 merge PR #{},#{} 验收完成",
-                        issue.pr_number, issue.number
-                    ),
-                });
-                // plan/13 D5: merge 后同步指标正本。先把工作区收拢回默认
-                // 分支(run 后还停在 bw/issue-N 活分支,merge 进主干的
-                // `.bw/metrics.toml` 只有 checkout+pull 之后才读得到),再
-                // 走同一条 sync 路径。收拢失败软降级 toast——验收已经完成,
-                // 不因同步不顺回滚任何东西;下次手动 SyncMetricsFile 可补。
-                if !proj.workspace_path.trim().is_empty() {
-                    match bw_engine::github::sync_default_branch(std::path::Path::new(
-                        proj.workspace_path.trim(),
-                    ))
-                    .await
-                    {
-                        Ok(()) => {
-                            self.sync_metrics_file_for(issue.project_id).await?;
-                        }
-                        Err(e) => {
-                            self.emit(Event::ConnectorSynced {
-                                name: "metrics.toml".into(),
-                                ok: false,
-                                detail: format!(
-                                    "merge 后工作区收拢默认分支失败,指标正本未同步(可手动重试):{e}"
-                                ),
-                            });
-                        }
-                    }
-                }
-            }
-
-            Command::AssignIssue { id, assignee } => {
-                self.store.assign_issue(id, assignee).await?;
-                self.refresh_issues().await?;
-                self.emit(Event::IssuesChanged);
-            }
-
-            Command::BlockIssue { id, reason } => {
-                let reason = reason.trim().to_string();
-                if reason.is_empty() {
-                    return Err(AppError::Invalid("转 Blocked 必须给出阻塞原因".into()));
-                }
-                let prev = self.store.get_issue(id).await?.ok_or(AppError::NotFound)?;
-                // Same table as TransitionIssue queries — Blocked is only
-                // reachable from Todo/InProgress/InReview (`can_transition_to`
-                // is the single source of truth for both entry points).
-                if !prev.status.can_transition_to(IssueStatus::Blocked) {
-                    return Err(AppError::Invalid(format!(
-                        "非法转移:#{} {}→阻塞",
-                        prev.number,
-                        prev.status.label()
-                    )));
-                }
-                self.store.block_issue(id, &reason).await?;
-                self.refresh_issues().await?;
-                self.emit(Event::IssuesChanged);
-            }
-
-            Command::RefreshIssues => {
-                // P7-7B (D22): 先真采 GitHub、再本地刷新——无活跃项目/无
-                // remote_path 的项目在 collect_github_issue_drift 内部短
-                // 路跳过,行为与升级前逐字节一致。
-                if let Some(p) = self.state.active_project {
-                    self.collect_github_issue_drift(p).await?;
-                }
-                self.refresh_issues().await?;
-                self.emit(Event::IssuesChanged);
-            }
-
-            Command::SendSessionMessage { session, text } => {
-                self.store
-                    .append_message(session, Author::Builder, &text)
-                    .await?;
-                self.emit(Event::SessionMessageAdded {
-                    session,
-                    role: Author::Builder,
-                    text: text.clone(),
-                });
-                // Deterministic mock reply (the real agent reply arrives via Tier C).
-                let reply = format!("【mock】已收到:{text}");
-                self.store
-                    .append_message(session, Author::Agent, &reply)
-                    .await?;
-                self.emit(Event::SessionMessageAdded {
-                    session,
-                    role: Author::Agent,
-                    text: reply,
-                });
-            }
-
-            Command::AnnotateWeeklyReview {
-                human_override,
-                reason,
-            } => {
-                let p = self.active()?;
-                let derived = self
-                    .store
-                    .persisted_signals(p)
-                    .await?
-                    .project
-                    .unwrap_or(Signal::Unknown);
-                // MVP rule (plan §2.5): an override may only be *more* pessimistic.
-                if let Some(ov) = human_override {
-                    if severity(ov) < severity(derived) {
-                        return Err(AppError::Invalid(
-                            "周复盘 override 只能更悲观,不能更乐观".into(),
-                        ));
-                    }
-                }
-                self.store
-                    .annotate_weekly_review(p, now(), derived, human_override, &reason)
-                    .await?;
-                self.emit(Event::WeeklyReviewAnnotated);
-            }
-
-            Command::OpenProject(id) => {
-                let proj = self
-                    .store
-                    .get_project(id)
-                    .await?
-                    .ok_or(AppError::NotFound)?;
-                self.state.active_project = Some(id);
-                self.state.active_session = None;
-                self.state.panel = Panel::Progress;
-                self.state.scope = Scope::All;
-                self.state.view = match proj.phase {
-                    Readiness::ColdStart => View::Create,
-                    Readiness::Running => {
-                        // Freshness is clock-relative — re-derive on open so a
-                        // value that went stale since last time shows as such.
-                        self.store.recompute_signals(id, now()).await?;
-                        self.refresh_projects().await?;
-                        View::App
-                    }
-                };
-                self.refresh_issues().await?;
-                self.emit(Event::ViewChanged(self.state.view));
-            }
-
-            Command::DeleteProject(id) => {
-                self.store.delete_project(id).await?;
-                if self.state.active_project == Some(id) {
-                    self.state.active_project = None;
-                    self.state.active_session = None;
-                    self.state.view = View::Projects;
-                    self.emit(Event::ViewChanged(View::Projects));
-                }
-                self.refresh_projects().await?;
-                self.emit(Event::ProjectsChanged);
-            }
-
-            Command::BackToProjects => {
-                self.state.view = View::Projects;
-                self.state.active_project = None;
-                self.state.active_session = None;
-                self.refresh_projects().await?;
-                self.refresh_issues().await?;
-                self.emit(Event::ViewChanged(View::Projects));
-            }
-
-            Command::SetPanel(p) => self.state.panel = p,
-            Command::SetScope(s) => self.state.scope = s,
-            Command::SelectSession(s) => self.state.active_session = s,
-        }
         Ok(())
     }
 }
 
 fn now() -> OffsetDateTime {
     OffsetDateTime::now_utc()
+}
+
+/// V1 Issue2 Phase2a: InReview poller throttle while interactive issues are
+/// waiting for an open MR. Rides `tick_scheduler` (~5s); 15s keeps detection
+/// in the "seconds–teens of seconds" band without flooding the remote every
+/// tick. Must stay ≥ the desktop ticker interval.
+const INREVIEW_POLL_ACTIVE_SECS: i64 = 15;
+/// Idle backstop when no InProgress+conversation+pr_number==0 candidates
+/// exist — avoid hammering codehub/github on quiet projects.
+const INREVIEW_POLL_IDLE_SECS: i64 = 5 * 60;
+
+/// Interval helper (testable): active while candidates wait, idle otherwise.
+fn inreview_poll_interval_secs(has_candidates: bool) -> i64 {
+    if has_candidates {
+        INREVIEW_POLL_ACTIVE_SECS
+    } else {
+        INREVIEW_POLL_IDLE_SECS
+    }
 }
 
 /// plan18-③ · `script` connector 的 config 解析结构。config 是 JSON 字符串,
@@ -7494,9 +704,8 @@ fn json_field_by_path<'a>(v: &'a serde_json::Value, raw: &str) -> Option<&'a ser
 /// C7 · 采集器 receipt — an honest tally of one collection pass (manual or
 /// cron). Real counts, so a caller can toast the truth and a failure is never
 /// silently swallowed. `changed` vs `unchanged` prove the change-guard held;
-/// `failed` with `first_error` prove a `gh` failure wrote nothing; `deferred`
-/// proves the bw/connector 留白; `no_remote_github` proves github can't be faked
-/// without a repo.
+/// `failed` with `first_error` proves a script failure wrote nothing;
+/// `deferred` proves a legacy definition or missing script output stayed blank.
 #[derive(Default)]
 struct MetricCollectSummary {
     changed: u32,
@@ -7504,8 +713,15 @@ struct MetricCollectSummary {
     failed: u32,
     deferred: u32,
     first_error: Option<String>,
-    no_remote_github: bool,
-    no_remote_codehub: bool,
+}
+
+impl MetricCollectSummary {
+    /// A green collection must have measured at least one real value and left
+    /// no failures or deferred definitions behind. Manual metrics are outside
+    /// this collector, so an all-manual project correctly reports no auto-collect.
+    fn is_success(&self) -> bool {
+        self.failed == 0 && self.deferred == 0 && self.changed + self.unchanged > 0
+    }
 }
 
 /// Standard workspace-derived metric names — the join keys between the
@@ -7518,7 +734,7 @@ pub const METRIC_WS_DOCS: &str = "剧本产物文档数";
 /// `claude --version` probe with a hard timeout — the `claude-cli`
 /// connector's real health check. Returns the version line on success.
 async fn claude_version_probe(binary: &str) -> Result<String, String> {
-    let fut = tokio::process::Command::new(binary)
+    let fut = bw_engine::tokio_cmd(binary)
         .arg("--version")
         .stdin(std::process::Stdio::null())
         .stdout(std::process::Stdio::piped())
@@ -7535,6 +751,113 @@ async fn claude_version_probe(binary: &str) -> Result<String, String> {
         ));
     }
     Ok(String::from_utf8_lossy(&output.stdout).trim().to_string())
+}
+
+/// Hosts `codehub-cli auth status` may list. Alias is what `-H` wants;
+/// `host_needle` matches the table URL; `label` is what the wall shows.
+const CODEHUB_AUTH_ZONES: &[(&str, &str, &str)] = &[
+    ("green", "codehub-g.huawei.com", "绿区"),
+    ("open", "open.codehub.huawei.com", "内源"),
+    ("yellow", "codehub-y.huawei.com", "黄区"),
+];
+
+/// Zones whose `auth status` row has a logged-in token. Table parse only —
+/// never returns token text. Order follows [`CODEHUB_AUTH_ZONES`].
+fn logged_in_codehub_zones(status: &str) -> Vec<&'static str> {
+    let mut out = Vec::new();
+    for line in status.lines() {
+        let low = line.to_ascii_lowercase();
+        for (_, host, label) in CODEHUB_AUTH_ZONES {
+            if !low.contains(host) {
+                continue;
+            }
+            if low.split_whitespace().any(|w| w == "yes") {
+                out.push(*label);
+            }
+        }
+    }
+    out
+}
+
+/// 项目墙探测：codehub-cli 在不在、至少一区已登录。未登录如实 Fail，不装绿。
+/// 旧实现只打 `-H open`，黄区/绿区 token 正常也会红。
+async fn codehub_cli_probe() -> EnvCheck {
+    let bin = std::env::var("USERPROFILE")
+        .ok()
+        .map(|h| {
+            std::path::PathBuf::from(h)
+                .join("bin")
+                .join("codehub-cli.exe")
+        })
+        .filter(|p| p.is_file())
+        .map(|p| p.to_string_lossy().into_owned())
+        .unwrap_or_else(|| "codehub-cli".into());
+    let fut = bw_engine::tokio_cmd(&bin)
+        .args(["auth", "status"])
+        .stdin(std::process::Stdio::null())
+        .stdout(std::process::Stdio::piped())
+        .stderr(std::process::Stdio::piped())
+        .output();
+    let output = match tokio::time::timeout(std::time::Duration::from_secs(15), fut).await {
+        Err(_) => return EnvCheck::Fail("codehub-cli 探针超时(15s)".into()),
+        Ok(Err(e)) if e.kind() == std::io::ErrorKind::NotFound => {
+            return EnvCheck::Fail("codehub-cli 未安装或不在 PATH".into());
+        }
+        Ok(Err(e)) => return EnvCheck::Fail(format!("无法运行 {bin}:{e}")),
+        Ok(Ok(o)) => o,
+    };
+    let stdout = String::from_utf8_lossy(&output.stdout);
+    let zones = logged_in_codehub_zones(&stdout);
+    if !zones.is_empty() {
+        return EnvCheck::Ok(format!("已登录 {}", zones.join(" / ")));
+    }
+    let err = String::from_utf8_lossy(&output.stderr).trim().to_string();
+    if !output.status.success() && !err.is_empty() {
+        return EnvCheck::Fail(err);
+    }
+    EnvCheck::Fail("未登录任何区:先本机 `codehub-cli -H green|open|yellow auth login`".into())
+}
+
+/// Wall「测一下」must accept any logged-in CodeHub zone, not only 内源.
+#[cfg(test)]
+mod codehub_env_probe_tests {
+    use super::logged_in_codehub_zones;
+
+    const STATUS_THREE_ROWS: &str = "\
+               HOST                  AUTH TYPE    USERNAME      TOKEN     EXPIRES AT  LOGIN          LOGIN AT           DEFAULT  ACTIVE
+  https://codehub-g.huawei.com     private-token  tester     abcd...wxyz  -           yes    2026-07-28T15:29:21+08:00
+  https://open.codehub.huawei.com  private-token  tester     efgh...ijkl  -           yes    2026-07-28T15:29:56+08:00  yes      yes
+  https://codehub-y.huawei.com     private-token  -          -            -           no     -
+";
+
+    const STATUS_YELLOW_ONLY: &str = "\
+  https://codehub-g.huawei.com     private-token  -          -            -           no     -
+  https://open.codehub.huawei.com  private-token  -          -            -           no     -
+  https://codehub-y.huawei.com     private-token  someone    abcd...wxyz  -           yes    2026-08-17T10:00:00+08:00
+";
+
+    #[test]
+    fn yellow_only_counts_as_logged_in() {
+        assert_eq!(logged_in_codehub_zones(STATUS_YELLOW_ONLY), vec!["黄区"]);
+    }
+
+    #[test]
+    fn green_and_open_both_count() {
+        assert_eq!(
+            logged_in_codehub_zones(STATUS_THREE_ROWS),
+            vec!["绿区", "内源"]
+        );
+    }
+
+    #[test]
+    fn none_logged_in_is_empty() {
+        let none = "\
+  https://codehub-g.huawei.com     private-token  -          -            -           no     -
+  https://open.codehub.huawei.com  private-token  -          -            -           no     -
+  https://codehub-y.huawei.com     private-token  -          -            -           no     -
+";
+        assert!(logged_in_codehub_zones(none).is_empty());
+    }
 }
 
 /// Filesystem-safe slug for a project's workspace directory: ascii
@@ -7559,6 +882,34 @@ fn workspace_slug(name: &str, id: ProjectId) -> String {
     }
 }
 
+/// W3-9: tell apart a buddy-provisioned workspace clone (under
+/// `workspaces_root`, named `<slug>-<uuid8hex>` — safe to delete with the
+/// project) from a user-bound pre-existing directory (the user's own path,
+/// which buddy must never delete). The judgment is path-based: `project`
+/// has no `is_bound` column, so this is the only reliable discriminator.
+fn is_buddy_built_clone(
+    workspace_path: &str,
+    name: &str,
+    id: ProjectId,
+    workspaces_root: Option<&std::path::Path>,
+) -> bool {
+    let ws = workspace_path.trim();
+    if ws.is_empty() {
+        return false;
+    }
+    let Some(root) = workspaces_root else {
+        return false;
+    };
+    let path = std::path::Path::new(ws);
+    if !path.starts_with(root) {
+        return false;
+    }
+    match path.file_name().and_then(|n| n.to_str()) {
+        Some(name_on_disk) => name_on_disk == workspace_slug(name, id),
+        None => false,
+    }
+}
+
 /// Provision the project's own git workspace under `root` (all-in-one-
 /// codebase default). Returns the real path. The README is written from the
 /// project's own creation-flow data — real inputs, not invented content.
@@ -7573,6 +924,413 @@ async fn provision_workspace(root: &std::path::Path, proj: &ProjectRow) -> Resul
         .await
         .map_err(|e| e.to_string())?;
     Ok(dir.to_string_lossy().into_owned())
+}
+
+/// V1 Issue 1 phase2 · Buddy-owned repo-stats collector for a remote-backed
+/// project. Writes `.bw/collect_stats.sh` (launcher) + `.bw/collect_stats.py`
+/// (real collector: today scalars + `history` of the last 30 calendar days).
+/// CreateProject and every `collect_project_metrics` call refresh these files
+/// so already-onboarded workspaces pick up Phase B without re-creating.
+fn write_buddy_collect_stats(proj: &ProjectRow) {
+    let root = proj.workspace_path.trim();
+    if root.is_empty() || proj.remote_path.trim().is_empty() {
+        return;
+    }
+    let bw_dir = Path::new(root).join(".bw");
+    let _ = std::fs::create_dir_all(&bw_dir);
+    let _ = std::fs::write(
+        bw_dir.join("collect_stats.py"),
+        build_collect_stats_py(proj),
+    );
+    let _ = std::fs::write(bw_dir.join("collect_stats.sh"), build_collect_stats_sh());
+}
+
+/// Thin sh launcher — collect arm keeps `command: sh` + `.bw/collect_stats.sh`
+/// for存量 connectors; delegates to the Python collector when available.
+fn build_collect_stats_sh() -> String {
+    r#"#!/bin/sh
+# BW 自带采集脚本 — 委托 .bw/collect_stats.py(当日值 + 近 30 天 history)
+# CreateProject / CollectMetrics 会覆盖本文件,勿手改。
+ROOT=$(CDPATH= cd -- "$(dirname "$0")/.." && pwd) || exit 1
+cd "$ROOT" || exit 1
+run_py() {
+  if command -v py >/dev/null 2>&1; then py -3 "$@"
+  elif command -v python3 >/dev/null 2>&1; then python3 "$@"
+  elif command -v python >/dev/null 2>&1; then python "$@"
+  else return 1
+  fi
+}
+run_py .bw/collect_stats.py
+"#
+    .to_string()
+}
+
+/// Python body for Buddy 仓统计. Emits:
+/// ```json
+/// {"open_issues": N, "merged_mrs": M,
+///  "history": {"open_issues":[{"ts":"YYYY-MM-DD","v":n},…],
+///              "merged_mrs":[{"ts":"YYYY-MM-DD","v":m},…]}}
+/// ```
+/// `history` covers today and the previous 29 days (30 points). open_issues
+/// as-of day D = created on/before D and not closed on/before D; merged_mrs
+/// as-of D = merged_at date ≤ D.
+fn build_collect_stats_py(proj: &ProjectRow) -> String {
+    match proj.provider.as_str() {
+        "codehub" => format!(
+            r#"#!/usr/bin/env python3
+# BW 自带采集 — codehub 仓统计(当日 + 近 30 天 history)。勿手改;Buddy 会覆盖。
+from __future__ import annotations
+
+import json
+import subprocess
+import sys
+from datetime import date, datetime, timedelta
+from pathlib import Path
+
+HOST = "{host}"
+PATH_NS = "{path}"
+OUT = Path(".bw/collect_stats.json")
+HISTORY_DAYS = 30
+
+
+def run(argv: list[str]) -> str:
+    try:
+        p = subprocess.run(argv, capture_output=True, text=True, check=False)
+    except FileNotFoundError:
+        return ""
+    if p.returncode != 0:
+        return ""
+    return (p.stdout or "").strip()
+
+
+def load_json(raw: str):
+    if not raw:
+        return []
+    try:
+        v = json.loads(raw)
+    except json.JSONDecodeError:
+        return []
+    if isinstance(v, list):
+        return v
+    if isinstance(v, dict):
+        for k in ("items", "list", "data", "values"):
+            if isinstance(v.get(k), list):
+                return v[k]
+    return []
+
+
+def parse_dt(s: str | None):
+    if not s:
+        return None
+    s = s.strip()
+    if s.endswith("Z"):
+        s = s[:-1] + "+00:00"
+    try:
+        return datetime.fromisoformat(s)
+    except ValueError:
+        return None
+
+
+def as_date(dt: datetime | None) -> date | None:
+    if dt is None:
+        return None
+    if dt.tzinfo is not None:
+        return dt.astimezone().date()
+    return dt.date()
+
+
+def open_count_as_of(issues, d: date) -> int:
+    n = 0
+    for iss in issues:
+        created = as_date(parse_dt(iss.get("created_at")))
+        if created is None or created > d:
+            continue
+        closed = as_date(parse_dt(iss.get("closed_at")))
+        if closed is not None and closed <= d:
+            continue
+        n += 1
+    return n
+
+
+def merged_count_as_of(mrs, d: date) -> int:
+    n = 0
+    for mr in mrs:
+        merged = as_date(parse_dt(mr.get("merged_at")))
+        if merged is not None and merged <= d:
+            n += 1
+    return n
+
+
+def main() -> int:
+    issues_raw = run([
+        "codehub-cli", "-H", HOST, "issue", "list", "-p", PATH_NS,
+        "--state", "all", "-l", "0", "-f", "json",
+        "--json", "id,state,created_at,closed_at",
+    ])
+    mrs_raw = run([
+        "codehub-cli", "-H", HOST, "mr", "list", "-p", PATH_NS,
+        "--state", "merged", "-l", "0", "-f", "json",
+        "--json", "id,merged_at",
+    ])
+    issues = load_json(issues_raw)
+    mrs = load_json(mrs_raw)
+    today = date.today()
+    hist_oi = []
+    hist_mm = []
+    for i in range(HISTORY_DAYS - 1, -1, -1):
+        d = today - timedelta(days=i)
+        hist_oi.append({{"ts": d.isoformat(), "v": open_count_as_of(issues, d)}})
+        hist_mm.append({{"ts": d.isoformat(), "v": merged_count_as_of(mrs, d)}})
+    out = {{
+        "open_issues": hist_oi[-1]["v"] if hist_oi else 0,
+        "merged_mrs": hist_mm[-1]["v"] if hist_mm else 0,
+        "history": {{"open_issues": hist_oi, "merged_mrs": hist_mm}},
+    }}
+    OUT.parent.mkdir(parents=True, exist_ok=True)
+    OUT.write_text(json.dumps(out, ensure_ascii=False), encoding="utf-8")
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())
+"#,
+            host = proj.remote_host,
+            path = proj.remote_path,
+        ),
+        _ => format!(
+            r#"#!/usr/bin/env python3
+# BW 自带采集 — GitHub 仓统计(当日 + 近 30 天 history)。勿手改;Buddy 会覆盖。
+from __future__ import annotations
+
+import json
+import subprocess
+import sys
+from datetime import date, datetime, timedelta
+from pathlib import Path
+
+REPO = "{path}"
+OUT = Path(".bw/collect_stats.json")
+HISTORY_DAYS = 30
+
+
+def run(argv: list[str]) -> str:
+    try:
+        p = subprocess.run(argv, capture_output=True, text=True, check=False)
+    except FileNotFoundError:
+        return ""
+    if p.returncode != 0:
+        return ""
+    return (p.stdout or "").strip()
+
+
+def load_json(raw: str):
+    if not raw:
+        return []
+    try:
+        v = json.loads(raw)
+    except json.JSONDecodeError:
+        return []
+    return v if isinstance(v, list) else []
+
+
+def parse_dt(s: str | None):
+    if not s:
+        return None
+    s = s.strip()
+    if s.endswith("Z"):
+        s = s[:-1] + "+00:00"
+    try:
+        return datetime.fromisoformat(s)
+    except ValueError:
+        return None
+
+
+def as_date(dt: datetime | None) -> date | None:
+    if dt is None:
+        return None
+    if dt.tzinfo is not None:
+        return dt.astimezone().date()
+    return dt.date()
+
+
+def open_count_as_of(issues, d: date) -> int:
+    n = 0
+    for iss in issues:
+        created = as_date(parse_dt(iss.get("createdAt")))
+        if created is None or created > d:
+            continue
+        closed = as_date(parse_dt(iss.get("closedAt")))
+        if closed is not None and closed <= d:
+            continue
+        n += 1
+    return n
+
+
+def merged_count_as_of(prs, d: date) -> int:
+    n = 0
+    for pr in prs:
+        merged = as_date(parse_dt(pr.get("mergedAt")))
+        if merged is not None and merged <= d:
+            n += 1
+    return n
+
+
+def main() -> int:
+    issues = load_json(run([
+        "gh", "issue", "list", "--repo", REPO, "--state", "all",
+        "--limit", "1000", "--json", "createdAt,closedAt",
+    ]))
+    prs = load_json(run([
+        "gh", "pr", "list", "--repo", REPO, "--state", "merged",
+        "--limit", "1000", "--json", "mergedAt",
+    ]))
+    today = date.today()
+    hist_oi = []
+    hist_mm = []
+    for i in range(HISTORY_DAYS - 1, -1, -1):
+        d = today - timedelta(days=i)
+        hist_oi.append({{"ts": d.isoformat(), "v": open_count_as_of(issues, d)}})
+        hist_mm.append({{"ts": d.isoformat(), "v": merged_count_as_of(prs, d)}})
+    out = {{
+        "open_issues": hist_oi[-1]["v"] if hist_oi else 0,
+        "merged_mrs": hist_mm[-1]["v"] if hist_mm else 0,
+        "history": {{"open_issues": hist_oi, "merged_mrs": hist_mm}},
+    }}
+    OUT.parent.mkdir(parents=True, exist_ok=True)
+    OUT.write_text(json.dumps(out, ensure_ascii=False), encoding="utf-8")
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())
+"#,
+            path = proj.remote_path,
+        ),
+    }
+}
+
+/// Parse `history.<field>` from a script output JSON into `(day, value)` pairs.
+/// Missing / malformed history → `None` (caller falls back to today-only).
+fn history_series_for_field(out: &serde_json::Value, field: &str) -> Option<Vec<(Date, String)>> {
+    let field = field.trim();
+    if field.is_empty() {
+        return None;
+    }
+    // Accept `history.open_issues` or top-level history + collect_query `open_issues`.
+    let path = field.strip_prefix("history.").unwrap_or(field);
+    let arr = out.pointer(&format!("/history/{path}"))?.as_array()?;
+    let mut series = Vec::with_capacity(arr.len());
+    for item in arr {
+        let ts = item.get("ts")?.as_str()?;
+        let day = parse_ymd(ts)?;
+        let v = item.get("v")?;
+        let value = match v {
+            serde_json::Value::Number(n) => n.to_string(),
+            serde_json::Value::String(s) => s.clone(),
+            other => other.to_string(),
+        };
+        series.push((day, value));
+    }
+    if series.is_empty() {
+        None
+    } else {
+        Some(series)
+    }
+}
+
+fn parse_ymd(s: &str) -> Option<Date> {
+    let mut parts = s.trim().split('-');
+    let y: i32 = parts.next()?.parse().ok()?;
+    let m: u8 = parts.next()?.parse().ok()?;
+    let d: u8 = parts.next()?.parse().ok()?;
+    let month = Month::try_from(m).ok()?;
+    Date::from_calendar_date(y, month, d).ok()
+}
+
+fn date_at_noon_utc(day: Date) -> OffsetDateTime {
+    OffsetDateTime::new_utc(day, Time::from_hms(12, 0, 0).expect("valid noon"))
+}
+
+/// PF1-R5c · Windows: app 进程的 PATH 可能缺 Git 的 bin/usr-bin(sh.exe/bash.exe
+/// 所在),`Command::new("sh")` 报 program not found。从 PATH 里的 git.exe 位置
+/// 推导(系统 PATH 通常有 `<root>\cmd\git.exe`):`<root>\bin\bash.exe` 或
+/// `<root>\usr\bin\sh.exe`。返回首个存在的全路径。
+fn resolve_script_interpreter_via_git() -> Option<String> {
+    if !cfg!(windows) {
+        return None;
+    }
+    let path = std::env::var("PATH").ok()?;
+    for dir in path.split(';') {
+        let dir_path = Path::new(dir);
+        if !dir_path.join("git.exe").exists() {
+            continue;
+        }
+        // git.exe 可能在 <root>\cmd\ 或 <root>\mingw64\bin\ 或 <root>\bin\。
+        // 试 root = dir_path 与 dir_path.parent(),找 bin\bash.exe / usr\bin\sh.exe。
+        let roots = [
+            dir_path.to_path_buf(),
+            dir_path.parent().unwrap_or(dir_path).to_path_buf(),
+        ];
+        for root in &roots {
+            let bash = root.join("bin").join("bash.exe");
+            if bash.exists() {
+                return Some(bash.to_string_lossy().into_owned());
+            }
+            let sh = root.join("usr").join("bin").join("sh.exe");
+            if sh.exists() {
+                return Some(sh.to_string_lossy().into_owned());
+            }
+        }
+    }
+    None
+}
+
+/// PF1-R5c · collect arm 跑 .sh 脚本的解释器候选链(Windows 专用增强)。
+/// 顺序:BW_SH_BIN env 强制 → config command + 裸名 sh/bash/sh.exe/bash.exe
+/// (PATH 搜)→ 从 git.exe 推导的全路径 → 常见安装位兜底。collect arm 试到
+/// 第一个 spawn 成功的为止(NotFound 才换下一个)。
+fn script_interpreter_candidates(command: &str) -> Vec<String> {
+    let mut v: Vec<String> = Vec::new();
+    let push = |v: &mut Vec<String>, s: String| {
+        if !v.contains(&s) {
+            v.push(s);
+        }
+    };
+    if cfg!(windows) {
+        if let Ok(p) = std::env::var("BW_SH_BIN") {
+            let p = p.trim();
+            if !p.is_empty() {
+                push(&mut v, p.to_string());
+            }
+        }
+    }
+    push(&mut v, command.to_string());
+    if cfg!(windows) {
+        // P5 · 2026-08-06 real-world incident: a fresh Windows machine may
+        // have the `py` launcher (installed by python.org's installer by
+        // default) on PATH but not a bare `python`/`python3` — the default
+        // script command (`ScriptConnectorConfig::from_config` defaults
+        // empty `command` to `"python"`) then fails NotFound with no
+        // fallback. `py` (no version arg) launches the newest installed
+        // Python, same semantics as bare `python` for a single-version box.
+        if matches!(command, "python" | "python3") {
+            push(&mut v, "py".to_string());
+        }
+        for c in ["bash", "sh.exe", "bash.exe"] {
+            push(&mut v, c.to_string());
+        }
+        if let Some(bash) = resolve_script_interpreter_via_git() {
+            push(&mut v, bash);
+        }
+        for p in [
+            r"C:\Program Files\Git\bin\bash.exe",
+            r"C:\Program Files\Git\usr\bin\sh.exe",
+            r"C:\Program Files (x86)\Git\bin\bash.exe",
+        ] {
+            push(&mut v, p.to_string());
+        }
+    }
+    v
 }
 
 /// P1: the project's charter (`PROJECT.md`) — every line is a real creation-
@@ -7614,6 +1372,34 @@ fn charter_md(proj: &ProjectRow) -> String {
     }
     s.push_str("---\n\n> 本章程由 Builders' Workbench 在创建流程中逐步写就,每次更新留一次提交。\n");
     s
+}
+
+/// V2-② Phase A (§6.1): render the project's intent as `.bw/project.toml`
+/// content — the five fields a creation flow collects. The first-comer
+/// writes this into the repo as the canonical intent (later-comers read it
+/// back via `sync_project_file_for`). North star is **not** here (it lives in
+/// `.bw/metrics.toml`). Returns `None` if serialization fails (shouldn't
+/// happen for string-only data, but honest rather than panicking).
+fn project_toml_content(proj: &ProjectRow) -> Option<String> {
+    let file = bw_engine::project_file::ProjectFile {
+        name: proj.name.clone(),
+        kind: proj.kind.clone(),
+        brief: proj.desc.clone(),
+        benchmark: proj.benchmark.clone(),
+        opportunity: proj.opportunity.clone(),
+    };
+    bw_engine::project_file::render(&file).ok()
+}
+
+/// V2-② Phase A (§6): check whether the workspace already has
+/// `.bw/project.toml` — the first-comer/later-comer判据. Empty workspace →
+/// false (no file = first-comer, same as a workspace that simply has none
+/// yet).
+fn has_project_toml(workspace: &str) -> bool {
+    !workspace.trim().is_empty()
+        && std::path::Path::new(workspace)
+            .join(bw_engine::project_file::PROJECT_FILE_REL_PATH)
+            .exists()
 }
 
 /// P1: write the project's `PROJECT.md` charter into its OWNED workspace and
@@ -7685,122 +1471,22 @@ async fn write_component_standards(app: &App, p: ProjectId) -> Result<(), AppErr
     Ok(())
 }
 
-/// Snapshot of the spec's shape at run time, serialized into the run's
-/// `params_json` (iter 3). Records what a run *actually executed* — so after
-/// a later `UpdateWorkflowSpec` rewrites the phases, a past run's history
-/// still truthfully shows the phases it ran. Pure function of the spec +
-/// trigger; no IO, no secrets.
-/// Forward one engine [`RunEvent`] to the live UI stream (T9 helper — shared by
-/// every `run_phase_range` call inside the adversarial loop so a subscriber sees
-/// phases advance and re-advance across rounds). `WorkflowDone` is emitted by
-/// the loop itself once the whole run truly finishes, so it's a no-op here.
-fn forward_progress(live: &broadcast::Sender<Event>, e: RunEvent) {
-    match e {
-        RunEvent::PhaseStarted { idx, name } => {
-            let _ = live.send(Event::WorkflowProgress {
-                phase_idx: idx,
-                status: format!("started:{name}"),
-            });
-        }
-        RunEvent::PhaseCompleted { idx, .. } => {
-            let _ = live.send(Event::WorkflowProgress {
-                phase_idx: idx,
-                status: "completed".into(),
-            });
-        }
-        RunEvent::WorkflowFailed { error } => {
-            let _ = live.send(Event::WorkflowFailed(error));
-        }
-        RunEvent::WorkflowDone { .. } => {}
+/// desc 的第一句,按字符数截断。技能的 description 上限 1024 字符,整句进目录
+/// 会把 prompt 撑得没法读;第一句恰好是触发段所在。
+fn first_sentence_capped(desc: &str, cap: usize) -> String {
+    let head = desc
+        .split(['。', '\n'])
+        .next()
+        .unwrap_or(desc)
+        .split(". ")
+        .next()
+        .unwrap_or(desc)
+        .trim();
+    if head.chars().count() <= cap {
+        return head.to_string();
     }
-}
-
-/// The tail slice of a review output — enough context to seed the next round's
-/// reject baton or an honest error message, without dragging a whole transcript.
-fn review_tail(text: &str) -> String {
-    const MAX: usize = 400;
-    let t = text.trim();
-    let n = t.chars().count();
-    if n <= MAX {
-        return t.to_string();
-    }
-    t.chars().skip(n - MAX).collect()
-}
-
-/// T10 (plan/12 §5): the ephemeral spec `tick_scheduler` runs a `RunSkill`/
-/// `RunPrompt` cron task through — same `run_workflow_inner` engine/executor
-/// path a `RunWorkflow` cron task uses (so evidence lands in `workflow_run`/
-/// `CronEffectiveness` identically), just one neutral phase carrying the
-/// skill's `content` or the bare prompt text instead of a real hub workflow's
-/// phases. Never persisted — minted fresh on every fire, like `stage_workflow`'s
-/// throwaway `Dynamic` specs.
-fn cron_prompt_workflow(name: String, prompt: String) -> WorkflowSpec {
-    WorkflowSpec {
-        id: WorkflowId::new(),
-        name,
-        kind: WorkflowKind::Dynamic {
-            origin: "定时任务".into(),
-            stage: String::new(),
-        },
-        prompt,
-        goal: "定时任务真实执行".into(),
-        stage_ref: None,
-        phases: vec![PhaseMeta::neutral("执行")],
-        phase_prompts: vec![],
-        agents: vec![],
-        skills: vec![],
-        loop_config: LoopConfig {
-            retries: 1,
-            max_iter: 1,
-        },
-        project_id: None,
-        content: String::new(),
-    }
-}
-
-/// `agent_cli`/`tools`/`allowed_tools_arg` are T6 (plan/12 §3) additions: the
-/// resolved Agent-CLI route and the exact `--allowedTools` value it implies,
-/// snapshotted BEFORE the engine runs — so a run's real invocation
-/// parameters read back from `params_json` regardless of whether the
-/// executor call itself ever completes (an `UnsupportedCliExecutor` errors
-/// on its very first call; a real `claude -p` call may hit a flaky gateway).
-///
-/// `force_mock` (plan/14 C13) is recorded verbatim so an E2E readback can
-/// prove a creation-flow drafting run never had a chance to reach the real
-/// executor, independent of what `agent_cli`/`workspace_path` say — "报告不
-/// 代答,读回为证" applies to the routing decision itself, not just the run's
-/// outcome.
-fn run_params_snapshot(
-    spec: &WorkflowSpec,
-    trigger: RunTrigger,
-    agent_cli: &str,
-    tools: &[String],
-    allowed_tools_arg: Option<&str>,
-    force_mock: bool,
-) -> String {
-    // serde_json::Value keeps this stable as the spec grows — adding a field
-    // later is additive, not a schema break on historical run rows.
-    let v = serde_json::json!({
-        "phases": spec.phases,
-        "phase_count": spec.phases.len(),
-        // Whether this run executed per-phase playbook instructions (vs the
-        // legacy shared prompt) — an A/B axis for later run analytics.
-        "playbook": !spec.phase_prompts.is_empty(),
-        "loop": { "retries": spec.loop_config.retries, "max_iter": spec.loop_config.max_iter },
-        "agents": spec.agents.len(),
-        "skills": spec.skills.len(),
-        "stage_ref": spec.stage_ref,
-        "trigger": trigger.text(),
-        "kind": match &spec.kind {
-            WorkflowKind::Static { version, .. } => format!("static:v{version}"),
-            WorkflowKind::Dynamic { origin, .. } => format!("dynamic:{origin}"),
-        },
-        "agent_cli": agent_cli,
-        "tools": tools,
-        "allowed_tools_arg": allowed_tools_arg,
-        "force_mock": force_mock,
-    });
-    v.to_string()
+    let cut: String = head.chars().take(cap).collect();
+    format!("{cut}…")
 }
 
 /// Compact, real `"YYYY-MM-DD HH:MM"` label for `CronTask.last_run` — a
@@ -7843,14 +1529,55 @@ fn metrics_file_sync(
     }
 }
 
-/// Worse signals sort higher. `Unknown` sits between green and amber — more
-/// pessimistic than green, less than a known amber.
-fn severity(s: Signal) -> u8 {
-    match s {
-        Signal::Green => 0,
-        Signal::Unknown => 1,
-        Signal::Amber => 2,
-        Signal::Red => 3,
+/// V1 Issue2 Phase 3: `bw_engine::connectors_file::ConnectorsFile` (parsed
+/// toml) → `ConnectorsFileSync` (the store's write shape). Pure reshaping —
+/// no validation here, `read` already guaranteed every connector has a valid
+/// `kind = "script"` and `name`/`script` by the time this runs (a file
+/// missing those fails to parse, never reaches this function). The `config`
+/// column is the JSON `{script, command, output}` that
+/// `ScriptConnectorConfig::from_config` parses back — matches the existing
+/// connector `config` format.
+fn connectors_file_sync(
+    project_id: ProjectId,
+    file: &bw_engine::connectors_file::ConnectorsFile,
+) -> ConnectorsFileSync {
+    let connectors = file
+        .connectors
+        .iter()
+        .map(|c| {
+            let config = serde_json::json!({
+                "script": c.script,
+                "command": c.command,
+                "output": c.output,
+            })
+            .to_string();
+            ConnectorDefSync {
+                name: c.name.clone(),
+                config,
+            }
+        })
+        .collect();
+    ConnectorsFileSync {
+        project_id,
+        connectors,
+    }
+}
+
+/// V2-② Phase A: `bw_engine::project_file::ProjectFile` (parsed toml) →
+/// `ProjectFileSync` (the store's write shape). Pure reshaping — no
+/// validation here, `read` already guaranteed every field is present (a file
+/// missing `name`/`kind` fails to parse, never reaches this function).
+fn project_file_sync(
+    project_id: ProjectId,
+    file: &bw_engine::project_file::ProjectFile,
+) -> ProjectFileSync {
+    ProjectFileSync {
+        project_id,
+        name: file.name.clone(),
+        kind: file.kind.clone(),
+        brief: file.brief.clone(),
+        benchmark: file.benchmark.clone(),
+        opportunity: file.opportunity.clone(),
     }
 }
 

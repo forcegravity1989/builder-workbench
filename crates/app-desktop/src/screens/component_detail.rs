@@ -16,10 +16,10 @@ use crate::screens::markdown::MarkdownView;
 use crate::screens::skill_hub::{workflows_using_skill, SkillFileBrowser, SkillSpecNotes};
 use crate::screens::workflow_flow::WorkflowFlow;
 use crate::theme;
-use bw_app::Command;
+use bw_app::{AdoptTarget, Command};
 use bw_core::{AgentId, ConnectorId, CronTaskId, SkillId, WorkflowId};
 use dioxus::prelude::*;
-use ui::vm::{CronEffectivenessVm, ProjectCardVm};
+use ui::vm::ProjectCardVm;
 
 /// Which component the project rail currently has open. `Copy` — this is a
 /// cheap id-sized selection, not owned data (the actual VM is looked up out
@@ -42,12 +42,46 @@ fn owner_project_name(
         .map(|p| p.name.clone())
 }
 
+/// plan/20 R5:「引入本项目」——只在 (a) 有活跃项目、(b) 本行是全局共享行
+/// (`row_owner` 为 None)时出现;点击把这行**复制**一份归活跃项目
+/// (`Command::AdoptIntoProject`,复制不是引用,之后各改各的)。
+fn adopt_button(
+    k: Kernel,
+    active_project: Option<bw_core::ProjectId>,
+    projects: &[ProjectCardVm],
+    row_owner: Option<bw_core::ProjectId>,
+    target: AdoptTarget,
+) -> Element {
+    let Some(pid) = active_project else {
+        return rsx! {};
+    };
+    if row_owner.is_some() {
+        return rsx! {};
+    }
+    let pname = projects
+        .iter()
+        .find(|p| p.id == pid)
+        .map(|p| p.name.clone())
+        .unwrap_or_default();
+    rsx! {
+        button {
+            style: "cursor:pointer;background:transparent;color:{theme::CLAY};border:1px solid {theme::CLAY};border-radius:7px;padding:4px 10px;font-size:12px;",
+            onclick: move |_| {
+                k.send(Command::AdoptIntoProject { target, project_id: pid });
+            },
+            "⤓ 引入本项目 · {pname}"
+        }
+    }
+}
+
 #[component]
 pub fn ComponentDetail(
     sel: ComponentSel,
     hub: HubVm,
     projects: Vec<ProjectCardVm>,
-    cron_effectiveness: Option<(CronTaskId, CronEffectivenessVm)>,
+    // plan/20 R5: 当前打开的项目(无则 None)——「引入本项目」按钮的归宿;
+    // Hub 深链没开项目时按钮如实不出现,不猜目标。
+    active_project: Option<bw_core::ProjectId>,
     on_close: EventHandler<()>,
     // T16 (plan/12 §10 v1.1#3): a workflow phase's agent/skill chip click,
     // re-pointing this very screen at a different `sel` — same `sel`/`hub`
@@ -70,10 +104,10 @@ pub fn ComponentDetail(
                 span { style: "font-family:{mono};font-size:11px;letter-spacing:.06em;color:{ink3};", "本项目组件 · 完整详情" }
             }
             match sel {
-                ComponentSel::Skill(id) => rsx! { SkillDetailCard { id, hub, projects } },
-                ComponentSel::Agent(id) => rsx! { AgentDetailCard { id, hub, projects } },
-                ComponentSel::Workflow(id) => rsx! { WorkflowDetailCard { id, hub, projects, on_select } },
-                ComponentSel::Cron(id) => rsx! { CronDetailCard { id, hub, projects, cron_effectiveness } },
+                ComponentSel::Skill(id) => rsx! { SkillDetailCard { id, hub, projects, active_project } },
+                ComponentSel::Agent(id) => rsx! { AgentDetailCard { id, hub, projects, active_project } },
+                ComponentSel::Workflow(id) => rsx! { WorkflowDetailCard { id, hub, projects, active_project, on_select } },
+                ComponentSel::Cron(id) => rsx! { CronDetailCard { id, hub, projects } },
                 ComponentSel::Connector(id) => rsx! { ConnectorDetailCard { id, hub, projects } },
             }
         }
@@ -81,7 +115,13 @@ pub fn ComponentDetail(
 }
 
 #[component]
-fn SkillDetailCard(id: SkillId, hub: HubVm, projects: Vec<ProjectCardVm>) -> Element {
+fn SkillDetailCard(
+    id: SkillId,
+    hub: HubVm,
+    projects: Vec<ProjectCardVm>,
+    active_project: Option<bw_core::ProjectId>,
+) -> Element {
+    let k = use_context::<Kernel>();
     let card = theme::card();
     let ink2 = theme::INK_2;
     let ink3 = theme::INK_3;
@@ -105,6 +145,7 @@ fn SkillDetailCard(id: SkillId, hub: HubVm, projects: Vec<ProjectCardVm>) -> Ele
                 }
                 SkillSpecNotes { s: s.clone(), compact: true }
                 span { style: "{theme::chip(\"#EFE9DA\", ink2)}", "{s.maturity_label}" }
+                {adopt_button(k.clone(), active_project, &projects, s.project_id, AdoptTarget::Skill(s.id))}
             }
             if !s.desc.is_empty() {
                 div { style: "font-size:13.5px;color:{ink2};line-height:1.7;margin-bottom:12px;", "{s.desc}" }
@@ -151,7 +192,13 @@ fn SkillDetailCard(id: SkillId, hub: HubVm, projects: Vec<ProjectCardVm>) -> Ele
 }
 
 #[component]
-fn AgentDetailCard(id: AgentId, hub: HubVm, projects: Vec<ProjectCardVm>) -> Element {
+fn AgentDetailCard(
+    id: AgentId,
+    hub: HubVm,
+    projects: Vec<ProjectCardVm>,
+    active_project: Option<bw_core::ProjectId>,
+) -> Element {
+    let k = use_context::<Kernel>();
     let card = theme::card();
     let ink2 = theme::INK_2;
     let ink3 = theme::INK_3;
@@ -178,6 +225,7 @@ fn AgentDetailCard(id: AgentId, hub: HubVm, projects: Vec<ProjectCardVm>) -> Ele
                     span { style: "{theme::chip(\"#F2E4DD\", theme::CLAY)} margin-left:auto;", "◇ {p}" }
                 }
                 span { style: "{theme::chip(\"#EFE9DA\", ink2)}", "{a.maturity_label}" }
+                {adopt_button(k.clone(), active_project, &projects, a.project_id, AdoptTarget::Agent(a.id))}
             }
             div {
                 style: "display:flex;align-items:center;gap:10px;font-size:12px;color:{ink3};font-family:{theme::MONO};margin:8px 0 14px;",
@@ -226,6 +274,7 @@ fn WorkflowDetailCard(
     id: WorkflowId,
     hub: HubVm,
     projects: Vec<ProjectCardVm>,
+    active_project: Option<bw_core::ProjectId>,
     on_select: EventHandler<ComponentSel>,
 ) -> Element {
     let k = use_context::<Kernel>();
@@ -239,11 +288,10 @@ fn WorkflowDetailCard(
         .find(|x| x.row.id == id)
         .cloned()
     else {
-        return rsx! { div { style: "{card} padding:20px;color:{ink3};", "这个工作流已不存在,或是一次性临时任务(没有持久详情)。" } };
+        return rsx! { div { style: "{card} padding:20px;color:{ink3};", "这个工作流已不存在(可能被删除)。" } };
     };
     let row = d.row.clone();
     let owner = owner_project_name(row.project_id, &projects);
-    let has_content = !row.content.trim().is_empty();
     // T16 (plan/12 §10 v1.1#3): 文档⇄流程图双视图,默认流程图(与
     // WorkflowHub 展开态默认一致)。
     let mut show_doc = use_signal(|| false);
@@ -257,15 +305,16 @@ fn WorkflowDetailCard(
                     span { style: "{theme::chip(\"#F2E4DD\", theme::CLAY)}", "◇ {p}" }
                 }
                 span { style: "{theme::chip(\"#EFE9DA\", ink2)}", "{row.maturity_label}" }
+                {adopt_button(k.clone(), active_project, &projects, row.project_id, AdoptTarget::Workflow(row.id))}
             }
             div { style: "font-size:11px;color:{ink3};margin-bottom:4px;", "解决" }
             div { style: "font-size:12.5px;color:{ink2};margin-bottom:10px;", "{row.goal}" }
             div {
                 style: "font-family:{mono};font-size:12px;color:{ink3};margin-bottom:10px;",
                 if row.last_run_label.is_empty() {
-                    "{row.version_label} · {row.uses} 次复用 · {row.record_label}"
+                    "{row.version_label} · {row.record_label}"
                 } else {
-                    "{row.version_label} · {row.uses} 次复用 · {row.record_label} · {row.last_run_label}"
+                    "{row.version_label} · {row.record_label} · {row.last_run_label}"
                 }
             }
             div {
@@ -281,26 +330,6 @@ fn WorkflowDetailCard(
                 span { style: "font-size:11.5px;color:{ink3};", if show_doc() { "文档" } else { "全流程" } }
                 div {
                     style: "display:flex;gap:4px;align-items:center;",
-                    // T17(plan/12 §10 v1.1#4):显式触发的解析动作——content 为空
-                    // (结构化定义/未撰写正文)诚实禁用,绝不假装能解析一份不存在
-                    // 的文档;失败走 Kernel 通用错误 toast(`UiNote::Error`),
-                    // 可再次点击重试——从不自动重跑。
-                    button {
-                        style: if has_content {
-                            "cursor:pointer;background:transparent;border:1px solid {theme::CLAY};color:{theme::CLAY};border-radius:6px;padding:2px 10px;font-size:10.5px;"
-                        } else {
-                            "cursor:not-allowed;background:transparent;border:1px solid {theme::BORDER};color:{ink3};border-radius:6px;padding:2px 10px;font-size:10.5px;opacity:.55;"
-                        },
-                        disabled: !has_content,
-                        title: if has_content { "读文档,真实执行解析,成功后覆盖流程图(先留版本快照)" } else { "无原始文档,无可解析" },
-                        onclick: move |_| {
-                            if has_content {
-                                k.send(Command::ParseWorkflowContent { workflow_id: id });
-                                show_doc.set(false);
-                            }
-                        },
-                        "🔍 解析为流程图"
-                    }
                     button {
                         style: if show_doc() {
                             "cursor:pointer;background:transparent;border:1px solid {theme::BORDER};color:{ink3};border-radius:6px;padding:2px 10px;font-size:10.5px;"
@@ -360,13 +389,7 @@ fn WorkflowDetailCard(
 }
 
 #[component]
-fn CronDetailCard(
-    id: CronTaskId,
-    hub: HubVm,
-    projects: Vec<ProjectCardVm>,
-    cron_effectiveness: Option<(CronTaskId, CronEffectivenessVm)>,
-) -> Element {
-    let k = use_context::<Kernel>();
+fn CronDetailCard(id: CronTaskId, hub: HubVm, projects: Vec<ProjectCardVm>) -> Element {
     let card = theme::card();
     let ink2 = theme::INK_2;
     let ink3 = theme::INK_3;
@@ -375,20 +398,6 @@ fn CronDetailCard(
         return rsx! { div { style: "{card} padding:20px;color:{ink3};", "这个定时任务已不存在(可能被删除)。" } };
     };
     let owner = owner_project_name(c.project_id, &projects);
-    let eff = cron_effectiveness
-        .filter(|(eid, _)| *eid == id)
-        .map(|(_, e)| e);
-    // T10 (plan/12 §5): the raw `target` column is a real `SkillId`/full
-    // prompt text for the two new modes — never show that opaque payload as
-    // "目标"; show the honest human-facing reading `CronRowVm` already
-    // derived instead (skill name / "(技能已删除)" / prompt preview).
-    let target_display = if let Some(skill_label) = &c.skill_target_label {
-        skill_label.clone()
-    } else if let Some(preview) = &c.prompt_preview {
-        preview.clone()
-    } else {
-        c.target.clone()
-    };
     rsx! {
         div {
             style: "{card} padding:22px 26px;max-width:680px;",
@@ -403,48 +412,50 @@ fn CronDetailCard(
                 span { style: "{theme::chip(\"#EFE9DA\", ink2)}", "{c.status_label}" }
             }
             div { style: "font-size:13.5px;color:{ink2};margin-bottom:12px;",
-                if !c.mode_icon.is_empty() {
-                    "到点:{c.mode_icon} {c.mode_label} · 目标「{target_display}」"
+                if c.is_collect_metrics {
+                    // PF1-R2-1①: CollectMetrics 详情卡专属分支(targets 非空时拼上
+                    // 指标名),不显示空「· 目标「」」(target 对 collect_metrics 无
+                    // 意义)。对仗 cron_hub.rs 列表行的 is_collect_metrics 分支。
+                    // P13(2026-08-06):前缀改中性「本项目全部 script 指标」,理由
+                    // 见 cron_hub.rs 同名分支注释——targets 不止代码仓统计。
+                    {
+                        let targets = c.collect_targets.join(" / ");
+                        let subtitle = if targets.is_empty() {
+                            "本项目全部 script 指标 · 每日".to_string()
+                        } else {
+                            format!("本项目全部 script 指标({targets})· 每日")
+                        };
+                        rsx! {
+                            span { "到点:📈 {subtitle}" }
+                        }
+                    }
                 } else {
-                    "到点:{c.mode_label} · 目标「{target_display}」"
+                    "到点:{c.mode_label}"
                 }
             }
             div {
                 style: "font-family:{mono};font-size:12px;color:{ink3};margin-bottom:6px;",
                 "{c.schedule_label} · 上次 {c.last_run} · 下次 {c.next_run}"
             }
-            if let Some(stage) = c.issue_stage_label {
-                div {
-                    style: "font-size:12px;color:{ink3};margin-bottom:14px;",
-                    if let Some(who) = &c.issue_assignee {
-                        "建活作用阶段:{stage} · 指派:{who}"
-                    } else {
-                        "建活作用阶段:{stage} · 未指派"
+            if !c.is_collect_metrics {
+                {
+                    // 建活任务:作用阶段(空 = 到点取项目当前阶段)+ 指派对象。
+                    let stage = c.issue_stage_label.unwrap_or("项目当前阶段");
+                    let who = c.issue_assignee.clone().unwrap_or_else(|| "未指派".to_string());
+                    rsx! {
+                        div {
+                            style: "font-size:12px;color:{ink3};margin-bottom:14px;",
+                            "建活作用阶段:{stage} · 指派:{who}"
+                        }
                     }
                 }
             } else {
                 div { style: "margin-bottom:14px;", "" }
             }
-            div { style: "font-size:11px;color:{ink3};margin-bottom:8px;border-top:1px dashed {theme::BORDER};padding-top:12px;", "真实有效性(cron_effectiveness · 按真实触发记录算)" }
-            match eff {
-                Some(e) => rsx! {
-                    div {
-                        style: "font-family:{mono};font-size:12.5px;color:{ink2};line-height:1.9;",
-                        div { "触发 {e.fires} 次 · 成功 {e.ok_fires} · 失败 {e.failed_fires} · 有效性 {e.effectiveness_label}" }
-                        div { "平均耗时 {e.avg_duration_label}" }
-                        if !e.last_fire_label.is_empty() {
-                            div { "{e.last_fire_label}" }
-                        }
-                    }
-                },
-                None => rsx! {
-                    button {
-                        style: "cursor:pointer;background:transparent;color:{theme::CLAY};border:1px solid {theme::CLAY};border-radius:7px;padding:6px 14px;font-size:12px;",
-                        onclick: move |_| k.send(Command::LoadCronEffectiveness(id)),
-                        "读取有效性"
-                    }
-                },
-            }
+            // 「真实有效性」面板(按 trigger='scheduled' 的 workflow_run 统计触发/
+            // 成败)随「到点跑」三模式于 2026-08-18 一起删除:定时任务现在只建活
+            // /采集,不再开 run 行,那块面板会永远显示「触发 0 次」——冻结数字比
+            // 没有更骗人。任务自身的状态与上次触发时间仍在上一行如实显示。
         }
     }
 }

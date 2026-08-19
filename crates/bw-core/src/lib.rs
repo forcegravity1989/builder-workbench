@@ -17,18 +17,20 @@
 //!   modelled so illegal states are unrepresentable.
 //! - [`derive`] — the metric→signal→health chain + the sealed [`derive::Derived`].
 
-pub mod analysis;
+pub mod buddy_assets;
 pub mod bw_library;
 pub mod derive;
 pub mod ids;
 pub mod model;
 pub mod playbook;
+pub mod scope;
 pub mod skill_body;
 pub mod skill_spec;
+pub mod stage_catalog;
 pub mod standards;
 
 pub use ids::{
-    AgentId, ArtifactId, ConnectorId, CronTaskId, IssueId, KnowledgeSourceId, MetricId, ProjectId,
-    RoutineId, SessionId, SkillFileId, SkillId, WorkflowId, WorkflowRunId,
+    AgentId, ArtifactId, ConnectorId, ConversationId, CronTaskId, IssueId, KnowledgeSourceId,
+    MetricId, ProjectId, RoutineId, SessionId, SkillFileId, SkillId, WorkflowId, WorkflowRunId,
 };
 pub use model::*;

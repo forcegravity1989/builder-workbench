@@ -73,6 +73,15 @@ CREATE TABLE IF NOT EXISTS metric (
     collect_kind       TEXT NOT NULL DEFAULT '', -- 'github'|'connector'|'bw'|'manual'|'script'|''
     collect_query      TEXT NOT NULL DEFAULT '',
     origin             TEXT NOT NULL DEFAULT 'manual', -- 'manual'(界面手建) | 'file'(正本文件同步)
+    -- 「停用/归档」——指标退役的唯一形态,替代物理删除。observation 是
+    -- append-only 的,硬删 metric 行要么级联抹掉真实历史、要么留下孤儿观测,
+    -- 两个都不可接受;archived 把「不想再看见它」和「它当初真测过什么」拆
+    -- 开:行留着、观测一条不删,只是退出界面默认视图 + 退出健康灯上卷 +
+    -- 退出自动采集。0=在用(存量行的真实状态,不是编的默认值) 1=已停用。
+    -- 停用后其 signal 缓存**冻结**在停用那一刻(recompute 跳过归档行),
+    -- 恢复后下一次 recompute 重新给它派生。
+    archived           INTEGER NOT NULL DEFAULT 0,
+    archived_at        INTEGER,                  -- 停用时刻 unix 秒;NULL=从未停用
     signal             TEXT,                     -- derived cache (L2/L3)
     hit                INTEGER,                  -- derived cache (= signal==green)
     signal_derived_rev INTEGER,
@@ -123,27 +132,6 @@ CREATE TABLE IF NOT EXISTS session (
     rev         INTEGER NOT NULL DEFAULT 0
 );
 
-CREATE TABLE IF NOT EXISTS message (
-    id          TEXT PRIMARY KEY,
-    session_id  TEXT NOT NULL REFERENCES session(id),
-    seq         INTEGER NOT NULL,
-    role        TEXT NOT NULL,                   -- 'builder' | 'agent'
-    text        TEXT NOT NULL,
-    created_at  INTEGER NOT NULL
-);
-CREATE INDEX IF NOT EXISTS idx_message_session_seq ON message(session_id, seq);
-
--- Weekly snapshot + auditable human override (never silently overwrites derived).
-CREATE TABLE IF NOT EXISTS weekly_review (
-    id              TEXT PRIMARY KEY,
-    project_id      TEXT NOT NULL REFERENCES project(id),
-    week_of         INTEGER NOT NULL,
-    derived_signal  TEXT NOT NULL,
-    human_override  TEXT,
-    override_reason TEXT,
-    created_at      INTEGER NOT NULL
-);
-
 -- Append-only stage-transition audit log (体系重构 v2 §07③: 交棒清单 checked or
 -- not, the handoff still happens — just marked risky). `Ops → Prototype` is
 -- the reflux that closes the loop, same table, no special-casing.
@@ -163,9 +151,12 @@ CREATE INDEX IF NOT EXISTS idx_handoff_project_ts ON handoff(project_id, created
 -- a deliberate architectural first: a hub entry is a catalog/library item that
 -- exists independent of any project. 2026-07-20 践行最小切片(plan/09 墙 B)
 -- added a nullable `project_id`: NULL keeps the original global/shared
--- semantics byte-for-byte; non-NULL marks a project-owned row. Query-side
--- scoping (指派下拉/技能注入/剧本选择只看本项目) is deliberately NOT part of
--- this slice — that's plan/08 的 P2,一次性做够,不留半破的收窄。
+-- semantics byte-for-byte; non-NULL marks a project-owned row.
+-- 2026-08-05 plan/20 落地了当年欠下的查询收窄(plan/08 P2,一次性做够):
+-- R1 选择池按作用域(他项目行绝不出现)、R2 按名解析就近优先
+-- (bw_core::scope::scoped_pick,项目行遮蔽全局行)、R3 记账 by-id
+-- (记账行==注入行)、R4 撞名同作用域内唯一(跨作用域同名=收录副本,合法)、
+-- R5 AdoptIntoProject 复制归项目。NULL 的全局/共享语义保持字节不差。
 
 CREATE TABLE IF NOT EXISTS workflow_spec (
     id             TEXT PRIMARY KEY,
@@ -209,11 +200,11 @@ CREATE TABLE IF NOT EXISTS skill (
     maturity    TEXT NOT NULL DEFAULT 'fresh',
     descr       TEXT NOT NULL DEFAULT '',
     category    TEXT NOT NULL DEFAULT '',
-    -- T7 (plan/12 §0/§2): which stage role this skill belongs to — same
-    -- 1..=5 nullable-INTEGER convention `workflow_spec.stage_ref` already
-    -- uses (interop via StageKind::index/from_index). NULL = 通用/跨阶段,
-    -- honest for every imported catalog skill (nobody has classified them).
-    stage_ref   INTEGER,
+    -- 2026-08-05:五角色归类出处(静态表/蒸馏派生/人工/legacy/''=未归类),
+    -- 与 skill_stage 关联表(下方)一起构成 stages 的完整语义(见那张表的
+    -- 注释)。同 `content` 一样,双守卫两处都要有 —— 这一列同时也靠
+    -- `sqlite.rs` 的 `add_column_if_missing` 补给存量库,新库靠这里。
+    stage_origin TEXT NOT NULL DEFAULT '',
     source      TEXT NOT NULL DEFAULT 'self_built',
     -- T2 (plan/12 §6): sub-tag for source='official' only — which curated
     -- external library ("mattpocock-skills"/"superpowers"/"ecc"/…). '' for
@@ -242,14 +233,22 @@ CREATE TABLE IF NOT EXISTS skill_file (
     created_at INTEGER NOT NULL
 );
 CREATE INDEX IF NOT EXISTS idx_skill_file_skill ON skill_file(skill_id);
--- T7: deliberately NO `CREATE INDEX ... ON skill(stage_ref)` here — this
--- schema blob runs in full (via `open()`'s statement-by-statement replay)
--- *before* `add_column_if_missing` adds this column to a pre-T7 on-disk
--- `skill` table, so an index on it here would crash every existing database
--- with "no such column: stage_ref" (real bug, caught by this ticket's own
--- migration E2E — `CREATE TABLE IF NOT EXISTS` is the schema-blob's only
--- safe-on-old-tables statement kind; `workflow_spec.stage_ref`'s index below
--- never hit this because that whole table postdates its own column).
+-- 五角色归类(2026-08-05):一件技能可挂多个阶段,所以归属是关联表而不是
+-- skill 行上的一个值。行数本身是语义的一半 —— 0 行 / 1..=4 行 / 5 行分别是
+-- 「未判定或已判定不属任何阶段」/「挂这些阶段」/「全阶段通用」,另一半由
+-- skill.stage_origin 提供(见上面 skill 表的 stage_origin 列)。
+CREATE TABLE IF NOT EXISTS skill_stage (
+    skill_id TEXT NOT NULL REFERENCES skill(id),
+    stage    INTEGER NOT NULL,
+    PRIMARY KEY (skill_id, stage)
+);
+-- 这个索引可以安全地待在 schema.sql 里(与下面 skill.stage_ref 的情况不同):
+-- 它索引的是本文件自己刚 CREATE 的新表的列,不是往存量表上补的列。
+CREATE INDEX IF NOT EXISTS idx_skill_stage_by_stage ON skill_stage(stage);
+-- 2026-08-05:skill 的阶段归属已迁到上面的 skill_stage 关联表,skill.stage_ref
+-- 列连同 idx_skill_stage 索引一并删除(sqlite.rs 的 drop_column_if_present)。
+-- T7 当年那条「本 blob 无条件重放在迁移守卫之前,所以补列的索引不能写在这里」
+-- 的教训仍然成立,对 agent.stage_ref 依然有效 —— 别把它的索引搬进本文件。
 
 CREATE TABLE IF NOT EXISTS agent (
     id          TEXT PRIMARY KEY,
@@ -318,6 +317,10 @@ CREATE TABLE IF NOT EXISTS connector (
     status      TEXT NOT NULL DEFAULT 'disconnected',
     last_sync   TEXT NOT NULL DEFAULT '',
     scope       TEXT NOT NULL DEFAULT '',
+    -- V1 Issue2 Phase 3: added inline (was already via add_column_if_missing;
+    -- double-guard: schema.sql + add_column_if_missing, per CLAUDE.md 铁律).
+    project_id  TEXT,
+    config      TEXT NOT NULL DEFAULT '',
     created_at  INTEGER NOT NULL,
     updated_at  INTEGER NOT NULL,
     rev         INTEGER NOT NULL DEFAULT 0
@@ -470,11 +473,34 @@ CREATE TABLE IF NOT EXISTS issue (
     -- by-name convention) this Issue is wired to. '' = no association (every
     -- hand-created / autopilot Issue). Set once at creation, never rewritten.
     standard_skill TEXT NOT NULL DEFAULT '',
+    -- V1 终端会话重构(阶段1): interactive_started + claude_session_id
+    -- 两列已退场(物理 DROP,见 sqlite.rs drop_column_if_present)。会话身
+    -- 份搬到下方 claude_conversation 表。业务读路径(is_resume /
+    -- is_interactive)只认新表,不留双读 fallback(守「不为向后兼容留旧
+    -- 路径」)。
     created_at  INTEGER NOT NULL,
     updated_at  INTEGER NOT NULL
 );
 CREATE INDEX IF NOT EXISTS idx_issue_project_number ON issue(project_id, number);
 CREATE INDEX IF NOT EXISTS idx_issue_project_stage ON issue(project_id, stage);
+
+-- V1 终端会话重构(阶段1): Claude 会话 / Conversation 的持久身份。
+-- 把活(Issue)和会话(Conversation)解耦:会话有独立身份,不随活 Done
+-- 而结束。一件交互式活最多一个会话(issue_id UNIQUE)。这行只存持久身份
+-- 和恢复所需事实(claude --resume 要用的 claude_session_id + 固定
+-- worktree 路径);PTY 句柄/channel/尺寸是纯内存,进程死了如实消失,
+-- 从这行恢复身份。详见 issue2-terminal-conversation-refactor.md §4。
+-- 新表,CREATE TABLE IF NOT EXISTS 即是充分守卫(无 add_column)。
+CREATE TABLE IF NOT EXISTS claude_conversation (
+    id                TEXT PRIMARY KEY,            -- buddy 自己的稳定会话 id
+    project_id         TEXT NOT NULL REFERENCES project(id),
+    issue_id          TEXT NOT NULL UNIQUE REFERENCES issue(id), -- 一件交互式活最多一个会话
+    claude_session_id TEXT NOT NULL DEFAULT '',   -- claude CLI 的 --resume id(hook 回传,空=未捕获)
+    workspace_path    TEXT NOT NULL DEFAULT '',   -- 固定 worktree 路径(重启 resume 重建用同路径)
+    branch_name       TEXT NOT NULL DEFAULT '',   -- bw/issue-<github_number>
+    created_at        INTEGER NOT NULL,
+    last_opened_at    INTEGER NOT NULL
+);
 
 -- T14 (2026-07-24, plan/12 §10 v1.1): tiny app-scoped key/value table for
 -- one-shot migration markers — starting with the legacy-shell migration's

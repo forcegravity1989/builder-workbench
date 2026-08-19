@@ -24,7 +24,7 @@
 use bw_app::{App, Command};
 use bw_core::model::HubSource;
 use bw_core::skill_spec::{check_skill_card, must_fix_count, SpecSeverity};
-use bw_engine::{ClaudeCliConfig, Engine, MockExecutor};
+use bw_engine::ClaudeCliConfig;
 use bw_store::{SqliteStore, Store};
 use std::collections::HashMap;
 use std::sync::Arc;
@@ -221,11 +221,7 @@ async fn main() {
     }
 
     // ── 真实 Boot:bw-standard pristine 升源 + desc/content 自愈对账 ──
-    let mut app = App::new(
-        store.clone(),
-        Engine::new(Arc::new(MockExecutor::new())),
-        ClaudeCliConfig::default(),
-    );
+    let mut app = App::new(store.clone(), ClaudeCliConfig::default());
     app.dispatch(Command::Boot).await.unwrap();
 
     if fix {
@@ -257,6 +253,7 @@ async fn main() {
                 desc: c.new_desc.to_string(),
                 category: s.category.clone(),
                 content: c.new_content.to_string(),
+                stages: None,
             })
             .await
             .unwrap();
@@ -302,7 +299,6 @@ async fn main() {
         // 自建域,但原始列还挂着 official——把原始编码归一为 self_built,
         // 与 parse_hub_source 早已在读的语义完全一致,零行为变化,纯编码
         // 卫生(plan/16 §4 台账)。
-        use sqlx::Row as _;
         let url = format!("sqlite://{db_path}");
         let pool = sqlx::sqlite::SqlitePoolOptions::new()
             .max_connections(1)

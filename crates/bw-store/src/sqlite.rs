@@ -9,27 +9,28 @@ use crate::{
     parse_cadence, parse_connector_status, parse_cron_mode, parse_cron_status, parse_cycle,
     parse_hub_source, parse_issue_priority, parse_issue_status, parse_maturity,
     parse_session_status, parse_sig, parse_stage_kind, session_status_text, sig_text,
-    stage_kind_text, AgentEdit, GlobalHandoffRow, HandoffRow, MessageRow, MetricDefSync,
-    MetricOrigin, MetricRole, MetricSignal, MetricsFileSync, MetricsFileSyncSummary, NewAgent,
-    NewArtifact, NewConnector, NewCronTask, NewIssue, NewKnowledgeSource, NewMetric, NewProject,
-    NewSession, NewSkill, NewSkillFile, NewStage, NewWorkflowRun, NewWorkflowSpec, ObservationRow,
-    PersistedSignals, ProjectRow, Result, SessionKind, SessionRow, SkillEdit, SkillFileRow,
-    StageRow, StageSignal, Store, StoreError, WorkflowEdit,
+    stage_kind_text, AgentEdit, ConnectorDefSync, ConnectorsFileSync, ConnectorsFileSyncSummary,
+    GlobalHandoffRow, HandoffRow, MetricDefSync, MetricOrigin, MetricRole, MetricSignal,
+    MetricsFileSync, MetricsFileSyncSummary, NewAgent, NewArtifact, NewConnector, NewCronTask,
+    NewIssue, NewKnowledgeSource, NewMetric, NewProject, NewSession, NewSkill, NewSkillFile,
+    NewStage, NewWorkflowRun, NewWorkflowSpec, ObservationRow, PersistedSignals, ProjectFileSync,
+    ProjectRow, Result, SessionKind, SessionRow, SkillEdit, SkillFileRow, StageRow, StageSignal,
+    Store, StoreError, WorkflowEdit,
 };
 use async_trait::async_trait;
 use bw_core::derive::{
     evaluate_metric, measure, parse_target_with, reduce_worst_of, AmberBand, Measurement,
 };
 use bw_core::model::{
-    AgentCard, AgentRef, AgentSkillTag, Artifact, ArtifactKind, Author, Connector, ConnectorStatus,
-    CronEffectiveness, CronStatus, CronTask, HubSource, Issue, IssueStatus, KnowledgeSource,
+    AgentCard, AgentRef, AgentSkillTag, Artifact, ArtifactKind, ClaudeConversation, Connector,
+    ConnectorStatus, CronStatus, CronTask, HubSource, Issue, IssueStatus, KnowledgeSource,
     LoopConfig, Maturity, MaturityPeriod, PhaseMeta, Readiness, RunStatus, RunTrigger, Signal,
-    SkillCard, SkillRef, SourceKind, StageKind, UsageRank, WorkflowKind, WorkflowRun,
-    WorkflowRunAnalytics, WorkflowSpec, WorkflowVersion,
+    SkillCard, SkillRef, SourceKind, StageKind, UsageRank, WorkflowKind, WorkflowRun, WorkflowSpec,
 };
+use bw_core::stage_catalog::StageOrigin;
 use bw_core::{
-    AgentId, ArtifactId, ConnectorId, CronTaskId, IssueId, KnowledgeSourceId, MetricId, ProjectId,
-    SessionId, SkillFileId, SkillId, WorkflowId, WorkflowRunId,
+    AgentId, ArtifactId, ConnectorId, ConversationId, CronTaskId, IssueId, KnowledgeSourceId,
+    MetricId, ProjectId, SessionId, SkillFileId, SkillId, WorkflowId, WorkflowRunId,
 };
 use sqlx::sqlite::{SqliteConnectOptions, SqlitePoolOptions};
 use sqlx::{Row, SqlitePool};
@@ -202,10 +203,27 @@ impl SqliteStore {
         add_column_if_missing(&pool, "metric", "collect_kind", "TEXT NOT NULL DEFAULT ''").await?;
         add_column_if_missing(&pool, "metric", "collect_query", "TEXT NOT NULL DEFAULT ''").await?;
         add_column_if_missing(&pool, "metric", "origin", "TEXT NOT NULL DEFAULT 'manual'").await?;
+        // 指标停用/归档。存量库全部行开出来 archived=0 / archived_at=NULL,
+        // 和"这些指标都还在用、从没被停用过"这个真实状态完全一致。
+        add_column_if_missing(&pool, "metric", "archived", "INTEGER NOT NULL DEFAULT 0").await?;
+        add_column_if_missing(&pool, "metric", "archived_at", "INTEGER").await?;
         // C8(plan/13 D8):标配 Issue 三件套与标配 Skill 的稳定关联。老库开出
         // 来是空串,和"这张 Issue 没有标配 Skill 关联"这个真实状态完全一致
         // ——存量 Issue 全部是手建/Autopilot 建,从未挂过标配 Skill。
         add_column_if_missing(&pool, "issue", "standard_skill", "TEXT NOT NULL DEFAULT ''").await?;
+        // V1 终端会话重构(阶段1): 存量搬运 —— 把 issue.claude_session_id
+        // 非空的行搬进新表 claude_conversation(幂等:INSERT OR IGNORE,
+        // issue_id UNIQUE 兜底,重复 open() 不产生重复行)。workspace_path/
+        // branch_name 能从 issue + project 推就推(worktree 兄弟路径 +
+        // bw/issue-<github_number>),推不出留空等首次 open 填(阶段4 resume
+        // 时回填)。
+        migrate_claude_conversations(&pool).await?;
+        // 阶段1: 旧列退场(物理 DROP,先搬后删——搬在上一行,删在这)。
+        // interactive_started / claude_session_id 业务零读(读路径收口到
+        // claude_conversation),守「不为向后兼容留旧路径」。列不存在即
+        // no-op(很老的库 Phase2a 之前没这两列;DROP 过的库二次 open 也 no-op)。
+        drop_column_if_present(&pool, "issue", "interactive_started", &[]).await?;
+        drop_column_if_present(&pool, "issue", "claude_session_id", &[]).await?;
         // T2 (plan/12 §6): Skill's source unified onto HubSource. Old rows'
         // bare `source='official'`/`'self_built'` text values already match
         // the new tag vocabulary 1:1 (no rewrite needed) — only the new
@@ -249,16 +267,36 @@ impl SqliteStore {
             "TEXT NOT NULL DEFAULT ''",
         )
         .await?;
-        // T7 (2026-07-23, plan/12 §0/§2/§3): Skill/Agent gain the same
-        // stage-role classification `workflow_spec.stage_ref` already has.
-        // NULL on every pre-T7 row (including the five built-in stage-role
-        // agents/skills) is honest until the boot-time by-name backfill
-        // (`seed_stage_role_agents_if_missing` / plan/17 起 skills 走
-        // `seed_bw_standard_skills_if_missing`) fills the real ones in;
+        // T7 (2026-07-23, plan/12 §0/§2/§3): Agent gains the same stage-role
+        // classification `workflow_spec.stage_ref` already has. NULL on
+        // every pre-T7 row (including the five built-in stage-role agents)
+        // is honest until the boot-time by-name backfill
+        // (`seed_stage_role_agents_if_missing`) fills the real ones in;
         // every imported catalog row stays NULL = 通用/跨阶段 — nobody has
         // manually classified those, so this never guesses.
-        add_column_if_missing(&pool, "skill", "stage_ref", "INTEGER").await?;
         add_column_if_missing(&pool, "agent", "stage_ref", "INTEGER").await?;
+        // 五角色归类(2026-08-05):归类**动作**的出处。'' = 还没人归过类;
+        // 'table' = bw-core 静态表回填;'distilled' = 按蒸馏出处 Issue 派生;
+        // 'manual' = 人工在 SkillHub 改过(此后 Boot 的静态表回填整条跳过)。
+        // 与 skill_stage 的行数共同派生四态 —— 单看行数分不出「判过了、不属
+        // 任何阶段」和「还没人管」,而这两件事在本仓是必须分开的。
+        add_column_if_missing(&pool, "skill", "stage_origin", "TEXT NOT NULL DEFAULT ''").await?;
+        // Critical 修复(2026-08-06):上一版在这里直接删列,理由是「Boot 的
+        // 搬值逻辑按 name 查静态表重建,不读旧列的值,所以删列不丢数据」——
+        // 这句话对静态表**覆盖得到**的行是对的,但对覆盖不到的行是假的:静态
+        // 表按名查不到的行,Boot 的按名回填从头到尾不会碰它,它的旧
+        // `stage_ref` 单值就随列一起被删列语句静默抹掉。真实日常库独立核实
+        // 命中过一次:`metrics-render`(`stage_ref=1`,来自另一条未合入本分支
+        // 的产品线,静态表里没有这个名字)。删列之前必须先把这类「静态表管不
+        // 着」的行搬进 `skill_stage`,标 `StageOrigin::Legacy`——静态表管得到
+        // 的行不搬,原样留给下面 Boot 的按名回填去写正确的**多值**(搬单值会
+        // 让它们停在旧的单值上,是计划内的中间态倒退)。
+        migrate_legacy_skill_stage_ref(&pool).await?;
+        // 旧列真删(用户 2026-08-05:「不要害怕修改旧表,有需要就大胆重做」)。
+        // 位置很关键:必须排在上面的保值搬迁之后 —— 搬迁函数自己按
+        // `PRAGMA table_info` 判断列是否还在,删列之后再跑第二次 `open()` 会
+        // 直接 no-op,天然幂等。
+        drop_column_if_present(&pool, "skill", "stage_ref", &["idx_skill_stage"]).await?;
         // T16 (plan/12 §10 v1.1#3): workflow's main MD document, aligned
         // with `skill.content`. '' on every pre-T16 row = honestly "no
         // original document" (real pre-T16 workflows never had one to lose).
@@ -269,19 +307,19 @@ impl SqliteStore {
             "TEXT NOT NULL DEFAULT ''",
         )
         .await?;
-        // Indexes on `stage_ref` deliberately live here, *after* the two
-        // `add_column_if_missing` calls above, instead of in `schema.sql`'s
+        // The index on `agent.stage_ref` deliberately lives here, *after* the
+        // `add_column_if_missing` call above, instead of in `schema.sql`'s
         // `CREATE INDEX` blob (that whole blob replays unconditionally,
-        // before these guards run, against the real on-disk `skill`/`agent`
-        // tables — a pre-T7 DB doesn't have the column yet at that point, so
-        // an index on it there crashes with "no such column: stage_ref",
-        // caught by this ticket's own migration E2E against an old fixture
-        // DB). `workflow_spec.stage_ref`'s schema.sql-embedded index never
-        // hit this because that column has been part of the table's initial
+        // before this guard runs, against the real on-disk `agent` table —
+        // a pre-T7 DB doesn't have the column yet at that point, so an index
+        // on it there crashes with "no such column: stage_ref", caught by
+        // this ticket's own migration E2E against an old fixture DB).
+        // `workflow_spec.stage_ref`'s schema.sql-embedded index never hit
+        // this because that column has been part of the table's initial
         // `CREATE TABLE` since before this ticket, not retrofitted.
-        sqlx::query("CREATE INDEX IF NOT EXISTS idx_skill_stage ON skill(stage_ref)")
-            .execute(&pool)
-            .await?;
+        // (`skill.stage_ref`'s twin index, `idx_skill_stage`, was dropped
+        // 2026-08-05 along with the column — see `drop_column_if_present`
+        // above.)
         sqlx::query("CREATE INDEX IF NOT EXISTS idx_agent_stage ON agent(stage_ref)")
             .execute(&pool)
             .await?;
@@ -295,9 +333,104 @@ impl SqliteStore {
             "TEXT NOT NULL DEFAULT 'github'",
         )
         .await?;
+        // PF1-R2-1②: rename legacy collect_metrics cron names ending in
+        // "· 指标采集" (pre-PF1-3a default) to the specific "· 采集代码仓指标"
+        // form, so `sqlite3 SELECT name` reads back the clear name too (UI +
+        // DB 一致 — honest, not just a VM-layer display override). Idempotent:
+        // only matches rows still ending in "· 指标采集"; new rows already use
+        // the specific name (PF1-3a ①) and don't match. Storage name 是审计
+        // 口径的活物,这次用户明确要 DB 读回也清楚,故走数据迁移而非 VM 派生。
+        migrate_cron_collect_metrics_name(&pool).await?;
+        // 2026-08-17 减负重构:「周评注」(weekly_review)功能连命令带表一起
+        // 退役,`schema.sql` 不再建这张表。但存量库里它还在——而它的
+        // `project_id … REFERENCES project(id)` 没带 ON DELETE CASCADE,连接又
+        // 开着 `foreign_keys(true)`,`delete_project` 里那句 `DELETE FROM
+        // weekly_review` 一删,老库删项目就撞外键(/code-review 用 sqlite3
+        // 复现:FOREIGN KEY constraint failed)。按「不为向后兼容留旧路径」的
+        // 规矩,这里把旧表真删掉,而不是把 DELETE 语句加回去养着一张死表。
+        // 幂等:表不在就 no-op;它是子表,带行 DROP 也不违反外键。
+        sqlx::query("DROP TABLE IF EXISTS weekly_review")
+            .execute(&pool)
+            .await?;
+        // 2026-08-18 拔旧执行引擎:定时任务只剩两种——「建活」与「采集指标」。
+        // 老库里可能还躺着 run_workflow / run_skill / run_prompt 三种旧模式行
+        // (它们跑的是被拔掉的旧聊天式引擎),统一归到「建活」:定时任务本来
+        // 就只该自动**建**活、绝不自动跑活(CLAUDE.md 铁律),归并方向没有歧义。
+        // 幂等:再跑一次匹配不到行。旧 `target` 列保留不动(历史字段,读回可查)。
+        sqlx::query(
+            "UPDATE cron_task SET mode = 'create_issue'
+             WHERE mode IN ('run_workflow', 'run_skill', 'run_prompt')",
+        )
+        .execute(&pool)
+        .await?;
+        // 2026-08-18 拔旧执行引擎:`message` 表(对话面板里 builder/agent 的
+        // 聊天气泡)随聊天式引擎一起退场——issue 的过程记录在内嵌终端的
+        // 回滚缓冲与 claude 自己的 session.jsonl 里,BW 不再存聊天正文。
+        // 老库直接 DROP(不为向后兼容留旧路径);幂等:表不在就 no-op。
+        // 它是 session 的子表,整表 DROP 不违反外键。
+        sqlx::query("DROP TABLE IF EXISTS message")
+            .execute(&pool)
+            .await?;
 
         Ok(Self { pool })
     }
+}
+
+/// 删 `skill.stage_ref` 之前的保值搬迁(Critical 修复,2026-08-06)。
+///
+/// 静态表([`bw_core::stage_catalog::SKILL_STAGE_CATALOG`])永远不可能覆盖每
+/// 个用户库里的每一行——它只随本分支发行,另一条产品线/另一次手填都可能
+/// 留下静态表查不到名字的 `stage_ref` 值。这些行**不会**被下面 Boot 的按名
+/// 回填接住(那段逻辑本身就是按名查这张静态表),所以旧列一删,值就真没了。
+///
+/// 做法:只在列还在时跑(`PRAGMA table_info` 判据,与 [`drop_column_if_present`]
+/// 同款,可安全重复调用);对每一行 `stage_ref IS NOT NULL` 的技能,**只在**
+/// `stages_for(name)` 返回 `None`(静态表管不着)时才搬——搬法是往
+/// `skill_stage` 插一行同值、把 `stage_origin` 标成 `Legacy`。静态表管得到的
+/// 行原样不动,留给调用方之后紧接着跑的 Boot 按名回填去写正确的**多值**
+/// (那才是这些行的正本;这里抢先写单值会造成计划内的中间态倒退)。
+///
+/// 越界的 `stage_ref` 值(理论上写不出来,但读侧 [`crate::sqlite::skill_row`]
+/// 一贯宁可丢弃也不瞎猜)按同一条纪律处理:不认识的整数不搬,直接丢弃。
+async fn migrate_legacy_skill_stage_ref(pool: &SqlitePool) -> Result<()> {
+    let table_info = sqlx::query("PRAGMA table_info(skill)")
+        .fetch_all(pool)
+        .await?;
+    let has_stage_ref = table_info
+        .iter()
+        .any(|r| r.get::<String, _>("name") == "stage_ref");
+    if !has_stage_ref {
+        // 已经真删过列的库(本函数在更早的一次 open() 里跑过)——no-op。
+        return Ok(());
+    }
+    let legacy_rows =
+        sqlx::query("SELECT id, name, stage_ref FROM skill WHERE stage_ref IS NOT NULL")
+            .fetch_all(pool)
+            .await?;
+    for r in legacy_rows {
+        let id: String = r.get("id");
+        let name: String = r.get("name");
+        let stage_ref: i64 = r.get("stage_ref");
+        // 静态表管得到的行不搬——交给紧随其后的 Boot 按名回填写多值。
+        if bw_core::stage_catalog::stages_for(&name).is_some() {
+            continue;
+        }
+        // 越界值如实丢弃,不硬塞进关联表(读侧同一条纪律:不认识就不猜)。
+        if StageKind::from_index(stage_ref as u8).is_none() {
+            continue;
+        }
+        sqlx::query("INSERT OR IGNORE INTO skill_stage (skill_id, stage) VALUES (?, ?)")
+            .bind(&id)
+            .bind(stage_ref)
+            .execute(pool)
+            .await?;
+        sqlx::query("UPDATE skill SET stage_origin=? WHERE id=?")
+            .bind(stage_origin_tag(StageOrigin::Legacy))
+            .bind(&id)
+            .execute(pool)
+            .await?;
+    }
+    Ok(())
 }
 
 /// `ALTER TABLE ... ADD COLUMN` has no `IF NOT EXISTS` clause in SQLite, so
@@ -321,6 +454,117 @@ async fn add_column_if_missing(
     Ok(())
 }
 
+/// `add_column_if_missing` 的对称件:删一列,先删掉依赖它的索引。
+///
+/// SQLite 的 `ALTER TABLE ... DROP COLUMN`(3.35+,本仓 libsqlite3-sys 0.30.1
+/// 远高于门槛)在列被索引时会直接拒绝,所以 `dependent_indexes` 必须列全 ——
+/// 调用方自己知道该列有哪些索引,这里不去猜。列不存在即 no-op,可在每次
+/// `open()` 上安全重复调用。
+///
+/// 用户 2026-08-05 拍板「不能无限制扩展表格,不要害怕修改旧表,有需要就大胆
+/// 重做」——把这条做成常备原语而不是一次性代码,是那句话的落地。
+///
+/// 非原子:`DROP INDEX` 与 `ALTER TABLE ... DROP COLUMN` 是各自独立的
+/// autocommit 语句,中途(比如进程被杀)可能只有索引没了、列还在。这是可以
+/// 接受的——每一步都是幂等的(索引不存在就 no-op、列不存在整个函数直接
+/// 提前返回),下次 `open()` 重跑会自愈到两者都删掉的终态,不需要事务包裹。
+async fn drop_column_if_present(
+    pool: &SqlitePool,
+    table: &str,
+    column: &str,
+    dependent_indexes: &[&str],
+) -> Result<()> {
+    let rows = sqlx::query(&format!("PRAGMA table_info({table})"))
+        .fetch_all(pool)
+        .await?;
+    let exists = rows.iter().any(|r| r.get::<String, _>("name") == column);
+    if !exists {
+        return Ok(());
+    }
+    for idx in dependent_indexes {
+        sqlx::query(&format!("DROP INDEX IF EXISTS {idx}"))
+            .execute(pool)
+            .await?;
+    }
+    sqlx::query(&format!("ALTER TABLE {table} DROP COLUMN {column}"))
+        .execute(pool)
+        .await?;
+    Ok(())
+}
+
+/// V1 终端会话重构(阶段1): 存量搬运 —— 把 `issue.claude_session_id` 非空
+/// 的行搬进新表 `claude_conversation`。幂等:INSERT OR IGNORE(issue_id
+/// UNIQUE 兜底),重复 `open()` 不产生重复行。`workspace_path`/
+/// `branch_name` 能从 issue + project 推就推(worktree 兄弟路径
+/// `<主>-issue-<github_number>` + 分支 `bw/issue-<github_number>`),推
+/// 不出留空等首次 open 填。旧列已在本阶段 DROP(见下方
+/// `drop_column_if_present`,先搬后删,数据不丢);DROP 后这函数从 PRAGMA
+/// 检测到列不在直接 no-op(二次 open 安全)。
+async fn migrate_claude_conversations(pool: &SqlitePool) -> Result<()> {
+    // 本阶段已 DROP 旧列 → 搬无可搬,no-op。
+    let has_legacy = sqlx::query("PRAGMA table_info(issue)")
+        .fetch_all(pool)
+        .await?
+        .iter()
+        .any(|r| r.get::<String, _>("name") == "claude_session_id");
+    if !has_legacy {
+        return Ok(());
+    }
+    let rows = sqlx::query(
+        "SELECT i.id AS issue_id, i.project_id, i.claude_session_id, i.github_number, p.workspace_path
+         FROM issue i JOIN project p ON i.project_id = p.id
+         WHERE i.claude_session_id != ''",
+    )
+    .fetch_all(pool)
+    .await?;
+    let now = OffsetDateTime::now_utc().unix_timestamp();
+    for r in rows {
+        let issue_id_str: String = r.get("issue_id");
+        let project_id_str: String = r.get("project_id");
+        let claude_session_id: String = r.get("claude_session_id");
+        let github_number: i64 = r.get("github_number");
+        let main_ws: String = r.get("workspace_path");
+        // branch_name: github_number 非0 推 bw/issue-<n>;否则留空。
+        let branch_name = if github_number != 0 {
+            format!("bw/issue-{github_number}")
+        } else {
+            String::new()
+        };
+        // workspace_path: 推 worktree 兄弟路径 <parent>/<stem>-issue-<n>;
+        // 主工作区空 / 无 parent / github_number=0 → 留空(阶段4 resume 回填)。
+        let conv_workspace = if github_number != 0 && !main_ws.trim().is_empty() {
+            let main = std::path::Path::new(&main_ws);
+            match (main.parent(), main.file_name().and_then(|n| n.to_str())) {
+                (Some(parent), Some(stem)) => parent
+                    .join(format!("{stem}-issue-{github_number}"))
+                    .to_string_lossy()
+                    .to_string(),
+                _ => String::new(),
+            }
+        } else {
+            String::new()
+        };
+        // buddy 自己的稳定会话 id(new uuid);claude_session_id 是 claude CLI 的。
+        let id = Uuid::new_v4().to_string();
+        sqlx::query(
+            "INSERT OR IGNORE INTO claude_conversation
+             (id, project_id, issue_id, claude_session_id, workspace_path, branch_name, created_at, last_opened_at)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+        )
+        .bind(&id)
+        .bind(&project_id_str)
+        .bind(&issue_id_str)
+        .bind(&claude_session_id)
+        .bind(&conv_workspace)
+        .bind(&branch_name)
+        .bind(now)
+        .bind(now)
+        .execute(pool)
+        .await?;
+    }
+    Ok(())
+}
+
 /// `ALTER TABLE ... RENAME COLUMN` has no `IF EXISTS` clause, and a fresh DB
 /// (whose `schema.sql` already defines the *new* column name) has no *old*
 /// column to rename — so check `PRAGMA table_info` first: rename only when the
@@ -339,6 +583,41 @@ async fn rename_column_if_exists(
     let old_exists = rows.iter().any(|r| r.get::<String, _>("name") == old);
     if old_exists {
         sqlx::query(&format!("ALTER TABLE {table} RENAME COLUMN {old} TO {new}"))
+            .execute(pool)
+            .await?;
+    }
+    Ok(())
+}
+
+/// PF1-R2-1②: data migration (not a schema change — no new column, only
+/// renames rows in `cron_task`). Legacy collect_metrics crons built before
+/// PF1-3a ① stored `name = "<project> · 指标采集"` (too generic; user read it
+/// as unclear what this cron actually does). Rename them to the specific
+/// "<project> · 采集代码仓指标" form so `SELECT name` reads back honestly —
+/// UI + DB 一致, not a VM-layer display override. Idempotent: the LIKE
+/// suffix `'· 指标采集'` only matches rows still on the old generic name; new
+/// crons (PF1-3a ①) already use the specific name and are not touched, so
+/// re-running on an already-migrated DB is a no-op. Project name is joined
+/// from `project` via `project_id` (keeps the name in sync with the project's
+/// real display name at migration time; later project renames are out of
+/// scope — same append-only name-stability cron_task has always had).
+async fn migrate_cron_collect_metrics_name(pool: &SqlitePool) -> Result<()> {
+    let rows = sqlx::query(
+        r#"SELECT cron_task.id AS id, project.name AS pname
+           FROM cron_task
+           JOIN project ON cron_task.project_id = project.id
+           WHERE cron_task.mode = 'collect_metrics'
+             AND cron_task.name LIKE '% · 指标采集'"#,
+    )
+    .fetch_all(pool)
+    .await?;
+    for r in rows {
+        let id: String = r.get("id");
+        let pname: String = r.get("pname");
+        let new_name = format!("{pname} · 采集代码仓指标");
+        sqlx::query("UPDATE cron_task SET name = ? WHERE id = ?")
+            .bind(&new_name)
+            .bind(&id)
             .execute(pool)
             .await?;
     }
@@ -369,18 +648,6 @@ fn parse_phase(s: &str) -> Readiness {
     match s {
         "running" => Readiness::Running,
         _ => Readiness::ColdStart,
-    }
-}
-fn role_text(r: Author) -> &'static str {
-    match r {
-        Author::Builder => "builder",
-        Author::Agent => "agent",
-    }
-}
-fn parse_role(s: &str) -> Author {
-    match s {
-        "agent" => Author::Agent,
-        _ => Author::Builder,
     }
 }
 fn source_text(s: SourceKind) -> &'static str {
@@ -482,9 +749,15 @@ async fn sync_one_metric_definition(
 
     match existing {
         Some(id) => {
+            // `archived=0` 让规则两边对称:**正本里有 = 在用,正本里没有 =
+            // 停用**。上面的自动停用是"没有"那一半,这里是"有"那一半——一条
+            // 曾被停用(手动或自动)的指标重新写回正本,下次同步它就回来,
+            // 不需要人再去界面上点一次"恢复"。界面因此不给正本来源的指标
+            // 停用按钮(点了会被下次同步推翻),只给手建行——见 op.rs 的
+            // MetricCard。
             sqlx::query(
                 "UPDATE metric SET def=?, target_raw=?, collect_kind=?, collect_query=?,
-                    origin=?, updated_at=?, rev=rev+1 WHERE id=?",
+                    origin=?, archived=0, archived_at=NULL, updated_at=?, rev=rev+1 WHERE id=?",
             )
             .bind(&m.def)
             .bind(&m.target_raw)
@@ -514,6 +787,61 @@ async fn sync_one_metric_definition(
             .bind(&m.collect_kind)
             .bind(&m.collect_query)
             .bind(metric_origin_text(MetricOrigin::File))
+            .bind(t)
+            .bind(t)
+            .execute(&mut **tx)
+            .await?;
+        }
+    }
+    Ok(())
+}
+
+/// V1 Issue2 Phase 3: upsert-by-name for one `.bw/connectors.toml` connector
+/// definition. Parallel to [`sync_one_metric_definition`] — looks the row up
+/// by `(project_id, name, kind='script')` and either UPDATEs its `config` in
+/// place (keeping the existing row's id, so connector history stays attached)
+/// or INSERTs a fresh row with `kind = 'script'` and default operational
+/// fields. Only `kind = 'script'` connectors are synced from the file; the
+/// `kind='script'` filter on the SELECT ensures a file script connector never
+/// collides with an existing non-script connector of the same name (e.g. a
+/// `codehub-repo` / `git-repo` connector) — same name + different kind →
+/// new INSERT, script row and legacy row coexist, each handled by its own
+/// processing path.
+async fn sync_one_connector_definition(
+    tx: &mut sqlx::Transaction<'_, sqlx::Sqlite>,
+    project_id: &str,
+    c: &ConnectorDefSync,
+    t: i64,
+) -> Result<()> {
+    let existing: Option<String> = sqlx::query_scalar(
+        "SELECT id FROM connector WHERE project_id=? AND name=? AND kind='script'",
+    )
+    .bind(project_id)
+    .bind(&c.name)
+    .fetch_optional(&mut **tx)
+    .await?;
+
+    match existing {
+        Some(id) => {
+            sqlx::query("UPDATE connector SET config=?, updated_at=?, rev=rev+1 WHERE id=?")
+                .bind(&c.config)
+                .bind(t)
+                .bind(&id)
+                .execute(&mut **tx)
+                .await?;
+        }
+        None => {
+            let id = Uuid::new_v4().to_string();
+            sqlx::query(
+                "INSERT INTO connector
+                    (id, name, kind, status, last_sync, scope, project_id, config,
+                     created_at, updated_at, rev)
+                 VALUES (?, ?, 'script', 'disconnected', '', '', ?, ?, ?, ?, 0)",
+            )
+            .bind(&id)
+            .bind(&c.name)
+            .bind(project_id)
+            .bind(&c.config)
             .bind(t)
             .bind(t)
             .execute(&mut **tx)
@@ -556,12 +884,6 @@ impl Store for SqliteStore {
         .bind(&p)
         .execute(&mut *tx)
         .await?;
-        sqlx::query(
-            "DELETE FROM message WHERE session_id IN (SELECT id FROM session WHERE project_id=?)",
-        )
-        .bind(&p)
-        .execute(&mut *tx)
-        .await?;
         // A project-owned skill's extra files, and a project-owned workflow's
         // version history — children of rows this fn deletes below, so they
         // have to go first or they outlive their parent as orphans. Global
@@ -588,6 +910,11 @@ impl Store for SqliteStore {
         // in the file — real Issue titles and artifact paths surviving a
         // "delete", which is both wrong and a privacy leak when a DB is
         // shared. Global agents/skills/workflows (`project_id IS NULL`) stay.
+        // 会话行挂在 issue 上:先于 issue 删,避免孤儿(阶段1缺口,底座补)。
+        sqlx::query("DELETE FROM claude_conversation WHERE project_id=?")
+            .bind(&p)
+            .execute(&mut *tx)
+            .await?;
         for table in [
             "issue",
             "artifact",
@@ -615,10 +942,6 @@ impl Store for SqliteStore {
             .bind(&p)
             .execute(&mut *tx)
             .await?;
-        sqlx::query("DELETE FROM weekly_review WHERE project_id=?")
-            .bind(&p)
-            .execute(&mut *tx)
-            .await?;
         sqlx::query("DELETE FROM handoff WHERE project_id=?")
             .bind(&p)
             .execute(&mut *tx)
@@ -627,6 +950,22 @@ impl Store for SqliteStore {
             .bind(&p)
             .execute(&mut *tx)
             .await?;
+        tx.commit().await?;
+        Ok(())
+    }
+
+    async fn delete_session(&self, id: SessionId) -> Result<()> {
+        let sid = id.uuid().to_string();
+        let mut tx = self.pool.begin().await?;
+        // `message` 表已于 2026-08-18 随旧聊天式引擎 DROP,没有子行要先删;
+        // 只删 session 行本身。
+        sqlx::query("DELETE FROM session WHERE id=?")
+            .bind(&sid)
+            .execute(&mut *tx)
+            .await?;
+        // 不碰 issue 行、不碰 claude_conversation：看板 ▶跑 / 点卡唤醒走
+        // claude_conversation，不读已删除的 session 行。issue.session_id
+        // 列在 V1 终端会话重构后已 DROP，这里再 UPDATE 会 no such column。
         tx.commit().await?;
         Ok(())
     }
@@ -779,6 +1118,25 @@ impl Store for SqliteStore {
         .execute(&mut *tx)
         .await?;
 
+        // W3-1: upsert the north star as a real metric row (role=Leading,
+        // stage_kind=NULL = project-level) so collect_project_metrics sees it
+        // and recompute_signals derives its signal instead of a forever-grey
+        // card. The two project columns above stay as a sync cache; this row
+        // is the observation mount point. Same upsert shape (by project_id +
+        // role + name) as lagging/leading below — a user-built same-name row
+        // is overwritten by origin='file', identical to lagging/leading sync.
+        let ns_name = sync.north_star_name.trim();
+        if !ns_name.is_empty() {
+            let ns_def = MetricDefSync {
+                name: ns_name.to_string(),
+                def: sync.north_star_def.clone(),
+                target_raw: String::new(),
+                collect_kind: sync.north_star_collect_kind.clone(),
+                collect_query: sync.north_star_collect_query.clone(),
+            };
+            sync_one_metric_definition(&mut tx, &p, MetricRole::Leading, &ns_def, t).await?;
+        }
+
         for m in &sync.lagging {
             sync_one_metric_definition(&mut tx, &p, MetricRole::Lagging, m, t).await?;
         }
@@ -786,27 +1144,107 @@ impl Store for SqliteStore {
             sync_one_metric_definition(&mut tx, &p, MetricRole::Leading, m, t).await?;
         }
 
+        // 正本里已经消失的行 → 自动停用。作用域死死卡在 `origin='file'`:
+        // 只有当初从正本同步进来的行,"正本里没有它了"才是一个成立的判断;
+        // 界面手建的 `manual` 行正本里本来就没有,不能被这条规则沉默清场
+        // (要停用得人在界面上显式点)。已经 archived 的不重复盖时戳。
+        // 一个字节不碰 observation。
+        let mut auto_archived = 0u32;
+        for (role, defs) in [
+            (MetricRole::Lagging, &sync.lagging),
+            (MetricRole::Leading, &sync.leading),
+        ] {
+            let rows = sqlx::query(
+                "SELECT id, name FROM metric
+                 WHERE project_id=? AND role=? AND origin='file' AND archived=0",
+            )
+            .bind(&p)
+            .bind(role_metric_text(role))
+            .fetch_all(&mut *tx)
+            .await?;
+            // 名字比对在 Rust 侧做,避开 IN (?,?,…) 的动态占位符拼接;
+            // 一个项目的指标是十几条量级,不值得为它上 SQL 生成。
+            for r in &rows {
+                let name: String = r.get("name");
+                let is_current_north_star =
+                    role == MetricRole::Leading && !ns_name.is_empty() && name == ns_name;
+                if is_current_north_star || defs.iter().any(|m| m.name == name) {
+                    continue;
+                }
+                let id: String = r.get("id");
+                sqlx::query(
+                    "UPDATE metric SET archived=1, archived_at=?, updated_at=?, rev=rev+1 WHERE id=?",
+                )
+                .bind(t)
+                .bind(t)
+                .bind(&id)
+                .execute(&mut *tx)
+                .await?;
+                auto_archived += 1;
+            }
+        }
+
         tx.commit().await?;
         Ok(MetricsFileSyncSummary {
             lagging_synced: sync.lagging.len() as u32,
             leading_synced: sync.leading.len() as u32,
+            auto_archived,
         })
     }
 
-    async fn update_week_plan(
+    /// V1 Issue2 Phase 3: upsert all `.bw/connectors.toml` connector
+    /// definitions for a project in one atomic transaction. Each connector
+    /// is upserted by `(project_id, name)` — existing rows keep their id
+    /// (so connector history stays attached), new rows are inserted with
+    /// `kind = 'script'` and default operational fields. Only `kind =
+    /// 'script'` connectors are synced from the file; other kinds are not
+    /// touched (they live in the DB from their creation paths).
+    async fn sync_connectors_file(
         &self,
-        metric: MetricId,
-        new_target: &str,
-        last_target: &str,
-        driver: &str,
-    ) -> Result<()> {
+        sync: ConnectorsFileSync,
+    ) -> Result<ConnectorsFileSyncSummary> {
+        let p = pid(sync.project_id);
+        let t = now_unix();
+        let mut tx = self.pool.begin().await?;
+
+        for c in &sync.connectors {
+            sync_one_connector_definition(&mut tx, &p, c, t).await?;
+        }
+
+        tx.commit().await?;
+        Ok(ConnectorsFileSyncSummary {
+            connectors_synced: sync.connectors.len() as u32,
+        })
+    }
+
+    async fn sync_project_file(&self, sync: ProjectFileSync) -> Result<()> {
+        let t = now_unix();
         sqlx::query(
-            "UPDATE metric SET target_raw=?, last_target=?, driver=?, updated_at=?, rev=rev+1 WHERE id=?",
+            "UPDATE project SET name=?, kind=?, descr=?, benchmark=?, opportunity=?,
+                updated_at=?, rev=rev+1 WHERE id=?",
         )
-        .bind(new_target)
-        .bind(last_target)
-        .bind(driver)
-        .bind(now_unix())
+        .bind(&sync.name)
+        .bind(&sync.kind)
+        .bind(&sync.brief)
+        .bind(&sync.benchmark)
+        .bind(&sync.opportunity)
+        .bind(t)
+        .bind(pid(sync.project_id))
+        .execute(&self.pool)
+        .await?;
+        Ok(())
+    }
+
+    async fn set_metric_archived(&self, metric: MetricId, archived: bool) -> Result<()> {
+        let t = now_unix();
+        sqlx::query(
+            "UPDATE metric SET archived=?, archived_at=?, updated_at=?, rev=rev+1 WHERE id=?",
+        )
+        .bind(archived as i64)
+        // 恢复时清掉时戳:archived_at 只在"当下正处于停用中"时才有意义,
+        // 留着一个陈旧的停用时刻会让人误以为它还停着。
+        .bind(if archived { Some(t) } else { None })
+        .bind(t)
         .bind(metric.uuid().to_string())
         .execute(&self.pool)
         .await?;
@@ -970,29 +1408,6 @@ impl Store for SqliteStore {
         Ok(())
     }
 
-    async fn append_message(&self, session_id: SessionId, role: Author, text: &str) -> Result<()> {
-        let sid = session_id.uuid().to_string();
-        let seq: i64 = sqlx::query(
-            "SELECT COALESCE(MAX(seq), -1) + 1 AS next FROM message WHERE session_id=?",
-        )
-        .bind(&sid)
-        .fetch_one(&self.pool)
-        .await?
-        .get("next");
-        sqlx::query(
-            "INSERT INTO message (id, session_id, seq, role, text, created_at) VALUES (?, ?, ?, ?, ?, ?)",
-        )
-        .bind(Uuid::new_v4().to_string())
-        .bind(&sid)
-        .bind(seq)
-        .bind(role_text(role))
-        .bind(text)
-        .bind(now_unix())
-        .execute(&self.pool)
-        .await?;
-        Ok(())
-    }
-
     async fn recompute_signals(&self, project_id: ProjectId, now: OffsetDateTime) -> Result<()> {
         let p = pid(project_id);
         let t = now.unix_timestamp();
@@ -1013,8 +1428,14 @@ impl Store for SqliteStore {
         }
 
         // L1→L3: each metric's signal from its latest observation vs its target.
+        // `archived=0`:停用的指标整条退出派生 —— 既不再重算它自己那盏灯
+        // (缓存冻结在停用那一刻),也不进下面的 by_stage/by_project 上卷
+        // (一条被判定为坏指标的行不该再把项目健康灯往任何方向拽)。
+        // 恢复后它自然回到这个 SELECT 里,由下一次 recompute 重新派生。
+        // derive-only 不变:recompute_signals 仍是 signal 的唯一写入者。
         let metric_rows = sqlx::query(
-            "SELECT id, stage_kind, target_raw, amber_kind, amber_value FROM metric WHERE project_id=?",
+            "SELECT id, stage_kind, target_raw, amber_kind, amber_value
+             FROM metric WHERE project_id=? AND archived=0",
         )
         .bind(&p)
         .fetch_all(&self.pool)
@@ -1128,30 +1549,6 @@ impl Store for SqliteStore {
         Ok(())
     }
 
-    async fn annotate_weekly_review(
-        &self,
-        project_id: ProjectId,
-        week_of: OffsetDateTime,
-        derived: Signal,
-        human_override: Option<Signal>,
-        reason: &str,
-    ) -> Result<()> {
-        sqlx::query(
-            "INSERT INTO weekly_review (id, project_id, week_of, derived_signal, human_override, override_reason, created_at)
-             VALUES (?, ?, ?, ?, ?, ?, ?)",
-        )
-        .bind(Uuid::new_v4().to_string())
-        .bind(pid(project_id))
-        .bind(week_of.unix_timestamp())
-        .bind(sig_text(derived))
-        .bind(human_override.map(sig_text))
-        .bind(reason)
-        .bind(now_unix())
-        .execute(&self.pool)
-        .await?;
-        Ok(())
-    }
-
     async fn get_project(&self, id: ProjectId) -> Result<Option<ProjectRow>> {
         let row = sqlx::query(
             "SELECT id, name, kind, descr, phase, cycle, active_stage, north_star, ns_def, benchmark, opportunity, workspace_path, allow_commands, remote_path, remote_host, north_star_collect_kind, north_star_collect_query, provider, signal, weekly_signal, created_at
@@ -1199,7 +1596,7 @@ impl Store for SqliteStore {
 
         let metric_rows = sqlx::query(
             "SELECT m.id, m.name, m.role, m.def, m.target_raw, m.last_target, m.driver, m.stage_kind, m.signal, m.hit,
-                    m.collect_kind, m.collect_query, m.origin,
+                    m.collect_kind, m.collect_query, m.origin, m.archived,
                     (SELECT raw FROM observation o WHERE o.metric_id = m.id ORDER BY ts DESC, rowid DESC LIMIT 1) AS value_raw,
                     (SELECT source_kind FROM observation o WHERE o.metric_id = m.id ORDER BY ts DESC, rowid DESC LIMIT 1) AS src
              FROM metric m WHERE m.project_id=? ORDER BY m.pos",
@@ -1231,6 +1628,7 @@ impl Store for SqliteStore {
                     collect_kind: r.get("collect_kind"),
                     collect_query: r.get("collect_query"),
                     origin: parse_metric_origin(&r.get::<String, _>("origin")),
+                    archived: r.get::<i64, _>("archived") != 0,
                 })
             })
             .collect::<Result<Vec<_>>>()?;
@@ -1378,20 +1776,6 @@ impl Store for SqliteStore {
             .collect()
     }
 
-    async fn session_messages(&self, session_id: SessionId) -> Result<Vec<MessageRow>> {
-        let rows = sqlx::query("SELECT role, text FROM message WHERE session_id=? ORDER BY seq")
-            .bind(session_id.uuid().to_string())
-            .fetch_all(&self.pool)
-            .await?;
-        Ok(rows
-            .into_iter()
-            .map(|r| MessageRow {
-                role: parse_role(&r.get::<String, _>("role")),
-                text: r.get("text"),
-            })
-            .collect())
-    }
-
     // ── hub library (global — no active-project gate) ──
 
     async fn create_workflow_spec(&self, w: NewWorkflowSpec) -> Result<()> {
@@ -1445,93 +1829,6 @@ impl Store for SqliteStore {
         .fetch_optional(&self.pool)
         .await?;
         row.map(workflow_spec_row).transpose()
-    }
-
-    async fn promote_workflow(
-        &self,
-        new_id: WorkflowId,
-        from: &WorkflowSpec,
-        source: HubSource,
-    ) -> Result<()> {
-        let kind = WorkflowKind::Static {
-            maturity: Maturity::Fresh,
-            version: 1,
-            uses: 0,
-            scope: String::new(),
-            source,
-            trigger: None,
-        };
-        let t = now_unix();
-        sqlx::query(
-            "INSERT INTO workflow_spec
-                (id, name, kind_json, prompt, goal, stage_ref, phases, phase_prompts, agents_json,
-                 skills_json, loop_retries, loop_max_iter, content, created_at, updated_at, rev)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0)",
-        )
-        .bind(new_id.uuid().to_string())
-        .bind(&from.name)
-        .bind(serde_json::to_string(&kind)?)
-        .bind(&from.prompt)
-        .bind(&from.goal)
-        .bind(from.stage_ref.map(i64::from))
-        .bind(serde_json::to_string(&from.phases)?)
-        .bind(serde_json::to_string(&from.phase_prompts)?)
-        .bind(serde_json::to_string(&from.agents)?)
-        .bind(serde_json::to_string(&from.skills)?)
-        .bind(i64::from(from.loop_config.retries))
-        .bind(i64::from(from.loop_config.max_iter))
-        .bind(&from.content)
-        .bind(t)
-        .bind(t)
-        .execute(&self.pool)
-        .await?;
-        Ok(())
-    }
-
-    async fn record_workflow_use(&self, id: WorkflowId) -> Result<()> {
-        let row = sqlx::query("SELECT kind_json FROM workflow_spec WHERE id=?")
-            .bind(id.uuid().to_string())
-            .fetch_optional(&self.pool)
-            .await?
-            .ok_or_else(|| StoreError::Other("workflow spec not found".into()))?;
-        let mut kind: WorkflowKind = serde_json::from_str(&row.get::<String, _>("kind_json"))?;
-        if let WorkflowKind::Static { uses, .. } = &mut kind {
-            *uses += 1;
-        }
-        sqlx::query("UPDATE workflow_spec SET kind_json=?, updated_at=?, rev=rev+1 WHERE id=?")
-            .bind(serde_json::to_string(&kind)?)
-            .bind(now_unix())
-            .bind(id.uuid().to_string())
-            .execute(&self.pool)
-            .await?;
-        Ok(())
-    }
-
-    async fn refresh_workflow_template_phases(
-        &self,
-        id: WorkflowId,
-        phases: Vec<PhaseMeta>,
-        phase_prompts: Vec<String>,
-    ) -> Result<()> {
-        sqlx::query(
-            "UPDATE workflow_spec SET phases=?, phase_prompts=?, updated_at=?, rev=rev+1
-             WHERE id=?",
-        )
-        .bind(serde_json::to_string(&phases)?)
-        .bind(serde_json::to_string(&phase_prompts)?)
-        .bind(now_unix())
-        .bind(id.uuid().to_string())
-        .execute(&self.pool)
-        .await?;
-        Ok(())
-    }
-
-    async fn delete_workflow_spec(&self, id: WorkflowId) -> Result<()> {
-        sqlx::query("DELETE FROM workflow_spec WHERE id=?")
-            .bind(id.uuid().to_string())
-            .execute(&self.pool)
-            .await?;
-        Ok(())
     }
 
     async fn record_workflow_run_start(&self, run: NewWorkflowRun<'_>) -> Result<WorkflowRunId> {
@@ -1622,166 +1919,6 @@ impl Store for SqliteStore {
         }
     }
 
-    async fn list_workflow_runs(&self, workflow_id: WorkflowId) -> Result<Vec<WorkflowRun>> {
-        let rows = sqlx::query(
-            "SELECT id, workflow_id, workflow_name, project_id, session_id, trigger, status,
-                    started_at, finished_at, duration_ms, phases_completed, error, params_json, cron_task_id, issue_id, head_before, head_after
-             FROM workflow_run WHERE workflow_id=? ORDER BY started_at DESC, rowid DESC",
-        )
-        .bind(workflow_id.uuid().to_string())
-        .fetch_all(&self.pool)
-        .await?;
-        Ok(rows.iter().map(parse_run_row).collect())
-    }
-
-    async fn list_all_workflow_runs(&self, limit: u32) -> Result<Vec<WorkflowRun>> {
-        let rows = sqlx::query(
-            "SELECT id, workflow_id, workflow_name, project_id, session_id, trigger, status,
-                    started_at, finished_at, duration_ms, phases_completed, error, params_json, cron_task_id, issue_id, head_before, head_after
-             FROM workflow_run ORDER BY started_at DESC, rowid DESC LIMIT ?",
-        )
-        .bind(limit as i64)
-        .fetch_all(&self.pool)
-        .await?;
-        Ok(rows.iter().map(parse_run_row).collect())
-    }
-
-    async fn workflow_analytics(&self, workflow_id: WorkflowId) -> Result<WorkflowRunAnalytics> {
-        // One aggregation query: counts + mean over settled runs. Median is
-        // computed in Rust over the fetched series (SQLite has no native
-        // MEDIAN), which also gives us last_run_at/last_status in the same
-        // pass. A workflow with no rows returns total_runs=0, success_rate=None.
-        let agg = sqlx::query(
-            "SELECT
-                COUNT(*)                                               AS total,
-                SUM(CASE WHEN status='ok'      THEN 1 ELSE 0 END)     AS ok_n,
-                SUM(CASE WHEN status='failed'  THEN 1 ELSE 0 END)     AS fail_n,
-                SUM(CASE WHEN status='running' THEN 1 ELSE 0 END)     AS run_n,
-                AVG(CASE WHEN status IN ('ok','failed') THEN duration_ms END) AS avg_dur
-             FROM workflow_run WHERE workflow_id=?",
-        )
-        .bind(workflow_id.uuid().to_string())
-        .fetch_one(&self.pool)
-        .await?;
-        let total: i64 = agg.get("total");
-        let ok_runs: i64 = agg.get("ok_n");
-        let failed_runs: i64 = agg.get("fail_n");
-        let running_runs: i64 = agg.get("run_n");
-        let avg_dur: Option<f64> = agg.get("avg_dur");
-        let settled = ok_runs + failed_runs;
-
-        // Name + last run + the duration series (for median) in one fetch.
-        let name_row = sqlx::query("SELECT workflow_name, started_at, status FROM workflow_run WHERE workflow_id=? ORDER BY started_at DESC, rowid DESC LIMIT 1")
-            .bind(workflow_id.uuid().to_string())
-            .fetch_optional(&self.pool)
-            .await?;
-        let (workflow_name, last_run_at, last_status) = match name_row {
-            Some(r) => (
-                r.get::<String, _>("workflow_name"),
-                Some(r.get::<i64, _>("started_at")),
-                Some(RunStatus::parse(&r.get::<String, _>("status"))),
-            ),
-            None => (String::new(), None, None),
-        };
-
-        // Median over settled durations — robust to a single slow outlier.
-        let median = if settled > 0 {
-            let dur_rows = sqlx::query(
-                "SELECT duration_ms FROM workflow_run
-                 WHERE workflow_id=? AND status IN ('ok','failed') AND duration_ms IS NOT NULL
-                 ORDER BY duration_ms",
-            )
-            .bind(workflow_id.uuid().to_string())
-            .fetch_all(&self.pool)
-            .await?;
-            let ds: Vec<i64> = dur_rows
-                .iter()
-                .map(|r| r.get::<i64, _>("duration_ms"))
-                .collect();
-            if ds.is_empty() {
-                None
-            } else {
-                let mid = ds.len() / 2;
-                Some(if ds.len() % 2 == 0 {
-                    (ds[mid - 1] + ds[mid]) / 2
-                } else {
-                    ds[mid]
-                })
-            }
-        } else {
-            None
-        };
-
-        Ok(WorkflowRunAnalytics {
-            workflow_id,
-            workflow_name,
-            total_runs: total as u32,
-            ok_runs: ok_runs as u32,
-            failed_runs: failed_runs as u32,
-            running_runs: running_runs as u32,
-            success_rate: if settled > 0 {
-                Some(ok_runs as f32 / settled as f32)
-            } else {
-                None
-            },
-            avg_duration_ms: avg_dur.map(|v| v as i64),
-            median_duration_ms: median,
-            last_run_at,
-            last_status,
-        })
-    }
-
-    async fn cron_effectiveness(&self, cron_task_id: CronTaskId) -> Result<CronEffectiveness> {
-        // Only runs this task auto-fired (trigger='scheduled' AND linked to
-        // this task). Manual runs of the same workflow are excluded — a
-        // schedule's track record is its own, not contaminated by ad-hoc fires.
-        let row = sqlx::query(
-            "SELECT
-                COUNT(*)                                                         AS fires,
-                SUM(CASE WHEN status='ok'     THEN 1 ELSE 0 END)                AS ok_n,
-                SUM(CASE WHEN status='failed' THEN 1 ELSE 0 END)                AS fail_n,
-                AVG(CASE WHEN status IN ('ok','failed') THEN duration_ms END)   AS avg_dur,
-                MAX(started_at)                                                  AS last_at
-             FROM workflow_run WHERE cron_task_id=? AND trigger='scheduled'",
-        )
-        .bind(cron_task_id.uuid().to_string())
-        .fetch_one(&self.pool)
-        .await?;
-        let fires: i64 = row.get("fires");
-        let ok_fires: i64 = row.get("ok_n");
-        let failed_fires: i64 = row.get("fail_n");
-        let avg_dur: Option<f64> = row.get("avg_dur");
-        let last_at: Option<i64> = row.get("last_at");
-        let last_fire_ok = if fires > 0 {
-            // Read the most recent fire's status in a second cheap query —
-            // keeping it separate avoids a window-function dependency.
-            let last = sqlx::query(
-                "SELECT status FROM workflow_run WHERE cron_task_id=? AND trigger='scheduled'
-                 ORDER BY started_at DESC, rowid DESC LIMIT 1",
-            )
-            .bind(cron_task_id.uuid().to_string())
-            .fetch_one(&self.pool)
-            .await?;
-            Some(RunStatus::parse(&last.get::<String, _>("status")) == RunStatus::Ok)
-        } else {
-            None
-        };
-        Ok(CronEffectiveness {
-            cron_task_id,
-            fires: fires as u32,
-            ok_fires: ok_fires as u32,
-            failed_fires: failed_fires as u32,
-            effectiveness: if fires > 0 {
-                Some(ok_fires as f32 / fires as f32)
-            } else {
-                None
-            },
-            avg_duration_ms: avg_dur.map(|v| v as i64),
-            last_fire_at: last_at,
-            last_fire_ok,
-        })
-    }
-
     async fn update_workflow_spec(&self, id: WorkflowId, edit: WorkflowEdit) -> Result<()> {
         // iter 5: snapshot the CURRENT content into workflow_version BEFORE
         // the overwrite — so the evolution history survives. Read everything
@@ -1865,45 +2002,6 @@ impl Store for SqliteStore {
         Ok(())
     }
 
-    async fn list_workflow_versions(
-        &self,
-        workflow_id: WorkflowId,
-    ) -> Result<Vec<WorkflowVersion>> {
-        let rows = sqlx::query(
-            "SELECT id, workflow_id, version, name, prompt, goal, phases, phase_prompts,
-                    agents_json, skills_json, loop_retries, loop_max_iter, note, created_at
-             FROM workflow_version WHERE workflow_id=? ORDER BY version DESC",
-        )
-        .bind(workflow_id.uuid().to_string())
-        .fetch_all(&self.pool)
-        .await?;
-        rows.iter()
-            .map(|r| {
-                let wid = parse_uuid(&r.get::<String, _>("workflow_id"), WorkflowId::from_uuid)
-                    .unwrap_or(WorkflowId::nil());
-                let id = parse_uuid(&r.get::<String, _>("id"), WorkflowRunId::from_uuid)
-                    .unwrap_or(WorkflowRunId::nil());
-                Ok(WorkflowVersion {
-                    id,
-                    workflow_id: wid,
-                    version: r.get::<i64, _>("version") as u32,
-                    name: r.get("name"),
-                    prompt: r.get("prompt"),
-                    goal: r.get("goal"),
-                    phases: serde_json::from_str(&r.get::<String, _>("phases"))?,
-                    phase_prompts: serde_json::from_str(&r.get::<String, _>("phase_prompts"))
-                        .unwrap_or_default(),
-                    agents: serde_json::from_str(&r.get::<String, _>("agents_json"))?,
-                    skills: serde_json::from_str(&r.get::<String, _>("skills_json"))?,
-                    loop_retries: r.get::<i64, _>("loop_retries") as u8,
-                    loop_max_iter: r.get::<i64, _>("loop_max_iter") as u8,
-                    note: r.get("note"),
-                    created_at: r.get("created_at"),
-                })
-            })
-            .collect()
-    }
-
     async fn hub_usage_ranking(&self) -> Result<Vec<UsageRank>> {
         // LEFT JOIN so a spec that's never run still appears (cold=true at the
         // bottom). Rank by real run count desc — the Static `uses` counter is
@@ -1952,8 +2050,11 @@ impl Store for SqliteStore {
     async fn create_skill(&self, s: NewSkill) -> Result<()> {
         let t = now_unix();
         let (source_tag, official_library) = hub_source_columns(&s.source);
+        // 建行与阶段归属包在同一事务里 —— 让调用方没有「skill 行落地、
+        // skill_stage 半途失败」的机会(seed/import 路径都靠这一点)。
+        let mut tx = self.pool.begin().await?;
         sqlx::query(
-            "INSERT INTO skill (id, name, maturity, descr, category, stage_ref, source, official_library, uses, content, project_id, created_at, updated_at, rev)
+            "INSERT INTO skill (id, name, maturity, descr, category, stage_origin, source, official_library, uses, content, project_id, created_at, updated_at, rev)
              VALUES (?, ?, ?, ?, ?, ?, ?, ?, 0, ?, ?, ?, ?, 0)",
         )
         .bind(s.id.uuid().to_string())
@@ -1961,15 +2062,23 @@ impl Store for SqliteStore {
         .bind(maturity_text(s.maturity))
         .bind(&s.desc)
         .bind(&s.category)
-        .bind(s.stage_ref.map(|k| i64::from(k.index())))
+        .bind(stage_origin_tag(s.stage_origin))
         .bind(source_tag)
         .bind(official_library)
         .bind(&s.content)
         .bind(s.project_id.map(pid))
         .bind(t)
         .bind(t)
-        .execute(&self.pool)
+        .execute(&mut *tx)
         .await?;
+        for k in &s.stages {
+            sqlx::query("INSERT OR IGNORE INTO skill_stage (skill_id, stage) VALUES (?, ?)")
+                .bind(s.id.uuid().to_string())
+                .bind(i64::from(k.index()))
+                .execute(&mut *tx)
+                .await?;
+        }
+        tx.commit().await?;
         Ok(())
     }
 
@@ -2006,16 +2115,6 @@ impl Store for SqliteStore {
         Ok(())
     }
 
-    async fn set_skill_stage_ref(&self, id: SkillId, stage_ref: Option<StageKind>) -> Result<()> {
-        sqlx::query("UPDATE skill SET stage_ref=?, updated_at=?, rev=rev+1 WHERE id=?")
-            .bind(stage_ref.map(|k| i64::from(k.index())))
-            .bind(now_unix())
-            .bind(id.uuid().to_string())
-            .execute(&self.pool)
-            .await?;
-        Ok(())
-    }
-
     async fn set_skill_source(&self, id: SkillId, source: HubSource) -> Result<()> {
         let (source_tag, official_library) = hub_source_columns(&source);
         sqlx::query(
@@ -2047,34 +2146,56 @@ impl Store for SqliteStore {
 
     async fn list_skills(&self) -> Result<Vec<SkillCard>> {
         let rows = sqlx::query(
-            "SELECT id, name, maturity, descr, category, stage_ref, source, official_library, uses, content,
-                    distilled_from_issue, origin_agent, project_id
+            "SELECT id, name, maturity, descr, category, stage_origin, source, official_library, uses, content,
+                    distilled_from_issue, origin_agent, project_id, rev
              FROM skill ORDER BY created_at",
         )
         .fetch_all(&self.pool)
         .await?;
-        rows.into_iter().map(skill_row).collect()
+        let mut cards: Vec<SkillCard> = rows
+            .into_iter()
+            .map(skill_row)
+            .collect::<Result<Vec<_>>>()?;
+        // 一次查关联表、按 id 分发 —— 不是每张卡一次查询。
+        let by_id = self.list_skill_stages().await?;
+        for c in cards.iter_mut() {
+            if let Some(stages) = by_id.get(&c.id) {
+                c.stages = stages.clone();
+            }
+        }
+        Ok(cards)
     }
 
     async fn get_skill(&self, id: SkillId) -> Result<Option<SkillCard>> {
         let row = sqlx::query(
-            "SELECT id, name, maturity, descr, category, stage_ref, source, official_library, uses, content,
-                    distilled_from_issue, origin_agent, project_id
+            "SELECT id, name, maturity, descr, category, stage_origin, source, official_library, uses, content,
+                    distilled_from_issue, origin_agent, project_id, rev
              FROM skill WHERE id=?",
         )
         .bind(id.uuid().to_string())
         .fetch_optional(&self.pool)
         .await?;
-        row.map(skill_row).transpose()
+        let Some(mut card) = row.map(skill_row).transpose()? else {
+            return Ok(None);
+        };
+        let stages = sqlx::query("SELECT stage FROM skill_stage WHERE skill_id=? ORDER BY stage")
+            .bind(id.uuid().to_string())
+            .fetch_all(&self.pool)
+            .await?;
+        card.stages = stages
+            .into_iter()
+            .filter_map(|r| StageKind::from_index(r.get::<i64, _>("stage") as u8))
+            .collect();
+        Ok(Some(card))
     }
 
-    async fn record_skill_use_by_name(&self, name: &str) -> Result<u32> {
-        let res = sqlx::query("UPDATE skill SET uses=uses+1, updated_at=?, rev=rev+1 WHERE name=?")
+    async fn record_skill_use(&self, id: SkillId) -> Result<()> {
+        sqlx::query("UPDATE skill SET uses=uses+1, updated_at=?, rev=rev+1 WHERE id=?")
             .bind(now_unix())
-            .bind(name)
+            .bind(id.uuid().to_string())
             .execute(&self.pool)
             .await?;
-        Ok(res.rows_affected() as u32)
+        Ok(())
     }
 
     /// Distill a new skill from a completed, assigned Issue — the "every
@@ -2096,9 +2217,12 @@ impl Store for SqliteStore {
 
         let t = now_unix();
         let (source_tag, official_library) = hub_source_columns(&HubSource::SelfBuilt);
+        // 建行与阶段归属包在同一事务里(同 create_skill)—— 前置的只读校验
+        // (issue 存在/Done/有 assignee)已经在事务外做完,这里只包写入。
+        let mut tx = self.pool.begin().await?;
         sqlx::query(
             "INSERT INTO skill
-                (id, name, maturity, descr, category, stage_ref, source, official_library, uses, content,
+                (id, name, maturity, descr, category, stage_origin, source, official_library, uses, content,
                  distilled_from_issue, origin_agent, project_id,
                  created_at, updated_at, rev)
              VALUES (?, ?, ?, ?, ?, ?, ?, ?, 0, ?, ?, ?, ?, ?, ?, 0)",
@@ -2108,10 +2232,12 @@ impl Store for SqliteStore {
         .bind(maturity_text(Maturity::Polishing))
         .bind(&skill.desc)
         .bind(&skill.category)
-        // T7 (plan/12 §0): same provenance-not-input rule the line below
-        // already applies to `project_id` — a distilled skill really did
-        // arise from work in the issue's real stage, not a caller guess.
-        .bind(i64::from(issue.stage.index()))
+        // T7 (plan/12 §0)/2026-08-05: same provenance-not-input rule the
+        // line below already applies to `project_id` — a distilled skill
+        // really did arise from work in the issue's real stage, not a
+        // caller guess (`skill.stages`/`skill.stage_origin` are ignored the
+        // same way `project_id` is, see the call site's own comment).
+        .bind(stage_origin_tag(StageOrigin::Distilled))
         .bind(source_tag)
         .bind(official_library)
         .bind(&skill.content)
@@ -2122,8 +2248,14 @@ impl Store for SqliteStore {
         .bind(pid(issue.project_id))
         .bind(t)
         .bind(t)
-        .execute(&self.pool)
+        .execute(&mut *tx)
         .await?;
+        sqlx::query("INSERT OR IGNORE INTO skill_stage (skill_id, stage) VALUES (?, ?)")
+            .bind(skill.id.uuid().to_string())
+            .bind(i64::from(issue.stage.index()))
+            .execute(&mut *tx)
+            .await?;
+        tx.commit().await?;
         Ok(())
     }
 
@@ -2132,7 +2264,7 @@ impl Store for SqliteStore {
         let (source_tag, official_library) = hub_source_columns(&skill.source);
         let mut tx = self.pool.begin().await?;
         sqlx::query(
-            "INSERT INTO skill (id, name, maturity, descr, category, stage_ref, source, official_library, uses, content, project_id, created_at, updated_at, rev)
+            "INSERT INTO skill (id, name, maturity, descr, category, stage_origin, source, official_library, uses, content, project_id, created_at, updated_at, rev)
              VALUES (?, ?, ?, ?, ?, ?, ?, ?, 0, ?, ?, ?, ?, 0)",
         )
         .bind(skill.id.uuid().to_string())
@@ -2140,7 +2272,7 @@ impl Store for SqliteStore {
         .bind(maturity_text(skill.maturity))
         .bind(&skill.desc)
         .bind(&skill.category)
-        .bind(skill.stage_ref.map(|k| i64::from(k.index())))
+        .bind(stage_origin_tag(skill.stage_origin))
         .bind(source_tag)
         .bind(official_library)
         .bind(&skill.content)
@@ -2149,6 +2281,14 @@ impl Store for SqliteStore {
         .bind(t)
         .execute(&mut *tx)
         .await?;
+        // 同 create_skill:建行与阶段归属在同一次调用里落地。
+        for k in &skill.stages {
+            sqlx::query("INSERT OR IGNORE INTO skill_stage (skill_id, stage) VALUES (?, ?)")
+                .bind(skill.id.uuid().to_string())
+                .bind(i64::from(k.index()))
+                .execute(&mut *tx)
+                .await?;
+        }
 
         for f in files {
             sqlx::query(
@@ -2177,6 +2317,50 @@ impl Store for SqliteStore {
         .fetch_all(&self.pool)
         .await?;
         rows.into_iter().map(skill_file_row).collect()
+    }
+
+    async fn list_skill_stages(&self) -> Result<HashMap<SkillId, Vec<StageKind>>> {
+        let rows = sqlx::query("SELECT skill_id, stage FROM skill_stage ORDER BY skill_id, stage")
+            .fetch_all(&self.pool)
+            .await?;
+        let mut out: HashMap<SkillId, Vec<StageKind>> = HashMap::new();
+        for r in rows {
+            let id = parse_uuid(&r.get::<String, _>("skill_id"), SkillId::from_uuid)?;
+            // 越界值(理论上进不来 —— 写侧只写 StageKind::index)如实丢弃,
+            // 绝不映射成某个「差不多的」阶段。
+            if let Some(k) = StageKind::from_index(r.get::<i64, _>("stage") as u8) {
+                out.entry(id).or_default().push(k);
+            }
+        }
+        Ok(out)
+    }
+
+    async fn set_skill_stages(
+        &self,
+        id: SkillId,
+        stages: &[StageKind],
+        origin: StageOrigin,
+    ) -> Result<()> {
+        let mut tx = self.pool.begin().await?;
+        sqlx::query("DELETE FROM skill_stage WHERE skill_id=?")
+            .bind(id.uuid().to_string())
+            .execute(&mut *tx)
+            .await?;
+        for k in stages {
+            sqlx::query("INSERT INTO skill_stage (skill_id, stage) VALUES (?, ?)")
+                .bind(id.uuid().to_string())
+                .bind(i64::from(k.index()))
+                .execute(&mut *tx)
+                .await?;
+        }
+        sqlx::query("UPDATE skill SET stage_origin=?, updated_at=? WHERE id=?")
+            .bind(stage_origin_tag(origin))
+            .bind(now_unix())
+            .bind(id.uuid().to_string())
+            .execute(&mut *tx)
+            .await?;
+        tx.commit().await?;
+        Ok(())
     }
 
     async fn create_agent(&self, a: NewAgent) -> Result<()> {
@@ -2268,22 +2452,22 @@ impl Store for SqliteStore {
         row.map(agent_row).transpose()
     }
 
-    async fn record_agent_run_by_name(&self, name: &str, ok: bool) -> Result<u32> {
+    async fn record_agent_run(&self, id: AgentId, ok: bool) -> Result<()> {
         // runs/wins are the real counters; win_rate is a derived display
         // string recomputed from them in the same statement — never patched
         // independently, so it can't drift from the counters it summarizes.
-        let res = sqlx::query(
+        sqlx::query(
             "UPDATE agent SET runs=runs+1, wins=wins+?, \
              win_rate = printf('%d%%', (wins+?)*100/(runs+1)), \
-             updated_at=?, rev=rev+1 WHERE name=?",
+             updated_at=?, rev=rev+1 WHERE id=?",
         )
         .bind(if ok { 1 } else { 0 })
         .bind(if ok { 1 } else { 0 })
         .bind(now_unix())
-        .bind(name)
+        .bind(id.uuid().to_string())
         .execute(&self.pool)
         .await?;
-        Ok(res.rows_affected() as u32)
+        Ok(())
     }
 
     async fn delete_agent(&self, id: AgentId) -> Result<()> {
@@ -2297,8 +2481,8 @@ impl Store for SqliteStore {
     async fn create_cron_task(&self, c: NewCronTask) -> Result<()> {
         let t = now_unix();
         sqlx::query(
-            "INSERT INTO cron_task (id, name, target, schedule, project_id, status, last_run, next_run, mode, issue_stage, issue_assignee, created_at, updated_at, rev)
-             VALUES (?, ?, ?, ?, ?, 'normal', '', '', ?, ?, ?, ?, ?, 0)",
+            "INSERT INTO cron_task (id, name, target, schedule, project_id, status, last_run, next_run, mode, issue_stage, issue_assignee, created_at, updated_at, rev, last_run_at)
+             VALUES (?, ?, ?, ?, ?, 'normal', '', '', ?, ?, ?, ?, ?, 0, ?)",
         )
         .bind(c.id.uuid().to_string())
         .bind(&c.name)
@@ -2310,6 +2494,7 @@ impl Store for SqliteStore {
         .bind(&c.issue_assignee)
         .bind(t)
         .bind(t)
+        .bind(c.last_run_at.unwrap_or(0))
         .execute(&self.pool)
         .await?;
         Ok(())
@@ -2539,8 +2724,8 @@ impl Store for SqliteStore {
         // query-builder dependency.
         let mut sql = String::from(
             "SELECT id, project_id, stage, number, github_number, pr_number, title, descr, status,
-                    priority, assignee, settled_at, blocked_reason, standard_skill, created_at,
-                    updated_at
+                    priority, assignee, settled_at, blocked_reason, standard_skill,
+                    created_at, updated_at
              FROM issue WHERE project_id=?",
         );
         if stage.is_some() {
@@ -2643,6 +2828,119 @@ impl Store for SqliteStore {
         Ok(())
     }
 
+    /// V1 终端会话重构(阶段1): 读一件活绑定的会话行。None = 从未点开过。
+    async fn get_conversation_by_issue(
+        &self,
+        issue_id: IssueId,
+    ) -> Result<Option<ClaudeConversation>> {
+        let row = sqlx::query(
+            "SELECT id, project_id, issue_id, claude_session_id, workspace_path, branch_name,
+                    created_at, last_opened_at
+             FROM claude_conversation WHERE issue_id=?",
+        )
+        .bind(issue_id.uuid().to_string())
+        .fetch_optional(&self.pool)
+        .await?;
+        row.map(conversation_row).transpose()
+    }
+
+    /// V1 终端会话重构: 首次 spawn 前建会话行(INSERT OR IGNORE,issue_id
+    /// UNIQUE 兜底,幂等)。claude_session_id 留空,等 hook 填。返回行的
+    /// `ConversationId`(新建或已存在都查回——底座 TerminalManager 要身份)。
+    async fn ensure_conversation(
+        &self,
+        issue_id: IssueId,
+        project_id: ProjectId,
+        workspace_path: &str,
+        branch_name: &str,
+    ) -> Result<ConversationId> {
+        let id = Uuid::new_v4().to_string();
+        let now = now_unix();
+        sqlx::query(
+            "INSERT OR IGNORE INTO claude_conversation
+             (id, project_id, issue_id, claude_session_id, workspace_path, branch_name,
+              created_at, last_opened_at)
+             VALUES (?, ?, ?, '', ?, ?, ?, ?)",
+        )
+        .bind(&id)
+        .bind(project_id.uuid().to_string())
+        .bind(issue_id.uuid().to_string())
+        .bind(workspace_path)
+        .bind(branch_name)
+        .bind(now)
+        .bind(now)
+        .execute(&self.pool)
+        .await?;
+        // INSERT OR IGNORE 在行已存在时不改 id——一律按 issue_id 读回。
+        let row = sqlx::query("SELECT id FROM claude_conversation WHERE issue_id=?")
+            .bind(issue_id.uuid().to_string())
+            .fetch_one(&self.pool)
+            .await?;
+        let id_str: String = row.get::<String, _>("id");
+        Ok(parse_uuid(&id_str, ConversationId::from_uuid)?)
+    }
+
+    /// V1 终端会话重构(阶段1): hook SessionStart 回传 session_id 时填进会话行
+    /// (UPDATE;行不存在则 0 行受影响,no-op 不报错)。
+    async fn set_conversation_session_id(&self, issue_id: IssueId, session_id: &str) -> Result<()> {
+        sqlx::query("UPDATE claude_conversation SET claude_session_id=? WHERE issue_id=?")
+            .bind(session_id)
+            .bind(issue_id.uuid().to_string())
+            .execute(&self.pool)
+            .await?;
+        Ok(())
+    }
+
+    /// V1 终端会话重构(重启恢复): 只回填空的 workspace_path/branch_name,
+    /// 已有值不覆盖;刷新 last_opened_at。
+    async fn update_conversation_workspace_if_empty(
+        &self,
+        issue_id: IssueId,
+        workspace_path: &str,
+        branch_name: &str,
+    ) -> Result<()> {
+        sqlx::query(
+            "UPDATE claude_conversation SET
+                workspace_path = CASE WHEN workspace_path = '' THEN ? ELSE workspace_path END,
+                branch_name = CASE WHEN branch_name = '' THEN ? ELSE branch_name END,
+                last_opened_at = ?
+             WHERE issue_id = ?",
+        )
+        .bind(workspace_path)
+        .bind(branch_name)
+        .bind(now_unix())
+        .bind(issue_id.uuid().to_string())
+        .execute(&self.pool)
+        .await?;
+        Ok(())
+    }
+
+    /// V1 终端会话重构(阶段1): 列出某项目下有会话行的 issue_id(poll 用)。
+    async fn list_conversation_issue_ids(&self, project_id: ProjectId) -> Result<Vec<IssueId>> {
+        let rows = sqlx::query("SELECT issue_id FROM claude_conversation WHERE project_id=?")
+            .bind(project_id.uuid().to_string())
+            .fetch_all(&self.pool)
+            .await?;
+        rows.into_iter()
+            .map(|r| parse_uuid(&r.get::<String, _>("issue_id"), IssueId::from_uuid))
+            .collect()
+    }
+
+    async fn list_resumable_conversation_issue_ids(
+        &self,
+        project_id: ProjectId,
+    ) -> Result<Vec<IssueId>> {
+        let rows = sqlx::query(
+            "SELECT issue_id FROM claude_conversation WHERE project_id=? AND claude_session_id != ''",
+        )
+            .bind(project_id.uuid().to_string())
+            .fetch_all(&self.pool)
+            .await?;
+        rows.into_iter()
+            .map(|r| parse_uuid(&r.get::<String, _>("issue_id"), IssueId::from_uuid))
+            .collect()
+    }
+
     async fn set_issue_github_number(&self, id: IssueId, github_number: u32) -> Result<()> {
         sqlx::query("UPDATE issue SET github_number=?, updated_at=? WHERE id=?")
             .bind(github_number as i64)
@@ -2653,22 +2951,29 @@ impl Store for SqliteStore {
         Ok(())
     }
 
-    async fn get_app_meta(&self, key: &str) -> Result<Option<String>> {
-        let row = sqlx::query("SELECT value FROM app_meta WHERE key=?")
-            .bind(key)
-            .fetch_optional(&self.pool)
+    async fn update_issue_content(&self, id: IssueId, title: &str, desc: &str) -> Result<()> {
+        sqlx::query("UPDATE issue SET title=?, descr=?, updated_at=? WHERE id=?")
+            .bind(title)
+            .bind(desc)
+            .bind(now_unix())
+            .bind(id.uuid().to_string())
+            .execute(&self.pool)
             .await?;
-        Ok(row.map(|r| r.get::<String, _>("value")))
+        Ok(())
     }
 
-    async fn set_app_meta(&self, key: &str, value: &str) -> Result<()> {
+    async fn set_issue_standard_skill_if_empty(&self, id: IssueId, skill: &str) -> Result<()> {
+        let skill = skill.trim();
+        if skill.is_empty() {
+            return Ok(());
+        }
         sqlx::query(
-            "INSERT INTO app_meta (key, value, updated_at) VALUES (?, ?, ?)
-             ON CONFLICT(key) DO UPDATE SET value=excluded.value, updated_at=excluded.updated_at",
+            "UPDATE issue SET standard_skill=?, updated_at=? \
+             WHERE id=? AND (standard_skill IS NULL OR standard_skill='')",
         )
-        .bind(key)
-        .bind(value)
+        .bind(skill)
         .bind(now_unix())
+        .bind(id.uuid().to_string())
         .execute(&self.pool)
         .await?;
         Ok(())
@@ -2795,6 +3100,28 @@ fn workflow_spec_row(r: sqlx::sqlite::SqliteRow) -> Result<WorkflowSpec> {
     })
 }
 
+/// `skill.stage_origin` 列 ↔ 域枚举。未知/空值一律读成 `Unclassified` ——
+/// 诚实降级,绝不猜一个归类出处出来。
+fn parse_stage_origin(tag: &str) -> StageOrigin {
+    match tag {
+        "table" => StageOrigin::Table,
+        "distilled" => StageOrigin::Distilled,
+        "manual" => StageOrigin::Manual,
+        "legacy" => StageOrigin::Legacy,
+        _ => StageOrigin::Unclassified,
+    }
+}
+
+fn stage_origin_tag(origin: StageOrigin) -> &'static str {
+    match origin {
+        StageOrigin::Unclassified => "",
+        StageOrigin::Table => "table",
+        StageOrigin::Distilled => "distilled",
+        StageOrigin::Manual => "manual",
+        StageOrigin::Legacy => "legacy",
+    }
+}
+
 fn skill_row(r: sqlx::sqlite::SqliteRow) -> Result<SkillCard> {
     let id = parse_uuid(&r.get::<String, _>("id"), SkillId::from_uuid)?;
     let distilled_from_issue = r
@@ -2808,9 +3135,10 @@ fn skill_row(r: sqlx::sqlite::SqliteRow) -> Result<SkillCard> {
         .map(|s| parse_uuid(&s, AgentId::from_uuid))
         .transpose()?;
     let project_id = opt_project_id(&r)?;
-    let stage_ref = r
-        .get::<Option<i64>, _>("stage_ref")
-        .and_then(|n| StageKind::from_index(n as u8));
+    // 阶段归属不在 skill 行上——它在 skill_stage 关联表里(多值)。行读只带
+    // 归类出处;`stages` 由调用方(list_skills / get_skill)按 skill_id 补齐,
+    // 避免每行一次查询的 N+1。
+    let stage_origin = parse_stage_origin(&r.get::<String, _>("stage_origin"));
     let source_tag: String = r.get("source");
     let official_library: String = r.get("official_library");
     Ok(SkillCard {
@@ -2819,7 +3147,8 @@ fn skill_row(r: sqlx::sqlite::SqliteRow) -> Result<SkillCard> {
         maturity: parse_maturity(&r.get::<String, _>("maturity")),
         desc: r.get("descr"),
         category: r.get("category"),
-        stage_ref,
+        stages: Vec::new(),
+        stage_origin,
         source: parse_hub_source(&source_tag, &official_library),
         adapted_from: parse_adapted_from(&source_tag, &official_library),
         uses: r.get::<i64, _>("uses") as u32,
@@ -2827,6 +3156,7 @@ fn skill_row(r: sqlx::sqlite::SqliteRow) -> Result<SkillCard> {
         distilled_from_issue,
         origin_agent,
         project_id,
+        rev: r.get::<i64, _>("rev") as u32,
     })
 }
 
@@ -2881,7 +3211,7 @@ fn cron_task_row(r: sqlx::sqlite::SqliteRow) -> Result<CronTask> {
     let last_run_at_raw: i64 = r.get("last_run_at");
     let target: String = r.get("target");
     let mode_text: String = r.get("mode");
-    let mode = parse_cron_mode(&mode_text, &target);
+    let mode = parse_cron_mode(&mode_text);
     Ok(CronTask {
         id,
         name: r.get("name"),
@@ -2992,4 +3322,235 @@ fn issue_row(r: sqlx::sqlite::SqliteRow) -> Result<Issue> {
         created_at: r.get("created_at"),
         updated_at: r.get("updated_at"),
     })
+}
+
+/// V1 终端会话重构(阶段1): row → ClaudeConversation。
+fn conversation_row(r: sqlx::sqlite::SqliteRow) -> Result<ClaudeConversation> {
+    let id = parse_uuid(&r.get::<String, _>("id"), ConversationId::from_uuid)?;
+    let project_id = parse_uuid(&r.get::<String, _>("project_id"), ProjectId::from_uuid)?;
+    let issue_id = parse_uuid(&r.get::<String, _>("issue_id"), IssueId::from_uuid)?;
+    Ok(ClaudeConversation {
+        id,
+        project_id,
+        issue_id,
+        claude_session_id: r.get("claude_session_id"),
+        workspace_path: r.get("workspace_path"),
+        branch_name: r.get("branch_name"),
+        created_at: r.get("created_at"),
+        last_opened_at: r.get("last_opened_at"),
+    })
+}
+
+// ─── Tests ─────────────────────────────────────────────────────────────
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::{ConnectorDefSync, ConnectorsFileSync, NewProject};
+
+    /// V1 Issue2 Phase 3: `sync_connectors_file` upserts by `(project_id,
+    /// name)` — first sync inserts, second sync updates config in place
+    /// (same id), kind is always `script`, config is the JSON string.
+    #[tokio::test]
+    async fn sync_connectors_file_upserts_by_name() {
+        let db_path = tempdb_path();
+        let store = SqliteStore::open(&db_path).await.expect("open store");
+        let project_id = ProjectId::new();
+        store
+            .create_project(NewProject {
+                id: project_id,
+                name: "测试项目".into(),
+                kind: "content".into(),
+                desc: "测试".into(),
+                provider: "github".into(),
+            })
+            .await
+            .expect("create project");
+
+        // First sync: insert two connectors.
+        let sync = ConnectorsFileSync {
+            project_id,
+            connectors: vec![
+                ConnectorDefSync {
+                    name: "leading".into(),
+                    config: r#"{"script":"scripts/derive_leading.py","command":"python","output":"data.json"}"#.into(),
+                },
+                ConnectorDefSync {
+                    name: "north-star".into(),
+                    config: r#"{"script":"scripts/derive_ns.py","command":"","output":"ns.json"}"#.into(),
+                },
+            ],
+        };
+        let summary = store.sync_connectors_file(sync).await.expect("first sync");
+        assert_eq!(summary.connectors_synced, 2);
+
+        let connectors = store.list_connectors().await.expect("list");
+        let project_connectors: Vec<_> = connectors
+            .into_iter()
+            .filter(|c| c.project_id == Some(project_id))
+            .collect();
+        assert_eq!(project_connectors.len(), 2);
+        let leading = project_connectors
+            .iter()
+            .find(|c| c.name == "leading")
+            .expect("leading found");
+        assert_eq!(leading.kind, "script");
+        assert!(leading.config.contains("derive_leading.py"));
+        let leading_id = leading.id;
+
+        // Second sync: update leading's config (same name → upsert, same id),
+        // drop north-star from the file (file deletion does NOT delete DB
+        // rows per design — docs/buddy/standards/connectors.md "正本里删掉的连接器").
+        let sync2 = ConnectorsFileSync {
+            project_id,
+            connectors: vec![ConnectorDefSync {
+                name: "leading".into(),
+                config: r#"{"script":"scripts/derive_leading_v2.py","command":"node","output":"data2.json"}"#.into(),
+            }],
+        };
+        let summary2 = store
+            .sync_connectors_file(sync2)
+            .await
+            .expect("second sync");
+        assert_eq!(summary2.connectors_synced, 1);
+
+        let connectors2 = store.list_connectors().await.expect("list after upsert");
+        let project_connectors2: Vec<_> = connectors2
+            .into_iter()
+            .filter(|c| c.project_id == Some(project_id))
+            .collect();
+        // north-star still in DB (file deletion doesn't delete DB rows).
+        assert_eq!(project_connectors2.len(), 2);
+        let leading2 = project_connectors2
+            .iter()
+            .find(|c| c.name == "leading")
+            .expect("leading still found");
+        // Same id (upsert, not insert).
+        assert_eq!(leading2.id, leading_id);
+        // Kind is still "script" (UPDATE path doesn't touch kind, but verify
+        // — regression guard for the Med review finding: SELECT must filter
+        // kind='script' so a non-script connector of the same name never
+        // gets its kind clobbered or its config overwritten).
+        assert_eq!(leading2.kind, "script");
+        // Config was updated.
+        assert!(leading2.config.contains("derive_leading_v2.py"));
+        assert!(leading2.config.contains("node"));
+        assert!(!leading2.config.contains("derive_leading.py") || leading2.config.contains("v2"));
+    }
+
+    /// V1 Issue2 Phase 3 review-fixup (Med): a file script connector with
+    /// the same name as an existing non-script connector (e.g. `git-repo`)
+    /// must NOT collide — the SELECT filters `kind='script'`, so the file
+    /// connector gets a fresh INSERT (new row, kind=script) instead of
+    /// updating the non-script row's config (which would leave the wrong
+    /// kind on it and silently break `collect_project_metrics`'s
+    /// `kind==script` filter).
+    #[tokio::test]
+    async fn sync_connectors_file_same_name_non_script_coexists() {
+        let db_path = tempdb_path();
+        let store = SqliteStore::open(&db_path).await.expect("open store");
+        let project_id = ProjectId::new();
+        store
+            .create_project(NewProject {
+                id: project_id,
+                name: "共存项目".into(),
+                kind: "content".into(),
+                desc: "".into(),
+                provider: "github".into(),
+            })
+            .await
+            .expect("create project");
+
+        // Pre-existing non-script connector with the same name as the file
+        // connector we're about to sync.
+        store
+            .create_connector(NewConnector {
+                id: bw_core::ConnectorId::new(),
+                name: "shared-name".into(),
+                kind: "git-repo".into(),
+                scope: String::new(),
+                project_id: Some(project_id),
+                config: "/workspace/path".into(),
+            })
+            .await
+            .expect("create git-repo connector");
+
+        // Sync a file script connector with the same name.
+        let sync = ConnectorsFileSync {
+            project_id,
+            connectors: vec![ConnectorDefSync {
+                name: "shared-name".into(),
+                config: r#"{"script":"scripts/derive.py","command":"python","output":"data.json"}"#
+                    .into(),
+            }],
+        };
+        let summary = store.sync_connectors_file(sync).await.expect("sync");
+        assert_eq!(summary.connectors_synced, 1);
+
+        let connectors = store.list_connectors().await.expect("list");
+        let project_connectors: Vec<_> = connectors
+            .into_iter()
+            .filter(|c| c.project_id == Some(project_id))
+            .collect();
+        // Both rows coexist: the non-script row is untouched, the script
+        // row is a fresh INSERT.
+        assert_eq!(project_connectors.len(), 2);
+        let git_repo = project_connectors
+            .iter()
+            .find(|c| c.kind == "git-repo")
+            .expect("git-repo row untouched");
+        assert_eq!(git_repo.name, "shared-name");
+        assert_eq!(git_repo.config, "/workspace/path");
+        let script = project_connectors
+            .iter()
+            .find(|c| c.kind == "script")
+            .expect("script row created");
+        assert_eq!(script.name, "shared-name");
+        assert!(script.config.contains("derive.py"));
+        assert_ne!(script.id, git_repo.id);
+    }
+
+    /// V1 Issue2 Phase 3: empty connectors list is a valid no-op (file with
+    /// zero `[[connector]]` entries — honest no-op, not an error).
+    #[tokio::test]
+    async fn sync_connectors_file_empty_is_noop() {
+        let db_path = tempdb_path();
+        let store = SqliteStore::open(&db_path).await.expect("open store");
+        let project_id = ProjectId::new();
+        store
+            .create_project(NewProject {
+                id: project_id,
+                name: "空项目".into(),
+                kind: "content".into(),
+                desc: "".into(),
+                provider: "github".into(),
+            })
+            .await
+            .expect("create project");
+
+        let sync = ConnectorsFileSync {
+            project_id,
+            connectors: vec![],
+        };
+        let summary = store.sync_connectors_file(sync).await.expect("empty sync");
+        assert_eq!(summary.connectors_synced, 0);
+
+        let connectors = store.list_connectors().await.expect("list");
+        assert!(connectors.is_empty());
+    }
+
+    /// Create a unique temp DB path for test isolation.
+    fn tempdb_path() -> String {
+        let dir = std::env::temp_dir().join(format!(
+            "bw-store-test-{}-{}.db",
+            std::process::id(),
+            std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .unwrap()
+                .as_nanos()
+        ));
+        // Remove any stale file from a previous run.
+        let _ = std::fs::remove_file(&dir);
+        dir.to_string_lossy().into_owned()
+    }
 }
