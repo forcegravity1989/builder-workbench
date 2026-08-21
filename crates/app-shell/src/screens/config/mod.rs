@@ -1,12 +1,16 @@
-//! 项目内 · 配置。**结构照 `hifi/index.html` 的 `renderConfig` 排**:开工工具
-//! 映射 / 技能与 workflow / 连接器 + 项目群 / 定时,四大块,都是真表格。
+//! 项目内 · 配置。开工工具映射 / 技能与 workflow / 项目群 + 工具探活 / 定时,
+//! 四大块,都是真表格。(高保真里还有一张「连接器」表,2026-08-21 按指标采集
+//! 的新设计整块退场 —— V4 没有任何采集在消费 `.bw/connectors.toml`,显示一个
+//! 没人用的东西比不显示更糟。)
 //!
 //! 三条如实:
 //!
 //! 1. **「用过几次」是现算的** —— 扫活的 workflow 列聚合,没有战绩表可查。
-//! 2. **技能清单是扫目录得到的** —— 项目仓 `.claude/skills/` 里有就是有,
-//!    没有登记表。高保真把「workflow」和「skill」分成两张表,V4 里它们是
-//!    同一样东西(workflow = SOP 类技能包),所以合成一张,不假装有两套。
+//! 2. **技能清单没有登记表** —— buddy 自带的十一份编在二进制里(摊在 buddy
+//!    自己的资产目录,不复制进用户的仓),项目自有的扫仓里 `.claude/skills/`
+//!    得到,同名以仓里那份为准。高保真把「workflow」和「skill」分成两张表,
+//!    V4 里它们是同一样东西(workflow = SOP 类技能包),所以合成一张,不假装
+//!    有两套。
 //! 3. **定时那张表没有「下次触发」列** —— 判据是「本周有没有这张活」,不查
 //!    任何定时表,所以那一列写的是判据本身。
 
@@ -24,7 +28,7 @@ pub fn View(p: ProjectVm, bridge: Bridge) -> Element {
             {mapping_block(p, bridge)}
             {skill_block(p)}
             div { class: "cfg-pair",
-                {connector_block(p, bridge)}
+                {chat_probe_block(p, bridge)}
                 {cron_block(p)}
             }
             StandardBlock { p: p.clone(), bridge: bridge.clone() }
@@ -103,9 +107,22 @@ fn MappingRow(m: MappingVm, pid: bw_v4::model::ProjectId, bridge: Bridge) -> Ele
                     value: "{tool}",
                     onchange: move |e| tool.set(e.value()),
                     option { value: "Claude CLI", "Claude CLI" }
-                    option { value: "Cursor", "Cursor" }
-                    option { value: "Open Design", "Open Design" }
+                    // 这两个今天起不起来:Cursor 在底座里 supported=false,
+                    // Open Design 是本机网页内嵌类、内嵌还没接。**按 §12.5 的
+                    // 规矩,按不动的留位一律灰态并写明为什么** —— 选得中却跑
+                    // 不起来,比选不中更坏。
+                    option { value: "Cursor", disabled: true, "Cursor(还没接,选了开不了工)" }
+                    option {
+                        value: "Open Design",
+                        disabled: true,
+                        "Open Design(内嵌还没接,选了开不了工)"
+                    }
                     option { value: "—", "—(未定)" }
+                }
+                div { class: "cfg-readonly-note",
+                    "开工会照这一列记的工具走,"
+                    strong { "不会悄悄拿 Claude CLI 顶上" }
+                    " —— 配了起不来的工具,▶开工 会当场如实报错。"
                 }
             }
             td {
@@ -139,11 +156,11 @@ fn skill_block(p: &ProjectVm) -> Element {
             div { class: "cfg-section-head",
                 h3 { "技能与 workflow" }
                 span { style: "font-size:11.5px;color:var(--ink-3);",
-                    "扫 .claude/skills/ 得到,共 {p.config.skills.len()} 个"
+                    "buddy 自带 + 本仓 .claude/skills/,共 {p.config.skills.len()} 个"
                 }
             }
             if p.config.skills.is_empty() {
-                div { class: "detail-empty", "这个仓的 .claude/skills/ 是空的,或者还没铺过规范件。" }
+                div { class: "detail-empty", "一个都没有 —— buddy 自带的那份没读出来,这不正常。" }
             } else {
                 div { class: "tbl-wrap",
                     table { class: "tbl",
@@ -192,62 +209,44 @@ fn desc_or_dash(d: &str) -> String {
     }
 }
 
-// ── ③ 连接器 + 项目群 ───────────────────────────────
+// ── ③ 项目群 + 开工工具探活 ─────────────────────────
+//
+// 2026-08-21 删「连接器」表时把同一个函数里搭车的这两段误删过一次(评审抓的:
+// ProbeTool 命令从此没有任何界面入口,项目群配置在界面上再也验证不了)。现在
+// 它们是独立的一块,和连接器再无瓜葛。
 
-fn connector_block(p: &ProjectVm, bridge: &Bridge) -> Element {
+fn chat_probe_block(p: &ProjectVm, bridge: &Bridge) -> Element {
     let c = &p.config;
     rsx! {
         div { class: "cfg-section",
-            div { class: "cfg-section-head", h3 { "连接器" } }
-            if c.connectors.is_empty() {
-                div { class: "detail-empty", "这个仓没有 .bw/connectors.toml。" }
-            } else {
-                div { class: "tbl-wrap",
-                    table { class: "tbl",
-                        thead { tr { th { "连接器" } th { "种类" } th { "跑什么" } } }
-                        tbody {
-                            for x in c.connectors.iter() {
-                                tr { key: "{x.name}",
-                                    td { "{x.name}" }
-                                    td { span { class: "chip chip-gray", "{x.kind}" } }
-                                    td { class: "mono", style: "font-size:10.6px;", "{x.target}" }
-                                }
-                            }
+            div { class: "cfg-section-head", h3 { "项目群" } }
+            div { style: "display:flex;flex-direction:column;gap:7px;font-size:12.2px;",
+                div {
+                    "提供方 "
+                    span {
+                        class: if c.chat_provider == "未配" { "chip chip-gray" } else { "chip chip-clay" },
+                        "{c.chat_provider}"
+                    }
+                }
+                div { "群号 " span { class: "mono", "{c.chat_group}" } }
+                div {
+                    "同步哪些通知 "
+                    if c.chat_events.is_empty() {
+                        span { style: "color:var(--ink-3);", "—(没配群)" }
+                    }
+                    for (label, on) in c.chat_events.iter() {
+                        span { key: "{label}", style: "display:inline-flex;align-items:center;gap:5px;margin-right:12px;font-size:11.3px;",
+                            span { class: if *on { "tglswitch on" } else { "tglswitch" }, span { class: "knob" } }
+                            "{label}"
                         }
                     }
                 }
             }
-
-            div { style: "border-top:1px dashed var(--border);margin-top:12px;padding-top:12px;font-size:12.2px;",
-                div { style: "font-weight:600;margin-bottom:7px;", "项目群" }
-                div { style: "display:flex;flex-direction:column;gap:7px;",
-                    div {
-                        "提供方 "
-                        span {
-                            class: if c.chat_provider == "未配" { "chip chip-gray" } else { "chip chip-clay" },
-                            "{c.chat_provider}"
-                        }
-                    }
-                    div { "群号 " span { class: "mono", "{c.chat_group}" } }
-                    div {
-                        "同步哪些通知 "
-                        if c.chat_events.is_empty() {
-                            span { style: "color:var(--ink-3);", "—(没配群)" }
-                        }
-                        for (label, on) in c.chat_events.iter() {
-                            span { key: "{label}", style: "display:inline-flex;align-items:center;gap:5px;margin-right:12px;font-size:11.3px;",
-                                span { class: if *on { "tglswitch on" } else { "tglswitch" }, span { class: "knob" } }
-                                "{label}"
-                            }
-                        }
-                    }
-                }
-                div { class: "cfg-readonly-note",
-                    "发出去就算完:不记账、不去重、失败不自动重发 —— 极小概率下同一件事会\
-                     重推一条,这是已经认了的代价。"
-                    strong { "仓是正本" }
-                    ",改群号或改勾选走「编辑项目信息」那条活 + MR,不在这里直接写仓。"
-                }
+            div { class: "cfg-readonly-note",
+                "发出去就算完:不记账、不去重、失败不自动重发 —— 极小概率下同一件事会\
+                 重推一条,这是已经认了的代价。"
+                strong { "仓是正本" }
+                ",改群号或改勾选走「编辑项目信息」那条活 + MR,不在这里直接写仓。"
             }
 
             div { style: "border-top:1px dashed var(--border);margin-top:12px;padding-top:12px;",
@@ -331,6 +330,25 @@ fn StandardBlock(p: ProjectVm, bridge: Bridge) -> Element {
     let b_ver = bridge.clone();
     let pid = p.id;
     let mut version = use_signal(|| p.card.current_version_raw.clone());
+    // 「规范铺底」要写仓、提交、推分支、开 MR —— 十几秒起步。不报进度的话
+    // 按下去界面一动不动,人会以为没点上。和接入屏同一条通道、同一种画法。
+    let mut log = use_signal(Vec::<bw_v4::app::ProgressLine>::new);
+    let prog = bridge.progress.clone();
+    use_future(move || {
+        let mut rx = prog.subscribe();
+        async move {
+            while let Ok(line) = rx.recv().await {
+                let mut rows = log.write();
+                match rows
+                    .iter()
+                    .position(|r: &bw_v4::app::ProgressLine| r.step == line.step)
+                {
+                    Some(i) => rows[i] = line,
+                    None => rows.push(line),
+                }
+            }
+        }
+    });
     let std_ver = if p.card.standard_version.is_empty() {
         "—(这个仓还没铺过规范件)".to_string()
     } else {
@@ -348,7 +366,10 @@ fn StandardBlock(p: ProjectVm, bridge: Bridge) -> Element {
                     }
                     button {
                         class: "btn btn-sm btn-primary",
-                        onclick: move |_| b_boot.cmd(Command::RunStandardBootstrap { project_id: pid }),
+                        onclick: move |_| {
+                            log.write().clear();
+                            b_boot.cmd(Command::RunStandardBootstrap { project_id: pid });
+                        },
                         "规范铺底"
                     }
                 }
@@ -377,6 +398,7 @@ fn StandardBlock(p: ProjectVm, bridge: Bridge) -> Element {
                     }
                 }
             }
+            {crate::chrome::progress_log(&log.read())}
             div { class: "cfg-readonly-note",
                 "对账只看不改:缺哪几份、哪几份过期了、哪几份被人手改过,结果显示在页脚回执里。\
                  「规范铺底」会真的写仓 —— 建分支、写核心件、建一张活提 MR,停在评审中等人合。"

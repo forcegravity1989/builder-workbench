@@ -13,8 +13,7 @@ use super::{App, AppError, Result};
 use crate::command::Event;
 use crate::model::{Category, Issue, IssueId, IssueKind, IssueOrigin, IssueStatus, ProjectId};
 use crate::repo::issue_policy_file;
-use bw_core::WorkflowId;
-use bw_engine::{build_startup_plan, InteractiveExecutor, RunCtx, TuiAgentConfig, CLAUDE};
+use v4_engine::{build_startup_plan, InteractiveExecutor, RunCtx, TuiAgentConfig};
 
 impl App {
     #[allow(clippy::too_many_arguments)]
@@ -151,18 +150,24 @@ impl App {
                 .await?;
         }
 
-        let agent: &TuiAgentConfig = &CLAUDE;
+        // 照活上记的工具走 —— 不许悄悄换(见 `tools::agent_for`)。
+        let agent: &TuiAgentConfig = super::tools::agent_for(&issue.tool)?;
         let prompt = format!("#{} {}\n\n{}", issue.number, issue.title, issue.body);
-        // 剧本先在干活那棵树里找,找不到再回主工作区找(有些仓把 `.claude/`
-        // 写进了 .gitignore,技能包进不了分支,只在主检出里)。
-        let workflow_body = super::bootstrap::workflow_body(&run_dir, &issue.workflow)
-            .or_else(|| super::bootstrap::workflow_body(&ws, &issue.workflow));
-        let system_prompt = super::bootstrap::agent_system_prompt(&issue, workflow_body.as_deref());
-        let plan = build_startup_plan(agent, &prompt, &system_prompt, &run_dir)
+        // 剧本在 buddy 自己的技能目录里,不在用户的仓里(见
+        // `standard::skills`)。提示词只带路径,正文按需读。
+        let skills_dir = self.ensure_skill_assets();
+        let skill = skills_dir
+            .as_deref()
+            .and_then(|d| super::bootstrap::skill_pointer(d, &issue.workflow));
+        let system_prompt = super::bootstrap::agent_system_prompt(&issue, &run_dir, skill.as_ref());
+        let mut plan = build_startup_plan(agent, &prompt, &system_prompt, &run_dir)
             .map_err(|e| AppError::Exec(e.to_string()))?;
+        if let Some(d) = &skills_dir {
+            super::bootstrap::allow_skills_dir(&mut plan, d);
+        }
         let ctx = RunCtx {
-            project: issue.project_id,
-            workflow: WorkflowId::nil(),
+            project: issue.project_id.uuid(),
+            workflow: uuid::Uuid::nil(),
         };
 
         // 没有真实工作区的项目走自我标注的替身:产出带【mock】字样,不冒充
@@ -170,7 +175,7 @@ impl App {
         let out = if tree.is_some() {
             self.executor.run_skill(&plan, &ctx).await
         } else {
-            bw_engine::MockInteractiveExecutor::new()
+            v4_engine::MockInteractiveExecutor::new()
                 .run_skill(&plan, &ctx)
                 .await
         };
@@ -307,7 +312,7 @@ impl App {
         Ok(events)
     }
 
-    /// 状态转移。合法性由 `bw_core` 的状态机守——不合法就如实报错弹回,不悄悄
+    /// 状态转移。合法性由 `crate::model::IssueStatus::can_transition_to` 那张转移表守——不合法就如实报错弹回,不悄悄
     /// 换成一个合法的转移。
     pub(super) async fn transition_issue(
         &mut self,
@@ -378,7 +383,7 @@ impl App {
         let Ok(ws) = self.workspace_of(issue.project_id).await else {
             return;
         };
-        let Some(tree) = bw_engine::workspace::issue_worktree_path(&ws, issue.number) else {
+        let Some(tree) = v4_engine::workspace::issue_worktree_path(&ws, issue.number) else {
             return;
         };
         worktree::remove_if_clean(&ws, &tree).await;

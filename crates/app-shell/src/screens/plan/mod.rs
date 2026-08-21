@@ -7,6 +7,11 @@
 //! - 拖进进行中 / 评审中 / 已完成 / 阻塞是**状态动作**,松手弹确认框,确认了
 //!   才真的发命令;状态机不允许的转移松手即弹回,连确认框都不弹。
 //!
+//! **拖进「已完成」= 合入并完成**:人把卡片拖过去,意思就是「这活我认了,合
+//! 进去吧」,所以确认之后发的是「合入并完成」——先真的把 MR 合了,再结清;
+//! 合不成就整条不算数。详情抽屉里那颗「✓ 点完成」发的是同一条命令,**两个入
+//! 口不能一个合一个不合**。
+//!
 //! 卡面上没有按钮 —— 按钮全在右侧详情抽屉。同一个位置按状态互斥切换文案,
 //! 不堆一排常驻按钮。
 
@@ -45,10 +50,24 @@ impl Filters {
 
 #[component]
 pub fn View(p: ProjectVm, bridge: Bridge) -> Element {
+    // 通知屏塞过来的那张活。**在借用 `p` 之前取走** —— 下面那行把 `p` 变成引用,
+    // 引用进不了 `'static` 的 effect 闭包。
+    let p_sel = p.selected_issue;
     let (p, bridge) = (&p, &bridge);
     let dragging = use_signal(|| None::<CardItemVm>);
     let pending = use_signal(|| None::<PendingMove>);
-    let selected = use_signal(|| None::<IssueId>);
+    let mut selected = use_signal(|| None::<IssueId>);
+    // 通知屏点「去看这张活」时先把活号放进 ViewModel,再切到这一屏 —— 这里把它
+    // 接过来打开详情抽屉。**只在它变了的那一次接**:之后人在这一屏点别的卡片、
+    // 或者关掉抽屉,都不该被这个值拽回去。
+    let mut came_from = use_signal(|| None::<IssueId>);
+    use_effect(move || {
+        let want = p_sel;
+        if want.is_some() && want != *came_from.peek() {
+            selected.set(want);
+        }
+        came_from.set(want);
+    });
     let bounced = use_signal(String::new);
     let filters = use_signal(Filters::default);
 
@@ -69,7 +88,7 @@ pub fn View(p: ProjectVm, bridge: Bridge) -> Element {
                 {board(p, Some(filters.read().clone()), bridge, dragging, pending, selected, bounced)}
             }
         }
-        DetailPanel { p: p.clone(), selected, bridge: bridge.clone() }
+        DetailPanel { p: p.clone(), selected, pending, bridge: bridge.clone() }
         if let Some(pm) = pending.read().clone() {
             {confirm_dialog(pm, pending, bridge)}
         }
@@ -89,7 +108,7 @@ fn week_rail(p: &ProjectVm, bridge: &Bridge) -> Element {
         }
         if p.weeks.is_empty() {
             div { class: "detail-empty",
-                "docs/plan/ 里还没有周计划文件。周列表是扫这个目录得到的,没有索引表。"
+                ".bw/plan/ 里还没有周计划文件。周列表是扫这个目录 ∪ 活排过的周得到的,没有索引表。"
             }
         }
         for w in current.iter() {
@@ -195,7 +214,7 @@ fn toolbar(p: &ProjectVm, bridge: &Bridge) -> Element {
                         "新建活"
                     }
                     // 高保真上这里还有一颗「预览 · 未合入」开关:看活自己的
-                    // worktree 里那份还没合入的 .bw/metrics.toml 与 docs/plan/。
+                    // worktree 里那份还没合入的 .bw/metrics.toml 与 .bw/plan/。
                     // 还没接,做成明确的灰态,点不动 —— 不放一个点了没反应的开关。
                     label { class: "switch", title: "还没接:要去读活自己 worktree 里未合入的仓文件",
                         input { r#type: "checkbox", disabled: true }
@@ -223,9 +242,9 @@ fn week_head(p: &ProjectVm) -> Element {
             div { style: "width:{c.pct(c.blocked)}%;background:var(--red);" }
             div { style: "width:{c.pct(c.todo)}%;background:#E4DDC8;" }
         }
-        if !p.ops.is_empty() {
+        if !p.board_ops.is_empty() {
             div { class: "ops-chip-row",
-                for o in p.ops.iter() {
+                for o in p.board_ops.iter() {
                     span { key: "{o.title}", class: "chip chip-outline", title: "{o.note}",
                         "{o.title} · {o.status}"
                     }
@@ -325,11 +344,19 @@ fn confirm_dialog(
     let pm2 = pm.clone();
     // 走到这里的一定是**状态动作** —— 排期在松手那一刻就直接发命令了,不经过
     // 这个框(见本文件顶部的说明)。
+    //
+    // 拖进「已完成」发的是「合入并完成」,不是光改状态:人把卡片拖到已完成,
+    // 意思就是「这活我认了,合进去吧」。详情抽屉里那颗「✓ 点完成」发的是同一
+    // 条命令 —— **两个入口不能一个合一个不合**。
     let confirm = move |_| {
-        b.cmd(Command::TransitionIssue {
-            id: pm2.id,
-            to: pm2.to,
-        });
+        if pm2.to == IssueStatus::Done {
+            b.cmd(Command::MergeAndSettle { id: pm2.id });
+        } else {
+            b.cmd(Command::TransitionIssue {
+                id: pm2.id,
+                to: pm2.to,
+            });
+        }
         pending.set(None);
     };
     rsx! {
@@ -338,9 +365,14 @@ fn confirm_dialog(
                 h3 { "确认一下" }
                 div { style: "font-size:13px;line-height:1.85;color:var(--ink-2);margin-bottom:8px;",
                     "把「{pm.title}」从「{pm.from.label()}」移到「{pm.to.label()}」。"
-                    if pm.to == IssueStatus::Done {
+                    if pm.to == IssueStatus::Done && pm.pr_number > 0 {
                         br {}
-                        "这一下就是「人点完成」——活会在这一刻结清,只结这一次。"
+                        "这一下就是「人点完成」:先把 MR #{pm.pr_number} 合进主干,再把这张活\
+                         结清 —— 只结这一次。合不成就整条不算数,活留在原地,可以重试。"
+                    }
+                    if pm.to == IssueStatus::Done && pm.pr_number == 0 {
+                        br {}
+                        "这一下就是「人点完成」——活会在这一刻结清,只结这一次。这张活没有 MR。"
                     }
                     if pm.to == IssueStatus::InReview {
                         br {}

@@ -1,4 +1,4 @@
-//! `docs/releases.md` —— 发版记录,**唯一正本**。库里不存副本。
+//! `.bw/releases.md` —— 发版记录,**唯一正本**。库里不存副本。
 //!
 //! 一行一个版本:版本号、发版日、说明、包含的活、来源。「包含的活」是活号的
 //! 自由文本(如 `#88 #91 #93`),渲染时按号去 `issue` 缓存拿标题展开;号找不到
@@ -7,7 +7,7 @@
 use super::{read_to_string, write_file, Result};
 use std::path::Path;
 
-pub const REL_PATH: &str = "docs/releases.md";
+pub const REL_PATH: &str = ".bw/releases.md";
 
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub struct ReleaseRow {

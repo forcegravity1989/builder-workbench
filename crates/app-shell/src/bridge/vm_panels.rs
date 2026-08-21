@@ -11,9 +11,19 @@ use bw_v4::V4Store;
 use std::path::Path;
 
 use super::vm_build::{card_item, probe_env, remote_label};
-use super::vm_kb::{managed_paths, skill_origin};
 
-/// 六列看板。待办池那一列装的是没排进任何一周的活,其余五列按状态分。
+/// 六列看板。
+///
+/// **两条维度别混**:待办池是「排没排周」,其余五列是「干到哪一步」。原来
+/// 待办池只看 `week_of` 空不空、不看状态,于是一张**已经干完在等评审、连 MR
+/// 都开好了**的活(运作活按设计就不排周)照样躺在待办池里,而看某一周时它又
+/// 因为周对不上从评审中消失 —— 试点第一天用户当场问「明明已经有 PR 了为什么
+/// 在待办池」。
+///
+/// 现在的规矩:**待办池只装还没动过的活**(没排周 + 状态还在待办池/待办);
+/// **动过的活一律按状态进列,不管排没排周** —— 没排周的在卡片上挂一个「未排周」
+/// 徽记,不藏起来也不假装它属于这一周。
+///
 /// `week` 传 `None` = 「全部活」视图,不按周过滤(左栏点「全部」时)。
 pub(super) fn build_board(
     issues: &[bw_v4::Issue],
@@ -30,18 +40,23 @@ pub(super) fn build_board(
         .map(|k| k.todo_label.clone())
         .unwrap_or_else(|| "待办 · 已排进本周,等开工".into());
 
+    // 没排周的活在任何一周的视图里都露面 —— 它不属于哪一周,但它是真事,
+    // 藏起来人就再也找不到它了(运作活就是这种)。
     let in_week = |i: &&bw_v4::Issue| match week {
         None => true,
-        Some(w) => i.week_of == w,
+        Some(w) => i.week_of == w || i.week_of.is_empty(),
     };
+    let untouched =
+        |i: &&bw_v4::Issue| matches!(i.status, IssueStatus::Backlog | IssueStatus::Todo);
     let columns = vec![
         ColumnVm {
             status: IssueStatus::Backlog,
             title: pool_label.clone(),
-            // 待办池按定义就是「没排进任何一周」,不按正在看的那一周过滤。
+            // 待办池按定义就是「没排进任何一周」,不按正在看的那一周过滤;
+            // 但**已经动过的活不在这里** —— 它们在自己的状态列里。
             cards: issues
                 .iter()
-                .filter(|i| i.week_of.is_empty())
+                .filter(|i| i.week_of.is_empty() && untouched(i))
                 .map(card_item)
                 .collect(),
         },
@@ -50,7 +65,7 @@ pub(super) fn build_board(
             title: todo_label.clone(),
             cards: issues
                 .iter()
-                .filter(|i| in_week(i) && i.status == IssueStatus::Todo)
+                .filter(|i| !i.week_of.is_empty() && in_week(i) && i.status == IssueStatus::Todo)
                 .map(card_item)
                 .collect(),
         },
@@ -98,7 +113,7 @@ pub(super) fn build_board(
     }
 }
 
-/// 周列表靠扫 `docs/plan/` 得到 —— 没有索引表。
+/// 周列表靠扫 `.bw/plan/` 得到 —— 没有索引表。
 pub(super) fn build_weeks(ws: &Path) -> Vec<WeekVm> {
     week_plan_file::list_weeks(ws)
         .into_iter()
@@ -126,12 +141,25 @@ pub(super) fn build_metrics(
     ws: &Path,
     plan: Option<&week_plan_file::WeekPlan>,
     issues: &[bw_v4::Issue],
+    collected: &[bw_v4::app::collect::MetricReadout],
 ) -> MetricsVm {
-    let Ok(Some(m)) = bw_engine::metrics_file::read(&ws.display().to_string()) else {
-        return MetricsVm {
-            note: Some("这个项目还没有 .bw/metrics.toml,指标是空的(不是 0)".into()),
-            ..Default::default()
-        };
+    // **「还没有」和「读不动」是两件事,不能混成一句「没有指标」。**
+    // 混了会让人以为文件不存在、去写一份新的,而实际上仓里躺着一份格式不对
+    // 的正本(比如 V3 的旧格式),写新的只会又叠一层。
+    let m = match bw_v4::repo::metrics_file::read(ws) {
+        Ok(Some(m)) => m,
+        Ok(None) => {
+            return MetricsVm {
+                note: Some("这个项目还没有 .bw/metrics.toml,指标是空的(不是 0)".into()),
+                ..Default::default()
+            }
+        }
+        Err(e) => {
+            return MetricsVm {
+                error: Some(e.to_string()),
+                ..Default::default()
+            }
+        }
     };
     // 精确按名字对,不用 contains:指标名互为前缀时会认错,空名字会命中第一条。
     let reading_of = |name: &str| -> Option<&week_plan_file::MetricReading> {
@@ -151,13 +179,19 @@ pub(super) fn build_metrics(
     // `issue.metric_key` 存的因此是指标的名字。
     // `target` / `def` / 采集方式来自指标定义文件;读数来自周计划文件。两边
     // 各是各的正本,这里只是拼到同一张卡上。
-    let mk = |name: &str, def: &str, target: &str, manual: bool| MetricCardVm {
+    // 采到的现值与走势来自「采一次指标」那一下(`ui.metrics`),不在这里跑
+    // ——起脚本要几百毫秒到几秒,每重拼一次 ViewModel 都跑一遍会把界面按住。
+    let readout_of = |name: &str| collected.iter().find(|r| r.name.trim() == name.trim());
+    let mk = |name: &str,
+              def: &str,
+              target: &str,
+              plan: &bw_v4::repo::metrics_file::CollectPlan| MetricCardVm {
         id: name.to_string(),
         name: name.to_string(),
         reading: reading_of(name).map(|r| r.value.clone()),
         target: target.to_string(),
         def: def.to_string(),
-        manual,
+        manual: plan.is_manual(),
         source: reading_of(name)
             .map(|r| r.source.clone())
             .unwrap_or_default(),
@@ -165,26 +199,43 @@ pub(super) fn build_metrics(
             .map(|r| r.collected_at.clone())
             .unwrap_or_default(),
         driving: driving_of(name),
+        class: class_label(plan.class()).to_string(),
+        collected: readout_of(name).and_then(|r| r.current.clone()),
+        trend: readout_of(name)
+            .map(|r| {
+                r.points
+                    .iter()
+                    .map(|p| {
+                        (
+                            p.week.clone(),
+                            p.value.as_ref().and_then(|v| v.parse::<f64>().ok()),
+                        )
+                    })
+                    .collect()
+            })
+            .unwrap_or_default(),
+        collect_error: readout_of(name)
+            .map(|r| r.error.clone())
+            .unwrap_or_default(),
     };
-    let is_manual =
-        |k: bw_engine::metrics_file::CollectKind| k == bw_engine::metrics_file::CollectKind::Manual;
+
     MetricsVm {
+        error: None,
         // 北极星没有 target 字段 —— 它的目标就是它自己那句定义。
-        north_star: Some(mk(
-            &m.north_star.name,
-            &m.north_star.def,
-            "",
-            is_manual(m.north_star.collect.kind),
-        )),
+        // 北极星可以缺席:刚接入、还没定指标的项目就是这样。**不摆空卡。**
+        north_star: m
+            .north_star
+            .as_ref()
+            .map(|n| mk(&n.name, &n.def, "", &n.collect)),
         lagging: m
             .lagging
             .iter()
-            .map(|d| mk(&d.name, &d.def, &d.target, is_manual(d.collect.kind)))
+            .map(|d| mk(&d.name, &d.def, &d.target, &d.collect))
             .collect(),
         leading: m
             .leading
             .iter()
-            .map(|d| mk(&d.name, &d.def, &d.target, is_manual(d.collect.kind)))
+            .map(|d| mk(&d.name, &d.def, &d.target, &d.collect))
             .collect(),
         note: None,
     }
@@ -307,7 +358,6 @@ pub(super) async fn build_config(
     file: &project_file::ProjectFile,
 ) -> ConfigVm {
     let usage = store.workflow_usage(id).await.unwrap_or_default();
-    let managed = managed_paths(ws);
     let mappings = policy
         .map(|p| {
             p.mappings
@@ -329,42 +379,7 @@ pub(super) async fn build_config(
         })
         .unwrap_or_default();
 
-    // 技能清单扫目录得到 —— 没有登记表可查,目录就是唯一判据。
-    let mut skills: Vec<SkillVm> = std::fs::read_dir(ws.join(".claude/skills"))
-        .map(|d| {
-            d.flatten()
-                .filter(|e| e.path().join("SKILL.md").is_file())
-                .map(|e| {
-                    let slug = e.file_name().to_string_lossy().to_string();
-                    SkillVm {
-                        uses: usage
-                            .iter()
-                            .find(|(w, _)| *w == slug)
-                            .map(|(_, n)| *n)
-                            .unwrap_or(0),
-                        title: slug.clone(),
-                        origin: skill_origin(&managed, &slug),
-                        desc: skill_desc(&e.path().join("SKILL.md")),
-                        slug,
-                    }
-                })
-                .collect()
-        })
-        .unwrap_or_default();
-    // 项目里没有目录、但活上挂了名字的 workflow(比如整包的 mattpocock-skills)
-    // 也如实列出来,用量是真的,只是包不在这个仓里。
-    for (w, n) in &usage {
-        if !skills.iter().any(|s| &s.slug == w) {
-            skills.push(SkillVm {
-                slug: w.clone(),
-                title: format!("{w}(包不在本仓 .claude/skills/)"),
-                uses: *n,
-                origin: "不在本仓".into(),
-                desc: String::new(),
-            });
-        }
-    }
-    skills.sort_by(|a, b| b.uses.cmp(&a.uses).then(a.slug.cmp(&b.slug)));
+    let skills = skill_list(ws, &usage);
 
     ConfigVm {
         mappings,
@@ -383,7 +398,6 @@ pub(super) async fn build_config(
             })
             .unwrap_or_else(|| "—(.bw/issue-policy.toml 里没有节律段)".into()),
         crons: build_crons(policy),
-        connectors: build_connectors(ws),
         chat_provider: chat_provider(file.chat.as_ref()),
         chat_group: chat_group(file.chat.as_ref()),
         chat_events: chat_events(file.chat.as_ref()),
@@ -392,6 +406,71 @@ pub(super) async fn build_config(
 }
 
 /// SKILL.md 头里的 `description:`。**读不到就空着**,不替它写一句。
+/// 这个项目能用到的技能清单。配置屏和知识库资产页签用的是同一份 —— 原来两处
+/// 各扫一遍目录、各拼一遍 `SkillVm`,改一处忘一处。
+///
+/// 三个来源,`origin` 如实标出来自哪:
+///
+/// - **buddy 自带**:编在二进制里的十一份(七份方法论 + 四份运作剧本)。
+///   它们摊在 buddy 自己的资产目录,**不复制进用户的仓** —— 用户的
+///   `.gitignore` 怎么写不该由 buddy 决定(见 `bw_v4::standard::skills`)。
+/// - **项目自有**:这个仓自己的 `.claude/skills/`,扫目录得到。
+/// - **不在册**:活上挂了这个名字,两处都找不到包。用量是真的,包确实没有。
+pub(super) fn skill_list(ws: &Path, usage: &[(String, u32)]) -> Vec<SkillVm> {
+    let used = |slug: &str| {
+        usage
+            .iter()
+            .find(|(w, _)| w == slug)
+            .map(|(_, n)| *n)
+            .unwrap_or(0)
+    };
+
+    let mut skills: Vec<SkillVm> = bw_v4::standard::skills::all()
+        .into_iter()
+        .map(|p| SkillVm {
+            uses: used(p.slug),
+            title: p.slug.to_string(),
+            origin: "buddy 自带".into(),
+            desc: p.desc.to_string(),
+            slug: p.slug.to_string(),
+        })
+        .collect();
+
+    // 项目自己的技能包。同名的以项目那份为准 —— 仓里那份才是这个仓真正会用的。
+    if let Ok(dir) = std::fs::read_dir(ws.join(".claude/skills")) {
+        for e in dir
+            .flatten()
+            .filter(|e| e.path().join("SKILL.md").is_file())
+        {
+            let slug = e.file_name().to_string_lossy().to_string();
+            skills.retain(|s| s.slug != slug);
+            skills.push(SkillVm {
+                uses: used(&slug),
+                title: slug.clone(),
+                origin: "项目自有".into(),
+                desc: skill_desc(&e.path().join("SKILL.md")),
+                slug,
+            });
+        }
+    }
+
+    // 活上挂了名字、两处都没有包的,如实列出来,不假装它存在。
+    for (w, n) in usage {
+        if !skills.iter().any(|s| &s.slug == w) {
+            skills.push(SkillVm {
+                slug: w.clone(),
+                title: format!("{w}(找不到这个包)"),
+                uses: *n,
+                origin: "不在册".into(),
+                desc: String::new(),
+            });
+        }
+    }
+
+    skills.sort_by(|a, b| b.uses.cmp(&a.uses).then(a.slug.cmp(&b.slug)));
+    skills
+}
+
 pub(super) fn skill_desc(path: &Path) -> String {
     let Ok(raw) = std::fs::read_to_string(path) else {
         return String::new();
@@ -428,28 +507,6 @@ fn build_crons(policy: Option<&issue_policy_file::IssuePolicyFile>) -> Vec<CronV
             rule: "本周还没有这张活(不查任何定时表)".into(),
         },
     ]
-}
-
-/// 连接器。`.bw/connectors.toml` 没有就是空的 —— 不摆一行「未配置」占位。
-fn build_connectors(ws: &Path) -> Vec<ConnectorVm> {
-    bw_engine::connectors_file::read(&ws.display().to_string())
-        .ok()
-        .flatten()
-        .map(|f| {
-            f.connectors
-                .into_iter()
-                .map(|c| ConnectorVm {
-                    kind: c.kind.as_str().to_string(),
-                    target: if c.script.is_empty() {
-                        c.command.clone()
-                    } else {
-                        c.script.clone()
-                    },
-                    name: c.name,
-                })
-                .collect()
-        })
-        .unwrap_or_default()
 }
 
 fn chat_provider(chat: Option<&project_file::ChatConfig>) -> String {
@@ -521,5 +578,16 @@ fn blank_dash(s: &str) -> &str {
         "—"
     } else {
         s
+    }
+}
+
+/// A/B/C 三类的人话标签。**这三个词是给人看的正本** —— 代码里那个枚举叫什么
+/// 不重要,界面上永远说「可回溯 / 不可回溯 / 手填」。
+fn class_label(c: bw_v4::repo::metrics_file::MetricClass) -> &'static str {
+    use bw_v4::repo::metrics_file::MetricClass as C;
+    match c {
+        C::Retro => "可回溯",
+        C::PointInTime => "不可回溯",
+        C::Manual => "手填",
     }
 }

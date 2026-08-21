@@ -5,9 +5,10 @@
 //! 自己手上那份没写完的改动还会被一起卷进某次提交。worktree 把每张活隔在自己
 //! 的目录和自己的分支上,主检出永远不动。
 //!
-//! 供给这一步**复用 bw-engine 的
-//! [`provision_issue_worktree`](bw_engine::workspace::provision_issue_worktree)**
-//! ——和 V3 用的是同一份实现,一个字都没改:在主仓的**兄弟目录**
+//! 供给这一步走**底座的
+//! [`provision_issue_worktree`](v4_engine::workspace::provision_issue_worktree)**
+//! ——`v4-engine` 是 2026-08-21 从 `bw-engine` 拷来接管的一份(不是复用):
+//! 在主仓的**兄弟目录**
 //! `<主仓名>-issue-<号>` 里开一棵,分支 `bw/issue-<号>`,已经存在就原样接着用
 //! (重跑幂等)。
 //!
@@ -52,12 +53,26 @@ pub(super) async fn provision(main: &Path, number: u32) -> Result<IssueTree> {
             isolated: false,
         });
     }
-    let path = bw_engine::workspace::provision_issue_worktree(main, number)
+    // **一条提交都还没有的仓开不了 worktree** —— 没有 HEAD 就没有东西可以拿来
+    // 开分支,git 会顶回来一句 `invalid reference: bw/issue-N`。刚建出来的空仓
+    // 就是这样。这时候就地写,第一提交直接落在主分支上(母文档第 0 站写明的
+    // 那条例外:新建的空仓首提交直推)。
+    if !crate::git::has_head(main).await {
+        let branch = crate::git::current_branch(main)
+            .await
+            .unwrap_or_else(|_| "—(读不出分支名)".into());
+        return Ok(IssueTree {
+            path: main.to_path_buf(),
+            branch,
+            isolated: false,
+        });
+    }
+    let path = v4_engine::workspace::provision_issue_worktree(main, number)
         .await
         .map_err(|e| AppError::Exec(format!("给第 {number} 号活开 worktree 没成:{e}")))?;
     Ok(IssueTree {
         path,
-        branch: bw_engine::github::issue_branch(number),
+        branch: v4_engine::github::issue_branch(number),
         isolated: true,
     })
 }
@@ -156,7 +171,12 @@ pub(super) async fn push_and_open_mr(
         return MrOutcome::none("这条分支上没有可评审的改动,没开");
     }
     if !tree.isolated {
-        return MrOutcome::none("这个工作区不是 git 仓,没有分支可提");
+        // 没隔出树有两种:压根不是 git 仓,或者是个还没有第一条提交的空仓。
+        // 两种都是就地写、就地提交,没有单独的分支可以拿去开 MR。**别把第二种
+        // 说成「不是 git 仓」** —— 它是,而且刚刚真的提交进去了。
+        return MrOutcome::none(
+            "没有单独的分支可开 MR:这个工作区没隔出活自己的树(不是 git 仓,或者是个还没有第一条提交的空仓),改动是就地提交的",
+        );
     }
     if !project.has_remote() {
         return MrOutcome::none("这个项目还没挂远端,分支只在本机(合的时候直接 merge 这个分支)");
@@ -164,7 +184,7 @@ pub(super) async fn push_and_open_mr(
     if let Err(e) = crate::git::push_branch(&tree.path, &tree.branch).await {
         return MrOutcome::none(&format!("推分支没成,原话:{e}"));
     }
-    let remote = match bw_engine::remote::Remote::for_project(
+    let remote = match v4_engine::remote::Remote::for_project(
         &project.provider,
         &project.remote_host,
         &project.remote_path,
