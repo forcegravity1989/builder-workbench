@@ -466,3 +466,288 @@ struct CodehubRepoJson {
     #[serde(default)]
     description: Option<String>,
 }
+
+// ───────────────────────── issue + release ─────────────────────────
+//
+// V4 数据层:issue 的状态/排期/版本正本搬到 codehub issue + 标签。下面五个
+// 函数都是 `codehub-cli issue/release` 子命令的无状态 shell-out,和本模块
+// 其余函数同形(`-p <path> -H <host>` + `--jq` 选字段)。不碰 SQLite,不碰
+// 调用方(加性)。
+//
+// body 旗标用 `--description`(V3 bw-engine codehub.rs 实测;codehub-cli 的
+// issue create 文档虽写 `--body/--body-file`,但 `--description` 是稳的那条)。
+// labels 逗号拼成一条串;空切片不打 `--labels`(codehub 对空 label 会报错)。
+
+/// `codehub-cli issue create -p <path> -H <host> --title <t> --description <body>
+/// [--labels a,b,c] --jq .iid` → 新 issue 的 `iid`(项目内号,对标 github
+/// issue number)。调它真开 issue,只在创建流调,绝不自动。
+pub async fn create_issue(
+    host: &str,
+    path: &str,
+    title: &str,
+    body: &str,
+    labels: &[&str],
+) -> Result<u32, CodehubError> {
+    let labels_csv = labels.join(",");
+    let mut args: Vec<&str> = vec![
+        "issue",
+        "create",
+        "-p",
+        path,
+        "-H",
+        host,
+        "--title",
+        title,
+        "--description",
+        body,
+    ];
+    if !labels_csv.is_empty() {
+        args.push("--labels");
+        args.push(&labels_csv);
+    }
+    args.push("--jq");
+    args.push(".iid");
+    let out = crate::win_cmd::tokio_cmd("codehub-cli")
+        .args(&args)
+        .stdin(Stdio::null())
+        .stdout(Stdio::piped())
+        .stderr(Stdio::piped())
+        .output()
+        .await
+        .map_err(spawn_err)?;
+    if !out.status.success() {
+        return Err(CodehubError::Command(stderr_text(&out)));
+    }
+    let text = String::from_utf8_lossy(&out.stdout).trim().to_string();
+    text.parse::<u32>()
+        .map_err(|_| CodehubError::Parse(format!("无法解析 codehub issue iid:{text:?}")))
+}
+
+/// `codehub-cli issue update <iid> -p <path> -H <host> [--labels a,b,c]
+/// [--state-event close|reopen]`。`labels` 是 **namespace-replace** 语义:
+/// 对每个入参 label 算前缀([`crate::remote::label_prefix`]),把 issue 现有
+/// labels 里前缀命中的摘掉,再把入参全加上(裸 label 无前缀,只加不摘)。
+/// 这样调 `update_issue(iid, Some(&["bw:status:inprogress"]), None)` 只换
+/// `bw:status:*`,`bw:week:*`/`bw:released:*` 不动。
+///
+/// GitLab 的 issue update API 对 `labels` 是**全量替换**(传啥整张盖掉旧
+/// 标签)——为了凑出 namespace-replace,得多 list 一次现有 labels,算出
+/// 「(现有 - 前缀命中的)∪ 入参」的最终全量,再当 `--labels` 传进去。
+/// `labels=None` 不动标签,`state_event=None` 不动状态。幂等: 对已关的
+/// issue 再 close 是 no-op。
+pub async fn update_issue(
+    host: &str,
+    path: &str,
+    iid: u32,
+    labels: Option<&[&str]>,
+    state_event: Option<&str>,
+) -> Result<(), CodehubError> {
+    let iid_s = iid.to_string();
+    // 1. 算最终全量 labels(GitLab 是全量替换,得现读再算 namespace-replace)
+    let labels_csv: Option<String> = if let Some(lbls) = labels {
+        if lbls.is_empty() {
+            None
+        } else {
+            // 1a. list 现有 labels(GitLab payload: labels 是字符串数组,
+            // codehub-cli --jq 对数组输出带引号,故取 JSON 数组走 serde 解析)
+            let view = crate::win_cmd::tokio_cmd("codehub-cli")
+                .args([
+                    "issue",
+                    "view",
+                    &iid_s,
+                    "-p",
+                    path,
+                    "-H",
+                    host,
+                    "--jq",
+                    "[.labels[]]",
+                ])
+                .stdin(Stdio::null())
+                .stdout(Stdio::piped())
+                .stderr(Stdio::piped())
+                .output()
+                .await
+                .map_err(spawn_err)?;
+            if !view.status.success() {
+                return Err(CodehubError::Command(stderr_text(&view)));
+            }
+            let text = String::from_utf8_lossy(&view.stdout).trim().to_string();
+            let current: Vec<String> = if text.is_empty() || text == "null" {
+                Vec::new()
+            } else {
+                serde_json::from_str(&text).map_err(|e| {
+                    CodehubError::Parse(format!("无法解析 codehub issue view labels JSON:{e}"))
+                })?
+            };
+            // 1b. 最终全量 = (现有 - 前缀命中的) ∪ 入参
+            let input_prefixes: std::collections::HashSet<&str> = lbls
+                .iter()
+                .filter_map(|&l| crate::remote::label_prefix(l))
+                .collect();
+            let mut final_set: Vec<String> = current
+                .iter()
+                .filter(|c| match crate::remote::label_prefix(c) {
+                    Some(p) => !input_prefixes.contains(p),
+                    None => true,
+                })
+                .cloned()
+                .collect();
+            for &l in lbls {
+                if !final_set.iter().any(|s| s == l) {
+                    final_set.push(l.to_string());
+                }
+            }
+            Some(final_set.join(","))
+        }
+    } else {
+        None
+    };
+    // 1c. 发 update(空 csv 不打 --labels,codehub 对空 label 报错)
+    let mut args: Vec<&str> = vec!["issue", "update", &iid_s, "-p", path, "-H", host];
+    if let Some(csv) = labels_csv.as_deref() {
+        if !csv.is_empty() {
+            args.push("--labels");
+            args.push(csv);
+        }
+    }
+    if let Some(ev) = state_event {
+        args.push("--state-event");
+        args.push(ev);
+    }
+    let out = crate::win_cmd::tokio_cmd("codehub-cli")
+        .args(&args)
+        .stdin(Stdio::null())
+        .stdout(Stdio::piped())
+        .stderr(Stdio::piped())
+        .output()
+        .await
+        .map_err(spawn_err)?;
+    if !out.status.success() {
+        return Err(CodehubError::Command(stderr_text(&out)));
+    }
+    Ok(())
+}
+
+/// `codehub-cli issue list -p <path> -H <host> [--state opened|closed]
+/// [--labels a,b,c] -l 0 --jq '[.[] | {iid, number, title, state, labels}]'`
+/// → 只读 issue 列表。`-l 0` = 全量(同 V3 `list_open_issues` 的做法)。
+/// `state=None` 两态都要。`labels` 取交集(必须带齐每一条)。`number` 取
+/// GitLab 的全局 `id`,缺失时退回 `iid`(够用,不假装有另一个号)。
+pub async fn list_issues(
+    host: &str,
+    path: &str,
+    state: Option<&str>,
+    labels: &[String],
+) -> Result<Vec<crate::remote::RemoteIssue>, CodehubError> {
+    let labels_csv = labels.join(",");
+    let mut args: Vec<&str> = vec!["issue", "list", "-p", path, "-H", host];
+    if let Some(s) = state {
+        args.push("--state");
+        args.push(s);
+    }
+    if !labels_csv.is_empty() {
+        args.push("--labels");
+        args.push(&labels_csv);
+    }
+    args.push("-l");
+    args.push("0");
+    args.push("--jq");
+    // jq 投影成对象数组,字段名对齐 GitLab v4 issue payload:`iid`/`id`/
+    // `title`/`state`/`labels`。`id` 缺失(GitLab 必有,但 codehub-cli 边缘
+    // 情况下可能不回)时退回 `iid`,免得解析整张列表炸掉。
+    args.push(r#"[.[] | {iid: .iid, number: (.id // .iid), title: (.title // ""), state: (.state // ""), labels: (.labels // [])}]"#);
+    let out = crate::win_cmd::tokio_cmd("codehub-cli")
+        .args(&args)
+        .stdin(Stdio::null())
+        .stdout(Stdio::piped())
+        .stderr(Stdio::piped())
+        .output()
+        .await
+        .map_err(spawn_err)?;
+    if !out.status.success() {
+        return Err(CodehubError::Command(stderr_text(&out)));
+    }
+    let rows: Vec<CodehubIssueJson> = serde_json::from_slice(&out.stdout)
+        .map_err(|e| CodehubError::Parse(format!("无法解析 codehub issue list JSON:{e}")))?;
+    Ok(rows
+        .into_iter()
+        .map(|r| crate::remote::RemoteIssue {
+            iid: r.iid,
+            number: r.number,
+            title: r.title,
+            state: r.state,
+            labels: r.labels,
+        })
+        .collect())
+}
+
+#[derive(serde::Deserialize)]
+struct CodehubIssueJson {
+    iid: u32,
+    #[serde(default)]
+    number: u32,
+    #[serde(default)]
+    title: String,
+    #[serde(default)]
+    state: String,
+    #[serde(default)]
+    labels: Vec<String>,
+}
+
+/// `codehub-cli release create -p <path> -H <host> <tag> --title <t> --notes <body>`
+/// → 打 tag + 发版本。只在发版流调,绝不自动。tag 已存在时 codehub-cli 如实
+/// 报错,不假装成功。body 旗标 `--notes`(GitLab release API 的正文字段)。
+pub async fn create_release(
+    host: &str,
+    path: &str,
+    tag: &str,
+    title: &str,
+    body: &str,
+) -> Result<(), CodehubError> {
+    let out = crate::win_cmd::tokio_cmd("codehub-cli")
+        .args([
+            "release", "create", "-p", path, "-H", host, tag, "--title", title, "--notes", body,
+        ])
+        .stdin(Stdio::null())
+        .stdout(Stdio::piped())
+        .stderr(Stdio::piped())
+        .output()
+        .await
+        .map_err(spawn_err)?;
+    if !out.status.success() {
+        return Err(CodehubError::Command(stderr_text(&out)));
+    }
+    Ok(())
+}
+
+/// `codehub-cli release list -p <path> -H <host> --jq '[.[] | .tag_name]'`
+/// → 所有版本的 tag 串(只回 tag,正文/资源数留给上层另查)。`tag_name` 是
+/// GitLab release payload 的字段名;codehub-cli 同构封装,沿用。
+pub async fn list_releases(host: &str, path: &str) -> Result<Vec<String>, CodehubError> {
+    let out = crate::win_cmd::tokio_cmd("codehub-cli")
+        .args([
+            "release",
+            "list",
+            "-p",
+            path,
+            "-H",
+            host,
+            "--jq",
+            r#"[.[] | .tag_name]"#,
+        ])
+        .stdin(Stdio::null())
+        .stdout(Stdio::piped())
+        .stderr(Stdio::piped())
+        .output()
+        .await
+        .map_err(spawn_err)?;
+    if !out.status.success() {
+        return Err(CodehubError::Command(stderr_text(&out)));
+    }
+    let text = String::from_utf8_lossy(&out.stdout).trim().to_string();
+    if text.is_empty() || text == "null" {
+        return Ok(Vec::new());
+    }
+    serde_json::from_str(&text)
+        .map_err(|e| CodehubError::Parse(format!("无法解析 codehub release list JSON:{e}")))
+}

@@ -48,6 +48,63 @@ pub enum Remote {
     Codehub { host: String, path: String },
 }
 
+// ─────────────── V4 issue 远端正本:辅助类型 ───────────────
+//
+// V4 数据层把 issue 的状态/排期/版本从本地 SQLite 搬到 codehub/GitHub issue +
+// 标签(正本在远端,本地只是缓存)。下面这些类型是 provider 无关的 DTO,两实现
+// 各自构造同一个 [`RemoteIssue`],trait 只透传 `labels: &[&str]`,**不硬编词表**
+// (状态 `bw:status:*` / 周 `bw:week:*` / 发版 `bw:released:*` / 种类 `bw:kind:*`
+// 都是调用方的事)。`IssueState` 故意不碰 bw-v4 的 `IssueStatus`(那是活的完整
+// 生命周期状态机,这里只是远端 issue 的开/关二态)。
+
+/// 远端 issue 的状态过滤值。**只指远端 issue 自身的 open/closed**,和 bw-v4
+/// `IssueStatus` 那套完整生命周期状态机不是一回事——别混。
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum IssueState {
+    Open,
+    Closed,
+}
+
+/// 对 issue 做的一次状态动作(关闭/重开)。对应 codehub 的
+/// `issue update --state-event close|reopen`、github 的 `gh issue close|reopen`。
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum IssueStateEvent {
+    Close,
+    Reopen,
+}
+
+/// `list_issues` 的过滤条件:`state=None` 不过滤(两态都要),`labels` 取交集
+/// (issue 必须带齐这里列的每一条 label)。空 `labels` = 不按 label 过滤。
+#[derive(Clone, Debug, Default)]
+pub struct IssueFilter {
+    pub state: Option<IssueState>,
+    pub labels: Vec<String>,
+}
+
+/// 一条远端 issue 的只读快照。`iid` = 项目内号(codehub/GitLab 的 `iid`);
+/// `number` = 全局号(codehub 的 `id`,github 无 `iid`,`number` 即 issue 号,
+/// 此时 `iid == number`)。`state` 是远端原文(codehub `"opened"`/`"closed"`、
+/// github `"OPEN"`/`"CLOSED"`),**不归一化**——归一化是上层的事,底座只透传。
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct RemoteIssue {
+    pub iid: u32,
+    pub number: u32,
+    pub title: String,
+    pub state: String,
+    pub labels: Vec<String>,
+}
+
+/// 算一个 label 的 namespace 前缀(不含末尾冒号):`bw:status:todo` →
+/// `Some("bw:status")`,`bug`(无冒号)→ `None`。只做字符串切分,**不硬编
+/// `bw:*` 词表**。调 `update_issue` 时用它实现 namespace-replace 语义:
+/// 把 issue 现有 labels 里、前缀落在入参前缀集合中的摘掉,再把入参全加上
+/// (裸 label 无前缀,只加不摘)。两 provider 各自实现里 list 一次现有
+/// labels 再算(github 无 set-absolute 旗标、codehub 是全量替换,都得多
+/// list 一次换取 namespace 语义)。
+pub(crate) fn label_prefix(label: &str) -> Option<&str> {
+    label.rsplit_once(':').map(|(p, _)| p)
+}
+
 impl Remote {
     /// Factory from a project's stored identity triple. `provider="github"`
     /// (or the legacy `""` default — pre-C16 存量行) → `Remote::Github(path)`;
@@ -124,6 +181,115 @@ impl Remote {
             Remote::Codehub { host, path } => {
                 Ok(codehub::open_mr_for_branch(host, path, branch).await?)
             }
+        }
+    }
+
+    // ─────────────── V4 issue 远端正本:issue 存取 ───────────────
+    //
+    // 六个方法都只做 provider 分发(github→`gh`、codehub→`codehub-cli`),不碰
+    // SQLite、不改 store、不重写 app 层调用方——加性。词表(bw:status:* 等)
+    // 由调用方塞进 `labels`,实现只透传、不硬编。
+
+    /// 在远端仓里**真开一个 issue**,回它的项目内号(`iid`)。title/body/labels
+    /// 原样透传;labels 空 = 不挂标签。调它会真在 codehub/github 仓里建一条
+    /// issue,只在创建流调,绝不自动(「自动建活」建的也是本地活,远端正本
+    /// 得人点)。对应 `gh issue create` / `codehub-cli issue create`。
+    pub async fn create_issue(
+        &self,
+        title: &str,
+        body: &str,
+        labels: &[&str],
+    ) -> Result<u32, RemoteError> {
+        match self {
+            Remote::Github(r) => Ok(github::create_issue(r, title, body, labels).await?),
+            Remote::Codehub { host, path } => {
+                Ok(codehub::create_issue(host, path, title, body, labels).await?)
+            }
+        }
+    }
+
+    /// 改一张远端 issue 的标签和/或状态。`labels` 走 **namespace-replace**
+    /// 语义:入参每个 label 的前缀([`label_prefix`]:`bw:status:todo` →
+    /// `bw:status`)命中的现有 label 被摘掉,入参再全加上(裸 label 无前缀,
+    /// 只加不摘)。调 `update_issue(iid, Some(&["bw:status:inprogress"]), None)`
+    /// 只换 `bw:status:*`,`bw:week:*`/`bw:released:*` 不动。`labels=None`
+    /// 不动标签,`state_event=None` 不动状态;两者都 `None` 是 no-op(直接
+    /// `Ok(())`,不发调用)。两 provider 各自 list 一次现有 labels 再算
+    /// (github 无 set-absolute 旗标、codehub 是全量替换,都得多 list 一次
+    /// 换取 namespace 语义),实现细节留在各自的 `github.rs`/`codehub.rs`。
+    pub async fn update_issue(
+        &self,
+        iid: u32,
+        labels: Option<&[&str]>,
+        state_event: Option<IssueStateEvent>,
+    ) -> Result<(), RemoteError> {
+        match self {
+            Remote::Github(r) => Ok(github::update_issue(r, iid, labels, state_event).await?),
+            Remote::Codehub { host, path } => {
+                let ev = state_event.map(|e| match e {
+                    IssueStateEvent::Close => "close",
+                    IssueStateEvent::Reopen => "reopen",
+                });
+                Ok(codehub::update_issue(host, path, iid, labels, ev).await?)
+            }
+        }
+    }
+
+    /// 按状态/标签过滤,读回一张只读的 issue 列表(读回为证: buddy 直接问远端,
+    /// 不靠谁自报)。`filter.state=None` 两态都要;`filter.labels` 取交集。对应
+    /// `gh issue list --state --label --json` / `codehub-cli issue list --state
+    /// --labels --jq`。无副作用。
+    pub async fn list_issues(&self, filter: &IssueFilter) -> Result<Vec<RemoteIssue>, RemoteError> {
+        match self {
+            Remote::Github(r) => {
+                let state = filter.state.map(|s| match s {
+                    IssueState::Open => "open",
+                    IssueState::Closed => "closed",
+                });
+                Ok(github::list_issues(r, state, &filter.labels).await?)
+            }
+            Remote::Codehub { host, path } => {
+                let state = filter.state.map(|s| match s {
+                    IssueState::Open => "opened",
+                    IssueState::Closed => "closed",
+                });
+                Ok(codehub::list_issues(host, path, state, &filter.labels).await?)
+            }
+        }
+    }
+
+    /// 关一张远端 issue —— `update_issue(iid, None, Some(Close))` 的便捷封装,
+    /// 没有第二条 shell-out 路径。codehub 走 `--state-event close`,github 走
+    /// `gh issue close`。幂等:关一张已关的 issue 是 no-op 成功,不报错。
+    pub async fn close_issue(&self, iid: u32) -> Result<(), RemoteError> {
+        self.update_issue(iid, None, Some(IssueStateEvent::Close))
+            .await
+    }
+
+    /// 在远端仓里发一个版本(release)——打 tag + 带 title/body。对应
+    /// `gh release create <tag> --title --notes` / `codehub-cli release create`。
+    /// 只在发版流调,绝不自动。tag 已存在时远端如实报错,不假装成功。
+    pub async fn create_release(
+        &self,
+        tag: &str,
+        title: &str,
+        body: &str,
+    ) -> Result<(), RemoteError> {
+        match self {
+            Remote::Github(r) => Ok(github::create_release(r, tag, title, body).await?),
+            Remote::Codehub { host, path } => {
+                Ok(codehub::create_release(host, path, tag, title, body).await?)
+            }
+        }
+    }
+
+    /// 读回远端仓里所有版本的 tag 列表(读回为证: 走势图/发版回顾要的真数)。
+    /// 对应 `gh release list --json tagName` / `codehub-cli release list --jq`。
+    /// 只回 tag 串,正文/资源数留给上层另查。无副作用。
+    pub async fn list_releases(&self) -> Result<Vec<String>, RemoteError> {
+        match self {
+            Remote::Github(r) => Ok(github::list_releases(r).await?),
+            Remote::Codehub { host, path } => Ok(codehub::list_releases(host, path).await?),
         }
     }
 }
