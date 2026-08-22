@@ -50,13 +50,51 @@ id_newtype!(
     ProjectId
 );
 id_newtype!(
-    /// 活的稳定身份。
-    IssueId
-);
-id_newtype!(
     /// 一场 agent 会话的稳定身份(`claude_conversation` 表的主键)。
     ConversationId
 );
+
+/// 活的稳定身份。内部是 `(project_id, iid)`——iid 来自远端 issue 的项目内号,
+/// 不再是随机 UUID。`from_remote` 是唯一生产构造方式;`nil()` 是测试占位。
+///
+/// **`from_uuid` 和 `new` 已删**——issue 身份现在由远端 issue 号定义,不再是
+/// 随机 UUID。`claude_conversation` 表的 `issue_id` 列因此存的是 iid(文本),
+/// 连同 `project_id` 列一起定位这张活。
+#[derive(Clone, Copy, PartialEq, Eq, Hash, Debug, Serialize, Deserialize)]
+pub struct IssueId {
+    project_id: ProjectId,
+    iid: u32,
+}
+
+impl IssueId {
+    /// 从远端 issue 的项目内号构造——唯一的生产构造方式。
+    pub const fn from_remote(project_id: ProjectId, iid: u32) -> Self {
+        Self { project_id, iid }
+    }
+
+    /// 全零占位 id,测试与「不属于任何一个」的场合用。
+    pub const fn nil() -> Self {
+        Self {
+            project_id: ProjectId::nil(),
+            iid: 0,
+        }
+    }
+
+    /// 项目内号(远端 issue iid)。
+    pub const fn iid(self) -> u32 {
+        self.iid
+    }
+
+    /// 项目身份。
+    pub const fn project_id(self) -> ProjectId {
+        self.project_id
+    }
+
+    /// 保留:返回项目 uuid。给 `ConversationMeta` 等需要裸 UUID 的场合用。
+    pub const fn uuid(self) -> Uuid {
+        self.project_id.uuid()
+    }
+}
 
 /// 健康信号。`Unknown` 是诚实的第四态 —— **没数据绝不默认成绿**。
 #[derive(Clone, Copy, PartialEq, Eq, Debug, Serialize, Deserialize)]

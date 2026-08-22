@@ -157,7 +157,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     }
     say(
         "步骤 3 · 它的状态没被改动",
-        &format!("{:?}(该是 InProgress)", status_of(&store, empty_id).await?),
+        &format!("{:?}(该是 InProgress)", status_of(&app, empty_id).await?),
     );
 
     // ── 模拟 agent 在这棵树里干活(写文件,不提交) ──────────
@@ -180,7 +180,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     }
     say(
         "步骤 4 · 活的状态",
-        &format!("{:?}", status_of(&store, id).await?),
+        &format!("{:?}", status_of(&app, id).await?),
     );
 
     // ── 读回:远端 bare 仓上真有这条分支和这个提交吗 ──────────
@@ -237,10 +237,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 }
 
 async fn status_of(
-    store: &V4Store,
+    app: &App,
     id: bw_v4::model::IssueId,
 ) -> Result<IssueStatus, Box<dyn std::error::Error>> {
-    Ok(store.issue(id).await?.expect("活没了").status)
+    Ok(app.issue_or_err(id).await.ok().expect("活没了").status)
 }
 
 fn say(step: &str, detail: &str) {

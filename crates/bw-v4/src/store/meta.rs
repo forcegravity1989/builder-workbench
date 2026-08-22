@@ -52,7 +52,7 @@ impl V4Store {
         )
         .bind(c.id.uuid().to_string())
         .bind(c.project_id.uuid().to_string())
-        .bind(c.issue_id.uuid().to_string())
+        .bind(c.issue_id.iid().to_string())
         .bind(&c.claude_session_id)
         .bind(&c.workspace_path)
         .bind(&c.branch_name)
@@ -69,9 +69,10 @@ impl V4Store {
     pub async fn conversation_for_issue(&self, issue_id: IssueId) -> Result<Option<Conversation>> {
         let row = sqlx::query(
             "SELECT id, project_id, issue_id, claude_session_id, workspace_path, branch_name, \
-             created_at, last_opened_at FROM claude_conversation WHERE issue_id = ?1",
+             created_at, last_opened_at FROM claude_conversation WHERE project_id = ?1 AND issue_id = ?2",
         )
-        .bind(issue_id.uuid().to_string())
+        .bind(issue_id.project_id().uuid().to_string())
+        .bind(issue_id.iid().to_string())
         .fetch_optional(self.pool())
         .await?;
         let Some(row) = row else { return Ok(None) };
@@ -81,7 +82,10 @@ impl V4Store {
         Ok(Some(Conversation {
             id: ConversationId::from_uuid(Uuid::parse_str(&id).unwrap_or_default()),
             project_id: ProjectId::from_uuid(Uuid::parse_str(&pid).unwrap_or_default()),
-            issue_id: IssueId::from_uuid(Uuid::parse_str(&iid).unwrap_or_default()),
+            issue_id: IssueId::from_remote(
+                ProjectId::from_uuid(Uuid::parse_str(&pid).unwrap_or_default()),
+                iid.parse().unwrap_or(0),
+            ),
             claude_session_id: row.try_get("claude_session_id")?,
             workspace_path: row.try_get("workspace_path")?,
             branch_name: row.try_get("branch_name")?,
@@ -101,7 +105,7 @@ impl V4Store {
         .await?;
         let mut out = Vec::with_capacity(rows.len());
         for (iid,) in rows {
-            let issue_id = IssueId::from_uuid(Uuid::parse_str(&iid).unwrap_or_default());
+            let issue_id = IssueId::from_remote(project_id, iid.parse().unwrap_or(0));
             if let Some(c) = self.conversation_for_issue(issue_id).await? {
                 out.push(c);
             }
@@ -117,11 +121,12 @@ impl V4Store {
     ) -> Result<()> {
         sqlx::query(
             "UPDATE claude_conversation SET claude_session_id=?2, last_opened_at=?3 \
-             WHERE issue_id=?1",
+             WHERE project_id=?1 AND issue_id=?4",
         )
-        .bind(issue_id.uuid().to_string())
+        .bind(issue_id.project_id().uuid().to_string())
         .bind(session_id)
         .bind(now_ts())
+        .bind(issue_id.iid().to_string())
         .execute(self.pool())
         .await?;
         Ok(())

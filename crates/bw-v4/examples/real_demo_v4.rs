@@ -173,7 +173,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // ── 步骤 5-6:▶跑 → 代人推评审中 → 代人点完成 ─────────
     // 重跑判据是这张活现在什么状态 —— 已经完成的不再开工一次(既是幂等,也是
     // 「干完的活不会被自动重开」这条本来就该成立的行为)。
-    let status_now = store.issue(main_issue).await?.map(|i| i.status);
+    let status_now = app.issue_or_err(main_issue).await.ok().map(|i| i.status);
     if status_now == Some(IssueStatus::Done) {
         say(
             &mut log,
@@ -190,7 +190,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                 ),
             );
         }
-        if store.issue(main_issue).await?.map(|i| i.status) != Some(IssueStatus::InReview) {
+        if app.issue_or_err(main_issue).await.ok().map(|i| i.status) != Some(IssueStatus::InReview)
+        {
             app.dispatch(Command::TransitionIssue {
                 id: main_issue,
                 to: IssueStatus::InReview,
@@ -265,10 +266,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             "步骤 8 前置 · 把演示项目的 ops2_schedule 改成「mon 00:00」(正式默认是 fri 20:00)",
         );
     }
-    let before: usize = store.issues(pid).await?.len();
+    let before: usize = app.issues(pid).await.len();
     app.dispatch(Command::TickScheduler { project_id: pid })
         .await?;
-    let after = store.issues(pid).await?;
+    let after = app.issues(pid).await;
     let audit = after
         .iter()
         .find(|i| i.workflow == bw_v4::app::OPS2_WORKFLOW && i.week_of == week);
@@ -345,9 +346,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         });
         let _ = bw_v4::repo::project_file::write(&workspace, &file);
     }
-    if let Some(one) = store
+    if let Some(one) = app
         .issues(pid)
-        .await?
+        .await
         .into_iter()
         .find(|i| i.kind == bw_v4::IssueKind::Business)
     {
@@ -404,7 +405,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     say(&mut log, &format!("健康现算:{:?}", health.signal()));
 
     // ── 步骤 10:证据 JSON,数字全部真实读回 ──────────────
-    let evidence = build_evidence(&store, pid, &slug, &workspace, &week, &health, &log).await?;
+    let evidence = build_evidence(&app, pid, &slug, &workspace, &week, &health, &log).await?;
     // 证据写在**工作区根旁边**,不写进当前目录 —— 从仓里跑一次指挥器就把仓
     // 弄脏(git status 多一行),那不像话。
     let out = ws_root.join(format!("evidence-v4-{slug}.json"));
@@ -441,7 +442,7 @@ fn clone_buddy_repo(root: &Path, slug: &str) -> std::io::Result<PathBuf> {
 }
 
 async fn build_evidence(
-    store: &V4Store,
+    app: &App,
     pid: ProjectId,
     slug: &str,
     workspace: &Path,
@@ -449,10 +450,11 @@ async fn build_evidence(
     health: &bw_v4::derive::DerivedHealth,
     log: &[String],
 ) -> Result<String, Box<dyn std::error::Error>> {
+    let store = app.store();
     let project = store.project(pid).await?.expect("项目行");
-    let issues = store.issues(pid).await?;
+    let issues = app.issues(pid).await;
     let tables = store.table_names().await?;
-    let usage = store.workflow_usage(pid).await?;
+    let usage = app.workflow_usage(pid).await;
 
     let issue_json: Vec<serde_json::Value> = issues
         .iter()

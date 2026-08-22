@@ -175,7 +175,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // 自动完成,这条是铁律。
     for slug in ["no-remote", "already"] {
         let pid = store.project_by_slug(slug).await?.unwrap().id;
-        let rows = store.issues(pid).await?;
+        let rows = app.issues(pid).await;
         let shown: Vec<String> = rows
             .iter()
             .map(|i| {
@@ -351,7 +351,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         &format!(
             "项目={:?} · 活={} 张(都该是空)",
             store.project_by_slug("already").await?.map(|p| p.slug),
-            store.issues(gone).await?.len()
+            app.issues(gone).await.len()
         ),
     );
     say(

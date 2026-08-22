@@ -564,7 +564,8 @@ pub fn spawn(deep_link: DeepLink) -> Bridge {
                                 cg.rows.first().map(|r| r.size).unwrap_or(0),
                                 cg.error
                             );
-                            let a = vm_kb::build_assets(&store, pid, &ws).await;
+                            let usage = app.workflow_usage(pid).await;
+                            let a = vm_kb::build_assets(&usage, &ws).await;
                             eprintln!(
                                 "[BW_KB] 资产:技能 {} · 蒸馏 {} · 产物 {} · 发版 {} · 仓统计 {:?}",
                                 a.skills.len(),
@@ -826,7 +827,7 @@ pub fn spawn(deep_link: DeepLink) -> Bridge {
                             if let (true, Some(pid)) = (want, ui.open) {
                                 if let Ok(ws) = app.workspace_of(pid).await {
                                     let back = tx_back.clone();
-                                    let st = store.clone();
+                                    let usage = app.workflow_usage(pid).await;
                                     tokio::spawn(async move {
                                         let (codegraph, assets) =
                                             if t == crate::vm::KbTab::CodeGraph {
@@ -834,7 +835,7 @@ pub fn spawn(deep_link: DeepLink) -> Bridge {
                                             } else {
                                                 (
                                                     None,
-                                                    Some(vm_kb::build_assets(&st, pid, &ws).await),
+                                                    Some(vm_kb::build_assets(&usage, &ws).await),
                                                 )
                                             };
                                         let _ = back.send(Req::KbComputed {

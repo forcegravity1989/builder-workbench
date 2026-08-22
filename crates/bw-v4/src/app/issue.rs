@@ -5,81 +5,46 @@
 //! - **▶跑最远只到「评审中」**。执行器返回成功也只推到 InReview,不会自己
 //!   推到「已完成」。
 //! - **「完成」永远由人点**。`TransitionIssue { to: Done }` 是唯一入口,而且
-//!   状态机只允许从「评审中」进 Done;结清那一下走的 SQL 自带
-//!   `WHERE settled_at IS NULL`,同一件活绝不结两次。
+//!   状态机只允许从「评审中」进 Done。
+//!
+//! 刀3 起,issue 的正本在远端 codehub/GitHub issue + 标签,本地不建 issue 表。
+//! 所有 issue 读写经 [`super::issue_store`] 走远端。
 
 use super::worktree;
-use super::{App, AppError, Result};
+use super::{issue_store, App, AppError, Result};
 use crate::command::Event;
 use crate::model::{Category, Issue, IssueId, IssueKind, IssueOrigin, IssueStatus, ProjectId};
-use crate::repo::issue_policy_file;
 use v4_engine::{build_startup_plan, InteractiveExecutor, RunCtx, TuiAgentConfig};
 
 impl App {
+    /// 取一个项目的完整行。内部辅助,给 issue_store 调用方用的。
+    pub(crate) async fn project_of(&self, project_id: ProjectId) -> Result<crate::model::Project> {
+        self.store
+            .project(project_id)
+            .await?
+            .ok_or_else(|| AppError::NoSuchProject(project_id.uuid().to_string()))
+    }
+
     #[allow(clippy::too_many_arguments)]
     pub(super) async fn create_issue(
         &mut self,
         project_id: ProjectId,
         title: String,
         body: String,
-        category: Option<Category>,
+        _category: Option<Category>,
         kind: IssueKind,
-        origin: IssueOrigin,
+        _origin: IssueOrigin,
         week_of: String,
     ) -> Result<Vec<Event>> {
-        // 幂等:同一个项目里标题一样的活不建第二张(指挥器重跑靠它)。
-        if let Some(existing) = self.store.issue_by_title(project_id, &title).await? {
+        let project = self.project_of(project_id).await?;
+        // 幂等:同一个项目里标题一样的、开着的活不建第二张(指挥器重跑靠它)。
+        if let Some(existing) = issue_store::find_open_by_title(&project, &title).await? {
             return Ok(vec![Event::IssueCreated {
                 id: existing.id,
                 number: existing.number,
             }]);
         }
-
-        // 类别决定默认工具与 workflow —— 查项目仓的 `.bw/issue-policy.toml`。
-        // 文件没有、或没配这个类别,就如实留空,不替用户挑一个。
-        let (tool, workflow) = match category {
-            None => (String::new(), String::new()),
-            Some(c) => {
-                let ws = self.workspace_of(project_id).await?;
-                issue_policy_file::read(&ws)
-                    .ok()
-                    .flatten()
-                    .and_then(|f| f.mapping_for(c).cloned())
-                    .map(|m| (m.tool, m.workflow))
-                    .unwrap_or_default()
-            }
-        };
-
-        let number = self.store.next_issue_number(project_id).await?;
-        let issue = Issue {
-            id: IssueId::new(),
-            project_id,
-            number,
-            remote_number: 0,
-            title,
-            body,
-            // 新建的活落在待办池,除非明确排了周。
-            status: if week_of.is_empty() {
-                IssueStatus::Backlog
-            } else {
-                IssueStatus::Todo
-            },
-            branch: String::new(),
-            pr_number: 0,
-            week_of,
-            version: String::new(),
-            tool,
-            kind,
-            origin,
-            workflow,
-            category,
-            sort_order: number as f64,
-            metric_key: String::new(),
-            created_at: 0,
-            updated_at: 0,
-            settled_at: None,
-        };
-        let issue = self.store.insert_issue(&issue).await?;
+        let issue = issue_store::create(&project, &title, &body, kind, &week_of, &[]).await?;
         Ok(vec![Event::IssueCreated {
             id: issue.id,
             number: issue.number,
@@ -88,14 +53,12 @@ impl App {
 
     pub(super) async fn set_issue_workflow(
         &mut self,
-        id: IssueId,
-        workflow: String,
+        _id: IssueId,
+        _workflow: String,
     ) -> Result<Vec<Event>> {
-        let issue = self.issue_or_err(id).await?;
-        self.store
-            .set_issue_dispatch(id, &issue.tool, &workflow, &issue.metric_key)
-            .await?;
-        Ok(vec![Event::IssueReordered { id }])
+        // 刀3:workflow 从标题推断(见 issue_store),不再单独存。这条命令保留
+        // 在枚举里但做不了实事——要改 workflow 得改标题。
+        Ok(Vec::new())
     }
 
     /// 唯一的干活入口。
@@ -129,12 +92,6 @@ impl App {
         // 没有工作区就没什么可隔离的,下面走自我标注的替身。
         let tree = if ws.is_dir() {
             let t = worktree::provision(&ws, issue.number).await?;
-            // 变了才写,同 `run_issue_pty`:分支没变就别白顶一次 `updated_at`。
-            if issue.branch != t.branch {
-                self.store
-                    .set_issue_remote(id, &t.branch, issue.pr_number, issue.remote_number)
-                    .await?;
-            }
             Some(t)
         } else {
             None
@@ -145,9 +102,8 @@ impl App {
             .unwrap_or_else(|| ws.clone());
         // 先推进行中 —— 界面上立刻看得出它开工了。
         if issue.status != IssueStatus::InProgress {
-            self.store
-                .set_issue_status(id, IssueStatus::InProgress)
-                .await?;
+            let project = self.project_of(issue.project_id).await?;
+            issue_store::set_status(&project, id.iid(), IssueStatus::InProgress).await?;
         }
 
         // 照活上记的工具走 —— 不许悄悄换(见 `tools::agent_for`)。
@@ -182,9 +138,8 @@ impl App {
         match out {
             Ok(o) if o.completed => {
                 // 最远到「评审中」。这一步不是人点的,所以到此为止。
-                self.store
-                    .set_issue_status(id, IssueStatus::InReview)
-                    .await?;
+                let project = self.project_of(issue.project_id).await?;
+                issue_store::set_status(&project, id.iid(), IssueStatus::InReview).await?;
                 let mut events = vec![Event::IssueRan {
                     id,
                     ok: true,
@@ -215,10 +170,6 @@ impl App {
     ///
     /// **由人点,而且最远只到「评审中」**。agent 什么时候算干完只有人知道;
     /// 「完成」还是得评审完之后再点一次。
-    ///
-    /// 任何一步没成都如实回报、活留在原地可以重试:推分支失败不会假装开了 MR,
-    /// 开 MR 失败不会假装进了评审。**只有一种情况直接弹回**——这棵树上压根没有
-    /// 比基线多出来的提交,那就是没干出东西,没有可评审的改动。
     pub(super) async fn submit_issue_work(&mut self, id: IssueId) -> Result<Vec<Event>> {
         let issue = self.issue_or_err(id).await?;
         if !matches!(
@@ -230,11 +181,7 @@ impl App {
                 issue.status.label()
             )));
         }
-        let project = self
-            .store
-            .project(issue.project_id)
-            .await?
-            .ok_or_else(|| AppError::NoSuchProject(issue.project_id.uuid().to_string()))?;
+        let project = self.project_of(issue.project_id).await?;
         let ws = self.workspace_of(issue.project_id).await?;
         // 幂等:这张活开过工就已经有一棵树,这里拿到的是同一棵。
         let tree = worktree::provision(&ws, issue.number).await?;
@@ -244,9 +191,7 @@ impl App {
             ));
         }
 
-        // 基线取主检出**当下**的 HEAD。要问的是「这棵树上有没有主检出还没有的
-        // 提交」,所以基线跟着主检出走:主检出后来往前走了,那些提交本来就在
-        // 基线这一侧,不会被算到这张活的账上。
+        // 基线取主检出**当下**的 HEAD。
         let base = crate::git::head_sha(&ws).await.unwrap_or_default();
         // agent 常常自己就提交了;没提交的这一下替它提交掉。
         crate::git::commit_all(&tree.path, &format!("#{} {}", issue.number, issue.title)).await?;
@@ -264,8 +209,6 @@ impl App {
             )));
         }
 
-        // 注意别用 `\` 续行拼这段正文:rustfmt 会把缩进原样留在字符串里,
-        // MR 正文上就会多出一串空格。要接就用 `concat!` 或者分段 push。
         let mut body = format!(
             "buddy 管理的第 {} 号活「{}」干出来的改动,等人评审。\n\n",
             issue.number, issue.title
@@ -282,19 +225,6 @@ impl App {
         )
         .await;
 
-        // 库里:MR 号只在真开出来时才写,0 不许把上一次记下的号冲掉。
-        let kept = if mr.number > 0 {
-            mr.number
-        } else {
-            issue.pr_number
-        };
-        self.store
-            .set_issue_remote(id, &tree.branch, kept, issue.remote_number)
-            .await?;
-
-        // 事件里报的是**这一次**的结果,不是库里留着的那个号。这两个数不一样的
-        // 时候(上次开过 MR、这次没开成),报库里那个就等于说"MR 开出来了",
-        // 而实际上这次推上去的提交并没有进那个 MR。
         let mut events = vec![Event::IssueSubmitted {
             id,
             branch: tree.branch.clone(),
@@ -312,8 +242,7 @@ impl App {
         Ok(events)
     }
 
-    /// 状态转移。合法性由 `crate::model::IssueStatus::can_transition_to` 那张转移表守——不合法就如实报错弹回,不悄悄
-    /// 换成一个合法的转移。
+    /// 状态转移。合法性由 `crate::model::IssueStatus::can_transition_to` 那张转移表守。
     pub(super) async fn transition_issue(
         &mut self,
         id: IssueId,
@@ -333,21 +262,15 @@ impl App {
                 to: to.label().to_string(),
             });
         }
-        self.store.set_issue_status(id, to).await?;
-        // 结清只发生在真正走进「已完成」的那一下,而且只结一次。
-        let settled = if to == IssueStatus::Done {
-            self.store.settle_issue(id).await?
-        } else {
-            false
-        };
-        // 结清了就把这张活那棵 worktree 收掉 —— 活完了,那棵树没用了。
-        // **只在它干净的时候收**:里面还有没提交的改动就原样留着,「我点了
-        // 完成」不构成删掉别人劳动成果的授权。
+        let project = self.project_of(issue.project_id).await?;
+        issue_store::set_status(&project, id.iid(), to).await?;
+        // Done = 远端 issue closed。settled 只在走进 Done 时才算。
+        let settled = to == IssueStatus::Done;
+        // 结清了就把这张活那棵 worktree 收掉。
         if settled {
             self.cleanup_issue_worktree(&issue).await;
         }
         let mut events = vec![Event::IssueTransitioned { id, to, settled }];
-        // 进评审 = 该人看一眼了,配了群就往群里说一声。
         if to == IssueStatus::InReview {
             if let Some(e) = self.chat_notify_issue(id, "review").await {
                 events.push(e);
@@ -364,21 +287,14 @@ impl App {
                 to: IssueStatus::Blocked.label().to_string(),
             });
         }
-        self.store
-            .set_issue_status(id, IssueStatus::Blocked)
-            .await?;
-        // 卡在哪写进这张活的说明里 —— 不写下来,下次接手的人只看见一个红点。
-        let body = if issue.body.is_empty() {
-            format!("阻塞原因:{reason}")
-        } else {
-            format!("{}\n\n阻塞原因:{reason}", issue.body)
-        };
-        self.store.set_issue_body(id, &body).await?;
+        let project = self.project_of(issue.project_id).await?;
+        issue_store::set_status(&project, id.iid(), IssueStatus::Blocked).await?;
+        // 阻塞原因写进 issue 评论 —— 不动正文,结构化产出挂评论。
+        issue_store::comment(&project, id.iid(), &format!("阻塞原因:{reason}")).await?;
         Ok(vec![Event::IssueBlocked { id }])
     }
 
-    /// 收掉这张活的 worktree。收不掉(脏的、路径算不出来、项目没了)就什么
-    /// 都不做 —— 收尾失败不该把「这张活已经完成」这件事顶回去。
+    /// 收掉这张活的 worktree。收不掉就什么都不做。
     async fn cleanup_issue_worktree(&self, issue: &Issue) {
         let Ok(ws) = self.workspace_of(issue.project_id).await else {
             return;
@@ -389,7 +305,63 @@ impl App {
         worktree::remove_if_clean(&ws, &tree).await;
     }
 
-    pub(crate) async fn issue_or_err(&self, id: IssueId) -> Result<Issue> {
-        self.store.issue(id).await?.ok_or(AppError::NoSuchIssue)
+    pub async fn issue_or_err(&self, id: IssueId) -> Result<Issue> {
+        let project = self.project_of(id.project_id()).await?;
+        issue_store::fetch(&project, id.iid()).await
+    }
+
+    // ── App 暴露给 app-shell 的查询方法(替代旧的 store.issue* 系列)──────
+
+    /// 列出项目的全部活(从远端现读)。没挂远端 → 空。
+    pub async fn issues(&self, project_id: ProjectId) -> Vec<Issue> {
+        let Ok(Some(project)) = self.store.project(project_id).await else {
+            return Vec::new();
+        };
+        if !project.has_remote() {
+            return Vec::new();
+        }
+        issue_store::list(
+            &project,
+            v4_engine::remote::IssueFilter {
+                state: None,
+                labels: vec![],
+            },
+        )
+        .await
+        .unwrap_or_default()
+    }
+
+    /// 某一周的活。`week` 传空串就是待办池那一列(没挂 bw:week 标签的)。
+    pub async fn issues_in_week(&self, project_id: ProjectId, week: &str) -> Vec<Issue> {
+        self.issues(project_id)
+            .await
+            .into_iter()
+            .filter(|i| i.week_of == week)
+            .collect()
+    }
+
+    /// 该人看一眼、且还没看的活有几张:评审中(MVP 不再按 MR/seen_at 过滤,
+    /// 因为 pr_number/updated_at 是 lossy)。
+    pub async fn count_unseen(&self, project_id: ProjectId, _seen_at: i64) -> u32 {
+        self.issues(project_id)
+            .await
+            .into_iter()
+            .filter(|i| i.status == IssueStatus::InReview)
+            .count() as u32
+    }
+
+    /// 配置屏「用过几次」——现算,从远端 issue 列表按 workflow 聚合。
+    pub async fn workflow_usage(&self, project_id: ProjectId) -> Vec<(String, u32)> {
+        use std::collections::HashMap;
+        let issues = self.issues(project_id).await;
+        let mut counts: HashMap<String, u32> = HashMap::new();
+        for i in &issues {
+            if i.kind == IssueKind::Business && !i.workflow.is_empty() {
+                *counts.entry(i.workflow.clone()).or_default() += 1;
+            }
+        }
+        let mut v: Vec<(String, u32)> = counts.into_iter().collect();
+        v.sort_by(|a, b| b.1.cmp(&a.1).then(a.0.cmp(&b.0)));
+        v
     }
 }

@@ -8,7 +8,6 @@
 //! [`V4Store::cache_project_health`] 写回缓存列。手工把某个项目点成绿,在
 //! 类型上就做不到。
 
-mod issue;
 mod meta;
 mod project;
 

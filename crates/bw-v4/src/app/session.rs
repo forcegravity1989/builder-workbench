@@ -13,7 +13,7 @@
 //! 子进程。
 
 use super::worktree;
-use super::{App, AppError, Result};
+use super::{issue_store, App, AppError, Result};
 use crate::command::Event;
 use crate::model::{ConversationId, IssueId, IssueStatus};
 use v4_engine::interactive_cli::PtyInput;
@@ -197,14 +197,8 @@ impl App {
                 last_opened_at: 0,
             })
             .await?;
-        // 界面上这张活的分支从这里来。**变了才写** —— 反复停止/重开时分支根本
-        // 没变,白写一条 UPDATE 还会把 `updated_at` 顶新,让这张活在「最近动过」
-        // 里排到前面,而它其实什么都没变。
-        if issue.branch != tree.branch {
-            self.store
-                .set_issue_remote(id, &tree.branch, issue.pr_number, issue.remote_number)
-                .await?;
-        }
+        // 界面上这张活的分支从这里来。刀3:branch 不再写库(没有 issue 表),
+        // 由 issue 号决定 (bw/issue-<号>),worktree::provision 保证它对得上。
 
         let prompt = format!("#{} {}\n\n{}", issue.number, issue.title, issue.body);
         // 剧本在 buddy 自己的技能目录里,不在用户的仓里。系统提示词只拿到
@@ -251,9 +245,8 @@ impl App {
         });
 
         if issue.status != IssueStatus::InProgress {
-            self.store
-                .set_issue_status(id, IssueStatus::InProgress)
-                .await?;
+            let project = self.project_of(issue.project_id).await?;
+            issue_store::set_status(&project, id.iid(), IssueStatus::InProgress).await?;
         }
         Ok(true)
     }

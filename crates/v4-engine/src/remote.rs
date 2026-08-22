@@ -85,6 +85,7 @@ pub struct IssueFilter {
 /// `number` = 全局号(codehub 的 `id`,github 无 `iid`,`number` 即 issue 号,
 /// 此时 `iid == number`)。`state` 是远端原文(codehub `"opened"`/`"closed"`、
 /// github `"OPEN"`/`"CLOSED"`),**不归一化**——归一化是上层的事,底座只透传。
+/// `body` 是 issue 正文;`list_issues` 不带正文(填空串),`view_issue` 单查带正文。
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct RemoteIssue {
     pub iid: u32,
@@ -92,6 +93,7 @@ pub struct RemoteIssue {
     pub title: String,
     pub state: String,
     pub labels: Vec<String>,
+    pub body: String,
 }
 
 /// 算一个 label 的 namespace 前缀(不含末尾冒号):`bw:status:todo` →
@@ -264,6 +266,29 @@ impl Remote {
     pub async fn close_issue(&self, iid: u32) -> Result<(), RemoteError> {
         self.update_issue(iid, None, Some(IssueStateEvent::Close))
             .await
+    }
+
+    /// 单查一张远端 issue(带正文)。`list_issues` 的 `RemoteIssue` 不带正文,
+    /// 要正文的调用方(如 run_issue 读 issue body)走这条。对应
+    /// `gh issue view <n> --json title,body,state,labels` /
+    /// `codehub-cli issue view <iid> --format json`。找不到返回 `Err`。
+    pub async fn view_issue(&self, iid: u32) -> Result<RemoteIssue, RemoteError> {
+        match self {
+            Remote::Github(r) => Ok(github::view_issue(r, iid).await?),
+            Remote::Codehub { host, path } => Ok(codehub::view_issue(host, path, iid).await?),
+        }
+    }
+
+    /// 在 issue 上写一条评论(结构化产出挂评论,不动正文)。对应
+    /// `gh issue comment <n> --repo <r> --body <text>` /
+    /// `codehub-cli issue note create <iid> -p <path> -H <host> --body <text>`。
+    pub async fn comment_issue(&self, iid: u32, body: &str) -> Result<(), RemoteError> {
+        match self {
+            Remote::Github(r) => Ok(github::comment_issue(r, iid, body).await?),
+            Remote::Codehub { host, path } => {
+                Ok(codehub::comment_issue(host, path, iid, body).await?)
+            }
+        }
     }
 
     /// 在远端仓里发一个版本(release)——打 tag + 带 title/body。对应

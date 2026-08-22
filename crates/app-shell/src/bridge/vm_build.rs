@@ -313,7 +313,7 @@ pub async fn build(app: &App, ui: &UiState) -> Vm {
         )
         .unwrap_or_default();
         let week = bw_v4::isoweek::current_week();
-        let in_week = store.issues_in_week(p.id, &week).await.unwrap_or_default();
+        let in_week = app.issues_in_week(p.id, &week).await;
         // 未读 = 评审中/阻塞里、更新时间晚于「读到这里」那一下的。没点过通知屏
         // 就是全部算未读。这个数是现算的,库里没有未读表。
         let seen_at: i64 = store
@@ -323,7 +323,7 @@ pub async fn build(app: &App, ui: &UiState) -> Vm {
             .flatten()
             .and_then(|v| v.parse().ok())
             .unwrap_or(0);
-        let unread = store.count_unseen(p.id, seen_at).await.unwrap_or(0);
+        let unread = app.count_unseen(p.id, seen_at).await;
         let week_goal = week_plan_file::read(&ws, &week)
             .ok()
             .flatten()
@@ -466,7 +466,7 @@ async fn build_project(
     let ws = app.workspace_of(id).await.ok()?;
     let file =
         read_or_warn(".bw/project.toml", project_file::read(&ws), warnings).unwrap_or_default();
-    let issues = store.issues(id).await.unwrap_or_default();
+    let issues = app.issues(id).await;
     let conversations = store.conversations(id).await.unwrap_or_default();
     // 「读到这里」是哪一刻。通知屏和项目轨的红点用的是同一个值,读一次就够。
     let notify_seen: Option<i64> = store
@@ -542,16 +542,13 @@ async fn build_project(
     // 新的在前;没有未来周,所以本周自然排在最上面。
     weeks.sort_by(|a, b| b.week.cmp(&a.week));
 
-    // 横幅判据:文件在不在(不看列表),以及本周运作活①走到哪了。已完成的
-    // 不算「在途」——文件若还是没有,人应该能再点一次「开始本周」。
-    let week_file_exists = week_plan_file::exists(&ws, &current_week);
-    // 按**标题**找那张活,和内核的幂等键一致 —— 按 `week_of` 找的话,卡片被
-    // 拖回待办池之后横幅会重新给出「开始本周」,而点下去内核只会平静挡住。
+    // 横幅判据:本周运作活① issue 在不在(不再是周计划文件在不在)。
     let ops1_title = bw_v4::app::ops1_title(&current_week);
     let ops1_status = issues
         .iter()
         .find(|i| i.title == ops1_title && i.status != IssueStatus::Done)
         .map(|i| i.status.label().to_string());
+    let week_file_exists = ops1_status.is_some();
     Some(ProjectVm {
         id,
         slug: p.slug.clone(),
@@ -662,12 +659,9 @@ async fn build_project(
                 .collect(),
             seen_at: notify_seen,
             events: build_notify_events(&issues, &conversations),
-            unread: store
-                .count_unseen(id, notify_seen.unwrap_or(0))
-                .await
-                .unwrap_or(0),
+            unread: app.count_unseen(id, notify_seen.unwrap_or(0)).await,
         },
-        config: build_config(store, id, &ws, policy.as_ref(), &p, &file).await,
+        config: build_config(app, id, &ws, policy.as_ref(), &p, &file).await,
         kb: KbVm {
             codegraph: ui.kb_codegraph.clone(),
             assets: ui.kb_assets.clone(),

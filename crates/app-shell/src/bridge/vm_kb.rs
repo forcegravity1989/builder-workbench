@@ -4,9 +4,7 @@
 //! 都是打开那一刻现扫仓目录、现走 git、现起子进程得来的。
 
 use crate::vm::*;
-use bw_v4::model::ProjectId;
 use bw_v4::repo::{managed_file, release_file, week_plan_file};
-use bw_v4::V4Store;
 use std::path::Path;
 
 /// 铺底管账里登记过的文件路径。**一次读完传下去** —— 原来是每个技能包各读
@@ -200,9 +198,8 @@ pub(super) async fn build_codegraph(ws: &Path) -> CodeGraphVm {
 
 /// 资产页签:五个区块**全部现算**——扫仓目录、走 git、解析仓文件。
 /// 没有登记表可查(V4 库里只有四张表)。
-pub(super) async fn build_assets(store: &V4Store, id: ProjectId, ws: &Path) -> AssetsVm {
-    let usage = store.workflow_usage(id).await.unwrap_or_default();
-    let skills = super::vm_panels::skill_list(ws, &usage);
+pub(super) async fn build_assets(usage: &[(String, u32)], ws: &Path) -> AssetsVm {
+    let skills = super::vm_panels::skill_list(ws, usage);
 
     let artifacts = bw_v4::git::artifacts(ws, 200)
         .await

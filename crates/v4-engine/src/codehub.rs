@@ -677,8 +677,59 @@ pub async fn list_issues(
             title: r.title,
             state: r.state,
             labels: r.labels,
+            body: String::new(),
         })
         .collect())
+}
+
+/// `codehub-cli issue view <iid> -p <path> -H <host> --format json`
+/// → 单条 issue 带正文。list_issues 不带正文,要正文走这条。
+/// codehub-cli 的 `issue view --format json` 回 GitLab v4 issue payload,
+/// 字段含 `iid`/`id`/`title`/`state`/`labels`/`description`(正文)。
+pub async fn view_issue(
+    host: &str,
+    path: &str,
+    iid: u32,
+) -> Result<crate::remote::RemoteIssue, CodehubError> {
+    let iid_s = iid.to_string();
+    let out = crate::win_cmd::tokio_cmd("codehub-cli")
+        .args([
+            "issue", "view", &iid_s, "-p", path, "-H", host, "--format", "json",
+        ])
+        .stdin(Stdio::null())
+        .stdout(Stdio::piped())
+        .stderr(Stdio::piped())
+        .output()
+        .await
+        .map_err(spawn_err)?;
+    if !out.status.success() {
+        return Err(CodehubError::Command(stderr_text(&out)));
+    }
+    let r: CodehubIssueViewJson = serde_json::from_slice(&out.stdout)
+        .map_err(|e| CodehubError::Parse(format!("无法解析 codehub issue view JSON:{e}")))?;
+    Ok(crate::remote::RemoteIssue {
+        iid: r.iid,
+        number: r.number,
+        title: r.title,
+        state: r.state,
+        labels: r.labels,
+        body: r.body.unwrap_or_default(),
+    })
+}
+
+#[derive(serde::Deserialize)]
+struct CodehubIssueViewJson {
+    iid: u32,
+    #[serde(default)]
+    number: u32,
+    #[serde(default)]
+    title: String,
+    #[serde(default)]
+    state: String,
+    #[serde(default)]
+    labels: Vec<String>,
+    #[serde(default)]
+    body: Option<String>,
 }
 
 #[derive(serde::Deserialize)]
@@ -692,6 +743,31 @@ struct CodehubIssueJson {
     state: String,
     #[serde(default)]
     labels: Vec<String>,
+}
+
+/// `codehub-cli issue note create <iid> -p <path> -H <host> --body <text>`
+/// → 在 issue 上写一条评论(GitLab 的 issue note)。结构化产出挂评论,不动正文。
+pub async fn comment_issue(
+    host: &str,
+    path: &str,
+    iid: u32,
+    body: &str,
+) -> Result<(), CodehubError> {
+    let iid_s = iid.to_string();
+    let out = crate::win_cmd::tokio_cmd("codehub-cli")
+        .args([
+            "issue", "note", "create", &iid_s, "-p", path, "-H", host, "--body", body,
+        ])
+        .stdin(Stdio::null())
+        .stdout(Stdio::piped())
+        .stderr(Stdio::piped())
+        .output()
+        .await
+        .map_err(spawn_err)?;
+    if !out.status.success() {
+        return Err(CodehubError::Command(stderr_text(&out)));
+    }
+    Ok(())
 }
 
 /// `codehub-cli release create -p <path> -H <host> <tag> --title <t> --notes <body>`

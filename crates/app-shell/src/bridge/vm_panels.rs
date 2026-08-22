@@ -7,7 +7,6 @@
 use crate::vm::*;
 use bw_v4::model::{IssueStatus, Project, ProjectId};
 use bw_v4::repo::{issue_policy_file, project_file, week_plan_file};
-use bw_v4::V4Store;
 use std::path::Path;
 
 use super::vm_build::{card_item, probe_env, remote_label};
@@ -347,8 +346,8 @@ pub(super) async fn build_workbench(
 }
 
 pub(super) async fn build_config(
-    store: &V4Store,
-    id: ProjectId,
+    app: &bw_v4::app::App,
+    _id: ProjectId,
     ws: &Path,
     policy: Option<&issue_policy_file::IssuePolicyFile>,
     project: &Project,
@@ -357,7 +356,7 @@ pub(super) async fn build_config(
     // 「项目群未配」,而真相是文件里有一行写错了。
     file: &project_file::ProjectFile,
 ) -> ConfigVm {
-    let usage = store.workflow_usage(id).await.unwrap_or_default();
+    let usage = app.workflow_usage(project.id).await;
     let mappings = policy
         .map(|p| {
             p.mappings

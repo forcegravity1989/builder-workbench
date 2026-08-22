@@ -155,10 +155,8 @@ fn week_row(w: &crate::vm::WeekVm, p: &ProjectVm, bridge: &Bridge) -> Element {
 fn toolbar(p: &ProjectVm, bridge: &Bridge) -> Element {
     let b_new = bridge.clone();
     let b_rel = bridge.clone();
-    let b_refresh = bridge.clone();
     let pid = p.id;
     let week = p.viewing_week.clone();
-    let week2 = p.viewing_week.clone();
     let version = p.card.current_version_raw.clone();
     let can_release = !next_version(&version).is_empty();
     let done_ids: Vec<IssueId> = p
@@ -180,14 +178,6 @@ fn toolbar(p: &ProjectVm, bridge: &Bridge) -> Element {
             div { class: "left", "{title}" }
             div { class: "right",
                 if !p.view_all {
-                    button {
-                        class: "btn btn-sm",
-                        onclick: move |_| b_refresh.cmd(Command::RefreshIssueCacheFromPlan {
-                            project_id: pid,
-                            week: week2.clone(),
-                        }),
-                        "按文件刷新"
-                    }
                     button {
                         class: "btn btn-sm",
                         // 在研版本填了、而且这一周真有完成的活,才发得了版。

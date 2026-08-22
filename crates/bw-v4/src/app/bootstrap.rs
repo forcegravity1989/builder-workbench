@@ -17,7 +17,7 @@
 //! 都不会被碰;两张活同时在跑也不会撞在一起。
 
 use super::worktree;
-use super::{App, AppError, ProgressLine, Result};
+use super::{issue_store, App, AppError, ProgressLine, Result};
 use crate::command::Event;
 use crate::model::{Issue, IssueOrigin, IssueStatus, ProjectId};
 use crate::repo::managed_file::{self, Reconcile};
@@ -210,18 +210,16 @@ impl App {
             "\n\n合入之前这些件只在这条分支上,主检出里还没有 —— 所以在你合上它之前,\
              定时(节律)、类别→工具的映射、规范对账都还读不到它们。",
         );
-        self.store.set_issue_body(issue_id, &b).await?;
-        // **已经记下的 MR 号不能被 0 冲掉**。重跑一次铺底,这次没有新东西要提交
-        // (幂等,拿到的是同一张活),`mr.number` 就是 0 —— 拿它去写库会把上一次
-        // 真开出来的那个号抹掉,活的正文和远端就对不上了。
-        let pr_number = if mr.number > 0 {
-            mr.number
-        } else {
-            issue.pr_number
-        };
-        self.store
-            .set_issue_remote(issue_id, &tree.branch, pr_number, issue.remote_number)
-            .await?;
+        // 刀3:issue 正文在创建时就写了,这里把详细报告写进评论(结构化产出挂评论)。
+        let project = self
+            .store
+            .project(project_id)
+            .await?
+            .ok_or_else(|| AppError::NoSuchProject(project_id.uuid().to_string()))?;
+        issue_store::comment(&project, issue_id.iid(), &b).await?;
+        // 没有本地 issue 表了,branch 和 pr_number 不再缓存。branch 由 issue 号决定
+        // (bw/issue-<号>),MR 号在合入时由 open_mr_for_branch 现查。
+        let _ = issue.pr_number;
         if committed && tree.isolated {
             drop_untracked_twin(&ws, &tree.path, project_file::REL_PATH).await;
         }

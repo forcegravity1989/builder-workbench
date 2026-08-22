@@ -4,9 +4,10 @@
 //! 与 `.bw/project.toml`,**不落库**——`project` 表只有定位与显示缓存。所以
 //! 改名片就是改仓文件,得走一张轻量活与一次 MR,不是直接 UPDATE 一行。
 
-use super::{App, AppError, ProgressLine, Result};
+use super::worktree;
+use super::{issue_store, App, AppError, ProgressLine, Result};
 use crate::command::{Event, ProjectIntent, RemoteRef};
-use crate::model::{IssueKind, IssueOrigin, Project, ProjectId};
+use crate::model::{Project, ProjectId};
 use crate::repo::project_file::{self, ChatConfig, ProjectFile};
 use crate::standard;
 
@@ -230,12 +231,39 @@ impl App {
         intent: ProjectIntent,
     ) -> Result<Vec<Event>> {
         let ws = self.workspace_of(project_id).await?;
-        let mut file = project_file::read(&ws)?.unwrap_or_default();
+        let project = self
+            .store
+            .project(project_id)
+            .await?
+            .ok_or_else(|| AppError::NoSuchProject(project_id.uuid().to_string()))?;
+
+        // B 类固定枚举标题「编辑项目名片」——在途复用:有则拿同一张,
+        // 无则建一张轻量活。
+        let issue =
+            match issue_store::find_open_by_title(&project, issue_store::LIGHT_TITLE).await? {
+                Some(existing) => existing,
+                None => {
+                    issue_store::create(
+                        &project,
+                        issue_store::LIGHT_TITLE,
+                        "名片四字段改动:名称 / 想做什么 / 最像的对标 / 北极星。改的是 \
+                     .bw/PROJECT.md 与 .bw/project.toml 两份仓文件,等人评审合入。",
+                        crate::model::IssueKind::Light,
+                        "",
+                        &[],
+                    )
+                    .await?
+                }
+            };
+
+        // 在这张活自己的 worktree 里写文件(主检出不动,走 MR 合入才落地)。
+        let tree = worktree::provision(&ws, issue.number).await?;
+        let mut file = project_file::read(&tree.path)?.unwrap_or_default();
         file.name = intent.name.clone();
         file.brief = intent.brief.clone();
         file.benchmark = intent.benchmark.clone();
         file.opportunity = intent.north_star.clone();
-        project_file::write(&ws, &file)?;
+        project_file::write(&tree.path, &file)?;
 
         // 章程也要跟着改 —— PROJECT.md 才是给人读的那一份。
         let body = standard::render(
@@ -249,48 +277,21 @@ impl App {
                 ("chat", &chat_label(&file.chat)),
             ],
         );
-        crate::repo::write_file(&ws, standard::CHARTER_REL_PATH, &body)?;
-
-        // 改仓的动作都走 MR:建一张轻量活背这次改动。
-        let events = self
-            .create_issue(
-                project_id,
-                format!("编辑项目名片 · {}", intent.name),
-                "名片四字段改动:名称 / 想做什么 / 最像的对标 / 北极星。改的是 \
-                 .bw/PROJECT.md 与 .bw/project.toml 两份仓文件,等人评审合入。"
-                    .into(),
-                None,
-                IssueKind::Light,
-                IssueOrigin::Human,
-                String::new(),
-            )
-            .await?;
-        let issue_id = events
-            .iter()
-            .find_map(|e| match e {
-                Event::IssueCreated { id, .. } => Some(*id),
-                _ => None,
-            })
-            .ok_or_else(|| AppError::Refused("名片编辑的轻量活没建出来".into()))?;
+        crate::repo::write_file(&tree.path, standard::CHARTER_REL_PATH, &body)?;
 
         // 库里的名字是项目墙的显示缓存,跟着改一次。
-        let p = self
-            .store
-            .project(project_id)
-            .await?
-            .ok_or_else(|| AppError::NoSuchProject(project_id.uuid().to_string()))?;
         self.store
             .update_project_location(
                 project_id,
                 &intent.name,
-                &p.workspace_path,
-                &p.provider,
-                &p.remote_host,
-                &p.remote_path,
+                &project.workspace_path,
+                &project.provider,
+                &project.remote_host,
+                &project.remote_path,
             )
             .await?;
 
-        Ok(vec![Event::ProjectCardEditPending { issue_id }])
+        Ok(vec![Event::ProjectCardEditPending { issue_id: issue.id }])
     }
 
     pub(super) async fn set_project_chat(

@@ -1,21 +1,13 @@
-//! codehub/GitHub issue 持久化映射层(数据层迁移刀2)。
+//! codehub/GitHub issue 持久化映射层(数据层迁移刀2/刀3)。
 //!
 //! 把 bw-v4 的 `Issue` 领域对象 ↔ codehub/GitHub issue 互转。issue 的状态、
 //! 排期、版本从本地 SQLite 搬到远端 issue + 标签(`bw:status:*` / `bw:week:*` /
 //! `bw:released:*`),这是那条映射的正本。
 //!
-//! **本刀纯加性**:只写这一组 free function,**不接线** `app/issue.rs` /
-//! `plan.rs` / `ops.rs` / `project.rs` 的调用方,不删 `store/issue.rs`,不删
-//! `week_plan_file` / `release_file`。bw-v4 暂时不用这个模块也能编译——下面
-//! 这些函数等迁移刀3 把 app 层切到远端正本时再被引用,在那之前用
-//! `#[allow(dead_code)]` 压住「未用」警告(临时待接线,不是死代码)。
-//!
 //! 字段映射的取舍正本见 `docs/v4-prototype/` 数据层迁移刀2 的设计篇;这里的每
-//! 一条都照那篇写,不自作主张加标签。**lossy**:远端 issue 不存 `body`(
-//! `list_issues` 的 `RemoteIssue` 不带正文)、`branch`/`pr_number`、
-//! `sort_order`/`metric_key`、`settled_at`,这些读回时一律给默认值。
-
-#![allow(dead_code)]
+//! 一条都照那篇写,不自作主张加标签。**lossy**:远端 issue 的 `body` 经
+//! `view_issue` 单查带回(列表查询不带正文);`branch`/`pr_number`、
+//! `sort_order`/`metric_key`、`settled_at` 这些读回时一律给默认值。
 
 use crate::model::{Issue, IssueId, IssueKind, IssueOrigin, IssueStatus, Project};
 use v4_engine::remote::{IssueFilter, IssueState, Remote, RemoteIssue};
@@ -35,8 +27,8 @@ const OPS1_TITLE_PREFIX: &str = "更新指标 + 制定本周计划 ";
 const OPS2_TITLE_PREFIX: &str = "资产盘点 ";
 /// 运作活③的标题前缀。完整标题 = 这个前缀 + 版本号(`"规范铺底 v{version}"`)。
 const OPS3_TITLE_PREFIX: &str = "规范铺底 v";
-/// 轻量活「编辑项目名片」的标题前缀。完整标题 = 这个前缀 + 项目名。
-const LIGHT_TITLE_PREFIX: &str = "编辑项目名片 · ";
+/// 轻量活「编辑项目名片」的固定标题(B 类在途复用的幂等键)。
+pub const LIGHT_TITLE: &str = "编辑项目名片";
 
 // ─────────────── 远端拿取 ───────────────
 
@@ -89,21 +81,13 @@ pub async fn create(
     Ok(issue_from_create(project, iid, title, body, kind, week_of))
 }
 
-/// 读回单张 issue。`Remote` 没有单查,走 `list_issues`(两态都要)再按 iid 过滤。
-/// `RemoteIssue` 不带正文,`body` 读回为空(MVP lossy)。
+/// 读回单张 issue(带正文)。走 `view_issue` 单查,正文在回程的 `body` 字段。
 pub async fn fetch(project: &Project, iid: u32) -> Result<Issue> {
     let remote = remote_for(project)?;
-    let list = remote
-        .list_issues(&IssueFilter {
-            state: None,
-            labels: vec![],
-        })
+    let r = remote
+        .view_issue(iid)
         .await
         .map_err(|e| map_remote_err("远端读 issue 没成", e))?;
-    let r = list
-        .into_iter()
-        .find(|r| r.iid == iid)
-        .ok_or(AppError::NoSuchIssue)?;
     Ok(issue_from_remote(project, &r))
 }
 
@@ -142,6 +126,16 @@ pub async fn set_status(project: &Project, iid: u32, status: IssueStatus) -> Res
         .update_issue(iid, Some(&label_refs), None)
         .await
         .map_err(|e| map_remote_err("远端改 issue 状态没成", e))?;
+    Ok(())
+}
+
+/// 在 issue 上写一条评论(结构化产出挂评论,不动正文)。
+pub async fn comment(project: &Project, iid: u32, body: &str) -> Result<()> {
+    let remote = remote_for(project)?;
+    remote
+        .comment_issue(iid, body)
+        .await
+        .map_err(|e| map_remote_err("远端写 issue 评论没成", e))?;
     Ok(())
 }
 
@@ -201,7 +195,7 @@ fn issue_from_create(
     week_of: &str,
 ) -> Issue {
     Issue {
-        id: IssueId::nil(),
+        id: IssueId::from_remote(project.id, iid),
         project_id: project.id,
         number: iid,
         remote_number: iid,
@@ -216,7 +210,6 @@ fn issue_from_create(
         kind,
         origin: origin_for(kind),
         workflow: workflow_for(kind, title),
-        // codehub issue 不存 category 标签(MVP 不给业务活打),读回一律 None。
         category: None,
         sort_order: iid as f64,
         metric_key: String::new(),
@@ -237,14 +230,13 @@ fn issue_from_remote(project: &Project, r: &RemoteIssue) -> Issue {
         parse_status_from_labels(&r.labels)
     };
     Issue {
-        id: IssueId::nil(),
+        id: IssueId::from_remote(project.id, r.iid),
         project_id: project.id,
         number: r.iid,
         remote_number: r.iid,
         title: r.title.clone(),
-        // list_issues 的 RemoteIssue 不带正文 —— body 读回为空。刀3 接线时若要
-        // 正文得另开一条单查(MVP 不做,建活时写一次之后也不回头改)。
-        body: String::new(),
+        // view_issue 单查带正文;list_issues 不带(填空串)。
+        body: r.body.clone(),
         status,
         branch: String::new(),
         pr_number: 0,
@@ -274,20 +266,23 @@ fn is_ops_title(title: &str) -> bool {
 fn kind_from_title(title: &str) -> IssueKind {
     if is_ops_title(title) {
         IssueKind::Ops
-    } else if title.starts_with(LIGHT_TITLE_PREFIX) {
+    } else if title == LIGHT_TITLE {
         IssueKind::Light
     } else {
         IssueKind::Business
     }
 }
 
-/// 运作活的 workflow 从标题推断:①→`week-planning`,②→`asset-audit`,
-/// ③→空(规范铺底没有 agent 步骤,见 `app::ops::skill_slug`)。
+/// 运作活的 workflow 从标题推断:①→`更新指标与周计划`,②→`资产盘点`,
+/// ③→`规范铺底`(③没有 agent 步骤,skill_slug 回 None,但 workflow 字段
+/// 仍需有值给配置屏「用过几次」与演示读回用)。
 fn ops_workflow_from_title(title: &str) -> String {
     if title.starts_with(OPS1_TITLE_PREFIX) {
-        "week-planning".into()
+        super::OPS1_WORKFLOW.into()
     } else if title.starts_with(OPS2_TITLE_PREFIX) {
-        "asset-audit".into()
+        super::OPS2_WORKFLOW.into()
+    } else if title.starts_with(OPS3_TITLE_PREFIX) {
+        super::OPS3_WORKFLOW.into()
     } else {
         String::new()
     }

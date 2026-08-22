@@ -763,8 +763,58 @@ pub async fn list_issues(
             title: r.title,
             state: r.state,
             labels: r.labels.into_iter().map(|l| l.name).collect(),
+            body: String::new(),
         })
         .collect())
+}
+
+/// `gh issue view <n> --repo <r> --json number,title,state,labels,body`
+/// → 单条 issue 带正文。list_issues 不带正文,要正文走这条。
+pub async fn view_issue(
+    owner_repo: &str,
+    number: u32,
+) -> Result<crate::remote::RemoteIssue, GithubError> {
+    let num_s = number.to_string();
+    let output = crate::win_cmd::tokio_cmd("gh")
+        .args([
+            "issue",
+            "view",
+            &num_s,
+            "--repo",
+            owner_repo,
+            "--json",
+            "number,title,state,labels,body",
+        ])
+        .stdin(Stdio::null())
+        .stdout(Stdio::piped())
+        .stderr(Stdio::piped())
+        .output()
+        .await
+        .map_err(spawn_err)?;
+    if !output.status.success() {
+        return Err(GithubError::Command(stderr_text(&output)));
+    }
+    let r: GhIssueViewJson = serde_json::from_slice(&output.stdout)
+        .map_err(|e| GithubError::Command(format!("无法解析 gh issue view JSON:{e}")))?;
+    Ok(crate::remote::RemoteIssue {
+        iid: r.number,
+        number: r.number,
+        title: r.title,
+        state: r.state,
+        labels: r.labels.into_iter().map(|l| l.name).collect(),
+        body: r.body.unwrap_or_default(),
+    })
+}
+
+#[derive(serde::Deserialize)]
+struct GhIssueViewJson {
+    number: u32,
+    title: String,
+    state: String,
+    #[serde(default)]
+    labels: Vec<GhLabelJson>,
+    #[serde(default)]
+    body: Option<String>,
 }
 
 #[derive(serde::Deserialize)]
@@ -792,6 +842,26 @@ pub async fn create_release(
     let output = crate::win_cmd::tokio_cmd("gh")
         .args([
             "release", "create", tag, "--repo", owner_repo, "--title", title, "--notes", body,
+        ])
+        .stdin(Stdio::null())
+        .stdout(Stdio::piped())
+        .stderr(Stdio::piped())
+        .output()
+        .await
+        .map_err(spawn_err)?;
+    if !output.status.success() {
+        return Err(GithubError::Command(stderr_text(&output)));
+    }
+    Ok(())
+}
+
+/// `gh issue comment <n> --repo <r> --body <text>` → 在 issue 上写一条评论。
+/// 结构化产出挂评论,不动正文。
+pub async fn comment_issue(owner_repo: &str, number: u32, body: &str) -> Result<(), GithubError> {
+    let num_s = number.to_string();
+    let output = crate::win_cmd::tokio_cmd("gh")
+        .args([
+            "issue", "comment", &num_s, "--repo", owner_repo, "--body", body,
         ])
         .stdin(Stdio::null())
         .stdout(Stdio::piped())

@@ -95,8 +95,6 @@ pub enum Command {
         id: IssueId,
         week_of: Option<String>,
     },
-    /// 同列内排先后。纯展示,不动状态机。
-    ReorderIssue { id: IssueId, after: Option<IssueId> },
     /// 换这张活用的 workflow / 单技能。
     SetIssueWorkflow { id: IssueId, workflow: String },
     /// 切在研版本,纯本机动作,不建活。
@@ -111,8 +109,6 @@ pub enum Command {
         note: String,
         included: Vec<IssueId>,
     },
-    /// 用周计划文件覆盖 `issue` 的缓存列 —— 文件说了算。幂等。
-    RefreshIssueCacheFromPlan { project_id: ProjectId, week: String },
     /// 把项目工作区的主检出快进到远端最新。
     ///
     /// **为什么需要人手点这一下**:buddy 只在「合入并完成」某张活的时候自动拉

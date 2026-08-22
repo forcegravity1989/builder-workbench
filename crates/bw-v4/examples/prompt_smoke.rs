@@ -70,7 +70,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // 逐字段拼一张活。`Issue` 故意没有 `Default` —— 一张没有项目的活不该存在,
     // 为了写个例子给领域模型开这个口子不值。
     let issue = Issue {
-        id: IssueId::new(),
+        id: IssueId::nil(),
         project_id: ProjectId::new(),
         number: 1,
         remote_number: 0,

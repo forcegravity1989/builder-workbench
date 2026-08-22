@@ -258,7 +258,6 @@ impl App {
                     .await
             }
             Command::ScheduleIssue { id, week_of } => self.schedule_issue(id, week_of).await,
-            Command::ReorderIssue { id, after } => self.reorder_issue(id, after).await,
             Command::SetIssueWorkflow { id, workflow } => {
                 self.set_issue_workflow(id, workflow).await
             }
@@ -272,9 +271,6 @@ impl App {
                 note,
                 included,
             } => self.cut_release(project_id, version, note, included).await,
-            Command::RefreshIssueCacheFromPlan { project_id, week } => {
-                self.refresh_issue_cache(project_id, week).await
-            }
             Command::RunIssue { id } => self.run_issue(id).await,
             Command::SubmitIssueWork { id } => self.submit_issue_work(id).await,
             Command::SetWorkspacesRoot { path } => self.set_workspaces_root(path).await,
