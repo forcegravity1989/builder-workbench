@@ -3,7 +3,7 @@
 //! 两张小表放一个文件:它们都只有「写一行、读一行」这点内容,各自单开一个
 //! 文件只会多两层目录。
 
-use super::{now_ts, Result, V4Store};
+use super::{now_ts, Result, StoreError, V4Store};
 use crate::model::{Conversation, ConversationId, IssueId, ProjectId};
 use sqlx::Row;
 use uuid::Uuid;
@@ -79,12 +79,16 @@ impl V4Store {
         let id: String = row.try_get("id")?;
         let pid: String = row.try_get("project_id")?;
         let iid: String = row.try_get("issue_id")?;
+        // iid 存的是远端 issue 号;库不该有非数字的值,有就让错冒泡,不留幽灵 0。
+        let iid_num: u32 = iid
+            .parse()
+            .map_err(|e| StoreError::BadData(format!("conversation issue_id 不是数字:{e}")))?;
         Ok(Some(Conversation {
             id: ConversationId::from_uuid(Uuid::parse_str(&id).unwrap_or_default()),
             project_id: ProjectId::from_uuid(Uuid::parse_str(&pid).unwrap_or_default()),
             issue_id: IssueId::from_remote(
                 ProjectId::from_uuid(Uuid::parse_str(&pid).unwrap_or_default()),
-                iid.parse().unwrap_or(0),
+                iid_num,
             ),
             claude_session_id: row.try_get("claude_session_id")?,
             workspace_path: row.try_get("workspace_path")?,
@@ -105,7 +109,10 @@ impl V4Store {
         .await?;
         let mut out = Vec::with_capacity(rows.len());
         for (iid,) in rows {
-            let issue_id = IssueId::from_remote(project_id, iid.parse().unwrap_or(0));
+            let iid_num: u32 = iid
+                .parse()
+                .map_err(|e| StoreError::BadData(format!("conversation issue_id 不是数字:{e}")))?;
+            let issue_id = IssueId::from_remote(project_id, iid_num);
             if let Some(c) = self.conversation_for_issue(issue_id).await? {
                 out.push(c);
             }

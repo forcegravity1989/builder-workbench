@@ -147,7 +147,7 @@ impl App {
 }
 
 impl App {
-    /// 「合入并完成」:先真的把 MR 合了,合入后 issue 自动关闭(buddy 读到 Done)。
+    /// 「合入并完成」:先真的把 MR 合了,再由 buddy 主动把 issue 关掉(= Done)。
     ///
     /// 顺序不能反。先推完成再合入的话,合入失败就留下一张「已完成」但改动还
     /// 挂在分支上的活 —— 账目和仓对不上。
@@ -219,12 +219,9 @@ impl App {
             notes.push(note);
         }
 
-        // 合入后 issue 在远端自动关闭(MR 描述含 `Closes #N`);buddy 再读就是 Done。
-        // 没挂远端的本地项目:直接调 issue_store::set_status(Done) 关掉。
-        if !merged {
-            // 没合 MR 就需要手动关 issue(本地项目)。
-            issue_store::set_status(&project, id.iid(), IssueStatus::Done).await?;
-        }
+        // 合入由人点;buddy 这一下把 issue 关掉 = Done。不指望 MR 描述里的
+        // `Closes #N` 那条魔法(codehub 不一定认)——合没合 MR 都由 buddy 主动关。
+        issue_store::set_status(&project, id.iid(), IssueStatus::Done).await?;
         // 收掉 worktree(结清=Done 之后)。
         if merged && main_has_it {
             notes.push(self.drop_issue_branch(&issue).await);

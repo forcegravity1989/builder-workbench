@@ -2,6 +2,16 @@
 //!
 //! 这一层只负责**收集输入**——判什么颜色是 [`crate::derive`] 的事,收集与判断
 //! 分开,才能保证「灯只可能是算出来的」。
+//!
+//! ## 现状与刀5 迁移(2026-08-22)
+//!
+//! 当前周 `.bw/plan/<week>.md` 现由 ops① 的 agent 会话产出(`plan.rs` 不再
+//! 主动写)。走替身路径(headless / 没开 PTY / agent 跑输了)时这份文件不会
+//! 存在 → `has_week_goal` / `has_metric_reading` 恒 false,健康因此缺两条
+//! 判据。**刀5 会修这条**:`has_goal` 改读 ops① issue、`has_reading` 改读仓
+//! `readings.jsonl`、`released` 改读 codehub Releases、`any_metric_red` 接真
+//! 比对——届时删掉 `week_plan_file` / `release_file` 这两个依赖。下方的
+//! `any_metric_red: false` 那行注释已是「还没接比对」,如实保留,不动。
 
 use super::{App, Result};
 use crate::derive::{derive_project_health, DerivedHealth, HealthInputs};

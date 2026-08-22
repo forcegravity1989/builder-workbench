@@ -37,6 +37,7 @@ mod worktree;
 
 pub use bootstrap::{agent_system_prompt, skill_pointer, SkillPointer};
 pub use health::collect_health_inputs;
+pub use issue::{count_unseen, issues_in_week, workflow_usage};
 pub use ops::{ops1_title, skill_slug, OPS1_WORKFLOW, OPS2_WORKFLOW, OPS3_WORKFLOW};
 pub use progress::{ProgressLine, StepState};
 
@@ -258,9 +259,6 @@ impl App {
                     .await
             }
             Command::ScheduleIssue { id, week_of } => self.schedule_issue(id, week_of).await,
-            Command::SetIssueWorkflow { id, workflow } => {
-                self.set_issue_workflow(id, workflow).await
-            }
             Command::SetCurrentVersion {
                 project_id,
                 version,

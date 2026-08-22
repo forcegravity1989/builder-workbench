@@ -51,16 +51,6 @@ impl App {
         }])
     }
 
-    pub(super) async fn set_issue_workflow(
-        &mut self,
-        _id: IssueId,
-        _workflow: String,
-    ) -> Result<Vec<Event>> {
-        // 刀3:workflow 从标题推断(见 issue_store),不再单独存。这条命令保留
-        // 在枚举里但做不了实事——要改 workflow 得改标题。
-        Ok(Vec::new())
-    }
-
     /// 唯一的干活入口。
     ///
     /// 干成了推「评审中」;干砸了如实停在原地(状态不动),可以重试,不假装
@@ -330,38 +320,37 @@ impl App {
         .await
         .unwrap_or_default()
     }
+}
 
-    /// 某一周的活。`week` 传空串就是待办池那一列(没挂 bw:week 标签的)。
-    pub async fn issues_in_week(&self, project_id: ProjectId, week: &str) -> Vec<Issue> {
-        self.issues(project_id)
-            .await
-            .into_iter()
-            .filter(|i| i.week_of == week)
-            .collect()
-    }
+// ── 纯内存过滤:调用方先 `App::issues(project_id).await` 拿一次,再借进来 ──────
+// 这三个函数不再各自起 codehub-cli 子进程——以前每屏重建 N 项目会 spawn
+// 2N+ 次,UI 卡 2-6 秒。现在只 spawn 一次(取 issues 列表),过滤在内存里做。
+// 不引入持久缓存(MVP 不要):单次 build 内去重 spawn。
 
-    /// 该人看一眼、且还没看的活有几张:评审中(MVP 不再按 MR/seen_at 过滤,
-    /// 因为 pr_number/updated_at 是 lossy)。
-    pub async fn count_unseen(&self, project_id: ProjectId, _seen_at: i64) -> u32 {
-        self.issues(project_id)
-            .await
-            .into_iter()
-            .filter(|i| i.status == IssueStatus::InReview)
-            .count() as u32
-    }
+/// 某一周的活。`week` 传空串就是待办池那一列(没挂 bw:week 标签的)。
+pub fn issues_in_week<'a>(issues: &'a [Issue], week: &str) -> Vec<&'a Issue> {
+    issues.iter().filter(|i| i.week_of == week).collect()
+}
 
-    /// 配置屏「用过几次」——现算,从远端 issue 列表按 workflow 聚合。
-    pub async fn workflow_usage(&self, project_id: ProjectId) -> Vec<(String, u32)> {
-        use std::collections::HashMap;
-        let issues = self.issues(project_id).await;
-        let mut counts: HashMap<String, u32> = HashMap::new();
-        for i in &issues {
-            if i.kind == IssueKind::Business && !i.workflow.is_empty() {
-                *counts.entry(i.workflow.clone()).or_default() += 1;
-            }
+/// 该人看一眼、且还没看的活有几张:评审中(MVP 不再按 MR/seen_at 过滤,
+/// 因为 pr_number/updated_at 是 lossy)。
+pub fn count_unseen(issues: &[Issue]) -> u32 {
+    issues
+        .iter()
+        .filter(|i| i.status == IssueStatus::InReview)
+        .count() as u32
+}
+
+/// 配置屏「用过几次」——现算,从 issue 列表按 workflow 聚合。
+pub fn workflow_usage(issues: &[Issue]) -> Vec<(String, u32)> {
+    use std::collections::HashMap;
+    let mut counts: HashMap<String, u32> = HashMap::new();
+    for i in issues {
+        if i.kind == IssueKind::Business && !i.workflow.is_empty() {
+            *counts.entry(i.workflow.clone()).or_default() += 1;
         }
-        let mut v: Vec<(String, u32)> = counts.into_iter().collect();
-        v.sort_by(|a, b| b.1.cmp(&a.1).then(a.0.cmp(&b.0)));
-        v
     }
+    let mut v: Vec<(String, u32)> = counts.into_iter().collect();
+    v.sort_by(|a, b| b.1.cmp(&a.1).then(a.0.cmp(&b.0)));
+    v
 }

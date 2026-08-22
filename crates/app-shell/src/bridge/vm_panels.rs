@@ -345,9 +345,7 @@ pub(super) async fn build_workbench(
     }
 }
 
-pub(super) async fn build_config(
-    app: &bw_v4::app::App,
-    _id: ProjectId,
+pub(super) fn build_config(
     ws: &Path,
     policy: Option<&issue_policy_file::IssuePolicyFile>,
     project: &Project,
@@ -355,8 +353,9 @@ pub(super) async fn build_config(
     // **不再自己读一遍** —— 自己读的那条路 `.ok()` 会把解析错误吞掉,表现成
     // 「项目群未配」,而真相是文件里有一行写错了。
     file: &project_file::ProjectFile,
+    issues: &[bw_v4::Issue],
 ) -> ConfigVm {
-    let usage = app.workflow_usage(project.id).await;
+    let usage = bw_v4::app::workflow_usage(issues);
     let mappings = policy
         .map(|p| {
             p.mappings

@@ -313,17 +313,12 @@ pub async fn build(app: &App, ui: &UiState) -> Vm {
         )
         .unwrap_or_default();
         let week = bw_v4::isoweek::current_week();
-        let in_week = app.issues_in_week(p.id, &week).await;
-        // 未读 = 评审中/阻塞里、更新时间晚于「读到这里」那一下的。没点过通知屏
-        // 就是全部算未读。这个数是现算的,库里没有未读表。
-        let seen_at: i64 = store
-            .meta(&bw_v4::store::notify_seen_key(p.id))
-            .await
-            .ok()
-            .flatten()
-            .and_then(|v| v.parse().ok())
-            .unwrap_or(0);
-        let unread = app.count_unseen(p.id, seen_at).await;
+        // 每项目只起一次 codehub-cli:issues 拿一次,再借给下面的纯内存过滤。
+        let issues = app.issues(p.id).await;
+        let in_week = bw_v4::app::issues_in_week(&issues, &week);
+        // 未读 = 评审中的活有几张。这个数是现算的,库里没有未读表
+        // (MVP 不再按 seen_at 过滤:pr_number/updated_at 是 lossy)。
+        let unread = bw_v4::app::count_unseen(&issues);
         let week_goal = week_plan_file::read(&ws, &week)
             .ok()
             .flatten()
@@ -659,9 +654,9 @@ async fn build_project(
                 .collect(),
             seen_at: notify_seen,
             events: build_notify_events(&issues, &conversations),
-            unread: app.count_unseen(id, notify_seen.unwrap_or(0)).await,
+            unread: bw_v4::app::count_unseen(&issues),
         },
-        config: build_config(app, id, &ws, policy.as_ref(), &p, &file).await,
+        config: build_config(&ws, policy.as_ref(), &p, &file, &issues),
         kb: KbVm {
             codegraph: ui.kb_codegraph.clone(),
             assets: ui.kb_assets.clone(),

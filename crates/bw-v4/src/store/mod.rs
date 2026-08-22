@@ -27,6 +27,8 @@ pub enum StoreError {
     Sqlite(#[from] sqlx::Error),
     #[error("库里读到无法识别的枚举值 {field}={value:?}")]
     BadEnum { field: &'static str, value: String },
+    #[error("库里 {0}")]
+    BadData(String),
 }
 
 pub type Result<T> = std::result::Result<T, StoreError>;

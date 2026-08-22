@@ -454,7 +454,7 @@ async fn build_evidence(
     let project = store.project(pid).await?.expect("项目行");
     let issues = app.issues(pid).await;
     let tables = store.table_names().await?;
-    let usage = app.workflow_usage(pid).await;
+    let usage = bw_v4::app::workflow_usage(&issues);
 
     let issue_json: Vec<serde_json::Value> = issues
         .iter()

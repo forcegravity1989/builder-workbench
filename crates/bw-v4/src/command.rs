@@ -95,8 +95,6 @@ pub enum Command {
         id: IssueId,
         week_of: Option<String>,
     },
-    /// 换这张活用的 workflow / 单技能。
-    SetIssueWorkflow { id: IssueId, workflow: String },
     /// 切在研版本,纯本机动作,不建活。
     SetCurrentVersion {
         project_id: ProjectId,
