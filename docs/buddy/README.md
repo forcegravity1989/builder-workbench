@@ -6,7 +6,7 @@
 
 - `system-prompt.md` — 公共系统提示词正本:身份、工作方式、所有 Issue 共用铁律、规范索引。所有 Issue 首次开工时由 buddy 注入 Claude 会话。
 - `standards/metrics.md` — 项目指标文件 `.bw/metrics.toml` 的格式规范。修改指标前必读。
-- `standards/connectors.md` — 脚本连接器文件 `.bw/connectors.toml` 的格式规范。搭采集装置前必读。
+- `standards/connectors.md` — **V3 遗留口径**(已加横幅标旧):脚本连接器文件 `.bw/connectors.toml` 的格式规范。V4 无 `connectors.toml`,采集脚本走 `.bw/scripts/*` + `metrics.toml` 的 `collect` 字段(`kind="script"`,buddy 现算 shell-out 跑脚本读结果、不进库)。
 
 buddy 规范回答「在 buddy 纳管的项目里,什么必须做对」,与 `docs/skills/` 下的 Skill 资产(回答「某类活怎样做得更好」)是两个独立维度,互不依附。换一个 Skill 后仍必须成立的,是 buddy 规范;只描述「如何把某类活做好」的,是 Skill。
 

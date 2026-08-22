@@ -195,7 +195,7 @@ pub fn ProjectRail(
 }
 
 /// 顶栏。`source` 是「这一屏的数字从哪来」的实话 —— 原型那格写的是
-/// 「演示数据 ✱」,真壳写库文件名。
+/// 「演示数据 ✱」,真壳写数据目录名(asset_root 下 registry/设置/会话;数字用 codehub-cli/gh/cat 当场对、不靠库)。
 #[component]
 pub fn TopBar(title: String, project: Option<String>, source: String, bridge: Bridge) -> Element {
     let b = bridge.clone();
@@ -208,7 +208,7 @@ pub fn TopBar(title: String, project: Option<String>, source: String, bridge: Br
                 }
             }
             div { class: "spacer" }
-            span { class: "demo-tag", title: "本机库文件;界面上的数字都能用 sqlite3 直接查这个库核对", "{source}" }
+            span { class: "demo-tag", title: "数据目录(registry/设置/会话);界面数字用 codehub-cli/gh/cat 当场对,不靠库", "{source}" }
             button {
                 class: "btn btn-sm btn-ghost",
                 onclick: move |_| b.send(Req::Refresh),

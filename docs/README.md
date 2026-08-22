@@ -26,7 +26,7 @@
 | 路径 | 是什么 | 谁在维护 |
 |---|---|---|
 | [`v1-prototype/`](v1-prototype/) → [`v2-prototype/`](v2-prototype/) → [`v3-prototype/`](v3-prototype/) | **当前迭代线**:V1 产品化(纳入项目简化 / 交互式指标环 / 内嵌终端 / 总览重构)→ V2(调度统一 / 最简多人)→ V3(原型进度页内嵌 Open Design)。**2026-08-20 归档整理**:三个目录里已落地、且没有被现役文档引用为当前权威的 8 篇设计事实源搬去了 [`archive/v1-prototype/`](archive/v1-prototype/)/[`v2-prototype/`](archive/v2-prototype/)/[`v3-prototype/`](archive/v3-prototype/)(按篇判断,不按目录整批搬);每个目录自带 README 与逐文件状态表,现在只列仍留在现役目录的篇章。**V4 见 [`v4-prototype/`](v4-prototype/)**——2026-08-21 收敛成四件套:[设计正本一篇](v4-prototype/design.md) + [高保真原型](v4-prototype/hifi/) + [产品指南](guide/v4-产品指南.html) + [对外宣讲](guide/v4-对外宣讲.html);原来的母文档与 14 篇细分设计已归档到 [`archive/v4-prototype/`](archive/v4-prototype/)。代码已建完合进 main(内核 `crates/bw-v4` + 能力底座 `crates/v4-engine` + 新壳 `crates/app-shell`,与 V3 旧壳并存、互不依赖),试点在跑。遗留清单已升格到 `docs/LEFTOVERS.md`(下一行),`v1-prototype/LEFTOVERS.md` 只剩指针 | 伙伴会话(V1/V2/V3/V4 分支已全部合入 main) |
-| [`LEFTOVERS.md`](LEFTOVERS.md) | **离「V4 的 MVP 做完了」还差什么**的唯一清单,11 处,按 `design.md` §13.1 的验收八条分组。2026-08-21 从 537 行重写成 91 行:做完的史实、有意的留白、V3 的欠账一律不记 | 2026-08-21 试点会话重写;加条目前先回答「验收八条里哪一条过不去」 |
+| [`LEFTOVERS.md`](LEFTOVERS.md) | **离「V4 的 MVP 做完了」还差什么**的唯一清单,9 处,按 `design.md` §13.1 的验收八条分组。2026-08-21 从 537 行重写成 91 行:做完的史实、有意的留白、V3 的欠账一律不记 | 2026-08-21 试点会话重写;加条目前先回答「验收八条里哪一条过不去」 |
 | [`doc-boundaries.md`](doc-boundaries.md) | 文档边界:什么写到哪、不写到哪 | 现在作数 |
 | [`releases.md`](releases.md) | 版本登记:出包与运作 | 现在作数 |
 | [`code-schemes.md`](code-schemes.md) | 代号索引(P/S/W/R/L/A/D/G/K/M/T/V……),新开一批代号先来这里登记 | 谁开代号谁登记 |
@@ -40,7 +40,7 @@
 
 | 路径 | 编进哪 |
 |---|---|
-| [`buddy/system-prompt.md`](buddy/system-prompt.md)、[`buddy/standards/metrics.md`](buddy/standards/metrics.md)、[`buddy/standards/connectors.md`](buddy/standards/connectors.md) | `crates/bw-core/src/buddy_assets.rs`——注入交互式会话的系统提示词、`.bw/metrics.toml` / `.bw/connectors.toml` 的格式规范正本 |
+| [`buddy/system-prompt.md`](buddy/system-prompt.md)、[`buddy/standards/metrics.md`](buddy/standards/metrics.md)、[`buddy/standards/connectors.md`](buddy/standards/connectors.md) | `crates/bw-core/src/buddy_assets.rs`——**V3** 注入交互式会话的系统提示词、`.bw/metrics.toml` / `.bw/connectors.toml` 的格式规范正本。**V4 不依赖 bw-core**:agent 系统提示词由 `crates/bw-v4/src/app/bootstrap.rs::agent_system_prompt` 动态拼装(遵循 `docs/buddy/system-prompt.md` 同一套规矩);V4 无 `.bw/connectors.toml`,采集走 `.bw/scripts/*` + `metrics.toml` 的 `collect` 字段;V4 自带规范件与技能在仓根 `standard/`,include_str! 进 `crates/bw-v4/src/standard/`(见下行) |
 | [`skills/*/SKILL.md`](skills/) | `crates/bw-core/src/bw_library.rs`——**V3 自带的 9 个基础技能包正本**(evidence-first / spec-to-tests / baseline-before-touch / fresh-eyes-funnel / breaking-drill / competitive-analysis / north-star-discovery / metrics-binding / metrics-render)。**V4 不再读这个目录**:V4 自带的技能与运作剧本收敛在仓根 `standard/skills/` 一个平铺目录里 |
 
 `buddy/README.md` 有这批资产的自述。**不要搬这两个目录**——路径是编译期硬绑定。

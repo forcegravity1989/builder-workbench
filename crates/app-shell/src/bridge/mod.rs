@@ -496,7 +496,8 @@ pub fn spawn(deep_link: DeepLink) -> Bridge {
                     eprintln!("[BW_ENV] {} = {} · {}", t.label, state, t.detail);
                 }
                 // 打开了项目就把这一份 ViewModel 的关键计数打出来 —— 这些数
-                // 都能用 sqlite3 当场对(活数 / 会话数 / 事件数 / 周数),
+                // 都能用 codehub-cli/gh/git/cat 当场对(活 = codehub issue、
+                // 会话 = session.jsonl、事件 = notify、周 = issue 的 bw:week 标签),
                 // 比截图硬。
                 if let Some(o) = &vm.open {
                     eprintln!(
