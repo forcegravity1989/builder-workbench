@@ -24,6 +24,9 @@ mod chat_notify;
 pub mod collect;
 mod health;
 mod issue;
+/// codehub issue 持久化映射层(数据层迁移刀2)。纯加性,未接线 app 层调用方,
+/// 等刀3 切远端正本时再用——在那之前靠模块级 `#[allow(dead_code)]` 压住警告。
+mod issue_store;
 mod ops;
 mod plan;
 mod progress;
