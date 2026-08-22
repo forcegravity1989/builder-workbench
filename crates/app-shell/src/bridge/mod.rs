@@ -552,7 +552,7 @@ pub fn spawn(deep_link: DeepLink) -> Bridge {
                                 cg.rows.first().map(|r| r.size).unwrap_or(0),
                                 cg.error
                             );
-                            let issues = app.issues(pid).await;
+                            let issues = app.issues(pid).await.unwrap_or_default();
                             let usage = bw_v4::app::workflow_usage(&issues);
                             let a = vm_kb::build_assets(&usage, &ws).await;
                             eprintln!(
@@ -592,14 +592,30 @@ pub fn spawn(deep_link: DeepLink) -> Bridge {
                             continue;
                         }
                         _ = sched_tick.tick() => {
-                            // 只对打开着的项目跑定时。没打开任何项目时不动 ——
-                            // 后台替一堆项目自动建活,人一打开就看见一片自己没
-                            // 点过的活,不是好体验。
-                            let Some(pid) = ui.open else { continue };
-                            match app.dispatch(Command::TickScheduler { project_id: pid }).await {
-                                Ok(events) if events.is_empty() => continue,
-                                Ok(events) => ui.set_note(vm_build::note_of(&events)),
-                                Err(e) => ui.set_note(Some(format!("定时没跑成:{e}"))),
+                            // 特性9:fanout —— 遍历所有纳管项目逐个查
+                            // cron_enabled + 到点建活,不再只对打开着的项目跑
+                            // (LEFTOVERS ② 拍板)。tick_scheduler 本身单项目
+                            // 幂等,到点没到点、本周有没有那张活都原地返空;
+                            // cron_enabled=false 也自己挡掉(高优1)。
+                            let mut note: Option<String> = None;
+                            if let Ok(projects) = app.projects().await {
+                                for p in &projects {
+                                    match app
+                                        .dispatch(Command::TickScheduler { project_id: p.id })
+                                        .await
+                                    {
+                                        Ok(events) if events.is_empty() => {}
+                                        Ok(events) => {
+                                            note = vm_build::note_of(&events);
+                                        }
+                                        Err(e) => {
+                                            note = Some(format!("定时没跑成:{e}"))
+                                        }
+                                    }
+                                }
+                            }
+                            if let Some(n) = note {
+                                ui.set_note(Some(n));
                             }
                             vm = vm_build::build(&app, &ui).await;
                             let _ = vm_tx.send(vm.clone());
@@ -816,7 +832,7 @@ pub fn spawn(deep_link: DeepLink) -> Bridge {
                             if let (true, Some(pid)) = (want, ui.open) {
                                 if let Ok(ws) = app.workspace_of(pid).await {
                                     let back = tx_back.clone();
-                                    let issues = app.issues(pid).await;
+                                    let issues = app.issues(pid).await.unwrap_or_default();
                                     let usage = bw_v4::app::workflow_usage(&issues);
                                     tokio::spawn(async move {
                                         let (codegraph, assets) =

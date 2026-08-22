@@ -1,6 +1,6 @@
 # 版本登记（出包与运作）
 
-> **30 秒导读**：给推广和出包的人看。一行一个已出或正在用的版本：**版本号、出包日、这一版是什么、修过什么**。安装器 `AppVersion` 必须和这里对齐。当前：V3 修 bug，V4 在规划。边界见 [`doc-boundaries.md`](doc-boundaries.md)。
+> **30 秒导读**：给推广和出包的人看。一行一个已出或正在用的版本：**版本号、出包日、这一版是什么、修过什么**。安装器 `AppVersion` 必须和这里对齐。当前：V4 在开发+试点。边界见 [`doc-boundaries.md`](doc-boundaries.md)。
 
 仓内 `Cargo.toml` 工作区版本仍是 `0.0.0`，**对外以安装器版本为准**。安装脚本在仓外 `D:\2026\buddy-setup`，不进本仓。
 
@@ -25,7 +25,7 @@ V1 / V2 是能力切片，合进主线后才有 0.3.0-v3 安装包。下表方�
 
 | 版本 | 状态 | 记在哪 |
 |---|---|---|
-| **V4** | 特性规划期，清单未齐 | [`v4-prototype/README.md`](v4-prototype/README.md) |
+| **V4** | 开发+试点期，设计已定稿、代码已建完并合进 main、试点在跑 | [`v4-prototype/README.md`](v4-prototype/README.md) |
 
 V3 里已设计、还没进安装包能力面的（Cursor 执行器、cowelink 旁路）进 [`LEFTOVERS.md`](LEFTOVERS.md)，不在这里假装已发布。
 

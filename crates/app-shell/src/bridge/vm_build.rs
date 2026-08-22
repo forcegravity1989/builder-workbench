@@ -145,7 +145,7 @@ fn primary_note(events: &[Event]) -> Option<String> {
             "{slug} 已从工作台移走(连同 {issues} 张活的账)。**仓一个字节都没动**,还在 {workspace}"
         ),
         Event::ProjectCardEditPending { .. } => "名片改动已建成一张轻量活,等评审合入".into(),
-        Event::ProjectChatChanged { .. } => "项目群配置已写进 .bw/project.toml".into(),
+        Event::ProjectChatChanged { .. } => "项目群配置已建成一张轻量活,等评审合入".into(),
         Event::StandardBootstrapped {
             files, committed, ..
         } => format!(
@@ -253,7 +253,6 @@ fn primary_note(events: &[Event]) -> Option<String> {
                 format!("这张活排进了 {week_of}")
             }
         }
-        Event::IssueReordered { .. } => "顺序改好了".into(),
         Event::WorkspacePulled { note, .. } => note.clone(),
         Event::IssueRan { ok, summary, .. } => {
             if *ok {
@@ -283,17 +282,6 @@ fn primary_note(events: &[Event]) -> Option<String> {
         Event::CurrentVersionChanged { version } => format!("在研版本切到 {version}"),
         Event::ToolMappingSaved { category } => format!("「{}」的映射保存了", category.label()),
         Event::ToolProbed { name, result } => format!("{name} 探活:{result:?}"),
-        Event::IssueCacheRefreshed {
-            week,
-            updated,
-            created,
-        } => {
-            if *created > 0 {
-                format!("按 {week} 的周计划文件建了 {created} 张活、刷新了 {updated} 张活的缓存")
-            } else {
-                format!("按 {week} 的周计划文件刷新了 {updated} 张活的缓存")
-            }
-        }
         Event::NotifySeenMarked { .. } => "通知已读到这里".into(),
         Event::HealthDerived { signal, .. } => format!("健康现算完成:{signal:?}"),
     })
@@ -323,7 +311,16 @@ pub async fn build(app: &App, ui: &UiState) -> Vm {
         .unwrap_or_default();
         let week = bw_v4::isoweek::current_week();
         // 每项目只起一次 codehub-cli:issues 拿一次,再借给下面的纯内存过滤。
-        let issues = app.issues(p.id).await;
+        // 失败不吞(刀3-fix):以前 `unwrap_or_default()` 把 codehub 抖一下整屏
+        // 蒸发成空;现在挂到 warnings,UI 显式横幅「读 issue 失败」,活用空数组
+        // —— 健康判据落到 Unknown 灰,不假装绿。
+        let issues = match app.issues(p.id).await {
+            Ok(v) => v,
+            Err(e) => {
+                warnings.push(format!("读 issue 失败:{e}"));
+                Vec::new()
+            }
+        };
         let in_week = bw_v4::app::issues_in_week(&issues, &week);
         // 未读 = 评审中的活有几张。这个数是现算的,库里没有未读表
         // (MVP 不再按 seen_at 过滤:pr_number/updated_at 是 lossy)。
@@ -475,7 +472,15 @@ async fn build_project(
     let ws = app.workspace_of(id).await.ok()?;
     let file =
         read_or_warn(".bw/project.toml", project_file::read(&ws), warnings).unwrap_or_default();
-    let issues = app.issues(id).await;
+    // 失败不吞:挂到 warnings,UI 横幅「读 issue 失败」,VM 用空活照建(健康落灰、
+    // 看板空),保留上一份已知好的结构 —— 不整体清空。
+    let issues = match app.issues(id).await {
+        Ok(v) => v,
+        Err(e) => {
+            warnings.push(format!("读 issue 失败:{e}"));
+            Vec::new()
+        }
+    };
     let conversations = app.conversations(id).await.unwrap_or_default();
     // 「读到这里」是哪一刻。通知屏和项目轨的红点用的是同一个值,读一次就够。
     let notify_seen: Option<i64> = app.notify_seen(id).await;

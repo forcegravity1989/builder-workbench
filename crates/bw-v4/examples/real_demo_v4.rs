@@ -278,10 +278,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             "步骤 8 前置 · 把演示项目的 ops2_schedule 改成「mon 00:00」(正式默认是 fri 20:00)",
         );
     }
-    let before: usize = app.issues(pid).await.len();
+    let before: usize = app.issues(pid).await.unwrap_or_default().len();
     app.dispatch(Command::TickScheduler { project_id: pid })
         .await?;
-    let after = app.issues(pid).await;
+    let after = app.issues(pid).await.unwrap_or_default();
     let audit = after
         .iter()
         .find(|i| i.workflow == bw_v4::app::OPS2_WORKFLOW && i.week_of == week);
@@ -361,6 +361,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     if let Some(one) = app
         .issues(pid)
         .await
+        .unwrap_or_default()
         .into_iter()
         .find(|i| i.kind == bw_v4::IssueKind::Business)
     {
@@ -463,7 +464,7 @@ async fn build_evidence(
     log: &[String],
 ) -> Result<String, Box<dyn std::error::Error>> {
     let project = app.project(pid).await?.expect("项目行");
-    let issues = app.issues(pid).await;
+    let issues = app.issues(pid).await.unwrap_or_default();
     let usage = bw_v4::app::workflow_usage(&issues);
 
     let issue_json: Vec<serde_json::Value> = issues

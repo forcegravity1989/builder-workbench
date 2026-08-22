@@ -154,8 +154,12 @@ impl App {
         Ok(vec![Event::CurrentVersionChanged { version }])
     }
 
-    /// 发版本:给选中的活打 `bw:released:*` 标签 + 在远端建 Release。
-    /// 按 version 标签幂等——同一版本不重复打。
+    /// 发版本:在远端建 Release(打 tag + notes),成功后再给选中的活打
+    /// `bw:released:*` 标签。按 version 标签幂等——同一版本不重复打。
+    ///
+    /// 高优7:先建 Release、后打标签。反过来若 Release 建失败,标签已打、
+    /// 远端没 Release → 不一致;现在顺序反了,Release 没建成就整条失败,
+    /// 标签一个没打,活还停在原地可以重试。
     pub(super) async fn cut_release(
         &mut self,
         project_id: ProjectId,
@@ -171,19 +175,18 @@ impl App {
         }
         let project = self.project_of(project_id).await?;
 
-        // 给选中的活打 released 标签。
-        for id in &included {
-            issue_store::set_released(self, &project, id.iid(), &version).await?;
-        }
-
-        // 在远端建 Release(tag + title + notes)。走 App 的 remote_factory —— 经
-        // mock 注入时和建活共享同一份内存状态(回填那份 list_releases 就能读到)。
+        // 1. 先在远端建 Release(tag + title + notes)—— 成功才往下。
         if project.has_remote() {
             let remote = self.remote_for(&project)?;
             remote
                 .create_release(&version, &version, &note)
                 .await
                 .map_err(|e| AppError::Exec(format!("远端建 Release 没成:{e}")))?;
+        }
+
+        // 2. Release 建成了,再给选中的活打 released 标签。
+        for id in &included {
+            issue_store::set_released(self, &project, id.iid(), &version).await?;
         }
 
         let rows_written = true;

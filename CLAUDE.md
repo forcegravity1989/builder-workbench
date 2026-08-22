@@ -98,10 +98,10 @@ app-desktop 真壳(Dioxus 0.7 hard-pin =0.7.9):kernel 桥(独立 tokio 线程)+ 
 (Web 版="以后也许":wasm32 keepalive + Store trait 留着门,仓里没有 app-web crate)
 
 # ── 以下两个是 V4 的,和上面六个并存,互不依赖 ───────────────────────
-bw-v4       V4 内核:**只有四张表**的本机库(project / issue / claude_conversation / app_meta)
-            + 仓文件解析(.bw/PROJECT.md / .bw/*.toml / .bw/plan/*.md / .bw/releases.md,
-            八个解析器全是自己的)+ 现算推导 + 自己的一对 Command/Event + 领域类型自持
-            (状态机、Signal、身份、五类别,2026-08-21 从 bw-core 逐字拷来接管)。
+bw-v4       V4 内核:本地零数据库(codehub issue+标签是唯一 issue 正本)+ 仓文件解析
+            (.bw/PROJECT.md / .bw/*.toml / .bw/metrics/,六个解析器全是自己的)+ 现算推导
+            + 自己的一对 Command/Event + 领域类型自持(状态机、Signal、身份、五类别,
+            2026-08-21 从 bw-core 逐字拷来接管)。local/ 只剩运行时(registry/settings/sessions)。
             **不依赖任何 V3 crate**(cargo tree 读回为 0)
 v4-engine   V4 能力底座:交互式 claude 执行器 + PTY 内嵌终端 + worktree 供给 + git 读数
             + GitHub/codehub 远端。2026-08-21 从 bw-engine 拷来接管(不是复用 ——
@@ -110,10 +110,10 @@ v4-engine   V4 能力底座:交互式 claude 执行器 + PTY 内嵌终端 + work
 app-shell   V4 新壳(bin 名 bw-v4-dev):六入口 + 三顶层屏,一屏一模块,适配模块在 adapters/
 ```
 
-**V4 与 V3 的关系(2026-08-19/20 起)**:两套并存,谁也不动谁。V3 用 `workbench.db`,V4 用
-`workbench-v4.db`,schema 从新写、**不写迁移**(老库不兼容)。V4 的核心变化是「**仓是正本**」——
-库只放定位与显示缓存,健康、指标读数、周列表、用过几次、文件树、diff 全部**现算**,一张索引表都
-没有。删旧壳的判据见 `docs/v4-prototype/design.md` §12.6(逐条核对过,今天一条都
+**V4 与 V3 的关系(2026-08-19/20 起)**:两套并存,谁也不动谁。V3 用 `workbench.db`,V4
+**本地零数据库**——codehub/GitHub 的 issue+标签是唯一 issue 正本,项目级配置/正文留仓文件、
+走 MR,健康、指标读数、周列表、用过几次、文件树、diff 全部**现算**,一张索引表都没有。
+删旧壳的判据见 `docs/v4-prototype/design.md` §12.6(逐条核对过,今天一条都
 不满足,所以旧壳还在)。V4 没做完的部分只认 `docs/LEFTOVERS.md` —— 它按验收八条分组,只记「离 MVP 做完还差什么」,做完的史实与有意的留白都不在里面。
 
 数据流:UI 只发 `Command`、收 `Event`;`bw-app` 执行用例 → store 写入数据库 → `recompute_signals` 重算 → 事件流回 UI。**唯一的干活入口是 Issue 的 ▶跑**(`Command::RunIssue`):项目配了真实工作区就在 issue 自己的 git worktree 里起交互式 `claude`(内嵌终端 PTY),没配就落到 MockInteractiveExecutor(产出自我标注为演示);每次运行都写一行 `workflow_run`(开工/结清/成败/耗时/前后 git head)绑到这张 Issue。

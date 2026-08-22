@@ -43,9 +43,6 @@ pub fn version() -> &'static str {
 pub const CHARTER_REL_PATH: &str = ".bw/PROJECT.md";
 
 pub const CHARTER_TMPL: &str = include_str!("../../../../standard/01-charter/PROJECT.md.tmpl");
-pub const PLAN_README: &str = include_str!("../../../../standard/03-docs/plan/README.md");
-pub const WEEK_TMPL: &str = include_str!("../../../../standard/03-docs/plan/WEEK.md.tmpl");
-pub const RELEASES_TMPL: &str = include_str!("../../../../standard/03-docs/releases.md.tmpl");
 pub const DESIGN_README: &str = include_str!("../../../../standard/03-docs/design/README.md");
 pub const METRICS_TMPL: &str = include_str!("../../../../standard/04-metrics/metrics.toml.tmpl");
 pub const ISSUE_POLICY_TMPL: &str =
@@ -140,21 +137,6 @@ pub const CORE_TEMPLATES: &[Template] = &[
         body: SCRIPT_STARS,
         lay_at: LayAt::OnFirstUse,
         note: "现成采集脚本:GitHub star 数(可回溯 —— 按 starred_at 倒推)",
-    },
-    Template {
-        category: "docs-core",
-        target: ".bw/plan/README.md",
-        body: PLAN_README,
-        lay_at: LayAt::OnFirstUse,
-        note: "周计划怎么写、写到哪个文件",
-    },
-    Template {
-        category: "docs-core",
-        target: ".bw/releases.md",
-        body: RELEASES_TMPL,
-        // 第 5 站第一次发版才用到。
-        lay_at: LayAt::OnFirstUse,
-        note: "版本与发布记录",
     },
     Template {
         category: "docs-core",

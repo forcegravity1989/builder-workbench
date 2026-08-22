@@ -18,7 +18,7 @@
 
 | # | 差什么 | 为什么过不去 | 落点 |
 |---|---|---|---|
-| ① | **数据层重定调的迁移未做**(2026-08-22 重定调,见 design.md §3):把 issue 数据从本地 SQLite 搬到 **codehub issue + 标签**——建 `RemoteIssueStore` trait(codehub+gh)、删 SQLite 四表、删 `.bw/plan/*`+`.bw/releases.md`、活状态走标签 / Done 走 `Closes #N` 自动关、B 类仓文件改动走 MR + 在途按 `buddy:*` 标签复用 | 条 1(周循环产物都在 codehub 看得见)、条 4(第二台 buddy 直接读 codehub 无盲区)、条 2(灯每条理由核对)都压在这块地基上 | `v4-engine/src/remote.rs`(加 issue 操作)、`bw-v4/src/store/`(删表)、`bw-v4/src/repo/`(删 plan/releases 解析)、`bw-v4/src/app/*`(状态命令改调 store) |
+| ① | **数据层重定调的迁移未做**(2026-08-22 重定调,见 design.md §3):把 issue 数据从本地 SQLite 搬到 **codehub issue + 标签**——建 `Remote` enum(Github/Codehub/Mock 三变体)+ `issue_store` 模块(issue↔标签映射)、删 SQLite 四表、删 `.bw/plan/*`+`.bw/releases.md`、活状态走标签 / Done = 人合入 MR 后 buddy 主动 `close_issue`(不依赖 `Closes #N`)、B 类仓文件改动走 MR + 在途按**固定枚举标题**复用(不占标签) | 条 1(周循环产物都在 codehub 看得见)、条 4(第二台 buddy 直接读 codehub 无盲区)、条 2(灯每条理由核对)都压在这块地基上 | `v4-engine/src/remote.rs`(加 issue 操作)、`bw-v4/src/app/issue_store.rs`(issue↔标签映射)、`bw-v4/src/store/`(删表)、`bw-v4/src/repo/`(删 plan/releases 解析)、`bw-v4/src/app/*`(状态命令改调 store) |
 | ② | **定时只对当前打开着的项目跑**。2026-08-21 已拍板推翻:定时要对所有纳管项目到点就干,闸是项目级开关(存本机、默认开) | 条 1 要「两轮运作活①②」,而运作活②(资产盘点)是定时触发的——buddy 没打开那个项目就不会到点 | `bw-v4/src/command.rs::TickScheduler`(今天带 `project_id` 参数) |
 
 ### 差在「灯不是灰的、每个数字都能核对」(§13.1 条 2)

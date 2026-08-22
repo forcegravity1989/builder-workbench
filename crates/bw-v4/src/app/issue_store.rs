@@ -29,6 +29,9 @@ const OPS2_TITLE_PREFIX: &str = "资产盘点 ";
 const OPS3_TITLE_PREFIX: &str = "规范铺底 v";
 /// 轻量活「编辑项目名片」的固定标题(B 类在途复用的幂等键)。
 pub const LIGHT_TITLE: &str = "编辑项目名片";
+/// 轻量活「配置项目群」的固定标题(B 类在途复用的幂等键)。高优3:改群配置
+/// 也走 worktree + MR,不再直写主检出。
+pub const LIGHT_CHAT_TITLE: &str = "配置项目群";
 
 // ─────────────── 远端拿取 ───────────────
 
@@ -207,14 +210,17 @@ fn issue_from_create(
         category: None,
         sort_order: iid as f64,
         metric_key: String::new(),
-        created_at: 0,
+        created_at: parse_iso_to_unix(None),
         updated_at: 0,
         settled_at: None,
     }
 }
 
-/// 把一条远端 issue 快照映射回 `Issue`。所有 lossy 字段(body/branch/
-/// pr_number/sort_order/metric_key/settled_at)按设计篇给默认值。
+/// 把一条远端 issue 快照映射回 `Issue`。body 在 list 不带(填空串),view
+/// 带;branch/pr_number/sort_order/metric_key 仍按设计篇给默认值。
+/// `created_at`/`settled_at` 从远端 RFC3339 串解析(刀3-fix:以前写死 0/None,
+/// 事件流恒空)。`settled_at`:关闭的 issue 取 `closed_at`;`closed_at` 缺失
+/// 但确实关了,退回 `created_at` 当近似(事件流至少能进「结清」那条)。
 fn issue_from_remote(project: &Project, r: &RemoteIssue) -> Issue {
     let closed = r.state.eq_ignore_ascii_case("closed");
     let kind = kind_from_title(&r.title);
@@ -222,6 +228,13 @@ fn issue_from_remote(project: &Project, r: &RemoteIssue) -> Issue {
         IssueStatus::Done
     } else {
         parse_status_from_labels(&r.labels)
+    };
+    let created_at = parse_iso_to_unix(r.created_at.as_deref());
+    let settled_at = if closed {
+        // 关了的活:先认 closed_at;没有就退回 created_at 当近似。
+        Some(parse_iso_to_unix(r.closed_at.as_deref()).max(created_at))
+    } else {
+        None
     };
     Issue {
         id: IssueId::from_remote(project.id, r.iid),
@@ -243,10 +256,21 @@ fn issue_from_remote(project: &Project, r: &RemoteIssue) -> Issue {
         category: None,
         sort_order: r.iid as f64,
         metric_key: String::new(),
-        created_at: 0,
+        created_at,
         updated_at: 0,
-        settled_at: None,
+        settled_at,
     }
+}
+
+/// RFC3339 串 → unix 秒。`None`/解析不出 = 0(事件流靠 `created_at > 0` 判进不进,
+/// 0 就是「这条进不来」,如实地少一条,不编一个时刻)。
+fn parse_iso_to_unix(s: Option<&str>) -> i64 {
+    let Some(s) = s else { return 0 };
+    let Ok(t) = time::OffsetDateTime::parse(s, &time::format_description::well_known::Rfc3339)
+    else {
+        return 0;
+    };
+    t.unix_timestamp()
 }
 
 // ─────────────── 辅助:kind/workflow/tool/origin 推断 ───────────────
@@ -260,7 +284,7 @@ fn is_ops_title(title: &str) -> bool {
 fn kind_from_title(title: &str) -> IssueKind {
     if is_ops_title(title) {
         IssueKind::Ops
-    } else if title == LIGHT_TITLE {
+    } else if title == LIGHT_TITLE || title == LIGHT_CHAT_TITLE {
         IssueKind::Light
     } else {
         IssueKind::Business

@@ -14,6 +14,9 @@ async-trait = { workspace = true }
 thiserror = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }
+# mock 远端建/关 issue 时给一个 RFC3339 时刻(created_at/closed_at),与真
+# provider 同形;真 provider 的时刻来自 gh/codehub-cli 的 JSON 字段。
+time = { workspace = true, features = ["formatting"] }
 # MockInteractiveExecutor 的模拟延时用 tokio::time;真执行器起 `claude` 子进程
 # 用 tokio::process。底座是原生运行时 crate,不进 wasm32 那组。
 tokio = { workspace = true, features = ["process", "fs"] }

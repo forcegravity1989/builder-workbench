@@ -197,7 +197,7 @@ impl App {
         let project = self.project_of(project_id).await?;
         let ws = self.workspace_of(project_id).await?;
         let week = isoweek::current_week();
-        let issues = self.issues(project_id).await;
+        let issues = self.issues(project_id).await?;
         let inputs = collect_health_inputs(&project, &ws, &week, &issues).await;
         let health = derive_project_health(&inputs);
         self.cache_project_health(project_id, &health).await?;

@@ -22,7 +22,7 @@ use crate::model::Signal;
 /// `docs/v4-prototype/design.md` 第 5 章「总览与健康」),不存任何中间值。
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct HealthInputs {
-    /// (a) 本周有周目标(`.bw/plan/<本周>.md` 存在且「## 周目标」段非空)。
+    /// (a) 本周有周目标(本周的运作活① issue 在 = 有目标;刀6 起不再读周计划文件)。
     pub has_week_goal: bool,
     /// (a) 本周仓里有真实 git 提交。
     pub committed_this_week: bool,
@@ -32,11 +32,12 @@ pub struct HealthInputs {
     /// 这一条是假 —— 此时「两周零提交」说明不了任何事,不能当成「这个项目
     /// 停了」判红。没数据是灰,不是红,也不是绿。
     pub git_readable: bool,
-    /// (b) 本周或上周的周计划文件里有「本周指标读数」段且非空。
+    /// (b) 本周或上周的 `.bw/metrics/readings.jsonl` 里有指标读数(刀6 起不再读
+    /// 周计划文件的「本周指标读数」段)。
     pub has_metric_reading: bool,
     /// 任何一条指标读数按 `.bw/metrics.toml` 的目标判下来是红。
     pub any_metric_red: bool,
-    /// (c) 上周有合入(`git log --merges`)或发版(`.bw/releases.md` 新增行)。
+    /// (c) 上周有合入(`git log --merges`)或发版(git 标签日期)。
     pub delivered_last_week: bool,
 }
 
@@ -95,7 +96,7 @@ pub fn derive_project_health(inputs: &HealthInputs) -> DerivedHealth {
             text: if a {
                 "本周定了周目标,仓里也有真实提交".into()
             } else if !inputs.has_week_goal {
-                "本周还没有周计划文件或周目标是空的".into()
+                "本周的『更新指标+制定本周计划』活还没开".into()
             } else {
                 "本周有周目标,但仓里还没有真实提交".into()
             },

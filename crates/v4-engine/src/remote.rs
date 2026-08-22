@@ -88,6 +88,10 @@ struct MockIssue {
     labels: Vec<String>,
     body: String,
     comments: Vec<String>,
+    /// 建活时刻的 RFC3339 串。建时填,事件流「建了活」那条靠它进得来。
+    created_at: Option<String>,
+    /// 关闭时刻的 RFC3339 串。关时填(= `settled_at` 的近似正本)。
+    closed_at: Option<String>,
 }
 
 impl MockState {
@@ -135,6 +139,9 @@ pub struct IssueFilter {
 /// 此时 `iid == number`)。`state` 是远端原文(codehub `"opened"`/`"closed"`、
 /// github `"OPEN"`/`"CLOSED"`),**不归一化**——归一化是上层的事,底座只透传。
 /// `body` 是 issue 正文;`list_issues` 不带正文(填空串),`view_issue` 单查带正文。
+/// `created_at`/`closed_at` 是远端原文(RFC3339),取不到 `None` —— 事件流「建/
+/// 结清」这两条靠它们进得来(刀3-fix:以前 `issue_from_remote` 写死 0/None,
+/// 事件流恒空)。不归一化成时间戳,解析是上层的事。
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct RemoteIssue {
     pub iid: u32,
@@ -143,6 +150,10 @@ pub struct RemoteIssue {
     pub state: String,
     pub labels: Vec<String>,
     pub body: String,
+    /// 建活时刻(RFC3339)。gh `createdAt` / codehub `created_at`。
+    pub created_at: Option<String>,
+    /// 关闭时刻(RFC3339)。gh `closedAt` / codehub `closed_at`。开着 = `None`。
+    pub closed_at: Option<String>,
 }
 
 /// 算一个 label 的 namespace 前缀(不含末尾冒号):`bw:status:todo` →
@@ -154,6 +165,14 @@ pub struct RemoteIssue {
 /// list 一次换取 namespace 语义)。
 pub(crate) fn label_prefix(label: &str) -> Option<&str> {
     label.rsplit_once(':').map(|(p, _)| p)
+}
+
+/// 当前 UTC 时刻的 RFC3339 串(mock 用)。与真 provider 同形:远端 issue 的
+/// `created_at`/`closed_at` 都是 RFC3339 原文,上层 `issue_from_remote` 解析。
+fn now_iso() -> String {
+    time::OffsetDateTime::now_utc()
+        .format(&time::format_description::well_known::Rfc3339)
+        .unwrap_or_default()
 }
 
 impl Remote {
@@ -279,6 +298,8 @@ impl Remote {
                         labels: labels.iter().map(|l| l.to_string()).collect(),
                         body: format!("【mock】{body}"),
                         comments: Vec::new(),
+                        created_at: Some(now_iso()),
+                        closed_at: None,
                     },
                 );
                 Ok(iid)
@@ -332,10 +353,17 @@ impl Remote {
                     }
                 }
                 if let Some(ev) = state_event {
-                    i.state = match ev {
-                        IssueStateEvent::Close => "closed".into(),
-                        IssueStateEvent::Reopen => "opened".into(),
-                    };
+                    match ev {
+                        IssueStateEvent::Close => {
+                            i.state = "closed".into();
+                            if i.closed_at.is_none() {
+                                i.closed_at = Some(now_iso());
+                            }
+                        }
+                        IssueStateEvent::Reopen => {
+                            i.state = "opened".into();
+                        }
+                    }
                 }
                 Ok(())
             }
@@ -391,6 +419,8 @@ impl Remote {
                         labels: i.labels.clone(),
                         // 与真 provider 一致:list 不带正文,要正文的走 view_issue。
                         body: String::new(),
+                        created_at: i.created_at.clone(),
+                        closed_at: i.closed_at.clone(),
                     });
                 }
                 out.sort_by_key(|r| r.iid);
@@ -428,6 +458,8 @@ impl Remote {
                     state: i.state.clone(),
                     labels: i.labels.clone(),
                     body: i.body.clone(),
+                    created_at: i.created_at.clone(),
+                    closed_at: i.closed_at.clone(),
                 })
             }
         }

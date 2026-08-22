@@ -17,6 +17,7 @@
 use super::{issue_store, App, AppError, Result};
 use crate::command::Event;
 use crate::isoweek;
+use crate::local::ProjectRegistry;
 use crate::model::{IssueId, IssueKind, IssueOrigin, IssueStatus, ProjectId};
 use crate::repo::issue_policy_file;
 
@@ -100,6 +101,16 @@ impl App {
     /// buddy 自动**建**活的地方。**自动建不等于自动完成**:这张活和别的活
     /// 走同一条状态机,最远只到「评审中」。
     pub(super) async fn tick_scheduler(&mut self, project_id: ProjectId) -> Result<Vec<Event>> {
+        // 高优1:读本机设置,这个项目关了定时就不建活(缺省 true)。开关在
+        // `projects.toml` 的 `cron_enabled` 字段,配置屏能改;false 就直接返空。
+        let cron_on = ProjectRegistry::find_by_id(&self.asset_root, project_id)
+            .ok()
+            .flatten()
+            .map(|e| e.cron_enabled)
+            .unwrap_or(true);
+        if !cron_on {
+            return Ok(vec![]);
+        }
         let ws = self.workspace_of(project_id).await?;
         let Some(policy) = issue_policy_file::read(&ws).ok().flatten() else {
             return Ok(vec![]);
@@ -153,9 +164,13 @@ impl App {
     /// 挂在分支上的活 —— 账目和仓对不上。
     ///
     /// **合入失败就整条失败**,活留在「评审中」原地,人看得见原话、可以重试。
-    /// 没挂远端或者这张活确实没有 MR,就只走「完成」那一步。
+    /// 没挂远端的本地项目确实没有 MR 可合 —— 那种只走「完成」那一步,合理。
+    /// **挂了远端但查不到这张活的 MR** —— 不关 issue,报错「没找到这活的 MR,
+    /// 活留评审中」(MR 正本在远端,现查,不靠 lossy 的 `issue.branch`/`pr_number`,
+    /// 那俩在 `issue_from_remote` 里恒空,旧逻辑因此永远 `merged=false` 却照常
+    /// `set_status(Done)`,活关了显示完成、MR 没合、主检出没拉、worktree 没清)。
     ///
-    /// 合入之后还会做两件本机收尾:把主检出快进到远端最新,把那条活分支收掉。
+    /// 合入之后还会做两件本机收尾:把主检出快进到远端最新,把 worktree + 分支收掉。
     /// 两件都是尽力而为,做不成不回滚这次合入,但下落写进事件的 `local_note`。
     pub(super) async fn merge_and_settle(&mut self, id: IssueId) -> Result<Vec<Event>> {
         let issue = self.issue_or_err(id).await?;
@@ -165,7 +180,7 @@ impl App {
         if issue.status == IssueStatus::Done {
             return Ok(vec![Event::IssueMerged {
                 id,
-                pr_number: issue.pr_number,
+                pr_number: 0,
                 merged: false,
                 local_note: String::new(),
             }]);
@@ -176,6 +191,10 @@ impl App {
                 to: IssueStatus::Done.label().to_string(),
             });
         }
+
+        // 分支名从 issue.number(=iid)现算 —— 确定性 `bw/issue-<iid>`,不靠
+        // lossy 的 `issue.branch`(刀3-fix:旧逻辑拿它查 MR,恒空永远查不到)。
+        let branch = v4_engine::github::issue_branch(issue.number);
 
         let remote = if project.has_remote() {
             Some(
@@ -190,46 +209,47 @@ impl App {
             None
         };
 
-        // 去远端问一次有没有开着的 MR(队友自己开的 buddy 可能没记过)。
-        let mut pr_number = issue.pr_number;
-        if pr_number == 0 && !issue.branch.is_empty() {
-            if let Some(r) = &remote {
-                if let Ok(Some(n)) = r.open_mr_for_branch(&issue.branch).await {
+        // 去远端现查 MR 号(正本在远端,现查)。
+        let mut pr_number = 0u32;
+        let mut merged = false;
+        if let Some(r) = &remote {
+            match r.open_mr_for_branch(&branch).await {
+                Ok(Some(n)) => {
                     pr_number = n;
+                    r.merge_mr(n)
+                        .await
+                        .map_err(|e| AppError::Exec(format!("合入 MR #{n} 没成:{e}")))?;
+                    merged = true;
+                }
+                Ok(None) => {
+                    // 挂了远端但分支上没有开着的 MR —— 不关 issue,活留评审中。
+                    return Err(AppError::Refused(format!(
+                        "没找到这活的 MR(分支 {branch} 上没有开着的 MR),活留评审中"
+                    )));
+                }
+                Err(e) => {
+                    // 查 MR 本身失败(网络/权限)—— 不关 issue,活留评审中。
+                    return Err(AppError::Exec(format!("查 MR 没成:{e}")));
                 }
             }
         }
-
-        let merged = match (&remote, pr_number) {
-            (Some(r), n) if n > 0 => {
-                r.merge_mr(n)
-                    .await
-                    .map_err(|e| AppError::Exec(format!("合入 MR #{n} 没成:{e}")))?;
-                true
-            }
-            _ => false,
-        };
+        // !has_remote 的本地项目:没有 MR 可合,merged=false,下面直接走「完成」。
 
         // 合入之后的本机收尾。
         let mut notes: Vec<String> = Vec::new();
-        let mut main_has_it = false;
         if merged {
-            let (ok, note) = self.pull_main_after_merge(issue.project_id).await;
-            main_has_it = ok;
+            let (_, note) = self.pull_main_after_merge(issue.project_id).await;
             notes.push(note);
         }
 
-        // 合入由人点;buddy 这一下把 issue 关掉 = Done。不指望 MR 描述里的
-        // `Closes #N` 那条魔法(codehub 不一定认)——合没合 MR 都由 buddy 主动关。
+        // 合入由人点;buddy 这一下把 issue 关掉 = Done。本地无远端项目(没 MR
+        // 可合)也走这一步 —— 合理。
         issue_store::set_status(self, &project, id.iid(), IssueStatus::Done).await?;
-        // 收掉 worktree(结清=Done 之后)。
-        if merged && main_has_it {
-            notes.push(self.drop_issue_branch(&issue).await);
-        } else if merged {
-            notes.push(format!(
-                "本机分支 {} 先留着:主检出没拉动,它是本机唯一还够得着这次合入的地方",
-                v4_engine::github::issue_branch(issue.number)
-            ));
+        // 收掉 worktree + 分支 —— set_status(Done) 后无条件收(只要 worktree 干净)。
+        // 不再以 `merged && main_has_it` 为条件:本地项目(merged=false)的活分支
+        // 也是 `bw/issue-<iid>`,结清了也该收。
+        if let Some(n) = self.cleanup_issue_branch_note(&issue).await {
+            notes.push(n);
         }
 
         let mut events = vec![Event::IssueMerged {
@@ -266,23 +286,48 @@ impl App {
         }
     }
 
-    async fn drop_issue_branch(&self, issue: &crate::model::Issue) -> String {
-        let branch = v4_engine::github::issue_branch(issue.number);
-        if issue.branch != branch {
-            return "没有单独的活分支要收(这张活的改动不在 bw/issue- 分支上)".into();
-        }
+    /// 收 worktree + 删分支的回执一句(给 `local_note`)。**不靠 lossy 的
+    /// `issue.branch`** —— 分支名从 `issue.number` 现算。worktree 脏的(有未提交
+    /// 改动)原样留着,如实说一声。
+    async fn cleanup_issue_branch_note(&self, issue: &crate::model::Issue) -> Option<String> {
         let Ok(ws) = self.workspace_of(issue.project_id).await else {
-            return format!("本机分支 {branch} 没收:算不出这个项目的工作区路径");
+            return None;
         };
-        if !crate::git::branch_exists(&ws, &branch).await {
-            return format!("本机已经没有 {branch} 这条分支了");
+        let tree = v4_engine::workspace::issue_worktree_path(&ws, issue.number)?;
+        let branch = v4_engine::github::issue_branch(issue.number);
+        match crate::git::is_dirty(&tree).await {
+            Ok(false) => {}
+            Ok(true) => {
+                return Some(format!(
+                    "本机分支 {branch} 先留着:worktree 有未提交的改动(真实劳动成果,不删)"
+                ));
+            }
+            Err(e) => {
+                return Some(format!(
+                    "本机分支 {branch} 没收:读 worktree 状态没成({})",
+                    one_line(&e.to_string())
+                ));
+            }
         }
-        match crate::git::delete_merged_branch(&ws, &branch).await {
-            Ok(()) => format!("本机分支 {branch} 已收掉"),
-            Err(e) => format!(
-                "本机分支 {branch} 没收掉(不影响合入与结清):{}",
-                one_line(&e.to_string())
-            ),
+        let s = match tree.to_str() {
+            Some(s) => s,
+            None => return None,
+        };
+        if crate::git::worktree_remove(&ws, s).await.is_err() {
+            return Some(format!(
+                "本机分支 {branch} 没收:worktree 收不掉(不影响合入与结清)"
+            ));
+        }
+        if crate::git::branch_exists(&ws, &branch).await {
+            match crate::git::delete_merged_branch(&ws, &branch).await {
+                Ok(()) => Some(format!("本机分支 {branch} 已收掉")),
+                Err(e) => Some(format!(
+                    "本机分支 {branch} 没收掉(可能是未合分支,git -d 拒绝;不影响合入与结清):{}",
+                    one_line(&e.to_string())
+                )),
+            }
+        } else {
+            Some(format!("本机已经没有 {branch} 这条分支了(worktree 已收)"))
         }
     }
 }

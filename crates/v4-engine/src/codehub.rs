@@ -655,7 +655,7 @@ pub async fn list_issues(
     // jq 投影成对象数组,字段名对齐 GitLab v4 issue payload:`iid`/`id`/
     // `title`/`state`/`labels`。`id` 缺失(GitLab 必有,但 codehub-cli 边缘
     // 情况下可能不回)时退回 `iid`,免得解析整张列表炸掉。
-    args.push(r#"[.[] | {iid: .iid, number: (.id // .iid), title: (.title // ""), state: (.state // ""), labels: (.labels // [])}]"#);
+    args.push(r#"[.[] | {iid: .iid, number: (.id // .iid), title: (.title // ""), state: (.state // ""), labels: (.labels // []), created_at: (.created_at // null), closed_at: (.closed_at // null)}]"#);
     let out = crate::win_cmd::tokio_cmd("codehub-cli")
         .args(&args)
         .stdin(Stdio::null())
@@ -678,6 +678,8 @@ pub async fn list_issues(
             state: r.state,
             labels: r.labels,
             body: String::new(),
+            created_at: r.created_at,
+            closed_at: r.closed_at,
         })
         .collect())
 }
@@ -714,6 +716,8 @@ pub async fn view_issue(
         state: r.state,
         labels: r.labels,
         body: r.body.unwrap_or_default(),
+        created_at: r.created_at,
+        closed_at: r.closed_at,
     })
 }
 
@@ -730,6 +734,10 @@ struct CodehubIssueViewJson {
     labels: Vec<String>,
     #[serde(default)]
     body: Option<String>,
+    #[serde(default)]
+    created_at: Option<String>,
+    #[serde(default)]
+    closed_at: Option<String>,
 }
 
 #[derive(serde::Deserialize)]
@@ -743,6 +751,10 @@ struct CodehubIssueJson {
     state: String,
     #[serde(default)]
     labels: Vec<String>,
+    #[serde(default)]
+    created_at: Option<String>,
+    #[serde(default)]
+    closed_at: Option<String>,
 }
 
 /// `codehub-cli issue note create <iid> -p <path> -H <host> --body <text>`

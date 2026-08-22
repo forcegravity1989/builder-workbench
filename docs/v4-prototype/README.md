@@ -1,6 +1,8 @@
 # docs/v4-prototype/ · V4
 
-> **30 秒导读**:V4 的入口。V4 是 buddy 的 MVP 版本——**仓是正本、库只留四张表、健康与指标全部现算**,界面收成六个入口。**现在到哪一步了**:设计定稿、代码建完并合进 `main`(V4 内核 `crates/bw-v4` + 能力底座 `crates/v4-engine` + 新壳 `crates/app-shell`,与 V3 的旧壳并存、互不依赖);**试点在跑,一边跑一边改**。还没干的活只认 [`../LEFTOVERS.md`](../LEFTOVERS.md);出包与版本号见 [`../releases.md`](../releases.md);文档写哪见 [`../doc-boundaries.md`](../doc-boundaries.md)。看不懂的词查 [`../../CONTEXT.md`](../../CONTEXT.md),代号查 [`../code-schemes.md`](../code-schemes.md)。
+> **⚠ 2026-08-22 数据层重定调**:V4 的数据层从「仓正本 + 本地库四表」改成「**codehub/GitHub 的 issue + 标签 = 唯一 issue 正本、本地零数据库**」。详见 [design.md](design.md) §3。本页其余表述里散见的「四表 / 周计划文件 / 本地库」是重定调前的,以 §3 为准。
+>
+> **30 秒导读**:V4 的入口。V4 是 buddy 的 MVP 版本——**本地零数据库(codehub issue+标签是唯一 issue 正本)、健康与指标全部现算**,界面收成六个入口。**现在到哪一步了**:设计定稿、代码建完并合进 `main`(V4 内核 `crates/bw-v4` + 能力底座 `crates/v4-engine` + 新壳 `crates/app-shell`,与 V3 的旧壳并存、互不依赖);**试点在跑,一边跑一边改**。还没干的活只认 [`../LEFTOVERS.md`](../LEFTOVERS.md);出包与版本号见 [`../releases.md`](../releases.md);文档写哪见 [`../doc-boundaries.md`](../doc-boundaries.md)。看不懂的词查 [`../../CONTEXT.md`](../../CONTEXT.md),代号查 [`../code-schemes.md`](../code-schemes.md)。
 
 ## 这里有什么
 

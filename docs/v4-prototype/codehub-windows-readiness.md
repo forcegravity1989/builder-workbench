@@ -1,5 +1,7 @@
 # V4 对 codehub 与 Windows:明摆着要修的问题(八条已全部处置)
 
+> **⚠ 2026-08-22 数据层重定调**:基线 main。数据层迁移后(codehub issue+标签=唯一 issue 正本、本地零数据库),§3 提到的 `libsqlite3-sys` 依赖已随 SQLite 四表删除而消除,§5 的 `sqlite3` 读回示例已废——以 [`design.md`](design.md) §3 为准。下列其余结论(探活、链接拼接、PTY、交叉编译 v4-engine 那半)仍然作数。
+
 > **30 秒导读**
 >
 > - **这是什么**:一份**问题清单 + 处置结果**。先做纯代码级核查,再拿**真跑着的 V3** 逐条比对,只留下代码级就能确定的问题;2026-08-21 又逐条回源码复核了一遍并改掉。
@@ -178,7 +180,7 @@ V4 拷贝时把一批函数丢下了,壳留在原地。**全仓无人使用**:
 
 这是**缺功能,不是假数据**,处理得诚实。V3 也没有这个能力 —— V3 只有个按状态数总数的 `collect_count`(`bw-engine/src/codehub.rs`),不能按周算合入数。要补是新功能,不在本次清单里。
 
-**二、交叉编译今天过不去,但卡的不是 BW 的代码。**
+**二、交叉编译今天过不去,但卡的不是 BW 的代码。**（2026-08-22 注:数据层重定调后 SQLite 四表已删,`libsqlite3-sys` 依赖随之消除——下列是该次核查时的历史记录。）
 
 ```
 cargo check --workspace --exclude app-desktop --target x86_64-pc-windows-gnu
@@ -222,7 +224,7 @@ cargo check --workspace --exclude app-desktop --target x86_64-pc-windows-gnu
 | 看什么 | 看到什么算有问题 |
 |---|---|
 | `which codehub` / `which codehub-cli` | 只有 `codehub-cli` 有 → 修-3 坐实 |
-| 关联一个已有 codehub 仓,`sqlite3 <库> "SELECT provider,remote_host,remote_path FROM project;"` | `provider` 不是 `codehub`,或 `remote_host` 不是 `open`/`green`/`yellow` |
+| 关联一个已有 codehub 仓,`cat <asset_root>/projects.toml`(看 remote_host/remote_path) | `remote_host` 不是 `open`/`green`/`yellow` |
 | 那个仓的网页域名,和修-1 那张映射表对一对(现在这张表在 `bw-v4/src/model.rs::codehub_alias_to_domain`) | 对不上 → **改那张表**,别改拼装逻辑 |
 | 点计划屏详情里的 MR / issue 链接 | 打不开 → 修-1 没修干净(**改完之后预期是能打开**) |
 

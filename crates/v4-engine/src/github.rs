@@ -738,7 +738,7 @@ pub async fn list_issues(
     args.push("--limit".into());
     args.push("200".into());
     args.push("--json".into());
-    args.push("number,title,state,labels".into());
+    args.push("number,title,state,labels,createdAt,closedAt".into());
     // tokio_cmd 要 &[&str]/Vec<String> 转 OsString;这里先把 Vec<String> 拼成
     // Vec<&str> 不行(生命周期),故用 args(&[String]) 的重载。
     let arg_refs: Vec<&str> = args.iter().map(|s| s.as_str()).collect();
@@ -764,6 +764,8 @@ pub async fn list_issues(
             state: r.state,
             labels: r.labels.into_iter().map(|l| l.name).collect(),
             body: String::new(),
+            created_at: r.created_at,
+            closed_at: r.closed_at,
         })
         .collect())
 }
@@ -783,7 +785,7 @@ pub async fn view_issue(
             "--repo",
             owner_repo,
             "--json",
-            "number,title,state,labels,body",
+            "number,title,state,labels,body,createdAt,closedAt",
         ])
         .stdin(Stdio::null())
         .stdout(Stdio::piped())
@@ -803,10 +805,13 @@ pub async fn view_issue(
         state: r.state,
         labels: r.labels.into_iter().map(|l| l.name).collect(),
         body: r.body.unwrap_or_default(),
+        created_at: r.created_at,
+        closed_at: r.closed_at,
     })
 }
 
 #[derive(serde::Deserialize)]
+#[serde(rename_all = "camelCase")]
 struct GhIssueViewJson {
     number: u32,
     title: String,
@@ -815,15 +820,24 @@ struct GhIssueViewJson {
     labels: Vec<GhLabelJson>,
     #[serde(default)]
     body: Option<String>,
+    #[serde(default)]
+    created_at: Option<String>,
+    #[serde(default)]
+    closed_at: Option<String>,
 }
 
 #[derive(serde::Deserialize)]
+#[serde(rename_all = "camelCase")]
 struct GhIssueFullJson {
     number: u32,
     title: String,
     state: String,
     #[serde(default)]
     labels: Vec<GhLabelJson>,
+    #[serde(default)]
+    created_at: Option<String>,
+    #[serde(default)]
+    closed_at: Option<String>,
 }
 
 #[derive(serde::Deserialize)]

@@ -276,15 +276,27 @@ impl App {
         Ok(vec![Event::IssueBlocked { id }])
     }
 
-    /// 收掉这张活的 worktree。收不掉就什么都不做。
-    async fn cleanup_issue_worktree(&self, issue: &Issue) {
+    /// 收掉这张活的 worktree(+ 分支)。结清(Done)后**无条件**调 —— 只要
+    /// worktree 干净就删分支;脏的(有未提交的劳动成果)原样留着。刀3-fix:
+    /// `merge_and_settle` 和 `transition_issue` 两条结清路都走这同一个收尾,
+    /// 不再各自判 `merged&&main_has_it`(那条靠 lossy 的 `issue.branch`,恒空)。
+    pub(super) async fn cleanup_issue_worktree(&self, issue: &Issue) {
         let Ok(ws) = self.workspace_of(issue.project_id).await else {
             return;
         };
         let Some(tree) = v4_engine::workspace::issue_worktree_path(&ws, issue.number) else {
             return;
         };
-        worktree::remove_if_clean(&ws, &tree).await;
+        // worktree 干净才收(脏的有未提交的劳动成果,不删)。
+        if worktree::remove_if_clean(&ws, &tree).await {
+            // worktree 收掉了,顺手删分支(只删 merged 的;未合的 `git -d` 会
+            // 拒绝,不强删 —— 留着也不影响)。分支名从 issue.number 现算,
+            // 不靠 lossy 的 `issue.branch`。
+            let branch = v4_engine::github::issue_branch(issue.number);
+            if crate::git::branch_exists(&ws, &branch).await {
+                let _ = crate::git::delete_merged_branch(&ws, &branch).await;
+            }
+        }
     }
 
     pub async fn issue_or_err(&self, id: IssueId) -> Result<Issue> {
@@ -294,13 +306,15 @@ impl App {
 
     // ── App 暴露给 app-shell 的查询方法(替代旧的 store.issue* 系列)──────
 
-    /// 列出项目的全部活(从远端现读)。没挂远端 → 空。
-    pub async fn issues(&self, project_id: ProjectId) -> Vec<Issue> {
-        let Ok(Some(project)) = self.project(project_id).await else {
-            return Vec::new();
+    /// 列出项目的全部活(从远端现读)。没挂远端 → 空。**失败不吞**(刀3-fix:
+    /// 以前 `unwrap_or_default()` 把 codehub 抖一下整屏蒸发成空、健康灯被写灰);
+    /// 现在返 `Err`,调用方挂到 warnings 让 UI 显式横幅,并保留上一份已知好的 VM。
+    pub async fn issues(&self, project_id: ProjectId) -> Result<Vec<Issue>> {
+        let Some(project) = self.project(project_id).await? else {
+            return Ok(Vec::new());
         };
         if !project.has_remote() {
-            return Vec::new();
+            return Ok(Vec::new());
         }
         issue_store::list(
             self,
@@ -311,7 +325,6 @@ impl App {
             },
         )
         .await
-        .unwrap_or_default()
     }
 }
 

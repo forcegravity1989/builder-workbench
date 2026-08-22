@@ -28,7 +28,7 @@ tree (active docs, runtime assets baked in via `include_str!`, the partner's
 
 V4 的数据层（2026-08-22 重定调，正本见 `docs/v4-prototype/design.md` §3）：**codehub/GitHub 的 issue + 标签 = 唯一 issue 正本；本地零数据库**（只剩运行时：`session.jsonl`、本机设置，落在 `asset_root` 下）。
 
-**改一个特性前，先在 `docs/v4-prototype/design.md` 的特性规划图（§特性规划图）上定位**：旅程站 → 三层 → 数据归属 → 模块落点。找不到就**先补文档、再动代码**——不清晰不写代码。
+**改一个特性前，先在 `docs/v4-prototype/design.md` 的 §2 旅程总图 + §3 数据归属 + 各章「工程落点」小节上定位**：这件特性属于旅程哪一站 → 三层里改哪层（承载·codehub issue / 规范·系统提示词 / 方法论·skill）→ 数据归在哪 → 模块落点。找不到就**先补文档、再动代码**——不清晰不写代码。
 
 **三层模型**（「怎么给 buddy 做一个特性」）：
 - **承载 · codehub issue**：把这件事装进来。issue 状态走标签、工作产物走 MR。

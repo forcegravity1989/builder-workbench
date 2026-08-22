@@ -12,7 +12,7 @@
 
 **落点分两类,别混**:
 
-- **`.bw/` 下的是 buddy 的资产** —— 名片、指标、周计划、发版记录、规范清单。
+- **`.bw/` 下的是 buddy 的资产** —— 名片、指标、规范清单（周计划改挂 ops① issue 评论、发版改用 codehub Release，都不再是仓文件）。
   收在一个目录里,「bw 到底往我仓里放了什么」一眼可数,也不会和项目自己的
   `README.md` / `docs/` 打架。
 - **仓根 `AGENTS.md` 与 `CLAUDE.md` 是项目自己的** —— 那是 Claude Code /
@@ -47,9 +47,6 @@
 |---|---|
 | `VERSION` | 当前规范版本号,铺底与对账时读这个值 |
 | `01-charter/PROJECT.md.tmpl` | 项目章程模板:想做什么、最像的对标、北极星、项目信息 |
-| `03-docs/plan/README.md` | 说明 `.bw/plan/` 目录的用途、正本地位、`origin` 字段含义 |
-| `03-docs/plan/WEEK.md.tmpl` | 每周一份的周计划模板:周目标、业务活、指标读数、本周运作、上周完成情况 |
-| `03-docs/releases.md.tmpl` | 发版记录模板,空表头,铺底时直接写进项目 `.bw/releases.md` |
 | `03-docs/design/README.md` | 说明 `.bw/design/` 目录的用途与写作约定(30 秒导读、过期加横幅不删除) |
 | `04-metrics/metrics.toml.tmpl` | `.bw/metrics.toml` 骨架:北极星占位 + 滞后/引领指标写法示例(注释掉) |
 | `05-issue-policy/issue-policy.toml.tmpl` | `.bw/issue-policy.toml` 骨架:开工工具声明、类别→工具→workflow 默认映射、评审/节律/看板规则 |
@@ -57,10 +54,10 @@
 
 ## 还没做的部分(如实说明,不是遗漏)
 
-规范第 6 类「默认件与鱼塘」的**运作技能已经建好**,在
-`standard/06-defaults/ops/`:更新指标与周计划、资产盘点(它带一个子技能
+buddy 自带的技能与运作剧本已经建好,在
+`standard/skills/`(一个平铺目录,共 10 份:6 方法论 + 4 运作):更新指标与周计划、资产盘点(它带一个子技能
 `project-handbook` —— 给纳管的项目写开发手册,**先问人愿不愿意**才写)。
-规范铺底不起 agent,所以没有它的剧本。它们和九份方法论技能(正本 `docs/skills/`)一起编进二进制,
+规范铺底不起 agent,所以没有它的剧本。它们一起编进二进制,
 开工时摊在 **buddy 自己的资产目录**,**不复制进用户的仓** —— 用户的
 `.gitignore` 怎么写不该由 buddy 决定,而每个项目复制一份 buddy 自带的
 东西也没有道理。系统提示词里只给名字 + 一句话 + 路径,正文按需读(见
