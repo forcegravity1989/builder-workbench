@@ -33,9 +33,9 @@ pub fn View(vm: Vm, bridge: Bridge, close: EventHandler<MouseEvent>) -> Element 
             div { class: "settings-list",
                 root_row { value: s.workspaces_root.clone(), bridge: bridge.clone() }
                 {path_row(
-                    "本机数据库",
-                    &s.db_path,
-                    "只放定位与显示缓存。删掉它,从仓和远端能重建。改它:启动前设 BW_DB。",
+                    "数据目录",
+                    &s.data_dir,
+                    "注册表 / 设置 / 会话都在这下面(不是 SQLite 库)。删掉它,从仓和远端能重建。",
                 )}
                 for t in vm.env.iter() {
                     {probe_row(t)}

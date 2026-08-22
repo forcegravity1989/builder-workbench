@@ -460,7 +460,7 @@ pub fn spawn(deep_link: DeepLink) -> Bridge {
                     note: None,
                     note_seq: 0,
                     pending_drafts: None,
-                    db_path: assets.display().to_string(),
+                    data_dir: assets.display().to_string(),
                     workspaces_root: root.display().to_string(),
                     repos: crate::vm::RepoPickerVm::default(),
                 };

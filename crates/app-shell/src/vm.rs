@@ -94,7 +94,9 @@ pub struct RepoPrefillVm {
 #[derive(Clone, Debug, Default, PartialEq)]
 pub struct SettingsVm {
     pub workspaces_root: String,
-    pub db_path: String,
+    /// buddy 本机数据目录(注册表 / 设置 / 会话都在这下面)。刀6 起不再有 SQLite
+    /// 库文件,这格显示的是 asset_root 目录名,不是 DB 路径。
+    pub data_dir: String,
     pub claude_binary: Option<String>,
 }
 

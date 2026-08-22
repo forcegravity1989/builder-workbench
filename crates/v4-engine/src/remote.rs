@@ -14,7 +14,9 @@
 
 use crate::codehub::{self, CodehubError};
 use crate::github::{self, GithubError};
+use std::collections::HashMap;
 use std::path::Path;
+use std::sync::{Arc, Mutex};
 
 #[derive(Debug, thiserror::Error)]
 pub enum RemoteError {
@@ -26,6 +28,11 @@ pub enum RemoteError {
     /// 错(不是 github/codehub 侧的运行时错),独立 variant,不冒充 GithubError。
     #[error("未知 provider(既非 github 也非 codehub):{0}")]
     UnknownProvider(String),
+    /// `Mock` 远端的运行时错。只用来如实回「找不到这张 issue」这类——mock 的
+    /// 全部状态在内存里,正常路径不会报错;报错只可能是调用方拿了一个不存在的
+    /// iid,那是调用方错,如实弹回,不静默。
+    #[error("mock:{0}")]
+    Mock(String),
 }
 
 /// A project's remote repo, provider-dispatched. Build via
@@ -46,6 +53,48 @@ pub enum Remote {
     /// `CodehubClient { host, path }` holding a resolved `project_id` would
     /// save the per-call `project view`, but the arms work as-is without it.
     Codehub { host: String, path: String },
+    /// In-memory mock —— 给 headless 指挥器/测试用的远端替身。**不碰 codehub、
+    /// 不碰 `gh`、不碰网关**;issue/release 全套在内存里走完,产出**自我标注**
+    /// (issue 正文与评论都带【mock】字样,不冒充真 codehub)。状态持在
+    /// `Arc<Mutex<MockState>>` 里,经 `App` 注入的 factory 拿到的是**同一个**
+    /// Arc —— 这样「建活 → 列活 → 改状态 → 关」一整圈共享同一份状态,和真
+    /// 远端一次会话连续操作的行为一致。`Remote::for_project("mock", …)` 也会回
+    /// 一个 `Mock`,但那是**新建一份**状态(无 factory 注入时的兜底,适合单发
+    /// 测试;指挥器走 factory 注入共享的那份)。
+    Mock(Arc<Mutex<MockState>>),
+}
+
+// ─────────────── V4 mock 远端:内存状态 ───────────────
+
+/// `Remote::Mock` 持的内存状态。`pub` 是为了让 `real_demo_v4` / 测试能 `Arc::new
+/// (MockState::default())` 注入共享的那一份;字段不暴露 —— 状态只经
+/// [`Remote`] 的方法读写。
+#[derive(Default, Debug)]
+pub struct MockState {
+    issues: HashMap<u32, MockIssue>,
+    /// 下一个 iid。从 1 起(0 不是合法 issue 号)。
+    next_iid: u32,
+    /// 已发的 release tag 集合。按版本号幂等(同 tag 不重复加)。
+    releases: Vec<String>,
+}
+
+#[derive(Default, Debug, Clone)]
+struct MockIssue {
+    iid: u32,
+    title: String,
+    /// `"opened"` / `"closed"`,与 codehub 原文一致(`issue_from_remote` 靠
+    /// `eq_ignore_ascii_case("closed")` 判)。
+    state: String,
+    labels: Vec<String>,
+    body: String,
+    comments: Vec<String>,
+}
+
+impl MockState {
+    fn next_iid(&mut self) -> u32 {
+        self.next_iid += 1;
+        self.next_iid
+    }
 }
 
 // ─────────────── V4 issue 远端正本:辅助类型 ───────────────
@@ -122,6 +171,10 @@ impl Remote {
                 host: host.trim().to_string(),
                 path: path.to_string(),
             }),
+            // 兜底:无 factory 注入时的 mock。**新建一份状态**,适合单发测试;
+            // 指挥器/需要跨调用共享状态的测试走 `App` 的 remote_factory 注入
+            // 同一个 Arc —— 这条路返回的 Arc 是独占的,建活之后再 list 拿不到。
+            "mock" => Ok(Remote::Mock(Arc::new(Mutex::new(MockState::default())))),
             other => Err(RemoteError::UnknownProvider(other.to_string())),
         }
     }
@@ -149,6 +202,9 @@ impl Remote {
                 host, path, workspace, branch, title, body, None,
             )
             .await?),
+            // Mock:不开真 MR。回一个假号,让调用方的那条「MR 已开」流程走得下去;
+            // body 不存 —— mock 的使命是验证 issue 全链路,MR 只到「不崩」为止。
+            Remote::Mock(_) => Ok(github::PrOpened::Created(1)),
         }
     }
 
@@ -166,6 +222,8 @@ impl Remote {
         match self {
             Remote::Github(r) => Ok(github::merge_pr(r, pr_number).await?),
             Remote::Codehub { host, path } => Ok(codehub::merge_mr(host, path, pr_number).await?),
+            // Mock:没有真 MR,合入就是 no-op 成功(不崩,不记账到别处)。
+            Remote::Mock(_) => Ok(()),
         }
     }
 
@@ -183,6 +241,8 @@ impl Remote {
             Remote::Codehub { host, path } => {
                 Ok(codehub::open_mr_for_branch(host, path, branch).await?)
             }
+            // Mock:不开真 MR,所以「有没有开着的 MR」如实回 None。
+            Remote::Mock(_) => Ok(None),
         }
     }
 
@@ -206,6 +266,22 @@ impl Remote {
             Remote::Github(r) => Ok(github::create_issue(r, title, body, labels).await?),
             Remote::Codehub { host, path } => {
                 Ok(codehub::create_issue(host, path, title, body, labels).await?)
+            }
+            Remote::Mock(state) => {
+                let mut s = state.lock().expect("mock state 未中毒");
+                let iid = s.next_iid();
+                s.issues.insert(
+                    iid,
+                    MockIssue {
+                        iid,
+                        title: title.to_string(),
+                        state: "opened".into(),
+                        labels: labels.iter().map(|l| l.to_string()).collect(),
+                        body: format!("【mock】{body}"),
+                        comments: Vec::new(),
+                    },
+                );
+                Ok(iid)
             }
         }
     }
@@ -234,6 +310,35 @@ impl Remote {
                 });
                 Ok(codehub::update_issue(host, path, iid, labels, ev).await?)
             }
+            Remote::Mock(state) => {
+                let mut s = state.lock().expect("mock state 未中毒");
+                let i = s
+                    .issues
+                    .get_mut(&iid)
+                    .ok_or_else(|| RemoteError::Mock(format!("issue #{iid} 不在")))?;
+                if let Some(labels) = labels {
+                    // 与真 provider 同一套 namespace-replace:入参前缀命中的现有
+                    // label 摘掉,入参再全加上(去重)。裸 label(无冒号)只加不摘。
+                    let prefixes: Vec<&str> =
+                        labels.iter().filter_map(|l| label_prefix(l)).collect();
+                    i.labels.retain(|x| match label_prefix(x) {
+                        None => true,
+                        Some(p) => !prefixes.contains(&p),
+                    });
+                    for l in labels {
+                        if !i.labels.iter().any(|x| x == *l) {
+                            i.labels.push(l.to_string());
+                        }
+                    }
+                }
+                if let Some(ev) = state_event {
+                    i.state = match ev {
+                        IssueStateEvent::Close => "closed".into(),
+                        IssueStateEvent::Reopen => "opened".into(),
+                    };
+                }
+                Ok(())
+            }
         }
     }
 
@@ -257,6 +362,40 @@ impl Remote {
                 });
                 Ok(codehub::list_issues(host, path, state, &filter.labels).await?)
             }
+            Remote::Mock(state) => {
+                let s = state.lock().expect("mock state 未中毒");
+                let want_state = filter.state.map(|st| match st {
+                    IssueState::Open => "opened",
+                    IssueState::Closed => "closed",
+                });
+                let mut out = Vec::new();
+                for i in s.issues.values() {
+                    if let Some(ws) = want_state {
+                        if i.state != ws {
+                            continue;
+                        }
+                    }
+                    // 取交集:issue 必须带齐入参里的每一条 label。
+                    if !filter
+                        .labels
+                        .iter()
+                        .all(|l| i.labels.iter().any(|x| x == l))
+                    {
+                        continue;
+                    }
+                    out.push(RemoteIssue {
+                        iid: i.iid,
+                        number: i.iid,
+                        title: i.title.clone(),
+                        state: i.state.clone(),
+                        labels: i.labels.clone(),
+                        // 与真 provider 一致:list 不带正文,要正文的走 view_issue。
+                        body: String::new(),
+                    });
+                }
+                out.sort_by_key(|r| r.iid);
+                Ok(out)
+            }
         }
     }
 
@@ -276,6 +415,21 @@ impl Remote {
         match self {
             Remote::Github(r) => Ok(github::view_issue(r, iid).await?),
             Remote::Codehub { host, path } => Ok(codehub::view_issue(host, path, iid).await?),
+            Remote::Mock(state) => {
+                let s = state.lock().expect("mock state 未中毒");
+                let i = s
+                    .issues
+                    .get(&iid)
+                    .ok_or_else(|| RemoteError::Mock(format!("issue #{iid} 不在")))?;
+                Ok(RemoteIssue {
+                    iid: i.iid,
+                    number: i.iid,
+                    title: i.title.clone(),
+                    state: i.state.clone(),
+                    labels: i.labels.clone(),
+                    body: i.body.clone(),
+                })
+            }
         }
     }
 
@@ -287,6 +441,15 @@ impl Remote {
             Remote::Github(r) => Ok(github::comment_issue(r, iid, body).await?),
             Remote::Codehub { host, path } => {
                 Ok(codehub::comment_issue(host, path, iid, body).await?)
+            }
+            Remote::Mock(state) => {
+                let mut s = state.lock().expect("mock state 未中毒");
+                let i = s
+                    .issues
+                    .get_mut(&iid)
+                    .ok_or_else(|| RemoteError::Mock(format!("issue #{iid} 不在")))?;
+                i.comments.push(format!("【mock】{body}"));
+                Ok(())
             }
         }
     }
@@ -305,6 +468,16 @@ impl Remote {
             Remote::Codehub { host, path } => {
                 Ok(codehub::create_release(host, path, tag, title, body).await?)
             }
+            // Mock:幂等 —— 同 tag 不重复加。真远端 tag 已存在会如实报错,这里不
+            // 报错(mock 没有「远端真有这个 tag」的运行时错这条,幂等更利于
+            // 指挥器重跑不产生重复数据)。
+            Remote::Mock(state) => {
+                let mut s = state.lock().expect("mock state 未中毒");
+                if !s.releases.iter().any(|r| r == tag) {
+                    s.releases.push(tag.to_string());
+                }
+                Ok(())
+            }
         }
     }
 
@@ -315,6 +488,10 @@ impl Remote {
         match self {
             Remote::Github(r) => Ok(github::list_releases(r).await?),
             Remote::Codehub { host, path } => Ok(codehub::list_releases(host, path).await?),
+            Remote::Mock(state) => {
+                let s = state.lock().expect("mock state 未中毒");
+                Ok(s.releases.clone())
+            }
         }
     }
 }

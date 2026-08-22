@@ -163,30 +163,6 @@ impl SessionStore {
         Ok(convs)
     }
 
-    /// 更新 `claude_session_id`:追加一条新记录(append-only,不改旧行)。
-    pub fn set_session_id(
-        asset_root: &Path,
-        slug: &str,
-        issue_id: IssueId,
-        session_id: &str,
-    ) -> Result<(), RepoFileError> {
-        // 读现有记录,更新 session_id,追加一行。
-        let existing = Self::read(asset_root, slug, issue_id.iid())?;
-        let mut conv = existing.unwrap_or_else(|| Conversation {
-            id: ConversationId::new(),
-            project_id: issue_id.project_id(),
-            issue_id,
-            claude_session_id: String::new(),
-            workspace_path: String::new(),
-            branch_name: String::new(),
-            created_at: 0,
-            last_opened_at: 0,
-        });
-        conv.claude_session_id = session_id.to_string();
-        conv.last_opened_at = time::OffsetDateTime::now_utc().unix_timestamp();
-        Self::append(asset_root, slug, &conv)
-    }
-
     /// 删一个项目的全部会话文件(删项目时调)。
     pub fn remove_project(asset_root: &Path, slug: &str) {
         let dir = asset_root.join("sessions").join(slug);

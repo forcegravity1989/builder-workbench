@@ -8,7 +8,6 @@ use super::{issue_store, App, AppError, Result};
 use crate::command::Event;
 use crate::model::{IssueId, IssueKind, IssueOrigin, IssueStatus, ProjectId};
 use crate::repo::project_file;
-use v4_engine::remote::Remote;
 
 impl App {
     /// 总览「开始本周」。判据是**本周的运作活① issue 在不在**——查远端 issue,
@@ -24,7 +23,7 @@ impl App {
         let project = self.project_of(project_id).await?;
 
         // 按标题查本周的运作活① —— 查远端开着的 issue。
-        if let Some(open) = issue_store::find_open_by_title(&project, &title).await? {
+        if let Some(open) = issue_store::find_open_by_title(self, &project, &title).await? {
             if open.status != IssueStatus::Done {
                 return Ok(vec![Event::WeekPlanInProgress {
                     project_id,
@@ -104,7 +103,7 @@ impl App {
         let issue = self.issue_or_err(id).await?;
         let target = week_of.unwrap_or_default();
         let project = self.project_of(issue.project_id).await?;
-        issue_store::set_week(&project, id.iid(), &target).await?;
+        issue_store::set_week(self, &project, id.iid(), &target).await?;
 
         // 排进某一周 = 进「待办」;移回待办池 = 回 Backlog。只在状态机允许时动,
         // 不合法就只改排期不动状态。
@@ -114,7 +113,7 @@ impl App {
             IssueStatus::Todo
         };
         if issue.status != want && issue.status.can_transition_to(want) {
-            issue_store::set_status(&project, id.iid(), want).await?;
+            issue_store::set_status(self, &project, id.iid(), want).await?;
         }
 
         Ok(vec![Event::IssueScheduled {
@@ -174,17 +173,13 @@ impl App {
 
         // 给选中的活打 released 标签。
         for id in &included {
-            issue_store::set_released(&project, id.iid(), &version).await?;
+            issue_store::set_released(self, &project, id.iid(), &version).await?;
         }
 
-        // 在远端建 Release(tag + title + notes)。
+        // 在远端建 Release(tag + title + notes)。走 App 的 remote_factory —— 经
+        // mock 注入时和建活共享同一份内存状态(回填那份 list_releases 就能读到)。
         if project.has_remote() {
-            let remote = Remote::for_project(
-                &project.provider,
-                &project.remote_host,
-                &project.remote_path,
-            )
-            .map_err(|e| AppError::Exec(format!("认不出远端类型:{e}")))?;
+            let remote = self.remote_for(&project)?;
             remote
                 .create_release(&version, &version, &note)
                 .await

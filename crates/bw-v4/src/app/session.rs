@@ -245,7 +245,7 @@ impl App {
 
         if issue.status != IssueStatus::InProgress {
             let project = self.project_of(issue.project_id).await?;
-            issue_store::set_status(&project, id.iid(), IssueStatus::InProgress).await?;
+            issue_store::set_status(self, &project, id.iid(), IssueStatus::InProgress).await?;
         }
         Ok(true)
     }

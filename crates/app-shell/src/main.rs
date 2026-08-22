@@ -17,7 +17,6 @@
 mod adapters;
 mod bridge;
 mod chrome;
-mod repo;
 mod screens;
 mod theme;
 mod vm;
@@ -57,8 +56,8 @@ fn GlobalChrome() -> Element {
     }
 }
 
-/// 顶栏那格「数据来自哪」写的就是本机库文件名。
-fn db_label(path: &str) -> String {
+/// 顶栏那格「数据来自哪」写的就是本机数据目录名(刀6 起不再是 SQLite 库文件)。
+fn data_dir_label(path: &str) -> String {
     path.rsplit(['/', '\\']).next().unwrap_or(path).to_string()
 }
 
@@ -138,7 +137,7 @@ fn Root() -> Element {
     let tv = *top_view.read();
     let project = v.open.clone();
     let in_project = project.is_some() && tv.is_none();
-    let source = db_label(&v.settings.db_path);
+    let source = data_dir_label(&v.settings.data_dir);
 
     // 顶栏标题:项目内是六入口的名字,顶层是那一屏的名字。
     let title = match (tv, in_project) {

@@ -93,12 +93,24 @@ async fn sessions_append_only() {
     assert!(read.is_some());
     assert_eq!(read.unwrap().branch_name, "bw/issue-42");
 
-    // 更新 session_id(追加一行,不改旧行)。
-    SessionStore::set_session_id(&root, "test-proj", issue_id, "claude-xyz").unwrap();
+    // 再追加一条(session_id 更新走 append-only,不改旧行)。刀6 删掉了
+    // `set_session_id` 这层 App 包装(PTY hook 没接,是死代码);这里直接追加
+    // 一条新记录,验证 append-only 语义还在:文件里两行,读到的是最新的那条。
+    let conv2 = Conversation {
+        id: conv.id,
+        project_id: pid,
+        issue_id,
+        claude_session_id: "claude-xyz".into(),
+        workspace_path: conv.workspace_path.clone(),
+        branch_name: conv.branch_name.clone(),
+        created_at: conv.created_at,
+        last_opened_at: 999,
+    };
+    SessionStore::append(&root, "test-proj", &conv2).unwrap();
     let read = SessionStore::read(&root, "test-proj", iid).unwrap();
     let conv = read.unwrap();
     assert_eq!(conv.claude_session_id, "claude-xyz");
-    assert!(conv.last_opened_at > 100, "last_opened_at 应该被更新");
+    assert_eq!(conv.last_opened_at, 999, "读到的是最后一条(最新的状态)");
 
     // 文件里应该有两行(append-only)。
     let path = root.join("sessions/test-proj/42.jsonl");

@@ -30,13 +30,13 @@ impl App {
     ) -> Result<Vec<Event>> {
         let project = self.project_of(project_id).await?;
         // 幂等:同一个项目里标题一样的、开着的活不建第二张(指挥器重跑靠它)。
-        if let Some(existing) = issue_store::find_open_by_title(&project, &title).await? {
+        if let Some(existing) = issue_store::find_open_by_title(self, &project, &title).await? {
             return Ok(vec![Event::IssueCreated {
                 id: existing.id,
                 number: existing.number,
             }]);
         }
-        let issue = issue_store::create(&project, &title, &body, kind, &week_of, &[]).await?;
+        let issue = issue_store::create(self, &project, &title, &body, kind, &week_of, &[]).await?;
         Ok(vec![Event::IssueCreated {
             id: issue.id,
             number: issue.number,
@@ -85,7 +85,7 @@ impl App {
         // 先推进行中 —— 界面上立刻看得出它开工了。
         if issue.status != IssueStatus::InProgress {
             let project = self.project_of(issue.project_id).await?;
-            issue_store::set_status(&project, id.iid(), IssueStatus::InProgress).await?;
+            issue_store::set_status(self, &project, id.iid(), IssueStatus::InProgress).await?;
         }
 
         // 照活上记的工具走 —— 不许悄悄换(见 `tools::agent_for`)。
@@ -121,7 +121,7 @@ impl App {
             Ok(o) if o.completed => {
                 // 最远到「评审中」。这一步不是人点的,所以到此为止。
                 let project = self.project_of(issue.project_id).await?;
-                issue_store::set_status(&project, id.iid(), IssueStatus::InReview).await?;
+                issue_store::set_status(self, &project, id.iid(), IssueStatus::InReview).await?;
                 let mut events = vec![Event::IssueRan {
                     id,
                     ok: true,
@@ -245,7 +245,7 @@ impl App {
             });
         }
         let project = self.project_of(issue.project_id).await?;
-        issue_store::set_status(&project, id.iid(), to).await?;
+        issue_store::set_status(self, &project, id.iid(), to).await?;
         // Done = 远端 issue closed。settled 只在走进 Done 时才算。
         let settled = to == IssueStatus::Done;
         // 结清了就把这张活那棵 worktree 收掉。
@@ -270,9 +270,9 @@ impl App {
             });
         }
         let project = self.project_of(issue.project_id).await?;
-        issue_store::set_status(&project, id.iid(), IssueStatus::Blocked).await?;
+        issue_store::set_status(self, &project, id.iid(), IssueStatus::Blocked).await?;
         // 阻塞原因写进 issue 评论 —— 不动正文,结构化产出挂评论。
-        issue_store::comment(&project, id.iid(), &format!("阻塞原因:{reason}")).await?;
+        issue_store::comment(self, &project, id.iid(), &format!("阻塞原因:{reason}")).await?;
         Ok(vec![Event::IssueBlocked { id }])
     }
 
@@ -289,7 +289,7 @@ impl App {
 
     pub async fn issue_or_err(&self, id: IssueId) -> Result<Issue> {
         let project = self.project_of(id.project_id()).await?;
-        issue_store::fetch(&project, id.iid()).await
+        issue_store::fetch(self, &project, id.iid()).await
     }
 
     // ── App 暴露给 app-shell 的查询方法(替代旧的 store.issue* 系列)──────
@@ -303,6 +303,7 @@ impl App {
             return Vec::new();
         }
         issue_store::list(
+            self,
             &project,
             v4_engine::remote::IssueFilter {
                 state: None,

@@ -47,11 +47,11 @@ pub async fn collect_health_inputs(
     let merged_last_week = counts.get(&last_week).is_some_and(|c| c.merges > 0);
 
     // (b) has_metric_reading + any_metric_red:读仓 `.bw/metrics/readings.jsonl`。
-    let readings = read_readings(workspace, week);
+    let readings = read_metric_readings(workspace, week);
     let last_readings = if last_week.is_empty() {
         Vec::new()
     } else {
-        read_readings(workspace, &last_week)
+        read_metric_readings(workspace, &last_week)
     };
     let has_metric_reading = !readings.is_empty() || !last_readings.is_empty();
     let any_metric_red = check_metric_red(workspace, &readings).await;
@@ -72,30 +72,39 @@ pub async fn collect_health_inputs(
 
 // ── readings.jsonl 读数 ──────────────────────────────────────────────
 
-/// `.bw/metrics/readings.jsonl` 的一行读数。
-#[derive(serde::Deserialize)]
-struct Reading {
-    week: String,
-    name: String,
-    value: String,
+/// `.bw/metrics/readings.jsonl` 的一行读数。`pub` 是为了让 app-shell 的指标卡
+/// 复用同一条读法(刀6:周计划文件不再写「本周指标读数」段,读数只从这份
+/// jsonl 来)。`source` / `collected_at` 今天 jsonl 里还没写,留 `#[serde(default)]`
+/// —— 以后加字段不破坏存量行。
+#[derive(serde::Deserialize, Clone, Debug, Default, PartialEq, Eq)]
+pub struct MetricReading {
+    #[serde(default)]
+    pub week: String,
+    pub name: String,
+    pub value: String,
+    #[serde(default)]
+    pub source: String,
+    #[serde(default)]
+    pub collected_at: String,
 }
 
 /// 读指定周的读数行。文件不存在 / 格式坏 = 空(不报错,没数据是合法状态)。
-fn read_readings(workspace: &Path, week: &str) -> Vec<Reading> {
+/// 健康判据与 app-shell 指标卡都走这一条 —— jsonl 的格式只有这一处定义。
+pub fn read_metric_readings(workspace: &Path, week: &str) -> Vec<MetricReading> {
     let path = workspace.join(".bw/metrics/readings.jsonl");
     let Ok(raw) = std::fs::read_to_string(&path) else {
         return Vec::new();
     };
     raw.lines()
         .filter(|l| !l.trim().is_empty())
-        .filter_map(|l| serde_json::from_str::<Reading>(l).ok())
+        .filter_map(|l| serde_json::from_str::<MetricReading>(l).ok())
         .filter(|r| r.week == week)
         .collect()
 }
 
 /// 比对读数与 `.bw/metrics.toml` 的 target。无读数 / 无定义 / 解析不出 → false
 /// (不假装红)。
-async fn check_metric_red(workspace: &Path, readings: &[Reading]) -> bool {
+async fn check_metric_red(workspace: &Path, readings: &[MetricReading]) -> bool {
     if readings.is_empty() {
         return false;
     }

@@ -4,13 +4,12 @@
 //! 软目标了(`scripts/guard-file-lines.sh` 会提醒)。上半截管「一个项目整体
 //! 长什么样」,这半截管「各块面板长什么样」。
 
-use crate::repo::week_plan_file;
 use crate::vm::*;
 use bw_v4::model::{IssueStatus, Project, ProjectId};
 use bw_v4::repo::{issue_policy_file, project_file};
 use std::path::Path;
 
-use super::vm_build::{card_item, probe_env, remote_label};
+use super::vm_build::{card_item, probe_env, remote_label, tool_label};
 
 /// 六列看板。
 ///
@@ -113,35 +112,42 @@ pub(super) fn build_board(
     }
 }
 
-/// 周列表靠扫 `.bw/plan/` 得到 —— 没有索引表。
-pub(super) fn build_weeks(ws: &Path) -> Vec<WeekVm> {
-    week_plan_file::list_weeks(ws)
-        .into_iter()
-        .map(|w| {
-            let plan = week_plan_file::read(ws, &w).ok().flatten();
-            WeekVm {
-                backfill: plan
-                    .as_ref()
-                    .and_then(|p| p.front_matter.as_ref())
-                    .is_some_and(|f| f.is_backfill()),
-                goal: plan.as_ref().and_then(|p| p.goal.clone()),
-                activity_count: plan
-                    .as_ref()
-                    .map(|p| p.activities.len() as u32)
-                    .unwrap_or(0),
-                week: w,
-            }
-        })
-        .collect()
+/// 周列表从 issues 的 `bw:week:*` 标签取(刀6:不再扫 `.bw/plan/` 目录 ——
+/// 那个文件没人写了,扫到也是旧的)。本周永远在列表里(置顶)。新的在前。
+pub(super) fn build_weeks(issues: &[bw_v4::Issue], current_week: &str) -> Vec<WeekVm> {
+    let mut weeks: Vec<WeekVm> = Vec::new();
+    let push = |weeks: &mut Vec<WeekVm>, w: &str| {
+        if !w.is_empty() && !weeks.iter().any(|x| x.week == w) {
+            weeks.push(WeekVm {
+                week: w.to_string(),
+                backfill: false,
+                goal: None,
+                activity_count: 0,
+            });
+        }
+    };
+    for i in issues {
+        push(&mut weeks, &i.week_of);
+    }
+    push(&mut weeks, current_week);
+    // 填回每 周 的活数;backfill 从 issues 看不出(那是文件 origin 的概念),
+    // 如实 false。
+    for w in &mut weeks {
+        w.activity_count = issues.iter().filter(|i| i.week_of == w.week).count() as u32;
+    }
+    // 新的在前;没有未来周,本周自然置顶。
+    weeks.sort_by(|a, b| b.week.cmp(&a.week));
+    weeks
 }
 
-/// 指标卡:定义来自 `.bw/metrics.toml`,读数来自周计划文件的「本周指标读数」段。
-/// **没有读数就显示「无数据」,不显示 0**。
+/// 指标卡:定义来自 `.bw/metrics.toml`,读数来自仓 `.bw/metrics/readings.jsonl`
+/// (刀6:不再读周计划文件的「本周指标读数」段)。**没有读数就显示「无数据」,
+/// 不显示 0**。
 pub(super) fn build_metrics(
     ws: &Path,
-    plan: Option<&week_plan_file::WeekPlan>,
     issues: &[bw_v4::Issue],
     collected: &[bw_v4::app::collect::MetricReadout],
+    readings: &[bw_v4::app::MetricReading],
 ) -> MetricsVm {
     // **「还没有」和「读不动」是两件事,不能混成一句「没有指标」。**
     // 混了会让人以为文件不存在、去写一份新的,而实际上仓里躺着一份格式不对
@@ -162,11 +168,11 @@ pub(super) fn build_metrics(
         }
     };
     // 精确按名字对,不用 contains:指标名互为前缀时会认错,空名字会命中第一条。
-    let reading_of = |name: &str| -> Option<&week_plan_file::MetricReading> {
+    let reading_of = |name: &str| -> Option<&bw_v4::app::MetricReading> {
         if name.trim().is_empty() {
             return None;
         }
-        plan?.readings.iter().find(|r| r.name.trim() == name.trim())
+        readings.iter().find(|r| r.name.trim() == name.trim())
     };
     let driving_of = |key: &str| -> Vec<String> {
         issues
@@ -366,7 +372,7 @@ pub(super) fn build_config(
                         .category()
                         .map(|c| c.label().to_string())
                         .unwrap_or_else(|| m.category.clone()),
-                    tool: week_plan_file::tool_label(&m.tool).into(),
+                    tool: tool_label(&m.tool).into(),
                     workflow: if m.workflow.is_empty() {
                         "—(无默认,从鱼塘挑)".into()
                     } else {

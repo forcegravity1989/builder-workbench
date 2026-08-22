@@ -10,9 +10,9 @@
 //! `sort_order`/`metric_key`、`settled_at` 这些读回时一律给默认值。
 
 use crate::model::{Issue, IssueId, IssueKind, IssueOrigin, IssueStatus, Project};
-use v4_engine::remote::{IssueFilter, IssueState, Remote, RemoteIssue};
+use v4_engine::remote::{IssueFilter, IssueState, RemoteIssue};
 
-use super::{AppError, Result};
+use super::{App, AppError, Result};
 
 // ─────────────── 标题枚举(幂等键,也是 kind/workflow 的推断源)───────────────
 //
@@ -32,17 +32,6 @@ pub const LIGHT_TITLE: &str = "编辑项目名片";
 
 // ─────────────── 远端拿取 ───────────────
 
-/// 从项目行的 provider/host/path 造一个 `Remote`。`RemoteError`(配置错)转成
-/// `AppError::Exec`,和 `app/ops.rs` 那条 `merge_and_settle` 里的转法一致。
-fn remote_for(project: &Project) -> Result<Remote> {
-    Remote::for_project(
-        &project.provider,
-        &project.remote_host,
-        &project.remote_path,
-    )
-    .map_err(|e| AppError::Exec(format!("认不出远端类型:{e}")))
-}
-
 /// `RemoteError` → `AppError::Exec` 的统一包装,前缀一句人话说明这步在干嘛。
 fn map_remote_err<E: std::fmt::Display>(ctx: &str, e: E) -> AppError {
     AppError::Exec(format!("{ctx}:{e}"))
@@ -58,6 +47,7 @@ fn map_remote_err<E: std::fmt::Display>(ctx: &str, e: E) -> AppError {
 ///
 /// **不接线 app 层**——这是刀2 的纯映射,调用方等刀3。
 pub async fn create(
+    app: &App,
     project: &Project,
     title: &str,
     body: &str,
@@ -65,7 +55,7 @@ pub async fn create(
     week_of: &str,
     extra_labels: &[&str],
 ) -> Result<Issue> {
-    let remote = remote_for(project)?;
+    let remote = app.remote_for(project)?;
     let mut labels: Vec<String> = vec!["bw:status:todo".to_string()];
     if !week_of.is_empty() {
         labels.push(format!("bw:week:{week_of}"));
@@ -82,8 +72,8 @@ pub async fn create(
 }
 
 /// 读回单张 issue(带正文)。走 `view_issue` 单查,正文在回程的 `body` 字段。
-pub async fn fetch(project: &Project, iid: u32) -> Result<Issue> {
-    let remote = remote_for(project)?;
+pub async fn fetch(app: &App, project: &Project, iid: u32) -> Result<Issue> {
+    let remote = app.remote_for(project)?;
     let r = remote
         .view_issue(iid)
         .await
@@ -92,8 +82,8 @@ pub async fn fetch(project: &Project, iid: u32) -> Result<Issue> {
 }
 
 /// 按过滤条件读回 issue 列表,逐条映射回 `Issue`。
-pub async fn list(project: &Project, filter: IssueFilter) -> Result<Vec<Issue>> {
-    let remote = remote_for(project)?;
+pub async fn list(app: &App, project: &Project, filter: IssueFilter) -> Result<Vec<Issue>> {
+    let remote = app.remote_for(project)?;
     let list = remote
         .list_issues(&filter)
         .await
@@ -104,8 +94,8 @@ pub async fn list(project: &Project, filter: IssueFilter) -> Result<Vec<Issue>> 
 /// 改 issue 的状态标签(`bw:status:*`,namespace-replace 会换掉旧 status)。
 /// `Done` 不打标签——走 `close_issue`(issue closed = Done)。`Backlog`/
 /// `Cancelled` 在 codehub 映射里没有对应标签,如实弹回(`AppError::Refused`)。
-pub async fn set_status(project: &Project, iid: u32, status: IssueStatus) -> Result<()> {
-    let remote = remote_for(project)?;
+pub async fn set_status(app: &App, project: &Project, iid: u32, status: IssueStatus) -> Result<()> {
+    let remote = app.remote_for(project)?;
     if status == IssueStatus::Done {
         remote
             .close_issue(iid)
@@ -130,8 +120,8 @@ pub async fn set_status(project: &Project, iid: u32, status: IssueStatus) -> Res
 }
 
 /// 在 issue 上写一条评论(结构化产出挂评论,不动正文)。
-pub async fn comment(project: &Project, iid: u32, body: &str) -> Result<()> {
-    let remote = remote_for(project)?;
+pub async fn comment(app: &App, project: &Project, iid: u32, body: &str) -> Result<()> {
+    let remote = app.remote_for(project)?;
     remote
         .comment_issue(iid, body)
         .await
@@ -140,8 +130,8 @@ pub async fn comment(project: &Project, iid: u32, body: &str) -> Result<()> {
 }
 
 /// 改 issue 的周标签(`bw:week:*`,namespace-replace 会换掉旧 week)。
-pub async fn set_week(project: &Project, iid: u32, week: &str) -> Result<()> {
-    let remote = remote_for(project)?;
+pub async fn set_week(app: &App, project: &Project, iid: u32, week: &str) -> Result<()> {
+    let remote = app.remote_for(project)?;
     let label = format!("bw:week:{week}");
     let labels = [label];
     let label_refs: Vec<&str> = labels.iter().map(|s| s.as_str()).collect();
@@ -153,8 +143,8 @@ pub async fn set_week(project: &Project, iid: u32, week: &str) -> Result<()> {
 }
 
 /// 改 issue 的发版标签(`bw:released:*`,namespace-replace 会换掉旧 released)。
-pub async fn set_released(project: &Project, iid: u32, version: &str) -> Result<()> {
-    let remote = remote_for(project)?;
+pub async fn set_released(app: &App, project: &Project, iid: u32, version: &str) -> Result<()> {
+    let remote = app.remote_for(project)?;
     let label = format!("bw:released:{version}");
     let labels = [label];
     let label_refs: Vec<&str> = labels.iter().map(|s| s.as_str()).collect();
@@ -167,8 +157,12 @@ pub async fn set_released(project: &Project, iid: u32, version: &str) -> Result<
 
 /// 在远端**开着的** issue 里找一张标题精确匹配的。B 类轻量活在途复用用
 /// (固定枚举标题,同一张卡不建第二张)。找不到返回 `None`,不报错。
-pub async fn find_open_by_title(project: &Project, title: &str) -> Result<Option<Issue>> {
-    let remote = remote_for(project)?;
+pub async fn find_open_by_title(
+    app: &App,
+    project: &Project,
+    title: &str,
+) -> Result<Option<Issue>> {
+    let remote = app.remote_for(project)?;
     let list = remote
         .list_issues(&IssueFilter {
             state: Some(IssueState::Open),
@@ -298,8 +292,11 @@ fn workflow_for(kind: IssueKind, title: &str) -> String {
 
 fn tool_for(kind: IssueKind) -> String {
     match kind {
-        IssueKind::Ops => "claude".into(),
-        // light→无;business→无(MVP 无 category 标签,查不到 issue_policy 默认 tool)。
+        // 机读键必须是 `tools::agent_for` 认的那一套(`claude_cli` / `cursor` /
+        // `open_design`)。早年写过 `"claude"`,但 `agent_for` 只认 `claude_cli`,
+        // 运作活一开工就被它拒掉。
+        IssueKind::Ops => "claude_cli".into(),
+        // light→无;business→无(MVP 无 category 标签,查不到 issue_policy 映射)。
         _ => String::new(),
     }
 }

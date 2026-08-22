@@ -36,7 +36,7 @@ mod tools;
 mod worktree;
 
 pub use bootstrap::{agent_system_prompt, skill_pointer, SkillPointer};
-pub use health::collect_health_inputs;
+pub use health::{collect_health_inputs, read_metric_readings, MetricReading};
 pub use issue::{count_unseen, issues_in_week, workflow_usage};
 pub use ops::{ops1_title, skill_slug, OPS1_WORKFLOW, OPS2_WORKFLOW, OPS3_WORKFLOW};
 pub use progress::{ProgressLine, StepState};
@@ -47,7 +47,16 @@ use crate::model::{Conversation, ProjectId};
 use crate::repo::RepoFileError;
 use std::path::PathBuf;
 use std::sync::Arc;
+use v4_engine::remote::{Remote, RemoteError};
 use v4_engine::{InteractiveExecutor, TerminalManager};
+
+/// 远端工厂:从项目行造一个 `Remote`。默认走 `Remote::for_project`(真
+/// codehub/gh);`real_demo_v4` / 测试注入一份返回**共享的** `Remote::Mock`
+/// (同一个 `Arc<Mutex<MockState>>`),让「建活 → 列活 → 改状态 → 关」一整圈
+/// 共享同一份内存状态,和真远端一次会话连续操作的行为一致。桌面壳不调这个
+/// 口子,走默认的真 codehub/gh。
+pub(crate) type RemoteFactory =
+    Box<dyn Fn(&crate::model::Project) -> std::result::Result<Remote, RemoteError> + Send + Sync>;
 
 #[derive(Debug, thiserror::Error)]
 pub enum AppError {
@@ -94,6 +103,9 @@ pub struct App {
     /// **不在任何一个用户项目的仓里**:用户的 `.gitignore` 怎么写不该由 buddy
     /// 决定,而 buddy 自带的剧本每个项目都一样,没有复制 N 份的道理。
     pub(crate) asset_root: PathBuf,
+    /// 远端工厂。issue_store 等内部模块经 [`App::remote_for`] 拿远端,统一经
+    /// 这里派发 —— 这也是 mock 注入的唯一口子。
+    pub(crate) remote_factory: RemoteFactory,
 }
 
 impl App {
@@ -112,6 +124,11 @@ impl App {
             terminal: TerminalManager::new(),
             pty_enabled: false,
             progress: None,
+            // 默认远端工厂 = 真 `Remote::for_project`(codehub/gh)。`real_demo_v4`
+            // 与测试用 [`App::with_remote_factory`] 注入共享的 `Remote::Mock`。
+            remote_factory: Box::new(|p| {
+                Remote::for_project(&p.provider, &p.remote_host, &p.remote_path)
+            }),
         }
     }
 
@@ -125,6 +142,21 @@ impl App {
     /// buddy 本机数据目录(注册表/设置/会话/技能都在这下面)。
     pub fn asset_root(&self) -> &std::path::Path {
         &self.asset_root
+    }
+
+    /// 注入远端工厂。**测试/指挥器专用** —— 注一份返回共享 `Arc<Mutex<MockState>>`
+    /// 的工厂,让一次完整生命周期(建活 → 列活 → 改状态 → 发版本 → 关)全在
+    /// 同一份内存状态上跑。桌面壳不调,走默认的真 `Remote::for_project`。
+    pub fn with_remote_factory(mut self, f: RemoteFactory) -> Self {
+        self.remote_factory = f;
+        self
+    }
+
+    /// 给 issue_store 等内部模块拿远端用的统一口子:经 `remote_factory` 派发。
+    /// `RemoteError`(配置错)→ `AppError::Exec`,与原 `issue_store::remote_for`
+    /// 的转法一致。
+    pub(crate) fn remote_for(&self, project: &crate::model::Project) -> Result<Remote> {
+        (self.remote_factory)(project).map_err(|e| AppError::Exec(format!("认不出远端类型:{e}")))
     }
 
     /// buddy 技能库摊在哪。开工前 [`App::ensure_skill_assets`] 保证它是齐的。
@@ -313,24 +345,6 @@ impl App {
         let slug = self.slug_of(c.project_id).await?;
         SessionStore::append(&self.asset_root, &slug, c)?;
         Ok(c.clone())
-    }
-
-    /// 恢复会话时 claude CLI 回传的 `--resume` id。PTY hook 收到后调这个,
-    /// 把 id 持久化到会话文件,重启后才能精确接回那一次对话。
-    /// V4 的 PTY hook 还没接线,这个方法暂时没人调,但删不得。
-    #[allow(dead_code)]
-    pub(crate) async fn set_conversation_session_id(
-        &self,
-        issue_id: crate::model::IssueId,
-        session_id: &str,
-    ) -> Result<()> {
-        let slug = self.slug_of(issue_id.project_id()).await?;
-        Ok(SessionStore::set_session_id(
-            &self.asset_root,
-            &slug,
-            issue_id,
-            session_id,
-        )?)
     }
 
     /// 某个项目的仓在哪。项目行里配了路径就用它,没配就是 `<工作区根目录>/<slug>`。

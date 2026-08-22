@@ -64,7 +64,7 @@ impl App {
         // 建活是按标题幂等的。调用方**必须知道这一张是不是新建的** —— 定时那
         // 条路会在建完之后立刻开工,拿到一张老活还去开工,就会把上一次正跑着
         // 的会话掐掉重开。
-        let created = issue_store::find_open_by_title(&project, &title)
+        let created = issue_store::find_open_by_title(self, &project, &title)
             .await?
             .is_none();
         let events = self
@@ -116,7 +116,7 @@ impl App {
         let title = format!("资产盘点 {week}");
         let project = self.project_of(project_id).await?;
         // **判据必须和建活的幂等键是同一个东西**(都是标题)。
-        if issue_store::find_open_by_title(&project, &title)
+        if issue_store::find_open_by_title(self, &project, &title)
             .await?
             .is_some()
         {
@@ -221,7 +221,7 @@ impl App {
 
         // 合入由人点;buddy 这一下把 issue 关掉 = Done。不指望 MR 描述里的
         // `Closes #N` 那条魔法(codehub 不一定认)——合没合 MR 都由 buddy 主动关。
-        issue_store::set_status(&project, id.iid(), IssueStatus::Done).await?;
+        issue_store::set_status(self, &project, id.iid(), IssueStatus::Done).await?;
         // 收掉 worktree(结清=Done 之后)。
         if merged && main_has_it {
             notes.push(self.drop_issue_branch(&issue).await);

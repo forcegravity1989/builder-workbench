@@ -25,7 +25,8 @@ use bw_v4::command::{Command, Event, ProjectIntent, RemoteRef};
 use bw_v4::isoweek;
 use bw_v4::model::{IssueKind, IssueOrigin, IssueStatus, ProjectId, StageKind};
 use std::path::{Path, PathBuf};
-use std::sync::Arc;
+use std::sync::{Arc, Mutex};
+use v4_engine::remote::{MockState, Remote};
 
 #[tokio::main(flavor = "current_thread")]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -50,11 +51,17 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .unwrap_or_else(|| "buddy-v4-demo".to_string());
 
     std::fs::create_dir_all(&ws_root)?;
+    // 远端走自我标注的内存 mock(不碰 codehub/gh/网关)。**共享同一个
+    // `Arc<Mutex<MockState>>`** —— 这样「建活 → 列活 → 改状态 → 发版本 →
+    // 关」一整圈都在同一份内存状态上,和真远端一次会话连续操作一致。mock
+    // 产出的 issue 正文/评论都带【mock】字样,不冒充真 codehub。
+    let mock_state = Arc::new(Mutex::new(MockState::default()));
     let mut app = App::new(
         &ws_root,
         Arc::new(v4_engine::MockInteractiveExecutor::new()),
     )
-    .with_asset_root(&asset_dir);
+    .with_asset_root(&asset_dir)
+    .with_remote_factory(Box::new(move |_| Ok(Remote::Mock(mock_state.clone()))));
 
     let week = isoweek::current_week();
     let mut log = Vec::new();
@@ -75,7 +82,11 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                 benchmark: "Linear".into(),
                 north_star: "每周被真实合入的活数".into(),
             },
-            remote: RemoteRef::default(),
+            remote: RemoteRef {
+                provider: "mock".into(),
+                host: String::new(),
+                path: "mock/buddy-v4-demo".into(),
+            },
             workspace_path: workspace.display().to_string(),
         })
         .await?;

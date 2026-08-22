@@ -4,7 +4,6 @@
 //! 几次,全部当场从库、仓文件、git 取。**没有的就留空**,绝不为了界面好看
 //! 填一个 0 或者一个假名字。
 
-use crate::repo::{release_file, week_plan_file};
 use crate::vm::*;
 use bw_v4::app::App;
 use bw_v4::command::Event;
@@ -16,6 +15,18 @@ use super::vm_kb::build_kb;
 use super::vm_panels::{
     build_board, build_config, build_metrics, build_sessions, build_weeks, build_workbench,
 };
+
+/// 开工工具的机读键 → 人话标签。从 `week_plan_file` 搬来(刀6:那个模块删了,
+/// 这是个纯展示函数,留在这层)。
+pub(super) fn tool_label(tool: &str) -> &str {
+    match tool {
+        "claude_cli" => "Claude CLI",
+        "cursor" => "Cursor",
+        "open_design" => "Open Design",
+        "" => "—",
+        other => other,
+    }
+}
 
 /// 读一份仓文件:读不出来就把原话记进 `warnings`,再退回默认值。
 /// 「退回默认值」本身没问题,**不说话**才是问题。
@@ -69,7 +80,7 @@ pub struct UiState {
     pub metrics: Vec<bw_v4::app::collect::MetricReadout>,
     /// 会话屏那块「这次开工喂了什么」。`None` = 面板关着。
     pub briefing: Option<String>,
-    pub db_path: String,
+    pub data_dir: String,
     pub workspaces_root: String,
     /// 接入屏那份仓列表的状态。**不进库** —— 它是「现在去平台问了一次」的结果,
     /// 关掉接入屏就该忘掉。
@@ -317,19 +328,25 @@ pub async fn build(app: &App, ui: &UiState) -> Vm {
         // 未读 = 评审中的活有几张。这个数是现算的,库里没有未读表
         // (MVP 不再按 seen_at 过滤:pr_number/updated_at 是 lossy)。
         let unread = bw_v4::app::count_unseen(&issues);
-        let week_goal = week_plan_file::read(&ws, &week)
-            .ok()
-            .flatten()
-            .filter(|pl| pl.has_goal())
-            .and_then(|pl| pl.goal)
-            .unwrap_or_default();
-        // 上次交付 = 发版记录最后一行。仓里没有那份表就留空,不拿最近一次
-        // commit 冒充「交付」——提交不是交付。
-        let last_delivery = release_file::read(&ws)
-            .ok()
-            .flatten()
-            .and_then(|rows| rows.last().cloned())
-            .map(|r| format!("{} {}", r.released_at, r.version))
+        // 周目标:本周 ops① issue 在 = 有目标(刀6:不再读周计划文件)。
+        // goal 正文先空 —— 以后从 ops① issue 评论里取;现在用一个标记说清
+        // 「已开工、目标正文待填」,免得卡片显示「还没定」而 ops① 明明在跑。
+        let ops1_title = bw_v4::app::ops1_title(&week);
+        let has_goal = issues
+            .iter()
+            .any(|i| i.title == ops1_title && i.status != IssueStatus::Done);
+        let week_goal = if has_goal {
+            "已开工·目标待定".to_string()
+        } else {
+            String::new()
+        };
+        // 上次交付 = 最近一个 git 标签的提交日期 + tag(刀6:不再读
+        // .bw/releases.md)。tags_with_dates 按 creatordate 升序,最后一个 = 最新。
+        let last_delivery = bw_v4::git::tags_with_dates(&ws)
+            .await
+            .into_iter()
+            .last()
+            .map(|(tag, date)| format!("{date} {tag}"))
             .unwrap_or_default();
         cards.push(ProjectCardVm {
             id: p.id,
@@ -366,7 +383,7 @@ pub async fn build(app: &App, ui: &UiState) -> Vm {
         open,
         settings: SettingsVm {
             workspaces_root: ui.workspaces_root.clone(),
-            db_path: ui.db_path.clone(),
+            data_dir: ui.data_dir.clone(),
             claude_binary: v4_engine::resolve_claude_binary(None),
         },
         note: ui.note.clone(),
@@ -494,40 +511,17 @@ async fn build_project(
         issue_policy_file::read(&ws),
         warnings,
     );
-    let plan = read_or_warn(
-        &format!("{}/{viewing_week}.md", week_plan_file::DIR),
-        week_plan_file::read(&ws, &viewing_week),
-        warnings,
-    );
+    // 指标读数从仓 `.bw/metrics/readings.jsonl` 取(刀6:不再读周计划文件的
+    // 「本周指标读数」段)。取的是正在看的那一周。
+    let readings = bw_v4::app::read_metric_readings(&ws, &viewing_week);
 
     // 本周计数与本周运作点在构造之前算好 —— `current_week` 会被 move 进结构体。
     let week_counts_now = build_week_counts(&issues, Some(current_week.as_str()));
     let ops_now = build_ops(&issues, current_week.as_str());
 
-    // 周列表 = 扫 `.bw/plan/` 目录 ∪ 库里活排过的周(设计 06 §2.1 的并集),
-    // 且**本周永远在列表里**——空的本周才有地方触发「开始本周」,真跑路径下
-    // 文件要等 MR 合入才落地,列表不能因此没有本周。
-    let mut weeks = build_weeks(&ws);
-    for w in issues.iter().map(|i| i.week_of.as_str()) {
-        if !w.is_empty() && !weeks.iter().any(|x| x.week == w) {
-            weeks.push(WeekVm {
-                week: w.to_string(),
-                backfill: false,
-                goal: None,
-                activity_count: 0,
-            });
-        }
-    }
-    if !weeks.iter().any(|x| x.week == current_week) {
-        weeks.push(WeekVm {
-            week: current_week.clone(),
-            backfill: false,
-            goal: None,
-            activity_count: 0,
-        });
-    }
-    // 新的在前;没有未来周,所以本周自然排在最上面。
-    weeks.sort_by(|a, b| b.week.cmp(&a.week));
+    // 周列表 = 库里活排过的周(issues 的 `bw:week:*` 标签)∪ 本周。刀6:不再
+    // 扫 `.bw/plan/` 目录(那个文件没人写了,扫到也是旧的)。本周永远在列表里。
+    let weeks = build_weeks(&issues, &current_week);
 
     // 横幅判据:本周运作活① issue 在不在(不再是周计划文件在不在)。
     let ops1_title = bw_v4::app::ops1_title(&current_week);
@@ -536,6 +530,21 @@ async fn build_project(
         .find(|i| i.title == ops1_title && i.status != IssueStatus::Done)
         .map(|i| i.status.label().to_string());
     let week_file_exists = ops1_status.is_some();
+    // 发版历史从 git 标签取(刀6:不再读 .bw/releases.md)。tags_with_dates 按
+    // creatordate 升序,rev() 让最新的在最前。git 标签没有 note / 包含的活,
+    // 那两列如实留空/「—」,不编。
+    let releases: Vec<ReleaseVm> = bw_v4::git::tags_with_dates(&ws)
+        .await
+        .into_iter()
+        .rev()
+        .map(|(tag, date)| ReleaseVm {
+            version: tag,
+            released_at: date,
+            note: String::new(),
+            included: "—".into(),
+            origin: "git 标签".into(),
+        })
+        .collect();
     Some(ProjectVm {
         id,
         slug: p.slug.clone(),
@@ -561,7 +570,7 @@ async fn build_project(
                 .map(|r| (r.ok, r.text.clone()))
                 .collect(),
         },
-        metrics: build_metrics(&ws, plan.as_ref(), &issues, &ui.metrics),
+        metrics: build_metrics(&ws, &issues, &ui.metrics, &readings),
         week_file_exists,
         ops1_status,
         weeks,
@@ -600,27 +609,7 @@ async fn build_project(
             Some((week, titles)) if *week == viewing_week => titles.clone(),
             _ => Vec::new(),
         },
-        releases: release_file::read(&ws)
-            .ok()
-            .flatten()
-            .unwrap_or_default()
-            .into_iter()
-            .map(|r| ReleaseVm {
-                version: r.version,
-                released_at: r.released_at,
-                note: r.note,
-                included: if r.included_numbers.is_empty() {
-                    "—".into()
-                } else {
-                    r.included_numbers
-                        .iter()
-                        .map(|n| format!("#{n}"))
-                        .collect::<Vec<_>>()
-                        .join(" ")
-                },
-                origin: r.origin,
-            })
-            .collect(),
+        releases,
         sessions: sessions.clone(),
         session_open: ui.session_open,
         briefing: ui.briefing.clone(),
@@ -671,7 +660,7 @@ pub(super) fn card_item(i: &bw_v4::Issue) -> CardItemVm {
         number: i.number,
         title: i.title.clone(),
         category: i.category.map(|c| c.label()).unwrap_or("—").into(),
-        tool: week_plan_file::tool_label(&i.tool).into(),
+        tool: tool_label(&i.tool).into(),
         workflow: if i.workflow.is_empty() {
             "—".into()
         } else {

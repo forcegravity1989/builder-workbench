@@ -214,7 +214,7 @@ impl App {
             .project(project_id)
             .await?
             .ok_or_else(|| AppError::NoSuchProject(project_id.uuid().to_string()))?;
-        issue_store::comment(&project, issue_id.iid(), &b).await?;
+        issue_store::comment(self, &project, issue_id.iid(), &b).await?;
         // 没有本地 issue 表了,branch 和 pr_number 不再缓存。branch 由 issue 号决定
         // (bw/issue-<号>),MR 号在合入时由 open_mr_for_branch 现查。
         let _ = issue.pr_number;

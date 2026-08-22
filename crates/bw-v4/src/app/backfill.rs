@@ -16,7 +16,6 @@ use super::{issue_store, App, Result};
 use crate::command::Event;
 use crate::isoweek;
 use crate::model::ProjectId;
-use v4_engine::remote::Remote;
 
 /// 往前最多回填多少周。两年 —— 再往前的周文件对今天的管理没有帮助,只是把
 /// `.bw/plan/` 撑大。扫到就停,不是"扫不动",这一条如实写进回填报告。
@@ -85,11 +84,7 @@ impl App {
         // ── 历史发版(在远端建 Release,按 git 标签幂等)──────────────
         let project = self.project_of(project_id).await?;
         let existing: Vec<String> = if project.has_remote() {
-            match Remote::for_project(
-                &project.provider,
-                &project.remote_host,
-                &project.remote_path,
-            ) {
+            match self.remote_for(&project) {
                 Ok(r) => r.list_releases().await.unwrap_or_default(),
                 Err(_) => Vec::new(),
             }
@@ -98,12 +93,7 @@ impl App {
         };
         let mut releases = Vec::new();
         if project.has_remote() {
-            let remote = Remote::for_project(
-                &project.provider,
-                &project.remote_host,
-                &project.remote_path,
-            )
-            .map_err(|e| super::AppError::Exec(format!("认不出远端类型:{e}")))?;
+            let remote = self.remote_for(&project)?;
             for (tag, _date) in crate::git::tags_with_dates(&ws).await {
                 if existing.contains(&tag) {
                     continue;
@@ -134,8 +124,8 @@ impl App {
 
         // 回填报告挂 ops② 首次 issue 的评论(如果那张活在)。
         let ops2_title = format!("资产盘点 {}", current);
-        if let Ok(Some(ops2)) = issue_store::find_open_by_title(&project, &ops2_title).await {
-            let _ = issue_store::comment(&project, ops2.id.iid(), &note).await;
+        if let Ok(Some(ops2)) = issue_store::find_open_by_title(self, &project, &ops2_title).await {
+            let _ = issue_store::comment(self, &project, ops2.id.iid(), &note).await;
         }
 
         Ok(vec![Event::HistoryBackfilled {

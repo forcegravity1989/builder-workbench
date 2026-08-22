@@ -3,10 +3,15 @@
 //! 三个页签的共同点:**一张登记表都不查**。库里只有四张表,这里的每个数字
 //! 都是打开那一刻现扫仓目录、现走 git、现起子进程得来的。
 
-use crate::repo::{release_file, week_plan_file};
 use crate::vm::*;
 use bw_v4::repo::managed_file;
 use std::path::Path;
+
+/// 知识树里周计划文件所在目录(刀6:这层不再解析它们,知识树只列仓里存在的
+/// 文件供人点开 —— 文件在就在,不在就不列)。
+const PLAN_DIR: &str = ".bw/plan";
+/// 发版记录文件路径。同上:知识树只看它在不在。
+const RELEASES_PATH: &str = ".bw/releases.md";
 
 /// 铺底管账里登记过的文件路径。**一次读完传下去** —— 原来是每个技能包各读
 /// 一次、各解析一次 `.bw/managed.toml`,十几个包就是十几次全文解析,而这段
@@ -75,13 +80,13 @@ pub(super) fn build_kb(ws: &Path, tab: KbTab, open: Option<&str>) -> KbVm {
     push_group(&mut groups, "规范件", spec);
 
     // 周计划倒序:最近的在最上面。回填出来的和人写的同目录同格式,只挂一个徽记。
-    let mut weeks: Vec<KbFileVm> = std::fs::read_dir(ws.join(week_plan_file::DIR))
+    let mut weeks: Vec<KbFileVm> = std::fs::read_dir(ws.join(PLAN_DIR))
         .map(|d| {
             d.flatten()
                 .filter(|e| e.path().extension().is_some_and(|x| x == "md"))
                 .map(|e| {
                     let name = e.file_name().to_string_lossy().to_string();
-                    let rel = format!("{}/{name}", week_plan_file::DIR);
+                    let rel = format!("{}/{name}", PLAN_DIR);
                     // 徽记只看头里那几行,不整篇读 —— 老项目回填后这里可能上百份,
                     // 而这段每重拼一次 ViewModel 就跑一遍。
                     let backfilled = read_head(&e.path())
@@ -105,9 +110,9 @@ pub(super) fn build_kb(ws: &Path, tab: KbTab, open: Option<&str>) -> KbVm {
     push_group(&mut groups, "周计划", weeks);
 
     let mut rel_files = Vec::new();
-    if ws.join(release_file::REL_PATH).is_file() {
+    if ws.join(RELEASES_PATH).is_file() {
         rel_files.push(KbFileVm {
-            rel: release_file::REL_PATH.into(),
+            rel: RELEASES_PATH.into(),
             label: "发版记录".into(),
             badge: String::new(),
         });
@@ -214,26 +219,18 @@ pub(super) async fn build_assets(usage: &[(String, u32)], ws: &Path) -> AssetsVm
         })
         .collect();
 
-    let releases = release_file::read(ws)
-        .ok()
-        .flatten()
-        .unwrap_or_default()
+    // 发版历史从 git 标签取(刀6:不再读 .bw/releases.md)。新的在前
+    // (tags_with_dates 按 creatordate 升序,rev())。note / 包含的活如实空。
+    let releases: Vec<ReleaseVm> = bw_v4::git::tags_with_dates(ws)
+        .await
         .into_iter()
         .rev()
-        .map(|r| ReleaseVm {
-            version: r.version,
-            released_at: r.released_at,
-            note: r.note,
-            included: if r.included_numbers.is_empty() {
-                String::new()
-            } else {
-                r.included_numbers
-                    .iter()
-                    .map(|n| format!("#{n}"))
-                    .collect::<Vec<_>>()
-                    .join(" ")
-            },
-            origin: r.origin,
+        .map(|(tag, date)| ReleaseVm {
+            version: tag,
+            released_at: date,
+            note: String::new(),
+            included: String::new(),
+            origin: "git 标签".into(),
         })
         .collect();
 

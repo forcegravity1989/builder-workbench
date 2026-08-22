@@ -237,22 +237,24 @@ impl App {
 
         // B 类固定枚举标题「编辑项目名片」——在途复用:有则拿同一张,
         // 无则建一张轻量活。
-        let issue =
-            match issue_store::find_open_by_title(&project, issue_store::LIGHT_TITLE).await? {
-                Some(existing) => existing,
-                None => {
-                    issue_store::create(
-                        &project,
-                        issue_store::LIGHT_TITLE,
-                        "名片四字段改动:名称 / 想做什么 / 最像的对标 / 北极星。改的是 \
+        let issue = match issue_store::find_open_by_title(self, &project, issue_store::LIGHT_TITLE)
+            .await?
+        {
+            Some(existing) => existing,
+            None => {
+                issue_store::create(
+                    self,
+                    &project,
+                    issue_store::LIGHT_TITLE,
+                    "名片四字段改动:名称 / 想做什么 / 最像的对标 / 北极星。改的是 \
                      .bw/PROJECT.md 与 .bw/project.toml 两份仓文件,等人评审合入。",
-                        crate::model::IssueKind::Light,
-                        "",
-                        &[],
-                    )
-                    .await?
-                }
-            };
+                    crate::model::IssueKind::Light,
+                    "",
+                    &[],
+                )
+                .await?
+            }
+        };
 
         // 在这张活自己的 worktree 里写文件(主检出不动,走 MR 合入才落地)。
         let tree = worktree::provision(&ws, issue.number).await?;
