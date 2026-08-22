@@ -1,30 +1,22 @@
 //! 老项目历史回填 —— 运作活②「资产盘点」的首次模式(`mode=first`)。
 //!
-//! **三层流水线里,这个文件是第一层**:buddy 自己把能算的数字全算出来,写成
-//! 同格式的正常文件。第二层(agent 读文本、补措辞与 PROJECT.md 草稿)与第三层
-//! (人评审确认)不在这里 —— 第二层要起真 agent 会话,还没做,见
-//! `docs/LEFTOVERS.md`。
+//! 刀5(2026-08-22)迁完:不再写 `.bw/plan/*.md` 周计划文件、不再写
+//! `.bw/releases.md` 发版记录行。历史发版改在远端建 codehub/GitHub Release
+//! (按 git 标签,幂等);回填报告挂 ops② 首次 issue 的评论(如实报「回填了
+//! N 个历史发版、M 个历史周」)。agent 读文本补名片那半仍留给站⑥(不碰)。
 //!
 //! 四条防伪规则,每一条都是预研里真踩出来的:
 //!
-//! 1. **合入按双亲结构判定**(`git log --merges`),不按提交消息里的文字匹配
-//!    —— 文字匹配会漏掉手写的合并提交(样例仓 71 条真实合入漏掉 23 条)。
-//!    `week_stats` 已经是这么算的,这里直接用。
+//! 1. **合入按双亲结构判定**(`git log --merges`),不按提交消息里的文字匹配。
 //! 2. **没有标签就诚实留空**,绝不拿提交日期倒推一个版本号出来。
-//! 3. **周目标不倒推**。历史周当时没写过周目标,回填就写「未发现」——从提交
-//!    消息里编一句「本周主要在重构 X」是最容易过关也最没有价值的假话。
-//! 4. **回填的东西不点灯**。历史周文件与标「回填」的版本行只解释过去,健康灯
-//!    的三条判据一条都不读它们(判据读的是当前周的 git 与本周计划文件)。
-//!
-//! 重跑安全:同一周的文件整份覆盖(和运作活①「这份文件归它管」同一个契约),
-//! 发版行按版本号去重。**已经存在的周文件一律不碰** —— 那可能是人自己写的。
+//! 3. **周目标不倒推**。历史周当时没写过周目标,回填就说「未发现」。
+//! 4. **回填的东西不点灯**。历史发版只解释过去,健康灯的判据一条都不读它们。
 
-use super::{App, Result};
+use super::{issue_store, App, Result};
 use crate::command::Event;
 use crate::isoweek;
 use crate::model::ProjectId;
-use crate::repo::release_file::{self, ReleaseRow};
-use crate::repo::week_plan_file::{self, OpsRow, WeekPlanDraft};
+use v4_engine::remote::Remote;
 
 /// 往前最多回填多少周。两年 —— 再往前的周文件对今天的管理没有帮助,只是把
 /// `.bw/plan/` 撑大。扫到就停,不是"扫不动",这一条如实写进回填报告。
@@ -51,17 +43,13 @@ impl App {
             }]);
         };
 
-        // ── 历史周 ──────────────────────────────────────────
-        let today = isoweek::today_local();
+        // ── 历史周(只统计,不写文件)──────────────────────────────
         let current = isoweek::current_week();
         let mut week =
             time::Date::parse(&first, &time::format_description::well_known::Iso8601::DATE)
                 .map(isoweek::iso_week_of)
                 .unwrap_or_else(|_| current.clone());
 
-        // 先把「首条提交那一周 → 本周」这条链列出来,再**只取最后 104 周**。
-        // 从最早那一周开始数着往前补是反的:接一个五年历史的仓,预算会全花在
-        // 2021 年那头,最近三年一份都没有,而人打开计划屏最先看的就是最近。
         let mut chain = Vec::new();
         while week != current {
             let this = week.clone();
@@ -70,7 +58,6 @@ impl App {
             };
             chain.push(this);
             week = next;
-            // 未来的周、或者链条本身坏了,不要转成死循环。
             if chain.len() > 4000 {
                 break;
             }
@@ -81,99 +68,60 @@ impl App {
             chain.drain(..skipped_old);
         }
 
-        // 先筛出真要补的周,再**一趟遍历**把所有周的读数出齐。第一版是逐周调
-        // `week_stats`(每周三条全量 git log),104 周就是 312 次全史遍历、一分
-        // 多钟同步冻住界面 —— 评审抓的;这 104 周的数据本来就在同一次 git log
-        // 的输出里。
-        let candidates: Vec<String> = chain
-            .into_iter()
-            .filter(|this| {
-                // 那一周之后才建的仓 / 未来的周,week_bounds 解不出来就跳过;
-                // 已经有文件的不碰 —— 那可能是人自己写的。
-                isoweek::week_start(this).is_some_and(|d| d <= today)
-                    && !week_plan_file::exists(&ws, this)
-            })
-            .collect();
-        // git 读不动不能当成「这些周没提交」—— 那是把失败伪装成「没发生」。
-        // 一趟查询失败 = 所有候选周都读不动,如实记数,最后说出来。
-        let (all_stats, unreadable) = match crate::git::week_stats_many(&ws, &candidates).await {
+        // 只统计哪些周有提交(不写文件)。
+        let (all_stats, unreadable) = match crate::git::week_stats_many(&ws, &chain).await {
             Ok(m) => (m, 0usize),
-            Err(_) => (Default::default(), candidates.len()),
+            Err(_) => (Default::default(), chain.len()),
         };
-
         let mut weeks = Vec::new();
-        for this in candidates {
-            let Some(stats) = all_stats.get(&this).cloned() else {
-                continue;
-            };
-            // 那一周什么都没发生,就不要给它凭空造一份文件。
-            if stats.commits == 0 {
-                continue;
+        for this in &chain {
+            if let Some(stats) = all_stats.get(this) {
+                if stats.commits > 0 {
+                    weeks.push(this.clone());
+                }
             }
-
-            let dirs = if stats.top_dirs.is_empty() {
-                "—".to_string()
-            } else {
-                stats.top_dirs.join("、")
-            };
-            let draft = WeekPlanDraft {
-                week: this.clone(),
-                origin: "backfill".into(),
-                // 不倒推。当时没写周目标,回填就说没写。
-                goal: Some(
-                    "(未发现——这一周是回填的,当时没有周计划记录,buddy 不从提交消息里倒推目标)"
-                        .into(),
-                ),
-                activities: Vec::new(),
-                readings: Vec::new(),
-                ops: vec![OpsRow {
-                    title: "历史回填".into(),
-                    status: "回填".into(),
-                    note: format!(
-                        "提交 {} 条 · 合入 {} 条(本地口径,按双亲结构判定)· 改得最多的目录:{dirs}",
-                        stats.commits, stats.merges
-                    ),
-                }],
-                // 复算命令带真实的 unix 秒窗口。**不要写 --since/--until** ——
-                // 那条命令多算一天还会漏算(见 git.rs::week_counts_many 的文档),
-                // 写进正本就是把人引向一条对不上数的复算路。
-                last_week_lines: {
-                    let (s, u) = crate::git::week_window(&this).unwrap_or((0, 0));
-                    vec![format!(
-                        "复算:git log --pretty=format:'%ct %P' | awk -v s={s} -v u={u} '$1>=s && $1<u' | wc -l(合入再加条件 NF>=3)"
-                    )]
-                },
-            };
-            week_plan_file::write(&ws, &this, &week_plan_file::render(&draft))?;
-            weeks.push(this);
         }
 
-        // ── 历史版本 ────────────────────────────────────────
-        let existing: Vec<String> = release_file::read(&ws)?
-            .unwrap_or_default()
-            .into_iter()
-            .map(|r| r.version)
-            .collect();
-        let mut releases = Vec::new();
-        for (tag, date) in crate::git::tags_with_dates(&ws).await {
-            if existing.contains(&tag) {
-                continue;
+        // ── 历史发版(在远端建 Release,按 git 标签幂等)──────────────
+        let project = self.project_of(project_id).await?;
+        let existing: Vec<String> = if project.has_remote() {
+            match Remote::for_project(
+                &project.provider,
+                &project.remote_host,
+                &project.remote_path,
+            ) {
+                Ok(r) => r.list_releases().await.unwrap_or_default(),
+                Err(_) => Vec::new(),
             }
-            let row = ReleaseRow {
-                version: tag.clone(),
-                released_at: date,
-                note: "回填自 git 标签".into(),
-                included_numbers: Vec::new(),
-                origin: "回填 · git tag".into(),
-            };
-            if release_file::append_row(&ws, &row)? {
-                releases.push(tag);
+        } else {
+            Vec::new()
+        };
+        let mut releases = Vec::new();
+        if project.has_remote() {
+            let remote = Remote::for_project(
+                &project.provider,
+                &project.remote_host,
+                &project.remote_path,
+            )
+            .map_err(|e| super::AppError::Exec(format!("认不出远端类型:{e}")))?;
+            for (tag, _date) in crate::git::tags_with_dates(&ws).await {
+                if existing.contains(&tag) {
+                    continue;
+                }
+                // 在远端建 Release(tag = title,空 note)。幂等:已存在的跳过。
+                if remote
+                    .create_release(&tag, &tag, "回填自 git 标签")
+                    .await
+                    .is_ok()
+                {
+                    releases.push(tag);
+                }
             }
         }
 
         let mut note = match (weeks.len(), releases.len()) {
-            (0, 0) => "没有可回填的东西:历史周都已经有文件了,标签也都在发版记录里".to_string(),
-            (w, r) => format!("回填了 {w} 份历史周文件、{r} 行历史版本"),
+            (0, 0) => "没有可回填的东西:历史周都有提交但没文件可写,标签也都在远端了".to_string(),
+            (w, r) => format!("回填了 {w} 个历史周(只统计不写文件)、{r} 个历史发版(远端 Release)"),
         };
         if truncated {
             note.push_str(&format!(
@@ -181,9 +129,15 @@ impl App {
             ));
         }
         if unreadable > 0 {
-            // 失败不能伪装成「那几周没提交」。说清有几周没读成。
             note.push_str(&format!(";另有 {unreadable} 周的 git 记录读不出来,跳过了"));
         }
+
+        // 回填报告挂 ops② 首次 issue 的评论(如果那张活在)。
+        let ops2_title = format!("资产盘点 {}", current);
+        if let Ok(Some(ops2)) = issue_store::find_open_by_title(&project, &ops2_title).await {
+            let _ = issue_store::comment(&project, ops2.id.iid(), &note).await;
+        }
+
         Ok(vec![Event::HistoryBackfilled {
             project_id,
             weeks,

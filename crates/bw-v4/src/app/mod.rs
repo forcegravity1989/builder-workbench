@@ -42,17 +42,15 @@ pub use ops::{ops1_title, skill_slug, OPS1_WORKFLOW, OPS2_WORKFLOW, OPS3_WORKFLO
 pub use progress::{ProgressLine, StepState};
 
 use crate::command::{Command, Event};
-use crate::model::ProjectId;
+use crate::local::{ProjectRegistry, SessionStore, Settings};
+use crate::model::{Conversation, ProjectId};
 use crate::repo::RepoFileError;
-use crate::store::{StoreError, V4Store};
 use std::path::PathBuf;
 use std::sync::Arc;
 use v4_engine::{InteractiveExecutor, TerminalManager};
 
 #[derive(Debug, thiserror::Error)]
 pub enum AppError {
-    #[error(transparent)]
-    Store(#[from] StoreError),
     #[error(transparent)]
     RepoFile(#[from] RepoFileError),
     #[error("git:{0}")]
@@ -76,21 +74,23 @@ pub type Result<T> = std::result::Result<T, AppError>;
 
 /// V4 的编排大脑。
 pub struct App {
-    pub(crate) store: V4Store,
     /// 工作区根目录。项目没单独配路径时,仓就在 `<root>/<slug>`。
     pub(crate) workspaces_root: PathBuf,
     /// 干活入口的后端。没配真实工作区的项目用自我标注的替身
     /// ([`v4_engine::MockInteractiveExecutor`]),产出带【mock】字样。
     pub(crate) executor: Arc<dyn InteractiveExecutor>,
     /// 活着的 PTY 会话。纯内存,进程死了就没了 —— 会话的**身份**在
-    /// `claude_conversation` 表里,那才是重启后接得回来的东西。
+    /// `asset_root/sessions/` 里的 jsonl 文件中,那才是重启后接得回来的东西。
     pub(crate) terminal: TerminalManager,
     /// 桌面壳开、headless 不开。见 [`App::with_pty`]。
     pub(crate) pty_enabled: bool,
     /// 长命令边做边报的口子。桌面壳接上,headless 不接。见
     /// [`progress`](crate::app::progress) —— 只为让人看得见,不承担账目。
     pub(crate) progress: Option<tokio::sync::broadcast::Sender<ProgressLine>>,
-    /// buddy 自己的资产目录 —— 技能库摊在这儿(`<asset_root>/skills/`)。
+    /// buddy 自己的资产目录 —— 技能库摊在这儿(`<asset_root>/skills/`),
+    /// 项目注册表(`<asset_root>/projects.toml`)、全局设置
+    /// (`<asset_root>/settings.toml`)、会话记录
+    /// (`<asset_root>/sessions/<slug>/<iid>.jsonl`)也都在这儿。
     /// **不在任何一个用户项目的仓里**:用户的 `.gitignore` 怎么写不该由 buddy
     /// 决定,而 buddy 自带的剧本每个项目都一样,没有复制 N 份的道理。
     pub(crate) asset_root: PathBuf,
@@ -98,7 +98,6 @@ pub struct App {
 
 impl App {
     pub fn new(
-        store: V4Store,
         workspaces_root: impl Into<PathBuf>,
         executor: Arc<dyn InteractiveExecutor>,
     ) -> Self {
@@ -108,7 +107,6 @@ impl App {
             // [`App::with_asset_root`] 换成库文件旁边那份;headless 例子就用
             // 这个默认值,跑完随临时目录一起没。
             asset_root: workspaces_root.join(".bw-assets"),
-            store,
             workspaces_root,
             executor,
             terminal: TerminalManager::new(),
@@ -122,6 +120,11 @@ impl App {
     pub fn with_asset_root(mut self, root: impl Into<PathBuf>) -> Self {
         self.asset_root = root.into();
         self
+    }
+
+    /// buddy 本机数据目录(注册表/设置/会话/技能都在这下面)。
+    pub fn asset_root(&self) -> &std::path::Path {
+        &self.asset_root
     }
 
     /// buddy 技能库摊在哪。开工前 [`App::ensure_skill_assets`] 保证它是齐的。
@@ -178,23 +181,173 @@ impl App {
         Ok(bootstrap::agent_system_prompt(&issue, &ws, skill.as_ref()))
     }
 
-    pub fn store(&self) -> &V4Store {
-        &self.store
-    }
-
     pub fn workspaces_root(&self) -> &std::path::Path {
         &self.workspaces_root
     }
 
-    /// 某个项目的仓在哪。项目行里配了就用那条路径,没配就是
-    /// `<工作区根目录>/<slug>`。
+    // ── 项目注册表(替代 store.project_*)─────────────────────────────
+
+    /// 读一个项目的完整行。`None` = 注册表里没有。
+    pub async fn project(&self, id: ProjectId) -> Result<Option<crate::model::Project>> {
+        Ok(ProjectRegistry::find_by_id(&self.asset_root, id)?.map(|e| e.to_project()))
+    }
+
+    /// 按 slug 找项目。
+    pub async fn project_by_slug(&self, slug: &str) -> Result<Option<crate::model::Project>> {
+        Ok(ProjectRegistry::find_by_slug(&self.asset_root, slug)?.map(|e| e.to_project()))
+    }
+
+    /// 项目墙的整屏 —— 按注册表顺序。
+    pub async fn projects(&self) -> Result<Vec<crate::model::Project>> {
+        let entries = ProjectRegistry::load(&self.asset_root)?;
+        Ok(entries.iter().map(|e| e.to_project()).collect())
+    }
+
+    /// 取一个项目的完整行。内部辅助,给 issue_store 调用方用的。
+    pub(crate) async fn project_of(&self, project_id: ProjectId) -> Result<crate::model::Project> {
+        self.project(project_id)
+            .await?
+            .ok_or_else(|| AppError::NoSuchProject(project_id.uuid().to_string()))
+    }
+
+    pub(crate) async fn upsert_project(
+        &self,
+        p: &crate::model::Project,
+    ) -> Result<crate::model::Project> {
+        Ok(ProjectRegistry::upsert(&self.asset_root, p)?)
+    }
+
+    pub(crate) async fn remove_project_entry(&self, id: ProjectId) -> Result<u64> {
+        let slug = self.project(id).await?.map(|p| p.slug).unwrap_or_default();
+        let n = ProjectRegistry::remove(&self.asset_root, id)?;
+        // 会话文件跟着清。
+        if !slug.is_empty() {
+            SessionStore::remove_project(&self.asset_root, &slug);
+        }
+        Ok(n)
+    }
+
+    pub(crate) async fn update_project_location(
+        &self,
+        id: ProjectId,
+        name: &str,
+        workspace_path: &str,
+        provider: &str,
+        remote_host: &str,
+        remote_path: &str,
+    ) -> Result<()> {
+        Ok(ProjectRegistry::update_location(
+            &self.asset_root,
+            id,
+            name,
+            workspace_path,
+            provider,
+            remote_host,
+            remote_path,
+        )?)
+    }
+
+    pub(crate) async fn set_project_workspace_path(&self, id: ProjectId, path: &str) -> Result<()> {
+        Ok(ProjectRegistry::set_workspace_path(
+            &self.asset_root,
+            id,
+            path,
+        )?)
+    }
+
+    /// 把现算出来的健康灯写进显示缓存(密封类型,无法手工点绿)。
+    pub async fn cache_project_health(
+        &self,
+        id: ProjectId,
+        health: &crate::derive::DerivedHealth,
+    ) -> Result<()> {
+        Ok(ProjectRegistry::cache_health(&self.asset_root, id, health)?)
+    }
+
+    // ── 全局设置(替代 store.meta workspaces_root)─────────────────────
+
+    pub async fn workspaces_root_setting(&self) -> Option<String> {
+        Settings::get_workspaces_root(&self.asset_root)
+    }
+
+    pub(crate) async fn set_workspaces_root_setting(&self, path: &str) -> Result<()> {
+        Ok(Settings::set_workspaces_root(&self.asset_root, path)?)
+    }
+
+    // ── 通知屏已读(替代 store.meta notify_seen:*)────────────────────
+
+    pub async fn notify_seen(&self, id: ProjectId) -> Option<i64> {
+        ProjectRegistry::get_notify_seen(&self.asset_root, id)
+    }
+
+    pub(crate) async fn set_notify_seen(&self, id: ProjectId, at: i64) -> Result<()> {
+        Ok(ProjectRegistry::set_notify_seen(&self.asset_root, id, at)?)
+    }
+
+    // ── 会话(替代 store.conversation_*)────────────────────────────────
+
+    pub async fn conversation_for_issue(
+        &self,
+        id: crate::model::IssueId,
+    ) -> Result<Option<Conversation>> {
+        let project = self.project(id.project_id()).await?;
+        let Some(p) = project else {
+            return Ok(None);
+        };
+        Ok(SessionStore::read(&self.asset_root, &p.slug, id.iid())?)
+    }
+
+    pub async fn conversations(&self, project_id: ProjectId) -> Result<Vec<Conversation>> {
+        let project = self.project(project_id).await?;
+        let Some(p) = project else {
+            return Ok(Vec::new());
+        };
+        Ok(SessionStore::list(&self.asset_root, &p.slug)?)
+    }
+
+    pub(crate) async fn upsert_conversation(&self, c: &Conversation) -> Result<Conversation> {
+        // 已经有会话就返回既有行(幂等)。
+        if let Some(existing) = self.conversation_for_issue(c.issue_id).await? {
+            return Ok(existing);
+        }
+        let slug = self.slug_of(c.project_id).await?;
+        SessionStore::append(&self.asset_root, &slug, c)?;
+        Ok(c.clone())
+    }
+
+    /// 恢复会话时 claude CLI 回传的 `--resume` id。PTY hook 收到后调这个,
+    /// 把 id 持久化到会话文件,重启后才能精确接回那一次对话。
+    /// V4 的 PTY hook 还没接线,这个方法暂时没人调,但删不得。
+    #[allow(dead_code)]
+    pub(crate) async fn set_conversation_session_id(
+        &self,
+        issue_id: crate::model::IssueId,
+        session_id: &str,
+    ) -> Result<()> {
+        let slug = self.slug_of(issue_id.project_id()).await?;
+        Ok(SessionStore::set_session_id(
+            &self.asset_root,
+            &slug,
+            issue_id,
+            session_id,
+        )?)
+    }
+
+    /// 某个项目的仓在哪。项目行里配了路径就用它,没配就是 `<工作区根目录>/<slug>`。
     pub async fn workspace_of(&self, id: ProjectId) -> Result<PathBuf> {
         let p = self
-            .store
             .project(id)
             .await?
             .ok_or_else(|| AppError::NoSuchProject(id.uuid().to_string()))?;
         Ok(self.workspace_at(&p.slug, &p.workspace_path))
+    }
+
+    /// 按 project id 查 slug。内部辅助。
+    async fn slug_of(&self, id: ProjectId) -> Result<String> {
+        self.project(id)
+            .await?
+            .map(|p| p.slug)
+            .ok_or_else(|| AppError::NoSuchProject(id.uuid().to_string()))
     }
 
     /// 仓该落在哪:项目行里配了路径就用它,没配就是 `<工作区根目录>/<slug>`。

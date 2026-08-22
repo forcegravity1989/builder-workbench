@@ -7,7 +7,6 @@ use super::{App, AppError, Result};
 use crate::command::{Event, ProbeResult};
 use crate::model::{category_key, Category, ProjectId};
 use crate::repo::issue_policy_file::{self, CategoryMapping};
-use crate::store::WORKSPACES_ROOT_KEY;
 
 impl App {
     pub(super) async fn save_tool_mapping(
@@ -63,16 +62,15 @@ impl App {
             .map_err(|e| AppError::Refused(format!("这个目录建不出来:{e}")))?;
         // 先钉死,再换根目录 —— 顺序反了就钉不出老路径了。
         let mut pinned = 0u32;
-        for project in self.store.projects().await? {
+        for project in self.projects().await? {
             if project.workspace_path.trim().is_empty() {
                 let here = self.workspaces_root.join(&project.slug);
-                self.store
-                    .set_project_workspace_path(project.id, &here.display().to_string())
+                self.set_project_workspace_path(project.id, &here.display().to_string())
                     .await?;
                 pinned += 1;
             }
         }
-        self.store.set_meta(WORKSPACES_ROOT_KEY, &path).await?;
+        self.set_workspaces_root_setting(&path).await?;
         self.workspaces_root = p;
         Ok(vec![Event::WorkspacesRootChanged { path, pinned }])
     }

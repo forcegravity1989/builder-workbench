@@ -69,7 +69,7 @@ impl App {
     /// **状态原地不动**。停下来不是失败也不是完成,这张活还在「进行中」,人
     /// 随时能再点▶跑接回去(有 `--resume` id 就精确接回那次对话)。
     pub(super) async fn cancel_run(&mut self, id: IssueId) -> Result<Vec<Event>> {
-        let Some(conv) = self.store.conversation_for_issue(id).await? else {
+        let Some(conv) = self.conversation_for_issue(id).await? else {
             return Ok(vec![Event::RunCancelled {
                 id,
                 was_live: false,
@@ -95,7 +95,7 @@ impl App {
         if !self.pty_enabled {
             return Err(AppError::Refused("这个进程没开内嵌终端,接不回会话".into()));
         }
-        let Some(conv) = self.store.conversation_for_issue(id).await? else {
+        let Some(conv) = self.conversation_for_issue(id).await? else {
             return Err(AppError::Refused(
                 "这张活还没有过会话 —— 点「▶开工」起一场".into(),
             ));
@@ -169,7 +169,7 @@ impl App {
         // 会话(整个进程组被 kill)—— 人跟 agent 谈到一半的上下文就这么没了,
         // 还没有任何提示。顶栏「▶开工」和「■停止」是挨着放的,误点很容易。
         // (光接回上次那场对话不必走这条路,那是 `reopen_session`。)
-        if let Some(existing) = self.store.conversation_for_issue(id).await? {
+        if let Some(existing) = self.conversation_for_issue(id).await? {
             if self.terminal.is_live(existing.id.uuid()) {
                 return Err(AppError::Refused(
                     "这张活的终端还开着。要重开先点「■ 停止」——重开是从头一次新对话,不是接着刚才那段聊。"
@@ -185,7 +185,6 @@ impl App {
         let tree = worktree::provision(&ws, issue.number).await?;
 
         let conv = self
-            .store
             .upsert_conversation(&crate::model::Conversation {
                 id: ConversationId::new(),
                 project_id: issue.project_id,

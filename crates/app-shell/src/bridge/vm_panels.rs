@@ -4,9 +4,10 @@
 //! 软目标了(`scripts/guard-file-lines.sh` 会提醒)。上半截管「一个项目整体
 //! 长什么样」,这半截管「各块面板长什么样」。
 
+use crate::repo::week_plan_file;
 use crate::vm::*;
 use bw_v4::model::{IssueStatus, Project, ProjectId};
-use bw_v4::repo::{issue_policy_file, project_file, week_plan_file};
+use bw_v4::repo::{issue_policy_file, project_file};
 use std::path::Path;
 
 use super::vm_build::{card_item, probe_env, remote_label};
@@ -245,8 +246,7 @@ pub(super) async fn build_sessions(
     id: ProjectId,
     issues: &[bw_v4::Issue],
 ) -> Vec<SessionVm> {
-    app.store()
-        .conversations(id)
+    app.conversations(id)
         .await
         .unwrap_or_default()
         .into_iter()

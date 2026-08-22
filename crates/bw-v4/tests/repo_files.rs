@@ -1,72 +1,12 @@
 //! 仓文件解析器的读回。用的样例就是详细设计 02 篇 §2.5 里那几份文件原文
 //! ——解析器认不认得设计稿给的格式,是这一层唯一要证明的事。
+//!
+//! 刀5:week_plan_file 和 release_file 已从 bw-v4 删掉(搬到 app-shell),
+//! 这两个解析器的测试也跟着搬走了。这里只剩还在 bw-v4 里的仓文件解析器。
 
 use bw_v4::isoweek;
 use bw_v4::model::StageKind;
-use bw_v4::repo::{issue_policy_file, managed_file, project_file, release_file, week_plan_file};
-
-const WEEK_SAMPLE: &str = r#"---
-week: 2026-W34
-origin: human
----
-
-# 2026-W34 周计划
-
-> 正本文件。
-
-## 周目标
-
-把 V4 详细设计稿写完并过一轮内部评审。
-
-## 业务活
-
-| 顺序 | 标题 | 类别 | 工具 | workflow | 预期推动的指标 | 远端 issue |
-|---|---|---|---|---|---|---|
-| 1 | V4 高保真可点击原型 | 原型 | Open Design | 原型设计 workflow | — | #104 |
-| 2 | 减负线两轮收尾合入 | 构建 | Claude CLI | mattpocock-skills | 本周合入活数 | #102 |
-
-## 本周指标读数
-
-| 指标 | 数值 | 来源 | 采集时间 |
-|---|---|---|---|
-| 本周合入活数(引领) | 4 | `git log --merges` 现算 | 2026-08-17 09:00 |
-
-## 本周运作
-
-| 活 | 状态 | 说明 |
-|---|---|---|
-| 运作活①更新指标 + 制定本周计划 | 已完成 08-17 | 复盘上周 |
-"#;
-
-#[test]
-fn week_plan_sample_parses() {
-    let plan = week_plan_file::parse(WEEK_SAMPLE);
-    let fm = plan.front_matter.as_ref().unwrap();
-    assert_eq!(fm.week, "2026-W34");
-    assert!(!fm.is_backfill());
-    assert!(plan.has_goal());
-    assert_eq!(plan.activities.len(), 2);
-    assert_eq!(plan.activities[0].title, "V4 高保真可点击原型");
-    assert_eq!(plan.activities[0].category, Some(StageKind::Prototype));
-    assert_eq!(plan.activities[0].tool, "open_design");
-    assert_eq!(plan.activities[0].metric_key, "", "「—」是留白,不是一个值");
-    assert_eq!(plan.activities[0].remote_number, 104);
-    assert_eq!(plan.activities[1].category, Some(StageKind::Build));
-    assert_eq!(plan.activities[1].tool, "claude_cli");
-    assert!(plan.has_reading());
-    assert_eq!(plan.ops.len(), 1);
-}
-
-#[test]
-fn backfilled_week_placeholders_are_not_real_data() {
-    let raw = "---\nweek: 2026-W32\norigin: backfill\n---\n\n## 周目标\n\n(未发现——历史周没有周计划记录,不倒推)\n";
-    let plan = week_plan_file::parse(raw);
-    assert!(plan.front_matter.as_ref().unwrap().is_backfill());
-    assert!(
-        !plan.has_goal(),
-        "括号包起来的「未发现」是留白,不能当成定过周目标"
-    );
-}
+use bw_v4::repo::{issue_policy_file, managed_file, project_file};
 
 #[test]
 fn iso_week_math_round_trips() {
@@ -85,70 +25,6 @@ fn iso_week_math_round_trips() {
     );
     assert!(isoweek::week_start("2026-W99").is_none(), "假周号不该被认");
     assert!(isoweek::week_start("不是周").is_none());
-}
-
-#[test]
-fn release_rows_parse_and_append_is_idempotent() {
-    let dir = tempdir("release");
-    release_file::write_default_if_missing(&dir).unwrap();
-    let row = release_file::ReleaseRow {
-        version: "v0.1".into(),
-        released_at: "2026-08-20".into(),
-        note: "首个可跑版本".into(),
-        included_numbers: vec![1, 2],
-        origin: "人发".into(),
-    };
-    assert!(
-        release_file::append_row(&dir, &row).unwrap(),
-        "第一次要写进去"
-    );
-    assert!(
-        !release_file::append_row(&dir, &row).unwrap(),
-        "同一个版本号绝不写第二行"
-    );
-    let rows = release_file::read(&dir).unwrap().unwrap();
-    assert_eq!(rows.len(), 1);
-    assert_eq!(rows[0].version, "v0.1");
-    assert_eq!(rows[0].included_numbers, vec![1, 2]);
-    assert_eq!(rows[0].origin, "人发");
-    std::fs::remove_dir_all(dir).ok();
-}
-
-#[test]
-fn foreign_release_table_is_never_written_into() {
-    // 老项目仓里已经有一份格式不同的发版记录 —— 列数与列名都不一样。
-    let dir = tempdir("foreign-release");
-    std::fs::create_dir_all(dir.join(".bw")).unwrap();
-    let foreign = "# 版本登记\n\n| 版本号 | 出包日 | 阶段 | 这一版是什么 | 修了什么 |\n|---|---|---|---|---|\n| 0.3.0 | 2026-08-14 | V3 | 首个安装包 | — |\n";
-    std::fs::write(dir.join(".bw/releases.md"), foreign).unwrap();
-
-    let row = release_file::ReleaseRow {
-        version: "v0.1".into(),
-        released_at: "2026-08-20".into(),
-        note: "主环跑通".into(),
-        included_numbers: vec![4],
-        origin: "人发".into(),
-    };
-    assert!(release_file::append_row(&dir, &row).unwrap());
-
-    let body = std::fs::read_to_string(dir.join(".bw/releases.md")).unwrap();
-    assert!(
-        body.contains("| 0.3.0 | 2026-08-14 | V3 | 首个安装包 | — |"),
-        "人家原来那张表一个字都不该动"
-    );
-    assert!(
-        body.contains("## buddy 管理的发版记录"),
-        "认不出 buddy 那张表时该另起一段,不是往陌生的表里塞行"
-    );
-    // 解析只认 buddy 那张表 —— 老项目那行不该被当成 buddy 的发版记录。
-    let rows = release_file::read(&dir).unwrap().unwrap();
-    assert_eq!(rows.len(), 1);
-    assert_eq!(rows[0].version, "v0.1");
-    assert_eq!(rows[0].note, "主环跑通", "列不能错位");
-    // 再来一次仍然只有一行。
-    assert!(!release_file::append_row(&dir, &row).unwrap());
-    assert_eq!(release_file::read(&dir).unwrap().unwrap().len(), 1);
-    std::fs::remove_dir_all(dir).ok();
 }
 
 #[test]
@@ -250,73 +126,6 @@ fn tempdir(tag: &str) -> std::path::PathBuf {
     let _ = std::fs::remove_dir_all(&d);
     std::fs::create_dir_all(&d).unwrap();
     d
-}
-
-/// 拖一张卡会触发一次周计划文件回写。**人手写在这份文件里的东西一个字都不能
-/// 少** —— 它是正本,而且回写完还会被顺手 commit。
-#[test]
-fn replacing_the_activity_table_keeps_everything_a_human_wrote() {
-    let raw = "---\nweek: 2026-W34\norigin: human\n---\n\n# 2026-W34 周计划\n\n\
-        ## 周目标\n\n第一段目标。\n\n第二段:我还想顺手把门禁修绿。\n\n\
-        ## 业务活\n\n这一段说明是我手写的。\n\n\
-        | 顺序 | 标题 | 类别 | 工具 | workflow | 预期推动的指标 | 远端 issue |\n\
-        |---|---|---|---|---|---|---|\n\
-        | 1 | 老的一张活 | 构建 | Claude CLI | — | — | — |\n\n\
-        ## 我自己加的一节:风险\n\n- 风险一:网关抖\n- 风险二:时间不够\n\n\
-        ## 本周指标读数\n\n| 指标 | 数值 | 来源 | 采集时间 |\n|---|---|---|---|\n\n";
-
-    let rows = vec![week_plan_file::ActivityRow {
-        order: 2.0,
-        title: "新排进来的活".into(),
-        category: None,
-        tool: "claude_cli".into(),
-        workflow: "mattpocock-skills".into(),
-        metric_key: String::new(),
-        remote_number: 0,
-    }];
-    let out =
-        week_plan_file::replace_table(raw, "业务活", &week_plan_file::render_activity_table(&rows))
-            .expect("这一节找得到");
-
-    assert!(
-        out.contains("第二段:我还想顺手把门禁修绿。"),
-        "周目标第二段没了"
-    );
-    assert!(
-        out.contains("这一段说明是我手写的。"),
-        "业务活上面那段说明没了"
-    );
-    assert!(out.contains("## 我自己加的一节:风险"), "人自己加的一节没了");
-    assert!(out.contains("- 风险一:网关抖"), "风险条目没了");
-    assert!(out.contains("## 本周指标读数"), "后面的小节没了");
-    assert!(out.contains("新排进来的活"), "新活没写进去");
-    assert!(!out.contains("老的一张活"), "旧表没被换掉");
-}
-
-/// 标题里带一个竖线,整行不能串列 —— 标题是自由文本,文件是正本。
-#[test]
-fn a_pipe_in_the_title_does_not_shift_every_column() {
-    let rows = vec![week_plan_file::ActivityRow {
-        order: 1.0,
-        title: "修 a|b 解析".into(),
-        category: None,
-        tool: "claude_cli".into(),
-        workflow: "mattpocock-skills".into(),
-        metric_key: "本周合入活数".into(),
-        remote_number: 7,
-    }];
-    let body = format!(
-        "---\nweek: 2026-W34\norigin: human\n---\n\n# x\n\n## 业务活\n\n{}\n",
-        week_plan_file::render_activity_table(&rows)
-    );
-    let plan = week_plan_file::parse(&body);
-    assert_eq!(plan.activities.len(), 1);
-    let a = &plan.activities[0];
-    assert_eq!(a.title, "修 a|b 解析");
-    assert_eq!(a.tool, "claude_cli");
-    assert_eq!(a.workflow, "mattpocock-skills");
-    assert_eq!(a.metric_key, "本周合入活数");
-    assert_eq!(a.remote_number, 7);
 }
 
 /// 接入页的「想做什么 / 北极星」是多行输入框。粘一段带换行、带引号的文字

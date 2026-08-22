@@ -6,7 +6,7 @@
 //! 灯),总览自己从不拿它们当输入。
 //!
 //! 铁律的类型落点在 [`sealed`]:[`DerivedHealth`] 的构造函数是私有的,只有
-//! 本模块的 [`derive_project_health`] 能造出一个来。`V4Store` 收灯的方法只
+//! 本模块的 [`derive_project_health`] 能造出一个来。`ProjectRegistry` 收灯的方法只
 //! 认这个类型,所以「手工把项目点成绿」在类型上就不存在这条路。
 //!
 //! **没数据 = Unknown 灰,不是绿**。三条判据全不成立时给的是

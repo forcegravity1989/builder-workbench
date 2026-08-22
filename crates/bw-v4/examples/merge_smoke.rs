@@ -26,7 +26,6 @@
 use bw_v4::app::App;
 use bw_v4::command::{Command, Event, ProjectIntent, RemoteRef};
 use bw_v4::model::{IssueId, IssueKind, IssueOrigin};
-use bw_v4::V4Store;
 use std::path::{Path, PathBuf};
 use std::process::Command as Cmd;
 use std::sync::Arc;
@@ -58,12 +57,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     install_fake_gh(&root)?;
 
-    let store = V4Store::open(root.join("v4.db").to_str().unwrap()).await?;
-    let mut app = App::new(
-        store.clone(),
-        &root,
-        Arc::new(v4_engine::MockInteractiveExecutor::new()),
-    );
+    let mut app = App::new(&root, Arc::new(v4_engine::MockInteractiveExecutor::new()))
+        .with_asset_root(root.join("assets"));
     let events = app
         .dispatch(Command::CreateProject {
             slug: "proj".into(),

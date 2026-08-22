@@ -10,7 +10,6 @@ rust-version.workspace = true
 # 干活入口:交互式执行器 + 工作区/worktree 供给 + git 读数,全部沿用。
 v4-engine = { workspace = true }
 
-sqlx = { workspace = true }
 # process/fs:起 git 子进程与读写仓文件;net:Open Design 的本机端口探活。
 tokio = { workspace = true, features = ["process", "fs", "net"] }
 async-trait = { workspace = true }
@@ -25,5 +24,3 @@ sha2 = "0.10"
 
 [dev-dependencies]
 tokio = { workspace = true }
-# 库形状读回(tests/schema_shape.rs)直接查 pragma_table_info。
-sqlx = { workspace = true }

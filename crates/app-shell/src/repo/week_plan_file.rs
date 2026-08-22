@@ -9,7 +9,7 @@
 //! 绝不猜一个值出来。
 
 use super::{read_to_string, write_file, Result};
-use crate::model::{category_key, Category, StageKind};
+use bw_v4::model::{category_key, Category, StageKind};
 use std::path::{Path, PathBuf};
 
 pub const DIR: &str = ".bw/plan";
@@ -115,7 +115,7 @@ pub fn list_weeks(workspace: &Path) -> Vec<String> {
         .filter_map(|e| {
             let name = e.file_name().to_string_lossy().to_string();
             let stem = name.strip_suffix(".md")?;
-            crate::isoweek::week_start(stem).map(|_| stem.to_string())
+            bw_v4::isoweek::week_start(stem).map(|_| stem.to_string())
         })
         .collect();
     weeks.sort();
@@ -342,7 +342,7 @@ fn table_rows(body: &str) -> Vec<Vec<String>> {
 /// 类别列既接受显示名(原型/构建/…)也接受机读键(prototype/build/…)。
 pub fn parse_category(cell: &str) -> Option<Category> {
     let t = cell.trim();
-    if let Some(c) = crate::model::category_from_key(t) {
+    if let Some(c) = bw_v4::model::category_from_key(t) {
         return Some(c);
     }
     StageKind::ALL.iter().copied().find(|s| s.label() == t)
@@ -459,7 +459,7 @@ pub struct WeekPlanDraft {
 const EMPTY_GOAL: &str = "(未填——本周还没定目标)";
 
 pub fn render(d: &WeekPlanDraft) -> String {
-    let last_week = crate::isoweek::previous_week(&d.week).unwrap_or_default();
+    let last_week = bw_v4::isoweek::previous_week(&d.week).unwrap_or_default();
     let origin = if d.origin.is_empty() {
         "human"
     } else {

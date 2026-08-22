@@ -35,7 +35,6 @@ impl App {
     ) -> Result<Vec<Event>> {
         let ws = self.workspace_of(project_id).await?;
         let project = self
-            .store
             .project(project_id)
             .await?
             .ok_or_else(|| AppError::NoSuchProject(project_id.uuid().to_string()))?;
@@ -212,7 +211,6 @@ impl App {
         );
         // 刀3:issue 正文在创建时就写了,这里把详细报告写进评论(结构化产出挂评论)。
         let project = self
-            .store
             .project(project_id)
             .await?
             .ok_or_else(|| AppError::NoSuchProject(project_id.uuid().to_string()))?;

@@ -17,6 +17,7 @@
 mod adapters;
 mod bridge;
 mod chrome;
+mod repo;
 mod screens;
 mod theme;
 mod vm;

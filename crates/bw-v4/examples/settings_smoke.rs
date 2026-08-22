@@ -6,7 +6,8 @@
 //!
 //! 验三件事,都是这条设置的承诺:
 //!
-//! 1. 改完**存进了本机库**(`app_meta` 的 `workspaces_root` 一行),重开进程还在。
+//! 1. 改完**存进了本地设置文件**(`settings.toml` 的 `workspaces_root` 一行),
+//!    重开进程还在。
 //! 2. 改完**立刻对新接进来的项目生效** —— 不用重启。
 //! 3. 改完**不动已接入的项目**:老项目的仓还在老地方。这条最容易写错,
 //!    写错的表现是改一下根目录、已有项目集体找不到仓。
@@ -15,7 +16,7 @@
 
 use bw_v4::app::App;
 use bw_v4::command::{Command, ProjectIntent, RemoteRef};
-use bw_v4::V4Store;
+use bw_v4::local::Settings;
 use std::path::PathBuf;
 use std::sync::Arc;
 
@@ -32,17 +33,16 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     }));
     std::fs::create_dir_all(&root)?;
 
-    let db = root.join("v4.db");
+    let assets = root.join("assets");
     let old_root = root.join("workspaces-old");
     let new_root = root.join("workspaces-new");
     std::fs::create_dir_all(&old_root)?;
 
-    let store = V4Store::open(db.to_str().unwrap()).await?;
     let mut app = App::new(
-        store.clone(),
         old_root.clone(),
         Arc::new(v4_engine::MockInteractiveExecutor::default()),
-    );
+    )
+    .with_asset_root(assets.clone());
 
     let intent = |n: &str| ProjectIntent {
         name: n.to_string(),
@@ -59,7 +59,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         workspace_path: String::new(),
     })
     .await?;
-    let before_id = store.project_by_slug("before").await?.unwrap().id;
+    let before_id = app.project_by_slug("before").await?.unwrap().id;
     let before_ws = app.workspace_of(before_id).await?;
     say(
         "步骤 1 · 改之前接的项目落在",
@@ -78,10 +78,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         &format!("{}", new_root.is_dir()),
     );
 
-    // ── 存进库了没有 ────────────────────────────────────────
-    let saved = store.meta(bw_v4::store::WORKSPACES_ROOT_KEY).await?;
+    // ── 存进本地设置了没有 ──────────────────────────────────
+    let saved = app.workspaces_root_setting().await;
     say(
-        "步骤 3 · 库里 app_meta 存的是",
+        "步骤 3 · settings.toml 存的是",
         &format!("{saved:?}(该等于新根目录)"),
     );
 
@@ -93,7 +93,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         workspace_path: String::new(),
     })
     .await?;
-    let after_id = store.project_by_slug("after").await?.unwrap().id;
+    let after_id = app.project_by_slug("after").await?.unwrap().id;
     let after_ws = app.workspace_of(after_id).await?;
     say(
         "步骤 4 · 改之后接的项目落在",
@@ -128,10 +128,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     // ── 重开一次进程:设置还在吗 ─────────────────────────────
     drop(app);
-    let store2 = V4Store::open(db.to_str().unwrap()).await?;
-    let reread = store2.meta(bw_v4::store::WORKSPACES_ROOT_KEY).await?;
+    let reread = Settings::get_workspaces_root(&assets);
     say(
-        "步骤 7 · 重开库再读",
+        "步骤 7 · 重开再读",
         &format!("{reread:?}(重启后设置不该丢)"),
     );
     Ok(())

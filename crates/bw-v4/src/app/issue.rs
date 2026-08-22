@@ -17,14 +17,6 @@ use crate::model::{Category, Issue, IssueId, IssueKind, IssueOrigin, IssueStatus
 use v4_engine::{build_startup_plan, InteractiveExecutor, RunCtx, TuiAgentConfig};
 
 impl App {
-    /// 取一个项目的完整行。内部辅助,给 issue_store 调用方用的。
-    pub(crate) async fn project_of(&self, project_id: ProjectId) -> Result<crate::model::Project> {
-        self.store
-            .project(project_id)
-            .await?
-            .ok_or_else(|| AppError::NoSuchProject(project_id.uuid().to_string()))
-    }
-
     #[allow(clippy::too_many_arguments)]
     pub(super) async fn create_issue(
         &mut self,
@@ -304,7 +296,7 @@ impl App {
 
     /// 列出项目的全部活(从远端现读)。没挂远端 → 空。
     pub async fn issues(&self, project_id: ProjectId) -> Vec<Issue> {
-        let Ok(Some(project)) = self.store.project(project_id).await else {
+        let Ok(Some(project)) = self.project(project_id).await else {
             return Vec::new();
         };
         if !project.has_remote() {

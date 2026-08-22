@@ -20,7 +20,7 @@ impl App {
         workspace_path: String,
     ) -> Result<Vec<Event>> {
         // 幂等:同名项目已存在就原样返回,不建第二行。
-        if let Some(existing) = self.store.project_by_slug(&slug).await? {
+        if let Some(existing) = self.project_by_slug(&slug).await? {
             self.step(ProgressLine::ok(
                 1,
                 format!("库里已经有 {slug} 这个项目了,没重复建"),
@@ -54,7 +54,7 @@ impl App {
             created_at: 0,
             updated_at: 0,
         };
-        let row = self.store.upsert_project(&row).await?;
+        let row = self.upsert_project(&row).await?;
         self.step(ProgressLine::ok(3, format!("项目 {slug} 已落库")));
 
         // 意图落仓文件。
@@ -212,12 +212,11 @@ impl App {
     /// 还在哪儿,人真要删自己去删。
     pub(super) async fn remove_project(&mut self, project_id: ProjectId) -> Result<Vec<Event>> {
         let project = self
-            .store
             .project(project_id)
             .await?
             .ok_or_else(|| AppError::NoSuchProject(project_id.uuid().to_string()))?;
         let ws = self.workspace_of(project_id).await?;
-        let issues = self.store.delete_project(project_id).await?;
+        let issues = self.remove_project_entry(project_id).await?;
         Ok(vec![Event::ProjectRemoved {
             slug: project.slug,
             issues,
@@ -232,7 +231,6 @@ impl App {
     ) -> Result<Vec<Event>> {
         let ws = self.workspace_of(project_id).await?;
         let project = self
-            .store
             .project(project_id)
             .await?
             .ok_or_else(|| AppError::NoSuchProject(project_id.uuid().to_string()))?;
@@ -280,16 +278,15 @@ impl App {
         crate::repo::write_file(&tree.path, standard::CHARTER_REL_PATH, &body)?;
 
         // 库里的名字是项目墙的显示缓存,跟着改一次。
-        self.store
-            .update_project_location(
-                project_id,
-                &intent.name,
-                &project.workspace_path,
-                &project.provider,
-                &project.remote_host,
-                &project.remote_path,
-            )
-            .await?;
+        self.update_project_location(
+            project_id,
+            &intent.name,
+            &project.workspace_path,
+            &project.provider,
+            &project.remote_host,
+            &project.remote_path,
+        )
+        .await?;
 
         Ok(vec![Event::ProjectCardEditPending { issue_id: issue.id }])
     }
@@ -324,9 +321,7 @@ impl App {
         project_id: ProjectId,
         at: i64,
     ) -> Result<Vec<Event>> {
-        self.store
-            .set_meta(&crate::store::notify_seen_key(project_id), &at.to_string())
-            .await?;
+        self.set_notify_seen(project_id, at).await?;
         Ok(vec![Event::NotifySeenMarked { project_id }])
     }
 }

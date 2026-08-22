@@ -21,7 +21,6 @@
 use bw_v4::app::App;
 use bw_v4::command::{Command, Event, ProjectIntent, RemoteRef};
 use bw_v4::model::{IssueKind, IssueOrigin, IssueStatus};
-use bw_v4::V4Store;
 use std::path::{Path, PathBuf};
 use std::process::Command as Cmd;
 use std::sync::Arc;
@@ -50,12 +49,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     git(&ws, &["remote", "add", "origin", bare.to_str().unwrap()])?;
     git(&ws, &["push", "-u", "origin", "main"])?;
 
-    let store = V4Store::open(root.join("v4.db").to_str().unwrap()).await?;
-    let mut app = App::new(
-        store.clone(),
-        &root,
-        Arc::new(v4_engine::MockInteractiveExecutor::new()),
-    );
+    let mut app = App::new(&root, Arc::new(v4_engine::MockInteractiveExecutor::new()))
+        .with_asset_root(root.join("assets"));
 
     // provider=github + 一个假 owner/repo:开 MR 那一步会走 `gh`。
     let events = app

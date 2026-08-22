@@ -15,8 +15,8 @@ pub use nav::{GuideNav, Panel, PanelNav, TopView};
 use crate::vm::Vm;
 use bw_v4::app::App;
 use bw_v4::command::Command;
+use bw_v4::local::Settings;
 use bw_v4::model::ProjectId;
-use bw_v4::V4Store;
 use std::path::PathBuf;
 use std::sync::Arc;
 use std::time::Duration;
@@ -183,13 +183,9 @@ impl Bridge {
     }
 }
 
-/// 库文件默认落在**和旧壳同一个目录、不同名字**:旧壳开 `workbench.db`,
-/// 新壳开 `workbench-v4.db`。两个库互不相扰,但放在一起,人找得到、备份
-/// 一起带走。`BW_DB` 覆盖。
-pub fn db_path() -> String {
-    if let Ok(p) = std::env::var("BW_DB") {
-        return p;
-    }
+/// buddy 本机数据(注册表、设置、会话)落在哪个目录。和旧壳同一个位置,
+/// 但不再有 `.db` 文件 —— 全是 TOML/JSONL。`BW_DB` 仍可覆盖目录(取 parent)。
+pub fn data_dir() -> PathBuf {
     let base = if cfg!(target_os = "macos") {
         std::env::var("HOME")
             .map(|h| format!("{h}/Library/Application Support/BuildersWorkbench"))
@@ -203,13 +199,22 @@ pub fn db_path() -> String {
             .map(|h| format!("{h}/.local/share/builders-workbench"))
             .ok()
     };
-    match base {
-        Some(dir) => {
-            let _ = std::fs::create_dir_all(&dir);
-            format!("{dir}/{}", bw_v4::DEFAULT_DB_FILENAME)
+    let dir = match base {
+        Some(d) => PathBuf::from(d),
+        None => dirs_home().join(".builders-workbench"),
+    };
+    let _ = std::fs::create_dir_all(&dir);
+    // BW_DB 仍可覆盖(取它的 parent 当目录,向后兼容)。
+    if let Ok(p) = std::env::var("BW_DB") {
+        let path = PathBuf::from(&p);
+        if let Some(parent) = path.parent() {
+            if !parent.as_os_str().is_empty() {
+                let _ = std::fs::create_dir_all(parent);
+                return parent.to_path_buf();
+            }
         }
-        None => bw_v4::DEFAULT_DB_FILENAME.to_string(),
     }
+    dir
 }
 
 pub fn workspaces_root() -> PathBuf {
@@ -218,18 +223,11 @@ pub fn workspaces_root() -> PathBuf {
         .unwrap_or_else(|_| dirs_home().join(".builders-workbench").join("workspaces"))
 }
 
-/// buddy 自己的资产放哪(技能库摊在 `<这里>/skills/`)。**跟着库文件走,不跟
-/// 工作区走** —— 它是 buddy 自带的东西,和用户把仓放在哪没关系;工作区根目录
-/// 是可以随时改的,资产不该跟着搬家。
+/// buddy 自己的资产放哪(技能库摊在 `<这里>/skills/`,注册表/设置/会话也在
+/// 这儿)。**跟着本机数据目录走,不跟工作区走** —— 它是 buddy 自带的东西,
+/// 和用户把仓放在哪没关系;工作区根目录是可以随时改的,资产不该跟着搬家。
 pub fn asset_root() -> PathBuf {
-    // `BW_DB=v4.db` 这种裸文件名的 `parent()` 是空串,直接 join 会得到相对路径
-    // `assets` —— 而这个路径要作为 `--add-dir` 传给 agent,agent 的工作目录是活
-    // 自己的 worktree,相对路径在那儿指向的是另一个地方。空的就回落到家目录。
-    let db = PathBuf::from(db_path());
-    match db.parent() {
-        Some(d) if !d.as_os_str().is_empty() => d.join("assets"),
-        _ => dirs_home().join(".builders-workbench").join("assets"),
-    }
+    data_dir().join("assets")
 }
 
 fn dirs_home() -> PathBuf {
@@ -421,23 +419,14 @@ pub fn spawn(deep_link: DeepLink) -> Bridge {
                 .build()
                 .expect("内核 runtime 起不来");
             rt.block_on(async move {
-                let db = db_path();
-                let store = match V4Store::open(&db).await {
-                    Ok(s) => s,
-                    Err(e) => {
-                        let _ = vm_tx.send(Vm {
-                            ready: true,
-                            fatal: Some(format!("本机数据库打不开({db}):{e}")),
-                            ..Vm::default()
-                        });
-                        return;
-                    }
-                };
-                // 工作区根目录三级取值:**人在设置屏改过的最大**(存在库的
-                // `app_meta` 里),其次是 `BW_WORKSPACES`(开发期覆盖),最后
-                // 才是默认值。人改过就该一直算数,不然设置屏那个输入框是假的。
-                let root = match store.meta(bw_v4::store::WORKSPACES_ROOT_KEY).await {
-                    Ok(Some(saved)) if !saved.trim().is_empty() => PathBuf::from(saved.trim()),
+                let assets = asset_root();
+                let _ = std::fs::create_dir_all(&assets);
+                // 工作区根目录三级取值:**人在设置屏改过的最大**(存在本地
+                // 设置文件 `settings.toml` 里),其次是 `BW_WORKSPACES`(开发期
+                // 覆盖),最后才是默认值。人改过就该一直算数,不然设置屏那个
+                // 输入框是假的。
+                let root = match Settings::get_workspaces_root(&assets) {
+                    Some(saved) if !saved.trim().is_empty() => PathBuf::from(saved.trim()),
                     _ => workspaces_root(),
                 };
                 let _ = std::fs::create_dir_all(&root);
@@ -445,12 +434,11 @@ pub fn spawn(deep_link: DeepLink) -> Bridge {
                 // 见、随时能停。指挥器那条路仍然走自我标注的替身 —— 它没有界
                 // 面渲染字节流。
                 let mut app = App::new(
-                    store.clone(),
                     root.clone(),
                     Arc::new(v4_engine::InteractiveCliExecutor::new()),
                 )
                 .with_pty()
-                .with_asset_root(asset_root())
+                .with_asset_root(assets.clone())
                 .with_progress(prog_tx.clone());
 
                 let mut ui = vm_build::UiState {
@@ -472,7 +460,7 @@ pub fn spawn(deep_link: DeepLink) -> Bridge {
                     note: None,
                     note_seq: 0,
                     pending_drafts: None,
-                    db_path: db.clone(),
+                    db_path: assets.display().to_string(),
                     workspaces_root: root.display().to_string(),
                     repos: crate::vm::RepoPickerVm::default(),
                 };
@@ -482,7 +470,7 @@ pub fn spawn(deep_link: DeepLink) -> Bridge {
 
                 // 深链:BW_OPEN=<slug 或项目名> 打开某个项目。
                 if let Some(want) = &deep_link.open {
-                    match vm_build::find_project(&store, want).await {
+                    match vm_build::find_project(&app, want).await {
                         Some(p) => {
                             ui.open = Some(p.id);
                             eprintln!(
@@ -495,7 +483,7 @@ pub fn spawn(deep_link: DeepLink) -> Bridge {
                 }
 
                 let mut vm = vm_build::build(&app, &ui).await;
-                eprintln!("[BW_BOOT] projects={} db={db}", vm.projects.len());
+                eprintln!("[BW_BOOT] projects={} assets={}", vm.projects.len(), assets.display());
                 // 环境条的探活结果也打出来 —— 它说「找不到 claude」的时候,人
                 // 得能在终端里拿 `which claude` 当场对。2026-08-20 就栽在这上面:
                 // 探活在 macOS 上恒返回「找不到」,而界面上没有任何办法核。
@@ -769,7 +757,7 @@ pub fn spawn(deep_link: DeepLink) -> Bridge {
                             // 常态。
                             if let Some(iid) = id {
                                 if let Ok(Some(conv)) =
-                                    app.store().conversation_for_issue(iid).await
+                                    app.conversation_for_issue(iid).await
                                 {
                                     if !app.pty_live(conv.id) {
                                         if let Err(e) = app
@@ -873,7 +861,7 @@ pub fn spawn(deep_link: DeepLink) -> Bridge {
                                 // 按钮却毫无反应,只会以为按钮坏了(评审抓的)。
                                 // git 那几项本来就不需要项目行,照采;只有远端那条
                                 // 线缺了地址,如实说一句。
-                                let proj = app.store().project(pid).await.ok().flatten();
+                                let proj = app.project(pid).await.ok().flatten();
                                 match app.workspace_of(pid).await {
                                     Ok(ws) => {
                                         let back = tx_back.clone();

@@ -1,43 +1,40 @@
-//! 健康三判据的现算:从仓文件与 git 现场取输入,交给密封的推导函数。
+//! 健康四判据的现算:从 issue、仓文件、git、远端取输入,交给密封的推导函数。
 //!
 //! 这一层只负责**收集输入**——判什么颜色是 [`crate::derive`] 的事,收集与判断
 //! 分开,才能保证「灯只可能是算出来的」。
 //!
-//! ## 现状与刀5 迁移(2026-08-22)
-//!
-//! 当前周 `.bw/plan/<week>.md` 现由 ops① 的 agent 会话产出(`plan.rs` 不再
-//! 主动写)。走替身路径(headless / 没开 PTY / agent 跑输了)时这份文件不会
-//! 存在 → `has_week_goal` / `has_metric_reading` 恒 false,健康因此缺两条
-//! 判据。**刀5 会修这条**:`has_goal` 改读 ops① issue、`has_reading` 改读仓
-//! `readings.jsonl`、`released` 改读 codehub Releases、`any_metric_red` 接真
-//! 比对——届时删掉 `week_plan_file` / `release_file` 这两个依赖。下方的
-//! `any_metric_red: false` 那行注释已是「还没接比对」,如实保留,不动。
+//! 刀5(2026-08-22)迁完:判据不再读 `week_plan_file` / `release_file`(这两个
+//! 模块已删)。`has_week_goal` 改查 ops① issue 在不在;`has_metric_reading` 和
+//! `any_metric_red` 改读仓 `.bw/metrics/readings.jsonl`;`released` 改读 git
+//! 标签日期(比 `Remote::list_releases` 只回 tag 名更有日期,且不依赖网关)。
 
 use super::{App, Result};
 use crate::derive::{derive_project_health, DerivedHealth, HealthInputs};
 use crate::isoweek;
-use crate::model::ProjectId;
-use crate::repo::week_plan_file;
+use crate::model::{Issue, IssueStatus, Project, ProjectId};
+use crate::repo::metrics_file;
 use std::path::Path;
 
-/// 从一个仓现场取三条判据的输入。git 读不到(不是仓、没提交)一律当「没有」,
-/// 不报错——没数据本来就是合法状态,结果是灰灯而不是崩溃。
-pub async fn collect_health_inputs(workspace: &Path, week: &str) -> HealthInputs {
+/// 从 issue 列表 + 仓现场取四条判据的输入。git 读不到(不是仓、没提交)一律当
+/// 「没有」,不报错——没数据本来就是合法状态,结果是灰灯而不是崩溃。
+pub async fn collect_health_inputs(
+    _project: &Project,
+    workspace: &Path,
+    week: &str,
+    issues: &[Issue],
+) -> HealthInputs {
     let last_week = isoweek::previous_week(week).unwrap_or_default();
 
-    let this_plan = week_plan_file::read(workspace, week).ok().flatten();
-    let last_plan = if last_week.is_empty() {
-        None
-    } else {
-        week_plan_file::read(workspace, &last_week).ok().flatten()
-    };
+    // (a) has_week_goal:本周的运作活① issue 在不在(标题 = ops1_title(week))。
+    let ops1_title = crate::app::ops1_title(week);
+    let has_week_goal = issues
+        .iter()
+        .any(|i| i.title == ops1_title && i.status != IssueStatus::Done);
 
     // 「这个仓 git 读得动吗」单独问一次:读不动的时候「零提交」说明不了任何
     // 事,不能拿去判红(新接入的项目第一眼看到红灯,是在编)。
     let git_readable = crate::git::is_repo(workspace).await;
-    // 本周 + 上周的计数**一趟遍历出齐**。这一段在每次重拼界面数据的路上,
-    // 第一版逐周各查一遍(每查还带一次没人用的 numstat),10 个 git 子进程
-    // 把内核单线程按住约 2 秒 —— 评审抓的,现在是 1 个子进程约 25 毫秒。
+    // 本周 + 上周的计数**一趟遍历出齐**。
     let mut wanted = vec![week.to_string()];
     if !last_week.is_empty() {
         wanted.push(last_week.clone());
@@ -48,27 +45,128 @@ pub async fn collect_health_inputs(workspace: &Path, week: &str) -> HealthInputs
     let committed_this_week = counts.get(week).is_some_and(|c| c.commits > 0);
     let committed_last_week = counts.get(&last_week).is_some_and(|c| c.commits > 0);
     let merged_last_week = counts.get(&last_week).is_some_and(|c| c.merges > 0);
-    // 上周发过版也算交付。发版记录的正本是仓文件,不查库。
-    let released = crate::repo::release_file::read(workspace)
-        .ok()
-        .flatten()
-        .is_some_and(|rows| {
-            rows.iter()
-                .any(|r| week_of_date(&r.released_at).as_deref() == Some(last_week.as_str()))
-        });
+
+    // (b) has_metric_reading + any_metric_red:读仓 `.bw/metrics/readings.jsonl`。
+    let readings = read_readings(workspace, week);
+    let last_readings = if last_week.is_empty() {
+        Vec::new()
+    } else {
+        read_readings(workspace, &last_week)
+    };
+    let has_metric_reading = !readings.is_empty() || !last_readings.is_empty();
+    let any_metric_red = check_metric_red(workspace, &readings).await;
+
+    // (c) delivered_last_week:上周有合入 或 上周有发版(git 标签日期)。
+    let released = git_tag_in_week(workspace, &last_week).await;
 
     HealthInputs {
-        has_week_goal: this_plan.as_ref().is_some_and(|p| p.has_goal()),
+        has_week_goal,
         committed_this_week,
         committed_last_week,
         git_readable,
-        has_metric_reading: this_plan.as_ref().is_some_and(|p| p.has_reading())
-            || last_plan.as_ref().is_some_and(|p| p.has_reading()),
-        // 读数是否越线要按 `.bw/metrics.toml` 的目标判 —— A 刀还没接指标目标
-        // 比对,这里如实给 false(不假装判过),接上之前灯不会因此变红。
-        any_metric_red: false,
+        has_metric_reading,
+        any_metric_red,
         delivered_last_week: merged_last_week || released,
     }
+}
+
+// ── readings.jsonl 读数 ──────────────────────────────────────────────
+
+/// `.bw/metrics/readings.jsonl` 的一行读数。
+#[derive(serde::Deserialize)]
+struct Reading {
+    week: String,
+    name: String,
+    value: String,
+}
+
+/// 读指定周的读数行。文件不存在 / 格式坏 = 空(不报错,没数据是合法状态)。
+fn read_readings(workspace: &Path, week: &str) -> Vec<Reading> {
+    let path = workspace.join(".bw/metrics/readings.jsonl");
+    let Ok(raw) = std::fs::read_to_string(&path) else {
+        return Vec::new();
+    };
+    raw.lines()
+        .filter(|l| !l.trim().is_empty())
+        .filter_map(|l| serde_json::from_str::<Reading>(l).ok())
+        .filter(|r| r.week == week)
+        .collect()
+}
+
+/// 比对读数与 `.bw/metrics.toml` 的 target。无读数 / 无定义 / 解析不出 → false
+/// (不假装红)。
+async fn check_metric_red(workspace: &Path, readings: &[Reading]) -> bool {
+    if readings.is_empty() {
+        return false;
+    }
+    let Ok(Some(metrics)) = metrics_file::read(workspace) else {
+        return false;
+    };
+    for r in readings {
+        let Some(def) = metrics.all().into_iter().find(|d| d.name == r.name) else {
+            continue;
+        };
+        if target_violated(&def.target, &r.value) {
+            return true;
+        }
+    }
+    false
+}
+
+/// 简单比对 target(如 `≥5` `≤24h`)与读数值。解析不出就当没越线(false)。
+fn target_violated(target: &str, value: &str) -> bool {
+    let target = target.trim();
+    if target.is_empty() {
+        return false;
+    }
+    // 拆运算符和数值。
+    let (op, num_str) = if let Some(s) = target.strip_prefix("≥") {
+        (">=", s)
+    } else if let Some(s) = target.strip_prefix("≤") {
+        ("<=", s)
+    } else if let Some(s) = target.strip_prefix(">") {
+        (">", s)
+    } else if let Some(s) = target.strip_prefix("<") {
+        ("<", s)
+    } else if let Some(s) = target.strip_prefix("=") {
+        ("==", s)
+    } else {
+        return false;
+    };
+    // 去掉单位后缀(h、d、% 等),只比数值。
+    let target_num: f64 = num_str
+        .chars()
+        .take_while(|c| c.is_ascii_digit() || *c == '.')
+        .collect::<String>()
+        .parse()
+        .ok()
+        .unwrap_or(f64::INFINITY);
+    let value_num: f64 = value
+        .chars()
+        .take_while(|c| c.is_ascii_digit() || *c == '.')
+        .collect::<String>()
+        .parse()
+        .ok()
+        .unwrap_or(f64::NEG_INFINITY);
+    match op {
+        ">=" => value_num < target_num,
+        "<=" => value_num > target_num,
+        ">" => value_num <= target_num,
+        "<" => value_num >= target_num,
+        "==" => (value_num - target_num).abs() > f64::EPSILON,
+        _ => false,
+    }
+}
+
+/// git 标签日期落在指定周 → true。读不动 = false(不假装发过版)。
+async fn git_tag_in_week(workspace: &Path, week: &str) -> bool {
+    if week.is_empty() {
+        return false;
+    }
+    crate::git::tags_with_dates(workspace)
+        .await
+        .iter()
+        .any(|(_tag, date)| week_of_date(date).as_deref() == Some(week))
 }
 
 /// `2026-08-20` → `2026-W34`。认不出格式就返回 `None`,不猜。
@@ -82,16 +180,18 @@ fn week_of_date(s: &str) -> Option<String> {
 }
 
 impl App {
-    /// 现算一次健康,并把结果写回项目墙的显示缓存。
+    /// 现算一次健康,并把结果写回项目注册表的显示缓存。
     ///
-    /// 总览屏自己从不读那两个缓存列当输入——它每次都调这个函数重算。缓存只
-    /// 服务「不打开任何项目也要看见灯」的项目墙。
+    /// 项目墙的灯读注册表缓存;打开项目时 `build_project` 会调
+    /// `collect_health_inputs` 重算并顺手写回缓存。
     pub async fn recompute_health(&self, project_id: ProjectId) -> Result<DerivedHealth> {
+        let project = self.project_of(project_id).await?;
         let ws = self.workspace_of(project_id).await?;
         let week = isoweek::current_week();
-        let inputs = collect_health_inputs(&ws, &week).await;
+        let issues = self.issues(project_id).await;
+        let inputs = collect_health_inputs(&project, &ws, &week, &issues).await;
         let health = derive_project_health(&inputs);
-        self.store.cache_project_health(project_id, &health).await?;
+        self.cache_project_health(project_id, &health).await?;
         Ok(health)
     }
 }

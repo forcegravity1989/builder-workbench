@@ -3,8 +3,9 @@
 //! 三个页签的共同点:**一张登记表都不查**。库里只有四张表,这里的每个数字
 //! 都是打开那一刻现扫仓目录、现走 git、现起子进程得来的。
 
+use crate::repo::{release_file, week_plan_file};
 use crate::vm::*;
-use bw_v4::repo::{managed_file, release_file, week_plan_file};
+use bw_v4::repo::managed_file;
 use std::path::Path;
 
 /// 铺底管账里登记过的文件路径。**一次读完传下去** —— 原来是每个技能包各读

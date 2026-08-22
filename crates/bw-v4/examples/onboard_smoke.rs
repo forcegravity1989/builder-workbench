@@ -23,7 +23,6 @@
 
 use bw_v4::app::{App, ProgressLine};
 use bw_v4::command::{Command, ProjectIntent, RemoteRef};
-use bw_v4::V4Store;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
 
@@ -63,13 +62,12 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let workspaces = root.join("workspaces");
     std::fs::create_dir_all(&workspaces)?;
-    let store = V4Store::open(root.join("v4.db").to_str().unwrap()).await?;
     let (prog_tx, mut prog_rx) = tokio::sync::broadcast::channel::<ProgressLine>(64);
     let mut app = App::new(
-        store.clone(),
         workspaces.clone(),
         Arc::new(v4_engine::MockInteractiveExecutor::default()),
     )
+    .with_asset_root(workspaces.join(".bw-assets"))
     .with_progress(prog_tx);
 
     // 每一档跑完就把这一档报的进度行倒出来 —— 界面上看到的就是这些。
@@ -143,7 +141,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         "档 3 · 库里留下项目了吗",
         &format!(
             "{:?}(该是 None —— 留下就删不掉了)",
-            store.project_by_slug("junk").await?.map(|p| p.slug)
+            app.project_by_slug("junk").await?.map(|p| p.slug)
         ),
     );
     say(
@@ -152,7 +150,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     );
 
     // ── 4 · 幂等 ────────────────────────────────────────────
-    let before = store.projects().await?.len();
+    let before = app.projects().await?.len();
     app.dispatch(Command::CreateProject {
         slug: "no-remote".into(),
         intent: intent("再接一次"),
@@ -165,7 +163,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         "档 4 · 项目条数",
         &format!(
             "接之前 {before} → 接之后 {}(该一样)",
-            store.projects().await?.len()
+            app.projects().await?.len()
         ),
     );
 
@@ -174,7 +172,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // 真的建了、来源是 auto、而且**状态最远只到评审中** —— 自动建的活绝不
     // 自动完成,这条是铁律。
     for slug in ["no-remote", "already"] {
-        let pid = store.project_by_slug(slug).await?.unwrap().id;
+        let pid = app.project_by_slug(slug).await?.unwrap().id;
         let rows = app.issues(pid).await;
         let shown: Vec<String> = rows
             .iter()
@@ -340,7 +338,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // ── 7 · 从工作台移走 ────────────────────────────────────
     // 项目卡右上角那个 ×。只动库,绝不动仓 —— 这条要能读回来,不然「移走」
     // 就成了「删掉我的代码」。
-    let gone = store.project_by_slug("already").await?.unwrap().id;
+    let gone = app.project_by_slug("already").await?.unwrap().id;
     let ws_before = already.join(".git").is_dir();
     let ev = app
         .dispatch(Command::RemoveProject { project_id: gone })
@@ -350,7 +348,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         "档 7 · 库里还有它吗",
         &format!(
             "项目={:?} · 活={} 张(都该是空)",
-            store.project_by_slug("already").await?.map(|p| p.slug),
+            app.project_by_slug("already").await?.map(|p| p.slug),
             app.issues(gone).await.len()
         ),
     );

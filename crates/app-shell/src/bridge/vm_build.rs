@@ -4,12 +4,12 @@
 //! 几次,全部当场从库、仓文件、git 取。**没有的就留空**,绝不为了界面好看
 //! 填一个 0 或者一个假名字。
 
+use crate::repo::{release_file, week_plan_file};
 use crate::vm::*;
 use bw_v4::app::App;
 use bw_v4::command::Event;
 use bw_v4::model::{IssueStatus, Project, ProjectId};
-use bw_v4::repo::{issue_policy_file, project_file, release_file, week_plan_file};
-use bw_v4::V4Store;
+use bw_v4::repo::{issue_policy_file, project_file};
 
 use super::vm_derive::{build_card_mr, build_notify_events, build_ops, build_week_counts};
 use super::vm_kb::build_kb;
@@ -77,12 +77,11 @@ pub struct UiState {
 }
 
 /// 深链按 slug 找,找不到再按显示名找。
-pub async fn find_project(store: &V4Store, want: &str) -> Option<Project> {
-    if let Ok(Some(p)) = store.project_by_slug(want).await {
+pub async fn find_project(app: &App, want: &str) -> Option<Project> {
+    if let Ok(Some(p)) = app.project_by_slug(want).await {
         return Some(p);
     }
-    store
-        .projects()
+    app.projects()
         .await
         .ok()?
         .into_iter()
@@ -299,8 +298,7 @@ impl UiState {
 }
 
 pub async fn build(app: &App, ui: &UiState) -> Vm {
-    let store = app.store();
-    let projects = store.projects().await.unwrap_or_default();
+    let projects = app.projects().await.unwrap_or_default();
     let mut warnings: Vec<String> = Vec::new();
 
     let mut cards = Vec::with_capacity(projects.len());
@@ -456,20 +454,14 @@ async fn build_project(
     ui: &UiState,
     warnings: &mut Vec<String>,
 ) -> Option<ProjectVm> {
-    let store = app.store();
-    let p = store.project(id).await.ok()??;
+    let p = app.project(id).await.ok()??;
     let ws = app.workspace_of(id).await.ok()?;
     let file =
         read_or_warn(".bw/project.toml", project_file::read(&ws), warnings).unwrap_or_default();
     let issues = app.issues(id).await;
-    let conversations = store.conversations(id).await.unwrap_or_default();
+    let conversations = app.conversations(id).await.unwrap_or_default();
     // 「读到这里」是哪一刻。通知屏和项目轨的红点用的是同一个值,读一次就够。
-    let notify_seen: Option<i64> = store
-        .meta(&bw_v4::store::notify_seen_key(id))
-        .await
-        .ok()
-        .flatten()
-        .and_then(|v| v.parse().ok());
+    let notify_seen: Option<i64> = app.notify_seen(id).await;
     let sessions = build_sessions(app, id, &issues).await;
     // 详情抽屉里那两条链接的前缀。**按 provider 拼**(库里那三个远端字段),
     // 不从 `origin` 推 —— codehub clone 走 SSH,origin 里是 SSH 主机加端口。
@@ -482,8 +474,8 @@ async fn build_project(
         ui.viewing_week.clone()
     };
 
-    // 健康:三条判据当场从仓文件与 git 取,不读库里那两个缓存列。
-    let inputs = bw_v4::app::collect_health_inputs(&ws, &current_week).await;
+    // 健康:四条判据当场从 issue 列表、仓文件与 git 取,不读缓存。
+    let inputs = bw_v4::app::collect_health_inputs(&p, &ws, &current_week, &issues).await;
     let derived = bw_v4::derive::derive_project_health(&inputs);
     // 算完顺手写回显示缓存。**项目墙只有这一个数据来源** —— 它要在不打开项目
     // 的情况下列出 N 个项目的灯,不能每次启动扫 N 个仓。此前壳里没有一处写过
@@ -491,10 +483,10 @@ async fn build_project(
     // 来的那个值,不重算(重算要再起一遍 git 子进程)。
     //
     // **只在灯真变了的时候写**:这个函数每重拼一次 ViewModel 就跑一次(人打字
-    // 时每 30ms 一次),而这条 UPDATE 顺带会把项目的 `updated_at` 顶新 —— 每次
+    // 时每 30ms 一次),而这条写回顺带会把项目的 `updated_at` 顶新 —— 每次
     // 都写等于让「这个项目最近动过」永远是刚刚,那是假的。
     if p.signal != Some(derived.signal()) || p.weekly_signal != Some(derived.weekly_signal()) {
-        let _ = store.cache_project_health(id, &derived).await;
+        let _ = app.cache_project_health(id, &derived).await;
     }
 
     let policy = read_or_warn(

@@ -16,7 +16,6 @@
 
 use bw_v4::app::App;
 use bw_v4::model::{Issue, IssueId, IssueKind, IssueOrigin, IssueStatus, ProjectId};
-use bw_v4::V4Store;
 use std::path::PathBuf;
 use std::sync::Arc;
 
@@ -34,9 +33,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let repo = root.join("repo");
     std::fs::create_dir_all(&repo)?;
 
-    let store = V4Store::open(root.join("v4.db").to_str().unwrap()).await?;
     let app = App::new(
-        store,
         root.join("workspaces"),
         Arc::new(v4_engine::MockInteractiveExecutor),
     )

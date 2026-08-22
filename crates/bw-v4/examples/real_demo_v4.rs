@@ -22,8 +22,8 @@
 
 use bw_v4::app::App;
 use bw_v4::command::{Command, Event, ProjectIntent, RemoteRef};
+use bw_v4::isoweek;
 use bw_v4::model::{IssueKind, IssueOrigin, IssueStatus, ProjectId, StageKind};
-use bw_v4::{isoweek, V4Store};
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
 
@@ -34,11 +34,13 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let args: Vec<String> = std::env::args().collect();
     if args.len() < 3 {
         eprintln!(
-            "用法:cargo run -p bw-v4 --example real_demo_v4 -- <db-path> <workspaces-root> [--project <slug>]"
+            "用法:cargo run -p bw-v4 --example real_demo_v4 -- <asset-dir> <workspaces-root> [--project <slug>]"
         );
         std::process::exit(2);
     }
-    let db_path = args[1].clone();
+    // 第一个参数原来是 db-path,现在没有 SQLite 了,改成 asset 目录。
+    // 摊在 asset 目录下,而不是工作区里(和工作区一起没才干净)。
+    let asset_dir = PathBuf::from(&args[1]);
     let ws_root = PathBuf::from(&args[2]);
     let slug = args
         .iter()
@@ -48,12 +50,11 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .unwrap_or_else(|| "buddy-v4-demo".to_string());
 
     std::fs::create_dir_all(&ws_root)?;
-    let store = V4Store::open(&db_path).await?;
     let mut app = App::new(
-        store.clone(),
         &ws_root,
         Arc::new(v4_engine::MockInteractiveExecutor::new()),
-    );
+    )
+    .with_asset_root(&asset_dir);
 
     let week = isoweek::current_week();
     let mut log = Vec::new();
@@ -379,8 +380,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let tail = bw_v4::git::commit_paths(
         &workspace,
         &[
-            bw_v4::repo::week_plan_file::DIR.to_string(),
-            bw_v4::repo::release_file::REL_PATH.to_string(),
+            ".bw/plan".to_string(),
+            ".bw/releases.md".to_string(),
             ".bw".to_string(),
         ],
         "docs(bw): 本周计划与发版记录(指挥器)",
@@ -450,10 +451,8 @@ async fn build_evidence(
     health: &bw_v4::derive::DerivedHealth,
     log: &[String],
 ) -> Result<String, Box<dyn std::error::Error>> {
-    let store = app.store();
-    let project = store.project(pid).await?.expect("项目行");
+    let project = app.project(pid).await?.expect("项目行");
     let issues = app.issues(pid).await;
-    let tables = store.table_names().await?;
     let usage = bw_v4::app::workflow_usage(&issues);
 
     let issue_json: Vec<serde_json::Value> = issues
@@ -475,17 +474,20 @@ async fn build_evidence(
         })
         .collect();
 
-    let plan_path = workspace.join(bw_v4::repo::week_plan_file::rel_path(week));
-    let releases_path = workspace.join(bw_v4::repo::release_file::REL_PATH);
+    let plan_path = workspace.join(format!(".bw/plan/{week}.md"));
+    let releases_path = workspace.join(".bw/releases.md");
 
     let v = serde_json::json!({
-        "说明": "每个数字都是从真实库与真实仓文件读回来的,没有一个是硬编码。\
+        "说明": "每个数字都是从真实本地持久化与真实仓文件读回来的,没有一个是硬编码。\
                  ▶跑走的是自我标注的替身执行器(产出带【mock】字样);推评审中与\
                  点完成是脚本代人(没挂远端,没有 MR 可合)。",
         "slug": slug,
         "week": week,
         "workspace": workspace.display().to_string(),
-        "库里的表": tables,
+        "本地持久化": {
+            "注册表": app.asset_root().join("projects.toml").is_file(),
+            "设置": app.asset_root().join("settings.toml").is_file(),
+        },
         "项目": {
             "name": project.name,
             "灯": format!("{:?}", health.signal()),
