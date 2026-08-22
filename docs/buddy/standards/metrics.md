@@ -1,5 +1,7 @@
 # `.bw/metrics.toml` 格式规范
 
+> **⚠ 2026-08-22 数据层重定调**:本页下方描述的 `SyncMetricsFile` 命令、`metric`/`observation` SQLite 表、`recompute_signals` 跳归档行等，是**重定调前的旧同步模型**。V4 新架构（见 `docs/v4-prototype/design.md` §3、§10）改为：指标**定义**留仓 `.bw/metrics.toml`（buddy 现算直读、不进库）、指标**读数**留仓 `.bw/metrics/readings.jsonl`（只追加）、健康「指标见红」判据**现算**（读读数 + 目标比对）。本地零数据库，不再有 `metric`/`observation` 表与 `SyncMetricsFile` 同步。完整重写随指标站（`docs/LEFTOVERS.md` ③）进行；读到下方与 §3 冲突处，以 §3 为准。
+>
 > **30 秒导读**:这是项目指标定义文件的唯一格式正本,给「找指标」「绑数据」Skill 和任何修改指标的 Issue 参考。现在作数。
 
 指标定义的正本。住在项目 git 工作区根下的 `.bw/metrics.toml`,和代码一样过

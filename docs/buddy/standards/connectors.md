@@ -1,5 +1,7 @@
 # `.bw/connectors.toml` 格式规范
 
+> **⚠ 2026-08-22 数据层重定调**:本页描述的 `.bw/connectors.toml` + `sync_connectors_file_for` + SQLite 同步是**重定调前的旧模型**。V4 新架构（见 `docs/v4-prototype/design.md` §3、§10）采集脚本直接放仓 `.bw/scripts/*`、采集配置内联在 `.bw/metrics.toml` 的 `collect` 字段（`kind="script"`），buddy 现算 shell-out 跑脚本读结果、不进库、无 `connectors.toml`。本地零数据库。本页完整重写随指标站（`docs/LEFTOVERS.md` ③）进行；以 `design.md` §3 为准。
+>
 > **30 秒导读**:这是脚本连接器定义文件的唯一格式正本,给「绑数据」Skill 和任何搭采集装置的 Issue 参考。现在作数。
 
 脚本连接器(script connector)的正本。住在项目 git 工作区根下的

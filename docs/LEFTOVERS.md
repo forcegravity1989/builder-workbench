@@ -1,5 +1,7 @@
 # 遗留清单 · MVP 还差什么
 
+> **⚠ 2026-08-22 数据层重定调**:V4 数据层改成「**codehub issue + 标签 = 唯一 issue 正本、本地零数据库**」(详见 [`v4-prototype/design.md`](v4-prototype/design.md) §3)。本清单正在按新口径重写;下列条目里凡涉及「本地库 / 四表 / 周计划文件 / `.bw/releases.md` / `sort_order`」的,一律按 §3 新口径理解——多数已**消融**(周计划文件删、拖卡片排序砍、发版改 codehub Release、第二台 buddy 盲区根除)或**改述**(issue 数据搬 codehub 标签、仓文件产物走 B 类 MR)。逐条重写随开发波逐站进行。
+>
 > **30 秒导读**:这份清单只回答一个问题——**离「V4 的 MVP 做完了」还差什么**。标尺是 [`v4-prototype/design.md`](v4-prototype/design.md) §13.1 的整体验收八条,下面每一条都写明「不做它,八条里哪一条过不去」。给排期和接手的人看。**现在作数**(2026-08-21 重写)。
 >
 > **这里只记还差的,不记做过的。** 做完的事去 `git log` 和 [`archive/`](archive/) 找,清单不养第二份历史。
@@ -16,7 +18,7 @@
 
 | # | 差什么 | 为什么过不去 | 落点 |
 |---|---|---|---|
-| ① | **周计划、发版记录、名片改动只落在主工作区的文件上,不建分支、不开 MR、也不推远端**。三处都是直接写文件:开始本周、拖卡片回写、发版本 | 条 1 要的是这些东西「**都在仓里**」,而它们只在这台机器的工作树上。顺带条 4(第二台 buddy 从同一份仓重算出一致的计划)也过不去 | `bw-v4/src/app/plan.rs`、`app/project.rs::edit_project_card` |
+| ① | **数据层重定调的迁移未做**(2026-08-22 重定调,见 design.md §3):把 issue 数据从本地 SQLite 搬到 **codehub issue + 标签**——建 `RemoteIssueStore` trait(codehub+gh)、删 SQLite 四表、删 `.bw/plan/*`+`.bw/releases.md`、活状态走标签 / Done 走 `Closes #N` 自动关、B 类仓文件改动走 MR + 在途按 `buddy:*` 标签复用 | 条 1(周循环产物都在 codehub 看得见)、条 4(第二台 buddy 直接读 codehub 无盲区)、条 2(灯每条理由核对)都压在这块地基上 | `v4-engine/src/remote.rs`(加 issue 操作)、`bw-v4/src/store/`(删表)、`bw-v4/src/repo/`(删 plan/releases 解析)、`bw-v4/src/app/*`(状态命令改调 store) |
 | ② | **定时只对当前打开着的项目跑**。2026-08-21 已拍板推翻:定时要对所有纳管项目到点就干,闸是项目级开关(存本机、默认开) | 条 1 要「两轮运作活①②」,而运作活②(资产盘点)是定时触发的——buddy 没打开那个项目就不会到点 | `bw-v4/src/command.rs::TickScheduler`(今天带 `project_id` 参数) |
 
 ### 差在「灯不是灰的、每个数字都能核对」(§13.1 条 2)
