@@ -122,9 +122,12 @@ async fn probe(name: &str) -> ProbeResult {
             Some(v) => ProbeResult::Found(v),
             None => ProbeResult::Missing("本机找不到 cursor 的 agent 二进制".into()),
         },
-        "open_design" => match tcp_alive("127.0.0.1:5173").await {
-            true => ProbeResult::Found("本机 127.0.0.1:5173 有服务在听".into()),
-            false => ProbeResult::Missing("本机 Open Design 没起来".into()),
+        "open_design" => match v4_engine::open_design::discover_web_url().await {
+            Some(url) => ProbeResult::Found(format!("本机 Open Design 在听:{url}")),
+            None => ProbeResult::Missing(
+                "本机 Open Design 没起来,或没探到它的 web 端口(命名管道握手没拿到 loopback URL)"
+                    .into(),
+            ),
         },
         // 内部同事在做的群工具。留着位置,如实说「还没接」。
         "welink_cli" => ProbeResult::Unknown("welink-cli 还没接,探不出结果".into()),
@@ -147,14 +150,4 @@ async fn version_of(bin: &str, args: &[&str]) -> Option<String> {
             .trim()
             .to_string()
     })
-}
-
-async fn tcp_alive(addr: &str) -> bool {
-    tokio::time::timeout(
-        std::time::Duration::from_millis(300),
-        tokio::net::TcpStream::connect(addr),
-    )
-    .await
-    .map(|r| r.is_ok())
-    .unwrap_or(false)
 }

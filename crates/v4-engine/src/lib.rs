@@ -30,6 +30,7 @@ pub mod codehub;
 pub mod evidence;
 pub mod github;
 pub mod interactive_cli;
+pub mod open_design;
 pub mod pty_backend;
 pub mod remote;
 mod terminal_manager;
