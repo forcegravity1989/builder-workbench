@@ -181,11 +181,14 @@ fn tabs(p: &ProjectVm, bridge: &Bridge) -> Element {
     } else {
         "文件".to_string()
     };
+    // 开工工具是 Open Design 的活多一个内嵌标签(本机网页内嵌类,不起 CLI)。
+    let has_od = p.workbench.tool == "open_design";
     rsx! {
         div { class: "sess-tabs",
             {tab_btn("终端", SessionTab::Terminal, cur, false, bridge)}
             {tab_btn(&file_label, SessionTab::File, cur, has_file, bridge)}
             {tab_btn("改动 diff", SessionTab::Diff, cur, has_file, bridge)}
+            {has_od.then(|| rsx! { {tab_btn("Open Design", SessionTab::OpenDesign, cur, false, bridge)} })}
         }
     }
 }
@@ -239,6 +242,9 @@ fn mid_body(p: &ProjectVm) -> Element {
                 div { class: "detail-empty", style: "margin:auto;", "选一个会话,终端出现在这里。" }
             }
         };
+    }
+    if w.tab == SessionTab::OpenDesign {
+        return rsx! { OpenDesignView {} };
     }
     if w.open_path.is_empty() {
         return rsx! {
@@ -402,6 +408,66 @@ fn tree_row(p: &ProjectVm, e: &crate::vm::TreeEntryVm, depth: usize, bridge: &Br
             }
             if expanded {
                 {tree_level(p, &e.rel, depth + 1, bridge)}
+            }
+        }
+    }
+}
+
+// ── 内嵌 Open Design ──────────────────────────────
+//
+// 原型类活(开工工具 open_design)的会话多这个标签:把本机已开的 Open Design
+// 的 loopback 首页嵌进一个 iframe。**不是起 CLI**——Open Design 是「本机网页
+// 内嵌类」工具(设计 §7.1/§7.3),开工 = 在这个内嵌视图里干,不是 spawn agent。
+//
+// 发现走 `v4_engine::open_design::discover_web_url`(命名管道/socket 握手,见
+// 该模块)。挂一次 use_future,结果存信号:OD 起着 → url → iframe;没起 → 如实
+// 说「没接到」,不假装嵌进去了。OD 重启换了端口时,「重新发现」重探。
+#[component]
+fn OpenDesignView() -> Element {
+    let mut url = use_signal(|| None::<String>);
+    let mut probing = use_signal(|| true);
+    let mut fut = use_future(move || async move {
+        let found = v4_engine::open_design::discover_web_url().await;
+        url.set(found);
+        probing.set(false);
+    });
+    let probing_now = *probing.read();
+    let u = (*url.read()).clone();
+    if let Some(u) = u {
+        // 探到了 → iframe 嵌本机 Open Design 的 loopback 首页。
+        return rsx! {
+            div { class: "sess-col sess-midbody",
+                iframe {
+                    src: "{u}/",
+                    style: "flex:1;width:100%;height:100%;border:0;display:block;background:#fff;",
+                    allow: "clipboard-read; clipboard-write; fullscreen"
+                }
+            }
+        };
+    }
+    let msg = if probing_now {
+        "正在找本机已打开的 Open Design…".to_string()
+    } else {
+        "还没接到 Open Design。先打开它,再点「重新发现」。\n不另弹窗口;没接到就不假装嵌进去了。"
+            .to_string()
+    };
+    rsx! {
+        div { class: "sess-col sess-midbody",
+            div {
+                style: "margin:auto;padding:24px;max-width:520px;text-align:center;\
+                        color:var(--ink-3);font-size:13px;line-height:1.8;",
+                "{msg}"
+                button {
+                    class: "btn btn-sm btn-primary",
+                    style: "margin-top:10px;",
+                    disabled: probing_now,
+                    onclick: move |_| {
+                        probing.set(true);
+                        url.set(None);
+                        fut.restart();
+                    },
+                    "重新发现"
+                }
             }
         }
     }

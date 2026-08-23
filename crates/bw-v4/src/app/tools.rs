@@ -99,9 +99,12 @@ pub fn agent_for(tool: &str) -> Result<&'static v4_engine::TuiAgentConfig> {
         "cursor" => Ok(&v4_engine::CURSOR),
         // 本机网页内嵌类,根本不是起一个终端子进程 —— 拿终端那条路去起它,
         // 起出来的一定不是人要的东西,所以这里直接拒,不往下走。
+        // (内嵌视图在会话屏的「Open Design」标签里,经 `run_issue` 的 open_design
+        // 分支打开;这条 agent_for 只服务终端类工具的 resume/attach。)
         "open_design" => Err(AppError::Exec(
-            "这张活配的开工工具是 Open Design,而内嵌 Open Design 还没接上。\
-             要用 Claude CLI 干这张活,先在活详情里把开工工具改掉。"
+            "这张活配的开工工具是 Open Design(本机网页内嵌类),不经过终端。\
+             去会话屏的「Open Design」标签用内嵌视图干活;要换 Claude CLI 干这张活,\
+             先在活详情里把开工工具改掉。"
                 .into(),
         )),
         other => Err(AppError::Exec(format!(

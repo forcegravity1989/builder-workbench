@@ -419,6 +419,10 @@ pub enum SessionTab {
     File,
     /// 从改动文件列表点开的单文件 diff。
     Diff,
+    /// 内嵌 Open Design(仅原型类活——开工工具是 open_design 时才有这个
+    /// 标签)。不是起 CLI,是把本机已开的 Open Design 的 loopback 首页嵌进
+    /// 一个 iframe(设计 §7.1/§7.3「本机网页内嵌类」)。
+    OpenDesign,
 }
 
 /// 会话屏右栏:文件树 / 改动文件 / git 状态 / MR 卡。全部现算,没有一张表
@@ -440,6 +444,10 @@ pub struct WorkbenchVm {
     /// MR 号 + 状态。0 = 没有 MR,如实说没有,不编一个号。
     pub pr_number: u32,
     pub tab: SessionTab,
+    /// 当前打开的会话那张活的开工工具(`claude_cli`/`cursor`/`open_design`)。
+    /// `open_design` 时会话屏多一个内嵌 Open Design 标签(本机网页内嵌类,
+    /// 不起 CLI)。空 = 没选中会话。
+    pub tool: String,
     /// 中栏打开的文件:路径 + 正文(只读)或 diff 正文。
     pub open_path: String,
     pub open_body: String,

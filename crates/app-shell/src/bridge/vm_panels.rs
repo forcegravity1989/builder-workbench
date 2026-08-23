@@ -288,11 +288,10 @@ pub(super) async fn build_workbench(
         return WorkbenchVm::default();
     };
     let ws = std::path::PathBuf::from(&s.workspace_path);
-    let pr_number = issues
-        .iter()
-        .find(|i| i.id == s.issue_id)
-        .map(|i| i.pr_number)
-        .unwrap_or(0);
+    let issue = issues.iter().find(|i| i.id == s.issue_id);
+    let pr_number = issue.map(|i| i.pr_number).unwrap_or(0);
+    // 开工工具:open_design 时会话屏多一个内嵌 Open Design 标签。
+    let tool = issue.map(|i| i.tool.clone()).unwrap_or_default();
 
     let mut expanded: Vec<String> = expanded.to_vec();
     if !expanded.iter().any(|d| d.is_empty()) {
@@ -346,6 +345,7 @@ pub(super) async fn build_workbench(
         changed,
         pr_number,
         tab,
+        tool,
         open_path: open_path.to_string(),
         open_body,
     }

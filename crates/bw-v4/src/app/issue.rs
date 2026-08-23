@@ -59,6 +59,43 @@ impl App {
             )));
         }
 
+        // Open Design = 本机网页内嵌类工具,**不起 CLI**:开工 = 在会话屏的
+        // 「Open Design」标签里用内嵌的本机 Open Design 干(设计 §7.1/§7.3)。
+        // 仍给这张活开一棵 worktree + 一条会话(原型产物从 OD 导出后落这棵
+        // 树、走「提交并开 MR」),但不 spawn agent、不起 PTY。最远还是
+        // 评审中 / 人点完成——和别的工具同一条状态机,没特殊待遇。
+        if issue.tool == "open_design" {
+            // 已有会话就别建第二条(幂等:重按 ▶开工 不复制会话行)。
+            let already = self.conversation_for_issue(id).await?.is_some();
+            if !already {
+                let ws = self.workspace_of(issue.project_id).await?;
+                let tree = worktree::provision(&ws, issue.number).await?;
+                let _conv = self
+                    .upsert_conversation(&crate::model::Conversation {
+                        id: crate::model::ConversationId::new(),
+                        project_id: issue.project_id,
+                        issue_id: id,
+                        claude_session_id: String::new(),
+                        workspace_path: tree.path.display().to_string(),
+                        branch_name: tree.branch.clone(),
+                        created_at: 0,
+                        last_opened_at: 0,
+                    })
+                    .await?;
+            }
+            if issue.status != IssueStatus::InProgress {
+                let project = self.project_of(issue.project_id).await?;
+                issue_store::set_status(self, &project, id.iid(), IssueStatus::InProgress).await?;
+            }
+            return Ok(vec![Event::IssueRan {
+                id,
+                ok: true,
+                summary: "Open Design 已内嵌——到会话屏「Open Design」标签里干;\
+                         原型导出落这棵工作树,再「提交并开 MR」"
+                    .into(),
+            }]);
+        }
+
         // 桌面壳里开工 = 起一个内嵌终端,人看着 agent 干活。这条路不等执行器
         // 返回,所以下面阻塞那一段不再走。
         if self.run_issue_pty(id).await? {
