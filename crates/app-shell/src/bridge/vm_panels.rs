@@ -351,7 +351,7 @@ pub(super) async fn build_workbench(
     }
 }
 
-pub(super) fn build_config(
+pub(super) async fn build_config(
     ws: &Path,
     policy: Option<&issue_policy_file::IssuePolicyFile>,
     project: &Project,
@@ -388,7 +388,7 @@ pub(super) fn build_config(
     ConfigVm {
         mappings,
         skills,
-        tools: probe_env(),
+        tools: probe_env().await,
         remote: remote_label(project),
         cadence: policy
             .and_then(|p| p.cadence.clone())

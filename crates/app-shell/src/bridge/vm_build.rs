@@ -375,7 +375,7 @@ pub async fn build(app: &App, ui: &UiState) -> Vm {
         ready: true,
         fatal: None,
         projects: cards,
-        env: probe_env(),
+        env: probe_env().await,
         repos: ui.repos.clone(),
         open,
         settings: SettingsVm {
@@ -398,13 +398,14 @@ pub(super) fn remote_label(p: &Project) -> String {
 }
 
 /// 本机环境条。探不到就是探不到;还没接实现的返回「不知道」显示灰,不是红。
-pub(super) fn probe_env() -> Vec<ToolProbeVm> {
+pub(super) async fn probe_env() -> Vec<ToolProbeVm> {
     // 探活与「要什么才能用」都问适配模块要,不在这里重写一遍 —— 加一个新的
     // 开工工具应该只是加一个适配模块目录,不改这个文件。
     //
-    // 六项分成两类,**界面上分得清**:能在 `PATH` 里当场找出来的(claude /
-    // cursor-agent / codehub-cli / gh)给 `Some(..)`,红绿都是真的;还没接实现的
-    // (Open Design 内嵌、welink-cli)给 `None` —— 灰,不是绿,也不是红。
+    // 六项各走各的真实探活:能在 `PATH` 里当场找出来的(claude / cursor-agent /
+    // codehub-cli / gh / welink-cli)走 `which_on_path`;Open Design 是本机网页
+    // 内嵌类,走命名管道握手取 loopback URL(`v4_engine::open_design`)。绿/红
+    // 都是真的;探不到就红,不是灰——灰只留给「这工具压根没接」。
     let claude = crate::adapters::claude_cli::detect();
     let cursor = v4_engine::which_on_path("cursor-agent");
     // **探的名字必须和真起的进程一模一样**:`codehub.rs` 里 8 处 shell-out 全是
@@ -413,6 +414,11 @@ pub(super) fn probe_env() -> Vec<ToolProbeVm> {
     // 报绿而真正要起的 `codehub-cli` 根本不在。
     let codehub = v4_engine::which_on_path("codehub-cli");
     let gh = v4_engine::which_on_path("gh");
+    // welink-cli 是 npm 的 `.cmd` shim,`which_on_path` 认 PATHEXT(含 .CMD)能找到。
+    // 这里只探「装没装」——登录态要起子进程(`welink-cli auth status`),那是按
+    // 群号的 probe(发测试消息)的事,不在环境条这儿做。
+    let welink = v4_engine::which_on_path("welink-cli");
+    let od_url = v4_engine::open_design::discover_web_url().await;
     vec![
         ToolProbeVm {
             name: "claude_cli".into(),
@@ -450,14 +456,16 @@ pub(super) fn probe_env() -> Vec<ToolProbeVm> {
         ToolProbeVm {
             name: "open_design".into(),
             label: "Open Design".into(),
-            ok: None,
-            detail: "内嵌还没接,探不出结果".into(),
+            // 命名管道握手拿到 loopback URL = 在听(绿);拿不到 = 没起(红)。
+            ok: Some(od_url.is_some()),
+            detail: od_url
+                .unwrap_or_else(|| "本机 Open Design 没起来(管道握手没拿到 loopback URL)".into()),
         },
         ToolProbeVm {
             name: "welink_cli".into(),
             label: "welink-cli".into(),
-            ok: None,
-            detail: "还没接,探不出结果".into(),
+            ok: Some(welink.is_some()),
+            detail: welink.unwrap_or_else(|| "本机路径里找不到 welink-cli".into()),
         },
     ]
 }
@@ -642,7 +650,7 @@ async fn build_project(
             events: build_notify_events(&issues, &conversations),
             unread: bw_v4::app::count_unseen(&issues),
         },
-        config: build_config(&ws, policy.as_ref(), &p, &file, &issues),
+        config: build_config(&ws, policy.as_ref(), &p, &file, &issues).await,
         kb: KbVm {
             codegraph: ui.kb_codegraph.clone(),
             assets: ui.kb_assets.clone(),

@@ -229,7 +229,7 @@ const CHAPTERS: [Chapter; 4] = [
     Chapter {
         id: "env",
         label: "环境准备",
-        body: "项目墙那条环境条上有六项。claude / cursor-agent / codehub / gh 是真探的:在本机 PATH 里找得到就绿、找不到就红,「测一下」重新找一遍。gh 只报装没装——登录没登录要跑 gh auth status,起子进程那条路还没接,所以不拿「装了」冒充「登录了」。Open Design 内嵌与 welink-cli 的探活还没实现,一直是灰的,点「测一下」也不会变绿。这条环境条与项目健康无关:健康只从观测推导,探活不写进任何信号。缺哪一项都不影响别的活开工,只影响对应类别的活能不能开工。",
+        body: "项目墙那条环境条上有六项,各走各的真实探活,「测一下」重新找一遍。claude / cursor-agent / codehub-cli / gh / welink-cli 在本机 PATH 里找得到就绿、找不到就红;gh 和 welink-cli 只报装没装——登录没登录要起子进程查,那条路不在环境条这儿,别拿「装了」冒充「登录了」。Open Design 是本机网页内嵌类,走命名管道握手取 loopback URL:OD 起着就绿、没起就红。这条环境条与项目健康无关:健康只从观测推导,探活不写进任何信号。缺哪一项都不影响别的活开工,只影响对应类别的活能不能开工。",
     },
     Chapter {
         id: "onboard",
