@@ -185,15 +185,26 @@ impl Bridge {
 
 /// buddy 本机数据(注册表、设置、会话)落在哪个目录。和旧壳同一个位置,
 /// 但不再有 `.db` 文件 —— 全是 TOML/JSONL。`BW_DB` 仍可覆盖目录(取 parent)。
+///
+/// **Windows 默认落 `D:\builders-workbench\data`**(D 盘在时;与
+/// [`workspaces_root`] 同根、两份平级:`data` + `workspaces`)。D 盘不在的
+/// 机器退回 `%APPDATA%\BuildersWorkbench`。数据目录是进程地基,**不在设置屏
+/// 热改**——要换用 `BW_DB` env(启动前设),理由见 settings 屏那条只读行。
 pub fn data_dir() -> PathBuf {
     let base = if cfg!(target_os = "macos") {
         std::env::var("HOME")
             .map(|h| format!("{h}/Library/Application Support/BuildersWorkbench"))
             .ok()
     } else if cfg!(target_os = "windows") {
-        std::env::var("APPDATA")
-            .map(|a| format!("{a}\\BuildersWorkbench"))
-            .ok()
+        // D 盘在:一个根两份(data 与 workspaces 平级,见 workspaces_root);
+        // D 盘不在的机器退回 APPDATA,不硬撑一个用不了的盘符。
+        if PathBuf::from("D:\\").exists() {
+            Some("D:\\builders-workbench\\data".into())
+        } else {
+            std::env::var("APPDATA")
+                .map(|a| format!("{a}\\BuildersWorkbench"))
+                .ok()
+        }
     } else {
         std::env::var("HOME")
             .map(|h| format!("{h}/.local/share/builders-workbench"))
@@ -220,7 +231,14 @@ pub fn data_dir() -> PathBuf {
 pub fn workspaces_root() -> PathBuf {
     std::env::var("BW_WORKSPACES")
         .map(PathBuf::from)
-        .unwrap_or_else(|_| dirs_home().join(".builders-workbench").join("workspaces"))
+        .unwrap_or_else(|_| {
+            // Windows + D 盘在:与 data_dir 同根,`D:\builders-workbench\workspaces`。
+            if cfg!(target_os = "windows") && PathBuf::from("D:\\").exists() {
+                PathBuf::from("D:\\builders-workbench\\workspaces")
+            } else {
+                dirs_home().join(".builders-workbench").join("workspaces")
+            }
+        })
 }
 
 /// buddy 自己的资产放哪(技能库摊在 `<这里>/skills/`,注册表/设置/会话也在
