@@ -9,6 +9,7 @@
 //! 不进 `Executor` 体系——`codehub-cli` 是 VCS 远端 API 客户端(对标 `gh`),
 //! 不是 agent 执行器(对标 `claude`)。两种 shell-out 模式别混。
 
+use crate::win_cmd::stderr_text;
 use std::path::Path;
 use std::process::Stdio;
 
@@ -42,10 +43,6 @@ fn spawn_err(e: std::io::Error) -> CodehubError {
     } else {
         CodehubError::Command(e.to_string())
     }
-}
-
-fn stderr_text(o: &std::process::Output) -> String {
-    String::from_utf8_lossy(&o.stderr).trim().to_string()
 }
 
 /// `codehub-cli project view -p <path> -H <host>` → 一行人话详情

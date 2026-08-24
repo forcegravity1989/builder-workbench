@@ -61,6 +61,12 @@ pub fn std_cmd(program: impl AsRef<OsStr>) -> std::process::Command {
     }
 }
 
+/// 把子进程 stderr 转成去尾空白的人话字符串 —— codehub/github 两臂的 CLI
+/// 调用都靠它把报错原文带出来。两臂原本各抄一份(只差参数名),收这里共享。
+pub fn stderr_text(o: &std::process::Output) -> String {
+    String::from_utf8_lossy(&o.stderr).trim().to_string()
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

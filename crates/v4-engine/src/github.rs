@@ -5,6 +5,7 @@
 /// 项目名片在仓里的相对路径。底座只拿它拼远端 API 的 URL,**不解析这份文件**
 /// —— 解析是上层的事(`bw-v4` 有自己的一份)。
 pub const PROJECT_FILE_REL_PATH: &str = ".bw/project.toml";
+use crate::win_cmd::stderr_text;
 use std::path::Path;
 use std::process::Stdio;
 
@@ -46,10 +47,6 @@ fn spawn_err(e: std::io::Error) -> GithubError {
     } else {
         GithubError::Command(e.to_string())
     }
-}
-
-fn stderr_text(output: &std::process::Output) -> String {
-    String::from_utf8_lossy(&output.stderr).trim().to_string()
 }
 
 /// github-repo 连接器的真探针——`gh repo view` 一次,回
