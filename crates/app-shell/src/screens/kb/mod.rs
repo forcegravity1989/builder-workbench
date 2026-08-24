@@ -228,7 +228,7 @@ fn assets_tab(a: Option<&AssetsVm>, bridge: &Bridge) -> Element {
 
         div { class: "asset-sect-title", "技能与 workflow" }
         div { class: "cfg-readonly-note",
-            "buddy 自带的十三份(摊在 buddy 自己的资产目录,不进你的仓)+ 本仓 \
+            "buddy 自带的四份(摊在 buddy 自己的资产目录,不进你的仓)+ 本仓 \
              .claude/skills/ 里自有的。「用过几次」按活挂的 workflow 现算,\
              没有胜率 —— V4 不留战绩账本。"
         }

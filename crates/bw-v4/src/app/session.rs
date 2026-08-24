@@ -205,8 +205,12 @@ impl App {
         let skill = skills_dir
             .as_deref()
             .and_then(|d| super::bootstrap::skill_pointer(d, &issue.workflow));
+        let references = self
+            .ensure_prompt_assets()
+            .map(|d| super::bootstrap::references_for(&issue, &d))
+            .unwrap_or_default();
         let system_prompt =
-            super::bootstrap::agent_system_prompt(&issue, &tree.path, skill.as_ref());
+            super::bootstrap::agent_system_prompt(&issue, skill.as_ref(), &references);
         // 有 `--resume` id 就精确接回那一次对话,不是模糊地接「最近一次」。
         let agent = super::tools::agent_for(&issue.tool)?;
         let mut plan = if conv.claude_session_id.is_empty() {

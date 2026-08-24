@@ -1,16 +1,15 @@
 # standard/vendor/ — vendor 进仓的业界技能库
 
-buddy 默认给被管项目带的 workflow(构建类 `mattpocock-skills`、可换 `superpowers`)的**原样副本**。vendor 进仓,而不是让用户自取——默认就该 buddy 打包统一管理(见 `docs/architecture.md` 的「系统提示词与渐进加载」模块:打包未实现,这里先备好源)。
+buddy 默认给被管项目带的 workflow(构建类 `mattpocock-skills`)的**原样副本**。vendor 进仓,而不是让用户自取——默认就该 buddy 打包统一管理(见 `docs/architecture.md` 的「系统提示词与渐进加载」模块:打包未实现,这里先备好源)。
 
-## 三个库(均为 MIT,原 LICENSE 原样保留)
+## 两个库(均为 MIT,原 LICENSE 原样保留)
 
 | 目录 | 上游 | 版本 | 版权 | 技能数 | 用途 |
 |---|---|---|---|---|---|
 | `mattpocock-skills/` | https://github.com/mattpocock/skills | 1.2.0 | Copyright (c) 2026 Matt Pocock | 41 | **build 阶段默认 workflow**(grill-with-docs → implement → code-review) |
-| `superpowers/` | https://github.com/obra/superpowers | 6.1.1 | Copyright (c) 2025 Jesse Vincent | 14 | build 阶段可换的备选 workflow |
 | `mohit-pm-claude-skills/` | https://github.com/mohitagw15856/pm-claude-skills | main@`f508142` (2026-08-04) | Copyright (c) 2026 Mohit Aggarwal | 2 | 指标框架两件(北极星/指标树),部分 vendor |
 
-三个库都是 MIT 许可,允许再分发,条件是保留版权声明与许可全文——各自目录下的 `LICENSE` 是上游原件,**不要删、不要改**。技能正文一字未改:这是副本,不是 fork。
+两个库都是 MIT 许可,允许再分发,条件是保留版权声明与许可全文——各自目录下的 `LICENSE` 是上游原件,**不要删、不要改**。技能正文一字未改:这是副本,不是 fork。
 
 `mohit-pm-claude-skills/` 是**部分 vendor**——上游是数百个通用 PM/生活技能的大型库(与"指标"关注点多数无关),只挑了 `metrics-framework` 与 `metric-tree-builder` 两件。
 

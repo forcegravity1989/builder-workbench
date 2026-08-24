@@ -42,28 +42,53 @@
 
 ## 目前这里有什么
 
+`standard/` 分四块,各有各的落点:
+
+| 块 | 内容 | 落点 |
+|---|---|---|
+| `VERSION` | 当前规范版本号 | 铺底与对账时读 |
+| `templates/` | **铺进项目仓 `.bw/` 的模板**,镜像 `.bw/` 结构 | 渲染进项目仓 `.bw/` |
+| `system-prompt/` | **buddy runtime 用的系统提示词**,不进项目仓 | 编进二进制,渲染后经 `--append-system-prompt` 送 agent |
+| `skills/` | **buddy 自带技能**(四份运作剧本) | 摊到 `<asset_root>/skills/`,不进项目仓 |
+| `vendor/` | **业界 workflow 库原样副本**(mattpocock / mohit) | 待打包,不进项目仓 |
+
+`templates/` 镜像铺底目标 `.bw/` 结构:
+
 | 文件 | 一句话 |
 |---|---|
-| `VERSION` | 当前规范版本号,铺底与对账时读这个值 |
-| `01-charter/PROJECT.md.tmpl` | 项目章程模板:想做什么、最像的对标、北极星、项目信息 |
-| `03-docs/design/README.md` | 说明 `.bw/design/` 目录的用途与写作约定(30 秒导读、过期加横幅不删除) |
-| `04-metrics/metrics.toml.tmpl` | `.bw/metrics.toml` 骨架:北极星占位 + 滞后/引领指标写法示例(注释掉) |
-| `05-issue-policy/issue-policy.toml.tmpl` | `.bw/issue-policy.toml` 骨架:开工工具声明、类别→工具→workflow 默认映射、评审/节律/看板规则 |
-| `08-meta/standard.toml.tmpl` | `.bw/standard.toml` 骨架:记录这个项目铺的规范版本与启用/扩展的大类 |
+| `templates/PROJECT.md.tmpl` | 项目章程:想做什么、最像的对标、北极星、项目信息 |
+| `templates/design/README.md` | `.bw/design/` 目录用途与写作约定(30 秒导读、过期加横幅) |
+| `templates/metrics.toml.tmpl` | `.bw/metrics.toml` 骨架:北极星占位 + 滞后/引领指标写法示例(注释掉) |
+| `templates/issue-policy.toml.tmpl` | `.bw/issue-policy.toml` 骨架:开工工具声明、类别→工具→workflow 默认映射、评审/节律/看板规则 |
+| `templates/standard.toml.tmpl` | `.bw/standard.toml` 骨架:记这个项目铺的规范版本与启用/扩展的大类 |
+| `templates/scripts/*.py`(3 份) | 现成采集脚本(每周提交数 / 合入 PR 数 / star 数),铺进 `.bw/scripts/` |
+
+`system-prompt/` 是 buddy 自己 runtime 用的(不进项目仓):
+
+| 文件 | 一句话 |
+|---|---|
+| `system-prompt/SYSTEM.md.tmpl` | 主提示词模板:身份 + 四铁律 + 读项目规范件指引,`{{...}}` 占位运行时渲染 |
+| `system-prompt/references/metrics.md` | 干指标活的 buddy 规范(可回溯/不许写0/窗口 buddy 给) |
+| `system-prompt/references/build.md` | 干改仓活的 buddy 规范(分支/MR/合并是人/不自动 Done) |
 
 ## 还没做的部分(如实说明,不是遗漏)
 
-buddy 自带的技能与运作剧本已经建好,在
-`standard/skills/`(一个平铺目录,共 10 份:6 方法论 + 4 运作):更新指标与周计划、资产盘点(它带一个子技能
-`project-handbook` —— 给纳管的项目写开发手册,**先问人愿不愿意**才写)。
-规范铺底不起 agent,所以没有它的剧本。它们一起编进二进制,
-开工时摊在 **buddy 自己的资产目录**,**不复制进用户的仓** —— 用户的
-`.gitignore` 怎么写不该由 buddy 决定,而每个项目复制一份 buddy 自带的
-东西也没有道理。系统提示词里只给名字 + 一句话 + 路径,正文按需读(见
-`crates/bw-v4/src/standard/skills.rs`)。
+`skills/` 现在只有**四份运作剧本**(更新指标与周计划、资产盘点 + 子技能
+`project-handbook`、`metrics-refresh`)。**不预置方法论**——原来预置的六份
+阶段方法论(原型/构建/优化/运营推广/运维/竞品)默认 workflow 没打包、一份
+没被真正派发过,删光了:阶段方法论该由业界 workflow(`vendor/`)提供,
+buddy 每个环节挑一个最好的默认;要从实践里长出 buddy 自己的方法论,到时候
+再建,不预先搞一堆没用的。规范铺底不起 agent,所以没有它的剧本。技能编进
+二进制,开工时摊在 **buddy 自己的资产目录**,**不复制进用户的仓** —— 用户
+`.gitignore` 怎么写不该由 buddy 决定,而每个项目复制一份 buddy 自带的东西也
+没有道理。系统提示词里只给名字 + 一句话 + 路径,正文按需读
+(见 `crates/bw-v4/src/standard/skills.rs` + `system_prompt.rs`)。
 
-还没建的是**鱼塘**:业界 workflow 包(mattpocock-skills、superpowers 等)
-的清单与导入,`standard/pond/` 目录本身还不存在,不要假装它已经在。
+`vendor/` 已 vendor 进来两家(mattpocock-skills、mohit-pm-claude-skills)的
+原样副本,但**打包机制未实现**——buddy 还没把它们摊进自己的资产目录、注入
+提示词(issue-policy 默认值已诚实化,不指向没打包的)。proto-design(原型阶段
+默认 workflow)的源还没 vendor 进来。full bundle 是后续 subagent 任务
+(见 `docs/architecture.md` 的「没建什么」)。
 
 铺底流程与对账细节见
 [`docs/architecture.md`](../docs/architecture.md) 的「规范铺底」模块;

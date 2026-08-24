@@ -30,3 +30,12 @@ V3 全量下线(不再「冻结等删」,直接删):V3 六 crate(`bw-core`/`bw-e
 - 代码 gap 修:issue-policy 默认 workflow 诚实化;app-shell/terminal_xterm V3 资产耦合补全;V4 代码文档章节锚(~50)+ V3 lineage 引用清零;`command.rs`/UI 文案"releases.md 唯一正本"假叙述修正(实际 codehub Release + git 标签)。
 
 V4 三 crate 代码行为未变(除 issue-policy 默认值 + terminal_xterm 资产本地化 + kb/mod.rs 一处 UI 串删内部文档指针)。cargo check --workspace 过、四守卫过。
+
+### 2026-08-24(续三)· standard/ 重构:系统提示词外置 + 扁平铺底 + 删方法论
+
+- **系统提示词外置**:从 `bootstrap.rs` 的 `format!` 硬编码 → `standard/system-prompt/SYSTEM.md.tmpl` 模板(身份+四铁律+读项目规范件指引)+ `references/` 阶段规范(metrics.md 指标铁律 / build.md 改仓规则,按活 category/workflow 注入)。改铁律=改 md + 抬 `standard/VERSION` + 对账,不再改代码重编译。`agent_system_prompt` 从拼 4 段 → 渲染模板 + 注入 references/skill 两指针;段3(列项目 `.bw/` 文件)折叠进 SYSTEM.md 指引(agent 自行 ls `.bw/`)。
+- **`templates/` 扁平镜像 `.bw/`**:`01-charter`/`03-docs`/`04-metrics`/`05-issue-policy`/`06-scripts`/`08-meta` 六个编号目录扁平进 `standard/templates/`(文件名镜像 `.bw/` 目标路径),编号遗风 + 02/07 空位一起去掉。
+- **删方法论 6 skill + superpowers**:`skills/` 从 10 份(6 方法论 + 4 运作剧本)→ 4 份运作剧本。6 份方法论默认 workflow 没打包、`skill_slug` 不识别、一份没派发过,删光——阶段方法论走业界 workflow(`vendor/`),阶段规范约束走 `references/`,要从实践长再建;`vendor/superpowers` 删(默认是 mattpocock,不是 superpowers)。
+- OD 探活(穿刺 subagent):`inject_skills` 对 OD 半成立——OD 有 systemPrompt 注入口子(`POST /api/runs` 实测被消费)、但收不了 buddy 技能文件(OD 自有 162 份 skillId,两套不兼容),不进 `InteractiveExecutor`(PTY 中心,不拟合)。做 systemPrompt 注入约 3-4h(在 `run_issue` OD 分支加 HTTP POST,不改 Executor),defer 给用户拍。
+- 文档同步:arch §2(四段→文件+references)/§4/§9/§15 + `standard/README`/`skills/README`/`vendor/README` + `AGENTS`/`docs/README`;代码注释陈旧计数(十一/十三/10 份)清零成 4。
+- V4 行为未变(提示词内容字字一致,只是从代码搬到模板 + 删了不被派发的死技能)。cargo check --workspace + clippy `-D warnings` + fmt + 5/12 test + prompt_smoke 跑通。

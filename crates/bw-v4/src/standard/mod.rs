@@ -1,8 +1,7 @@
 //! `standard/` —— 规范件正本,编译期打进二进制。
 //!
 //! 仓根 `standard/` 与 `crates/`、`docs/` 平级,`include_str!` 在编译期读进
-//! 常量(零 IO、和 `bw-core` 的 `buddy_assets`/`bw_library` 同一个已验证的做
-//! 法)。**改 `standard/` 就是改产品行为**,不要搬。
+//! 常量(零 IO)。**改 `standard/` 就是改产品行为**,不要搬。
 //!
 //! 两个版本号别混:
 //! - `standard/VERSION`(这里的 [`version`]):**buddy 侧** —— 当前二进制自带
@@ -14,6 +13,7 @@
 
 pub mod bootstrap;
 pub mod skills;
+pub mod system_prompt;
 
 /// 一个规范件模板:属于哪个大类、渲染到项目仓的哪个路径、模板正文。
 pub struct Template {
@@ -42,24 +42,26 @@ pub fn version() -> &'static str {
 /// 和项目自己的 README / CLAUDE.md / docs 打架。
 pub const CHARTER_REL_PATH: &str = ".bw/PROJECT.md";
 
-pub const CHARTER_TMPL: &str = include_str!("../../../../standard/01-charter/PROJECT.md.tmpl");
-pub const DESIGN_README: &str = include_str!("../../../../standard/03-docs/design/README.md");
-pub const METRICS_TMPL: &str = include_str!("../../../../standard/04-metrics/metrics.toml.tmpl");
+pub const CHARTER_TMPL: &str = include_str!("../../../../standard/templates/PROJECT.md.tmpl");
+pub const DESIGN_README: &str = include_str!("../../../../standard/templates/design/README.md");
+pub const METRICS_TMPL: &str = include_str!("../../../../standard/templates/metrics.toml.tmpl");
 pub const ISSUE_POLICY_TMPL: &str =
-    include_str!("../../../../standard/05-issue-policy/issue-policy.toml.tmpl");
-pub const STANDARD_TMPL: &str = include_str!("../../../../standard/08-meta/standard.toml.tmpl");
+    include_str!("../../../../standard/templates/issue-policy.toml.tmpl");
+pub const STANDARD_TMPL: &str = include_str!("../../../../standard/templates/standard.toml.tmpl");
 
-// ── 现成的采集脚本 ────────────────────────────────────────────
+// ── 现成的采集脚本(铺进 .bw/scripts/,镜像 .bw/ 结构) ───────────
 //
 // **脚本铺一次就归项目,buddy 之后再也不覆盖。** 改窗口、改口径、换数据源,
 // 项目自己改 —— 脚本本身就是「这个数怎么来的」的文档,不该由 buddy 每次采集
 // 前无条件盖掉(V3 就是那么干的,项目改过的采法被静默抹掉)。
 //
 // 只铺通用的这三份。**业务采集脚本 buddy 不代写**,那是项目自己的事。
-pub const SCRIPT_GIT_COMMITS: &str = include_str!("../../../../standard/06-scripts/git-commits.py");
+pub const SCRIPT_GIT_COMMITS: &str =
+    include_str!("../../../../standard/templates/scripts/git-commits.py");
 pub const SCRIPT_MERGED_PRS: &str =
-    include_str!("../../../../standard/06-scripts/github-merged-prs.py");
-pub const SCRIPT_STARS: &str = include_str!("../../../../standard/06-scripts/github-stars.py");
+    include_str!("../../../../standard/templates/scripts/github-merged-prs.py");
+pub const SCRIPT_STARS: &str =
+    include_str!("../../../../standard/templates/scripts/github-stars.py");
 
 /// 一份规范件**在哪一站落地**。
 ///
@@ -80,8 +82,9 @@ pub enum LayAt {
 ///
 /// **落点分两类,别混**:
 ///
-/// - **`.bw/` 下的是 buddy 的资产** —— 名片、指标、周计划、发版记录、规范清单。
-///   收在一个目录里,「bw 到底往我仓里放了什么」一眼可数,也不会因为项目把
+/// - **`.bw/` 下的是 buddy 的资产** —— 名片、指标、规范清单(周计划改挂 ops①
+///   issue 评论、发版改用 codehub Release,都不再是仓文件)。收在一个目录里,
+///   「bw 到底往我仓里放了什么」一眼可数,也不会因为项目把
 ///   `docs/` 或 `.claude/` 写进 .gitignore 就有件悄悄进不了版本控制。
 /// - **仓根的 `AGENTS.md` 与 `CLAUDE.md` 是项目自己的** —— 它们是整个生态约定
 ///   俗成的位置(Claude Code / Cursor / Codex 都在仓根找),塞进 `.bw/` 谁都

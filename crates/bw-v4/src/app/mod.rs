@@ -35,7 +35,9 @@ mod session;
 mod tools;
 mod worktree;
 
-pub use bootstrap::{agent_system_prompt, skill_pointer, SkillPointer};
+pub use bootstrap::{
+    agent_system_prompt, references_for, skill_pointer, ReferencePointer, SkillPointer,
+};
 pub use health::{collect_health_inputs, read_metric_readings, MetricReading};
 pub use issue::{count_unseen, issues_in_week, workflow_usage};
 pub use ops::{ops1_title, skill_slug, OPS1_WORKFLOW, OPS2_WORKFLOW, OPS3_WORKFLOW};
@@ -183,6 +185,29 @@ impl App {
         Some(dir)
     }
 
+    /// 阶段规范 references 摊在哪(`<asset_root>/system-prompt/references/`)。
+    pub fn prompt_dir(&self) -> PathBuf {
+        self.asset_root.join("system-prompt").join("references")
+    }
+
+    /// 把 buddy 自带的阶段规范 references 摊到 [`App::prompt_dir`],返回那个目录。
+    /// 和 [`App::ensure_skill_assets`] 同一套规矩:幂等、写不下去返回 `None`
+    /// 如实少一段。
+    pub fn ensure_prompt_assets(&self) -> Option<PathBuf> {
+        let dir = self.prompt_dir();
+        for pack in crate::standard::system_prompt::references() {
+            let path = dir.join(&pack.rel);
+            if std::fs::read_to_string(&path).is_ok_and(|on_disk| on_disk == pack.raw) {
+                continue;
+            }
+            if let Some(parent) = path.parent() {
+                std::fs::create_dir_all(parent).ok()?;
+            }
+            std::fs::write(&path, pack.raw).ok()?;
+        }
+        Some(dir)
+    }
+
     /// 把「一步一句」的回执接出去。不接的话长命令照跑,只是没人看得见中间过程。
     pub fn with_progress(mut self, tx: tokio::sync::broadcast::Sender<ProgressLine>) -> Self {
         self.progress = Some(tx);
@@ -206,11 +231,18 @@ impl App {
     /// 看它到底被告知了什么。
     pub async fn agent_briefing(&self, id: crate::model::IssueId) -> Result<String> {
         let issue = self.issue_or_err(id).await?;
-        let ws = self.workspace_of(issue.project_id).await?;
         let skill = self
             .ensure_skill_assets()
             .and_then(|d| bootstrap::skill_pointer(&d, &issue.workflow));
-        Ok(bootstrap::agent_system_prompt(&issue, &ws, skill.as_ref()))
+        let references = self
+            .ensure_prompt_assets()
+            .map(|d| bootstrap::references_for(&issue, &d))
+            .unwrap_or_default();
+        Ok(bootstrap::agent_system_prompt(
+            &issue,
+            skill.as_ref(),
+            &references,
+        ))
     }
 
     pub fn workspaces_root(&self) -> &std::path::Path {

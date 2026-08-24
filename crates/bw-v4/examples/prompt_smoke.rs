@@ -63,7 +63,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         ),
     );
 
-    // ── 2 · 空仓:规范索引一条都不该列 ────────────────────────
+    // ── 2 · 没摊 references:提示词里 references 块该是空的 ──────
     // 逐字段拼一张活。`Issue` 故意没有 `Default` —— 一张没有项目的活不该存在,
     // 为了写个例子给领域模型开这个口子不值。
     let issue = Issue {
@@ -90,30 +90,26 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         settled_at: None,
     };
     let skill = bw_v4::app::skill_pointer(&skills_dir, &issue.workflow).expect("挑不到剧本");
-    let empty = bw_v4::app::agent_system_prompt(&issue, &repo, Some(&skill));
+    let prompt_empty = bw_v4::app::agent_system_prompt(&issue, Some(&skill), &[]);
     say(
-        "步骤 2 · 空仓的提示词里列了几份规范件",
-        &format!(
-            "{}(该是 0 —— 铺底还没跑,列一个不存在的路径不如不列)",
-            empty.matches("\n- `").count()
-        ),
+        "步骤 2 · 没指 references 时提示词里几条路径",
+        &format!("{}(该是 0)", prompt_empty.matches("\n- `").count()),
     );
 
-    // ── 3 · 铺几份进去,再看索引 ──────────────────────────────
-    let laid = [".bw/PROJECT.md", ".bw/standard.toml", ".bw/metrics.toml"];
-    for rel in laid {
-        let p = repo.join(rel);
-        std::fs::create_dir_all(p.parent().unwrap())?;
-        std::fs::write(&p, "占位\n")?;
-    }
-    let prompt = bw_v4::app::agent_system_prompt(&issue, &repo, Some(&skill));
+    // ── 3 · 摊 references:指标活该命中 metrics.md ─────────────
+    let refs_dir = app.ensure_prompt_assets().expect("references 没摊出来");
+    let references = bw_v4::app::references_for(&issue, &refs_dir);
+    let prompt = bw_v4::app::agent_system_prompt(&issue, Some(&skill), &references);
     say(
-        "步骤 3 · 铺了 3 份之后列了几份",
+        "步骤 3 · 指标活命中几份 reference",
         &format!(
-            "{} · 三份都在里面={}",
-            prompt.matches("\n- `").count(),
-            laid.iter().all(|r| prompt.contains(&format!("`{r}`")))
+            "{}(该是 1 —— metrics 命中;build 不命中因为 category=None)",
+            references.len()
         ),
+    );
+    say(
+        "步骤 3 · 提示词里有没有 metrics.md 路径",
+        &format!("{}(该是 true)", prompt.contains("metrics.md")),
     );
 
     // ── 4 · 提示词里给的路径是真文件,且**没有正文** ────────────

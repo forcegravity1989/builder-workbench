@@ -19,16 +19,22 @@
 
 规范铺底(运作活③)**没有剧本** —— 它没有 agent 步骤,buddy 自己把核心件写进 `.bw/`。
 
-## 六份方法论技能(按活的类别注入)
+## 不预置方法论技能
 
-`evidence-first`(原型)· `spec-to-tests`(构建)· `baseline-before-touch`(优化)·
-`fresh-eyes-funnel`(运营推广)· `breaking-drill`(运维)· `competitive-analysis`。
+这里**只有运作剧本,没有阶段方法论技能**。原来预置过六份「阶段方法论」
+(`evidence-first` 原型 / `spec-to-tests` 构建 / `baseline-before-touch` 优化 /
+`fresh-eyes-funnel` 运营推广 / `breaking-drill` 运维 / `competitive-analysis` 竞品),
+但默认 workflow 没打包、`skill_slug` 也不识别,一份没被真正派发过——属「预先搞的
+一堆没用的」。2026-08-24 删光:
 
-**三份没有收进来**:`north-star-discovery` 与 `metrics-binding` 的内容已并入
-`metrics-refresh`;`metrics-render` 2026-08-21 整份删掉——它每一步都踩在 V4 不存在
-的东西上(V3 的渲染器例子、库里那两张 V4 没有的表、已退场的五种采集方式),而
-V4 的指标呈现本来就在总览屏里现算。`docs/skills/` 下的原文件是 V3 期的(已删,见 v3 分支),V4 不读
-那个目录。
+- **阶段方法论该由业界 workflow 提供**(build 默认 `mattpocock-skills`、原型
+  默认 `proto-design`,见 `../vendor/`),buddy 每个环节只挑一个最好的默认;
+- **阶段规范约束**(指标铁律、改仓规则)不叫方法论,归 `../system-prompt/references/`,
+  按活注入提示词,不进 `skills/`;
+- 真要从实践里长出 buddy 自己的方法论,**到时候再单独建,不预置**。
+
+(`north-star-discovery` / `metrics-binding` 早前并入 `metrics-refresh`;
+`metrics-render` 整份删过——踩在 V4 不存在的东西上。这几份原文件随 V3 已删。)
 
 ## 版本
 

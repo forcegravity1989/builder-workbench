@@ -47,7 +47,7 @@ cargo test --workspace
 crates/   bw-v4(MVP 内核:本地零库+仓文件解析+现算推导+Command/Event)
           v4-engine(MVP 底座:交互式 claude+PTY+worktree+git+codehub/github 远端)
           app-shell(MVP 壳:九屏+主题+内核桥+适配模块,bin bw-v4-dev)
-standard/  buddy 推给被管项目的规范正本(include_str! 进 bw-v4):模板 + 自维护 skill(`skills/` 10 份)+ 业界 skill(`vendor/` mattpocock/superpowers/mohit,给默认 workflow 打包)
+standard/  buddy 推给被管项目的规范正本(include_str! 进 bw-v4):铺底 `templates/` + 系统提示词 `system-prompt/`(SYSTEM.md.tmpl+references)+ 自维护运作剧本 `skills/` 4 份 + 业界 workflow `vendor/`(mattpocock/mohit,给默认 workflow 打包)
 docs/      architecture(设计正本)+ guide(产品指南)+ adr + hifi + README(地图)
 scripts/   门禁脚本(guard-*)+ codegraph 联调
 .bw/       buddy 自己作为被管项目的资产(PROJECT.md/metrics.toml/issue-policy.toml/…)
@@ -67,8 +67,8 @@ scripts/   门禁脚本(guard-*)+ codegraph 联调
 ### 三层模型(怎么给 buddy 做一个特性)
 
 - **承载 · codehub issue**:issue+标签=唯一正本,本地零数据库;状态走标签、工作产物走 MR。
-- **规范 · 系统提示词 + 渐进加载**(三段静态在 `crates/bw-v4/src/app/bootstrap.rs` `agent_system_prompt` 现拼 + 运行时注入剧本;设计见 [`docs/architecture.md`](docs/architecture.md) 的「系统提示词与渐进加载」模块;`standard/skills/` 索引):不论哪个 workflow 都兜住 buddy 统一要求。
-- **方法论 · skill / workflow**(`standard/skills/` 自带 10 份;build 默认 workflow 见 issue-policy,可换):怎么做能做得更好。
+- **规范 · 系统提示词 + 渐进加载**(主提示词外置 `standard/system-prompt/SYSTEM.md.tmpl` + `references/` 阶段规范,运行时渲染注入;设计见 [`docs/architecture.md`](docs/architecture.md) 的「系统提示词与渐进加载」模块):不论哪个 workflow 都兜住 buddy 统一要求。
+- **方法论 · skill / workflow**(业界 workflow 见 `vendor/`,build 默认 `mattpocock-skills` 可换;buddy 自带 4 份运作剧本在 `skills/`):怎么做能做得更好。
 
 改一个特性前,先在 [`docs/architecture.md`](docs/architecture.md) 的模块设计上定位:旅程哪一站 → 三层里改哪层 → 数据归哪 → 模块落点。找不到先补文档、再动代码——不清晰不写代码。
 

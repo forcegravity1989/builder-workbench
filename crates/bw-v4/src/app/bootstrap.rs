@@ -9,7 +9,7 @@
 //! 历史回填也一样要起 agent 会话,同样还没做 —— 探测到了什么如实写进这张活的
 //! 正文,但没跑就是没跑。
 //!
-//! **技能不往用户仓里复制**(2026-08-20 改):buddy 自带那十一份摊在自己的资产
+//! **技能不往用户仓里复制**(2026-08-20 改):buddy 自带那四份摊在自己的资产
 //! 目录,开工时只把名字、一句话和完整路径写进系统提示词,正文让 agent 按需读。
 //!
 //! **不在主检出上动手**。写文件、提交、开分支全在
@@ -354,43 +354,109 @@ fn pending_steps(probe: &boot::BootstrapProbe) -> String {
 /// ▶开工 时注入给 agent 的系统提示词。**渐进式加载**:提示词里只放索引,
 /// 正文让 agent 自己按需读。
 ///
-/// 四段:身份与这张活 → 铁律 → 这个项目的规范索引(一句话 + 路径)→ 这张活
-/// 挂的那一份技能(名字 + 一句话 + 完整路径)。
+/// 主提示词是外置的 `standard/system-prompt/SYSTEM.md.tmpl`(身份 + 四铁律 +
+/// 读项目规范件的指引),`{{...}}` 占位在这里渲染:活的信息、本活要读的
+/// references 阶段规范、本活挂的技能。**正文一律不塞进提示词** —— references
+/// 和技能都只给「一句话 + 完整路径」,agent 按需自己读,和主提示词同一套规矩。
 ///
-/// **绝不整篇塞正文**。以前是把 `SKILL.md` 全文拼进来,长、贵、而且塞进去的
-/// 那份还得先复制进用户的仓才读得到。现在给路径,要不要读、读哪几段由 agent
-/// 自己定 —— 这和 buddy 自己的系统提示词(本模块 `agent_system_prompt`)是
-/// 同一套规矩。
+/// 不硬编码在 `format!` 里:改身份/铁律 = 改那份 md + 抬 `standard/VERSION`,
+/// 规范对账测得出落后(以前塞在 `base_prompt` 的 `format!` 里,改=改代码,不可对账)。
 pub fn agent_system_prompt(
     issue: &Issue,
-    workspace: &std::path::Path,
     skill: Option<&SkillPointer>,
+    references: &[ReferencePointer],
 ) -> String {
-    let mut prompt = base_prompt(issue);
+    let number = issue.number.to_string();
+    let category = issue.category.map(|c| c.label()).unwrap_or("—(没定类别)");
+    let workflow = if issue.workflow.is_empty() {
+        "—(没挂 workflow)"
+    } else {
+        issue.workflow.as_str()
+    };
+    let refs = references_block(references);
+    let skill_str = skill_block(skill);
+    standard::render(
+        standard::system_prompt::SYSTEM_PROMPT_TMPL,
+        &[
+            ("number", number.as_str()),
+            ("title", issue.title.as_str()),
+            ("category", category),
+            ("workflow", workflow),
+            ("references", refs.as_str()),
+            ("skill", skill_str.as_str()),
+        ],
+    )
+}
 
-    // ── 规范索引:只列**这个仓里真有**的那几份 ──────────────────
-    // 铺底还没跑的项目一份都没有,那就一份都不列。列一个不存在的路径,agent
-    // 读一次失败一次,比不列更糟。
-    let present: Vec<&standard::Template> = standard::CORE_TEMPLATES
-        .iter()
-        .filter(|t| workspace.join(t.target).exists())
-        .collect();
-    if !present.is_empty() {
-        prompt.push_str("\n这个项目的规范件(正文别猜,动到哪份就先读哪份;路径相对仓根):\n");
-        for t in present {
-            prompt.push_str(&format!("- `{}` —— {}\n", t.target, t.note));
+/// 指给 agent 的一份阶段规范:名字、一句话、**完整路径**。正文不在这里。
+pub struct ReferencePointer {
+    pub name: String,
+    pub desc: String,
+    pub path: String,
+}
+
+/// 这张活要读哪几份阶段规范 references。按活的类别/workflow 匹配,只返**硬盘
+/// 上真存在**的那几份(文件不在就如实不指,不编路径)。
+///
+/// 起手只两份:`metrics`(指标活,workflow=更新指标与周计划)、`build`(改仓类活,
+/// 类别=构建/优化/运维)。其余按实践长。
+pub fn references_for(issue: &Issue, refs_dir: &std::path::Path) -> Vec<ReferencePointer> {
+    let mut out = vec![];
+    for pack in standard::system_prompt::references() {
+        if want_ref(issue, pack.slug) {
+            let path = refs_dir.join(&pack.rel);
+            if path.is_file() {
+                out.push(ReferencePointer {
+                    name: pack.slug.to_string(),
+                    desc: pack.desc.to_string(),
+                    path: path.display().to_string(),
+                });
+            }
         }
     }
+    out
+}
 
-    // ── 这张活挂的那一份技能 ────────────────────────────────────
-    if let Some(s) = skill {
-        prompt.push_str(&format!(
-            "\n这件活挂的剧本是 `{}`:{}\n开工前读它:`{}`。它自己会说要不要再读别的,\
-             照它说的读,别把整个技能库翻一遍。\n",
-            s.name, s.desc, s.path,
-        ));
+/// 这份 reference 要不要给这张活。
+fn want_ref(issue: &Issue, slug: &str) -> bool {
+    match slug {
+        // 指标活:更新指标与周计划
+        "metrics" => issue.workflow == super::ops::OPS1_WORKFLOW,
+        // 改仓类活:构建 / 优化 / 运维
+        "build" => matches!(
+            issue.category,
+            Some(
+                crate::model::StageKind::Build
+                    | crate::model::StageKind::Optimize
+                    | crate::model::StageKind::Ops
+            )
+        ),
+        _ => false,
     }
-    prompt
+}
+
+fn references_block(references: &[ReferencePointer]) -> String {
+    if references.is_empty() {
+        return String::new();
+    }
+    let mut s = String::from(
+        "\n\n干这件活,开工前还要读这几份 buddy 规范(正文自己按需读,路径在 buddy 资产目录):\n",
+    );
+    for r in references {
+        s.push_str(&format!("- `{}` —— {}\n", r.path, r.desc));
+    }
+    s
+}
+
+fn skill_block(skill: Option<&SkillPointer>) -> String {
+    match skill {
+        Some(s) => format!(
+            "\n\n这件活挂的剧本是 `{}`:{}\n开工前读它:`{}`。它自己会说要不要再读别的,\
+             照它说的读,别把整个技能库翻一遍。\n",
+            s.name, s.desc, s.path
+        ),
+        None => String::new(),
+    }
 }
 
 /// 指给 agent 的一份技能:名字、一句话、**完整路径**。正文不在这里。
@@ -427,31 +493,4 @@ pub fn skill_pointer(skills_dir: &std::path::Path, workflow: &str) -> Option<Ski
 pub(crate) fn allow_skills_dir(plan: &mut v4_engine::LaunchPlan, dir: &std::path::Path) {
     plan.args.push("--add-dir".to_string());
     plan.args.push(dir.display().to_string());
-}
-
-fn base_prompt(issue: &Issue) -> String {
-    format!(
-        "你是 Builders' Workbench(buddy)派出的 AI 队友,在一个真实项目仓里干一件活。\n\
-         \n活:#{} {}\n类别:{}\n用的 workflow:{}\n\
-         \n活的标题和描述是这一轮的目标,不等于全部规则。先读项目现状再动手,\
-         报告不代替真实产出。\n\
-         \n几条不许破的规矩:\n\
-         1. 你干完最远只能把活推到「评审中」,「完成」永远由人点。\n\
-         2. 改动落在这张活自己的分支上,正常提交 + 提 MR;**合并永远是人**\
-         (`gh pr merge`、`codehub-cli mr merge` 以及任何等价的合并或直推主干\
-         动作一律不许执行)。提完把地址打屏,合入由人在 buddy 里点。\n\
-         3. 指标读数只能来自真实采集,没数据就是未知,不许为了让灯变绿手工改数。\n\
-         4. 干砸了如实停下说明,不假装流程前进。\n\
-         \n仓根的 `AGENTS.md` 是这个项目自己的开发与维护手册(怎么建、怎么跑、\
-         怎么测、目录约定)。动手前读它 —— 它写的是这个项目怎么开发,和上面几条\
-         不是一回事,上面几条是 buddy 的规矩。\n",
-        issue.number,
-        issue.title,
-        issue.category.map(|c| c.label()).unwrap_or("—(没定类别)"),
-        if issue.workflow.is_empty() {
-            "—(没挂 workflow)"
-        } else {
-            &issue.workflow
-        },
-    )
 }

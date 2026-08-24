@@ -134,7 +134,12 @@ impl App {
         let skill = skills_dir
             .as_deref()
             .and_then(|d| super::bootstrap::skill_pointer(d, &issue.workflow));
-        let system_prompt = super::bootstrap::agent_system_prompt(&issue, &run_dir, skill.as_ref());
+        let references = self
+            .ensure_prompt_assets()
+            .map(|d| super::bootstrap::references_for(&issue, &d))
+            .unwrap_or_default();
+        let system_prompt =
+            super::bootstrap::agent_system_prompt(&issue, skill.as_ref(), &references);
         let mut plan = build_startup_plan(agent, &prompt, &system_prompt, &run_dir)
             .map_err(|e| AppError::Exec(e.to_string()))?;
         if let Some(d) = &skills_dir {

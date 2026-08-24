@@ -39,15 +39,15 @@ buddy 给一个项目赋能走两条路径,信息落点分清:
 
 三类产出各有落点:**顶层文档**(README / AGENTS / CLAUDE / CHANGELOG)归 `project-handbook` 这份剧本管——buddy 管该有的集合,问过人才写、从仓真读、走 MR;**dev 过程件**(CONTEXT / adr / spec / ticket)由 workflow 自己产;`.bw/` 永远走路径 A,不进会话。
 
-### 系统提示词四段
+### 系统提示词(文件 + references + 技能指针)
 
-每张活开工时给 agent 的系统提示词分四段:前三段静态(①身份与这张活 ②铁律 ③规范索引),在 `crates/bw-v4/src/app/bootstrap.rs` 的 `agent_system_prompt` 现拼;第四段是运行时注入的本活剧本(issue 正文 + 挂的 workflow)。**不论哪个 workflow 都被这层兜住 buddy 统一要求**——要加"所有项目都该遵守的统一要求",加进提示词,不加进 workflow 本身。
+每张活开工时给 agent 的系统提示词:主提示词是**外置的 `standard/system-prompt/SYSTEM.md.tmpl`**(身份 + 四铁律 + 读项目规范件的指引),`{{...}}` 占位在运行时填——活的信息、本活要读的 references 阶段规范、本活挂的技能。**不论哪个 workflow 都被这层兜住 buddy 统一要求**——要加"所有项目都该遵守的统一要求",改这份 md + 抬 `standard/VERSION`,不加进 workflow 本身,也不硬编码在 Rust `format!` 里。
 
-规范索引只列仓里真存在的文件——铺底还没跑的项目一条都不列(列一条不存在的路径,agent 读一次失败一次,比不列更糟)。这就是渐进加载:提示词放索引,正文让 agent 按需读(单个技能正文均值八千多字符,而注入护栏上限约六千字符,整包塞进提示词根本装不下)。
+references(`standard/system-prompt/references/*.md`)是「干某类活需要额外知道的 buddy 规范」(指标铁律、改仓规则),按活的 category/workflow 匹配后摊到 `<asset_root>/system-prompt/references/`、提示词只给路径。技能同理。文件不在硬盘就如实少一段不指,不编路径。这就是渐进加载:提示词放索引,正文让 agent 按需读(单个技能正文均值八千多字符,而注入护栏上限约六千字符,整包塞进提示词根本装不下)。
 
 ### 默认 workflow
 
-`issue-policy.toml` 里类别→工具→workflow 的默认映射:构建类默认 `mattpocock-skills`、原型类默认 `proto-design`,可换。**默认 workflow 应由 buddy 打包统一管理**(像自带十份技能一样摊到资产目录、开机即用),不丢给鱼塘/外部自取。现状如实:打包未实现——自带技能库只含 buddy 自带十份,不含这两份;issue-policy 默认值已诚实化(不默认指向 buddy 没打包的东西),构建类活今天 workflow 命中空、第四段剧本如实省略。
+`issue-policy.toml` 里类别→工具→workflow 的默认映射:构建类默认 `mattpocock-skills`、原型类默认 `proto-design`,可换。**默认 workflow 应由 buddy 打包统一管理**(像自带四份运作剧本一样摊到资产目录、开机即用),不丢给鱼塘/外部自取。现状如实:打包未实现——自带库只含 buddy 自带四份运作剧本 + 两份 references,不含这两份业界 workflow;issue-policy 默认值已诚实化(不默认指向 buddy 没打包的东西),构建类活今天 workflow 命中空、技能指针如实省略。
 
 ### 数据流
 
@@ -97,12 +97,12 @@ buddy 给一个项目赋能走两条路径,信息落点分清:
 
 ### 4 · 系统提示词与渐进加载
 
-**是什么**:每张活开工现拼一份四段系统提示词(前三段静态:身份/铁律/规范索引;第四段运行时注入:本活剧本),外加把自带技能摊到 buddy 自己的资产目录供 agent 按需读(渐进加载——提示词只放索引,正文让 agent 自己读)。前三段不论哪份 workflow 都兜住 buddy 统一要求。关键取舍是规范索引只列仓里真存在的文件、第四段找不到 workflow 就如实省略不伪造路径。
+**是什么**:每张活开工渲染一份系统提示词,主提示词是**外置的 `standard/system-prompt/SYSTEM.md.tmpl`**(身份 + 四铁律 + 读项目规范件的指引),`{{...}}` 占位在运行时填:活的信息、本活要读的 references 阶段规范、本活挂的技能。references(`standard/system-prompt/references/*.md`)是「干某类活需要额外知道的 buddy 规范」(指标铁律、改仓规则),按活的 category/workflow 匹配后摊到 `<asset_root>/system-prompt/references/`、提示词只给路径,agent 按需读。技能同理摊到 `<asset_root>/skills/`。关键取舍:**正文一律不塞进提示词**(只给「一句话 + 完整路径」),references/技能文件不在硬盘就如实少一段不编路径,主提示词不硬编码在 `format!` 里(改身份/铁律 = 改 md + 抬 `standard/VERSION`,规范对账测得出落后)。
 
-**代码**:bw-v4 的 `app/bootstrap.rs`(`agent_system_prompt` 拼四段 + `skill_pointer`)+ `standard/skills.rs`(十份技能 `include_str!`)+ `app/mod.rs`(`ensure_skill_assets`)。
-**数据**:技能正本编进二进制,开工时摊到 `<asset_root>/skills/`;提示词是一次性字符串经 `--append-system-prompt` 送进 CLI,不落盘不缓存。
-**依赖**:standard::skills、CORE_TEMPLATES、v4_engine::LaunchPlan(`--add-dir`)、codehub issue 正本。
-**没建**:默认 workflow(mattpocock / proto-design)打包未实现——自带库只打包十份,构建类活 workflow 命中空、第四段如实省略;full bundle 留后续。
+**代码**:bw-v4 的 `app/bootstrap.rs`(`agent_system_prompt` 渲染模板 + `skill_pointer` + `references_for`)+ `standard/system_prompt.rs`(`SYSTEM_PROMPT_TMPL` + references 表)+ `standard/skills.rs`(四份运作剧本 `include_str!`)+ `app/mod.rs`(`ensure_skill_assets` / `ensure_prompt_assets`)。
+**数据**:主提示词模板 + references + 技能正本都编进二进制,开工时摊到 `<asset_root>/`;提示词是一次性字符串经 `--append-system-prompt` 送进 CLI,不落盘不缓存。
+**依赖**:standard::system_prompt、standard::skills、standard::render、v4_engine::LaunchPlan(`--add-dir`)、codehub issue 正本。
+**没建**:默认 workflow(mattpocock / proto-design)打包未实现——自带库只打包四份运作剧本 + 两份 references,构建类活 workflow 命中空、技能指针如实省略;references 起手只两份(按实践长);full bundle 留后续。
 
 ### 5 · command-event-与状态机
 
@@ -147,7 +147,7 @@ buddy 给一个项目赋能走两条路径,信息落点分清:
 **代码**:v4-engine 的 `open_design.rs`(`discover_web_url` 探活 + `looks_loopback_http` 只放行 loopback);app-shell 的 `screens/session/mod.rs`(`OpenDesignView` iframe 组件);bw-v4 的 `app/issue.rs`(run_issue 的 open_design 分支不开 CLI)+ `app/tools.rs`(probe)。
 **数据**:零持久化;探活结果是一次性 loopback url 挂在 `use_signal` 里不落库不缓存;OD 产物不在 buddy 库——是 OD 导出后落进 issue worktree 的文件。
 **依赖**:只碰本机命名管道/socket + env,不依赖任何远端或 Executor;平台 Windows 命名管道 + macOS/Linux unix socket。
-**没建**:壳侧 `open_design` 适配模块未建(实际只有 claude_cli / codegraph / terminal_xterm);OD 导出产物→MR 的约定仍 defer——没加"OD 类活评审前 `design/` 非空"显式前置校验,今天靠"0 提交如实弹回"兜底。
+**没建**:壳侧 `open_design` 适配模块未建(实际只有 claude_cli / codegraph / terminal_xterm);OD 导出产物→MR 的约定仍 defer——没加"OD 类活评审前 `design/` 非空"显式前置校验,今天靠"0 提交如实弹回"兜底。**`inject_skills` 对 OD 是半成立的**:`issue-policy` 声明了,探活证 OD 有 `systemPrompt` 注入口子(`POST /api/runs` 的 `systemPrompt` 参数,实测被消费),但 OD 收不了 buddy 的技能文件——OD 有自己内建的 162 份技能(`skillId` 引用),和 buddy 的 `--add-dir` 挂文件是两套不兼容模型;且 OD 自己内部 spawn claude(是个 agent runner),套进 buddy 的 `InteractiveExecutor`(PTY 中心)不拟合。真要做是在 `run_issue` 的 OD 分支加一步 HTTP POST 传 buddy 的系统提示词(约 3-4 小时,不改 Executor),defer 给用户拍。
 
 ### 10 · 项目群
 
@@ -196,12 +196,12 @@ buddy 给一个项目赋能走两条路径,信息落点分清:
 
 ### 15 · 技能与蒸馏
 
-**是什么**:buddy 自带十份技能(六份方法论 + 四份运作剧本),编译期 `include_str!` 进二进制,开工前摊到 buddy 自己的资产目录,提示词只给"名字 + 一句话 + 完整路径",正文让 agent 按需读(渐进加载)。蒸馏是活的附属动作——把一件做完的活提炼成带做法的技能,永远记着来自哪件活。关键取舍是技能正本编进二进制零 IO、全局一份不随项目复制(不进用户仓——buddy 自己仓把 `.claude/` 写进 .gitignore,复制进去一个都没进 MR),"用过几次"每次现查 issue 列表聚合不落表不缓存(且不显示胜率——没有结算记录,这一列直接不放)。
+**是什么**:buddy 自带**四份运作剧本**(week-planning / asset-audit / metrics-refresh / project-handbook),编译期 `include_str!` 进二进制,开工前摊到 buddy 自己的资产目录,提示词只给"名字 + 一句话 + 完整路径",正文让 agent 按需读(渐进加载)。**不预建方法论技能**——原来预置的六份「阶段方法论」(原型/构建/优化/运营推广/运维/竞品)默认 workflow 没打包、`skill_slug` 也不识别,一份没被真正派发过,属「预先搞的一堆没用的」,删光:阶段方法论该由业界 workflow(mattpocock / proto-design,见 `standard/vendor`)提供,buddy 每个环节挑一个最好的默认,要从实践里长出 buddy 自己的方法论到时候再建。阶段规范约束(references,如指标铁律、改仓规则)归模块4,不和技能混。蒸馏是活的附属动作——把一件做完的活提炼成带做法的技能,永远记着来自哪件活。关键取舍是技能正本编进二进制零 IO、全局一份不随项目复制(不进用户仓),"用过几次"每次现查 issue 列表聚合不落表不缓存(且不显示胜率——没有结算记录,这一列直接不放)。
 
-**代码**:bw-v4 的 `standard/skills.rs`(`SkillPack` + 十份 `include_str!` + `desc_of`)+ `app/mod.rs`(`asset_root` / `skills_dir` / `ensure_skill_assets`)+ `app/bootstrap.rs`(`SkillPointer`)+ `app/ops.rs`(`skill_slug` 只映射两个运作剧本);app-shell 的 `bridge/vm_panels.rs`(配置屏 skill_list + workflow_usage 现算)。
-**数据**:十份正本编进二进制,开工摊到 `<asset_root>/skills/<slug>/SKILL.md`(全局一份);活挂的 workflow 名在 codehub issue 正本上;"用过几次"每次现查聚合不落表;提示词一次性字符串不落盘。
-**依赖**:standard::skills、CORE_TEMPLATES、v4_engine::LaunchPlan(`--add-dir`)、Issue 模型;无数据库无网络。
-**没建**:蒸馏——会话屏顶部按钮灰着,grep 不到任何 distill 代码,命令未接;workflow 目录扫描识别(design 里写的"扫技能目录按判据区分包还是单技能"没对应实现,`skill_slug` 只硬编码映射两个运作剧本);默认 workflow 打包(自带库只打包十份)。
+**代码**:bw-v4 的 `standard/skills.rs`(`SkillPack` + 四份 `include_str!` + `desc_of`)+ `app/mod.rs`(`asset_root` / `skills_dir` / `ensure_skill_assets`)+ `app/bootstrap.rs`(`SkillPointer`)+ `app/ops.rs`(`skill_slug` 只映射两个运作剧本);app-shell 的 `bridge/vm_panels.rs`(配置屏 skill_list + workflow_usage 现算)。
+**数据**:四份正本编进二进制,开工摊到 `<asset_root>/skills/<slug>/SKILL.md`(全局一份);活挂的 workflow 名在 codehub issue 正本上;"用过几次"每次现查聚合不落表;提示词一次性字符串不落盘。
+**依赖**:standard::skills、standard::system_prompt、v4_engine::LaunchPlan(`--add-dir`)、Issue 模型;无数据库无网络。
+**没建**:蒸馏——会话屏顶部按钮灰着,grep 不到任何 distill 代码,命令未接;workflow 目录扫描识别(design 里写的"扫技能目录按判据区分包还是单技能"没对应实现,`skill_slug` 只硬编码映射两个运作剧本);默认 workflow 打包(自带库只打包四份运作剧本 + 两份 references)。
 
 ### 16 · app编排与运行时
 
