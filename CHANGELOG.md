@@ -94,3 +94,9 @@ cargo check + clippy + fmt + 四守卫 + test 全过。行为:E2E 验证 defer �
 
 人靠四样可见物接手(旅程/高保真/架构/规矩),不靠读源码;仓外会话里人只走站和验收,
 改代码与文档是窗口 AI 的事。仓外起手 skill 本机使用、不进仓。
+
+### 2026-08-24(续八)· 产品指南入口与口径对齐 MVP
+
+`docs/guide/index.html` 改指现行 `v4-产品指南.html`；`buddy-guide.html` 顶部标 V3 历史不作数。
+指南正文去掉已删路径（`design.md` / `LEFTOVERS.md`）和旧 crate 名（`bw-v4` / `v4-engine` / `bw-v4-dev`），
+门禁与命令与 `AGENTS.md` 对齐。1–6 站仍只留标题，不编没走过的步骤。
