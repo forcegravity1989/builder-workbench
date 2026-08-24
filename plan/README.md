@@ -2,7 +2,7 @@
 
 > 本目录只留**现在还作数**的计划与规范(7 篇)。历史批次的计划——早期路线选型(00-05)与做完即历史的执行记录(09-12、14、17-19、21)——2026-08-17 起统一归档到 [`../docs/archive/plan/`](../docs/archive/plan/),编号语义不变(源码注释与文档里的 `plan/NN §M` 锚点按号去那里找)。**编号是时间序,不是重要度**。
 >
-> 看不懂的词查 [`../CONTEXT.md`](../CONTEXT.md) 词表;看不懂的代号(P2、W6、R1……)查 [`../docs/code-schemes.md`](../docs/code-schemes.md)。**当前迭代在做什么**(V1 产品化 → V2 调度/多人 → V3 内嵌 Open Design)不在本目录,在 [`../docs/v1-prototype/`](../docs/v1-prototype/) → [`../docs/v2-prototype/`](../docs/v2-prototype/) → [`../docs/v3-prototype/`](../docs/v3-prototype/);全仓文档地图见 [`../docs/README.md`](../docs/README.md)。
+> 看不懂的词查 [`../CONTEXT.md`](../CONTEXT.md) 词表;看不懂的代号(P2、W6、R1……)查 [`../docs/code-schemes.md`](../docs/code-schemes.md)。**当前迭代在做什么**(buddy MVP)的设计在 [`../DESIGN.md`](../DESIGN.md) 指向的 [`../docs/modules/`](../docs/modules/) 各份自足模块设计里;全仓文档地图见 [`../docs/README.md`](../docs/README.md)。
 
 ## 现在还作数的
 

@@ -28,25 +28,28 @@ capabilities = ["inject_skills"]
 
 # 三列映射:类别 → 默认开工工具 → 默认 workflow。
 # workflow = SOP 类技能包(自己调度 agent),不是单个技能。
+# 注:默认 workflow(mattpocock-skills / proto-design)的打包未实现——buddy 还没把
+# 已严选的默认 workflow 进资产目录(见 docs/convention.md §4 + docs/modules/系统提示词与渐进加载.md)。
+# 在没打包前,默认值留空,不指向 buddy 不供的东西;项目自行配,或等 buddy 打包后回填默认。
 [[mapping]]
 category = "prototype"            # 原型
 tool     = "open_design"
-workflow = "proto-design"
+workflow = ""                     # 意图默认 proto-design,待打包
 
 [[mapping]]
 category = "build"                # 构建
 tool     = "claude_cli"
-workflow = "mattpocock-skills"    # 默认,项目可换成 superpowers
+workflow = ""                     # 意图默认 mattpocock-skills,待打包
 
 [[mapping]]
 category = "optimize"             # 优化
 tool     = "claude_cli"
-workflow = "mattpocock-skills"
+workflow = ""                     # 意图默认 mattpocock-skills,待打包
 
 [[mapping]]
 category = "ops"                  # 运维,和优化同款默认
 tool     = "claude_cli"
-workflow = "mattpocock-skills"
+workflow = ""                     # 意图默认 mattpocock-skills,待打包
 
 [[mapping]]
 category = "growth"               # 运营推广

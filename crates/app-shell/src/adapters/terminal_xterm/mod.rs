@@ -19,9 +19,9 @@ use std::time::Duration;
 
 /// xterm 资产随二进制走,不联网。CDN 拉不下来的那一次,用户看到的是一整块
 /// 空白 —— 那之后就一直是内嵌的。
-const XTERM_JS: &str = include_str!("../../../../app-desktop/public/xterm.min.js");
-const XTERM_CSS: &str = include_str!("../../../../app-desktop/public/xterm.css");
-const FIT_ADDON_JS: &str = include_str!("../../../../app-desktop/public/xterm-addon-fit.min.js");
+const XTERM_JS: &str = include_str!("../../../public/xterm.min.js");
+const XTERM_CSS: &str = include_str!("../../../public/xterm.css");
+const FIT_ADDON_JS: &str = include_str!("../../../public/xterm-addon-fit.min.js");
 
 /// Pre-handler write/drain keyed by conversation id. Must run BEFORE any
 /// bytes arrive so the pre-handler buffer (orca §2.4) catches early output.

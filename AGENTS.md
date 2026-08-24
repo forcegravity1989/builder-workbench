@@ -1,45 +1,108 @@
-# CodeGraph-first repository navigation
+# AGENTS.md — buddy 开发手册
 
-This repository shares its code graph at `.codegraph/codegraph.db`. When the
-`codegraph` CLI is available, use it before broad grep/find or opening many
-files:
+> 这是 buddy(loop-buddy / Builders' Workbench)仓库的**唯一开发规矩正本**。`CLAUDE.md` 只是一行导入它。给所有驱动 AI(Claude Code / Cursor / Codex)和接手的人看。改这份 = 改开发规矩,过评审再合。
 
-- `codegraph explore "<question or symbol names>"` for architecture, flows, and
-  locating the relevant implementation in one call.
-- `codegraph node <symbol>`, `codegraph callers <symbol>`,
-  `codegraph callees <symbol>`, and `codegraph impact <symbol>` for focused
-  follow-up queries.
-- Treat source returned by `codegraph explore` or `codegraph node` as already
-  read; do not reopen the same file unless additional lines are needed.
+## 这是什么
 
-Run `codegraph sync` after changing source code so local queries stay current.
-Do not add `.codegraph/codegraph.db` to feature commits: pull-request CI verifies
-the graph, and the CodeGraph workflow is the single writer that publishes the
-shared snapshot after `main` passes CI. Runtime files such as WAL/SHM files,
-logs, sockets, and PID files stay machine-local.
+单人构建者的 Rust 原生桌面工作台(Dioxus 0.7 / wry WebView,macOS + Windows)。产品命题见 [`plan/07-product-proposition.md`](plan/07-product-proposition.md);设计正本见 [`DESIGN.md`](DESIGN.md) 指向的各模块设计;领域词表见 [`CONTEXT.md`](CONTEXT.md)。三个名字一件东西:仓库真名 **loop-buddy**、产品名 **Builders' Workbench(BW)**、产品里 AI 队友自称 **buddy**。
 
-Repository-specific product, architecture, verification, and writing rules
-remain in `CLAUDE.md` and apply alongside this file. Start at `README.md` for
-what the repo is and how to run it; `docs/README.md` is the map of every doc
-tree (active docs, runtime assets baked in via `include_str!`, the partner's
-`docs/v1~v3-prototype/` iteration line, and `docs/archive/`).
+> **buddy MVP 与 V3**:本仓现在的产品线是 buddy MVP(内核 `crates/bw-v4` + 底座 `crates/v4-engine` + 壳 `crates/app-shell`)。另有 V3 六 crate(`bw-core`/`bw-engine`/`bw-store`/`bw-app`/`ui`/`app-desktop`)**冻结在仓里、不再演进、连 bug 也不修**,等 [`DESIGN.md`](DESIGN.md) 指的删旧壳判据满足后同一次删干净(判据见 archive 与 v3 分支)。**做 buddy MVP 工作时:V3 crate 不是权威,别 grep 它当事实源**(它会让 AI 把 V3 概念误当 MVP 现状)。`docs/skills/` 与 `docs/buddy/` 是 V3 的编译资产(`bw-core` 用 `include_str!` 编进二进制),随 V3 一起冻结、一起删,不是活跃概念。
 
-## buddy 开发规范（给每个开发 AI，不乱改）
+## 语言和构建
 
-V4 的数据层（2026-08-22 重定调，正本见 `docs/v4-prototype/design.md` §3）：**codehub/GitHub 的 issue + 标签 = 唯一 issue 正本；本地零数据库**（只剩运行时：`session.jsonl`、本机设置，落在 `asset_root` 下）。
+Rust 1.82+,cargo workspace。桌面壳另需 Dioxus 0.7 的系统依赖(macOS 自带 WebKit,Windows 用 WebView2)。`#![forbid(unsafe_code)]` 是 `v4-engine` 的规矩。跨会话只认本仓的 `AGENTS.md` + `CONTEXT.md` + `docs/` + `CHANGELOG.md` + `DESIGN.md`,不凭上一会话口头结论改代码。
 
-**改一个特性前，先在 `docs/v4-prototype/design.md` 的 §2 旅程总图 + §3 数据归属 + 各章「工程落点」小节上定位**：这件特性属于旅程哪一站 → 三层里改哪层（承载·codehub issue / 规范·系统提示词 / 方法论·skill）→ 数据归在哪 → 模块落点。找不到就**先补文档、再动代码**——不清晰不写代码。
+## 怎么建 / 怎么跑 / 怎么测
 
-**三层模型**（「怎么给 buddy 做一个特性」）：
-- **承载 · codehub issue**：把这件事装进来。issue 状态走标签、工作产物走 MR。
-- **规范 · 系统提示词 + 渐进加载规范**（`docs/buddy/system-prompt.md` + `docs/buddy/standards/`，`include_str!` 进二进制）：这个运作活 buddy 要求的规范是什么。改 buddy 规范 = 改这套，随 buddy 演进。
-- **方法论 · skill**（`standard/skills/<名>/SKILL.md`，自带、不进用户仓、未来拔插）：怎么做能做得更好。改方法论 = 改 skill。
+```bash
+cargo check -p bw-app                       # 日常最快(编译 V3 内核+应用,不编 Dioxus)
+cargo run -p app-shell                      # 启 buddy MVP 桌面壳(bin 名 bw-v4-dev)
+BW_OPEN=<项目名> BW_PANEL=overview|plan|session|notify|config|kb ./target/debug/bw-v4-dev
+                                            # 深链直达屏;stderr [BW_OPEN]=真的渲染到了
+BW_VIEW=onboard|settings ./target/debug/bw-v4-dev   # 顶层屏深链
+cargo run -p v4-engine --example pty_smoke [-- --teardown|-- --abort]  # PTY 地基烟测(不碰 claude/网关)
+cargo test --workspace --exclude app-desktop          # CI 也跑:现存内联测试必须过
+```
 
-**仓改动两类，无特殊**：
-- A 类 · issue 数据（状态/排期/版本）→ codehub 标签，buddy 直接改。
-- B 类 · 仓文件产物（名片/配置/规范件/AGENTS.md 草稿）→ worktree + MR，**幂等键 = 固定枚举标题**（精确匹配、不加变体后缀，buddy 查「标题==这个枚举的 open issue」→ 有则复用 worktree 追加提交、没则新建），不重复建。
-- 要加「buddy 直写 main」的特殊，先答「为什么不走 MR」——答不上不加。
+▶跑(干一张活)走交互式 `claude` 在内嵌终端里;需本机 `claude` CLI(`BW_CLAUDE_BIN` 可指定路径)。真跑受 claude 信任对话框与网关状态影响,不作为门禁。`BW_CLAUDE_MAX_BUDGET_USD` 控预算。
 
-**codehub issue 标签词表**：`bw:status:{todo|inprogress|inreview|blocked}`（closed=Done，不打）、`bw:week:YYYY-Www`、`bw:released:vX`。**不打**：`kind`（从 workflow 推断）、`tool`/`workflow`（走 `.bw/issue-policy.toml` 映射）、B 类复用键（走固定枚举标题、不占标签）。buddy 结构化产出挂 **issue 评论**、不动正文。B 类 issue 标题一律固定枚举字符串（如「编辑项目名片」），变体内容进评论/正文，不拼进标题。
+## 门禁(每个 commit 前全过,与 CI 一致)
 
-**门禁**（每件 commit 前全过，见 `CLAUDE.md`）：`cargo fmt --all --check`、`cargo clippy --workspace --exclude app-desktop -- -D warnings`、三个 guard 脚本、`cargo check -p bw-core --target wasm32-unknown-unknown --no-default-features`、`cargo test --workspace --exclude app-desktop`。每件独立 commit、在分支上、标题带人话。
+```bash
+cargo fmt --all --check
+cargo clippy --workspace --exclude app-desktop -- -D warnings
+cargo check -p bw-core --target wasm32-unknown-unknown --no-default-features
+cargo check -p ui --target wasm32-unknown-unknown
+cargo check -p app-desktop        # V3 旧壳编译过(冻结但要编得动)
+cargo check -p app-shell          # buddy MVP 新壳编译过
+./scripts/guard-kernel-ui-free.sh
+./scripts/guard-no-cross-screen-import.sh   # 新壳:屏与屏不互相引用
+./scripts/guard-screen-hooks.sh             # 新壳:用 hook 的函数必须是组件
+./scripts/guard-file-lines.sh               # 单文件 1500 行硬上限(只查 buddy MVP 三 crate)
+cargo test --workspace --exclude app-desktop
+```
+
+行为正确性靠 E2E(深链启动 + `codehub-cli`/`gh`/`git`/`cat .bw/…` 读回 + computer-use)+ `/code-review`;单元测试不是交付物(现存的随 CI 跑、改到顺手维护、不建回归大坝)。**buddy MVP 本地零数据库——读回用 `codehub-cli`/`gh`/`git`/`cat .bw/…`,不用 `sqlite3`**(那是 V3 的库)。
+
+## 顶层目录导览
+
+```
+crates/   bw-v4(MVP 内核:本地零库+仓文件解析+现算推导+Command/Event)
+          v4-engine(MVP 底座:交互式 claude+PTY+worktree+git+codehub/github 远端)
+          app-shell(MVP 壳:九屏+主题+内核桥+适配模块,bin bw-v4-dev)
+          bw-core/bw-engine/bw-store/bw-app/ui/app-desktop  ← V3(冻结等删,别当权威)
+standard/  buddy 推给被管项目的规范正本(include_str! 进 bw-v4):模板+10 份自带 skill
+docs/      设计地图(README)+ 模块设计(modules/)+ convention + adr + 历史 archive
+.bw/       buddy 自己作为被管项目的资产(PROJECT.md/metrics.toml/issue-policy.toml/…)
+plan/      06 设计事实源 · 07 命题 · 08 MVP 定义 · 13/15/16/20 规范
+scripts/   门禁脚本 + 验收流工具链 + 联调脚本
+e2e/ examples/  验收流考卷 + 样板间库与 vendor 技能库(mattpocock/superpowers/mohit)
+```
+
+## buddy 特有规矩(只写仓里真还在用的)
+
+### 四铁律(产品行为不可违反约束)
+
+| 铁律(人话) | 怎么守 |
+|---|---|
+| 杀进程重开,所有数字能重算出来、前后一致 | 现算推导;E2E 重启后读回一致 |
+| 信号只能从数据推导;没数据就是 Unknown,不是绿 | `Derived<Signal>` 密封、store 无 `set_signal`;现算唯一写入者 |
+| 「完成」永远由人点;同一件活绝不重复记账 | 状态机 `can_transition_to` 守卫、Done 入边仅 InReview;`settled_at` settle-once |
+| 定时任务真实到点触发;自动建的活绝不被自动推进到完成 | E2E:到点 tick 后读回新建活,状态正常 |
+
+### 三层模型(怎么给 buddy 做一个特性)
+
+- **承载 · codehub issue**:issue+标签=唯一正本,本地零数据库;状态走标签、工作产物走 MR。
+- **规范 · 系统提示词 + 渐进加载**(`docs/buddy/system-prompt.md` 三段静态 + 运行时注入剧本;`standard/skills/` 索引):不论哪个 workflow 都兜住 buddy 统一要求。
+- **方法论 · skill / workflow**(`standard/skills/` 自带 10 份;build 默认 workflow 见 issue-policy,可换):怎么做能做得更好。
+
+改一个特性前,先在 [`DESIGN.md`](DESIGN.md) 指的模块设计上定位:旅程哪一站 → 三层里改哪层 → 数据归哪 → 模块落点。找不到先补文档、再动代码——不清晰不写代码。
+
+### codehub issue 标签词表
+
+`bw:status:{todo|inprogress|inreview|blocked}`(closed=Done,不打)、`bw:week:YYYY-Www`、`bw:released:vX`。**不打**:`kind`(从 workflow 推断)、`tool`/`workflow`(走 `.bw/issue-policy.toml` 映射)。仓改动两类:issue 数据(状态/排期/版本)→ codehub 标签 buddy 直接改;仓文件产物(名片/配置/规范件)→ worktree + MR,幂等键=固定枚举标题。详见 `standard/05-issue-policy/`。
+
+### 写作纪律(给人看的东西先让人看得懂)
+
+1. 汇报用人话:做了什么、结果如何、下一步。代号第一次出现带一句人话。
+2. 实现术语留在代码(settle-once / derive-only 这类只进代码注释与对照表,写给人的正文说人话)。
+3. 用词以 [`CONTEXT.md`](CONTEXT.md) 词表为准;新造词先进词表。
+4. 代号先在 [`docs/code-schemes.md`](docs/code-schemes.md) 登记再用。
+5. 每篇新文档开头给 30 秒导读;过时不删但顶部加历史横幅。
+6. **不为向后兼容留旧路径**:发现过时实现直接移除,不加兼容层/回退/迁移。
+
+### commit 约定
+
+每件独立 commit、在分支上、**不 push**(用户要 push 时另开 bundle)。标题让人不查文档也看懂做了什么(可带代号前缀,但须人话描述;代号系列先在 `docs/code-schemes.md` 登记)。信息如实描述取舍,不吹;偏差如实记进 commit message 与 `CHANGELOG.md`。
+
+## CodeGraph 导航(可选用)
+
+仓共享 codegraph 在 `.codegraph/codegraph.db`。`codegraph` CLI 可用时,先于广 grep 用:
+`codegraph explore "<问题或符号>"` 一次拿架构/流程/落点;`codegraph node/callers/callees/impact <symbol>` 跟进。改源码后跑 `codegraph sync`。`.codegraph/codegraph.db` 不进 feature commit(CI 是唯一发布者)。
+
+## 不要做的
+
+- 不拿 V3 crate 当 MVP 事实源去 grep/读(冻结、会误导)。
+- 不为「兼容旧半修」留双路径;不扩 scope(留白如实标"未建")。
+- 不在入口层写业务和存储;不照 README 抄命令(README 常年不更新,以 CI 配置为准)。
+- 未锁定决策先走 grill/domain-modeling,不凭猜改设计;改动前 `CHANGELOG.md` 记一行。

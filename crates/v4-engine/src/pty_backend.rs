@@ -99,7 +99,7 @@ pub fn active() -> impl PtyBackend {
 #[cfg(windows)]
 pub mod windows {
     //! Windows PTY 后端:conpty-oxide(portable-pty 0.9.0 的 ConPTY 实现不
-    //! 把子进程 stdout 送到读端,见 docs/v1-prototype/issue2-metrics-interactive-loop.md §9)。
+    //! 把子进程 stdout 送到读端,见 docs/archive/v1-prototype/issue2-metrics-interactive-loop.md §9)。
     //!
     //! **如实标注**:本仓开发机是 macOS,**这份文件自己没在 Windows 真机上跑
     //! 过**,只经 `cargo check --target x86_64-pc-windows-gnu -p v4-engine` 交叉

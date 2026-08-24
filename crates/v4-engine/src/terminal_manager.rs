@@ -4,7 +4,6 @@
 //! 平台 PTY 类型。字节按会话身份路由;每会话有界输出缓冲(满丢最老)。
 //!
 //! 并发切卡:多会话常驻 PTY,attach 不杀 peer;交付锁仍由 `active_run`。
-//! 见 `docs/v1-prototype/issue2-terminal-conversation-refactor.md` §7 / §10.1。
 
 use std::collections::{HashMap, VecDeque};
 use std::path::PathBuf;
