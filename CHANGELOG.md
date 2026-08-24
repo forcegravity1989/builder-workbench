@@ -1,6 +1,6 @@
 # CHANGELOG.md
 
-版本变更记录:每次合入记"本次做了什么"。决策动机进 [`docs/adr/`](docs/adr/),不写这里。buddy MVP 起记(2026-08-24);MVP 之前的 V1/V2/V3 史实在 git 历史与 `docs/archive/`,不补抄。
+版本变更记录:每次合入记"本次做了什么"。决策动机进 [`docs/adr/`](docs/adr/),不写这里。buddy MVP 起记(2026-08-24);MVP 之前的 V1/V2/V3 史实在 git 历史与 `v3` 分支,不补抄。
 
 ## [buddy MVP] — 2026-08-24 起
 

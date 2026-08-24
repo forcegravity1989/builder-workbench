@@ -93,7 +93,7 @@ references(`standard/system-prompt/references/*.md`)是「干某类活需要额�
 **代码**:bw-v4 的 `standard/`(模板/版本)+ `standard/bootstrap.rs`(写件/探测)+ `app/bootstrap.rs`(建活→开树→写→提交→推分支→开 MR 编排)+ `repo/managed_file.rs`(指纹对账)。
 **数据**:铺进项目仓 `.bw/`;零本地库;仓根一个字不写。
 **依赖**:repo::managed_file、git、standard、worktree、issue_store;外部 sha2 / serde。
-**没建**:升级流程(对账代码在,但"过期→看差异→建活→提 MR"动作未实现);历史回填走资产盘点首次模式;`CHANGELOG.md` / `07-cadence/` / 鱼塘 `pond/` 目录未建。
+**没建**:升级流程(对账代码在,但"过期→看差异→建活→提 MR"动作未实现);历史回填走资产盘点首次模式;节律(cadence)目录 / 鱼塘 `pond/` 未建。
 
 ### 4 · 系统提示词与渐进加载
 

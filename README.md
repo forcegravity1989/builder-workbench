@@ -28,8 +28,8 @@ cargo run -p v4-engine --example pty_smoke
 
 ```
 crates/   bw-v4(内核)· v4-engine(底座)· app-shell(壳,bin bw-v4-dev)
-standard/  规范正本(模板 + 自维护 skill `skills/` 10 份 + 业界 skill `vendor/` mattpocock/superpowers/mohit)
-docs/      文档地图 + 模块设计(modules/)+ proposition + convention + adr + hifi + 历史 archive
+standard/  规范正本(铺底 `templates/` + 系统提示词 `system-prompt/` + 运作剧本 `skills/` 4 份 + 业界 workflow `vendor/` mattpocock/mohit)
+docs/      文档地图 + architecture(设计正本)+ guide(产品指南)+ adr + hifi
 scripts/   门禁脚本(guard-*)+ codegraph 联调
 ```
 
