@@ -258,7 +258,12 @@ impl App {
         }];
         // 真提交出东西了才推「评审中」—— 该人看一眼了。什么都没写下去的时候
         // 原地不动,不假装干过活。**最远只到评审中**,「完成」永远由人点。
-        if committed && issue.status.can_transition_to(IssueStatus::InProgress) {
+        //
+        // 判据用「MR 开着」(`mr.number > 0`)而不是「这次新提交了」(`committed`):
+        // 重跑幂等恢复时,件上次已提交过、这次 `committed=0`,但 MR 开着(新建或
+        // 复用上次的)——这种活也该在评审中,不该因为「这次没新提交」就卡在 todo。
+        // `committed` 但 MR 没开成(推/开 MR 失败)的,不算「交出去评审」,不推。
+        if mr.number > 0 && issue.status.can_transition_to(IssueStatus::InProgress) {
             events.extend(
                 self.transition_issue(issue_id, IssueStatus::InProgress)
                     .await?,
