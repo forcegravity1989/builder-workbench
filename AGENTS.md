@@ -12,6 +12,8 @@
 
 Rust 1.82+,cargo workspace。桌面壳另需 Dioxus 0.7 的系统依赖(macOS 自带 WebKit,Windows 用 WebView2)。`#![forbid(unsafe_code)]` 是 `bw-engine` 的规矩。跨会话只认本仓的 `AGENTS.md` + `CONTEXT.md` + `docs/` + `CHANGELOG.md` + `DESIGN.md`,不凭上一会话口头结论改代码。
 
+仓外 IDE(Claude Code / Cursor / Codex)开新会话,先读 [`.claude/skills/buddy-start/SKILL.md`](.claude/skills/buddy-start/SKILL.md)——只是闸门,正本仍是本文件。工作台内嵌终端里不要用它(那边已经灌了系统提示词)。buddy MVP 还不能在工作台里维护自己,所以仓外起手暂时靠这份 skill,不是再做一套伴飞/需求/修 bug 流程。
+
 ## 怎么建 / 怎么跑 / 怎么测
 
 ```bash
@@ -54,6 +56,19 @@ scripts/   门禁脚本(guard-*)+ codegraph 联调
 ```
 
 ## buddy 特有规矩(只写仓里真还在用的)
+
+### 人怎么驾驭(可见物,不是代码)
+
+人、同事、另一只 AI 接手靠四样能看见的东西,不靠读源码。不同人开不同模型,只许写出同一套风格——正本在这些文件里,聊天结论不进仓就不算数。代码和文档都在这些规范下演进。仓外会话里人只走站和验收,改代码与文档是窗口 AI 的事(开场契约见 `.claude/skills/buddy-start`)。
+
+| 可见物 | 在哪 | 用来干什么 |
+|---|---|---|
+| 用户旅程 / 产品指南 | [`docs/guide/`](docs/guide/) | 点什么、背后发生什么、手上多了什么;按站把活交给人或 AI |
+| 高保真 | [`docs/hifi/`](docs/hifi/) | 界面长什么样 |
+| 架构与特性关键设计 | [`docs/architecture.md`](docs/architecture.md) | 模块为什么这样、数据归哪、没建什么;按模块交活 |
+| 开发规矩 + 词表 | 本文件 + [`CONTEXT.md`](CONTEXT.md) | 怎么建/跑/测、用哪个词 |
+
+自己作为被管项目跟被管仓同一套落点:`.bw/` 走规范铺底;`AGENTS.md` 走 project-handbook;`CONTEXT` / adr / spec 走 `mattpocock-skills`;旅程 / 高保真 / 架构是产品自己的可见物,业界 workflow 不会代写。资产盘点盘这些齐不齐,它本身不产规范。
 
 ### 四铁律(产品行为不可违反约束)
 

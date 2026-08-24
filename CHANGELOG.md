@@ -89,3 +89,8 @@ cargo check --workspace + clippy + fmt + 四守卫 + test + prompt_smoke(5 份�
 
 cargo check + clippy + fmt + 四守卫 + test 全过。行为:E2E 验证 defer 给用户
 (真跑一张原型活看 OD 内 AI 是否按 systemPrompt 走 + 产物能不能进 worktree)。
+
+### 2026-08-24(续七)· 驾驭面落到 AGENTS.md
+
+人靠四样可见物接手(旅程/高保真/架构/规矩),不靠读源码;仓外会话里人只走站和验收,
+改代码与文档是窗口 AI 的事。仓外起手 skill 本机使用、不进仓。
