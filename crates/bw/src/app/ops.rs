@@ -14,7 +14,7 @@
 //! 本身就是幂等锁,也是补建逻辑——错过一次 tick(那会儿 buddy 没开着)下次
 //! 启动的第一次 tick 天然成立,自动补上。
 
-use super::{issue_store, App, AppError, Result};
+use super::{issue_store, App, AppError, ProgressLine, Result};
 use crate::command::Event;
 use crate::isoweek;
 use crate::local::ProjectRegistry;
@@ -179,8 +179,11 @@ impl App {
         let issue = self.issue_or_err(id).await?;
         let project = self.project_of(issue.project_id).await?;
 
+        self.step(ProgressLine::doing(1, "合入:查这张活的 MR…"));
+
         // 已经完成的活直接短路。
         if issue.status == IssueStatus::Done {
+            self.step(ProgressLine::ok(3, "合入:这张活已经完成"));
             return Ok(vec![Event::IssueMerged {
                 id,
                 pr_number: 0,
@@ -189,6 +192,10 @@ impl App {
             }]);
         }
         if !issue.status.can_transition_to(IssueStatus::Done) {
+            self.step(ProgressLine::fail(
+                1,
+                format!("合入:不能从「{}」直接完成", issue.status.label()),
+            ));
             return Err(AppError::IllegalTransition {
                 from: issue.status.label().to_string(),
                 to: IssueStatus::Done.label().to_string(),
@@ -206,7 +213,10 @@ impl App {
                     &project.remote_host,
                     &project.remote_path,
                 )
-                .map_err(|e| AppError::Exec(format!("认不出远端类型:{e}")))?,
+                .map_err(|e| {
+                    self.step(ProgressLine::fail(1, format!("合入:认不出远端类型:{e}")));
+                    AppError::Exec(format!("认不出远端类型:{e}"))
+                })?,
             )
         } else {
             None
@@ -218,42 +228,57 @@ impl App {
         if let Some(r) = &remote {
             match r.open_mr_for_branch(&branch).await {
                 Ok(Some(n)) => {
+                    self.step(ProgressLine::doing(1, format!("合入:正在合 MR #{n}…")));
+                    if let Err(e) = r.merge_mr(n).await {
+                        self.step(ProgressLine::fail(1, format!("合入:MR #{n} 没成:{e}")));
+                        return Err(AppError::Exec(format!("合入 MR #{n} 没成:{e}")));
+                    }
                     pr_number = n;
-                    r.merge_mr(n)
-                        .await
-                        .map_err(|e| AppError::Exec(format!("合入 MR #{n} 没成:{e}")))?;
                     merged = true;
+                    self.step(ProgressLine::ok(1, format!("合入:MR #{n} 已合")));
                 }
                 Ok(None) => {
                     // 挂了远端但分支上没有开着的 MR —— 不关 issue,活留评审中。
-                    return Err(AppError::Refused(format!(
-                        "没找到这活的 MR(分支 {branch} 上没有开着的 MR),活留评审中"
-                    )));
+                    let why = format!("没找到这活的 MR(分支 {branch} 上没有开着的 MR),活留评审中");
+                    self.step(ProgressLine::fail(1, format!("合入:{why}")));
+                    return Err(AppError::Refused(why));
                 }
                 Err(e) => {
                     // 查 MR 本身失败(网络/权限)—— 不关 issue,活留评审中。
+                    self.step(ProgressLine::fail(1, format!("合入:查 MR 没成:{e}")));
                     return Err(AppError::Exec(format!("查 MR 没成:{e}")));
                 }
             }
+        } else {
+            self.step(ProgressLine::ok(1, "合入:没挂远端,没有 MR 可合"));
         }
         // !has_remote 的本地项目:没有 MR 可合,merged=false,下面直接走「完成」。
 
         // 合入之后的本机收尾。
         let mut notes: Vec<String> = Vec::new();
         if merged {
+            self.step(ProgressLine::doing(2, "合入:把本机仓快进到刚合进去的提交…"));
             let (_, note) = self.pull_main_after_merge(issue.project_id).await;
-            notes.push(note);
+            notes.push(note.clone());
+            self.step(ProgressLine::ok(2, format!("合入:{note}")));
+        } else {
+            self.step(ProgressLine::ok(2, "合入:不用拉主检出"));
         }
 
         // 合入由人点;buddy 这一下把 issue 关掉 = Done。本地无远端项目(没 MR
         // 可合)也走这一步 —— 合理。
-        issue_store::set_status(self, &project, id.iid(), IssueStatus::Done).await?;
+        self.step(ProgressLine::doing(3, "合入:结清这张活…"));
+        if let Err(e) = issue_store::set_status(self, &project, id.iid(), IssueStatus::Done).await {
+            self.step(ProgressLine::fail(3, format!("合入:结清没成:{e}")));
+            return Err(e);
+        }
         // 收掉 worktree + 分支 —— set_status(Done) 后无条件收(只要 worktree 干净)。
         // 不再以 `merged && main_has_it` 为条件:本地项目(merged=false)的活分支
         // 也是 `bw/issue-<iid>`,结清了也该收。
         if let Some(n) = self.cleanup_issue_branch_note(&issue).await {
             notes.push(n);
         }
+        self.step(ProgressLine::ok(3, "合入:活已完成"));
 
         let mut events = vec![Event::IssueMerged {
             id,

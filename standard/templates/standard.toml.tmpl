@@ -1,6 +1,8 @@
-# .bw/standard.toml —— 这个项目当前铺了哪版规范、启用了哪些大类、扩展了
-# 哪些大类。buddy 用它做对账(缺什么、过期什么)和"要不要提示升级"的判断。
+# .bw/standard.toml —— 这个项目铺的是哪一版规范、这套包里有哪几类件。
+# enabled = 二进制里真有模板的大类(第 0 站只落 charter + meta;
+# docs-core / metrics / issue-policy 要走到那一站或配置屏「规范铺底」才落盘)。
+# extensions 留给以后同事贡献的扩展件;空 = 还没有。
 version    = "{{version}}"
-enabled    = ["charter", "agents", "docs-core", "metrics", "issue-policy", "defaults-core", "cadence"]
-extensions = ["decisions", "method"]
+enabled    = ["charter", "meta", "docs-core", "metrics", "issue-policy"]
+extensions = []
 source     = "builtin"

@@ -36,10 +36,9 @@ pub fn version() -> &'static str {
     VERSION_RAW.trim()
 }
 
-/// 章程落在哪。**在 `.bw/` 里,不在仓根** —— 试点第一天定的:buddy 铺进用户
-/// 仓的东西全部收进 `.bw/`,仓根只留一份一行的 `CLAUDE.md`(Claude Code 的
-/// 自动发现入口,唯一躲不掉的)。这样人一眼就知道「哪些是 bw 的资产」,也不会
-/// 和项目自己的 README / CLAUDE.md / docs 打架。
+/// 章程落在哪。**在 `.bw/` 里,不在仓根** —— buddy 铺进用户仓的东西全部收进
+/// `.bw/`,仓根一个字不写。这样人一眼就知道「哪些是 bw 的资产」,也不会和
+/// 项目自己的 README / CLAUDE.md / docs 打架。
 pub const CHARTER_REL_PATH: &str = ".bw/PROJECT.md";
 
 pub const CHARTER_TMPL: &str = include_str!("../../../../standard/templates/PROJECT.md.tmpl");
@@ -70,8 +69,7 @@ pub const SCRIPT_STARS: &str =
 /// 大半的件(指标、周计划目录、发版记录)那一刻一个字都还用不上。
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum LayAt {
-    /// 第 0 站接入就铺:名片、章程、agent 约定、规范版本。没有它们总览什么都
-    /// 读不到、agent 也不知道这个项目的规矩。
+    /// 第 0 站接入就铺:名片、章程、规范版本。没有它们总览读不到项目是谁。
     Adopt,
     /// 到那一站第一次用到才铺。人也可以在配置屏点一次「规范铺底」提前补齐。
     OnFirstUse,
@@ -88,7 +86,7 @@ pub enum LayAt {
 ///   `docs/` 或 `.claude/` 写进 .gitignore 就有件悄悄进不了版本控制。
 /// - **仓根的 `AGENTS.md` 与 `CLAUDE.md` 是项目自己的** —— 它们是整个生态约定
 ///   俗成的位置(Claude Code / Cursor / Codex 都在仓根找),塞进 `.bw/` 谁都
-///   读不到。buddy 只在它们**不存在**时搭一份初稿,已经有就一个字不动。
+///   读不到。铺底不写仓根;手册归资产盘点首次模式,问过人才写。
 pub const CORE_TEMPLATES: &[Template] = &[
     Template {
         category: "charter",

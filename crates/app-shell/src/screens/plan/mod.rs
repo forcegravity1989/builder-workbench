@@ -19,7 +19,9 @@ mod detail;
 mod kanban;
 
 use crate::bridge::{Bridge, Req};
+use crate::chrome::progress_log;
 use crate::vm::{CardItemVm, ProjectVm};
+use bw::app::{ProgressLine, StepState};
 use bw::command::Command;
 use bw::model::{IssueId, IssueStatus};
 use dioxus::prelude::*;
@@ -55,7 +57,7 @@ pub fn View(p: ProjectVm, bridge: Bridge) -> Element {
     let p_sel = p.selected_issue;
     let (p, bridge) = (&p, &bridge);
     let dragging = use_signal(|| None::<CardItemVm>);
-    let pending = use_signal(|| None::<PendingMove>);
+    let mut pending = use_signal(|| None::<PendingMove>);
     let mut selected = use_signal(|| None::<IssueId>);
     // 通知屏点「去看这张活」时先把活号放进 ViewModel,再切到这一屏 —— 这里把它
     // 接过来打开详情抽屉。**只在它变了的那一次接**:之后人在这一屏点别的卡片、
@@ -70,6 +72,34 @@ pub fn View(p: ProjectVm, bridge: Bridge) -> Element {
     });
     let bounced = use_signal(String::new);
     let filters = use_signal(Filters::default);
+    // 「合入并完成」要走远端合 MR + 拉仓 + 关 issue,两三秒。确认框不关,
+    // 用和接入屏同一条进度通道,免得人以为没点上。
+    let merge_log = use_signal(Vec::<ProgressLine>::new);
+    let mut merging = use_signal(|| false);
+    let prog = bridge.progress.clone();
+    use_future(move || {
+        let mut merge_log = merge_log;
+        let mut rx = prog.subscribe();
+        async move {
+            while let Ok(line) = rx.recv().await {
+                let mut rows = merge_log.write();
+                match rows.iter().position(|r: &ProgressLine| r.step == line.step) {
+                    Some(i) => rows[i] = line,
+                    None => rows.push(line),
+                }
+            }
+        }
+    });
+    use_effect(move || {
+        let rows = merge_log.read().clone();
+        if !*merging.peek() {
+            return;
+        }
+        if rows.iter().any(|r| r.step == 3 && r.state == StepState::Ok) {
+            merging.set(false);
+            pending.set(None);
+        }
+    });
 
     rsx! {
         section { class: "plan-grid", style: "height:calc(100vh - 112px);",
@@ -90,7 +120,7 @@ pub fn View(p: ProjectVm, bridge: Bridge) -> Element {
         }
         DetailPanel { p: p.clone(), selected, pending, bridge: bridge.clone() }
         if let Some(pm) = pending.read().clone() {
-            {confirm_dialog(pm, pending, bridge)}
+            {confirm_dialog(pm, pending, merging, merge_log, bridge)}
         }
     }
 }
@@ -328,10 +358,14 @@ fn next_version(cur: &str) -> String {
 fn confirm_dialog(
     pm: PendingMove,
     mut pending: Signal<Option<PendingMove>>,
+    mut merging: Signal<bool>,
+    mut merge_log: Signal<Vec<ProgressLine>>,
     bridge: &Bridge,
 ) -> Element {
     let b = bridge.clone();
     let pm2 = pm.clone();
+    let busy = *merging.read();
+    let failed = merge_log.read().iter().any(|r| r.state == StepState::Fail);
     // 走到这里的一定是**状态动作** —— 排期在松手那一刻就直接发命令了,不经过
     // 这个框(见本文件顶部的说明)。
     //
@@ -340,14 +374,16 @@ fn confirm_dialog(
     // 条命令 —— **两个入口不能一个合一个不合**。
     let confirm = move |_| {
         if pm2.to == IssueStatus::Done {
+            merge_log.write().clear();
+            merging.set(true);
             b.cmd(Command::MergeAndSettle { id: pm2.id });
         } else {
             b.cmd(Command::TransitionIssue {
                 id: pm2.id,
                 to: pm2.to,
             });
+            pending.set(None);
         }
-        pending.set(None);
     };
     rsx! {
         div { class: "modal-backdrop",
@@ -372,9 +408,19 @@ fn confirm_dialog(
                          去会话屏点「提交并开 MR」。"
                     }
                 }
+                {progress_log(&merge_log.read())}
                 div { class: "modal-actions",
-                    button { class: "btn", onclick: move |_| pending.set(None), "算了" }
-                    button { class: "btn btn-primary", onclick: confirm, "确认" }
+                    if busy && !failed {
+                        button { class: "btn", disabled: true, "合入中…" }
+                    } else if failed {
+                        button { class: "btn btn-primary", onclick: move |_| {
+                            merging.set(false);
+                            pending.set(None);
+                        }, "知道了" }
+                    } else {
+                        button { class: "btn", onclick: move |_| pending.set(None), "算了" }
+                        button { class: "btn btn-primary", onclick: confirm, "确认" }
+                    }
                 }
             }
         }

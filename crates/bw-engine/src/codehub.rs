@@ -653,7 +653,11 @@ pub async fn list_issues(
     // jq 投影成对象数组,字段名对齐 GitLab v4 issue payload:`iid`/`id`/
     // `title`/`state`/`labels`。`id` 缺失(GitLab 必有,但 codehub-cli 边缘
     // 情况下可能不回)时退回 `iid`,免得解析整张列表炸掉。
-    args.push(r#"[.[] | {iid: .iid, number: (.id // .iid), title: (.title // ""), state: (.state // ""), labels: ((.labels // []) | map(.name? // .)), created_at: (.created_at // null), closed_at: (.closed_at // null)}]"#);
+    //
+    // `(. // [])` 兜 null:开着的 issue 为零时 codehub-cli 返 null,
+    // 裸 `.[]` 会 jq 运行期失败(实测 2026-08-24:接入后铺底先查同标题开着的
+    // 活,这里一炸就建不出新活、开不出 MR)。走势那对查询已经兜过,这里漏了。
+    args.push(r#"(. // []) | [.[] | {iid: .iid, number: (.id // .iid), title: (.title // ""), state: (.state // ""), labels: ((.labels // []) | map(.name? // .)), created_at: (.created_at // null), closed_at: (.closed_at // null)}]"#);
     let out = crate::win_cmd::tokio_cmd("codehub-cli")
         .args(&args)
         .stdin(Stdio::null())
@@ -665,8 +669,7 @@ pub async fn list_issues(
     if !out.status.success() {
         return Err(CodehubError::Command(stderr_text(&out)));
     }
-    let rows: Vec<CodehubIssueJson> = serde_json::from_slice(&out.stdout)
-        .map_err(|e| CodehubError::Parse(format!("无法解析 codehub issue list JSON:{e}")))?;
+    let rows = parse_issue_list_json(&out.stdout)?;
     Ok(rows
         .into_iter()
         .map(|r| crate::remote::RemoteIssue {
@@ -749,6 +752,16 @@ struct CodehubIssueViewJson {
     created_at: Option<String>,
     #[serde(default)]
     closed_at: Option<String>,
+}
+
+/// 把 `issue list --jq` 的 stdout 收成行。空串 / `null` = 一张都没有,不是解析失败。
+fn parse_issue_list_json(stdout: &[u8]) -> Result<Vec<CodehubIssueJson>, CodehubError> {
+    let text = String::from_utf8_lossy(stdout).trim().to_string();
+    if text.is_empty() || text == "null" {
+        return Ok(Vec::new());
+    }
+    serde_json::from_str(&text)
+        .map_err(|e| CodehubError::Parse(format!("无法解析 codehub issue list JSON:{e}")))
 }
 
 #[derive(serde::Deserialize)]
@@ -836,7 +849,8 @@ pub async fn list_releases(host: &str, path: &str) -> Result<Vec<String>, Codehu
             "-H",
             host,
             "--jq",
-            r#"[.[] | .tag_name]"#,
+            // 与 list_issues 同形:空仓返 null,裸 `.[]` 会炸。
+            "(. // []) | [.[] | .tag_name]",
         ])
         .stdin(Stdio::null())
         .stdout(Stdio::piped())
@@ -953,4 +967,28 @@ struct CodehubIssueTimeJson {
     created_at: Option<String>,
     #[serde(default)]
     closed_at: Option<String>,
+}
+
+#[cfg(test)]
+mod parse_issue_list_json_tests {
+    use super::parse_issue_list_json;
+
+    #[test]
+    fn empty_and_null_are_no_issues() {
+        assert!(parse_issue_list_json(b"").unwrap().is_empty());
+        assert!(parse_issue_list_json(b"null").unwrap().is_empty());
+        assert!(parse_issue_list_json(b"[]").unwrap().is_empty());
+    }
+
+    #[test]
+    fn one_row() {
+        let rows = parse_issue_list_json(
+            r#"[{"iid":5,"number":5,"title":"bootstrap v5.0","state":"closed","labels":[]}]"#
+                .as_bytes(),
+        )
+        .unwrap();
+        assert_eq!(rows.len(), 1);
+        assert_eq!(rows[0].iid, 5);
+        assert_eq!(rows[0].title, "bootstrap v5.0");
+    }
 }

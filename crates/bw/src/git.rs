@@ -82,6 +82,21 @@ pub async fn has_head(workspace: &Path) -> bool {
         .is_ok()
 }
 
+/// HEAD 里有没有这个相对路径。工作区未提交的同名文件不算。
+///
+/// 规范铺底「已完成」看这个:件合进默认分支才算落地,关过的铺底 issue 不算。
+pub async fn path_in_head(workspace: &Path, rel: &str) -> bool {
+    match git(
+        workspace,
+        &["ls-tree", "-r", "--name-only", "HEAD", "--", rel],
+    )
+    .await
+    {
+        Ok(s) => s.lines().any(|l| l.trim() == rel),
+        Err(_) => false,
+    }
+}
+
 /// 一周的窗口,换算成本机时区的 unix 秒:`[周一 00:00, 下周一 00:00)`。
 pub fn week_window(week: &str) -> Result<(i64, i64), GitError> {
     let (start, end) = isoweek::week_bounds(week).ok_or_else(|| GitError::BadWeek(week.into()))?;

@@ -314,7 +314,7 @@
             <tr><td>已经被 buddy 接管过</td><td>同事先接过，或者你以前接过</td><td>四格是回显出来的，直接改就行；接进来时不会覆盖仓里已有的字</td></tr>
             <tr><td>还没被 buddy 接管过</td><td>仓在、就是没这份文件</td><td>四格自己填</td></tr>
             <tr><td>找不到这个仓</td><td>地址敲错了、私有仓没权限、没登录</td><td><strong>先把地址改对</strong>，接一个不存在的仓后面每步都会失败</td></tr>
-            <tr><td>没查成</td><td>网不通、默认分支不叫 main</td><td>照样能接；仓里真有名片的话，接入时以仓里的为准</td></tr>
+            <tr><td>没查成</td><td>没登录、网不通、或没从列表点选（没带上默认分支时会去查 <code>main</code>）</td><td>照样能接；仓里真有名片的话，接入时以仓里的为准</td></tr>
           </tbody>
         </table>
       </div>
@@ -324,23 +324,25 @@
       <p>界面上一步一句地摆出来，做完的那行原地换成结果——<strong>这一下要十几秒，别猛点</strong>：</p>
       <div class="ops">
         <div class="li"><div class="n">1</div><div class="t"><strong>取仓</strong>——目录里已经是 git 仓就直接用（顺带把它的 origin 报出来给你核对）；目录不在或是空的就 clone；没填远端就建个空目录并说明它是空的；<strong>目录里有东西又不是 git 仓就当场弹回</strong>，既不敢往里 clone，也不敢把别人的目录当成这个项目的仓。</div></div>
-        <div class="li"><div class="n">2</div><div class="t"><strong>库里落一行项目</strong>——只存定位：名字、本机路径、远端地址。名片不进库。</div></div>
+        <div class="li"><div class="n">2</div><div class="t"><strong>本机清单落一行项目</strong>——只存定位：名字、本机路径、远端地址。名片不进这份清单。</div></div>
         <div class="li"><div class="n">3</div><div class="t"><strong>写名片</strong>——<code>.bw/project.toml</code>。仓里已经有就一个字不覆盖、只补空着的字段。</div></div>
         <div class="li"><div class="n">4</div><div class="t"><strong>自动建一张「规范铺底」的活</strong>——它开一条分支、往仓里写规范骨架、<strong>提一个 MR</strong>，然后<strong>停在评审中等你合</strong>。它不会自动合，也不会自动把活标成完成。</div></div>
         <div class="li"><div class="n">5</div><div class="t"><strong>自动进这个项目</strong>。</div></div>
       </div>
 
-      <p>第 4 步这次只铺你马上要用的三份，不是一口气铺二十几份，而且全在 <code>.bw/</code> 底下：</p>
+      <p>第 4 步只铺马上要用的骨架，全在 <code>.bw/</code> 底下，不是一口气铺二十几份：</p>
       <div class="ktable-wrap">
         <table class="ktable">
           <thead><tr><th>文件</th><th>是什么</th></tr></thead>
           <tbody>
-            <tr><td class="k">.bw/PROJECT.md</td><td>项目名片：这个项目是什么、对标谁、北极星是什么</td></tr>
+            <tr><td class="k">.bw/project.toml</td><td>第 3 步写的名片机读件（仓里已有就不覆盖）</td></tr>
+            <tr><td class="k">.bw/PROJECT.md</td><td>项目名片给人看：这个项目是什么、对标谁、北极星是什么</td></tr>
             <tr><td class="k">.bw/standard.toml</td><td>铺的是哪一版规范、开了哪几类件</td></tr>
+            <tr><td class="k">.bw/managed.toml</td><td>记指纹，以后对账用</td></tr>
           </tbody>
         </table>
       </div>
-      <p class="note-line">（另外还有第 3 步写的 <code>.bw/project.toml</code> 和一份记指纹的 <code>.bw/managed.toml</code>，一共五份，全在 <code>.bw/</code> 里。）其余的——指标正本、活的分类映射、设计文档目录（周计划已改挂 ops① issue 评论、发版改用 codehub Release）——<strong>等你第一次真的走到那一站再出现</strong>。想提前补齐，「配置」屏那颗「规范铺底」按钮点一次就全铺上。</p>
+      <p class="note-line">其余的——指标正本、活的分类映射、设计文档目录（周计划已改挂 ops① issue 评论、发版改用 codehub Release）——<strong>等你第一次真的走到那一站再出现</strong>。想提前补齐，「配置」屏那颗「规范铺底」按钮点一次就全铺上。</p>
 
       <h2 class="sec"><span class="n">两件事你会注意到</span></h2>
       <div class="res">
@@ -352,7 +354,11 @@
         </ul>
       </div>
       <p class="note-line">你仓里本来就有的 <code>README.md</code>、<code>CLAUDE.md</code>、<code>AGENTS.md</code>，<strong>buddy 根本不碰</strong>——不是「已存在就跳过」，是这一步压根不往仓根写东西。</p>
-      <p class="note-line">第 4 步没成不会推翻前面：项目已经接进来了、仓已经在本机了，这两件是真的。回头在「配置」屏点一次「规范铺底」重来就行——它按标题幂等，重来不会多建一张活。</p>
+      <p class="note-line">第 4 步没成不会推翻前面：项目已经接进来了、仓已经在本机了，这两件是真的。回头在「配置」屏点一次「规范铺底」重来就行——它按标题幂等（只认<strong>开着的</strong>同标题活），重来不会多建一张活。</p>
+      <div class="callout note">
+        <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/></svg>
+        <div class="body"><strong>以前铺过、但 MR 没合、issue 也关了</strong>——远端默认分支没有 <code>.bw/project.toml</code>，这一站仍算「还没纳入过」，接入后应再开一张新铺底和 MR。总览那三个运作活点只看开着的活；③写「已完成」只当件已经在默认分支上，关过的旧活不冒充铺过。</div>
+      </div>
 
       <h2 class="sec"><span class="n">接错了怎么办</span></h2>
       <div class="callout note">
@@ -360,15 +366,23 @@
         <div class="body"><strong>项目卡右上角有个 ✕。</strong>点一下先问一句，再点「移走」才真移走。它只把这个项目从工作台移出去（项目行、它所有活的账），<strong>仓一个字节都不动</strong>——硬盘上的代码还在原地，活自己的工作目录也还在。回执里会告诉你仓在哪儿，你真要删自己去删。</div>
       </div>
 
+      <h2 class="sec"><span class="n">最后一下：你点完成，合那个 MR</span></h2>
+      <p>接入只把活推到「评审中」。<strong>合入永远是人点的</strong>——计划屏把这张「规范铺底」从「评审中」拖到「已完成」（详情抽屉里那颗「✓ 点完成」是同一下）。松手会弹出确认框，写明先合哪个 MR；确认之后框不关，一步一句写正在合 MR、拉仓、结清（要两三秒）。合不成就整条不算数，活留在评审中，可以重试。</p>
+      <div class="callout note">
+        <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/></svg>
+        <div class="body"><strong>通知屏只通知，不在那儿合。</strong>「等你合入」告诉你有一张 MR 等着；去计划屏拖到「已完成」，或总览上那颗「合入并完成」。不要只在 codehub 网页关 issue——那不会合 MR。</div>
+      </div>
+
       <h2 class="sec"><span class="n">这一站结束时</span>你手上有什么</h2>
       <div class="res">
         <ul>
           <li><span class="b"></span><div>本机一个真实的仓（clone 下来的）</div></li>
           <li><span class="b"></span><div>工作台上一个项目</div></li>
-          <li><span class="b"></span><div>一张停在「评审中」的「规范铺底」活，和它在远端的 MR</div></li>
+          <li><span class="b"></span><div>默认分支上有 <code>.bw/</code> 骨架（合入之后才有；合之前只在铺底那条分支上）</div></li>
+          <li><span class="b"></span><div>那张「规范铺底」活已完成，对应 MR 已合</div></li>
         </ul>
       </div>
-      <p><strong>下一步是去合那个 MR。</strong>合完这个仓就有管理体系的正本了。</p>
+      <p>合完这一下，第 0 站结束。下一站是周一看总览，还没真走过，不在这里编步骤。</p>
     </section>
 
     <!-- ============ U2 还没走到的站 ============ -->

@@ -37,32 +37,32 @@ pub(super) fn build_week_counts(issues: &[bw::Issue], week: Option<&str>) -> Wee
     }
 }
 
-/// 运作活①②③三个状态点 —— **查活缓存,不读周计划文件**(
-/// chip 按 `kind='ops'` 的活按 workflow 归类取状态)。真跑路径下周计划文件要
-/// 等 MR 合入才落地,读文件的话整场会话期间三个点都是「未建」,而活明明在跑。
+/// 运作活①②③三个状态点 —— **查开着的活,关过的不算完成**。
 ///
-/// ①②按当前周查(它们每周一张);③规范铺底是接入时的一次性动作,不挂周,
-/// 取最新那张。没建就是灰点「未建」,不编。
-pub(super) fn build_ops(issues: &[bw::Issue], current_week: &str) -> Vec<OpsChipVm> {
+/// 以前取号最大的一张(含已关):人把旧铺底 / 旧周计划在远端关掉、MR 又没合,
+/// 总览仍写「已完成」。开着的优先;没有开着的,③只在默认分支 HEAD 里真有
+/// `.bw/standard.toml` 才写已完成(工作区未提交的名片不算)。
+pub(super) async fn build_ops(
+    issues: &[bw::Issue],
+    current_week: &str,
+    ws: &Path,
+) -> Vec<OpsChipVm> {
     use bw::app::{OPS1_WORKFLOW, OPS2_WORKFLOW, OPS3_WORKFLOW};
-    let ops = |wf: &str| {
+    let ops3_landed = bw::git::path_in_head(ws, ".bw/standard.toml").await;
+    let open = |wf: &str| {
         issues
             .iter()
             .filter(|i| i.kind == bw::model::IssueKind::Ops && i.workflow == wf)
             .filter(|i| wf == OPS3_WORKFLOW || i.week_of == current_week)
+            .filter(|i| i.status != IssueStatus::Done)
             .max_by_key(|i| i.number)
     };
     let chip = |label: &str, wf: &str, when: &str| {
-        let found = ops(wf);
+        let (status, note) = ops_chip_display(open(wf), wf == OPS3_WORKFLOW, ops3_landed, when);
         OpsChipVm {
             title: label.to_string(),
-            status: found
-                .map(|i| i.status.label().to_string())
-                .unwrap_or_else(|| "未建".into()),
-            note: match found {
-                Some(i) => format!("#{} {}", i.number, i.title),
-                None => when.to_string(),
-            },
+            status,
+            note,
         }
     };
     vec![
@@ -78,6 +78,25 @@ pub(super) fn build_ops(issues: &[bw::Issue], current_week: &str) -> Vec<OpsChip
         ),
         chip("运作活③ 规范铺底", OPS3_WORKFLOW, "接入项目时铺"),
     ]
+}
+
+/// 开着的活 → 它的状态;否则③看件在不在 HEAD;再否则未建。
+fn ops_chip_display(
+    open: Option<&bw::Issue>,
+    is_ops3: bool,
+    ops3_landed: bool,
+    idle_note: &str,
+) -> (String, String) {
+    if let Some(i) = open {
+        return (
+            i.status.label().to_string(),
+            format!("#{} {}", i.number, i.title),
+        );
+    }
+    if is_ops3 && ops3_landed {
+        return ("已完成".into(), "件已在默认分支".into());
+    }
+    ("未建".into(), idle_note.to_string())
 }
 
 /// 名片改动那张在途的轻量活。名片是仓文件,改它走分支 + MR,所以总览要能
@@ -255,5 +274,24 @@ fn stamp(unix: i64) -> String {
             )
         }
         Err(_) => String::new(),
+    }
+}
+
+#[cfg(test)]
+mod ops_chip_display_tests {
+    use super::ops_chip_display;
+
+    #[test]
+    fn closed_leftover_is_not_done() {
+        let (st, note) = ops_chip_display(None, true, false, "接入项目时铺");
+        assert_eq!(st, "未建");
+        assert_eq!(note, "接入项目时铺");
+    }
+
+    #[test]
+    fn ops3_landed_on_head() {
+        let (st, note) = ops_chip_display(None, true, true, "接入项目时铺");
+        assert_eq!(st, "已完成");
+        assert_eq!(note, "件已在默认分支");
     }
 }

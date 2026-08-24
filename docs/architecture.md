@@ -133,7 +133,7 @@ references(`standard/system-prompt/references/*.md`)是「干某类活需要额�
 
 ### 8 · 远端与工具探活
 
-**是什么**:两件互锁的事。一是远端分发层:`Remote` enum 按 provider 把 issue 正本读写、MR 开合、Release、走势时序统一路由到 `gh` 或 `codehub-cli`,调用方只见方法不见 provider 分支。二是开工工具声明与探活:工具声明住项目仓 `.bw/issue-policy.toml`,探活分三种机制(候选路径 / 版本命令 / 套接字握手),探不通如实回灰。关键取舍是 MR 合入后复跑 `mr view` 读回 state 真变 `merged` 才算成功(退出码靠不住绝不假 Done);选了 Cursor 探活失败就拒绝开工,不悄悄退回 Claude CLI。
+**是什么**:两件互锁的事。一是远端分发层:`Remote` enum 按 provider 把 issue 正本读写、MR 开合、Release、走势时序统一路由到 `gh` 或 `codehub-cli`,调用方只见方法不见 provider 分支。二是开工工具声明与探活:工具声明住项目仓 `.bw/issue-policy.toml`,探活分三种机制(候选路径 / 版本命令 / 套接字握手),探不通如实回灰。关键取舍是 MR 合入后复跑 `mr view` 读回 state 真变 `merged` 才算成功(退出码靠不住绝不假 Done);选了 Cursor 探活失败就拒绝开工,不悄悄退回 Claude CLI。codehub `issue list --state opened` 在零开着的活时返 null,jq 用 `(. // [])` 收成空列表——不兜的话铺底查幂等键先炸,建不出新活也开不出 MR。
 
 **代码**:bw-engine 的 `remote.rs`(`Remote` enum 工厂 + issue 存取六法 + MR 三件套)+ `codehub.rs` / `github.rs`(两臂)+ `claude_bin.rs`(候选路径)+ `open_design.rs`(套接字握手);bw 的 `app/tools.rs`(工具注册探活)。
 **数据**:issue 正本在 codehub/GitHub;工具声明在 `.bw/issue-policy.toml`;本地零库——远端读全走 CLI 不留缓存,探活结果只在内存走一圈不落盘。
@@ -178,7 +178,7 @@ references(`standard/system-prompt/references/*.md`)是「干某类活需要额�
 
 ### 13 · 周循环与计划
 
-**是什么**:项目里的"计划屏":左栏窄周列表 + 中栏周头/六列看板 + 右侧活详情抽屉,把"这周干什么"和"活的推进状态"装在一个界面里。周用 ISO 周文本(`2026-W34`,周一为起点)表示,按机器本地时区判定"现在哪一周"。周列表、发版、看板计数全部现算——没有周计划索引表、没有发版表。关键取舍是发版先建 codehub Release 成功再给活打 `bw:released` 标签(顺序不能反,否则重复点会重复打标签账对不上),版本号按版本号幂等;看板拖拽落定那一刻标签就是新的(排期是 issue 数据,不走 MR)。
+**是什么**:项目里的"计划屏":左栏窄周列表 + 中栏周头/六列看板 + 右侧活详情抽屉,把"这周干什么"和"活的推进状态"装在一个界面里。周用 ISO 周文本(`2026-W34`,周一为起点)表示,按机器本地时区判定"现在哪一周"。周列表、发版、看板计数全部现算——没有周计划索引表、没有发版表。关键取舍是发版先建 codehub Release 成功再给活打 `bw:released` 标签(顺序不能反,否则重复点会重复打标签账对不上),版本号按版本号幂等;看板拖拽落定那一刻标签就是新的(排期是 issue 数据,不走 MR)。总览/计划上的运作活点只认开着的活;③「已完成」看默认分支 HEAD 有没有 `.bw/standard.toml`,关过但没合入的旧铺底不冒充完成。
 
 **代码**:bw 的 `app/plan.rs`(用例)+ `app/ops.rs`(运作活①②标题幂等键与定时)+ `isoweek.rs` + `trend.rs`(近 N 周走势全现算);app-shell 的 `screens/plan/`(mod / kanban / detail)。
 **数据**:零本地库——codehub/GitHub issue+标签是唯一正本;排期 = 给 issue 打 `bw:week:YYYY-Www` 标签(buddy 直接改);发版 = 远端建 Release + 打 `bw:released:vX` 标签按版本号幂等;发版默认版本号现读项目名片里的在研版本。

@@ -5,10 +5,10 @@
      这里是 V4「规范铺底」用的模板正本,代码侧已经在读它、铺它了
      (`crates/bw/src/standard/`)。 -->
 
-`standard/` 是 Builders' Workbench(buddy)接入一个项目时,往那个项目仓里
-铺的那一整套骨架文件的**正本**。项目仓里看到的 `.bw/PROJECT.md`、
-`.bw/metrics.toml`、仓根 `AGENTS.md` 这些文件,内容都来自这里的模板渲染——改
-这里的模板,就是在改 buddy 给每个新项目铺出来的起点长什么样。
+`standard/` 是 Builders' Workbench(buddy)往被管项目仓 `.bw/` 里铺的骨架
+文件的**正本**。项目仓里看到的 `.bw/PROJECT.md`、`.bw/standard.toml`、
+`.bw/metrics.toml` 等内容都来自这里的模板渲染——改这里的模板,就是在改
+buddy 给每个新项目铺出来的起点长什么样。仓根 `AGENTS.md` 不在这套模板里。
 
 **落点分两类,别混**:
 
@@ -16,17 +16,16 @@
   收在一个目录里,「bw 到底往我仓里放了什么」一眼可数,也不会和项目自己的
   `README.md` / `docs/` 打架。
 - **仓根 `AGENTS.md` 与 `CLAUDE.md` 是项目自己的** —— 那是 Claude Code /
-  Cursor / Codex 都在找的位置,塞进 `.bw/` 谁都读不到。buddy 只在它们
-  **不存在**时搭一份初稿,已经有就一个字不动,补齐交给规范铺底第 2 步的
-  agent 会话去谈。
+  Cursor / Codex 都在找的位置,塞进 `.bw/` 谁都读不到。铺底**仓根一个字
+  不写**;要不要写开发手册,是资产盘点首次模式问过人才写的事(今天还没接上)。
 
 规范版本因此从 4.0 跳到 **5.0** —— 落点变了,老版本铺出来的文件在新版本眼里
 就是「不在册」,不做迁移。续三(系统提示词外置 + 扁平铺底 + 删方法论)又
 抬到 **5.1**,当前值见 `VERSION`。续五(默认 workflow 打包:mattpocock 入口 + vendor 摊 + issue-policy 回填)抬到 **5.2**。
 
-这套规范分八个大类(charter / agents / docs-core / metrics / issue-policy /
-defaults-core / cadence / meta),这个仓目前只落地了会被优先接入代码的那一
-部分——见下方文件表与「还没做的部分」。
+这套规范现在就五类,和 `CORE_TEMPLATES` 对得上:charter、meta、docs-core、
+metrics、issue-policy。旧名单里的 agents / defaults-core / cadence 没有对应
+模板(仓根手册归资产盘点、节律目录标了没建),不写进 `.bw/standard.toml`。
 
 ## 谁会读这些文件
 

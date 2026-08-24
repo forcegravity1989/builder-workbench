@@ -15,15 +15,14 @@
 //!    失败、某条群消息发没发出去)就不在流里,少一条,不补一条假的。
 //! 2. **只列最近 80 条**(上限在 `bridge::vm_derive::build_notify_events` 里)。
 //!    更早的事没有消失,是这条流没往下翻 —— 要查更早的直接查库。
-//! 3. **不做已读未读的账本**。「看到哪个时间点」只是一个 key/value,不参与
-//!    任何计数。
+//! 3. **不做已读未读的账本**。徽章数 = 评审中的活张数,不靠「读到哪个时间点」。
+//!    「标记已读到现在」只写一个没人读的时间戳,已从界面拿掉。
 //!
 //! 上面这三条是**给改这个文件的人看的**,不摆到界面上 —— 用户要的是「谁在
 //! 等我」,不是这条流怎么算出来的。
 
 use crate::bridge::{Bridge, Panel, PanelNav, Req};
 use crate::vm::{CardItemVm, ProjectVm};
-use bw::command::Command;
 use bw::model::IssueId;
 use dioxus::prelude::*;
 
@@ -31,9 +30,7 @@ use dioxus::prelude::*;
 pub fn View(p: ProjectVm, bridge: Bridge) -> Element {
     let nav = use_context::<PanelNav>();
     let (p, bridge) = (&p, &bridge);
-    let b_seen = bridge.clone();
     let b_cfg = bridge.clone();
-    let pid = p.id;
     let n = &p.notify;
     let pending = n.to_merge.len();
     let chat_unset = p.card.chat == "未配";
@@ -41,15 +38,6 @@ pub fn View(p: ProjectVm, bridge: Bridge) -> Element {
         section {
             div { style: "display:flex;align-items:baseline;gap:12px;margin-bottom:6px;",
                 h1 { style: "font-size:20px;margin:0;", "通知" }
-                div { class: "spacer" }
-                button {
-                    class: "btn btn-sm",
-                    onclick: move |_| b_seen.cmd(Command::MarkNotifySeen {
-                        project_id: pid,
-                        at: time::OffsetDateTime::now_utc().unix_timestamp(),
-                    }),
-                    "标记已读到现在"
-                }
             }
             if chat_unset {
                 div { style: "font-size:11.5px;color:var(--ink-3);margin-bottom:10px;",
