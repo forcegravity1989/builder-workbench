@@ -25,7 +25,7 @@
 //! 不再由后端回放。
 //!
 //! **写线程**:往 PTY 主端写键盘字节是同步阻塞的 fd 写(portable-pty 与
-//! conpty-oxide 都不开非阻塞),而这个 `run` future 被 bw-app `tokio::spawn`
+//! conpty-oxide 都不开非阻塞),而这个 `run` future 被 app-shell `tokio::spawn`
 //! 到桌面壳内核的 **current_thread** 运行时上——子进程卡住不读输入、用户又
 //! 粘贴超过 tty 输入队列容量(macOS 上几 KB)时,一次阻塞写会把整个内核线程
 //! (所有 Command/Event)一起卡死。所以两份后端都把写端交给一条
@@ -79,7 +79,7 @@ pub trait PtyBackend: Send + Sync {
 }
 
 // 非 unix/非 windows 目标(例如 wasm32)在编译期挑明「PTY 后端只做了两家」,
-// 不留一个含糊的兜底分支。bw-engine 本就不在 wasm32 keepalive 集合里。
+// 不留一个含糊的兜底分支。v4-engine 本就不在 wasm32 keepalive 集合里。
 #[cfg(not(any(unix, windows)))]
 compile_error!("PTY 后端仅支持 unix/windows");
 
@@ -317,7 +317,7 @@ pub mod unix {
     //! 2. 中途丢弃要自己兜:portable-pty 的 Unix 子进程就是裸的
     //!    `std::process::Child`,不 kill-on-drop;读线程又持有一份 dup 出来的主
     //!    端 fd,future 被丢弃后主端并不会真正关闭,子进程收不到挂断信号。
-    //!    bw-app 的 `cancel_run` 正是用 `JoinHandle::abort()` 丢弃这个 future,
+    //!    app-shell 的 `cancel_run` 正是用 `JoinHandle::abort()` 丢弃这个 future,
     //!    所以子进程句柄套在 [`ChildGuard`] 里,`Drop` 时若尚未正常收尾,就丢给
     //!    一条独立线程按进程组杀掉并 `wait()` 收割(不能在 `Drop` 里阻塞等宽限:
     //!    丢弃方可能是内核唯一那条线程)。早退错误路径也靠它,不再手写 `kill()`。

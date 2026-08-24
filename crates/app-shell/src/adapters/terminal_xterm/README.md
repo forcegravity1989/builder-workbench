@@ -2,7 +2,7 @@
 
 ## 借自哪个项目 / 文件
 
-- 整块从 V3 搬过来的(V3 试用期一个坑一个坑填出来的那一份),现住本目录
+- 整块从 V3 搬过来的(V3 试用期一个坑一个坑填出来的那一份,见 v3 分支),现住本目录
   `mod.rs`。
 - `crates/v4-engine/src/pty_backend.rs` / `terminal_manager.rs` —— PTY 后端与按会话分
   的有界缓冲,原样沿用,一行没改。
@@ -78,7 +78,7 @@ copy 事件,xterm 自带的那个监听器才有机会把选区塞进剪贴板;�
 
 ## 换掉的接线(只有这两处)
 
-| 原来(app-desktop) | 现在(app-shell) |
-|---|---|
-| `use_context::<Kernel>()` + `k.pty_bytes()` | `Bridge` 当 props 传进来 + `bridge.pty` |
-| `k.send(Command::Terminal*)` | `bridge.cmd(Command::Terminal*)` |
+| 现在(app-shell) |
+|---|
+| `Bridge` 当 props 传进来 + `bridge.pty` |
+| `bridge.cmd(Command::Terminal*)` |

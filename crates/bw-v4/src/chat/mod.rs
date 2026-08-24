@@ -6,7 +6,7 @@
 //!
 //! # 为什么是 trait + 工厂,不是一个 enum
 //!
-//! `bw-engine` 里 `Remote::for_project` 是同一条纪律的先例:**认哪个提供方
+//! `bw-engine` 里 `Remote::for_project` 是同一条纪律的先例(V3,见 v3 分支):**认哪个提供方
 //! 只在工厂这一处分支,调用点只调方法**。但 `Remote` 两个变体的字段几乎一样
 //! (host + path),塞一个 enum 正合适;聊天工具天生更杂——群号 / channel ID /
 //! chat_id,认证方式各不相同,而且第一版就要装「未配置」和「本机自测」两个

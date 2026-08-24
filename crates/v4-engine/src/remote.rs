@@ -2,7 +2,7 @@
 //! project's remote is GitHub (`gh` CLI) or CodeHub (`codehub-cli`). Call
 //! sites ask [`Remote::for_project`] once, then call methods on the returned
 //! [`Remote`]; the provider branch lives here (one `match` per method),
-//! not scattered across N call sites in `bw-app`.
+//! not scattered across N call sites in `app-shell`.
 //!
 //! Both arms are wired: GitHub delegates to [`crate::github`] (`gh`), CodeHub
 //! delegates to [`crate::codehub`] (`codehub-cli`). The type + dispatch shape
@@ -10,7 +10,7 @@
 //! with real `codehub-cli` shell-outs — no `CodehubUnwired` variant remains
 //! (call sites never match on `Remote`; they call methods, so adding a
 //! provider means filling the arm here, not revisiting N call sites in
-//! `bw-app`).
+//! `app-shell`).
 
 use crate::codehub::{self, CodehubError};
 use crate::github::{self, GithubError};

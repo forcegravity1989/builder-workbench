@@ -85,7 +85,7 @@ pub async fn probe_repo(owner_repo: &str) -> Result<String, GithubError> {
 //
 // `Command::AttachRepo` 给「绑定本地目录」建的项目补上 GitHub 远端。这里只管
 // 本地 `origin` 这一侧的真实读写;探活(`probe_repo`)、写 `remote_path`、
-// 补 connector 都是 bw-app 的编排职责,不下沉到这层。
+// 补 connector 都是 app-shell 的编排职责,不下沉到这层。
 
 /// 读一个工作区的 `origin` 远端 URL。`Ok(None)` = 没配 `origin`(绑定本地
 /// 目录建的项目的常态——`git remote get-url origin` 以非零退出,这不是
@@ -154,7 +154,7 @@ pub async fn clone_repo(
 //
 // 三件套 + 收尾:提 PR / 查 PR 状态 / merge PR,外加 merge 后的 issue 补关。
 // 关键纪律:**执行器只提 PR、永不 merge**——`open_pr` 在执行器路径里被调用,
-// `merge_pr` 只从 bw-app 的人手命令(MergeIssuePr)里调用,两者物理隔离。
+// `merge_pr` 只从 app-shell 的人手命令(MergeIssuePr)里调用,两者物理隔离。
 // 验收=人 merge;issue 关闭是 merge 的后果(PR body 的 `Closes #<n>` 关键字让
 // GitHub 自动关单,`merge_pr` 后再幂等核对补关)。BW 绝不反向改写 GitHub:检测
 // 到的漂移(PR 已被网页 merge 等)只反映、不 reopen、不改写远端。
@@ -269,7 +269,7 @@ async fn adopt_existing_pr(workspace: &Path, branch: &str) -> Result<u32, Github
 }
 
 /// merge PR: the **human** verification action — merges the PR,
-/// which (via `Closes #<n>`) closes the Issue. Called only from bw-app's
+/// which (via `Closes #<n>`) closes the Issue. Called only from app-shell's
 /// `MergeIssuePr` command, never from any executor/run path. Squash-merge keeps
 /// the base branch history one-commit-per-Issue.
 pub async fn merge_pr(owner_repo: &str, pr_number: u32) -> Result<(), GithubError> {
@@ -297,7 +297,7 @@ pub async fn merge_pr(owner_repo: &str, pr_number: u32) -> Result<(), GithubErro
 /// P7-7B: read-only probe for whether an Issue's
 /// deterministic work branch (`issue_branch`) currently has an OPEN PR
 /// against it. **现役调用方**(2026-08-17 起唯一一个):`Remote::open_mr_for_branch`
-/// ← bw-app `poll_interactive_inreview`(调度器每次 tick 轮询「评审中」候选,
+/// ← app-shell `poll_interactive_inreview`(调度器每次 tick 轮询「评审中」候选,
 /// 队友自己 `gh pr create` 的 PR 就靠这条探针发现;最初为它而写的
 /// `RefreshIssues` 漂移采集器已随 2026-08-17 减负重构删除——别因为 grep 不到
 /// `RefreshIssues` 就把本函数当死码)。Executors are allowed `gh pr create`;

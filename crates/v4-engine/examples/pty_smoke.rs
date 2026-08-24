@@ -17,7 +17,7 @@
 //! 500ms 后丢输入端,断言后端 5s 内返回、且孙进程 `sleep 30` 也被连坐——
 //! 只杀顶层 pid 的实现会让它活到自然结束。
 //!
-//! `--abort` 场景模拟 bw-app `cancel_run` 的真实做法——对跑着后端的 tokio
+//! `--abort` 场景模拟 app-shell `cancel_run` 的真实做法——对跑着后端的 tokio
 //! 任务调 `JoinHandle::abort()`,future 在 `select!` 中途被丢弃、正常收尾代码
 //! 根本不会执行。断言 3s 内顶层与孙进程都没了(靠 `ChildGuard` 的 `Drop`)。
 //! 2026-08-17 评审抓出的真 bug:改前 macOS 上中止一次就漏一个孤儿 `claude`。
@@ -218,7 +218,7 @@ async fn teardown_scenario() {
 }
 
 #[cfg(not(windows))]
-/// 中止场景:和 bw-app `cancel_run` 一模一样地 `abort()` 掉跑着后端的任务。
+/// 中止场景:和 app-shell `cancel_run` 一模一样地 `abort()` 掉跑着后端的任务。
 /// 输入端故意一直握着——要证明的是「future 被丢弃」这一件事就足以收尾,
 /// 不靠输入端关闭那条正常路径。
 async fn abort_scenario() {
