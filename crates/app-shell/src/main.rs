@@ -188,8 +188,11 @@ fn Root() -> Element {
                     bridge: bridge.clone(),
                 }
                 // 仓文件读不动的实话。**不退回默认值假装文件不存在**。
-                for w in v.warnings.iter() {
-                    div { key: "{w}", class: "warnbar", "{w}" }
+                // key 按索引,不按警告文本:同一条警告被两处推过(如 issues() 在
+                // build_project 与 build_vm 各失败一次)时,文本相同、按文本
+                // key 会撞 → dioxus "keyed siblings must each have a unique key" 崩。
+                for (i, w) in v.warnings.iter().enumerate() {
+                    div { key: "{i}", class: "warnbar", "{w}" }
                 }
                 // 会话屏的三栏由 .content 自己摆 —— 终端挂在这一层,靠这套
                 // 网格落进中栏下半格(理由见 screens/session 的头注)。

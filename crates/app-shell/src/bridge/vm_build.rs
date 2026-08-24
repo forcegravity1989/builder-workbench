@@ -371,6 +371,12 @@ pub async fn build(app: &App, ui: &UiState) -> Vm {
         Some(id) => build_project(app, id, ui, &mut warnings).await,
     };
 
+    // 去重保序:开项目的 issues 会在 build_project 里再拉一次,失败时同一条
+    // 「读 issue 失败」被推两遍 —— 去掉重复,横幅不显示两遍同一条(也避免按
+    // 文本 key 的渲染崩,虽然 key 已改按索引)。
+    let mut seen = std::collections::HashSet::new();
+    warnings.retain(|w| seen.insert(w.clone()));
+
     Vm {
         ready: true,
         fatal: None,

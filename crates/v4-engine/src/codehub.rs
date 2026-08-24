@@ -655,7 +655,7 @@ pub async fn list_issues(
     // jq 投影成对象数组,字段名对齐 GitLab v4 issue payload:`iid`/`id`/
     // `title`/`state`/`labels`。`id` 缺失(GitLab 必有,但 codehub-cli 边缘
     // 情况下可能不回)时退回 `iid`,免得解析整张列表炸掉。
-    args.push(r#"[.[] | {iid: .iid, number: (.id // .iid), title: (.title // ""), state: (.state // ""), labels: (.labels // []), created_at: (.created_at // null), closed_at: (.closed_at // null)}]"#);
+    args.push(r#"[.[] | {iid: .iid, number: (.id // .iid), title: (.title // ""), state: (.state // ""), labels: ((.labels // []) | map(.name? // .)), created_at: (.created_at // null), closed_at: (.closed_at // null)}]"#);
     let out = crate::win_cmd::tokio_cmd("codehub-cli")
         .args(&args)
         .stdin(Stdio::null())
@@ -714,11 +714,23 @@ pub async fn view_issue(
         number: r.number,
         title: r.title,
         state: r.state,
-        labels: r.labels,
+        // codehub 的 labels 是对象数组 `[{name,color,...}]`(不是字符串数组),
+        // 抽 `.name`;万一将来变字符串,也兼容。
+        labels: r.labels.iter().map(label_name).collect(),
         body: r.body.unwrap_or_default(),
         created_at: r.created_at,
         closed_at: r.closed_at,
     })
+}
+
+/// codehub 的 label 既可能是对象 `{name: "..."}`(list/view 都返这种),也可能
+/// 是裸字符串。抽名字;都取不到返空串(绝不 panic)。
+fn label_name(v: &serde_json::Value) -> String {
+    v.get("name")
+        .and_then(|n| n.as_str())
+        .map(|s| s.to_string())
+        .or_else(|| v.as_str().map(|s| s.to_string()))
+        .unwrap_or_default()
 }
 
 #[derive(serde::Deserialize)]
@@ -730,8 +742,9 @@ struct CodehubIssueViewJson {
     title: String,
     #[serde(default)]
     state: String,
+    /// codehub 返对象数组 `[{name,color}]`,用 Value 收、`label_name` 抽名字。
     #[serde(default)]
-    labels: Vec<String>,
+    labels: Vec<serde_json::Value>,
     #[serde(default)]
     body: Option<String>,
     #[serde(default)]
