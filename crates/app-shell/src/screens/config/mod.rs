@@ -24,7 +24,7 @@ use dioxus::prelude::*;
 pub fn View(p: ProjectVm, bridge: Bridge) -> Element {
     let (p, bridge) = (&p, &bridge);
     rsx! {
-        section { style: "max-width:1120px;",
+        section {
             {mapping_block(p, bridge)}
             {skill_block(p)}
             div { class: "cfg-pair",

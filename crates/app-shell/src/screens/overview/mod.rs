@@ -20,7 +20,7 @@ pub fn View(p: ProjectVm, bridge: Bridge) -> Element {
     let draft = use_signal(|| (String::new(), String::new(), String::new()));
 
     rsx! {
-        section { class: "ov-stack", style: "max-width:1120px;",
+        section { class: "ov-stack",
             // 判据是**文件在不在**,不是周列表里有没有本周(本周永远在列表里)。
             // 文件还没有、但运作活①已经在路上时,不再给「开始本周」按钮 ——
             // 再点一次只会收到「终端还开着」的拒绝,给一条去会话屏的路才对。

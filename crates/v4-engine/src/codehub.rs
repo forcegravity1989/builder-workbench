@@ -852,3 +852,103 @@ pub async fn list_releases(host: &str, path: &str) -> Result<Vec<String>, Codehu
     serde_json::from_str(&text)
         .map_err(|e| CodehubError::Parse(format!("无法解析 codehub release list JSON:{e}")))
 }
+
+// ─────────────────────── 走势图用:合入 MR / issue 时序 ───────────────────────
+//
+// 对仗 `crate::github` 的 `merged_pr_times` / `issue_times`:走势图(§5.4)要
+// 按周分桶「每周合入的 PR」+「未处理 issue 周末存量」。codehub 那条以前只
+// 走 GitHub,codehub 项目这两条线一直空(「尚无观测」)—— 补上。
+//
+// 与 github 那对同形:回 RFC3339 原文,**不在底座解析时间**,按周分桶是上层
+// (`bw-v4::trend`)的事。`-l 0` = 全量(同 `list_issues` 的做法,不截断)。
+
+/// 已合并 MR 的合并时刻(RFC3339 原文),对仗 [`crate::github::merged_pr_times`]。
+///
+/// 复算:`codehub-cli -H <host> mr list -p <path> --state merged -l 0 --jq '[.[] | .merged_at]'`
+pub async fn merged_mr_times(host: &str, path: &str) -> Result<Vec<String>, CodehubError> {
+    let out = crate::win_cmd::tokio_cmd("codehub-cli")
+        .args([
+            "mr",
+            "list",
+            "-p",
+            path,
+            "-H",
+            host,
+            "--state",
+            "merged",
+            "-l",
+            "0",
+            "--jq",
+            // `(. // [])` 兜 null:仓里没有已合并 MR 时 codehub-cli 返 null,不兜的话
+            // `.[]` 迭代 null 会报错(实测)。
+            "(. // []) | [.[] | .merged_at]",
+        ])
+        .stdin(Stdio::null())
+        .stdout(Stdio::piped())
+        .stderr(Stdio::piped())
+        .output()
+        .await
+        .map_err(spawn_err)?;
+    if !out.status.success() {
+        return Err(CodehubError::Command(stderr_text(&out)));
+    }
+    let text = String::from_utf8_lossy(&out.stdout).trim().to_string();
+    if text.is_empty() || text == "null" {
+        return Ok(Vec::new());
+    }
+    // merged_at 可能是 null(未合并的不会进 --state merged,但稳一手),flatten 掉。
+    let v: Vec<Option<String>> = serde_json::from_str(&text)
+        .map_err(|e| CodehubError::Parse(format!("无法解析 codehub mr merged_at JSON:{e}")))?;
+    Ok(v.into_iter().flatten().collect())
+}
+
+/// 每张 issue 的建立时刻与关闭时刻(没关就是 None),对仗 [`crate::github::issue_times`]。
+/// **不含 MR** —— codehub 的 issue list 本就把 MR 排除在外(同 GitLab)。
+///
+/// 复算:`codehub-cli -H <host> issue list -p <path> --state all -l 0 --jq '[.[] | {created_at: .created_at, closed_at: .closed_at}]'`
+pub async fn issue_times(
+    host: &str,
+    path: &str,
+) -> Result<Vec<(String, Option<String>)>, CodehubError> {
+    let out = crate::win_cmd::tokio_cmd("codehub-cli")
+        .args([
+            "issue",
+            "list",
+            "-p",
+            path,
+            "-H",
+            host,
+            "--state",
+            "all",
+            "-l",
+            "0",
+            "--jq",
+            "(. // []) | [.[] | {created_at: .created_at, closed_at: .closed_at}]",
+        ])
+        .stdin(Stdio::null())
+        .stdout(Stdio::piped())
+        .stderr(Stdio::piped())
+        .output()
+        .await
+        .map_err(spawn_err)?;
+    if !out.status.success() {
+        return Err(CodehubError::Command(stderr_text(&out)));
+    }
+    let text = String::from_utf8_lossy(&out.stdout).trim().to_string();
+    if text.is_empty() || text == "null" {
+        return Ok(Vec::new());
+    }
+    let v: Vec<CodehubIssueTimeJson> = serde_json::from_str(&text)
+        .map_err(|e| CodehubError::Parse(format!("无法解析 codehub issue times JSON:{e}")))?;
+    Ok(v.into_iter()
+        .map(|r| (r.created_at.unwrap_or_default(), r.closed_at))
+        .collect())
+}
+
+#[derive(serde::Deserialize)]
+struct CodehubIssueTimeJson {
+    #[serde(default)]
+    created_at: Option<String>,
+    #[serde(default)]
+    closed_at: Option<String>,
+}

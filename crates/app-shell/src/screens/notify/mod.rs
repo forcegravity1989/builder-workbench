@@ -38,7 +38,7 @@ pub fn View(p: ProjectVm, bridge: Bridge) -> Element {
     let pending = n.to_merge.len();
     let chat_unset = p.card.chat == "未配";
     rsx! {
-        section { style: "max-width:820px;",
+        section {
             div { style: "display:flex;align-items:baseline;gap:12px;margin-bottom:6px;",
                 h1 { style: "font-size:20px;margin:0;", "通知" }
                 div { class: "spacer" }

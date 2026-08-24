@@ -45,9 +45,16 @@ pub struct Trend {
 /// 算最近 `weeks` 周(含本周),旧的在前。
 ///
 /// 三条线都遵守同一条:**采不到就是 `None`,失败原话带回,绝不变成 0**。
-/// git 那两条一趟遍历出齐;远端那条只在挂了 GitHub 时才问,各周并发。
+/// git 那两条一趟遍历出齐;远端那两条按 provider 分派(GitHub 走 gh、
+/// codehub 走 codehub-cli),各周并发。
 pub async fn recent_weeks(ws: &Path, project: &Project, weeks: u32) -> Trend {
-    recent_weeks_inner(ws, github_repo(project), project.has_remote(), weeks).await
+    let remote = v4_engine::remote::Remote::for_project(
+        &project.provider,
+        &project.remote_host,
+        &project.remote_path,
+    )
+    .ok();
+    recent_weeks_inner(ws, remote, project.has_remote(), weeks).await
 }
 
 /// 只算 git 那两条,不问远端。项目行读不出来时用它 —— **不伪造一个空项目**
@@ -58,7 +65,7 @@ pub async fn recent_weeks_git_only(ws: &Path, weeks: u32) -> Trend {
 
 async fn recent_weeks_inner(
     ws: &Path,
-    remote: Option<String>,
+    remote: Option<v4_engine::remote::Remote>,
     has_remote: bool,
     weeks: u32,
 ) -> Trend {
@@ -78,26 +85,38 @@ async fn recent_weeks_inner(
     };
 
     // 远端那两条:**provider 判断走底座那一份**([`v4_engine::remote::Remote::for_project`]),
-    // 不在这儿手写字符串比较 —— 手写会和它分叉:底座把空 provider 当 github,
-    // 存量项目就是空的,于是同一个项目「合入」走 gh、走势图却说「不是 GitHub」。
+    // 不在这儿手写字符串比较。GitHub 走 gh、codehub 走 codehub-cli,各按周分桶。
     if remote.is_none() && has_remote {
         trend.remote_note =
-            "这个项目的远端不是 GitHub,合入的 PR 与未处理 issue 还没接 —— 只画提交那一条".into();
+            "这个项目的远端 provider buddy 不认识,合入的 PR 与未处理 issue 走势没查 —— 只画提交那一条".into();
     }
 
     // 一趟拉全、本地按周分桶。**不按周去查** —— 见 `v4_engine::github` 里那两个
-    // 读数函数上面的说明。
+    // 读数函数上面的说明。codehub 同构(`-l 0` 全量,不截断)。
     let (merged, open_issues) = match &remote {
         None => (None, None),
-        Some(owner_repo) => {
+        Some(v4_engine::remote::Remote::Github(owner_repo)) => {
             let (a, b) = tokio::join!(
                 merged_prs_by_week(owner_repo, &list),
                 open_issues_by_week(owner_repo, &list),
             );
-            let merged = note_or(&mut trend.remote_note, a);
-            let open = note_or(&mut trend.remote_note, b);
-            (merged, open)
+            (
+                note_or(&mut trend.remote_note, a),
+                note_or(&mut trend.remote_note, b),
+            )
         }
+        Some(v4_engine::remote::Remote::Codehub { host, path }) => {
+            let (a, b) = tokio::join!(
+                merged_mrs_by_week(host, path, &list),
+                open_issues_by_week_ch(host, path, &list),
+            );
+            (
+                note_or(&mut trend.remote_note, a),
+                note_or(&mut trend.remote_note, b),
+            )
+        }
+        // Mock 远端没有真数据,两条线都空(走势图说「尚无观测」,不假装)。
+        Some(v4_engine::remote::Remote::Mock(_)) => (None, None),
     };
 
     for (i, week) in list.iter().enumerate() {
@@ -187,6 +206,45 @@ fn window_of(week: &str) -> Result<(i64, i64), String> {
     crate::git::week_window(week).map_err(|e| e.to_string())
 }
 
+/// codehub 版的「每周合入 MR 数」,对仗 [`merged_prs_by_week`]。codehub-cli
+/// `-l 0` 全量、不截断,故无 LIST_CAP 检查(gh 那边有,因为 gh 会截到 1000)。
+async fn merged_mrs_by_week(host: &str, path: &str, weeks: &[String]) -> Result<Vec<u32>, String> {
+    let rows = v4_engine::codehub::merged_mr_times(host, path)
+        .await
+        .map_err(|e| format!("远端合入的 MR 没查成:{e}"))?;
+    let stamps: Vec<i64> = rows.iter().filter_map(|s| epoch_of(s)).collect();
+    let mut out = Vec::with_capacity(weeks.len());
+    for w in weeks {
+        let (s, u) = window_of(w)?;
+        out.push(stamps.iter().filter(|t| (s..u).contains(t)).count() as u32);
+    }
+    Ok(out)
+}
+
+/// codehub 版的「未处理 issue 周末存量」,对仗 [`open_issues_by_week`]。
+async fn open_issues_by_week_ch(
+    host: &str,
+    path: &str,
+    weeks: &[String],
+) -> Result<Vec<u32>, String> {
+    let rows = v4_engine::codehub::issue_times(host, path)
+        .await
+        .map_err(|e| format!("远端未处理 issue 数没查成:{e}"))?;
+    let born: Vec<i64> = rows.iter().filter_map(|(c, _)| epoch_of(c)).collect();
+    let closed: Vec<i64> = rows
+        .iter()
+        .filter_map(|(_, k)| epoch_of(k.as_deref()?))
+        .collect();
+    let mut out = Vec::with_capacity(weeks.len());
+    for w in weeks {
+        let (_, end) = window_of(w)?;
+        let opened = born.iter().filter(|t| **t < end).count();
+        let shut = closed.iter().filter(|t| **t < end).count();
+        out.push(opened.saturating_sub(shut) as u32);
+    }
+    Ok(out)
+}
+
 /// RFC3339 → unix 秒。**解析不出来的点直接跳过,不猜、不补** —— 少一个点画出来
 /// 是断开,而猜一个点画出来是假数据。
 fn epoch_of(s: &str) -> Option<i64> {
@@ -207,24 +265,4 @@ fn week_labels(weeks: u32) -> Vec<String> {
         w = prev;
     }
     out
-}
-
-/// `owner/repo`,只在远端确实是 GitHub 时给。
-///
-/// **provider 的判断走底座那一份**([`v4_engine::remote::Remote::for_project`]),
-/// 不在这里手写 `provider == "github"` —— 底座把空 provider 当 github(存量项目
-/// 就是空的),手写一份会分叉:同一个项目「合入并完成」走 gh,走势图却报
-/// 「远端不是 GitHub」。
-fn github_repo(project: &Project) -> Option<String> {
-    if !project.has_remote() {
-        return None;
-    }
-    match v4_engine::remote::Remote::for_project(
-        &project.provider,
-        &project.remote_host,
-        &project.remote_path,
-    ) {
-        Ok(v4_engine::remote::Remote::Github(owner_repo)) => Some(owner_repo),
-        _ => None,
-    }
 }
