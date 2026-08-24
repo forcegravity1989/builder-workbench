@@ -548,8 +548,9 @@ pub async fn update_issue(
         if lbls.is_empty() {
             None
         } else {
-            // 1a. list 现有 labels(GitLab payload: labels 是字符串数组,
-            // codehub-cli --jq 对数组输出带引号,故取 JSON 数组走 serde 解析)
+            // 1a. list 现有 labels(codehub 的 labels 是对象数组 `[{name,color}]`,
+            // 不是字符串数组——直接 `[.labels[]]` 会回对象、按 Vec<String> 解析炸,
+            // 这里抽 .name;裸字符串 label 也兼容(`.name? // .`)。
             let view = crate::win_cmd::tokio_cmd("codehub-cli")
                 .args([
                     "issue",
@@ -560,7 +561,7 @@ pub async fn update_issue(
                     "-H",
                     host,
                     "--jq",
-                    "[.labels[]]",
+                    "(.labels // []) | [.[] | (.name? // .)]",
                 ])
                 .stdin(Stdio::null())
                 .stdout(Stdio::piped())
