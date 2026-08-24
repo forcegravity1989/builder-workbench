@@ -1,6 +1,6 @@
 //! 外壳骨架:图标轨 / 项目轨 / 顶栏 / 指南抽屉 / toast。
 //!
-//! 结构照 `docs/v4-prototype/hifi/index.html` 的 `iconRailHTML` /
+//! 结构照 `docs/hifi/index.html` 的 `iconRailHTML` /
 //! `projectRailHTML` / `topbarHTML` / `guideMarkupHTML` 搬,类名同名同义,
 //! **不写行内样式**。
 //!

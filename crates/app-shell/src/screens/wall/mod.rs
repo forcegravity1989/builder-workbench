@@ -1,6 +1,6 @@
 //! 顶层 · 项目墙。不打开任何项目时看到的那一屏。
 //!
-//! 版式照 `docs/v4-prototype/hifi/index.html` 的 `renderWall`:本机环境条 →
+//! 版式照 `docs/hifi/index.html` 的 `renderWall`:本机环境条 →
 //! 健康概览条 → 两列项目卡。
 //!
 //! 卡片上的灯来自库里的显示缓存(项目墙要在不打开项目时列出 N 个项目,不能每

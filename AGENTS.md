@@ -6,7 +6,7 @@
 
 单人构建者的 Rust 原生桌面工作台(Dioxus 0.7 / wry WebView,macOS + Windows)。产品命题见 [`plan/07-product-proposition.md`](plan/07-product-proposition.md);设计正本见 [`DESIGN.md`](DESIGN.md) 指向的各模块设计;领域词表见 [`CONTEXT.md`](CONTEXT.md)。三个名字一件东西:仓库真名 **loop-buddy**、产品名 **Builders' Workbench(BW)**、产品里 AI 队友自称 **buddy**。
 
-> **buddy MVP 与 V3**:本仓现在的产品线是 buddy MVP(内核 `crates/bw-v4` + 底座 `crates/v4-engine` + 壳 `crates/app-shell`)。另有 V3 六 crate(`bw-core`/`bw-engine`/`bw-store`/`bw-app`/`ui`/`app-desktop`)**冻结在仓里、不再演进、连 bug 也不修**,等 [`DESIGN.md`](DESIGN.md) 指的删旧壳判据满足后同一次删干净(判据见 archive 与 v3 分支)。**做 buddy MVP 工作时:V3 crate 不是权威,别 grep 它当事实源**(它会让 AI 把 V3 概念误当 MVP 现状)。`docs/skills/` 与 `docs/buddy/` 是 V3 的编译资产(`bw-core` 用 `include_str!` 编进二进制),随 V3 一起冻结、一起删,不是活跃概念。
+> **V3 已删**:本仓产品线是 buddy MVP(内核 `crates/bw-v4` + 底座 `crates/v4-engine` + 壳 `crates/app-shell`)。V3 的六 crate(`bw-core`/`bw-engine`/`bw-store`/`bw-app`/`ui`/`app-desktop`)与 V3 编译资产(`docs/skills/`、`docs/buddy/`)已于 2026-08-24 删除——全量在 `v3` 分支与 `docs/archive/` 找回。别再提 V3 概念,设计看 [`DESIGN.md`](DESIGN.md) 指的 `docs/modules/`。
 
 ## 语言和构建
 
@@ -15,13 +15,13 @@ Rust 1.82+,cargo workspace。桌面壳另需 Dioxus 0.7 的系统依赖(macOS �
 ## 怎么建 / 怎么跑 / 怎么测
 
 ```bash
-cargo check -p bw-app                       # 日常最快(编译 V3 内核+应用,不编 Dioxus)
+cargo check -p bw-v4 -p v4-engine            # 日常最快(内核+底座,不编 Dioxus)
 cargo run -p app-shell                      # 启 buddy MVP 桌面壳(bin 名 bw-v4-dev)
 BW_OPEN=<项目名> BW_PANEL=overview|plan|session|notify|config|kb ./target/debug/bw-v4-dev
                                             # 深链直达屏;stderr [BW_OPEN]=真的渲染到了
 BW_VIEW=onboard|settings ./target/debug/bw-v4-dev   # 顶层屏深链
 cargo run -p v4-engine --example pty_smoke [-- --teardown|-- --abort]  # PTY 地基烟测(不碰 claude/网关)
-cargo test --workspace --exclude app-desktop          # CI 也跑:现存内联测试必须过
+cargo test --workspace                                # CI 也跑:现存内联测试必须过
 ```
 
 ▶跑(干一张活)走交互式 `claude` 在内嵌终端里;需本机 `claude` CLI(`BW_CLAUDE_BIN` 可指定路径)。真跑受 claude 信任对话框与网关状态影响,不作为门禁。`BW_CLAUDE_MAX_BUDGET_USD` 控预算。
@@ -30,16 +30,13 @@ cargo test --workspace --exclude app-desktop          # CI 也跑:现存内联�
 
 ```bash
 cargo fmt --all --check
-cargo clippy --workspace --exclude app-desktop -- -D warnings
-cargo check -p bw-core --target wasm32-unknown-unknown --no-default-features
-cargo check -p ui --target wasm32-unknown-unknown
-cargo check -p app-desktop        # V3 旧壳编译过(冻结但要编得动)
-cargo check -p app-shell          # buddy MVP 新壳编译过
+cargo clippy --workspace -- -D warnings
+cargo check -p app-shell          # buddy MVP 壳编译过
 ./scripts/guard-kernel-ui-free.sh
-./scripts/guard-no-cross-screen-import.sh   # 新壳:屏与屏不互相引用
-./scripts/guard-screen-hooks.sh             # 新壳:用 hook 的函数必须是组件
+./scripts/guard-no-cross-screen-import.sh   # 屏与屏不互相引用
+./scripts/guard-screen-hooks.sh             # 用 hook 的函数必须是组件
 ./scripts/guard-file-lines.sh               # 单文件 1500 行硬上限(只查 buddy MVP 三 crate)
-cargo test --workspace --exclude app-desktop
+cargo test --workspace
 ```
 
 行为正确性靠 E2E(深链启动 + `codehub-cli`/`gh`/`git`/`cat .bw/…` 读回 + computer-use)+ `/code-review`;单元测试不是交付物(现存的随 CI 跑、改到顺手维护、不建回归大坝)。**buddy MVP 本地零数据库——读回用 `codehub-cli`/`gh`/`git`/`cat .bw/…`,不用 `sqlite3`**(那是 V3 的库)。
@@ -50,11 +47,10 @@ cargo test --workspace --exclude app-desktop
 crates/   bw-v4(MVP 内核:本地零库+仓文件解析+现算推导+Command/Event)
           v4-engine(MVP 底座:交互式 claude+PTY+worktree+git+codehub/github 远端)
           app-shell(MVP 壳:九屏+主题+内核桥+适配模块,bin bw-v4-dev)
-          bw-core/bw-engine/bw-store/bw-app/ui/app-desktop  ← V3(冻结等删,别当权威)
 standard/  buddy 推给被管项目的规范正本(include_str! 进 bw-v4):模板+10 份自带 skill
 docs/      设计地图(README)+ 模块设计(modules/)+ convention + adr + 历史 archive
 .bw/       buddy 自己作为被管项目的资产(PROJECT.md/metrics.toml/issue-policy.toml/…)
-plan/      06 设计事实源 · 07 命题 · 08 MVP 定义 · 13/15/16/20 规范
+plan/      06 设计事实源 · 07 命题 · 08 MVP 定义 · 13/16/20 规范
 scripts/   门禁脚本 + 验收流工具链 + 联调脚本
 e2e/ examples/  验收流考卷 + 样板间库与 vendor 技能库(mattpocock/superpowers/mohit)
 ```

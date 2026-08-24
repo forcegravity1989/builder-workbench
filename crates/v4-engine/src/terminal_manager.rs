@@ -1,4 +1,4 @@
-//! V1 终端会话重构 · 集中模块 TerminalManager(深模块 seam,设计 md §7.1)。
+//! V1 终端会话重构 · 集中模块 TerminalManager(深模块 seam)。
 //!
 //! 外部调用者只认识稳定的 [`Uuid`],不直接碰 child handle、channel、
 //! 平台 PTY 类型。字节按会话身份路由;每会话有界输出缓冲(满丢最老)。
@@ -14,10 +14,10 @@ use uuid::Uuid;
 
 use crate::interactive_cli::PtyInput;
 
-/// 每会话输出批次数上限(设计 md §7.4)。满了丢最老,避免背压卡住 claude。
+/// 每会话输出批次数上限。满了丢最老,避免背压卡住 claude。
 pub const OUTPUT_BATCH_CAP: usize = 64;
 
-/// 单批字节上限(设计 md §7.4:每批 ≤8KB)。读侧超长则切段入队。
+/// 单批字节上限(每批 ≤8KB)。读侧超长则切段入队。
 pub const OUTPUT_BATCH_MAX_BYTES: usize = 8 * 1024;
 
 /// 某个会话此刻在内存里持有的身份事实(可随 attach 写入)。

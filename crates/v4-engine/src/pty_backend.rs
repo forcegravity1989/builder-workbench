@@ -99,15 +99,15 @@ pub fn active() -> impl PtyBackend {
 #[cfg(windows)]
 pub mod windows {
     //! Windows PTY 后端:conpty-oxide(portable-pty 0.9.0 的 ConPTY 实现不
-    //! 把子进程 stdout 送到读端,见 docs/archive/v1-prototype/issue2-metrics-interactive-loop.md §9)。
+    //! 把子进程 stdout 送到读端)。
     //!
     //! **如实标注**:本仓开发机是 macOS,**这份文件自己没在 Windows 真机上跑
     //! 过**,只经 `cargo check --target x86_64-pc-windows-gnu -p v4-engine` 交叉
     //! 编译检查(2026-08-21 复核通过;此前这里写的是 `-p bw-engine`,那是另一
     //! 个 crate 的证据,标错了)。
     //!
-    //! 能借的证据:这份与 V3 的 `bw-engine/src/pty_backend.rs` **逐字相同**
-    //! (`diff` 无输出,2026-08-21 核过),所以那份跑出来的里程对这份成立。
+    //! 能借的证据:这份是 2026-08-21 从 V3 原样接管的一份(`diff` 无输出,
+    //! 2026-08-21 核过;V3 已删,见 v3 分支),所以那份跑出来的里程对这份成立。
     //!
     //! 中途丢弃(`abort`)时的收尾靠 conpty-oxide 自己:`Command::spawn()`
     //! 返回的是托管会话,其 `Child` 一律 kill-on-drop 且 Job 带
@@ -513,7 +513,7 @@ pub mod unix {
     /// `setsid()`,子进程同时成为新会话与新进程组首领,`pid == pgid`。
     ///
     /// `killpg` 对已不存在的进程组返回 `ESRCH`——进程组已空的正常情况,静默
-    /// 吞掉。用 `nix` 的安全封装而不是 `libc` 裸调用:bw-engine 整 crate
+    /// 吞掉。用 `nix` 的安全封装而不是 `libc` 裸调用:本 crate
     /// `#![forbid(unsafe_code)]`,不为一个 syscall 开口子;`nix` 本就在锁文件
     /// 里(portable-pty 自身依赖)。
     fn teardown_group(child: &mut (dyn Child + Send + Sync)) {

@@ -18,8 +18,7 @@ pub use sealed::DerivedHealth;
 
 use crate::model::Signal;
 
-/// 健康的三条判据。每条都能被独立复算(命令见
-/// `docs/v4-prototype/design.md` 第 5 章「总览与健康」),不存任何中间值。
+/// 健康的三条判据。每条都能被独立复算,不存任何中间值。
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct HealthInputs {
     /// (a) 本周有周目标(本周的运作活① issue 在 = 有目标;刀6 起不再读周计划文件)。

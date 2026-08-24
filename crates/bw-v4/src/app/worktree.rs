@@ -55,7 +55,7 @@ pub(super) async fn provision(main: &Path, number: u32) -> Result<IssueTree> {
     }
     // **一条提交都还没有的仓开不了 worktree** —— 没有 HEAD 就没有东西可以拿来
     // 开分支,git 会顶回来一句 `invalid reference: bw/issue-N`。刚建出来的空仓
-    // 就是这样。这时候就地写,第一提交直接落在主分支上(母文档第 0 站写明的
+    // 就是这样。这时候就地写,第一提交直接落在主分支上(写明的
     // 那条例外:新建的空仓首提交直推)。
     if !crate::git::has_head(main).await {
         let branch = crate::git::current_branch(main)

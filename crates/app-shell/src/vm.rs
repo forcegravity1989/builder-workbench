@@ -421,7 +421,7 @@ pub enum SessionTab {
     Diff,
     /// 内嵌 Open Design(仅原型类活——开工工具是 open_design 时才有这个
     /// 标签)。不是起 CLI,是把本机已开的 Open Design 的 loopback 首页嵌进
-    /// 一个 iframe(设计 §7.1/§7.3「本机网页内嵌类」)。
+    /// 一个 iframe(「本机网页内嵌类」)。
     OpenDesign,
 }
 

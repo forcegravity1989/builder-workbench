@@ -29,7 +29,7 @@ pub struct GithubRepoSummary {
     pub owner: String,
     pub repo: String,
     pub private: bool,
-    /// C16(plan/14 规范条 4): 仓描述 —— `gh repo list --json description` 的
+    /// C16: 仓描述 —— `gh repo list --json description` 的
     /// 原文;空串 = 仓本身没填描述(真实状态),不是"没取到"。
     pub description: String,
     /// 默认分支名(如 `main`)—— `defaultBranchRef.name`;空 = 空仓无提交这类
@@ -52,7 +52,7 @@ fn stderr_text(output: &std::process::Output) -> String {
     String::from_utf8_lossy(&output.stderr).trim().to_string()
 }
 
-/// plan/13 D12: github-repo 连接器的真探针——`gh repo view` 一次,回
+/// github-repo 连接器的真探针——`gh repo view` 一次,回
 /// 可见性与最近推送时间。探不通就如实报错,绝不伪造"已同步"。
 pub async fn probe_repo(owner_repo: &str) -> Result<String, GithubError> {
     let output = crate::win_cmd::tokio_cmd("gh")
@@ -153,7 +153,7 @@ pub async fn clone_repo(
     })
 }
 
-// ─────────────────────── C5 · PR 验收环 (plan/13 D3) ───────────────────────
+// ─────────────────────── C5 · PR 验收环 ───────────────────────
 //
 // 三件套 + 收尾:提 PR / 查 PR 状态 / merge PR,外加 merge 后的 issue 补关。
 // 关键纪律:**执行器只提 PR、永不 merge**——`open_pr` 在执行器路径里被调用,
@@ -271,7 +271,7 @@ async fn adopt_existing_pr(workspace: &Path, branch: &str) -> Result<u32, Github
         .map_err(|_| GithubError::Command("认领已存在 PR 时读回号码失败".to_string()))
 }
 
-/// merge PR (plan/13 D3): the **human** verification action — merges the PR,
+/// merge PR: the **human** verification action — merges the PR,
 /// which (via `Closes #<n>`) closes the Issue. Called only from bw-app's
 /// `MergeIssuePr` command, never from any executor/run path. Squash-merge keeps
 /// the base branch history one-commit-per-Issue.
@@ -297,7 +297,7 @@ pub async fn merge_pr(owner_repo: &str, pr_number: u32) -> Result<(), GithubErro
     Ok(())
 }
 
-/// P7-7B (plan/13 用户故事 22, D22): read-only probe for whether an Issue's
+/// P7-7B: read-only probe for whether an Issue's
 /// deterministic work branch (`issue_branch`) currently has an OPEN PR
 /// against it. **现役调用方**(2026-08-17 起唯一一个):`Remote::open_mr_for_branch`
 /// ← bw-app `poll_interactive_inreview`(调度器每次 tick 轮询「评审中」候选,
@@ -377,7 +377,7 @@ struct RepoJson {
 /// List repos owned by the authenticated user — the "接入已有仓" picker's
 /// data source. Read-only, no local filesystem side effects.
 ///
-/// C16(plan/14 规范条 4): `--json` 字段集从 `nameWithOwner,isPrivate,updatedAt`
+/// C16: `--json` 字段集从 `nameWithOwner,isPrivate,updatedAt`
 /// 扩到 `nameWithOwner,isPrivate,description,defaultBranchRef,pushedAt` ——
 /// 字段名核实自 `gh repo list --help`(`gh` 2.95.0)的 JSON FIELDS 清单,均在
 /// 表中:`description`、`defaultBranchRef`、`isPrivate`、`pushedAt`、
@@ -420,7 +420,7 @@ pub async fn list_repos(limit: u32) -> Result<Vec<GithubRepoSummary>, GithubErro
         .collect())
 }
 
-/// V2-② Intent UX (§6.2): fetch `.bw/project.toml` via `gh api` raw contents
+/// V2-② Intent UX: fetch `.bw/project.toml` via `gh api` raw contents
 /// without cloning. Same contract as [`crate::codehub::fetch_project_toml`]:
 /// `Ok(None)` = absent → first-comer; `Err` = soft-fail (stay editable).
 pub async fn fetch_project_toml(

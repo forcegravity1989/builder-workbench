@@ -88,9 +88,8 @@ impl App {
     /// 不做 —— 它不带 prompt、不带 `--append-system-prompt`,只是重新进入那场
     /// 对话等人说话,既不花钱也不会动手。
     ///
-    /// 这条是**从 V3 掉下来的行为**:V3 里「选中一张活」就等于接回它的会话
-    /// (`bw-app/src/terminal.rs` 有整套测试在守),V4 的 `SelectSession` 退化
-    /// 成了纯切视图,于是点进去是一片空白。
+    /// 这条是**从 V3 掉下来的行为**:V3 里「选中一张活」就等于接回它的会话,
+    /// V4 的 `SelectSession` 退化成了纯切视图,于是点进去是一片空白。
     pub(super) async fn reopen_session(&mut self, id: IssueId) -> Result<Vec<Event>> {
         if !self.pty_enabled {
             return Err(AppError::Refused("这个进程没开内嵌终端,接不回会话".into()));

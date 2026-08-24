@@ -28,7 +28,7 @@
 |---|---|
 | [`modules/`](modules/) | **特性模块自足设计**(16 份 + README 索引):每份说清是什么 / 代码在哪几层 / 数据落哪 / 依赖 / 产出与验证 / 没建什么。不同人凭一份接手该模块。`DESIGN.md` 指向这里 |
 | [`convention.md`](convention.md) | **规范与赋能模型**:buddy 给被管项目的三来源两路径 + 顶层文档集 + 边界 + buddy 自身符合度(dogfood) |
-| [`hifi/`](v4-prototype/hifi/) | 视觉正本(`index.html` 单文件高保真 + 逐屏简报),桌面壳样式表从它搬过去 |
+| [`hifi/`](hifi/) | 视觉正本(`index.html` 单文件高保真 + 逐屏简报),桌面壳样式表从它搬过去 |
 | [`LEFTOVERS.md`](LEFTOVERS.md) | 离「buddy MVP 做完了」还差什么的唯一清单,按验收八条分组 |
 | [`doc-boundaries.md`](doc-boundaries.md) | 文档边界:什么写到哪、不写到哪 |
 | [`releases.md`](releases.md) | 版本登记:出包与运作 |
@@ -58,6 +58,6 @@
 | 开发规矩(建/跑/测/门禁/目录/铁律) | [`AGENTS.md`](../AGENTS.md) |
 | 领域词 | [`CONTEXT.md`](../CONTEXT.md) |
 | headless 例子(指挥器 / PTY 烟测) | [`DEVELOPMENT.md`](../DEVELOPMENT.md);源码在 `crates/bw-v4/examples/`、`crates/v4-engine/examples/` |
-| 验收流 | [`plan/15`](../plan/15-acceptance-flow-workflow.md) + `e2e/` + `scripts/run-flow.py` |
+| 验收流(考卷 / 真点击 / 证据报告) | V3 期验收流工具链(e2e/run-flow.py)已随 V3 删除;V4 验证走深链 + `codehub-cli`/`gh`/`git`/`cat .bw` 读回(见 `AGENTS.md` 核心纪律) |
 | 规范与赋能模型(三来源两路径) | [`convention.md`](convention.md) |
 | V3 在哪 | V3 六 crate 冻结在 `crates/`(bw-core/bw-engine/bw-store/bw-app/ui/app-desktop),不是权威;全量在 `v3` 分支与 `docs/archive/` |

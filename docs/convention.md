@@ -47,7 +47,7 @@ buddy 给一个项目赋能,走两条路径,信息落点分清:
 
 ## 3 · 特性模块自足设计(`docs/modules/`)
 
-每个特性模块一份 `docs/modules/<slug>.md`,固定结构:**是什么 / 代码在哪几层(文件:行)/ 数据落哪 / 依赖什么 / 产出与验证 / 没建什么**。不同人凭一份模块设计接手该模块。清单见 `docs/modules/`(16 份:codehub-issue正本/仓文件解析/规范铺底/系统提示词与渐进加载/command-event与状态机/健康推导/会话与执行/远端与工具探活/open-design/项目群/桌面壳/指标采集与读数/周循环与计划/资产盘点与项目接入/技能与蒸馏/app编排与运行时)。归口与边界切线见 [`docs/superpowers/specs/2026-08-24-buddy-repo-convention-整改.md`](superpowers/specs/2026-08-24-buddy-repo-convention-整改.md) §3.1(执行完归档后改指 modules 各篇的"边界"小节)。
+每个特性模块一份 `docs/modules/<slug>.md`,固定结构:**是什么 / 代码在哪几层(文件:行)/ 数据落哪 / 依赖什么 / 产出与验证 / 没建什么**。不同人凭一份模块设计接手该模块。清单见 [`docs/modules/`](modules/README.md)(16 份)。归口与边界切线见 [`docs/modules/README.md`](modules/README.md) §边界切线。
 
 ## 4 · 默认 workflow 的处置
 

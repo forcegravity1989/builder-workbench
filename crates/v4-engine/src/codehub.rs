@@ -214,7 +214,7 @@ pub async fn open_mr_for_branch(
 /// Issue `Done` on `Ok` via the existing `TransitionIssue` InReview→Done path;
 /// on `Err` the Issue stays `InReview` retryable — never reverse-settled,
 /// never fabricated. **Only ever called from `MergeIssuePr` (a human click),
-/// never from any run/executor path** (plan/13 D3+D11).
+/// never from any run/executor path**.
 pub async fn merge_mr(host: &str, path: &str, mr_iid: u32) -> Result<(), CodehubError> {
     let out = crate::win_cmd::tokio_cmd("codehub-cli")
         .args([
@@ -355,7 +355,7 @@ pub async fn clone_repo(host: &str, path: &str, dest: &Path) -> Result<(), Codeh
 // 平台网页上做。原来这里写着一段 `project create --namespace-id …` 的说明,
 // 而那个函数从来没被拷过来 —— 已删,不留一段指着空气的注释。
 
-/// V2-② Intent UX (§6.2): fetch `.bw/project.toml` from the remote without
+/// V2-② Intent UX: fetch `.bw/project.toml` from the remote without
 /// cloning. Used by the creation flow after the user picks「接入已有仓」so
 /// Intent can readonly-prefill later-comers. `Ok(None)` = file absent (404)
 /// → first-comer; `Err` = network/auth/parse failure → UI stays editable and
@@ -474,7 +474,7 @@ struct CodehubRepoJson {
 // 其余函数同形(`-p <path> -H <host>` + `--jq` 选字段)。不碰 SQLite,不碰
 // 调用方(加性)。
 //
-// body 旗标用 `--description`(V3 bw-engine codehub.rs 实测;codehub-cli 的
+// body 旗标用 `--description`(V3 试用期实测;codehub-cli 的
 // issue create 文档虽写 `--body/--body-file`,但 `--description` 是稳的那条)。
 // labels 逗号拼成一条串;空切片不打 `--labels`(codehub 对空 label 会报错)。
 
@@ -860,7 +860,7 @@ pub async fn list_releases(host: &str, path: &str) -> Result<Vec<String>, Codehu
 
 // ─────────────────────── 走势图用:合入 MR / issue 时序 ───────────────────────
 //
-// 对仗 `crate::github` 的 `merged_pr_times` / `issue_times`:走势图(§5.4)要
+// 对仗 `crate::github` 的 `merged_pr_times` / `issue_times`:走势图要
 // 按周分桶「每周合入的 PR」+「未处理 issue 周末存量」。codehub 那条以前只
 // 走 GitHub,codehub 项目这两条线一直空(「尚无观测」)—— 补上。
 //

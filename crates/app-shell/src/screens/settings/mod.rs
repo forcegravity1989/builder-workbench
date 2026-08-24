@@ -1,6 +1,6 @@
 //! 顶层 · 设置。本机相关的几件事:工作区根目录、库文件、各个开工工具在不在。
 //!
-//! 版式照 `docs/v4-prototype/hifi/index.html` 的 `renderSettings`:一个描边列表,
+//! 版式照 `docs/hifi/index.html` 的 `renderSettings`:一个描边列表,
 //! 每行「名字 / 取值 / 右侧一个灯点」。
 //!
 //! **没有登录**。V4 不管任何账号:远端凭证在系统钥匙串、群登录态由用户自己在

@@ -359,7 +359,7 @@ fn pending_steps(probe: &boot::BootstrapProbe) -> String {
 ///
 /// **绝不整篇塞正文**。以前是把 `SKILL.md` 全文拼进来,长、贵、而且塞进去的
 /// 那份还得先复制进用户的仓才读得到。现在给路径,要不要读、读哪几段由 agent
-/// 自己定 —— 这和 buddy 自己的系统提示词(`docs/buddy/system-prompt.md`)是
+/// 自己定 —— 这和 buddy 自己的系统提示词(本模块 `agent_system_prompt`)是
 /// 同一套规矩。
 pub fn agent_system_prompt(
     issue: &Issue,

@@ -417,7 +417,7 @@ fn tree_row(p: &ProjectVm, e: &crate::vm::TreeEntryVm, depth: usize, bridge: &Br
 //
 // 原型类活(开工工具 open_design)的会话多这个标签:把本机已开的 Open Design
 // 的 loopback 首页嵌进一个 iframe。**不是起 CLI**——Open Design 是「本机网页
-// 内嵌类」工具(设计 §7.1/§7.3),开工 = 在这个内嵌视图里干,不是 spawn agent。
+// 内嵌类」工具,开工 = 在这个内嵌视图里干,不是 spawn agent。
 //
 // 发现走 `v4_engine::open_design::discover_web_url`(命名管道/socket 握手,见
 // 该模块)。挂一次 use_future,结果存信号:OD 起着 → url → iframe;没起 → 如实

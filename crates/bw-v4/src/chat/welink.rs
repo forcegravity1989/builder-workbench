@@ -9,7 +9,7 @@
 //!   (welink-cli 不渲染 markdown,发了也是乱码正文)。
 //! - **`fetch_history` 永远返 [`ChatError::HistoryUnsupported`]**:`welink-cli im`
 //!   只有 send-to-user / send-to-group,**没有读群历史**的子命令。这是提供方
-//!   天生拉不了历史(和钉钉/企微/Ts 群机器人一个性质),按设计 §9.4 是正常
+//!   天生拉不了历史(和钉钉/企微/Ts 群机器人一个性质),是正常
 //!   返回值、不是错。**群摘要(LEFTOVERS ⑧)因此 defer**——它要 fetch_history。
 //! - **`probe` 已实现**:往该群发一条 `【buddy 探活】` 测试消息。welink-cli 没有
 //!   按群号只读校验的命令(`search group` 按关键字搜,验不了具体 group_id),
@@ -21,7 +21,7 @@
 //! 用户在本机用官方渠道自己登好 welink-cli(`welink-cli auth login`),buddy 不碰、
 //! 不存这份凭证,设置屏也没有「聊天工具登录」按钮。welink-cli 老是提示 token
 //! 过期——用户实测**不影响实际发送**(那是刷新提示,非失败);本实现认退出码,
-//! 退出 0 = 发送即完成(设计 §9.5「发送即完成」,不追踪投递)。
+//! 退出 0 = 发送即完成(「发送即完成」,不追踪投递)。
 //!
 //! # Windows 上的 `.cmd` shim
 //!
@@ -75,7 +75,7 @@ impl WelinkChatGroup {
         s
     }
 
-    /// 起一条 `welink-cli im send-to-group`。退出 0 = 发送即完成(设计 §9.5);
+    /// 起一条 `welink-cli im send-to-group`。退出 0 = 发送即完成;
     /// 非零按 stderr 文本分流 Auth / Network。群号空是配置错,不该走到这——
     /// 调用方 `for_project` 在群号为空时本就路由到 `none`,不到 welink。
     async fn run_send(&self, text: &str) -> Result<(), ChatError> {
@@ -137,7 +137,7 @@ impl ChatGroup for WelinkChatGroup {
         _until: OffsetDateTime,
     ) -> Result<Vec<ChatMessage>, ChatError> {
         // welink-cli im 只有 send、无读群历史子命令(见模块文档)。提供方天生
-        // 拉不了——这是正常返回值,调用方安静跳过,不重试不报错(设计 §9.4)。
+        // 拉不了——这是正常返回值,调用方安静跳过,不重试不报错。
         Err(ChatError::HistoryUnsupported)
     }
 

@@ -2,9 +2,9 @@
 
 ## 借自哪个项目 / 文件
 
-- `crates/bw-engine/src/claude_bin.rs` —— 候选路径探测(Windows 上认 `claude.cmd`,
+- `crates/v4-engine/src/claude_bin.rs` —— 候选路径探测(Windows 上认 `claude.cmd`,
   这条是 V3 试用期真踩出来的)。
-- `crates/bw-engine/src/interactive_cli.rs` —— 交互式启动计划(`--append-system-prompt`
+- `crates/v4-engine/src/interactive_cli.rs` —— 交互式启动计划(`--append-system-prompt`
   + 位置参数提示词)与 PTY 后端。
 - Orca(见 `docs/archive/v4-prototype/research/orca.md` §2(d)、§5(B))—— agent 状态判定
   的思路。

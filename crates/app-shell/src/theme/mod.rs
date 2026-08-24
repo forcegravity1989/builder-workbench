@@ -1,6 +1,6 @@
 //! 设计系统:高保真原型那张样式表 + 两个 Rust 侧要用到的取值函数。
 //!
-//! **正本是 `docs/v4-prototype/hifi/index.html` 的 `<style>` 块**,整体搬进了
+//! **正本是 `docs/hifi/index.html` 的 `<style>` 块**,整体搬进了
 //! `assets/hifi.css`(搬法与两处改动见那个文件的头注)。屏里一律写 `class`,
 //! 不写行内样式。
 //!

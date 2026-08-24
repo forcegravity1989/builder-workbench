@@ -3,10 +3,10 @@
 //! Launches a TUI agent (claude CLI) in an interactive terminal session,
 //! pre-loaded with a skill body (as the first user message) and a buddy
 //! system prompt (static `system-prompt.md` + dynamic project context).
-//! One skill = one interactive session (§2.3) — no phase splitting, no
+//! One skill = one interactive session — no phase splitting, no
 //! adversarial loop.
 //!
-//! 不解析 `session.jsonl`(§2.5 砍了对话摘要 collector)—— 终端回滚区加
+//! 不解析 `session.jsonl`(砍了对话摘要 collector)—— 终端回滚区加
 //! `session.jsonl` 本身就是记录。干没干成看仓里的真状态(git、MR),不看这里。
 //!
 //! **V4 只有内嵌终端这一条路**:[`InteractiveCliExecutor`] 干活全走
@@ -44,7 +44,7 @@ pub enum PtyInput {
 /// How the skill body is injected into the interactive session. One variant
 /// per real injection strategy — adding a CLI that needs a different one
 /// means adding a variant and the matching arm in [`build_startup_plan`],
-/// not a new impl (orca §2.4's declarative table).
+/// not a new impl (declarative table).
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum PromptInjectionMode {
     /// The skill body rides as the positional `prompt` argument, becoming the
@@ -52,11 +52,11 @@ pub enum PromptInjectionMode {
     /// the design's `--prefill` (draft the text in the input box for review)
     /// does not exist in `claude --help` (verified 2026-08-04), so the flag
     /// and its config field were dropped rather than kept as dead forward-
-    /// compat (§2.6 #5).
+    /// compat.
     PositionalArgv,
 }
 
-// ─── TuiAgentConfig (orca §2.4 declarative CLI table) ──────────────────
+// ─── TuiAgentConfig (declarative CLI table) ──────────────────
 
 /// Declarative config for a TUI agent CLI. The static table names the
 /// agents buddy can launch interactively; `supported` gates whether
@@ -135,7 +135,7 @@ pub struct LaunchPlan {
     pub args: Vec<String>,
     pub env: HashMap<String, String>,
     pub cwd: PathBuf,
-    /// V1 Issue2 W2 (§9.5): whether `run_skill_pty` should submit the
+    /// V1 Issue2 W2: whether `run_skill_pty` should submit the
     /// positional prompt after the TUI loads. claude interactive's
     /// positional argv doesn't auto-submit in buddy's GLM-gateway environment
     /// (the TUI starts and waits for Enter). `true` on first run (the startup
@@ -279,7 +279,7 @@ pub fn build_startup_plan(
     // not a wall: it doesn't cover `codehub-cli mr merge` (the CodeHub
     // equivalent) and a deny list under `--dangerously-skip-permissions` is
     // only as strong as the CLI's own enforcement. 「合并永远是人」的真正
-    // 约束在 buddy 系统提示词(`docs/buddy/system-prompt.md`)里说清楚,
+    // 约束在 buddy 系统提示词(`bw-v4` 的 `agent_system_prompt`)里说清楚,
     // 且 buddy 侧 Done 入边由状态机守死 —— 别把这两行当成拦得住的保证。
     args.push("--disallowedTools".to_string());
     args.push("Bash(gh pr merge)".to_string());
@@ -289,7 +289,7 @@ pub fn build_startup_plan(
         args,
         env,
         cwd: workspace_cwd.to_path_buf(),
-        // First run: the positional skill body needs an Enter to submit (§9.5).
+        // First run: the positional skill body needs an Enter to submit.
         submit_prompt: true,
     })
 }
@@ -359,7 +359,7 @@ pub fn build_resume_plan(
 // ─── SkillOutput ───────────────────────────────────────────────────────
 
 /// What an interactive skill session produced. Phase 1 doesn't parse
-/// session.jsonl (§2.5 砍了对话摘要 collector) — `summary` is
+/// session.jsonl (砍了对话摘要 collector) — `summary` is
 /// best-effort and may be empty (the terminal scrollback + session.jsonl
 /// itself is the record). `completed` is the signal the caller uses to
 /// decide `RunOutcome::Completed` vs `Err`.
@@ -371,7 +371,7 @@ pub struct SkillOutput {
 
 // ─── InteractiveExecutor trait ─────────────────────────────────────────
 
-/// The swappable interactive execution backend (§2.3: one skill = one
+/// The swappable interactive execution backend (one skill = one
 /// interactive session, not phase-by-phase). Phase 2 widened this
 /// seam (PTY bytes → the App's `watch` channel), but Phase 1's concrete
 /// impls are a plain OS terminal spawn ([`InteractiveCliExecutor`]) and
@@ -409,7 +409,7 @@ pub trait InteractiveExecutor: Send + Sync {
     /// settles the run the same way. If the executor doesn't support PTY,
     /// the default returns `Err` (the caller falls back to `run_skill`).
     ///
-    /// **Three races** (orca §2.4, solved in the UI layer, not here):
+    /// **Three races** (solved in the UI layer, not here):
     ///  - ACK backpressure (`ackData`): the UI throttles to prevent flooding.
     ///  - rendererDispatcherReady handshake: the UI buffers until xterm.js
     ///    signals ready (prevents reload losing bytes).

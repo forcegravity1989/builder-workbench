@@ -356,7 +356,7 @@ impl Project {
 /// 开的地址。已经是完整域名的值原样返回。
 ///
 /// **V4 自带一份**,不 `use bw_core::codehub_alias_to_domain`:同一张表,但 V4
-/// 对 V3 那六个 crate 零依赖是硬规矩(设计正本 §12.1),所以照抄一份。表变了
+/// 对 V3 那六个 crate 零依赖是硬规矩,所以照抄一份。表变了
 /// 两处都要改 —— 这是零依赖那条规矩明码标价的代价。
 pub fn codehub_alias_to_domain(alias: &str) -> &str {
     match alias.trim() {

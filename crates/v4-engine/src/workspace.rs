@@ -49,7 +49,7 @@ pub fn issue_worktree_path(main_workspace: &Path, issue_number: u32) -> Option<P
     Some(parent.join(format!("{stem}-issue-{issue_number}")))
 }
 
-/// plan/17 S2: provision an isolated per-issue git worktree off the main
+/// provision an isolated per-issue git worktree off the main
 /// workspace's HEAD (master), so two concurrent/back-to-back issue runs in
 /// one project never collide on the shared working tree. The worktree lives
 /// in a sibling directory `<main_workspace>-issue-<n>` and carries branch

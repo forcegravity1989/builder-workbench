@@ -8,7 +8,7 @@
 - **规范与赋能模型**(buddy 给被管项目的三来源两路径 + 文档集 + 边界)→ [`docs/convention.md`](docs/convention.md)。
 - **产品命题** → [`plan/07-product-proposition.md`](plan/07-product-proposition.md);**设计事实源台账** → [`plan/06-overall-alignment.md`](plan/06-overall-alignment.md)。
 - **架构决策(难回头)** → [`docs/adr/`](docs/adr/),一条决策一篇。
-- **视觉正本**(高保真原型,单文件浏览器可点)→ [`docs/v4-prototype/hifi/index.html`](docs/v4-prototype/hifi/index.html) + 逐屏简报 [`docs/v4-prototype/hifi/README.md`](docs/v4-prototype/hifi/README.md);桌面壳样式表从它整体搬过去。
+- **视觉正本**(高保真原型,单文件浏览器可点)→ [`docs/hifi/index.html`](docs/hifi/index.html) + 逐屏简报 [`docs/hifi/README.md`](docs/hifi/README.md);桌面壳样式表从它整体搬过去。
 
 ## workflow 自带文档去哪找
 

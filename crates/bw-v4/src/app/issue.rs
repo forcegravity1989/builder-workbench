@@ -60,7 +60,7 @@ impl App {
         }
 
         // Open Design = 本机网页内嵌类工具,**不起 CLI**:开工 = 在会话屏的
-        // 「Open Design」标签里用内嵌的本机 Open Design 干(设计 §7.1/§7.3)。
+        // 「Open Design」标签里用内嵌的本机 Open Design 干。
         // 仍给这张活开一棵 worktree + 一条会话(原型产物从 OD 导出后落这棵
         // 树、走「提交并开 MR」),但不 spawn agent、不起 PTY。最远还是
         // 评审中 / 人点完成——和别的工具同一条状态机,没特殊待遇。

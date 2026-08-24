@@ -4,7 +4,7 @@
 //!
 //! 不进 Executor 体系——这是本机资源发现,不是 agent 执行器。
 //!
-//! V3 在 `app-desktop/src/open_design.rs` 有一份同步版(std 线程 + recv_timeout,
+//! V3 那边有一份同步版(std 线程 + recv_timeout,
 //! 因为命名管道 `CreateFile` 能无超时阻塞)。这份是 V4 的:`spawn_blocking`
 //! 跑阻塞的管道 open+读写,外面套 `tokio::time::timeout`(400ms),不卡 async
 //! 运行时。`#![forbid(unsafe_code)]` 是 v4-engine 的规矩,Windows 命名管道用

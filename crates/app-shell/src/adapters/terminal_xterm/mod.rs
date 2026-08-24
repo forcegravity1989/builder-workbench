@@ -1,11 +1,11 @@
 //! 适配模块 · 内嵌终端(xterm.js + PTY 字节桥)。
 //!
-//! 从 `crates/app-desktop/src/screens/op/terminal_widget.rs` 整块搬过来,只换
+//! 从 V3 整块搬过来(详见本目录 README),只换
 //! 了两处接线:字节从 [`crate::bridge::Bridge`] 的 pty 通道来,键盘与尺寸经
 //! [`crate::bridge::Req::Cmd`] 发回内核。渲染那部分是 V3 试用期一个坑一个坑
 //! 填出来的,除了下面这一件之外一行没改,见本目录 README。
 //!
-//! 搬过来之后自己加的一件:**复制/粘贴在终端里自己接管**(设计 md §7.1 要求
+//! 搬过来之后自己加的一件:**复制/粘贴在终端里自己接管**(要求
 //! 「内容和真终端一样能选中复制」)。原因见 [`TERM_PRE_HANDLER_JS`] 里那段
 //! 注释 —— 这个壳没有 macOS 原生菜单,Cmd+C 到不了网页。
 //!
@@ -24,9 +24,9 @@ const XTERM_CSS: &str = include_str!("../../../public/xterm.css");
 const FIT_ADDON_JS: &str = include_str!("../../../public/xterm-addon-fit.min.js");
 
 /// Pre-handler write/drain keyed by conversation id. Must run BEFORE any
-/// bytes arrive so the pre-handler buffer (orca §2.4) catches early output.
+/// bytes arrive so the pre-handler buffer catches early output.
 /// Map shape: `window.__bw_term_sessions[id] = { term, fit, ready, buffer,
-/// input[], resize }` — 修掉旧全局 `window.__bw_term` 单例(设计 md §7.3)。
+/// input[], resize }` — 修掉旧全局 `window.__bw_term` 单例。
 const TERM_PRE_HANDLER_JS: &str = r#"
 window.__bw_term_sessions = window.__bw_term_sessions || {};
 window.__bw_term_ensure = function(id) {
@@ -354,7 +354,7 @@ return (async function(id) {{
         sess.resize = {{ cols: size.cols, rows: size.rows }};
     }});
 
-    // V1-TermRefactor review · 设计 md §7.6:卡片重新显示 / 窗口缩放 /
+    // V1-TermRefactor review · 卡片重新显示 / 窗口缩放 /
     // 侧栏变化 / 字体就绪都 re-fit。fit() 触发 onResize → stash
     // sess.resize → Rust 30ms drain 发 TerminalResize(带 id)。观察
     // term.element(跨 remount 稳定);display:none 下尺寸为 0 跳过,避免

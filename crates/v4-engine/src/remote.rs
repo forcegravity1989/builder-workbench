@@ -229,7 +229,7 @@ impl Remote {
 
     /// Merge the open PR/MR. Github: `gh pr merge --squash`; codehub:
     /// `codehub-cli mr merge <iid> --squash -y`. Two call sites with different
-    /// human/auto semantics (§7): `MergeIssuePr` — the **human验收** action
+    /// human/auto semantics: `MergeIssuePr` — the **human验收** action
     /// (one-click merge → caller settles `Done`); on `Err` the Issue stays
     /// `InReview` retryable, never fabricated, never reverse-settled.
     /// `write_project_toml_pr` — the **auto-merge** of a `.bw/project.toml`
