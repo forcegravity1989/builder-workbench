@@ -202,6 +202,8 @@ impl App {
         // 剧本在 buddy 自己的技能目录里,不在用户的仓里。系统提示词只拿到
         // 名字 + 一句话 + 路径,正文让 agent 自己按需读。
         let skills_dir = self.ensure_skill_assets();
+        // 摊 vendor 业界 workflow 库(workflow 入口 body 指向这)。
+        self.ensure_vendor_assets();
         let skill = skills_dir
             .as_deref()
             .and_then(|d| super::bootstrap::skill_pointer(d, &issue.workflow));
@@ -219,9 +221,8 @@ impl App {
             build_resume_plan(agent, Some(&conv.claude_session_id), &tree.path)
         }
         .map_err(|e| AppError::Exec(e.to_string()))?;
-        if let Some(d) = &skills_dir {
-            super::bootstrap::allow_skills_dir(&mut plan, d);
-        }
+        // 挂整个 asset_root 给 agent 读:技能 + references + vendor 库都在下面。
+        super::bootstrap::allow_skills_dir(&mut plan, &self.asset_root);
 
         let meta = ConversationMeta {
             conversation_id: conv.id.uuid(),

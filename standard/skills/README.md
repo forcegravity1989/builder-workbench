@@ -19,6 +19,17 @@
 
 规范铺底(运作活③)**没有剧本** —— 它没有 agent 步骤,buddy 自己把核心件写进 `.bw/`。
 
+## workflow 入口(业界 SOP 链,buddy 写入口 body 指向 vendor 库)
+
+归一:workflow 注入和运作剧本走**同一个** `skill_pointer`→`SkillPack` 机制。运作剧本
+body 自足;workflow 入口 body 是 SOP 链 + 指向 `../vendor/` 库子技能路径(库由
+`ensure_vendor_assets` 摊到 `<asset>/vendor/`)。
+
+| 活的 `workflow` 字段 | 目录 | body 指向 | 状态 |
+|---|---|---|---|
+| `mattpocock-skills` | `mattpocock-skills/` | `../vendor/mattpocock-skills/skills/engineering/` 下 grill-with-docs→implement→code-review | ✅ build 阶段默认,已打包 + issue-policy 回填 |
+| `proto-design` | — | (源还没 vendor 进 `../vendor/`) | ⏸ 原型阶段默认,待 vendor + 入口 |
+
 ## 不预置方法论技能
 
 这里**只有运作剧本,没有阶段方法论技能**。原来预置过六份「阶段方法论」

@@ -208,6 +208,26 @@ impl App {
         Some(dir)
     }
 
+    /// vendor 业界 workflow 库摊在哪(`<asset_root>/vendor/`)。
+    pub fn vendor_dir(&self) -> PathBuf {
+        self.asset_root.join("vendor")
+    }
+
+    /// 把 `standard/vendor/` 下的业界 workflow 库(mattpocock-skills / mohit)整树
+    /// 摊到 [`App::vendor_dir`]。workflow 入口(如 `mattpocock-skills`)的 body 指向
+    /// 这里的子技能路径,agent 按入口 SOP 自己读。
+    ///
+    /// **dev 期从源码树跑**:源在 `CARGO_MANIFEST_DIR/../../standard/vendor/`
+    /// (编译期烘焙的绝对路径,运行时该路径还在=源码树在)。**分发态无源码树时
+    /// walk 失败返 `None`**:workflow 入口仍注入(skill_pointer 只查入口本身),
+    /// 但入口 body 指向的 vendor 子技能读不到——如实降级,不崩。幂等:文件一致不重写。
+    pub fn ensure_vendor_assets(&self) -> Option<PathBuf> {
+        let src = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../../standard/vendor");
+        let dst = self.vendor_dir();
+        copy_tree(&src, &dst).ok()?;
+        Some(dst)
+    }
+
     /// 把「一步一句」的回执接出去。不接的话长命令照跑,只是没人看得见中间过程。
     pub fn with_progress(mut self, tx: tokio::sync::broadcast::Sender<ProgressLine>) -> Self {
         self.progress = Some(tx);
@@ -506,4 +526,36 @@ impl App {
             } => self.terminal_resize(conversation_id, cols, rows).await,
         }
     }
+}
+
+/// 递归复制 `src` 树到 `dst`,文件一致就跳过(幂等)。给 `ensure_vendor_assets`
+/// 用——vendor 库太大不能 `include_str!` 逐份编进二进制,运行时从源码树整树摊。
+fn copy_tree(src: &std::path::Path, dst: &std::path::Path) -> std::io::Result<()> {
+    if !src.is_dir() {
+        return Err(std::io::Error::new(
+            std::io::ErrorKind::NotFound,
+            format!(
+                "vendor 源不在 {}(分发态无源码树,vendor 不摊)",
+                src.display()
+            ),
+        ));
+    }
+    std::fs::create_dir_all(dst)?;
+    for entry in std::fs::read_dir(src)? {
+        let entry = entry?;
+        let from = entry.path();
+        let to = dst.join(entry.file_name());
+        let ft = entry.file_type()?;
+        if ft.is_dir() {
+            copy_tree(&from, &to)?;
+        } else if ft.is_file() {
+            let same = std::fs::read_to_string(&from)
+                .is_ok_and(|s| std::fs::read_to_string(&to).is_ok_and(|d| d == s));
+            if same {
+                continue;
+            }
+            std::fs::copy(&from, &to)?;
+        }
+    }
+    Ok(())
 }

@@ -22,7 +22,7 @@
 
 规范版本因此从 4.0 跳到 **5.0** —— 落点变了,老版本铺出来的文件在新版本眼里
 就是「不在册」,不做迁移。续三(系统提示词外置 + 扁平铺底 + 删方法论)又
-抬到 **5.1**,当前值见 `VERSION`。
+抬到 **5.1**,当前值见 `VERSION`。续五(默认 workflow 打包:mattpocock 入口 + vendor 摊 + issue-policy 回填)抬到 **5.2**。
 
 这套规范分八个大类(charter / agents / docs-core / metrics / issue-policy /
 defaults-core / cadence / meta),这个仓目前只落地了会被优先接入代码的那一
@@ -86,9 +86,12 @@ buddy 每个环节挑一个最好的默认;要从实践里长出 buddy 自己的
 (见 `crates/bw/src/standard/skills.rs` + `system_prompt.rs`)。
 
 `vendor/` 已 vendor 进来两家(mattpocock-skills、mohit-pm-claude-skills)的
-原样副本,但**打包机制未实现**——buddy 还没把它们摊进自己的资产目录、注入
-提示词(issue-policy 默认值已诚实化,不指向没打包的)。proto-design(原型阶段
-默认 workflow)的源还没 vendor 进来。full bundle 是后续 subagent 任务
+原样副本。**mattpocock-skills 已打包**:buddy 写一份入口 SKILL.md(在
+`skills/mattpocock-skills/`,body 是 grill→implement→review SOP + 指向 vendor 库
+子技能路径)作 SkillPack 走 `skill_pointer` 注入,vendor 库整树摊到
+`<asset>/vendor/`(dev 期从源码树 runtime 摊,分发态 defer),issue-policy
+build/优化/运维默认值已回填 `mattpocock-skills`。**proto-design**(原型阶段默认
+workflow)源还没 vendor 进来、未打包。vendor 摊的分发态 bundle 进二进制留后续
 (见 `docs/architecture.md` 的「没建什么」)。
 
 铺底流程与对账细节见

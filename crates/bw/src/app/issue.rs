@@ -131,6 +131,8 @@ impl App {
         // 剧本在 buddy 自己的技能目录里,不在用户的仓里(见
         // `standard::skills`)。提示词只带路径,正文按需读。
         let skills_dir = self.ensure_skill_assets();
+        // 摊 vendor 业界 workflow 库(workflow 入口 body 指向这,如 mattpocock-skills)。
+        self.ensure_vendor_assets();
         let skill = skills_dir
             .as_deref()
             .and_then(|d| super::bootstrap::skill_pointer(d, &issue.workflow));
@@ -142,9 +144,8 @@ impl App {
             super::bootstrap::agent_system_prompt(&issue, skill.as_ref(), &references);
         let mut plan = build_startup_plan(agent, &prompt, &system_prompt, &run_dir)
             .map_err(|e| AppError::Exec(e.to_string()))?;
-        if let Some(d) = &skills_dir {
-            super::bootstrap::allow_skills_dir(&mut plan, d);
-        }
+        // 挂整个 asset_root 给 agent 读:技能 + references + vendor 库都在下面。
+        super::bootstrap::allow_skills_dir(&mut plan, &self.asset_root);
         let ctx = RunCtx {
             project: issue.project_id.uuid(),
             workflow: uuid::Uuid::nil(),

@@ -43,6 +43,9 @@ pub fn skill_slug(workflow: &str) -> Option<&'static str> {
     match workflow {
         OPS1_WORKFLOW => Some("week-planning"),
         OPS2_WORKFLOW => Some("asset-audit"),
+        // build 阶段默认 workflow 入口(mattpocock grill→implement→review SOP)。
+        // proto-design(原型)源还没 vendor,待补。
+        "mattpocock-skills" => Some("mattpocock-skills"),
         // 规范铺底**没有 agent 步骤**(2026-08-20:只铺 `.bw/`,仓根一个字不写),
         // 所以它没有剧本可挂。给这个项目写开发手册的那份剧本已经挪进资产盘点,
         // 见 `standard/skills/project-handbook/`。

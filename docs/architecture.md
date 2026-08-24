@@ -47,7 +47,7 @@ references(`standard/system-prompt/references/*.md`)是「干某类活需要额�
 
 ### 默认 workflow
 
-`issue-policy.toml` 里类别→工具→workflow 的默认映射:构建类默认 `mattpocock-skills`、原型类默认 `proto-design`,可换。**默认 workflow 应由 buddy 打包统一管理**(像自带四份运作剧本一样摊到资产目录、开机即用),不丢给鱼塘/外部自取。现状如实:打包未实现——自带库只含 buddy 自带四份运作剧本 + 两份 references,不含这两份业界 workflow;issue-policy 默认值已诚实化(不默认指向 buddy 没打包的东西),构建类活今天 workflow 命中空、技能指针如实省略。
+`issue-policy.toml` 里类别→工具→workflow 的默认映射:构建/优化/运维默认 `mattpocock-skills`、原型类默认 `proto-design`,可换。**默认 workflow 应由 buddy 打包统一管理**(像自带技能一样摊到资产目录、开机即用),不丢给鱼塘/外部自取。现状:**`mattpocock-skills` 已打包**——buddy 写一份入口 SKILL.md(body 是 grill→implement→review SOP,指向 vendor 库子技能路径)作 SkillPack 走 `skill_pointer` 注入,vendor 库整树摊到 `<asset>/vendor/`(dev 期从源码树 runtime 摊,分发态 defer),issue-policy 已回填默认值;`proto-design`(原型)源还没 vendor 进来、未打包。
 
 ### 数据流
 
@@ -97,12 +97,12 @@ references(`standard/system-prompt/references/*.md`)是「干某类活需要额�
 
 ### 4 · 系统提示词与渐进加载
 
-**是什么**:每张活开工渲染一份系统提示词,主提示词是**外置的 `standard/system-prompt/SYSTEM.md.tmpl`**(身份 + 四铁律 + 读项目规范件的指引),`{{...}}` 占位在运行时填:活的信息、本活要读的 references 阶段规范、本活挂的技能。references(`standard/system-prompt/references/*.md`)是「干某类活需要额外知道的 buddy 规范」(指标铁律、改仓规则),按活的 category/workflow 匹配后摊到 `<asset_root>/system-prompt/references/`、提示词只给路径,agent 按需读。技能同理摊到 `<asset_root>/skills/`。关键取舍:**正文一律不塞进提示词**(只给「一句话 + 完整路径」),references/技能文件不在硬盘就如实少一段不编路径,主提示词不硬编码在 `format!` 里(改身份/铁律 = 改 md + 抬 `standard/VERSION`,规范对账测得出落后)。
+**是什么**:每张活开工渲染一份系统提示词,主提示词是**外置的 `standard/system-prompt/SYSTEM.md.tmpl`**(身份 + 四铁律 + 读项目规范件的指引),`{{...}}` 占位在运行时填:活的信息、本活要读的 references 阶段规范、本活挂的技能。references(`standard/system-prompt/references/*.md`)是「干某类活需要额外知道的 buddy 规范」(指标铁律、改仓规则),按活的 category/workflow 匹配后摊到 `<asset_root>/system-prompt/references/`、提示词只给路径,agent 按需读。技能同理摊到 `<asset_root>/skills/`。关键取舍:**正文一律不塞进提示词**(只给「一句话 + 完整路径」),references/技能文件不在硬盘就如实少一段不编路径,主提示词不硬编码在 `format!` 里(改身份/铁律 = 改 md + 抬 `standard/VERSION`,规范对账测得出落后)。**归一**:技能注入只有**一个模型**——`skill_pointer`(workflow→slug→`SkillPack`→入口 SKILL.md 路径)。运作剧本(week-planning 等)的入口 body 自足;业界 workflow(mattpocock-skills)的入口 body 是 SOP 链 + 指向 `vendor/` 库子技能路径(库由 `ensure_vendor_assets` 摊)。两类同机制,不另开第二条注入路径。
 
 **代码**:bw 的 `app/bootstrap.rs`(`agent_system_prompt` 渲染模板 + `skill_pointer` + `references_for`)+ `standard/system_prompt.rs`(`SYSTEM_PROMPT_TMPL` + references 表)+ `standard/skills.rs`(四份运作剧本 `include_str!`)+ `app/mod.rs`(`ensure_skill_assets` / `ensure_prompt_assets`)。
 **数据**:主提示词模板 + references + 技能正本都编进二进制,开工时摊到 `<asset_root>/`;提示词是一次性字符串经 `--append-system-prompt` 送进 CLI,不落盘不缓存。
 **依赖**:standard::system_prompt、standard::skills、standard::render、bw_engine::LaunchPlan(`--add-dir`)、codehub issue 正本。
-**没建**:默认 workflow(mattpocock / proto-design)打包未实现——自带库只打包四份运作剧本 + 两份 references,构建类活 workflow 命中空、技能指针如实省略;references 起手只两份(按实践长);full bundle 留后续。
+**没建**:`proto-design`(原型阶段默认 workflow)源还没 vendor 进来、未打包;vendor 摊是 dev 期从源码树 runtime 复制(分发态无源码树时降级为不摊,入口仍注入但子技能读不到——bundle 进二进制留后续);references 起手只两份(按实践长);运营推广/竞品阶段无业界默认(留白)。
 
 ### 5 · command-event-与状态机
 
@@ -201,7 +201,7 @@ references(`standard/system-prompt/references/*.md`)是「干某类活需要额�
 **代码**:bw 的 `standard/skills.rs`(`SkillPack` + 四份 `include_str!` + `desc_of`)+ `app/mod.rs`(`asset_root` / `skills_dir` / `ensure_skill_assets`)+ `app/bootstrap.rs`(`SkillPointer`)+ `app/ops.rs`(`skill_slug` 只映射两个运作剧本);app-shell 的 `bridge/vm_panels.rs`(配置屏 skill_list + workflow_usage 现算)。
 **数据**:四份正本编进二进制,开工摊到 `<asset_root>/skills/<slug>/SKILL.md`(全局一份);活挂的 workflow 名在 codehub issue 正本上;"用过几次"每次现查聚合不落表;提示词一次性字符串不落盘。
 **依赖**:standard::skills、standard::system_prompt、bw_engine::LaunchPlan(`--add-dir`)、Issue 模型;无数据库无网络。
-**没建**:蒸馏——会话屏顶部按钮灰着,grep 不到任何 distill 代码,命令未接;workflow 目录扫描识别(design 里写的"扫技能目录按判据区分包还是单技能"没对应实现,`skill_slug` 只硬编码映射两个运作剧本);默认 workflow 打包(自带库只打包四份运作剧本 + 两份 references)。
+**没建**:蒸馏——会话屏顶部按钮灰着,grep 不到任何 distill 代码,命令未接;workflow 目录扫描识别(design 里写的"扫技能目录按判据区分包还是单技能"没对应实现,`skill_slug` 硬编码映射运作剧本 + mattpocock-skills 入口);`proto-design` 默认 workflow 源还没 vendor。
 
 ### 16 · app编排与运行时
 

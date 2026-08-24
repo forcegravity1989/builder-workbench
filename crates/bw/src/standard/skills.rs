@@ -28,6 +28,12 @@ pub const ASSET_AUDIT_SKILL: &str =
     include_str!("../../../../standard/skills/asset-audit/SKILL.md");
 pub const PROJECT_HANDBOOK_SKILL: &str =
     include_str!("../../../../standard/skills/project-handbook/SKILL.md");
+/// build 阶段默认 workflow 的**入口**(body 是 grill→implement→review SOP,指向
+/// `vendor/mattpocock-skills/` 库内子技能路径)。归一:workflow 注入和运作剧本
+/// 走同一个 `skill_pointer`→`SkillPack` 机制——运作剧本 body 自足,workflow 入口
+/// body 指向 vendor 库(库由 `ensure_vendor_assets` 摊到 `<asset>/vendor/`)。
+pub const BUILD_DEFAULT_SKILL: &str =
+    include_str!("../../../../standard/skills/mattpocock-skills/SKILL.md");
 
 /// frontmatter 里那句 `description`。取不到就返回空串 —— 不编一句假的。
 ///
@@ -50,26 +56,30 @@ fn desc_of(raw: &'static str) -> &'static str {
     ""
 }
 
-/// buddy 自带的全部技能 —— **一个正本目录,全部平级**:`standard/skills/<名字>/SKILL.md`,
-/// 四份运作剧本(buddy 自己发起的标准动作)。
+/// buddy 自带的全部技能 —— **一个正本目录,全部平级**:`standard/skills/<名字>/SKILL.md`。
+/// 两类,但走**同一个**注入机制(`skill_pointer`→`SkillPack`):
+/// - **四份运作剧本**(buddy 自己发起的标准动作,body 自足);
+/// - **workflow 入口**(body 是 SOP 链 + 指向 `vendor/` 库子技能路径,库由
+///   `ensure_vendor_assets` 摊到 `<asset>/vendor/`)。今天一份:`mattpocock-skills`
+///   (build 阶段默认);proto-design(原型)源还没 vendor,待补。
 ///
 /// **不预建方法论技能**。原来还预置了六份「阶段方法论」(原型/构建/优化/
 /// 运营推广/运维/竞品),但默认 workflow 没打包、`skill_slug` 也不识别它们,
 /// 一份都没被真正派发过——属于「预先搞的一堆没用的」。2026-08-24 删光:
-/// 阶段方法论该由业界 workflow(mattpocock / proto-design 等,见 `standard/vendor`)
-/// 提供,buddy 只在每个环节挑一个最好的默认;真要从实践里长出 buddy 自己的
-/// 方法论,到时候再单独建,不预置。
+/// 阶段方法论该由业界 workflow 提供,buddy 只在每个环节挑一个最好的默认;
+/// 真要从实践里长出 buddy 自己的方法论,到时候再单独建,不预置。
 ///
-/// 留下的四份是 buddy 独有的「运作剧本」——业界不会有,且已被 `skill_slug`
+/// 留下的四份运作剧本是 buddy 独有的——业界不会有,且已被 `skill_slug`
 /// 硬编码映射、真派发(运作活①②)。`north-star-discovery` / `metrics-binding`
 /// 两份的内容已并入 `metrics-refresh`;`metrics-render` 早前整份删过(踩在 V4
-/// 不存在的东西上)。这几份原文件随 V3 已删,V4 不读那个目录。
+/// 不存在的东西上)。这几份原文件随 V3 已删。
 pub fn all() -> Vec<SkillPack> {
-    const PACKS: [(&str, &str); 4] = [
+    const PACKS: [(&str, &str); 5] = [
         ("week-planning", WEEK_PLANNING_SKILL),
         ("metrics-refresh", METRICS_REFRESH_SKILL),
         ("asset-audit", ASSET_AUDIT_SKILL),
         ("project-handbook", PROJECT_HANDBOOK_SKILL),
+        ("mattpocock-skills", BUILD_DEFAULT_SKILL),
     ];
     PACKS
         .iter()

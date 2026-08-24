@@ -47,3 +47,23 @@ V4 三 crate 代码行为未变(除 issue-policy 默认值 + terminal_xterm 资�
 **前置清扫**:改名前先清 V3 裸 crate 名(bw-core/bw-engine/bw-store/bw-app/ui/app-desktop 的 lineage 引用),否则 `v4-engine→bw-engine` 会和 V3 的 bw-engine(已删)撞。按统一口径:provenance(历史来路)保留名+加「(V3,见 v3 分支)」;当现行换名(bw-app→app-shell、bw-engine→v4-engine,再随本次改名→bw-engine);假句(「留着伺候直到删除」「继续编译」)删或改时态。改完后「bw-engine」无 V3 标=新底座、带标=历史,无歧义。
 
 cargo check --workspace + clippy `-D warnings` + fmt + 四守卫 + test 全过。纯命名/注释,行为零变。
+
+### 2026-08-24(续五)· 默认 workflow 打包:mattpocock-skills(build 阶段闭环)
+
+build 阶段默认 workflow 从"声明但没打包"到**开机即用**。方案 A(归一):
+- **入口 SKILL.md**(`standard/skills/mattpocock-skills/SKILL.md`,buddy 写):body 是
+  grill-with-docs→implement→code-review 的 SOP + 指向 vendor 库子技能路径。作 SkillPack
+  走**同一个** `skill_pointer` 机制(运作剧本 + workflow 入口同模型,不另开第二条注入路径)。
+- `skill_slug` 识别 `mattpocock-skills`→入口;`skills.rs` 加 `BUILD_DEFAULT_SKILL`。
+- `ensure_vendor_assets`:vendor 库整树摊到 `<asset>/vendor/`(dev 期从源码树
+  `CARGO_MANIFEST_DIR/../../standard/vendor/` runtime 复制;分发态无源码树降级为不摊,
+  入口仍注入但子技能读不到——bundle 进二进制留后续)。
+- `issue-policy.toml.tmpl`:build/优化/运维 默认 `workflow` 从 `""` 回填 `mattpocock-skills`。
+- 顺带修 redesign 遗留 gap:`--add-dir` 只挂了 skills_dir,references 读不到 → 改挂整个
+  `asset_root`(技能 + references + vendor 都可读)。
+- `proto-design`(原型阶段默认)源还没 vendor,待补。
+
+归一记录在 arch §4(技能注入单一模型:skill_pointer→入口 SKILL.md;运作剧本 body 自足、
+workflow 入口 body 指向 vendor 库)。VERSION 5.1→5.2。
+cargo check --workspace + clippy + fmt + 四守卫 + test + prompt_smoke(5 份技能全摊出)全过。
+行为:E2E 验证 defer 给用户(真跑一张 build 活看 agent 走 grill→implement→review)。

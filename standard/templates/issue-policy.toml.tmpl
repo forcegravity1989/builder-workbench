@@ -28,28 +28,27 @@ capabilities = ["inject_skills"]
 
 # 三列映射:类别 → 默认开工工具 → 默认 workflow。
 # workflow = SOP 类技能包(自己调度 agent),不是单个技能。
-# 注:默认 workflow(mattpocock-skills / proto-design)的打包未实现——buddy 还没把
-# 已严选的默认 workflow 进资产目录(见 docs/architecture.md 的「系统提示词与渐进加载」模块「没建什么」)。
-# 在没打包前,默认值留空,不指向 buddy 不供的东西;项目自行配,或等 buddy 打包后回填默认。
+# mattpocock-skills 已打包(build/优化/运维 默认),proto-design(原型)源还没
+# vendor 进来、未打包。见 docs/architecture.md 的「系统提示词与渐进加载」模块。
 [[mapping]]
 category = "prototype"            # 原型
 tool     = "open_design"
-workflow = ""                     # 意图默认 proto-design,待打包
+workflow = ""                     # 意图默认 proto-design,源还没 vendor,待打包
 
 [[mapping]]
 category = "build"                # 构建
 tool     = "claude_cli"
-workflow = ""                     # 意图默认 mattpocock-skills,待打包
+workflow = "mattpocock-skills"     # 默认:grill-with-docs → implement → code-review
 
 [[mapping]]
 category = "optimize"             # 优化
 tool     = "claude_cli"
-workflow = ""                     # 意图默认 mattpocock-skills,待打包
+workflow = "mattpocock-skills"     # 和构建同款默认
 
 [[mapping]]
 category = "ops"                  # 运维,和优化同款默认
 tool     = "claude_cli"
-workflow = ""                     # 意图默认 mattpocock-skills,待打包
+workflow = "mattpocock-skills"
 
 [[mapping]]
 category = "growth"               # 运营推广
