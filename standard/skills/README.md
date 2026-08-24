@@ -5,7 +5,7 @@
 > 户的仓),按活挂的 `workflow` 挑出对应那份,只把**名字 + 一句话 + 完整路径**写进
 > agent 的系统提示词,正文让 agent 自己按需读 —— 渐进式加载,见
 > `crates/bw-v4/src/standard/skills.rs`。给接手技能这块的人看。**现在作数**
-> (2026-08-21 收敛:此前散在 `docs/skills/` 与 `standard/06-defaults/ops/` 两处、
+> (2026-08-21 收敛:此前散在 `docs/skills/`(已删,见 v3 分支)与 `standard/06-defaults/ops/` 两处、
 > 还用目录层级表达「谁调用谁」;现在从属关系写在正文里,目录不表达任何结构)。
 
 ## 四份运作剧本(buddy 自己发起的标准动作)
@@ -27,7 +27,7 @@
 **三份没有收进来**:`north-star-discovery` 与 `metrics-binding` 的内容已并入
 `metrics-refresh`;`metrics-render` 2026-08-21 整份删掉——它每一步都踩在 V4 不存在
 的东西上(V3 的渲染器例子、库里那两张 V4 没有的表、已退场的五种采集方式),而
-V4 的指标呈现本来就在总览屏里现算。`docs/skills/` 下的原文件留给 V3 用,V4 不读
+V4 的指标呈现本来就在总览屏里现算。`docs/skills/` 下的原文件是 V3 期的(已删,见 v3 分支),V4 不读
 那个目录。
 
 ## 版本

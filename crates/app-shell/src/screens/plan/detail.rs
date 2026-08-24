@@ -153,7 +153,7 @@ pub fn DetailPanel(
                         "去会话 →"
                     }
                     // 高保真上这里还有一颗「蒸馏」:把做完的活变成一篇技能。
-                    // V4 还没有这条命令(见 docs/LEFTOVERS.md),做成灰态,
+                    // V4 还没有这条命令,做成灰态,
                     // 不放一颗点了没反应的按钮。
                     button { class: "btn btn-sm", disabled: true, title: "V4 还没接蒸馏", "蒸馏" }
                 }

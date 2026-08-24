@@ -106,7 +106,7 @@ pub(super) fn build_card_mr(issues: &[bw_v4::Issue]) -> Option<CardMrVm> {
 ///
 /// 高保真那张网格上还有几项是远端来的(合入的 PR、远端 issue、开放 PR),
 /// 那要走 GitHub / codehub 的接口,今天还没接 —— 与其编几个数,不如只列采得
-/// 到的,并在界面上说清楚少了哪几项(见 `docs/LEFTOVERS.md`)。
+/// 到的,并在界面上说清楚少了哪几项。
 pub(super) async fn collect_repo_stats(
     ws: &Path,
     project: Option<&bw_v4::model::Project>,

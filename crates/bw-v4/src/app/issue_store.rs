@@ -4,8 +4,7 @@
 //! 排期、版本从本地 SQLite 搬到远端 issue + 标签(`bw:status:*` / `bw:week:*` /
 //! `bw:released:*`),这是那条映射的正本。
 //!
-//! 字段映射的取舍正本见 `docs/v4-prototype/` 数据层迁移刀2 的设计篇;这里的每
-//! 一条都照那篇写,不自作主张加标签。**lossy**:远端 issue 的 `body` 经
+//! 字段映射的取舍:每一条都不自作主张加标签。**lossy**:远端 issue 的 `body` 经
 //! `view_issue` 单查带回(列表查询不带正文);`branch`/`pr_number`、
 //! `sort_order`/`metric_key`、`settled_at` 这些读回时一律给默认值。
 

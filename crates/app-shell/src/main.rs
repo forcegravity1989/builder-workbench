@@ -252,7 +252,7 @@ fn body(
         //
         // 只挂「进程还活着」或「正被选中」的会话:早就跑完的会话再挂一
         // 个每 30ms 轮询一次的循环纯属白烧。代价是切走再回来看一个已经
-        // 结束的会话,回放是空的 —— 存不存回放还没做(见 LEFTOVERS)。
+        // 结束的会话,回放是空的 —— 存不存回放还没做。
         for s in p.sessions.iter().filter(|s| s.live || p.session_open == Some(s.issue_id)) {
             TerminalWidget {
                 key: "{s.conversation_id:?}",

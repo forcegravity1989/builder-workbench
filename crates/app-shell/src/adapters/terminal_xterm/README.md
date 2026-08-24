@@ -6,7 +6,7 @@
   `mod.rs`。
 - `crates/v4-engine/src/pty_backend.rs` / `terminal_manager.rs` —— PTY 后端与按会话分
   的有界缓冲,原样沿用,一行没改。
-- Orca 的 `use-terminal-pane-lifecycle.ts`(见 `docs/archive/v4-prototype/research/orca.md` §2a)
+- Orca 的 `use-terminal-pane-lifecycle.ts`(V3 期参考,见 v3 分支)
   —— 选区防抖 + 长度上限那一段的思路。
 - `docs/hifi/index.html` 的 `copyTerminal`(约第 1122 行)—— 标题栏那颗
   「复制」按钮:先试 `navigator.clipboard.writeText`,不成退到临时 textarea +

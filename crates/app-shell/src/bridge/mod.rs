@@ -617,7 +617,7 @@ pub fn spawn(deep_link: DeepLink) -> Bridge {
                         _ = sched_tick.tick() => {
                             // 特性9:fanout —— 遍历所有纳管项目逐个查
                             // cron_enabled + 到点建活,不再只对打开着的项目跑
-                            // (LEFTOVERS ② 拍板)。tick_scheduler 本身单项目
+                            // (已拍板)。tick_scheduler 本身单项目
                             // 幂等,到点没到点、本周有没有那张活都原地返空;
                             // cron_enabled=false 也自己挡掉(高优1)。
                             let mut note: Option<String> = None;

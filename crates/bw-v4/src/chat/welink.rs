@@ -10,7 +10,7 @@
 //! - **`fetch_history` 永远返 [`ChatError::HistoryUnsupported`]**:`welink-cli im`
 //!   只有 send-to-user / send-to-group,**没有读群历史**的子命令。这是提供方
 //!   天生拉不了历史(和钉钉/企微/Ts 群机器人一个性质),是正常
-//!   返回值、不是错。**群摘要(LEFTOVERS ⑧)因此 defer**——它要 fetch_history。
+//!   返回值、不是错。**群摘要因此 defer**——它要 fetch_history。
 //! - **`probe` 已实现**:往该群发一条 `【buddy 探活】` 测试消息。welink-cli 没有
 //!   按群号只读校验的命令(`search group` 按关键字搜,验不了具体 group_id),
 //!   只有真发一条才答得出「这个群号能不能收到」。人点「测一下」才发,不是

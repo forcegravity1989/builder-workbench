@@ -4,9 +4,9 @@
 
 ## 这是什么
 
-单人构建者的 Rust 原生桌面工作台(Dioxus 0.7 / wry WebView,macOS + Windows)。产品命题见 [`plan/07-product-proposition.md`](plan/07-product-proposition.md);设计正本见 [`DESIGN.md`](DESIGN.md) 指向的各模块设计;领域词表见 [`CONTEXT.md`](CONTEXT.md)。三个名字一件东西:仓库真名 **loop-buddy**、产品名 **Builders' Workbench(BW)**、产品里 AI 队友自称 **buddy**。
+单人构建者的 Rust 原生桌面工作台(Dioxus 0.7 / wry WebView,macOS + Windows)。产品命题见 [`README.md`](README.md);设计正本见 [`docs/architecture.md`](docs/architecture.md)([`DESIGN.md`](DESIGN.md) 指路);领域词表见 [`CONTEXT.md`](CONTEXT.md)。三个名字一件东西:仓库真名 **loop-buddy**、产品名 **Builders' Workbench(BW)**、产品里 AI 队友自称 **buddy**。
 
-> **V3 已删**:本仓产品线是 buddy MVP(内核 `crates/bw-v4` + 底座 `crates/v4-engine` + 壳 `crates/app-shell`)。V3 的六 crate(`bw-core`/`bw-engine`/`bw-store`/`bw-app`/`ui`/`app-desktop`)与 V3 编译资产(`docs/skills/`、`docs/buddy/`)已于 2026-08-24 删除——全量在 `v3` 分支与 `docs/archive/` 找回。别再提 V3 概念,设计看 [`DESIGN.md`](DESIGN.md) 指的 `docs/modules/`。
+> **V3 已删**:本仓产品线是 buddy MVP(内核 `crates/bw-v4` + 底座 `crates/v4-engine` + 壳 `crates/app-shell`)。V3 的六 crate 与 V3 编译资产已于 2026-08-24 删除——全量在 `v3` 分支找回。别再提 V3 概念,设计看 [`docs/architecture.md`](docs/architecture.md)。
 
 ## 语言和构建
 
@@ -47,12 +47,10 @@ cargo test --workspace
 crates/   bw-v4(MVP 内核:本地零库+仓文件解析+现算推导+Command/Event)
           v4-engine(MVP 底座:交互式 claude+PTY+worktree+git+codehub/github 远端)
           app-shell(MVP 壳:九屏+主题+内核桥+适配模块,bin bw-v4-dev)
-standard/  buddy 推给被管项目的规范正本(include_str! 进 bw-v4):模板+10 份自带 skill
-docs/      设计地图(README)+ 模块设计(modules/)+ convention + adr + 历史 archive
+standard/  buddy 推给被管项目的规范正本(include_str! 进 bw-v4):模板 + 自维护 skill(`skills/` 10 份)+ 业界 skill(`vendor/` mattpocock/superpowers/mohit,给默认 workflow 打包)
+docs/      architecture(设计正本)+ guide(产品指南)+ adr + hifi + README(地图)
+scripts/   门禁脚本(guard-*)+ codegraph 联调
 .bw/       buddy 自己作为被管项目的资产(PROJECT.md/metrics.toml/issue-policy.toml/…)
-plan/      06 设计事实源 · 07 命题 · 08 MVP 定义 · 13/16/20 规范
-scripts/   门禁脚本 + 验收流工具链 + 联调脚本
-e2e/ examples/  验收流考卷 + 样板间库与 vendor 技能库(mattpocock/superpowers/mohit)
 ```
 
 ## buddy 特有规矩(只写仓里真还在用的)
@@ -69,10 +67,10 @@ e2e/ examples/  验收流考卷 + 样板间库与 vendor 技能库(mattpocock/su
 ### 三层模型(怎么给 buddy 做一个特性)
 
 - **承载 · codehub issue**:issue+标签=唯一正本,本地零数据库;状态走标签、工作产物走 MR。
-- **规范 · 系统提示词 + 渐进加载**(`docs/buddy/system-prompt.md` 三段静态 + 运行时注入剧本;`standard/skills/` 索引):不论哪个 workflow 都兜住 buddy 统一要求。
+- **规范 · 系统提示词 + 渐进加载**(三段静态在 `crates/bw-v4/src/app/bootstrap.rs` `agent_system_prompt` 现拼 + 运行时注入剧本;设计见 [`docs/architecture.md`](docs/architecture.md) 的「系统提示词与渐进加载」模块;`standard/skills/` 索引):不论哪个 workflow 都兜住 buddy 统一要求。
 - **方法论 · skill / workflow**(`standard/skills/` 自带 10 份;build 默认 workflow 见 issue-policy,可换):怎么做能做得更好。
 
-改一个特性前,先在 [`DESIGN.md`](DESIGN.md) 指的模块设计上定位:旅程哪一站 → 三层里改哪层 → 数据归哪 → 模块落点。找不到先补文档、再动代码——不清晰不写代码。
+改一个特性前,先在 [`docs/architecture.md`](docs/architecture.md) 的模块设计上定位:旅程哪一站 → 三层里改哪层 → 数据归哪 → 模块落点。找不到先补文档、再动代码——不清晰不写代码。
 
 ### codehub issue 标签词表
 
@@ -83,13 +81,13 @@ e2e/ examples/  验收流考卷 + 样板间库与 vendor 技能库(mattpocock/su
 1. 汇报用人话:做了什么、结果如何、下一步。代号第一次出现带一句人话。
 2. 实现术语留在代码(settle-once / derive-only 这类只进代码注释与对照表,写给人的正文说人话)。
 3. 用词以 [`CONTEXT.md`](CONTEXT.md) 词表为准;新造词先进词表。
-4. 代号先在 [`docs/code-schemes.md`](docs/code-schemes.md) 登记再用。
+4. 代号先登记再用(开新代号系列前,先确认旧系列没撞;登记处随用随建进 `docs/adr/` 或 `CONTEXT.md`)。
 5. 每篇新文档开头给 30 秒导读;过时不删但顶部加历史横幅。
 6. **不为向后兼容留旧路径**:发现过时实现直接移除,不加兼容层/回退/迁移。
 
 ### commit 约定
 
-每件独立 commit、在分支上、**不 push**(用户要 push 时另开 bundle)。标题让人不查文档也看懂做了什么(可带代号前缀,但须人话描述;代号系列先在 `docs/code-schemes.md` 登记)。信息如实描述取舍,不吹;偏差如实记进 commit message 与 `CHANGELOG.md`。
+每件独立 commit、在分支上、**不 push**(用户要 push 时另开 bundle)。标题让人不查文档也看懂做了什么(可带代号前缀,但须人话描述)。信息如实描述取舍,不吹;偏差如实记进 commit message 与 `CHANGELOG.md`。
 
 ## CodeGraph 导航(可选用)
 
@@ -98,7 +96,7 @@ e2e/ examples/  验收流考卷 + 样板间库与 vendor 技能库(mattpocock/su
 
 ## 不要做的
 
-- 不拿 V3 crate 当 MVP 事实源去 grep/读(冻结、会误导)。
+- V3 已删(见 `v3` 分支),别拿 V3 crate 当 MVP 事实源去 grep/读(会误导)。
 - 不为「兼容旧半修」留双路径;不扩 scope(留白如实标"未建")。
 - 不在入口层写业务和存储;不照 README 抄命令(README 常年不更新,以 CI 配置为准)。
 - 未锁定决策先走 grill/domain-modeling,不凭猜改设计;改动前 `CHANGELOG.md` 记一行。

@@ -4,8 +4,8 @@
 
 > **30 秒导读**:这是 buddy MVP 的领域词表——代码、文档、界面、对话共用的选词与定义。MVP 本地零数据库,issue 正本在 codehub/GitHub 的 issue+标签,项目级配置留仓文件、走 MR,健康与指标读数全部现算。词表稳定优先,宁少不乱。
 > 定义原则:每个词只说它**是什么**(1–2 句),不写实现;`_Avoid_` 列出被它取代的说法。
-> 这是词表,不是规格——**设计事实源指向 [`DESIGN.md`](DESIGN.md) 指路的 [`docs/modules/`](docs/modules/) 各模块自足设计**(每份说清这个模块是什么/代码在哪几层/数据落哪/产出与验证/没建什么);[`plan/06-overall-alignment.md`](plan/06-overall-alignment.md) 仍是缺口台账(G1-G11/R1-R4),不当唯一事实源。
-> 命名冲突的收敛与改名计划见 [`docs/adr/`](docs/adr/);字母数字任务代号(P2、W6、R1……)不属于领域语言,各系列的含义与撞车警示见 [`docs/code-schemes.md`](docs/code-schemes.md)。
+> 这是词表,不是规格——**设计正本是 [`docs/architecture.md`](docs/architecture.md)([`DESIGN.md`](DESIGN.md) 指路)**,16 模块核心设计在它的 §3;设计缺口分散在各模块的「没建什么」段,不另开台账。
+> 命名冲突的收敛与改名计划见 [`docs/adr/`](docs/adr/);字母数字任务代号(P2、W6、R1……)不属于领域语言,用前先确认旧系列没撞(代号登记处随用随建进 adr 或本表)。
 > 词表分两部分:前半是**产品语义词**(产品概念本身),文末「工程操作词」一节是**仓库工作方式的行话**(读回、门禁、记账……)。
 
 ## Language
@@ -13,18 +13,18 @@
 ### 人与角色
 
 **Builders' Workbench / BW / buddy / loop-buddy**:
-同一件东西的几个称呼:**Builders' Workbench(BW)**是产品名;**buddy** 是产品里那个 AI 程序对自己的称呼(系统提示词、`docs/buddy/` 里通篇这么叫);**loop-buddy** 是 GitHub 仓库真名。写文档时说产品用 BW,说「它替你做了什么」用 buddy,都可以——别把它们当三个不同的东西。
+同一件东西的几个称呼:**Builders' Workbench(BW)**是产品名;**buddy** 是产品里那个 AI 程序对自己的称呼(系统提示词里通篇这么叫,见 [modules/系统提示词与渐进加载](docs/architecture.md));**loop-buddy** 是 GitHub 仓库真名。写文档时说产品用 BW,说「它替你做了什么」用 buddy,都可以——别把它们当三个不同的东西。
 _Avoid_: 把 buddy 理解成某个具体 agent 或队友的名字(它是程序整体的自称);workbuddy(另一款产品)。
 
 **Builder / 构建者**:
 使用工作台的那个人——端到端 own 一个项目的单人系统设计者,产品的主角。全局唯一,专指人类。
 _Avoid_: user、owner、开发者。
 
-> **MVP 不再有「队友」概念**——活上挂的是 workflow/技能(见 [modules/系统提示词与渐进加载](docs/modules/系统提示词与渐进加载.md)),开工时按活记的工具起 agent(见 [modules/远端与工具探活](docs/modules/远端与工具探活.md))。「干没干成」看远端 MR 合没合入,不记战绩。别处见到 teammate 一律按此消歧,不是指某个具名 AI 人格。
+> **MVP 不再有「队友」概念**——活上挂的是 workflow/技能(见 [modules/系统提示词与渐进加载](docs/architecture.md)),开工时按活记的工具起 agent(见 [modules/远端与工具探活](docs/architecture.md))。「干没干成」看远端 MR 合没合入,不记战绩。别处见到 teammate 一律按此消歧,不是指某个具名 AI 人格。
 
 **开工工具 / Agent CLI**:
 一件活开工时真实调起的智能体 CLI 或内嵌工具(Claude Code / Cursor / Open Design 内嵌等)。声明住在项目仓的 `.bw/issue-policy.toml`,探活分三种机制(候选路径 / 版本命令 / 套接字握手);选了 Cursor 但探活失败就拒绝开工,绝不悄悄退回 Claude Code。未接的工具如实回灰、不假装可用。
-_Avoid_: 和"模型"混为一谈(model 是模型标签,开工工具是执行引擎);假装多工具已支持(今天只有 Claude Code 真能跑);把它当装饰性标签——它真实生效,探不通就不开工。详见 [modules/远端与工具探活](docs/modules/远端与工具探活.md)。
+_Avoid_: 和"模型"混为一谈(model 是模型标签,开工工具是执行引擎);假装多工具已支持(今天只有 Claude Code 真能跑);把它当装饰性标签——它真实生效,探不通就不开工。详见 [modules/远端与工具探活](docs/architecture.md)。
 
 **发言方 / Author**:
 一条对话消息出自谁——人(Builder)还是 AI。纯 UI 归属轴。
@@ -68,7 +68,7 @@ _Avoid_: 和"工作区"混用(工作区只是仓的本地克隆路径,仓才是�
 
 **仓平台 / Repo Provider**:
 建仓时选的托管平台。MVP 真通的有两个:GitHub 与 CodeHub(GitLab v4 兼容),由 `Remote` enum 按 provider 把 issue 正本读写、MR 开合统一路由到 `gh` 或 `codehub-cli`。未接的平台如实标注、不假装可用;暂时连不通仍可点,失败时给人话报错,绝不静默吞掉。它是一个选择器,不是抢先做好的多平台抽象。
-_Avoid_: 把「未接」的选项假装已支持;把「连不通就灰置不可点」当现行口径(可点+人话报错)。详见 [modules/远端与工具探活](docs/modules/远端与工具探活.md) 与 [modules/codehub-issue-正本](docs/modules/codehub-issue-正本.md)。
+_Avoid_: 把「未接」的选项假装已支持;把「连不通就灰置不可点」当现行口径(可点+人话报错)。详见 [modules/远端与工具探活](docs/architecture.md) 与 [modules/codehub-issue-正本](docs/architecture.md)。
 
 ### 创建流(快、能退、能续)
 
@@ -80,11 +80,11 @@ _Avoid_: 按旧五步(仓→意图→快速问题→起草→确认)描述它—
 
 **Issue / 活**:
 一件要干的具体工作,最小单位。"活"是口语规范词,"卡"只在指界面卡片形态时用。codehub/GitHub 的 issue+标签是唯一正本(标题=标识,`bw:status:*`/`bw:week:*`/`bw:released:*` 标签=状态/排期/版本,issue closed=Done);本地零库,读都走 CLI、不留读缓存。没挂仓的项目如实留白、不假装已同步。
-_Avoid_: 任务(与"定时任务"撞)、卡片(指实体时用"活",指 UI 时才用"卡")、ticket、工单。详见 [modules/codehub-issue-正本](docs/modules/codehub-issue-正本.md)。
+_Avoid_: 任务(与"定时任务"撞)、卡片(指实体时用"活",指 UI 时才用"卡")、ticket、工单。详见 [modules/codehub-issue-正本](docs/architecture.md)。
 
 **Issue 状态流转**:
 Backlog → Todo → InProgress → InReview → Done 的单向明路;另有 Blocked(阻塞,必填原因)、Cancelled。**Done 的唯一入边是 InReview**。状态以 `bw:status:*` 标签为正本,由 `can_transition_to` 守卫锁死;Backlog/Cancelled 在 codehub 映射里没有对应标签,如实弹回不编。
-_Avoid_: 自造中间态;把 InReview 当终态。详见 [modules/command-event-与状态机](docs/modules/command-event-与状态机.md)。
+_Avoid_: 自造中间态;把 InReview 当终态。详见 [modules/command-event-与状态机](docs/architecture.md)。
 
 **PR / Pull Request**:
 一件活的真实交付载体——代码活、非代码活(报告、复盘文档)都以 PR/MR 进仓。agent 只能提 PR,永远不能 merge;"提 PR"是 agent 的动作,"验收"是人的动作,两者不是一回事。
@@ -104,11 +104,11 @@ _Avoid_: 失败(失败是"运行"的结局,不是活的状态)、挂起。
 
 ### 运行与执行
 
-> **消歧**:workflow 在 MVP = 活上挂的 SOP 技能包(在 `.bw/issue-policy.toml` 的 `mapping.workflow` 里给每类活记一个,如构建类挂 `mattpocock-skills`、原型类挂 `proto-design`,可换),buddy 按它注入对应剧本(见 [modules/系统提示词与渐进加载](docs/modules/系统提示词与渐进加载.md))。不再是聊天式工作流引擎(静态/动态、阶段角色、打回、解析为流程图那一套已退场)。
+> **消歧**:workflow 在 MVP = 活上挂的 SOP 技能包(在 `.bw/issue-policy.toml` 的 `mapping.workflow` 里给每类活记一个,如构建类挂 `mattpocock-skills`、原型类挂 `proto-design`,可换),buddy 按它注入对应剧本(见 [modules/系统提示词与渐进加载](docs/architecture.md))。不再是聊天式工作流引擎(静态/动态、阶段角色、打回、解析为流程图那一套已退场)。
 
 **运行 / Run**:
 一件活的真实执行(▶跑),有成败与耗时,全结局都入账(成功、失败都记)。运行在该活专属的 issue worktree 里干活(每张活一棵,两张同时跑互不撞车;收尾后拆除,主工作区留着提供 master 视角)。
-_Avoid_: 执行(动词可用,名词统一"运行")、跑一遍(口语)。详见 [modules/会话与执行](docs/modules/会话与执行.md)。
+_Avoid_: 执行(动词可用,名词统一"运行")、跑一遍(口语)。详见 [modules/会话与执行](docs/architecture.md)。
 
 **中止 / Cancel (Run)**:
 人主动停掉一次正在跑的运行。中止后活如实停在进行中、状态原地不动、随时能 ▶跑 接回——不冒充失败,更不自动完成。
@@ -116,11 +116,11 @@ _Avoid_: 取消(留给活的 Cancelled 终态)、终止后自动补一个结论�
 
 **交互式运行 / Interactive run**:
 MVP 唯一的执行轨:开工工具起在**内嵌终端**(伪终端 PTY)里,活在 issue 自己的一棵 git worktree 里干,人全程可见、可插话、要停点取消,并按真实会话号(`--resume`)精确续跑。交互式活不写运行史——过程就在嵌入终端里,不是没跑过。人在场就是它的兜底:不靠机器掐表,后台轨的预算封顶/超时那套不照搬。
-_Avoid_: 把交互式活的空运行史当「没跑过」;把后台轨的自动兜底照搬到交互轨;嵌入终端(指 UI 载体时可用,指这条执行轨时统一说「交互式运行」)。详见 [modules/会话与执行](docs/modules/会话与执行.md)。
+_Avoid_: 把交互式活的空运行史当「没跑过」;把后台轨的自动兜底照搬到交互轨;嵌入终端(指 UI 载体时可用,指这条执行轨时统一说「交互式运行」)。详见 [modules/会话与执行](docs/architecture.md)。
 
 **系统提示词 / System prompt**:
 buddy 给每张开工的活现拼的一份常驻提示,装的是身份与本张活(活号/标题/类别/workflow)、通用铁律(最远到评审中、合并永远是人、指标只来自真实采集、干砸如实停)、规范索引(只列仓里真存在的 `.bw/` 件)、本活剧本四段。分工:系统提示词不可换(契约与铁律由它兜住),技能可换——换任何业界技能当方法论,契约仍由系统提示词兜住。提示词只放索引,正文让 agent 按需读(渐进加载)。
-_Avoid_: 把契约写进技能正文(换技能就丢);把系统提示词当成技能的一部分。详见 [modules/系统提示词与渐进加载](docs/modules/系统提示词与渐进加载.md)。
+_Avoid_: 把契约写进技能正文(换技能就丢);把系统提示词当成技能的一部分。详见 [modules/系统提示词与渐进加载](docs/architecture.md)。
 
 **Agent Loop**(产品命题层):
 "1 个 Builder + Agent Loop 取代 5 个专职角色"里的运作模式——人守质量门、agent 干 80% 的活。是产品主张的说法,专用于命题语境。
@@ -130,7 +130,7 @@ _Avoid_: 把它当某个具体代码结构;与"交互式运行"混用。
 
 **读数 / Reading(原「观测」)**:
 一个真实数据点。MVP 分三类:**可回溯**的一个字都不存、每次现算(git 提交数、合入的 PR 数、star 数……);**不可回溯**的落进只追加的读数流水 `.bw/metrics/readings.jsonl`(绝不插值,一个读数=一个点);**手填**的也进流水、带「手填」徽记。判据是一句话:「今天能采到这个数,那么上周三那天的值现在还能算出来吗」。
-_Avoid_: 记录、log(读数是结构化数据点,不是日志文本)、埋点数据;观测(V3 旧名,正文统一用「读数」)。详见 [modules/健康推导](docs/modules/健康推导.md) 与 [modules/仓文件解析](docs/modules/仓文件解析.md)。
+_Avoid_: 记录、log(读数是结构化数据点,不是日志文本)、埋点数据;观测(V3 旧名,正文统一用「读数」)。详见 [modules/健康推导](docs/architecture.md) 与 [modules/仓文件解析](docs/architecture.md)。
 
 **指标 / Metric**:
 由读数派生出的、可与目标比较的度量(带目标值、比较符、黄区带)。定义本身(名字、目标值、采集方案)也有正本,见"指标正本"。
@@ -138,7 +138,7 @@ _Avoid_: 数据、统计值;不要和"读数"混用——读数是原料,指标�
 
 **指标正本 / Metrics Source of Truth**:
 一个项目的北极星 + 滞后指标 + 引领指标定义,写在仓里一份机读文件 `.bw/metrics.toml`(**只认 `schema_version = 2`**,读到旧格式整份拒收、不迁移),改指标和改代码一样走 MR 评审。buddy 本地不缓存定义,每次现读。MVP **不要中间连接器层**——一条指标直接指向一个脚本:起进程、传时间窗、读标准输出的 JSON,buddy 不认识被连的是什么系统;采集方式只有脚本和手填两种。
-_Avoid_: 绕开 MR 直接在界面里"定义"一条指标;把 V3 的 `.bw/connectors.toml` / `docs/buddy/standards/metrics.md` 当现行正本(那是 V3 的)。详见 [modules/仓文件解析](docs/modules/仓文件解析.md)。
+_Avoid_: 绕开 MR 直接在界面里"定义"一条指标;把 V3 的 `.bw/connectors.toml` / `docs/buddy/standards/metrics.md` 当现行正本(V3 已删,见 archive)。详见 [modules/仓文件解析](docs/architecture.md)。
 
 **业务指标 / 项目指标(两层分流)**:
 总览把指标分两层看:**业务指标**=用户自己的北极星/引领/滞后指标,点灯、参与健康上卷;**项目指标**=buddy 自动播种的代码仓统计(开放 Issue 数、已合入 MR 数、阶段完成),所有项目都有,只当现状数看——不点灯、不上卷。
@@ -236,7 +236,7 @@ _Avoid_: 总结、归档、沉淀(沉淀指整个复利过程,别专指这一步
 
 **技能 / Skill**:
 一篇可复用的做法说明,真实形态是一个**文件夹**(SKILL.md 正文 + 任意数量的支撑文件)。buddy 自带的技能正本 `include_str!` 编进二进制,开工时摊到本地资产目录供 agent 按需读;下次干同类活时按活挂的 workflow 注入对应剧本,用一次记一次(uses 按 workflow 标签分组现算)。
-_Avoid_: 文档、知识、SOP;把技能等同于它的 SKILL.md 正文(支撑文件也是它的一部分)。详见 [modules/系统提示词与渐进加载](docs/modules/系统提示词与渐进加载.md)。
+_Avoid_: 文档、知识、SOP;把技能等同于它的 SKILL.md 正文(支撑文件也是它的一部分)。详见 [modules/系统提示词与渐进加载](docs/architecture.md)。
 
 **注入 / Inject**:
 干活时按活挂的 workflow 把对应技能带进开工工具的上下文(提示词只放索引,正文让 agent 按需读,即渐进加载)。
@@ -254,7 +254,7 @@ _Avoid_: 全库按名匹配(谁先入库谁被注入,是修掉的旧病);隐式�
 
 **探活 / Probe**:
 对一个外部工具或远端真连一次、看通不通;探不通就一个字节都不写、如实回灰。「能真连的才叫连接」这条判据的具体动作。三种机制:候选路径 / 版本命令 / 套接字握手。
-_Avoid_: 把配置填好了当成连接通了;健康检查(探活是一次性动作,不是持续监控)。详见 [modules/远端与工具探活](docs/modules/远端与工具探活.md)。
+_Avoid_: 把配置填好了当成连接通了;健康检查(探活是一次性动作,不是持续监控)。详见 [modules/远端与工具探活](docs/architecture.md)。
 
 **产物 / Artifact**:
 运行真实产出的文件,分类登记(文档/代码/测试/脚本/配置/其他)。产物入仓约定见各模块"没建什么",未建如实。
@@ -266,7 +266,7 @@ _Avoid_: 假装真实、demo 数据不标注;和"手填 (Manual)"混——手填
 
 ### 工程操作词(仓库工作方式的行话)
 
-> 这一节收录的是"我们怎么干活"的词,不是产品概念。它们高频出现在 CLAUDE.md、plan/ 文档、commit message 和对话汇报里,却长期没有定义——本节补上。给用户写汇报时,优先用这些词条里的人话解释,而不是甩裸词。
+> 这一节收录的是"我们怎么干活"的词,不是产品概念。它们高频出现在 AGENTS.md、commit message 和对话汇报里,却长期没有定义——本节补上。给用户写汇报时,优先用这些词条里的人话解释,而不是甩裸词。
 
 **读回 / Read-back**:
 把一个陈述涉及的数字或状态,从远端 issue+标签(`gh` / `codehub-cli`)、git 历史(`git`)、仓文件(`cat .bw/...`)里**独立重新查出来**核对。MVP 本地零库,`sqlite3` 读回不适用(只有会话身份等运行时少量落本地表)。是「报告不代答」纪律的核心动作:任何"已完成/数字是 X"的说法都必须能读回。
@@ -285,11 +285,11 @@ _Avoid_: 在给人的正文里写 "settle-once"(说"绝不记两次");统计、�
 _Avoid_: 保存(口语)、sync。
 
 **台账 / Ledger**:
-持续追加的问题/任务登记表,通常带编号(如 plan/06 的「缺口台账」G1-G11/R1-R4)。只增不删:处理完标状态,不抹历史。
+持续追加的问题/任务登记表,通常带编号。只增不删:处理完标状态,不抹历史。
 _Avoid_: 清单(一次性勾完就扔的才叫清单)、backlog 混称。
 
-**遗留清单 / LEFTOVERS**:
-离「MVP 做完了」还差什么的唯一清单(`docs/LEFTOVERS.md`,全产品一份),每条带产生窗口、现象、未决点、处置。减负重构并入的冗余功能/结构债条目以「减负-N」编号也在这里。与「台账」是近亲:台账登记设计缺口,遗留清单收实践溢出物。
+**遗留清单 / LEFTOVERS**(已废):
+离「MVP 做完了」还差什么——不养第二份清单:每个模块设计的「没建什么」段记该模块的缺口,要做就派 subagent 逐个干(不集中登记)。原 `docs/LEFTOVERS.md` 已删,git 历史可查。
 _Avoid_: 散落在各设计文档里各记各的(已归拢,读遗留只看这一份)。
 
 **留痕 / Append-only record**:
@@ -317,7 +317,7 @@ _Avoid_: TODO(留口是结构性预留,不是待办注释);占位 UI 放假数�
 _Avoid_: 同步(对账有明确的正本方向,不是双向合并)。
 
 **指挥器 / Conductor script**:
-不开界面、直接调用内核命令走完某段完整流程的脚本或 example(如 `cargo run -p bw-app --example real_demo`,走自我标注替身、不碰真实开工工具)。用于 headless 验证和批量操作。
+不开界面、直接调用内核命令走完某段完整流程的脚本或 example(如 `cargo run -p bw-v4 --example real_demo_v4`,走自我标注替身、不碰真实开工工具)。用于 headless 验证和批量操作。
 _Avoid_: runner、driver;和「监理」混用(指挥器干活,监理盯着重试)。
 
 **监理 / Supervisor script**:
@@ -325,12 +325,12 @@ _Avoid_: runner、driver;和「监理」混用(指挥器干活,监理盯着重�
 _Avoid_: 重试循环(监理还负责判断状态、决定停不停)。
 
 **棒次 / 交接件 (Baton leg / Handoff doc)**:
-「棒次」=接力赛里的一棒,借指由一个会话(或一个人)完成的一段工作区间;「交接件」=写给下一棒的自足文档(`docs/archive/iterations/` 下的 HANDOFF),要求不读原对话也能接手。交接件写完即成历史档案,不描述现状。
+「棒次」=接力赛里的一棒,借指由一个会话(或一个人)完成的一段工作区间;「交接件」=写给下一棒的自足文档(历史 HANDOFF,见 v3 分支),要求不读原对话也能接手。交接件写完即成历史档案,不描述现状。
 _Avoid_: 把交接件当现状文档读;会议纪要。
 
 **窗口 / Delivery window**:
-产品化的交付切片单位:一个窗口只做自己申明范围内的活,内容必须来自真实实践,不越界替别的窗口做主。历史三窗口(W1 纳入项目 / W2 找指标·绑数据 / W3 总览重构)的设计事实源在 `docs/v1-prototype/`。
-_Avoid_: 与「批次」混用(窗口强调边界申明,批次只是时间分组);W 编号不查 `docs/code-schemes.md` 就用(W 字母已多次撞车)。
+产品化的交付切片单位:一个窗口只做自己申明范围内的活,内容必须来自真实实践,不越界替别的窗口做主。历史三窗口(W1 纳入项目 / W2 找指标·绑数据 / W3 总览重构,V3 期,见 v3 分支)。
+_Avoid_: 与「批次」混用(窗口强调边界申明,批次只是时间分组);W 编号已多次撞车,用前确认没撞。
 
 **穿刺 / 真人穿刺 (Piercing)**:
 用户拿一个真实项目从头走一遍产品,把撞到的问题按用户口径原样记下,再定位根因、出修复设计。与验收流(考卷)互补:考卷验的是写死的剧本,穿刺验的是真人真项目撞出来的东西。产出是带编号的反馈清单与决议。
@@ -358,4 +358,4 @@ _Avoid_: 快捷方式;URL scheme(深链走环境变量,不走 URL)。
 
 ---
 
-_命名冲突的收敛决策与代码改名台账见 [`docs/adr/`](docs/adr/);任务代号各系列的索引见 [`docs/code-schemes.md`](docs/code-schemes.md);模块设计事实源见 [`DESIGN.md`](DESIGN.md) 指路的 [`docs/modules/`](docs/modules/)。_
+_命名冲突的收敛决策与代码改名台账见 [`docs/adr/`](docs/adr/);模块设计见 [`docs/architecture.md`](docs/architecture.md)([`DESIGN.md`](DESIGN.md) 指路)。_

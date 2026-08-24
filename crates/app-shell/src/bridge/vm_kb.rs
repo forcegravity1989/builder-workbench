@@ -249,7 +249,7 @@ pub(super) async fn build_assets(usage: &[(String, u32)], ws: &Path) -> AssetsVm
 
     AssetsVm {
         skills,
-        // V4 还没有蒸馏这颗按钮(见 docs/LEFTOVERS.md V4B-6),所以这里恒空。
+        // V4 还没有蒸馏这颗按钮,所以这里恒空。
         // 不放占位数据。
         distilled: Vec::new(),
         artifacts,

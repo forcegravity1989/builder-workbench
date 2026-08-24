@@ -28,37 +28,17 @@ uuid = { version = "1", default-features = false, features = ["serde"] }
 time = { version = "0.3", default-features = false, features = ["serde"] }
 thiserror = "1"
 
-# --- Runtime deps (native shells: bw-engine / bw-store / bw-app). Not in the
-#     wasm32 keepalive set — the web swaps the Store impl + executor (Tier E). ---
+# --- Runtime deps (tokio async 运行时; toml 解析 .bw/*.toml) ---
 tokio = { version = "1", features = ["rt", "rt-multi-thread", "macros", "sync", "time"] }
 async-trait = "0.1"
-sqlx = { version = "0.8", default-features = false, features = ["runtime-tokio", "sqlite"] }
-# C6 (plan/13 D5): `.bw/metrics.toml` parser (bw-engine only — file IO stays
-# out of bw-core). Already present transitively (system-deps → dioxus
-# desktop's build chain) at 0.8.x; pinning the same major keeps one copy.
 toml = "0.8"
-# T2 (plan/12 §2): real YAML frontmatter parsing for SKILL.md import — a
-# proper parser (not a hand-rolled line scanner) so quotes/multi-line
-# descriptions/unknown fields (disable-model-invocation, …) are handled
-# correctly instead of guessed at. bw-app only (native, IO-doing crate) —
-# never touches the wasm32-checked kernel crates.
-serde_yaml = "0.9"
 
-# --- Internal crates (path deps) ---
-# bw-core defaults to NO id-generation (no RNG) so pure consumers (ui) stay
-# wasm-clean; native crates that mint ids opt in with features = ["idgen"].
-bw-core = { path = "crates/bw-core", default-features = false }
-bw-engine = { path = "crates/bw-engine" }
-bw-store = { path = "crates/bw-store" }
-bw-app = { path = "crates/bw-app" }
+# --- Internal crates (path deps; V4 三 crate,对 V3 零依赖) ---
 bw-v4 = { path = "crates/bw-v4" }
 v4-engine = { path = "crates/v4-engine" }
 app-shell = { path = "crates/app-shell" }
-ui = { path = "crates/ui" }
 
-# --- UI stack: hard-pinned (plan 00 §8 risk-2). 0.8.0-alpha is on the way and
-#     would be a breaking change; views live only in app-desktop so a break is
-#     contained. Bump deliberately, never via `^`. ---
+# --- UI stack: hard-pinned dioxus 0.7.9(0.8.0-alpha 会破坏,手动 bump 不走 ^) ---
 dioxus = "=0.7.9"
 
 # Smaller / faster release binary for the desktop shell.

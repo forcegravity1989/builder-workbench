@@ -171,7 +171,7 @@ fn is_spawnable_env_key(key: &str) -> bool {
     !key.is_empty() && !key.contains('=') && !key.contains('\0')
 }
 
-/// **试点期的临时后门,用完删** —— 登记在 `docs/LEFTOVERS.md` 的「试点-9」。
+/// **试点期的临时后门,用完删**。
 ///
 /// 设了 `BW_KEEP_ANTHROPIC_ENV`(任意非空值)就**不剥** [`VENDOR_ENV`] 那三个,
 /// 把人自己配的厂商端点原样透传给子 `claude`;`CLAUDE…` 那一族照剥不误
@@ -755,7 +755,7 @@ mod tests {
             std::process::id(),
             // 进程内自增,不用时间戳:并行跑的两个测试可能在同一纳秒取到同一个
             // 名字,于是共用一个临时目录、互相看见对方写的文件(这就是
-            // LEFTOVERS 里「减负-21」那条偶发失败的根因)。
+            // 偶发失败的根因)。
             NEXT.fetch_add(1, std::sync::atomic::Ordering::Relaxed)
         ));
         std::fs::create_dir_all(&dir).unwrap();
