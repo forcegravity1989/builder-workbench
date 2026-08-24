@@ -1,17 +1,17 @@
 [workspace]
 resolver = "2"
 members = [
-    "crates/bw-v4",
+    "crates/bw",
     "crates/app-shell",
-    "crates/v4-engine",
+    "crates/bw-engine",
 ]
 # `default-members` = the headless kernel + capability base. Routine
 # `cargo test` / `cargo check` stay UI-free and fast — they never pull the
 # Dioxus/wry dependency tree. Build the desktop shell explicitly with
-# `cargo build -p app-shell` (bin `bw-v4-dev`).
+# `cargo build -p app-shell` (bin `bw-dev`).
 default-members = [
-    "crates/bw-v4",
-    "crates/v4-engine",
+    "crates/bw",
+    "crates/bw-engine",
 ]
 
 [workspace.package]
@@ -34,8 +34,8 @@ async-trait = "0.1"
 toml = "0.8"
 
 # --- Internal crates (path deps; V4 三 crate,对 V3 零依赖) ---
-bw-v4 = { path = "crates/bw-v4" }
-v4-engine = { path = "crates/v4-engine" }
+bw = { path = "crates/bw" }
+bw-engine = { path = "crates/bw-engine" }
 app-shell = { path = "crates/app-shell" }
 
 # --- UI stack: hard-pinned dioxus 0.7.9(0.8.0-alpha 会破坏,手动 bump 不走 ^) ---

@@ -8,5 +8,5 @@ pub const REQUIRES: &[&str] = &["本机已装 claude", "一个真实的工作区
 
 /// 本机探到没探到。探不到就返回 `None`,不猜一个路径出来。
 pub fn detect() -> Option<String> {
-    v4_engine::resolve_claude_binary(None)
+    bw_engine::resolve_claude_binary(None)
 }

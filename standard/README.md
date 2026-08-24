@@ -3,7 +3,7 @@
 <!-- 30 秒导读:这是 standard/ 目录本身的说明文件,给三种人看——复核规范
      设计的用户、维护铺底代码的会话、以后要往这里提 PR 的同事。现在作数:
      这里是 V4「规范铺底」用的模板正本,代码侧已经在读它、铺它了
-     (`crates/bw-v4/src/standard/`)。 -->
+     (`crates/bw/src/standard/`)。 -->
 
 `standard/` 是 Builders' Workbench(buddy)接入一个项目时,往那个项目仓里
 铺的那一整套骨架文件的**正本**。项目仓里看到的 `.bw/PROJECT.md`、
@@ -83,7 +83,7 @@ buddy 每个环节挑一个最好的默认;要从实践里长出 buddy 自己的
 二进制,开工时摊在 **buddy 自己的资产目录**,**不复制进用户的仓** —— 用户
 `.gitignore` 怎么写不该由 buddy 决定,而每个项目复制一份 buddy 自带的东西也
 没有道理。系统提示词里只给名字 + 一句话 + 路径,正文按需读
-(见 `crates/bw-v4/src/standard/skills.rs` + `system_prompt.rs`)。
+(见 `crates/bw/src/standard/skills.rs` + `system_prompt.rs`)。
 
 `vendor/` 已 vendor 进来两家(mattpocock-skills、mohit-pm-claude-skills)的
 原样副本,但**打包机制未实现**——buddy 还没把它们摊进自己的资产目录、注入

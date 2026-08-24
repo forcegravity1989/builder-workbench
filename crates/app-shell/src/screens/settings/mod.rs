@@ -16,8 +16,8 @@
 use crate::bridge::Bridge;
 use crate::chrome::light_dot;
 use crate::vm::{ToolProbeVm, Vm};
-use bw_v4::command::Command;
-use bw_v4::Signal as HealthSignal;
+use bw::command::Command;
+use bw::Signal as HealthSignal;
 use dioxus::prelude::*;
 
 #[component]

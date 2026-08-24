@@ -23,8 +23,8 @@
 
 use crate::bridge::{Bridge, Panel, PanelNav, Req};
 use crate::vm::{CardItemVm, ProjectVm};
-use bw_v4::command::Command;
-use bw_v4::model::IssueId;
+use bw::command::Command;
+use bw::model::IssueId;
 use dioxus::prelude::*;
 
 #[component]

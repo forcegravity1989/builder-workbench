@@ -4,7 +4,7 @@
 > 子目录,里面一份 `SKILL.md`。开工时 buddy 把这些摊到**自己的资产目录**(不复制进用
 > 户的仓),按活挂的 `workflow` 挑出对应那份,只把**名字 + 一句话 + 完整路径**写进
 > agent 的系统提示词,正文让 agent 自己按需读 —— 渐进式加载,见
-> `crates/bw-v4/src/standard/skills.rs`。给接手技能这块的人看。**现在作数**
+> `crates/bw/src/standard/skills.rs`。给接手技能这块的人看。**现在作数**
 > (2026-08-21 收敛:此前散在 `docs/skills/`(已删,见 v3 分支)与 `standard/06-defaults/ops/` 两处、
 > 还用目录层级表达「谁调用谁」;现在从属关系写在正文里,目录不表达任何结构)。
 

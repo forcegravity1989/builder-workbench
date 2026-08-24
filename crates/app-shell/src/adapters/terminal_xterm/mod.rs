@@ -12,8 +12,8 @@
 //! 借了什么、没借什么见 `README.md`。
 
 use crate::bridge::Bridge;
-use bw_v4::command::Command;
-use bw_v4::model::ConversationId;
+use bw::command::Command;
+use bw::model::ConversationId;
 use dioxus::prelude::*;
 use std::time::Duration;
 

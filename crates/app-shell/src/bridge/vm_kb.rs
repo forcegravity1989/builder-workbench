@@ -4,7 +4,7 @@
 //! 都是打开那一刻现扫仓目录、现走 git、现起子进程得来的。
 
 use crate::vm::*;
-use bw_v4::repo::managed_file;
+use bw::repo::managed_file;
 use std::path::Path;
 
 /// 知识树里周计划文件所在目录(刀6:这层不再解析它们,知识树只列仓里存在的
@@ -207,7 +207,7 @@ pub(super) async fn build_codegraph(ws: &Path) -> CodeGraphVm {
 pub(super) async fn build_assets(usage: &[(String, u32)], ws: &Path) -> AssetsVm {
     let skills = super::vm_panels::skill_list(ws, usage);
 
-    let artifacts = bw_v4::git::artifacts(ws, 200)
+    let artifacts = bw::git::artifacts(ws, 200)
         .await
         .unwrap_or_default()
         .into_iter()
@@ -221,7 +221,7 @@ pub(super) async fn build_assets(usage: &[(String, u32)], ws: &Path) -> AssetsVm
 
     // 发版历史从 git 标签取(刀6:不再读 .bw/releases.md)。新的在前
     // (tags_with_dates 按 creatordate 升序,rev())。note / 包含的活如实空。
-    let releases: Vec<ReleaseVm> = bw_v4::git::tags_with_dates(ws)
+    let releases: Vec<ReleaseVm> = bw::git::tags_with_dates(ws)
         .await
         .into_iter()
         .rev()
@@ -234,7 +234,7 @@ pub(super) async fn build_assets(usage: &[(String, u32)], ws: &Path) -> AssetsVm
         })
         .collect();
 
-    let (repo_stats, error) = match v4_engine::evidence::collect(&ws.display().to_string()).await {
+    let (repo_stats, error) = match bw_engine::evidence::collect(&ws.display().to_string()).await {
         Ok(e) => (
             vec![
                 ("提交数".to_string(), e.commit_count.to_string()),

@@ -7,8 +7,8 @@
 //! 深链(启动即打读回证据,和旧壳同一套机制):
 //!
 //! ```bash
-//! BW_DB=<db> BW_OPEN=<项目> BW_PANEL=overview|plan|session|notify|config|kb ./bw-v4-dev
-//! BW_VIEW=onboard|settings ./bw-v4-dev
+//! BW_DB=<db> BW_OPEN=<项目> BW_PANEL=overview|plan|session|notify|config|kb ./bw-dev
+//! BW_VIEW=onboard|settings ./bw-dev
 //! ```
 
 #![forbid(unsafe_code)]
@@ -28,7 +28,7 @@ use vm::SessionTab;
 
 fn main() {
     // 起任何线程之前先把本机时区定住 —— 周是按本机时区算的。
-    bw_v4::isoweek::init_local_offset();
+    bw::isoweek::init_local_offset();
     let deep_link = bridge::read_deep_link();
     let builder = dioxus::desktop::WindowBuilder::new()
         .with_title("Builders' Workbench")
@@ -100,7 +100,7 @@ fn Root() -> Element {
     // **顶层屏是外壳自己的一个信号,内核不知道它存在**:接入完内核把 `open`
     // 设上了,项目其实已经在下面开好了,可人眼前还是那张接入卡 —— 看起来就像
     // 「点了没跳转」。这个 effect 就是把这两边接起来的那根线。
-    let mut last_open = use_signal(|| None::<bw_v4::model::ProjectId>);
+    let mut last_open = use_signal(|| None::<bw::model::ProjectId>);
     use_effect(move || {
         let now = vm.read().open.as_ref().map(|p| p.id);
         // 用 peek 读上一次的值:这里只是拿它比一比,不该因此再订阅一遍自己。

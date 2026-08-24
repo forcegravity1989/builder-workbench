@@ -10,7 +10,7 @@
 //! 别再发明第二种。
 //!
 //! 列表是**真的** —— `gh repo list` / `codehub-cli` 现问(两个平台的 `list_repos`
-//! 在 `v4-engine` 里本来就有,V3 期就在用,见 v3 分支)。问不出来就把 CLI 的原话摆出来,绝不
+//! 在 `bw-engine` 里本来就有,V3 期就在用,见 v3 分支)。问不出来就把 CLI 的原话摆出来,绝不
 //! 拿假数据顶上;高保真里那份 `REPO_LIST` 是工厂造的,不抄。
 //!
 //! 四个基础字段全部落仓文件(`PROJECT.md` 与 `.bw/project.toml`),库里只记路径
@@ -25,9 +25,9 @@
 use crate::bridge::{Bridge, Req};
 use crate::chrome::{light_dot, progress_log};
 use crate::vm::{RepoProbe, RepoRowVm, ToolProbeVm, Vm};
-use bw_v4::app::ProgressLine;
-use bw_v4::command::{Command, ProjectIntent, RemoteRef};
-use bw_v4::Signal as HealthSignal;
+use bw::app::ProgressLine;
+use bw::command::{Command, ProjectIntent, RemoteRef};
+use bw::Signal as HealthSignal;
 use dioxus::prelude::*;
 
 /// 下拉里最多画几行。检索是在**已经拉下来的那批**里过滤,不是再去问平台。

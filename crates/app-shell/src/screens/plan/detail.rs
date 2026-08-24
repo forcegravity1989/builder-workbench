@@ -8,8 +8,8 @@
 use super::kanban::PendingMove;
 use crate::bridge::{Bridge, Panel, PanelNav, Req};
 use crate::vm::ProjectVm;
-use bw_v4::command::Command;
-use bw_v4::model::{IssueId, IssueStatus};
+use bw::command::Command;
+use bw::model::{IssueId, IssueStatus};
 use dioxus::prelude::*;
 
 /// **按 id 从最新的 ViewModel 里现查**,不拿点卡片那一刻的快照 —— 拿快照的

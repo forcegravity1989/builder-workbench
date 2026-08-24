@@ -16,8 +16,8 @@
 
 use crate::bridge::Bridge;
 use crate::vm::{MappingVm, ProjectVm};
-use bw_v4::command::Command;
-use bw_v4::model::category_from_key;
+use bw::command::Command;
+use bw::model::category_from_key;
 use dioxus::prelude::*;
 
 #[component]
@@ -82,7 +82,7 @@ fn mapping_block(p: &ProjectVm, bridge: &Bridge) -> Element {
 /// 渲染的 —— 做成普通函数的话,hook 数量会随映射条数变,行与行的输入框内容
 /// 会串位(改 A 类别却存到 B 类别上)。
 #[component]
-fn MappingRow(m: MappingVm, pid: bw_v4::model::ProjectId, bridge: Bridge) -> Element {
+fn MappingRow(m: MappingVm, pid: bw::model::ProjectId, bridge: Bridge) -> Element {
     let mut tool = use_signal(|| m.tool.clone());
     let mut workflow = use_signal(|| m.workflow.clone());
     let b = bridge.clone();
@@ -331,7 +331,7 @@ fn StandardBlock(p: ProjectVm, bridge: Bridge) -> Element {
     let mut version = use_signal(|| p.card.current_version_raw.clone());
     // 「规范铺底」要写仓、提交、推分支、开 MR —— 十几秒起步。不报进度的话
     // 按下去界面一动不动,人会以为没点上。和接入屏同一条通道、同一种画法。
-    let mut log = use_signal(Vec::<bw_v4::app::ProgressLine>::new);
+    let mut log = use_signal(Vec::<bw::app::ProgressLine>::new);
     let prog = bridge.progress.clone();
     use_future(move || {
         let mut rx = prog.subscribe();
@@ -340,7 +340,7 @@ fn StandardBlock(p: ProjectVm, bridge: Bridge) -> Element {
                 let mut rows = log.write();
                 match rows
                     .iter()
-                    .position(|r: &bw_v4::app::ProgressLine| r.step == line.step)
+                    .position(|r: &bw::app::ProgressLine| r.step == line.step)
                 {
                     Some(i) => rows[i] = line,
                     None => rows.push(line),

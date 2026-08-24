@@ -5,7 +5,7 @@
 //!
 //! 这一层不算任何东西:每个字段都是内核那边现算好塞进来的。壳只渲染和转发意图。
 
-use bw_v4::model::{ConversationId, IssueId, IssueStatus, ProjectId, Signal};
+use bw::model::{ConversationId, IssueId, IssueStatus, ProjectId, Signal};
 
 #[derive(Clone, Debug, Default, PartialEq)]
 pub struct Vm {

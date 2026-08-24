@@ -45,14 +45,14 @@ checksum = "2a4385e2e34eb35d6b3efe798b9eb88096925d87726c0798709bf56d9ed84af3"
 name = "app-shell"
 version = "0.0.0"
 dependencies = [
- "bw-v4",
+ "bw",
+ "bw-engine",
  "dioxus",
  "pulldown-cmark",
  "serde_json",
  "time",
  "tokio",
  "uuid",
- "v4-engine",
 ]
 
 [[package]]
@@ -243,10 +243,11 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "72f5acc6cb2ba439de613abc23857ec3d78374d8ed5ac84e9d11336e87da8649"
 
 [[package]]
-name = "bw-v4"
+name = "bw"
 version = "0.0.0"
 dependencies = [
  "async-trait",
+ "bw-engine",
  "serde",
  "serde_json",
  "sha2",
@@ -255,7 +256,22 @@ dependencies = [
  "tokio",
  "toml",
  "uuid",
- "v4-engine",
+]
+
+[[package]]
+name = "bw-engine"
+version = "0.0.0"
+dependencies = [
+ "async-trait",
+ "conpty-oxide",
+ "nix",
+ "portable-pty",
+ "serde",
+ "serde_json",
+ "thiserror 1.0.69",
+ "time",
+ "tokio",
+ "uuid",
 ]
 
 [[package]]
@@ -4719,22 +4735,6 @@ dependencies = [
  "js-sys",
  "serde_core",
  "wasm-bindgen",
-]
-
-[[package]]
-name = "v4-engine"
-version = "0.0.0"
-dependencies = [
- "async-trait",
- "conpty-oxide",
- "nix",
- "portable-pty",
- "serde",
- "serde_json",
- "thiserror 1.0.69",
- "time",
- "tokio",
- "uuid",
 ]
 
 [[package]]

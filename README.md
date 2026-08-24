@@ -14,12 +14,12 @@
 
 ```bash
 # 需要 Rust 1.82+;桌面壳另需 Dioxus 0.7 的系统依赖(macOS 自带 WebKit,Windows 用 WebView2)
-cargo run -p app-shell                      # 启 buddy MVP 桌面壳(bin 名 bw-v4-dev,本地零数据库)
-BW_OPEN=<项目名> BW_PANEL=overview|plan|session|notify|config|kb ./target/debug/bw-v4-dev
+cargo run -p app-shell                      # 启 buddy MVP 桌面壳(bin 名 bw-dev,本地零数据库)
+BW_OPEN=<项目名> BW_PANEL=overview|plan|session|notify|config|kb ./target/debug/bw-dev
                                             # 深链直达屏;stderr [BW_OPEN]=真的渲染到了
 
 # 不开界面证明内嵌终端在这台机器上能跑(所有平台同一条路径,不碰 claude/网关):
-cargo run -p v4-engine --example pty_smoke
+cargo run -p bw-engine --example pty_smoke
 ```
 
 ▶跑 需要本机装好 `claude` CLI(`BW_CLAUDE_BIN` 可指定路径)。真跑受 claude 信任对话框与网关状态影响,那不是 BW 的门禁。
@@ -27,7 +27,7 @@ cargo run -p v4-engine --example pty_smoke
 ## 仓库结构
 
 ```
-crates/   bw-v4(内核)· v4-engine(底座)· app-shell(壳,bin bw-v4-dev)
+crates/   bw(内核)· bw-engine(底座)· app-shell(壳,bin bw-dev)
 standard/  规范正本(铺底 `templates/` + 系统提示词 `system-prompt/` + 运作剧本 `skills/` 4 份 + 业界 workflow `vendor/` mattpocock/mohit)
 docs/      文档地图 + architecture(设计正本)+ guide(产品指南)+ adr + hifi
 scripts/   门禁脚本(guard-*)+ codegraph 联调

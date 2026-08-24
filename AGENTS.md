@@ -6,21 +6,21 @@
 
 单人构建者的 Rust 原生桌面工作台(Dioxus 0.7 / wry WebView,macOS + Windows)。产品命题见 [`README.md`](README.md);设计正本见 [`docs/architecture.md`](docs/architecture.md)([`DESIGN.md`](DESIGN.md) 指路);领域词表见 [`CONTEXT.md`](CONTEXT.md)。三个名字一件东西:仓库真名 **loop-buddy**、产品名 **Builders' Workbench(BW)**、产品里 AI 队友自称 **buddy**。
 
-> **V3 已删**:本仓产品线是 buddy MVP(内核 `crates/bw-v4` + 底座 `crates/v4-engine` + 壳 `crates/app-shell`)。V3 的六 crate 与 V3 编译资产已于 2026-08-24 删除——全量在 `v3` 分支找回。别再提 V3 概念,设计看 [`docs/architecture.md`](docs/architecture.md)。
+> **V3 已删**:本仓产品线是 buddy MVP(内核 `crates/bw` + 底座 `crates/bw-engine` + 壳 `crates/app-shell`)。V3 的六 crate 与 V3 编译资产已于 2026-08-24 删除——全量在 `v3` 分支找回。别再提 V3 概念,设计看 [`docs/architecture.md`](docs/architecture.md)。
 
 ## 语言和构建
 
-Rust 1.82+,cargo workspace。桌面壳另需 Dioxus 0.7 的系统依赖(macOS 自带 WebKit,Windows 用 WebView2)。`#![forbid(unsafe_code)]` 是 `v4-engine` 的规矩。跨会话只认本仓的 `AGENTS.md` + `CONTEXT.md` + `docs/` + `CHANGELOG.md` + `DESIGN.md`,不凭上一会话口头结论改代码。
+Rust 1.82+,cargo workspace。桌面壳另需 Dioxus 0.7 的系统依赖(macOS 自带 WebKit,Windows 用 WebView2)。`#![forbid(unsafe_code)]` 是 `bw-engine` 的规矩。跨会话只认本仓的 `AGENTS.md` + `CONTEXT.md` + `docs/` + `CHANGELOG.md` + `DESIGN.md`,不凭上一会话口头结论改代码。
 
 ## 怎么建 / 怎么跑 / 怎么测
 
 ```bash
-cargo check -p bw-v4 -p v4-engine            # 日常最快(内核+底座,不编 Dioxus)
-cargo run -p app-shell                      # 启 buddy MVP 桌面壳(bin 名 bw-v4-dev)
-BW_OPEN=<项目名> BW_PANEL=overview|plan|session|notify|config|kb ./target/debug/bw-v4-dev
+cargo check -p bw -p bw-engine            # 日常最快(内核+底座,不编 Dioxus)
+cargo run -p app-shell                      # 启 buddy MVP 桌面壳(bin 名 bw-dev)
+BW_OPEN=<项目名> BW_PANEL=overview|plan|session|notify|config|kb ./target/debug/bw-dev
                                             # 深链直达屏;stderr [BW_OPEN]=真的渲染到了
-BW_VIEW=onboard|settings ./target/debug/bw-v4-dev   # 顶层屏深链
-cargo run -p v4-engine --example pty_smoke [-- --teardown|-- --abort]  # PTY 地基烟测(不碰 claude/网关)
+BW_VIEW=onboard|settings ./target/debug/bw-dev   # 顶层屏深链
+cargo run -p bw-engine --example pty_smoke [-- --teardown|-- --abort]  # PTY 地基烟测(不碰 claude/网关)
 cargo test --workspace                                # CI 也跑:现存内联测试必须过
 ```
 
@@ -44,10 +44,10 @@ cargo test --workspace
 ## 顶层目录导览
 
 ```
-crates/   bw-v4(MVP 内核:本地零库+仓文件解析+现算推导+Command/Event)
-          v4-engine(MVP 底座:交互式 claude+PTY+worktree+git+codehub/github 远端)
-          app-shell(MVP 壳:九屏+主题+内核桥+适配模块,bin bw-v4-dev)
-standard/  buddy 推给被管项目的规范正本(include_str! 进 bw-v4):铺底 `templates/` + 系统提示词 `system-prompt/`(SYSTEM.md.tmpl+references)+ 自维护运作剧本 `skills/` 4 份 + 业界 workflow `vendor/`(mattpocock/mohit,给默认 workflow 打包)
+crates/   bw(MVP 内核:本地零库+仓文件解析+现算推导+Command/Event)
+          bw-engine(MVP 底座:交互式 claude+PTY+worktree+git+codehub/github 远端)
+          app-shell(MVP 壳:九屏+主题+内核桥+适配模块,bin bw-dev)
+standard/  buddy 推给被管项目的规范正本(include_str! 进 bw):铺底 `templates/` + 系统提示词 `system-prompt/`(SYSTEM.md.tmpl+references)+ 自维护运作剧本 `skills/` 4 份 + 业界 workflow `vendor/`(mattpocock/mohit,给默认 workflow 打包)
 docs/      architecture(设计正本)+ guide(产品指南)+ adr + hifi + README(地图)
 scripts/   门禁脚本(guard-*)+ codegraph 联调
 .bw/       buddy 自己作为被管项目的资产(PROJECT.md/metrics.toml/issue-policy.toml/…)

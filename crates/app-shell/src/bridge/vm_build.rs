@@ -5,10 +5,10 @@
 //! 填一个 0 或者一个假名字。
 
 use crate::vm::*;
-use bw_v4::app::App;
-use bw_v4::command::Event;
-use bw_v4::model::{IssueStatus, Project, ProjectId};
-use bw_v4::repo::{issue_policy_file, project_file};
+use bw::app::App;
+use bw::command::Event;
+use bw::model::{IssueStatus, Project, ProjectId};
+use bw::repo::{issue_policy_file, project_file};
 
 use super::vm_derive::{build_card_mr, build_notify_events, build_ops, build_week_counts};
 use super::vm_kb::build_kb;
@@ -32,7 +32,7 @@ pub(super) fn tool_label(tool: &str) -> &str {
 /// 「退回默认值」本身没问题,**不说话**才是问题。
 pub(super) fn read_or_warn<T>(
     what: &str,
-    r: Result<Option<T>, bw_v4::repo::RepoFileError>,
+    r: Result<Option<T>, bw::repo::RepoFileError>,
     warnings: &mut Vec<String>,
 ) -> Option<T> {
     match r {
@@ -59,9 +59,9 @@ pub struct UiState {
     pub pending_drafts: Option<(String, Vec<String>)>,
     /// 会话屏选中哪个会话、开着哪个页签、展开了哪些目录、中栏开着哪个文件。
     /// 纯导航状态,一律不进库。
-    pub session_open: Option<bw_v4::model::IssueId>,
+    pub session_open: Option<bw::model::IssueId>,
     /// 计划屏详情抽屉开着哪张活。纯导航状态,不进库。
-    pub selected_issue: Option<bw_v4::model::IssueId>,
+    pub selected_issue: Option<bw::model::IssueId>,
     pub session_tab: crate::vm::SessionTab,
     pub expanded_dirs: Vec<String>,
     pub open_file: String,
@@ -77,7 +77,7 @@ pub struct UiState {
     pub repo_stats: Option<crate::vm::RepoStatsVm>,
     /// 上一次「采一次指标」采到的东西。同理:起脚本要几百毫秒到几秒,只在人
     /// 点那一下才跑。**空 = 还没采过**,不是「采到的是 0」。
-    pub metrics: Vec<bw_v4::app::collect::MetricReadout>,
+    pub metrics: Vec<bw::app::collect::MetricReadout>,
     /// 会话屏那块「这次开工喂了什么」。`None` = 面板关着。
     pub briefing: Option<String>,
     pub data_dir: String,
@@ -89,7 +89,7 @@ pub struct UiState {
     /// 复用,免得每重拼一次 ViewModel 都打 codehub-cli/gh)。键是 IssueId(含项目
     /// id,跨项目不撞);值 0 = 查过了、没有开着的 MR。issue 离开 inreview 后这条
     /// 留着也无害(只有 inreview 的活读它)。
-    pub mr_cache: std::collections::HashMap<bw_v4::model::IssueId, u32>,
+    pub mr_cache: std::collections::HashMap<bw::model::IssueId, u32>,
 }
 
 /// 深链按 slug 找,找不到再按显示名找。
@@ -234,7 +234,7 @@ fn primary_note(events: &[Event]) -> Option<String> {
             note,
             ..
         } => {
-            let label = bw_v4::chat::event_label(event_type);
+            let label = bw::chat::event_label(event_type);
             if *ok {
                 format!("已发到项目群:{label}")
             } else {
@@ -314,7 +314,7 @@ pub async fn build(app: &App, ui: &mut UiState) -> Vm {
             &mut warnings,
         )
         .unwrap_or_default();
-        let week = bw_v4::isoweek::current_week();
+        let week = bw::isoweek::current_week();
         // 每项目只起一次 codehub-cli:issues 拿一次,再借给下面的纯内存过滤。
         // 失败不吞(刀3-fix):以前 `unwrap_or_default()` 把 codehub 抖一下整屏
         // 蒸发成空;现在挂到 warnings,UI 显式横幅「读 issue 失败」,活用空数组
@@ -326,14 +326,14 @@ pub async fn build(app: &App, ui: &mut UiState) -> Vm {
                 Vec::new()
             }
         };
-        let in_week = bw_v4::app::issues_in_week(&issues, &week);
+        let in_week = bw::app::issues_in_week(&issues, &week);
         // 未读 = 评审中的活有几张。这个数是现算的,库里没有未读表
         // (MVP 不再按 seen_at 过滤:pr_number/updated_at 是 lossy)。
-        let unread = bw_v4::app::count_unseen(&issues);
+        let unread = bw::app::count_unseen(&issues);
         // 周目标:本周 ops① issue 在 = 有目标(刀6:不再读周计划文件)。
         // goal 正文先空 —— 以后从 ops① issue 评论里取;现在用一个标记说清
         // 「已开工、目标正文待填」,免得卡片显示「还没定」而 ops① 明明在跑。
-        let ops1_title = bw_v4::app::ops1_title(&week);
+        let ops1_title = bw::app::ops1_title(&week);
         let has_goal = issues
             .iter()
             .any(|i| i.title == ops1_title && i.status != IssueStatus::Done);
@@ -344,7 +344,7 @@ pub async fn build(app: &App, ui: &mut UiState) -> Vm {
         };
         // 上次交付 = 最近一个 git 标签的提交日期 + tag(刀6:不再读
         // .bw/releases.md)。tags_with_dates 按 creatordate 升序,最后一个 = 最新。
-        let last_delivery = bw_v4::git::tags_with_dates(&ws)
+        let last_delivery = bw::git::tags_with_dates(&ws)
             .await
             .into_iter()
             .last()
@@ -392,7 +392,7 @@ pub async fn build(app: &App, ui: &mut UiState) -> Vm {
         settings: SettingsVm {
             workspaces_root: ui.workspaces_root.clone(),
             data_dir: ui.data_dir.clone(),
-            claude_binary: v4_engine::resolve_claude_binary(None),
+            claude_binary: bw_engine::resolve_claude_binary(None),
         },
         note: ui.note.clone(),
         note_seq: ui.note_seq,
@@ -415,21 +415,21 @@ pub(super) async fn probe_env() -> Vec<ToolProbeVm> {
     //
     // 六项各走各的真实探活:能在 `PATH` 里当场找出来的(claude / cursor-agent /
     // codehub-cli / gh / welink-cli)走 `which_on_path`;Open Design 是本机网页
-    // 内嵌类,走命名管道握手取 loopback URL(`v4_engine::open_design`)。绿/红
+    // 内嵌类,走命名管道握手取 loopback URL(`bw_engine::open_design`)。绿/红
     // 都是真的;探不到就红,不是灰——灰只留给「这工具压根没接」。
     let claude = crate::adapters::claude_cli::detect();
-    let cursor = v4_engine::which_on_path("cursor-agent");
+    let cursor = bw_engine::which_on_path("cursor-agent");
     // **探的名字必须和真起的进程一模一样**:`codehub.rs` 里 8 处 shell-out 全是
     // `codehub-cli`。探 `codehub`、起 `codehub-cli`,两边对不上时这一格给的答案
     // 就是错的 —— 装了报红,或者更糟:机器上恰好有个叫 `codehub` 的别名,这格
     // 报绿而真正要起的 `codehub-cli` 根本不在。
-    let codehub = v4_engine::which_on_path("codehub-cli");
-    let gh = v4_engine::which_on_path("gh");
+    let codehub = bw_engine::which_on_path("codehub-cli");
+    let gh = bw_engine::which_on_path("gh");
     // welink-cli 是 npm 的 `.cmd` shim,`which_on_path` 认 PATHEXT(含 .CMD)能找到。
     // 这里只探「装没装」——登录态要起子进程(`welink-cli auth status`),那是按
     // 群号的 probe(发测试消息)的事,不在环境条这儿做。
-    let welink = v4_engine::which_on_path("welink-cli");
-    let od_url = v4_engine::open_design::discover_web_url().await;
+    let welink = bw_engine::which_on_path("welink-cli");
+    let od_url = bw_engine::open_design::discover_web_url().await;
     vec![
         ToolProbeVm {
             name: "claude_cli".into(),
@@ -490,10 +490,10 @@ pub(super) async fn probe_env() -> Vec<ToolProbeVm> {
 /// 非在审的活不查(没 MR 要看);查失败按 0(不显),不崩。
 async fn fill_pr_numbers(
     project: &Project,
-    issues: &mut [bw_v4::Issue],
-    mr_cache: &mut std::collections::HashMap<bw_v4::model::IssueId, u32>,
+    issues: &mut [bw::Issue],
+    mr_cache: &mut std::collections::HashMap<bw::model::IssueId, u32>,
 ) {
-    let Ok(remote) = v4_engine::remote::Remote::for_project(
+    let Ok(remote) = bw_engine::remote::Remote::for_project(
         &project.provider,
         &project.remote_host,
         &project.remote_path,
@@ -508,7 +508,7 @@ async fn fill_pr_numbers(
             i.pr_number = pr;
             continue;
         }
-        let branch = v4_engine::github::issue_branch(i.number);
+        let branch = bw_engine::github::issue_branch(i.number);
         let pr = match remote.open_mr_for_branch(&branch).await {
             Ok(Some(n)) => n,
             // 查不成 / 没开着的 MR —— 0,不显 MR(如实,不假装)。
@@ -550,7 +550,7 @@ async fn build_project(
     // 不从 `origin` 推 —— codehub clone 走 SSH,origin 里是 SSH 主机加端口。
     let mr_url_prefix = p.mr_url_prefix();
     let issue_url_prefix = p.issue_url_prefix();
-    let current_week = bw_v4::isoweek::current_week();
+    let current_week = bw::isoweek::current_week();
     let viewing_week = if ui.viewing_week.is_empty() {
         current_week.clone()
     } else {
@@ -558,8 +558,8 @@ async fn build_project(
     };
 
     // 健康:四条判据当场从 issue 列表、仓文件与 git 取,不读缓存。
-    let inputs = bw_v4::app::collect_health_inputs(&p, &ws, &current_week, &issues).await;
-    let derived = bw_v4::derive::derive_project_health(&inputs);
+    let inputs = bw::app::collect_health_inputs(&p, &ws, &current_week, &issues).await;
+    let derived = bw::derive::derive_project_health(&inputs);
     // 算完顺手写回显示缓存。**项目墙只有这一个数据来源** —— 它要在不打开项目
     // 的情况下列出 N 个项目的灯,不能每次启动扫 N 个仓。此前壳里没有一处写过
     // 这两列,于是项目墙的灯永远是灰的,哪怕总览上算出来是黄的。写的是刚算出
@@ -579,7 +579,7 @@ async fn build_project(
     );
     // 指标读数从仓 `.bw/metrics/readings.jsonl` 取(刀6:不再读周计划文件的
     // 「本周指标读数」段)。取的是正在看的那一周。
-    let readings = bw_v4::app::read_metric_readings(&ws, &viewing_week);
+    let readings = bw::app::read_metric_readings(&ws, &viewing_week);
 
     // 本周计数与本周运作点在构造之前算好 —— `current_week` 会被 move 进结构体。
     let week_counts_now = build_week_counts(&issues, Some(current_week.as_str()));
@@ -590,7 +590,7 @@ async fn build_project(
     let weeks = build_weeks(&issues, &current_week);
 
     // 横幅判据:本周运作活① issue 在不在(不再是周计划文件在不在)。
-    let ops1_title = bw_v4::app::ops1_title(&current_week);
+    let ops1_title = bw::app::ops1_title(&current_week);
     let ops1_status = issues
         .iter()
         .find(|i| i.title == ops1_title && i.status != IssueStatus::Done)
@@ -599,7 +599,7 @@ async fn build_project(
     // 发版历史从 git 标签取(刀6:不再读 .bw/releases.md)。tags_with_dates 按
     // creatordate 升序,rev() 让最新的在最前。git 标签没有 note / 包含的活,
     // 那两列如实留空/「—」,不编。
-    let releases: Vec<ReleaseVm> = bw_v4::git::tags_with_dates(&ws)
+    let releases: Vec<ReleaseVm> = bw::git::tags_with_dates(&ws)
         .await
         .into_iter()
         .rev()
@@ -701,7 +701,7 @@ async fn build_project(
                 .collect(),
             seen_at: notify_seen,
             events: build_notify_events(&issues, &conversations),
-            unread: bw_v4::app::count_unseen(&issues),
+            unread: bw::app::count_unseen(&issues),
         },
         config: build_config(&ws, policy.as_ref(), &p, &file, &issues).await,
         kb: KbVm {
@@ -720,7 +720,7 @@ pub(super) fn or_blank(s: &str) -> String {
     }
 }
 
-pub(super) fn card_item(i: &bw_v4::Issue) -> CardItemVm {
+pub(super) fn card_item(i: &bw::Issue) -> CardItemVm {
     CardItemVm {
         id: i.id,
         number: i.number,

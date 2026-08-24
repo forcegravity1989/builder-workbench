@@ -317,7 +317,7 @@ _Avoid_: TODO(留口是结构性预留,不是待办注释);占位 UI 放假数�
 _Avoid_: 同步(对账有明确的正本方向,不是双向合并)。
 
 **指挥器 / Conductor script**:
-不开界面、直接调用内核命令走完某段完整流程的脚本或 example(如 `cargo run -p bw-v4 --example real_demo_v4`,走自我标注替身、不碰真实开工工具)。用于 headless 验证和批量操作。
+不开界面、直接调用内核命令走完某段完整流程的脚本或 example(如 `cargo run -p bw --example real_demo_v4`,走自我标注替身、不碰真实开工工具)。用于 headless 验证和批量操作。
 _Avoid_: runner、driver;和「监理」混用(指挥器干活,监理盯着重试)。
 
 **监理 / Supervisor script**:

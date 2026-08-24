@@ -4,7 +4,7 @@
 
 - 整块从 V3 搬过来的(V3 试用期一个坑一个坑填出来的那一份,见 v3 分支),现住本目录
   `mod.rs`。
-- `crates/v4-engine/src/pty_backend.rs` / `terminal_manager.rs` —— PTY 后端与按会话分
+- `crates/bw-engine/src/pty_backend.rs` / `terminal_manager.rs` —— PTY 后端与按会话分
   的有界缓冲,原样沿用,一行没改。
 - Orca 的 `use-terminal-pane-lifecycle.ts`(V3 期参考,见 v3 分支)
   —— 选区防抖 + 长度上限那一段的思路。

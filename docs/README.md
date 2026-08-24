@@ -12,8 +12,8 @@
 ├── CONTEXT.md         领域语言词表(交棒/读数/蒸馏……唯一规范用词来源)
 ├── CHANGELOG.md       版本变更记录(本次合入了什么)
 ├── DESIGN.md          设计指向(各模块设计 + workflow 文档指过去)
-├── crates/            bw-v4(内核)· v4-engine(底座)· app-shell(壳,bin bw-v4-dev)
-├── standard/          规范正本(include_str! 进 bw-v4):铺底 `templates/` + 系统提示词 `system-prompt/` + 运作剧本 `skills/` 4 份 + 业界 workflow `vendor/`(mattpocock/mohit)
+├── crates/            bw(内核)· bw-engine(底座)· app-shell(壳,bin bw-dev)
+├── standard/          规范正本(include_str! 进 bw):铺底 `templates/` + 系统提示词 `system-prompt/` + 运作剧本 `skills/` 4 份 + 业界 workflow `vendor/`(mattpocock/mohit)
 ├── scripts/           门禁脚本(guard-*)+ codegraph 联调
 ├── docs/              ← 你在这
 └── .bw/               buddy 自己作为被管项目的资产(PROJECT.md/metrics.toml/issue-policy.toml/…)
@@ -36,5 +36,5 @@
 | 开发规矩(建/跑/测/门禁/目录/铁律/怎么加特性) | [`AGENTS.md`](../AGENTS.md) |
 | 领域词 | [`CONTEXT.md`](../CONTEXT.md) |
 | 产品指南(怎么用) | [`guide/`](guide/) |
-| headless 例子(PTY 烟测) | [`AGENTS.md`](../AGENTS.md)「怎么建/跑/测」;源码 `crates/v4-engine/examples/` |
+| headless 例子(PTY 烟测) | [`AGENTS.md`](../AGENTS.md)「怎么建/跑/测」;源码 `crates/bw-engine/examples/` |
 | V3 在哪 | V3 已删(2026-08-24),全量在 `v3` 分支 |

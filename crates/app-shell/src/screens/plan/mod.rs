@@ -20,8 +20,8 @@ mod kanban;
 
 use crate::bridge::{Bridge, Req};
 use crate::vm::{CardItemVm, ProjectVm};
-use bw_v4::command::Command;
-use bw_v4::model::{IssueId, IssueStatus};
+use bw::command::Command;
+use bw::model::{IssueId, IssueStatus};
 use dioxus::prelude::*;
 
 use detail::DetailPanel;
@@ -196,9 +196,9 @@ fn toolbar(p: &ProjectVm, bridge: &Bridge) -> Element {
                             project_id: pid,
                             title: format!("新活 · {week}"),
                             body: String::new(),
-                            category: Some(bw_v4::model::StageKind::Build),
-                            kind: bw_v4::model::IssueKind::Business,
-                            origin: bw_v4::model::IssueOrigin::Human,
+                            category: Some(bw::model::StageKind::Build),
+                            kind: bw::model::IssueKind::Business,
+                            origin: bw::model::IssueOrigin::Human,
                             week_of: week.clone(),
                         }),
                         "新建活"
@@ -250,7 +250,7 @@ fn filter_bar(mut filters: Signal<Filters>) -> Element {
             select {
                 onchange: move |e| filters.write().category = e.value(),
                 option { value: "", "类别 · 全部" }
-                for c in bw_v4::model::StageKind::ALL {
+                for c in bw::model::StageKind::ALL {
                     option { key: "{c:?}", value: "{c.label()}", "{c.label()}" }
                 }
             }

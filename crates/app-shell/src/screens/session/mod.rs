@@ -16,8 +16,8 @@
 
 use crate::bridge::{Bridge, Req};
 use crate::vm::{ProjectVm, SessionTab, SessionVm};
-use bw_v4::command::Command;
-use bw_v4::model::Signal as HealthSignal;
+use bw::command::Command;
+use bw::model::Signal as HealthSignal;
 use dioxus::prelude::*;
 
 #[component]
@@ -152,7 +152,7 @@ fn action_bar(open: Option<&SessionVm>, bridge: &Bridge) -> Element {
                 title: "只改状态,不碰仓 —— 给「改动不在这棵树里」或者「远端还没挂上」的情况留的。",
                 onclick: move |_| b_review.cmd(Command::TransitionIssue {
                     id,
-                    to: bw_v4::model::IssueStatus::InReview,
+                    to: bw::model::IssueStatus::InReview,
                 }),
                 "只推到评审"
             }
@@ -419,7 +419,7 @@ fn tree_row(p: &ProjectVm, e: &crate::vm::TreeEntryVm, depth: usize, bridge: &Br
 // 的 loopback 首页嵌进一个 iframe。**不是起 CLI**——Open Design 是「本机网页
 // 内嵌类」工具,开工 = 在这个内嵌视图里干,不是 spawn agent。
 //
-// 发现走 `v4_engine::open_design::discover_web_url`(命名管道/socket 握手,见
+// 发现走 `bw_engine::open_design::discover_web_url`(命名管道/socket 握手,见
 // 该模块)。挂一次 use_future,结果存信号:OD 起着 → url → iframe;没起 → 如实
 // 说「没接到」,不假装嵌进去了。OD 重启换了端口时,「重新发现」重探。
 #[component]
@@ -427,7 +427,7 @@ fn OpenDesignView() -> Element {
     let mut url = use_signal(|| None::<String>);
     let mut probing = use_signal(|| true);
     let mut fut = use_future(move || async move {
-        let found = v4_engine::open_design::discover_web_url().await;
+        let found = bw_engine::open_design::discover_web_url().await;
         url.set(found);
         probing.set(false);
     });

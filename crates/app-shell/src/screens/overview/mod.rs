@@ -9,7 +9,7 @@
 use crate::bridge::{Bridge, Panel, PanelNav, Req};
 use crate::chrome::light_dot;
 use crate::vm::{MetricCardVm, ProjectVm};
-use bw_v4::command::{Command, ProjectIntent};
+use bw::command::{Command, ProjectIntent};
 use dioxus::prelude::*;
 
 #[component]

@@ -8,14 +8,14 @@ rust-version.workspace = true
 
 [[bin]]
 # 共存期用这个名字,和旧壳的 builders-workbench 分得开;删旧壳那次改回去。
-name = "bw-v4-dev"
+name = "bw-dev"
 path = "src/main.rs"
 
 [dependencies]
 # 与旧壳同一个 hard-pin(=0.7.9)。desktop feature = wry WebView。
 dioxus = { workspace = true, features = ["desktop"] }
-v4-engine = { workspace = true }
-bw-v4 = { workspace = true }
+bw-engine = { workspace = true }
+bw = { workspace = true }
 tokio = { workspace = true }
 time = { workspace = true, features = ["std"] }
 uuid = { workspace = true }

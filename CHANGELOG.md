@@ -39,3 +39,11 @@ V4 三 crate 代码行为未变(除 issue-policy 默认值 + terminal_xterm 资�
 - OD 探活(穿刺 subagent):`inject_skills` 对 OD 半成立——OD 有 systemPrompt 注入口子(`POST /api/runs` 实测被消费)、但收不了 buddy 技能文件(OD 自有 162 份 skillId,两套不兼容),不进 `InteractiveExecutor`(PTY 中心,不拟合)。做 systemPrompt 注入约 3-4h(在 `run_issue` OD 分支加 HTTP POST,不改 Executor),defer 给用户拍。
 - 文档同步:arch §2(四段→文件+references)/§4/§9/§15 + `standard/README`/`skills/README`/`vendor/README` + `AGENTS`/`docs/README`;代码注释陈旧计数(十一/十三/10 份)清零成 4。
 - V4 行为未变(提示词内容字字一致,只是从代码搬到模板 + 删了不被派发的死技能)。cargo check --workspace + clippy `-D warnings` + fmt + 5/12 test + prompt_smoke 跑通。
+
+### 2026-08-24(续四)· crate 去版本号 + V3 裸名清扫
+
+「V4 框去掉就是新 buddy MVP」收尾——三个 crate 去版本号:`bw-v4 → bw`、`v4-engine → bw-engine`、bin `bw-v4-dev → bw-dev`(旧壳 app-desktop 已删,共存期权宜名一并改回)。目录 `crates/bw-v4`→`crates/bw`、`crates/v4-engine`→`crates/bw-engine`;Cargo.toml(workspace members/deps/paths)+ CI + `guard-kernel-ui-free.sh` KERNEL + 所有 `use bw_v4::`/`use v4_engine::` + bin + 文档(AGENTS/architecture/README/CONTEXT)同步。`include_str!` 相对路径不受目录改名影响(层级数不变)。
+
+**前置清扫**:改名前先清 V3 裸 crate 名(bw-core/bw-engine/bw-store/bw-app/ui/app-desktop 的 lineage 引用),否则 `v4-engine→bw-engine` 会和 V3 的 bw-engine(已删)撞。按统一口径:provenance(历史来路)保留名+加「(V3,见 v3 分支)」;当现行换名(bw-app→app-shell、bw-engine→v4-engine,再随本次改名→bw-engine);假句(「留着伺候直到删除」「继续编译」)删或改时态。改完后「bw-engine」无 V3 标=新底座、带标=历史,无歧义。
+
+cargo check --workspace + clippy `-D warnings` + fmt + 四守卫 + test 全过。纯命名/注释,行为零变。

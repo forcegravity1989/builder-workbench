@@ -10,7 +10,7 @@
 use crate::bridge::{Bridge, GuideNav, Req, TopView};
 use crate::chrome::light_dot;
 use crate::vm::{ProjectCardVm, ToolProbeVm, Vm};
-use bw_v4::Signal as HealthSignal;
+use bw::Signal as HealthSignal;
 use dioxus::prelude::*;
 
 #[component]
@@ -22,7 +22,7 @@ pub fn View(vm: Vm, bridge: Bridge, go_top: EventHandler<TopView>) -> Element {
     let guide = use_context::<GuideNav>();
     // 哪张卡正在问「真移走?」。**放在这里而不是每张卡里** —— 卡片是在 `for`
     // 循环里画的,hook 进了循环就不再是每轮渲染同样的调用序列。
-    let asking = use_signal(|| None::<bw_v4::model::ProjectId>);
+    let asking = use_signal(|| None::<bw::model::ProjectId>);
     rsx! {
         section {
             div { class: "wall-topline",
@@ -155,7 +155,7 @@ fn dot_of(ok: Option<bool>) -> Option<HealthSignal> {
 fn project_card(
     p: &ProjectCardVm,
     bridge: &Bridge,
-    mut asking: Signal<Option<bw_v4::model::ProjectId>>,
+    mut asking: Signal<Option<bw::model::ProjectId>>,
 ) -> Element {
     let b = bridge.clone();
     let b_del = bridge.clone();
@@ -238,7 +238,7 @@ fn project_card(
                             onclick: move |e: MouseEvent| {
                                 e.stop_propagation();
                                 asking.set(None);
-                                b_del.cmd(bw_v4::command::Command::RemoveProject { project_id: id });
+                                b_del.cmd(bw::command::Command::RemoveProject { project_id: id });
                             },
                             "移走"
                         }

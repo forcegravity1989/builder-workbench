@@ -17,7 +17,7 @@ pub mod sparkline;
 
 use crate::bridge::{Bridge, Panel, Req, TopView};
 use crate::theme;
-use bw_v4::model::Signal;
+use bw::model::Signal;
 use dioxus::prelude::*;
 
 /// 原型那套线性图标。内容是写死的常量,没有任何外部输入拼进去。
@@ -66,9 +66,9 @@ pub fn icon(name: &str) -> Element {
 ///
 /// **行由调用方自己收**(各屏一个信号,点按钮时清空),这里只管画 —— 谁在跑
 /// 长命令、什么时候该清屏,是那一屏自己的事;放到这里来猜只会猜错。行按步号
-/// 原地覆盖的规矩在收的那一侧,见 `bw_v4::app::ProgressLine::step`。
-pub fn progress_log(lines: &[bw_v4::app::ProgressLine]) -> Element {
-    use bw_v4::app::StepState;
+/// 原地覆盖的规矩在收的那一侧,见 `bw::app::ProgressLine::step`。
+pub fn progress_log(lines: &[bw::app::ProgressLine]) -> Element {
+    use bw::app::StepState;
     if lines.is_empty() {
         return rsx! {};
     }
@@ -325,7 +325,7 @@ pub fn open_in_browser(url: &str) {
     // `Command::new("cmd")` 会闪一下黑窗。走底座那层就带上 `CREATE_NO_WINDOW`,
     // 和 git / codehub-cli 那些子进程同一个规矩。
     #[cfg(target_os = "windows")]
-    let _ = v4_engine::win_cmd::std_cmd("cmd")
+    let _ = bw_engine::win_cmd::std_cmd("cmd")
         .args(["/C", "start", "", url])
         .spawn();
     #[cfg(all(unix, not(target_os = "macos")))]

@@ -4,8 +4,8 @@ use super::Filters;
 use crate::bridge::Bridge;
 use crate::chrome::light_dot;
 use crate::vm::{CardItemVm, ColumnVm, ProjectVm};
-use bw_v4::command::Command;
-use bw_v4::model::{IssueId, IssueStatus, Signal as HealthSignal};
+use bw::command::Command;
+use bw::model::{IssueId, IssueStatus, Signal as HealthSignal};
 use dioxus::prelude::*;
 
 /// 松手之后等人确认的那一下。

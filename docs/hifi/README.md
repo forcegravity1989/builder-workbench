@@ -12,7 +12,7 @@
 - **左栏 = V3 图标栏(64px)+ 项目栏(198px)**。顶层:项目墙 · ⚙ 设置(底部)。进项目后项目栏:← 项目墙 / 项目名 + 在研版本 + 灯 / **总览 · 计划 · 会话 · 通知(未读徽章)· 配置 · 知识库**。
 - **顶栏**:当前屏名 · 右侧 Gravity 头像 · 很小的灰色「演示数据 ✱」+ 「重置」。**没有铃铛。**
 - 路由:`#/wall` `#/onboard` `#/settings` `#/p/buddy/overview|plan|session|notify|config|kb` `#/p/buddy/plan/<周id|all>` `#/p/buddy/session/<会话id>` `#/p/buddy/kb/knowledge|graph|assets` `#/p/new/overview`。
-- 状态在内存 + localStorage(**前缀 `bw-v4-hifi4-`**,v4 改前缀避免旧版本的 `bw-v4-hifi-` 状态串味),「重置」清掉;按钮真改状态;完成永远由人点(合入 ≠ 完成)。
+- 状态在内存 + localStorage(**前缀 `bw-hifi4-`**,v4 改前缀避免旧版本的 `bw-hifi-` 状态串味),「重置」清掉;按钮真改状态;完成永远由人点(合入 ≠ 完成)。
 
 ## 2 · 逐屏
 
