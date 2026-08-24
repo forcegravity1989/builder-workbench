@@ -484,6 +484,7 @@ pub fn spawn(deep_link: DeepLink) -> Bridge {
                     data_dir: assets.display().to_string(),
                     workspaces_root: root.display().to_string(),
                     repos: crate::vm::RepoPickerVm::default(),
+                    mr_cache: std::collections::HashMap::new(),
                 };
 
                 // 「刷新」按下了没有。回执要等 ViewModel 拼完才写得出来。
@@ -503,7 +504,7 @@ pub fn spawn(deep_link: DeepLink) -> Bridge {
                     }
                 }
 
-                let mut vm = vm_build::build(&app, &ui).await;
+                let mut vm = vm_build::build(&app, &mut ui).await;
                 eprintln!("[BW_BOOT] projects={} assets={}", vm.projects.len(), assets.display());
                 // 环境条的探活结果也打出来 —— 它说「找不到 claude」的时候,人
                 // 得能在终端里拿 `which claude` 当场对。2026-08-20 就栽在这上面:
@@ -639,7 +640,7 @@ pub fn spawn(deep_link: DeepLink) -> Bridge {
                             if let Some(n) = note {
                                 ui.set_note(Some(n));
                             }
-                            vm = vm_build::build(&app, &ui).await;
+                            vm = vm_build::build(&app, &mut ui).await;
                             let _ = vm_tx.send(vm.clone());
                             continue;
                         }
@@ -1037,7 +1038,7 @@ pub fn spawn(deep_link: DeepLink) -> Bridge {
                             refresh_receipt = true;
                         }
                     }
-                    vm = vm_build::build(&app, &ui).await;
+                    vm = vm_build::build(&app, &mut ui).await;
                     // 刷新的回执在这里补:此刻的 vm 才是「刚读出来的那一份」。
                     if refresh_receipt {
                         refresh_receipt = false;

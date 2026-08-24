@@ -770,8 +770,12 @@ struct CodehubIssueJson {
     closed_at: Option<String>,
 }
 
-/// `codehub-cli issue note create <iid> -p <path> -H <host> --body <text>`
+/// `codehub-cli issue comment create <iid> -p <path> -H <host> --body <text>`
 /// → 在 issue 上写一条评论(GitLab 的 issue note)。结构化产出挂评论,不动正文。
+///
+/// 子命令是 `issue comment create`(不是 `issue note create`——codehub-cli 没有
+/// `note` 子命令,以前写成 `note` 会被当未知命令、`-p` 报「unknown shorthand
+/// flag」,评论写不进去,bootstrap 在这步炸、后面的推 inreview 也走不到)。
 pub async fn comment_issue(
     host: &str,
     path: &str,
@@ -781,7 +785,7 @@ pub async fn comment_issue(
     let iid_s = iid.to_string();
     let out = crate::win_cmd::tokio_cmd("codehub-cli")
         .args([
-            "issue", "note", "create", &iid_s, "-p", path, "-H", host, "--body", body,
+            "issue", "comment", "create", &iid_s, "-p", path, "-H", host, "--body", body,
         ])
         .stdin(Stdio::null())
         .stdout(Stdio::piped())

@@ -85,6 +85,11 @@ pub struct UiState {
     /// 接入屏那份仓列表的状态。**不进库** —— 它是「现在去平台问了一次」的结果,
     /// 关掉接入屏就该忘掉。
     pub repos: crate::vm::RepoPickerVm,
+    /// inreview 的活「开着的 MR iid」现查缓存(刀3:pr_number 不进库,这里查一次
+    /// 复用,免得每重拼一次 ViewModel 都打 codehub-cli/gh)。键是 IssueId(含项目
+    /// id,跨项目不撞);值 0 = 查过了、没有开着的 MR。issue 离开 inreview 后这条
+    /// 留着也无害(只有 inreview 的活读它)。
+    pub mr_cache: std::collections::HashMap<bw_v4::model::IssueId, u32>,
 }
 
 /// 深链按 slug 找,找不到再按显示名找。
@@ -296,7 +301,7 @@ impl UiState {
     }
 }
 
-pub async fn build(app: &App, ui: &UiState) -> Vm {
+pub async fn build(app: &App, ui: &mut UiState) -> Vm {
     let projects = app.projects().await.unwrap_or_default();
     let mut warnings: Vec<String> = Vec::new();
 
@@ -476,10 +481,48 @@ pub(super) async fn probe_env() -> Vec<ToolProbeVm> {
     ]
 }
 
+/// inreview 的活现查「开着的 MR iid」,填进 `issue.pr_number` + 缓存到 `mr_cache`。
+///
+/// pr_number 不进库(刀3:`.bw/` 不存、codehub issue 也没这字段),不查的话
+/// 通知「评审中待合入」、详情 MR 卡、总览名片 MR 横幅全读 `pr_number=0` →
+/// 永远看不到 MR。这里给 inreview 的活现查 `Remote::open_mr_for_branch`(按
+/// `bw/issue-<号>` 分支查开着没),查过一次缓存,每重拼 ViewModel 不重打远端。
+/// 非在审的活不查(没 MR 要看);查失败按 0(不显),不崩。
+async fn fill_pr_numbers(
+    project: &Project,
+    issues: &mut [bw_v4::Issue],
+    mr_cache: &mut std::collections::HashMap<bw_v4::model::IssueId, u32>,
+) {
+    let Ok(remote) = v4_engine::remote::Remote::for_project(
+        &project.provider,
+        &project.remote_host,
+        &project.remote_path,
+    ) else {
+        return;
+    };
+    for i in issues.iter_mut() {
+        if i.status != IssueStatus::InReview || i.number == 0 {
+            continue;
+        }
+        if let Some(&pr) = mr_cache.get(&i.id) {
+            i.pr_number = pr;
+            continue;
+        }
+        let branch = v4_engine::github::issue_branch(i.number);
+        let pr = match remote.open_mr_for_branch(&branch).await {
+            Ok(Some(n)) => n,
+            // 查不成 / 没开着的 MR —— 0,不显 MR(如实,不假装)。
+            _ => 0,
+        };
+        i.pr_number = pr;
+        mr_cache.insert(i.id, pr);
+    }
+}
+
 async fn build_project(
     app: &App,
     id: ProjectId,
-    ui: &UiState,
+    ui: &mut UiState,
     warnings: &mut Vec<String>,
 ) -> Option<ProjectVm> {
     let p = app.project(id).await.ok()??;
@@ -488,13 +531,17 @@ async fn build_project(
         read_or_warn(".bw/project.toml", project_file::read(&ws), warnings).unwrap_or_default();
     // 失败不吞:挂到 warnings,UI 横幅「读 issue 失败」,VM 用空活照建(健康落灰、
     // 看板空),保留上一份已知好的结构 —— 不整体清空。
-    let issues = match app.issues(id).await {
+    let mut issues = match app.issues(id).await {
         Ok(v) => v,
         Err(e) => {
             warnings.push(format!("读 issue 失败:{e}"));
             Vec::new()
         }
     };
+    // pr_number 不进库(刀3):inreview 的活这里现查 open_mr_for_branch 填上,
+    // 通知「待合入」/ 详情 MR 卡 / 总览名片 MR 才看得到号;查过一次缓存到
+    // ui.mr_cache,每重拼一次 ViewModel 不重打 codehub-cli/gh。
+    fill_pr_numbers(&p, &mut issues, &mut ui.mr_cache).await;
     let conversations = app.conversations(id).await.unwrap_or_default();
     // 「读到这里」是哪一刻。通知屏和项目轨的红点用的是同一个值,读一次就够。
     let notify_seen: Option<i64> = app.notify_seen(id).await;
