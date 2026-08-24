@@ -56,12 +56,20 @@ pub fn trend_chart(s: &Series) -> Element {
 
     let min = known.iter().copied().fold(f64::INFINITY, f64::min);
     let max = known.iter().copied().fold(f64::NEG_INFINITY, f64::max);
-    // 全平的序列人为撑开,免得线贴着边框看不见。
+    // 全平的序列人为撑开,免得线贴着边框看不见。**计数序列(提交/PR/issue
+    // 数,都 ≥ 0)y 轴不低于 0**——以前平在 0 时 y_min = 0-1 = -1,折线图
+    // 纵坐标从 -1 起,看着像能取负值,其实只是撑开的余量。
     let (y_min, y_max) = if (max - min).abs() <= f64::EPSILON {
-        (min - 1.0, min + 1.0)
+        let lo = if min >= 0.0 { 0.0 } else { min - 1.0 };
+        (lo, min + 1.0)
     } else {
         let pad = (max - min) * 0.08;
-        (min - pad, max + pad)
+        let lo = if min >= 0.0 {
+            (min - pad).max(0.0)
+        } else {
+            min - pad
+        };
+        (lo, max + pad)
     };
 
     let x_at = |i: usize| -> f64 {
