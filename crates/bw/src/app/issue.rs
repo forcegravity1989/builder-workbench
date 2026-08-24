@@ -87,12 +87,40 @@ impl App {
                 let project = self.project_of(issue.project_id).await?;
                 issue_store::set_status(self, &project, id.iid(), IssueStatus::InProgress).await?;
             }
+            // 灌系统提示词:让 OD 内部 spawn 的 AI 知道在 buddy 管理下(身份+铁律+
+            // 本活挂的技能/references 指针)。OD 独立——它有自己的 skill 体系(skillId),
+            // 灌不进 buddy 技能文件,只灌 systemPrompt(技能指针在文本里,OD 的 AI
+            // best-effort 读)。探不到 OD / POST 失败不阻断(OD 仍内嵌),如实降级。
+            let prompt = format!("#{} {}\n\n{}", issue.number, issue.title, issue.body);
+            let skills_dir = self.ensure_skill_assets();
+            self.ensure_vendor_assets();
+            let skill = skills_dir
+                .as_deref()
+                .and_then(|d| super::bootstrap::skill_pointer(d, &issue.workflow));
+            let references = self
+                .ensure_prompt_assets()
+                .map(|d| super::bootstrap::references_for(&issue, &d))
+                .unwrap_or_default();
+            let system_prompt =
+                super::bootstrap::agent_system_prompt(&issue, skill.as_ref(), &references);
+            let injected = match bw_engine::open_design::discover_web_url().await {
+                Some(url) => bw_engine::open_design::start_run(&url, &prompt, &system_prompt)
+                    .await
+                    .is_some(),
+                None => false,
+            };
             return Ok(vec![Event::IssueRan {
                 id,
                 ok: true,
-                summary: "Open Design 已内嵌——到会话屏「Open Design」标签里干;\
-                         原型导出落这棵工作树,再「提交并开 MR」"
-                    .into(),
+                summary: format!(
+                    "Open Design 已内嵌——到会话屏「Open Design」标签里干;原型导出落这棵\
+                     工作树,再「提交并开 MR」{}",
+                    if injected {
+                        "(已灌系统提示词,OD 内 AI 知道在 buddy 管理下)"
+                    } else {
+                        ""
+                    }
+                ),
             }]);
         }
 

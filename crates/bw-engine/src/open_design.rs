@@ -140,3 +140,59 @@ fn looks_loopback_http(url: &str) -> bool {
     }
     host == "127.0.0.1" || host.eq_ignore_ascii_case("localhost")
 }
+
+/// 把 `http://127.0.0.1:<port>` 拆成 (host, port)。非 loopback / 缺端口返 None。
+fn loopback_host_port(url: &str) -> Option<(&str, u16)> {
+    let rest = url.trim().strip_prefix("http://")?;
+    if rest.contains('@') {
+        return None;
+    }
+    let hostport = rest.split('/').next().unwrap_or("");
+    let (host, port) = hostport.rsplit_once(':')?;
+    if !(host == "127.0.0.1" || host.eq_ignore_ascii_case("localhost")) {
+        return None;
+    }
+    Some((host, port.parse::<u16>().ok()?))
+}
+
+/// 给 OD 起一个 run,把 buddy 的系统提示词灌进去——让 OD 内部 spawn 的 AI
+/// 知道自己处在 buddy 的管理下(身份 + 四铁律 + 本活挂的技能/references 指针)。
+///
+/// **OD 是独立的**:它有自己的 skill 体系(`skillId`,162 份),和 buddy 的
+/// 技能文件(`--add-dir` 挂路径)不兼容——所以只灌 `systemPrompt` + `prompt`,
+/// 不灌技能文件。技能指针/references 在 systemPrompt 文本里,OD 的 AI 能不能
+/// 真读到那个路径是 best-effort(它在 OD 的进程上下文里,未必有 buddy 资产目录
+/// 的访问权);读不到也不阻断,OD 仍按它自己的能力干。
+///
+/// 探不到 url、连不上、POST 失败一律返 `None`——不阻断开工(OD 仍内嵌在会话屏,
+/// 只是没有灌提示词这步),如实降级。返回 runId 字符串(若 OD 回了)。
+pub async fn start_run(base_url: &str, prompt: &str, system_prompt: &str) -> Option<String> {
+    let (host, port) = loopback_host_port(base_url)?;
+    let body = serde_json::json!({ "prompt": prompt, "systemPrompt": system_prompt }).to_string();
+    let host = host.to_string();
+    let req = format!(
+        "POST /api/runs HTTP/1.1\r\nHost: {host}:{port}\r\nContent-Type: application/json\r\n\
+         Content-Length: {len}\r\nConnection: close\r\n\r\n{body}",
+        len = body.len()
+    );
+    tokio::task::spawn_blocking(move || {
+        use std::io::{Read, Write};
+        let mut s = std::net::TcpStream::connect((host.as_str(), port)).ok()?;
+        s.set_write_timeout(Some(QUERY_TIMEOUT)).ok()?;
+        s.set_read_timeout(Some(QUERY_TIMEOUT)).ok()?;
+        s.write_all(req.as_bytes()).ok()?;
+        // 读完响应——只取 status line 确认发出去了;body 里的 runId 不强解析
+        // (OD 的响应结构没定稿,best-effort)。
+        let mut buf = Vec::with_capacity(256);
+        s.read_to_end(&mut buf).ok()?;
+        let text = String::from_utf8_lossy(&buf);
+        // HTTP/1.1 200 才算 OD 收了;其余(连不上/4xx/5xx)如实 None。
+        if text.starts_with("HTTP/1.1 2") {
+            Some(text.split('\r').next().unwrap_or("").to_string())
+        } else {
+            None
+        }
+    })
+    .await
+    .ok()?
+}

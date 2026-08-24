@@ -147,7 +147,7 @@ references(`standard/system-prompt/references/*.md`)是「干某类活需要额�
 **代码**:bw-engine 的 `open_design.rs`(`discover_web_url` 探活 + `looks_loopback_http` 只放行 loopback);app-shell 的 `screens/session/mod.rs`(`OpenDesignView` iframe 组件);bw 的 `app/issue.rs`(run_issue 的 open_design 分支不开 CLI)+ `app/tools.rs`(probe)。
 **数据**:零持久化;探活结果是一次性 loopback url 挂在 `use_signal` 里不落库不缓存;OD 产物不在 buddy 库——是 OD 导出后落进 issue worktree 的文件。
 **依赖**:只碰本机命名管道/socket + env,不依赖任何远端或 Executor;平台 Windows 命名管道 + macOS/Linux unix socket。
-**没建**:壳侧 `open_design` 适配模块未建(实际只有 claude_cli / codegraph / terminal_xterm);OD 导出产物→MR 的约定仍 defer——没加"OD 类活评审前 `design/` 非空"显式前置校验,今天靠"0 提交如实弹回"兜底。**`inject_skills` 对 OD 是半成立的**:`issue-policy` 声明了,探活证 OD 有 `systemPrompt` 注入口子(`POST /api/runs` 的 `systemPrompt` 参数,实测被消费),但 OD 收不了 buddy 的技能文件——OD 有自己内建的 162 份技能(`skillId` 引用),和 buddy 的 `--add-dir` 挂文件是两套不兼容模型;且 OD 自己内部 spawn claude(是个 agent runner),套进 buddy 的 `InteractiveExecutor`(PTY 中心)不拟合。真要做是在 `run_issue` 的 OD 分支加一步 HTTP POST 传 buddy 的系统提示词(约 3-4 小时,不改 Executor),defer 给用户拍。
+**没建**:壳侧 `open_design` 适配模块未建(实际只有 claude_cli / codegraph / terminal_xterm);OD 导出产物→MR 的约定仍 defer——没加"OD 类活评审前 `design/` 非空"显式前置校验,今天靠"0 提交如实弹回"兜底。**`inject_skills` 对 OD 的最终口径**:OD 独立内嵌不动,只灌 `systemPrompt`(`run_issue` OD 分支调 `bw_engine::open_design::discover_web_url` + `start_run`,HTTP `POST /api/runs` 传 buddy 的 `agent_system_prompt` + 活的 prompt,让 OD 内部 spawn 的 AI 知道在 buddy 管理下)。OD 收不了 buddy 技能文件(自有 162 份 `skillId`,两套不兼容),技能指针/references 在 systemPrompt 文本里、OD 的 AI best-effort 读(它在 OD 上下文,未必有 buddy 资产目录访问权);不进 `InteractiveExecutor`(PTY 中心不拟合)。探不到 OD / POST 失败如实降级(OD 仍内嵌,不阻断)。**仍 defer**:OD 导出产物怎么落进 issue worktree(`linkedDir` 实测没生效)——按"先保证最小可用、有问题再处理",MVP 留这步,真撞到再探。
 
 ### 10 · 项目群
 

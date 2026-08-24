@@ -67,3 +67,25 @@ build 阶段默认 workflow 从"声明但没打包"到**开机即用**。方案 
 workflow 入口 body 指向 vendor 库)。VERSION 5.1→5.2。
 cargo check --workspace + clippy + fmt + 四守卫 + test + prompt_smoke(5 份技能全摊出)全过。
 行为:E2E 验证 defer 给用户(真跑一张 build 活看 agent 走 grill→implement→review)。
+
+### 2026-08-24(续六)· OD 最小注入:灌 systemPrompt(原型阶段闭环)
+
+原型阶段 OD 开工从"只内嵌不灌提示词"到**灌系统提示词**。按用户口径:OD 独立内嵌
+不动,只灌 systemPrompt 让 OD 内 AI 知道在 buddy 管理下;skill 能放就放、没入口
+走提示词。
+
+- `bw-engine/open_design.rs` 加 `start_run(base_url, prompt, system_prompt)`:
+  HTTP `POST /api/runs`(loopback,手动 `TcpStream`——不引 HTTP dep,bw-engine
+  `#![forbid(unsafe_code)]` 下 std::net 安全)。探不到 url / 连不上 / 非 2xx 一律
+  返 None(不阻断)。
+- `run_issue` OD 分支:探活(`discover_web_url`)+ `start_run` 灌 buddy 的
+  `agent_system_prompt`(身份+铁律+技能/references 指针)+ 活 prompt。OD 收不了 buddy
+  技能文件(自有 162 份 skillId),技能指针在 systemPrompt 文本里、OD 的 AI
+  best-effort 读。
+- `inject_skills` 对 OD 从"半成立假声明"→有实现(systemPrompt 注入);OD 不进
+  `InteractiveExecutor`(PTY 中心不拟合),不改 Executor。
+- 仍 defer:OD 导出产物怎么落进 worktree(`linkedDir` 实测没生效)——按"先保证
+  最小可用、有问题再处理",MVP 留这步。
+
+cargo check + clippy + fmt + 四守卫 + test 全过。行为:E2E 验证 defer 给用户
+(真跑一张原型活看 OD 内 AI 是否按 systemPrompt 走 + 产物能不能进 worktree)。
