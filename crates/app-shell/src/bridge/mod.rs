@@ -288,7 +288,10 @@ fn refresh_note(vm: &Vm) -> String {
 /// 界面上。列不出来就把 CLI 的原话端回去 —— 多半是没装、没登录、或者 codehub
 /// 域名填错,这三件事人一看原话就知道该干嘛。
 async fn list_repos(github: bool, host: &str) -> (Vec<crate::vm::RepoRowVm>, Option<String>) {
-    const LIMIT: u32 = 100;
+    // 拉满用户的仓:搜索是客户端过滤已拉到的列表(走缓存,不重新拉),
+    // 所以 fetch 要一次拿全——codehub-cli 无硬上限(实测 limit 9999 拉全 158 个)、
+    // gh repo list 跨页拉到 limit。下拉框另有 DROPDOWN_CAP=30 封顶,不会铺满 999。
+    const LIMIT: u32 = 999;
     if github {
         match v4_engine::github::list_repos(LIMIT).await {
             Ok(rows) => (
