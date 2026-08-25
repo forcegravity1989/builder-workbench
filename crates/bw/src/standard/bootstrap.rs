@@ -191,7 +191,7 @@ pub struct BootstrapProbe {
     /// 首次模式去问人的事 —— 那是在改人家的项目,得先问过。这条只是写进活的
     /// 正文当证据,顺带给将来那次盘点当输入。
     pub has_own_conventions: bool,
-    /// 有历史(提交数 > 1、有标签、有 CHANGELOG)—— 触发资产盘点首次模式(历史回填)。
+    /// 有历史(提交数 > 1、有标签、有 CHANGELOG)—— 触发资产盘点首次模式(打周标签)。
     pub has_history: bool,
     /// 写进这张活说明里的证据句子。评审的人不用猜这张活为什么跑了这几步。
     pub reasons: Vec<String>,
@@ -249,7 +249,7 @@ pub fn issue_title() -> String {
 pub fn planned_steps(probe: &BootstrapProbe) -> String {
     let mut steps = vec!["写核心件(全部落在 `.bw/` 下,仓根一个字不写)"];
     if probe.has_history {
-        steps.push("资产盘点首次模式:历史回填(这个仓已经有历史了)");
+        steps.push("资产盘点首次模式:给已有 issue 打 bw:week(这个仓已经有历史了)");
     }
     steps.join("、")
 }

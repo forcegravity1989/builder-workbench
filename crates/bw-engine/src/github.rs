@@ -886,6 +886,31 @@ pub async fn comment_issue(owner_repo: &str, number: u32, body: &str) -> Result<
     Ok(())
 }
 
+/// `gh api repos/{r}/issues/{n}/comments` → 旧的在前,只要正文。
+pub async fn list_issue_comments(
+    owner_repo: &str,
+    number: u32,
+) -> Result<Vec<String>, GithubError> {
+    let path = format!("repos/{owner_repo}/issues/{number}/comments");
+    let output = crate::win_cmd::tokio_cmd("gh")
+        .args(["api", &path, "--jq", "[.[].body]"])
+        .stdin(Stdio::null())
+        .stdout(Stdio::piped())
+        .stderr(Stdio::piped())
+        .output()
+        .await
+        .map_err(spawn_err)?;
+    if !output.status.success() {
+        return Err(GithubError::Command(stderr_text(&output)));
+    }
+    let text = String::from_utf8_lossy(&output.stdout);
+    let text = text.trim();
+    if text.is_empty() || text == "null" {
+        return Ok(Vec::new());
+    }
+    serde_json::from_str(text).map_err(|e| GithubError::Command(format!("解析 issue 评论失败:{e}")))
+}
+
 /// `gh release list --repo <r> --json tagName --limit 200` → 所有版本的 tag
 /// 串(只回 tag,正文/资源数留给上层另查)。`tagName` 是 gh release list 的
 /// JSON 字段名(camelCase),这里 serde 重命名对齐。

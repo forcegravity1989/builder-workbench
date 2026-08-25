@@ -29,6 +29,19 @@ use vm::SessionTab;
 fn main() {
     // 起任何线程之前先把本机时区定住 —— 周是按本机时区算的。
     bw::isoweek::init_local_offset();
+    // 会话屏 iframe 嵌本机 Open Design。WebView2 默认拦 loopback,V3 壳关过,这里同样关。
+    #[cfg(windows)]
+    {
+        const FLAG: &str = "--disable-features=LocalNetworkAccessChecks";
+        match std::env::var("WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS") {
+            Ok(existing) if existing.contains("LocalNetworkAccessChecks") => {}
+            Ok(existing) => std::env::set_var(
+                "WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS",
+                format!("{existing} {FLAG}"),
+            ),
+            Err(_) => std::env::set_var("WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS", FLAG),
+        }
+    }
     let deep_link = bridge::read_deep_link();
     let builder = dioxus::desktop::WindowBuilder::new()
         .with_title("Builders' Workbench")
@@ -201,10 +214,7 @@ fn Root() -> Element {
                     {body(tv, cur, &v, &project, &bridge, top_view)}
                 }
             }
-            // 指南只在项目墙露出来 —— 和原型一致:进了项目,屏本身就是说明书。
-            if !in_project && tv.is_none() {
-                chrome::GuideDrawer {}
-            }
+            chrome::GuideDrawer {}
             chrome::Toast { note: v.note.clone(), seq: v.note_seq }
         }
     }

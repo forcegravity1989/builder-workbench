@@ -176,7 +176,7 @@ impl App {
         let version = version.trim().to_string();
         if version.is_empty() || version.contains('(') {
             return Err(AppError::Refused(format!(
-                "「{version}」不像一个版本号。先在配置屏把在研版本填好再发版。"
+                "「{version}」不像一个版本号。不要空、不要带括号。"
             )));
         }
         let project = self.project_of(project_id).await?;

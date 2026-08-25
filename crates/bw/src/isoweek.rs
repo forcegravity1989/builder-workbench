@@ -47,6 +47,36 @@ pub fn today_local() -> Date {
     now_local().date()
 }
 
+/// 本机今天的 `YYYY-MM-DD`,给「今日采过没有」这种戳用。
+pub fn today_ymd() -> String {
+    let d = today_local();
+    format!("{:04}-{:02}-{:02}", d.year(), u8::from(d.month()), d.day())
+}
+
+/// `"2026-08-25"` → 那一天。认不出返回 `None`。
+pub fn parse_ymd(s: &str) -> Option<Date> {
+    let mut it = s.split('-');
+    let y: i32 = it.next()?.parse().ok()?;
+    let m: u8 = it.next()?.parse().ok()?;
+    let d: u8 = it.next()?.parse().ok()?;
+    if it.next().is_some() {
+        return None;
+    }
+    let month = time::Month::try_from(m).ok()?;
+    Date::from_calendar_date(y, month, d).ok()
+}
+
+/// 这一天落在哪个 ISO 周。认不出返回 `None`。
+pub fn week_of_ymd(s: &str) -> Option<String> {
+    parse_ymd(s).map(iso_week_of)
+}
+
+/// 本机现在是不是已经到了几点几分(当天)。认不出时区时按 UTC,与周号同一条偏移。
+pub fn local_hm_reached(hour: u8, minute: u8) -> bool {
+    let now = now_local();
+    (now.hour(), now.minute()) >= (hour, minute)
+}
+
 /// 现在是哪个 ISO 周,按**本机时区**算(见 [`init_local_offset`])。
 pub fn current_week() -> String {
     iso_week_of(now_local().date())

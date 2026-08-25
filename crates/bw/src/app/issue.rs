@@ -23,7 +23,7 @@ impl App {
         project_id: ProjectId,
         title: String,
         body: String,
-        _category: Option<Category>,
+        category: Option<Category>,
         kind: IssueKind,
         _origin: IssueOrigin,
         week_of: String,
@@ -36,7 +36,14 @@ impl App {
                 number: existing.number,
             }]);
         }
-        let issue = issue_store::create(self, &project, &title, &body, kind, &week_of, &[]).await?;
+        // 业务活打五阶段类别;运作活不打。
+        let extra: Vec<String> = match (kind, category) {
+            (IssueKind::Ops, _) | (_, None) => Vec::new(),
+            (_, Some(c)) => vec![format!("bw:category:{}", crate::model::category_key(c))],
+        };
+        let extra_refs: Vec<&str> = extra.iter().map(String::as_str).collect();
+        let issue =
+            issue_store::create(self, &project, &title, &body, kind, &week_of, &extra_refs).await?;
         Ok(vec![Event::IssueCreated {
             id: issue.id,
             number: issue.number,
@@ -121,6 +128,8 @@ impl App {
                         ""
                     }
                 ),
+                tool: issue.tool.clone(),
+                embed_url: String::new(),
             }]);
         }
 
@@ -131,6 +140,8 @@ impl App {
                 id,
                 ok: true,
                 summary: "已在内嵌终端里开工,过程看会话屏".into(),
+                tool: issue.tool.clone(),
+                embed_url: String::new(),
             }]);
         }
 
@@ -201,6 +212,8 @@ impl App {
                     id,
                     ok: true,
                     summary: o.summary,
+                    tool: issue.tool.clone(),
+                    embed_url: String::new(),
                 }];
                 if let Some(e) = self.chat_notify_issue(id, "review").await {
                     events.push(e);
@@ -211,11 +224,15 @@ impl App {
                 id,
                 ok: false,
                 summary: o.summary,
+                tool: issue.tool.clone(),
+                embed_url: String::new(),
             }]),
             Err(e) => Ok(vec![Event::IssueRan {
                 id,
                 ok: false,
                 summary: format!("开工失败:{e}"),
+                tool: issue.tool.clone(),
+                embed_url: String::new(),
             }]),
         }
     }
@@ -349,6 +366,45 @@ impl App {
         // 阻塞原因写进 issue 评论 —— 不动正文,结构化产出挂评论。
         issue_store::comment(self, &project, id.iid(), &format!("阻塞原因:{reason}")).await?;
         Ok(vec![Event::IssueBlocked { id }])
+    }
+
+    pub(super) async fn set_issue_category(
+        &mut self,
+        id: IssueId,
+        category: Category,
+    ) -> Result<Vec<Event>> {
+        let issue = self.issue_or_err(id).await?;
+        if issue.kind == IssueKind::Ops {
+            return Err(AppError::Refused("运作活没有五阶段类别".into()));
+        }
+        let project = self.project_of(issue.project_id).await?;
+        issue_store::set_category(self, &project, id.iid(), category).await?;
+        Ok(vec![Event::IssueCategorySet {
+            id,
+            category: category.label().to_string(),
+        }])
+    }
+
+    /// 作废:原因进评论,打取消标签并关掉远端 issue。不是完成。
+    pub(super) async fn cancel_issue(&mut self, id: IssueId, reason: String) -> Result<Vec<Event>> {
+        let why = reason.trim().to_string();
+        if why.is_empty() {
+            return Err(AppError::Refused("作废必须写原因".into()));
+        }
+        let issue = self.issue_or_err(id).await?;
+        if issue.status == IssueStatus::Cancelled {
+            return Ok(vec![Event::IssueCancelled { id }]);
+        }
+        if !issue.status.can_transition_to(IssueStatus::Cancelled) {
+            return Err(AppError::IllegalTransition {
+                from: issue.status.label().to_string(),
+                to: IssueStatus::Cancelled.label().to_string(),
+            });
+        }
+        let project = self.project_of(issue.project_id).await?;
+        issue_store::comment(self, &project, id.iid(), &format!("取消原因:{why}")).await?;
+        issue_store::set_status(self, &project, id.iid(), IssueStatus::Cancelled).await?;
+        Ok(vec![Event::IssueCancelled { id }])
     }
 
     /// 收掉这张活的 worktree(+ 分支)。结清(Done)后**无条件**调 —— 只要

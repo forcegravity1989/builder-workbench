@@ -130,7 +130,7 @@ fn env_item(t: &ToolProbeVm, guide: GuideNav) -> Element {
             if fail {
                 span {
                     class: "env-help",
-                    onclick: move |_| guide.open("env"),
+                    onclick: move |_| guide.open("u0"),
                     "怎么处理 →"
                 }
             }

@@ -1,15 +1,15 @@
 //! codehub/GitHub issue 持久化映射层(数据层迁移刀2/刀3)。
 //!
 //! 把 bw 的 `Issue` 领域对象 ↔ codehub/GitHub issue 互转。issue 的状态、
-//! 排期、版本从本地 SQLite 搬到远端 issue + 标签(`bw:status:*` / `bw:week:*` /
-//! `bw:released:*`),这是那条映射的正本。
+//! 排期、版本、类别从本地 SQLite 搬到远端 issue + 标签(`bw:status:*` /
+//! `bw:week:*` / `bw:released:*` / `bw:category:*`),这是那条映射的正本。
 //!
 //! 字段映射的取舍:每一条都不自作主张加标签。**lossy**:远端 issue 的 `body` 经
 //! `view_issue` 单查带回(列表查询不带正文);`branch`/`pr_number`、
 //! `sort_order`/`metric_key`、`settled_at` 这些读回时一律给默认值。
 
 use crate::model::{Issue, IssueId, IssueKind, IssueOrigin, IssueStatus, Project};
-use bw_engine::remote::{IssueFilter, IssueState, RemoteIssue};
+use bw_engine::remote::{IssueFilter, IssueState, Remote, RemoteIssue};
 
 use super::{App, AppError, Result};
 
@@ -70,7 +70,16 @@ pub async fn create(
         .create_issue(title, body, &label_refs)
         .await
         .map_err(|e| map_remote_err("远端建活没成", e))?;
-    Ok(issue_from_create(project, iid, title, body, kind, week_of))
+    project_week_best_effort(&remote, iid, week_of).await;
+    Ok(issue_from_create(
+        project,
+        iid,
+        title,
+        body,
+        kind,
+        week_of,
+        extra_labels,
+    ))
 }
 
 /// 读回单张 issue(带正文)。走 `view_issue` 单查,正文在回程的 `body` 字段。
@@ -94,8 +103,8 @@ pub async fn list(app: &App, project: &Project, filter: IssueFilter) -> Result<V
 }
 
 /// 改 issue 的状态标签(`bw:status:*`,namespace-replace 会换掉旧 status)。
-/// `Done` 不打标签——走 `close_issue`(issue closed = Done)。`Backlog`/
-/// `Cancelled` 在 codehub 映射里没有对应标签,如实弹回(`AppError::Refused`)。
+/// `Done` 不打标签——走 `close_issue`(issue closed = Done)。`Backlog` 没有
+/// 对应标签,如实弹回。`Cancelled` 先打 `bw:status:cancelled` 再关 issue。
 pub async fn set_status(app: &App, project: &Project, iid: u32, status: IssueStatus) -> Result<()> {
     let remote = app.remote_for(project)?;
     if status == IssueStatus::Done {
@@ -118,6 +127,12 @@ pub async fn set_status(app: &App, project: &Project, iid: u32, status: IssueSta
         .update_issue(iid, Some(&label_refs), None)
         .await
         .map_err(|e| map_remote_err("远端改 issue 状态没成", e))?;
+    if status == IssueStatus::Cancelled {
+        remote
+            .close_issue(iid)
+            .await
+            .map_err(|e| map_remote_err("远端关作废 issue 没成", e))?;
+    }
     Ok(())
 }
 
@@ -131,6 +146,33 @@ pub async fn comment(app: &App, project: &Project, iid: u32, body: &str) -> Resu
     Ok(())
 }
 
+/// 读 issue 评论正文,旧的在前。
+pub async fn list_comments(app: &App, project: &Project, iid: u32) -> Result<Vec<String>> {
+    let remote = app.remote_for(project)?;
+    remote
+        .list_issue_comments(iid)
+        .await
+        .map_err(|e| map_remote_err("远端读 issue 评论没成", e))
+}
+
+/// 改 issue 的类别标签(`bw:category:*`,namespace-replace 会换掉旧类别)。
+pub async fn set_category(
+    app: &App,
+    project: &Project,
+    iid: u32,
+    category: crate::model::Category,
+) -> Result<()> {
+    let remote = app.remote_for(project)?;
+    let label = format!("bw:category:{}", crate::model::category_key(category));
+    let labels = [label];
+    let label_refs: Vec<&str> = labels.iter().map(|s| s.as_str()).collect();
+    remote
+        .update_issue(iid, Some(&label_refs), None)
+        .await
+        .map_err(|e| map_remote_err("远端改 issue 类别没成", e))?;
+    Ok(())
+}
+
 /// 改 issue 的周标签(`bw:week:*`,namespace-replace 会换掉旧 week)。
 pub async fn set_week(app: &App, project: &Project, iid: u32, week: &str) -> Result<()> {
     let remote = app.remote_for(project)?;
@@ -141,7 +183,33 @@ pub async fn set_week(app: &App, project: &Project, iid: u32, week: &str) -> Res
         .update_issue(iid, Some(&label_refs), None)
         .await
         .map_err(|e| map_remote_err("远端改 issue 周没成", e))?;
+    project_week_best_effort(&remote, iid, week).await;
     Ok(())
+}
+
+/// 标签已经写成功之后才投影。失败只打 stderr，不回滚、不挡正本。
+async fn project_week_best_effort(remote: &Remote, iid: u32, week: &str) {
+    let (start, due) = if week.is_empty() {
+        (String::new(), String::new())
+    } else if let Some(pair) = week_span(week) {
+        pair
+    } else {
+        eprintln!("[BW_MILESTONE] 周号认不出,不投影:{week}");
+        return;
+    };
+    if let Err(e) = remote.project_week(iid, week, &start, &due).await {
+        eprintln!("[BW_MILESTONE] #{iid} {week} 投影没成:{e}");
+    }
+}
+
+fn week_span(week: &str) -> Option<(String, String)> {
+    let start = crate::isoweek::week_start(week)?;
+    let due = start + time::Duration::days(6);
+    Some((ymd(start), ymd(due)))
+}
+
+fn ymd(d: time::Date) -> String {
+    format!("{:04}-{:02}-{:02}", d.year(), u8::from(d.month()), d.day())
 }
 
 /// 改 issue 的发版标签(`bw:released:*`,namespace-replace 会换掉旧 released)。
@@ -189,7 +257,10 @@ fn issue_from_create(
     body: &str,
     kind: IssueKind,
     week_of: &str,
+    extra_labels: &[&str],
 ) -> Issue {
+    let category = parse_category(extra_labels);
+    let (tool, workflow) = resolve_tool_workflow(project, kind, title, category);
     Issue {
         id: IssueId::from_remote(project.id, iid),
         project_id: project.id,
@@ -202,11 +273,11 @@ fn issue_from_create(
         pr_number: 0,
         week_of: week_of.to_string(),
         version: String::new(),
-        tool: tool_for(kind),
+        tool,
         kind,
         origin: origin_for(kind),
-        workflow: workflow_for(kind, title),
-        category: None,
+        workflow,
+        category,
         sort_order: iid as f64,
         metric_key: String::new(),
         created_at: parse_iso_to_unix(None),
@@ -222,19 +293,24 @@ fn issue_from_create(
 /// 但确实关了,退回 `created_at` 当近似(事件流至少能进「结清」那条)。
 fn issue_from_remote(project: &Project, r: &RemoteIssue) -> Issue {
     let closed = r.state.eq_ignore_ascii_case("closed");
+    let cancelled = has_cancelled_label(&r.labels);
     let kind = kind_from_title(&r.title);
-    let status = if closed {
+    // 作废会关 issue。先认取消标签,否则 closed 会被读成已完成。
+    let status = if cancelled {
+        IssueStatus::Cancelled
+    } else if closed {
         IssueStatus::Done
     } else {
         parse_status_from_labels(&r.labels)
     };
     let created_at = parse_iso_to_unix(r.created_at.as_deref());
-    let settled_at = if closed {
-        // 关了的活:先认 closed_at;没有就退回 created_at 当近似。
+    let settled_at = if closed && !cancelled {
         Some(parse_iso_to_unix(r.closed_at.as_deref()).max(created_at))
     } else {
         None
     };
+    let category = parse_category(&r.labels);
+    let (tool, workflow) = resolve_tool_workflow(project, kind, &r.title, category);
     Issue {
         id: IssueId::from_remote(project.id, r.iid),
         project_id: project.id,
@@ -248,11 +324,11 @@ fn issue_from_remote(project: &Project, r: &RemoteIssue) -> Issue {
         pr_number: 0,
         week_of: parse_week(&r.labels),
         version: parse_released(&r.labels),
-        tool: tool_for(kind),
+        tool,
         kind,
         origin: origin_for(kind),
-        workflow: workflow_for(kind, &r.title),
-        category: None,
+        workflow,
+        category,
         sort_order: r.iid as f64,
         metric_key: String::new(),
         created_at,
@@ -319,9 +395,41 @@ fn tool_for(kind: IssueKind) -> String {
         // `open_design`)。早年写过 `"claude"`,但 `agent_for` 只认 `claude_cli`,
         // 运作活一开工就被它拒掉。
         IssueKind::Ops => "claude_cli".into(),
-        // light→无;business→无(MVP 无 category 标签,查不到 issue_policy 映射)。
         _ => String::new(),
     }
+}
+
+/// 业务活:类别标签 → `.bw/issue-policy.toml` 映射出工具和 workflow。
+/// 运作活仍从标题推断。查不到映射就空着,不猜 claude。
+fn resolve_tool_workflow(
+    project: &Project,
+    kind: IssueKind,
+    title: &str,
+    category: Option<crate::model::Category>,
+) -> (String, String) {
+    if kind == IssueKind::Ops {
+        return (tool_for(kind), workflow_for(kind, title));
+    }
+    let Some(cat) = category else {
+        return (String::new(), String::new());
+    };
+    let Ok(Some(file)) =
+        crate::repo::issue_policy_file::read(std::path::Path::new(&project.workspace_path))
+    else {
+        return (String::new(), String::new());
+    };
+    match file.mapping_for(cat) {
+        Some(m) => (m.tool.clone(), m.workflow.clone()),
+        None => (String::new(), String::new()),
+    }
+}
+
+fn parse_category<S: AsRef<str>>(labels: &[S]) -> Option<crate::model::Category> {
+    labels.iter().find_map(|l| {
+        l.as_ref()
+            .strip_prefix("bw:category:")
+            .and_then(crate::model::category_from_key)
+    })
 }
 
 fn origin_for(kind: IssueKind) -> IssueOrigin {
@@ -333,14 +441,21 @@ fn origin_for(kind: IssueKind) -> IssueOrigin {
 
 // ─────────────── 辅助:标签 ↔ 字段 ───────────────
 
-/// 四态 status 的标签后缀。Done/Backlog/Cancelled 不在此列(Done 走 close,
-/// Backlog/Cancelled 在 codehub 映射里没有对应标签)。
+fn has_cancelled_label(labels: &[String]) -> bool {
+    labels
+        .iter()
+        .any(|l| l.strip_prefix("bw:status:") == Some("cancelled"))
+}
+
+/// 状态标签后缀。Done 走 close;Backlog 仍无对应标签。Cancelled 打
+/// `bw:status:cancelled` 再关 issue——codehub 不能删卡,作废不等于完成。
 fn status_label(status: IssueStatus) -> &'static str {
     match status {
         IssueStatus::Todo => "todo",
         IssueStatus::InProgress => "inprogress",
         IssueStatus::InReview => "inreview",
         IssueStatus::Blocked => "blocked",
+        IssueStatus::Cancelled => "cancelled",
         _ => "",
     }
 }
@@ -354,6 +469,7 @@ fn parse_status_from_labels(labels: &[String]) -> IssueStatus {
                 "inprogress" => IssueStatus::InProgress,
                 "inreview" => IssueStatus::InReview,
                 "blocked" => IssueStatus::Blocked,
+                "cancelled" => IssueStatus::Cancelled,
                 _ => continue,
             };
         }
@@ -373,4 +489,58 @@ fn parse_released(labels: &[String]) -> String {
         .iter()
         .find_map(|l| l.strip_prefix("bw:released:").map(|s| s.to_string()))
         .unwrap_or_default()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use bw_engine::remote::RemoteIssue;
+
+    fn proj() -> Project {
+        Project {
+            id: crate::model::ProjectId::nil(),
+            slug: "t".into(),
+            name: "t".into(),
+            workspace_path: String::new(),
+            provider: String::new(),
+            remote_host: String::new(),
+            remote_path: String::new(),
+            signal: None,
+            weekly_signal: None,
+            signal_derived_at: None,
+            sort_order: 0.0,
+            created_at: 0,
+            updated_at: 0,
+        }
+    }
+
+    fn remote(state: &str, labels: &[&str]) -> RemoteIssue {
+        RemoteIssue {
+            iid: 9,
+            number: 9,
+            title: "精品 skill 打磨".into(),
+            state: state.into(),
+            labels: labels.iter().map(|s| (*s).to_string()).collect(),
+            body: String::new(),
+            created_at: None,
+            closed_at: Some("2026-08-25T00:00:00Z".into()),
+        }
+    }
+
+    #[test]
+    fn closed_with_cancelled_is_cancelled_not_done() {
+        let i = issue_from_remote(
+            &proj(),
+            &remote("closed", &["bw:status:cancelled", "bw:week:2026-W35"]),
+        );
+        assert_eq!(i.status, IssueStatus::Cancelled);
+        assert!(i.settled_at.is_none());
+    }
+
+    #[test]
+    fn closed_without_cancelled_is_done() {
+        let i = issue_from_remote(&proj(), &remote("closed", &[]));
+        assert_eq!(i.status, IssueStatus::Done);
+        assert!(i.settled_at.is_some());
+    }
 }

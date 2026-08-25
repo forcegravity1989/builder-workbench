@@ -492,6 +492,8 @@ pub fn spawn(deep_link: DeepLink) -> Bridge {
                     workspaces_root: root.display().to_string(),
                     repos: crate::vm::RepoPickerVm::default(),
                     mr_cache: std::collections::HashMap::new(),
+                    od_src: String::new(),
+                    od_gen: 0,
                 };
 
                 // 「刷新」按下了没有。回执要等 ViewModel 拼完才写得出来。
@@ -562,6 +564,10 @@ pub fn spawn(deep_link: DeepLink) -> Bridge {
                             + usize::from(o.metrics.north_star.is_some()),
                         o.notify.unread,
                     );
+                    // 本会话第一次打开这个项目:自动采一轮指标 + 仓统计。
+                    // 不在每次重拼 VM 时跑,只在进项目这一下。
+                    kick_project_collect(&app, o.id, &tx_back).await;
+                    ui.set_note(Some("正在采本项目指标与仓统计…".into()));
                 }
                 // BW_KB_DUMP=1:把知识库三个页签的数字打进 stderr,好让人拿
                 // `git ls-files` / `codegraph files -j` / `cat .bw/releases.md`
@@ -584,7 +590,11 @@ pub fn spawn(deep_link: DeepLink) -> Bridge {
                             );
                             let issues = app.issues(pid).await.unwrap_or_default();
                             let usage = bw::app::workflow_usage(&issues);
-                            let a = vm_kb::build_assets(&usage, &ws).await;
+                            let releases = match app.project(pid).await {
+                                Ok(Some(p)) => vm_build::load_releases(&app, &p, &ws).await,
+                                _ => vec![],
+                            };
+                            let a = vm_kb::build_assets(&usage, &ws, releases).await;
                             eprintln!(
                                 "[BW_KB] 资产:技能 {} · 蒸馏 {} · 产物 {} · 发版 {} · 仓统计 {:?}",
                                 a.skills.len(),
@@ -701,25 +711,46 @@ pub fn spawn(deep_link: DeepLink) -> Bridge {
                                     // 总览那颗按钮会把人带到会话屏,落地时该正
                                     // 好停在这场会话上,而不是让人自己在左列里
                                     // 找哪一条是刚才那下点出来的。
-                                    if let Some(bw::command::Event::WeekPlanStarted {
-                                        issue_id,
-                                        ..
-                                    }) = events
-                                        .iter()
-                                        .find(|e| {
-                                            matches!(
-                                                e,
-                                                bw::command::Event::WeekPlanStarted { .. }
-                                            )
-                                        })
-                                    {
-                                        ui.session_open = Some(*issue_id);
+                                    if let Some((issue_id, tool, embed_url)) = events.iter().find_map(|e| match e {
+                                        bw::command::Event::WeekPlanStarted { issue_id, .. } => {
+                                            Some((*issue_id, String::new(), String::new()))
+                                        }
+                                        bw::command::Event::IssueRan {
+                                            id,
+                                            tool,
+                                            embed_url,
+                                            ..
+                                        } => Some((*id, tool.clone(), embed_url.clone())),
+                                        _ => None,
+                                    }) {
+                                        ui.session_open = Some(issue_id);
                                         // 换了一张活,「喂了什么」那块必须跟着关
                                         // —— 它是**上一张活**的提示词,留在屏幕上
                                         // 会被读成这一张的。
                                         ui.briefing = None;
                                         ui.expanded_dirs.clear();
                                         ui.open_file.clear();
+                                        ui.session_tab = if tool == "open_design" {
+                                            crate::vm::SessionTab::OpenDesign
+                                        } else {
+                                            crate::vm::SessionTab::default()
+                                        };
+                                        if tool == "open_design" && !embed_url.is_empty() {
+                                            ui.od_src = embed_url;
+                                            ui.od_gen = ui.od_gen.saturating_add(1);
+                                        }
+                                    }
+                                    if let Some(id) = events.iter().find_map(|e| match e {
+                                        bw::command::Event::SessionDeleted { id, .. } => Some(*id),
+                                        _ => None,
+                                    }) {
+                                        if ui.session_open == Some(id) {
+                                            ui.session_open = None;
+                                            ui.briefing = None;
+                                            ui.expanded_dirs.clear();
+                                            ui.open_file.clear();
+                                            ui.od_src.clear();
+                                        }
                                     }
                                     if confirming {
                                         ui.pending_drafts = None;
@@ -747,6 +778,8 @@ pub fn spawn(deep_link: DeepLink) -> Bridge {
                                         ui.metrics = Vec::new();
                                         ui.briefing = None;
                                         ui.repos = crate::vm::RepoPickerVm::default();
+                                        kick_project_collect(&app, *id, &tx_back).await;
+                                        ui.set_note(Some("正在采本项目指标与仓统计…".into()));
                                     }
                                     // 项目被移走了:它要是正开着,得回项目墙 ——
                                     // 留在一个已经不存在的项目上,整屏都是空的。
@@ -798,6 +831,10 @@ pub fn spawn(deep_link: DeepLink) -> Bridge {
                             ui.repo_stats = None;
                             ui.metrics = Vec::new();
                             ui.briefing = None;
+                            if let Some(pid) = id {
+                                kick_project_collect(&app, pid, &tx_back).await;
+                                ui.set_note(Some("正在采本项目指标与仓统计…".into()));
+                            }
                         }
                         Req::ViewWeek(w) => {
                             ui.viewing_week = w;
@@ -846,7 +883,15 @@ pub fn spawn(deep_link: DeepLink) -> Bridge {
                             // 文件在新工作区里多半不存在,一律清掉重来。
                             ui.expanded_dirs.clear();
                             ui.open_file.clear();
-                            ui.session_tab = crate::vm::SessionTab::default();
+                            ui.session_tab = match id {
+                                Some(iid) => match app.issue_or_err(iid).await {
+                                    Ok(i) if i.tool == "open_design" => {
+                                        crate::vm::SessionTab::OpenDesign
+                                    }
+                                    _ => crate::vm::SessionTab::default(),
+                                },
+                                None => crate::vm::SessionTab::default(),
+                            };
                         }
                         Req::SessionTab(t) => ui.session_tab = t,
                         Req::ToggleDir(d) => {
@@ -884,26 +929,61 @@ pub fn spawn(deep_link: DeepLink) -> Bridge {
                                 crate::vm::KbTab::CodeGraph | crate::vm::KbTab::Assets
                             );
                             if let (true, Some(pid)) = (want, ui.open) {
-                                if let Ok(ws) = app.workspace_of(pid).await {
-                                    let back = tx_back.clone();
-                                    let issues = app.issues(pid).await.unwrap_or_default();
-                                    let usage = bw::app::workflow_usage(&issues);
-                                    tokio::spawn(async move {
-                                        let (codegraph, assets) =
-                                            if t == crate::vm::KbTab::CodeGraph {
-                                                (Some(vm_kb::build_codegraph(&ws).await), None)
-                                            } else {
-                                                (
-                                                    None,
-                                                    Some(vm_kb::build_assets(&usage, &ws).await),
-                                                )
-                                            };
-                                        let _ = back.send(Req::KbComputed {
-                                            tab: t,
-                                            codegraph,
-                                            assets,
+                                match app.workspace_of(pid).await {
+                                    Ok(ws) => {
+                                        // 先摆「正在跑」,不然点「重新跑一次」会先闪
+                                        // 成「点一下页签就现跑」,算得快时整页像没动。
+                                        if t == crate::vm::KbTab::CodeGraph {
+                                            ui.kb_codegraph = Some(crate::vm::CodeGraphVm {
+                                                state: "running".into(),
+                                                hint: "正在跑 codegraph…".into(),
+                                                ..crate::vm::CodeGraphVm::default()
+                                            });
+                                        }
+                                        let back = tx_back.clone();
+                                        let issues = app.issues(pid).await.unwrap_or_default();
+                                        let usage = bw::app::workflow_usage(&issues);
+                                        let releases = match app.project(pid).await {
+                                            Ok(Some(p)) => {
+                                                vm_build::load_releases(&app, &p, &ws).await
+                                            }
+                                            _ => vec![],
+                                        };
+                                        tokio::spawn(async move {
+                                            let (codegraph, assets) =
+                                                if t == crate::vm::KbTab::CodeGraph {
+                                                    (Some(vm_kb::build_codegraph(&ws).await), None)
+                                                } else {
+                                                    (
+                                                        None,
+                                                        Some(
+                                                            vm_kb::build_assets(
+                                                                &usage, &ws, releases,
+                                                            )
+                                                            .await,
+                                                        ),
+                                                    )
+                                                };
+                                            let _ = back.send(Req::KbComputed {
+                                                tab: t,
+                                                codegraph,
+                                                assets,
+                                            });
                                         });
-                                    });
+                                    }
+                                    Err(e) => {
+                                        // 工作区找不到**不能静默什么都不做** —— 人
+                                        // 点了按钮却毫无反应,只会以为按钮坏了。
+                                        let msg = format!("找不到这个项目的工作区:{e}");
+                                        ui.set_note(Some(msg.clone()));
+                                        if t == crate::vm::KbTab::CodeGraph {
+                                            ui.kb_codegraph = Some(crate::vm::CodeGraphVm {
+                                                state: "error".into(),
+                                                error: msg,
+                                                ..crate::vm::CodeGraphVm::default()
+                                            });
+                                        }
+                                    }
                                 }
                             }
                         }
@@ -1006,6 +1086,8 @@ pub fn spawn(deep_link: DeepLink) -> Bridge {
                                 ui.metrics = readouts;
                                 if let Some(e) = error {
                                     ui.set_note(Some(format!("采不了指标:{e}")));
+                                } else if ui.note.as_deref() == Some("正在采本项目指标与仓统计…") {
+                                    ui.set_note(None);
                                 }
                             }
                         }
@@ -1107,4 +1189,32 @@ pub fn spawn(deep_link: DeepLink) -> Bridge {
         pty: pty_tx_handle,
         progress: prog_tx_handle,
     }
+}
+
+/// 进项目时后台采一轮。不 await 脚本 —— 占着内核线程会卡住终端节拍。
+async fn kick_project_collect(app: &App, pid: ProjectId, tx_back: &mpsc::UnboundedSender<Req>) {
+    let Ok(ws) = app.workspace_of(pid).await else {
+        return;
+    };
+    let proj = app.project(pid).await.ok().flatten();
+    let back_m = tx_back.clone();
+    let back_r = tx_back.clone();
+    let ws_m = ws.clone();
+    tokio::spawn(async move {
+        let (readouts, error) = match bw::app::collect::collect_all(&ws_m, 4).await {
+            Ok(r) => (r, None),
+            Err(e) => (Vec::new(), Some(e)),
+        };
+        let _ = back_m.send(Req::MetricsCollected {
+            project: pid,
+            readouts,
+            error,
+        });
+    });
+    tokio::spawn(async move {
+        let _ = back_r.send(Req::RepoStatsComputed {
+            project: pid,
+            stats: vm_derive::collect_repo_stats(&ws, proj.as_ref()).await,
+        });
+    });
 }

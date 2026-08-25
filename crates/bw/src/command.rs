@@ -4,7 +4,7 @@
 //! 仓文件、不自己判断状态能不能转。所有用例与守卫都在 [`crate::app`]。
 //!
 //! 这里只列 A 刀真接了实现的命令。**没接的不放进枚举** —— 一条能发出去但内核
-//! 悄悄什么都不做的命令,比没有这条命令更糟;会话屏、项目群、回填那几条随
+//! 悄悄什么都不做的命令,比没有这条命令更糟;会话屏、项目群那几条随
 //! B / C 刀落地时再加。
 
 use crate::model::{Category, ConversationId, IssueId, IssueStatus, ProjectId};
@@ -126,10 +126,17 @@ pub enum Command {
     /// 人在评审完之后再点一次。
     SubmitIssueWork { id: IssueId },
     /// 状态转移。合法性由 `can_transition_to` 守;「完成」只能从「评审中」来,
-    /// 而且只能是人显式发这条命令。
+    /// 而且只能是人显式发这条命令。作废走 `Cancelled`,不是 Done。
     TransitionIssue { id: IssueId, to: IssueStatus },
+    /// 给已有的活补/改类别标签。读回时用它查 issue-policy 的开工工具。
+    SetIssueCategory { id: IssueId, category: Category },
     /// 卡住了。如实停在原地,可以重试,不假装前进。
     BlockIssue { id: IssueId, reason: String },
+    /// 作废:写取消原因进评论、打 `bw:status:cancelled`、关掉远端 issue。
+    /// 不是完成。原因不能空。
+    CancelIssue { id: IssueId, reason: String },
+    /// 删掉这张活的本机会话行和它的 worktree。不动远端 issue。
+    DeleteSession { id: IssueId },
 
     // ── 配置 ──────────────────────────────────────────────
     /// 保存一行「类别→工具→workflow」映射,写 `.bw/issue-policy.toml`。
@@ -157,10 +164,6 @@ pub enum Command {
     /// 返回空事件,不是错误。
     TickScheduler { project_id: ProjectId },
 
-    /// 老项目历史回填 —— 把「本该有但老项目没攒出来」的周计划文件与发版行补
-    /// 出来。语义是「给资产盘点这个 workflow 传一次 `mode=first`」,不是另开
-    /// 一条平行流水线。重跑安全:已有的周文件不碰,发版行按版本号去重。
-    BackfillHistory { project_id: ProjectId },
     /// 通知屏的「合入并完成」。先真的合 MR,再把活推「完成」——顺序反了,
     /// 合入失败就会留下一张已完成、改动却还挂在分支上的活。
     MergeAndSettle { id: IssueId },
@@ -184,6 +187,13 @@ pub enum Command {
         conversation_id: ConversationId,
         cols: u16,
         rows: u16,
+    },
+    /// 总览手填卡:把人填的今天这个数追加进 `.bw/metrics/readings.jsonl`。
+    /// 只收 C 类(`collect.kind = "manual"`)。空值拒。
+    RecordManualMetric {
+        project_id: ProjectId,
+        name: String,
+        value: String,
     },
 }
 
@@ -268,11 +278,19 @@ pub enum Event {
         id: IssueId,
         week_of: String,
     },
+    IssueCategorySet {
+        id: IssueId,
+        category: String,
+    },
     /// 一次 ▶跑 结束。`summary` 原样来自执行器(mock 的自带【mock】字样)。
+    /// `tool` 是这张活读回的开工工具,壳用来决定会话屏落在哪一页。
+    /// `embed_url` 只给 Open Design:内嵌页该打开的 loopback 地址;空 = 不是 OD 或没灌上。
     IssueRan {
         id: IssueId,
         ok: bool,
         summary: String,
+        tool: String,
+        embed_url: String,
     },
     /// 「提交并开 MR」走完了。`commits` 是这条分支上比基线多出来的提交数,
     /// `pr_number = 0` 时 `note` 说明为什么没有 MR —— 绝不摆一个空号。
@@ -298,6 +316,9 @@ pub enum Event {
     IssueBlocked {
         id: IssueId,
     },
+    IssueCancelled {
+        id: IssueId,
+    },
     ReleaseCut {
         version: String,
         rows_written: bool,
@@ -317,13 +338,6 @@ pub enum Event {
     ToolProbed {
         name: String,
         result: ProbeResult,
-    },
-    /// 回填跑完了。`weeks`/`releases` 是**真的写出去**的那些,不是"扫到的"。
-    HistoryBackfilled {
-        project_id: ProjectId,
-        weeks: Vec<String>,
-        releases: Vec<String>,
-        note: String,
     },
     /// 往项目群发了(或没发成)一条。**不落库**——通知行上那句「已发到群 ✓」
     /// 和事件流里那一条是同一个事件在两处的展示,只在当前这次运行里存在。
@@ -351,11 +365,29 @@ pub enum Event {
         id: IssueId,
         was_live: bool,
     },
+    /// 人确认后删掉了本机会话行。远端 issue 不动;`note` 写工作树收没收掉。
+    SessionDeleted {
+        id: IssueId,
+        note: String,
+    },
     /// 定时真的建出了一张活。界面上「本周运作」栏据此显示「已自动开工」。
     OpsAutoFired {
         id: IssueId,
         workflow: String,
         week: String,
+    },
+    /// B 类指标今日自动采了一轮。不建活、不完成活。
+    MetricsAutoCollected {
+        project_id: ProjectId,
+        week: String,
+        count: u32,
+    },
+    /// 人记下了一条 C 类读数。同一天再记覆盖读回(只追加,最后一行算)。
+    MetricRecorded {
+        project_id: ProjectId,
+        name: String,
+        day: String,
+        value: String,
     },
     NotifySeenMarked {
         project_id: ProjectId,

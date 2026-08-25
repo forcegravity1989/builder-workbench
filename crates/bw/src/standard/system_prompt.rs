@@ -25,16 +25,23 @@ pub const SYSTEM_PROMPT_TMPL: &str =
 pub const REF_METRICS: &str =
     include_str!("../../../../standard/system-prompt/references/metrics.md");
 pub const REF_BUILD: &str = include_str!("../../../../standard/system-prompt/references/build.md");
+pub const REF_WEEK_PLAN_COMMENT: &str =
+    include_str!("../../../../standard/system-prompt/references/week-plan-comment.md");
 
 /// buddy 自带的阶段规范 md —— **起手只放已定型的两份**(指标铁律、改仓规则),
 /// 其余按实践长,不预置一堆没用的。
 pub fn references() -> Vec<ReferencePack> {
     // (slug, 一句话, 正文)
-    const REFS: [(&str, &str, &str); 2] = [
+    const REFS: [(&str, &str, &str); 3] = [
         (
             "metrics",
             "干指标活的 buddy 规范(可回溯/不许写0/窗口由 buddy 给)",
             REF_METRICS,
+        ),
+        (
+            "week-plan-comment",
+            "运作活①评论格式(周目标/本周纳入/读数快照,挂前要过校验脚本)",
+            REF_WEEK_PLAN_COMMENT,
         ),
         (
             "build",

@@ -69,6 +69,31 @@ pub async fn probe(host: &str, path: &str) -> Result<String, CodehubError> {
     Ok(format!("{pns} · {vis}{arch} · 最近活跃 {last}"))
 }
 
+/// `codehub-cli project view` 的默认分支。绿区建 Release 强制要 `--ref`,
+/// 不传就 HTTP 422 `CH.00404131`。空则 `master`(内部仓常见,跟
+/// [`create_mr_on_branch`] 同口径)。
+async fn project_default_branch(host: &str, path: &str) -> Result<String, CodehubError> {
+    let out = crate::win_cmd::tokio_cmd("codehub-cli")
+        .args(["project", "view", "-p", path, "-H", host])
+        .stdin(Stdio::null())
+        .stdout(Stdio::piped())
+        .stderr(Stdio::piped())
+        .output()
+        .await
+        .map_err(spawn_err)?;
+    if !out.status.success() {
+        return Err(CodehubError::Command(stderr_text(&out)));
+    }
+    let v: serde_json::Value = serde_json::from_slice(&out.stdout)
+        .map_err(|e| CodehubError::Parse(format!("project view JSON:{e}")))?;
+    let b = v["default_branch"].as_str().unwrap_or("").trim();
+    if b.is_empty() {
+        Ok("master".to_string())
+    } else {
+        Ok(b.to_string())
+    }
+}
+
 /// 在**已经推上去的分支**上开一个 MR —— `codehub-cli mr create` 就这一处实现。
 ///
 /// 调用方各自准备分支的方式不同([`create_mr`] 走 `stage_commit_push`、
@@ -810,9 +835,54 @@ pub async fn comment_issue(
     Ok(())
 }
 
-/// `codehub-cli release create -p <path> -H <host> <tag> --title <t> --notes <body>`
-/// → 打 tag + 发版本。只在发版流调,绝不自动。tag 已存在时 codehub-cli 如实
-/// 报错,不假装成功。body 旗标 `--notes`(GitLab release API 的正文字段)。
+/// `codehub-cli issue comment list <iid> -p <path> -H <host> -l 0 --sort asc`
+/// → 旧的在前,系统备注丢掉。
+pub async fn list_issue_comments(
+    host: &str,
+    path: &str,
+    iid: u32,
+) -> Result<Vec<String>, CodehubError> {
+    let iid_s = iid.to_string();
+    let out = crate::win_cmd::tokio_cmd("codehub-cli")
+        .args([
+            "issue",
+            "comment",
+            "list",
+            &iid_s,
+            "-p",
+            path,
+            "-H",
+            host,
+            "-l",
+            "0",
+            "--sort",
+            "asc",
+            "--jq",
+            r#"(. // []) | [.[] | select((.system // false) | not) | .body // ""]"#,
+        ])
+        .stdin(Stdio::null())
+        .stdout(Stdio::piped())
+        .stderr(Stdio::piped())
+        .output()
+        .await
+        .map_err(spawn_err)?;
+    if !out.status.success() {
+        return Err(CodehubError::Command(stderr_text(&out)));
+    }
+    let text = String::from_utf8_lossy(&out.stdout);
+    let text = text.trim();
+    if text.is_empty() || text == "null" {
+        return Ok(Vec::new());
+    }
+    serde_json::from_str(text)
+        .map_err(|e| CodehubError::Parse(format!("无法解析 issue 评论列表 JSON:{e}")))
+}
+
+/// `codehub-cli release create -p <path> -H <host> --tag-name <tag> --name <t>
+/// --description <body> --ref <default_branch>` → 打 tag + 发版本。只在发版流调,
+/// 绝不自动。tag 已存在时 codehub-cli 如实报错,不假装成功。
+/// 旗标跟现行 CLI:`--title` / `--notes` / 位置参数 tag 都会被拒。
+/// 绿区实例强制 `--ref`(分支/提交/tag),不传就 422 `CH.00404131`。
 pub async fn create_release(
     host: &str,
     path: &str,
@@ -820,9 +890,23 @@ pub async fn create_release(
     title: &str,
     body: &str,
 ) -> Result<(), CodehubError> {
+    let git_ref = project_default_branch(host, path).await?;
     let out = crate::win_cmd::tokio_cmd("codehub-cli")
         .args([
-            "release", "create", "-p", path, "-H", host, tag, "--title", title, "--notes", body,
+            "release",
+            "create",
+            "-p",
+            path,
+            "-H",
+            host,
+            "--tag-name",
+            tag,
+            "--name",
+            title,
+            "--description",
+            body,
+            "--ref",
+            &git_ref,
         ])
         .stdin(Stdio::null())
         .stdout(Stdio::piped())
@@ -961,6 +1045,172 @@ pub async fn issue_times(
         .collect())
 }
 
+// ───────────────────────── 周标签 → 里程碑投影 ─────────────────────────
+//
+// codehub-cli 没有 milestone 子命令。走 `api`，路径必须带 `/api/v4`
+//（不带会 302 到登录页）。只认标题整段等于 `YYYY-Www` 的里程碑，不碰
+// 别人的 `5.8.0`。`week` 空 = 从里程碑摘下（`milestone_id=0`）。
+
+/// 把一张 issue 挂到（或摘下）同名周里程碑。幂等：同名已在就复用。
+pub async fn project_week(
+    host: &str,
+    path: &str,
+    iid: u32,
+    week: &str,
+    start: &str,
+    due: &str,
+) -> Result<(), CodehubError> {
+    let project_id = project_numeric_id(host, path).await?;
+    let pid = project_id.to_string();
+    if week.is_empty() {
+        return set_issue_milestone(host, &pid, iid, 0).await;
+    }
+    let mid = ensure_week_milestone(host, &pid, week, start, due).await?;
+    set_issue_milestone(host, &pid, iid, mid).await
+}
+
+async fn project_numeric_id(host: &str, path: &str) -> Result<u64, CodehubError> {
+    let out = crate::win_cmd::tokio_cmd("codehub-cli")
+        .args(["project", "view", "-p", path, "-H", host])
+        .stdin(Stdio::null())
+        .stdout(Stdio::piped())
+        .stderr(Stdio::piped())
+        .output()
+        .await
+        .map_err(spawn_err)?;
+    if !out.status.success() {
+        return Err(CodehubError::Command(stderr_text(&out)));
+    }
+    let v: serde_json::Value = serde_json::from_slice(&out.stdout)
+        .map_err(|e| CodehubError::Parse(format!("project view JSON:{e}")))?;
+    v["id"]
+        .as_u64()
+        .ok_or_else(|| CodehubError::Parse("project view 没有数字 id".into()))
+}
+
+async fn ensure_week_milestone(
+    host: &str,
+    project_id: &str,
+    week: &str,
+    start: &str,
+    due: &str,
+) -> Result<u64, CodehubError> {
+    let listed = api_json(
+        host,
+        "GET",
+        "/api/v4/projects/:id/milestones",
+        &[("id", project_id)],
+        &[],
+    )
+    .await?;
+    for m in milestone_rows(&listed) {
+        if m["title"].as_str() == Some(week) {
+            if let Some(id) = m["id"].as_u64() {
+                return Ok(id);
+            }
+        }
+    }
+    let desc = format!("buddy 投影 · 正本是 bw:week:{week}");
+    let created = api_json(
+        host,
+        "POST",
+        "/api/v4/projects/:id/milestones",
+        &[
+            ("id", project_id),
+            ("title", week),
+            ("start_date", start),
+            ("due_date", due),
+        ],
+        &[("description", desc.as_str())],
+    )
+    .await?;
+    created["id"]
+        .as_u64()
+        .ok_or_else(|| CodehubError::Parse(format!("新建里程碑没有 id:{created}")))
+}
+
+async fn set_issue_milestone(
+    host: &str,
+    project_id: &str,
+    iid: u32,
+    milestone_id: u64,
+) -> Result<(), CodehubError> {
+    let iid_s = iid.to_string();
+    let mid_s = milestone_id.to_string();
+    api_json(
+        host,
+        "PUT",
+        "/api/v4/projects/:id/issues/:issue_iid",
+        &[
+            ("id", project_id),
+            ("issue_iid", iid_s.as_str()),
+            ("milestone_id", mid_s.as_str()),
+        ],
+        &[],
+    )
+    .await?;
+    Ok(())
+}
+
+async fn api_json(
+    host: &str,
+    method: &str,
+    endpoint: &str,
+    fields: &[(&str, &str)],
+    raw_fields: &[(&str, &str)],
+) -> Result<serde_json::Value, CodehubError> {
+    let field_args: Vec<String> = fields.iter().map(|(k, v)| format!("{k}={v}")).collect();
+    let raw_args: Vec<String> = raw_fields.iter().map(|(k, v)| format!("{k}={v}")).collect();
+    let mut args = vec!["api", method, endpoint, "-H", host, "-f", "json"];
+    for a in &field_args {
+        args.push("--field");
+        args.push(a);
+    }
+    for a in &raw_args {
+        args.push("--raw-field");
+        args.push(a);
+    }
+    let out = crate::win_cmd::tokio_cmd("codehub-cli")
+        .args(&args)
+        .stdin(Stdio::null())
+        .stdout(Stdio::piped())
+        .stderr(Stdio::piped())
+        .output()
+        .await
+        .map_err(spawn_err)?;
+    if !out.status.success() {
+        return Err(CodehubError::Command(stderr_text(&out)));
+    }
+    unwrap_api_body(&out.stdout)
+}
+
+/// `codehub-cli api -f json` 包一层 `{body,status,statusCode}`；也兼容裸 JSON。
+fn unwrap_api_body(stdout: &[u8]) -> Result<serde_json::Value, CodehubError> {
+    let v: serde_json::Value =
+        serde_json::from_slice(stdout).map_err(|e| CodehubError::Parse(format!("api JSON:{e}")))?;
+    if let Some(code) = v.get("statusCode").and_then(|c| c.as_u64()) {
+        if !(200..300).contains(&code) {
+            return Err(CodehubError::Command(format!(
+                "api {}: {}",
+                v.get("status").and_then(|s| s.as_str()).unwrap_or("?"),
+                v.get("body").map(|b| b.to_string()).unwrap_or_default()
+            )));
+        }
+        return Ok(v.get("body").cloned().unwrap_or(serde_json::Value::Null));
+    }
+    Ok(v)
+}
+
+fn milestone_rows(body: &serde_json::Value) -> Vec<&serde_json::Value> {
+    if let Some(arr) = body.get("milestones").and_then(|v| v.as_array()) {
+        return arr.iter().collect();
+    }
+    if let Some(arr) = body.as_array() {
+        return arr.iter().collect();
+    }
+    Vec::new()
+}
+
 #[derive(serde::Deserialize)]
 struct CodehubIssueTimeJson {
     #[serde(default)]
@@ -990,5 +1240,30 @@ mod parse_issue_list_json_tests {
         assert_eq!(rows.len(), 1);
         assert_eq!(rows[0].iid, 5);
         assert_eq!(rows[0].title, "bootstrap v5.0");
+    }
+}
+
+#[cfg(test)]
+mod api_body_tests {
+    use super::{milestone_rows, unwrap_api_body};
+
+    #[test]
+    fn unwraps_status_wrapper() {
+        let v = unwrap_api_body(
+            br#"{"body":{"id":50659,"title":"2026-W35"},"status":"201 Created","statusCode":201}"#,
+        )
+        .unwrap();
+        assert_eq!(v["id"], 50659);
+    }
+
+    #[test]
+    fn reads_wrapped_milestone_list() {
+        let body = unwrap_api_body(
+            br#"{"body":{"all":1,"milestones":[{"id":1,"title":"2026-W35"}]},"status":"200 OK","statusCode":200}"#,
+        )
+        .unwrap();
+        let rows = milestone_rows(&body);
+        assert_eq!(rows.len(), 1);
+        assert_eq!(rows[0]["title"], "2026-W35");
     }
 }

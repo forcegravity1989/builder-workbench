@@ -317,33 +317,13 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         }
     }
 
-    // ── 步骤 9:老项目历史回填 ────────────────────────────
-    // 这个演示项目是 buddy 自己的仓 `git clone --local` 出来的,所以它有真实
-    // 历史 —— 回填出来的每一份周文件都能拿 git 复算。
-    let events = app
-        .dispatch(Command::BackfillHistory { project_id: pid })
-        .await?;
-    if let Some(Event::HistoryBackfilled {
-        weeks,
-        releases,
-        note,
-        ..
-    }) = events.first()
-    {
-        say(&mut log, &format!("步骤 9 · 历史回填:{note}"));
-        // 抽一份出来标明怎么复算 —— 报告里给命令,不给结论。
-        if let Some(w) = weeks.first() {
-            say(
-                &mut log,
-                &format!(
-                    "  复算样例:git -C <ws> log --since=<{w} 周一> --until=<下周一> --pretty=format:%H | wc -l",
-                ),
-            );
-        }
-        if let Some(v) = releases.first() {
-            say(&mut log, &format!("  回填的第一个版本:{v}(来自 git 标签)"));
-        }
-    }
+    // ── 步骤 9:历史呈现(不再走内置回填)────────────────
+    // 某一周要出现在计划屏,给已有 issue 打 `bw:week:YYYY-Www`。
+    // 需要周目标就补一张运作活①,评论写明补记。没有 BackfillHistory 命令。
+    say(
+        &mut log,
+        "步骤 9 · 历史呈现:给已有 issue 打 bw:week,需要周目标再补运作活①(内置回填已删)",
+    );
 
     // ── 步骤 10:项目群(mock 提供方)────────────────────
     // 真实提供方(WeLink)还没接,所以这里用自我标注的假群:每发一条往 stderr

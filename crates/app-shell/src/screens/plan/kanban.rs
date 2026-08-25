@@ -1,7 +1,7 @@
-//! 六列看板本体。列头带「这一列是什么意思」的定义,卡片左边框按状态染色。
+//! 七列看板本体。列头带「这一列是什么意思」的定义,卡片左边框按状态染色。
 
 use super::Filters;
-use crate::bridge::Bridge;
+use crate::bridge::{Bridge, Panel, PanelNav};
 use crate::chrome::light_dot;
 use crate::vm::{CardItemVm, ColumnVm, ProjectVm};
 use bw::command::Command;
@@ -52,6 +52,7 @@ pub fn board(
     pending: Signal<Option<PendingMove>>,
     selected: Signal<Option<IssueId>>,
     bounced: Signal<String>,
+    nav: PanelNav,
 ) -> Element {
     // 筛选器只在「全部活」视图上生效;看某一周时不过滤。
     let f = if p.view_all { filters } else { None };
@@ -66,7 +67,7 @@ pub fn board(
     rsx! {
         div { class: "kanban",
             for col in p.board.columns.iter() {
-                {column(col, f.clone(), drop_week, bridge, dragging, pending, selected, bounced)}
+                {column(col, f.clone(), drop_week, bridge, dragging, pending, selected, bounced, nav)}
             }
         }
     }
@@ -82,6 +83,7 @@ fn column(
     mut pending: Signal<Option<PendingMove>>,
     selected: Signal<Option<IssueId>>,
     mut bounced: Signal<String>,
+    nav: PanelNav,
 ) -> Element {
     let target = col.status;
     let week = drop_week.to_string();
@@ -161,7 +163,7 @@ fn column(
                 div { class: "kanban-col-def", {col_def(col.status)} }
             }
             for c in cards {
-                {card_view(c, dragging, selected)}
+                {card_view(c, dragging, selected, bridge, nav)}
             }
         }
     }
@@ -171,9 +173,16 @@ fn card_view(
     c: &CardItemVm,
     mut dragging: Signal<Option<CardItemVm>>,
     mut selected: Signal<Option<IssueId>>,
+    bridge: &Bridge,
+    nav: PanelNav,
 ) -> Element {
     let c1 = c.clone();
     let cid = c.id;
+    let b_run = bridge.clone();
+    let can_start = matches!(
+        c.status,
+        IssueStatus::Backlog | IssueStatus::Todo | IssueStatus::InProgress
+    );
     let sig = status_signal(c.status);
     let edge = crate::theme::signal_color(sig);
     rsx! {
@@ -184,6 +193,7 @@ fn card_view(
             style: "border-left-color:{edge};",
             ondragstart: move |_| dragging.set(Some(c1.clone())),
             ondragend: move |_| dragging.set(None),
+            onclick: move |_| selected.set(Some(cid)),
             div { class: "kcard-top",
                 span { class: "chip chip-outline", "{c.category}" }
                 if c.kind != "业务活" {
@@ -203,10 +213,19 @@ fn card_view(
                 }
                 span { style: "margin-left:auto;", title: "{c.status.label()}", {light_dot(sig, false)} }
             }
-            div {
-                class: "kcard-title",
-                onclick: move |_| selected.set(Some(cid)),
-                "#{c.number} {c.title}"
+            div { class: "kcard-title", "#{c.number} {c.title}" }
+            if can_start {
+                div { class: "kcard-actions",
+                    button {
+                        class: "btn btn-sm btn-primary",
+                        onclick: move |e| {
+                            e.stop_propagation();
+                            b_run.cmd(Command::RunIssue { id: cid });
+                            nav.go(Panel::Session);
+                        },
+                        "▶ 开工"
+                    }
+                }
             }
         }
     }

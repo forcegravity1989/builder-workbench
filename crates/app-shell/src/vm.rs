@@ -120,7 +120,7 @@ pub struct ProjectCardVm {
     /// 还没看过的动静:评审中 + 阻塞里,更新时间晚于「读到这里」那一下的。
     /// 通知屏点过之后这个数会掉下去。
     pub unread: u32,
-    /// 本周目标。呈现落点明早再对,今天壳里常常是空的。
+    /// 本周目标一句话,来自运作活①评论。没有或解析不到 = 空。
     pub week_goal: String,
     /// 上次交付:发版记录最后一行的日期与版本。仓里没有发版记录 = 空。
     pub last_delivery: String,
@@ -268,8 +268,6 @@ pub struct MetricCardVm {
 #[derive(Clone, Debug, PartialEq)]
 pub struct WeekVm {
     pub week: String,
-    /// 回填出来的历史周带徽记。
-    pub backfill: bool,
     pub goal: Option<String>,
     pub activity_count: u32,
 }
@@ -453,6 +451,9 @@ pub struct WorkbenchVm {
     /// 中栏打开的文件:路径 + 正文(只读)或 diff 正文。
     pub open_path: String,
     pub open_body: String,
+    /// Open Design iframe。空 = 组件自己探首页。
+    pub od_src: String,
+    pub od_gen: u64,
 }
 
 #[derive(Clone, Debug, Default, PartialEq)]
@@ -608,7 +609,7 @@ pub struct KbFileVm {
 
 #[derive(Clone, Debug, Default, PartialEq)]
 pub struct CodeGraphVm {
-    /// `ready` / `not_installed` / `not_indexed`。
+    /// `ready` / `running` / `not_installed` / `not_indexed` / `error`。
     pub state: String,
     /// 灰态时的下一步该干什么。
     pub hint: String,

@@ -4,8 +4,8 @@
 //! 分开,才能保证「灯只可能是算出来的」。
 //!
 //! 刀5(2026-08-22)迁完:判据不再读 `week_plan_file` / `release_file`(这两个
-//! 模块已删)。`has_week_goal` 要读 ops① 评论里的目标正文(还没建,今天恒假);
-//! `ops1_open` 只说明这张活开了;`has_metric_reading` 和 `any_metric_red` 改读
+//! 模块已删)。`has_week_goal` 读 ops① 评论里解析出的周目标一句话;
+//! `ops1_open` 只说明这张活还开着;`has_metric_reading` 和 `any_metric_red` 改读
 //! 仓 `.bw/metrics/readings.jsonl`;`released` 改读 git 标签日期。
 
 use super::{App, Result};
@@ -13,7 +13,10 @@ use crate::derive::{derive_project_health, DerivedHealth, HealthInputs};
 use crate::isoweek;
 use crate::model::{Issue, IssueStatus, Project, ProjectId};
 use crate::repo::metrics_file;
+use crate::repo::readings_file;
 use std::path::Path;
+
+pub use readings_file::{read_metric_readings, MetricReading};
 
 /// 从 issue 列表 + 仓现场取四条判据的输入。git 读不到(不是仓、没提交)一律当
 /// 「没有」,不报错——没数据本来就是合法状态,结果是灰灯而不是崩溃。
@@ -22,16 +25,16 @@ pub async fn collect_health_inputs(
     workspace: &Path,
     week: &str,
     issues: &[Issue],
+    week_goal: Option<&str>,
 ) -> HealthInputs {
     let last_week = isoweek::previous_week(week).unwrap_or_default();
 
-    // (a) 运作活①开着 ≠ 周目标已定。目标正文要从 ops① 评论里取,那条还没建;
-    // 没读到正文就当没有目标,不把「开始本周」点亮成「定了周目标」。
+    // (a) 运作活①开着 ≠ 周目标已定。目标正文从 ops① 评论解析,没读到就不打勾。
     let ops1_title = crate::app::ops1_title(week);
     let ops1_open = issues
         .iter()
         .any(|i| i.title == ops1_title && i.status != IssueStatus::Done);
-    let has_week_goal = false;
+    let has_week_goal = week_goal.is_some_and(|s| !s.trim().is_empty());
 
     // 「这个仓 git 读得动吗」单独问一次:读不动的时候「零提交」说明不了任何
     // 事,不能拿去判红(新接入的项目第一眼看到红灯,是在编)。
@@ -71,38 +74,6 @@ pub async fn collect_health_inputs(
         any_metric_red,
         delivered_last_week: merged_last_week || released,
     }
-}
-
-// ── readings.jsonl 读数 ──────────────────────────────────────────────
-
-/// `.bw/metrics/readings.jsonl` 的一行读数。`pub` 是为了让 app-shell 的指标卡
-/// 复用同一条读法(刀6:周计划文件不再写「本周指标读数」段,读数只从这份
-/// jsonl 来)。`source` / `collected_at` 今天 jsonl 里还没写,留 `#[serde(default)]`
-/// —— 以后加字段不破坏存量行。
-#[derive(serde::Deserialize, Clone, Debug, Default, PartialEq, Eq)]
-pub struct MetricReading {
-    #[serde(default)]
-    pub week: String,
-    pub name: String,
-    pub value: String,
-    #[serde(default)]
-    pub source: String,
-    #[serde(default)]
-    pub collected_at: String,
-}
-
-/// 读指定周的读数行。文件不存在 / 格式坏 = 空(不报错,没数据是合法状态)。
-/// 健康判据与 app-shell 指标卡都走这一条 —— jsonl 的格式只有这一处定义。
-pub fn read_metric_readings(workspace: &Path, week: &str) -> Vec<MetricReading> {
-    let path = workspace.join(".bw/metrics/readings.jsonl");
-    let Ok(raw) = std::fs::read_to_string(&path) else {
-        return Vec::new();
-    };
-    raw.lines()
-        .filter(|l| !l.trim().is_empty())
-        .filter_map(|l| serde_json::from_str::<MetricReading>(l).ok())
-        .filter(|r| r.week == week)
-        .collect()
 }
 
 /// 比对读数与 `.bw/metrics.toml` 的 target。无读数 / 无定义 / 解析不出 → false
@@ -201,7 +172,15 @@ impl App {
         let ws = self.workspace_of(project_id).await?;
         let week = isoweek::current_week();
         let issues = self.issues(project_id).await?;
-        let inputs = collect_health_inputs(&project, &ws, &week, &issues).await;
+        let goals = self.week_goals_from_ops1(&project, &issues).await;
+        let inputs = collect_health_inputs(
+            &project,
+            &ws,
+            &week,
+            &issues,
+            goals.get(&week).map(String::as_str),
+        )
+        .await;
         let health = derive_project_health(&inputs);
         self.cache_project_health(project_id, &health).await?;
         Ok(health)

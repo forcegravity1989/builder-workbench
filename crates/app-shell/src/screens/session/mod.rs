@@ -19,36 +19,90 @@ use crate::vm::{ProjectVm, SessionTab, SessionVm};
 use bw::command::Command;
 use bw::model::Signal as HealthSignal;
 use dioxus::prelude::*;
+use std::time::Duration;
+
+fn bump_term_fit() {
+    spawn(async {
+        tokio::time::sleep(Duration::from_millis(48)).await;
+        let _ = document::eval("window.dispatchEvent(new Event('resize')); true").await;
+    });
+}
 
 #[component]
 pub fn View(p: ProjectVm, bridge: Bridge) -> Element {
     let (p, bridge) = (&p, &bridge);
+    let pending_delete = use_signal(|| None::<(bw::model::IssueId, String)>);
+    let mut left_on = use_signal(|| true);
+    let mut right_on = use_signal(|| true);
     let open = p
         .session_open
         .and_then(|id| p.sessions.iter().find(|s| s.issue_id == id));
+    let left_cls = if *left_on.read() {
+        "sess-col sess-left"
+    } else {
+        "sess-col sess-left is-collapsed"
+    };
+    let right_cls = if *right_on.read() {
+        "sess-col sess-right"
+    } else {
+        "sess-col sess-right is-collapsed"
+    };
     rsx! {
-        div { class: "sess-col sess-left",
-            div { class: "sess-left-scroll",
-                if p.sessions.is_empty() {
-                    div { class: "detail-empty",
-                        "还没有会话。到计划屏点一张活的 ▶开工,这里就会多一行。"
+        div { class: "{left_cls}",
+            if *left_on.read() {
+                button {
+                    class: "sess-rail-toggle",
+                    title: "收起会话列表",
+                    onclick: move |_| { left_on.set(false); bump_term_fit(); },
+                    "‹"
+                }
+                div { class: "sess-left-scroll",
+                    if p.sessions.is_empty() {
+                        div { class: "detail-empty",
+                            "还没有会话。到计划屏点一张活的 ▶开工,这里就会多一行。"
+                        }
+                    }
+                    for s in p.sessions.iter() {
+                        {session_row(s, p.session_open == Some(s.issue_id), bridge)}
                     }
                 }
-                for s in p.sessions.iter() {
-                    {session_row(s, p.session_open == Some(s.issue_id), bridge)}
+            } else {
+                button {
+                    class: "sess-rail",
+                    title: "展开会话列表",
+                    onclick: move |_| { left_on.set(true); bump_term_fit(); },
+                    "会话"
                 }
             }
         }
         div { class: "sess-col sess-midhead",
-            {action_bar(open, bridge)}
+            {action_bar(open, pending_delete, bridge)}
             {tabs(p, bridge)}
         }
         if let Some(text) = p.briefing.as_ref() {
             {briefing_overlay(text, p.session_open, bridge)}
         }
         {mid_body(p)}
-        div { class: "sess-col sess-right",
-            div { class: "sess-right-scroll", {right_column(p, bridge)} }
+        div { class: "{right_cls}",
+            if *right_on.read() {
+                button {
+                    class: "sess-rail-toggle",
+                    title: "收起工作区",
+                    onclick: move |_| { right_on.set(false); bump_term_fit(); },
+                    "›"
+                }
+                div { class: "sess-right-scroll", {right_column(p, bridge)} }
+            } else {
+                button {
+                    class: "sess-rail",
+                    title: "展开工作区",
+                    onclick: move |_| { right_on.set(true); bump_term_fit(); },
+                    "工作区"
+                }
+            }
+        }
+        if let Some((id, title)) = pending_delete.read().clone() {
+            {delete_session_dialog(id, title, pending_delete, bridge)}
         }
     }
 }
@@ -85,7 +139,11 @@ fn session_row(s: &SessionVm, active: bool, bridge: &Bridge) -> Element {
 
 // ── 中栏上半:动作条 + 页签 ─────────────────────────
 
-fn action_bar(open: Option<&SessionVm>, bridge: &Bridge) -> Element {
+fn action_bar(
+    open: Option<&SessionVm>,
+    mut pending_delete: Signal<Option<(bw::model::IssueId, String)>>,
+    bridge: &Bridge,
+) -> Element {
     let Some(s) = open else {
         return rsx! {
             div { class: "sess-actionbar",
@@ -101,6 +159,7 @@ fn action_bar(open: Option<&SessionVm>, bridge: &Bridge) -> Element {
         bridge.clone(),
     );
     let id = s.issue_id;
+    let del_title = format!("#{} {}", s.issue_number, s.issue_title);
     rsx! {
         div { class: "sess-actionbar",
             span { class: "ttl", title: "#{s.issue_number} {s.issue_title}",
@@ -157,6 +216,44 @@ fn action_bar(open: Option<&SessionVm>, bridge: &Bridge) -> Element {
             // 高保真上这里还有「蒸馏」与「在 Cursor 中打开」。前者 V4 还没有
             // 这条命令,后者要按活的开工工具决定露不露 —— 都还没接,做成灰态。
             button { class: "btn btn-sm", disabled: true, title: "V4 还没接蒸馏", "蒸馏" }
+            button {
+                class: "btn btn-sm",
+                title: "删掉本机这一行会话和它的工作树。远端 issue 不动。",
+                onclick: move |_| pending_delete.set(Some((id, del_title.clone()))),
+                "删除会话"
+            }
+        }
+    }
+}
+
+fn delete_session_dialog(
+    id: bw::model::IssueId,
+    title: String,
+    mut pending: Signal<Option<(bw::model::IssueId, String)>>,
+    bridge: &Bridge,
+) -> Element {
+    let b = bridge.clone();
+    rsx! {
+        div { class: "modal-backdrop",
+            div { class: "modal", style: "max-width:420px;",
+                h3 { "删除会话" }
+                div { style: "font-size:13px;line-height:1.85;color:var(--ink-2);margin-bottom:8px;",
+                    "删掉「{title}」在本机的会话和工作树。未提交的改动也会没。"
+                    br {}
+                    "远端 issue 不动。作废过的活不会因此重新开工。"
+                }
+                div { class: "modal-actions",
+                    button { class: "btn", onclick: move |_| pending.set(None), "算了" }
+                    button {
+                        class: "btn btn-primary",
+                        onclick: move |_| {
+                            b.cmd(Command::DeleteSession { id });
+                            pending.set(None);
+                        },
+                        "删除"
+                    }
+                }
+            }
         }
     }
 }
@@ -258,7 +355,7 @@ fn mid_body(p: &ProjectVm) -> Element {
         };
     }
     if w.tab == SessionTab::OpenDesign {
-        return rsx! { OpenDesignView {} };
+        return rsx! { OpenDesignView { src: w.od_src.clone(), gen: w.od_gen } };
     }
     if w.open_path.is_empty() {
         return rsx! {
@@ -437,22 +534,27 @@ fn tree_row(p: &ProjectVm, e: &crate::vm::TreeEntryVm, depth: usize, bridge: &Br
 // 该模块)。挂一次 use_future,结果存信号:OD 起着 → url → iframe;没起 → 如实
 // 说「没接到」,不假装嵌进去了。OD 重启换了端口时,「重新发现」重探。
 #[component]
-fn OpenDesignView() -> Element {
+fn OpenDesignView(src: String, gen: u64) -> Element {
     let mut url = use_signal(|| None::<String>);
-    let mut probing = use_signal(|| true);
+    let mut probing = use_signal(|| src.is_empty());
     let mut fut = use_future(move || async move {
         let found = bw_engine::open_design::discover_web_url().await;
         url.set(found);
         probing.set(false);
     });
-    let probing_now = *probing.read();
-    let u = (*url.read()).clone();
+    let probing_now = *probing.read() && src.is_empty();
+    let u = if src.is_empty() {
+        (*url.read()).clone()
+    } else {
+        Some(src.clone())
+    };
     if let Some(u) = u {
-        // 探到了 → iframe 嵌本机 Open Design 的 loopback 首页。
+        let iframe_src = iframe_src(&u);
         return rsx! {
             div { class: "sess-col sess-midbody",
                 iframe {
-                    src: "{u}/",
+                    key: "{gen}-{iframe_src}",
+                    src: "{iframe_src}",
                     style: "flex:1;width:100%;height:100%;border:0;display:block;background:#fff;",
                     allow: "clipboard-read; clipboard-write; fullscreen"
                 }
@@ -484,5 +586,18 @@ fn OpenDesignView() -> Element {
                 }
             }
         }
+    }
+}
+
+fn iframe_src(u: &str) -> String {
+    let u = u.trim();
+    if u.contains('?') || u.contains('#') || u.ends_with('/') {
+        return u.to_string();
+    }
+    let after = u.strip_prefix("http://").unwrap_or(u);
+    if after.contains('/') {
+        u.to_string()
+    } else {
+        format!("{u}/")
     }
 }

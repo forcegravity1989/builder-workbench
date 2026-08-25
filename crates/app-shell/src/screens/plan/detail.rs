@@ -1,4 +1,4 @@
-//! 右侧 360px 详情抽屉。卡面上不放按钮,动作全在这里。
+//! 右侧 360px 详情抽屉。卡片上也有 ▶开工;这里一次看全字段和作废。
 //!
 //! **这是一张活的落脚点**:通知屏说「有 MR 等你合」,点过来落在这儿。所以这里
 //! 得能一次看全 —— 活要干什么(正文)、干到哪(状态、分支)、干出了什么
@@ -9,7 +9,7 @@ use super::kanban::PendingMove;
 use crate::bridge::{Bridge, Panel, PanelNav, Req};
 use crate::vm::ProjectVm;
 use bw::command::Command;
-use bw::model::{IssueId, IssueStatus};
+use bw::model::{category_from_key, category_key, IssueId, IssueStatus, StageKind};
 use dioxus::prelude::*;
 
 /// **按 id 从最新的 ViewModel 里现查**,不拿点卡片那一刻的快照 —— 拿快照的
@@ -40,11 +40,13 @@ pub fn DetailPanel(
     let b_run = bridge.clone();
     let b_review = bridge.clone();
     let b_block = bridge.clone();
+    let b_cat = bridge.clone();
     let b_sess = bridge.clone();
     let nav = use_context::<PanelNav>();
     let id = c.id;
     // 先快照出来:`c` 是借来的,闭包要活到点击那一刻。
     let title = c.title.clone();
+    let title_cancel = title.clone();
     let pr = c.pr_number;
     // 链接只在**真拼得出地址**时才有。两个前缀由内核按 provider 拼好(github
     // 与 codehub 的路径形状不同),这里只管接上号码;没挂远端就是空串,那时候
@@ -65,8 +67,31 @@ pub fn DetailPanel(
                     div { class: "detail-body-text", "{c.body}" }
                 }
                 {row("状态", c.status.label())}
-                {row("类别", &c.category)}
-                {row("开工工具", if c.tool.is_empty() { "—" } else { &c.tool })}
+                if c.kind == "运作活" {
+                    {row("类别", "运作")}
+                } else {
+                    div { class: "detail-row",
+                        div { class: "k", "类别" }
+                        select {
+                            class: "select",
+                            onchange: move |e| {
+                                if let Some(cat) = category_from_key(&e.value()) {
+                                    b_cat.cmd(Command::SetIssueCategory { id, category: cat });
+                                }
+                            },
+                            option { value: "", selected: c.category == "—", "还没选" }
+                            for cat in StageKind::ALL {
+                                option {
+                                    key: "{category_key(cat)}",
+                                    value: "{category_key(cat)}",
+                                    selected: c.category == cat.label(),
+                                    "{cat.label()}"
+                                }
+                            }
+                        }
+                    }
+                }
+                {row("开工工具", if c.tool.is_empty() || c.tool == "—" { "—" } else { &c.tool })}
                 {workflow_row(&c.workflow, bridge, nav)}
                 {row("种类", &c.kind)}
                 {row("来源", &c.origin)}
@@ -86,7 +111,10 @@ pub fn DetailPanel(
                             IssueStatus::Backlog | IssueStatus::Todo | IssueStatus::InProgress => rsx! {
                                 button {
                                     class: "btn btn-sm btn-primary",
-                                    onclick: move |_| b_run.cmd(Command::RunIssue { id }),
+                                    onclick: move |_| {
+                                        b_run.cmd(Command::RunIssue { id });
+                                        nav.go(Panel::Session);
+                                    },
                                     "▶ 开工"
                                 }
                             },
@@ -134,6 +162,19 @@ pub fn DetailPanel(
                                     reason: "在计划屏手动标为阻塞".into(),
                                 }),
                                 "⛔ 阻塞"
+                            }
+                        }
+                        if c.status.can_transition_to(IssueStatus::Cancelled) {
+                            button {
+                                class: "btn btn-sm",
+                                onclick: move |_| pending.set(Some(PendingMove {
+                                    id,
+                                    title: title_cancel.clone(),
+                                    from: c.status,
+                                    to: IssueStatus::Cancelled,
+                                    pr_number: pr,
+                                })),
+                                "作废"
                             }
                         }
                     }
@@ -189,7 +230,9 @@ fn link_row(k: &str, number: u32, url: Option<&str>, none_hint: &str) -> Element
 }
 
 fn workflow_row(workflow: &str, bridge: &Bridge, nav: PanelNav) -> Element {
-    if workflow.is_empty() {
+    // ViewModel 有时把空 workflow 写成「—」;那是占位,不是一份真剧本,
+    // 不能画成可点的「— →」。
+    if workflow.is_empty() || workflow == "—" {
         return row("workflow", "—");
     }
     let slug = bw::app::skill_slug(workflow)

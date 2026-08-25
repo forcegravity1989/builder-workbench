@@ -101,7 +101,7 @@ pub fn derive_project_health(inputs: &HealthInputs) -> DerivedHealth {
             } else if !inputs.has_week_goal && inputs.ops1_open {
                 "本周计划还在做,周目标还没写进这张活的评论".into()
             } else if !inputs.has_week_goal {
-                "本周的『更新指标+制定本周计划』活还没开".into()
+                "没有从本周运作活评论里读到周目标一句话".into()
             } else {
                 "本周有周目标,但仓里还没有真实提交".into()
             },

@@ -15,6 +15,7 @@ pub mod issue_policy_file;
 pub mod managed_file;
 pub mod metrics_file;
 pub mod project_file;
+pub mod readings_file;
 pub mod standard_file;
 
 use std::path::{Path, PathBuf};

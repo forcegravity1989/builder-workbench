@@ -24,7 +24,7 @@ _Avoid_: user、owner、开发者。
 
 **开工工具 / Agent CLI**:
 一件活开工时真实调起的智能体 CLI 或内嵌工具(Claude Code / Cursor / Open Design 内嵌等)。声明住在项目仓的 `.bw/issue-policy.toml`,探活分三种机制(候选路径 / 版本命令 / 套接字握手);选了 Cursor 但探活失败就拒绝开工,绝不悄悄退回 Claude Code。未接的工具如实回灰、不假装可用。
-_Avoid_: 和"模型"混为一谈(model 是模型标签,开工工具是执行引擎);假装多工具已支持(今天只有 Claude Code 真能跑);把它当装饰性标签——它真实生效,探不通就不开工。详见 [远端与工具探活 模块](docs/architecture.md)。
+_Avoid_: 和"模型"混为一谈(model 是模型标签,开工工具是执行引擎);假装 Cursor 已接(今天 Claude Code 走内嵌终端、Open Design 走会话屏内嵌页,Cursor 探不到就拒绝开工);把它当装饰性标签——它真实生效,探不通就不开工。详见 [远端与工具探活 模块](docs/architecture.md)。
 
 **发言方 / Author**:
 一条对话消息出自谁——人(Builder)还是 AI。纯 UI 归属轴。
@@ -79,11 +79,11 @@ _Avoid_: 按旧五步(仓→意图→快速问题→起草→确认)描述它—
 ### 活与状态
 
 **Issue / 活**:
-一件要干的具体工作,最小单位。"活"是口语规范词,"卡"只在指界面卡片形态时用。codehub/GitHub 的 issue+标签是唯一正本(标题=标识,`bw:status:*`/`bw:week:*`/`bw:released:*` 标签=状态/排期/版本,issue closed=Done);本地零库,读都走 CLI、不留读缓存。没挂仓的项目如实留白、不假装已同步。
+一件要干的具体工作,最小单位。"活"是口语规范词,"卡"只在指界面卡片形态时用。codehub/GitHub 的 issue+标签是唯一正本(标题=标识,`bw:status:*`/`bw:week:*`/`bw:released:*`/`bw:category:*` 标签=状态/排期/版本/类别,issue closed=Done);开工工具和 workflow 不另打标签,读回时用类别去查 `.bw/issue-policy.toml`。本地零库,读都走 CLI、不留读缓存。没挂仓的项目如实留白、不假装已同步。
 _Avoid_: 任务(与"定时任务"撞)、卡片(指实体时用"活",指 UI 时才用"卡")、ticket、工单。详见 [codehub-issue-正本 模块](docs/architecture.md)。
 
 **Issue 状态流转**:
-Backlog → Todo → InProgress → InReview → Done 的单向明路;另有 Blocked(阻塞,必填原因)、Cancelled。**Done 的唯一入边是 InReview**。状态以 `bw:status:*` 标签为正本,由 `can_transition_to` 守卫锁死;Backlog/Cancelled 在 codehub 映射里没有对应标签,如实弹回不编。
+Backlog → Todo → InProgress → InReview → Done 的单向明路;另有 Blocked(阻塞,必填原因)、Cancelled。**Done 的唯一入边是 InReview**。状态以 `bw:status:*` 标签为正本,由 `can_transition_to` 守卫锁死;Backlog 在 codehub 映射里没有对应标签,如实弹回不编。Cancelled 打 `bw:status:cancelled` 再关远端 issue,读回先认取消标签,不当完成。
 _Avoid_: 自造中间态;把 InReview 当终态。详见 [command-event-与状态机 模块](docs/architecture.md)。
 
 **PR / Pull Request**:
@@ -115,7 +115,7 @@ _Avoid_: 执行(动词可用,名词统一"运行")、跑一遍(口语)。详见 
 _Avoid_: 取消(留给活的 Cancelled 终态)、终止后自动补一个结论。
 
 **交互式运行 / Interactive run**:
-MVP 唯一的执行轨:开工工具起在**内嵌终端**(伪终端 PTY)里,活在 issue 自己的一棵 git worktree 里干,人全程可见、可插话、要停点取消,并按真实会话号(`--resume`)精确续跑。交互式活不写运行史——过程就在嵌入终端里,不是没跑过。人在场就是它的兜底:不靠机器掐表,后台轨的预算封顶/超时那套不照搬。
+MVP 两条执行轨,都在这张活自己的 git worktree 里干:构建类走**内嵌终端**(伪终端 PTY + Claude,按 `--resume` 续跑);原型类默认走会话屏里的 **Open Design 内嵌页**(不起 CLI)。人全程可见、要停能停。交互式活不写运行史——过程就在嵌入页/终端里,不是没跑过。人在场就是它的兜底:不靠机器掐表,后台轨的预算封顶/超时那套不照搬。
 _Avoid_: 把交互式活的空运行史当「没跑过」;把后台轨的自动兜底照搬到交互轨;嵌入终端(指 UI 载体时可用,指这条执行轨时统一说「交互式运行」)。详见 [会话与执行 模块](docs/architecture.md)。
 
 **系统提示词 / System prompt**:
@@ -129,7 +129,7 @@ _Avoid_: 把它当某个具体代码结构;与"交互式运行"混用。
 ### 健康(难造假)
 
 **读数 / Reading(原「观测」)**:
-一个真实数据点。MVP 分三类:**可回溯**的一个字都不存、每次现算(git 提交数、合入的 PR 数、star 数……);**不可回溯**的落进只追加的读数流水 `.bw/metrics/readings.jsonl`(绝不插值,一个读数=一个点);**手填**的也进流水、带「手填」徽记。判据是一句话:「今天能采到这个数,那么上周三那天的值现在还能算出来吗」。
+一个真实数据点。MVP 分三类:**可回溯**的一个字都不存、每次现算(git 提交数、合入的 PR 数、star 数……);**不可回溯**的落进只追加的读数流水 `.bw/metrics/readings.jsonl`(键是日历日,绝不插值,一个读数=一个点,展示按周取那一周最后一天);**手填**的也进流水、带「手填」徽记。判据是一句话:「今天能采到这个数,那么上周三那天的值现在还能算出来吗」。
 _Avoid_: 记录、log(读数是结构化数据点,不是日志文本)、埋点数据;观测(V3 旧名,正文统一用「读数」)。详见 [健康推导 模块](docs/architecture.md) 与 [仓文件解析 模块](docs/architecture.md)。
 
 **指标 / Metric**:
@@ -340,9 +340,9 @@ _Avoid_: 当成随手试用(穿刺要求真实项目、全程留痕、逐条出�
 每个窗口的固定推进流程:先取证现状(不基于猜)→ 对齐原型 → 开发 → 验证 → 填指南。最后一步是硬要求:功能没写进使用指导就不算完。
 _Avoid_: 跳过取证直接开发;做完不填指南就交。
 
-**使用指导 / 维护指南(两本)**:
-产品指南的两本(`docs/guide/`),用不同维度组织、互为索引:使用指导按界面操作阶段写给 Builder,只写「点什么、看到什么、得到什么」;维护指南按跨阶段机制写给要改/维护 buddy 的开发。写作规范见 `docs/guide/填写规范.md`。
-_Avoid_: 在使用指导里写字段名/解析器这类开发话术(那是维护指南的领地);两本混着组织(一本按操作阶段、一本按机制,是有意的)。
+**产品指南 / 使用指南**:
+`docs/guide/v4-产品指南.html` 只写给人看的使用指南:按界面操作阶段写「点什么、看到什么、得到什么」。怎么建 / 跑 / 测在仓根 `AGENTS.md`;机制为什么这么定在 `docs/architecture.md`。写作规范见 `docs/guide/填写规范.md`。
+_Avoid_: 把命令、门禁、crate 分层写进产品指南(那是给 AI / 接手开发看的,不在这份 HTML 里)。
 
 **铁律 / Iron rule**:
 产品行为的不可违反约束(如「完成永远由人点」「信号绝不手设」),由类型、守卫和 E2E 抽查共同守住——违反即 bug,没有权衡余地。

@@ -28,6 +28,8 @@ pub const ASSET_AUDIT_SKILL: &str =
     include_str!("../../../../standard/skills/asset-audit/SKILL.md");
 pub const PROJECT_HANDBOOK_SKILL: &str =
     include_str!("../../../../standard/skills/project-handbook/SKILL.md");
+pub const WEEK_PLANNING_COMMENT_CHECK: &str =
+    include_str!("../../../../standard/skills/week-planning/check-week-comment.py");
 /// build 阶段默认 workflow 的**入口**(body 是 grill→implement→review SOP,指向
 /// `vendor/mattpocock-skills/` 库内子技能路径)。归一:workflow 注入和运作剧本
 /// 走同一个 `skill_pointer`→`SkillPack` 机制——运作剧本 body 自足,workflow 入口

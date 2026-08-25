@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html data-proto="v4-hifi" data-version="6" lang="zh-CN">
+<html data-proto="v4-hifi" data-version="7" lang="zh-CN">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -257,7 +257,14 @@ h1,h2,h3,h4{font-family:var(--serif);font-weight:700;margin:0 0 8px;}
 
 /* ---------- session (Orca-style) ---------- */
 [data-screen="session"]{height:calc(100vh - 92px);max-width:1600px;}
-.sess-grid{display:grid;grid-template-columns:216px 1fr 264px;gap:14px;height:100%;min-height:0;}
+.sess-grid{display:grid;grid-template-columns:auto 1fr auto;gap:14px;height:100%;min-height:0;}
+.sess-grid .sess-left{width:216px;}
+.sess-grid .sess-right{width:264px;}
+.sess-grid .sess-left.is-collapsed,.sess-grid .sess-right.is-collapsed{width:40px;}
+.sess-rail{flex:1;border:none;background:transparent;color:var(--ink-2);cursor:pointer;writing-mode:vertical-rl;letter-spacing:.12em;font-size:14px;padding:18px 0;min-width:40px;}
+.sess-rail-toggle{min-width:36px;min-height:36px;font-size:20px;padding:6px 10px;border:1px solid var(--border);border-radius:8px;background:var(--bg);}
+.guide-panel{width:min(760px,92vw);}
+.guide-frame{flex:1;border:none;width:100%;min-height:0;}
 .sess-col{background:var(--card);border:1px solid var(--border);border-radius:10px;overflow:hidden;display:flex;flex-direction:column;min-height:0;}
 .sess-left-scroll{overflow-y:auto;padding:9px;flex:1;}
 .sess-group-label{font-size:10.3px;color:var(--ink-3);font-family:var(--mono);padding:9px 6px 4px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
@@ -448,6 +455,14 @@ function getPath(o,p){return p.split('.').reduce(function(a,k){return (a==null)?
 function setPath(o,p,v){var parts=p.split('.'),c=o;for(var i=0;i<parts.length-1;i++){c=c[parts[i]];if(c==null)return;}c[parts[parts.length-1]]=v;}
 var toastTimer=null;
 function toast(msg){var t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');if(toastTimer)clearTimeout(toastTimer);toastTimer=setTimeout(function(){t.classList.remove('show');},2600);}
+function nextVersion(cur){
+  var t=String(cur||'').trim().replace(/^v/,'');
+  var i=t.lastIndexOf('.');
+  if(i<=0) return String(cur||'').trim();
+  var n=parseInt(t.slice(i+1),10);
+  if(isNaN(n)) return String(cur||'').trim();
+  return 'v'+t.slice(0,i)+'.'+(n+1);
+}
 function icon(name){
   var p={
     wall:'<rect x="3" y="3" width="7" height="7" rx="1.4"/><rect x="14" y="3" width="7" height="7" rx="1.4"/><rect x="3" y="14" width="7" height="7" rx="1.4"/><rect x="14" y="14" width="7" height="7" rx="1.4"/>',
@@ -476,7 +491,7 @@ var STATUS_DOT={pool:'gray',todo:'gray',doing:'amber',review:'amber',merged:'amb
 var CATS=['构建','构建(文档)','原型','优化','运维','运营推广','运作'];
 var WEEKS=['W34'];
 var HISTORY_WEEKS=['W33','W32','W31','W30','W29','W28','W27'];
-// 回填出来的历史周:数字来自 buddy 自己仓的 git 合入记录(按 ISO 周),回填时写进同格式的 docs/plan/2026-Www.md
+// 回填出来的历史周:数字来自 git 合入记录(按 ISO 周)。周目标正本是运作活①评论,不另写 docs/plan/。
 var HISTORY_WEEK_MERGED={W33:3,W32:17,W31:7,W30:12,W29:3,W28:3,W27:1};
 var VERSIONS=['0.4.0-v4','0.3.0-v3','0.2.0-v3'];
 var KANBAN_COLS=[['pool','待办池'],['todo','待办'],['doing','进行中'],['review','评审中'],['done','已完成'],['blocked','阻塞']];
@@ -490,10 +505,10 @@ function colOf(status){
   return 'todo';
 }
 var GUIDE_CHAPTERS=[
-  {id:'env',label:'环境准备',body:'claude CLI、Open Design、codehub-cli 三项本机环境按需安装,缺一项不影响开工,只影响对应类别的活能不能开工。「测一下」会真实探活,结果记进健康信号,不假装绿。welink-cli 探活函数还没内部实现,先留位显示灰色 Unknown,不会因为点了「测一下」就变绿。'},
-  {id:'onboard',label:'接入项目',body:'接入只问两件事:仓在哪、这个项目想做什么。规范铺底(运作活③)会在后台自动建分支、写核心件、提 MR,评审中合入即可,不用手填目录或分支。'},
-  {id:'cycle',label:'一周一圈',body:'每周由运作活①开场:复盘上周 → 更新指标 → 引导出本周目标与活清单。活从待办池推到评审中都是 agent 干的,「完成」永远由你在看板上点一下。'},
-  {id:'faq',label:'常见问题',body:'常见问题会随实际使用逐步收进这里。当前先看前三章;遇到没写清楚的地方,用下面的「问题上报」占位记一笔(暂未接入真实上报)。'}
+  {id:'env',label:'环境准备',body:'claude CLI、Open Design、codehub-cli / gh 按需装。缺一项不影响接入,只影响对应类别的活能不能开工。「测一下」如实探活,没找到就是红,没接探活就是灰,不假装绿。Cursor 还没接。'},
+  {id:'onboard',label:'接入项目',body:'接入问仓在哪、这个项目想做什么。规范铺底(运作活③)是路径 A:不起 agent,往 .bw/ 写名片、开工映射、规范版本,开 MR,停在评审中等你合。仓根 AGENTS.md 不写。'},
+  {id:'cycle',label:'一周一圈',body:'每周由运作活①开场:复盘 → 更新指标 → 聊出周目标与活清单。正本写在这张活的评论里。agent 最远到评审中,「完成」永远由你点。'},
+  {id:'faq',label:'常见问题',body:'灯是灰的不是坏了:没数据就是灰。更完整的流程见仓里的产品指南,它只写已经走过的站。'}
 ];
 
 /* ===================== 终端 transcript(沿用第一版三套) ===================== */
@@ -502,17 +517,16 @@ var OPS1_TRANSCRIPT=[
   {cls:'sys',text:'[workflow] workflow 已注入:更新指标与周计划(buddy 自建 · 合并自 north-star-discovery + metrics-binding)'},
   {cls:'sys',text:'[read] AGENTS.md'},
   {cls:'sys',text:'[read] PROJECT.md'},
-  {cls:'sys',text:'[read] docs/plan/2026-W33.md'},
+  {cls:'sys',text:'[read] .bw/PROJECT.md'},
   {cls:'agent',text:'agent> 复盘上周(2026-W33):减负线两轮收尾在途、V4 全貌草案与规范铺底稿收口,原型仍在做。'},
-  {cls:'agent',text:'agent> 更新指标:「默认件被真实使用次数」目前无数据源,建议在 .bw/connectors.toml 加一段采集脚本。'},
+  {cls:'agent',text:'agent> 更新指标:「默认件被真实使用次数」还没有采集脚本。脚本跟人在这张运作活里写,不预铺空壳。'},
   {cls:'human',text:'人> 先记一条 TODO,这周先把高保真原型和减负线合入收口。'},
   {cls:'agent',text:'agent> 引导本周目标:「V4 MVP 从口述收口成设计事实源并出高保真;减负线合入 main」,你看呢?'},
   {cls:'human',text:'人> 可以,就这句。'},
-  {cls:'agent',text:'agent> 已按类别拆出业务活草稿,你确认后我建活。'},
+  {cls:'agent',text:'agent> 已按类别拆出业务活草稿,你确认后我建活并打 bw:week。'},
   {cls:'human',text:'人> 确认,建吧。'},
-  {cls:'git',text:'[write] 活草稿已写入,含类别 / 预期推动指标 / 建议开工工具'},
-  {cls:'git',text:'[git] 分支 bw/issue-plan-2026-W34 → 提交 .bw/metrics.toml、docs/plan/2026-W34.md'},
-  {cls:'git',text:'[mr] 已提 MR !bw/plan-2026-W34'},
+  {cls:'git',text:'[comment] ## 周目标 / ## 本周纳入 / ## 本周指标读数 已挂到这张运作活'},
+  {cls:'git',text:'[git] 分支 bw/issue-plan-2026-W34 → 提交 .bw/metrics.toml(指标定义跟人写的)'},
   {cls:'git',text:'[hook] 已推到评审中'}
 ];
 function issueSuffix(id){return String(id).replace(/^pr-/,'');}
@@ -526,11 +540,11 @@ function buildOps2Transcript(pid,issueId){
     {cls:'sys',text:'[workflow] workflow 已注入:资产盘点'},
     {cls:'sys',text:'[read] docs/'},
     {cls:'sys',text:'[read] .bw/standard.toml(默认件清单与版本)'},
-    {cls:'agent',text:'agent> 盘点 docs/、产物登记、技能与 workflow、周计划与发版记录是否齐全。'},
-    {cls:'agent',text:'agent> 规范对账、核对指标数据新不新鲜:.claude/skills/ 是否与 standard/ 声明的版本一致。'},
+    {cls:'agent',text:'agent> 盘点 docs/、产物登记、技能与 workflow、规范对账、指标新鲜度。'},
+    {cls:'agent',text:'agent> 周目标读运作活①评论,发版读远端 Release,不另写周计划文件。'},
     {cls:'agent',text:'agent> codegraph files -j 找候选大文件,列进大文件榜。'},
     {cls:'agent',text:'agent> 发现 3 处可微重构点,已列为建议活草稿(类别:优化),等你勾选'},
-    {cls:'git',text:'[write] 盘点报告写入 docs/plan/2026-'+wk+'.md 尾段'},
+    {cls:'git',text:'[comment] 盘点报告挂到这张运作活的评论'},
     {cls:'git',text:'[git] 分支 '+branch+' → 提交盘点报告'},
     {cls:'git',text:'[mr] 已提 MR '+mrLabel},
     {cls:'git',text:'[hook] 已推到评审中'}
@@ -557,8 +571,8 @@ function buildGenericTranscript(pid,issueId){
   if(issue.skill && issue.skill!=='—'){ lines.push({cls:'sys',text:'[skill] 技能已注入:'+issue.skill}); }
   lines.push(
     {cls:'sys',text:'[read] AGENTS.md'},
-    {cls:'sys',text:'[read] PROJECT.md'},
-    {cls:'sys',text:'[read] docs/plan/2026-'+(issue.week||CURRENT_WEEK)+'.md'},
+    {cls:'sys',text:'[read] .bw/PROJECT.md'},
+    {cls:'sys',text:'[read] 运作活①评论 · ## 周目标'},
     {cls:'agent',text:'agent> 读活说明:'+issue.title},
     {cls:'agent',text:'agent> '+categoryWorkHint(issue.category)},
     {cls:'git',text:'[write] 改了 '+files.length+' 个文件:'+files.map(function(f){return f[0];}).join('、')},
@@ -574,10 +588,9 @@ function TRANSCRIPTS_FOR(pid,issueId){
   return buildGenericTranscript(pid,issueId);
 }
 function changedFilesFor(issue){
-  if(issue.tool==='open_design')return [['docs/design/v4-hifi-notes.md','+42','-0'],['docs/v4-prototype/hifi/index.html','+880','-0']];
-  return [['standard/README.md','+120','-0'],['standard/01-charter/PROJECT.md.tmpl','+40','-0'],
-    ['crates/bw-app/src/standard/mod.rs','+85','-3'],['crates/bw-store/src/sqlite.rs','+12','-1'],
-    ['docs/plan/2026-'+(issue.week||CURRENT_WEEK)+'.md','+6','-0']];
+  if(issue.tool==='open_design')return [['docs/hifi/index.html','+880','-0'],['docs/hifi/README.md','+40','-0']];
+  return [['standard/README.md','+120','-0'],['standard/templates/PROJECT.md.tmpl','+40','-0'],
+    ['crates/bw/src/standard/mod.rs','+85','-3'],['crates/app-shell/src/screens/overview/mod.rs','+12','-1']];
 }
 var DISTILL_NAMES={'std-1':'规范铺底核对清单','pr-102':'旧引擎退役核对法','w1-2':'codehub clone 排障笔记','v4-4':'高保真原型走查法'};
 
@@ -587,17 +600,17 @@ function makeIssues(){
     'v4-1':{id:'v4-1',title:'V4 MVP 全貌草案三轮 grilling 收口',category:'构建(文档)',tool:'claude_cli',kind:'business',status:'done',doneDate:'08-18',source:'人建',metricIds:[],mr:null,week:'W34',version:'0.4.0-v4',workflow:'mattpocock-skills',skill:'grillme',desc:'把口述原文收口成设计事实源(mvp-blueprint-draft.md),三轮 grilling 走完拍板,22 条已定。'},
     'v4-2':{id:'v4-2',title:'规范铺底模块设计稿',category:'构建(文档)',tool:'claude_cli',kind:'business',status:'done',doneDate:'08-18',source:'人建',metricIds:[],mr:null,week:'W34',version:'0.4.0-v4',workflow:'mattpocock-skills',skill:'grillme',desc:'standard-module-draft.md:八大类规范怎么落地、正本住哪、怎么演进。'},
     'v4-3':{id:'v4-3',title:'Orca / DSH / codegraph 预研',category:'构建(文档)',tool:'claude_cli',kind:'business',status:'done',doneDate:'08-18',source:'agent 拆',metricIds:[],mr:null,week:'W34',version:'0.4.0-v4',workflow:'mattpocock-skills',skill:'research',desc:'三条并行预研:Orca 借模式、DeepSeek Harness 接口、codegraph 用法。'},
-    'v4-4':{id:'v4-4',title:'V4 高保真可点击原型',category:'原型',tool:'open_design',kind:'business',status:'doing',source:'人建',metricIds:['lead-1'],mr:null,week:'W34',version:'0.4.0-v4',workflow:'原型设计 workflow',skill:'—',desc:'五入口可点击原型,证明「一周一圈」在界面上走不走得通。'},
+    'v4-4':{id:'v4-4',title:'V4 高保真可点击原型',category:'原型',tool:'open_design',kind:'business',status:'doing',source:'人建',metricIds:['lead-1'],mr:null,week:'W34',version:'0.4.0-v4',workflow:'—',skill:'—',desc:'五入口可点击原型。原型默认 Open Design;proto-design workflow 还没打包。'},
     'pr-102':{id:'pr-102',title:'减负线两轮收尾合入(删旧聊天式引擎,唯一入口 Issue ▶跑)',category:'构建',tool:'claude_cli',kind:'business',status:'review',source:'人建',metricIds:['lead-1'],mr:{id:'#102',label:'PR #102',status:'open'},week:'W34',version:'0.4.0-v4',workflow:'mattpocock-skills',skill:'—',desc:'两轮收尾把旧聊天式工作流引擎整链删除,唯一开工入口收敛到 Issue ▶跑。22 commit,等待合入。'},
-    'w1-2':{id:'w1-2',title:'纳入时 codehub clone 堵命令循环',category:'优化',tool:'cursor',kind:'business',status:'todo',source:'人建',metricIds:[],mr:null,week:'W34',version:'0.4.0-v4',workflow:'mattpocock-skills',skill:'systematic-debugging',desc:'纳入已有仓时 codehub clone 在某些网络下会卡住命令循环,需要加超时与重试。'},
-    'std-1':{id:'std-1',title:'规范铺底模块落地(standard/ 目录 + 铺底命令)',category:'构建',tool:'claude_cli',kind:'business',status:'pool',source:'人建',metricIds:['lag-1'],mr:null,week:'W34',version:'0.4.0-v4',workflow:'mattpocock-skills',skill:'—',desc:'把 standard-module-draft.md 落成 standard/ 目录 + 铺底命令 + 对账。'},
-    'suggest-1':{id:'suggest-1',title:'建议活 · 拆 op.rs(2524 行)',category:'优化',tool:'claude_cli',kind:'business',status:'pool',source:'建议',metricIds:[],mr:null,week:'W34',version:'0.4.0-v4',workflow:'mattpocock-skills',skill:'—',desc:'运作活②「资产盘点 2026-W33」评审后生成的建议活草稿:crates/app-desktop/src/screens/op.rs 单文件 2524 行,建议按屏拆分。人勾选后才真正建活,agent 不自己动代码。'},
-    'ops1-w34':{id:'ops1-w34',title:'运作活①更新指标 + 制定本周计划 2026-W34',category:'运作',tool:'claude_cli',kind:'ops',status:'done',doneDate:'08-17',source:'人触发',metricIds:[],mr:{id:'!bw/plan-2026-W34',label:'!bw/plan-2026-W34',status:'merged'},week:'W34',version:'0.4.0-v4',workflow:'更新指标与周计划',skill:'—',desc:'复盘上周 → 更新指标 → 引导本周目标与活清单。MR 已合入。'},
-    'ops2-w33':{id:'ops2-w33',title:'运作活②资产盘点 2026-W33',category:'运作',tool:'claude_cli',kind:'ops',status:'review',source:'自动建 08-14 20:00',auto:true,metricIds:[],mr:{id:'!bw/ops-2026-W33',label:'!bw/ops-2026-W33',status:'open'},week:'W33',version:'0.3.0-v3',workflow:'资产盘点',skill:'—',desc:'盘点仓内全部资产(文档 / 产物 / 技能与 workflow / 周计划与发版记录 / 规范对账 / 指标新鲜度 / 代码图大文件榜),报告写进本周 docs/plan/ 尾段;微重构只列成建议活草稿,人勾选才建。周五自动开工,等人评审。'},
-    'ops3':{id:'ops3',title:'运作活③规范铺底 v4.0(含合并调整)',category:'运作',tool:'claude_cli',kind:'ops',status:'done',doneDate:'08-17',doneAssumed:true,source:'自动建(接入时)',auto:true,metricIds:[],mr:{id:'!bw/standard-4.0',label:'!bw/standard-4.0',status:'merged'},week:'W33',version:'0.3.0-v3',workflow:'规范铺底(含合并调整 · 历史回填)',skill:'—',desc:'写核心件 → 合并调整(检测到已有 README,合入 CLAUDE.md/AGENTS.md)→ 历史回填(= 资产盘点首次模式)。'},
+    'w1-2':{id:'w1-2',title:'纳入时 codehub clone 堵命令循环',category:'优化',tool:'claude_cli',kind:'business',status:'todo',source:'人建',metricIds:[],mr:null,week:'W34',version:'0.4.0-v4',workflow:'mattpocock-skills',skill:'systematic-debugging',desc:'纳入已有仓时 codehub clone 在某些网络下会卡住命令循环,需要加超时与重试。Cursor 还没接,这张活用 Claude CLI。'},
+    'std-1':{id:'std-1',title:'规范铺底模块落地(standard/ 目录 + 铺底命令)',category:'构建',tool:'claude_cli',kind:'business',status:'pool',source:'人建',metricIds:['lag-1'],mr:null,week:'W34',version:'0.4.0-v4',workflow:'mattpocock-skills',skill:'—',desc:'把铺底落成 standard/ 目录 + 接入时写三份骨架 + 对账。'},
+    'suggest-1':{id:'suggest-1',title:'建议活 · 拆过长的计划屏',category:'优化',tool:'claude_cli',kind:'business',status:'pool',source:'建议',metricIds:[],mr:null,week:'W34',version:'0.4.0-v4',workflow:'mattpocock-skills',skill:'—',desc:'运作活②「资产盘点 2026-W33」评审后生成的建议活草稿:crates/app-shell/src/screens/plan/ 建议按文件拆。人勾选后才真正建活。'},
+    'ops1-w34':{id:'ops1-w34',title:'运作活①更新指标 + 制定本周计划 2026-W34',category:'运作',tool:'claude_cli',kind:'ops',status:'done',doneDate:'08-17',source:'人触发',metricIds:[],mr:{id:'!bw/plan-2026-W34',label:'!bw/plan-2026-W34',status:'merged'},week:'W34',version:'0.4.0-v4',workflow:'week-planning',skill:'—',desc:'复盘上周 → 更新指标 → 引导本周目标与活清单。周目标写在这张活的评论里。'},
+    'ops2-w33':{id:'ops2-w33',title:'运作活②资产盘点 2026-W33',category:'运作',tool:'claude_cli',kind:'ops',status:'review',source:'人触发',auto:false,metricIds:[],mr:{id:'!bw/ops-2026-W33',label:'!bw/ops-2026-W33',status:'open'},week:'W33',version:'0.3.0-v3',workflow:'asset-audit',skill:'—',desc:'盘点仓内资产。报告挂这张活的评论;建议活草稿等人勾选。周五到点会自动建,最远评审中。'},
+    'ops3':{id:'ops3',title:'运作活③规范铺底',category:'运作',tool:'—',kind:'ops',status:'done',doneDate:'08-17',doneAssumed:true,source:'自动建(接入时)',auto:true,metricIds:[],mr:{id:'!bw/standard-4.0',label:'!bw/standard-4.0',status:'merged'},week:'W33',version:'0.3.0-v3',workflow:'—',skill:'—',desc:'路径 A,不起 agent。写入 .bw/PROJECT.md、issue-policy.toml、standard.toml,开 MR 等人合。仓根不写。'},
     'w33-legacy':{id:'w33-legacy',title:'减负线第一轮六切片(旧聊天式引擎整链退役第一轮)',category:'构建',tool:'claude_cli',kind:'business',status:'done',doneDate:'08-17',source:'人建',metricIds:['lead-1'],mr:{id:'#102',label:'PR #102(第一轮)',status:'merged'},week:'W33',version:'0.3.0-v3',workflow:'mattpocock-skills',skill:'—',desc:'六个切片依次删除旧聊天式工作流引擎的各处依赖,为第二轮收尾铺路。'},
     'w33-usefix':{id:'w33-usefix',title:'V3-use-fix:Claude 探测 / 列仓搜索 / 测一下',category:'构建',tool:'claude_cli',kind:'business',status:'done',doneDate:'08-17',source:'人建',metricIds:[],mr:{id:'#101',label:'PR #101',status:'merged'},week:'W33',version:'0.3.0-v3',workflow:'mattpocock-skills',skill:'—',desc:'三张真实体验修复:claude 可执行探测、列仓搜索、探活「测一下」按钮。'},
-    'w32-odembed':{id:'w32-odembed',title:'V3-OD-embed:原型进度内嵌 Open Design',category:'原型',tool:'open_design',kind:'business',status:'done',doneDate:'08-12',source:'人建',metricIds:[],mr:{id:'#99',label:'PR #99',status:'merged'},week:'W32',version:'0.3.0-v3',workflow:'原型设计 workflow',skill:'—',desc:'原型阶段进度面板内嵌本机 Open Design 首页,替换占位卡。'},
+    'w32-odembed':{id:'w32-odembed',title:'V3-OD-embed:原型进度内嵌 Open Design',category:'原型',tool:'open_design',kind:'business',status:'done',doneDate:'08-12',source:'人建',metricIds:[],mr:{id:'#99',label:'PR #99',status:'merged'},week:'W32',version:'0.3.0-v3',workflow:'—',skill:'—',desc:'原型阶段进度面板内嵌本机 Open Design 首页,替换占位卡。'},
     'w32-v2prod':{id:'w32-v2prod',title:'V2 产品化',category:'构建',tool:'claude_cli',kind:'business',status:'done',doneDate:'08-10',source:'人建',metricIds:[],mr:{id:'#97',label:'PR #97',status:'merged'},week:'W32',version:'0.2.0-v3',workflow:'mattpocock-skills',skill:'—',desc:'V2 阶段收尾产品化改动,合入 main。'}
   };
 }
@@ -613,116 +626,89 @@ function makeMetrics(){
 }
 function makeSkillsList(){
   return [
-    {name:'grillme',source:'buddy 内置(业界引入)',pkg:'独立(可被 superpowers 等 workflow 调用)',desc:'只引导模型追着用户问,不是一套流程。',enabled:true},
-    {name:'蒸馏',source:'buddy 内置 · buddy 自建',pkg:'独立',desc:'把做完的活的会话与产物写成一份带正文的技能,永远记着来自哪件活。',enabled:true},
-    {name:'research',source:'buddy 内置(业界引入)',pkg:'mattpocock-skills 包内',desc:'针对高置信源做调研,把结论落成仓内 md。',enabled:true},
-    {name:'systematic-debugging',source:'buddy 内置(业界引入)',pkg:'独立(可挂在优化 / 运维类活上起手)',desc:'先复现、定位、再修,系统化排障步骤单。',enabled:true},
-    {name:'E2E 读回',source:'蒸馏(来源活:减负线两轮收尾合入 PR #102)',pkg:'独立',desc:'活完成后怎么用 sqlite 读回 + 深链启动核验数字与状态,可复用的验收步骤单。',enabled:true,distilled:true,assumed:true}
+    {slug:'week-planning',name:'更新指标与周计划',origin:'内置',desc:'复盘上周 → 更新指标 → 聊出本周目标与活清单。',uses:1},
+    {slug:'asset-audit',name:'资产盘点',origin:'内置',desc:'每周盘点;老仓历史回填是它的首次模式。',uses:1},
+    {slug:'metrics-refresh',name:'更新指标',origin:'内置',desc:'把 .bw/metrics.toml 里的指标真采一遍。',uses:0},
+    {slug:'project-handbook',name:'项目开发手册',origin:'内置',desc:'先读懂、先问你,你点头才写仓根 AGENTS.md。还没接上。',uses:0},
+    {slug:'mattpocock-skills',name:'mattpocock-skills',origin:'内置',desc:'对齐 → 实现 → 评审。入口写明每一步读哪份文件。',uses:10}
   ];
 }
 function makeWorkflows(){
-  return [
-    {name:'superpowers',source:'buddy 内置',entry:'superpowers/SKILL.md(插件包,内含多个子技能)✱',agents:'不固定 ✱ · 按步骤动态起子代理',oneliner:'头脑风暴 → 写计划 → 子代理执行 → 验证的完整开发工作流'},
-    {name:'mattpocock-skills',source:'buddy 内置',entry:'mattpocock-skills/SKILL.md(插件包,内含多个子技能)✱',agents:'不固定 ✱ · 按环节起子代理',oneliner:'研究 → 领域建模 → TDD → 评审的完整开发工作流'},
-    {name:'原型设计 workflow',source:'buddy 内置',entry:'standard/workflows/prototype-design/SKILL.md ✱',agents:'0 ✱ · 不额外起子代理',oneliner:'配 Open Design,人与 agent 一起把原型问题磨清楚'},
-    {name:'更新指标与周计划',source:'buddy 内置 · 运作',entry:'standard/workflows/weekly-plan/SKILL.md ✱',agents:'0 ✱ · 单会话直接执行',oneliner:'复盘上周 → 更新指标 → 引导出本周目标与活清单'},
-    {name:'资产盘点',source:'buddy 内置 · 运作',entry:'standard/workflows/asset-audit/SKILL.md ✱',agents:'0 ✱ · 单会话直接执行',oneliner:'每周模式;接入老项目时的历史回填是它的首次模式'},
-    {name:'规范铺底(含合并调整 · 历史回填)',source:'buddy 内置 · 运作',entry:'standard/workflows/standard-scaffold/SKILL.md ✱',agents:'0 ✱ · 单会话直接执行',oneliner:'铺全套核心件;成熟仓多一步合并调整;有历史再多一步历史回填(= 资产盘点首次模式)'}
-  ];
+  return makeSkillsList().map(function(s){
+    return {name:s.name,source:s.origin,entry:'skills/'+s.slug+'/SKILL.md',oneliner:s.desc};
+  });
 }
 function workflowUsage(pid,name){ return allIssuesArr(pid).filter(function(i){return i.workflow===name;}).length; }
-function makeConnectors(){
-  return [
-    {name:'GitHub',target:'forcegravity1989/loop-buddy',status:'connected',lastSync:'2026-08-18 09:02'},
-    {name:'codehub',target:'—',status:'unconfigured',lastSync:'—'}
-  ];
-}
 function makeCrons(){
   return [
-    {id:'cron-ops2',name:'运作活②资产盘点',schedule:'每周五 20:00',lastRun:'2026-08-14 20:00',nextRun:'2026-08-21 20:00',status:'normal'},
-    {id:'cron-metrics',name:'指标采集',schedule:'每日 09:00',lastRun:'2026-08-18 09:00',nextRun:'2026-08-19 09:00',status:'normal'}
+    {id:'cron-b',name:'B 类指标采集',trigger:'到点自动采',schedule:'daily 09:00',rule:'今天还没采过。展示仍按周。'},
+    {id:'cron-ops2',name:'运作活②资产盘点',trigger:'到点建活',schedule:'每周五 20:00',rule:'本周还没有这张运作活(标题幂等)。'}
   ];
 }
 function makeToolmap(){
   return [
-    {cat:'原型',tool:'open_design',workflow:'原型设计 workflow'},
+    {cat:'原型',tool:'open_design',workflow:'—'},
     {cat:'构建',tool:'claude_cli',workflow:'mattpocock-skills'},
     {cat:'优化',tool:'claude_cli',workflow:'mattpocock-skills'},
     {cat:'运维',tool:'claude_cli',workflow:'mattpocock-skills'},
     {cat:'运营推广',tool:'claude_cli',workflow:'无'},
-    {cat:'运作',tool:'claude_cli',workflow:'更新指标与周计划'}
+    {cat:'运作',tool:'claude_cli',workflow:'week-planning'}
   ];
 }
 function makeNotifyEvents(){
   return [
-    {id:'ev-1',text:'agent 等你输入(减负线收尾会话)',time:'08-18 14:20',link:'pr-102'},
-    {id:'ev-2',text:'运作活② 已于 08-14 20:00 自动建并开工',time:'08-14 20:00',link:'ops2-w33'},
-    {id:'ev-3',text:'MR #102 检查通过',time:'08-14 11:40',link:'pr-102'},
-    {id:'ev-4',text:'蒸馏完成「E2E 读回」',time:'08-13 19:05',link:null},
-    {id:'ev-5',text:'指标采集 09:00 完成',time:'08-13 09:00',link:null}
+    {id:'ev-1',text:'「减负线两轮收尾合入」进入评审中',time:'08-18 14:20',link:'pr-102'},
+    {id:'ev-2',text:'运作活②「资产盘点 2026-W33」评审中',time:'08-14 20:00',link:'ops2-w33'},
+    {id:'ev-3',text:'PR #102 开着',time:'08-14 11:40',link:'pr-102'}
   ];
 }
 var FILE_TREE={name:'loop-buddy',type:'dir',path:'',children:[
   {name:'crates',type:'dir',path:'crates',children:[
-    {name:'bw-core',type:'dir',path:'crates/bw-core',children:[{name:'src',type:'dir',path:'crates/bw-core/src',children:[{name:'model.rs',type:'file',path:'crates/bw-core/src/model.rs'}]}]},
-    {name:'bw-engine',type:'dir',path:'crates/bw-engine',children:[]},
-    {name:'bw-store',type:'dir',path:'crates/bw-store',children:[{name:'src',type:'dir',path:'crates/bw-store/src',children:[{name:'sqlite.rs',type:'file',path:'crates/bw-store/src/sqlite.rs'}]}]},
-    {name:'bw-app',type:'dir',path:'crates/bw-app',children:[{name:'src',type:'dir',path:'crates/bw-app/src',children:[{name:'lib.rs',type:'file',path:'crates/bw-app/src/lib.rs'},{name:'standard',type:'dir',path:'crates/bw-app/src/standard',children:[{name:'mod.rs',type:'file',path:'crates/bw-app/src/standard/mod.rs'}]}]}]},
-    {name:'ui',type:'dir',path:'crates/ui',children:[{name:'src',type:'dir',path:'crates/ui/src',children:[{name:'vm.rs',type:'file',path:'crates/ui/src/vm.rs'}]}]},
-    {name:'app-desktop',type:'dir',path:'crates/app-desktop',children:[{name:'src',type:'dir',path:'crates/app-desktop/src',children:[{name:'screens',type:'dir',path:'crates/app-desktop/src/screens',children:[{name:'overview.rs',type:'file',path:'crates/app-desktop/src/screens/overview.rs'}]}]}]}
+    {name:'bw',type:'dir',path:'crates/bw',children:[{name:'src',type:'dir',path:'crates/bw/src',children:[{name:'model.rs',type:'file',path:'crates/bw/src/model.rs'},{name:'app',type:'dir',path:'crates/bw/src/app',children:[{name:'mod.rs',type:'file',path:'crates/bw/src/app/mod.rs'}]}]}]},
+    {name:'bw-engine',type:'dir',path:'crates/bw-engine',children:[{name:'src',type:'dir',path:'crates/bw-engine/src',children:[{name:'remote.rs',type:'file',path:'crates/bw-engine/src/remote.rs'}]}]},
+    {name:'app-shell',type:'dir',path:'crates/app-shell',children:[{name:'src',type:'dir',path:'crates/app-shell/src',children:[{name:'screens',type:'dir',path:'crates/app-shell/src/screens',children:[{name:'overview',type:'dir',path:'crates/app-shell/src/screens/overview',children:[{name:'mod.rs',type:'file',path:'crates/app-shell/src/screens/overview/mod.rs'}]}]}]}]}
   ]},
   {name:'docs',type:'dir',path:'docs',children:[
-    {name:'plan',type:'dir',path:'docs/plan',children:[{name:'2026-W34.md',type:'file',path:'docs/plan/2026-W34.md'},{name:'2026-W33.md',type:'file',path:'docs/plan/2026-W33.md'}]},
-    {name:'v4-prototype',type:'dir',path:'docs/v4-prototype',children:[{name:'hifi',type:'dir',path:'docs/v4-prototype/hifi',children:[{name:'index.html',type:'file',path:'docs/v4-prototype/hifi/index.html'}]}]},
-    {name:'releases.md',type:'file',path:'docs/releases.md'}
+    {name:'architecture.md',type:'file',path:'docs/architecture.md'},
+    {name:'hifi',type:'dir',path:'docs/hifi',children:[{name:'index.html',type:'file',path:'docs/hifi/index.html'}]}
   ]},
   {name:'standard',type:'dir',path:'standard',children:[{name:'README.md',type:'file',path:'standard/README.md'}]},
-  {name:'.bw',type:'dir',path:'.bw',children:[{name:'metrics.toml',type:'file',path:'.bw/metrics.toml'},{name:'project.toml',type:'file',path:'.bw/project.toml'}]},
+  {name:'.bw',type:'dir',path:'.bw',children:[{name:'PROJECT.md',type:'file',path:'.bw/PROJECT.md'},{name:'issue-policy.toml',type:'file',path:'.bw/issue-policy.toml'},{name:'standard.toml',type:'file',path:'.bw/standard.toml'},{name:'project.toml',type:'file',path:'.bw/project.toml'}]},
   {name:'AGENTS.md',type:'file',path:'AGENTS.md'},
-  {name:'PROJECT.md',type:'file',path:'PROJECT.md'},
   {name:'Cargo.toml',type:'file',path:'Cargo.toml'}
 ]};
 var FILE_CONTENTS={
-  'crates/bw-core/src/model.rs':['// bw-core/src/model.rs · 领域内核:五阶段元数据与状态机','pub enum StageKind { Prototype, Build, Optimize, Growth, Ops }','','pub enum IssueStatus { Todo, Doing, Review, Done, Blocked }','','impl IssueStatus {','    pub fn can_transition_to(&self, next: &IssueStatus) -> bool {','        match (self, next) {','            (IssueStatus::Review, IssueStatus::Done) => true,','            (IssueStatus::Todo, IssueStatus::Doing) => true,','            (IssueStatus::Doing, IssueStatus::Review) => true,','            _ => false,','        }','    }','}'],
-  'crates/bw-app/src/lib.rs':['// bw-app/src/lib.rs · 编排大脑:Command / Event 总线','pub struct App { store: Store, executor: Box<dyn Executor> }','','impl App {','    pub fn dispatch(&mut self, cmd: Command) -> Vec<Event> {','        let events = self.handle(cmd);','        self.store.recompute_signals();','        events','    }','}'],
-  'crates/bw-app/src/standard/mod.rs':['// bw-app/src/standard/mod.rs · 规范铺底:按 manifest 写核心件','pub fn scaffold(project: &Project, manifest: &StandardManifest) -> Vec<FileWrite> {','    // 建分支 → 写核心件 → 提 MR,不直接提交','    manifest.core_files.iter().map(render_template).collect()','}'],
-  'crates/bw-store/src/sqlite.rs':['// bw-store/src/sqlite.rs · SQLite 存取,store 层无业务判断','pub fn add_column_if_missing(conn: &Connection, table: &str, col: &str, ty: &str) {','    // CREATE TABLE IF NOT EXISTS 对存量表不会加新列,这里补上','}'],
-  'crates/ui/src/vm.rs':['// ui/src/vm.rs · 纯函数 selector:state → 可渲染 DTO','pub fn signal_color(signal: &Derived<Signal>) -> &\'static str {','    match signal.value() {','        Some(Signal::Green) => "transparent",','        Some(Signal::Amber) => "#D3A24A",','        Some(Signal::Red) => "#C0463A",','        None => "#9A9590",','    }','}'],
-  'crates/app-desktop/src/screens/overview.rs':['// app-desktop/src/screens/overview.rs · V4 总览屏','pub fn Overview(pid: ProjectId) -> Element {','    let health = use_health(pid);','    let metrics = use_metrics(pid);','    rsx! { OverviewGrid { health, metrics } }','}'],
-  'docs/plan/2026-W34.md':['# 2026-W34 周计划','','## 本周目标','V4 MVP 从口述收口成设计事实源并出高保真;减负线合入 main','','## 业务活','- v4-4 V4 高保真可点击原型(原型 · Open Design)','- pr-102 减负线两轮收尾合入(构建 · Claude CLI)','- std-1 规范铺底模块落地(构建 · Claude CLI)'],
-  'docs/plan/2026-W33.md':['# 2026-W33 周计划','','## 本周目标','减负线两轮收尾;V4 口述转设计事实源起草 ✱','','## 业务活','- w33-legacy 减负线第一轮六切片','- w33-usefix V3-use-fix 三张'],
-  'docs/releases.md':['# 发版记录','','## 0.3.0-v3 · 2026-08-17','重出(V3-use-fix),PR #101 合入。','','## 0.3.0-v3 · 2026-08-14','首包。'],
-  'standard/README.md':['# 规范铺底模块','','八大类核心件,按 manifest 铺进项目仓:','章程 · agent 工作约定 · 指标正本 · 周计划 · 发版记录 · 目录与知识结构 · 活的约定 · 默认件与鱼塘。'],
-  '.bw/metrics.toml':['# .bw/metrics.toml · 指标正本','[northstar]','label = "在 buddy 上跑完 ≥4 个周循环的内部项目数"','target = 5'],
-  '.bw/project.toml':['# .bw/project.toml','name = "Builders\' Workbench (buddy)"','standard_version = "4.0"','current_version = "0.4.0-v4"'],
-  'AGENTS.md':['# AGENTS.md · agent 工作约定正本','','先读 PROJECT.md,再读本周 docs/plan/。','指标改动一律走 MR,不直接提交。','代码结构问题优先用 codegraph explore / node / callers / impact。'],
-  'PROJECT.md':['# PROJECT.md · 项目章程','','Builders\' Workbench(buddy):AI Coding 里一个人的一张工作台。','对标:Linear / Orca 的工作台形态;传统 PM 的五角色十流程。'],
-  'Cargo.toml':['[workspace]','members = ["bw-core","bw-engine","bw-store","bw-app","ui","app-desktop"]','','[workspace.package]','edition = "2021"']
+  'crates/bw/src/model.rs':['// crates/bw/src/model.rs · 内核:活的状态机','pub enum IssueStatus { Todo, InProgress, InReview, Done, Blocked }','','impl IssueStatus {','    pub fn can_transition_to(&self, next: &IssueStatus) -> bool {','        // Done 的唯一入边是 InReview','        match (self, next) {','            (IssueStatus::InReview, IssueStatus::Done) => true,','            _ => /* 见 can_transition_to 正本 */ false,','        }','    }','}'],
+  'crates/bw/src/app/mod.rs':['// crates/bw/src/app/mod.rs · dispatch 是唯一执行入口','impl App {','    pub async fn dispatch(&mut self, cmd: Command) -> Vec<Event> {','        // 写 codehub issue / 仓文件 → recompute → Event 回 UI','        self.handle(cmd).await','    }','}'],
+  'crates/bw-engine/src/remote.rs':['// crates/bw-engine/src/remote.rs · GitHub / CodeHub 两条臂','pub enum Remote { GitHub(...), CodeHub(...) }'],
+  'crates/app-shell/src/screens/overview/mod.rs':['// crates/app-shell/src/screens/overview/mod.rs','// 北极星 → 本周进度 → 滞后 → 引领 → 仓指标 → 发版'],
+  'docs/architecture.md':['# architecture.md — buddy MVP 设计正本','三个 crate:bw / bw-engine / app-shell。本地零数据库。'],
+  'docs/hifi/index.html':['<!-- 高保真 · 视觉目标态,跟现行壳对齐 -->'],
+  'standard/README.md':['# standard/','buddy 推给被管项目的规范正本。接入铺名片 + issue-policy + standard.toml。'],
+  '.bw/PROJECT.md':['# 项目名片','Builders\' Workbench(buddy):AI Coding 里一个人的一张工作台。'],
+  '.bw/issue-policy.toml':['# 类别 → 工具 → workflow;节律也在这里','[cadence]','asset_audit = "周五 20:00"'],
+  '.bw/standard.toml':['schema_version = 1','standard_version = "5.7"'],
+  '.bw/project.toml':['# .bw/project.toml','name = "Builders\' Workbench (buddy)"','standard_version = "5.7"','current_version = "0.4.0-v4"'],
+  '.bw/metrics.toml':['# .bw/metrics.toml · 指标定义跟人在运作活①里写,不预铺空壳'],
+  'AGENTS.md':['# AGENTS.md · 项目自己的开发手册','铺底不写仓根。资产盘点首次模式问过人才写。'],
+  'Cargo.toml':['[workspace]','members = ["crates/bw","crates/bw-engine","crates/app-shell"]']
 };
 var KNOWLEDGE_DOCS=[
-  {group:'章程',id:'k-project',name:'PROJECT.md',path:'PROJECT.md'},
-  {group:'章程',id:'k-agents',name:'AGENTS.md',path:'AGENTS.md'},
-  {group:'规范件',id:'k-metrics',name:'.bw/metrics.toml',path:'.bw/metrics.toml'},
+  {group:'章程',id:'k-project',name:'.bw/PROJECT.md',path:'.bw/PROJECT.md'},
+  {group:'规范件',id:'k-policy',name:'.bw/issue-policy.toml',path:'.bw/issue-policy.toml'},
+  {group:'规范件',id:'k-std',name:'.bw/standard.toml',path:'.bw/standard.toml'},
   {group:'规范件',id:'k-projecttoml',name:'.bw/project.toml',path:'.bw/project.toml'},
-  {group:'周计划',id:'k-w34',name:'docs/plan/2026-W34.md',path:'docs/plan/2026-W34.md'},
-  {group:'周计划',id:'k-w33',name:'docs/plan/2026-W33.md',path:'docs/plan/2026-W33.md'},
-  {group:'周计划',id:'k-w32',name:'docs/plan/2026-W32.md',path:'docs/plan/2026-W32.md'},
-  {group:'周计划',id:'k-w31',name:'docs/plan/2026-W31.md',path:'docs/plan/2026-W31.md'},
-  {group:'周计划',id:'k-w30',name:'docs/plan/2026-W30.md',path:'docs/plan/2026-W30.md'},
-  {group:'周计划',id:'k-w29',name:'docs/plan/2026-W29.md',path:'docs/plan/2026-W29.md'},
-  {group:'周计划',id:'k-w28',name:'docs/plan/2026-W28.md',path:'docs/plan/2026-W28.md'},
-  {group:'周计划',id:'k-w27',name:'docs/plan/2026-W27.md',path:'docs/plan/2026-W27.md'},
-  {group:'发版记录',id:'k-releases',name:'docs/releases.md',path:'docs/releases.md'},
-  {group:'决策记录',id:'k-adr1',name:'ADR0001 · 通用语言',path:null,fallback:'record'},
-  {group:'设计产物',id:'k-blueprint',name:'mvp-blueprint-draft.md',path:null,fallback:'design'},
-  {group:'设计产物',id:'k-standard',name:'standard-module-draft.md',path:'standard/README.md'}
+  {group:'规范件',id:'k-metrics',name:'.bw/metrics.toml',path:'.bw/metrics.toml'},
+  {group:'设计',id:'k-arch',name:'docs/architecture.md',path:'docs/architecture.md'},
+  {group:'设计',id:'k-hifi',name:'docs/hifi/index.html',path:'docs/hifi/index.html'},
+  {group:'手册',id:'k-agents',name:'AGENTS.md(问过人才写)',path:'AGENTS.md'}
 ];
 
 /* ===================== 项目 / 状态 ===================== */
 function freshProjects(){
   return {
     buddy:{id:'buddy',kind:'real',light:'yellow',name:"Builders' Workbench(buddy)",shortName:'buddy',hasHistory:true,
-      oneLiner:'V4 MVP 高保真中,减负线待合入',version:'0.4.0-v4',repo:'forcegravity1989/loop-buddy',owner:'Gravity',standardVersion:'4.0',lastDelivery:'08-17',
+      oneLiner:'V4 MVP 高保真中,减负线待合入',version:'0.4.0-v4',repo:'forcegravity1989/loop-buddy',owner:'Gravity',standardVersion:'5.7',lastDelivery:'08-17',
       card:{name:"Builders' Workbench(buddy)",intent:'AI Coding 里一个人的一张工作台,把一个小项目从想法管到能验收的结果',benchmark:'Linear / Orca 的工作台形态;传统 PM 的五角色十流程',northstar:'2026-11-18 前,5 个内部项目在 buddy 上各跑完 ≥4 个完整周循环',northstarAssumed:true}},
     jianmu:{id:'jianmu',kind:'placeholder',light:'green',name:'建木',shortName:'建木',oneLiner:'✱ 内部项目,演示假设值',version:'v0.1 ✱',repo:'jianmu ✱',owner:'Gravity',standardVersion:'—',lastDelivery:'—',
       card:{name:'建木',intent:'✱ 未展开',benchmark:'✱ 未展开',northstar:'✱ 未展开',northstarAssumed:true}},
@@ -747,15 +733,14 @@ function freshState(){
     projects:freshProjects(), newProject:null,
     issues:{buddy:makeIssues()}, metrics:{buddy:makeMetrics()},
     skills:{buddy:makeSkillsList()}, workflows:{buddy:makeWorkflows()},
-    connectors:{buddy:makeConnectors()}, crons:{buddy:makeCrons()},
+    crons:{buddy:makeCrons()},
     toolmap:{buddy:makeToolmap()},
     chatGroup:{buddy:{configured:false,provider:'welink',kind:'internal',groupId:'',sync:{review:true,merged:true,release:true}}},
     kanbanOrder:{},
     settings:{workspaceRoot:'D:\\bw-workspaces'},
     inbox:{buddy:[
       {id:'inbox-pr102',kind:'issue',issueId:'pr-102',text:'PR #102 评审中',state:'pending'},
-      {id:'inbox-ops2',kind:'issue',issueId:'ops2-w33',text:'运作活②「资产盘点 2026-W33」评审中(MR,周五自动跑的)',state:'pending'},
-      {id:'inbox-metrics',kind:'metric',text:'指标「周循环跑通率」「默认件被真实使用次数」无观测',state:'pending',link:'ops1-w34'}
+      {id:'inbox-ops2',kind:'issue',issueId:'ops2-w33',text:'运作活②「资产盘点 2026-W33」评审中',state:'pending'}
     ]},
     notifyEvents:{buddy:makeNotifyEvents()},
     releases:{buddy:[
@@ -775,7 +760,7 @@ function freshState(){
     onboard:{tab:'existing',platform:'github',selectedRepo:'demo-new',search:'',visibility:'private',intentName:'',intentWhat:'',intentBenchmark:'',intentNorthstar:'',namespace:'',repoName:''},
     ui:{
       terminalLines:{},playing:{},
-      guideOpen:false, guideChapter:'env',
+      guideOpen:false, guideChapter:'u0', sessLeft:true, sessRight:true,
       envTesting:false, envStatus:{claude:'unknown',codehub:'unknown',od:'unknown'}, obEnvOk:false,
       workspaceRootEditing:false,
       deleteConfirm:{},
@@ -789,15 +774,16 @@ function freshState(){
       treeExpanded:{buddy:{'':true,'crates':true,'docs':true}},
       spaceTab:{buddy:'knowledge'}, spaceDoc:{buddy:'k-project'},
       symbolQuery:{buddy:''},
-      modal:null, settingsProbe:{}
+      modal:null, settingsProbe:{},
+      deletedSessions:{}
     }
   };
 }
 var state = loadState() || freshState();
-function saveState(){ try{ localStorage.setItem('bw-v4-hifi6-state', JSON.stringify(state)); }catch(_){} }
+function saveState(){ try{ localStorage.setItem('bw-v4-hifi7-state', JSON.stringify(state)); }catch(_){} }
 function loadState(){
   try{
-    var raw = localStorage.getItem('bw-v4-hifi6-state');
+    var raw = localStorage.getItem('bw-v4-hifi7-state');
     if(!raw) return null;
     var s = JSON.parse(raw);
     if(!s || !s.projects) return null;
@@ -866,7 +852,7 @@ var ACTIONS = {
   goWall:function(){ nav('#/wall'); },
   goSettings:function(){ nav('#/settings'); },
   goOnboard:function(){ nav('#/onboard'); },
-  resetDemo:function(){ try{ localStorage.removeItem('bw-v4-hifi6-state'); }catch(_){}
+  resetDemo:function(){ try{ localStorage.removeItem('bw-v4-hifi7-state'); }catch(_){}
     state=freshState(); nav('#/wall'); render(); toast('演示已重置'); },
   mergeInbox:function(pid,id){ var item=findInboxItem(pid,id); if(!item)return; item.state='merged'; if(item.issueId)mergeIssueGeneric(pid,item.issueId); render(); toast('已合入 · 相关指标与待人处理计数已更新'); },
   completeInbox:function(pid,id){ var item=findInboxItem(pid,id); if(!item)return; if(item.issueId)completeIssueGeneric(pid,item.issueId);
@@ -884,12 +870,14 @@ var ACTIONS = {
     state.notifyEvents[pid].unshift({id:'ev-mergedone-'+id,text:(issue?issue.title:item.text)+' · 已合入并完成',time:TODAY_SHORT+' 刚刚',link:item.issueId,processed:true});
     render(); toast('已合入并完成 · 两下合一下,仍是你点的');
   },
-  openInboxIssue:function(pid,id){ var item=findInboxItem(pid,id); if(item&&item.issueId){ nav('#/p/'+pid+'/session/'+item.issueId); } else if(item&&item.link){ nav('#/p/'+pid+'/session/'+item.link); } else { render(); } },
+  openInboxIssue:function(pid,id){ var item=findInboxItem(pid,id); if(item&&item.issueId){ state.ui.selectedIssue[pid]=item.issueId; nav('#/p/'+pid+'/plan'); } else { render(); } },
   goEventLink:function(pid,link){ if(!link)return; nav('#/p/'+pid+'/session/'+link); },
   toggleDelete:function(pid){ state.ui.deleteConfirm[pid]=!state.ui.deleteConfirm[pid]; render(); },
   confirmDelete:function(pid){ delete state.projects[pid]; render(); toast('已删除(演示)'); },
   testEnv:function(){ state.ui.envTesting=true; render();
     setTimeout(function(){ state.ui.envTesting=false; state.ui.envStatus={claude:'ok',od:'ok',codehub:'fail'}; render(); },700); },
+  toggleSessLeft:function(){ state.ui.sessLeft=state.ui.sessLeft===false; render(); },
+  toggleSessRight:function(){ state.ui.sessRight=state.ui.sessRight===false; render(); },
   openGuide:function(){ state.ui.guideOpen=true; render(); },
   closeGuide:function(){ state.ui.guideOpen=false; render(); },
   selectGuideChapter:function(id){ state.ui.guideChapter=id; state.ui.guideOpen=true; render(); },
@@ -907,16 +895,13 @@ var ACTIONS = {
     var displayName=ob.intentName||repoName.split('/').pop();
     state.newProject={ id:'new',kind:'onboarded',light:'gray',name:displayName,shortName:displayName,
       oneLiner:'刚接入,规范铺底待合入',version:'v0.1',repo:repoLabel&&repoLabel.real?repoLabel.id:repoName,
-      owner:'Gravity',standardVersion:'4.0(待合入)',lastDelivery:'—',
+      owner:'Gravity',standardVersion:'5.7(待合入)',lastDelivery:'—',
       card:{name:displayName,intent:ob.intentWhat||'(未填,沿用仓 README)',benchmark:ob.intentBenchmark||'(未填)',northstar:ob.intentNorthstar||'(未填)',northstarAssumed:!ob.intentNorthstar}};
-    var isNewRepo = ob.tab==='new';
-    var ops3Desc = isNewRepo
-      ? '新建空仓,无历史可回填:buddy 建分支写入 8 类核心件,提 MR !1。'
-      : '检测到已有 README(成熟仓):①写核心件 → ②合并调整(把 buddy 约定合进已有 README/CLAUDE.md/AGENTS.md)→ ③历史回填(= 资产盘点首次模式;检测到提交 / 标签 / 远端 issue,产出和正常运作同格式的历史周计划文件 docs/plan/YYYY-Www.md 与 docs/releases.md 里的历史版本行,不另开一份 history.md);三步同一个 MR !1。';
-    state.issues.new={ 'ops3-new':{id:'ops3-new',title:'运作活③规范铺底 v4.0(含合并调整'+(isNewRepo?'':' · 历史回填')+')',category:'运作',tool:'claude_cli',kind:'ops',status:'review',source:'自动建(接入时)',auto:true,metricIds:[],mr:{id:'!1',label:'!1',status:'open'},workflow:'规范铺底(含合并调整 · 历史回填)',skill:'—',desc:ops3Desc} };
-    state.inbox.new=[{id:'inbox-new-ops3',kind:'issue',issueId:'ops3-new',text:'运作活③「规范铺底」评审中(MR !1'+(isNewRepo?'':',已做合并调整 + 历史回填')+')',state:'pending'}];
+    var ops3Desc = '路径 A,不起 agent。往 .bw/ 写名片、issue-policy.toml、standard.toml,开 MR !1,停在评审中。仓根 AGENTS.md 不写。';
+    state.issues.new={ 'ops3-new':{id:'ops3-new',title:'运作活③规范铺底',category:'运作',tool:'—',kind:'ops',status:'review',source:'自动建(接入时)',auto:true,metricIds:[],mr:{id:'!1',label:'!1',status:'open'},workflow:'—',skill:'—',desc:ops3Desc} };
+    state.inbox.new=[{id:'inbox-new-ops3',kind:'issue',issueId:'ops3-new',text:'运作活③「规范铺底」评审中(MR !1)',state:'pending'}];
     state.metrics.new={ northstar:{id:'northstar',tier:'北极星',label:state.newProject.card.northstar,gray:true,drivenBy:[]} };
-    state.skills.new=[]; state.workflows.new=[]; state.connectors.new=[]; state.crons.new=[]; state.toolmap.new=[];
+    state.skills.new=[]; state.workflows.new=[]; state.crons.new=[]; state.toolmap.new=[];
     state.chatGroup.new={configured:false,provider:'welink',kind:'internal',groupId:'',sync:{review:true,merged:true,release:true}};
     state.releases.new=[]; state.weekPlans.new={}; state.health.new={level:'gray',reasons:[{ok:false,text:'刚接入,还没有一周真实数据',jump:'week'}]};
     state.ui.selectedIssue.new=null; state.ui.currentSession.new='shell'; state.ui.treeExpanded.new={'':true};
@@ -967,8 +952,8 @@ var ACTIONS = {
   },
   startWeek:function(pid){
     var proj=getProject(pid); if(!proj)return;
-    var wk=CURRENT_WEEK; state.weekPlans[pid]=state.weekPlans[pid]||{};
-    if(state.weekPlans[pid][wk]){ nav('#/p/'+pid+'/plan'); return; }
+    var existing=allIssuesArr(pid).filter(function(i){return i.kind==='ops' && /运作活①/.test(i.title) && i.week===CURRENT_WEEK;})[0];
+    if(existing){ nav('#/p/'+pid+'/session/'+existing.id); return; }
     var opsId='ops1-'+pid;
     state.issues[pid]=state.issues[pid]||{};
     state.issues[pid][opsId]={ id:opsId,title:'运作活①更新指标 + 制定本周计划 2026-'+wk,category:'运作',tool:'claude_cli',kind:'ops',status:'todo',source:'人触发',metricIds:[],mr:null,week:wk,workflow:'更新指标与周计划',skill:'—',desc:'复盘上周 → 更新指标 → 引导本周目标与活清单。' };
@@ -981,42 +966,52 @@ var ACTIONS = {
   togglePreview:function(pid){ state.ui.previewMode[pid]=!state.ui.previewMode[pid]; render(); },
   setPlanFilter:function(pid,field,val){ state.ui.planFilter[pid]=state.ui.planFilter[pid]||{}; state.ui.planFilter[pid][field]=val; render(); },
   goSession:function(pid,id){ nav('#/p/'+pid+'/session/'+id); },
-  newIssueDraft:function(pid){ state.ui.modal={type:'new-issue',pid:pid,title:'',category:'构建',tool:'claude_cli'}; render(); },
+  newIssueDraft:function(pid){ state.ui.modal={type:'new-issue',pid:pid,title:'',body:'',kind:'business',ops:'week',category:'构建',tool:'claude_cli'}; render(); },
   confirmNewIssue:function(){
     var m=state.ui.modal; if(!m||m.type!=='new-issue')return;
     if(!m.title){ toast('请填标题'); return; }
     var id='draft-'+Date.now();
     var wk=state.ui.selectedWeek[m.pid]||CURRENT_WEEK;
+    var isOps=m.kind==='ops';
     state.issues[m.pid]=state.issues[m.pid]||{};
-    state.issues[m.pid][id]={ id:id,title:m.title,category:m.category,tool:m.tool,kind:'business',status:'todo',source:'人建',metricIds:[],mr:null,week:wk,version:(getProject(m.pid)||{}).version,skill:'—',workflow:m.tool==='open_design'?'原型设计 workflow':'mattpocock-skills',desc:'(演示)新建活草稿。' };
+    state.issues[m.pid][id]={ id:id,title:m.title,category:isOps?'运作':m.category,tool:isOps?'claude_cli':m.tool,kind:isOps?'ops':'business',status:'todo',source:'人建',metricIds:[],mr:null,week:wk,version:(getProject(m.pid)||{}).version,skill:'—',workflow:isOps?(m.ops==='audit'?'asset-audit':'更新指标与周计划'):(m.tool==='open_design'?'—':'mattpocock-skills'),desc:m.body||'(演示)新建活草稿。' };
     state.ui.modal=null; render(); toast('已新建活「'+m.title+'」');
   },
   openReleaseModal:function(pid){
     var wk=state.ui.selectedWeek[pid]||CURRENT_WEEK;
     var done=allIssuesArr(pid).filter(function(i){return i.kind==='business'&&i.week===wk&&i.status==='done';});
     var proj=getProject(pid);
-    state.ui.modal={type:'release',pid:pid,wk:wk,checked:done.map(function(i){return i.id;}),version:proj.version,desc:'agent 起草(演示):本次发版包含 '+done.length+' 张已完成活,详见各活 MR。'};
+    state.ui.modal={type:'release',pid:pid,wk:wk,checked:done.map(function(i){return i.id;}),version:nextVersion(proj.version),desc:'agent 起草(演示):本次发版包含 '+done.length+' 张已完成活,详见各活 MR。'};
     render();
   },
   toggleReleaseCheck:function(id){ var m=state.ui.modal; if(!m||m.type!=='release')return; var i=m.checked.indexOf(id); if(i>=0)m.checked.splice(i,1); else m.checked.push(id); render(); },
   confirmRelease:function(){
     var m=state.ui.modal; if(!m||m.type!=='release')return;
-    var pid=m.pid, relId='release-'+m.version.replace(/[^a-zA-Z0-9.]/g,'')+'-'+Date.now();
-    var title='发版本 '+m.version;
-    state.issues[pid]=state.issues[pid]||{};
-    state.issues[pid][relId]={ id:relId,title:title,category:'运作',tool:'—',kind:'release',status:'review',source:'人触发',metricIds:[],
-      mr:{id:'!bw/release-'+m.version,label:'!bw/release-'+m.version,status:'open'},week:m.wk,version:m.version,workflow:'—',skill:'—',
-      releaseVersion:m.version,releaseNote:m.desc,releaseIssues:m.checked.slice(),
-      desc:'写仓一律走分支 + MR:'+m.desc };
-    state.inbox[pid]=state.inbox[pid]||[];
-    state.inbox[pid].push({id:'inbox-'+relId,kind:'issue',issueId:relId,text:'「'+title+'」待合入',state:'pending'});
-    state.ui.modal=null; render(); toast('已建活「'+title+'」,停在评审中 · 通知里合入并完成才算真发版');
+    var pid=m.pid;
+    state.releases[pid]=state.releases[pid]||[];
+    state.releases[pid].push({version:m.version,date:TODAY,note:m.desc||'',issues:m.checked.slice()});
+    (m.checked||[]).forEach(function(id){ var iss=getIssue(pid,id); if(iss) iss.released=m.version; });
+    state.ui.modal=null; render(); toast('已在代码平台建 Release '+m.version+' · 选中的活打了发版标签');
   },
   closeModal:function(){ state.ui.modal=null; render(); },
+  askDeleteSession:function(pid,sid){
+    var issue=getIssue(pid,sid); if(!issue)return;
+    state.ui.modal={type:'delete-session',pid:pid,sid:sid,title:issue.title};
+    render();
+  },
+  confirmDeleteSession:function(){
+    var m=state.ui.modal; if(!m||m.type!=='delete-session')return;
+    state.ui.deletedSessions=state.ui.deletedSessions||{};
+    state.ui.deletedSessions[m.pid+':'+m.sid]=true;
+    state.ui.playing[m.sid]=false;
+    if(state.ui.currentSession[m.pid]===m.sid) delete state.ui.currentSession[m.pid];
+    state.ui.modal=null; render(); toast('本机会话和工作树删了(演示)·远端 issue 不动');
+  },
 
   selectSession:function(pid,id){ state.ui.currentSession[pid]=id; nav('#/p/'+pid+'/session/'+id); },
   startWork:function(pid,issueId){
     var issue=getIssue(pid,issueId); if(!issue)return;
+    if(issue.tool==='cursor'){ toast('Cursor 还没接,选了开不了工,不会悄悄换成 Claude CLI'); return; }
     issue.status='doing';
     if(state.ui.playing[issueId]) return;
     state.ui.playing[issueId]=true;
@@ -1371,19 +1366,12 @@ function topbarHTML(inProject,pid,screenSeg){
 }
 function guideMarkupHTML(){
   var open=state.ui.guideOpen;
-  var ch=state.ui.guideChapter||'env';
   if(!open){
     return '<div data-guide><div class="guide-tab" data-action="openGuide">指南</div></div>';
   }
-  var chaptersHTML=GUIDE_CHAPTERS.map(function(c){
-    return '<div class="guide-chapter '+(ch===c.id?'active':'')+'" data-action="selectGuideChapter" data-arg=\'"'+c.id+'"\'>'+esc(c.label)+'</div>';
-  }).join('');
-  var cur=GUIDE_CHAPTERS.filter(function(c){return c.id===ch;})[0]||GUIDE_CHAPTERS[0];
-  return '<div data-guide><div class="guide-panel">'
-    + '<div class="guide-panel-head"><h3 style="font-size:15px;margin:0;font-family:var(--serif);">指南</h3><button class="drawer-close" data-action="closeGuide">✕</button></div>'
-    + '<div class="guide-chapters">'+chaptersHTML+'</div>'
-    + '<div class="guide-body">'+esc(cur.body)+'</div>'
-    + '<div class="guide-report" title="暂未接入">⚑ 问题上报</div>'
+  return '<div data-guide><div class="guide-panel guide-panel-wide">'
+    + '<div class="guide-panel-head"><h3 style="font-size:15px;margin:0;font-family:var(--serif);">产品指南</h3><button class="drawer-close" data-action="closeGuide">✕</button></div>'
+    + '<iframe class="guide-frame" src="../guide/v4-产品指南.html"></iframe>'
     + '</div></div>';
 }
 function modalHTML(){
@@ -1407,15 +1395,19 @@ function modalHTML(){
       + '<h3>发版本</h3>' + rows
       + '<div class="formrow" style="margin-top:10px;"><label class="label">版本号</label><input class="input" data-bind="ui.modal.version" value="'+esc(m.version)+'"></div>'
       + '<div class="formrow"><label class="label">说明</label><textarea class="textarea" data-bind="ui.modal.desc">'+esc(m.desc)+'</textarea></div>'
-      + '<div style="font-size:11.3px;color:var(--ink-3);margin:2px 0 10px;">写仓一律走分支 + MR:确认后建一张轻量活「发版本 '+esc(m.version)+'」(不起 agent 会话)+ MR,活先停在评审中;去通知里「合入并完成」才算真发版。</div>'
-      + '<div class="modal-actions"><button class="btn" data-action="closeModal">取消</button><button class="btn btn-primary" data-action="confirmRelease">确认 · 建发版活</button></div></div></div>';
+      + '<div style="font-size:11.3px;color:var(--ink-3);margin:2px 0 10px;">默认是在研号的下一位,可以改。确认后立刻在代码平台建 Release 并给勾选的活打发版标签。不另建一张「发版本」活,也不写仓文件。</div>'
+      + '<div class="modal-actions"><button class="btn" data-action="closeModal">取消</button><button class="btn btn-primary" data-action="confirmRelease">确认 · 发版</button></div></div></div>';
   }
   if(m.type==='new-issue'){
+    var isOps=m.kind==='ops';
     return '<div class="modal-backdrop" data-action="closeModal"><div class="modal">'
       + '<h3>新建活</h3>'
+      + '<div class="formrow"><label class="label">种类</label><select class="select" data-bindchange="ui.modal.kind"><option value="business" '+(!isOps?'selected':'')+'>业务活</option><option value="ops" '+(isOps?'selected':'')+'>运作活</option></select></div>'
+      + (isOps?'<div class="formrow"><label class="label">哪一张</label><select class="select" data-bindchange="ui.modal.ops"><option value="week" '+(m.ops!=='audit'?'selected':'')+'>① 更新指标与周计划</option><option value="audit" '+(m.ops==='audit'?'selected':'')+'>② 资产盘点</option></select></div>':'')
       + '<div class="formrow"><label class="label">标题</label><input class="input" data-bind="ui.modal.title" value="'+esc(m.title)+'"></div>'
-      + '<div class="formrow"><label class="label">类别</label><select class="select" data-bindchange="ui.modal.category">'+CATS.map(function(c){return '<option '+(m.category===c?'selected':'')+'>'+c+'</option>';}).join('')+'</select></div>'
-      + '<div class="formrow"><label class="label">开工工具</label><select class="select" data-bindchange="ui.modal.tool"><option value="claude_cli" '+(m.tool==='claude_cli'?'selected':'')+'>Claude CLI</option><option value="cursor" '+(m.tool==='cursor'?'selected':'')+'>Cursor</option><option value="open_design" '+(m.tool==='open_design'?'selected':'')+'>Open Design</option></select></div>'
+      + '<div class="formrow"><label class="label">正文</label><textarea class="textarea" data-bind="ui.modal.body">'+esc(m.body||'')+'</textarea></div>'
+      + (isOps?'':'<div class="formrow"><label class="label">类别</label><select class="select" data-bindchange="ui.modal.category">'+CATS.map(function(c){return '<option '+(m.category===c?'selected':'')+'>'+c+'</option>';}).join('')+'</select></div>')
+      + (isOps?'':'<div class="formrow"><label class="label">开工工具</label><select class="select" data-bindchange="ui.modal.tool"><option value="claude_cli" '+(m.tool==='claude_cli'?'selected':'')+'>Claude CLI</option><option value="open_design" '+(m.tool==='open_design'?'selected':'')+'>Open Design</option><option value="cursor" disabled>Cursor(还没接)</option></select></div>')
       + '<div class="modal-actions"><button class="btn" data-action="closeModal">取消</button><button class="btn btn-primary" data-action="confirmNewIssue">创建</button></div></div></div>';
   }
   if(m.type==='import'){
@@ -1470,6 +1462,12 @@ function modalHTML(){
     return '<div class="modal-backdrop" data-action="closeModal"><div class="modal">'
       + '<h3>'+kindMeta.title+'</h3>' + bodyHTML
       + '<div class="modal-actions"><button class="btn" data-action="closeModal">取消</button><button class="btn btn-primary" data-action="confirmKanbanAction">'+kindMeta.label+'</button></div></div></div>';
+  }
+  if(m.type==='delete-session'){
+    return '<div class="modal-backdrop" data-action="closeModal"><div class="modal" style="max-width:420px;">'
+      + '<h3>删除会话</h3>'
+      + '<div style="font-size:13px;line-height:1.85;color:var(--ink-2);margin-bottom:8px;">删掉「'+esc(m.title)+'」在本机的会话和工作树。未提交的改动也会没。<br>远端 issue 不动。作废过的活不会因此重新开工。</div>'
+      + '<div class="modal-actions"><button class="btn" data-action="closeModal">算了</button><button class="btn btn-primary" data-action="confirmDeleteSession">删除</button></div></div></div>';
   }
   return '';
 }
@@ -1581,17 +1579,18 @@ function renderOnboard(){
 /* ===================== 渲染:设置 ===================== */
 function renderSettings(){
   var rows=[
+    {k:'数据目录',v:'注册表 / 设置 / 会话都在这下面(不是 SQLite 库)',light:null},
     {k:'claude 路径',v:'/usr/local/bin/claude(已找到)',light:'green'},
-    {k:'Cursor Agent CLI',v:'未安装',light:'gray'},
+    {k:'Cursor Agent CLI',v:'还没接探活',light:'gray'},
     {k:'Open Design',v:'本机已探活',light:'green'},
-    {k:'GitHub 登录',v:'已登录 forcegravity1989',light:'green'},
-    {k:'codehub',v:'未配置',light:'gray'}
+    {k:'codehub-cli / gh',v:'本机路径里找得到就绿;凭证在系统钥匙串,这里不管登录',light:'green'}
   ];
   var wr=state.settings.workspaceRoot, wrEditing=state.ui.workspaceRootEditing;
   var wrRow='<div class="settings-row"><div style="flex:1;min-width:0;"><div class="k">工作区根目录</div>'
     + (wrEditing
         ? '<input class="input mono" style="margin-top:5px;max-width:320px;" data-bind="settings.workspaceRoot" value="'+esc(wr)+'">'
         : '<div class="v mono">'+esc(wr)+'</div>')
+    + '<div style="font-size:11px;color:var(--ink-4);margin-top:4px;">只影响以后新接进来的项目。已接入的仓路径各自记着。</div>'
     + '</div>'
     + (wrEditing
         ? '<button class="btn btn-sm btn-primary" data-action="toggleWorkspaceRootEdit">保存</button>'
@@ -1599,9 +1598,10 @@ function renderSettings(){
     + '</div>';
   var body=rows.map(function(r){
     return '<div class="settings-row"><div><div class="k">'+esc(r.k)+'</div><div class="v">'+esc(r.v)+'</div></div>'
-      + lightDot(r.light,true) + '</div>';
+      + (r.light?lightDot(r.light,true):'') + '</div>';
   }).join('');
-  return '<section data-screen="settings"><h1 style="font-size:20px;">设置</h1><div class="settings-list">'+wrRow+body+'</div></section>';
+  return '<section data-screen="settings"><h1 style="font-size:20px;">设置</h1><div class="settings-list">'+wrRow+body+'</div>'
+    + '<div style="margin-top:14px;color:var(--ink-3);font-size:11.5px;line-height:1.9;">这里没有登录。远端凭证在系统钥匙串,项目群的登录态由你自己在本机登好。buddy 不存 WeLink 账号。</div></section>';
 }
 
 /* ===================== 渲染:总览 ===================== */
@@ -1612,9 +1612,9 @@ function issueChip(pid,issueId){
 function metricCardHTML(pid,m,big){
   if(!m) return '';
   if(m.gray){
-    return '<div class="mcard gray'+(big?' north':'')+'"><div class="mcard-head"><span class="mcard-name'+(big?' big':'')+'">'+esc(m.label)+'</span><span class="chip badge-manual">手填 · 未接入</span></div>'
+    return '<div class="mcard gray'+(big?' north':'')+'"><div class="mcard-head"><span class="mcard-name'+(big?' big':'')+'">'+esc(m.label)+'</span><span class="chip badge-manual">手填</span></div>'
       + '<div class="mcard-value-row"><span class="mcard-value'+(big?' big':'')+'" style="color:var(--ink-4);">—</span><span class="mcard-target">目标未设</span></div>'
-      + '<div class="mcard-sub">无观测 · Unknown ≠ 绿</div></div>';
+      + '<div class="mcard-sub">无观测 · Unknown ≠ 绿 · 卡上填今天这个数</div></div>';
   }
   var driven=(m.drivenBy||[]).map(function(id){return issueChip(pid,id);}).join('');
   var wk = m.weekTarget ? ('<div class="mcard-sub">本周目标 '+esc(m.weekTarget)+' '+(m.achieved?'●':'○')+'</div>') : '';
@@ -1629,14 +1629,15 @@ function metricCardHTML(pid,m,big){
 function chatGroupLineHTML(pid){
   var g=state.chatGroup[pid];
   if(!g||!g.configured){
-    return '未配 <button class="btn btn-sm btn-ghost" data-action="openChatGroupModal" data-arg=\'"'+pid+'"\'>配置</button>';
+    return '未配 · 改群号走编辑名片 + MR';
   }
-  return 'WeLink · 群 '+esc(g.groupId)+' · 通知同步中 <button class="btn btn-sm btn-ghost" data-action="openChatGroupModal" data-arg=\'"'+pid+'"\'>改</button>';
+  return 'WeLink · 群 '+esc(g.groupId)+' · 通知同步中';
 }
 function renderOverview(pid){
   var proj=getProject(pid); if(!proj) return '<section data-screen="overview"><div class="detail-empty">项目不存在</div></section>';
   var wk=getPath(state,'weekPlans.'+pid+'.'+CURRENT_WEEK);
-  var showStartBanner = !wk;
+  var ops1=allIssuesArr(pid).filter(function(i){return i.kind==='ops' && /运作活①/.test(i.title) && i.week===CURRENT_WEEK;})[0];
+  var showStartBanner = !ops1;
   var health=(state.health[pid])||{level:'gray',reasons:[]};
   var editing=state.ui.charterEditing[pid];
   var card=proj.card;
@@ -1646,7 +1647,7 @@ function renderOverview(pid){
     charterEditHTML='<div class="formrow"><label class="label">想做什么</label><textarea class="textarea" data-bind="ui.charterDraft.'+pid+'.intent">'+esc(d.intent)+'</textarea></div>'
       + '<div class="formrow"><label class="label">最像的对标</label><input class="input" data-bind="ui.charterDraft.'+pid+'.benchmark" value="'+esc(d.benchmark)+'"></div>'
       + '<div class="formrow"><label class="label">三个月长成什么样(北极星)</label><textarea class="textarea" data-bind="ui.charterDraft.'+pid+'.northstar">'+esc(d.northstar)+'</textarea></div>'
-      + '<div style="display:flex;gap:8px;justify-content:flex-end;"><button class="btn btn-sm" data-action="cancelCardEdit" data-arg=\'"'+pid+'"\'>取消</button><button class="btn btn-sm btn-primary" data-action="saveCard" data-arg=\'"'+pid+'"\'>保存</button></div>';
+      + '<div style="display:flex;gap:8px;justify-content:flex-end;"><button class="btn btn-sm" data-action="cancelCardEdit" data-arg=\'"'+pid+'"\'>取消</button><button class="btn btn-sm btn-primary" data-action="saveCard" data-arg=\'"'+pid+'"\'>保存 · 建一张活提 MR</button></div>';
   }
   var charterEdit=getIssue(pid,'charter-edit');
   var mrBanner='';
@@ -1677,7 +1678,8 @@ function renderOverview(pid){
   }).join('');
   var opsChips=opsChipsHTML(pid);
   return '<section data-screen="overview"><div class="ov-stack">'
-    + (showStartBanner ? ('<div class="ov-banner"><span>本周还没有计划</span><button class="btn btn-primary btn-sm" data-action="startWeek" data-arg=\'"'+pid+'"\'>开始本周</button></div>') : '')
+    + (showStartBanner ? ('<div class="ov-banner"><span>本周('+CURRENT_WEEK+')还没开始「更新指标 + 制定本周计划」</span><button class="btn btn-primary btn-sm" data-action="startWeek" data-arg=\'"'+pid+'"\'>开始本周</button></div>')
+        : (ops1 && ops1.status!=='done' ? ('<div class="ov-banner"><span>运作活①已开工 · '+esc(STATUS_LABEL[ops1.status]||ops1.status)+'。去会话屏接着聊。</span><button class="btn btn-sm" data-action="goSession" data-arg=\'["'+pid+'","'+ops1.id+'"]\'>去会话屏</button></div>') : ''))
     + '<div class="card ov-block ov-block1" data-block="card">'
     +   '<div class="info">'
     +     (editing ? ('<div class="charter-name">'+esc(proj.name)+'</div>'+charterEditHTML)
@@ -1686,24 +1688,18 @@ function renderOverview(pid){
             + '<div class="charter-line"><span class="k">对标</span>'+esc(card.benchmark)+'</div>'
             + '<div class="charter-line"><span class="k">北极星</span>'+esc(card.northstar)+(card.northstarAssumed?' <span class="asterisk">✱</span>':'')+'</div>'
             + '<div class="charter-line"><span class="k">项目群</span>'+chatGroupLineHTML(pid)+'</div>'
-            + '<div class="charter-meta"><span class="mono">'+esc(proj.repo)+'</span><span>负责人 '+esc(proj.owner)+'</span><span>规范 v'+esc(proj.standardVersion)+'</span><span style="margin-left:auto;"><button class="btn btn-sm" data-action="editCard" data-arg=\'"'+pid+'"\'>编辑</button></span></div>'))
+            + '<div class="charter-meta"><span class="mono">'+esc(proj.repo)+'</span><span>规范 v'+esc(proj.standardVersion)+'</span><span style="margin-left:auto;display:flex;gap:6px;"><button class="btn btn-sm" data-action="toastOnly" data-arg=\'"工作区已快进到远端最新(演示)"\'>↻ 拉到最新</button><button class="btn btn-sm" data-action="editCard" data-arg=\'"'+pid+'"\'>编辑</button></span></div>'))
     +     mrBanner
     +   '</div>'
     +   '<div class="health">'
     +     '<div class="health-big">'+lightDot(health.level,true)+'<span class="health-word">'+({green:'平稳',yellow:'需要关注',red:'阻塞',gray:'无数据'}[health.level]||'无数据')+'</span></div>'
-    +     '<div class="health-reasons">'+(reasons||'<div class="detail-empty">暂无理由</div>')+'</div>'
+    +     '<div class="health-reasons">'+(reasons||'<div class="detail-empty">还没有任何真实数据 —— 灰不是绿。</div>')+'</div>'
     +   '</div>'
     + '</div>'
     + '<div class="card ov-block" data-block="northstar"><div class="ov-block-title">北极星</div>'+metricCardHTML(pid,metrics.northstar,true)+'</div>'
-    + '<div class="card ov-block" data-block="lagging"><div class="ov-block-title">滞后性指标</div><div class="ov-row">'+lagCols+'</div></div>'
-    + '<div class="card ov-block" data-block="leading"><div class="ov-block-title">引领性指标</div><div class="ov-row">'+leadCols+'</div></div>'
-    + '<div class="card ov-block" data-block="repo">'
-    +   '<div class="repo-metric-head"><h3>项目指标 · 代码仓级</h3><button class="btn btn-sm" data-action="toastOnly" data-arg=\'"已重新采集(演示)"\'>↻ 立即采集</button></div>'
-    +   '<div class="repo-metric-grid">'+repoMetricsHTML+'</div>'
-    + '</div>'
     + '<div class="card ov-block" data-block="week">'
     +   '<div class="ov-block-title">本周计划进度</div>'
-    +   '<div class="week-goal"><b>'+CURRENT_WEEK+'</b> · '+esc(wk?wk.goal:'（未开始本周）')+(wk&&wk.assumed?' <span class="asterisk">✱</span>':'')+'</div>'
+    +   '<div class="week-goal"><b>'+CURRENT_WEEK+'</b> · '+esc(wk?wk.goal:'（周目标还没写进运作活①评论）')+(wk&&wk.assumed?' <span class="asterisk">✱</span>':'')+'</div>'
     +   '<div class="week-progress">'
     +     '<div style="width:'+segPct(weekProg.done)+'%;background:var(--green);"></div>'
     +     '<div style="width:'+segPct(weekProg.review)+'%;background:var(--amber);"></div>'
@@ -1712,7 +1708,12 @@ function renderOverview(pid){
     +   '</div>'
     +   '<div class="week-counts"><span>待办 <b>'+weekProg.todo+'</b></span><span>进行中 <b>'+weekProg.doing+'</b></span><span>评审中 <b>'+weekProg.review+'</b></span><span>完成 <b>'+weekProg.done+'</b></span></div>'
     +   (opsChips?('<div class="ops-chip-row">'+opsChips+'</div>'):'')
-    +   '<button class="btn btn-sm" data-action="nav" data-arg=\'"#/p/'+pid+'/plan"\'>去计划 →</button>'
+    + '</div>'
+    + '<div class="card ov-block" data-block="lagging"><div class="ov-block-title">滞后性指标</div><div class="ov-row">'+lagCols+'</div></div>'
+    + '<div class="card ov-block" data-block="leading"><div class="ov-block-title">引领性指标</div><div class="ov-row">'+leadCols+'</div></div>'
+    + '<div class="card ov-block" data-block="repo">'
+    +   '<div class="repo-metric-head"><h3>项目指标 · 代码仓级</h3><button class="btn btn-sm" data-action="toastOnly" data-arg=\'"已重新采集(演示)"\'>↻ 立即采集</button></div>'
+    +   '<div class="repo-metric-grid">'+repoMetricsHTML+'</div>'
     + '</div>'
     + '<div class="card ov-block" data-block="version">'
     +   '<div class="ov-block-title">在研版本与发版记录</div>'
@@ -1817,13 +1818,11 @@ function renderPlan(pid){
       + '</div>'
       + kanbanHTML(pid,rows);
   } else if(HISTORY_WEEKS.indexOf(left)>=0){
-    // 回填出来的历史周:和普通周同一个文件格式(docs/plan/2026-Www.md,origin: backfill),
-    // 界面不做特殊处理——就是把那份文件里的内容渲染出来;没有周目标就照实说没有。
+    // 回填出来的历史周:合入数来自 git。周目标不倒推,没有就是没有。
     var mg=HISTORY_WEEK_MERGED[left]||0;
-    midHTML='<div class="plan-toolbar"><div class="left">2026-'+left+' <span class="chip chip-muted">回填</span></div>'
-      + '<div class="right"><span class="muted" style="font-size:12px;">docs/plan/2026-'+left+'.md</span></div></div>'
+    midHTML='<div class="plan-toolbar"><div class="left">2026-'+left+' <span class="chip chip-muted">回填</span></div></div>'
       + '<div class="goal-box">(回填,无周目标)本周合入 '+mg+' 个 MR</div>'
-      + '<div class="detail-empty" style="margin-top:10px;">这一周是接入时由「资产盘点」首次模式从 git 历史回填出来的:同格式的周计划文件,记着这周合了什么、动了哪些目录、关了几个 issue。当时项目还没在 buddy 上运作,所以没有活卡。</div>';
+      + '<div class="detail-empty" style="margin-top:10px;">这一周是接入时由「资产盘点」首次模式从 git 历史回填出来的。当时项目还没在 buddy 上运作,所以没有活卡,也不倒推周目标。</div>';
   } else {
     var wk=getPath(state,'weekPlans.'+pid+'.'+left);
     var weekIssues=allIssuesArr(pid).filter(function(i){return i.kind==='business'&&i.week===left;});
@@ -1835,10 +1834,9 @@ function renderPlan(pid){
       + '<div class="right">'
       +   '<button class="btn btn-sm" data-action="newIssueDraft" data-arg=\'"'+pid+'"\'>新建活</button>'
       +   '<button class="btn btn-sm" data-action="openReleaseModal" data-arg=\'"'+pid+'"\'>发版本</button>'
-      +   '<label class="switch"><input type="checkbox" '+(preview?'checked':'')+' data-action="togglePreview" data-arg=\'"'+pid+'"\'> 预览 · 未合入</label>'
+      +   '<label class="switch" title="还没接:要去读活自己 worktree 里未合入的仓文件"><input type="checkbox" disabled> 预览 · 未合入</label>'
       + '</div></div>'
-      + (preview? '<div class="mr-banner" style="margin:0 0 8px;">预览:活 worktree 内的 .bw/metrics.toml、docs/plan/ 效果(未合入)</div>' : '')
-      + '<div class="goal-box">'+esc(wk?wk.goal:'（本周尚无计划)')+'</div>'
+      + '<div class="goal-box">'+esc(wk?wk.goal:'（这一周还没写周目标)')+'</div>'
       + '<div class="week-progress">'
       +   '<div style="width:'+segPct(weekProg.done)+'%;background:var(--green);"></div>'
       +   '<div style="width:'+segPct(weekProg.review)+'%;background:var(--amber);"></div>'
@@ -1856,7 +1854,7 @@ function renderPlan(pid){
       + '<div class="plan-detail-body">'
       + '<div class="detail-title">'+esc(di.title)+'</div>'
       + '<div class="detail-row"><div class="k">说明</div>'+esc(di.desc||'—')+'</div>'
-      + '<div class="detail-row"><div class="k">类别</div>'+esc(di.category)+'</div>'
+      + '<div class="detail-row"><div class="k">类别</div>'+(di.kind==='ops'?'运作(不能改)':esc(di.category))+'</div>'
       + '<div class="detail-row"><div class="k">开工工具</div>'+esc(TOOL_LABEL[di.tool]||'—')+'</div>'
       + '<div class="detail-row"><div class="k">workflow / 技能</div>'+esc(di.workflow||'—')+' / '+esc(di.skill||'—')+'</div>'
       + '<div class="detail-row"><div class="k">推动指标</div>'+((di.metricIds||[]).map(function(mid){var m=getMetric(pid,mid);return m?esc(m.label):'';}).join('、')||'—')+'</div>'
@@ -1864,7 +1862,7 @@ function renderPlan(pid){
       + '<div class="detail-row"><div class="k">来源</div>'+esc(di.source||'—')+'</div>'
       + '<div class="detail-row"><div class="k">week_of / 版本</div>'+esc(di.week||'—')+' / '+esc(di.version||'—')+'</div>'
       + '<div class="detail-row"><div class="k">操作(键盘 / 替代路径,拖拽同效)</div><div class="kcard-actions" style="margin-top:3px;">'+issueActionsHTML(pid,di)+'</div></div>'
-      + '<div class="detail-actions"><button class="btn btn-primary btn-sm" data-action="goSession" data-arg=\'["'+pid+'","'+di.id+'"]\'>去会话 →</button><button class="btn btn-sm" data-action="distill" data-arg=\'["'+pid+'","'+di.id+'"]\'>蒸馏</button></div>'
+      + '<div class="detail-actions"><button class="btn btn-primary btn-sm" data-action="goSession" data-arg=\'["'+pid+'","'+di.id+'"]\'>去会话 →</button><button class="btn btn-sm" disabled title="V4 还没接蒸馏">蒸馏</button></div>'
       + '</div></div>';
   }
   return '<section data-screen="plan"><div class="plan-grid">'
@@ -1887,6 +1885,7 @@ function sessionGroups(pid){
     else if(i.status==='review'||i.status==='merged'){ dot='amber'; sub=(i.auto?'自动 · 已推评审':'等你输入 · 3 分钟前'); }
     else if(i.status==='doing'){ dot='amber'; sub='等你输入'; }
     else if(i.status==='done'){ dot='gray'; sub='已完成'; }
+    if(state.ui.deletedSessions && state.ui.deletedSessions[pid+':'+id]) return;
     groups.push({sid:id,groupLabel:repoShort+'-issue-'+issueSuffix(id)+' · '+branchOf(id),title:i.title,sub:sub,dot:dot,issue:i});
   });
   return groups;
@@ -2019,96 +2018,88 @@ function renderSession(pid,sidParam){
       + '<button class="btn btn-sm" data-btn="play" data-action="startWork" data-arg=\'["'+pid+'","'+sid+'"]\' '+(canPlay?'':'disabled')+'>▶ 开工</button>'
       + '<button class="btn btn-sm" data-btn="stop" data-action="stopWork" data-arg=\'["'+pid+'","'+sid+'"]\' '+(playing?'':'disabled')+'>■ 停止</button>'
       + '<button class="btn btn-sm" data-action="pushReview" data-arg=\'["'+pid+'","'+sid+'"]\' '+(canPush?'':'disabled')+'>推到评审</button>'
-      + '<button class="btn btn-sm" data-action="distill" data-arg=\'["'+pid+'","'+sid+'"]\'>蒸馏</button>'
-      + (issue.tool==='cursor'?'<button class="btn btn-sm" data-action="openInCursor">在 Cursor 中打开</button>':'')
+      + '<button class="btn btn-sm" disabled title="V4 还没接蒸馏">蒸馏</button>'
+      + '<button class="btn btn-sm" data-action="askDeleteSession" data-arg=\'["'+pid+'","'+sid+'"]\'>删除会话</button>'
       + '</div>';
   } else {
     actionBar='<div class="sess-actionbar"><span class="ttl">仓根 · main</span><span class="chip">常驻 shell</span></div>';
   }
+  var leftOn=state.ui.sessLeft!==false;
+  var rightOn=state.ui.sessRight!==false;
+  var leftCol=leftOn
+    ? '<div class="sess-col sess-left"><button class="sess-rail" data-action="toggleSessLeft" title="收起会话列表">‹</button><div class="sess-left-scroll">'+leftHTML+'</div></div>'
+    : '<div class="sess-col sess-left is-collapsed"><button class="sess-rail" data-action="toggleSessLeft" title="展开会话列表">会话</button></div>';
+  var rightCol=rightOn
+    ? '<div class="sess-col sess-right"><button class="sess-rail" data-action="toggleSessRight" title="收起工作区">›</button><div class="sess-right-scroll">'+sessionRightHTML(pid,sid,issue)+'</div></div>'
+    : '<div class="sess-col sess-right is-collapsed"><button class="sess-rail" data-action="toggleSessRight" title="展开工作区">工作区</button></div>';
   return '<section data-screen="session"><div class="sess-grid">'
-    + '<div class="sess-col"><div class="sess-left-scroll">'+leftHTML+'</div></div>'
+    + leftCol
     + '<div class="sess-col sess-mid">'+actionBar+'<div class="sess-tabs">'+tabsHTML+'</div><div class="sess-body">'+bodyHTML+'</div></div>'
-    + '<div class="sess-col"><div class="sess-right-scroll">'+sessionRightHTML(pid,sid,issue)+'</div></div>'
+    + rightCol
     + '</div></section>';
 }
 
 /* ===================== 渲染:配置 ===================== */
-var TOOL_OPTIONS=['open_design','claude_cli','cursor'];
 function toolmapSectionHTML(pid){
   var rows=state.toolmap[pid]||[];
-  var wfNames=(state.workflows[pid]||[]).map(function(w){return w.name;});
   var body=rows.map(function(r,idx){
-    var toolSel='<select class="select-sm" data-bindchange="toolmap.'+pid+'.'+idx+'.tool">'+TOOL_OPTIONS.map(function(t){return '<option value="'+t+'" '+(r.tool===t?'selected':'')+'>'+TOOL_LABEL[t]+'</option>';}).join('')+'</select>';
-    var wfCell;
-    if(r.cat==='运作'){
-      wfCell='<select class="select-sm" disabled><option>'+esc(r.workflow)+'</option></select>'
-        + '<div style="font-size:10px;color:var(--ink-3);margin-top:3px;">运作活按活自动选对应运作 workflow</div>';
-    } else {
-      var opts=wfNames.concat(['无']);
-      wfCell='<select class="select-sm" data-bindchange="toolmap.'+pid+'.'+idx+'.workflow">'+opts.map(function(w){return '<option '+(r.workflow===w?'selected':'')+'>'+esc(w)+'</option>';}).join('')+'</select>';
-    }
-    return '<tr><td>'+esc(r.cat)+'</td><td>'+toolSel+'</td><td>'+wfCell+'</td></tr>';
+    var toolSel='<select class="select-sm" data-bindchange="toolmap.'+pid+'.'+idx+'.tool">'
+      + '<option value="claude_cli" '+(r.tool==='claude_cli'?'selected':'')+'>Claude CLI</option>'
+      + '<option value="open_design" '+(r.tool==='open_design'?'selected':'')+'>Open Design(本机网页内嵌)</option>'
+      + '<option value="cursor" disabled>Cursor(还没接,选了开不了工)</option>'
+      + '<option value="" '+(r.tool==='—'||!r.tool?'selected':'')+'>—</option>'
+      + '</select>';
+    return '<tr><td>'+esc(r.cat)+'</td><td>'+toolSel+'</td><td><input class="input" style="min-width:180px;" data-bind="toolmap.'+pid+'.'+idx+'.workflow" value="'+esc(r.workflow)+'"></td><td><button class="btn btn-sm btn-primary" data-action="saveToolmap" data-arg=\'"'+pid+'"\'>保存</button></td></tr>';
   }).join('');
-  return '<div class="cfg-section"><div class="cfg-section-head"><h3>开工工具映射</h3><button class="btn btn-sm btn-primary" data-action="saveToolmap" data-arg=\'"'+pid+'"\'>保存</button></div>'
-    + '<div class="tbl-wrap"><table class="tbl"><thead><tr><th>类别</th><th>开工工具</th><th>workflow</th></tr></thead><tbody>'+body+'</tbody></table></div>'
-    + '<div class="cfg-readonly-note">保存后写回 .bw/issue-policy.toml(演示)。workflow = SOP 类技能包,自己调度 agent,buddy 不单独维护 agent 名单;下拉里含项目导入的 workflow。</div></div>';
-}
-function workflowsSectionHTML(pid){
-  var wfs=state.workflows[pid]||[];
-  return '<div class="cfg-section"><div class="cfg-section-head"><h3>workflow(SOP 类技能包)</h3><button class="btn btn-sm" data-action="openImportModal" data-arg=\'["'+pid+'","workflow"]\'>导入</button></div>'
-    + '<div class="tbl-wrap"><table class="tbl"><thead><tr><th>名称</th><th>来源</th><th>入口</th><th>自带 agent 数</th><th>用过几次</th><th>一句话</th></tr></thead><tbody>'
-    + wfs.map(function(w){
-      var uses = w.name==='mattpocock-skills' ? (workflowUsage(pid,'mattpocock-skills')+' ✱') : '—(无使用记录)';
-      return '<tr><td>'+esc(w.name)+'</td><td>'+esc(w.source)+'</td><td class="mono" style="font-size:10.4px;">'+esc(w.entry)+'</td><td>'+esc(w.agents)+'</td><td class="mono">'+uses+'</td><td>'+esc(w.oneliner)+'</td></tr>';
-    }).join('') + '</tbody></table></div>'
-    + '<div class="cfg-readonly-note">workflow 的入口是一份 SKILL.md,写的是一整套做事流程,自己调度该用哪个 agent;buddy 不再单独维护 agent 名单,战绩记在 workflow / 技能上。buddy 带的都是通用件,各人 / 各项目可导入自己的。</div></div>';
+  return '<div class="cfg-section"><div class="cfg-section-head"><h3>开工工具映射</h3></div>'
+    + '<div class="tbl-wrap"><table class="tbl"><thead><tr><th>类别</th><th>开工工具</th><th>workflow</th><th></th></tr></thead><tbody>'+body+'</tbody></table></div>'
+    + '<div class="cfg-readonly-note">正本是仓里的 .bw/issue-policy.toml。配了起不来的工具,▶开工 会当场报错,不会悄悄拿 Claude CLI 顶上。</div></div>';
 }
 function skillsSectionHTML(pid){
   var skills=state.skills[pid]||[];
-  return '<div class="cfg-section"><div class="cfg-section-head"><h3>skill(单个技能)</h3><button class="btn btn-sm" data-action="openImportModal" data-arg=\'["'+pid+'","skill"]\'>导入</button></div>'
-    + '<div class="tbl-wrap"><table class="tbl"><thead><tr><th>名称</th><th>来源</th><th>属于哪个包</th><th>一句话</th><th>启用</th></tr></thead><tbody>'
+  return '<div class="cfg-section"><div class="cfg-section-head"><h3>技能与 workflow</h3><span style="font-size:11.5px;color:var(--ink-3);">buddy 自带 + 本仓 .claude/skills/,共 '+skills.length+' 个</span></div>'
+    + '<div class="tbl-wrap"><table class="tbl"><thead><tr><th>名称</th><th>来源</th><th>一句话</th><th>用过几次</th></tr></thead><tbody>'
     + skills.map(function(s){
-      return '<tr><td>'+esc(s.name)+(s.distilled?' <span class="chip chip-green">蒸馏</span>':'')+'</td><td>'+esc(s.source)+'</td><td>'+esc(s.pkg||'独立')+'</td><td>'+esc(s.desc||'')+'</td>'
-        + '<td><span class="tglswitch '+(s.enabled?'on':'')+'" data-action="toggleSkill" data-arg=\'["'+pid+'",'+JSON.stringify(s.name)+']\'><span class="knob"></span></span></td></tr>';
-    }).join('') + '</tbody></table></div></div>';
+      return '<tr><td>'+esc(s.name)+'<div style="font-size:11px;color:var(--ink-3);">'+esc(s.slug||'')+'</div></td><td><span class="chip chip-gray">'+esc(s.origin||s.source||'内置')+'</span></td><td>'+esc(s.desc||'')+'</td><td class="mono">'+(s.uses?s.uses:'—(还没被任何活用过)')+'</td></tr>';
+    }).join('') + '</tbody></table></div>'
+    + '<div class="cfg-readonly-note">workflow 和技能是同一样东西,不分两张表。导入按钮还没接:自己的技能放进仓里 .claude/skills/&lt;目录&gt;/SKILL.md,这里会扫成「项目自有」。</div></div>';
 }
 function chatGroupBlockHTML(pid){
   var g=state.chatGroup[pid]||{configured:false,sync:{}};
   var toggles=[['review','评审中'],['merged','已合入'],['release','发版']].map(function(t){
-    return '<label style="display:inline-flex;align-items:center;gap:5px;margin-right:12px;font-size:11.3px;"><span class="tglswitch '+((g.sync&&g.sync[t[0]])?'on':'')+'" data-action="toggleChatSyncCfg" data-arg=\'["'+pid+'","'+t[0]+'"]\'><span class="knob"></span></span>'+t[1]+'</label>';
+    return '<span style="display:inline-flex;align-items:center;gap:5px;margin-right:12px;font-size:11.3px;"><span class="tglswitch '+((g.sync&&g.sync[t[0]])?'on':'')+'"><span class="knob"></span></span>'+t[1]+'</span>';
   }).join('');
-  return '<div style="border-top:1px dashed var(--border);margin-top:12px;padding-top:12px;font-size:12.2px;">'
-    + '<div style="font-weight:600;margin-bottom:7px;">项目群</div>'
-    + '<div style="display:flex;flex-direction:column;gap:7px;">'
-    + '<div>提供方 <span class="chip chip-clay">WeLink · 内部</span> <span class="chip chip-gray" style="opacity:.55;" title="工厂留位,暂未接入">外部 · 待定</span></div>'
-    + '<div>群号 <span class="mono">'+esc(g.groupId||'—')+'</span> <button class="btn btn-sm btn-ghost" data-action="openChatGroupModal" data-arg=\'"'+pid+'"\'>'+(g.configured?'改':'配置')+'</button></div>'
-    + '<div>同步哪些通知 '+toggles+'</div>'
-    + '<div>状态 <span class="chip '+(g.configured?'chip-green':'')+'">'+(g.configured?'已配':'未配')+'</span></div>'
-    + '</div></div>';
+  return '<div class="cfg-section"><div class="cfg-section-head"><h3>项目群</h3></div>'
+    + '<div style="display:flex;flex-direction:column;gap:7px;font-size:12.2px;">'
+    + '<div>提供方 <span class="chip '+(g.configured?'chip-clay':'chip-gray')+'">'+(g.configured?'WeLink':'未配')+'</span></div>'
+    + '<div>群号 <span class="mono">'+esc(g.groupId||'—')+'</span></div>'
+    + '<div>同步哪些通知 '+(g.configured?toggles:'<span style="color:var(--ink-3);">—(没配群)</span>')+'</div>'
+    + '</div>'
+    + '<div class="cfg-readonly-note">发出去就算完,不记账。改群号走「编辑项目信息」那条活 + MR,不在这里直接写仓。</div></div>';
 }
-function connectorsCronsSectionHTML(pid){
-  var cs=state.connectors[pid]||[], crons=state.crons[pid]||[];
-  var connHTML='<div class="cfg-section"><div class="cfg-section-head"><h3>连接器</h3></div>'
-    + '<div class="tbl-wrap"><table class="tbl"><thead><tr><th>连接器</th><th>目标</th><th>状态</th><th>上次同步</th></tr></thead><tbody>'
-    + cs.map(function(c){ return '<tr><td>'+esc(c.name)+'</td><td class="mono">'+esc(c.target)+'</td><td><span class="chip '+(c.status==='connected'?'chip-green':'')+'">'+(c.status==='connected'?'已连接':'未配置')+'</span></td><td class="mono">'+esc(c.lastSync)+'</td></tr>'; }).join('')
-    + '</tbody></table></div>'
-    + chatGroupBlockHTML(pid)
-    + '</div>';
-  var cronHTML='<div class="cfg-section"><div class="cfg-section-head"><h3>定时</h3></div>'
-    + '<div class="tbl-wrap"><table class="tbl"><thead><tr><th>任务</th><th>频率</th><th>下次触发</th><th>状态</th><th>操作</th></tr></thead><tbody>'
+function cronBlockHTML(pid){
+  var crons=state.crons[pid]||[];
+  return '<div class="cfg-section"><div class="cfg-section-head"><h3>定时</h3></div>'
+    + '<div class="tbl-wrap"><table class="tbl"><thead><tr><th>运作活</th><th>怎么触发</th><th>节律</th><th>判据</th></tr></thead><tbody>'
     + crons.map(function(c){
-      return '<tr><td>'+esc(c.name)+'</td><td class="mono">'+esc(c.schedule)+'</td><td class="mono">'+esc(c.nextRun)+'</td>'
-        + '<td><span class="chip '+(c.status==='running'?'chip-clay':(c.status==='paused'?'':'chip-green'))+'">'+({normal:'正常',running:'运行中',paused:'已暂停'}[c.status]||c.status)+'</span></td>'
-        + '<td><button class="btn btn-sm" data-action="runCron" data-arg=\'["'+pid+'","'+c.id+'"]\'>立即执行</button> <button class="btn btn-sm btn-ghost" data-action="toggleCron" data-arg=\'["'+pid+'","'+c.id+'"]\'>'+(c.status==='paused'?'恢复':'暂停')+'</button></td></tr>';
-    }).join('') + '</tbody></table></div></div>';
-  return '<div class="cfg-pair">'+connHTML+cronHTML+'</div>';
+      return '<tr><td>'+esc(c.name)+'</td><td><span class="chip">'+esc(c.trigger||'到点建活')+'</span></td><td class="mono">'+esc(c.schedule)+'</td><td>'+esc(c.rule||'')+'</td></tr>';
+    }).join('') + '</tbody></table></div>'
+    + '<div class="cfg-readonly-note"><strong>没有定时表</strong>,所以没有「下次触发」列。到点只会自动<strong>建</strong>活,绝不自动完成。每周自动触发那条链还没接上。</div></div>';
+}
+function standardBlockHTML(pid){
+  var proj=getProject(pid)||{};
+  return '<div class="cfg-section"><div class="cfg-section-head"><h3>规范件与在研版本</h3>'
+    + '<button class="btn btn-sm" data-action="toastOnly" data-arg=\'"对账只看不改:缺哪几份、哪几份过期、哪几份被人手改过(演示)"\'>对一遍账</button></div>'
+    + '<div class="settings-list"><div class="settings-row"><div><div class="k">规范版本</div><div class="v">'+esc(proj.standardVersion||'—')+'</div></div></div>'
+    + '<div class="settings-row"><div><div class="k">在研版本</div><div class="v mono">'+esc(proj.version||'—')+'</div></div></div></div>'
+    + '<div class="cfg-readonly-note">对账只看不改。名片和开工映射在接入那次铺底里一次写完;指标正文跟运作活①会话走,不预铺空壳。没有「规范铺底」按钮。</div></div>';
 }
 function renderConfig(pid){
   return '<section data-screen="config">'
     + toolmapSectionHTML(pid)
-    + workflowsSectionHTML(pid)
     + skillsSectionHTML(pid)
-    + connectorsCronsSectionHTML(pid)
+    + '<div class="cfg-pair">'+chatGroupBlockHTML(pid)+cronBlockHTML(pid)+'</div>'
+    + standardBlockHTML(pid)
     + '</section>';
 }
 
@@ -2120,11 +2111,10 @@ function codeGraphSVG(){
       + '<text x="'+(x+w/2)+'" y="'+(y+h/2+13)+'" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="10.5" fill="#8C867A">'+lines+' 行</text>';
   }
   function arrow(x1,y1,x2,y2){ return '<line x1="'+x1+'" y1="'+y1+'" x2="'+x2+'" y2="'+y2+'" stroke="#8C867A" stroke-width="1.3" marker-end="url(#gArrow)"/>'; }
-  return '<svg viewBox="0 0 760 220" width="100%" style="max-width:760px;display:block;">'
+  return '<svg viewBox="0 0 640 180" width="100%" style="max-width:640px;display:block;">'
     + '<defs><marker id="gArrow" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="#8C867A"/></marker></defs>'
-    + arrow(130,113,190,63) + arrow(130,113,190,173) + arrow(300,63,380,103) + arrow(300,173,380,123) + arrow(490,113,560,63) + arrow(490,113,560,173)
-    + box(20,90,110,46,'bw-core','4,997') + box(190,30,110,46,'bw-engine','6,098') + box(190,150,110,46,'bw-store','5,630')
-    + box(380,90,110,46,'bw-app','27,572') + box(560,30,110,46,'ui','2,559') + box(560,150,110,46,'app-desktop','13,968')
+    + arrow(130,90,230,90) + arrow(350,90,450,90)
+    + box(20,62,110,56,'bw','内核') + box(230,62,120,56,'bw-engine','底座') + box(450,62,120,56,'app-shell','壳')
     + '</svg>';
 }
 function renderSpace(pid,subTab){
@@ -2151,8 +2141,8 @@ function renderSpace(pid,subTab){
   } else if(tab==='graph'){
     var q=(state.ui.symbolQuery[pid]||'').trim();
     var SYMBOL_RESULTS={
-      'recompute_signals':[['crates/bw-store/src/sqlite.rs','persist_observation() 观测写入后触发'],['crates/bw-app/src/lib.rs','dispatch() 每次命令处理后调用'],['crates/ui/src/vm.rs','signal_color() 间接读取结果']],
-      'can_transition_to':[['crates/bw-app/src/lib.rs','transition_issue() 状态机守卫'],['crates/app-desktop/src/screens/issues.rs','on_click_next() 按钮可见性判断']]
+      'recompute_health':[['crates/bw/src/app/health.rs','recompute_health 唯一写入者'],['crates/bw/src/derive/mod.rs','derive_project_health 纯函数']],
+      'can_transition_to':[['crates/bw/src/model.rs','状态机守卫'],['crates/bw/src/app/issue.rs','transition_issue']]
     };
     var results=SYMBOL_RESULTS[q];
     var resultsHTML=q?(results?results.map(function(r){return '<div class="symbol-result"><div class="h">'+esc(r[0])+'</div><div>'+esc(r[1])+'</div></div>';}).join(''):'<div class="detail-empty">—</div>'):'';
@@ -2160,10 +2150,10 @@ function renderSpace(pid,subTab){
       + '<div class="graph-svgbox" data-codegraph>'+codeGraphSVG()+'</div>'
       + '<div class="graph-lower">'
       +   '<div class="card" style="padding:12px 14px;"><div class="sr-h" style="margin-top:0;">大文件榜</div>'
-      +     [['crates/bw-app/src/lib.rs','12,102'],['crates/app-desktop/src/screens/op.rs','4,148'],['crates/bw-store/src/sqlite.rs','3,940'],['crates/bw-core/src/model.rs','2,238'],['crates/ui/src/vm.rs','2,086']].map(function(r){return '<div class="leaderboard-row"><span>'+esc(r[0])+'</span><span>'+r[1]+' 行</span></div>';}).join('')
+      +     [['crates/app-shell/src/screens/plan/mod.rs','—'],['crates/bw/src/app/mod.rs','—'],['crates/bw-engine/src/remote.rs','—']].map(function(r){return '<div class="leaderboard-row"><span>'+esc(r[0])+'</span><span>'+r[1]+'</span></div>';}).join('')
       +   '</div>'
       +   '<div class="card" style="padding:12px 14px;"><div class="sr-h" style="margin-top:0;">符号 → 调用者 / 影响面</div>'
-      +     '<input class="input symbol-search-input" placeholder="recompute_signals / can_transition_to" data-symbol-input data-pid="'+pid+'" value="'+esc(q)+'">'
+      +     '<input class="input symbol-search-input" placeholder="recompute_health / can_transition_to" data-symbol-input data-pid="'+pid+'" value="'+esc(q)+'">'
       +     resultsHTML + '</div>'
       + '</div>'
       + '<div class="graph-foot">索引时间 2026-08-18 09:10 · codegraph explore</div>'
@@ -2187,41 +2177,23 @@ function renderSpace(pid,subTab){
       + '<div class="asset-sect-title">仓统计指标</div>'
       + '<div class="repostats" style="border:none;padding:0;">30 天提交 464 · Rust 115 文件 / 60,824 行 · docs 80 篇 · 技能 9 · 30 天 PR 数 7 · 开放 PR 4</div>';
   }
-  return '<section data-screen="kb"><div class="card sp-topinfo"><span>规范 v4.0(最新)</span><span>对账 8 类核心件 <span style="color:var(--green);">✓</span></span><span style="margin-left:auto;"></span><button class="btn btn-sm" data-action="toastOnly" data-arg=\'"演示:规范差异为空,已是最新"\'>看差异</button><button class="btn btn-sm" data-action="toastOnly" data-arg=\'"演示:规范已是最新,无需升级"\'>升级</button></div>'
+  return '<section data-screen="kb"><div class="card sp-topinfo"><span>规范 v5.7</span><span>对账只看不改</span><span style="margin-left:auto;"></span><button class="btn btn-sm" data-action="toastOnly" data-arg=\'"对账:缺 / 过期 / 人改过,结果显示在回执里(演示)"\'>对一遍账</button></div>'
     + '<div class="tabbtn-row">'+tabsHTML+'</div>' + body + '</section>';
 }
 
 /* ===================== 渲染:通知 ===================== */
-function chatSyncChipHTML(pid,kind){
-  var g=state.chatGroup[pid];
-  if(g && g.configured && g.sync && g.sync[kind]){ return ' <span class="chip chip-green">已发到群 ✓</span>'; }
-  return '';
-}
 function renderNotify(pid){
-  var pending=getInbox(pid);
+  var pending=getInbox(pid).filter(function(it){return it.kind==='issue' && it.state==='pending';});
   var events=(state.notifyEvents[pid]||[]).slice();
   var g=state.chatGroup[pid];
   var groupHintHTML = (!g||!g.configured)
     ? '<div style="font-size:11.5px;color:var(--ink-3);margin-bottom:10px;">配了项目群,这些通知能直达群 → <span style="color:var(--clay);cursor:pointer;" data-action="nav" data-arg=\'"#/p/'+pid+'/config"\'>配置</span></div>'
     : '';
   var pendingHTML=pending.length? pending.map(function(it){
-    var acts='';
-    var chip='';
-    if(it.kind==='metric'){
-      acts='<button class="btn btn-sm btn-ghost" data-action="openInboxIssue" data-arg=\'["'+pid+'","'+it.id+'"]\'>去补</button>';
-    } else if(it.state==='pending'){
-      chip=chatSyncChipHTML(pid,'review');
-      acts='<button class="btn btn-sm btn-ghost" data-action="openInboxIssue" data-arg=\'["'+pid+'","'+it.id+'"]\'>打开</button>'
-        + '<button class="btn btn-sm" data-action="mergeInbox" data-arg=\'["'+pid+'","'+it.id+'"]\'>合入</button>'
-        + '<button class="btn btn-sm btn-primary" data-action="mergeAndCompleteInbox" data-arg=\'["'+pid+'","'+it.id+'"]\'>合入并完成</button>';
-    } else if(it.state==='merged'){
-      chip=chatSyncChipHTML(pid,'merged');
-      acts='<button class="btn btn-sm btn-primary" data-action="completeInbox" data-arg=\'["'+pid+'","'+it.id+'"]\'>点完成</button>';
-    }
     return '<div class="drawer-item"'+(it.issueId?(' data-issue="'+it.issueId+'"'):'')+'>'
-      + '<div class="desc">'+esc(it.text)+(it.state==='merged'?' <span class="chip chip-green">已合入</span>':'')+chip+'</div>'
-      + '<div class="acts">'+acts+'</div></div>';
-  }).join('') : '<div class="drawer-empty">待处理已清空</div>';
+      + '<div class="desc">'+esc(it.text)+'</div>'
+      + '<div class="acts"><button class="btn btn-sm btn-ghost" data-action="openInboxIssue" data-arg=\'["'+pid+'","'+it.id+'"]\'>去看这张活</button></div></div>';
+  }).join('') : '<div class="drawer-empty">没有等你合入的 MR</div>';
   var eventsHTML=events.length? events.map(function(e){
     var clickable=!!e.link;
     return '<div class="notify-event"'+(clickable?(' data-action="goEventLink" data-arg=\'["'+pid+'","'+esc(e.link)+'"]\' style="cursor:pointer;"'):'')+'>'
@@ -2230,7 +2202,7 @@ function renderNotify(pid){
   return '<section data-screen="notify" data-notify>'
     + '<h1 style="font-size:20px;">通知</h1>'
     + groupHintHTML
-    + '<div class="notify-sect-title">待处理 · '+pending.length+'</div>'
+    + '<div class="notify-sect-title">等你合入 · '+pending.length+'</div>'
     + '<div class="notify-list">'+pendingHTML+'</div>'
     + '<div class="notify-sect-title">事件</div>'
     + '<div class="notify-events">'+eventsHTML+'</div>'
@@ -2267,7 +2239,7 @@ function shellHTML(){
   return iconRailHTML(r.inProject,r.screenSeg)
     + (r.inProject?projectRailHTML(r.pid,r.screenSeg):'')
     + '<div class="main">'+topbarHTML(r.inProject,r.pid,r.screenSeg)+'<div class="content">'+r.html+'</div></div>'
-    + (!r.inProject&&r.screenSeg==='wall'?guideMarkupHTML():'')
+    + guideMarkupHTML()
     + modalHTML();
 }
 function render(){

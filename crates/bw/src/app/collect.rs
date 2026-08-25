@@ -13,10 +13,14 @@
 //!
 //! **失败一律如实,绝不写 0。** 0 是一个真实的数值,「没采到」不是。
 
+use super::App;
+use crate::command::Event;
 use crate::isoweek;
+use crate::model::ProjectId;
 use crate::repo::metrics_file::{self, MetricClass, MetricDef};
+use crate::repo::readings_file::{self, MetricReading};
 use serde::Deserialize;
-use std::path::Path;
+use std::path::{Path, PathBuf};
 use std::process::Stdio;
 use std::time::Duration;
 
@@ -53,8 +57,9 @@ pub struct MetricReadout {
 
 /// 采一遍这个项目的全部指标。
 ///
-/// 三类各走各的路:可回溯的现算(传窗口跑脚本);不可回溯的今天**如实说还没
-/// 接**(读数流水那条路没落地);手填的不采,界面上打「手填」徽记。
+/// 三类各走各的路:可回溯的现算(传窗口跑脚本);不可回溯的跑脚本拿当下值,
+/// 追加进 `.bw/metrics/readings.jsonl`,走势从流水里铺;手填不跑脚本,走势
+/// 从流水铺,数由 [`App::record_manual_metric`] 写入。
 pub async fn collect_all(ws: &Path, weeks: u32) -> Result<Vec<MetricReadout>, String> {
     let file = metrics_file::read(ws)
         .map_err(|e| e.to_string())?
@@ -67,6 +72,34 @@ pub async fn collect_all(ws: &Path, weeks: u32) -> Result<Vec<MetricReadout>, St
     Ok(out)
 }
 
+/// 只采 B 类(不可回溯、当下值进流水)。记账键是日历日,自动采每天一轮,展示按周。
+pub async fn collect_b_class(ws: &Path, weeks: u32) -> Result<Vec<MetricReadout>, String> {
+    let file = metrics_file::read(ws)
+        .map_err(|e| e.to_string())?
+        .ok_or_else(|| "这个项目还没有 .bw/metrics.toml".to_string())?;
+    let labels = week_labels(weeks);
+    let mut out = Vec::new();
+    for def in file.all() {
+        if def.collect.class() != MetricClass::PointInTime {
+            continue;
+        }
+        out.push(collect_one(ws, def, &labels).await);
+    }
+    Ok(out)
+}
+
+pub fn has_b_class(ws: &Path) -> bool {
+    metrics_file::read(ws)
+        .ok()
+        .flatten()
+        .map(|f| {
+            f.all()
+                .iter()
+                .any(|d| d.collect.class() == MetricClass::PointInTime)
+        })
+        .unwrap_or(false)
+}
+
 async fn collect_one(ws: &Path, def: &MetricDef, labels: &[String]) -> MetricReadout {
     let class = def.collect.class();
     let mut r = MetricReadout {
@@ -77,14 +110,12 @@ async fn collect_one(ws: &Path, def: &MetricDef, labels: &[String]) -> MetricRea
         error: String::new(),
     };
     match class {
-        MetricClass::Manual => return r,
-        MetricClass::PointInTime => {
-            // 如实:这条路设计好了(读数追加进 `.bw/metrics/readings.jsonl`),
-            // 但今天一行没落地。**不假装采过、也不悄悄当成手填。**
-            r.error = "这条标着不可回溯,而按时采一次、追加进读数流水的那条路还没接上 —— \
-                       今天没有数。要么给它找一个能倒推历史的采法改成可回溯,要么先当手填。"
-                .into();
+        MetricClass::Manual => {
+            fill_from_readings(ws, &def.name, labels, &mut r);
             return r;
+        }
+        MetricClass::PointInTime => {
+            return collect_point_in_time(ws, def, labels, r).await;
         }
         MetricClass::Retro => {}
     }
@@ -98,29 +129,217 @@ async fn collect_one(ws: &Path, def: &MetricDef, labels: &[String]) -> MetricRea
             r.points = points;
         }
         Ok(ScriptOutcome::Snapshot(value)) => {
-            // 现值留下,走势空着 —— 一张卡打成「没采到」会把数和折线一起藏掉,
-            // 人对照代码仓级那三张四周图会以为这边根本不会画。
+            // 一个值也画:落在窗口最后一周,前面几周断开。不编前几周的数,
+            // 也不把整张卡打成失败 —— 规范仍要求 A 类吐按周 points。
+            r.points = snapshot_as_last_week(labels, &value);
             r.current = Some(value);
-            r.error = "这条标着可回溯,但脚本只给了一个当下的值、没有按周的序列。\
-                       现值留下了,四周折线画不出来 —— 标准输出要吐 \
-                       {\"points\":[{\"week\":\"2026-Wxx\",\"value\":…}, …]}。"
-                .into();
         }
         Err(e) => r.error = e,
     }
     r
 }
 
+/// B 类:跑脚本拿当下一个值,追加进流水,走势从流水铺。失败不写 0,旧行仍画。
+async fn collect_point_in_time(
+    ws: &Path,
+    def: &MetricDef,
+    labels: &[String],
+    mut r: MetricReadout,
+) -> MetricReadout {
+    if def.collect.run.is_empty() {
+        r.error = "这条写的是脚本采集,但 run 是空的 —— 那是一条写了一半的定义,没法采".into();
+        fill_from_readings(ws, &def.name, labels, &mut r);
+        return r;
+    }
+    match run_script(ws, &def.collect.run, labels).await {
+        Ok(out) => match current_value(&out) {
+            Some(value) => {
+                if let Err(e) = append_current(ws, &def.name, &value) {
+                    r.error = format!("采到了 {value},但没写成读数流水:{e}");
+                }
+                fill_from_readings(ws, &def.name, labels, &mut r);
+            }
+            None => {
+                r.error = "采集脚本没给出当下这个值".into();
+                fill_from_readings(ws, &def.name, labels, &mut r);
+            }
+        },
+        Err(e) => {
+            r.error = e;
+            fill_from_readings(ws, &def.name, labels, &mut r);
+        }
+    }
+    r
+}
+
+fn current_value(out: &ScriptOutcome) -> Option<String> {
+    match out {
+        ScriptOutcome::Snapshot(v) => Some(v.clone()),
+        ScriptOutcome::Series(pts) => pts.iter().rev().find_map(|p| p.value.clone()),
+    }
+}
+
+fn append_current(ws: &Path, name: &str, value: &str) -> Result<(), String> {
+    let collected_at = time::OffsetDateTime::now_utc()
+        .format(&time::format_description::well_known::Rfc3339)
+        .unwrap_or_default();
+    readings_file::append_metric_reading(
+        ws,
+        &MetricReading {
+            day: isoweek::today_ymd(),
+            name: name.to_string(),
+            value: value.to_string(),
+            source: "script".into(),
+            collected_at,
+        },
+    )
+    .map_err(|e| e.to_string())
+}
+
+fn fill_from_readings(ws: &Path, name: &str, labels: &[String], r: &mut MetricReadout) {
+    let values = readings_file::latest_values_for(ws, name, labels);
+    r.points = labels
+        .iter()
+        .zip(values)
+        .map(|(week, value)| MetricPoint {
+            week: week.clone(),
+            value,
+        })
+        .collect();
+    r.current = r.points.last().and_then(|p| p.value.clone());
+}
+
+/// 本机「今日已试过 B 类日采」的戳。写在 buddy 资产目录,不进被管仓。
+fn collect_stamp_path(asset_root: &Path, slug: &str) -> PathBuf {
+    asset_root.join("collect-stamp").join(slug)
+}
+
+fn stamp_is_today(path: &Path) -> bool {
+    std::fs::read_to_string(path)
+        .ok()
+        .is_some_and(|s| s.trim() == isoweek::today_ymd())
+}
+
+fn write_today_stamp(path: &Path) {
+    if let Some(dir) = path.parent() {
+        let _ = std::fs::create_dir_all(dir);
+    }
+    let _ = std::fs::write(path, isoweek::today_ymd());
+}
+
+impl App {
+    /// 人在总览手填卡记下今天这个数。只收 C 类,追加进读数流水。
+    pub(super) async fn record_manual_metric(
+        &mut self,
+        project_id: ProjectId,
+        name: String,
+        value: String,
+    ) -> super::Result<Vec<Event>> {
+        let value = value.trim().to_string();
+        if value.is_empty() {
+            return Err(super::AppError::Refused("手填的数不能空".into()));
+        }
+        let name = name.trim().to_string();
+        if name.is_empty() {
+            return Err(super::AppError::Refused("指标名不能空".into()));
+        }
+        let ws = self.workspace_of(project_id).await?;
+        let file = metrics_file::read(&ws)?
+            .ok_or_else(|| super::AppError::Refused("这个项目还没有 .bw/metrics.toml".into()))?;
+        let def = file
+            .all()
+            .into_iter()
+            .find(|d| d.name == name)
+            .ok_or_else(|| super::AppError::Refused(format!("没有叫 {name} 的指标")))?;
+        if def.collect.class() != MetricClass::Manual {
+            return Err(super::AppError::Refused(format!(
+                "「{name}」不是手填指标,点采集让脚本跑"
+            )));
+        }
+        let day = isoweek::today_ymd();
+        let collected_at = time::OffsetDateTime::now_utc()
+            .format(&time::format_description::well_known::Rfc3339)
+            .unwrap_or_default();
+        readings_file::append_metric_reading(
+            &ws,
+            &MetricReading {
+                day: day.clone(),
+                name: name.clone(),
+                value: value.clone(),
+                source: "manual".into(),
+                collected_at,
+            },
+        )?;
+        Ok(vec![Event::MetricRecorded {
+            project_id,
+            name,
+            day,
+            value,
+        }])
+    }
+
+    /// buddy 开着、过了本机 09:00、今天还没试过,就采一轮 B 类。
+    /// 不建活。失败也落今日戳,避免每 60 秒重打失败脚本。
+    pub(super) async fn maybe_auto_collect_b(&self, project_id: ProjectId) -> Vec<Event> {
+        if !isoweek::local_hm_reached(9, 0) {
+            return vec![];
+        }
+        let Ok(slug) = self.slug_of(project_id).await else {
+            return vec![];
+        };
+        if slug.is_empty() {
+            return vec![];
+        }
+        let stamp = collect_stamp_path(&self.asset_root, &slug);
+        if stamp_is_today(&stamp) {
+            return vec![];
+        }
+        let Ok(ws) = self.workspace_of(project_id).await else {
+            return vec![];
+        };
+        if !has_b_class(&ws) {
+            return vec![];
+        }
+        write_today_stamp(&stamp);
+        let Ok(rows) = collect_b_class(&ws, 4).await else {
+            return vec![];
+        };
+        let count = rows
+            .iter()
+            .filter(|r| r.error.is_empty() && r.current.is_some())
+            .count() as u32;
+        if count == 0 {
+            return vec![];
+        }
+        vec![Event::MetricsAutoCollected {
+            project_id,
+            week: isoweek::current_week(),
+            count,
+        }]
+    }
+}
+
 /// 脚本跑完的两种诚实结果。
 enum ScriptOutcome {
     /// 按周对齐过的序列,每一周都有一格。
     Series(Vec<MetricPoint>),
-    /// 只给了当下一个值,画不出四周。
+    /// 只给了当下一个值。采集层会把它落在窗口最后一周,前几周断开。
     Snapshot(String),
 }
 
-/// 脚本吐回来的 JSON。可回溯的给序列;不可回溯的给一个当下的值(今天用不上,
-/// 但协议里留着,免得将来接读数流水时再改一次格式)。
+/// 单点快照对齐到近 N 周:只有最后一格有值。
+fn snapshot_as_last_week(labels: &[String], value: &str) -> Vec<MetricPoint> {
+    labels
+        .iter()
+        .enumerate()
+        .map(|(i, w)| MetricPoint {
+            week: w.clone(),
+            value: (i + 1 == labels.len()).then(|| value.to_string()),
+        })
+        .collect()
+}
+
+/// 脚本吐回来的 JSON。可回溯的给序列;不可回溯的给一个当下的值,buddy 记进流水。
 #[derive(Deserialize)]
 struct ScriptOut {
     #[serde(default)]
@@ -279,6 +498,25 @@ mod tests {
                 ("2026-W32", Some("3")),
                 ("2026-W33", None),
                 ("2026-W34", Some("5")),
+            ]
+        );
+    }
+
+    #[test]
+    fn snapshot_lands_on_last_week_only() {
+        let points = snapshot_as_last_week(
+            &["2026-W32".into(), "2026-W33".into(), "2026-W34".into()],
+            "8",
+        );
+        assert_eq!(
+            points
+                .iter()
+                .map(|p| (p.week.as_str(), p.value.as_deref()))
+                .collect::<Vec<_>>(),
+            vec![
+                ("2026-W32", None),
+                ("2026-W33", None),
+                ("2026-W34", Some("8")),
             ]
         );
     }

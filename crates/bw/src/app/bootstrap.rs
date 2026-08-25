@@ -6,8 +6,8 @@
 //! **就这一步,没有第二步。** 仓根一个字不写 —— `AGENTS.md` / `CLAUDE.md` 是
 //! 项目自己的文件,给它们写内容等于「建议改造人家的项目」,那要先读懂这个仓、
 //! 先问过人,归资产盘点(运作活②)首次模式的子技能 `project-handbook`。
-//! 历史回填也一样要起 agent 会话,同样还没做 —— 探测到了什么如实写进这张活的
-//! 正文,但没跑就是没跑。
+//! 老仓历史要出现在计划屏:给已有 issue 打周标签,需要周目标再补运作活①。
+//! 探测到了什么如实写进这张活的正文,没跑就是没跑。
 //!
 //! **技能不往用户仓里复制**(2026-08-20 改):buddy 自带那四份摊在自己的资产
 //! 目录,开工时只把名字、一句话和完整路径写进系统提示词,正文让 agent 按需读。
@@ -26,8 +26,7 @@ use crate::standard;
 use crate::standard::bootstrap::{self as boot, BootstrapVars};
 
 impl App {
-    /// `all = false`(接入时自动跑的那次)只铺第 0 站要用的那几份;
-    /// `all = true`(人在配置屏点那颗按钮)把该有的规范件都补齐。
+    /// 接入自动跑。`all` 今天没有分别,配置屏不再二次铺底。
     pub(super) async fn run_standard_bootstrap(
         &mut self,
         project_id: ProjectId,
@@ -336,7 +335,7 @@ async fn drop_untracked_twin(main: &std::path::Path, tree: &std::path::Path, rel
 fn pending_steps(probe: &boot::BootstrapProbe) -> String {
     let mut v = Vec::new();
     if probe.has_history {
-        v.push("资产盘点首次模式:历史回填(把老项目的历史周与历史版本补成同格式的正常文件)");
+        v.push("资产盘点首次模式:给已有 issue 打 bw:week(需要周目标再补一张运作活①,评论写明补记)");
     }
     if probe.has_own_conventions {
         v.push(
@@ -421,7 +420,7 @@ pub fn references_for(issue: &Issue, refs_dir: &std::path::Path) -> Vec<Referenc
 fn want_ref(issue: &Issue, slug: &str) -> bool {
     match slug {
         // 指标活:更新指标与周计划
-        "metrics" => issue.workflow == super::ops::OPS1_WORKFLOW,
+        "metrics" | "week-plan-comment" => issue.workflow == super::ops::OPS1_WORKFLOW,
         // 改仓类活:构建 / 优化 / 运维
         "build" => matches!(
             issue.category,

@@ -37,11 +37,9 @@ pub(super) fn build_week_counts(issues: &[bw::Issue], week: Option<&str>) -> Wee
     }
 }
 
-/// 运作活①②③三个状态点 —— **查开着的活,关过的不算完成**。
-///
-/// 以前取号最大的一张(含已关):人把旧铺底 / 旧周计划在远端关掉、MR 又没合,
-/// 总览仍写「已完成」。开着的优先;没有开着的,③只在默认分支 HEAD 里真有
-/// `.bw/standard.toml` 才写已完成(工作区未提交的名片不算)。
+/// 运作活①②③三个状态点。开着的优先;本周已关的①②写「已完成」。
+/// ③关过但默认分支没有 `.bw/standard.toml` 仍算未建(旧铺底关掉、MR 没合
+/// 不能冒充铺过)。
 pub(super) async fn build_ops(
     issues: &[bw::Issue],
     current_week: &str,
@@ -49,16 +47,28 @@ pub(super) async fn build_ops(
 ) -> Vec<OpsChipVm> {
     use bw::app::{OPS1_WORKFLOW, OPS2_WORKFLOW, OPS3_WORKFLOW};
     let ops3_landed = bw::git::path_in_head(ws, ".bw/standard.toml").await;
-    let open = |wf: &str| {
+    let pick = |wf: &str, done: bool| {
         issues
             .iter()
             .filter(|i| i.kind == bw::model::IssueKind::Ops && i.workflow == wf)
-            .filter(|i| wf == OPS3_WORKFLOW || i.week_of == current_week)
-            .filter(|i| i.status != IssueStatus::Done)
+            .filter(|i| {
+                // ①②认本周:标签优先,标题里的周号兜底(关卡时标签偶发掉了,
+                // 计划屏仍能从标题读出周目标,这里不能因此退回「未建」)。
+                wf == OPS3_WORKFLOW
+                    || i.week_of == current_week
+                    || i.title.ends_with(&format!(" {current_week}"))
+            })
+            .filter(|i| done == (i.status == IssueStatus::Done))
             .max_by_key(|i| i.number)
     };
     let chip = |label: &str, wf: &str, when: &str| {
-        let (status, note) = ops_chip_display(open(wf), wf == OPS3_WORKFLOW, ops3_landed, when);
+        let (status, note) = ops_chip_display(
+            pick(wf, false),
+            pick(wf, true),
+            wf == OPS3_WORKFLOW,
+            ops3_landed,
+            when,
+        );
         OpsChipVm {
             title: label.to_string(),
             status,
@@ -80,9 +90,10 @@ pub(super) async fn build_ops(
     ]
 }
 
-/// 开着的活 → 它的状态;否则③看件在不在 HEAD;再否则未建。
+/// 开着的活 → 它的状态;本周已关的①② → 已完成;③看件在不在 HEAD;再否则未建。
 fn ops_chip_display(
     open: Option<&bw::Issue>,
+    done: Option<&bw::Issue>,
     is_ops3: bool,
     ops3_landed: bool,
     idle_note: &str,
@@ -92,6 +103,9 @@ fn ops_chip_display(
             i.status.label().to_string(),
             format!("#{} {}", i.number, i.title),
         );
+    }
+    if let Some(i) = done.filter(|_| !is_ops3) {
+        return ("已完成".into(), format!("#{} {}", i.number, i.title));
     }
     if is_ops3 && ops3_landed {
         return ("已完成".into(), "件已在默认分支".into());
@@ -283,15 +297,50 @@ mod ops_chip_display_tests {
 
     #[test]
     fn closed_leftover_is_not_done() {
-        let (st, note) = ops_chip_display(None, true, false, "接入项目时铺");
+        let (st, note) = ops_chip_display(None, None, true, false, "接入项目时铺");
         assert_eq!(st, "未建");
         assert_eq!(note, "接入项目时铺");
     }
 
     #[test]
     fn ops3_landed_on_head() {
-        let (st, note) = ops_chip_display(None, true, true, "接入项目时铺");
+        let (st, note) = ops_chip_display(None, None, true, true, "接入项目时铺");
         assert_eq!(st, "已完成");
         assert_eq!(note, "件已在默认分支");
+    }
+
+    #[test]
+    fn ops1_closed_this_week_is_done() {
+        let done = dummy_ops("#8 更新指标 + 制定本周计划");
+        let (st, note) =
+            ops_chip_display(None, Some(&done), false, false, "点总览的「开始本周」触发");
+        assert_eq!(st, "已完成");
+        assert_eq!(note, format!("#{} {}", done.number, done.title));
+    }
+
+    fn dummy_ops(title: &str) -> bw::Issue {
+        bw::Issue {
+            id: bw::model::IssueId::from_remote(bw::model::ProjectId::nil(), 8),
+            project_id: bw::model::ProjectId::nil(),
+            number: 8,
+            remote_number: 8,
+            title: title.to_string(),
+            body: String::new(),
+            status: bw::model::IssueStatus::Done,
+            branch: String::new(),
+            pr_number: 0,
+            week_of: "2026-W35".into(),
+            version: String::new(),
+            tool: String::new(),
+            kind: bw::model::IssueKind::Ops,
+            origin: bw::model::IssueOrigin::Human,
+            workflow: bw::app::OPS1_WORKFLOW.into(),
+            category: None,
+            sort_order: 8.0,
+            metric_key: String::new(),
+            created_at: 0,
+            updated_at: 0,
+            settled_at: None,
+        }
     }
 }

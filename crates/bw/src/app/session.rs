@@ -108,6 +108,32 @@ impl App {
         Ok(vec![Event::RunCancelled { id, was_live }])
     }
 
+    /// 人确认后删本机会话:停 PTY、收 worktree(脏的也收)、删 jsonl。
+    /// 远端 issue 不动。
+    pub(super) async fn delete_session(&mut self, id: IssueId) -> Result<Vec<Event>> {
+        let Some(conv) = self.conversation_for_issue(id).await? else {
+            return Err(AppError::Refused("这张活没有本机会话可删".into()));
+        };
+        self.terminal.close(conv.id.uuid());
+        let mut note = String::from("本机会话行删了");
+        let ws = self.workspace_of(id.project_id()).await?;
+        let tree = std::path::PathBuf::from(&conv.workspace_path);
+        if tree.is_dir() && tree != ws {
+            if let Some(s) = tree.to_str() {
+                match crate::git::worktree_remove_force(&ws, s).await {
+                    Ok(()) => note.push_str(",工作树收了"),
+                    Err(e) => note.push_str(&format!(",工作树没收掉:{e}")),
+                }
+            }
+        }
+        if !conv.branch_name.is_empty() && crate::git::branch_exists(&ws, &conv.branch_name).await {
+            let _ = crate::git::delete_merged_branch(&ws, &conv.branch_name).await;
+        }
+        let slug = self.slug_of(id.project_id()).await?;
+        crate::local::SessionStore::remove_issue(&self.asset_root, &slug, id.iid())?;
+        Ok(vec![Event::SessionDeleted { id, note }])
+    }
+
     /// 把上次那场会话接回来看看。**不改活的状态,不发任何 prompt。**
     ///
     /// 为什么要单独一条命令、不复用 ▶开工:▶开工 会把活推到「进行中」。而人从

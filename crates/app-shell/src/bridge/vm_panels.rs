@@ -13,17 +13,11 @@ use super::vm_build::{card_item, probe_env, remote_label, tool_label};
 
 /// 六列看板。
 ///
-/// **两条维度别混**:待办池是「排没排周」,其余五列是「干到哪一步」。原来
-/// 待办池只看 `week_of` 空不空、不看状态,于是一张**已经干完在等评审、连 MR
-/// 都开好了**的活(运作活按设计就不排周)照样躺在待办池里,而看某一周时它又
-/// 因为周对不上从评审中消失 —— 试点第一天用户当场问「明明已经有 PR 了为什么
-/// 在待办池」。
+/// **两条维度别混**:待办池是「排没排周」,其余五列是「干到哪一步」。
 ///
-/// 现在的规矩:**待办池只装还没动过的活**(没排周 + 状态还在待办池/待办);
-/// **动过的活一律按状态进列,不管排没排周** —— 没排周的在卡片上挂一个「未排周」
-/// 徽记,不藏起来也不假装它属于这一周。
-///
-/// `week` 传 `None` = 「全部活」视图,不按周过滤(左栏点「全部」时)。
+/// `week` 传 `None` = 左栏「全部」:没打周标签的未动手活进待办池,其余按状态。
+/// `week` 传某一周 = 只显示打了那一周 `bw:week` 的活。未排周不串进任何一周,
+/// 只在「全部」里找。
 pub(super) fn build_board(
     issues: &[bw::Issue],
     week: Option<&str>,
@@ -39,22 +33,19 @@ pub(super) fn build_board(
         .map(|k| k.todo_label.clone())
         .unwrap_or_else(|| "待办 · 已排进本周,等开工".into());
 
-    // 没排周的活在任何一周的视图里都露面 —— 它不属于哪一周,但它是真事,
-    // 藏起来人就再也找不到它了(运作活就是这种)。
     let in_week = |i: &&bw::Issue| match week {
         None => true,
-        Some(w) => i.week_of == w || i.week_of.is_empty(),
+        Some(w) => i.week_of == w,
     };
     let untouched = |i: &&bw::Issue| matches!(i.status, IssueStatus::Backlog | IssueStatus::Todo);
     let columns = vec![
         ColumnVm {
             status: IssueStatus::Backlog,
             title: pool_label.clone(),
-            // 待办池按定义就是「没排进任何一周」,不按正在看的那一周过滤;
-            // 但**已经动过的活不在这里** —— 它们在自己的状态列里。
+            // 未排周只出现在「全部」。看某一周时这列空着。
             cards: issues
                 .iter()
-                .filter(|i| i.week_of.is_empty() && untouched(i))
+                .filter(|i| week.is_none() && i.week_of.is_empty() && untouched(i))
                 .map(card_item)
                 .collect(),
         },
@@ -103,6 +94,15 @@ pub(super) fn build_board(
                 .map(card_item)
                 .collect(),
         },
+        ColumnVm {
+            status: IssueStatus::Cancelled,
+            title: "已取消".into(),
+            cards: issues
+                .iter()
+                .filter(|i| in_week(i) && i.status == IssueStatus::Cancelled)
+                .map(card_item)
+                .collect(),
+        },
     ];
     BoardVm {
         columns,
@@ -113,14 +113,17 @@ pub(super) fn build_board(
 
 /// 周列表从 issues 的 `bw:week:*` 标签取(刀6:不再扫 `.bw/plan/` 目录 ——
 /// 那个文件没人写了,扫到也是旧的)。本周永远在列表里(置顶)。新的在前。
-pub(super) fn build_weeks(issues: &[bw::Issue], current_week: &str) -> Vec<WeekVm> {
+pub(super) fn build_weeks(
+    issues: &[bw::Issue],
+    current_week: &str,
+    goals: &std::collections::HashMap<String, String>,
+) -> Vec<WeekVm> {
     let mut weeks: Vec<WeekVm> = Vec::new();
     let push = |weeks: &mut Vec<WeekVm>, w: &str| {
         if !w.is_empty() && !weeks.iter().any(|x| x.week == w) {
             weeks.push(WeekVm {
                 week: w.to_string(),
-                backfill: false,
-                goal: None,
+                goal: goals.get(w).cloned(),
                 activity_count: 0,
             });
         }
@@ -129,14 +132,32 @@ pub(super) fn build_weeks(issues: &[bw::Issue], current_week: &str) -> Vec<WeekV
         push(&mut weeks, &i.week_of);
     }
     push(&mut weeks, current_week);
-    // 填回每 周 的活数;backfill 从 issues 看不出(那是文件 origin 的概念),
-    // 如实 false。
     for w in &mut weeks {
         w.activity_count = issues.iter().filter(|i| i.week_of == w.week).count() as u32;
     }
     // 新的在前;没有未来周,本周自然置顶。
     weeks.sort_by(|a, b| b.week.cmp(&a.week));
     weeks
+}
+
+/// 手填还没跑过采集时,折线直接从流水按周收。一周取日期最大的一天。
+fn trend_from_readings(ws: &Path, name: &str) -> Vec<(String, Option<f64>)> {
+    let mut weeks = Vec::new();
+    let mut w = bw::isoweek::current_week();
+    for _ in 0..4 {
+        weeks.push(w.clone());
+        let Some(prev) = bw::isoweek::previous_week(&w) else {
+            break;
+        };
+        w = prev;
+    }
+    weeks.reverse();
+    let values = bw::repo::readings_file::latest_values_for(ws, name, &weeks);
+    weeks
+        .into_iter()
+        .zip(values)
+        .map(|(week, v)| (week, v.and_then(|s| s.parse::<f64>().ok())))
+        .collect()
 }
 
 /// 指标卡:定义来自 `.bw/metrics.toml`,读数来自仓 `.bw/metrics/readings.jsonl`
@@ -207,8 +228,8 @@ pub(super) fn build_metrics(
             driving: driving_of(name),
             class: class_label(plan.class()).to_string(),
             collected: readout_of(name).and_then(|r| r.current.clone()),
-            trend: readout_of(name)
-                .map(|r| {
+            trend: {
+                let from_run = readout_of(name).map(|r| {
                     r.points
                         .iter()
                         .map(|p| {
@@ -217,9 +238,15 @@ pub(super) fn build_metrics(
                                 p.value.as_ref().and_then(|v| v.parse::<f64>().ok()),
                             )
                         })
-                        .collect()
-                })
-                .unwrap_or_default(),
+                        .collect::<Vec<_>>()
+                });
+                match from_run {
+                    Some(t) if t.iter().any(|(_, v)| v.is_some()) => t,
+                    _ if plan.is_manual() => trend_from_readings(ws, name),
+                    Some(t) => t,
+                    None => Vec::new(),
+                }
+            },
             collect_error: readout_of(name)
                 .map(|r| r.error.clone())
                 .unwrap_or_default(),
@@ -278,6 +305,7 @@ pub(super) async fn build_sessions(
 
 /// 会话屏右栏 + 中栏。全部现算:文件树点开哪层读哪层、改动文件问 git、
 /// diff 也问 git。**没选中会话就整块是空的**,不摆一个假的工作台。
+#[allow(clippy::too_many_arguments)]
 pub(super) async fn build_workbench(
     sessions: &[SessionVm],
     issues: &[bw::Issue],
@@ -285,6 +313,8 @@ pub(super) async fn build_workbench(
     tab: SessionTab,
     expanded: &[String],
     open_path: &str,
+    od_src: &str,
+    od_gen: u64,
 ) -> WorkbenchVm {
     let Some(s) = open.and_then(|id| sessions.iter().find(|s| s.issue_id == id)) else {
         return WorkbenchVm::default();
@@ -350,6 +380,8 @@ pub(super) async fn build_workbench(
         tool,
         open_path: open_path.to_string(),
         open_body,
+        od_src: od_src.to_string(),
+        od_gen,
     }
 }
 
@@ -496,8 +528,14 @@ pub(super) fn skill_desc(path: &Path) -> String {
 
 /// 定时那张表。**没有定时表** —— 判据写在这里,让人知道它到底看什么。
 fn build_crons(policy: Option<&issue_policy_file::IssuePolicyFile>) -> Vec<CronVm> {
+    let mut rows = vec![CronVm {
+        name: "B 类指标采集".into(),
+        trigger: "到点自动采".into(),
+        schedule: "daily 09:00".into(),
+        rule: "今天还没采过".into(),
+    }];
     let Some(c) = policy.and_then(|p| p.cadence.clone()) else {
-        return Vec::new();
+        return rows;
     };
     let word = |t: &str| match t {
         "manual" => "人触发".to_string(),
@@ -505,20 +543,19 @@ fn build_crons(policy: Option<&issue_policy_file::IssuePolicyFile>) -> Vec<CronV
         "" => "—".to_string(),
         other => other.to_string(),
     };
-    vec![
-        CronVm {
-            name: "更新指标与制定本周计划".into(),
-            trigger: word(&c.ops1_trigger),
-            schedule: "—".into(),
-            rule: "本周还没有运作活①「更新指标 + 制定本周计划」".into(),
-        },
-        CronVm {
-            name: "资产盘点".into(),
-            trigger: word(&c.ops2_trigger),
-            schedule: blank_dash(&c.ops2_schedule).to_string(),
-            rule: "本周还没有这张活(不查任何定时表)".into(),
-        },
-    ]
+    rows.push(CronVm {
+        name: "更新指标与制定本周计划".into(),
+        trigger: word(&c.ops1_trigger),
+        schedule: "—".into(),
+        rule: "本周还没有运作活①「更新指标 + 制定本周计划」".into(),
+    });
+    rows.push(CronVm {
+        name: "资产盘点".into(),
+        trigger: word(&c.ops2_trigger),
+        schedule: blank_dash(&c.ops2_schedule).to_string(),
+        rule: "本周还没有这张活(不查任何定时表)".into(),
+    });
+    rows
 }
 
 fn chat_provider(chat: Option<&project_file::ChatConfig>) -> String {

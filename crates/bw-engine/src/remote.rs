@@ -486,8 +486,28 @@ impl Remote {
         }
     }
 
+    /// 读 issue 评论正文,旧的在前。系统备注不进。
+    pub async fn list_issue_comments(&self, iid: u32) -> Result<Vec<String>, RemoteError> {
+        match self {
+            Remote::Github(r) => Ok(github::list_issue_comments(r, iid).await?),
+            Remote::Codehub { host, path } => {
+                Ok(codehub::list_issue_comments(host, path, iid).await?)
+            }
+            Remote::Mock(state) => {
+                let s = state.lock().expect("mock state 未中毒");
+                let i = s
+                    .issues
+                    .get(&iid)
+                    .ok_or_else(|| RemoteError::Mock(format!("issue #{iid} 不在")))?;
+                Ok(i.comments.clone())
+            }
+        }
+    }
+
     /// 在远端仓里发一个版本(release)——打 tag + 带 title/body。对应
-    /// `gh release create <tag> --title --notes` / `codehub-cli release create`。
+    /// `gh release create <tag> --title --notes` /
+    /// `codehub-cli release create --tag-name --name --description --ref`。
+    /// codehub 的 `--ref` 取 `project view` 默认分支;GitHub 的 `gh` 自己打,不传。
     /// 只在发版流调,绝不自动。tag 已存在时远端如实报错,不假装成功。
     pub async fn create_release(
         &self,
@@ -524,6 +544,23 @@ impl Remote {
                 let s = state.lock().expect("mock state 未中毒");
                 Ok(s.releases.clone())
             }
+        }
+    }
+
+    /// 周标签的投影：codehub 建/复用标题=`week` 的里程碑并挂上 issue。
+    /// `week` 空 = 从里程碑摘下。不当正本。GitHub 臂诚实不投。
+    pub async fn project_week(
+        &self,
+        iid: u32,
+        week: &str,
+        start: &str,
+        due: &str,
+    ) -> Result<(), RemoteError> {
+        match self {
+            Remote::Codehub { host, path } => {
+                Ok(codehub::project_week(host, path, iid, week, start, due).await?)
+            }
+            Remote::Github(_) | Remote::Mock(_) => Ok(()),
         }
     }
 }

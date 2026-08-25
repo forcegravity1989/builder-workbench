@@ -10,14 +10,13 @@
 //! - [`issue`] —— 建活、▶跑、状态转移
 //! - [`bootstrap`] —— 规范铺底与对账
 //! - [`chat_notify`] —— 三件事同步进项目群(发出去就算完,不记账)
-//! - [`backfill`] —— 老项目历史回填(资产盘点的首次模式)
+//! - [`week_comment`] —— 运作活①评论里的周目标
 //! - [`ops`] —— 三张运作活:周计划、资产盘点、规范铺底
 //! - [`session`] —— 内嵌终端的 PTY 生命周期
 //! - [`tools`] —— 开工工具映射与探活
 //! - [`worktree`] —— 每张活一棵自己的 worktree 与分支
 //! - [`health`] —— 三条判据的现算
 
-mod backfill;
 mod bootstrap;
 mod chat_notify;
 /// 指标采集:起脚本、传时间窗、读标准输出的 JSON。壳那边「立即采集」直接调它。
@@ -33,6 +32,7 @@ mod progress;
 mod project;
 mod session;
 mod tools;
+mod week_comment;
 mod worktree;
 
 pub use bootstrap::{
@@ -41,9 +41,12 @@ pub use bootstrap::{
 pub use health::{collect_health_inputs, read_metric_readings, MetricReading};
 pub use issue::{count_unseen, issues_in_week, workflow_usage};
 pub use ops::{
-    ops1_title, skill_slug, workflow_label, OPS1_WORKFLOW, OPS2_WORKFLOW, OPS3_WORKFLOW,
+    ops1_title, ops2_title, skill_slug, workflow_label, OPS1_WORKFLOW, OPS2_WORKFLOW, OPS3_WORKFLOW,
 };
 pub use progress::{ProgressLine, StepState};
+pub use week_comment::{
+    parse_comments, validate_comment, WeekComment, HEADING_GOAL, HEADING_READINGS, HEADING_SCOPE,
+};
 
 use crate::command::{Command, Event};
 use crate::local::{ProjectRegistry, SessionStore, Settings};
@@ -159,10 +162,9 @@ impl App {
         self
     }
 
-    /// 给 issue_store 等内部模块拿远端用的统一口子:经 `remote_factory` 派发。
-    /// `RemoteError`(配置错)→ `AppError::Exec`,与原 `issue_store::remote_for`
-    /// 的转法一致。
-    pub(crate) fn remote_for(&self, project: &crate::model::Project) -> Result<Remote> {
+    /// 给 issue_store 和桌面壳拿远端用的统一口子:经 `remote_factory` 派发。
+    /// `RemoteError`(配置错)→ `AppError::Exec`。
+    pub fn remote_for(&self, project: &crate::model::Project) -> Result<Remote> {
         (self.remote_factory)(project).map_err(|e| AppError::Exec(format!("认不出远端类型:{e}")))
     }
 
@@ -504,6 +506,11 @@ impl App {
             Command::SubmitIssueWork { id } => self.submit_issue_work(id).await,
             Command::SetWorkspacesRoot { path } => self.set_workspaces_root(path).await,
             Command::TransitionIssue { id, to } => self.transition_issue(id, to).await,
+            Command::SetIssueCategory { id, category } => {
+                self.set_issue_category(id, category).await
+            }
+            Command::CancelIssue { id, reason } => self.cancel_issue(id, reason).await,
+            Command::DeleteSession { id } => self.delete_session(id).await,
             Command::BlockIssue { id, reason } => self.block_issue(id, reason).await,
             Command::SaveToolMapping {
                 project_id,
@@ -525,7 +532,6 @@ impl App {
                 issue_id,
                 event_type,
             } => self.sync_notify_to_chat(issue_id, event_type).await,
-            Command::BackfillHistory { project_id } => self.backfill_history(project_id).await,
             Command::CancelRun { id } => self.cancel_run(id).await,
             Command::TerminalInput {
                 conversation_id,
@@ -536,6 +542,11 @@ impl App {
                 cols,
                 rows,
             } => self.terminal_resize(conversation_id, cols, rows).await,
+            Command::RecordManualMetric {
+                project_id,
+                name,
+                value,
+            } => self.record_manual_metric(project_id, name, value).await,
         }
     }
 }

@@ -10,6 +10,7 @@ use crate::bridge::{Bridge, Panel, PanelNav, Req};
 use crate::chrome::light_dot;
 use crate::vm::{MetricCardVm, ProjectVm};
 use bw::command::{Command, ProjectIntent};
+use bw::model::ProjectId;
 use dioxus::prelude::*;
 
 #[component]
@@ -33,9 +34,9 @@ pub fn View(p: ProjectVm, bridge: Bridge) -> Element {
             // 本周计划进度紧跟北极星:第一眼要能看全「这项目是什么 · 顶层目标
             // 是什么 · 这周在往那个目标上推什么」。滞后/引领两层是展开看的细节,
             // 排在后面。
-            {week_block(&p, nav)}
-            {metric_row_block("滞后性指标", &p.metrics.lagging, p.metrics.note.as_deref(), &bridge, p.metrics.collected)}
-            {metric_row_block("引领性指标", &p.metrics.leading, None, &bridge, p.metrics.collected)}
+            {week_block(&p)}
+            {metric_row_block("滞后性指标", &p.metrics.lagging, p.metrics.note.as_deref(), &bridge, p.metrics.collected, p.id)}
+            {metric_row_block("引领性指标", &p.metrics.leading, None, &bridge, p.metrics.collected, p.id)}
             {repo_block(&p, &bridge)}
             {version_block(&p)}
         }
@@ -262,7 +263,7 @@ fn north_star_block(p: &ProjectVm, bridge: &Bridge) -> Element {
                 div { class: "detail-empty", style: "color:var(--alert-deep);", "指标文件读不了:{e}" }
             } else {
                 match p.metrics.north_star.as_ref() {
-                    Some(m) => metric_card(m, true, true),
+                    Some(m) => metric_card(m, true, p.id, bridge),
                     None => rsx! { div { class: "detail-empty", "还没定北极星。" } },
                 }
             }
@@ -276,6 +277,7 @@ fn metric_row_block(
     note: Option<&str>,
     bridge: &Bridge,
     collected: bool,
+    pid: ProjectId,
 ) -> Element {
     let b = bridge.clone();
     rsx! {
@@ -298,51 +300,65 @@ fn metric_row_block(
             }
             if !cards.is_empty() && !collected {
                 div { class: "detail-empty",
-                    "还没采过。可回溯的指标点上面那颗按钮就会画出近四周折线,\
-                     跟下面「代码仓级」同一套 —— 不自动跑。"
+                    "还没采过。点上面那颗按钮会现算近四周,每张卡固定一块折线 —— 不自动跑。"
                 }
             }
             div { class: "ov-row",
                 for m in cards.iter() {
-                    {metric_card(m, false, false)}
+                    {metric_card(m, false, pid, bridge)}
                 }
             }
-            {metric_trend_row(cards)}
         }
     }
 }
 
-/// 滞后/引领的四周折线单独成行,跟代码仓级那三张图一个排法。
-/// 卡里不再塞小图 —— 塞进去又窄又容易看成「这边没有走势」。
-fn metric_trend_row(cards: &[MetricCardVm]) -> Element {
-    use crate::chrome::sparkline::{trend_chart, Series};
-    let series: Vec<&MetricCardVm> = cards
-        .iter()
-        .filter(|m| m.trend.iter().any(|(_, v)| v.is_some()))
-        .collect();
-    if series.is_empty() {
-        return rsx! {};
+fn metric_series(m: &MetricCardVm) -> crate::chrome::sparkline::Series {
+    crate::chrome::sparkline::Series {
+        label: String::new(),
+        points: m
+            .trend
+            .iter()
+            .map(|(w, v)| {
+                (
+                    w.split_once("-W")
+                        .map_or_else(|| w.clone(), |(_, n)| format!("W{n}")),
+                    *v,
+                )
+            })
+            .collect(),
+        color: "var(--clay)",
     }
-    let x = |w: &str| {
-        w.split_once("-W")
-            .map_or_else(|| w.to_string(), |(_, n)| format!("W{n}"))
-    };
-    rsx! {
-        div { class: "trend-row",
-            for m in series {
-                {trend_chart(&Series {
-                    label: m.name.clone(),
-                    points: m.trend.iter().map(|(w, v)| (x(w), *v)).collect(),
-                    color: "var(--clay)",
-                })}
+}
+
+/// 相对上周:取序列里最后两个已知数。只有一个点或解不出数就写「—」。
+fn vs_last_week(trend: &[(String, Option<f64>)]) -> String {
+    let known: Vec<f64> = trend.iter().filter_map(|(_, v)| *v).collect();
+    match known.as_slice() {
+        [.., prev, cur] => {
+            let d = cur - prev;
+            if d.abs() < f64::EPSILON {
+                "相对上周 持平".into()
+            } else if d > 0.0 {
+                format!("相对上周 +{}", fmt_delta(d))
+            } else {
+                format!("相对上周 {}", fmt_delta(d))
             }
         }
+        _ => "相对上周 —".into(),
+    }
+}
+
+fn fmt_delta(v: f64) -> String {
+    if (v - v.round()).abs() < 0.05 {
+        format!("{}", v.round() as i64)
+    } else {
+        format!("{v:.1}")
     }
 }
 
 /// 指标卡。**没读数走灰卡** —— 灰卡上写的是「无观测 · Unknown ≠ 绿」,
-/// 不是一个 0。
-fn metric_card(m: &MetricCardVm, big: bool, inline_chart: bool) -> Element {
+/// 不是一个 0。折线始终占一块:没点就写「尚无观测」,一个点也画。
+fn metric_card(m: &MetricCardVm, big: bool, pid: ProjectId, bridge: &Bridge) -> Element {
     let name_cls = if big { "mcard-name big" } else { "mcard-name" };
     let value_cls = if big {
         "mcard-value big"
@@ -354,9 +370,12 @@ fn metric_card(m: &MetricCardVm, big: bool, inline_chart: bool) -> Element {
     } else {
         format!("目标 {}", m.target)
     };
-    // **现算出来的值优先于周计划里那份快照** —— 快照是「上周抄下来的」,
-    // 现算的是「刚刚跑脚本采到的」。两个都没有才走灰卡。
-    let shown = m.collected.as_ref().or(m.reading.as_ref());
+    // 脚本采到的现值优先;手填以流水为准(记下当天立刻能看见)。
+    let shown = if m.manual {
+        m.reading.as_ref().or(m.collected.as_ref())
+    } else {
+        m.collected.as_ref().or(m.reading.as_ref())
+    };
     let Some(reading) = shown else {
         let cls = if big {
             "mcard gray north"
@@ -373,6 +392,7 @@ fn metric_card(m: &MetricCardVm, big: bool, inline_chart: bool) -> Element {
                 }
                 div { class: "mcard-value-row",
                     span { class: "{value_cls}", style: "color:var(--ink-4);", "—" }
+                    span { class: "mcard-delta", "{vs_last_week(&m.trend)}" }
                     span { class: "mcard-target", "{target}" }
                 }
                 if m.collect_error.is_empty() {
@@ -380,6 +400,15 @@ fn metric_card(m: &MetricCardVm, big: bool, inline_chart: bool) -> Element {
                 } else {
                     // **没采到就说没采到,并且把原话端出来** —— 不写 0。
                     div { class: "mcard-sub", style: "color:var(--alert-deep);", "{m.collect_error}" }
+                }
+                {crate::chrome::sparkline::trend_chart(&metric_series(m))}
+                if m.manual {
+                    ManualFill {
+                        pid,
+                        name: m.name.clone(),
+                        current: String::new(),
+                        bridge: bridge.clone(),
+                    }
                 }
             }
         };
@@ -403,6 +432,7 @@ fn metric_card(m: &MetricCardVm, big: bool, inline_chart: bool) -> Element {
             }
             div { class: "mcard-value-row",
                 span { class: "{value_cls}", "{reading}" }
+                span { class: "mcard-delta", "{vs_last_week(&m.trend)}" }
                 span { class: "mcard-target", "{target}" }
             }
             if !m.collect_error.is_empty() {
@@ -410,17 +440,14 @@ fn metric_card(m: &MetricCardVm, big: bool, inline_chart: bool) -> Element {
             } else if !m.source.is_empty() || !m.collected_at.is_empty() {
                 div { class: "mcard-sub", "来源 {m.source} · 采于 {m.collected_at}" }
             }
-            // 北极星卡内画小图;滞后/引领走块下那一行(跟代码仓级同一排法)。
-            // 采不到的点断开,不补前值 —— 补了就分不出「没变」和「没数」。
-            if inline_chart && m.trend.iter().any(|(_, v)| v.is_some()) {
-                {crate::chrome::sparkline::trend_chart(&crate::chrome::sparkline::Series {
-                    label: String::new(),
-                    points: m.trend.iter().map(|(w, v)| (
-                        w.split_once("-W").map_or(w.clone(), |(_, n)| format!("W{n}")),
-                        *v,
-                    )).collect(),
-                    color: "var(--clay)",
-                })}
+            {crate::chrome::sparkline::trend_chart(&metric_series(m))}
+            if m.manual {
+                ManualFill {
+                    pid,
+                    name: m.name.clone(),
+                    current: reading.clone(),
+                    bridge: bridge.clone(),
+                }
             }
             if !m.driving.is_empty() {
                 div { class: "mcard-driven",
@@ -428,6 +455,38 @@ fn metric_card(m: &MetricCardVm, big: bool, inline_chart: bool) -> Element {
                         span { key: "{t}", class: "chip", "{t}" }
                     }
                 }
+            }
+        }
+    }
+}
+
+#[component]
+fn ManualFill(pid: ProjectId, name: String, current: String, bridge: Bridge) -> Element {
+    let mut draft = use_signal(|| current);
+    let b = bridge.clone();
+    rsx! {
+        div { class: "mcard-fill",
+            input {
+                class: "input",
+                value: "{draft}",
+                placeholder: "今天这个数",
+                oninput: move |e| draft.set(e.value()),
+            }
+            button {
+                class: "btn btn-sm btn-primary",
+                disabled: draft.read().trim().is_empty(),
+                onclick: move |_| {
+                    let v = draft.read().trim().to_string();
+                    if v.is_empty() {
+                        return;
+                    }
+                    b.cmd(Command::RecordManualMetric {
+                        project_id: pid,
+                        name: name.clone(),
+                        value: v,
+                    });
+                },
+                "记下"
             }
         }
     }
@@ -536,7 +595,7 @@ fn repo_block(p: &ProjectVm, bridge: &Bridge) -> Element {
 
 // ── ⑥ 本周计划进度 ──────────────────────────────────
 
-fn week_block(p: &ProjectVm, nav: PanelNav) -> Element {
+fn week_block(p: &ProjectVm) -> Element {
     let w = p.weeks.iter().find(|w| w.week == p.current_week);
     let goal = w
         .and_then(|w| w.goal.clone())
@@ -574,11 +633,6 @@ fn week_block(p: &ProjectVm, nav: PanelNav) -> Element {
                     }
                 }
             }
-            button {
-                class: "btn btn-sm",
-                onclick: move |_| nav.go(Panel::Plan),
-                "去计划 →"
-            }
         }
     }
 }
@@ -601,7 +655,7 @@ fn version_block(p: &ProjectVm) -> Element {
             }
             if p.releases.is_empty() {
                 div { class: "detail-empty",
-                    "还没有发过版。发版记录从 git 标签 + 远端 Release 现算,库里不存副本。"
+                    "还没有发过版。次数优先读远端 Release,读不到再看本机 git 标签。"
                 }
             }
             for r in p.releases.iter() {

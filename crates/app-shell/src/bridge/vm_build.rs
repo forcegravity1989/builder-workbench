@@ -7,7 +7,7 @@
 use crate::vm::*;
 use bw::app::App;
 use bw::command::Event;
-use bw::model::{IssueStatus, Project, ProjectId};
+use bw::model::{IssueKind, IssueStatus, Project, ProjectId};
 use bw::repo::{issue_policy_file, project_file};
 
 use super::vm_derive::{build_card_mr, build_notify_events, build_ops, build_week_counts};
@@ -92,6 +92,10 @@ pub struct UiState {
     /// id,跨项目不撞);值 0 = 查过了、没有开着的 MR。issue 离开 inreview 后这条
     /// 留着也无害(只有 inreview 的活读它)。
     pub mr_cache: std::collections::HashMap<bw::model::IssueId, u32>,
+    /// 会话屏 Open Design iframe 该打开的地址。开工成功后写入;空 = 组件自己探首页。
+    pub od_src: String,
+    /// 换一次就让 iframe 卸掉重挂,否则同一 origin 不刷新。
+    pub od_gen: u64,
 }
 
 /// 深链按 slug 找,找不到再按显示名找。
@@ -185,7 +189,6 @@ fn primary_note(events: &[Event]) -> Option<String> {
                 format!("{week} 的运作活①已开工(流程演示),等你确认草稿")
             }
         }
-        Event::HistoryBackfilled { note, .. } => note.clone(),
         Event::WorkspacesRootChanged { path, pinned } => {
             let tail = if *pinned > 0 {
                 format!(",已接入的 {pinned} 个项目已就地钉在原位置、不会跟着搬")
@@ -262,10 +265,15 @@ fn primary_note(events: &[Event]) -> Option<String> {
                 format!("这张活排进了 {week_of}")
             }
         }
+        Event::IssueCategorySet { category, .. } => {
+            format!("类别改成了{category},开工工具按映射重算")
+        }
         Event::WorkspacePulled { note, .. } => note.clone(),
         Event::IssueRan { ok, summary, .. } => {
             if *ok {
-                format!("跑完了,推到「评审中」。执行器原话:{summary}")
+                // PTY / OD 开工成功只是「会话起来了」,还没到评审中。
+                // 原话已经说清去哪看,不再谎称推到评审中。
+                summary.clone()
             } else {
                 format!("这次没跑成,活留在原地可以重试。原话:{summary}")
             }
@@ -278,16 +286,24 @@ fn primary_note(events: &[Event]) -> Option<String> {
             }
         }
         Event::IssueBlocked { .. } => "已标成阻塞,原因写进了活的说明".into(),
+        Event::IssueCancelled { .. } => "已作废:取消标签打上了,远端 issue 关了,原因在评论里".into(),
+        Event::SessionDeleted { note, .. } => note.clone(),
         Event::ReleaseCut {
             version,
             rows_written,
         } => {
             if *rows_written {
-                format!("发版记录新增一行 {version}")
+                format!("远端已建 Release {version},选中的活打了发版标签")
             } else {
                 format!("{version} 已经在发版记录里了,没写第二行")
             }
         }
+        Event::MetricsAutoCollected { count, .. } => {
+            format!("今日自动采了 {count} 条 B 类指标")
+        }
+        Event::MetricRecorded {
+            name, day, value, ..
+        } => format!("记下了 {name} = {value}({day})"),
         Event::CurrentVersionChanged { version } => format!("在研版本切到 {version}"),
         Event::ToolMappingSaved { category } => format!("「{}」的映射保存了", category.label()),
         Event::ToolProbed { name, result } => format!("{name} 探活:{result:?}"),
@@ -330,22 +346,20 @@ pub async fn build(app: &App, ui: &mut UiState) -> Vm {
                 Vec::new()
             }
         };
-        let in_week = bw::app::issues_in_week(&issues, &week);
+        // 项目墙「本周 x/y 完成」跟总览五段同一口径:作废的活不算进分母。
+        // 以前用带周标签的张数当 y,#10/#11 这种打了本周标签又作废的卡会把 3/4 撑成 3/6。
+        let week_counts = build_week_counts(&issues, Some(week.as_str()));
+        let week_total = (week_counts.todo
+            + week_counts.doing
+            + week_counts.review
+            + week_counts.done
+            + week_counts.blocked) as u32;
         // 未读 = 评审中的活有几张。这个数是现算的,库里没有未读表
         // (MVP 不再按 seen_at 过滤:pr_number/updated_at 是 lossy)。
         let unread = bw::app::count_unseen(&issues);
-        // 周目标:本周 ops① issue 在 = 有目标(刀6:不再读周计划文件)。
-        // goal 正文先空 —— 以后从 ops① issue 评论里取;现在用一个标记说清
-        // 「已开工、目标正文待填」,免得卡片显示「还没定」而 ops① 明明在跑。
-        let ops1_title = bw::app::ops1_title(&week);
-        let has_goal = issues
-            .iter()
-            .any(|i| i.title == ops1_title && i.status != IssueStatus::Done);
-        let week_goal = if has_goal {
-            "已开工·目标待定".to_string()
-        } else {
-            String::new()
-        };
+        // 周目标:从本周运作活①评论解析出的那一句话。没有或解析不到就是空。
+        let goals = app.week_goals_from_ops1(p, &issues).await;
+        let week_goal = goals.get(&week).cloned().unwrap_or_default();
         // 上次交付 = 最近一个 git 标签的提交日期 + tag(刀6:不再读
         // .bw/releases.md)。tags_with_dates 按 creatordate 升序,最后一个 = 最新。
         let last_delivery = bw::git::tags_with_dates(&ws)
@@ -362,11 +376,8 @@ pub async fn build(app: &App, ui: &mut UiState) -> Vm {
             signal: p.signal,
             workspace_path: ws.display().to_string(),
             remote: remote_label(p),
-            week_total: in_week.len() as u32,
-            week_done: in_week
-                .iter()
-                .filter(|i| i.status == IssueStatus::Done)
-                .count() as u32,
+            week_total,
+            week_done: week_counts.done as u32,
             version: file.current_version.clone(),
             week,
             unread,
@@ -562,7 +573,15 @@ async fn build_project(
     };
 
     // 健康:四条判据当场从 issue 列表、仓文件与 git 取,不读缓存。
-    let inputs = bw::app::collect_health_inputs(&p, &ws, &current_week, &issues).await;
+    let week_goals = app.week_goals_from_ops1(&p, &issues).await;
+    let inputs = bw::app::collect_health_inputs(
+        &p,
+        &ws,
+        &current_week,
+        &issues,
+        week_goals.get(&current_week).map(String::as_str),
+    )
+    .await;
     let derived = bw::derive::derive_project_health(&inputs);
     // 算完顺手写回显示缓存。**项目墙只有这一个数据来源** —— 它要在不打开项目
     // 的情况下列出 N 个项目的灯,不能每次启动扫 N 个仓。此前壳里没有一处写过
@@ -591,7 +610,7 @@ async fn build_project(
 
     // 周列表 = 库里活排过的周(issues 的 `bw:week:*` 标签)∪ 本周。刀6:不再
     // 扫 `.bw/plan/` 目录(那个文件没人写了,扫到也是旧的)。本周永远在列表里。
-    let weeks = build_weeks(&issues, &current_week);
+    let weeks = build_weeks(&issues, &current_week, &week_goals);
 
     // 横幅判据:本周运作活①在不在(含已完成)。做完再冒「开始本周」是假的。
     let ops1_title = bw::app::ops1_title(&current_week);
@@ -600,21 +619,7 @@ async fn build_project(
     let ops1_status = ops1
         .filter(|i| i.status != IssueStatus::Done)
         .map(|i| i.status.label().to_string());
-    // 发版历史从 git 标签取(刀6:不再读 .bw/releases.md)。tags_with_dates 按
-    // creatordate 升序,rev() 让最新的在最前。git 标签没有 note / 包含的活,
-    // 那两列如实留空/「—」,不编。
-    let releases: Vec<ReleaseVm> = bw::git::tags_with_dates(&ws)
-        .await
-        .into_iter()
-        .rev()
-        .map(|(tag, date)| ReleaseVm {
-            version: tag,
-            released_at: date,
-            note: String::new(),
-            included: "—".into(),
-            origin: "git 标签".into(),
-        })
-        .collect();
+    let releases = load_releases(app, &p, &ws).await;
     Some(ProjectVm {
         id,
         slug: p.slug.clone(),
@@ -693,6 +698,8 @@ async fn build_project(
             ui.session_tab,
             &ui.expanded_dirs,
             &ui.open_file,
+            &ui.od_src,
+            ui.od_gen,
         )
         .await,
         notify: NotifyVm {
@@ -733,7 +740,11 @@ pub(super) fn card_item(i: &bw::Issue) -> CardItemVm {
         id: i.id,
         number: i.number,
         title: i.title.clone(),
-        category: i.category.map(|c| c.label()).unwrap_or("—").into(),
+        category: if i.kind == IssueKind::Ops {
+            "运作".into()
+        } else {
+            i.category.map(|c| c.label()).unwrap_or("—").into()
+        },
         tool: tool_label(&i.tool).into(),
         workflow: if i.workflow.is_empty() {
             "—".into()
@@ -752,4 +763,39 @@ pub(super) fn card_item(i: &bw::Issue) -> CardItemVm {
         branch: i.branch.clone(),
         body: i.body.clone(),
     }
+}
+
+/// 发版次数与列表:优先读远端 Release。本机 git 标签经常还没 fetch,只靠它
+/// 会把刚发出去的版本算成 0。远端读不到(没挂仓 / CLI 失败)再退回本机标签。
+pub(super) async fn load_releases(app: &App, p: &Project, ws: &std::path::Path) -> Vec<ReleaseVm> {
+    if p.has_remote() {
+        if let Ok(remote) = app.remote_for(p) {
+            if let Ok(tags) = remote.list_releases().await {
+                if !tags.is_empty() {
+                    return tags
+                        .into_iter()
+                        .map(|tag| ReleaseVm {
+                            version: tag,
+                            released_at: String::new(),
+                            note: String::new(),
+                            included: "—".into(),
+                            origin: "远端 Release".into(),
+                        })
+                        .collect();
+                }
+            }
+        }
+    }
+    bw::git::tags_with_dates(ws)
+        .await
+        .into_iter()
+        .rev()
+        .map(|(tag, date)| ReleaseVm {
+            version: tag,
+            released_at: date,
+            note: String::new(),
+            included: "—".into(),
+            origin: "git 标签".into(),
+        })
+        .collect()
 }

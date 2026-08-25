@@ -218,68 +218,24 @@ pub fn TopBar(title: String, project: Option<String>, source: String, bridge: Br
     }
 }
 
-struct Chapter {
-    id: &'static str,
-    label: &'static str,
-    body: &'static str,
-}
-
-/// 指南正文照搬原型,只把「演示 / 留位」的说法对齐真壳现状。
-const CHAPTERS: [Chapter; 4] = [
-    Chapter {
-        id: "env",
-        label: "环境准备",
-        body: "项目墙那条环境条上有六项,各走各的真实探活,「测一下」重新找一遍。claude / cursor-agent / codehub-cli / gh / welink-cli 在本机 PATH 里找得到就绿、找不到就红;gh 和 welink-cli 只报装没装——登录没登录要起子进程查,那条路不在环境条这儿,别拿「装了」冒充「登录了」。Open Design 是本机网页内嵌类,走命名管道握手取 loopback URL:OD 起着就绿、没起就红。这条环境条与项目健康无关:健康只从观测推导,探活不写进任何信号。缺哪一项都不影响别的活开工,只影响对应类别的活能不能开工。",
-    },
-    Chapter {
-        id: "onboard",
-        label: "接入项目",
-        body: "接入分两步。第一步只问项目地址:光标点进那格就去列你账号下的仓,打字即检索、点一行即选中,也可以直接把 owner/repo 打进去;列不出来会把命令原话摆出来,不摆假列表。第二步是四个基础字段,顶上先告诉你这个仓被 buddy 接管过没有——接管过就把仓里的名片回显出来,你改哪格算哪格。注意「没查成」和「没被接管过」是两回事,前者多半是没登录或者这个仓的默认分支不叫 main,这时候别照着空格子填,填了会盖掉仓里真正的名片。点「完成接入」要十几秒,界面上一步一句地报:取仓(该 clone 就 clone)→ 库里落一行 → 写名片 → 自动建一张「规范铺底」的活(建分支、写规范骨架、提 MR,停在评审中等你合)→ 进这个项目。别猛点。接错了就用项目卡右上角的 ✕ 移走——它只把项目从工作台移出去,仓一个字节都不动。",
-    },
-    Chapter {
-        id: "cycle",
-        label: "一周一圈",
-        body: "每周由「更新指标与制定本周计划」这张运作活开场:复盘上周 → 更新指标 → 引导出本周目标与活清单。活从待办池推到评审中都是 agent 干的,「完成」永远由你在看板上点一下。",
-    },
-    Chapter {
-        id: "faq",
-        label: "常见问题",
-        body: "点了没反应?接入和规范铺底都要十几秒,界面上会一步一句地报进度,报到哪就是做到哪,别猛点。想把一个项目从工作台移走,用项目卡右上角的 ✕——只动库不动仓。灯是灰的不是坏了:没数据就是灰,不会假装绿。更完整的流程见仓里的 docs/guide/v4-用户使用指南.md,它只写已经真走过一遍的站。遇到没写清楚的地方,用下面的「问题上报」占位记一笔(还没接真实上报,点了不会发出去)。",
-    },
-];
+/// 侧栏指南就是仓里那份产品指南,编进二进制,不另写一套。
+const GUIDE_HTML: &str = include_str!("../../../../docs/guide/v4-产品指南.html");
 
 #[component]
 pub fn GuideDrawer() -> Element {
-    // 开在哪一章由外壳级的共享信号说了算 —— 项目墙那条「怎么处理 →」要能把
-    // 抽屉直接翻到环境那一章。
     let guide = use_context::<crate::bridge::GuideNav>();
-    let Some(cur_id) = *guide.0.read() else {
+    if guide.0.read().is_none() {
         return rsx! {
-            div { class: "guide-tab", onclick: move |_| guide.open("env"), "指南" }
+            div { class: "guide-tab", onclick: move |_| guide.open("u0"), "指南" }
         };
-    };
-    let cur = CHAPTERS
-        .iter()
-        .find(|c| c.id == cur_id)
-        .unwrap_or(&CHAPTERS[0]);
+    }
     rsx! {
-        div { class: "guide-panel",
+        div { class: "guide-panel guide-panel-wide",
             div { class: "guide-panel-head",
-                h3 { style: "font-size:15px;margin:0;", "指南" }
+                h3 { style: "font-size:15px;margin:0;", "产品指南" }
                 button { class: "drawer-close", onclick: move |_| guide.close(), "✕" }
             }
-            div { class: "guide-chapters",
-                for c in CHAPTERS.iter() {
-                    div {
-                        key: "{c.id}",
-                        class: if c.id == cur_id { "guide-chapter active" } else { "guide-chapter" },
-                        onclick: move |_| guide.open(c.id),
-                        "{c.label}"
-                    }
-                }
-            }
-            div { class: "guide-body", "{cur.body}" }
-            div { class: "guide-report", title: "还没接真实上报", "⚑ 问题上报" }
+            iframe { class: "guide-frame", srcdoc: GUIDE_HTML }
         }
     }
 }

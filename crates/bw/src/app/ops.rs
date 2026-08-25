@@ -39,6 +39,10 @@ pub fn ops1_title(week: &str) -> String {
     format!("更新指标 + 制定本周计划 {week}")
 }
 
+pub fn ops2_title(week: &str) -> String {
+    format!("资产盘点 {week}")
+}
+
 /// 剧本目录名 → 活上挂的 workflow 人话名。配置表「名称」用这个,slug 另写一行。
 pub fn workflow_label(slug: &str) -> Option<&'static str> {
     match slug {
@@ -124,16 +128,20 @@ impl App {
         if !cron_on {
             return Ok(vec![]);
         }
-        let ws = self.workspace_of(project_id).await?;
+        let mut events = self.maybe_auto_collect_b(project_id).await;
+
+        let Ok(ws) = self.workspace_of(project_id).await else {
+            return Ok(events);
+        };
         let Some(policy) = issue_policy_file::read(&ws).ok().flatten() else {
-            return Ok(vec![]);
+            return Ok(events);
         };
         let Some(cadence) = policy.cadence else {
-            return Ok(vec![]);
+            return Ok(events);
         };
         let spec = cadence.ops2_schedule.trim().to_string();
         if spec.is_empty() || !isoweek::schedule_passed_this_week(&spec) {
-            return Ok(vec![]);
+            return Ok(events);
         }
 
         let week = isoweek::current_week();
@@ -144,10 +152,10 @@ impl App {
             .await?
             .is_some()
         {
-            return Ok(vec![]);
+            return Ok(events);
         }
 
-        let (id, created, mut events) = self
+        let (id, created, mut ops_events) = self
             .create_ops_issue(
                 project_id,
                 title,
@@ -157,6 +165,7 @@ impl App {
                 week.clone(),
             )
             .await?;
+        events.append(&mut ops_events);
         if !created {
             return Ok(events);
         }

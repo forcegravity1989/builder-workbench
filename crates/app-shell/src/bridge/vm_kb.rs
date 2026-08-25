@@ -211,8 +211,13 @@ pub(super) async fn build_codegraph(ws: &Path) -> CodeGraphVm {
 }
 
 /// 资产页签:五个区块**全部现算**——扫仓目录、走 git、解析仓文件。
-/// 没有登记表可查(V4 库里只有四张表)。
-pub(super) async fn build_assets(usage: &[(String, u32)], ws: &Path) -> AssetsVm {
+/// 没有登记表可查(V4 库里只有四张表)。发版列表由调用方现算后传入
+/// (优先远端 Release,与总览同一份)。
+pub(super) async fn build_assets(
+    usage: &[(String, u32)],
+    ws: &Path,
+    releases: Vec<ReleaseVm>,
+) -> AssetsVm {
     let skills = super::vm_panels::skill_list(ws, usage);
 
     let artifacts = bw::git::artifacts(ws, 200)
@@ -224,21 +229,6 @@ pub(super) async fn build_assets(usage: &[(String, u32)], ws: &Path) -> AssetsVm
             commit: a.commit,
             subject: a.subject,
             issue: a.issue_number.map(|n| format!("#{n}")).unwrap_or_default(),
-        })
-        .collect();
-
-    // 发版历史从 git 标签取(刀6:不再读 .bw/releases.md)。新的在前
-    // (tags_with_dates 按 creatordate 升序,rev())。note / 包含的活如实空。
-    let releases: Vec<ReleaseVm> = bw::git::tags_with_dates(ws)
-        .await
-        .into_iter()
-        .rev()
-        .map(|(tag, date)| ReleaseVm {
-            version: tag,
-            released_at: date,
-            note: String::new(),
-            included: String::new(),
-            origin: "git 标签".into(),
         })
         .collect();
 

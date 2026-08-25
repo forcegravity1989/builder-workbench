@@ -21,27 +21,12 @@ pub enum GitError {
     BadWeek(String),
 }
 
-/// 一周的 git 读数。**复算命令写在 [`week_counts_many`] 的文档里** —— 界面上
-/// 的每个数字都要能在终端复算出来,这是纪律不是修辞。注意复算**不要**用
-/// `git log --since/--until`:那正是 2026-08-21 修掉的错误窗口(多算一天、
-/// 还会漏算),用它复算出来的数和界面对不上是命令的错,不是界面的错。
+/// 一周的轻量计数:提交数、合入数。健康判据和走势图只要这两个数。
 ///
-/// 特别地:这里跑的是当前分支,**不带 `--all`**。带上 `--all` 会把
-/// remote-tracking 分支和别的 worktree 的提交都算进「本周有没有真实提交」,
-/// 一次 `git fetch` 就能把健康灯点亮 —— 那就成了可以造假的数字。
-#[derive(Debug, Clone, Default, PartialEq, Eq)]
-pub struct WeekStats {
-    pub week: String,
-    /// 提交时间落在 `[周一 00:00, 下周一 00:00)`(本机时区)的提交数。
-    pub commits: u32,
-    /// 同窗口内父提交 ≥ 2 的提交数(合入)。
-    pub merges: u32,
-    /// `git log --numstat` 按目录聚合后的前三名。
-    pub top_dirs: Vec<String>,
-}
-
-/// 一周的轻量计数:提交数、合入数。健康判据和走势图只要这两个数 ——
-/// **不要为它们付 numstat 的钱**(那是 [`week_stats_many`] 的事,贵一个量级)。
+/// **复算命令写在 [`week_counts_many`] 的文档里**。注意复算**不要**用
+/// `git log --since/--until`:那正是 2026-08-21 修掉的错误窗口(多算一天、
+/// 还会漏算)。这里跑的是当前分支,**不带 `--all`** —— 带上会把
+/// remote-tracking 分支和别的 worktree 的提交都算进「本周有没有真实提交」。
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
 pub struct WeekCounts {
     pub commits: u32,
@@ -122,7 +107,7 @@ pub fn week_window(week: &str) -> Result<(i64, i64), GitError> {
 ///    78 变成 83。走势图上的数**必须**是每次算都一样的。
 ///
 /// 全量遍历一次的代价:这个仓 751 条提交,`--pretty=format:'%ct %P'` 实测约
-/// 25 毫秒 —— **要几周都是这一趟**,健康判两周、走势看八周、回填补一百周,
+/// 25 毫秒 —— **要几周都是这一趟**,健康判两周、走势看八周,
 /// 都不再把遍历次数乘上去(第一版就是这么乘出 2 秒卡顿和 75 秒冻屏的,评审
 /// 抓的)。
 ///
@@ -165,121 +150,6 @@ pub async fn week_counts_many(
         }
     }
     Ok(map)
-}
-
-/// 多个周的完整读数(计数 + 目录榜),**一趟 numstat 遍历全部出齐**。
-///
-/// 和 [`week_counts_many`] 的分工:那边只要计数、便宜(轻一个量级);这边要
-/// 目录榜,得付一次全量 `--numstat` 的钱(本仓实测约 0.7 秒、174KB 输出)——
-/// 所以**只给真要目录榜的调用方用**(回填、周计划的「上周完成情况」),健康
-/// 判据和走势图别走这条。
-pub async fn week_stats_many(
-    workspace: &Path,
-    weeks: &[String],
-) -> Result<std::collections::HashMap<String, WeekStats>, GitError> {
-    let mut windows = Vec::with_capacity(weeks.len());
-    for w in weeks {
-        windows.push((w.clone(), week_window(w)?));
-    }
-    // `\x01` 是提交行的标记(git 自己在 pretty 里也这么用;numstat 对含控制
-    // 字符的路径会 C-quote,所以路径伪造不出这个前缀)。每条提交行:
-    // `\x01<unix 秒> <父提交…>`,后面跟着它的 numstat 行。
-    let out = git(
-        workspace,
-        &["log", "--numstat", "--pretty=format:\x01%ct %P"],
-    )
-    .await?;
-
-    let mut counts: std::collections::HashMap<String, WeekCounts> =
-        std::collections::HashMap::new();
-    let mut dirs: std::collections::HashMap<String, std::collections::HashMap<String, u32>> =
-        std::collections::HashMap::new();
-    // 当前提交落在哪个周的桶里;不在任何桶就丢。
-    let mut bucket: Option<String> = None;
-    for line in out.lines() {
-        if let Some(head) = line.strip_prefix('\x01') {
-            bucket = None;
-            let mut fields = head.split_whitespace();
-            let Some(ts) = fields.next().and_then(|t| t.parse::<i64>().ok()) else {
-                continue;
-            };
-            let parents = fields.count();
-            for (w, (since, until)) in &windows {
-                if ts >= *since && ts < *until {
-                    let c = counts.entry(w.clone()).or_default();
-                    c.commits += 1;
-                    if parents >= 2 {
-                        c.merges += 1;
-                    }
-                    bucket = Some(w.clone());
-                    break;
-                }
-            }
-        } else if let Some(week) = &bucket {
-            let Some(path) = line.split('\t').nth(2) else {
-                continue;
-            };
-            let dir = match numstat_path(path).rsplit_once('/') {
-                Some((d, _)) => d.to_string(),
-                None => ".".to_string(),
-            };
-            *dirs
-                .entry(week.clone())
-                .or_default()
-                .entry(dir)
-                .or_default() += 1;
-        }
-    }
-
-    let mut map = std::collections::HashMap::new();
-    for w in weeks {
-        let c = counts.get(w).copied().unwrap_or_default();
-        let top = dirs
-            .remove(w)
-            .map(|m| {
-                let mut v: Vec<(String, u32)> = m.into_iter().collect();
-                v.sort_by(|a, b| b.1.cmp(&a.1).then(a.0.cmp(&b.0)));
-                v.into_iter().take(3).map(|(d, _)| d).collect()
-            })
-            .unwrap_or_default();
-        map.insert(
-            w.clone(),
-            WeekStats {
-                week: w.clone(),
-                commits: c.commits,
-                merges: c.merges,
-                top_dirs: top,
-            },
-        );
-    }
-    Ok(map)
-}
-
-/// 这一周的提交、合入、动得最多的目录。单周场景的便捷入口;要多周就用
-/// [`week_stats_many`],别在循环里逐周调这个。
-pub async fn week_stats(workspace: &Path, week: &str) -> Result<WeekStats, GitError> {
-    let weeks = vec![week.to_string()];
-    let mut map = week_stats_many(workspace, &weeks).await?;
-    Ok(map.remove(week).unwrap_or_default())
-}
-
-/// numstat 的路径列对**改名**输出的是紧凑合并形式(`a/{old => new}/f.rs` 或
-/// `old.rs => new.rs`),直接当路径用会切出根本不存在的目录(评审抓的:本仓
-/// 那批目录搬迁提交就能复现)。这里取**新路径**那一侧 —— 改动落点在新位置。
-fn numstat_path(raw: &str) -> String {
-    if let (Some(l), Some(r)) = (raw.find('{'), raw.find('}')) {
-        if l < r {
-            if let Some((_, new)) = raw[l + 1..r].split_once(" => ") {
-                let joined = format!("{}{}{}", &raw[..l], new, &raw[r + 1..]);
-                // `{old => }` 两侧的斜杠会撞在一起,收掉。
-                return joined.replace("//", "/");
-            }
-        }
-    }
-    if let Some((_, new)) = raw.split_once(" => ") {
-        return new.to_string();
-    }
-    raw.to_string()
 }
 
 /// 仓里一共多少条提交。铺底探测「这是不是个有历史的仓」用它。
@@ -375,6 +245,13 @@ pub async fn delete_merged_branch(workspace: &Path, branch: &str) -> Result<(), 
 /// 说明情况和刚才读到的不一样了 —— 那就该失败,不该硬删。
 pub async fn worktree_remove(main_workspace: &Path, tree: &str) -> Result<(), GitError> {
     git(main_workspace, &["worktree", "remove", tree]).await?;
+    let _ = git(main_workspace, &["worktree", "prune"]).await;
+    Ok(())
+}
+
+/// 人点「删除会话」才走这条:连未提交的改动一起收。结清收尾不许调。
+pub async fn worktree_remove_force(main_workspace: &Path, tree: &str) -> Result<(), GitError> {
+    git(main_workspace, &["worktree", "remove", "--force", tree]).await?;
     let _ = git(main_workspace, &["worktree", "prune"]).await;
     Ok(())
 }
@@ -621,8 +498,6 @@ pub fn list_dir(workspace: &Path, rel: &str) -> Vec<TreeEntry> {
 }
 
 /// 仓里最早那条提交的日期(`YYYY-MM-DD`)。空仓返回 `None`。
-///
-/// 回填的起点靠它 —— 从这一天所在的那一周开始往今天扫。
 pub async fn first_commit_date(workspace: &Path) -> Option<String> {
     let out = git(
         workspace,

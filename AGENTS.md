@@ -89,7 +89,7 @@ scripts/   门禁脚本(guard-*)+ codegraph 联调
 
 ### codehub issue 标签词表
 
-`bw:status:{todo|inprogress|inreview|blocked}`(closed=Done,不打)、`bw:week:YYYY-Www`、`bw:released:vX`。**不打**:`kind`(从 workflow 推断)、`tool`/`workflow`(走 `.bw/issue-policy.toml` 映射)。仓改动两类:issue 数据(状态/排期/版本)→ codehub 标签 buddy 直接改;仓文件产物(名片/配置/规范件)→ worktree + MR,幂等键=固定枚举标题。详见 `standard/templates/issue-policy.toml.tmpl`。
+`bw:status:{todo|inprogress|inreview|blocked}`(closed=Done,不打)、`bw:week:YYYY-Www`、`bw:released:vX`、`bw:category:{prototype|build|optimize|growth|ops}`。**不打**:`kind`(从标题推断)、`tool`/`workflow`(走 `.bw/issue-policy.toml` 映射)。仓改动两类:issue 数据(状态/排期/版本/类别)→ codehub 标签 buddy 直接改;仓文件产物(名片/配置/规范件)→ worktree + MR,幂等键=固定枚举标题。详见 `standard/templates/issue-policy.toml.tmpl`。
 
 ### 写作纪律(给人看的东西先让人看得懂)
 

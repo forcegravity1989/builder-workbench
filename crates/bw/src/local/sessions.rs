@@ -168,4 +168,17 @@ impl SessionStore {
         let dir = asset_root.join("sessions").join(slug);
         let _ = std::fs::remove_dir_all(&dir);
     }
+
+    /// 人点「删除会话」:整份 jsonl 拿掉。这张活下次开工会再建一行。
+    pub fn remove_issue(asset_root: &Path, slug: &str, iid: u32) -> Result<(), RepoFileError> {
+        let path = Self::path(asset_root, slug, iid);
+        match std::fs::remove_file(&path) {
+            Ok(()) => Ok(()),
+            Err(e) if e.kind() == std::io::ErrorKind::NotFound => Ok(()),
+            Err(e) => Err(RepoFileError::Io {
+                path: path.display().to_string(),
+                source: e,
+            }),
+        }
+    }
 }
