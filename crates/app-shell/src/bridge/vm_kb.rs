@@ -167,18 +167,26 @@ fn push_group(out: &mut Vec<KbGroupVm>, title: &str, files: Vec<KbFileVm>) {
 }
 
 /// 代码图页签:每次点开就是一次全新的子进程调用,不缓存。
+/// 这个仓还没 `.codegraph/` 时当场跑 `init`,不再只甩一句「你自己去终端建」。
 pub(super) async fn build_codegraph(ws: &Path) -> CodeGraphVm {
-    use crate::adapters::codegraph::{big_files, detect, Availability};
-    let state = detect(ws).await;
-    if state != Availability::Ready {
+    use crate::adapters::codegraph::{big_files, detect, init_index, Availability};
+    let state = detect(ws);
+    if state == Availability::NotInstalled {
         return CodeGraphVm {
-            state: match state {
-                Availability::NotInstalled => "not_installed".into(),
-                _ => "not_indexed".into(),
-            },
+            state: "not_installed".into(),
             hint: state.hint(),
             ..CodeGraphVm::default()
         };
+    }
+    if state == Availability::NotIndexed {
+        if let Err(e) = init_index(ws).await {
+            return CodeGraphVm {
+                state: "not_indexed".into(),
+                hint: Availability::NotIndexed.hint(),
+                error: e,
+                ..CodeGraphVm::default()
+            };
+        }
     }
     match big_files(ws, 20).await {
         Ok(rows) => CodeGraphVm {

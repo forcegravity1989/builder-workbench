@@ -143,8 +143,9 @@ fn codegraph_tab(cg: Option<&CodeGraphVm>, bridge: &Bridge) -> Element {
                     div { class: "sr-h", style: "margin-top:0;flex:1;", "大文件榜" }
                     button {
                         class: "btn btn-sm",
+                        disabled: cg.state == "running",
                         onclick: move |_| b.send(Req::KbTab(KbTab::CodeGraph)),
-                        "重新跑一次"
+                        if cg.state == "running" { "正在跑…" } else { "重新跑一次" }
                     }
                 }
                 if cg.state != "ready" {
