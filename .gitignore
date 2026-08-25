@@ -3,7 +3,12 @@
 node_modules/
 .vscode/
 .idea/
-.claude/
+# Claude 本机会话 / 缓存不进仓;仓外起手 skill 要进仓
+.claude/*
+!.claude/skills/
+.claude/skills/*
+!.claude/skills/buddy-start/
+!.claude/skills/buddy-start/**
 
 # Rust
 /target/
