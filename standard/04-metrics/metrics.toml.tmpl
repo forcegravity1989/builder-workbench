@@ -107,3 +107,32 @@ collect = { kind = "manual" }
 # def = "仓的 star 总数;按 starred_at 倒推,所以每周末的存量都算得出来"
 # target = ""
 # collect = { kind = "script", run = ["python3", ".bw/scripts/github-stars.py"], retro = true }
+
+# ── 过程指标(可直接放开用;完整目录见 .bw/process-catalog.md)──────────
+# 量研发过程自身的现成指标,全部可回溯、全部从代码仓与远端现算——代码仓是
+# 唯一统计源。**至多挑两条**进上面的格子,把位置留给业务指标;北极星永远不放
+# 过程指标。目标先跑一遍脚本看真实水位再定,不拍脑袋。
+#
+# [[leading]]
+# name = "首过率"
+# def = "本周合入的 PR 里,开出后零追加提交就合入的占比;开出后的提交算评审驱动的返工"
+# target = "≥70"
+# collect = { kind = "script", run = ["python3", ".bw/scripts/github-first-pass.py"], retro = true }
+#
+# [[leading]]
+# name = "评审等待"
+# def = "本周合入的 PR 从开出到合入的中位时长,单位小时;没有合入的周断开"
+# target = "≤24"
+# collect = { kind = "script", run = ["python3", ".bw/scripts/github-review-wait.py"], retro = true }
+#
+# [[lagging]]
+# name = "返工轮数"
+# def = "本周合入的 PR 平均「开出后追加的提交数」;首过率的另一面"
+# target = "≤1"
+# collect = { kind = "script", run = ["python3", ".bw/scripts/github-rework-rounds.py"], retro = true }
+#
+# [[lagging]]
+# name = "距上次发版天数"
+# def = "每周末距 .bw/releases.md 最近发版日的天数;回填的历史行也算,要不要设目标由人定"
+# target = ""
+# collect = { kind = "script", run = ["python3", ".bw/scripts/release-gap.py"], retro = true }

@@ -58,11 +58,33 @@ pub const STANDARD_TMPL: &str = include_str!("../../../../standard/08-meta/stand
 // 项目自己改 —— 脚本本身就是「这个数怎么来的」的文档,不该由 buddy 每次采集
 // 前无条件盖掉(V3 就是那么干的,项目改过的采法被静默抹掉)。
 //
-// 只铺通用的这三份。**业务采集脚本 buddy 不代写**,那是项目自己的事。
+// 只铺通用的:仓级三份 + 过程指标包十份(全部从代码仓与远端现算——代码仓是
+// 唯一统计源)。**业务采集脚本 buddy 不代写**,那是项目自己的事。
 pub const SCRIPT_GIT_COMMITS: &str = include_str!("../../../../standard/06-scripts/git-commits.py");
 pub const SCRIPT_MERGED_PRS: &str =
     include_str!("../../../../standard/06-scripts/github-merged-prs.py");
 pub const SCRIPT_STARS: &str = include_str!("../../../../standard/06-scripts/github-stars.py");
+pub const SCRIPT_REVIEW_WAIT: &str =
+    include_str!("../../../../standard/06-scripts/github-review-wait.py");
+pub const SCRIPT_FIRST_PASS: &str =
+    include_str!("../../../../standard/06-scripts/github-first-pass.py");
+pub const SCRIPT_REWORK_ROUNDS: &str =
+    include_str!("../../../../standard/06-scripts/github-rework-rounds.py");
+pub const SCRIPT_FIRST_REVIEW_WAIT: &str =
+    include_str!("../../../../standard/06-scripts/github-first-review-wait.py");
+pub const SCRIPT_INTENT_LEAD: &str =
+    include_str!("../../../../standard/06-scripts/github-intent-lead.py");
+pub const SCRIPT_LEAD_TIME: &str =
+    include_str!("../../../../standard/06-scripts/github-lead-time.py");
+pub const SCRIPT_OPEN_PRS: &str =
+    include_str!("../../../../standard/06-scripts/github-open-prs.py");
+pub const SCRIPT_ISSUE_SURVIVAL: &str =
+    include_str!("../../../../standard/06-scripts/github-issue-survival.py");
+pub const SCRIPT_HANDBOOK_CHANGES: &str =
+    include_str!("../../../../standard/06-scripts/handbook-changes.py");
+pub const SCRIPT_RELEASE_GAP: &str = include_str!("../../../../standard/06-scripts/release-gap.py");
+pub const PROCESS_CATALOG: &str =
+    include_str!("../../../../standard/04-metrics/process-catalog.md");
 
 /// 一份规范件**在哪一站落地**。
 ///
@@ -140,6 +162,85 @@ pub const CORE_TEMPLATES: &[Template] = &[
         body: SCRIPT_STARS,
         lay_at: LayAt::OnFirstUse,
         note: "现成采集脚本:GitHub star 数(可回溯 —— 按 starred_at 倒推)",
+    },
+    // ── 过程指标包(playbook 引领/滞后指标里今天就能算的十条)────────
+    // 全部可回溯、全部只读代码仓与远端;总账在 process-catalog.md。
+    Template {
+        category: "metrics",
+        target: ".bw/scripts/github-review-wait.py",
+        body: SCRIPT_REVIEW_WAIT,
+        lay_at: LayAt::OnFirstUse,
+        note: "过程指标:评审等待 —— 本周合入的 PR 开出→合入中位时长(小时)",
+    },
+    Template {
+        category: "metrics",
+        target: ".bw/scripts/github-first-pass.py",
+        body: SCRIPT_FIRST_PASS,
+        lay_at: LayAt::OnFirstUse,
+        note: "过程指标:首过率 —— 开出后零追加提交即合入的占比(%)",
+    },
+    Template {
+        category: "metrics",
+        target: ".bw/scripts/github-rework-rounds.py",
+        body: SCRIPT_REWORK_ROUNDS,
+        lay_at: LayAt::OnFirstUse,
+        note: "过程指标:返工轮数 —— 合入 PR 平均「开出后追加的提交数」",
+    },
+    Template {
+        category: "metrics",
+        target: ".bw/scripts/github-first-review-wait.py",
+        body: SCRIPT_FIRST_REVIEW_WAIT,
+        lay_at: LayAt::OnFirstUse,
+        note: "过程指标:首审等待 —— 开出→首条评审事件中位时长;单人仓常年空,空如实",
+    },
+    Template {
+        category: "metrics",
+        target: ".bw/scripts/github-intent-lead.py",
+        body: SCRIPT_INTENT_LEAD,
+        lay_at: LayAt::OnFirstUse,
+        note: "过程指标:意图成文时长 —— 分支首提交→PR 开出中位时长",
+    },
+    Template {
+        category: "metrics",
+        target: ".bw/scripts/github-lead-time.py",
+        body: SCRIPT_LEAD_TIME,
+        lay_at: LayAt::OnFirstUse,
+        note: "过程指标:变更前置时间(DORA)—— 分支首提交→合入中位时长",
+    },
+    Template {
+        category: "metrics",
+        target: ".bw/scripts/github-open-prs.py",
+        body: SCRIPT_OPEN_PRS,
+        lay_at: LayAt::OnFirstUse,
+        note: "过程指标:同时开着的 MR 数 —— 每周末仍开着的 PR 存量",
+    },
+    Template {
+        category: "metrics",
+        target: ".bw/scripts/github-issue-survival.py",
+        body: SCRIPT_ISSUE_SURVIVAL,
+        lay_at: LayAt::OnFirstUse,
+        note: "过程指标:活存活率 —— 本周关闭的 issue 里「完成关闭」占比(%)",
+    },
+    Template {
+        category: "metrics",
+        target: ".bw/scripts/handbook-changes.py",
+        body: SCRIPT_HANDBOOK_CHANGES,
+        lay_at: LayAt::OnFirstUse,
+        note: "过程指标:手册修正频次 —— 仓根 AGENTS.md/CLAUDE.md 每周改动提交数",
+    },
+    Template {
+        category: "metrics",
+        target: ".bw/scripts/release-gap.py",
+        body: SCRIPT_RELEASE_GAP,
+        lay_at: LayAt::OnFirstUse,
+        note: "过程指标:距上次发版天数(DORA 部署频率)—— 读 .bw/releases.md",
+    },
+    Template {
+        category: "metrics",
+        target: ".bw/process-catalog.md",
+        body: PROCESS_CATALOG,
+        lay_at: LayAt::OnFirstUse,
+        note: "过程指标目录:playbook 26 条的总账(能算的/等前置的/不建的与理由)",
     },
     Template {
         category: "docs-core",
