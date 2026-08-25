@@ -1,6 +1,6 @@
 # 文档边界(写到哪、不写到哪)
 
-> **30 秒导读**:给写文档和改 buddy 的人看。回答两个问题——给人看的文档分几层、每层写什么;文档整理什么时候做。**现在作数**(2026-08-21 随 V4 文档收敛成四件套更新)。当前运作:**一心 V4**,V3 不再投入、等删。版本号与出包见 [`releases.md`](releases.md);还没干的活只认 [`LEFTOVERS.md`](LEFTOVERS.md)。
+> **30 秒导读**:给写文档和改 buddy 的人看。回答两个问题——给人看的文档分几层、每层写什么;文档整理什么时候做。**现在作数**(2026-08-21 随 V4 文档收敛成四件套更新)。当前节奏见 [`README.md`](README.md)「现在的节奏」;版本号与出包见 [`releases.md`](releases.md);还没干的活只认 [`LEFTOVERS.md`](LEFTOVERS.md)。
 
 看不懂的词查 [`../CONTEXT.md`](../CONTEXT.md)。
 
@@ -46,12 +46,12 @@ buddy 现在的使用者主要是**内部同事**;对外目前只有 buddy 自�
 | `iterations/PRACTICE-buddy.md` | 实践过程:假设→动作→读回→结论;当周新发现 | 完整设计规格(只留指针);第二份未决总表 |
 | `docs/guide/` | 产品指南(怎么用 + 怎么开发新特性)与对外宣讲(见上「三层结构·1」),只写已实践 | 未实践功能、开发过程中间态、开发流水 |
 | `docs/releases.md` | 版本号、出包时间、本版特性 / 修过的问题 | 设计论证 |
-| `.claude/skills/` | agent 怎么干活 | 瞬时窗口号、当前遗留正文 |
+| `.claude/skills/`(本机会话配置,不入仓;当前不存在) | agent 怎么干活 | 瞬时窗口号、当前遗留正文 |
 
 ## 落盘规则
 
-1. **新特性** → 写进 [`docs/v4-prototype/design.md`](v4-prototype/design.md) 对应那一章(**不新开平行篇**;设计正本只有这一篇)。走 `buddy-feature-dev`。
-2. **V3 的 bug / 使用修复** → 设计落 `docs/v3-prototype/`(已有篇就改状态,不要新开平行文)。走 `buddy-bugfix`。当前 V3 不再投入、等删。
+1. **新特性** → 写进 [`docs/v4-prototype/design.md`](v4-prototype/design.md) 对应那一章(**不新开平行篇**;设计正本只有这一篇)。
+2. **V3 的 bug / 使用修复** → 当前 V3 不再投入、连 bug 也不修,等删;真要记一笔,落 `docs/v3-prototype/` 已有篇改状态,不新开文。
 3. **还没干** → 只追加 `docs/LEFTOVERS.md`。PRACTICE §4 可以记当周发现,消化后迁进清单或关掉,不在 §4 养第二份总表。
 4. **实践过程** → PRACTICE。已解的坑嵌进对应操作步;和后来实测矛盾就加「归正」,不悄悄改写。
 5. **出一包** → 在 `docs/releases.md` 加一行:版本号、出包日、这一包相对上一包多了什么 / 修了什么。安装器 `AppVersion` 与这一行对齐。
@@ -59,8 +59,9 @@ buddy 现在的使用者主要是**内部同事**;对外目前只有 buddy 自�
 7. **同一决定只在一处写正文**。别处只留指针。例如 V3-use-fix 的修法正文已归档在 [`archive/v3-prototype/onboard-list-and-claude-resolve.md`](archive/v3-prototype/onboard-list-and-claude-resolve.md),PRACTICE 只指过去。
 8. **文档整理不跟开发混在一次会话里做** → 见上「节奏」一节:等用户验证过这一站,另开会话专门做。
 
-## 当前节奏(2026-08-17 起)
+## 与节奏相关的两条文档规矩
 
-- **V3**:**不再投入,等删**。遗留清单里标了 V3 的条目(含 Cursor 执行器、cowelink 旁路)先放着;删旧壳的判据见 [`v4-prototype/design.md`](v4-prototype/design.md) 第 12 章。
-- **V4**:主战场。设计正本是 [`v4-prototype/design.md`](v4-prototype/design.md)(一篇);试点在跑,一站一站走。每站用户验证过之后走上面「节奏」一节的文档整理,不在开发会话里顺手改。
+项目当前在做什么,正本在 [`README.md`](README.md)「现在的节奏」,这里不复述;只留两条属于文档边界的规矩:
+
+- **V1~V3 三个目录只读不写**:不往里新增设计、不给等删的 V3 立新欠账;要写的一律进 V4。
 - **不新开 V5 目录**,直到 V4 有了范围。

@@ -1,6 +1,6 @@
 # 版本登记（出包与运作）
 
-> **30 秒导读**：给推广和出包的人看。一行一个已出或正在用的版本：**版本号、出包日、这一版是什么、修过什么**。安装器 `AppVersion` 必须和这里对齐。当前：V3 修 bug，V4 在规划。边界见 [`doc-boundaries.md`](doc-boundaries.md)。
+> **30 秒导读**：给推广和出包的人看。一行一个已出或正在用的版本：**版本号、出包日、这一版是什么、修过什么**。安装器 `AppVersion` 必须和这里对齐。当前节奏见 [`README.md`](README.md)「现在的节奏」（一心 V4；V4 还没出过包，同事手里的包仍是 V3）。边界见 [`doc-boundaries.md`](doc-boundaries.md)。
 
 仓内 `Cargo.toml` 工作区版本仍是 `0.0.0`，**对外以安装器版本为准**。安装脚本在仓外 `D:\2026\buddy-setup`，不进本仓。
 
@@ -21,13 +21,13 @@ V1 / V2 是能力切片，合进主线后才有 0.3.0-v3 安装包。下表方�
 | **V1** | 2026-08-06 前后三窗口合入 | 纳入项目（创建流两卡）；找指标 / 绑数据走嵌入终端；总览灰卡诚实、指标分层 | 创建防连点；clone/采集时序；黄区未登录人话；终端会话重构（一活一会话、切卡、咨询态）；合入/Done 后不冻死在「进行中」 |
 | **V2** | 2026-08-10 起设计，随后落地（当时记在 `v1` 分支） | 所有 Issue 必带 buddy 系统提示词 + 按活选技能（V2-①）；同一仓可被多台 buddy 纳管（正本在仓、后来者只读预填、open Issue 读回）（V2-②） | 手填观测不跨机器（已知边界，见遗留清单）；提 MR 后看板进评审中过慢 + merge 无忙态（已修） |
 
-## 还没出包的规划
+## 还没出包的
 
 | 版本 | 状态 | 记在哪 |
 |---|---|---|
-| **V4** | 特性规划期，清单未齐 | [`v4-prototype/README.md`](v4-prototype/README.md) |
+| **V4** | 代码已建成合进 `main`，试点在跑；macOS 有打包脚本（`./scripts/bundle-desktop.sh v4`），Windows 安装包还出不了（脚本在仓外的 Windows 机器上） | 设计 [`v4-prototype/design.md`](v4-prototype/design.md)；还差什么 [`LEFTOVERS.md`](LEFTOVERS.md) |
 
-V3 里已设计、还没进安装包能力面的（Cursor 执行器、cowelink 旁路）进 [`LEFTOVERS.md`](LEFTOVERS.md)，不在这里假装已发布。
+V3 里已设计、还没进安装包能力面的（Cursor 执行器、cowelink 旁路）设计仍在 [`v3-prototype/`](v3-prototype/)，随 V3 一起冻结等删——不进遗留清单，也不在这里假装已发布或会排期。
 
 ## 出下一包时怎么填
 

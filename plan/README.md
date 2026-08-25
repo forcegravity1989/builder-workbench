@@ -1,20 +1,20 @@
 # plan/ 目录导读(先读这篇,30 秒知道哪些还作数)
 
-> 本目录只留**现在还作数**的计划与规范(7 篇)。历史批次的计划——早期路线选型(00-05)与做完即历史的执行记录(09-12、14、17-19、21)——2026-08-17 起统一归档到 [`../docs/archive/plan/`](../docs/archive/plan/),编号语义不变(源码注释与文档里的 `plan/NN §M` 锚点按号去那里找)。**编号是时间序,不是重要度**。
+> 本目录只留**现在还作数**的计划与规范。历史批次的计划——早期路线选型(00-05)与做完即历史的执行记录(09-12、14、17-19、21)——2026-08-17 起统一归档到 [`../docs/archive/plan/`](../docs/archive/plan/),编号语义不变(源码注释与文档里的 `plan/NN §M` 锚点按号去那里找)。**编号是时间序,不是重要度**。
 >
-> 看不懂的词查 [`../CONTEXT.md`](../CONTEXT.md) 词表;看不懂的代号(P2、W6、R1……)查 [`../docs/code-schemes.md`](../docs/code-schemes.md)。**当前迭代在做什么**(V1 产品化 → V2 调度/多人 → V3 内嵌 Open Design)不在本目录,在 [`../docs/v1-prototype/`](../docs/v1-prototype/) → [`../docs/v2-prototype/`](../docs/v2-prototype/) → [`../docs/v3-prototype/`](../docs/v3-prototype/);全仓文档地图见 [`../docs/README.md`](../docs/README.md)。
+> 看不懂的词查 [`../CONTEXT.md`](../CONTEXT.md) 词表;看不懂的代号(P2、W6、R1……)查 [`../docs/code-schemes.md`](../docs/code-schemes.md)。**现在在做什么**见 [`../docs/README.md`](../docs/README.md)「现在的节奏」(当前:一心 V4)。注意:本目录的几篇多为 **V3 时代的拍板与规范**——产品命题(07)不分代、长期现役;其余各篇对 V4 是否仍适用,看下表「怎么用」一列的说明,V4 的设计一律以 [`../docs/v4-prototype/design.md`](../docs/v4-prototype/design.md) 为准。
 
 ## 现在还作数的
 
 | 文件 | 是什么 | 怎么用 |
 |---|---|---|
-| [06-overall-alignment.md](06-overall-alignment.md) | **设计唯一事实源**。含缺口台账(G 系列)与执行队列;末尾持续追加「转向(用户拍板)」记录 | 设计层面拿不准就查它;新决定以最晚一条「转向」为准 |
-| [07-product-proposition.md](07-product-proposition.md) | **产品命题**:原型引子页原文 + 用户语言拆解 + 工程对照表 | 全目录的写作范本;命题正文只用人话 |
-| [08-mvp-execution-plan.md](08-mvp-execution-plan.md) | MVP 的**定义**(项目的生命周期 × workflow 的生命周期)与当时的执行队列 | §1 定义仍作数;**执行队列已被 `docs/v1~v3-prototype/` 接管**(顶部横幅写明),别再照它排活 |
-| [13-github-mainline-creation-flow.md](13-github-mainline-creation-flow.md) | GitHub 为正本的创建流(D1-D12 十二条拍板) | 决定仍生效:issue = GitHub issue、验收 = merge、`.bw/metrics.toml` 正本 |
-| [15-acceptance-flow-workflow.md](15-acceptance-flow-workflow.md) | 验收流(考卷/真点击/证据报告)与 `scripts/*flow*` 工具链的权威说明 | 用 `scripts/run-flow.py` 之前读它;注意 ▶跑 已改走内嵌终端,`e2e/flows/core/02` 那张考卷可能过时(见 `docs/LEFTOVERS.md` 减负-8) |
-| [16-skill-standard-spec.md](16-skill-standard-spec.md) | 技能规范(S1-S7 硬规) | **规范长期有效**;`audit_skills` 例子按它巡检 |
-| [20-asset-scope-isolation.md](20-asset-scope-isolation.md) | 资产按项目归属的三层隔离(R1-R5 规则) | **规则活跃**;`scoped_pick` 是唯一按名解析器 |
+| [06-overall-alignment.md](06-overall-alignment.md) | **V3 时代的设计事实源**。含缺口台账(G 系列)与执行队列;末尾持续追加「转向(用户拍板)」记录 | 查「V3 当时为什么这么定」;**V4 的设计拿不准查 `docs/v4-prototype/design.md`**,不查这里 |
+| [07-product-proposition.md](07-product-proposition.md) | **产品命题**:原型引子页原文 + 用户语言拆解 + 工程对照表 | **不分代、长期现役**;全目录的写作范本,命题正文只用人话 |
+| [08-mvp-execution-plan.md](08-mvp-execution-plan.md) | 当时对 MVP 的**定义**(项目的生命周期 × workflow 的生命周期)与执行队列 | 史实参考;V4 对「MVP 做完」的定义在 design.md §13.1(验收八条),别再照这篇排活 |
+| [13-github-mainline-creation-flow.md](13-github-mainline-creation-flow.md) | GitHub 为正本的创建流(D1-D12 十二条拍板) | 精神仍生效(issue = 平台 issue、验收 = merge、指标正本在仓);V4 接入的现行形态见 design.md 第 4 章 |
+| [15-acceptance-flow-workflow.md](15-acceptance-flow-workflow.md) | 验收流(考卷/真点击/证据报告)与 `scripts/*flow*` 工具链的权威说明 | **V3 工具链**;用 `scripts/run-flow.py` 之前读它。V4 明确不做点击巡航,验证手段见 design.md 第 13 章 |
+| [16-skill-standard-spec.md](16-skill-standard-spec.md) | 技能规范(S1-S7 硬规) | 对 V3 库内技能长期有效(`audit_skills` 例子按它巡检);V4 自带技能的正本与规矩见 `standard/skills/` 与 design.md §7.5 |
+| [20-asset-scope-isolation.md](20-asset-scope-isolation.md) | 资产按项目归属的三层隔离(R1-R5 规则) | 对 V3 活跃(`scoped_pick` 是唯一按名解析器);V4 的资产只分「buddy 自带 / 项目自有」两层,见 design.md §7.5 |
 
 ## 已归档到 `docs/archive/plan/` 的(去那里读,各文件顶部有横幅)
 

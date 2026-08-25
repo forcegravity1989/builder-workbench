@@ -1,6 +1,6 @@
 # docs/archive/ — 历史档案(只加不改)
 
-> **30 秒导读**:这里放**已经执行完毕、或已被后续文档取代**的计划、交接记录、设计稿与验证产物。它们记录「当时为什么这么做」,不描述现状。给两类人看:考古某个决定来龙去脉的人,和被源码/文档里的 `plan/NN §M` 锚点指到这里的人。**现状一律以仓库根的 `CLAUDE.md`、`plan/`(现役 7 篇)、`docs/v1~v3-prototype/` 为准**。2026-08-17 建目录(减负重构会话,见 `docs/superpowers/specs/2026-08-17-debt-reduction-refactor-design.md` §3)。
+> **30 秒导读**:这里放**已经执行完毕、或已被后续文档取代**的计划、交接记录、设计稿与验证产物。它们记录「当时为什么这么做」,不描述现状。给两类人看:考古某个决定来龙去脉的人,和被源码/文档里的 `plan/NN §M` 锚点指到这里的人。**现状一律以 `docs/README.md`「现在的节奏」与 `docs/v4-prototype/design.md` 为准**。2026-08-17 建目录(减负重构会话,见 `docs/superpowers/specs/2026-08-17-debt-reduction-refactor-design.md` §3)。
 
 ## 规则
 
