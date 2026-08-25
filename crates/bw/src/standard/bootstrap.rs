@@ -48,8 +48,8 @@ pub struct BootstrapVars {
 
 /// 写规范件 + 记指纹。幂等:重跑一遍,已经一致的件原样跳过。
 ///
-/// `all = false`(第 0 站接入)只铺 [`standard::LayAt::Adopt`] 那几份;
-/// `all = true`(人在配置屏点「规范铺底」)把该有的都补齐。
+/// `all` 今天没有分别:铺底清单里的件全是接入一次该有的。
+/// 参数还在,接入仍传 `false`;配置屏不再提供第二次铺底。
 pub fn write_core_files(
     workspace: &Path,
     vars: &BootstrapVars,
@@ -72,8 +72,7 @@ pub fn write_core_files(
     ];
 
     for tmpl in standard::CORE_TEMPLATES {
-        // 第 0 站只铺人马上要用的那几份;其余等真的走到那一站,或者人在配置屏
-        // 点一次「规范铺底」补齐。
+        // 接入只铺 Adopt。清单里现在没有 OnFirstUse 件。
         if !all && tmpl.lay_at != standard::LayAt::Adopt {
             // **不铺不等于不看。** 仓里已经躺着一份、而且不是 buddy 管的,就得
             // 报一声:界面等会儿会把它当正本读(见 `preexisting` 字段的说明)。
@@ -112,12 +111,8 @@ pub fn write_core_files(
     Ok(report)
 }
 
-/// 到那一站第一次用到才铺的件:目标路径还不存在才写,已有的不覆盖。
-///
-/// 运作活①开工时往**这张活的 worktree** 里铺 `metrics.toml` 空壳、现成脚本、
-/// issue-policy(都是 `LayAt::OnFirstUse`)。agent 才能「照顶部注释写」。
-/// 接入那次 `all=false` 故意不铺这些。不改 `.bw/managed.toml` —— 那份清单
-/// 归铺底那张活,这里只是给本次会话一份能照着写的正本,随这张活的 MR 走。
+/// 清单里若还有 `OnFirstUse` 件,目标路径不存在才写,已有的不覆盖。
+/// 今天没有这类件,调用方得到空列表。不改 `.bw/managed.toml`。
 pub fn write_missing_on_first_use(workspace: &Path) -> Result<Vec<String>, RepoFileError> {
     let mut written = Vec::new();
     for tmpl in standard::CORE_TEMPLATES {
@@ -264,21 +259,13 @@ mod first_use_tests {
     use super::*;
 
     #[test]
-    fn writes_metrics_shell_only_when_missing() {
+    fn first_use_lays_nothing_while_list_is_adopt_only() {
         let dir = std::env::temp_dir().join(format!("bw-first-use-{}", std::process::id()));
         let _ = std::fs::remove_dir_all(&dir);
         std::fs::create_dir_all(&dir).expect("temp dir");
         let written = write_missing_on_first_use(&dir).expect("first lay");
-        assert!(
-            written.iter().any(|p| p == ".bw/metrics.toml"),
-            "{written:?}"
-        );
-        assert!(dir.join(".bw/metrics.toml").is_file());
-        let again = write_missing_on_first_use(&dir).expect("second lay");
-        assert!(
-            again.is_empty(),
-            "already there must not overwrite: {again:?}"
-        );
+        assert!(written.is_empty(), "no OnFirstUse templates: {written:?}");
+        assert!(!dir.join(".bw/metrics.toml").is_file());
         let _ = std::fs::remove_dir_all(&dir);
     }
 }

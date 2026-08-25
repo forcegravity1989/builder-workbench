@@ -93,7 +93,7 @@ references(`standard/system-prompt/references/*.md`)是「干某类活需要额�
 **代码**:bw 的 `standard/`(模板/版本)+ `standard/bootstrap.rs`(写件/探测)+ `app/bootstrap.rs`(建活→开树→写→提交→推分支→开 MR 编排)+ `repo/managed_file.rs`(指纹对账)。
 **数据**:铺进项目仓 `.bw/`;零本地库;仓根一个字不写。
 **依赖**:repo::managed_file、git、standard、worktree、issue_store;外部 sha2 / serde。
-**没建**:升级流程(对账代码在,但"过期→看差异→建活→提 MR"动作未实现);历史回填走资产盘点首次模式;节律(cadence)目录 / 鱼塘 `pond/` 未建。`OnFirstUse` 已接到运作活①开工:worktree 里缺的 `metrics.toml` 空壳/脚本/issue-policy 当场铺上(已有不覆盖),不再等配置屏再点一次铺底。
+**没建**:升级流程(对账代码在,但"过期→看差异→建活→提 MR"动作未实现);历史回填走资产盘点首次模式;节律(cadence)目录 / 鱼塘 `pond/` 未建。接入一次铺名片 + `issue-policy.toml`(映射与周五资产盘点节律);指标正文和业务脚本跟运作活①会话走,不预铺空壳,也不再从配置屏二次铺底。
 
 ### 4 · 系统提示词与渐进加载
 
@@ -171,7 +171,7 @@ references(`standard/system-prompt/references/*.md`)是「干某类活需要额�
 
 **是什么**:把 `.bw/metrics.toml` 里定义的指标真采一遍、读出来。一条判据贯穿全设计:"今天能采到这个数,上周三那天的值现在还能算出来吗"——能就是可回溯(A 类),一个字都不存每次现算;不能就落进只追加的读数流水(B 类)。采集方式只有脚本和手填两种。关键取舍是 `MetricClass` 枚举是整个设计分水岭,脚本窗口由 buddy 给不是脚本自己决定,失败一律如实绝不写 0(None = 这周没采到,不是 0)。
 
-**代码**:bw 的 `repo/metrics_file.rs`(`MetricClass` / `CollectPlan` / `read`)+ `app/collect.rs`(`collect_all` / `collect_one` / `run_script`)+ `standard/mod.rs`(三份现成脚本 `include_str!`);app-shell 的 `bridge/mod.rs`(命令/事件对)+ `screens/overview/mod.rs`(采按钮)。
+**代码**:bw 的 `repo/metrics_file.rs`(`MetricClass` / `CollectPlan` / `read`)+ `app/collect.rs`(`collect_all` / `collect_one` / `run_script`);app-shell 的 `bridge/mod.rs`(命令/事件对)+ `screens/overview/mod.rs`(采按钮)。业务采集脚本由运作活①跟人写进项目仓,buddy 不预铺。
 **数据**:可回溯(A 类)一个字不存现算;不可回溯(B 类)+ 手填(C 类)设计落 `.bw/metrics/readings.jsonl` 只追加不改已有行——但这条追加写入路径今天还没接;指标定义 `.bw/metrics.toml`(人手写正本);采集结果本机纯缓存丢了重算。
 **依赖**:仓文件解析器读定义;bw_engine::tokio_cmd 起子进程;isoweek 算 ISO 周号;serde_json 解析 stdout;不认识任何远端系统,只会"起进程、传窗口、读 JSON"。
 **没建**:B 类定时采集 + 追加进 `readings.jsonl` 没接(如实报"这条路还没接上"不假装采过也不悄悄当手填);C 类定时建提醒活没做;今天只有人点"采一次指标"通;`readings.jsonl` 写入端没建(读取端在模块6)。脚本 stdout 必须 UTF-8、A 类必须吐按周 `points` 已写进 `references/metrics.md` 与模板顶部注释。滞后/引领的四周折线和代码仓级同一套:三层都有「采一次」按钮,不自动跑;A 类吐了 `points` 才在该块下画折线;只吐当下一个 `value` 的卡上留现值并写明画不出四周,不把整张卡打成没采到。

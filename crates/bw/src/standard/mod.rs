@@ -42,36 +42,24 @@ pub fn version() -> &'static str {
 pub const CHARTER_REL_PATH: &str = ".bw/PROJECT.md";
 
 pub const CHARTER_TMPL: &str = include_str!("../../../../standard/templates/PROJECT.md.tmpl");
-pub const DESIGN_README: &str = include_str!("../../../../standard/templates/design/README.md");
-pub const METRICS_TMPL: &str = include_str!("../../../../standard/templates/metrics.toml.tmpl");
 pub const ISSUE_POLICY_TMPL: &str =
     include_str!("../../../../standard/templates/issue-policy.toml.tmpl");
 pub const STANDARD_TMPL: &str = include_str!("../../../../standard/templates/standard.toml.tmpl");
 
-// ── 现成的采集脚本(铺进 .bw/scripts/,镜像 .bw/ 结构) ───────────
-//
-// **脚本铺一次就归项目,buddy 之后再也不覆盖。** 改窗口、改口径、换数据源,
-// 项目自己改 —— 脚本本身就是「这个数怎么来的」的文档,不该由 buddy 每次采集
-// 前无条件盖掉(V3 就是那么干的,项目改过的采法被静默抹掉)。
-//
-// 只铺通用的这三份。**业务采集脚本 buddy 不代写**,那是项目自己的事。
-pub const SCRIPT_GIT_COMMITS: &str =
-    include_str!("../../../../standard/templates/scripts/git-commits.py");
-pub const SCRIPT_MERGED_PRS: &str =
-    include_str!("../../../../standard/templates/scripts/github-merged-prs.py");
-pub const SCRIPT_STARS: &str =
-    include_str!("../../../../standard/templates/scripts/github-stars.py");
+/// 指标空壳的格式正本。运作活①跟人定北极星/滞后/引领时照着写,
+/// **不在接入铺底里落一份假的**。
+#[allow(dead_code)]
+pub const METRICS_TMPL: &str = include_str!("../../../../standard/templates/metrics.toml.tmpl");
 
 /// 一份规范件**在哪一站落地**。
 ///
-/// 试点第一天定的:接入那一下只铺人马上要用的,其余的等你第一次真的走到那一站
-/// 再出现。原来在接入时一口气铺 23 件、第一个 MR 1789 行,人根本看不完;而且
-/// 大半的件(指标、周计划目录、发版记录)那一刻一个字都还用不上。
+/// buddy 自己写得对的(名片、映射、版本清单)接入一次铺完。
+/// 要跟人聊才写得对的(指标正文、业务脚本)不预铺空壳,跟会话走。
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum LayAt {
-    /// 第 0 站接入就铺:名片、章程、规范版本。没有它们总览读不到项目是谁。
+    /// 接入就铺:名片、规范版本、开工映射与节律。
     Adopt,
-    /// 到那一站第一次用到才铺。人也可以在配置屏点一次「规范铺底」提前补齐。
+    /// 留给以后真有「第一次用到再铺」的件。今天铺底清单里没有这类。
     OnFirstUse,
 }
 
@@ -80,8 +68,7 @@ pub enum LayAt {
 ///
 /// **落点分两类,别混**:
 ///
-/// - **`.bw/` 下的是 buddy 的资产** —— 名片、指标、规范清单(周计划改挂 ops①
-///   issue 评论、发版改用 codehub Release,都不再是仓文件)。收在一个目录里,
+/// - **`.bw/` 下的是 buddy 的资产** —— 名片、映射、规范清单。收在一个目录里,
 ///   「bw 到底往我仓里放了什么」一眼可数,也不会因为项目把
 ///   `docs/` 或 `.claude/` 写进 .gitignore 就有件悄悄进不了版本控制。
 /// - **仓根的 `AGENTS.md` 与 `CLAUDE.md` 是项目自己的** —— 它们是整个生态约定
@@ -103,48 +90,11 @@ pub const CORE_TEMPLATES: &[Template] = &[
         note: "这个项目铺的是哪一版规范、开了哪几类件",
     },
     Template {
-        category: "metrics",
-        target: ".bw/metrics.toml",
-        body: METRICS_TMPL,
-        // 第 2 站「更新指标 + 制定本周计划」才第一次用到。
-        lay_at: LayAt::OnFirstUse,
-        note: "指标正本:北极星/滞后/引领三层,每条附采集方案。读数只能来自真实采集",
-    },
-    Template {
         category: "issue-policy",
         target: ".bw/issue-policy.toml",
         body: ISSUE_POLICY_TMPL,
-        // 第 2 站排期、第 4 站按类别选开工工具才用到。
-        lay_at: LayAt::OnFirstUse,
-        note: "活的分类 → 用什么工具开工、挂哪份剧本",
-    },
-    Template {
-        category: "metrics",
-        target: ".bw/scripts/git-commits.py",
-        body: SCRIPT_GIT_COMMITS,
-        lay_at: LayAt::OnFirstUse,
-        note: "现成采集脚本:每周提交数(可回溯)",
-    },
-    Template {
-        category: "metrics",
-        target: ".bw/scripts/github-merged-prs.py",
-        body: SCRIPT_MERGED_PRS,
-        lay_at: LayAt::OnFirstUse,
-        note: "现成采集脚本:每周合入的 PR 数(可回溯)",
-    },
-    Template {
-        category: "metrics",
-        target: ".bw/scripts/github-stars.py",
-        body: SCRIPT_STARS,
-        lay_at: LayAt::OnFirstUse,
-        note: "现成采集脚本:GitHub star 数(可回溯 —— 按 starred_at 倒推)",
-    },
-    Template {
-        category: "docs-core",
-        target: ".bw/design/README.md",
-        body: DESIGN_README,
-        lay_at: LayAt::OnFirstUse,
-        note: "设计文档写到哪、怎么分篇",
+        lay_at: LayAt::Adopt,
+        note: "活的分类 → 用什么工具开工、挂哪份剧本;定时节律也在这里",
     },
 ];
 

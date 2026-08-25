@@ -4,6 +4,11 @@
 
 ## [buddy MVP] — 2026-08-24 起
 
+### 2026-08-25(续二十一)· 纳入一次铺完映射;配置屏不再二次铺底
+
+接入那张规范铺底带上 `.bw/issue-policy.toml`(开工映射 + 定时节律)。指标空壳和 GitHub/git 通用脚本不预铺——要跟人定的跟运作活①走。配置屏拿掉「规范铺底」,对账仍只读。
+
+
 仓整改成 buddy 自己推给被管项目的规范(dogfood):顶层文档集收敛到 grillme 那套(`AGENTS.md` 唯一开发规矩正本、`CLAUDE.md` 一行导入、`README`/`CHANGELOG`/`CONTEXT`/`DESIGN` 各守边界);V3 文档/skill 断舍离(`docs/v1~v3-prototype/` 残件删、`.claude/skills/` 4 个 V3 旧 skill 删、`docs/v4-prototype/design.md` 拆成 `docs/modules/<特性>.md` 各份自足设计);"V4"框去掉,就是新 buddy 的 MVP。V3 六 crate 已删(2026-08-24,见下条;全量在 `v3` 分支与 `docs/archive/`),`AGENTS.md` 的 V3 备注同步更新。
 
 - 顶层文档:`AGENTS.md` 重写为开发手册(吸收原 CLAUDE.md 实质 + 脱 V3 框);`CLAUDE.md`→`@AGENTS.md` 一行。

@@ -44,7 +44,7 @@ fn mapping_block(p: &ProjectVm, bridge: &Bridge) -> Element {
             div { class: "cfg-section-head", h3 { "开工工具映射" } }
             if p.config.mappings.is_empty() {
                 div { class: "detail-empty",
-                    "这个项目还没有 .bw/issue-policy.toml。到下面「规范件」那块点「规范铺底」把它铺出来。"
+                    "这个项目还没有 .bw/issue-policy.toml。接入时的规范铺底合进默认分支之后才会有。"
                 }
             } else {
                 div { class: "tbl-wrap",
@@ -328,35 +328,15 @@ fn cron_block(p: &ProjectVm) -> Element {
 
 // ── ⑤ 规范件与在研版本 ──────────────────────────────
 
-/// 对账是**纯读**的:只回报缺 / 过期 / 人改过,不动仓、不建活 —— 要不要补由
-/// 人决定。「规范铺底」才是真写仓的那一颗,它会建活提 MR。
+/// 对账是**纯读**的:只回报缺 / 过期 / 人改过,不动仓、不建活。
+/// 写仓只发生在接入那一次规范铺底。
 #[component]
 fn StandardBlock(p: ProjectVm, bridge: Bridge) -> Element {
     let (p, bridge) = (&p, &bridge);
     let b_rec = bridge.clone();
-    let b_boot = bridge.clone();
     let b_ver = bridge.clone();
     let pid = p.id;
     let mut version = use_signal(|| p.card.current_version_raw.clone());
-    // 「规范铺底」要写仓、提交、推分支、开 MR —— 十几秒起步。不报进度的话
-    // 按下去界面一动不动,人会以为没点上。和接入屏同一条通道、同一种画法。
-    let mut log = use_signal(Vec::<bw::app::ProgressLine>::new);
-    let prog = bridge.progress.clone();
-    use_future(move || {
-        let mut rx = prog.subscribe();
-        async move {
-            while let Ok(line) = rx.recv().await {
-                let mut rows = log.write();
-                match rows
-                    .iter()
-                    .position(|r: &bw::app::ProgressLine| r.step == line.step)
-                {
-                    Some(i) => rows[i] = line,
-                    None => rows.push(line),
-                }
-            }
-        }
-    });
     let std_ver = if p.card.standard_version.is_empty() {
         "—(这个仓还没铺过规范件)".to_string()
     } else {
@@ -371,14 +351,6 @@ fn StandardBlock(p: ProjectVm, bridge: Bridge) -> Element {
                         class: "btn btn-sm",
                         onclick: move |_| b_rec.cmd(Command::ReconcileStandard { project_id: pid }),
                         "对一遍账"
-                    }
-                    button {
-                        class: "btn btn-sm btn-primary",
-                        onclick: move |_| {
-                            log.write().clear();
-                            b_boot.cmd(Command::RunStandardBootstrap { project_id: pid });
-                        },
-                        "规范铺底"
                     }
                 }
             }
@@ -406,10 +378,9 @@ fn StandardBlock(p: ProjectVm, bridge: Bridge) -> Element {
                     }
                 }
             }
-            {crate::chrome::progress_log(&log.read())}
             div { class: "cfg-readonly-note",
                 "对账只看不改:缺哪几份、哪几份过期了、哪几份被人手改过,结果显示在页脚回执里。\
-                 「规范铺底」会真的写仓 —— 建分支、写核心件、建一张活提 MR,停在评审中等人合。"
+                 名片和开工映射在接入那次铺底里一次写完;指标正文跟运作活①会话走,不预铺空壳。"
             }
         }
     }

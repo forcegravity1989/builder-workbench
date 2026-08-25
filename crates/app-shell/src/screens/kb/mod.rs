@@ -70,7 +70,7 @@ fn docs_tab(p: &ProjectVm, bridge: &Bridge) -> Element {
             div { class: "card sp-tree",
                 if p.kb.groups.is_empty() {
                     div { class: "detail-empty",
-                        "这个仓还没有铺底 —— 去配置屏点「规范铺底」。"
+                        "这个仓还没有铺底。接入时那张规范铺底合进默认分支之后才会有。"
                     }
                 }
                 for g in p.kb.groups.iter() {
