@@ -139,6 +139,10 @@ impl App {
         // 没有工作区就没什么可隔离的,下面走自我标注的替身。
         let tree = if ws.is_dir() {
             let t = worktree::provision(&ws, issue.number).await?;
+            if issue.workflow == super::OPS1_WORKFLOW {
+                crate::standard::bootstrap::write_missing_on_first_use(&t.path)
+                    .map_err(|e| AppError::Exec(format!("给这张活铺指标空壳没成:{e}")))?;
+            }
             Some(t)
         } else {
             None
@@ -423,7 +427,7 @@ pub fn workflow_usage(issues: &[Issue]) -> Vec<(String, u32)> {
     use std::collections::HashMap;
     let mut counts: HashMap<String, u32> = HashMap::new();
     for i in issues {
-        if i.kind == IssueKind::Business && !i.workflow.is_empty() {
+        if !i.workflow.is_empty() {
             *counts.entry(i.workflow.clone()).or_default() += 1;
         }
     }

@@ -4,9 +4,9 @@
 //! 分开,才能保证「灯只可能是算出来的」。
 //!
 //! 刀5(2026-08-22)迁完:判据不再读 `week_plan_file` / `release_file`(这两个
-//! 模块已删)。`has_week_goal` 改查 ops① issue 在不在;`has_metric_reading` 和
-//! `any_metric_red` 改读仓 `.bw/metrics/readings.jsonl`;`released` 改读 git
-//! 标签日期(比 `Remote::list_releases` 只回 tag 名更有日期,且不依赖网关)。
+//! 模块已删)。`has_week_goal` 要读 ops① 评论里的目标正文(还没建,今天恒假);
+//! `ops1_open` 只说明这张活开了;`has_metric_reading` 和 `any_metric_red` 改读
+//! 仓 `.bw/metrics/readings.jsonl`;`released` 改读 git 标签日期。
 
 use super::{App, Result};
 use crate::derive::{derive_project_health, DerivedHealth, HealthInputs};
@@ -25,11 +25,13 @@ pub async fn collect_health_inputs(
 ) -> HealthInputs {
     let last_week = isoweek::previous_week(week).unwrap_or_default();
 
-    // (a) has_week_goal:本周的运作活① issue 在不在(标题 = ops1_title(week))。
+    // (a) 运作活①开着 ≠ 周目标已定。目标正文要从 ops① 评论里取,那条还没建;
+    // 没读到正文就当没有目标,不把「开始本周」点亮成「定了周目标」。
     let ops1_title = crate::app::ops1_title(week);
-    let has_week_goal = issues
+    let ops1_open = issues
         .iter()
         .any(|i| i.title == ops1_title && i.status != IssueStatus::Done);
+    let has_week_goal = false;
 
     // 「这个仓 git 读得动吗」单独问一次:读不动的时候「零提交」说明不了任何
     // 事,不能拿去判红(新接入的项目第一眼看到红灯,是在编)。
@@ -61,6 +63,7 @@ pub async fn collect_health_inputs(
 
     HealthInputs {
         has_week_goal,
+        ops1_open,
         committed_this_week,
         committed_last_week,
         git_readable,

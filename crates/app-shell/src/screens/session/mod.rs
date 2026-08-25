@@ -41,22 +41,10 @@ pub fn View(p: ProjectVm, bridge: Bridge) -> Element {
         }
         div { class: "sess-col sess-midhead",
             {action_bar(open, bridge)}
-            if let Some(text) = p.briefing.as_ref() {
-                div { class: "card",
-                    style: "margin:8px 12px;padding:12px;max-height:320px;overflow:auto;",
-                    div { style: "font-size:12px;color:var(--ink-3);margin-bottom:6px;",
-                        "开工时真会喂给 agent 的系统提示词。"
-                        strong { "技能正文不在里面" }
-                        " —— 只给名字、一句话和绝对路径,让它按需自己去读(渐进加载)。"
-                    }
-                    pre {
-                        style: "white-space:pre-wrap;word-break:break-word;font-size:12px;\
-                                line-height:1.7;margin:0;font-family:var(--mono);",
-                        "{text}"
-                    }
-                }
-            }
             {tabs(p, bridge)}
+        }
+        if let Some(text) = p.briefing.as_ref() {
+            {briefing_overlay(text, p.session_open, bridge)}
         }
         {mid_body(p)}
         div { class: "sess-col sess-right",
@@ -222,6 +210,32 @@ fn tab_btn(
                     },
                     "✕"
                 }
+            }
+        }
+    }
+}
+
+fn briefing_overlay(text: &str, issue: Option<bw::model::IssueId>, bridge: &Bridge) -> Element {
+    let b = bridge.clone();
+    let id = issue.unwrap_or(bw::model::IssueId::nil());
+    rsx! {
+        div { class: "sess-briefing",
+            div { style: "display:flex;align-items:center;gap:8px;margin-bottom:6px;",
+                div { style: "font-size:12px;color:var(--ink-3);flex:1;",
+                    "开工时真会喂给 agent 的系统提示词。"
+                    strong { "技能正文不在里面" }
+                    " —— 只给名字、一句话和绝对路径。"
+                }
+                button {
+                    class: "btn btn-sm",
+                    onclick: move |_| b.send(Req::ShowBriefing { issue: id }),
+                    "收起"
+                }
+            }
+            pre {
+                style: "white-space:pre-wrap;word-break:break-word;font-size:12px;\
+                        line-height:1.7;margin:0;font-family:var(--mono);",
+                "{text}"
             }
         }
     }

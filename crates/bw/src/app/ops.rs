@@ -39,6 +39,16 @@ pub fn ops1_title(week: &str) -> String {
     format!("更新指标 + 制定本周计划 {week}")
 }
 
+/// 剧本目录名 → 活上挂的 workflow 人话名。配置表「名称」用这个,slug 另写一行。
+pub fn workflow_label(slug: &str) -> Option<&'static str> {
+    match slug {
+        "week-planning" => Some(OPS1_WORKFLOW),
+        "asset-audit" => Some(OPS2_WORKFLOW),
+        "mattpocock-skills" => Some("mattpocock-skills"),
+        _ => None,
+    }
+}
+
 pub fn skill_slug(workflow: &str) -> Option<&'static str> {
     match workflow {
         OPS1_WORKFLOW => Some("week-planning"),

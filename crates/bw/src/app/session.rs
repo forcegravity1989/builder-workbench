@@ -31,11 +31,39 @@ impl App {
     pub fn drain_pty_events(&mut self) -> Vec<(ConversationId, Vec<u8>)> {
         // 底座按裸 UUID 路由,出了这一层就包回语义类型 —— 转换只发生在这儿,
         // 上面的用例代码永远只见 `ConversationId`。
-        self.terminal
+        let out = self
+            .terminal
             .drain_events()
             .into_iter()
             .map(|(id, bytes)| (ConversationId::from_uuid(id), bytes))
-            .collect()
+            .collect();
+        self.reap_ended_ptys();
+        out
+    }
+
+    /// 进程退了就把 live 清掉,缓冲留下给挂件回放。没订户时也要收,
+    /// 否则开工会一直灰着。
+    pub fn reap_ended_ptys(&mut self) {
+        let ended = self
+            .pty_ended
+            .lock()
+            .map(|mut v| std::mem::take(&mut *v))
+            .unwrap_or_default();
+        for id in ended {
+            self.terminal.mark_ended(id);
+        }
+    }
+
+    /// 挂件订上之后要第一屏:drain 过的字节还在 replay 里。
+    pub fn pty_snapshot(&self, id: ConversationId) -> Vec<u8> {
+        self.terminal.snapshot(id.uuid())
+    }
+
+    /// 回放整段第一屏,并清掉待发批次(已经含在 snapshot 里,再 drain 会双写)。
+    pub fn pty_ack_replay(&self, id: ConversationId) -> Vec<u8> {
+        let snap = self.pty_snapshot(id);
+        self.terminal.drain_one(id.uuid());
+        snap
     }
 
     /// 这个会话的 PTY 还活着没有。左列「运行中 / 空闲」两态里的那一半靠它。
@@ -94,7 +122,7 @@ impl App {
         if !self.pty_enabled {
             return Err(AppError::Refused("这个进程没开内嵌终端,接不回会话".into()));
         }
-        let Some(conv) = self.conversation_for_issue(id).await? else {
+        let Some(mut conv) = self.conversation_for_issue(id).await? else {
             return Err(AppError::Refused(
                 "这张活还没有过会话 —— 点「▶开工」起一场".into(),
             ));
@@ -107,6 +135,20 @@ impl App {
                 live: true,
             }]);
         }
+        // 先收一次 hook 落盘的 id。没有 `--resume` id 就不要 `claude --continue`:
+        // 工作区里没有可接的对话时,Claude 会先刷欢迎再红字
+        // 「No conversation found to continue」,人还没点开工却像坏了一场。
+        // 空 id 的接回是空终端,等人点▶开工(那条会灌系统提示词重开)。
+        self.harvest_claude_session_ids().await;
+        if let Ok(Some(fresh)) = self.conversation_for_issue(id).await {
+            conv = fresh;
+        }
+        if conv.claude_session_id.is_empty() {
+            return Ok(vec![Event::SessionReopened {
+                issue_id: id,
+                live: false,
+            }]);
+        }
         let issue = self.issue_or_err(id).await?;
         let ws = self.workspace_of(issue.project_id).await?;
         if !ws.is_dir() {
@@ -115,12 +157,15 @@ impl App {
         let tree = worktree::provision(&ws, issue.number).await?;
         // 照活上记的工具走 —— 不许悄悄换(见 `tools::agent_for`)。
         let agent = super::tools::agent_for(&issue.tool)?;
-        let plan = build_resume_plan(
-            agent,
-            Some(conv.claude_session_id.as_str()).filter(|s| !s.is_empty()),
-            &tree.path,
-        )
-        .map_err(|e| AppError::Exec(e.to_string()))?;
+        let mut plan = build_resume_plan(agent, Some(conv.claude_session_id.as_str()), &tree.path)
+            .map_err(|e| AppError::Exec(e.to_string()))?;
+        super::bootstrap::allow_skills_dir(&mut plan, &self.asset_root);
+        super::bootstrap::attach_session_hook(
+            &mut plan,
+            &self.asset_root,
+            issue.project_id,
+            issue.number,
+        );
 
         let meta = ConversationMeta {
             conversation_id: conv.id.uuid(),
@@ -130,16 +175,11 @@ impl App {
             branch_name: tree.branch,
         };
         let (bytes_tx, input_rx) = self.terminal.attach(conv.id.uuid(), meta, None);
-        let executor = self.executor.clone();
         let ctx = RunCtx {
             project: issue.project_id.uuid(),
             workflow: uuid::Uuid::nil(),
         };
-        tokio::spawn(async move {
-            let _ = executor
-                .run_skill_pty(&plan, &ctx, bytes_tx, input_rx)
-                .await;
-        });
+        self.spawn_pty_run(conv.id, plan, bytes_tx, input_rx, ctx);
         Ok(vec![Event::SessionReopened {
             issue_id: id,
             live: false,
@@ -182,6 +222,10 @@ impl App {
         // 出来的:worktree 真的在这个分支上,`git rev-parse --abbrev-ref HEAD`
         // 一对就对得上。
         let tree = worktree::provision(&ws, issue.number).await?;
+        if issue.workflow == super::OPS1_WORKFLOW {
+            crate::standard::bootstrap::write_missing_on_first_use(&tree.path)
+                .map_err(|e| AppError::Exec(format!("给这张活铺指标空壳没成:{e}")))?;
+        }
 
         let conv = self
             .upsert_conversation(&crate::model::Conversation {
@@ -223,6 +267,12 @@ impl App {
         .map_err(|e| AppError::Exec(e.to_string()))?;
         // 挂整个 asset_root 给 agent 读:技能 + references + vendor 库都在下面。
         super::bootstrap::allow_skills_dir(&mut plan, &self.asset_root);
+        super::bootstrap::attach_session_hook(
+            &mut plan,
+            &self.asset_root,
+            issue.project_id,
+            issue.number,
+        );
 
         let meta = ConversationMeta {
             conversation_id: conv.id.uuid(),
@@ -233,24 +283,86 @@ impl App {
         };
         let (bytes_tx, input_rx) = self.terminal.attach(conv.id.uuid(), meta, None);
 
-        let executor = self.executor.clone();
         let ctx = RunCtx {
             project: issue.project_id.uuid(),
             workflow: uuid::Uuid::nil(),
         };
-        tokio::spawn(async move {
-            // 跑完的结果不在这里落库:PTY 会话的收尾(提交、开 PR、推「评审
-            // 中」)是人在终端里看着发生的,由下一跳的轮询认领。这里只保证
-            // 子进程不会因为没人 await 就被丢掉。
-            let _ = executor
-                .run_skill_pty(&plan, &ctx, bytes_tx, input_rx)
-                .await;
-        });
+        self.spawn_pty_run(conv.id, plan, bytes_tx, input_rx, ctx);
 
         if issue.status != IssueStatus::InProgress {
             let project = self.project_of(issue.project_id).await?;
             issue_store::set_status(self, &project, id.iid(), IssueStatus::InProgress).await?;
         }
         Ok(true)
+    }
+
+    fn spawn_pty_run(
+        &self,
+        conversation_id: ConversationId,
+        plan: bw_engine::LaunchPlan,
+        bytes_tx: tokio::sync::mpsc::UnboundedSender<Vec<u8>>,
+        input_rx: tokio::sync::mpsc::UnboundedReceiver<PtyInput>,
+        ctx: RunCtx,
+    ) {
+        let executor = self.executor.clone();
+        let ended = self.pty_ended.clone();
+        let err_tx = bytes_tx.clone();
+        let cid = conversation_id.uuid();
+        tokio::spawn(async move {
+            let r = executor
+                .run_skill_pty(&plan, &ctx, bytes_tx, input_rx)
+                .await;
+            if let Err(e) = r {
+                let _ = err_tx.send(format!("\r\n[BW] 开工失败:{e}\r\n").into_bytes());
+                tokio::time::sleep(std::time::Duration::from_millis(80)).await;
+            }
+            if let Ok(mut v) = ended.lock() {
+                v.push(cid);
+            }
+        });
+    }
+
+    /// SessionStart hook 把 claude 的 `--resume` id 写进 runs 目录;这里收上来
+    /// 追加进 jsonl。没写出就跳过,不编一个 id。
+    pub async fn harvest_claude_session_ids(&self) {
+        let root = self.asset_root.join("claude").join("runs");
+        let Ok(entries) = std::fs::read_dir(&root) else {
+            return;
+        };
+        for entry in entries.flatten() {
+            let path = entry.path();
+            if !path.is_dir() {
+                continue;
+            }
+            let Some(name) = path.file_name().and_then(|s| s.to_str()) else {
+                continue;
+            };
+            let Some((pid_s, iid_s)) = name.rsplit_once('_') else {
+                continue;
+            };
+            let Ok(pid) = uuid::Uuid::parse_str(pid_s) else {
+                continue;
+            };
+            let Ok(iid) = iid_s.parse::<u32>() else {
+                continue;
+            };
+            let sid_path = path.join("session_id.txt");
+            let Ok(raw) = std::fs::read_to_string(&sid_path) else {
+                continue;
+            };
+            let sid = raw.trim();
+            if sid.is_empty() {
+                continue;
+            }
+            let issue_id = IssueId::from_remote(crate::model::ProjectId::from_uuid(pid), iid);
+            let Ok(Some(mut conv)) = self.conversation_for_issue(issue_id).await else {
+                continue;
+            };
+            if conv.claude_session_id == sid {
+                continue;
+            }
+            conv.claude_session_id = sid.to_string();
+            let _ = self.append_conversation(&conv).await;
+        }
     }
 }

@@ -93,7 +93,7 @@ references(`standard/system-prompt/references/*.md`)是「干某类活需要额�
 **代码**:bw 的 `standard/`(模板/版本)+ `standard/bootstrap.rs`(写件/探测)+ `app/bootstrap.rs`(建活→开树→写→提交→推分支→开 MR 编排)+ `repo/managed_file.rs`(指纹对账)。
 **数据**:铺进项目仓 `.bw/`;零本地库;仓根一个字不写。
 **依赖**:repo::managed_file、git、standard、worktree、issue_store;外部 sha2 / serde。
-**没建**:升级流程(对账代码在,但"过期→看差异→建活→提 MR"动作未实现);历史回填走资产盘点首次模式;节律(cadence)目录 / 鱼塘 `pond/` 未建。
+**没建**:升级流程(对账代码在,但"过期→看差异→建活→提 MR"动作未实现);历史回填走资产盘点首次模式;节律(cadence)目录 / 鱼塘 `pond/` 未建。`OnFirstUse` 已接到运作活①开工:worktree 里缺的 `metrics.toml` 空壳/脚本/issue-policy 当场铺上(已有不覆盖),不再等配置屏再点一次铺底。
 
 ### 4 · 系统提示词与渐进加载
 
@@ -120,16 +120,16 @@ references(`standard/system-prompt/references/*.md`)是「干某类活需要额�
 **代码**:bw 的 `derive/`(`derive_project_health` 唯一判色纯函数 + `sealed.rs` 密封件 + `HealthInputs`)+ `app/health.rs`(只读采集 + `recompute_health` 唯一写入者)+ `trend.rs`(走势现算)。
 **数据**:本地零库不存灯;结果只在 `local/registry.rs` 项目显示缓存里留两列服务项目墙;判据每次打开现算。
 **依赖**:上游模块12的读数流水 + `.bw/metrics.toml` 目标定义;git / isoweek;只消费读数不负责采集。对 V3 任何 crate 零依赖。
-**没建**:B 类读数还没采进 `readings.jsonl`——`check_metric_red` 比对逻辑已建有测试,但读数文件是空的,今天灯不会因读数难看变红,只"git 读得动、连着两周零提交"变红。这是留白不是 bug。
+**没建**:B 类读数还没采进 `readings.jsonl`——`check_metric_red` 比对逻辑已建有测试,但读数文件是空的,今天灯不会因读数难看变红,只"git 读得动、连着两周零提交"变红。这是留白不是 bug。周目标正文从 ops① 评论读取还没建——有这张活 ≠ 定了目标,`has_week_goal` 今天恒假,理由写成「计划还在做,目标还没写进评论」。
 
 ### 7 · 会话与执行
 
-**是什么**:活怎么被真干起来。▶跑 把交互式 `claude` 起在内嵌终端(伪终端 PTY)里,活在 issue 自己的一棵 git worktree 里干,人全程看得见、随时能停。run 成功只推"评审中","完成"永远由人点。关键取舍是会话身份进 sessions jsonl(进程死了重启能接回),进程态纯内存(死了就没);PTY 字节流走单独 broadcast 通道不走 ViewModel(终端一秒几百批,重拼 ViewModel 会拖垮)。
+**是什么**:路径 B 的产品特性——交互式 `claude` 嵌在桌面里,体验对齐本机终端(回显、接着聊、复制粘贴)。▶跑 把 CLI 起在伪终端(PTY)里,活在 issue 自己的 git worktree 里干,人看得见、随时能停。run 成功只推"评审中","完成"永远由人点。会话身份进 sessions jsonl(进程死了靠 `--resume` id 接回),进程态纯内存。字节流走 broadcast,不走 ViewModel。开工找 claude 与探活同一条候选链。`--resume` id 由 SessionStart hook 写到 buddy 资产目录,节拍收进 jsonl。选中会话只有记下了 id 才接回;没有 id 不跑 `claude --continue`。没订户时不抽走有界环,挂件订上后能要回活着的第一屏。复制走网页兜底,粘贴由壳读系统剪贴板。
 
 **代码**:bw-engine 的 `interactive_cli.rs`(执行器)+ `pty_backend.rs`(平台接缝)+ `terminal_manager.rs`(集中管理);bw 的 `app/session.rs`(生命周期)+ `app/worktree.rs`(每活一棵 worktree)+ `app/issue.rs`(`cleanup_issue_worktree`)。
 **数据**:会话身份落 sessions jsonl;进程态纯内存;issue 状态与 `settled_at` 正本是 codehub issue+标签,现读远端 `closed_at` 不自己写。
 **依赖**:async_trait + tokio mpsc、conpty-oxide(Win)/ portable-pty + nix(Unix,`#![forbid(unsafe_code)]`);bw-engine 不依赖任何 V3 crate。
-**没建**:Cursor 适配(supported=false);蒸馏按钮;agent 四态回报(今天只有"运行中/空闲"两态,"等你输入"不猜);MR 卡"检查过没过"列;会话切走再回来回放是空的。
+**没建**:Cursor 适配(supported=false);蒸馏按钮;agent 四态回报(今天只有"运行中/空闲"两态,"等你输入"不猜);MR 卡"检查过没过"列;已结束的会话切走再回来回放仍空(活着的第一屏已能回放)。
 
 ### 8 · 远端与工具探活
 
@@ -165,7 +165,7 @@ references(`standard/system-prompt/references/*.md`)是「干某类活需要额�
 **代码**:app-shell 的 `main.rs`(Root)+ `bridge/`(独立线程持有 App + nav + vm_build/vm_derive/vm_kb/vm_panels 四分文件拼 VM)+ `vm.rs`(全体 ViewModel)+ `theme/` + `chrome/` + `screens/`(九屏各一目录)+ `adapters/`(一能力一目录)。
 **数据**:本地零数据库——本机数据是 TOML/JSONL 落 `data_dir()` 下;codehub/GitHub issue+标签是唯一 issue 正本;壳自己不存任何业务数据,每个数字都是拼 ViewModel 那一刻从内核现算塞进来的。
 **依赖**:bw(内核 App / Command / Model)、bw_engine(执行器 / 远端)、dioxus 0.7 hard-pin + wry、tokio;对 V3 任何 crate 零依赖;xterm.js 前端资产 `include_str!` 编进二进制不联网拉。
-**没建**:Cursor 适配模块;蒸馏按钮、MR 检查列、"等你输入"那种 agent 细粒度状态(要靠 hook 回传还没接);会话切走再回来回放是空的;Windows 安装包不在本仓;删旧壳判据一条都不满足。
+**没建**:Cursor 适配模块;蒸馏按钮、MR 检查列、"等你输入"那种 agent 细粒度状态(要靠 hook 回传还没接);已结束的会话切走再回来回放仍空;Windows 安装包不在本仓;删旧壳判据一条都不满足。
 
 ### 12 · 指标采集与读数
 
@@ -174,7 +174,7 @@ references(`standard/system-prompt/references/*.md`)是「干某类活需要额�
 **代码**:bw 的 `repo/metrics_file.rs`(`MetricClass` / `CollectPlan` / `read`)+ `app/collect.rs`(`collect_all` / `collect_one` / `run_script`)+ `standard/mod.rs`(三份现成脚本 `include_str!`);app-shell 的 `bridge/mod.rs`(命令/事件对)+ `screens/overview/mod.rs`(采按钮)。
 **数据**:可回溯(A 类)一个字不存现算;不可回溯(B 类)+ 手填(C 类)设计落 `.bw/metrics/readings.jsonl` 只追加不改已有行——但这条追加写入路径今天还没接;指标定义 `.bw/metrics.toml`(人手写正本);采集结果本机纯缓存丢了重算。
 **依赖**:仓文件解析器读定义;bw_engine::tokio_cmd 起子进程;isoweek 算 ISO 周号;serde_json 解析 stdout;不认识任何远端系统,只会"起进程、传窗口、读 JSON"。
-**没建**:B 类定时采集 + 追加进 `readings.jsonl` 没接(如实报"这条路还没接上"不假装采过也不悄悄当手填);C 类定时建提醒活没做;今天只有人点"采一次指标"通;`readings.jsonl` 写入端没建(读取端在模块6)。
+**没建**:B 类定时采集 + 追加进 `readings.jsonl` 没接(如实报"这条路还没接上"不假装采过也不悄悄当手填);C 类定时建提醒活没做;今天只有人点"采一次指标"通;`readings.jsonl` 写入端没建(读取端在模块6)。脚本 stdout 必须 UTF-8、A 类必须吐按周 `points` 已写进 `references/metrics.md` 与模板顶部注释。滞后/引领的四周折线和代码仓级同一套:三层都有「采一次」按钮,不自动跑;A 类吐了 `points` 才在该块下画折线;只吐当下一个 `value` 的卡上留现值并写明画不出四周,不把整张卡打成没采到。
 
 ### 13 · 周循环与计划
 
@@ -183,7 +183,7 @@ references(`standard/system-prompt/references/*.md`)是「干某类活需要额�
 **代码**:bw 的 `app/plan.rs`(用例)+ `app/ops.rs`(运作活①②标题幂等键与定时)+ `isoweek.rs` + `trend.rs`(近 N 周走势全现算);app-shell 的 `screens/plan/`(mod / kanban / detail)。
 **数据**:零本地库——codehub/GitHub issue+标签是唯一正本;排期 = 给 issue 打 `bw:week:YYYY-Www` 标签(buddy 直接改);发版 = 远端建 Release + 打 `bw:released:vX` 标签按版本号幂等;发版默认版本号现读项目名片里的在研版本。
 **依赖**:issue_store、repo::project_file、git(`pull_ff`)、isoweek、trend、bw_engine::remote(建 Release / 查 MR)、bw_engine::github(`issue_branch` 确定性);节律规则读 `.bw/issue-policy.toml`。
-**没建**:"预览·未合入"做成灰态(从活 worktree 读未合入的 metrics.toml 与 ops① 评论重渲染周头未接);"蒸馏"灰态(见模块15);给活挂指标的命令没接(建活时"推的指标"列恒空);切在研版本要不要建活走 MR 张力未消解留给人拍;macOS 页面内拖放还没真机验证过一次。
+**没建**:"预览·未合入"做成灰态(从活 worktree 读未合入的 metrics.toml 与 ops① 评论重渲染周头未接);"蒸馏"灰态(见模块15);给活挂指标的命令没接(建活时"推的指标"列恒空);切在研版本要不要建活走 MR 张力未消解留给人拍;macOS 页面内拖放还没真机验证过一次。**周目标与「本周范围内有哪些活」在总览/计划屏怎么呈现**——现行落点是 ops① 评论 + `bw:week` 标签,合入后界面读不到评论、确认后的草稿也不自动建卡;人判定评论不该承载这些,旅程明早再对,今晚不改落点、不读评论。已修:本周运作活①做过(含已完成)不再冒「开始本周」。
 
 ### 14 · 资产盘点与项目接入
 
@@ -201,7 +201,7 @@ references(`standard/system-prompt/references/*.md`)是「干某类活需要额�
 **代码**:bw 的 `standard/skills.rs`(`SkillPack` + 四份 `include_str!` + `desc_of`)+ `app/mod.rs`(`asset_root` / `skills_dir` / `ensure_skill_assets`)+ `app/bootstrap.rs`(`SkillPointer`)+ `app/ops.rs`(`skill_slug` 只映射两个运作剧本);app-shell 的 `bridge/vm_panels.rs`(配置屏 skill_list + workflow_usage 现算)。
 **数据**:四份正本编进二进制,开工摊到 `<asset_root>/skills/<slug>/SKILL.md`(全局一份);活挂的 workflow 名在 codehub issue 正本上;"用过几次"每次现查聚合不落表;提示词一次性字符串不落盘。
 **依赖**:standard::skills、standard::system_prompt、bw_engine::LaunchPlan(`--add-dir`)、Issue 模型;无数据库无网络。
-**没建**:蒸馏——会话屏顶部按钮灰着,grep 不到任何 distill 代码,命令未接;workflow 目录扫描识别(design 里写的"扫技能目录按判据区分包还是单技能"没对应实现,`skill_slug` 硬编码映射运作剧本 + mattpocock-skills 入口);`proto-design` 默认 workflow 源还没 vendor。
+**没建**:蒸馏——会话屏顶部按钮灰着,命令未接;配置屏「导入」按钮没接——用户自己的技能约定放进被管仓 `.claude/skills/<slug>/SKILL.md`(配置表扫成「项目自有」),不拷进 buddy 资产目录;`skill_slug` 硬编码映射运作剧本 + mattpocock-skills;`proto-design` 源还没 vendor。活上的 workflow 人话名(如「更新指标与周计划」)对应剧本目录 `week-planning`,详情可跳配置屏亮那一行。
 
 ### 16 · app编排与运行时
 

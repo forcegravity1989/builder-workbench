@@ -7,6 +7,7 @@ use bw::model::Signal;
 fn all_good() -> HealthInputs {
     HealthInputs {
         has_week_goal: true,
+        ops1_open: true,
         committed_this_week: true,
         committed_last_week: true,
         git_readable: true,
@@ -60,4 +61,21 @@ fn a_red_metric_beats_three_green_judgements() {
 #[test]
 fn three_judgements_all_true_is_green() {
     assert_eq!(derive_project_health(&all_good()).signal(), Signal::Green);
+}
+
+#[test]
+fn ops1_open_without_goal_text_is_not_on_track() {
+    let inputs = HealthInputs {
+        ops1_open: true,
+        committed_this_week: true,
+        git_readable: true,
+        ..HealthInputs::empty()
+    };
+    let h = derive_project_health(&inputs);
+    assert!(!h.reasons()[0].ok);
+    assert!(
+        h.reasons()[0].text.contains("还没写进"),
+        "got {}",
+        h.reasons()[0].text
+    );
 }

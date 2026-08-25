@@ -142,6 +142,12 @@ pub enum Req {
     },
     /// 重新算一遍并推一份新的 ViewModel。
     Refresh,
+    /// 终端挂件订上之后要第一屏。不重拼 ViewModel。
+    PtyReplay {
+        conversation_id: bw::model::ConversationId,
+    },
+    /// 配置屏亮某一行技能(从活上的 workflow 跳过来)。
+    FocusSkill(String),
 }
 
 /// 桥是整个进程共用的**一个**句柄,clone 出来的都指向同一个内核线程,
@@ -475,6 +481,7 @@ pub fn spawn(deep_link: DeepLink) -> Bridge {
                     repo_stats: None,
                     metrics: Vec::new(),
                     briefing: None,
+                    focus_skill: String::new(),
                     viewing_week: bw::isoweek::current_week(),
                     view_all: false,
                     open_doc: None,
@@ -608,6 +615,21 @@ pub fn spawn(deep_link: DeepLink) -> Bridge {
                             None => break,
                         },
                         _ = pty_tick.tick() => {
+                            // SessionStart hook 把 `--resume` id 落到
+                            // asset 目录,这里每拍收一次。没写出就跳过。
+                            app.harvest_claude_session_ids().await;
+                            // 没人订就先别 drain:tokio broadcast 在
+                            // receiver_count==0 时把这一拍丢掉。从总览点
+                            // 「开始本周」是先起 PTY、后挂终端,第一屏
+                            // (欢迎/信任框)会整段失踪,人看见空终端、
+                            // 开工灰着(进程还活)、键盘也没处可打。
+                            // 缓冲留在 TerminalManager 有界环里,挂件
+                            // 订上后走 PtyReplay / 下一拍整段送出去。
+                            // 进程退了也要收 live,否则开工一直灰。
+                            if pty_tx.receiver_count() == 0 {
+                                app.reap_ended_ptys();
+                                continue;
+                            }
                             let batches = app.drain_pty_events();
                             if !batches.is_empty() {
                                 let _ = pty_tx.send(batches);
@@ -650,6 +672,13 @@ pub fn spawn(deep_link: DeepLink) -> Bridge {
                     // .bw/plan/、解析四个 toml —— 而人打字时每 30ms 就来一条。
                     // 全串在内核这条单线程上,终端会明显卡顿,pty 那一跳也排不
                     // 上队。这两条命令本来也不改任何会显示的东西。
+                    if let Req::PtyReplay { conversation_id } = req {
+                        let snap = app.pty_ack_replay(conversation_id);
+                        if !snap.is_empty() {
+                            let _ = pty_tx.send(vec![(conversation_id, snap)]);
+                        }
+                        continue;
+                    }
                     if let Req::Cmd(
                         c @ (Command::TerminalInput { .. } | Command::TerminalResize { .. }),
                     ) = req
@@ -788,17 +817,19 @@ pub fn spawn(deep_link: DeepLink) -> Bridge {
                             }
                         }
                         Req::SelectSession(id) => {
-                            // **选中一张有会话的活 = 把上次那场对话接回来。**
-                            // 光切视图的话人看到的是一片空白 —— V3 本来就是接
-                            // 回来的,V4 这条掉了。只在「真有会话、而且没开着」
-                            // 时才发命令:没有会话的活(buddy 自己写的、回填的)
-                            // 发过去只会弹一句「还没有过会话」,那不是错误,是
-                            // 常态。
+                            // **选中一张记下了 `--resume` id 的活 = 接回那场对话。**
+                            // 只有会话行、id 还是空的,不发 Reopen:发了会走
+                            // `claude --continue`,工作区没有对话就红字
+                            // 「No conversation found to continue」。空 id 等
+                            // 人点▶开工。没有会话行的活(buddy 自己写的、回填
+                            // 的)也不发,那不是错误。
                             if let Some(iid) = id {
                                 if let Ok(Some(conv)) =
                                     app.conversation_for_issue(iid).await
                                 {
-                                    if !app.pty_live(conv.id) {
+                                    if !app.pty_live(conv.id)
+                                        && !conv.claude_session_id.is_empty()
+                                    {
                                         if let Err(e) = app
                                             .dispatch(Command::ReopenSession { issue_id: iid })
                                             .await
@@ -1029,6 +1060,8 @@ pub fn spawn(deep_link: DeepLink) -> Bridge {
                                 ui.repos.probe = probe;
                             }
                         }
+                        Req::PtyReplay { .. } => {}
+                        Req::FocusSkill(slug) => ui.focus_skill = slug,
                         Req::Refresh => {
                             // 「刷新」本身不用干活 —— 探活、仓文件、git 都是拼
                             // ViewModel 那一刻现跑的。但回执必须**带上刚读出来的

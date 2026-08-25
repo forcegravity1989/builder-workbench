@@ -173,8 +173,15 @@ fn skill_block(p: &ProjectVm) -> Element {
                         }
                         tbody {
                             for s in p.config.skills.iter() {
-                                tr { key: "{s.slug}",
-                                    td { "{s.title}" }
+                                tr {
+                                    key: "{s.slug}",
+                                    class: if p.config.focus_skill == s.slug { "sel" } else { "" },
+                                    td {
+                                        "{s.title}"
+                                        if s.title != s.slug {
+                                            div { style: "font-size:11px;color:var(--ink-3);", "{s.slug}" }
+                                        }
+                                    }
                                     td {
                                         span {
                                             class: if s.origin == "蒸馏" { "chip chip-green" } else { "chip chip-gray" },
@@ -194,7 +201,9 @@ fn skill_block(p: &ProjectVm) -> Element {
             div { class: "cfg-readonly-note",
                 "workflow 的入口是一份 SKILL.md,写的是一整套做事流程,自己调度该用哪个 agent \
                  —— 所以 V4 里 workflow 和技能是同一样东西,不分两张表。「用过几次」现算:\
-                 扫活的 workflow 列聚合,没有战绩表。导入与启用/停用还没接,这里只列不改。"
+                 扫活的 workflow 列聚合,没有战绩表。导入按钮还没接:用户自己的技能放进\
+                 这个仓的 `.claude/skills/<目录名>/SKILL.md`,这里会扫成「项目自有」。\
+                 不要拷进 buddy 资产目录(那是自带剧本摊出来的)。启用/停用也还没接。"
             }
         }
     }

@@ -147,6 +147,7 @@ pub(super) fn build_metrics(
     issues: &[bw::Issue],
     collected: &[bw::app::collect::MetricReadout],
     readings: &[bw::app::MetricReading],
+    collected_once: bool,
 ) -> MetricsVm {
     // **「还没有」和「读不动」是两件事,不能混成一句「没有指标」。**
     // 混了会让人以为文件不存在、去写一份新的,而实际上仓里躺着一份格式不对
@@ -155,12 +156,14 @@ pub(super) fn build_metrics(
         Ok(Some(m)) => m,
         Ok(None) => {
             return MetricsVm {
+                collected: collected_once,
                 note: Some("这个项目还没有 .bw/metrics.toml,指标是空的(不是 0)".into()),
                 ..Default::default()
             }
         }
         Err(e) => {
             return MetricsVm {
+                collected: collected_once,
                 error: Some(e.to_string()),
                 ..Default::default()
             }
@@ -182,8 +185,8 @@ pub(super) fn build_metrics(
     };
     // `.bw/metrics.toml` 里的指标没有单独的 id 字段 —— 名字就是它的键。
     // `issue.metric_key` 存的因此是指标的名字。
-    // `target` / `def` / 采集方式来自指标定义文件;读数来自周计划文件。两边
-    // 各是各的正本,这里只是拼到同一张卡上。
+    // `target` / `def` / 采集方式来自指标定义文件;读数来自
+    // `.bw/metrics/readings.jsonl`。两边各是各的正本,这里只是拼到同一张卡上。
     // 采到的现值与走势来自「采一次指标」那一下(`ui.metrics`),不在这里跑
     // ——起脚本要几百毫秒到几秒,每重拼一次 ViewModel 都跑一遍会把界面按住。
     let readout_of = |name: &str| collected.iter().find(|r| r.name.trim() == name.trim());
@@ -224,6 +227,7 @@ pub(super) fn build_metrics(
     };
 
     MetricsVm {
+        collected: collected_once,
         error: None,
         // 北极星没有 target 字段 —— 它的目标就是它自己那句定义。
         // 北极星可以缺席:刚接入、还没定指标的项目就是这样。**不摆空卡。**
@@ -386,6 +390,7 @@ pub(super) async fn build_config(
     ConfigVm {
         mappings,
         skills,
+        focus_skill: String::new(),
         tools: probe_env().await,
         remote: remote_label(project),
         cadence: policy
@@ -419,19 +424,21 @@ pub(super) async fn build_config(
 /// - **项目自有**:这个仓自己的 `.claude/skills/`,扫目录得到。
 /// - **不在册**:活上挂了这个名字,两处都找不到包。用量是真的,包确实没有。
 pub(super) fn skill_list(ws: &Path, usage: &[(String, u32)]) -> Vec<SkillVm> {
-    let used = |slug: &str| {
+    let used = |slug: &str| -> u32 {
         usage
             .iter()
-            .find(|(w, _)| w == slug)
+            .filter(|(w, _)| w == slug || bw::app::skill_slug(w) == Some(slug))
             .map(|(_, n)| *n)
-            .unwrap_or(0)
+            .sum()
     };
 
     let mut skills: Vec<SkillVm> = bw::standard::skills::all()
         .into_iter()
         .map(|p| SkillVm {
             uses: used(p.slug),
-            title: p.slug.to_string(),
+            title: bw::app::workflow_label(p.slug)
+                .unwrap_or(p.slug)
+                .to_string(),
             origin: "buddy 自带".into(),
             desc: p.desc.to_string(),
             slug: p.slug.to_string(),
@@ -458,6 +465,9 @@ pub(super) fn skill_list(ws: &Path, usage: &[(String, u32)]) -> Vec<SkillVm> {
 
     // 活上挂了名字、两处都没有包的,如实列出来,不假装它存在。
     for (w, n) in usage {
+        if bw::app::skill_slug(w).is_some() {
+            continue;
+        }
         if !skills.iter().any(|s| &s.slug == w) {
             skills.push(SkillVm {
                 slug: w.clone(),
@@ -500,7 +510,7 @@ fn build_crons(policy: Option<&issue_policy_file::IssuePolicyFile>) -> Vec<CronV
             name: "更新指标与制定本周计划".into(),
             trigger: word(&c.ops1_trigger),
             schedule: "—".into(),
-            rule: "当前周还没有周计划文件".into(),
+            rule: "本周还没有运作活①「更新指标 + 制定本周计划」".into(),
         },
         CronVm {
             name: "资产盘点".into(),

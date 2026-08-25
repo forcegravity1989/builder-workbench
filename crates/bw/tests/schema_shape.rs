@@ -93,9 +93,8 @@ async fn sessions_append_only() {
     assert!(read.is_some());
     assert_eq!(read.unwrap().branch_name, "bw/issue-42");
 
-    // 再追加一条(session_id 更新走 append-only,不改旧行)。刀6 删掉了
-    // `set_session_id` 这层 App 包装(PTY hook 没接,是死代码);这里直接追加
-    // 一条新记录,验证 append-only 语义还在:文件里两行,读到的是最新的那条。
+    // 再追加一条(session_id 更新走 append-only,不改旧行)。SessionStart hook
+    // 收下 id 之后也是再 append 一行,读到的是最新的那条。
     let conv2 = Conversation {
         id: conv.id,
         project_id: pid,

@@ -21,7 +21,7 @@ buddy 给每个新项目铺出来的起点长什么样。仓根 `AGENTS.md` 不�
 
 规范版本因此从 4.0 跳到 **5.0** —— 落点变了,老版本铺出来的文件在新版本眼里
 就是「不在册」,不做迁移。续三(系统提示词外置 + 扁平铺底 + 删方法论)又
-抬到 **5.1**,当前值见 `VERSION`。续五(默认 workflow 打包:mattpocock 入口 + vendor 摊 + issue-policy 回填)抬到 **5.2**。
+抬到 **5.1**,当前值见 `VERSION`。续五(默认 workflow 打包:mattpocock 入口 + vendor 摊 + issue-policy 回填)抬到 **5.2**。续十六(指标空壳到站才铺 + 脚本 UTF-8 / A 类 points / `def` 字段)抬到 **5.3**。
 
 这套规范现在就五类,和 `CORE_TEMPLATES` 对得上:charter、meta、docs-core、
 metrics、issue-policy。旧名单里的 agents / defaults-core / cadence 没有对应

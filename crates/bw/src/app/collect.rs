@@ -93,13 +93,30 @@ async fn collect_one(ws: &Path, def: &MetricDef, labels: &[String]) -> MetricRea
         return r;
     }
     match run_script(ws, &def.collect.run, labels).await {
-        Ok(points) => {
+        Ok(ScriptOutcome::Series(points)) => {
             r.current = points.last().and_then(|p| p.value.clone());
             r.points = points;
+        }
+        Ok(ScriptOutcome::Snapshot(value)) => {
+            // 现值留下,走势空着 —— 一张卡打成「没采到」会把数和折线一起藏掉,
+            // 人对照代码仓级那三张四周图会以为这边根本不会画。
+            r.current = Some(value);
+            r.error = "这条标着可回溯,但脚本只给了一个当下的值、没有按周的序列。\
+                       现值留下了,四周折线画不出来 —— 标准输出要吐 \
+                       {\"points\":[{\"week\":\"2026-Wxx\",\"value\":…}, …]}。"
+                .into();
         }
         Err(e) => r.error = e,
     }
     r
+}
+
+/// 脚本跑完的两种诚实结果。
+enum ScriptOutcome {
+    /// 按周对齐过的序列,每一周都有一格。
+    Series(Vec<MetricPoint>),
+    /// 只给了当下一个值,画不出四周。
+    Snapshot(String),
 }
 
 /// 脚本吐回来的 JSON。可回溯的给序列;不可回溯的给一个当下的值(今天用不上,
@@ -127,11 +144,7 @@ fn as_text(v: &serde_json::Value) -> Option<String> {
     }
 }
 
-async fn run_script(
-    ws: &Path,
-    run: &[String],
-    labels: &[String],
-) -> Result<Vec<MetricPoint>, String> {
+async fn run_script(ws: &Path, run: &[String], labels: &[String]) -> Result<ScriptOutcome, String> {
     let (since, until) = window_of(labels)?;
     let mut cmd = bw_engine::tokio_cmd(&run[0]);
     cmd.args(&run[1..])
@@ -167,13 +180,15 @@ async fn run_script(
         let head: String = text.trim().chars().take(120).collect();
         format!("采集脚本的输出不是 JSON({e});它打的是:{head}")
     })?;
+    align_script_out(parsed, labels)
+}
+
+/// 把脚本吐的 JSON 对齐到 buddy 要的周。抽出来是为了单测「只给 value」和
+/// 「周号对不上」这两条,不靠起真脚本。
+fn align_script_out(parsed: ScriptOut, labels: &[String]) -> Result<ScriptOutcome, String> {
     if parsed.points.is_empty() {
-        if parsed.value.is_some() {
-            return Err(
-                "这条标着可回溯,但脚本只给了一个当下的值、没有按周的序列 —— \
-                        多半是脚本没认 --since/--until,检查一下标对了没有"
-                    .into(),
-            );
+        if let Some(v) = parsed.value.as_ref().and_then(as_text) {
+            return Ok(ScriptOutcome::Snapshot(v));
         }
         return Err("采集脚本没给出任何数据点".into());
     }
@@ -195,7 +210,7 @@ async fn run_script(
     if points.iter().all(|p| p.value.is_none()) {
         return Err("采集脚本给的周号和 buddy 要的对不上(要的是 `2026-W34` 这种 ISO 周)".into());
     }
-    Ok(points)
+    Ok(ScriptOutcome::Series(points))
 }
 
 /// 近 `weeks` 周的 ISO 周号,**旧的在前**。
@@ -222,4 +237,49 @@ fn window_of(labels: &[String]) -> Result<(String, String), String> {
     let (_, until) = isoweek::week_bounds(last).ok_or(format!("认不出周号 {last}"))?;
     let fmt = |d: time::Date| format!("{:04}-{:02}-{:02}", d.year(), u8::from(d.month()), d.day());
     Ok((fmt(since), fmt(until)))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn parse(s: &str) -> ScriptOut {
+        serde_json::from_str(s).expect("fixture json")
+    }
+
+    #[test]
+    fn value_only_is_snapshot_not_failure() {
+        let out = align_script_out(
+            parse(r#"{"value": 8}"#),
+            &["2026-W32".into(), "2026-W33".into()],
+        )
+        .unwrap();
+        match out {
+            ScriptOutcome::Snapshot(v) => assert_eq!(v, "8"),
+            ScriptOutcome::Series(_) => panic!("must not invent a weekly series"),
+        }
+    }
+
+    #[test]
+    fn weekly_points_align_and_keep_gaps() {
+        let out = align_script_out(
+            parse(r#"{"points":[{"week":"2026-W32","value":3},{"week":"2026-W34","value":5}]}"#),
+            &["2026-W32".into(), "2026-W33".into(), "2026-W34".into()],
+        )
+        .unwrap();
+        let ScriptOutcome::Series(points) = out else {
+            panic!("expected series");
+        };
+        assert_eq!(
+            points
+                .iter()
+                .map(|p| (p.week.as_str(), p.value.as_deref()))
+                .collect::<Vec<_>>(),
+            vec![
+                ("2026-W32", Some("3")),
+                ("2026-W33", None),
+                ("2026-W34", Some("5")),
+            ]
+        );
+    }
 }

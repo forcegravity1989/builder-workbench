@@ -2,8 +2,8 @@
 //! 竖排,名片与健康并排在第一块的左右两栏。
 //!
 //! 每一块的数字都是现算的:名片来自 `PROJECT.md` / `.bw/project.toml`,健康来
-//! 自仓文件与 git 的三条判据,指标定义来自 `.bw/metrics.toml`、读数来自周计划
-//! 文件的「本周指标读数」段,发版记录来自 git 标签 + 远端 Release。**没有读数就说
+//! 自仓文件与 git 的三条判据,指标定义来自 `.bw/metrics.toml`、读数来自
+//! `.bw/metrics/readings.jsonl`,发版记录来自 git 标签 + 远端 Release。**没有读数就说
 //! 无数据,不显示 0**。
 
 use crate::bridge::{Bridge, Panel, PanelNav, Req};
@@ -21,15 +21,12 @@ pub fn View(p: ProjectVm, bridge: Bridge) -> Element {
 
     rsx! {
         section { class: "ov-stack",
-            // 判据是**文件在不在**,不是周列表里有没有本周(本周永远在列表里)。
-            // 文件还没有、但运作活①已经在路上时,不再给「开始本周」按钮 ——
-            // 再点一次只会收到「终端还开着」的拒绝,给一条去会话屏的路才对。
-            if !p.week_file_exists {
-                if let Some(st) = p.ops1_status.clone() {
-                    {running_banner(st, nav)}
-                } else {
-                    {start_banner(&p, &bridge, nav)}
-                }
+            // 本周还没有运作活①才给「开始本周」。做完(含已完成)不再冒出来。
+            // 还开着时只指路去会话屏,再点一次会重建一张同名活。
+            if !p.week_started {
+                {start_banner(&p, &bridge, nav)}
+            } else if let Some(st) = p.ops1_status.clone() {
+                {running_banner(st, nav)}
             }
             {card_and_health(&p, &bridge, editing, draft)}
             {north_star_block(&p, &bridge)}
@@ -37,8 +34,8 @@ pub fn View(p: ProjectVm, bridge: Bridge) -> Element {
             // 是什么 · 这周在往那个目标上推什么」。滞后/引领两层是展开看的细节,
             // 排在后面。
             {week_block(&p, nav)}
-            {metric_row_block("滞后性指标", &p.metrics.lagging, p.metrics.note.as_deref())}
-            {metric_row_block("引领性指标", &p.metrics.leading, None)}
+            {metric_row_block("滞后性指标", &p.metrics.lagging, p.metrics.note.as_deref(), &bridge, p.metrics.collected)}
+            {metric_row_block("引领性指标", &p.metrics.leading, None, &bridge, p.metrics.collected)}
             {repo_block(&p, &bridge)}
             {version_block(&p)}
         }
@@ -50,7 +47,7 @@ fn start_banner(p: &ProjectVm, bridge: &Bridge, nav: PanelNav) -> Element {
     let (pid, week) = (p.id, p.current_week.clone());
     rsx! {
         div { class: "ov-banner",
-            span { "本周({p.current_week})还没有周计划文件" }
+            span { "本周({p.current_week})还没开始「更新指标 + 制定本周计划」" }
             button {
                 class: "btn btn-primary btn-sm",
                 onclick: move |_| {
@@ -68,13 +65,12 @@ fn start_banner(p: &ProjectVm, bridge: &Bridge, nav: PanelNav) -> Element {
     }
 }
 
-/// 运作活①已经在路上:文件要等会话里的 MR 合入才落地,这期间横幅只指路,
-/// 不再给「开始本周」按钮。
+/// 运作活①还开着:横幅只指路,不再给「开始本周」。
 fn running_banner(status: String, nav: PanelNav) -> Element {
     rsx! {
         div { class: "ov-banner",
             span {
-                "运作活①(更新指标 + 制定本周计划)已开工 · {status}。本周文件由那场会话产出,合入 MR 后这里才亮。"
+                "运作活①(更新指标 + 制定本周计划)已开工 · {status}。去会话屏接着聊。"
             }
             button {
                 class: "btn btn-sm",
@@ -258,7 +254,7 @@ fn north_star_block(p: &ProjectVm, bridge: &Bridge) -> Element {
                 button {
                     class: "btn btn-sm",
                     onclick: move |_| b.send(Req::CollectMetrics),
-                    "↻ 采一次指标"
+                    {if p.metrics.collected { "↻ 重新采集" } else { "↻ 采一次指标" }}
                 }
             }
             // 读不动和还没有是两件事:读不动就整块灰 + 原话,**不猜、不用旧值顶上**。
@@ -266,7 +262,7 @@ fn north_star_block(p: &ProjectVm, bridge: &Bridge) -> Element {
                 div { class: "detail-empty", style: "color:var(--alert-deep);", "指标文件读不了:{e}" }
             } else {
                 match p.metrics.north_star.as_ref() {
-                    Some(m) => metric_card(m, true),
+                    Some(m) => metric_card(m, true, true),
                     None => rsx! { div { class: "detail-empty", "还没定北极星。" } },
                 }
             }
@@ -274,20 +270,71 @@ fn north_star_block(p: &ProjectVm, bridge: &Bridge) -> Element {
     }
 }
 
-fn metric_row_block(title: &str, cards: &[MetricCardVm], note: Option<&str>) -> Element {
+fn metric_row_block(
+    title: &str,
+    cards: &[MetricCardVm],
+    note: Option<&str>,
+    bridge: &Bridge,
+    collected: bool,
+) -> Element {
+    let b = bridge.clone();
     rsx! {
         div { class: "card ov-block",
-            div { class: "ov-block-title", "{title}" }
+            div { class: "repo-metric-head",
+                div { class: "ov-block-title", "{title}" }
+                // 和北极星、代码仓级同一颗按钮、同一条命令。采一次三层一起跑,
+                // 不在打开总览时自动跑。
+                button {
+                    class: "btn btn-sm",
+                    onclick: move |_| b.send(Req::CollectMetrics),
+                    {if collected { "↻ 重新采集" } else { "↻ 采一次指标" }}
+                }
+            }
             if let Some(n) = note {
                 div { class: "detail-empty", "{n}" }
             }
             if cards.is_empty() && note.is_none() {
                 div { class: "detail-empty", "这一档还没有指标。" }
             }
+            if !cards.is_empty() && !collected {
+                div { class: "detail-empty",
+                    "还没采过。可回溯的指标点上面那颗按钮就会画出近四周折线,\
+                     跟下面「代码仓级」同一套 —— 不自动跑。"
+                }
+            }
             div { class: "ov-row",
                 for m in cards.iter() {
-                    {metric_card(m, false)}
+                    {metric_card(m, false, false)}
                 }
+            }
+            {metric_trend_row(cards)}
+        }
+    }
+}
+
+/// 滞后/引领的四周折线单独成行,跟代码仓级那三张图一个排法。
+/// 卡里不再塞小图 —— 塞进去又窄又容易看成「这边没有走势」。
+fn metric_trend_row(cards: &[MetricCardVm]) -> Element {
+    use crate::chrome::sparkline::{trend_chart, Series};
+    let series: Vec<&MetricCardVm> = cards
+        .iter()
+        .filter(|m| m.trend.iter().any(|(_, v)| v.is_some()))
+        .collect();
+    if series.is_empty() {
+        return rsx! {};
+    }
+    let x = |w: &str| {
+        w.split_once("-W")
+            .map_or_else(|| w.to_string(), |(_, n)| format!("W{n}"))
+    };
+    rsx! {
+        div { class: "trend-row",
+            for m in series {
+                {trend_chart(&Series {
+                    label: m.name.clone(),
+                    points: m.trend.iter().map(|(w, v)| (x(w), *v)).collect(),
+                    color: "var(--clay)",
+                })}
             }
         }
     }
@@ -295,7 +342,7 @@ fn metric_row_block(title: &str, cards: &[MetricCardVm], note: Option<&str>) -> 
 
 /// 指标卡。**没读数走灰卡** —— 灰卡上写的是「无观测 · Unknown ≠ 绿」,
 /// 不是一个 0。
-fn metric_card(m: &MetricCardVm, big: bool) -> Element {
+fn metric_card(m: &MetricCardVm, big: bool, inline_chart: bool) -> Element {
     let name_cls = if big { "mcard-name big" } else { "mcard-name" };
     let value_cls = if big {
         "mcard-value big"
@@ -363,9 +410,9 @@ fn metric_card(m: &MetricCardVm, big: bool) -> Element {
             } else if !m.source.is_empty() || !m.collected_at.is_empty() {
                 div { class: "mcard-sub", "来源 {m.source} · 采于 {m.collected_at}" }
             }
-            // 走势只在真采到过序列时画。**采不到的点断开,不补前值** ——
-            // 补了就分不出「没变」和「没数」。
-            if m.trend.len() > 1 {
+            // 北极星卡内画小图;滞后/引领走块下那一行(跟代码仓级同一排法)。
+            // 采不到的点断开,不补前值 —— 补了就分不出「没变」和「没数」。
+            if inline_chart && m.trend.iter().any(|(_, v)| v.is_some()) {
                 {crate::chrome::sparkline::trend_chart(&crate::chrome::sparkline::Series {
                     label: String::new(),
                     points: m.trend.iter().map(|(w, v)| (

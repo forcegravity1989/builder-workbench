@@ -40,7 +40,9 @@ pub use bootstrap::{
 };
 pub use health::{collect_health_inputs, read_metric_readings, MetricReading};
 pub use issue::{count_unseen, issues_in_week, workflow_usage};
-pub use ops::{ops1_title, skill_slug, OPS1_WORKFLOW, OPS2_WORKFLOW, OPS3_WORKFLOW};
+pub use ops::{
+    ops1_title, skill_slug, workflow_label, OPS1_WORKFLOW, OPS2_WORKFLOW, OPS3_WORKFLOW,
+};
 pub use progress::{ProgressLine, StepState};
 
 use crate::command::{Command, Event};
@@ -50,7 +52,7 @@ use crate::repo::RepoFileError;
 use bw_engine::remote::{Remote, RemoteError};
 use bw_engine::{InteractiveExecutor, TerminalManager};
 use std::path::PathBuf;
-use std::sync::Arc;
+use std::sync::{Arc, Mutex};
 
 /// 远端工厂:从项目行造一个 `Remote`。默认走 `Remote::for_project`(真
 /// codehub/gh);`real_demo_v4` / 测试注入一份返回**共享的** `Remote::Mock`
@@ -108,6 +110,8 @@ pub struct App {
     /// 远端工厂。issue_store 等内部模块经 [`App::remote_for`] 拿远端,统一经
     /// 这里派发 —— 这也是 mock 注入的唯一口子。
     pub(crate) remote_factory: RemoteFactory,
+    /// PTY 子进程退出后由后台任务塞进来,内核节拍里收掉 live 标记。
+    pub(crate) pty_ended: Arc<Mutex<Vec<uuid::Uuid>>>,
 }
 
 impl App {
@@ -131,6 +135,7 @@ impl App {
             remote_factory: Box::new(|p| {
                 Remote::for_project(&p.provider, &p.remote_host, &p.remote_path)
             }),
+            pty_ended: Arc::new(Mutex::new(Vec::new())),
         }
     }
 
@@ -397,6 +402,13 @@ impl App {
         let slug = self.slug_of(c.project_id).await?;
         SessionStore::append(&self.asset_root, &slug, c)?;
         Ok(c.clone())
+    }
+
+    /// 追加一条会话记录(更新 `--resume` id)。不走 upsert 的「已有就原样返回」。
+    pub(crate) async fn append_conversation(&self, c: &Conversation) -> Result<()> {
+        let slug = self.slug_of(c.project_id).await?;
+        SessionStore::append(&self.asset_root, &slug, c)?;
+        Ok(())
     }
 
     /// 某个项目的仓在哪。项目行里配了路径就用它,没配就是 `<工作区根目录>/<slug>`。

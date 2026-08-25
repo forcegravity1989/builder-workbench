@@ -31,10 +31,12 @@ pub struct ConversationMeta {
     pub branch_name: String,
 }
 
-/// 有界输出环:满了 pop 最老。
+/// 有界输出环:满了 pop 最老。`replay` 是自 attach 以来的副本,
+/// drain 抽走待发批次后挂件仍能要回第一屏(订户来晚 / 换会话 id)。
 #[derive(Debug, Default)]
 struct SessionOutputBuffer {
     batches: VecDeque<Vec<u8>>,
+    replay: Vec<u8>,
 }
 
 impl SessionOutputBuffer {
@@ -43,6 +45,12 @@ impl SessionOutputBuffer {
         while !chunk.is_empty() {
             let take = chunk.len().min(OUTPUT_BATCH_MAX_BYTES);
             let piece = chunk.drain(..take).collect::<Vec<_>>();
+            let cap = OUTPUT_BATCH_CAP * OUTPUT_BATCH_MAX_BYTES;
+            if self.replay.len() + piece.len() > cap {
+                let drop = self.replay.len() + piece.len() - cap;
+                self.replay.drain(..drop.min(self.replay.len()));
+            }
+            self.replay.extend_from_slice(&piece);
             if self.batches.len() >= OUTPUT_BATCH_CAP {
                 self.batches.pop_front();
             }
@@ -57,14 +65,20 @@ impl SessionOutputBuffer {
         }
         out
     }
+
+    fn snapshot(&self) -> Vec<u8> {
+        self.replay.clone()
+    }
 }
 
-/// 一个活着的终端连接(纯内存;PTY 子进程在 `run_skill_pty` 任务里)。
+/// 一个终端连接(纯内存;PTY 子进程在 `run_skill_pty` 任务里)。
+/// `live=false` 表示进程已退出,缓冲还留着给挂件回放第一屏。
 pub struct TerminalSession {
     pty_input_tx: mpsc::UnboundedSender<PtyInput>,
     output: Arc<Mutex<SessionOutputBuffer>>,
     pub current_size: (u16, u16),
     pub meta: ConversationMeta,
+    live: bool,
 }
 
 /// 集中模块:多会话终端管理器。
@@ -95,18 +109,22 @@ impl TerminalManager {
         self.last_fit_size
     }
 
-    /// 是否有任一活着的 PTY 连接(驱动 UI `pty_active`)。
+    /// 是否有任一还在跑的 PTY(驱动 UI `pty_active`)。
     pub fn has_live(&self) -> bool {
-        !self.sessions.is_empty()
+        self.sessions.values().any(|s| s.live)
     }
 
-    /// 当前活连接的 conversation id 列表。
+    /// 当前还在跑的 conversation id 列表。
     pub fn live_ids(&self) -> Vec<Uuid> {
-        self.sessions.keys().copied().collect()
+        self.sessions
+            .iter()
+            .filter(|(_, s)| s.live)
+            .map(|(id, _)| *id)
+            .collect()
     }
 
     pub fn is_live(&self, conversation_id: Uuid) -> bool {
-        self.sessions.contains_key(&conversation_id)
+        self.sessions.get(&conversation_id).is_some_and(|s| s.live)
     }
 
     /// 活连接对应的 issue(焦点回落时用)。
@@ -159,6 +177,7 @@ impl TerminalManager {
                 output,
                 current_size: size,
                 meta,
+                live: true,
             },
         );
 
@@ -187,8 +206,25 @@ impl TerminalManager {
     }
 
     /// 关掉会话连接(丢 sender → executor 侧 input_rx 结束 → PTY 收尾)。
+    /// 缓冲一起清掉。人点「■停止」走这条。
     pub fn close(&mut self, conversation_id: Uuid) {
         self.sessions.remove(&conversation_id);
+    }
+
+    /// 进程自己退出:开工按钮要亮,第一屏还得能回放。
+    pub fn mark_ended(&mut self, conversation_id: Uuid) {
+        if let Some(session) = self.sessions.get_mut(&conversation_id) {
+            session.live = false;
+        }
+    }
+
+    /// 抽出某一会话还没送走的批次(回放已经带上它们之后清掉,避免双写)。
+    pub fn drain_one(&self, conversation_id: Uuid) {
+        if let Some(session) = self.sessions.get(&conversation_id) {
+            if let Ok(mut buf) = session.output.lock() {
+                let _ = buf.drain_concat();
+            }
+        }
     }
 
     /// 抽出所有会话自上次 drain 以来的输出,每项带 conversation_id。
@@ -203,5 +239,56 @@ impl TerminalManager {
             }
         }
         out
+    }
+
+    /// 自 attach 以来的全部输出(有界)。挂件订上之后要第一屏,走这条,
+    /// 不依赖 broadcast 那时有没有订户。
+    pub fn snapshot(&self, conversation_id: Uuid) -> Vec<u8> {
+        self.sessions
+            .get(&conversation_id)
+            .and_then(|s| s.output.lock().ok().map(|b| b.snapshot()))
+            .unwrap_or_default()
+    }
+
+    /// 往已挂上的会话塞一行(开工失败写进画布,不假装没发生)。
+    pub fn push_output(&self, conversation_id: Uuid, bytes: Vec<u8>) {
+        if let Some(session) = self.sessions.get(&conversation_id) {
+            if let Ok(mut buf) = session.output.lock() {
+                buf.push_chunk(bytes);
+            }
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[tokio::test]
+    async fn snapshot_survives_drain() {
+        let mut tm = TerminalManager::new();
+        let id = Uuid::nil();
+        let meta = ConversationMeta {
+            conversation_id: id,
+            issue_id: id,
+            claude_session_id: String::new(),
+            workspace_path: PathBuf::from("."),
+            branch_name: "bw/issue-1".into(),
+        };
+        let (tx, _rx) = tm.attach(id, meta, Some((80, 24)));
+        tx.send(b"hello".to_vec()).unwrap();
+        tokio::task::yield_now().await;
+        // 等 forwarder 进环
+        for _ in 0..20 {
+            if !tm.snapshot(id).is_empty() {
+                break;
+            }
+            tokio::task::yield_now().await;
+        }
+        let _ = tm.drain_events();
+        assert_eq!(tm.snapshot(id), b"hello");
+        tm.mark_ended(id);
+        assert!(!tm.is_live(id));
+        assert_eq!(tm.snapshot(id), b"hello");
     }
 }

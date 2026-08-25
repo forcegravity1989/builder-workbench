@@ -21,8 +21,11 @@ use crate::model::Signal;
 /// 健康的三条判据。每条都能被独立复算,不存任何中间值。
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct HealthInputs {
-    /// (a) 本周有周目标(本周的运作活① issue 在 = 有目标;刀6 起不再读周计划文件)。
+    /// (a) 本周真有周目标正文(ops① 评论里那一句)。issue 开着 ≠ 目标已定。
     pub has_week_goal: bool,
+    /// 本周运作活①还在(没点完成)。用来把「还没开这张活」和「活开了但目标
+    /// 还没落到评论」说成两句,不把「开始本周」当成已经定了目标。
+    pub ops1_open: bool,
     /// (a) 本周仓里有真实 git 提交。
     pub committed_this_week: bool,
     /// 上周仓里有真实 git 提交。两周都没动是硬红。
@@ -45,6 +48,7 @@ impl HealthInputs {
     pub fn empty() -> Self {
         Self {
             has_week_goal: false,
+            ops1_open: false,
             committed_this_week: false,
             committed_last_week: false,
             git_readable: false,
@@ -94,6 +98,8 @@ pub fn derive_project_health(inputs: &HealthInputs) -> DerivedHealth {
             ok: a,
             text: if a {
                 "本周定了周目标,仓里也有真实提交".into()
+            } else if !inputs.has_week_goal && inputs.ops1_open {
+                "本周计划还在做,周目标还没写进这张活的评论".into()
             } else if !inputs.has_week_goal {
                 "本周的『更新指标+制定本周计划』活还没开".into()
             } else {
@@ -103,7 +109,7 @@ pub fn derive_project_health(inputs: &HealthInputs) -> DerivedHealth {
         HealthReason {
             ok: b,
             text: if b {
-                "本周或上周的周计划文件里有指标读数".into()
+                "本周或上周有指标读数".into()
             } else {
                 "最近两周都没有记过指标读数".into()
             },

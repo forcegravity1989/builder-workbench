@@ -80,6 +80,8 @@ pub struct UiState {
     pub metrics: Vec<bw::app::collect::MetricReadout>,
     /// 会话屏那块「这次开工喂了什么」。`None` = 面板关着。
     pub briefing: Option<String>,
+    /// 配置屏要亮的技能 slug。纯导航。
+    pub focus_skill: String,
     pub data_dir: String,
     pub workspaces_root: String,
     /// 接入屏那份仓列表的状态。**不进库** —— 它是「现在去平台问了一次」的结果,
@@ -180,7 +182,7 @@ fn primary_note(events: &[Event]) -> Option<String> {
                 // 真跑:文件由 agent 会话产出、走 MR,这里没有骨架也没有草稿。
                 format!("运作活①已开工:{week} 的周计划由这场会话产出,提交走 MR,人合入后总览才亮")
             } else {
-                format!("{week} 的周计划文件已写出(流程演示),等你确认草稿")
+                format!("{week} 的运作活①已开工(流程演示),等你确认草稿")
             }
         }
         Event::HistoryBackfilled { note, .. } => note.clone(),
@@ -246,9 +248,11 @@ fn primary_note(events: &[Event]) -> Option<String> {
         Event::OpsAutoFired { workflow, week, .. } => {
             format!("定时到点:{week} 的「{workflow}」已自动建活并开工")
         }
-        Event::WeekPlanAlreadyExists { week, .. } => format!("{week} 已经有周计划文件了,没有重写"),
+        Event::WeekPlanAlreadyExists { week, .. } => {
+            format!("{week} 的「更新指标 + 制定本周计划」已经做过,没有重开")
+        }
         Event::WeekPlanInProgress { week, status, .. } => {
-            format!("{week} 的运作活①还在路上({status})—— 去会话屏接着聊,周计划由那场会话产出")
+            format!("{week} 的运作活①还在路上({status})—— 去会话屏接着聊")
         }
         Event::IssueCreated { number, .. } => format!("建了一张活 #{number}"),
         Event::IssueScheduled { week_of, .. } => {
@@ -589,13 +593,13 @@ async fn build_project(
     // 扫 `.bw/plan/` 目录(那个文件没人写了,扫到也是旧的)。本周永远在列表里。
     let weeks = build_weeks(&issues, &current_week);
 
-    // 横幅判据:本周运作活① issue 在不在(不再是周计划文件在不在)。
+    // 横幅判据:本周运作活①在不在(含已完成)。做完再冒「开始本周」是假的。
     let ops1_title = bw::app::ops1_title(&current_week);
-    let ops1_status = issues
-        .iter()
-        .find(|i| i.title == ops1_title && i.status != IssueStatus::Done)
+    let ops1 = issues.iter().find(|i| i.title == ops1_title);
+    let week_started = ops1.is_some();
+    let ops1_status = ops1
+        .filter(|i| i.status != IssueStatus::Done)
         .map(|i| i.status.label().to_string());
-    let week_file_exists = ops1_status.is_some();
     // 发版历史从 git 标签取(刀6:不再读 .bw/releases.md)。tags_with_dates 按
     // creatordate 升序,rev() 让最新的在最前。git 标签没有 note / 包含的活,
     // 那两列如实留空/「—」,不编。
@@ -636,8 +640,8 @@ async fn build_project(
                 .map(|r| (r.ok, r.text.clone()))
                 .collect(),
         },
-        metrics: build_metrics(&ws, &issues, &ui.metrics, &readings),
-        week_file_exists,
+        metrics: build_metrics(&ws, &issues, &ui.metrics, &readings, !ui.metrics.is_empty()),
+        week_started,
         ops1_status,
         weeks,
         current_week,
@@ -703,7 +707,11 @@ async fn build_project(
             events: build_notify_events(&issues, &conversations),
             unread: bw::app::count_unseen(&issues),
         },
-        config: build_config(&ws, policy.as_ref(), &p, &file, &issues).await,
+        config: {
+            let mut c = build_config(&ws, policy.as_ref(), &p, &file, &issues).await;
+            c.focus_skill = ui.focus_skill.clone();
+            c
+        },
         kb: KbVm {
             codegraph: ui.kb_codegraph.clone(),
             assets: ui.kb_assets.clone(),

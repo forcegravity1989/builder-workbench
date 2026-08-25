@@ -511,11 +511,28 @@ impl InteractiveExecutor for InteractiveCliExecutor {
         bytes_tx: mpsc::UnboundedSender<Vec<u8>>,
         input_rx: mpsc::UnboundedReceiver<PtyInput>,
     ) -> Result<SkillOutput, ExecError> {
-        let binary = self.claude_binary.as_deref().unwrap_or(&plan.binary);
+        let resolved = spawn_binary(self.claude_binary.as_deref(), &plan.binary)?;
         crate::pty_backend::active()
-            .run(binary, plan, bytes_tx, input_rx)
+            .run(&resolved, plan, bytes_tx, input_rx)
             .await
     }
+}
+
+/// 开工和探活用同一条候选链。裸名字 `claude` 交给 ConPTY 的 CreateProcess
+/// 找不到 PATH 里的 `claude.cmd`(Windows 上「program not found」)。
+fn spawn_binary(override_bin: Option<&str>, plan_binary: &str) -> Result<String, ExecError> {
+    if let Some(p) = override_bin.map(str::trim).filter(|s| !s.is_empty()) {
+        return Ok(p.to_string());
+    }
+    if plan_binary == "claude" {
+        return crate::resolve_claude_binary(None).ok_or_else(|| {
+            ExecError::Failed(
+                "本机路径里找不到 claude。装过 npm 的话看 %APPDATA%\\npm\\claude.cmd，或设 BW_CLAUDE_BIN。"
+                    .into(),
+            )
+        });
+    }
+    Ok(plan_binary.to_string())
 }
 
 // ─── MockInteractiveExecutor (for tests / no-claude environments) ──────
@@ -628,6 +645,12 @@ mod tests {
         assert!(plan.env.keys().all(|k| is_spawnable_env_key(k)));
         // Cwd preserved
         assert_eq!(plan.cwd, tmp);
+    }
+
+    #[test]
+    fn spawn_binary_override_wins() {
+        let got = spawn_binary(Some(r"D:\tools\claude.exe"), "claude").unwrap();
+        assert_eq!(got, r"D:\tools\claude.exe");
     }
 
     #[test]

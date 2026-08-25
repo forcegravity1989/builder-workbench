@@ -20,18 +20,24 @@ impl App {
     ) -> Result<Vec<Event>> {
         let ws = self.workspace_of(project_id).await?;
         let title = super::ops1_title(&week);
-        let project = self.project_of(project_id).await?;
 
-        // 按标题查本周的运作活① —— 查远端开着的 issue。
-        if let Some(open) = issue_store::find_open_by_title(self, &project, &title).await? {
-            if open.status != IssueStatus::Done {
+        // 按标题查本周的运作活①(含已关闭)。关过再点「开始本周」会再建一张
+        // 同名活 —— 合入 #8 之后总览横幅又出来,就是这条漏了。
+        let existing = self
+            .issues(project_id)
+            .await?
+            .into_iter()
+            .find(|i| i.title == title);
+        if let Some(found) = existing {
+            if found.status != IssueStatus::Done {
                 return Ok(vec![Event::WeekPlanInProgress {
                     project_id,
                     week,
-                    issue_id: open.id,
-                    status: open.status.label().to_string(),
+                    issue_id: found.id,
+                    status: found.status.label().to_string(),
                 }]);
             }
+            return Ok(vec![Event::WeekPlanAlreadyExists { project_id, week }]);
         }
 
         // 真跑与替身是两条路。真跑(桌面壳开着内嵌终端 + 项目有真实工作区):

@@ -138,7 +138,7 @@ fn week_rail(p: &ProjectVm, bridge: &Bridge) -> Element {
         }
         if p.weeks.is_empty() {
             div { class: "detail-empty",
-                ".bw/plan/ 里还没有周计划文件。周列表是扫这个目录 ∪ 活排过的周得到的,没有索引表。"
+                "还没有挂过周标签的活。周列表从 issue 的 bw:week 标签来,本周永远在。"
             }
         }
         for w in current.iter() {
@@ -317,7 +317,7 @@ fn draft_confirm(p: &ProjectVm, bridge: &Bridge) -> Element {
     rsx! {
         div { class: "card", style: "padding:14px 16px;margin-bottom:10px;flex:none;",
             div { style: "font-size:12.5px;color:var(--ink-2);margin-bottom:8px;line-height:1.8;",
-                "{week} 的周计划文件写好了,下面是草稿活标。确认之前一张活都还没建。"
+                "{week} 的运作活①已开工,下面是草稿活标。确认之前一张活都还没建。"
             }
             for t in titles.iter() {
                 div { key: "{t}", style: "font-size:12.5px;padding:3px 0;", "· {t}" }

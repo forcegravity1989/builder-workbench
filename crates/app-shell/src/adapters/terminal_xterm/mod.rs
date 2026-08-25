@@ -11,7 +11,7 @@
 //!
 //! 借了什么、没借什么见 `README.md`。
 
-use crate::bridge::Bridge;
+use crate::bridge::{Bridge, Req};
 use bw::command::Command;
 use bw::model::ConversationId;
 use dioxus::prelude::*;
@@ -54,8 +54,10 @@ window.__bw_term_drain = function(id) {
     }
     var resize = sess.resize || null;
     sess.resize = null;
-    if (input === null && resize === null) return null;
-    return { input: input, resize: resize, ready: !!sess.ready };
+    var paste = !!sess.wantPaste;
+    sess.wantPaste = false;
+    if (input === null && resize === null && !paste) return null;
+    return { input: input, resize: resize, paste: paste, ready: !!sess.ready };
 };
 // Bug2: display:none → 0×0 open 假成功;非焦点离屏保尺寸;焦点回来 re-home+fit+refresh。
 window.__bw_term_refocus = function(id) {
@@ -172,33 +174,29 @@ window.__bw_term_copy = function(id, allow_whole) {
         refocus();
     });
 };
-// 粘贴只有 navigator.clipboard.readText 一条路:execCommand('paste') 在
-// WebKit 里对网页是禁用的,不存在第二条。读不到就如实说读不到。
-// 文字交给 term.paste() 而不是直接推给 PTY —— 它负责括号粘贴模式的包裹和
-// 换行归一,自己拼会把多行粘贴变成一串回车。
+// 网页读剪贴板要安全上下文;这个壳是 dioxus://,navigator.clipboard.readText
+// 会被拒。execCommand('paste') 对网页是禁的。复制已有 textarea 兜底,粘贴
+// 没有第二条网页路 —— 只举手,让 Rust 读系统剪贴板再 __bw_term_apply_paste。
 window.__bw_term_paste = function(id) {
     var sess = window.__bw_term_sessions && window.__bw_term_sessions[id];
     if (!sess || !sess.term) return;
-    var nav = window.navigator;
-    if (!(nav && nav.clipboard && nav.clipboard.readText)) {
-        window.__bw_term_status(id, '粘贴用不了:这个窗口不让网页读剪贴板');
+    sess.wantPaste = true;
+};
+window.__bw_term_apply_paste = function(id, text) {
+    var sess = window.__bw_term_sessions && window.__bw_term_sessions[id];
+    if (!sess || !sess.term) return;
+    if (!text) {
+        window.__bw_term_status(id, '剪贴板是空的');
         return;
     }
-    nav.clipboard.readText().then(function(text) {
-        if (!text) {
-            window.__bw_term_status(id, '剪贴板是空的');
-            return;
-        }
-        try {
-            sess.term.paste(text);
-        } catch (e) {
-            window.__bw_term_status(id, '粘贴失败:' + ((e && e.message) || '未知原因'));
-            return;
-        }
-        window.__bw_term_status(id, '已粘贴 ' + text.length + ' 字');
-    }, function(e) {
-        window.__bw_term_status(id, '粘贴失败:' + ((e && e.message) || '拿不到剪贴板'));
-    });
+    try {
+        sess.term.paste(text);
+    } catch (e) {
+        window.__bw_term_status(id, '粘贴失败:' + ((e && e.message) || '未知原因'));
+        return;
+    }
+    window.__bw_term_status(id, '已粘贴 ' + text.length + ' 字');
+    try { sess.term.focus(); } catch (e) {}
 };
 // 标题栏「复制」按钮的点击**必须在 JS 里当场处理完**:走 Rust 的 onclick 再
 // document::eval 回来是一整趟异步 IPC,等 JS 真跑起来时浏览器认的那一下「用户
@@ -387,6 +385,12 @@ return (async function(id) {{
     )
 }
 
+fn read_os_clipboard() -> Result<String, String> {
+    arboard::Clipboard::new()
+        .and_then(|mut c| c.get_text())
+        .map_err(|e| e.to_string())
+}
+
 /// Take the longest valid UTF-8 prefix out of `buf`, leaving whatever
 /// trailing bytes form an incomplete character behind for the next batch.
 ///
@@ -453,9 +457,12 @@ pub fn TerminalWidget(conversation_id: ConversationId, focused: bool, bridge: Br
                 eprintln!("[pty] terminal init {cid_str}: {init:?}");
             }
 
-            // 订阅在这里开始 —— 这一刻之前的字节这个终端拿不到,但 agent 的输出
-            // 是开工那一下才开始产生的,而挂件比开工先在。
+            // 「开始本周」先起 PTY 再挂终端;订上之后立刻要回第一屏,
+            // 不靠 broadcast 那时有没有订户。
             let mut pty_rx = k.pty.subscribe();
+            k.send(Req::PtyReplay {
+                conversation_id: cid,
+            });
             let mut carry: Vec<u8> = Vec::new();
             loop {
                 tokio::select! {
@@ -520,6 +527,27 @@ pub fn TerminalWidget(conversation_id: ConversationId, focused: bool, bridge: Br
                                 cols,
                                 rows,
                             });
+                        }
+                        if obj.get("paste").and_then(|p| p.as_bool()).unwrap_or(false) {
+                            match read_os_clipboard() {
+                                Ok(text) => {
+                                    let escaped = serde_json::to_string(&text)
+                                        .unwrap_or_else(|_| "\"\"".into());
+                                    let _ = document::eval(&format!(
+                                        "window.__bw_term_apply_paste({cid_json}, {escaped})"
+                                    ))
+                                    .await;
+                                }
+                                Err(e) => {
+                                    let msg = format!("粘贴失败:{e}");
+                                    let escaped = serde_json::to_string(&msg)
+                                        .unwrap_or_else(|_| "\"\"".into());
+                                    let _ = document::eval(&format!(
+                                        "window.__bw_term_status({cid_json}, {escaped})"
+                                    ))
+                                    .await;
+                                }
+                            }
                         }
                     }
                 }

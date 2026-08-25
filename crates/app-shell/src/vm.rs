@@ -120,7 +120,7 @@ pub struct ProjectCardVm {
     /// 还没看过的动静:评审中 + 阻塞里,更新时间晚于「读到这里」那一下的。
     /// 通知屏点过之后这个数会掉下去。
     pub unread: u32,
-    /// 本周目标,来自仓里的周计划文件。文件没有 / 目标还是占位符 = 空。
+    /// 本周目标。呈现落点明早再对,今天壳里常常是空的。
     pub week_goal: String,
     /// 上次交付:发版记录最后一行的日期与版本。仓里没有发版记录 = 空。
     pub last_delivery: String,
@@ -144,13 +144,12 @@ pub struct ProjectVm {
     pub health: HealthVm,
     pub metrics: MetricsVm,
     pub current_week: String,
-    /// 当前周的 `.bw/plan/YYYY-Www.md` 在不在。总览「开始本周」横幅的判据 ——
-    /// 不能拿 `weeks` 里有没有本周判(本周永远在列表里置顶,哪怕还没有文件)。
-    pub week_file_exists: bool,
-    /// 本周那张运作活①(更新指标 + 制定本周计划)走到哪了。`None` = 还没建
-    /// (或上一张已完成)。横幅靠它区分「还没开始」和「已开工、文件在 MR 路上」。
+    /// 本周是否已经有过运作活①(含已完成)。总览「开始本周」只在还没有时出现;
+    /// 做完再点会再建一张同名活。
+    pub week_started: bool,
+    /// 本周运作活①若还开着,走到哪了。`None` = 还没建,或已经完成。
     pub ops1_status: Option<String>,
-    /// 计划屏左栏:扫 `.bw/plan/` 目录 ∪ 库里活排过的周(新的在前,本周置顶)。
+    /// 计划屏左栏:活上的 `bw:week:*` 标签 ∪ 本周(新的在前,本周置顶)。
     pub weeks: Vec<WeekVm>,
     /// 正在看哪一周。
     pub viewing_week: String,
@@ -228,6 +227,9 @@ pub struct MetricsVm {
     pub north_star: Option<MetricCardVm>,
     pub lagging: Vec<MetricCardVm>,
     pub leading: Vec<MetricCardVm>,
+    /// 这轮会话里人点过「采一次指标」。空着的走势和「还没点」是两件事,
+    /// 后者要在滞后/引领上写出和代码仓级同一句「点了才采」。
+    pub collected: bool,
     /// 读不到 `.bw/metrics.toml` 时的实话(还没有这份文件 —— 正常状态)。
     pub note: Option<String>,
     /// 有这份文件、但**读不动**时的原话(格式错、旧格式)。和 `note` 分开:
@@ -297,7 +299,7 @@ impl WeekCountsVm {
     }
 }
 
-/// 「本周运作」表里的一行。正本是周计划文件,不是库。
+/// 「本周运作」表里的一行。正本是远端 issue,不是库。
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
 pub struct OpsChipVm {
     pub title: String,
@@ -517,6 +519,8 @@ pub struct ConfigVm {
     /// `.bw/project.toml` 的 `[chat]` 段:项目群。**仓是正本**,这里只显示;
     /// 改它走「编辑项目信息」那条轻量活 + MR,不在配置屏直接写仓。
     pub chat: String,
+    /// 从活详情点 workflow 跳过来时要亮的那一行(slug)。空 = 没指定。
+    pub focus_skill: String,
 }
 
 #[derive(Clone, Debug, PartialEq)]

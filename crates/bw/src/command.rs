@@ -71,7 +71,7 @@ pub enum Command {
     ReconcileStandard { project_id: ProjectId },
 
     // ── 计划 ──────────────────────────────────────────────
-    /// 总览「开始本周」:写这一周的周计划文件并产出草稿活标,等人确认。
+    /// 总览「开始本周」:建本周运作活①并开工。同一标题做过(含已完成)不再建。
     /// 判据是「本周文件不存在」——查文件,不查任何索引表。
     StartWeekPlanning { project_id: ProjectId, week: String },
     /// 人确认草稿后真的建活(`origin = agent_split`)。
@@ -238,7 +238,7 @@ pub enum Event {
         stale: Vec<String>,
         human_edited: Vec<String>,
     },
-    /// 周计划文件写出来了,附带等人确认的草稿活标。
+    /// 本周运作活①已建并开工。
     WeekPlanStarted {
         project_id: ProjectId,
         week: String,
@@ -246,12 +246,12 @@ pub enum Event {
         issue_id: IssueId,
         draft_titles: Vec<String>,
     },
-    /// 本周文件已经存在,这次什么都没做 —— 重跑不产生重复数据。
+    /// 本周运作活①已经做过(含已完成),这次什么都没做。
     WeekPlanAlreadyExists {
         project_id: ProjectId,
         week: String,
     },
-    /// 本周那张运作活①还在路上(周计划文件要等它的 MR 合入才落地),这次什么
+    /// 本周那张运作活①还在路上,这次什么
     /// 都没做。**不是错误** —— 人再点一次「开始本周」该被平静地挡住,而不是
     /// 收到一句「这张活现在是评审中,不是能开工的状态」。
     WeekPlanInProgress {

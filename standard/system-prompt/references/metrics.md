@@ -31,6 +31,20 @@ buddy 起脚本时追加:`--since YYYY-MM-DD --until YYYY-MM-DD --granularity we
 (左闭右开)。面板要几周就传几周,**采多少和画多少永远一致**。脚本不能自己
 决定窗口。
 
+**标准输出必须是 UTF-8。** Windows 控制台默认常是 gbk,中文 `unit` 会乱码,
+buddy 解析失败或读到错值。脚本里显式把 stdout 设成 UTF-8(Python:
+`sys.stdout.reconfigure(encoding="utf-8")`)。
+
+**A 类脚本吐按周序列,不是一个当下值:**
+`{"points":[{"week":"2026-W35","value":8},…]}`。只给 `{"value":8}` 会报
+「标着可回溯,但没有按周的序列」。B 类才是 `{"value":12}`。
+
+字段名照 `.bw/metrics.toml` 顶部注释:`name` / `def` / `target` / `collect`。
+`definition` 不是 `def`,界面口径会空着。
+
+首次会话里 agent 真采到的 B 类读数,只进本周运作活①的 issue 评论快照;
+`.bw/metrics/readings.jsonl` 由 buddy 自己写(这条路今天还没接),别手补。
+
 ## 失败一律如实,绝不写 0
 
 非零退出、超时、输出不是 JSON、缺字段 —— 都记这条指标这次「没采到」,

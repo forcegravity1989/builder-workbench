@@ -494,3 +494,75 @@ pub(crate) fn allow_skills_dir(plan: &mut bw_engine::LaunchPlan, dir: &std::path
     plan.args.push("--add-dir".to_string());
     plan.args.push(dir.display().to_string());
 }
+
+/// 给这次开工配一份只属于 buddy 的 Claude settings(不写用户仓)。
+/// SessionStart hook 把 `--resume` id 落到
+/// `<asset_root>/claude/runs/<project>_<iid>/session_id.txt`。
+pub(crate) fn attach_session_hook(
+    plan: &mut bw_engine::LaunchPlan,
+    asset_root: &std::path::Path,
+    project_id: ProjectId,
+    iid: u32,
+) {
+    let dir = asset_root
+        .join("claude")
+        .join("runs")
+        .join(format!("{}_{iid}", project_id.uuid()));
+    if std::fs::create_dir_all(&dir).is_err() {
+        return;
+    }
+    let settings = dir.join("settings.json");
+    let command = if cfg!(windows) {
+        let ps1 = dir.join("capture.ps1");
+        let script = "\
+$out = Join-Path $PSScriptRoot 'session_id.txt'\n\
+$raw = [Console]::In.ReadToEnd()\n\
+try {\n\
+  $j = $raw | ConvertFrom-Json\n\
+  $id = $j.session_id\n\
+  if (-not $id) { $id = $j.sessionId }\n\
+  if ($id) { Set-Content -Path $out -Value ([string]$id).Trim() -Encoding ascii }\n\
+  else { Set-Content -Path $out -Value $raw -Encoding utf8 }\n\
+} catch { Set-Content -Path $out -Value $raw -Encoding utf8 }\n";
+        if std::fs::write(&ps1, script).is_err() {
+            return;
+        }
+        format!(
+            "powershell -NoProfile -ExecutionPolicy Bypass -File \"{}\"",
+            ps1.display()
+        )
+    } else {
+        let sh = dir.join("capture.sh");
+        let script = "#!/bin/sh\n\
+out=\"$(dirname \"$0\")/session_id.txt\"\n\
+raw=$(cat)\n\
+id=$(printf '%s' \"$raw\" | sed -n 's/.*\"session_id\"[[:space:]]*:[[:space:]]*\"\\([^\"]*\\)\".*/\\1/p')\n\
+if [ -n \"$id\" ]; then printf '%s\\n' \"$id\" > \"$out\"\n\
+else printf '%s\\n' \"$raw\" > \"$out\"\n\
+fi\n";
+        if std::fs::write(&sh, script).is_err() {
+            return;
+        }
+        #[cfg(unix)]
+        {
+            use std::os::unix::fs::PermissionsExt;
+            let _ = std::fs::set_permissions(&sh, std::fs::Permissions::from_mode(0o755));
+        }
+        format!("sh \"{}\"", sh.display())
+    };
+    let body = serde_json::json!({
+        "hooks": {
+            "SessionStart": [{
+                "hooks": [{
+                    "type": "command",
+                    "command": command
+                }]
+            }]
+        }
+    });
+    if std::fs::write(&settings, body.to_string()).is_err() {
+        return;
+    }
+    plan.args.push("--settings".to_string());
+    plan.args.push(settings.display().to_string());
+}

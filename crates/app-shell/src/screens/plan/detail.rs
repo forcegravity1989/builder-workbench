@@ -67,7 +67,7 @@ pub fn DetailPanel(
                 {row("状态", c.status.label())}
                 {row("类别", &c.category)}
                 {row("开工工具", if c.tool.is_empty() { "—" } else { &c.tool })}
-                {row("workflow", if c.workflow.is_empty() { "—" } else { &c.workflow })}
+                {workflow_row(&c.workflow, bridge, nav)}
                 {row("种类", &c.kind)}
                 {row("来源", &c.origin)}
                 {row("排在", if c.week_of.is_empty() { "待办池" } else { &c.week_of })}
@@ -183,6 +183,35 @@ fn link_row(k: &str, number: u32, url: Option<&str>, none_hint: &str) -> Element
                     title: "这个项目没挂远端(或者 provider 认不出来),拼不出能点的地址",
                     "#{number}(没有可点的地址)"
                 }
+            }
+        }
+    }
+}
+
+fn workflow_row(workflow: &str, bridge: &Bridge, nav: PanelNav) -> Element {
+    if workflow.is_empty() {
+        return row("workflow", "—");
+    }
+    let slug = bw::app::skill_slug(workflow)
+        .unwrap_or(workflow)
+        .to_string();
+    let label = if slug == workflow {
+        workflow.to_string()
+    } else {
+        format!("{workflow} · {slug}")
+    };
+    let b = bridge.clone();
+    rsx! {
+        div { class: "detail-row",
+            div { class: "k", "workflow" }
+            span {
+                class: "detail-link",
+                title: "去配置屏看这份剧本",
+                onclick: move |_| {
+                    b.send(Req::FocusSkill(slug.clone()));
+                    nav.go(Panel::Config);
+                },
+                "{label} →"
             }
         }
     }
