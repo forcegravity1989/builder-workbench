@@ -115,7 +115,8 @@ docs 细则与本文冲突时：**docs 目录内的落盘仍听 doc-boundaries**
 | 角色/场景 | 先读 |
 |---|---|
 | 新会话 / 新成员 | README → 本文 → CONTEXT → AGENTS/CLAUDE → docs/README |
-| 要开一个**特性** | 相关 principles → 开 `changes/<id>/intent.md` |
+| 要开一个**特性** | 对齐 [03 产品主张](03-press-release-faq-flywheel.md) → 按 [02 逆向工作法](02-working-backwards.md) 开 `changes/<id>/intent.md` |
+| 要改客群/飞轮/对外主张 | 先议 → 改 [03](03-press-release-faq-flywheel.md)；特性 intent 不得偷偷改写 |
 | 小 bug / 琐修 | 直接改 + 验证 + PR；不开 `changes/` |
 | 要改产品实况 | 站验证后改 design 正本；过程可记 PRACTICE |
 | 要改原则本身 | 显式讨论 → 改本目录对应篇 → 必要时 ADR |
@@ -132,3 +133,4 @@ docs 细则与本文冲突时：**docs 目录内的落盘仍听 doc-boundaries**
 |---|---|
 | 2026-08-25 | 首篇：定 `principles/` 与文档组织结构 |
 | 2026-08-25 | `changes/` 定为特性级粒度；小 bug 直修不开链 |
+| 2026-08-25 | 特性立项指向 [02 逆向工作法](02-working-backwards.md) |
