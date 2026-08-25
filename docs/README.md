@@ -35,6 +35,7 @@
 | [`guide/`](guide/) | 给同事用的两篇:[`v4-产品指南.html`](guide/v4-产品指南.html)(上半「怎么用」跟着伴飞长、**只写已实践**;下半「怎么给 buddy 开发新特性」)、[`v4-对外宣讲.html`](guide/v4-对外宣讲.html)(讲给同事听的讲稿,零实现术语零代号)+ V1 期留下的指南 HTML 原型与 `填写规范.md` | V4 指南:伴飞中,每走完一站补一站 |
 | [`metrics/workflowhub/`](metrics/workflowhub/) | **WorkflowHub 这个项目**的指标正本 [`metrics.toml`](metrics/workflowhub/metrics.toml) + 推导记录 [`metrics-rationale.md`](metrics/workflowhub/metrics-rationale.md)。正本 2026-08-21 从仓根 `.bw/` 移来:它装的是 WorkflowHub 的五条指标,不是 loop-buddy 自己的,留在 `.bw/` 会被 V4 当成本仓的指标读出来 | 指标变动时 |
 | [`examples/metrics.toml.sample`](examples/metrics.toml.sample) | `.bw/metrics.toml` 可复制样例 | 格式变动时 |
+| [`reference/ai-native-sdlc-playbook.md`](reference/ai-native-sdlc-playbook.md) | 外部参考的**提炼版**(转述非原文,原文只存链接):AI-native SDLC playbook 的做法与治理哲学,每段带 BW 落点或不采纳理由;指标 26 条的正本在 `standard/04-metrics/process-catalog.md`,不在这里 | 引用它的施工会话(#120~#124) |
 
 ### 2. 运行时资产(被 `include_str!` 编进二进制——**改它就是改产品行为**,不是改文档)
 
