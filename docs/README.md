@@ -41,7 +41,7 @@
 | [`releases.md`](releases.md) | 版本登记:出包与运作 | 现在作数 |
 | [`code-schemes.md`](code-schemes.md) | 代号索引(P/S/W/R/L/A/D/G/K/M/T/V……),新开一批代号先来这里登记 | 谁开代号谁登记 |
 | [`adr/0001-ubiquitous-language.md`](adr/0001-ubiquitous-language.md) | 确立 `CONTEXT.md` 为领域语言规范的决定 + 改名台账 | 改术语时更新 |
-| [`guide/`](guide/) | 给同事用的两篇:[`v4-产品指南.html`](guide/v4-产品指南.html)(上半「怎么用」**只写已实践**;下半「怎么给 buddy 开发新特性」)、[`v4-对外宣讲.html`](guide/v4-对外宣讲.html)(讲稿,零实现术语零代号)+ V1 期留下的指南 HTML 原型与 `填写规范.md` | V4 指南:伴飞中,每走完一站补一站 |
+| [`guide/`](guide/) | 给同事用的:[`guide.md`](guide/guide.md)(**「怎么用」的正本**,只写已实践,每走完一站补一站)、[`v4-产品指南.html`](guide/v4-产品指南.html)(图文版,冲突时以 guide.md 为准;下半「怎么给 buddy 开发新特性」以 `DEVELOPMENT.md` 为正本)、[`v4-对外宣讲.html`](guide/v4-对外宣讲.html)(讲稿,零实现术语零代号)+ V1 期留下的指南 HTML 原型与 `填写规范.md` | V4 指南:伴飞中,每走完一站补一站 |
 | [`superpowers/specs/`](superpowers/specs/) | 仍作数的设计稿(GitHub 主体化入门、技能五角色归类、减负重构) | 过时即搬 `archive/superpowers/` |
 | [`metrics/workflowhub/`](metrics/workflowhub/) | **WorkflowHub 这个项目**的指标正本与推导记录(装的是 WorkflowHub 的指标,不是 loop-buddy 自己的,所以不放仓根 `.bw/`) | 指标变动时 |
 | [`examples/metrics.toml.sample`](examples/metrics.toml.sample) | `.bw/metrics.toml` 可复制样例(V3 格式;V4 格式见 design.md §10.8) | 格式变动时 |

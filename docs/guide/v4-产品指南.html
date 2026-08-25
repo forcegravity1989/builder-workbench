@@ -199,7 +199,7 @@
       <div class="eyebrow">buddy V4 · 产品指南</div>
       <h1 class="disp">30 秒导读</h1>
       <div class="banner">
-        这是什么——buddy V4 的一份指南，分两部分：<strong>上半部分「怎么用」</strong>，一站一站写，从零开始把一个项目接进来、每周转一圈；<strong>下半部分「怎么给 buddy 开发新特性」</strong>，写给要动 buddy 自己这个仓的人。给谁看——第一次打开 buddy 的人（先是我们自己，然后是组里的同事），以及接手 buddy 开发的人。现在还作数吗——作数（2026-08-21）。
+        这是什么——buddy V4 的一份指南，分两部分：<strong>上半部分「怎么用」</strong>，一站一站写，从零开始把一个项目接进来、每周转一圈；<strong>下半部分「怎么给 buddy 开发新特性」</strong>，写给要动 buddy 自己这个仓的人。给谁看——第一次打开 buddy 的人（先是我们自己，然后是组里的同事），以及接手 buddy 开发的人。现在还作数吗——<strong>2026-08-25 起，「怎么用」的正本迁到了 <code>docs/guide/guide.md</code></strong>，本页是它的图文版，两边不一致时以 guide.md 为准；下半「特性开发维护」的命令与门禁以仓根 <code>DEVELOPMENT.md</code> 与 <code>scripts/gate.sh</code> 为正本。
         <ul class="rules-mini">
           <li>上半部分只写<strong>已经真走过一遍</strong>的站。没走到的站列在下面，写明「还没走到」，不提前编。</li>
           <li>下半部分只写<strong>今天真能跑</strong>的命令。命令改了这里就得改。</li>
@@ -631,18 +631,9 @@ cargo run -p app-shell            <span class="c"># 启动 V4 新壳（二进制
 ./scripts/bundle-desktop.sh v4    <span class="c"># 打成 dist/BW-V4.app（macOS；Windows 包见 LEFTOVERS）</span>
 ./scripts/point-bwdev-here.sh v4  <span class="c"># 把当前二进制拷进 ~/Applications/BWDev.app（computer-use 用的稳定壳）</span></pre>
 
-      <h2 class="sec"><span class="n">门禁</span>提交前这一组全过</h2>
-      <pre class="code">cargo fmt --all --check
-cargo clippy --workspace --exclude app-desktop -- -D warnings   # 本机连新壳一起查
-cargo check -p bw-core --target wasm32-unknown-unknown --no-default-features
-cargo check -p ui --target wasm32-unknown-unknown
-./scripts/guard-kernel-ui-free.sh          <span class="c"># 内核 crate 不许依赖界面框架</span>
-./scripts/guard-no-cross-screen-import.sh  <span class="c"># 一屏一模块：屏与屏之间不互相 import</span>
-./scripts/guard-file-lines.sh              <span class="c"># 单文件 1500 行硬上限、600 行软提醒</span>
-./scripts/guard-screen-hooks.sh            <span class="c"># 用 Dioxus hook 的函数必须是组件</span>
-cargo check -p app-desktop                 <span class="c"># 旧壳编译过</span>
-cargo check -p app-shell                   <span class="c"># 新壳编译过</span>
-cargo test --workspace --exclude app-desktop</pre>
+      <h2 class="sec"><span class="n">门禁</span>提交前全过，清单正本是脚本本身</h2>
+      <pre class="code">./scripts/gate.sh   <span class="c"># 门禁清单的唯一正本：格式化、lint、wasm32、结构守卫、两个壳编译、测试</span></pre>
+      <p>具体跑了哪几条、为什么这么定，看脚本本身的注释——此前清单在三处文档里各写一份，漂移出过三个互相矛盾的版本，2026-08-25 起收口成这一份可执行的脚本，别处不再复述。</p>
 
       <div class="callout note">
         <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/></svg>
