@@ -11,7 +11,7 @@ fn all_good() -> HealthInputs {
         committed_last_week: true,
         git_readable: true,
         has_metric_reading: true,
-        any_metric_red: false,
+        red_metrics: Vec::new(),
         delivered_last_week: true,
     }
 }
@@ -47,14 +47,20 @@ fn two_silent_weeks_in_a_readable_repo_is_red() {
 #[test]
 fn a_red_metric_beats_three_green_judgements() {
     let inputs = HealthInputs {
-        any_metric_red: true,
+        red_metrics: vec!["「每周合入的 PR 数」现值 1,目标 ≥5".into()],
         ..all_good()
     };
+    let health = derive_project_health(&inputs);
     assert_eq!(
-        derive_project_health(&inputs).signal(),
+        health.signal(),
         Signal::Red,
         "指标越线不能被「三条判据都齐了」吞掉"
     );
+    // 红的理由必须第一眼说清是哪条指标越线,不给一个孤零零的颜色。
+    let first = &health.reasons()[0];
+    assert!(!first.ok);
+    assert!(first.text.contains("指标越线"), "理由是:{}", first.text);
+    assert!(first.text.contains("每周合入的 PR 数"));
 }
 
 #[test]

@@ -13,6 +13,7 @@
 //! [`Signal::Unknown`],不是「先当它是好的」。
 
 mod sealed;
+pub mod target;
 
 pub use sealed::DerivedHealth;
 
@@ -34,8 +35,11 @@ pub struct HealthInputs {
     pub git_readable: bool,
     /// (b) 本周或上周的周计划文件里有「本周指标读数」段且非空。
     pub has_metric_reading: bool,
-    /// 任何一条指标读数按 `.bw/metrics.toml` 的目标判下来是红。
-    pub any_metric_red: bool,
+    /// 按 `.bw/metrics.toml` 的目标判下来**越线**的指标,一条一句人话
+    /// (「名」现值 X,目标 Y)。空 = 没有越线的。判读在 [`target::breach`]:
+    /// 目标未设、格式认不出、读数没采到,都是「判不了」不进这里 ——
+    /// **缺数是灰的事,不是红的事**。
+    pub red_metrics: Vec<String>,
     /// (c) 上周有合入(`git log --merges`)或发版(`.bw/releases.md` 新增行)。
     pub delivered_last_week: bool,
 }
@@ -49,7 +53,7 @@ impl HealthInputs {
             committed_last_week: false,
             git_readable: false,
             has_metric_reading: false,
-            any_metric_red: false,
+            red_metrics: Vec::new(),
             delivered_last_week: false,
         }
     }
@@ -76,7 +80,8 @@ pub fn derive_project_health(inputs: &HealthInputs) -> DerivedHealth {
 
     // 判红在判绿之前:三条判据齐了但指标越线,那是红,不是绿。
     let stalled = inputs.git_readable && !inputs.committed_this_week && !inputs.committed_last_week;
-    let signal = if inputs.any_metric_red || stalled {
+    let metric_breached = !inputs.red_metrics.is_empty();
+    let signal = if metric_breached || stalled {
         // 指标越线,或者读到了 git 而连着两周一条提交都没有 —— 后者不是
         // 「说不准」,是真的停了。
         Signal::Red
@@ -89,7 +94,15 @@ pub fn derive_project_health(inputs: &HealthInputs) -> DerivedHealth {
         Signal::Amber
     };
 
-    let reasons = vec![
+    let mut reasons = Vec::new();
+    // 越线的理由排最前:红灯必须第一眼就看到是哪条指标、现值多少、目标多少。
+    if metric_breached {
+        reasons.push(HealthReason {
+            ok: false,
+            text: format!("指标越线:{}", inputs.red_metrics.join(";")),
+        });
+    }
+    reasons.extend([
         HealthReason {
             ok: a,
             text: if a {
@@ -116,7 +129,7 @@ pub fn derive_project_health(inputs: &HealthInputs) -> DerivedHealth {
                 "上周既没有合入也没有发版".into()
             },
         },
-    ];
+    ]);
 
     sealed::mint(signal, reasons)
 }

@@ -47,6 +47,21 @@ pub async fn collect_health_inputs(workspace: &Path, week: &str) -> HealthInputs
                 .any(|r| week_of_date(&r.released_at).as_deref() == Some(last_week.as_str()))
         });
 
+    // 「指标见红」的读数来源是**周计划快照**(本周的,本周没有就上周的)——
+    // 健康是现算的,不起脚本、不碰网络;快照是运作活①抄进仓的文件,目标定义
+    // 也在仓里,两台机器对同一个仓算出同一个结果。指标文件解析失败按「没有」
+    // 对待:那种情况总览的指标区已经整体灰 + 原话了,健康这边判不了就不参与,
+    // 不拿坏文件凑一个颜色。
+    let metrics = crate::repo::metrics_file::read(workspace).ok().flatten();
+    let snapshot = this_plan
+        .as_ref()
+        .filter(|p| p.has_reading())
+        .or(last_plan.as_ref().filter(|p| p.has_reading()));
+    let red_metrics = match (&metrics, snapshot) {
+        (Some(file), Some(plan)) => breached_metrics(file, &plan.readings),
+        _ => Vec::new(),
+    };
+
     HealthInputs {
         has_week_goal: this_plan.as_ref().is_some_and(|p| p.has_goal()),
         committed_this_week,
@@ -54,11 +69,36 @@ pub async fn collect_health_inputs(workspace: &Path, week: &str) -> HealthInputs
         git_readable,
         has_metric_reading: this_plan.as_ref().is_some_and(|p| p.has_reading())
             || last_plan.as_ref().is_some_and(|p| p.has_reading()),
-        // 读数是否越线要按 `.bw/metrics.toml` 的目标判 —— A 刀还没接指标目标
-        // 比对,这里如实给 false(不假装判过),接上之前灯不会因此变红。
-        any_metric_red: false,
+        red_metrics,
         delivered_last_week: merged_last_week || released,
     }
+}
+
+/// 拿快照里的读数对每条**设了目标**的指标判一次越线。判读全在
+/// [`crate::derive::target::breach`] 那个纯函数里:目标未设、格式认不出、快照
+/// 里没有这条的读数,都是「判不了」——不参与,绝不当成越线。
+fn breached_metrics(
+    file: &crate::repo::metrics_file::MetricsFile,
+    readings: &[crate::repo::week_plan_file::MetricReading],
+) -> Vec<String> {
+    let mut out = Vec::new();
+    for def in file.all() {
+        if def.target.trim().is_empty() {
+            continue;
+        }
+        let Some(reading) = readings.iter().find(|r| r.name.trim() == def.name.trim()) else {
+            continue;
+        };
+        if crate::derive::target::breach(&def.target, &reading.value) == Some(true) {
+            out.push(format!(
+                "「{}」现值 {},目标 {}",
+                def.name,
+                reading.value.trim(),
+                def.target.trim()
+            ));
+        }
+    }
+    out
 }
 
 /// `2026-08-20` → `2026-W34`。认不出格式就返回 `None`,不猜。
