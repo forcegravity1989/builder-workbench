@@ -60,7 +60,7 @@ references(`standard/system-prompt/references/*.md`)是「干某类活需要额�
 1. **杀进程重开,所有数字能重算、前后一致**——健康 / 走势 / 用量全部现算,`recompute_*` 是唯一写入者。
 2. **信号只能从数据推导;没数据就是 Unknown,不是绿**——`Derived<Signal>` 密封类型,store 层根本没有 `set_signal` 方法,手工把项目点绿在类型上就没有这条路。
 3. **完成永远由人点;同一件活绝不记两次**——状态机 `can_transition_to` 守卫,Done 的唯一入边是 InReview;定时任务只自动建活、绝不自动完成。
-4. **记录只追加、不修改;事后抹不掉**——V4 里这条的落点从库表换成仓文件(`.bw/metrics/readings.jsonl` 只追加)与 codehub issue 评论。
+4. **记录只追加、不修改;事后抹不掉**——跨天只追加。同一日历日同一指标只留一行(当天再采或再手填,覆盖这一行,不是再叠一行)。落点是仓文件 `.bw/metrics/readings.jsonl` 与 codehub issue 评论。采/手填写在固定账本 worktree(`bw/ledger`),不写人的主检出;合进主干跟运作活①走。
 
 ---
 
@@ -79,12 +79,12 @@ references(`standard/system-prompt/references/*.md`)是「干某类活需要额�
 
 ### 2 · 仓文件解析
 
-**是什么**:把项目仓 `.bw/` 下的配置/定义文件解析成内存结构供各屏现读现用。仓是正本——人、agent、第二台机器要看的都住仓里走 MR,本地不存第二份;这一层是读写正本的唯一入口,别处不许自己拼路径读 `.bw/*.toml`。关键取舍是不做 `deny_unknown_fields`(人手写多一个字段就整份崩代价太大),metrics 只认 `schema_version=2`、旧格式整份拒收不迁移。
+**是什么**:把项目仓 `.bw/` 下的配置/定义文件解析成内存结构供各屏现读现用。仓是正本——人、agent、第二台机器要看的都住仓里走 MR,本地不存第二份;这一层是读写正本的唯一入口,别处不许自己拼路径读 `.bw/*.toml`。关键取舍是不做 `deny_unknown_fields`(人手写多一个字段就整份崩代价太大),metrics 只认 `schema_version=2`、内核读到旧格式整份拒收(不上屏、不在打开项目时改仓)。重定+迁读数+借鉴旧脚本+删 V3 废弃件,跟运作活①的 skill 走,不写进系统提示词、不做内核静默迁移。
 
 **代码**:bw 的 `repo/`(共用读写口 + 五个解析器:project / metrics / issue-policy / managed / standard)+ `standard/mod.rs`(章程模板渲染)。
 **数据**:不落本地库,仓文件就是正本,解析结果只在内存里现用;写回手写渲染而非 `toml::to_string`,为把注释留给人看。
 **依赖**:serde / toml 反序列化、sha2 算指纹;对 V3 任何 crate 零依赖。
-**没建**:采集执行落在 `app/collect.rs`(模块12),规范铺底编排见模块3。B/C 读写 `.bw/metrics/readings.jsonl` 已接(只追加,键是日历日,同一天同一指标最后一行为准;展示按周取那一周日期最大的一天)。C 类定时建提醒活没做。
+**没建**:采集执行落在 `app/collect.rs`(模块12),规范铺底编排见模块3。B/C 读写 `.bw/metrics/readings.jsonl` 已接(键是日历日,同一天同一指标只留一行;展示按周取那一周日期最大的一天)。C 类定时建提醒活没做。
 
 ### 3 · 规范铺底
 
@@ -111,7 +111,7 @@ references(`standard/system-prompt/references/*.md`)是「干某类活需要额�
 **代码**:bw 的 `command.rs`(Command/Event 枚举)+ `model.rs`(`IssueStatus` 七态、`can_transition_to` 唯一事实源)+ `app/mod.rs`(dispatch)+ `app/issue.rs`(run_issue / transition_issue)。
 **数据**:本模块不落库;状态机是内存态求值,转移成立后把新状态交给 issue_store(模块1)写远端正本;Event 只活在当次运行里不持久化。
 **依赖**:crate::model 领域类型(本 crate 自持);issue_store 是转移落盘唯一出口;bw_engine 执行器 trait(▶跑下游,但状态推进判定在本模块)。
-**没建**:V3 那对 Command/Event 枚举不继承不引用。会话屏已接 `ReopenSession` / `DeleteSession` / `CancelRun`;项目群有自己的命令,缺口在对应模块「没建」段。
+**没建**:V3 那对 Command/Event 枚举不继承不引用。会话屏已接 `ReopenSession` / `DeleteSession` / `CancelRun`;项目群和在研版本跟名片走同一条 `EditProjectCard` 命令,缺口在对应模块「没建」段。
 
 ### 6 · 健康推导
 
@@ -154,7 +154,7 @@ references(`standard/system-prompt/references/*.md`)是「干某类活需要额�
 **是什么**:适配项目本来就有的一个群(今天只有 WeLink)。buddy 只做两件事:往群里发一条通知(评审中 / 合入 / 发版);定计划时拉一段上周群历史当参考。不是发明新的协作面,也不做双向机器人。关键取舍是发送不落库(没有"已发送"账本 / 去重键 / 重试队列,发送即完成),重复触发允许真的重发一条是已接受的知情代价;群号是项目的事(走仓文件+MR)、登录是机器的事(buddy 不碰不存凭证)。
 
 **代码**:bw 的 `chat/`(`ChatGroup` trait + 工厂 + `welink` / `mock` / `none` 三实现)+ `app/chat_notify.rs`(`chat_send` / `chat_notify_issue`)+ `repo/project_file.rs`(`[chat]` 段)。
-**数据**:配置在 `.bw/project.toml [chat]` 段(正本走轻量活+MR);发送不落库;探活与时间戳只写本机设置文件不开表。
+**数据**:配置在 `.bw/project.toml [chat]` 段(正本走总览「编辑项目名片」那张轻量活+MR,和名片四字段、在研版本同一张);发送不落库;探活与时间戳只写本机设置文件不开表。
 **依赖**:`welink-cli`(npm 全局装,用户自己 `auth login`,buddy 不碰凭证)经 bw_engine::tokio_cmd shell-out;`Box<dyn ChatGroup>` + async_trait。
 **没建**:群摘要 defer——welink-cli 天生拉不了群历史(只发不读),`fetch_history` 稳定返 `HistoryUnsupported` 是正常返回值不是错;不做双向机器人、群里点按钮改活状态、一个项目多个群、除 WeLink 外任何一家正式实现(WeLink 实现由同事补,buddy 侧只留接口)。
 
@@ -172,9 +172,9 @@ references(`standard/system-prompt/references/*.md`)是「干某类活需要额�
 **是什么**:把 `.bw/metrics.toml` 里定义的指标真采一遍、读出来。一条判据贯穿全设计:"今天能采到这个数,上周三那天的值现在还能算出来吗"——能就是可回溯(A 类),一个字都不存每次现算;不能就落进只追加的读数流水(B 类)。采集方式只有脚本和手填两种。关键取舍是 `MetricClass` 枚举是整个设计分水岭,脚本窗口由 buddy 给不是脚本自己决定,失败一律如实绝不写 0(None = 这周没采到,不是 0)。
 
 **代码**:bw 的 `repo/metrics_file.rs`(`MetricClass` / `CollectPlan` / `read`)+ `repo/readings_file.rs`(流水读写)+ `app/collect.rs`(`collect_all` / `collect_one` / `run_script`);app-shell 的 `bridge/mod.rs`(命令/事件对)+ `screens/overview/mod.rs`(采按钮)。业务采集脚本由运作活①跟人写进项目仓,buddy 不预铺。
-**数据**:可回溯(A 类)一个字不存现算;不可回溯(B 类)与手填(C 类)追加进 `.bw/metrics/readings.jsonl`(只追加,键是日历日 `YYYY-MM-DD`,同一天同一指标最后一行为准);展示按周时取那一周日期最大的一天。指标定义 `.bw/metrics.toml`(人手写正本);A 类采集结果本机纯缓存丢了重算。
+**数据**:可回溯(A 类)一个字不存现算;不可回溯(B 类)与手填(C 类)进同一份 `.bw/metrics/readings.jsonl`(键是日历日 `YYYY-MM-DD`,同一天同一指标只留一行,当天再采覆盖)。写在固定账本 worktree,分支 `bw/ledger`、目录是主仓兄弟 `<仓名>-bw-ledger`,不写人的主检出;读的时候主检出(已合入的历史)和账本叠在一起,同一天以账本为准。合进主干跟运作活①走。指标定义 `.bw/metrics.toml`(人手写正本);A 类采集结果本机纯缓存丢了重算。
 **依赖**:仓文件解析器读定义;bw_engine::tokio_cmd 起子进程;isoweek 算 ISO 周号;serde_json 解析 stdout;不认识任何远端系统,只会"起进程、传窗口、读 JSON"。
-**没建**:C 类定时建提醒活没做。脚本 stdout 必须 UTF-8、A 类必须吐按周 `points` 已写进 `references/metrics.md` 与模板顶部注释。北极星/滞后/引领每张卡固定一块折线,卡顶一行现值 + 相对上周(序列里最后两个已知数;不够就「—」);多条引领同一行并排。只吐当下一个 `value` 的落在窗口最后一周一个孤点,前几周断开,不把整张卡打成没采到。本会话第一次打开一个项目会自动采一轮指标和仓统计;B 类另有每日 09:00 自动采(buddy 开着、今天还没试过才跑,戳在 buddy 资产目录 `collect-stamp/<slug>`,不进被管仓;失败也盖戳避免 60 秒重打)。**记账键是日历日**,与 V3 `observation` 一天一行对齐,迁过去不亏周内点;折线按周画,一周取最后一天。V3 没有「每条指标自选日/周粒度」——当时全局日采、按日存、面板按 8 周画。C 类在总览卡手填今天的数。B 类没写 `run` 仍采不到——脚本在被管项目里,buddy 只负责跑和记账。旧流水只有 `week`、没有 `day` 的行不认。
+**没建**:C 类定时建提醒活没做。脚本 stdout 必须 UTF-8、A 类必须吐按周 `points` 已写进 `references/metrics.md` 与模板顶部注释。北极星/滞后/引领每张卡固定一块折线,卡顶一行现值 + 相对上周(序列里最后两个已知数;不够就「—」);多条引领同一行并排。只吐当下一个 `value` 的落在窗口最后一周一个孤点,前几周断开,不把整张卡打成没采到。本会话第一次打开一个项目会自动采一轮指标和仓统计;B 类另有每日 20:00 自动采(buddy 开着、今天还没试过才跑,戳在 buddy 资产目录 `collect-stamp/<slug>`,不进被管仓;失败也盖戳避免 60 秒重打)。**记账键是日历日**,与 V3 `observation` 一天一行对齐,迁过去不亏周内点;折线按周画,一周取最后一天。V3 没有「每条指标自选日/周粒度」——当时全局日采、按日存、面板按 8 周画。C 类在总览卡手填今天的数,和 B 类同一份流水、同一套覆盖。B 类没写 `run` 仍采不到——脚本在被管项目里,buddy 只负责跑和记账。旧流水只有 `week`、没有 `day` 的行不认。顶栏「刷新」会先把打开着的项目主检出快进到远端(脏的若只是读数流水,先挪进账本再拉),再重采;只重拼界面、不拉仓,会继续看见旧的 `metrics.toml`。
 
 ### 13 · 周循环与计划
 
@@ -183,7 +183,7 @@ references(`standard/system-prompt/references/*.md`)是「干某类活需要额�
 **代码**:bw 的 `app/plan.rs`(用例)+ `app/ops.rs`(运作活①②标题幂等键与定时)+ `isoweek.rs` + `trend.rs`(近 N 周走势全现算);app-shell 的 `screens/plan/`(mod / kanban / detail)。
 **数据**:零本地库——codehub/GitHub issue+标签是唯一正本;排期 = 给 issue 打 `bw:week:YYYY-Www` 标签(buddy 直接改);codehub 上顺带投影同名里程碑,计划屏仍只认标签;发版 = 远端建 Release + 打 `bw:released:vX` 标签按版本号幂等;发版弹窗默认号 = 在研号自增一位,人可改。总览/知识库发版次数优先读远端 Release,读不到再退本机 git 标签。点某一周只看打了那一周标签的活;没打周标签的只在「issue总览」。项目墙「本周 x/y 完成」跟总览五段同一口径,作废不进分母。
 **依赖**:issue_store、repo::project_file、git(`pull_ff`)、isoweek、trend、bw_engine::remote(建 Release / 查 MR)、bw_engine::github(`issue_branch` 确定性);节律规则读 `.bw/issue-policy.toml`。
-**没建**:"预览·未合入"做成灰态(从活 worktree 读未合入的 metrics.toml 与 ops① 评论重渲染周头未接);"蒸馏"灰态(见模块15);给活挂指标的命令没接(建活时"推的指标"列恒空);切在研版本要不要建活走 MR 张力未消解留给人拍;macOS 页面内拖放还没真机验证过一次。周目标在总览「本周计划进度」、计划屏周头、项目墙卡片各显示**一句话**;正本是 ops① 评论 `## 周目标`,多条从新到旧。纳入清单和读数快照留在评论里,人点开运作活看。范围内的活认 `bw:week` 标签。剧本要求人确认后当场建卡并打 `bw:week` + `bw:category:*`;替身路径仍走 `ConfirmWeekDraft`。挂评前用 `week-planning/check-week-comment.py` 校验标题。计划屏「新建活」可选业务活或运作活①②,都能填正文。业务活打 `bw:category:*`;运作活不打五阶段类别,标题按本周幂等。工具和 workflow 读回时查 issue-policy,不另打标签(原型默认 Open Design,workflow 空着等 proto-design 打包)。总览不再放「去计划」(侧栏下一格就是计划)。
+**没建**:"预览·未合入"做成灰态(从活 worktree 读未合入的 metrics.toml 与 ops① 评论重渲染周头未接);"蒸馏"灰态(见模块15);给活挂指标的命令没接(建活时"推的指标"列恒空);在研版本和项目群跟名片四字段走同一张轻量活「编辑项目名片」+MR,在总览编辑,不写主检出;配置屏不再改这两项;macOS 页面内拖放还没真机验证过一次。周目标在总览「本周计划进度」、计划屏周头、项目墙卡片各显示**一句话**;正本是 ops① 评论 `## 周目标`,多条从新到旧。纳入清单和读数快照留在评论里,人点开运作活看。范围内的活认 `bw:week` 标签。剧本要求人确认后当场建卡并打 `bw:week` + `bw:category:*`;替身路径仍走 `ConfirmWeekDraft`。挂评前用 `week-planning/check-week-comment.py` 校验标题。计划屏「新建活」可选业务活或运作活①②,都能填正文。业务活打 `bw:category:*`;运作活不打五阶段类别,标题按本周幂等。工具和 workflow 读回时查 issue-policy,不另打标签(原型默认 Open Design,workflow 空着等 proto-design 打包)。总览不再放「去计划」(侧栏下一格就是计划)。
 
 ### 14 · 资产盘点与项目接入
 
@@ -192,7 +192,7 @@ references(`standard/system-prompt/references/*.md`)是「干某类活需要额�
 **代码**:bw 的 `app/project.rs`(接入 / 名片 / 群)+ `git.rs`(`first_commit_date` / `tags_with_dates` / `week_counts_many` 现算);standard/skills 的 `asset-audit` + `project-handbook` 两份剧本。
 **数据**:零本地库;名片四字段落 `.bw/PROJECT.md` + `.bw/project.toml`;`project` 表只有定位与显示缓存;历史呈现不写仓文件。
 **依赖**:crate::git / isoweek / repo::project_file / standard、worktree、issue_store;外部 bw_engine::github / codehub(clone、list/create Release)。
-**没建**:首次模式打标签+补记靠 agent 会话,没有 buddy 先算证据文件那一层;`BackfillHistory` 已删;五条历史探测判据只实现前三条(提交数 / 标签 / CHANGELOG),远端已关闭 issue、已合并 MR 两条没对应查询;project-handbook 写 `AGENTS.md` 只记遗留、不接首次会话。每周模式定时已接:读 `.bw/issue-policy.toml` 的 `ops2_schedule`(模板默认 `fri 20:00`),buddy 开着每 60 秒判一次「本周这一刻过了没有」;过了且没有开着的「资产盘点 YYYY-Www」就建一张并开工,最远评审中。错过(当时没开着)下次开着照样补建,不另记触发表。运作活没有五阶段类别,详情锁死显示「运作」,内核拒改。
+**没建**:首次模式打标签+补记靠 agent 会话,没有 buddy 先算证据文件那一层;`BackfillHistory` 已删;五条历史探测判据只实现前三条(提交数 / 标签 / CHANGELOG),远端已关闭 issue、已合并 MR 两条没对应查询;project-handbook 写 `AGENTS.md` 只记遗留、不接首次会话。每周模式定时已接:读 `.bw/issue-policy.toml` 的 `ops2_schedule`(模板默认 `fri 09:00`),buddy 开着每 60 秒判一次「本周这一刻过了没有」;过了且没有开着的「资产盘点 YYYY-Www」就建一张并开工,最远评审中。错过(当时没开着)下次开着照样补建,不另记触发表。运作活①仍是人触发(`ops1_trigger = manual`),总览「开始本周」看本周有没有这张活/有没有周目标。运作活没有五阶段类别,详情锁死显示「运作」,内核拒改。V3 残留件(`.bw/connectors.toml`、`docs/buddy/`、`.bw/plan/` 等)由资产盘点 skill 在这张活的 worktree 里删,走 MR,不在主检出动手。
 
 ### 15 · 技能与蒸馏
 

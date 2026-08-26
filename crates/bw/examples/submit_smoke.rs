@@ -61,6 +61,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                 brief: "验第 4 站到第 5 站".into(),
                 benchmark: "—".into(),
                 north_star: "—".into(),
+                ..Default::default()
             },
             remote: RemoteRef {
                 provider: "github".into(),

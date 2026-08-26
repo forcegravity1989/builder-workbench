@@ -81,6 +81,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                 brief: "验证 V4 主环:接入 → 铺底 → 开始本周 → 干一张活 → 发版本".into(),
                 benchmark: "Linear".into(),
                 north_star: "每周被真实合入的活数".into(),
+                ..Default::default()
             },
             remote: RemoteRef {
                 provider: "mock".into(),

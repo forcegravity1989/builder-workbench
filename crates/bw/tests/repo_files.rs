@@ -49,7 +49,7 @@ require_pr_for = ["code", "docs"]
 
 [cadence]
 ops2_trigger  = "scheduled"
-ops2_schedule = "fri 20:00"
+ops2_schedule = "fri 09:00"
 "#;
     let f = issue_policy_file::parse(raw).unwrap();
     assert_eq!(f.tools.len(), 1);

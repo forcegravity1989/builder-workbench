@@ -33,9 +33,7 @@ fn say(step: &str, detail: &str) {
 fn intent(n: &str) -> ProjectIntent {
     ProjectIntent {
         name: n.to_string(),
-        brief: String::new(),
-        benchmark: String::new(),
-        north_star: String::new(),
+        ..Default::default()
     }
 }
 

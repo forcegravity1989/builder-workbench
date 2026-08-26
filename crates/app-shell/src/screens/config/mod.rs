@@ -28,7 +28,7 @@ pub fn View(p: ProjectVm, bridge: Bridge) -> Element {
             {mapping_block(p, bridge)}
             {skill_block(p)}
             div { class: "cfg-pair",
-                {chat_probe_block(p, bridge)}
+                {probe_block(p, bridge)}
                 {cron_block(p)}
             }
             StandardBlock { p: p.clone(), bridge: bridge.clone() }
@@ -217,55 +217,25 @@ fn desc_or_dash(d: &str) -> String {
     }
 }
 
-// ── ③ 项目群 + 开工工具探活 ─────────────────────────
+// ── ③ 开工工具探活 ────────────────────────────────
 //
-// 2026-08-21 删「连接器」表时把同一个函数里搭车的这两段误删过一次(评审抓的:
-// ProbeTool 命令从此没有任何界面入口,项目群配置在界面上再也验证不了)。现在
-// 它们是独立的一块,和连接器再无瓜葛。
+// 项目群改到总览名片一起编。这里只留探活,免得 ProbeTool 又没入口。
 
-fn chat_probe_block(p: &ProjectVm, bridge: &Bridge) -> Element {
+fn probe_block(p: &ProjectVm, bridge: &Bridge) -> Element {
     let c = &p.config;
     rsx! {
         div { class: "cfg-section",
-            div { class: "cfg-section-head", h3 { "项目群" } }
-            div { style: "display:flex;flex-direction:column;gap:7px;font-size:12.2px;",
-                div {
-                    "提供方 "
-                    span {
-                        class: if c.chat_provider == "未配" { "chip chip-gray" } else { "chip chip-clay" },
-                        "{c.chat_provider}"
-                    }
-                }
-                div { "群号 " span { class: "mono", "{c.chat_group}" } }
-                div {
-                    "同步哪些通知 "
-                    if c.chat_events.is_empty() {
-                        span { style: "color:var(--ink-3);", "—(没配群)" }
-                    }
-                    for (label, on) in c.chat_events.iter() {
-                        span { key: "{label}", style: "display:inline-flex;align-items:center;gap:5px;margin-right:12px;font-size:11.3px;",
-                            span { class: if *on { "tglswitch on" } else { "tglswitch" }, span { class: "knob" } }
-                            "{label}"
-                        }
-                    }
+            div { class: "cfg-section-head", h3 { "开工工具探活" } }
+            div { style: "font-size:11.5px;color:var(--ink-3);margin-bottom:8px;",
+                "远端仓 {c.remote}"
+            }
+            div { style: "display:flex;gap:8px;flex-wrap:wrap;",
+                for t in c.tools.iter() {
+                    {probe_chip(&t.name, &t.label, t.ok, &t.detail, bridge)}
                 }
             }
             div { class: "cfg-readonly-note",
-                "发出去就算完:不记账、不去重、失败不自动重发 —— 极小概率下同一件事会\
-                 重推一条,这是已经认了的代价。"
-                strong { "仓是正本" }
-                ",改群号或改勾选走「编辑项目信息」那条活 + MR,不在这里直接写仓。"
-            }
-
-            div { style: "border-top:1px dashed var(--border);margin-top:12px;padding-top:12px;",
-                div { style: "font-size:11.5px;color:var(--ink-3);margin-bottom:8px;",
-                    "开工工具探活 · 远端仓 {c.remote}"
-                }
-                div { style: "display:flex;gap:8px;flex-wrap:wrap;",
-                    for t in c.tools.iter() {
-                        {probe_chip(&t.name, &t.label, t.ok, &t.detail, bridge)}
-                    }
-                }
+                "项目群和在研版本在总览名片里改,跟四字段一张活、一次 MR。"
             }
         }
     }
@@ -326,17 +296,15 @@ fn cron_block(p: &ProjectVm) -> Element {
     }
 }
 
-// ── ⑤ 规范件与在研版本 ──────────────────────────────
+// ── ⑤ 规范件对账 ────────────────────────────────────
 
 /// 对账是**纯读**的:只回报缺 / 过期 / 人改过,不动仓、不建活。
-/// 写仓只发生在接入那一次规范铺底。
+/// 写仓只发生在接入那一次规范铺底。在研版本去总览名片里改。
 #[component]
 fn StandardBlock(p: ProjectVm, bridge: Bridge) -> Element {
     let (p, bridge) = (&p, &bridge);
     let b_rec = bridge.clone();
-    let b_ver = bridge.clone();
     let pid = p.id;
-    let mut version = use_signal(|| p.card.current_version_raw.clone());
     let std_ver = if p.card.standard_version.is_empty() {
         "—(这个仓还没铺过规范件)".to_string()
     } else {
@@ -345,7 +313,7 @@ fn StandardBlock(p: ProjectVm, bridge: Bridge) -> Element {
     rsx! {
         div { class: "cfg-section",
             div { class: "cfg-section-head",
-                h3 { "规范件与在研版本" }
+                h3 { "规范件" }
                 div { style: "display:flex;gap:8px;",
                     button {
                         class: "btn btn-sm",
@@ -358,29 +326,10 @@ fn StandardBlock(p: ProjectVm, bridge: Bridge) -> Element {
                 div { class: "settings-row",
                     div { div { class: "k", "规范版本" } div { class: "v", "{std_ver}" } }
                 }
-                div { class: "settings-row",
-                    div { style: "flex:1;",
-                        div { class: "k", "在研版本" }
-                        input {
-                            class: "input mono",
-                            style: "margin-top:5px;max-width:180px;",
-                            value: "{version}",
-                            oninput: move |e| version.set(e.value()),
-                        }
-                    }
-                    button {
-                        class: "btn btn-sm",
-                        onclick: move |_| b_ver.cmd(Command::SetCurrentVersion {
-                            project_id: pid,
-                            version: version.read().trim().to_string(),
-                        }),
-                        "保存"
-                    }
-                }
             }
             div { class: "cfg-readonly-note",
                 "对账只看不改:缺哪几份、哪几份过期了、哪几份被人手改过,结果显示在页脚回执里。\
-                 名片和开工映射在接入那次铺底里一次写完;指标正文跟运作活①会话走,不预铺空壳。"
+                 在研版本和项目群在总览名片里改。指标正文跟运作活①会话走,不预铺空壳。"
             }
         }
     }
