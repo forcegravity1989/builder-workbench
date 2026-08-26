@@ -52,7 +52,7 @@ impl Panel {
 
 /// 「跳到另一个入口」的口子。六入口之间切换是**纯本机导航**,不经内核 ——
 /// 所以它不是一条 `Req`,而是一个各屏都拿得到的信号。屏里想跳(总览的
-/// 「去计划 →」、通知里点一条跳会话)就 `use_context::<PanelNav>()`。
+/// 通知里点一条跳会话)就 `use_context::<PanelNav>()`。
 #[derive(Clone, Copy)]
 pub struct PanelNav(pub dioxus::prelude::Signal<Panel>);
 
@@ -63,9 +63,9 @@ impl PanelNav {
     }
 }
 
-/// 指南抽屉开在哪一章。`None` = 收着。和 [`PanelNav`] 一样是纯本机导航,
-/// 所以也走 context 不走 `Req` —— 项目墙那条「怎么处理 →」按下去要能直接把
-/// 抽屉翻到环境那一章,抽屉本身却挂在外壳上,两边只能靠这个共享信号说话。
+/// 指南抽屉开着还是收着。`None` = 收着。和 [`PanelNav`] 一样是纯本机导航,
+/// 所以也走 context 不走 `Req` —— 项目墙环境条「怎么处理 →」也能打开。
+/// 正文是编进二进制的产品指南,不再自写章节。
 #[derive(Clone, Copy)]
 pub struct GuideNav(pub dioxus::prelude::Signal<Option<&'static str>>);
 

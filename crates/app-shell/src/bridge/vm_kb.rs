@@ -4,10 +4,14 @@
 //! 都是打开那一刻现扫仓目录、现走 git、现起子进程得来的。
 
 use crate::vm::*;
-use bw_v4::model::ProjectId;
-use bw_v4::repo::{managed_file, release_file, week_plan_file};
-use bw_v4::V4Store;
+use bw::repo::managed_file;
 use std::path::Path;
+
+/// 知识树里周计划文件所在目录(刀6:这层不再解析它们,知识树只列仓里存在的
+/// 文件供人点开 —— 文件在就在,不在就不列)。
+const PLAN_DIR: &str = ".bw/plan";
+/// 发版记录文件路径。同上:知识树只看它在不在。
+const RELEASES_PATH: &str = ".bw/releases.md";
 
 /// 铺底管账里登记过的文件路径。**一次读完传下去** —— 原来是每个技能包各读
 /// 一次、各解析一次 `.bw/managed.toml`,十几个包就是十几次全文解析,而这段
@@ -76,13 +80,13 @@ pub(super) fn build_kb(ws: &Path, tab: KbTab, open: Option<&str>) -> KbVm {
     push_group(&mut groups, "规范件", spec);
 
     // 周计划倒序:最近的在最上面。回填出来的和人写的同目录同格式,只挂一个徽记。
-    let mut weeks: Vec<KbFileVm> = std::fs::read_dir(ws.join(week_plan_file::DIR))
+    let mut weeks: Vec<KbFileVm> = std::fs::read_dir(ws.join(PLAN_DIR))
         .map(|d| {
             d.flatten()
                 .filter(|e| e.path().extension().is_some_and(|x| x == "md"))
                 .map(|e| {
                     let name = e.file_name().to_string_lossy().to_string();
-                    let rel = format!("{}/{name}", week_plan_file::DIR);
+                    let rel = format!("{}/{name}", PLAN_DIR);
                     // 徽记只看头里那几行,不整篇读 —— 老项目回填后这里可能上百份,
                     // 而这段每重拼一次 ViewModel 就跑一遍。
                     let backfilled = read_head(&e.path())
@@ -106,9 +110,9 @@ pub(super) fn build_kb(ws: &Path, tab: KbTab, open: Option<&str>) -> KbVm {
     push_group(&mut groups, "周计划", weeks);
 
     let mut rel_files = Vec::new();
-    if ws.join(release_file::REL_PATH).is_file() {
+    if ws.join(RELEASES_PATH).is_file() {
         rel_files.push(KbFileVm {
-            rel: release_file::REL_PATH.into(),
+            rel: RELEASES_PATH.into(),
             label: "发版记录".into(),
             badge: String::new(),
         });
@@ -163,18 +167,26 @@ fn push_group(out: &mut Vec<KbGroupVm>, title: &str, files: Vec<KbFileVm>) {
 }
 
 /// 代码图页签:每次点开就是一次全新的子进程调用,不缓存。
+/// 这个仓还没 `.codegraph/` 时当场跑 `init`,不再只甩一句「你自己去终端建」。
 pub(super) async fn build_codegraph(ws: &Path) -> CodeGraphVm {
-    use crate::adapters::codegraph::{big_files, detect, Availability};
-    let state = detect(ws).await;
-    if state != Availability::Ready {
+    use crate::adapters::codegraph::{big_files, detect, init_index, Availability};
+    let state = detect(ws);
+    if state == Availability::NotInstalled {
         return CodeGraphVm {
-            state: match state {
-                Availability::NotInstalled => "not_installed".into(),
-                _ => "not_indexed".into(),
-            },
+            state: "not_installed".into(),
             hint: state.hint(),
             ..CodeGraphVm::default()
         };
+    }
+    if state == Availability::NotIndexed {
+        if let Err(e) = init_index(ws).await {
+            return CodeGraphVm {
+                state: "not_indexed".into(),
+                hint: Availability::NotIndexed.hint(),
+                error: e,
+                ..CodeGraphVm::default()
+            };
+        }
     }
     match big_files(ws, 20).await {
         Ok(rows) => CodeGraphVm {
@@ -199,12 +211,16 @@ pub(super) async fn build_codegraph(ws: &Path) -> CodeGraphVm {
 }
 
 /// 资产页签:五个区块**全部现算**——扫仓目录、走 git、解析仓文件。
-/// 没有登记表可查(V4 库里只有四张表)。
-pub(super) async fn build_assets(store: &V4Store, id: ProjectId, ws: &Path) -> AssetsVm {
-    let usage = store.workflow_usage(id).await.unwrap_or_default();
-    let skills = super::vm_panels::skill_list(ws, &usage);
+/// 没有登记表可查(V4 库里只有四张表)。发版列表由调用方现算后传入
+/// (优先远端 Release,与总览同一份)。
+pub(super) async fn build_assets(
+    usage: &[(String, u32)],
+    ws: &Path,
+    releases: Vec<ReleaseVm>,
+) -> AssetsVm {
+    let skills = super::vm_panels::skill_list(ws, usage);
 
-    let artifacts = bw_v4::git::artifacts(ws, 200)
+    let artifacts = bw::git::artifacts(ws, 200)
         .await
         .unwrap_or_default()
         .into_iter()
@@ -216,30 +232,7 @@ pub(super) async fn build_assets(store: &V4Store, id: ProjectId, ws: &Path) -> A
         })
         .collect();
 
-    let releases = release_file::read(ws)
-        .ok()
-        .flatten()
-        .unwrap_or_default()
-        .into_iter()
-        .rev()
-        .map(|r| ReleaseVm {
-            version: r.version,
-            released_at: r.released_at,
-            note: r.note,
-            included: if r.included_numbers.is_empty() {
-                String::new()
-            } else {
-                r.included_numbers
-                    .iter()
-                    .map(|n| format!("#{n}"))
-                    .collect::<Vec<_>>()
-                    .join(" ")
-            },
-            origin: r.origin,
-        })
-        .collect();
-
-    let (repo_stats, error) = match v4_engine::evidence::collect(&ws.display().to_string()).await {
+    let (repo_stats, error) = match bw_engine::evidence::collect(&ws.display().to_string()).await {
         Ok(e) => (
             vec![
                 ("提交数".to_string(), e.commit_count.to_string()),
@@ -254,7 +247,7 @@ pub(super) async fn build_assets(store: &V4Store, id: ProjectId, ws: &Path) -> A
 
     AssetsVm {
         skills,
-        // V4 还没有蒸馏这颗按钮(见 docs/LEFTOVERS.md V4B-6),所以这里恒空。
+        // V4 还没有蒸馏这颗按钮,所以这里恒空。
         // 不放占位数据。
         distilled: Vec::new(),
         artifacts,

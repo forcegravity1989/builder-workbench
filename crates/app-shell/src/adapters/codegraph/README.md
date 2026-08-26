@@ -7,7 +7,9 @@
 
 - `codegraph files -j` —— 每个文件的 `path` / `language` / `nodeCount` / `size`,
   本模块按 `size` 排序取前若干行当「大文件榜」。字段原样透出,不加工。
-- 「装没装 / 建没建索引」这两个判据:命令在不在 PATH、仓里有没有 `.codegraph/`。
+- 「装没装 / 建没建索引」这两个判据:命令在不在 PATH(走 `which_on_path`,Windows
+  认 `codegraph.cmd`)、仓里有没有 `.codegraph/`。没索引时点页签或「重新跑一次」
+  会当场跑 `codegraph init`,不再只甩一句「你自己去终端建」。
 
 **没借什么**:
 

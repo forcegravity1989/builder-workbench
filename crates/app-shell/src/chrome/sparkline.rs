@@ -1,7 +1,7 @@
 //! 走势小图 —— 内联 SVG,不引任何图表库。
 //!
-//! **几何取舍照搬 V3 那版已经跑顺的**(`crates/ui` 里那两个纯函数),但代码是
-//! 这边重写的一份:`ui` 那个 crate 挂在 `bw-core` 上,而 V4 正在断掉那条依赖,
+//! **几何取舍照搬 V3 那版已经跑顺的**(V3 `ui` crate 里那两个纯函数,见 v3 分支),但代码是
+//! 这边重写的一份:V3 那个 crate 挂在 V3 内核上,V4 不依赖那条链,
 //! 搬过来等于把依赖又接回去。
 //!
 //! 抄过来的四条取舍,每条都有它的道理:
@@ -56,12 +56,20 @@ pub fn trend_chart(s: &Series) -> Element {
 
     let min = known.iter().copied().fold(f64::INFINITY, f64::min);
     let max = known.iter().copied().fold(f64::NEG_INFINITY, f64::max);
-    // 全平的序列人为撑开,免得线贴着边框看不见。
+    // 全平的序列人为撑开,免得线贴着边框看不见。**计数序列(提交/PR/issue
+    // 数,都 ≥ 0)y 轴不低于 0**——以前平在 0 时 y_min = 0-1 = -1,折线图
+    // 纵坐标从 -1 起,看着像能取负值,其实只是撑开的余量。
     let (y_min, y_max) = if (max - min).abs() <= f64::EPSILON {
-        (min - 1.0, min + 1.0)
+        let lo = if min >= 0.0 { 0.0 } else { min - 1.0 };
+        (lo, min + 1.0)
     } else {
         let pad = (max - min) * 0.08;
-        (min - pad, max + pad)
+        let lo = if min >= 0.0 {
+            (min - pad).max(0.0)
+        } else {
+            min - pad
+        };
+        (lo, max + pad)
     };
 
     let x_at = |i: usize| -> f64 {
