@@ -1,10 +1,10 @@
 # Builders' Workbench(BW / loop-buddy)
 
-> **30 秒导读**:仓库总入口——是什么、怎么跑、规矩在哪。给第一次 clone 下来的人看。开发规矩(唯一正本)在 [`AGENTS.md`](AGENTS.md);领域词表在 [`CONTEXT.md`](CONTEXT.md);设计指向在 [`DESIGN.md`](DESIGN.md);全仓文档地图在 [`docs/README.md`](docs/README.md)。
+> **30 秒导读**:仓库总入口——是什么、怎么跑、规矩在哪。给第一次 clone 下来的人看。**产品主张**听 [`principles/03`](principles/03-press-release-faq-flywheel.md)；**文档分层与特性制品链**听 [`principles/`](principles/README.md)；开发规矩(唯一正本)在 [`AGENTS.md`](AGENTS.md);领域词表在 [`CONTEXT.md`](CONTEXT.md);设计指向在 [`DESIGN.md`](DESIGN.md);全仓文档地图在 [`docs/README.md`](docs/README.md)。
 
 ## 是什么
 
-单人构建者的 Rust 原生桌面工作台(Dioxus 0.7 / wry WebView,macOS + Windows)。产品命题一句话:**用 AI 时代的方式,一步步把一个项目的管理体系搭起来;走完,你拥有一套可复制的项目管理方法,而不只是一块看板**。设计见 [`docs/architecture.md`](docs/architecture.md)。
+单人构建者的 Rust 原生桌面工作台(Dioxus 0.7 / wry WebView,macOS + Windows)。**目标体验**见 [`principles/03`](principles/03-press-release-faq-flywheel.md)（一站式迭代、少而硬的 gate）。现行工程设计见 [`docs/architecture.md`](docs/architecture.md)，**不得把草稿界面讲成 03 已交付**。
 
 主环(用户在这里真干活):**项目墙 → 建/接项目 → Issue 看板 → ▶跑(内嵌终端里的真实 `claude`)→ 评审 → 人点「完成」→ 一键蒸馏成技能**。
 
@@ -27,14 +27,15 @@ cargo run -p bw-engine --example pty_smoke
 ## 仓库结构
 
 ```
-crates/   bw(内核)· bw-engine(底座)· app-shell(壳,bin bw-dev)
-standard/  规范正本(铺底 `templates/` + 系统提示词 `system-prompt/` + 运作剧本 `skills/` 4 份 + 业界 workflow `vendor/` mattpocock/mohit)
-docs/      文档地图 + architecture(设计正本)+ guide(产品指南)+ adr + hifi
-scripts/   门禁脚本(guard-*)+ codegraph 联调
+principles/ 慢变原则(01 分层/changes · 02 逆向工作法 · 03 新闻稿/FAQ/飞轮)
+crates/     bw(内核)· bw-engine(底座)· app-shell(壳,bin bw-dev)
+standard/   规范正本(铺底 `templates/` + 系统提示词 `system-prompt/` + 运作剧本 `skills/` 4 份 + 业界 workflow `vendor/` mattpocock/mohit)
+docs/       文档地图 + architecture(设计正本)+ guide(产品指南)+ adr + hifi
+scripts/    门禁脚本(guard-*)+ codegraph 联调
 ```
 
 架构、门禁命令、验证方式、目录导览见 [`AGENTS.md`](AGENTS.md);现在在做什么见 [`docs/README.md`](docs/README.md)。
 
 ## 提交前
 
-headless 门禁与 CI 一致(app-shell 壳的编译/Clippy 因 ubuntu runner 缺 WebKit/GTK 系统依赖,只本地跑;命令见 [`AGENTS.md`](AGENTS.md)「门禁」);commit 标题必须让不查文档的人看懂做了什么;数字一律读回(`codehub-cli`/`gh`/`git`/`cat .bw/…`)、不硬编。
+headless 门禁与 CI 一致(app-shell 壳的编译/Clippy 因 ubuntu runner 缺 WebKit/GTK 系统依赖,只本地跑;命令见 [`AGENTS.md`](AGENTS.md)「门禁」);commit 标题必须让不查文档的人看懂做了什么;数字一律读回(`codehub-cli`/`gh`/`git`/`cat .bw/…`)、不硬编。特性级变更走 `principles/02` + `changes/`(Superpowers/grill-me 可用,产出落回 changes/),见 [`AGENTS.md`](AGENTS.md)。

@@ -2,6 +2,27 @@
 
 > 这是 buddy(loop-buddy / Builders' Workbench)仓库的**唯一开发规矩正本**。`CLAUDE.md` 只是一行导入它。给所有驱动 AI(Claude Code / Cursor / Codex)和接手的人看。改这份 = 改开发规矩,过评审再合。
 
+## 原则正本（最高优先级）
+
+**`principles/` 是本仓最重要、最慢变的原则。** 开特性、改产品主张、写给人看的文档之前必须对齐这里；不得用草稿实现或口头约定推翻。
+
+| 篇 | 管什么 |
+|---|---|
+| [`principles/01-document-organization.md`](principles/01-document-organization.md) | 整仓知识/文档怎么分层；`changes/` 少 gate |
+| [`principles/02-working-backwards.md`](principles/02-working-backwards.md) | 逆向工作法：特性怎么写 intent / 带原型的 spec |
+| [`principles/03-press-release-faq-flywheel.md`](principles/03-press-release-faq-flywheel.md) | **整个产品**的新闻稿、外/内 FAQ、飞轮（主张正本） |
+
+索引见 [`principles/README.md`](principles/README.md)。改客群 / 飞轮 / 对外主张 → 先议再改 03；特性 intent 不得偷偷改写。现行实现对照听 [`docs/architecture.md`](docs/architecture.md)，**不得把草稿界面讲成 03 里已经交付的体验**。
+
+### 特性起手路径（硬约定）
+
+| 场景 | 怎么走 |
+|---|---|
+| **特性级变更** | 对齐 03 → 按 **02** 开 / 改 `changes/<id>/intent.md` + 带原型的 `spec.md`（人 gate）；`plan.md` 仅大风险升 gate；小修直修（见 01） |
+| **Superpowers / grill-me** | **可用**：发散、质询、写计划草稿。产出必须落回 `changes/<id>/`。不得把聊天或旁路 specs 当成已过 gate 的正本 |
+| **小 bug / 琐修** | 直接改 + 门禁 / 验证；不开 `changes/` |
+
+
 ## 这是什么
 
 单人构建者的 Rust 原生桌面工作台(Dioxus 0.7 / wry WebView,macOS + Windows)。产品命题见 [`README.md`](README.md);设计正本见 [`docs/architecture.md`](docs/architecture.md)([`DESIGN.md`](DESIGN.md) 指路);领域词表见 [`CONTEXT.md`](CONTEXT.md)。三个名字一件东西:仓库真名 **loop-buddy**、产品名 **Builders' Workbench(BW)**、产品里 AI 队友自称 **buddy**。
@@ -10,7 +31,7 @@
 
 ## 语言和构建
 
-Rust 1.82+,cargo workspace。桌面壳另需 Dioxus 0.7 的系统依赖(macOS 自带 WebKit,Windows 用 WebView2)。`#![forbid(unsafe_code)]` 是 `bw-engine` 的规矩。跨会话只认本仓的 `AGENTS.md` + `CONTEXT.md` + `docs/` + `CHANGELOG.md` + `DESIGN.md`,不凭上一会话口头结论改代码。
+Rust 1.82+,cargo workspace。桌面壳另需 Dioxus 0.7 的系统依赖(macOS 自带 WebKit,Windows 用 WebView2)。`#![forbid(unsafe_code)]` 是 `bw-engine` 的规矩。跨会话只认本仓的 `principles/` + `AGENTS.md` + `CONTEXT.md` + `docs/` + `CHANGELOG.md` + `DESIGN.md`,不凭上一会话口头结论改代码。
 
 仓外 IDE(Claude Code / Cursor / Codex)开新会话,先读 [`.claude/skills/buddy-start/SKILL.md`](.claude/skills/buddy-start/SKILL.md)——只是闸门,正本仍是本文件。工作台内嵌终端里不要用它(那边已经灌了系统提示词)。buddy MVP 还不能在工作台里维护自己,所以仓外起手暂时靠这份 skill,不是再做一套伴飞/需求/修 bug 流程。
 
@@ -51,6 +72,7 @@ crates/   bw(MVP 内核:本地零库+仓文件解析+现算推导+Command/Event)
           bw-engine(MVP 底座:交互式 claude+PTY+worktree+git+codehub/github 远端)
           app-shell(MVP 壳:九屏+主题+内核桥+适配模块,bin bw-dev)
 standard/  buddy 推给被管项目的规范正本(include_str! 进 bw):铺底 `templates/` + 系统提示词 `system-prompt/`(SYSTEM.md.tmpl+references)+ 自维护运作剧本 `skills/` 4 份 + 业界 workflow `vendor/`(mattpocock/mohit,给默认 workflow 打包)
+principles/ 慢变原则正本(01 分层/changes · 02 逆向工作法 · 03 新闻稿/FAQ/飞轮)
 docs/      architecture(设计正本)+ guide(产品指南)+ adr + hifi + README(地图)
 scripts/   门禁脚本(guard-*)+ codegraph 联调
 .bw/       buddy 自己作为被管项目的资产(PROJECT.md/metrics.toml/issue-policy.toml/…)
@@ -67,6 +89,7 @@ scripts/   门禁脚本(guard-*)+ codegraph 联调
 | 用户旅程 / 产品指南 | [`docs/guide/`](docs/guide/) | 点什么、背后发生什么、手上多了什么;按站把活交给人或 AI |
 | 高保真 | [`docs/hifi/`](docs/hifi/) | 界面长什么样 |
 | 架构与特性关键设计 | [`docs/architecture.md`](docs/architecture.md) | 模块为什么这样、数据归哪、没建什么;按模块交活 |
+| 产品主张 / 飞轮 | [`principles/03`](principles/03-press-release-faq-flywheel.md) | 目标体验与选型约束；特性 intent 必须对齐 |
 | 开发规矩 + 词表 | 本文件 + [`CONTEXT.md`](CONTEXT.md) | 怎么建/跑/测、用哪个词 |
 
 自己作为被管项目跟被管仓同一套落点:`.bw/` 走规范铺底;`AGENTS.md` 走 project-handbook;`CONTEXT` / adr / spec 走 `mattpocock-skills`;旅程 / 高保真 / 架构是产品自己的可见物,业界 workflow 不会代写。资产盘点盘这些齐不齐,它本身不产规范。
@@ -86,7 +109,7 @@ scripts/   门禁脚本(guard-*)+ codegraph 联调
 - **规范 · 系统提示词 + 渐进加载**(主提示词外置 `standard/system-prompt/SYSTEM.md.tmpl` + `references/` 阶段规范,运行时渲染注入;设计见 [`docs/architecture.md`](docs/architecture.md) 的「系统提示词与渐进加载」模块):不论哪个 workflow 都兜住 buddy 统一要求。
 - **方法论 · skill / workflow**(此层含**运作剧本**——buddy 自发动作,非方法论——在 `skills/`;**业界 workflow**——方法论来源——在 `vendor/`,build 默认 `mattpocock-skills` 可换):怎么做能做得更好。
 
-改一个特性前,先在 [`docs/architecture.md`](docs/architecture.md) 的模块设计上定位:旅程哪一站 → 三层里改哪层 → 数据归哪 → 模块落点。找不到先补文档、再动代码——不清晰不写代码。
+改一个特性前,先对齐 [`principles/03`](principles/03-press-release-faq-flywheel.md) 飞轮检验,再按「特性起手路径」写 `changes/`(见上);工程落点在 [`docs/architecture.md`](docs/architecture.md) 的模块设计上定位:旅程哪一站 → 三层里改哪层 → 数据归哪 → 模块落点。找不到先补文档、再动代码——不清晰不写代码。
 
 ### codehub issue 标签词表
 

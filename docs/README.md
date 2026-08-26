@@ -1,13 +1,14 @@
 # docs/ — 全仓文档地图
 
-> **30 秒导读**:这一页告诉你仓库里每一堆文档是干什么的。给新接手的人和 AI 会话看。仓库根 [`README.md`](../README.md) 是总入口;开发规矩唯一正本 [`AGENTS.md`](../AGENTS.md);`CLAUDE.md` 只是一行导入它。本页随目录变动维护。
+> **30 秒导读**:这一页告诉你仓库里每一堆文档是干什么的。给新接手的人和 AI 会话看。仓库根 [`README.md`](../README.md) 是总入口;**主张与分层**听 [`../principles/`](../principles/README.md);开发规矩唯一正本 [`AGENTS.md`](../AGENTS.md);`CLAUDE.md` 只是一行导入它。本页随目录变动维护。
 
 ## 一张图
 
 ```
 仓库根
 ├── README.md          总入口:是什么 · 怎么跑
-├── AGENTS.md          唯一开发规矩正本(建/跑/测+门禁+目录+铁律)
+├── principles/        **原则正本**(01 分层/changes · 02 逆向工作法 · 03 新闻稿/FAQ/飞轮)
+├── AGENTS.md          唯一开发规矩正本(建/跑/测+门禁+目录+铁律+特性起手)
 ├── CLAUDE.md          一行 @AGENTS.md 导入
 ├── CONTEXT.md         领域语言词表(交棒/读数/蒸馏……唯一规范用词来源)
 ├── CHANGELOG.md       版本变更记录(本次合入了什么)
@@ -33,6 +34,7 @@
 | 你在找 | 在哪 |
 |---|---|
 | 「buddy 是什么/设计」 | [`architecture.md`](architecture.md)([`DESIGN.md`](../DESIGN.md) 指路) |
+| 产品主张 / 飞轮 / 特性怎么立项 | [`../principles/`](../principles/README.md) |
 | 开发规矩(建/跑/测/门禁/目录/铁律/怎么加特性) | [`AGENTS.md`](../AGENTS.md) |
 | 领域词 | [`CONTEXT.md`](../CONTEXT.md) |
 | 产品指南(怎么用) | [`guide/`](guide/) |
