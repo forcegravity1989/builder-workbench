@@ -6,6 +6,8 @@
 
 ## 最近 · 2026-08-26
 
+首次运作活①:`.bw/metrics.toml` 从零起草。北极星本轮**留空**(人要的是「被纳入项目是否又快又好」,MVP 阶段无用户效果数据、手填也无思路,诚实灰,不为点亮硬凑)。一条滞后「纳入管理项目数」(C 类手填)+ 一条引领「每周闭环 issue 数」(A 类,脚本 `.bw/scripts/codehub-closed-issues.py` 真采到=3)。代码仓指标(提交数 / MR 合入数)workbench 平台自记,不重复定义。判定与理由见 `docs/metrics.md`。
+
 规范铺底 v5.9:buddy 自己的 `.bw/project.toml` 镜像 `standard_version` 漏停在 5.0(接入只在新建项目赋一次值,之后铺底从不 bump),而 standard.toml 已到 5.9、两者违约;这次把镜像同步到 5.9。3 个核心件仍 HumanEdited(载项目专属内容),managed.toml 如实记历史不 bump。根因(铺底代码不 bump 镜像字段)另开活修。
 
 Windows 上 `bw-dev.exe` 嵌 `app.ico`(任务栏 / 资源管理器)。编不过只告警,不影响功能和 CI。
