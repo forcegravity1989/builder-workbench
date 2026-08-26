@@ -7,7 +7,8 @@
 ```
 仓库根
 ├── README.md          产品介绍(GitHub 门面):是什么 · 主张摘要 · 快速开始 · 架构一眼
-├── principles/        **原则正本**(01 分层/changes · 02 逆向工作法 · 03 新闻稿/FAQ/飞轮)
+├── principles/        **原则正本**(01 分层/changes · 02 逆向工作法 · 03 新闻稿/FAQ/飞轮 · 04 AI-Native SDLC)
+├── changes/           特性级变更制品链(intent/spec/plan/STATUS;粒度与 gate 见 principles/01)
 ├── AGENTS.md          唯一开发规矩正本(建/跑/测+门禁+目录+铁律+特性起手)
 ├── CLAUDE.md          一行 @AGENTS.md 导入
 ├── CONTEXT.md         领域语言词表(交棒/读数/蒸馏……唯一规范用词来源)
@@ -28,7 +29,6 @@
 | [`guide/`](guide/) | 产品指南(怎么用 Workbench,给用户/同事)+ 填写规范 |
 | [`adr/`](adr/) | 架构决策(难回头一条一篇) |
 | [`hifi/`](hifi/) | 视觉正本(`index.html` 单文件高保真 + 逐屏简报),桌面壳样式表从它搬过去 |
-| [`reference/`](reference/) | 外部参考的**提炼版**(转述非原文,原文只存链接)。现有一篇:[AI-native SDLC playbook](reference/ai-native-sdlc-playbook.md)——做法与治理哲学,每段带 BW 落点或不采纳理由 |
 
 ## 找东西
 
@@ -41,5 +41,5 @@
 | 领域词 | [`CONTEXT.md`](../CONTEXT.md) |
 | 产品指南(怎么用) | [`guide/`](guide/) |
 | headless 例子(PTY 烟测) | [`AGENTS.md`](../AGENTS.md)「怎么建/跑/测」;源码 `crates/bw-engine/examples/` |
-| 外部参考(playbook 等的提炼版) | [`reference/`](reference/) |
+| AI-Native SDLC playbook 提炼(产物链/治理哲学) | [`../principles/04-ai-native-sdlc.md`](../principles/04-ai-native-sdlc.md)(2026-08-26 从 `docs/reference/` 并入 principles) |
 | V3 在哪 | V3 已删(2026-08-24),全量在 `v3` 分支 |

@@ -11,6 +11,7 @@
 | [`principles/01-document-organization.md`](principles/01-document-organization.md) | 整仓知识/文档怎么分层；`changes/` 少 gate |
 | [`principles/02-working-backwards.md`](principles/02-working-backwards.md) | 逆向工作法：特性怎么写 intent / 带原型的 spec |
 | [`principles/03-press-release-faq-flywheel.md`](principles/03-press-release-faq-flywheel.md) | **整个产品**的新闻稿、外/内 FAQ、飞轮（主张正本） |
+| [`principles/04-ai-native-sdlc.md`](principles/04-ai-native-sdlc.md) | 研发过程原则（playbook 提炼）：产物链、治理哲学、不采纳清单 |
 
 索引见 [`principles/README.md`](principles/README.md)。改客群 / 飞轮 / 对外主张 → 先议再改 03；特性 intent 不得偷偷改写。现行实现对照听 [`docs/architecture.md`](docs/architecture.md)，**不得把草稿界面讲成 03 里已经交付的体验**。
 
@@ -74,7 +75,8 @@ crates/   bw(MVP 内核:本地零库+仓文件解析+现算推导+Command/Event)
           bw-engine(MVP 底座:交互式 claude+PTY+worktree+git+codehub/github 远端)
           app-shell(MVP 壳:九屏+主题+内核桥+适配模块,bin bw-dev)
 standard/  Workbench 推给被管项目的规范正本(include_str! 进 bw):铺底 `templates/` + 系统提示词 `system-prompt/`(SYSTEM.md.tmpl+references)+ 自维护运作剧本 `skills/` 4 份 + 业界 workflow `vendor/`(mattpocock/mohit,给默认 workflow 打包)
-principles/ 慢变原则正本(01 分层/changes · 02 逆向工作法 · 03 新闻稿/FAQ/飞轮)
+principles/ 慢变原则正本(01 分层/changes · 02 逆向工作法 · 03 新闻稿/FAQ/飞轮 · 04 AI-Native SDLC)
+changes/   特性级变更制品链(intent/spec/plan/STATUS,一特性一目录;粒度与 gate 见 principles/01)
 docs/      architecture(设计正本)+ guide(产品指南)+ adr + hifi + README(地图)
 scripts/   门禁脚本(guard-*)+ codegraph 联调
 .bw/       Workbench 自己作为被管项目的资产(PROJECT.md/metrics.toml/issue-policy.toml/…)

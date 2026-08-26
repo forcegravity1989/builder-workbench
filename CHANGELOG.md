@@ -6,6 +6,8 @@
 
 ## 最近 · 2026-08-26
 
+文档治理一批:playbook 提炼版从 `docs/reference/` 并入 `principles/04-ai-native-sdlc.md`(与 01–03 同目录,索引/入链同步);principles 01/03 里指向本仓不存在路径的引用改为真实地形;残留 buddy 称呼清理、V3 期「维护指南」半篇从填写规范退役;`changes/process-metrics` 状态改已合入;新开 `changes/spec-knowledge-base`(项目规范知识库 milestone,intent/spec/plan)。
+
 产品命名统一为 Builders' Workbench / Workbench / BW，工程标识保留 bw；废弃 buddy、loop-buddy。README 改产品门面；仓外起手 skill 改名为 `workbench-start`。
 
 计划屏左栏「全部」改成「issue总览」，字重和周行同一套，不再像标题。

@@ -1,6 +1,13 @@
-# AI-Native SDLC Playbook · 提炼版
+# 04 · AI-Native SDLC(playbook 提炼)
 
-> **30 秒导读**:这是什么——Anthropic《The AI-Native SDLC Playbook》的**转述提炼,不是原文**(原文有版权,仓里只存链接:<https://claude.com/blog/the-ai-native-sdlc-playbook>,2026-08-25 取读)。按「它主张什么 → BW 怎么用 / 为什么不用」组织,每段都落到我们自己的实现或活号。给谁看——做过程指标后续施工与相关设计的会话。现在作数吗——**作数**(2026-08-25 用户拍板「playbook 是重要信息来源之一,提炼后入仓」,活 #127)。**指标那一半不在这里**:26 条引领/滞后指标已逐条翻成 BW 统计方式,正本是过程指标总账(随 PR #125 落在 `standard/templates/process-catalog.md`,铺进被管项目为 `.bw/process-catalog.md`),本篇只留指针、不写第二份。
+- 状态:**现在作数**(2026-08-26 并入 `principles/`;2026-08-25 拍板入仓,活 #127)
+- 位置:`principles/` 过程原则篇——本仓「研发过程怎么组织」的方法来源与取舍正本
+- 相关:[`01-document-organization.md`](01-document-organization.md)(产物链落成 `changes/<id>/` 的分层规矩)、[`02-working-backwards.md`](02-working-backwards.md)(intent/spec 怎么写)、[`03-press-release-faq-flywheel.md`](03-press-release-faq-flywheel.md)(产品主张;少 gate 哲学与本篇「人守判断」同源)
+- 方法来源:Anthropic《The AI-Native SDLC Playbook》(外部实践;本篇为**转述提炼,不是原文**——原文有版权,仓里只存链接:<https://claude.com/blog/the-ai-native-sdlc-playbook>,2026-08-25 取读)
+
+> **30 秒导读**:按「它主张什么 → BW 怎么用 / 为什么不用」组织,每段都落到我们自己的实现或活号。给谁看——理解本仓过程原则(产物链、六阶段做法、治理哲学)的人和会话。**指标那一半不在这里**:26 条引领/滞后指标已逐条翻成 BW 统计方式,正本是过程指标总账(`standard/templates/process-catalog.md`,铺进被管项目为 `.bw/process-catalog.md`),本篇只留指针、不写第二份。
+>
+> **阶段用词消歧**:本篇「六阶段」(计划/设计/构建/测试/发布/运维)是 playbook 原文的划分;产品自己的六阶段(规划/设计/构建/发布/维护/运营,见 [03](03-press-release-faq-flywheel.md))与被管项目的五阶段方法论(原型→构建→优化→运营推广→运维,见 `CONTEXT.md`「阶段」)是另外两套,不强行一一对应,引用时写明是哪套。
 
 ## 一句话主张
 
@@ -10,7 +17,7 @@
 
 每个阶段以「提交一份进版本控制的产物」收尾,下个阶段从读这份产物开始:**意图件 → 规格件 → 实施计划 → 带测试的改动 → 带评审结论的 PR → 事故记录**,事故记录又写成新的意图件,环闭合。每份产物有具名的验收人,接受与否用合入/关闭留痕。
 
-**BW 落点**:这就是「仓是正本」的企业版。`.bw/` 件是我们的产物层;**单变更的产物链已由 [`principles/01-document-organization.md`](../../principles/01-document-organization.md) 固化**——特性级变更走仓根 `changes/<id>/`(intent → spec → plan → STATUS,小 bug 直修不开链),本次过程指标变更的三件随 PR #125 迁入 `changes/process-metrics/`。
+**BW 落点**:这就是「仓是正本」的企业版。`.bw/` 件是我们的产物层;**单变更的产物链已由 [`01-document-organization.md`](01-document-organization.md) 固化**——特性级变更走仓根 `changes/<id>/`(intent → spec → plan → STATUS,小 bug 直修不开链),首个实例见 `changes/process-metrics/`(PR #125)。
 
 ## 六阶段逐段:主张、关键做法、BW 落点
 
@@ -55,12 +62,19 @@
 |---|---|
 | 托管设置 / MDM 管控 | 单人工作台没有「管理员锁住工程师」的关系,违反反命题 |
 | 多环境部署梯度、发布授权人 | BW 不管部署 |
-| OpenTelemetry 观测栈 | BW 的对应物是 sqlite 读回 + 深链证据日志,已经够硬 |
+| OpenTelemetry 观测栈 | BW 的对应物是读回(`codehub-cli`/`gh`/`git`/`cat .bw/…`)+ 深链证据日志,已经够硬 |
 | 评测集进 CI | 对单人项目过重;真要做也是鱼塘里的事 |
 
-## 引用与施工状态(2026-08-25)
+## 引用与施工状态(2026-08-26)
 
 - 原文:<https://claude.com/blog/the-ai-native-sdlc-playbook>(本篇为转述,复核以原文为准)
-- 指标 26 条的 BW 统计方式 → 过程指标总账(随 PR #125 落 `standard/templates/process-catalog.md`)
-- 产物链原则 → [`principles/01-document-organization.md`](../../principles/01-document-organization.md)(特性级走 `changes/<id>/`,小 bug 直修)
-- 施工追踪:#118 规范包(PR #125,按 `standard/templates/` 新布局改造)· #119 指标见红(main 已接读数流水路线,PR #126 补具名理由与判读修正)· #120 过程指标块 · #121 先计划后动手 · #122 评审剧本 · #123 手册回路 · #124 事件触发(MVP 后)
+- 指标 26 条的 BW 统计方式 → 过程指标总账(`standard/templates/process-catalog.md`,PR #125 已合入)
+- 产物链原则 → [`01-document-organization.md`](01-document-organization.md)(特性级走 `changes/<id>/`,小 bug 直修)
+- 施工追踪:#118 规范包(PR #125,已合入)· #119 指标见红(PR #126,已合入)· #120 过程指标块 · #121 先计划后动手 · #122 评审剧本 · #123 手册回路 · #124 事件触发(MVP 后)
+
+## 修订
+
+| 日期 | 改什么 |
+|---|---|
+| 2026-08-25 | 首版:提炼入仓,落 `docs/reference/` |
+| 2026-08-26 | 并入 `principles/` 为第 04 篇(过程原则与 01–03 同一目录);补阶段用词消歧;读回口径改现行(去 sqlite) |
