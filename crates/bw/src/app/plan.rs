@@ -138,7 +138,7 @@ impl App {
         if !ws.is_dir() {
             return Err(AppError::NoWorkspace(project_id.uuid().to_string()));
         }
-        let salvaged = salvage_readings_dirt(&ws).await;
+        let cleared = salvage_main_checkout_dirt(&ws).await;
         let (moved, mut note) = match crate::git::pull_ff(&ws).await {
             Ok(true) => (true, "工作区已拉到最新".to_string()),
             Ok(false) => (false, "工作区本来就是最新的".to_string()),
@@ -150,8 +150,8 @@ impl App {
                 ),
             ),
         };
-        if salvaged {
-            note = format!("主检出上的读数已挪进账本。{note}");
+        if !cleared.is_empty() {
+            note = format!("{cleared}{note}");
         }
         Ok(vec![Event::WorkspacePulled { moved, note }])
     }
@@ -204,14 +204,46 @@ impl App {
     }
 }
 
-/// 主检出若只脏了读数流水,把内容并进账本,再把主检出那份恢复成 HEAD。
-async fn salvage_readings_dirt(ws: &std::path::Path) -> bool {
+/// 拉主干之前清掉 buddy 自己留在主检出上的预览:
+/// 读数挪进账本;接入写下的名片恢复成 HEAD(正本在已合入的 MR 里)。
+/// 人自己的源码脏文件不动。
+pub(super) async fn salvage_main_checkout_dirt(ws: &std::path::Path) -> String {
     let Ok(paths) = crate::git::dirty_paths(ws).await else {
-        return false;
+        return String::new();
     };
-    if !crate::git::is_readings_dirt(&paths) {
-        return false;
+    let mut bits = Vec::new();
+    if paths
+        .iter()
+        .any(|p| crate::git::is_readings_dirt(&[p.clone()]))
+    {
+        if salvage_readings_into_ledger(ws).await {
+            bits.push("主检出上的读数已挪进账本。");
+        }
     }
+    let mut restored = false;
+    for rel in [".bw/project.toml", ".bw/PROJECT.md"] {
+        if !paths
+            .iter()
+            .any(|p| p == rel && crate::git::is_card_preview_path(p))
+        {
+            continue;
+        }
+        if crate::git::restore_path(ws, rel).await.is_ok() {
+            restored = true;
+            continue;
+        }
+        // 未跟踪:restore 无效。接入写下、还没合进主干的那份,删掉才能拉。
+        let _ = std::fs::remove_file(ws.join(rel));
+        restored = true;
+    }
+    if restored {
+        bits.push("主检出上未提交的名片已让开,改以主干为准。");
+    }
+    bits.concat()
+}
+
+/// 主检出若脏了读数流水,把内容并进账本,再把主检出那份恢复成 HEAD。
+async fn salvage_readings_into_ledger(ws: &std::path::Path) -> bool {
     let ledger = match bw_engine::workspace::provision_ledger_worktree(ws).await {
         Ok(p) => p,
         Err(_) => {

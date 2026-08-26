@@ -122,7 +122,10 @@ pub(super) fn build_card_mr(issues: &[bw::Issue]) -> Option<CardMrVm> {
         .filter(|i| {
             matches!(
                 i.status,
-                IssueStatus::InReview | IssueStatus::InProgress | IssueStatus::Todo
+                IssueStatus::InReview
+                    | IssueStatus::InProgress
+                    | IssueStatus::Todo
+                    | IssueStatus::Backlog
             )
         })
         .max_by_key(|i| i.number)?;

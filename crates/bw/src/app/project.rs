@@ -319,9 +319,9 @@ impl App {
         .await;
 
         let mut events = vec![Event::ProjectCardEditPending { issue_id: issue.id }];
-        if issue.status != IssueStatus::InReview
-            && issue.status.can_transition_to(IssueStatus::InReview)
-        {
+        // 新建轻量活是待办池。状态机不许待办池直接进评审中,要先到进行中
+        // (规范铺底同一条跳法)。只在 MR 真开着时推——没交出评审就不假装在审。
+        if mr.number > 0 && issue.status != IssueStatus::InReview {
             if issue.status.can_transition_to(IssueStatus::InProgress) {
                 events.extend(
                     self.transition_issue(issue.id, IssueStatus::InProgress)

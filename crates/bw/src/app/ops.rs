@@ -313,7 +313,8 @@ impl App {
         let Ok(ws) = self.workspace_of(project_id).await else {
             return (false, "主检出没拉:算不出这个项目的工作区路径".into());
         };
-        match crate::git::pull_ff(&ws).await {
+        let cleared = super::plan::salvage_main_checkout_dirt(&ws).await;
+        let (ok, note) = match crate::git::pull_ff(&ws).await {
             Ok(true) => (true, "主检出已拉到最新".into()),
             Ok(false) => (true, "主检出本来就是最新的".into()),
             Err(e) => (
@@ -323,6 +324,11 @@ impl App {
                     one_line(&e.to_string())
                 ),
             ),
+        };
+        if cleared.is_empty() {
+            (ok, note)
+        } else {
+            (ok, format!("{cleared}{note}"))
         }
     }
 

@@ -518,7 +518,7 @@ pub struct ConfigVm {
     pub chat_group: String,
     pub chat_events: Vec<(String, bool)>,
     /// `.bw/project.toml` 的 `[chat]` 段:项目群。**仓是正本**,这里只显示;
-    /// 改它走「编辑项目信息」那条轻量活 + MR,不在配置屏直接写仓。
+    /// 改它走总览「编辑项目名片」那张轻量活 + MR。
     pub chat: String,
     /// 从活详情点 workflow 跳过来时要亮的那一行(slug)。空 = 没指定。
     pub focus_skill: String,
