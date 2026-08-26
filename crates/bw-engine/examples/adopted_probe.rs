@@ -51,7 +51,10 @@ fn main() {
     };
     print!("[ADOPTED_PROBE] {slug} 分支={shown} → ");
     match answer {
-        Ok(Some(f)) => println!("接管过 · 名片上写的项目名是「{}」", f.name),
+        Ok(Some(raw)) => println!(
+            "接管过 · 远端那份 .bw/project.toml 读到了({} 字节)",
+            raw.len()
+        ),
         Ok(None) => println!("还没接管过 · 仓里没有 .bw/project.toml"),
         Err(e) => println!("没查成,所以不知道接管过没有 · 原话:{e}"),
     }

@@ -9,48 +9,41 @@ env:
 
 jobs:
   kernel:
-    name: kernel + selectors (headless)
+    name: kernel + base (headless)
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
         with:
-          # wasm32 for the "以后也许的 Web" keepalive; clippy/rustfmt for gates.
-          targets: wasm32-unknown-unknown
           components: clippy, rustfmt
       - uses: Swatinem/rust-cache@v2
 
       - name: Format
         run: cargo fmt --all --check
 
-      # Both shells (app-desktop and the V4 app-shell) pull the Dioxus/wry tree,
-      # which needs system WebKit/GTK — glib-2.0 is not on the plain ubuntu
-      # runner, so linking dies in the build script before clippy sees any code.
-      # This job stays light and never compiles either shell; shell build and
-      # packaging is a separate matrix (Tier B).
-      #
-      # What that costs, stated plainly: neither shell's clippy runs here. They
-      # are gated locally (macOS builds them without pkg-config), and the three
-      # structural guards below — which are pure text checks and cost nothing —
-      # run in CI so the new shell's layout rules are enforced on every push.
-      - name: Clippy (default members)
-        run: cargo clippy --workspace --exclude app-desktop --exclude app-shell -- -D warnings
+      # app-shell pulls the Dioxus/wry tree, which needs system WebKit/GTK —
+      # glib-2.0 is not on the plain ubuntu runner, so linking dies in the
+      # build script before clippy sees any code. This job stays light and
+      # never compiles the shell; shell build/packaging is a separate matrix.
+      # The shell's clippy runs locally (macOS builds it without pkg-config);
+      # the three structural guards below are pure text checks, so they run
+      # here to enforce the shell's layout rules on every push.
+      - name: Clippy (headless crates)
+        run: cargo clippy --workspace --exclude app-shell -- -D warnings
 
-      - name: Test (kernel + selectors + compile-fail doctests)
-        run: cargo test
-
-      - name: wasm32 keepalive (kernel + selectors compile to the web target)
-        run: |
-          cargo check -p bw-core --target wasm32-unknown-unknown --no-default-features
-          cargo check -p ui --target wasm32-unknown-unknown
+      - name: Test (kernel + base + compile-fail doctests)
+        run: cargo test --workspace --exclude app-shell
 
       - name: Kernel stays UI-free
         run: ./scripts/guard-kernel-ui-free.sh
 
-      # V4 shell layout rules. Pure grep — no compilation, so they run here even
+      # Shell layout rules. Pure grep — no compilation, so they run here even
       # though app-shell itself is not built on this runner.
-      - name: V4 shell stays laid out the way it says it is
+      - name: Shell stays laid out the way it says it is
         run: |
           ./scripts/guard-no-cross-screen-import.sh
           ./scripts/guard-screen-hooks.sh
           ./scripts/guard-file-lines.sh
+
+      - name: codegraph.db not staged in feature commits
+        run: ./scripts/guard-codegraph-clean.sh

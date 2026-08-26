@@ -5,11 +5,10 @@
 //! 填一个 0 或者一个假名字。
 
 use crate::vm::*;
-use bw_v4::app::App;
-use bw_v4::command::Event;
-use bw_v4::model::{IssueStatus, Project, ProjectId};
-use bw_v4::repo::{issue_policy_file, project_file, release_file, week_plan_file};
-use bw_v4::V4Store;
+use bw::app::App;
+use bw::command::Event;
+use bw::model::{IssueKind, IssueStatus, Project, ProjectId};
+use bw::repo::{issue_policy_file, project_file};
 
 use super::vm_derive::{build_card_mr, build_notify_events, build_ops, build_week_counts};
 use super::vm_kb::build_kb;
@@ -17,11 +16,23 @@ use super::vm_panels::{
     build_board, build_config, build_metrics, build_sessions, build_weeks, build_workbench,
 };
 
+/// 开工工具的机读键 → 人话标签。从 `week_plan_file` 搬来(刀6:那个模块删了,
+/// 这是个纯展示函数,留在这层)。
+pub(super) fn tool_label(tool: &str) -> &str {
+    match tool {
+        "claude_cli" => "Claude CLI",
+        "cursor" => "Cursor",
+        "open_design" => "Open Design",
+        "" => "—",
+        other => other,
+    }
+}
+
 /// 读一份仓文件:读不出来就把原话记进 `warnings`,再退回默认值。
 /// 「退回默认值」本身没问题,**不说话**才是问题。
 pub(super) fn read_or_warn<T>(
     what: &str,
-    r: Result<Option<T>, bw_v4::repo::RepoFileError>,
+    r: Result<Option<T>, bw::repo::RepoFileError>,
     warnings: &mut Vec<String>,
 ) -> Option<T> {
     match r {
@@ -48,9 +59,9 @@ pub struct UiState {
     pub pending_drafts: Option<(String, Vec<String>)>,
     /// 会话屏选中哪个会话、开着哪个页签、展开了哪些目录、中栏开着哪个文件。
     /// 纯导航状态,一律不进库。
-    pub session_open: Option<bw_v4::model::IssueId>,
+    pub session_open: Option<bw::model::IssueId>,
     /// 计划屏详情抽屉开着哪张活。纯导航状态,不进库。
-    pub selected_issue: Option<bw_v4::model::IssueId>,
+    pub selected_issue: Option<bw::model::IssueId>,
     pub session_tab: crate::vm::SessionTab,
     pub expanded_dirs: Vec<String>,
     pub open_file: String,
@@ -66,23 +77,33 @@ pub struct UiState {
     pub repo_stats: Option<crate::vm::RepoStatsVm>,
     /// 上一次「采一次指标」采到的东西。同理:起脚本要几百毫秒到几秒,只在人
     /// 点那一下才跑。**空 = 还没采过**,不是「采到的是 0」。
-    pub metrics: Vec<bw_v4::app::collect::MetricReadout>,
+    pub metrics: Vec<bw::app::collect::MetricReadout>,
     /// 会话屏那块「这次开工喂了什么」。`None` = 面板关着。
     pub briefing: Option<String>,
-    pub db_path: String,
+    /// 配置屏要亮的技能 slug。纯导航。
+    pub focus_skill: String,
+    pub data_dir: String,
     pub workspaces_root: String,
     /// 接入屏那份仓列表的状态。**不进库** —— 它是「现在去平台问了一次」的结果,
     /// 关掉接入屏就该忘掉。
     pub repos: crate::vm::RepoPickerVm,
+    /// inreview 的活「开着的 MR iid」现查缓存(刀3:pr_number 不进库,这里查一次
+    /// 复用,免得每重拼一次 ViewModel 都打 codehub-cli/gh)。键是 IssueId(含项目
+    /// id,跨项目不撞);值 0 = 查过了、没有开着的 MR。issue 离开 inreview 后这条
+    /// 留着也无害(只有 inreview 的活读它)。
+    pub mr_cache: std::collections::HashMap<bw::model::IssueId, u32>,
+    /// 会话屏 Open Design iframe 该打开的地址。开工成功后写入;空 = 组件自己探首页。
+    pub od_src: String,
+    /// 换一次就让 iframe 卸掉重挂,否则同一 origin 不刷新。
+    pub od_gen: u64,
 }
 
 /// 深链按 slug 找,找不到再按显示名找。
-pub async fn find_project(store: &V4Store, want: &str) -> Option<Project> {
-    if let Ok(Some(p)) = store.project_by_slug(want).await {
+pub async fn find_project(app: &App, want: &str) -> Option<Project> {
+    if let Ok(Some(p)) = app.project_by_slug(want).await {
         return Some(p);
     }
-    store
-        .projects()
+    app.projects()
         .await
         .ok()?
         .into_iter()
@@ -135,7 +156,7 @@ fn primary_note(events: &[Event]) -> Option<String> {
             "{slug} 已从工作台移走(连同 {issues} 张活的账)。**仓一个字节都没动**,还在 {workspace}"
         ),
         Event::ProjectCardEditPending { .. } => "名片改动已建成一张轻量活,等评审合入".into(),
-        Event::ProjectChatChanged { .. } => "项目群配置已写进 .bw/project.toml".into(),
+        Event::ProjectChatChanged { .. } => "项目群配置已建成一张轻量活,等评审合入".into(),
         Event::StandardBootstrapped {
             files, committed, ..
         } => format!(
@@ -165,10 +186,9 @@ fn primary_note(events: &[Event]) -> Option<String> {
                 // 真跑:文件由 agent 会话产出、走 MR,这里没有骨架也没有草稿。
                 format!("运作活①已开工:{week} 的周计划由这场会话产出,提交走 MR,人合入后总览才亮")
             } else {
-                format!("{week} 的周计划文件已写出(流程演示),等你确认草稿")
+                format!("{week} 的运作活①已开工(流程演示),等你确认草稿")
             }
         }
-        Event::HistoryBackfilled { note, .. } => note.clone(),
         Event::WorkspacesRootChanged { path, pinned } => {
             let tail = if *pinned > 0 {
                 format!(",已接入的 {pinned} 个项目已就地钉在原位置、不会跟着搬")
@@ -219,7 +239,7 @@ fn primary_note(events: &[Event]) -> Option<String> {
             note,
             ..
         } => {
-            let label = bw_v4::chat::event_label(event_type);
+            let label = bw::chat::event_label(event_type);
             if *ok {
                 format!("已发到项目群:{label}")
             } else {
@@ -231,9 +251,11 @@ fn primary_note(events: &[Event]) -> Option<String> {
         Event::OpsAutoFired { workflow, week, .. } => {
             format!("定时到点:{week} 的「{workflow}」已自动建活并开工")
         }
-        Event::WeekPlanAlreadyExists { week, .. } => format!("{week} 已经有周计划文件了,没有重写"),
+        Event::WeekPlanAlreadyExists { week, .. } => {
+            format!("{week} 的「更新指标 + 制定本周计划」已经做过,没有重开")
+        }
         Event::WeekPlanInProgress { week, status, .. } => {
-            format!("{week} 的运作活①还在路上({status})—— 去会话屏接着聊,周计划由那场会话产出")
+            format!("{week} 的运作活①还在路上({status})—— 去会话屏接着聊")
         }
         Event::IssueCreated { number, .. } => format!("建了一张活 #{number}"),
         Event::IssueScheduled { week_of, .. } => {
@@ -243,11 +265,15 @@ fn primary_note(events: &[Event]) -> Option<String> {
                 format!("这张活排进了 {week_of}")
             }
         }
-        Event::IssueReordered { .. } => "顺序改好了".into(),
+        Event::IssueCategorySet { category, .. } => {
+            format!("类别改成了{category},开工工具按映射重算")
+        }
         Event::WorkspacePulled { note, .. } => note.clone(),
         Event::IssueRan { ok, summary, .. } => {
             if *ok {
-                format!("跑完了,推到「评审中」。执行器原话:{summary}")
+                // PTY / OD 开工成功只是「会话起来了」,还没到评审中。
+                // 原话已经说清去哪看,不再谎称推到评审中。
+                summary.clone()
             } else {
                 format!("这次没跑成,活留在原地可以重试。原话:{summary}")
             }
@@ -260,30 +286,27 @@ fn primary_note(events: &[Event]) -> Option<String> {
             }
         }
         Event::IssueBlocked { .. } => "已标成阻塞,原因写进了活的说明".into(),
+        Event::IssueCancelled { .. } => "已作废:取消标签打上了,远端 issue 关了,原因在评论里".into(),
+        Event::SessionDeleted { note, .. } => note.clone(),
         Event::ReleaseCut {
             version,
             rows_written,
         } => {
             if *rows_written {
-                format!("发版记录新增一行 {version}")
+                format!("远端已建 Release {version},选中的活打了发版标签")
             } else {
                 format!("{version} 已经在发版记录里了,没写第二行")
             }
         }
+        Event::MetricsAutoCollected { count, .. } => {
+            format!("今日自动采了 {count} 条 B 类指标")
+        }
+        Event::MetricRecorded {
+            name, day, value, ..
+        } => format!("记下了 {name} = {value}({day})"),
         Event::CurrentVersionChanged { version } => format!("在研版本切到 {version}"),
         Event::ToolMappingSaved { category } => format!("「{}」的映射保存了", category.label()),
         Event::ToolProbed { name, result } => format!("{name} 探活:{result:?}"),
-        Event::IssueCacheRefreshed {
-            week,
-            updated,
-            created,
-        } => {
-            if *created > 0 {
-                format!("按 {week} 的周计划文件建了 {created} 张活、刷新了 {updated} 张活的缓存")
-            } else {
-                format!("按 {week} 的周计划文件刷新了 {updated} 张活的缓存")
-            }
-        }
         Event::NotifySeenMarked { .. } => "通知已读到这里".into(),
         Event::HealthDerived { signal, .. } => format!("健康现算完成:{signal:?}"),
     })
@@ -298,9 +321,8 @@ impl UiState {
     }
 }
 
-pub async fn build(app: &App, ui: &UiState) -> Vm {
-    let store = app.store();
-    let projects = store.projects().await.unwrap_or_default();
+pub async fn build(app: &App, ui: &mut UiState) -> Vm {
+    let projects = app.projects().await.unwrap_or_default();
     let mut warnings: Vec<String> = Vec::new();
 
     let mut cards = Vec::with_capacity(projects.len());
@@ -312,31 +334,39 @@ pub async fn build(app: &App, ui: &UiState) -> Vm {
             &mut warnings,
         )
         .unwrap_or_default();
-        let week = bw_v4::isoweek::current_week();
-        let in_week = store.issues_in_week(p.id, &week).await.unwrap_or_default();
-        // 未读 = 评审中/阻塞里、更新时间晚于「读到这里」那一下的。没点过通知屏
-        // 就是全部算未读。这个数是现算的,库里没有未读表。
-        let seen_at: i64 = store
-            .meta(&bw_v4::store::notify_seen_key(p.id))
+        let week = bw::isoweek::current_week();
+        // 每项目只起一次 codehub-cli:issues 拿一次,再借给下面的纯内存过滤。
+        // 失败不吞(刀3-fix):以前 `unwrap_or_default()` 把 codehub 抖一下整屏
+        // 蒸发成空;现在挂到 warnings,UI 显式横幅「读 issue 失败」,活用空数组
+        // —— 健康判据落到 Unknown 灰,不假装绿。
+        let issues = match app.issues(p.id).await {
+            Ok(v) => v,
+            Err(e) => {
+                warnings.push(format!("读 issue 失败:{e}"));
+                Vec::new()
+            }
+        };
+        // 项目墙「本周 x/y 完成」跟总览五段同一口径:作废的活不算进分母。
+        // 以前用带周标签的张数当 y,#10/#11 这种打了本周标签又作废的卡会把 3/4 撑成 3/6。
+        let week_counts = build_week_counts(&issues, Some(week.as_str()));
+        let week_total = (week_counts.todo
+            + week_counts.doing
+            + week_counts.review
+            + week_counts.done
+            + week_counts.blocked) as u32;
+        // 未读 = 评审中的活有几张。这个数是现算的,库里没有未读表
+        // (MVP 不再按 seen_at 过滤:pr_number/updated_at 是 lossy)。
+        let unread = bw::app::count_unseen(&issues);
+        // 周目标:从本周运作活①评论解析出的那一句话。没有或解析不到就是空。
+        let goals = app.week_goals_from_ops1(p, &issues).await;
+        let week_goal = goals.get(&week).cloned().unwrap_or_default();
+        // 上次交付 = 最近一个 git 标签的提交日期 + tag(刀6:不再读
+        // .bw/releases.md)。tags_with_dates 按 creatordate 升序,最后一个 = 最新。
+        let last_delivery = bw::git::tags_with_dates(&ws)
             .await
-            .ok()
-            .flatten()
-            .and_then(|v| v.parse().ok())
-            .unwrap_or(0);
-        let unread = store.count_unseen(p.id, seen_at).await.unwrap_or(0);
-        let week_goal = week_plan_file::read(&ws, &week)
-            .ok()
-            .flatten()
-            .filter(|pl| pl.has_goal())
-            .and_then(|pl| pl.goal)
-            .unwrap_or_default();
-        // 上次交付 = 发版记录最后一行。仓里没有那份表就留空,不拿最近一次
-        // commit 冒充「交付」——提交不是交付。
-        let last_delivery = release_file::read(&ws)
-            .ok()
-            .flatten()
-            .and_then(|rows| rows.last().cloned())
-            .map(|r| format!("{} {}", r.released_at, r.version))
+            .into_iter()
+            .last()
+            .map(|(tag, date)| format!("{date} {tag}"))
             .unwrap_or_default();
         cards.push(ProjectCardVm {
             id: p.id,
@@ -346,11 +376,8 @@ pub async fn build(app: &App, ui: &UiState) -> Vm {
             signal: p.signal,
             workspace_path: ws.display().to_string(),
             remote: remote_label(p),
-            week_total: in_week.len() as u32,
-            week_done: in_week
-                .iter()
-                .filter(|i| i.status == IssueStatus::Done)
-                .count() as u32,
+            week_total,
+            week_done: week_counts.done as u32,
             version: file.current_version.clone(),
             week,
             unread,
@@ -364,17 +391,23 @@ pub async fn build(app: &App, ui: &UiState) -> Vm {
         Some(id) => build_project(app, id, ui, &mut warnings).await,
     };
 
+    // 去重保序:开项目的 issues 会在 build_project 里再拉一次,失败时同一条
+    // 「读 issue 失败」被推两遍 —— 去掉重复,横幅不显示两遍同一条(也避免按
+    // 文本 key 的渲染崩,虽然 key 已改按索引)。
+    let mut seen = std::collections::HashSet::new();
+    warnings.retain(|w| seen.insert(w.clone()));
+
     Vm {
         ready: true,
         fatal: None,
         projects: cards,
-        env: probe_env(),
+        env: probe_env().await,
         repos: ui.repos.clone(),
         open,
         settings: SettingsVm {
             workspaces_root: ui.workspaces_root.clone(),
-            db_path: ui.db_path.clone(),
-            claude_binary: v4_engine::resolve_claude_binary(None),
+            data_dir: ui.data_dir.clone(),
+            claude_binary: bw_engine::resolve_claude_binary(None),
         },
         note: ui.note.clone(),
         note_seq: ui.note_seq,
@@ -391,21 +424,27 @@ pub(super) fn remote_label(p: &Project) -> String {
 }
 
 /// 本机环境条。探不到就是探不到;还没接实现的返回「不知道」显示灰,不是红。
-pub(super) fn probe_env() -> Vec<ToolProbeVm> {
+pub(super) async fn probe_env() -> Vec<ToolProbeVm> {
     // 探活与「要什么才能用」都问适配模块要,不在这里重写一遍 —— 加一个新的
     // 开工工具应该只是加一个适配模块目录,不改这个文件。
     //
-    // 六项分成两类,**界面上分得清**:能在 `PATH` 里当场找出来的(claude /
-    // cursor-agent / codehub-cli / gh)给 `Some(..)`,红绿都是真的;还没接实现的
-    // (Open Design 内嵌、welink-cli)给 `None` —— 灰,不是绿,也不是红。
+    // 六项各走各的真实探活:能在 `PATH` 里当场找出来的(claude / cursor-agent /
+    // codehub-cli / gh / welink-cli)走 `which_on_path`;Open Design 是本机网页
+    // 内嵌类,走命名管道握手取 loopback URL(`bw_engine::open_design`)。绿/红
+    // 都是真的;探不到就红,不是灰——灰只留给「这工具压根没接」。
     let claude = crate::adapters::claude_cli::detect();
-    let cursor = v4_engine::which_on_path("cursor-agent");
+    let cursor = bw_engine::which_on_path("cursor-agent");
     // **探的名字必须和真起的进程一模一样**:`codehub.rs` 里 8 处 shell-out 全是
     // `codehub-cli`。探 `codehub`、起 `codehub-cli`,两边对不上时这一格给的答案
     // 就是错的 —— 装了报红,或者更糟:机器上恰好有个叫 `codehub` 的别名,这格
     // 报绿而真正要起的 `codehub-cli` 根本不在。
-    let codehub = v4_engine::which_on_path("codehub-cli");
-    let gh = v4_engine::which_on_path("gh");
+    let codehub = bw_engine::which_on_path("codehub-cli");
+    let gh = bw_engine::which_on_path("gh");
+    // welink-cli 是 npm 的 `.cmd` shim,`which_on_path` 认 PATHEXT(含 .CMD)能找到。
+    // 这里只探「装没装」——登录态要起子进程(`welink-cli auth status`),那是按
+    // 群号的 probe(发测试消息)的事,不在环境条这儿做。
+    let welink = bw_engine::which_on_path("welink-cli");
+    let od_url = bw_engine::open_design::discover_web_url().await;
     vec![
         ToolProbeVm {
             name: "claude_cli".into(),
@@ -443,63 +482,117 @@ pub(super) fn probe_env() -> Vec<ToolProbeVm> {
         ToolProbeVm {
             name: "open_design".into(),
             label: "Open Design".into(),
-            ok: None,
-            detail: "内嵌还没接,探不出结果".into(),
+            // 命名管道握手拿到 loopback URL = 在听(绿);拿不到 = 没起(红)。
+            ok: Some(od_url.is_some()),
+            detail: od_url
+                .unwrap_or_else(|| "本机 Open Design 没起来(管道握手没拿到 loopback URL)".into()),
         },
         ToolProbeVm {
             name: "welink_cli".into(),
             label: "welink-cli".into(),
-            ok: None,
-            detail: "还没接,探不出结果".into(),
+            ok: Some(welink.is_some()),
+            detail: welink.unwrap_or_else(|| "本机路径里找不到 welink-cli".into()),
         },
     ]
+}
+
+/// inreview 的活现查「开着的 MR iid」,填进 `issue.pr_number` + 缓存到 `mr_cache`。
+///
+/// pr_number 不进库(刀3:`.bw/` 不存、codehub issue 也没这字段),不查的话
+/// 通知「评审中待合入」、详情 MR 卡、总览名片 MR 横幅全读 `pr_number=0` →
+/// 永远看不到 MR。这里给 inreview 的活现查 `Remote::open_mr_for_branch`(按
+/// `bw/issue-<号>` 分支查开着没),查过一次缓存,每重拼 ViewModel 不重打远端。
+/// 非在审的活不查(没 MR 要看);查失败按 0(不显),不崩。
+async fn fill_pr_numbers(
+    project: &Project,
+    issues: &mut [bw::Issue],
+    mr_cache: &mut std::collections::HashMap<bw::model::IssueId, u32>,
+) {
+    let Ok(remote) = bw_engine::remote::Remote::for_project(
+        &project.provider,
+        &project.remote_host,
+        &project.remote_path,
+    ) else {
+        return;
+    };
+    for i in issues.iter_mut() {
+        if i.status != IssueStatus::InReview || i.number == 0 {
+            continue;
+        }
+        if let Some(&pr) = mr_cache.get(&i.id) {
+            i.pr_number = pr;
+            continue;
+        }
+        let branch = bw_engine::github::issue_branch(i.number);
+        let pr = match remote.open_mr_for_branch(&branch).await {
+            Ok(Some(n)) => n,
+            // 查不成 / 没开着的 MR —— 0,不显 MR(如实,不假装)。
+            _ => 0,
+        };
+        i.pr_number = pr;
+        mr_cache.insert(i.id, pr);
+    }
 }
 
 async fn build_project(
     app: &App,
     id: ProjectId,
-    ui: &UiState,
+    ui: &mut UiState,
     warnings: &mut Vec<String>,
 ) -> Option<ProjectVm> {
-    let store = app.store();
-    let p = store.project(id).await.ok()??;
+    let p = app.project(id).await.ok()??;
     let ws = app.workspace_of(id).await.ok()?;
     let file =
         read_or_warn(".bw/project.toml", project_file::read(&ws), warnings).unwrap_or_default();
-    let issues = store.issues(id).await.unwrap_or_default();
-    let conversations = store.conversations(id).await.unwrap_or_default();
+    // 失败不吞:挂到 warnings,UI 横幅「读 issue 失败」,VM 用空活照建(健康落灰、
+    // 看板空),保留上一份已知好的结构 —— 不整体清空。
+    let mut issues = match app.issues(id).await {
+        Ok(v) => v,
+        Err(e) => {
+            warnings.push(format!("读 issue 失败:{e}"));
+            Vec::new()
+        }
+    };
+    // pr_number 不进库(刀3):inreview 的活这里现查 open_mr_for_branch 填上,
+    // 通知「待合入」/ 详情 MR 卡 / 总览名片 MR 才看得到号;查过一次缓存到
+    // ui.mr_cache,每重拼一次 ViewModel 不重打 codehub-cli/gh。
+    fill_pr_numbers(&p, &mut issues, &mut ui.mr_cache).await;
+    let conversations = app.conversations(id).await.unwrap_or_default();
     // 「读到这里」是哪一刻。通知屏和项目轨的红点用的是同一个值,读一次就够。
-    let notify_seen: Option<i64> = store
-        .meta(&bw_v4::store::notify_seen_key(id))
-        .await
-        .ok()
-        .flatten()
-        .and_then(|v| v.parse().ok());
+    let notify_seen: Option<i64> = app.notify_seen(id).await;
     let sessions = build_sessions(app, id, &issues).await;
     // 详情抽屉里那两条链接的前缀。**按 provider 拼**(库里那三个远端字段),
     // 不从 `origin` 推 —— codehub clone 走 SSH,origin 里是 SSH 主机加端口。
     let mr_url_prefix = p.mr_url_prefix();
     let issue_url_prefix = p.issue_url_prefix();
-    let current_week = bw_v4::isoweek::current_week();
+    let current_week = bw::isoweek::current_week();
     let viewing_week = if ui.viewing_week.is_empty() {
         current_week.clone()
     } else {
         ui.viewing_week.clone()
     };
 
-    // 健康:三条判据当场从仓文件与 git 取,不读库里那两个缓存列。
-    let inputs = bw_v4::app::collect_health_inputs(&ws, &current_week).await;
-    let derived = bw_v4::derive::derive_project_health(&inputs);
+    // 健康:四条判据当场从 issue 列表、仓文件与 git 取,不读缓存。
+    let week_goals = app.week_goals_from_ops1(&p, &issues).await;
+    let inputs = bw::app::collect_health_inputs(
+        &p,
+        &ws,
+        &current_week,
+        &issues,
+        week_goals.get(&current_week).map(String::as_str),
+    )
+    .await;
+    let derived = bw::derive::derive_project_health(&inputs);
     // 算完顺手写回显示缓存。**项目墙只有这一个数据来源** —— 它要在不打开项目
     // 的情况下列出 N 个项目的灯,不能每次启动扫 N 个仓。此前壳里没有一处写过
     // 这两列,于是项目墙的灯永远是灰的,哪怕总览上算出来是黄的。写的是刚算出
     // 来的那个值,不重算(重算要再起一遍 git 子进程)。
     //
     // **只在灯真变了的时候写**:这个函数每重拼一次 ViewModel 就跑一次(人打字
-    // 时每 30ms 一次),而这条 UPDATE 顺带会把项目的 `updated_at` 顶新 —— 每次
+    // 时每 30ms 一次),而这条写回顺带会把项目的 `updated_at` 顶新 —— 每次
     // 都写等于让「这个项目最近动过」永远是刚刚,那是假的。
     if p.signal != Some(derived.signal()) || p.weekly_signal != Some(derived.weekly_signal()) {
-        let _ = store.cache_project_health(id, &derived).await;
+        let _ = app.cache_project_health(id, &derived).await;
     }
 
     let policy = read_or_warn(
@@ -507,51 +600,26 @@ async fn build_project(
         issue_policy_file::read(&ws),
         warnings,
     );
-    let plan = read_or_warn(
-        &format!("{}/{viewing_week}.md", week_plan_file::DIR),
-        week_plan_file::read(&ws, &viewing_week),
-        warnings,
-    );
+    // 指标读数从仓 `.bw/metrics/readings.jsonl` 取(刀6:不再读周计划文件的
+    // 「本周指标读数」段)。取的是正在看的那一周。
+    let readings = bw::app::read_metric_readings(&ws, &viewing_week);
 
     // 本周计数与本周运作点在构造之前算好 —— `current_week` 会被 move 进结构体。
     let week_counts_now = build_week_counts(&issues, Some(current_week.as_str()));
-    let ops_now = build_ops(&issues, current_week.as_str());
+    let ops_now = build_ops(&issues, current_week.as_str(), &ws).await;
 
-    // 周列表 = 扫 `.bw/plan/` 目录 ∪ 库里活排过的周(设计 06 §2.1 的并集),
-    // 且**本周永远在列表里**——空的本周才有地方触发「开始本周」,真跑路径下
-    // 文件要等 MR 合入才落地,列表不能因此没有本周。
-    let mut weeks = build_weeks(&ws);
-    for w in issues.iter().map(|i| i.week_of.as_str()) {
-        if !w.is_empty() && !weeks.iter().any(|x| x.week == w) {
-            weeks.push(WeekVm {
-                week: w.to_string(),
-                backfill: false,
-                goal: None,
-                activity_count: 0,
-            });
-        }
-    }
-    if !weeks.iter().any(|x| x.week == current_week) {
-        weeks.push(WeekVm {
-            week: current_week.clone(),
-            backfill: false,
-            goal: None,
-            activity_count: 0,
-        });
-    }
-    // 新的在前;没有未来周,所以本周自然排在最上面。
-    weeks.sort_by(|a, b| b.week.cmp(&a.week));
+    // 周列表 = 库里活排过的周(issues 的 `bw:week:*` 标签)∪ 本周。刀6:不再
+    // 扫 `.bw/plan/` 目录(那个文件没人写了,扫到也是旧的)。本周永远在列表里。
+    let weeks = build_weeks(&issues, &current_week, &week_goals);
 
-    // 横幅判据:文件在不在(不看列表),以及本周运作活①走到哪了。已完成的
-    // 不算「在途」——文件若还是没有,人应该能再点一次「开始本周」。
-    let week_file_exists = week_plan_file::exists(&ws, &current_week);
-    // 按**标题**找那张活,和内核的幂等键一致 —— 按 `week_of` 找的话,卡片被
-    // 拖回待办池之后横幅会重新给出「开始本周」,而点下去内核只会平静挡住。
-    let ops1_title = bw_v4::app::ops1_title(&current_week);
-    let ops1_status = issues
-        .iter()
-        .find(|i| i.title == ops1_title && i.status != IssueStatus::Done)
+    // 横幅判据:本周运作活①在不在(含已完成)。做完再冒「开始本周」是假的。
+    let ops1_title = bw::app::ops1_title(&current_week);
+    let ops1 = issues.iter().find(|i| i.title == ops1_title);
+    let week_started = ops1.is_some();
+    let ops1_status = ops1
+        .filter(|i| i.status != IssueStatus::Done)
         .map(|i| i.status.label().to_string());
+    let releases = load_releases(app, &p, &ws).await;
     Some(ProjectVm {
         id,
         slug: p.slug.clone(),
@@ -577,8 +645,8 @@ async fn build_project(
                 .map(|r| (r.ok, r.text.clone()))
                 .collect(),
         },
-        metrics: build_metrics(&ws, plan.as_ref(), &issues, &ui.metrics),
-        week_file_exists,
+        metrics: build_metrics(&ws, &issues, &ui.metrics, &readings, !ui.metrics.is_empty()),
+        week_started,
         ops1_status,
         weeks,
         current_week,
@@ -607,7 +675,7 @@ async fn build_project(
             },
         ),
         ops: ops_now,
-        board_ops: build_ops(&issues, viewing_week.as_str()),
+        board_ops: build_ops(&issues, viewing_week.as_str(), &ws).await,
         // 采不采由界面点 —— 现算一次要起好几个 git 子进程,不能每次重拼
         // ViewModel 都跑一遍(人打字时每 30ms 就重拼一次)。
         repo_stats: ui.repo_stats.clone(),
@@ -616,27 +684,7 @@ async fn build_project(
             Some((week, titles)) if *week == viewing_week => titles.clone(),
             _ => Vec::new(),
         },
-        releases: release_file::read(&ws)
-            .ok()
-            .flatten()
-            .unwrap_or_default()
-            .into_iter()
-            .map(|r| ReleaseVm {
-                version: r.version,
-                released_at: r.released_at,
-                note: r.note,
-                included: if r.included_numbers.is_empty() {
-                    "—".into()
-                } else {
-                    r.included_numbers
-                        .iter()
-                        .map(|n| format!("#{n}"))
-                        .collect::<Vec<_>>()
-                        .join(" ")
-                },
-                origin: r.origin,
-            })
-            .collect(),
+        releases,
         sessions: sessions.clone(),
         session_open: ui.session_open,
         briefing: ui.briefing.clone(),
@@ -650,6 +698,8 @@ async fn build_project(
             ui.session_tab,
             &ui.expanded_dirs,
             &ui.open_file,
+            &ui.od_src,
+            ui.od_gen,
         )
         .await,
         notify: NotifyVm {
@@ -662,12 +712,13 @@ async fn build_project(
                 .collect(),
             seen_at: notify_seen,
             events: build_notify_events(&issues, &conversations),
-            unread: store
-                .count_unseen(id, notify_seen.unwrap_or(0))
-                .await
-                .unwrap_or(0),
+            unread: bw::app::count_unseen(&issues),
         },
-        config: build_config(store, id, &ws, policy.as_ref(), &p, &file).await,
+        config: {
+            let mut c = build_config(&ws, policy.as_ref(), &p, &file, &issues).await;
+            c.focus_skill = ui.focus_skill.clone();
+            c
+        },
         kb: KbVm {
             codegraph: ui.kb_codegraph.clone(),
             assets: ui.kb_assets.clone(),
@@ -684,13 +735,17 @@ pub(super) fn or_blank(s: &str) -> String {
     }
 }
 
-pub(super) fn card_item(i: &bw_v4::Issue) -> CardItemVm {
+pub(super) fn card_item(i: &bw::Issue) -> CardItemVm {
     CardItemVm {
         id: i.id,
         number: i.number,
         title: i.title.clone(),
-        category: i.category.map(|c| c.label()).unwrap_or("—").into(),
-        tool: week_plan_file::tool_label(&i.tool).into(),
+        category: if i.kind == IssueKind::Ops {
+            "运作".into()
+        } else {
+            i.category.map(|c| c.label()).unwrap_or("—").into()
+        },
+        tool: tool_label(&i.tool).into(),
         workflow: if i.workflow.is_empty() {
             "—".into()
         } else {
@@ -708,4 +763,39 @@ pub(super) fn card_item(i: &bw_v4::Issue) -> CardItemVm {
         branch: i.branch.clone(),
         body: i.body.clone(),
     }
+}
+
+/// 发版次数与列表:优先读远端 Release。本机 git 标签经常还没 fetch,只靠它
+/// 会把刚发出去的版本算成 0。远端读不到(没挂仓 / CLI 失败)再退回本机标签。
+pub(super) async fn load_releases(app: &App, p: &Project, ws: &std::path::Path) -> Vec<ReleaseVm> {
+    if p.has_remote() {
+        if let Ok(remote) = app.remote_for(p) {
+            if let Ok(tags) = remote.list_releases().await {
+                if !tags.is_empty() {
+                    return tags
+                        .into_iter()
+                        .map(|tag| ReleaseVm {
+                            version: tag,
+                            released_at: String::new(),
+                            note: String::new(),
+                            included: "—".into(),
+                            origin: "远端 Release".into(),
+                        })
+                        .collect();
+                }
+            }
+        }
+    }
+    bw::git::tags_with_dates(ws)
+        .await
+        .into_iter()
+        .rev()
+        .map(|(tag, date)| ReleaseVm {
+            version: tag,
+            released_at: date,
+            note: String::new(),
+            included: "—".into(),
+            origin: "git 标签".into(),
+        })
+        .collect()
 }

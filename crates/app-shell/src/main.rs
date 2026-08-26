@@ -7,8 +7,8 @@
 //! 深链(启动即打读回证据,和旧壳同一套机制):
 //!
 //! ```bash
-//! BW_DB=<db> BW_OPEN=<项目> BW_PANEL=overview|plan|session|notify|config|kb ./bw-v4-dev
-//! BW_VIEW=onboard|settings ./bw-v4-dev
+//! BW_DB=<db> BW_OPEN=<项目> BW_PANEL=overview|plan|session|notify|config|kb ./bw-dev
+//! BW_VIEW=onboard|settings ./bw-dev
 //! ```
 
 #![forbid(unsafe_code)]
@@ -28,7 +28,20 @@ use vm::SessionTab;
 
 fn main() {
     // 起任何线程之前先把本机时区定住 —— 周是按本机时区算的。
-    bw_v4::isoweek::init_local_offset();
+    bw::isoweek::init_local_offset();
+    // 会话屏 iframe 嵌本机 Open Design。WebView2 默认拦 loopback,V3 壳关过,这里同样关。
+    #[cfg(windows)]
+    {
+        const FLAG: &str = "--disable-features=LocalNetworkAccessChecks";
+        match std::env::var("WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS") {
+            Ok(existing) if existing.contains("LocalNetworkAccessChecks") => {}
+            Ok(existing) => std::env::set_var(
+                "WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS",
+                format!("{existing} {FLAG}"),
+            ),
+            Err(_) => std::env::set_var("WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS", FLAG),
+        }
+    }
     let deep_link = bridge::read_deep_link();
     let builder = dioxus::desktop::WindowBuilder::new()
         .with_title("Builders' Workbench")
@@ -56,8 +69,8 @@ fn GlobalChrome() -> Element {
     }
 }
 
-/// 顶栏那格「数据来自哪」写的就是本机库文件名。
-fn db_label(path: &str) -> String {
+/// 顶栏那格「数据来自哪」写的就是本机数据目录名(刀6 起不再是 SQLite 库文件)。
+fn data_dir_label(path: &str) -> String {
     path.rsplit(['/', '\\']).next().unwrap_or(path).to_string()
 }
 
@@ -100,7 +113,7 @@ fn Root() -> Element {
     // **顶层屏是外壳自己的一个信号,内核不知道它存在**:接入完内核把 `open`
     // 设上了,项目其实已经在下面开好了,可人眼前还是那张接入卡 —— 看起来就像
     // 「点了没跳转」。这个 effect 就是把这两边接起来的那根线。
-    let mut last_open = use_signal(|| None::<bw_v4::model::ProjectId>);
+    let mut last_open = use_signal(|| None::<bw::model::ProjectId>);
     use_effect(move || {
         let now = vm.read().open.as_ref().map(|p| p.id);
         // 用 peek 读上一次的值:这里只是拿它比一比,不该因此再订阅一遍自己。
@@ -137,7 +150,7 @@ fn Root() -> Element {
     let tv = *top_view.read();
     let project = v.open.clone();
     let in_project = project.is_some() && tv.is_none();
-    let source = db_label(&v.settings.db_path);
+    let source = data_dir_label(&v.settings.data_dir);
 
     // 顶栏标题:项目内是六入口的名字,顶层是那一屏的名字。
     let title = match (tv, in_project) {
@@ -188,8 +201,11 @@ fn Root() -> Element {
                     bridge: bridge.clone(),
                 }
                 // 仓文件读不动的实话。**不退回默认值假装文件不存在**。
-                for w in v.warnings.iter() {
-                    div { key: "{w}", class: "warnbar", "{w}" }
+                // key 按索引,不按警告文本:同一条警告被两处推过(如 issues() 在
+                // build_project 与 build_vm 各失败一次)时,文本相同、按文本
+                // key 会撞 → dioxus "keyed siblings must each have a unique key" 崩。
+                for (i, w) in v.warnings.iter().enumerate() {
+                    div { key: "{i}", class: "warnbar", "{w}" }
                 }
                 // 会话屏的三栏由 .content 自己摆 —— 终端挂在这一层,靠这套
                 // 网格落进中栏下半格(理由见 screens/session 的头注)。
@@ -198,10 +214,7 @@ fn Root() -> Element {
                     {body(tv, cur, &v, &project, &bridge, top_view)}
                 }
             }
-            // 指南只在项目墙露出来 —— 和原型一致:进了项目,屏本身就是说明书。
-            if !in_project && tv.is_none() {
-                chrome::GuideDrawer {}
-            }
+            chrome::GuideDrawer {}
             chrome::Toast { note: v.note.clone(), seq: v.note_seq }
         }
     }
@@ -249,7 +262,7 @@ fn body(
         //
         // 只挂「进程还活着」或「正被选中」的会话:早就跑完的会话再挂一
         // 个每 30ms 轮询一次的循环纯属白烧。代价是切走再回来看一个已经
-        // 结束的会话,回放是空的 —— 存不存回放还没做(见 LEFTOVERS)。
+        // 结束的会话,回放是空的 —— 存不存回放还没做。
         for s in p.sessions.iter().filter(|s| s.live || p.session_open == Some(s.issue_id)) {
             TerminalWidget {
                 key: "{s.conversation_id:?}",

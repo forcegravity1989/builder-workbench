@@ -3,10 +3,10 @@
 ## 借自哪个项目 / 文件
 
 - `crates/bw-engine/src/claude_bin.rs` —— 候选路径探测(Windows 上认 `claude.cmd`,
-  这条是 V3 试用期真踩出来的)。
+  这条是 V3 试用期真踩出来的,见 v3 分支)。
 - `crates/bw-engine/src/interactive_cli.rs` —— 交互式启动计划(`--append-system-prompt`
   + 位置参数提示词)与 PTY 后端。
-- Orca(见 `docs/archive/v4-prototype/research/orca.md` §2(d)、§5(B))—— agent 状态判定
+- Orca(V3 期参考,见 v3 分支)—— agent 状态判定
   的思路。
 
 ## 借了什么
@@ -19,4 +19,4 @@
 
 - **不抄 Orca 的多 agent 归一化层**。buddy 今天只有一个真实能跑的开工工具,
   为「将来可能有很多种 agent」先建一层抽象,是替还不存在的问题写代码。
-- 不抄它的会话面板布局 —— 界面按 V4 自己的六入口走。
+- 不抄它的会话面板布局 —— 界面按自己的六入口走。

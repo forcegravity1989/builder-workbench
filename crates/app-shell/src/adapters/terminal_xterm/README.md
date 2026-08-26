@@ -2,13 +2,13 @@
 
 ## 借自哪个项目 / 文件
 
-- `crates/app-desktop/src/screens/op/terminal_widget.rs` —— 整块搬过来的,是 V3 试用期
-  一个坑一个坑填出来的那一份。
+- 整块从 V3 搬过来的(V3 试用期一个坑一个坑填出来的那一份,见 v3 分支),现住本目录
+  `mod.rs`。
 - `crates/bw-engine/src/pty_backend.rs` / `terminal_manager.rs` —— PTY 后端与按会话分
   的有界缓冲,原样沿用,一行没改。
-- Orca 的 `use-terminal-pane-lifecycle.ts`(见 `docs/archive/v4-prototype/research/orca.md` §2a)
+- Orca 的 `use-terminal-pane-lifecycle.ts`(V3 期参考,见 v3 分支)
   —— 选区防抖 + 长度上限那一段的思路。
-- `docs/v4-prototype/hifi/index.html` 的 `copyTerminal`(约第 1122 行)—— 标题栏那颗
+- `docs/hifi/index.html` 的 `copyTerminal`(约第 1122 行)—— 标题栏那颗
   「复制」按钮:先试 `navigator.clipboard.writeText`,不成退到临时 textarea +
   `execCommand('copy')`,两条都不成就如实告诉人没复制成。按钮的样式类 `.copybtn`
   高保真里就有,样式表里一直带着,这次只是终于有东西用它了。
@@ -53,10 +53,9 @@ copy 事件,xterm 自带的那个监听器才有机会把选区塞进剪贴板;�
   当成普通输入吐给 PTY。
 - **没选中就完全不碰这个键**,让它按原路走完。**不带 Shift 的 Ctrl+C 压根不在识别
   范围里** —— 那是「中断正在跑的命令」,任何时候都原样送到 PTY,有没有选中都一样。
-- **Cmd+V 与 Ctrl+Shift+V** 粘贴,只有 `navigator.clipboard.readText` 一条路
-  (`execCommand('paste')` 在 WebKit 里对网页是禁的,不存在第二条);读不到就说读
-  不到。文字交给 `term.paste()` 而不是自己拼给 PTY —— 它负责括号粘贴模式的包裹和
-  换行归一,自己拼会把多行粘贴变成一串回车。
+- **Cmd+V 与 Ctrl+Shift+V** 粘贴:网页读剪贴板要安全上下文,这个壳是 `dioxus://`,
+  `navigator.clipboard.readText` 会被拒;`execCommand('paste')` 对网页是禁的。
+  挂件举手,壳用系统剪贴板读出来再交给 `term.paste()`(括号粘贴模式 / 换行归一)。
 - 顺带修掉一个原来就有的错:`keyBytes` 会把 Cmd+C / Cmd+V 漏成普通的 `c` / `v` 推给
   PTY,还顺手 `preventDefault` 掉。现在带 Cmd/Super 的组合一律不算终端输入。
 
@@ -70,15 +69,12 @@ copy 事件,xterm 自带的那个监听器才有机会把选区塞进剪贴板;�
 - **不为了复制去装 macOS 原生菜单**。装菜单确实能把 Cmd+C 接通,但那是**全应用范围**
   的改动(要动 `main.rs`),Windows 上又完全用不着;一个适配模块该自足,所以复制这件
   事就在这个模块里了结。
-- **不走 Rust 侧的剪贴板库**。那样最稳(不受网页那层的安全上下文限制),但要给
-  `app-shell` 加依赖、加一条命令,不是这个模块能自己收口的。**留一句实话在这**:这个
-  壳的页面地址是 `dioxus://index.html`,WebKit 不把自定义协议当安全上下文,
-  `navigator.clipboard` 很可能在 macOS 上压根不存在 —— 真正兜底的是那条
-  `execCommand('copy')`。哪天它也不灵了,再谈把剪贴板挪到 Rust 侧。
+- **复制仍走网页兜底**(textarea + `execCommand('copy')`),不另开内核命令。
+  **粘贴走壳读系统剪贴板**:网页没有第二条路,适配模块自己收口,不进内核 Command。
 
 ## 换掉的接线(只有这两处)
 
-| 原来(app-desktop) | 现在(app-shell) |
-|---|---|
-| `use_context::<Kernel>()` + `k.pty_bytes()` | `Bridge` 当 props 传进来 + `bridge.pty` |
-| `k.send(Command::Terminal*)` | `bridge.cmd(Command::Terminal*)` |
+| 现在(app-shell) |
+|---|
+| `Bridge` 当 props 传进来 + `bridge.pty` |
+| `bridge.cmd(Command::Terminal*)` |
