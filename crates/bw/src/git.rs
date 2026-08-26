@@ -283,10 +283,16 @@ pub async fn dirty_paths(workspace: &Path) -> Result<Vec<String>, GitError> {
 
 /// 脏的是不是只有读数流水(buddy 自己写进主检出的那份)。别的脏文件不动。
 pub fn is_readings_dirt(paths: &[String]) -> bool {
-    !paths.is_empty()
-        && paths.iter().all(|p| {
-            p == ".bw/metrics/readings.jsonl" || p == ".bw/metrics" || p.starts_with(".bw/metrics/")
-        })
+    !paths.is_empty() && paths.iter().all(|p| is_readings_path(p))
+}
+
+fn is_readings_path(p: &str) -> bool {
+    p == ".bw/metrics/readings.jsonl" || p == ".bw/metrics" || p.starts_with(".bw/metrics/")
+}
+
+/// 接入写在主检出上、等人合入才算正本的那两份名片。
+pub fn is_card_preview_path(p: &str) -> bool {
+    p == ".bw/project.toml" || p == ".bw/PROJECT.md"
 }
 
 /// 把一个路径恢复成 HEAD。未跟踪的文件这条会失败,调用方自己删。

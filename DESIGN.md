@@ -15,5 +15,5 @@
 
 ## 没建什么(如实)
 
-- 默认 workflow(mattpocock-skills / proto-design)的**打包**(buddy 把已严选的默认 workflow 进 `standard/vendor/` 资产目录、开机即用)未实现——见 `docs/architecture.md` 的「系统提示词与渐进加载」模块「没建什么」。
-- Open Design 适配模块(壳侧)、产物入仓约定、蒸馏、readings 写入端——见 `docs/architecture.md` 各模块「没建什么」,不在这里汇总第二份清单。
+- `mattpocock-skills` 已打包、开机即用；`proto-design` 源还没 vendor 进来——见 `docs/architecture.md`「系统提示词与渐进加载」模块「没建什么」。
+- Open Design 适配模块(壳侧)、产物入仓约定、蒸馏——见各模块「没建什么」,不在这里汇总第二份清单。B/C 读数写入端已接(账本 worktree `bw/ledger`)。
