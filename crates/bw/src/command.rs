@@ -3,13 +3,15 @@
 //! 界面只发 [`Command`]、只收 [`Event`],别的一概不做:不直接开库、不直接写
 //! 仓文件、不自己判断状态能不能转。所有用例与守卫都在 [`crate::app`]。
 //!
-//! 这里只列 A 刀真接了实现的命令。**没接的不放进枚举** —— 一条能发出去但内核
-//! 悄悄什么都不做的命令,比没有这条命令更糟;会话屏、项目群那几条随
-//! B / C 刀落地时再加。
+//! 这里只列真接了实现的命令。**没接的不放进枚举** —— 一条能发出去但内核
+//! 悄悄什么都不做的命令,比没有这条命令更糟。
 
 use crate::model::{Category, ConversationId, IssueId, IssueStatus, ProjectId};
 
-/// 接入一个项目时填的四个字段(意图卡)。
+/// 总览「编辑项目信息」一次填完的仓文件字段。
+///
+/// 正本仍是 `.bw/PROJECT.md` + `.bw/project.toml` 两份。接入时只填前四项,
+/// 在研版本 / 项目群落默认或仓里已有的;总览保存会把后几项一并写回。
 #[derive(Clone, Debug, PartialEq, Eq, Default)]
 pub struct ProjectIntent {
     pub name: String,
@@ -19,6 +21,13 @@ pub struct ProjectIntent {
     pub benchmark: String,
     /// 三个月长成什么样(北极星一句话)。
     pub north_star: String,
+    /// 在研版本。接入时空着 = 不覆盖仓里已有的 / 新建默认 `v0.1`。
+    pub current_version: String,
+    /// 项目群提供方。空或 `"none"` = 不配群。
+    pub chat_provider: String,
+    pub chat_group: String,
+    /// 同步哪些事件(`review` / `merged` / `release`)。空数组 = 静音。
+    pub chat_notify: Vec<String>,
 }
 
 /// 远端仓的地址。两个字段都空 = 没挂远端(本地仓),如实留白。
@@ -34,7 +43,7 @@ pub struct RemoteRef {
 #[derive(Clone, Debug, PartialEq)]
 pub enum Command {
     // ── 接入 ──────────────────────────────────────────────
-    /// 接入项目:写项目行 + 备好工作区。名片四字段落 `PROJECT.md`,不落库。
+    /// 接入项目:写项目行 + 备好工作区。名片字段落 `PROJECT.md`,不落库。
     CreateProject {
         slug: String,
         intent: ProjectIntent,
@@ -42,18 +51,11 @@ pub enum Command {
         /// 空 = 用工作区根目录下的 `<slug>`。
         workspace_path: String,
     },
-    /// 名片「编辑→保存」:改 `PROJECT.md` 与 `.bw/project.toml`,走一张轻量活。
+    /// 总览「编辑→保存」:改 `PROJECT.md` 与 `.bw/project.toml`
+    /// (名片 + 在研版本 + 项目群),走一张轻量活。
     EditProjectCard {
         project_id: ProjectId,
         intent: ProjectIntent,
-    },
-    /// 配项目群:写 `.bw/project.toml` 的 `[chat]` 段。`provider` 传 `"none"`
-    /// 就是明确不配群。
-    SetProjectChat {
-        project_id: ProjectId,
-        provider: String,
-        group_id: String,
-        notify: Vec<String>,
     },
 
     // ── 规范铺底(运作活③)─────────────────────────────────
@@ -94,11 +96,6 @@ pub enum Command {
     ScheduleIssue {
         id: IssueId,
         week_of: Option<String>,
-    },
-    /// 切在研版本,纯本机动作,不建活。
-    SetCurrentVersion {
-        project_id: ProjectId,
-        version: String,
     },
     /// 发版本:给选中的活写版本号 + 建远端 codehub/GitHub Release + 打 `bw:released:*` 标签。
     CutRelease {
@@ -188,7 +185,7 @@ pub enum Command {
         cols: u16,
         rows: u16,
     },
-    /// 总览手填卡:把人填的今天这个数追加进 `.bw/metrics/readings.jsonl`。
+    /// 总览手填卡:把人填的今天这个数记进账本 `.bw/metrics/readings.jsonl`(当天覆盖)。
     /// 只收 C 类(`collect.kind = "manual"`)。空值拒。
     RecordManualMetric {
         project_id: ProjectId,
@@ -220,10 +217,6 @@ pub enum Event {
     ProjectCardEditPending {
         issue_id: IssueId,
     },
-    ProjectChatChanged {
-        project_id: ProjectId,
-    },
-    /// 规范铺底第 1 步真的把文件写进仓并提交了。`files` 是实际落盘的路径。
     /// 项目从工作台上移走了。`issues` = 跟着一起删掉的活数,好让人知道
     /// 自己刚才丢掉了多少账;仓和活自己的 worktree 都还在硬盘上。
     ProjectRemoved {
@@ -236,6 +229,7 @@ pub enum Event {
         issue_id: IssueId,
         live: bool,
     },
+    /// 规范铺底第 1 步真的把文件写进仓并提交了。`files` 是实际落盘的路径。
     StandardBootstrapped {
         project_id: ProjectId,
         issue_id: IssueId,
@@ -322,9 +316,6 @@ pub enum Event {
     ReleaseCut {
         version: String,
         rows_written: bool,
-    },
-    CurrentVersionChanged {
-        version: String,
     },
     /// 拉工作区的结果。`moved` = 主检出真的往前走了;`note` 是给人看的一句话,
     /// 拉不动时装的是 git 的原话(压成一行),**不吞**。

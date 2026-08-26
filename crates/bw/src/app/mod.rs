@@ -458,15 +458,6 @@ impl App {
             Command::EditProjectCard { project_id, intent } => {
                 self.edit_project_card(project_id, intent).await
             }
-            Command::SetProjectChat {
-                project_id,
-                provider,
-                group_id,
-                notify,
-            } => {
-                self.set_project_chat(project_id, provider, group_id, notify)
-                    .await
-            }
             Command::RunStandardBootstrap { project_id } => {
                 self.run_standard_bootstrap(project_id, true).await
             }
@@ -492,10 +483,6 @@ impl App {
                     .await
             }
             Command::ScheduleIssue { id, week_of } => self.schedule_issue(id, week_of).await,
-            Command::SetCurrentVersion {
-                project_id,
-                version,
-            } => self.set_current_version(project_id, version).await,
             Command::CutRelease {
                 project_id,
                 version,

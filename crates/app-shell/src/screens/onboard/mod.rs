@@ -121,6 +121,7 @@ pub fn View(vm: Vm, bridge: Bridge, close: EventHandler<MouseEvent>) -> Element 
                 brief: pick(&brief.read(), &pf_brief),
                 benchmark: pick(&benchmark.read(), &pf_bench),
                 north_star: pick(&north_star.read(), &pf_star),
+                ..Default::default()
             },
             remote: if r.is_empty() {
                 RemoteRef::default()

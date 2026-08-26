@@ -755,6 +755,16 @@ pub fn spawn(deep_link: DeepLink) -> Bridge {
                                     if confirming {
                                         ui.pending_drafts = None;
                                     }
+                                    // 拉完主检出必须重采:同事合进去的 metrics.toml
+                                    // 不重读,界面会继续显示「旧格式」那句拒收。
+                                    if events.iter().any(|e| {
+                                        matches!(e, bw::command::Event::WorkspacePulled { .. })
+                                    }) {
+                                        if let Some(pid) = ui.open {
+                                            ui.metrics = Vec::new();
+                                            kick_project_collect(&app, pid, &tx_back).await;
+                                        }
+                                    }
                                     // 接完一个项目就把它打开 —— 人点「完成接入」
                                     // 要的是进这个项目,不是停在接入屏上自己再点
                                     // 一遍项目墙。
@@ -1145,11 +1155,24 @@ pub fn spawn(deep_link: DeepLink) -> Bridge {
                         Req::PtyReplay { .. } => {}
                         Req::FocusSkill(slug) => ui.focus_skill = slug,
                         Req::Refresh => {
-                            // 「刷新」本身不用干活 —— 探活、仓文件、git 都是拼
-                            // ViewModel 那一刻现跑的。但回执必须**带上刚读出来的
-                            // 数**:一句「重新读了一遍」等于什么都没说,人还是不
-                            // 知道刷没刷、刷出了什么。数要等下面 build 完才有,
-                            // 所以这里只立个旗。
+                            // 顶栏「刷新」以前只重拼 ViewModel、不拉仓。同事把
+                            // v2 指标合进远端之后,本机仍停在旧提交,点刷新还是
+                            // 「旧格式拒收」。打开着的项目先快进主检出,再重采。
+                            if let Some(pid) = ui.open {
+                                match app
+                                    .dispatch(Command::PullWorkspace { project_id: pid })
+                                    .await
+                                {
+                                    Ok(events) => {
+                                        ui.set_note(vm_build::note_of(&events));
+                                        ui.metrics = Vec::new();
+                                        kick_project_collect(&app, pid, &tx_back).await;
+                                    }
+                                    Err(e) => {
+                                        ui.set_note(Some(format!("没拉到最新:{e}")));
+                                    }
+                                }
+                            }
                             refresh_receipt = true;
                         }
                     }

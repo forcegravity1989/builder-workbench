@@ -6,8 +6,9 @@
 
 use super::{issue_store, App, AppError, Result};
 use crate::command::Event;
-use crate::model::{IssueId, IssueKind, IssueOrigin, IssueStatus, ProjectId};
-use crate::repo::project_file;
+use crate::model::{IssueId, IssueStatus, ProjectId};
+use crate::repo::readings_file;
+use crate::{IssueKind, IssueOrigin};
 
 impl App {
     /// 总览「开始本周」。判据是**本周的运作活① issue 在不在**——查远端 issue,
@@ -129,12 +130,16 @@ impl App {
     }
 
     /// 「↻ 拉到最新」:把主检出快进到远端。
+    ///
+    /// 主检出若只被读数流水弄脏,先把那份挪进账本再拉——否则 `--ff-only`
+    /// 会停住,人点刷新也看不到同事已经合进去的 `metrics.toml`。
     pub(super) async fn pull_workspace(&mut self, project_id: ProjectId) -> Result<Vec<Event>> {
         let ws = self.workspace_of(project_id).await?;
         if !ws.is_dir() {
             return Err(AppError::NoWorkspace(project_id.uuid().to_string()));
         }
-        let (moved, note) = match crate::git::pull_ff(&ws).await {
+        let salvaged = salvage_readings_dirt(&ws).await;
+        let (moved, mut note) = match crate::git::pull_ff(&ws).await {
             Ok(true) => (true, "工作区已拉到最新".to_string()),
             Ok(false) => (false, "工作区本来就是最新的".to_string()),
             Err(e) => (
@@ -145,19 +150,10 @@ impl App {
                 ),
             ),
         };
+        if salvaged {
+            note = format!("主检出上的读数已挪进账本。{note}");
+        }
         Ok(vec![Event::WorkspacePulled { moved, note }])
-    }
-
-    pub(super) async fn set_current_version(
-        &mut self,
-        project_id: ProjectId,
-        version: String,
-    ) -> Result<Vec<Event>> {
-        let ws = self.workspace_of(project_id).await?;
-        let mut file = project_file::read(&ws)?.unwrap_or_default();
-        file.current_version = version.clone();
-        project_file::write(&ws, &file)?;
-        Ok(vec![Event::CurrentVersionChanged { version }])
     }
 
     /// 发版本:在远端建 Release(打 tag + notes),成功后再给选中的活打
@@ -206,4 +202,29 @@ impl App {
         }
         Ok(events)
     }
+}
+
+/// 主检出若只脏了读数流水,把内容并进账本,再把主检出那份恢复成 HEAD。
+async fn salvage_readings_dirt(ws: &std::path::Path) -> bool {
+    let Ok(paths) = crate::git::dirty_paths(ws).await else {
+        return false;
+    };
+    if !crate::git::is_readings_dirt(&paths) {
+        return false;
+    }
+    let ledger = match bw_engine::workspace::provision_ledger_worktree(ws).await {
+        Ok(p) => p,
+        Err(_) => {
+            let Some(dir) = bw_engine::workspace::ledger_worktree_path(ws) else {
+                return false;
+            };
+            let _ = std::fs::create_dir_all(&dir);
+            dir
+        }
+    };
+    if readings_file::absorb_main_readings(&ledger, ws).is_err() {
+        return false;
+    }
+    let _ = crate::git::restore_path(ws, ".bw/metrics/readings.jsonl").await;
+    true
 }

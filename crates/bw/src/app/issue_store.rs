@@ -31,6 +31,8 @@ pub const LIGHT_TITLE: &str = "编辑项目名片";
 /// 轻量活「配置项目群」的固定标题(B 类在途复用的幂等键)。高优3:改群配置
 /// 也走 worktree + MR,不再直写主检出。
 pub const LIGHT_CHAT_TITLE: &str = "配置项目群";
+/// 旧标题「切换在研版本」。新改动跟「编辑项目名片」走;读回旧活仍认轻量。
+pub const LIGHT_VERSION_TITLE: &str = "切换在研版本";
 
 // ─────────────── 远端拿取 ───────────────
 
@@ -360,7 +362,7 @@ fn is_ops_title(title: &str) -> bool {
 fn kind_from_title(title: &str) -> IssueKind {
     if is_ops_title(title) {
         IssueKind::Ops
-    } else if title == LIGHT_TITLE || title == LIGHT_CHAT_TITLE {
+    } else if title == LIGHT_TITLE || title == LIGHT_CHAT_TITLE || title == LIGHT_VERSION_TITLE {
         IssueKind::Light
     } else {
         IssueKind::Business
