@@ -155,8 +155,7 @@ fn primary_note(events: &[Event]) -> Option<String> {
         } => format!(
             "{slug} 已从工作台移走(连同 {issues} 张活的账)。**仓一个字节都没动**,还在 {workspace}"
         ),
-        Event::ProjectCardEditPending { .. } => "名片改动已建成一张轻量活,等评审合入".into(),
-        Event::ProjectChatChanged { .. } => "项目群配置已建成一张轻量活,等评审合入".into(),
+        Event::ProjectCardEditPending { .. } => "项目信息改动已建成一张轻量活,等评审合入".into(),
         Event::StandardBootstrapped {
             files, committed, ..
         } => format!(
@@ -304,7 +303,6 @@ fn primary_note(events: &[Event]) -> Option<String> {
         Event::MetricRecorded {
             name, day, value, ..
         } => format!("记下了 {name} = {value}({day})"),
-        Event::CurrentVersionChanged { version } => format!("在研版本切到 {version}"),
         Event::ToolMappingSaved { category } => format!("「{}」的映射保存了", category.label()),
         Event::ToolProbed { name, result } => format!("{name} 探活:{result:?}"),
         Event::NotifySeenMarked { .. } => "通知已读到这里".into(),

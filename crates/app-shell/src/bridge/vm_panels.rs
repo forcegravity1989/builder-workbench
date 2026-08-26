@@ -531,7 +531,7 @@ fn build_crons(policy: Option<&issue_policy_file::IssuePolicyFile>) -> Vec<CronV
     let mut rows = vec![CronVm {
         name: "B 类指标采集".into(),
         trigger: "到点自动采".into(),
-        schedule: "daily 09:00".into(),
+        schedule: "daily 20:00".into(),
         rule: "今天还没采过".into(),
     }];
     let Some(c) = policy.and_then(|p| p.cadence.clone()) else {

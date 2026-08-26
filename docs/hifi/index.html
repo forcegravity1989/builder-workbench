@@ -641,8 +641,8 @@ function makeWorkflows(){
 function workflowUsage(pid,name){ return allIssuesArr(pid).filter(function(i){return i.workflow===name;}).length; }
 function makeCrons(){
   return [
-    {id:'cron-b',name:'B 类指标采集',trigger:'到点自动采',schedule:'daily 09:00',rule:'今天还没采过。展示仍按周。'},
-    {id:'cron-ops2',name:'运作活②资产盘点',trigger:'到点建活',schedule:'每周五 20:00',rule:'本周还没有这张运作活(标题幂等)。'}
+    {id:'cron-b',name:'B 类指标采集',trigger:'到点自动采',schedule:'daily 20:00',rule:'今天还没采过。展示仍按周。'},
+    {id:'cron-ops2',name:'运作活②资产盘点',trigger:'到点建活',schedule:'每周五 09:00',rule:'本周还没有这张运作活(标题幂等)。'}
   ];
 }
 function makeToolmap(){
@@ -686,7 +686,7 @@ var FILE_CONTENTS={
   'docs/hifi/index.html':['<!-- 高保真 · 视觉目标态,跟现行壳对齐 -->'],
   'standard/README.md':['# standard/','buddy 推给被管项目的规范正本。接入铺名片 + issue-policy + standard.toml。'],
   '.bw/PROJECT.md':['# 项目名片','Builders\' Workbench(buddy):AI Coding 里一个人的一张工作台。'],
-  '.bw/issue-policy.toml':['# 类别 → 工具 → workflow;节律也在这里','[cadence]','asset_audit = "周五 20:00"'],
+  '.bw/issue-policy.toml':['# 类别 → 工具 → workflow;节律也在这里','[cadence]','asset_audit = "周五 09:00"'],
   '.bw/standard.toml':['schema_version = 1','standard_version = "5.7"'],
   '.bw/project.toml':['# .bw/project.toml','name = "Builders\' Workbench (buddy)"','standard_version = "5.7"','current_version = "0.4.0-v4"'],
   '.bw/metrics.toml':['# .bw/metrics.toml · 指标定义跟人在运作活①里写,不预铺空壳'],
@@ -1644,9 +1644,12 @@ function renderOverview(pid){
   var charterEditHTML='';
   if(editing){
     var d=state.ui.charterDraft[pid];
+    var g=state.chatGroup[pid]||{configured:false};
     charterEditHTML='<div class="formrow"><label class="label">想做什么</label><textarea class="textarea" data-bind="ui.charterDraft.'+pid+'.intent">'+esc(d.intent)+'</textarea></div>'
       + '<div class="formrow"><label class="label">最像的对标</label><input class="input" data-bind="ui.charterDraft.'+pid+'.benchmark" value="'+esc(d.benchmark)+'"></div>'
       + '<div class="formrow"><label class="label">三个月长成什么样(北极星)</label><textarea class="textarea" data-bind="ui.charterDraft.'+pid+'.northstar">'+esc(d.northstar)+'</textarea></div>'
+      + '<div class="formrow"><label class="label">在研版本</label><input class="input mono" value="'+esc(proj.version||'')+'"></div>'
+      + '<div class="formrow"><label class="label">项目群</label><input class="input" value="'+(g.configured?('WeLink · '+esc(g.groupId||'')):'不配')+'"></div>'
       + '<div style="display:flex;gap:8px;justify-content:flex-end;"><button class="btn btn-sm" data-action="cancelCardEdit" data-arg=\'"'+pid+'"\'>取消</button><button class="btn btn-sm btn-primary" data-action="saveCard" data-arg=\'"'+pid+'"\'>保存 · 建一张活提 MR</button></div>';
   }
   var charterEdit=getIssue(pid,'charter-edit');
@@ -1687,6 +1690,7 @@ function renderOverview(pid){
             + '<div class="charter-line"><span class="k">想做什么</span>'+esc(card.intent)+'</div>'
             + '<div class="charter-line"><span class="k">对标</span>'+esc(card.benchmark)+'</div>'
             + '<div class="charter-line"><span class="k">北极星</span>'+esc(card.northstar)+(card.northstarAssumed?' <span class="asterisk">✱</span>':'')+'</div>'
+            + '<div class="charter-line"><span class="k">在研版本</span>'+esc(proj.version||'（待填）')+'</div>'
             + '<div class="charter-line"><span class="k">项目群</span>'+chatGroupLineHTML(pid)+'</div>'
             + '<div class="charter-meta"><span class="mono">'+esc(proj.repo)+'</span><span>规范 v'+esc(proj.standardVersion)+'</span><span style="margin-left:auto;display:flex;gap:6px;"><button class="btn btn-sm" data-action="toastOnly" data-arg=\'"工作区已快进到远端最新(演示)"\'>↻ 拉到最新</button><button class="btn btn-sm" data-action="editCard" data-arg=\'"'+pid+'"\'>编辑</button></span></div>'))
     +     mrBanner
@@ -2064,18 +2068,11 @@ function skillsSectionHTML(pid){
     }).join('') + '</tbody></table></div>'
     + '<div class="cfg-readonly-note">workflow 和技能是同一样东西,不分两张表。导入按钮还没接:自己的技能放进仓里 .claude/skills/&lt;目录&gt;/SKILL.md,这里会扫成「项目自有」。</div></div>';
 }
-function chatGroupBlockHTML(pid){
-  var g=state.chatGroup[pid]||{configured:false,sync:{}};
-  var toggles=[['review','评审中'],['merged','已合入'],['release','发版']].map(function(t){
-    return '<span style="display:inline-flex;align-items:center;gap:5px;margin-right:12px;font-size:11.3px;"><span class="tglswitch '+((g.sync&&g.sync[t[0]])?'on':'')+'"><span class="knob"></span></span>'+t[1]+'</span>';
-  }).join('');
-  return '<div class="cfg-section"><div class="cfg-section-head"><h3>项目群</h3></div>'
-    + '<div style="display:flex;flex-direction:column;gap:7px;font-size:12.2px;">'
-    + '<div>提供方 <span class="chip '+(g.configured?'chip-clay':'chip-gray')+'">'+(g.configured?'WeLink':'未配')+'</span></div>'
-    + '<div>群号 <span class="mono">'+esc(g.groupId||'—')+'</span></div>'
-    + '<div>同步哪些通知 '+(g.configured?toggles:'<span style="color:var(--ink-3);">—(没配群)</span>')+'</div>'
-    + '</div>'
-    + '<div class="cfg-readonly-note">发出去就算完,不记账。改群号走「编辑项目信息」那条活 + MR,不在这里直接写仓。</div></div>';
+function probeBlockHTML(pid){
+  var proj=getProject(pid)||{};
+  return '<div class="cfg-section"><div class="cfg-section-head"><h3>开工工具探活</h3></div>'
+    + '<div style="font-size:11.5px;color:var(--ink-3);margin-bottom:8px;">远端仓 '+esc(proj.repo||'—')+'</div>'
+    + '<div class="cfg-readonly-note">项目群和在研版本在总览名片里改,跟四字段一张活、一次 MR。</div></div>';
 }
 function cronBlockHTML(pid){
   var crons=state.crons[pid]||[];
@@ -2088,17 +2085,16 @@ function cronBlockHTML(pid){
 }
 function standardBlockHTML(pid){
   var proj=getProject(pid)||{};
-  return '<div class="cfg-section"><div class="cfg-section-head"><h3>规范件与在研版本</h3>'
+  return '<div class="cfg-section"><div class="cfg-section-head"><h3>规范件</h3>'
     + '<button class="btn btn-sm" data-action="toastOnly" data-arg=\'"对账只看不改:缺哪几份、哪几份过期、哪几份被人手改过(演示)"\'>对一遍账</button></div>'
-    + '<div class="settings-list"><div class="settings-row"><div><div class="k">规范版本</div><div class="v">'+esc(proj.standardVersion||'—')+'</div></div></div>'
-    + '<div class="settings-row"><div><div class="k">在研版本</div><div class="v mono">'+esc(proj.version||'—')+'</div></div></div></div>'
-    + '<div class="cfg-readonly-note">对账只看不改。名片和开工映射在接入那次铺底里一次写完;指标正文跟运作活①会话走,不预铺空壳。没有「规范铺底」按钮。</div></div>';
+    + '<div class="settings-list"><div class="settings-row"><div><div class="k">规范版本</div><div class="v">'+esc(proj.standardVersion||'—')+'</div></div></div></div>'
+    + '<div class="cfg-readonly-note">对账只看不改。在研版本和项目群在总览名片里改。指标正文跟运作活①会话走,不预铺空壳。没有「规范铺底」按钮。</div></div>';
 }
 function renderConfig(pid){
   return '<section data-screen="config">'
     + toolmapSectionHTML(pid)
     + skillsSectionHTML(pid)
-    + '<div class="cfg-pair">'+chatGroupBlockHTML(pid)+cronBlockHTML(pid)+'</div>'
+    + '<div class="cfg-pair">'+probeBlockHTML(pid)+cronBlockHTML(pid)+'</div>'
     + standardBlockHTML(pid)
     + '</section>';
 }

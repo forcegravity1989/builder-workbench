@@ -264,6 +264,37 @@ pub async fn is_dirty(workspace: &Path) -> Result<bool, GitError> {
         .is_empty())
 }
 
+/// 工作区未提交路径(相对仓根)。空 = 干净。
+pub async fn dirty_paths(workspace: &Path) -> Result<Vec<String>, GitError> {
+    let raw = git(workspace, &["status", "--porcelain"]).await?;
+    Ok(raw
+        .lines()
+        .filter_map(|l| {
+            // porcelain: 两列状态 + 一个空格 + 路径。不能 trim 整行,否则
+            // ` M path` 会变成 `M path`,切掉的就不是路径了。
+            if l.len() < 4 {
+                return None;
+            }
+            let path = l[3..].trim().trim_matches('"').replace('\\', "/");
+            (!path.is_empty()).then_some(path)
+        })
+        .collect())
+}
+
+/// 脏的是不是只有读数流水(buddy 自己写进主检出的那份)。别的脏文件不动。
+pub fn is_readings_dirt(paths: &[String]) -> bool {
+    !paths.is_empty()
+        && paths.iter().all(|p| {
+            p == ".bw/metrics/readings.jsonl" || p == ".bw/metrics" || p.starts_with(".bw/metrics/")
+        })
+}
+
+/// 把一个路径恢复成 HEAD。未跟踪的文件这条会失败,调用方自己删。
+pub async fn restore_path(workspace: &Path, rel: &str) -> Result<(), GitError> {
+    git(workspace, &["restore", "--worktree", "--staged", "--", rel]).await?;
+    Ok(())
+}
+
 /// 提交**这次 buddy 自己写过的那几个文件**(铺底第 1 步、发版本这类动作)。
 /// 没有改动就返回 `Ok(false)`,不造一个空提交。
 ///

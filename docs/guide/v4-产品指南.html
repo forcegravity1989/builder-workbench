@@ -403,7 +403,7 @@
         <ul>
           <li><span class="b"></span><div><strong>对远端代码仓</strong>：读这个项目的 issue 列表（开着的和关过的都读）。周目标那一句话来自本周运作活①最新一条评论里的 <code>## 周目标</code>。纳入了哪些活看 <code>bw:week:YYYY-Www</code> 标签。</div></li>
           <li><span class="b"></span><div><strong>对你的机器</strong>：在项目工作区跑 <code>.bw/metrics.toml</code> 里的采集脚本，窗口是近四周。脚本只吐一个当下值时，折线只在本周那一格画一个点，前几周断开。仓统计走 git（再问远端合入的 PR）。</div></li>
-          <li><span class="b"></span><div><strong>对 <code>.bw/</code></strong>：指标定义读 <code>metrics.toml</code>。B 类点「采集」或每天 09:00 自动采，都把<strong>当天</strong>的值追加进 <code>readings.jsonl</code>（只追加，键是日历日，和 V3 一天一行对齐）。折线按周画，取那一周最后一天。没有 <code>run</code> 的 B 类仍然采不到。C 类在卡上填今天这个数，同一天再记覆盖读回。</div></li>
+          <li><span class="b"></span><div><strong>对 <code>.bw/</code></strong>：指标定义读 <code>metrics.toml</code>。B 类点「采集」或每天 20:00 自动采，都把<strong>当天</strong>的值记进账本 <code>readings.jsonl</code>（同一天再采覆盖这一行，不写主检出）。折线按周画，取那一周最后一天。没有 <code>run</code> 的 B 类仍然采不到。C 类在卡上填今天这个数，和 B 类同一份流水、同一套覆盖。</div></li>
         </ul>
       </div>
 
@@ -533,7 +533,7 @@
         <ul>
           <li><span class="b"></span><div><strong>对远端代码仓</strong>：先合那张 MR，再关掉 issue（完成）。发版先建 codehub Release（打 git 标签），成功后再给勾过的活打 <code>bw:released:vX</code>。顺序不能反。</div></li>
           <li><span class="b"></span><div><strong>对你的机器</strong>：合入后尽量把主检出拉到最新，收掉这张活的工作目录。本机不会多出一个发版文件。</div></li>
-          <li><span class="b"></span><div><strong>对 <code>.bw/</code></strong>：在研版本仍是 <code>project.toml</code> 里那一行，发版<strong>不改</strong>它。要切号，去配置屏改完点保存。</div></li>
+          <li><span class="b"></span><div><strong>对 <code>.bw/</code></strong>：在研版本仍是 <code>project.toml</code> 里那一行，发版<strong>不改</strong>它。要切号，去总览名片点「编辑」，和项目群、四字段一起保存，走同一张活的 MR。</div></li>
         </ul>
       </div>
 
@@ -548,7 +548,7 @@
 
       <div class="callout note">
         <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/></svg>
-        <div class="body"><strong>发版不是只打 issue 标签。</strong>标签是第二步。第一步是远端 Release。在研号发完不改——切号去配置屏。次数读的是已经发出去的 Release，不是名片上的在研号。</div>
+        <div class="body"><strong>发版不是只打 issue 标签。</strong>标签是第二步。第一步是远端 Release。在研号发完不改——切号去总览名片编辑。次数读的是已经发出去的 Release，不是名片上的在研号。</div>
       </div>
       <div class="foot">穿刺 2026-W35 · 仓 <code>z30026659/oh-my-hw-claudecode</code> · 远端 Release <code>v0.2</code>。事实源 <code>docs/architecture.md</code> 模块 8 / 13。</div>
     </section>
@@ -561,7 +561,7 @@
 
       <h2 class="sec"><span class="n">操作</span></h2>
       <div class="ops">
-        <div class="li"><div class="n">1</div><div class="t">配置屏能看见「资产盘点 · 到点自动建 · fri 20:00」，还有一行「B 类指标采集 · daily 09:00 · 今天还没采过」。盘点节律写在 <code>.bw/issue-policy.toml</code>；B 类日采是写死的 09:00，不另开一张定时表。</div></div>
+        <div class="li"><div class="n">1</div><div class="t">配置屏能看见「资产盘点 · 到点自动建 · fri 09:00」，还有一行「B 类指标采集 · daily 20:00 · 今天还没采过」。盘点节律写在 <code>.bw/issue-policy.toml</code>；B 类日采是写死的 20:00，不另开一张定时表。运作活①仍是人点「开始本周」，本周没有这张活 / 没有周目标才出按钮。</div></div>
         <div class="li"><div class="n">2</div><div class="t">buddy 开着、过了本周那个时刻，计划屏会出现「资产盘点 YYYY-Www」。类别锁成「运作」，改不了五阶段。剧本跟标题走，不跟映射走。</div></div>
         <div class="li"><div class="n">3</div><div class="t">这张活会自己开工。看会话或详情：最远到评审中。合入、点完成仍是你来。</div></div>
         <div class="li"><div class="n">4</div><div class="t">周一回到总览，开始下一圈。盘点报告挂在这张活的评论里；微重构只出建议，不直接改业务代码。</div></div>
@@ -581,7 +581,7 @@
         <ul>
           <li><span class="b"></span><div>多一张运作活②，类别显示「运作」、改不了五阶段。剧本跟标题走，不跟映射走。</div></li>
           <li><span class="b"></span><div>写仓根开发手册的 <code>project-handbook</code> 还在技能表里，挂在首次盘点「问过你再写」上，会话没接上。先记着，不挡这一站。</div></li>
-          <li><span class="b"></span><div>buddy 开着、过了本机 09:00，会自动采一轮 B 类，按<strong>当天</strong>写入 <code>readings.jsonl</code>。折线按周，取那一周最后一天。点「采集」也能立刻再采今天。</div></li>
+          <li><span class="b"></span><div>buddy 开着、过了本机 20:00，会自动采一轮 B 类，按<strong>当天</strong>写入账本 <code>readings.jsonl</code>（同一天再采覆盖）。折线按周，取那一周最后一天。点「采集」也能立刻再采今天。</div></li>
         </ul>
       </div>
 
