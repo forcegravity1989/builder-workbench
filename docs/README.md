@@ -28,6 +28,7 @@
 | [`guide/`](guide/) | 产品指南(怎么用 buddy,给用户/同事)+ 填写规范 |
 | [`adr/`](adr/) | 架构决策(难回头一条一篇) |
 | [`hifi/`](hifi/) | 视觉正本(`index.html` 单文件高保真 + 逐屏简报),桌面壳样式表从它搬过去 |
+| [`reference/`](reference/) | 外部参考的**提炼版**(转述非原文,原文只存链接)。现有一篇:[AI-native SDLC playbook](reference/ai-native-sdlc-playbook.md)——做法与治理哲学,每段带 BW 落点或不采纳理由 |
 
 ## 找东西
 
@@ -39,4 +40,5 @@
 | 领域词 | [`CONTEXT.md`](../CONTEXT.md) |
 | 产品指南(怎么用) | [`guide/`](guide/) |
 | headless 例子(PTY 烟测) | [`AGENTS.md`](../AGENTS.md)「怎么建/跑/测」;源码 `crates/bw-engine/examples/` |
+| 外部参考(playbook 等的提炼版) | [`reference/`](reference/) |
 | V3 在哪 | V3 已删(2026-08-24),全量在 `v3` 分支 |
