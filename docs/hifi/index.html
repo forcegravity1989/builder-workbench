@@ -211,7 +211,7 @@ h1,h2,h3,h4{font-family:var(--serif);font-weight:700;margin:0 0 8px;}
 [data-screen="plan"]{height:calc(100vh - 92px);max-width:1560px;}
 .plan-grid{display:grid;grid-template-columns:180px 1fr;gap:14px;height:100%;min-height:0;}
 .plan-col{background:var(--card);border:1px solid var(--border);border-radius:10px;overflow-y:auto;padding:12px;}
-.plan-allrow{padding:8px 9px;border-radius:7px;font-size:13px;cursor:pointer;font-weight:600;margin-bottom:6px;}
+.plan-allrow{padding:7px 9px;border-radius:7px;font-size:12.5px;cursor:pointer;margin-bottom:2px;display:flex;justify-content:space-between;align-items:center;}
 .plan-allrow:hover{background:#EEE6D3;}
 .plan-allrow.active{background:var(--clay);color:#fff;}
 .plan-weekrow{padding:7px 9px;border-radius:7px;font-size:12.5px;cursor:pointer;margin-bottom:2px;display:flex;justify-content:space-between;align-items:center;}
@@ -1793,7 +1793,7 @@ function renderPlan(pid){
   var histRows=HISTORY_WEEKS.map(function(w){
     return '<div class="plan-weekrow '+(left===w?'active':'')+'" data-action="selectPlanLeft" data-arg=\'["'+pid+'","'+w+'"]\'><span>2026-'+w+'</span><span class="chip chip-muted">回填</span></div>';
   }).join('');
-  var leftHTML='<div class="plan-allrow '+(left==='all'?'active':'')+'" data-action="selectPlanLeft" data-arg=\'["'+pid+'","all"]\'>全部</div>'
+  var leftHTML='<div class="plan-weekrow '+(left==='all'?'active':'')+'" data-action="selectPlanLeft" data-arg=\'["'+pid+'","all"]\'>issue总览</div>'
     + weekRows
     + '<div class="plan-weekgroup">历史周</div>'
     + histRows
@@ -1809,7 +1809,7 @@ function renderPlan(pid){
       if(filt.keyword&&i.title.toLowerCase().indexOf(filt.keyword.toLowerCase())<0)return false;
       return true;
     });
-    midHTML='<div class="plan-toolbar"><div class="left">全部活</div></div>'
+    midHTML='<div class="plan-toolbar"><div class="left">issue总览</div></div>'
       + '<div class="filter-bar">'
       +   '<select data-bindchange="ui.planFilter.'+pid+'.cat"><option value="">类别·全部</option>'+CATS.map(function(c){return '<option value="'+c+'">'+c+'</option>';}).join('')+'</select>'
       +   '<select data-bindchange="ui.planFilter.'+pid+'.version"><option value="">版本·全部</option>'+VERSIONS.map(function(v){return '<option value="'+v+'">'+v+'</option>';}).join('')+'</select>'

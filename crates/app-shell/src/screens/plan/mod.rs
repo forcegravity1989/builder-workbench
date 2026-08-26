@@ -173,9 +173,9 @@ fn week_rail(p: &ProjectVm, bridge: &Bridge) -> Element {
     let b_all = bridge.clone();
     rsx! {
         div {
-            class: if p.view_all { "plan-allrow active" } else { "plan-allrow" },
+            class: if p.view_all { "plan-weekrow active" } else { "plan-weekrow" },
             onclick: move |_| b_all.send(Req::ViewAll(true)),
-            "全部"
+            "issue总览"
         }
         if p.weeks.is_empty() {
             div { class: "detail-empty",
@@ -229,7 +229,7 @@ fn toolbar(
         .map(|c| c.cards.iter().map(|x| x.id).collect())
         .unwrap_or_default();
     let title = if p.view_all {
-        "全部活".to_string()
+        "issue总览".to_string()
     } else if p.viewing_week == p.current_week {
         format!("{} · 本周", p.viewing_week)
     } else {
