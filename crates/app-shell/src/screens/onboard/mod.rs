@@ -6,17 +6,17 @@
 //!
 //! 选仓用的是**一个输入框**:点「刷新」把你账号下的仓拉进来,然后在框里打字即
 //! 检索、点一行即选中;也可以完全不理列表,直接把 `owner/repo` 打进去。这跟 V3
-//! 的接入流是同一个交互(`app-desktop/src/screens/create.rs` 的 `RepoCombobox`),
+//! 的接入流是同一个交互(`RepoCombobox`),
 //! 别再发明第二种。
 //!
 //! 列表是**真的** —— `gh repo list` / `codehub-cli` 现问(两个平台的 `list_repos`
-//! 在 `bw-engine` 里本来就有,V3 一直在用)。问不出来就把 CLI 的原话摆出来,绝不
+//! 在 `bw-engine` 里本来就有,V3 期就在用,见 v3 分支)。问不出来就把 CLI 的原话摆出来,绝不
 //! 拿假数据顶上;高保真里那份 `REPO_LIST` 是工厂造的,不抄。
 //!
 //! 四个基础字段全部落仓文件(`PROJECT.md` 与 `.bw/project.toml`),库里只记路径
 //! 与显示用的名字 —— 名片的正本在仓里,换台机器拉下来就有。
 //!
-//! **「完成接入」按下去会发生什么**(母文档 §2 第 0 站):把仓弄到本机(该 clone
+//! **「完成接入」按下去会发生什么**:把仓弄到本机(该 clone
 //! 就 clone)→ 库里落一行项目 → 读/写仓里的名片 → 自动建一张运作活③「规范铺底」,
 //! 它写规范骨架、开一条分支、提一个 MR,**停在评审中等人合** → 进这个项目。
 //! 每一步都往那条 broadcast 通道报一行,界面上原地覆盖 —— 这一下要十几秒,不报
@@ -25,9 +25,9 @@
 use crate::bridge::{Bridge, Req};
 use crate::chrome::{light_dot, progress_log};
 use crate::vm::{RepoProbe, RepoRowVm, ToolProbeVm, Vm};
-use bw_v4::app::ProgressLine;
-use bw_v4::command::{Command, ProjectIntent, RemoteRef};
-use bw_v4::Signal as HealthSignal;
+use bw::app::ProgressLine;
+use bw::command::{Command, ProjectIntent, RemoteRef};
+use bw::Signal as HealthSignal;
 use dioxus::prelude::*;
 
 /// 下拉里最多画几行。检索是在**已经拉下来的那批**里过滤,不是再去问平台。
@@ -368,7 +368,7 @@ pub fn View(vm: Vm, bridge: Bridge, close: EventHandler<MouseEvent>) -> Element 
 /// 的那批里检索,点一行即选中;不想理列表就直接把地址打进去,一样算数。想重新拉一次,
 /// 点框里右边那个 ⟳。
 ///
-/// 交互照 V3 的 `RepoCombobox`(`app-desktop/src/screens/create.rs`)—— 原生
+/// 交互照 V3 的 `RepoCombobox` —— 原生
 /// `<select>` 做不了「打字过滤」,而「搜索框 + 下拉框」两个控件是把一件事拆成两下。
 #[component]
 fn RepoField(

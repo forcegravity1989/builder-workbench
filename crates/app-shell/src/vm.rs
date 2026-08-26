@@ -5,7 +5,7 @@
 //!
 //! 这一层不算任何东西:每个字段都是内核那边现算好塞进来的。壳只渲染和转发意图。
 
-use bw_v4::model::{ConversationId, IssueId, IssueStatus, ProjectId, Signal};
+use bw::model::{ConversationId, IssueId, IssueStatus, ProjectId, Signal};
 
 #[derive(Clone, Debug, Default, PartialEq)]
 pub struct Vm {
@@ -94,7 +94,9 @@ pub struct RepoPrefillVm {
 #[derive(Clone, Debug, Default, PartialEq)]
 pub struct SettingsVm {
     pub workspaces_root: String,
-    pub db_path: String,
+    /// buddy 本机数据目录(注册表 / 设置 / 会话都在这下面)。刀6 起不再有 SQLite
+    /// 库文件,这格显示的是 asset_root 目录名,不是 DB 路径。
+    pub data_dir: String,
     pub claude_binary: Option<String>,
 }
 
@@ -118,7 +120,7 @@ pub struct ProjectCardVm {
     /// 还没看过的动静:评审中 + 阻塞里,更新时间晚于「读到这里」那一下的。
     /// 通知屏点过之后这个数会掉下去。
     pub unread: u32,
-    /// 本周目标,来自仓里的周计划文件。文件没有 / 目标还是占位符 = 空。
+    /// 本周目标一句话,来自运作活①评论。没有或解析不到 = 空。
     pub week_goal: String,
     /// 上次交付:发版记录最后一行的日期与版本。仓里没有发版记录 = 空。
     pub last_delivery: String,
@@ -142,13 +144,12 @@ pub struct ProjectVm {
     pub health: HealthVm,
     pub metrics: MetricsVm,
     pub current_week: String,
-    /// 当前周的 `.bw/plan/YYYY-Www.md` 在不在。总览「开始本周」横幅的判据 ——
-    /// 不能拿 `weeks` 里有没有本周判(本周永远在列表里置顶,哪怕还没有文件)。
-    pub week_file_exists: bool,
-    /// 本周那张运作活①(更新指标 + 制定本周计划)走到哪了。`None` = 还没建
-    /// (或上一张已完成)。横幅靠它区分「还没开始」和「已开工、文件在 MR 路上」。
+    /// 本周是否已经有过运作活①(含已完成)。总览「开始本周」只在还没有时出现;
+    /// 做完再点会再建一张同名活。
+    pub week_started: bool,
+    /// 本周运作活①若还开着,走到哪了。`None` = 还没建,或已经完成。
     pub ops1_status: Option<String>,
-    /// 计划屏左栏:扫 `.bw/plan/` 目录 ∪ 库里活排过的周(新的在前,本周置顶)。
+    /// 计划屏左栏:活上的 `bw:week:*` 标签 ∪ 本周(新的在前,本周置顶)。
     pub weeks: Vec<WeekVm>,
     /// 正在看哪一周。
     pub viewing_week: String,
@@ -226,6 +227,9 @@ pub struct MetricsVm {
     pub north_star: Option<MetricCardVm>,
     pub lagging: Vec<MetricCardVm>,
     pub leading: Vec<MetricCardVm>,
+    /// 这轮会话里人点过「采一次指标」。空着的走势和「还没点」是两件事,
+    /// 后者要在滞后/引领上写出和代码仓级同一句「点了才采」。
+    pub collected: bool,
     /// 读不到 `.bw/metrics.toml` 时的实话(还没有这份文件 —— 正常状态)。
     pub note: Option<String>,
     /// 有这份文件、但**读不动**时的原话(格式错、旧格式)。和 `note` 分开:
@@ -264,8 +268,6 @@ pub struct MetricCardVm {
 #[derive(Clone, Debug, PartialEq)]
 pub struct WeekVm {
     pub week: String,
-    /// 回填出来的历史周带徽记。
-    pub backfill: bool,
     pub goal: Option<String>,
     pub activity_count: u32,
 }
@@ -295,7 +297,7 @@ impl WeekCountsVm {
     }
 }
 
-/// 「本周运作」表里的一行。正本是周计划文件,不是库。
+/// 「本周运作」表里的一行。正本是远端 issue,不是库。
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
 pub struct OpsChipVm {
     pub title: String,
@@ -417,6 +419,10 @@ pub enum SessionTab {
     File,
     /// 从改动文件列表点开的单文件 diff。
     Diff,
+    /// 内嵌 Open Design(仅原型类活——开工工具是 open_design 时才有这个
+    /// 标签)。不是起 CLI,是把本机已开的 Open Design 的 loopback 首页嵌进
+    /// 一个 iframe(「本机网页内嵌类」)。
+    OpenDesign,
 }
 
 /// 会话屏右栏:文件树 / 改动文件 / git 状态 / MR 卡。全部现算,没有一张表
@@ -438,9 +444,16 @@ pub struct WorkbenchVm {
     /// MR 号 + 状态。0 = 没有 MR,如实说没有,不编一个号。
     pub pr_number: u32,
     pub tab: SessionTab,
+    /// 当前打开的会话那张活的开工工具(`claude_cli`/`cursor`/`open_design`)。
+    /// `open_design` 时会话屏多一个内嵌 Open Design 标签(本机网页内嵌类,
+    /// 不起 CLI)。空 = 没选中会话。
+    pub tool: String,
     /// 中栏打开的文件:路径 + 正文(只读)或 diff 正文。
     pub open_path: String,
     pub open_body: String,
+    /// Open Design iframe。空 = 组件自己探首页。
+    pub od_src: String,
+    pub od_gen: u64,
 }
 
 #[derive(Clone, Debug, Default, PartialEq)]
@@ -507,6 +520,8 @@ pub struct ConfigVm {
     /// `.bw/project.toml` 的 `[chat]` 段:项目群。**仓是正本**,这里只显示;
     /// 改它走「编辑项目信息」那条轻量活 + MR,不在配置屏直接写仓。
     pub chat: String,
+    /// 从活详情点 workflow 跳过来时要亮的那一行(slug)。空 = 没指定。
+    pub focus_skill: String,
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -594,7 +609,7 @@ pub struct KbFileVm {
 
 #[derive(Clone, Debug, Default, PartialEq)]
 pub struct CodeGraphVm {
-    /// `ready` / `not_installed` / `not_indexed`。
+    /// `ready` / `running` / `not_installed` / `not_indexed` / `error`。
     pub state: String,
     /// 灰态时的下一步该干什么。
     pub hint: String,

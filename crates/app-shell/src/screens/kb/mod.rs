@@ -70,7 +70,7 @@ fn docs_tab(p: &ProjectVm, bridge: &Bridge) -> Element {
             div { class: "card sp-tree",
                 if p.kb.groups.is_empty() {
                     div { class: "detail-empty",
-                        "这个仓还没有铺底,也没有周计划 —— 去配置屏点「规范铺底」。"
+                        "这个仓还没有铺底。接入时那张规范铺底合进默认分支之后才会有。"
                     }
                 }
                 for g in p.kb.groups.iter() {
@@ -143,8 +143,9 @@ fn codegraph_tab(cg: Option<&CodeGraphVm>, bridge: &Bridge) -> Element {
                     div { class: "sr-h", style: "margin-top:0;flex:1;", "大文件榜" }
                     button {
                         class: "btn btn-sm",
+                        disabled: cg.state == "running",
                         onclick: move |_| b.send(Req::KbTab(KbTab::CodeGraph)),
-                        "重新跑一次"
+                        if cg.state == "running" { "正在跑…" } else { "重新跑一次" }
                     }
                 }
                 if cg.state != "ready" {
@@ -207,7 +208,7 @@ fn assets_tab(a: Option<&AssetsVm>, bridge: &Bridge) -> Element {
                     "点一下上面的「资产」页签就现扫一次。"
                     br {}
                     "五个区块全部现算:列 buddy 自带的技能 + 扫本仓 .claude/skills/、\
-                     走 git log、解析 .bw/releases.md。没有登记表可查。"
+                     走 git log、发版记录扫 git 标签 + 远端 Release。没有登记表可查。"
                 }
             }
         };
@@ -228,7 +229,7 @@ fn assets_tab(a: Option<&AssetsVm>, bridge: &Bridge) -> Element {
 
         div { class: "asset-sect-title", "技能与 workflow" }
         div { class: "cfg-readonly-note",
-            "buddy 自带的十三份(摊在 buddy 自己的资产目录,不进你的仓)+ 本仓 \
+            "buddy 自带的四份(摊在 buddy 自己的资产目录,不进你的仓)+ 本仓 \
              .claude/skills/ 里自有的。「用过几次」按活挂的 workflow 现算,\
              没有胜率 —— V4 不留战绩账本。"
         }
@@ -243,7 +244,7 @@ fn assets_tab(a: Option<&AssetsVm>, bridge: &Bridge) -> Element {
 
         div { class: "asset-sect-title", "蒸馏出来的技能" }
         div { class: "cfg-readonly-note",
-            "把做完的活蒸馏成技能这颗按钮 V4 还没建(docs/LEFTOVERS.md V4B-6),\
+            "把做完的活蒸馏成技能这颗按钮 V4 还没建,\
              所以这里现在恒为空 —— 不放占位数据。"
         }
         if a.distilled.is_empty() {
@@ -277,7 +278,7 @@ fn assets_tab(a: Option<&AssetsVm>, bridge: &Bridge) -> Element {
 
         div { class: "asset-sect-title", "发版记录" }
         div { class: "cfg-readonly-note",
-            "解析 .bw/releases.md —— 那份文件是唯一正本,库里没有版本表。"
+            "发版记录扫 git 标签 + 远端 Release,库里没有版本表。"
         }
         if a.releases.is_empty() {
             div { class: "detail-empty", "暂无发版记录" }

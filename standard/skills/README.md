@@ -4,8 +4,8 @@
 > 子目录,里面一份 `SKILL.md`。开工时 buddy 把这些摊到**自己的资产目录**(不复制进用
 > 户的仓),按活挂的 `workflow` 挑出对应那份,只把**名字 + 一句话 + 完整路径**写进
 > agent 的系统提示词,正文让 agent 自己按需读 —— 渐进式加载,见
-> `crates/bw-v4/src/standard/skills.rs`。给接手技能这块的人看。**现在作数**
-> (2026-08-21 收敛:此前散在 `docs/skills/` 与 `standard/06-defaults/ops/` 两处、
+> `crates/bw/src/standard/skills.rs`。给接手技能这块的人看。**现在作数**
+> (2026-08-21 收敛:此前散在 `docs/skills/`(已删,见 v3 分支)与 `standard/06-defaults/ops/` 两处、
 > 还用目录层级表达「谁调用谁」;现在从属关系写在正文里,目录不表达任何结构)。
 
 ## 四份运作剧本(buddy 自己发起的标准动作)
@@ -19,16 +19,33 @@
 
 规范铺底(运作活③)**没有剧本** —— 它没有 agent 步骤,buddy 自己把核心件写进 `.bw/`。
 
-## 六份方法论技能(按活的类别注入)
+## workflow 入口(业界 SOP 链,buddy 写入口 body 指向 vendor 库)
 
-`evidence-first`(原型)· `spec-to-tests`(构建)· `baseline-before-touch`(优化)·
-`fresh-eyes-funnel`(运营推广)· `breaking-drill`(运维)· `competitive-analysis`。
+归一:workflow 注入和运作剧本走**同一个** `skill_pointer`→`SkillPack` 机制。运作剧本
+body 自足;workflow 入口 body 是 SOP 链 + 指向 `../vendor/` 库子技能路径(库由
+`ensure_vendor_assets` 摊到 `<asset>/vendor/`)。
 
-**三份没有收进来**:`north-star-discovery` 与 `metrics-binding` 的内容已并入
-`metrics-refresh`;`metrics-render` 2026-08-21 整份删掉——它每一步都踩在 V4 不存在
-的东西上(V3 的渲染器例子、库里那两张 V4 没有的表、已退场的五种采集方式),而
-V4 的指标呈现本来就在总览屏里现算。`docs/skills/` 下的原文件留给 V3 用,V4 不读
-那个目录。
+| 活的 `workflow` 字段 | 目录 | body 指向 | 状态 |
+|---|---|---|---|
+| `mattpocock-skills` | `mattpocock-skills/` | `../vendor/mattpocock-skills/skills/engineering/` 下 grill-with-docs→implement→code-review | ✅ build 阶段默认,已打包 + issue-policy 回填 |
+| `proto-design` | — | (源还没 vendor 进 `../vendor/`) | ⏸ 原型阶段默认,待 vendor + 入口 |
+
+## 不预置方法论技能
+
+这里**只有运作剧本,没有阶段方法论技能**。原来预置过六份「阶段方法论」
+(`evidence-first` 原型 / `spec-to-tests` 构建 / `baseline-before-touch` 优化 /
+`fresh-eyes-funnel` 运营推广 / `breaking-drill` 运维 / `competitive-analysis` 竞品),
+但默认 workflow 没打包、`skill_slug` 也不识别,一份没被真正派发过——属「预先搞的
+一堆没用的」。2026-08-24 删光:
+
+- **阶段方法论该由业界 workflow 提供**(build 默认 `mattpocock-skills`、原型
+  默认 `proto-design`,见 `../vendor/`),buddy 每个环节只挑一个最好的默认;
+- **阶段规范约束**(指标铁律、改仓规则)不叫方法论,归 `../system-prompt/references/`,
+  按活注入提示词,不进 `skills/`;
+- 真要从实践里长出 buddy 自己的方法论,**到时候再单独建,不预置**。
+
+(`north-star-discovery` / `metrics-binding` 早前并入 `metrics-refresh`;
+`metrics-render` 整份删过——踩在 V4 不存在的东西上。这几份原文件随 V3 已删。)
 
 ## 版本
 

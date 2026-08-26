@@ -1,4 +1,4 @@
-//! 内核桥:一条独立 tokio 线程拿着 `bw_v4::App`,壳这边只发命令、收 ViewModel。
+//! 内核桥:一条独立 tokio 线程拿着 `bw::App`,壳这边只发命令、收 ViewModel。
 //!
 //! 壳里没有一行业务判断。界面点一下 → 发一条 `Command` 过桥 → 内核执行 → 重建
 //! 一份 [`Vm`] → 经 watch 通道推回来 → 界面重画。**壳自己绝不伪造成功事件**:
@@ -13,10 +13,10 @@ mod vm_panels;
 pub use nav::{GuideNav, Panel, PanelNav, TopView};
 
 use crate::vm::Vm;
-use bw_v4::app::App;
-use bw_v4::command::Command;
-use bw_v4::model::ProjectId;
-use bw_v4::V4Store;
+use bw::app::App;
+use bw::command::Command;
+use bw::local::Settings;
+use bw::model::ProjectId;
 use std::path::PathBuf;
 use std::sync::Arc;
 use std::time::Duration;
@@ -67,10 +67,10 @@ pub enum Req {
     DropDrafts,
     /// 会话屏:选中哪个会话 / 切页签 / 展开某个目录 / 中栏开哪个文件。
     /// 全是纯导航,一律不进库。
-    SelectSession(Option<bw_v4::model::IssueId>),
+    SelectSession(Option<bw::model::IssueId>),
     /// 计划屏右侧详情抽屉开着哪张活。**通知点过去也走这条** —— 通知只负责
     /// 「告诉你有 MR 等着」,看活、看会话、看 MR 都在活的详情里,不在通知里。
-    SelectIssue(Option<bw_v4::model::IssueId>),
+    SelectIssue(Option<bw::model::IssueId>),
     SessionTab(crate::vm::SessionTab),
     ToggleDir(String),
     OpenFile {
@@ -96,12 +96,12 @@ pub enum Req {
     /// 会话屏:「看看喂了什么」—— 把这张活开工时那份系统提示词原样算一遍。
     /// **纯读**,和真开工走的是同一个函数,所以显示什么、agent 收到的就是什么。
     ShowBriefing {
-        issue: bw_v4::model::IssueId,
+        issue: bw::model::IssueId,
     },
     /// 上面那一采的结果。**不是界面发的**,是派出去的任务算完发回来的。
     MetricsCollected {
         project: ProjectId,
-        readouts: Vec<bw_v4::app::collect::MetricReadout>,
+        readouts: Vec<bw::app::collect::MetricReadout>,
         error: Option<String>,
     },
     /// 上面那一采的结果。**不是界面发的**,是派出去的那个任务算完发回来的。
@@ -142,6 +142,12 @@ pub enum Req {
     },
     /// 重新算一遍并推一份新的 ViewModel。
     Refresh,
+    /// 终端挂件订上之后要第一屏。不重拼 ViewModel。
+    PtyReplay {
+        conversation_id: bw::model::ConversationId,
+    },
+    /// 配置屏亮某一行技能(从活上的 workflow 跳过来)。
+    FocusSkill(String),
 }
 
 /// 桥是整个进程共用的**一个**句柄,clone 出来的都指向同一个内核线程,
@@ -160,11 +166,11 @@ pub struct Bridge {
     /// 上一批**静默覆盖**掉 —— claude 大段刷屏(编译输出、长 diff)时终端会缺
     /// 段,而且断口两侧的字节被拼起来,跨批的汉字直接变乱码。broadcast 留一整
     /// 个队列,真丢的时候会明说丢了多少(`Lagged`),不装作没发生。
-    pub pty: broadcast::Sender<Vec<(bw_v4::model::ConversationId, Vec<u8>)>>,
+    pub pty: broadcast::Sender<Vec<(bw::model::ConversationId, Vec<u8>)>>,
     /// 长命令的「一步一句」回执(接入项目就是靠它才不像死了)。**和 PTY 同理
     /// 走 broadcast、不走 ViewModel**:命令还没做完,ViewModel 根本没重拼的机会
     /// —— 内核那条队列此刻正卡在 `dispatch` 里,进度得从旁边这条道出来。
-    pub progress: broadcast::Sender<bw_v4::app::ProgressLine>,
+    pub progress: broadcast::Sender<bw::app::ProgressLine>,
 }
 
 impl PartialEq for Bridge {
@@ -183,53 +189,69 @@ impl Bridge {
     }
 }
 
-/// 库文件默认落在**和旧壳同一个目录、不同名字**:旧壳开 `workbench.db`,
-/// 新壳开 `workbench-v4.db`。两个库互不相扰,但放在一起,人找得到、备份
-/// 一起带走。`BW_DB` 覆盖。
-pub fn db_path() -> String {
-    if let Ok(p) = std::env::var("BW_DB") {
-        return p;
-    }
+/// buddy 本机数据(注册表、设置、会话)落在哪个目录。和旧壳同一个位置,
+/// 但不再有 `.db` 文件 —— 全是 TOML/JSONL。`BW_DB` 仍可覆盖目录(取 parent)。
+///
+/// **Windows 默认落 `D:\builders-workbench\data`**(D 盘在时;与
+/// [`workspaces_root`] 同根、两份平级:`data` + `workspaces`)。D 盘不在的
+/// 机器退回 `%APPDATA%\BuildersWorkbench`。数据目录是进程地基,**不在设置屏
+/// 热改**——要换用 `BW_DB` env(启动前设),理由见 settings 屏那条只读行。
+pub fn data_dir() -> PathBuf {
     let base = if cfg!(target_os = "macos") {
         std::env::var("HOME")
             .map(|h| format!("{h}/Library/Application Support/BuildersWorkbench"))
             .ok()
     } else if cfg!(target_os = "windows") {
-        std::env::var("APPDATA")
-            .map(|a| format!("{a}\\BuildersWorkbench"))
-            .ok()
+        // D 盘在:一个根两份(data 与 workspaces 平级,见 workspaces_root);
+        // D 盘不在的机器退回 APPDATA,不硬撑一个用不了的盘符。
+        if PathBuf::from("D:\\").exists() {
+            Some("D:\\builders-workbench\\data".into())
+        } else {
+            std::env::var("APPDATA")
+                .map(|a| format!("{a}\\BuildersWorkbench"))
+                .ok()
+        }
     } else {
         std::env::var("HOME")
             .map(|h| format!("{h}/.local/share/builders-workbench"))
             .ok()
     };
-    match base {
-        Some(dir) => {
-            let _ = std::fs::create_dir_all(&dir);
-            format!("{dir}/{}", bw_v4::DEFAULT_DB_FILENAME)
+    let dir = match base {
+        Some(d) => PathBuf::from(d),
+        None => dirs_home().join(".builders-workbench"),
+    };
+    let _ = std::fs::create_dir_all(&dir);
+    // BW_DB 仍可覆盖(取它的 parent 当目录,向后兼容)。
+    if let Ok(p) = std::env::var("BW_DB") {
+        let path = PathBuf::from(&p);
+        if let Some(parent) = path.parent() {
+            if !parent.as_os_str().is_empty() {
+                let _ = std::fs::create_dir_all(parent);
+                return parent.to_path_buf();
+            }
         }
-        None => bw_v4::DEFAULT_DB_FILENAME.to_string(),
     }
+    dir
 }
 
 pub fn workspaces_root() -> PathBuf {
     std::env::var("BW_WORKSPACES")
         .map(PathBuf::from)
-        .unwrap_or_else(|_| dirs_home().join(".builders-workbench").join("workspaces"))
+        .unwrap_or_else(|_| {
+            // Windows + D 盘在:与 data_dir 同根,`D:\builders-workbench\workspaces`。
+            if cfg!(target_os = "windows") && PathBuf::from("D:\\").exists() {
+                PathBuf::from("D:\\builders-workbench\\workspaces")
+            } else {
+                dirs_home().join(".builders-workbench").join("workspaces")
+            }
+        })
 }
 
-/// buddy 自己的资产放哪(技能库摊在 `<这里>/skills/`)。**跟着库文件走,不跟
-/// 工作区走** —— 它是 buddy 自带的东西,和用户把仓放在哪没关系;工作区根目录
-/// 是可以随时改的,资产不该跟着搬家。
+/// buddy 自己的资产放哪(技能库摊在 `<这里>/skills/`,注册表/设置/会话也在
+/// 这儿)。**跟着本机数据目录走,不跟工作区走** —— 它是 buddy 自带的东西,
+/// 和用户把仓放在哪没关系;工作区根目录是可以随时改的,资产不该跟着搬家。
 pub fn asset_root() -> PathBuf {
-    // `BW_DB=v4.db` 这种裸文件名的 `parent()` 是空串,直接 join 会得到相对路径
-    // `assets` —— 而这个路径要作为 `--add-dir` 传给 agent,agent 的工作目录是活
-    // 自己的 worktree,相对路径在那儿指向的是另一个地方。空的就回落到家目录。
-    let db = PathBuf::from(db_path());
-    match db.parent() {
-        Some(d) if !d.as_os_str().is_empty() => d.join("assets"),
-        _ => dirs_home().join(".builders-workbench").join("assets"),
-    }
+    data_dir().join("assets")
 }
 
 fn dirs_home() -> PathBuf {
@@ -272,9 +294,12 @@ fn refresh_note(vm: &Vm) -> String {
 /// 界面上。列不出来就把 CLI 的原话端回去 —— 多半是没装、没登录、或者 codehub
 /// 域名填错,这三件事人一看原话就知道该干嘛。
 async fn list_repos(github: bool, host: &str) -> (Vec<crate::vm::RepoRowVm>, Option<String>) {
-    const LIMIT: u32 = 100;
+    // 拉满用户的仓:搜索是客户端过滤已拉到的列表(走缓存,不重新拉),
+    // 所以 fetch 要一次拿全——codehub-cli 无硬上限(实测 limit 9999 拉全 158 个)、
+    // gh repo list 跨页拉到 limit。下拉框另有 DROPDOWN_CAP=30 封顶,不会铺满 999。
+    const LIMIT: u32 = 999;
     if github {
-        match v4_engine::github::list_repos(LIMIT).await {
+        match bw_engine::github::list_repos(LIMIT).await {
             Ok(rows) => (
                 rows.into_iter()
                     .map(|r| crate::vm::RepoRowVm {
@@ -295,7 +320,7 @@ async fn list_repos(github: bool, host: &str) -> (Vec<crate::vm::RepoRowVm>, Opt
             Some("没选区 —— codehub 要 -H green/open/yellow 之一".into()),
         )
     } else {
-        match v4_engine::codehub::list_repos(host.trim(), LIMIT).await {
+        match bw_engine::codehub::list_repos(host.trim(), LIMIT).await {
             Ok(rows) => (
                 rows.into_iter()
                     .map(|r| crate::vm::RepoRowVm {
@@ -327,7 +352,7 @@ async fn fetch_prefill(
     use crate::vm::RepoProbe;
     let got = if github {
         match path.split_once('/') {
-            Some((owner, repo)) => v4_engine::github::fetch_project_toml(owner, repo, git_ref)
+            Some((owner, repo)) => bw_engine::github::fetch_project_toml(owner, repo, git_ref)
                 .await
                 .map_err(|e| e.to_string()),
             None => Err(format!("「{path}」不是 owner/repo 的样子,没法查")),
@@ -335,7 +360,7 @@ async fn fetch_prefill(
     } else if host.trim().is_empty() {
         Err("codehub 域名还没填,查不了".into())
     } else {
-        v4_engine::codehub::fetch_project_toml(host.trim(), path, git_ref)
+        bw_engine::codehub::fetch_project_toml(host.trim(), path, git_ref)
             .await
             .map_err(|e| e.to_string())
     };
@@ -347,11 +372,11 @@ async fn fetch_prefill(
         // 不落在常路上。
         Ok(None) => {
             let exists = if github {
-                v4_engine::github::probe_repo(path)
+                bw_engine::github::probe_repo(path)
                     .await
                     .map_err(|e| e.to_string())
             } else {
-                v4_engine::codehub::probe(host.trim(), path)
+                bw_engine::codehub::probe(host.trim(), path)
                     .await
                     .map_err(|e| e.to_string())
             };
@@ -363,7 +388,7 @@ async fn fetch_prefill(
         // 底座只负责把远端那份文件的**原文**取回来,解析是这一层的事 ——
         // 它不认识业务文件格式。解析不了说明那份文件坏了或不是名片,
         // 那是「没查成」,**不是**「没被接管过」。
-        Ok(Some(raw)) => match bw_v4::repo::project_file::parse(&raw) {
+        Ok(Some(raw)) => match bw::repo::project_file::parse(&raw) {
             Ok(file) => (
                 Some(crate::vm::RepoPrefillVm {
                     name: file.name,
@@ -383,9 +408,9 @@ async fn fetch_prefill(
 
 /// 从一批事件里挑出「开始本周」产出的草稿活标。真跑路径没有草稿(周计划由
 /// agent 会话产出、走 MR),那时候不该弹「等你确认草稿」的卡。
-fn drafts_of(events: &[bw_v4::command::Event]) -> Option<(String, Vec<String>)> {
+fn drafts_of(events: &[bw::command::Event]) -> Option<(String, Vec<String>)> {
     events.iter().find_map(|e| match e {
-        bw_v4::command::Event::WeekPlanStarted {
+        bw::command::Event::WeekPlanStarted {
             week, draft_titles, ..
         } if !draft_titles.is_empty() => Some((week.clone(), draft_titles.clone())),
         _ => None,
@@ -408,7 +433,7 @@ pub fn spawn(deep_link: DeepLink) -> Bridge {
     let tx_back = tx.clone();
 
     std::thread::Builder::new()
-        .name("bw-v4-kernel".into())
+        .name("bw-kernel".into())
         .spawn(move || {
             // 内核这条线程一处 panic 就整条死掉,而界面那头只会停在最后一份
             // ViewModel 上 —— 之后发出去的命令石沉大海,**没有任何提示**。
@@ -421,23 +446,14 @@ pub fn spawn(deep_link: DeepLink) -> Bridge {
                 .build()
                 .expect("内核 runtime 起不来");
             rt.block_on(async move {
-                let db = db_path();
-                let store = match V4Store::open(&db).await {
-                    Ok(s) => s,
-                    Err(e) => {
-                        let _ = vm_tx.send(Vm {
-                            ready: true,
-                            fatal: Some(format!("本机数据库打不开({db}):{e}")),
-                            ..Vm::default()
-                        });
-                        return;
-                    }
-                };
-                // 工作区根目录三级取值:**人在设置屏改过的最大**(存在库的
-                // `app_meta` 里),其次是 `BW_WORKSPACES`(开发期覆盖),最后
-                // 才是默认值。人改过就该一直算数,不然设置屏那个输入框是假的。
-                let root = match store.meta(bw_v4::store::WORKSPACES_ROOT_KEY).await {
-                    Ok(Some(saved)) if !saved.trim().is_empty() => PathBuf::from(saved.trim()),
+                let assets = asset_root();
+                let _ = std::fs::create_dir_all(&assets);
+                // 工作区根目录三级取值:**人在设置屏改过的最大**(存在本地
+                // 设置文件 `settings.toml` 里),其次是 `BW_WORKSPACES`(开发期
+                // 覆盖),最后才是默认值。人改过就该一直算数,不然设置屏那个
+                // 输入框是假的。
+                let root = match Settings::get_workspaces_root(&assets) {
+                    Some(saved) if !saved.trim().is_empty() => PathBuf::from(saved.trim()),
                     _ => workspaces_root(),
                 };
                 let _ = std::fs::create_dir_all(&root);
@@ -445,12 +461,11 @@ pub fn spawn(deep_link: DeepLink) -> Bridge {
                 // 见、随时能停。指挥器那条路仍然走自我标注的替身 —— 它没有界
                 // 面渲染字节流。
                 let mut app = App::new(
-                    store.clone(),
                     root.clone(),
-                    Arc::new(v4_engine::InteractiveCliExecutor::new()),
+                    Arc::new(bw_engine::InteractiveCliExecutor::new()),
                 )
                 .with_pty()
-                .with_asset_root(asset_root())
+                .with_asset_root(assets.clone())
                 .with_progress(prog_tx.clone());
 
                 let mut ui = vm_build::UiState {
@@ -466,15 +481,19 @@ pub fn spawn(deep_link: DeepLink) -> Bridge {
                     repo_stats: None,
                     metrics: Vec::new(),
                     briefing: None,
-                    viewing_week: bw_v4::isoweek::current_week(),
+                    focus_skill: String::new(),
+                    viewing_week: bw::isoweek::current_week(),
                     view_all: false,
                     open_doc: None,
                     note: None,
                     note_seq: 0,
                     pending_drafts: None,
-                    db_path: db.clone(),
+                    data_dir: assets.display().to_string(),
                     workspaces_root: root.display().to_string(),
                     repos: crate::vm::RepoPickerVm::default(),
+                    mr_cache: std::collections::HashMap::new(),
+                    od_src: String::new(),
+                    od_gen: 0,
                 };
 
                 // 「刷新」按下了没有。回执要等 ViewModel 拼完才写得出来。
@@ -482,7 +501,7 @@ pub fn spawn(deep_link: DeepLink) -> Bridge {
 
                 // 深链:BW_OPEN=<slug 或项目名> 打开某个项目。
                 if let Some(want) = &deep_link.open {
-                    match vm_build::find_project(&store, want).await {
+                    match vm_build::find_project(&app, want).await {
                         Some(p) => {
                             ui.open = Some(p.id);
                             eprintln!(
@@ -494,8 +513,8 @@ pub fn spawn(deep_link: DeepLink) -> Bridge {
                     }
                 }
 
-                let mut vm = vm_build::build(&app, &ui).await;
-                eprintln!("[BW_BOOT] projects={} db={db}", vm.projects.len());
+                let mut vm = vm_build::build(&app, &mut ui).await;
+                eprintln!("[BW_BOOT] projects={} assets={}", vm.projects.len(), assets.display());
                 // 环境条的探活结果也打出来 —— 它说「找不到 claude」的时候,人
                 // 得能在终端里拿 `which claude` 当场对。2026-08-20 就栽在这上面:
                 // 探活在 macOS 上恒返回「找不到」,而界面上没有任何办法核。
@@ -508,7 +527,8 @@ pub fn spawn(deep_link: DeepLink) -> Bridge {
                     eprintln!("[BW_ENV] {} = {} · {}", t.label, state, t.detail);
                 }
                 // 打开了项目就把这一份 ViewModel 的关键计数打出来 —— 这些数
-                // 都能用 sqlite3 当场对(活数 / 会话数 / 事件数 / 周数),
+                // 都能用 codehub-cli/gh/git/cat 当场对(活 = codehub issue、
+                // 会话 = session.jsonl、事件 = notify、周 = issue 的 bw:week 标签),
                 // 比截图硬。
                 if let Some(o) = &vm.open {
                     eprintln!(
@@ -544,6 +564,10 @@ pub fn spawn(deep_link: DeepLink) -> Bridge {
                             + usize::from(o.metrics.north_star.is_some()),
                         o.notify.unread,
                     );
+                    // 本会话第一次打开这个项目:自动采一轮指标 + 仓统计。
+                    // 不在每次重拼 VM 时跑,只在进项目这一下。
+                    kick_project_collect(&app, o.id, &tx_back).await;
+                    ui.set_note(Some("正在采本项目指标与仓统计…".into()));
                 }
                 // BW_KB_DUMP=1:把知识库三个页签的数字打进 stderr,好让人拿
                 // `git ls-files` / `codegraph files -j` / `cat .bw/releases.md`
@@ -564,7 +588,13 @@ pub fn spawn(deep_link: DeepLink) -> Bridge {
                                 cg.rows.first().map(|r| r.size).unwrap_or(0),
                                 cg.error
                             );
-                            let a = vm_kb::build_assets(&store, pid, &ws).await;
+                            let issues = app.issues(pid).await.unwrap_or_default();
+                            let usage = bw::app::workflow_usage(&issues);
+                            let releases = match app.project(pid).await {
+                                Ok(Some(p)) => vm_build::load_releases(&app, &p, &ws).await,
+                                _ => vec![],
+                            };
+                            let a = vm_kb::build_assets(&usage, &ws, releases).await;
                             eprintln!(
                                 "[BW_KB] 资产:技能 {} · 蒸馏 {} · 产物 {} · 发版 {} · 仓统计 {:?}",
                                 a.skills.len(),
@@ -595,6 +625,21 @@ pub fn spawn(deep_link: DeepLink) -> Bridge {
                             None => break,
                         },
                         _ = pty_tick.tick() => {
+                            // SessionStart hook 把 `--resume` id 落到
+                            // asset 目录,这里每拍收一次。没写出就跳过。
+                            app.harvest_claude_session_ids().await;
+                            // 没人订就先别 drain:tokio broadcast 在
+                            // receiver_count==0 时把这一拍丢掉。从总览点
+                            // 「开始本周」是先起 PTY、后挂终端,第一屏
+                            // (欢迎/信任框)会整段失踪,人看见空终端、
+                            // 开工灰着(进程还活)、键盘也没处可打。
+                            // 缓冲留在 TerminalManager 有界环里,挂件
+                            // 订上后走 PtyReplay / 下一拍整段送出去。
+                            // 进程退了也要收 live,否则开工一直灰。
+                            if pty_tx.receiver_count() == 0 {
+                                app.reap_ended_ptys();
+                                continue;
+                            }
                             let batches = app.drain_pty_events();
                             if !batches.is_empty() {
                                 let _ = pty_tx.send(batches);
@@ -602,16 +647,32 @@ pub fn spawn(deep_link: DeepLink) -> Bridge {
                             continue;
                         }
                         _ = sched_tick.tick() => {
-                            // 只对打开着的项目跑定时。没打开任何项目时不动 ——
-                            // 后台替一堆项目自动建活,人一打开就看见一片自己没
-                            // 点过的活,不是好体验。
-                            let Some(pid) = ui.open else { continue };
-                            match app.dispatch(Command::TickScheduler { project_id: pid }).await {
-                                Ok(events) if events.is_empty() => continue,
-                                Ok(events) => ui.set_note(vm_build::note_of(&events)),
-                                Err(e) => ui.set_note(Some(format!("定时没跑成:{e}"))),
+                            // 特性9:fanout —— 遍历所有纳管项目逐个查
+                            // cron_enabled + 到点建活,不再只对打开着的项目跑
+                            // (已拍板)。tick_scheduler 本身单项目
+                            // 幂等,到点没到点、本周有没有那张活都原地返空;
+                            // cron_enabled=false 也自己挡掉(高优1)。
+                            let mut note: Option<String> = None;
+                            if let Ok(projects) = app.projects().await {
+                                for p in &projects {
+                                    match app
+                                        .dispatch(Command::TickScheduler { project_id: p.id })
+                                        .await
+                                    {
+                                        Ok(events) if events.is_empty() => {}
+                                        Ok(events) => {
+                                            note = vm_build::note_of(&events);
+                                        }
+                                        Err(e) => {
+                                            note = Some(format!("定时没跑成:{e}"))
+                                        }
+                                    }
+                                }
                             }
-                            vm = vm_build::build(&app, &ui).await;
+                            if let Some(n) = note {
+                                ui.set_note(Some(n));
+                            }
+                            vm = vm_build::build(&app, &mut ui).await;
                             let _ = vm_tx.send(vm.clone());
                             continue;
                         }
@@ -621,6 +682,13 @@ pub fn spawn(deep_link: DeepLink) -> Bridge {
                     // .bw/plan/、解析四个 toml —— 而人打字时每 30ms 就来一条。
                     // 全串在内核这条单线程上,终端会明显卡顿,pty 那一跳也排不
                     // 上队。这两条命令本来也不改任何会显示的东西。
+                    if let Req::PtyReplay { conversation_id } = req {
+                        let snap = app.pty_ack_replay(conversation_id);
+                        if !snap.is_empty() {
+                            let _ = pty_tx.send(vec![(conversation_id, snap)]);
+                        }
+                        continue;
+                    }
                     if let Req::Cmd(
                         c @ (Command::TerminalInput { .. } | Command::TerminalResize { .. }),
                     ) = req
@@ -643,25 +711,46 @@ pub fn spawn(deep_link: DeepLink) -> Bridge {
                                     // 总览那颗按钮会把人带到会话屏,落地时该正
                                     // 好停在这场会话上,而不是让人自己在左列里
                                     // 找哪一条是刚才那下点出来的。
-                                    if let Some(bw_v4::command::Event::WeekPlanStarted {
-                                        issue_id,
-                                        ..
-                                    }) = events
-                                        .iter()
-                                        .find(|e| {
-                                            matches!(
-                                                e,
-                                                bw_v4::command::Event::WeekPlanStarted { .. }
-                                            )
-                                        })
-                                    {
-                                        ui.session_open = Some(*issue_id);
+                                    if let Some((issue_id, tool, embed_url)) = events.iter().find_map(|e| match e {
+                                        bw::command::Event::WeekPlanStarted { issue_id, .. } => {
+                                            Some((*issue_id, String::new(), String::new()))
+                                        }
+                                        bw::command::Event::IssueRan {
+                                            id,
+                                            tool,
+                                            embed_url,
+                                            ..
+                                        } => Some((*id, tool.clone(), embed_url.clone())),
+                                        _ => None,
+                                    }) {
+                                        ui.session_open = Some(issue_id);
                                         // 换了一张活,「喂了什么」那块必须跟着关
                                         // —— 它是**上一张活**的提示词,留在屏幕上
                                         // 会被读成这一张的。
                                         ui.briefing = None;
                                         ui.expanded_dirs.clear();
                                         ui.open_file.clear();
+                                        ui.session_tab = if tool == "open_design" {
+                                            crate::vm::SessionTab::OpenDesign
+                                        } else {
+                                            crate::vm::SessionTab::default()
+                                        };
+                                        if tool == "open_design" && !embed_url.is_empty() {
+                                            ui.od_src = embed_url;
+                                            ui.od_gen = ui.od_gen.saturating_add(1);
+                                        }
+                                    }
+                                    if let Some(id) = events.iter().find_map(|e| match e {
+                                        bw::command::Event::SessionDeleted { id, .. } => Some(*id),
+                                        _ => None,
+                                    }) {
+                                        if ui.session_open == Some(id) {
+                                            ui.session_open = None;
+                                            ui.briefing = None;
+                                            ui.expanded_dirs.clear();
+                                            ui.open_file.clear();
+                                            ui.od_src.clear();
+                                        }
                                     }
                                     if confirming {
                                         ui.pending_drafts = None;
@@ -669,14 +758,14 @@ pub fn spawn(deep_link: DeepLink) -> Bridge {
                                     // 接完一个项目就把它打开 —— 人点「完成接入」
                                     // 要的是进这个项目,不是停在接入屏上自己再点
                                     // 一遍项目墙。
-                                    if let Some(bw_v4::command::Event::ProjectCreated {
+                                    if let Some(bw::command::Event::ProjectCreated {
                                         id,
                                         ..
                                     }) = events.first()
                                     {
                                         ui.open = Some(*id);
                                         ui.open_doc = None;
-                                        ui.viewing_week = bw_v4::isoweek::current_week();
+                                        ui.viewing_week = bw::isoweek::current_week();
                                         ui.view_all = false;
                                         ui.kb_tab = crate::vm::KbTab::default();
                                         ui.kb_codegraph = None;
@@ -689,11 +778,13 @@ pub fn spawn(deep_link: DeepLink) -> Bridge {
                                         ui.metrics = Vec::new();
                                         ui.briefing = None;
                                         ui.repos = crate::vm::RepoPickerVm::default();
+                                        kick_project_collect(&app, *id, &tx_back).await;
+                                        ui.set_note(Some("正在采本项目指标与仓统计…".into()));
                                     }
                                     // 项目被移走了:它要是正开着,得回项目墙 ——
                                     // 留在一个已经不存在的项目上,整屏都是空的。
                                     if events.iter().any(|e| {
-                                        matches!(e, bw_v4::command::Event::ProjectRemoved { .. })
+                                        matches!(e, bw::command::Event::ProjectRemoved { .. })
                                     }) {
                                         ui.open = None;
                                         ui.open_doc = None;
@@ -710,7 +801,7 @@ pub fn spawn(deep_link: DeepLink) -> Bridge {
                                     // 改了工作区根目录:设置屏那一行要立刻显示
                                     // 新值,不能等下次重启。
                                     for e in &events {
-                                        if let bw_v4::command::Event::WorkspacesRootChanged {
+                                        if let bw::command::Event::WorkspacesRootChanged {
                                             path,
                                             ..
                                         } = e
@@ -726,7 +817,7 @@ pub fn spawn(deep_link: DeepLink) -> Bridge {
                         Req::Open(id) => {
                             ui.open = id;
                             ui.open_doc = None;
-                            ui.viewing_week = bw_v4::isoweek::current_week();
+                            ui.viewing_week = bw::isoweek::current_week();
                             ui.view_all = false;
                             // 知识库那两个页签的结果是**上一个项目**的:它的技能
                             // 清单、它的 git 产物、它的发版记录、它的仓统计。留着
@@ -740,6 +831,10 @@ pub fn spawn(deep_link: DeepLink) -> Bridge {
                             ui.repo_stats = None;
                             ui.metrics = Vec::new();
                             ui.briefing = None;
+                            if let Some(pid) = id {
+                                kick_project_collect(&app, pid, &tx_back).await;
+                                ui.set_note(Some("正在采本项目指标与仓统计…".into()));
+                            }
                         }
                         Req::ViewWeek(w) => {
                             ui.viewing_week = w;
@@ -759,17 +854,19 @@ pub fn spawn(deep_link: DeepLink) -> Bridge {
                             }
                         }
                         Req::SelectSession(id) => {
-                            // **选中一张有会话的活 = 把上次那场对话接回来。**
-                            // 光切视图的话人看到的是一片空白 —— V3 本来就是接
-                            // 回来的,V4 这条掉了。只在「真有会话、而且没开着」
-                            // 时才发命令:没有会话的活(buddy 自己写的、回填的)
-                            // 发过去只会弹一句「还没有过会话」,那不是错误,是
-                            // 常态。
+                            // **选中一张记下了 `--resume` id 的活 = 接回那场对话。**
+                            // 只有会话行、id 还是空的,不发 Reopen:发了会走
+                            // `claude --continue`,工作区没有对话就红字
+                            // 「No conversation found to continue」。空 id 等
+                            // 人点▶开工。没有会话行的活(buddy 自己写的、回填
+                            // 的)也不发,那不是错误。
                             if let Some(iid) = id {
                                 if let Ok(Some(conv)) =
-                                    app.store().conversation_for_issue(iid).await
+                                    app.conversation_for_issue(iid).await
                                 {
-                                    if !app.pty_live(conv.id) {
+                                    if !app.pty_live(conv.id)
+                                        && !conv.claude_session_id.is_empty()
+                                    {
                                         if let Err(e) = app
                                             .dispatch(Command::ReopenSession { issue_id: iid })
                                             .await
@@ -786,7 +883,15 @@ pub fn spawn(deep_link: DeepLink) -> Bridge {
                             // 文件在新工作区里多半不存在,一律清掉重来。
                             ui.expanded_dirs.clear();
                             ui.open_file.clear();
-                            ui.session_tab = crate::vm::SessionTab::default();
+                            ui.session_tab = match id {
+                                Some(iid) => match app.issue_or_err(iid).await {
+                                    Ok(i) if i.tool == "open_design" => {
+                                        crate::vm::SessionTab::OpenDesign
+                                    }
+                                    _ => crate::vm::SessionTab::default(),
+                                },
+                                None => crate::vm::SessionTab::default(),
+                            };
                         }
                         Req::SessionTab(t) => ui.session_tab = t,
                         Req::ToggleDir(d) => {
@@ -824,25 +929,61 @@ pub fn spawn(deep_link: DeepLink) -> Bridge {
                                 crate::vm::KbTab::CodeGraph | crate::vm::KbTab::Assets
                             );
                             if let (true, Some(pid)) = (want, ui.open) {
-                                if let Ok(ws) = app.workspace_of(pid).await {
-                                    let back = tx_back.clone();
-                                    let st = store.clone();
-                                    tokio::spawn(async move {
-                                        let (codegraph, assets) =
-                                            if t == crate::vm::KbTab::CodeGraph {
-                                                (Some(vm_kb::build_codegraph(&ws).await), None)
-                                            } else {
-                                                (
-                                                    None,
-                                                    Some(vm_kb::build_assets(&st, pid, &ws).await),
-                                                )
-                                            };
-                                        let _ = back.send(Req::KbComputed {
-                                            tab: t,
-                                            codegraph,
-                                            assets,
+                                match app.workspace_of(pid).await {
+                                    Ok(ws) => {
+                                        // 先摆「正在跑」,不然点「重新跑一次」会先闪
+                                        // 成「点一下页签就现跑」,算得快时整页像没动。
+                                        if t == crate::vm::KbTab::CodeGraph {
+                                            ui.kb_codegraph = Some(crate::vm::CodeGraphVm {
+                                                state: "running".into(),
+                                                hint: "正在跑 codegraph…".into(),
+                                                ..crate::vm::CodeGraphVm::default()
+                                            });
+                                        }
+                                        let back = tx_back.clone();
+                                        let issues = app.issues(pid).await.unwrap_or_default();
+                                        let usage = bw::app::workflow_usage(&issues);
+                                        let releases = match app.project(pid).await {
+                                            Ok(Some(p)) => {
+                                                vm_build::load_releases(&app, &p, &ws).await
+                                            }
+                                            _ => vec![],
+                                        };
+                                        tokio::spawn(async move {
+                                            let (codegraph, assets) =
+                                                if t == crate::vm::KbTab::CodeGraph {
+                                                    (Some(vm_kb::build_codegraph(&ws).await), None)
+                                                } else {
+                                                    (
+                                                        None,
+                                                        Some(
+                                                            vm_kb::build_assets(
+                                                                &usage, &ws, releases,
+                                                            )
+                                                            .await,
+                                                        ),
+                                                    )
+                                                };
+                                            let _ = back.send(Req::KbComputed {
+                                                tab: t,
+                                                codegraph,
+                                                assets,
+                                            });
                                         });
-                                    });
+                                    }
+                                    Err(e) => {
+                                        // 工作区找不到**不能静默什么都不做** —— 人
+                                        // 点了按钮却毫无反应,只会以为按钮坏了。
+                                        let msg = format!("找不到这个项目的工作区:{e}");
+                                        ui.set_note(Some(msg.clone()));
+                                        if t == crate::vm::KbTab::CodeGraph {
+                                            ui.kb_codegraph = Some(crate::vm::CodeGraphVm {
+                                                state: "error".into(),
+                                                error: msg,
+                                                ..crate::vm::CodeGraphVm::default()
+                                            });
+                                        }
+                                    }
                                 }
                             }
                         }
@@ -870,7 +1011,7 @@ pub fn spawn(deep_link: DeepLink) -> Bridge {
                                 // 按钮却毫无反应,只会以为按钮坏了(评审抓的)。
                                 // git 那几项本来就不需要项目行,照采;只有远端那条
                                 // 线缺了地址,如实说一句。
-                                let proj = app.store().project(pid).await.ok().flatten();
+                                let proj = app.project(pid).await.ok().flatten();
                                 match app.workspace_of(pid).await {
                                     Ok(ws) => {
                                         let back = tx_back.clone();
@@ -918,7 +1059,7 @@ pub fn spawn(deep_link: DeepLink) -> Bridge {
                                         let back = tx_back.clone();
                                         tokio::spawn(async move {
                                             let (readouts, error) =
-                                                match bw_v4::app::collect::collect_all(&ws, 4).await
+                                                match bw::app::collect::collect_all(&ws, 4).await
                                                 {
                                                     Ok(r) => (r, None),
                                                     Err(e) => (Vec::new(), Some(e)),
@@ -945,6 +1086,8 @@ pub fn spawn(deep_link: DeepLink) -> Bridge {
                                 ui.metrics = readouts;
                                 if let Some(e) = error {
                                     ui.set_note(Some(format!("采不了指标:{e}")));
+                                } else if ui.note.as_deref() == Some("正在采本项目指标与仓统计…") {
+                                    ui.set_note(None);
                                 }
                             }
                         }
@@ -999,6 +1142,8 @@ pub fn spawn(deep_link: DeepLink) -> Bridge {
                                 ui.repos.probe = probe;
                             }
                         }
+                        Req::PtyReplay { .. } => {}
+                        Req::FocusSkill(slug) => ui.focus_skill = slug,
                         Req::Refresh => {
                             // 「刷新」本身不用干活 —— 探活、仓文件、git 都是拼
                             // ViewModel 那一刻现跑的。但回执必须**带上刚读出来的
@@ -1008,7 +1153,7 @@ pub fn spawn(deep_link: DeepLink) -> Bridge {
                             refresh_receipt = true;
                         }
                     }
-                    vm = vm_build::build(&app, &ui).await;
+                    vm = vm_build::build(&app, &mut ui).await;
                     // 刷新的回执在这里补:此刻的 vm 才是「刚读出来的那一份」。
                     if refresh_receipt {
                         refresh_receipt = false;
@@ -1044,4 +1189,32 @@ pub fn spawn(deep_link: DeepLink) -> Bridge {
         pty: pty_tx_handle,
         progress: prog_tx_handle,
     }
+}
+
+/// 进项目时后台采一轮。不 await 脚本 —— 占着内核线程会卡住终端节拍。
+async fn kick_project_collect(app: &App, pid: ProjectId, tx_back: &mpsc::UnboundedSender<Req>) {
+    let Ok(ws) = app.workspace_of(pid).await else {
+        return;
+    };
+    let proj = app.project(pid).await.ok().flatten();
+    let back_m = tx_back.clone();
+    let back_r = tx_back.clone();
+    let ws_m = ws.clone();
+    tokio::spawn(async move {
+        let (readouts, error) = match bw::app::collect::collect_all(&ws_m, 4).await {
+            Ok(r) => (r, None),
+            Err(e) => (Vec::new(), Some(e)),
+        };
+        let _ = back_m.send(Req::MetricsCollected {
+            project: pid,
+            readouts,
+            error,
+        });
+    });
+    tokio::spawn(async move {
+        let _ = back_r.send(Req::RepoStatsComputed {
+            project: pid,
+            stats: vm_derive::collect_repo_stats(&ws, proj.as_ref()).await,
+        });
+    });
 }

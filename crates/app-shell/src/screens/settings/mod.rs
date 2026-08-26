@@ -1,6 +1,6 @@
 //! 顶层 · 设置。本机相关的几件事:工作区根目录、库文件、各个开工工具在不在。
 //!
-//! 版式照 `docs/v4-prototype/hifi/index.html` 的 `renderSettings`:一个描边列表,
+//! 版式照 `docs/hifi/index.html` 的 `renderSettings`:一个描边列表,
 //! 每行「名字 / 取值 / 右侧一个灯点」。
 //!
 //! **没有登录**。V4 不管任何账号:远端凭证在系统钥匙串、群登录态由用户自己在
@@ -16,8 +16,8 @@
 use crate::bridge::Bridge;
 use crate::chrome::light_dot;
 use crate::vm::{ToolProbeVm, Vm};
-use bw_v4::command::Command;
-use bw_v4::Signal as HealthSignal;
+use bw::command::Command;
+use bw::Signal as HealthSignal;
 use dioxus::prelude::*;
 
 #[component]
@@ -33,9 +33,9 @@ pub fn View(vm: Vm, bridge: Bridge, close: EventHandler<MouseEvent>) -> Element 
             div { class: "settings-list",
                 root_row { value: s.workspaces_root.clone(), bridge: bridge.clone() }
                 {path_row(
-                    "本机数据库",
-                    &s.db_path,
-                    "只放定位与显示缓存。删掉它,从仓和远端能重建。改它:启动前设 BW_DB。",
+                    "数据目录",
+                    &s.data_dir,
+                    "注册表 / 设置 / 会话都在这下面(不是 SQLite 库)。删掉它,从仓和远端能重建。",
                 )}
                 for t in vm.env.iter() {
                     {probe_row(t)}
