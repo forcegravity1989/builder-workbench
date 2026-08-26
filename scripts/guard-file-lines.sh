@@ -11,10 +11,10 @@ SOFT=${SOFT:-600}
 
 roots=()
 [ -d crates/app-shell/src ] && roots+=(crates/app-shell/src)
-[ -d crates/bw-v4/src ] && roots+=(crates/bw-v4/src)
-[ -d crates/v4-engine/src ] && roots+=(crates/v4-engine/src)
+[ -d crates/bw/src ] && roots+=(crates/bw/src)
+[ -d crates/bw-engine/src ] && roots+=(crates/bw-engine/src)
 if [ ${#roots[@]} -eq 0 ]; then
-  echo "跳过:app-shell / bw-v4 / v4-engine 都还不存在"
+  echo "跳过:app-shell / bw / bw-engine 都还不存在"
   exit 0
 fi
 

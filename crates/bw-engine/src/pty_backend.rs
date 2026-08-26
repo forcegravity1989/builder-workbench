@@ -20,12 +20,12 @@
 //! (`interactive_cli::apply_child_env`,与系统终端那条 tokio `Command` 路径同一
 //! 张清单):不整份 `env_clear()` 再回放 `LaunchPlan.env`——V3 在 Windows 真机
 //! 踩到 windows-spawn 拒绝 `=C:` 这类隐藏环境名(2026-08 main `3410401`),
-//! 回放整张表反而起不来;只 `env_remove` 被禁的几个名字,`ANTHROPIC_AUTH_TOKEN`
-//! /`CLAUDECODE` 等就漏不回去,其余原样继承。`plan.env` 仍是那份快照,供测试与
-//! 读回核对,不再由后端回放。
+//! 回放整张表反而起不来;只 `env_remove` 被禁的那些名字(`CLAUDE…` 打头的一族
+//! 加上厂商那三个),其余原样继承。`plan.env` 仍是那份快照,供测试与读回核对,
+//! 不再由后端回放。
 //!
 //! **写线程**:往 PTY 主端写键盘字节是同步阻塞的 fd 写(portable-pty 与
-//! conpty-oxide 都不开非阻塞),而这个 `run` future 被 bw-app `tokio::spawn`
+//! conpty-oxide 都不开非阻塞),而这个 `run` future 被 app-shell `tokio::spawn`
 //! 到桌面壳内核的 **current_thread** 运行时上——子进程卡住不读输入、用户又
 //! 粘贴超过 tty 输入队列容量(macOS 上几 KB)时,一次阻塞写会把整个内核线程
 //! (所有 Command/Event)一起卡死。所以两份后端都把写端交给一条
@@ -37,7 +37,7 @@
 //! 与 `SkillOutput` 的语义边界:这里的 `completed` 恒为 `true`,只表达「PTY 子
 //! 进程退出了」这一件事实(读到 EOF 或读错误都算),不表示「活干成了」——那由
 //! 更上层(评审 → 人点完成)判定。已知粗粒度:退出码不看、读错误与正常退出
-//! 不分,上层把它当 `run_ok` 记进队友战绩;细化留在 docs/LEFTOVERS.md 减负-17。
+//! 不分,上层把它当 `run_ok` 记进队友战绩;细化暂不在此层做。
 //!
 //! 两份后端的 `select!` 主循环长得几乎一样,刻意不抽公共骨架:两边的
 //! 子进程/读端/写端/尺寸类型完全不同,硬抽会变成一堆泛型参数,可读性反而差;
@@ -56,7 +56,7 @@ use crate::ExecError;
 /// claude 交互式启动时位置 argv 不会自动提交(buddy 的 GLM 网关环境下实测),
 /// TUI 起来后停在输入框等 Enter。这是启发式(赌 TUI 到这个点已加载完),不是
 /// 侦测到了就绪信号;更慢的网络/机器上可能不够,失效模式是 `\r` 送进一个还
-/// 没起来的输入框、等于没发。两份后端共用同一个值(docs/LEFTOVERS.md 减负-15)。
+/// 没起来的输入框、等于没发。两份后端共用同一个值。
 pub const SUBMIT_READY_DELAY: Duration = Duration::from_millis(2000);
 
 /// PTY 平台接缝。只管四件事:起进程、双向倒腾字节、改尺寸、收尾杀进程。
@@ -99,11 +99,15 @@ pub fn active() -> impl PtyBackend {
 #[cfg(windows)]
 pub mod windows {
     //! Windows PTY 后端:conpty-oxide(portable-pty 0.9.0 的 ConPTY 实现不
-    //! 把子进程 stdout 送到读端,见 docs/v1-prototype/issue2-metrics-interactive-loop.md §9)。
+    //! 把子进程 stdout 送到读端)。
     //!
-    //! **如实标注**:本仓开发机是 macOS,这份实现只经
-    //! `cargo check --target x86_64-pc-windows-gnu -p bw-engine` 交叉编译检查,
-    //! 搬迁后未在 Windows 真机跑过。
+    //! **如实标注**:本仓开发机是 macOS,**这份文件自己没在 Windows 真机上跑
+    //! 过**,只经 `cargo check --target x86_64-pc-windows-gnu -p bw-engine` 交叉
+    //! 编译检查(2026-08-21 复核通过;此前这里写的是 `-p bw-engine`,那是另一
+    //! 个 crate 的证据,标错了)。
+    //!
+    //! 能借的证据:这份是 2026-08-21 从 V3 原样接管的一份(`diff` 无输出,
+    //! 2026-08-21 核过;V3 已删,见 v3 分支),所以那份跑出来的里程对这份成立。
     //!
     //! 中途丢弃(`abort`)时的收尾靠 conpty-oxide 自己:`Command::spawn()`
     //! 返回的是托管会话,其 `Child` 一律 kill-on-drop 且 Job 带
@@ -313,7 +317,7 @@ pub mod unix {
     //! 2. 中途丢弃要自己兜:portable-pty 的 Unix 子进程就是裸的
     //!    `std::process::Child`,不 kill-on-drop;读线程又持有一份 dup 出来的主
     //!    端 fd,future 被丢弃后主端并不会真正关闭,子进程收不到挂断信号。
-    //!    bw-app 的 `cancel_run` 正是用 `JoinHandle::abort()` 丢弃这个 future,
+    //!    app-shell 的 `cancel_run` 正是用 `JoinHandle::abort()` 丢弃这个 future,
     //!    所以子进程句柄套在 [`ChildGuard`] 里,`Drop` 时若尚未正常收尾,就丢给
     //!    一条独立线程按进程组杀掉并 `wait()` 收割(不能在 `Drop` 里阻塞等宽限:
     //!    丢弃方可能是内核唯一那条线程)。早退错误路径也靠它,不再手写 `kill()`。
@@ -509,7 +513,7 @@ pub mod unix {
     /// `setsid()`,子进程同时成为新会话与新进程组首领,`pid == pgid`。
     ///
     /// `killpg` 对已不存在的进程组返回 `ESRCH`——进程组已空的正常情况,静默
-    /// 吞掉。用 `nix` 的安全封装而不是 `libc` 裸调用:bw-engine 整 crate
+    /// 吞掉。用 `nix` 的安全封装而不是 `libc` 裸调用:本 crate
     /// `#![forbid(unsafe_code)]`,不为一个 syscall 开口子;`nix` 本就在锁文件
     /// 里(portable-pty 自身依赖)。
     fn teardown_group(child: &mut (dyn Child + Send + Sync)) {

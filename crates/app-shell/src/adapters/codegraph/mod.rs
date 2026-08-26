@@ -8,19 +8,23 @@ use std::path::Path;
 use std::time::Duration;
 use tokio::process::Command;
 
-/// 子进程最多等这么久。大仓上 `codegraph files -j` 是几十毫秒级(预研实测),
-/// 真跑到 15 秒说明它卡住了(等索引、等输入),这时候如实说超时,比让人对着
-/// 一个永远转不完的页签强。
-const TIMEOUT: Duration = Duration::from_secs(15);
+/// `files -j` 最多等这么久。大仓上是几十毫秒级(预研实测),真跑到 15 秒说明
+/// 它卡住了(等索引、等输入),这时候如实说超时,比让人对着一个永远转不完的
+/// 页签强。
+const FILES_TIMEOUT: Duration = Duration::from_secs(15);
+
+/// `init` 要建整仓索引,比 `files` 慢一档。穿刺仓这种技能仓大约几秒;真卡到
+/// 两分钟就掐,不让页签永远转。
+const INIT_TIMEOUT: Duration = Duration::from_secs(120);
 
 /// 起一个子进程,超时就杀掉。**不吞错误**:超时、起不来、非 0 退出各说各的。
-async fn run(mut cmd: Command) -> Result<Vec<u8>, String> {
+async fn run(mut cmd: Command, timeout: Duration) -> Result<Vec<u8>, String> {
     cmd.kill_on_drop(true);
-    let out = match tokio::time::timeout(TIMEOUT, cmd.output()).await {
+    let out = match tokio::time::timeout(timeout, cmd.output()).await {
         Err(_) => {
             return Err(format!(
                 "codegraph 超过 {} 秒还没返回,已经掐掉",
-                TIMEOUT.as_secs()
+                timeout.as_secs()
             ))
         }
         Ok(Err(e)) => return Err(format!("起 codegraph 子进程失败:{e}")),
@@ -53,11 +57,12 @@ impl Availability {
         match self {
             Availability::NotInstalled => format!(
                 "本机没装 codegraph。装:npm install --global @colbymchenry/codegraph@{}\n\
-                 装完在项目仓里跑一次 codegraph init。",
+                 装完再点「重新跑一次」。",
                 version()
             ),
             Availability::NotIndexed => {
-                "装了 codegraph,但这个仓还没建索引。在项目仓里跑一次 codegraph init。".into()
+                "装了 codegraph,但这个仓还没建索引。点「重新跑一次」会在这个仓里跑 codegraph init。"
+                    .into()
             }
             Availability::Ready => String::new(),
         }
@@ -73,8 +78,20 @@ pub fn version() -> &'static str {
     VERSION_RAW.trim()
 }
 
-pub async fn detect(workspace: &Path) -> Availability {
-    if !installed().await {
+/// 在 PATH 里找 `codegraph`。Windows 上是 `codegraph.cmd`(npm 全局 shim),
+/// 必须走 [`bw_engine::which_on_path`](认 PATHEXT)——`sh -c 'command -v'`
+/// 在没装 Git Bash 的机器上永远失败,会把「装了」说成「没装」。
+fn program() -> Result<String, String> {
+    bw_engine::which_on_path("codegraph").ok_or_else(|| "本机路径里找不到 codegraph".to_string())
+}
+
+/// 起 codegraph 用底座那条口:Windows 上 `.cmd` 走 `cmd.exe /c`,并且不闪控制台。
+fn cmd() -> Result<Command, String> {
+    Ok(bw_engine::tokio_cmd(program()?))
+}
+
+pub fn detect(workspace: &Path) -> Availability {
+    if program().is_err() {
         return Availability::NotInstalled;
     }
     if !workspace.join(".codegraph").is_dir() {
@@ -83,13 +100,16 @@ pub async fn detect(workspace: &Path) -> Availability {
     Availability::Ready
 }
 
-async fn installed() -> bool {
-    let mut cmd = Command::new("sh");
-    cmd.arg("-c").arg("command -v codegraph");
-    run(cmd)
-        .await
-        .map(|o| !String::from_utf8_lossy(&o).trim().is_empty())
-        .unwrap_or(false)
+/// 在这个仓里跑 `codegraph init`。点「代码图」或「重新跑一次」时,没索引就走这
+/// 条 —— 不再把「去终端里自己跑 init」甩给人,人点了按钮却毫无变化。
+pub async fn init_index(workspace: &Path) -> Result<(), String> {
+    let mut c = cmd()?;
+    c.args(["init"]).current_dir(workspace);
+    run(c, INIT_TIMEOUT).await?;
+    if !workspace.join(".codegraph").is_dir() {
+        return Err("codegraph init 跑完了,但仓里还是没有 .codegraph/ 目录".into());
+    }
+    Ok(())
 }
 
 /// 大文件榜的一行。字段就是 `codegraph files -j` 吐出来的原始字段,不加工。
@@ -106,9 +126,9 @@ pub struct FileRow {
 /// 非 0 退出把 stderr 原文带回去,**不吞错误**;JSON 解析不了也如实说,不
 /// 悄悄返回一个空榜(空榜和「跑失败了」在界面上是两件事)。
 pub async fn big_files(workspace: &Path, top: usize) -> Result<Vec<FileRow>, String> {
-    let mut cmd = Command::new("codegraph");
-    cmd.args(["files", "-j"]).current_dir(workspace);
-    let stdout = run(cmd).await?;
+    let mut c = cmd()?;
+    c.args(["files", "-j"]).current_dir(workspace);
+    let stdout = run(c, FILES_TIMEOUT).await?;
     let text = String::from_utf8_lossy(&stdout);
     let v: serde_json::Value =
         serde_json::from_str(&text).map_err(|e| format!("codegraph 的输出不是 JSON:{e}"))?;
@@ -137,4 +157,29 @@ pub async fn big_files(workspace: &Path, top: usize) -> Result<Vec<FileRow>, Str
     rows.sort_by_key(|r| std::cmp::Reverse(r.size));
     rows.truncate(top);
     Ok(rows)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn missing_dot_dir_is_not_indexed_when_cli_present() {
+        if program().is_err() {
+            return;
+        }
+        let dir = std::env::temp_dir().join(format!("bw-cg-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&dir);
+        std::fs::create_dir_all(&dir).expect("temp dir");
+        let state = detect(&dir);
+        let _ = std::fs::remove_dir_all(&dir);
+        assert_eq!(state, Availability::NotIndexed);
+    }
+
+    #[test]
+    fn not_installed_hint_names_the_package() {
+        let h = Availability::NotInstalled.hint();
+        assert!(h.contains("@colbymchenry/codegraph@"), "{h}");
+        assert!(h.contains(version()), "{h}");
+    }
 }

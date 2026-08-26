@@ -6,7 +6,7 @@
 //! 三条如实:
 //!
 //! 1. **「用过几次」是现算的** —— 扫活的 workflow 列聚合,没有战绩表可查。
-//! 2. **技能清单没有登记表** —— buddy 自带的十一份编在二进制里(摊在 buddy
+//! 2. **技能清单没有登记表** —— buddy 自带的那四份编在二进制里(摊在 buddy
 //!    自己的资产目录,不复制进用户的仓),项目自有的扫仓里 `.claude/skills/`
 //!    得到,同名以仓里那份为准。高保真把「workflow」和「skill」分成两张表,
 //!    V4 里它们是同一样东西(workflow = SOP 类技能包),所以合成一张,不假装
@@ -16,15 +16,15 @@
 
 use crate::bridge::Bridge;
 use crate::vm::{MappingVm, ProjectVm};
-use bw_v4::command::Command;
-use bw_v4::model::category_from_key;
+use bw::command::Command;
+use bw::model::category_from_key;
 use dioxus::prelude::*;
 
 #[component]
 pub fn View(p: ProjectVm, bridge: Bridge) -> Element {
     let (p, bridge) = (&p, &bridge);
     rsx! {
-        section { style: "max-width:1120px;",
+        section {
             {mapping_block(p, bridge)}
             {skill_block(p)}
             div { class: "cfg-pair",
@@ -44,7 +44,7 @@ fn mapping_block(p: &ProjectVm, bridge: &Bridge) -> Element {
             div { class: "cfg-section-head", h3 { "开工工具映射" } }
             if p.config.mappings.is_empty() {
                 div { class: "detail-empty",
-                    "这个项目还没有 .bw/issue-policy.toml。到下面「规范件」那块点「规范铺底」把它铺出来。"
+                    "这个项目还没有 .bw/issue-policy.toml。接入时的规范铺底合进默认分支之后才会有。"
                 }
             } else {
                 div { class: "tbl-wrap",
@@ -82,7 +82,7 @@ fn mapping_block(p: &ProjectVm, bridge: &Bridge) -> Element {
 /// 渲染的 —— 做成普通函数的话,hook 数量会随映射条数变,行与行的输入框内容
 /// 会串位(改 A 类别却存到 B 类别上)。
 #[component]
-fn MappingRow(m: MappingVm, pid: bw_v4::model::ProjectId, bridge: Bridge) -> Element {
+fn MappingRow(m: MappingVm, pid: bw::model::ProjectId, bridge: Bridge) -> Element {
     let mut tool = use_signal(|| m.tool.clone());
     let mut workflow = use_signal(|| m.workflow.clone());
     let b = bridge.clone();
@@ -107,15 +107,14 @@ fn MappingRow(m: MappingVm, pid: bw_v4::model::ProjectId, bridge: Bridge) -> Ele
                     value: "{tool}",
                     onchange: move |e| tool.set(e.value()),
                     option { value: "Claude CLI", "Claude CLI" }
-                    // 这两个今天起不起来:Cursor 在底座里 supported=false,
-                    // Open Design 是本机网页内嵌类、内嵌还没接。**按 §12.5 的
-                    // 规矩,按不动的留位一律灰态并写明为什么** —— 选得中却跑
-                    // 不起来,比选不中更坏。
+                    // Cursor 在底座里 supported=false,**按规矩,按不动的
+                    // 留位一律灰态并写明为什么** —— 选得中却跑不起来,比选不中更坏。
+                    // Open Design 已接(会话屏 OD 标签内嵌本机 OD,▶开工 不起 CLI),
+                    // 不再灰。
                     option { value: "Cursor", disabled: true, "Cursor(还没接,选了开不了工)" }
                     option {
                         value: "Open Design",
-                        disabled: true,
-                        "Open Design(内嵌还没接,选了开不了工)"
+                        "Open Design(本机网页内嵌,开工开会话屏 OD 标签)"
                     }
                     option { value: "—", "—(未定)" }
                 }
@@ -174,8 +173,15 @@ fn skill_block(p: &ProjectVm) -> Element {
                         }
                         tbody {
                             for s in p.config.skills.iter() {
-                                tr { key: "{s.slug}",
-                                    td { "{s.title}" }
+                                tr {
+                                    key: "{s.slug}",
+                                    class: if p.config.focus_skill == s.slug { "sel" } else { "" },
+                                    td {
+                                        "{s.title}"
+                                        if s.title != s.slug {
+                                            div { style: "font-size:11px;color:var(--ink-3);", "{s.slug}" }
+                                        }
+                                    }
                                     td {
                                         span {
                                             class: if s.origin == "蒸馏" { "chip chip-green" } else { "chip chip-gray" },
@@ -195,7 +201,9 @@ fn skill_block(p: &ProjectVm) -> Element {
             div { class: "cfg-readonly-note",
                 "workflow 的入口是一份 SKILL.md,写的是一整套做事流程,自己调度该用哪个 agent \
                  —— 所以 V4 里 workflow 和技能是同一样东西,不分两张表。「用过几次」现算:\
-                 扫活的 workflow 列聚合,没有战绩表。导入与启用/停用还没接,这里只列不改。"
+                 扫活的 workflow 列聚合,没有战绩表。导入按钮还没接:用户自己的技能放进\
+                 这个仓的 `.claude/skills/<目录名>/SKILL.md`,这里会扫成「项目自有」。\
+                 不要拷进 buddy 资产目录(那是自带剧本摊出来的)。启用/停用也还没接。"
             }
         }
     }
@@ -320,35 +328,15 @@ fn cron_block(p: &ProjectVm) -> Element {
 
 // ── ⑤ 规范件与在研版本 ──────────────────────────────
 
-/// 对账是**纯读**的:只回报缺 / 过期 / 人改过,不动仓、不建活 —— 要不要补由
-/// 人决定。「规范铺底」才是真写仓的那一颗,它会建活提 MR。
+/// 对账是**纯读**的:只回报缺 / 过期 / 人改过,不动仓、不建活。
+/// 写仓只发生在接入那一次规范铺底。
 #[component]
 fn StandardBlock(p: ProjectVm, bridge: Bridge) -> Element {
     let (p, bridge) = (&p, &bridge);
     let b_rec = bridge.clone();
-    let b_boot = bridge.clone();
     let b_ver = bridge.clone();
     let pid = p.id;
     let mut version = use_signal(|| p.card.current_version_raw.clone());
-    // 「规范铺底」要写仓、提交、推分支、开 MR —— 十几秒起步。不报进度的话
-    // 按下去界面一动不动,人会以为没点上。和接入屏同一条通道、同一种画法。
-    let mut log = use_signal(Vec::<bw_v4::app::ProgressLine>::new);
-    let prog = bridge.progress.clone();
-    use_future(move || {
-        let mut rx = prog.subscribe();
-        async move {
-            while let Ok(line) = rx.recv().await {
-                let mut rows = log.write();
-                match rows
-                    .iter()
-                    .position(|r: &bw_v4::app::ProgressLine| r.step == line.step)
-                {
-                    Some(i) => rows[i] = line,
-                    None => rows.push(line),
-                }
-            }
-        }
-    });
     let std_ver = if p.card.standard_version.is_empty() {
         "—(这个仓还没铺过规范件)".to_string()
     } else {
@@ -363,14 +351,6 @@ fn StandardBlock(p: ProjectVm, bridge: Bridge) -> Element {
                         class: "btn btn-sm",
                         onclick: move |_| b_rec.cmd(Command::ReconcileStandard { project_id: pid }),
                         "对一遍账"
-                    }
-                    button {
-                        class: "btn btn-sm btn-primary",
-                        onclick: move |_| {
-                            log.write().clear();
-                            b_boot.cmd(Command::RunStandardBootstrap { project_id: pid });
-                        },
-                        "规范铺底"
                     }
                 }
             }
@@ -398,10 +378,9 @@ fn StandardBlock(p: ProjectVm, bridge: Bridge) -> Element {
                     }
                 }
             }
-            {crate::chrome::progress_log(&log.read())}
             div { class: "cfg-readonly-note",
                 "对账只看不改:缺哪几份、哪几份过期了、哪几份被人手改过,结果显示在页脚回执里。\
-                 「规范铺底」会真的写仓 —— 建分支、写核心件、建一张活提 MR,停在评审中等人合。"
+                 名片和开工映射在接入那次铺底里一次写完;指标正文跟运作活①会话走,不预铺空壳。"
             }
         }
     }

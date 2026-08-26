@@ -5,28 +5,21 @@
 //! 长什么样」,这半截管「各块面板长什么样」。
 
 use crate::vm::*;
-use bw_v4::model::{IssueStatus, Project, ProjectId};
-use bw_v4::repo::{issue_policy_file, project_file, week_plan_file};
-use bw_v4::V4Store;
+use bw::model::{IssueStatus, Project, ProjectId};
+use bw::repo::{issue_policy_file, project_file};
 use std::path::Path;
 
-use super::vm_build::{card_item, probe_env, remote_label};
+use super::vm_build::{card_item, probe_env, remote_label, tool_label};
 
 /// 六列看板。
 ///
-/// **两条维度别混**:待办池是「排没排周」,其余五列是「干到哪一步」。原来
-/// 待办池只看 `week_of` 空不空、不看状态,于是一张**已经干完在等评审、连 MR
-/// 都开好了**的活(运作活按设计就不排周)照样躺在待办池里,而看某一周时它又
-/// 因为周对不上从评审中消失 —— 试点第一天用户当场问「明明已经有 PR 了为什么
-/// 在待办池」。
+/// **两条维度别混**:待办池是「排没排周」,其余五列是「干到哪一步」。
 ///
-/// 现在的规矩:**待办池只装还没动过的活**(没排周 + 状态还在待办池/待办);
-/// **动过的活一律按状态进列,不管排没排周** —— 没排周的在卡片上挂一个「未排周」
-/// 徽记,不藏起来也不假装它属于这一周。
-///
-/// `week` 传 `None` = 「全部活」视图,不按周过滤(左栏点「全部」时)。
+/// `week` 传 `None` = 左栏「全部」:没打周标签的未动手活进待办池,其余按状态。
+/// `week` 传某一周 = 只显示打了那一周 `bw:week` 的活。未排周不串进任何一周,
+/// 只在「全部」里找。
 pub(super) fn build_board(
-    issues: &[bw_v4::Issue],
+    issues: &[bw::Issue],
     week: Option<&str>,
     policy: Option<&issue_policy_file::IssuePolicyFile>,
 ) -> BoardVm {
@@ -40,23 +33,19 @@ pub(super) fn build_board(
         .map(|k| k.todo_label.clone())
         .unwrap_or_else(|| "待办 · 已排进本周,等开工".into());
 
-    // 没排周的活在任何一周的视图里都露面 —— 它不属于哪一周,但它是真事,
-    // 藏起来人就再也找不到它了(运作活就是这种)。
-    let in_week = |i: &&bw_v4::Issue| match week {
+    let in_week = |i: &&bw::Issue| match week {
         None => true,
-        Some(w) => i.week_of == w || i.week_of.is_empty(),
+        Some(w) => i.week_of == w,
     };
-    let untouched =
-        |i: &&bw_v4::Issue| matches!(i.status, IssueStatus::Backlog | IssueStatus::Todo);
+    let untouched = |i: &&bw::Issue| matches!(i.status, IssueStatus::Backlog | IssueStatus::Todo);
     let columns = vec![
         ColumnVm {
             status: IssueStatus::Backlog,
             title: pool_label.clone(),
-            // 待办池按定义就是「没排进任何一周」,不按正在看的那一周过滤;
-            // 但**已经动过的活不在这里** —— 它们在自己的状态列里。
+            // 未排周只出现在「全部」。看某一周时这列空着。
             cards: issues
                 .iter()
-                .filter(|i| i.week_of.is_empty() && untouched(i))
+                .filter(|i| week.is_none() && i.week_of.is_empty() && untouched(i))
                 .map(card_item)
                 .collect(),
         },
@@ -105,6 +94,15 @@ pub(super) fn build_board(
                 .map(card_item)
                 .collect(),
         },
+        ColumnVm {
+            status: IssueStatus::Cancelled,
+            title: "已取消".into(),
+            cards: issues
+                .iter()
+                .filter(|i| in_week(i) && i.status == IssueStatus::Cancelled)
+                .map(card_item)
+                .collect(),
+        },
     ];
     BoardVm {
         columns,
@@ -113,60 +111,91 @@ pub(super) fn build_board(
     }
 }
 
-/// 周列表靠扫 `.bw/plan/` 得到 —— 没有索引表。
-pub(super) fn build_weeks(ws: &Path) -> Vec<WeekVm> {
-    week_plan_file::list_weeks(ws)
+/// 周列表从 issues 的 `bw:week:*` 标签取(刀6:不再扫 `.bw/plan/` 目录 ——
+/// 那个文件没人写了,扫到也是旧的)。本周永远在列表里(置顶)。新的在前。
+pub(super) fn build_weeks(
+    issues: &[bw::Issue],
+    current_week: &str,
+    goals: &std::collections::HashMap<String, String>,
+) -> Vec<WeekVm> {
+    let mut weeks: Vec<WeekVm> = Vec::new();
+    let push = |weeks: &mut Vec<WeekVm>, w: &str| {
+        if !w.is_empty() && !weeks.iter().any(|x| x.week == w) {
+            weeks.push(WeekVm {
+                week: w.to_string(),
+                goal: goals.get(w).cloned(),
+                activity_count: 0,
+            });
+        }
+    };
+    for i in issues {
+        push(&mut weeks, &i.week_of);
+    }
+    push(&mut weeks, current_week);
+    for w in &mut weeks {
+        w.activity_count = issues.iter().filter(|i| i.week_of == w.week).count() as u32;
+    }
+    // 新的在前;没有未来周,本周自然置顶。
+    weeks.sort_by(|a, b| b.week.cmp(&a.week));
+    weeks
+}
+
+/// 手填还没跑过采集时,折线直接从流水按周收。一周取日期最大的一天。
+fn trend_from_readings(ws: &Path, name: &str) -> Vec<(String, Option<f64>)> {
+    let mut weeks = Vec::new();
+    let mut w = bw::isoweek::current_week();
+    for _ in 0..4 {
+        weeks.push(w.clone());
+        let Some(prev) = bw::isoweek::previous_week(&w) else {
+            break;
+        };
+        w = prev;
+    }
+    weeks.reverse();
+    let values = bw::repo::readings_file::latest_values_for(ws, name, &weeks);
+    weeks
         .into_iter()
-        .map(|w| {
-            let plan = week_plan_file::read(ws, &w).ok().flatten();
-            WeekVm {
-                backfill: plan
-                    .as_ref()
-                    .and_then(|p| p.front_matter.as_ref())
-                    .is_some_and(|f| f.is_backfill()),
-                goal: plan.as_ref().and_then(|p| p.goal.clone()),
-                activity_count: plan
-                    .as_ref()
-                    .map(|p| p.activities.len() as u32)
-                    .unwrap_or(0),
-                week: w,
-            }
-        })
+        .zip(values)
+        .map(|(week, v)| (week, v.and_then(|s| s.parse::<f64>().ok())))
         .collect()
 }
 
-/// 指标卡:定义来自 `.bw/metrics.toml`,读数来自周计划文件的「本周指标读数」段。
-/// **没有读数就显示「无数据」,不显示 0**。
+/// 指标卡:定义来自 `.bw/metrics.toml`,读数来自仓 `.bw/metrics/readings.jsonl`
+/// (刀6:不再读周计划文件的「本周指标读数」段)。**没有读数就显示「无数据」,
+/// 不显示 0**。
 pub(super) fn build_metrics(
     ws: &Path,
-    plan: Option<&week_plan_file::WeekPlan>,
-    issues: &[bw_v4::Issue],
-    collected: &[bw_v4::app::collect::MetricReadout],
+    issues: &[bw::Issue],
+    collected: &[bw::app::collect::MetricReadout],
+    readings: &[bw::app::MetricReading],
+    collected_once: bool,
 ) -> MetricsVm {
     // **「还没有」和「读不动」是两件事,不能混成一句「没有指标」。**
     // 混了会让人以为文件不存在、去写一份新的,而实际上仓里躺着一份格式不对
     // 的正本(比如 V3 的旧格式),写新的只会又叠一层。
-    let m = match bw_v4::repo::metrics_file::read(ws) {
+    let m = match bw::repo::metrics_file::read(ws) {
         Ok(Some(m)) => m,
         Ok(None) => {
             return MetricsVm {
+                collected: collected_once,
                 note: Some("这个项目还没有 .bw/metrics.toml,指标是空的(不是 0)".into()),
                 ..Default::default()
             }
         }
         Err(e) => {
             return MetricsVm {
+                collected: collected_once,
                 error: Some(e.to_string()),
                 ..Default::default()
             }
         }
     };
     // 精确按名字对,不用 contains:指标名互为前缀时会认错,空名字会命中第一条。
-    let reading_of = |name: &str| -> Option<&week_plan_file::MetricReading> {
+    let reading_of = |name: &str| -> Option<&bw::app::MetricReading> {
         if name.trim().is_empty() {
             return None;
         }
-        plan?.readings.iter().find(|r| r.name.trim() == name.trim())
+        readings.iter().find(|r| r.name.trim() == name.trim())
     };
     let driving_of = |key: &str| -> Vec<String> {
         issues
@@ -177,49 +206,55 @@ pub(super) fn build_metrics(
     };
     // `.bw/metrics.toml` 里的指标没有单独的 id 字段 —— 名字就是它的键。
     // `issue.metric_key` 存的因此是指标的名字。
-    // `target` / `def` / 采集方式来自指标定义文件;读数来自周计划文件。两边
-    // 各是各的正本,这里只是拼到同一张卡上。
+    // `target` / `def` / 采集方式来自指标定义文件;读数来自
+    // `.bw/metrics/readings.jsonl`。两边各是各的正本,这里只是拼到同一张卡上。
     // 采到的现值与走势来自「采一次指标」那一下(`ui.metrics`),不在这里跑
     // ——起脚本要几百毫秒到几秒,每重拼一次 ViewModel 都跑一遍会把界面按住。
     let readout_of = |name: &str| collected.iter().find(|r| r.name.trim() == name.trim());
-    let mk = |name: &str,
-              def: &str,
-              target: &str,
-              plan: &bw_v4::repo::metrics_file::CollectPlan| MetricCardVm {
-        id: name.to_string(),
-        name: name.to_string(),
-        reading: reading_of(name).map(|r| r.value.clone()),
-        target: target.to_string(),
-        def: def.to_string(),
-        manual: plan.is_manual(),
-        source: reading_of(name)
-            .map(|r| r.source.clone())
-            .unwrap_or_default(),
-        collected_at: reading_of(name)
-            .map(|r| r.collected_at.clone())
-            .unwrap_or_default(),
-        driving: driving_of(name),
-        class: class_label(plan.class()).to_string(),
-        collected: readout_of(name).and_then(|r| r.current.clone()),
-        trend: readout_of(name)
-            .map(|r| {
-                r.points
-                    .iter()
-                    .map(|p| {
-                        (
-                            p.week.clone(),
-                            p.value.as_ref().and_then(|v| v.parse::<f64>().ok()),
-                        )
-                    })
-                    .collect()
-            })
-            .unwrap_or_default(),
-        collect_error: readout_of(name)
-            .map(|r| r.error.clone())
-            .unwrap_or_default(),
+    let mk = |name: &str, def: &str, target: &str, plan: &bw::repo::metrics_file::CollectPlan| {
+        MetricCardVm {
+            id: name.to_string(),
+            name: name.to_string(),
+            reading: reading_of(name).map(|r| r.value.clone()),
+            target: target.to_string(),
+            def: def.to_string(),
+            manual: plan.is_manual(),
+            source: reading_of(name)
+                .map(|r| r.source.clone())
+                .unwrap_or_default(),
+            collected_at: reading_of(name)
+                .map(|r| r.collected_at.clone())
+                .unwrap_or_default(),
+            driving: driving_of(name),
+            class: class_label(plan.class()).to_string(),
+            collected: readout_of(name).and_then(|r| r.current.clone()),
+            trend: {
+                let from_run = readout_of(name).map(|r| {
+                    r.points
+                        .iter()
+                        .map(|p| {
+                            (
+                                p.week.clone(),
+                                p.value.as_ref().and_then(|v| v.parse::<f64>().ok()),
+                            )
+                        })
+                        .collect::<Vec<_>>()
+                });
+                match from_run {
+                    Some(t) if t.iter().any(|(_, v)| v.is_some()) => t,
+                    _ if plan.is_manual() => trend_from_readings(ws, name),
+                    Some(t) => t,
+                    None => Vec::new(),
+                }
+            },
+            collect_error: readout_of(name)
+                .map(|r| r.error.clone())
+                .unwrap_or_default(),
+        }
     };
 
     MetricsVm {
+        collected: collected_once,
         error: None,
         // 北极星没有 target 字段 —— 它的目标就是它自己那句定义。
         // 北极星可以缺席:刚接入、还没定指标的项目就是这样。**不摆空卡。**
@@ -242,12 +277,11 @@ pub(super) fn build_metrics(
 }
 
 pub(super) async fn build_sessions(
-    app: &bw_v4::app::App,
+    app: &bw::app::App,
     id: ProjectId,
-    issues: &[bw_v4::Issue],
+    issues: &[bw::Issue],
 ) -> Vec<SessionVm> {
-    app.store()
-        .conversations(id)
+    app.conversations(id)
         .await
         .unwrap_or_default()
         .into_iter()
@@ -271,23 +305,25 @@ pub(super) async fn build_sessions(
 
 /// 会话屏右栏 + 中栏。全部现算:文件树点开哪层读哪层、改动文件问 git、
 /// diff 也问 git。**没选中会话就整块是空的**,不摆一个假的工作台。
+#[allow(clippy::too_many_arguments)]
 pub(super) async fn build_workbench(
     sessions: &[SessionVm],
-    issues: &[bw_v4::Issue],
-    open: Option<bw_v4::model::IssueId>,
+    issues: &[bw::Issue],
+    open: Option<bw::model::IssueId>,
     tab: SessionTab,
     expanded: &[String],
     open_path: &str,
+    od_src: &str,
+    od_gen: u64,
 ) -> WorkbenchVm {
     let Some(s) = open.and_then(|id| sessions.iter().find(|s| s.issue_id == id)) else {
         return WorkbenchVm::default();
     };
     let ws = std::path::PathBuf::from(&s.workspace_path);
-    let pr_number = issues
-        .iter()
-        .find(|i| i.id == s.issue_id)
-        .map(|i| i.pr_number)
-        .unwrap_or(0);
+    let issue = issues.iter().find(|i| i.id == s.issue_id);
+    let pr_number = issue.map(|i| i.pr_number).unwrap_or(0);
+    // 开工工具:open_design 时会话屏多一个内嵌 Open Design 标签。
+    let tool = issue.map(|i| i.tool.clone()).unwrap_or_default();
 
     let mut expanded: Vec<String> = expanded.to_vec();
     if !expanded.iter().any(|d| d.is_empty()) {
@@ -296,7 +332,7 @@ pub(super) async fn build_workbench(
     let tree: Vec<(String, Vec<TreeEntryVm>)> = expanded
         .iter()
         .map(|dir| {
-            let entries = bw_v4::git::list_dir(&ws, dir)
+            let entries = bw::git::list_dir(&ws, dir)
                 .into_iter()
                 .map(|e| TreeEntryVm {
                     rel: e.rel,
@@ -308,7 +344,7 @@ pub(super) async fn build_workbench(
         })
         .collect();
 
-    let changed: Vec<ChangedFileVm> = bw_v4::git::changed_files(&ws)
+    let changed: Vec<ChangedFileVm> = bw::git::changed_files(&ws)
         .await
         .unwrap_or_default()
         .into_iter()
@@ -323,7 +359,7 @@ pub(super) async fn build_workbench(
     let open_body = if open_path.is_empty() {
         String::new()
     } else if tab == SessionTab::Diff {
-        bw_v4::git::file_diff(&ws, open_path)
+        bw::git::file_diff(&ws, open_path)
             .await
             .unwrap_or_else(|e| format!("(diff 取不到:{e})"))
     } else {
@@ -334,21 +370,22 @@ pub(super) async fn build_workbench(
     WorkbenchVm {
         workspace: s.workspace_path.clone(),
         branch: s.branch.clone(),
-        ahead_behind: bw_v4::git::ahead_behind(&ws, "main").await,
+        ahead_behind: bw::git::ahead_behind(&ws, "main").await,
         dirty: !changed.is_empty(),
         expanded,
         tree,
         changed,
         pr_number,
         tab,
+        tool,
         open_path: open_path.to_string(),
         open_body,
+        od_src: od_src.to_string(),
+        od_gen,
     }
 }
 
 pub(super) async fn build_config(
-    store: &V4Store,
-    id: ProjectId,
     ws: &Path,
     policy: Option<&issue_policy_file::IssuePolicyFile>,
     project: &Project,
@@ -356,8 +393,9 @@ pub(super) async fn build_config(
     // **不再自己读一遍** —— 自己读的那条路 `.ok()` 会把解析错误吞掉,表现成
     // 「项目群未配」,而真相是文件里有一行写错了。
     file: &project_file::ProjectFile,
+    issues: &[bw::Issue],
 ) -> ConfigVm {
-    let usage = store.workflow_usage(id).await.unwrap_or_default();
+    let usage = bw::app::workflow_usage(issues);
     let mappings = policy
         .map(|p| {
             p.mappings
@@ -368,7 +406,7 @@ pub(super) async fn build_config(
                         .category()
                         .map(|c| c.label().to_string())
                         .unwrap_or_else(|| m.category.clone()),
-                    tool: week_plan_file::tool_label(&m.tool).into(),
+                    tool: tool_label(&m.tool).into(),
                     workflow: if m.workflow.is_empty() {
                         "—(无默认,从鱼塘挑)".into()
                     } else {
@@ -384,7 +422,8 @@ pub(super) async fn build_config(
     ConfigVm {
         mappings,
         skills,
-        tools: probe_env(),
+        focus_skill: String::new(),
+        tools: probe_env().await,
         remote: remote_label(project),
         cadence: policy
             .and_then(|p| p.cadence.clone())
@@ -411,25 +450,27 @@ pub(super) async fn build_config(
 ///
 /// 三个来源,`origin` 如实标出来自哪:
 ///
-/// - **buddy 自带**:编在二进制里的十一份(七份方法论 + 四份运作剧本)。
+/// - **buddy 自带**:编在二进制里的四份(全是运作剧本)。
 ///   它们摊在 buddy 自己的资产目录,**不复制进用户的仓** —— 用户的
-///   `.gitignore` 怎么写不该由 buddy 决定(见 `bw_v4::standard::skills`)。
+///   `.gitignore` 怎么写不该由 buddy 决定(见 `bw::standard::skills`)。
 /// - **项目自有**:这个仓自己的 `.claude/skills/`,扫目录得到。
 /// - **不在册**:活上挂了这个名字,两处都找不到包。用量是真的,包确实没有。
 pub(super) fn skill_list(ws: &Path, usage: &[(String, u32)]) -> Vec<SkillVm> {
-    let used = |slug: &str| {
+    let used = |slug: &str| -> u32 {
         usage
             .iter()
-            .find(|(w, _)| w == slug)
+            .filter(|(w, _)| w == slug || bw::app::skill_slug(w) == Some(slug))
             .map(|(_, n)| *n)
-            .unwrap_or(0)
+            .sum()
     };
 
-    let mut skills: Vec<SkillVm> = bw_v4::standard::skills::all()
+    let mut skills: Vec<SkillVm> = bw::standard::skills::all()
         .into_iter()
         .map(|p| SkillVm {
             uses: used(p.slug),
-            title: p.slug.to_string(),
+            title: bw::app::workflow_label(p.slug)
+                .unwrap_or(p.slug)
+                .to_string(),
             origin: "buddy 自带".into(),
             desc: p.desc.to_string(),
             slug: p.slug.to_string(),
@@ -456,6 +497,9 @@ pub(super) fn skill_list(ws: &Path, usage: &[(String, u32)]) -> Vec<SkillVm> {
 
     // 活上挂了名字、两处都没有包的,如实列出来,不假装它存在。
     for (w, n) in usage {
+        if bw::app::skill_slug(w).is_some() {
+            continue;
+        }
         if !skills.iter().any(|s| &s.slug == w) {
             skills.push(SkillVm {
                 slug: w.clone(),
@@ -484,8 +528,14 @@ pub(super) fn skill_desc(path: &Path) -> String {
 
 /// 定时那张表。**没有定时表** —— 判据写在这里,让人知道它到底看什么。
 fn build_crons(policy: Option<&issue_policy_file::IssuePolicyFile>) -> Vec<CronVm> {
+    let mut rows = vec![CronVm {
+        name: "B 类指标采集".into(),
+        trigger: "到点自动采".into(),
+        schedule: "daily 09:00".into(),
+        rule: "今天还没采过".into(),
+    }];
     let Some(c) = policy.and_then(|p| p.cadence.clone()) else {
-        return Vec::new();
+        return rows;
     };
     let word = |t: &str| match t {
         "manual" => "人触发".to_string(),
@@ -493,20 +543,19 @@ fn build_crons(policy: Option<&issue_policy_file::IssuePolicyFile>) -> Vec<CronV
         "" => "—".to_string(),
         other => other.to_string(),
     };
-    vec![
-        CronVm {
-            name: "更新指标与制定本周计划".into(),
-            trigger: word(&c.ops1_trigger),
-            schedule: "—".into(),
-            rule: "当前周还没有周计划文件".into(),
-        },
-        CronVm {
-            name: "资产盘点".into(),
-            trigger: word(&c.ops2_trigger),
-            schedule: blank_dash(&c.ops2_schedule).to_string(),
-            rule: "本周还没有这张活(不查任何定时表)".into(),
-        },
-    ]
+    rows.push(CronVm {
+        name: "更新指标与制定本周计划".into(),
+        trigger: word(&c.ops1_trigger),
+        schedule: "—".into(),
+        rule: "本周还没有运作活①「更新指标 + 制定本周计划」".into(),
+    });
+    rows.push(CronVm {
+        name: "资产盘点".into(),
+        trigger: word(&c.ops2_trigger),
+        schedule: blank_dash(&c.ops2_schedule).to_string(),
+        rule: "本周还没有这张活(不查任何定时表)".into(),
+    });
+    rows
 }
 
 fn chat_provider(chat: Option<&project_file::ChatConfig>) -> String {
@@ -525,17 +574,17 @@ fn chat_events(chat: Option<&project_file::ChatConfig>) -> Vec<(String, bool)> {
     let on: Vec<String> = match chat {
         None => return Vec::new(),
         Some(c) => c.notify.clone().unwrap_or_else(|| {
-            bw_v4::chat::DEFAULT_NOTIFY
+            bw::chat::DEFAULT_NOTIFY
                 .iter()
                 .map(|s| s.to_string())
                 .collect()
         }),
     };
-    bw_v4::chat::DEFAULT_NOTIFY
+    bw::chat::DEFAULT_NOTIFY
         .iter()
         .map(|e| {
             (
-                bw_v4::chat::event_label(e).to_string(),
+                bw::chat::event_label(e).to_string(),
                 on.iter().any(|x| x == e),
             )
         })
@@ -554,15 +603,15 @@ fn chat_label(ws: &Path) -> String {
     };
     // 整行没写 = 默认那三样;写了空数组 = 静音,如实说「一件都不发」。
     let notify = match &cfg.notify {
-        None => bw_v4::chat::DEFAULT_NOTIFY
+        None => bw::chat::DEFAULT_NOTIFY
             .iter()
-            .map(|e| bw_v4::chat::event_label(e))
+            .map(|e| bw::chat::event_label(e))
             .collect::<Vec<_>>()
             .join(" / "),
         Some(list) if list.is_empty() => "一件都不发(静音)".to_string(),
         Some(list) => list
             .iter()
-            .map(|e| bw_v4::chat::event_label(e))
+            .map(|e| bw::chat::event_label(e))
             .collect::<Vec<_>>()
             .join(" / "),
     };
@@ -583,8 +632,8 @@ fn blank_dash(s: &str) -> &str {
 
 /// A/B/C 三类的人话标签。**这三个词是给人看的正本** —— 代码里那个枚举叫什么
 /// 不重要,界面上永远说「可回溯 / 不可回溯 / 手填」。
-fn class_label(c: bw_v4::repo::metrics_file::MetricClass) -> &'static str {
-    use bw_v4::repo::metrics_file::MetricClass as C;
+fn class_label(c: bw::repo::metrics_file::MetricClass) -> &'static str {
+    use bw::repo::metrics_file::MetricClass as C;
     match c {
         C::Retro => "可回溯",
         C::PointInTime => "不可回溯",

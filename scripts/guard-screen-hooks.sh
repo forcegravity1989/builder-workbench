@@ -31,7 +31,7 @@ while IFS= read -r -d '' f; do
       if (fn_is_component != 1) printf "    第 %d 行的 hook 在非组件函数里(函数定义在第 %d 行)\n", NR, fn_line
     }
     # 属性之外的任何非空行都会清掉 #[component] 标记,避免它跨过无关代码生效
-    !/^[[:space:]]*(#\[|\/\/)/ && NF { is_component = is_component }
+    !/^[[:space:]]*(#\[|\/\/)/ && NF { is_component = 0 }
   ' "$f")
   if [ -n "$bad" ]; then
     echo "✗ $f"

@@ -8,18 +8,21 @@ rust-version.workspace = true
 
 [[bin]]
 # 共存期用这个名字,和旧壳的 builders-workbench 分得开;删旧壳那次改回去。
-name = "bw-v4-dev"
+name = "bw-dev"
 path = "src/main.rs"
 
 [dependencies]
 # 与旧壳同一个 hard-pin(=0.7.9)。desktop feature = wry WebView。
 dioxus = { workspace = true, features = ["desktop"] }
-v4-engine = { workspace = true }
-bw-v4 = { workspace = true }
+bw-engine = { workspace = true }
+bw = { workspace = true }
 tokio = { workspace = true }
 time = { workspace = true, features = ["std"] }
 uuid = { workspace = true }
 # 内嵌终端把字节 / 尺寸经 document::eval 送进 WebView,靠它做 JS 字面量转义。
 serde_json = { workspace = true }
+# 粘贴:dioxus:// 不是安全上下文,网页读不了剪贴板;复制已有 execCommand 兜底,
+# 粘贴没有第二条网页路,只能由壳读系统剪贴板再交给 xterm.paste。
+arboard = "3"
 # 知识库屏渲染仓内 Markdown。只进这个 crate,内核零新增依赖。
 pulldown-cmark = { version = "0.13.4", default-features = false, features = ["html"] }
