@@ -13,18 +13,20 @@
 ### 人与角色
 
 **Builders' Workbench / Workbench / BW**:
-产品名。全称 **Builders' Workbench**，短称 **Workbench** 或 **BW**——同一件产品，不是三样东西。GitHub 仓库 slug 是 `builder-workbench`。
-_Avoid_: buddy、loop-buddy（已废弃）;把 BW 理解成某个具名 AI 人格;workbuddy（另一款产品）。
+产品名。全称 **Builders' Workbench**，短称 **Workbench** 或 **BW**——同一件产品，不是三样东西。GitHub 仓库 slug 现仍是 `loop-buddy`(远端改名未做,做完后统一改口)。
+_Avoid_: buddy、loop-buddy（产品称呼已废弃,仅指远端 slug 时如实写）;把 BW 理解成某个具名 AI 人格;workbuddy（另一款产品）。
 
 **bw（工程标识）**:
 代码与落点前缀：crate（`bw` / `bw-engine`）、被管仓目录 `.bw/`、远端标签 `bw:*`、环境变量 `BW_*`、二进制 `bw-dev`。说产品用 Workbench / BW，说工程路径与标识用 `bw`。
 _Avoid_: 再发明第三套产品称呼与工程前缀。
 
 **Builder / 构建者**:
-使用工作台的那个人——端到端 own 一个项目的单人系统设计者,产品的主角。全局唯一,专指人类。
+使用工作台的那个人——端到端 own 一个项目的单人系统设计者,产品的主角。全局唯一,专指人类。**super builder** 是主张文案(`principles/03`)里对同一角色的强调说法——一个人从想法 own 到持续运营,不是另一类用户。
 _Avoid_: user、owner、开发者。
 
-> **MVP 不再有「队友」概念**——活上挂的是 workflow/技能(见 [系统提示词与渐进加载 模块](docs/architecture.md)),开工时按活记的工具起 agent(见 [远端与工具探活 模块](docs/architecture.md))。「干没干成」看远端 MR 合没合入,不记战绩。别处见到 teammate 一律按此消歧,不是指某个具名 AI 人格。
+**队友 / Teammate**(主张层):
+产品主张(`principles/03`)里对「替你自动跑中间段的 AI」的称呼——你定框、过 gate,队友把拆解、实现、自检、起草跑完;「架构师队友」是其中一种角色化说法。它是主张语言,不是某个具名 AI 人格;在 MVP 实现里对应的是「开工工具 / Agent CLI」+ 活上挂的 workflow/技能,「干没干成」看远端 MR 合没合入,不记战绩。
+_Avoid_: teammate 当实现层实体(MVP 代码里没有队友对象);把队友当成要单独起名、记战绩的成员列表(那是协作套件的做法)。
 
 **开工工具 / Agent CLI**:
 一件活开工时真实调起的智能体 CLI 或内嵌工具(Claude Code / Cursor / Open Design 内嵌等)。声明住在项目仓的 `.bw/issue-policy.toml`,探活分三种机制(候选路径 / 版本命令 / 套接字握手);选了 Cursor 但探活失败就拒绝开工,绝不悄悄退回 Claude Code。未接的工具如实回灰、不假装可用。
@@ -38,14 +40,14 @@ _Avoid_: 用 "Role" 单指这个(代码里对应类型为 `Author`,见 ADR)。
 
 **阶段 / Stage**:
 项目的五个方法论阶段:**原型 → 构建 → 优化 → 运营推广 → 运维**,运维复盘回流到原型(**闭环回流**,所以是环不是流水线)。每阶段自带该问什么、什么节奏、DoD、常见坑。这是通用方法论,不随项目现编。
-_Avoid_: 用裸词 "环 / Loop / operating loop" 指五阶段——五阶段的成环性叫"**闭环回流**"这个属性,不当名词用;"Agent Loop"专指产品命题的运作模式,别混;step/step-N/七步向导(已演进为五阶段)。
+_Avoid_: 用裸词 "环 / Loop / operating loop" 指五阶段——五阶段的成环性叫"**闭环回流**"这个属性,不当名词用;"Agent Loop"专指产品命题的运作模式,别混;step/step-N/七步向导(已演进为五阶段);与「迭代」词条里产品自己的六段(规划…运营)混为一谈(两套各自成词)。
 
 **交棒 / Handoff**:
 从当前阶段推进到下一阶段的那一次显式动作。只留痕、不拦人——清单没勾完也能交。交棒记录只追加、不修改。
 _Avoid_: 审批、gate(交棒只留痕,不是要人拍板才能过的 gate)、阶段切换。
 
 **迭代**:
-六个阶段(规划、设计、构建、发布、维护、运营)走完一次。对 super builder 通常一周一次:每次迭代由你定的周目标开头,以真实增量与回流的欠账收尾。产品主张见 `principles/03`。
+六个阶段(规划、设计、构建、发布、维护、运营)走完一次。对 super builder 通常一周一次:每次迭代由你定的周目标开头,以真实增量与回流的欠账收尾。产品主张见 `principles/03`。**注意**:这里的六段是产品迭代的划分,与「阶段 / Stage」词条里被管项目的**五阶段方法论**(原型→构建→优化→运营推广→运维)是两套,引用时写明是哪套(三套阶段词的总消歧见 `principles/04` 导读)。
 _Avoid_: 转圈 / 周环 / 这一圈 / 一圈(都改写成"这次迭代 / 下一次迭代");也不要拿"环 / Loop"指五阶段(见「阶段」条)——五阶段的成环性叫"闭环回流"。
 
 **gate**:
@@ -150,7 +152,7 @@ _Avoid_: 数据、统计值;不要和"读数"混用——读数是原料,指标�
 
 **指标正本 / Metrics Source of Truth**:
 一个项目的北极星 + 滞后指标 + 引领指标定义,写在仓里一份机读文件 `.bw/metrics.toml`(**只认 `schema_version = 2`**,读到旧格式整份拒收、不迁移),改指标和改代码一样走 MR 评审。Workbench 本地不缓存定义,每次现读。MVP **不要中间连接器层**——一条指标直接指向一个脚本:起进程、传时间窗、读标准输出的 JSON,Workbench 不认识被连的是什么系统;采集方式只有脚本和手填两种。
-_Avoid_: 绕开 MR 直接在界面里"定义"一条指标;把 V3 的 `.bw/connectors.toml` / `docs/Workbench/standards/metrics.md` 当现行正本(V3 已删,见 `v3` 分支)。详见 [仓文件解析 模块](docs/architecture.md)。
+_Avoid_: 绕开 MR 直接在界面里"定义"一条指标;把 V3 的 `.bw/connectors.toml` / `docs/buddy/standards/metrics.md`(V3 旧路径,按史实保留旧名)当现行正本(V3 已删,见 `v3` 分支)。详见 [仓文件解析 模块](docs/architecture.md)。
 
 **业务指标 / 项目指标(两层分流)**:
 总览把指标分两层看:**业务指标**=用户自己的北极星/引领/滞后指标,点灯、参与健康上卷;**项目指标**=Workbench 自动播种的代码仓统计(开放 Issue 数、已合入 MR 数、阶段完成),所有项目都有,只当现状数看——不点灯、不上卷。

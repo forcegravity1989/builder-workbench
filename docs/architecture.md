@@ -37,7 +37,7 @@ Workbench 给一个项目赋能走两条路径,信息落点分清:
 - **路径 A · 轻量(不走会话)**:规范铺底(运作活③)把 Workbench 资产写进项目仓的 `.bw/`,无 agent、无系统提示词。Workbench 在活自己的 worktree+MR 里写,人的主分支一个字节不碰。
 - **路径 B · 走会话**:挂了 workflow 的活开工,agent 在活的工作区里跑。系统提示词兜底 Workbench 统一要求,workflow 自己管流程。
 
-三类产出各有落点:**顶层文档**(README / AGENTS / CLAUDE / CHANGELOG)归 `project-handbook` 这份剧本管——Workbench 管该有的集合,问过人才写、从仓真读、走 MR;**dev 过程件**(CONTEXT / adr / spec / ticket)由 workflow 自己产;`.bw/` 永远走路径 A,不进会话。
+三类产出各有落点:**顶层文档**(README / AGENTS / CLAUDE / CHANGELOG)归 `project-handbook` 这份剧本管——Workbench 管该有的集合,问过人才写、从仓真读、走 MR;**dev 过程件**(CONTEXT / adr / spec / ticket——ticket 是 `mattpocock-skills` 自带的拆活件叫法,不指本仓的「活」)由 workflow 自己产;`.bw/` 永远走路径 A,不进会话。
 
 ### 系统提示词(文件 + references + 技能指针)
 

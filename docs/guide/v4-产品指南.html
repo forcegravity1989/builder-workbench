@@ -197,7 +197,7 @@
       <div class="eyebrow">Workbench MVP · 产品指南</div>
       <h1 class="disp">30 秒导读</h1>
       <div class="banner">
-        这是什么——Workbench MVP 的<strong>使用指南</strong>，一站一站写，从零把一个项目接进来、每周转一圈。给谁看——第一次打开 Workbench 的人（先是我们自己，然后是同事）。现在还作数吗——作数（2026-08-25）。
+        这是什么——Workbench MVP 的<strong>使用指南</strong>，一站一站写，从零把一个项目接进来、每周走一次迭代。给谁看——第一次打开 Workbench 的人（先是我们自己，然后是同事）。现在还作数吗——作数（2026-08-25）。
         <ul class="rules-mini">
           <li>只写<strong>已经真走过一遍</strong>的站。没走到的站列在「先记着的缺口」，不提前编。</li>
           <li>怎么建 / 跑 / 测、门禁，看仓根 <code>AGENTS.md</code>。机制为什么这么定，看 <code>docs/architecture.md</code>。</li>
@@ -206,12 +206,12 @@
       </div>
 
       <h2 class="sec"><span class="n">怎么干活</span></h2>
-      <p>一个项目接进来一次,之后<strong>每周转一圈,一圈六站</strong>(下面那张图就是这一圈)。<strong>你做的事只有两类</strong>：说清楚要什么，以及在关键路口点头。剩下的——查资料、写代码、写文档、提交、开 MR——交给 agent。</p>
+      <p>一个项目接进来一次,之后<strong>每周走一次迭代,一次迭代六站</strong>(下面那张图就是这次迭代)。<strong>你做的事只有两类</strong>：说清楚要什么，以及在关键路口点头。剩下的——查资料、写代码、写文档、提交、开 MR——交给 agent。</p>
       <p>所以整份指南只有一条主线：<strong>接进来 → 每周定目标 → 派活 → agent 干 → 你验收</strong>。</p>
 
       <h2 class="sec"><span class="n">六站旅程环</span>一个项目每周怎么转</h2>
       <div class="diagram">
-        <div class="cap">0 只做一次；1–6 已经走过一圈</div>
+        <div class="cap">0 只做一次；1–6 已经走过一次迭代</div>
         <div class="scroll">
           <svg viewBox="0 0 480 450" width="480" height="450" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="六站旅程环：0 接入项目一次性完成后，1 看总览、2/3 定本周、4 干活、5 验收记发版、6 定时盘点循环往复，6 之后回到 1">
             <defs>
@@ -270,7 +270,7 @@
           <span class="sw"><span class="box" style="background:var(--surface);border:1.5px dashed var(--border-deep)"></span>虚线 = 设计定了，还没真走到</span>
         </div>
       </div>
-      <p class="note-line">这份指南跟着实践走：每走完一站、那一站的改动合入之前，把这一站从「还没走到」搬进「已经走过」。今天第 0–6 站都走过一遍；还没建的记在「先记着的缺口」，不挡这一圈打结。</p>
+      <p class="note-line">这份指南跟着实践走：每走完一站、那一站的改动合入之前，把这一站从「还没走到」搬进「已经走过」。今天第 0–6 站都走过一遍；还没建的记在「先记着的缺口」，不挡这次迭代收尾。</p>
 
       <div class="callout note">
         <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/></svg>
@@ -564,7 +564,7 @@
         <div class="li"><div class="n">1</div><div class="t">配置屏能看见「资产盘点 · 到点自动建 · fri 20:00」，还有一行「B 类指标采集 · daily 09:00 · 今天还没采过」。盘点节律写在 <code>.bw/issue-policy.toml</code>；B 类日采是写死的 09:00，不另开一张定时表。</div></div>
         <div class="li"><div class="n">2</div><div class="t">Workbench 开着、过了本周那个时刻，计划屏会出现「资产盘点 YYYY-Www」。类别锁成「运作」，改不了五阶段。剧本跟标题走，不跟映射走。</div></div>
         <div class="li"><div class="n">3</div><div class="t">这张活会自己开工。看会话或详情：最远到评审中。合入、点完成仍是你来。</div></div>
-        <div class="li"><div class="n">4</div><div class="t">周一回到总览，开始下一圈。盘点报告挂在这张活的评论里；微重构只出建议，不直接改业务代码。</div></div>
+        <div class="li"><div class="n">4</div><div class="t">周一回到总览，开始下一次迭代。盘点报告挂在这张活的评论里；微重构只出建议，不直接改业务代码。</div></div>
       </div>
 
       <h2 class="sec"><span class="n">背后</span></h2>
@@ -595,7 +595,7 @@
     <!-- ============ U2 先记着的缺口 ============ -->
     <section class="screen" id="u2" data-title="先记着的缺口" data-sec-name="怎么用">
       <div class="eyebrow">怎么用 · 站点地图</div>
-      <h1 class="disp">这一圈走完了，这些先记着</h1>
+      <h1 class="disp">这次迭代走完了，这些先记着</h1>
       <p class="lede">第 0–6 站都走过一遍。下面不是下一站，是走过之后还不改产品、先记下的缺口。设计仍以 <code>docs/architecture.md</code> 各模块「没建什么」为准。</p>
 
       <div class="roadmap">

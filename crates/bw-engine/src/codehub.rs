@@ -957,7 +957,7 @@ pub async fn list_releases(host: &str, path: &str) -> Result<Vec<String>, Codehu
 //
 // 对仗 `crate::github` 的 `merged_pr_times` / `issue_times`:走势图要
 // 按周分桶「每周合入的 PR」+「未处理 issue 周末存量」。codehub 那条以前只
-// 走 GitHub,codehub 项目这两条线一直空(「尚无观测」)—— 补上。
+// 走 GitHub,codehub 项目这两条线一直空(「尚无读数」)—— 补上。
 //
 // 与 github 那对同形:回 RFC3339 原文,**不在底座解析时间**,按周分桶是上层
 // (`bw::trend`)的事。`-l 0` = 全量(同 `list_issues` 的做法,不截断)。

@@ -4,7 +4,7 @@
 
 给 **super builder** 的 AI 时代工作台——一个人从想法 own 到持续运营。你定框、过少数几个 gate；规划到运营在同一张台上迭代。
 
-![CI](https://github.com/forcegravity1989/builder-workbench/actions/workflows/ci.yml/badge.svg)
+![CI](https://github.com/forcegravity1989/loop-buddy/actions/workflows/ci.yml/badge.svg)
 
 主张正本 · [principles/03](principles/03-press-release-faq-flywheel.md) · 开发规矩 · [AGENTS.md](AGENTS.md) · 设计 · [docs/architecture.md](docs/architecture.md) · 词表 · [CONTEXT.md](CONTEXT.md)
 
@@ -34,7 +34,7 @@ AI 时代写代码已经很快，六个阶段——规划、设计、构建、�
 | **Builders' Workbench** / **Workbench** / **BW** | 产品名（对外、文档、主张） |
 | **bw** | 工程标识：crate（`bw` / `bw-engine`）、仓目录 `.bw/`、标签 `bw:*`、环境变量 `BW_*`、二进制 `bw-dev` |
 
-GitHub 仓库 slug 是 `builder-workbench`。已废弃：`buddy`、`loop-buddy`。
+GitHub 仓库 slug 现仍是 `loop-buddy`（远端改名未做，做完后统一改口）。产品称呼已废弃：`buddy`、`loop-buddy`。
 
 ---
 

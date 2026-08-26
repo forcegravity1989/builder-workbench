@@ -18,7 +18,7 @@ AGENTS.md            跨工具薄入口（原则指针、特性起手路径、�
 CLAUDE.md            一行导入 AGENTS（开发规矩唯一正本）
 CONTEXT.md           领域词表唯一正本
 REVIEW.md            PR / gate 怎么审（未建；与变更链配套时再立）
-.teamai/             团队 harness 分发（skills / rules / hooks / MCP）——未建，有则用之
+.teamai/             团队 harness（驱动 agent 的工具链配置）分发（skills / rules / hooks / MCP）——未建，有则用之
 decision-ui/ 等      gate 投影（只读渲染 changes/*；不当第二真相）——未建
 ```
 
@@ -138,7 +138,7 @@ changes/<change-id>/
 ## 8. 暂不在本文强制的
 
 - 立刻建齐 `REVIEW.md`、`.teamai/`、decision-ui（三者今天都未建，按 MVP 逐步加）  
-- Maintain 全自治闭环、harness continuous evals（门禁信息架构稳定后再上）  
+- Maintain 全自治闭环、对 agent 工具链的持续评测（harness continuous evals）——门禁信息架构稳定后再上  
 - 改 vendor skill 正文（Superpowers / grill-me 等）——过程兼容由本文与 `AGENTS.md` 约定，skill 包本身先不动
 
 ## 修订

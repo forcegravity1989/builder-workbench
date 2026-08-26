@@ -19,6 +19,6 @@
 ## 后果
 
 - 读回不再用 `sqlite3`,改 `codehub-cli` / `gh` / `git` / `cat .bw/…`。
-- `Derived<Signal>` 仍密封、`set_signal` 仍不存在——健康 derive-only 不变,只是原料从本地库观测变成现算/读数流水。
+- `Derived<Signal>` 仍密封、`set_signal` 仍不存在——健康信号仍只能从数据推导、不能手设(代码里这条约束叫 derive-only),只是原料从本地库观测变成现算/读数流水。
 - 同一活绝不记两次(settle-once)的 `settled_at` 现读远端 issue 的 `closed_at`,不自己写。
 - 代价:本地零缓存,每次现算有 IO 成本;MVP 体量下可接受,优化(本地只读缓存、失效策略)留后续。

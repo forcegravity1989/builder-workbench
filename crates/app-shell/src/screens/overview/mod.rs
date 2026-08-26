@@ -357,7 +357,7 @@ fn fmt_delta(v: f64) -> String {
 }
 
 /// 指标卡。**没读数走灰卡** —— 灰卡上写的是「无观测 · Unknown ≠ 绿」,
-/// 不是一个 0。折线始终占一块:没点就写「尚无观测」,一个点也画。
+/// 不是一个 0。折线始终占一块:没点就写「尚无读数」,一个点也画。
 fn metric_card(m: &MetricCardVm, big: bool, pid: ProjectId, bridge: &Bridge) -> Element {
     let name_cls = if big { "mcard-name big" } else { "mcard-name" };
     let value_cls = if big {

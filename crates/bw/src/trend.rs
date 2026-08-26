@@ -115,7 +115,7 @@ async fn recent_weeks_inner(
                 note_or(&mut trend.remote_note, b),
             )
         }
-        // Mock 远端没有真数据,两条线都空(走势图说「尚无观测」,不假装)。
+        // Mock 远端没有真数据,两条线都空(走势图说「尚无读数」,不假装)。
         Some(bw_engine::remote::Remote::Mock(_)) => (None, None),
     };
 
