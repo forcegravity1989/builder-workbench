@@ -26,3 +26,7 @@ serde_json = { workspace = true }
 arboard = "3"
 # 知识库屏渲染仓内 Markdown。只进这个 crate,内核零新增依赖。
 pulldown-cmark = { version = "0.13.4", default-features = false, features = ["html"] }
+
+# 嵌 Windows 图标资源(仅 Windows 目标,GNU 走 windres / MSVC 走 rc)。
+[target.'cfg(windows)'.build-dependencies]
+winres = "0.1"
