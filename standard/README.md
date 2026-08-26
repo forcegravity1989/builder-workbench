@@ -5,7 +5,7 @@
      这里是 V4「规范铺底」用的模板正本,代码侧已经在读它、铺它了
      (`crates/bw/src/standard/`)。 -->
 
-`standard/` 是 Builders' Workbench(Workbench)往被管项目仓 `.bw/` 里铺的骨架
+`standard/` 是 Builders' Workbench(BW)往被管项目仓 `.bw/` 里铺的骨架
 文件的**正本**。项目仓里看到的 `.bw/PROJECT.md`、`.bw/standard.toml`、
 `.bw/metrics.toml` 等内容都来自这里的模板渲染——改这里的模板,就是在改
 Workbench 给每个新项目铺出来的起点长什么样。仓根 `AGENTS.md` 不在这套模板里。
@@ -19,9 +19,10 @@ Workbench 给每个新项目铺出来的起点长什么样。仓根 `AGENTS.md` 
   Cursor / Codex 都在找的位置,塞进 `.bw/` 谁都读不到。铺底**仓根一个字
   不写**;要不要写开发手册,是资产盘点首次模式问过人才写的事(今天还没接上)。
 
-规范版本因此从 4.0 跳到 **5.0** —— 落点变了,老版本铺出来的文件在新版本眼里
-就是「不在册」,不做迁移。续三(系统提示词外置 + 扁平铺底 + 删方法论)又
-抬到 **5.1**,当前值见 `VERSION`。续五(默认 workflow 打包:mattpocock 入口 + vendor 摊 + issue-policy 回填)抬到 **5.2**。续十六(指标空壳到站才铺 + 脚本 UTF-8 / A 类 points / `def` 字段)抬到 **5.3**。续十七(运作活①评论三标题 + 挂评校验脚本)抬到 **5.4**。续二十(B 类仍要写脚本)抬到 **5.5**。续二十二(B 类写入 + 定本周建卡必打类别)抬到 **5.6**。续二十三(mattpocock 入口写清 `/xxx`=读路径,并补 grilling/domain-modeling/tdd)抬到 **5.7**。B/C 读数改日历日键、展示按周抬到 **5.8**。
+规范版本从 4.0 跳到 **5.0** 起就是这套落点——落点变了,老版本铺出来的文件在
+新版本眼里就是「不在册」,不做迁移。此后每次改模板内容抬一位小版本,**当前值
+见 `VERSION`**(2026-08-26 为 5.9,过程指标包并入)。每一版改了什么,看
+`VERSION` 文件的 git 历史与 `CHANGELOG.md`,不在这里堆流水。
 
 这套规范现在就五类,和 `CORE_TEMPLATES` 对得上:charter、meta、docs-core、
 metrics、issue-policy。旧名单里的 agents / defaults-core / cadence 没有对应
