@@ -49,7 +49,7 @@ metrics、issue-policy。旧名单里的 agents / defaults-core / cadence 没有
 | `VERSION` | 当前规范版本号 | 铺底与对账时读 |
 | `templates/` | **铺进项目仓 `.bw/` 的模板**,镜像 `.bw/` 结构 | 渲染进项目仓 `.bw/` |
 | `system-prompt/` | **buddy runtime 用的系统提示词**,不进项目仓 | 编进二进制,渲染后经 `--append-system-prompt` 送 agent |
-| `skills/` | **buddy 自带技能**(四份运作剧本) | 摊到 `<asset_root>/skills/`,不进项目仓 |
+| `skills/` | **buddy 自带技能**(四份运作剧本 + workflow 入口) | 摊到 `<asset_root>/skills/`,不进项目仓 |
 | `vendor/` | **业界 workflow 库原样副本**(mattpocock / mohit) | 待打包,不进项目仓 |
 
 `templates/` 镜像铺底目标 `.bw/` 结构:

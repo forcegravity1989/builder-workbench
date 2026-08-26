@@ -38,15 +38,18 @@ pub async fn collect_health_inputs(
 
     // 「这个仓 git 读得动吗」单独问一次:读不动的时候「零提交」说明不了任何
     // 事,不能拿去判红(新接入的项目第一眼看到红灯,是在编)。
-    let git_readable = crate::git::is_repo(workspace).await;
+    let is_git = crate::git::is_repo(workspace).await;
     // 本周 + 上周的计数**一趟遍历出齐**。
     let mut wanted = vec![week.to_string()];
     if !last_week.is_empty() {
         wanted.push(last_week.clone());
     }
-    let counts = crate::git::week_counts_many(workspace, &wanted)
-        .await
-        .unwrap_or_default();
+    let counts_result = crate::git::week_counts_many(workspace, &wanted).await;
+    // 读数失败(磁盘 IO 等罕见情况)时 `git_readable` 也要落下 —— 否则 counts 空
+    // → committed 全 false + git_readable=true → 推导判 stalled=红,而其实是
+    // 「读不出来」,该是灰(铁律②:没数据不是红)。
+    let git_readable = is_git && counts_result.is_ok();
+    let counts = counts_result.unwrap_or_default();
     let committed_this_week = counts.get(week).is_some_and(|c| c.commits > 0);
     let committed_last_week = counts.get(&last_week).is_some_and(|c| c.commits > 0);
     let merged_last_week = counts.get(&last_week).is_some_and(|c| c.merges > 0);

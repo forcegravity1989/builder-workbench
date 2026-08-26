@@ -11,7 +11,7 @@
 use super::{App, Result};
 use crate::chat::{self, ChatError, ChatMessage};
 use crate::command::Event;
-use crate::model::{IssueId, ProjectId};
+use crate::model::{Issue, IssueId, ProjectId};
 
 impl App {
     /// 界面/别的用例都走这一个入口。
@@ -66,12 +66,26 @@ impl App {
     }
 
     /// 一张活的三类事件走这条:文案按模板拼,`who` 与 MR 状态能拿到就带上。
-    pub(super) async fn chat_notify_issue(&self, id: IssueId, event: &str) -> Option<Event> {
+    ///
+    /// `known_mr` = 调用方已经知道的 MR 号(>0 就直接用,不再查远端)。合入路径
+    /// 传合完的那个号——合完 MR 已关,现查「开着的 MR」查不到,必须靠调用方传。
+    /// 评审 / 手动同步路径传 0,这里现查分支上开着的 MR(评审时 MR 还开着,查得到)。
+    pub(super) async fn chat_notify_issue(
+        &self,
+        id: IssueId,
+        event: &str,
+        known_mr: u32,
+    ) -> Option<Event> {
         let issue = self.issue_or_err(id).await.ok()?;
-        let mr = if issue.pr_number > 0 {
-            format!("MR !{}", issue.pr_number)
+        let mr = if known_mr > 0 {
+            format!("MR !{known_mr}")
         } else {
-            String::new()
+            let n = self.mr_number_for(&issue).await;
+            if n > 0 {
+                format!("MR !{n}")
+            } else {
+                String::new()
+            }
         };
         let who = match event {
             "review" => "该你看一眼",
@@ -80,6 +94,25 @@ impl App {
         let text = chat::notify_text(event, issue.number, &issue.title, &mr, who);
         self.chat_send(issue.project_id, event, issue.number, text)
             .await
+    }
+
+    /// 现查这张活分支上开着的 MR 号(正本在远端,现查)。没挂远端 / 没开着 /
+    /// 查失败 → 0。不靠 `issue.pr_number`(那是 `issue_from_remote` 的 lossy 字段,恒 0)。
+    async fn mr_number_for(&self, issue: &Issue) -> u32 {
+        let Ok(project) = self.project_of(issue.project_id).await else {
+            return 0;
+        };
+        if !project.has_remote() {
+            return 0;
+        }
+        let Ok(remote) = self.remote_for(&project) else {
+            return 0;
+        };
+        let branch = bw_engine::github::issue_branch(issue.number);
+        match remote.open_mr_for_branch(&branch).await {
+            Ok(Some(n)) => n,
+            _ => 0,
+        }
     }
 
     /// 界面显式触发的那条命令。项目没配群 / 这件事没勾选时如实回一条「跳过了」,
@@ -91,7 +124,7 @@ impl App {
     ) -> Result<Vec<Event>> {
         let issue = self.issue_or_err(issue_id).await?;
         Ok(vec![self
-            .chat_notify_issue(issue_id, &event_type)
+            .chat_notify_issue(issue_id, &event_type, 0)
             .await
             .unwrap_or(Event::ChatNotifySent {
                 number: issue.number,

@@ -215,7 +215,7 @@ impl App {
                     tool: issue.tool.clone(),
                     embed_url: String::new(),
                 }];
-                if let Some(e) = self.chat_notify_issue(id, "review").await {
+                if let Some(e) = self.chat_notify_issue(id, "review", 0).await {
                     events.push(e);
                 }
                 Ok(events)
@@ -346,7 +346,7 @@ impl App {
         }
         let mut events = vec![Event::IssueTransitioned { id, to, settled }];
         if to == IssueStatus::InReview {
-            if let Some(e) = self.chat_notify_issue(id, "review").await {
+            if let Some(e) = self.chat_notify_issue(id, "review", 0).await {
                 events.push(e);
             }
         }

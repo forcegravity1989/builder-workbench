@@ -288,10 +288,46 @@ pub async fn merge_pr(owner_repo: &str, pr_number: u32) -> Result<(), GithubErro
         .output()
         .await
         .map_err(spawn_err)?;
+    let merge_stderr = stderr_text(&output);
     if !output.status.success() {
-        return Err(GithubError::Command(stderr_text(&output)));
+        return Err(GithubError::Command(merge_stderr));
     }
-    Ok(())
+    // 读回为证:与 codehub 臂同构——`gh pr merge` 的退出码靠不住(保护分支 /
+    // 权限不足 / 网络边缘),退出 0 但 PR 实际没合的情况与 codehub-cli 同形。只信
+    // 「PR state 真变 MERGED」才算成功,绝不假 Done。复跑 `pr view` 读 state
+    // (gh 的 state 大写:`MERGED` / `OPEN` / `CLOSED`)。
+    let verify = crate::win_cmd::tokio_cmd("gh")
+        .args([
+            "pr",
+            "view",
+            &pr_number.to_string(),
+            "--repo",
+            owner_repo,
+            "--json",
+            "state",
+            "--jq",
+            ".state",
+        ])
+        .stdin(Stdio::null())
+        .stdout(Stdio::piped())
+        .stderr(Stdio::piped())
+        .output()
+        .await
+        .map_err(spawn_err)?;
+    if !verify.status.success() {
+        return Err(GithubError::Command(format!(
+            "merge 后读回 PR 状态失败:{} | merge stderr: {merge_stderr}",
+            stderr_text(&verify)
+        )));
+    }
+    let state = String::from_utf8_lossy(&verify.stdout).trim().to_string();
+    if state.eq_ignore_ascii_case("MERGED") {
+        Ok(())
+    } else {
+        Err(GithubError::Command(format!(
+            "merge 未生效(PR state={state},应 MERGED):{merge_stderr}"
+        )))
+    }
 }
 
 /// P7-7B: read-only probe for whether an Issue's

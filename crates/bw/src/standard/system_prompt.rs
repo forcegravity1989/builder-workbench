@@ -28,8 +28,8 @@ pub const REF_BUILD: &str = include_str!("../../../../standard/system-prompt/ref
 pub const REF_WEEK_PLAN_COMMENT: &str =
     include_str!("../../../../standard/system-prompt/references/week-plan-comment.md");
 
-/// buddy 自带的阶段规范 md —— **起手只放已定型的两份**(指标铁律、改仓规则),
-/// 其余按实践长,不预置一堆没用的。
+/// buddy 自带的阶段规范 md —— **起手三份**(指标铁律、运作活①评论格式、
+/// 改仓规则),其余按实践长,不预置一堆没用的。
 pub fn references() -> Vec<ReferencePack> {
     // (slug, 一句话, 正文)
     const REFS: [(&str, &str, &str); 3] = [

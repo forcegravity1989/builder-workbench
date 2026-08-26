@@ -38,6 +38,7 @@ cargo check -p app-shell          # buddy MVP 壳编译过
 ./scripts/guard-no-cross-screen-import.sh   # 屏与屏不互相引用
 ./scripts/guard-screen-hooks.sh             # 用 hook 的函数必须是组件
 ./scripts/guard-file-lines.sh               # 单文件 1500 行硬上限(只查 buddy MVP 三 crate)
+./scripts/guard-codegraph-clean.sh           # codegraph.db 不进 feature commit(CI 在 main 发布)
 cargo test --workspace
 ```
 

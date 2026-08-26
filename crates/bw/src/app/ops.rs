@@ -226,17 +226,10 @@ impl App {
         let branch = bw_engine::github::issue_branch(issue.number);
 
         let remote = if project.has_remote() {
-            Some(
-                bw_engine::remote::Remote::for_project(
-                    &project.provider,
-                    &project.remote_host,
-                    &project.remote_path,
-                )
-                .map_err(|e| {
-                    self.step(ProgressLine::fail(1, format!("合入:认不出远端类型:{e}")));
-                    AppError::Exec(format!("认不出远端类型:{e}"))
-                })?,
-            )
+            Some(self.remote_for(&project).map_err(|e| {
+                self.step(ProgressLine::fail(1, format!("合入:认不出远端类型:{e}")));
+                AppError::Exec(format!("认不出远端类型:{e}"))
+            })?)
         } else {
             None
         };
@@ -310,7 +303,7 @@ impl App {
             to: IssueStatus::Done,
             settled: true,
         });
-        if let Some(e) = self.chat_notify_issue(id, "merged").await {
+        if let Some(e) = self.chat_notify_issue(id, "merged", pr_number).await {
             events.push(e);
         }
         Ok(events)

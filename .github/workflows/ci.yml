@@ -32,7 +32,7 @@ jobs:
         run: cargo clippy --workspace --exclude app-shell -- -D warnings
 
       - name: Test (kernel + base + compile-fail doctests)
-        run: cargo test
+        run: cargo test --workspace
 
       - name: Kernel stays UI-free
         run: ./scripts/guard-kernel-ui-free.sh
@@ -44,3 +44,6 @@ jobs:
           ./scripts/guard-no-cross-screen-import.sh
           ./scripts/guard-screen-hooks.sh
           ./scripts/guard-file-lines.sh
+
+      - name: codegraph.db not staged in feature commits
+        run: ./scripts/guard-codegraph-clean.sh

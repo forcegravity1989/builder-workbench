@@ -47,7 +47,8 @@ fn map_remote_err<E: std::fmt::Display>(ctx: &str, e: E) -> AppError {
 /// `extra_labels`(调用方自塞,如 `bw:released:*`)。kind 由参数显式给(不推
 /// 断),决定回填 `tool`/`workflow`/`origin`。
 ///
-/// **不接线 app 层**——这是刀2 的纯映射,调用方等刀3。
+/// issue 读写唯一入口:app 层各用例(issue / plan / ops / bootstrap / project /
+/// session)都经这里的 `create` / `set_status` / `find_open_by_title` / `fetch` 落远端。
 pub async fn create(
     app: &App,
     project: &Project,

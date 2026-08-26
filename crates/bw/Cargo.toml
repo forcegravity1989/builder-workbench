@@ -1,6 +1,6 @@
 [package]
 name = "bw"
-description = "V4 内核:四张表的本机库、仓文件解析器、现算推导、命令/事件总线。仓是正本,库只放定位与显示缓存。"
+description = "V4 内核:仓是正本、本地零库,远端 issue 映射 + 仓文件解析 + 现算推导 + 命令/事件总线。"
 edition.workspace = true
 version.workspace = true
 license.workspace = true

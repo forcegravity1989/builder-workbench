@@ -37,4 +37,4 @@ scripts/   门禁脚本(guard-*)+ codegraph 联调
 
 ## 提交前
 
-门禁与 CI 完全一致(命令见 [`AGENTS.md`](AGENTS.md)「门禁」);commit 标题必须让不查文档的人看懂做了什么;数字一律读回(`codehub-cli`/`gh`/`git`/`cat .bw/…`)、不硬编。
+headless 门禁与 CI 一致(app-shell 壳的编译/Clippy 因 ubuntu runner 缺 WebKit/GTK 系统依赖,只本地跑;命令见 [`AGENTS.md`](AGENTS.md)「门禁」);commit 标题必须让不查文档的人看懂做了什么;数字一律读回(`codehub-cli`/`gh`/`git`/`cat .bw/…`)、不硬编。
