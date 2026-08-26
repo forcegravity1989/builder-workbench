@@ -514,7 +514,14 @@ async fn fill_pr_numbers(
         return;
     };
     for i in issues.iter_mut() {
-        if i.status != IssueStatus::InReview || i.number == 0 {
+        // 评审中必查。名片那张轻量活开了 MR 却停在待办池时也要查,
+        // 否则总览横幅永远「还没提 MR」,人只能去看板里盲找。
+        let card_edit = i.title.starts_with("编辑项目名片")
+            && matches!(
+                i.status,
+                IssueStatus::Backlog | IssueStatus::Todo | IssueStatus::InProgress
+            );
+        if i.number == 0 || (i.status != IssueStatus::InReview && !card_edit) {
             continue;
         }
         if let Some(&pr) = mr_cache.get(&i.id) {

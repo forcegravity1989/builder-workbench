@@ -760,12 +760,8 @@ fn week_block(p: &ProjectVm) -> Element {
 fn version_block(p: &ProjectVm) -> Element {
     rsx! {
         div { class: "card ov-block",
-            div { class: "ov-block-title", "在研版本与发版记录" }
+            div { class: "ov-block-title", "发版记录" }
             div { class: "version-cols",
-                div { class: "version-col",
-                    div { class: "k", "在研版本" }
-                    div { class: "v mono", "{p.card.current_version}" }
-                }
                 div { class: "version-col",
                     div { class: "k", "已发版次数" }
                     div { class: "v mono", "{p.releases.len()}" }

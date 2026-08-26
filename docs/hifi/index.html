@@ -839,7 +839,14 @@ function onIssueCompleted(pid,issue){
 function mergeIssueGeneric(pid,issueId){
   var issue=getIssue(pid,issueId); if(!issue)return;
   issue.status='merged'; if(issue.mr)issue.mr.status='merged';
-  if(issue.kind==='charter'&&issue.draft){ Object.assign(getProject(pid).card,issue.draft); }
+  if(issue.kind==='charter'&&issue.draft){
+    var proj=getProject(pid); var d=issue.draft;
+    Object.assign(proj.card,{name:d.name||proj.card.name,intent:d.intent,benchmark:d.benchmark,northstar:d.northstar});
+    if(typeof d.version==='string') proj.version=d.version;
+    if(typeof d.chatProvider==='string'){
+      state.chatGroup[pid]={configured:!!d.chatProvider,provider:d.chatProvider||'welink',kind:'internal',groupId:d.chatGroup||'',sync:d.chatSync||{review:true,merged:true,release:true}};
+    }
+  }
   (issue.metricIds||[]).forEach(function(mid){ var m=getMetric(pid,mid); if(m&&typeof m.current==='number'){ m.current+=1; } });
 }
 function completeIssueGeneric(pid,issueId){
@@ -908,14 +915,24 @@ var ACTIONS = {
     nav('#/p/new/overview');
   },
 
-  editCard:function(pid){ state.ui.charterEditing[pid]=true; state.ui.charterDraft[pid]=clone(getProject(pid).card); render(); },
+  editCard:function(pid){
+    var proj=getProject(pid);
+    var g=state.chatGroup[pid]||{configured:false,provider:'welink',kind:'internal',groupId:'',sync:{review:true,merged:true,release:true}};
+    state.ui.charterEditing[pid]=true;
+    state.ui.charterDraft[pid]={
+      name:proj.card.name,intent:proj.card.intent,benchmark:proj.card.benchmark,northstar:proj.card.northstar,
+      version:proj.version||'',chatProvider:g.configured?(g.provider||'welink'):'',chatGroup:g.groupId||'',
+      chatSync:clone(g.sync||{review:true,merged:true,release:true})
+    };
+    render();
+  },
   cancelCardEdit:function(pid){ state.ui.charterEditing[pid]=false; render(); },
   saveCard:function(pid){
     state.ui.charterEditing[pid]=false;
     var draft=state.ui.charterDraft[pid];
     state.issues[pid]=state.issues[pid]||{};
     state.issues[pid]['charter-edit']={ id:'charter-edit',title:'名片修改',category:'轻量活',tool:null,kind:'charter',status:'review',source:'人建',metricIds:[],
-      mr:{id:'!bw/charter-edit',label:'!bw/charter-edit',status:'open'},desc:'更新想做什么 / 对标 / 三个月长成什么样。',draft:draft };
+      mr:{id:'!bw/charter-edit',label:'!bw/charter-edit',status:'open'},desc:'更新名片四字段 / 在研版本 / 项目群。',draft:draft };
     state.inbox[pid]=state.inbox[pid]||[];
     if(!state.inbox[pid].some(function(x){return x.id==='inbox-charter';})){
       state.inbox[pid].unshift({id:'inbox-charter',kind:'issue',issueId:'charter-edit',text:'名片修改已提 MR !bw/charter-edit',state:'pending'});
@@ -928,27 +945,10 @@ var ACTIONS = {
     state.notifyEvents[pid]=state.notifyEvents[pid]||[]; state.notifyEvents[pid].unshift({id:'ev-charter-'+Date.now(),text:'名片修改已完成',time:TODAY_SHORT+' 刚刚',link:null,processed:true});
     render(); toast('已完成 · 同一件活不会重复记账'); },
   jumpBlock:function(blk){ var el=document.querySelector('[data-block="'+blk+'"]'); if(el&&el.scrollIntoView){ el.scrollIntoView({behavior:'smooth',block:'center'}); el.style.outline='2px solid var(--clay)'; setTimeout(function(){ el.style.outline=''; },1200); } },
-  openChatGroupModal:function(pid){
-    var cur=state.chatGroup[pid]||{configured:false,provider:'welink',kind:'internal',groupId:'',sync:{review:true,merged:true,release:true}};
-    state.ui.modal={type:'chat-group',pid:pid,draft:clone(cur)}; render();
-  },
-  toggleChatSync:function(field){ var m=state.ui.modal; if(!m||m.type!=='chat-group')return; m.draft.sync=m.draft.sync||{}; m.draft.sync[field]=!m.draft.sync[field]; render(); },
-  saveChatGroup:function(){
-    var m=state.ui.modal; if(!m||m.type!=='chat-group')return;
-    if(!m.draft.groupId){ toast('请填群号'); return; }
-    m.draft.configured=true; m.draft.provider='welink'; m.draft.kind='internal';
-    state.chatGroup[m.pid]=m.draft; state.ui.modal=null;
-    var reviewIssue=allIssuesArr(m.pid).filter(function(i){return i.status==='review';})[0];
-    if(m.draft.sync.review && reviewIssue){
-      state.notifyEvents[m.pid]=state.notifyEvents[m.pid]||[];
-      state.notifyEvents[m.pid].unshift({id:'ev-chatsync-'+Date.now(),text:'已同步到项目群:「'+reviewIssue.title+'」进入评审中',time:TODAY_SHORT+' 刚刚',link:reviewIssue.id});
-    }
-    render(); toast('项目群已配置 · 通知同步中');
-  },
-  toggleChatSyncCfg:function(pid,field){
-    var g=state.chatGroup[pid];
-    if(!g||!g.configured){ toast('先配置群号'); return; }
-    g.sync=g.sync||{}; g.sync[field]=!g.sync[field]; render();
+  toggleCharterSync:function(arg){
+    var pid=arg[0], field=arg[1];
+    var d=state.ui.charterDraft[pid]; if(!d)return;
+    d.chatSync=d.chatSync||{}; d.chatSync[field]=!d.chatSync[field]; render();
   },
   startWeek:function(pid){
     var proj=getProject(pid); if(!proj)return;
@@ -1384,6 +1384,8 @@ function modalHTML(){
       + '<div class="charter-line"><span class="k">想做什么</span>'+esc(d.intent)+'</div>'
       + '<div class="charter-line"><span class="k">对标</span>'+esc(d.benchmark)+'</div>'
       + '<div class="charter-line"><span class="k">北极星</span>'+esc(d.northstar)+'</div>'
+      + '<div class="charter-line"><span class="k">在研版本</span>'+esc(d.version||'（空）')+'</div>'
+      + '<div class="charter-line"><span class="k">项目群</span>'+(d.chatProvider?(esc(d.chatProvider)+' · '+esc(d.chatGroup||'')):'不配')+'</div>'
       + '<div class="modal-actions"><button class="btn" data-action="closeModal">关闭</button></div></div></div>';
   }
   if(m.type==='release'){
@@ -1420,20 +1422,6 @@ function modalHTML(){
       + '<div class="pillrow">'+srcTypes.map(function(t){return '<span class="pill '+(st===t[0]?'active':'')+'" data-action="setImportSrcType" data-arg=\'"'+t[0]+'"\'>'+t[1]+'</span>';}).join('')+'</div>'
       + '<div class="formrow"><label class="label">'+srcLabel+'</label><input class="input" data-bind="ui.modal.src" value="'+esc(m.src)+'"></div>'
       + '<div class="modal-actions"><button class="btn" data-action="closeModal">取消</button><button class="btn btn-primary" data-action="confirmImport">确认导入</button></div></div></div>';
-  }
-  if(m.type==='chat-group'){
-    var d=m.draft;
-    return '<div class="modal-backdrop" data-action="closeModal"><div class="modal">'
-      + '<h3>配置项目群</h3>'
-      + '<div class="label">提供方 · 群和 codehub / GitHub 一样,有内部 / 外部之分(工厂设计)</div>'
-      + '<div class="pillrow"><span class="pill active">WeLink · 内部</span><span class="pill" style="opacity:.45;cursor:not-allowed;" title="工厂留位,提供方待定,暂未接入">外部 · 待定</span></div>'
-      + '<div class="formrow"><label class="label">群号</label><input class="input" data-bind="ui.modal.draft.groupId" value="'+esc(d.groupId)+'" placeholder="例如 638201"></div>'
-      + '<div class="formrow"><label class="label">同步哪些通知(直接发到群,不只是工作台里看)</label>'
-      +   '<label class="check-row"><input type="checkbox" '+(d.sync.review?'checked':'')+' data-action="toggleChatSync" data-arg=\'"review"\'> 评审中</label>'
-      +   '<label class="check-row"><input type="checkbox" '+(d.sync.merged?'checked':'')+' data-action="toggleChatSync" data-arg=\'"merged"\'> 已合入</label>'
-      +   '<label class="check-row"><input type="checkbox" '+(d.sync.release?'checked':'')+' data-action="toggleChatSync" data-arg=\'"release"\'> 发版</label>'
-      + '</div>'
-      + '<div class="modal-actions"><button class="btn" data-action="closeModal">取消</button><button class="btn btn-primary" data-action="saveChatGroup">保存</button></div></div></div>';
   }
   if(m.type==='kanban-confirm'){
     var issue=getIssue(m.pid,m.issueId);
@@ -1644,12 +1632,18 @@ function renderOverview(pid){
   var charterEditHTML='';
   if(editing){
     var d=state.ui.charterDraft[pid];
-    var g=state.chatGroup[pid]||{configured:false};
+    var sync=d.chatSync||{};
     charterEditHTML='<div class="formrow"><label class="label">想做什么</label><textarea class="textarea" data-bind="ui.charterDraft.'+pid+'.intent">'+esc(d.intent)+'</textarea></div>'
       + '<div class="formrow"><label class="label">最像的对标</label><input class="input" data-bind="ui.charterDraft.'+pid+'.benchmark" value="'+esc(d.benchmark)+'"></div>'
       + '<div class="formrow"><label class="label">三个月长成什么样(北极星)</label><textarea class="textarea" data-bind="ui.charterDraft.'+pid+'.northstar">'+esc(d.northstar)+'</textarea></div>'
-      + '<div class="formrow"><label class="label">在研版本</label><input class="input mono" value="'+esc(proj.version||'')+'"></div>'
-      + '<div class="formrow"><label class="label">项目群</label><input class="input" value="'+(g.configured?('WeLink · '+esc(g.groupId||'')):'不配')+'"></div>'
+      + '<div class="formrow"><label class="label">在研版本</label><input class="input mono" data-bind="ui.charterDraft.'+pid+'.version" value="'+esc(d.version||'')+'"></div>'
+      + '<div class="formrow"><label class="label">项目群</label><select class="select" data-bindchange="ui.charterDraft.'+pid+'.chatProvider"><option value="" '+(!d.chatProvider?'selected':'')+'>不配</option><option value="welink" '+(d.chatProvider==='welink'?'selected':'')+'>WeLink</option></select></div>'
+      + (d.chatProvider?('<div class="formrow"><label class="label">群号</label><input class="input mono" data-bind="ui.charterDraft.'+pid+'.chatGroup" value="'+esc(d.chatGroup||'')+'"></div>'
+        + '<div class="formrow"><label class="label">同步哪些通知</label>'
+        +   '<label class="check-row"><input type="checkbox" '+(sync.review?'checked':'')+' data-action="toggleCharterSync" data-arg=\'["'+pid+'","review"]\'> 评审中</label>'
+        +   '<label class="check-row"><input type="checkbox" '+(sync.merged?'checked':'')+' data-action="toggleCharterSync" data-arg=\'["'+pid+'","merged"]\'> 已合入</label>'
+        +   '<label class="check-row"><input type="checkbox" '+(sync.release?'checked':'')+' data-action="toggleCharterSync" data-arg=\'["'+pid+'","release"]\'> 发版</label>'
+        + '</div>'):'')
       + '<div style="display:flex;gap:8px;justify-content:flex-end;"><button class="btn btn-sm" data-action="cancelCardEdit" data-arg=\'"'+pid+'"\'>取消</button><button class="btn btn-sm btn-primary" data-action="saveCard" data-arg=\'"'+pid+'"\'>保存 · 建一张活提 MR</button></div>';
   }
   var charterEdit=getIssue(pid,'charter-edit');
@@ -1720,8 +1714,7 @@ function renderOverview(pid){
     +   '<div class="repo-metric-grid">'+repoMetricsHTML+'</div>'
     + '</div>'
     + '<div class="card ov-block" data-block="version">'
-    +   '<div class="ov-block-title">在研版本与发版记录</div>'
-    +   '<div class="version-cols"><div class="version-col"><div class="k">在研版本</div><div class="v mono">'+esc(proj.version)+'</div></div></div>'
+    +   '<div class="ov-block-title">发版记录</div>'
     +   releases.map(function(r){
           var parts=[esc(r.version),esc(r.date)]; if(r.note)parts.push(esc(r.note));
           var badge=r.backfill?' <span class="chip chip-gray" style="margin-left:5px;">回填</span>':'';
@@ -2072,7 +2065,7 @@ function probeBlockHTML(pid){
   var proj=getProject(pid)||{};
   return '<div class="cfg-section"><div class="cfg-section-head"><h3>开工工具探活</h3></div>'
     + '<div style="font-size:11.5px;color:var(--ink-3);margin-bottom:8px;">远端仓 '+esc(proj.repo||'—')+'</div>'
-    + '<div class="cfg-readonly-note">项目群和在研版本在总览名片里改,跟四字段一张活、一次 MR。</div></div>';
+    + '<div class="cfg-readonly-note">探活只测本机工具在不在,不改仓。</div></div>';
 }
 function cronBlockHTML(pid){
   var crons=state.crons[pid]||[];
@@ -2081,7 +2074,7 @@ function cronBlockHTML(pid){
     + crons.map(function(c){
       return '<tr><td>'+esc(c.name)+'</td><td><span class="chip">'+esc(c.trigger||'到点建活')+'</span></td><td class="mono">'+esc(c.schedule)+'</td><td>'+esc(c.rule||'')+'</td></tr>';
     }).join('') + '</tbody></table></div>'
-    + '<div class="cfg-readonly-note"><strong>没有定时表</strong>,所以没有「下次触发」列。到点只会自动<strong>建</strong>活,绝不自动完成。每周自动触发那条链还没接上。</div></div>';
+    + '<div class="cfg-readonly-note"><strong>没有定时表</strong>,所以没有「下次触发」列。到点只会自动<strong>建</strong>活,绝不自动完成。资产盘点读 issue-policy 的周五节律;运作活①仍是人点「开始本周」。</div></div>';
 }
 function standardBlockHTML(pid){
   var proj=getProject(pid)||{};
