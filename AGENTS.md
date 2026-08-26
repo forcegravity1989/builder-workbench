@@ -23,7 +23,7 @@ BW_OPEN=<项目名> BW_PANEL=overview|plan|session|notify|config|kb ./target/deb
                                             # 深链直达屏;stderr [BW_OPEN]=真的渲染到了
 BW_VIEW=onboard|settings ./target/debug/bw-dev   # 顶层屏深链
 cargo run -p bw-engine --example pty_smoke [-- --teardown|-- --abort]  # PTY 地基烟测(不碰 claude/网关)
-cargo test --workspace                                # CI 也跑:现存内联测试必须过
+cargo test --workspace                                # 本地含壳;CI 同命令加 --exclude app-shell(ubuntu 无 WebKit/GTK)
 ```
 
 ▶跑(干一张活)走交互式 `claude` 在内嵌终端里;需本机 `claude` CLI(`BW_CLAUDE_BIN` 可指定路径)。真跑受 claude 信任对话框与网关状态影响,不作为门禁。`BW_CLAUDE_MAX_BUDGET_USD` 控预算。

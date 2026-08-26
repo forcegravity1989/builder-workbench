@@ -32,7 +32,7 @@ jobs:
         run: cargo clippy --workspace --exclude app-shell -- -D warnings
 
       - name: Test (kernel + base + compile-fail doctests)
-        run: cargo test --workspace
+        run: cargo test --workspace --exclude app-shell
 
       - name: Kernel stays UI-free
         run: ./scripts/guard-kernel-ui-free.sh
