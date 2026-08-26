@@ -97,10 +97,9 @@ fn open_duplex(path: &str) -> Option<std::fs::File> {
 
 #[cfg(not(windows))]
 fn open_duplex(path: &str) -> Option<std::os::unix::net::UnixStream> {
-    std::os::unix::net::UnixStream::connect(path).ok().map(|s| {
+    std::os::unix::net::UnixStream::connect(path).ok().inspect(|s| {
         let _ = s.set_read_timeout(Some(QUERY_TIMEOUT));
         let _ = s.set_write_timeout(Some(QUERY_TIMEOUT));
-        s
     })
 }
 
