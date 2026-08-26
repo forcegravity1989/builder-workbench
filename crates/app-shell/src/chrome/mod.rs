@@ -212,6 +212,7 @@ pub fn TopBar(title: String, project: Option<String>, source: String, bridge: Br
             button {
                 class: "btn btn-sm btn-ghost",
                 onclick: move |_| b.send(Req::Refresh),
+                title: "打开着的项目会先快进主检出再重读;项目墙只重读本机",
                 "刷新"
             }
         }

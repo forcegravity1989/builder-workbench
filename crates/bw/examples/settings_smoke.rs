@@ -46,9 +46,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let intent = |n: &str| ProjectIntent {
         name: n.to_string(),
-        brief: String::new(),
-        benchmark: String::new(),
-        north_star: String::new(),
+        ..Default::default()
     };
 
     // ── 老根目录下先接一个项目 ───────────────────────────────

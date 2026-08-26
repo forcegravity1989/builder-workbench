@@ -58,16 +58,17 @@ pub struct MetricReadout {
 /// 采一遍这个项目的全部指标。
 ///
 /// 三类各走各的路:可回溯的现算(传窗口跑脚本);不可回溯的跑脚本拿当下值,
-/// 追加进 `.bw/metrics/readings.jsonl`,走势从流水里铺;手填不跑脚本,走势
-/// 从流水铺,数由 [`App::record_manual_metric`] 写入。
+/// 记进账本 worktree 的 `.bw/metrics/readings.jsonl`(当天一行,再采覆盖),
+/// 走势从流水里铺;手填不跑脚本,走势从流水铺,数由 [`App::record_manual_metric`] 写入。
 pub async fn collect_all(ws: &Path, weeks: u32) -> Result<Vec<MetricReadout>, String> {
     let file = metrics_file::read(ws)
         .map_err(|e| e.to_string())?
         .ok_or_else(|| "这个项目还没有 .bw/metrics.toml".to_string())?;
     let labels = week_labels(weeks);
+    let ledger = write_ledger(ws).await;
     let mut out = Vec::new();
     for def in file.all() {
-        out.push(collect_one(ws, def, &labels).await);
+        out.push(collect_one(ws, ledger.as_deref(), def, &labels).await);
     }
     Ok(out)
 }
@@ -78,12 +79,13 @@ pub async fn collect_b_class(ws: &Path, weeks: u32) -> Result<Vec<MetricReadout>
         .map_err(|e| e.to_string())?
         .ok_or_else(|| "这个项目还没有 .bw/metrics.toml".to_string())?;
     let labels = week_labels(weeks);
+    let ledger = write_ledger(ws).await;
     let mut out = Vec::new();
     for def in file.all() {
         if def.collect.class() != MetricClass::PointInTime {
             continue;
         }
-        out.push(collect_one(ws, def, &labels).await);
+        out.push(collect_one(ws, ledger.as_deref(), def, &labels).await);
     }
     Ok(out)
 }
@@ -100,7 +102,12 @@ pub fn has_b_class(ws: &Path) -> bool {
         .unwrap_or(false)
 }
 
-async fn collect_one(ws: &Path, def: &MetricDef, labels: &[String]) -> MetricReadout {
+async fn collect_one(
+    ws: &Path,
+    ledger: Option<&Path>,
+    def: &MetricDef,
+    labels: &[String],
+) -> MetricReadout {
     let class = def.collect.class();
     let mut r = MetricReadout {
         name: def.name.clone(),
@@ -115,7 +122,7 @@ async fn collect_one(ws: &Path, def: &MetricDef, labels: &[String]) -> MetricRea
             return r;
         }
         MetricClass::PointInTime => {
-            return collect_point_in_time(ws, def, labels, r).await;
+            return collect_point_in_time(ws, ledger, def, labels, r).await;
         }
         MetricClass::Retro => {}
     }
@@ -139,9 +146,10 @@ async fn collect_one(ws: &Path, def: &MetricDef, labels: &[String]) -> MetricRea
     r
 }
 
-/// B 类:跑脚本拿当下一个值,追加进流水,走势从流水铺。失败不写 0,旧行仍画。
+/// B 类:跑脚本拿当下一个值,覆盖进账本当天那一行,走势从流水铺。失败不写 0,旧行仍画。
 async fn collect_point_in_time(
     ws: &Path,
+    ledger: Option<&Path>,
     def: &MetricDef,
     labels: &[String],
     mut r: MetricReadout,
@@ -154,8 +162,12 @@ async fn collect_point_in_time(
     match run_script(ws, &def.collect.run, labels).await {
         Ok(out) => match current_value(&out) {
             Some(value) => {
-                if let Err(e) = append_current(ws, &def.name, &value) {
-                    r.error = format!("采到了 {value},但没写成读数流水:{e}");
+                if let Some(dest) = ledger {
+                    if let Err(e) = upsert_current(dest, &def.name, &value) {
+                        r.error = format!("采到了 {value},但没写成读数流水:{e}");
+                    }
+                } else {
+                    r.error = format!("采到了 {value},但开不出账本,没写下主检出");
                 }
                 fill_from_readings(ws, &def.name, labels, &mut r);
             }
@@ -179,12 +191,12 @@ fn current_value(out: &ScriptOutcome) -> Option<String> {
     }
 }
 
-fn append_current(ws: &Path, name: &str, value: &str) -> Result<(), String> {
+fn upsert_current(ledger: &Path, name: &str, value: &str) -> Result<(), String> {
     let collected_at = time::OffsetDateTime::now_utc()
         .format(&time::format_description::well_known::Rfc3339)
         .unwrap_or_default();
-    readings_file::append_metric_reading(
-        ws,
+    readings_file::upsert_metric_reading(
+        ledger,
         &MetricReading {
             day: isoweek::today_ymd(),
             name: name.to_string(),
@@ -194,6 +206,34 @@ fn append_current(ws: &Path, name: &str, value: &str) -> Result<(), String> {
         },
     )
     .map_err(|e| e.to_string())
+}
+
+/// 读数账本:固定 worktree,写不进主检出。开不出树就退到同路径普通目录。
+async fn write_ledger(main: &Path) -> Option<PathBuf> {
+    match bw_engine::workspace::provision_ledger_worktree(main).await {
+        Ok(p) => {
+            seed_ledger(main, &p);
+            Some(p)
+        }
+        Err(_) => {
+            let dir = bw_engine::workspace::ledger_worktree_path(main)?;
+            let _ = std::fs::create_dir_all(&dir);
+            seed_ledger(main, &dir);
+            Some(dir)
+        }
+    }
+}
+
+fn seed_ledger(main: &Path, ledger: &Path) {
+    let src = main.join(".bw/metrics/readings.jsonl");
+    let dst = ledger.join(".bw/metrics/readings.jsonl");
+    if dst.is_file() || !src.is_file() {
+        return;
+    }
+    if let Some(parent) = dst.parent() {
+        let _ = std::fs::create_dir_all(parent);
+    }
+    let _ = std::fs::copy(&src, &dst);
 }
 
 fn fill_from_readings(ws: &Path, name: &str, labels: &[String], r: &mut MetricReadout) {
@@ -228,7 +268,7 @@ fn write_today_stamp(path: &Path) {
 }
 
 impl App {
-    /// 人在总览手填卡记下今天这个数。只收 C 类,追加进读数流水。
+    /// 人在总览手填卡记下今天这个数。只收 C 类,覆盖进账本当天那一行。
     pub(super) async fn record_manual_metric(
         &mut self,
         project_id: ProjectId,
@@ -244,6 +284,9 @@ impl App {
             return Err(super::AppError::Refused("指标名不能空".into()));
         }
         let ws = self.workspace_of(project_id).await?;
+        let ledger = write_ledger(&ws)
+            .await
+            .ok_or_else(|| super::AppError::Refused("开不出读数账本,手填不能写进主检出".into()))?;
         let file = metrics_file::read(&ws)?
             .ok_or_else(|| super::AppError::Refused("这个项目还没有 .bw/metrics.toml".into()))?;
         let def = file
@@ -260,8 +303,8 @@ impl App {
         let collected_at = time::OffsetDateTime::now_utc()
             .format(&time::format_description::well_known::Rfc3339)
             .unwrap_or_default();
-        readings_file::append_metric_reading(
-            &ws,
+        readings_file::upsert_metric_reading(
+            &ledger,
             &MetricReading {
                 day: day.clone(),
                 name: name.clone(),
@@ -278,10 +321,10 @@ impl App {
         }])
     }
 
-    /// buddy 开着、过了本机 09:00、今天还没试过,就采一轮 B 类。
+    /// buddy 开着、过了本机 20:00、今天还没试过,就采一轮 B 类。
     /// 不建活。失败也落今日戳,避免每 60 秒重打失败脚本。
     pub(super) async fn maybe_auto_collect_b(&self, project_id: ProjectId) -> Vec<Event> {
-        if !isoweek::local_hm_reached(9, 0) {
+        if !isoweek::local_hm_reached(20, 0) {
             return vec![];
         }
         let Ok(slug) = self.slug_of(project_id).await else {

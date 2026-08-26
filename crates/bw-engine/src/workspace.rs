@@ -109,6 +109,63 @@ pub async fn provision_issue_worktree(
     Ok(sibling)
 }
 
+/// 读数账本 worktree 的兄弟目录:`<主仓名>-bw-ledger`。B/C 采和手填写这里,
+/// 不写人的主检出。`None` = 主工作区没有上级或名字不是 UTF-8。
+pub fn ledger_worktree_path(main_workspace: &Path) -> Option<PathBuf> {
+    let parent = main_workspace.parent()?;
+    let stem = main_workspace.file_name().and_then(|n| n.to_str())?;
+    Some(parent.join(format!("{stem}-bw-ledger")))
+}
+
+/// 账本分支名。固定一条,所有项目各自一棵树,互不撞。
+pub const LEDGER_BRANCH: &str = "bw/ledger";
+
+/// 给这个项目开(或接着用)读数账本 worktree。已经在就原样返回,不开第二次。
+///
+/// 不是 git 仓 / 没有 HEAD 时返回 `Err`,调用方退到同路径的普通目录(仍不写主检出)。
+pub async fn provision_ledger_worktree(main_workspace: &Path) -> Result<PathBuf, ProvisionError> {
+    let sibling = ledger_worktree_path(main_workspace).ok_or_else(|| {
+        ProvisionError::CreateDir(format!(
+            "算不出账本 worktree 路径(主工作区没有上级目录,或者目录名不是 UTF-8):{}",
+            main_workspace.display()
+        ))
+    })?;
+    if sibling.join(".git").exists() {
+        return Ok(sibling);
+    }
+    let sibling_str = sibling
+        .to_str()
+        .ok_or_else(|| {
+            ProvisionError::CreateDir(format!("账本 worktree 路径非 UTF-8:{}", sibling.display()))
+        })?
+        .to_string();
+    let _ = crate::win_cmd::tokio_cmd("git")
+        .current_dir(main_workspace)
+        .args(["worktree", "prune"])
+        .stdin(Stdio::null())
+        .stdout(Stdio::piped())
+        .stderr(Stdio::piped())
+        .output()
+        .await;
+    if sibling.exists() && !sibling.join(".git").exists() {
+        let _ = std::fs::remove_dir_all(&sibling);
+    }
+    if git_in(
+        main_workspace,
+        &["worktree", "add", "-b", LEDGER_BRANCH, &sibling_str],
+    )
+    .await
+    .is_err()
+    {
+        git_in(
+            main_workspace,
+            &["worktree", "add", &sibling_str, LEDGER_BRANCH],
+        )
+        .await?;
+    }
+    Ok(sibling)
+}
+
 /// One file's real change stat between two commits (`git diff --numstat`).
 /// Binary files (numstat prints `-`) record 0/0 — present, size unknown.
 #[derive(Clone, Debug, PartialEq, Eq)]

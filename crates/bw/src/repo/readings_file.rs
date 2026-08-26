@@ -1,16 +1,19 @@
-//! `.bw/metrics/readings.jsonl` —— 不可回溯(B)与手填(C)的只追加读数流水。
+//! `.bw/metrics/readings.jsonl` —— 不可回溯(B)与手填(C)的读数流水。
 //!
 //! 一行一个 JSON 对象。记账键是**日历日**(`YYYY-MM-DD`),和 V3 `observation.ts`
-//! 对齐,迁过去一行对一天。不改已有行;同一天同一指标采多次,读的时候**最后
-//! 一行为准**。展示按 ISO 周收:那一周里日期最大的一天。文件不存在 / 某行
-//! 坏掉 / 没有 `day` = 那一行当没看见,不把整份打成失败。
+//! 对齐,迁过去一行对一天。同一天同一指标只留一行:再采或再手填覆盖这一行,
+//! 不叠第二行。跨天的历史行不改。展示按 ISO 周收:那一周里日期最大的一天。
+//!
+//! **写不进主检出。** 采和手填写固定账本 worktree(`<仓名>-bw-ledger`,
+//! 分支 `bw/ledger`);读的时候主检出(已合入的历史)和账本叠在一起,同一天
+//! 以账本为准。文件不存在 / 某行坏掉 / 没有 `day` = 那一行当没看见,不把
+//! 整份打成失败。
 
 use super::{RepoFileError, Result};
 use crate::isoweek;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
-use std::io::Write;
-use std::path::Path;
+use std::path::{Path, PathBuf};
 
 const REL: &str = ".bw/metrics/readings.jsonl";
 
@@ -30,7 +33,7 @@ pub struct MetricReading {
 /// 读指定 ISO 周收成的读数。一周多天时取日期最大的那天,那天多行取最后一行。
 pub fn read_metric_readings(workspace: &Path, week: &str) -> Vec<MetricReading> {
     let mut latest: HashMap<String, MetricReading> = HashMap::new();
-    for r in collapse_days(read_all(workspace)) {
+    for r in collapse_days(read_merged(workspace)) {
         if isoweek::week_of_ymd(&r.day).as_deref() != Some(week) {
             continue;
         }
@@ -49,7 +52,7 @@ pub fn read_metric_readings(workspace: &Path, week: &str) -> Vec<MetricReading> 
 /// 某指标在近 N 周里、每周最后一天读到的值。`None` = 那一周没有日行。
 pub fn latest_values_for(workspace: &Path, name: &str, weeks: &[String]) -> Vec<Option<String>> {
     let days: Vec<MetricReading> = collapse_days(
-        read_all(workspace)
+        read_merged(workspace)
             .into_iter()
             .filter(|r| r.name == name && !r.value.is_empty()),
     );
@@ -64,8 +67,76 @@ pub fn latest_values_for(workspace: &Path, name: &str, weeks: &[String]) -> Vec<
         .collect()
 }
 
-/// 追加一行。父目录不存在就建。失败把原因给人,不写 0、不改旧行。
-pub fn append_metric_reading(workspace: &Path, row: &MetricReading) -> Result<()> {
+/// 记下或覆盖当天这一行。写到 `workspace`(调用方应传入账本目录,不是主检出)。
+/// 同一天同一指标值没变就不动文件。
+pub fn upsert_metric_reading(workspace: &Path, row: &MetricReading) -> Result<()> {
+    if row.day.is_empty() || row.name.is_empty() {
+        return Err(RepoFileError::Shape {
+            path: REL.to_string(),
+            why: "读数行缺 day 或 name,不写".into(),
+        });
+    }
+    let mut rows = read_all(workspace);
+    let mut found = false;
+    for existing in &mut rows {
+        if existing.name == row.name && existing.day == row.day {
+            if existing.value == row.value && existing.source == row.source {
+                return Ok(());
+            }
+            *existing = row.clone();
+            found = true;
+            break;
+        }
+    }
+    if !found {
+        rows.push(row.clone());
+    }
+    write_all(workspace, &rows)
+}
+
+/// 把主检出上的读数流水并进账本(覆盖同日同名),然后删掉主检出那份未提交的文件。
+/// 给「拉到最新」清脏用。主检出没有这份文件就什么都不做。
+pub fn absorb_main_readings(ledger: &Path, main: &Path) -> Result<bool> {
+    let main_path = main.join(REL);
+    if !main_path.is_file() {
+        return Ok(false);
+    }
+    for row in read_all(main) {
+        upsert_metric_reading(ledger, &row)?;
+    }
+    std::fs::remove_file(&main_path).map_err(|e| RepoFileError::Io {
+        path: REL.to_string(),
+        source: e,
+    })?;
+    Ok(true)
+}
+
+/// 账本目录(兄弟 worktree)如果已经在盘上就返回,否则 `None`。
+pub fn ledger_dir_if_present(main: &Path) -> Option<PathBuf> {
+    let dir = bw_engine::workspace::ledger_worktree_path(main)?;
+    dir.is_dir().then_some(dir)
+}
+
+fn read_merged(main: &Path) -> Vec<MetricReading> {
+    let mut latest: HashMap<(String, String), MetricReading> = HashMap::new();
+    for r in read_all(main) {
+        if r.day.is_empty() || r.name.is_empty() {
+            continue;
+        }
+        latest.insert((r.name.clone(), r.day.clone()), r);
+    }
+    if let Some(ledger) = ledger_dir_if_present(main) {
+        for r in read_all(&ledger) {
+            if r.day.is_empty() || r.name.is_empty() {
+                continue;
+            }
+            latest.insert((r.name.clone(), r.day.clone()), r);
+        }
+    }
+    latest.into_values().collect()
+}
+
+fn write_all(workspace: &Path, rows: &[MetricReading]) -> Result<()> {
     let path = workspace.join(REL);
     if let Some(dir) = path.parent() {
         std::fs::create_dir_all(dir).map_err(|e| RepoFileError::Io {
@@ -73,20 +144,16 @@ pub fn append_metric_reading(workspace: &Path, row: &MetricReading) -> Result<()
             source: e,
         })?;
     }
-    let mut line = serde_json::to_string(row).map_err(|e| RepoFileError::Shape {
-        path: REL.to_string(),
-        why: format!("读数行序列化失败:{e}"),
-    })?;
-    line.push('\n');
-    let mut f = std::fs::OpenOptions::new()
-        .create(true)
-        .append(true)
-        .open(&path)
-        .map_err(|e| RepoFileError::Io {
+    let mut body = String::new();
+    for row in rows {
+        let line = serde_json::to_string(row).map_err(|e| RepoFileError::Shape {
             path: REL.to_string(),
-            source: e,
+            why: format!("读数行序列化失败:{e}"),
         })?;
-    f.write_all(line.as_bytes()).map_err(|e| RepoFileError::Io {
+        body.push_str(&line);
+        body.push('\n');
+    }
+    std::fs::write(&path, body).map_err(|e| RepoFileError::Io {
         path: REL.to_string(),
         source: e,
     })
@@ -136,13 +203,41 @@ mod tests {
             collected_at: "t2".into(),
             ..a.clone()
         };
-        append_metric_reading(&dir, &a).unwrap();
-        append_metric_reading(&dir, &b).unwrap();
+        upsert_metric_reading(&dir, &a).unwrap();
+        upsert_metric_reading(&dir, &b).unwrap();
         let got = read_metric_readings(&dir, "2026-W35");
         assert_eq!(got.len(), 1);
         assert_eq!(got[0].value, "8");
         let weeks = latest_values_for(&dir, "关注人数", &["2026-W34".into(), "2026-W35".into()]);
         assert_eq!(weeks, vec![None, Some("8".into())]);
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn same_day_upserts_not_appends() {
+        let dir = std::env::temp_dir().join(format!("bw-readings-up-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&dir);
+        std::fs::create_dir_all(&dir).unwrap();
+        let a = MetricReading {
+            day: "2026-08-26".into(),
+            name: "在线".into(),
+            value: "1".into(),
+            source: "script".into(),
+            collected_at: "t1".into(),
+        };
+        upsert_metric_reading(&dir, &a).unwrap();
+        upsert_metric_reading(
+            &dir,
+            &MetricReading {
+                value: "9".into(),
+                collected_at: "t2".into(),
+                ..a.clone()
+            },
+        )
+        .unwrap();
+        let raw = std::fs::read_to_string(dir.join(REL)).unwrap();
+        assert_eq!(raw.lines().filter(|l| !l.trim().is_empty()).count(), 1);
+        assert!(raw.contains("\"value\":\"9\""));
         let _ = std::fs::remove_dir_all(&dir);
     }
 }
