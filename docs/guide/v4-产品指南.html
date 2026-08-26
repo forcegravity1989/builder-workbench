@@ -481,7 +481,7 @@
       <div class="ops">
         <div class="li"><div class="n">1</div><div class="t">计划屏点开一张卡（整张都能点）。没打类别的先在详情里补一类——不开工工具的活会被拒绝开工，不会悄悄起 Claude。</div></div>
         <div class="li"><div class="n">2</div><div class="t">卡片或详情上「▶ 开工」，或把卡拖进「进行中」。确认框写开工工具和 workflow。确认后跳会话屏。</div></div>
-        <div class="li"><div class="n">3</div><div class="t">原型类默认停在 Open Design 标签。对话里能看见这一张活的提示词；<strong>不会自动开跑</strong>，你在 OD 里打一句发出去，它的 AI 才动。构建类走内嵌终端里的 Claude。</div></div>
+        <div class="li"><div class="n">3</div><div class="t">原型类默认停在 Open Design 标签，嵌的是本机 OD 首页。<strong>不会自动开跑</strong>，你在 OD 里打一句发出去，它的 AI 才动。提示词尽量灌进 OD 的系统提示；对话列表里不一定看得见这一单。构建类走内嵌终端里的 Claude。</div></div>
         <div class="li"><div class="n">4</div><div class="t">不想干了：详情「作废」，写原因。这不是完成——打已取消标签并关掉远端 issue，卡到「已取消」。</div></div>
         <div class="li"><div class="n">5</div><div class="t">作废不会拆本机会话。要收掉：会话屏「删除会话」，确认之后才停终端、收这棵工作目录、删本机会话行。远端那张 issue 不动。</div></div>
         <div class="li"><div class="n">6</div><div class="t">计划屏点某一周，只看打了那一周标签的活；没打周标签的只在「全部」。顶栏刷新读远端，右栏跟着改文件自己刷新不做。</div></div>
@@ -492,7 +492,7 @@
       <div class="res">
         <ul>
           <li><span class="b"></span><div><strong>对远端代码仓</strong>：开工改状态标签到进行中。作废写原因评论、打 <code>bw:status:cancelled</code>、关掉 issue。删除会话不碰远端。周范围认 <code>bw:week:YYYY-Www</code>。</div></li>
-          <li><span class="b"></span><div><strong>对你的机器</strong>：每张活一棵工作目录。原型开工在本机 Open Design 里建（或复用）一单，把提示词写成对话里的一条用户消息；构建类在伪终端里起 Claude。删会话才强制收掉这棵目录。</div></li>
+          <li><span class="b"></span><div><strong>对你的机器</strong>：每张活一棵工作目录。原型开工探活后嵌 OD 首页，并向 <code>/api/runs</code> 灌系统提示词；灌不上就说没灌上，不假装已经进了某一单对话。构建类在伪终端里起 Claude。删会话才强制收掉这棵目录。</div></li>
           <li><span class="b"></span><div><strong>对 <code>.bw/</code></strong>：会话身份落本机 sessions 文件。指标读数不在这一站写——点采集才追加 <code>readings.jsonl</code>。</div></li>
         </ul>
       </div>
@@ -502,7 +502,7 @@
         <ul>
           <li><span class="b"></span><div>拖进进行中 = 开工，和按钮是同一条路。</div></li>
           <li><span class="b"></span><div>作废卡不会冒充已完成。作废后再点开工，会说这张活已经取消。</div></li>
-          <li><span class="b"></span><div>原型：OD 里能看见这一单和提示词。退路是会话屏「看看喂了什么」，把提示词拷过去。</div></li>
+          <li><span class="b"></span><div>原型：会话停在 Open Design 标签。退路是「看看喂了什么」，把提示词拷过去。不在 OD 里另建一单、也不深链到某一会话。</div></li>
           <li><span class="b"></span><div>右侧文件树是问这棵工作目录；「改动」只列还没提交的脏文件；「MR」只在评审中才去查开着的合并请求。刚开工、目录干净，写「无改动 / 还没有 MR」是实话。</div></li>
         </ul>
       </div>
