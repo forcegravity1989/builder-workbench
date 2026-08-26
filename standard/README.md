@@ -61,7 +61,8 @@ metrics、issue-policy。旧名单里的 agents / defaults-core / cadence 没有
 | `templates/metrics.toml.tmpl` | `.bw/metrics.toml` 骨架:北极星占位 + 滞后/引领指标写法示例(注释掉) |
 | `templates/issue-policy.toml.tmpl` | `.bw/issue-policy.toml` 骨架:开工工具声明、类别→工具→workflow 默认映射、评审/节律/看板规则 |
 | `templates/standard.toml.tmpl` | `.bw/standard.toml` 骨架:记这个项目铺的规范版本与启用/扩展的大类 |
-| `templates/scripts/*.py`(3 份) | 现成采集脚本(每周提交数 / 合入 PR 数 / star 数),铺进 `.bw/scripts/` |
+| `templates/scripts/*.py`(13 份) | 现成采集脚本,铺进 `.bw/scripts/`:仓级三份(每周提交数 / 合入 PR 数 / star 数)+ 过程指标包十份(评审等待 / 首过率 / 返工轮数 / 首审等待 / 意图成文时长 / 变更前置时间 / 同时开着的 MR 数 / 活存活率 / 手册修正频次 / 距上次发版天数)——全部可回溯、只读代码仓与远端 |
+| `templates/process-catalog.md` | 过程指标目录(playbook 26 条的总账:能算的指到脚本、等前置的写明等什么、不建的写明为什么),铺进 `.bw/process-catalog.md`;荐入规则见 `skills/metrics-refresh` |
 
 `system-prompt/` 是 buddy 自己 runtime 用的(不进项目仓):
 
