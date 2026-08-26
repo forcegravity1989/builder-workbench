@@ -115,6 +115,11 @@ impl App {
         // 再写一遍是同一份内容;进 `written` 是为了让它被提交。
         project_file::write(&tree.path, &file)?;
         report.written.push(project_file::REL_PATH.to_string());
+        // 接入写在主检出上的那份只是为了当场能渲染。正本走这张活的 MR,
+        // 主检出上留下未提交的名片会挡「拉到最新」。
+        if tree.isolated {
+            let _ = super::plan::salvage_main_checkout_dirt(&ws).await;
+        }
 
         // 只提交这次真写下去的那些件,不用 `add -A`:这棵树是干净的检出,但
         // 规矩就是规矩 —— 提交里出现的每一个文件都该是 buddy 自己写的。

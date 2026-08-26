@@ -8,7 +8,7 @@
 
 use crate::model::{Category, ConversationId, IssueId, IssueStatus, ProjectId};
 
-/// 总览「编辑项目信息」一次填完的仓文件字段。
+/// 总览「编辑项目名片」一次填完的仓文件字段。
 ///
 /// 正本仍是 `.bw/PROJECT.md` + `.bw/project.toml` 两份。接入时只填前四项,
 /// 在研版本 / 项目群落默认或仓里已有的;总览保存会把后几项一并写回。
