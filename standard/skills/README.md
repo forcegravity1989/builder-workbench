@@ -1,14 +1,14 @@
-# buddy 自带的技能库(唯一正本目录)
+# Workbench 自带的技能库(唯一正本目录)
 
-> **30 秒导读**:buddy 自带的全部技能住在这里 —— **一个目录、全部平级**,一个技能一个
-> 子目录,里面一份 `SKILL.md`。开工时 buddy 把这些摊到**自己的资产目录**(不复制进用
+> **30 秒导读**:Workbench 自带的全部技能住在这里 —— **一个目录、全部平级**,一个技能一个
+> 子目录,里面一份 `SKILL.md`。开工时 Workbench 把这些摊到**自己的资产目录**(不复制进用
 > 户的仓),按活挂的 `workflow` 挑出对应那份,只把**名字 + 一句话 + 完整路径**写进
 > agent 的系统提示词,正文让 agent 自己按需读 —— 渐进式加载,见
 > `crates/bw/src/standard/skills.rs`。给接手技能这块的人看。**现在作数**
 > (2026-08-21 收敛:此前散在 `docs/skills/`(已删,见 v3 分支)与 `standard/06-defaults/ops/` 两处、
 > 还用目录层级表达「谁调用谁」;现在从属关系写在正文里,目录不表达任何结构)。
 
-## 四份运作剧本(buddy 自己发起的标准动作)
+## 四份运作剧本(Workbench 自己发起的标准动作)
 
 | 活的 `workflow` 字段 | 目录 | 谁触发 | 一次会话大概 |
 |---|---|---|---|
@@ -17,9 +17,9 @@
 | —(子技能) | `metrics-refresh/` | `week-planning` 第二步指名调用 | 随宿主 |
 | —(子技能) | `project-handbook/` | `asset-audit` 首次模式里**问过人**之后调用 | 随宿主 |
 
-规范铺底(运作活③)**没有剧本** —— 它没有 agent 步骤,buddy 自己把核心件写进 `.bw/`。
+规范铺底(运作活③)**没有剧本** —— 它没有 agent 步骤,Workbench 自己把核心件写进 `.bw/`。
 
-## workflow 入口(业界 SOP 链,buddy 写入口 body 指向 vendor 库)
+## workflow 入口(业界 SOP 链,Workbench 写入口 body 指向 vendor 库)
 
 归一:workflow 注入和运作剧本走**同一个** `skill_pointer`→`SkillPack` 机制。运作剧本
 body 自足;workflow 入口 body 是 SOP 链 + 指向 `../vendor/` 库子技能路径(库由
@@ -39,17 +39,17 @@ body 自足;workflow 入口 body 是 SOP 链 + 指向 `../vendor/` 库子技能�
 一堆没用的」。2026-08-24 删光:
 
 - **阶段方法论该由业界 workflow 提供**(build 默认 `mattpocock-skills`、原型
-  默认 `proto-design`,见 `../vendor/`),buddy 每个环节只挑一个最好的默认;
+  默认 `proto-design`,见 `../vendor/`),Workbench 每个环节只挑一个最好的默认;
 - **阶段规范约束**(指标铁律、改仓规则)不叫方法论,归 `../system-prompt/references/`,
   按活注入提示词,不进 `skills/`;
-- 真要从实践里长出 buddy 自己的方法论,**到时候再单独建,不预置**。
+- 真要从实践里长出 Workbench 自己的方法论,**到时候再单独建,不预置**。
 
 (`north-star-discovery` / `metrics-binding` 早前并入 `metrics-refresh`;
 `metrics-render` 整份删过——踩在 V4 不存在的东西上。这几份原文件随 V3 已删。)
 
 ## 版本
 
-不单开版本线——版本号就是 `standard/VERSION`,随 buddy 整体发布走。改了内容 =
+不单开版本线——版本号就是 `standard/VERSION`,随 Workbench 整体发布走。改了内容 =
 `standard/VERSION` 抬一档 + 这里记一行。项目侧 `.bw/managed.toml` 记这几份 SKILL.md
 的指纹,规范对账能测出落后。
 

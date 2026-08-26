@@ -23,13 +23,13 @@ schema_version = 2
 #   2. 手填   collect = { kind = "manual" }
 #
 # 连 git 、连 GitHub、连 codehub、连内网系统、读一个本地文件 —— 全是脚本自己的事。
-# buddy 不认识这些系统,它只会「起进程、传时间窗、读标准输出的 JSON」。
+# Workbench 不认识这些系统,它只会「起进程、传时间窗、读标准输出的 JSON」。
 #
 # ## retro:这一条是整份文件里最重要的字段
 #
 # 它回答一个问题:**今天能采到这个数,那么「上周三那天的值」现在还能算出来吗?**
 #
-#   retro = true   能。buddy 一个字都不存,要看几周就现算几个窗口 —— 新接入的项目
+#   retro = true   能。Workbench 一个字都不存,要看几周就现算几个窗口 —— 新接入的项目
 #                  第一天就有完整四周走势,不用先攒。
 #   retro = false  不能,过了那一刻就没了。这一类必须把每次读数追加进
 #                  `.bw/metrics/readings.jsonl`(键是日历日)。点「采集」或每天
@@ -41,16 +41,16 @@ schema_version = 2
 # 数看起来只有当前值,但 stargazers 接口带一个特殊 Accept 头就返回每个 star 的时刻,
 # 所以它其实是 retro = true(现成脚本见 `.bw/scripts/github-stars.py`)。
 #
-# ## 脚本协议(buddy 和脚本之间唯一的约定)
+# ## 脚本协议(Workbench 和脚本之间唯一的约定)
 #
 #   run     argv 数组,第一项是可执行文件,其余是参数。**不走 shell**,所以不要写
 #           管道、重定向、`&&`;要用就在脚本里面写。路径相对仓根。
 #           写成数组而不是一行命令,是为了在 Windows 上也能明确指定解释器:
 #           `["python", ".bw/scripts/x.py"]` 和 `["python3", ...]` 是两回事。
 #
-#   buddy 起脚本时追加的参数:
+#   Workbench 起脚本时追加的参数:
 #     retro = true   --since YYYY-MM-DD --until YYYY-MM-DD --granularity week
-#                    (左闭右开;**窗口由 buddy 给,不是脚本自己决定** —— 面板要
+#                    (左闭右开;**窗口由 Workbench 给,不是脚本自己决定** —— 面板要
 #                     几周就传几周,采多少和画多少永远一致)
 #     retro = false  不传窗口,只问「现在是多少」
 #
@@ -72,7 +72,7 @@ schema_version = 2
 #
 # ## 脚本铺一次就归项目
 #
-# buddy 铺进 `.bw/scripts/` 的几份是通用起手式,**之后 buddy 再也不覆盖它们**。
+# Workbench 铺进 `.bw/scripts/` 的几份是通用起手式,**之后 Workbench 再也不覆盖它们**。
 # 改窗口、改口径、换数据源,直接改脚本 —— 脚本本身就是「这个数怎么来的」的文档。
 #
 # ─────────────────────────────────────────────────────────────────────────
@@ -95,7 +95,7 @@ collect = { kind = "manual" }
 # collect = { kind = "manual" }
 
 # ── 引领指标(≤3):本周可控的先行量,直接由活推动 ──────────────────
-# 例(下面三条对应 buddy 铺的三份现成脚本,可以直接放开用):
+# 例(下面三条对应 Workbench 铺的三份现成脚本,可以直接放开用):
 #
 # [[leading]]
 # name = "本周合入的 PR 数"

@@ -1,7 +1,7 @@
 name = "workbench"
 kind = ""
 brief = "mvp v4的愿景"
-benchmark = "workbuddy"
+benchmark = "workWorkbench"
 opportunity = "更多的项目纳入到workbench中演进"
 
 # 规范版本与在研版本。这两个值不进本机库,总览与计划屏每次要

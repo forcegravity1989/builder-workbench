@@ -2,7 +2,7 @@
 
 单人构建者的项目管理工作台。本文件是**唯一的规范词表**:代码、文档、界面、对话都用这里选定的词，别再各叫各的。
 
-> **30 秒导读**:这是 buddy MVP 的领域词表——代码、文档、界面、对话共用的选词与定义。MVP 本地零数据库,issue 正本在 codehub/GitHub 的 issue+标签,项目级配置留仓文件、走 MR,健康与指标读数全部现算。词表稳定优先,宁少不乱。
+> **30 秒导读**:这是 Workbench MVP 的领域词表——代码、文档、界面、对话共用的选词与定义。MVP 本地零数据库,issue 正本在 codehub/GitHub 的 issue+标签,项目级配置留仓文件、走 MR,健康与指标读数全部现算。词表稳定优先,宁少不乱。
 > 定义原则:每个词只说它**是什么**(1–2 句),不写实现;`_Avoid_` 列出被它取代的说法。
 > 这是词表,不是规格——**设计正本是 [`docs/architecture.md`](docs/architecture.md)([`DESIGN.md`](DESIGN.md) 指路)**,16 模块核心设计在它的 §3;设计缺口分散在各模块的「没建什么」段,不另开台账。
 > 命名冲突的收敛与改名计划见 [`docs/adr/`](docs/adr/);字母数字任务代号(P2、W6、R1……)不属于领域语言,用前先确认旧系列没撞(代号登记处随用随建进 adr 或本表)。
@@ -12,9 +12,13 @@
 
 ### 人与角色
 
-**Builders' Workbench / BW / buddy / loop-buddy**:
-同一件东西的几个称呼:**Builders' Workbench(BW)**是产品名;**buddy** 是产品里那个 AI 程序对自己的称呼(系统提示词里通篇这么叫,见 [系统提示词与渐进加载 模块](docs/architecture.md));**loop-buddy** 是 GitHub 仓库真名。写文档时说产品用 BW,说「它替你做了什么」用 buddy,都可以——别把它们当三个不同的东西。
-_Avoid_: 把 buddy 理解成某个具体 agent 或队友的名字(它是程序整体的自称);workbuddy(另一款产品)。
+**Builders' Workbench / Workbench / BW**:
+产品名。全称 **Builders' Workbench**，短称 **Workbench** 或 **BW**——同一件产品，不是三样东西。GitHub 仓库 slug 是 `builder-workbench`。
+_Avoid_: buddy、loop-buddy（已废弃）;把 BW 理解成某个具名 AI 人格;workbuddy（另一款产品）。
+
+**bw（工程标识）**:
+代码与落点前缀：crate（`bw` / `bw-engine`）、被管仓目录 `.bw/`、远端标签 `bw:*`、环境变量 `BW_*`、二进制 `bw-dev`。说产品用 Workbench / BW，说工程路径与标识用 `bw`。
+_Avoid_: 再发明第三套产品称呼与工程前缀。
 
 **Builder / 构建者**:
 使用工作台的那个人——端到端 own 一个项目的单人系统设计者,产品的主角。全局唯一,专指人类。
@@ -67,8 +71,8 @@ _Avoid_: Phase / ProjectPhase(与"阶段 Stage"撞;代码里对应类型为 `Rea
 ### 项目与仓(产品信息正本在仓里)
 
 **产品信息 / 过程信息 (Product / Process)**:
-一个项目切成两类信息:**产品信息**(代码、Spec、原型、Issue、指标定义)正本住在仓与远端 issue;**过程信息**(会话、运行记账、健康)MVP 本地零库——不存第二份正本,会话身份等运行时少量落本地表,健康与指标读数全部现算。buddy 是操作台 + 信息转化层,不是又一份正本。
-_Avoid_: 把 buddy 当项目的唯一数据源;把仓说成"备份"或"同步目标"(它才是正本所在地)。
+一个项目切成两类信息:**产品信息**(代码、Spec、原型、Issue、指标定义)正本住在仓与远端 issue;**过程信息**(会话、运行记账、健康)MVP 本地零库——不存第二份正本,会话身份等运行时少量落本地表,健康与指标读数全部现算。Workbench 是操作台 + 信息转化层,不是又一份正本。
+_Avoid_: 把 Workbench 当项目的唯一数据源;把仓说成"备份"或"同步目标"(它才是正本所在地)。
 
 **仓 / Repo**:
 项目背后真实的 codehub/GitHub 仓库——新建或接入。Issue、PR、指标定义的正本都挂在它上面;没挂仓的项目(纯本地项目)如实留白,绝不假装有仓。
@@ -112,7 +116,7 @@ _Avoid_: 失败(失败是"运行"的结局,不是活的状态)、挂起。
 
 ### 运行与执行
 
-> **消歧**:workflow 在 MVP = 活上挂的 SOP 技能包(在 `.bw/issue-policy.toml` 的 `mapping.workflow` 里给每类活记一个,如构建类挂 `mattpocock-skills`、原型类挂 `proto-design`,可换),buddy 按它注入对应剧本(见 [系统提示词与渐进加载 模块](docs/architecture.md))。不再是聊天式工作流引擎(静态/动态、阶段角色、打回、解析为流程图那一套已退场)。
+> **消歧**:workflow 在 MVP = 活上挂的 SOP 技能包(在 `.bw/issue-policy.toml` 的 `mapping.workflow` 里给每类活记一个,如构建类挂 `mattpocock-skills`、原型类挂 `proto-design`,可换),Workbench 按它注入对应剧本(见 [系统提示词与渐进加载 模块](docs/architecture.md))。不再是聊天式工作流引擎(静态/动态、阶段角色、打回、解析为流程图那一套已退场)。
 
 **运行 / Run**:
 一件活的真实执行(▶跑),有成败与耗时,全结局都入账(成功、失败都记)。运行在该活专属的 issue worktree 里干活(每张活一棵,两张同时跑互不撞车;收尾后拆除,主工作区留着提供 master 视角)。
@@ -127,7 +131,7 @@ MVP 两条执行轨,都在这张活自己的 git worktree 里干:构建类走**�
 _Avoid_: 把交互式活的空运行史当「没跑过」;把后台轨的自动兜底照搬到交互轨;嵌入终端(指 UI 载体时可用,指这条执行轨时统一说「交互式运行」)。详见 [会话与执行 模块](docs/architecture.md)。
 
 **系统提示词 / System prompt**:
-buddy 给每张开工的活渲染的一份常驻提示,主提示词是外置的 `standard/system-prompt/SYSTEM.md.tmpl`(身份 + 通用铁律:最远到评审中、合并永远是人、指标只来自真实采集、干砸如实停 + 读项目 `.bw/` 规范件与仓根 `AGENTS.md` 的指引),`{{...}}` 占位运行时填:活的信息、本活要读的 references 阶段规范(指标铁律/改仓规则)、本活挂的技能指针。不硬编码在 Rust `format!` 里(改铁律=改 md + 抬 `standard/VERSION` + 对账)。分工:系统提示词不可换(契约与铁律由它兜住),技能/references 可换。提示词只放索引(名字+一句话+路径),正文让 agent 按需读(渐进加载)。
+Workbench 给每张开工的活渲染的一份常驻提示,主提示词是外置的 `standard/system-prompt/SYSTEM.md.tmpl`(身份 + 通用铁律:最远到评审中、合并永远是人、指标只来自真实采集、干砸如实停 + 读项目 `.bw/` 规范件与仓根 `AGENTS.md` 的指引),`{{...}}` 占位运行时填:活的信息、本活要读的 references 阶段规范(指标铁律/改仓规则)、本活挂的技能指针。不硬编码在 Rust `format!` 里(改铁律=改 md + 抬 `standard/VERSION` + 对账)。分工:系统提示词不可换(契约与铁律由它兜住),技能/references 可换。提示词只放索引(名字+一句话+路径),正文让 agent 按需读(渐进加载)。
 _Avoid_: 把契约写进技能正文(换技能就丢);把系统提示词当成技能的一部分。详见 [系统提示词与渐进加载 模块](docs/architecture.md)。
 
 **Agent Loop**(产品命题层):
@@ -145,11 +149,11 @@ _Avoid_: 记录、log(读数是结构化数据点,不是日志文本)、埋点�
 _Avoid_: 数据、统计值;不要和"读数"混用——读数是原料,指标是产物。
 
 **指标正本 / Metrics Source of Truth**:
-一个项目的北极星 + 滞后指标 + 引领指标定义,写在仓里一份机读文件 `.bw/metrics.toml`(**只认 `schema_version = 2`**,读到旧格式整份拒收、不迁移),改指标和改代码一样走 MR 评审。buddy 本地不缓存定义,每次现读。MVP **不要中间连接器层**——一条指标直接指向一个脚本:起进程、传时间窗、读标准输出的 JSON,buddy 不认识被连的是什么系统;采集方式只有脚本和手填两种。
-_Avoid_: 绕开 MR 直接在界面里"定义"一条指标;把 V3 的 `.bw/connectors.toml` / `docs/buddy/standards/metrics.md` 当现行正本(V3 已删,见 `v3` 分支)。详见 [仓文件解析 模块](docs/architecture.md)。
+一个项目的北极星 + 滞后指标 + 引领指标定义,写在仓里一份机读文件 `.bw/metrics.toml`(**只认 `schema_version = 2`**,读到旧格式整份拒收、不迁移),改指标和改代码一样走 MR 评审。Workbench 本地不缓存定义,每次现读。MVP **不要中间连接器层**——一条指标直接指向一个脚本:起进程、传时间窗、读标准输出的 JSON,Workbench 不认识被连的是什么系统;采集方式只有脚本和手填两种。
+_Avoid_: 绕开 MR 直接在界面里"定义"一条指标;把 V3 的 `.bw/connectors.toml` / `docs/Workbench/standards/metrics.md` 当现行正本(V3 已删,见 `v3` 分支)。详见 [仓文件解析 模块](docs/architecture.md)。
 
 **业务指标 / 项目指标(两层分流)**:
-总览把指标分两层看:**业务指标**=用户自己的北极星/引领/滞后指标,点灯、参与健康上卷;**项目指标**=buddy 自动播种的代码仓统计(开放 Issue 数、已合入 MR 数、阶段完成),所有项目都有,只当现状数看——不点灯、不上卷。
+总览把指标分两层看:**业务指标**=用户自己的北极星/引领/滞后指标,点灯、参与健康上卷;**项目指标**=Workbench 自动播种的代码仓统计(开放 Issue 数、已合入 MR 数、阶段完成),所有项目都有,只当现状数看——不点灯、不上卷。
 _Avoid_: 让仓统计数字点灯(工程虚荣指标混进健康);把两层混在一张表里读。
 
 **停用(指标)/ Archived metric**:
@@ -243,7 +247,7 @@ _Avoid_: 与"定时任务"混用;例行任务(会和 Cron 撞)。
 _Avoid_: 总结、归档、沉淀(沉淀指整个复利过程,别专指这一步)。
 
 **技能 / Skill**:
-一篇可复用的做法说明,真实形态是一个**文件夹**(SKILL.md 正文 + 任意数量的支撑文件)。buddy 自带的技能正本 `include_str!` 编进二进制,开工时摊到本地资产目录供 agent 按需读;下次干同类活时按活挂的 workflow 注入对应剧本,用一次记一次(uses 按 workflow 标签分组现算)。
+一篇可复用的做法说明,真实形态是一个**文件夹**(SKILL.md 正文 + 任意数量的支撑文件)。Workbench 自带的技能正本 `include_str!` 编进二进制,开工时摊到本地资产目录供 agent 按需读;下次干同类活时按活挂的 workflow 注入对应剧本,用一次记一次(uses 按 workflow 标签分组现算)。
 _Avoid_: 文档、知识、SOP;把技能等同于它的 SKILL.md 正文(支撑文件也是它的一部分)。详见 [系统提示词与渐进加载 模块](docs/architecture.md)。
 
 **注入 / Inject**:
@@ -281,7 +285,7 @@ _Avoid_: 假装真实、demo 数据不标注;和"手填 (Manual)"混——手填
 _Avoid_: 拿截图或 agent 自报当读回;复查(读回强调独立取证,不是再看一眼)。
 
 **门禁 / Gate checks**:
-每个 commit 前必须全部通过的检查组(格式化、clippy、wasm 编译、内核无 UI 守卫脚本、buddy MVP 新壳的结构守卫——屏与屏不互相引用、用 hook 的函数必须是组件、单文件 1500 行硬上限、桌面壳编译)。本地清单与 CI 并非完全一致:CI 侧还跑 `cargo test`(现存内联测试),差异以 `.github/workflows/ci.yml` 为准。本地先过门禁,CI 是远端复核。
+每个 commit 前必须全部通过的检查组(格式化、clippy、wasm 编译、内核无 UI 守卫脚本、Workbench MVP 新壳的结构守卫——屏与屏不互相引用、用 hook 的函数必须是组件、单文件 1500 行硬上限、桌面壳编译)。本地清单与 CI 并非完全一致:CI 侧还跑 `cargo test`(现存内联测试),差异以 `.github/workflows/ci.yml` 为准。本地先过门禁,CI 是远端复核。
 _Avoid_: 测试基线(行为正确性以 E2E 读回为主,不建永久累积的回归大坝);把门禁和 E2E 验证混为一谈(门禁管编译期,E2E 管行为);把门禁和产品语义里的 **gate** 混为一谈(门禁机器跑、管提交,gate 人来过、管这次迭代要不要往下走)。
 
 **记账 / 入账 / 结算 (Settle)**:

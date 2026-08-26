@@ -7,8 +7,8 @@ node_modules/
 .claude/*
 !.claude/skills/
 .claude/skills/*
-!.claude/skills/buddy-start/
-!.claude/skills/buddy-start/**
+!.claude/skills/workbench-start/
+!.claude/skills/workbench-start/**
 
 # Rust
 /target/

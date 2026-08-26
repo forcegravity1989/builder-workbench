@@ -1,6 +1,6 @@
-# AGENTS.md — buddy 开发手册
+# AGENTS.md — Workbench 开发手册
 
-> 这是 buddy(loop-buddy / Builders' Workbench)仓库的**唯一开发规矩正本**。`CLAUDE.md` 只是一行导入它。给所有驱动 AI(Claude Code / Cursor / Codex)和接手的人看。改这份 = 改开发规矩,过评审再合。
+> 这是 **Builders' Workbench（Workbench / BW）** 仓库的**唯一开发规矩正本**。`CLAUDE.md` 只是一行导入它。给所有驱动 AI(Claude Code / Cursor / Codex)和接手的人看。改这份 = 改开发规矩,过评审再合。
 
 ## 原则正本（最高优先级）
 
@@ -25,21 +25,21 @@
 
 ## 这是什么
 
-单人构建者的 Rust 原生桌面工作台(Dioxus 0.7 / wry WebView,macOS + Windows)。产品命题见 [`README.md`](README.md);设计正本见 [`docs/architecture.md`](docs/architecture.md)([`DESIGN.md`](DESIGN.md) 指路);领域词表见 [`CONTEXT.md`](CONTEXT.md)。三个名字一件东西:仓库真名 **loop-buddy**、产品名 **Builders' Workbench(BW)**、产品里 AI 队友自称 **buddy**。
+单人构建者的 Rust 原生桌面工作台(Dioxus 0.7 / wry WebView,macOS + Windows)。产品命题见 [`README.md`](README.md);设计正本见 [`docs/architecture.md`](docs/architecture.md)([`DESIGN.md`](DESIGN.md) 指路);领域词表见 [`CONTEXT.md`](CONTEXT.md)。产品叫 **Builders' Workbench / Workbench / BW**;工程标识用 **bw**(crate / `.bw/` / `bw:*` / `BW_*`)。已废弃 buddy、loop-buddy。
 
-> **V3 已删**:本仓产品线是 buddy MVP(内核 `crates/bw` + 底座 `crates/bw-engine` + 壳 `crates/app-shell`)。V3 的六 crate 与 V3 编译资产已于 2026-08-24 删除——全量在 `v3` 分支找回。别再提 V3 概念,设计看 [`docs/architecture.md`](docs/architecture.md)。
+> **V3 已删**:本仓产品线是 Workbench MVP(内核 `crates/bw` + 底座 `crates/bw-engine` + 壳 `crates/app-shell`)。V3 的六 crate 与 V3 编译资产已于 2026-08-24 删除——全量在 `v3` 分支找回。别再提 V3 概念,设计看 [`docs/architecture.md`](docs/architecture.md)。
 
 ## 语言和构建
 
 Rust 1.82+,cargo workspace。桌面壳另需 Dioxus 0.7 的系统依赖(macOS 自带 WebKit,Windows 用 WebView2)。`#![forbid(unsafe_code)]` 是 `bw-engine` 的规矩。跨会话只认本仓的 `principles/` + `AGENTS.md` + `CONTEXT.md` + `docs/` + `CHANGELOG.md` + `DESIGN.md`,不凭上一会话口头结论改代码。
 
-仓外 IDE(Claude Code / Cursor / Codex)开新会话,先读 [`.claude/skills/buddy-start/SKILL.md`](.claude/skills/buddy-start/SKILL.md)——只是闸门,正本仍是本文件。工作台内嵌终端里不要用它(那边已经灌了系统提示词)。buddy MVP 还不能在工作台里维护自己,所以仓外起手暂时靠这份 skill,不是再做一套伴飞/需求/修 bug 流程。
+仓外 IDE(Claude Code / Cursor / Codex)开新会话,先读 [`.claude/skills/workbench-start/SKILL.md`](.claude/skills/workbench-start/SKILL.md)——只是闸门,正本仍是本文件。工作台内嵌终端里不要用它(那边已经灌了系统提示词)。Workbench MVP 还不能在工作台里维护自己,所以仓外起手暂时靠这份 skill,不是再做一套伴飞/需求/修 bug 流程。
 
 ## 怎么建 / 怎么跑 / 怎么测
 
 ```bash
 cargo check -p bw -p bw-engine            # 日常最快(内核+底座,不编 Dioxus)
-cargo run -p app-shell                      # 启 buddy MVP 桌面壳(bin 名 bw-dev)
+cargo run -p app-shell                      # 启 Workbench MVP 桌面壳(bin 名 bw-dev)
 BW_OPEN=<项目名> BW_PANEL=overview|plan|session|notify|config|kb ./target/debug/bw-dev
                                             # 深链直达屏;stderr [BW_OPEN]=真的渲染到了
 BW_VIEW=onboard|settings ./target/debug/bw-dev   # 顶层屏深链
@@ -54,16 +54,18 @@ cargo test --workspace                                # 本地含壳;CI 同命�
 ```bash
 cargo fmt --all --check
 cargo clippy --workspace -- -D warnings
-cargo check -p app-shell          # buddy MVP 壳编译过
+cargo check -p app-shell          # Workbench MVP 壳编译过
 ./scripts/guard-kernel-ui-free.sh
 ./scripts/guard-no-cross-screen-import.sh   # 屏与屏不互相引用
 ./scripts/guard-screen-hooks.sh             # 用 hook 的函数必须是组件
-./scripts/guard-file-lines.sh               # 单文件 1500 行硬上限(只查 buddy MVP 三 crate)
+./scripts/guard-file-lines.sh               # 单文件 1500 行硬上限(只查 Workbench MVP 三 crate)
 ./scripts/guard-codegraph-clean.sh           # codegraph.db 不进 feature commit(CI 在 main 发布)
 cargo test --workspace
 ```
 
-行为正确性靠 E2E(深链启动 + `codehub-cli`/`gh`/`git`/`cat .bw/…` 读回 + computer-use)+ `/code-review`;单元测试不是交付物(现存的随 CI 跑、改到顺手维护、不建回归大坝)。**buddy MVP 本地零数据库——读回用 `codehub-cli`/`gh`/`git`/`cat .bw/…`,不用 `sqlite3`**(那是 V3 的库)。
+本地与 CI：壳的编译 / Clippy 因 ubuntu runner 常缺 WebKit/GTK，**壳相关检查以本机为准**；CI 侧 `cargo test` 会 `--exclude app-shell`。差异以 `.github/workflows/ci.yml` 为准。
+
+行为正确性靠 E2E(深链启动 + `codehub-cli`/`gh`/`git`/`cat .bw/…` 读回 + computer-use)+ `/code-review`;单元测试不是交付物(现存的随 CI 跑、改到顺手维护、不建回归大坝)。**Workbench MVP 本地零数据库——读回用 `codehub-cli`/`gh`/`git`/`cat .bw/…`,不用 `sqlite3`**(那是 V3 的库)。
 
 ## 顶层目录导览
 
@@ -71,18 +73,18 @@ cargo test --workspace
 crates/   bw(MVP 内核:本地零库+仓文件解析+现算推导+Command/Event)
           bw-engine(MVP 底座:交互式 claude+PTY+worktree+git+codehub/github 远端)
           app-shell(MVP 壳:九屏+主题+内核桥+适配模块,bin bw-dev)
-standard/  buddy 推给被管项目的规范正本(include_str! 进 bw):铺底 `templates/` + 系统提示词 `system-prompt/`(SYSTEM.md.tmpl+references)+ 自维护运作剧本 `skills/` 4 份 + 业界 workflow `vendor/`(mattpocock/mohit,给默认 workflow 打包)
+standard/  Workbench 推给被管项目的规范正本(include_str! 进 bw):铺底 `templates/` + 系统提示词 `system-prompt/`(SYSTEM.md.tmpl+references)+ 自维护运作剧本 `skills/` 4 份 + 业界 workflow `vendor/`(mattpocock/mohit,给默认 workflow 打包)
 principles/ 慢变原则正本(01 分层/changes · 02 逆向工作法 · 03 新闻稿/FAQ/飞轮)
 docs/      architecture(设计正本)+ guide(产品指南)+ adr + hifi + README(地图)
 scripts/   门禁脚本(guard-*)+ codegraph 联调
-.bw/       buddy 自己作为被管项目的资产(PROJECT.md/metrics.toml/issue-policy.toml/…)
+.bw/       Workbench 自己作为被管项目的资产(PROJECT.md/metrics.toml/issue-policy.toml/…)
 ```
 
-## buddy 特有规矩(只写仓里真还在用的)
+## Workbench 特有规矩(只写仓里真还在用的)
 
 ### 人怎么驾驭(可见物,不是代码)
 
-人、同事、另一只 AI 接手靠四样能看见的东西,不靠读源码。不同人开不同模型,只许写出同一套风格——正本在这些文件里,聊天结论不进仓就不算数。代码和文档都在这些规范下演进。仓外会话里人只走站和验收,改代码与文档是窗口 AI 的事(开场契约见 `.claude/skills/buddy-start`)。
+人、同事、另一只 AI 接手靠四样能看见的东西,不靠读源码。不同人开不同模型,只许写出同一套风格——正本在这些文件里,聊天结论不进仓就不算数。代码和文档都在这些规范下演进。仓外会话里人只走站和验收,改代码与文档是窗口 AI 的事(开场契约见 `.claude/skills/workbench-start`)。
 
 | 可见物 | 在哪 | 用来干什么 |
 |---|---|---|
@@ -103,17 +105,17 @@ scripts/   门禁脚本(guard-*)+ codegraph 联调
 | 「完成」永远由人点;同一件活绝不重复记账 | 状态机 `can_transition_to` 守卫、Done 入边仅 InReview;`settled_at` settle-once |
 | 定时任务真实到点触发;自动建的活绝不被自动推进到完成 | E2E:到点 tick 后读回新建活,状态正常 |
 
-### 三层模型(怎么给 buddy 做一个特性)
+### 三层模型(怎么给 Workbench 做一个特性)
 
 - **承载 · codehub issue**:issue+标签=唯一正本,本地零数据库;状态走标签、工作产物走 MR。
-- **规范 · 系统提示词 + 渐进加载**(主提示词外置 `standard/system-prompt/SYSTEM.md.tmpl` + `references/` 阶段规范,运行时渲染注入;设计见 [`docs/architecture.md`](docs/architecture.md) 的「系统提示词与渐进加载」模块):不论哪个 workflow 都兜住 buddy 统一要求。
-- **方法论 · skill / workflow**(此层含**运作剧本**——buddy 自发动作,非方法论——在 `skills/`;**业界 workflow**——方法论来源——在 `vendor/`,build 默认 `mattpocock-skills` 可换):怎么做能做得更好。
+- **规范 · 系统提示词 + 渐进加载**(主提示词外置 `standard/system-prompt/SYSTEM.md.tmpl` + `references/` 阶段规范,运行时渲染注入;设计见 [`docs/architecture.md`](docs/architecture.md) 的「系统提示词与渐进加载」模块):不论哪个 workflow 都兜住 Workbench 统一要求。
+- **方法论 · skill / workflow**(此层含**运作剧本**——Workbench 自发动作,非方法论——在 `skills/`;**业界 workflow**——方法论来源——在 `vendor/`,build 默认 `mattpocock-skills` 可换):怎么做能做得更好。
 
 改一个特性前,先对齐 [`principles/03`](principles/03-press-release-faq-flywheel.md) 飞轮检验,再按「特性起手路径」写 `changes/`(见上);工程落点在 [`docs/architecture.md`](docs/architecture.md) 的模块设计上定位:旅程哪一站 → 三层里改哪层 → 数据归哪 → 模块落点。找不到先补文档、再动代码——不清晰不写代码。
 
 ### codehub issue 标签词表
 
-`bw:status:{todo|inprogress|inreview|blocked}`(closed=Done,不打)、`bw:week:YYYY-Www`、`bw:released:vX`、`bw:category:{prototype|build|optimize|growth|ops}`。**不打**:`kind`(从标题推断)、`tool`/`workflow`(走 `.bw/issue-policy.toml` 映射)。仓改动两类:issue 数据(状态/排期/版本/类别)→ codehub 标签 buddy 直接改;仓文件产物(名片/配置/规范件)→ worktree + MR,幂等键=固定枚举标题。详见 `standard/templates/issue-policy.toml.tmpl`。
+`bw:status:{todo|inprogress|inreview|blocked}`(closed=Done,不打)、`bw:week:YYYY-Www`、`bw:released:vX`、`bw:category:{prototype|build|optimize|growth|ops}`。**不打**:`kind`(从标题推断)、`tool`/`workflow`(走 `.bw/issue-policy.toml` 映射)。仓改动两类:issue 数据(状态/排期/版本/类别)→ codehub 标签 Workbench 直接改;仓文件产物(名片/配置/规范件)→ worktree + MR,幂等键=固定枚举标题。详见 `standard/templates/issue-policy.toml.tmpl`。
 
 ### 写作纪律(给人看的东西先让人看得懂)
 
@@ -137,5 +139,5 @@ scripts/   门禁脚本(guard-*)+ codegraph 联调
 
 - V3 已删(见 `v3` 分支),别拿 V3 crate 当 MVP 事实源去 grep/读(会误导)。
 - 不为「兼容旧半修」留双路径;不扩 scope(留白如实标"未建")。
-- 不在入口层写业务和存储;不照 README 抄命令(README 常年不更新,以 CI 配置为准)。
+- 不在入口层写业务和存储;命令与门禁以本文件与 CI 为准——根 `README.md` 是产品介绍与快速开始,不是开发命令正本。
 - 未锁定决策先走 grill/domain-modeling,不凭猜改设计;改动前 `CHANGELOG.md` 记一行。
