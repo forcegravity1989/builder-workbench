@@ -494,6 +494,8 @@ pub fn spawn(deep_link: DeepLink) -> Bridge {
                     mr_cache: std::collections::HashMap::new(),
                     od_src: String::new(),
                     od_gen: 0,
+                    gather_gen: 0,
+                    workbench_cache: None,
                 };
 
                 // 「刷新」按下了没有。回执要等 ViewModel 拼完才写得出来。
@@ -513,7 +515,8 @@ pub fn spawn(deep_link: DeepLink) -> Bridge {
                     }
                 }
 
-                let mut vm = vm_build::build(&app, &mut ui).await;
+                let mut last_gather = vm_build::gather(&app, &mut ui).await;
+                let mut vm = vm_build::assemble(&app, &mut ui, &last_gather).await;
                 eprintln!("[BW_BOOT] projects={} assets={}", vm.projects.len(), assets.display());
                 // 环境条的探活结果也打出来 —— 它说「找不到 claude」的时候,人
                 // 得能在终端里拿 `which claude` 当场对。2026-08-20 就栽在这上面:
@@ -672,7 +675,9 @@ pub fn spawn(deep_link: DeepLink) -> Bridge {
                             if let Some(n) = note {
                                 ui.set_note(Some(n));
                             }
-                            vm = vm_build::build(&app, &mut ui).await;
+                            // 到点可能建活,数据真变了,走全量 gather。
+                            last_gather = vm_build::gather(&app, &mut ui).await;
+                            vm = vm_build::assemble(&app, &mut ui, &last_gather).await;
                             let _ = vm_tx.send(vm.clone());
                             continue;
                         }
@@ -696,6 +701,20 @@ pub fn spawn(deep_link: DeepLink) -> Bridge {
                         let _ = app.dispatch(c).await;
                         continue;
                     }
+                    // 纯导航(切周 / 点总览 / 选卡片看详情 / 切页签 / 展开
+                    // 目录 / 后台采回发)不重跑 gather —— 复用上次采的那份,只
+                    // 重切依赖视图字段的片段(健康/Release/环境/issue/ops3 的 git
+                    // 子进程与远端都不跑;会话工作台在会话字段变时仍跑几个 git,
+                    // 但切周/选卡片时不会)。真命令、换项目、刷新、SelectSession
+                    // 可能改了底层数据,才重 gather。在 `match req`(会按值移走
+                    // req)之前判。设计见 ADR 0002。
+                    let needs_gather = matches!(
+                        &req,
+                        Req::Cmd(_)
+                            | Req::Open(_)
+                            | Req::Refresh
+                            | Req::SelectSession(_)
+                    );
                     match req {
                         Req::Cmd(c) => {
                             let confirming = matches!(c, Command::ConfirmWeekDraft { .. });
@@ -1176,7 +1195,12 @@ pub fn spawn(deep_link: DeepLink) -> Bridge {
                             refresh_receipt = true;
                         }
                     }
-                    vm = vm_build::build(&app, &mut ui).await;
+                    // 纯导航复用上次 gather,不重跑;真命令 / 换项目 / 刷新 /
+                    // SelectSession 在 match 前判过 needs_gather,这里重 gather。
+                    if needs_gather {
+                        last_gather = vm_build::gather(&app, &mut ui).await;
+                    }
+                    vm = vm_build::assemble(&app, &mut ui, &last_gather).await;
                     // 刷新的回执在这里补:此刻的 vm 才是「刚读出来的那一份」。
                     if refresh_receipt {
                         refresh_receipt = false;
