@@ -4,7 +4,11 @@
 
 本文件按**六站 + 底座**收口,不再按每次窗口一条流水往下堆。最近一次改动永远写在最上面。
 
-## 最近 · 2026-08-26
+## 最近 · 2026-08-27
+
+**独立评审(reviewer agent)**:评审中且 MR 开着的活可一键「请评审」——起一场独立评审会话(不是写码那场;评审剧本 `mr-review` + 阶段规范 `review` + 外置评审提示词 `REVIEW.md.tmpl`,standard 5.9→5.10),两轴评审(项目手册 + 活的意图),意见落 MR 评论;不合并、不改状态,合入仍由人点。会话记录另存 `<iid>-review.jsonl`,会话屏加「评审」页签,MVP 无接回、不派生「已评审」灯。产物链见 `changes/reviewer-agent/`。
+
+## 2026-08-26
 
 产品命名统一为 Builders' Workbench / Workbench / BW，工程标识保留 bw；废弃 buddy、loop-buddy。README 改产品门面；仓外起手 skill 改名为 `workbench-start`。
 
