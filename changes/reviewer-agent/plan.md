@@ -28,6 +28,7 @@ crates/app-shell/src/screens/plan/detail.rs        评审中活的详情加「�
 changes/reviewer-agent/                            本产物链五件(intent/spec/prototype/plan/STATUS)
 docs/architecture.md                               模块 4/7/15 各补一句评审落点
 CHANGELOG.md                                       一行
+.github/workflows/claude-code-review.yml           新增(谈定补入:GitHub 仓 PR 事件自动 review,OAuth token 认证)
 ```
 
 ## 顺序与进度
@@ -48,6 +49,7 @@ CHANGELOG.md                                       一行
 2. **接回 id 污染**:SessionStart hook 的 runs 目录按 `<project>_<iid>` 键控,评审会话挂同一个 hook 会覆盖写码会话的 `--resume` id。解法:评审会话**不挂 hook**,MVP 无接回(spec 已如实标注)。
 3. **评审会话越权**:提示词/剧本/阶段规范三处写死禁 merge、禁状态、禁改码;Rust 侧评审路径零状态写入。剩余风险是模型不听话——人仍是 gate,评审意见只是证据。
 4. **Mock 远端**:`open_mr_for_branch` 在 Mock 上恒 `None`,评审在无真远端的测试环境会如实拒绝「没有可评之物」——这是正确行为,不造假路径。
+5. **CI workflow 在 secret 配好前不生效**:`CLAUDE_CODE_OAUTH_TOKEN` 由人本机 `claude setup-token` 生成并配进仓 secret,Claude GitHub App 也由人装;落文件本身零副作用,配好前 action 只会失败在认证一步,不产假 review。参数以 claude-code-guide 对官方文档的核实为准,不照抄外来草稿。
 
 ## 完成的定义
 
