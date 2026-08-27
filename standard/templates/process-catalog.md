@@ -25,10 +25,11 @@
 | 手册修正频次 | 引领 | 仓根 AGENTS.md / CLAUDE.md 的每周改动提交数 | `handbook-changes.py` |
 | 距上次发版天数(DORA 部署频率) | 滞后 | 每周末距最近一个 git 标签日期的天数(发版正本 = 打标签,与交付判据同源) | `release-gap.py` |
 
-## 二、能算但不做走势脚本(2 条)
+## 二、能算但不做走势脚本(3 条,含 BW 自增 1 条)
 
 | 指标 | 为什么不做脚本 | 复算命令 |
 |---|---|---|
+| 设计正本更新间隔(BW 自增,非 playbook 26 条) | 知识库体检每周现查、证据留运作活②评论,不落走势;阈值与判据正本在 `.bw/knowledge-catalog.md` | `git log -1 --format=%cs -- docs/architecture.md`(或项目自己的设计正本路径),对照期间合入 MR 数 |
 | 接入→首个合入(≈「新成员首合入时长」) | 一次性标量,每个项目只有一个数,不成走势 | `gh pr list --state merged --json createdAt,mergedAt --limit 1000` 里最早那张的时刻,对照 `.bw/` 骨架首提交 |
 | 规范过期件数(≈「政策变更→技能更新」) | 对账现值(`.bw/managed.toml` 指纹比对每次现算) | 界面的规范对账区,或按指纹清单手工比对 |
 

@@ -6,6 +6,8 @@
 
 ## 最近 · 2026-08-27
 
+项目规范知识库出实物(规范 5.10):`standard/templates/knowledge-catalog.md` 知识文档总账(地板 7 类 + 可选 4 类,判据全可读回)+ `asset-audit` 剧本「知识库体检」段(三态口径、幂等建活、只建活不代写)+ `process-catalog.md` 补设计正本更新间隔。真实建活与自狗食真跑仍等规格 gate,偏差记 `changes/spec-knowledge-base/STATUS.md`。
+
 会话历史管理成文进 `principles/01` 新 §6(发起人 /goal 拍板):会话是棒次不是正本、结论只有三个落点(changes/ 流水、正本更新、CHANGELOG+commit)、每棒收尾清单、历史三态单向流转(现役→横幅→归档分支)、及时性接知识库体检;原 §6–8 顺延 §7–9,README/AGENTS 指针同步。
 
 ## 最近 · 2026-08-26
