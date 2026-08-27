@@ -273,5 +273,22 @@ fn body(
                 bridge: bridge.clone(),
             }
         }
+        // 评审会话的终端:同一套挂载,路由到评审那场的字节流,焦点在「评审」
+        // 页签上时归它。一张活最多两个终端(写码 + 评审),互不遮挡。
+        for (s, rid) in p
+            .sessions
+            .iter()
+            .filter_map(|s| s.review_conversation_id.map(|rid| (s, rid)))
+            .filter(|(s, _)| s.review_live || p.session_open == Some(s.issue_id))
+        {
+            TerminalWidget {
+                key: "{rid:?}",
+                conversation_id: rid,
+                focused: cur == Panel::Session
+                    && p.session_open == Some(s.issue_id)
+                    && p.workbench.tab == SessionTab::Review,
+                bridge: bridge.clone(),
+            }
+        }
     }
 }
