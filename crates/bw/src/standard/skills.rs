@@ -36,6 +36,9 @@ pub const WEEK_PLANNING_COMMENT_CHECK: &str =
 /// body 指向 vendor 库(库由 `ensure_vendor_assets` 摊到 `<asset>/vendor/`)。
 pub const BUILD_DEFAULT_SKILL: &str =
     include_str!("../../../../standard/skills/mattpocock-skills/SKILL.md");
+/// 评审剧本:独立评审会话专用(两轴评审 + 意见六段 + 硬约束),由「请评审」
+/// 派发,不进类别→workflow 映射。
+pub const MR_REVIEW_SKILL: &str = include_str!("../../../../standard/skills/mr-review/SKILL.md");
 
 /// frontmatter 里那句 `description`。取不到就返回空串 —— 不编一句假的。
 ///
@@ -76,12 +79,13 @@ fn desc_of(raw: &'static str) -> &'static str {
 /// 两份的内容已并入 `metrics-refresh`;`metrics-render` 早前整份删过(踩在 V4
 /// 不存在的东西上)。这几份原文件随 V3 已删。
 pub fn all() -> Vec<SkillPack> {
-    const PACKS: [(&str, &str); 5] = [
+    const PACKS: [(&str, &str); 6] = [
         ("week-planning", WEEK_PLANNING_SKILL),
         ("metrics-refresh", METRICS_REFRESH_SKILL),
         ("asset-audit", ASSET_AUDIT_SKILL),
         ("project-handbook", PROJECT_HANDBOOK_SKILL),
         ("mattpocock-skills", BUILD_DEFAULT_SKILL),
+        ("mr-review", MR_REVIEW_SKILL),
     ];
     PACKS
         .iter()
