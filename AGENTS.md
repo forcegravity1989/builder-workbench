@@ -8,7 +8,7 @@
 
 | 篇 | 管什么 |
 |---|---|
-| [`principles/01-document-organization.md`](principles/01-document-organization.md) | 整仓知识/文档怎么分层；`changes/` 少 gate |
+| [`principles/01-document-organization.md`](principles/01-document-organization.md) | 整仓知识/文档怎么分层；`changes/` 少 gate；会话历史落仓/归档/淘汰 |
 | [`principles/02-working-backwards.md`](principles/02-working-backwards.md) | 逆向工作法：特性怎么写 intent / 带原型的 spec |
 | [`principles/03-press-release-faq-flywheel.md`](principles/03-press-release-faq-flywheel.md) | **整个产品**的新闻稿、外/内 FAQ、飞轮（主张正本） |
 | [`principles/04-ai-native-sdlc.md`](principles/04-ai-native-sdlc.md) | 研发过程原则（playbook 提炼）：产物链、治理哲学、不采纳清单 |
@@ -32,7 +32,7 @@
 
 ## 语言和构建
 
-Rust 1.82+,cargo workspace。桌面壳另需 Dioxus 0.7 的系统依赖(macOS 自带 WebKit,Windows 用 WebView2)。`#![forbid(unsafe_code)]` 是 `bw-engine` 的规矩。跨会话只认本仓的 `principles/` + `AGENTS.md` + `CONTEXT.md` + `docs/` + `CHANGELOG.md` + `DESIGN.md`,不凭上一会话口头结论改代码。
+Rust 1.82+,cargo workspace。桌面壳另需 Dioxus 0.7 的系统依赖(macOS 自带 WebKit,Windows 用 WebView2)。`#![forbid(unsafe_code)]` 是 `bw-engine` 的规矩。跨会话只认本仓的 `principles/` + `AGENTS.md` + `CONTEXT.md` + `docs/` + `CHANGELOG.md` + `DESIGN.md`,不凭上一会话口头结论改代码;会话结论怎么落仓、历史怎么归档淘汰,听 `principles/01` §6。
 
 仓外 IDE(Claude Code / Cursor / Codex)开新会话,先读 [`.claude/skills/workbench-start/SKILL.md`](.claude/skills/workbench-start/SKILL.md)——只是闸门,正本仍是本文件。工作台内嵌终端里不要用它(那边已经灌了系统提示词)。Workbench MVP 还不能在工作台里维护自己,所以仓外起手暂时靠这份 skill,不是再做一套伴飞/需求/修 bug 流程。
 

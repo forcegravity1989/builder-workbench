@@ -4,7 +4,7 @@
 - 位置：`principles/` 第一篇——本仓「知识与文档怎么分层」的正本
 - 相关：[`../docs/README.md`](../docs/README.md)（docs 地图）、[`../docs/architecture.md`](../docs/architecture.md)（设计正本）、[`../CONTEXT.md`](../CONTEXT.md)（词表）、[`../AGENTS.md`](../AGENTS.md)（开发规矩）、[`03-press-release-faq-flywheel.md`](03-press-release-faq-flywheel.md)（少 gate / 飞轮检验）、[`04-ai-native-sdlc.md`](04-ai-native-sdlc.md)（产物链的方法来源）
 
-> **30 秒导读**：原则慢变；**特性级**变更走 `changes/` 制品链——**人 gate 是 intent + 带原型的 spec**；`plan.md` 默认不审，仅大风险升 gate；**小 bug 直接修**，不开链。读回进 `changes/` 或 commit，欠账进 `changes` 开放问题或架构文档；**不再设仓根 `iterations/` 层**。Superpowers / grill-me 可当过程工具，产出必须落进 `changes/`。产品主张听 03。Markdown 是唯一真相；gate 决策页只是投影。
+> **30 秒导读**：原则慢变；**特性级**变更走 `changes/` 制品链——**人 gate 是 intent + 带原型的 spec**；`plan.md` 默认不审，仅大风险升 gate；**小 bug 直接修**，不开链。读回进 `changes/` 或 commit，欠账进 `changes` 开放问题或架构文档；**不再设仓根 `iterations/` 层**。会话历史听 §6：会话是棒次不是正本，结论只有三个落点，历史走「现役 → 横幅 → 归档分支」三态。Superpowers / grill-me 可当过程工具，产出必须落进 `changes/`。产品主张听 03。Markdown 是唯一真相；gate 决策页只是投影。
 
 > **用词**：**gate** = 必须由人拍板才能往下走的关卡（见 03 / `CONTEXT.md`）。本文一律用 gate，不再写「人闸」。与工程侧**门禁**（提交前检查组）不是一回事。
 
@@ -119,12 +119,50 @@ changes/<change-id>/
 - **投影**：HTML / 应用内决策台——为 gate 提供摘要、风险、证据、通过|驳回|接着聊|开独立 worktree。  
 - **禁止**：把 HTML 当成 intent/spec/plan 的唯一正文，再维护一份 md「备份」。
 
-## 6. 与现有文档边界的关系
+## 6. 会话历史管理（上百个会话怎么落仓、归档、淘汰）
+
+本仓由上百个 AI 会话（棒次，见 `CONTEXT.md`）接力建成，还会继续。本节定知识分层的**时间维度**：会话产出怎么记录、正本怎么保鲜、历史怎么退场——既保证任何新会话读到的上下文**统一**（每个问题只有一个正本），又保证**及时**（正本描述现状）。
+
+### 6.1 三条铁规
+
+1. **会话是棒次，不是正本**。聊天记录不进仓；跨会话只认落仓制品（`AGENTS.md` 已定）。一个会话的结论只有三个合法落点：**变更制品链**（`changes/<id>/`，STATUS 追一行流水）、**正本更新**（architecture / guide / CONTEXT / AGENTS / principles）、**流水一行**（`CHANGELOG.md` + commit message）。落不进这三处 = 没发生。个人机器上的会话记忆（如 Claude Code 的 memory）只是个人辅助，不是仓的记录层。
+2. **完整记录 = git 历史，不是文件堆积**。跨会话上下文的单位是**变更**，不是会话：一百个会话映射成 N 条 `changes/` 加若干次正本更新，会话本身不留档。审计轨迹在 commit / PR / STATUS 里（[04](04-ai-native-sdlc.md)「PR 即审计记录」）；不建 `iterations/`、日志目录、会议纪要层。查「当时为什么这么改」：`git log`/`blame` → 对应 `changes/<id>/` → 必要时归档分支。
+3. **正本必须描述现状**。内容一旦不再描述现状即进入淘汰流程（§6.3），不许以「留着参考」为名混在现役正本里。
+
+### 6.2 会话收尾清单（每棒必做）
+
+- 特性级结论 → 写回 `changes/<id>/`（STATUS 追一行，带日期）
+- 实况变化 → 站验证后改 architecture / guide；新词进 CONTEXT；错两次进 AGENTS
+- `CHANGELOG.md` 记一行；commit message 如实
+- 没干完的 → 该 change 的开放问题或 architecture 留白，不开新总表
+
+交接件（HANDOFF）是历史体裁（见 `CONTEXT.md`「棒次/交接件」）：现役接力靠**正本齐 + 本清单**，不再写交接件。
+
+### 6.3 归档与淘汰（三态单向流转）
+
+现役 → 历史横幅 → 归档分支，只进不退：
+
+| 态 | 判据 | 动作 |
+|---|---|---|
+| **现役** | 描述现状，新会话要读 | 留工作树，正常演进 |
+| **横幅**（缓冲态） | 不再描述现状，但正本还没完全吸收其内容 | 顶部加历史横幅，写明被谁取代；下一次治理批处理 |
+| **归档** | 内容已被正本吸收 / shipped 满一个治理周期 / rejected | 移归档分支（先例：`v3`、`plan-archive`），工作树删除；`CHANGELOG.md` 留一行去向 |
+
+- **`changes/<id>/`**：shipped 后先留仓（它是该特性的最近史）；**milestone 收官盘点时**整批归档已被 architecture/guide 吸收的目录。rejected 当场加横幅、下批归档。
+- **流水**（CHANGELOG / STATUS）：只增不改；过长时压缩为里程碑摘要（先例：standard 版本流水压缩），细节永在 git。
+- 代码不留双路径（`AGENTS.md` 铁规）；文档不即刻物删——横幅是文档的缓冲态，给引用者一个周期迁移。
+
+### 6.4 及时性怎么守（不靠自觉）
+
+- 地板文件（AGENTS / CONTEXT / principles / architecture）的**齐不齐、新鲜不新鲜**纳入知识库体检（`changes/spec-knowledge-base`）：判据可读回，缺口与腐烂变活挂看板，修不修人定。
+- 新会话起手只读现役层（顺序见 §8）；归档分支默认不读，查史才去。
+
+## 7. 与现有文档边界的关系
 
 [`docs/README.md`](../docs/README.md) 管 docs 树地图；设计正本是 [`docs/architecture.md`](../docs/architecture.md)；产品指南在 [`docs/guide/`](../docs/guide/)。  
 本文管**整仓知识分层**（原则 / 变更 / docs / agent 入口）。与 docs 落盘细则冲突时：**docs 目录内听 docs/README + architecture**；跨目录归属听本文。
 
-## 7. 建议的读写顺序
+## 8. 建议的读写顺序
 
 | 角色/场景 | 先读 |
 |---|---|
@@ -132,10 +170,11 @@ changes/<change-id>/
 | 要开一个**特性** | 对齐 [03](03-press-release-faq-flywheel.md) → 按 [02](02-working-backwards.md) 开 `changes/<id>/intent.md`；可用 Superpowers/grill-me 辅助，产出落回 `changes/` |
 | 要改客群/飞轮/对外主张 | 先议 → 改 [03](03-press-release-faq-flywheel.md)；特性 intent 不得偷偷改写 |
 | 小 bug / 琐修 | 直接改 + 验证 + PR；不开 `changes/` |
+| 会话收尾 | 过 §6.2 清单：结论落三处之一，落不进 = 没发生 |
 | 要改产品实况 | 站验证后改 `docs/architecture.md` / guide；读回写进对应 change / commit |
 | 要改原则本身 | 显式讨论 → 改本目录对应篇 → 必要时 ADR |
 
-## 8. 暂不在本文强制的
+## 9. 暂不在本文强制的
 
 - 立刻建齐 `REVIEW.md`、`.teamai/`、decision-ui（三者今天都未建，按 MVP 逐步加）  
 - Maintain 全自治闭环、对 agent 工具链的持续评测（harness continuous evals）——门禁信息架构稳定后再上  
@@ -151,3 +190,4 @@ changes/<change-id>/
 | 2026-08-26 | 术语改 gate；制品链改为 intent+带原型 spec 为人 gate，plan 仅大风险；兼容 Superpowers/grill-me（过程工具，正本在 changes/） |
 | 2026-08-26 | 撤销仓根 `iterations/` 层；读回归 changes / guide / architecture；与 lean 仓（AGENTS 正本、无 plan/archive）对齐 |
 | 2026-08-26 | 引用对齐本仓真实地形：设计实况指 `docs/architecture.md`（不再写 `doc-boundaries` / `*-prototype/design`）；未建层（REVIEW / .teamai / decision-ui）如实标注；删 `docs/superpowers/specs/`、`plan/` 迁并等失实条目；分层图补 04 |
+| 2026-08-27 | 新增 §6 会话历史管理（发起人 /goal 拍板）：会话是棒次不是正本、结论三落点、收尾清单、三态归档淘汰（现役→横幅→归档分支）、及时性接知识库体检；原 §6–8 顺延为 §7–9 |

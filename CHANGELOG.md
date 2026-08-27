@@ -4,6 +4,10 @@
 
 本文件按**六站 + 底座**收口,不再按每次窗口一条流水往下堆。最近一次改动永远写在最上面。
 
+## 最近 · 2026-08-27
+
+会话历史管理成文进 `principles/01` 新 §6(发起人 /goal 拍板):会话是棒次不是正本、结论只有三个落点(changes/ 流水、正本更新、CHANGELOG+commit)、每棒收尾清单、历史三态单向流转(现役→横幅→归档分支)、及时性接知识库体检;原 §6–8 顺延 §7–9,README/AGENTS 指针同步。
+
 ## 最近 · 2026-08-26
 
 文档治理一批:playbook 提炼版从 `docs/reference/` 并入 `principles/04-ai-native-sdlc.md`(与 01–03 同目录,索引/入链同步);principles 01/03 里指向本仓不存在路径的引用改为真实地形;残留 buddy 称呼清理、V3 期「维护指南」半篇从填写规范退役;`changes/process-metrics` 状态改已合入;新开 `changes/spec-knowledge-base`(项目规范知识库 milestone,intent/spec/plan)。

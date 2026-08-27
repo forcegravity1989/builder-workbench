@@ -6,7 +6,7 @@
 
 | # | 篇 | 管什么 |
 |---|---|---|
-| 01 | [`01-document-organization.md`](01-document-organization.md) | 整仓知识/文档怎么分层；`changes/` 少 gate（intent + 带原型的 spec；plan 仅大风险；小修直修）；兼容 Superpowers / grill-me |
+| 01 | [`01-document-organization.md`](01-document-organization.md) | 整仓知识/文档怎么分层；`changes/` 少 gate（intent + 带原型的 spec；plan 仅大风险；小修直修）；兼容 Superpowers / grill-me；会话历史怎么落仓/归档/淘汰（§6） |
 | 02 | [`02-working-backwards.md`](02-working-backwards.md) | 产品开发方法：逆向工作法；特性级 intent/spec；对齐 03 飞轮检验 |
 | 03 | [`03-press-release-faq-flywheel.md`](03-press-release-faq-flywheel.md) | **整个产品**的新闻稿、外/内 FAQ、飞轮（主张正本） |
 | 04 | [`04-ai-native-sdlc.md`](04-ai-native-sdlc.md) | 研发过程原则（AI-Native SDLC playbook 提炼）：产物链、六阶段做法、治理哲学、明确不采纳的 |
