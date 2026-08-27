@@ -693,7 +693,7 @@ pub async fn update_issue(
             }
             // 加:入参里现有已经有的不加(gh 对已存在 label 报错)
             let mut add: Vec<&str> = Vec::new();
-            for &l in lbls {
+            for l in crate::remote::filter_persistent_labels(lbls) {
                 if !current_set.contains(l) {
                     add.push(l);
                 }

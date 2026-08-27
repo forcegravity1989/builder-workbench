@@ -167,6 +167,21 @@ pub(crate) fn label_prefix(label: &str) -> Option<&str> {
     label.rsplit_once(':').map(|(p, _)| p)
 }
 
+/// `bw:week:` 这种「前缀在、值空」= 只摘这个命名空间,不加回去。
+/// 排期移回待办池走这条,避免留下一张空的 `bw:week:` 标签。
+pub(crate) fn is_empty_namespace_label(label: &str) -> bool {
+    label.rsplit_once(':').is_some_and(|(_, v)| v.is_empty())
+}
+
+/// 写入时跳过空后缀标签(它们只贡献 [`label_prefix`] 用来摘旧值)。
+/// codehub / github / mock 三臂加标签都走这里,改一处即可。
+pub(crate) fn filter_persistent_labels<'a>(labels: &'a [&'a str]) -> impl Iterator<Item = &'a str> {
+    labels
+        .iter()
+        .copied()
+        .filter(|l| !is_empty_namespace_label(l))
+}
+
 /// 当前 UTC 时刻的 RFC3339 串(mock 用)。与真 provider 同形:远端 issue 的
 /// `created_at`/`closed_at` 都是 RFC3339 原文,上层 `issue_from_remote` 解析。
 fn now_iso() -> String {
@@ -346,8 +361,8 @@ impl Remote {
                         None => true,
                         Some(p) => !prefixes.contains(&p),
                     });
-                    for l in labels {
-                        if !i.labels.iter().any(|x| x == *l) {
+                    for l in filter_persistent_labels(labels) {
+                        if !i.labels.iter().any(|x| x == l) {
                             i.labels.push(l.to_string());
                         }
                     }
@@ -562,5 +577,21 @@ impl Remote {
             }
             Remote::Github(_) | Remote::Mock(_) => Ok(()),
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{filter_persistent_labels, is_empty_namespace_label, label_prefix};
+
+    #[test]
+    fn empty_week_label_is_empty_namespace() {
+        assert_eq!(label_prefix("bw:week:"), Some("bw:week"));
+        assert!(is_empty_namespace_label("bw:week:"));
+        assert!(!is_empty_namespace_label("bw:week:2026-W35"));
+        assert_eq!(
+            filter_persistent_labels(&["bw:week:", "bw:status:todo"]).collect::<Vec<_>>(),
+            vec!["bw:status:todo"]
+        );
     }
 }
