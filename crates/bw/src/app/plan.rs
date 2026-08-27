@@ -214,11 +214,10 @@ pub(super) async fn salvage_main_checkout_dirt(ws: &std::path::Path) -> String {
     let mut bits = Vec::new();
     if paths
         .iter()
-        .any(|p| crate::git::is_readings_dirt(&[p.clone()]))
+        .any(|p| crate::git::is_readings_dirt(std::slice::from_ref(p)))
+        && salvage_readings_into_ledger(ws).await
     {
-        if salvage_readings_into_ledger(ws).await {
-            bits.push("主检出上的读数已挪进账本。");
-        }
+        bits.push("主检出上的读数已挪进账本。");
     }
     let mut restored = false;
     for rel in [".bw/project.toml", ".bw/PROJECT.md"] {
