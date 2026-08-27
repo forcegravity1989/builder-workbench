@@ -355,7 +355,7 @@ pub async fn build(app: &App, ui: &mut UiState) -> Vm {
         // 未读 = 评审中的活有几张。这个数是现算的,库里没有未读表
         // (MVP 不再按 seen_at 过滤:pr_number/updated_at 是 lossy)。
         let unread = bw::app::count_unseen(&issues);
-        // 周目标:从本周运作活①评论解析出的那一句话。没有或解析不到就是空。
+        // 周目标:从本周运作活①评论解析出的整段。没有或解析不到就是空。
         let goals = app.week_goals_from_ops1(p, &issues).await;
         let week_goal = goals.get(&week).cloned().unwrap_or_default();
         // 上次交付 = 最近一个 git 标签的提交日期 + tag(刀6:不再读

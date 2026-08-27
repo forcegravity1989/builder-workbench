@@ -59,7 +59,7 @@ def main() -> int:
     if not has_heading(body, HEAD_GOAL):
         errs.append(f"缺二级标题 `## {HEAD_GOAL}`")
     elif not first_line_under(body, HEAD_GOAL):
-        errs.append(f"`## {HEAD_GOAL}` 下面要有一句话,不能空着")
+        errs.append(f"`## {HEAD_GOAL}` 下面要有内容,不能空着")
     if not has_heading(body, HEAD_SCOPE):
         errs.append(f"缺二级标题 `## {HEAD_SCOPE}`")
     if not has_heading(body, HEAD_READINGS):
