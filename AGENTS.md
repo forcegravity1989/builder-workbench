@@ -24,6 +24,10 @@ BW_OPEN=<项目名> BW_PANEL=overview|plan|session|notify|config|kb ./target/deb
 BW_VIEW=onboard|settings ./target/debug/bw-dev   # 顶层屏深链
 cargo run -p bw-engine --example pty_smoke [-- --teardown|-- --abort]  # PTY 地基烟测(不碰 claude/网关)
 cargo test --workspace                                # 本地含壳;CI 同命令加 --exclude app-shell(ubuntu 无 WebKit/GTK)
+# 出包(Windows 安装器,非门禁/非 CI):流程见 packaging/BuildersWorkbench-MVP.iss 头注释,只吃仓内相对路径 + 装过 buddy 的机器
+#   cargo build --release -p app-shell                                                    # 出带图标 bw-dev.exe(build.rs 嵌 app.ico)
+#   cp target/release/build/webview2-com-sys-*/out/x64/WebView2Loader.dll target/release/  # dll 落稳定路径(hash 子目录不稳)
+#   cd packaging && "<InnoSetup>\ISCC.exe" BuildersWorkbench-MVP.iss                       # setup.exe 落 packaging\output\(gitignore)
 ```
 
 ▶跑(干一张活)走交互式 `claude` 在内嵌终端里;需本机 `claude` CLI(`BW_CLAUDE_BIN` 可指定路径)。真跑受 claude 信任对话框与网关状态影响,不作为门禁。`BW_CLAUDE_MAX_BUDGET_USD` 控预算。
@@ -53,6 +57,7 @@ crates/   bw(MVP 内核:本地零库+仓文件解析+现算推导+Command/Event)
 standard/  buddy 推给被管项目的规范正本(include_str! 进 bw):铺底 `templates/` + 系统提示词 `system-prompt/`(SYSTEM.md.tmpl+references)+ 自维护运作剧本 `skills/` 4 份 + 业界 workflow `vendor/`(mattpocock/mohit,给默认 workflow 打包)
 docs/      architecture(设计正本)+ guide(产品指南)+ adr + hifi + README(地图)
 scripts/   门禁脚本(guard-*)+ codegraph 联调
+packaging/  BW 自身出包(Inno Setup 脚本 + 装完说明;ISCC 编译,产物落仓外暂存,不入 CI/门禁)
 .bw/       buddy 自己作为被管项目的资产(PROJECT.md/metrics.toml/issue-policy.toml/…)
 ```
 
