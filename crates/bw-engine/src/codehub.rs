@@ -615,7 +615,7 @@ pub async fn update_issue(
                 })
                 .cloned()
                 .collect();
-            for &l in lbls {
+            for l in crate::remote::filter_persistent_labels(lbls) {
                 if !final_set.iter().any(|s| s == l) {
                     final_set.push(l.to_string());
                 }

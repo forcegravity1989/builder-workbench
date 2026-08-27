@@ -228,7 +228,7 @@ h1,h2,h3,h4{font-family:var(--serif);font-weight:700;margin:0 0 8px;}
 .mcard-driven{margin-top:7px;display:flex;gap:4px;flex-wrap:wrap;}
 .badge-manual{display:inline-block;font-size:9.5px;background:#E7E0CF;border-radius:4px;padding:0 5px;margin-left:4px;color:var(--ink-3);}
 
-.week-goal{font-size:13.2px;margin-bottom:8px;}
+.week-goal{font-size:13.2px;margin-bottom:8px;white-space:pre-wrap;}
 .week-progress{height:10px;border-radius:5px;overflow:hidden;display:flex;border:1px solid var(--border);margin-bottom:10px;}
 
 .version-cols{display:flex;gap:24px;flex-wrap:wrap;margin-bottom:9px;}
@@ -257,7 +257,7 @@ h1,h2,h3,h4{font-family:var(--serif);font-weight:700;margin:0 0 8px;}
 .plan-toolbar .left{font-size:14px;font-family:var(--serif);font-weight:700;}
 .plan-toolbar .right{display:flex;gap:8px;align-items:center;flex-wrap:wrap;}
 .switch{display:flex;align-items:center;gap:6px;font-size:11.5px;color:var(--ink-3);cursor:pointer;user-select:none;}
-.goal-box{background:#fff;border:1px solid var(--border);border-radius:8px;padding:9px 11px;font-size:13.2px;margin-bottom:9px;flex:none;}
+.goal-box{background:#fff;border:1px solid var(--border);border-radius:8px;padding:9px 11px;font-size:13.2px;margin-bottom:9px;flex:none;white-space:pre-wrap;}
 .filter-bar{display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap;flex:none;}
 .filter-bar select,.filter-bar input{padding:5px 8px;font-size:11.5px;border:1px solid var(--border);border-radius:6px;background:#fff;}
 .filter-bar input{width:150px;}

@@ -93,23 +93,24 @@ fn column(
             return;
         };
         dragging.set(None);
-        if card.status == target {
-            return;
-        }
-        // 待办池 ⇄ 待办 是排期,直接生效,不弹框。
-        if matches!(target, IssueStatus::Backlog | IssueStatus::Todo)
-            && matches!(card.status, IssueStatus::Backlog | IssueStatus::Todo)
-        {
+        // 待办池 ⇄ 待办 是排期。没排周的卡默认就是 Todo,不能凭状态相同当没动作。
+        let schedule = matches!(target, IssueStatus::Backlog | IssueStatus::Todo)
+            && matches!(card.status, IssueStatus::Backlog | IssueStatus::Todo);
+        if schedule {
+            let to_pool = target == IssueStatus::Backlog;
+            let already_pool = card.week_of.is_empty();
+            let already_here = !to_pool && card.week_of == week;
+            if (to_pool && already_pool) || already_here {
+                return;
+            }
             bounced.set(String::new());
             b_drop.cmd(Command::ScheduleIssue {
                 id: card.id,
-                // 拖回待办池 = 清空排期;拖进待办 = 排进左栏正在看的那一周。
-                week_of: if target == IssueStatus::Backlog {
-                    None
-                } else {
-                    Some(week.clone())
-                },
+                week_of: if to_pool { None } else { Some(week.clone()) },
             });
+            return;
+        }
+        if card.status == target {
             return;
         }
         if !card.status.can_transition_to(target) {
