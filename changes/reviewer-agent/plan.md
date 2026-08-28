@@ -29,7 +29,6 @@ changes/reviewer-agent/                            本产物链五件(intent/spe
 docs/architecture.md                               模块 4/7/15 各补一句评审落点
 CHANGELOG.md                                       一行
 .github/workflows/claude-code-review.yml           新增(谈定补入:GitHub 仓 PR 事件自动 review,OAuth token 认证)
-.github/workflows/claude-pr-sweep.yml              新增(谈定补入:每晚兜底——确定性脚本筛 >24h 无 review 的 open PR,有才起 Claude 补审)
 ```
 
 ## 顺序与进度
@@ -51,7 +50,8 @@ CHANGELOG.md                                       一行
 3. **评审会话越权**:提示词/剧本/阶段规范三处写死禁 merge、禁状态、禁改码;Rust 侧评审路径零状态写入。剩余风险是模型不听话——人仍是 gate,评审意见只是证据。
 4. **Mock 远端**:`open_mr_for_branch` 在 Mock 上恒 `None`,评审在无真远端的测试环境会如实拒绝「没有可评之物」——这是正确行为,不造假路径。
 5. **CI workflow 在 secret 配好前不生效**:`CLAUDE_CODE_OAUTH_TOKEN` 由人本机 `claude setup-token` 生成并配进仓 secret,Claude GitHub App 也由人装;落文件本身零副作用,配好前 action 只会失败在认证一步,不产假 review。参数以 claude-code-guide 对官方文档的核实为准,不照抄外来草稿。(2026-08-28 已配齐:App 装好、token 生效,安装分支的首场 run 成功。)
-6. **【已撞、已解释】改 workflow 文件的 PR 上评审被有意跳过**:action 有防篡改校验——`pull_request` 触发时,PR 分支上的评审 workflow 必须与默认分支**逐字节一致**才真跑,否则 skip(防 PR 改 workflow 给自己放水;官方明说首次加/改这份文件的 PR 上属正常)。所以 PR #132 自己吃不到这场评审,首场真实评审发生在**合入后的下一条 PR**。另:`/install-github-app` 已把它生成的同路径文件合进 main,本分支解冲突时按「不留双路径」保留核实版(fork 守卫 + 钉 sonnet),合入即成唯一正本。
+6. **【拍板后撤销】每晚兜底 sweep**:曾按拍板落地(`claude-pr-sweep.yml`,确定性筛选判据对真仓 dry-run 命中 #116),同日发起人定调撤销——评审已随 CI 事件驱动每 PR 出评论,机器人巡扫是第二条路径;评审 run 失败在 PR 检查上显红、人 re-run 即补,不是静默漏。存量与被防篡改跳过的 PR 手动 `@claude` 兜。留痕不留文件。
+7. **【已撞、已解释】改 workflow 文件的 PR 上评审被有意跳过**:action 有防篡改校验——`pull_request` 触发时,PR 分支上的评审 workflow 必须与默认分支**逐字节一致**才真跑,否则 skip(防 PR 改 workflow 给自己放水;官方明说首次加/改这份文件的 PR 上属正常)。所以 PR #132 自己吃不到这场评审,首场真实评审发生在**合入后的下一条 PR**。另:`/install-github-app` 已把它生成的同路径文件合进 main,本分支解冲突时按「不留双路径」保留核实版(fork 守卫 + 钉 sonnet),合入即成唯一正本。
 
 ## 完成的定义
 
