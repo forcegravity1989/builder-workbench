@@ -288,6 +288,16 @@ fn primary_note(events: &[Event]) -> Option<String> {
         Event::IssueBlocked { .. } => "已标成阻塞,原因写进了活的说明".into(),
         Event::IssueCancelled { .. } => "已作废:取消标签打上了,远端 issue 关了,原因在评论里".into(),
         Event::SessionDeleted { note, .. } => note.clone(),
+        Event::ReviewStarted { mr_number, .. } => {
+            format!("评审会话已起:独立评审 MR !{mr_number},意见会落在它的评论上。合不合仍由你点")
+        }
+        Event::ReviewCancelled { was_live, .. } => {
+            if *was_live {
+                "评审会话停了。已发出的评审意见还在 MR 评论上".into()
+            } else {
+                "本来就没有开着的评审会话".into()
+            }
+        }
         Event::ReleaseCut {
             version,
             rows_written,

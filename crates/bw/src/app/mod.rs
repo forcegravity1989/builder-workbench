@@ -272,6 +272,39 @@ impl App {
         ))
     }
 
+    /// 「看看喂了什么」的评审版:**评审会话**开场时真会注入的那份系统提示词。
+    /// 和真「请评审」走同一条渲染链,显示什么、评审 agent 收到的就是什么。
+    /// MR 号查不到就如实显示「—」—— 那时「请评审」本来也起不了会话。
+    pub async fn review_briefing(&self, id: crate::model::IssueId) -> Result<String> {
+        let issue = self.issue_or_err(id).await?;
+        let mr = match self.project_of(issue.project_id).await {
+            Ok(project) => match self.remote_for(&project) {
+                Ok(remote) => {
+                    let branch = bw_engine::github::issue_branch(issue.number);
+                    remote.open_mr_for_branch(&branch).await.unwrap_or(None)
+                }
+                Err(_) => None,
+            },
+            Err(_) => None,
+        };
+        let mr_label = mr
+            .map(|n| n.to_string())
+            .unwrap_or_else(|| "—(没查到开着的 MR)".into());
+        let skill = self
+            .ensure_skill_assets()
+            .and_then(|d| bootstrap::skill_pointer(&d, "mr-review"));
+        let references = self
+            .ensure_prompt_assets()
+            .map(|d| bootstrap::review_references(&d))
+            .unwrap_or_default();
+        Ok(bootstrap::review_system_prompt(
+            &issue,
+            &mr_label,
+            skill.as_ref(),
+            &references,
+        ))
+    }
+
     pub fn workspaces_root(&self) -> &std::path::Path {
         &self.workspaces_root
     }
@@ -413,6 +446,35 @@ impl App {
         Ok(())
     }
 
+    /// 这张活的**评审会话**(第二条会话轴,独立于写码会话)。没有就 `None`。
+    pub async fn review_conversation_for_issue(
+        &self,
+        id: crate::model::IssueId,
+    ) -> Result<Option<Conversation>> {
+        let project = self.project(id.project_id()).await?;
+        let Some(p) = project else {
+            return Ok(None);
+        };
+        Ok(SessionStore::read_review(
+            &self.asset_root,
+            &p.slug,
+            id.iid(),
+        )?)
+    }
+
+    pub(crate) async fn upsert_review_conversation(
+        &self,
+        c: &Conversation,
+    ) -> Result<Conversation> {
+        // 已经有评审会话就返回既有行(幂等)—— 和写码会话同一套规矩。
+        if let Some(existing) = self.review_conversation_for_issue(c.issue_id).await? {
+            return Ok(existing);
+        }
+        let slug = self.slug_of(c.project_id).await?;
+        SessionStore::append_review(&self.asset_root, &slug, c)?;
+        Ok(c.clone())
+    }
+
     /// 某个项目的仓在哪。项目行里配了路径就用它,没配就是 `<工作区根目录>/<slug>`。
     pub async fn workspace_of(&self, id: ProjectId) -> Result<PathBuf> {
         let p = self
@@ -511,6 +573,8 @@ impl App {
             }
             Command::CancelIssue { id, reason } => self.cancel_issue(id, reason).await,
             Command::DeleteSession { id } => self.delete_session(id).await,
+            Command::ReviewIssue { id } => self.review_issue(id).await,
+            Command::CancelReview { id } => self.cancel_review(id).await,
             Command::BlockIssue { id, reason } => self.block_issue(id, reason).await,
             Command::SaveToolMapping {
                 project_id,

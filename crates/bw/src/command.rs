@@ -137,6 +137,12 @@ pub enum Command {
     CancelIssue { id: IssueId, reason: String },
     /// 删掉这张活的本机会话行和它的 worktree。不动远端 issue。
     DeleteSession { id: IssueId },
+    /// 「请评审」:给一张**评审中**且 MR 开着的活起一场**独立评审会话**(不是
+    /// 写代码那场),评它的 MR。评审产物只落 MR 评论;**这条命令不写任何状态**,
+    /// 合入/打回仍由人点。
+    ReviewIssue { id: IssueId },
+    /// ■停止评审:关掉这张活的评审 PTY。活和写码会话都原地不动。
+    CancelReview { id: IssueId },
 
     // ── 配置 ──────────────────────────────────────────────
     /// 保存一行「类别→工具→workflow」映射,写 `.bw/issue-policy.toml`。
@@ -369,6 +375,16 @@ pub enum Event {
     SessionDeleted {
         id: IssueId,
         note: String,
+    },
+    /// 评审会话起来了。意见会落在 MR !`mr_number` 的评论上;活的状态没动。
+    ReviewStarted {
+        id: IssueId,
+        mr_number: u32,
+    },
+    /// ■停止评审按下去之后。`was_live=false` = 本来就没有活着的评审会话可停。
+    ReviewCancelled {
+        id: IssueId,
+        was_live: bool,
     },
     /// 定时真的建出了一张活。界面上「本周运作」栏据此显示「已自动开工」。
     OpsAutoFired {

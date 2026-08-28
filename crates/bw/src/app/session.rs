@@ -109,11 +109,14 @@ impl App {
     }
 
     /// 人确认后删本机会话:停 PTY、收 worktree(脏的也收)、删 jsonl。
-    /// 远端 issue 不动。
+    /// 远端 issue 不动。评审会话是同一张活的附属轴,一起停、一起删。
     pub(super) async fn delete_session(&mut self, id: IssueId) -> Result<Vec<Event>> {
         let Some(conv) = self.conversation_for_issue(id).await? else {
             return Err(AppError::Refused("这张活没有本机会话可删".into()));
         };
+        if let Some(rev) = self.review_conversation_for_issue(id).await? {
+            self.terminal.close(rev.id.uuid());
+        }
         self.terminal.close(conv.id.uuid());
         let mut note = String::from("本机会话行删了");
         let ws = self.workspace_of(id.project_id()).await?;
@@ -320,6 +323,119 @@ impl App {
             issue_store::set_status(self, &project, id.iid(), IssueStatus::InProgress).await?;
         }
         Ok(true)
+    }
+
+    /// 「请评审」:给一张评审中的活起**独立评审会话**,评它的 MR。
+    ///
+    /// 这场会话不是写代码那场 —— 单独的会话轴(`<iid>-review.jsonl`)、评审
+    /// 专用系统提示词(`REVIEW.md.tmpl`)+ `mr-review` 剧本,工具固定
+    /// Claude CLI(与活的开工工具无关:Open Design 的活照样评它的 MR)。
+    /// 评审产物只落 MR 评论,由会话自己用 `gh` / `codehub-cli` 发。
+    ///
+    /// **这条路径零状态写入**:活已经在「评审中」,评审不推它、不拉它;
+    /// 合入/打回仍是人的显式动作。
+    ///
+    /// 不挂 SessionStart hook:runs 目录按活号键控,挂了会覆盖写码会话的
+    /// `--resume` id。代价是评审会话没有接回 —— 进程死了再点一次「请评审」,
+    /// 重新评一轮、追加一条评论,幂等且无害。
+    pub(super) async fn review_issue(&mut self, id: IssueId) -> Result<Vec<Event>> {
+        if !self.pty_enabled {
+            return Err(AppError::Refused(
+                "这个进程没开内嵌终端,评审会话开不了".into(),
+            ));
+        }
+        let issue = self.issue_or_err(id).await?;
+        if issue.status != IssueStatus::InReview {
+            return Err(AppError::Refused(
+                "只评「评审中」的活 —— 先把活推到评审中,有了 MR 再请评审".into(),
+            ));
+        }
+        let ws = self.workspace_of(issue.project_id).await?;
+        if !ws.is_dir() {
+            return Err(AppError::NoWorkspace(issue.project_id.uuid().to_string()));
+        }
+        // 没有开着的 MR 就没有可评之物 —— 如实拒绝,不评工作区里的散件。
+        let project = self.project_of(issue.project_id).await?;
+        let remote = self.remote_for(&project)?;
+        let branch = bw_engine::github::issue_branch(issue.number);
+        let mr_number = remote
+            .open_mr_for_branch(&branch)
+            .await
+            .map_err(|e| AppError::Exec(format!("查这张活的 MR 没成:{e}")))?
+            .ok_or_else(|| AppError::Refused("这张活没有开着的 MR,没有可评之物".into()))?;
+        // 评审会话还开着就别重开 —— 和写码会话同一条理由(attach 会 kill 旧进程)。
+        if let Some(existing) = self.review_conversation_for_issue(id).await? {
+            if self.terminal.is_live(existing.id.uuid()) {
+                return Err(AppError::Refused(
+                    "这张活的评审会话还开着。要再评一轮先点「■ 停止评审」。".into(),
+                ));
+            }
+        }
+
+        // 共用这张活的 worktree(评审只读不写;diff 从远端拉,不依赖树的干净度)。
+        let tree = worktree::provision(&ws, issue.number).await?;
+        let conv = self
+            .upsert_review_conversation(&crate::model::Conversation {
+                id: ConversationId::new(),
+                project_id: issue.project_id,
+                issue_id: id,
+                claude_session_id: String::new(),
+                workspace_path: tree.path.display().to_string(),
+                branch_name: tree.branch.clone(),
+                created_at: 0,
+                last_opened_at: 0,
+            })
+            .await?;
+
+        let prompt = format!(
+            "评审这张活的 MR:#{} {}\nMR/PR 号:!{mr_number}\n\n\
+             照系统提示词与剧本评审,意见落到这个 MR 的评论上。",
+            issue.number, issue.title
+        );
+        let skills_dir = self.ensure_skill_assets();
+        let skill = skills_dir
+            .as_deref()
+            .and_then(|d| super::bootstrap::skill_pointer(d, "mr-review"));
+        let references = self
+            .ensure_prompt_assets()
+            .map(|d| super::bootstrap::review_references(&d))
+            .unwrap_or_default();
+        let mr_label = mr_number.to_string();
+        let system_prompt =
+            super::bootstrap::review_system_prompt(&issue, &mr_label, skill.as_ref(), &references);
+        // 评审工具固定 Claude CLI —— 不读活上的开工工具(那是写码那场的事)。
+        let agent = super::tools::agent_for("claude_cli")?;
+        let mut plan = build_startup_plan(agent, &prompt, &system_prompt, &tree.path)
+            .map_err(|e| AppError::Exec(e.to_string()))?;
+        super::bootstrap::allow_skills_dir(&mut plan, &self.asset_root);
+
+        let meta = ConversationMeta {
+            conversation_id: conv.id.uuid(),
+            issue_id: id.uuid(),
+            claude_session_id: String::new(),
+            workspace_path: tree.path.clone(),
+            branch_name: tree.branch,
+        };
+        let (bytes_tx, input_rx) = self.terminal.attach(conv.id.uuid(), meta, None);
+        let ctx = RunCtx {
+            project: issue.project_id.uuid(),
+            workflow: uuid::Uuid::nil(),
+        };
+        self.spawn_pty_run(conv.id, plan, bytes_tx, input_rx, ctx);
+        Ok(vec![Event::ReviewStarted { id, mr_number }])
+    }
+
+    /// ■停止评审:关掉这张活的评审 PTY。活和写码会话都原地不动。
+    pub(super) async fn cancel_review(&mut self, id: IssueId) -> Result<Vec<Event>> {
+        let Some(conv) = self.review_conversation_for_issue(id).await? else {
+            return Ok(vec![Event::ReviewCancelled {
+                id,
+                was_live: false,
+            }]);
+        };
+        let was_live = self.terminal.is_live(conv.id.uuid());
+        self.terminal.close(conv.id.uuid());
+        Ok(vec![Event::ReviewCancelled { id, was_live }])
     }
 
     fn spawn_pty_run(

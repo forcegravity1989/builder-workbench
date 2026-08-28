@@ -387,6 +387,34 @@ pub fn agent_system_prompt(
     )
 }
 
+/// 评审会话的系统提示词 —— 主文件是外置的
+/// `standard/system-prompt/REVIEW.md.tmpl`(独立评审身份 + 只评不改/绝不合并/
+/// 意见落 MR 评论),渲染规矩与 [`agent_system_prompt`] 完全一套:占位运行时
+/// 填、正文不塞提示词、改身份 = 改 md + 抬 `standard/VERSION`。
+///
+/// `mr` 是被评的 MR/PR 号的显示文本(查不到时如实是「—(没查到开着的 MR)」,
+/// 那种情况只出现在 briefing 预览里——真「请评审」查不到号根本不起会话)。
+pub fn review_system_prompt(
+    issue: &Issue,
+    mr: &str,
+    skill: Option<&SkillPointer>,
+    references: &[ReferencePointer],
+) -> String {
+    let number = issue.number.to_string();
+    let refs = references_block(references);
+    let skill_str = skill_block(skill);
+    standard::render(
+        standard::system_prompt::REVIEW_PROMPT_TMPL,
+        &[
+            ("number", number.as_str()),
+            ("title", issue.title.as_str()),
+            ("mr", mr),
+            ("references", refs.as_str()),
+            ("skill", skill_str.as_str()),
+        ],
+    )
+}
+
 /// 指给 agent 的一份阶段规范:名字、一句话、**完整路径**。正文不在这里。
 pub struct ReferencePointer {
     pub name: String,
@@ -414,6 +442,23 @@ pub fn references_for(issue: &Issue, refs_dir: &std::path::Path) -> Vec<Referenc
         }
     }
     out
+}
+
+/// 评审会话要读的阶段规范 —— 固定 `review` 一份,与活的类别/workflow 无关
+/// (评审评的是 MR,不是重干那件活)。文件不在硬盘就如实不指。
+pub fn review_references(refs_dir: &std::path::Path) -> Vec<ReferencePointer> {
+    standard::system_prompt::references()
+        .into_iter()
+        .filter(|pack| pack.slug == "review")
+        .filter_map(|pack| {
+            let path = refs_dir.join(&pack.rel);
+            path.is_file().then(|| ReferencePointer {
+                name: pack.slug.to_string(),
+                desc: pack.desc.to_string(),
+                path: path.display().to_string(),
+            })
+        })
+        .collect()
 }
 
 /// 这份 reference 要不要给这张活。

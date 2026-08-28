@@ -76,7 +76,7 @@ pub fn View(p: ProjectVm, bridge: Bridge) -> Element {
             }
         }
         div { class: "sess-col sess-midhead",
-            {action_bar(open, pending_delete, bridge)}
+            {action_bar(open, pending_delete, bridge, p.workbench.tab == SessionTab::Review)}
             {tabs(p, bridge)}
         }
         if let Some(text) = p.briefing.as_ref() {
@@ -143,6 +143,9 @@ fn action_bar(
     open: Option<&SessionVm>,
     mut pending_delete: Signal<Option<(bw::model::IssueId, String)>>,
     bridge: &Bridge,
+    // 当前停在「评审」页签上没有 ——「看看喂了什么」据此决定显示写码会话
+    // 还是评审会话的那份提示词。
+    review_tab: bool,
 ) -> Element {
     let Some(s) = open else {
         return rsx! {
@@ -158,6 +161,8 @@ fn action_bar(
         bridge.clone(),
         bridge.clone(),
     );
+    let (b_ask_review, b_stop_review) = (bridge.clone(), bridge.clone());
+    let in_review = s.issue_status == bw::model::IssueStatus::InReview.label();
     let id = s.issue_id;
     let del_title = format!("#{} {}", s.issue_number, s.issue_title);
     rsx! {
@@ -203,6 +208,24 @@ fn action_bar(
                 }),
                 "只推到评审"
             }
+            // 评审是**另一场会话**:独立于写码这场,意见落 MR 评论,不推状态。
+            // 只在「评审中」露出来 —— 别的状态下没有可评之物,不摆灰按钮占位。
+            if in_review {
+                button {
+                    class: "btn btn-sm",
+                    disabled: s.review_live,
+                    title: "起一场独立评审会话(不是写码这场),评这张活的 MR。\
+                            意见落在 MR 评论上;合不合仍由你点。没有开着的 MR 会如实拒绝。",
+                    onclick: move |_| b_ask_review.cmd(Command::ReviewIssue { id }),
+                    "请评审"
+                }
+                button {
+                    class: "btn btn-sm",
+                    disabled: !s.review_live,
+                    onclick: move |_| b_stop_review.cmd(Command::CancelReview { id }),
+                    "■ 停止评审"
+                }
+            }
             // 提示词是经 --append-system-prompt 送进去的,**终端里一个字都
             // 看不见**。agent 跑偏时第一步就该看它到底被告知了什么,所以给一个
             // 口子。再点一次收起。
@@ -210,7 +233,7 @@ fn action_bar(
                 class: "btn btn-sm",
                 title: "看这张活开工时真会喂给 agent 的那份系统提示词(身份 · 铁律 · 规范索引 · 挂的剧本)。\
                         终端里看不见它,因为它是当参数送进去的。",
-                onclick: move |_| b_brief.send(Req::ShowBriefing { issue: id }),
+                onclick: move |_| b_brief.send(Req::ShowBriefing { issue: id, review: review_tab }),
                 "看看喂了什么"
             }
             // 高保真上这里还有「蒸馏」与「在 Cursor 中打开」。前者 V4 还没有
@@ -268,12 +291,19 @@ fn tabs(p: &ProjectVm, bridge: &Bridge) -> Element {
     };
     // 开工工具是 Open Design 的活多一个内嵌标签(本机网页内嵌类,不起 CLI)。
     let has_od = p.workbench.tool == "open_design";
+    // 请过评审的活多一个「评审」标签 —— 评审会话的终端在那里,和写码这场
+    // 的终端互不遮挡。没请过就不摆。
+    let has_review = p
+        .session_open
+        .and_then(|id| p.sessions.iter().find(|s| s.issue_id == id))
+        .is_some_and(|s| s.review_conversation_id.is_some());
     rsx! {
         div { class: "sess-tabs",
             {tab_btn("终端", SessionTab::Terminal, cur, false, bridge)}
             {tab_btn(&file_label, SessionTab::File, cur, has_file, bridge)}
             {tab_btn("改动 diff", SessionTab::Diff, cur, has_file, bridge)}
             {has_od.then(|| rsx! { {tab_btn("Open Design", SessionTab::OpenDesign, cur, false, bridge)} })}
+            {has_review.then(|| rsx! { {tab_btn("评审", SessionTab::Review, cur, false, bridge)} })}
         }
     }
 }
@@ -325,7 +355,8 @@ fn briefing_overlay(text: &str, issue: Option<bw::model::IssueId>, bridge: &Brid
                 }
                 button {
                     class: "btn btn-sm",
-                    onclick: move |_| b.send(Req::ShowBriefing { issue: id }),
+                    // 已经开着,这一发只是关掉 —— review 位在关的方向上无所谓。
+                    onclick: move |_| b.send(Req::ShowBriefing { issue: id, review: false }),
                     "收起"
                 }
             }
@@ -344,7 +375,9 @@ fn briefing_overlay(text: &str, issue: Option<bw::model::IssueId>, bridge: &Brid
 /// 没选中会话时才摆一句话,否则会盖住终端。
 fn mid_body(p: &ProjectVm) -> Element {
     let w = &p.workbench;
-    if w.tab == SessionTab::Terminal {
+    // 「评审」页签和「终端」同一套:格子留给挂在 `.content` 上的终端本体,
+    // 只是那边路由的是评审会话的字节流。
+    if w.tab == SessionTab::Terminal || w.tab == SessionTab::Review {
         if p.session_open.is_some() {
             return rsx! {};
         }

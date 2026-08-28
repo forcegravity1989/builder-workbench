@@ -49,6 +49,9 @@ pub fn workflow_label(slug: &str) -> Option<&'static str> {
         "week-planning" => Some(OPS1_WORKFLOW),
         "asset-audit" => Some(OPS2_WORKFLOW),
         "mattpocock-skills" => Some("mattpocock-skills"),
+        // 评审剧本不挂在活的 workflow 字段上(由「请评审」直接派发),
+        // 配置表照实列出它。
+        "mr-review" => Some("独立评审"),
         _ => None,
     }
 }
@@ -60,6 +63,8 @@ pub fn skill_slug(workflow: &str) -> Option<&'static str> {
         // build 阶段默认 workflow 入口(mattpocock grill→implement→review SOP)。
         // proto-design(原型)源还没 vendor,待补。
         "mattpocock-skills" => Some("mattpocock-skills"),
+        // 评审剧本:不进类别→workflow 映射,「请评审」按这个名字直接取指针。
+        "mr-review" => Some("mr-review"),
         // 规范铺底**没有 agent 步骤**(2026-08-20:只铺 `.bw/`,仓根一个字不写),
         // 所以它没有剧本可挂。给这个项目写开发手册的那份剧本已经挪进资产盘点,
         // 见 `standard/skills/project-handbook/`。

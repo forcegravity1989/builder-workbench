@@ -281,26 +281,32 @@ pub(super) async fn build_sessions(
     id: ProjectId,
     issues: &[bw::Issue],
 ) -> Vec<SessionVm> {
-    app.conversations(id)
-        .await
-        .unwrap_or_default()
-        .into_iter()
-        .filter_map(|c| {
-            let issue = issues.iter().find(|i| i.id == c.issue_id)?;
-            Some(SessionVm {
-                issue_id: c.issue_id,
-                conversation_id: c.id,
-                issue_number: issue.number,
-                issue_title: issue.title.clone(),
-                issue_status: issue.status.label().to_string(),
-                branch: c.branch_name,
-                workspace_path: c.workspace_path,
-                session_id: c.claude_session_id,
-                // 唯一真实的信号:这个会话的 PTY 进程还在不在。
-                live: app.pty_live(c.id),
-            })
-        })
-        .collect()
+    let mut out = Vec::new();
+    for c in app.conversations(id).await.unwrap_or_default() {
+        let Some(issue) = issues.iter().find(|i| i.id == c.issue_id) else {
+            continue;
+        };
+        // 这张活的评审会话(第二条轴)。没有就如实 None,页签不出现。
+        let review = app
+            .review_conversation_for_issue(c.issue_id)
+            .await
+            .unwrap_or(None);
+        out.push(SessionVm {
+            issue_id: c.issue_id,
+            conversation_id: c.id,
+            issue_number: issue.number,
+            issue_title: issue.title.clone(),
+            issue_status: issue.status.label().to_string(),
+            branch: c.branch_name,
+            workspace_path: c.workspace_path,
+            session_id: c.claude_session_id,
+            // 唯一真实的信号:这个会话的 PTY 进程还在不在。
+            live: app.pty_live(c.id),
+            review_live: review.as_ref().is_some_and(|r| app.pty_live(r.id)),
+            review_conversation_id: review.map(|r| r.id),
+        });
+    }
+    out
 }
 
 /// 会话屏右栏 + 中栏。全部现算:文件树点开哪层读哪层、改动文件问 git、

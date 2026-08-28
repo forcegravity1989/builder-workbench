@@ -39,6 +39,7 @@ pub fn DetailPanel(
     };
     let b_run = bridge.clone();
     let b_review = bridge.clone();
+    let b_ask_review = bridge.clone();
     let b_block = bridge.clone();
     let b_cat = bridge.clone();
     let b_sess = bridge.clone();
@@ -132,6 +133,16 @@ pub fn DetailPanel(
                                         pr_number: pr,
                                     })),
                                     "✓ 点完成"
+                                }
+                                button {
+                                    class: "btn btn-sm",
+                                    title: "起一场独立评审会话(不是写码那场),评这张活的 MR。\
+                                            意见落在 MR 评论上;合不合仍由你点。没有开着的 MR 会如实拒绝。",
+                                    onclick: move |_| {
+                                        b_ask_review.cmd(Command::ReviewIssue { id });
+                                        nav.go(Panel::Session);
+                                    },
+                                    "请评审"
                                 }
                             },
                             IssueStatus::Done => rsx! {

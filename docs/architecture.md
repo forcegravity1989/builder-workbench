@@ -99,7 +99,9 @@ references(`standard/system-prompt/references/*.md`)是「干某类活需要额�
 
 **是什么**:每张活开工渲染一份系统提示词,主提示词是**外置的 `standard/system-prompt/SYSTEM.md.tmpl`**(身份 + 四铁律 + 读项目规范件的指引),`{{...}}` 占位在运行时填:活的信息、本活要读的 references 阶段规范、本活挂的技能。references(`standard/system-prompt/references/*.md`)是「干某类活需要额外知道的 Workbench 规范」(指标铁律、改仓规则),按活的 category/workflow 匹配后摊到 `<asset_root>/system-prompt/references/`、提示词只给路径,agent 按需读。技能同理摊到 `<asset_root>/skills/`。关键取舍:**正文一律不塞进提示词**(只给「一句话 + 完整路径」),references/技能文件不在硬盘就如实少一段不编路径,主提示词不硬编码在 `format!` 里(改身份/铁律 = 改 md + 抬 `standard/VERSION`,规范对账测得出落后)。**归一**:技能注入只有**一个模型**——`skill_pointer`(workflow→slug→`SkillPack`→入口 SKILL.md 路径)。运作剧本(week-planning 等)的入口 body 自足;业界 workflow(mattpocock-skills)的入口 body 是 SOP 链 + 指向 `vendor/` 库子技能路径(库由 `ensure_vendor_assets` 摊)。两类同机制,不另开第二条注入路径。
 
-**代码**:bw 的 `app/bootstrap.rs`(`agent_system_prompt` 渲染模板 + `skill_pointer` + `references_for`)+ `standard/system_prompt.rs`(`SYSTEM_PROMPT_TMPL` + references 表)+ `standard/skills.rs`(四份运作剧本 `include_str!`)+ `app/mod.rs`(`ensure_skill_assets` / `ensure_prompt_assets`)。
+**评审会话另有一份外置主提示词** `standard/system-prompt/REVIEW.md.tmpl`(独立评审身份 + 只评不改/绝不合并/意见落 MR 评论),渲染与摊开同机制;阶段规范第四份 `review`、评审剧本 `mr-review` 走同一条注入链(见模块7「请评审」)。
+
+**代码**:bw 的 `app/bootstrap.rs`(`agent_system_prompt` / `review_system_prompt` 渲染模板 + `skill_pointer` + `references_for` / `review_references`)+ `standard/system_prompt.rs`(`SYSTEM_PROMPT_TMPL` + `REVIEW_PROMPT_TMPL` + references 表)+ `standard/skills.rs`(运作剧本与评审剧本 `include_str!`)+ `app/mod.rs`(`ensure_skill_assets` / `ensure_prompt_assets`)。
 **数据**:主提示词模板 + references + 技能正本都编进二进制,开工时摊到 `<asset_root>/`;提示词是一次性字符串经 `--append-system-prompt` 送进 CLI,不落盘不缓存。
 **依赖**:standard::system_prompt、standard::skills、standard::render、bw_engine::LaunchPlan(`--add-dir`)、codehub issue 正本。
 **没建**:`proto-design`(原型阶段默认 workflow)源还没 vendor 进来、未打包;vendor 摊是 dev 期从源码树 runtime 复制(分发态无源码树时降级为不摊,入口仍注入但子技能读不到——bundle 进二进制留后续);references 起手三份(指标铁律 / 运作活①评论格式 / 改仓规则,按实践长);运营推广/竞品阶段无业界默认(留白)。
@@ -126,10 +128,12 @@ references(`standard/system-prompt/references/*.md`)是「干某类活需要额�
 
 **是什么**:路径 B 的产品特性——交互式 `claude` 嵌在桌面里,体验对齐本机终端(回显、接着聊、复制粘贴)。▶跑 把 CLI 起在伪终端(PTY)里,活在 issue 自己的 git worktree 里干,人看得见、随时能停。run 成功只推"评审中","完成"永远由人点。会话身份进 sessions jsonl(进程死了靠 `--resume` id 接回),进程态纯内存。字节流走 broadcast,不走 ViewModel。开工找 claude 与探活同一条候选链。`--resume` id 由 SessionStart hook 写到 Workbench 资产目录,节拍收进 jsonl。选中会话只有记下了 id 才接回;没有 id 不跑 `claude --continue`。没订户时不抽走有界环,挂件订上后能要回活着的第一屏。复制走网页兜底,粘贴由壳读系统剪贴板。作废一张活不会自动拆本机会话——人在会话屏点「删除会话」、确认弹窗之后,才停 PTY、强制收这棵 worktree、删 jsonl;远端 issue 不动(作废关单是另一条命令)。
 
-**代码**:bw-engine 的 `interactive_cli.rs`(执行器)+ `pty_backend.rs`(平台接缝)+ `terminal_manager.rs`(集中管理);bw 的 `app/session.rs`(生命周期)+ `app/worktree.rs`(每活一棵 worktree)+ `app/issue.rs`(`cleanup_issue_worktree`)。
+**「请评审」= 同一张活上的第二条会话轴**:活在评审中且 MR 开着时,人一键起一场**独立评审会话**——不是写码那场(写代码的会话不能给自己放行),评审专用提示词(`REVIEW.md.tmpl`)+ `mr-review` 剧本,工具固定 Claude CLI、与活的开工工具无关。评审产物只落 MR 评论(会话自己用 `gh` / `codehub-cli` 发,Rust 不加平行的 MR diff/评论 API);**评审路径零状态写入**,合入/打回仍是人的显式动作。会话记录另存 `<iid>-review.jsonl`,共用这张活的 worktree;不挂 SessionStart hook(runs 目录按活号键控,挂了会覆盖写码会话的接回 id)。设计与取舍全文见 `changes/reviewer-agent/`。
+
+**代码**:bw-engine 的 `interactive_cli.rs`(执行器)+ `pty_backend.rs`(平台接缝)+ `terminal_manager.rs`(集中管理);bw 的 `app/session.rs`(生命周期,含 `review_issue` / `cancel_review`)+ `app/worktree.rs`(每活一棵 worktree)+ `app/issue.rs`(`cleanup_issue_worktree`)。
 **数据**:会话身份落 sessions jsonl;进程态纯内存;issue 状态与 `settled_at` 正本是 codehub issue+标签,现读远端 `closed_at` 不自己写。
 **依赖**:async_trait + tokio mpsc、conpty-oxide(Win)/ portable-pty + nix(Unix,`#![forbid(unsafe_code)]`);bw-engine 不依赖任何 V3 crate。
-**没建**:Cursor 适配(supported=false);蒸馏按钮;agent 四态回报(今天只有"运行中/空闲"两态,"等你输入"不猜);MR 卡"检查过没过"列;已结束的会话切走再回来回放仍空(活着的第一屏已能回放)。作废不自动删会话——要人点「删除会话」。
+**没建**:Cursor 适配(supported=false);蒸馏按钮;agent 四态回报(今天只有"运行中/空闲"两态,"等你输入"不猜);MR 卡"检查过没过"列;已结束的会话切走再回来回放仍空(活着的第一屏已能回放)。作废不自动删会话——要人点「删除会话」。评审会话没有 `--resume` 接回(进程死了再点一次「请评审」,重评一轮、追加一条评论);「已评审」不派生进界面(人去 MR 上看意见,没读回的数据不点灯);推到评审中不自动触发评审(手动一键,自动留给用出真需求再谈)。
 
 ### 8 · 远端与工具探活
 
@@ -196,7 +200,7 @@ references(`standard/system-prompt/references/*.md`)是「干某类活需要额�
 
 ### 15 · 技能与蒸馏
 
-**是什么**:Workbench 自带**四份运作剧本**(week-planning / asset-audit / metrics-refresh / project-handbook),编译期 `include_str!` 进二进制,开工前摊到 Workbench 自己的资产目录,提示词只给"名字 + 一句话 + 完整路径",正文让 agent 按需读(渐进加载)。**不预建方法论技能**——原来预置的六份「阶段方法论」(原型/构建/优化/运营推广/运维/竞品)默认 workflow 没打包、`skill_slug` 也不识别,一份没被真正派发过,属「预先搞的一堆没用的」,删光:阶段方法论该由业界 workflow(mattpocock / proto-design,见 `standard/vendor`)提供,Workbench 每个环节挑一个最好的默认,要从实践里长出 Workbench 自己的方法论到时候再建。阶段规范约束(references,如指标铁律、改仓规则)归模块4,不和技能混。蒸馏是活的附属动作——把一件做完的活提炼成带做法的技能,永远记着来自哪件活。关键取舍是技能正本编进二进制零 IO、全局一份不随项目复制(不进用户仓),"用过几次"每次现查 issue 列表聚合不落表不缓存(且不显示胜率——没有结算记录,这一列直接不放)。
+**是什么**:Workbench 自带**四份运作剧本**(week-planning / asset-audit / metrics-refresh / project-handbook)加**一份评审剧本**(mr-review,独立评审会话专用,由「请评审」直接派发、不进类别→workflow 映射),编译期 `include_str!` 进二进制,开工前摊到 Workbench 自己的资产目录,提示词只给"名字 + 一句话 + 完整路径",正文让 agent 按需读(渐进加载)。**不预建方法论技能**——原来预置的六份「阶段方法论」(原型/构建/优化/运营推广/运维/竞品)默认 workflow 没打包、`skill_slug` 也不识别,一份没被真正派发过,属「预先搞的一堆没用的」,删光:阶段方法论该由业界 workflow(mattpocock / proto-design,见 `standard/vendor`)提供,Workbench 每个环节挑一个最好的默认,要从实践里长出 Workbench 自己的方法论到时候再建。阶段规范约束(references,如指标铁律、改仓规则)归模块4,不和技能混。蒸馏是活的附属动作——把一件做完的活提炼成带做法的技能,永远记着来自哪件活。关键取舍是技能正本编进二进制零 IO、全局一份不随项目复制(不进用户仓),"用过几次"每次现查 issue 列表聚合不落表不缓存(且不显示胜率——没有结算记录,这一列直接不放)。
 
 **代码**:bw 的 `standard/skills.rs`(`SkillPack` + 四份 `include_str!` + `desc_of`)+ `app/mod.rs`(`asset_root` / `skills_dir` / `ensure_skill_assets`)+ `app/bootstrap.rs`(`SkillPointer`)+ `app/ops.rs`(`skill_slug` 只映射两个运作剧本);app-shell 的 `bridge/vm_panels.rs`(配置屏 skill_list + workflow_usage 现算)。
 **数据**:四份正本编进二进制,开工摊到 `<asset_root>/skills/<slug>/SKILL.md`(全局一份);活挂的 workflow 名在 codehub issue 正本上;"用过几次"每次现查聚合不落表;提示词一次性字符串不落盘。

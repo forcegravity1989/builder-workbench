@@ -95,8 +95,10 @@ pub enum Req {
     CollectMetrics,
     /// 会话屏:「看看喂了什么」—— 把这张活开工时那份系统提示词原样算一遍。
     /// **纯读**,和真开工走的是同一个函数,所以显示什么、agent 收到的就是什么。
+    /// `review=true` 时算的是**评审会话**那份(人正停在「评审」页签上)。
     ShowBriefing {
         issue: bw::model::IssueId,
+        review: bool,
     },
     /// 上面那一采的结果。**不是界面发的**,是派出去的任务算完发回来的。
     MetricsCollected {
@@ -752,6 +754,16 @@ pub fn spawn(deep_link: DeepLink) -> Bridge {
                                             ui.od_src.clear();
                                         }
                                     }
+                                    // 评审会话起来了:选中这张活、落在「评审」页签
+                                    // 上 —— 人点完「请评审」该看见的就是评审终端。
+                                    if let Some(id) = events.iter().find_map(|e| match e {
+                                        bw::command::Event::ReviewStarted { id, .. } => Some(*id),
+                                        _ => None,
+                                    }) {
+                                        ui.session_open = Some(id);
+                                        ui.briefing = None;
+                                        ui.session_tab = crate::vm::SessionTab::Review;
+                                    }
                                     if confirming {
                                         ui.pending_drafts = None;
                                     }
@@ -1033,13 +1045,18 @@ pub fn spawn(deep_link: DeepLink) -> Bridge {
                                 ui.repo_stats = Some(stats);
                             }
                         }
-                        Req::ShowBriefing { issue } => {
+                        Req::ShowBriefing { issue, review } => {
                             // 已经开着就再点一次关掉 —— 一颗按钮两个方向,
                             // 不额外加一颗「收起」。
                             if ui.briefing.is_some() {
                                 ui.briefing = None;
                             } else {
-                                match app.agent_briefing(issue).await {
+                                let r = if review {
+                                    app.review_briefing(issue).await
+                                } else {
+                                    app.agent_briefing(issue).await
+                                };
+                                match r {
                                     Ok(t) => ui.briefing = Some(t),
                                     // 算不出来就把原话摆出来,**不显示一份空的**
                                     // —— 空面板会被读成「什么都没喂」。

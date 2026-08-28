@@ -408,6 +408,10 @@ pub struct SessionVm {
     /// PTY 进程还活着没有。**只有这一个信号是真的**——「等你输入」那种细粒度
     /// 状态要靠 claude 的 hook 回传,还没接,所以不显示,不猜。
     pub live: bool,
+    /// 这张活的**评审会话**(独立评审那场,不是写码这场)。`None` = 没请过评审。
+    pub review_conversation_id: Option<ConversationId>,
+    /// 评审 PTY 还活着没有。规矩同 `live`:只报真的。
+    pub review_live: bool,
 }
 
 /// 会话屏中栏三个页签。
@@ -423,6 +427,9 @@ pub enum SessionTab {
     /// 标签)。不是起 CLI,是把本机已开的 Open Design 的 loopback 首页嵌进
     /// 一个 iframe(「本机网页内嵌类」)。
     OpenDesign,
+    /// 评审会话的终端(请过评审的活才有这个标签)。和「终端」同一套挂载
+    /// 机制,只是路由到评审那场会话的字节流。
+    Review,
 }
 
 /// 会话屏右栏:文件树 / 改动文件 / git 状态 / MR 卡。全部现算,没有一张表
