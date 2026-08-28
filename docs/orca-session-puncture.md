@@ -120,6 +120,18 @@ Orca 三层别混:
 
 人 Add 时必须加 `D:\builders-workbench\workspaces\workbench`。如果加已经在表里的 `D:\2026\code\workbench`,什么都不会变。Add 之后对照本表 diff `orca-data.json` 的 `repos` 段,看多出来的 id / `externalWorktreeVisibility` / `importedExternalWorktreePaths`。
 
+### Add 后(2026-08-28 15:27)
+
+多了一条仓:
+
+| id 前缀 | 路径 | 外部 worktree | worktreeBasePath |
+|---|---|---|---|
+| `6fa03e4b` | `D:/builders-workbench/workspaces/workbench` | **show** | (无,新树仍会落到 Orca 默认 `workspaceDir`) |
+
+`projectHostSetupMethod=imported-existing-folder`。`projects` 仍是 2 条 remote 身份——这条和开发仓共用 `git:codehub-dg-g.huawei.com/z30026659/workbench`。当前会话已切到这条仓的主检出。
+
+Orca 已把这些路径写进 `worktreeMeta`(侧栏按理能列):`workbench-issue-1/6/10/11/15/22/25`、`workbench-bw-ledger`、嵌套的 `issue-1/.bw/worktrees/.../buddy-live-2`、以及 Orca 自己目录里的 `workbench-issue-10/buddy-live`。磁盘上的 `workbench-issue-8` 没进 meta(多半不是活的 git worktree)。
+
 ---
 
 ## 进展
@@ -128,7 +140,9 @@ Orca 三层别混:
 |---|---|---|
 | 2026-08-28 | 窗口 | 从 master 开 `pierce/orca-session`。第 1 步未过。人已重装 Orca;APPDATA 用户数据未清空。 |
 | 2026-08-28 | 窗口 | Add 前读了 `orca-data.json`:只登记了 `D:/2026/code/bridge` 和 `D:/2026/code/workbench`,外部树都 hide。被管仓 `D:\builders-workbench\workspaces\workbench` **未登记**。 |
-| | | 第 1 步人眼结果:**还没有。** |
+| 2026-08-28 | 人 | 点了添加项目,路径是被管仓。 |
+| 2026-08-28 | 窗口 | Add 后多出 repo `6fa03e4b`,path=`D:/builders-workbench/workspaces/workbench`,`externalWorktreeVisibility=show`(不是默认 hide)。`worktreeMeta` 已扫到 issue-1/6/10/11/15/22/25、账本、以及 `C:\Users\...\orca\workspaces\workbench-issue-10\buddy-live`。磁盘上还有 `workbench-issue-8`,meta 没扫到。未设 `worktreeBasePath`。与开发仓共享同一个 git remote(`z30026659/workbench`),侧栏会有两个都叫 workbench 的项目。 |
+| | | 第 1 步人眼结果:**仓已登记。树和会话是否在界面看见,等人看。** |
 
 (新窗口接手:只在这张表追加事实,不改上面的顺序和验收标准,除非人改口。)
 
