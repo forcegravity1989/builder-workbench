@@ -138,9 +138,14 @@ Orca 已把这些路径写进 `worktreeMeta`(侧栏按理能列):`workbench-issu
 
 找 buddy 那几条:
 
-1. 历史顶部范围改成 **工作区**(不要项目、不要全局)。再在左边点 `workbench-issue-1`,列表应按这棵树的 cwd 收窄。
-2. 或者搜索框输入 `path:workbench-issue-1`(也可直接打 `workbench-issue-1`)。查看选项:智能体只留 Claude、打开「隐藏空会话」、分组选「文件夹」。
-3. 点到想要的那条 → 行菜单 **在工作树中恢复** / **在新标签页中恢复**。
+**不要先切「工作区」再在主仓上点分支。** 「工作区」=当前打开的那一棵树的目录,不是这个 git 仓的所有分支。主仓路径是 `D:\builders-workbench\workspaces\workbench`,对话在平级的 `workbench-issue-1`,Orca 用「cwd 是否在当前树里面」判断——`workbench-issue-1` 不是 `workbench\` 的子目录,所以主仓上选工作区一定是 0;再在主仓里切 git 分支,当前树路径不变,还是 0。
+
+jsonl 里 cwd 已核对:`D:\builders-workbench\workspaces\workbench-issue-1`(session `6340093e-…`)。
+
+正确顺序:
+
+1. 左边在被管 workbench 下**打开**(选成当前工作区)`workbench-issue-1` 那一行,等中间变成这棵树,再把范围改成工作区——应只剩约 1 条。
+2. 更稳:范围留在 **项目**,搜索 `path:workbench-issue-1`,看行上的「工作目录」是不是这条路径,再 **在工作树中恢复**。
 
 ---
 
@@ -152,8 +157,9 @@ Orca 已把这些路径写进 `worktreeMeta`(侧栏按理能列):`workbench-issu
 | 2026-08-28 | 窗口 | Add 前读了 `orca-data.json`:只登记了 `D:/2026/code/bridge` 和 `D:/2026/code/workbench`,外部树都 hide。被管仓 `D:\builders-workbench\workspaces\workbench` **未登记**。 |
 | 2026-08-28 | 人 | 点了添加项目,路径是被管仓。 |
 | 2026-08-28 | 窗口 | Add 后多出 repo `6fa03e4b`,path=`D:/builders-workbench/workspaces/workbench`,`externalWorktreeVisibility=show`(不是默认 hide)。`worktreeMeta` 已扫到 issue-1/6/10/11/15/22/25、账本、以及 `C:\Users\...\orca\workspaces\workbench-issue-10\buddy-live`。磁盘上还有 `workbench-issue-8`,meta 没扫到。未设 `worktreeBasePath`。与开发仓共享同一个 git remote(`z30026659/workbench`),侧栏会有两个都叫 workbench 的项目。 |
-| 2026-08-28 | 人 | 左侧 Projects 能看见 issue 树,点开都是新 Terminal 1、没有 Claude。右侧智能体会话历史约 499 条,切左边树右边不跟着滤。 |
-| | | 第 1 步人眼结果:**仓和树可见。会话要在右侧历史里按「工作区」或 `path:workbench-issue-N` 找,再 Resume。左边点树不等于打开旧对话。** |
+| 2026-08-28 | 人 | 左侧 Projects 能看见 issue 树,点开都是新 Terminal 1、没有 Claude。右侧智能体会话历史约 499 条,切左边树右边不跟着滤。范围改成工作区后变成 0,再点任何分支仍是 0。 |
+| 2026-08-28 | 窗口 | 工作区=0 符合 Orca 规则:主仓 `...\workspaces\workbench` 自己 0 条 jsonl;对话 cwd=`D:\builders-workbench\workspaces\workbench-issue-1`,是平级目录,不算在主仓里面。在主仓上切分支不会改当前树路径。 |
+| | | 第 1 步人眼结果:**仓和树可见。要先打开 issue-1 再选工作区,或项目范围搜 `path:workbench-issue-1` 再 Resume。** |
 
 (新窗口接手:只在这张表追加事实,不改上面的顺序和验收标准,除非人改口。)
 
