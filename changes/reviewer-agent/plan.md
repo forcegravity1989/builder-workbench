@@ -29,6 +29,7 @@ changes/reviewer-agent/                            本产物链五件(intent/spe
 docs/architecture.md                               模块 4/7/15 各补一句评审落点
 CHANGELOG.md                                       一行
 .github/workflows/claude-code-review.yml           新增(谈定补入:GitHub 仓 PR 事件自动 review,OAuth token 认证)
+.github/workflows/claude-pr-sweep.yml              新增(谈定补入:每晚兜底——确定性脚本筛 >24h 无 review 的 open PR,有才起 Claude 补审)
 ```
 
 ## 顺序与进度

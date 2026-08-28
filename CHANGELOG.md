@@ -8,7 +8,7 @@
 
 **独立评审(reviewer agent)**:评审中且 MR 开着的活可一键「请评审」——起一场独立评审会话(不是写码那场;评审剧本 `mr-review` + 阶段规范 `review` + 外置评审提示词 `REVIEW.md.tmpl`,standard 5.9→5.10),两轴评审(项目手册 + 活的意图),意见落 MR 评论;不合并、不改状态,合入仍由人点。会话记录另存 `<iid>-review.jsonl`,会话屏加「评审」页签,MVP 无接回、不派生「已评审」灯。产物链见 `changes/reviewer-agent/`。
 
-同批谈定:GitHub 仓的自动触发放 CI 层——`.github/workflows/claude-code-review.yml` 用官方 claude-code-action 在 PR 事件上自动 review(订阅 OAuth token 认证,secret 与 GitHub App 由人配,配好前如实不生效);codehub 仓仍走内建「请评审」。
+同批谈定:GitHub 仓的自动触发放 CI 层——`.github/workflows/claude-code-review.yml` 用官方 claude-code-action 在 PR 事件上自动 review(订阅 OAuth token 认证,secret 与 GitHub App 由人配,配好前如实不生效);codehub 仓仍走内建「请评审」。另补每晚兜底 `claude-pr-sweep.yml`:确定性脚本筛 >24h 无 review 的 open PR,有才起 Claude 逐条补审(北京 22:00,合入 main 后定时生效)。
 
 ## 2026-08-26
 

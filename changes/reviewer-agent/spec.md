@@ -13,7 +13,7 @@
    - 规范：`standard/system-prompt/references/review.md`（评审阶段规范）+ **评审主提示词外置** `standard/system-prompt/REVIEW.md.tmpl`（与 SYSTEM.md.tmpl 同机制：`{{...}}` 占位、编进二进制、改身份=改 md + 抬 `standard/VERSION`）。
    - 承载：新命令「请评审」；评审事件即 MR 评论（只追加，事后抹不掉）——不落本地库、不建评审台账。
 6. **MVP 不派生「已评审」信号**：界面不解析 MR 评论、不点评审灯——没读回的数据不装绿。人去 MR 上看意见（原型步 3 是评论在远端的样子）。
-7. **CI 层自动评审（2026-08-27 谈定补入）**：GitHub 仓的自动触发放在 CI 层——官方 `claude-code-action` 在 PR 打开/更新时自动 review（本仓落一份 workflow，认证走订阅 OAuth token，secret 由人配；配好前 workflow 如实不生效）。边界三条：只覆盖 GitHub 仓（codehub 仍靠内建「请评审」）；review 口径不另立第二份正本——action 每次自动读仓根 `CLAUDE.md`→`AGENTS.md`，与 `mr-review` 剧本同源于仓内规矩；CI 评论与评审会话评论共存，靠评审会话首行的机器可辨标记区分。
+7. **CI 层自动评审（2026-08-27 谈定补入）**：GitHub 仓的自动触发放在 CI 层——官方 `claude-code-action` 在 PR 打开/更新时自动 review（本仓落一份 workflow，认证走订阅 OAuth token，secret 由人配；配好前 workflow 如实不生效）。边界三条：只覆盖 GitHub 仓（codehub 仍靠内建「请评审」）；review 口径不另立第二份正本——action 每次自动读仓根 `CLAUDE.md`→`AGENTS.md`，与 `mr-review` 剧本同源于仓内规矩；CI 评论与评审会话评论共存，靠评审会话首行的机器可辨标记区分。另配**每晚兜底 sweep**（2026-08-28 发起人拍板补入）：确定性脚本筛「超过 24 小时无任何 review」的 open PR——有才起 Claude 逐条补审发评论，没有则零花费；北京 22:00 定时 + `workflow_dispatch` 手动可验；schedule 只从默认分支跑，合入 main 前定时不生效；补审评论以 workflow 令牌（github-actions bot）身份发，与事件驱动那条（Claude App 身份）不同，如实标注。
 
 ## 操作逻辑
 
