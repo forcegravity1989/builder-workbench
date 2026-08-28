@@ -72,8 +72,8 @@ Orca 三层别混:
 
 ## 第 1 步人怎么验(安装版桌面,今天)
 
-1. 打开刚重装的 Orca。
-2. Add Project,路径填 `D:\builders-workbench\workspaces\workbench`,不要填上一级。
+1. 打开刚重装的 Orca。侧栏若已有 workbench,那是 `D:\2026\code\workbench`,不是被管仓。
+2. Add Project,路径填 `D:\builders-workbench\workspaces\workbench`(不要填上一级,也不要再加一遍开发仓)。
 3. 这个仓的外部 worktree 改成 Show,或把 `workbench-issue-1` 等路径显式 Import。
 4. 看 Projects 栏有没有 `workbench-issue-*`。
 5. 历史面板 scope 先用 project,不行再试 all。
@@ -95,11 +95,39 @@ Orca 三层别混:
 
 ---
 
+## Add 前快照(2026-08-28,人还没点 Add)
+
+正本文件:`%APPDATA%\orca\profiles\local-default\orca-data.json`(约 49KB,重装后用户数据还在)。只记路径和可见性,**不记 token**。
+
+**当前登记的仓只有 2 个,都不是 buddy 管理目录:**
+
+| id 前缀 | 路径 | 显示名 | 外部 worktree | worktreeBasePath | 显式 import |
+|---|---|---|---|---|---|
+| `8462f821` | `D:/2026/code/bridge` | bridge | **hide** | (无) | (无) |
+| `34a1c01c` | `D:/2026/code/workbench` | workbench | **hide** | `D:\2026\code\workbench\.bw\worktrees` | `D:\2026\code\workbench-issue-99` |
+
+`orca-data.json` 全文 **0 次**出现 `builders-workbench`。`D:\builders-workbench\workspaces\workbench` **没有登记**。
+
+所以侧栏里那个叫 workbench 的,是**开发仓**,不是被管项目。开发仓下面能看见的是 `.bw\worktrees\workbench\buddy-live*` 和已 import 的 `workbench-issue-99`(源码仓平级,不是 `D:\builders-workbench\...`)。平级的 `workbench-issue-1` 那些对开发仓来说也是 external,默认 hide。
+
+**全局设置:** `nestWorkspaces=true`,`workspaceDir=C:\Users\z30026659\orca\workspaces`,`worktreeVisibilityDefaults` 未设(新仓外部树走 hide)。当前会话停在开发仓主检出。
+
+**残留(仓记录已删,磁盘还留着):**
+
+- `terminal-history` 里曾有过 repo `2180706e` → `D:/builders-workbench/workspaces/workbench` 和 `workbench-issue-1`(另一条分支穿刺留下的,现在 repos 列表里没了)
+- 还有 `05f79be4` → 只绑过 `workbench-issue-1`;`f504fc79` → `workbench-issue-1` 下面再套的 buddy-live-2
+- ai-vault 解析缓存里 `builders-workbench` 出现 79 次——**会话文件 Orca 扫过**,缺的是仓登记 + 树可见,不是没对话
+
+人 Add 时必须加 `D:\builders-workbench\workspaces\workbench`。如果加已经在表里的 `D:\2026\code\workbench`,什么都不会变。Add 之后对照本表 diff `orca-data.json` 的 `repos` 段,看多出来的 id / `externalWorktreeVisibility` / `importedExternalWorktreePaths`。
+
+---
+
 ## 进展
 
 | 何时 | 谁 | 事实 |
 |---|---|---|
 | 2026-08-28 | 窗口 | 从 master 开 `pierce/orca-session`。第 1 步未过。人已重装 Orca;APPDATA 用户数据未清空。 |
+| 2026-08-28 | 窗口 | Add 前读了 `orca-data.json`:只登记了 `D:/2026/code/bridge` 和 `D:/2026/code/workbench`,外部树都 hide。被管仓 `D:\builders-workbench\workspaces\workbench` **未登记**。 |
 | | | 第 1 步人眼结果:**还没有。** |
 
 (新窗口接手:只在这张表追加事实,不改上面的顺序和验收标准,除非人改口。)
