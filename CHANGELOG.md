@@ -6,6 +6,8 @@
 
 ## 最近 · 2026-08-28
 
+会话屏改嵌 Orca:从 master 开分支 `pierce/orca-session`,把目标、四步顺序、为什么历史项目在 Orca 里看不见、第 1 步怎么验,写成仓内正本 [`docs/orca-session-puncture.md`](docs/orca-session-puncture.md)。**设计未锁定**,architecture 模块 7 现行仍是 PTY+三栏,只在「没建」留指路。本轮不改产品代码;另一条 `worktree-orca-adapter` 不碰。
+
 计划屏操作卡顿(#16):纯导航(切周 / 点总览 / 选卡片看详情 / 切页签 / 展开目录 / 后台采回发)走快路径,复用上次 gather、不重跑 git 子进程 / 远端 / OD 探活;真命令、换项目、刷新、`SelectSession` 仍走全量。`build()` 拆成 `gather`(贵、数据变更时跑)+ `assemble`(便宜、每次跑)。顺带去掉三处重复:`probe_env` 每重建跑两遍 → 探一次;打开项目 `app.issues` 拉两遍 → 拉一次;`build_ops` 的 `git::path_in_head` 跑两遍 → 算一次传参。决策见 [`docs/adr/0002`](docs/adr/0002-导航快路径-gather缓存.md),是 [ADR 0001](docs/adr/0001-codehub-issue-正本-本地零库.md)「优化(本地只读缓存、失效策略)留后续」那条的落地。
 
 ## 最近 · 2026-08-27

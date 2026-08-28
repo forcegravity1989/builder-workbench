@@ -129,7 +129,7 @@ references(`standard/system-prompt/references/*.md`)是「干某类活需要额�
 **代码**:bw-engine 的 `interactive_cli.rs`(执行器)+ `pty_backend.rs`(平台接缝)+ `terminal_manager.rs`(集中管理);bw 的 `app/session.rs`(生命周期)+ `app/worktree.rs`(每活一棵 worktree)+ `app/issue.rs`(`cleanup_issue_worktree`)。
 **数据**:会话身份落 sessions jsonl;进程态纯内存;issue 状态与 `settled_at` 正本是 codehub issue+标签,现读远端 `closed_at` 不自己写。
 **依赖**:async_trait + tokio mpsc、conpty-oxide(Win)/ portable-pty + nix(Unix,`#![forbid(unsafe_code)]`);bw-engine 不依赖任何 V3 crate。
-**没建**:Cursor 适配(supported=false);蒸馏按钮;agent 四态回报(今天只有"运行中/空闲"两态,"等你输入"不猜);MR 卡"检查过没过"列;已结束的会话切走再回来回放仍空(活着的第一屏已能回放)。作废不自动删会话——要人点「删除会话」。
+**没建**:Cursor 适配(supported=false);蒸馏按钮;agent 四态回报(今天只有"运行中/空闲"两态,"等你输入"不猜);MR 卡"检查过没过"列;已结束的会话切走再回来回放仍空(活着的第一屏已能回放)。作废不自动删会话——要人点「删除会话」。会话屏改嵌 Orca web 的穿刺进行中,**设计未锁定、本段现行口径仍是 PTY+三栏**;进度正本 [`docs/orca-session-puncture.md`](orca-session-puncture.md),勿把聊天或 `worktree-orca-adapter` 当现行。
 
 ### 8 · 远端与工具探活
 
