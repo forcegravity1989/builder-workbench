@@ -27,6 +27,7 @@
 | [`guide/`](guide/) | 产品指南(怎么用 buddy,给用户/同事)+ 填写规范 |
 | [`adr/`](adr/) | 架构决策(难回头一条一篇) |
 | [`hifi/`](hifi/) | 视觉正本(`index.html` 单文件高保真 + 逐屏简报),桌面壳样式表从它搬过去 |
+| [`orca-session-puncture.md`](orca-session-puncture.md) | 会话屏改嵌 Orca 的穿刺进度正本(设计未锁定;窗口挂了从这里续) |
 
 ## 找东西
 
