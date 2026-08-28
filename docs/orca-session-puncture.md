@@ -73,7 +73,7 @@ Orca 三层别混:
 ## 第 1 步人怎么验(安装版桌面,今天)
 
 1. 打开刚重装的 Orca。侧栏若已有 workbench,那是 `D:\2026\code\workbench`,不是被管仓。
-2. Add Project,路径填 `D:\builders-workbench\workspaces\workbench`(不要填上一级,也不要再加一遍开发仓)。
+2. 点 **添加项目**(Add Project / `repo.add`),不要点 **新工作区**(会在当前项目下新建一棵树,默认落到 `C:\Users\z30026659\orca\workspaces`)。路径填 `D:\builders-workbench\workspaces\workbench`(不要填上一级,也不要再加一遍开发仓)。选已有 git 检出,不要建成「文件夹工作区」。
 3. 这个仓的外部 worktree 改成 Show,或把 `workbench-issue-1` 等路径显式 Import。
 4. 看 Projects 栏有没有 `workbench-issue-*`。
 5. 历史面板 scope 先用 project,不行再试 all。
