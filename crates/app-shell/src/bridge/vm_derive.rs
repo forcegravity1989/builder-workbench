@@ -40,13 +40,15 @@ pub(super) fn build_week_counts(issues: &[bw::Issue], week: Option<&str>) -> Wee
 /// 运作活①②③三个状态点。开着的优先;本周已关的①②写「已完成」。
 /// ③关过但默认分支没有 `.bw/standard.toml` 仍算未建(旧铺底关掉、MR 没合
 /// 不能冒充铺过)。
-pub(super) async fn build_ops(
+///
+/// `ops3_landed` 从外部传:它只跟仓走、不跟周走,在 `gather` 里采一次,
+/// 不再每重切都跑一遍 `git::path_in_head`(原来一次重拼跑两遍)。
+pub(super) fn build_ops(
     issues: &[bw::Issue],
     current_week: &str,
-    ws: &Path,
+    ops3_landed: bool,
 ) -> Vec<OpsChipVm> {
     use bw::app::{OPS1_WORKFLOW, OPS2_WORKFLOW, OPS3_WORKFLOW};
-    let ops3_landed = bw::git::path_in_head(ws, ".bw/standard.toml").await;
     let pick = |wf: &str, done: bool| {
         issues
             .iter()
