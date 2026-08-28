@@ -132,6 +132,16 @@ Orca 三层别混:
 
 Orca 已把这些路径写进 `worktreeMeta`(侧栏按理能列):`workbench-issue-1/6/10/11/15/22/25`、`workbench-bw-ledger`、嵌套的 `issue-1/.bw/worktrees/.../buddy-live-2`、以及 Orca 自己目录里的 `workbench-issue-10/buddy-live`。磁盘上的 `workbench-issue-8` 没进 meta(多半不是活的 git worktree)。
 
+**左边点树 ≠ 打开旧 Claude。** buddy 当初在自己的 PTY 里跑 `claude`,Orca 没在这些树上开过 agent 标签,所以点 worktree 只会新开 Terminal 1。旧对话在右侧「智能体会话历史」,要 Resume 才回到那棵树。
+
+**499 条是「项目 / 全局」范围。** 被管仓和开发仓共用同一个 git remote(`z30026659/workbench`),范围选「项目」会把两边所有树、包括 `claude -p` 看图的临时会话都算进来。左边换树不会缩小这个列表。
+
+找 buddy 那几条:
+
+1. 历史顶部范围改成 **工作区**(不要项目、不要全局)。再在左边点 `workbench-issue-1`,列表应按这棵树的 cwd 收窄。
+2. 或者搜索框输入 `path:workbench-issue-1`(也可直接打 `workbench-issue-1`)。查看选项:智能体只留 Claude、打开「隐藏空会话」、分组选「文件夹」。
+3. 点到想要的那条 → 行菜单 **在工作树中恢复** / **在新标签页中恢复**。
+
 ---
 
 ## 进展
@@ -142,7 +152,8 @@ Orca 已把这些路径写进 `worktreeMeta`(侧栏按理能列):`workbench-issu
 | 2026-08-28 | 窗口 | Add 前读了 `orca-data.json`:只登记了 `D:/2026/code/bridge` 和 `D:/2026/code/workbench`,外部树都 hide。被管仓 `D:\builders-workbench\workspaces\workbench` **未登记**。 |
 | 2026-08-28 | 人 | 点了添加项目,路径是被管仓。 |
 | 2026-08-28 | 窗口 | Add 后多出 repo `6fa03e4b`,path=`D:/builders-workbench/workspaces/workbench`,`externalWorktreeVisibility=show`(不是默认 hide)。`worktreeMeta` 已扫到 issue-1/6/10/11/15/22/25、账本、以及 `C:\Users\...\orca\workspaces\workbench-issue-10\buddy-live`。磁盘上还有 `workbench-issue-8`,meta 没扫到。未设 `worktreeBasePath`。与开发仓共享同一个 git remote(`z30026659/workbench`),侧栏会有两个都叫 workbench 的项目。 |
-| | | 第 1 步人眼结果:**仓已登记。树和会话是否在界面看见,等人看。** |
+| 2026-08-28 | 人 | 左侧 Projects 能看见 issue 树,点开都是新 Terminal 1、没有 Claude。右侧智能体会话历史约 499 条,切左边树右边不跟着滤。 |
+| | | 第 1 步人眼结果:**仓和树可见。会话要在右侧历史里按「工作区」或 `path:workbench-issue-N` 找,再 Resume。左边点树不等于打开旧对话。** |
 
 (新窗口接手:只在这张表追加事实,不改上面的顺序和验收标准,除非人改口。)
 
