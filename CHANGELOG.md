@@ -6,6 +6,12 @@
 
 ## 最近 · 2026-08-29
 
+待评审→完成:没有开着的 MR 时弹确认,确认后只关 issue(人可能已经在网页合过)。详情链接查出已合入的 MR,不再只认开着的。
+
+计划屏周目标默认收成两行,右下角展开框打开整段,再点收起。
+
+计划屏周计划/版本看板拖拽认十条:待办→进行中/拒绝/阻塞,进行中→阻塞/拒绝/待办,待评审→完成/拒绝,阻塞→进行中/拒绝。松手认当前子标题。详情加状态下拉,只列从当前状态能走到的那几条,和拖拽走同一条命令——列表用户不拖也能改。作废/阻塞仍要写原因。待办拖到「完成」仍不让过。
+
 Open / 去会话只 `worktree.activate`,不再 `ensureAgentSession`(那条是 `--resume` 再开一扇 TUI)。`createAgentSession` 若回「Timed out waiting for terminal handle after creation」,渲染进程已经把窗拉起来了,当成功,再切树让配对网页跟上。▶开工已有会话也只切树。
 
 会话屏嵌 Orca 走 iframe(和 Open Design 同路):新版 Orca SPA boot 调 `crypto.randomUUID()` 要 Secure Context,Windows 主 WebView 用 `with_windows_browser_args` 把 `http://dioxus.index.html` 当 secure + 关 `LocalNetworkAccessChecks`。开工走本地 pipe;`createAgentSession` 的 `clientOperationId` 用 Orca 规定形状(13 位毫秒-32 hex,误填 RPC 帧 id 会被 `agent_session_operation_invalid` 拒),Cursor 预设名是 `cursor`(不是 `cursor-agent`)。去会话先认会话记下的树(`resolve_issue_worktree`),不 `provision` 第二棵;只 `worktree.activate`,不 ensure。`#pairing=` 搬成 `?pairing=`(只搬家不 mint code);Orca 网页地址存本机 `settings.toml`(带 token 不进仓/Event/日志,`BW_ORCA_WEB_URL` 可覆盖);create/ensure 失败把 error code 露进 `IssueRan.summary` 与 stderr(不带 token)。修 `request_id` debug 下 `u64` 溢出→`wrapping_mul`;会话屏去掉 1600px 上限。

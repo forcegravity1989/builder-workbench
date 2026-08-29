@@ -381,8 +381,11 @@ pub struct Issue {
     pub body: String,
     pub status: IssueStatus,
     pub branch: String,
-    /// MR 号;`0` = 没有 MR。「干没干成看远端 MR 合没合入」这条判据的落点。
+    /// MR 号;`0` = 没有 MR。壳现查填上,开着的或已合入的都算,给详情展示。
     pub pr_number: u32,
+    /// 这张活的 `bw/issue-<号>` 分支上现在有没有**开着的** MR。合入走
+    /// `MergeAndSettle`;没有开着的(人可能已经在网页合过)走确认后只关 issue。
+    pub has_open_mr: bool,
     pub week_of: String,
     pub version: String,
     pub tool: String,

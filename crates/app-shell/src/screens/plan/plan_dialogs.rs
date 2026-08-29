@@ -318,29 +318,80 @@ pub fn ScheduleDialog(
     }
 }
 
-/// 作废/状态转移确认框(拖卡片进状态列的旧路径,详情弹窗里点 Complete/阻塞
-/// 不走这里)。保留给直接发 TransitionIssue 的场景。
-pub fn confirm_dialog(
+/// 拖卡片松手后的确认框。完成走合入;拒绝走作废(必须写原因);其余走状态转移。
+#[component]
+pub fn ConfirmMoveDialog(
     pm: PendingMove,
     mut pending: Signal<Option<PendingMove>>,
-    bridge: &Bridge,
+    bridge: Bridge,
 ) -> Element {
     let b = bridge.clone();
     let pm2 = pm.clone();
+    let mut reason = use_signal(String::new);
+    let need_reason = matches!(pm.to, IssueStatus::Cancelled | IssueStatus::Blocked);
+    let to_label = match pm.to {
+        IssueStatus::Cancelled => "拒绝",
+        IssueStatus::Blocked => "阻塞",
+        other => other.label(),
+    };
+    let reason_label = if pm.to == IssueStatus::Blocked {
+        "阻塞原因"
+    } else {
+        "作废原因"
+    };
+    let reason_hint = if pm.to == IssueStatus::Blocked {
+        "阻塞必须写原因,会写进 issue 评论"
+    } else {
+        "作废必须写原因,会写进 issue 评论"
+    };
     rsx! {
         div { class: "modal-backdrop", onclick: move |_| pending.set(None),
             div { class: "modal", onclick: move |e| e.stop_propagation(),
                 h3 { "确认一下" }
                 div { style: "font-size:13px;line-height:1.85;color:var(--ink-2);margin-bottom:8px;",
-                    "把「{pm.title}」从「{pm.from.label()}」移到「{pm.to.label()}」。"
+                    "把「{pm.title}」从「{pm.from.label()}」移到「{to_label}」。"
+                }
+                if pm.to == IssueStatus::Done && !pm.has_open_mr {
+                    div { style: "font-size:13px;line-height:1.85;color:var(--ink-2);margin-bottom:8px;",
+                        "没有开着的 MR。可能已经在网页合过了。确认后只关这张 issue,不会再去合。"
+                    }
+                }
+                if need_reason {
+                    div { class: "formrow",
+                        label { class: "label", "{reason_label}" }
+                        textarea {
+                            class: "textarea",
+                            rows: "3",
+                            placeholder: "{reason_hint}",
+                            oninput: move |e| reason.set(e.value()),
+                        }
+                    }
                 }
                 div { class: "modal-actions",
                     button { class: "btn btn-secondary", onclick: move |_| pending.set(None), "算了" }
                     button {
                         class: "btn btn-primary",
+                        disabled: need_reason && reason.read().trim().is_empty(),
                         onclick: move |_| {
-                            if pm2.to == IssueStatus::Done {
+                            if pm2.to == IssueStatus::Done && pm2.has_open_mr {
                                 b.cmd(Command::MergeAndSettle { id: pm2.id });
+                            } else if pm2.to == IssueStatus::Done {
+                                b.cmd(Command::TransitionIssue {
+                                    id: pm2.id,
+                                    to: IssueStatus::Done,
+                                });
+                            } else if pm2.to == IssueStatus::Cancelled {
+                                let why = reason.read().trim().to_string();
+                                if why.is_empty() {
+                                    return;
+                                }
+                                b.cmd(Command::CancelIssue { id: pm2.id, reason: why });
+                            } else if pm2.to == IssueStatus::Blocked {
+                                let why = reason.read().trim().to_string();
+                                if why.is_empty() {
+                                    return;
+                                }
+                                b.cmd(Command::BlockIssue { id: pm2.id, reason: why });
                             } else {
                                 b.cmd(Command::TransitionIssue { id: pm2.id, to: pm2.to });
                             }

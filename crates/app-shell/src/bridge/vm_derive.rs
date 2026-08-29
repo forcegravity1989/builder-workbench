@@ -137,6 +137,7 @@ pub(super) fn build_card_mr(issues: &[bw::Issue]) -> Option<CardMrVm> {
         status: i.status.label().to_string(),
         pr_number: i.pr_number,
         mergeable: i.status == IssueStatus::InReview,
+        has_open_mr: i.has_open_mr,
     })
 }
 
@@ -248,6 +249,7 @@ mod ops_chip_display_tests {
             status: bw::model::IssueStatus::Done,
             branch: String::new(),
             pr_number: 0,
+            has_open_mr: false,
             week_of: "2026-W35".into(),
             version: String::new(),
             tool: String::new(),

@@ -382,6 +382,44 @@ pub async fn open_pr_for_branch(
         .map_err(|_| GithubError::Command(format!("无法解析 PR 号:{text:?}")))
 }
 
+/// 同 `open_pr_for_branch` 但 `--state all`(开着或已合入)。给详情展示用。
+pub async fn pr_for_branch(
+    owner_repo: &str,
+    head_branch: &str,
+) -> Result<Option<u32>, GithubError> {
+    let output = crate::win_cmd::tokio_cmd("gh")
+        .args([
+            "pr",
+            "list",
+            "--repo",
+            owner_repo,
+            "--head",
+            head_branch,
+            "--state",
+            "all",
+            "--json",
+            "number",
+            "--jq",
+            ".[0].number // empty",
+        ])
+        .stdin(Stdio::null())
+        .stdout(Stdio::piped())
+        .stderr(Stdio::piped())
+        .output()
+        .await
+        .map_err(spawn_err)?;
+    if !output.status.success() {
+        return Err(GithubError::Command(stderr_text(&output)));
+    }
+    let text = String::from_utf8_lossy(&output.stdout).trim().to_string();
+    if text.is_empty() {
+        return Ok(None);
+    }
+    text.parse::<u32>()
+        .map(Some)
+        .map_err(|_| GithubError::Command(format!("无法解析 PR 号:{text:?}")))
+}
+
 /// C16: `defaultBranchRef` comes back as a nested object (`{"name":"main"}`),
 /// not a bare string — `gh repo list --json defaultBranchRef` shape per its
 /// own JSON FIELDS reference (`gh repo list --help`). An empty repo with no
