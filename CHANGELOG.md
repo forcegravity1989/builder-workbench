@@ -7,6 +7,8 @@
 
 ## 最近 · 2026-08-29
 
+计划屏详情:点 Start / Open / 阻塞 / Cancel / Complete 后弹窗自动关。业务活显示已有类别(不再误锁成「运作」),计划和负责人同一行。Start 建 worktree 时可改/补类别,没选不能开工。
+
 通知模块整改(#18):群通知从自由字符串重做成固定枚举事件注册表 `NotifyEvent`(本周版本计划 / 新建活纳入本周 / PR 合入 / 发版 / 周报)。`review`(进评审)移除。删通知页签整片(`screens/notify/`、`Panel::Notify`、`BW_PANEL=notify` 深链等全清)。决策见 `docs/adr/0002-通知模块整改-事件注册表与删页签.md`。
 
 
