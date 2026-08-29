@@ -93,7 +93,7 @@
 
 - **L1 工具条** — 第一行预设：开放 / 分配我的 / 我的。第二行：计划、阶段下拉 + 搜索。去掉列标题点选筛选。`listView()` / `.il-bar` / `.il-preset`
 - **L2 列** — ID / 标题 / 负责人 / 状态 / 已更新 / 操作。
-- **L3 行操作** — 未排期 `schedule`（排进现有周/版本）；已排期 `Start`（worktree 配置后进会话，状态切进行中）；进行中 / 待评审 / 阻塞 `Open`（回会话）；完成 / 取消为灰色横杠。`openSchedule` / `openStart` / `startModal` / `openIssueSession`
+- **L3 行操作** — 未排期 `schedule`（排进现有周/版本）；已排期 `Start`（worktree 配置后进会话，状态切进行中，确认框可改/补类别）；进行中 / 待评审 / 阻塞 `Open`（回会话）；完成 / 取消为灰色横杠。详情点操作后弹窗自动关。`openSchedule` / `openStart` / `startModal` / `openIssueSession`
 - **L4 文案** — 开工→Start，去会话→Open，点完成→Complete，作废→Cancel，待办池→未排期，issue总览→全部 issue，责任人→负责人，排在→计划。叙事里的「活」改为 issue。
 
 

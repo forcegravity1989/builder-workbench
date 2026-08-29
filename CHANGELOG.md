@@ -8,6 +8,8 @@
 
 会话屏嵌 Orca 走 iframe(和 Open Design 同路):新版 Orca SPA boot 调 `crypto.randomUUID()` 要 Secure Context,Windows 主 WebView 用 `with_windows_browser_args` 把 `http://dioxus.index.html` 当 secure + 关 `LocalNetworkAccessChecks`。开工走本地 pipe;`createAgentSession` 的 `clientOperationId` 用 Orca 规定形状(13 位毫秒-32 hex,误填 RPC 帧 id 会被 `agent_session_operation_invalid` 拒),Cursor 预设名是 `cursor`(不是 `cursor-agent`)。去会话以切树为准:一律 `worktree.activate`(12s),有 Claude session id 再短等 ensure(4s),失败不算跳失败;▶开工 接回走 ensure(Claude)/activate(Cursor)。`#pairing=` 搬成 `?pairing=`(只搬家不 mint code);Orca 网页地址存本机 `settings.toml`(带 token 不进仓/Event/日志,`BW_ORCA_WEB_URL` 可覆盖);create/ensure 失败把 error code 露进 `IssueRan.summary` 与 stderr(不带 token)。修 `request_id` debug 下 `u64` 溢出→`wrapping_mul`;会话屏去掉 1600px 上限。
 
+计划屏详情:点 Start / Open / 阻塞 / Cancel / Complete 后弹窗自动关。业务活显示已有类别(不再误锁成「运作」),计划和负责人同一行。Start 建 worktree 时可改/补类别,没选不能开工。
+
 通知模块整改(#18):群通知从自由字符串重做成固定枚举事件注册表 `NotifyEvent`(本周版本计划 / 新建活纳入本周 / PR 合入 / 发版 / 周报)。`review`(进评审)移除。删通知页签整片(`screens/notify/`、`Panel::Notify`、`BW_PANEL=notify` 深链等全清)。决策见 `docs/adr/0002-通知模块整改-事件注册表与删页签.md`。
 
 ## 最近 · 2026-08-28
