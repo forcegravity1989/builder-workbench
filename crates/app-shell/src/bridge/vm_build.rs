@@ -376,7 +376,7 @@ fn primary_note(events: &[Event]) -> Option<String> {
             format!("已排进版本 {plan} —— 正本是 bw:plan 标签,codehub 里程碑同步中")
         }
         Event::PlanVersionCreated { name, .. } => {
-            format!("版本 {name} 已建 —— 自定义计划包,和发版号不是一回事")
+            format!("版本 {name} 已建 —— 和周版本是同一类,和发版号不是一回事")
         }
         Event::PlanVersionDeleted {
             name,

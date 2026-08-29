@@ -155,12 +155,12 @@ pub struct ProjectVm {
     pub weeks: Vec<WeekVm>,
     /// 正在看哪一周。
     pub viewing_week: String,
-    /// 看某个自定义版本(计划包)。空 = 不在看版本。
+    /// 看某个人起名的版本。空 = 在看周版本或「全部」。
     pub viewing_plan: String,
     /// 左栏点的是「全部」——看板不按周过滤。
     pub view_all: bool,
     pub board: BoardVm,
-    /// 自定义版本(计划包)列表,扫 issues 的 `bw:plan:*` 标签去重得来。
+    /// 人起名的版本列表,扫 issues 的 `bw:plan:*` 标签去重得来。周版本在 `weeks` 里。
     pub plan_versions: Vec<PlanVersionVm>,
     /// 当前登录用户名(给列表「我的」筛选用)。空 = 认不出。
     pub current_user: String,
@@ -408,7 +408,7 @@ pub struct CardItemVm {
     pub assignee: String,
     /// 提出人(codehub author)。空 = 认不出。
     pub author: String,
-    /// 排进的自定义版本(`bw:plan:*`)。空 = 不属于任何版本;与 week_of 互斥。
+    /// 排进人起名的版本(`bw:plan:*`)。空 = 没挂这个写法;与 week_of 是同一槽位。
     pub plan_version: String,
     /// 最近更新时间(unix 秒)。0 = 认不出。卡片「已更新」用它现算相对时间。
     pub updated_at: i64,
