@@ -1,6 +1,8 @@
 # 给另一窗:Orca 配对端跟随 host
 
-> **30 秒**:buddy 嵌的是 Orca web(所属 wry 窗)。本机 pipe 打 `ensureAgentSession` / `createAgentSession` 只推动桌面,已配对网页不跟。这窗只改 **Orca 源码仓**,不改 buddy。不阻塞 buddy 先嵌 web、先打同一条 RPC。
+> **历史横幅(2026-08-29)**:Orca 源码仓这刀已写完,源码桌面(`:6769`)+浏览器配对**人眼过**(jump / create+灌词 / 新树新会话都会跟)。**官方安装包还没有这刀**。buddy 所属窗里正式验还没走。现行口径在 [`architecture.md`](architecture.md) §3 模块 7。下面是当时交给 Orca 窗的 brief,不再当待办。
+
+> **30 秒**:buddy 嵌的是 Orca web(所属 wry 窗)。开工/跳转走本地 pipe,不发明新 RPC / `#session=` / postMessage。跟随是 Orca 在 focused 成功后推已有 `activateWorktree` 给配对端。
 
 把下面整段交给开在 `D:\2026\code\orca` 的窗口。
 

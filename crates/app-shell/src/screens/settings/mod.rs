@@ -32,6 +32,7 @@ pub fn View(vm: Vm, bridge: Bridge, close: EventHandler<MouseEvent>) -> Element 
             }
             div { class: "settings-list",
                 root_row { value: s.workspaces_root.clone(), bridge: bridge.clone() }
+                orca_row { value: s.orca_web_url.clone(), bridge: bridge.clone() }
                 {path_row(
                     "数据目录",
                     &s.data_dir,
@@ -84,6 +85,48 @@ fn root_row(value: String, bridge: Bridge) -> Element {
                     " —— 已接入的项目各自记着自己的仓路径,不会跟着搬,现在的值是 "
                     span { class: "mono", "{shown}" }
                     "。"
+                }
+            }
+        }
+    }
+}
+
+/// Orca 网页配对 URL:可改。安装版「给 web 配对」给的那条(带 token),
+/// 存本机设置,不进仓。只认 loopback,非 loopback 在会话屏被如实滤成空。
+#[component]
+fn orca_row(value: String, bridge: Bridge) -> Element {
+    let mut draft = use_signal(|| value.clone());
+    let shown = value.clone();
+    let b = bridge.clone();
+    rsx! {
+        div { class: "settings-row",
+            div { style: "flex:1;min-width:0;",
+                div { class: "k", "Orca 网页地址" }
+                div { style: "display:flex;gap:8px;align-items:center;margin-top:4px;",
+                    input {
+                        class: "input mono",
+                        style: "flex:1;min-width:0;",
+                        value: "{draft}",
+                        placeholder: "http://127.0.0.1:6768/web-index.html#pairing=…",
+                        oninput: move |e| draft.set(e.value()),
+                    }
+                    button {
+                        class: "btn btn-sm btn-primary",
+                        onclick: move |_| b.cmd(Command::SetOrcaWebUrl { url: draft.read().clone() }),
+                        "保存"
+                    }
+                }
+                div { style: "font-size:11px;color:var(--ink-4);margin-top:4px;",
+                    "从安装版 Orca「给 web 配对」复制完整 URL 贴这里(带 #pairing=,含 token)。"
+                    br {}
+                    "只认 loopback;"
+                    strong { "不进仓、不进仓文件" }
+                    " —— 是这台机器看 Orca web 的事。重启 buddy 后会话屏生效。"
+                    br {}
+                    "现在的值:"
+                    span { class: "mono", style: if shown.is_empty() { "color:var(--ink-4);" } else { "" },
+                        if shown.is_empty() { "—(没配,会话屏空着)" } else { "{shown}" }
+                    }
                 }
             }
         }

@@ -429,6 +429,9 @@ pub fn spawn(deep_link: DeepLink) -> Bridge {
                     _ => workspaces_root(),
                 };
                 let _ = std::fs::create_dir_all(&root);
+                // Orca 网页配对 URL 也是本机设置(带 token,只在本地)。读一次进
+                // ui,会话屏所属 wry 窗打开它;设置屏改了走 OrcaWebUrlChanged 刷新。
+                let orca_web_url = Settings::get_orca_web_url(&assets).unwrap_or_default();
                 // 桌面壳里 ▶跑 起的是真的 claude,挂在内嵌终端里,人全程看得
                 // 见、随时能停。指挥器那条路仍然走自我标注的替身 —— 它没有界
                 // 面渲染字节流。
@@ -459,6 +462,7 @@ pub fn spawn(deep_link: DeepLink) -> Bridge {
                     pending_drafts: None,
                     data_dir: assets.display().to_string(),
                     workspaces_root: root.display().to_string(),
+                    orca_web_url,
                     repos: crate::vm::RepoPickerVm::default(),
                     mr_cache: std::collections::HashMap::new(),
                     od_src: String::new(),
@@ -744,6 +748,16 @@ pub fn spawn(deep_link: DeepLink) -> Bridge {
                                         } = e
                                         {
                                             ui.workspaces_root = path.clone();
+                                        }
+                                        // Orca 网页地址改了:重读本机 settings.toml 刷新
+                                        // (事件不带 URL 原文 —— 配对 URL 带 token)。
+                                        if matches!(
+                                            e,
+                                            bw::command::Event::OrcaWebUrlChanged
+                                        ) {
+                                            ui.orca_web_url =
+                                                Settings::get_orca_web_url(&assets)
+                                                    .unwrap_or_default();
                                         }
                                     }
                                 }

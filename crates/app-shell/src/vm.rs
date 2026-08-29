@@ -94,6 +94,8 @@ pub struct RepoPrefillVm {
 #[derive(Clone, Debug, Default, PartialEq)]
 pub struct SettingsVm {
     pub workspaces_root: String,
+    /// Orca 网页配对 URL(带 token,只在本地)。设置屏可改;会话屏所属 wry 窗打开它。
+    pub orca_web_url: String,
     /// buddy 本机数据目录(注册表 / 设置 / 会话都在这下面)。刀6 起不再有 SQLite
     /// 库文件,这格显示的是 asset_root 目录名,不是 DB 路径。
     pub data_dir: String,
@@ -427,6 +429,9 @@ pub struct WorkbenchVm {
     /// Open Design iframe。空 = 组件自己探首页。
     pub od_src: String,
     pub od_gen: u64,
+    /// Orca 网页配对 URL(本机设置读出来,带 token)。所属 wry 窗打开它;
+    /// `BW_ORCA_WEB_URL` 在 `web_embed_url` 里覆盖。空 = 没配,会话屏空着。
+    pub orca_web_url: String,
 }
 
 #[derive(Clone, Debug, Default, PartialEq)]

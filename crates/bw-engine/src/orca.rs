@@ -163,13 +163,16 @@ pub async fn create_session(
 }
 
 /// 给会话屏所属 wry 窗的 loopback。**不依赖 `connect()`** —— 人把安装版
-/// 「给 web 配对」的完整 URL 塞进 `BW_ORCA_WEB_URL`,启动 buddy 后原样打开。
-/// 只校验 loopback,不拼会话深链、不 postMessage。没设 / 不是 loopback →
-/// `None`。pipe 开工不读这个 env。
-pub fn web_embed_url() -> Option<String> {
-    let raw = std::env::var("BW_ORCA_WEB_URL").ok()?;
+/// 「给 web 配对」的完整 URL 贴进设置屏(存本机 `settings.toml`),或开发期
+/// 塞 `BW_ORCA_WEB_URL` 覆盖;启动 buddy 后原样打开。**先 env 后 `fallback`**
+/// (fallback 是壳从本机设置读出来喂进来的),都只过 `looks_loopback_http`,
+/// 不拼会话深链、不 postMessage。没设 / 不是 loopback → `None`。pipe 开工
+/// 不读这个。**只认一份**(env 或设置),不在壳和这里各开一条嵌页。
+pub fn web_embed_url(fallback: Option<&str>) -> Option<String> {
+    let env = std::env::var("BW_ORCA_WEB_URL").ok();
+    let raw = env.as_deref().or(fallback)?;
     let trimmed = raw.trim();
-    if !crate::open_design::looks_loopback_http(trimmed) {
+    if trimmed.is_empty() || !crate::open_design::looks_loopback_http(trimmed) {
         return None;
     }
     Some(trimmed.to_string())
