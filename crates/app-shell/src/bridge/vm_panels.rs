@@ -19,6 +19,7 @@ use super::vm_build::{card_item, probe_env, remote_label, tool_label};
 pub(super) fn build_board(
     issues: &[bw::Issue],
     week: Option<&str>,
+    plan: Option<&str>,
     policy: Option<&issue_policy_file::IssuePolicyFile>,
 ) -> BoardVm {
     let labels = policy.and_then(|p| p.kanban.clone());
@@ -34,7 +35,11 @@ pub(super) fn build_board(
 
     let in_week = |i: &bw::Issue| match week {
         None => true,
-        Some(w) => i.week_of == w || !i.plan_version.is_empty(),
+        Some(w) => i.week_of == w,
+    };
+    let in_plan = |i: &bw::Issue| match plan {
+        None => true,
+        Some(p) => i.plan_version == p,
     };
     // 已排期 = 排进了某一周或某个版本(任一非空)。未排期 = 都空。
     let scheduled = |i: &bw::Issue| !i.week_of.is_empty() || !i.plan_version.is_empty();
@@ -47,6 +52,7 @@ pub(super) fn build_board(
         .iter()
         .filter(|i| {
             week.is_none()
+                && in_plan(i)
                 && !scheduled(i)
                 && matches!(i.status, IssueStatus::Backlog | IssueStatus::Todo)
         })
@@ -54,7 +60,7 @@ pub(super) fn build_board(
         .collect();
     let todo_cards: Vec<_> = issues
         .iter()
-        .filter(|i| scheduled(i) && in_week(i) && i.status == IssueStatus::Todo)
+        .filter(|i| scheduled(i) && in_week(i) && in_plan(i) && i.status == IssueStatus::Todo)
         .map(card_item)
         .collect();
     let todo_segs = if week.is_some() {
@@ -91,27 +97,27 @@ pub(super) fn build_board(
 
     let doing_cards: Vec<_> = issues
         .iter()
-        .filter(|i| in_week(i) && i.status == IssueStatus::InProgress)
+        .filter(|i| in_week(i) && in_plan(i) && i.status == IssueStatus::InProgress)
         .map(card_item)
         .collect();
     let review_cards: Vec<_> = issues
         .iter()
-        .filter(|i| in_week(i) && i.status == IssueStatus::InReview)
+        .filter(|i| in_week(i) && in_plan(i) && i.status == IssueStatus::InReview)
         .map(card_item)
         .collect();
     let blocked_cards: Vec<_> = issues
         .iter()
-        .filter(|i| in_week(i) && i.status == IssueStatus::Blocked)
+        .filter(|i| in_week(i) && in_plan(i) && i.status == IssueStatus::Blocked)
         .map(card_item)
         .collect();
     let done_cards: Vec<_> = issues
         .iter()
-        .filter(|i| in_week(i) && i.status == IssueStatus::Done)
+        .filter(|i| in_week(i) && in_plan(i) && i.status == IssueStatus::Done)
         .map(card_item)
         .collect();
     let cancelled_cards: Vec<_> = issues
         .iter()
-        .filter(|i| in_week(i) && i.status == IssueStatus::Cancelled)
+        .filter(|i| in_week(i) && in_plan(i) && i.status == IssueStatus::Cancelled)
         .map(card_item)
         .collect();
 

@@ -59,6 +59,8 @@ pub enum Req {
     Open(Option<ProjectId>),
     /// 计划屏切到看某一周。
     ViewWeek(String),
+    /// 计划屏切到看某个自定义版本(计划包)。
+    ViewPlan(String),
     /// 计划屏左栏点「全部」/ 点回某一周。
     ViewAll(bool),
     /// 知识库屏打开某份文档。
@@ -484,6 +486,7 @@ pub fn spawn(deep_link: DeepLink) -> Bridge {
                     briefing: None,
                     focus_skill: String::new(),
                     viewing_week: bw::isoweek::current_week(),
+                    viewing_plan: String::new(),
                     view_all: false,
                     open_doc: None,
                     note: None,
@@ -849,9 +852,20 @@ pub fn spawn(deep_link: DeepLink) -> Bridge {
                         }
                         Req::ViewWeek(w) => {
                             ui.viewing_week = w;
+                            ui.viewing_plan = String::new();
                             ui.view_all = false;
                         }
-                        Req::ViewAll(v) => ui.view_all = v,
+                        Req::ViewPlan(p) => {
+                            ui.viewing_plan = p;
+                            ui.viewing_week = String::new();
+                            ui.view_all = false;
+                        }
+                        Req::ViewAll(v) => {
+                            ui.view_all = v;
+                            if v {
+                                ui.viewing_plan = String::new();
+                            }
+                        }
                         Req::OpenDoc(p) => ui.open_doc = p,
                         Req::DropDrafts => ui.pending_drafts = None,
                         Req::SelectIssue(id) => {

@@ -96,3 +96,7 @@
 - **L3 行操作** — 未排期 `schedule`（排进现有周/版本）；已排期 `Start`（worktree 配置后进会话，状态切进行中）；进行中 / 待评审 / 阻塞 `Open`（回会话）；完成 / 取消为灰色横杠。`openSchedule` / `openStart` / `startModal` / `openIssueSession`
 - **L4 文案** — 开工→Start，去会话→Open，点完成→Complete，作废→Cancel，待办池→未排期，issue总览→全部 issue，责任人→负责人，排在→计划。叙事里的「活」改为 issue。
 
+
+## M. 待办(未做)
+
+- **M1 项目墙列迁移到 iconrail + 收起** — 全局 chrome 布局改:把 projectrail(项目名 + 总览/计划/会话/通知/知识/配置 文字导航)合并进 iconrail(图标列),支持展开/折叠。影响 `chrome/mod.rs` 全局布局,所有屏受影响。暂未做。

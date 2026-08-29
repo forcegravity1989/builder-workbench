@@ -239,8 +239,8 @@ h1,h2,h3,h4{font-family:var(--serif);font-weight:700;margin:0 0 8px;}
 
 /* ---------- plan ---------- */
 [data-screen="plan"]{height:calc(100vh - 92px);max-width:1560px;}
-.plan-grid{display:grid;grid-template-columns:180px 1fr;gap:14px;height:100%;min-height:0;}
-.plan-grid.has-detail{grid-template-columns:180px minmax(0,1fr) 360px;}
+.plan-grid{display:block;height:100%;min-height:0;}
+.plan-grid.has-detail{display:block;}
 .plan-col{background:var(--card);border:1px solid var(--border);border-radius:10px;overflow-y:auto;padding:12px;}
 .plan-allrow{padding:7px 9px;border-radius:7px;font-size:12.5px;cursor:pointer;margin-bottom:2px;display:flex;justify-content:space-between;align-items:center;}
 .plan-allrow:hover{background:#EEE6D3;}
@@ -294,6 +294,12 @@ h1,h2,h3,h4{font-family:var(--serif);font-weight:700;margin:0 0 8px;}
 .plan-detail-body{flex:1;overflow-y:auto;padding:16px 18px;}
 
 /* ---------- #23 计划页整改新增 ---------- */
+/* 状态点(看板列头 + 卡片) */
+.status-dot{width:8px;height:8px;flex:none;border-radius:50%;background:var(--gray);display:inline-block;}
+.dot-gray{background:var(--gray);}
+.dot-amber{background:var(--amber);}
+.dot-green{background:var(--green);}
+.dot-red{background:var(--red);}
 /* 看板:四列合并 + 列底色 + 段 tab */
 .kanban-col.col-todo{background:#F3F2EF;}
 .kanban-col.col-doing{background:#FBF6E8;}

@@ -33,7 +33,7 @@ pub enum ViewMode {
 }
 
 /// 列表筛选(对齐 opt:listFilter)。
-#[derive(Clone, Default, PartialEq)]
+#[derive(Clone, PartialEq)]
 pub struct ListFilter {
     pub preset: String, // open | assigned | mine
     pub plan: String,
@@ -41,25 +41,43 @@ pub struct ListFilter {
     pub q: String,
 }
 
+impl Default for ListFilter {
+    fn default() -> Self {
+        Self {
+            preset: "open".into(),
+            plan: String::new(),
+            stage: String::new(),
+            q: String::new(),
+        }
+    }
+}
+
 impl ListFilter {
     fn keep(&self, c: &crate::vm::CardItemVm, current_user: &str) -> bool {
         if self.preset == "assigned" && c.assignee != current_user {
             return false;
         }
-        if self.preset == "mine" && c.origin != "人建" {
+        if self.preset == "mine" && c.author != current_user {
             return false;
         }
         // open 预设不过滤(显示全部);assigned/mine 已过滤
         if !self.plan.is_empty() {
-            let pl = if !c.week_of.is_empty() {
-                &c.week_of
-            } else if !c.plan_version.is_empty() {
-                &c.plan_version
+            if self.plan == "unscheduled" {
+                // 未排期 = week_of 和 plan_version 都空
+                if !c.week_of.is_empty() || !c.plan_version.is_empty() {
+                    return false;
+                }
             } else {
-                return false;
-            };
-            if pl != &self.plan {
-                return false;
+                let pl = if !c.week_of.is_empty() {
+                    &c.week_of
+                } else if !c.plan_version.is_empty() {
+                    &c.plan_version
+                } else {
+                    return false;
+                };
+                if pl != &self.plan {
+                    return false;
+                }
             }
         }
         if !self.stage.is_empty() && format!("{:?}", c.status) != self.stage {
@@ -140,17 +158,16 @@ pub fn View(p: ProjectVm, bridge: Bridge) -> Element {
         section {
             class: "plan-grid",
             style: "height:calc(100vh - 112px);",
-            div { class: "plan-col", {week_rail(p, bridge)} }
             div { class: "plan-col plan-mid",
                 {toolbar(p, bridge, view_mode, dialog)}
-                if !p.view_all {
+                if !p.view_all && p.viewing_plan.is_empty() {
                     {week_head(p)}
                 }
                 {draft_confirm(p, bridge)}
                 if *view_mode.read() == ViewMode::List {
-                    {list_view::list_view(p, rows, list_filter, selected, dialog, bridge, nav)}
+                    {list_view::list_view(p, rows, list_filter, selected, schedule, start, bridge, nav)}
                 } else {
-                    {board(p, Some(Filters::default()), bridge, dragging, pending, schedule, selected, use_signal(String::new), col_seg, nav)}
+                    {board(p, Some(Filters::default()), list_filter.read().plan.clone(), bridge, dragging, pending, schedule, selected, start, use_signal(String::new), col_seg, nav)}
                 }
             }
         }
@@ -169,72 +186,6 @@ pub fn View(p: ProjectVm, bridge: Bridge) -> Element {
                 DialogKind::CreateVersion => rsx! { CreateVersionDialog { p: p.clone(), dialog, bridge: bridge.clone() } },
                 DialogKind::Release(draft) => rsx! { ReleaseDialog { draft, dialog, bridge: bridge.clone() } },
             }
-        }
-    }
-}
-
-// ── 左栏 ────────────────────────────────────────────
-
-fn week_rail(p: &ProjectVm, bridge: &Bridge) -> Element {
-    let b_all = bridge.clone();
-    rsx! {
-        div {
-            class: if p.view_all { "plan-weekrow active" } else { "plan-weekrow" },
-            onclick: move |_| b_all.send(Req::ViewAll(true)),
-            "全部 issue"
-        }
-        if p.weeks.is_empty() {
-            div { class: "detail-empty",
-                "还没有挂过周标签的活。周列表从 issue 的 bw:week 标签来,本周永远在。"
-            }
-        }
-        // 本周 + 未来周(可排期)
-        for w in p.weeks.iter().filter(|w| !is_past(w, p)) {
-            {week_row(w, p, bridge)}
-        }
-        // 版本(自定义计划包)在历史周上方
-        if !p.plan_versions.is_empty() {
-            div { class: "plan-weekgroup", "版本" }
-            for v in p.plan_versions.iter() {
-                div { class: "plan-weekrow",
-                    span { "{v.name}" }
-                    span { class: "chip-muted", "{v.issue_count}" }
-                }
-            }
-        }
-        // 历史周
-        div { class: "plan-weekgroup", "历史周" }
-        for w in p.weeks.iter().filter(|w| is_past(w, p)) {
-            {week_row(w, p, bridge)}
-        }
-        div { class: "plan-versionsel",
-            label { class: "label", "在研版本" }
-            div { class: "mono", style: "font-size:13px;", "{p.card.current_version}" }
-        }
-    }
-}
-
-fn is_past(w: &crate::vm::WeekVm, p: &ProjectVm) -> bool {
-    w.week < p.current_week
-}
-
-fn week_row(w: &crate::vm::WeekVm, p: &ProjectVm, bridge: &Bridge) -> Element {
-    let b = bridge.clone();
-    let week = w.week.clone();
-    let active = !p.view_all && w.week == p.viewing_week;
-    let is_current = w.week == p.current_week;
-    let label = if is_current {
-        format!("{} · 本周", w.week)
-    } else {
-        w.week.clone()
-    };
-    rsx! {
-        div {
-            key: "{w.week}",
-            class: if active { "plan-weekrow active" } else { "plan-weekrow" },
-            onclick: move |_| b.send(Req::ViewWeek(week.clone())),
-            span { "{label}" }
-            span { class: "chip-muted", "{w.activity_count}" }
         }
     }
 }
@@ -258,15 +209,61 @@ fn toolbar(
         .unwrap_or_default();
     let title = if p.view_all {
         "全部 issue".to_string()
+    } else if !p.viewing_plan.is_empty() {
+        p.viewing_plan.clone()
     } else if p.viewing_week == p.current_week {
         format!("{} · 本周", p.viewing_week)
     } else {
         p.viewing_week.clone()
     };
+    // 视图切换下拉(取代左栏):全部 issue / 各周 / 各版本
+    let b_view = _bridge.clone();
+    let view_opts: Vec<(String, String)> = {
+        let mut v: Vec<(String, String)> = vec![("all".into(), "全部 issue".into())];
+        for w in &p.weeks {
+            let val = format!("week:{}", w.week);
+            let label = if w.week == p.current_week {
+                format!("{} · 本周", w.week)
+            } else {
+                w.week.clone()
+            };
+            v.push((val, label));
+        }
+        for v2 in &p.plan_versions {
+            v.push((
+                format!("version:{}", v2.name),
+                format!("版本 · {}", v2.name),
+            ));
+        }
+        v
+    };
+    let cur_view = if p.view_all {
+        "all".to_string()
+    } else if !p.viewing_plan.is_empty() {
+        format!("version:{}", p.viewing_plan)
+    } else {
+        format!("week:{}", p.viewing_week)
+    };
     rsx! {
         div { class: "plan-toolbar",
             div { class: "left", "{title}" }
             div { class: "right",
+                select {
+                    class: "il-dd-btn",
+                    onchange: move |e| {
+                        let v = e.value();
+                        if v == "all" {
+                            b_view.send(Req::ViewAll(true));
+                        } else if let Some(w) = v.strip_prefix("week:") {
+                            b_view.send(Req::ViewWeek(w.to_string()));
+                        } else if let Some(pl) = v.strip_prefix("version:") {
+                            b_view.send(Req::ViewPlan(pl.to_string()));
+                        }
+                    },
+                    for (val, label) in view_opts.iter() {
+                        option { value: "{val}", selected: val.as_str() == cur_view.as_str(), "{label}" }
+                    }
+                }
                 button {
                     class: "btn btn-sm btn-secondary",
                     onclick: move |_| view_mode.set(if *view_mode.read() == ViewMode::Board { ViewMode::List } else { ViewMode::Board }),

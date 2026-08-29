@@ -153,6 +153,8 @@ pub struct ProjectVm {
     pub weeks: Vec<WeekVm>,
     /// 正在看哪一周。
     pub viewing_week: String,
+    /// 看某个自定义版本(计划包)。空 = 不在看版本。
+    pub viewing_plan: String,
     /// 左栏点的是「全部」——看板不按周过滤。
     pub view_all: bool,
     pub board: BoardVm,
