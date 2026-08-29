@@ -1,16 +1,5 @@
-# PR 自动评审(CI 层):官方 claude-code-action + code-review plugin。
-#
-# 谈定见 changes/reviewer-agent/(spec 拍板 7):GitHub 仓的自动触发放这一层,
-# codehub 仓走 Workbench 内建「请评审」。评审口径同源仓根 AGENTS.md(action
-# 每次自动读),不另立第二份 review 标准。
-#
-# 生效前提(人做;配好前本 workflow 如实失败在认证一步,不产假 review):
-#   1. 给仓装 Claude GitHub App(Contents / Issues / Pull requests 读写);
-#   2. 本机 `claude setup-token` 生成订阅 OAuth token,配进仓 secret
-#      CLAUDE_CODE_OAUTH_TOKEN。
-#
-# 2026-08-29 修好一次空跑:此前四次运行全绿、却一条评审都没产出过。
-# 绿色只说明 job 没崩,不说明评审发生过 —— 教训记在下面两条注释里。
+# PR 自动评审。谈定见 changes/reviewer-agent/;codehub 仓走 Workbench 内建「请评审」。
+# 前提(人做一次):给仓装 Claude GitHub App + 配 secret CLAUDE_CODE_OAUTH_TOKEN。
 name: Code Review
 on:
   pull_request:
@@ -18,53 +7,33 @@ on:
 jobs:
   review:
     runs-on: ubuntu-latest
-    # fork PR 拿不到 secrets(GitHub 的规矩)——显式跳过,换一个干净状态,
-    # 不留一场认证失败的红。官方骨架没有这条,是本仓自己加的。
+    # fork PR 拿不到 secrets,显式跳过,不留一场认证失败的红。
     if: github.event.pull_request.head.repo.full_name == github.repository
     permissions:
       contents: read
       pull-requests: read
       issues: read
-      # 评论经 Claude GitHub App 的 OIDC 联合认证发出,workflow 自己的令牌
-      # 保持只读 —— 所以这里没有 pull-requests: write。核过 action 源码
-      # (src/github/token.ts):它拿 id-token 换的是 App 自己的令牌,权限来自
-      # App 安装,与这个块无关;`gh` 与发评论用的都是那个令牌。这条设计成立。
+      # 评论走 App 的 OIDC 令牌,不用 workflow 令牌,所以这里没有写权限。
       id-token: write
     steps:
       - uses: actions/checkout@v6
         with:
-          # 评审要看 git 历史(谁在什么时候改的),浅克隆里没有。
-          fetch-depth: 0
+          fetch-depth: 0 # 评审要看 git 历史
       - uses: anthropics/claude-code-action@v1
         id: claude
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           plugin_marketplaces: "https://github.com/anthropics/claude-code.git"
           plugins: "code-review@claude-code-plugins"
-          # --comment = 意见以 inline comment 落在 PR 上(每个发现一条,无发现
-          # 发一条总结);不加只进 workflow log。skill 自己会跳过 draft、已关、
-          # 琐碎、以及已有 Claude 评论的 PR,不用另写去重。
-          #
-          # **只传 PR 号**:这条命令没有 $ARGUMENTS 占位符,多传的东西会被原样
-          # 附成 "ARGUMENTS: ..." 静默失效;而且 owner/repo/pull/N 这种写法
-          # `gh` 根本不认(它只吃纯数字或完整 URL)。旧版传的就是那个长形式。
+          # 只传 PR 号:这条命令没有 $ARGUMENTS,多传的会被静默忽略。
           prompt: "/code-review:code-review --comment ${{ github.event.pull_request.number }}"
-          # **这一行是上次空跑的病根**。`--allowedTools` 是「免询问名单」,不是
-          # 「可用工具集」;而 Bash 在这个 action 里**默认整个关掉**。code-review
-          # 这条命令全靠 `gh` 干活(它自己的 frontmatter 就声明了这些子命令),
-          # 旧版只点名了发评论那个 MCP 工具,于是 `gh` 一条都没获批 —— 命令第一步
-          # 「查这条 PR 该不该评审」拿不到数据,按它自带的规矩「条件不满足就停」,
-          # 4 轮 17 秒空跑收场,还报成功。逐条放行它要用的命令。
-          #
-          # 发 inline comment 的 MCP server 只在这里点名时才装(核过
-          # install-mcp-server.ts 的门控),那一项不能删。
+          # 这一长串必需,别精简:Bash 在这个 action 里默认关闭,而 code-review
+          # 全靠 gh 干活;发 inline comment 的 MCP server 也只在点名时才装。
           claude_args: >-
             --model claude-sonnet-5
             --allowedTools "mcp__github_inline_comment__create_inline_comment,Bash(gh pr view:*),Bash(gh pr diff:*),Bash(gh pr comment:*),Bash(gh pr list:*),Bash(gh issue view:*),Bash(gh issue list:*),Bash(gh search:*),Bash(git log:*),Bash(git blame:*),Bash(git diff:*),Read,Glob,Grep"
-      # 留取证路径:执行日志本来就无条件落盘(不受 show_full_output 影响),
-      # 这里把它捞出来。**不开 show_full_output** —— 那会把所有工具结果打进
-      # 公开日志,官方明确警告可能带出 secret。下次再空跑,看这份就知道
-      # agent 到底做了什么、哪一步被挡。
+      # 空跑时靠这份日志查哪一步被挡。不开 show_full_output——它会把工具结果
+      # (可能含 secret)打进公开日志。
       - if: always() && steps.claude.outputs.execution_file != ''
         uses: actions/upload-artifact@v4
         with:
