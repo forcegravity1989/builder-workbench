@@ -347,6 +347,8 @@ pub struct CardMrVm {
     pub pr_number: u32,
     /// 能不能点「合入并完成」——只有停在评审中的才能。
     pub mergeable: bool,
+    /// 现在有没有开着的 MR。合入按钮用它;已合入的只展示号。
+    pub has_open_mr: bool,
 }
 
 /// 四列看板(合并后:待办/进行中/待处理/已完成)。列的顺序是活的生命周期顺序,
@@ -393,8 +395,10 @@ pub struct CardItemVm {
     pub metric_key: String,
     pub settled: bool,
     pub status: IssueStatus,
-    /// 远端 MR 号。0 = 还没开 MR。通知那一类的判据就是它 > 0。
+    /// 远端 MR 号。0 = 没有 MR。开着的或已合入的都算,详情链接用它。
     pub pr_number: u32,
+    /// 分支上现在有没有开着的 MR。待评审→完成时:有则合入,没有则确认后只关 issue。
+    pub has_open_mr: bool,
     /// 远端 issue 号。0 = 这张活只在本机,没有对应的远端 issue。
     pub remote_number: u32,
     /// 这张活的分支。空 = 还没开过工。
