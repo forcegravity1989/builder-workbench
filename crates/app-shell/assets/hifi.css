@@ -80,6 +80,8 @@ h1,h2,h3,h4{font-family:var(--serif);font-weight:700;margin:0 0 8px;}
 @keyframes pulse{0%,100%{opacity:1;}50%{opacity:.32;}}
 .dot-run{animation:pulse 1.2s ease-in-out infinite;}
 .asterisk{color:var(--clay);font-weight:700;}
+.input.invalid{border-color:var(--alert-deep);}
+.field-err{font-size:12px;color:var(--alert-deep);margin-top:6px;}
 .spacer{flex:1;}
 .hidden{display:none !important;}
 

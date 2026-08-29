@@ -42,7 +42,14 @@ impl App {
             (IssueKind::Ops, _) | (_, None) => Vec::new(),
             (_, Some(c)) => vec![format!("bw:category:{}", crate::model::category_key(c))],
         };
-        // 排进版本 → 加 bw:plan 标签(issue_store 据此把状态设为 Todo=已排期)。
+        // 一张活只属于一个版本。人起名的版本只打 bw:plan,周版本只打
+        // bw:week。壳看自定义版本时 viewing_week 会被拼成本周,两个都传来
+        // 就丢掉周,只留版本。
+        let (week_of, plan) = if !plan.is_empty() {
+            (String::new(), plan)
+        } else {
+            (week_of, String::new())
+        };
         if !plan.is_empty() {
             extra.push(format!("bw:plan:{plan}"));
         }

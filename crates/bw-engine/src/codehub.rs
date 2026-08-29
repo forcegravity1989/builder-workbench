@@ -1132,9 +1132,9 @@ pub async fn project_week(
     set_issue_milestone(host, &pid, iid, mid).await
 }
 
-// ── 版本(自定义计划包)→ 里程碑 ──
-// 周计划怎么存版本就怎么存:codehub milestone(title=版本名)+ `bw:plan:<name>`
-// 标签。正本是标签,里程碑是 codehub 侧镜像。与发版号(bw:released:*)不同。
+// ── 人起名的版本 → 里程碑 ──
+// 和周版本同一套存法:codehub milestone(title=版本名)+ `bw:plan:<name>`
+// 标签。正本是标签,里程碑是 codehub 侧镜像。周版本走 `bw:week:`。与发版号(bw:released:*)不同。
 
 /// 建/复用一个版本里程碑,返回 mid。同名复用(不更新日期);找不到才建。
 pub async fn ensure_plan_milestone(
@@ -1150,7 +1150,7 @@ pub async fn ensure_plan_milestone(
         host,
         "GET",
         "/api/v4/projects/:id/milestones",
-        &[("id", pid.as_str())],
+        &[("id", pid.as_str()), ("per_page", "100")],
         &[],
     )
     .await?;
@@ -1162,16 +1162,12 @@ pub async fn ensure_plan_milestone(
         }
     }
     let desc = format!("buddy 投影 · 正本是 bw:plan:{name}");
+    let fields = milestone_create_fields(&pid, name, start, due);
     let created = api_json(
         host,
         "POST",
         "/api/v4/projects/:id/milestones",
-        &[
-            ("id", pid.as_str()),
-            ("title", name),
-            ("start_date", start),
-            ("due_date", due),
-        ],
+        &fields,
         &[("description", desc.as_str())],
     )
     .await?;
@@ -1422,16 +1418,12 @@ async fn ensure_week_milestone(
         }
     }
     let desc = format!("buddy 投影 · 正本是 bw:week:{week}");
+    let fields = milestone_create_fields(project_id, week, start, due);
     let created = api_json(
         host,
         "POST",
         "/api/v4/projects/:id/milestones",
-        &[
-            ("id", project_id),
-            ("title", week),
-            ("start_date", start),
-            ("due_date", due),
-        ],
+        &fields,
         &[("description", desc.as_str())],
     )
     .await?;
@@ -1512,6 +1504,24 @@ fn unwrap_api_body(stdout: &[u8]) -> Result<serde_json::Value, CodehubError> {
     Ok(v)
 }
 
+/// 建里程碑的 `--field`。日期可空:空串传给 codehub 会回
+/// `Failed to create milestone`,有值才带 `start_date` / `due_date`。
+fn milestone_create_fields<'a>(
+    id: &'a str,
+    title: &'a str,
+    start: &'a str,
+    due: &'a str,
+) -> Vec<(&'a str, &'a str)> {
+    let mut fields = vec![("id", id), ("title", title)];
+    if !start.trim().is_empty() {
+        fields.push(("start_date", start));
+    }
+    if !due.trim().is_empty() {
+        fields.push(("due_date", due));
+    }
+    fields
+}
+
 fn milestone_rows(body: &serde_json::Value) -> Vec<&serde_json::Value> {
     if let Some(arr) = body.get("milestones").and_then(|v| v.as_array()) {
         return arr.iter().collect();
@@ -1556,7 +1566,22 @@ mod parse_issue_list_json_tests {
 
 #[cfg(test)]
 mod api_body_tests {
-    use super::{milestone_rows, unwrap_api_body};
+    use super::{milestone_create_fields, milestone_rows, unwrap_api_body};
+
+    #[test]
+    fn omits_empty_milestone_dates() {
+        let f = milestone_create_fields("9", "MVP收尾", "", "");
+        assert_eq!(f, vec![("id", "9"), ("title", "MVP收尾")]);
+        let f = milestone_create_fields("9", "MVP收尾", "2026-08-01", "");
+        assert_eq!(
+            f,
+            vec![
+                ("id", "9"),
+                ("title", "MVP收尾"),
+                ("start_date", "2026-08-01")
+            ]
+        );
+    }
 
     #[test]
     fn unwraps_status_wrapper() {
