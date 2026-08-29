@@ -217,6 +217,11 @@ pub fn DetailModal(
                                 }, "Open" }
                             },
                             IssueStatus::InReview => rsx! {
+                                button { class: "btn btn-sm btn-secondary", onclick: move |_| {
+                                    selected.set(None);
+                                    b_sess.send(Req::SelectSession(Some(id)));
+                                    nav.go(Panel::Session);
+                                }, "Open" }
                                 button { class: "btn btn-sm btn-primary", onclick: {
                                     let title = c.title.clone();
                                     let pr = c.pr_number;
@@ -234,7 +239,13 @@ pub fn DetailModal(
                                     }
                                 }, "Complete" }
                             },
-                            IssueStatus::Done => rsx! { span { style: "color:var(--ink-3);", "已完成并结清" } },
+                            IssueStatus::Done | IssueStatus::Cancelled => rsx! {
+                                button { class: "btn btn-sm btn-secondary", onclick: move |_| {
+                                    selected.set(None);
+                                    b_sess.send(Req::SelectSession(Some(id)));
+                                    nav.go(Panel::Session);
+                                }, "Open" }
+                            },
                             IssueStatus::Blocked => rsx! {
                                 button { class: "btn btn-sm btn-secondary", onclick: move |_| {
                                     selected.set(None);
@@ -242,7 +253,6 @@ pub fn DetailModal(
                                     nav.go(Panel::Session);
                                 }, "Open" }
                             },
-                            IssueStatus::Cancelled => rsx! { span { style: "color:var(--ink-3);", "已取消" } },
                         }}
                     }
                     div { style: "display:flex;gap:8px;justify-content:flex-end;",

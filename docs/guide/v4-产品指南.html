@@ -274,7 +274,7 @@
             <tr><td>接一个仓、看铺了哪些文件、合铺底 MR</td><td><a href="#" onclick="go('u1');return false">第 0 站 · 接入项目</a></td></tr>
             <tr><td>看健康灯、指标、改名片 / 在研版本 / 项目群</td><td><a href="#" onclick="go('u1b');return false">第 1 站 · 看总览</a></td></tr>
             <tr><td>开始本周、写周目标、建活、看某一周</td><td><a href="#" onclick="go('u1c');return false">第 2/3 站 · 定本周</a></td></tr>
-            <tr><td>开工、作废、原型进 Open Design、删会话</td><td><a href="#" onclick="go('u1d');return false">第 4 站 · 干活</a></td></tr>
+            <tr><td>开工、作废、去会话、原型进 Open Design</td><td><a href="#" onclick="go('u1d');return false">第 4 站 · 干活</a></td></tr>
             <tr><td>合 MR、点完成、发版本</td><td><a href="#" onclick="go('u1e');return false">第 5 站 · 验收记发版</a></td></tr>
             <tr><td>周五自动盘点、每天自动采数</td><td><a href="#" onclick="go('u1f');return false">第 6 站 · 定时盘点</a></td></tr>
             <tr><td>灯为什么是灰、完成为什么必须人点</td><td><a href="#" onclick="go('u2');return false">规矩与查找</a></td></tr>
@@ -374,7 +374,7 @@
       </div>
 
       <h2 class="sec"><span class="n">最后一下：你点完成，合那个 MR</span></h2>
-      <p>接入只把活推到「评审中」。<strong>合入永远是人点的</strong>——计划屏把这张「规范铺底」从「评审中」拖到「已完成」（详情抽屉里那颗「✓ 点完成」是同一下）。松手会弹出确认框，写明先合哪个 MR；确认之后框不关，一步一句写正在合 MR、拉仓、结清（要两三秒）。合不成就整条不算数，活留在评审中，可以重试。</p>
+      <p>接入只把活推到「评审中」。<strong>合入永远是人点的</strong>——计划屏把这张「规范铺底」从「评审中」拖到「已完成」（详情弹窗里那颗「✓ 点完成」是同一下）。松手会弹出确认框，写明先合哪个 MR；确认之后框不关，一步一句写正在合 MR、拉仓、结清（要两三秒）。合不成就整条不算数，活留在评审中，可以重试。</p>
       <div class="callout note">
         <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/></svg>
         <div class="body"><strong>项目墙 ⚑ 只提醒，不在那儿合。</strong>「等你合入」告诉你有一张 MR 等着；去计划屏拖到「已完成」，或总览上那颗「合入并完成」。不要只在 codehub 网页关 issue——那不会合 MR。</div>
@@ -412,7 +412,7 @@
         <div class="li"><div class="n">2</div><div class="t">从上往下看：名片和健康灯（名片上有在研版本和项目群）、北极星、本周计划进度、滞后、引领、代码仓统计、发版记录。</div></div>
         <div class="li"><div class="n">3</div><div class="t">本会话第一次打开这个项目，buddy 会自己采一轮指标和仓统计。卡上先写「正在采…」，采完折线出现。还想再采，用各块上的「重新采集」。</div></div>
         <div class="li"><div class="n">4</div><div class="t">顶栏「刷新」会先把打开着的项目拉到远端最新，再重采。主检出上若只脏了读数或接入留下的未提交名片，buddy 会先让开再拉。只重画界面、不拉仓，会继续看见同事已经合进主干的旧 <code>metrics.toml</code>。</div></div>
-        <div class="li"><div class="n">5</div><div class="t">改项目名称 / 想做什么 / 对标 / 三个月长成什么样，或改在研版本、项目群：点「编辑项目名片」。保存后这张活在「评审中」（计划屏「issue总览」能看见，不进待办池）。总览横幅或看板拖到「已完成」合入。</div></div>
+        <div class="li"><div class="n">5</div><div class="t">改项目名称 / 想做什么 / 对标 / 三个月长成什么样，或改在研版本、项目群：点「编辑项目名片」。保存后这张活在「评审中」（计划屏右上角下拉切「全部 issue」就能看见，不进待办池）。总览横幅或看板拖到「已完成」合入。</div></div>
       </div>
 
       <h2 class="sec"><span class="n">背后</span></h2>
@@ -467,9 +467,9 @@
       <h2 class="sec"><span class="n">操作</span></h2>
       <div class="ops">
         <div class="li"><div class="n">1</div><div class="t">总览顶上「开始本周」。本周还没有这张运作活①、也还没有周目标，才会出现；已经做过（含已完成）不再冒出来。</div></div>
-        <div class="li"><div class="n">2</div><div class="t">跳到会话屏。agent 按周计划剧本走：复盘、采指标、起草周目标与纳入清单。你在内嵌终端里看着、随时能停。</div></div>
+        <div class="li"><div class="n">2</div><div class="t">跳到会话屏。agent 按周计划剧本走：复盘、采指标、起草周目标与纳入清单。你在会话屏的 Orca 页看着、随时能停。</div></div>
         <div class="li"><div class="n">3</div><div class="t">你确认之后，agent 当场建纳入的业务活，并打上本周 <code>bw:week:YYYY-Www</code>（codehub 还挂同名里程碑）。周目标、纳入清单、指标读数快照写成运作活①的三条评论，标题必须是 <code>## 周目标</code> / <code>## 本周纳入</code> / <code>## 本周指标读数</code>。周目标那一段一句或一段都行。</div></div>
-        <div class="li"><div class="n">4</div><div class="t">侧栏点「计划」。周头是周目标那段，默认只露两行，点右下角小框展开，再点收起。点某一周只看打了那一周标签的活；没打周标签的只在左栏「issue总览」。</div></div>
+        <div class="li"><div class="n">4</div><div class="t">侧栏点「计划」。周头是周目标那段，默认只露两行，点右下角小框展开，再点收起。点某一周只看打了那一周标签的活；没打周标签的切到右上角下拉「全部 issue」就能看见。</div></div>
       </div>
 
       <h2 class="sec"><span class="n">背后</span></h2>
@@ -502,13 +502,13 @@
     <section class="screen" id="u1d" data-title="第 4 站 · 干活" data-sec-name="怎么用">
       <div class="eyebrow">怎么用 · 第 4 站</div>
       <h1 class="disp">把一张活开起来干</h1>
-      <p class="lede">开工、作废、收会话、原型进 Open Design。合入、点完成、发版在<a href="#" onclick="go('u1e');return false">第 5 站</a>。</p>
+      <p class="lede">开工、作废、去会话、原型进 Open Design。合入、点完成、发版在<a href="#" onclick="go('u1e');return false">第 5 站</a>。</p>
       <div class="res">
         <div class="h">这一站能查到</div>
         <ul>
           <li><span class="b"></span><div>怎么开工（按钮和拖进「进行中」是同一条路）</div></li>
-          <li><span class="b"></span><div>原型走 Open Design、构建走内嵌终端</div></li>
-          <li><span class="b"></span><div>作废和「删除会话」不是一回事</div></li>
+          <li><span class="b"></span><div>构建停会话屏 Orca 页、原型停 Open Design</div></li>
+          <li><span class="b"></span><div>「去会话」只切树、不改活的状态</div></li>
         </ul>
       </div>
 
@@ -516,17 +516,17 @@
       <div class="ops">
         <div class="li"><div class="n">1</div><div class="t">计划屏点开一张卡（看板或列表都行）。业务活详情会带上已有类别；没打的可在详情或开工确认框补一类——不开工工具的活会被拒绝开工，不会悄悄起 Claude。状态下拉只列出从现在能走到的：待办能去进行中/阻塞/拒绝，进行中能去待办/阻塞/拒绝，待评审能去完成/拒绝，阻塞能去进行中/拒绝。选了和拖拽是同一条路。点 Start / Open / Complete 或改状态下拉后详情会自己关。</div></div>
         <div class="li"><div class="n">2</div><div class="t">详情「Start」，或把卡拖进「进行中」。确认框写 worktree，业务活可改类别。确认后跳会话屏。</div></div>
-        <div class="li"><div class="n">3</div><div class="t">原型类默认停在 Open Design 标签，嵌的是本机 OD 首页。<strong>不会自动开跑</strong>，你在 OD 里打一句发出去，它的 AI 才动。构建类走内嵌终端里的 Claude。</div></div>
-        <div class="li"><div class="n">4</div><div class="t">卡住了：待办或进行中拖到待处理列的「阻塞」段，或详情「阻塞」，写原因。阻塞卡可拖回进行中（只改状态，不会再开一轮工），或拖进「拒绝」作废。不想干了：详情 Cancel，或把卡拖到已完成列的「拒绝」段（待办 / 进行中 / 待评审 / 阻塞都能拖）。写原因。这不是完成——打已取消标签并关掉远端 issue，卡到「拒绝」。</div></div>
-        <div class="li"><div class="n">5</div><div class="t">作废不会拆本机会话。要收掉：会话屏「删除会话」，确认之后才停终端、收这棵工作目录、删本机会话行。远端那张 issue 不动。</div></div>
-        <div class="li"><div class="n">6</div><div class="t">会话屏左右两栏都能收，把中间终端撑大。右侧「指南」哪一屏都在，打开就是这份。</div></div>
+        <div class="li"><div class="n">3</div><div class="t">原型类默认停在 Open Design 标签，嵌的是本机 OD 首页。<strong>不会自动开跑</strong>，你在 OD 里打一句发出去，它的 AI 才动。构建类停在 Orca 页，嵌的是本机已配对的 Orca web；agent 在 Orca 里跑，过程在那看。</div></div>
+        <div class="li"><div class="n">4</div><div class="t">卡住了：待办或进行中拖到待处理列的「阻塞」段，或详情状态下拉选「阻塞」，写原因。阻塞卡可拖回进行中（只改状态，不会再开一轮工），或拖进「拒绝」作废。不想干了：详情状态下拉选「拒绝」，或把卡拖到已完成列的「拒绝」段（待办 / 进行中 / 待评审 / 阻塞都能拖）。写原因。这不是完成——打已取消标签并关掉远端 issue，卡到「拒绝」。</div></div>
+        <div class="li"><div class="n">5</div><div class="t">作废不会动本机会话行。停止、开 MR、评审在 Orca 里做，或在计划屏拖列；会话屏这版不露「删除会话」按钮（内核命令还在，屏上暂不露）。远端那张 issue 不动。</div></div>
+        <div class="li"><div class="n">6</div><div class="t">会话屏只剩 Orca / Open Design 两个页签，都常驻；右侧「指南」哪一屏都在，打开就是这份。</div></div>
       </div>
 
       <h2 class="sec"><span class="n">背后</span></h2>
       <div class="res">
         <ul>
-          <li><span class="b"></span><div><strong>对远端代码仓</strong>：开工改状态到进行中。作废写原因、打取消标签、关掉 issue。删除会话不碰远端。</div></li>
-          <li><span class="b"></span><div><strong>对你的机器</strong>：每张活一棵工作目录。原型开工后嵌 OD 首页，并尽量灌进系统提示词；灌不上就说没灌上，不假装已经进了某一单对话。构建类在终端里起 Claude。删会话才强制收掉这棵目录。</div></li>
+          <li><span class="b"></span><div><strong>对远端代码仓</strong>：开工改状态到进行中。作废写原因、打取消标签、关掉 issue。去会话不碰远端。</div></li>
+          <li><span class="b"></span><div><strong>对你的机器</strong>：每张活一棵工作目录。原型开工后嵌 OD 首页，并尽量灌进系统提示词；灌不上就说没灌上，不假装已经进了某一单对话。构建类在 Orca 里起 Claude（本机本地 pipe 开工）。新树落 <code>&lt;仓&gt;/.bw/worktrees/</code>，旧平级树不搬还能打开。</div></li>
           <li><span class="b"></span><div><strong>对 <code>.bw/</code></strong>：会话身份落本机。指标读数不在这一站写——点采集才记。</div></li>
         </ul>
       </div>
@@ -536,14 +536,14 @@
         <ul>
           <li><span class="b"></span><div>待办拖进进行中 = 开工，和 Start 是同一条路。进行中也可以拖回待办、拖进阻塞或拒绝。阻塞拖回进行中只改状态，不开新工。</div></li>
           <li><span class="b"></span><div>作废卡不会冒充已完成。已完成列要先切到「拒绝」再松手才是作废；切在「完成」上仍是合入。作废后再点开工，会说这张活已经取消。</div></li>
-          <li><span class="b"></span><div>原型：会话停在 Open Design 标签。退路是「看看喂了什么」，把提示词拷过去。不在 OD 里另建一单。</div></li>
-          <li><span class="b"></span><div>右侧文件树是这棵工作目录；「改动」只列还没提交的文件；「MR」只在评审中才去查。刚开工、目录干净，写「无改动 / 还没有 MR」是实话。</div></li>
+          <li><span class="b"></span><div>原型：会话停在 Open Design 标签。OD 不自动开跑，你打一句发出去它才动。不在 OD 里另建一单。</div></li>
+          <li><span class="b"></span><div>去会话：先切到这张活的工作目录树；树上有几扇窗、是否正好落到这条对话是其次，切树成功就算跳到了。</div></li>
         </ul>
       </div>
 
       <div class="callout note">
         <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/></svg>
-        <div class="body"><strong>Open Design 不会自动开跑。</strong>导出怎么稳落进这张活的目录还没做。右栏要最新内容，点刷新。</div>
+        <div class="body"><strong>Open Design 不会自动开跑。</strong>导出怎么稳落进这张活的目录还没做。要最新内容，点顶栏刷新。</div>
       </div>
       <p class="next">下一站：<a href="#" onclick="go('u1e');return false">第 5 站 · 验收记发版</a></p>
       <div class="foot">事实源 <code>docs/architecture.md</code> 模块 5 / 7 / 9 / 13。</div>
@@ -657,8 +657,8 @@
           <tbody>
             <tr><td>接一个仓、看铺了哪些文件、合铺底 MR</td><td><a href="#" onclick="go('u1');return false">第 0 站</a></td></tr>
             <tr><td>健康灯、指标、改名片 / 在研 / 项目群、顶栏刷新</td><td><a href="#" onclick="go('u1b');return false">第 1 站</a></td></tr>
-            <tr><td>开始本周、周目标、新建活、issue总览</td><td><a href="#" onclick="go('u1c');return false">第 2/3 站</a></td></tr>
-            <tr><td>开工、作废、Open Design、删除会话</td><td><a href="#" onclick="go('u1d');return false">第 4 站</a></td></tr>
+            <tr><td>开始本周、周目标、新建活、全部 issue 下拉</td><td><a href="#" onclick="go('u1c');return false">第 2/3 站</a></td></tr>
+            <tr><td>开工、作废、去会话、Open Design</td><td><a href="#" onclick="go('u1d');return false">第 4 站</a></td></tr>
             <tr><td>合 MR、点完成、发版本</td><td><a href="#" onclick="go('u1e');return false">第 5 站</a></td></tr>
             <tr><td>周五盘点、每天 20:00 采数</td><td><a href="#" onclick="go('u1f');return false">第 6 站</a></td></tr>
           </tbody>

@@ -6,7 +6,7 @@
 //! 这里只列真接了实现的命令。**没接的不放进枚举** —— 一条能发出去但内核
 //! 悄悄什么都不做的命令,比没有这条命令更糟。
 
-use crate::model::{Category, ConversationId, IssueId, IssueStatus, ProjectId};
+use crate::model::{Category, IssueId, IssueStatus, ProjectId};
 
 /// 总览「编辑项目名片」一次填完的仓文件字段。
 ///
@@ -64,10 +64,10 @@ pub enum Command {
     /// 把一个项目从工作台上移走。**只动库,不动仓** —— 仓是正本,里面是真实
     /// 的劳动成果。界面上要人点两下才发得出这条(第一下问「真移走?」)。
     RemoveProject { project_id: ProjectId },
-    /// 把这张活上次那场会话接回来看看(`claude --resume <id>`)。
+    /// 去会话:把 Orca 切到这张活的树。有 Claude session id 再尽量点回那条 tab。
     ///
-    /// **不改活的状态、不发任何 prompt** —— 纯粹是「让我看看上次聊到哪了」。
-    /// 和 ▶开工 的区别就在这:▶开工 会把活推到「进行中」,这条不会。
+    /// **不改活的状态、不发任何 prompt** —— 切树成功就算成功。和 ▶开工 的
+    /// 区别:▶开工 会把活推到「进行中」,这条不会。
     ReopenSession { issue_id: IssueId },
     /// 纯读:按「缺 / 过期 / 人改过 / 一致」四类对账,不建活不写仓。
     ReconcileStandard { project_id: ProjectId },
@@ -114,6 +114,9 @@ pub enum Command {
         note: String,
         included: Vec<IssueId>,
     },
+    /// 删一个自定义版本:给挂着 `bw:plan:<name>` 的活摘掉该标签,再删同名
+    /// 里程碑。**不碰 `bw:week:`** —— 周排期不是这个按钮的事。
+    DeletePlanVersion { project_id: ProjectId, name: String },
     /// 发版本:给选中的活写版本号 + 建远端 codehub/GitHub Release + 打 `bw:released:*` 标签。
     CutRelease {
         project_id: ProjectId,
@@ -177,6 +180,10 @@ pub enum Command {
     /// 只影响**之后**接入的项目:已接入的项目行里各自记着自己的仓路径,不会被这
     /// 一改牵着走(不然改一下根目录,已有项目就集体找不到仓了)。
     SetWorkspacesRoot { path: String },
+    /// 改「Orca 网页地址」——会话屏 iframe 打开的那条配对 URL(带 token)。
+    /// **只存本机 `settings.toml`,不进仓** —— 是这台机器看 Orca web 的事。
+    /// `BW_ORCA_WEB_URL` 仍可覆盖(开发期)。空串 = 清掉。
+    SetOrcaWebUrl { url: String },
 
     /// 定时的一跳。**只会自动建活,绝不自动完成活**——到点了就查本周有没有
     /// 那张资产盘点活,没有就建一张并自动开工。没到点、已经有了,都是原地
@@ -193,20 +200,10 @@ pub enum Command {
         /// `review` / `merged` / `release`。
         event_type: String,
     },
-    /// ■停止:关掉这件活的内嵌终端。**状态原地不动**——停下来既不是失败也
-    /// 不是完成,人随时能再点▶跑接回去。
+    /// ■停止:停掉这件活的运行。**状态原地不动**——停下来既不是失败也
+    /// 不是完成,人随时能再点▶跑接回去。PTY 已封存,这条现在只停本机记账
+    /// (live=false),不真去关什么进程 —— 没真实进程信号就当空闲,不假 live。
     CancelRun { id: IssueId },
-    /// 人在内嵌终端里敲的字节。
-    TerminalInput {
-        conversation_id: ConversationId,
-        bytes: Vec<u8>,
-    },
-    /// 终端框大小变了,PTY 那头也要跟着变,否则 agent 输出会按 80×24 折行。
-    TerminalResize {
-        conversation_id: ConversationId,
-        cols: u16,
-        rows: u16,
-    },
     /// 总览手填卡:把人填的今天这个数记进账本 `.bw/metrics/readings.jsonl`(当天覆盖)。
     /// 只收 C 类(`collect.kind = "manual"`)。空值拒。
     RecordManualMetric {
@@ -304,6 +301,12 @@ pub enum Event {
         /// codehub milestone id;0 = 没建里程碑(只打了标签)。
         milestone_id: u64,
     },
+    PlanVersionDeleted {
+        project_id: ProjectId,
+        name: String,
+        /// 摘掉 `bw:plan` 的活有几张。
+        issues_cleared: u32,
+    },
     IssueCategorySet {
         id: IssueId,
         category: String,
@@ -340,6 +343,9 @@ pub enum Event {
         path: String,
         pinned: u32,
     },
+    /// Orca 网页地址改了。**不带 URL 原文**(配对 URL 带 token,不进 Event);
+    /// 壳收到后自己重读本机 `settings.toml` 刷新显示。
+    OrcaWebUrlChanged,
     IssueTransitioned {
         id: IssueId,
         to: IssueStatus,

@@ -6,8 +6,8 @@
  * 搬过来只动了这几处:
  *   1. 根容器选择器 `#app` → `.app-root`(原型挂在 id=app 上,真壳的根是
  *      自己渲染的一个 div,Dioxus 的挂载点另有其名)。
- *   2. 末尾追加了「真壳补充」一节 —— 原型没有的东西:xterm.js 的容器、
- *      不在焦点上的终端挪到屏外的挂载位、拖拽中的列高亮。
+ *   2. 末尾追加了「真壳补充」一节 —— 原型没有的东西:会话屏 iframe 容器、
+ *      仓文件读不动的横幅(.warnbar)。
  *   3. toast 在「真壳补充」里被整条改写:原型的 toast 2.6 秒自动消失、
  *      永远不可点,所以它 `pointer-events:none`、底色是墨黑。真壳这条位置
  *      放的是命令回执(可能是一整句失败原话),必须点得到 ✕、也不该是一坨
@@ -19,6 +19,8 @@
  *   5. 活的详情抽屉里加了两样原型上没有的:活的正文块(.detail-body-text)
  *      与能点开远端 MR / issue 的链接(.detail-link)。原型上那个抽屉只有
  *      字段,没有正文也没有链接 —— 通知点过来落在这儿,得能一次看全。
+ *   6. 「真壳补充」末尾把 .app-root 钉在视口上。WebView2 最大化时 100vh /
+ *      height:100% 不刷新,会话中栏和 OD iframe 会停在旧尺寸;浏览器稿不用。
  *
  * 除此之外一行没改。类名照搬,屏里直接用 class,不再写行内样式。
  */
@@ -103,7 +105,7 @@ h1,h2,h3,h4{font-family:var(--serif);font-weight:700;margin:0 0 8px;}
 .pr-link:hover{background:#DED5C2;}
 .pr-link.active{background:var(--clay);color:#fff;}
 
-.main{flex:1;display:flex;flex-direction:column;min-width:0;}
+.main{flex:1;display:flex;flex-direction:column;min-width:0;min-height:0;}
 .topbar{height:52px;flex:0 0 52px;border-bottom:1px solid var(--border);background:var(--card);display:flex;align-items:center;padding:0 18px;gap:12px;}
 .topbar-title{font-family:var(--serif);font-weight:700;font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
 .demo-tag{font-size:10.5px;color:var(--ink-3);background:transparent;border:1px solid var(--border);border-radius:999px;padding:2px 10px;white-space:nowrap;}
@@ -111,7 +113,8 @@ h1,h2,h3,h4{font-family:var(--serif);font-weight:700;margin:0 0 8px;}
 .pr-badge{margin-left:auto;background:var(--clay);color:#fff;font-size:10px;border-radius:8px;padding:0 5px;min-width:14px;text-align:center;line-height:16px;flex:none;}
 .env-help{color:var(--clay);cursor:pointer;font-size:11px;margin-left:2px;}
 .env-help:hover{text-decoration:underline;}
-.content{flex:1;overflow-y:auto;padding:20px 24px 60px;min-width:0;}
+.content{flex:1;overflow-y:auto;padding:20px 24px 60px;min-width:0;min-height:0;}
+.content:has(.session-screen){overflow:hidden;display:flex;flex-direction:column;padding-bottom:16px;}
 
 /* ---------- wall ---------- */
 [data-screen="wall"]{max-width:1300px;}
@@ -394,82 +397,16 @@ h1,h2,h3,h4{font-family:var(--serif);font-weight:700;margin:0 0 8px;}
 
 
 /* ---------- session (Orca-style) ---------- */
-[data-screen="session"]{height:calc(100vh - 92px);max-width:1600px;}
-.sess-grid{display:grid;grid-template-columns:216px 1fr 264px;gap:14px;height:100%;min-height:0;}
+[data-screen="session"]{height:100%;max-width:1600px;min-height:0;}
+.session-screen{display:flex;flex-direction:column;flex:1;height:100%;min-height:0;max-width:1600px;}
+.session-screen .sess-midhead{flex:none;grid-column:auto;grid-row:auto;}
+.session-screen .sess-midbody{flex:1;min-height:0;grid-column:auto;grid-row:auto;}
 .sess-col{background:var(--card);border:1px solid var(--border);border-radius:10px;overflow:hidden;display:flex;flex-direction:column;min-height:0;}
-.sess-left-scroll{overflow-y:auto;padding:9px;flex:1;}
-.sess-group-label{font-size:10.3px;color:var(--ink-3);font-family:var(--mono);padding:9px 6px 4px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
-.sess-row{display:flex;align-items:flex-start;gap:8px;padding:8px 8px;border-radius:8px;cursor:pointer;margin-bottom:2px;}
-.sess-row:hover{background:#EEE6D3;}
-.sess-row.sel{background:var(--clay);color:#fff;}
-.sess-row .dot{margin-top:4px;}
-.sess-row .body{flex:1;min-width:0;}
-.sess-row .ttl{font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
-.sess-row .sub{font-size:10.3px;color:var(--ink-3);margin-top:1px;}
-.sess-row.sel .sub{color:rgba(255,255,255,.78);}
-.sess-addnew{font-size:10.3px;color:var(--ink-3);padding:3px 8px 8px;cursor:pointer;}
-.sess-addnew:hover{color:var(--clay);}
-.sess-mid{min-width:0;}
-.sess-actionbar{display:flex;align-items:center;gap:8px;padding:10px 13px;border-bottom:1px solid var(--border);background:#FBF8EF;flex-wrap:wrap;flex:none;}
-.sess-actionbar .ttl{font-weight:700;font-size:13px;flex:1;min-width:100px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
 .sess-tabs{display:flex;gap:2px;padding:7px 8px 0;border-bottom:1px solid var(--border);flex:none;overflow-x:auto;}
 .sess-tab{padding:6px 12px;font-size:11.3px;border-radius:7px 7px 0 0;cursor:pointer;color:var(--ink-3);white-space:nowrap;display:flex;align-items:center;gap:6px;}
 .sess-tab.active{background:#fff;color:var(--ink);border:1px solid var(--border);border-bottom-color:#fff;margin-bottom:-1px;}
 .sess-tab .x{opacity:.5;padding:0 2px;}
 .sess-tab .x:hover{opacity:1;color:var(--alert-deep);}
-.sess-body{flex:1;min-height:0;display:flex;flex-direction:column;padding:9px;}
-
-.terminal{flex:1;background:#1c1b19;border-radius:9px;display:flex;flex-direction:column;overflow:hidden;min-height:0;}
-.term-titlebar{background:#2a2825;color:#c9c5b8;font-size:11px;padding:7px 12px;display:flex;justify-content:space-between;align-items:center;font-family:var(--mono);flex:none;gap:10px;}
-.term-titlebar .copybtn{background:transparent;border:1px solid #4c4a44;color:#c9c5b8;border-radius:5px;padding:2px 8px;font-size:10.5px;}
-.term-titlebar .copybtn:hover{border-color:var(--amber);color:var(--amber);}
-.term-body{flex:1;overflow-y:auto;padding:11px 13px;font-family:var(--mono);font-size:12px;color:#d8d4c6;white-space:pre-wrap;word-break:break-word;user-select:text;}
-.term-line{margin-bottom:4px;}
-.term-line.sys{color:#8f9c7b;}
-.term-line.agent{color:#e3b479;}
-.term-line.human{color:#8fb3d9;}
-.term-line.git{color:#7fbf8a;}
-.term-idle{color:#77746a;}
-.term-input-row{display:flex;gap:8px;padding:8px 11px;border-top:1px solid #38352f;flex:none;}
-.term-input-row input{flex:1;background:#100f0e;border:1px solid #3c3a34;border-radius:6px;color:#e5e1d4;padding:6px 9px;font-family:var(--mono);font-size:12px;}
-.term-input-row input:focus{outline:1px solid var(--amber);}
-
-.codeview{flex:1;background:#fff;border:1px solid var(--border);border-radius:9px;overflow:hidden;display:flex;flex-direction:column;min-height:0;}
-.codeview-head{background:var(--card-alt);padding:6px 12px;font-family:var(--mono);font-size:11px;color:var(--ink-3);border-bottom:1px solid var(--border);flex:none;}
-.codeview-body{flex:1;overflow:auto;font-family:var(--mono);font-size:11.5px;line-height:1.7;padding:4px 0;}
-.codeline{display:flex;}
-.codeline .ln{flex:none;width:38px;text-align:right;padding-right:10px;color:var(--ink-4);user-select:none;}
-.codeline .src{flex:1;white-space:pre;padding-right:12px;}
-.tok-kw{color:#8B4A9C;}
-.tok-str{color:#B0764A;}
-.tok-com{color:var(--ink-3);font-style:italic;}
-
-.diffview{flex:1;background:#fff;border:1px solid var(--border);border-radius:9px;overflow:auto;font-family:var(--mono);font-size:11.5px;line-height:1.7;}
-.diffline{padding:1px 12px;white-space:pre;}
-.diffline.add{background:#E9F1E3;color:#3E5A32;}
-.diffline.del{background:#F7E4DE;color:var(--alert-deep);}
-.diffline.ctx{color:var(--ink-3);}
-
-.od-embed{flex:1;border:1px solid var(--border);border-radius:9px;overflow:hidden;display:flex;flex-direction:column;background:#fff;}
-.od-embed-head{background:var(--rail-bg);padding:6px 12px;font-size:11px;font-family:var(--mono);color:var(--ink-3);border-bottom:1px solid var(--border);}
-.od-embed-canvas{flex:1;display:flex;align-items:center;justify-content:center;background:repeating-linear-gradient(45deg,#faf7ee,#faf7ee 12px,#f2eede 12px,#f2eede 24px);color:var(--ink-3);font-size:13px;flex-direction:column;gap:8px;}
-
-.sess-right-scroll{overflow-y:auto;padding:11px;flex:1;}
-.sr-h{font-size:10px;color:var(--ink-3);text-transform:uppercase;letter-spacing:.05em;margin:12px 0 6px;}
-.sr-h:first-child{margin-top:0;}
-.tree-node{font-family:var(--mono);font-size:11.3px;line-height:1.85;cursor:pointer;display:flex;align-items:center;gap:4px;border-radius:4px;}
-.tree-node:hover{background:#EEE6D3;}
-.tree-node.dir{color:var(--ink-2);}
-.tree-node.file{color:var(--ink);}
-.tree-node.changed{color:var(--clay);font-weight:600;}
-.tree-arrow{width:11px;display:inline-block;color:var(--ink-3);flex:none;}
-.changed-row{display:flex;justify-content:space-between;font-family:var(--mono);font-size:10.8px;padding:3px 2px;border-bottom:1px dashed var(--border);cursor:pointer;}
-.changed-row:hover{color:var(--clay);}
-.diffnum .plus{color:var(--up);}
-.diffnum .minus{color:var(--down);margin-left:4px;}
-.git-box{font-family:var(--mono);font-size:11.3px;background:#fff;border:1px solid var(--border);border-radius:7px;padding:8px 10px;line-height:1.8;}
-.mr-card{margin-top:8px;font-size:12px;background:#fff;border:1px solid var(--border);border-radius:8px;padding:9px 10px;}
-.mr-card .row{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;}
 
 /* ---------- config ---------- */
 .tabbtn-row{display:flex;gap:6px;margin-bottom:14px;flex-wrap:wrap;}
@@ -574,43 +511,6 @@ select.select-multi{padding:3px;font-size:11.5px;border:1px solid var(--border-d
 
 /* ---------- 真壳补充(原型没有的) ---------- */
 
-/* xterm.js 的宿主。原型里终端是一堆 div 行,真壳里是 canvas,
-   所以 .term-body 那套排版规则用不上,这里给它一个纯容器。 */
-.xterm-host{flex:1;min-height:0;overflow:hidden;border-radius:0 0 9px 9px;}
-
-/* 不在焦点上的终端挪到屏外,而不是 display:none —— 后者会让 xterm 以
-   0×0 打开,切回来一片空白。屏外它照样收字节,agent 说的话不会丢。 */
-.term-offscreen{position:absolute;left:-100000px;top:0;width:900px;height:600px;}
-
-/* 拖拽中的看板列(原型靠 JS 加类,真壳同名同效)。 */
-.kanban-col.drop-ok{outline:2px dashed var(--clay);outline-offset:-2px;background:#FBEEE9;}
-.kanban-col.drop-no{outline:2px dashed var(--ink-4);outline-offset:-2px;opacity:.72;}
-
-
-/* 会话屏的三栏,在真壳里必须由 .content 自己摆 —— 原型可以把终端画在中栏
-   里面,真壳不行:终端是活的 PTY,挂进会话屏就会被「切到别的面板」连屏卸载,
-   那期间 agent 说的话是真丢的。所以终端始终挂在 .content 上,靠这套网格落到
-   中栏下半格。中栏因此被拆成上下两格(动作条+页签 / 正文),行间距设 0 再把
-   圆角接起来,看上去还是一整张卡。 */
-.content.session-mode{display:grid;grid-template-columns:auto minmax(0,1fr) auto;
-  grid-template-rows:auto minmax(0,1fr);gap:0 14px;overflow:hidden;padding:20px 24px 24px;}
-.sess-left{grid-column:1;grid-row:1 / span 2;width:216px;min-width:216px;}
-.sess-left.is-collapsed,.sess-right.is-collapsed{width:40px;min-width:40px;}
-.sess-midhead{grid-column:2;grid-row:1;border-radius:10px 10px 0 0;border-bottom:none;}
-.sess-midbody{grid-column:2;grid-row:2;min-height:0;border-radius:0 0 10px 10px;border-top:none;}
-.sess-right{grid-column:3;grid-row:1 / span 2;width:264px;min-width:264px;}
-.sess-rail-toggle{flex:none;align-self:flex-end;margin:8px 8px 0;border:1px solid var(--border);
-  background:var(--bg);color:var(--ink-2);cursor:pointer;font-size:20px;line-height:1;
-  min-width:36px;min-height:36px;padding:6px 10px;border-radius:8px;}
-.sess-rail-toggle:hover{color:var(--clay);border-color:var(--clay);}
-.sess-rail{flex:1;border:none;background:transparent;color:var(--ink-2);cursor:pointer;
-  writing-mode:vertical-rl;letter-spacing:.12em;font-size:14px;padding:18px 0;min-width:40px;}
-.sess-rail:hover{color:var(--clay);}
-/* 「看看喂了什么」盖在终端格上,不撑高动作条把 PTY 挤下去。 */
-.sess-briefing{grid-column:2;grid-row:2;z-index:4;min-height:0;overflow:auto;
-  margin:0;padding:12px;background:var(--bg, #fff);border:1px solid var(--border);
-  border-top:none;border-radius:0 0 10px 10px;}
-
 /* 仓文件读不动这类实话,原型没有对应位置(原型的文件都是内嵌的)。 */
 .warnbar{padding:8px 18px;background:#F6E7E2;border-bottom:1px solid var(--border);
   font-size:12px;color:var(--alert-deep);}
@@ -681,3 +581,10 @@ select.select-multi{padding:3px;font-size:11.5px;border:1px solid var(--border-d
   color:var(--ink-2);line-height:1.55;cursor:default;}
 .btn-danger{background:var(--alert-deep);border-color:var(--alert-deep);color:#FFF8F3;}
 .btn-danger:hover{background:var(--red);border-color:var(--red);}
+
+/* WebView2 最大化时 100vh / height:100% 不刷新视口,会话中栏和 iframe
+   会停在旧尺寸。把根钉在窗口四边上(替代上面的 100vh),中栏跟 flex 撑。
+   浏览器稿不用这条。 */
+.app-root{position:fixed;inset:0;height:auto;}
+/* 会话是全屏嵌页,不要再卡 1600px——最大化右侧会空一截。总览仍走稿上的 max-width。 */
+[data-screen="session"],.session-screen{max-width:none;width:100%;}

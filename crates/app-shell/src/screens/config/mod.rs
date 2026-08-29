@@ -107,11 +107,9 @@ fn MappingRow(m: MappingVm, pid: bw::model::ProjectId, bridge: Bridge) -> Elemen
                     value: "{tool}",
                     onchange: move |e| tool.set(e.value()),
                     option { value: "Claude CLI", "Claude CLI" }
-                    // Cursor 在底座里 supported=false,**按规矩,按不动的
-                    // 留位一律灰态并写明为什么** —— 选得中却跑不起来,比选不中更坏。
-                    // Open Design 已接(会话屏 OD 标签内嵌本机 OD,▶开工 不起 CLI),
-                    // 不再灰。
-                    option { value: "Cursor", disabled: true, "Cursor(还没接,选了开不了工)" }
+                    // Cursor 底座已通(打 cursor-agent);选了探不到就如实报错、
+                    // 不退回 Claude —— 和 Claude CLI 同口径,不再灰。
+                    option { value: "Cursor", "Cursor" }
                     option {
                         value: "Open Design",
                         "Open Design(本机网页内嵌,开工开会话屏 OD 标签)"

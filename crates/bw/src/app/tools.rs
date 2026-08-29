@@ -75,6 +75,16 @@ impl App {
         Ok(vec![Event::WorkspacesRootChanged { path, pinned }])
     }
 
+    /// 改 Orca 网页地址(会话屏 iframe 打开的配对 URL)。只存本机设置,
+    /// 不进仓。loopback 校验在**读侧**(`bw_engine::orca::web_embed_url` 用
+    /// `looks_loopback_http`)——这里存什么不报错,非 loopback 在会话屏被如实
+    /// 滤成空(人贴错看空就知道)。事件不带 URL 原文(配对 URL 带 token)。
+    pub(super) async fn set_orca_web_url(&mut self, url: String) -> Result<Vec<Event>> {
+        let url = url.trim().to_string();
+        self.set_orca_web_url_setting(&url).await?;
+        Ok(vec![Event::OrcaWebUrlChanged])
+    }
+
     pub(super) async fn probe_tool(&mut self, name: String) -> Result<Vec<Event>> {
         let result = probe(&name).await;
         Ok(vec![Event::ToolProbed { name, result }])
@@ -105,6 +115,29 @@ pub fn agent_for(tool: &str) -> Result<&'static bw_engine::TuiAgentConfig> {
             "这张活配的开工工具是 Open Design(本机网页内嵌类),不经过终端。\
              去会话屏的「Open Design」标签用内嵌视图干活;要换 Claude CLI 干这张活,\
              先在活详情里把开工工具改掉。"
+                .into(),
+        )),
+        other => Err(AppError::Exec(format!(
+            "活上记着的开工工具是「{other}」,buddy 不认识它 —— 不猜、不拿别的工具顶上。\
+             去配置屏的「类别 → 开工工具」里改掉,或者在活详情里改这一张。"
+        ))),
+    }
+}
+
+/// 活上记着的开工工具 → Orca 里要用的 agent 名(给 `orca::create_session` /
+/// `reveal_tree`)。和 [`agent_for`] 同源 —— 都照活上记的工具走,不许悄悄换;
+/// 只是这里返回的是 Orca 的 agent 名字符串,不是 PTY 那套 `TuiAgentConfig`。
+/// Open Design 仍走 OD 分支,不打 Orca(这里拒,和 `agent_for` 一致)。探活失败
+/// 仍拒绝开工,不退回 Claude。
+pub fn orca_agent(tool: &str) -> Result<&'static str> {
+    match tool.trim() {
+        "" | "claude_cli" => Ok("claude"),
+        // Orca 的 createAgentSession 预设名是 `cursor`(isTuiAgent);
+        // `cursor-agent` 是启动二进制,打出去会被拒成 Unknown agent preset。
+        "cursor" => Ok("cursor"),
+        "open_design" => Err(AppError::Exec(
+            "这张活配的开工工具是 Open Design(本机网页内嵌类),不经 Orca。\
+             去会话屏的「Open Design」组件用内嵌视图干活。"
                 .into(),
         )),
         other => Err(AppError::Exec(format!(
@@ -153,4 +186,16 @@ async fn version_of(bin: &str, args: &[&str]) -> Option<String> {
             .trim()
             .to_string()
     })
+}
+
+#[cfg(test)]
+mod tests {
+    use super::orca_agent;
+
+    #[test]
+    fn orca_preset_is_cursor_not_binary_name() {
+        assert_eq!(orca_agent("claude_cli").unwrap(), "claude");
+        assert_eq!(orca_agent("cursor").unwrap(), "cursor");
+        assert!(orca_agent("open_design").is_err());
+    }
 }

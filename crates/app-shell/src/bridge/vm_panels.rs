@@ -386,92 +386,34 @@ pub(super) async fn build_sessions(
                 branch: c.branch_name,
                 workspace_path: c.workspace_path,
                 session_id: c.claude_session_id,
-                // 唯一真实的信号:这个会话的 PTY 进程还在不在。
-                live: app.pty_live(c.id),
+                // PTY 已封存,没真进程信号 —— live 如实是 false,不假绿。
+                live: false,
             })
         })
         .collect()
 }
 
-/// 会话屏右栏 + 中栏。全部现算:文件树点开哪层读哪层、改动文件问 git、
-/// diff 也问 git。**没选中会话就整块是空的**,不摆一个假的工作台。
-#[allow(clippy::too_many_arguments)]
-pub(super) async fn build_workbench(
+/// 会话屏两个组件要的那点状态:页签 + 开工工具 + OD iframe 的 src/gen +
+/// Orca 网页地址。两个页签常驻,不依赖「先选中一场会话」——左列表已经删了,
+/// 没选中也要能切 Orca / Open Design,否则点页签会被 `Default` 打回 Orca。
+pub(super) fn build_workbench(
     sessions: &[SessionVm],
     issues: &[bw::Issue],
     open: Option<bw::model::IssueId>,
     tab: SessionTab,
-    expanded: &[String],
-    open_path: &str,
     od_src: &str,
     od_gen: u64,
+    orca_web_url: &str,
 ) -> WorkbenchVm {
-    let Some(s) = open.and_then(|id| sessions.iter().find(|s| s.issue_id == id)) else {
-        return WorkbenchVm::default();
-    };
-    let ws = std::path::PathBuf::from(&s.workspace_path);
-    let issue = issues.iter().find(|i| i.id == s.issue_id);
-    let pr_number = issue.map(|i| i.pr_number).unwrap_or(0);
-    // 开工工具:open_design 时会话屏多一个内嵌 Open Design 标签。
+    let s = open.and_then(|id| sessions.iter().find(|s| s.issue_id == id));
+    let issue = s.and_then(|s| issues.iter().find(|i| i.id == s.issue_id));
     let tool = issue.map(|i| i.tool.clone()).unwrap_or_default();
-
-    let mut expanded: Vec<String> = expanded.to_vec();
-    if !expanded.iter().any(|d| d.is_empty()) {
-        expanded.push(String::new());
-    }
-    let tree: Vec<(String, Vec<TreeEntryVm>)> = expanded
-        .iter()
-        .map(|dir| {
-            let entries = bw::git::list_dir(&ws, dir)
-                .into_iter()
-                .map(|e| TreeEntryVm {
-                    rel: e.rel,
-                    name: e.name,
-                    is_dir: e.is_dir,
-                })
-                .collect();
-            (dir.clone(), entries)
-        })
-        .collect();
-
-    let changed: Vec<ChangedFileVm> = bw::git::changed_files(&ws)
-        .await
-        .unwrap_or_default()
-        .into_iter()
-        .map(|c| ChangedFileVm {
-            label: c.label(),
-            path: c.path,
-        })
-        .collect();
-
-    // 中栏正文:文件页签给全文(只读),diff 页签问 git 要 diff。读不出来就
-    // 把读不出来这件事本身摆出来,不显示空白。
-    let open_body = if open_path.is_empty() {
-        String::new()
-    } else if tab == SessionTab::Diff {
-        bw::git::file_diff(&ws, open_path)
-            .await
-            .unwrap_or_else(|e| format!("(diff 取不到:{e})"))
-    } else {
-        std::fs::read_to_string(ws.join(open_path))
-            .unwrap_or_else(|e| format!("(这个文件读不出来:{e})"))
-    };
-
     WorkbenchVm {
-        workspace: s.workspace_path.clone(),
-        branch: s.branch.clone(),
-        ahead_behind: bw::git::ahead_behind(&ws, "main").await,
-        dirty: !changed.is_empty(),
-        expanded,
-        tree,
-        changed,
-        pr_number,
         tab,
         tool,
-        open_path: open_path.to_string(),
-        open_body,
         od_src: od_src.to_string(),
         od_gen,
+        orca_web_url: orca_web_url.to_string(),
     }
 }
 
