@@ -403,15 +403,15 @@ pub struct Issue {
     pub assignee: String,
     /// 提出人(codehub issue author)。空 = 认不出。正本在远端,本地只透传。
     pub author: String,
-    /// 排进的自定义版本(`bw:plan:<name>` 标签);空 = 不属于任何版本。
-    /// 和 `week_of` 互斥:一张活要么排进某一周、要么排进某个版本。
+    /// 排进人起名的版本(`bw:plan:<name>` 标签);空 = 没挂这个写法。
+    /// 和 `week_of` 是同一槽位的两种写法:周版本走 `week_of`,人起名的走这里。
     pub plan_version: String,
 }
 
 impl Issue {
-    /// 排进某一周了没有。`week_of` 为空 = 还在待办池。
+    /// 排进某个版本了没有(周版本或人起名的都算)。两个都空 = 还在待办池。
     pub fn is_scheduled(&self) -> bool {
-        !self.week_of.is_empty()
+        !self.week_of.is_empty() || !self.plan_version.is_empty()
     }
 }
 

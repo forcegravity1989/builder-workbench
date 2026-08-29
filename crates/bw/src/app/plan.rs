@@ -1,8 +1,9 @@
 //! 开始本周、排期、发版本。
 //!
 //! 刀3 起,issue 的正本在远端 codehub/GitHub issue + 标签,本地不建 issue 表,
-//! 不写周计划文件。排期 = 给 issue 打 `bw:week:*` 标签;发版 = 给活打
-//! `bw:released:*` 标签 + 在远端建 Release。
+//! 不写周计划文件。排期 = 给 issue 打一个版本标签(周版本 `bw:week:*` /
+//! 人起名的 `bw:plan:*`,同一槽位);发版 = 给活打 `bw:released:*` 标签 +
+//! 在远端建 Release。
 
 use super::{issue_store, App, AppError, Result};
 use crate::command::Event;
@@ -145,7 +146,7 @@ impl App {
         }])
     }
 
-    /// 排进自定义版本(`bw:plan:<name>`)。和排进周互斥:先摘 `bw:week:` 标签,
+    /// 排进人起名的版本(`bw:plan:<name>`)。同一槽位:先摘 `bw:week:` 标签,
     /// 再打 `bw:plan:<name>`,并把 issue 挂到版本里程碑。状态进「待办」(已排期)。
     pub(super) async fn schedule_to_plan(
         &mut self,
@@ -162,9 +163,9 @@ impl App {
         Ok(vec![Event::IssueScheduledToPlan { id, plan }])
     }
 
-    /// 建一个自定义版本(计划包):建 codehub milestone(title=name,start,due),
+    /// 建一个人起名的版本:建 codehub milestone(title=name,start,due),
     /// 并给 `included` 每张打 `bw:plan:<name>` 标签、挂到这个里程碑。
-    /// 与发版号 `cut_release` 不同:版本是把待办活划归到一个计划包里排期。
+    /// 周号形态拒收(那是每周一固定出现的版本)。与发版号 `cut_release` 不同。
     pub(super) async fn create_plan_version(
         &mut self,
         project_id: ProjectId,
@@ -174,6 +175,29 @@ impl App {
         _note: String,
         included: Vec<IssueId>,
     ) -> Result<Vec<Event>> {
+        let name = name.trim().to_string();
+        if name.is_empty() {
+            return Err(AppError::Refused("版本名不能空".into()));
+        }
+        if looks_like_week(&name) {
+            return Err(AppError::Refused(
+                "周号是每周一固定出现的版本,不用在这里再建".into(),
+            ));
+        }
+        let start = start.trim().to_string();
+        let due = due.trim().to_string();
+        if start.is_empty() || due.is_empty() {
+            return Err(AppError::Refused("开始和结束都要填".into()));
+        }
+        if !looks_like_ymd(&start) {
+            return Err(AppError::Refused("开始日期认不出,请用日期框选".into()));
+        }
+        if !looks_like_ymd(&due) {
+            return Err(AppError::Refused("结束日期认不出,请用日期框选".into()));
+        }
+        if start > due {
+            return Err(AppError::Refused("开始不能晚于结束".into()));
+        }
         let project = self.project_of(project_id).await?;
         let mid = issue_store::create_plan_version(self, &project, &name, &start, &due).await?;
         for id in &included {
@@ -186,8 +210,8 @@ impl App {
         }])
     }
 
-    /// 删自定义版本:给挂着 `bw:plan:<name>` 的活摘标签,再删同名里程碑。
-    /// 不碰 `bw:week:`。周格式标题拒收(那是周排期投影,不是这个按钮)。
+    /// 删人起名的版本:给挂着 `bw:plan:<name>` 的活摘标签,再删同名里程碑。
+    /// 周版本每周一固定出现,周格式标题拒收。
     pub(super) async fn delete_plan_version(
         &mut self,
         project_id: ProjectId,
@@ -199,7 +223,7 @@ impl App {
         }
         if looks_like_week(&name) {
             return Err(AppError::Refused(
-                "周排期不是自定义版本,不能从这里删".into(),
+                "周版本每周一固定出现,不能从这里删".into(),
             ));
         }
         let project = self.project_of(project_id).await?;
@@ -358,4 +382,13 @@ fn looks_like_week(s: &str) -> bool {
         && s.get(4..6).is_some_and(|m| m.eq_ignore_ascii_case("-W"))
         && s[..4].chars().all(|c| c.is_ascii_digit())
         && s[6..].chars().all(|c| c.is_ascii_digit())
+}
+
+fn looks_like_ymd(s: &str) -> bool {
+    s.len() == 10
+        && s.as_bytes().get(4) == Some(&b'-')
+        && s.as_bytes().get(7) == Some(&b'-')
+        && s.bytes()
+            .enumerate()
+            .all(|(i, c)| if i == 4 || i == 7 { c == b'-' } else { c.is_ascii_digit() })
 }
