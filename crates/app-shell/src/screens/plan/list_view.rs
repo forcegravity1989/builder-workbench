@@ -275,6 +275,7 @@ fn list_row(
                     "open" => rsx! {
                         button { class: "il-btn primary", onclick: move |e| {
                             e.stop_propagation();
+                            selected.set(None);
                             b_sess.send(Req::SelectSession(Some(cid)));
                             nav.go(Panel::Session);
                         }, "Open →" }

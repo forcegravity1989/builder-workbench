@@ -18,7 +18,7 @@ use bw::command::Command;
 use bw::model::IssueId;
 use dioxus::prelude::*;
 
-use detail::DetailModal;
+use detail::{DetailModal, StartModal};
 use kanban::{board, PendingMove, PendingSchedule};
 use plan_dialogs::{
     confirm_dialog, CreateVersionDialog, DeleteVersionDialog, DialogKind, NewIssueDialog,
@@ -166,7 +166,7 @@ pub fn View(p: ProjectVm, bridge: Bridge) -> Element {
             DetailModal { p: p.clone(), selected, schedule, start, bridge: bridge.clone() }
         }
         if let Some(sid) = *start.read() {
-            {detail::start_modal(p, sid, bridge, start, &nav)}
+            StartModal { p: p.clone(), sid, start, bridge: bridge.clone() }
         }
         if let Some(pm) = pending.read().clone() {
             {confirm_dialog(pm, pending, bridge)}

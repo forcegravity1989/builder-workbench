@@ -1,5 +1,6 @@
 //! 详情弹窗(屏幕居中)。点卡片打开,三段式:头/体/底。字段精简,主操作按
-//! 状态互斥。Start 是只读子弹窗,确认即 RunIssue。
+//! 状态互斥。点 Start / Open / 阻塞 / Cancel / Complete 后详情自动关。
+//! Start 确认框建 worktree,业务活可改/补类别后再 RunIssue。
 
 use crate::bridge::{Bridge, Panel, PanelNav, Req};
 use crate::vm::{CardItemVm, ProjectVm};
@@ -94,8 +95,13 @@ pub fn DetailModal(
                                 span { style: "color:var(--ink-3);", "— 只在本机" }
                             }
                         }
-                        if c.kind != "业务活" {
-                            div { class: "detail-row",
+                        if c.kind == "运作活" {
+                            div { class: "detail-row", style: "grid-column:1/-1;",
+                                div { class: "k", "类别" }
+                                "运作"
+                            }
+                        } else {
+                            div { class: "detail-row", style: "grid-column:1/-1;",
                                 div { class: "k", "类别" }
                                 select {
                                     class: "select",
@@ -111,8 +117,6 @@ pub fn DetailModal(
                                     }
                                 }
                             }
-                        } else {
-                            {row("类别", "运作")}
                         }
                         div { class: "detail-row",
                             div { class: "k", "计划" }
@@ -163,20 +167,28 @@ pub fn DetailModal(
                                 }, "schedule" }
                             },
                             IssueStatus::Todo => rsx! {
-                                button { class: "btn btn-sm btn-primary", onclick: move |_| start.set(Some(id)), "Start" }
+                                button { class: "btn btn-sm btn-primary", onclick: move |_| {
+                                    selected.set(None);
+                                    start.set(Some(id));
+                                }, "Start" }
                             },
                             IssueStatus::InProgress => rsx! {
                                 button { class: "btn btn-sm btn-secondary", onclick: move |_| {
+                                    selected.set(None);
                                     b_sess.send(Req::SelectSession(Some(id)));
                                     nav.go(Panel::Session);
                                 }, "Open" }
                             },
                             IssueStatus::InReview => rsx! {
-                                button { class: "btn btn-sm btn-primary", onclick: move |_| b_complete.cmd(Command::MergeAndSettle { id }), "Complete" }
+                                button { class: "btn btn-sm btn-primary", onclick: move |_| {
+                                    b_complete.cmd(Command::MergeAndSettle { id });
+                                    selected.set(None);
+                                }, "Complete" }
                             },
                             IssueStatus::Done => rsx! { span { style: "color:var(--ink-3);", "已完成并结清" } },
                             IssueStatus::Blocked => rsx! {
                                 button { class: "btn btn-sm btn-secondary", onclick: move |_| {
+                                    selected.set(None);
                                     b_sess.send(Req::SelectSession(Some(id)));
                                     nav.go(Panel::Session);
                                 }, "Open" }
@@ -186,13 +198,19 @@ pub fn DetailModal(
                         {match c.status {
                             IssueStatus::Done | IssueStatus::Cancelled => rsx! {},
                             _ => rsx! {
-                                button { class: "btn btn-sm btn-secondary", onclick: move |_| b_block.cmd(Command::BlockIssue { id, reason: "在计划屏手动标为阻塞".into() }), "阻塞" }
+                                button { class: "btn btn-sm btn-secondary", onclick: move |_| {
+                                    b_block.cmd(Command::BlockIssue { id, reason: "在计划屏手动标为阻塞".into() });
+                                    selected.set(None);
+                                }, "阻塞" }
                             },
                         }}
                         {match c.status {
                             IssueStatus::Done | IssueStatus::Cancelled => rsx! {},
                             _ => rsx! {
-                                button { class: "btn btn-sm btn-secondary", onclick: move |_| b_cancel.cmd(Command::CancelIssue { id, reason: "在计划屏作废".into() }), "Cancel" }
+                                button { class: "btn btn-sm btn-secondary", onclick: move |_| {
+                                    b_cancel.cmd(Command::CancelIssue { id, reason: "在计划屏作废".into() });
+                                    selected.set(None);
+                                }, "Cancel" }
                             },
                         }}
                     }
@@ -218,15 +236,23 @@ pub fn DetailModal(
     }
 }
 
-pub fn start_modal(
-    p: &ProjectVm,
+#[component]
+pub fn StartModal(
+    p: ProjectVm,
     sid: IssueId,
-    bridge: &Bridge,
     mut start: Signal<Option<IssueId>>,
-    nav: &PanelNav,
+    bridge: Bridge,
 ) -> Element {
-    let c = pick_card(p, sid);
-    let Some(c) = c else {
+    let nav = use_context::<PanelNav>();
+    let picked = pick_card(&p, sid);
+    let init_cat = picked.as_ref().and_then(|c| {
+        StageKind::ALL
+            .iter()
+            .copied()
+            .find(|k| k.label() == c.category)
+    });
+    let mut cat_sel = use_signal(move || init_cat);
+    let Some(c) = picked else {
         return rsx! {};
     };
     let name = if c.branch.is_empty() {
@@ -234,9 +260,12 @@ pub fn start_modal(
     } else {
         c.branch.clone()
     };
+    let is_ops = c.kind == "运作活";
+    let can_start = is_ops || cat_sel.read().is_some();
+    let current_cat = c.category.clone();
     let b_run = bridge.clone();
+    let b_cat = bridge.clone();
     let id = c.id;
-    let nav = *nav;
     rsx! {
         div { class: "modal-backdrop", onclick: move |_| start.set(None),
             div { class: "modal plan-modal", onclick: move |e| e.stop_propagation(),
@@ -248,17 +277,47 @@ pub fn start_modal(
                 div { class: "plan-modal-body",
                     div { class: "detail-row", div { class: "k", "worktree 名" }, "{name}" }
                     div { class: "detail-row", div { class: "k", "基于" }, "main" }
-                    div { class: "cfg-readonly-note", "确认后建 worktree,issue 切到进行中,并打开会话。" }
+                    if is_ops {
+                        {row("类别", "运作")}
+                    } else {
+                        div { class: "formrow",
+                            label { class: "label", "类别" }
+                            select {
+                                class: "select",
+                                onchange: move |e| cat_sel.set(category_from_key(&e.value())),
+                                option { value: "", selected: cat_sel.read().is_none(), "还没选" }
+                                for cat in StageKind::ALL {
+                                    option {
+                                        key: "{category_key(cat)}",
+                                        value: "{category_key(cat)}",
+                                        selected: cat_sel.read().is_some_and(|s| s == cat),
+                                        "{cat.label()}"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    div { class: "cfg-readonly-note", "确认后建 worktree,issue 切到进行中,并打开会话。没类别的业务活先选一类,开工工具按映射走。" }
                 }
                 div { class: "plan-modal-foot",
                     span {}
                     div { style: "display:flex;gap:8px;",
                         button { class: "btn btn-secondary", onclick: move |_| start.set(None), "取消" }
-                        button { class: "btn btn-primary", onclick: move |_| {
-                            b_run.cmd(Command::RunIssue { id });
-                            start.set(None);
-                            nav.go(Panel::Session);
-                        }, "Start" }
+                        button {
+                            class: "btn btn-primary",
+                            disabled: !can_start,
+                            onclick: move |_| {
+                                if let Some(cat) = *cat_sel.read() {
+                                    if current_cat != cat.label() {
+                                        b_cat.cmd(Command::SetIssueCategory { id, category: cat });
+                                    }
+                                }
+                                b_run.cmd(Command::RunIssue { id });
+                                start.set(None);
+                                nav.go(Panel::Session);
+                            },
+                            "Start"
+                        }
                     }
                 }
             }
