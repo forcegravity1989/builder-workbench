@@ -156,6 +156,10 @@ pub struct ProjectVm {
     /// 左栏点的是「全部」——看板不按周过滤。
     pub view_all: bool,
     pub board: BoardVm,
+    /// 自定义版本(计划包)列表,扫 issues 的 `bw:plan:*` 标签去重得来。
+    pub plan_versions: Vec<PlanVersionVm>,
+    /// 当前登录用户名(给列表「我的」筛选用)。空 = 认不出。
+    pub current_user: String,
     /// 本周四段计数:待办 / 进行中 / 评审中 / 完成。总览与计划屏的进度条都用它。
     /// **当前周**的五段计数。总览那块「本周计划进度」用它。
     pub week_counts: WeekCountsVm,
@@ -345,7 +349,8 @@ pub struct CardMrVm {
     pub mergeable: bool,
 }
 
-/// 六列看板。列的顺序就是活的生命周期顺序。
+/// 四列看板(合并后:待办/进行中/待处理/已完成)。列的顺序是活的生命周期顺序,
+/// 列内再分段(待办=未排期/已排期,待处理=待评审/阻塞,已完成=完成/拒绝)。
 #[derive(Clone, Debug, Default, PartialEq)]
 pub struct BoardVm {
     pub columns: Vec<ColumnVm>,
@@ -357,6 +362,19 @@ pub struct BoardVm {
 pub struct ColumnVm {
     pub status: IssueStatus,
     pub title: String,
+    pub cards: Vec<CardItemVm>,
+    /// 合并列内的分段。单段列(进行中)只一段。两段列默认显示第一段。
+    pub segments: Vec<ColumnSegVm>,
+}
+
+/// 看板一列里的段(如「未排期」「已排期」)。`cards` 是这段的卡(build_board
+/// 已按排期/状态分好,屏直接渲染,不再二次过滤)。
+#[derive(Clone, Debug, Default, PartialEq)]
+pub struct ColumnSegVm {
+    pub key: String,
+    pub label: String,
+    pub statuses: Vec<IssueStatus>,
+    pub count: u32,
     pub cards: Vec<CardItemVm>,
 }
 
@@ -383,6 +401,24 @@ pub struct CardItemVm {
     pub branch: String,
     /// 活的正文。详情抽屉里要看的就是它 —— 光有标题看不出这张活要干什么。
     pub body: String,
+    /// 责任人(codehub assignee)。空 = 未指派。
+    pub assignee: String,
+    /// 提出人(codehub author)。空 = 认不出。
+    pub author: String,
+    /// 排进的自定义版本(`bw:plan:*`)。空 = 不属于任何版本;与 week_of 互斥。
+    pub plan_version: String,
+    /// 最近更新时间(unix 秒)。0 = 认不出。卡片「已更新」用它现算相对时间。
+    pub updated_at: i64,
+}
+
+/// 自定义版本(计划包)。和发版号(ReleaseVm)不是一回事 —— 版本是把若干
+/// 待办活划归到一个计划包里排期,正本是 `bw:plan:*` 标签 + codehub milestone。
+#[derive(Clone, Debug, Default, PartialEq)]
+pub struct PlanVersionVm {
+    pub name: String,
+    pub start: String,
+    pub end: String,
+    pub issue_count: u32,
 }
 
 #[derive(Clone, Debug, PartialEq)]

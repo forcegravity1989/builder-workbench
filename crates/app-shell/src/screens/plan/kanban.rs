@@ -1,31 +1,50 @@
-//! 七列看板本体。列头带「这一列是什么意思」的定义,卡片左边框按状态染色。
+//! 四列看板本体(合并后:待办/进行中/待处理/已完成)。列内分段,两段列默认
+//! 只显示第一段、点子标题切到第二段。卡面按 opt 重做:编号 + CodeHub 徽 +
+//! 标题 + 正文一行预览 + 计划位置 + 责任人 + 更新时间,**无开工按钮**(开工
+//! 入口在详情弹窗)。
 
 use super::Filters;
-use crate::bridge::{Bridge, Panel, PanelNav};
-use crate::chrome::light_dot;
+use crate::bridge::{Bridge, PanelNav};
 use crate::vm::{CardItemVm, ColumnVm, ProjectVm};
-use bw::command::Command;
-use bw::model::{IssueId, IssueStatus, Signal as HealthSignal};
+use bw::model::{IssueId, IssueStatus};
 use dioxus::prelude::*;
+use std::collections::HashMap;
 
-/// 松手之后等人确认的那一下。
+/// 松手之后等人确认的那一下(拖进评审中/已完成等状态动作)。
 #[derive(Clone, PartialEq)]
 pub struct PendingMove {
     pub id: IssueId,
     pub title: String,
     pub from: IssueStatus,
     pub to: IssueStatus,
-    /// 这张活的 MR 号,`0` = 没有。确认框据此说清楚这一下到底会不会去合 MR ——
-    /// 拖进「已完成」发的是「合入并完成」,人得先知道要合的是哪一个。
+    /// 这张活的 MR 号,`0` = 没有。确认框据此说清楚这一下到底会不会去合 MR。
     pub pr_number: u32,
 }
 
-/// 每一列一句「什么样的活会在这一列」。照高保真的 KANBAN_COL_DEF。
-fn col_def(s: IssueStatus) -> &'static str {
+/// 拖一张未排期的卡到「已排期」段时,等人选排进哪个周/版本的那一下。
+#[derive(Clone, PartialEq)]
+pub struct PendingSchedule {
+    pub id: IssueId,
+    pub title: String,
+}
+
+/// 状态 → 状态点 css 类 + 标签。照 opt 的 `STATUS_META`。
+fn status_dot_class(s: IssueStatus) -> &'static str {
+    match s {
+        IssueStatus::Backlog | IssueStatus::Todo | IssueStatus::Cancelled => "dot-gray",
+        IssueStatus::InProgress => "dot-amber dot-run",
+        IssueStatus::InReview => "dot-amber",
+        IssueStatus::Done => "dot-green",
+        IssueStatus::Blocked => "dot-red",
+    }
+}
+
+/// 一句「什么样的活会在这一列/这一段」。照 opt 的 `COL_DEF`。
+fn seg_def(s: IssueStatus) -> &'static str {
     match s {
         IssueStatus::Backlog => "未排进任何一周",
-        IssueStatus::Todo => "已排进这一周,等开工",
-        IssueStatus::InProgress => "agent 在干",
+        IssueStatus::Todo => "已排进这一周,等 Start",
+        IssueStatus::InProgress => "agent 在做",
         IssueStatus::InReview => "MR 开着,等人审",
         IssueStatus::Done => "人点过完成",
         IssueStatus::Blocked => "填了原因",
@@ -33,13 +52,30 @@ fn col_def(s: IssueStatus) -> &'static str {
     }
 }
 
-/// 卡片左边框与状态灯点的颜色。用的是健康那三色 + 灰,不另起一套。
-fn status_signal(s: IssueStatus) -> Option<HealthSignal> {
-    match s {
-        IssueStatus::Backlog | IssueStatus::Todo | IssueStatus::Cancelled => None,
-        IssueStatus::InProgress | IssueStatus::InReview => Some(HealthSignal::Amber),
-        IssueStatus::Done => Some(HealthSignal::Green),
-        IssueStatus::Blocked => Some(HealthSignal::Red),
+/// unix 秒 → 「X天前/X小时前」人话。0 = 认不出,留空。
+fn ago(unix: i64) -> String {
+    if unix <= 0 {
+        return String::new();
+    }
+    let now = time::OffsetDateTime::now_utc().unix_timestamp();
+    let d = now.saturating_sub(unix);
+    if d < 3600 {
+        format!("{}分钟前", d.max(1) / 60)
+    } else if d < 86_400 {
+        format!("{}小时前", d / 3600)
+    } else {
+        format!("{}天前", d / 86_400)
+    }
+}
+
+/// 一张活「排在哪」:周 > 版本 > 未排期。
+fn place_of(c: &CardItemVm) -> String {
+    if !c.week_of.is_empty() {
+        c.week_of.clone()
+    } else if !c.plan_version.is_empty() {
+        format!("版本·{}", c.plan_version)
+    } else {
+        "未排期".into()
     }
 }
 
@@ -50,24 +86,18 @@ pub fn board(
     bridge: &Bridge,
     dragging: Signal<Option<CardItemVm>>,
     pending: Signal<Option<PendingMove>>,
+    schedule: Signal<Option<PendingSchedule>>,
     selected: Signal<Option<IssueId>>,
     bounced: Signal<String>,
+    col_seg: Signal<HashMap<String, String>>,
     nav: PanelNav,
 ) -> Element {
-    // 筛选器只在「全部活」视图上生效;看某一周时不过滤。
     let f = if p.view_all { filters } else { None };
-    // 拖进「待办」= 排进哪一周。看某一周就排进那一周;「全部活」视图下左栏
-    // 并没有选中任何一周,`viewing_week` 只是上次点过的值(可能是历史周),
-    // 拿它排期会把活悄悄塞进过去的一周 —— 这种时候一律排进当前周。
-    let drop_week = if p.view_all {
-        p.current_week.as_str()
-    } else {
-        p.viewing_week.as_str()
-    };
+    let view_all = p.view_all;
     rsx! {
         div { class: "kanban",
             for col in p.board.columns.iter() {
-                {column(col, f.clone(), drop_week, bridge, dragging, pending, selected, bounced, nav)}
+                {column(col, f.clone(), view_all, bridge, dragging, pending, schedule, selected, bounced, col_seg, nav)}
             }
         }
     }
@@ -77,94 +107,101 @@ pub fn board(
 fn column(
     col: &ColumnVm,
     filters: Option<Filters>,
-    drop_week: &str,
+    view_all: bool,
     bridge: &Bridge,
     mut dragging: Signal<Option<CardItemVm>>,
-    mut pending: Signal<Option<PendingMove>>,
+    _pending: Signal<Option<PendingMove>>,
+    mut schedule: Signal<Option<PendingSchedule>>,
     selected: Signal<Option<IssueId>>,
-    mut bounced: Signal<String>,
+    _bounced: Signal<String>,
+    col_seg: Signal<HashMap<String, String>>,
     nav: PanelNav,
 ) -> Element {
-    let target = col.status;
-    let week = drop_week.to_string();
-    let b_drop = bridge.clone();
-    let drop = move |_| {
-        let Some(card) = dragging.read().clone() else {
-            return;
-        };
-        dragging.set(None);
-        // 待办池 ⇄ 待办 是排期。没排周的卡默认就是 Todo,不能凭状态相同当没动作。
-        let schedule = matches!(target, IssueStatus::Backlog | IssueStatus::Todo)
-            && matches!(card.status, IssueStatus::Backlog | IssueStatus::Todo);
-        if schedule {
-            let to_pool = target == IssueStatus::Backlog;
-            let already_pool = card.week_of.is_empty();
-            let already_here = !to_pool && card.week_of == week;
-            if (to_pool && already_pool) || already_here {
-                return;
-            }
-            bounced.set(String::new());
-            b_drop.cmd(Command::ScheduleIssue {
-                id: card.id,
-                week_of: if to_pool { None } else { Some(week.clone()) },
-            });
-            return;
-        }
-        if card.status == target {
-            return;
-        }
-        if !card.status.can_transition_to(target) {
-            bounced.set(format!(
-                "「{}」不能直接从「{}」拖到「{}」——卡片弹回原处,状态没动。",
-                card.title,
-                card.status.label(),
-                target.label()
-            ));
-            return;
-        }
-        bounced.set(String::new());
-        pending.set(Some(PendingMove {
-            id: card.id,
-            title: card.title.clone(),
-            from: card.status,
-            to: target,
-            pr_number: card.pr_number,
-        }));
-    };
-
-    // 拖着一张卡经过时,这一列能不能放。能放描 clay,不能放描灰。
-    let cls = match dragging.read().as_ref() {
-        None => "kanban-col".to_string(),
-        Some(c) if c.status == target => "kanban-col".to_string(),
-        Some(c) => {
-            let schedule = matches!(target, IssueStatus::Backlog | IssueStatus::Todo)
-                && matches!(c.status, IssueStatus::Backlog | IssueStatus::Todo);
-            if schedule || c.status.can_transition_to(target) {
-                "kanban-col drop-ok".to_string()
-            } else {
-                "kanban-col drop-no".to_string()
-            }
-        }
-    };
-
-    let cards: Vec<&CardItemVm> = col
-        .cards
+    // 预拷贝成 owned 数据,rsx 闭包不借用 col。段自带 cards(build_board 已按
+    // 排期/状态分好),屏直接用,不再靠 statuses 二次过滤(否则未排期段会漏掉
+    // 那些状态是 Todo 但没排期的新建 issue)。
+    let col_key = col.status_label_key();
+    let segs_owned: Vec<(String, String, Vec<CardItemVm>)> = col
+        .segments
         .iter()
-        .filter(|c| filters.as_ref().is_none_or(|f| f.keep(c)))
+        .map(|s| {
+            let cards: Vec<CardItemVm> = s
+                .cards
+                .iter()
+                .filter(|c| filters.as_ref().is_none_or(|f| f.keep(c)))
+                .cloned()
+                .collect();
+            (s.key.clone(), s.label.clone(), cards)
+        })
         .collect();
-
+    let all: Vec<CardItemVm> = segs_owned
+        .iter()
+        .flat_map(|s| s.2.iter().cloned())
+        .collect();
+    let active_idx: usize = col_seg
+        .read()
+        .get(&col_key)
+        .and_then(|k| segs_owned.iter().position(|s| s.0 == *k))
+        .unwrap_or(0);
+    let active_seg = segs_owned
+        .get(active_idx)
+        .cloned()
+        .unwrap_or_else(|| segs_owned[0].clone());
+    let active_cards: Vec<CardItemVm> = active_seg.2.clone();
+    let total = all.len() as u32;
+    let mut col_seg_w = col_seg;
+    let _ = view_all;
     rsx! {
-        div {
-            key: "{col.status:?}",
-            class: "{cls}",
-            ondragover: move |e| e.prevent_default(),
-            ondrop: drop,
+        div { class: "kanban-col",
             div { class: "kanban-col-head",
-                "{col.title} · {cards.len()}"
-                div { class: "kanban-col-def", {col_def(col.status)} }
+                span { class: "status-dot {status_dot_class(col.status)}" }
+                "{col.title}"
+                span { class: "count", "{total}" }
             }
-            for c in cards {
-                {card_view(c, dragging, selected, bridge, nav)}
+            if segs_owned.len() > 1 {
+                div { class: "kanban-segtabs",
+                    for (i, s) in segs_owned.iter().enumerate() {
+                        {
+                            let key = s.0.clone();
+                            let label = s.1.clone();
+                            let ck = col_key.clone();
+                            let cnt = s.2.len() as u32;
+                            rsx! {
+                                button {
+                                    class: if i == active_idx { "seg-tab active" } else { "seg-tab" },
+                                    onclick: move |_| { col_seg_w.write().insert(ck.clone(), key.clone()); },
+                                    "{label}"
+                                    span { class: "seg-count", "{cnt}" }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            div {
+                class: "kanban-seg-box",
+                ondragover: move |e| e.prevent_default(),
+                ondrop: move |_| {
+                    if active_seg.0 == "assigned" {
+                        if let Some(card) = dragging.read().clone() {
+                            // 未排期 = week_of 和 plan_version 都空(状态可能是 Backlog
+                            // 或 Todo——新建 issue 默认 Todo 但没排期)。
+                            if card.week_of.is_empty() && card.plan_version.is_empty() {
+                                schedule.set(Some(PendingSchedule {
+                                    id: card.id,
+                                    title: card.title.clone(),
+                                }));
+                            }
+                        }
+                    }
+                    dragging.set(None);
+                },
+                for c in active_cards.iter() {
+                    {card_view(c, dragging, selected, bridge, nav)}
+                }
+                if active_cards.is_empty() {
+                    div { class: "kanban-empty", "无 issue" }
+                }
             }
         }
     }
@@ -174,60 +211,70 @@ fn card_view(
     c: &CardItemVm,
     mut dragging: Signal<Option<CardItemVm>>,
     mut selected: Signal<Option<IssueId>>,
-    bridge: &Bridge,
-    nav: PanelNav,
+    _bridge: &Bridge,
+    _nav: PanelNav,
 ) -> Element {
     let c1 = c.clone();
     let cid = c.id;
-    let b_run = bridge.clone();
-    let can_start = matches!(
-        c.status,
-        IssueStatus::Backlog | IssueStatus::Todo | IssueStatus::InProgress
-    );
-    let sig = status_signal(c.status);
-    let edge = crate::theme::signal_color(sig);
+    // 未排期的卡可拖(排进周/版本)。新建 issue 状态是 Todo 但没排期,也要能拖。
+    let can_drag = c.week_of.is_empty() && c.plan_version.is_empty();
+    let place = place_of(c);
+    let assignee = if c.assignee.is_empty() {
+        "未指派".to_string()
+    } else {
+        c.assignee.clone()
+    };
+    let initial = assignee
+        .chars()
+        .next()
+        .unwrap_or('?')
+        .to_uppercase()
+        .collect::<String>();
+    let updated = ago(c.updated_at);
+    let remote_badge = if c.remote_number > 0 {
+        rsx! { span { class: "kcard-src", "CodeHub" } }
+    } else {
+        rsx! {}
+    };
     rsx! {
         div {
-            key: "{c.id:?}",
             class: "kcard",
-            draggable: true,
-            style: "border-left-color:{edge};",
+            draggable: can_drag,
             ondragstart: move |_| dragging.set(Some(c1.clone())),
             ondragend: move |_| dragging.set(None),
             onclick: move |_| selected.set(Some(cid)),
             div { class: "kcard-top",
-                span { class: "chip chip-outline", "{c.category}" }
-                if c.kind != "业务活" {
-                    span { class: "chip chip-gray", "{c.kind}" }
-                }
-                if c.origin == "自动建" {
-                    span { class: "chip chip-gray", "自动" }
-                }
-                // 没排周的活在每一周的视图里都露面(运作活按设计就不排周)。
-                // 不挂这个徽记的话,人会以为它属于正在看的这一周。
-                if c.week_of.is_empty() {
-                    span {
-                        class: "chip chip-gray",
-                        title: "这张活没排进任何一周,在哪一周看都能看到它",
-                        "未排周"
-                    }
-                }
-                span { style: "margin-left:auto;", title: "{c.status.label()}", {light_dot(sig, false)} }
+                span { class: "mono", "#{c.number}" }
+                {remote_badge}
+                span { class: "status-dot {status_dot_class(c.status)}", style: "margin-left:auto;", title: "{seg_def(c.status)}" }
             }
-            div { class: "kcard-title", "#{c.number} {c.title}" }
-            if can_start {
-                div { class: "kcard-actions",
-                    button {
-                        class: "btn btn-sm btn-primary",
-                        onclick: move |e| {
-                            e.stop_propagation();
-                            b_run.cmd(Command::RunIssue { id: cid });
-                            nav.go(Panel::Session);
-                        },
-                        "▶ 开工"
-                    }
+            div { class: "kcard-title", "{c.title}" }
+            if !c.body.trim().is_empty() {
+                div { class: "kcard-desc", "{c.body.chars().take(64).collect::<String>()}" }
+            }
+            div { class: "kcard-place",
+                span { class: "kcard-folder", "▸" }
+                "{place}"
+            }
+            div { class: "kcard-foot",
+                span { class: "kcard-who",
+                    span { class: "avatar avatar-sm", "{initial}" }
+                    "{assignee}"
+                }
+                if !updated.is_empty() {
+                    span { class: "kcard-ago", "{updated}" }
                 }
             }
         }
+    }
+}
+
+/// 给 `ColumnVm` 一个稳定的 key(用于 col_seg 状态)。
+trait ColKey {
+    fn status_label_key(&self) -> String;
+}
+impl ColKey for ColumnVm {
+    fn status_label_key(&self) -> String {
+        format!("{:?}", self.status)
     }
 }

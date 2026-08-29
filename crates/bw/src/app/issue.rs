@@ -385,6 +385,32 @@ impl App {
         }])
     }
 
+    /// 改责任人(codehub assignee)。空串 = 取消指派。走 codehub API,
+    /// 不在本地另存一套 —— 重启读回一致(四铁律一)。
+    pub(super) async fn set_issue_assignee(
+        &mut self,
+        id: IssueId,
+        assignee: String,
+    ) -> Result<Vec<Event>> {
+        let issue = self.issue_or_err(id).await?;
+        let project = self.project_of(issue.project_id).await?;
+        issue_store::set_assignee(self, &project, id.iid(), &assignee).await?;
+        Ok(vec![Event::IssueAssigneeSet { id, assignee }])
+    }
+
+    /// 改 issue 标题与正文(codehub issue update)。详情弹窗双击编辑后发这条。
+    pub(super) async fn edit_issue(
+        &mut self,
+        id: IssueId,
+        title: String,
+        body: String,
+    ) -> Result<Vec<Event>> {
+        let issue = self.issue_or_err(id).await?;
+        let project = self.project_of(issue.project_id).await?;
+        issue_store::edit_issue(self, &project, id.iid(), &title, &body).await?;
+        Ok(vec![Event::IssueEdited { id }])
+    }
+
     /// 作废:原因进评论,打取消标签并关掉远端 issue。不是完成。
     pub(super) async fn cancel_issue(&mut self, id: IssueId, reason: String) -> Result<Vec<Event>> {
         let why = reason.trim().to_string();

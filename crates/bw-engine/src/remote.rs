@@ -92,6 +92,10 @@ struct MockIssue {
     created_at: Option<String>,
     /// 关闭时刻的 RFC3339 串。关时填(= `settled_at` 的近似正本)。
     closed_at: Option<String>,
+    /// 责任人(mock 用)。`None` = 未指派。
+    assignee: Option<String>,
+    /// 提出人(mock 用)。`None` = 认不出。
+    author: Option<String>,
 }
 
 impl MockState {
@@ -154,6 +158,10 @@ pub struct RemoteIssue {
     pub created_at: Option<String>,
     /// 关闭时刻(RFC3339)。gh `closedAt` / codehub `closed_at`。开着 = `None`。
     pub closed_at: Option<String>,
+    /// 责任人(codehub issue assignee)。`None` = 未指派/认不出。正本在远端。
+    pub assignee: Option<String>,
+    /// 提出人(codehub issue author)。`None` = 认不出。正本在远端。
+    pub author: Option<String>,
 }
 
 /// 算一个 label 的 namespace 前缀(不含末尾冒号):`bw:status:todo` →
@@ -315,6 +323,8 @@ impl Remote {
                         comments: Vec::new(),
                         created_at: Some(now_iso()),
                         closed_at: None,
+                        assignee: None,
+                        author: None,
                     },
                 );
                 Ok(iid)
@@ -436,6 +446,8 @@ impl Remote {
                         body: String::new(),
                         created_at: i.created_at.clone(),
                         closed_at: i.closed_at.clone(),
+                        assignee: i.assignee.clone(),
+                        author: i.author.clone(),
                     });
                 }
                 out.sort_by_key(|r| r.iid);
@@ -475,6 +487,8 @@ impl Remote {
                     body: i.body.clone(),
                     created_at: i.created_at.clone(),
                     closed_at: i.closed_at.clone(),
+                    assignee: i.assignee.clone(),
+                    author: i.author.clone(),
                 })
             }
         }
@@ -576,6 +590,94 @@ impl Remote {
                 Ok(codehub::project_week(host, path, iid, week, start, due).await?)
             }
             Remote::Github(_) | Remote::Mock(_) => Ok(()),
+        }
+    }
+
+    /// 当前登录用户名(给「我的」筛选用)。认不出返 None。
+    pub async fn current_user(&self) -> Option<String> {
+        match self {
+            Remote::Codehub { host, .. } => codehub::current_user(host).await,
+            Remote::Github(r) => github::current_user(r).await.ok(),
+            Remote::Mock(_) => None,
+        }
+    }
+
+    /// 列出所有里程碑 (title, start, due)。左栏版本组用:扫一遍,标题不是
+    /// 周格式的就是自定义版本。GitHub/mock 不投(返空)。
+    pub async fn list_milestones(
+        &self,
+        path: &str,
+    ) -> Result<Vec<(String, String, String)>, RemoteError> {
+        match self {
+            Remote::Codehub { host, .. } => Ok(codehub::list_milestones(host, path).await?),
+            Remote::Github(_) | Remote::Mock(_) => Ok(Vec::new()),
+        }
+    }
+
+    /// 建/复用一个版本里程碑,返回 mid。GitHub 臂诚实不投(返 0)。
+    pub async fn ensure_plan_milestone(
+        &self,
+        path: &str,
+        name: &str,
+        start: &str,
+        due: &str,
+    ) -> Result<u64, RemoteError> {
+        match self {
+            Remote::Codehub { host, .. } => {
+                Ok(codehub::ensure_plan_milestone(host, path, name, start, due).await?)
+            }
+            Remote::Github(_) | Remote::Mock(_) => Ok(0),
+        }
+    }
+
+    /// 把 issue 挂到已存在的版本里程碑(best-effort 镜像)。GitHub/mock 不投。
+    pub async fn project_plan(&self, iid: u32, path: &str, name: &str) -> Result<(), RemoteError> {
+        match self {
+            Remote::Codehub { host, .. } => Ok(codehub::project_plan(host, path, iid, name).await?),
+            Remote::Github(_) | Remote::Mock(_) => Ok(()),
+        }
+    }
+
+    /// 改 issue 责任人。空串 = 取消指派。
+    pub async fn set_issue_assignee(&self, iid: u32, assignee: &str) -> Result<(), RemoteError> {
+        match self {
+            Remote::Github(r) => Ok(github::set_issue_assignee(r, iid, assignee).await?),
+            Remote::Codehub { host, path } => {
+                Ok(codehub::set_issue_assignee(host, path, iid, assignee).await?)
+            }
+            Remote::Mock(state) => {
+                let mut s = state.lock().expect("mock state 未中毒");
+                let i = s
+                    .issues
+                    .get_mut(&iid)
+                    .ok_or_else(|| RemoteError::Mock(format!("issue #{iid} 不在")))?;
+                i.assignee = if assignee.is_empty() {
+                    None
+                } else {
+                    Some(assignee.to_string())
+                };
+                Ok(())
+            }
+        }
+    }
+
+    /// 改 issue 标题与正文。
+    pub async fn edit_issue(&self, iid: u32, title: &str, body: &str) -> Result<(), RemoteError> {
+        match self {
+            Remote::Github(r) => Ok(github::edit_issue(r, iid, title, body).await?),
+            Remote::Codehub { host, path } => {
+                Ok(codehub::edit_issue(host, path, iid, title, body).await?)
+            }
+            Remote::Mock(state) => {
+                let mut s = state.lock().expect("mock state 未中毒");
+                let i = s
+                    .issues
+                    .get_mut(&iid)
+                    .ok_or_else(|| RemoteError::Mock(format!("issue #{iid} 不在")))?;
+                i.title = title.to_string();
+                i.body = body.to_string();
+                Ok(())
+            }
         }
     }
 }
