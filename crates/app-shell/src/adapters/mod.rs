@@ -8,8 +8,8 @@
 //! - [`claude_cli`] —— Claude CLI 开工工具(声明 + 探活)
 //! - [`codegraph`] —— 代码图子进程(探活三态 + 大文件榜)
 //!
-//! `terminal_xterm/` 已封存(xterm.js + PTY 字节桥):开工改走 Orca 本地 pipe,
-//! 终端不再挂在壳上。目录留作封存件,不进编译(`pub mod terminal_xterm` 已删)。
+//! 终端不挂在壳上:开工走 Orca 本地 pipe,字节流在 Orca 里,buddy 壳不渲染
+//! 终端(旧 xterm.js + PTY 字节桥整包已删)。
 //!
 //! 还没开的(各自随对应的刀落地):Cursor、Open Design 内嵌。
 //!
