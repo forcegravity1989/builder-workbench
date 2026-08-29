@@ -25,7 +25,7 @@ pub fn View(p: ProjectVm, bridge: Bridge) -> Element {
                     TabBtn { label: "Open Design".to_string(), tab: SessionTab::OpenDesign, cur, bridge: bridge.clone() }
                 }
             }
-            {mid_body(&p)}
+            {mid_body(&p, bridge.clone())}
         }
     }
 }
@@ -42,9 +42,11 @@ fn TabBtn(label: String, tab: SessionTab, cur: SessionTab, bridge: Bridge) -> El
     }
 }
 
-fn mid_body(p: &ProjectVm) -> Element {
+fn mid_body(p: &ProjectVm, bridge: Bridge) -> Element {
     match p.workbench.tab {
-        SessionTab::Orca => rsx! { OrcaView { orca_url: p.workbench.orca_web_url.clone() } },
+        SessionTab::Orca => {
+            rsx! { OrcaView { orca_url: p.workbench.orca_web_url.clone(), bridge } }
+        }
         SessionTab::OpenDesign => rsx! {
             OpenDesignView { src: p.workbench.od_src.clone(), gen: p.workbench.od_gen }
         },
@@ -54,18 +56,20 @@ fn mid_body(p: &ProjectVm) -> Element {
 /// 本机 Orca web 的 pairing 页,iframe 嵌。地址来自本机设置
 /// (`settings.toml` 的 `orca_web_url`),`BW_ORCA_WEB_URL` 可覆盖;都只认 loopback。
 #[component]
-fn OrcaView(orca_url: String) -> Element {
+fn OrcaView(orca_url: String, bridge: Bridge) -> Element {
     let url = bw_engine::orca::web_embed_url(Some(&orca_url));
     let body_style = "flex:1;min-height:0;display:flex;flex-direction:column;height:100%;";
     if let Some(u) = url {
         let iframe_src = iframe_src(&u);
+        let ready = bridge.clone();
         return rsx! {
             div { class: "sess-col sess-midbody", style: "{body_style}",
                 iframe {
                     key: "{iframe_src}",
                     src: "{iframe_src}",
                     style: "flex:1;width:100%;height:100%;min-height:0;border:0;display:block;background:#fff;",
-                    allow: "clipboard-read; clipboard-write; fullscreen"
+                    allow: "clipboard-read; clipboard-write; fullscreen",
+                    onload: move |_| ready.send(Req::OrcaEmbedReady)
                 }
             }
         };
