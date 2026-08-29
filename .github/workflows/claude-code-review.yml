@@ -26,6 +26,10 @@ jobs:
           # 机器人开的 PR 默认一律不评审。claude[bot] 在这个仓真开过 PR
           # (#90/#94/#98/#100 那批死码清理),点名放行它一个,不开 "*"。
           allowed_bots: "claude[bot]"
+          # gh pr view --comments 的查询里带 CI 检查数据,App 令牌默认读不到,
+          # 整条命令会以 "Resource not accessible by integration" 失败。
+          additional_permissions: |
+            actions: read
           plugin_marketplaces: "https://github.com/anthropics/claude-code.git"
           plugins: "code-review@claude-code-plugins"
           # 只传 PR 号:这条命令没有 $ARGUMENTS,多传的会被静默忽略。
