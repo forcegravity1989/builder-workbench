@@ -140,6 +140,34 @@ pub async fn reveal_tree(rt: &OrcaRuntime, worktree: &Path) -> Result<(), OrcaEr
     activate_worktree(rt, worktree).await
 }
 
+/// 让 Orca 认得这份被管仓。人纳入 buddy 时不该再去 Orca 里手加
+/// `workspaces/xx`。已有则原样返回(老用户无感)。随后把外部 worktree 设成
+/// 可见,`.bw/worktrees/issue-N` 才能被 `path:` 选到。
+pub async fn ensure_repo(rt: &OrcaRuntime, repo: &Path) -> Result<(), OrcaError> {
+    let path = repo.display().to_string();
+    let added = call(
+        rt,
+        "repo.add",
+        json!({ "path": path, "kind": "git" }),
+        ACTIVATE_TIMEOUT,
+    )
+    .await?;
+    require_ok(&added, "repo.add")?;
+    let updated = call(
+        rt,
+        "repo.update",
+        json!({
+            "repo": path_prefixed(repo),
+            "updates": { "externalWorktreeVisibility": "show" }
+        }),
+        ACTIVATE_TIMEOUT,
+    )
+    .await?;
+    // 仓已经在了,visibility 改不成也不挡后面的切树 / 开工。
+    let _ = require_ok(&updated, "repo.update");
+    Ok(())
+}
+
 /// 把配对网页 / 桌面切到这棵 worktree。不 resume agent。去会话、create
 /// 成功后跟网页、再开工接回都走这条。
 pub async fn activate_worktree(rt: &OrcaRuntime, worktree: &Path) -> Result<(), OrcaError> {

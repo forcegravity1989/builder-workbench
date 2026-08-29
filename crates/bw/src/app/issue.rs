@@ -313,6 +313,20 @@ impl App {
         }
         let outcome = match bw_engine::orca::connect() {
             Ok(rt) => {
+                if let Err(e) = bw_engine::orca::ensure_repo(&rt, ws).await {
+                    eprintln!(
+                        "[BW_ORCA] 登记仓没成:{e} · {} · repo={}",
+                        rt.log_tag(),
+                        ws.display()
+                    );
+                    return Ok(vec![Event::IssueRan {
+                        id,
+                        ok: false,
+                        summary: format!("开工失败:Orca 还不认得这个仓:{e}"),
+                        tool: issue.tool.clone(),
+                        embed_url: String::new(),
+                    }]);
+                }
                 let r = if sid.is_empty() {
                     match bw_engine::orca::create_session(
                         &rt,

@@ -7,7 +7,7 @@
 
 1. **把一次 `build()` 拆成 `gather()` + `assemble()` 两段**。`gather` 跑所有跟「在看哪一周 / 选中哪张活 / 展开哪个目录」**无关**的贵 I/O:环境探活(`probe_env`)、打开项目的 issue 列表(`app.issues`)、健康三判据(`collect_health_inputs` 的 git 子进程)、Release(`load_releases` 的远端/git)、会话列表、项目墙卡片。`assemble` 只做依赖 `UiState` 视图字段的重切:看板按周过滤、四段计数、运作活状态点、指标读数、会话工作台、知识库扫描——全是纯内存或本机文件读。
 2. **纯导航请求走快路径**:`ViewWeek` / `ViewAll` / `SelectIssue` / `FocusSkill` / `OpenDoc` / `DropDrafts` / `SessionTab` / `ToggleDir` / `OpenFile` / `KbTab` 以及后台回发(`KbComputed` / `RepoStatsComputed` / `MetricsCollected` / `ReposListed` / `RepoPicked`)只跑 `assemble`,复用上次的 `gather`,**不起任何 git 子进程、不打远端、不重探 OD**。
-3. **数据真变时才重 gather**:`Req::Cmd`(真命令)、`Req::Open`(换项目)、`Req::Refresh`(拉仓)、`Req::SelectSession`(可能内发 `ReopenSession`、影响会话 live 信号)、`sched_tick`(可能到点建活)走 `gather + assemble`。失效策略 = **按事件失效**:只有改了底层 issue/项目/git 状态的请求才刷 `gather`,导航请求一律不刷。
+3. **数据真变时才重 gather**:`Req::Cmd`(真命令)、`Req::Open`(换项目)、`Req::Refresh`(拉仓)、`Req::FlushOrcaReveal`(内发 `ReopenSession`)、`sched_tick`(可能到点建活)走 `gather + assemble`。`SelectSession` 只记账等嵌页,走快路径。失效策略 = **按事件失效**:只有改了底层 issue/项目/git 状态的请求才刷 `gather`,导航请求一律不刷。
 4. **顺带去掉 `build()` 内的重复**:`probe_env` 原来每重建跑两遍(顶层环境条 + `build_config`),现在 `gather` 里探一次、`assemble` 复用;打开项目的 `app.issues` 原来拉两遍(项目墙循环 + `build_project`),现在 `gather` 里拉一次、项目墙与 `assemble` 共用;`build_ops` 原来跑两遍 `git::path_in_head`(本周 + 看的那周,结果其实只跟仓走),现在 `ops3_landed` 在 `gather` 里算一次、传参给 `build_ops`。
 
 ## 为什么
@@ -21,5 +21,5 @@
 - 切周 / 点总览 / 选卡片看详情 / 切页签 / 展开目录 这些**纯导航**不再卡;真命令、换项目、刷新仍走全量(合理,数据真变了)。
 - `gather` 缓存的是「上一次全量采集的结果」;导航期间若有同事在远端改了 issue / 合了 MR,本机要等下一次真命令或刷新才看到——这与「刷新」按钮的语义一致(刷新就是「去拉新的」),不是回退。
 - 会话工作台(`build_workbench`)仍跑 git(`list_dir` / `changed_files` / `ahead_behind` / `file_diff`),但它被一个「会话相关 ui 字段」键缓存住:切周时键不变、直接复用;展开目录 / 切会话时键变、重算。`gather` 刷新时键失效。
-- `SelectSession` 仍走全量:它可能内发 `ReopenSession`、要重新判 `pty_live`,不归入快路径。
+- `FlushOrcaReveal` 走全量:它内发 `ReopenSession`。`SelectSession` 只记账等嵌页,走快路径。
 - 这条不改四铁律:`gather` 仍是现算(不是把数写进库)、`assemble` 仍是现算的重切;`Derived<Signal>` 密封、settle-once、状态机卫不变——只是「什么时候重算贵的那段」从「每次请求」收紧到「数据真变时」。

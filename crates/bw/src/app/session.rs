@@ -107,6 +107,16 @@ impl App {
         }
         let rt = bw_engine::orca::connect()
             .map_err(|e| AppError::Exec(format!("连 Orca 没成,接不回会话:{e}")))?;
+        if let Err(e) = bw_engine::orca::ensure_repo(&rt, &ws).await {
+            eprintln!(
+                "[BW_ORCA] 登记仓没成:{e} · {} · repo={}",
+                rt.log_tag(),
+                ws.display()
+            );
+            return Err(AppError::Exec(format!(
+                "Orca 还不认得这个仓,切不了树:{e}"
+            )));
+        }
         if let Err(e) = bw_engine::orca::reveal_tree(&rt, &path).await {
             eprintln!(
                 "[BW_ORCA] {e} · {} · worktree={}",

@@ -22,6 +22,11 @@ use std::sync::Arc;
 use std::time::Duration;
 use tokio::sync::{broadcast, mpsc, watch};
 
+/// iframe onload 之后再给配对 WS 的时间。短于这个,嵌页还没订上 `notifyClients`。
+const ORCA_PAIRING_SETTLE: Duration = Duration::from_millis(400);
+/// 嵌页一直不 onload(没 URL / WebView 吞了事件)也要切树 —— 桌面还能跟。
+const ORCA_EMBED_FALLBACK: Duration = Duration::from_secs(3);
+
 /// 启动时从环境变量读到的深链意图。
 #[derive(Clone, Debug, Default)]
 pub struct DeepLink {
@@ -68,7 +73,15 @@ pub enum Req {
     /// 「先不建」——把还没确认的草稿丢掉。草稿本来就没进库,丢掉不留痕。
     DropDrafts,
     /// 会话屏:选中哪个会话 / 切页签。全是纯导航,一律不进库。
+    /// 有会话行时**先**记下要切的树,等嵌页 `OrcaEmbedReady` 再 `worktree.activate`;
+    /// 先切树再挂 iframe,配对网页听不见跟随。
     SelectSession(Option<bw::model::IssueId>),
+    /// 会话屏 Orca iframe 已经 load。配对 WS 可能还要一拍,见
+    /// [`FlushOrcaReveal`]。
+    OrcaEmbedReady,
+    /// 嵌页已挂(或兜底超时):把挂着的那张活 `worktree.activate`。
+    /// `seq` 对不上就丢掉 —— 人又点了另一张。
+    FlushOrcaReveal { seq: u64 },
     SessionTab(crate::vm::SessionTab),
     /// 知识库屏切页签。代码图与资产两个页签**切过去那一刻现跑一次**
     /// (起 codegraph 子进程、走 `git log`、采仓统计),结果留到下次再点。
@@ -472,6 +485,9 @@ pub fn spawn(deep_link: DeepLink) -> Bridge {
 
                 // 「刷新」按下了没有。回执要等 ViewModel 拼完才写得出来。
                 let mut refresh_receipt = false;
+                // 去会话要等嵌页在才切树。seq 对不上的 Flush 丢掉。
+                let mut pending_orca_reveal: Option<bw::model::IssueId> = None;
+                let mut orca_reveal_seq: u64 = 0;
 
                 // 深链:BW_OPEN=<slug 或项目名> 打开某个项目。
                 if let Some(want) = &deep_link.open {
@@ -626,15 +642,15 @@ pub fn spawn(deep_link: DeepLink) -> Bridge {
                     // 目录 / 后台采回发)不重跑 gather —— 复用上次采的那份,只
                     // 重切依赖视图字段的片段(健康/Release/环境/issue/ops3 的 git
                     // 子进程与远端都不跑;会话工作台在会话字段变时仍跑几个 git,
-                    // 但切周/选卡片时不会)。真命令、换项目、刷新、SelectSession
-                    // 可能改了底层数据,才重 gather。在 `match req`(会按值移走
-                    // req)之前判。设计见 ADR 0002。
+                    // 但切周/选卡片时不会)。真命令、换项目、刷新、FlushOrcaReveal
+                    // (内发 ReopenSession)可能改了底层数据,才重 gather。
+                    // SelectSession 只记账等嵌页,走快路径。设计见 ADR 0002。
                     let needs_gather = matches!(
                         &req,
                         Req::Cmd(_)
                             | Req::Open(_)
                             | Req::Refresh
-                            | Req::SelectSession(_)
+                            | Req::FlushOrcaReveal { .. }
                     );
                     match req {
                         Req::Cmd(c) => {
@@ -795,8 +811,10 @@ pub fn spawn(deep_link: DeepLink) -> Bridge {
                         Req::OpenDoc(p) => ui.open_doc = p,
                         Req::DropDrafts => ui.pending_drafts = None,
                         Req::SelectSession(id) => {
-                            // 点一张有会话行的活 = 去会话:先切到那棵树,有 Claude id 再尽量
-                            // 点回那条 tab。没会话行不发(让人点▶开工)。
+                            // 点一张有会话行的活 = 去会话:先记下要切的树,等嵌页
+                            // onload(+配对 WS)再 activate。没会话行不发(让人点▶开工)。
+                            orca_reveal_seq = orca_reveal_seq.wrapping_add(1);
+                            pending_orca_reveal = None;
                             if let Some(iid) = id {
                                 let has_conv = app
                                     .conversation_for_issue(iid)
@@ -805,11 +823,14 @@ pub fn spawn(deep_link: DeepLink) -> Bridge {
                                     .flatten()
                                     .is_some();
                                 if has_conv {
-                                    if let Err(e) = app
-                                        .dispatch(Command::ReopenSession { issue_id: iid })
-                                        .await
+                                    pending_orca_reveal = Some(iid);
+                                    let seq = orca_reveal_seq;
+                                    if bw_engine::orca::web_embed_url(Some(&ui.orca_web_url))
+                                        .is_some()
                                     {
-                                        ui.set_note(Some(format!("去会话没成:{e}")));
+                                        schedule_orca_flush(&tx_back, seq, ORCA_EMBED_FALLBACK);
+                                    } else {
+                                        let _ = tx_back.send(Req::FlushOrcaReveal { seq });
                                     }
                                 }
                             }
@@ -823,6 +844,27 @@ pub fn spawn(deep_link: DeepLink) -> Bridge {
                                 },
                                 None => crate::vm::SessionTab::default(),
                             };
+                        }
+                        Req::OrcaEmbedReady => {
+                            if pending_orca_reveal.is_some() {
+                                schedule_orca_flush(
+                                    &tx_back,
+                                    orca_reveal_seq,
+                                    ORCA_PAIRING_SETTLE,
+                                );
+                            }
+                        }
+                        Req::FlushOrcaReveal { seq } => {
+                            if seq == orca_reveal_seq {
+                                if let Some(iid) = pending_orca_reveal.take() {
+                                    if let Err(e) = app
+                                        .dispatch(Command::ReopenSession { issue_id: iid })
+                                        .await
+                                    {
+                                        ui.set_note(Some(format!("去会话没成:{e}")));
+                                    }
+                                }
+                            }
                         }
                         Req::SessionTab(t) => ui.session_tab = t,
                         Req::KbTab(t) => {
@@ -1064,7 +1106,7 @@ pub fn spawn(deep_link: DeepLink) -> Bridge {
                         }
                     }
                     // 纯导航复用上次 gather,不重跑;真命令 / 换项目 / 刷新 /
-                    // SelectSession 在 match 前判过 needs_gather,这里重 gather。
+                    // FlushOrcaReveal 在 match 前判过 needs_gather,这里重 gather。
                     if needs_gather {
                         last_gather = vm_build::gather(&app, &mut ui).await;
                     }
@@ -1103,6 +1145,14 @@ pub fn spawn(deep_link: DeepLink) -> Bridge {
         vm: vm_rx,
         progress: prog_tx_handle,
     }
+}
+
+fn schedule_orca_flush(tx: &mpsc::UnboundedSender<Req>, seq: u64, delay: Duration) {
+    let back = tx.clone();
+    tokio::spawn(async move {
+        tokio::time::sleep(delay).await;
+        let _ = back.send(Req::FlushOrcaReveal { seq });
+    });
 }
 
 /// 进项目时后台采一轮。不 await 脚本 —— 占着内核线程会卡住终端节拍。
