@@ -12,7 +12,7 @@ use std::sync::{Arc, Mutex};
 use tokio::sync::mpsc;
 use uuid::Uuid;
 
-use crate::interactive_cli::PtyInput;
+use super::interactive_cli::PtyInput;
 
 /// 每会话输出批次数上限。满了丢最老,避免背压卡住 claude。
 pub const OUTPUT_BATCH_CAP: usize = 64;
@@ -84,7 +84,7 @@ pub struct TerminalSession {
 /// 集中模块:多会话终端管理器。
 ///
 /// 不碰 dioxus/tauri/wry(过 `guard-kernel-ui-free.sh`)。PTY 本体在
-/// `crate::pty_backend`(Windows conpty-oxide / macOS·Linux portable-pty,
+/// `super::pty_backend`(Windows conpty-oxide / macOS·Linux portable-pty,
 /// 2026-08-17 起两家都有);本模块只管身份、channel、缓冲、尺寸。
 #[derive(Default)]
 pub struct TerminalManager {

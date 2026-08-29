@@ -10,7 +10,7 @@
 //! `session.jsonl` 本身就是记录。干没干成看仓里的真状态(git、MR),不看这里。
 //!
 //! **V4 只有内嵌终端这一条路**:[`InteractiveCliExecutor`] 干活全走
-//! `run_skill_pty` → [`crate::pty_backend`],所有平台一样。它的 `run_skill`
+//! `run_skill_pty` → [`super::pty_backend`],所有平台一样。它的 `run_skill`
 //! (从 V3 拷来的那条「起一个系统终端窗口」的老路)已经如实退场,只剩一句错误
 //! —— 拆掉它的原委见 [`InteractiveCliExecutor`] 的说明。真正还在用 `run_skill`
 //! 的只有自我标注的 [`MockInteractiveExecutor`](headless 指挥器走它)。
@@ -21,7 +21,7 @@ use std::path::{Path, PathBuf};
 use async_trait::async_trait;
 use tokio::sync::mpsc;
 
-use crate::pty_backend::PtyBackend;
+use super::pty_backend::PtyBackend;
 use crate::{ExecError, RunCtx};
 
 // ─── PtyInput (V1 Issue2 Phase2b) ───────────────────────────────────────
@@ -432,7 +432,7 @@ pub trait InteractiveExecutor: Send + Sync {
 
 // ─── InteractiveCliExecutor(真跑 claude 的那个执行器) ─────────────────
 
-/// 真执行器:把 claude 起在**内嵌终端**里(伪终端,见 [`crate::pty_backend`]),
+/// 真执行器:把 claude 起在**内嵌终端**里(伪终端,见 [`super::pty_backend`]),
 /// 字节流交给会话屏渲染,人全程看得见、随时能停。
 ///
 /// **它只实现 `run_skill_pty` 一条路。** 从 V3 拷过来的时候还带着另一条:
@@ -496,7 +496,7 @@ impl InteractiveExecutor for InteractiveCliExecutor {
 
     /// Spawn the agent in a PTY and stream bytes. The platform split
     /// (conpty-oxide on Windows, portable-pty on macOS/Linux) lives in
-    /// [`crate::pty_backend`]; this method only resolves the binary override
+    /// [`super::pty_backend`]; this method only resolves the binary override
     /// and delegates.
     ///
     /// Flow: read loop drains PTY output → `bytes_tx`; `input_rx` bytes are
@@ -512,7 +512,7 @@ impl InteractiveExecutor for InteractiveCliExecutor {
         input_rx: mpsc::UnboundedReceiver<PtyInput>,
     ) -> Result<SkillOutput, ExecError> {
         let resolved = spawn_binary(self.claude_binary.as_deref(), &plan.binary)?;
-        crate::pty_backend::active()
+        super::pty_backend::active()
             .run(&resolved, plan, bytes_tx, input_rx)
             .await
     }

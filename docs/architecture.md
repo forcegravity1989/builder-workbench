@@ -12,7 +12,7 @@ buddy MVP 由三个 Rust crate 组成,各管一件事、互锁而不互相渗透
 
 **bw(内核)**:本地零数据库——codehub/GitHub 的 issue+标签是唯一 issue 正本;仓文件解析(读 `.bw/*`)、现算推导(健康/走势/用量)、自己的一对 Command/Event、规范铺底、三张运作活、项目群工厂全在这层。它是纯领域与编排,不直接碰终端、不直接碰远端协议。
 
-**bw-engine(能力底座)**:交互式 `claude` 执行器、伪终端(PTY)内嵌终端、每张活一棵 git worktree 的供给、git 读数、codehub/GitHub 两个远端。它只认裸的通用 id,不活、不持有业务语义——一个 id 背后是"活"还是"会话"由上层说。
+**bw-engine(能力底座)**:本机 Orca 的本地 pipe 客户端(会话开工)、封存的 PTY 旧实现、每张活一棵 git worktree 的供给、git 读数、codehub/GitHub 两个远端。它只认裸的通用 id,不活、不持有业务语义——一个 id 背后是"活"还是"会话"由上层说。
 
 **app-shell(壳)**:九个屏(项目墙 / 接入 / 设置 三个顶层 + 总览 / 计划 / 会话 / 通知 / 配置 / 知识库 六个项目内入口)+ 内核桥(独立线程)+ ViewModel + 主题 + 适配模块。壳只渲染和转发意图,没有一行业务判断。
 
@@ -124,12 +124,23 @@ references(`standard/system-prompt/references/*.md`)是「干某类活需要额�
 
 ### 7 · 会话与执行
 
-**是什么**:路径 B 的产品特性——交互式 `claude` 嵌在桌面里,体验对齐本机终端(回显、接着聊、复制粘贴)。▶跑 把 CLI 起在伪终端(PTY)里,活在 issue 自己的 git worktree 里干,人看得见、随时能停。run 成功只推"评审中","完成"永远由人点。会话身份进 sessions jsonl(进程死了靠 `--resume` id 接回),进程态纯内存。字节流走 broadcast,不走 ViewModel。开工找 claude 与探活同一条候选链。`--resume` id 由 SessionStart hook 写到 buddy 资产目录,节拍收进 jsonl。选中会话只有记下了 id 才接回;没有 id 不跑 `claude --continue`。没订户时不抽走有界环,挂件订上后能要回活着的第一屏。复制走网页兜底,粘贴由壳读系统剪贴板。作废一张活不会自动拆本机会话——人在会话屏点「删除会话」、确认弹窗之后,才停 PTY、强制收这棵 worktree、删 jsonl;远端 issue 不动(作废关单是另一条命令)。
+**是什么**:会话屏只剩两个组件——**Orca**、**Open Design**。旧三栏和后来加上的动作条、灌词条都不要:停止 / 开 MR / 推评审 / 删会话在 Orca 里做,或在计划屏拖列;buddy 也不知道人在 Orca 里点了哪条会话,灌词条对着「当前会话」会骗人。开工入口在**计划屏**(拖进「进行中」或详情 ▶开工),同一条 `run_issue`:开/复用 worktree,打 Orca 本地 pipe(`createAgentSession` / 有 id 则 `ensureAgentSession`),铁律挂启动参数(Cursor 拼进用户话)。会话屏只是把本机已开的 Orca web / OD 嵌进来给人看。完成仍由人点(计划屏拖进已完成 / 合入)。
 
-**代码**:bw-engine 的 `interactive_cli.rs`(执行器)+ `pty_backend.rs`(平台接缝)+ `terminal_manager.rs`(集中管理);bw 的 `app/session.rs`(生命周期)+ `app/worktree.rs`(每活一棵 worktree)+ `app/issue.rs`(`cleanup_issue_worktree`)。
-**数据**:会话身份落 sessions jsonl;进程态纯内存;issue 状态与 `settled_at` 正本是 codehub issue+标签,现读远端 `closed_at` 不自己写。
-**依赖**:async_trait + tokio mpsc、conpty-oxide(Win)/ portable-pty + nix(Unix,`#![forbid(unsafe_code)]`);bw-engine 不依赖任何 V3 crate。
-**没建**:Cursor 适配(supported=false);蒸馏按钮;agent 四态回报(今天只有"运行中/空闲"两态,"等你输入"不猜);MR 卡"检查过没过"列;已结束的会话切走再回来回放仍空(活着的第一屏已能回放)。作废不自动删会话——要人点「删除会话」。会话屏改嵌 Orca web 的穿刺进行中,**设计未锁定、本段现行口径仍是 PTY+三栏**;进度正本 [`docs/orca-session-puncture.md`](orca-session-puncture.md),勿把聊天或 `worktree-orca-adapter` 当现行。
+**两条通道别混**:本地 pipe 是 buddy 对 Orca 桌面下命令(开工、接回),同机读 `orca-runtime.json` 的 token,不需要配对。iframe 是把 Orca 的网页嵌进会话屏,要带 `#pairing=` 才能看见桌面那份状态;配对码 Orca 不经 pipe 发,人从安装版桌面「给 web 配对」拿完整 URL,塞进进程环境 `BW_ORCA_WEB_URL`(不建设置页)。没喂 URL 则 iframe 如实空着,开工不受影响。网页跟随 host 选中是 Orca 另窗。
+
+**新 worktree**:`issue_worktree_path` 只写 `<仓根>/.bw/worktrees/issue-<n>`,分支仍 `bw/issue-<n>`。目录忽略提交(本仓 `.gitignore` 已写;被管仓铺底或开工时补 `.bw/worktrees/`,没有才补,不改人别的 ignore 规则)。**旧平级兄弟不迁、不删**;接回时先看会话记下的路径,没有再看新目录,再没有才看旧兄弟。账本 worktree 这版不动。
+
+**PTY 封存**:`interactive_cli` / `pty_backend` / `terminal_manager` 整包挪到 `bw-engine` 的 `legacy_pty/`,开工路径不再调用。新模块 `orca`(对标 `open_design.rs`)接口一次定住,不跟着穿刺脚本改形状:
+
+- `connect() -> OrcaRuntime` — 读本机 `orca-runtime.json`,token 不落盘
+- `ensure_session(worktree, agent, session_id)`
+- `create_session(worktree, agent, prompt, system)` — 内部按代理填 `agentArgs` 或把 system 拼进 prompt
+- `web_embed_url()` — 给 iframe 的 loopback,hash 只在内存
+
+**代码**:会话屏 `app-shell/screens/session/mod.rs`(只剩 Orca/OD 两页签);开工在计划屏 → `run_issue` / `run_issue_orca`;路径 `bw-engine/workspace.rs`;Orca 客户端 `bw-engine/orca.rs`;PTY 封存 `bw-engine/legacy_pty/`。穿刺 [`docs/orca-session-puncture.md`](orca-session-puncture.md)。
+**数据**:issue 正本不变。会话正文不进 buddy 库。token 不入库。worktree 目录不入库。系统提示词开工时现算、一次性灌进 Orca/OD,不落配置屏、不跟会话屏当前页签走。
+**依赖**:本机**安装版** Orca + named-pipe;iframe 吃 `BW_ORCA_WEB_URL`。`#![forbid(unsafe_code)]` 仍守。
+**没建**:iframe 还不能自己配对(启动时设 `BW_ORCA_WEB_URL` 就能嵌上;不建设置页)。网页跟随仍是 Orca 另窗。稿未改。账本路径未改。不做:pairing 设置页、postMessage、会话 URL、新 crate、Cursor 专模块、Orca 里代登记仓、`worktree-orca-adapter`、迁旧树、源码版与安装版并行。
 
 ### 8 · 远端与工具探活
 

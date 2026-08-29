@@ -27,6 +27,9 @@ demo-workspaces/
 # subagent 隔离工作区(git worktree),不是源码
 /.worktrees/
 
+# buddy 每活一棵树:新树落 `.bw/worktrees/`,不进仓;旧平级兄弟不搬
+.bw/worktrees/
+
 # 指南截图本地占位(验证时填,不进仓)
 docs/guide/img/
 

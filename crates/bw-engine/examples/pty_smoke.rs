@@ -35,10 +35,8 @@ use std::collections::HashMap;
 #[cfg(not(windows))]
 use std::time::{Duration, Instant};
 
-use bw_engine::interactive_cli::{
-    InteractiveCliExecutor, InteractiveExecutor, LaunchPlan, PtyInput,
-};
 use bw_engine::RunCtx;
+use bw_engine::{InteractiveCliExecutor, InteractiveExecutor, LaunchPlan, PtyInput};
 use tokio::sync::mpsc;
 
 #[tokio::main]

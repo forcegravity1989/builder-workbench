@@ -77,7 +77,7 @@ pub(super) struct ProjectGathered {
     issues: Vec<bw::Issue>,
     conversations: Vec<bw::model::Conversation>,
     notify_seen: Option<i64>,
-    /// 会话行。`live` 是采那一刻的;`assemble` 会对着 `app.pty_live` 现刷新(纯内存)。
+    /// 会话行。`live` 是采那一刻的(PTY 已封存,恒 false —— 没真进程信号,不假绿)。
     sessions: Vec<SessionVm>,
     releases: Vec<ReleaseVm>,
     health: HealthVm,
@@ -92,15 +92,12 @@ pub(super) struct ProjectGathered {
     ops1_status: Option<String>,
 }
 
-/// 会话工作台缓存键 + 值。切周 / 选卡片时会话相关 ui 字段没变,直接复用,
-/// 不重跑 `build_workbench` 那几个 git 子进程(list_dir / changed_files /
-/// ahead_behind / file_diff)。展开目录 / 切会话 / 换页签时键变,重算。
+/// 会话工作台缓存键 + 值。切周 / 选卡片时会话相关 ui 字段没变,直接复用。
+/// 切会话 / 换页签时键变,重算(现在 build_workbench 便宜,没 git 子进程了)。
 #[derive(PartialEq)]
 pub(super) struct WorkbenchKey {
     session_open: Option<bw::model::IssueId>,
     session_tab: crate::vm::SessionTab,
-    expanded: Vec<String>,
-    open_file: String,
     od_src: String,
     od_gen: u64,
 }
@@ -125,14 +122,11 @@ pub struct UiState {
     pub note_seq: u64,
     /// 「开始本周」回来的草稿活标,连同是哪一周。人确认前只存在这里,不进库。
     pub pending_drafts: Option<(String, Vec<String>)>,
-    /// 会话屏选中哪个会话、开着哪个页签、展开了哪些目录、中栏开着哪个文件。
-    /// 纯导航状态,一律不进库。
+    /// 会话屏选中哪个会话、开着哪个页签。纯导航状态,一律不进库。
     pub session_open: Option<bw::model::IssueId>,
     /// 计划屏详情抽屉开着哪张活。纯导航状态,不进库。
     pub selected_issue: Option<bw::model::IssueId>,
     pub session_tab: crate::vm::SessionTab,
-    pub expanded_dirs: Vec<String>,
-    pub open_file: String,
     /// 知识库屏在看哪个页签,以及代码图/资产两个页签**上一次点开时**跑出来的
     /// 结果。这两样各要起好几个子进程(codegraph、`git log --name-only`、仓
     /// 统计),每重拼一次 ViewModel 就重跑一遍会把界面拖垮 —— 所以只在人点
@@ -146,8 +140,6 @@ pub struct UiState {
     /// 上一次「采一次指标」采到的东西。同理:起脚本要几百毫秒到几秒,只在人
     /// 点那一下才跑。**空 = 还没采过**,不是「采到的是 0」。
     pub metrics: Vec<bw::app::collect::MetricReadout>,
-    /// 会话屏那块「这次开工喂了什么」。`None` = 面板关着。
-    pub briefing: Option<String>,
     /// 配置屏要亮的技能 slug。纯导航。
     pub focus_skill: String,
     pub data_dir: String,
@@ -503,9 +495,9 @@ pub async fn gather(app: &App, ui: &mut UiState) -> Gathered {
 /// 换页签)时仍跑 `list_dir` / `changed_files` / `ahead_behind` / `file_diff`
 /// 几个 git——但同代 gather 内键没变就复用缓存,**切周 / 选卡片时不会跑**。
 /// 导航请求只调它。设计见 ADR 0002。
-pub async fn assemble(app: &App, ui: &mut UiState, g: &Gathered) -> Vm {
+pub fn assemble(ui: &mut UiState, g: &Gathered) -> Vm {
     let open = match (&g.open, ui.open) {
-        (Some(pg), Some(_)) => Some(assemble_project(app, ui, pg, g.gen, &g.env).await),
+        (Some(pg), Some(_)) => Some(assemble_project(ui, pg, g.gen, &g.env)),
         _ => None,
     };
     Vm {
@@ -759,8 +751,7 @@ async fn gather_project(
 /// 从 [`ProjectGathered`] + 视图字段现切 `ProjectVm`。不起 git 子进程
 /// (`ops3_landed` 已采)、不重探 OD(`env` 已采)。会话工作台用键缓存住,
 /// 切周 / 选卡片时会话字段没变就直接复用。见 [`assemble`]。
-async fn assemble_project(
-    app: &App,
+fn assemble_project(
     ui: &mut UiState,
     pg: &ProjectGathered,
     gen: u64,
@@ -779,24 +770,14 @@ async fn assemble_project(
     };
     // 指标读数按正在看的那一周现读(本机 jsonl,便宜)。
     let readings = bw::app::read_metric_readings(&pg.ws, &viewing_week);
-    // 会话 live 现刷新:PTY 自己会死,这是唯一一个不靠命令就会变的东西;
-    // `app.pty_live` 是纯内存查询,不起子进程。
-    let sessions: Vec<SessionVm> = pg
-        .sessions
-        .iter()
-        .map(|s| {
-            let mut s = s.clone();
-            s.live = app.pty_live(s.conversation_id);
-            s
-        })
-        .collect();
-    // workbench 缓存:会话相关 ui 字段没变 + 同一代 gather,就复用,不重跑
-    // `build_workbench` 那几个 git 子进程。展开目录 / 切会话 / 换页签时键变,重算。
+    // 会话 live:PTY 已封存,build_sessions 已经如实置 false(没真进程信号,不假
+    // 绿)。这里直接用采到的那份,不再查什么 live。
+    let sessions: Vec<SessionVm> = pg.sessions.clone();
+    // workbench 缓存:会话相关 ui 字段没变 + 同一代 gather,就复用。切会话 / 换
+    // 页签时键变,重算(build_workbench 现在便宜,没 git 子进程了)。
     let wb_key = WorkbenchKey {
         session_open: ui.session_open,
         session_tab: ui.session_tab,
-        expanded: ui.expanded_dirs.clone(),
-        open_file: ui.open_file.clone(),
         od_src: ui.od_src.clone(),
         od_gen: ui.od_gen,
     };
@@ -812,12 +793,9 @@ async fn assemble_project(
             &pg.issues,
             ui.session_open,
             ui.session_tab,
-            &ui.expanded_dirs,
-            &ui.open_file,
             &ui.od_src,
             ui.od_gen,
-        )
-        .await;
+        );
         ui.workbench_cache = Some(WorkbenchCache {
             gen,
             key: wb_key,
@@ -873,7 +851,6 @@ async fn assemble_project(
         releases: pg.releases.clone(),
         sessions: sessions.clone(),
         session_open: ui.session_open,
-        briefing: ui.briefing.clone(),
         selected_issue: ui.selected_issue,
         mr_url_prefix: pg.mr_url_prefix.clone(),
         issue_url_prefix: pg.issue_url_prefix.clone(),

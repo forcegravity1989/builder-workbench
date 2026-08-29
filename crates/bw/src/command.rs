@@ -6,7 +6,7 @@
 //! 这里只列真接了实现的命令。**没接的不放进枚举** —— 一条能发出去但内核
 //! 悄悄什么都不做的命令,比没有这条命令更糟。
 
-use crate::model::{Category, ConversationId, IssueId, IssueStatus, ProjectId};
+use crate::model::{Category, IssueId, IssueStatus, ProjectId};
 
 /// 总览「编辑项目名片」一次填完的仓文件字段。
 ///
@@ -171,20 +171,10 @@ pub enum Command {
         /// `review` / `merged` / `release`。
         event_type: String,
     },
-    /// ■停止:关掉这件活的内嵌终端。**状态原地不动**——停下来既不是失败也
-    /// 不是完成,人随时能再点▶跑接回去。
+    /// ■停止:停掉这件活的运行。**状态原地不动**——停下来既不是失败也
+    /// 不是完成,人随时能再点▶跑接回去。PTY 已封存,这条现在只停本机记账
+    /// (live=false),不真去关什么进程 —— 没真实进程信号就当空闲,不假 live。
     CancelRun { id: IssueId },
-    /// 人在内嵌终端里敲的字节。
-    TerminalInput {
-        conversation_id: ConversationId,
-        bytes: Vec<u8>,
-    },
-    /// 终端框大小变了,PTY 那头也要跟着变,否则 agent 输出会按 80×24 折行。
-    TerminalResize {
-        conversation_id: ConversationId,
-        cols: u16,
-        rows: u16,
-    },
     /// 总览手填卡:把人填的今天这个数记进账本 `.bw/metrics/readings.jsonl`(当天覆盖)。
     /// 只收 C 类(`collect.kind = "manual"`)。空值拒。
     RecordManualMetric {

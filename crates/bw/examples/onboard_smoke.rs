@@ -284,15 +284,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         ("空仓", workspaces.join("no-remote")),
     ] {
         // 分支上写了什么最能说明问题 —— 主检出可能本来就有人写的那几份。
-        let tree = ws
-            .parent()
-            .map(|p| {
-                p.join(format!(
-                    "{}-issue-1",
-                    ws.file_name().unwrap().to_string_lossy()
-                ))
-            })
-            .unwrap_or_else(|| ws.clone());
+        // 活的 worktree 落在仓根下 `.bw/worktrees/issue-1`(新路径);旧平级兄弟
+        // 不再建。这里照底座的路径函数找那棵树,找不到就回退看主检出。
+        let tree = bw_engine::workspace::issue_worktree_path(&ws, 1).unwrap_or_else(|| ws.clone());
         let look = if tree.is_dir() { tree } else { ws.clone() };
         let listed = std::fs::read_dir(&look)
             .map(|d| {
