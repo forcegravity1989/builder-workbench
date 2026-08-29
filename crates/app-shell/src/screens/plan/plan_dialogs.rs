@@ -337,7 +337,11 @@ pub fn confirm_dialog(
                     button {
                         class: "btn btn-primary",
                         onclick: move |_| {
-                            b.cmd(Command::TransitionIssue { id: pm2.id, to: pm2.to });
+                            if pm2.to == IssueStatus::Done {
+                                b.cmd(Command::MergeAndSettle { id: pm2.id });
+                            } else {
+                                b.cmd(Command::TransitionIssue { id: pm2.id, to: pm2.to });
+                            }
                             pending.set(None);
                         },
                         "确认"
