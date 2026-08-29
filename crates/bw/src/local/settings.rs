@@ -2,7 +2,7 @@
 //!
 //! 替代旧的 `app_meta` 表里的 `workspaces_root` 键。今天两个全局键:
 //! 工作区根目录 + Orca 网页地址(配对 URL,带 token,**只在本地**,不进仓/Event
-//! 原文/日志);`notify_seen` 是 per-project,住在项目注册表里([`super::registry`])。
+//! 原文/日志)。
 
 use crate::repo::RepoFileError;
 use std::path::Path;

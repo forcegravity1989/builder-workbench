@@ -94,6 +94,7 @@ impl App {
                 IssueKind::Ops,
                 origin,
                 week_of,
+                String::new(),
             )
             .await?;
         let id = events
@@ -303,7 +304,10 @@ impl App {
             to: IssueStatus::Done,
             settled: true,
         });
-        if let Some(e) = self.chat_notify_issue(id, "merged", pr_number).await {
+        if let Some(e) = self
+            .chat_notify_issue(id, crate::chat::NotifyEvent::Merged.key(), pr_number)
+            .await
+        {
             events.push(e);
         }
         Ok(events)

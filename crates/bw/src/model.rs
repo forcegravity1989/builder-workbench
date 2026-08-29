@@ -396,6 +396,13 @@ pub struct Issue {
     pub updated_at: i64,
     /// 人显式点「完成」的那一刻;`None` = 还没结清。
     pub settled_at: Option<i64>,
+    /// 责任人(codehub issue assignee)。空 = 未指派。正本在远端,本地只透传。
+    pub assignee: String,
+    /// 提出人(codehub issue author)。空 = 认不出。正本在远端,本地只透传。
+    pub author: String,
+    /// 排进的自定义版本(`bw:plan:<name>` 标签);空 = 不属于任何版本。
+    /// 和 `week_of` 互斥:一张活要么排进某一周、要么排进某个版本。
+    pub plan_version: String,
 }
 
 impl Issue {

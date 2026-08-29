@@ -56,7 +56,7 @@ impl App {
         };
 
         // 建运作活①并立刻开工。
-        let (issue_id, _, mut events) = self
+        let (issue_id, created, mut events) = self
             .create_ops_issue(
                 project_id,
                 title,
@@ -67,6 +67,21 @@ impl App {
                 week.clone(),
             )
             .await?;
+        // 本周版本计划创建完成 → 发群(仅在新建那一下,不是重复点开始本周)。
+        if created {
+            let number = events
+                .iter()
+                .find_map(|e| match e {
+                    Event::IssueCreated { number, .. } => Some(*number),
+                    _ => None,
+                })
+                .unwrap_or(0);
+            let ev = crate::chat::NotifyEvent::WeekPlan;
+            let text = crate::chat::notify_text(ev.key(), number, &week, "", "");
+            if let Some(e) = self.chat_send(project_id, ev.key(), number, text).await {
+                events.push(e);
+            }
+        }
         events.extend(self.run_issue(issue_id).await?);
         events.push(Event::WeekPlanStarted {
             project_id,
@@ -94,6 +109,7 @@ impl App {
                     Some(crate::model::StageKind::Build),
                     IssueKind::Business,
                     IssueOrigin::AgentSplit,
+                    String::new(),
                     String::new(),
                 )
                 .await?;
@@ -126,6 +142,47 @@ impl App {
         Ok(vec![Event::IssueScheduled {
             id,
             week_of: target,
+        }])
+    }
+
+    /// 排进自定义版本(`bw:plan:<name>`)。和排进周互斥:先摘 `bw:week:` 标签,
+    /// 再打 `bw:plan:<name>`,并把 issue 挂到版本里程碑。状态进「待办」(已排期)。
+    pub(super) async fn schedule_to_plan(
+        &mut self,
+        id: IssueId,
+        plan: String,
+    ) -> Result<Vec<Event>> {
+        let issue = self.issue_or_err(id).await?;
+        let project = self.project_of(issue.project_id).await?;
+        issue_store::assign_to_plan(self, &project, id.iid(), &plan).await?;
+        // 排进版本 = 进「待办」(已排期),状态机允许才动。
+        if issue.status != IssueStatus::Todo && issue.status.can_transition_to(IssueStatus::Todo) {
+            issue_store::set_status(self, &project, id.iid(), IssueStatus::Todo).await?;
+        }
+        Ok(vec![Event::IssueScheduledToPlan { id, plan }])
+    }
+
+    /// 建一个自定义版本(计划包):建 codehub milestone(title=name,start,due),
+    /// 并给 `included` 每张打 `bw:plan:<name>` 标签、挂到这个里程碑。
+    /// 与发版号 `cut_release` 不同:版本是把待办活划归到一个计划包里排期。
+    pub(super) async fn create_plan_version(
+        &mut self,
+        project_id: ProjectId,
+        name: String,
+        start: String,
+        due: String,
+        _note: String,
+        included: Vec<IssueId>,
+    ) -> Result<Vec<Event>> {
+        let project = self.project_of(project_id).await?;
+        let mid = issue_store::create_plan_version(self, &project, &name, &start, &due).await?;
+        for id in &included {
+            issue_store::assign_to_plan(self, &project, id.iid(), &name).await?;
+        }
+        Ok(vec![Event::PlanVersionCreated {
+            project_id,
+            name,
+            milestone_id: mid,
         }])
     }
 
@@ -196,8 +253,10 @@ impl App {
             version: version.clone(),
             rows_written,
         }];
-        let text = crate::chat::notify_text("release", 0, &format!("发版 {version}"), "", "");
-        if let Some(e) = self.chat_send(project_id, "release", 0, text).await {
+        let release_ev = crate::chat::NotifyEvent::Release;
+        let text =
+            crate::chat::notify_text(release_ev.key(), 0, &format!("发版 {version}"), "", "");
+        if let Some(e) = self.chat_send(project_id, release_ev.key(), 0, text).await {
             events.push(e);
         }
         Ok(events)

@@ -1,270 +1,280 @@
-//! 右侧 360px 详情抽屉。卡片上也有 ▶开工;这里一次看全字段和作废。
-//!
-//! **这是一张活的落脚点**:通知屏说「有 MR 等你合」,点过来落在这儿。所以这里
-//! 得能一次看全 —— 活要干什么(正文)、干到哪(状态、分支)、干出了什么
-//! (MR 链接、远端 issue 链接)、以及怎么去看过程(去会话)。链接只在真推得出
-//! 地址时才给,推不出就说明为什么,不摆一个点了报错的链接。
+//! 详情弹窗(屏幕居中)。点卡片打开,三段式:头/体/底。字段精简,主操作按
+//! 状态互斥。Start 是只读子弹窗,确认即 RunIssue。
 
-use super::kanban::PendingMove;
 use crate::bridge::{Bridge, Panel, PanelNav, Req};
-use crate::vm::ProjectVm;
+use crate::vm::{CardItemVm, ProjectVm};
 use bw::command::Command;
 use bw::model::{category_from_key, category_key, IssueId, IssueStatus, StageKind};
 use dioxus::prelude::*;
 
-/// **按 id 从最新的 ViewModel 里现查**,不拿点卡片那一刻的快照 —— 拿快照的
-/// 话,▶开工 之后活已经到「评审中」了,面板还显示「▶ 开工」,再点一次只会
-/// 收到一句「这张活现在不是能开工的状态」。
+use super::kanban::PendingSchedule;
+
 #[component]
-pub fn DetailPanel(
+pub fn DetailModal(
     p: ProjectVm,
     mut selected: Signal<Option<IssueId>>,
-    /// 「✓ 点完成」不直接发命令,而是把这一下**塞进和拖卡片同一个确认框**。
-    /// 两个入口发的是同一条命令,拦的也该是同一下 —— 一个有拦、一个没拦,
-    /// 就成了「哪个按钮危险取决于你从哪儿点进来」。
-    mut pending: Signal<Option<PendingMove>>,
+    mut schedule: Signal<Option<PendingSchedule>>,
+    mut start: Signal<Option<IssueId>>,
     bridge: Bridge,
 ) -> Element {
-    let (p, bridge) = (&p, &bridge);
-    let picked = selected.read().and_then(|id| {
-        p.board
-            .columns
-            .iter()
-            .flat_map(|col| col.cards.iter())
-            .find(|c| c.id == id)
-            .cloned()
-    });
+    let nav = use_context::<PanelNav>();
+    let picked = selected.read().and_then(|id| pick_card(&p, id));
     let Some(c) = picked else {
         return rsx! {};
     };
-    let b_run = bridge.clone();
-    let b_review = bridge.clone();
-    let b_block = bridge.clone();
-    let b_cat = bridge.clone();
-    let b_sess = bridge.clone();
-    let nav = use_context::<PanelNav>();
     let id = c.id;
-    // 先快照出来:`c` 是借来的,闭包要活到点击那一刻。
-    let title = c.title.clone();
-    let title_cancel = title.clone();
-    let pr = c.pr_number;
-    // 链接只在**真拼得出地址**时才有。两个前缀由内核按 provider 拼好(github
-    // 与 codehub 的路径形状不同),这里只管接上号码;没挂远端就是空串,那时候
-    // 只显示号码、不给链接。
+    let title_orig = c.title.clone();
+    let body_orig = c.body.clone();
+    let assignee_orig = c.assignee.clone();
+    let mut title_val = use_signal(move || title_orig.clone());
+    let mut body_val = use_signal(move || body_orig.clone());
+    let mut assignee_val = use_signal(move || assignee_orig.clone());
+    let close = move |_| selected.set(None);
+
     let mr_url = (!p.mr_url_prefix.is_empty() && c.pr_number > 0)
         .then(|| format!("{}{}", p.mr_url_prefix, c.pr_number));
     let issue_url = (!p.issue_url_prefix.is_empty() && c.remote_number > 0)
         .then(|| format!("{}{}", p.issue_url_prefix, c.remote_number));
-    rsx! {
-        div { class: "plan-detail",
-            div { class: "plan-detail-head",
-                h3 { "详情 · #{c.number}" }
-                button { class: "drawer-close", onclick: move |_| selected.set(None), "✕" }
-            }
-            div { class: "plan-detail-body",
-                div { class: "detail-title", "{c.title}" }
-                if !c.body.trim().is_empty() {
-                    div { class: "detail-body-text", "{c.body}" }
-                }
-                {row("状态", c.status.label())}
-                if c.kind == "运作活" {
-                    {row("类别", "运作")}
-                } else {
-                    div { class: "detail-row",
-                        div { class: "k", "类别" }
-                        select {
-                            class: "select",
-                            onchange: move |e| {
-                                if let Some(cat) = category_from_key(&e.value()) {
-                                    b_cat.cmd(Command::SetIssueCategory { id, category: cat });
-                                }
-                            },
-                            option { value: "", selected: c.category == "—", "还没选" }
-                            for cat in StageKind::ALL {
-                                option {
-                                    key: "{category_key(cat)}",
-                                    value: "{category_key(cat)}",
-                                    selected: c.category == cat.label(),
-                                    "{cat.label()}"
-                                }
-                            }
-                        }
-                    }
-                }
-                {row("开工工具", if c.tool.is_empty() || c.tool == "—" { "—" } else { &c.tool })}
-                {workflow_row(&c.workflow, bridge, nav)}
-                {row("种类", &c.kind)}
-                {row("来源", &c.origin)}
-                {row("排在", if c.week_of.is_empty() { "待办池" } else { &c.week_of })}
-                {row("版本", if c.version.is_empty() { "—" } else { &c.version })}
-                {row("推的指标", if c.metric_key.is_empty() { "—" } else { &c.metric_key })}
-                {row("结清", if c.settled { "已结清(只结这一次)" } else { "未结清" })}
-                {row("分支", if c.branch.is_empty() { "—(还没开过工)" } else { &c.branch })}
-                {link_row("MR", c.pr_number, mr_url.as_deref(), "还没开 MR")}
-                {link_row("远端 issue", c.remote_number, issue_url.as_deref(), "只在本机,没建远端 issue")}
-
-                div { class: "detail-row",
-                    div { class: "k", "操作" }
-                    div { class: "kcard-actions", style: "margin-top:3px;",
-                        // 同一个位置按状态互斥切换,不堆一排常驻按钮。
-                        match c.status {
-                            IssueStatus::Backlog | IssueStatus::Todo | IssueStatus::InProgress => rsx! {
-                                button {
-                                    class: "btn btn-sm btn-primary",
-                                    onclick: move |_| {
-                                        b_run.cmd(Command::RunIssue { id });
-                                        nav.go(Panel::Session);
-                                    },
-                                    "▶ 开工"
-                                }
-                            },
-                            // 「✓ 点完成」和看板上把卡片拖进「已完成」是同一条
-                            // 路:同一个确认框、同一条命令 —— 两个入口不能一个
-                            // 合一个不合,也不能一个拦一下一个不拦。
-                            IssueStatus::InReview => rsx! {
-                                button {
-                                    class: "btn btn-sm btn-primary",
-                                    onclick: move |_| pending.set(Some(PendingMove {
-                                        id,
-                                        title: title.clone(),
-                                        from: IssueStatus::InReview,
-                                        to: IssueStatus::Done,
-                                        pr_number: pr,
-                                    })),
-                                    "✓ 点完成"
-                                }
-                            },
-                            IssueStatus::Done => rsx! {
-                                span { style: "color:var(--ink-3);", "已完成并结清" }
-                            },
-                            IssueStatus::Blocked => rsx! {
-                                button {
-                                    class: "btn btn-sm",
-                                    onclick: move |_| b_review.cmd(Command::TransitionIssue {
-                                        id,
-                                        to: IssueStatus::Todo,
-                                    }),
-                                    "解除阻塞 → 待办"
-                                }
-                            },
-                            IssueStatus::Cancelled => rsx! {
-                                span { style: "color:var(--ink-3);", "已取消" }
-                            },
-                        }
-                        if !matches!(
-                            c.status,
-                            IssueStatus::Done | IssueStatus::Blocked | IssueStatus::Cancelled
-                        ) {
-                            button {
-                                class: "btn btn-sm",
-                                onclick: move |_| b_block.cmd(Command::BlockIssue {
-                                    id,
-                                    reason: "在计划屏手动标为阻塞".into(),
-                                }),
-                                "⛔ 阻塞"
-                            }
-                        }
-                        if c.status.can_transition_to(IssueStatus::Cancelled) {
-                            button {
-                                class: "btn btn-sm",
-                                onclick: move |_| pending.set(Some(PendingMove {
-                                    id,
-                                    title: title_cancel.clone(),
-                                    from: c.status,
-                                    to: IssueStatus::Cancelled,
-                                    pr_number: pr,
-                                })),
-                                "作废"
-                            }
-                        }
-                    }
-                }
-                if c.status == IssueStatus::InReview {
-                    div { style: "font-size:11px;color:var(--ink-4);line-height:1.8;",
-                        "「完成」永远是人点的。跑完的活最远只到这一步。"
-                    }
-                }
-                div { class: "detail-actions",
-                    button {
-                        class: "btn btn-primary btn-sm",
-                        onclick: move |_| {
-                            b_sess.send(Req::SelectSession(Some(id)));
-                            nav.go(Panel::Session);
-                        },
-                        "去会话 →"
-                    }
-                    // 高保真上这里还有一颗「蒸馏」:把做完的活变成一篇技能。
-                    // V4 还没有这条命令,做成灰态,
-                    // 不放一颗点了没反应的按钮。
-                    button { class: "btn btn-sm", disabled: true, title: "V4 还没接蒸馏", "蒸馏" }
-                }
-            }
-        }
-    }
-}
-
-/// 一行「号码 + 能点的链接」。没号码就说没有;有号码但推不出地址(本机仓、
-/// origin 认不出)就只显示号码,并说明为什么点不了 —— 不摆一个点了报错的链接。
-fn link_row(k: &str, number: u32, url: Option<&str>, none_hint: &str) -> Element {
-    let opened = url.map(str::to_string);
-    rsx! {
-        div { class: "detail-row",
-            div { class: "k", "{k}" }
-            if number == 0 {
-                span { style: "color:var(--ink-3);", "—({none_hint})" }
-            } else if let Some(u) = opened {
-                span {
-                    class: "detail-link",
-                    title: "{u}",
-                    onclick: move |_| crate::chrome::open_in_browser(&u),
-                    "#{number} ↗"
-                }
-            } else {
-                span {
-                    title: "这个项目没挂远端(或者 provider 认不出来),拼不出能点的地址",
-                    "#{number}(没有可点的地址)"
-                }
-            }
-        }
-    }
-}
-
-fn workflow_row(workflow: &str, bridge: &Bridge, nav: PanelNav) -> Element {
-    // ViewModel 有时把空 workflow 写成「—」;那是占位,不是一份真剧本,
-    // 不能画成可点的「— →」。
-    if workflow.is_empty() || workflow == "—" {
-        return row("workflow", "—");
-    }
-    let slug = bw::app::skill_slug(workflow)
-        .unwrap_or(workflow)
-        .to_string();
-    let label = if slug == workflow {
-        workflow.to_string()
+    let _place = if !c.week_of.is_empty() {
+        c.week_of.clone()
+    } else if !c.plan_version.is_empty() {
+        format!("版本·{}", c.plan_version)
     } else {
-        format!("{workflow} · {slug}")
+        "未排期".into()
     };
-    let b = bridge.clone();
+
+    let b_complete = bridge.clone();
+    let b_block = bridge.clone();
+    let b_cancel = bridge.clone();
+    let b_assignee = bridge.clone();
+    let b_sess = bridge.clone();
+    let b_cat = bridge.clone();
+    let b_edit = bridge.clone();
+    let b_sched = bridge.clone();
+
     rsx! {
-        div { class: "detail-row",
-            div { class: "k", "workflow" }
-            span {
-                class: "detail-link",
-                title: "去配置屏看这份剧本",
-                onclick: move |_| {
-                    b.send(Req::FocusSkill(slug.clone()));
-                    nav.go(Panel::Config);
-                },
-                "{label} →"
+        div { class: "modal-backdrop", onclick: close,
+            div { class: "modal plan-modal", onclick: move |e| e.stop_propagation(),
+                div { class: "plan-modal-head",
+                    div { class: "plan-modal-tag", "详情 · #{c.number}" }
+                    input {
+                        class: "input plan-modal-title-input",
+                        value: "{title_val}",
+                        oninput: move |e| title_val.set(e.value()),
+                    }
+                    button { class: "plan-modal-x", onclick: close, "✕" }
+                }
+                div { class: "plan-modal-body",
+                    textarea {
+                        class: "textarea detail-body-text",
+                        value: "{body_val}",
+                        oninput: move |e| body_val.set(e.value()),
+                        placeholder: "正文",
+                    }
+                    div { class: "plan-meta-grid",
+                        div { class: "detail-row", style: "grid-column:1/-1;",
+                            div { class: "k", "链接" }
+                            if c.pr_number > 0 {
+                                if let Some(u) = mr_url.clone() {
+                                    span { class: "detail-link", onclick: move |_| crate::chrome::open_in_browser(&u), "MR #{c.pr_number} ↗" }
+                                } else {
+                                    span { "MR #{c.pr_number}" }
+                                }
+                            } else {
+                                span { style: "color:var(--ink-3);" }
+                            }
+                            " · "
+                            if c.remote_number > 0 {
+                                if let Some(u) = issue_url.clone() {
+                                    span { class: "detail-link", onclick: move |_| crate::chrome::open_in_browser(&u), "issue #{c.remote_number} ↗" }
+                                } else {
+                                    span { "issue #{c.remote_number}" }
+                                }
+                            } else {
+                                span { style: "color:var(--ink-3);", "— 只在本机" }
+                            }
+                        }
+                        if c.kind != "业务活" {
+                            div { class: "detail-row",
+                                div { class: "k", "类别" }
+                                select {
+                                    class: "select",
+                                    style: "width:100%;",
+                                    onchange: move |e| {
+                                        if let Some(cat) = category_from_key(&e.value()) {
+                                            b_cat.cmd(Command::SetIssueCategory { id, category: cat });
+                                        }
+                                    },
+                                    option { value: "", selected: c.category == "—", "还没选" }
+                                    for cat in StageKind::ALL {
+                                        option { key: "{category_key(cat)}", value: "{category_key(cat)}", selected: c.category == cat.label(), "{cat.label()}" }
+                                    }
+                                }
+                            }
+                        } else {
+                            {row("类别", "运作")}
+                        }
+                        div { class: "detail-row",
+                            div { class: "k", "计划" }
+                            select {
+                                class: "select",
+                                style: "width:100%;",
+                                onchange: move |e| {
+                                    let v = e.value();
+                                    if v == "unscheduled" {
+                                        b_sched.cmd(Command::ScheduleIssue { id, week_of: None });
+                                    } else if let Some(w) = v.strip_prefix("week:") {
+                                        b_sched.cmd(Command::ScheduleIssue { id, week_of: Some(w.to_string()) });
+                                    } else if let Some(pl) = v.strip_prefix("version:") {
+                                        b_sched.cmd(Command::ScheduleToPlan { id, plan: pl.to_string() });
+                                    }
+                                },
+                                option { value: "unscheduled", selected: c.week_of.is_empty() && c.plan_version.is_empty(), "未排期" }
+                                for w in p.weeks.iter().filter(|w| w.week >= p.current_week) {
+                                    {let val = format!("week:{}", w.week); let sel = c.week_of == w.week; rsx! { option { value: "{val}", selected: sel, "周 · {w.week}" } }}
+                                }
+                                for v in p.plan_versions.iter() {
+                                    {let val = format!("version:{}", v.name); let sel = c.plan_version == v.name; rsx! { option { value: "{val}", selected: sel, "版本 · {v.name}" } }}
+                                }
+                            }
+                        }
+                        div { class: "detail-row",
+                            div { class: "k", "负责人" }
+                            input {
+                                class: "input",
+                                style: "width:100%;",
+                                value: "{assignee_val}",
+                                placeholder: "指派谁",
+                                oninput: move |e| assignee_val.set(e.value()),
+                            }
+                        }
+                    }
+                    if c.status == IssueStatus::InReview {
+                        div { class: "plan-review-hint", "Complete 由人确认。agent 跑完只到待评审。" }
+                    }
+                }
+                div { class: "plan-modal-foot",
+                    div { style: "display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end;",
+                        {match c.status {
+                            IssueStatus::Backlog => rsx! {
+                                button { class: "btn btn-sm btn-secondary", onclick: move |_| {
+                                    selected.set(None);
+                                    schedule.set(Some(PendingSchedule { id, title: String::new() }));
+                                }, "schedule" }
+                            },
+                            IssueStatus::Todo => rsx! {
+                                button { class: "btn btn-sm btn-primary", onclick: move |_| start.set(Some(id)), "Start" }
+                            },
+                            IssueStatus::InProgress => rsx! {
+                                button { class: "btn btn-sm btn-secondary", onclick: move |_| {
+                                    b_sess.send(Req::SelectSession(Some(id)));
+                                    nav.go(Panel::Session);
+                                }, "Open" }
+                            },
+                            IssueStatus::InReview => rsx! {
+                                button { class: "btn btn-sm btn-primary", onclick: move |_| b_complete.cmd(Command::MergeAndSettle { id }), "Complete" }
+                            },
+                            IssueStatus::Done => rsx! { span { style: "color:var(--ink-3);", "已完成并结清" } },
+                            IssueStatus::Blocked => rsx! {
+                                button { class: "btn btn-sm btn-secondary", onclick: move |_| {
+                                    b_sess.send(Req::SelectSession(Some(id)));
+                                    nav.go(Panel::Session);
+                                }, "Open" }
+                            },
+                            IssueStatus::Cancelled => rsx! { span { style: "color:var(--ink-3);", "已取消" } },
+                        }}
+                        {match c.status {
+                            IssueStatus::Done | IssueStatus::Cancelled => rsx! {},
+                            _ => rsx! {
+                                button { class: "btn btn-sm btn-secondary", onclick: move |_| b_block.cmd(Command::BlockIssue { id, reason: "在计划屏手动标为阻塞".into() }), "阻塞" }
+                            },
+                        }}
+                        {match c.status {
+                            IssueStatus::Done | IssueStatus::Cancelled => rsx! {},
+                            _ => rsx! {
+                                button { class: "btn btn-sm btn-secondary", onclick: move |_| b_cancel.cmd(Command::CancelIssue { id, reason: "在计划屏作废".into() }), "Cancel" }
+                            },
+                        }}
+                    }
+                    div { style: "display:flex;gap:8px;justify-content:flex-end;",
+                        button {
+                            class: "btn btn-sm btn-primary",
+                            onclick: move |_| {
+                                let t = title_val.read().trim().to_string();
+                                let b = body_val.read().clone();
+                                b_edit.cmd(Command::EditIssue { id, title: t, body: b });
+                                let a = assignee_val.read().trim().to_string();
+                                if a != c.assignee {
+                                    b_assignee.cmd(Command::SetIssueAssignee { id, assignee: a });
+                                }
+                                selected.set(None);
+                            },
+                            "保存"
+                        }
+                    }
+                }
             }
         }
     }
+}
+
+pub fn start_modal(
+    p: &ProjectVm,
+    sid: IssueId,
+    bridge: &Bridge,
+    mut start: Signal<Option<IssueId>>,
+    nav: &PanelNav,
+) -> Element {
+    let c = pick_card(p, sid);
+    let Some(c) = c else {
+        return rsx! {};
+    };
+    let name = if c.branch.is_empty() {
+        format!("bw/issue-{}", c.number)
+    } else {
+        c.branch.clone()
+    };
+    let b_run = bridge.clone();
+    let id = c.id;
+    let nav = *nav;
+    rsx! {
+        div { class: "modal-backdrop", onclick: move |_| start.set(None),
+            div { class: "modal plan-modal", onclick: move |e| e.stop_propagation(),
+                div { class: "plan-modal-head",
+                    div { class: "plan-modal-tag", "worktree" }
+                    div { class: "plan-modal-title", "Start · #{c.number}" }
+                    button { class: "plan-modal-x", onclick: move |_| start.set(None), "✕" }
+                }
+                div { class: "plan-modal-body",
+                    div { class: "detail-row", div { class: "k", "worktree 名" }, "{name}" }
+                    div { class: "detail-row", div { class: "k", "基于" }, "main" }
+                    div { class: "cfg-readonly-note", "确认后建 worktree,issue 切到进行中,并打开会话。" }
+                }
+                div { class: "plan-modal-foot",
+                    span {}
+                    div { style: "display:flex;gap:8px;",
+                        button { class: "btn btn-secondary", onclick: move |_| start.set(None), "取消" }
+                        button { class: "btn btn-primary", onclick: move |_| {
+                            b_run.cmd(Command::RunIssue { id });
+                            start.set(None);
+                            nav.go(Panel::Session);
+                        }, "Start" }
+                    }
+                }
+            }
+        }
+    }
+}
+
+fn pick_card(p: &ProjectVm, id: IssueId) -> Option<CardItemVm> {
+    p.board
+        .columns
+        .iter()
+        .flat_map(|c| c.cards.iter())
+        .find(|c| c.id == id)
+        .cloned()
 }
 
 fn row(k: &str, v: &str) -> Element {
-    rsx! {
-        div { class: "detail-row",
-            div { class: "k", "{k}" }
-            "{v}"
-        }
-    }
+    rsx! { div { class: "detail-row", div { class: "k", "{k}" }, "{v}" } }
 }

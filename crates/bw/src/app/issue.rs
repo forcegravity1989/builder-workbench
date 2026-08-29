@@ -27,6 +27,7 @@ impl App {
         kind: IssueKind,
         _origin: IssueOrigin,
         week_of: String,
+        plan: String,
     ) -> Result<Vec<Event>> {
         let project = self.project_of(project_id).await?;
         // 幂等:同一个项目里标题一样的、开着的活不建第二张(指挥器重跑靠它)。
@@ -37,17 +38,40 @@ impl App {
             }]);
         }
         // 业务活打五阶段类别;运作活不打。
-        let extra: Vec<String> = match (kind, category) {
+        let mut extra: Vec<String> = match (kind, category) {
             (IssueKind::Ops, _) | (_, None) => Vec::new(),
             (_, Some(c)) => vec![format!("bw:category:{}", crate::model::category_key(c))],
         };
+        // 排进版本 → 加 bw:plan 标签(issue_store 据此把状态设为 Todo=已排期)。
+        if !plan.is_empty() {
+            extra.push(format!("bw:plan:{plan}"));
+        }
         let extra_refs: Vec<&str> = extra.iter().map(String::as_str).collect();
         let issue =
             issue_store::create(self, &project, &title, &body, kind, &week_of, &extra_refs).await?;
-        Ok(vec![Event::IssueCreated {
+        let mut events = vec![Event::IssueCreated {
             id: issue.id,
             number: issue.number,
-        }])
+        }];
+        // 新建活并临时纳入本周 → 发群通知(版本计划那件由 start_week_planning 单独
+        // 发,不在这里重复;运作活是 buddy 内部,不发)。
+        if !week_of.is_empty() && kind != IssueKind::Ops {
+            let ev = crate::chat::NotifyEvent::IssueCreated;
+            let text = crate::chat::notify_text(
+                ev.key(),
+                issue.number,
+                &title,
+                "",
+                &format!("纳入本周 {week_of}"),
+            );
+            if let Some(e) = self
+                .chat_send(project_id, ev.key(), issue.number, text)
+                .await
+            {
+                events.push(e);
+            }
+        }
+        Ok(events)
     }
 
     /// 唯一的干活入口。
@@ -202,16 +226,13 @@ impl App {
                 // 最远到「评审中」。这一步不是人点的,所以到此为止。
                 let project = self.project_of(issue.project_id).await?;
                 issue_store::set_status(self, &project, id.iid(), IssueStatus::InReview).await?;
-                let mut events = vec![Event::IssueRan {
+                let events = vec![Event::IssueRan {
                     id,
                     ok: true,
                     summary: o.summary,
                     tool: issue.tool.clone(),
                     embed_url: String::new(),
                 }];
-                if let Some(e) = self.chat_notify_issue(id, "review", 0).await {
-                    events.push(e);
-                }
                 Ok(events)
             }
             Ok(o) => Ok(vec![Event::IssueRan {
@@ -456,12 +477,7 @@ impl App {
         if settled {
             self.cleanup_issue_worktree(&issue).await;
         }
-        let mut events = vec![Event::IssueTransitioned { id, to, settled }];
-        if to == IssueStatus::InReview {
-            if let Some(e) = self.chat_notify_issue(id, "review", 0).await {
-                events.push(e);
-            }
-        }
+        let events = vec![Event::IssueTransitioned { id, to, settled }];
         Ok(events)
     }
 
@@ -495,6 +511,32 @@ impl App {
             id,
             category: category.label().to_string(),
         }])
+    }
+
+    /// 改责任人(codehub assignee)。空串 = 取消指派。走 codehub API,
+    /// 不在本地另存一套 —— 重启读回一致(四铁律一)。
+    pub(super) async fn set_issue_assignee(
+        &mut self,
+        id: IssueId,
+        assignee: String,
+    ) -> Result<Vec<Event>> {
+        let issue = self.issue_or_err(id).await?;
+        let project = self.project_of(issue.project_id).await?;
+        issue_store::set_assignee(self, &project, id.iid(), &assignee).await?;
+        Ok(vec![Event::IssueAssigneeSet { id, assignee }])
+    }
+
+    /// 改 issue 标题与正文(codehub issue update)。详情弹窗双击编辑后发这条。
+    pub(super) async fn edit_issue(
+        &mut self,
+        id: IssueId,
+        title: String,
+        body: String,
+    ) -> Result<Vec<Event>> {
+        let issue = self.issue_or_err(id).await?;
+        let project = self.project_of(issue.project_id).await?;
+        issue_store::edit_issue(self, &project, id.iid(), &title, &body).await?;
+        Ok(vec![Event::IssueEdited { id }])
     }
 
     /// 作废:原因进评论,打取消标签并关掉远端 issue。不是完成。

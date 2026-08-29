@@ -771,7 +771,7 @@ pub async fn list_issues(
     args.push("--limit".into());
     args.push("200".into());
     args.push("--json".into());
-    args.push("number,title,state,labels,createdAt,closedAt".into());
+    args.push("number,title,state,labels,createdAt,closedAt,assignee,author".into());
     // tokio_cmd 要 &[&str]/Vec<String> 转 OsString;这里先把 Vec<String> 拼成
     // Vec<&str> 不行(生命周期),故用 args(&[String]) 的重载。
     let arg_refs: Vec<&str> = args.iter().map(|s| s.as_str()).collect();
@@ -799,6 +799,8 @@ pub async fn list_issues(
             body: String::new(),
             created_at: r.created_at,
             closed_at: r.closed_at,
+            assignee: r.assignee.map(|p| p.login).filter(|s| !s.is_empty()),
+            author: r.author.map(|p| p.login).filter(|s| !s.is_empty()),
         })
         .collect())
 }
@@ -818,7 +820,7 @@ pub async fn view_issue(
             "--repo",
             owner_repo,
             "--json",
-            "number,title,state,labels,body,createdAt,closedAt",
+            "number,title,state,labels,body,createdAt,closedAt,assignee,author",
         ])
         .stdin(Stdio::null())
         .stdout(Stdio::piped())
@@ -840,7 +842,80 @@ pub async fn view_issue(
         body: r.body.unwrap_or_default(),
         created_at: r.created_at,
         closed_at: r.closed_at,
+        assignee: r.assignee.map(|p| p.login).filter(|s| !s.is_empty()),
+        author: r.author.map(|p| p.login).filter(|s| !s.is_empty()),
     })
+}
+
+/// `gh issue edit <n> --repo <r> --add-assignee <name>` / `--remove-assignee`。
+/// 空串 = `--remove-assignee **`(取消全部指派)。
+pub async fn set_issue_assignee(
+    owner_repo: &str,
+    number: u32,
+    assignee: &str,
+) -> Result<(), GithubError> {
+    let num_s = number.to_string();
+    let mut args = vec!["issue", "edit", &num_s, "--repo", owner_repo];
+    if assignee.is_empty() {
+        args.push("--remove-assignee");
+        args.push("**");
+    } else {
+        args.push("--add-assignee");
+        args.push(assignee);
+    }
+    let output = crate::win_cmd::tokio_cmd("gh")
+        .args(&args)
+        .stdin(Stdio::null())
+        .stdout(Stdio::piped())
+        .stderr(Stdio::piped())
+        .output()
+        .await
+        .map_err(spawn_err)?;
+    if !output.status.success() {
+        return Err(GithubError::Command(stderr_text(&output)));
+    }
+    Ok(())
+}
+
+/// `gh api user --jq .login` → 当前登录用户。认不出返错。
+pub async fn current_user(owner_repo: &str) -> Result<String, GithubError> {
+    let _ = owner_repo;
+    let output = crate::win_cmd::tokio_cmd("gh")
+        .args(["api", "user", "--jq", ".login"])
+        .stdin(Stdio::null())
+        .stdout(Stdio::piped())
+        .stderr(Stdio::piped())
+        .output()
+        .await
+        .map_err(spawn_err)?;
+    if !output.status.success() {
+        return Err(GithubError::Command(stderr_text(&output)));
+    }
+    Ok(String::from_utf8_lossy(&output.stdout).trim().to_string())
+}
+
+/// `gh issue edit <n> --repo <r> --title <t> --body <b>`。
+pub async fn edit_issue(
+    owner_repo: &str,
+    number: u32,
+    title: &str,
+    body: &str,
+) -> Result<(), GithubError> {
+    let num_s = number.to_string();
+    let output = crate::win_cmd::tokio_cmd("gh")
+        .args([
+            "issue", "edit", &num_s, "--repo", owner_repo, "--title", title, "--body", body,
+        ])
+        .stdin(Stdio::null())
+        .stdout(Stdio::piped())
+        .stderr(Stdio::piped())
+        .output()
+        .await
+        .map_err(spawn_err)?;
+    if !output.status.success() {
+        return Err(GithubError::Command(stderr_text(&output)));
+    }
+    Ok(())
 }
 
 #[derive(serde::Deserialize)]
@@ -857,6 +932,10 @@ struct GhIssueViewJson {
     created_at: Option<String>,
     #[serde(default)]
     closed_at: Option<String>,
+    #[serde(default)]
+    assignee: Option<GhPersonJson>,
+    #[serde(default)]
+    author: Option<GhPersonJson>,
 }
 
 #[derive(serde::Deserialize)]
@@ -871,6 +950,16 @@ struct GhIssueFullJson {
     created_at: Option<String>,
     #[serde(default)]
     closed_at: Option<String>,
+    #[serde(default)]
+    assignee: Option<GhPersonJson>,
+    #[serde(default)]
+    author: Option<GhPersonJson>,
+}
+
+#[derive(serde::Deserialize)]
+struct GhPersonJson {
+    #[serde(default)]
+    login: String,
 }
 
 #[derive(serde::Deserialize)]
