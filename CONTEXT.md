@@ -79,8 +79,12 @@ _Avoid_: 按旧五步(仓→意图→快速问题→起草→确认)描述它—
 ### 活与状态
 
 **Issue / 活**:
-一件要干的具体工作,最小单位。"活"是口语规范词,"卡"只在指界面卡片形态时用。codehub/GitHub 的 issue+标签是唯一正本(标题=标识,`bw:status:*`/`bw:week:*`/`bw:released:*`/`bw:category:*` 标签=状态/排期/版本/类别,issue closed=Done);开工工具和 workflow 不另打标签,读回时用类别去查 `.bw/issue-policy.toml`。本地零库,读都走 CLI、不留读缓存。没挂仓的项目如实留白、不假装已同步。
+一件要干的具体工作,最小单位。"活"是口语规范词,"卡"只在指界面卡片形态时用。codehub/GitHub 的 issue+标签是唯一正本(标题=标识,`bw:status:*`/`bw:week:*`/`bw:plan:*`/`bw:released:*`/`bw:category:*` 标签=状态/排期(版本)/发版号/类别,issue closed=Done);开工工具和 workflow 不另打标签,读回时用类别去查 `.bw/issue-policy.toml`。本地零库,读都走 CLI、不留读缓存。没挂仓的项目如实留白、不假装已同步。
 _Avoid_: 任务(与"定时任务"撞)、卡片(指实体时用"活",指 UI 时才用"卡")、ticket、工单。详见 [codehub-issue-正本 模块](docs/architecture.md)。
+
+**计划 / 版本 (Plan version)**:
+一张活排进哪个版本。**周版本**是每周一按 ISO 周号自动出现的那个(`2026-W35`);人也可以另起名字建版本。一张活只属于一个版本。标签是同一槽位的两种写法:周号形态打 `bw:week:YYYY-Www`,其他人名打 `bw:plan:<name>`。发版号(`bw:released:vX`)是另一件事——给已完成的活打上的发布标记。
+_Avoid_: 把周和人起名的版本当成两套排期;一张活同时挂周标签和版本标签;和发版号混为一谈。详见 [周循环与计划 模块](docs/architecture.md)。
 
 **Issue 状态流转**:
 Backlog → Todo → InProgress → InReview → Done 的单向明路;另有 Blocked(阻塞,必填原因)、Cancelled。**Done 的唯一入边是 InReview**。状态以 `bw:status:*` 标签为正本,由 `can_transition_to` 守卫锁死;Backlog 在 codehub 映射里没有对应标签,如实弹回不编。Cancelled 打 `bw:status:cancelled` 再关远端 issue,读回先认取消标签,不当完成。
