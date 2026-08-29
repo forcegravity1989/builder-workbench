@@ -106,24 +106,24 @@ opportunity = "更多的项目纳入到workbench中演进"
 current_version = "v0.1"
 
 # 项目群没配。配了加 [chat] 段:provider / group_id / notify。</pre>
-<p class="note">三处「规范 vX」显示(总览名片 / 知识库顶栏 / 配置屏)统一改从 <code>state/managed.toml</code> 现算对账摘要——最低版本 + 缺/人改计数,<strong>不取 max</strong>,过期不计入名片异常(升级重铺入口未建);清单缺失显「—」。</p>
+<p class="note">三处「规范 vX」显示(总览名片 / 知识库顶栏 / 配置屏)统一改从 <code>state/managed.toml</code> 现算对账结果——条目里最低的版本 + 缺/人改件数,<strong>不取最高版本</strong>;「铺的版本比现在旧」不算进名片异常(升级重铺的入口还没建);清单不存在显「—」。</p>
 </details>
 
 <details>
-<summary><code>state/managed.toml</code> — 机制不变;搬迁只改 path,version/指纹不动(不盖假章)</summary>
+<summary><code>state/managed.toml</code> — 机制不变;搬迁只改 path,version/指纹不动(不粉饰)</summary>
 <pre># 铺底/升级时写:哪些文件是 Workbench 管的、什么版本、落盘那一刻的指纹。
 # 指纹变了 = 人手改过,升级不覆盖只提示差异。
 
 [[file]]
 path        = ".bw/PROJECT.md"      # path 随搬迁重记
 version     = "5.0"                  # 不动:这是「铺的时候」的版本
-fingerprint = "sha256:9532…"         # 不动:本仓这两件实测已被人改过,
-                                     # 对账如实显「人改」,不重盖指纹伪装机器原样
+fingerprint = "sha256:9532…"         # 不动:本仓这两份实测已被人改过,
+                                     # 对账如实显「人改」,不重新记成机器原样
 [[file]]
 path        = ".bw/config/issue-policy.toml"
 version     = "5.8"
 fingerprint = "sha256:27dc…"</pre>
-<p class="note"><code>standard.toml</code> 条目随文件一并摘除(孤儿条目不留);运作活③的完成判据锚点同步换到这份清单。</p>
+<p class="note"><code>standard.toml</code> 的记录随文件一并摘掉(文件删了、清单里不留它);运作活③的完成判据同步改成查这份清单。</p>
 </details>
 
 <details>
@@ -137,11 +137,11 @@ fingerprint = "sha256:27dc…"</pre>
 运作活① 更新指标与周计划 · <del>manual</del> <ins>人触发</ins>(写死,与行为一致)<br>
 运作活② 资产盘点 · <ins>定时</ins> · fri 20:00(仍读 <code>config/issue-policy.toml</code>)</div>
 <div class="screen"><strong>总览 · 名片(知识库/配置屏同口径)</strong><br>
-规范 <del>v5.0(project.toml 失真镜像)</del> <ins>「v6.0 · 2 件在管」(state/managed.toml 现算对账摘要;有异常时如「v5.8 · 2 件在管 · 人改 2」——这正是本仓搬迁后的诚实投影,不盖假章)</ins></div>
+规范 <del>v5.0(project.toml 失真镜像)</del> <ins>「v6.0 · 2 件在管」(state/managed.toml 现算的对账结果;有异常时如「v5.8 · 2 件在管 · 人改 2」——这正是本仓搬完后会真实显示的样子,不粉饰)</ins></div>
 </div>
 
-<h2>④ 写权与出错分支</h2>
-<p class="note"><strong>写权硬规则</strong>:config/ = 人拍板落盘(MR,或配置屏当场点击确认);Workbench 替人写 config 后必须同步 state/managed.toml 指纹——「人改过」只指真人改。守卫 guard-bw-write-authority.sh 静态断言写入调用点在白名单模块,目录承诺不靠自觉。</p>
+<h2>④ 谁能写、写错了怎么办</h2>
+<p class="note"><strong>谁能写的硬规则</strong>:config/ = 人拍板落盘(MR,或配置屏当场点击确认);Workbench 替人写 config 后必须同步更新 state/managed.toml 里的内容指纹——这样「人改过」才真的只指人改过。守卫脚本 guard-bw-write-authority.sh 检查写入这些文件的代码只出现在白名单模块里,目录的边界不靠自觉。</p>
 <p class="note">旧布局项目:<code>state/managed.toml</code> 不存在 = 视同未接管,boot 照常提议铺底,旧位置文件如实并存(资产盘点盘出,由人处置)。<code>config/</code> 文件含未知字段:整份拒读,壳黄条报文件名与错误,不猜不兜。</p>
 </body>
 </html>
