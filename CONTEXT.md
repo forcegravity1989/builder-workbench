@@ -24,7 +24,7 @@ _Avoid_: user、owner、开发者。
 
 **开工工具 / Agent CLI**:
 一件活开工时真实调起的智能体 CLI 或内嵌工具(Claude Code / Cursor / Open Design 内嵌等)。声明住在项目仓的 `.bw/issue-policy.toml`,探活分三种机制(候选路径 / 版本命令 / 套接字握手);选了 Cursor 但探活失败就拒绝开工,绝不悄悄退回 Claude Code。未接的工具如实回灰、不假装可用。
-_Avoid_: 和"模型"混为一谈(model 是模型标签,开工工具是执行引擎);假装 Cursor 已接(今天 Claude Code 走内嵌终端、Open Design 走会话屏内嵌页,Cursor 探不到就拒绝开工);把它当装饰性标签——它真实生效,探不通就不开工。详见 [远端与工具探活 模块](docs/architecture.md)。
+_Avoid_: 和"模型"混为一谈(model 是模型标签,开工工具是执行引擎);开工走 Orca(Claude / Cursor)或会话屏内嵌页(Open Design),探不通就拒绝开工、不悄悄换工具;把它当装饰性标签——它真实生效,探不通就不开工。详见 [远端与工具探活 模块](docs/architecture.md)。
 
 **发言方 / Author**:
 一条对话消息出自谁——人(Builder)还是 AI。纯 UI 归属轴。

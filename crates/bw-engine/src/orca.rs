@@ -13,7 +13,7 @@
 //! 接口一次定住(四个函数),不跟着穿刺脚本改形状。create 不回 Claude session id
 //! (Orca 只回自己的 `terminal.handle`),所以 buddy 不编 id —— 有 id 走 ensure,
 //! 没有 让下次 create(见 `app::issue::run_issue` / `app::session::reopen_session`)。
-//! web iframe 的配对码 buddy 自己拿不到(Orca 只在桌面 IPC / `orca serve` 里发,
+//! web 配对码 buddy 自己拿不到(Orca 只在桌面 IPC / `orca serve` 里发,
 //! 没开本地 pipe 的 RPC),由人从 Orca 桌面「给 web 配对」拿到 URL 塞进
 //! `BW_ORCA_WEB_URL` 一次 —— 抄 OD 的 `BW_OPEN_DESIGN_URL` 那条;本机 pipe 的开工
 //! (create/ensure)不靠 pairing,靠 runtime.json 的 authToken,不受这个 env 影响。
@@ -162,9 +162,9 @@ pub async fn create_session(
     require_ok(&frame, "terminal.createAgentSession")
 }
 
-/// 给 iframe 的 loopback。**不依赖 `connect()`** —— 人把安装版「给 web 配对」
-/// 的完整 URL 塞进 `BW_ORCA_WEB_URL`,启动 buddy 后会话屏原样喂给 iframe。
-/// 只校验 loopback,不拼、不深链会话、不 postMessage。没设 / 不是 loopback →
+/// 给会话屏所属 wry 窗的 loopback。**不依赖 `connect()`** —— 人把安装版
+/// 「给 web 配对」的完整 URL 塞进 `BW_ORCA_WEB_URL`,启动 buddy 后原样打开。
+/// 只校验 loopback,不拼会话深链、不 postMessage。没设 / 不是 loopback →
 /// `None`。pipe 开工不读这个 env。
 pub fn web_embed_url() -> Option<String> {
     let raw = std::env::var("BW_ORCA_WEB_URL").ok()?;
