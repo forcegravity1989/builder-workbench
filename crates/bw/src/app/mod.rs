@@ -483,6 +483,18 @@ impl App {
                     .await
             }
             Command::ScheduleIssue { id, week_of } => self.schedule_issue(id, week_of).await,
+            Command::ScheduleToPlan { id, plan } => self.schedule_to_plan(id, plan).await,
+            Command::CreatePlanVersion {
+                project_id,
+                name,
+                start,
+                due,
+                note,
+                included,
+            } => {
+                self.create_plan_version(project_id, name, start, due, note, included)
+                    .await
+            }
             Command::CutRelease {
                 project_id,
                 version,
@@ -496,6 +508,10 @@ impl App {
             Command::SetIssueCategory { id, category } => {
                 self.set_issue_category(id, category).await
             }
+            Command::SetIssueAssignee { id, assignee } => {
+                self.set_issue_assignee(id, assignee).await
+            }
+            Command::EditIssue { id, title, body } => self.edit_issue(id, title, body).await,
             Command::CancelIssue { id, reason } => self.cancel_issue(id, reason).await,
             Command::DeleteSession { id } => self.delete_session(id).await,
             Command::BlockIssue { id, reason } => self.block_issue(id, reason).await,

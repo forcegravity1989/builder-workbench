@@ -4,6 +4,18 @@
 
 本文件按**六站 + 底座**收口,不再按每次窗口一条流水往下堆。最近一次改动永远写在最上面。
 
+## 最近 · 2026-08-28(源码同步)
+
+**新增/优化** · 按 `docs/hifi/plan-23.html`(定稿高保真)把计划页整改落到源码,跨 bw + bw-engine + app-shell 三 crate。看板七列合并为四列(待办/进行中/待处理/已完成),两段列加子标题 tab(默认显示第一段,点切第二段);卡面重做(编号 + CodeHub 徽 + 标题 + 正文预览 + 计划位置 + 责任人头像 + 更新时间),删卡面开工按钮(入口移详情弹窗);详情从右侧抽屉改屏幕居中弹窗,字段精简(留标题/正文/链接/类别/计划/负责人,删 状态/工具/workflow/种类/来源/版本/指标/结清/分支/蒸馏);新增列表视图(预设 开放/分配我的/我的 + 计划/阶段下拉 + 搜索 + 行操作 schedule/Start/Open/Complete/Cancel);左栏「全部 issue」+ 版本组上移到历史周上方;弹窗:新建issue(含负责人)、创建版本、排期(拖未排期→已排期)、Start(只读确认即 RunIssue)。
+
+**新概念落内核**:`Issue` 加 `assignee`/`author`/`plan_version` 字段;`RemoteIssue` 透传 assignee/author(codehub 走 `assignee.user_name`、github 走 `assignee.login`);新命令 `SetIssueAssignee`(codehub issue assignee API,username→userid)/`CreatePlanVersion`(建 codehub milestone + 打 `bw:plan:` 标签)/`ScheduleToPlan`(排进版本,与 `ScheduleIssue` 互斥:排进版本摘 `bw:week:`、排进周摘 `bw:plan:`)/`EditIssue`(改标题正文);周计划怎么存版本就怎么存——`bw:plan:` 标签为正本、codehub milestone 为镜像。`build_board` 七列直接改四合并列(不留旧路径),`CardItemVm` 加 assignee/author/plan_version/updated_at,`ProjectVm` 加 `plan_versions`。
+
+涉及文件:`crates/bw/src/{model,command,app/issue_store,app/issue,app/plan,app/mod}.rs`、`crates/bw-engine/src/{remote,codehub,github}.rs`、`crates/app-shell/src/{vm,bridge/vm_build,bridge/vm_panels,bridge/vm_derive,bridge/mod}.rs`、`crates/app-shell/src/screens/plan/{mod,kanban,detail,list_view,plan_dialogs}.rs`(拆出 `list_view.rs`+`plan_dialogs.rs`)、`crates/app-shell/assets/hifi.css`(加 #23 计划页新类)、`docs/hifi/{plan-23.html,plan-23-changes.md}`。门禁:fmt/clippy(--workspace -D warnings)/check/guard-* 全过;`cargo test` 受本机缺 `dlltool.exe` 阻断(链接 native 依赖,非代码问题)。
+
+## 最近 · 2026-08-28
+
+**优化** · 计划页独立高保真(`docs/hifi/plan-23.html`)视觉规范对齐 Builder design system(Claude 板)与 ADE 资源视觉调性。配色 token 全量切到 Builder Claude ramp(ivory `#faf9f5` 底 + 赭土 `#d97757` accent + slate `#4c73a5` 次声 + 暖色 status 三元组),衬线标题改系统无衬线栈(weight 600)、`--font-mono` 留给编号/计数。按设计原则整改结构:卡片重阴影改 hairline、看板列走 surface 底且不再嵌套卡片、卡片左色条装饰改 `.status-dot` 语义(todo/progress/review/done/blocked)、方角 chip 改 999px pill(`.tag` + 语义变体)、列表行对齐 `.list-row`(mono 编号左 + meta 右)、弹窗对齐 `.dialog` floating elevation、`:focus-visible` accent 描边、hover 走 ink tint。unicode 字符导航(✓▢⚑☰⚙)换 Lucide SVG(stroke 2,16px),加 `icon()` 帮助器与静态 `data-icon` 注水。JS 数据/状态机/事件逻辑原样保留,仅重写模板与样式块。涉及文件:`docs/hifi/plan-23.html`。
+
 ## 最近 · 2026-08-27
 
 出包代码入库:本地 `D:\2026\buddy-setup` 的 `BuildersWorkbench-MVP.iss` + `AFTER-INSTALL-MVP.txt` 落到仓 `packaging/`,成为出包正源。脚本只吃「clone + cargo + 装过 buddy」必然有的东西,不依赖任何仓外暂存目录:装完说明、安装器图标(`crates/app-shell/app.ico`)走相对路径直接取;`bw-dev.exe` 从 `target\release\` 取(cargo 产物);`WebView2Loader.dll` 出包人先拷到 `target\release\`(cargo 落在带 hash 的 build 子目录,不稳);`codehub-cli` 默认从 `%USERPROFILE%\bin\codehub-cli.exe` 取(装 buddy 就有),可用 `BW_CODEHUB_CLI_SRC` 覆盖,没有则告警跳过、不阻断;`OutputDir=output` 落 `packaging\output\`(gitignore)。顺带修出包图标 bug:装完没图标是因 payload 的 `bw-dev.exe` 的 `.rsrc` 段没嵌 RT_ICON。根因在 `crates/app-shell/build.rs`:winres 把图标编进静态库 `libresource.a` 靠 `cargo:rustc-link-lib` 拉,但 GNU 链接器只从静态库拉能解析未定义符号的成员,资源对象没导出符号 → 整个被跳过,图标进不了 exe(只剩 mingw crt 自带的 manifest)。修法:GNU 下 build.rs 编完用 `cargo:rustc-link-arg` 把 `resource.o` 直接喂给链接器(对象文件一定被收入),图标真嵌进去;MSVC 走 rc 不受影响。重编验证 exe 的 `.rsrc` 含 RT_ICON/GROUP_ICON/version/manifest。`AGENTS.md` 顶层目录导览补 `packaging/`、`怎么建/怎么跑` 补出包命令,按可见物规矩记上。顺手修 `crates/bw/src/app/plan.rs` 两处存量 clippy(collapsible-if + cloned-ref-to-slice,master 上 week-plan 引入、挡着 workspace 门禁),让 `cargo clippy --workspace` 回绿。

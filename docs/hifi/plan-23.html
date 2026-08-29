@@ -1,0 +1,1168 @@
+<!doctype html>
+<html lang="zh-CN" data-theme="claude">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>BW · 计划页高保真(#23 视觉优化稿)</title>
+<!--
+  独立高保真:计划屏。类名与 docs/hifi/index.html 及 crates/app-shell/assets/hifi.css
+  一一对齐,定稿后改动直接回填到 hifi.css / plan/*.rs。
+  样式从 hifi.css 摘出必要段落内联,保证单文件可双击预览。
+  视觉规范对齐 Builder design system(Claude 板):暖 ivory 底 + 赭土 accent,
+  系统字体栈、hairline 结构、颜色只给状态与主操作、Lucide 图标、状态点语义化。
+-->
+<style>
+:root{
+  /* ── Builder · Claude palette ──────────────────────────────────────── */
+  --color-bg:#faf9f5; --color-surface:#f0eee6; --color-card:#fefdfa; --color-text:#1f1e1d;
+  --color-accent:#d97757; --color-accent-2:#4c73a5;
+
+  --color-neutral-100:#f6f3ef; --color-neutral-200:#ebe7e1; --color-neutral-300:#d7d2ca;
+  --color-neutral-400:#b8b3ac; --color-neutral-500:#96918a; --color-neutral-600:#75716a;
+  --color-neutral-700:#58554f; --color-neutral-800:#3d3a36; --color-neutral-900:#262421;
+
+  --color-accent-100:#fef0eb; --color-accent-200:#ffe0d7; --color-accent-300:#fec3af;
+  --color-accent-400:#f19b80; --color-accent-500:#d47354; --color-accent-600:#af5233;
+  --color-accent-700:#893a1f; --color-accent-800:#602613; --color-accent-900:#3c180c;
+
+  --color-accent-2-100:#edf4fe; --color-accent-2-200:#dbe9fc; --color-accent-2-300:#bdd5f4;
+  --color-accent-2-400:#96b7e1; --color-accent-2-500:#6c95c9; --color-accent-2-600:#4c73a5;
+  --color-accent-2-700:#355781; --color-accent-2-800:#243c59; --color-accent-2-900:#142539;
+
+  --color-success:#579766; --color-success-soft:#dcf7e1; --color-success-deep:#286037;
+  --color-warning:#ce9042; --color-warning-soft:#feecce; --color-warning-deep:#774a03;
+  --color-danger:#c15f4d;  --color-danger-soft:#ffe4df;  --color-danger-deep:#883324;
+
+  --color-divider:color-mix(in srgb,var(--color-text) 12%,transparent);
+
+  --col-todo:#f3f2ef; --col-doing:#fbf6e8; --col-review:#eef6f1; --col-done:#eef4fb; --col-blocked:#f8eeee;
+  --surface-page:#f6f5f2;
+
+  --font-body:-apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,"Helvetica Neue",Arial,"PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif;
+  --font-heading:var(--font-body);
+  --font-heading-weight:600;
+  --font-mono:ui-monospace,"SF Mono",SFMono-Regular,Menlo,Consolas,"Liberation Mono",monospace;
+
+  --space-1:4px; --space-2:8px; --space-3:12px; --space-4:16px; --space-6:24px; --space-8:32px;
+  --radius-sm:6px; --radius-md:8px; --radius-lg:12px;
+
+  --shadow-sm:0 1px 2px color-mix(in srgb,var(--color-neutral-900) 4%,transparent),0 1px 1px color-mix(in srgb,var(--color-neutral-900) 3%,transparent);
+  --shadow-md:0 8px 24px color-mix(in srgb,var(--color-neutral-900) 8%,transparent),0 2px 6px color-mix(in srgb,var(--color-neutral-900) 5%,transparent);
+  --shadow-lg:0 16px 40px color-mix(in srgb,var(--color-neutral-900) 14%,transparent),0 3px 10px color-mix(in srgb,var(--color-neutral-900) 8%,transparent);
+
+  /* legacy 别名:让旧内联 var() 仍能解析 */
+  --paper:var(--color-bg); --rail-bg:var(--color-surface); --clay:var(--color-accent); --clay-dim:var(--color-accent-200);
+  --card:var(--color-card); --card-alt:var(--color-surface); --border:var(--color-divider); --border-deep:var(--color-neutral-300);
+  --ink:var(--color-text); --ink-2:color-mix(in srgb,var(--color-text) 75%,transparent); --ink-3:color-mix(in srgb,var(--color-text) 55%,transparent); --ink-4:color-mix(in srgb,var(--color-text) 40%,transparent);
+  --agent:var(--color-accent-2); --alert-deep:var(--color-danger-deep);
+  --green:var(--color-success); --amber:var(--color-warning); --red:var(--color-danger); --gray:var(--color-neutral-400);
+  --up:var(--color-success); --down:var(--color-danger);
+  --serif:var(--font-heading); --sans:var(--font-body); --mono:var(--font-mono);
+}
+
+*,*::before,*::after{box-sizing:border-box;}
+html,body{margin:0;padding:0;height:100%;}
+body{background:var(--surface-page);color:var(--color-text);font-family:var(--font-body);font-size:13px;line-height:1.5;letter-spacing:.005em;-webkit-font-smoothing:antialiased;}
+::selection{background:color-mix(in srgb,var(--color-accent) 22%,transparent);}
+::-webkit-scrollbar{width:10px;height:10px;}
+::-webkit-scrollbar-thumb{background:var(--color-neutral-300);border-radius:6px;border:3px solid var(--color-bg);}
+::-webkit-scrollbar-track{background:transparent;}
+button{font-family:inherit;cursor:pointer;}
+input,textarea,select{font-family:inherit;color:var(--color-text);}
+textarea{resize:vertical;}
+a{color:var(--color-accent);text-decoration:none;}
+a:hover{text-decoration:underline;text-underline-offset:3px;}
+h1,h2,h3,h4,h5,h6{font-family:var(--font-heading);font-weight:var(--font-heading-weight);line-height:1.25;letter-spacing:-.014em;margin:0 0 var(--space-2);}
+:focus{outline:none;}
+:focus-visible{outline:2px solid var(--color-accent);outline-offset:2px;}
+input:focus,textarea:focus,select:focus{outline:none;border-color:var(--color-accent);box-shadow:0 0 0 3px color-mix(in srgb,var(--color-accent) 18%,transparent);}
+[contenteditable="true"]{outline:2px solid var(--color-accent);outline-offset:1px;border-radius:var(--radius-sm);}
+
+/* ── Builder atoms ─────────────────────────────────────────────────── */
+.mono{font-family:var(--font-mono);}
+.text-muted{color:color-mix(in srgb,var(--color-text) 55%,transparent);}
+
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;cursor:pointer;text-decoration:none;font-family:var(--font-body);font-weight:500;font-size:13px;line-height:1;color:var(--color-text);background:transparent;border:1px solid transparent;height:28px;padding:0 var(--space-3);border-radius:var(--radius-sm);white-space:nowrap;}
+.btn svg{display:block;}
+.btn:disabled{opacity:.45;cursor:not-allowed;}
+.btn-secondary{background:var(--color-card);border-color:var(--color-divider);box-shadow:var(--shadow-sm);}
+.btn-secondary:hover{background:var(--color-neutral-100);border-color:color-mix(in srgb,var(--color-text) 20%,transparent);}
+.btn-primary{background:var(--color-accent);border-color:var(--color-accent);color:#fff;}
+.btn-primary:hover{background:var(--color-accent-600);border-color:var(--color-accent-600);}
+.btn-primary:active{background:var(--color-accent-700);border-color:var(--color-accent-700);}
+.btn-primary:disabled{background:var(--color-neutral-300);border-color:var(--color-neutral-300);color:#fff;opacity:1;cursor:not-allowed;}
+.btn-ghost{color:var(--color-accent);}
+.btn-ghost:hover{background:color-mix(in srgb,var(--color-accent) 9%,transparent);}
+.btn-sm{height:24px;font-size:12px;padding:0 var(--space-2);}
+.btn-icon{width:28px;padding:0;}
+
+.tag{display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:500;line-height:1;letter-spacing:.01em;padding:4px 8px;border-radius:999px;white-space:nowrap;}
+.tag-accent{background:var(--color-accent-100);color:var(--color-accent-700);}
+.tag-accent-2{background:var(--color-accent-2-100);color:var(--color-accent-2-700);}
+.tag-neutral{background:var(--color-neutral-100);color:var(--color-neutral-700);}
+.tag-outline{background:transparent;border:1px solid var(--color-divider);color:color-mix(in srgb,var(--color-text) 70%,transparent);padding:3px 8px;}
+.tag-success{background:var(--color-success-soft);color:var(--color-success-deep);}
+.tag-warning{background:var(--color-warning-soft);color:var(--color-warning-deep);}
+.tag-danger{background:var(--color-danger-soft);color:var(--color-danger-deep);}
+
+.status{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:500;color:color-mix(in srgb,var(--color-text) 75%,transparent);}
+.status-dot{width:8px;height:8px;flex:none;border-radius:50%;background:var(--status-c,var(--color-neutral-400));}
+.status-todo{--status-c:var(--color-neutral-400);}
+.status-progress{--status-c:var(--color-warning);}
+.status-review{--status-c:var(--color-accent-2);}
+.status-done{--status-c:var(--color-success);}
+.status-blocked{--status-c:var(--color-danger);}
+@keyframes pulse{0%,100%{opacity:1;}50%{opacity:.32;}}
+.dot-run .status-dot{animation:pulse 1.2s ease-in-out infinite;}
+
+.card{display:flex;flex-direction:column;gap:var(--space-2);padding:var(--space-3);border-radius:var(--radius-md);background:var(--color-card);border:1px solid var(--color-divider);}
+.card-title{font-family:var(--font-heading);font-weight:var(--font-heading-weight);font-size:13px;line-height:1.35;letter-spacing:-.01em;}
+.card-meta{display:flex;align-items:center;gap:6px;flex-wrap:wrap;font-size:11px;color:color-mix(in srgb,var(--color-text) 50%,transparent);}
+.elev-sm{box-shadow:var(--shadow-sm);}
+.elev-lg{box-shadow:var(--shadow-lg);}
+
+.avatar{width:24px;height:24px;flex:none;display:inline-flex;align-items:center;justify-content:center;border-radius:50%;font-size:10px;font-weight:600;color:#fff;background:var(--color-neutral-500);overflow:hidden;}
+.avatar-sm{width:18px;height:18px;font-size:8px;}
+.avatar-agent{border-radius:var(--radius-sm);background:var(--color-accent-2);}
+
+/* ── shell ─────────────────────────────────────────────────────────── */
+.app-root{display:flex;height:100vh;overflow:hidden;background:var(--color-bg);}
+.iconrail{width:56px;flex:0 0 56px;background:var(--color-surface);border-right:1px solid var(--color-divider);display:flex;flex-direction:column;align-items:center;padding:var(--space-3) 0 var(--space-2);gap:var(--space-1);}
+.rail-logo{width:28px;height:28px;border-radius:var(--radius-sm);background:var(--color-accent);color:#fff;display:flex;align-items:center;justify-content:center;font-family:var(--font-heading);font-weight:700;font-size:15px;margin-bottom:var(--space-2);flex:none;}
+.rail-btn{width:32px;height:32px;border:none;border-radius:var(--radius-sm);background:transparent;display:flex;align-items:center;justify-content:center;color:color-mix(in srgb,var(--color-text) 62%,transparent);position:relative;}
+.rail-btn svg{display:block;}
+.rail-btn:hover{background:color-mix(in srgb,var(--color-text) 6%,transparent);color:var(--color-text);}
+.rail-btn.active{background:color-mix(in srgb,var(--color-accent) 14%,transparent);color:var(--color-accent);}
+
+.projectrail{width:220px;flex:0 0 220px;background:var(--color-surface);border-right:1px solid color-mix(in srgb,var(--color-text) 8%,transparent);padding:var(--space-3) var(--space-2);overflow-y:auto;display:flex;flex-direction:column;gap:var(--space-3);}
+.pr-back{font-size:12.5px;color:color-mix(in srgb,var(--color-text) 62%,transparent);display:flex;align-items:center;gap:6px;cursor:pointer;padding:6px var(--space-2);border-radius:var(--radius-sm);}
+.pr-back:hover{background:color-mix(in srgb,var(--color-text) 6%,transparent);color:var(--color-text);text-decoration:none;}
+.pr-head{padding-bottom:var(--space-2);border-bottom:1px solid var(--color-divider);}
+.pr-head-name{font-family:var(--font-heading);font-weight:700;font-size:14px;letter-spacing:-.01em;margin-bottom:4px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.pr-head-meta{display:flex;align-items:center;gap:6px;font-size:11px;color:color-mix(in srgb,var(--color-text) 50%,transparent);font-family:var(--font-mono);}
+.pr-nav{display:flex;flex-direction:column;gap:2px;}
+.pr-link{display:flex;align-items:center;gap:var(--space-2);height:28px;padding:0 var(--space-2);border-radius:var(--radius-sm);font-size:13px;color:color-mix(in srgb,var(--color-text) 80%,transparent);cursor:pointer;}
+.pr-link svg{flex:none;opacity:.75;}
+.pr-link:hover{background:color-mix(in srgb,var(--color-text) 6%,transparent);color:var(--color-text);text-decoration:none;}
+.pr-link.active{background:color-mix(in srgb,var(--color-text) 8%,transparent);color:var(--color-text);font-weight:500;}
+.pr-link.active svg{opacity:1;}
+.pr-link .count{margin-left:auto;font-family:var(--font-mono);font-size:10.5px;color:color-mix(in srgb,var(--color-text) 45%,transparent);}
+
+.main{flex:1;display:flex;flex-direction:column;min-width:0;}
+.topbar{height:44px;flex:0 0 44px;border-bottom:1px solid var(--color-divider);background:var(--color-bg);display:flex;align-items:center;gap:var(--space-3);padding:0 var(--space-4);}
+.topbar-title{font-family:var(--font-heading);font-weight:700;font-size:14px;letter-spacing:-.01em;}
+.topbar-crumbs{font-size:12px;color:color-mix(in srgb,var(--color-text) 50%,transparent);font-family:var(--font-mono);}
+.content{flex:1;overflow-y:auto;padding:var(--space-4) var(--space-6) 60px;min-width:0;position:relative;}
+
+/* ── plan ─────────────────────────────────────────────────────────── */
+[data-screen="plan"]{height:calc(100vh - 112px);max-width:1560px;}
+.plan-grid{display:grid;grid-template-columns:188px 1fr;gap:var(--space-4);height:100%;min-height:0;}
+.plan-col{background:var(--color-surface);border:1px solid var(--color-divider);border-radius:var(--radius-md);overflow-y:auto;padding:var(--space-2);}
+.plan-weekrow{padding:6px var(--space-2);border-radius:var(--radius-sm);font-size:12.5px;cursor:pointer;margin-bottom:2px;display:flex;justify-content:space-between;align-items:center;color:color-mix(in srgb,var(--color-text) 80%,transparent);}
+.plan-weekrow:hover{background:color-mix(in srgb,var(--color-text) 5%,transparent);color:var(--color-text);}
+.plan-weekrow.active{background:color-mix(in srgb,var(--color-text) 8%,transparent);color:var(--color-text);font-weight:500;}
+.plan-weekgroup{font-size:10px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:color-mix(in srgb,var(--color-text) 45%,transparent);margin:var(--space-3) 0 var(--space-1);padding:0 var(--space-2);}
+.chip-muted{background:transparent;color:color-mix(in srgb,var(--color-text) 45%,transparent);font-size:10.5px;font-family:var(--font-mono);padding:0;}
+.plan-weekrow.active .chip-muted{color:var(--color-text);}
+.plan-versionsel{margin-top:var(--space-3);padding-top:var(--space-3);border-top:1px solid var(--color-divider);}
+.plan-mid{display:flex;flex-direction:column;min-width:0;height:100%;background:transparent;border:none;box-shadow:none;padding:0;overflow:visible;}
+.plan-toolbar{display:flex;align-items:center;justify-content:space-between;margin-bottom:var(--space-3);gap:var(--space-3);flex-wrap:wrap;flex:none;}
+.plan-toolbar .left{font-size:20px;font-family:var(--font-heading);font-weight:700;letter-spacing:-.014em;}
+.plan-toolbar .right{display:flex;gap:var(--space-2);align-items:center;flex-wrap:wrap;}
+.switch{display:flex;align-items:center;gap:6px;font-size:11.5px;color:color-mix(in srgb,var(--color-text) 55%,transparent);cursor:pointer;user-select:none;}
+.goal-box{background:var(--color-card);border:1px solid var(--color-divider);border-radius:var(--radius-md);padding:var(--space-3);font-size:13px;margin-bottom:var(--space-3);flex:none;white-space:pre-wrap;color:color-mix(in srgb,var(--color-text) 82%,transparent);line-height:1.65;}
+.ops-chip-row{display:flex;gap:var(--space-2);flex-wrap:wrap;margin:var(--space-1) 0 var(--space-4);}
+.week-progress{height:8px;border-radius:999px;overflow:hidden;display:flex;border:1px solid var(--color-divider);margin-bottom:var(--space-3);background:var(--color-neutral-100);}
+
+/* 看板:列走 surface 底,卡走 card 底 + hairline,不嵌套、不重影 */
+
+.kanban{flex:1;display:grid;grid-auto-flow:column;grid-auto-columns:minmax(248px,1fr);gap:16px;min-height:0;overflow-x:auto;padding:4px 2px 8px;}
+.kanban-col{display:flex;flex-direction:column;gap:8px;padding:8px;border-radius:14px;background:var(--col-todo);border:none;min-height:0;overflow:hidden;transition:background .15s;}
+.kanban-col.col-todo{background:var(--col-todo);}
+.kanban-col.col-doing{background:var(--col-doing);}
+.kanban-col.col-pending{background:var(--col-review);}
+.kanban-col.col-blocked{background:var(--col-blocked);}
+.kanban-col.col-done{background:var(--col-done);}
+.kanban-col-head{display:flex;align-items:center;gap:8px;padding:6px 8px 2px;font-size:13px;font-weight:600;color:var(--color-text);flex:none;}
+.kanban-col-head .count{margin-left:auto;font-family:var(--font-mono);font-size:12px;font-weight:500;color:color-mix(in srgb,var(--color-text) 45%,transparent);}
+.kanban-seg{font-size:10px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:color-mix(in srgb,var(--color-text) 45%,transparent);margin:var(--space-1) 0 var(--space-1);flex:none;display:flex;align-items:center;gap:5px;padding:0 var(--space-1);}
+.kanban-seg .seg-count{margin-left:auto;font-family:var(--font-mono);color:color-mix(in srgb,var(--color-text) 40%,transparent);font-weight:400;}
+.kanban-seg-sep{height:1px;background:var(--color-divider);margin:var(--space-2) 0 2px;flex:none;}
+.kanban-seg-box{display:flex;flex-direction:column;gap:8px;flex:1;min-height:0;overflow-y:auto;padding:2px;}
+.kanban-seg-box.drop-target{outline:2px dashed var(--color-accent);outline-offset:-2px;background:var(--color-accent-100);border-radius:var(--radius-sm);}
+.kanban-empty{padding:48px 8px;text-align:center;font-size:12px;color:color-mix(in srgb,var(--color-text) 40%,transparent);}
+.kcard{display:flex;flex-direction:column;gap:6px;padding:12px 10px;border-radius:10px;background:#fff;}
+.kcard{border:0.5px solid color-mix(in srgb,var(--color-text) 8%,transparent);box-shadow:0 1px 2px color-mix(in srgb,var(--color-neutral-900) 5%,transparent);flex:none;cursor:grab;}
+.kcard:hover{border-color:color-mix(in srgb,var(--color-text) 16%,transparent);box-shadow:0 2px 8px color-mix(in srgb,var(--color-neutral-900) 7%,transparent);}
+.kcard.dragging{opacity:.4;}
+.kcard.sel{border-color:var(--color-accent);box-shadow:0 0 0 1px var(--color-accent);}
+.kcard-top{display:flex;align-items:center;gap:6px;font-family:var(--font-mono);font-size:12px;color:color-mix(in srgb,var(--color-text) 48%,transparent);}
+.kcard-src{display:inline-flex;align-items:center;gap:3px;font-size:10px;font-weight:600;color:var(--color-accent-2-700);background:var(--color-accent-2-100);padding:2px 6px;border-radius:999px;}
+.kcard-title{font-weight:600;font-size:14px;line-height:1.4;color:var(--color-text);cursor:pointer;}
+.kcard-title:hover{color:var(--color-accent);}
+
+.kcard-desc{font-size:12px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;}
+.kcard-place{display:inline-flex;align-items:center;gap:5px;padding:2px 8px;border-radius:999px;font-size:11px;}
+.kcard-foot{display:flex;align-items:center;justify-content:space-between;gap:8px;}
+
+.kcard-who{display:inline-flex;align-items:center;gap:6px;font-size:12px;}
+.kcard-ago{font-size:11px;opacity:.7;}
+
+
+.il-row{display:flex;align-items:center;gap:16px;min-height:64px;padding:12px 16px;cursor:pointer;}
+.il-row:hover{background:rgba(0,0,0,.03);}
+.il-row.sel{background:rgba(217,119,87,.08);}
+.il-row.il-head{cursor:default;font-size:12px;font-weight:500;min-height:40px;background:#fafafa;}
+.il-num{flex:none;width:56px;display:inline-flex;align-items:center;gap:6px;font-family:var(--font-mono);font-size:12px;}
+.il-idmark{width:8px;height:8px;border-radius:50%;border:1.5px solid #bbb;flex:none;}
+.il-title{flex:1;min-width:0;display:flex;flex-direction:column;gap:3px;}
+.il-t1{font-weight:600;font-size:14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.il-t2{font-size:12px;opacity:.55;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.il-status{flex:none;width:110px;}
+.il-pill{display:inline-flex;align-items:center;justify-content:center;min-width:64px;padding:3px 10px;border-radius:999px;font-size:12px;font-weight:500;}
+.il-pill.status-todo{background:#f3f4f3;color:#5c5c5c;}
+.il-pill.status-progress{background:#feecce;color:#774a03;}
+.il-pill.status-review{background:#e7f6ec;color:#1f6b3a;}
+.il-pill.status-done{background:#e8f2fb;color:#1d4e89;}
+.il-pill.status-blocked{background:#ffe4df;color:#883324;}
+.il-empty{padding:24px;text-align:center;opacity:.45;}
+
+.il-wrap{display:flex;flex-direction:column;flex:1;min-height:0;}
+.il-bar{flex:none;border:1px solid color-mix(in srgb,var(--color-text) 8%,transparent);border-bottom:none;border-radius:10px 10px 0 0;background:#f4f4f2;padding:10px 12px 8px;}
+.il-presets{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:8px;}
+.il-preset{height:28px;padding:0 10px;border-radius:6px;border:1px solid color-mix(in srgb,var(--color-text) 14%,transparent);background:transparent;font-size:12px;color:var(--color-text);}
+.il-preset.on{background:var(--color-text);color:#fff;border-color:var(--color-text);}
+.il-tools{display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+.il-dd{position:relative;}
+.il-dd-btn{height:32px;display:inline-flex;align-items:center;gap:6px;padding:0 10px;border-radius:6px;border:1px solid color-mix(in srgb,var(--color-text) 14%,transparent);background:#fff;font-size:12px;}
+.il-dd-btn b{font-weight:600;color:var(--color-accent);}
+.il-search-wrap{position:relative;flex:1;min-width:180px;}
+.il-search-wrap svg{position:absolute;left:9px;top:50%;transform:translateY(-50%);opacity:.45;}
+.il-search{width:100%;height:32px;padding:0 10px 0 30px;border-radius:6px;border:1px solid color-mix(in srgb,var(--color-text) 14%,transparent);background:#fff;font-size:12px;}
+.il-pop-plan{left:0;right:auto;top:36px;}
+.il-updated{flex:none;width:88px;font-size:12px;color:color-mix(in srgb,var(--color-text) 50%,transparent);}
+.il-act{flex:none;width:108px;display:flex;align-items:center;justify-content:flex-end;}
+.il-btn{height:28px;padding:0 10px;border-radius:6px;border:1px solid color-mix(in srgb,var(--color-text) 16%,transparent);background:#fff;font-size:12px;font-weight:600;display:inline-flex;align-items:center;gap:4px;}
+.il-btn:hover{background:#f7f7f6;}
+.il-dash{display:block;width:24px;height:2px;background:#c8c8c8;border-radius:1px;}
+.il-owner{flex:none;width:110px;display:inline-flex;align-items:center;justify-content:flex-start;gap:6px;font-size:12px;}
+
+.il-btn.primary{background:var(--color-text);color:#fff;border-color:var(--color-text);}
+.sess-page{position:absolute;inset:0;background:#f6f5f2;z-index:40;display:flex;flex-direction:column;}
+.sess-bar{height:44px;display:flex;align-items:center;gap:10px;padding:0 16px;border-bottom:1px solid color-mix(in srgb,var(--color-text) 8%,transparent);background:#fff;}
+.sess-title{font-weight:600;font-size:14px;}
+.sess-meta{font-size:12px;opacity:.55;}
+.sess-body{flex:1;padding:20px;display:flex;flex-direction:column;gap:10px;}
+.sess-bubble{max-width:640px;padding:10px 12px;border-radius:10px;background:#fff;border:1px solid color-mix(in srgb,var(--color-text) 8%,transparent);font-size:13px;line-height:1.55;}
+.issue-list{display:flex;flex-direction:column;border-radius:0 0 10px 10px;overflow:hidden;background:#fff;flex:1;min-height:0;overflow-y:auto;position:relative;border:1px solid color-mix(in srgb,var(--color-text) 8%,transparent);}
+/* ── 弹窗:Builder dialog(floating elevation) ──────────────────────── */
+.kanban-segtabs{display:flex;gap:2px;padding:2px;background:#f3f2ef;border-radius:8px;margin-bottom:8px;}
+.seg-tab{flex:1;padding:4px 8px;font-size:11px;border:none;border-radius:6px;background:transparent;cursor:pointer;}
+.seg-tab.active{background:#fff;}
+.il-filter{cursor:pointer;position:relative;}
+.il-popover{position:absolute;top:32px;right:16px;min-width:172px;background:#fff;border:1px solid #ddd;border-radius:8px;padding:6px;z-index:20;}
+.il-pop-title{font-size:10px;font-weight:600;padding:3px 6px;opacity:.5;}
+.il-pop-opt{padding:6px 9px;font-size:12px;border-radius:6px;cursor:pointer;}
+.il-pop-opt:hover{background:#f3f3f3;}
+.il-pop-opt.sel{background:#eee;font-weight:500;}
+.modal-backdrop{position:fixed;inset:0;background:color-mix(in srgb,var(--color-neutral-900) 40%,transparent);display:grid;place-items:center;z-index:70;padding:var(--space-4);}
+.modal{width:min(540px,100%);display:flex;flex-direction:column;gap:var(--space-3);padding:var(--space-6);border-radius:var(--radius-lg);background:var(--color-card);border:1px solid var(--color-divider);box-shadow:var(--shadow-lg);max-height:84vh;overflow:hidden;}
+.modal.plan-modal{padding:0;max-width:560px;}
+.plan-modal-head{position:relative;padding:var(--space-4) var(--space-6) var(--space-3);border-bottom:1px solid var(--color-divider);}
+.plan-modal-tag{display:flex;align-items:center;gap:6px;font-family:var(--font-mono);font-size:11px;color:color-mix(in srgb,var(--color-text) 55%,transparent);margin-bottom:var(--space-2);}
+.plan-modal-title{font-family:var(--font-heading);font-weight:700;font-size:18px;line-height:1.35;letter-spacing:-.014em;color:var(--color-text);}
+.plan-modal-x{position:absolute;top:var(--space-3);right:var(--space-4);width:28px;height:28px;display:flex;align-items:center;justify-content:center;border-radius:var(--radius-sm);background:transparent;border:none;color:color-mix(in srgb,var(--color-text) 55%,transparent);}
+.plan-modal-x:hover{background:color-mix(in srgb,var(--color-text) 6%,transparent);color:var(--color-text);}
+.plan-modal-body{padding:var(--space-4) var(--space-6);overflow-y:auto;flex:1;min-height:0;}
+.detail-body-text{font-size:13px;line-height:1.75;color:color-mix(in srgb,var(--color-text) 82%,transparent);white-space:pre-wrap;padding:2px 0;margin-bottom:var(--space-3);max-height:240px;overflow-y:auto;}
+.detail-link{color:var(--color-accent);cursor:pointer;text-decoration:underline;text-underline-offset:3px;}
+.detail-link:hover{opacity:.8;}
+.edithint{font-size:11px;color:color-mix(in srgb,var(--color-text) 40%,transparent);margin-top:var(--space-1);}
+.plan-meta-grid{display:grid;grid-template-columns:1fr 1fr;gap:var(--space-2) var(--space-6);margin-top:var(--space-2);}
+.detail-row{margin-bottom:0;font-size:12.5px;}
+.detail-row .k{font-size:10.5px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:color-mix(in srgb,var(--color-text) 45%,transparent);margin-bottom:3px;}
+.plan-review-hint{font-size:11px;color:color-mix(in srgb,var(--color-text) 40%,transparent);line-height:1.7;margin-top:var(--space-3);padding-top:var(--space-2);border-top:1px dashed var(--color-divider);}
+.plan-modal-foot{padding:var(--space-3) var(--space-6);border-top:1px solid var(--color-divider);display:flex;justify-content:space-between;align-items:center;gap:var(--space-2);flex-wrap:wrap;background:var(--color-card);flex:none;}
+
+/* 创建版本弹窗表单 */
+.cv-form .formrow,.formrow{margin-bottom:var(--space-4);}
+.cv-form .formrow:last-child,.formrow:last-child{margin-bottom:0;}
+.field>label,.label{display:block;font-size:11px;font-weight:600;letter-spacing:.04em;color:color-mix(in srgb,var(--color-text) 65%,transparent);margin-bottom:5px;}
+.input,.select,textarea.input{width:100%;min-height:30px;padding:5px 9px;font:inherit;font-size:13px;color:var(--color-text);caret-color:var(--color-accent);background:var(--color-card);border:1px solid var(--color-divider);border-radius:var(--radius-sm);}
+.input:hover,.select:hover{border-color:color-mix(in srgb,var(--color-text) 28%,transparent);}
+.input::placeholder{color:color-mix(in srgb,var(--color-text) 35%,transparent);}
+textarea.input{min-height:64px;resize:vertical;}
+.asterisk{color:var(--color-danger);}
+.cv-field-2{display:grid;grid-template-columns:1fr 1fr;gap:var(--space-3);}
+.cv-field-2 .sub{font-size:10.5px;color:color-mix(in srgb,var(--color-text) 55%,transparent);margin:0 0 5px;display:block;}
+.cv-foot-hint{font-size:11px;color:color-mix(in srgb,var(--color-text) 50%,transparent);line-height:1.6;}
+.modal-actions{display:flex;justify-content:flex-end;gap:var(--space-2);margin-top:var(--space-2);}
+.check-list{display:flex;flex-direction:column;max-height:180px;overflow-y:auto;border-top:1px solid var(--color-divider);}
+.check-row{display:flex;align-items:center;gap:var(--space-2);font-size:12.5px;padding:7px 2px;border-bottom:1px solid color-mix(in srgb,var(--color-text) 6%,transparent);cursor:pointer;transition:background .1s;}
+.check-row:hover{background:color-mix(in srgb,var(--color-text) 3.5%,transparent);}
+.check-row:has(input:checked){background:color-mix(in srgb,var(--color-accent) 8%,transparent);}
+.check-row:has(input:checked) span{color:var(--color-accent-700);font-weight:600;}
+.check-row input{margin:0;accent-color:var(--color-accent);}
+.cfg-readonly-note{font-size:11px;color:color-mix(in srgb,var(--color-text) 50%,transparent);margin-top:var(--space-2);}
+.hidden{display:none !important;}
+</style>
+</head>
+<body>
+
+<div class="app-root">
+
+  <!-- 图标栏 -->
+  <div class="iconrail">
+    <div class="rail-logo">b</div>
+    <div class="rail-btn" title="项目墙" data-icon="grid"></div>
+    <div class="rail-btn active" title="计划" data-icon="plan"></div>
+    <div class="rail-btn" title="会话" data-icon="session"></div>
+    <div class="rail-btn" title="通知" data-icon="bell"></div>
+    <div class="rail-btn" title="知识" data-icon="book"></div>
+    <div class="rail-btn" title="配置" data-icon="settings"></div>
+  </div>
+
+  <!-- 项目栏 -->
+  <div class="projectrail">
+    <div class="pr-back" data-icon="back">工作台</div>
+    <div class="pr-head">
+      <div class="pr-head-name">loop-buddy</div>
+      <div class="pr-head-meta"><span>v0.4</span><span>·</span><span>2026-W35</span></div>
+    </div>
+    <div class="pr-nav">
+      <div class="pr-link" data-icon="grid">总览</div>
+      <div class="pr-link active" data-icon="plan">计划</div>
+      <div class="pr-link" data-icon="session">会话</div>
+      <div class="pr-link" data-icon="bell">通知 <span class="count">3</span></div>
+      <div class="pr-link" data-icon="book">知识</div>
+      <div class="pr-link" data-icon="settings">配置</div>
+    </div>
+  </div>
+
+  <!-- 主区 -->
+  <div class="main">
+    <div class="topbar">
+      <div class="topbar-title">计划</div>
+      <div class="topbar-crumbs">loop-buddy · 2026-W35</div>
+      <div class="spacer" style="flex:1"></div>
+      <div class="avatar avatar-sm avatar-agent">b</div>
+    </div>
+    <div class="content">
+      <section data-screen="plan" id="plan-root">
+        <div class="plan-grid" id="plan-grid">
+          <!-- 左栏:周列表 -->
+          <div class="plan-col" id="week-rail"></div>
+          <!-- 中栏 -->
+          <div class="plan-col plan-mid" id="plan-mid"></div>
+        </div>
+      </section>
+      <div id="detail-slot"></div>
+      <div id="modal-slot"></div>
+      <div id="session-slot"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ---- Lucide 图标(line, stroke 2, 16px 默认) ---- */
+var ICONS = {
+  grid:'<rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/>',
+  plan:'<path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><path d="m9 11 3 3L22 4"/>',
+  session:'<polyline points="4 17 10 11 4 5"/><line x1="12" x2="20" y1="19" y2="19"/>',
+  bell:'<path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/>',
+  book:'<path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20"/>',
+  settings:'<path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/>',
+  back:'<path d="m15 18-6-6 6-6"/>',
+  plus:'<path d="M5 12h14"/><path d="M12 5v14"/>',
+  folder:'<path d="M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z"/>',
+  package:'<path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/><path d="m3.3 7 8.7 5 8.7-5"/><path d="M12 22V12"/>',
+  columns:'<rect width="18" height="18" x="3" y="3" rx="2"/><path d="M9 3v18"/><path d="M15 3v18"/>',
+  list:'<path d="M8 6h13"/><path d="M8 12h13"/><path d="M8 18h13"/><path d="M3 6h.01"/><path d="M3 12h.01"/><path d="M3 18h.01"/>',
+  close:'<path d="M18 6 6 18"/><path d="m6 6 12 12"/>',
+  external:'<path d="M15 3h6v6"/><path d="M10 14 21 3"/><path d="M21 14v5a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5"/>',
+  play:'<polygon points="6 3 20 12 6 21 6 3"/>',
+  search:'<circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/>',
+  check:'<path d="M20 6 9 17l-5-5"/>',
+  ban:'<circle cx="12" cy="12" r="10"/><path d="m4.9 4.9 14.2 14.2"/>',
+  xcircle:'<circle cx="12" cy="12" r="10"/><path d="m15 9-6 6"/><path d="m9 9 6 6"/>',
+  arrowright:'<path d="M5 12h14"/><path d="m12 5 7 7-7 7"/>',
+  unlock:'<rect width="18" height="11" x="3" y="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 9.9-1"/>',
+  chevron:'<path d="m6 9 6 6 6-6"/>',
+};
+function icon(name, size){
+  size = size || 16;
+  var p = ICONS[name] || '';
+  return '<svg width="'+size+'" height="'+size+'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'+p+'</svg>';
+}
+/* 把静态标签栏上的 data-icon 渲染成 svg */
+function hydrateStaticIcons(){
+  document.querySelectorAll('[data-icon]').forEach(function(el){
+    var n = el.getAttribute('data-icon');
+    el.insertAdjacentHTML('afterbegin', icon(n, 16));
+  });
+}
+
+/* ---- mock 数据,结构对齐 crates/app-shell/src/vm.rs ---- */
+var PROJECT = {
+  name: "loop-buddy",
+  version: "v0.4",
+  weeks: [
+    { week: "2026-W35", goal: "本周把计划页面整改到位(#23),并完成出包流程文档化(#15)。\n运作①周一已开始,产出本周指标读数与草稿指标。", activity: 6, current: true },
+    { week: "2026-W36", goal: "(未来周,尚未开始)", activity: 0, future: true },
+    { week: "2026-W34", goal: "接入流程两步走落地、出包代码入库。", activity: 4, past: true },
+    { week: "2026-W33", goal: "周计划页改指标单独确认 + 未排期排进本周。", activity: 3, past: true },
+  ],
+  board_counts: { todo: 2, doing: 1, review: 2, done: 2, blocked: 1 },
+  ops: [
+    { title: "① 更新指标与周计划", status: "评审中", note: "本周幂等,剧本 week-planning" },
+    { title: "② 资产盘点", status: "待办", note: "周五定时,剧本 asset-audit" },
+  ],
+  mr_url_prefix: "https://codehub-g.huawei.com/z30026659/workbench/-/merge_requests/",
+  issue_url_prefix: "https://codehub-g.huawei.com/z30026659/workbench/issues/",
+  /* 需求2:自定义「计划版本」—— 划归 issue 的容器,和发版号(v0.4)不是一回事 */
+  plan_versions: [],
+};
+
+/* 四列(合并后)。列内分段;段按原始状态算 status 语义。
+   状态 → Builder status 变体 + 标签语义。 */
+var STATUS_META = {
+  Backlog:    { status:"status-todo",     tag:"tag-neutral",  label:"待办·未排期" },
+  Todo:       { status:"status-todo",     tag:"tag-accent",   label:"待办·已排期" },
+  InProgress: { status:"status-progress", tag:"tag-warning", label:"进行中" },
+  InReview:   { status:"status-review",   tag:"tag-accent-2", label:"待评审" },
+  Done:       { status:"status-done",     tag:"tag-success",  label:"完成" },
+  Blocked:    { status:"status-blocked",  tag:"tag-danger",   label:"阻塞" },
+  Cancelled:  { status:"status-todo",     tag:"tag-neutral",  label:"已取消" },
+};
+var COL_DEF = {
+  Backlog:"未排进任何一周", Todo:"已排进这一周,等 Start",
+  InProgress:"agent 在做", InReview:"MR 开着,等人审",
+  Done:"人点过完成", Blocked:"填了原因", Cancelled:"已取消",
+};
+var GROUPS = [
+  { key:"todo",    title:"待办",   colDot:"status-todo",     segments:[
+    { key:"unassigned", label:"未排期", statuses:["Backlog"] },
+    { key:"assigned",   label:"已排期", statuses:["Todo"] },
+  ]},
+  { key:"doing",   title:"进行中", colDot:"status-progress", single:true, statuses:["InProgress"] },
+  { key:"pending", title:"待处理", colDot:"status-review",  segments:[
+    { key:"review",  label:"待评审", statuses:["InReview"] },
+    { key:"blocked", label:"阻塞",   statuses:["Blocked"] },
+  ]},
+  { key:"done",    title:"已完成", colDot:"status-done",     segments:[
+    { key:"done",     label:"完成", statuses:["Done"] },
+    { key:"cancelled",label:"拒绝", statuses:["Cancelled"] },
+  ]},
+];
+/* 周视图下待办列只显示「待开始」段(已分配本周),不显示未分配。 */
+var GROUPS_WEEK = GROUPS.map(function(g){
+  if(g.key!=="todo") return g;
+  return { key:"todo", title:"待办", colDot:"status-todo", segments:[
+    { key:"assigned", label:"待开始", statuses:["Todo"] },
+  ]};
+});
+
+var CARDS = [
+  { id:"i16", col:"Backlog", num:16, title:"出包文档补全:ISS 脚本头注释",
+    category:"build", kind:"业务活", origin:"人建", week_of:"", version:"", metric_key:"", settled:false,
+    pr_number:0, remote_number:16, branch:"",
+    body:"packaging/BuildersWorkbench-MVP.iss 头注释要写清:只吃仓内相对路径 + 装过 buddy 的机器。非门禁、非 CI。", can_start:true },
+  { id:"i20", col:"Backlog", num:20, title:"配置屏类别映射表校验",
+    category:"optimize", kind:"业务活", origin:"人建", week_of:"", version:"", metric_key:"", settled:false,
+    pr_number:0, remote_number:20, branch:"",
+    body:"issue-policy.toml 映射和配置屏那张表对不上时,界面上标出来,不要默默错位。", can_start:true },
+  { id:"i23", col:"Todo", num:23, title:"计划页面整改",
+    category:"build", kind:"业务活", origin:"人建", week_of:"2026-W35", version:"", metric_key:"", settled:false,
+    pr_number:0, remote_number:23, branch:"", assignee:"andi",
+    body:"先做独立高保真,逐项迭代定稿,再回改 plan/*.rs 与 hifi.css。整改点见 issue 正文(由人逐步口述)。", can_start:true },
+  { id:"i18", col:"Todo", num:18, title:"会话屏终端韧性:切屏不丢字节",
+    category:"build", kind:"业务活", origin:"人建", week_of:"2026-W35", version:"", metric_key:"", settled:false,
+    pr_number:0, remote_number:18, branch:"",
+    body:"终端挪到屏外而不是 display:none,xterm 才不会以 0×0 打开后切回一片空白。", can_start:true },
+  { id:"i17", col:"InProgress", num:17, title:"知识屏代码图联调",
+    category:"build", kind:"业务活", origin:"人建", week_of:"2026-W35", version:"", metric_key:"", settled:false,
+    pr_number:0, remote_number:17, branch:"bw/issue-17", assignee:"claude",
+    body:"codegraph CLI 可用先于广 grep 用。改源码后跑 codegraph sync。.codegraph/codegraph.db 不进 feature commit。", can_start:true },
+  { id:"i15", col:"InReview", num:15, title:"出包代码入库 packaging/ + 修出包没图标",
+    category:"build", kind:"业务活", origin:"人建", week_of:"2026-W35", version:"v0.4", metric_key:"", settled:false,
+    pr_number:9, remote_number:15, branch:"bw/issue-15", assignee:"andi",
+    body:"build.rs 嵌 app.ico;WebView2Loader.dll 落稳定路径(hash 子目录不稳)。", can_start:false },
+  { id:"i11", col:"InReview", num:11, title:"周计划:指标单独确认、周目标整段展示",
+    category:"build", kind:"业务活", origin:"人建", week_of:"2026-W35", version:"", metric_key:"", settled:false,
+    pr_number:7, remote_number:11, branch:"bw/issue-11", assignee:"andi",
+    body:"指标读数单独确认再写回;周目标作为一整段展示,不再拆行。", can_start:false },
+  { id:"i10", col:"Done", num:10, title:"周计划:未排期能排进本周",
+    category:"build", kind:"业务活", origin:"人建", week_of:"2026-W35", version:"v0.3", metric_key:"", settled:true,
+    pr_number:5, remote_number:10, branch:"bw/issue-10",
+    body:"拖进待办 = 排进哪一周。全部 issue 视图下没选中周时,排期一律进当前周,不悄悄塞进历史周。", can_start:false },
+  { id:"i09", col:"Done", num:9, title:"接入屏改两步走",
+    category:"build", kind:"业务活", origin:"人建", week_of:"2026-W34", version:"v0.3", metric_key:"", settled:true,
+    pr_number:4, remote_number:9, branch:"bw/issue-9",
+    body:"第一步选仓,第二步回显名片。避免人对着空格子先填一遍。", can_start:false },
+  { id:"i19", col:"Blocked", num:19, title:"远端 issue 同步:codehub 限流",
+    category:"ops", kind:"业务活", origin:"自动建", week_of:"2026-W35", version:"", metric_key:"", settled:false,
+    pr_number:0, remote_number:19, branch:"",
+    body:"codehub-cli 在高频同步时报 429。已加退避,等网关侧调限流。", can_start:false },
+  { id:"i12", col:"Cancelled", num:12, title:"(已取消)重复建 issue",
+    category:"build", kind:"业务活", origin:"自动建", week_of:"", version:"", metric_key:"", settled:false,
+    pr_number:0, remote_number:12, branch:"",
+    body:"周计划幂等没认出来,建了第二张。取消原因写进评论。", can_start:false },
+];
+
+/* ---- 渲染 ---- */
+var state = {
+  view: "week", week: "2026-W35", selId: null, viewMode: "board",
+  // 需求4:看板两段列的当前激活段(默认第一段)
+  colSeg: {},
+  // 需求5:列表筛选
+  listFilter: { preset:'open', plan:'', stage:'', q:'' },
+  listFilterOpen: null,
+  listCaret: 0,
+  listFocus: null,
+  screen: 'plan',
+  sessionId: null,
+  startId: null,
+};
+var CURRENT_USER = 'andi';
+
+function esc(s){ return String(s).replace(/[&<>"]/g, function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];}); }
+
+function weekRail(){
+  var h = '';
+  h += '<div class="plan-weekrow '+(state.view==='all'?'active':'')+'" onclick="setView(\'all\')">全部 issue</div>';
+  // 本周 + 未来周(可排期的未结束周)
+  PROJECT.weeks.filter(function(w){return !w.past;}).forEach(function(w){
+    var active = state.view==='week' && state.week===w.week ? 'active':'';
+    var tag = w.current?' · 本周':(w.future?' · 未来':'');
+    h += '<div class="plan-weekrow '+active+'" onclick="setView(\'week\',\''+w.week+'\')">'
+      + '<span>'+w.week+tag+'</span>'
+      + '<span class="chip-muted">'+w.activity+'</span>'
+      + '</div>';
+  });
+  // 历史周
+  var past = PROJECT.weeks.filter(function(w){return w.past;});
+  // 已建的版本(需求2):在历史周上方
+  if(PROJECT.plan_versions.length){
+    h += '<div class="plan-weekgroup">版本</div>';
+    PROJECT.plan_versions.forEach(function(v){
+      h += '<div class="plan-weekrow" title="'+esc(v.start)+' → '+esc(v.end)+'"><span>'+esc(v.name)+'</span><span class="chip-muted">'+v.issues.length+'</span></div>';
+    });
+  }
+  if(past.length){
+    h += '<div class="plan-weekgroup">历史周</div>';
+    past.forEach(function(w){
+      var active = state.view==='week' && state.week===w.week ? 'active':'';
+      h += '<div class="plan-weekrow '+active+'" onclick="setView(\'week\',\''+w.week+'\')">'
+        + '<span>'+w.week+'</span>'
+        + '<span class="chip-muted">回填</span>'
+        + '</div>';
+    });
+  }
+  h += '<div class="plan-versionsel"><div class="label">在研版本</div><div class="mono" style="font-size:13px;color:var(--color-text);">'+PROJECT.version+'</div></div>';
+  return h;
+}
+
+/* 未结束的周计划(本周+未来),供排期下拉 */
+function openWeeks(){ return PROJECT.weeks.filter(function(w){return !w.past;}); }
+
+function pct(n, t){ return t ? Math.round(n/t*100) : 0; }
+
+function midBar(){
+  if(state.view==='all'){
+    var rows = CARDS.slice();
+    return '<div class="plan-toolbar"><div class="left">全部 issue</div>'
+      +   '<div class="right">'
+      +     toggleBtn()
+      +     '<button class="btn btn-sm btn-secondary" onclick="openCreateVersion()">'+icon('package',14)+' 创建版本</button>'
+      +     '<button class="btn btn-sm btn-primary" onclick="openNewIssue()">'+icon('plus',14)+' 新建issue</button>'
+      +   '</div></div>'
+      + (state.viewMode==='list' ? listView(rows,true) : kanban(rows, true));
+  }
+  var w = PROJECT.weeks.find(function(x){return x.week===state.week;});
+  var c = PROJECT.board_counts;
+  var total = c.todo+c.doing+c.review+c.done+c.blocked;
+  var ops = '';
+  PROJECT.ops.forEach(function(o){
+    ops += '<span class="tag tag-outline" title="'+esc(o.note)+'">'+esc(o.title)+' · '+o.status+'</span>';
+  });
+  return '<div class="plan-toolbar">'
+    +   '<div class="left">'+state.week+(w && w.current?' · 本周':'')+'</div>'
+    +   '<div class="right">'
+    +     toggleBtn()
+    +     '<button class="btn btn-sm" disabled>发版本</button>'
+    +     '<button class="btn btn-sm btn-primary" onclick="openNewIssue()">'+icon('plus',14)+' 新建issue</button>'
+    +     '<label class="switch" title="还没接:要去读活自己 worktree 里未合入的仓文件"><input type="checkbox" disabled> 预览 · 未合入</label>'
+    +   '</div>'
+    + '</div>'
+    + '<div class="goal-box">'+esc(w?w.goal:'(这一周还没写周目标)')+'</div>'
+    + '<div class="week-progress">'
+    +   '<div style="width:'+pct(c.done,total)+'%;background:var(--color-success);"></div>'
+    +   '<div style="width:'+pct(c.review,total)+'%;background:var(--color-accent-2);"></div>'
+    +   '<div style="width:'+pct(c.doing,total)+'%;background:var(--color-warning);"></div>'
+    +   '<div style="width:'+pct(c.blocked,total)+'%;background:var(--color-danger);"></div>'
+    +   '<div style="width:'+pct(c.todo,total)+'%;background:var(--color-neutral-300);"></div>'
+    + '</div>'
+    + '<div class="ops-chip-row">'+ops+'</div>'
+    + (state.viewMode==='list' ? listView(CARDS.filter(function(x){return x.week_of===state.week || x.kind!=='业务活';}),false) : kanban(CARDS.filter(function(x){return x.week_of===state.week || x.kind!=='业务活';}), false));
+}
+
+function kanban(rows, isAll){
+  var groups = isAll ? GROUPS : GROUPS_WEEK;
+  var h = '<div class="kanban">';
+  groups.forEach(function(g){
+    var segs = g.segments || [{ key:g.key, label:"", statuses:g.statuses }];
+    var rendered = segs.map(function(seg){
+      var items = rows.filter(function(r){return seg.statuses.indexOf(r.col)>=0;});
+      return { seg:seg, items:items };
+    });
+    var total = rendered.reduce(function(n,s){return n+s.items.length;},0);
+    var multi = segs.length>1;
+    var activeKey = state.colSeg[g.key] || segs[0].key;
+    var tint = g.key;
+    if(g.key==='pending' && activeKey==='blocked') tint = 'blocked';
+    if(g.key==='done' && activeKey==='cancelled') tint = 'todo';
+    h += '<div class="kanban-col col-'+tint+'">'
+      +   '<div class="kanban-col-head"><span class="status-dot '+g.colDot+'"></span>'+g.title+'<span class="count">'+total+'</span></div>';
+    if(multi){
+      // 需求4:列标题下一行放两个子标题,默认只显示第一段,点第二段切到第二段
+      h += '<div class="kanban-segtabs">';
+      segs.forEach(function(s){
+        var on = s.key===activeKey ? 'active':'';
+        var cnt = rendered.find(function(r){return r.seg.key===s.key;}).items.length;
+        h += '<button class="seg-tab '+on+'" onclick="setColSeg(\''+g.key+'\',\''+s.key+'\')">'+s.label+'<span class="seg-count">'+cnt+'</span></button>';
+      });
+      h += '</div>';
+    }
+    var active = rendered.find(function(r){return r.seg.key===activeKey;}) || rendered[0];
+    // 需求3:总览下「已计划」段是放置区,接住未计划卡的拖拽
+    var isDropTarget = isAll && active.seg.key==='assigned';
+    var dropAttrs = isDropTarget ? 'ondragover="dragOverAssign(event)" ondrop="dropToAssign(event)" data-seg="assigned"' : '';
+    h += '<div class="kanban-seg-box" '+dropAttrs+'>';
+    if(active.items.length){ active.items.forEach(function(c){ h += card(c); }); } else { h += '<div class="kanban-empty">无 issue</div>'; }
+    h += '</div>';
+    h += '</div>';
+  });
+  h += '</div>';
+  return h;
+}
+function setColSeg(gk, sk){ state.colSeg[gk] = sk; render(); }
+
+function agoOf(c){
+  var m={16:'16d',20:'12d',23:'2d',18:'3d',17:'4h',15:'1d',11:'6d',10:'8d',9:'20d',19:'5d',12:'9d'};
+  var zh={'16d':'更新于 16 天前','12d':'更新于 12 天前','2d':'更新于 2 天前','3d':'更新于 3 天前','4h':'更新于 4小时前','1d':'更新于 1 天前','6d':'更新于 6 天前','8d':'更新于 8 天前','20d':'更新于 20 天前','5d':'更新于 5 天前','9d':'更新于 9 天前','now':'更新于 最近'};
+  var k=c.updated||m[c.num]||'now'; return zh[k]||k;
+}
+function card(c){
+  var meta = STATUS_META[c.col] || STATUS_META.Backlog;
+  var running = c.col==='InProgress';
+  var preview = String(c.body||'').replace(/\s+/g,' ').trim();
+  if(preview.length>64) preview = preview.slice(0,64)+'\u2026';
+  var place = c.week_of ? c.week_of : (c.plan_version ? ('版本·'+c.plan_version) : '未排期');
+  var who = c.assignee || '未指派';
+  var initial = (c.assignee||'?').charAt(0).toUpperCase();
+  var src = c.remote_number ? '<span class="kcard-src">'+icon('external',10)+' CodeHub</span>' : '';
+  var sel = state.selId===c.id ? 'sel':'';
+  var drag = c.col==='Backlog' ? 'draggable="true" ondragstart="dragIssue(\''+c.id+'\',event)"' : '';
+  return '<div class="kcard '+sel+'" '+drag+' onclick="selectCard(\''+c.id+'\')">'
+    + '<div class="kcard-top"><span>#'+c.num+'</span>'+src+'<span class="status '+(running?'dot-run ':'')+meta.status+'" style="margin-left:auto" title="'+meta.label+'"><span class="status-dot"></span></span></div>'
+    + '<div class="kcard-title">'+esc(c.title)+'</div>'
+    + (preview ? '<div class="kcard-desc">'+esc(preview)+'</div>' : '')
+    + '<div class="kcard-place">'+icon('folder',12)+'<span>'+esc(place)+'</span></div>'
+    + '<div class="kcard-foot"><span class="kcard-who"><span class="avatar avatar-sm">'+esc(initial)+'</span>'+esc(who)+'</span><span class="kcard-ago">'+esc(agoOf(c))+'</span></div>'
+    + '</div>';
+}
+
+function detail(){
+  if(!state.selId) return '';
+  var c = CARDS.find(function(x){return x.id===state.selId;});
+  if(!c) return '';
+  var meta = STATUS_META[c.col] || STATUS_META.Backlog;
+  var mr = c.pr_number>0 && PROJECT.mr_url_prefix
+    ? '<span class="detail-link" onclick="window.open(\''+PROJECT.mr_url_prefix+c.pr_number+'\')">'+icon('external',12)+' MR #'+c.pr_number+'</span>'
+    : (c.pr_number>0 ? '<span>MR #'+c.pr_number+'</span>' : '<span class="text-muted">— 还没开 MR</span>');
+  var issue = c.remote_number>0 && PROJECT.issue_url_prefix
+    ? '<span class="detail-link" onclick="window.open(\''+PROJECT.issue_url_prefix+c.remote_number+'\')">'+icon('external',12)+' issue #'+c.remote_number+'</span>'
+    : (c.remote_number>0 ? '<span>#'+c.remote_number+'</span>' : '<span class="text-muted">— 只在本机</span>');
+  var catRow = c.kind==='运作活'
+    ? row('类别','运作')
+    : '<div class="detail-row"><div class="k">类别</div><select class="select" style="width:auto;display:inline-block;"><option>原型</option><option selected>构建</option><option>优化</option><option>运作</option></select></div>';
+  var mainAct = '';
+  if(c.col==='Backlog'){
+    mainAct = '<button class="btn btn-sm btn-secondary" onclick="closeDetail();openSchedule(\''+c.id+'\')">schedule</button>';
+  } else if(c.col==='Todo'){
+    mainAct = '<button class="btn btn-sm btn-primary" onclick="closeDetail();openStart(\''+c.id+'\')">'+icon('play',14)+' Start</button>';
+  } else if(c.col==='InProgress'){
+    mainAct = '<button class="btn btn-sm btn-primary" onclick="closeDetail();openIssueSession(\''+c.id+'\')">'+icon('arrowright',14)+' Open</button>';
+  } else if(c.col==='InReview'){
+    mainAct = '<button class="btn btn-sm btn-primary" onclick="alert(\'Complete = 合入并完成(原型未接)\')">'+icon('check',14)+' Complete</button>';
+  } else if(c.col==='Done'){
+    mainAct = '<span class="text-muted">已完成并结清</span>';
+  } else if(c.col==='Blocked'){
+    mainAct = '<button class="btn btn-sm btn-secondary" onclick="alert(\'解除阻塞(原型未接)\')">'+icon('unlock',14)+' 解除阻塞</button>';
+  } else if(c.col==='Cancelled'){
+    mainAct = '<span class="text-muted">已取消</span>';
+  }
+  var block = (c.col!=='Done'&&c.col!=='Blocked'&&c.col!=='Cancelled') ? '<button class="btn btn-sm btn-secondary" title="标记阻塞">'+icon('ban',14)+' 阻塞</button>' : '';
+  var cancel = (c.col!=='Done'&&c.col!=='Cancelled') ? '<button class="btn btn-sm btn-secondary" title="Cancel">'+icon('xcircle',14)+' Cancel</button>' : '';
+  var assign = c.week_of ? c.week_of : (c.plan_version ? '版本·'+c.plan_version : '未排期');
+  var dotHtml = '<span class="status '+(c.col==='InProgress'?'dot-run ':'')+meta.status+'"><span class="status-dot"></span>'+meta.label+'</span>';
+  return '<div class="modal-backdrop" onclick="if(event.target===this)closeDetail()">'
+    +   '<div class="modal plan-modal">'
+    +     '<div class="plan-modal-head">'
+    +       '<div class="plan-modal-tag">'+dotHtml+' · #'+c.num+'</div>'
+    +       '<div class="plan-modal-title" id="ed-title" ondblclick="editOn(this)" onblur="editSaveTitle(\''+c.id+'\')" title="双击编辑">'+esc(c.title)+'</div>'
+    +       '<button class="plan-modal-x" onclick="closeDetail()">'+icon('close',16)+'</button>'
+    +     '</div>'
+    +     '<div class="plan-modal-body">'
+    +       '<div class="detail-body-text" id="ed-body" ondblclick="editOn(this)" onblur="editSaveBody(\''+c.id+'\')" title="双击编辑">'+esc(c.body)+'</div>'
+    +       '<div class="edithint">双击标题或正文编辑,关闭弹窗自动保存</div>'
+    +       '<div class="plan-meta-grid">'
+    +         '<div class="detail-row"><div class="k">链接</div>'+mr+' · '+issue+'</div>'
+    +         catRow
+    +         row('计划', assign)
+    +         '<div class="detail-row"><div class="k">负责人</div><input id="ed-assignee" class="input" style="width:auto;display:inline-block;" value="'+esc(c.assignee||'')+'" placeholder="指派谁" onblur="editSaveAssignee(\''+c.id+'\')" title="回车或失焦保存,同步到 codehub"></div>'
+    +       '</div>'
+    +       (c.col==='InReview'? '<div class="plan-review-hint">Complete 由人确认。agent 跑完只到待评审。</div>':'')
+    +     '</div>'
+    +     '<div class="plan-modal-foot">'
+    +       '<div style="display:flex;gap:var(--space-2);flex-wrap:wrap;">'+mainAct+block+cancel+'</div>'
+    +       ((c.col==='InProgress'||c.col==='InReview'||c.col==='Blocked')
+        ? '<button class="btn btn-sm btn-ghost" onclick="closeDetail();openIssueSession(\''+c.id+'\')">'+icon('arrowright',14)+' Open</button>'
+        : '')
+    +     '</div>'
+    +   '</div>'
+    + '</div>';
+}
+
+function toggleBtn(){
+  var isBoard = state.viewMode==='board';
+  return '<button class="btn btn-sm btn-secondary" onclick="toggleViewMode()" title="在看板与列表之间切换">'
+    + (isBoard ? icon('list',14)+' 切换列表' : icon('columns',14)+' 切换看板')
+    + '</button>';
+}
+function toggleViewMode(){
+  state.viewMode = state.viewMode==='board' ? 'list' : 'board';
+  render();
+}
+
+/* 需求2:列表视图 —— 一行一张活,点行开详情 */
+function cardPlan(c){
+  return c.week_of || c.plan_version || c.version || '';
+}
+function stageLabel(col){
+  var m = {Backlog:'未排期',Todo:'已排期',InProgress:'进行中',InReview:'待评审',Blocked:'阻塞',Done:'完成',Cancelled:'已取消'};
+  return m[col] || ((STATUS_META[col]||{}).label || col);
+}
+function listAction(c){
+  if(c.col==='Backlog') return 'schedule';
+  if(c.col==='Todo') return 'start';
+  if(c.col==='InProgress'||c.col==='InReview'||c.col==='Blocked') return 'open';
+  return 'dash';
+}
+
+function listView(rows, isAll){
+  var order = ['Backlog','Todo','InProgress','InReview','Blocked','Done','Cancelled'];
+  var f = state.listFilter;
+  var plans = [];
+  rows.forEach(function(c){
+    var pl = cardPlan(c);
+    if(pl && plans.indexOf(pl)<0) plans.push(pl);
+  });
+  PROJECT.weeks.forEach(function(w){ if(plans.indexOf(w.week)<0) plans.push(w.week); });
+  (PROJECT.plan_versions||[]).forEach(function(v){ if(v.name && plans.indexOf(v.name)<0) plans.push(v.name); });
+  var filtered = rows.filter(function(c){
+    if(f.preset==='open' && (c.col==='Done'||c.col==='Cancelled')) return false;
+    if(f.preset==='assigned' && (c.assignee||'')!==CURRENT_USER) return false;
+    if(f.preset==='mine' && c.origin!=='人建') return false;
+    if(f.plan && cardPlan(c)!==f.plan) return false;
+    if(f.stage && c.col!==f.stage) return false;
+    if(f.q){
+      var q = String(f.q).toLowerCase();
+      var blob = (c.title+' #'+c.num+' '+(c.body||'')+' '+(c.assignee||'')).toLowerCase();
+      if(blob.indexOf(q)<0) return false;
+    }
+    return true;
+  }).sort(function(a,b){return order.indexOf(a.col)-order.indexOf(b.col);});
+
+  function presetBtn(id, lab){
+    return '<button class="il-preset'+(f.preset===id?' on':'')+'" onclick="setListPreset(\''+id+'\')">'+lab+'</button>';
+  }
+  function dd(key, title, value, optsHtml){
+    var open = state.listFilterOpen===key;
+    return '<div class="il-dd">'
+      + '<button class="il-dd-btn" onclick="event.stopPropagation();toggleListFilter(\''+key+'\')">'+title+(value?' <b>'+esc(value)+'</b>':'')+' '+icon('chevron',12)+'</button>'
+      + (open ? '<div class="il-popover il-pop-plan">'+optsHtml+'</div>' : '')
+      + '</div>';
+  }
+  var planOpts = '<div class="il-pop-opt '+(f.plan===''?'sel':'')+'" onclick="setListFilter(\'plan\',\'\')">全部</div>';
+  plans.forEach(function(pl){
+    planOpts += '<div class="il-pop-opt '+(f.plan===pl?'sel':'')+'" onclick="setListFilter(\'plan\',\''+String(pl).replace(/'/g,'')+'\')">'+esc(pl)+'</div>';
+  });
+  var stageOpts = '<div class="il-pop-opt '+(f.stage===''?'sel':'')+'" onclick="setListFilter(\'stage\',\'\')">全部</div>';
+  order.forEach(function(k){
+    stageOpts += '<div class="il-pop-opt '+(f.stage===k?'sel':'')+'" onclick="setListFilter(\'stage\',\''+k+'\')">'+stageLabel(k)+'</div>';
+  });
+
+  var h = '<div class="il-wrap">'
+    + '<div class="il-bar">'
+    +   '<div class="il-presets">'+presetBtn('open','开放')+presetBtn('assigned','分配我的')+presetBtn('mine','我的')+'</div>'
+    +   '<div class="il-tools">'
+    +     dd('plan','计划', f.plan, planOpts)
+    +     dd('stage','阶段', f.stage?stageLabel(f.stage):'', stageOpts)
+    +     '<div class="il-search-wrap">'+icon('search',14)+'<input id="il-q" class="il-search" placeholder="Search issues..." value="'+esc(f.q||'')+'" oninput="onListSearch(this)"></div>'
+    +   '</div>'
+    + '</div>'
+    + '<div class="issue-list">'
+    + '<div class="il-row il-head">'
+    +   '<span class="il-num">ID</span><span class="il-title">标题</span>'
+    +   '<span class="il-owner">负责人</span>'
+    +   '<span class="il-status">状态</span>'
+    +   '<span class="il-updated">已更新</span>'
+    +   '<span class="il-act"></span>'
+    + '</div>';
+
+  filtered.forEach(function(c){
+    var meta = STATUS_META[c.col] || STATUS_META.Backlog;
+    var ownerName = c.assignee || '';
+    var initial = ownerName ? ownerName.charAt(0).toUpperCase() : '';
+    var planTag = cardPlan(c) || '未排期';
+    var sub = 'by '+(ownerName || '—')+' · '+planTag;
+    var ownerHtml = ownerName
+      ? '<span class="avatar avatar-sm'+(ownerName==='claude'?' avatar-agent':'')+'">'+esc(initial)+'</span>'+esc(ownerName)
+      : '—';
+    var kind = listAction(c);
+    var actHtml = '<span class="il-dash"></span>';
+    if(kind==='schedule')
+      actHtml = '<button class="il-btn" onclick="event.stopPropagation();openSchedule(\''+c.id+'\')">schedule</button>';
+    else if(kind==='start')
+      actHtml = '<button class="il-btn" onclick="event.stopPropagation();openStart(\''+c.id+'\')">Start '+icon('arrowright',12)+'</button>';
+    else if(kind==='open')
+      actHtml = '<button class="il-btn primary" onclick="event.stopPropagation();openIssueSession(\''+c.id+'\')">Open '+icon('arrowright',12)+'</button>';
+    var ago = String(agoOf(c)).replace('更新于 ','');
+    h += '<div class="il-row '+(state.selId===c.id?'sel':'')+'" onclick="selectCard(\''+c.id+'\')">'
+      +   '<span class="il-num"><span class="il-idmark"></span>#'+c.num+'</span>'
+      +   '<span class="il-title"><span class="il-t1">'+esc(c.title)+'</span><span class="il-t2">'+esc(sub)+'</span></span>'
+      +   '<span class="il-owner">'+ownerHtml+'</span>'
+      +   '<span class="il-status"><span class="il-pill '+meta.status+'">'+stageLabel(c.col)+'</span></span>'
+      +   '<span class="il-updated">'+esc(ago)+'</span>'
+      +   '<span class="il-act">'+actHtml+'</span>'
+      + '</div>';
+  });
+  if(!filtered.length) h += '<div class="il-empty">没有符合的 issue</div>';
+  h += '</div></div>';
+  return h;
+}
+function setListPreset(id){ state.listFilter.preset=id; state.listFilterOpen=null; render(); }
+function onListSearch(el){
+  state.listFilter.q = el.value;
+  state.listFocus = 'q';
+  state.listCaret = el.selectionStart||el.value.length;
+  render();
+}
+function restoreListSearch(){
+  var el = document.getElementById('il-q');
+  if(!el || state.listFocus!=='q') return;
+  el.focus();
+  var pos = state.listCaret|0;
+  try{ el.setSelectionRange(pos, pos); }catch(e){}
+}
+function toggleListFilter(k){ state.listFilterOpen = state.listFilterOpen===k ? null : k; render(); }
+function setListFilter(k,v){ state.listFilter[k]=v; state.listFilterOpen=null; render(); }
+
+function openSchedule(id){ state.scheduleId=id; state.modal='schedule'; state.selId=null; render(); }
+function openStart(id){ state.startId=id; state.modal='start'; state.selId=null; render(); }
+function openIssueSession(id){
+  var c = CARDS.find(function(x){return x.id===id;});
+  if(!c) return;
+  state.sessionId = id;
+  state.screen = 'session';
+  state.selId = null;
+  state.modal = null;
+  render();
+}
+function backToPlan(){ state.screen='plan'; render(); }
+function startModal(){
+  var c = CARDS.find(function(x){return x.id===state.startId;});
+  if(!c) return '';
+  var defName = c.branch || ('bw/issue-'+c.num);
+  return '<div class="modal-backdrop" onclick="if(event.target===this)closeModal()">'
+    + '<div class="modal plan-modal" style="max-width:480px;">'
+    +   '<div class="plan-modal-head">'
+    +     '<div class="plan-modal-tag">worktree</div>'
+    +     '<div class="plan-modal-title">'+icon('play',16)+' Start · #'+c.num+'</div>'
+    +     '<button class="plan-modal-x" onclick="closeModal()">'+icon('close',16)+'</button>'
+    +   '</div>'
+    +   '<div class="plan-modal-body cv-form">'
+    +     '<div class="formrow"><label class="label">worktree 名</label>'
+    +       '<input id="st-name" class="input" value="'+esc(defName)+'"></div>'
+    +     '<div class="formrow"><label class="label">基于</label>'
+    +       '<select id="st-base" class="select"><option value="main">main</option><option value="HEAD">HEAD</option></select></div>'
+    +     '<label class="check-row"><input id="st-setup" type="checkbox" checked><span>创建后跑 setup script</span></label>'
+    +     '<div class="cfg-readonly-note">确认后创建 worktree，issue 切到进行中，并打开会话。</div>'
+    +   '</div>'
+    +   '<div class="plan-modal-foot">'
+    +     '<span></span>'
+    +     '<div style="display:flex;gap:var(--space-2);">'
+    +       '<button class="btn btn-secondary" onclick="closeModal()">取消</button>'
+    +       '<button class="btn btn-primary" onclick="confirmStart()">Start</button>'
+    +     '</div>'
+    +   '</div>'
+    + '</div></div>';
+}
+function confirmStart(){
+  var c = CARDS.find(function(x){return x.id===state.startId;});
+  if(!c){ closeModal(); return; }
+  var nameEl = document.getElementById('st-name');
+  var baseEl = document.getElementById('st-base');
+  var name = (nameEl && nameEl.value.trim()) || ('bw/issue-'+c.num);
+  var base = (baseEl && baseEl.value) || 'main';
+  c.col = 'InProgress';
+  c.branch = name;
+  c.worktree = { name:name, base:base };
+  c.updated = 'now';
+  if(!c.assignee) c.assignee = CURRENT_USER;
+  var id = c.id;
+  state.modal = null;
+  state.startId = null;
+  openIssueSession(id);
+}
+function sessionView(){
+  var c = CARDS.find(function(x){return x.id===state.sessionId;});
+  if(!c) return '';
+  var wt = (c.worktree && c.worktree.name) || c.branch || ('bw/issue-'+c.num);
+  return '<div class="sess-page">'
+    +   '<div class="sess-bar">'
+    +     '<button class="btn btn-sm btn-ghost" onclick="backToPlan()">'+icon('back',14)+' 计划</button>'
+    +     '<span class="sess-title">#'+c.num+' '+esc(c.title)+'</span>'
+    +     '<span class="sess-meta">'+esc(wt)+'</span>'
+    +   '</div>'
+    +   '<div class="sess-body">'
+    +     '<div class="sess-bubble">worktree 已就绪 · '+esc(wt)+'</div>'
+    +     '<div class="sess-bubble">围绕 #'+c.num+' 开始。状态已切到进行中。</div>'
+    +   '</div>'
+    + '</div>';
+}
+
+function row(k,v){ return '<div class="detail-row"><div class="k">'+esc(k)+'</div>'+esc(v)+'</div>'; }
+
+/* ---- 需求4:详情双击编辑,关闭自动保存 ---- */
+function editOn(el){ el.setAttribute('contenteditable','true'); el.focus(); }
+function editSaveTitle(id){
+  var el=document.getElementById('ed-title'); if(!el)return;
+  el.removeAttribute('contenteditable');
+  var c=CARDS.find(function(x){return x.id===id;}); if(c){c.title=el.textContent.trim();}
+}
+function editSaveBody(id){
+  var el=document.getElementById('ed-body'); if(!el)return;
+  el.removeAttribute('contenteditable');
+  var c=CARDS.find(function(x){return x.id===id;}); if(c){c.body=el.textContent;}
+}
+/* 需求6:负责人可编辑,保存时同步到 codehub(原型用 alert 模拟) */
+function editSaveAssignee(id){
+  var el=document.getElementById('ed-assignee'); if(!el)return;
+  var c=CARDS.find(function(x){return x.id===id;});
+  if(!c) return;
+  var v = el.value.trim();
+  var changed = (c.assignee||'') !== v;
+  c.assignee = v;
+  if(changed) toast('负责人改为 '+(v||'(空)')+' · 已同步到 codehub');
+}
+function closeDetail(){
+  if(state.selId){
+    editSaveTitle(state.selId);
+    editSaveBody(state.selId);
+    editSaveAssignee(state.selId);
+  }
+  selectCard(null);
+}
+/* 简易 toast(原型) */
+function toast(msg){
+  var t = document.createElement('div');
+  t.className = 'toast show';
+  t.textContent = msg;
+  t.style.cssText = 'position:fixed;bottom:22px;left:50%;transform:translateX(-50%);background:var(--color-text);color:var(--color-surface);padding:9px 16px;border-radius:8px;font-size:12.5px;z-index:200;box-shadow:0 8px 26px rgba(0,0,0,.18);';
+  document.body.appendChild(t);
+  setTimeout(function(){ t.remove(); }, 2600);
+}
+
+/* ---- 需求3:拖未分配的卡到已分配段 → 排期弹窗 ---- */
+function dragIssue(id, e){ state.dragId=id; e.dataTransfer.setData('text', id); e.dataTransfer.effectAllowed='move'; }
+function dragOverAssign(e){ e.preventDefault(); e.currentTarget.classList.add('drop-target'); }
+function dropToAssign(e){
+  e.preventDefault();
+  e.currentTarget.classList.remove('drop-target');
+  var id = e.dataTransfer.getData('text') || state.dragId;
+  if(!id) return;
+  var c = CARDS.find(function(x){return x.id===id;});
+  if(!c || c.col!=='Backlog') return; // 只接未分配
+  state.scheduleId = id;
+  state.modal = 'schedule';
+  render();
+}
+
+/* ---- 需求2:创建版本弹窗 ---- */
+function openCreateVersion(){ state.modal='createVersion'; render(); }
+
+/* ---- 需求6:新建 issue 弹窗(含负责人,创建后同步 codehub) ---- */
+function openNewIssue(){ state.modal='newIssue'; render(); }
+function newIssueModal(){
+  return '<div class="modal-backdrop" onclick="if(event.target===this)closeModal()">'
+    + '<div class="modal plan-modal" style="max-width:480px;">'
+    +   '<div class="plan-modal-head">'
+    +     '<div class="plan-modal-tag">新建</div>'
+    +     '<div class="plan-modal-title">'+icon('plus',16)+' 新建 issue</div>'
+    +     '<button class="plan-modal-x" onclick="closeModal()">'+icon('close',16)+'</button>'
+    +   '</div>'
+    +   '<div class="plan-modal-body cv-form">'
+    +     '<div class="formrow"><label class="label">标题 <span class="asterisk">*</span></label>'
+    +       '<input id="ni-title" class="input" placeholder="这张活要干什么"></div>'
+    +     '<div class="formrow"><label class="label">正文</label>'
+    +       '<textarea id="ni-body" class="input" placeholder="要做成什么、边界。可空"></textarea></div>'
+    +     '<div class="cv-field-2">'
+    +       '<div class="formrow" style="margin:0;"><label class="label">类别</label>'
+    +         '<select id="ni-cat" class="select"><option>原型</option><option selected>构建</option><option>优化</option><option>运作</option></select></div>'
+    +       '<div class="formrow" style="margin:0;"><label class="label">负责人</label>'
+    +         '<input id="ni-assignee" class="input" placeholder="指派谁(可空)"></div>'
+    +     '</div>'
+    +   '</div>'
+    +   '<div class="plan-modal-foot">'
+    +     '<span class="cv-foot-hint">新建的 issue 进未排期·未计划;创建后同步到 codehub。</span>'
+    +     '<div style="display:flex;gap:var(--space-2);">'
+    +       '<button class="btn btn-secondary" onclick="closeModal()">取消</button>'
+    +       '<button class="btn btn-primary" onclick="confirmNewIssue()">创建</button>'
+    +     '</div>'
+    +   '</div>'
+    + '</div></div>';
+}
+function confirmNewIssue(){
+  var title = document.getElementById('ni-title').value.trim();
+  if(!title){ alert('标题不能空'); return; }
+  var body = document.getElementById('ni-body').value.trim();
+  var cat = document.getElementById('ni-cat').value;
+  var assignee = document.getElementById('ni-assignee').value.trim();
+  var num = CARDS.reduce(function(m,c){return Math.max(m,c.num);},0)+1;
+  CARDS.push({
+    id:'i'+num, col:'Backlog', num:num, title:title, category:cat, kind:'业务活', origin:'人建',
+    week_of:'', version:'', metric_key:'', settled:false, pr_number:0, remote_number:num, branch:'',
+    body:body, can_start:true, assignee:assignee
+  });
+  closeModal();
+  toast('issue #'+num+' 已创建 · 负责人 '+(assignee||'(空)')+' · 已同步到 codehub');
+}
+
+function scheduleModal(){
+  var c = CARDS.find(function(x){return x.id===state.scheduleId;});
+  if(!c) return '';
+  var opts = '';
+  openWeeks().forEach(function(w){
+    var tag = w.current?'(本周)':(w.future?'(未来)':'');
+    opts += '<option value="week:'+w.week+'">周计划 · '+w.week+' '+tag+'</option>';
+  });
+  PROJECT.plan_versions.forEach(function(v){
+    opts += '<option value="version:'+v.name+'">版本 · '+v.name+'</option>';
+  });
+  return '<div class="modal-backdrop" onclick="if(event.target===this)closeModal()">'
+    + '<div class="modal" style="max-width:420px;">'
+    +   '<div class="plan-modal-title" style="font-size:16px;">'+icon('package',16)+' 排期 · #'+c.num+'</div>'
+    +   '<div style="font-size:13px;line-height:1.7;color:color-mix(in srgb,var(--color-text) 75%,transparent);">把这张未排期的活排进哪个未结束的周计划或版本。</div>'
+    +   '<div class="formrow"><label class="label">排进</label>'
+    +     '<select id="sched-sel" class="select">'+opts+'</select></div>'
+    +   '<div class="cfg-readonly-note">排进周计划 = 给它打周标签;排进版本 = 划归到自定义版本下。两者都让它从「未排期」变「已排期」。</div>'
+    +   '<div class="modal-actions">'
+    +     '<button class="btn btn-secondary" onclick="closeModal()">取消</button>'
+    +     '<button class="btn btn-primary" onclick="confirmSchedule()">确认 · 排期</button>'
+    +   '</div>'
+    + '</div></div>';
+}
+
+function confirmSchedule(){
+  var sel = document.getElementById('sched-sel').value;
+  var c = CARDS.find(function(x){return x.id===state.scheduleId;});
+  if(!c){ closeModal(); return; }
+  var parts = sel.split(':');
+  c.col='Todo';
+  if(parts[0]==='week'){ c.week_of=parts[1]; c.plan_version=''; }
+  else { c.plan_version=parts[1]; c.week_of=''; }
+  closeModal();
+}
+function createVersionModal(){
+  var unassigned = CARDS.filter(function(x){return x.col==='Backlog';});
+  var checks = unassigned.map(function(c){
+    return '<label class="check-row"><input type="checkbox" value="'+c.id+'"><span>#'+c.num+' '+esc(c.title)+'</span></label>';
+  }).join('') || '<div class="cfg-readonly-note">当前没有未排期的活可划归。</div>';
+  return '<div class="modal-backdrop" onclick="if(event.target===this)closeModal()">'
+    + '<div class="modal plan-modal" style="max-width:480px;">'
+    +   '<div class="plan-modal-head">'
+    +     '<div class="plan-modal-tag">自定义计划包</div>'
+    +     '<div class="plan-modal-title">'+icon('package',16)+' 创建版本</div>'
+    +     '<button class="plan-modal-x" onclick="closeModal()">'+icon('close',16)+'</button>'
+    +   '</div>'
+    +   '<div class="plan-modal-body cv-form">'
+    +     '<div class="formrow"><label class="label">版本名 <span class="asterisk">*</span></label>'
+    +       '<input id="cv-name" class="input" placeholder="例如 MVP收尾"></div>'
+    +     '<div class="formrow"><label class="label">时间</label>'
+    +       '<div class="cv-field-2">'
+    +         '<div><span class="sub">开始</span><input id="cv-start" class="input" type="date"></div>'
+    +         '<div><span class="sub">结束</span><input id="cv-end" class="input" type="date"></div>'
+    +       '</div></div>'
+    +     '<div class="formrow"><label class="label">说明</label>'
+    +       '<textarea id="cv-note" class="input" placeholder="这个版本要收口什么"></textarea></div>'
+    +     '<div class="formrow"><label class="label">划归的 issue</label>'
+    +       '<div class="check-list">'+checks+'</div></div>'
+    +   '</div>'
+    +   '<div class="plan-modal-foot">'
+    +     '<span class="cv-foot-hint">版本是自定义计划包,与发版号(如 v0.4)不是一回事。</span>'
+    +     '<div style="display:flex;gap:var(--space-2);">'
+    +       '<button class="btn btn-secondary" onclick="closeModal()">取消</button>'
+    +       '<button class="btn btn-primary" onclick="confirmCreateVersion()">创建</button>'
+    +     '</div>'
+    +   '</div>'
+    + '</div></div>';
+}
+function confirmCreateVersion(){
+  var name = document.getElementById('cv-name').value.trim();
+  if(!name){ alert('版本名不能空'); return; }
+  var note = document.getElementById('cv-note').value.trim();
+  var start = document.getElementById('cv-start').value;
+  var end = document.getElementById('cv-end').value;
+  var picked = [];
+  document.querySelectorAll('.check-list input[type=checkbox]:checked').forEach(function(cb){
+    picked.push(cb.value);
+  });
+  var v = { name:name, note:note, start:start, end:end, issues:picked };
+  PROJECT.plan_versions.push(v);
+  picked.forEach(function(id){
+    var c = CARDS.find(function(x){return x.id===id;});
+    if(c){ c.col='Todo'; c.plan_version=name; c.week_of=''; }
+  });
+  closeModal();
+}
+function closeModal(){ state.modal=null; state.scheduleId=null; state.startId=null; render(); }
+
+function render(){
+  document.getElementById('week-rail').innerHTML = weekRail();
+  document.getElementById('plan-mid').innerHTML = midBar();
+  var grid = document.getElementById('plan-grid');
+  grid.classList.remove('has-detail');
+  var old = grid.querySelector('.plan-detail');
+  if(old) old.remove();
+  document.getElementById('detail-slot').innerHTML = state.selId ? detail() : '';
+  var slot = document.getElementById('modal-slot');
+  if(state.modal==='schedule') slot.innerHTML = scheduleModal();
+  else if(state.modal==='createVersion') slot.innerHTML = createVersionModal();
+  else if(state.modal==='newIssue') slot.innerHTML = newIssueModal();
+  else if(state.modal==='start') slot.innerHTML = startModal();
+  else slot.innerHTML = '';
+  var sess = document.getElementById('session-slot');
+  if(sess) sess.innerHTML = state.screen==='session' ? sessionView() : '';
+  restoreListSearch();
+}
+
+function setView(v, week){ state.view=v; if(week) state.week=week; state.selId=null; render(); }
+function selectCard(id){ state.selId = id; render(); }
+
+hydrateStaticIcons();
+render();
+</script>
+</body>
+</html>

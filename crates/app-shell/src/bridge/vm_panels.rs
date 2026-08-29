@@ -11,13 +11,11 @@ use std::path::Path;
 
 use super::vm_build::{card_item, probe_env, remote_label, tool_label};
 
-/// 六列看板。
+/// 四列看板(合并后)。列内分段;段按原始状态算。
 ///
-/// **两条维度别混**:待办池是「排没排周」,其余五列是「干到哪一步」。
-///
-/// `week` 传 `None` = 左栏「全部」:没打周标签的未动手活进待办池,其余按状态。
-/// `week` 传某一周 = 只显示打了那一周 `bw:week` 的活。未排周不串进任何一周,
-/// 只在「全部」里找。
+/// `week` 传 `None` = 左栏「全部」:未排周的未动手活进待办列·未排期段,其余按状态。
+/// `week` 传某一周 = 只显示打了那一周 `bw:week` 的活;待办列只「待开始」段(已排期本周),
+/// 不显示未排期。版本(`bw:plan:*`)排期的活在「全部」里也算已排期。
 pub(super) fn build_board(
     issues: &[bw::Issue],
     week: Option<&str>,
@@ -32,76 +30,162 @@ pub(super) fn build_board(
         .as_ref()
         .map(|k| k.todo_label.clone())
         .unwrap_or_else(|| "待办 · 已排进本周,等开工".into());
+    let _ = (pool_label.as_str(), todo_label.as_str()); // 段文案沿用固定词,这两个留作回执/兼容
 
-    let in_week = |i: &&bw::Issue| match week {
+    let in_week = |i: &bw::Issue| match week {
         None => true,
-        Some(w) => i.week_of == w,
+        Some(w) => i.week_of == w || !i.plan_version.is_empty(),
     };
-    let untouched = |i: &&bw::Issue| matches!(i.status, IssueStatus::Backlog | IssueStatus::Todo);
+    // 已排期 = 排进了某一周或某个版本(任一非空)。未排期 = 都空。
+    let scheduled = |i: &bw::Issue| !i.week_of.is_empty() || !i.plan_version.is_empty();
+
+    // 待办列:未排期(Backlog 或 Todo 但 week_of/plan_version 都空,仅全部)
+    // + 已排期(Todo 且排进了周/版本)。周视图只已排期段,名「待开始」。
+    // 新建 issue 默认打 bw:status:todo 但 week_of 空 —— 它是 Todo 但未排期,
+    // 归未排期段,不能靠 status==Backlog 漏掉。
+    let backlog_cards: Vec<_> = issues
+        .iter()
+        .filter(|i| {
+            week.is_none()
+                && !scheduled(i)
+                && matches!(i.status, IssueStatus::Backlog | IssueStatus::Todo)
+        })
+        .map(card_item)
+        .collect();
+    let todo_cards: Vec<_> = issues
+        .iter()
+        .filter(|i| scheduled(i) && in_week(i) && i.status == IssueStatus::Todo)
+        .map(card_item)
+        .collect();
+    let todo_segs = if week.is_some() {
+        vec![ColumnSegVm {
+            key: "assigned".into(),
+            label: "待开始".into(),
+            statuses: vec![IssueStatus::Todo],
+            count: todo_cards.len() as u32,
+            cards: todo_cards.clone(),
+        }]
+    } else {
+        vec![
+            ColumnSegVm {
+                key: "unassigned".into(),
+                label: "未排期".into(),
+                statuses: vec![IssueStatus::Backlog, IssueStatus::Todo],
+                count: backlog_cards.len() as u32,
+                cards: backlog_cards.clone(),
+            },
+            ColumnSegVm {
+                key: "assigned".into(),
+                label: "已排期".into(),
+                statuses: vec![IssueStatus::Todo],
+                count: todo_cards.len() as u32,
+                cards: todo_cards.clone(),
+            },
+        ]
+    };
+    let todo_cards_all = {
+        let mut v = backlog_cards.clone();
+        v.extend(todo_cards.clone());
+        v
+    };
+
+    let doing_cards: Vec<_> = issues
+        .iter()
+        .filter(|i| in_week(i) && i.status == IssueStatus::InProgress)
+        .map(card_item)
+        .collect();
+    let review_cards: Vec<_> = issues
+        .iter()
+        .filter(|i| in_week(i) && i.status == IssueStatus::InReview)
+        .map(card_item)
+        .collect();
+    let blocked_cards: Vec<_> = issues
+        .iter()
+        .filter(|i| in_week(i) && i.status == IssueStatus::Blocked)
+        .map(card_item)
+        .collect();
+    let done_cards: Vec<_> = issues
+        .iter()
+        .filter(|i| in_week(i) && i.status == IssueStatus::Done)
+        .map(card_item)
+        .collect();
+    let cancelled_cards: Vec<_> = issues
+        .iter()
+        .filter(|i| in_week(i) && i.status == IssueStatus::Cancelled)
+        .map(card_item)
+        .collect();
+
+    let pending_all = {
+        let mut v = review_cards.clone();
+        v.extend(blocked_cards.clone());
+        v
+    };
+    let done_all = {
+        let mut v = done_cards.clone();
+        v.extend(cancelled_cards.clone());
+        v
+    };
+
     let columns = vec![
         ColumnVm {
-            status: IssueStatus::Backlog,
-            title: pool_label.clone(),
-            // 未排周只出现在「全部」。看某一周时这列空着。
-            cards: issues
-                .iter()
-                .filter(|i| week.is_none() && i.week_of.is_empty() && untouched(i))
-                .map(card_item)
-                .collect(),
-        },
-        ColumnVm {
             status: IssueStatus::Todo,
-            title: todo_label.clone(),
-            cards: issues
-                .iter()
-                .filter(|i| !i.week_of.is_empty() && in_week(i) && i.status == IssueStatus::Todo)
-                .map(card_item)
-                .collect(),
+            title: "待办".into(),
+            cards: todo_cards_all,
+            segments: todo_segs,
         },
         ColumnVm {
             status: IssueStatus::InProgress,
             title: "进行中".into(),
-            cards: issues
-                .iter()
-                .filter(|i| in_week(i) && i.status == IssueStatus::InProgress)
-                .map(card_item)
-                .collect(),
+            cards: doing_cards.clone(),
+            segments: vec![ColumnSegVm {
+                key: "doing".into(),
+                label: String::new(),
+                statuses: vec![IssueStatus::InProgress],
+                count: doing_cards.len() as u32,
+                cards: doing_cards.clone(),
+            }],
         },
         ColumnVm {
             status: IssueStatus::InReview,
-            title: "评审中".into(),
-            cards: issues
-                .iter()
-                .filter(|i| in_week(i) && i.status == IssueStatus::InReview)
-                .map(card_item)
-                .collect(),
+            title: "待处理".into(),
+            cards: pending_all,
+            segments: vec![
+                ColumnSegVm {
+                    key: "review".into(),
+                    label: "待评审".into(),
+                    statuses: vec![IssueStatus::InReview],
+                    count: review_cards.len() as u32,
+                    cards: review_cards.clone(),
+                },
+                ColumnSegVm {
+                    key: "blocked".into(),
+                    label: "阻塞".into(),
+                    statuses: vec![IssueStatus::Blocked],
+                    count: blocked_cards.len() as u32,
+                    cards: blocked_cards.clone(),
+                },
+            ],
         },
         ColumnVm {
             status: IssueStatus::Done,
             title: "已完成".into(),
-            cards: issues
-                .iter()
-                .filter(|i| in_week(i) && i.status == IssueStatus::Done)
-                .map(card_item)
-                .collect(),
-        },
-        ColumnVm {
-            status: IssueStatus::Blocked,
-            title: "阻塞".into(),
-            cards: issues
-                .iter()
-                .filter(|i| in_week(i) && i.status == IssueStatus::Blocked)
-                .map(card_item)
-                .collect(),
-        },
-        ColumnVm {
-            status: IssueStatus::Cancelled,
-            title: "已取消".into(),
-            cards: issues
-                .iter()
-                .filter(|i| in_week(i) && i.status == IssueStatus::Cancelled)
-                .map(card_item)
-                .collect(),
+            cards: done_all,
+            segments: vec![
+                ColumnSegVm {
+                    key: "done".into(),
+                    label: "完成".into(),
+                    statuses: vec![IssueStatus::Done],
+                    count: done_cards.len() as u32,
+                    cards: done_cards.clone(),
+                },
+                ColumnSegVm {
+                    key: "cancelled".into(),
+                    label: "拒绝".into(),
+                    statuses: vec![IssueStatus::Cancelled],
+                    count: cancelled_cards.len() as u32,
+                    cards: cancelled_cards.clone(),
+                },
+            ],
         },
     ];
     BoardVm {

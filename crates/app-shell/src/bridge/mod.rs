@@ -147,6 +147,7 @@ pub enum Req {
         conversation_id: bw::model::ConversationId,
     },
     /// 配置屏亮某一行技能(从活上的 workflow 跳过来)。
+    #[allow(dead_code)]
     FocusSkill(String),
 }
 
