@@ -1,7 +1,11 @@
 # STATUS
 
-**in_spec_gate**(2026-08-29,分支 claude/bw-dir-split,承载活 [#133](https://github.com/forcegravity1989/builder-workbench/issues/133),未 push)
+**accepted**(意图已由发起人拍板;**规格在 gate**。2026-08-29,分支 claude/bw-dir-split,承载活 [#133](https://github.com/forcegravity1989/builder-workbench/issues/133),未 push)
 
-- 2026-08-29 · 发起人两句定向(「给人看的、给 agent 看的,用目录隔离」「去冗留真」,上游是同日对 `.bw/` 五份文件的谁读谁写审计)→ 产物链(intent / spec / plan / prototype)成文,**未动任何代码与 `.bw/` 实物**。
-- 2026-08-29 · 发起人点名过程缺口(产物链没走活承载)→ 补建活 #133(标签词表 `bw:status:inprogress` / `bw:week:2026-W35` / `bw:category:build` 三枚首次真实落 GitHub 仓)+ 「先建活」成文进 02 §6 与 AGENTS.md 起手路径(同分支 commit)。
-- 待人拍:spec 整体 + 三个未决问题(名片「规范 vX」的数据源;VERSION 升 6.0 还是 5.11;plan/ 与 releases.md 本批不动)。认可即按 plan 批次施工,MR 挂活 #133。
+- 2026-08-29 · 发起人两句定向(「给人看的、给 agent 看的,用目录隔离」「去冗留真」,上游是同日对 `.bw/` 五份文件的谁读谁写审计)→ 产物链成文,**未动任何代码与 `.bw/` 实物**。
+- 2026-08-29 · 发起人点名过程缺口(产物链没走活承载)→ 补建活 #133(标签词表三枚首次真实落 GitHub 仓)+「先建活」成文进 02 §6 与 AGENTS.md 起手路径。
+- 2026-08-29 · 发起人下令对抗式多轮审查。**三轮收敛,共 45 条发现,拦门 15 条全部折入,零条驳回后翻案**:
+  - **轮一(主会话架构评审,F1-F7/P1-P4)**:拦门 4——config/ 不变量被 `save_tool_mapping` 直写证伪(→写权硬规则+指纹同步)、目录承诺无守卫(→R6)、「规范 vX」取 max 是弱化镜像谎(→对账摘要)、迁移敞口未验(→pre-flight);建议 7 条同批折入。commit f151eb2。
+  - **轮二(三名独立评审员:架构 A1-A18 / 原则合规 B1-B7 / 迁移验收 C1-C9,拦门项经主会话逐条复核证据后采纳)**:最重的五刀——standard.toml 其实有活消费者(ops③ 判据 `vm_derive.rs:49`,删除须换锚点);本仓在管件实测全是「人改过」,R5「全 UpToDate」只能靠盖假章达成(→对账不许修饰);VERSION 与路径翻转拆开必出对账错乱中间态(→并入 commit 2);指纹同步会在主检出凭空造半份清单(→清单不存在不建不同步);「boot 提议铺底」在代码里不存在(→迁移口径按代码事实重写)。另:三处版本显示(不止名片)、R6 白名单漏两模块、pre-flight 漏 BW_DB/APPDATA/Linux 分支、原型自相矛盾、飞轮三问只答一问、STATUS 用了枚举外状态值、architecture.md §2 的 deny_unknown_fields 句是文档谎(随 commit 4 修)等,全部折入。
+  - **轮三(主会话复核收敛)**:拦门项证据逐条亲手验证(grep/哈希/读代码),34 条中采纳 30、放过 4(A18/C6/C8 属顺手项已归批次;B7 词表登记归 commit 4);最终版三件套重写。
+- **待人拍(规格 gate)**:spec 整体;评审拍定项如需推翻,重点三处——对账摘要口径(§4)、写权硬规则与指纹同步细则(§1)、合入序(§8)。认可即按 plan 五 commit 施工,MR 挂活 #133。
