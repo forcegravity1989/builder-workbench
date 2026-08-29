@@ -430,11 +430,10 @@ pub fn spawn(deep_link: DeepLink) -> Bridge {
                 };
                 let _ = std::fs::create_dir_all(&root);
                 // Orca 网页配对 URL 也是本机设置(带 token,只在本地)。读一次进
-                // ui,会话屏所属 wry 窗打开它;设置屏改了走 OrcaWebUrlChanged 刷新。
+                // ui,会话屏 iframe 打开它;设置屏改了走 OrcaWebUrlChanged 刷新。
                 let orca_web_url = Settings::get_orca_web_url(&assets).unwrap_or_default();
-                // 桌面壳里 ▶跑 起的是真的 claude,挂在内嵌终端里,人全程看得
-                // 见、随时能停。指挥器那条路仍然走自我标注的替身 —— 它没有界
-                // 面渲染字节流。
+                // 桌面壳里 ▶跑 打 Orca 本地 pipe,过程看会话屏 iframe。指挥器
+                // 那条路仍然走自我标注的替身 —— 它没有界面渲染字节流。
                 let mut app = App::new(
                     root.clone(),
                     Arc::new(bw_engine::InteractiveCliExecutor::new()),
@@ -804,11 +803,8 @@ pub fn spawn(deep_link: DeepLink) -> Bridge {
                             }
                         }
                         Req::SelectSession(id) => {
-                            // 点一张有会话行的活 = 在 Orca 里接回那场对话(ensureAgentSession)。
-                            // 有会话行就 dispatch —— sid 空也走,reopen_session 会从这棵 worktree
-                            // 的 Claude jsonl 收 id;收不到返回没 live、不编 id、不 ensure。PTY 已
-                            // 封存,不查 live;Orca ensure 幂等(已开着 tab 会 adopted)。没会话行不发
-                            // (让人点▶开工),所以先看有没有会话行再决定发不发。
+                            // 点一张有会话行的活 = 去会话:先切到那棵树,有 Claude id 再尽量
+                            // 点回那条 tab。没会话行不发(让人点▶开工)。
                             if let Some(iid) = id {
                                 let has_conv = app
                                     .conversation_for_issue(iid)
@@ -821,7 +817,7 @@ pub fn spawn(deep_link: DeepLink) -> Bridge {
                                         .dispatch(Command::ReopenSession { issue_id: iid })
                                         .await
                                     {
-                                        ui.set_note(Some(format!("接不回上次那场会话:{e}")));
+                                        ui.set_note(Some(format!("去会话没成:{e}")));
                                     }
                                 }
                             }

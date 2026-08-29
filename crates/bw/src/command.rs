@@ -64,10 +64,10 @@ pub enum Command {
     /// 把一个项目从工作台上移走。**只动库,不动仓** —— 仓是正本,里面是真实
     /// 的劳动成果。界面上要人点两下才发得出这条(第一下问「真移走?」)。
     RemoveProject { project_id: ProjectId },
-    /// 把这张活上次那场会话接回来看看(`claude --resume <id>`)。
+    /// 去会话:把 Orca 切到这张活的树。有 Claude session id 再尽量点回那条 tab。
     ///
-    /// **不改活的状态、不发任何 prompt** —— 纯粹是「让我看看上次聊到哪了」。
-    /// 和 ▶开工 的区别就在这:▶开工 会把活推到「进行中」,这条不会。
+    /// **不改活的状态、不发任何 prompt** —— 切树成功就算成功。和 ▶开工 的
+    /// 区别:▶开工 会把活推到「进行中」,这条不会。
     ReopenSession { issue_id: IssueId },
     /// 纯读:按「缺 / 过期 / 人改过 / 一致」四类对账,不建活不写仓。
     ReconcileStandard { project_id: ProjectId },
@@ -151,7 +151,7 @@ pub enum Command {
     /// 只影响**之后**接入的项目:已接入的项目行里各自记着自己的仓路径,不会被这
     /// 一改牵着走(不然改一下根目录,已有项目就集体找不到仓了)。
     SetWorkspacesRoot { path: String },
-    /// 改「Orca 网页地址」——会话屏所属 wry 窗打开的那条配对 URL(带 token)。
+    /// 改「Orca 网页地址」——会话屏 iframe 打开的那条配对 URL(带 token)。
     /// **只存本机 `settings.toml`,不进仓** —— 是这台机器看 Orca web 的事。
     /// `BW_ORCA_WEB_URL` 仍可覆盖(开发期)。空串 = 清掉。
     SetOrcaWebUrl { url: String },

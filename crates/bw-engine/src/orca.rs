@@ -10,13 +10,14 @@
 //! 加超时(学 [`crate::open_design`]);`#![forbid(unsafe_code)]` 仍守,Windows 命名
 //! 管道用 `OpenOptions` 加 `share_mode`,不走 unsafe。
 //!
-//! 接口一次定住(四个函数),不跟着穿刺脚本改形状。create 不回 Claude session id
-//! (Orca 只回自己的 `terminal.handle`),所以 buddy 不编 id —— 有 id 走 ensure,
-//! 没有 让下次 create(见 `app::issue::run_issue` / `app::session::reopen_session`)。
+//! 接口一次定住,不跟着穿刺脚本改形状。create 不回 Claude session id
+//! (Orca 只回自己的 `terminal.handle`),所以 buddy 不编 id —— 再开工有
+//! Claude id 走 ensure,没有就 create;去会话一律先切树,有 id 再尽量
+//! ensure(见 `app::issue::run_issue` / `app::session::reopen_session`)。
 //! web 配对码 buddy 自己拿不到(Orca 只在桌面 IPC / `orca serve` 里发,
-//! 没开本地 pipe 的 RPC),由人从 Orca 桌面「给 web 配对」拿到 URL 塞进
-//! `BW_ORCA_WEB_URL` 一次 —— 抄 OD 的 `BW_OPEN_DESIGN_URL` 那条;本机 pipe 的开工
-//! (create/ensure)不靠 pairing,靠 runtime.json 的 authToken,不受这个 env 影响。
+//! 没开本地 pipe 的 RPC),由人从 Orca 桌面「给 web 配对」拿到 URL 贴进
+//! 设置屏或 `BW_ORCA_WEB_URL`;本机 pipe 的开工不靠 pairing,靠
+//! runtime.json 的 authToken。
 
 use std::io::{Read, Write};
 use std::path::Path;
@@ -24,8 +25,12 @@ use std::time::{Duration, Instant};
 
 use serde_json::{json, Value};
 
-/// 创建/接回会话的超时(create 本身要起一个 agent,穿刺 20–45s)。
+/// 创建/再开工 ensure 的超时(create 本身要起一个 agent,穿刺 20–45s)。
 const RPC_TIMEOUT: Duration = Duration::from_secs(45);
+/// 切树不该等 agent 拉起。官方包偶发慢回,12s 内没切过去就报,别空等 45s。
+const ACTIVATE_TIMEOUT: Duration = Duration::from_secs(12);
+/// 去会话点回那条 tab 是加分项。短等即可;失败仍算跳成功(树已经在)。
+const REVEAL_ENSURE_TIMEOUT: Duration = Duration::from_secs(4);
 
 #[derive(Debug, thiserror::Error)]
 pub enum OrcaError {
@@ -111,14 +116,73 @@ pub fn connect() -> Result<OrcaRuntime, OrcaError> {
     })
 }
 
-/// 把一张已有会话在 Orca 桌面里点出来(焦点落到那条 agent tab)。`session_id`
-/// 是 Claude jsonl 的 session id(会话行里记的),Orca 要显式指定 —— 它不会按
-/// worktree+agent 自己找。没 id 就别调这条(走 [`create_session`] 开新会话)。
+/// Orca `terminal.ensureAgentSession` 的 agent 枚举只收可 resume 的 TUI
+/// (`claude` / `codex` / …)。buddy 会发出去的只有 `claude` 和 `cursor`;
+/// **`cursor` 不在名单里**,硬打 ensure 会被 Zod 拒成
+/// `invalid_argument · Invalid input`。Cursor 接回改走 [`activate_worktree`]。
+/// create 的预设名也是 `cursor`,不是二进制名 `cursor-agent`。
+pub fn agent_supports_ensure(agent: &str) -> bool {
+    matches!(agent, "claude")
+}
+
+/// 再开工接回上一场。Claude 走 `ensureAgentSession`(resume + focused);
+/// Cursor 等不能 resume 的只 [`activate_worktree`]。去会话请走 [`reveal_tree`]:
+/// 那边先切树,ensure 失败不算跳失败。
+pub async fn focus_session(
+    rt: &OrcaRuntime,
+    worktree: &Path,
+    agent: &str,
+    session_id: &str,
+) -> Result<(), OrcaError> {
+    if agent_supports_ensure(agent) {
+        ensure_session(rt, worktree, agent, session_id).await
+    } else {
+        activate_worktree(rt, worktree).await
+    }
+}
+
+/// 去会话:先把 Orca 切到这棵树。有 Claude session id 再尽量点回那条 tab。
+/// **切树成功就算成功**——树上有几扇窗、是否正好落到 issue 那条,是其次。
+/// ensure 失败或超时只打日志,不把整次跳转打成失败。
+pub async fn reveal_tree(
+    rt: &OrcaRuntime,
+    worktree: &Path,
+    session_id: &str,
+) -> Result<(), OrcaError> {
+    activate_worktree(rt, worktree).await?;
+    if session_id.is_empty() {
+        return Ok(());
+    }
+    if let Err(e) =
+        ensure_session_timed(rt, worktree, "claude", session_id, REVEAL_ENSURE_TIMEOUT).await
+    {
+        eprintln!(
+            "[BW_ORCA] 树已切过去,点回那条会话没跟上:{e} · {} · worktree={}",
+            rt.log_tag(),
+            worktree.display()
+        );
+    }
+    Ok(())
+}
+
+/// 把一张已有 Claude 会话在 Orca 桌面里点出来(焦点落到那条 agent tab)。
+/// `session_id` 是 Claude jsonl 的 session id(会话行里记的),Orca 要显式指定
+/// —— 它不会按 worktree+agent 自己找。没 id 就别调这条(走 [`create_session`])。
 pub async fn ensure_session(
     rt: &OrcaRuntime,
     worktree: &Path,
     agent: &str,
     session_id: &str,
+) -> Result<(), OrcaError> {
+    ensure_session_timed(rt, worktree, agent, session_id, RPC_TIMEOUT).await
+}
+
+async fn ensure_session_timed(
+    rt: &OrcaRuntime,
+    worktree: &Path,
+    agent: &str,
+    session_id: &str,
+    timeout: Duration,
 ) -> Result<(), OrcaError> {
     let params = json!({
         "kind": "explicit",
@@ -127,8 +191,19 @@ pub async fn ensure_session(
         "providerSession": { "key": "session_id", "id": session_id },
         "presentation": "focused",
     });
-    let frame = call(rt, "terminal.ensureAgentSession", params, RPC_TIMEOUT).await?;
+    let frame = call(rt, "terminal.ensureAgentSession", params, timeout).await?;
     require_ok(&frame, "terminal.ensureAgentSession")
+}
+
+/// 把配对网页 / 桌面切到这棵 worktree。不 resume agent。去会话必走;
+/// Cursor 的 ▶开工 接回也走这条(Orca 不支持 `cursor` 的 ensure)。
+pub async fn activate_worktree(rt: &OrcaRuntime, worktree: &Path) -> Result<(), OrcaError> {
+    let params = json!({
+        "worktree": path_prefixed(worktree),
+        "notifyClients": true,
+    });
+    let frame = call(rt, "worktree.activate", params, ACTIVATE_TIMEOUT).await?;
+    require_ok(&frame, "worktree.activate")
 }
 
 /// 在 Orca 里给这张活开一场新会话并把首条用户话发出去。`prompt` 是用户话
@@ -138,7 +213,8 @@ pub async fn ensure_session(
 /// 传 focused。**调用方不要自己拼 flag** —— 内部按 agent 分流:
 /// - Claude:`agentArgs = --append-system-prompt '<system>'`(必须加引号,否则
 ///   Orca 拆 token 后只剩 You 进系统提示词,后半截被当用户话发出 —— 穿刺踩过)。
-/// - Cursor(cursor-agent):没有系统提示词开关,把 system 拼在 prompt 最前面。
+/// - Cursor(`cursor` 预设,二进制才是 cursor-agent):没有系统提示词开关,
+///   把 system 拼在 prompt 最前面。
 pub async fn create_session(
     rt: &OrcaRuntime,
     worktree: &Path,
@@ -162,7 +238,7 @@ pub async fn create_session(
     require_ok(&frame, "terminal.createAgentSession")
 }
 
-/// 给会话屏所属 wry 窗的 loopback。**不依赖 `connect()`** —— 人把安装版
+/// 给会话屏 iframe 的 loopback。**不依赖 `connect()`** —— 人把安装版
 /// 「给 web 配对」的完整 URL 贴进设置屏(存本机 `settings.toml`),或开发期
 /// 塞 `BW_ORCA_WEB_URL` 覆盖;启动 buddy 后原样打开。**先 env 后 `fallback`**
 /// (fallback 是壳从本机设置读出来喂进来的),都只过 `looks_loopback_http`,
@@ -178,9 +254,8 @@ pub fn web_embed_url(fallback: Option<&str>) -> Option<String> {
     Some(pairing_as_query(trimmed))
 }
 
-/// WebView2 的 `load_url` 会丢掉 `#fragment`。配对码在 hash 里就签不上,
-/// 嵌页只是一张未配对的 Orca web,pipe 开工了它也不跟。Orca 自己认
-/// `?pairing=`(和 `#pairing=` 同一套读法),只搬家不改 code。
+/// WebView2 部分导航会丢 `#fragment`。配对码只在 hash 里就签不上。
+/// Orca 认 `?pairing=`(和 `#pairing=` 同一套读法),只搬家不改 code。
 fn pairing_as_query(url: &str) -> String {
     let Some((base, frag)) = url.split_once('#') else {
         return url.to_string();
@@ -338,7 +413,7 @@ fn looks_session_id(stem: &str) -> bool {
 
 /// 按 agent 分流:返回 (真正发出去的 prompt, agentArgs 字符串)。
 fn split_prompt_and_args(agent: &str, prompt: &str, system: &str) -> (String, String) {
-    if agent == "cursor-agent" {
+    if agent == "cursor" {
         // Cursor 没有系统提示词开关 —— 把 system 拼在 prompt 最前面。
         let combined = if system.is_empty() {
             prompt.to_string()
@@ -447,7 +522,11 @@ fn send_recv(
         .write_all(line.as_bytes())
         .map_err(|e| OrcaError::Connect(format!("写 pipe 没成:{e}")))?;
     let _ = stream.flush();
-    let mut buf = String::new();
+    // 按字节 b'\n' 切行、再整行 from_slice 解析 —— 不在每次读上做 from_utf8_lossy:
+    // 多字节 UTF-8 被一次 8K 读的边界劈开时,lossy 会把残缺字节换成 U+FFFD 永久进
+    // 缓冲,整行 JSON 坏掉、命中的回包被跳过 → BadFrame/Timeout。b'\n'(0x0A) 在
+    // UTF-8 里绝不会作为续接字节出现,按字节切行不会劈开多字节字符。
+    let mut buf: Vec<u8> = Vec::new();
     let mut chunk = [0u8; 8192];
     loop {
         if Instant::now() >= deadline {
@@ -459,15 +538,15 @@ fn send_recv(
         if n == 0 {
             break; // pipe 关了
         }
-        buf.push_str(&String::from_utf8_lossy(&chunk[..n]));
+        buf.extend_from_slice(&chunk[..n]);
         // 把已经完整的行逐条取出来解析。
-        while let Some(nl) = buf.find('\n') {
-            let raw = buf[..nl].trim().to_string();
-            buf = buf[nl + 1..].to_string();
-            if raw.is_empty() {
+        while let Some(pos) = buf.iter().position(|&b| b == b'\n') {
+            let line: Vec<u8> = buf.drain(..pos).collect(); // 行字节(不含 \n)
+            buf.drain(..1); // 丢掉那个 \n
+            if line.iter().all(|&b| b.is_ascii_whitespace()) {
                 continue;
             }
-            let v: Value = match serde_json::from_str(&raw) {
+            let v: Value = match serde_json::from_slice(&line) {
                 Ok(v) => v,
                 Err(_) => continue,
             };
@@ -556,7 +635,10 @@ fn open_duplex(path: &str) -> Option<std::os::unix::net::UnixStream> {
 
 #[cfg(test)]
 mod tests {
-    use super::{claude_project_slug, client_operation_id, looks_session_id, pairing_as_query};
+    use super::{
+        agent_supports_ensure, claude_project_slug, client_operation_id, looks_session_id,
+        pairing_as_query, split_prompt_and_args,
+    };
     use std::path::Path;
 
     #[test]
@@ -582,6 +664,23 @@ mod tests {
         assert_eq!(id.as_bytes()[13], b'-');
         assert!(id[..13].chars().all(|c| c.is_ascii_digit()));
         assert!(id[14..].chars().all(|c| matches!(c, '0'..='9' | 'a'..='f')));
+    }
+
+    #[test]
+    fn cursor_agent_cannot_ensure_claude_can() {
+        assert!(agent_supports_ensure("claude"));
+        assert!(!agent_supports_ensure("cursor"));
+        assert!(!agent_supports_ensure(""));
+    }
+
+    #[test]
+    fn cursor_preset_splices_system_into_prompt() {
+        let (prompt, args) = split_prompt_and_args("cursor", "do the work", "You are buddy.");
+        assert_eq!(prompt, "You are buddy.\n\ndo the work");
+        assert!(args.is_empty());
+        let (p2, a2) = split_prompt_and_args("claude", "do the work", "You are buddy.");
+        assert_eq!(p2, "do the work");
+        assert!(a2.contains("--append-system-prompt"));
     }
 
     #[test]

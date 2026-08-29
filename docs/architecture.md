@@ -124,27 +124,29 @@ references(`standard/system-prompt/references/*.md`)是「干某类活需要额�
 
 ### 7 · 会话与执行
 
-**是什么**:会话屏只剩两个组件——**Orca**、**Open Design**。旧三栏和后来加上的动作条、灌词条都不要:停止 / 开 MR / 推评审 / 删会话在 Orca 里做,或在计划屏拖列;buddy 也不知道人在 Orca 里点了哪条会话,灌词条对着「当前会话」会骗人。开工入口在**计划屏**(拖进「进行中」或详情 ▶开工),同一条 `run_issue`:开/复用 worktree,打 Orca 本地 pipe(`createAgentSession` / 有 id 则 `ensureAgentSession`),铁律挂启动参数(Cursor 拼进用户话)。会话屏只是把本机已开的 Orca web / OD 嵌进来给人看。完成仍由人点(计划屏拖进已完成 / 合入)。
+**是什么**:会话屏只剩两个组件——**Orca**、**Open Design**。旧三栏和后来加上的动作条、灌词条都不要:停止 / 开 MR / 推评审 / 删会话在 Orca 里做,或在计划屏拖列;buddy 也不知道人在 Orca 里点了哪条会话,灌词条对着「当前会话」会骗人。开工入口在**计划屏**(拖进「进行中」或详情 ▶开工),同一条 `run_issue`:开/复用 worktree,打 Orca 本地 pipe(`createAgentSession`;Claude 有 session id 则 `ensureAgentSession`,Cursor 接回只 `worktree.activate`),铁律挂启动参数(Cursor 拼进用户话)。**去会话**先 `worktree.activate` 切到这张活的树,有 Claude session id 再尽量 ensure 那条 tab;切树成功就算成功,树上有几扇窗、是否正好落到 issue 那条是其次。会话屏只是把本机已开的 Orca web / OD 嵌进来给人看。完成仍由人点(计划屏拖进已完成 / 合入)。
 
 **两条通道别混**:本地 pipe 是 buddy 对 Orca 桌面下命令(开工、接回),同机读 `orca-runtime.json` 的 token,不需要配对。嵌网页是把本机已开的 Orca web 给人看,要带 `#pairing=` 才能看见桌面那份状态;配对码 Orca 不经 pipe 发,人从桌面「给 web 配对」拿完整 URL,贴进本机 `settings.toml`(设置屏可改;开发期 `BW_ORCA_WEB_URL` 可覆盖)。没喂 URL 则这块如实空着,开工不受影响。
 
-**网页跟随是 Orca 内核,不是 buddy 第二条 RPC。** pipe 打 `ensureAgentSession` / `createAgentSession`(`presentation: focused`)成功后,带这刀的 Orca 把已配对网页推到同一棵树、同一条 TUI;官方安装包今天没有这刀,开工和桌面切换仍成立,嵌进去的网页停在旧位置,人要点侧栏。buddy 不绕 URL / postMessage。源码桌面+浏览器已人眼过;buddy 所属窗里正式验还没走。
+**网页跟随是 Orca 内核,不是 buddy 第二条 RPC。** pipe 打 `ensureAgentSession` / `createAgentSession`(`presentation: focused`)成功后,带这刀的 Orca 把已配对网页推到同一棵树、同一条 TUI;官方安装包今天没有这刀,开工和桌面切换仍成立,嵌进去的网页停在旧位置,人要点侧栏。buddy 不绕 URL / postMessage。源码桌面+浏览器已人眼过;buddy 会话屏 iframe **能亮**已人验(Claude 开工/接回、Cursor 开工),iframe 里网页是否跟着滚到那条会话还没正式走完。
 
-**Orca 为什么不是 iframe、也不是同窗子控件**:三条路人对过都死。(1) Dioxus 桌面壳把主 WebView 里任何 `http://`/`https://` 导航扔给系统浏览器并禁止页内跳转——顶级 `load_url` 会白屏、内容跑到浏览器。(2) 同一张 pairing 页,Chromium iframe 能亮,WebView2 iframe(含把 OD 页签的 src 换成 Orca)是白的。(3) 在主 HWND 上再 `build_as_child` 一枚 wry,被铺满窗口的 WebView2 盖住,人看不见。剩下能亮的只有**另一扇顶级 wry 窗**自己 `with_url`。它挂成主窗的所属窗(跟着最小化、不另占任务栏、只压在 buddy 上面不压别的应用),对齐 `#orca-host` 的屏幕格子。看起来像嵌进中栏,操作系统里仍是第二扇窗——不是 DOM 里的一块。Open Design 仍是 iframe。
+**嵌网页走 iframe**(Orca 和 Open Design 同一条路)。新版 Orca SPA boot 调 `crypto.randomUUID()`,只在 Secure Context 有。buddy 父页是 `http://dioxus.index.html`(dioxus 虚拟主机,非 localhost / 非 https),默认不算 secure,子 iframe 跟着不算 → SPA 一抛、纯白。旧版 Orca 不调这个 API,所以一度能嵌。Windows 主 WebView 用 `with_windows_browser_args` 把该 origin 当 secure 对待(`--unsafely-treat-insecure-origin-as-secure=http://dioxus.index.html`),并关掉 `LocalNetworkAccessChecks`(iframe 嵌 loopback)。不另开顶级 wry 窗、不 `build_as_child`。顶级 `load_url` 仍会把 `http(s)` 扔给系统浏览器,所以嵌页必须是 iframe,不能把主 WebView 导航到 pairing URL。
 
 **新 worktree**:`issue_worktree_path` 只写 `<仓根>/.bw/worktrees/issue-<n>`,分支仍 `bw/issue-<n>`。目录忽略提交(本仓 `.gitignore` 已写;被管仓铺底或开工时补 `.bw/worktrees/`,没有才补,不改人别的 ignore 规则)。**旧平级兄弟不迁、不删**;接回时先看会话记下的路径,没有再看新目录,再没有才看旧兄弟。账本 worktree 这版不动。
 
-**PTY 封存**:`interactive_cli` / `pty_backend` / `terminal_manager` 整包挪到 `bw-engine` 的 `legacy_pty/`,开工路径不再调用。新模块 `orca`(对标 `open_design.rs`)接口一次定住,不跟着穿刺脚本改形状:
+**PTY 封存**:`interactive_cli` / `pty_backend` / `terminal_manager` 整包挪到 `bw-engine` 的 `legacy_pty/`,开工路径不再调用。新模块 `orca`(对标 `open_design.rs`)接口一次定住:
 
 - `connect() -> OrcaRuntime` — 读本机 `orca-runtime.json`,token 不落盘
-- `ensure_session(worktree, agent, session_id)`
-- `create_session(worktree, agent, prompt, system)` — 内部按代理填 `agentArgs` 或把 system 拼进 prompt;`clientOperationId` 用 Orca 规定形状(13 位毫秒 + `-` + 32 hex,不是 RPC 帧 id),形状不对立刻 `agent_session_operation_invalid` 被拒
-- `web_embed_url(fallback)` — 给会话屏所属 wry 窗的 loopback;先 `BW_ORCA_WEB_URL` 后本机设置。WebView2 `load_url` 会丢 fragment,把 `#pairing=` 搬成 `?pairing=`(Orca 两边都认,只搬家不 mint code)
+- `ensure_session(worktree, agent, session_id)` — 只给 Orca 能 resume 的 agent(`claude`);`cursor` 不在 ensure 枚举里,硬打会被拒成 `invalid_argument`
+- `focus_session` — ▶开工 接回上一场:Claude 走 ensure;Cursor 走 `worktree.activate`
+- `reveal_tree` — 去会话:先 `worktree.activate`(12s);有 Claude session id 再短等 ensure(4s),失败只打日志。切树成功就算成功
+- `create_session(worktree, agent, prompt, system)` — Orca 预设名是 `claude` / `cursor`(`cursor-agent` 是启动二进制,打出去会被 `Unknown agent preset` 拒);内部按代理填 `agentArgs` 或把 system 拼进 prompt;`clientOperationId` 用 Orca 规定形状(13 位毫秒 + `-` + 32 hex,不是 RPC 帧 id),形状不对立刻 `agent_session_operation_invalid` 被拒。create 成功后只给 Claude 短等 jsonl 收 session id;Cursor 不等
+- `web_embed_url(fallback)` — 给会话屏 iframe 的 loopback;先 `BW_ORCA_WEB_URL` 后本机设置。WebView2 部分导航会丢 fragment,把 `#pairing=` 搬成 `?pairing=`(Orca 两边都认,只搬家不 mint code)
 
-**代码**:会话屏 `app-shell/screens/session/mod.rs`(只剩 Orca/OD 两页签);开工在计划屏 → `run_issue` / `run_issue_orca`;路径 `bw-engine/workspace.rs`;Orca 客户端 `bw-engine/orca.rs`;PTY 封存 `bw-engine/legacy_pty/`。穿刺 [`docs/orca-session-puncture.md`](orca-session-puncture.md)。
+**代码**:会话屏 `app-shell/screens/session/mod.rs`(只剩 Orca/OD 两页签);开工在计划屏 → `run_issue` / `run_issue_orca`;路径 `bw-engine/workspace.rs`;Orca 客户端 `bw-engine/orca.rs`;PTY 封存 `bw-engine/legacy_pty/`。
 **数据**:issue 正本不变。会话正文不进 buddy 库。token 不入库。worktree 目录不入库。系统提示词开工时现算、一次性灌进 Orca/OD,不落配置屏、不跟会话屏当前页签走。
-**依赖**:本机 Orca(官方包或源码桌面)+ named-pipe;会话屏所属 wry 窗吃本机设置里的 pairing URL(开发期可被 `BW_ORCA_WEB_URL` 覆盖)。`#![forbid(unsafe_code)]` 仍守。
-**没建**:不能自己 mint 配对码,人从 Orca 桌面「给 web 配对」拿「Open in browser」贴进设置屏(存本机 `settings.toml`,带 token 不进仓 / Event 原文 / 日志);开发期 `BW_ORCA_WEB_URL` 可覆盖。跟随在带这刀的 Orca 里已兑现、官方包还没有;buddy 嵌窗正式验未走。稿未改。账本路径未改。不做:自己 mint pairing、postMessage、会话 URL、新 crate、Cursor 专模块、Orca 里代登记仓、`worktree-orca-adapter`、迁旧树、源码版与安装版并行。
+**依赖**:本机 Orca(官方包或源码桌面)+ named-pipe;会话屏 iframe 吃本机设置里的 pairing URL(开发期可被 `BW_ORCA_WEB_URL` 覆盖)。`#![forbid(unsafe_code)]` 仍守。
+**没建**:不能自己 mint 配对码,人从 Orca 桌面「给 web 配对」拿「Open in browser」贴进设置屏(存本机 `settings.toml`,带 token 不进仓 / Event 原文 / 日志);开发期 `BW_ORCA_WEB_URL` 可覆盖。跟随在带这刀的 Orca 里已兑现、官方包还没有;buddy iframe 能亮已人验,嵌页自动跟到那条会话未闭环。去会话已闭环到「至少到树」。`DeleteSession` 内核还在,会话屏没有按钮。稿未改。账本路径未改。不做:自己 mint pairing、postMessage、会话 URL、新 crate、Cursor 专模块、Orca 里代登记仓、`worktree-orca-adapter`、迁旧树、源码版与安装版并行。
 
 ### 8 · 远端与工具探活
 
