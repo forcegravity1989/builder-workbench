@@ -109,7 +109,6 @@ fn panel_icon(p: Panel) -> &'static str {
         Panel::Overview => "overview",
         Panel::Plan => "plan",
         Panel::Session => "session",
-        Panel::Notify => "notify",
         Panel::Config => "config",
         Panel::Kb => "space",
     }
@@ -174,6 +173,12 @@ pub fn ProjectRail(
                 div { class: "pr-head-meta",
                     span { "{version}" }
                     {light_dot(signal, false)}
+                    // 未读徽章:评审中的活有几张。原挂在已删的通知页签上
+                    // (ADR-0002),挪到项目轨头部——它是项目级属性,不该绑在
+                    // 某个页签上。个人弹窗落地后再看它的角色。
+                    if unread > 0 {
+                        span { class: "pr-badge", title: "评审中的活有几张", "{unread}" }
+                    }
                 }
             }
             nav { class: "pr-nav",
@@ -184,9 +189,6 @@ pub fn ProjectRail(
                         onclick: move |_| on_nav.call(p),
                         span { style: "width:15px;height:15px;display:flex;", {icon(panel_icon(p))} }
                         span { "{p.label()}" }
-                        if p == Panel::Notify && unread > 0 {
-                            span { class: "pr-badge", "{unread}" }
-                        }
                     }
                 }
             }

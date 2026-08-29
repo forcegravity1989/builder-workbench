@@ -342,15 +342,6 @@ impl App {
         });
         Ok(events)
     }
-
-    pub(super) async fn mark_notify_seen(
-        &mut self,
-        project_id: ProjectId,
-        at: i64,
-    ) -> Result<Vec<Event>> {
-        self.set_notify_seen(project_id, at).await?;
-        Ok(vec![Event::NotifySeenMarked { project_id }])
-    }
 }
 
 /// 名片上「项目群」那一行怎么写。没配就如实说没配。
