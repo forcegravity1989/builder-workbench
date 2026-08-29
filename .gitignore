@@ -36,3 +36,7 @@ docs/guide/img/
 # superpowers 插件本地工作目录
 /.superpowers/
 evidence-v4-*.json
+
+# 出包暂存(payload 产物 + ISCC 输出)不进仓;出包脚本本身在 packaging/ 入库。
+packaging/**/payload/
+packaging/**/output/

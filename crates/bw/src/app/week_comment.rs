@@ -1,4 +1,4 @@
-//! 运作活①评论里的周计划段落。界面只取「周目标」那一句;
+//! 运作活①评论里的周计划段落。界面取「周目标」这一段(一句或一段都算);
 //! 纳入清单和读数快照留在 issue 评论里给人点开看。
 //!
 //! 多条评论从新到旧扫,同一段以最新一条为准。认不出标题就当没有,
@@ -14,7 +14,7 @@ const GOAL_ALIASES: &[&str] = &["周目标", "本周目标"];
 
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub struct WeekComment {
-    /// 一句话。没有或解析不到 = `None`。
+    /// `## 周目标` 到下一个二级标题之间的正文。没有或解析不到 = `None`。
     pub goal: Option<String>,
 }
 
@@ -23,7 +23,7 @@ pub fn parse_comments(bodies: &[String]) -> WeekComment {
     let mut goal = None;
     for body in bodies.iter().rev() {
         if goal.is_none() {
-            goal = section_first_line(body, GOAL_ALIASES);
+            goal = section_text(body, GOAL_ALIASES);
         }
         if goal.is_some() {
             break;
@@ -37,8 +37,8 @@ pub fn validate_comment(body: &str) -> Result<(), Vec<String>> {
     let mut errs = Vec::new();
     if !has_heading(body, HEADING_GOAL) {
         errs.push(format!("缺二级标题 `## {HEADING_GOAL}`"));
-    } else if section_first_line(body, &[HEADING_GOAL]).is_none() {
-        errs.push(format!("`## {HEADING_GOAL}` 下面要有一句话,不能空着"));
+    } else if section_text(body, &[HEADING_GOAL]).is_none() {
+        errs.push(format!("`## {HEADING_GOAL}` 下面要有内容,不能空着"));
     }
     if !has_heading(body, HEADING_SCOPE) {
         errs.push(format!("缺二级标题 `## {HEADING_SCOPE}`"));
@@ -69,7 +69,8 @@ fn heading_matches(line: &str, name: &str) -> bool {
         || rest.starts_with(&format!("{name} "))
 }
 
-fn section_first_line(body: &str, names: &[&str]) -> Option<String> {
+/// `## 周目标` 到下一个 `##` 的整段,保留换行。前后空行去掉。
+fn section_text(body: &str, names: &[&str]) -> Option<String> {
     let mut lines = body.lines();
     loop {
         let line = lines.next()?;
@@ -77,31 +78,30 @@ fn section_first_line(body: &str, names: &[&str]) -> Option<String> {
             break;
         }
     }
+    let mut buf = Vec::new();
     for line in lines {
-        let t = line.trim();
-        if t.starts_with("##") {
+        if line.trim().starts_with("##") {
             break;
         }
-        if t.is_empty() || t.starts_with('>') {
-            continue;
-        }
-        let cleaned = t
-            .trim_start_matches(['-', '*'])
-            .trim()
-            .trim_start_matches("**")
-            .trim_end_matches("**")
-            .trim();
-        if !cleaned.is_empty() {
-            return Some(cleaned.to_string());
-        }
+        buf.push(line);
     }
-    None
+    while buf.first().is_some_and(|l| l.trim().is_empty()) {
+        buf.remove(0);
+    }
+    while buf.last().is_some_and(|l| l.trim().is_empty()) {
+        buf.pop();
+    }
+    if buf.iter().all(|l| l.trim().is_empty()) {
+        None
+    } else {
+        Some(buf.join("\n"))
+    }
 }
 
 const OPS1_PREFIX: &str = "更新指标 + 制定本周计划 ";
 
 impl super::App {
-    /// 各周运作活①评论里解析出的周目标一句话。读失败的周就空着,不挡整屏。
+    /// 各周运作活①评论里解析出的周目标这一段。读失败的周就空着,不挡整屏。
     pub async fn week_goals_from_ops1(
         &self,
         project: &crate::model::Project,
@@ -166,5 +166,15 @@ mod tests {
         assert!(parse_comments(&["## 周目标\n\n## 本周纳入\n".into()])
             .goal
             .is_none());
+    }
+
+    #[test]
+    fn multiline_goal_keeps_the_whole_section() {
+        let body =
+            "## 周目标\n\n本周清共性小问题,催熟通知。\n- 通知:#4\n- 会话:#1\n\n## 本周纳入\n- #4\n";
+        assert_eq!(
+            parse_comments(&[body.into()]).goal.as_deref(),
+            Some("本周清共性小问题,催熟通知。\n- 通知:#4\n- 会话:#1")
+        );
     }
 }

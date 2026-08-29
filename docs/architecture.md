@@ -120,7 +120,7 @@ references(`standard/system-prompt/references/*.md`)是「干某类活需要额�
 **代码**:bw 的 `derive/`(`derive_project_health` 唯一判色纯函数 + `sealed.rs` 密封件 + `HealthInputs`)+ `app/health.rs`(只读采集 + `recompute_health` 唯一写入者)+ `trend.rs`(走势现算)。
 **数据**:本地零库不存灯;结果只在 `local/registry.rs` 项目显示缓存里留两列服务项目墙;判据每次打开现算。
 **依赖**:上游模块12的读数流水 + `.bw/metrics.toml` 目标定义;git / isoweek;只消费读数不负责采集。对 V3 任何 crate 零依赖。
-**没建**:C 类定时建提醒活没做(总览卡手填今天的数已接)。周目标一句话从 ops① 评论解析(多条从新到旧,认 `## 周目标` / 旧评 `## 本周目标`);没读到就不打勾。点过采集或每日自动采过、流水里有本周或上周的行,灯可以因读数难看变红。
+**没建**:C 类定时建提醒活没做(总览卡手填今天的数已接)。周目标从 ops① 评论解析整段(多条从新到旧,认 `## 周目标` / 旧评 `## 本周目标`);没读到就不打勾。点过采集或每日自动采过、流水里有本周或上周的行,灯可以因读数难看变红。
 
 ### 7 · 会话与执行
 
@@ -183,7 +183,7 @@ references(`standard/system-prompt/references/*.md`)是「干某类活需要额�
 **代码**:bw 的 `app/plan.rs`(用例)+ `app/ops.rs`(运作活①②标题幂等键与定时)+ `isoweek.rs` + `trend.rs`(近 N 周走势全现算);app-shell 的 `screens/plan/`(mod / kanban / detail)。
 **数据**:零本地库——codehub/GitHub issue+标签是唯一正本;排期 = 给 issue 打 `bw:week:YYYY-Www` 标签(buddy 直接改);codehub 上顺带投影同名里程碑,计划屏仍只认标签;发版 = 远端建 Release + 打 `bw:released:vX` 标签按版本号幂等;发版弹窗默认号 = 在研号自增一位,人可改。在研版本和项目群跟名片四字段同一张轻量活「编辑项目名片」,总览编辑,不写主检出。总览/知识库发版次数优先读远端 Release,读不到再退本机 git 标签。点某一周只看打了那一周标签的活;没打周标签的只在「issue总览」。项目墙「本周 x/y 完成」跟总览五段同一口径,作废不进分母。
 **依赖**:issue_store、repo::project_file、git(`pull_ff`)、isoweek、trend、bw_engine::remote(建 Release / 查 MR)、bw_engine::github(`issue_branch` 确定性);节律规则读 `.bw/issue-policy.toml`。
-**没建**:"预览·未合入"做成灰态(从活 worktree 读未合入的 metrics.toml 与 ops① 评论重渲染周头未接);"蒸馏"灰态(见模块15);给活挂指标的命令没接(建活时"推的指标"列恒空);macOS 页面内拖放还没真机验证过一次。周目标在总览「本周计划进度」、计划屏周头、项目墙卡片各显示**一句话**;正本是 ops① 评论 `## 周目标`,多条从新到旧。纳入清单和读数快照留在评论里,人点开运作活看。范围内的活认 `bw:week` 标签。剧本要求人确认后当场建卡并打 `bw:week` + `bw:category:*`;替身路径仍走 `ConfirmWeekDraft`。挂评前用 `week-planning/check-week-comment.py` 校验标题。计划屏「新建活」可选业务活或运作活①②,都能填正文。业务活打 `bw:category:*`;运作活不打五阶段类别,标题按本周幂等。工具和 workflow 读回时查 issue-policy,不另打标签(原型默认 Open Design,workflow 空着等 proto-design 打包)。总览不再放「去计划」(侧栏下一格就是计划)。
+**没建**:"预览·未合入"做成灰态(从活 worktree 读未合入的 metrics.toml 与 ops① 评论重渲染周头未接);"蒸馏"灰态(见模块15);给活挂指标的命令没接(建活时"推的指标"列恒空);macOS 页面内拖放还没真机验证过一次。周目标在总览「本周计划进度」、计划屏周头显示 `## 周目标` **整段**(一句或一段都行,旧的一句话评论不用迁);项目墙卡片仍截短。正本是 ops① 评论,多条从新到旧。纳入清单和读数快照留在评论里,人点开运作活看。范围内的活认 `bw:week` 标签。剧本要求人确认后当场建卡并打 `bw:week` + `bw:category:*`,打完周标签还要挂 codehub 同名里程碑;替身路径仍走 `ConfirmWeekDraft`。挂评前用 `week-planning/check-week-comment.py` 校验标题。计划屏「新建活」可选业务活或运作活①②,都能填正文。业务活打 `bw:category:*`;运作活不打五阶段类别,标题按本周幂等。工具和 workflow 读回时查 issue-policy,不另打标签(原型默认 Open Design,workflow 空着等 proto-design 打包)。总览不再放「去计划」(侧栏下一格就是计划)。
 
 ### 14 · 资产盘点与项目接入
 
