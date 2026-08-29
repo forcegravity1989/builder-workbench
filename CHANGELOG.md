@@ -6,9 +6,21 @@
 
 ## 最近 · 2026-08-29
 
-纳入 / 开工 / Open 前把被管仓 `repo.add` 进 Orca(已有则跳过),人不去 Orca 里手导 `workspaces/xx`。Orca 没开不推翻接入,第一次开工再补。
+开工那几秒盖遮罩挡住嵌页。被管仓只在纳入和打开项目时 `repo.add` 进 Orca(这个进程里登过不再打),不跟开工 / 去会话绑。人不去 Orca 里手导 `workspaces/xx`。Orca 没开不推翻接入。
+
+开工刚 `git worktree add` 完、create 之前再写一次 `worktreeBasePath`(回写已有值,误写成 `.bw/worktrees` 的清掉),刷掉 Orca 30s 扫描缓存。不刷会 `selector_not_found`。不把扫描根改成 buddy 目录,否则 Orca 把新树当自己的工作区、开空窗、提示词灌不进你看见的那扇。不是再 `repo.add`。
 
 计划屏 Open / 去会话先切到会话屏、等 Orca iframe onload(再短等配对)才 `worktree.activate`;没配对 URL 仍切树。连点只跟最后一张。不 ensure、不按当前全局工具 create。
+
+创建版本:开始/结束必填(红星)。开始晚于结束日期框飘红、不能点创建。空日期不再传给 codehub(先前会回 `Failed to create milestone`)。
+
+计划/版本收成一件事:周版本就是每周一按 ISO 周号固定出现的那个版本,人起名的版本是同一槽位,一张活只挂一个。先前文档写成「周与自定义版本互斥两套」,壳在版本视图里新建活会把本周和当前版本两套标签都打上,详情先显示本周再跳回。创建路径只写当前正在看的那个版本;内核两个都传来时丢掉周、只留版本。
+
+待评审→完成:没有开着的 MR 时弹确认,确认后只关 issue(人可能已经在网页合过)。详情链接查出已合入的 MR,不再只认开着的。
+
+计划屏周目标默认收成两行,右下角展开框打开整段,再点收起。
+
+计划屏周计划/版本看板拖拽认十条:待办→进行中/拒绝/阻塞,进行中→阻塞/拒绝/待办,待评审→完成/拒绝,阻塞→进行中/拒绝。松手认当前子标题。详情加状态下拉,只列从当前状态能走到的那几条,和拖拽走同一条命令——列表用户不拖也能改。作废/阻塞仍要写原因。待办拖到「完成」仍不让过。
 
 Open / 去会话只 `worktree.activate`,不再 `ensureAgentSession`(那条是 `--resume` 再开一扇 TUI)。`createAgentSession` 若回「Timed out waiting for terminal handle after creation」,渲染进程已经把窗拉起来了,当成功,再切树让配对网页跟上。▶开工已有会话也只切树。
 

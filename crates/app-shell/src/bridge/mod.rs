@@ -481,6 +481,8 @@ pub fn spawn(deep_link: DeepLink) -> Bridge {
                     od_gen: 0,
                     gather_gen: 0,
                     workbench_cache: None,
+                    busy: None,
+                    orca_repos_ready: std::collections::HashSet::new(),
                 };
 
                 // 「刷新」按下了没有。回执要等 ViewModel 拼完才写得出来。
@@ -655,6 +657,16 @@ pub fn spawn(deep_link: DeepLink) -> Bridge {
                     match req {
                         Req::Cmd(c) => {
                             let confirming = matches!(c, Command::ConfirmWeekDraft { .. });
+                            let running_issue = matches!(c, Command::RunIssue { .. });
+                            if running_issue {
+                                ui.busy = Some(
+                                    "正在开工,Orca 要几秒把会话拉起来。先别点嵌页。"
+                                        .into(),
+                                );
+                                let snap =
+                                    vm_build::assemble(&app, &mut ui, &last_gather).await;
+                                let _ = vm_tx.send(snap);
+                            }
                             match app.dispatch(c).await {
                                 Ok(events) => {
                                     ui.set_note(vm_build::note_of(&events));
@@ -770,8 +782,21 @@ pub fn spawn(deep_link: DeepLink) -> Bridge {
                                 // 失败就把失败的原话摆出来。壳不替内核圆场。
                                 Err(e) => ui.set_note(Some(format!("没做成:{e}"))),
                             }
+                            if running_issue {
+                                ui.busy = None;
+                            }
                         }
                         Req::Open(id) => {
+                            if let Some(pid) = id {
+                                if !ui.orca_repos_ready.contains(&pid) {
+                                    ui.busy = Some("正在让 Orca 认得这个仓…".into());
+                                    let snap =
+                                        vm_build::assemble(&app, &mut ui, &last_gather).await;
+                                    let _ = vm_tx.send(snap);
+                                    register_orca_repo(&app, &mut ui, pid).await;
+                                    ui.busy = None;
+                                }
+                            }
                             ui.open = id;
                             ui.open_doc = None;
                             ui.viewing_week = bw::isoweek::current_week();
@@ -1153,6 +1178,26 @@ fn schedule_orca_flush(tx: &mpsc::UnboundedSender<Req>, seq: u64, delay: Duratio
         tokio::time::sleep(delay).await;
         let _ = back.send(Req::FlushOrcaReveal { seq });
     });
+}
+
+/// 打开项目时把被管仓登记进 Orca。已成功过的项目这个进程里不再打。
+/// Orca 没开不挡进项目。
+async fn register_orca_repo(app: &App, ui: &mut vm_build::UiState, pid: ProjectId) {
+    if ui.orca_repos_ready.contains(&pid) {
+        return;
+    }
+    let Ok(ws) = app.workspace_of(pid).await else {
+        return;
+    };
+    if !ws.is_dir() {
+        return;
+    }
+    let Ok(rt) = bw_engine::orca::connect() else {
+        return;
+    };
+    if bw_engine::orca::ensure_repo(&rt, &ws).await.is_ok() {
+        ui.orca_repos_ready.insert(pid);
+    }
 }
 
 /// 进项目时后台采一轮。不 await 脚本 —— 占着内核线程会卡住终端节拍。

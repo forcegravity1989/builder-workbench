@@ -254,7 +254,8 @@ impl App {
 
     /// 桌面 ▶跑 的 Orca 分支。开/复用 worktree(走 resolve,旧平级兄弟接着用)→
     /// upsert 会话行(workspace_path 写实际用的路径)→ 推进行中 → connect Orca →
-    /// 没 id 才 create(灌系统提示词);有 id / create 完了只切树,不 ensure。
+    /// 刷扫描(刚 add 的树才能被 `path:` 选到,不 `repo.add`)→ 没 id 才 create;
+    /// 有 id / create 完了只切树,不 ensure。
     /// 成功回执「已在 Orca 里开工」。**Orca 没开 / 连不上:人话报错,不静默 mock
     /// 成功**;桌面有工作区才进这条。
     /// 系统提示词仍走 `bootstrap::agent_system_prompt`(身份+铁律+技能指针),不新模板。
@@ -313,16 +314,18 @@ impl App {
         }
         let outcome = match bw_engine::orca::connect() {
             Ok(rt) => {
-                if let Err(e) = bw_engine::orca::ensure_repo(&rt, ws).await {
+                // 树刚 provision 完;Orca 打开项目时扫的那份还没有这棵。
+                // 刷扫描,不 repo.add。
+                if let Err(e) = bw_engine::orca::refresh_worktrees(&rt, ws).await {
                     eprintln!(
-                        "[BW_ORCA] 登记仓没成:{e} · {} · repo={}",
+                        "[BW_ORCA] 刷扫描没成:{e} · {} · repo={}",
                         rt.log_tag(),
                         ws.display()
                     );
                     return Ok(vec![Event::IssueRan {
                         id,
                         ok: false,
-                        summary: format!("开工失败:Orca 还不认得这个仓:{e}"),
+                        summary: format!("开工失败:Orca 还没刷到这棵树:{e}"),
                         tool: issue.tool.clone(),
                         embed_url: String::new(),
                     }]);
