@@ -44,6 +44,74 @@ pub(super) fn read_or_warn<T>(
     }
 }
 
+/// 一次 `gather()` 采回来的**与导航无关**的贵数据。导航请求只跑 `assemble()`,
+/// 复用这里的东西,不重跑 git 子进程 / 远端 / OD 探活。数据真变了(真命令、换
+/// 项目、刷新、到点建活)才重新 `gather` 刷新它。设计见
+/// [`docs/adr/0002-导航快路径-gather缓存.md`](../../../docs/adr/0002-导航快路径-gather缓存.md)。
+pub struct Gathered {
+    /// 第几代 gather。`assemble` 用它判断 workbench 缓存是不是同一代采的。
+    pub gen: u64,
+    /// 项目墙卡片。导航时不重采(每项目一次 codehub/gh + git tag 太贵)。
+    pub projects: Vec<ProjectCardVm>,
+    /// 环境条。会话内探一次够了:OD 管道探活最多 400ms,PATH 扫 5 次,没理由每次导航重跑。
+    pub env: Vec<ToolProbeVm>,
+    /// 采这份数据时攒的仓文件读不动原话。
+    pub warnings: Vec<String>,
+    /// `claude` 本机路径(设置条)。会话内不变,缓存。
+    pub claude_binary: Option<String>,
+    /// 打开项目的那一份贵数据。`None` = 还在项目墙。
+    pub open: Option<ProjectGathered>,
+}
+
+/// 打开项目的、与「在看哪一周 / 选中哪张活 / 展开哪个目录」无关的贵数据。
+/// `assemble` 从它 + `UiState` 视图字段现切出 `ProjectVm`。
+pub(super) struct ProjectGathered {
+    id: bw::model::ProjectId,
+    slug: String,
+    name: String,
+    project: Project,
+    ws: std::path::PathBuf,
+    file: project_file::ProjectFile,
+    policy: Option<issue_policy_file::IssuePolicyFile>,
+    /// 已填好 `pr_number`(`fill_pr_numbers` 跑过、`mr_cache` 跑过)的 issue 列表。
+    issues: Vec<bw::Issue>,
+    conversations: Vec<bw::model::Conversation>,
+    notify_seen: Option<i64>,
+    /// 会话行。`live` 是采那一刻的;`assemble` 会对着 `app.pty_live` 现刷新(纯内存)。
+    sessions: Vec<SessionVm>,
+    releases: Vec<ReleaseVm>,
+    health: HealthVm,
+    /// 规范铺底件在不在默认分支 HEAD。`build_ops` 要它,只跟仓走、不跟周走,
+    /// 所以这里算一次传给 `build_ops`,不再每重切都跑一遍 git。
+    ops3_landed: bool,
+    week_goals: std::collections::HashMap<String, String>,
+    current_week: String,
+    mr_url_prefix: String,
+    issue_url_prefix: String,
+    week_started: bool,
+    ops1_status: Option<String>,
+}
+
+/// 会话工作台缓存键 + 值。切周 / 选卡片时会话相关 ui 字段没变,直接复用,
+/// 不重跑 `build_workbench` 那几个 git 子进程(list_dir / changed_files /
+/// ahead_behind / file_diff)。展开目录 / 切会话 / 换页签时键变,重算。
+#[derive(PartialEq)]
+pub(super) struct WorkbenchKey {
+    session_open: Option<bw::model::IssueId>,
+    session_tab: crate::vm::SessionTab,
+    expanded: Vec<String>,
+    open_file: String,
+    od_src: String,
+    od_gen: u64,
+}
+
+pub(super) struct WorkbenchCache {
+    /// 这份缓存是针对第几代 gather 的。gather 刷新后,旧缓存自动作废。
+    gen: u64,
+    key: WorkbenchKey,
+    vm: crate::vm::WorkbenchVm,
+}
+
 /// 壳这边的纯导航状态(打开了哪个项目、在看哪一周)。不进库。
 pub struct UiState {
     pub open: Option<ProjectId>,
@@ -98,6 +166,10 @@ pub struct UiState {
     pub od_src: String,
     /// 换一次就让 iframe 卸掉重挂,否则同一 origin 不刷新。
     pub od_gen: u64,
+    /// gather 世代号。每次 `gather()` +1;workbench 缓存靠它判是不是同一代采的。
+    pub gather_gen: u64,
+    /// 会话工作台缓存(见 [`WorkbenchCache`])。导航切周时复用,不重跑 git。
+    pub workbench_cache: Option<WorkbenchCache>,
 }
 
 /// 深链按 slug 找,找不到再按显示名找。
@@ -335,9 +407,25 @@ impl UiState {
     }
 }
 
-pub async fn build(app: &App, ui: &mut UiState) -> Vm {
+/// 全量采集:跑所有跟导航无关的贵 I/O(环境探活、issue 列表、健康三判据、
+/// Release、会话、ops3_landed)。数据真变了(真命令、换项目、刷新、到点建活)
+/// 才调它;导航请求复用上次结果(见 [`assemble`])。设计见 ADR 0002。
+pub async fn gather(app: &App, ui: &mut UiState) -> Gathered {
+    ui.gather_gen = ui.gather_gen.wrapping_add(1);
+    let gen = ui.gather_gen;
     let projects = app.projects().await.unwrap_or_default();
     let mut warnings: Vec<String> = Vec::new();
+    let current_week = bw::isoweek::current_week();
+    // 环境条会话内探一次够了:OD 管道探活最多 400ms、PATH 扫 5 次,没理由每次
+    // 导航重跑。探的结果进 Gathered,assemble 和 build_config 共用这一份。
+    let env = probe_env().await;
+    let claude_binary = bw_engine::resolve_claude_binary(None);
+
+    // 打开项目先采:它的 issues 借给项目墙那张卡,不再起第二次 codehub/gh。
+    let open_g = match ui.open {
+        Some(id) => gather_project(app, id, ui, &mut warnings, &current_week).await,
+        None => None,
+    };
 
     let mut cards = Vec::with_capacity(projects.len());
     for p in &projects {
@@ -348,32 +436,40 @@ pub async fn build(app: &App, ui: &mut UiState) -> Vm {
             &mut warnings,
         )
         .unwrap_or_default();
-        let week = bw::isoweek::current_week();
-        // 每项目只起一次 codehub-cli:issues 拿一次,再借给下面的纯内存过滤。
-        // 失败不吞(刀3-fix):以前 `unwrap_or_default()` 把 codehub 抖一下整屏
-        // 蒸发成空;现在挂到 warnings,UI 显式横幅「读 issue 失败」,活用空数组
-        // —— 健康判据落到 Unknown 灰,不假装绿。
-        let issues = match app.issues(p.id).await {
-            Ok(v) => v,
-            Err(e) => {
-                warnings.push(format!("读 issue 失败:{e}"));
-                Vec::new()
+        // 打开项目的 issues 复用 gather_project 采的那份;别的项目才起 codehub/gh。
+        let issues = if Some(p.id) == ui.open {
+            open_g
+                .as_ref()
+                .map(|g| g.issues.clone())
+                .unwrap_or_default()
+        } else {
+            match app.issues(p.id).await {
+                Ok(v) => v,
+                Err(e) => {
+                    warnings.push(format!("读 issue 失败:{e}"));
+                    Vec::new()
+                }
             }
         };
         // 项目墙「本周 x/y 完成」跟总览五段同一口径:作废的活不算进分母。
-        // 以前用带周标签的张数当 y,#10/#11 这种打了本周标签又作废的卡会把 3/4 撑成 3/6。
-        let week_counts = build_week_counts(&issues, Some(week.as_str()));
+        let week_counts = build_week_counts(&issues, Some(current_week.as_str()));
         let week_total = (week_counts.todo
             + week_counts.doing
             + week_counts.review
             + week_counts.done
             + week_counts.blocked) as u32;
-        // 未读 = 评审中的活有几张。这个数是现算的,库里没有未读表
-        // (MVP 不再按 seen_at 过滤:pr_number/updated_at 是 lossy)。
         let unread = bw::app::count_unseen(&issues);
-        // 周目标:从本周运作活①评论解析出的整段。没有或解析不到就是空。
-        let goals = app.week_goals_from_ops1(p, &issues).await;
-        let week_goal = goals.get(&week).cloned().unwrap_or_default();
+        // 周目标:从本周运作活①评论解析出的整段。打开项目复用 gather_project
+        // 解析的那份;别的项目现解析。没有或解析不到就是空。
+        let goals = if Some(p.id) == ui.open {
+            open_g
+                .as_ref()
+                .map(|g| g.week_goals.clone())
+                .unwrap_or_default()
+        } else {
+            app.week_goals_from_ops1(p, &issues).await
+        };
+        let week_goal = goals.get(&current_week).cloned().unwrap_or_default();
         // 上次交付 = 最近一个 git 标签的提交日期 + tag(刀6:不再读
         // .bw/releases.md)。tags_with_dates 按 creatordate 升序,最后一个 = 最新。
         let last_delivery = bw::git::tags_with_dates(&ws)
@@ -393,39 +489,56 @@ pub async fn build(app: &App, ui: &mut UiState) -> Vm {
             week_total,
             week_done: week_counts.done as u32,
             version: file.current_version.clone(),
-            week,
+            week: current_week.clone(),
             unread,
             week_goal,
             last_delivery,
         });
     }
 
-    let open = match ui.open {
-        None => None,
-        Some(id) => build_project(app, id, ui, &mut warnings).await,
-    };
-
-    // 去重保序:开项目的 issues 会在 build_project 里再拉一次,失败时同一条
-    // 「读 issue 失败」被推两遍 —— 去掉重复,横幅不显示两遍同一条(也避免按
-    // 文本 key 的渲染崩,虽然 key 已改按索引)。
+    // 去重保序:开项目的 issues 会在 gather_project 里拉,失败时同一条
+    // 「读 issue 失败」被推两遍 —— 去掉重复,横幅不显示两遍同一条。
     let mut seen = std::collections::HashSet::new();
     warnings.retain(|w| seen.insert(w.clone()));
 
+    Gathered {
+        gen,
+        projects: cards,
+        env,
+        warnings,
+        claude_binary,
+        open: open_g,
+    }
+}
+
+/// 从上次 [`gather`] 的结果 + 当前 `UiState` 视图字段现切一份 `Vm`。只做依赖
+/// `viewing_week` / `view_all` / `selected_issue` / 会话 / 页签 的重切:看板按周
+/// 过滤、四段计数、运作活状态点、指标读数、会话工作台、知识库扫描。**健康 /
+/// Release / 环境 / issue / ops3 的 git 子进程与远端一律不跑**(都在 gather 采
+/// 过);**会话工作台**(`build_workbench`)在会话相关字段变(展开目录 / 切会话 /
+/// 换页签)时仍跑 `list_dir` / `changed_files` / `ahead_behind` / `file_diff`
+/// 几个 git——但同代 gather 内键没变就复用缓存,**切周 / 选卡片时不会跑**。
+/// 导航请求只调它。设计见 ADR 0002。
+pub async fn assemble(app: &App, ui: &mut UiState, g: &Gathered) -> Vm {
+    let open = match (&g.open, ui.open) {
+        (Some(pg), Some(_)) => Some(assemble_project(app, ui, pg, g.gen, &g.env).await),
+        _ => None,
+    };
     Vm {
         ready: true,
         fatal: None,
-        projects: cards,
-        env: probe_env().await,
+        projects: g.projects.clone(),
+        env: g.env.clone(),
         repos: ui.repos.clone(),
         open,
         settings: SettingsVm {
             workspaces_root: ui.workspaces_root.clone(),
             data_dir: ui.data_dir.clone(),
-            claude_binary: bw_engine::resolve_claude_binary(None),
+            claude_binary: g.claude_binary.clone(),
         },
         note: ui.note.clone(),
         note_seq: ui.note_seq,
-        warnings,
+        warnings: g.warnings.clone(),
     }
 }
 
@@ -555,12 +668,16 @@ async fn fill_pr_numbers(
     }
 }
 
-async fn build_project(
+/// 采打开项目那份贵数据。issue 列表只拉一次(借给项目墙那张卡),健康三判据、
+/// Release、会话、`ops3_landed` 各跑一遍,结果存进 [`ProjectGathered`] 给
+/// [`assemble_project`] 重切。
+async fn gather_project(
     app: &App,
     id: ProjectId,
     ui: &mut UiState,
     warnings: &mut Vec<String>,
-) -> Option<ProjectVm> {
+    current_week: &str,
+) -> Option<ProjectGathered> {
     let p = app.project(id).await.ok()??;
     let ws = app.workspace_of(id).await.ok()?;
     let file =
@@ -586,32 +703,22 @@ async fn build_project(
     // 不从 `origin` 推 —— codehub clone 走 SSH,origin 里是 SSH 主机加端口。
     let mr_url_prefix = p.mr_url_prefix();
     let issue_url_prefix = p.issue_url_prefix();
-    let current_week = bw::isoweek::current_week();
-    let viewing_week = if ui.viewing_week.is_empty() {
-        current_week.clone()
-    } else {
-        ui.viewing_week.clone()
-    };
 
     // 健康:四条判据当场从 issue 列表、仓文件与 git 取,不读缓存。
     let week_goals = app.week_goals_from_ops1(&p, &issues).await;
     let inputs = bw::app::collect_health_inputs(
         &p,
         &ws,
-        &current_week,
+        current_week,
         &issues,
-        week_goals.get(&current_week).map(String::as_str),
+        week_goals.get(current_week).map(String::as_str),
     )
     .await;
     let derived = bw::derive::derive_project_health(&inputs);
     // 算完顺手写回显示缓存。**项目墙只有这一个数据来源** —— 它要在不打开项目
-    // 的情况下列出 N 个项目的灯,不能每次启动扫 N 个仓。此前壳里没有一处写过
-    // 这两列,于是项目墙的灯永远是灰的,哪怕总览上算出来是黄的。写的是刚算出
-    // 来的那个值,不重算(重算要再起一遍 git 子进程)。
-    //
-    // **只在灯真变了的时候写**:这个函数每重拼一次 ViewModel 就跑一次(人打字
-    // 时每 30ms 一次),而这条写回顺带会把项目的 `updated_at` 顶新 —— 每次
-    // 都写等于让「这个项目最近动过」永远是刚刚,那是假的。
+    // 的情况下列出 N 个项目的灯,不能每次启动扫 N 个仓。写的是刚算出来的那个值,
+    // 不重算(重算要再起一遍 git 子进程)。**只在灯真变了的时候写**:每次都写
+    // 等于让「这个项目最近动过」永远是刚刚,那是假的。
     if p.signal != Some(derived.signal()) || p.weekly_signal != Some(derived.weekly_signal()) {
         let _ = app.cache_project_health(id, &derived).await;
     }
@@ -621,43 +728,32 @@ async fn build_project(
         issue_policy_file::read(&ws),
         warnings,
     );
-    // 指标读数从仓 `.bw/metrics/readings.jsonl` 取(刀6:不再读周计划文件的
-    // 「本周指标读数」段)。取的是正在看的那一周。
-    let readings = bw::app::read_metric_readings(&ws, &viewing_week);
-
-    // 本周计数与本周运作点在构造之前算好 —— `current_week` 会被 move 进结构体。
-    let week_counts_now = build_week_counts(&issues, Some(current_week.as_str()));
-    let ops_now = build_ops(&issues, current_week.as_str(), &ws).await;
-
-    // 周列表 = 库里活排过的周(issues 的 `bw:week:*` 标签)∪ 本周。刀6:不再
-    // 扫 `.bw/plan/` 目录(那个文件没人写了,扫到也是旧的)。本周永远在列表里。
-    let weeks = build_weeks(&issues, &current_week, &week_goals);
+    // `ops3_landed` 只跟仓走、不跟周走:`build_ops` 要它,原来每次重拼都跑两遍
+    // `git::path_in_head`(本周 + 看的那周,结果其实一样)。这里采一次传给
+    // `assemble_project` 的 `build_ops`,不再每重切都跑 git。
+    let ops3_landed = bw::git::path_in_head(&ws, ".bw/standard.toml").await;
 
     // 横幅判据:本周运作活①在不在(含已完成)。做完再冒「开始本周」是假的。
-    let ops1_title = bw::app::ops1_title(&current_week);
+    let ops1_title = bw::app::ops1_title(current_week);
     let ops1 = issues.iter().find(|i| i.title == ops1_title);
     let week_started = ops1.is_some();
     let ops1_status = ops1
         .filter(|i| i.status != IssueStatus::Done)
         .map(|i| i.status.label().to_string());
     let releases = load_releases(app, &p, &ws).await;
-    Some(ProjectVm {
+    Some(ProjectGathered {
         id,
         slug: p.slug.clone(),
         name: p.name.clone(),
-        card: CardVm {
-            brief: or_blank(&file.brief),
-            benchmark: or_blank(&file.benchmark),
-            north_star: or_blank(&file.opportunity),
-            remote: remote_label(&p),
-            current_version: or_blank(&file.current_version),
-            current_version_raw: file.current_version.clone(),
-            standard_version: or_blank(&file.standard_version),
-            chat: match &file.chat {
-                None => "未配".into(),
-                Some(c) => format!("{} · 群号 {}", c.provider, c.group_id),
-            },
-        },
+        project: p.clone(),
+        ws,
+        file,
+        policy,
+        issues,
+        conversations,
+        notify_seen,
+        sessions,
+        releases,
         health: HealthVm {
             signal: Some(derived.signal()),
             reasons: derived
@@ -666,63 +762,75 @@ async fn build_project(
                 .map(|r| (r.ok, r.text.clone()))
                 .collect(),
         },
-        metrics: build_metrics(&ws, &issues, &ui.metrics, &readings, !ui.metrics.is_empty()),
-        week_started,
-        ops1_status,
-        weeks,
-        current_week,
-        viewing_week: viewing_week.clone(),
-        viewing_plan: ui.viewing_plan.clone(),
-        view_all: ui.view_all,
-        board: build_board(
-            &issues,
-            if ui.view_all || !ui.viewing_plan.is_empty() {
-                None
-            } else {
-                Some(viewing_week.as_str())
-            },
-            if !ui.viewing_plan.is_empty() {
-                Some(ui.viewing_plan.as_str())
-            } else {
-                None
-            },
-            policy.as_ref(),
-        ),
-        plan_versions: build_plan_versions(app, &p, &issues).await,
-        current_user: current_user(app, &p).await,
-        // 两份计数,各有各的归属:总览那块标题写着「本周」,就只能是本周;
-        // 计划屏的进度条画在它正在看的那个看板上面,就跟着看板的范围走。
-        // **共用一份的后果**是人在计划屏点了历史周,总览的「本周」下面摆着
-        // 那一周的数。
-        week_counts: week_counts_now,
-        board_counts: build_week_counts(
-            &issues,
-            if ui.view_all {
-                None
-            } else {
-                Some(viewing_week.as_str())
-            },
-        ),
-        ops: ops_now,
-        board_ops: build_ops(&issues, viewing_week.as_str(), &ws).await,
-        // 采不采由界面点 —— 现算一次要起好几个 git 子进程,不能每次重拼
-        // ViewModel 都跑一遍(人打字时每 30ms 就重拼一次)。
-        repo_stats: ui.repo_stats.clone(),
-        card_mr: build_card_mr(&issues),
-        pending_drafts: match &ui.pending_drafts {
-            Some((week, titles)) if *week == viewing_week => titles.clone(),
-            _ => Vec::new(),
-        },
-        releases,
-        sessions: sessions.clone(),
-        session_open: ui.session_open,
-        briefing: ui.briefing.clone(),
-        selected_issue: ui.selected_issue,
+        ops3_landed,
+        week_goals,
+        current_week: current_week.to_string(),
         mr_url_prefix,
         issue_url_prefix,
-        workbench: build_workbench(
+        week_started,
+        ops1_status,
+    })
+}
+
+/// 从 [`ProjectGathered`] + 视图字段现切 `ProjectVm`。不起 git 子进程
+/// (`ops3_landed` 已采)、不重探 OD(`env` 已采)。会话工作台用键缓存住,
+/// 切周 / 选卡片时会话字段没变就直接复用。见 [`assemble`]。
+async fn assemble_project(
+    app: &App,
+    ui: &mut UiState,
+    pg: &ProjectGathered,
+    gen: u64,
+    env: &[ToolProbeVm],
+) -> ProjectVm {
+    let current_week = pg.current_week.clone();
+    let viewing_week = if ui.viewing_week.is_empty() {
+        current_week.clone()
+    } else {
+        ui.viewing_week.clone()
+    };
+    let week = if ui.view_all || !ui.viewing_plan.is_empty() {
+        None
+    } else {
+        Some(viewing_week.as_str())
+    };
+    let plan = if !ui.viewing_plan.is_empty() {
+        Some(ui.viewing_plan.as_str())
+    } else {
+        None
+    };
+    // 指标读数按正在看的那一周现读(本机 jsonl,便宜)。
+    let readings = bw::app::read_metric_readings(&pg.ws, &viewing_week);
+    // 会话 live 现刷新:PTY 自己会死,这是唯一一个不靠命令就会变的东西;
+    // `app.pty_live` 是纯内存查询,不起子进程。
+    let sessions: Vec<SessionVm> = pg
+        .sessions
+        .iter()
+        .map(|s| {
+            let mut s = s.clone();
+            s.live = app.pty_live(s.conversation_id);
+            s
+        })
+        .collect();
+    // workbench 缓存:会话相关 ui 字段没变 + 同一代 gather,就复用,不重跑
+    // `build_workbench` 那几个 git 子进程。展开目录 / 切会话 / 换页签时键变,重算。
+    let wb_key = WorkbenchKey {
+        session_open: ui.session_open,
+        session_tab: ui.session_tab,
+        expanded: ui.expanded_dirs.clone(),
+        open_file: ui.open_file.clone(),
+        od_src: ui.od_src.clone(),
+        od_gen: ui.od_gen,
+    };
+    let hit = ui
+        .workbench_cache
+        .as_ref()
+        .is_some_and(|c| c.gen == gen && c.key == wb_key);
+    let workbench = if hit {
+        ui.workbench_cache.as_ref().expect("刚判过 hit").vm.clone()
+    } else {
+        let vm = build_workbench(
             &sessions,
-            &issues,
+            &pg.issues,
             ui.session_open,
             ui.session_tab,
             &ui.expanded_dirs,
@@ -730,30 +838,101 @@ async fn build_project(
             &ui.od_src,
             ui.od_gen,
         )
-        .await,
+        .await;
+        ui.workbench_cache = Some(WorkbenchCache {
+            gen,
+            key: wb_key,
+            vm: vm.clone(),
+        });
+        vm
+    };
+    ProjectVm {
+        id: pg.id,
+        slug: pg.slug.clone(),
+        name: pg.name.clone(),
+        card: CardVm {
+            brief: or_blank(&pg.file.brief),
+            benchmark: or_blank(&pg.file.benchmark),
+            north_star: or_blank(&pg.file.opportunity),
+            remote: remote_label(&pg.project),
+            current_version: or_blank(&pg.file.current_version),
+            current_version_raw: pg.file.current_version.clone(),
+            standard_version: or_blank(&pg.file.standard_version),
+            chat: match &pg.file.chat {
+                None => "未配".into(),
+                Some(c) => format!("{} · 群号 {}", c.provider, c.group_id),
+            },
+        },
+        health: pg.health.clone(),
+        metrics: build_metrics(
+            &pg.ws,
+            &pg.issues,
+            &ui.metrics,
+            &readings,
+            !ui.metrics.is_empty(),
+        ),
+        week_started: pg.week_started,
+        ops1_status: pg.ops1_status.clone(),
+        weeks: build_weeks(&pg.issues, &pg.current_week, &pg.week_goals),
+        current_week: pg.current_week.clone(),
+        viewing_week: viewing_week.clone(),
+        viewing_plan: ui.viewing_plan.clone(),
+        view_all: ui.view_all,
+        board: build_board(&pg.issues, week, plan, pg.policy.as_ref()),
+        plan_versions: build_plan_versions(app, &pg.project, &pg.issues).await,
+        current_user: current_user(app, &pg.project).await,
+        // 两份计数,各有各的归属:总览那块标题写着「本周」,就只能是本周;
+        // 计划屏的进度条画在它正在看的那个看板上面,就跟着看板的范围走。
+        week_counts: build_week_counts(&pg.issues, Some(pg.current_week.as_str())),
+        board_counts: build_week_counts(&pg.issues, week),
+        ops: build_ops(&pg.issues, pg.current_week.as_str(), pg.ops3_landed),
+        board_ops: build_ops(&pg.issues, viewing_week.as_str(), pg.ops3_landed),
+        // 采不采由界面点 —— 现算一次要起好几个 git 子进程,不能每次重切都跑。
+        repo_stats: ui.repo_stats.clone(),
+        card_mr: build_card_mr(&pg.issues),
+        pending_drafts: match &ui.pending_drafts {
+            Some((w, titles)) if *w == viewing_week => titles.clone(),
+            _ => Vec::new(),
+        },
+        releases: pg.releases.clone(),
+        sessions: sessions.clone(),
+        session_open: ui.session_open,
+        briefing: ui.briefing.clone(),
+        selected_issue: ui.selected_issue,
+        mr_url_prefix: pg.mr_url_prefix.clone(),
+        issue_url_prefix: pg.issue_url_prefix.clone(),
+        workbench,
         notify: NotifyVm {
             // 评审中 **且真有 MR**。没 MR 的评审中活不是通知 —— 它在计划屏的
             // 评审中那一列里,人在那儿点完成。
-            to_merge: issues
+            to_merge: pg
+                .issues
                 .iter()
                 .filter(|i| i.status == IssueStatus::InReview && i.pr_number > 0)
                 .map(card_item)
                 .collect(),
-            seen_at: notify_seen,
-            events: build_notify_events(&issues, &conversations),
-            unread: bw::app::count_unseen(&issues),
+            seen_at: pg.notify_seen,
+            events: build_notify_events(&pg.issues, &pg.conversations),
+            unread: bw::app::count_unseen(&pg.issues),
         },
         config: {
-            let mut c = build_config(&ws, policy.as_ref(), &p, &file, &issues).await;
+            let mut c = build_config(
+                &pg.ws,
+                pg.policy.as_ref(),
+                &pg.project,
+                &pg.file,
+                &pg.issues,
+                env,
+            );
             c.focus_skill = ui.focus_skill.clone();
             c
         },
         kb: KbVm {
             codegraph: ui.kb_codegraph.clone(),
             assets: ui.kb_assets.clone(),
-            ..build_kb(&ws, ui.kb_tab, ui.open_doc.as_deref())
+            ..build_kb(&pg.ws, ui.kb_tab, ui.open_doc.as_deref())
         },
-    })
+    }
 }
 
 pub(super) fn or_blank(s: &str) -> String {

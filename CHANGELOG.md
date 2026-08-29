@@ -4,13 +4,15 @@
 
 本文件按**六站 + 底座**收口,不再按每次窗口一条流水往下堆。最近一次改动永远写在最上面。
 
-## 最近 · 2026-08-28(源码同步)
+## 最近 · 2026-08-28(#16)
 
-**新增/优化** · 按 `docs/hifi/plan-23.html`(定稿高保真)把计划页整改落到源码,跨 bw + bw-engine + app-shell 三 crate。看板七列合并为四列(待办/进行中/待处理/已完成),两段列加子标题 tab(默认显示第一段,点切第二段);卡面重做(编号 + CodeHub 徽 + 标题 + 正文预览 + 计划位置 + 责任人头像 + 更新时间),删卡面开工按钮(入口移详情弹窗);详情从右侧抽屉改屏幕居中弹窗,字段精简(留标题/正文/链接/类别/计划/负责人,删 状态/工具/workflow/种类/来源/版本/指标/结清/分支/蒸馏);新增列表视图(预设 开放/分配我的/我的 + 计划/阶段下拉 + 搜索 + 行操作 schedule/Start/Open/Complete/Cancel);左栏「全部 issue」+ 版本组上移到历史周上方;弹窗:新建issue(含负责人)、创建版本、排期(拖未排期→已排期)、Start(只读确认即 RunIssue)。
+计划屏操作卡顿(#16):纯导航(切周 / 点总览 / 选卡片看详情 / 切页签 / 展开目录 / 后台采回发)走快路径,复用上次 gather、不重跑 git 子进程 / 远端 / OD 探活;真命令、换项目、刷新、`SelectSession` 仍走全量。`build()` 拆成 `gather`(贵、数据变更时跑)+ `assemble`(便宜、每次跑)。顺带去掉三处重复:`probe_env` 每重建跑两遍 → 探一次;打开项目 `app.issues` 拉两遍 → 拉一次;`build_ops` 的 `git::path_in_head` 跑两遍 → 算一次传参。决策见 [`docs/adr/0002`](docs/adr/0002-导航快路径-gather缓存.md),是 [ADR 0001](docs/adr/0001-codehub-issue-正本-本地零库.md)「优化(本地只读缓存、失效策略)留后续」那条的落地。
 
-**新概念落内核**:`Issue` 加 `assignee`/`author`/`plan_version` 字段;`RemoteIssue` 透传 assignee/author(codehub 走 `assignee.user_name`、github 走 `assignee.login`);新命令 `SetIssueAssignee`(codehub issue assignee API,username→userid)/`CreatePlanVersion`(建 codehub milestone + 打 `bw:plan:` 标签)/`ScheduleToPlan`(排进版本,与 `ScheduleIssue` 互斥:排进版本摘 `bw:week:`、排进周摘 `bw:plan:`)/`EditIssue`(改标题正文);周计划怎么存版本就怎么存——`bw:plan:` 标签为正本、codehub milestone 为镜像。`build_board` 七列直接改四合并列(不留旧路径),`CardItemVm` 加 assignee/author/plan_version/updated_at,`ProjectVm` 加 `plan_versions`。
+## 最近 · 2026-08-28(#23 源码同步)
 
-涉及文件:`crates/bw/src/{model,command,app/issue_store,app/issue,app/plan,app/mod}.rs`、`crates/bw-engine/src/{remote,codehub,github}.rs`、`crates/app-shell/src/{vm,bridge/vm_build,bridge/vm_panels,bridge/vm_derive,bridge/mod}.rs`、`crates/app-shell/src/screens/plan/{mod,kanban,detail,list_view,plan_dialogs}.rs`(拆出 `list_view.rs`+`plan_dialogs.rs`)、`crates/app-shell/assets/hifi.css`(加 #23 计划页新类)、`docs/hifi/{plan-23.html,plan-23-changes.md}`。门禁:fmt/clippy(--workspace -D warnings)/check/guard-* 全过;`cargo test` 受本机缺 `dlltool.exe` 阻断(链接 native 依赖,非代码问题)。
+**新增/优化** · 按 `docs/hifi/plan-23.html`(定稿高保真)把计划页整改落到源码,跨 bw + bw-engine + app-shell 三 crate。看板七列合并为四列(待办/进行中/待处理/已完成),两段列加子标题 tab(默认显示第一段,点切第二段);卡面重做(编号 + CodeHub 徽 + 标题 + 正文预览 + 计划位置 + 责任人头像 + 更新时间),删卡面开工按钮(入口移详情弹窗);详情从右侧抽屉改屏幕居中弹窗,字段精简(留标题/正文/链接/类别/计划/负责人,删 状态/工具/workflow/种类/来源/版本/指标/结清/分支/蒸馏);新增列表视图(预设 开放/分配我的/我的 + 计划/阶段下拉 + 搜索 + 行操作 schedule/Start/Open/Complete/Cancel);弹窗:新建issue(含负责人)、创建版本、排期(拖未排期→已排期)、Start(只读确认即 RunIssue)。左栏删除,改为右上角下拉视图切换(全部issue/各周/各版本)。
+
+**新概念落内核**:`Issue` 加 `assignee`/`author`/`plan_version` 字段;`RemoteIssue` 透传 assignee/author;新命令 `SetIssueAssignee`/`CreatePlanVersion`/`ScheduleToPlan`/`EditIssue`;`build_board` 七列改四合并列;`CardItemVm` 加 assignee/author/plan_version/updated_at,`ProjectVm` 加 `plan_versions`/`current_user`/`viewing_plan`。
 
 ## 最近 · 2026-08-28
 
