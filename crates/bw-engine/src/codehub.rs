@@ -229,7 +229,45 @@ pub async fn open_mr_for_branch(
         .map_err(|_| CodehubError::Parse(format!("无法解析 codehub MR iid:{text:?}")))
 }
 
-/// `codehub-cli mr merge <iid> --squash -y` — the codehub parity of
+/// 同 `open_mr_for_branch` 但 `--state all`(找开着或已合入的 MR)。
+/// 给 Done 的 issue 用 —— 它的 MR 已合入,`open_mr_for_branch` 查不到。
+pub async fn mr_for_branch(
+    host: &str,
+    path: &str,
+    branch: &str,
+) -> Result<Option<u32>, CodehubError> {
+    let out = crate::win_cmd::tokio_cmd("codehub-cli")
+        .args([
+            "mr",
+            "list",
+            "-p",
+            path,
+            "-H",
+            host,
+            "--source-branch",
+            branch,
+            "--state",
+            "all",
+            "--jq",
+            ".[0].iid",
+        ])
+        .stdin(Stdio::null())
+        .stdout(Stdio::piped())
+        .stderr(Stdio::piped())
+        .output()
+        .await
+        .map_err(spawn_err)?;
+    if !out.status.success() {
+        return Err(CodehubError::Command(stderr_text(&out)));
+    }
+    let text = String::from_utf8_lossy(&out.stdout).trim().to_string();
+    if text.is_empty() || text == "null" {
+        return Ok(None);
+    }
+    text.parse::<u32>()
+        .map(Some)
+        .map_err(|_| CodehubError::Parse(format!("无法解析 codehub MR iid:{text:?}")))
+}
 /// [`crate::github::merge_pr`]: the human验收 action that integrates the
 /// source branch into the target. Squash-merges (matches github's `--squash`).
 /// The caller ([`crate::Remote::merge_mr`] ← `MergeIssuePr`) settles the
