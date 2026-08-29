@@ -89,6 +89,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             kind: IssueKind::Business,
             origin: IssueOrigin::Human,
             week_of: bw::isoweek::current_week(),
+            plan: String::new(),
         })
         .await?;
     let (id, number) = events
@@ -130,6 +131,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             kind: IssueKind::Business,
             origin: IssueOrigin::Human,
             week_of: bw::isoweek::current_week(),
+            plan: String::new(),
         })
         .await?;
     let empty_id = events

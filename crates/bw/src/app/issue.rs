@@ -157,20 +157,14 @@ impl App {
             }]);
         }
 
-        // 桌面壳里开工 = 起一个内嵌终端,人看着 agent 干活。这条路不等执行器
-        // 返回,所以下面阻塞那一段不再走。
-        if self.run_issue_pty(id).await? {
-            return Ok(vec![Event::IssueRan {
-                id,
-                ok: true,
-                summary: "已在内嵌终端里开工,过程看会话屏".into(),
-                tool: issue.tool.clone(),
-                embed_url: String::new(),
-            }]);
-        }
-
         let ws = self.workspace_of(issue.project_id).await?;
-        // 有真实工作区就在**这张活自己的 worktree** 里干,和 PTY 那条路一样;
+        // 桌面壳里 ▶跑 走 Orca 本地 pipe(PTY 已封存)。有真实工作区才打;没有
+        // 工作区不硬打 Orca —— 退到下面的阻塞替身路(headless 同款,自我标注)。
+        // 桌面有工作区但 Orca 没开:人话报错,不静默 mock 成功(见 `run_issue_orca`)。
+        if self.pty_enabled && ws.is_dir() {
+            return self.run_issue_orca(id, &issue, &ws).await;
+        }
+        // 有真实工作区就在**这张活自己的 worktree** 里干,和 Orca 那条路一样;
         // 没有工作区就没什么可隔离的,下面走自我标注的替身。
         let tree = if ws.is_dir() {
             let t = worktree::provision(&ws, issue.number).await?;
@@ -256,6 +250,132 @@ impl App {
                 embed_url: String::new(),
             }]),
         }
+    }
+
+    /// 桌面 ▶跑 的 Orca 分支。开/复用 worktree(走 resolve,旧平级兄弟接着用)→
+    /// upsert 会话行(workspace_path 写实际用的路径)→ 推进行中 → connect Orca →
+    /// 没 id 才 create(灌系统提示词);有 id / create 完了只切树,不 ensure。
+    /// 成功回执「已在 Orca 里开工」。**Orca 没开 / 连不上:人话报错,不静默 mock
+    /// 成功**;桌面有工作区才进这条。
+    /// 系统提示词仍走 `bootstrap::agent_system_prompt`(身份+铁律+技能指针),不新模板。
+    /// Orca 不吃 LaunchPlan,不 attach_session_hook(那是给 PTY 收割 `--resume` id 的,
+    /// Orca 自己认 Claude session id)—— 技能靠提示词里的绝对路径让 agent 自己读。
+    async fn run_issue_orca(
+        &mut self,
+        id: IssueId,
+        issue: &Issue,
+        ws: &std::path::Path,
+    ) -> Result<Vec<Event>> {
+        // 开/复用 worktree:resolve 会接住旧平级兄弟,不建第二棵新树。
+        let tree = worktree::provision(ws, issue.number).await?;
+        if issue.workflow == super::OPS1_WORKFLOW {
+            crate::standard::bootstrap::write_missing_on_first_use(&tree.path)
+                .map_err(|e| AppError::Exec(format!("给这张活铺指标空壳没成:{e}")))?;
+        }
+        // upsert 会话行:workspace_path 写实际用的路径(可能是旧兄弟)。幂等:已有就返回既有行。
+        let conv = self
+            .upsert_conversation(&crate::model::Conversation {
+                id: crate::model::ConversationId::new(),
+                project_id: issue.project_id,
+                issue_id: id,
+                claude_session_id: String::new(),
+                workspace_path: tree.path.display().to_string(),
+                branch_name: tree.branch.clone(),
+                created_at: 0,
+                last_opened_at: 0,
+            })
+            .await?;
+        // 先推进行中 —— 界面上立刻看得出它开工了。
+        if issue.status != IssueStatus::InProgress {
+            let project = self.project_of(issue.project_id).await?;
+            issue_store::set_status(self, &project, id.iid(), IssueStatus::InProgress).await?;
+        }
+        // 系统提示词:身份+四铁律+技能/references 指针(和 OD 分支、阻塞路同一个函数)。
+        let prompt = format!("#{} {}\n\n{}", issue.number, issue.title, issue.body);
+        let skills_dir = self.ensure_skill_assets();
+        self.ensure_vendor_assets();
+        let skill = skills_dir
+            .as_deref()
+            .and_then(|d| super::bootstrap::skill_pointer(d, &issue.workflow));
+        let references = self
+            .ensure_prompt_assets()
+            .map(|d| super::bootstrap::references_for(issue, &d))
+            .unwrap_or_default();
+        let system_prompt =
+            super::bootstrap::agent_system_prompt(issue, skill.as_ref(), &references);
+
+        let agent = super::tools::orca_agent(&issue.tool)?;
+        let mut sid = conv.claude_session_id.clone();
+        if sid.is_empty() {
+            if let Some(found) = bw_engine::orca::session_id_for_worktree(&tree.path) {
+                sid = found;
+            }
+        }
+        let outcome = match bw_engine::orca::connect() {
+            Ok(rt) => {
+                let r = if sid.is_empty() {
+                    match bw_engine::orca::create_session(
+                        &rt,
+                        &tree.path,
+                        agent,
+                        &prompt,
+                        &system_prompt,
+                    )
+                    .await
+                    {
+                        Ok(()) => {
+                            // Claude 的 jsonl 可能晚几拍落到盘,短等再收 id。
+                            // Cursor 不写这份文件,空等满 8 秒才回「开工成功」。
+                            if bw_engine::orca::agent_supports_ensure(agent) {
+                                if let Some(found) =
+                                    bw_engine::orca::wait_session_id_for_worktree(&tree.path).await
+                                {
+                                    sid = found;
+                                }
+                            }
+                            Ok(())
+                        }
+                        Err(e) => Err(e),
+                    }
+                } else {
+                    Ok(())
+                };
+                // 开成了(含句柄超时当成功)或树上已有会话:切树,网页才跟得上。
+                // 切树失败只打日志,不把已经起来的窗打成开工失败。
+                if r.is_ok() {
+                    if let Err(e) = bw_engine::orca::reveal_tree(&rt, &tree.path).await {
+                        eprintln!(
+                            "[BW_ORCA] 窗已在,切树没跟上:{e} · {} · worktree={}",
+                            rt.log_tag(),
+                            tree.path.display()
+                        );
+                    }
+                } else if let Err(e) = &r {
+                    eprintln!(
+                        "[BW_ORCA] {e} · {} · worktree={}",
+                        rt.log_tag(),
+                        tree.path.display()
+                    );
+                }
+                r
+            }
+            Err(e) => Err(e),
+        };
+        if !sid.is_empty() {
+            let _ = self.remember_session_id(&conv, &sid).await;
+        }
+        let ok = outcome.is_ok();
+        let summary = match outcome {
+            Ok(()) => "已在 Orca 里开工,过程看会话屏".to_string(),
+            Err(e) => format!("开工失败:{e}"),
+        };
+        Ok(vec![Event::IssueRan {
+            id,
+            ok,
+            summary,
+            tool: issue.tool.clone(),
+            embed_url: String::new(),
+        }])
     }
 
     /// 「提交并开 MR」——第 4 站到第 5 站之间那一下。
@@ -453,11 +573,24 @@ impl App {
     /// worktree 干净就删分支;脏的(有未提交的劳动成果)原样留着。刀3-fix:
     /// `merge_and_settle` 和 `transition_issue` 两条结清路都走这同一个收尾,
     /// 不再各自判 `merged&&main_has_it`(那条靠 lossy 的 `issue.branch`,恒空)。
+    ///
+    /// 不能只看新路径 `.bw/worktrees/issue-<n>`:旧活记的是平级兄弟,结清时要
+    /// 能收掉那棵。先看会话行记下的路径,再看新目录,再看旧兄弟(走底座的
+    /// `resolve_issue_worktree`)。
     pub(super) async fn cleanup_issue_worktree(&self, issue: &Issue) {
         let Ok(ws) = self.workspace_of(issue.project_id).await else {
             return;
         };
-        let Some(tree) = bw_engine::workspace::issue_worktree_path(&ws, issue.number) else {
+        let recorded = self
+            .conversation_for_issue(issue.id)
+            .await
+            .ok()
+            .flatten()
+            .filter(|c| !c.workspace_path.is_empty())
+            .map(|c| std::path::PathBuf::from(&c.workspace_path));
+        let Some(tree) =
+            bw_engine::workspace::resolve_issue_worktree(&ws, issue.number, recorded.as_deref())
+        else {
             return;
         };
         // worktree 干净才收(脏的有未提交的劳动成果,不删)。

@@ -8,9 +8,10 @@
 //! 供给这一步走**底座的
 //! [`provision_issue_worktree`](bw_engine::workspace::provision_issue_worktree)**
 //! ——`bw-engine` 是 2026-08-21 从 `bw-engine` 拷来接管的一份(不是复用):
-//! 在主仓的**兄弟目录**
-//! `<主仓名>-issue-<号>` 里开一棵,分支 `bw/issue-<号>`,已经存在就原样接着用
-//! (重跑幂等)。
+//! 新树落在仓根下 `<仓根>/.bw/worktrees/issue-<号>`,分支 `bw/issue-<号>`,
+//! 已经存在就原样接着用(重跑幂等)。**旧平级兄弟 `<主仓名>-issue-<号>` 不迁、
+//! 不删** —— 接回时 [`bw_engine::workspace::resolve_issue_worktree`] 先看会话记下
+//! 的路径、再看新目录、最后看旧兄弟,旧活就地接着用。
 //!
 //! **不给 RAII guard,不跑完就删**。V3 是跑完 `Drop` 里把 worktree 删掉;V4
 //! 不能那样:会话屏的文件树和 diff 读的就是这棵 worktree,跑完立刻删,人点开
