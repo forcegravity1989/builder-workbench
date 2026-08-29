@@ -19,7 +19,7 @@ Rust 1.82+,cargo workspace。桌面壳另需 Dioxus 0.7 的系统依赖(macOS �
 ```bash
 cargo check -p bw -p bw-engine            # 日常最快(内核+底座,不编 Dioxus)
 cargo run -p app-shell                      # 启 buddy MVP 桌面壳(bin 名 bw-dev)
-BW_OPEN=<项目名> BW_PANEL=overview|plan|session|notify|config|kb ./target/debug/bw-dev
+BW_OPEN=<项目名> BW_PANEL=overview|plan|session|config|kb ./target/debug/bw-dev
                                             # 深链直达屏;stderr [BW_OPEN]=真的渲染到了
 BW_VIEW=onboard|settings ./target/debug/bw-dev   # 顶层屏深链
 cargo run -p bw-engine --example pty_smoke [-- --teardown|-- --abort]  # PTY 地基烟测(不碰 claude/网关)
@@ -49,7 +49,7 @@ cargo test --workspace
 ```
 crates/   bw(MVP 内核:本地零库+仓文件解析+现算推导+Command/Event)
           bw-engine(MVP 底座:交互式 claude+PTY+worktree+git+codehub/github 远端)
-          app-shell(MVP 壳:九屏+主题+内核桥+适配模块,bin bw-dev)
+          app-shell(MVP 壳:八屏+主题+内核桥+适配模块,bin bw-dev)
 standard/  buddy 推给被管项目的规范正本(include_str! 进 bw):铺底 `templates/` + 系统提示词 `system-prompt/`(SYSTEM.md.tmpl+references)+ 自维护运作剧本 `skills/` 4 份 + 业界 workflow `vendor/`(mattpocock/mohit,给默认 workflow 打包)
 docs/      architecture(设计正本)+ guide(产品指南)+ adr + hifi + README(地图)
 scripts/   门禁脚本(guard-*)+ codegraph 联调

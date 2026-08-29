@@ -4,6 +4,12 @@
 
 本文件按**六站 + 底座**收口,不再按每次窗口一条流水往下堆。最近一次改动永远写在最上面。
 
+## 最近 · 2026-08-29
+
+通知模块整改(#18):群通知从自由字符串(`review`/`merged`/`release` 散在动作点)重做成**固定枚举事件注册表** `NotifyEvent`(本周版本计划 / 新建活纳入本周 / PR 合入 / 发版 / 周报),加新事件=加一个 variant + 动作点调一次统一 dispatch,不散落硬编码。`review`(进评审)移除——它该在计划屏看见。`start_week_planning` 建出本周计划即发「本周版本计划」;`create_issue` 带 `week_of` 的非运作活发「新建活纳入本周」;合入/发版迁到枚举 key。总览「同步哪些通知」从 3 个 checkbox 扩到 5 个,单项可关。周报(`weekly`)只留枚举项 + 配置开关 + dispatch 槽,**不实现触发与生成**(后续单独会话,接入点已留)。决策动机与取舍见 [`docs/adr/0002-通知模块整改-事件注册表与删页签.md`](docs/adr/0002-通知模块整改-事件注册表与删页签.md)。
+
+删通知页签整片:`screens/notify/`、`Panel::Notify`、`BW_PANEL=notify` 深链、`NotifyVm` 的 `to_merge`/`seen_at`/`events`、`NotifyEventVm`、`build_notify_events`/`stamp`、`Req::SelectIssue` + `ui.selected_issue` + 计划屏 `p_sel`/`came_from` 接收机制、`Command::MarkNotifySeen`/`Event::NotifySeenMarked`/`ProjectRegistry.notify_seen` 死路径全清。`NotifyVm` 瘦成只剩 `unread`(评审中活张数,现算),项目墙 ⚑ 留、tooltip 改;项目轨未读徽章从已删的通知页签挪到项目轨头部(项目级属性,不绑页签)。个人 Windows 弹窗**本轮不建**(后续单独会话)。
+
 ## 最近 · 2026-08-26
 
 首次运作活①:`.bw/metrics.toml` 从零起草。北极星本轮**留空**(人要的是「被纳入项目是否又快又好」,MVP 阶段无用户效果数据、手填也无思路,诚实灰,不为点亮硬凑)。一条滞后「纳入管理项目数」(C 类手填)+ 一条引领「每周闭环 issue 数」(A 类,脚本 `.bw/scripts/codehub-closed-issues.py` 真采到=3)。代码仓指标(提交数 / MR 合入数)workbench 平台自记,不重复定义。判定与理由见 `docs/metrics.md`。
