@@ -10,7 +10,7 @@ use bw::command::Event;
 use bw::model::{IssueKind, IssueStatus, Project, ProjectId};
 use bw::repo::{issue_policy_file, project_file};
 
-use super::vm_derive::{build_card_mr, build_notify_events, build_ops, build_week_counts};
+use super::vm_derive::{build_card_mr, build_ops, build_week_counts};
 use super::vm_kb::build_kb;
 use super::vm_panels::{
     build_board, build_config, build_metrics, build_sessions, build_weeks, build_workbench,
@@ -75,8 +75,6 @@ pub(super) struct ProjectGathered {
     policy: Option<issue_policy_file::IssuePolicyFile>,
     /// 已填好 `pr_number`(`fill_pr_numbers` 跑过、`mr_cache` 跑过)的 issue 列表。
     issues: Vec<bw::Issue>,
-    conversations: Vec<bw::model::Conversation>,
-    notify_seen: Option<i64>,
     /// 会话行。`live` 是采那一刻的;`assemble` 会对着 `app.pty_live` 现刷新(纯内存)。
     sessions: Vec<SessionVm>,
     releases: Vec<ReleaseVm>,
@@ -128,8 +126,6 @@ pub struct UiState {
     /// 会话屏选中哪个会话、开着哪个页签、展开了哪些目录、中栏开着哪个文件。
     /// 纯导航状态,一律不进库。
     pub session_open: Option<bw::model::IssueId>,
-    /// 计划屏详情抽屉开着哪张活。纯导航状态,不进库。
-    pub selected_issue: Option<bw::model::IssueId>,
     pub session_tab: crate::vm::SessionTab,
     pub expanded_dirs: Vec<String>,
     pub open_file: String,
@@ -377,7 +373,6 @@ fn primary_note(events: &[Event]) -> Option<String> {
         } => format!("记下了 {name} = {value}({day})"),
         Event::ToolMappingSaved { category } => format!("「{}」的映射保存了", category.label()),
         Event::ToolProbed { name, result } => format!("{name} 探活:{result:?}"),
-        Event::NotifySeenMarked { .. } => "通知已读到这里".into(),
         Event::HealthDerived { signal, .. } => format!("健康现算完成:{signal:?}"),
     })
 }
@@ -679,9 +674,6 @@ async fn gather_project(
     // 通知「待合入」/ 详情 MR 卡 / 总览名片 MR 才看得到号;查过一次缓存到
     // ui.mr_cache,每重拼一次 ViewModel 不重打 codehub-cli/gh。
     fill_pr_numbers(&p, &mut issues, &mut ui.mr_cache).await;
-    let conversations = app.conversations(id).await.unwrap_or_default();
-    // 「读到这里」是哪一刻。通知屏和项目轨的红点用的是同一个值,读一次就够。
-    let notify_seen: Option<i64> = app.notify_seen(id).await;
     let sessions = build_sessions(app, id, &issues).await;
     // 详情抽屉里那两条链接的前缀。**按 provider 拼**(库里那三个远端字段),
     // 不从 `origin` 推 —— codehub clone 走 SSH,origin 里是 SSH 主机加端口。
@@ -734,8 +726,6 @@ async fn gather_project(
         file,
         policy,
         issues,
-        conversations,
-        notify_seen,
         sessions,
         releases,
         health: HealthVm {
@@ -749,6 +739,7 @@ async fn gather_project(
         ops3_landed,
         week_goals,
         current_week: current_week.to_string(),
+
         mr_url_prefix,
         issue_url_prefix,
         week_started,
@@ -874,21 +865,12 @@ async fn assemble_project(
         sessions: sessions.clone(),
         session_open: ui.session_open,
         briefing: ui.briefing.clone(),
-        selected_issue: ui.selected_issue,
         mr_url_prefix: pg.mr_url_prefix.clone(),
         issue_url_prefix: pg.issue_url_prefix.clone(),
         workbench,
         notify: NotifyVm {
-            // 评审中 **且真有 MR**。没 MR 的评审中活不是通知 —— 它在计划屏的
-            // 评审中那一列里,人在那儿点完成。
-            to_merge: pg
-                .issues
-                .iter()
-                .filter(|i| i.status == IssueStatus::InReview && i.pr_number > 0)
-                .map(card_item)
-                .collect(),
-            seen_at: pg.notify_seen,
-            events: build_notify_events(&pg.issues, &pg.conversations),
+            // 评审中的活张数,现算。项目墙 ⚾ 与项目轨头部徽章读它。通知页签已删
+            // (ADR-0002),事件流/等你合入列表不再进 ViewModel。
             unread: bw::app::count_unseen(&pg.issues),
         },
         config: {

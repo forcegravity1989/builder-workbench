@@ -4,6 +4,12 @@
 
 本文件按**六站 + 底座**收口,不再按每次窗口一条流水往下堆。最近一次改动永远写在最上面。
 
+## 最近 · 2026-08-29
+
+通知模块整改(#18):群通知从自由字符串(`review`/`merged`/`release` 散在动作点)重做成**固定枚举事件注册表** `NotifyEvent`(本周版本计划 / 新建活纳入本周 / PR 合入 / 发版 / 周报),加新事件=加一个 variant + 动作点调一次统一 dispatch,不散落硬编码。`review`(进评审)移除——它该在计划屏看见。`start_week_planning` 建出本周计划即发「本周版本计划」;`create_issue` 带 `week_of` 的非运作活发「新建活纳入本周」;合入/发版迁到枚举 key。总览「同步哪些通知」从 3 个 checkbox 扩到 5 个,单项可关。周报(`weekly`)只留枚举项 + 配置开关 + dispatch 槽,**不实现触发与生成**(后续单独会话,接入点已留)。决策动机与取舍见 [`docs/adr/0002-通知模块整改-事件注册表与删页签.md`](docs/adr/0002-通知模块整改-事件注册表与删页签.md)。
+
+删通知页签整片:`screens/notify/`、`Panel::Notify`、`BW_PANEL=notify` 深链、`NotifyVm` 的 `to_merge`/`seen_at`/`events`、`NotifyEventVm`、`build_notify_events`/`stamp`、`Req::SelectIssue` + `ui.selected_issue` + 计划屏 `p_sel`/`came_from` 接收机制、`Command::MarkNotifySeen`/`Event::NotifySeenMarked`/`ProjectRegistry.notify_seen` 死路径全清。`NotifyVm` 瘦成只剩 `unread`(评审中活张数,现算),项目墙 ⚑ 留、tooltip 改;项目轨未读徽章从已删的通知页签挪到项目轨头部(项目级属性,不绑页签)。个人 Windows 弹窗**本轮不建**(后续单独会话)。
+
 ## 最近 · 2026-08-28
 
 计划屏操作卡顿(#16):纯导航(切周 / 点总览 / 选卡片看详情 / 切页签 / 展开目录 / 后台采回发)走快路径,复用上次 gather、不重跑 git 子进程 / 远端 / OD 探活;真命令、换项目、刷新、`SelectSession` 仍走全量。`build()` 拆成 `gather`(贵、数据变更时跑)+ `assemble`(便宜、每次跑)。顺带去掉三处重复:`probe_env` 每重建跑两遍 → 探一次;打开项目 `app.issues` 拉两遍 → 拉一次;`build_ops` 的 `git::path_in_head` 跑两遍 → 算一次传参。决策见 [`docs/adr/0002`](docs/adr/0002-导航快路径-gather缓存.md),是 [ADR 0001](docs/adr/0001-codehub-issue-正本-本地零库.md)「优化(本地只读缓存、失效策略)留后续」那条的落地。
