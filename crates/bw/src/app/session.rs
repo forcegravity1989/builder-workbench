@@ -9,7 +9,6 @@
 //! 开工后从本机 `~/.claude/projects/…/<id>.jsonl` 收最新一条记进会话行;再开工
 //! 走 `ensure`。收不到就不编 id,下次再收。
 
-use super::worktree;
 use super::{App, AppError, Result};
 use crate::command::Event;
 use crate::model::IssueId;
@@ -67,9 +66,11 @@ impl App {
     /// 上一格。切树成功就算成功;树上有没有 issue 那条窗口是其次。
     ///
     /// - 没会话行 → 拒绝,让人点▶开工。
+    /// - 先认会话记下的树(旧平级兄弟也算),没有再看新目录,再没有才看旧兄弟。
+    ///   **不新建**第二棵 —— 去会话不是开工。
     /// - 一律 `worktree.activate`。有 Claude session id(会话行或这棵树的 jsonl)
-    ///   再尽量 ensure 那条 tab;ensure 失败不算跳失败。
-    /// - 不跟当前类别映射走。worktree::provision 复用已有活树,不建第二棵。
+    ///   再尽量 ensure 那条 tab;ensure 失败不算跳失败。Cursor 没有 ensure。
+    /// - 不跟当前类别映射走。
     pub(super) async fn reopen_session(&mut self, id: IssueId) -> Result<Vec<Event>> {
         if !self.pty_enabled {
             return Err(AppError::Refused(
@@ -86,20 +87,31 @@ impl App {
         if !ws.is_dir() {
             return Err(AppError::NoWorkspace(issue.project_id.uuid().to_string()));
         }
-        let tree = worktree::provision(&ws, issue.number).await?;
+        let recorded = if conv.workspace_path.is_empty() {
+            None
+        } else {
+            Some(std::path::PathBuf::from(&conv.workspace_path))
+        };
+        let Some(path) =
+            bw_engine::workspace::resolve_issue_worktree(&ws, issue.number, recorded.as_deref())
+        else {
+            return Err(AppError::Refused(
+                "这张活的工作树找不到了 —— 点「▶开工」再开一棵".into(),
+            ));
+        };
         let mut sid = conv.claude_session_id.clone();
         if sid.is_empty() {
-            if let Some(found) = bw_engine::orca::session_id_for_worktree(&tree.path) {
+            if let Some(found) = bw_engine::orca::session_id_for_worktree(&path) {
                 sid = found;
             }
         }
         let rt = bw_engine::orca::connect()
             .map_err(|e| AppError::Exec(format!("连 Orca 没成,接不回会话:{e}")))?;
-        if let Err(e) = bw_engine::orca::reveal_tree(&rt, &tree.path, &sid).await {
+        if let Err(e) = bw_engine::orca::reveal_tree(&rt, &path, &sid).await {
             eprintln!(
                 "[BW_ORCA] {e} · {} · worktree={}",
                 rt.log_tag(),
-                tree.path.display()
+                path.display()
             );
             return Err(AppError::Exec(format!("在 Orca 里切到这棵树没成:{e}")));
         }

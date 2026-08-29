@@ -69,7 +69,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     .with_progress(prog_tx);
 
     // 每一档跑完就把这一档报的进度行倒出来 —— 界面上看到的就是这些。
-    let mut drain = |label: &str, rx: &mut tokio::sync::broadcast::Receiver<ProgressLine>| {
+    let drain = |label: &str, rx: &mut tokio::sync::broadcast::Receiver<ProgressLine>| {
         while let Ok(l) = rx.try_recv() {
             println!(
                 "[ONBOARD_SMOKE]   {label} 进度 · 第{}步 {:?} {}",

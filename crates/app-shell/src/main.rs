@@ -159,7 +159,7 @@ fn Root() -> Element {
 
     let b_rail = bridge.clone();
     // 项目轨头部徽章和项目墙卡片上的 ⚑ 是同一个数(见 `NotifyVm::unread`)
-    // —— 评审中的活张数,现算。通知页签已删(ADR-0002),个人弹窗落地前
+    // —— 评审中的活张数,现算。通知页签已删(ADR-0003),个人弹窗落地前
     // 它撑着「有几张等你合入」。
     let unread = project.as_ref().map(|p| p.notify.unread).unwrap_or(0);
 

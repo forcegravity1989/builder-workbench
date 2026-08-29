@@ -173,6 +173,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             kind: IssueKind::Business,
             origin: IssueOrigin::Human,
             week_of: week.clone(),
+            plan: String::new(),
         })
         .await?;
     let main_issue = events

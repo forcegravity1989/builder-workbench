@@ -90,7 +90,7 @@ pub fn for_project(provider: &str, group_id: &str) -> Box<dyn ChatGroup> {
 
 /// 群通知事件——一张**固定枚举注册表**。加新事件(如周报触发)= 加一个
 /// variant + 在对应动作点调一次 [`App::chat_send`](crate::app::App::chat_send),
-/// 不是散落硬编码字符串。详见 ADR-0002。
+/// 不是散落硬编码字符串。详见 ADR-0003。
 ///
 /// 顺序即总览「同步哪些通知」里勾选项的稳定顺序,别随意调。
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

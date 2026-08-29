@@ -362,6 +362,7 @@ pub fn DeleteVersionDialog(
     bridge: Bridge,
 ) -> Element {
     let b = bridge.clone();
+    let pid = p.id;
     let default_sel = p
         .plan_versions
         .first()
@@ -397,14 +398,10 @@ pub fn DeleteVersionDialog(
                             class: "btn btn-danger",
                             onclick: move |_| {
                                 let s = sel.read().clone();
-                                // 删版本 = 给该版本下所有 issue 摘 bw:plan 标签(移回未排期)
-                                for c in &p.board.columns {
-                                    for card in &c.cards {
-                                        if card.plan_version == s {
-                                            b.cmd(Command::ScheduleIssue { id: card.id, week_of: None });
-                                        }
-                                    }
-                                }
+                                b.cmd(Command::DeletePlanVersion {
+                                    project_id: pid,
+                                    name: s,
+                                });
                                 dialog.set(None);
                             },
                             "删除"
