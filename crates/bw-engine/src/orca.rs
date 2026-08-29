@@ -153,6 +153,52 @@ pub async fn ensure_repo(rt: &OrcaRuntime, repo: &Path) -> Result<(), OrcaError>
     )
     .await?;
     require_ok(&added, "repo.add")?;
+    // 仓已经在了,visibility 改不成也不挡接入。不改 worktreeBasePath ——
+    // 写成 `.bw/worktrees` 会被 Orca 当成自己的工作区根,新树一出现就开空窗。
+    let _ = publish_visibility(rt, repo).await;
+    Ok(())
+}
+
+/// 刚 `git worktree add` 完,Orca 的扫描缓存(30s)还是打开项目时那份,
+/// `path:<新树>` 会 `selector_not_found`。再写一次 `worktreeBasePath` 会刷掉
+/// 扫描(Orca 只在这个字段再写时 invalidate)。**不是 `repo.add`**。
+/// 只回写 Orca 已有的值(我们误写成 `.bw/worktrees` 的清掉),不把扫描根改成 buddy 目录。
+pub async fn refresh_worktrees(rt: &OrcaRuntime, repo: &Path) -> Result<(), OrcaError> {
+    let shown = call(
+        rt,
+        "repo.show",
+        json!({ "repo": path_prefixed(repo) }),
+        ACTIVATE_TIMEOUT,
+    )
+    .await?;
+    require_ok(&shown, "repo.show")?;
+    let current = shown
+        .pointer("/result/repo/worktreeBasePath")
+        .and_then(|v| v.as_str())
+        .unwrap_or("");
+    // 上一刀误把扫描根写成 buddy 目录;空串经 Orca OptionalString 变 undefined,清掉误写。
+    let base = if current == ".bw/worktrees" {
+        ""
+    } else {
+        current
+    };
+    let updated = call(
+        rt,
+        "repo.update",
+        json!({
+            "repo": path_prefixed(repo),
+            "updates": {
+                "externalWorktreeVisibility": "show",
+                "worktreeBasePath": base
+            }
+        }),
+        ACTIVATE_TIMEOUT,
+    )
+    .await?;
+    require_ok(&updated, "repo.update")
+}
+
+async fn publish_visibility(rt: &OrcaRuntime, repo: &Path) -> Result<(), OrcaError> {
     let updated = call(
         rt,
         "repo.update",
@@ -163,9 +209,7 @@ pub async fn ensure_repo(rt: &OrcaRuntime, repo: &Path) -> Result<(), OrcaError>
         ACTIVATE_TIMEOUT,
     )
     .await?;
-    // 仓已经在了,visibility 改不成也不挡后面的切树 / 开工。
-    let _ = require_ok(&updated, "repo.update");
-    Ok(())
+    require_ok(&updated, "repo.update")
 }
 
 /// 把配对网页 / 桌面切到这棵 worktree。不 resume agent。去会话、create

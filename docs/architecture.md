@@ -137,7 +137,8 @@ references(`standard/system-prompt/references/*.md`)是「干某类活需要额�
 **PTY 封存**:`interactive_cli` / `pty_backend` / `terminal_manager` 整包挪到 `bw-engine` 的 `legacy_pty/`,开工路径不再调用。新模块 `orca`(对标 `open_design.rs`)接口一次定住:
 
 - `connect() -> OrcaRuntime` — 读本机 `orca-runtime.json`,token 不落盘
-- `ensure_repo` — 纳入 / 开工 / Open 前把被管仓 `repo.add` 进 Orca(已有则原样返回),并打开外部 worktree 可见。人不去 Orca 里手导 `workspaces/xx`
+- `ensure_repo` — 纳入、以及打开项目时把被管仓 `repo.add` 进 Orca(已有则原样返回,这个进程里登过不再打)。不跟开工 / 去会话绑在一起。人不去 Orca 里手导 `workspaces/xx`。开工那几秒盖遮罩挡住嵌页
+- `refresh_worktrees` — 开工在 `git worktree add` 之后、create 之前:再写一次 `worktreeBasePath`(回写 Orca 已有值;误写成 `.bw/worktrees` 的清掉)。Orca 没有「刷新扫描」RPC;`path:` 走 30s `worktreeScanCache`,刚 add 的树立刻 create 会 `selector_not_found`;只有 payload 带 `worktreeBasePath` 的 `repo.update` 才清这级缓存。不把扫描根改成 buddy 目录(Orca 会把那当自己的工作区根、新树开空窗、提示词灌不进你看见的那扇)。不 `repo.add`、不用 Orca 的 `worktree.create`(树已在会和 git 打架)
 - `reveal_tree` / `activate_worktree` — 去会话和开工成功后跟网页:只 `worktree.activate`(12s)。不 ensure、不 resume
 - `create_session(worktree, agent, prompt, system)` — Orca 预设名是 `claude` / `cursor`(`cursor-agent` 是启动二进制,打出去会被 `Unknown agent preset` 拒);内部按代理填 `agentArgs` 或把 system 拼进 prompt;`clientOperationId` 用 Orca 规定形状(13 位毫秒 + `-` + 32 hex,不是 RPC 帧 id),形状不对立刻 `agent_session_operation_invalid` 被拒。Orca 回「等终端句柄超时」当成功(窗已在)。create 成功后只给 Claude 短等 jsonl 收 session id;Cursor 不等;然后切树
 - `web_embed_url(fallback)` — 给会话屏 iframe 的 loopback;先 `BW_ORCA_WEB_URL` 后本机设置。WebView2 部分导航会丢 fragment,把 `#pairing=` 搬成 `?pairing=`(Orca 两边都认,只搬家不 mint code)
@@ -145,7 +146,7 @@ references(`standard/system-prompt/references/*.md`)是「干某类活需要额�
 **代码**:会话屏 `app-shell/screens/session/mod.rs`(只剩 Orca/OD 两页签);开工在计划屏 → `run_issue` / `run_issue_orca`;路径 `bw-engine/workspace.rs`;Orca 客户端 `bw-engine/orca.rs`;PTY 封存 `bw-engine/legacy_pty/`。
 **数据**:issue 正本不变。会话正文不进 buddy 库。token 不入库。worktree 目录不入库。系统提示词开工时现算、一次性灌进 Orca/OD,不落配置屏、不跟会话屏当前页签走。
 **依赖**:本机 Orca(官方包或源码桌面)+ named-pipe;会话屏 iframe 吃本机设置里的 pairing URL(开发期可被 `BW_ORCA_WEB_URL` 覆盖)。`#![forbid(unsafe_code)]` 仍守。
-**没建**:不能自己 mint 配对码,人从 Orca 桌面「给 web 配对」拿「Open in browser」贴进设置屏(存本机 `settings.toml`,带 token 不进仓 / Event 原文 / 日志);开发期 `BW_ORCA_WEB_URL` 可覆盖。跟随在带这刀的 Orca 里已兑现、官方包还没有;去会话 / Open 先挂嵌页再切树。`DeleteSession` 内核还在,会话屏没有按钮。稿未改。账本路径未改。不做:自己 mint pairing、postMessage、会话 URL、新 crate、Cursor 专模块、`worktree-orca-adapter`、迁旧树、源码版与安装版并行。人不去 Orca 手导仓——纳入 / 开工 / Open 走 `ensure_repo`。
+**没建**:不能自己 mint 配对码,人从 Orca 桌面「给 web 配对」拿「Open in browser」贴进设置屏(存本机 `settings.toml`,带 token 不进仓 / Event 原文 / 日志);开发期 `BW_ORCA_WEB_URL` 可覆盖。跟随在带这刀的 Orca 里已兑现、官方包还没有;去会话 / Open 先挂嵌页再切树。`DeleteSession` 内核还在,会话屏没有按钮。稿未改。账本路径未改。不做:自己 mint pairing、postMessage、会话 URL、新 crate、Cursor 专模块、`worktree-orca-adapter`、迁旧树、源码版与安装版并行。人不去 Orca 手导仓——纳入 / 打开项目走 `ensure_repo`,不跟开工 / 去会话绑。
 
 ### 8 · 远端与工具探活
 
