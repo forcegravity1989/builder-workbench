@@ -114,6 +114,8 @@ pub(super) struct WorkbenchCache {
 pub struct UiState {
     pub open: Option<ProjectId>,
     pub viewing_week: String,
+    /// 看某个自定义版本(计划包)。空 = 不在看版本。
+    pub viewing_plan: String,
     /// 计划屏左栏点的是「全部」。
     pub view_all: bool,
     pub open_doc: Option<String>,
@@ -374,6 +376,20 @@ fn primary_note(events: &[Event]) -> Option<String> {
         Event::ToolMappingSaved { category } => format!("「{}」的映射保存了", category.label()),
         Event::ToolProbed { name, result } => format!("{name} 探活:{result:?}"),
         Event::HealthDerived { signal, .. } => format!("健康现算完成:{signal:?}"),
+        Event::IssueScheduledToPlan { plan, .. } => {
+            format!("已排进版本 {plan} —— 正本是 bw:plan 标签,codehub 里程碑同步中")
+        }
+        Event::PlanVersionCreated { name, .. } => {
+            format!("版本 {name} 已建 —— 自定义计划包,和发版号不是一回事")
+        }
+        Event::IssueAssigneeSet { assignee, .. } => {
+            if assignee.is_empty() {
+                "已取消指派 · 已同步到 codehub".into()
+            } else {
+                format!("责任人改为 {assignee} · 已同步到 codehub")
+            }
+        }
+        Event::IssueEdited { .. } => "issue 标题/正文已改 · 已同步到 codehub".into(),
     })
 }
 
@@ -629,7 +645,9 @@ async fn fill_pr_numbers(
                 i.status,
                 IssueStatus::Backlog | IssueStatus::Todo | IssueStatus::InProgress
             );
-        if i.number == 0 || (i.status != IssueStatus::InReview && !card_edit) {
+        if i.number == 0
+            || (i.status != IssueStatus::InReview && i.status != IssueStatus::Done && !card_edit)
+        {
             continue;
         }
         if let Some(&pr) = mr_cache.get(&i.id) {
@@ -637,10 +655,18 @@ async fn fill_pr_numbers(
             continue;
         }
         let branch = bw_engine::github::issue_branch(i.number);
-        let pr = match remote.open_mr_for_branch(&branch).await {
-            Ok(Some(n)) => n,
-            // 查不成 / 没开着的 MR —— 0,不显 MR(如实,不假装)。
-            _ => 0,
+        // InReview 查 open MR;Done 查 all(含合入)——合入的 MR 用
+        // open_mr_for_branch 查不到。
+        let pr = if i.status == IssueStatus::Done {
+            match remote.mr_for_branch(&branch).await {
+                Ok(Some(n)) => n,
+                _ => 0,
+            }
+        } else {
+            match remote.open_mr_for_branch(&branch).await {
+                Ok(Some(n)) => n,
+                _ => 0,
+            }
         };
         i.pr_number = pr;
         mr_cache.insert(i.id, pr);
@@ -763,10 +789,15 @@ async fn assemble_project(
     } else {
         ui.viewing_week.clone()
     };
-    let week = if ui.view_all {
+    let week = if ui.view_all || !ui.viewing_plan.is_empty() {
         None
     } else {
         Some(viewing_week.as_str())
+    };
+    let plan = if !ui.viewing_plan.is_empty() {
+        Some(ui.viewing_plan.as_str())
+    } else {
+        None
     };
     // 指标读数按正在看的那一周现读(本机 jsonl,便宜)。
     let readings = bw::app::read_metric_readings(&pg.ws, &viewing_week);
@@ -846,8 +877,11 @@ async fn assemble_project(
         weeks: build_weeks(&pg.issues, &pg.current_week, &pg.week_goals),
         current_week: pg.current_week.clone(),
         viewing_week: viewing_week.clone(),
+        viewing_plan: ui.viewing_plan.clone(),
         view_all: ui.view_all,
-        board: build_board(&pg.issues, week, pg.policy.as_ref()),
+        board: build_board(&pg.issues, week, plan, pg.policy.as_ref()),
+        plan_versions: build_plan_versions(app, &pg.project, &pg.issues).await,
+        current_user: current_user(app, &pg.project).await,
         // 两份计数,各有各的归属:总览那块标题写着「本周」,就只能是本周;
         // 计划屏的进度条画在它正在看的那个看板上面,就跟着看板的范围走。
         week_counts: build_week_counts(&pg.issues, Some(pg.current_week.as_str())),
@@ -901,6 +935,61 @@ pub(super) fn or_blank(s: &str) -> String {
     }
 }
 
+/// 自定义版本(计划包)列表:扫 issues 的 `plan_version` 字段去重,带计数。
+/// 起止时间暂留空(要读 codehub milestone 列表才有,VM 构建时不起远端调用)。
+/// 当前登录用户名(给列表「我的」筛选用)。读不到返空。
+async fn current_user(app: &App, p: &Project) -> String {
+    match app.remote_for(p) {
+        Ok(r) => r.current_user().await.unwrap_or_default(),
+        Err(_) => String::new(),
+    }
+}
+
+/// 自定义版本(计划包)列表:扫 issues 的 `plan_version` 字段去重 + 读 codehub
+/// milestone 列表(标题非周格式的就是版本)补 start/end,让空版本也能出现。
+async fn build_plan_versions(app: &App, p: &Project, issues: &[bw::Issue]) -> Vec<PlanVersionVm> {
+    let mut counts: std::collections::HashMap<String, u32> = std::collections::HashMap::new();
+    for i in issues {
+        if i.plan_version.is_empty() {
+            continue;
+        }
+        *counts.entry(i.plan_version.clone()).or_default() += 1;
+    }
+    // 从 codehub milestone 列表读版本(标题非周格式),补上 start/end,且让
+    // 没勾 issue 的空版本也能出现。读不到(没挂远端/cli 失败)就只靠 issues 标签。
+    let mut order: Vec<String> = Vec::new();
+    let mut meta: std::collections::HashMap<String, (String, String)> =
+        std::collections::HashMap::new();
+    if let Ok(remote) = app.remote_for(p) {
+        if let Ok(rows) = remote.list_milestones(&p.remote_path).await {
+            for (title, start, due) in rows {
+                if !order.contains(&title) {
+                    order.push(title.clone());
+                }
+                meta.insert(title, (start, due));
+            }
+        }
+    }
+    // issues 里带的版本名也补进 order(防止 milestone 列表读不到时漏掉)
+    for i in issues {
+        if !i.plan_version.is_empty() && !order.contains(&i.plan_version) {
+            order.push(i.plan_version.clone());
+        }
+    }
+    order
+        .into_iter()
+        .map(|name| {
+            let (start, end) = meta.get(&name).cloned().unwrap_or_default();
+            PlanVersionVm {
+                name: name.clone(),
+                start,
+                end,
+                issue_count: counts.remove(&name).unwrap_or(0),
+            }
+        })
+        .collect()
+}
+
 pub(super) fn card_item(i: &bw::Issue) -> CardItemVm {
     CardItemVm {
         id: i.id,
@@ -928,6 +1017,14 @@ pub(super) fn card_item(i: &bw::Issue) -> CardItemVm {
         remote_number: i.remote_number,
         branch: i.branch.clone(),
         body: i.body.clone(),
+        assignee: i.assignee.clone(),
+        author: i.author.clone(),
+        plan_version: i.plan_version.clone(),
+        updated_at: if i.updated_at > 0 {
+            i.updated_at
+        } else {
+            i.created_at
+        },
     }
 }
 

@@ -61,7 +61,14 @@ pub async fn create(
     extra_labels: &[&str],
 ) -> Result<Issue> {
     let remote = app.remote_for(project)?;
-    let mut labels: Vec<String> = vec!["bw:status:todo".to_string()];
+    // 未排期(week_of 空)的 issue 状态是 Backlog(待办池),排进周的才是 Todo(已排期)。
+    // 以前统一打 todo,新建未排期的 issue 状态显示"已排期"但计划"未排期",矛盾。
+    let status_label = if week_of.is_empty() {
+        "bw:status:backlog"
+    } else {
+        "bw:status:todo"
+    };
+    let mut labels: Vec<String> = vec![status_label.to_string()];
     if !week_of.is_empty() {
         labels.push(format!("bw:week:{week_of}"));
     }
@@ -177,10 +184,10 @@ pub async fn set_category(
 }
 
 /// 改 issue 的周标签(`bw:week:*`,namespace-replace 会换掉旧 week)。
+/// 同时摘 `bw:plan:`(空后缀) —— 周与版本互斥,排进周就不能还挂着版本。
 pub async fn set_week(app: &App, project: &Project, iid: u32, week: &str) -> Result<()> {
     let remote = app.remote_for(project)?;
-    let label = format!("bw:week:{week}");
-    let labels = [label];
+    let labels = [format!("bw:week:{week}"), "bw:plan:".to_string()];
     let label_refs: Vec<&str> = labels.iter().map(|s| s.as_str()).collect();
     remote
         .update_issue(iid, Some(&label_refs), None)
@@ -228,6 +235,68 @@ pub async fn set_released(app: &App, project: &Project, iid: u32, version: &str)
     Ok(())
 }
 
+/// 改 issue 的责任人(codehub assignee)。空串 = 取消指派。正本在远端。
+pub async fn set_assignee(app: &App, project: &Project, iid: u32, assignee: &str) -> Result<()> {
+    let remote = app.remote_for(project)?;
+    remote
+        .set_issue_assignee(iid, assignee)
+        .await
+        .map_err(|e| map_remote_err("远端改 issue 责任人没成", e))?;
+    Ok(())
+}
+
+/// 改 issue 的标题与正文(codehub issue update)。
+pub async fn edit_issue(
+    app: &App,
+    project: &Project,
+    iid: u32,
+    title: &str,
+    body: &str,
+) -> Result<()> {
+    let remote = app.remote_for(project)?;
+    remote
+        .edit_issue(iid, title, body)
+        .await
+        .map_err(|e| map_remote_err("远端改 issue 标题/正文没成", e))?;
+    Ok(())
+}
+
+/// 把 issue 排进自定义版本:打 `bw:plan:<name>` 标签(namespace-replace 摘掉旧
+/// `bw:plan:`)+ 挂到同名里程碑(best-effort 镜像)。和 `set_week` 互斥 ——
+/// 调用方负责先摘 `bw:week:`(排进版本就不该还挂着周标签)。
+pub async fn assign_to_plan(app: &App, project: &Project, iid: u32, plan: &str) -> Result<()> {
+    let remote = app.remote_for(project)?;
+    // 打 bw:plan:<name>,同时摘 bw:week:(空后缀 = 摘掉整个周命名空间)。
+    // 一张活要么排进某一周、要么排进某个版本,两者互斥。
+    let labels = [format!("bw:plan:{plan}"), "bw:week:".to_string()];
+    let label_refs: Vec<&str> = labels.iter().map(|s| s.as_str()).collect();
+    remote
+        .update_issue(iid, Some(&label_refs), None)
+        .await
+        .map_err(|e| map_remote_err("远端打 bw:plan 标签没成", e))?;
+    // 里程碑是 codehub 侧镜像,失败只打 stderr,不挡正本(标签)。
+    if let Err(e) = remote.project_plan(iid, &project.remote_path, plan).await {
+        eprintln!("[BW_MILESTONE] #{iid} 版本 {plan} 投影没成:{e}");
+    }
+    Ok(())
+}
+
+/// 建一个版本里程碑(title=name,start,due),返回 mid。不碰 issue ——
+/// `assign_to_plan` 才把 issue 挂上去。0 = provider 不投(github/mock)。
+pub async fn create_plan_version(
+    app: &App,
+    project: &Project,
+    name: &str,
+    start: &str,
+    due: &str,
+) -> Result<u64> {
+    let remote = app.remote_for(project)?;
+    remote
+        .ensure_plan_milestone(&project.remote_path, name, start, due)
+        .await
+        .map_err(|e| map_remote_err("远端建版本里程碑没成", e))
+}
+
 /// 在远端**开着的** issue 里找一张标题精确匹配的。B 类轻量活在途复用用
 /// (固定枚举标题,同一张卡不建第二张)。找不到返回 `None`,不报错。
 pub async fn find_open_by_title(
@@ -271,7 +340,11 @@ fn issue_from_create(
         remote_number: iid,
         title: title.to_string(),
         body: body.to_string(),
-        status: IssueStatus::Todo,
+        status: if week_of.is_empty() {
+            IssueStatus::Backlog
+        } else {
+            IssueStatus::Todo
+        },
         branch: String::new(),
         pr_number: 0,
         week_of: week_of.to_string(),
@@ -286,6 +359,9 @@ fn issue_from_create(
         created_at: parse_iso_to_unix(None),
         updated_at: 0,
         settled_at: None,
+        assignee: String::new(),
+        author: String::new(),
+        plan_version: String::new(),
     }
 }
 
@@ -337,6 +413,9 @@ fn issue_from_remote(project: &Project, r: &RemoteIssue) -> Issue {
         created_at,
         updated_at: 0,
         settled_at,
+        assignee: r.assignee.clone().unwrap_or_default(),
+        author: r.author.clone().unwrap_or_default(),
+        plan_version: parse_plan(&r.labels),
     }
 }
 
@@ -491,6 +570,14 @@ fn parse_released(labels: &[String]) -> String {
     labels
         .iter()
         .find_map(|l| l.strip_prefix("bw:released:").map(|s| s.to_string()))
+        .unwrap_or_default()
+}
+
+/// 从 `bw:plan:<name>` 标签取这张活排进的自定义版本。空 = 不属于任何版本。
+fn parse_plan(labels: &[String]) -> String {
+    labels
+        .iter()
+        .find_map(|l| l.strip_prefix("bw:plan:").map(|s| s.to_string()))
         .unwrap_or_default()
 }
 
