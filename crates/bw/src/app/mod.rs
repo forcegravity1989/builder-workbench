@@ -456,6 +456,9 @@ impl App {
                 self.create_plan_version(project_id, name, start, due, note, included)
                     .await
             }
+            Command::DeletePlanVersion { project_id, name } => {
+                self.delete_plan_version(project_id, name).await
+            }
             Command::CutRelease {
                 project_id,
                 version,

@@ -37,7 +37,6 @@ fn action_kind(c: &CardItemVm) -> &'static str {
         | IssueStatus::Blocked
         | IssueStatus::Done
         | IssueStatus::Cancelled => "open",
-        _ => "dash",
     }
 }
 

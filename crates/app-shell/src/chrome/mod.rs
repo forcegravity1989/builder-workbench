@@ -174,7 +174,7 @@ pub fn ProjectRail(
                     span { "{version}" }
                     {light_dot(signal, false)}
                     // 未读徽章:评审中的活有几张。原挂在已删的通知页签上
-                    // (ADR-0002),挪到项目轨头部——它是项目级属性,不该绑在
+                    // (ADR-0003),挪到项目轨头部——它是项目级属性,不该绑在
                     // 某个页签上。个人弹窗落地后再看它的角色。
                     if unread > 0 {
                         span { class: "pr-badge", title: "评审中的活有几张", "{unread}" }

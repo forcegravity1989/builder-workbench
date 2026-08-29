@@ -124,7 +124,7 @@ references(`standard/system-prompt/references/*.md`)是「干某类活需要额�
 
 ### 7 · 会话与执行
 
-**是什么**:会话屏只剩两个组件——**Orca**、**Open Design**。旧三栏和后来加上的动作条、灌词条都不要:停止 / 开 MR / 推评审 / 删会话在 Orca 里做,或在计划屏拖列;buddy 也不知道人在 Orca 里点了哪条会话,灌词条对着「当前会话」会骗人。开工入口在**计划屏**(拖进「进行中」或详情 ▶开工),同一条 `run_issue`:开/复用 worktree,打 Orca 本地 pipe(`createAgentSession`;Claude 有 session id 则 `ensureAgentSession`,Cursor 接回只 `worktree.activate`),铁律挂启动参数(Cursor 拼进用户话)。**去会话**先 `worktree.activate` 切到这张活的树,有 Claude session id 再尽量 ensure 那条 tab;切树成功就算成功,树上有几扇窗、是否正好落到 issue 那条是其次。会话屏只是把本机已开的 Orca web / OD 嵌进来给人看。完成仍由人点(计划屏拖进已完成 / 合入)。
+**是什么**:会话屏只剩两个组件——**Orca**、**Open Design**。旧三栏和后来加上的动作条、灌词条都不要:停止 / 开 MR / 推评审 / 删会话在 Orca 里做,或在计划屏拖列;buddy 也不知道人在 Orca 里点了哪条会话,灌词条对着「当前会话」会骗人。开工入口在**计划屏**(拖进「进行中」或详情 ▶开工),同一条 `run_issue`:开/复用 worktree,打 Orca 本地 pipe(`createAgentSession`;Claude 有 session id 则 `ensureAgentSession`,Cursor 接回只 `worktree.activate`),铁律挂启动参数(Cursor 拼进用户话)。**去会话**先认会话记下的路径再 `worktree.activate` 切到这张活的树,有 Claude session id 再尽量 ensure 那条 tab;切树成功就算成功,树上有几扇窗、是否正好落到 issue 那条是其次。会话屏只是把本机已开的 Orca web / OD 嵌进来给人看。完成仍由人点(计划屏拖进已完成 / 合入)。
 
 **两条通道别混**:本地 pipe 是 buddy 对 Orca 桌面下命令(开工、接回),同机读 `orca-runtime.json` 的 token,不需要配对。嵌网页是把本机已开的 Orca web 给人看,要带 `#pairing=` 才能看见桌面那份状态;配对码 Orca 不经 pipe 发,人从桌面「给 web 配对」拿完整 URL,贴进本机 `settings.toml`(设置屏可改;开发期 `BW_ORCA_WEB_URL` 可覆盖)。没喂 URL 则这块如实空着,开工不受影响。
 
@@ -168,12 +168,12 @@ references(`standard/system-prompt/references/*.md`)是「干某类活需要额�
 
 ### 10 · 项目群
 
-**是什么**:适配项目本来就有的一个群(今天只有 WeLink)。buddy 往群里发一类**固定枚举事件**——本周版本计划 / 新建活纳入本周 / PR 合入 / 发版 / 周报,每件可在总览单项开关。事件挂在 `NotifyEvent` 注册表上(加新事件=加 variant + 动作点调一次统一 dispatch,不散落硬编码字符串,见 ADR-0002)。定计划时拉一段上周群历史当参考。不是发明新的协作面,也不做双向机器人。关键取舍是发送不落库(没有"已发送"账本 / 去重键 / 重试队列,发送即完成),重复触发允许真的重发一条是已接受的知情代价;群号是项目的事(走仓文件+MR)、登录是机器的事(buddy 不碰不存凭证)。
+**是什么**:适配项目本来就有的一个群(今天只有 WeLink)。buddy 往群里发一类**固定枚举事件**——本周版本计划 / 新建活纳入本周 / PR 合入 / 发版 / 周报,每件可在总览单项开关。事件挂在 `NotifyEvent` 注册表上(加新事件=加 variant + 动作点调一次统一 dispatch,不散落硬编码字符串,见 ADR-0003)。定计划时拉一段上周群历史当参考。不是发明新的协作面,也不做双向机器人。关键取舍是发送不落库(没有"已发送"账本 / 去重键 / 重试队列,发送即完成),重复触发允许真的重发一条是已接受的知情代价;群号是项目的事(走仓文件+MR)、登录是机器的事(buddy 不碰不存凭证)。
 
 **代码**:bw 的 `chat/`(`ChatGroup` trait + 工厂 + `welink` / `mock` / `none` 三实现 + `NotifyEvent` 枚举注册表 + `notify_text`)+ `app/chat_notify.rs`(`chat_send` 统一 dispatch / `chat_notify_issue`)+ `repo/project_file.rs`(`[chat]` 段)。触发点:`start_week_planning`(本周版本计划)、`create_issue` 带 `week_of`(新建活纳入本周)、合入路径(PR 合入)、`cut_release`(发版)。
 **数据**:配置在 `.bw/project.toml [chat]` 段(正本走总览「编辑项目名片」那张轻量活+MR,和名片四字段、在研版本同一张);发送不落库;探活与时间戳只写本机设置文件不开表。
 **依赖**:`welink-cli`(npm 全局装,用户自己 `auth login`,buddy 不碰凭证)经 bw_engine::tokio_cmd shell-out;`Box<dyn ChatGroup>` + async_trait。
-**没建**:群摘要 defer——welink-cli 天生拉不了群历史(只发不读),`fetch_history` 稳定返 `HistoryUnsupported` 是正常返回值不是错;不做双向机器人、群里点按钮改活状态、一个项目多个群、除 WeLink 外任何一家正式实现(WeLink 实现由同事补,buddy 侧只留接口)。**周报**(`weekly`)是已注册事件项(枚举 + 配置开关 + dispatch 槽都在),但本轮**无触发、无生成逻辑**——后续单独会话补,接入点已留(见 ADR-0002)。**个人 Windows 弹窗**本轮不建,后续单独会话——通知页签已删,个人提醒改走 OS 弹窗(推送式,不是点进来才看得见的列表),未落地前「有几张等你合入」由项目墙 ⚑ + 项目轨头部徽章撑着。
+**没建**:群摘要 defer——welink-cli 天生拉不了群历史(只发不读),`fetch_history` 稳定返 `HistoryUnsupported` 是正常返回值不是错;不做双向机器人、群里点按钮改活状态、一个项目多个群、除 WeLink 外任何一家正式实现(WeLink 实现由同事补,buddy 侧只留接口)。**周报**(`weekly`)是已注册事件项(枚举 + 配置开关 + dispatch 槽都在),但本轮**无触发、无生成逻辑**——后续单独会话补,接入点已留(见 ADR-0003)。**个人 Windows 弹窗**本轮不建,后续单独会话——通知页签已删,个人提醒改走 OS 弹窗(推送式,不是点进来才看得见的列表),未落地前「有几张等你合入」由项目墙 ⚑ + 项目轨头部徽章撑着。
 
 ### 11 · 桌面壳
 
@@ -198,7 +198,7 @@ references(`standard/system-prompt/references/*.md`)是「干某类活需要额�
 **是什么**:项目里的"计划屏":中栏周头/四列看板 + 屏幕居中的活详情弹窗,把"这周干什么"和"活的推进状态"装在一个界面里。周用 ISO 周文本(`2026-W34`,周一为起点)表示,按机器本地时区判定"现在哪一周"。周列表、发版、看板计数全部现算——没有周计划索引表、没有发版表。关键取舍是发版先建 codehub Release 成功再给活打 `bw:released` 标签(顺序不能反,否则重复点会重复打标签账对不上),版本号按版本号幂等;看板拖拽落定那一刻标签就是新的(排期是 issue 数据,不走 MR)。拖进「进行中」= 开工(▶跑),确认后切到会话屏;卡片和详情上的「▶ 开工」是同一条命令。详情点 Start / Open / 阻塞 / Cancel / Complete 后弹窗自动关;Start 确认框建 worktree,业务活可改或补类别(没打的必须选,开工工具按映射走),运作活锁「运作」。垃圾卡作废要人写原因(进 issue 评论),打 `bw:status:cancelled` 并关掉远端 issue(codehub 不能删)。读回先认取消标签,关着的作废卡不是已完成。总览/计划上的运作活点:①②开着的写它的状态,本周已关的写「已完成」(标签或标题里的周号都认);③「已完成」仍只看默认分支 HEAD 有没有 `.bw/standard.toml`,关过但没合入的旧铺底不冒充完成。
 
 **代码**:bw 的 `app/plan.rs`(用例)+ `app/ops.rs`(运作活①②标题幂等键与定时)+ `isoweek.rs` + `trend.rs`(近 N 周走势全现算);app-shell 的 `screens/plan/`(mod / kanban / detail)。
-**数据**:零本地库——codehub/GitHub issue+标签是唯一正本;排期 = 给 issue 打 `bw:week:YYYY-Www` 标签(buddy 直接改);codehub 上顺带投影同名里程碑,计划屏仍只认标签;发版 = 远端建 Release + 打 `bw:released:vX` 标签按版本号幂等;发版弹窗默认号 = 在研号自增一位,人可改。在研版本和项目群跟名片四字段同一张轻量活「编辑项目名片」,总览编辑,不写主检出。总览/知识库发版次数优先读远端 Release,读不到再退本机 git 标签。点某一周只看打了那一周标签的活;没打周标签的只在「issue总览」。项目墙「本周 x/y 完成」跟总览五段同一口径,作废不进分母。
+**数据**:零本地库——codehub/GitHub issue+标签是唯一正本;排期 = 给 issue 打 `bw:week:YYYY-Www` 标签(buddy 直接改);codehub 上顺带投影同名里程碑,计划屏仍只认标签;删除自定义版本 = 摘 `bw:plan:<name>` + 删同名里程碑,不碰 `bw:week`(周格式标题拒收);发版 = 远端建 Release + 打 `bw:released:vX` 标签按版本号幂等;发版弹窗默认号 = 在研号自增一位,人可改。在研版本和项目群跟名片四字段同一张轻量活「编辑项目名片」,总览编辑,不写主检出。总览/知识库发版次数优先读远端 Release,读不到再退本机 git 标签。点某一周只看打了那一周标签的活;没打周标签的只在「issue总览」。项目墙「本周 x/y 完成」跟总览五段同一口径,作废不进分母。
 **依赖**:issue_store、repo::project_file、git(`pull_ff`)、isoweek、trend、bw_engine::remote(建 Release / 查 MR)、bw_engine::github(`issue_branch` 确定性);节律规则读 `.bw/issue-policy.toml`。
 **没建**:"预览·未合入"做成灰态(从活 worktree 读未合入的 metrics.toml 与 ops① 评论重渲染周头未接);"蒸馏"灰态(见模块15);给活挂指标的命令没接(建活时"推的指标"列恒空);macOS 页面内拖放还没真机验证过一次。周目标在总览「本周计划进度」、计划屏周头显示 `## 周目标` **整段**(一句或一段都行,旧的一句话评论不用迁);项目墙卡片仍截短。正本是 ops① 评论,多条从新到旧。纳入清单和读数快照留在评论里,人点开运作活看。范围内的活认 `bw:week` 标签。剧本要求人确认后当场建卡并打 `bw:week` + `bw:category:*`,打完周标签还要挂 codehub 同名里程碑;替身路径仍走 `ConfirmWeekDraft`。挂评前用 `week-planning/check-week-comment.py` 校验标题。计划屏「新建活」可选业务活或运作活①②,都能填正文。业务活打 `bw:category:*`;运作活不打五阶段类别,标题按本周幂等。工具和 workflow 读回时查 issue-policy,不另打标签(原型默认 Open Design,workflow 空着等 proto-design 打包)。总览不再放「去计划」(侧栏下一格就是计划)。
 

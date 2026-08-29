@@ -380,6 +380,13 @@ fn primary_note(events: &[Event]) -> Option<String> {
         Event::PlanVersionCreated { name, .. } => {
             format!("版本 {name} 已建 —— 自定义计划包,和发版号不是一回事")
         }
+        Event::PlanVersionDeleted {
+            name,
+            issues_cleared,
+            ..
+        } => {
+            format!("版本 {name} 已删,摘了 {issues_cleared} 张活的计划标签(周排期没动)")
+        }
         Event::IssueAssigneeSet { assignee, .. } => {
             if assignee.is_empty() {
                 "已取消指派 · 已同步到 codehub".into()
@@ -891,7 +898,7 @@ async fn assemble_project(
         workbench,
         notify: NotifyVm {
             // 评审中的活张数,现算。项目墙 ⚾ 与项目轨头部徽章读它。通知页签已删
-            // (ADR-0002),事件流/等你合入列表不再进 ViewModel。
+            // (ADR-0003),事件流/等你合入列表不再进 ViewModel。
             unread: bw::app::count_unseen(&pg.issues),
         },
         config: {

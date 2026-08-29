@@ -282,6 +282,32 @@ pub async fn assign_to_plan(app: &App, project: &Project, iid: u32, plan: &str) 
     Ok(())
 }
 
+/// 从自定义版本拿下:只摘 `bw:plan:`(空后缀),不碰 `bw:week:`。
+/// 里程碑镜像 best-effort 摘下。
+pub async fn clear_plan(app: &App, project: &Project, iid: u32) -> Result<()> {
+    let remote = app.remote_for(project)?;
+    let labels = ["bw:plan:".to_string()];
+    let label_refs: Vec<&str> = labels.iter().map(|s| s.as_str()).collect();
+    remote
+        .update_issue(iid, Some(&label_refs), None)
+        .await
+        .map_err(|e| map_remote_err("远端摘 bw:plan 标签没成", e))?;
+    if let Err(e) = remote.clear_issue_milestone(iid).await {
+        eprintln!("[BW_MILESTONE] #{iid} 从版本里程碑摘下没成:{e}");
+    }
+    Ok(())
+}
+
+/// 按标题删版本里程碑。找不到当成功。周格式标题远端也不删。
+pub async fn delete_plan_version(app: &App, project: &Project, name: &str) -> Result<()> {
+    let remote = app.remote_for(project)?;
+    remote
+        .delete_plan_milestone(&project.remote_path, name)
+        .await
+        .map_err(|e| map_remote_err("远端删版本里程碑没成", e))?;
+    Ok(())
+}
+
 /// 建一个版本里程碑(title=name,start,due),返回 mid。不碰 issue ——
 /// `assign_to_plan` 才把 issue 挂上去。0 = provider 不投(github/mock)。
 pub async fn create_plan_version(

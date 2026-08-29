@@ -114,6 +114,9 @@ pub enum Command {
         note: String,
         included: Vec<IssueId>,
     },
+    /// 删一个自定义版本:给挂着 `bw:plan:<name>` 的活摘掉该标签,再删同名
+    /// 里程碑。**不碰 `bw:week:`** —— 周排期不是这个按钮的事。
+    DeletePlanVersion { project_id: ProjectId, name: String },
     /// 发版本:给选中的活写版本号 + 建远端 codehub/GitHub Release + 打 `bw:released:*` 标签。
     CutRelease {
         project_id: ProjectId,
@@ -297,6 +300,12 @@ pub enum Event {
         name: String,
         /// codehub milestone id;0 = 没建里程碑(只打了标签)。
         milestone_id: u64,
+    },
+    PlanVersionDeleted {
+        project_id: ProjectId,
+        name: String,
+        /// 摘掉 `bw:plan` 的活有几张。
+        issues_cleared: u32,
     },
     IssueCategorySet {
         id: IssueId,

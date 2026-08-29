@@ -1237,6 +1237,48 @@ pub async fn list_milestones(
         .collect())
 }
 
+/// 按标题删一个版本里程碑。找不到当成功(已经没了)。周格式标题不删。
+pub async fn delete_plan_milestone(host: &str, path: &str, name: &str) -> Result<(), CodehubError> {
+    if name.trim().is_empty() || is_week_title(name) {
+        return Ok(());
+    }
+    let project_id = project_numeric_id(host, path).await?;
+    let pid = project_id.to_string();
+    let listed = api_json(
+        host,
+        "GET",
+        "/api/v4/projects/:id/milestones",
+        &[("id", pid.as_str())],
+        &[],
+    )
+    .await?;
+    let Some(mid) = milestone_rows(&listed).iter().find_map(|m| {
+        if m["title"].as_str() == Some(name) {
+            m["id"].as_u64()
+        } else {
+            None
+        }
+    }) else {
+        return Ok(());
+    };
+    let mid_s = mid.to_string();
+    api_json(
+        host,
+        "DELETE",
+        "/api/v4/projects/:id/milestones/:milestone_id",
+        &[("id", pid.as_str()), ("milestone_id", mid_s.as_str())],
+        &[],
+    )
+    .await?;
+    Ok(())
+}
+
+/// 把 issue 从里程碑摘下(镜像,失败不挡标签正本)。
+pub async fn clear_issue_milestone(host: &str, path: &str, iid: u32) -> Result<(), CodehubError> {
+    let project_id = project_numeric_id(host, path).await?;
+    set_issue_milestone(host, &project_id.to_string(), iid, 0).await
+}
+
 /// `YYYY-Www` 周格式?形如 2026-W35。
 fn is_week_title(s: &str) -> bool {
     let b = s.as_bytes();
