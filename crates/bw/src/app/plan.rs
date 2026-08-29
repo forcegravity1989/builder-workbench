@@ -56,7 +56,7 @@ impl App {
         };
 
         // 建运作活①并立刻开工。
-        let (issue_id, _, mut events) = self
+        let (issue_id, created, mut events) = self
             .create_ops_issue(
                 project_id,
                 title,
@@ -67,6 +67,21 @@ impl App {
                 week.clone(),
             )
             .await?;
+        // 本周版本计划创建完成 → 发群(仅在新建那一下,不是重复点开始本周)。
+        if created {
+            let number = events
+                .iter()
+                .find_map(|e| match e {
+                    Event::IssueCreated { number, .. } => Some(*number),
+                    _ => None,
+                })
+                .unwrap_or(0);
+            let ev = crate::chat::NotifyEvent::WeekPlan;
+            let text = crate::chat::notify_text(ev.key(), number, &week, "", "");
+            if let Some(e) = self.chat_send(project_id, ev.key(), number, text).await {
+                events.push(e);
+            }
+        }
         events.extend(self.run_issue(issue_id).await?);
         events.push(Event::WeekPlanStarted {
             project_id,
@@ -237,8 +252,10 @@ impl App {
             version: version.clone(),
             rows_written,
         }];
-        let text = crate::chat::notify_text("release", 0, &format!("发版 {version}"), "", "");
-        if let Some(e) = self.chat_send(project_id, "release", 0, text).await {
+        let release_ev = crate::chat::NotifyEvent::Release;
+        let text =
+            crate::chat::notify_text(release_ev.key(), 0, &format!("发版 {version}"), "", "");
+        if let Some(e) = self.chat_send(project_id, release_ev.key(), 0, text).await {
             events.push(e);
         }
         Ok(events)

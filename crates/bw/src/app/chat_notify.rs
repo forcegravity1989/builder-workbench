@@ -35,7 +35,10 @@ impl App {
         // 整行没写 = 用默认那三件事;写了就以写的为准 —— 写了空数组就是静音,
         // 一件都不发。
         let wanted: Vec<String> = match &cfg.notify {
-            None => chat::DEFAULT_NOTIFY.iter().map(|s| s.to_string()).collect(),
+            None => chat::DEFAULT_NOTIFY
+                .iter()
+                .map(|e| e.key().to_string())
+                .collect(),
             Some(list) => list.clone(),
         };
         if !wanted.iter().any(|w| w == event) {
@@ -87,11 +90,7 @@ impl App {
                 String::new()
             }
         };
-        let who = match event {
-            "review" => "该你看一眼",
-            _ => "",
-        };
-        let text = chat::notify_text(event, issue.number, &issue.title, &mr, who);
+        let text = chat::notify_text(event, issue.number, &issue.title, &mr, "");
         self.chat_send(issue.project_id, event, issue.number, text)
             .await
     }

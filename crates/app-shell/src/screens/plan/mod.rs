@@ -116,25 +116,16 @@ impl Filters {
 
 #[component]
 pub fn View(p: ProjectVm, bridge: Bridge) -> Element {
-    let p_sel = p.selected_issue;
     let (p, bridge) = (&p, &bridge);
     let dragging = use_signal(|| None::<crate::vm::CardItemVm>);
     let pending = use_signal(|| None::<PendingMove>);
-    let mut selected = use_signal(|| None::<IssueId>);
+    let selected = use_signal(|| None::<IssueId>);
     let schedule = use_signal(|| None::<PendingSchedule>);
     let start = use_signal(|| None::<IssueId>);
     let dialog = use_signal(|| None::<DialogKind>);
-    let mut came_from = use_signal(|| None::<IssueId>);
     let view_mode = use_signal(|| ViewMode::Board);
     let list_filter = use_signal(ListFilter::default);
     let col_seg = use_signal(std::collections::HashMap::<String, String>::new);
-    use_effect(move || {
-        let want = p_sel;
-        if want.is_some() && want != *came_from.peek() {
-            selected.set(want);
-        }
-        came_from.set(want);
-    });
     let nav = use_context::<PanelNav>();
 
     let rows: Vec<&crate::vm::CardItemVm> = if p.view_all {
