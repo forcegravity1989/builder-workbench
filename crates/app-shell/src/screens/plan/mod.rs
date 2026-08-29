@@ -21,8 +21,8 @@ use dioxus::prelude::*;
 use detail::DetailModal;
 use kanban::{board, PendingMove, PendingSchedule};
 use plan_dialogs::{
-    confirm_dialog, CreateVersionDialog, DialogKind, NewIssueDialog, NewIssueDraft, ReleaseDialog,
-    ReleaseDraft, ScheduleDialog,
+    confirm_dialog, CreateVersionDialog, DeleteVersionDialog, DialogKind, NewIssueDialog,
+    NewIssueDraft, ReleaseDialog, ReleaseDraft, ScheduleDialog,
 };
 
 /// 列表/看板视图模式。
@@ -178,6 +178,7 @@ pub fn View(p: ProjectVm, bridge: Bridge) -> Element {
             match d {
                 DialogKind::NewIssue(_) => rsx! { NewIssueDialog { p: p.clone(), dialog, bridge: bridge.clone() } },
                 DialogKind::CreateVersion => rsx! { CreateVersionDialog { p: p.clone(), dialog, bridge: bridge.clone() } },
+                DialogKind::DeleteVersion => rsx! { DeleteVersionDialog { p: p.clone(), dialog, bridge: bridge.clone() } },
                 DialogKind::Release(draft) => rsx! { ReleaseDialog { draft, dialog, bridge: bridge.clone() } },
             }
         }
@@ -258,16 +259,17 @@ fn toolbar(
                         option { value: "{val}", selected: val.as_str() == cur_view.as_str(), "{label}" }
                     }
                 }
-                button {
-                    class: "btn btn-sm btn-secondary",
-                    onclick: move |_| view_mode.set(if *view_mode.read() == ViewMode::Board { ViewMode::List } else { ViewMode::Board }),
-                    {if *view_mode.read() == ViewMode::Board { "切换列表" } else { "切换看板" }}
-                }
                 if p.view_all {
                     button {
                         class: "btn btn-sm btn-secondary",
                         onclick: move |_| dialog.set(Some(DialogKind::CreateVersion)),
                         "创建版本"
+                    }
+                    button {
+                        class: "btn btn-sm btn-secondary",
+                        disabled: p.plan_versions.is_empty(),
+                        onclick: move |_| dialog.set(Some(DialogKind::DeleteVersion)),
+                        "删除版本"
                     }
                 } else {
                     button {
@@ -286,6 +288,12 @@ fn toolbar(
                     class: "btn btn-sm btn-primary",
                     onclick: move |_| dialog.set(Some(DialogKind::NewIssue(NewIssueDraft::default()))),
                     "新建issue"
+                }
+                button {
+                    class: "btn btn-sm btn-secondary",
+                    style: "margin-left:auto;",
+                    onclick: move |_| view_mode.set(if *view_mode.read() == ViewMode::Board { ViewMode::List } else { ViewMode::Board }),
+                    {if *view_mode.read() == ViewMode::Board { "☰" } else { "▦" }}
                 }
             }
         }

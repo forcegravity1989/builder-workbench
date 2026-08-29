@@ -16,6 +16,7 @@ use super::kanban::{PendingMove, PendingSchedule};
 pub enum DialogKind {
     NewIssue(NewIssueDraft),
     CreateVersion,
+    DeleteVersion,
     Release(ReleaseDraft),
 }
 
@@ -115,7 +116,8 @@ pub fn NewIssueDialog(
                                     category: Some(*category.read()),
                                     kind: IssueKind::Business,
                                     origin: IssueOrigin::Human,
-                                    week_of: String::new(),
+                                    week_of: if !p.view_all { p.viewing_week.clone() } else { String::new() },
+                                    plan: if !p.viewing_plan.is_empty() { p.viewing_plan.clone() } else { String::new() },
                                 });
                                 dialog.set(None);
                             },
@@ -345,6 +347,68 @@ pub fn confirm_dialog(
                             pending.set(None);
                         },
                         "确认"
+                    }
+                }
+            }
+        }
+    }
+}
+
+/// 删除版本弹窗:选一个版本删,确认后清掉 milestone + 摘掉 issues 上的 bw:plan 标签。
+#[component]
+pub fn DeleteVersionDialog(
+    p: ProjectVm,
+    mut dialog: Signal<Option<DialogKind>>,
+    bridge: Bridge,
+) -> Element {
+    let b = bridge.clone();
+    let default_sel = p
+        .plan_versions
+        .first()
+        .map(|v| v.name.clone())
+        .unwrap_or_default();
+    let mut sel = use_signal(move || default_sel.clone());
+    let versions: Vec<String> = p.plan_versions.iter().map(|v| v.name.clone()).collect();
+    rsx! {
+        div { class: "modal-backdrop", onclick: move |_| dialog.set(None),
+            div { class: "modal plan-modal", onclick: move |e| e.stop_propagation(),
+                div { class: "plan-modal-head",
+                    div { class: "plan-modal-tag", "删除版本" }
+                    button { class: "plan-modal-x", onclick: move |_| dialog.set(None), "✕" }
+                }
+                div { class: "plan-modal-body",
+                    div { class: "formrow",
+                        label { class: "label", "选版本" }
+                        select {
+                            class: "select",
+                            onchange: move |e| sel.set(e.value()),
+                            for v in versions.iter() {
+                                option { value: "{v}", "{v}" }
+                            }
+                        }
+                    }
+                    div { class: "cfg-readonly-note", "确认后删掉 codehub 里程碑,issue 上的 bw:plan 标签也会摘掉。" }
+                }
+                div { class: "plan-modal-foot",
+                    span {}
+                    div { style: "display:flex;gap:8px;",
+                        button { class: "btn btn-secondary", onclick: move |_| dialog.set(None), "取消" }
+                        button {
+                            class: "btn btn-danger",
+                            onclick: move |_| {
+                                let s = sel.read().clone();
+                                // 删版本 = 给该版本下所有 issue 摘 bw:plan 标签(移回未排期)
+                                for c in &p.board.columns {
+                                    for card in &c.cards {
+                                        if card.plan_version == s {
+                                            b.cmd(Command::ScheduleIssue { id: card.id, week_of: None });
+                                        }
+                                    }
+                                }
+                                dialog.set(None);
+                            },
+                            "删除"
+                        }
                     }
                 }
             }
