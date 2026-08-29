@@ -27,7 +27,6 @@
 | [`guide/`](guide/) | 产品指南(怎么用 buddy,给用户/同事)+ 填写规范 |
 | [`adr/`](adr/) | 架构决策(难回头一条一篇) |
 | [`hifi/`](hifi/) | 视觉正本(`index.html` 单文件高保真 + 逐屏简报),桌面壳样式表从它搬过去 |
-| [`orca-paired-follow-brief.md`](orca-paired-follow-brief.md) | 史实:当时给 Orca 的跟随 brief;源码已人眼过,官方包未带,buddy 嵌窗待验。现行在 architecture 模块 7 |
 
 ## 找东西
 

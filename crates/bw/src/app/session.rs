@@ -60,18 +60,16 @@ impl App {
         Ok(vec![Event::SessionDeleted { id, note }])
     }
 
-    /// 把上次那场会话在 Orca 桌面里点出来。**不改活的状态,不发任何 prompt。**
+    /// 去会话:把 Orca 切到这张活的树。**不改活的状态,不发任何 prompt。**
     ///
-    /// 为什么要单独一条、不复用 ▶开工:▶开工 会把活推到「进行中」。而人从通知点
-    /// 进来看一张**已经在评审中**的活时,要的是「让我看看 agent 都干了什么」,
-    /// 不是把这张活拽回上一格。Orca 的 `ensureAgentSession` 也只是把焦点落到那条
-    /// agent tab,不带 prompt、不花钱、不动手。
+    /// 为什么要单独一条、不复用 ▶开工:▶开工 会把活推到「进行中」。人从通知点
+    /// 进来看一张**已经在评审中**的活时,要的是「让我看看那棵树」,不是把活拽回
+    /// 上一格。切树成功就算成功;树上有没有 issue 那条窗口是其次。
     ///
     /// - 没会话行 → 拒绝,让人点▶开工。
-    /// - 没 `session_id` → 先从这棵 worktree 的本机 Claude jsonl 收最新一条;
-    ///   收到就 ensure 并记回会话行。收不到不编 id,返回没 live,空着等人开工。
-    /// - 有 id → connect + ensure_session(worktree=resolve 后的真实路径, agent, id)。
-    ///   worktree::provision 会复用已有活树(含旧平级兄弟),不建第二棵新树。
+    /// - 一律 `worktree.activate`。有 Claude session id(会话行或这棵树的 jsonl)
+    ///   再尽量 ensure 那条 tab;ensure 失败不算跳失败。
+    /// - 不跟当前类别映射走。worktree::provision 复用已有活树,不建第二棵。
     pub(super) async fn reopen_session(&mut self, id: IssueId) -> Result<Vec<Event>> {
         if !self.pty_enabled {
             return Err(AppError::Refused(
@@ -83,8 +81,6 @@ impl App {
                 "这张活还没有过会话 —— 点「▶开工」起一场".into(),
             ));
         };
-        // 没有 Claude session id 就别 ensure —— Orca 要显式指定 id,不会按 worktree
-        // 自己找;编一个 id 出去只会 ensure 到一个不存在的会话。空着等人开工。
         let issue = self.issue_or_err(id).await?;
         let ws = self.workspace_of(issue.project_id).await?;
         if !ws.is_dir() {
@@ -97,24 +93,15 @@ impl App {
                 sid = found;
             }
         }
-        if sid.is_empty() {
-            return Ok(vec![Event::SessionReopened {
-                issue_id: id,
-                live: false,
-            }]);
-        }
-        let agent = super::tools::orca_agent(&issue.tool)?;
         let rt = bw_engine::orca::connect()
             .map_err(|e| AppError::Exec(format!("连 Orca 没成,接不回会话:{e}")))?;
-        if let Err(e) = bw_engine::orca::ensure_session(&rt, &tree.path, agent, &sid).await {
-            // ensure 被拒或没成也打 method+code+runtimeId+pid+worktree(和 run_issue_orca
-            // 同口径),不带 token / pairing。
+        if let Err(e) = bw_engine::orca::reveal_tree(&rt, &tree.path, &sid).await {
             eprintln!(
                 "[BW_ORCA] {e} · {} · worktree={}",
                 rt.log_tag(),
                 tree.path.display()
             );
-            return Err(AppError::Exec(format!("在 Orca 里点回会话没成:{e}")));
+            return Err(AppError::Exec(format!("在 Orca 里切到这棵树没成:{e}")));
         }
         if sid != conv.claude_session_id {
             self.remember_session_id(&conv, &sid).await?;

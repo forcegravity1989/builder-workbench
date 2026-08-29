@@ -146,7 +146,7 @@ pub struct UiState {
     pub focus_skill: String,
     pub data_dir: String,
     pub workspaces_root: String,
-    /// Orca 网页配对 URL(本机设置读出来,带 token)。会话屏所属 wry 窗打开它。
+    /// Orca 网页配对 URL(本机设置读出来,带 token)。会话屏 iframe 打开它。
     pub orca_web_url: String,
     /// 接入屏那份仓列表的状态。**不进库** —— 它是「现在去平台问了一次」的结果,
     /// 关掉接入屏就该忘掉。
@@ -264,7 +264,7 @@ fn primary_note(events: &[Event]) -> Option<String> {
             };
             format!("工作区根目录改成了 {path}{tail}")
         }
-        // 不带 URL 原文(配对 URL 带 token)。进会话屏即打开;旧所属窗会按新地址重建。
+        // 不带 URL 原文(配对 URL 带 token)。进会话屏即打开。
         Event::OrcaWebUrlChanged => "Orca 网页地址已保存,进会话屏即可".into(),
         Event::IssueSubmitted {
             branch,

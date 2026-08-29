@@ -27,19 +27,6 @@ use dioxus::prelude::*;
 fn main() {
     // 起任何线程之前先把本机时区定住 —— 周是按本机时区算的。
     bw::isoweek::init_local_offset();
-    // 会话屏 iframe 嵌本机 Open Design。WebView2 默认拦 loopback,V3 壳关过,这里同样关。
-    #[cfg(windows)]
-    {
-        const FLAG: &str = "--disable-features=LocalNetworkAccessChecks";
-        match std::env::var("WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS") {
-            Ok(existing) if existing.contains("LocalNetworkAccessChecks") => {}
-            Ok(existing) => std::env::set_var(
-                "WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS",
-                format!("{existing} {FLAG}"),
-            ),
-            Err(_) => std::env::set_var("WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS", FLAG),
-        }
-    }
     let deep_link = bridge::read_deep_link();
     let builder = dioxus::desktop::WindowBuilder::new()
         .with_title("Builders' Workbench")
@@ -50,6 +37,18 @@ fn main() {
     // 六列就拖不动了。必须关掉。
     #[cfg(windows)]
     let cfg = cfg.with_disable_drag_drop_handler(true);
+    // iframe 嵌 Orca / OD。新版 Orca SPA boot 调 crypto.randomUUID,只在
+    // Secure Context 有;父页 http://dioxus.index.html 默认不算 secure,子
+    // iframe 跟着不算 → 白屏。把该 origin 当 secure 对待。走
+    // with_windows_browser_args(透传 wry additional_browser_args),不走
+    // WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS —— wry 设了显式默认 args 会盖掉
+    // env。必须带上 wry 默认那几条,否则回退;LocalNetworkAccessChecks 是
+    // iframe 嵌 loopback 要关的。
+    #[cfg(windows)]
+    let cfg = cfg.with_windows_browser_args(
+        "--disable-features=msWebOOUI,msPdfOOUI,msSmartScreenProtection,LocalNetworkAccessChecks \
+         --unsafely-treat-insecure-origin-as-secure=http://dioxus.index.html",
+    );
 
     LAUNCH_DEEP_LINK.with(|c| *c.borrow_mut() = Some(deep_link));
     dioxus::LaunchBuilder::new().with_cfg(cfg).launch(Root);
@@ -206,7 +205,7 @@ fn Root() -> Element {
                     div { key: "{i}", class: "warnbar", "{w}" }
                 }
                 // 会话屏的布局由 .content 自己摆 —— session-mode 三栏网格已随
-                // PTY 封存删掉(终端不挂这里了,会话屏只剩动作条 + Orca/OD 两组件)。
+                // PTY 封存删掉(终端不挂这里了,会话屏只剩 Orca/OD 两组件)。
                 div {
                     class: "content",
                     {body(tv, cur, &v, &project, &bridge, top_view)}

@@ -302,17 +302,21 @@ impl App {
                     .await
                     {
                         Ok(()) => {
-                            if let Some(found) =
-                                bw_engine::orca::wait_session_id_for_worktree(&tree.path).await
-                            {
-                                sid = found;
+                            // Claude 的 jsonl 可能晚几拍落到盘,短等再收 id。
+                            // Cursor 不写这份文件,空等满 8 秒才回「开工成功」。
+                            if bw_engine::orca::agent_supports_ensure(agent) {
+                                if let Some(found) =
+                                    bw_engine::orca::wait_session_id_for_worktree(&tree.path).await
+                                {
+                                    sid = found;
+                                }
                             }
                             Ok(())
                         }
                         Err(e) => Err(e),
                     }
                 } else {
-                    bw_engine::orca::ensure_session(&rt, &tree.path, agent, &sid).await
+                    bw_engine::orca::focus_session(&rt, &tree.path, agent, &sid).await
                 };
                 // create/ensure 被拒或没成:把 method+code+runtimeId+pid+worktree 打进
                 // stderr,方便和 Orca 日志对(连上了但被拒也走这条)。`log_tag` 只含

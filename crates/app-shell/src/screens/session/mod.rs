@@ -3,16 +3,11 @@
 //! 或计划屏拖列。buddy 不知道人在 Orca 里点了哪条会话,灌词条会对着错的活。
 //!
 //! 两个页签常驻:原型活默认停 Open Design,构建类默认停 Orca。
-//! 没接到就如实说,不假装嵌进去。
-
-mod orca_host;
+//! 没接到就如实说,不假装嵌进去。Orca / Open Design 都走 iframe。
 
 use crate::bridge::{Bridge, Req};
 use crate::vm::{ProjectVm, SessionTab};
 use dioxus::prelude::*;
-use std::cell::Cell;
-use std::rc::Rc;
-use std::time::Duration;
 
 const FILL: &str = "display:flex;flex-direction:column;flex:1;height:100%;min-height:0;";
 
@@ -56,55 +51,31 @@ fn mid_body(p: &ProjectVm) -> Element {
     }
 }
 
-/// Orca 走所属 wry 窗顶级打开 pairing URL,不走 iframe。地址来自本机设置
+/// 本机 Orca web 的 pairing 页,iframe 嵌。地址来自本机设置
 /// (`settings.toml` 的 `orca_web_url`),`BW_ORCA_WEB_URL` 可覆盖;都只认 loopback。
 #[component]
 fn OrcaView(orca_url: String) -> Element {
     let url = bw_engine::orca::web_embed_url(Some(&orca_url));
-    let alive = use_hook(|| Rc::new(Cell::new(true)));
-    alive.set(true);
-    use_drop({
-        let alive = alive.clone();
-        move || {
-            alive.set(false);
-            orca_host::hide();
-        }
-    });
-    use_future({
-        let alive = alive.clone();
-        let src = url.clone();
-        move || {
-            let alive = alive.clone();
-            let src = src.clone();
-            async move {
-                let Some(src) = src else {
-                    return;
-                };
-                orca_host::show(&src).await;
-                while alive.get() {
-                    orca_host::place().await;
-                    tokio::time::sleep(Duration::from_millis(80)).await;
-                }
-            }
-        }
-    });
-    let body = "flex:1;min-height:0;width:100%;background:#fff;";
-    if url.is_none() {
+    let body_style = "flex:1;min-height:0;display:flex;flex-direction:column;height:100%;";
+    if let Some(u) = url {
+        let iframe_src = iframe_src(&u);
         return rsx! {
-            div { class: "sess-col sess-midbody", id: "orca-host", style: "{body}",
-                div {
-                    style: "margin:auto;padding:24px;max-width:520px;text-align:center;\
-                            color:var(--ink-3);font-size:13px;line-height:1.8;",
-                    "还没接到 Orca 网页。到顶层设置贴「给 web 配对」的完整 URL。"
+            div { class: "sess-col sess-midbody", style: "{body_style}",
+                iframe {
+                    key: "{iframe_src}",
+                    src: "{iframe_src}",
+                    style: "flex:1;width:100%;height:100%;min-height:0;border:0;display:block;background:#fff;",
+                    allow: "clipboard-read; clipboard-write; fullscreen"
                 }
             }
         };
     }
     rsx! {
-        div { class: "sess-col sess-midbody", id: "orca-host", style: "{body}",
+        div { class: "sess-col sess-midbody", style: "{body_style}",
             div {
-                style: "margin:auto;padding:24px;color:var(--ink-3);font-size:13px;",
-                "正在打开 Orca…"
+                style: "margin:auto;padding:24px;max-width:520px;text-align:center;\
+                        color:var(--ink-3);font-size:13px;line-height:1.8;",
+                "还没接到 Orca 网页。到顶层设置贴「给 web 配对」的完整 URL。"
             }
         }
     }
