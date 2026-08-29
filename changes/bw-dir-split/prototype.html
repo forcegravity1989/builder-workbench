@@ -1,0 +1,146 @@
+<!doctype html>
+<html lang="zh">
+<head>
+<meta charset="utf-8">
+<title>原型 · .bw/ 人机分目录 + 去冗留真</title>
+<style>
+  body { font: 14px/1.7 -apple-system, "PingFang SC", sans-serif; margin: 2rem auto; max-width: 960px; padding: 0 1rem; color: #222; background: #fafafa; }
+  h1 { font-size: 1.3rem; } h2 { font-size: 1.05rem; margin-top: 2rem; }
+  .cols { display: flex; gap: 1rem; flex-wrap: wrap; }
+  .cols > div { flex: 1 1 320px; }
+  pre { background: #1e1e1e; color: #d4d4d4; padding: .9rem 1rem; border-radius: 8px; overflow-x: auto; font-size: 12.5px; line-height: 1.55; }
+  .tag { display: inline-block; font-size: 11px; border-radius: 4px; padding: 0 6px; margin-left: 6px; vertical-align: 1px; }
+  .human { background: #e8f5e9; color: #1b5e20; } .machine { background: #e3f2fd; color: #0d47a1; } .stateT { background: #fff3e0; color: #e65100; } .dead { background: #ffebee; color: #b71c1c; text-decoration: line-through; }
+  details { background: #fff; border: 1px solid #e0e0e0; border-radius: 8px; margin: .6rem 0; padding: .5rem .9rem; }
+  summary { cursor: pointer; font-weight: 600; }
+  .note { color: #666; font-size: 12.5px; }
+  del { color: #b71c1c; } ins { color: #1b5e20; text-decoration: none; font-weight: 600; }
+  .screen { background: #fff; border: 1px solid #ccc; border-radius: 10px; padding: .8rem 1rem; font-size: 13px; }
+</style>
+</head>
+<body>
+<h1>原型 · <code>.bw/</code> 人机分目录 + 去冗留真</h1>
+<p class="note">点开各折叠块看瘦身后文件全文。规则一句话:<strong>机器逐字段解析的进 config/(人经 MR 改)与 state/(机器写),人与 agent 通读的 Markdown 留顶层。</strong></p>
+
+<h2>① 目录前后对照</h2>
+<div class="cols">
+<div><strong>现在</strong>
+<pre>.bw/
+├─ PROJECT.md
+├─ project.toml
+├─ issue-policy.toml
+├─ standard.toml        ← 零读方
+├─ managed.toml
+├─ metrics.toml
+├─ metrics/readings.jsonl
+├─ process-catalog.md
+├─ releases.md · plan/ · decisions/ · design/
+└─ scripts/</pre></div>
+<div><strong>改后</strong>
+<pre>.bw/
+├─ PROJECT.md            <b>给人读</b>
+├─ process-catalog.md · releases.md
+├─ plan/ · decisions/ · design/
+├─ config/               <b>人经MR改·机器读</b>
+│  ├─ project.toml
+│  ├─ issue-policy.toml
+│  └─ metrics.toml
+├─ state/                <b>机器写·人只审</b>
+│  ├─ managed.toml
+│  └─ metrics-readings.jsonl
+└─ scripts/              可执行脚本</pre></div>
+</div>
+<p>顶层 Markdown<span class="tag human">给人</span> · <code>config/</code><span class="tag machine">机器读</span> · <code>state/</code><span class="tag stateT">机器写</span> · <code>standard.toml</code><span class="tag dead">删除</span></p>
+
+<h2>② 瘦身后的文件全文</h2>
+
+<details open>
+<summary><code>config/issue-policy.toml</code> — 74 行 → 30 行;删 [[tool]] / [review] / trigger / schema_version</summary>
+<pre># 三列映射:活的类别 → 默认开工工具 → 默认 workflow(空 = 开工时现挑)。
+# 工具的探活与接法在 Workbench 适配模块里,不在这份文件配。
+
+[[mapping]]
+category = "prototype"
+tool     = "open_design"
+workflow = ""
+
+[[mapping]]
+category = "build"
+tool     = "claude_cli"
+workflow = "mattpocock-skills"
+
+[[mapping]]
+category = "optimize"
+tool     = "claude_cli"
+workflow = "mattpocock-skills"
+
+[[mapping]]
+category = "ops"
+tool     = "claude_cli"
+workflow = "mattpocock-skills"
+
+[[mapping]]
+category = "growth"
+tool     = "claude_cli"
+workflow = ""
+
+# 运作活②「资产盘点」到点自动建活;运作活①永远人触发,不在此配。
+[cadence]
+ops2_schedule = "fri 20:00"
+
+# 看板前两列的标题。
+[kanban]
+pool_label = "待办池 · 未排进任何一周"
+todo_label = "待办 · 已排进本周,等开工"</pre>
+</details>
+
+<details>
+<summary><code>config/project.toml</code> — 删 standard_version 失真镜像</summary>
+<pre>name = "workbench"
+kind = ""
+brief = "mvp v4的愿景"
+benchmark = "workWorkbench"
+opportunity = "更多的项目纳入到workbench中演进"
+
+# 计划屏顶部可切的在研版本;不入库,现读现解析。
+current_version = "v0.1"
+
+# 项目群没配。配了加 [chat] 段:provider / group_id / notify。</pre>
+<p class="note">名片上的「规范 vX」改从 <code>state/managed.toml</code> 现算条目最高版本(无文件显「—」)。</p>
+</details>
+
+<details>
+<summary><code>state/managed.toml</code> — 机制不变,路径条目随搬迁重记</summary>
+<pre># 铺底/升级时写:哪些文件是 Workbench 管的、什么版本、落盘那一刻的指纹。
+# 指纹变了 = 人手改过,升级不覆盖只提示差异。
+
+[[file]]
+path        = ".bw/PROJECT.md"
+version     = "6.0"
+fingerprint = "sha256:…"
+
+[[file]]
+path        = ".bw/config/issue-policy.toml"
+version     = "6.0"
+fingerprint = "sha256:…"</pre>
+<p class="note"><code>standard.toml</code> 条目不再存在——它整份被删,对账正本就是这份清单。</p>
+</details>
+
+<details>
+<summary><code>standard.toml</code> — 整份删除</summary>
+<p>解析器 <code>standard_file.rs</code> 全仓零调用;「哪版规范、铺了什么」由 <code>state/managed.toml</code> 逐条如实记录。<code>enabled</code>/<code>extensions</code> 是未建能力,不留空壳。</p>
+</details>
+
+<h2>③ 受影响的两处屏文案</h2>
+<div class="cols">
+<div class="screen"><strong>配置屏 · 定时</strong><br>
+运作活① 更新指标与周计划 · <del>manual</del> <ins>人触发</ins>(写死,与行为一致)<br>
+运作活② 资产盘点 · <ins>定时</ins> · fri 20:00(仍读 <code>config/issue-policy.toml</code>)</div>
+<div class="screen"><strong>总览 · 名片</strong><br>
+规范 <del>v5.0(project.toml 失真镜像)</del> <ins>v6.0(state/managed.toml 现算)</ins></div>
+</div>
+
+<h2>④ 出错分支</h2>
+<p class="note">旧布局项目:<code>state/managed.toml</code> 不存在 = 视同未接管,boot 照常提议铺底,旧位置文件如实并存(资产盘点盘出,由人处置)。<code>config/</code> 文件含未知字段:整份拒读,壳黄条报文件名与错误,不猜不兜。</p>
+</body>
+</html>
