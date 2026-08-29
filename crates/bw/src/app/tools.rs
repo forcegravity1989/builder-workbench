@@ -7,6 +7,8 @@ use super::{App, AppError, Result};
 use crate::command::{Event, ProbeResult};
 use crate::model::{category_key, Category, ProjectId};
 use crate::repo::issue_policy_file::{self, CategoryMapping};
+use crate::repo::managed_file;
+use std::path::Path;
 
 impl App {
     pub(super) async fn save_tool_mapping(
@@ -32,7 +34,10 @@ impl App {
                 workflow,
             }),
         }
-        issue_policy_file::write(&ws, &file)?;
+        // 先写文件、再更指纹 —— 顺序不能反:指纹记的必须是**已经落盘**的那份
+        // 内容(和铺底那条「指纹清单最后写」是同一条规矩)。
+        let body = issue_policy_file::write(&ws, &file)?;
+        sync_managed_fingerprint(&ws, issue_policy_file::REL_PATH, body.as_bytes())?;
         Ok(vec![Event::ToolMappingSaved { category }])
     }
 
@@ -79,6 +84,36 @@ impl App {
         let result = probe(&name).await;
         Ok(vec![Event::ToolProbed { name, result }])
     }
+}
+
+/// Workbench 替人改完 `config/` 里的一份文件之后,把指纹清单里那一条更新掉。
+///
+/// **不更的后果**:人在配置屏点一次保存,文件内容就和清单记的对不上,对账从此
+/// 一直说这份文件「人改过」——而实际上是 Workbench 自己写的。这条判断是升级
+/// 要不要覆盖的唯一依据,污染了它,「人改过」这句话就不再可信。
+///
+/// **清单不在就什么都不做,不新建**:接入那张铺底活的 MR 还没合入时,人的主
+/// 检出里本来就没有这份清单。这时候凭空造一份出来会同时坏两件事——一个从没
+/// 铺过底的项目会显示成「接管过」;而且主检出里多了个没提交的同名文件,铺底
+/// MR 之后就快进不进来了。
+///
+/// 清单在、但没有这份文件的记录,也什么都不做:没记录 = 这份文件不归 Workbench
+/// 管,替它记一笔等于擅自认领。
+fn sync_managed_fingerprint(ws: &Path, rel: &str, body: &[u8]) -> Result<()> {
+    let Some(mut managed) = managed_file::read(ws)? else {
+        return Ok(());
+    };
+    let Some(entry) = managed.files.iter_mut().find(|f| f.path == rel) else {
+        return Ok(());
+    };
+    entry.fingerprint = managed_file::fingerprint(body);
+    managed_file::write(ws, &managed).map_err(|e| {
+        AppError::Refused(format!(
+            "{rel} 已经写进去了,但指纹清单没跟上({e})—— 下次对账会把这份文件\
+             判成「人改过」。手动跑一次对账,或者把这次改动重新保存一遍。"
+        ))
+    })?;
+    Ok(())
 }
 
 /// 活上记着的开工工具 → 真正要起的那个 CLI。
