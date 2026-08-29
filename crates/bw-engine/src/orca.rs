@@ -148,7 +148,7 @@ pub async fn create_session(
 ) -> Result<(), OrcaError> {
     let (prompt, agent_args) = split_prompt_and_args(agent, prompt, system);
     let mut params = json!({
-        "clientOperationId": request_id(),
+        "clientOperationId": client_operation_id(),
         "worktree": path_prefixed(worktree),
         "agent": agent,
         "prompt": prompt,
@@ -175,7 +175,27 @@ pub fn web_embed_url(fallback: Option<&str>) -> Option<String> {
     if trimmed.is_empty() || !crate::open_design::looks_loopback_http(trimmed) {
         return None;
     }
-    Some(trimmed.to_string())
+    Some(pairing_as_query(trimmed))
+}
+
+/// WebView2 的 `load_url` 会丢掉 `#fragment`。配对码在 hash 里就签不上,
+/// 嵌页只是一张未配对的 Orca web,pipe 开工了它也不跟。Orca 自己认
+/// `?pairing=`(和 `#pairing=` 同一套读法),只搬家不改 code。
+fn pairing_as_query(url: &str) -> String {
+    let Some((base, frag)) = url.split_once('#') else {
+        return url.to_string();
+    };
+    let Some(pairing) = frag.strip_prefix("pairing=") else {
+        return url.to_string();
+    };
+    if base.contains("pairing=") {
+        return url.to_string();
+    }
+    if base.contains('?') {
+        format!("{base}&pairing={pairing}")
+    } else {
+        format!("{base}?pairing={pairing}")
+    }
 }
 
 /// 读本机 Claude jsonl,找这棵 worktree 上**最新**一条 session id。不编 id。
@@ -250,14 +270,31 @@ fn user_data_dir() -> std::path::PathBuf {
     }
 }
 
-/// 生成一个请求 id(timestamp + 进程混合的 hex),同时给 clientOperationId 用。
+/// JSON-RPC 帧的 `id`(按回包匹配)。Orca 不解析这个形状。
 fn request_id() -> String {
     let now = std::time::SystemTime::now()
         .duration_since(std::time::UNIX_EPOCH)
         .map(|d| d.as_millis())
         .unwrap_or(0);
-    let rand = (std::process::id() as u64) ^ (now as u64 * 2654435761);
+    let rand = (std::process::id() as u64) ^ (now as u64).wrapping_mul(2654435761);
     format!("bw-{now:016x}-{rand:016x}")
+}
+
+/// `createAgentSession` 的 `clientOperationId`。Orca 源码要求
+/// `/^(\d{13})-[0-9a-f]{32}$/`(毫秒时间戳 + 32 hex),对不上直接
+/// `agent_session_operation_invalid`,工作树已经开了、Claude 会话不会建。
+/// 穿刺烟测 `.scratch/orca-rpc-smoke.cjs` 的 `operationId()` 就是这个形状;
+/// 以前误把 RPC `id` 的 `bw-hex-hex` 填进来了。
+fn client_operation_id() -> String {
+    let now = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .map(|d| d.as_millis())
+        .unwrap_or(0);
+    let ts = now % 10_000_000_000_000;
+    let nonce = (std::process::id() as u128)
+        .wrapping_shl(64)
+        .wrapping_add(now.wrapping_mul(0x9E37_79B9_7F4A_7C15));
+    format!("{ts:013}-{nonce:032x}")
 }
 
 /// `path: <worktree 绝对路径>`。Orca 用这个前缀认 worktree(穿刺已人眼过)。
@@ -448,24 +485,41 @@ fn send_recv(
     )))
 }
 
-/// 看回包 `ok` 是不是 true。`ok=false` 把 Orca 的原话(压成一行)带出来。
+/// 看回包 `ok` 是不是 true。失败把 Orca 的 **code** + 一行 message 带出来
+/// (`agent_session_operation_invalid` / `legacy_required` / 别的),给
+/// `IssueRan.summary` 和 stderr 露给人 —— 连上了但被拒也走这条,不只是连不上。
 fn require_ok(frame: &Value, method: &str) -> Result<(), OrcaError> {
     if frame.get("ok").and_then(|o| o.as_bool()) == Some(true) {
         return Ok(());
     }
-    let detail = frame
-        .get("error")
-        .or_else(|| frame.get("message"))
-        .map(|v| {
-            if let Some(s) = v.as_str() {
-                s.to_string()
-            } else {
-                v.to_string()
-            }
-        })
-        .unwrap_or_default();
-    let one_line: String = detail.split_whitespace().collect::<Vec<_>>().join(" ");
-    Err(OrcaError::Rpc(format!("{method}:{one_line}")))
+    Err(OrcaError::Rpc(error_brief(frame, method)))
+}
+
+/// 从失败回包拆 `method · code=<code> · <一行 message>`。code 可能在顶层、
+/// 可能在 `error` 对象里;找不到就不写那一段(不编)。**不带 token / pairing**。
+fn error_brief(frame: &Value, method: &str) -> String {
+    let err = frame.get("error");
+    let code = frame
+        .get("code")
+        .or_else(|| err.and_then(|e| e.get("code")))
+        .and_then(|c| c.as_str())
+        .map(|c| c.to_string());
+    let msg = err
+        .and_then(|e| e.get("message"))
+        .or(err)
+        .or_else(|| frame.get("message"));
+    let one_line = match msg.and_then(|v| v.as_str()) {
+        Some(s) => s.split_whitespace().collect::<Vec<_>>().join(" "),
+        None => msg.map(|v| v.to_string()).unwrap_or_default(),
+    };
+    let mut brief = method.to_string();
+    if let Some(c) = code {
+        brief.push_str(&format!(" · code={c}"));
+    }
+    if !one_line.is_empty() {
+        brief.push_str(&format!(" · {one_line}"));
+    }
+    brief
 }
 
 // ── 平台管道接缝(抄 open_design,forbid unsafe) ─────────────────────────
@@ -502,7 +556,7 @@ fn open_duplex(path: &str) -> Option<std::os::unix::net::UnixStream> {
 
 #[cfg(test)]
 mod tests {
-    use super::{claude_project_slug, looks_session_id};
+    use super::{claude_project_slug, client_operation_id, looks_session_id, pairing_as_query};
     use std::path::Path;
 
     #[test]
@@ -519,5 +573,30 @@ mod tests {
         assert!(looks_session_id("6340093e-ba66-40e8-8b09-26373b33354a"));
         assert!(!looks_session_id("notes"));
         assert!(!looks_session_id(""));
+    }
+
+    #[test]
+    fn client_operation_id_matches_orca_pattern() {
+        let id = client_operation_id();
+        assert_eq!(id.len(), 46);
+        assert_eq!(id.as_bytes()[13], b'-');
+        assert!(id[..13].chars().all(|c| c.is_ascii_digit()));
+        assert!(id[14..].chars().all(|c| matches!(c, '0'..='9' | 'a'..='f')));
+    }
+
+    #[test]
+    fn pairing_hash_moves_to_query() {
+        assert_eq!(
+            pairing_as_query("http://127.0.0.1:6769/web-index.html#pairing=orca://pair?code=abc"),
+            "http://127.0.0.1:6769/web-index.html?pairing=orca://pair?code=abc"
+        );
+        assert_eq!(
+            pairing_as_query("http://127.0.0.1:6769/web?x=1#pairing=abc"),
+            "http://127.0.0.1:6769/web?x=1&pairing=abc"
+        );
+        assert_eq!(
+            pairing_as_query("http://127.0.0.1:6769/web-index.html?pairing=already"),
+            "http://127.0.0.1:6769/web-index.html?pairing=already"
+        );
     }
 }

@@ -6,7 +6,7 @@
 
 ## 最近 · 2026-08-29
 
-会话屏嵌 Orca:WebView2 的 iframe 不画这张页(浏览器 iframe 能亮,人对过);同窗子 HWND 会被 WebView2 盖住。改成所属 wry 窗顶级打开 pairing URL,对齐中栏格子(不 always-on-top)。根容器钉在窗口上,最大化时中栏和所属窗跟着撑。Open Design 仍 iframe。开工仍走本地 pipe。拆掉 iframe 探针 / 改 hash / 写死配对码那些对照路径。网页跟随是 Orca 内核(源码已人眼过、官方包未带);官方包也能开工,嵌页不自动落到那条会话。Orca 网页地址改存本机 `settings.toml`(设置屏可改,带 token 不进仓 / Event / 日志;`BW_ORCA_WEB_URL` 仍可覆盖);配置屏 Cursor 放开可选(底座已通 `cursor-agent`,探不到如实报错不退回 Claude)。
+会话屏嵌 Orca:WebView2 的 iframe 不画这张页(浏览器 iframe 能亮,人对过);同窗子 HWND 会被 WebView2 盖住。改成所属 wry 窗顶级打开 pairing URL,对齐中栏格子(不 always-on-top)。根容器钉在窗口上,最大化时中栏和所属窗跟着撑。Open Design 仍 iframe。开工仍走本地 pipe。拆掉 iframe 探针 / 改 hash / 写死配对码那些对照路径。网页跟随是 Orca 内核(源码已人眼过、官方包未带);官方包也能开工,嵌页不自动落到那条会话。Orca 网页地址改存本机 `settings.toml`(设置屏可改,带 token 不进仓 / Event / 日志;`BW_ORCA_WEB_URL` 仍可覆盖);配置屏 Cursor 放开可选(底座已通 `cursor-agent`,探不到如实报错不退回 Claude)。去会话打 ensure 时 `request_id` 用毫秒时间戳乘常数在 debug 下 `u64` 溢出、内核线程崩——改 `wrapping_mul`。所属窗先 `about:blank` 再 `load_url`,避免事件回调里同步等整页。会话屏去掉 1600px 上限,最大化右侧能撑满。`createAgentSession` 的 `clientOperationId` 用 Orca 规定形状(13 位毫秒 + `-` + 32 hex;以前误填 RPC 帧 id 会被 `agent_session_operation_invalid` 拒,工作树开了但 Claude 会话建不出)。所属窗 `load_url` 丢 fragment,把 `#pairing=` 搬成 `?pairing=`(Orca 两边都认,只搬家不 mint code)。create/ensure 失败把 Orca 的 error code 露进 `IssueRan.summary` 和 stderr(method + code + runtimeId + pid + worktree,不带 token / pairing);点有会话行的活接回时 sid 空也走 reopen、从 worktree 的 Claude jsonl 收(收不到不编、不 ensure)。
 
 ## 最近 · 2026-08-28
 

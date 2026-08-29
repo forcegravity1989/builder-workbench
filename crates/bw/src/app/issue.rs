@@ -291,7 +291,7 @@ impl App {
         }
         let outcome = match bw_engine::orca::connect() {
             Ok(rt) => {
-                if sid.is_empty() {
+                let r = if sid.is_empty() {
                     match bw_engine::orca::create_session(
                         &rt,
                         &tree.path,
@@ -313,7 +313,18 @@ impl App {
                     }
                 } else {
                     bw_engine::orca::ensure_session(&rt, &tree.path, agent, &sid).await
+                };
+                // create/ensure 被拒或没成:把 method+code+runtimeId+pid+worktree 打进
+                // stderr,方便和 Orca 日志对(连上了但被拒也走这条)。`log_tag` 只含
+                // runtimeId/pid/endpoint(管道路径),不带 token / pairing。
+                if let Err(e) = &r {
+                    eprintln!(
+                        "[BW_ORCA] {e} · {} · worktree={}",
+                        rt.log_tag(),
+                        tree.path.display()
+                    );
                 }
+                r
             }
             Err(e) => Err(e),
         };
@@ -323,7 +334,7 @@ impl App {
         let ok = outcome.is_ok();
         let summary = match outcome {
             Ok(()) => "已在 Orca 里开工,过程看会话屏".to_string(),
-            Err(e) => format!("开工失败(Orca 连不上 / 没开):{e}"),
+            Err(e) => format!("开工失败:{e}"),
         };
         Ok(vec![Event::IssueRan {
             id,

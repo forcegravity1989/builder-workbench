@@ -95,13 +95,18 @@ fn OrcaView(orca_url: String) -> Element {
                 div {
                     style: "margin:auto;padding:24px;max-width:520px;text-align:center;\
                             color:var(--ink-3);font-size:13px;line-height:1.8;",
-                    "还没接到 Orca 网页。把安装版「给 web 配对」的完整 URL 塞进启动环境 BW_ORCA_WEB_URL。"
+                    "还没接到 Orca 网页。到顶层设置贴「给 web 配对」的完整 URL。"
                 }
             }
         };
     }
     rsx! {
-        div { class: "sess-col sess-midbody", id: "orca-host", style: "{body}" }
+        div { class: "sess-col sess-midbody", id: "orca-host", style: "{body}",
+            div {
+                style: "margin:auto;padding:24px;color:var(--ink-3);font-size:13px;",
+                "正在打开 Orca…"
+            }
+        }
     }
 }
 

@@ -264,8 +264,8 @@ fn primary_note(events: &[Event]) -> Option<String> {
             };
             format!("工作区根目录改成了 {path}{tail}")
         }
-        // 不带 URL 原文(配对 URL 带 token)。会话屏要重启 buddy 才换地址。
-        Event::OrcaWebUrlChanged => "Orca 网页地址已保存,重启 buddy 后会话屏生效".into(),
+        // 不带 URL 原文(配对 URL 带 token)。进会话屏即打开;旧所属窗会按新地址重建。
+        Event::OrcaWebUrlChanged => "Orca 网页地址已保存,进会话屏即可".into(),
         Event::IssueSubmitted {
             branch,
             commits,

@@ -107,7 +107,7 @@ fn orca_row(value: String, bridge: Bridge) -> Element {
                         class: "input mono",
                         style: "flex:1;min-width:0;",
                         value: "{draft}",
-                        placeholder: "http://127.0.0.1:6768/web-index.html#pairing=…",
+                        placeholder: "http://127.0.0.1:6768/web-index.html#pairing=…(源码桌面换 6769)",
                         oninput: move |e| draft.set(e.value()),
                     }
                     button {
@@ -117,11 +117,11 @@ fn orca_row(value: String, bridge: Bridge) -> Element {
                     }
                 }
                 div { style: "font-size:11px;color:var(--ink-4);margin-top:4px;",
-                    "从安装版 Orca「给 web 配对」复制完整 URL 贴这里(带 #pairing=,含 token)。"
+                    "从 Orca「给 web 配对 / Share this Orca server」复制「Open in browser」那条(http://127.0.0.1:…#pairing=)。"
                     br {}
-                    "只认 loopback;"
-                    strong { "不进仓、不进仓文件" }
-                    " —— 是这台机器看 Orca web 的事。重启 buddy 后会话屏生效。"
+                    "官方包端口 6768,源码桌面 6769。不要用 orca:// 那条。只认 loopback;"
+                    strong { "不进仓" }
+                    "。保存后进会话屏即可,不用重启。"
                     br {}
                     "现在的值:"
                     span { class: "mono", style: if shown.is_empty() { "color:var(--ink-4);" } else { "" },

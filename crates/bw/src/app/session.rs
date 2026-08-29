@@ -106,9 +106,16 @@ impl App {
         let agent = super::tools::orca_agent(&issue.tool)?;
         let rt = bw_engine::orca::connect()
             .map_err(|e| AppError::Exec(format!("连 Orca 没成,接不回会话:{e}")))?;
-        bw_engine::orca::ensure_session(&rt, &tree.path, agent, &sid)
-            .await
-            .map_err(|e| AppError::Exec(format!("在 Orca 里点回会话没成:{e}")))?;
+        if let Err(e) = bw_engine::orca::ensure_session(&rt, &tree.path, agent, &sid).await {
+            // ensure 被拒或没成也打 method+code+runtimeId+pid+worktree(和 run_issue_orca
+            // 同口径),不带 token / pairing。
+            eprintln!(
+                "[BW_ORCA] {e} · {} · worktree={}",
+                rt.log_tag(),
+                tree.path.display()
+            );
+            return Err(AppError::Exec(format!("在 Orca 里点回会话没成:{e}")));
+        }
         if sid != conv.claude_session_id {
             self.remember_session_id(&conv, &sid).await?;
         }

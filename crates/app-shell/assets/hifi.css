@@ -588,3 +588,5 @@ select.select-multi{padding:3px;font-size:11.5px;border:1px solid var(--border-d
    会停在旧尺寸。把根钉在窗口四边上(替代上面的 100vh),中栏跟 flex 撑,
    Orca 所属窗按 #orca-host 格子重测。浏览器稿不用这条。 */
 .app-root{position:fixed;inset:0;height:auto;}
+/* 会话是全屏嵌页,不要再卡 1600px——最大化右侧会空一截。总览仍走稿上的 max-width。 */
+[data-screen="session"],.session-screen{max-width:none;width:100%;}

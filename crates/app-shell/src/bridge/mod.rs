@@ -804,19 +804,24 @@ pub fn spawn(deep_link: DeepLink) -> Bridge {
                             }
                         }
                         Req::SelectSession(id) => {
-                            // 选中一张记下了 Claude session id 的活 = 在 Orca 里点回那场对话
-                            // (ensureAgentSession)。PTY 已封存,不查 live —— Orca ensure 本身
-                            // 幂等(已开着的 tab 会 adopted,不杀进程),再点一次没事。空 id 不发
-                            // (发了会 ensure 到一个不存在的会话);没会话行也不发。
+                            // 点一张有会话行的活 = 在 Orca 里接回那场对话(ensureAgentSession)。
+                            // 有会话行就 dispatch —— sid 空也走,reopen_session 会从这棵 worktree
+                            // 的 Claude jsonl 收 id;收不到返回没 live、不编 id、不 ensure。PTY 已
+                            // 封存,不查 live;Orca ensure 幂等(已开着 tab 会 adopted)。没会话行不发
+                            // (让人点▶开工),所以先看有没有会话行再决定发不发。
                             if let Some(iid) = id {
-                                if let Ok(Some(conv)) = app.conversation_for_issue(iid).await {
-                                    if !conv.claude_session_id.is_empty() {
-                                        if let Err(e) = app
-                                            .dispatch(Command::ReopenSession { issue_id: iid })
-                                            .await
-                                        {
-                                            ui.set_note(Some(format!("接不回上次那场会话:{e}")));
-                                        }
+                                let has_conv = app
+                                    .conversation_for_issue(iid)
+                                    .await
+                                    .ok()
+                                    .flatten()
+                                    .is_some();
+                                if has_conv {
+                                    if let Err(e) = app
+                                        .dispatch(Command::ReopenSession { issue_id: iid })
+                                        .await
+                                    {
+                                        ui.set_note(Some(format!("接不回上次那场会话:{e}")));
                                     }
                                 }
                             }
