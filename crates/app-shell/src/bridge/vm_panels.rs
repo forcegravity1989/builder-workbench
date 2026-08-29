@@ -9,7 +9,7 @@ use bw::model::{IssueStatus, Project, ProjectId};
 use bw::repo::{issue_policy_file, project_file};
 use std::path::Path;
 
-use super::vm_build::{card_item, probe_env, remote_label, tool_label};
+use super::vm_build::{card_item, remote_label, tool_label};
 
 /// 四列看板(合并后)。列内分段;段按原始状态算。
 ///
@@ -475,7 +475,9 @@ pub(super) async fn build_workbench(
     }
 }
 
-pub(super) async fn build_config(
+/// 配置屏。`tools`(环境条)从外部传:它在 `gather` 里探一次,不再每次重切
+/// 都重探(OD 管道 400ms + PATH 扫)——原来这条是 `probe_env` 第二遍的来源。
+pub(super) fn build_config(
     ws: &Path,
     policy: Option<&issue_policy_file::IssuePolicyFile>,
     project: &Project,
@@ -484,6 +486,7 @@ pub(super) async fn build_config(
     // 「项目群未配」,而真相是文件里有一行写错了。
     file: &project_file::ProjectFile,
     issues: &[bw::Issue],
+    env: &[ToolProbeVm],
 ) -> ConfigVm {
     let usage = bw::app::workflow_usage(issues);
     let mappings = policy
@@ -513,7 +516,7 @@ pub(super) async fn build_config(
         mappings,
         skills,
         focus_skill: String::new(),
-        tools: probe_env().await,
+        tools: env.to_vec(),
         remote: remote_label(project),
         cadence: policy
             .and_then(|p| p.cadence.clone())
