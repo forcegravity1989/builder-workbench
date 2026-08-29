@@ -254,8 +254,9 @@ impl App {
 
     /// 桌面 ▶跑 的 Orca 分支。开/复用 worktree(走 resolve,旧平级兄弟接着用)→
     /// upsert 会话行(workspace_path 写实际用的路径)→ 推进行中 → connect Orca →
-    /// 有 session_id ensure,没 id create(灌系统提示词)→ 成功回执「已在 Orca 里
-    /// 开工」。**Orca 没开 / 连不上:人话报错,不静默 mock 成功**;桌面有工作区才进这条。
+    /// 没 id 才 create(灌系统提示词);有 id / create 完了只切树,不 ensure。
+    /// 成功回执「已在 Orca 里开工」。**Orca 没开 / 连不上:人话报错,不静默 mock
+    /// 成功**;桌面有工作区才进这条。
     /// 系统提示词仍走 `bootstrap::agent_system_prompt`(身份+铁律+技能指针),不新模板。
     /// Orca 不吃 LaunchPlan,不 attach_session_hook(那是给 PTY 收割 `--resume` id 的,
     /// Orca 自己认 Claude session id)—— 技能靠提示词里的绝对路径让 agent 自己读。
@@ -337,12 +338,19 @@ impl App {
                         Err(e) => Err(e),
                     }
                 } else {
-                    bw_engine::orca::focus_session(&rt, &tree.path, agent, &sid).await
+                    Ok(())
                 };
-                // create/ensure 被拒或没成:把 method+code+runtimeId+pid+worktree 打进
-                // stderr,方便和 Orca 日志对(连上了但被拒也走这条)。`log_tag` 只含
-                // runtimeId/pid/endpoint(管道路径),不带 token / pairing。
-                if let Err(e) = &r {
+                // 开成了(含句柄超时当成功)或树上已有会话:切树,网页才跟得上。
+                // 切树失败只打日志,不把已经起来的窗打成开工失败。
+                if r.is_ok() {
+                    if let Err(e) = bw_engine::orca::reveal_tree(&rt, &tree.path).await {
+                        eprintln!(
+                            "[BW_ORCA] 窗已在,切树没跟上:{e} · {} · worktree={}",
+                            rt.log_tag(),
+                            tree.path.display()
+                        );
+                    }
+                } else if let Err(e) = &r {
                     eprintln!(
                         "[BW_ORCA] {e} · {} · worktree={}",
                         rt.log_tag(),

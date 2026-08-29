@@ -124,11 +124,11 @@ references(`standard/system-prompt/references/*.md`)是「干某类活需要额�
 
 ### 7 · 会话与执行
 
-**是什么**:会话屏只剩两个组件——**Orca**、**Open Design**。旧三栏和后来加上的动作条、灌词条都不要:停止 / 开 MR / 推评审 / 删会话在 Orca 里做,或在计划屏拖列;buddy 也不知道人在 Orca 里点了哪条会话,灌词条对着「当前会话」会骗人。开工入口在**计划屏**(拖进「进行中」或详情 ▶开工),同一条 `run_issue`:开/复用 worktree,打 Orca 本地 pipe(`createAgentSession`;Claude 有 session id 则 `ensureAgentSession`,Cursor 接回只 `worktree.activate`),铁律挂启动参数(Cursor 拼进用户话)。**去会话**先认会话记下的路径再 `worktree.activate` 切到这张活的树,有 Claude session id 再尽量 ensure 那条 tab;切树成功就算成功,树上有几扇窗、是否正好落到 issue 那条是其次。会话屏只是把本机已开的 Orca web / OD 嵌进来给人看。完成仍由人点(计划屏拖进已完成 / 合入)。
+**是什么**:会话屏只剩两个组件——**Orca**、**Open Design**。旧三栏和后来加上的动作条、灌词条都不要:停止 / 开 MR / 推评审 / 删会话在 Orca 里做,或在计划屏拖列;buddy 也不知道人在 Orca 里点了哪条会话,灌词条对着「当前会话」会骗人。开工入口在**计划屏**(拖进「进行中」或详情 ▶开工),同一条 `run_issue`:开/复用 worktree,没会话才打 Orca `createAgentSession`,有会话只切树。铁律挂启动参数(Cursor 拼进用户话)。Orca create 若回 `Timed out waiting for terminal handle after creation`,渲染进程已经把 tab/agent 拉起来了,当成功,再 `worktree.activate` 让配对网页跟上。**去会话 / Open**只 `worktree.activate`,不 `ensure`(那条是 `--resume` 再开一扇)。切树成功就算成功,树上已有的 TUI 由 Orca 自己记着。会话屏只是把本机已开的 Orca web / OD 嵌进来给人看。完成仍由人点(计划屏拖进已完成 / 合入)。
 
 **两条通道别混**:本地 pipe 是 buddy 对 Orca 桌面下命令(开工、接回),同机读 `orca-runtime.json` 的 token,不需要配对。嵌网页是把本机已开的 Orca web 给人看,要带 `#pairing=` 才能看见桌面那份状态;配对码 Orca 不经 pipe 发,人从桌面「给 web 配对」拿完整 URL,贴进本机 `settings.toml`(设置屏可改;开发期 `BW_ORCA_WEB_URL` 可覆盖)。没喂 URL 则这块如实空着,开工不受影响。
 
-**网页跟随是 Orca 内核,不是 buddy 第二条 RPC。** pipe 打 `ensureAgentSession` / `createAgentSession`(`presentation: focused`)成功后,带这刀的 Orca 把已配对网页推到同一棵树、同一条 TUI;官方安装包今天没有这刀,开工和桌面切换仍成立,嵌进去的网页停在旧位置,人要点侧栏。buddy 不绕 URL / postMessage。源码桌面+浏览器已人眼过;buddy 会话屏 iframe **能亮**已人验(Claude 开工/接回、Cursor 开工),iframe 里网页是否跟着滚到那条会话还没正式走完。
+**网页跟随是 Orca 内核,不是 buddy 第二条 RPC。** create 句柄交成功后,带这刀的 Orca 会推配对网页;句柄超时那条路 Orca 不发跟随,buddy 自己再 `worktree.activate`(`notifyClients`)。官方安装包今天没有跟随这刀,开工和桌面切换仍成立,嵌进去的网页可能停在旧位置,人要点侧栏。buddy 不绕 URL / postMessage。源码桌面+浏览器已人眼过;buddy 会话屏 iframe **能亮**已人验,嵌页自动跟到那条会话还没正式走完。
 
 **嵌网页走 iframe**(Orca 和 Open Design 同一条路)。新版 Orca SPA boot 调 `crypto.randomUUID()`,只在 Secure Context 有。buddy 父页是 `http://dioxus.index.html`(dioxus 虚拟主机,非 localhost / 非 https),默认不算 secure,子 iframe 跟着不算 → SPA 一抛、纯白。旧版 Orca 不调这个 API,所以一度能嵌。Windows 主 WebView 用 `with_windows_browser_args` 把该 origin 当 secure 对待(`--unsafely-treat-insecure-origin-as-secure=http://dioxus.index.html`),并关掉 `LocalNetworkAccessChecks`(iframe 嵌 loopback)。不另开顶级 wry 窗、不 `build_as_child`。顶级 `load_url` 仍会把 `http(s)` 扔给系统浏览器,所以嵌页必须是 iframe,不能把主 WebView 导航到 pairing URL。
 
@@ -137,10 +137,8 @@ references(`standard/system-prompt/references/*.md`)是「干某类活需要额�
 **PTY 封存**:`interactive_cli` / `pty_backend` / `terminal_manager` 整包挪到 `bw-engine` 的 `legacy_pty/`,开工路径不再调用。新模块 `orca`(对标 `open_design.rs`)接口一次定住:
 
 - `connect() -> OrcaRuntime` — 读本机 `orca-runtime.json`,token 不落盘
-- `ensure_session(worktree, agent, session_id)` — 只给 Orca 能 resume 的 agent(`claude`);`cursor` 不在 ensure 枚举里,硬打会被拒成 `invalid_argument`
-- `focus_session` — ▶开工 接回上一场:Claude 走 ensure;Cursor 走 `worktree.activate`
-- `reveal_tree` — 去会话:先 `worktree.activate`(12s);有 Claude session id 再短等 ensure(4s),失败只打日志。切树成功就算成功
-- `create_session(worktree, agent, prompt, system)` — Orca 预设名是 `claude` / `cursor`(`cursor-agent` 是启动二进制,打出去会被 `Unknown agent preset` 拒);内部按代理填 `agentArgs` 或把 system 拼进 prompt;`clientOperationId` 用 Orca 规定形状(13 位毫秒 + `-` + 32 hex,不是 RPC 帧 id),形状不对立刻 `agent_session_operation_invalid` 被拒。create 成功后只给 Claude 短等 jsonl 收 session id;Cursor 不等
+- `reveal_tree` / `activate_worktree` — 去会话和开工成功后跟网页:只 `worktree.activate`(12s)。不 ensure、不 resume
+- `create_session(worktree, agent, prompt, system)` — Orca 预设名是 `claude` / `cursor`(`cursor-agent` 是启动二进制,打出去会被 `Unknown agent preset` 拒);内部按代理填 `agentArgs` 或把 system 拼进 prompt;`clientOperationId` 用 Orca 规定形状(13 位毫秒 + `-` + 32 hex,不是 RPC 帧 id),形状不对立刻 `agent_session_operation_invalid` 被拒。Orca 回「等终端句柄超时」当成功(窗已在)。create 成功后只给 Claude 短等 jsonl 收 session id;Cursor 不等;然后切树
 - `web_embed_url(fallback)` — 给会话屏 iframe 的 loopback;先 `BW_ORCA_WEB_URL` 后本机设置。WebView2 部分导航会丢 fragment,把 `#pairing=` 搬成 `?pairing=`(Orca 两边都认,只搬家不 mint code)
 
 **代码**:会话屏 `app-shell/screens/session/mod.rs`(只剩 Orca/OD 两页签);开工在计划屏 → `run_issue` / `run_issue_orca`;路径 `bw-engine/workspace.rs`;Orca 客户端 `bw-engine/orca.rs`;PTY 封存 `bw-engine/legacy_pty/`。
