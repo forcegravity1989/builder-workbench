@@ -335,7 +335,12 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         file.chat = Some(bw::repo::project_file::ChatConfig {
             provider: "mock".into(),
             group_id: "demo-group".into(),
-            notify: Some(vec!["review".into(), "merged".into(), "release".into()]),
+            notify: Some(
+                bw::chat::NotifyEvent::ALL
+                    .iter()
+                    .map(|e| e.key().to_string())
+                    .collect(),
+            ),
         });
         let _ = bw::repo::project_file::write(&workspace, &file);
     }

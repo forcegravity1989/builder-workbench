@@ -1,7 +1,6 @@
 //! `asset_root/settings.toml` —— 全局本机设置。
 //!
-//! 替代旧的 `app_meta` 表里的 `workspaces_root` 键。今天只有这一个全局键;
-//! `notify_seen` 是 per-project,住在项目注册表里([`super::registry`])。
+//! 替代旧的 `app_meta` 表里的 `workspaces_root` 键。今天只有这一个全局键。
 
 use crate::repo::RepoFileError;
 use std::path::Path;
