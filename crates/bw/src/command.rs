@@ -91,21 +91,21 @@ pub enum Command {
         kind: crate::model::IssueKind,
         origin: crate::model::IssueOrigin,
         week_of: String,
-        /// 排进的自定义版本(`bw:plan:<name>`)。空 = 不属于任何版本。
+        /// 排进人起名的版本(`bw:plan:<name>`)。空 = 不走这个写法。
+        /// 和 `week_of` 是同一槽位:有 plan 就只打版本,丢掉周。
         plan: String,
     },
-    /// 排期:排进某一周,或传空串移回待办池。
+    /// 排期:排进某个周版本,或传空串移回待办池。
     ScheduleIssue {
         id: IssueId,
         week_of: Option<String>,
     },
-    /// 排进自定义版本(`bw:plan:<name>`)。和 `ScheduleIssue` 互斥:一张活要么
-    /// 排进某一周、要么排进某个版本。正本走 codehub milestone + 标签,本地不缓存写。
+    /// 排进人起名的版本(`bw:plan:<name>`)。和 `ScheduleIssue` 是同一槽位的
+    /// 两种写法:一张活只属于一个版本。正本走 codehub milestone + 标签。
     ScheduleToPlan { id: IssueId, plan: String },
-    /// 建一个自定义版本(计划包):建 codehub milestone(title=name,start,due),
+    /// 建一个人起名的版本:建 codehub milestone(title=name,start,due),
     /// 并给 `included` 每张打 `bw:plan:<name>` 标签、挂到这个里程碑。
-    /// 与发版号 `CutRelease` 不同:发版号给已完成的活打版本标签;版本是把
-    /// 若干待办活划归到一个计划包里排期。
+    /// 周版本每周一按周号出现,不用这条建。与发版号 `CutRelease` 不同。
     CreatePlanVersion {
         project_id: ProjectId,
         name: String,
@@ -114,8 +114,8 @@ pub enum Command {
         note: String,
         included: Vec<IssueId>,
     },
-    /// 删一个自定义版本:给挂着 `bw:plan:<name>` 的活摘掉该标签,再删同名
-    /// 里程碑。**不碰 `bw:week:`** —— 周排期不是这个按钮的事。
+    /// 删一个人起名的版本:给挂着 `bw:plan:<name>` 的活摘掉该标签,再删同名
+    /// 里程碑。周版本每周一固定出现,周格式标题拒收。
     DeletePlanVersion { project_id: ProjectId, name: String },
     /// 发版本:给选中的活写版本号 + 建远端 codehub/GitHub Release + 打 `bw:released:*` 标签。
     CutRelease {

@@ -1,6 +1,6 @@
-//! 详情弹窗(屏幕居中)。点卡片打开,三段式:头/体/底。字段精简,主操作按
-//! 状态互斥。点 Start / Open / 阻塞 / Cancel / Complete 后详情自动关。
-//! Start 确认框建 worktree,业务活可改/补类别后再 RunIssue。
+//! 详情弹窗(屏幕居中)。点卡片打开,三段式:头/体/底。字段精简。状态下拉只列
+//! 十条里从当前状态能走到的;选了走和看板拖拽同一条命令。底栏只留 Start /
+//! Open / Complete。Start 确认框建 worktree,业务活可改/补类别后再 RunIssue。
 
 use crate::bridge::{Bridge, Panel, PanelNav, Req};
 use crate::vm::{CardItemVm, ProjectVm};
@@ -8,7 +8,10 @@ use bw::command::Command;
 use bw::model::{category_from_key, category_key, IssueId, IssueStatus, StageKind};
 use dioxus::prelude::*;
 
-use super::kanban::PendingSchedule;
+use super::kanban::{
+    allowed_plan_targets, apply_status_move, plan_status_label, status_from_key, status_key,
+    PendingMove, PendingSchedule,
+};
 
 #[component]
 pub fn DetailModal(
@@ -16,6 +19,7 @@ pub fn DetailModal(
     mut selected: Signal<Option<IssueId>>,
     mut schedule: Signal<Option<PendingSchedule>>,
     mut start: Signal<Option<IssueId>>,
+    mut pending: Signal<Option<PendingMove>>,
     bridge: Bridge,
 ) -> Element {
     let nav = use_context::<PanelNav>();
@@ -44,9 +48,6 @@ pub fn DetailModal(
         "未排期".into()
     };
 
-    let b_complete = bridge.clone();
-    let b_block = bridge.clone();
-    let b_cancel = bridge.clone();
     let b_assignee = bridge.clone();
     let b_sess = bridge.clone();
     let b_cat = bridge.clone();
@@ -119,6 +120,42 @@ pub fn DetailModal(
                             }
                         }
                         div { class: "detail-row",
+                            div { class: "k", "状态" }
+                            {
+                                let targets = allowed_plan_targets(c.status);
+                                let card = c.clone();
+                                if targets.is_empty() {
+                                    rsx! {
+                                        select {
+                                            class: "select",
+                                            style: "width:100%;",
+                                            disabled: true,
+                                            option { selected: true, "{plan_status_label(c.status)}" }
+                                        }
+                                    }
+                                } else {
+                                    rsx! {
+                                        select {
+                                            class: "select",
+                                            style: "width:100%;",
+                                            onchange: move |e| {
+                                                let Some(to) = status_from_key(&e.value()) else { return; };
+                                                if to == card.status {
+                                                    return;
+                                                }
+                                                apply_status_move(&card, to, start, pending);
+                                                selected.set(None);
+                                            },
+                                            option { value: "{status_key(c.status)}", selected: true, "{plan_status_label(c.status)}" }
+                                            for to in targets.iter().copied() {
+                                                option { value: "{status_key(to)}", "{plan_status_label(to)}" }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                        div { class: "detail-row",
                             div { class: "k", "计划" }
                             select {
                                 class: "select",
@@ -185,9 +222,21 @@ pub fn DetailModal(
                                     b_sess.send(Req::SelectSession(Some(id)));
                                     nav.go(Panel::Session);
                                 }, "Open" }
-                                button { class: "btn btn-sm btn-primary", onclick: move |_| {
-                                    b_complete.cmd(Command::MergeAndSettle { id });
-                                    selected.set(None);
+                                button { class: "btn btn-sm btn-primary", onclick: {
+                                    let title = c.title.clone();
+                                    let pr = c.pr_number;
+                                    let open = c.has_open_mr;
+                                    move |_| {
+                                        pending.set(Some(PendingMove {
+                                            id,
+                                            title: title.clone(),
+                                            from: IssueStatus::InReview,
+                                            to: IssueStatus::Done,
+                                            pr_number: pr,
+                                            has_open_mr: open,
+                                        }));
+                                        selected.set(None);
+                                    }
                                 }, "Complete" }
                             },
                             IssueStatus::Done | IssueStatus::Cancelled => rsx! {
@@ -203,24 +252,6 @@ pub fn DetailModal(
                                     b_sess.send(Req::SelectSession(Some(id)));
                                     nav.go(Panel::Session);
                                 }, "Open" }
-                            },
-                        }}
-                        {match c.status {
-                            IssueStatus::Done | IssueStatus::Cancelled => rsx! {},
-                            _ => rsx! {
-                                button { class: "btn btn-sm btn-secondary", onclick: move |_| {
-                                    b_block.cmd(Command::BlockIssue { id, reason: "在计划屏手动标为阻塞".into() });
-                                    selected.set(None);
-                                }, "阻塞" }
-                            },
-                        }}
-                        {match c.status {
-                            IssueStatus::Done | IssueStatus::Cancelled => rsx! {},
-                            _ => rsx! {
-                                button { class: "btn btn-sm btn-secondary", onclick: move |_| {
-                                    b_cancel.cmd(Command::CancelIssue { id, reason: "在计划屏作废".into() });
-                                    selected.set(None);
-                                }, "Cancel" }
                             },
                         }}
                     }
