@@ -46,22 +46,11 @@ pub fn DetailModal(
     let b_complete = bridge.clone();
     let b_block = bridge.clone();
     let b_cancel = bridge.clone();
-    let b_unblock = bridge.clone();
     let b_assignee = bridge.clone();
     let b_sess = bridge.clone();
     let b_cat = bridge.clone();
     let b_edit = bridge.clone();
     let b_sched = bridge.clone();
-
-    let can_block = !matches!(
-        c.status,
-        IssueStatus::Done | IssueStatus::Blocked | IssueStatus::Cancelled
-    );
-    let can_cancel = !matches!(c.status, IssueStatus::Done | IssueStatus::Cancelled);
-    let can_open = matches!(
-        c.status,
-        IssueStatus::InProgress | IssueStatus::InReview | IssueStatus::Blocked
-    );
 
     rsx! {
         div { class: "modal-backdrop", onclick: close,
@@ -92,7 +81,7 @@ pub fn DetailModal(
                                     span { "MR #{c.pr_number}" }
                                 }
                             } else {
-                                span { style: "color:var(--ink-3);", "— 还没开 MR" }
+                                span { style: "color:var(--ink-3);" }
                             }
                             " · "
                             if c.remote_number > 0 {
@@ -106,12 +95,11 @@ pub fn DetailModal(
                             }
                         }
                         if c.kind != "业务活" {
-                            {row("类别", "运作")}
-                        } else {
                             div { class: "detail-row",
                                 div { class: "k", "类别" }
                                 select {
                                     class: "select",
+                                    style: "width:100%;",
                                     onchange: move |e| {
                                         if let Some(cat) = category_from_key(&e.value()) {
                                             b_cat.cmd(Command::SetIssueCategory { id, category: cat });
@@ -123,12 +111,14 @@ pub fn DetailModal(
                                     }
                                 }
                             }
+                        } else {
+                            {row("类别", "运作")}
                         }
                         div { class: "detail-row",
                             div { class: "k", "计划" }
                             select {
                                 class: "select",
-                                style: "width:auto;display:inline-block;",
+                                style: "width:100%;",
                                 onchange: move |e| {
                                     let v = e.value();
                                     if v == "unscheduled" {
@@ -152,7 +142,7 @@ pub fn DetailModal(
                             div { class: "k", "负责人" }
                             input {
                                 class: "input",
-                                style: "width:auto;display:inline-block;",
+                                style: "width:100%;",
                                 value: "{assignee_val}",
                                 placeholder: "指派谁",
                                 oninput: move |e| assignee_val.set(e.value()),
@@ -164,7 +154,7 @@ pub fn DetailModal(
                     }
                 }
                 div { class: "plan-modal-foot",
-                    div { style: "display:flex;gap:8px;flex-wrap:wrap;",
+                    div { style: "display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end;",
                         {match c.status {
                             IssueStatus::Backlog => rsx! {
                                 button { class: "btn btn-sm btn-secondary", onclick: move |_| {
@@ -175,24 +165,38 @@ pub fn DetailModal(
                             IssueStatus::Todo => rsx! {
                                 button { class: "btn btn-sm btn-primary", onclick: move |_| start.set(Some(id)), "Start" }
                             },
-                            IssueStatus::InProgress => rsx! { span { style: "color:var(--ink-3);", "进行中" } },
+                            IssueStatus::InProgress => rsx! {
+                                button { class: "btn btn-sm btn-secondary", onclick: move |_| {
+                                    b_sess.send(Req::SelectSession(Some(id)));
+                                    nav.go(Panel::Session);
+                                }, "Open" }
+                            },
                             IssueStatus::InReview => rsx! {
                                 button { class: "btn btn-sm btn-primary", onclick: move |_| b_complete.cmd(Command::MergeAndSettle { id }), "Complete" }
                             },
                             IssueStatus::Done => rsx! { span { style: "color:var(--ink-3);", "已完成并结清" } },
                             IssueStatus::Blocked => rsx! {
-                                button { class: "btn btn-sm btn-secondary", onclick: move |_| b_unblock.cmd(Command::TransitionIssue { id, to: IssueStatus::Todo }), "解除阻塞" }
+                                button { class: "btn btn-sm btn-secondary", onclick: move |_| {
+                                    b_sess.send(Req::SelectSession(Some(id)));
+                                    nav.go(Panel::Session);
+                                }, "Open" }
                             },
                             IssueStatus::Cancelled => rsx! { span { style: "color:var(--ink-3);", "已取消" } },
                         }}
-                        if can_block {
-                            button { class: "btn btn-sm btn-secondary", onclick: move |_| b_block.cmd(Command::BlockIssue { id, reason: "在计划屏手动标为阻塞".into() }), "阻塞" }
-                        }
-                        if can_cancel {
-                            button { class: "btn btn-sm btn-secondary", onclick: move |_| b_cancel.cmd(Command::CancelIssue { id, reason: "在计划屏作废".into() }), "Cancel" }
-                        }
+                        {match c.status {
+                            IssueStatus::Done | IssueStatus::Cancelled => rsx! {},
+                            _ => rsx! {
+                                button { class: "btn btn-sm btn-secondary", onclick: move |_| b_block.cmd(Command::BlockIssue { id, reason: "在计划屏手动标为阻塞".into() }), "阻塞" }
+                            },
+                        }}
+                        {match c.status {
+                            IssueStatus::Done | IssueStatus::Cancelled => rsx! {},
+                            _ => rsx! {
+                                button { class: "btn btn-sm btn-secondary", onclick: move |_| b_cancel.cmd(Command::CancelIssue { id, reason: "在计划屏作废".into() }), "Cancel" }
+                            },
+                        }}
                     }
-                    div { style: "display:flex;gap:8px;",
+                    div { style: "display:flex;gap:8px;justify-content:flex-end;",
                         button {
                             class: "btn btn-sm btn-primary",
                             onclick: move |_| {
@@ -206,12 +210,6 @@ pub fn DetailModal(
                                 selected.set(None);
                             },
                             "保存"
-                        }
-                        if can_open {
-                            button { class: "btn btn-sm btn-ghost", onclick: move |_| {
-                                b_sess.send(Req::SelectSession(Some(id)));
-                                nav.go(Panel::Session);
-                            }, "Open" }
                         }
                     }
                 }

@@ -91,6 +91,8 @@ pub enum Command {
         kind: crate::model::IssueKind,
         origin: crate::model::IssueOrigin,
         week_of: String,
+        /// 排进的自定义版本(`bw:plan:<name>`)。空 = 不属于任何版本。
+        plan: String,
     },
     /// 排期:排进某一周,或传空串移回待办池。
     ScheduleIssue {

@@ -110,6 +110,7 @@ impl App {
                     IssueKind::Business,
                     IssueOrigin::AgentSplit,
                     String::new(),
+                    String::new(),
                 )
                 .await?;
             events.extend(created);
