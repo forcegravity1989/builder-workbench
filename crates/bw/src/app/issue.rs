@@ -27,6 +27,7 @@ impl App {
         kind: IssueKind,
         _origin: IssueOrigin,
         week_of: String,
+        plan: String,
     ) -> Result<Vec<Event>> {
         let project = self.project_of(project_id).await?;
         // 幂等:同一个项目里标题一样的、开着的活不建第二张(指挥器重跑靠它)。
@@ -37,10 +38,14 @@ impl App {
             }]);
         }
         // 业务活打五阶段类别;运作活不打。
-        let extra: Vec<String> = match (kind, category) {
+        let mut extra: Vec<String> = match (kind, category) {
             (IssueKind::Ops, _) | (_, None) => Vec::new(),
             (_, Some(c)) => vec![format!("bw:category:{}", crate::model::category_key(c))],
         };
+        // 排进版本 → 加 bw:plan 标签(issue_store 据此把状态设为 Todo=已排期)。
+        if !plan.is_empty() {
+            extra.push(format!("bw:plan:{plan}"));
+        }
         let extra_refs: Vec<&str> = extra.iter().map(String::as_str).collect();
         let issue =
             issue_store::create(self, &project, &title, &body, kind, &week_of, &extra_refs).await?;

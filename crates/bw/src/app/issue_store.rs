@@ -61,9 +61,10 @@ pub async fn create(
     extra_labels: &[&str],
 ) -> Result<Issue> {
     let remote = app.remote_for(project)?;
-    // 未排期(week_of 空)的 issue 状态是 Backlog(待办池),排进周的才是 Todo(已排期)。
-    // 以前统一打 todo,新建未排期的 issue 状态显示"已排期"但计划"未排期",矛盾。
-    let status_label = if week_of.is_empty() {
+    // 未排期(week_of 空 + plan 空)的 issue 状态是 Backlog(待办池),
+    // 排进周或版本的才是 Todo(已排期)。
+    let has_plan = extra_labels.iter().any(|l| l.starts_with("bw:plan:"));
+    let status_label = if week_of.is_empty() && !has_plan {
         "bw:status:backlog"
     } else {
         "bw:status:todo"
