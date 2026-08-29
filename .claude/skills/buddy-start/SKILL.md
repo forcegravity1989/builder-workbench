@@ -44,6 +44,8 @@ buddy MVP 还不能在工作台里维护自己。这份 skill 按住仓外窗口
 
 定位:旅程哪一站 → 三层哪一层 → 数据归哪 → architecture §3 哪个模块。找不到先补文档。未锁定决策走 grill / domain-modeling。构建类活走仓内 `mattpocock-skills`,不要自造流程。
 
+先审已有实现和提示词,不对再改那一份;不新增平行方案。正本见 `AGENTS.md`「不要做的」。
+
 ## 禁止
 
 | 借口 | 实际 |
