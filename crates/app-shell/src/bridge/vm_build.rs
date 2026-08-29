@@ -48,6 +48,8 @@ pub(super) fn read_or_warn<T>(
 pub struct UiState {
     pub open: Option<ProjectId>,
     pub viewing_week: String,
+    /// 看某个自定义版本(计划包)。空 = 不在看版本。
+    pub viewing_plan: String,
     /// 计划屏左栏点的是「全部」。
     pub view_all: bool,
     pub open_doc: Option<String>,
@@ -670,13 +672,19 @@ async fn build_project(
         weeks,
         current_week,
         viewing_week: viewing_week.clone(),
+        viewing_plan: ui.viewing_plan.clone(),
         view_all: ui.view_all,
         board: build_board(
             &issues,
-            if ui.view_all {
+            if ui.view_all || !ui.viewing_plan.is_empty() {
                 None
             } else {
                 Some(viewing_week.as_str())
+            },
+            if !ui.viewing_plan.is_empty() {
+                Some(ui.viewing_plan.as_str())
+            } else {
+                None
             },
             policy.as_ref(),
         ),

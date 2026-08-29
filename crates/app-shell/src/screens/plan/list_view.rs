@@ -10,23 +10,28 @@ use dioxus::prelude::*;
 
 use super::ListFilter;
 
-/// 状态 → 胶囊 css + 中文。
-fn stage_pill(s: IssueStatus) -> (&'static str, &'static str) {
-    match s {
-        IssueStatus::Backlog => ("il-pill status-todo", "未排期"),
-        IssueStatus::Todo => ("il-pill status-todo", "已排期"),
-        IssueStatus::InProgress => ("il-pill status-progress", "进行中"),
-        IssueStatus::InReview => ("il-pill status-review", "待评审"),
-        IssueStatus::Done => ("il-pill status-done", "完成"),
-        IssueStatus::Blocked => ("il-pill status-blocked", "阻塞"),
-        IssueStatus::Cancelled => ("il-pill status-cancelled", "已取消"),
+/// 状态 → 胶囊 css + 中文。按 scheduled 判断未排期/已排期(而非纯 status),
+/// 因为历史 issue 可能 status=Todo 但 week_of 空(旧默认 Todo),那样该显示"未排期"。
+fn stage_pill(c: &CardItemVm) -> (&'static str, String) {
+    let scheduled = !c.week_of.is_empty() || !c.plan_version.is_empty();
+    match c.status {
+        IssueStatus::Backlog => ("il-pill status-todo", "未排期".into()),
+        IssueStatus::Todo if !scheduled => ("il-pill status-todo", "未排期".into()),
+        IssueStatus::Todo => ("il-pill status-todo", "已排期".into()),
+        IssueStatus::InProgress => ("il-pill status-progress", "进行中".into()),
+        IssueStatus::InReview => ("il-pill status-review", "待评审".into()),
+        IssueStatus::Done => ("il-pill status-done", "完成".into()),
+        IssueStatus::Blocked => ("il-pill status-blocked", "阻塞".into()),
+        IssueStatus::Cancelled => ("il-pill status-cancelled", "已取消".into()),
     }
 }
 
-/// 行操作类型。
-fn action_kind(s: IssueStatus) -> &'static str {
-    match s {
+/// 行操作类型。按 scheduled 判断:未排期→schedule,已排期 Todo→start。
+fn action_kind(c: &CardItemVm) -> &'static str {
+    let scheduled = !c.week_of.is_empty() || !c.plan_version.is_empty();
+    match c.status {
         IssueStatus::Backlog => "schedule",
+        IssueStatus::Todo if !scheduled => "schedule",
         IssueStatus::Todo => "start",
         IssueStatus::InProgress | IssueStatus::InReview | IssueStatus::Blocked => "open",
         _ => "dash",
@@ -39,7 +44,8 @@ pub fn list_view(
     rows: Vec<&CardItemVm>,
     mut list_filter: Signal<ListFilter>,
     selected: Signal<Option<IssueId>>,
-    _dialog: Signal<Option<super::plan_dialogs::DialogKind>>,
+    schedule: Signal<Option<super::kanban::PendingSchedule>>,
+    start: Signal<Option<IssueId>>,
     bridge: &Bridge,
     nav: PanelNav,
 ) -> Element {
@@ -62,20 +68,27 @@ pub fn list_view(
     ];
     filtered.sort_by_key(|c| order.iter().position(|s| *s == c.status).unwrap_or(99));
 
-    // 计划去重(供下拉)
+    // 计划下拉:从全部 rows(非 filtered)+ p.weeks + p.plan_versions 构建,避免
+    // 选"未排期"后 W35 从下拉消失(bug 5)。
     let mut plans: Vec<String> = Vec::new();
-    for c in &filtered {
-        let pl = if !c.week_of.is_empty() {
-            &c.week_of
-        } else if !c.plan_version.is_empty() {
-            &c.plan_version
-        } else {
-            continue;
-        };
-        if !plans.contains(pl) {
-            plans.push(pl.clone());
+    for w in &p.weeks {
+        if !plans.contains(&w.week) {
+            plans.push(w.week.clone());
         }
     }
+    for v in &p.plan_versions {
+        if !plans.contains(&v.name) {
+            plans.push(v.name.clone());
+        }
+    }
+
+    // 阶段下拉联动:选了"未排期"后,未排期的 issue 状态都是 Backlog/Todo,
+    // 阶段下拉只剩"全部"(bug 5b)。
+    let stage_options = if f.plan == "unscheduled" {
+        vec![(String::new(), "全部".into())]
+    } else {
+        stage_opts()
+    };
 
     rsx! {
         div { class: "il-wrap",
@@ -86,8 +99,11 @@ pub fn list_view(
                     {preset_btn("mine", "我的", &f.preset, list_filter)}
                 }
                 div { class: "il-tools",
-                    {dropdown(&f.plan, plan_opts(&plans), list_filter, "plan")}
-                    {dropdown(&f.stage, stage_opts(), list_filter, "stage")}
+                    // 计划下拉只在「全部 issue」显示;周/版本视图已经在看特定计划,不需要再筛
+                    if p.view_all {
+                        {dropdown(&f.plan, plan_opts(&plans), list_filter, "plan")}
+                    }
+                    {dropdown(&f.stage, stage_options, list_filter, "stage")}
                     div { class: "il-search-wrap",
                         input {
                             class: "il-search",
@@ -108,7 +124,7 @@ pub fn list_view(
                     span { class: "il-act", "" }
                 }
                 for c in &filtered {
-                    {list_row(c, selected, bridge, nav)}
+                    {list_row(c, selected, schedule, start, bridge, nav)}
                 }
                 if filtered.is_empty() {
                     div { class: "il-empty", "没有符合的 issue" }
@@ -119,8 +135,8 @@ pub fn list_view(
 }
 
 fn stage_list() -> Vec<(&'static str, &'static str)> {
+    // 阶段下拉不含"未排期"(Backlog)—— 未排期在「计划」下拉里筛。
     vec![
-        ("Backlog", "未排期"),
         ("Todo", "已排期"),
         ("InProgress", "进行中"),
         ("InReview", "待评审"),
@@ -153,8 +169,11 @@ fn stage_opts() -> Vec<(String, String)> {
 }
 
 fn plan_opts(plans: &[String]) -> Vec<(String, String)> {
-    let mut v: Vec<(String, String)> = plans.iter().map(|s| (s.clone(), s.clone())).collect();
-    v.insert(0, (String::new(), "全部".into()));
+    let mut v: Vec<(String, String)> = vec![
+        (String::new(), "全部".into()),
+        ("unscheduled".into(), "未排期".into()),
+    ];
+    v.extend(plans.iter().map(|s| (s.clone(), s.clone())));
     v
 }
 
@@ -187,17 +206,25 @@ fn dropdown(
 fn list_row(
     c: &CardItemVm,
     mut selected: Signal<Option<IssueId>>,
+    mut schedule: Signal<Option<super::kanban::PendingSchedule>>,
+    mut start: Signal<Option<IssueId>>,
     bridge: &Bridge,
     nav: PanelNav,
 ) -> Element {
-    let (pill_cls, stage) = stage_pill(c.status);
-    let act = action_kind(c.status);
-    let owner = if c.assignee.is_empty() {
+    let (pill_cls, stage) = stage_pill(c);
+    let act = action_kind(c);
+    // 负责人(assignee)给负责人列;提出人(author)给 by 行。
+    let assignee_name = if c.assignee.is_empty() {
         "—".into()
     } else {
         c.assignee.clone()
     };
-    let initial = owner
+    let author_name = if c.author.is_empty() {
+        "—".into()
+    } else {
+        c.author.clone()
+    };
+    let initial = assignee_name
         .chars()
         .next()
         .unwrap_or('—')
@@ -210,8 +237,9 @@ fn list_row(
     } else {
         "未排期".into()
     };
-    let sub = format!("by {} · {}", owner, plan_tag);
+    let sub = format!("by {} · {}", author_name, plan_tag);
     let cid = c.id;
+    let ctitle = c.title.clone();
     let b_sess = bridge.clone();
     rsx! {
         div {
@@ -224,7 +252,7 @@ fn list_row(
             }
             span { class: "il-owner",
                 span { class: "avatar avatar-sm", "{initial}" }
-                "{owner}"
+                "{assignee_name}"
             }
             span { class: "il-status", span { class: "{pill_cls}", "{stage}" } }
             span { class: "il-updated", "" }
@@ -234,13 +262,14 @@ fn list_row(
                         button { class: "il-btn", onclick: move |e| {
                             e.stop_propagation();
                             selected.set(None);
-                            // 排期走 schedule signal —— 但 list_view 拿不到;先开详情
+                            schedule.set(Some(super::kanban::PendingSchedule { id: cid, title: ctitle.clone() }));
                         }, "schedule" }
                     },
                     "start" => rsx! {
                         button { class: "il-btn", onclick: move |e| {
                             e.stop_propagation();
-                            selected.set(Some(cid));
+                            selected.set(None);
+                            start.set(Some(cid));
                         }, "Start →" }
                     },
                     "open" => rsx! {

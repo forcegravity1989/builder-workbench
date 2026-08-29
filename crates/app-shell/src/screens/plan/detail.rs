@@ -35,7 +35,7 @@ pub fn DetailModal(
         .then(|| format!("{}{}", p.mr_url_prefix, c.pr_number));
     let issue_url = (!p.issue_url_prefix.is_empty() && c.remote_number > 0)
         .then(|| format!("{}{}", p.issue_url_prefix, c.remote_number));
-    let place = if !c.week_of.is_empty() {
+    let _place = if !c.week_of.is_empty() {
         c.week_of.clone()
     } else if !c.plan_version.is_empty() {
         format!("版本·{}", c.plan_version)
@@ -51,6 +51,7 @@ pub fn DetailModal(
     let b_sess = bridge.clone();
     let b_cat = bridge.clone();
     let b_edit = bridge.clone();
+    let b_sched = bridge.clone();
 
     let can_block = !matches!(
         c.status,
@@ -81,9 +82,8 @@ pub fn DetailModal(
                         oninput: move |e| body_val.set(e.value()),
                         placeholder: "正文",
                     }
-                    div { class: "edithint", "改完点底部「保存」同步到 codehub" }
                     div { class: "plan-meta-grid",
-                        div { class: "detail-row",
+                        div { class: "detail-row", style: "grid-column:1/-1;",
                             div { class: "k", "链接" }
                             if c.pr_number > 0 {
                                 if let Some(u) = mr_url.clone() {
@@ -124,7 +124,30 @@ pub fn DetailModal(
                                 }
                             }
                         }
-                        {row("计划", &place)}
+                        div { class: "detail-row",
+                            div { class: "k", "计划" }
+                            select {
+                                class: "select",
+                                style: "width:auto;display:inline-block;",
+                                onchange: move |e| {
+                                    let v = e.value();
+                                    if v == "unscheduled" {
+                                        b_sched.cmd(Command::ScheduleIssue { id, week_of: None });
+                                    } else if let Some(w) = v.strip_prefix("week:") {
+                                        b_sched.cmd(Command::ScheduleIssue { id, week_of: Some(w.to_string()) });
+                                    } else if let Some(pl) = v.strip_prefix("version:") {
+                                        b_sched.cmd(Command::ScheduleToPlan { id, plan: pl.to_string() });
+                                    }
+                                },
+                                option { value: "unscheduled", selected: c.week_of.is_empty() && c.plan_version.is_empty(), "未排期" }
+                                for w in p.weeks.iter().filter(|w| w.week >= p.current_week) {
+                                    {let val = format!("week:{}", w.week); let sel = c.week_of == w.week; rsx! { option { value: "{val}", selected: sel, "周 · {w.week}" } }}
+                                }
+                                for v in p.plan_versions.iter() {
+                                    {let val = format!("version:{}", v.name); let sel = c.plan_version == v.name; rsx! { option { value: "{val}", selected: sel, "版本 · {v.name}" } }}
+                                }
+                            }
+                        }
                         div { class: "detail-row",
                             div { class: "k", "负责人" }
                             input {
@@ -180,6 +203,7 @@ pub fn DetailModal(
                                 if a != c.assignee {
                                     b_assignee.cmd(Command::SetIssueAssignee { id, assignee: a });
                                 }
+                                selected.set(None);
                             },
                             "保存"
                         }

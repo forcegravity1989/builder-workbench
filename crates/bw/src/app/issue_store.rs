@@ -61,7 +61,14 @@ pub async fn create(
     extra_labels: &[&str],
 ) -> Result<Issue> {
     let remote = app.remote_for(project)?;
-    let mut labels: Vec<String> = vec!["bw:status:todo".to_string()];
+    // 未排期(week_of 空)的 issue 状态是 Backlog(待办池),排进周的才是 Todo(已排期)。
+    // 以前统一打 todo,新建未排期的 issue 状态显示"已排期"但计划"未排期",矛盾。
+    let status_label = if week_of.is_empty() {
+        "bw:status:backlog"
+    } else {
+        "bw:status:todo"
+    };
+    let mut labels: Vec<String> = vec![status_label.to_string()];
     if !week_of.is_empty() {
         labels.push(format!("bw:week:{week_of}"));
     }
@@ -333,7 +340,11 @@ fn issue_from_create(
         remote_number: iid,
         title: title.to_string(),
         body: body.to_string(),
-        status: IssueStatus::Todo,
+        status: if week_of.is_empty() {
+            IssueStatus::Backlog
+        } else {
+            IssueStatus::Todo
+        },
         branch: String::new(),
         pr_number: 0,
         week_of: week_of.to_string(),
