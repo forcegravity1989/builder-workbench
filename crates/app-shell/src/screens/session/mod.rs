@@ -5,38 +5,39 @@
 //! 两个页签常驻:原型活默认停 Open Design,构建类默认停 Orca。
 //! 没接到就如实说,不假装嵌进去。
 
+mod orca_host;
+
 use crate::bridge::{Bridge, Req};
 use crate::vm::{ProjectVm, SessionTab};
 use dioxus::prelude::*;
+use std::cell::Cell;
+use std::rc::Rc;
+use std::time::Duration;
+
+const FILL: &str = "display:flex;flex-direction:column;flex:1;height:100%;min-height:0;";
 
 #[component]
 pub fn View(p: ProjectVm, bridge: Bridge) -> Element {
-    let (p, bridge) = (&p, &bridge);
+    let cur = p.workbench.tab;
     rsx! {
         div {
             class: "session-screen",
-            style: "display:flex;flex-direction:column;height:100%;min-height:0;",
-            div { class: "sess-col sess-midhead",
-                {tabs(p, bridge)}
+            "data-screen": "session",
+            style: "{FILL}",
+            div { class: "sess-col sess-midhead", style: "flex:none;",
+                div { class: "sess-tabs",
+                    TabBtn { label: "Orca".to_string(), tab: SessionTab::Orca, cur, bridge: bridge.clone() }
+                    TabBtn { label: "Open Design".to_string(), tab: SessionTab::OpenDesign, cur, bridge: bridge.clone() }
+                }
             }
-            {mid_body(p)}
+            {mid_body(&p)}
         }
     }
 }
 
-fn tabs(p: &ProjectVm, bridge: &Bridge) -> Element {
-    let cur = p.workbench.tab;
-    rsx! {
-        div { class: "sess-tabs",
-            {tab_btn("Orca", SessionTab::Orca, cur, bridge)}
-            {tab_btn("Open Design", SessionTab::OpenDesign, cur, bridge)}
-        }
-    }
-}
-
-fn tab_btn(label: &str, tab: SessionTab, cur: SessionTab, bridge: &Bridge) -> Element {
+#[component]
+fn TabBtn(label: String, tab: SessionTab, cur: SessionTab, bridge: Bridge) -> Element {
     let b = bridge.clone();
-    let label = label.to_string();
     rsx! {
         div {
             class: if tab == cur { "sess-tab active" } else { "sess-tab" },
@@ -55,62 +56,51 @@ fn mid_body(p: &ProjectVm) -> Element {
     }
 }
 
-/// 把本机已开的 Orca **网页**嵌进会话屏。产品意图就是在这里看、在这里聊,
-/// 不是让人再去 Orca 桌面窗口。跳会话靠计划屏开工打 pipe,不改 iframe src、
-/// 不 postMessage。
-///
-/// 嵌进来要带配对 URL。buddy 自己 mint 不到配对码,人从安装版「给 web 配对」
-/// 拿完整地址塞进 `BW_ORCA_WEB_URL`。没喂则这页空着(缺口,不是改去桌面看)。
+/// Orca 走所属 wry 窗顶级打开 `BW_ORCA_WEB_URL`,不走 iframe。
 #[component]
 fn OrcaView() -> Element {
-    let mut url = use_signal(|| None::<String>);
-    let mut probing = use_signal(|| true);
-    let mut fut = use_future(move || async move {
-        url.set(bw_engine::orca::web_embed_url());
-        probing.set(false);
+    let url = bw_engine::orca::web_embed_url();
+    let alive = use_hook(|| Rc::new(Cell::new(true)));
+    alive.set(true);
+    use_drop({
+        let alive = alive.clone();
+        move || {
+            alive.set(false);
+            orca_host::hide();
+        }
     });
-    let body_style = "flex:1;min-height:0;display:flex;flex-direction:column;";
-    if let Some(u) = (*url.read()).clone() {
-        let iframe_src = iframe_src(&u);
+    use_future({
+        let alive = alive.clone();
+        let src = url.clone();
+        move || {
+            let alive = alive.clone();
+            let src = src.clone();
+            async move {
+                let Some(src) = src else {
+                    return;
+                };
+                orca_host::show(&src).await;
+                while alive.get() {
+                    orca_host::place().await;
+                    tokio::time::sleep(Duration::from_millis(80)).await;
+                }
+            }
+        }
+    });
+    let body = "flex:1;min-height:0;width:100%;background:#fff;";
+    if url.is_none() {
         return rsx! {
-            div { class: "sess-col sess-midbody", style: "{body_style}",
-                iframe {
-                    key: "orca-{iframe_src}",
-                    src: "{iframe_src}",
-                    style: "flex:1;width:100%;height:100%;border:0;display:block;background:#fff;",
-                    allow: "clipboard-read; clipboard-write; fullscreen"
+            div { class: "sess-col sess-midbody", id: "orca-host", style: "{body}",
+                div {
+                    style: "margin:auto;padding:24px;max-width:520px;text-align:center;\
+                            color:var(--ink-3);font-size:13px;line-height:1.8;",
+                    "还没接到 Orca 网页。把安装版「给 web 配对」的完整 URL 塞进启动环境 BW_ORCA_WEB_URL。"
                 }
             }
         };
     }
-    let msg = if *probing.read() {
-        "正在找本机已打开的 Orca…"
-    } else {
-        "会话屏要把 Orca 嵌在这里,现在还没接到它的网页。\n\
-         先打开安装版 Orca,用「给 web 配对」复制整段\n\
-         http://127.0.0.1:<端口>/web-index.html#pairing=…\n\
-         设成环境变量 BW_ORCA_WEB_URL,再开 buddy,点「重新发现」。\n\
-         不带 #pairing= 的地址进不去同一份桌面状态。"
-    };
     rsx! {
-        div { class: "sess-col sess-midbody", style: "{body_style}",
-            div {
-                style: "margin:auto;padding:24px;max-width:580px;text-align:center;\
-                        color:var(--ink-3);font-size:13px;line-height:1.8;white-space:pre-wrap;",
-                "{msg}"
-                button {
-                    class: "btn btn-sm btn-primary",
-                    style: "margin-top:10px;",
-                    disabled: *probing.read(),
-                    onclick: move |_| {
-                        probing.set(true);
-                        url.set(None);
-                        fut.restart();
-                    },
-                    "重新发现"
-                }
-            }
-        }
+        div { class: "sess-col sess-midbody", id: "orca-host", style: "{body}" }
     }
 }
 
@@ -130,7 +120,7 @@ fn OpenDesignView(src: String, gen: u64) -> Element {
     } else {
         Some(src.clone())
     };
-    let body_style = "flex:1;min-height:0;display:flex;flex-direction:column;";
+    let body_style = "flex:1;min-height:0;display:flex;flex-direction:column;height:100%;";
     if let Some(u) = u {
         let iframe_src = iframe_src(&u);
         return rsx! {
@@ -138,7 +128,7 @@ fn OpenDesignView(src: String, gen: u64) -> Element {
                 iframe {
                     key: "{gen}-{iframe_src}",
                     src: "{iframe_src}",
-                    style: "flex:1;width:100%;height:100%;border:0;display:block;background:#fff;",
+                    style: "flex:1;width:100%;height:100%;min-height:0;border:0;display:block;background:#fff;",
                     allow: "clipboard-read; clipboard-write; fullscreen"
                 }
             }

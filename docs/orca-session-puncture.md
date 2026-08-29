@@ -1,5 +1,7 @@
 # 会话屏改嵌 Orca — 穿刺正本
 
+> **历史横幅(2026-08-29)**:嵌法的最终口径是**另一扇顶级 wry 窗**(所属窗)顶级打开 pairing URL,对齐中栏格子——不是 iframe、不是同窗子控件。三条死路人逐条对过,锁定在 [`docs/architecture.md`](architecture.md) §3 模块 7「Orca 为什么不是 iframe、也不是同窗子控件」。**下面全文是穿刺史实**(第 2 步当时按 iframe 嵌进中栏讲的,后来否了),只作证据留档,不再作现行嵌法;现行以 architecture 模块 7 为准。
+
 > **30 秒导读**:会话屏改成两个全屏页签:Orca / Open Design。穿刺人眼过,architecture 模块 7 **已锁定**。本文件仍是穿刺证据正本;buddy 改造在同一条 `pierce/orca-session`。另一条 `worktree-orca-adapter` 锁着,不改、不合入。
 
 - 分支:`pierce/orca-session`(从 master `60c0da3` 切)

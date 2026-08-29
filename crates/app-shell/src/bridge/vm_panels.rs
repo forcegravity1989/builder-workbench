@@ -303,9 +303,9 @@ pub(super) async fn build_sessions(
         .collect()
 }
 
-/// 会话屏两个组件要的那点状态:页签 + 开工工具 + OD iframe 的 src/gen。右栏
-/// (文件树 / 改动 / git / MR)和文件/diff 页签删了,那些能力在 Orca 里。
-/// **没选中会话就整块是空的**,不摆一个假的工作台。
+/// 会话屏两个组件要的那点状态:页签 + 开工工具 + OD iframe 的 src/gen。
+/// 两个页签常驻,不依赖「先选中一场会话」——左列表已经删了,没选中也要
+/// 能切 Orca / Open Design,否则点页签会被 `Default` 打回 Orca。
 pub(super) fn build_workbench(
     sessions: &[SessionVm],
     issues: &[bw::Issue],
@@ -314,10 +314,8 @@ pub(super) fn build_workbench(
     od_src: &str,
     od_gen: u64,
 ) -> WorkbenchVm {
-    let Some(s) = open.and_then(|id| sessions.iter().find(|s| s.issue_id == id)) else {
-        return WorkbenchVm::default();
-    };
-    let issue = issues.iter().find(|i| i.id == s.issue_id);
+    let s = open.and_then(|id| sessions.iter().find(|s| s.issue_id == id));
+    let issue = s.and_then(|s| issues.iter().find(|i| i.id == s.issue_id));
     let tool = issue.map(|i| i.tool.clone()).unwrap_or_default();
     WorkbenchVm {
         tab,

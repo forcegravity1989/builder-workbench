@@ -4,6 +4,10 @@
 
 本文件按**六站 + 底座**收口,不再按每次窗口一条流水往下堆。最近一次改动永远写在最上面。
 
+## 最近 · 2026-08-29
+
+会话屏嵌 Orca:WebView2 的 iframe 不画这张页(浏览器 iframe 能亮,人对过);同窗子 HWND 会被 WebView2 盖住。改成所属 wry 窗顶级打开 pairing URL,对齐中栏格子(不 always-on-top)。根容器钉在窗口上,最大化时中栏和所属窗跟着撑。Open Design 仍 iframe。开工仍走本地 pipe。拆掉 iframe 探针 / 改 hash / 写死配对码那些对照路径。
+
 ## 最近 · 2026-08-28
 
 会话屏改嵌 Orca(仍在 `pierce/orca-session`)。人改口:会话屏只留 Orca / Open Design 两个组件,动作条和灌词条不要(开工在计划屏拖进进行中;停止/MR/评审/删会话不在这屏;buddy 不知 Orca 里当前哪条会话)。pipe 开工与 iframe 配对是两件事。先用安装版 Orca 验,web 地址用进程环境 `BW_ORCA_WEB_URL`,不建设置页。同一张活再开工接回上一场(从本机 Claude jsonl 收 session id,不编)。启动时设 `BW_ORCA_WEB_URL` 会话屏就能嵌 Orca 网页(不再先要求 pipe 连上)。进度见 [`docs/orca-session-puncture.md`](docs/orca-session-puncture.md)。

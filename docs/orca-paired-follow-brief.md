@@ -1,6 +1,6 @@
 # 给另一窗:Orca 配对端跟随 host
 
-> **30 秒**:buddy 嵌的是 Orca web。本机 pipe 打 `ensureAgentSession` / `createAgentSession` 只推动桌面,已配对网页不跟。这窗只改 **Orca 源码仓**,不改 buddy。不阻塞 buddy 先嵌 iframe、先打同一条 RPC。
+> **30 秒**:buddy 嵌的是 Orca web(所属 wry 窗)。本机 pipe 打 `ensureAgentSession` / `createAgentSession` 只推动桌面,已配对网页不跟。这窗只改 **Orca 源码仓**,不改 buddy。不阻塞 buddy 先嵌 web、先打同一条 RPC。
 
 把下面整段交给开在 `D:\2026\code\orca` 的窗口。
 
