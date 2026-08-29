@@ -41,7 +41,7 @@
 ├─ PROJECT.md            <b>给人读</b>
 ├─ process-catalog.md · releases.md
 ├─ plan/ · decisions/ · design/
-├─ config/               <b>人经MR改·机器读</b>
+├─ config/               <b>人拍板的输入·机器读</b>
 │  ├─ project.toml
 │  ├─ issue-policy.toml
 │  └─ metrics.toml
@@ -137,10 +137,11 @@ fingerprint = "sha256:…"</pre>
 运作活① 更新指标与周计划 · <del>manual</del> <ins>人触发</ins>(写死,与行为一致)<br>
 运作活② 资产盘点 · <ins>定时</ins> · fri 20:00(仍读 <code>config/issue-policy.toml</code>)</div>
 <div class="screen"><strong>总览 · 名片</strong><br>
-规范 <del>v5.0(project.toml 失真镜像)</del> <ins>v6.0(state/managed.toml 现算)</ins></div>
+规范 <del>v5.0(project.toml 失真镜像)</del> <ins>「v6.0 · 3 件在管」(state/managed.toml 现算对账摘要:最低版本+异常件数,如「v5.8 · 1 件过期」;不取 max)</ins></div>
 </div>
 
-<h2>④ 出错分支</h2>
+<h2>④ 写权与出错分支</h2>
+<p class="note"><strong>写权硬规则</strong>:config/ = 人拍板落盘(MR,或配置屏当场点击确认);Workbench 替人写 config 后必须同步 state/managed.toml 指纹——「人改过」只指真人改。守卫 guard-bw-write-authority.sh 静态断言写入调用点在白名单模块,目录承诺不靠自觉。</p>
 <p class="note">旧布局项目:<code>state/managed.toml</code> 不存在 = 视同未接管,boot 照常提议铺底,旧位置文件如实并存(资产盘点盘出,由人处置)。<code>config/</code> 文件含未知字段:整份拒读,壳黄条报文件名与错误,不猜不兜。</p>
 </body>
 </html>

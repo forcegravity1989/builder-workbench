@@ -8,7 +8,7 @@
 
 2026-08-29 对 `.bw/` 五份文件做了一次「谁读谁写」的全链审计,两个问题实锤:
 
-1. **人机混放**。`.bw/` 顶层同时躺着给人读的章程(`PROJECT.md`)和给机器逐字段解析的配置(`project.toml` / `issue-policy.toml` / `managed.toml` / `standard.toml`),还有机器写的流水(`metrics/readings.jsonl`)。打开目录分不出「哪份该人编、哪份机器管」,注释只能靠在 toml 里堆散文来补——这正是「注释过多」观感的来源。
+1. **人机混放**。`.bw/` 顶层同时躺着给人读的章程(`PROJECT.md`)和给机器逐字段解析的配置(`project.toml` / `issue-policy.toml` / `managed.toml` / `standard.toml`),还有机器写的流水(`metrics/readings.jsonl`)。打开目录分不出「哪份该人编、哪份机器管」。(注:「注释过多」的直接原因是下条的假配置需要散文解释 + 各 `render()` 硬编码文案,由注释纪律与去冗解决;目录隔离解决的是「分不清谁写谁读」——两个问题相关但不是因果,评审轮 F5 已把这句掰直。)
 2. **假配置**。一部分字段/文件解析了但**零消费**,注释还在为不存在的行为背书:
    - `issue-policy.toml` 的 `[[tool]]` 段四个字段(`kind`/`probe`/`version_cmd`/`capabilities`)无任何代码读——探活与工具→CLI 解析全部硬编码在适配模块(`tools.rs::probe` / `agent_for` / `probe_env`);
    - `[review]` 整段(`who_can_merge`/`require_pr_for`)除测试外零消费;
@@ -38,12 +38,14 @@
 
 ## 约束
 
-- **不留兼容路径**(AGENTS.md 纪律):不写迁移代码、不双读旧位置。唯一在管项目是本仓,随实现批搬;其它旧布局项目重新接入。
+- **不留兼容路径**(AGENTS.md 纪律):不写迁移代码、不双读旧位置。迁移敞口经核查:本机(macOS)注册表 `projects.toml` 尚不存在——零库时代未接管过项目,敞口=本仓,随实现批搬;**Windows 机注册表待验**(pre-flight,见 plan 第 0 步),查出在管项目按「重新接入」处置。
 - `metrics.toml` 顶部注释是 skills(metrics-refresh / week-planning)引用的**格式正本**,属于「真」,不许剪。
 - 删除假配置后,行为的正本如实指向代码(适配模块),不造第二份纸面正本。
 
-## 未决问题(留给评审拍)
+## 原未决问题(评审轮已拍定,规格 gate 可推翻)
 
-1. 名片上的「规范 vX」:改从 `state/managed.toml` 现算(条目最高版本),还是先撤下这格?spec 按前者写,可改。
-2. `standard/VERSION` 升 6.0(布局级变更)还是 5.11?spec 按 6.0 写。
-3. `.bw/plan/`(刀6 后不再写的历史周计划)与 `releases.md` 本批不动,只随清单改路径引用——认可与否。
+1. 名片「规范」格:**对账摘要**(从 `state/managed.toml` 现算最低版本+异常件数),不取 max——max 是「最近铺过」不是「在用」,与被删的镜像同病(评审轮 F3)。
+2. `standard/VERSION` → **6.0**:布局级不兼容变更用大版本。
+3. `.bw/plan/` 与 `releases.md` 本批不动,只改引用路径。
+
+评审轮另拍三条进 spec:config/ 写权硬规则与指纹同步(F1)、写权守卫 R6(F2)、去冗 commit 可独立合入的降级路径(F6)。两轮对抗评审记录见 STATUS。
