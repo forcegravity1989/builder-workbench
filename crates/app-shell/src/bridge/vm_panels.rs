@@ -63,10 +63,10 @@ pub(super) fn build_board(
         .filter(|i| scheduled(i) && in_week(i) && in_plan(i) && i.status == IssueStatus::Todo)
         .map(card_item)
         .collect();
-    let todo_segs = if week.is_some() {
+    let todo_segs = if week.is_some() || plan.is_some() {
         vec![ColumnSegVm {
             key: "assigned".into(),
-            label: "待开始".into(),
+            label: String::new(),
             statuses: vec![IssueStatus::Todo],
             count: todo_cards.len() as u32,
             cards: todo_cards.clone(),

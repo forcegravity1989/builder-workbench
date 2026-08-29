@@ -99,7 +99,7 @@ pub fn board(
     rsx! {
         div { class: "kanban",
             for col in p.board.columns.iter() {
-                {column(col, f.clone(), &plan_filter, view_all, bridge, dragging, pending, schedule, selected, start, bounced, col_seg, nav)}
+                {column(col, f.clone(), &plan_filter, view_all, bridge, dragging, schedule, selected, start, pending, bounced, col_seg, nav)}
             }
         }
     }
@@ -113,10 +113,10 @@ fn column(
     view_all: bool,
     bridge: &Bridge,
     mut dragging: Signal<Option<CardItemVm>>,
-    _pending: Signal<Option<PendingMove>>,
     mut schedule: Signal<Option<PendingSchedule>>,
     selected: Signal<Option<IssueId>>,
     mut start: Signal<Option<IssueId>>,
+    mut pending: Signal<Option<PendingMove>>,
     _bounced: Signal<String>,
     col_seg: Signal<HashMap<String, String>>,
     nav: PanelNav,
@@ -209,6 +209,15 @@ fn column(
                         if col_status == IssueStatus::InProgress && card.status == IssueStatus::Todo {
                             // 待办拖到进行中 → 弹 worktree 窗(Start)
                             start.set(Some(card.id));
+                        } else if col_status == IssueStatus::Done && card.status == IssueStatus::InReview {
+                            // 评审中拖到完成 → 合入并完成(确认框)
+                            pending.set(Some(PendingMove {
+                                id: card.id,
+                                title: card.title.clone(),
+                                from: IssueStatus::InReview,
+                                to: IssueStatus::Done,
+                                pr_number: card.pr_number,
+                            }));
                         } else if active_seg.0 == "assigned"
                             && card.week_of.is_empty()
                             && card.plan_version.is_empty()
@@ -243,7 +252,10 @@ fn card_view(
 ) -> Element {
     let c1 = c.clone();
     let cid = c.id;
-    let can_drag = matches!(c.status, IssueStatus::Backlog | IssueStatus::Todo);
+    let can_drag = matches!(
+        c.status,
+        IssueStatus::Backlog | IssueStatus::Todo | IssueStatus::InReview
+    );
     let assignee = if c.assignee.is_empty() {
         "未指派".to_string()
     } else {

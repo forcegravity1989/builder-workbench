@@ -217,14 +217,10 @@ pub fn DetailModal(
                 }
             }
         }
-        // Start 子弹窗(只读,确认即 RunIssue)
-        if start.read().is_some() {
-            {start_modal(&p, start.read().unwrap(), &bridge, start, &nav)}
-        }
     }
 }
 
-fn start_modal(
+pub fn start_modal(
     p: &ProjectVm,
     sid: IssueId,
     bridge: &Bridge,

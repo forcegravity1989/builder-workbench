@@ -174,6 +174,9 @@ pub fn View(p: ProjectVm, bridge: Bridge) -> Element {
         if selected.read().is_some() {
             DetailModal { p: p.clone(), selected, schedule, start, bridge: bridge.clone() }
         }
+        if let Some(sid) = *start.read() {
+            {detail::start_modal(p, sid, bridge, start, &nav)}
+        }
         if let Some(pm) = pending.read().clone() {
             {confirm_dialog(pm, pending, bridge)}
         }
