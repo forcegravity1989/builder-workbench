@@ -18,7 +18,7 @@
 
 | 场景 | 怎么走 |
 |---|---|
-| **特性级变更** | 对齐 03 → 按 **02** 开 / 改 `changes/<id>/intent.md` + 带原型的 `spec.md`（人 gate）；`plan.md` 仅大风险升 gate；小修直修（见 01） |
+| **特性级变更** | 对齐 03 → **先按标准建活**（活号与 `changes/<id>/` 互链，无活=未立项，见 02 §6）→ 按 **02** 开 / 改 `changes/<id>/intent.md` + 带原型的 `spec.md`（人 gate）；`plan.md` 仅大风险升 gate；小修直修（见 01） |
 | **Superpowers / grill-me** | **可用**：发散、质询、写计划草稿。产出必须落回 `changes/<id>/`。不得把聊天或旁路 specs 当成已过 gate 的正本 |
 | **小 bug / 琐修** | 直接改 + 门禁 / 验证；不开 `changes/` |
 
