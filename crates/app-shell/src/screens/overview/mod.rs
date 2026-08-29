@@ -166,7 +166,7 @@ fn card_and_health(
                     {charter_line("项目群", &c.chat)}
                     div { class: "charter-meta",
                         span { class: "mono", "{c.remote}" }
-                        span { "规范 v{c.standard_version}" }
+                        span { "规范 {c.standard}" }
                         span { style: "margin-left:auto;display:flex;gap:6px;",
                             // 人在网页上直接合了 MR 时,buddy 是不知道的 ——
                             // 工作区会一直停在旧提交,而界面照常显示旧内容。

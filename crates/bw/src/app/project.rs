@@ -65,7 +65,6 @@ impl App {
         let existing = project_file::read(&ws)?;
         let adopted = existing.is_some();
         let mut file = existing.unwrap_or_else(|| ProjectFile {
-            standard_version: standard::version().to_string(),
             // 新建项目默认在研版本 v0.1。
             current_version: "v0.1".into(),
             ..Default::default()

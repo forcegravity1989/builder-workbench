@@ -19,16 +19,16 @@ use dioxus::prelude::*;
 pub fn View(p: ProjectVm, bridge: Bridge) -> Element {
     let nav = use_context::<PanelNav>();
     let (p, bridge) = (&p, &bridge);
-    let std_ver = if p.card.standard_version.is_empty() {
+    let std_ver = if p.card.standard == "—" {
         "—(还没铺过规范件)".to_string()
     } else {
-        format!("规范 v{}", p.card.standard_version)
+        format!("规范 {}", p.card.standard)
     };
     rsx! {
         section {
             div { class: "card sp-topinfo",
+                // 「几份在管」已经在规范那一句里,不再单列一格说同一个数。
                 span { "{std_ver}" }
-                span { "管账里登记着 {p.kb.managed_count} 份核心件" }
                 span { class: "spacer" }
                 button {
                     class: "btn btn-sm",

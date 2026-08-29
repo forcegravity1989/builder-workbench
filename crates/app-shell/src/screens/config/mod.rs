@@ -337,10 +337,10 @@ fn StandardBlock(p: ProjectVm, bridge: Bridge) -> Element {
     let b_ver = bridge.clone();
     let pid = p.id;
     let mut version = use_signal(|| p.card.current_version_raw.clone());
-    let std_ver = if p.card.standard_version.is_empty() {
+    let std_ver = if p.card.standard == "—" {
         "—(这个仓还没铺过规范件)".to_string()
     } else {
-        p.card.standard_version.clone()
+        p.card.standard.clone()
     };
     rsx! {
         div { class: "cfg-section",

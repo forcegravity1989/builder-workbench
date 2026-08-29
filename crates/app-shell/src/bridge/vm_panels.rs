@@ -431,13 +431,14 @@ pub(super) async fn build_config(
         focus_skill: String::new(),
         tools: probe_env().await,
         remote: remote_label(project),
+        // ①永远人触发、②永远定时 —— 这两件是代码写死的行为,不是配出来的,
+        // 所以这里直接说人话,不去读文件里的字段(读了也只是显示,改它不会
+        // 改行为:2026-08-29 删掉的 ops1_trigger / ops2_trigger 就是那种假配置)。
         cadence: policy
             .and_then(|p| p.cadence.clone())
             .map(|c| {
                 format!(
-                    "运作活①:{};运作活②:{} {}",
-                    blank_dash(&c.ops1_trigger),
-                    blank_dash(&c.ops2_trigger),
+                    "运作活①:人触发;运作活②:定时 {}",
                     blank_dash(&c.ops2_schedule)
                 )
             })
@@ -543,21 +544,17 @@ fn build_crons(policy: Option<&issue_policy_file::IssuePolicyFile>) -> Vec<CronV
     let Some(c) = policy.and_then(|p| p.cadence.clone()) else {
         return rows;
     };
-    let word = |t: &str| match t {
-        "manual" => "人触发".to_string(),
-        "scheduled" => "到点自动建".to_string(),
-        "" => "—".to_string(),
-        other => other.to_string(),
-    };
+    // 两行的「怎么触发」是代码写死的行为,不从文件读:①只有人点总览的
+    // 「开始本周」才会有,②到点自己建。文件里只有②的时刻是真能配的。
     rows.push(CronVm {
         name: "更新指标与制定本周计划".into(),
-        trigger: word(&c.ops1_trigger),
+        trigger: "人触发".into(),
         schedule: "—".into(),
         rule: "本周还没有运作活①「更新指标 + 制定本周计划」".into(),
     });
     rows.push(CronVm {
         name: "资产盘点".into(),
-        trigger: word(&c.ops2_trigger),
+        trigger: "到点自动建".into(),
         schedule: blank_dash(&c.ops2_schedule).to_string(),
         rule: "本周还没有这张活(不查任何定时表)".into(),
     });

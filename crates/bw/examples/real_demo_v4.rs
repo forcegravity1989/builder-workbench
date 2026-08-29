@@ -492,7 +492,6 @@ async fn build_evidence(
         "仓文件": {
             "周计划": plan_path.is_file(),
             "发版记录": releases_path.is_file(),
-            "规范元信息": workspace.join(".bw/standard.toml").is_file(),
             "指纹清单": workspace.join(".bw/managed.toml").is_file(),
             "活的约定": workspace.join(".bw/issue-policy.toml").is_file(),
             "预置技能包数": count_skill_packages(workspace),

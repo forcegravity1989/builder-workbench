@@ -538,10 +538,9 @@ fn spawn_binary(override_bin: Option<&str>, plan_binary: &str) -> Result<String,
 // ─── MockInteractiveExecutor (for tests / no-claude environments) ──────
 
 /// Mock interactive executor — never spawns a real terminal. Returns a
-/// self-labeled `【mock】` `SkillOutput` and, if the plan's cwd is a real
-/// writable directory, writes a placeholder `.bw/metrics.toml` so the
-/// interactive path's downstream (SyncMetricsFile, artifact scan) has
-/// something to chew on in tests / no-claude environments.
+/// self-labeled `【mock】` `SkillOutput` and **writes nothing to the repo**
+/// (see the assertions below: the stand-in used to drop a placeholder
+/// metrics file; now it must not touch a single repo file).
 ///
 /// The self-labeled mock for the interactive path:
 /// its sole purpose is to cheaply verify the interactive plumbing works

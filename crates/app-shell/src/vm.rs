@@ -210,7 +210,9 @@ pub struct CardVm {
     /// 只能用这一个 —— 把「(待填)」当版本号发出去,发版记录里就多一行叫
     /// 「(待填)」的版本,而且按版本号幂等,这个项目以后再也发不出版。
     pub current_version_raw: String,
-    pub standard_version: String,
+    /// 规范那一格,**已经拼成一句话**:`v5.0 · 2 件在管 · 人改 2`,没铺过是
+    /// 「—」。从指纹清单现算(见 `managed_file::summarize`),不是存下来的值。
+    pub standard: String,
     /// 项目群。没配就是「未配」。
     pub chat: String,
 }
@@ -586,9 +588,6 @@ impl KbTab {
 #[derive(Clone, Debug, Default, PartialEq)]
 pub struct KbVm {
     pub tab: KbTab,
-    /// 规范管账(`.bw/managed.toml`)里登记了几份核心件。**不做对账** ——
-    /// 对账是配置屏那颗按钮的事,这里只报个数。
-    pub managed_count: usize,
     /// 知识页签:按规范八大类分组的文件清单。**只列存在的文件**,不列位置。
     pub groups: Vec<KbGroupVm>,
     /// 打开的那份文档:路径 + 原文。懒加载 —— 点了才现读。

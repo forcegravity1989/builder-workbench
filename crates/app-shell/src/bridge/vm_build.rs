@@ -641,7 +641,7 @@ async fn build_project(
             remote: remote_label(&p),
             current_version: or_blank(&file.current_version),
             current_version_raw: file.current_version.clone(),
-            standard_version: or_blank(&file.standard_version),
+            standard: standard_label(&ws),
             chat: match &file.chat {
                 None => "未配".into(),
                 Some(c) => format!("{} · 群号 {}", c.provider, c.group_id),
@@ -743,6 +743,26 @@ pub(super) fn or_blank(s: &str) -> String {
     } else {
         s.to_string()
     }
+}
+
+/// 规范那一格:`v5.0 · 2 件在管`,有异常再缀上`· 缺 1`/`· 人改 2`。
+///
+/// 三处显示(总览名片 / 知识库顶栏 / 配置屏)共用这一句,**同一个数只有一个
+/// 算法**。「铺的版本比现在旧」有意不出现在这里:今天没有升级重铺的入口,
+/// 挂上去就是个人永远消不掉的提醒;它只在配置屏「对一遍账」里如实报。
+pub(super) fn standard_label(ws: &std::path::Path) -> String {
+    let s = bw::repo::managed_file::summarize(ws);
+    if s.managed == 0 {
+        return "—".into();
+    }
+    let mut out = format!("v{} · {} 件在管", s.version, s.managed);
+    if s.missing > 0 {
+        out.push_str(&format!(" · 缺 {}", s.missing));
+    }
+    if s.human_edited > 0 {
+        out.push_str(&format!(" · 人改 {}", s.human_edited));
+    }
+    out
 }
 
 pub(super) fn card_item(i: &bw::Issue) -> CardItemVm {

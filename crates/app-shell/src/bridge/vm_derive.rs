@@ -38,15 +38,18 @@ pub(super) fn build_week_counts(issues: &[bw::Issue], week: Option<&str>) -> Wee
 }
 
 /// 运作活①②③三个状态点。开着的优先;本周已关的①②写「已完成」。
-/// ③关过但默认分支没有 `.bw/standard.toml` 仍算未建(旧铺底关掉、MR 没合
-/// 不能冒充铺过)。
+/// ③关过但默认分支没有指纹清单仍算未建(旧铺底关掉、MR 没合不能冒充铺过)。
+///
+/// **判据认的是指纹清单,不是某一份规范件**:清单是铺底最后写的那一份,铺
+/// 什么件都跑不掉它;盯某一份具体的件,那份件哪天从清单里去掉,这个判据就
+/// 会连着假红——2026-08-29 删 `.bw/standard.toml` 正好撞上,所以改到这里。
 pub(super) async fn build_ops(
     issues: &[bw::Issue],
     current_week: &str,
     ws: &Path,
 ) -> Vec<OpsChipVm> {
     use bw::app::{OPS1_WORKFLOW, OPS2_WORKFLOW, OPS3_WORKFLOW};
-    let ops3_landed = bw::git::path_in_head(ws, ".bw/standard.toml").await;
+    let ops3_landed = bw::git::path_in_head(ws, bw::repo::managed_file::REL_PATH).await;
     let pick = |wf: &str, done: bool| {
         issues
             .iter()

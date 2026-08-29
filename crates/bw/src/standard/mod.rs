@@ -4,12 +4,13 @@
 //! 常量(零 IO)。**改 `standard/` 就是改产品行为**,不要搬。
 //!
 //! 两个版本号别混:
-//! - `standard/VERSION`(这里的 [`version`]):**buddy 侧** —— 当前二进制自带
-//!   哪一版规范,随发布走。
-//! - 项目仓 `.bw/standard.toml` 的 `version`:**项目侧** —— 这个项目铺的是哪
-//!   一版,随项目走。
+//! - `standard/VERSION`(这里的 [`version`]):**Workbench 侧** —— 当前二进制
+//!   自带哪一版规范,随发布走。
+//! - `.bw/managed.toml` 里每条记录的 `version`:**项目侧** —— 这个项目的这一
+//!   份件是哪一版铺下去的,随项目走。
 //!
-//! 两个值常常相等,含义不同,不合并成一个字段。
+//! 两个值常常相等,含义不同。项目侧的版本**逐份记在指纹清单里**,不在别处
+//! 再存一份汇总——存了就没人维护,放几周准和真相对不上。
 
 pub mod bootstrap;
 pub mod skills;
@@ -17,7 +18,7 @@ pub mod system_prompt;
 
 /// 一个规范件模板:属于哪个大类、渲染到项目仓的哪个路径、模板正文。
 pub struct Template {
-    /// `.bw/standard.toml` 的 `enabled` 里那个键。
+    /// 这份件归哪个大类(charter / issue-policy …)。只用来分组与报告。
     pub category: &'static str,
     /// 项目仓内的相对路径。
     pub target: &'static str,
@@ -44,7 +45,6 @@ pub const CHARTER_REL_PATH: &str = ".bw/PROJECT.md";
 pub const CHARTER_TMPL: &str = include_str!("../../../../standard/templates/PROJECT.md.tmpl");
 pub const ISSUE_POLICY_TMPL: &str =
     include_str!("../../../../standard/templates/issue-policy.toml.tmpl");
-pub const STANDARD_TMPL: &str = include_str!("../../../../standard/templates/standard.toml.tmpl");
 
 /// 指标空壳的格式正本。运作活①跟人定北极星/滞后/引领时照着写,
 /// **不在接入铺底里落一份假的**。
@@ -81,13 +81,6 @@ pub const CORE_TEMPLATES: &[Template] = &[
         body: CHARTER_TMPL,
         lay_at: LayAt::Adopt,
         note: "项目名片:这个项目是什么、对标谁、北极星是什么",
-    },
-    Template {
-        category: "meta",
-        target: ".bw/standard.toml",
-        body: STANDARD_TMPL,
-        lay_at: LayAt::Adopt,
-        note: "这个项目铺的是哪一版规范、开了哪几类件",
     },
     Template {
         category: "issue-policy",

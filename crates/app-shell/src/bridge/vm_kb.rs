@@ -4,7 +4,6 @@
 //! 都是打开那一刻现扫仓目录、现走 git、现起子进程得来的。
 
 use crate::vm::*;
-use bw::repo::managed_file;
 use std::path::Path;
 
 /// 知识树里周计划文件所在目录(刀6:这层不再解析它们,知识树只列仓里存在的
@@ -12,17 +11,6 @@ use std::path::Path;
 const PLAN_DIR: &str = ".bw/plan";
 /// 发版记录文件路径。同上:知识树只看它在不在。
 const RELEASES_PATH: &str = ".bw/releases.md";
-
-/// 铺底管账里登记过的文件路径。**一次读完传下去** —— 原来是每个技能包各读
-/// 一次、各解析一次 `.bw/managed.toml`,十几个包就是十几次全文解析,而这段
-/// 每重拼一次 ViewModel 就跑一遍。
-pub(super) fn managed_paths(ws: &Path) -> Vec<String> {
-    managed_file::read(ws)
-        .ok()
-        .flatten()
-        .map(|m| m.files.into_iter().map(|e| e.path).collect())
-        .unwrap_or_default()
-}
 
 /// 只读文件开头这么多字节。周文件的徽记就在 front matter 里,为了一行标记把
 /// 一份几十 KB 的周计划整篇读进内存不值 —— 老项目回填后这里有上百份。
@@ -43,7 +31,6 @@ fn read_head(path: &Path) -> String {
 /// 知识页签的树:**不扫全仓**,按规范八大类固定分组、每组按约定路径找文件。
 /// 只列真实存在的,不列位置。
 pub(super) fn build_kb(ws: &Path, tab: KbTab, open: Option<&str>) -> KbVm {
-    let managed_count = managed_paths(ws).len();
     let mut groups = Vec::new();
 
     let mut charter = Vec::new();
@@ -66,7 +53,6 @@ pub(super) fn build_kb(ws: &Path, tab: KbTab, open: Option<&str>) -> KbVm {
         (".bw/project.toml", "项目名片"),
         (".bw/metrics.toml", "指标"),
         (".bw/issue-policy.toml", "类别映射与节律"),
-        (".bw/standard.toml", "铺了哪版规范"),
         (".bw/managed.toml", "铺底文件的指纹"),
     ] {
         if ws.join(rel).is_file() {
@@ -149,7 +135,6 @@ pub(super) fn build_kb(ws: &Path, tab: KbTab, open: Option<&str>) -> KbVm {
                 .ok()
         }),
         groups,
-        managed_count,
         codegraph: None,
         assets: None,
     }
