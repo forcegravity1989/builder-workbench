@@ -468,9 +468,12 @@ impl App {
                 kind,
                 origin,
                 week_of,
+                plan,
             } => {
-                self.create_issue(project_id, title, body, category, kind, origin, week_of)
-                    .await
+                self.create_issue(
+                    project_id, title, body, category, kind, origin, week_of, plan,
+                )
+                .await
             }
             Command::ScheduleIssue { id, week_of } => self.schedule_issue(id, week_of).await,
             Command::ScheduleToPlan { id, plan } => self.schedule_to_plan(id, plan).await,

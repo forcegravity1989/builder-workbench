@@ -94,6 +94,7 @@ impl App {
                 IssueKind::Ops,
                 origin,
                 week_of,
+                String::new(),
             )
             .await?;
         let id = events
