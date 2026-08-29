@@ -75,7 +75,7 @@ references(`standard/system-prompt/references/*.md`)是「干某类活需要额�
 **代码**:bw 的 `app/issue_store.rs`(互转主逻辑)、`model.rs`(`Issue`/`IssueId`)、`app/issue.rs`(读写入口)。
 **数据**:issue 正本在 codehub/GitHub 的 issue+标签;本地零库,不留读缓存。
 **依赖**:上游 `bw-engine/remote.rs`(`Remote` 三变体分发,调 codehub-cli / gh);下游命令层(模块5)经它落盘,壳查询经 `App::issues` 读回。
-**没建**:本地读缓存(MVP 不要);"已合入待点完成"与"MR 检查失败"两类待处理今天还判不出——`open_mr_for_branch` 只答 MR 开着没、答不了合没合。
+**没建**:本地读缓存(MVP 不要)。"MR 检查失败"今天还判不出。已合入待点完成:详情会查出已合入的 MR 号;待评审→完成时若没有开着的 MR,确认后只关 issue(人可能已经在网页合过)。
 
 ### 2 · 仓文件解析
 
@@ -153,7 +153,7 @@ references(`standard/system-prompt/references/*.md`)是「干某类活需要额�
 **代码**:bw-engine 的 `remote.rs`(`Remote` enum 工厂 + issue 存取六法 + MR 三件套)+ `codehub.rs` / `github.rs`(两臂)+ `claude_bin.rs`(候选路径)+ `open_design.rs`(套接字握手);bw 的 `app/tools.rs`(工具注册探活)。
 **数据**:issue 正本在 codehub/GitHub;工具声明在 `.bw/issue-policy.toml`;本地零库——远端读全走 CLI 不留缓存,探活结果只在内存走一圈不落盘。
 **依赖**:bw-engine 的 tokio_cmd、OS keyring(codehub-cli token)、本机 `gh` / `codehub-cli` / `agent` / Open Design 进程;自身 `Remote` 依赖两臂。
-**没建**:本地读缓存(MVP 不要);MR 合没合的查询仍缺(只答开着没);Cursor 能力清单(空数组);新增 provider 仍需填一条臂;GitHub 里程碑投影。
+**没建**:本地读缓存(MVP 不要)。"MR 检查失败"今天还判不出。已合入的 MR 号详情能查(`state=all`);开着没仍走 `open_mr_for_branch`。Cursor 能力清单(空数组);新增 provider 仍需填一条臂;GitHub 里程碑投影。
 
 ### 9 · open-design
 
@@ -193,12 +193,12 @@ references(`standard/system-prompt/references/*.md`)是「干某类活需要额�
 
 ### 13 · 周循环与计划
 
-**是什么**:项目里的"计划屏":中栏周头/四列看板 + 屏幕居中的活详情弹窗,把"这周干什么"和"活的推进状态"装在一个界面里。周用 ISO 周文本(`2026-W34`,周一为起点)表示,按机器本地时区判定"现在哪一周"。周列表、发版、看板计数全部现算——没有周计划索引表、没有发版表。关键取舍是发版先建 codehub Release 成功再给活打 `bw:released` 标签(顺序不能反,否则重复点会重复打标签账对不上),版本号按版本号幂等;看板拖拽落定那一刻标签就是新的(排期是 issue 数据,不走 MR)。拖进「进行中」= 开工(▶跑),确认后切到会话屏;卡片和详情上的「▶ 开工」是同一条命令。详情点 Start / Open / 阻塞 / Cancel / Complete 后弹窗自动关;Start 确认框建 worktree,业务活可改或补类别(没打的必须选,开工工具按映射走),运作活锁「运作」。垃圾卡作废要人写原因(进 issue 评论),打 `bw:status:cancelled` 并关掉远端 issue(codehub 不能删)。读回先认取消标签,关着的作废卡不是已完成。总览/计划上的运作活点:①②开着的写它的状态,本周已关的写「已完成」(标签或标题里的周号都认);③「已完成」仍只看默认分支 HEAD 有没有 `.bw/standard.toml`,关过但没合入的旧铺底不冒充完成。
+**是什么**:项目里的"计划屏":中栏周头/四列看板 + 屏幕居中的活详情弹窗,把"这周干什么"和"活的推进状态"装在一个界面里。周用 ISO 周文本(`2026-W34`,周一为起点)表示,按机器本地时区判定"现在哪一周"。周列表、发版、看板计数全部现算——没有周计划索引表、没有发版表。关键取舍是发版先建 codehub Release 成功再给活打 `bw:released` 标签(顺序不能反,否则重复点会重复打标签账对不上),版本号按版本号幂等;看板拖拽落定那一刻标签就是新的(排期是 issue 数据,不走 MR)。松手认的是当前子标题那段,不是列头。周计划/版本认十条:待办→进行中(开工)/拒绝/阻塞;进行中→阻塞/拒绝/待办;待评审→完成/拒绝;阻塞→进行中(只改标签,不开工)/拒绝。完成只能从待评审来。详情有状态下拉,选项只列十条里从当前状态能走到的(列表用户不拖看板也靠这一份);选了走和拖拽同一条命令——待办→进行中开工、待评审→完成(有开着的 MR 就合入,没有则确认后只关 issue)、拒绝/阻塞写原因、阻塞→进行中只改标签。底栏只留 Start / Open / Complete。拖进「进行中」从待办来=开工(▶跑),确认后切到会话屏;从阻塞来只解除阻塞。详情点 Start / Open / Complete 或改状态下拉后弹窗自动关;Start 确认框建 worktree,业务活可改或补类别(没打的必须选,开工工具按映射走),运作活锁「运作」。垃圾卡作废要人写原因(进 issue 评论),打 `bw:status:cancelled` 并关掉远端 issue(codehub 不能删)。读回先认取消标签,关着的作废卡不是已完成。总览/计划上的运作活点:①②开着的写它的状态,本周已关的写「已完成」(标签或标题里的周号都认);③「已完成」仍只看默认分支 HEAD 有没有 `.bw/standard.toml`,关过但没合入的旧铺底不冒充完成。
 
 **代码**:bw 的 `app/plan.rs`(用例)+ `app/ops.rs`(运作活①②标题幂等键与定时)+ `isoweek.rs` + `trend.rs`(近 N 周走势全现算);app-shell 的 `screens/plan/`(mod / kanban / detail)。
 **数据**:零本地库——codehub/GitHub issue+标签是唯一正本;排期 = 给 issue 打 `bw:week:YYYY-Www` 标签(buddy 直接改);codehub 上顺带投影同名里程碑,计划屏仍只认标签;删除自定义版本 = 摘 `bw:plan:<name>` + 删同名里程碑,不碰 `bw:week`(周格式标题拒收);发版 = 远端建 Release + 打 `bw:released:vX` 标签按版本号幂等;发版弹窗默认号 = 在研号自增一位,人可改。在研版本和项目群跟名片四字段同一张轻量活「编辑项目名片」,总览编辑,不写主检出。总览/知识库发版次数优先读远端 Release,读不到再退本机 git 标签。点某一周只看打了那一周标签的活;没打周标签的只在「issue总览」。项目墙「本周 x/y 完成」跟总览五段同一口径,作废不进分母。
 **依赖**:issue_store、repo::project_file、git(`pull_ff`)、isoweek、trend、bw_engine::remote(建 Release / 查 MR)、bw_engine::github(`issue_branch` 确定性);节律规则读 `.bw/issue-policy.toml`。
-**没建**:"预览·未合入"做成灰态(从活 worktree 读未合入的 metrics.toml 与 ops① 评论重渲染周头未接);"蒸馏"灰态(见模块15);给活挂指标的命令没接(建活时"推的指标"列恒空);macOS 页面内拖放还没真机验证过一次。周目标在总览「本周计划进度」、计划屏周头显示 `## 周目标` **整段**(一句或一段都行,旧的一句话评论不用迁);项目墙卡片仍截短。正本是 ops① 评论,多条从新到旧。纳入清单和读数快照留在评论里,人点开运作活看。范围内的活认 `bw:week` 标签。剧本要求人确认后当场建卡并打 `bw:week` + `bw:category:*`,打完周标签还要挂 codehub 同名里程碑;替身路径仍走 `ConfirmWeekDraft`。挂评前用 `week-planning/check-week-comment.py` 校验标题。计划屏「新建活」可选业务活或运作活①②,都能填正文。业务活打 `bw:category:*`;运作活不打五阶段类别,标题按本周幂等。工具和 workflow 读回时查 issue-policy,不另打标签(原型默认 Open Design,workflow 空着等 proto-design 打包)。总览不再放「去计划」(侧栏下一格就是计划)。
+**没建**:"预览·未合入"做成灰态(从活 worktree 读未合入的 metrics.toml 与 ops① 评论重渲染周头未接);"蒸馏"灰态(见模块15);给活挂指标的命令没接(建活时"推的指标"列恒空);macOS 页面内拖放还没真机验证过一次。周目标在总览「本周计划进度」、计划屏周头显示 `## 周目标` **整段**(一句或一段都行,旧的一句话评论不用迁);计划屏周头默认收成两行,右下角展开框打开整段,再点收起。项目墙卡片仍截短。正本是 ops① 评论,多条从新到旧。纳入清单和读数快照留在评论里,人点开运作活看。范围内的活认 `bw:week` 标签。剧本要求人确认后当场建卡并打 `bw:week` + `bw:category:*`,打完周标签还要挂 codehub 同名里程碑;替身路径仍走 `ConfirmWeekDraft`。挂评前用 `week-planning/check-week-comment.py` 校验标题。计划屏「新建活」可选业务活或运作活①②,都能填正文。业务活打 `bw:category:*`;运作活不打五阶段类别,标题按本周幂等。工具和 workflow 读回时查 issue-policy,不另打标签(原型默认 Open Design,workflow 空着等 proto-design 打包)。总览不再放「去计划」(侧栏下一格就是计划)。
 
 ### 14 · 资产盘点与项目接入
 

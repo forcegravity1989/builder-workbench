@@ -21,7 +21,7 @@ use dioxus::prelude::*;
 use detail::{DetailModal, StartModal};
 use kanban::{board, PendingMove, PendingSchedule};
 use plan_dialogs::{
-    confirm_dialog, CreateVersionDialog, DeleteVersionDialog, DialogKind, NewIssueDialog,
+    ConfirmMoveDialog, CreateVersionDialog, DeleteVersionDialog, DialogKind, NewIssueDialog,
     NewIssueDraft, ReleaseDialog, ReleaseDraft, ScheduleDialog,
 };
 
@@ -152,7 +152,7 @@ pub fn View(p: ProjectVm, bridge: Bridge) -> Element {
             div { class: "plan-col plan-mid",
                 {toolbar(p, bridge, view_mode, dialog)}
                 if !p.view_all && p.viewing_plan.is_empty() {
-                    {week_head(p)}
+                    WeekHead { p: p.clone() }
                 }
                 {draft_confirm(p, bridge)}
                 if *view_mode.read() == ViewMode::List {
@@ -163,13 +163,13 @@ pub fn View(p: ProjectVm, bridge: Bridge) -> Element {
             }
         }
         if selected.read().is_some() {
-            DetailModal { p: p.clone(), selected, schedule, start, bridge: bridge.clone() }
+            DetailModal { p: p.clone(), selected, schedule, start, pending, bridge: bridge.clone() }
         }
         if let Some(sid) = *start.read() {
             StartModal { p: p.clone(), sid, start, bridge: bridge.clone() }
         }
         if let Some(pm) = pending.read().clone() {
-            {confirm_dialog(pm, pending, bridge)}
+            ConfirmMoveDialog { pm, pending, bridge: bridge.clone() }
         }
         if let Some(ps) = schedule.read().clone() {
             ScheduleDialog { p: p.clone(), ps, schedule, bridge: bridge.clone() }
@@ -300,14 +300,27 @@ fn toolbar(
     }
 }
 
-fn week_head(p: &ProjectVm) -> Element {
+#[component]
+fn WeekHead(p: ProjectVm) -> Element {
     let w = p.weeks.iter().find(|w| w.week == p.viewing_week);
     let goal = w
         .and_then(|w| w.goal.clone())
         .unwrap_or_else(|| "(这一周还没写周目标)".into());
+    let mut open = use_signal(|| false);
     let c = &p.board_counts;
     rsx! {
-        div { class: "goal-box", "{goal}" }
+        div { class: if *open.read() { "goal-box is-open" } else { "goal-box" },
+            div { class: "goal-box-text", "{goal}" }
+            button {
+                class: "goal-box-toggle",
+                title: if *open.read() { "收起" } else { "展开" },
+                onclick: move |_| {
+                    let next = !*open.peek();
+                    open.set(next);
+                },
+                {if *open.read() { "▴" } else { "▾" }}
+            }
+        }
         div { class: "week-progress",
             div { style: "width:{c.pct(c.done)}%;background:var(--green);" }
             div { style: "width:{c.pct(c.review)}%;background:var(--amber);" }
