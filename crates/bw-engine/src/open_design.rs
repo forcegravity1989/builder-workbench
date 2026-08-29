@@ -124,12 +124,15 @@ fn parse_status_url(bytes: &[u8]) -> Option<String> {
 
 /// `http://127.0.0.1:<port>` 或 `http://localhost:<port>` 才放行。拒绝
 /// userinfo(`@`)、缺端口、以及非 loopback 的 host。
-fn looks_loopback_http(url: &str) -> bool {
+pub(crate) fn looks_loopback_http(url: &str) -> bool {
     let rest = match url.trim().strip_prefix("http://") {
         Some(r) => r,
         None => return false,
     };
-    if rest.contains('@') {
+    // `@` 只禁在 authority(第一个 `/` 或 `#` 之前)。pairing hash 里可能有 `@`,
+    // 整段扫描会把合法的 Orca web URL 误拒。
+    let authority = rest.split(['/', '#']).next().unwrap_or("");
+    if authority.contains('@') {
         return false;
     }
     let hostport = rest.split('/').next().unwrap_or("");
@@ -196,4 +199,25 @@ pub async fn start_run(base_url: &str, prompt: &str, system_prompt: &str) -> Opt
     })
     .await
     .ok()?
+}
+
+#[cfg(test)]
+mod tests {
+    use super::looks_loopback_http;
+
+    #[test]
+    fn pairing_hash_is_still_loopback() {
+        assert!(looks_loopback_http(
+            "http://127.0.0.1:6768/web-index.html#pairing=orca://pair?code=abc"
+        ));
+        assert!(looks_loopback_http(
+            "http://127.0.0.1:6768/web-index.html#pairing=orca://pair?code=a@b"
+        ));
+        assert!(!looks_loopback_http(
+            "http://user@127.0.0.1:6768/web-index.html"
+        ));
+        assert!(!looks_loopback_http(
+            "http://example.com:6768/web-index.html"
+        ));
+    }
 }

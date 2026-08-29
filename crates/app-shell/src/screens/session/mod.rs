@@ -1,538 +1,87 @@
-//! 项目内 · 会话。**结构照 `hifi/index.html` 的 `renderSession` 排**:三栏
-//! 216 / 1fr / 264,左边按 worktree 分组列会话,中间动作条 + 页签 + 正文,
-//! 右边文件树 · 改动文件 · git 盒 · MR 卡。
+//! 项目内 · 会话。只剩两个组件:**Orca**、**Open Design**。
+//! 动作条 / 灌词条不要 —— 开工在计划屏(拖进进行中);停止、MR、评审在 Orca
+//! 或计划屏拖列。buddy 不知道人在 Orca 里点了哪条会话,灌词条会对着错的活。
 //!
-//! 三条如实:
-//!
-//! 1. **左列只显示「运行中 / 空闲」两态**。「等你输入」这种细粒度状态要靠
-//!    claude 的 hook 回传,还没接 —— 唯一真实的信号是 PTY 进程还在不在,
-//!    所以只显示这一个,不猜。
-//! 2. **终端本体不在这个文件里**。它挂在 `.content` 上(`main.rs`),因为挂在
-//!    这里的话人一切面板就整屏卸载,收字节的循环跟着没,agent 那段时间说的话
-//!    是真丢的。这个屏在中栏下半格留一个空格子,终端靠 `.content.session-mode`
-//!    那套网格落进去 —— 所以中栏是上下两张卡拼的,不是原型里的一整张。
-//! 3. **没有「完成」按钮**。会话屏里能做的最远是「推到评审」;点完成在计划屏
-//!    或通知屏,那是人看过 diff 之后的动作。
+//! 两个页签常驻:原型活默认停 Open Design,构建类默认停 Orca。
+//! 没接到就如实说,不假装嵌进去。Orca / Open Design 都走 iframe。
 
 use crate::bridge::{Bridge, Req};
-use crate::vm::{ProjectVm, SessionTab, SessionVm};
-use bw::command::Command;
-use bw::model::Signal as HealthSignal;
+use crate::vm::{ProjectVm, SessionTab};
 use dioxus::prelude::*;
-use std::time::Duration;
 
-fn bump_term_fit() {
-    spawn(async {
-        tokio::time::sleep(Duration::from_millis(48)).await;
-        let _ = document::eval("window.dispatchEvent(new Event('resize')); true").await;
-    });
-}
+const FILL: &str = "display:flex;flex-direction:column;flex:1;height:100%;min-height:0;";
 
 #[component]
 pub fn View(p: ProjectVm, bridge: Bridge) -> Element {
-    let (p, bridge) = (&p, &bridge);
-    let pending_delete = use_signal(|| None::<(bw::model::IssueId, String)>);
-    let mut left_on = use_signal(|| true);
-    let mut right_on = use_signal(|| true);
-    let open = p
-        .session_open
-        .and_then(|id| p.sessions.iter().find(|s| s.issue_id == id));
-    let left_cls = if *left_on.read() {
-        "sess-col sess-left"
-    } else {
-        "sess-col sess-left is-collapsed"
-    };
-    let right_cls = if *right_on.read() {
-        "sess-col sess-right"
-    } else {
-        "sess-col sess-right is-collapsed"
-    };
-    rsx! {
-        div { class: "{left_cls}",
-            if *left_on.read() {
-                button {
-                    class: "sess-rail-toggle",
-                    title: "收起会话列表",
-                    onclick: move |_| { left_on.set(false); bump_term_fit(); },
-                    "‹"
-                }
-                div { class: "sess-left-scroll",
-                    if p.sessions.is_empty() {
-                        div { class: "detail-empty",
-                            "还没有会话。到计划屏点一张活的 ▶开工,这里就会多一行。"
-                        }
-                    }
-                    for s in p.sessions.iter() {
-                        {session_row(s, p.session_open == Some(s.issue_id), bridge)}
-                    }
-                }
-            } else {
-                button {
-                    class: "sess-rail",
-                    title: "展开会话列表",
-                    onclick: move |_| { left_on.set(true); bump_term_fit(); },
-                    "会话"
-                }
-            }
-        }
-        div { class: "sess-col sess-midhead",
-            {action_bar(open, pending_delete, bridge)}
-            {tabs(p, bridge)}
-        }
-        if let Some(text) = p.briefing.as_ref() {
-            {briefing_overlay(text, p.session_open, bridge)}
-        }
-        {mid_body(p)}
-        div { class: "{right_cls}",
-            if *right_on.read() {
-                button {
-                    class: "sess-rail-toggle",
-                    title: "收起工作区",
-                    onclick: move |_| { right_on.set(false); bump_term_fit(); },
-                    "›"
-                }
-                div { class: "sess-right-scroll", {right_column(p, bridge)} }
-            } else {
-                button {
-                    class: "sess-rail",
-                    title: "展开工作区",
-                    onclick: move |_| { right_on.set(true); bump_term_fit(); },
-                    "工作区"
-                }
-            }
-        }
-        if let Some((id, title)) = pending_delete.read().clone() {
-            {delete_session_dialog(id, title, pending_delete, bridge)}
-        }
-    }
-}
-
-// ── 左栏 ────────────────────────────────────────────
-
-fn session_row(s: &SessionVm, active: bool, bridge: &Bridge) -> Element {
-    let b = bridge.clone();
-    let id = s.issue_id;
-    // 只有两态,而且两态都是真的:进程在不在。
-    let (sig, state) = if s.live {
-        (Some(HealthSignal::Green), "运行中")
-    } else {
-        (None, "空闲")
-    };
-    let dot_cls = if s.live { "dot dot-run" } else { "dot" };
-    let color = crate::theme::signal_color(sig);
-    rsx! {
-        div { key: "{s.issue_id:?}",
-            // 分组标签 = 这个会话在哪个 worktree、哪条分支上干活。
-            div { class: "sess-group-label", title: "{s.workspace_path}", "{s.branch}" }
-            div {
-                class: if active { "sess-row sel" } else { "sess-row" },
-                onclick: move |_| b.send(Req::SelectSession(Some(id))),
-                span { class: "{dot_cls}", style: "background:{color};margin-top:4px;" }
-                div { class: "body",
-                    div { class: "ttl", "#{s.issue_number} {s.issue_title}" }
-                    div { class: "sub", "{s.issue_status} · {state}" }
-                }
-            }
-        }
-    }
-}
-
-// ── 中栏上半:动作条 + 页签 ─────────────────────────
-
-fn action_bar(
-    open: Option<&SessionVm>,
-    mut pending_delete: Signal<Option<(bw::model::IssueId, String)>>,
-    bridge: &Bridge,
-) -> Element {
-    let Some(s) = open else {
-        return rsx! {
-            div { class: "sess-actionbar",
-                span { class: "ttl", "左边选一个会话" }
-            }
-        };
-    };
-    let (b_run, b_stop, b_review, b_submit, b_brief) = (
-        bridge.clone(),
-        bridge.clone(),
-        bridge.clone(),
-        bridge.clone(),
-        bridge.clone(),
-    );
-    let id = s.issue_id;
-    let del_title = format!("#{} {}", s.issue_number, s.issue_title);
-    rsx! {
-        div { class: "sess-actionbar",
-            span { class: "ttl", title: "#{s.issue_number} {s.issue_title}",
-                "#{s.issue_number} {s.issue_title}"
-            }
-            span { class: "chip", "{s.issue_status}" }
-            button {
-                class: "btn btn-sm",
-                disabled: s.live,
-                // **标签跟着状态变**。对一张已经聊过的活,这颗按钮的真实语义是
-                // 「从头再开一场」,不是「接着上次聊」—— 接着上次聊是选中这张
-                // 活的时候自动发生的。叫「开工」的话,熟 claude CLI 的人会以为
-                // 它是 `--resume`,一点就把上次那段对话丢了。
-                title: if s.session_id.is_empty() {
-                    "起一场新的 agent 会话"
-                } else {
-                    "从头再开一场新对话。上次那场已经自动接回来了,想接着聊直接在终端里说话"
-                },
-                onclick: move |_| b_run.cmd(Command::RunIssue { id }),
-                if s.session_id.is_empty() { "▶ 开工" } else { "▶ 重开一场" }
-            }
-            button {
-                class: "btn btn-sm",
-                disabled: !s.live,
-                onclick: move |_| b_stop.cmd(Command::CancelRun { id }),
-                "■ 停止"
-            }
-            button {
-                class: "btn btn-sm btn-primary",
-                title: "把这棵树里 agent 干出来的改动提交、推分支、开 MR,然后把活推到「评审中」。\
-                        「完成」还是你评审完之后再点一次。",
-                onclick: move |_| b_submit.cmd(Command::SubmitIssueWork { id }),
-                "提交并开 MR"
-            }
-            button {
-                class: "btn btn-sm",
-                title: "只改状态,不碰仓 —— 给「改动不在这棵树里」或者「远端还没挂上」的情况留的。",
-                onclick: move |_| b_review.cmd(Command::TransitionIssue {
-                    id,
-                    to: bw::model::IssueStatus::InReview,
-                }),
-                "只推到评审"
-            }
-            // 提示词是经 --append-system-prompt 送进去的,**终端里一个字都
-            // 看不见**。agent 跑偏时第一步就该看它到底被告知了什么,所以给一个
-            // 口子。再点一次收起。
-            button {
-                class: "btn btn-sm",
-                title: "看这张活开工时真会喂给 agent 的那份系统提示词(身份 · 铁律 · 规范索引 · 挂的剧本)。\
-                        终端里看不见它,因为它是当参数送进去的。",
-                onclick: move |_| b_brief.send(Req::ShowBriefing { issue: id }),
-                "看看喂了什么"
-            }
-            // 高保真上这里还有「蒸馏」与「在 Cursor 中打开」。前者 V4 还没有
-            // 这条命令,后者要按活的开工工具决定露不露 —— 都还没接,做成灰态。
-            button { class: "btn btn-sm", disabled: true, title: "V4 还没接蒸馏", "蒸馏" }
-            button {
-                class: "btn btn-sm",
-                title: "删掉本机这一行会话和它的工作树。远端 issue 不动。",
-                onclick: move |_| pending_delete.set(Some((id, del_title.clone()))),
-                "删除会话"
-            }
-        }
-    }
-}
-
-fn delete_session_dialog(
-    id: bw::model::IssueId,
-    title: String,
-    mut pending: Signal<Option<(bw::model::IssueId, String)>>,
-    bridge: &Bridge,
-) -> Element {
-    let b = bridge.clone();
-    rsx! {
-        div { class: "modal-backdrop",
-            div { class: "modal", style: "max-width:420px;",
-                h3 { "删除会话" }
-                div { style: "font-size:13px;line-height:1.85;color:var(--ink-2);margin-bottom:8px;",
-                    "删掉「{title}」在本机的会话和工作树。未提交的改动也会没。"
-                    br {}
-                    "远端 issue 不动。作废过的活不会因此重新开工。"
-                }
-                div { class: "modal-actions",
-                    button { class: "btn", onclick: move |_| pending.set(None), "算了" }
-                    button {
-                        class: "btn btn-primary",
-                        onclick: move |_| {
-                            b.cmd(Command::DeleteSession { id });
-                            pending.set(None);
-                        },
-                        "删除"
-                    }
-                }
-            }
-        }
-    }
-}
-
-fn tabs(p: &ProjectVm, bridge: &Bridge) -> Element {
     let cur = p.workbench.tab;
-    let has_file = !p.workbench.open_path.is_empty();
-    let file_label = if has_file {
-        p.workbench.open_path.clone()
-    } else {
-        "文件".to_string()
-    };
-    // 开工工具是 Open Design 的活多一个内嵌标签(本机网页内嵌类,不起 CLI)。
-    let has_od = p.workbench.tool == "open_design";
     rsx! {
-        div { class: "sess-tabs",
-            {tab_btn("终端", SessionTab::Terminal, cur, false, bridge)}
-            {tab_btn(&file_label, SessionTab::File, cur, has_file, bridge)}
-            {tab_btn("改动 diff", SessionTab::Diff, cur, has_file, bridge)}
-            {has_od.then(|| rsx! { {tab_btn("Open Design", SessionTab::OpenDesign, cur, false, bridge)} })}
+        div {
+            class: "session-screen",
+            "data-screen": "session",
+            style: "{FILL}",
+            div { class: "sess-col sess-midhead", style: "flex:none;",
+                div { class: "sess-tabs",
+                    TabBtn { label: "Orca".to_string(), tab: SessionTab::Orca, cur, bridge: bridge.clone() }
+                    TabBtn { label: "Open Design".to_string(), tab: SessionTab::OpenDesign, cur, bridge: bridge.clone() }
+                }
+            }
+            {mid_body(&p)}
         }
     }
 }
 
-fn tab_btn(
-    label: &str,
-    tab: SessionTab,
-    cur: SessionTab,
-    closable: bool,
-    bridge: &Bridge,
-) -> Element {
+#[component]
+fn TabBtn(label: String, tab: SessionTab, cur: SessionTab, bridge: Bridge) -> Element {
     let b = bridge.clone();
-    let b_close = bridge.clone();
-    let label = label.to_string();
     rsx! {
         div {
             class: if tab == cur { "sess-tab active" } else { "sess-tab" },
             onclick: move |_| b.send(Req::SessionTab(tab)),
-            span {
-                style: "max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;",
-                "{label}"
-            }
-            if closable {
-                span {
-                    class: "x",
-                    onclick: move |e| {
-                        e.stop_propagation();
-                        // 关掉 = 不再开着任何文件,回终端。
-                        b_close.send(Req::OpenFile { path: String::new(), diff: false });
-                        b_close.send(Req::SessionTab(SessionTab::Terminal));
-                    },
-                    "✕"
-                }
-            }
+            span { "{label}" }
         }
     }
 }
 
-fn briefing_overlay(text: &str, issue: Option<bw::model::IssueId>, bridge: &Bridge) -> Element {
-    let b = bridge.clone();
-    let id = issue.unwrap_or(bw::model::IssueId::nil());
-    rsx! {
-        div { class: "sess-briefing",
-            div { style: "display:flex;align-items:center;gap:8px;margin-bottom:6px;",
-                div { style: "font-size:12px;color:var(--ink-3);flex:1;",
-                    "开工时真会喂给 agent 的系统提示词。"
-                    strong { "技能正文不在里面" }
-                    " —— 只给名字、一句话和绝对路径。"
-                }
-                button {
-                    class: "btn btn-sm",
-                    onclick: move |_| b.send(Req::ShowBriefing { issue: id }),
-                    "收起"
-                }
-            }
-            pre {
-                style: "white-space:pre-wrap;word-break:break-word;font-size:12px;\
-                        line-height:1.7;margin:0;font-family:var(--mono);",
-                "{text}"
-            }
-        }
-    }
-}
-
-// ── 中栏下半:正文 ──────────────────────────────────
-
-/// 终端页签下**什么都不渲染** —— 那个格子留给挂在 `.content` 上的终端本体。
-/// 没选中会话时才摆一句话,否则会盖住终端。
 fn mid_body(p: &ProjectVm) -> Element {
-    let w = &p.workbench;
-    if w.tab == SessionTab::Terminal {
-        if p.session_open.is_some() {
-            return rsx! {};
-        }
-        return rsx! {
-            div { class: "sess-col sess-midbody",
-                div { class: "detail-empty", style: "margin:auto;", "选一个会话,终端出现在这里。" }
-            }
-        };
+    match p.workbench.tab {
+        SessionTab::Orca => rsx! { OrcaView { orca_url: p.workbench.orca_web_url.clone() } },
+        SessionTab::OpenDesign => rsx! {
+            OpenDesignView { src: p.workbench.od_src.clone(), gen: p.workbench.od_gen }
+        },
     }
-    if w.tab == SessionTab::OpenDesign {
-        return rsx! { OpenDesignView { src: w.od_src.clone(), gen: w.od_gen } };
-    }
-    if w.open_path.is_empty() {
+}
+
+/// 本机 Orca web 的 pairing 页,iframe 嵌。地址来自本机设置
+/// (`settings.toml` 的 `orca_web_url`),`BW_ORCA_WEB_URL` 可覆盖;都只认 loopback。
+#[component]
+fn OrcaView(orca_url: String) -> Element {
+    let url = bw_engine::orca::web_embed_url(Some(&orca_url));
+    let body_style = "flex:1;min-height:0;display:flex;flex-direction:column;height:100%;";
+    if let Some(u) = url {
+        let iframe_src = iframe_src(&u);
         return rsx! {
-            div { class: "sess-col sess-midbody",
-                div { class: "detail-empty", style: "margin:auto;", "右边点一个文件。" }
-            }
-        };
-    }
-    if w.tab == SessionTab::Diff {
-        return rsx! {
-            div { class: "sess-col sess-midbody",
-                div { class: "codeview-head", "{w.open_path} · diff" }
-                div { class: "diffview", style: "border:none;border-radius:0;",
-                    for (i, line) in w.open_body.lines().enumerate() {
-                        div { key: "{i}", class: "diffline {diff_cls(line)}", "{line}" }
-                    }
+            div { class: "sess-col sess-midbody", style: "{body_style}",
+                iframe {
+                    key: "{iframe_src}",
+                    src: "{iframe_src}",
+                    style: "flex:1;width:100%;height:100%;min-height:0;border:0;display:block;background:#fff;",
+                    allow: "clipboard-read; clipboard-write; fullscreen"
                 }
             }
         };
     }
     rsx! {
-        div { class: "sess-col sess-midbody",
-            div { class: "codeview-head", "{w.open_path} · 只读" }
-            div { class: "codeview-body",
-                for (i, line) in w.open_body.lines().enumerate() {
-                    div { key: "{i}", class: "codeline",
-                        span { class: "ln", "{i + 1}" }
-                        span { class: "src", "{line}" }
-                    }
-                }
-            }
-        }
-    }
-}
-
-/// diff 每一行按前缀染色。**只认 git 自己的前缀**,不猜。
-fn diff_cls(line: &str) -> &'static str {
-    match line.as_bytes().first() {
-        Some(b'+') => "add",
-        Some(b'-') => "del",
-        _ => "ctx",
-    }
-}
-
-// ── 右栏 ────────────────────────────────────────────
-
-fn right_column(p: &ProjectVm, bridge: &Bridge) -> Element {
-    let w = &p.workbench;
-    if p.session_open.is_none() {
-        return rsx! {
-            div { class: "detail-empty",
-                "选中一个会话之后,这里显示它那个工作区的文件树、改动、分支状态和 MR。"
-            }
-        };
-    }
-    let ab = match w.ahead_behind {
-        // 问不出来就说问不出来。显示 0 会让人以为「和主干一样」。
-        None => "领先 — · 落后 —".to_string(),
-        Some((a, b)) => format!("领先 {a} · 落后 {b}"),
-    };
-    let dirty = if w.dirty {
-        "有未提交的改动"
-    } else {
-        "干净"
-    };
-    rsx! {
-        div { class: "sr-h", "文件树" }
-        {tree_level(p, "", 0, bridge)}
-
-        div { class: "sr-h", "改动文件" }
-        if w.changed.is_empty() {
-            div { class: "detail-empty", style: "padding:6px 2px;", "无改动" }
-        }
-        for c in w.changed.iter() {
-            {changed_row(c, bridge)}
-        }
-
-        div { class: "sr-h", "git" }
-        div { class: "git-box",
-            div { "分支 {w.branch}" }
-            div { "{ab}" }
-            div { "{dirty}" }
-        }
-
-        div { class: "sr-h", "MR" }
-        if w.pr_number == 0 {
-            div { class: "detail-empty", style: "padding:6px 2px;", "还没有 MR" }
-        } else {
-            div { class: "mr-card",
-                div { class: "row",
-                    span { class: "mono", "!{w.pr_number}" }
-                    span { class: "chip chip-outline", "开着" }
-                }
-                div { style: "font-size:11px;color:var(--ink-3);",
-                    "合入走通知屏的「合入并完成」——那一下才结清。"
-                }
-            }
-        }
-    }
-}
-
-fn changed_row(c: &crate::vm::ChangedFileVm, bridge: &Bridge) -> Element {
-    let b = bridge.clone();
-    let path = c.path.clone();
-    rsx! {
-        div {
-            key: "{c.path}",
-            class: "changed-row",
-            onclick: move |_| b.send(Req::OpenFile { path: path.clone(), diff: true }),
-            span { style: "word-break:break-all;", "{c.path}" }
-            span { class: "diffnum", "{c.label}" }
-        }
-    }
-}
-
-/// 一层目录。展开着的目录才往下递归 —— 没展开的那些根本没读过盘。
-fn tree_level(p: &ProjectVm, dir: &str, depth: usize, bridge: &Bridge) -> Element {
-    let Some((_, entries)) = p.workbench.tree.iter().find(|(d, _)| d == dir) else {
-        return rsx! {};
-    };
-    rsx! {
-        for e in entries.iter() {
-            {tree_row(p, e, depth, bridge)}
-        }
-    }
-}
-
-fn tree_row(p: &ProjectVm, e: &crate::vm::TreeEntryVm, depth: usize, bridge: &Bridge) -> Element {
-    let b = bridge.clone();
-    let rel = e.rel.clone();
-    let is_dir = e.is_dir;
-    let expanded = is_dir && p.workbench.expanded.contains(&e.rel);
-    let changed = p.workbench.changed.iter().any(|c| c.path == e.rel);
-    let pad = depth * 12 + if is_dir { 0 } else { 11 };
-    let cls = if is_dir {
-        "tree-node dir"
-    } else if changed {
-        "tree-node file changed"
-    } else {
-        "tree-node file"
-    };
-    rsx! {
-        div { key: "{e.rel}",
+        div { class: "sess-col sess-midbody", style: "{body_style}",
             div {
-                class: "{cls}",
-                style: "padding-left:{pad}px;",
-                onclick: move |_| {
-                    if is_dir {
-                        b.send(Req::ToggleDir(rel.clone()));
-                    } else {
-                        b.send(Req::OpenFile { path: rel.clone(), diff: false });
-                    }
-                },
-                if is_dir {
-                    span { class: "tree-arrow", {if expanded { "▾" } else { "▸" }} }
-                    "{e.name}/"
-                } else {
-                    "{e.name}"
-                    if changed { " ✱" }
-                }
-            }
-            if expanded {
-                {tree_level(p, &e.rel, depth + 1, bridge)}
+                style: "margin:auto;padding:24px;max-width:520px;text-align:center;\
+                        color:var(--ink-3);font-size:13px;line-height:1.8;",
+                "还没接到 Orca 网页。到顶层设置贴「给 web 配对」的完整 URL。"
             }
         }
     }
 }
 
-// ── 内嵌 Open Design ──────────────────────────────
-//
-// 原型类活(开工工具 open_design)的会话多这个标签:把本机已开的 Open Design
-// 的 loopback 首页嵌进一个 iframe。**不是起 CLI**——Open Design 是「本机网页
-// 内嵌类」工具,开工 = 在这个内嵌视图里干,不是 spawn agent。
-//
-// 发现走 `bw_engine::open_design::discover_web_url`(命名管道/socket 握手,见
-// 该模块)。挂一次 use_future,结果存信号:OD 起着 → url → iframe;没起 → 如实
-// 说「没接到」,不假装嵌进去了。OD 重启换了端口时,「重新发现」重探。
+/// 本机 Open Design 的 loopback 首页。探活走 `discover_web_url`。
 #[component]
 fn OpenDesignView(src: String, gen: u64) -> Element {
     let mut url = use_signal(|| None::<String>);
@@ -548,14 +97,15 @@ fn OpenDesignView(src: String, gen: u64) -> Element {
     } else {
         Some(src.clone())
     };
+    let body_style = "flex:1;min-height:0;display:flex;flex-direction:column;height:100%;";
     if let Some(u) = u {
         let iframe_src = iframe_src(&u);
         return rsx! {
-            div { class: "sess-col sess-midbody",
+            div { class: "sess-col sess-midbody", style: "{body_style}",
                 iframe {
                     key: "{gen}-{iframe_src}",
                     src: "{iframe_src}",
-                    style: "flex:1;width:100%;height:100%;border:0;display:block;background:#fff;",
+                    style: "flex:1;width:100%;height:100%;min-height:0;border:0;display:block;background:#fff;",
                     allow: "clipboard-read; clipboard-write; fullscreen"
                 }
             }
@@ -564,14 +114,13 @@ fn OpenDesignView(src: String, gen: u64) -> Element {
     let msg = if probing_now {
         "正在找本机已打开的 Open Design…".to_string()
     } else {
-        "还没接到 Open Design。先打开它,再点「重新发现」。\n不另弹窗口;没接到就不假装嵌进去了。"
-            .to_string()
+        "还没接到 Open Design。先打开它,再点「重新发现」。".to_string()
     };
     rsx! {
-        div { class: "sess-col sess-midbody",
+        div { class: "sess-col sess-midbody", style: "{body_style}",
             div {
                 style: "margin:auto;padding:24px;max-width:520px;text-align:center;\
-                        color:var(--ink-3);font-size:13px;line-height:1.8;",
+                        color:var(--ink-3);font-size:13px;line-height:1.8;white-space:pre-wrap;",
                 "{msg}"
                 button {
                     class: "btn btn-sm btn-primary",

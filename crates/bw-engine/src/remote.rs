@@ -647,6 +647,26 @@ impl Remote {
         }
     }
 
+    /// 从里程碑摘下(镜像)。GitHub/mock 不投。
+    pub async fn clear_issue_milestone(&self, iid: u32) -> Result<(), RemoteError> {
+        match self {
+            Remote::Codehub { host, path } => {
+                Ok(codehub::clear_issue_milestone(host, path, iid).await?)
+            }
+            Remote::Github(_) | Remote::Mock(_) => Ok(()),
+        }
+    }
+
+    /// 按标题删版本里程碑。找不到当成功。GitHub/mock 不投。
+    pub async fn delete_plan_milestone(&self, path: &str, name: &str) -> Result<(), RemoteError> {
+        match self {
+            Remote::Codehub { host, .. } => {
+                Ok(codehub::delete_plan_milestone(host, path, name).await?)
+            }
+            Remote::Github(_) | Remote::Mock(_) => Ok(()),
+        }
+    }
+
     /// 改 issue 责任人。空串 = 取消指派。
     pub async fn set_issue_assignee(&self, iid: u32, assignee: &str) -> Result<(), RemoteError> {
         match self {

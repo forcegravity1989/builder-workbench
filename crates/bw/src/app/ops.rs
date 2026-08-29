@@ -338,12 +338,21 @@ impl App {
 
     /// 收 worktree + 删分支的回执一句(给 `local_note`)。**不靠 lossy 的
     /// `issue.branch`** —— 分支名从 `issue.number` 现算。worktree 脏的(有未提交
-    /// 改动)原样留着,如实说一声。
+    /// 改动)原样留着,如实说一声。旧活记的是平级兄弟路径,这里走
+    /// `resolve_issue_worktree`(会话记下的路径 → 新目录 → 旧兄弟)才能收掉。
     async fn cleanup_issue_branch_note(&self, issue: &crate::model::Issue) -> Option<String> {
         let Ok(ws) = self.workspace_of(issue.project_id).await else {
             return None;
         };
-        let tree = bw_engine::workspace::issue_worktree_path(&ws, issue.number)?;
+        let recorded = self
+            .conversation_for_issue(issue.id)
+            .await
+            .ok()
+            .flatten()
+            .filter(|c| !c.workspace_path.is_empty())
+            .map(|c| std::path::PathBuf::from(&c.workspace_path));
+        let tree =
+            bw_engine::workspace::resolve_issue_worktree(&ws, issue.number, recorded.as_deref())?;
         let branch = bw_engine::github::issue_branch(issue.number);
         match crate::git::is_dirty(&tree).await {
             Ok(false) => {}

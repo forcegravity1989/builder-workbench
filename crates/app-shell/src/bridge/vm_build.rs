@@ -75,7 +75,7 @@ pub(super) struct ProjectGathered {
     policy: Option<issue_policy_file::IssuePolicyFile>,
     /// 已填好 `pr_number`(`fill_pr_numbers` 跑过、`mr_cache` 跑过)的 issue 列表。
     issues: Vec<bw::Issue>,
-    /// 会话行。`live` 是采那一刻的;`assemble` 会对着 `app.pty_live` 现刷新(纯内存)。
+    /// 会话行。`live` 是采那一刻的(PTY 已封存,恒 false —— 没真进程信号,不假绿)。
     sessions: Vec<SessionVm>,
     releases: Vec<ReleaseVm>,
     health: HealthVm,
@@ -90,17 +90,16 @@ pub(super) struct ProjectGathered {
     ops1_status: Option<String>,
 }
 
-/// 会话工作台缓存键 + 值。切周 / 选卡片时会话相关 ui 字段没变,直接复用,
-/// 不重跑 `build_workbench` 那几个 git 子进程(list_dir / changed_files /
-/// ahead_behind / file_diff)。展开目录 / 切会话 / 换页签时键变,重算。
+/// 会话工作台缓存键 + 值。切周 / 选卡片时会话相关 ui 字段没变,直接复用。
+/// 切会话 / 换页签时键变,重算(现在 build_workbench 便宜,没 git 子进程了)。
 #[derive(PartialEq)]
 pub(super) struct WorkbenchKey {
     session_open: Option<bw::model::IssueId>,
     session_tab: crate::vm::SessionTab,
-    expanded: Vec<String>,
-    open_file: String,
     od_src: String,
     od_gen: u64,
+    /// Orca 网页地址变了也要重算(会话屏 OrcaView 依赖它)。
+    orca_web_url: String,
 }
 
 pub(super) struct WorkbenchCache {
@@ -125,12 +124,9 @@ pub struct UiState {
     pub note_seq: u64,
     /// 「开始本周」回来的草稿活标,连同是哪一周。人确认前只存在这里,不进库。
     pub pending_drafts: Option<(String, Vec<String>)>,
-    /// 会话屏选中哪个会话、开着哪个页签、展开了哪些目录、中栏开着哪个文件。
-    /// 纯导航状态,一律不进库。
+    /// 会话屏选中哪个会话、开着哪个页签。纯导航状态,一律不进库。
     pub session_open: Option<bw::model::IssueId>,
     pub session_tab: crate::vm::SessionTab,
-    pub expanded_dirs: Vec<String>,
-    pub open_file: String,
     /// 知识库屏在看哪个页签,以及代码图/资产两个页签**上一次点开时**跑出来的
     /// 结果。这两样各要起好几个子进程(codegraph、`git log --name-only`、仓
     /// 统计),每重拼一次 ViewModel 就重跑一遍会把界面拖垮 —— 所以只在人点
@@ -144,12 +140,12 @@ pub struct UiState {
     /// 上一次「采一次指标」采到的东西。同理:起脚本要几百毫秒到几秒,只在人
     /// 点那一下才跑。**空 = 还没采过**,不是「采到的是 0」。
     pub metrics: Vec<bw::app::collect::MetricReadout>,
-    /// 会话屏那块「这次开工喂了什么」。`None` = 面板关着。
-    pub briefing: Option<String>,
     /// 配置屏要亮的技能 slug。纯导航。
     pub focus_skill: String,
     pub data_dir: String,
     pub workspaces_root: String,
+    /// Orca 网页配对 URL(本机设置读出来,带 token)。会话屏 iframe 打开它。
+    pub orca_web_url: String,
     /// 接入屏那份仓列表的状态。**不进库** —— 它是「现在去平台问了一次」的结果,
     /// 关掉接入屏就该忘掉。
     pub repos: crate::vm::RepoPickerVm,
@@ -264,6 +260,8 @@ fn primary_note(events: &[Event]) -> Option<String> {
             };
             format!("工作区根目录改成了 {path}{tail}")
         }
+        // 不带 URL 原文(配对 URL 带 token)。进会话屏即打开。
+        Event::OrcaWebUrlChanged => "Orca 网页地址已保存,进会话屏即可".into(),
         Event::IssueSubmitted {
             branch,
             commits,
@@ -379,6 +377,13 @@ fn primary_note(events: &[Event]) -> Option<String> {
         }
         Event::PlanVersionCreated { name, .. } => {
             format!("版本 {name} 已建 —— 自定义计划包,和发版号不是一回事")
+        }
+        Event::PlanVersionDeleted {
+            name,
+            issues_cleared,
+            ..
+        } => {
+            format!("版本 {name} 已删,摘了 {issues_cleared} 张活的计划标签(周排期没动)")
         }
         Event::IssueAssigneeSet { assignee, .. } => {
             if assignee.is_empty() {
@@ -526,6 +531,7 @@ pub async fn assemble(app: &App, ui: &mut UiState, g: &Gathered) -> Vm {
         open,
         settings: SettingsVm {
             workspaces_root: ui.workspaces_root.clone(),
+            orca_web_url: ui.orca_web_url.clone(),
             data_dir: ui.data_dir.clone(),
             claude_binary: g.claude_binary.clone(),
         },
@@ -799,26 +805,17 @@ async fn assemble_project(
     };
     // 指标读数按正在看的那一周现读(本机 jsonl,便宜)。
     let readings = bw::app::read_metric_readings(&pg.ws, &viewing_week);
-    // 会话 live 现刷新:PTY 自己会死,这是唯一一个不靠命令就会变的东西;
-    // `app.pty_live` 是纯内存查询,不起子进程。
-    let sessions: Vec<SessionVm> = pg
-        .sessions
-        .iter()
-        .map(|s| {
-            let mut s = s.clone();
-            s.live = app.pty_live(s.conversation_id);
-            s
-        })
-        .collect();
-    // workbench 缓存:会话相关 ui 字段没变 + 同一代 gather,就复用,不重跑
-    // `build_workbench` 那几个 git 子进程。展开目录 / 切会话 / 换页签时键变,重算。
+    // 会话 live:PTY 已封存,build_sessions 已经如实置 false(没真进程信号,不假
+    // 绿)。这里直接用采到的那份,不再查什么 live。
+    let sessions: Vec<SessionVm> = pg.sessions.clone();
+    // workbench 缓存:会话相关 ui 字段没变 + 同一代 gather,就复用。切会话 / 换
+    // 页签时键变,重算(build_workbench 现在便宜,没 git 子进程了)。
     let wb_key = WorkbenchKey {
         session_open: ui.session_open,
         session_tab: ui.session_tab,
-        expanded: ui.expanded_dirs.clone(),
-        open_file: ui.open_file.clone(),
         od_src: ui.od_src.clone(),
         od_gen: ui.od_gen,
+        orca_web_url: ui.orca_web_url.clone(),
     };
     let hit = ui
         .workbench_cache
@@ -832,12 +829,10 @@ async fn assemble_project(
             &pg.issues,
             ui.session_open,
             ui.session_tab,
-            &ui.expanded_dirs,
-            &ui.open_file,
             &ui.od_src,
             ui.od_gen,
-        )
-        .await;
+            &ui.orca_web_url,
+        );
         ui.workbench_cache = Some(WorkbenchCache {
             gen,
             key: wb_key,
@@ -896,13 +891,12 @@ async fn assemble_project(
         releases: pg.releases.clone(),
         sessions: sessions.clone(),
         session_open: ui.session_open,
-        briefing: ui.briefing.clone(),
         mr_url_prefix: pg.mr_url_prefix.clone(),
         issue_url_prefix: pg.issue_url_prefix.clone(),
         workbench,
         notify: NotifyVm {
             // 评审中的活张数,现算。项目墙 ⚾ 与项目轨头部徽章读它。通知页签已删
-            // (ADR-0002),事件流/等你合入列表不再进 ViewModel。
+            // (ADR-0003),事件流/等你合入列表不再进 ViewModel。
             unread: bw::app::count_unseen(&pg.issues),
         },
         config: {

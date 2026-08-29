@@ -1,7 +1,6 @@
 //! 计划屏 · 列表视图(对齐 opt:listView)。预设(开放/分配我的/我的)+ 计划/
 //! 阶段下拉 + 搜索 + 表格行(ID/标题双行/负责人/状态胶囊/已更新/行操作)。
-//! 行操作:未排期→schedule、已排期→Start、进行中/待评审/阻塞→Open、完成/
-//! 取消→灰杠。
+//! 行操作:未排期→schedule、已排期→Start、进行中/待评审/阻塞/完成/取消→Open。
 
 use crate::bridge::{Bridge, Panel, PanelNav, Req};
 use crate::vm::{CardItemVm, ProjectVm};
@@ -33,8 +32,11 @@ fn action_kind(c: &CardItemVm) -> &'static str {
         IssueStatus::Backlog => "schedule",
         IssueStatus::Todo if !scheduled => "schedule",
         IssueStatus::Todo => "start",
-        IssueStatus::InProgress | IssueStatus::InReview | IssueStatus::Blocked => "open",
-        _ => "dash",
+        IssueStatus::InProgress
+        | IssueStatus::InReview
+        | IssueStatus::Blocked
+        | IssueStatus::Done
+        | IssueStatus::Cancelled => "open",
     }
 }
 

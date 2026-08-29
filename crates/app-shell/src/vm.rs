@@ -94,6 +94,8 @@ pub struct RepoPrefillVm {
 #[derive(Clone, Debug, Default, PartialEq)]
 pub struct SettingsVm {
     pub workspaces_root: String,
+    /// Orca 网页配对 URL(带 token,只在本地)。设置屏可改;会话屏 iframe 打开它。
+    pub orca_web_url: String,
     /// buddy 本机数据目录(注册表 / 设置 / 会话都在这下面)。刀6 起不再有 SQLite
     /// 库文件,这格显示的是 asset_root 目录名,不是 DB 路径。
     pub data_dir: String,
@@ -185,9 +187,6 @@ pub struct ProjectVm {
     pub sessions: Vec<SessionVm>,
     /// 会话屏选中的那一个(按活)。
     pub session_open: Option<IssueId>,
-    /// 会话屏「看看喂了什么」面板的内容。`None` = 面板关着。**这是开工时真会
-    /// 送给 agent 的那份系统提示词**,和真开工算的是同一份,不是示意。
-    pub briefing: Option<String>,
     /// MR / PR 网页地址的前缀,后面直接拼号码(`.../pull/` 或 codehub 的
     /// `.../-/merge_requests/`)。**按 provider 拼**,不是从 `.git/config` 的
     /// origin 推 —— codehub clone 走 SSH,origin 里是 SSH 主机加端口,拿它当
@@ -450,70 +449,36 @@ pub struct SessionVm {
     pub live: bool,
 }
 
-/// 会话屏中栏三个页签。
+/// 会话屏中栏两个组件:Orca + Open Design(都常驻,不按活露不露)。原型活
+/// 默认停 Open Design,构建类默认停 Orca。
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
 pub enum SessionTab {
     #[default]
-    Terminal,
-    /// 从文件树点开的只读视图。
-    File,
-    /// 从改动文件列表点开的单文件 diff。
-    Diff,
-    /// 内嵌 Open Design(仅原型类活——开工工具是 open_design 时才有这个
-    /// 标签)。不是起 CLI,是把本机已开的 Open Design 的 loopback 首页嵌进
-    /// 一个 iframe(「本机网页内嵌类」)。
+    Orca,
     OpenDesign,
 }
 
-/// 会话屏右栏:文件树 / 改动文件 / git 状态 / MR 卡。全部现算,没有一张表
-/// 缓存它们。
+/// 会话屏两个组件要的那点状态。右栏(文件树 / 改动 / git / MR)和终端页签删了,
+/// 那些能力在 Orca 里;这里只剩页签、开工工具和 OD iframe 的 src/gen。
 #[derive(Clone, Debug, Default, PartialEq)]
 pub struct WorkbenchVm {
-    /// 当前选中的那个会话在哪个 worktree 里干活。空 = 没选中任何会话。
-    pub workspace: String,
-    pub branch: String,
-    /// 相对主干领先 / 落后。`None` = 问不出来(没有主干、没有上游),
-    /// 界面显示「—」,不显示 0。
-    pub ahead_behind: Option<(u32, u32)>,
-    pub dirty: bool,
-    /// 展开着的目录(相对仓根)。根目录恒在里面。
-    pub expanded: Vec<String>,
-    /// 已经读出来的目录内容:`(目录, 这一层的条目)`。
-    pub tree: Vec<(String, Vec<TreeEntryVm>)>,
-    pub changed: Vec<ChangedFileVm>,
-    /// MR 号 + 状态。0 = 没有 MR,如实说没有,不编一个号。
-    pub pr_number: u32,
     pub tab: SessionTab,
     /// 当前打开的会话那张活的开工工具(`claude_cli`/`cursor`/`open_design`)。
-    /// `open_design` 时会话屏多一个内嵌 Open Design 标签(本机网页内嵌类,
-    /// 不起 CLI)。空 = 没选中会话。
+    /// 默认页签按它选:open_design → OpenDesign,其余 → Orca。空 = 没选中会话。
     pub tool: String,
-    /// 中栏打开的文件:路径 + 正文(只读)或 diff 正文。
-    pub open_path: String,
-    pub open_body: String,
     /// Open Design iframe。空 = 组件自己探首页。
     pub od_src: String,
     pub od_gen: u64,
-}
-
-#[derive(Clone, Debug, Default, PartialEq)]
-pub struct TreeEntryVm {
-    pub rel: String,
-    pub name: String,
-    pub is_dir: bool,
-}
-
-#[derive(Clone, Debug, Default, PartialEq)]
-pub struct ChangedFileVm {
-    pub path: String,
-    pub label: String,
+    /// Orca 网页配对 URL(本机设置读出来,带 token)。会话屏 iframe 打开它;
+    /// `BW_ORCA_WEB_URL` 在 `web_embed_url` 里覆盖。空 = 没配,会话屏空着。
+    pub orca_web_url: String,
 }
 
 #[derive(Clone, Debug, Default, PartialEq)]
 pub struct NotifyVm {
     /// 还没看的动静有几件 = 评审中的活张数(现算,不靠「读到哪个时间点」的
     /// 账本)。项目墙卡片上的 ⚑ 和项目轨头部徽章读它。**通知页签已删**(见
-    /// ADR-0002),个人提醒改走 OS 弹窗(后建);这个数先撑着「有几张等你
+    /// ADR-0003),个人提醒改走 OS 弹窗(后建);这个数先撑着「有几张等你
     /// 合入」,弹窗到位后它的角色再看。
     pub unread: u32,
 }

@@ -1,9 +1,8 @@
 //! `bw-engine` —— V4 的能力底座:凡是要碰外部世界的都在这儿。
 //!
-//! 交互式 `claude` 执行器(各平台都走 [`pty_backend`] 的内嵌终端 PTY,没有真实
-//! 工作区的项目退回自我标注的 [`MockInteractiveExecutor`])、工作区与 worktree
-//! 供给、git 读数、GitHub / codehub 两个远端。**没有 UI,没有 SQL,也没有任何
-//! 业务语义** —— 它只知道「怎么起一个进程、怎么开一棵树、怎么调一次 CLI」。
+//! 本机 Orca 的本地 pipe 客户端(会话开工,见 [`orca`])、工作区与 worktree 供给、
+//! git 读数、GitHub / codehub 两个远端。**没有 UI,没有 SQL,也没有任何业务语义**
+//! —— 它只知道「怎么开一棵树、怎么调一次本地 pipe、怎么读一次远端」。
 //!
 //! ## 它和 `bw-engine`(V3,见 v3 分支) 是什么关系
 //!
@@ -29,11 +28,10 @@ pub mod claude_bin;
 pub mod codehub;
 pub mod evidence;
 pub mod github;
-pub mod interactive_cli;
+pub mod legacy_pty;
 pub mod open_design;
-pub mod pty_backend;
+pub mod orca;
 pub mod remote;
-mod terminal_manager;
 pub mod win_cmd;
 pub mod workspace;
 
@@ -43,11 +41,12 @@ pub mod workspace;
 // 想改 `evidence` 的返回形状得先把十来个名字挨个 grep 一遍才敢下手,正是这次
 // 拷贝想省掉的那笔账(评审抓的)。
 pub use claude_bin::{resolve_claude_binary, which_on_path};
-pub use interactive_cli::{
+// headless 指挥器/测试的阻塞跑法(run_skill / MockInteractiveExecutor)还在用
+// 这些名字 —— 桌面 ▶跑 不进 PTY,走 `orca`。trait/mock/plan 都在 `legacy_pty`。
+pub use legacy_pty::interactive_cli::{
     build_resume_plan, build_startup_plan, InteractiveCliExecutor, InteractiveExecutor, LaunchPlan,
-    MockInteractiveExecutor, TuiAgentConfig, CLAUDE, CURSOR,
+    MockInteractiveExecutor, PtyInput, TuiAgentConfig, CLAUDE, CURSOR,
 };
-pub use terminal_manager::{ConversationMeta, TerminalManager};
 pub use win_cmd::tokio_cmd;
 
 /// 一次运行的上下文。
