@@ -336,10 +336,21 @@ fn card_mr_banner(p: &ProjectVm, bridge: &Bridge) -> Element {
             span { "项目信息改动在 #{mr.number}「{mr.status}」· {pr}" }
             if mr.mergeable {
                 if let Some(id) = id {
-                    button {
-                        class: "btn btn-sm btn-primary",
-                        onclick: move |_| b.cmd(Command::MergeAndSettle { id }),
-                        "合入并完成"
+                    if mr.has_open_mr {
+                        button {
+                            class: "btn btn-sm btn-primary",
+                            onclick: move |_| b.cmd(Command::MergeAndSettle { id }),
+                            "合入并完成"
+                        }
+                    } else {
+                        button {
+                            class: "btn btn-sm btn-primary",
+                            onclick: move |_| b.cmd(Command::TransitionIssue {
+                                id,
+                                to: bw::model::IssueStatus::Done,
+                            }),
+                            "完成(无开着的 MR)"
+                        }
                     }
                 }
             }

@@ -153,11 +153,9 @@ pub struct UiState {
     /// 接入屏那份仓列表的状态。**不进库** —— 它是「现在去平台问了一次」的结果,
     /// 关掉接入屏就该忘掉。
     pub repos: crate::vm::RepoPickerVm,
-    /// inreview 的活「开着的 MR iid」现查缓存(刀3:pr_number 不进库,这里查一次
-    /// 复用,免得每重拼一次 ViewModel 都打 codehub-cli/gh)。键是 IssueId(含项目
-    /// id,跨项目不撞);值 0 = 查过了、没有开着的 MR。issue 离开 inreview 后这条
-    /// 留着也无害(只有 inreview 的活读它)。
-    pub mr_cache: std::collections::HashMap<bw::model::IssueId, u32>,
+    /// 活的 MR 现查缓存(刀3:pr_number 不进库)。键是 IssueId;值是
+    /// `(iid, 现在开着)`。`iid=0` = 查过了、没有 MR。
+    pub mr_cache: std::collections::HashMap<bw::model::IssueId, (u32, bool)>,
     /// 会话屏 Open Design iframe 该打开的地址。开工成功后写入;空 = 组件自己探首页。
     pub od_src: String,
     /// 换一次就让 iframe 卸掉重挂,否则同一 origin 不刷新。
@@ -618,17 +616,16 @@ pub(super) async fn probe_env() -> Vec<ToolProbeVm> {
     ]
 }
 
-/// inreview 的活现查「开着的 MR iid」,填进 `issue.pr_number` + 缓存到 `mr_cache`。
+/// 给该看 MR 的活现查 iid,填进 `issue.pr_number` + `has_open_mr`,缓存到
+/// `mr_cache`。pr_number 不进库(刀3),不查的话详情链接、总览横幅全是 0。
 ///
-/// pr_number 不进库(刀3:`.bw/` 不存、codehub issue 也没这字段),不查的话
-/// 通知「评审中待合入」、详情 MR 卡、总览名片 MR 横幅全读 `pr_number=0` →
-/// 永远看不到 MR。这里给 inreview 的活现查 `Remote::open_mr_for_branch`(按
-/// `bw/issue-<号>` 分支查开着没),查过一次缓存,每重拼 ViewModel 不重打远端。
-/// 非在审的活不查(没 MR 要看);查失败按 0(不显),不崩。
+/// 开着的用 `open_mr_for_branch`;没有开着的再查 `mr_for_branch`(含已合入)。
+/// 人在网页合过、活还停在待评审时,详情仍能显示 MR 号;完成时靠
+/// `has_open_mr` 决定合入还是只关 issue。
 async fn fill_pr_numbers(
     project: &Project,
     issues: &mut [bw::Issue],
-    mr_cache: &mut std::collections::HashMap<bw::model::IssueId, u32>,
+    mr_cache: &mut std::collections::HashMap<bw::model::IssueId, (u32, bool)>,
 ) {
     let Ok(remote) = bw_engine::remote::Remote::for_project(
         &project.provider,
@@ -638,38 +635,39 @@ async fn fill_pr_numbers(
         return;
     };
     for i in issues.iter_mut() {
-        // 评审中必查。名片那张轻量活开了 MR 却停在待办池时也要查,
-        // 否则总览横幅永远「还没提 MR」,人只能去看板里盲找。
+        // 进行中/待评审/阻塞/已完成都可能有 MR。名片轻量活停在待办也要查。
         let card_edit = i.title.starts_with("编辑项目名片")
             && matches!(
                 i.status,
                 IssueStatus::Backlog | IssueStatus::Todo | IssueStatus::InProgress
             );
         if i.number == 0
-            || (i.status != IssueStatus::InReview && i.status != IssueStatus::Done && !card_edit)
+            || (!matches!(
+                i.status,
+                IssueStatus::InProgress
+                    | IssueStatus::InReview
+                    | IssueStatus::Blocked
+                    | IssueStatus::Done
+            ) && !card_edit)
         {
             continue;
         }
-        if let Some(&pr) = mr_cache.get(&i.id) {
+        if let Some(&(pr, open)) = mr_cache.get(&i.id) {
             i.pr_number = pr;
+            i.has_open_mr = open;
             continue;
         }
         let branch = bw_engine::github::issue_branch(i.number);
-        // InReview 查 open MR;Done 查 all(含合入)——合入的 MR 用
-        // open_mr_for_branch 查不到。
-        let pr = if i.status == IssueStatus::Done {
-            match remote.mr_for_branch(&branch).await {
-                Ok(Some(n)) => n,
-                _ => 0,
-            }
-        } else {
-            match remote.open_mr_for_branch(&branch).await {
-                Ok(Some(n)) => n,
-                _ => 0,
-            }
+        let (pr, open) = match remote.open_mr_for_branch(&branch).await {
+            Ok(Some(n)) => (n, true),
+            _ => match remote.mr_for_branch(&branch).await {
+                Ok(Some(n)) => (n, false),
+                _ => (0, false),
+            },
         };
         i.pr_number = pr;
-        mr_cache.insert(i.id, pr);
+        i.has_open_mr = open;
+        mr_cache.insert(i.id, (pr, open));
     }
 }
 
@@ -1014,6 +1012,7 @@ pub(super) fn card_item(i: &bw::Issue) -> CardItemVm {
         settled: i.settled_at.is_some(),
         status: i.status,
         pr_number: i.pr_number,
+        has_open_mr: i.has_open_mr,
         remote_number: i.remote_number,
         branch: i.branch.clone(),
         body: i.body.clone(),

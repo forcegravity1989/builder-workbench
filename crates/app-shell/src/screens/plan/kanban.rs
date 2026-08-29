@@ -10,15 +10,17 @@ use bw::model::{IssueId, IssueStatus};
 use dioxus::prelude::*;
 use std::collections::HashMap;
 
-/// 松手之后等人确认的那一下(拖进评审中/已完成等状态动作)。
+/// 松手之后等人确认的那一下(拖进完成 / 拒绝 / 待办等状态动作)。
 #[derive(Clone, PartialEq)]
 pub struct PendingMove {
     pub id: IssueId,
     pub title: String,
     pub from: IssueStatus,
     pub to: IssueStatus,
-    /// 这张活的 MR 号,`0` = 没有。确认框据此说清楚这一下到底会不会去合 MR。
+    /// 这张活的 MR 号,`0` = 没有(开着的或已合入的都算)。详情展示用。
     pub pr_number: u32,
+    /// 现在有没有开着的 MR。待评审→完成时据此决定合入还是只关 issue。
+    pub has_open_mr: bool,
 }
 
 /// 拖一张未排期的卡到「已排期」段时,等人选排进哪个周/版本的那一下。
@@ -113,10 +115,10 @@ fn column(
     view_all: bool,
     bridge: &Bridge,
     mut dragging: Signal<Option<CardItemVm>>,
-    mut schedule: Signal<Option<PendingSchedule>>,
+    schedule: Signal<Option<PendingSchedule>>,
     selected: Signal<Option<IssueId>>,
-    mut start: Signal<Option<IssueId>>,
-    mut pending: Signal<Option<PendingMove>>,
+    start: Signal<Option<IssueId>>,
+    pending: Signal<Option<PendingMove>>,
     _bounced: Signal<String>,
     col_seg: Signal<HashMap<String, String>>,
     nav: PanelNav,
@@ -174,6 +176,7 @@ fn column(
         _ => "col-todo",
     };
     let _ = view_all;
+    let drop_seg = active_seg.0.clone();
     rsx! {
         div { class: "kanban-col {col_tint}",
             div { class: "kanban-col-head",
@@ -206,28 +209,7 @@ fn column(
                 ondragover: move |e| e.prevent_default(),
                 ondrop: move |_| {
                     if let Some(card) = dragging.read().clone() {
-                        if col_status == IssueStatus::InProgress && card.status == IssueStatus::Todo {
-                            // 待办拖到进行中 → 弹 worktree 窗(Start)
-                            start.set(Some(card.id));
-                        } else if col_status == IssueStatus::Done && card.status == IssueStatus::InReview {
-                            // 评审中拖到完成 → 合入并完成(确认框)
-                            pending.set(Some(PendingMove {
-                                id: card.id,
-                                title: card.title.clone(),
-                                from: IssueStatus::InReview,
-                                to: IssueStatus::Done,
-                                pr_number: card.pr_number,
-                            }));
-                        } else if active_seg.0 == "assigned"
-                            && card.week_of.is_empty()
-                            && card.plan_version.is_empty()
-                        {
-                            // 未排期拖到已排期 → 排期弹窗
-                            schedule.set(Some(PendingSchedule {
-                                id: card.id,
-                                title: card.title.clone(),
-                            }));
-                        }
+                        apply_drop(&card, col_status, &drop_seg, start, pending, schedule);
                     }
                     dragging.set(None);
                 },
@@ -254,7 +236,11 @@ fn card_view(
     let cid = c.id;
     let can_drag = matches!(
         c.status,
-        IssueStatus::Backlog | IssueStatus::Todo | IssueStatus::InReview
+        IssueStatus::Backlog
+            | IssueStatus::Todo
+            | IssueStatus::InProgress
+            | IssueStatus::InReview
+            | IssueStatus::Blocked
     );
     let assignee = if c.assignee.is_empty() {
         "未指派".to_string()
@@ -305,6 +291,129 @@ fn card_view(
                 }
             }
         }
+    }
+}
+
+/// 周计划/版本认的十条。详情下拉和看板拖拽共用,别的合法边不从这里开。
+pub fn allowed_plan_targets(from: IssueStatus) -> &'static [IssueStatus] {
+    match from {
+        IssueStatus::Todo => &[
+            IssueStatus::InProgress,
+            IssueStatus::Blocked,
+            IssueStatus::Cancelled,
+        ],
+        IssueStatus::InProgress => &[
+            IssueStatus::Todo,
+            IssueStatus::Blocked,
+            IssueStatus::Cancelled,
+        ],
+        IssueStatus::InReview => &[IssueStatus::Done, IssueStatus::Cancelled],
+        IssueStatus::Blocked => &[IssueStatus::InProgress, IssueStatus::Cancelled],
+        _ => &[],
+    }
+}
+
+/// 看板/详情用的人话:待评审/完成/拒绝,不是内核的「评审中/已完成/已取消」。
+pub fn plan_status_label(s: IssueStatus) -> &'static str {
+    match s {
+        IssueStatus::Backlog => "未排期",
+        IssueStatus::Todo => "待办",
+        IssueStatus::InProgress => "进行中",
+        IssueStatus::InReview => "待评审",
+        IssueStatus::Done => "完成",
+        IssueStatus::Blocked => "阻塞",
+        IssueStatus::Cancelled => "拒绝",
+    }
+}
+
+pub fn status_key(s: IssueStatus) -> &'static str {
+    match s {
+        IssueStatus::Backlog => "backlog",
+        IssueStatus::Todo => "todo",
+        IssueStatus::InProgress => "inprogress",
+        IssueStatus::InReview => "inreview",
+        IssueStatus::Done => "done",
+        IssueStatus::Blocked => "blocked",
+        IssueStatus::Cancelled => "cancelled",
+    }
+}
+
+pub fn status_from_key(k: &str) -> Option<IssueStatus> {
+    Some(match k {
+        "backlog" => IssueStatus::Backlog,
+        "todo" => IssueStatus::Todo,
+        "inprogress" => IssueStatus::InProgress,
+        "inreview" => IssueStatus::InReview,
+        "done" => IssueStatus::Done,
+        "blocked" => IssueStatus::Blocked,
+        "cancelled" => IssueStatus::Cancelled,
+        _ => return None,
+    })
+}
+
+/// 详情下拉和拖拽同一条路:待办→进行中开工,待评审→完成合入,拒绝/阻塞写原因。
+pub fn apply_status_move(
+    card: &CardItemVm,
+    target: IssueStatus,
+    mut start: Signal<Option<IssueId>>,
+    mut pending: Signal<Option<PendingMove>>,
+) {
+    if target == card.status || !allowed_plan_targets(card.status).contains(&target) {
+        return;
+    }
+    if card.status == IssueStatus::Todo && target == IssueStatus::InProgress {
+        start.set(Some(card.id));
+        return;
+    }
+    pending.set(Some(move_to(card, target)));
+}
+
+/// 当前段决定落点状态:已完成列切到「拒绝」= Cancelled,不是列头那个 Done。
+fn drop_target_status(col: IssueStatus, seg: &str) -> IssueStatus {
+    match seg {
+        "cancelled" => IssueStatus::Cancelled,
+        "done" => IssueStatus::Done,
+        "blocked" => IssueStatus::Blocked,
+        "review" => IssueStatus::InReview,
+        "unassigned" => IssueStatus::Backlog,
+        "assigned" => IssueStatus::Todo,
+        "doing" => IssueStatus::InProgress,
+        _ => col,
+    }
+}
+
+fn apply_drop(
+    card: &CardItemVm,
+    col_status: IssueStatus,
+    drop_seg: &str,
+    start: Signal<Option<IssueId>>,
+    pending: Signal<Option<PendingMove>>,
+    mut schedule: Signal<Option<PendingSchedule>>,
+) {
+    // 未排期拖到已排期 → 排期弹窗(改标签,不改状态)
+    if drop_seg == "assigned"
+        && card.week_of.is_empty()
+        && card.plan_version.is_empty()
+        && matches!(card.status, IssueStatus::Backlog | IssueStatus::Todo)
+    {
+        schedule.set(Some(PendingSchedule {
+            id: card.id,
+            title: card.title.clone(),
+        }));
+        return;
+    }
+
+    apply_status_move(card, drop_target_status(col_status, drop_seg), start, pending);
+}
+
+fn move_to(card: &CardItemVm, to: IssueStatus) -> PendingMove {
+    PendingMove {
+        id: card.id,
+        title: card.title.clone(),
+        from: card.status,
+        to,
+        pr_number: card.pr_number,
+        has_open_mr: card.has_open_mr,
     }
 }
 
