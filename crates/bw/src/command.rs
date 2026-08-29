@@ -176,10 +176,6 @@ pub enum Command {
     /// 一改牵着走(不然改一下根目录,已有项目就集体找不到仓了)。
     SetWorkspacesRoot { path: String },
 
-    // ── 通知 ──────────────────────────────────────────────
-    /// 记「这个项目的事件流看到哪个时间点」。只影响视觉状态,不参与待处理计数。
-    MarkNotifySeen { project_id: ProjectId, at: i64 },
-
     /// 定时的一跳。**只会自动建活,绝不自动完成活**——到点了就查本周有没有
     /// 那张资产盘点活,没有就建一张并自动开工。没到点、已经有了,都是原地
     /// 返回空事件,不是错误。
@@ -420,9 +416,6 @@ pub enum Event {
         name: String,
         day: String,
         value: String,
-    },
-    NotifySeenMarked {
-        project_id: ProjectId,
     },
     /// 项目健康算完了一次。灯与理由都是现算出来的,库里那两列只是显示缓存。
     HealthDerived {

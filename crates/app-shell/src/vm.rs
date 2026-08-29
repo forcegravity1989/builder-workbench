@@ -188,8 +188,6 @@ pub struct ProjectVm {
     /// 会话屏「看看喂了什么」面板的内容。`None` = 面板关着。**这是开工时真会
     /// 送给 agent 的那份系统提示词**,和真开工算的是同一份,不是示意。
     pub briefing: Option<String>,
-    /// 计划屏右侧详情抽屉开着哪张活。通知点「去看这张活」也是设这个。
-    pub selected_issue: Option<IssueId>,
     /// MR / PR 网页地址的前缀,后面直接拼号码(`.../pull/` 或 codehub 的
     /// `.../-/merge_requests/`)。**按 provider 拼**,不是从 `.git/config` 的
     /// origin 推 —— codehub clone 走 SSH,origin 里是 SSH 主机加端口,拿它当
@@ -509,34 +507,11 @@ pub struct ChangedFileVm {
 
 #[derive(Clone, Debug, Default, PartialEq)]
 pub struct NotifyVm {
-    /// **通知只有一类:有 MR 等你合入。**
-    ///
-    /// 试点第一天定的边界:通知就该是「有件事非你不可、而且现在就能做」。
-    /// 「活阻塞了」「agent 停下来等你回话」这些是**状态**,该在计划屏和会话屏
-    /// 上看见,不该也来占通知位 —— 尤其「等你回话」那种,真要提醒也该是系统级
-    /// 的弹窗,不是一个你得先点进来才看得到的列表。那些等实践清楚了再单独设计,
-    /// 现在不摆冗余的位。
-    pub to_merge: Vec<CardItemVm>,
-    pub seen_at: Option<i64>,
-    /// 还没看过的动静有几件。**和项目墙卡片上那个 ⚑ 是同一个定义**,也和上面
-    /// 那一类同口径:评审中、有 MR、更新时间晚于「读到这里」。点过「读到这里」
-    /// 之后它会掉到 0,而不是永远亮着。
+    /// 还没看的动静有几件 = 评审中的活张数(现算,不靠「读到哪个时间点」的
+    /// 账本)。项目墙卡片上的 ⚑ 和项目轨头部徽章读它。**通知页签已删**(见
+    /// ADR-0002),个人提醒改走 OS 弹窗(后建);这个数先撑着「有几张等你
+    /// 合入」,弹窗到位后它的角色再看。
     pub unread: u32,
-    /// 事件流。**没有事件表** —— 这条流是从四张表里现算出来的:活什么时候建
-    /// 的、什么时候结清的、会话什么时候开的。存不下来的事(比如某次运行失败)
-    /// 就不在流里,不补一条假的。
-    pub events: Vec<NotifyEventVm>,
-}
-
-#[derive(Clone, Debug, Default, PartialEq)]
-pub struct NotifyEventVm {
-    /// 本机时区的「MM-DD HH:MM」。
-    pub time: String,
-    pub text: String,
-    /// 点它跳到哪张活。`None` = 不可点。
-    pub issue: Option<IssueId>,
-    /// 这件事后来被处理掉了(活已完成)。
-    pub done: bool,
 }
 
 #[derive(Clone, Debug, Default, PartialEq)]

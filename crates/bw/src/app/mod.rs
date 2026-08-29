@@ -365,16 +365,6 @@ impl App {
         Ok(Settings::set_workspaces_root(&self.asset_root, path)?)
     }
 
-    // ── 通知屏已读(替代 store.meta notify_seen:*)────────────────────
-
-    pub async fn notify_seen(&self, id: ProjectId) -> Option<i64> {
-        ProjectRegistry::get_notify_seen(&self.asset_root, id)
-    }
-
-    pub(crate) async fn set_notify_seen(&self, id: ProjectId, at: i64) -> Result<()> {
-        Ok(ProjectRegistry::set_notify_seen(&self.asset_root, id, at)?)
-    }
-
     // ── 会话(替代 store.conversation_*)────────────────────────────────
 
     pub async fn conversation_for_issue(
@@ -525,9 +515,6 @@ impl App {
                     .await
             }
             Command::ProbeTool { name } => self.probe_tool(name).await,
-            Command::MarkNotifySeen { project_id, at } => {
-                self.mark_notify_seen(project_id, at).await
-            }
             Command::PullWorkspace { project_id } => self.pull_workspace(project_id).await,
             Command::TickScheduler { project_id } => self.tick_scheduler(project_id).await,
             Command::MergeAndSettle { id } => self.merge_and_settle(id).await,

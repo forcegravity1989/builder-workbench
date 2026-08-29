@@ -662,25 +662,22 @@ fn chat_group(chat: Option<&project_file::ChatConfig>) -> String {
         .unwrap_or_else(|| "—".into())
 }
 
-/// 同步哪些事件。`notify` 没写 = 用默认三件;写成空列表 = 明确要求安静。
+/// 同步哪些事件。`notify` 没写 = 用默认五件;写成空列表 = 明确要求安静。
+/// 顺序按 [`bw::chat::NotifyEvent::ALL`],稳定不跳。
 fn chat_events(chat: Option<&project_file::ChatConfig>) -> Vec<(String, bool)> {
+    use bw::chat::NotifyEvent;
     let on: Vec<String> = match chat {
         None => return Vec::new(),
         Some(c) => c.notify.clone().unwrap_or_else(|| {
-            bw::chat::DEFAULT_NOTIFY
+            NotifyEvent::ALL
                 .iter()
-                .map(|s| s.to_string())
+                .map(|e| e.key().to_string())
                 .collect()
         }),
     };
-    bw::chat::DEFAULT_NOTIFY
+    NotifyEvent::ALL
         .iter()
-        .map(|e| {
-            (
-                bw::chat::event_label(e).to_string(),
-                on.iter().any(|x| x == e),
-            )
-        })
+        .map(|e| (e.label().to_string(), on.iter().any(|x| x == e.key())))
         .collect()
 }
 
@@ -694,11 +691,11 @@ fn chat_label(ws: &Path) -> String {
     else {
         return "—(没配项目群。配了就在 .bw/project.toml 里加一段 [chat])".into();
     };
-    // 整行没写 = 默认那三样;写了空数组 = 静音,如实说「一件都不发」。
+    // 整行没写 = 默认那五样;写了空数组 = 静音,如实说「一件都不发」。
     let notify = match &cfg.notify {
-        None => bw::chat::DEFAULT_NOTIFY
+        None => bw::chat::NotifyEvent::ALL
             .iter()
-            .map(|e| bw::chat::event_label(e))
+            .map(|e| e.label())
             .collect::<Vec<_>>()
             .join(" / "),
         Some(list) if list.is_empty() => "一件都不发(静音)".to_string(),

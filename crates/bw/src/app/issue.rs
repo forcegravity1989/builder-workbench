@@ -44,10 +44,29 @@ impl App {
         let extra_refs: Vec<&str> = extra.iter().map(String::as_str).collect();
         let issue =
             issue_store::create(self, &project, &title, &body, kind, &week_of, &extra_refs).await?;
-        Ok(vec![Event::IssueCreated {
+        let mut events = vec![Event::IssueCreated {
             id: issue.id,
             number: issue.number,
-        }])
+        }];
+        // 新建活并临时纳入本周 → 发群通知(版本计划那件由 start_week_planning 单独
+        // 发,不在这里重复;运作活是 buddy 内部,不发)。
+        if !week_of.is_empty() && kind != IssueKind::Ops {
+            let ev = crate::chat::NotifyEvent::IssueCreated;
+            let text = crate::chat::notify_text(
+                ev.key(),
+                issue.number,
+                &title,
+                "",
+                &format!("纳入本周 {week_of}"),
+            );
+            if let Some(e) = self
+                .chat_send(project_id, ev.key(), issue.number, text)
+                .await
+            {
+                events.push(e);
+            }
+        }
+        Ok(events)
     }
 
     /// 唯一的干活入口。
@@ -208,16 +227,13 @@ impl App {
                 // 最远到「评审中」。这一步不是人点的,所以到此为止。
                 let project = self.project_of(issue.project_id).await?;
                 issue_store::set_status(self, &project, id.iid(), IssueStatus::InReview).await?;
-                let mut events = vec![Event::IssueRan {
+                let events = vec![Event::IssueRan {
                     id,
                     ok: true,
                     summary: o.summary,
                     tool: issue.tool.clone(),
                     embed_url: String::new(),
                 }];
-                if let Some(e) = self.chat_notify_issue(id, "review", 0).await {
-                    events.push(e);
-                }
                 Ok(events)
             }
             Ok(o) => Ok(vec![Event::IssueRan {
@@ -344,12 +360,7 @@ impl App {
         if settled {
             self.cleanup_issue_worktree(&issue).await;
         }
-        let mut events = vec![Event::IssueTransitioned { id, to, settled }];
-        if to == IssueStatus::InReview {
-            if let Some(e) = self.chat_notify_issue(id, "review", 0).await {
-                events.push(e);
-            }
-        }
+        let events = vec![Event::IssueTransitioned { id, to, settled }];
         Ok(events)
     }
 
