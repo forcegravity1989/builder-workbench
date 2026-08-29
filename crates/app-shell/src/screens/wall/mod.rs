@@ -190,7 +190,7 @@ fn project_card(
                 }
                 span { class: "chip", "{p.week}" }
                 if p.unread > 0 {
-                    span { class: "chip chip-clay", title: "评审中或阻塞、你还没在通知屏看过的活", "⚑ {p.unread}" }
+                    span { class: "chip chip-clay", title: "评审中的活有几张等你合入", "⚑ {p.unread}" }
                 }
                 span { style: "margin-left:auto;" }
                 {light_dot(p.signal, true)}

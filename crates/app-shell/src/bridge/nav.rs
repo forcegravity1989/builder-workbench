@@ -11,7 +11,6 @@ pub enum Panel {
     Overview,
     Plan,
     Session,
-    Notify,
     Config,
     Kb,
 }
@@ -22,7 +21,6 @@ impl Panel {
             "overview" => Panel::Overview,
             "plan" => Panel::Plan,
             "session" => Panel::Session,
-            "notify" => Panel::Notify,
             "config" => Panel::Config,
             "kb" => Panel::Kb,
             _ => return None,
@@ -34,17 +32,15 @@ impl Panel {
             Panel::Overview => "总览",
             Panel::Plan => "计划",
             Panel::Session => "会话",
-            Panel::Notify => "通知",
             Panel::Config => "配置",
             Panel::Kb => "知识库",
         }
     }
 
-    pub const ALL: [Panel; 6] = [
+    pub const ALL: [Panel; 5] = [
         Panel::Overview,
         Panel::Plan,
         Panel::Session,
-        Panel::Notify,
         Panel::Config,
         Panel::Kb,
     ];

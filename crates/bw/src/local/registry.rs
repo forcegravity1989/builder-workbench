@@ -17,8 +17,8 @@ fn now_ts() -> i64 {
 /// 注册表文件名。
 const FILENAME: &str = "projects.toml";
 
-/// 一条项目注册项。比 [`Project`] 多两个本机字段:`notify_seen`(通知屏
-/// 「读到哪了」)和 `cron_enabled`(定时到点要不要建活,缺省 true)。
+/// 一条项目注册项。比 [`Project`] 多一个本机字段:`cron_enabled`(定时到点
+/// 要不要建活,缺省 true)。
 #[derive(Clone, Debug, serde::Serialize, serde::Deserialize)]
 pub struct ProjectEntry {
     pub id: ProjectId,
@@ -41,9 +41,6 @@ pub struct ProjectEntry {
     pub created_at: i64,
     #[serde(default)]
     pub updated_at: i64,
-    /// 通知屏「事件流读到哪个时间点」。`None` = 还没读过。
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub notify_seen: Option<i64>,
     /// 定时到点要不要自动建运作活②。缺省 true。
     #[serde(default = "default_true")]
     pub cron_enabled: bool,
@@ -69,7 +66,6 @@ impl From<&Project> for ProjectEntry {
             sort_order: p.sort_order,
             created_at: p.created_at,
             updated_at: p.updated_at,
-            notify_seen: None,
             cron_enabled: true,
         }
     }
@@ -265,25 +261,5 @@ impl ProjectRegistry {
             }
         }
         Self::save(asset_root, &entries)
-    }
-
-    /// 写通知屏「读到哪了」。
-    pub fn set_notify_seen(asset_root: &Path, id: ProjectId, at: i64) -> Result<(), RepoFileError> {
-        let mut entries = Self::load(asset_root)?;
-        for e in entries.iter_mut() {
-            if e.id == id {
-                e.notify_seen = Some(at);
-                break;
-            }
-        }
-        Self::save(asset_root, &entries)
-    }
-
-    /// 读通知屏「读到哪了」。
-    pub fn get_notify_seen(asset_root: &Path, id: ProjectId) -> Option<i64> {
-        Self::find_by_id(asset_root, id)
-            .ok()
-            .flatten()
-            .and_then(|e| e.notify_seen)
     }
 }

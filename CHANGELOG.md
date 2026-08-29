@@ -6,13 +6,25 @@
 
 ## 最近 · 2026-08-29
 
-会话屏嵌 Orca 走 iframe(和 Open Design 同一条路)。新版 Orca SPA boot 调 `crypto.randomUUID()`,要 Secure Context;父页 `http://dioxus.index.html` 默认不算 secure,子 iframe 跟着白。Windows 主 WebView 用 `with_windows_browser_args` 把该 origin 当 secure 对待,并关 `LocalNetworkAccessChecks`(iframe 嵌 loopback);不走 `WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS`(wry 显式默认 args 会盖掉 env)。开工仍走本地 pipe。网页跟随是 Orca 内核(源码已人眼过、官方包未带);官方包也能开工,嵌页不自动落到那条会话。Orca 网页地址存本机 `settings.toml`(设置屏可改,带 token 不进仓 / Event / 日志;`BW_ORCA_WEB_URL` 仍可覆盖);配置屏 Cursor 放开可选(底座已通 `cursor-agent`,探不到如实报错不退回 Claude)。去会话打 ensure 时 `request_id` 用毫秒时间戳乘常数在 debug 下 `u64` 溢出、内核线程崩——改 `wrapping_mul`。会话屏去掉 1600px 上限,最大化右侧能撑满。`createAgentSession` 的 `clientOperationId` 用 Orca 规定形状(13 位毫秒 + `-` + 32 hex;以前误填 RPC 帧 id 会被 `agent_session_operation_invalid` 拒,工作树开了但 Claude 会话建不出)。`#pairing=` 搬成 `?pairing=`(Orca 两边都认,只搬家不 mint code)。create/ensure 失败把 Orca 的 error code 露进 `IssueRan.summary` 和 stderr(method + code + runtimeId + pid + worktree,不带 token / pairing);点有会话行的活接回时 sid 空也走 reopen、从 worktree 的 Claude jsonl 收(收不到不编)。`createAgentSession` 的 Cursor 预设名是 `cursor` 不是二进制名 `cursor-agent`(后者 Zod 直接 `Unknown agent preset`,进程都不起)。**去会话以切树为准**:一律 `worktree.activate`(12s),有 Claude session id 再短等 ensure(4s);ensure 失败或超时不算跳失败——树上有几扇窗、是否落到 issue 那条是其次。▶开工 接回上一场仍走 ensure(Claude)/activate(Cursor)。Cursor 开工不再空等 Claude jsonl。
+会话屏嵌 Orca 走 iframe(和 Open Design 同路):新版 Orca SPA boot 调 `crypto.randomUUID()` 要 Secure Context,Windows 主 WebView 用 `with_windows_browser_args` 把 `http://dioxus.index.html` 当 secure + 关 `LocalNetworkAccessChecks`。开工走本地 pipe;`createAgentSession` 的 `clientOperationId` 用 Orca 规定形状(13 位毫秒-32 hex,误填 RPC 帧 id 会被 `agent_session_operation_invalid` 拒),Cursor 预设名是 `cursor`(不是 `cursor-agent`)。去会话以切树为准:一律 `worktree.activate`(12s),有 Claude session id 再短等 ensure(4s),失败不算跳失败;▶开工 接回走 ensure(Claude)/activate(Cursor)。`#pairing=` 搬成 `?pairing=`(只搬家不 mint code);Orca 网页地址存本机 `settings.toml`(带 token 不进仓/Event/日志,`BW_ORCA_WEB_URL` 可覆盖);create/ensure 失败把 error code 露进 `IssueRan.summary` 与 stderr(不带 token)。修 `request_id` debug 下 `u64` 溢出→`wrapping_mul`;会话屏去掉 1600px 上限。
+
+通知模块整改(#18):群通知从自由字符串重做成固定枚举事件注册表 `NotifyEvent`(本周版本计划 / 新建活纳入本周 / PR 合入 / 发版 / 周报)。`review`(进评审)移除。删通知页签整片(`screens/notify/`、`Panel::Notify`、`BW_PANEL=notify` 深链等全清)。决策见 `docs/adr/0002-通知模块整改-事件注册表与删页签.md`。
 
 ## 最近 · 2026-08-28
 
 会话屏改嵌 Orca(仍在 `pierce/orca-session`)。人改口:会话屏只留 Orca / Open Design 两个组件,动作条和灌词条不要(开工在计划屏拖进进行中;停止/MR/评审/删会话不在这屏;buddy 不知 Orca 里当前哪条会话)。pipe 开工与 iframe 配对是两件事。先用安装版 Orca 验,web 地址用进程环境 `BW_ORCA_WEB_URL`,不建设置页。同一张活再开工接回上一场(从本机 Claude jsonl 收 session id,不编)。启动时设 `BW_ORCA_WEB_URL` 会话屏就能接到网页地址(不再先要求 pipe 连上)。
 
 计划屏操作卡顿(#16):纯导航(切周 / 点总览 / 选卡片看详情 / 切页签 / 展开目录 / 后台采回发)走快路径,复用上次 gather、不重跑 git 子进程 / 远端 / OD 探活;真命令、换项目、刷新、`SelectSession` 仍走全量。`build()` 拆成 `gather`(贵、数据变更时跑)+ `assemble`(便宜、每次跑)。顺带去掉三处重复:`probe_env` 每重建跑两遍 → 探一次;打开项目 `app.issues` 拉两遍 → 拉一次;`build_ops` 的 `git::path_in_head` 跑两遍 → 算一次传参。决策见 [`docs/adr/0002`](docs/adr/0002-导航快路径-gather缓存.md),是 [ADR 0001](docs/adr/0001-codehub-issue-正本-本地零库.md)「优化(本地只读缓存、失效策略)留后续」那条的落地。
+
+## 最近 · 2026-08-28(#23 源码同步)
+
+**新增/优化** · 按 `docs/hifi/plan-23.html`(定稿高保真)把计划页整改落到源码,跨 bw + bw-engine + app-shell 三 crate。看板七列合并为四列(待办/进行中/待处理/已完成),两段列加子标题 tab(默认显示第一段,点切第二段);卡面重做(编号 + CodeHub 徽 + 标题 + 正文预览 + 计划位置 + 责任人头像 + 更新时间),删卡面开工按钮(入口移详情弹窗);详情从右侧抽屉改屏幕居中弹窗,字段精简(留标题/正文/链接/类别/计划/负责人,删 状态/工具/workflow/种类/来源/版本/指标/结清/分支/蒸馏);新增列表视图(预设 开放/分配我的/我的 + 计划/阶段下拉 + 搜索 + 行操作 schedule/Start/Open/Complete/Cancel);弹窗:新建issue(含负责人)、创建版本、排期(拖未排期→已排期)、Start(只读确认即 RunIssue)。左栏删除,改为右上角下拉视图切换(全部issue/各周/各版本)。
+
+**新概念落内核**:`Issue` 加 `assignee`/`author`/`plan_version` 字段;`RemoteIssue` 透传 assignee/author;新命令 `SetIssueAssignee`/`CreatePlanVersion`/`ScheduleToPlan`/`EditIssue`;`build_board` 七列改四合并列;`CardItemVm` 加 assignee/author/plan_version/updated_at,`ProjectVm` 加 `plan_versions`/`current_user`/`viewing_plan`。
+
+## 最近 · 2026-08-28
+
+**优化** · 计划页独立高保真(`docs/hifi/plan-23.html`)视觉规范对齐 Builder design system(Claude 板)与 ADE 资源视觉调性。配色 token 全量切到 Builder Claude ramp(ivory `#faf9f5` 底 + 赭土 `#d97757` accent + slate `#4c73a5` 次声 + 暖色 status 三元组),衬线标题改系统无衬线栈(weight 600)、`--font-mono` 留给编号/计数。按设计原则整改结构:卡片重阴影改 hairline、看板列走 surface 底且不再嵌套卡片、卡片左色条装饰改 `.status-dot` 语义(todo/progress/review/done/blocked)、方角 chip 改 999px pill(`.tag` + 语义变体)、列表行对齐 `.list-row`(mono 编号左 + meta 右)、弹窗对齐 `.dialog` floating elevation、`:focus-visible` accent 描边、hover 走 ink tint。unicode 字符导航(✓▢⚑☰⚙)换 Lucide SVG(stroke 2,16px),加 `icon()` 帮助器与静态 `data-icon` 注水。JS 数据/状态机/事件逻辑原样保留,仅重写模板与样式块。涉及文件:`docs/hifi/plan-23.html`。
 
 ## 最近 · 2026-08-27
 

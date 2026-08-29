@@ -59,6 +59,8 @@ pub enum Req {
     Open(Option<ProjectId>),
     /// 计划屏切到看某一周。
     ViewWeek(String),
+    /// 计划屏切到看某个自定义版本(计划包)。
+    ViewPlan(String),
     /// 计划屏左栏点「全部」/ 点回某一周。
     ViewAll(bool),
     /// 知识库屏打开某份文档。
@@ -67,9 +69,6 @@ pub enum Req {
     DropDrafts,
     /// 会话屏:选中哪个会话 / 切页签。全是纯导航,一律不进库。
     SelectSession(Option<bw::model::IssueId>),
-    /// 计划屏右侧详情抽屉开着哪张活。**通知点过去也走这条** —— 通知只负责
-    /// 「告诉你有 MR 等着」,看活、看会话、看 MR 都在活的详情里,不在通知里。
-    SelectIssue(Option<bw::model::IssueId>),
     SessionTab(crate::vm::SessionTab),
     /// 知识库屏切页签。代码图与资产两个页签**切过去那一刻现跑一次**
     /// (起 codegraph 子进程、走 `git log`、采仓统计),结果留到下次再点。
@@ -132,6 +131,7 @@ pub enum Req {
     /// 重新算一遍并推一份新的 ViewModel。
     Refresh,
     /// 配置屏亮某一行技能(从活上的 workflow 跳过来)。
+    #[allow(dead_code)]
     FocusSkill(String),
 }
 
@@ -445,7 +445,6 @@ pub fn spawn(deep_link: DeepLink) -> Bridge {
                 let mut ui = vm_build::UiState {
                     open: None,
                     session_open: None,
-                    selected_issue: None,
                     session_tab: crate::vm::SessionTab::default(),
                     kb_tab: crate::vm::KbTab::default(),
                     kb_codegraph: None,
@@ -454,6 +453,7 @@ pub fn spawn(deep_link: DeepLink) -> Bridge {
                     metrics: Vec::new(),
                     focus_skill: String::new(),
                     viewing_week: bw::isoweek::current_week(),
+                    viewing_plan: String::new(),
                     view_all: false,
                     open_doc: None,
                     note: None,
@@ -488,7 +488,7 @@ pub fn spawn(deep_link: DeepLink) -> Bridge {
                 }
 
                 let mut last_gather = vm_build::gather(&app, &mut ui).await;
-                let mut vm = vm_build::assemble(&mut ui, &last_gather);
+                let mut vm = vm_build::assemble(&app, &mut ui, &last_gather).await;
                 eprintln!("[BW_BOOT] projects={} assets={}", vm.projects.len(), assets.display());
                 // 环境条的探活结果也打出来 —— 它说「找不到 claude」的时候,人
                 // 得能在终端里拿 `which claude` 当场对。2026-08-20 就栽在这上面:
@@ -503,22 +503,16 @@ pub fn spawn(deep_link: DeepLink) -> Bridge {
                 }
                 // 打开了项目就把这一份 ViewModel 的关键计数打出来 —— 这些数
                 // 都能用 codehub-cli/gh/git/cat 当场对(活 = codehub issue、
-                // 会话 = session.jsonl、事件 = notify、周 = issue 的 bw:week 标签),
-                // 比截图硬。
+                // 会话 = session.jsonl、周 = issue 的 bw:week 标签),比截图硬。
                 if let Some(o) = &vm.open {
                     eprintln!(
-                        "[BW_VM] project={} 活={} 会话={} 事件={} 周={} 等你合入={} 技能={}",
+                        "[BW_VM] project={} 活={} 会话={} 周={} 技能={}",
                         o.slug,
                         o.board.columns.iter().map(|c| c.cards.len()).sum::<usize>(),
                         o.sessions.len(),
-                        o.notify.events.len(),
                         o.weeks.len(),
-                        o.notify.to_merge.len(),
                         o.config.skills.len(),
                     );
-                    // 事件流最新那一条的时间戳也打出来 —— 它是**本机时区**
-                    // 的实证:能直接和 `date -r <unix>` 对上,对不上就说明
-                    // 时区那条路又退回 UTC 了(见 vm_derive::stamp)。
                     // 总览那条「本周计划进度」的五段。**只认当前周**,与计划屏
                     // 左栏看的是哪一周无关 —— 这一行就是那条纪律的读回。
                     let c = &o.week_counts;
@@ -526,9 +520,6 @@ pub fn spawn(deep_link: DeepLink) -> Bridge {
                         "[BW_VM] 本周{} 待办={} 进行中={} 评审中={} 完成={} 阻塞={}",
                         o.current_week, c.todo, c.doing, c.review, c.done, c.blocked,
                     );
-                    if let Some(e) = o.notify.events.first() {
-                        eprintln!("[BW_VM] 最新事件 {} · {}", e.time, e.text);
-                    }
                     eprintln!(
                         "[BW_VM] 映射={} 定时={} 群={} 指标={} 未读={}",
                         o.config.mappings.len(),
@@ -626,7 +617,7 @@ pub fn spawn(deep_link: DeepLink) -> Bridge {
                             }
                             // 到点可能建活,数据真变了,走全量 gather。
                             last_gather = vm_build::gather(&app, &mut ui).await;
-                            vm = vm_build::assemble(&mut ui, &last_gather);
+                            vm = vm_build::assemble(&app, &mut ui, &last_gather).await;
                             let _ = vm_tx.send(vm.clone());
                             continue;
                         }
@@ -787,21 +778,22 @@ pub fn spawn(deep_link: DeepLink) -> Bridge {
                         }
                         Req::ViewWeek(w) => {
                             ui.viewing_week = w;
+                            ui.viewing_plan = String::new();
                             ui.view_all = false;
                         }
-                        Req::ViewAll(v) => ui.view_all = v,
-                        Req::OpenDoc(p) => ui.open_doc = p,
-                        Req::DropDrafts => ui.pending_drafts = None,
-                        Req::SelectIssue(id) => {
-                            ui.selected_issue = id;
-                            // **顺手切到「全部活」**。这条只有通知屏会发,而通知
-                            // 里那张活很可能没排进正在看的那一周(铺底活就没排
-                            // 周)—— 不切的话看板里根本没有这张卡,详情抽屉找不
-                            // 到它,人点过去看到的是一片空白。
-                            if id.is_some() {
-                                ui.view_all = true;
+                        Req::ViewPlan(p) => {
+                            ui.viewing_plan = p;
+                            ui.viewing_week = String::new();
+                            ui.view_all = false;
+                        }
+                        Req::ViewAll(v) => {
+                            ui.view_all = v;
+                            if v {
+                                ui.viewing_plan = String::new();
                             }
                         }
+                        Req::OpenDoc(p) => ui.open_doc = p,
+                        Req::DropDrafts => ui.pending_drafts = None,
                         Req::SelectSession(id) => {
                             // 点一张有会话行的活 = 去会话:先切到那棵树,有 Claude id 再尽量
                             // 点回那条 tab。没会话行不发(让人点▶开工)。
@@ -1076,7 +1068,7 @@ pub fn spawn(deep_link: DeepLink) -> Bridge {
                     if needs_gather {
                         last_gather = vm_build::gather(&app, &mut ui).await;
                     }
-                    vm = vm_build::assemble(&mut ui, &last_gather);
+                    vm = vm_build::assemble(&app, &mut ui, &last_gather).await;
                     // 刷新的回执在这里补:此刻的 vm 才是「刚读出来的那一份」。
                     if refresh_receipt {
                         refresh_receipt = false;

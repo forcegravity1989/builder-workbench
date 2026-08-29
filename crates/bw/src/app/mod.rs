@@ -340,16 +340,6 @@ impl App {
         Ok(Settings::set_orca_web_url(&self.asset_root, url)?)
     }
 
-    // ── 通知屏已读(替代 store.meta notify_seen:*)────────────────────
-
-    pub async fn notify_seen(&self, id: ProjectId) -> Option<i64> {
-        ProjectRegistry::get_notify_seen(&self.asset_root, id)
-    }
-
-    pub(crate) async fn set_notify_seen(&self, id: ProjectId, at: i64) -> Result<()> {
-        Ok(ProjectRegistry::set_notify_seen(&self.asset_root, id, at)?)
-    }
-
     // ── 会话(替代 store.conversation_*)────────────────────────────────
 
     pub async fn conversation_for_issue(
@@ -446,11 +436,26 @@ impl App {
                 kind,
                 origin,
                 week_of,
+                plan,
             } => {
-                self.create_issue(project_id, title, body, category, kind, origin, week_of)
-                    .await
+                self.create_issue(
+                    project_id, title, body, category, kind, origin, week_of, plan,
+                )
+                .await
             }
             Command::ScheduleIssue { id, week_of } => self.schedule_issue(id, week_of).await,
+            Command::ScheduleToPlan { id, plan } => self.schedule_to_plan(id, plan).await,
+            Command::CreatePlanVersion {
+                project_id,
+                name,
+                start,
+                due,
+                note,
+                included,
+            } => {
+                self.create_plan_version(project_id, name, start, due, note, included)
+                    .await
+            }
             Command::CutRelease {
                 project_id,
                 version,
@@ -465,6 +470,10 @@ impl App {
             Command::SetIssueCategory { id, category } => {
                 self.set_issue_category(id, category).await
             }
+            Command::SetIssueAssignee { id, assignee } => {
+                self.set_issue_assignee(id, assignee).await
+            }
+            Command::EditIssue { id, title, body } => self.edit_issue(id, title, body).await,
             Command::CancelIssue { id, reason } => self.cancel_issue(id, reason).await,
             Command::DeleteSession { id } => self.delete_session(id).await,
             Command::BlockIssue { id, reason } => self.block_issue(id, reason).await,
@@ -478,9 +487,6 @@ impl App {
                     .await
             }
             Command::ProbeTool { name } => self.probe_tool(name).await,
-            Command::MarkNotifySeen { project_id, at } => {
-                self.mark_notify_seen(project_id, at).await
-            }
             Command::PullWorkspace { project_id } => self.pull_workspace(project_id).await,
             Command::TickScheduler { project_id } => self.tick_scheduler(project_id).await,
             Command::MergeAndSettle { id } => self.merge_and_settle(id).await,

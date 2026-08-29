@@ -10,7 +10,7 @@ use bw::command::Event;
 use bw::model::{IssueKind, IssueStatus, Project, ProjectId};
 use bw::repo::{issue_policy_file, project_file};
 
-use super::vm_derive::{build_card_mr, build_notify_events, build_ops, build_week_counts};
+use super::vm_derive::{build_card_mr, build_ops, build_week_counts};
 use super::vm_kb::build_kb;
 use super::vm_panels::{
     build_board, build_config, build_metrics, build_sessions, build_weeks, build_workbench,
@@ -75,8 +75,6 @@ pub(super) struct ProjectGathered {
     policy: Option<issue_policy_file::IssuePolicyFile>,
     /// 已填好 `pr_number`(`fill_pr_numbers` 跑过、`mr_cache` 跑过)的 issue 列表。
     issues: Vec<bw::Issue>,
-    conversations: Vec<bw::model::Conversation>,
-    notify_seen: Option<i64>,
     /// 会话行。`live` 是采那一刻的(PTY 已封存,恒 false —— 没真进程信号,不假绿)。
     sessions: Vec<SessionVm>,
     releases: Vec<ReleaseVm>,
@@ -115,6 +113,8 @@ pub(super) struct WorkbenchCache {
 pub struct UiState {
     pub open: Option<ProjectId>,
     pub viewing_week: String,
+    /// 看某个自定义版本(计划包)。空 = 不在看版本。
+    pub viewing_plan: String,
     /// 计划屏左栏点的是「全部」。
     pub view_all: bool,
     pub open_doc: Option<String>,
@@ -126,8 +126,6 @@ pub struct UiState {
     pub pending_drafts: Option<(String, Vec<String>)>,
     /// 会话屏选中哪个会话、开着哪个页签。纯导航状态,一律不进库。
     pub session_open: Option<bw::model::IssueId>,
-    /// 计划屏详情抽屉开着哪张活。纯导航状态,不进库。
-    pub selected_issue: Option<bw::model::IssueId>,
     pub session_tab: crate::vm::SessionTab,
     /// 知识库屏在看哪个页签,以及代码图/资产两个页签**上一次点开时**跑出来的
     /// 结果。这两样各要起好几个子进程(codegraph、`git log --name-only`、仓
@@ -375,8 +373,21 @@ fn primary_note(events: &[Event]) -> Option<String> {
         } => format!("记下了 {name} = {value}({day})"),
         Event::ToolMappingSaved { category } => format!("「{}」的映射保存了", category.label()),
         Event::ToolProbed { name, result } => format!("{name} 探活:{result:?}"),
-        Event::NotifySeenMarked { .. } => "通知已读到这里".into(),
         Event::HealthDerived { signal, .. } => format!("健康现算完成:{signal:?}"),
+        Event::IssueScheduledToPlan { plan, .. } => {
+            format!("已排进版本 {plan} —— 正本是 bw:plan 标签,codehub 里程碑同步中")
+        }
+        Event::PlanVersionCreated { name, .. } => {
+            format!("版本 {name} 已建 —— 自定义计划包,和发版号不是一回事")
+        }
+        Event::IssueAssigneeSet { assignee, .. } => {
+            if assignee.is_empty() {
+                "已取消指派 · 已同步到 codehub".into()
+            } else {
+                format!("责任人改为 {assignee} · 已同步到 codehub")
+            }
+        }
+        Event::IssueEdited { .. } => "issue 标题/正文已改 · 已同步到 codehub".into(),
     })
 }
 
@@ -501,9 +512,9 @@ pub async fn gather(app: &App, ui: &mut UiState) -> Gathered {
 /// 换页签)时仍跑 `list_dir` / `changed_files` / `ahead_behind` / `file_diff`
 /// 几个 git——但同代 gather 内键没变就复用缓存,**切周 / 选卡片时不会跑**。
 /// 导航请求只调它。设计见 ADR 0002。
-pub fn assemble(ui: &mut UiState, g: &Gathered) -> Vm {
+pub async fn assemble(app: &App, ui: &mut UiState, g: &Gathered) -> Vm {
     let open = match (&g.open, ui.open) {
-        (Some(pg), Some(_)) => Some(assemble_project(ui, pg, g.gen, &g.env)),
+        (Some(pg), Some(_)) => Some(assemble_project(app, ui, pg, g.gen, &g.env).await),
         _ => None,
     };
     Vm {
@@ -633,7 +644,9 @@ async fn fill_pr_numbers(
                 i.status,
                 IssueStatus::Backlog | IssueStatus::Todo | IssueStatus::InProgress
             );
-        if i.number == 0 || (i.status != IssueStatus::InReview && !card_edit) {
+        if i.number == 0
+            || (i.status != IssueStatus::InReview && i.status != IssueStatus::Done && !card_edit)
+        {
             continue;
         }
         if let Some(&pr) = mr_cache.get(&i.id) {
@@ -641,10 +654,18 @@ async fn fill_pr_numbers(
             continue;
         }
         let branch = bw_engine::github::issue_branch(i.number);
-        let pr = match remote.open_mr_for_branch(&branch).await {
-            Ok(Some(n)) => n,
-            // 查不成 / 没开着的 MR —— 0,不显 MR(如实,不假装)。
-            _ => 0,
+        // InReview 查 open MR;Done 查 all(含合入)——合入的 MR 用
+        // open_mr_for_branch 查不到。
+        let pr = if i.status == IssueStatus::Done {
+            match remote.mr_for_branch(&branch).await {
+                Ok(Some(n)) => n,
+                _ => 0,
+            }
+        } else {
+            match remote.open_mr_for_branch(&branch).await {
+                Ok(Some(n)) => n,
+                _ => 0,
+            }
         };
         i.pr_number = pr;
         mr_cache.insert(i.id, pr);
@@ -678,9 +699,6 @@ async fn gather_project(
     // 通知「待合入」/ 详情 MR 卡 / 总览名片 MR 才看得到号;查过一次缓存到
     // ui.mr_cache,每重拼一次 ViewModel 不重打 codehub-cli/gh。
     fill_pr_numbers(&p, &mut issues, &mut ui.mr_cache).await;
-    let conversations = app.conversations(id).await.unwrap_or_default();
-    // 「读到这里」是哪一刻。通知屏和项目轨的红点用的是同一个值,读一次就够。
-    let notify_seen: Option<i64> = app.notify_seen(id).await;
     let sessions = build_sessions(app, id, &issues).await;
     // 详情抽屉里那两条链接的前缀。**按 provider 拼**(库里那三个远端字段),
     // 不从 `origin` 推 —— codehub clone 走 SSH,origin 里是 SSH 主机加端口。
@@ -733,8 +751,6 @@ async fn gather_project(
         file,
         policy,
         issues,
-        conversations,
-        notify_seen,
         sessions,
         releases,
         health: HealthVm {
@@ -748,6 +764,7 @@ async fn gather_project(
         ops3_landed,
         week_goals,
         current_week: current_week.to_string(),
+
         mr_url_prefix,
         issue_url_prefix,
         week_started,
@@ -758,7 +775,8 @@ async fn gather_project(
 /// 从 [`ProjectGathered`] + 视图字段现切 `ProjectVm`。不起 git 子进程
 /// (`ops3_landed` 已采)、不重探 OD(`env` 已采)。会话工作台用键缓存住,
 /// 切周 / 选卡片时会话字段没变就直接复用。见 [`assemble`]。
-fn assemble_project(
+async fn assemble_project(
+    app: &App,
     ui: &mut UiState,
     pg: &ProjectGathered,
     gen: u64,
@@ -770,10 +788,15 @@ fn assemble_project(
     } else {
         ui.viewing_week.clone()
     };
-    let week = if ui.view_all {
+    let week = if ui.view_all || !ui.viewing_plan.is_empty() {
         None
     } else {
         Some(viewing_week.as_str())
+    };
+    let plan = if !ui.viewing_plan.is_empty() {
+        Some(ui.viewing_plan.as_str())
+    } else {
+        None
     };
     // 指标读数按正在看的那一周现读(本机 jsonl,便宜)。
     let readings = bw::app::read_metric_readings(&pg.ws, &viewing_week);
@@ -842,8 +865,11 @@ fn assemble_project(
         weeks: build_weeks(&pg.issues, &pg.current_week, &pg.week_goals),
         current_week: pg.current_week.clone(),
         viewing_week: viewing_week.clone(),
+        viewing_plan: ui.viewing_plan.clone(),
         view_all: ui.view_all,
-        board: build_board(&pg.issues, week, pg.policy.as_ref()),
+        board: build_board(&pg.issues, week, plan, pg.policy.as_ref()),
+        plan_versions: build_plan_versions(app, &pg.project, &pg.issues).await,
+        current_user: current_user(app, &pg.project).await,
         // 两份计数,各有各的归属:总览那块标题写着「本周」,就只能是本周;
         // 计划屏的进度条画在它正在看的那个看板上面,就跟着看板的范围走。
         week_counts: build_week_counts(&pg.issues, Some(pg.current_week.as_str())),
@@ -860,21 +886,12 @@ fn assemble_project(
         releases: pg.releases.clone(),
         sessions: sessions.clone(),
         session_open: ui.session_open,
-        selected_issue: ui.selected_issue,
         mr_url_prefix: pg.mr_url_prefix.clone(),
         issue_url_prefix: pg.issue_url_prefix.clone(),
         workbench,
         notify: NotifyVm {
-            // 评审中 **且真有 MR**。没 MR 的评审中活不是通知 —— 它在计划屏的
-            // 评审中那一列里,人在那儿点完成。
-            to_merge: pg
-                .issues
-                .iter()
-                .filter(|i| i.status == IssueStatus::InReview && i.pr_number > 0)
-                .map(card_item)
-                .collect(),
-            seen_at: pg.notify_seen,
-            events: build_notify_events(&pg.issues, &pg.conversations),
+            // 评审中的活张数,现算。项目墙 ⚾ 与项目轨头部徽章读它。通知页签已删
+            // (ADR-0002),事件流/等你合入列表不再进 ViewModel。
             unread: bw::app::count_unseen(&pg.issues),
         },
         config: {
@@ -905,6 +922,61 @@ pub(super) fn or_blank(s: &str) -> String {
     }
 }
 
+/// 自定义版本(计划包)列表:扫 issues 的 `plan_version` 字段去重,带计数。
+/// 起止时间暂留空(要读 codehub milestone 列表才有,VM 构建时不起远端调用)。
+/// 当前登录用户名(给列表「我的」筛选用)。读不到返空。
+async fn current_user(app: &App, p: &Project) -> String {
+    match app.remote_for(p) {
+        Ok(r) => r.current_user().await.unwrap_or_default(),
+        Err(_) => String::new(),
+    }
+}
+
+/// 自定义版本(计划包)列表:扫 issues 的 `plan_version` 字段去重 + 读 codehub
+/// milestone 列表(标题非周格式的就是版本)补 start/end,让空版本也能出现。
+async fn build_plan_versions(app: &App, p: &Project, issues: &[bw::Issue]) -> Vec<PlanVersionVm> {
+    let mut counts: std::collections::HashMap<String, u32> = std::collections::HashMap::new();
+    for i in issues {
+        if i.plan_version.is_empty() {
+            continue;
+        }
+        *counts.entry(i.plan_version.clone()).or_default() += 1;
+    }
+    // 从 codehub milestone 列表读版本(标题非周格式),补上 start/end,且让
+    // 没勾 issue 的空版本也能出现。读不到(没挂远端/cli 失败)就只靠 issues 标签。
+    let mut order: Vec<String> = Vec::new();
+    let mut meta: std::collections::HashMap<String, (String, String)> =
+        std::collections::HashMap::new();
+    if let Ok(remote) = app.remote_for(p) {
+        if let Ok(rows) = remote.list_milestones(&p.remote_path).await {
+            for (title, start, due) in rows {
+                if !order.contains(&title) {
+                    order.push(title.clone());
+                }
+                meta.insert(title, (start, due));
+            }
+        }
+    }
+    // issues 里带的版本名也补进 order(防止 milestone 列表读不到时漏掉)
+    for i in issues {
+        if !i.plan_version.is_empty() && !order.contains(&i.plan_version) {
+            order.push(i.plan_version.clone());
+        }
+    }
+    order
+        .into_iter()
+        .map(|name| {
+            let (start, end) = meta.get(&name).cloned().unwrap_or_default();
+            PlanVersionVm {
+                name: name.clone(),
+                start,
+                end,
+                issue_count: counts.remove(&name).unwrap_or(0),
+            }
+        })
+        .collect()
+}
+
 pub(super) fn card_item(i: &bw::Issue) -> CardItemVm {
     CardItemVm {
         id: i.id,
@@ -932,6 +1004,14 @@ pub(super) fn card_item(i: &bw::Issue) -> CardItemVm {
         remote_number: i.remote_number,
         branch: i.branch.clone(),
         body: i.body.clone(),
+        assignee: i.assignee.clone(),
+        author: i.author.clone(),
+        plan_version: i.plan_version.clone(),
+        updated_at: if i.updated_at > 0 {
+            i.updated_at
+        } else {
+            i.created_at
+        },
     }
 }
 

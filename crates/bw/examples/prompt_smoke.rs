@@ -88,6 +88,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         created_at: 0,
         updated_at: 0,
         settled_at: None,
+        assignee: String::new(),
+        author: String::new(),
+        plan_version: String::new(),
     };
     let skill = bw::app::skill_pointer(&skills_dir, &issue.workflow).expect("挑不到剧本");
     let prompt_empty = bw::app::agent_system_prompt(&issue, Some(&skill), &[]);

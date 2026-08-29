@@ -91,14 +91,14 @@ struct CardDraft {
     version: String,
     chat_provider: String,
     chat_group: String,
-    notify_review: bool,
-    notify_merged: bool,
-    notify_release: bool,
+    /// 五件群通知事件各开不开,顺序按 [`bw::chat::NotifyEvent::ALL`]。
+    notify: Vec<bool>,
 }
 
 impl CardDraft {
     fn from_project(p: &ProjectVm) -> Self {
         let ev = &p.config.chat_events;
+        // `ev` 为空(没配群)= 默认全开;配了就按表里的勾。
         let on = |i: usize| ev.get(i).map(|(_, o)| *o).unwrap_or(ev.is_empty());
         let provider = if p.config.chat_provider == "未配" {
             String::new()
@@ -117,24 +117,21 @@ impl CardDraft {
             version: p.card.current_version_raw.clone(),
             chat_provider: provider,
             chat_group: group,
-            notify_review: on(0),
-            notify_merged: on(1),
-            notify_release: on(2),
+            notify: bw::chat::NotifyEvent::ALL
+                .iter()
+                .enumerate()
+                .map(|(i, _)| on(i))
+                .collect(),
         }
     }
 
     fn notify_keys(&self) -> Vec<String> {
-        let mut v = Vec::new();
-        if self.notify_review {
-            v.push("review".into());
-        }
-        if self.notify_merged {
-            v.push("merged".into());
-        }
-        if self.notify_release {
-            v.push("release".into());
-        }
-        v
+        bw::chat::NotifyEvent::ALL
+            .iter()
+            .zip(self.notify.iter().chain(std::iter::repeat(&false)))
+            .filter(|(_, on)| **on)
+            .map(|(e, _)| e.key().to_string())
+            .collect()
     }
 }
 
@@ -220,29 +217,19 @@ fn card_and_health(
                         div { class: "formrow",
                             label { class: "label", "同步哪些通知" }
                             div { style: "display:flex;gap:14px;flex-wrap:wrap;font-size:12px;",
-                                label {
-                                    input {
-                                        r#type: "checkbox",
-                                        checked: draft.read().notify_review,
-                                        oninput: move |e| draft.write().notify_review = e.checked(),
+                                for (i, ev) in bw::chat::NotifyEvent::ALL.iter().enumerate() {
+                                    label {
+                                        input {
+                                            r#type: "checkbox",
+                                            checked: draft.read().notify.get(i).copied().unwrap_or(false),
+                                            oninput: move |e| {
+                                                if let Some(slot) = draft.write().notify.get_mut(i) {
+                                                    *slot = e.checked();
+                                                }
+                                            },
+                                        }
+                                        " {ev.label()}"
                                     }
-                                    " 评审中"
-                                }
-                                label {
-                                    input {
-                                        r#type: "checkbox",
-                                        checked: draft.read().notify_merged,
-                                        oninput: move |e| draft.write().notify_merged = e.checked(),
-                                    }
-                                    " 已合入"
-                                }
-                                label {
-                                    input {
-                                        r#type: "checkbox",
-                                        checked: draft.read().notify_release,
-                                        oninput: move |e| draft.write().notify_release = e.checked(),
-                                    }
-                                    " 发版"
                                 }
                             }
                         }
