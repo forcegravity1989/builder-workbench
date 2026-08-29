@@ -432,8 +432,7 @@ pub(super) async fn build_config(
         tools: probe_env().await,
         remote: remote_label(project),
         // ①永远人触发、②永远定时 —— 这两件是代码写死的行为,不是配出来的,
-        // 所以这里直接说人话,不去读文件里的字段(读了也只是显示,改它不会
-        // 改行为:2026-08-29 删掉的 ops1_trigger / ops2_trigger 就是那种假配置)。
+        // 所以这里直接说人话。文件里只有②的时刻是真能配的。
         cadence: policy
             .and_then(|p| p.cadence.clone())
             .map(|c| {
