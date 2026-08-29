@@ -336,6 +336,10 @@ impl App {
         Ok(Settings::set_workspaces_root(&self.asset_root, path)?)
     }
 
+    pub(crate) async fn set_orca_web_url_setting(&self, url: &str) -> Result<()> {
+        Ok(Settings::set_orca_web_url(&self.asset_root, url)?)
+    }
+
     // ── 通知屏已读(替代 store.meta notify_seen:*)────────────────────
 
     pub async fn notify_seen(&self, id: ProjectId) -> Option<i64> {
@@ -456,6 +460,7 @@ impl App {
             Command::RunIssue { id } => self.run_issue(id).await,
             Command::SubmitIssueWork { id } => self.submit_issue_work(id).await,
             Command::SetWorkspacesRoot { path } => self.set_workspaces_root(path).await,
+            Command::SetOrcaWebUrl { url } => self.set_orca_web_url(url).await,
             Command::TransitionIssue { id, to } => self.transition_issue(id, to).await,
             Command::SetIssueCategory { id, category } => {
                 self.set_issue_category(id, category).await

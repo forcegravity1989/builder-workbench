@@ -100,6 +100,8 @@ pub(super) struct WorkbenchKey {
     session_tab: crate::vm::SessionTab,
     od_src: String,
     od_gen: u64,
+    /// Orca 网页地址变了也要重算(会话屏 OrcaView 依赖它)。
+    orca_web_url: String,
 }
 
 pub(super) struct WorkbenchCache {
@@ -144,6 +146,8 @@ pub struct UiState {
     pub focus_skill: String,
     pub data_dir: String,
     pub workspaces_root: String,
+    /// Orca 网页配对 URL(本机设置读出来,带 token)。会话屏所属 wry 窗打开它。
+    pub orca_web_url: String,
     /// 接入屏那份仓列表的状态。**不进库** —— 它是「现在去平台问了一次」的结果,
     /// 关掉接入屏就该忘掉。
     pub repos: crate::vm::RepoPickerVm,
@@ -260,6 +264,8 @@ fn primary_note(events: &[Event]) -> Option<String> {
             };
             format!("工作区根目录改成了 {path}{tail}")
         }
+        // 不带 URL 原文(配对 URL 带 token)。会话屏要重启 buddy 才换地址。
+        Event::OrcaWebUrlChanged => "Orca 网页地址已保存,重启 buddy 后会话屏生效".into(),
         Event::IssueSubmitted {
             branch,
             commits,
@@ -509,6 +515,7 @@ pub fn assemble(ui: &mut UiState, g: &Gathered) -> Vm {
         open,
         settings: SettingsVm {
             workspaces_root: ui.workspaces_root.clone(),
+            orca_web_url: ui.orca_web_url.clone(),
             data_dir: ui.data_dir.clone(),
             claude_binary: g.claude_binary.clone(),
         },
@@ -780,6 +787,7 @@ fn assemble_project(
         session_tab: ui.session_tab,
         od_src: ui.od_src.clone(),
         od_gen: ui.od_gen,
+        orca_web_url: ui.orca_web_url.clone(),
     };
     let hit = ui
         .workbench_cache
@@ -795,6 +803,7 @@ fn assemble_project(
             ui.session_tab,
             &ui.od_src,
             ui.od_gen,
+            &ui.orca_web_url,
         );
         ui.workbench_cache = Some(WorkbenchCache {
             gen,

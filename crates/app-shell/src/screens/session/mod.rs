@@ -49,17 +49,18 @@ fn TabBtn(label: String, tab: SessionTab, cur: SessionTab, bridge: Bridge) -> El
 
 fn mid_body(p: &ProjectVm) -> Element {
     match p.workbench.tab {
-        SessionTab::Orca => rsx! { OrcaView {} },
+        SessionTab::Orca => rsx! { OrcaView { orca_url: p.workbench.orca_web_url.clone() } },
         SessionTab::OpenDesign => rsx! {
             OpenDesignView { src: p.workbench.od_src.clone(), gen: p.workbench.od_gen }
         },
     }
 }
 
-/// Orca 走所属 wry 窗顶级打开 `BW_ORCA_WEB_URL`,不走 iframe。
+/// Orca 走所属 wry 窗顶级打开 pairing URL,不走 iframe。地址来自本机设置
+/// (`settings.toml` 的 `orca_web_url`),`BW_ORCA_WEB_URL` 可覆盖;都只认 loopback。
 #[component]
-fn OrcaView() -> Element {
-    let url = bw_engine::orca::web_embed_url();
+fn OrcaView(orca_url: String) -> Element {
+    let url = bw_engine::orca::web_embed_url(Some(&orca_url));
     let alive = use_hook(|| Rc::new(Cell::new(true)));
     alive.set(true);
     use_drop({

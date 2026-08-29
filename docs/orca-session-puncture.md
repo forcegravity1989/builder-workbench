@@ -1,12 +1,12 @@
 # 会话屏改嵌 Orca — 穿刺正本
 
-> **历史横幅(2026-08-29)**:嵌法的最终口径是**另一扇顶级 wry 窗**(所属窗)顶级打开 pairing URL,对齐中栏格子——不是 iframe、不是同窗子控件。三条死路人逐条对过,锁定在 [`docs/architecture.md`](architecture.md) §3 模块 7「Orca 为什么不是 iframe、也不是同窗子控件」。**下面全文是穿刺史实**(第 2 步当时按 iframe 嵌进中栏讲的,后来否了),只作证据留档,不再作现行嵌法;现行以 architecture 模块 7 为准。
+> **历史横幅(2026-08-29)**:嵌法的最终口径是**另一扇顶级 wry 窗**(所属窗)顶级打开 pairing URL,对齐中栏格子——不是 iframe、不是同窗子控件。三条死路人逐条对过,锁定在 [`docs/architecture.md`](architecture.md) §3 模块 7「Orca 为什么不是 iframe、也不是同窗子控件」。**网页跟随**后来也是 Orca 内核的事:源码桌面+浏览器已人眼过,官方包还没有这刀;buddy 不绕。**下面全文是穿刺史实**(第 2 步当时按 iframe 嵌、且记「桌面跟、网页不跟」),只作证据留档;现行以 architecture 模块 7 为准。
 
 > **30 秒导读**:会话屏改成两个全屏页签:Orca / Open Design。穿刺人眼过,architecture 模块 7 **已锁定**。本文件仍是穿刺证据正本;buddy 改造在同一条 `pierce/orca-session`。另一条 `worktree-orca-adapter` 锁着,不改、不合入。
 
 - 分支:`pierce/orca-session`(从 master `60c0da3` 切)
 - 旅程站:会话屏
-- 状态:**穿刺正式过,进入 buddy 改造。** 跳转/新建/Claude 系统提示词/Cursor 开工均人眼过。网页不跟是 Orca 另窗,不阻塞这边。token / pairing 不入库。
+- 状态:**穿刺正式过,进入 buddy 改造。** 跳转/新建/Claude 系统提示词/Cursor 开工均人眼过。跟随后来在 Orca 源码侧人眼过(官方包未带);buddy 嵌窗正式验未走。token / pairing 不入库。
 - 写代码:会话屏两组件 + `orca` 模块(接口一次定住)+ 新树落到 `.bw/worktrees`。PTY 整包封存 `legacy_pty/`,不删、不开工再调。不碰 `worktree-orca-adapter`。不迁旧平级树。
 - 更新日期:2026-08-28
 

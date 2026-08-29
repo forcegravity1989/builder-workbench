@@ -151,6 +151,10 @@ pub enum Command {
     /// 只影响**之后**接入的项目:已接入的项目行里各自记着自己的仓路径,不会被这
     /// 一改牵着走(不然改一下根目录,已有项目就集体找不到仓了)。
     SetWorkspacesRoot { path: String },
+    /// 改「Orca 网页地址」——会话屏所属 wry 窗打开的那条配对 URL(带 token)。
+    /// **只存本机 `settings.toml`,不进仓** —— 是这台机器看 Orca web 的事。
+    /// `BW_ORCA_WEB_URL` 仍可覆盖(开发期)。空串 = 清掉。
+    SetOrcaWebUrl { url: String },
 
     // ── 通知 ──────────────────────────────────────────────
     /// 记「这个项目的事件流看到哪个时间点」。只影响视觉状态,不参与待处理计数。
@@ -291,6 +295,9 @@ pub enum Event {
         path: String,
         pinned: u32,
     },
+    /// Orca 网页地址改了。**不带 URL 原文**(配对 URL 带 token,不进 Event);
+    /// 壳收到后自己重读本机 `settings.toml` 刷新显示。
+    OrcaWebUrlChanged,
     IssueTransitioned {
         id: IssueId,
         to: IssueStatus,

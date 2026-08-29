@@ -303,9 +303,9 @@ pub(super) async fn build_sessions(
         .collect()
 }
 
-/// 会话屏两个组件要的那点状态:页签 + 开工工具 + OD iframe 的 src/gen。
-/// 两个页签常驻,不依赖「先选中一场会话」——左列表已经删了,没选中也要
-/// 能切 Orca / Open Design,否则点页签会被 `Default` 打回 Orca。
+/// 会话屏两个组件要的那点状态:页签 + 开工工具 + OD iframe 的 src/gen +
+/// Orca 网页地址。两个页签常驻,不依赖「先选中一场会话」——左列表已经删了,
+/// 没选中也要能切 Orca / Open Design,否则点页签会被 `Default` 打回 Orca。
 pub(super) fn build_workbench(
     sessions: &[SessionVm],
     issues: &[bw::Issue],
@@ -313,6 +313,7 @@ pub(super) fn build_workbench(
     tab: SessionTab,
     od_src: &str,
     od_gen: u64,
+    orca_web_url: &str,
 ) -> WorkbenchVm {
     let s = open.and_then(|id| sessions.iter().find(|s| s.issue_id == id));
     let issue = s.and_then(|s| issues.iter().find(|i| i.id == s.issue_id));
@@ -322,6 +323,7 @@ pub(super) fn build_workbench(
         tool,
         od_src: od_src.to_string(),
         od_gen,
+        orca_web_url: orca_web_url.to_string(),
     }
 }
 

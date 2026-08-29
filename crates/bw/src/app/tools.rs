@@ -75,6 +75,16 @@ impl App {
         Ok(vec![Event::WorkspacesRootChanged { path, pinned }])
     }
 
+    /// 改 Orca 网页地址(会话屏所属 wry 窗打开的配对 URL)。只存本机设置,
+    /// 不进仓。loopback 校验在**读侧**(`bw_engine::orca::web_embed_url` 用
+    /// `looks_loopback_http`)——这里存什么不报错,非 loopback 在会话屏被如实
+    /// 滤成空(人贴错看空就知道)。事件不带 URL 原文(配对 URL 带 token)。
+    pub(super) async fn set_orca_web_url(&mut self, url: String) -> Result<Vec<Event>> {
+        let url = url.trim().to_string();
+        self.set_orca_web_url_setting(&url).await?;
+        Ok(vec![Event::OrcaWebUrlChanged])
+    }
+
     pub(super) async fn probe_tool(&mut self, name: String) -> Result<Vec<Event>> {
         let result = probe(&name).await;
         Ok(vec![Event::ToolProbed { name, result }])

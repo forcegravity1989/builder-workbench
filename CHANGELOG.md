@@ -6,7 +6,7 @@
 
 ## 最近 · 2026-08-29
 
-会话屏嵌 Orca:WebView2 的 iframe 不画这张页(浏览器 iframe 能亮,人对过);同窗子 HWND 会被 WebView2 盖住。改成所属 wry 窗顶级打开 pairing URL,对齐中栏格子(不 always-on-top)。根容器钉在窗口上,最大化时中栏和所属窗跟着撑。Open Design 仍 iframe。开工仍走本地 pipe。拆掉 iframe 探针 / 改 hash / 写死配对码那些对照路径。
+会话屏嵌 Orca:WebView2 的 iframe 不画这张页(浏览器 iframe 能亮,人对过);同窗子 HWND 会被 WebView2 盖住。改成所属 wry 窗顶级打开 pairing URL,对齐中栏格子(不 always-on-top)。根容器钉在窗口上,最大化时中栏和所属窗跟着撑。Open Design 仍 iframe。开工仍走本地 pipe。拆掉 iframe 探针 / 改 hash / 写死配对码那些对照路径。网页跟随是 Orca 内核(源码已人眼过、官方包未带);官方包也能开工,嵌页不自动落到那条会话。Orca 网页地址改存本机 `settings.toml`(设置屏可改,带 token 不进仓 / Event / 日志;`BW_ORCA_WEB_URL` 仍可覆盖);配置屏 Cursor 放开可选(底座已通 `cursor-agent`,探不到如实报错不退回 Claude)。
 
 ## 最近 · 2026-08-28
 
