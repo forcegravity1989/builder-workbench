@@ -79,15 +79,11 @@ pub fn fingerprint(bytes: &[u8]) -> String {
     format!("sha256:{:x}", Sha256::digest(bytes))
 }
 
-/// 名片上「规范」那一格要显示的东西。**从这份清单现算,不存第二份**——
-/// 2026-08-29 之前它是 `.bw/config/project.toml` 里一个没人维护的镜像,放几周就
-/// 和真相对不上了。
+/// 名片上「规范」那一格要显示的东西。从这份清单现算,不存第二份。
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub struct LedgerSummary {
-    /// 清单里最低的那个版本。空 = 清单不存在,或者一条记录都没有。
-    ///
-    /// **取最低不取最高**:最高说的是「最近铺过什么」,最低才是「这个项目
-    /// 整体还停在哪一版」——名片要回答的是后者。
+    /// 清单里**最低**的那个版本(最高说的是「最近铺过什么」,不是「还停在
+    /// 哪一版」)。空 = 清单不存在或没有记录。
     pub version: String,
     /// 清单里登记着几份。
     pub managed: usize,
@@ -97,17 +93,8 @@ pub struct LedgerSummary {
     pub human_edited: usize,
 }
 
-impl LedgerSummary {
-    /// 有没有要提的异常。**「铺的版本比现在旧」不算**——今天没有「升级重铺」
-    /// 的入口(铺底只在接入时跑一次),把过期挂在名片上就是一个人永远消不掉
-    /// 的提醒,那是假的。过期只在配置屏的「对一遍账」里如实显示。
-    pub fn has_issues(&self) -> bool {
-        self.missing > 0 || self.human_edited > 0
-    }
-}
-
-/// 现读现算名片摘要。**只认清单里登记过的条目**——名片不虚报「在管」:
-/// `project.toml` 与 `metrics.toml` 从来不进这份清单,自然也不算进件数。
+/// 现读现算名片摘要。只认清单里登记过的条目——`project.toml` 与 `metrics.toml`
+/// 从来不进这份清单,名片也就不把它们算进「在管」。
 pub fn summarize(workspace: &Path) -> LedgerSummary {
     let Ok(Some(file)) = read(workspace) else {
         return LedgerSummary::default();
