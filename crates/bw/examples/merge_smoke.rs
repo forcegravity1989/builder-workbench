@@ -246,6 +246,7 @@ async fn new_issue(
             kind: IssueKind::Business,
             origin: IssueOrigin::Human,
             week_of: bw::isoweek::current_week(),
+            plan: String::new(),
         })
         .await?;
     Ok(events

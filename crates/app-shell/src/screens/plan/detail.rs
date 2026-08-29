@@ -180,12 +180,23 @@ pub fn DetailModal(
                                 }, "Open" }
                             },
                             IssueStatus::InReview => rsx! {
+                                button { class: "btn btn-sm btn-secondary", onclick: move |_| {
+                                    selected.set(None);
+                                    b_sess.send(Req::SelectSession(Some(id)));
+                                    nav.go(Panel::Session);
+                                }, "Open" }
                                 button { class: "btn btn-sm btn-primary", onclick: move |_| {
                                     b_complete.cmd(Command::MergeAndSettle { id });
                                     selected.set(None);
                                 }, "Complete" }
                             },
-                            IssueStatus::Done => rsx! { span { style: "color:var(--ink-3);", "已完成并结清" } },
+                            IssueStatus::Done | IssueStatus::Cancelled => rsx! {
+                                button { class: "btn btn-sm btn-secondary", onclick: move |_| {
+                                    selected.set(None);
+                                    b_sess.send(Req::SelectSession(Some(id)));
+                                    nav.go(Panel::Session);
+                                }, "Open" }
+                            },
                             IssueStatus::Blocked => rsx! {
                                 button { class: "btn btn-sm btn-secondary", onclick: move |_| {
                                     selected.set(None);
@@ -193,7 +204,6 @@ pub fn DetailModal(
                                     nav.go(Panel::Session);
                                 }, "Open" }
                             },
-                            IssueStatus::Cancelled => rsx! { span { style: "color:var(--ink-3);", "已取消" } },
                         }}
                         {match c.status {
                             IssueStatus::Done | IssueStatus::Cancelled => rsx! {},

@@ -53,9 +53,9 @@ use crate::local::{ProjectRegistry, SessionStore, Settings};
 use crate::model::{Conversation, ProjectId};
 use crate::repo::RepoFileError;
 use bw_engine::remote::{Remote, RemoteError};
-use bw_engine::{InteractiveExecutor, TerminalManager};
+use bw_engine::InteractiveExecutor;
 use std::path::PathBuf;
-use std::sync::{Arc, Mutex};
+use std::sync::Arc;
 
 /// 远端工厂:从项目行造一个 `Remote`。默认走 `Remote::for_project`(真
 /// codehub/gh);`real_demo_v4` / 测试注入一份返回**共享的** `Remote::Mock`
@@ -95,10 +95,9 @@ pub struct App {
     /// 干活入口的后端。没配真实工作区的项目用自我标注的替身
     /// ([`bw_engine::MockInteractiveExecutor`]),产出带【mock】字样。
     pub(crate) executor: Arc<dyn InteractiveExecutor>,
-    /// 活着的 PTY 会话。纯内存,进程死了就没了 —— 会话的**身份**在
-    /// `asset_root/sessions/` 里的 jsonl 文件中,那才是重启后接得回来的东西。
-    pub(crate) terminal: TerminalManager,
-    /// 桌面壳开、headless 不开。见 [`App::with_pty`]。
+    /// 桌面壳开、headless 不开。见 [`App::with_pty`]。**PTY 已封存** —— 这条门闩
+    /// 现在管的是「桌面 ▶跑 走 Orca 本地 pipe」,不是起 PTY;headless 仍走
+    /// 阻塞 `run_skill`。
     pub(crate) pty_enabled: bool,
     /// 长命令边做边报的口子。桌面壳接上,headless 不接。见
     /// [`progress`](crate::app::progress) —— 只为让人看得见,不承担账目。
@@ -113,8 +112,6 @@ pub struct App {
     /// 远端工厂。issue_store 等内部模块经 [`App::remote_for`] 拿远端,统一经
     /// 这里派发 —— 这也是 mock 注入的唯一口子。
     pub(crate) remote_factory: RemoteFactory,
-    /// PTY 子进程退出后由后台任务塞进来,内核节拍里收掉 live 标记。
-    pub(crate) pty_ended: Arc<Mutex<Vec<uuid::Uuid>>>,
 }
 
 impl App {
@@ -130,7 +127,6 @@ impl App {
             asset_root: workspaces_root.join(".bw-assets"),
             workspaces_root,
             executor,
-            terminal: TerminalManager::new(),
             pty_enabled: false,
             progress: None,
             // 默认远端工厂 = 真 `Remote::for_project`(codehub/gh)。`real_demo_v4`
@@ -138,7 +134,6 @@ impl App {
             remote_factory: Box::new(|p| {
                 Remote::for_project(&p.provider, &p.remote_host, &p.remote_path)
             }),
-            pty_ended: Arc::new(Mutex::new(Vec::new())),
         }
     }
 
@@ -248,30 +243,6 @@ impl App {
         }
     }
 
-    /// 这张活开工时会喂给 agent 的那份系统提示词。**只读、纯算**,不起进程、
-    /// 不改任何状态 —— 和真开工走的是同一个函数,所以它显示什么,agent 收到的
-    /// 就是什么。
-    ///
-    /// 为什么要有这个口子:提示词是经 `--append-system-prompt` 送进去的,
-    /// **终端里一个字都看不见**。试点第一天用户就问「我看没有技能路径」——
-    /// 路径其实一直在,只是没有任何地方能看到它。agent 跑偏时,第一步就该是
-    /// 看它到底被告知了什么。
-    pub async fn agent_briefing(&self, id: crate::model::IssueId) -> Result<String> {
-        let issue = self.issue_or_err(id).await?;
-        let skill = self
-            .ensure_skill_assets()
-            .and_then(|d| bootstrap::skill_pointer(&d, &issue.workflow));
-        let references = self
-            .ensure_prompt_assets()
-            .map(|d| bootstrap::references_for(&issue, &d))
-            .unwrap_or_default();
-        Ok(bootstrap::agent_system_prompt(
-            &issue,
-            skill.as_ref(),
-            &references,
-        ))
-    }
-
     pub fn workspaces_root(&self) -> &std::path::Path {
         &self.workspaces_root
     }
@@ -365,6 +336,10 @@ impl App {
         Ok(Settings::set_workspaces_root(&self.asset_root, path)?)
     }
 
+    pub(crate) async fn set_orca_web_url_setting(&self, url: &str) -> Result<()> {
+        Ok(Settings::set_orca_web_url(&self.asset_root, url)?)
+    }
+
     // ── 会话(替代 store.conversation_*)────────────────────────────────
 
     pub async fn conversation_for_issue(
@@ -394,13 +369,6 @@ impl App {
         let slug = self.slug_of(c.project_id).await?;
         SessionStore::append(&self.asset_root, &slug, c)?;
         Ok(c.clone())
-    }
-
-    /// 追加一条会话记录(更新 `--resume` id)。不走 upsert 的「已有就原样返回」。
-    pub(crate) async fn append_conversation(&self, c: &Conversation) -> Result<()> {
-        let slug = self.slug_of(c.project_id).await?;
-        SessionStore::append(&self.asset_root, &slug, c)?;
-        Ok(())
     }
 
     /// 某个项目的仓在哪。项目行里配了路径就用它,没配就是 `<工作区根目录>/<slug>`。
@@ -488,6 +456,9 @@ impl App {
                 self.create_plan_version(project_id, name, start, due, note, included)
                     .await
             }
+            Command::DeletePlanVersion { project_id, name } => {
+                self.delete_plan_version(project_id, name).await
+            }
             Command::CutRelease {
                 project_id,
                 version,
@@ -497,6 +468,7 @@ impl App {
             Command::RunIssue { id } => self.run_issue(id).await,
             Command::SubmitIssueWork { id } => self.submit_issue_work(id).await,
             Command::SetWorkspacesRoot { path } => self.set_workspaces_root(path).await,
+            Command::SetOrcaWebUrl { url } => self.set_orca_web_url(url).await,
             Command::TransitionIssue { id, to } => self.transition_issue(id, to).await,
             Command::SetIssueCategory { id, category } => {
                 self.set_issue_category(id, category).await
@@ -526,15 +498,6 @@ impl App {
                 event_type,
             } => self.sync_notify_to_chat(issue_id, event_type).await,
             Command::CancelRun { id } => self.cancel_run(id).await,
-            Command::TerminalInput {
-                conversation_id,
-                bytes,
-            } => self.terminal_input(conversation_id, bytes).await,
-            Command::TerminalResize {
-                conversation_id,
-                cols,
-                rows,
-            } => self.terminal_resize(conversation_id, cols, rows).await,
             Command::RecordManualMetric {
                 project_id,
                 name,

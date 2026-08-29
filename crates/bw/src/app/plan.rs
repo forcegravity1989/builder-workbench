@@ -186,6 +186,39 @@ impl App {
         }])
     }
 
+    /// 删自定义版本:给挂着 `bw:plan:<name>` 的活摘标签,再删同名里程碑。
+    /// 不碰 `bw:week:`。周格式标题拒收(那是周排期投影,不是这个按钮)。
+    pub(super) async fn delete_plan_version(
+        &mut self,
+        project_id: ProjectId,
+        name: String,
+    ) -> Result<Vec<Event>> {
+        let name = name.trim().to_string();
+        if name.is_empty() {
+            return Err(AppError::Refused("没选要删的版本".into()));
+        }
+        if looks_like_week(&name) {
+            return Err(AppError::Refused(
+                "周排期不是自定义版本,不能从这里删".into(),
+            ));
+        }
+        let project = self.project_of(project_id).await?;
+        let issues = self.issues(project_id).await?;
+        let mut issues_cleared = 0u32;
+        for issue in issues {
+            if issue.plan_version == name {
+                issue_store::clear_plan(self, &project, issue.number).await?;
+                issues_cleared += 1;
+            }
+        }
+        issue_store::delete_plan_version(self, &project, &name).await?;
+        Ok(vec![Event::PlanVersionDeleted {
+            project_id,
+            name,
+            issues_cleared,
+        }])
+    }
+
     /// 「↻ 拉到最新」:把主检出快进到远端。
     ///
     /// 主检出若只被读数流水弄脏,先把那份挪进账本再拉——否则 `--ff-only`
@@ -317,4 +350,12 @@ async fn salvage_readings_into_ledger(ws: &std::path::Path) -> bool {
     }
     let _ = crate::git::restore_path(ws, ".bw/metrics/readings.jsonl").await;
     true
+}
+
+/// `YYYY-Www` 周格式?跟 codehub 里程碑投影同一口径,这里拒收。
+fn looks_like_week(s: &str) -> bool {
+    s.len() == 8
+        && s.get(4..6).is_some_and(|m| m.eq_ignore_ascii_case("-W"))
+        && s[..4].chars().all(|c| c.is_ascii_digit())
+        && s[6..].chars().all(|c| c.is_ascii_digit())
 }
