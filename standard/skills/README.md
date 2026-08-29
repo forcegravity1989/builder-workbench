@@ -50,7 +50,7 @@ body 自足;workflow 入口 body 是 SOP 链 + 指向 `../vendor/` 库子技能�
 ## 版本
 
 不单开版本线——版本号就是 `standard/VERSION`,随 Workbench 整体发布走。改了内容 =
-`standard/VERSION` 抬一档 + 这里记一行。项目侧 `.bw/managed.toml` 记这几份 SKILL.md
+`standard/VERSION` 抬一档 + 这里记一行。项目侧 `.bw/state/managed.toml` 记这几份 SKILL.md
 的指纹,规范对账能测出落后。
 
 ## 三条共同的规矩

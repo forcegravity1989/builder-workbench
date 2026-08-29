@@ -1,4 +1,4 @@
-//! `.bw/managed.toml` —— 哪些文件是 buddy 铺下去的、什么版本、铺那一刻的内容
+//! `.bw/state/managed.toml` —— 哪些文件是 buddy 铺下去的、什么版本、铺那一刻的内容
 //! 指纹。规范对账的唯一权威记录。
 //!
 //! 为什么是一份清单而不是给每个被铺的文件配一个同名旁路文件:铺一次底就在
@@ -13,7 +13,7 @@ use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 use std::path::Path;
 
-pub const REL_PATH: &str = ".bw/managed.toml";
+pub const REL_PATH: &str = ".bw/state/managed.toml";
 
 #[derive(Debug, Clone, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(deny_unknown_fields)]
@@ -80,7 +80,7 @@ pub fn fingerprint(bytes: &[u8]) -> String {
 }
 
 /// 名片上「规范」那一格要显示的东西。**从这份清单现算,不存第二份**——
-/// 2026-08-29 之前它是 `.bw/project.toml` 里一个没人维护的镜像,放几周就
+/// 2026-08-29 之前它是 `.bw/config/project.toml` 里一个没人维护的镜像,放几周就
 /// 和真相对不上了。
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub struct LedgerSummary {

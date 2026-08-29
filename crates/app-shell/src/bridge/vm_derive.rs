@@ -42,7 +42,7 @@ pub(super) fn build_week_counts(issues: &[bw::Issue], week: Option<&str>) -> Wee
 ///
 /// **判据认的是指纹清单,不是某一份规范件**:清单是铺底最后写的那一份,铺
 /// 什么件都跑不掉它;盯某一份具体的件,那份件哪天从清单里去掉,这个判据就
-/// 会连着假红——2026-08-29 删 `.bw/standard.toml` 正好撞上,所以改到这里。
+/// 会连着假红——2026-08-29 删掉一份规范件时正好撞上,所以改到这里。
 pub(super) async fn build_ops(
     issues: &[bw::Issue],
     current_week: &str,
@@ -87,7 +87,7 @@ pub(super) async fn build_ops(
         chip(
             "运作活② 资产盘点",
             OPS2_WORKFLOW,
-            "到点自动建(节律配在 .bw/issue-policy.toml)",
+            "到点自动建(节律配在 .bw/config/issue-policy.toml)",
         ),
         chip("运作活③ 规范铺底", OPS3_WORKFLOW, "接入项目时铺"),
     ]

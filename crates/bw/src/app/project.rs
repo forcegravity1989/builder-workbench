@@ -1,7 +1,7 @@
 //! 接入项目、改名片、配项目群。
 //!
 //! 名片四字段(名称 / 想做什么 / 最像的对标 / 北极星)的正本是 `.bw/PROJECT.md`
-//! 与 `.bw/project.toml`,**不落库**——`project` 表只有定位与显示缓存。所以
+//! 与 `.bw/config/project.toml`,**不落库**——`project` 表只有定位与显示缓存。所以
 //! 改名片就是改仓文件,得走一张轻量活与一次 MR,不是直接 UPDATE 一行。
 
 use super::worktree;
@@ -58,8 +58,11 @@ impl App {
         self.step(ProgressLine::ok(3, format!("项目 {slug} 已落库")));
 
         // 意图落仓文件。
-        self.step(ProgressLine::doing(4, "读仓里的名片(.bw/project.toml)…"));
-        // **仓里已经有 `.bw/project.toml` 就以它为准**(后来者接入:同事先接过
+        self.step(ProgressLine::doing(
+            4,
+            "读仓里的名片(.bw/config/project.toml)…",
+        ));
+        // **仓里已经有 `.bw/config/project.toml` 就以它为准**(后来者接入:同事先接过
         // 这个项目,或者开发期删库重建之后重新接入)。人手填过的东西一个字都
         // 不覆盖,只补空着的字段;读不出来(文件坏了)也不覆盖,如实往上报。
         let existing = project_file::read(&ws)?;
@@ -245,7 +248,7 @@ impl App {
                     &project,
                     issue_store::LIGHT_TITLE,
                     "名片四字段改动:名称 / 想做什么 / 最像的对标 / 北极星。改的是 \
-                     .bw/PROJECT.md 与 .bw/project.toml 两份仓文件,等人评审合入。",
+                     .bw/PROJECT.md 与 .bw/config/project.toml 两份仓文件,等人评审合入。",
                     crate::model::IssueKind::Light,
                     "",
                     &[],
@@ -315,19 +318,17 @@ impl App {
                 .await?
             {
                 Some(existing) => existing,
-                None => {
-                    issue_store::create(
-                        self,
-                        &project,
-                        issue_store::LIGHT_CHAT_TITLE,
-                        "项目群配置改动:provider / 群号 / 通知名单。改的是 .bw/project.toml \
+                None => issue_store::create(
+                    self,
+                    &project,
+                    issue_store::LIGHT_CHAT_TITLE,
+                    "项目群配置改动:provider / 群号 / 通知名单。改的是 .bw/config/project.toml \
                      的 [chat] 段,等人评审合入。",
-                        crate::model::IssueKind::Light,
-                        "",
-                        &[],
-                    )
-                    .await?
-                }
+                    crate::model::IssueKind::Light,
+                    "",
+                    &[],
+                )
+                .await?,
             };
 
         // 在这张活自己的 worktree 里写文件(主检出不动,走 MR 合入才落地)。

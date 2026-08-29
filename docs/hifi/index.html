@@ -526,7 +526,7 @@ var OPS1_TRANSCRIPT=[
   {cls:'agent',text:'agent> 已按类别拆出业务活草稿,你确认后我建活并打 bw:week。'},
   {cls:'human',text:'人> 确认,建吧。'},
   {cls:'git',text:'[comment] ## 周目标 / ## 本周纳入 / ## 本周指标读数 已挂到这张运作活'},
-  {cls:'git',text:'[git] 分支 bw/issue-plan-2026-W34 → 提交 .bw/metrics.toml(指标定义跟人写的)'},
+  {cls:'git',text:'[git] 分支 bw/issue-plan-2026-W34 → 提交 .bw/config/metrics.toml(指标定义跟人写的)'},
   {cls:'git',text:'[hook] 已推到评审中'}
 ];
 function issueSuffix(id){return String(id).replace(/^pr-/,'');}
@@ -539,7 +539,7 @@ function buildOps2Transcript(pid,issueId){
     {cls:'sys',text:'[Workbench] 系统提示词已注入 · 单人构建者工作台 · 一活一分支一 MR · 完成永远由人点'},
     {cls:'sys',text:'[workflow] workflow 已注入:资产盘点'},
     {cls:'sys',text:'[read] docs/'},
-    {cls:'sys',text:'[read] .bw/standard.toml(默认件清单与版本)'},
+    {cls:'sys',text:'[read] .bw/state/managed.toml(在管件清单与版本)'},
     {cls:'agent',text:'agent> 盘点 docs/、产物登记、技能与 workflow、规范对账、指标新鲜度。'},
     {cls:'agent',text:'agent> 周目标读运作活①评论,发版读远端 Release,不另写周计划文件。'},
     {cls:'agent',text:'agent> codegraph files -j 找候选大文件,列进大文件榜。'},
@@ -628,7 +628,7 @@ function makeSkillsList(){
   return [
     {slug:'week-planning',name:'更新指标与周计划',origin:'内置',desc:'复盘上周 → 更新指标 → 聊出本周目标与活清单。',uses:1},
     {slug:'asset-audit',name:'资产盘点',origin:'内置',desc:'每周盘点;老仓历史回填是它的首次模式。',uses:1},
-    {slug:'metrics-refresh',name:'更新指标',origin:'内置',desc:'把 .bw/metrics.toml 里的指标真采一遍。',uses:0},
+    {slug:'metrics-refresh',name:'更新指标',origin:'内置',desc:'把 .bw/config/metrics.toml 里的指标真采一遍。',uses:0},
     {slug:'project-handbook',name:'项目开发手册',origin:'内置',desc:'先读懂、先问你,你点头才写仓根 AGENTS.md。还没接上。',uses:0},
     {slug:'mattpocock-skills',name:'mattpocock-skills',origin:'内置',desc:'对齐 → 实现 → 评审。入口写明每一步读哪份文件。',uses:10}
   ];
@@ -673,7 +673,7 @@ var FILE_TREE={name:'builder-workbench',type:'dir',path:'',children:[
     {name:'hifi',type:'dir',path:'docs/hifi',children:[{name:'index.html',type:'file',path:'docs/hifi/index.html'}]}
   ]},
   {name:'standard',type:'dir',path:'standard',children:[{name:'README.md',type:'file',path:'standard/README.md'}]},
-  {name:'.bw',type:'dir',path:'.bw',children:[{name:'PROJECT.md',type:'file',path:'.bw/PROJECT.md'},{name:'issue-policy.toml',type:'file',path:'.bw/issue-policy.toml'},{name:'standard.toml',type:'file',path:'.bw/standard.toml'},{name:'project.toml',type:'file',path:'.bw/project.toml'}]},
+  {name:'.bw',type:'dir',path:'.bw',children:[{name:'PROJECT.md',type:'file',path:'.bw/PROJECT.md'},{name:'issue-policy.toml',type:'file',path:'.bw/config/issue-policy.toml'},{name:'project.toml',type:'file',path:'.bw/config/project.toml'}]},
   {name:'AGENTS.md',type:'file',path:'AGENTS.md'},
   {name:'Cargo.toml',type:'file',path:'Cargo.toml'}
 ]};
@@ -684,21 +684,19 @@ var FILE_CONTENTS={
   'crates/app-shell/src/screens/overview/mod.rs':['// crates/app-shell/src/screens/overview/mod.rs','// 北极星 → 本周进度 → 滞后 → 引领 → 仓指标 → 发版'],
   'docs/architecture.md':['# architecture.md — Workbench MVP 设计正本','三个 crate:bw / bw-engine / app-shell。本地零数据库。'],
   'docs/hifi/index.html':['<!-- 高保真 · 视觉目标态,跟现行壳对齐 -->'],
-  'standard/README.md':['# standard/','Workbench 推给被管项目的规范正本。接入铺名片 + issue-policy + standard.toml。'],
+  'standard/README.md':['# standard/','Workbench 推给被管项目的规范正本。接入铺名片 + issue-policy。'],
   '.bw/PROJECT.md':['# 项目名片','Builders\' Workbench(Workbench):AI Coding 里一个人的一张工作台。'],
-  '.bw/issue-policy.toml':['# 类别 → 工具 → workflow;节律也在这里','[cadence]','asset_audit = "周五 20:00"'],
-  '.bw/standard.toml':['schema_version = 1','standard_version = "5.7"'],
-  '.bw/project.toml':['# .bw/project.toml','name = "Builders\' Workbench (Workbench)"','standard_version = "5.7"','current_version = "0.4.0-v4"'],
-  '.bw/metrics.toml':['# .bw/metrics.toml · 指标定义跟人在运作活①里写,不预铺空壳'],
+  '.bw/config/issue-policy.toml':['# 类别 → 工具 → workflow;节律也在这里','[cadence]','asset_audit = "周五 20:00"'],
+  '.bw/config/project.toml':['# .bw/config/project.toml','name = "Builders\' Workbench (Workbench)"','current_version = "0.4.0-v4"'],
+  '.bw/config/metrics.toml':['# .bw/config/metrics.toml · 指标定义跟人在运作活①里写,不预铺空壳'],
   'AGENTS.md':['# AGENTS.md · 项目自己的开发手册','铺底不写仓根。资产盘点首次模式问过人才写。'],
   'Cargo.toml':['[workspace]','members = ["crates/bw","crates/bw-engine","crates/app-shell"]']
 };
 var KNOWLEDGE_DOCS=[
   {group:'章程',id:'k-project',name:'.bw/PROJECT.md',path:'.bw/PROJECT.md'},
-  {group:'规范件',id:'k-policy',name:'.bw/issue-policy.toml',path:'.bw/issue-policy.toml'},
-  {group:'规范件',id:'k-std',name:'.bw/standard.toml',path:'.bw/standard.toml'},
-  {group:'规范件',id:'k-projecttoml',name:'.bw/project.toml',path:'.bw/project.toml'},
-  {group:'规范件',id:'k-metrics',name:'.bw/metrics.toml',path:'.bw/metrics.toml'},
+  {group:'规范件',id:'k-policy',name:'.bw/config/issue-policy.toml',path:'.bw/config/issue-policy.toml'},
+  {group:'规范件',id:'k-projecttoml',name:'.bw/config/project.toml',path:'.bw/config/project.toml'},
+  {group:'规范件',id:'k-metrics',name:'.bw/config/metrics.toml',path:'.bw/config/metrics.toml'},
   {group:'设计',id:'k-arch',name:'docs/architecture.md',path:'docs/architecture.md'},
   {group:'设计',id:'k-hifi',name:'docs/hifi/index.html',path:'docs/hifi/index.html'},
   {group:'手册',id:'k-agents',name:'AGENTS.md(问过人才写)',path:'AGENTS.md'}
@@ -1165,7 +1163,7 @@ var ACTIONS = {
     else { state.workflows[m.pid]=state.workflows[m.pid]||[]; state.workflows[m.pid].push({name:m.name,source:'项目导入('+srcLabel+(m.src?(' · '+m.src):'')+')',entry:'(演示)入口以仓内 SKILL.md 为准',agents:'—(未登记)',oneliner:'(演示)导入的 workflow,自己调度 agent。'}); }
     state.ui.modal=null; render(); toast('已导入「'+m.name+'」');
   },
-  saveToolmap:function(pid){ toast('已保存写回 .bw/issue-policy.toml(演示)'); },
+  saveToolmap:function(pid){ toast('已保存写回 .bw/config/issue-policy.toml(演示)'); },
   runCron:function(pid,cronId){ (state.crons[pid]||[]).forEach(function(c){ if(c.id===cronId){ c.lastRun=TODAY+' '+(new Date()).toTimeString().slice(0,5); c.status='running'; } }); render();
     setTimeout(function(){ (state.crons[pid]||[]).forEach(function(c){ if(c.id===cronId)c.status='normal'; }); render(); toast('定时任务已跑一次(演示)'); },500); },
   toggleCron:function(pid,cronId){ (state.crons[pid]||[]).forEach(function(c){ if(c.id===cronId){ c.status=(c.status==='paused')?'normal':'paused'; } }); render(); },
@@ -2053,7 +2051,7 @@ function toolmapSectionHTML(pid){
   }).join('');
   return '<div class="cfg-section"><div class="cfg-section-head"><h3>开工工具映射</h3></div>'
     + '<div class="tbl-wrap"><table class="tbl"><thead><tr><th>类别</th><th>开工工具</th><th>workflow</th><th></th></tr></thead><tbody>'+body+'</tbody></table></div>'
-    + '<div class="cfg-readonly-note">正本是仓里的 .bw/issue-policy.toml。配了起不来的工具,▶开工 会当场报错,不会悄悄拿 Claude CLI 顶上。</div></div>';
+    + '<div class="cfg-readonly-note">正本是仓里的 .bw/config/issue-policy.toml。配了起不来的工具,▶开工 会当场报错,不会悄悄拿 Claude CLI 顶上。</div></div>';
 }
 function skillsSectionHTML(pid){
   var skills=state.skills[pid]||[];

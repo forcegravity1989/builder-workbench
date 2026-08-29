@@ -42,7 +42,7 @@ pub struct MetricPoint {
 /// 一条指标采完之后的样子。
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct MetricReadout {
-    /// 指标名 —— `.bw/metrics.toml` 里没有单独的 id,名字就是键。
+    /// 指标名 —— `.bw/config/metrics.toml` 里没有单独的 id,名字就是键。
     pub name: String,
     pub class: MetricClass,
     /// 近 N 周,旧的在前,**每一周都有一格**(没采到的那格是 `None`)。
@@ -58,12 +58,12 @@ pub struct MetricReadout {
 /// 采一遍这个项目的全部指标。
 ///
 /// 三类各走各的路:可回溯的现算(传窗口跑脚本);不可回溯的跑脚本拿当下值,
-/// 追加进 `.bw/metrics/readings.jsonl`,走势从流水里铺;手填不跑脚本,走势
+/// 追加进 `.bw/state/metrics-readings.jsonl`,走势从流水里铺;手填不跑脚本,走势
 /// 从流水铺,数由 [`App::record_manual_metric`] 写入。
 pub async fn collect_all(ws: &Path, weeks: u32) -> Result<Vec<MetricReadout>, String> {
     let file = metrics_file::read(ws)
         .map_err(|e| e.to_string())?
-        .ok_or_else(|| "这个项目还没有 .bw/metrics.toml".to_string())?;
+        .ok_or_else(|| "这个项目还没有 .bw/config/metrics.toml".to_string())?;
     let labels = week_labels(weeks);
     let mut out = Vec::new();
     for def in file.all() {
@@ -76,7 +76,7 @@ pub async fn collect_all(ws: &Path, weeks: u32) -> Result<Vec<MetricReadout>, St
 pub async fn collect_b_class(ws: &Path, weeks: u32) -> Result<Vec<MetricReadout>, String> {
     let file = metrics_file::read(ws)
         .map_err(|e| e.to_string())?
-        .ok_or_else(|| "这个项目还没有 .bw/metrics.toml".to_string())?;
+        .ok_or_else(|| "这个项目还没有 .bw/config/metrics.toml".to_string())?;
     let labels = week_labels(weeks);
     let mut out = Vec::new();
     for def in file.all() {
@@ -244,8 +244,9 @@ impl App {
             return Err(super::AppError::Refused("指标名不能空".into()));
         }
         let ws = self.workspace_of(project_id).await?;
-        let file = metrics_file::read(&ws)?
-            .ok_or_else(|| super::AppError::Refused("这个项目还没有 .bw/metrics.toml".into()))?;
+        let file = metrics_file::read(&ws)?.ok_or_else(|| {
+            super::AppError::Refused("这个项目还没有 .bw/config/metrics.toml".into())
+        })?;
         let def = file
             .all()
             .into_iter()

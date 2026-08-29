@@ -89,7 +89,7 @@ pub enum Req {
     },
     /// 总览那块「项目指标 · 代码仓级」:现采一次。
     CollectRepoStats,
-    /// 总览:点「采一次指标」。把 `.bw/metrics.toml` 里可回溯的那几条真的跑
+    /// 总览:点「采一次指标」。把 `.bw/config/metrics.toml` 里可回溯的那几条真的跑
     /// 一遍(起脚本、传时间窗、读标准输出的 JSON)。**不在打开总览时自动跑**
     /// —— 一次要起好几个子进程,不该在每次进项目、每次重绘时发生。
     CollectMetrics,
@@ -124,13 +124,13 @@ pub enum Req {
         rows: Vec<crate::vm::RepoRowVm>,
         error: Option<String>,
     },
-    /// 接入屏:点了某一行仓 —— 去读那个仓远端的 `.bw/project.toml`,
+    /// 接入屏:点了某一行仓 —— 去读那个仓远端的 `.bw/config/project.toml`,
     /// 读得到就说明这个项目已经被 buddy 接管过,名片直接回显。
     PickRepo {
         github: bool,
         host: String,
         path: String,
-        /// 去哪个分支上找 `.bw/project.toml`。列表里那一行给的默认分支;人手打
+        /// 去哪个分支上找 `.bw/config/project.toml`。列表里那一行给的默认分支;人手打
         /// 地址时是空的,那就交给引擎兜底(它会用 `main`)。**这一格要是错了,
         /// 表现就是把一个接管过的仓报成「没接管过」** —— 默认分支不叫 main 的
         /// 仓很常见。
@@ -342,7 +342,7 @@ async fn list_repos(github: bool, host: &str) -> (Vec<crate::vm::RepoRowVm>, Opt
     }
 }
 
-/// 读某个仓远端的 `.bw/project.toml`。读得到 = 这个项目已经被 buddy 接管过
+/// 读某个仓远端的 `.bw/config/project.toml`。读得到 = 这个项目已经被 buddy 接管过
 /// (你自己接过、或者同事先接的),名片四个字段直接回显,人不用再填一遍。
 /// 读不到就是 `None` —— **不猜、不拿仓描述冒充名片**。
 async fn fetch_prefill(

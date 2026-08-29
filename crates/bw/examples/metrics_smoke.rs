@@ -7,7 +7,7 @@
 //! 证明的是设计第 10 章那条判据真的落地了:**可回溯的指标一个字都不存**,
 //! 每次都是把时间窗传给脚本、现算出来的,所以过去任意一周的值随时都能重算。
 //!
-//! 不碰本机库、不碰 claude。它读的是 `<仓>/.bw/metrics.toml`,起的是那份文件
+//! 不碰本机库、不碰 claude。它读的是 `<仓>/.bw/config/metrics.toml`,起的是那份文件
 //! 里 `collect.run` 指着的脚本。
 //!
 //! **每一条都附上自己复算的命令** —— 数字对不上就是代码错了,不是「大概差不多」。
@@ -47,7 +47,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             std::process::exit(1);
         }
         Ok(None) => {
-            println!("这个仓还没有 .bw/metrics.toml —— 指标是空的(不是 0)");
+            println!("这个仓还没有 .bw/config/metrics.toml —— 指标是空的(不是 0)");
             return Ok(());
         }
         Ok(Some(f)) => f,

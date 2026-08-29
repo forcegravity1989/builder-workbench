@@ -45,7 +45,7 @@ pub struct RepoPickerVm {
     pub rows: Vec<RepoRowVm>,
     /// 现在盯着哪个仓(点中的那一行,或者人手打进去的地址)。
     pub picked: Option<String>,
-    /// 从那个仓的远端 `.bw/project.toml` 读回来的名片。
+    /// 从那个仓的远端 `.bw/config/project.toml` 读回来的名片。
     pub prefill: Option<RepoPrefillVm>,
     /// 那一读的结局。**「没读到」和「没读成」必须分开** —— 网络断了、没登录、
     /// 默认分支不叫 main,这些都会读不到,但它们**不等于**「这个仓没被接管过」。
@@ -59,7 +59,7 @@ pub enum RepoProbe {
     #[default]
     NotAsked,
     Loading,
-    /// 读到了 `.bw/project.toml` —— 这个仓被 buddy 接管过。
+    /// 读到了 `.bw/config/project.toml` —— 这个仓被 buddy 接管过。
     Adopted,
     /// 平台明确回「没有这个文件」,而且**这个仓确实在**(另问了一次)——
     /// 这个仓没被接管过。
@@ -105,7 +105,7 @@ pub struct ProjectCardVm {
     pub id: ProjectId,
     pub slug: String,
     pub name: String,
-    /// 「想做什么」一句话,来自 `PROJECT.md` / `.bw/project.toml`。
+    /// 「想做什么」一句话,来自 `PROJECT.md` / `.bw/config/project.toml`。
     pub brief: String,
     pub signal: Option<Signal>,
     pub workspace_path: String,
@@ -113,7 +113,7 @@ pub struct ProjectCardVm {
     /// 本周排了几张活、完成了几张。
     pub week_total: u32,
     pub week_done: u32,
-    /// 在研版本(仓里 `.bw/project.toml` 写的)。没写就是空,不猜一个。
+    /// 在研版本(仓里 `.bw/config/project.toml` 写的)。没写就是空,不猜一个。
     pub version: String,
     /// 当前 ISO 周,卡片上那个周 chip 显示它。
     pub week: String,
@@ -197,7 +197,7 @@ pub struct ProjectVm {
     pub kb: KbVm,
 }
 
-/// 名片。四个字段的正本是 `PROJECT.md` 与 `.bw/project.toml`,不在库里。
+/// 名片。四个字段的正本是 `PROJECT.md` 与 `.bw/config/project.toml`,不在库里。
 #[derive(Clone, Debug, Default, PartialEq)]
 pub struct CardVm {
     pub brief: String,
@@ -232,7 +232,7 @@ pub struct MetricsVm {
     /// 这轮会话里人点过「采一次指标」。空着的走势和「还没点」是两件事,
     /// 后者要在滞后/引领上写出和代码仓级同一句「点了才采」。
     pub collected: bool,
-    /// 读不到 `.bw/metrics.toml` 时的实话(还没有这份文件 —— 正常状态)。
+    /// 读不到 `.bw/config/metrics.toml` 时的实话(还没有这份文件 —— 正常状态)。
     pub note: Option<String>,
     /// 有这份文件、但**读不动**时的原话(格式错、旧格式)。和 `note` 分开:
     /// 前者是「还没定出来」,后者是「定了但我读不了」,**两件事不能混成一句
@@ -246,7 +246,7 @@ pub struct MetricCardVm {
     pub name: String,
     /// 本周读数。`None` = 没读数,显示「无数据」而不是 0。
     pub reading: Option<String>,
-    /// `.bw/metrics.toml` 里写的目标。空 = 还没定目标,显示「目标未设」。
+    /// `.bw/config/metrics.toml` 里写的目标。空 = 还没定目标,显示「目标未设」。
     pub target: String,
     /// 这条指标的定义(`def`),给人看「这个数到底数的是什么」。
     pub def: String,
@@ -518,7 +518,7 @@ pub struct ConfigVm {
     pub skills: Vec<SkillVm>,
     pub tools: Vec<ToolProbeVm>,
     pub remote: String,
-    /// `.bw/issue-policy.toml` 的 `[cadence]` 段:定时节律。原样一句话。
+    /// `.bw/config/issue-policy.toml` 的 `[cadence]` 段:定时节律。原样一句话。
     pub cadence: String,
     /// 节律拆成表格行:哪张运作活、怎么触发、判据是什么。
     pub crons: Vec<CronVm>,
@@ -526,7 +526,7 @@ pub struct ConfigVm {
     pub chat_provider: String,
     pub chat_group: String,
     pub chat_events: Vec<(String, bool)>,
-    /// `.bw/project.toml` 的 `[chat]` 段:项目群。**仓是正本**,这里只显示;
+    /// `.bw/config/project.toml` 的 `[chat]` 段:项目群。**仓是正本**,这里只显示;
     /// 改它走「编辑项目信息」那条轻量活 + MR,不在配置屏直接写仓。
     pub chat: String,
     /// 从活详情点 workflow 跳过来时要亮的那一行(slug)。空 = 没指定。

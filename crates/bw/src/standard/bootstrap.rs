@@ -3,9 +3,9 @@
 //! 三条规矩:
 //!
 //! 1. **人手改过的不覆盖**。只在目标路径不存在、或存在且指纹与
-//!    `.bw/managed.toml` 记的一致时才写;两者都不满足就跳过,并把跳过的路径
+//!    `.bw/state/managed.toml` 记的一致时才写;两者都不满足就跳过,并把跳过的路径
 //!    如实报出来(调用方写进这张活的说明里,评审的人不用猜为什么少了一份)。
-//! 2. **指纹清单最后写**。`.bw/managed.toml` 记的是刚落盘那一刻的真实内容,
+//! 2. **指纹清单最后写**。`.bw/state/managed.toml` 记的是刚落盘那一刻的真实内容,
 //!    先写它就会记成上一轮的旧值。
 //! 3. **落盘方式看仓是不是 buddy 自己建的**。是(空仓例外)就直接提交当前
 //!    分支;不是就交给调用方走分支与 MR —— 这一层只负责写文件,不决定怎么合。
@@ -28,7 +28,7 @@ pub struct BootstrapReport {
     /// 为什么必须单独报一声:界面会把这份文件**当正本读**(指标卡、走势、健康
     /// 判据都从它来),可它来路不明 —— 可能是上一代 buddy 留下的、可能是别的
     /// 项目的、也可能格式早就过期了。第 0 站试点真撞上过:项目仓里躺着一份
-    /// 另一个项目的 `.bw/metrics.toml`,铺底连看都没看它一眼,人以为铺完了,
+    /// 另一个项目的 `.bw/config/metrics.toml`,铺底连看都没看它一眼,人以为铺完了,
     /// 而总览上显示的是别人的指标。
     pub preexisting: Vec<String>,
 }
@@ -112,7 +112,7 @@ pub fn write_core_files(
 }
 
 /// 清单里若还有 `OnFirstUse` 件,目标路径不存在才写,已有的不覆盖。
-/// 今天没有这类件,调用方得到空列表。不改 `.bw/managed.toml`。
+/// 今天没有这类件,调用方得到空列表。不改 `.bw/state/managed.toml`。
 pub fn write_missing_on_first_use(workspace: &Path) -> Result<Vec<String>, RepoFileError> {
     let mut written = Vec::new();
     for tmpl in standard::CORE_TEMPLATES {
@@ -265,7 +265,7 @@ mod first_use_tests {
         std::fs::create_dir_all(&dir).expect("temp dir");
         let written = write_missing_on_first_use(&dir).expect("first lay");
         assert!(written.is_empty(), "no OnFirstUse templates: {written:?}");
-        assert!(!dir.join(".bw/metrics.toml").is_file());
+        assert!(!dir.join(".bw/config/metrics.toml").is_file());
         let _ = std::fs::remove_dir_all(&dir);
     }
 }

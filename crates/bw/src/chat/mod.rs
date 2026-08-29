@@ -88,7 +88,7 @@ pub fn for_project(provider: &str, group_id: &str) -> Box<dyn ChatGroup> {
     }
 }
 
-/// 哪些事默认同步到群。`.bw/project.toml` 的 `[chat] notify` 没写就是这三样。
+/// 哪些事默认同步到群。`.bw/config/project.toml` 的 `[chat] notify` 没写就是这三样。
 pub const DEFAULT_NOTIFY: [&str; 3] = ["review", "merged", "release"];
 
 /// 事件类型 → 中文标签。认不出的原样返回,不替它编一个名字。

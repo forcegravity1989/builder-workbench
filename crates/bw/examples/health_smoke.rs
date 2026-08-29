@@ -5,12 +5,12 @@
 //! ```
 //!
 //! 证明的是健康判据 + 「指标见红」真的是**纯现算**:输入全部来自仓文件与
-//! git(周计划、`.bw/metrics/readings.jsonl` 的读数、`.bw/metrics.toml` 的
+//! git(周计划、`.bw/state/metrics-readings.jsonl` 的读数、`.bw/config/metrics.toml` 的
 //! 目标、git 标签),不碰网络、不起采集脚本——同一个仓,谁跑、跑几遍、
 //! 换哪台机器,都是同一个结果。
 //!
-//! 自己复算:`cat <仓>/.bw/metrics/readings.jsonl` 取本周读数,对照
-//! `<仓>/.bw/metrics.toml` 里同名指标的 `target`,方向按 `≥ ≤ > < =`。
+//! 自己复算:`cat <仓>/.bw/state/metrics-readings.jsonl` 取本周读数,对照
+//! `<仓>/.bw/config/metrics.toml` 里同名指标的 `target`,方向按 `≥ ≤ > < =`。
 
 use bw::app::collect_health_inputs;
 use bw::derive::derive_project_health;

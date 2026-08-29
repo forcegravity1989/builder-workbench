@@ -1,4 +1,4 @@
-//! `.bw/metrics.toml` —— 指标定义的正本。
+//! `.bw/config/metrics.toml` —— 指标定义的正本。
 //!
 //! **只认 `schema_version = 2`。** 旧格式(V3 那套五种采集方式 + 连接器中间层)
 //! 读到就整份拒收并如实说「这份是旧格式,运作活①会带你重定一遍」——
@@ -18,7 +18,7 @@ use super::{parse_toml, read_to_string, Result};
 use serde::Deserialize;
 use std::path::Path;
 
-pub const REL_PATH: &str = ".bw/metrics.toml";
+pub const REL_PATH: &str = ".bw/config/metrics.toml";
 
 /// 这一版格式。读到别的值一律拒收。
 pub const SCHEMA_VERSION: u32 = 2;
@@ -113,7 +113,7 @@ impl MetricsFile {
     }
 }
 
-/// 读 `<workspace>/.bw/metrics.toml`。
+/// 读 `<workspace>/.bw/config/metrics.toml`。
 ///
 /// `Ok(None)` = 这个项目还没有指标文件(新接入的项目就是这样)。**这不是错误**
 /// ——界面据此显示「还没定出来」。解析失败与旧格式才是 `Err`,那时候整块灰 +

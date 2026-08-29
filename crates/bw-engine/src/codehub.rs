@@ -377,7 +377,7 @@ pub async fn clone_repo(host: &str, path: &str, dest: &Path) -> Result<(), Codeh
 // 平台网页上做。原来这里写着一段 `project create --namespace-id …` 的说明,
 // 而那个函数从来没被拷过来 —— 已删,不留一段指着空气的注释。
 
-/// V2-② Intent UX: fetch `.bw/project.toml` from the remote without
+/// V2-② Intent UX: fetch `.bw/config/project.toml` from the remote without
 /// cloning. Used by the creation flow after the user picks「接入已有仓」so
 /// Intent can readonly-prefill later-comers. `Ok(None)` = file absent (404)
 /// → first-comer; `Err` = network/auth/parse failure → UI stays editable and

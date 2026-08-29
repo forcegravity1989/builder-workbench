@@ -1,6 +1,6 @@
 ---
 name: week-planning
-description: 复盘上周、补齐 .bw/metrics.toml、和人交流出本周目标与业务活草稿。适用:运作活①「更新指标 + 制定本周计划」被开工时,别处不用
+description: 复盘上周、补齐 .bw/config/metrics.toml、和人交流出本周目标与业务活草稿。适用:运作活①「更新指标 + 制定本周计划」被开工时,别处不用
 category: 运作
 ---
 
@@ -22,7 +22,7 @@ category: 运作
 - 本周 ops① issue **已经存在** → 先读它的评论,原地补该补的,**不推倒重来**;在会话里说
   清楚你改了哪几段。
 
-`.bw/metrics.toml` 不存在或是旧格式(项目刚接入、或指标还停在 V3 那套采集方案)则第
+`.bw/config/metrics.toml` 不存在或是旧格式(项目刚接入、或指标还停在 V3 那套采集方案)则第
 二步走**完整起草/重定**而不是补齐。
 
 ## 第一步 · 复盘上周
@@ -69,7 +69,7 @@ category: 运作
 
 写这几份:
 
-1. `.bw/metrics.toml`(第二步的改动)
+1. `.bw/config/metrics.toml`(第二步的改动)
 2. `docs/metrics.md`(指标说明:每条指标的判定与理由,没数的要有诚实说明)
 3. 第二步新写或改过的采集脚本(`.bw/scripts/` 下)
 4. 按下面模板追加一条 ops① issue 评论(不动正文、不改旧评)

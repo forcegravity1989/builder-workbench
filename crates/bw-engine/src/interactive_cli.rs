@@ -604,7 +604,7 @@ impl InteractiveExecutor for MockInteractiveExecutor {
     }
 }
 
-// **替身不写任何仓文件。** 它以前会往 `.bw/metrics.toml` 写一份占位的指标正本
+// **替身不写任何仓文件。** 它以前会往 `.bw/config/metrics.toml` 写一份占位的指标正本
 // (还是 `schema_version = 1` 的旧格式),于是替身跑一次就在人的仓里留下一份
 // 内容是假的、格式是过期的正本,而界面会把它**当正本读**。替身存在的唯一目的
 // 是廉价验证管线本身,**绝不冒充真实执行、更不该替人写正本** —— 要留痕就写进
@@ -686,7 +686,7 @@ mod tests {
         assert!(output.completed);
         assert!(output.summary.contains("【mock】"));
         // **替身跑完之后,人的仓里不该多出任何东西。** 它以前会写一份占位的
-        // `.bw/metrics.toml`,现在这条断言反过来守着「一个字都不写」。
+        // `.bw/config/metrics.toml`,现在这条断言反过来守着「一个字都不写」。
         assert!(
             !tmp.join(".bw").exists(),
             "替身不该往仓里写任何文件,更不该写指标正本"

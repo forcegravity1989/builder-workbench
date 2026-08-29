@@ -59,7 +59,7 @@ impl App {
             .create_ops_issue(
                 project_id,
                 title,
-                "复盘上周、补齐 .bw/metrics.toml、和人交流出本周目标与业务活草稿。\n\n草稿没经人确认之前不许建活、不许落文件。"
+                "复盘上周、补齐 .bw/config/metrics.toml、和人交流出本周目标与业务活草稿。\n\n草稿没经人确认之前不许建活、不许落文件。"
                     .into(),
                 super::OPS1_WORKFLOW,
                 IssueOrigin::Human,

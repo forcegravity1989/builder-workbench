@@ -1,9 +1,9 @@
 //! 项目内 · 总览。**结构照 `hifi/index.html` 的 `renderOverview` 排**:七块
 //! 竖排,名片与健康并排在第一块的左右两栏。
 //!
-//! 每一块的数字都是现算的:名片来自 `PROJECT.md` / `.bw/project.toml`,健康来
-//! 自仓文件与 git 的三条判据,指标定义来自 `.bw/metrics.toml`、读数来自
-//! `.bw/metrics/readings.jsonl`,发版记录来自 git 标签 + 远端 Release。**没有读数就说
+//! 每一块的数字都是现算的:名片来自 `PROJECT.md` / `.bw/config/project.toml`,健康来
+//! 自仓文件与 git 的三条判据,指标定义来自 `.bw/config/metrics.toml`、读数来自
+//! `.bw/state/metrics-readings.jsonl`,发版记录来自 git 标签 + 远端 Release。**没有读数就说
 //! 无数据,不显示 0**。
 
 use crate::bridge::{Bridge, Panel, PanelNav, Req};

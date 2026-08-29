@@ -160,7 +160,7 @@ fn trend_from_readings(ws: &Path, name: &str) -> Vec<(String, Option<f64>)> {
         .collect()
 }
 
-/// 指标卡:定义来自 `.bw/metrics.toml`,读数来自仓 `.bw/metrics/readings.jsonl`
+/// 指标卡:定义来自 `.bw/config/metrics.toml`,读数来自仓 `.bw/state/metrics-readings.jsonl`
 /// (刀6:不再读周计划文件的「本周指标读数」段)。**没有读数就显示「无数据」,
 /// 不显示 0**。
 pub(super) fn build_metrics(
@@ -178,7 +178,7 @@ pub(super) fn build_metrics(
         Ok(None) => {
             return MetricsVm {
                 collected: collected_once,
-                note: Some("这个项目还没有 .bw/metrics.toml,指标是空的(不是 0)".into()),
+                note: Some("这个项目还没有 .bw/config/metrics.toml,指标是空的(不是 0)".into()),
                 ..Default::default()
             }
         }
@@ -204,10 +204,10 @@ pub(super) fn build_metrics(
             .map(|i| i.title.clone())
             .collect()
     };
-    // `.bw/metrics.toml` 里的指标没有单独的 id 字段 —— 名字就是它的键。
+    // `.bw/config/metrics.toml` 里的指标没有单独的 id 字段 —— 名字就是它的键。
     // `issue.metric_key` 存的因此是指标的名字。
     // `target` / `def` / 采集方式来自指标定义文件;读数来自
-    // `.bw/metrics/readings.jsonl`。两边各是各的正本,这里只是拼到同一张卡上。
+    // `.bw/state/metrics-readings.jsonl`。两边各是各的正本,这里只是拼到同一张卡上。
     // 采到的现值与走势来自「采一次指标」那一下(`ui.metrics`),不在这里跑
     // ——起脚本要几百毫秒到几秒,每重拼一次 ViewModel 都跑一遍会把界面按住。
     let readout_of = |name: &str| collected.iter().find(|r| r.name.trim() == name.trim());
@@ -442,7 +442,7 @@ pub(super) async fn build_config(
                     blank_dash(&c.ops2_schedule)
                 )
             })
-            .unwrap_or_else(|| "—(.bw/issue-policy.toml 里没有节律段)".into()),
+            .unwrap_or_else(|| "—(.bw/config/issue-policy.toml 里没有节律段)".into()),
         crons: build_crons(policy),
         chat_provider: chat_provider(file.chat.as_ref()),
         chat_group: chat_group(file.chat.as_ref()),
@@ -602,7 +602,7 @@ fn chat_label(ws: &Path) -> String {
         .and_then(|f| f.chat)
         .filter(|c| !c.provider.trim().is_empty() && c.provider.trim() != "none")
     else {
-        return "—(没配项目群。配了就在 .bw/project.toml 里加一段 [chat])".into();
+        return "—(没配项目群。配了就在 .bw/config/project.toml 里加一段 [chat])".into();
     };
     // 整行没写 = 默认那三样;写了空数组 = 静音,如实说「一件都不发」。
     let notify = match &cfg.notify {

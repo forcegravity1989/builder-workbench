@@ -266,7 +266,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // 点**:周五 20:00 之前跑这个指挥器,这一跳就该什么都不做,如实说没到点。
     // 演示项目的节律先改成「周一 00:00」——**不是伪造时间**,是把这个项目自
     // 己的配置改成一个已经过去的时刻,让这一跳真的到点。正式项目的默认值是
-    // 周五 20:00,`.bw/issue-policy.toml` 里写着,人随时能改。
+    // 周五 20:00,`.bw/config/issue-policy.toml` 里写着,人随时能改。
     let mut restore_schedule: Option<String> = None;
     if let Ok(Some(mut policy)) = bw::repo::issue_policy_file::read(&workspace) {
         if let Some(c) = policy.cadence.as_mut() {
@@ -296,7 +296,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                 i.status.label()
             ),
             None if after.len() == before => {
-                "步骤 8 · 定时:还没到 .bw/issue-policy.toml 里那个时刻,这一跳什么都没做".into()
+                "步骤 8 · 定时:还没到 .bw/config/issue-policy.toml 里那个时刻,这一跳什么都没做"
+                    .into()
             }
             None => "步骤 8 · 定时:建出了活但不是资产盘点 —— 判据对不上,如实记下".into(),
         },
@@ -492,8 +493,8 @@ async fn build_evidence(
         "仓文件": {
             "周计划": plan_path.is_file(),
             "发版记录": releases_path.is_file(),
-            "指纹清单": workspace.join(".bw/managed.toml").is_file(),
-            "活的约定": workspace.join(".bw/issue-policy.toml").is_file(),
+            "指纹清单": workspace.join(".bw/state/managed.toml").is_file(),
+            "活的约定": workspace.join(".bw/config/issue-policy.toml").is_file(),
             "预置技能包数": count_skill_packages(workspace),
         },
         "步骤日志": log,

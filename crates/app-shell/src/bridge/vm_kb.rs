@@ -50,10 +50,10 @@ pub(super) fn build_kb(ws: &Path, tab: KbTab, open: Option<&str>) -> KbVm {
 
     let mut spec = Vec::new();
     for (rel, label) in [
-        (".bw/project.toml", "项目名片"),
-        (".bw/metrics.toml", "指标"),
-        (".bw/issue-policy.toml", "类别映射与节律"),
-        (".bw/managed.toml", "铺底文件的指纹"),
+        (".bw/config/project.toml", "项目名片"),
+        (".bw/config/metrics.toml", "指标"),
+        (".bw/config/issue-policy.toml", "类别映射与节律"),
+        (".bw/state/managed.toml", "铺底文件的指纹"),
     ] {
         if ws.join(rel).is_file() {
             spec.push(KbFileVm {

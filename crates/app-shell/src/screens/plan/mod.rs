@@ -264,7 +264,7 @@ fn toolbar(
                         "新建活"
                     }
                     // 高保真上这里还有一颗「预览 · 未合入」开关:看活自己的
-                    // worktree 里那份还没合入的 .bw/metrics.toml 与 .bw/plan/。
+                    // worktree 里那份还没合入的 .bw/config/metrics.toml 与 .bw/plan/。
                     // 还没接,做成明确的灰态,点不动 —— 不放一个点了没反应的开关。
                     label { class: "switch", title: "还没接:要去读活自己 worktree 里未合入的仓文件",
                         input { r#type: "checkbox", disabled: true }

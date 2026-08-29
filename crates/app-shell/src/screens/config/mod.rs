@@ -44,7 +44,7 @@ fn mapping_block(p: &ProjectVm, bridge: &Bridge) -> Element {
             div { class: "cfg-section-head", h3 { "开工工具映射" } }
             if p.config.mappings.is_empty() {
                 div { class: "detail-empty",
-                    "这个项目还没有 .bw/issue-policy.toml。接入时的规范铺底合进默认分支之后才会有。"
+                    "这个项目还没有 .bw/config/issue-policy.toml。接入时的规范铺底合进默认分支之后才会有。"
                 }
             } else {
                 div { class: "tbl-wrap",
@@ -72,7 +72,7 @@ fn mapping_block(p: &ProjectVm, bridge: &Bridge) -> Element {
             }
             div { class: "cfg-readonly-note",
                 "建一张活的时候,类别决定它默认用哪个工具、挂哪个 workflow。正本是仓里的 \
-                 .bw/issue-policy.toml —— 点「保存」就是改那份文件。"
+                 .bw/config/issue-policy.toml —— 点「保存」就是改那份文件。"
             }
         }
     }

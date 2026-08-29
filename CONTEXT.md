@@ -27,7 +27,7 @@ _Avoid_: user、owner、开发者。
 > **MVP 不再有「队友」概念**——活上挂的是 workflow/技能(见 [系统提示词与渐进加载 模块](docs/architecture.md)),开工时按活记的工具起 agent(见 [远端与工具探活 模块](docs/architecture.md))。「干没干成」看远端 MR 合没合入,不记战绩。别处见到 teammate 一律按此消歧,不是指某个具名 AI 人格。
 
 **开工工具 / Agent CLI**:
-一件活开工时真实调起的智能体 CLI 或内嵌工具(Claude Code / Cursor / Open Design 内嵌等)。声明住在项目仓的 `.bw/issue-policy.toml`,探活分三种机制(候选路径 / 版本命令 / 套接字握手);选了 Cursor 但探活失败就拒绝开工,绝不悄悄退回 Claude Code。未接的工具如实回灰、不假装可用。
+一件活开工时真实调起的智能体 CLI 或内嵌工具(Claude Code / Cursor / Open Design 内嵌等)。声明住在项目仓的 `.bw/config/issue-policy.toml`,探活分三种机制(候选路径 / 版本命令 / 套接字握手);选了 Cursor 但探活失败就拒绝开工,绝不悄悄退回 Claude Code。未接的工具如实回灰、不假装可用。
 _Avoid_: 和"模型"混为一谈(model 是模型标签,开工工具是执行引擎);假装 Cursor 已接(今天 Claude Code 走内嵌终端、Open Design 走会话屏内嵌页,Cursor 探不到就拒绝开工);把它当装饰性标签——它真实生效,探不通就不开工。详见 [远端与工具探活 模块](docs/architecture.md)。
 
 **发言方 / Author**:
@@ -91,7 +91,7 @@ _Avoid_: 按旧五步(仓→意图→快速问题→起草→确认)描述它—
 ### 活与状态
 
 **Issue / 活**:
-一件要干的具体工作,最小单位。"活"是口语规范词,"卡"只在指界面卡片形态时用。codehub/GitHub 的 issue+标签是唯一正本(标题=标识,`bw:status:*`/`bw:week:*`/`bw:released:*`/`bw:category:*` 标签=状态/排期/版本/类别,issue closed=Done);开工工具和 workflow 不另打标签,读回时用类别去查 `.bw/issue-policy.toml`。本地零库,读都走 CLI、不留读缓存。没挂仓的项目如实留白、不假装已同步。
+一件要干的具体工作,最小单位。"活"是口语规范词,"卡"只在指界面卡片形态时用。codehub/GitHub 的 issue+标签是唯一正本(标题=标识,`bw:status:*`/`bw:week:*`/`bw:released:*`/`bw:category:*` 标签=状态/排期/版本/类别,issue closed=Done);开工工具和 workflow 不另打标签,读回时用类别去查 `.bw/config/issue-policy.toml`。本地零库,读都走 CLI、不留读缓存。没挂仓的项目如实留白、不假装已同步。
 _Avoid_: 任务(与"定时任务"撞)、卡片(指实体时用"活",指 UI 时才用"卡")、ticket、工单。详见 [codehub-issue-正本 模块](docs/architecture.md)。
 
 **Issue 状态流转**:
@@ -116,7 +116,7 @@ _Avoid_: 失败(失败是"运行"的结局,不是活的状态)、挂起。
 
 ### 运行与执行
 
-> **消歧**:workflow 在 MVP = 活上挂的 SOP 技能包(在 `.bw/issue-policy.toml` 的 `mapping.workflow` 里给每类活记一个,如构建类挂 `mattpocock-skills`、原型类挂 `proto-design`,可换),Workbench 按它注入对应剧本(见 [系统提示词与渐进加载 模块](docs/architecture.md))。不再是聊天式工作流引擎(静态/动态、阶段角色、打回、解析为流程图那一套已退场)。
+> **消歧**:workflow 在 MVP = 活上挂的 SOP 技能包(在 `.bw/config/issue-policy.toml` 的 `mapping.workflow` 里给每类活记一个,如构建类挂 `mattpocock-skills`、原型类挂 `proto-design`,可换),Workbench 按它注入对应剧本(见 [系统提示词与渐进加载 模块](docs/architecture.md))。不再是聊天式工作流引擎(静态/动态、阶段角色、打回、解析为流程图那一套已退场)。
 
 **运行 / Run**:
 一件活的真实执行(▶跑),有成败与耗时,全结局都入账(成功、失败都记)。运行在该活专属的 issue worktree 里干活(每张活一棵,两张同时跑互不撞车;收尾后拆除,主工作区留着提供 master 视角)。
@@ -141,7 +141,7 @@ _Avoid_: 把它当某个具体代码结构;与"交互式运行"混用。
 ### 健康(难造假)
 
 **读数 / Reading(原「观测」)**:
-一个真实数据点。MVP 分三类:**可回溯**的一个字都不存、每次现算(git 提交数、合入的 PR 数、star 数……);**不可回溯**的落进只追加的读数流水 `.bw/metrics/readings.jsonl`(键是日历日,绝不插值,一个读数=一个点,展示按周取那一周最后一天);**手填**的也进流水、带「手填」徽记。判据是一句话:「今天能采到这个数,那么上周三那天的值现在还能算出来吗」。
+一个真实数据点。MVP 分三类:**可回溯**的一个字都不存、每次现算(git 提交数、合入的 PR 数、star 数……);**不可回溯**的落进只追加的读数流水 `.bw/state/metrics-readings.jsonl`(键是日历日,绝不插值,一个读数=一个点,展示按周取那一周最后一天);**手填**的也进流水、带「手填」徽记。判据是一句话:「今天能采到这个数,那么上周三那天的值现在还能算出来吗」。
 _Avoid_: 记录、log(读数是结构化数据点,不是日志文本)、埋点数据;观测(V3 旧名,正文统一用「读数」)。详见 [健康推导 模块](docs/architecture.md) 与 [仓文件解析 模块](docs/architecture.md)。
 
 **指标 / Metric**:
@@ -149,7 +149,7 @@ _Avoid_: 记录、log(读数是结构化数据点,不是日志文本)、埋点�
 _Avoid_: 数据、统计值;不要和"读数"混用——读数是原料,指标是产物。
 
 **指标正本 / Metrics Source of Truth**:
-一个项目的北极星 + 滞后指标 + 引领指标定义,写在仓里一份机读文件 `.bw/metrics.toml`(**只认 `schema_version = 2`**,读到旧格式整份拒收、不迁移),改指标和改代码一样走 MR 评审。Workbench 本地不缓存定义,每次现读。MVP **不要中间连接器层**——一条指标直接指向一个脚本:起进程、传时间窗、读标准输出的 JSON,Workbench 不认识被连的是什么系统;采集方式只有脚本和手填两种。
+一个项目的北极星 + 滞后指标 + 引领指标定义,写在仓里一份机读文件 `.bw/config/metrics.toml`(**只认 `schema_version = 2`**,读到旧格式整份拒收、不迁移),改指标和改代码一样走 MR 评审。Workbench 本地不缓存定义,每次现读。MVP **不要中间连接器层**——一条指标直接指向一个脚本:起进程、传时间窗、读标准输出的 JSON,Workbench 不认识被连的是什么系统;采集方式只有脚本和手填两种。
 _Avoid_: 绕开 MR 直接在界面里"定义"一条指标;把 V3 的 `.bw/connectors.toml` / `docs/Workbench/standards/metrics.md` 当现行正本(V3 已删,见 `v3` 分支)。详见 [仓文件解析 模块](docs/architecture.md)。
 
 **业务指标 / 项目指标(两层分流)**:
@@ -177,7 +177,7 @@ _Avoid_: 状态、健康值、分数;不要说"信号是绿的就是好的"以�
 _Avoid_: 默认绿、N/A、待定。
 
 **北极星 / North Star**:
-每个项目唯一的顶层目标,正本在 `.bw/project.toml`。可由工作台把用户回答组合成草稿,但绝不编造数字替用户答题。
+每个项目唯一的顶层目标,正本在 `.bw/config/project.toml`。可由工作台把用户回答组合成草稿,但绝不编造数字替用户答题。
 _Avoid_: KPI、OKR、总目标;不要有多个"北极星"。
 
 **引领指标 / 滞后指标 (Leading / Lagging)**:

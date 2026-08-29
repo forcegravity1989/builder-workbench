@@ -1,4 +1,4 @@
-//! `.bw/metrics/readings.jsonl` —— 不可回溯(B)与手填(C)的只追加读数流水。
+//! `.bw/state/metrics-readings.jsonl` —— 不可回溯(B)与手填(C)的只追加读数流水。
 //!
 //! 一行一个 JSON 对象。记账键是**日历日**(`YYYY-MM-DD`),和 V3 `observation.ts`
 //! 对齐,迁过去一行对一天。不改已有行;同一天同一指标采多次,读的时候**最后
@@ -12,7 +12,7 @@ use std::collections::HashMap;
 use std::io::Write;
 use std::path::Path;
 
-const REL: &str = ".bw/metrics/readings.jsonl";
+const REL: &str = ".bw/state/metrics-readings.jsonl";
 
 /// 一行读数。`source` / `collected_at` 旧行可能没有。没有 `day` 的旧周键行不认。
 #[derive(Serialize, Deserialize, Clone, Debug, Default, PartialEq, Eq)]

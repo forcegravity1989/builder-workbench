@@ -35,11 +35,11 @@ pub struct HealthInputs {
     /// 这一条是假 —— 此时「两周零提交」说明不了任何事,不能当成「这个项目
     /// 停了」判红。没数据是灰,不是红,也不是绿。
     pub git_readable: bool,
-    /// (b) 本周或上周的 `.bw/metrics/readings.jsonl` 里有指标读数(刀6 起不再读
+    /// (b) 本周或上周的 `.bw/state/metrics-readings.jsonl` 里有指标读数(刀6 起不再读
     /// 周计划文件的「本周指标读数」段)。
     pub has_metric_reading: bool,
-    /// 按 `.bw/metrics.toml` 的目标判下来**越线**的指标,一条一句人话
-    /// (「名」现值 X,目标 Y),读数来自 `.bw/metrics/readings.jsonl`。
+    /// 按 `.bw/config/metrics.toml` 的目标判下来**越线**的指标,一条一句人话
+    /// (「名」现值 X,目标 Y),读数来自 `.bw/state/metrics-readings.jsonl`。
     /// 空 = 没有越线的。判读在 [`target::breach`]:目标未设、格式认不出、
     /// 读数没采到,都是「判不了」不进这里 —— **缺数是灰的事,不是红的事**。
     pub red_metrics: Vec<String>,

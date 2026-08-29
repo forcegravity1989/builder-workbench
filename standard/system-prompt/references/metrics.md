@@ -10,7 +10,7 @@
 - 能 → **可回溯(A 类)**:一个字都不存,要看几周就现算几个窗口。新接入的
   项目第一天就有完整四周走势,不用先攒。
 - 不能 → **不可回溯(B 类)**:过了那一刻就没了,必须把每次读数追加进
-  `.bw/metrics/readings.jsonl`(只追加,不改已有行)。
+  `.bw/state/metrics-readings.jsonl`(只追加,不改已有行)。
 
 **判 B 类之前,先真的去找一遍有没有带时间戳的接口。** 判错的代价很实:一条
 本来能画出四周走势的指标,会被画成只有一个孤点。真实反例:GitHub 的 star 数
@@ -38,9 +38,9 @@ Workbench 解析失败或读到错值。脚本里显式把 stdout 设成 UTF-8(P
 **A 类脚本吐按周序列,不是一个当下值:**
 `{"points":[{"week":"2026-W35","value":8},…]}`。只给 `{"value":8}` 会落在
 窗口最后一周一个孤点、前几周断开——折线能画,但看不出走势。B 类才是
-`{"value":12}`。**判成 B 不等于不写脚本**——`collect` 仍是 `kind = "script", retro = false`,必须有 `run`。不写 `run` 就是写了一半。Workbench 点采集时跑脚本,把**当天**的值追加进 `.bw/metrics/readings.jsonl`(键是日历日 `YYYY-MM-DD`,同一天最后一行算)。Workbench 开着、过了本机 09:00,还会自动采一轮 B 类(失败也盖今日戳,避免反复打失败脚本)。展示按周,取那一周日期最大的一天。C 类在总览卡手填今天的数,同一天再记覆盖读回。不写 `run` 的 B 类仍然采不到。
+`{"value":12}`。**判成 B 不等于不写脚本**——`collect` 仍是 `kind = "script", retro = false`,必须有 `run`。不写 `run` 就是写了一半。Workbench 点采集时跑脚本,把**当天**的值追加进 `.bw/state/metrics-readings.jsonl`(键是日历日 `YYYY-MM-DD`,同一天最后一行算)。Workbench 开着、过了本机 09:00,还会自动采一轮 B 类(失败也盖今日戳,避免反复打失败脚本)。展示按周,取那一周日期最大的一天。C 类在总览卡手填今天的数,同一天再记覆盖读回。不写 `run` 的 B 类仍然采不到。
 
-字段名照 `.bw/metrics.toml` 顶部注释:`name` / `def` / `target` / `collect`。
+字段名照 `.bw/config/metrics.toml` 顶部注释:`name` / `def` / `target` / `collect`。
 `definition` 不是 `def`,界面口径会空着。
 
 ## 失败一律如实,绝不写 0

@@ -351,7 +351,7 @@
     <section class="screen" id="u2" data-title="纳入项目" data-sec-name="使用指导">
       <div class="eyebrow">使用指导 · 阶段 01</div>
       <h1 class="disp">纳入项目</h1>
-      <p class="lede">主推<strong>接入已有仓</strong>：选平台 → 选仓 → 填名字点确认。buddy 负责 clone、挂连接器、排定时器，并按仓里有没有 <code>.bw/project.toml</code> 区分<strong>首到者</strong>与<strong>后来者</strong>——同一项目可被多台 Buddy 分别纳管，共同事实从仓读回。</p>
+      <p class="lede">主推<strong>接入已有仓</strong>：选平台 → 选仓 → 填名字点确认。buddy 负责 clone、挂连接器、排定时器，并按仓里有没有 <code>.bw/config/project.toml</code> 区分<strong>首到者</strong>与<strong>后来者</strong>——同一项目可被多台 Buddy 分别纳管，共同事实从仓读回。</p>
 
       <h2 class="sec"><span class="n">操作</span>两张卡</h2>
       <div class="ops">
@@ -359,26 +359,26 @@
         <img src="img/u2-step1-wall.png" alt="项目墙 · 点新建项目" style="max-width:100%;border:1px solid var(--border);border-radius:10px;margin:10px 0">
         <div class="li"><div class="n">2</div><div class="t">「仓从哪来」：选平台（<code>codehub</code>/<code>github</code>）；起点选「新建仓」或「接入已有仓」；<code>codehub</code> 选区域（绿区/内源/黄区）；接入已有点「↻ 刷新列表」后从下拉选</div></div>
         <img src="img/u2-step2-repo.png" alt="仓从哪来 · 平台与起点" style="max-width:100%;border:1px solid var(--border);border-radius:10px;margin:10px 0">
-        <div class="li"><div class="n">3</div><div class="t">「你想做什么」：项目名称（必填）+ 一句话意图 / 对标谁 / 三个月后怎样算成了（均可空）。<strong>后来者</strong>（选仓后探测到远端已有 <code>.bw/project.toml</code>）：意图区<strong>只读预填</strong>正本字段，不必重填；<strong>首到者</strong>仍手填，确认后写入正本</div></div>
+        <div class="li"><div class="n">3</div><div class="t">「你想做什么」：项目名称（必填）+ 一句话意图 / 对标谁 / 三个月后怎样算成了（均可空）。<strong>后来者</strong>（选仓后探测到远端已有 <code>.bw/config/project.toml</code>）：意图区<strong>只读预填</strong>正本字段，不必重填；<strong>首到者</strong>仍手填，确认后写入正本</div></div>
         <img src="img/u2-step3-intent.png" alt="命名 · 意图 · 确认建立" style="max-width:100%;border:1px solid var(--border);border-radius:10px;margin:10px 0">
         <div class="li"><div class="n">4</div><div class="t">点「确认 · 建立项目」——一个按钮，背后连发整链；进度见上方条，完成后进项目</div></div>
       </div>
       <div class="callout">
         <svg viewBox="0 0 24 24"><path d="M12 3l9 16H3z"/><path d="M12 9v5M12 17h.01"/></svg>
-        <div class="body"><strong>判据</strong>：仓里有 <code>.bw/project.toml</code> = 后来者（读回正本、不建三件套；选仓后意图只读预填）；没有 = 首到者（手填意图、写正本、建三件套）。下拉列出你是 <strong>member</strong> 的仓（自己的、被加成协作、所在组织的）；只 star / 只看过的仓不会出现。仍没有 = 不是 member，或排在已加载上限以外。</div>
+        <div class="body"><strong>判据</strong>：仓里有 <code>.bw/config/project.toml</code> = 后来者（读回正本、不建三件套；选仓后意图只读预填）；没有 = 首到者（手填意图、写正本、建三件套）。下拉列出你是 <strong>member</strong> 的仓（自己的、被加成协作、所在组织的）；只 star / 只看过的仓不会出现。仍没有 = 不是 member，或排在已加载上限以外。</div>
       </div>
       <h2 class="sec"><span class="n">背后</span>确认建立后系统执行了什么</h2>
       <div class="res">
         <div class="h">对远端代码仓（GitHub/CodeHub）</div>
         <ul>
-          <li><span class="b"></span><div><strong>首到 · 新建仓</strong>：创建空仓；开 3 个起手 Issue；把 <code>.bw/project.toml</code>（及章程等）commit 上主干并推送</div></li>
-          <li><span class="b"></span><div><strong>首到 · 接入已有</strong>：clone 后写 <code>.bw/project.toml</code>，走 <code>bw/project-init</code> 分支提 PR 并由 Buddy <strong>自动合入</strong>（这是配置落仓，不是自动完成一张活）；失败会 tip，需你手动 merge。然后开 3 个起手 Issue</div></li>
+          <li><span class="b"></span><div><strong>首到 · 新建仓</strong>：创建空仓；开 3 个起手 Issue；把 <code>.bw/config/project.toml</code>（及章程等）commit 上主干并推送</div></li>
+          <li><span class="b"></span><div><strong>首到 · 接入已有</strong>：clone 后写 <code>.bw/config/project.toml</code>，走 <code>bw/project-init</code> 分支提 PR 并由 Buddy <strong>自动合入</strong>（这是配置落仓，不是自动完成一张活）；失败会 tip，需你手动 merge。然后开 3 个起手 Issue</div></li>
           <li><span class="b"></span><div><strong>后来者 · 接入已有</strong>：clone 后<strong>不再</strong>远端开那 3 个 Issue（启动包已由首到者发过）；不写不推 <code>project.toml</code></div></li>
         </ul>
         <div class="h">对你的机器</div>
         <ul>
           <li><span class="b"></span><div>把仓 clone 到 buddy 工作区（默认 <code>%APPDATA%\BuildersWorkbench\workspaces\&lt;名&gt;-&lt;短id&gt;</code>）</div></li>
-          <li><span class="b"></span><div>创建收尾读回仓内正本：<code>.bw/project.toml</code>（若有）+ <code>metrics.toml</code> + <code>connectors.toml</code> → 写入本机 buddy 缓存</div></li>
+          <li><span class="b"></span><div>创建收尾读回仓内正本：<code>.bw/config/project.toml</code>（若有）+ <code>metrics.toml</code> + <code>connectors.toml</code> → 写入本机 buddy 缓存</div></li>
         </ul>
         <div class="h">对 buddy 数据库</div>
         <ul>
@@ -392,7 +392,7 @@
         <ul>
           <li><span class="b"></span><div><strong>项目在墙</strong>——点进运营屏；侧栏能看到扫到的本项目 skill / 定时器 / 连接器</div></li>
           <li><span class="b"></span><div><strong>总览 · 项目指标</strong>两张仓卡 + 阶段完成一行；有值就显示，没值灰着（Unknown ≠ 绿）</div></li>
-          <li><span class="b"></span><div><strong>首到者</strong>：3 张起手 Issue 在看板待办池；工作区已在默认主干；仓里有意图正本 <code>.bw/project.toml</code></div></li>
+          <li><span class="b"></span><div><strong>首到者</strong>：3 张起手 Issue 在看板待办池；工作区已在默认主干；仓里有意图正本 <code>.bw/config/project.toml</code></div></li>
           <li><span class="b"></span><div><strong>后来者</strong>：toast「正本已读回」+「从仓同步 Issue」；不重复建三件套远端；本地看板出现仓上已有的 <strong>open</strong> Issue（待办池），可 ▶跑</div></li>
         </ul>
         <img src="img/u2-result-overview-metrics.png" alt="总览 · 项目指标两张仓卡" style="max-width:100%;border:1px solid var(--border);border-radius:10px;margin:10px 0">
@@ -443,7 +443,7 @@
           <div class="body"><strong>嵌终端里自动出现的第一段字 ≠ buddy 系统提示词，也不等于 Skill 全文。</strong>那只是这张活的<strong>标题 + 描述</strong>（首条任务）。buddy 铁律、规范索引、以及挂上的方法（如 <code>north-star-discovery</code>）已在后台注入，聊天记录里通常<strong>看不见</strong>。想确认：直接问模型「有没有 buddy 铁律？主 Skill 是什么？」——能答出合并须人点、<code>north-star-discovery</code> 等即生效。机制 → <a href="#" onclick="go('m4');return false">技能与 Prompt</a>。</div>
         </div>
         <div class="li"><div class="n">3</div><div class="t">聊到你认可：北极星、引领/滞后；每条打算<strong>自动采</strong>还是<strong>以后手填</strong></div></div>
-        <div class="li"><div class="n">4</div><div class="t">让模型把计划写进仓（<code>.bw/metrics.toml</code> 等）并自提合并请求——它合不了，只能你合</div></div>
+        <div class="li"><div class="n">4</div><div class="t">让模型把计划写进仓（<code>.bw/config/metrics.toml</code> 等）并自提合并请求——它合不了，只能你合</div></div>
         <div class="li"><div class="n">5</div><div class="t">卡变成「评审中」后：在 buddy 点 <strong>⬇ merge PR</strong>（合入并验收完成）；只有你已在网页合过时，才点 <strong>→已完成</strong></div></div>
         <img src="img/u3-issues-board.png" alt="Issue 看板 · 找指标与绑数据收尾后" style="max-width:100%;border:1px solid var(--border);border-radius:10px;margin:10px 0">
         <p class="note-line">上图示例（收尾后刷新）：找指标 / 绑数据已在「已完成」；左侧能看到连接器和每日采集定时。</p>
@@ -859,7 +859,7 @@
 
       <div class="ex">
         <div class="eh">Example · 三件套从哪来</div>
-        <div class="ed">挂远端仓且仓里<strong>还没有</strong> <code>.bw/project.toml</code>（首到者）时，纳入收尾自动建：竞品分析 → 找指标 → 绑数据。仓里<strong>已有</strong>该文件（后来者）则跳过远端新建。创建收尾与看板「↻ 从仓同步 Issue」都会把远端 <strong>open</strong> Issue 读回成本地待办池行（同号幂等）。再同步时：远端已关、本机又没点完成的本地行会收起（Cancelled，看板上不出现）；本机已完成的留在「已完成」可续聊。三件套标题精确匹配才挂对应 skill。纯本地无远端则不建。</div>
+        <div class="ed">挂远端仓且仓里<strong>还没有</strong> <code>.bw/config/project.toml</code>（首到者）时，纳入收尾自动建：竞品分析 → 找指标 → 绑数据。仓里<strong>已有</strong>该文件（后来者）则跳过远端新建。创建收尾与看板「↻ 从仓同步 Issue」都会把远端 <strong>open</strong> Issue 读回成本地待办池行（同号幂等）。再同步时：远端已关、本机又没点完成的本地行会收起（Cancelled，看板上不出现）；本机已完成的留在「已完成」可续聊。三件套标题精确匹配才挂对应 skill。纯本地无远端则不建。</div>
       </div>
       <div class="ex">
         <div class="eh">Example · 后来者本地可跑远端已有活</div>
@@ -921,7 +921,7 @@
 
       <div class="ex">
         <div class="eh">Example · 换技能会怎样</div>
-        <div class="ed">把 <code>north-star-discovery/SKILL.md</code> 换成业界写法也可以：衔接层仍要求产出 <code>.bw/metrics.toml</code> 与 rationale。若技能教模型「只聊天不写文件」，合入链会断——那是技能质量问题，不是衔接层该放松。</div>
+        <div class="ed">把 <code>north-star-discovery/SKILL.md</code> 换成业界写法也可以：衔接层仍要求产出 <code>.bw/config/metrics.toml</code> 与 rationale。若技能教模型「只聊天不写文件」，合入链会断——那是技能质量问题，不是衔接层该放松。</div>
       </div>
 
       <h2 class="sec"><span class="n">复利</span></h2>
@@ -1021,7 +1021,7 @@
 
       <div class="ex">
         <div class="eh">Example · 找指标 ▶跑 → InReview</div>
-        <div class="ed">嵌终端多轮 → 活分支写 <code>.bw/metrics.toml</code> → 自提 MR → buddy 读回开放 MR → InReview。buddy 内 merge，或网页合完点「已完成」——都会 pull+Sync 装表。</div>
+        <div class="ed">嵌终端多轮 → 活分支写 <code>.bw/config/metrics.toml</code> → 自提 MR → buddy 读回开放 MR → InReview。buddy 内 merge，或网页合完点「已完成」——都会 pull+Sync 装表。</div>
       </div>
       <p class="where">落点：PTY 会话 <code>crates/bw-engine/src/terminal_manager.rs</code>；交互式启动/续聊/降级咨询 <code>crates/bw-app</code>；MergeIssuePr / TransitionIssue <code>crates/bw-app</code>；嵌终端 <code>app-desktop</code>。</p>
       <div class="foot">技能怎么灌 → <a href="#" onclick="go('m4');return false">技能与 Prompt</a>；采数链 → <a href="#" onclick="go('m6');return false">指标与健康</a>。</div>
@@ -1038,9 +1038,9 @@
       <div class="diagram">
         <div class="cap">正本在仓 · 缓存进库 · 灯不能手点</div>
         <div class="pipe">
-          <div class="box"><div class="t">.bw/project.toml</div><div class="d">意图正本<br>名/对标/机会</div></div>
+          <div class="box"><div class="t">.bw/config/project.toml</div><div class="d">意图正本<br>名/对标/机会</div></div>
           <div class="arr">+</div>
-          <div class="box"><div class="t">.bw/metrics.toml</div><div class="d">定义正本<br>走 PR</div></div>
+          <div class="box"><div class="t">.bw/config/metrics.toml</div><div class="d">定义正本<br>走 PR</div></div>
           <div class="arr">→</div>
           <div class="box"><div class="t">metric 行</div><div class="d">merge 后装表<br>origin=file</div></div>
           <div class="arr">→</div>
@@ -1065,7 +1065,7 @@
 
       <h2 class="sec"><span class="n">装表</span>SyncMetrics / SyncConnectors</h2>
       <div class="pipe">
-        <div class="box"><div class="t">默认分支</div><div class="d">.bw/metrics.toml<br>.bw/connectors.toml</div></div>
+        <div class="box"><div class="t">默认分支</div><div class="d">.bw/config/metrics.toml<br>.bw/connectors.toml</div></div>
         <div class="arr">→</div>
         <div class="box"><div class="t">Sync*</div><div class="d">upsert metric<br>/ script connector</div></div>
         <div class="arr">→</div>
@@ -1136,7 +1136,7 @@
 
       <div class="ex">
         <div class="eh">Example · 绑数据合入后</div>
-        <div class="ed">MR 合入 → buddy 读 <code>.bw/metrics.toml</code> + <code>.bw/connectors.toml</code> 装表 → <strong>立刻采一轮</strong>（与「立即采集」同一条）→ <code>observation.raw</code> 有值 → 总览业务卡出数。之后靠每日 cron 续采。装置目录约定见 <code>docs/buddy/standards/connectors.md</code>。</div>
+        <div class="ed">MR 合入 → buddy 读 <code>.bw/config/metrics.toml</code> + <code>.bw/connectors.toml</code> 装表 → <strong>立刻采一轮</strong>（与「立即采集」同一条）→ <code>observation.raw</code> 有值 → 总览业务卡出数。之后靠每日 cron 续采。装置目录约定见 <code>docs/buddy/standards/connectors.md</code>。</div>
       </div>
       <div class="ex">
         <div class="eh">Example · 存量项目补历史</div>

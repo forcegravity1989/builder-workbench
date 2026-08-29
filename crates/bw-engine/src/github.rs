@@ -4,7 +4,7 @@
 
 /// 项目名片在仓里的相对路径。底座只拿它拼远端 API 的 URL,**不解析这份文件**
 /// —— 解析是上层的事(`bw` 有自己的一份)。
-pub const PROJECT_FILE_REL_PATH: &str = ".bw/project.toml";
+pub const PROJECT_FILE_REL_PATH: &str = ".bw/config/project.toml";
 use crate::win_cmd::stderr_text;
 use std::path::Path;
 use std::process::Stdio;
@@ -453,7 +453,7 @@ pub async fn list_repos(limit: u32) -> Result<Vec<GithubRepoSummary>, GithubErro
         .collect())
 }
 
-/// V2-② Intent UX: fetch `.bw/project.toml` via `gh api` raw contents
+/// V2-② Intent UX: fetch `.bw/config/project.toml` via `gh api` raw contents
 /// without cloning. Same contract as [`crate::codehub::fetch_project_toml`]:
 /// `Ok(None)` = absent → first-comer; `Err` = soft-fail (stay editable).
 pub async fn fetch_project_toml(

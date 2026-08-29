@@ -4,7 +4,7 @@
 //! cargo run -p bw-engine --example adopted_probe -- <owner/repo> [分支]
 //! ```
 //!
-//! 接入屏点「下一步」时问的就是这一句:去远端取 `.bw/project.toml`。
+//! 接入屏点「下一步」时问的就是这一句:去远端取 `.bw/config/project.toml`。
 //! 三种答案必须分得开,分不开就会出人命:
 //!
 //! | 远端回什么 | 该报 | 报错了会怎样 |
@@ -52,10 +52,10 @@ fn main() {
     print!("[ADOPTED_PROBE] {slug} 分支={shown} → ");
     match answer {
         Ok(Some(raw)) => println!(
-            "接管过 · 远端那份 .bw/project.toml 读到了({} 字节)",
+            "接管过 · 远端那份 .bw/config/project.toml 读到了({} 字节)",
             raw.len()
         ),
-        Ok(None) => println!("还没接管过 · 仓里没有 .bw/project.toml"),
+        Ok(None) => println!("还没接管过 · 仓里没有 .bw/config/project.toml"),
         Err(e) => println!("没查成,所以不知道接管过没有 · 原话:{e}"),
     }
 }

@@ -184,7 +184,7 @@ fn project_card(
             onclick: move |_| b.send(Req::Open(Some(id))),
             div { class: "pcard-top",
                 if p.version.trim().is_empty() {
-                    span { class: "chip chip-outline mono", title: "仓里的 .bw/project.toml 没写在研版本", "版本未定" }
+                    span { class: "chip chip-outline mono", title: "仓里的 .bw/config/project.toml 没写在研版本", "版本未定" }
                 } else {
                     span { class: "chip chip-outline mono", "{p.version}" }
                 }

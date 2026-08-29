@@ -400,7 +400,7 @@ fn tool_for(kind: IssueKind) -> String {
     }
 }
 
-/// 业务活:类别标签 → `.bw/issue-policy.toml` 映射出工具和 workflow。
+/// 业务活:类别标签 → `.bw/config/issue-policy.toml` 映射出工具和 workflow。
 /// 运作活仍从标题推断。查不到映射就空着,不猜 claude。
 fn resolve_tool_workflow(
     project: &Project,

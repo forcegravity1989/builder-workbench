@@ -6,7 +6,7 @@
 //! 刀5(2026-08-22)迁完:判据不再读 `week_plan_file` / `release_file`(这两个
 //! 模块已删)。`has_week_goal` 读 ops① 评论里解析出的周目标一句话;
 //! `ops1_open` 只说明这张活还开着;`has_metric_reading` 和 `any_metric_red` 改读
-//! 仓 `.bw/metrics/readings.jsonl`;`released` 改读 git 标签日期。
+//! 仓 `.bw/state/metrics-readings.jsonl`;`released` 改读 git 标签日期。
 
 use super::{App, Result};
 use crate::derive::{derive_project_health, DerivedHealth, HealthInputs};
@@ -54,7 +54,7 @@ pub async fn collect_health_inputs(
     let committed_last_week = counts.get(&last_week).is_some_and(|c| c.commits > 0);
     let merged_last_week = counts.get(&last_week).is_some_and(|c| c.merges > 0);
 
-    // (b) has_metric_reading + red_metrics:读仓 `.bw/metrics/readings.jsonl`。
+    // (b) has_metric_reading + red_metrics:读仓 `.bw/state/metrics-readings.jsonl`。
     let readings = read_metric_readings(workspace, week);
     let last_readings = if last_week.is_empty() {
         Vec::new()

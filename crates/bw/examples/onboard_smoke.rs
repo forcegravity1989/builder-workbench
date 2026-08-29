@@ -262,7 +262,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             "-C",
             mature.to_str().unwrap(),
             "show",
-            "bw/issue-1:.bw/project.toml",
+            "bw/issue-1:.bw/config/project.toml",
         ])
         .output()
         .map(|o| o.status.success())
@@ -384,9 +384,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             say(
                 "档 5 · clone 下来了吗",
                 &format!(
-                    ".git={} · .bw/project.toml={}",
+                    ".git={} · .bw/config/project.toml={}",
                     ws.join(".git").is_dir(),
-                    ws.join(".bw/project.toml").is_file()
+                    ws.join(".bw/config/project.toml").is_file()
                 ),
             );
             let head = tokio::process::Command::new("git")

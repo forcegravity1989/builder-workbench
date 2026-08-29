@@ -1,4 +1,4 @@
-//! `.bw/issue-policy.toml` —— 活的约定:「类别→工具→workflow」三列映射、节律、
+//! `.bw/config/issue-policy.toml` —— 活的约定:「类别→工具→workflow」三列映射、节律、
 //! 看板列文案。
 //!
 //! 这份文件**不入库**。配置屏、▶开工、定时判据每次现读现解析。
@@ -12,7 +12,7 @@ use crate::model::{category_from_key, Category};
 use serde::{Deserialize, Serialize};
 use std::path::Path;
 
-pub const REL_PATH: &str = ".bw/issue-policy.toml";
+pub const REL_PATH: &str = ".bw/config/issue-policy.toml";
 
 /// 一行三列映射:类别 → 默认开工工具 → 默认 workflow。
 /// `workflow` 空 = 这个类别没有默认 workflow,开工时现挑。

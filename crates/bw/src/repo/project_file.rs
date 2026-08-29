@@ -1,10 +1,10 @@
-//! `.bw/project.toml` —— 项目意图与配置的正本。
+//! `.bw/config/project.toml` —— 项目意图与配置的正本。
 //!
 //! V3 的解析器(`bw_engine::project_file`)只认五个意图字段,这份多两样:
 //! `[chat]` 项目群与 `current_version`(在研版本)。**都不入库**——总览、计划屏
 //! 每次要显示就现读现解析这份文件。
 //!
-//! **这里没有「项目用的是哪版规范」**:那个数只有 `.bw/managed.toml` 说了算
+//! **这里没有「项目用的是哪版规范」**:那个数只有 `.bw/state/managed.toml` 说了算
 //! (它逐份记着铺的时候是哪版、内容指纹是什么)。在这儿再存一份镜像,没有
 //! 任何代码维护它,放几周就和真相对不上了——2026-08-29 删掉的正是那个字段。
 
@@ -12,7 +12,7 @@ use super::{parse_toml, read_to_string, write_file, Result};
 use serde::{Deserialize, Serialize};
 use std::path::Path;
 
-pub const REL_PATH: &str = ".bw/project.toml";
+pub const REL_PATH: &str = ".bw/config/project.toml";
 
 /// 项目群配置。不配就整段不写,总览名片显示「未配 · 配置」。
 #[derive(Debug, Clone, Default, Deserialize, Serialize, PartialEq, Eq)]

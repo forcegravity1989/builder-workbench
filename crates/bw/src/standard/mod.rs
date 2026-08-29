@@ -6,7 +6,7 @@
 //! 两个版本号别混:
 //! - `standard/VERSION`(这里的 [`version`]):**Workbench 侧** —— 当前二进制
 //!   自带哪一版规范,随发布走。
-//! - `.bw/managed.toml` 里每条记录的 `version`:**项目侧** —— 这个项目的这一
+//! - `.bw/state/managed.toml` 里每条记录的 `version`:**项目侧** —— 这个项目的这一
 //!   份件是哪一版铺下去的,随项目走。
 //!
 //! 两个值常常相等,含义不同。项目侧的版本**逐份记在指纹清单里**,不在别处
@@ -63,7 +63,7 @@ pub enum LayAt {
     OnFirstUse,
 }
 
-/// 铺底要落的核心件,按落盘顺序。`.bw/managed.toml` 不在表里——它记的是
+/// 铺底要落的核心件,按落盘顺序。`.bw/state/managed.toml` 不在表里——它记的是
 /// 「这些件的指纹」,所以必须**最后**写,保证记的是刚落盘那一刻的真实内容。
 ///
 /// **落点分两类,别混**:
@@ -84,7 +84,7 @@ pub const CORE_TEMPLATES: &[Template] = &[
     },
     Template {
         category: "issue-policy",
-        target: ".bw/issue-policy.toml",
+        target: ".bw/config/issue-policy.toml",
         body: ISSUE_POLICY_TMPL,
         lay_at: LayAt::Adopt,
         note: "活的分类 → 用什么工具开工、挂哪份剧本;定时节律也在这里",

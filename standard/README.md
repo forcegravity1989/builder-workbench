@@ -6,8 +6,8 @@
      (`crates/bw/src/standard/`)。 -->
 
 `standard/` 是 Builders' Workbench(Workbench)往被管项目仓 `.bw/` 里铺的骨架
-文件的**正本**。项目仓里看到的 `.bw/PROJECT.md`、`.bw/issue-policy.toml`、
-`.bw/metrics.toml` 等内容都来自这里的模板渲染——改这里的模板,就是在改
+文件的**正本**。项目仓里看到的 `.bw/PROJECT.md`、`.bw/config/issue-policy.toml`、
+`.bw/config/metrics.toml` 等内容都来自这里的模板渲染——改这里的模板,就是在改
 Workbench 给每个新项目铺出来的起点长什么样。仓根 `AGENTS.md` 不在这套模板里。
 
 **落点分两类,别混**:
@@ -26,8 +26,8 @@ Workbench 给每个新项目铺出来的起点长什么样。仓根 `AGENTS.md` 
 这套规范现在四类,和 `CORE_TEMPLATES` 对得上:charter、docs-core、metrics、
 issue-policy。旧名单里的 agents / defaults-core / cadence 没有对应模板(仓根
 手册归资产盘点、节律目录标了没建)。**「这个项目铺了哪一版」逐份记在
-`.bw/managed.toml` 里**,不另存一份汇总——2026-08-29 删掉的 `meta` 那类
-(`.bw/standard.toml`)就是那份没人读的汇总。
+`.bw/state/managed.toml` 里**,不另存一份汇总——2026-08-29 删掉的 `meta` 那一类
+就是那份没人读的汇总。
 
 ## 谁会读这些文件
 
@@ -60,8 +60,8 @@ issue-policy。旧名单里的 agents / defaults-core / cadence 没有对应模�
 |---|---|
 | `templates/PROJECT.md.tmpl` | 项目章程:想做什么、最像的对标、北极星、项目信息 |
 | `templates/design/README.md` | `.bw/design/` 目录用途与写作约定(30 秒导读、过期加横幅) |
-| `templates/metrics.toml.tmpl` | `.bw/metrics.toml` 骨架:北极星占位 + 滞后/引领指标写法示例(注释掉) |
-| `templates/issue-policy.toml.tmpl` | `.bw/issue-policy.toml` 骨架:类别→工具→workflow 默认映射、节律、看板列标题 |
+| `templates/metrics.toml.tmpl` | `.bw/config/metrics.toml` 骨架:北极星占位 + 滞后/引领指标写法示例(注释掉) |
+| `templates/issue-policy.toml.tmpl` | `.bw/config/issue-policy.toml` 骨架:类别→工具→workflow 默认映射、节律、看板列标题 |
 | `templates/scripts/*.py`(13 份) | 现成采集脚本,铺进 `.bw/scripts/`:仓级三份(每周提交数 / 合入 PR 数 / star 数)+ 过程指标包十份(评审等待 / 首过率 / 返工轮数 / 首审等待 / 意图成文时长 / 变更前置时间 / 同时开着的 MR 数 / 活存活率 / 手册修正频次 / 距上次发版天数)——全部可回溯、只读代码仓与远端 |
 | `templates/process-catalog.md` | 过程指标目录(playbook 26 条的总账:能算的指到脚本、等前置的写明等什么、不建的写明为什么),铺进 `.bw/process-catalog.md`;荐入规则见 `skills/metrics-refresh` |
 

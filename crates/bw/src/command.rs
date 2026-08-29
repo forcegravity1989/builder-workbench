@@ -42,12 +42,12 @@ pub enum Command {
         /// 空 = 用工作区根目录下的 `<slug>`。
         workspace_path: String,
     },
-    /// 名片「编辑→保存」:改 `PROJECT.md` 与 `.bw/project.toml`,走一张轻量活。
+    /// 名片「编辑→保存」:改 `PROJECT.md` 与 `.bw/config/project.toml`,走一张轻量活。
     EditProjectCard {
         project_id: ProjectId,
         intent: ProjectIntent,
     },
-    /// 配项目群:写 `.bw/project.toml` 的 `[chat]` 段。`provider` 传 `"none"`
+    /// 配项目群:写 `.bw/config/project.toml` 的 `[chat]` 段。`provider` 传 `"none"`
     /// 就是明确不配群。
     SetProjectChat {
         project_id: ProjectId,
@@ -80,7 +80,7 @@ pub enum Command {
         week: String,
         titles: Vec<String>,
     },
-    /// 建一张活。`category` 决定默认工具与 workflow(查 `.bw/issue-policy.toml`)。
+    /// 建一张活。`category` 决定默认工具与 workflow(查 `.bw/config/issue-policy.toml`)。
     CreateIssue {
         project_id: ProjectId,
         title: String,
@@ -145,7 +145,7 @@ pub enum Command {
     CancelReview { id: IssueId },
 
     // ── 配置 ──────────────────────────────────────────────
-    /// 保存一行「类别→工具→workflow」映射,写 `.bw/issue-policy.toml`。
+    /// 保存一行「类别→工具→workflow」映射,写 `.bw/config/issue-policy.toml`。
     SaveToolMapping {
         project_id: ProjectId,
         category: Category,
@@ -194,7 +194,7 @@ pub enum Command {
         cols: u16,
         rows: u16,
     },
-    /// 总览手填卡:把人填的今天这个数追加进 `.bw/metrics/readings.jsonl`。
+    /// 总览手填卡:把人填的今天这个数追加进 `.bw/state/metrics-readings.jsonl`。
     /// 只收 C 类(`collect.kind = "manual"`)。空值拒。
     RecordManualMetric {
         project_id: ProjectId,
@@ -219,7 +219,7 @@ pub enum Event {
     ProjectCreated {
         id: ProjectId,
         slug: String,
-        /// 仓里本来就有 `.bw/project.toml` —— 这次是「接手已有项目」,
+        /// 仓里本来就有 `.bw/config/project.toml` —— 这次是「接手已有项目」,
         /// 人手填过的字段一个都没覆盖。
         adopted: bool,
     },

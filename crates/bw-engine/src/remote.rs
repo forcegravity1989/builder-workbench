@@ -232,7 +232,7 @@ impl Remote {
     /// human/auto semantics: `MergeIssuePr` — the **human验收** action
     /// (one-click merge → caller settles `Done`); on `Err` the Issue stays
     /// `InReview` retryable, never fabricated, never reverse-settled.
-    /// `write_project_toml_pr` — the **auto-merge** of a `.bw/project.toml`
+    /// `write_project_toml_pr` — the **auto-merge** of a `.bw/config/project.toml`
     /// config PR (project.toml is configuration, not an Issue, so auto-merging
     /// it doesn't break "Done 永不自动"; issue PRs are never auto-merged —
     /// that path is unchanged). Bug③ (2026-07-30): before this, `MergeIssuePr`

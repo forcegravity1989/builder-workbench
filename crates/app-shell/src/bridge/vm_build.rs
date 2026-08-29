@@ -136,7 +136,7 @@ fn primary_note(events: &[Event]) -> Option<String> {
     events.first().map(|e| match e {
         Event::ProjectCreated { slug, adopted, .. } => {
             if *adopted {
-                format!("接手了已有项目 {slug} —— 仓里原有的 .bw/project.toml 一个字没动")
+                format!("接手了已有项目 {slug} —— 仓里原有的 .bw/config/project.toml 一个字没动")
             } else {
                 format!("项目 {slug} 已接入")
             }
@@ -339,7 +339,7 @@ pub async fn build(app: &App, ui: &mut UiState) -> Vm {
     for p in &projects {
         let ws = app.workspace_of(p.id).await.unwrap_or_default();
         let file = read_or_warn(
-            &format!("{} 的 .bw/project.toml", p.slug),
+            &format!("{} 的 .bw/config/project.toml", p.slug),
             project_file::read(&ws),
             &mut warnings,
         )
@@ -552,8 +552,8 @@ async fn build_project(
 ) -> Option<ProjectVm> {
     let p = app.project(id).await.ok()??;
     let ws = app.workspace_of(id).await.ok()?;
-    let file =
-        read_or_warn(".bw/project.toml", project_file::read(&ws), warnings).unwrap_or_default();
+    let file = read_or_warn(".bw/config/project.toml", project_file::read(&ws), warnings)
+        .unwrap_or_default();
     // 失败不吞:挂到 warnings,UI 横幅「读 issue 失败」,VM 用空活照建(健康落灰、
     // 看板空),保留上一份已知好的结构 —— 不整体清空。
     let mut issues = match app.issues(id).await {
@@ -606,11 +606,11 @@ async fn build_project(
     }
 
     let policy = read_or_warn(
-        ".bw/issue-policy.toml",
+        ".bw/config/issue-policy.toml",
         issue_policy_file::read(&ws),
         warnings,
     );
-    // 指标读数从仓 `.bw/metrics/readings.jsonl` 取(刀6:不再读周计划文件的
+    // 指标读数从仓 `.bw/state/metrics-readings.jsonl` 取(刀6:不再读周计划文件的
     // 「本周指标读数」段)。取的是正在看的那一周。
     let readings = bw::app::read_metric_readings(&ws, &viewing_week);
 

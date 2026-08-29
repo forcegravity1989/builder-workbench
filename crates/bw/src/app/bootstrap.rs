@@ -105,7 +105,7 @@ impl App {
         self.step(ProgressLine::doing(5, "规范铺底:往那棵树里写规范骨架…"));
         let mut report = boot::write_core_files(&tree.path, &vars, all)?;
 
-        // **名片也得进这个 MR。** 接入那一步把 `.bw/project.toml` 写在人的主
+        // **名片也得进这个 MR。** 接入那一步把 `.bw/config/project.toml` 写在人的主
         // 检出里(得先有它,PROJECT.md 才渲染得出项目名),但铺底是在**这张活
         // 自己的树**上提交的 —— 不把它复制过来,人的工作目录里就永远挂着一份
         // 没提交的 `.bw/`,而仓里到今天都没有名片。「仓是正本、换台机器拉下来

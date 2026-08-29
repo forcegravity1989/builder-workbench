@@ -32,10 +32,10 @@ category: 运作
 1. **文档**——本周 ops① issue 在不在、codehub Release 有没有落下版本;这周新增
    的文档有没有登记进知识库资产页。
 2. **产物与技能 / workflow**——新增的技能包、新挂的 workflow 有没有登记。
-3. **规范对账**——对照 `.bw/managed.toml` 里的指纹,检查规范件版本是否落后、有没有人改
+3. **规范对账**——对照 `.bw/state/managed.toml` 里的指纹,检查规范件版本是否落后、有没有人改
    过。**只记录差异,不擅自升级**——人改过的规范件是这个项目自己的决定。
-4. **指标数据新鲜度**——`.bw/metrics.toml` 里哪些指标超过保鲜期没有真实读数(读数在
-   `.bw/metrics/readings.jsonl` 与本周 ops① issue 评论里的读数快照段)。
+4. **指标数据新鲜度**——`.bw/config/metrics.toml` 里哪些指标超过保鲜期没有真实读数(读数在
+   `.bw/state/metrics-readings.jsonl` 与本周 ops① issue 评论里的读数快照段)。
 5. **代码图大文件榜**——`codegraph files -j` 找超过行数上限的文件。
 
 **不做「零调用者就当死码删」**:`codegraph` 对 `dyn Trait` 这类动态分发看不见,零调用者
