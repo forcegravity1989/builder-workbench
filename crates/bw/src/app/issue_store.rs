@@ -2,7 +2,8 @@
 //!
 //! 把 bw 的 `Issue` 领域对象 ↔ codehub/GitHub issue 互转。issue 的状态、
 //! 排期、版本、类别从本地 SQLite 搬到远端 issue + 标签(`bw:status:*` /
-//! `bw:week:*` / `bw:released:*` / `bw:category:*`),这是那条映射的正本。
+//! `bw:week:*` / `bw:plan:*` / `bw:released:*` / `bw:category:*`),这是那条映射的正本。
+//! 周版本和人起名的版本是同一槽位,一张活只挂一个。
 //!
 //! 字段映射的取舍:每一条都不自作主张加标签。**lossy**:远端 issue 的 `body` 经
 //! `view_issue` 单查带回(列表查询不带正文);`branch`/`pr_number`、
@@ -45,9 +46,9 @@ fn map_remote_err<E: std::fmt::Display>(ctx: &str, e: E) -> AppError {
 
 /// 在远端仓里真开一个 issue,返回填好 `number`/`remote_number` 的 `Issue`。
 ///
-/// labels = `bw:status:todo`(新活默认待办)+ `bw:week:{week_of}`(非空时)+
-/// `extra_labels`(调用方自塞,如 `bw:released:*`)。kind 由参数显式给(不推
-/// 断),决定回填 `tool`/`workflow`/`origin`。
+/// labels = `bw:status:todo`(新活默认待办)+ 一个版本槽(`bw:week:` 或
+/// `bw:plan:`,见 [`one_schedule`])+ `extra_labels`(调用方自塞,如类别)。
+/// kind 由参数显式给(不推断),决定回填 `tool`/`workflow`/`origin`。
 ///
 /// issue 读写唯一入口:app 层各用例(issue / plan / ops / bootstrap / project /
 /// session)都经这里的 `create` / `set_status` / `find_open_by_title` / `fetch` 落远端。
@@ -61,19 +62,20 @@ pub async fn create(
     extra_labels: &[&str],
 ) -> Result<Issue> {
     let remote = app.remote_for(project)?;
-    // 未排期(week_of 空 + plan 空)的 issue 状态是 Backlog(待办池),
-    // 排进周或版本的才是 Todo(已排期)。
-    let has_plan = extra_labels.iter().any(|l| l.starts_with("bw:plan:"));
-    let status_label = if week_of.is_empty() && !has_plan {
+    let (week, plan) = one_schedule(week_of, extra_labels);
+    // 未排期的 issue 状态是 Backlog(待办池),排进一个版本的才是 Todo。
+    let status_label = if week.is_none() && plan.is_none() {
         "bw:status:backlog"
     } else {
         "bw:status:todo"
     };
     let mut labels: Vec<String> = vec![status_label.to_string()];
-    if !week_of.is_empty() {
-        labels.push(format!("bw:week:{week_of}"));
+    if let Some(w) = &week {
+        labels.push(format!("bw:week:{w}"));
     }
     for x in extra_labels {
+        // plan 已在 extra 里;week 与 plan 同时传来时 one_schedule 丢掉了周,
+        // 这里不再补 bw:week。
         labels.push((*x).to_string());
     }
     let label_refs: Vec<&str> = labels.iter().map(|s| s.as_str()).collect();
@@ -81,14 +83,18 @@ pub async fn create(
         .create_issue(title, body, &label_refs)
         .await
         .map_err(|e| map_remote_err("远端建活没成", e))?;
-    project_week_best_effort(&remote, iid, week_of).await;
+    if let Some(name) = &plan {
+        project_plan_best_effort(&remote, &project.remote_path, iid, name).await;
+    } else if let Some(w) = &week {
+        project_week_best_effort(&remote, iid, w).await;
+    }
     Ok(issue_from_create(
         project,
         iid,
         title,
         body,
         kind,
-        week_of,
+        week.as_deref().unwrap_or(""),
         extra_labels,
     ))
 }
@@ -184,8 +190,8 @@ pub async fn set_category(
     Ok(())
 }
 
-/// 改 issue 的周标签(`bw:week:*`,namespace-replace 会换掉旧 week)。
-/// 同时摘 `bw:plan:`(空后缀) —— 周与版本互斥,排进周就不能还挂着版本。
+/// 改 issue 的周版本标签(`bw:week:*`,namespace-replace 会换掉旧 week)。
+/// 同时摘 `bw:plan:`(空后缀) —— 一张活只属于一个版本,换到周版本就把人起名的那个摘掉。
 pub async fn set_week(app: &App, project: &Project, iid: u32, week: &str) -> Result<()> {
     let remote = app.remote_for(project)?;
     let labels = [format!("bw:week:{week}"), "bw:plan:".to_string()];
@@ -210,6 +216,12 @@ async fn project_week_best_effort(remote: &Remote, iid: u32, week: &str) {
     };
     if let Err(e) = remote.project_week(iid, week, &start, &due).await {
         eprintln!("[BW_MILESTONE] #{iid} {week} 投影没成:{e}");
+    }
+}
+
+async fn project_plan_best_effort(remote: &Remote, path: &str, iid: u32, plan: &str) {
+    if let Err(e) = remote.project_plan(iid, path, plan).await {
+        eprintln!("[BW_MILESTONE] #{iid} 版本 {plan} 投影没成:{e}");
     }
 }
 
@@ -262,13 +274,13 @@ pub async fn edit_issue(
     Ok(())
 }
 
-/// 把 issue 排进自定义版本:打 `bw:plan:<name>` 标签(namespace-replace 摘掉旧
-/// `bw:plan:`)+ 挂到同名里程碑(best-effort 镜像)。和 `set_week` 互斥 ——
-/// 调用方负责先摘 `bw:week:`(排进版本就不该还挂着周标签)。
+/// 把 issue 排进人起名的版本:打 `bw:plan:<name>` 标签(namespace-replace 摘掉旧
+/// `bw:plan:`)+ 挂到同名里程碑(best-effort 镜像)。同一槽位 —— 同时摘
+/// `bw:week:`(排进这个版本就不该还挂着周版本)。
 pub async fn assign_to_plan(app: &App, project: &Project, iid: u32, plan: &str) -> Result<()> {
     let remote = app.remote_for(project)?;
     // 打 bw:plan:<name>,同时摘 bw:week:(空后缀 = 摘掉整个周命名空间)。
-    // 一张活要么排进某一周、要么排进某个版本,两者互斥。
+    // 一张活只属于一个版本。
     let labels = [format!("bw:plan:{plan}"), "bw:week:".to_string()];
     let label_refs: Vec<&str> = labels.iter().map(|s| s.as_str()).collect();
     remote
@@ -347,8 +359,25 @@ pub async fn find_open_by_title(
 
 // ─────────────── Issue 构造(两条路:create 直接拼 / 从 RemoteIssue 映射)────
 
+/// 一张活只属于一个版本槽。`bw:plan:` 在 extra 里就只留版本,不留周;
+/// 否则 week_of 非空就留周。两个都给时丢掉周(壳看自定义版本时曾误带本周)。
+fn one_schedule(week_of: &str, extra_labels: &[&str]) -> (Option<String>, Option<String>) {
+    let plan = extra_labels
+        .iter()
+        .find_map(|l| l.strip_prefix("bw:plan:"))
+        .filter(|s| !s.is_empty())
+        .map(|s| s.to_string());
+    if plan.is_some() {
+        (None, plan)
+    } else if !week_of.is_empty() {
+        (Some(week_of.to_string()), None)
+    } else {
+        (None, None)
+    }
+}
+
 /// `create` 成功后拼 `Issue`——这会儿没有 `RemoteIssue` 快照,但 title/body/
-/// kind/week 都是调用方给的,status 固定 Todo,其余 lossy 字段给默认值。
+/// kind/week 都是调用方给的,其余 lossy 字段给默认值。
 fn issue_from_create(
     project: &Project,
     iid: u32,
@@ -360,6 +389,8 @@ fn issue_from_create(
 ) -> Issue {
     let category = parse_category(extra_labels);
     let (tool, workflow) = resolve_tool_workflow(project, kind, title, category);
+    let (week, plan) = one_schedule(week_of, extra_labels);
+    let scheduled = week.is_some() || plan.is_some();
     Issue {
         id: IssueId::from_remote(project.id, iid),
         project_id: project.id,
@@ -367,14 +398,15 @@ fn issue_from_create(
         remote_number: iid,
         title: title.to_string(),
         body: body.to_string(),
-        status: if week_of.is_empty() {
-            IssueStatus::Backlog
-        } else {
+        status: if scheduled {
             IssueStatus::Todo
+        } else {
+            IssueStatus::Backlog
         },
         branch: String::new(),
         pr_number: 0,
-        week_of: week_of.to_string(),
+        has_open_mr: false,
+        week_of: week.unwrap_or_default(),
         version: String::new(),
         tool,
         kind,
@@ -388,7 +420,7 @@ fn issue_from_create(
         settled_at: None,
         assignee: String::new(),
         author: String::new(),
-        plan_version: String::new(),
+        plan_version: plan.unwrap_or_default(),
     }
 }
 
@@ -428,6 +460,7 @@ fn issue_from_remote(project: &Project, r: &RemoteIssue) -> Issue {
         status,
         branch: String::new(),
         pr_number: 0,
+        has_open_mr: false,
         week_of: parse_week(&r.labels),
         version: parse_released(&r.labels),
         tool,
@@ -661,5 +694,35 @@ mod tests {
         let i = issue_from_remote(&proj(), &remote("closed", &[]));
         assert_eq!(i.status, IssueStatus::Done);
         assert!(i.settled_at.is_some());
+    }
+
+    #[test]
+    fn one_schedule_keeps_only_plan_when_both_given() {
+        let (week, plan) = one_schedule("2026-W35", &["bw:plan:MVP收尾"]);
+        assert!(week.is_none());
+        assert_eq!(plan.as_deref(), Some("MVP收尾"));
+    }
+
+    #[test]
+    fn one_schedule_keeps_week_when_no_plan() {
+        let (week, plan) = one_schedule("2026-W35", &["bw:category:build"]);
+        assert_eq!(week.as_deref(), Some("2026-W35"));
+        assert!(plan.is_none());
+    }
+
+    #[test]
+    fn issue_from_create_writes_plan_not_week() {
+        let i = issue_from_create(
+            &proj(),
+            3,
+            "收口看板",
+            "",
+            IssueKind::Business,
+            "2026-W35",
+            &["bw:plan:MVP收尾", "bw:category:build"],
+        );
+        assert_eq!(i.week_of, "");
+        assert_eq!(i.plan_version, "MVP收尾");
+        assert_eq!(i.status, IssueStatus::Todo);
     }
 }

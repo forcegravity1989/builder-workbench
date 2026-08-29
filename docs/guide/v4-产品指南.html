@@ -469,7 +469,7 @@
         <div class="li"><div class="n">1</div><div class="t">总览顶上「开始本周」。本周还没有这张运作活①、也还没有周目标，才会出现；已经做过（含已完成）不再冒出来。</div></div>
         <div class="li"><div class="n">2</div><div class="t">跳到会话屏。agent 按周计划剧本走：复盘、采指标、起草周目标与纳入清单。你在会话屏的 Orca 页看着、随时能停。</div></div>
         <div class="li"><div class="n">3</div><div class="t">你确认之后，agent 当场建纳入的业务活，并打上本周 <code>bw:week:YYYY-Www</code>（codehub 还挂同名里程碑）。周目标、纳入清单、指标读数快照写成运作活①的三条评论，标题必须是 <code>## 周目标</code> / <code>## 本周纳入</code> / <code>## 本周指标读数</code>。周目标那一段一句或一段都行。</div></div>
-        <div class="li"><div class="n">4</div><div class="t">侧栏点「计划」。周头是周目标那段。点某一周只看打了那一周标签的活；没打周标签的切到右上角下拉「全部 issue」就能看见。</div></div>
+        <div class="li"><div class="n">4</div><div class="t">侧栏点「计划」。周头是周目标那段，默认只露两行，点右下角小框展开，再点收起。点某一周只看打了那一周标签的活；没打周标签的切到右上角下拉「全部 issue」就能看见。</div></div>
       </div>
 
       <h2 class="sec"><span class="n">背后</span></h2>
@@ -514,10 +514,10 @@
 
       <h2 class="sec"><span class="n">操作</span></h2>
       <div class="ops">
-        <div class="li"><div class="n">1</div><div class="t">计划屏点开一张卡。业务活详情会带上已有类别；没打的可在详情或开工确认框补一类——不开工工具的活会被拒绝开工，不会悄悄起 Claude。点 Start / Open / 阻塞 / 作废 / Complete 后详情会自己关。</div></div>
+        <div class="li"><div class="n">1</div><div class="t">计划屏点开一张卡（看板或列表都行）。业务活详情会带上已有类别；没打的可在详情或开工确认框补一类——不开工工具的活会被拒绝开工，不会悄悄起 Claude。状态下拉只列出从现在能走到的：待办能去进行中/阻塞/拒绝，进行中能去待办/阻塞/拒绝，待评审能去完成/拒绝，阻塞能去进行中/拒绝。选了和拖拽是同一条路。点 Start / Open / Complete 或改状态下拉后详情会自己关。</div></div>
         <div class="li"><div class="n">2</div><div class="t">详情「Start」，或把卡拖进「进行中」。确认框写 worktree，业务活可改类别。确认后跳会话屏。</div></div>
         <div class="li"><div class="n">3</div><div class="t">原型类默认停在 Open Design 标签，嵌的是本机 OD 首页。<strong>不会自动开跑</strong>，你在 OD 里打一句发出去，它的 AI 才动。构建类停在 Orca 页，嵌的是本机已配对的 Orca web；agent 在 Orca 里跑，过程在那看。</div></div>
-        <div class="li"><div class="n">4</div><div class="t">不想干了：详情「作废」，写原因。这不是完成——打已取消标签并关掉远端 issue，卡到「已取消」。</div></div>
+        <div class="li"><div class="n">4</div><div class="t">卡住了：待办或进行中拖到待处理列的「阻塞」段，或详情状态下拉选「阻塞」，写原因。阻塞卡可拖回进行中（只改状态，不会再开一轮工），或拖进「拒绝」作废。不想干了：详情状态下拉选「拒绝」，或把卡拖到已完成列的「拒绝」段（待办 / 进行中 / 待评审 / 阻塞都能拖）。写原因。这不是完成——打已取消标签并关掉远端 issue，卡到「拒绝」。</div></div>
         <div class="li"><div class="n">5</div><div class="t">作废不会动本机会话行。停止、开 MR、评审在 Orca 里做，或在计划屏拖列；会话屏这版不露「删除会话」按钮（内核命令还在，屏上暂不露）。远端那张 issue 不动。</div></div>
         <div class="li"><div class="n">6</div><div class="t">会话屏只剩 Orca / Open Design 两个页签，都常驻；右侧「指南」哪一屏都在，打开就是这份。</div></div>
       </div>
@@ -534,8 +534,8 @@
       <h2 class="sec"><span class="n">得到什么</span></h2>
       <div class="res">
         <ul>
-          <li><span class="b"></span><div>拖进进行中 = 开工，和按钮是同一条路。</div></li>
-          <li><span class="b"></span><div>作废卡不会冒充已完成。作废后再点开工，会说这张活已经取消。</div></li>
+          <li><span class="b"></span><div>待办拖进进行中 = 开工，和 Start 是同一条路。进行中也可以拖回待办、拖进阻塞或拒绝。阻塞拖回进行中只改状态，不开新工。</div></li>
+          <li><span class="b"></span><div>作废卡不会冒充已完成。已完成列要先切到「拒绝」再松手才是作废；切在「完成」上仍是合入。作废后再点开工，会说这张活已经取消。</div></li>
           <li><span class="b"></span><div>原型：会话停在 Open Design 标签。OD 不自动开跑，你打一句发出去它才动。不在 OD 里另建一单。</div></li>
           <li><span class="b"></span><div>去会话：先切到这张活的工作目录树；树上有几扇窗、是否正好落到这条对话是其次，切树成功就算跳到了。</div></li>
         </ul>
@@ -565,7 +565,7 @@
 
       <h2 class="sec"><span class="n">操作</span></h2>
       <div class="ops">
-        <div class="li"><div class="n">1</div><div class="t">计划屏把评审中的卡拖到「已完成」，或详情里「✓ 点完成」。确认框写明先合哪个 MR。合不成就整条不算，活留在评审中，可以重试。</div></div>
+        <div class="li"><div class="n">1</div><div class="t">计划屏把评审中的卡拖到「已完成」，先确认列上切的是「完成」不是「拒绝」，或详情里 Complete / 状态下拉选「完成」。有开着的 MR 就先合再关；没有开着的（可能已经在网页合过）确认后只关 issue。待办拖到「完成」不会过——完成只能从评审中来。</div></div>
         <div class="li"><div class="n">2</div><div class="t">项目墙 ⚑ 只提醒你有 MR 等着，不在那儿合。不要只在代码平台网页关 issue——那不会合 MR。</div></div>
         <div class="li"><div class="n">3</div><div class="t">本周有已完成的活，计划屏点「发版本」。弹窗里填版本号，默认是在研号的下一位，可以改。确认后才建远端 Release。</div></div>
         <div class="li"><div class="n">4</div><div class="t">去代码平台的版本页，或跑 <code>codehub-cli release list</code> / <code>gh release list</code>，核对远端真有这个版本。总览「已发版次数」优先读远端 Release。</div></div>

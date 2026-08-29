@@ -293,6 +293,8 @@ input:focus,textarea:focus,select:focus{outline:none;border-color:var(--color-ac
 .input::placeholder{color:color-mix(in srgb,var(--color-text) 35%,transparent);}
 textarea.input{min-height:64px;resize:vertical;}
 .asterisk{color:var(--color-danger);}
+.input.invalid{border-color:var(--color-danger);}
+.field-err{font-size:12px;color:var(--color-danger);margin-top:6px;}
 .cv-field-2{display:grid;grid-template-columns:1fr 1fr;gap:var(--space-3);}
 .cv-field-2 .sub{font-size:10.5px;color:color-mix(in srgb,var(--color-text) 55%,transparent);margin:0 0 5px;display:block;}
 .cv-foot-hint{font-size:11px;color:color-mix(in srgb,var(--color-text) 50%,transparent);line-height:1.6;}
@@ -1074,10 +1076,10 @@ function scheduleModal(){
   return '<div class="modal-backdrop" onclick="if(event.target===this)closeModal()">'
     + '<div class="modal" style="max-width:420px;">'
     +   '<div class="plan-modal-title" style="font-size:16px;">'+icon('package',16)+' 排期 · #'+c.num+'</div>'
-    +   '<div style="font-size:13px;line-height:1.7;color:color-mix(in srgb,var(--color-text) 75%,transparent);">把这张未排期的活排进哪个未结束的周计划或版本。</div>'
+    +   '<div style="font-size:13px;line-height:1.7;color:color-mix(in srgb,var(--color-text) 75%,transparent);">把这张未排期的活排进哪个版本。周版本每周一按周号出现,也可以排进人起名的版本。</div>'
     +   '<div class="formrow"><label class="label">排进</label>'
     +     '<select id="sched-sel" class="select">'+opts+'</select></div>'
-    +   '<div class="cfg-readonly-note">排进周计划 = 给它打周标签;排进版本 = 划归到自定义版本下。两者都让它从「未排期」变「已排期」。</div>'
+    +   '<div class="cfg-readonly-note">排进一个版本 = 从未排期变已排期。周号形态和人起名的是同一类版本,不是两套排期。</div>'
     +   '<div class="modal-actions">'
     +     '<button class="btn btn-secondary" onclick="closeModal()">取消</button>'
     +     '<button class="btn btn-primary" onclick="confirmSchedule()">确认 · 排期</button>'
@@ -1103,38 +1105,52 @@ function createVersionModal(){
   return '<div class="modal-backdrop" onclick="if(event.target===this)closeModal()">'
     + '<div class="modal plan-modal" style="max-width:480px;">'
     +   '<div class="plan-modal-head">'
-    +     '<div class="plan-modal-tag">自定义计划包</div>'
+    +     '<div class="plan-modal-tag">版本</div>'
     +     '<div class="plan-modal-title">'+icon('package',16)+' 创建版本</div>'
     +     '<button class="plan-modal-x" onclick="closeModal()">'+icon('close',16)+'</button>'
     +   '</div>'
     +   '<div class="plan-modal-body cv-form">'
     +     '<div class="formrow"><label class="label">版本名 <span class="asterisk">*</span></label>'
-    +       '<input id="cv-name" class="input" placeholder="例如 MVP收尾"></div>'
+    +       '<input id="cv-name" class="input" placeholder="例如 MVP收尾" oninput="syncCvRange()"></div>'
     +     '<div class="formrow"><label class="label">时间</label>'
     +       '<div class="cv-field-2">'
-    +         '<div><span class="sub">开始</span><input id="cv-start" class="input" type="date"></div>'
-    +         '<div><span class="sub">结束</span><input id="cv-end" class="input" type="date"></div>'
-    +       '</div></div>'
+    +         '<div><span class="sub">开始 <span class="asterisk">*</span></span><input id="cv-start" class="input" type="date" oninput="syncCvRange()"></div>'
+    +         '<div><span class="sub">结束 <span class="asterisk">*</span></span><input id="cv-end" class="input" type="date" oninput="syncCvRange()"></div>'
+    +       '</div>'
+    +       '<div id="cv-range-err" class="field-err" style="display:none;">开始不能晚于结束</div></div>'
     +     '<div class="formrow"><label class="label">说明</label>'
     +       '<textarea id="cv-note" class="input" placeholder="这个版本要收口什么"></textarea></div>'
     +     '<div class="formrow"><label class="label">划归的 issue</label>'
     +       '<div class="check-list">'+checks+'</div></div>'
     +   '</div>'
     +   '<div class="plan-modal-foot">'
-    +     '<span class="cv-foot-hint">版本是自定义计划包,与发版号(如 v0.4)不是一回事。</span>'
+    +     '<span class="cv-foot-hint">人起名的版本,和每周一出现的周版本是同一类东西;与发版号(如 v0.4)不是一回事。</span>'
     +     '<div style="display:flex;gap:var(--space-2);">'
     +       '<button class="btn btn-secondary" onclick="closeModal()">取消</button>'
-    +       '<button class="btn btn-primary" onclick="confirmCreateVersion()">创建</button>'
+    +       '<button id="cv-create" class="btn btn-primary" onclick="confirmCreateVersion()" disabled>创建</button>'
     +     '</div>'
     +   '</div>'
     + '</div></div>';
 }
+function syncCvRange(){
+  var name = document.getElementById('cv-name');
+  var start = document.getElementById('cv-start');
+  var end = document.getElementById('cv-end');
+  var err = document.getElementById('cv-range-err');
+  var btn = document.getElementById('cv-create');
+  if(!start || !end || !err || !btn) return;
+  var bad = start.value && end.value && start.value > end.value;
+  start.classList.toggle('invalid', bad);
+  end.classList.toggle('invalid', bad);
+  err.style.display = bad ? 'block' : 'none';
+  btn.disabled = !name || !name.value.trim() || !start.value || !end.value || bad;
+}
 function confirmCreateVersion(){
   var name = document.getElementById('cv-name').value.trim();
-  if(!name){ alert('版本名不能空'); return; }
-  var note = document.getElementById('cv-note').value.trim();
   var start = document.getElementById('cv-start').value;
   var end = document.getElementById('cv-end').value;
+  if(!name || !start || !end || start > end){ return; }
+  var note = document.getElementById('cv-note').value.trim();
   var picked = [];
   document.querySelectorAll('.check-list input[type=checkbox]:checked').forEach(function(cb){
     picked.push(cb.value);

@@ -76,6 +76,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         status: IssueStatus::Todo,
         branch: String::new(),
         pr_number: 0,
+        has_open_mr: false,
         week_of: String::new(),
         version: String::new(),
         tool: String::new(),

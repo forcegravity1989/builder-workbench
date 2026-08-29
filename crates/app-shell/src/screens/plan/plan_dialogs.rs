@@ -64,6 +64,13 @@ pub fn NewIssueDialog(
     let b = bridge.clone();
     let pid = p.id;
     let title_ok = !title.read().trim().is_empty();
+    let where_note = if p.view_all {
+        "新建的 issue 进待办池·未排期;创建后同步到 codehub。".to_string()
+    } else if !p.viewing_plan.is_empty() {
+        format!("新建的 issue 排进版本「{}」。", p.viewing_plan)
+    } else {
+        format!("新建的 issue 排进版本「{}」。", p.viewing_week)
+    };
     rsx! {
         div { class: "modal-backdrop", onclick: move |_| dialog.set(None),
             div { class: "modal plan-modal", onclick: move |e| e.stop_propagation(),
@@ -97,7 +104,7 @@ pub fn NewIssueDialog(
                         input { class: "input", value: "{assignee}", placeholder: "指派谁(可空)",
                             oninput: move |e| assignee.set(e.value()) }
                     }
-                    div { class: "cfg-readonly-note", "新建的 issue 进待办池·未排期;创建后同步到 codehub。" }
+                    div { class: "cfg-readonly-note", "{where_note}" }
                 }
                 div { class: "plan-modal-foot",
                     span {}
@@ -109,6 +116,10 @@ pub fn NewIssueDialog(
                             onclick: move |_| {
                                 let t = title.read().trim().to_string();
                                 if t.is_empty() { return; }
+                                // 一张活只属于一个版本。看人起名的版本只带 plan;
+                                // 看周版本只带 week;「全部」两个都空(进待办池)。
+                                // 看版本时 viewing_week 会被拼成本周,绝不能一起发。
+                                let viewing_custom = !p.viewing_plan.is_empty();
                                 b.cmd(Command::CreateIssue {
                                     project_id: pid,
                                     title: t,
@@ -116,8 +127,16 @@ pub fn NewIssueDialog(
                                     category: Some(*category.read()),
                                     kind: IssueKind::Business,
                                     origin: IssueOrigin::Human,
-                                    week_of: if !p.view_all { p.viewing_week.clone() } else { String::new() },
-                                    plan: if !p.viewing_plan.is_empty() { p.viewing_plan.clone() } else { String::new() },
+                                    week_of: if p.view_all || viewing_custom {
+                                        String::new()
+                                    } else {
+                                        p.viewing_week.clone()
+                                    },
+                                    plan: if viewing_custom {
+                                        p.viewing_plan.clone()
+                                    } else {
+                                        String::new()
+                                    },
                                 });
                                 dialog.set(None);
                             },
@@ -130,7 +149,7 @@ pub fn NewIssueDialog(
     }
 }
 
-/// 创建版本(自定义计划包)弹窗。版本名 + 时间 + 说明 + 勾选未排期 issue。
+/// 创建版本弹窗。人起名的版本,和每周一出现的周版本是同一类。
 #[component]
 pub fn CreateVersionDialog(
     p: ProjectVm,
@@ -153,11 +172,16 @@ pub fn CreateVersionDialog(
     let b = bridge.clone();
     let pid = p.id;
     let name_ok = !name.read().trim().is_empty();
+    let start_v = start.read().clone();
+    let due_v = due.read().clone();
+    let dates_ok = !start_v.is_empty() && !due_v.is_empty();
+    let range_bad = dates_ok && start_v > due_v;
+    let can_create = name_ok && dates_ok && !range_bad;
     rsx! {
         div { class: "modal-backdrop", onclick: move |_| dialog.set(None),
             div { class: "modal plan-modal", onclick: move |e| e.stop_propagation(),
                 div { class: "plan-modal-head",
-                    div { class: "plan-modal-tag", "自定义计划包" }
+                    div { class: "plan-modal-tag", "版本" }
                     div { class: "plan-modal-title", "创建版本" }
                     button { class: "plan-modal-x", onclick: move |_| dialog.set(None), "✕" }
                 }
@@ -170,12 +194,27 @@ pub fn CreateVersionDialog(
                     div { class: "formrow",
                         label { class: "label", "时间" }
                         div { class: "cv-field-2",
-                            div { span { class: "sub", "开始" },
-                                input { class: "input", r#type: "date", value: "{start}",
-                                    oninput: move |e| start.set(e.value()) } }
-                            div { span { class: "sub", "结束" },
-                                input { class: "input", r#type: "date", value: "{due}",
-                                    oninput: move |e| due.set(e.value()) } }
+                            div {
+                                span { class: "sub", "开始 " span { class: "asterisk", "*" } }
+                                input {
+                                    class: if range_bad { "input invalid" } else { "input" },
+                                    r#type: "date",
+                                    value: "{start}",
+                                    oninput: move |e| start.set(e.value()),
+                                }
+                            }
+                            div {
+                                span { class: "sub", "结束 " span { class: "asterisk", "*" } }
+                                input {
+                                    class: if range_bad { "input invalid" } else { "input" },
+                                    r#type: "date",
+                                    value: "{due}",
+                                    oninput: move |e| due.set(e.value()),
+                                }
+                            }
+                        }
+                        if range_bad {
+                            div { class: "field-err", "开始不能晚于结束" }
                         }
                     }
                     div { class: "formrow",
@@ -195,7 +234,7 @@ pub fn CreateVersionDialog(
                         }
                     }
                     div { class: "cfg-readonly-note",
-                        "版本是自定义计划包,与发版号(如 {p.card.current_version})不是一回事。"
+                        "人起名的版本,和每周一出现的周版本是同一类东西;与发版号(如 {p.card.current_version})不是一回事。"
                     }
                 }
                 div { class: "plan-modal-foot",
@@ -204,8 +243,17 @@ pub fn CreateVersionDialog(
                         button { class: "btn btn-secondary", onclick: move |_| dialog.set(None), "取消" }
                         button {
                             class: "btn btn-primary",
-                            disabled: !name_ok,
+                            disabled: !can_create,
                             onclick: move |_| {
+                                let start_v = start.read().clone();
+                                let due_v = due.read().clone();
+                                if name.read().trim().is_empty()
+                                    || start_v.is_empty()
+                                    || due_v.is_empty()
+                                    || start_v > due_v
+                                {
+                                    return;
+                                }
                                 let included = picked.read().clone();
                                 b.cmd(Command::CreatePlanVersion {
                                     project_id: pid,
@@ -268,7 +316,7 @@ pub fn ScheduleDialog(
             div { class: "modal", onclick: move |e| e.stop_propagation(),
                 h3 { "排期" }
                 div { style: "font-size:13px;line-height:1.7;color:var(--ink-2);",
-                    "把「{ps.title}」排进哪个未结束的周计划或版本。"
+                    "把「{ps.title}」排进哪个版本。周版本每周一按周号出现,也可以排进人起名的版本。一张活只属于一个版本。"
                 }
                 div { class: "formrow",
                     label { class: "label", "排进" }
@@ -295,7 +343,7 @@ pub fn ScheduleDialog(
                     }
                 }
                 div { class: "cfg-readonly-note",
-                    "排进周计划 = 打 bw:week 标签;排进版本 = 划归到自定义版本。两者都让它从未排期变已排期。"
+                    "排进一个版本 = 从未排期变已排期。周号形态和人起名的是同一类版本,不是两套排期。"
                 }
                 div { class: "modal-actions",
                     button { class: "btn btn-secondary", onclick: move |_| schedule.set(None), "取消" }
@@ -318,29 +366,80 @@ pub fn ScheduleDialog(
     }
 }
 
-/// 作废/状态转移确认框(拖卡片进状态列的旧路径,详情弹窗里点 Complete/阻塞
-/// 不走这里)。保留给直接发 TransitionIssue 的场景。
-pub fn confirm_dialog(
+/// 拖卡片松手后的确认框。完成走合入;拒绝走作废(必须写原因);其余走状态转移。
+#[component]
+pub fn ConfirmMoveDialog(
     pm: PendingMove,
     mut pending: Signal<Option<PendingMove>>,
-    bridge: &Bridge,
+    bridge: Bridge,
 ) -> Element {
     let b = bridge.clone();
     let pm2 = pm.clone();
+    let mut reason = use_signal(String::new);
+    let need_reason = matches!(pm.to, IssueStatus::Cancelled | IssueStatus::Blocked);
+    let to_label = match pm.to {
+        IssueStatus::Cancelled => "拒绝",
+        IssueStatus::Blocked => "阻塞",
+        other => other.label(),
+    };
+    let reason_label = if pm.to == IssueStatus::Blocked {
+        "阻塞原因"
+    } else {
+        "作废原因"
+    };
+    let reason_hint = if pm.to == IssueStatus::Blocked {
+        "阻塞必须写原因,会写进 issue 评论"
+    } else {
+        "作废必须写原因,会写进 issue 评论"
+    };
     rsx! {
         div { class: "modal-backdrop", onclick: move |_| pending.set(None),
             div { class: "modal", onclick: move |e| e.stop_propagation(),
                 h3 { "确认一下" }
                 div { style: "font-size:13px;line-height:1.85;color:var(--ink-2);margin-bottom:8px;",
-                    "把「{pm.title}」从「{pm.from.label()}」移到「{pm.to.label()}」。"
+                    "把「{pm.title}」从「{pm.from.label()}」移到「{to_label}」。"
+                }
+                if pm.to == IssueStatus::Done && !pm.has_open_mr {
+                    div { style: "font-size:13px;line-height:1.85;color:var(--ink-2);margin-bottom:8px;",
+                        "没有开着的 MR。可能已经在网页合过了。确认后只关这张 issue,不会再去合。"
+                    }
+                }
+                if need_reason {
+                    div { class: "formrow",
+                        label { class: "label", "{reason_label}" }
+                        textarea {
+                            class: "textarea",
+                            rows: "3",
+                            placeholder: "{reason_hint}",
+                            oninput: move |e| reason.set(e.value()),
+                        }
+                    }
                 }
                 div { class: "modal-actions",
                     button { class: "btn btn-secondary", onclick: move |_| pending.set(None), "算了" }
                     button {
                         class: "btn btn-primary",
+                        disabled: need_reason && reason.read().trim().is_empty(),
                         onclick: move |_| {
-                            if pm2.to == IssueStatus::Done {
+                            if pm2.to == IssueStatus::Done && pm2.has_open_mr {
                                 b.cmd(Command::MergeAndSettle { id: pm2.id });
+                            } else if pm2.to == IssueStatus::Done {
+                                b.cmd(Command::TransitionIssue {
+                                    id: pm2.id,
+                                    to: IssueStatus::Done,
+                                });
+                            } else if pm2.to == IssueStatus::Cancelled {
+                                let why = reason.read().trim().to_string();
+                                if why.is_empty() {
+                                    return;
+                                }
+                                b.cmd(Command::CancelIssue { id: pm2.id, reason: why });
+                            } else if pm2.to == IssueStatus::Blocked {
+                                let why = reason.read().trim().to_string();
+                                if why.is_empty() {
+                                    return;
+                                }
+                                b.cmd(Command::BlockIssue { id: pm2.id, reason: why });
                             } else {
                                 b.cmd(Command::TransitionIssue { id: pm2.id, to: pm2.to });
                             }
