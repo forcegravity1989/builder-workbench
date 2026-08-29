@@ -229,7 +229,45 @@ pub async fn open_mr_for_branch(
         .map_err(|_| CodehubError::Parse(format!("无法解析 codehub MR iid:{text:?}")))
 }
 
-/// `codehub-cli mr merge <iid> --squash -y` — the codehub parity of
+/// 同 `open_mr_for_branch` 但 `--state all`(找开着或已合入的 MR)。
+/// 给 Done 的 issue 用 —— 它的 MR 已合入,`open_mr_for_branch` 查不到。
+pub async fn mr_for_branch(
+    host: &str,
+    path: &str,
+    branch: &str,
+) -> Result<Option<u32>, CodehubError> {
+    let out = crate::win_cmd::tokio_cmd("codehub-cli")
+        .args([
+            "mr",
+            "list",
+            "-p",
+            path,
+            "-H",
+            host,
+            "--source-branch",
+            branch,
+            "--state",
+            "all",
+            "--jq",
+            ".[0].iid",
+        ])
+        .stdin(Stdio::null())
+        .stdout(Stdio::piped())
+        .stderr(Stdio::piped())
+        .output()
+        .await
+        .map_err(spawn_err)?;
+    if !out.status.success() {
+        return Err(CodehubError::Command(stderr_text(&out)));
+    }
+    let text = String::from_utf8_lossy(&out.stdout).trim().to_string();
+    if text.is_empty() || text == "null" {
+        return Ok(None);
+    }
+    text.parse::<u32>()
+        .map(Some)
+        .map_err(|_| CodehubError::Parse(format!("无法解析 codehub MR iid:{text:?}")))
+}
 /// [`crate::github::merge_pr`]: the human验收 action that integrates the
 /// source branch into the target. Squash-merges (matches github's `--squash`).
 /// The caller ([`crate::Remote::merge_mr`] ← `MergeIssuePr`) settles the
@@ -682,7 +720,7 @@ pub async fn list_issues(
     // `(. // [])` 兜 null:开着的 issue 为零时 codehub-cli 返 null,
     // 裸 `.[]` 会 jq 运行期失败(实测 2026-08-24:接入后铺底先查同标题开着的
     // 活,这里一炸就建不出新活、开不出 MR)。走势那对查询已经兜过,这里漏了。
-    args.push(r#"(. // []) | [.[] | {iid: .iid, number: (.id // .iid), title: (.title // ""), state: (.state // ""), labels: ((.labels // []) | map(.name? // .)), created_at: (.created_at // null), closed_at: (.closed_at // null)}]"#);
+    args.push(r#"(. // []) | [.[] | {iid: .iid, number: (.id // .iid), title: (.title // ""), state: (.state // ""), labels: ((.labels // []) | map(.name? // .)), created_at: (.created_at // null), closed_at: (.closed_at // null), assignee: .assignee, author: .author}]"#);
     let out = crate::win_cmd::tokio_cmd("codehub-cli")
         .args(&args)
         .stdin(Stdio::null())
@@ -706,6 +744,8 @@ pub async fn list_issues(
             body: String::new(),
             created_at: r.created_at,
             closed_at: r.closed_at,
+            assignee: person_name(r.assignee.as_ref()),
+            author: person_name(r.author.as_ref()),
         })
         .collect())
 }
@@ -746,6 +786,8 @@ pub async fn view_issue(
         body: r.body.unwrap_or_default(),
         created_at: r.created_at,
         closed_at: r.closed_at,
+        assignee: person_name(r.assignee.as_ref()),
+        author: person_name(r.author.as_ref()),
     })
 }
 
@@ -757,6 +799,19 @@ fn label_name(v: &serde_json::Value) -> String {
         .map(|s| s.to_string())
         .or_else(|| v.as_str().map(|s| s.to_string()))
         .unwrap_or_default()
+}
+
+/// 从 codehub/GitLab 的 `assignee`/`author` 对象里取人名。codehub 用 `user_name`,
+/// GitLab 用 `username`;两个都试,认不出返空串。`null`(未指派)= None。
+fn person_name(v: Option<&serde_json::Value>) -> Option<String> {
+    let v = v?;
+    if v.is_null() {
+        return None;
+    }
+    ["user_name", "username", "name"]
+        .iter()
+        .find_map(|k| v.get(k).and_then(|x| x.as_str()).filter(|s| !s.is_empty()))
+        .map(|s| s.to_string())
 }
 
 #[derive(serde::Deserialize)]
@@ -777,6 +832,10 @@ struct CodehubIssueViewJson {
     created_at: Option<String>,
     #[serde(default)]
     closed_at: Option<String>,
+    #[serde(default)]
+    assignee: Option<serde_json::Value>,
+    #[serde(default)]
+    author: Option<serde_json::Value>,
 }
 
 /// 把 `issue list --jq` 的 stdout 收成行。空串 / `null` = 一张都没有,不是解析失败。
@@ -804,6 +863,10 @@ struct CodehubIssueJson {
     created_at: Option<String>,
     #[serde(default)]
     closed_at: Option<String>,
+    #[serde(default)]
+    assignee: Option<serde_json::Value>,
+    #[serde(default)]
+    author: Option<serde_json::Value>,
 }
 
 /// `codehub-cli issue comment create <iid> -p <path> -H <host> --body <text>`
@@ -1067,6 +1130,212 @@ pub async fn project_week(
     }
     let mid = ensure_week_milestone(host, &pid, week, start, due).await?;
     set_issue_milestone(host, &pid, iid, mid).await
+}
+
+// ── 版本(自定义计划包)→ 里程碑 ──
+// 周计划怎么存版本就怎么存:codehub milestone(title=版本名)+ `bw:plan:<name>`
+// 标签。正本是标签,里程碑是 codehub 侧镜像。与发版号(bw:released:*)不同。
+
+/// 建/复用一个版本里程碑,返回 mid。同名复用(不更新日期);找不到才建。
+pub async fn ensure_plan_milestone(
+    host: &str,
+    path: &str,
+    name: &str,
+    start: &str,
+    due: &str,
+) -> Result<u64, CodehubError> {
+    let project_id = project_numeric_id(host, path).await?;
+    let pid = project_id.to_string();
+    let listed = api_json(
+        host,
+        "GET",
+        "/api/v4/projects/:id/milestones",
+        &[("id", pid.as_str())],
+        &[],
+    )
+    .await?;
+    for m in milestone_rows(&listed) {
+        if m["title"].as_str() == Some(name) {
+            if let Some(id) = m["id"].as_u64() {
+                return Ok(id);
+            }
+        }
+    }
+    let desc = format!("buddy 投影 · 正本是 bw:plan:{name}");
+    let created = api_json(
+        host,
+        "POST",
+        "/api/v4/projects/:id/milestones",
+        &[
+            ("id", pid.as_str()),
+            ("title", name),
+            ("start_date", start),
+            ("due_date", due),
+        ],
+        &[("description", desc.as_str())],
+    )
+    .await?;
+    created["id"]
+        .as_u64()
+        .ok_or_else(|| CodehubError::Parse(format!("新建版本里程碑没有 id:{created}")))
+}
+
+/// 把一张 issue 挂到**已存在**的版本里程碑（按标题找，不建、不更新日期）。
+/// 找不到就如实空过 —— 正本是 `bw:plan:` 标签，里程碑只是 codehub 侧的镜像。
+pub async fn project_plan(
+    host: &str,
+    path: &str,
+    iid: u32,
+    name: &str,
+) -> Result<(), CodehubError> {
+    let project_id = project_numeric_id(host, path).await?;
+    let pid = project_id.to_string();
+    let listed = api_json(
+        host,
+        "GET",
+        "/api/v4/projects/:id/milestones",
+        &[("id", pid.as_str())],
+        &[],
+    )
+    .await?;
+    for m in milestone_rows(&listed) {
+        if m["title"].as_str() == Some(name) {
+            if let Some(id) = m["id"].as_u64() {
+                return set_issue_milestone(host, &pid, iid, id).await;
+            }
+        }
+    }
+    Ok(())
+}
+
+/// 列出所有里程碑 (title, start, due)。跳过周格式(YYYY-Www)的,余下是版本。
+pub async fn list_milestones(
+    host: &str,
+    path: &str,
+) -> Result<Vec<(String, String, String)>, CodehubError> {
+    let project_id = project_numeric_id(host, path).await?;
+    let pid = project_id.to_string();
+    let listed = api_json(
+        host,
+        "GET",
+        "/api/v4/projects/:id/milestones",
+        &[("id", pid.as_str())],
+        &[],
+    )
+    .await?;
+    Ok(milestone_rows(&listed)
+        .iter()
+        .filter_map(|m| {
+            let title = m["title"].as_str()?.to_string();
+            if is_week_title(&title) {
+                return None;
+            }
+            let start = m["start_date"].as_str().unwrap_or("").to_string();
+            let due = m["due_date"].as_str().unwrap_or("").to_string();
+            Some((title, start, due))
+        })
+        .collect())
+}
+
+/// `YYYY-Www` 周格式?形如 2026-W35。
+fn is_week_title(s: &str) -> bool {
+    let b = s.as_bytes();
+    b.len() == 8
+        && s[5..6].eq_ignore_ascii_case("W")
+        && s[..4].chars().all(|c| c.is_ascii_digit())
+        && s[6..].chars().all(|c| c.is_ascii_digit())
+}
+
+/// 改 issue 责任人。空 = 取消指派。先 username→userid,再 PUT `assignee_id`。
+pub async fn set_issue_assignee(
+    host: &str,
+    path: &str,
+    iid: u32,
+    assignee: &str,
+) -> Result<(), CodehubError> {
+    let project_id = project_numeric_id(host, path).await?;
+    let pid = project_id.to_string();
+    let iid_s = iid.to_string();
+    let endpoint = format!("/api/v4/projects/:id/issues/{iid_s}");
+    if assignee.is_empty() {
+        // 取消指派:assignee_id 传空串让 GitLab 清空(部分版本接受;不行就走
+        // assignee_ids=[] raw JSON,先按这版)。
+        api_json(
+            host,
+            "PUT",
+            &endpoint,
+            &[("id", pid.as_str()), ("assignee_id", "")],
+            &[],
+        )
+        .await?;
+        return Ok(());
+    }
+    let uid = user_id_by_username(host, assignee).await?.to_string();
+    // GitLab v4 单指派用 assignee_id(单数,接受 int 字符串);assignee_ids 要数组,
+    // codehub-cli --field 传成字符串会被忽略,故用单数。
+    api_json(
+        host,
+        "PUT",
+        &endpoint,
+        &[("id", pid.as_str()), ("assignee_id", uid.as_str())],
+        &[],
+    )
+    .await?;
+    Ok(())
+}
+
+/// `GET /api/v4/users?username=<name>` → 第一个匹配的数字 id。认不出报错。
+/// `GET /api/v4/user` → 当前登录用户名(给「我的」筛选用)。认不出返 None。
+pub async fn current_user(host: &str) -> Option<String> {
+    let v = api_json(host, "GET", "/api/v4/user", &[], &[]).await.ok()?;
+    person_name(Some(&v)).or_else(|| {
+        v.get("user_name")
+            .and_then(|x| x.as_str())
+            .or_else(|| v.get("username").and_then(|x| x.as_str()))
+            .map(|s| s.to_string())
+    })
+}
+
+async fn user_id_by_username(host: &str, username: &str) -> Result<u64, CodehubError> {
+    let listed = api_json(host, "GET", "/api/v4/users", &[("username", username)], &[]).await?;
+    let arr = listed
+        .as_array()
+        .ok_or_else(|| CodehubError::Parse(format!("users 查询不是数组:{listed}")))?;
+    for u in arr {
+        if let Some(id) = u["id"].as_u64() {
+            return Ok(id);
+        }
+    }
+    Err(CodehubError::Command(format!(
+        "codehub 查不到用户名 {username}"
+    )))
+}
+
+/// 改一张 issue 的标题与正文（GitLab v4 `title`/`description`）。
+pub async fn edit_issue(
+    host: &str,
+    path: &str,
+    iid: u32,
+    title: &str,
+    body: &str,
+) -> Result<(), CodehubError> {
+    let project_id = project_numeric_id(host, path).await?;
+    let pid = project_id.to_string();
+    let iid_s = iid.to_string();
+    let endpoint = format!("/api/v4/projects/:id/issues/{iid_s}");
+    api_json(
+        host,
+        "PUT",
+        &endpoint,
+        &[
+            ("id", pid.as_str()),
+            ("title", title),
+            ("description", body),
+        ],
+        &[],
+    )
+    .await?;
+    Ok(())
 }
 
 async fn project_numeric_id(host: &str, path: &str) -> Result<u64, CodehubError> {

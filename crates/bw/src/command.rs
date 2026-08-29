@@ -97,6 +97,21 @@ pub enum Command {
         id: IssueId,
         week_of: Option<String>,
     },
+    /// 排进自定义版本(`bw:plan:<name>`)。和 `ScheduleIssue` 互斥:一张活要么
+    /// 排进某一周、要么排进某个版本。正本走 codehub milestone + 标签,本地不缓存写。
+    ScheduleToPlan { id: IssueId, plan: String },
+    /// 建一个自定义版本(计划包):建 codehub milestone(title=name,start,due),
+    /// 并给 `included` 每张打 `bw:plan:<name>` 标签、挂到这个里程碑。
+    /// 与发版号 `CutRelease` 不同:发版号给已完成的活打版本标签;版本是把
+    /// 若干待办活划归到一个计划包里排期。
+    CreatePlanVersion {
+        project_id: ProjectId,
+        name: String,
+        start: String,
+        due: String,
+        note: String,
+        included: Vec<IssueId>,
+    },
     /// 发版本:给选中的活写版本号 + 建远端 codehub/GitHub Release + 打 `bw:released:*` 标签。
     CutRelease {
         project_id: ProjectId,
@@ -127,6 +142,15 @@ pub enum Command {
     TransitionIssue { id: IssueId, to: IssueStatus },
     /// 给已有的活补/改类别标签。读回时用它查 issue-policy 的开工工具。
     SetIssueCategory { id: IssueId, category: Category },
+    /// 改 issue 的责任人(codehub assignee)。空串 = 取消指派。走 codehub API,
+    /// 不在本地另存一套。
+    SetIssueAssignee { id: IssueId, assignee: String },
+    /// 改 issue 的标题与正文(codehub issue update)。详情弹窗双击编辑后发这条。
+    EditIssue {
+        id: IssueId,
+        title: String,
+        body: String,
+    },
     /// 卡住了。如实停在原地,可以重试,不假装前进。
     BlockIssue { id: IssueId, reason: String },
     /// 作废:写取消原因进评论、打 `bw:status:cancelled`、关掉远端 issue。
@@ -268,9 +292,26 @@ pub enum Event {
         id: IssueId,
         week_of: String,
     },
+    IssueScheduledToPlan {
+        id: IssueId,
+        plan: String,
+    },
+    PlanVersionCreated {
+        project_id: ProjectId,
+        name: String,
+        /// codehub milestone id;0 = 没建里程碑(只打了标签)。
+        milestone_id: u64,
+    },
     IssueCategorySet {
         id: IssueId,
         category: String,
+    },
+    IssueAssigneeSet {
+        id: IssueId,
+        assignee: String,
+    },
+    IssueEdited {
+        id: IssueId,
     },
     /// 一次 ▶跑 结束。`summary` 原样来自执行器(mock 的自带【mock】字样)。
     /// `tool` 是这张活读回的开工工具,壳用来决定会话屏落在哪一页。

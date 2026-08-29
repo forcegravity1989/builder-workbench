@@ -260,6 +260,9 @@ mod ops_chip_display_tests {
             created_at: 0,
             updated_at: 0,
             settled_at: None,
+            assignee: String::new(),
+            author: String::new(),
+            plan_version: String::new(),
         }
     }
 }

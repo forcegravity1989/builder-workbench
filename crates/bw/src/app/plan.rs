@@ -144,6 +144,47 @@ impl App {
         }])
     }
 
+    /// 排进自定义版本(`bw:plan:<name>`)。和排进周互斥:先摘 `bw:week:` 标签,
+    /// 再打 `bw:plan:<name>`,并把 issue 挂到版本里程碑。状态进「待办」(已排期)。
+    pub(super) async fn schedule_to_plan(
+        &mut self,
+        id: IssueId,
+        plan: String,
+    ) -> Result<Vec<Event>> {
+        let issue = self.issue_or_err(id).await?;
+        let project = self.project_of(issue.project_id).await?;
+        issue_store::assign_to_plan(self, &project, id.iid(), &plan).await?;
+        // 排进版本 = 进「待办」(已排期),状态机允许才动。
+        if issue.status != IssueStatus::Todo && issue.status.can_transition_to(IssueStatus::Todo) {
+            issue_store::set_status(self, &project, id.iid(), IssueStatus::Todo).await?;
+        }
+        Ok(vec![Event::IssueScheduledToPlan { id, plan }])
+    }
+
+    /// 建一个自定义版本(计划包):建 codehub milestone(title=name,start,due),
+    /// 并给 `included` 每张打 `bw:plan:<name>` 标签、挂到这个里程碑。
+    /// 与发版号 `cut_release` 不同:版本是把待办活划归到一个计划包里排期。
+    pub(super) async fn create_plan_version(
+        &mut self,
+        project_id: ProjectId,
+        name: String,
+        start: String,
+        due: String,
+        _note: String,
+        included: Vec<IssueId>,
+    ) -> Result<Vec<Event>> {
+        let project = self.project_of(project_id).await?;
+        let mid = issue_store::create_plan_version(self, &project, &name, &start, &due).await?;
+        for id in &included {
+            issue_store::assign_to_plan(self, &project, id.iid(), &name).await?;
+        }
+        Ok(vec![Event::PlanVersionCreated {
+            project_id,
+            name,
+            milestone_id: mid,
+        }])
+    }
+
     /// 「↻ 拉到最新」:把主检出快进到远端。
     ///
     /// 主检出若只被读数流水弄脏,先把那份挪进账本再拉——否则 `--ff-only`
