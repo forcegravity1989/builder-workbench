@@ -79,9 +79,13 @@ references(`standard/system-prompt/references/*.md`)是「干某类活需要额�
 
 ### 2 · 仓文件解析
 
-**是什么**:把项目仓 `.bw/` 下的配置/定义文件解析成内存结构供各屏现读现用。仓是正本——人、agent、第二台机器要看的都住仓里走 MR,本地不存第二份;这一层是读写正本的唯一入口,别处不许自己拼路径读 `.bw/*.toml`。关键取舍是不做 `deny_unknown_fields`(人手写多一个字段就整份崩代价太大),metrics 只认 `schema_version=2`、旧格式整份拒收不迁移。
+**是什么**:把项目仓 `.bw/` 下的配置/定义文件解析成内存结构供各屏现读现用。仓是正本——人、agent、第二台机器要看的都住仓里走 MR,本地不存第二份;这一层是读写正本的唯一入口,别处不许自己拼路径读 `.bw/` 下的文件。
 
-**代码**:bw 的 `repo/`(共用读写口 + 五个解析器:project / metrics / issue-policy / managed / standard)+ `standard/mod.rs`(章程模板渲染)。
+`.bw/` 按「谁写的」分三层:顶层 Markdown 给人和 agent 通读;`config/` 是人拍板的输入(经 MR 或配置屏当场确认),机器读它推导行为;`state/` 是机器自己记的台账与流水,人只审不编。写入边界由 `scripts/guard-bw-write-authority.sh` 守着,不靠目录名自我声明。
+
+关键取舍:**除 metrics 外一律 `deny_unknown_fields`**——键名写错要当场报错,不能静默丢掉半个文件再写进一份残缺的缓存;metrics 是唯一例外(人手写的文件,多一个字段就整份崩代价太大),它另外只认 `schema_version=2`、旧格式整份拒收不迁移。
+
+**代码**:bw 的 `repo/`(共用读写口 + 四个解析器:project / metrics / issue-policy / managed)+ `standard/mod.rs`(章程模板渲染)。「这个项目铺了哪一版规范」逐份记在 `managed.toml` 里,不另存汇总——2026-08-29 删掉的 `standard.toml` 就是那份没人读的汇总。
 **数据**:不落本地库,仓文件就是正本,解析结果只在内存里现用;写回手写渲染而非 `toml::to_string`,为把注释留给人看。
 **依赖**:serde / toml 反序列化、sha2 算指纹;对 V3 任何 crate 零依赖。
 **没建**:采集执行落在 `app/collect.rs`(模块12),规范铺底编排见模块3。B/C 读写 `.bw/state/metrics-readings.jsonl` 已接(只追加,键是日历日,同一天同一指标最后一行为准;展示按周取那一周日期最大的一天)。C 类定时建提醒活没做。

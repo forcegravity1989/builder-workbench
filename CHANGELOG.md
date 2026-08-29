@@ -6,7 +6,17 @@
 
 ## 最近 · 2026-08-29
 
-**`.bw/` 人机分目录 + 去冗留真(立项,规格在 gate)**:对 `.bw/` 五份文件做谁读谁写审计,实锤一批假配置(`[[tool]]` 四字段、`[review]` 段、trigger 两字段零消费;`standard.toml` 整份写了没人读;`standard_version` 镜像失真)。发起人定向:给人读的与给机器解析的分目录隔离(顶层 Markdown / `config/` / `state/`),假配置删除、注释收敛到真行为。产物链见 `changes/bw-dir-split/`,承载活 #133;**本批只成文,未动代码与 `.bw/` 实物**,等规格 gate。
+**`.bw/` 人机分目录 + 去冗留真(已实现,规范版本 6.0)**:被管项目的 `.bw/` 按「谁写的」分三层——顶层 Markdown 给人和 agent 通读、`config/` 是人拍板的输入(经 MR 或配置屏当场确认)、`state/` 是机器自己记的台账。搬了五份:project / issue-policy / metrics.toml → `config/`;managed.toml 与读数流水 → `state/`(读数改名 `metrics-readings.jsonl`)。不留兼容路径,旧布局项目由人删掉旧 `.bw/` 后重新接入。
+
+同批删掉一批假配置:`issue-policy.toml` 的 `[[tool]]` 四字段、`[review]` 段、`ops1/ops2_trigger`、`schema_version` 全仓没有任何代码读;`standard.toml` 整份(解析器零调用、文件头「用它对账」是假的)。版本信号统一由 `managed.toml` 逐份承担。连带三处改实:运作活③的完成判据从查 `standard.toml` 改为查指纹清单;名片「规范」格从 `project.toml` 里那个失真镜像(本仓实测写 5.0、真实 5.8)改为从清单现算「最低版本 + 在管件数 + 缺/人改件数」,三处显示(总览/知识库/配置屏)同一句;配置屏两处触发方式改成写死的人话。
+
+新守卫 `guard-bw-write-authority.sh`:只有内核里指定的模块能往被管项目 `.bw/` 里写(壳与引擎零写入),目录的分层承诺不再只写在文档里。同批修了两处文档失实:架构正本说「不做 `deny_unknown_fields`」而代码除 metrics 外一律做;产品指南与高保真里还摆着已删的 `standard.toml`。
+
+配置屏保存映射后会同步指纹清单——此前 Workbench 自己写的文件会被对账记成「人改过」,污染了升级要不要覆盖的唯一依据。清单不存在时不新建(铺底 MR 未合入前主检出本就没有它)。
+
+产物链见 `changes/bw-dir-split/`,承载活 #133。
+
+**(立项记录)**:对 `.bw/` 五份文件做谁读谁写审计,实锤一批假配置(`[[tool]]` 四字段、`[review]` 段、trigger 两字段零消费;`standard.toml` 整份写了没人读;`standard_version` 镜像失真)。发起人定向:给人读的与给机器解析的分目录隔离(顶层 Markdown / `config/` / `state/`),假配置删除、注释收敛到真行为。产物链见 `changes/bw-dir-split/`,承载活 #133;**本批只成文,未动代码与 `.bw/` 实物**,等规格 gate。
 
 同批制度补丁:发起人点名「产物链没走活承载」的过程缺口——「先建活」08-25 首链口头拍板过但未成文,后两条链连漏。已成文进 02 §6 制品链与 AGENTS.md 起手路径(活号与 `changes/<id>/` 互链,无活=未立项;两 gate 可合并送审也写死);标签词表三枚标签(`bw:status`/`bw:week`/`bw:category`)首次真实落 GitHub 仓。
 

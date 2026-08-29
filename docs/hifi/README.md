@@ -14,7 +14,7 @@
 
 ### 项目墙 / 接入
 
-接入只问仓和名片四字段。完成接入会自动建运作活③「规范铺底」:**路径 A,不起 agent**,写入 `.bw/PROJECT.md`、`issue-policy.toml`、`standard.toml`,开 MR 等人合。仓根 `AGENTS.md` 不写。
+接入只问仓和名片四字段。完成接入会自动建运作活③「规范铺底」:**路径 A,不起 agent**,写入 `.bw/PROJECT.md` 与 `.bw/config/issue-policy.toml`,并把指纹记进 `.bw/state/managed.toml`,开 MR 等人合。仓根 `AGENTS.md` 不写。
 
 ### 总览
 

@@ -60,6 +60,7 @@ cargo check -p app-shell          # Workbench MVP 壳编译过
 ./scripts/guard-screen-hooks.sh             # 用 hook 的函数必须是组件
 ./scripts/guard-file-lines.sh               # 单文件 1500 行硬上限(只查 Workbench MVP 三 crate)
 ./scripts/guard-codegraph-clean.sh           # codegraph.db 不进 feature commit(CI 在 main 发布)
+./scripts/guard-bw-write-authority.sh        # 只有允许的模块能往被管项目 .bw/ 里写
 cargo test --workspace
 ```
 
@@ -77,7 +78,8 @@ standard/  Workbench 推给被管项目的规范正本(include_str! 进 bw):铺�
 principles/ 慢变原则正本(01 分层/changes · 02 逆向工作法 · 03 新闻稿/FAQ/飞轮)
 docs/      architecture(设计正本)+ guide(产品指南)+ adr + hifi + README(地图)
 scripts/   门禁脚本(guard-*)+ codegraph 联调
-.bw/       Workbench 自己作为被管项目的资产(PROJECT.md/metrics.toml/issue-policy.toml/…)
+.bw/       Workbench 自己作为被管项目的资产。按谁写的分层:顶层 Markdown 给人读、
+           config/ 人拍板(经 MR 或配置屏)、state/ 机器自写的台账、scripts/ 采集脚本
 ```
 
 ## Workbench 特有规矩(只写仓里真还在用的)
