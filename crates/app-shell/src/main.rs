@@ -213,6 +213,14 @@ fn Root() -> Element {
                 }
             }
             chrome::GuideDrawer {}
+            if let Some(msg) = v.busy.as_deref() {
+                div { class: "busy-mask",
+                    div { class: "busy-card",
+                        div { class: "busy-spin" }
+                        "{msg}"
+                    }
+                }
+            }
             chrome::Toast { note: v.note.clone(), seq: v.note_seq }
         }
     }

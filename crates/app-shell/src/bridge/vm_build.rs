@@ -160,6 +160,10 @@ pub struct UiState {
     pub gather_gen: u64,
     /// 会话工作台缓存(见 [`WorkbenchCache`])。导航切周时复用,不重跑 git。
     pub workbench_cache: Option<WorkbenchCache>,
+    /// 长操作遮罩文案。空 = 不挡。
+    pub busy: Option<String>,
+    /// 这个进程里已经对 Orca `repo.add` 成功过的项目。再进项目不再登记。
+    pub orca_repos_ready: std::collections::HashSet<bw::model::ProjectId>,
 }
 
 /// 深链按 slug 找,找不到再按显示名找。
@@ -537,6 +541,7 @@ pub async fn assemble(app: &App, ui: &mut UiState, g: &Gathered) -> Vm {
         },
         note: ui.note.clone(),
         note_seq: ui.note_seq,
+        busy: ui.busy.clone(),
         warnings: g.warnings.clone(),
     }
 }

@@ -561,6 +561,15 @@ select.select-multi{padding:3px;font-size:11.5px;border:1px solid var(--border-d
 .repo-refresh[disabled]{cursor:default;color:var(--ink-4);background:transparent;}
 .repo-refresh.spinning{animation:repo-spin .9s linear infinite;}
 @keyframes repo-spin{from{transform:rotate(0)}to{transform:rotate(360deg)}}
+/* 开工 / 第一次登记仓:挡住嵌页,免得那几秒里乱点。 */
+.busy-mask{position:fixed;inset:0;z-index:90;background:rgba(250,249,245,.72);
+  display:flex;align-items:center;justify-content:center;}
+.busy-card{display:flex;flex-direction:column;align-items:center;gap:12px;
+  padding:22px 28px;background:var(--paper);border:1px solid var(--border);
+  border-radius:12px;max-width:360px;text-align:center;font-size:13px;
+  color:var(--ink-2);line-height:1.6;box-shadow:0 8px 28px rgba(0,0,0,.08);}
+.busy-spin{width:22px;height:22px;border:2px solid var(--border-deep);
+  border-top-color:var(--clay);border-radius:50%;animation:repo-spin .8s linear infinite;}
 
 /* 长命令的一步一句回执(接入、规范铺底)。人点完那一下总得看见事情在动,
    否则会以为没点上、然后猛点 —— 试点第一天用户提的。 */
