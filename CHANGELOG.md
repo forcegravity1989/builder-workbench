@@ -6,7 +6,9 @@
 
 ## 最近 · 2026-08-29
 
-会话屏嵌 Orca 走 iframe(和 Open Design 同路):新版 Orca SPA boot 调 `crypto.randomUUID()` 要 Secure Context,Windows 主 WebView 用 `with_windows_browser_args` 把 `http://dioxus.index.html` 当 secure + 关 `LocalNetworkAccessChecks`。开工走本地 pipe;`createAgentSession` 的 `clientOperationId` 用 Orca 规定形状(13 位毫秒-32 hex,误填 RPC 帧 id 会被 `agent_session_operation_invalid` 拒),Cursor 预设名是 `cursor`(不是 `cursor-agent`)。去会话先认会话记下的树(`resolve_issue_worktree`),不 `provision` 第二棵;再以切树为准:一律 `worktree.activate`(12s),有 Claude session id 再短等 ensure(4s),失败不算跳失败;▶开工 接回走 ensure(Claude)/activate(Cursor)。`#pairing=` 搬成 `?pairing=`(只搬家不 mint code);Orca 网页地址存本机 `settings.toml`(带 token 不进仓/Event/日志,`BW_ORCA_WEB_URL` 可覆盖);create/ensure 失败把 error code 露进 `IssueRan.summary` 与 stderr(不带 token)。修 `request_id` debug 下 `u64` 溢出→`wrapping_mul`;会话屏去掉 1600px 上限。
+Open / 去会话只 `worktree.activate`,不再 `ensureAgentSession`(那条是 `--resume` 再开一扇 TUI)。`createAgentSession` 若回「Timed out waiting for terminal handle after creation」,渲染进程已经把窗拉起来了,当成功,再切树让配对网页跟上。▶开工已有会话也只切树。
+
+会话屏嵌 Orca 走 iframe(和 Open Design 同路):新版 Orca SPA boot 调 `crypto.randomUUID()` 要 Secure Context,Windows 主 WebView 用 `with_windows_browser_args` 把 `http://dioxus.index.html` 当 secure + 关 `LocalNetworkAccessChecks`。开工走本地 pipe;`createAgentSession` 的 `clientOperationId` 用 Orca 规定形状(13 位毫秒-32 hex,误填 RPC 帧 id 会被 `agent_session_operation_invalid` 拒),Cursor 预设名是 `cursor`(不是 `cursor-agent`)。去会话先认会话记下的树(`resolve_issue_worktree`),不 `provision` 第二棵;只 `worktree.activate`,不 ensure。`#pairing=` 搬成 `?pairing=`(只搬家不 mint code);Orca 网页地址存本机 `settings.toml`(带 token 不进仓/Event/日志,`BW_ORCA_WEB_URL` 可覆盖);create/ensure 失败把 error code 露进 `IssueRan.summary` 与 stderr(不带 token)。修 `request_id` debug 下 `u64` 溢出→`wrapping_mul`;会话屏去掉 1600px 上限。
 
 计划屏详情:点 Start / Open / 阻塞 / Cancel / Complete 后弹窗自动关。待评审 / 已完成 / 已取消也有 Open(去会话,不改状态)。业务活显示已有类别(不再误锁成「运作」),计划和负责人同一行。Start 建 worktree 时可改/补类别,没选不能开工。删除自定义版本走真命令 `DeletePlanVersion`:摘 `bw:plan:<name>` + 删同名里程碑,不碰 `bw:week`(周格式标题拒收);弹窗不再用 `ScheduleIssue { week_of: None }` 清周排期。
 

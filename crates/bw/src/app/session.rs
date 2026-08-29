@@ -1,13 +1,13 @@
 //! 会话:在 Orca 里开工 / 接回 / 停 / 删。
 //!
 //! PTY 已封存到 `bw-engine` 的 `legacy_pty/`,开工不再起内嵌终端。桌面 ▶跑 改打
-//! Orca 本地 pipe(`orca::create_session` / `ensure_session`),过程在会话屏的
+//! Orca 本地 pipe(`orca::create_session` / `reveal_tree`),过程在会话屏的
 //! Orca iframe 里看;headless 指挥器仍走阻塞 `run_skill`(自我标注替身)。
 //!
 //! 会话的**身份**仍落在 `asset_root/sessions/` 的 jsonl(`Conversation` 行:
 //! worktree 路径、分支、Claude session id)。Orca create 不回 Claude session id,
-//! 开工后从本机 `~/.claude/projects/…/<id>.jsonl` 收最新一条记进会话行;再开工
-//! 走 `ensure`。收不到就不编 id,下次再收。
+//! 开工后从本机 `~/.claude/projects/…/<id>.jsonl` 收最新一条记进会话行。
+//! 去会话 / 再开工只切树,不 `ensure`。收不到 id 就不编。
 
 use super::{App, AppError, Result};
 use crate::command::Event;
@@ -68,8 +68,8 @@ impl App {
     /// - 没会话行 → 拒绝,让人点▶开工。
     /// - 先认会话记下的树(旧平级兄弟也算),没有再看新目录,再没有才看旧兄弟。
     ///   **不新建**第二棵 —— 去会话不是开工。
-    /// - 一律 `worktree.activate`。有 Claude session id(会话行或这棵树的 jsonl)
-    ///   再尽量 ensure 那条 tab;ensure 失败不算跳失败。Cursor 没有 ensure。
+    /// - 一律 `worktree.activate`。不 ensure、不 resume。树上已有的 TUI
+    ///   切过去就能看见。
     /// - 不跟当前类别映射走。
     pub(super) async fn reopen_session(&mut self, id: IssueId) -> Result<Vec<Event>> {
         if !self.pty_enabled {
@@ -107,7 +107,7 @@ impl App {
         }
         let rt = bw_engine::orca::connect()
             .map_err(|e| AppError::Exec(format!("连 Orca 没成,接不回会话:{e}")))?;
-        if let Err(e) = bw_engine::orca::reveal_tree(&rt, &path, &sid).await {
+        if let Err(e) = bw_engine::orca::reveal_tree(&rt, &path).await {
             eprintln!(
                 "[BW_ORCA] {e} · {} · worktree={}",
                 rt.log_tag(),

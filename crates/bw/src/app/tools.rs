@@ -125,7 +125,7 @@ pub fn agent_for(tool: &str) -> Result<&'static bw_engine::TuiAgentConfig> {
 }
 
 /// 活上记着的开工工具 → Orca 里要用的 agent 名(给 `orca::create_session` /
-/// `focus_session`)。和 [`agent_for`] 同源 —— 都照活上记的工具走,不许悄悄换;
+/// `reveal_tree`)。和 [`agent_for`] 同源 —— 都照活上记的工具走,不许悄悄换;
 /// 只是这里返回的是 Orca 的 agent 名字符串,不是 PTY 那套 `TuiAgentConfig`。
 /// Open Design 仍走 OD 分支,不打 Orca(这里拒,和 `agent_for` 一致)。探活失败
 /// 仍拒绝开工,不退回 Claude。

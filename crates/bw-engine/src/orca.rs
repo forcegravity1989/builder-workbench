@@ -11,9 +11,9 @@
 //! 管道用 `OpenOptions` 加 `share_mode`,不走 unsafe。
 //!
 //! 接口一次定住,不跟着穿刺脚本改形状。create 不回 Claude session id
-//! (Orca 只回自己的 `terminal.handle`),所以 buddy 不编 id —— 再开工有
-//! Claude id 走 ensure,没有就 create;去会话一律先切树,有 id 再尽量
-//! ensure(见 `app::issue::run_issue` / `app::session::reopen_session`)。
+//! (Orca 只回自己的 `terminal.handle`),所以 buddy 不编 id —— 没 id 才
+//! create;去会话和再开工接回都只切树,不 `ensure`(Orca 的 ensure 是
+//! `--resume` 再开一扇,树上已有的窗切过去就能看见)。
 //! web 配对码 buddy 自己拿不到(Orca 只在桌面 IPC / `orca serve` 里发,
 //! 没开本地 pipe 的 RPC),由人从 Orca 桌面「给 web 配对」拿到 URL 贴进
 //! 设置屏或 `BW_ORCA_WEB_URL`;本机 pipe 的开工不靠 pairing,靠
@@ -25,12 +25,10 @@ use std::time::{Duration, Instant};
 
 use serde_json::{json, Value};
 
-/// 创建/再开工 ensure 的超时(create 本身要起一个 agent,穿刺 20–45s)。
+/// 创建的超时(create 本身要起一个 agent,穿刺 20–45s)。
 const RPC_TIMEOUT: Duration = Duration::from_secs(45);
 /// 切树不该等 agent 拉起。官方包偶发慢回,12s 内没切过去就报,别空等 45s。
 const ACTIVATE_TIMEOUT: Duration = Duration::from_secs(12);
-/// 去会话点回那条 tab 是加分项。短等即可;失败仍算跳成功(树已经在)。
-const REVEAL_ENSURE_TIMEOUT: Duration = Duration::from_secs(4);
 
 #[derive(Debug, thiserror::Error)]
 pub enum OrcaError {
@@ -48,6 +46,17 @@ pub enum OrcaError {
     Rpc(String),
     #[error("Orca 回包不是合法 JSON / 形状不对:{0}")]
     BadFrame(String),
+}
+
+impl OrcaError {
+    /// Orca 渲染进程已经建了 tab / 拉起 agent,主进程 10 秒没把句柄交回。
+    /// 回包是失败,活已经起来了 —— 当成功,再切树让网页跟上。
+    pub fn is_terminal_handle_timeout(&self) -> bool {
+        matches!(
+            self,
+            OrcaError::Rpc(s) if s.contains("Timed out waiting for terminal handle after creation")
+        )
+    }
 }
 
 /// 本机 Orca 运行时:本地 pipe 端点 + 一次性 token(只活在内存)。clone 只在
@@ -125,78 +134,14 @@ pub fn agent_supports_ensure(agent: &str) -> bool {
     matches!(agent, "claude")
 }
 
-/// 再开工接回上一场。Claude 走 `ensureAgentSession`(resume + focused);
-/// Cursor 等不能 resume 的只 [`activate_worktree`]。去会话请走 [`reveal_tree`]:
-/// 那边先切树,ensure 失败不算跳失败。
-pub async fn focus_session(
-    rt: &OrcaRuntime,
-    worktree: &Path,
-    agent: &str,
-    session_id: &str,
-) -> Result<(), OrcaError> {
-    if agent_supports_ensure(agent) {
-        ensure_session(rt, worktree, agent, session_id).await
-    } else {
-        activate_worktree(rt, worktree).await
-    }
+/// 去会话 / 再开工接回:只切树。Orca 自己记着树上有哪些窗,切过去主窗口
+/// 就是那些 TUI。不打 `ensureAgentSession` —— 那条是 `--resume` 再开一扇。
+pub async fn reveal_tree(rt: &OrcaRuntime, worktree: &Path) -> Result<(), OrcaError> {
+    activate_worktree(rt, worktree).await
 }
 
-/// 去会话:先把 Orca 切到这棵树。有 Claude session id 再尽量点回那条 tab。
-/// **切树成功就算成功**——树上有几扇窗、是否正好落到 issue 那条,是其次。
-/// ensure 失败或超时只打日志,不把整次跳转打成失败。
-pub async fn reveal_tree(
-    rt: &OrcaRuntime,
-    worktree: &Path,
-    session_id: &str,
-) -> Result<(), OrcaError> {
-    activate_worktree(rt, worktree).await?;
-    if session_id.is_empty() {
-        return Ok(());
-    }
-    if let Err(e) =
-        ensure_session_timed(rt, worktree, "claude", session_id, REVEAL_ENSURE_TIMEOUT).await
-    {
-        eprintln!(
-            "[BW_ORCA] 树已切过去,点回那条会话没跟上:{e} · {} · worktree={}",
-            rt.log_tag(),
-            worktree.display()
-        );
-    }
-    Ok(())
-}
-
-/// 把一张已有 Claude 会话在 Orca 桌面里点出来(焦点落到那条 agent tab)。
-/// `session_id` 是 Claude jsonl 的 session id(会话行里记的),Orca 要显式指定
-/// —— 它不会按 worktree+agent 自己找。没 id 就别调这条(走 [`create_session`])。
-pub async fn ensure_session(
-    rt: &OrcaRuntime,
-    worktree: &Path,
-    agent: &str,
-    session_id: &str,
-) -> Result<(), OrcaError> {
-    ensure_session_timed(rt, worktree, agent, session_id, RPC_TIMEOUT).await
-}
-
-async fn ensure_session_timed(
-    rt: &OrcaRuntime,
-    worktree: &Path,
-    agent: &str,
-    session_id: &str,
-    timeout: Duration,
-) -> Result<(), OrcaError> {
-    let params = json!({
-        "kind": "explicit",
-        "worktree": path_prefixed(worktree),
-        "agent": agent,
-        "providerSession": { "key": "session_id", "id": session_id },
-        "presentation": "focused",
-    });
-    let frame = call(rt, "terminal.ensureAgentSession", params, timeout).await?;
-    require_ok(&frame, "terminal.ensureAgentSession")
-}
-
-/// 把配对网页 / 桌面切到这棵 worktree。不 resume agent。去会话必走;
-/// Cursor 的 ▶开工 接回也走这条(Orca 不支持 `cursor` 的 ensure)。
+/// 把配对网页 / 桌面切到这棵 worktree。不 resume agent。去会话、create
+/// 成功后跟网页、再开工接回都走这条。
 pub async fn activate_worktree(rt: &OrcaRuntime, worktree: &Path) -> Result<(), OrcaError> {
     let params = json!({
         "worktree": path_prefixed(worktree),
@@ -235,7 +180,12 @@ pub async fn create_session(
         params["agentArgs"] = json!(agent_args);
     }
     let frame = call(rt, "terminal.createAgentSession", params, RPC_TIMEOUT).await?;
-    require_ok(&frame, "terminal.createAgentSession")
+    match require_ok(&frame, "terminal.createAgentSession") {
+        Ok(()) => Ok(()),
+        // 渲染进程已经建了 tab,句柄没交回。当成功,调用方再切树。
+        Err(e) if e.is_terminal_handle_timeout() => Ok(()),
+        Err(e) => Err(e),
+    }
 }
 
 /// 给会话屏 iframe 的 loopback。**不依赖 `connect()`** —— 人把安装版
@@ -637,7 +587,7 @@ fn open_duplex(path: &str) -> Option<std::os::unix::net::UnixStream> {
 mod tests {
     use super::{
         agent_supports_ensure, claude_project_slug, client_operation_id, looks_session_id,
-        pairing_as_query, split_prompt_and_args,
+        pairing_as_query, split_prompt_and_args, OrcaError,
     };
     use std::path::Path;
 
@@ -664,6 +614,22 @@ mod tests {
         assert_eq!(id.as_bytes()[13], b'-');
         assert!(id[..13].chars().all(|c| c.is_ascii_digit()));
         assert!(id[14..].chars().all(|c| matches!(c, '0'..='9' | 'a'..='f')));
+    }
+
+    #[test]
+    fn handle_timeout_rpc_counts_as_side_effect_ok() {
+        let e = OrcaError::Rpc(
+            "terminal.createAgentSession · code=runtime_error · Timed out waiting for terminal handle after creation"
+                .into(),
+        );
+        assert!(e.is_terminal_handle_timeout());
+        assert!(
+            !OrcaError::Rpc("agent_session_operation_invalid".into()).is_terminal_handle_timeout()
+        );
+        assert!(!OrcaError::Timeout {
+            method: "terminal.createAgentSession".into()
+        }
+        .is_terminal_handle_timeout());
     }
 
     #[test]
