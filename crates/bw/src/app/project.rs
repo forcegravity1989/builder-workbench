@@ -102,6 +102,22 @@ impl App {
                 format!("规范铺底没成:{e} —— 项目已经接进来了。配置屏「对一遍账」能看见缺哪些件"),
             )),
         }
+        // 纳入时替人把仓登记进 Orca。Orca 没开不推翻接入,第一次开工 / Open 再补。
+        if self.pty_enabled {
+            match bw_engine::orca::connect() {
+                Ok(rt) => match bw_engine::orca::ensure_repo(&rt, &ws).await {
+                    Ok(()) => self.step(ProgressLine::ok(6, "Orca 已经认得这个仓")),
+                    Err(e) => self.step(ProgressLine::fail(
+                        6,
+                        format!("Orca 还没记下这个仓:{e} —— 第一次开工会再试"),
+                    )),
+                },
+                Err(_) => self.step(ProgressLine::fail(
+                    6,
+                    "Orca 没开,仓没登记 —— 第一次开工会再试",
+                )),
+            }
+        }
         Ok(events)
     }
 
