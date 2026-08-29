@@ -1,13 +1,5 @@
-# PR 自动评审(CI 层):官方 claude-code-action + code-review plugin。
-#
-# 谈定见 changes/reviewer-agent/(spec 拍板 7):GitHub 仓的自动触发放这一层,
-# codehub 仓走 Workbench 内建「请评审」。评审口径同源仓根 AGENTS.md(action
-# 每次自动读),不另立第二份 review 标准。
-#
-# 生效前提(人做;配好前本 workflow 如实失败在认证一步,不产假 review):
-#   1. 给仓装 Claude GitHub App(Contents / Issues / Pull requests 读写);
-#   2. 本机 `claude setup-token` 生成订阅 OAuth token,配进仓 secret
-#      CLAUDE_CODE_OAUTH_TOKEN。
+# PR 自动评审。谈定见 changes/reviewer-agent/;codehub 仓走 Workbench 内建「请评审」。
+# 前提(人做一次):给仓装 Claude GitHub App + 配 secret CLAUDE_CODE_OAUTH_TOKEN。
 name: Code Review
 on:
   pull_request:
@@ -15,30 +7,36 @@ on:
 jobs:
   review:
     runs-on: ubuntu-latest
-    # fork PR 拿不到 secrets(GitHub 的规矩)——显式跳过,换一个干净状态,
-    # 不留一场认证失败的红。官方骨架没有这条,是本仓自己加的。
+    # fork PR 拿不到 secrets,显式跳过,不留一场认证失败的红。
     if: github.event.pull_request.head.repo.full_name == github.repository
     permissions:
       contents: read
       pull-requests: read
       issues: read
-      # 评论经 Claude GitHub App 的 OIDC 联合认证发出,workflow 自己的令牌
-      # 保持只读 —— 所以这里没有 pull-requests: write。
+      # 评论走 App 的 OIDC 令牌,不用 workflow 令牌,所以这里没有写权限。
       id-token: write
     steps:
       - uses: actions/checkout@v6
         with:
-          fetch-depth: 1
+          fetch-depth: 0 # 评审要看 git 历史
       - uses: anthropics/claude-code-action@v1
+        id: claude
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           plugin_marketplaces: "https://github.com/anthropics/claude-code.git"
           plugins: "code-review@claude-code-plugins"
-          # --comment = 意见以 inline comment 落在 PR 上(每个发现一条,无发现
-          # 发一条总结);不加只进 workflow log。skill 自己会跳过 draft、已关、
-          # 琐碎、以及已有 Claude 评论的 PR,不用另写去重。
-          prompt: "/code-review:code-review --comment ${{ github.repository }}/pull/${{ github.event.pull_request.number }}"
-          # 发 inline comment 的 MCP server 只在 --allowedTools 点名时才启动,
-          # 这一行不能删。订阅额度下默认模型随账户档位走(Pro=Sonnet、Max=Opus),
-          # 钉死 sonnet 让每场 review 的开销可预期,要更强再抬。
-          claude_args: '--model claude-sonnet-5 --allowedTools "mcp__github_inline_comment__create_inline_comment"'
+          # 只传 PR 号:这条命令没有 $ARGUMENTS,多传的会被静默忽略。
+          prompt: "/code-review:code-review --comment ${{ github.event.pull_request.number }}"
+          # 这一长串必需,别精简:Bash 在这个 action 里默认关闭,而 code-review
+          # 全靠 gh 干活;发 inline comment 的 MCP server 也只在点名时才装。
+          claude_args: >-
+            --model claude-sonnet-5
+            --allowedTools "mcp__github_inline_comment__create_inline_comment,Bash(gh pr view:*),Bash(gh pr diff:*),Bash(gh pr comment:*),Bash(gh pr list:*),Bash(gh issue view:*),Bash(gh issue list:*),Bash(gh search:*),Bash(git log:*),Bash(git blame:*),Bash(git diff:*),Read,Glob,Grep"
+      # 空跑时靠这份日志查哪一步被挡。不开 show_full_output——它会把工具结果
+      # (可能含 secret)打进公开日志。
+      - if: always() && steps.claude.outputs.execution_file != ''
+        uses: actions/upload-artifact@v4
+        with:
+          name: claude-execution
+          path: ${{ steps.claude.outputs.execution_file }}
+          if-no-files-found: ignore
