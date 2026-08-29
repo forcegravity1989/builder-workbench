@@ -288,6 +288,15 @@ impl Remote {
         }
     }
 
+    /// 同 `open_mr_for_branch` 但查 all 状态(含已合入)。给 Done 的 issue 用。
+    pub async fn mr_for_branch(&self, branch: &str) -> Result<Option<u32>, RemoteError> {
+        match self {
+            Remote::Github(r) => Ok(github::open_pr_for_branch(r, branch).await?),
+            Remote::Codehub { host, path } => Ok(codehub::mr_for_branch(host, path, branch).await?),
+            Remote::Mock(_) => Ok(None),
+        }
+    }
+
     // ─────────────── V4 issue 远端正本:issue 存取 ───────────────
     //
     // 六个方法都只做 provider 分发(github→`gh`、codehub→`codehub-cli`),不碰

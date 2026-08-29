@@ -650,7 +650,9 @@ async fn fill_pr_numbers(
                 i.status,
                 IssueStatus::Backlog | IssueStatus::Todo | IssueStatus::InProgress
             );
-        if i.number == 0 || (i.status != IssueStatus::InReview && !card_edit) {
+        if i.number == 0
+            || (i.status != IssueStatus::InReview && i.status != IssueStatus::Done && !card_edit)
+        {
             continue;
         }
         if let Some(&pr) = mr_cache.get(&i.id) {
@@ -658,10 +660,18 @@ async fn fill_pr_numbers(
             continue;
         }
         let branch = bw_engine::github::issue_branch(i.number);
-        let pr = match remote.open_mr_for_branch(&branch).await {
-            Ok(Some(n)) => n,
-            // 查不成 / 没开着的 MR —— 0,不显 MR(如实,不假装)。
-            _ => 0,
+        // InReview 查 open MR;Done 查 all(含合入)——合入的 MR 用
+        // open_mr_for_branch 查不到。
+        let pr = if i.status == IssueStatus::Done {
+            match remote.mr_for_branch(&branch).await {
+                Ok(Some(n)) => n,
+                _ => 0,
+            }
+        } else {
+            match remote.open_mr_for_branch(&branch).await {
+                Ok(Some(n)) => n,
+                _ => 0,
+            }
         };
         i.pr_number = pr;
         mr_cache.insert(i.id, pr);
