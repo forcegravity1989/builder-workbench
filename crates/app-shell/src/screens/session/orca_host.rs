@@ -44,6 +44,7 @@ thread_local! {
     static HOST: RefCell<Option<HostCss>> = const { RefCell::new(None) };
     static MAIN: RefCell<Option<MainSnap>> = const { RefCell::new(None) };
     static HOOKED: Cell<bool> = const { Cell::new(false) };
+    static OPENED: RefCell<Option<String>> = const { RefCell::new(None) };
 }
 
 const MEASURE_JS: &str = r#"
@@ -60,19 +61,28 @@ pub fn hide() {
     HELD.with(|h| {
         h.borrow_mut().take();
     });
+    OPENED.with(|o| *o.borrow_mut() = None);
 }
 
 pub async fn show(url: &str) {
     hook();
     snapshot_main();
+    let same = OPENED.with(|o| o.borrow().as_deref() == Some(url));
     if HELD.with(|h| h.borrow().is_some()) {
-        apply_cached();
-        return;
+        if same {
+            apply_cached();
+            return;
+        }
+        // 地址换了:丢掉旧 WebView,下面重新 arm。格子还在,不用清 HOST。
+        HELD.with(|h| {
+            h.borrow_mut().take();
+        });
     }
     // 先 arm PENDING:tao 事件回调一来就 create_overlay,WebView 就开始加载
     // pairing URL,和量 #orca-host 格子并行(原先后置 wait_host 的 ~640ms 是
     // 延迟来源)。窗建出来时 visible=false,要等下面量到格子 apply_cached
     // 才露出来——所以 WebView 在背后先加载,人对上时已是加载好的页。
+    OPENED.with(|o| *o.borrow_mut() = Some(url.to_string()));
     PENDING.with(|p| *p.borrow_mut() = Some(url.to_string()));
     for _ in 0..60 {
         if HELD.with(|h| h.borrow().is_some()) {
@@ -153,8 +163,8 @@ fn hook() {
                         if s.id != *window_id {
                             return;
                         }
-                        s.inner.x += pos.x - s.outer.x;
-                        s.inner.y += pos.y - s.outer.y;
+                        s.inner.x = s.inner.x.saturating_add(pos.x.saturating_sub(s.outer.x));
+                        s.inner.y = s.inner.y.saturating_add(pos.y.saturating_sub(s.outer.y));
                         s.outer = *pos;
                     }
                 });
@@ -192,8 +202,11 @@ fn create_overlay<T>(url: &str, target: &tao::event_loop::EventLoopWindowTarget<
             return;
         }
     };
-    match WebViewBuilder::new().with_url(url).build(&window) {
+    // 先挂空白页再 load pairing:with_url(真地址) 会在事件回调里同步等
+    // WebView2 拉完整页(人对过约 10s 白屏)。about:blank 建窗是瞬间的。
+    match WebViewBuilder::new().with_url("about:blank").build(&window) {
         Ok(webview) => {
+            let _ = webview.load_url(url);
             HELD.with(|h| {
                 *h.borrow_mut() = Some(Held {
                     window,
@@ -204,6 +217,22 @@ fn create_overlay<T>(url: &str, target: &tao::event_loop::EventLoopWindowTarget<
         }
         Err(e) => eprintln!("[BW_ORCA] webview: {e}"),
     }
+}
+
+fn add_px(base: i32, offset: f64) -> i32 {
+    let o = if offset.is_finite() {
+        offset.round().clamp(i32::MIN as f64, i32::MAX as f64) as i32
+    } else {
+        0
+    };
+    base.saturating_add(o)
+}
+
+fn px_u32(v: f64) -> u32 {
+    if !v.is_finite() || v < 1.0 {
+        return 1;
+    }
+    v.min(u32::MAX as f64) as u32
 }
 
 fn apply_cached() {
@@ -226,12 +255,12 @@ fn apply_cached() {
             held.window.set_undecorated_shadow(false);
         }
         held.window.set_outer_position(PhysicalPosition::new(
-            main.inner.x + (css.x * main.scale).round() as i32,
-            main.inner.y + (css.y * main.scale).round() as i32,
+            add_px(main.inner.x, css.x * main.scale),
+            add_px(main.inner.y, css.y * main.scale),
         ));
         held.window.set_inner_size(PhysicalSize::new(
-            (css.w * main.scale).round() as u32,
-            (css.h * main.scale).round() as u32,
+            px_u32(css.w * main.scale),
+            px_u32(css.h * main.scale),
         ));
         held.window.set_visible(true);
     });

@@ -138,13 +138,13 @@ references(`standard/system-prompt/references/*.md`)是「干某类活需要额�
 
 - `connect() -> OrcaRuntime` — 读本机 `orca-runtime.json`,token 不落盘
 - `ensure_session(worktree, agent, session_id)`
-- `create_session(worktree, agent, prompt, system)` — 内部按代理填 `agentArgs` 或把 system 拼进 prompt
-- `web_embed_url()` — 给会话屏所属 wry 窗的 loopback,hash 只在内存
+- `create_session(worktree, agent, prompt, system)` — 内部按代理填 `agentArgs` 或把 system 拼进 prompt;`clientOperationId` 用 Orca 规定形状(13 位毫秒 + `-` + 32 hex,不是 RPC 帧 id),形状不对立刻 `agent_session_operation_invalid` 被拒
+- `web_embed_url(fallback)` — 给会话屏所属 wry 窗的 loopback;先 `BW_ORCA_WEB_URL` 后本机设置。WebView2 `load_url` 会丢 fragment,把 `#pairing=` 搬成 `?pairing=`(Orca 两边都认,只搬家不 mint code)
 
 **代码**:会话屏 `app-shell/screens/session/mod.rs`(只剩 Orca/OD 两页签);开工在计划屏 → `run_issue` / `run_issue_orca`;路径 `bw-engine/workspace.rs`;Orca 客户端 `bw-engine/orca.rs`;PTY 封存 `bw-engine/legacy_pty/`。穿刺 [`docs/orca-session-puncture.md`](orca-session-puncture.md)。
 **数据**:issue 正本不变。会话正文不进 buddy 库。token 不入库。worktree 目录不入库。系统提示词开工时现算、一次性灌进 Orca/OD,不落配置屏、不跟会话屏当前页签走。
 **依赖**:本机 Orca(官方包或源码桌面)+ named-pipe;会话屏所属 wry 窗吃本机设置里的 pairing URL(开发期可被 `BW_ORCA_WEB_URL` 覆盖)。`#![forbid(unsafe_code)]` 仍守。
-**没建**:不能自己 mint 配对码,人从 Orca 桌面「给 web 配对」拿完整 URL 贴进设置屏(存本机 `settings.toml`,带 token 不进仓 / Event 原文 / 日志);开发期 `BW_ORCA_WEB_URL` 可覆盖。跟随在带这刀的 Orca 里已兑现、官方包还没有;buddy 嵌窗正式验未走。稿未改。账本路径未改。配置屏 Cursor 可选(底座已通 `cursor-agent`,探不到如实报错、不退回 Claude)。不做:自己 mint pairing、postMessage、会话 URL、新 crate、Cursor 专模块、Orca 里代登记仓、`worktree-orca-adapter`、迁旧树、源码版与安装版并行。
+**没建**:不能自己 mint 配对码,人从 Orca 桌面「给 web 配对」拿「Open in browser」贴进设置屏(存本机 `settings.toml`,带 token 不进仓 / Event 原文 / 日志);开发期 `BW_ORCA_WEB_URL` 可覆盖。跟随在带这刀的 Orca 里已兑现、官方包还没有;buddy 嵌窗正式验未走。稿未改。账本路径未改。不做:自己 mint pairing、postMessage、会话 URL、新 crate、Cursor 专模块、Orca 里代登记仓、`worktree-orca-adapter`、迁旧树、源码版与安装版并行。
 
 ### 8 · 远端与工具探活
 
