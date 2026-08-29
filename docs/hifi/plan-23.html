@@ -683,9 +683,10 @@ function detail(){
   var issue = c.remote_number>0 && PROJECT.issue_url_prefix
     ? '<span class="detail-link" onclick="window.open(\''+PROJECT.issue_url_prefix+c.remote_number+'\')">'+icon('external',12)+' issue #'+c.remote_number+'</span>'
     : (c.remote_number>0 ? '<span>#'+c.remote_number+'</span>' : '<span class="text-muted">— 只在本机</span>');
+  var catSel = '<select class="select" style="width:100%;"><option'+(c.category==='原型'?' selected':'')+'>原型</option><option'+(c.category==='构建'?' selected':'')+'>构建</option><option'+(c.category==='优化'?' selected':'')+'>优化</option><option'+(c.category==='运维'?' selected':'')+'>运维</option><option'+(c.category==='运营推广'?' selected':'')+'>运营推广</option></select>';
   var catRow = c.kind==='运作活'
-    ? row('类别','运作')
-    : '<div class="detail-row"><div class="k">类别</div><select class="select" style="width:auto;display:inline-block;"><option>原型</option><option selected>构建</option><option>优化</option><option>运作</option></select></div>';
+    ? '<div class="detail-row" style="grid-column:1/-1;"><div class="k">类别</div>运作</div>'
+    : '<div class="detail-row" style="grid-column:1/-1;"><div class="k">类别</div>'+catSel+'</div>';
   var mainAct = '';
   if(c.col==='Backlog'){
     mainAct = '<button class="btn btn-sm btn-secondary" onclick="closeDetail();openSchedule(\''+c.id+'\')">schedule</button>';
@@ -694,7 +695,7 @@ function detail(){
   } else if(c.col==='InProgress'){
     mainAct = '<button class="btn btn-sm btn-primary" onclick="closeDetail();openIssueSession(\''+c.id+'\')">'+icon('arrowright',14)+' Open</button>';
   } else if(c.col==='InReview'){
-    mainAct = '<button class="btn btn-sm btn-primary" onclick="alert(\'Complete = 合入并完成(原型未接)\')">'+icon('check',14)+' Complete</button>';
+    mainAct = '<button class="btn btn-sm btn-primary" onclick="closeDetail();alert(\'Complete = 合入并完成(原型未接)\')">'+icon('check',14)+' Complete</button>';
   } else if(c.col==='Done'){
     mainAct = '<span class="text-muted">已完成并结清</span>';
   } else if(c.col==='Blocked'){
@@ -702,8 +703,8 @@ function detail(){
   } else if(c.col==='Cancelled'){
     mainAct = '<span class="text-muted">已取消</span>';
   }
-  var block = (c.col!=='Done'&&c.col!=='Blocked'&&c.col!=='Cancelled') ? '<button class="btn btn-sm btn-secondary" title="标记阻塞">'+icon('ban',14)+' 阻塞</button>' : '';
-  var cancel = (c.col!=='Done'&&c.col!=='Cancelled') ? '<button class="btn btn-sm btn-secondary" title="Cancel">'+icon('xcircle',14)+' Cancel</button>' : '';
+  var block = (c.col!=='Done'&&c.col!=='Blocked'&&c.col!=='Cancelled') ? '<button class="btn btn-sm btn-secondary" title="标记阻塞" onclick="closeDetail()">'+icon('ban',14)+' 阻塞</button>' : '';
+  var cancel = (c.col!=='Done'&&c.col!=='Cancelled') ? '<button class="btn btn-sm btn-secondary" title="Cancel" onclick="closeDetail()">'+icon('xcircle',14)+' Cancel</button>' : '';
   var assign = c.week_of ? c.week_of : (c.plan_version ? '版本·'+c.plan_version : '未排期');
   var dotHtml = '<span class="status '+(c.col==='InProgress'?'dot-run ':'')+meta.status+'"><span class="status-dot"></span>'+meta.label+'</span>';
   return '<div class="modal-backdrop" onclick="if(event.target===this)closeDetail()">'
@@ -717,7 +718,7 @@ function detail(){
     +       '<div class="detail-body-text" id="ed-body" ondblclick="editOn(this)" onblur="editSaveBody(\''+c.id+'\')" title="双击编辑">'+esc(c.body)+'</div>'
     +       '<div class="edithint">双击标题或正文编辑,关闭弹窗自动保存</div>'
     +       '<div class="plan-meta-grid">'
-    +         '<div class="detail-row"><div class="k">链接</div>'+mr+' · '+issue+'</div>'
+    +         '<div class="detail-row" style="grid-column:1/-1;"><div class="k">链接</div>'+mr+' · '+issue+'</div>'
     +         catRow
     +         row('计划', assign)
     +         '<div class="detail-row"><div class="k">负责人</div><input id="ed-assignee" class="input" style="width:auto;display:inline-block;" value="'+esc(c.assignee||'')+'" placeholder="指派谁" onblur="editSaveAssignee(\''+c.id+'\')" title="回车或失焦保存,同步到 codehub"></div>'
@@ -897,8 +898,11 @@ function startModal(){
     +       '<input id="st-name" class="input" value="'+esc(defName)+'"></div>'
     +     '<div class="formrow"><label class="label">基于</label>'
     +       '<select id="st-base" class="select"><option value="main">main</option><option value="HEAD">HEAD</option></select></div>'
+    +     (c.kind==='运作活'
+    +       ? '<div class="formrow"><label class="label">类别</label><div>运作</div></div>'
+    +       : '<div class="formrow"><label class="label">类别</label><select id="st-cat" class="select"><option value=""'+(c.category?'':' selected')+'>还没选</option><option'+(c.category==='原型'?' selected':'')+'>原型</option><option'+(c.category==='构建'?' selected':'')+'>构建</option><option'+(c.category==='优化'?' selected':'')+'>优化</option><option'+(c.category==='运维'?' selected':'')+'>运维</option><option'+(c.category==='运营推广'?' selected':'')+'>运营推广</option></select></div>')
     +     '<label class="check-row"><input id="st-setup" type="checkbox" checked><span>创建后跑 setup script</span></label>'
-    +     '<div class="cfg-readonly-note">确认后创建 worktree，issue 切到进行中，并打开会话。</div>'
+    +     '<div class="cfg-readonly-note">确认后创建 worktree，issue 切到进行中，并打开会话。没类别的业务活先选一类。</div>'
     +   '</div>'
     +   '<div class="plan-modal-foot">'
     +     '<span></span>'
@@ -914,8 +918,14 @@ function confirmStart(){
   if(!c){ closeModal(); return; }
   var nameEl = document.getElementById('st-name');
   var baseEl = document.getElementById('st-base');
+  var catEl = document.getElementById('st-cat');
   var name = (nameEl && nameEl.value.trim()) || ('bw/issue-'+c.num);
   var base = (baseEl && baseEl.value) || 'main';
+  if(c.kind!=='运作活'){
+    var cat = catEl && catEl.value.trim();
+    if(!cat){ alert('先选类别'); return; }
+    c.category = cat;
+  }
   c.col = 'InProgress';
   c.branch = name;
   c.worktree = { name:name, base:base };
