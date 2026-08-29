@@ -65,18 +65,12 @@ pub enum Req {
     OpenDoc(Option<String>),
     /// 「先不建」——把还没确认的草稿丢掉。草稿本来就没进库,丢掉不留痕。
     DropDrafts,
-    /// 会话屏:选中哪个会话 / 切页签 / 展开某个目录 / 中栏开哪个文件。
-    /// 全是纯导航,一律不进库。
+    /// 会话屏:选中哪个会话 / 切页签。全是纯导航,一律不进库。
     SelectSession(Option<bw::model::IssueId>),
     /// 计划屏右侧详情抽屉开着哪张活。**通知点过去也走这条** —— 通知只负责
     /// 「告诉你有 MR 等着」,看活、看会话、看 MR 都在活的详情里,不在通知里。
     SelectIssue(Option<bw::model::IssueId>),
     SessionTab(crate::vm::SessionTab),
-    ToggleDir(String),
-    OpenFile {
-        path: String,
-        diff: bool,
-    },
     /// 知识库屏切页签。代码图与资产两个页签**切过去那一刻现跑一次**
     /// (起 codegraph 子进程、走 `git log`、采仓统计),结果留到下次再点。
     KbTab(crate::vm::KbTab),
@@ -93,11 +87,6 @@ pub enum Req {
     /// 一遍(起脚本、传时间窗、读标准输出的 JSON)。**不在打开总览时自动跑**
     /// —— 一次要起好几个子进程,不该在每次进项目、每次重绘时发生。
     CollectMetrics,
-    /// 会话屏:「看看喂了什么」—— 把这张活开工时那份系统提示词原样算一遍。
-    /// **纯读**,和真开工走的是同一个函数,所以显示什么、agent 收到的就是什么。
-    ShowBriefing {
-        issue: bw::model::IssueId,
-    },
     /// 上面那一采的结果。**不是界面发的**,是派出去的任务算完发回来的。
     MetricsCollected {
         project: ProjectId,
@@ -142,10 +131,6 @@ pub enum Req {
     },
     /// 重新算一遍并推一份新的 ViewModel。
     Refresh,
-    /// 终端挂件订上之后要第一屏。不重拼 ViewModel。
-    PtyReplay {
-        conversation_id: bw::model::ConversationId,
-    },
     /// 配置屏亮某一行技能(从活上的 workflow 跳过来)。
     FocusSkill(String),
 }
@@ -158,18 +143,9 @@ pub enum Req {
 pub struct Bridge {
     tx: mpsc::UnboundedSender<Req>,
     pub vm: watch::Receiver<Vm>,
-    /// PTY 字节流,按会话 id 分批。**不走 ViewModel**——终端一秒钟能吐几百
-    /// 批字节,每一批都重拼一次整个 ViewModel 会把界面拖垮;而且字节流是
-    /// 一次性的,进了 ViewModel 就会在每次重渲染时被重复写进终端。
-    ///
-    /// **是 broadcast 不是 watch**:watch 只留最新一个值,一轮渲染慢过一跳就把
-    /// 上一批**静默覆盖**掉 —— claude 大段刷屏(编译输出、长 diff)时终端会缺
-    /// 段,而且断口两侧的字节被拼起来,跨批的汉字直接变乱码。broadcast 留一整
-    /// 个队列,真丢的时候会明说丢了多少(`Lagged`),不装作没发生。
-    pub pty: broadcast::Sender<Vec<(bw::model::ConversationId, Vec<u8>)>>,
-    /// 长命令的「一步一句」回执(接入项目就是靠它才不像死了)。**和 PTY 同理
-    /// 走 broadcast、不走 ViewModel**:命令还没做完,ViewModel 根本没重拼的机会
-    /// —— 内核那条队列此刻正卡在 `dispatch` 里,进度得从旁边这条道出来。
+    /// 长命令的「一步一句」回执(接入项目就是靠它才不像死了)。**走 broadcast、
+    /// 不走 ViewModel**:命令还没做完,ViewModel 根本没重拼的机会 —— 内核那条
+    /// 队列此刻正卡在 `dispatch` 里,进度得从旁边这条道出来。
     pub progress: broadcast::Sender<bw::app::ProgressLine>,
 }
 
@@ -421,13 +397,9 @@ fn drafts_of(events: &[bw::command::Event]) -> Option<(String, Vec<String>)> {
 pub fn spawn(deep_link: DeepLink) -> Bridge {
     let (tx, mut rx) = mpsc::unbounded_channel::<Req>();
     let (vm_tx, vm_rx) = watch::channel(Vm::default());
-    // 1024 批 ≈ 一分钟的密集输出。真的堆到这个数还没人取,说明界面那头已经
-    // 卡住了,丢批是次要问题。
-    let (pty_tx, _) = broadcast::channel(1024);
     // 一条长命令十来行顶天了,64 够用;没人订的时候 send 直接丢,不阻塞。
     let (prog_tx, _) = broadcast::channel(64);
 
-    let pty_tx_handle = pty_tx.clone();
     let prog_tx_handle = prog_tx.clone();
     // 内核往自己这条队列里回发用的口子(知识库那两个页签算完之后发回来)。
     let tx_back = tx.clone();
@@ -473,14 +445,11 @@ pub fn spawn(deep_link: DeepLink) -> Bridge {
                     session_open: None,
                     selected_issue: None,
                     session_tab: crate::vm::SessionTab::default(),
-                    expanded_dirs: Vec::new(),
-                    open_file: String::new(),
                     kb_tab: crate::vm::KbTab::default(),
                     kb_codegraph: None,
                     kb_assets: None,
                     repo_stats: None,
                     metrics: Vec::new(),
-                    briefing: None,
                     focus_skill: String::new(),
                     viewing_week: bw::isoweek::current_week(),
                     view_all: false,
@@ -516,7 +485,7 @@ pub fn spawn(deep_link: DeepLink) -> Bridge {
                 }
 
                 let mut last_gather = vm_build::gather(&app, &mut ui).await;
-                let mut vm = vm_build::assemble(&app, &mut ui, &last_gather).await;
+                let mut vm = vm_build::assemble(&mut ui, &last_gather);
                 eprintln!("[BW_BOOT] projects={} assets={}", vm.projects.len(), assets.display());
                 // 环境条的探活结果也打出来 —— 它说「找不到 claude」的时候,人
                 // 得能在终端里拿 `which claude` 当场对。2026-08-20 就栽在这上面:
@@ -616,10 +585,9 @@ pub fn spawn(deep_link: DeepLink) -> Bridge {
                 }
                 let _ = vm_tx.send(vm.clone());
 
-                // 两个节拍器。终端字节 60ms 一次(约 16fps,人眼看着连续,而
-                // 且不重拼 ViewModel);定时判据 60s 一次 —— 它查的是「本周有
-                // 没有那张活」,快一点慢一点都不影响结论。
-                let mut pty_tick = tokio::time::interval(Duration::from_millis(60));
+                // 定时判据 60s 一次 —— 它查的是「本周有没有那张活」,快一点慢一点都
+                // 不影响结论。(终端字节 60ms 节拍已随 PTY 封存删掉 —— 桌面 ▶跑 走
+                // Orca 本地 pipe,字节在 Orca 那个 tab 里,不经过 buddy。)
                 let mut sched_tick = tokio::time::interval(Duration::from_secs(60));
                 loop {
                     let req = tokio::select! {
@@ -627,28 +595,6 @@ pub fn spawn(deep_link: DeepLink) -> Bridge {
                             Some(r) => r,
                             None => break,
                         },
-                        _ = pty_tick.tick() => {
-                            // SessionStart hook 把 `--resume` id 落到
-                            // asset 目录,这里每拍收一次。没写出就跳过。
-                            app.harvest_claude_session_ids().await;
-                            // 没人订就先别 drain:tokio broadcast 在
-                            // receiver_count==0 时把这一拍丢掉。从总览点
-                            // 「开始本周」是先起 PTY、后挂终端,第一屏
-                            // (欢迎/信任框)会整段失踪,人看见空终端、
-                            // 开工灰着(进程还活)、键盘也没处可打。
-                            // 缓冲留在 TerminalManager 有界环里,挂件
-                            // 订上后走 PtyReplay / 下一拍整段送出去。
-                            // 进程退了也要收 live,否则开工一直灰。
-                            if pty_tx.receiver_count() == 0 {
-                                app.reap_ended_ptys();
-                                continue;
-                            }
-                            let batches = app.drain_pty_events();
-                            if !batches.is_empty() {
-                                let _ = pty_tx.send(batches);
-                            }
-                            continue;
-                        }
                         _ = sched_tick.tick() => {
                             // 特性9:fanout —— 遍历所有纳管项目逐个查
                             // cron_enabled + 到点建活,不再只对打开着的项目跑
@@ -677,30 +623,11 @@ pub fn spawn(deep_link: DeepLink) -> Bridge {
                             }
                             // 到点可能建活,数据真变了,走全量 gather。
                             last_gather = vm_build::gather(&app, &mut ui).await;
-                            vm = vm_build::assemble(&app, &mut ui, &last_gather).await;
+                            vm = vm_build::assemble(&mut ui, &last_gather);
                             let _ = vm_tx.send(vm.clone());
                             continue;
                         }
                     };
-                    // 终端的键盘与尺寸**不重拼 ViewModel**。重拼一次要跑十来个
-                    // git 子进程(健康三判据 + 改动文件 + 领先落后)、扫一遍
-                    // .bw/plan/、解析四个 toml —— 而人打字时每 30ms 就来一条。
-                    // 全串在内核这条单线程上,终端会明显卡顿,pty 那一跳也排不
-                    // 上队。这两条命令本来也不改任何会显示的东西。
-                    if let Req::PtyReplay { conversation_id } = req {
-                        let snap = app.pty_ack_replay(conversation_id);
-                        if !snap.is_empty() {
-                            let _ = pty_tx.send(vec![(conversation_id, snap)]);
-                        }
-                        continue;
-                    }
-                    if let Req::Cmd(
-                        c @ (Command::TerminalInput { .. } | Command::TerminalResize { .. }),
-                    ) = req
-                    {
-                        let _ = app.dispatch(c).await;
-                        continue;
-                    }
                     // 纯导航(切周 / 点总览 / 选卡片看详情 / 切页签 / 展开
                     // 目录 / 后台采回发)不重跑 gather —— 复用上次采的那份,只
                     // 重切依赖视图字段的片段(健康/Release/环境/issue/ops3 的 git
@@ -730,34 +657,24 @@ pub fn spawn(deep_link: DeepLink) -> Bridge {
                                     // 总览那颗按钮会把人带到会话屏,落地时该正
                                     // 好停在这场会话上,而不是让人自己在左列里
                                     // 找哪一条是刚才那下点出来的。
-                                    if let Some((issue_id, tool, embed_url)) = events.iter().find_map(|e| match e {
+                                    if let Some((issue_id, tool)) = events.iter().find_map(|e| match e {
                                         bw::command::Event::WeekPlanStarted { issue_id, .. } => {
-                                            Some((*issue_id, String::new(), String::new()))
+                                            Some((*issue_id, String::new()))
                                         }
-                                        bw::command::Event::IssueRan {
-                                            id,
-                                            tool,
-                                            embed_url,
-                                            ..
-                                        } => Some((*id, tool.clone(), embed_url.clone())),
+                                        bw::command::Event::IssueRan { id, tool, .. } => {
+                                            Some((*id, tool.clone()))
+                                        }
                                         _ => None,
                                     }) {
                                         ui.session_open = Some(issue_id);
-                                        // 换了一张活,「喂了什么」那块必须跟着关
-                                        // —— 它是**上一张活**的提示词,留在屏幕上
-                                        // 会被读成这一张的。
-                                        ui.briefing = None;
-                                        ui.expanded_dirs.clear();
-                                        ui.open_file.clear();
+                                        // 原型活停 Open Design,构建类停 Orca(终端
+                                        // 页签随 PTY 封存删了)。两个 iframe 都自己探
+                                        // 本机,这里不灌 src。
                                         ui.session_tab = if tool == "open_design" {
                                             crate::vm::SessionTab::OpenDesign
                                         } else {
                                             crate::vm::SessionTab::default()
                                         };
-                                        if tool == "open_design" && !embed_url.is_empty() {
-                                            ui.od_src = embed_url;
-                                            ui.od_gen = ui.od_gen.saturating_add(1);
-                                        }
                                     }
                                     if let Some(id) = events.iter().find_map(|e| match e {
                                         bw::command::Event::SessionDeleted { id, .. } => Some(*id),
@@ -765,10 +682,6 @@ pub fn spawn(deep_link: DeepLink) -> Bridge {
                                     }) {
                                         if ui.session_open == Some(id) {
                                             ui.session_open = None;
-                                            ui.briefing = None;
-                                            ui.expanded_dirs.clear();
-                                            ui.open_file.clear();
-                                            ui.od_src.clear();
                                         }
                                     }
                                     if confirming {
@@ -800,12 +713,9 @@ pub fn spawn(deep_link: DeepLink) -> Bridge {
                                         ui.kb_codegraph = None;
                                         ui.kb_assets = None;
                                         ui.repo_stats = None;
-                                        // 指标读数和「喂了什么」同理:留着就是
-                                        // 把上一个项目的数摆在这个项目的卡片上
-                                        // ——而且指标是**按名字**对上去的,
-                                        // 两个项目撞名就真会显示错的那个数。
+                                        // 指标按名字对上去,两个项目撞名就会
+                                        // 把上一个项目的数摆在这个项目的卡片上。
                                         ui.metrics = Vec::new();
-                                        ui.briefing = None;
                                         ui.repos = crate::vm::RepoPickerVm::default();
                                         kick_project_collect(&app, *id, &tx_back).await;
                                         ui.set_note(Some("正在采本项目指标与仓统计…".into()));
@@ -820,12 +730,10 @@ pub fn spawn(deep_link: DeepLink) -> Bridge {
                                         ui.kb_codegraph = None;
                                         ui.kb_assets = None;
                                         ui.repo_stats = None;
-                                        // 指标读数和「喂了什么」同理:留着就是
-                                        // 把上一个项目的数摆在这个项目的卡片上
-                                        // ——而且指标是**按名字**对上去的,
-                                        // 两个项目撞名就真会显示错的那个数。
+                                        // 指标读数同理:留着就是把上一个项目的数
+                                        // 摆在这个项目的卡片上——而且指标是**按名字**
+                                        // 对上去的,两个项目撞名就真会显示错的那个数。
                                         ui.metrics = Vec::new();
-                                        ui.briefing = None;
                                     }
                                     // 改了工作区根目录:设置屏那一行要立刻显示
                                     // 新值,不能等下次重启。
@@ -859,7 +767,6 @@ pub fn spawn(deep_link: DeepLink) -> Bridge {
                             // 项目的总览上。
                             ui.repo_stats = None;
                             ui.metrics = Vec::new();
-                            ui.briefing = None;
                             if let Some(pid) = id {
                                 kick_project_collect(&app, pid, &tx_back).await;
                                 ui.set_note(Some("正在采本项目指标与仓统计…".into()));
@@ -883,19 +790,13 @@ pub fn spawn(deep_link: DeepLink) -> Bridge {
                             }
                         }
                         Req::SelectSession(id) => {
-                            // **选中一张记下了 `--resume` id 的活 = 接回那场对话。**
-                            // 只有会话行、id 还是空的,不发 Reopen:发了会走
-                            // `claude --continue`,工作区没有对话就红字
-                            // 「No conversation found to continue」。空 id 等
-                            // 人点▶开工。没有会话行的活(buddy 自己写的、回填
-                            // 的)也不发,那不是错误。
+                            // 选中一张记下了 Claude session id 的活 = 在 Orca 里点回那场对话
+                            // (ensureAgentSession)。PTY 已封存,不查 live —— Orca ensure 本身
+                            // 幂等(已开着的 tab 会 adopted,不杀进程),再点一次没事。空 id 不发
+                            // (发了会 ensure 到一个不存在的会话);没会话行也不发。
                             if let Some(iid) = id {
-                                if let Ok(Some(conv)) =
-                                    app.conversation_for_issue(iid).await
-                                {
-                                    if !app.pty_live(conv.id)
-                                        && !conv.claude_session_id.is_empty()
-                                    {
+                                if let Ok(Some(conv)) = app.conversation_for_issue(iid).await {
+                                    if !conv.claude_session_id.is_empty() {
                                         if let Err(e) = app
                                             .dispatch(Command::ReopenSession { issue_id: iid })
                                             .await
@@ -906,12 +807,6 @@ pub fn spawn(deep_link: DeepLink) -> Bridge {
                                 }
                             }
                             ui.session_open = id;
-                            // 同上:换活就关掉「喂了什么」,别把上一张的摆在这一张下面。
-                            ui.briefing = None;
-                            // 换会话 = 换工作区,上一个会话展开的目录、开着的
-                            // 文件在新工作区里多半不存在,一律清掉重来。
-                            ui.expanded_dirs.clear();
-                            ui.open_file.clear();
                             ui.session_tab = match id {
                                 Some(iid) => match app.issue_or_err(iid).await {
                                     Ok(i) if i.tool == "open_design" => {
@@ -923,25 +818,6 @@ pub fn spawn(deep_link: DeepLink) -> Bridge {
                             };
                         }
                         Req::SessionTab(t) => ui.session_tab = t,
-                        Req::ToggleDir(d) => {
-                            if let Some(i) = ui.expanded_dirs.iter().position(|x| *x == d) {
-                                ui.expanded_dirs.remove(i);
-                                // 收起一个目录,它下面所有已展开的子目录也一起
-                                // 收起,不然再点开它会看见一堆孤儿层。
-                                ui.expanded_dirs
-                                    .retain(|x| !x.starts_with(&format!("{d}/")));
-                            } else {
-                                ui.expanded_dirs.push(d);
-                            }
-                        }
-                        Req::OpenFile { path, diff } => {
-                            ui.open_file = path;
-                            ui.session_tab = if diff {
-                                crate::vm::SessionTab::Diff
-                            } else {
-                                crate::vm::SessionTab::File
-                            };
-                        }
                         Req::KbTab(t) => {
                             ui.kb_tab = t;
                             // 每次点页签就是一次全新的现跑 —— 不缓存,和「对账
@@ -1062,20 +938,6 @@ pub fn spawn(deep_link: DeepLink) -> Bridge {
                                 ui.repo_stats = Some(stats);
                             }
                         }
-                        Req::ShowBriefing { issue } => {
-                            // 已经开着就再点一次关掉 —— 一颗按钮两个方向,
-                            // 不额外加一颗「收起」。
-                            if ui.briefing.is_some() {
-                                ui.briefing = None;
-                            } else {
-                                match app.agent_briefing(issue).await {
-                                    Ok(t) => ui.briefing = Some(t),
-                                    // 算不出来就把原话摆出来,**不显示一份空的**
-                                    // —— 空面板会被读成「什么都没喂」。
-                                    Err(e) => ui.briefing = Some(format!("算不出来:{e}")),
-                                }
-                            }
-                        }
                         Req::CollectMetrics => {
                             // 和上面那一采同一个做法:派出去跑,不在这条循环里
                             // await —— 它要起好几个采集脚本(每个还可能连远端),
@@ -1171,7 +1033,6 @@ pub fn spawn(deep_link: DeepLink) -> Bridge {
                                 ui.repos.probe = probe;
                             }
                         }
-                        Req::PtyReplay { .. } => {}
                         Req::FocusSkill(slug) => ui.focus_skill = slug,
                         Req::Refresh => {
                             // 顶栏「刷新」以前只重拼 ViewModel、不拉仓。同事把
@@ -1200,7 +1061,7 @@ pub fn spawn(deep_link: DeepLink) -> Bridge {
                     if needs_gather {
                         last_gather = vm_build::gather(&app, &mut ui).await;
                     }
-                    vm = vm_build::assemble(&app, &mut ui, &last_gather).await;
+                    vm = vm_build::assemble(&mut ui, &last_gather);
                     // 刷新的回执在这里补:此刻的 vm 才是「刚读出来的那一份」。
                     if refresh_receipt {
                         refresh_receipt = false;
@@ -1233,7 +1094,6 @@ pub fn spawn(deep_link: DeepLink) -> Bridge {
     Bridge {
         tx,
         vm: vm_rx,
-        pty: pty_tx_handle,
         progress: prog_tx_handle,
     }
 }

@@ -48,7 +48,7 @@ use std::time::Duration;
 use async_trait::async_trait;
 use tokio::sync::mpsc;
 
-use crate::interactive_cli::{LaunchPlan, PtyInput, SkillOutput};
+use super::interactive_cli::{LaunchPlan, PtyInput, SkillOutput};
 use crate::ExecError;
 
 /// 首启后等多久再替用户按一次 Enter(`\r`)提交位置 prompt。
@@ -121,7 +121,9 @@ pub mod windows {
     use tokio::sync::mpsc;
 
     use super::{PtyBackend, SUBMIT_READY_DELAY};
-    use crate::interactive_cli::{apply_child_env, EnvSink, LaunchPlan, PtyInput, SkillOutput};
+    use crate::legacy_pty::interactive_cli::{
+        apply_child_env, EnvSink, LaunchPlan, PtyInput, SkillOutput,
+    };
     use crate::ExecError;
 
     /// Same strip list as the tokio `Command` paths — see
@@ -332,7 +334,9 @@ pub mod unix {
     use tokio::sync::mpsc;
 
     use super::{PtyBackend, SUBMIT_READY_DELAY};
-    use crate::interactive_cli::{apply_child_env, EnvSink, LaunchPlan, PtyInput, SkillOutput};
+    use crate::legacy_pty::interactive_cli::{
+        apply_child_env, EnvSink, LaunchPlan, PtyInput, SkillOutput,
+    };
     use crate::ExecError;
 
     /// Same strip list as the tokio `Command` paths and the Windows backend —

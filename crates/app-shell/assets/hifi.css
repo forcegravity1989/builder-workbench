@@ -506,10 +506,6 @@ select.select-multi{padding:3px;font-size:11.5px;border:1px solid var(--border-d
 .sess-rail{flex:1;border:none;background:transparent;color:var(--ink-2);cursor:pointer;
   writing-mode:vertical-rl;letter-spacing:.12em;font-size:14px;padding:18px 0;min-width:40px;}
 .sess-rail:hover{color:var(--clay);}
-/* 「看看喂了什么」盖在终端格上,不撑高动作条把 PTY 挤下去。 */
-.sess-briefing{grid-column:2;grid-row:2;z-index:4;min-height:0;overflow:auto;
-  margin:0;padding:12px;background:var(--bg, #fff);border:1px solid var(--border);
-  border-top:none;border-radius:0 0 10px 10px;}
 
 /* 仓文件读不动这类实话,原型没有对应位置(原型的文件都是内嵌的)。 */
 .warnbar{padding:8px 18px;background:#F6E7E2;border-bottom:1px solid var(--border);

@@ -6,7 +6,7 @@
 
 ## 最近 · 2026-08-28
 
-会话屏改嵌 Orca:从 master 开分支 `pierce/orca-session`,把目标、四步顺序、为什么历史项目在 Orca 里看不见、第 1 步怎么验,写成仓内正本 [`docs/orca-session-puncture.md`](docs/orca-session-puncture.md)。**设计未锁定**,architecture 模块 7 现行仍是 PTY+三栏,只在「没建」留指路。本轮不改产品代码;另一条 `worktree-orca-adapter` 不碰。
+会话屏改嵌 Orca(仍在 `pierce/orca-session`)。人改口:会话屏只留 Orca / Open Design 两个组件,动作条和灌词条不要(开工在计划屏拖进进行中;停止/MR/评审/删会话不在这屏;buddy 不知 Orca 里当前哪条会话)。pipe 开工与 iframe 配对是两件事。先用安装版 Orca 验,web 地址用进程环境 `BW_ORCA_WEB_URL`,不建设置页。同一张活再开工接回上一场(从本机 Claude jsonl 收 session id,不编)。启动时设 `BW_ORCA_WEB_URL` 会话屏就能嵌 Orca 网页(不再先要求 pipe 连上)。进度见 [`docs/orca-session-puncture.md`](docs/orca-session-puncture.md)。
 
 计划屏操作卡顿(#16):纯导航(切周 / 点总览 / 选卡片看详情 / 切页签 / 展开目录 / 后台采回发)走快路径,复用上次 gather、不重跑 git 子进程 / 远端 / OD 探活;真命令、换项目、刷新、`SelectSession` 仍走全量。`build()` 拆成 `gather`(贵、数据变更时跑)+ `assemble`(便宜、每次跑)。顺带去掉三处重复:`probe_env` 每重建跑两遍 → 探一次;打开项目 `app.issues` 拉两遍 → 拉一次;`build_ops` 的 `git::path_in_head` 跑两遍 → 算一次传参。决策见 [`docs/adr/0002`](docs/adr/0002-导航快路径-gather缓存.md),是 [ADR 0001](docs/adr/0001-codehub-issue-正本-本地零库.md)「优化(本地只读缓存、失效策略)留后续」那条的落地。
 

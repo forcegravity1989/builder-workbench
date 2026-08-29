@@ -21,10 +21,8 @@ mod screens;
 mod theme;
 mod vm;
 
-use adapters::terminal_xterm::TerminalWidget;
 use bridge::{Bridge, DeepLink, Panel, Req, TopView};
 use dioxus::prelude::*;
-use vm::SessionTab;
 
 fn main() {
     // 起任何线程之前先把本机时区定住 —— 周是按本机时区算的。
@@ -207,10 +205,10 @@ fn Root() -> Element {
                 for (i, w) in v.warnings.iter().enumerate() {
                     div { key: "{i}", class: "warnbar", "{w}" }
                 }
-                // 会话屏的三栏由 .content 自己摆 —— 终端挂在这一层,靠这套
-                // 网格落进中栏下半格(理由见 screens/session 的头注)。
+                // 会话屏的布局由 .content 自己摆 —— session-mode 三栏网格已随
+                // PTY 封存删掉(终端不挂这里了,会话屏只剩动作条 + Orca/OD 两组件)。
                 div {
-                    class: if in_project && cur == Panel::Session { "content session-mode" } else { "content" },
+                    class: "content",
                     {body(tv, cur, &v, &project, &bridge, top_view)}
                 }
             }
@@ -220,7 +218,7 @@ fn Root() -> Element {
     }
 }
 
-/// 内容区分发。终端**挂在屏的外面**,理由见下面那段注释。
+/// 内容区分发:顶层三屏 / 项目内六屏。PTY 已封存,终端不再挂在屏外。
 fn body(
     tv: Option<TopView>,
     cur: Panel,
@@ -252,26 +250,5 @@ fn body(
     };
     rsx! {
         {screens::route(cur, &p, bridge)}
-        // 终端本体挂在**屏的外面**,不在会话屏里面。
-        //
-        // 挂在会话屏里的话,人一切到别的面板,整个屏连同终端一起被卸载
-        // —— 收字节的那条循环也就没了,这期间 agent 说的话是**真丢的**,
-        // 切回来只剩一个空终端。挂在这里,六个面板怎么切它都活着;不是
-        // 当前焦点的那个只是被挪到屏外(不是 display:none —— 那会让
-        // xterm 以 0×0 打开,再回来一片空白)。
-        //
-        // 只挂「进程还活着」或「正被选中」的会话:早就跑完的会话再挂一
-        // 个每 30ms 轮询一次的循环纯属白烧。代价是切走再回来看一个已经
-        // 结束的会话,回放是空的 —— 存不存回放还没做。
-        for s in p.sessions.iter().filter(|s| s.live || p.session_open == Some(s.issue_id)) {
-            TerminalWidget {
-                key: "{s.conversation_id:?}",
-                conversation_id: s.conversation_id,
-                focused: cur == Panel::Session
-                    && p.session_open == Some(s.issue_id)
-                    && p.workbench.tab == SessionTab::Terminal,
-                bridge: bridge.clone(),
-            }
-        }
     }
 }

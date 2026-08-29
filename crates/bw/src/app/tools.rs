@@ -114,6 +114,28 @@ pub fn agent_for(tool: &str) -> Result<&'static bw_engine::TuiAgentConfig> {
     }
 }
 
+/// 活上记着的开工工具 → Orca 里要用的 agent 名(给 `orca::create_session` /
+/// `ensure_session`)。和 [`agent_for`] 同源 —— 都照活上记的工具走,不许悄悄换;
+/// 只是这里返回的是 Orca 的 agent 名字符串,不是 PTY 那套 `TuiAgentConfig`。
+/// Open Design 仍走 OD 分支,不打 Orca(这里拒,和 `agent_for` 一致)。探活失败
+/// 仍拒绝开工,不退回 Claude。
+pub fn orca_agent(tool: &str) -> Result<&'static str> {
+    match tool.trim() {
+        "" | "claude_cli" => Ok("claude"),
+        // Cursor 在 Orca 里是 `cursor-agent`;系统提示词拼进 prompt(见 orca::create_session)。
+        "cursor" => Ok("cursor-agent"),
+        "open_design" => Err(AppError::Exec(
+            "这张活配的开工工具是 Open Design(本机网页内嵌类),不经 Orca。\
+             去会话屏的「Open Design」组件用内嵌视图干活。"
+                .into(),
+        )),
+        other => Err(AppError::Exec(format!(
+            "活上记着的开工工具是「{other}」,buddy 不认识它 —— 不猜、不拿别的工具顶上。\
+             去配置屏的「类别 → 开工工具」里改掉,或者在活详情里改这一张。"
+        ))),
+    }
+}
+
 async fn probe(name: &str) -> ProbeResult {
     match name {
         // Claude CLI 沿用既有的候选路径探测(Windows 上要认 `claude.cmd`)。

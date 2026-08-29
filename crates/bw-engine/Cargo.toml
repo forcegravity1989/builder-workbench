@@ -1,6 +1,6 @@
 [package]
 name = "bw-engine"
-description = "V4 的能力底座:交互式 claude 执行器 + PTY 内嵌终端 + worktree 供给 + git 读数 + GitHub/codehub 远端。无 UI、无 SQL、无业务语义。"
+description = "V4 的能力底座:本机 Orca 本地 pipe 客户端 + 封存的 PTY + worktree 供给 + git 读数 + GitHub/codehub 远端。无 UI、无 SQL、无业务语义。"
 edition.workspace = true
 version.workspace = true
 license.workspace = true
