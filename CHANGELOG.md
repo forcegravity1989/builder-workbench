@@ -6,7 +6,9 @@
 
 ## 最近 · 2026-08-29
 
-**`.bw/` 人机分目录 + 去冗留真(立项,规格在 gate)**:对 `.bw/` 五份文件做谁读谁写审计,实锤一批假配置(`[[tool]]` 四字段、`[review]` 段、trigger 两字段零消费;`standard.toml` 整份写了没人读;`standard_version` 镜像失真)。发起人定向:给人读的与给机器解析的分目录隔离(顶层 Markdown / `config/` / `state/`),假配置删除、注释收敛到真行为。产物链见 `changes/bw-dir-split/`;**本批只成文,未动代码与 `.bw/` 实物**,等规格 gate。
+**`.bw/` 人机分目录 + 去冗留真(立项,规格在 gate)**:对 `.bw/` 五份文件做谁读谁写审计,实锤一批假配置(`[[tool]]` 四字段、`[review]` 段、trigger 两字段零消费;`standard.toml` 整份写了没人读;`standard_version` 镜像失真)。发起人定向:给人读的与给机器解析的分目录隔离(顶层 Markdown / `config/` / `state/`),假配置删除、注释收敛到真行为。产物链见 `changes/bw-dir-split/`,承载活 #133;**本批只成文,未动代码与 `.bw/` 实物**,等规格 gate。
+
+同批制度补丁:发起人点名「产物链没走活承载」的过程缺口——「先建活」08-25 首链口头拍板过但未成文,后两条链连漏。已成文进 02 §6 制品链与 AGENTS.md 起手路径(活号与 `changes/<id>/` 互链,无活=未立项;两 gate 可合并送审也写死);标签词表三枚标签(`bw:status`/`bw:week`/`bw:category`)首次真实落 GitHub 仓。
 
 ## 2026-08-27
 
