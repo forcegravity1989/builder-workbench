@@ -1,6 +1,6 @@
 # standard/vendor/ — vendor 进仓的业界技能库
 
-buddy 默认给被管项目带的 workflow(构建类 `mattpocock-skills`)的**原样副本**。vendor 进仓,而不是让用户自取——默认就该 buddy 打包统一管理(见 `docs/architecture.md` 的「系统提示词与渐进加载」模块:打包未实现,这里先备好源)。
+Workbench 默认给被管项目带的 workflow(构建类 `mattpocock-skills`)的**原样副本**。vendor 进仓,而不是让用户自取——默认就该 Workbench 打包统一管理(见 `docs/architecture.md` 的「系统提示词与渐进加载」模块:打包未实现,这里先备好源)。
 
 ## 两个库(均为 MIT,原 LICENSE 原样保留)
 
@@ -19,7 +19,7 @@ buddy 默认给被管项目带的 workflow(构建类 `mattpocock-skills`)的**�
 
 ## 现状(如实)
 
-**打包机制未实现**——buddy 还没把这些 vendor 库摊进自己的资产目录、注入提示词(issue-policy 默认值已诚实化,不指向没打包的)。这里先备好源,full bundle 是后续 subagent 任务(见 `docs/architecture.md` 的「没建什么」)。proto-design(原型阶段默认 workflow)的源**还没 vendor 进来**——也是 gap。
+**打包机制未实现**——Workbench 还没把这些 vendor 库摊进自己的资产目录、注入提示词(issue-policy 默认值已诚实化,不指向没打包的)。这里先备好源,full bundle 是后续 subagent 任务(见 `docs/architecture.md` 的「没建什么」)。proto-design(原型阶段默认 workflow)的源**还没 vendor 进来**——也是 gap。
 
 ## 诚实的局限
 

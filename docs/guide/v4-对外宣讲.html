@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>把 buddy 讲给同事听</title>
+<title>把 Workbench 讲给同事听</title>
 <style>
   :root{
     --bg:#EFEBE2; --card:#FBFAF6; --card2:#F4F0E7; --rail:#E9E3D7;
@@ -97,10 +97,10 @@ var SLIDES = [
 
 {title:"一句话",html:`
   <div class="k">组内 · 2026-08-25</div>
-  <h1>buddy 是 AI Coding 时代里，<br>一个人的一张工作台。</h1>
+  <h1>Workbench 是 AI Coding 时代里，<br>一个人的一张工作台。</h1>
   <p class="sub">用 AI 时代的方式，把一个项目的管理体系搭起来。走完，你有一套可复制的方法，而不只是一块看板。</p>
   <div class="figbox">
-    <div class="cap">市面工具停在左边 · buddy 要回答右边</div>
+    <div class="cap">市面工具停在左边 · Workbench 要回答右边</div>
     <svg class="fig" viewBox="0 0 1040 160" xmlns="http://www.w3.org/2000/svg">
       <rect x="8" y="18" width="420" height="124" rx="14" fill="#F4F0E7" stroke="#DBD4C5"/>
       <text x="218" y="58" text-anchor="middle" font-size="15" fill="#8C867A">存卡片</text>
@@ -413,24 +413,24 @@ var SLIDES = [
 `},
 
 {title:"三种人",html:`
-  <div class="k">buddy 里没有成员和权限</div>
+  <div class="k">Workbench 里没有成员和权限</div>
   <h1>三种人，读同一份正本。</h1>
-  <p class="sub">协作发生在仓和代码平台上，不发生在 buddy 里再造一套人。</p>
+  <p class="sub">协作发生在仓和代码平台上，不发生在 Workbench 里再造一套人。</p>
   <div class="g3">
     <div class="tile">
       <svg class="fig" viewBox="0 0 280 72"><rect x="70" y="10" width="140" height="52" rx="12" fill="#EFD9CE"/><text x="140" y="42" text-anchor="middle" font-size="16" font-weight="700" fill="#A8432B">Builder</text></svg>
       <h3>构建者</h3>
-      <p>在 buddy 上转这一圈：定本周、开工、验收处点完成。端到端负责这个项目。</p>
+      <p>在 Workbench 上转这一圈：定本周、开工、验收处点完成。端到端负责这个项目。</p>
     </div>
     <div class="tile">
       <svg class="fig" viewBox="0 0 280 72"><rect x="70" y="10" width="140" height="52" rx="12" fill="#FBFAF6" stroke="#C5654A"/><text x="140" y="42" text-anchor="middle" font-size="16" font-weight="700">Committer</text></svg>
       <h3>合入者</h3>
-      <p>在代码平台审合并请求、点合入。buddy 不代合。合完，构建者才能点完成。</p>
+      <p>在代码平台审合并请求、点合入。Workbench 不代合。合完，构建者才能点完成。</p>
     </div>
     <div class="tile">
       <svg class="fig" viewBox="0 0 280 72"><rect x="70" y="10" width="140" height="52" rx="12" fill="#F4F0E7"/><text x="140" y="42" text-anchor="middle" font-size="16" font-weight="700">Leader</text></svg>
       <h3>负责人</h3>
-      <p>直接打开同一份 issue 看进展。不需要第二台 buddy 同步，也没有本机私有账本挡着。</p>
+      <p>直接打开同一份 issue 看进展。不需要第二台 Workbench 同步，也没有本机私有账本挡着。</p>
     </div>
   </div>
   <div class="figbox">
@@ -489,7 +489,7 @@ var SLIDES = [
     <div class="tile">
       <span class="chip">不是 skill</span>
       <h3>管理面 · 规范铺底</h3>
-      <p>接入时 buddy 自己写，给总览和计划用：名片、开工映射、规范版本。不起 agent。仓根手册不写。要打磨的是这套骨架过期以后怎么再提一单。</p>
+      <p>接入时 Workbench 自己写，给总览和计划用：名片、开工映射、规范版本。不起 agent。仓根手册不写。要打磨的是这套骨架过期以后怎么再提一单。</p>
     </div>
     <div class="tile">
       <span class="chip">运作剧本</span>
@@ -504,7 +504,7 @@ var SLIDES = [
     <div class="tile">
       <span class="chip">默认链</span>
       <h3>干活时选什么</h3>
-      <p>构建 / 优化 / 运维：Claude 命令行 + 已打包的「对齐 → 实现 → 评审」。原型：Open Design 已嵌，默认工作流还没打包装进 buddy。映射写在项目自己的开工约定里，可换。</p>
+      <p>构建 / 优化 / 运维：Claude 命令行 + 已打包的「对齐 → 实现 → 评审」。原型：Open Design 已嵌，默认工作流还没打包装进 Workbench。映射写在项目自己的开工约定里，可换。</p>
     </div>
   </div>
 `},
@@ -552,7 +552,7 @@ var SLIDES = [
   var num = document.getElementById('num');
   var prog = document.getElementById('prog');
   var i = 0;
-  nav.innerHTML = '<div class="brand">buddy<i>.</i></div>' +
+  nav.innerHTML = '<div class="brand">Workbench<i>.</i></div>' +
     SLIDES.map(function(s,idx){ return '<button data-i="'+idx+'">'+(idx+1)+'　'+s.title+'</button>'; }).join('');
   function show(n){
     if(n<0||n>=SLIDES.length) return;

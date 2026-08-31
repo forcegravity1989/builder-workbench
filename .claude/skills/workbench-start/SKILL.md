@@ -1,23 +1,23 @@
 ---
-name: buddy-start
+name: workbench-start
 description: >-
   Use when starting any Claude Code, Cursor, or Codex session on the
-  loop-buddy / Builders' Workbench repo outside the buddy workbench —
+  Builders' Workbench (builder-workbench) repo outside the Workbench desktop app —
   起手, 开干, 伴飞, continue a module, add a feature, fix a bug, write docs,
   or a new window on this repo. Use even if a personal kickoff,
   feature-dev, or bugfix skill is also available. Do not use inside
-  buddy's embedded terminal.
+  Workbench's embedded terminal.
 ---
 
-# buddy-start — 仓外起手闸门
+# workbench-start — 仓外起手闸门
 
-buddy MVP 还不能在工作台里维护自己。这份 skill 按住仓外窗口 AI:**人只走站和验收,改代码与文档是你的事**。不是第二套工作台,正本仍是 `AGENTS.md`。
+Workbench MVP 还不能在工作台里维护自己。这份 skill 按住仓外窗口 AI:**人只走站和验收,改代码与文档是你的事**。不是第二套工作台,正本仍是 `AGENTS.md`。
 
 ## 人与窗口 AI
 
 人是 Builder,也是核心开发——但开发不是人干的。人做三件事:走旅程、判断对错、点头或驳回。你改代码、补指南、改 architecture、改高保真。人说「做成了」之前,他自己用 `gh` / `codehub-cli` / `git` / `cat .bw/…` 读回,不信你自报。
 
-可见物各干什么,见 `AGENTS.md`「人怎么驾驭」。伴飞打开 `docs/guide/index.html`（已指向现行指南）。`buddy-guide.html` 是 V3 种子,不作数:
+可见物各干什么,见 `AGENTS.md`「人怎么驾驭」。伴飞打开 `docs/guide/index.html`（已指向现行指南）。`buddy-guide.html`（V3 种子文件名未改） 是 V3 种子,不作数:
 
 | 人看 | 人用来 | 你用来 |
 |---|---|---|
