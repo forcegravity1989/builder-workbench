@@ -4,7 +4,15 @@
 
 本文件按**六站 + 底座**收口,不再按每次窗口一条流水往下堆。最近一次改动永远写在最上面。
 
+## 最近 · 2026-08-31
+
+打开 / 接入项目先问 Orca `repo.show`。仓已在就不盖「正在让 Orca 认得这个仓」遮罩、不再 `repo.add`。`orca_repos_ready` 只是同进程连点加速,不落盘。Orca 没开仍不挡进项目。总览「开始本周」create 会话时盖和计划屏 Start 同一块「正在开工」遮罩,先前只认 `RunIssue`、这条命令漏了。
+
 ## 最近 · 2026-08-29
+
+Claude 开工把系统提示词压成单行 `--append-system-prompt`,标题+正文改成同一条启动命令的位置参数,不再靠句柄回来之后的 `auto-submit`。同一条命令补上 `--dangerously-skip-permissions` 和 `--disallowedTools 'Bash(gh pr merge)'`(原先只在 PTY `LaunchPlan` 里,Orca 漏了)。句柄超时后先停 5 秒再收 session id / 切树,对照日志打 `handle_timeout: wait` / `settle done`、`yolo=` 和 jsonl 前后有没有落下。Cursor 仍把 system 拼进 Orca `prompt`。
+
+开工对照日志(stderr + `%TEMP%/bw-orca.log`,`BW_ORCA_LOG` 可改路径):是否跳过 create、句柄超时还是 ok、prompt/system/agentArgs 字数与换行数。不写 token / pairing / 提示词正文。两台机器各开一张活,把这份文件对一下就能看出差在哪一刀。
 
 开工那几秒盖遮罩挡住嵌页。被管仓只在纳入和打开项目时 `repo.add` 进 Orca(这个进程里登过不再打),不跟开工 / 去会话绑。人不去 Orca 里手导 `workspaces/xx`。Orca 没开不推翻接入。
 

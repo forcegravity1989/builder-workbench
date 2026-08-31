@@ -314,21 +314,38 @@ impl App {
 
         let agent = super::tools::orca_agent(&issue.tool)?;
         let mut sid = conv.claude_session_id.clone();
+        let mut sid_source = if sid.is_empty() { "empty" } else { "conv" };
         if sid.is_empty() {
             if let Some(found) = bw_engine::orca::session_id_for_worktree(&tree.path) {
                 sid = found;
+                sid_source = "jsonl";
             }
         }
+        bw_engine::orca::diag(&format!(
+            "start issue=#{} tool={} agent={agent} isolated={} \
+             worktree={} sid_source={sid_source} sid_prefix={} \
+             prompt_chars={} system_chars={} skill={} refs={} log={}",
+            issue.number,
+            issue.tool,
+            tree.isolated,
+            tree.path.display(),
+            sid.chars().take(8).collect::<String>(),
+            prompt.chars().count(),
+            system_prompt.chars().count(),
+            skill.as_ref().map(|s| s.name.as_str()).unwrap_or("-"),
+            references.len(),
+            bw_engine::orca::diag_log_path().display()
+        ));
         let outcome = match bw_engine::orca::connect() {
             Ok(rt) => {
                 // 树刚 provision 完;Orca 打开项目时扫的那份还没有这棵。
                 // 刷扫描,不 repo.add。
                 if let Err(e) = bw_engine::orca::refresh_worktrees(&rt, ws).await {
-                    eprintln!(
-                        "[BW_ORCA] 刷扫描没成:{e} · {} · repo={}",
+                    bw_engine::orca::diag(&format!(
+                        "refresh fail:{e} · {} · repo={}",
                         rt.log_tag(),
                         ws.display()
-                    );
+                    ));
                     return Ok(vec![Event::IssueRan {
                         id,
                         ok: false,
@@ -337,6 +354,7 @@ impl App {
                         embed_url: String::new(),
                     }]);
                 }
+                bw_engine::orca::diag(&format!("refresh ok repo={}", ws.display()));
                 let r = if sid.is_empty() {
                     match bw_engine::orca::create_session(
                         &rt,
@@ -347,7 +365,27 @@ impl App {
                     )
                     .await
                     {
-                        Ok(()) => {
+                        Ok(verdict) => {
+                            if verdict == bw_engine::orca::CreateSessionOutcome::HandleTimeout {
+                                let jsonl_before =
+                                    bw_engine::orca::session_id_for_worktree(&tree.path).is_some();
+                                let settle = bw_engine::orca::HANDLE_TIMEOUT_SETTLE;
+                                bw_engine::orca::diag(&format!(
+                                    "handle_timeout: wait {}s before wait_session_id/reveal \
+                                     jsonl_before={jsonl_before} worktree={}",
+                                    settle.as_secs(),
+                                    tree.path.display()
+                                ));
+                                tokio::time::sleep(settle).await;
+                                let jsonl_after =
+                                    bw_engine::orca::session_id_for_worktree(&tree.path).is_some();
+                                bw_engine::orca::diag(&format!(
+                                    "handle_timeout: settle done jsonl_after={jsonl_after} \
+                                     next=wait_session_id/reveal"
+                                ));
+                            } else {
+                                bw_engine::orca::diag("create ready, next=wait_session_id/reveal");
+                            }
                             // Claude 的 jsonl 可能晚几拍落到盘,短等再收 id。
                             // Cursor 不写这份文件,空等满 8 秒才回「开工成功」。
                             if bw_engine::orca::agent_supports_ensure(agent) {
@@ -355,6 +393,14 @@ impl App {
                                     bw_engine::orca::wait_session_id_for_worktree(&tree.path).await
                                 {
                                     sid = found;
+                                    bw_engine::orca::diag(&format!(
+                                        "wait_session_id found prefix={}",
+                                        sid.chars().take(8).collect::<String>()
+                                    ));
+                                } else {
+                                    bw_engine::orca::diag(
+                                        "wait_session_id miss (jsonl 8s 内没落下)",
+                                    );
                                 }
                             }
                             Ok(())
@@ -362,36 +408,48 @@ impl App {
                         Err(e) => Err(e),
                     }
                 } else {
+                    bw_engine::orca::diag(&format!(
+                        "skip create sid_source={sid_source} (只切树,不灌词)"
+                    ));
                     Ok(())
                 };
-                // 开成了(含句柄超时当成功)或树上已有会话:切树,网页才跟得上。
+                // 开成了(含句柄超时 settle 后再走)或树上已有会话:切树,网页才跟得上。
                 // 切树失败只打日志,不把已经起来的窗打成开工失败。
                 if r.is_ok() {
                     if let Err(e) = bw_engine::orca::reveal_tree(&rt, &tree.path).await {
-                        eprintln!(
-                            "[BW_ORCA] 窗已在,切树没跟上:{e} · {} · worktree={}",
+                        bw_engine::orca::diag(&format!(
+                            "reveal fail:{e} · {} · worktree={}",
                             rt.log_tag(),
                             tree.path.display()
-                        );
+                        ));
+                    } else {
+                        bw_engine::orca::diag(&format!(
+                            "reveal ok worktree={}",
+                            tree.path.display()
+                        ));
                     }
                 } else if let Err(e) = &r {
-                    eprintln!(
-                        "[BW_ORCA] {e} · {} · worktree={}",
+                    bw_engine::orca::diag(&format!(
+                        "{e} · {} · worktree={}",
                         rt.log_tag(),
                         tree.path.display()
-                    );
+                    ));
                 }
                 r
             }
-            Err(e) => Err(e),
+            Err(e) => {
+                bw_engine::orca::diag(&format!("connect fail:{e}"));
+                Err(e)
+            }
         };
         if !sid.is_empty() {
             let _ = self.remember_session_id(&conv, &sid).await;
         }
         let ok = outcome.is_ok();
+        let log = bw_engine::orca::diag_log_path();
         let summary = match outcome {
-            Ok(()) => "已在 Orca 里开工,过程看会话屏".to_string(),
-            Err(e) => format!("开工失败:{e}"),
+            Ok(()) => format!("已在 Orca 里开工,过程看会话屏(对照日志 {})", log.display()),
+            Err(e) => format!("开工失败:{e}(对照日志 {})", log.display()),
         };
         Ok(vec![Event::IssueRan {
             id,
