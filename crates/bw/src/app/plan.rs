@@ -388,7 +388,11 @@ fn looks_like_ymd(s: &str) -> bool {
     s.len() == 10
         && s.as_bytes().get(4) == Some(&b'-')
         && s.as_bytes().get(7) == Some(&b'-')
-        && s.bytes()
-            .enumerate()
-            .all(|(i, c)| if i == 4 || i == 7 { c == b'-' } else { c.is_ascii_digit() })
+        && s.bytes().enumerate().all(|(i, c)| {
+            if i == 4 || i == 7 {
+                c == b'-'
+            } else {
+                c.is_ascii_digit()
+            }
+        })
 }
