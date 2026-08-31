@@ -42,7 +42,7 @@ impl App {
     /// 项目,库里那一列是空的,`workspace_of` 每次都拿**当下**的根目录现拼
     /// (`<根目录>/<slug>`)。所以改根目录之前必须先把它们**钉死**:把各自当下
     /// 算出来的绝对路径写回库里。不钉的话,改一下根目录,已有项目就集体指到一个
-    /// 空目录 —— 仓还在硬盘上,但 buddy 全看不见了(健康变灰、文件树全空)。
+    /// 空目录 —— 仓还在硬盘上,但 Workbench 全看不见了(健康变灰、文件树全空)。
     ///
     /// 钉死是一次性的:钉完之后它们和「根目录」再没有关系。**不搬目录** —— 真要
     /// 搬得先解决"仓里有没有没提交的改动、worktree 还开着没有",那是另一件事。
@@ -100,7 +100,7 @@ impl App {
 /// 别的工具、卡面也挂着那个标签,跑起来的却始终是 claude —— 正是那条规矩要
 /// 防的事,而且方向是最坏的那个(默默顶上,不报错)。
 ///
-/// 空值按 Claude CLI 算:活是 buddy 自己建的、还没配过映射时就是空的,
+/// 空值按 Claude CLI 算:活是 Workbench 自己建的、还没配过映射时就是空的,
 /// 这是默认不是「未知」。
 pub fn agent_for(tool: &str) -> Result<&'static bw_engine::TuiAgentConfig> {
     match tool.trim() {
@@ -118,7 +118,7 @@ pub fn agent_for(tool: &str) -> Result<&'static bw_engine::TuiAgentConfig> {
                 .into(),
         )),
         other => Err(AppError::Exec(format!(
-            "活上记着的开工工具是「{other}」,buddy 不认识它 —— 不猜、不拿别的工具顶上。\
+            "活上记着的开工工具是「{other}」,Workbench 不认识它 —— 不猜、不拿别的工具顶上。\
              去配置屏的「类别 → 开工工具」里改掉,或者在活详情里改这一张。"
         ))),
     }
@@ -141,7 +141,7 @@ pub fn orca_agent(tool: &str) -> Result<&'static str> {
                 .into(),
         )),
         other => Err(AppError::Exec(format!(
-            "活上记着的开工工具是「{other}」,buddy 不认识它 —— 不猜、不拿别的工具顶上。\
+            "活上记着的开工工具是「{other}」,Workbench 不认识它 —— 不猜、不拿别的工具顶上。\
              去配置屏的「类别 → 开工工具」里改掉,或者在活详情里改这一张。"
         ))),
     }

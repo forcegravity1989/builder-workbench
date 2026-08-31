@@ -1,12 +1,12 @@
-//! buddy 自带的技能库 —— **放在 buddy 自己的目录里,不复制进用户的仓**。
+//! Workbench 自带的技能库 —— **放在 Workbench 自己的目录里,不复制进用户的仓**。
 //!
-//! 开工前把这些文件展开到 buddy 自己的资产目录(`<asset_root>/skills/…`,
+//! 开工前把这些文件展开到 Workbench 自己的资产目录(`<asset_root>/skills/…`,
 //! 见 `App::skills_dir`),系统提示词里只给 agent **名字 + 一句话 + 完整路径**,
-//! 正文让它自己按需去读。这就是渐进式加载 —— 和 buddy 自己的系统提示词
+//! 正文让它自己按需去读。这就是渐进式加载 —— 和 Workbench 自己的系统提示词
 //! (`standard/system-prompt/` 的 `SYSTEM.md.tmpl`,见 `app/bootstrap.rs` 的
 //! `agent_system_prompt`)是同一套规矩:提示词里放索引,正文按需读。
 //!
-//! 用户仓怎么写 `.gitignore` 不该由 buddy 决定,所以技能不进用户的仓。
+//! 用户仓怎么写 `.gitignore` 不该由 Workbench 决定,所以技能不进用户的仓。
 
 /// 一份技能包:名字、一句话、正文,以及它在技能目录下的相对落点。
 pub struct SkillPack {
@@ -58,9 +58,9 @@ fn desc_of(raw: &'static str) -> &'static str {
     ""
 }
 
-/// buddy 自带的全部技能 —— **一个正本目录,全部平级**:`standard/skills/<名字>/SKILL.md`。
+/// Workbench 自带的全部技能 —— **一个正本目录,全部平级**:`standard/skills/<名字>/SKILL.md`。
 /// 两类,但走**同一个**注入机制(`skill_pointer`→`SkillPack`):
-/// - **四份运作剧本**(buddy 自己发起的标准动作,body 自足);
+/// - **四份运作剧本**(Workbench 自己发起的标准动作,body 自足);
 /// - **workflow 入口**(body 是 SOP 链 + 指向 `vendor/` 库子技能路径,库由
 ///   `ensure_vendor_assets` 摊到 `<asset>/vendor/`)。今天一份:`mattpocock-skills`
 ///   (build 阶段默认);proto-design(原型)源还没 vendor,待补。
@@ -68,10 +68,10 @@ fn desc_of(raw: &'static str) -> &'static str {
 /// **不预建方法论技能**。原来还预置了六份「阶段方法论」(原型/构建/优化/
 /// 运营推广/运维/竞品),但默认 workflow 没打包、`skill_slug` 也不识别它们,
 /// 一份都没被真正派发过——属于「预先搞的一堆没用的」。2026-08-24 删光:
-/// 阶段方法论该由业界 workflow 提供,buddy 只在每个环节挑一个最好的默认;
-/// 真要从实践里长出 buddy 自己的方法论,到时候再单独建,不预置。
+/// 阶段方法论该由业界 workflow 提供,Workbench 只在每个环节挑一个最好的默认;
+/// 真要从实践里长出 Workbench 自己的方法论,到时候再单独建,不预置。
 ///
-/// 留下的四份运作剧本是 buddy 独有的——业界不会有,且已被 `skill_slug`
+/// 留下的四份运作剧本是 Workbench 独有的——业界不会有,且已被 `skill_slug`
 /// 硬编码映射、真派发(运作活①②)。`north-star-discovery` / `metrics-binding`
 /// 两份的内容已并入 `metrics-refresh`;`metrics-render` 早前整份删过(踩在 V4
 /// 不存在的东西上)。这几份原文件随 V3 已删。

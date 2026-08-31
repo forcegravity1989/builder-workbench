@@ -4,7 +4,7 @@
 //! 常量(零 IO)。**改 `standard/` 就是改产品行为**,不要搬。
 //!
 //! 两个版本号别混:
-//! - `standard/VERSION`(这里的 [`version`]):**buddy 侧** —— 当前二进制自带
+//! - `standard/VERSION`(这里的 [`version`]):**Workbench 侧** —— 当前二进制自带
 //!   哪一版规范,随发布走。
 //! - 项目仓 `.bw/standard.toml` 的 `version`:**项目侧** —— 这个项目铺的是哪
 //!   一版,随项目走。
@@ -31,12 +31,12 @@ pub struct Template {
 
 const VERSION_RAW: &str = include_str!("../../../../standard/VERSION");
 
-/// buddy 二进制自带的规范版本,如 `5.0`。
+/// Workbench 二进制自带的规范版本,如 `5.0`。
 pub fn version() -> &'static str {
     VERSION_RAW.trim()
 }
 
-/// 章程落在哪。**在 `.bw/` 里,不在仓根** —— buddy 铺进用户仓的东西全部收进
+/// 章程落在哪。**在 `.bw/` 里,不在仓根** —— Workbench 铺进用户仓的东西全部收进
 /// `.bw/`,仓根一个字不写。这样人一眼就知道「哪些是 bw 的资产」,也不会和
 /// 项目自己的 README / CLAUDE.md / docs 打架。
 pub const CHARTER_REL_PATH: &str = ".bw/PROJECT.md";
@@ -53,7 +53,7 @@ pub const METRICS_TMPL: &str = include_str!("../../../../standard/templates/metr
 
 /// 一份规范件**在哪一站落地**。
 ///
-/// buddy 自己写得对的(名片、映射、版本清单)接入一次铺完。
+/// Workbench 自己写得对的(名片、映射、版本清单)接入一次铺完。
 /// 要跟人聊才写得对的(指标正文、业务脚本)不预铺空壳,跟会话走。
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum LayAt {
@@ -68,7 +68,7 @@ pub enum LayAt {
 ///
 /// **落点分两类,别混**:
 ///
-/// - **`.bw/` 下的是 buddy 的资产** —— 名片、映射、规范清单。收在一个目录里,
+/// - **`.bw/` 下的是 Workbench 的资产** —— 名片、映射、规范清单。收在一个目录里,
 ///   「bw 到底往我仓里放了什么」一眼可数,也不会因为项目把
 ///   `docs/` 或 `.claude/` 写进 .gitignore 就有件悄悄进不了版本控制。
 /// - **仓根的 `AGENTS.md` 与 `CLAUDE.md` 是项目自己的** —— 它们是整个生态约定

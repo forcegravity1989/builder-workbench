@@ -2,7 +2,7 @@
 //!
 //! 三件东西:
 //!
-//! - [`registry`] —— `asset_root/projects.toml`,buddy 纳管的项目清单。每条
+//! - [`registry`] —— `asset_root/projects.toml`,Workbench 纳管的项目清单。每条
 //!   记着项目的定位字段(slug / workspace_path / provider / remote_*)、显示
 //!   缓存(健康灯)与本机设置(`cron_enabled`)。替代旧的 `project` 表。
 //! - [`settings`] —— `asset_root/settings.toml`,全局本机设置。今天只有

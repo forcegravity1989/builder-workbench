@@ -166,7 +166,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     );
 
     // ── 6 · 接入自动建的那张「规范铺底」活 ────────────────────
-    // 母文档 §2 第 0 站:接入完 buddy 自己建一张一次性运作活③。这里读回它
+    // 母文档 §2 第 0 站:接入完 Workbench 自己建一张一次性运作活③。这里读回它
     // 真的建了、来源是 auto、而且**状态最远只到评审中** —— 自动建的活绝不
     // 自动完成,这条是铁律。
     for slug in ["no-remote", "already"] {
@@ -196,7 +196,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     }
 
     // ── 8 · 成熟仓不许被盖 ──────────────────────────────────
-    // loop-buddy 自己就是这种仓:根目录有一份人写了很久的 CLAUDE.md。铺底
+    // workbench 自己就是这种仓:根目录有一份人写了很久的 CLAUDE.md。铺底
     // 要往仓里写 AGENTS.md 和 CLAUDE.md,**盖掉就是事故**。
     let mature = workspaces.join("mature");
     std::fs::create_dir_all(&mature)?;
@@ -275,10 +275,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     );
 
     // ── 10 · 接项目时,仓根一个字都不写 ──────────────────────
-    // 这条是第 0 站的边界:buddy 只铺**自己的**资产,全在 `.bw/` 底下。仓根的
+    // 这条是第 0 站的边界:Workbench 只铺**自己的**资产,全在 `.bw/` 底下。仓根的
     // `AGENTS.md` / `CLAUDE.md` 是这个项目自己的文件 —— 要不要给它写一份开发
     // 手册,是资产盘点(运作活②)首次模式去问人的事,那是在改人家的项目。
-    // 接项目的时候 buddy 才刚 clone 完,既没读过这个仓,也没人问过人家愿不愿意。
+    // 接项目的时候 Workbench 才刚 clone 完,既没读过这个仓,也没人问过人家愿不愿意。
     for (label, ws) in [
         ("成熟仓", mature.clone()),
         ("空仓", workspaces.join("no-remote")),
@@ -302,7 +302,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         say(
             &format!("档 10 · {label}的仓根,铺底之后有哪些 .md/.toml"),
             &format!(
-                "{listed:?} · 有 buddy 写的 AGENTS.md/CLAUDE.md={}(该是 false)",
+                "{listed:?} · 有 Workbench 写的 AGENTS.md/CLAUDE.md={}(该是 false)",
                 ["AGENTS.md", "CLAUDE.md"].iter().any(|f| {
                     std::fs::read_to_string(look.join(f))
                         .map(|t| t.contains("bw:managed"))

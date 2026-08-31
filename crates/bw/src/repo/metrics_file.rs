@@ -45,7 +45,7 @@ pub struct CollectPlan {
     ///
     /// 写成数组而不是一行命令,是为了在 Windows 上也能明确指定解释器:
     /// `["python", …]` 和 `["python3", …]` 是两回事,让人自己写清楚,
-    /// buddy 不去猜。
+    /// Workbench 不去猜。
     #[serde(default)]
     pub run: Vec<String>,
     /// 历史还能不能重新算出来。见 [`MetricClass`]。

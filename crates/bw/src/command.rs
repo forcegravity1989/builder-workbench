@@ -126,8 +126,8 @@ pub enum Command {
     },
     /// 把项目工作区的主检出快进到远端最新。
     ///
-    /// **为什么需要人手点这一下**:buddy 只在「合入并完成」某张活的时候自动拉
-    /// 一次。人在 GitHub / codehub 网页上直接合了 MR,buddy 完全不知道 —— 工作
+    /// **为什么需要人手点这一下**:Workbench 只在「合入并完成」某张活的时候自动拉
+    /// 一次。人在 GitHub / codehub 网页上直接合了 MR,Workbench 完全不知道 —— 工作
     /// 区就一直停在旧提交,合进去的 `.bw/` 那些件在本机根本不存在,而界面还照
     /// 常显示旧内容。以前没有任何入口能补这一下。
     PullWorkspace { project_id: ProjectId },

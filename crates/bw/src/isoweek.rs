@@ -154,7 +154,7 @@ pub fn parse_schedule(spec: &str) -> Option<(u8, u8, u8)> {
 ///
 /// 判据只看「星期几 + 几点几分」在本周之内的先后,不算具体时间戳——因为幂等
 /// 靠的是「本周有没有建过这张活」那条查询,这里只要回答「这一周里该触发的那
-/// 一刻是不是已经过去了」。错过一次(比如那会儿 buddy 没开着)下次照样成立,
+/// 一刻是不是已经过去了」。错过一次(比如那会儿 Workbench 没开着)下次照样成立,
 /// 自动补建,不需要另记一张「上次触发时间」的表。
 pub fn schedule_passed_this_week(spec: &str) -> bool {
     let Some((dow, h, m)) = parse_schedule(spec) else {
