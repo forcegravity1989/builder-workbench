@@ -103,7 +103,7 @@ pub fn light_dot(signal: Option<Signal>, big: bool) -> Element {
     rsx! { span { class: "{cls}", style: "background:{color}" } }
 }
 
-/// 六个入口各自的图标名。原型里知识库那一格用的是 `space`(内部沿用旧命名)。
+/// 五个入口各自的图标名。原型里知识库那一格用的是 `space`(内部沿用旧命名)。
 fn panel_icon(p: Panel) -> &'static str {
     match p {
         Panel::Overview => "overview",

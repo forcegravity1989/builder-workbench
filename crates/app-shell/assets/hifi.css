@@ -501,15 +501,6 @@ select.select-multi{padding:3px;font-size:11.5px;border:1px solid var(--border-d
 .guide-body{flex:1;overflow-y:auto;padding:14px 18px;font-size:12.7px;line-height:1.75;color:var(--ink-2);}
 .guide-report{padding:11px 18px;border-top:1px dashed var(--border);color:var(--ink-4);font-size:11.3px;cursor:not-allowed;flex:none;}
 
-/* ---------- notify ---------- */
-[data-screen="notify"]{max-width:820px;}
-.notify-sect-title{font-size:11.5px;color:var(--ink-3);text-transform:uppercase;letter-spacing:.04em;margin:20px 0 9px;font-family:var(--mono);}
-.notify-sect-title:first-of-type{margin-top:6px;}
-.notify-list{display:flex;flex-direction:column;gap:8px;}
-.notify-events{display:flex;flex-direction:column;}
-.notify-event{display:flex;gap:10px;padding:8px 6px;border-bottom:1px dashed var(--border);font-size:12.5px;align-items:baseline;}
-.notify-event:hover{background:#F6F1E5;}
-
 
 /* ---------- 真壳补充(原型没有的) ---------- */
 
@@ -532,7 +523,7 @@ select.select-multi{padding:3px;font-size:11.5px;border:1px solid var(--border-d
 .toast-x:hover{color:var(--clay);}
 
 /* 接入屏改成两步(原型是并排两张卡)。第二步的四个字段取决于第一步选了哪个仓
-   —— 那个仓被 buddy 接管过的话名片是回显的,并排摆着等于让人先对着空格子填一遍。 */
+   —— 那个仓被 Workbench 接管过的话名片是回显的,并排摆着等于让人先对着空格子填一遍。 */
 .ob-steps{display:flex;align-items:center;gap:10px;margin:0 0 14px;}
 .ob-step{font-size:12.5px;color:var(--ink-3);}
 .ob-step.active{color:var(--clay);font-weight:600;}

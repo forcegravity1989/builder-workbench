@@ -53,7 +53,7 @@ pub fn View(vm: Vm, bridge: Bridge, go_top: EventHandler<TopView>) -> Element {
                             font-size:14px;line-height:2;",
                     "还没有接入任何项目。"
                     br {}
-                    "点右上角「接入项目」,填四个字段,buddy 会把管理体系铺进这个仓。"
+                    "点右上角「接入项目」,填四个字段,Workbench 会把管理体系铺进这个仓。"
                 }
             } else {
                 div { class: "wall-grid",

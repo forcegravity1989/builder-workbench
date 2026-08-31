@@ -485,9 +485,9 @@ pub(super) fn build_config(
 ///
 /// 三个来源,`origin` 如实标出来自哪:
 ///
-/// - **buddy 自带**:编在二进制里的四份(全是运作剧本)。
-///   它们摊在 buddy 自己的资产目录,**不复制进用户的仓** —— 用户的
-///   `.gitignore` 怎么写不该由 buddy 决定(见 `bw::standard::skills`)。
+/// - **Workbench 自带**:编在二进制里的四份(全是运作剧本)。
+///   它们摊在 Workbench 自己的资产目录,**不复制进用户的仓** —— 用户的
+///   `.gitignore` 怎么写不该由 Workbench 决定(见 `bw::standard::skills`)。
 /// - **项目自有**:这个仓自己的 `.claude/skills/`,扫目录得到。
 /// - **不在册**:活上挂了这个名字,两处都找不到包。用量是真的,包确实没有。
 pub(super) fn skill_list(ws: &Path, usage: &[(String, u32)]) -> Vec<SkillVm> {
@@ -506,7 +506,7 @@ pub(super) fn skill_list(ws: &Path, usage: &[(String, u32)]) -> Vec<SkillVm> {
             title: bw::app::workflow_label(p.slug)
                 .unwrap_or(p.slug)
                 .to_string(),
-            origin: "buddy 自带".into(),
+            origin: "Workbench 自带".into(),
             desc: p.desc.to_string(),
             slug: p.slug.to_string(),
         })
