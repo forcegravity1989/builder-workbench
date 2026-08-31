@@ -148,6 +148,13 @@ pub enum Req {
     /// 配置屏亮某一行技能(从活上的 workflow 跳过来)。
     #[allow(dead_code)]
     FocusSkill(String),
+    /// 后台查完打开项目的 MR 号。**不是界面发的**。`gen` 对不上或已经换项目
+    /// 就丢掉,不把上一屏的号写到这一屏。
+    PrNumbersFilled {
+        project: ProjectId,
+        gen: u64,
+        entries: Vec<(bw::model::IssueId, u32, bool)>,
+    },
 }
 
 /// 桥是整个进程共用的**一个**句柄,clone 出来的都指向同一个内核线程,
@@ -555,6 +562,7 @@ pub fn spawn(deep_link: DeepLink) -> Bridge {
                     kick_project_collect(&app, o.id, &tx_back).await;
                     ui.set_note(Some("正在采本项目指标与仓统计…".into()));
                 }
+                kick_pr_fill(&last_gather, &ui, &tx_back);
                 // BW_KB_DUMP=1:把知识库三个页签的数字打进 stderr,好让人拿
                 // `git ls-files` / `codegraph files -j` / `cat .bw/releases.md`
                 // 当场对。截图对不了数,这个能。
@@ -639,15 +647,14 @@ pub fn spawn(deep_link: DeepLink) -> Bridge {
                             last_gather = vm_build::gather(&app, &mut ui).await;
                             vm = vm_build::assemble(&app, &mut ui, &last_gather).await;
                             let _ = vm_tx.send(vm.clone());
+                            kick_pr_fill(&last_gather, &ui, &tx_back);
                             continue;
                         }
                     };
                     // 纯导航(切周 / 点总览 / 选卡片看详情 / 切页签 / 展开
-                    // 目录 / 后台采回发)不重跑 gather —— 复用上次采的那份,只
-                    // 重切依赖视图字段的片段(健康/Release/环境/issue/ops3 的 git
-                    // 子进程与远端都不跑;会话工作台在会话字段变时仍跑几个 git,
-                    // 但切周/选卡片时不会)。真命令、换项目、刷新、FlushOrcaReveal
-                    // (内发 ReopenSession)可能改了底层数据,才重 gather。
+                    // 目录 / 后台采回发 / MR 回填)不重跑 gather —— 复用上次
+                    // 采的那份,只重切依赖视图字段的片段。真命令、换项目、刷新、
+                    // FlushOrcaReveal 可能改了底层数据,才重 gather。
                     // SelectSession 只记账等嵌页,走快路径。设计见 ADR 0002。
                     let needs_gather = matches!(
                         &req,
@@ -666,6 +673,8 @@ pub fn spawn(deep_link: DeepLink) -> Bridge {
                                 Command::RunIssue { .. }
                                     | Command::StartWeekPlanning { .. }
                             );
+                            // 遮罩撤了再切:开工里那次 activate 嵌页听不见。
+                            let mut reveal_after_busy: Option<bw::model::IssueId> = None;
                             if running_issue {
                                 ui.busy = Some(STARTING_SESSION.into());
                                 let snap =
@@ -702,6 +711,30 @@ pub fn spawn(deep_link: DeepLink) -> Bridge {
                                         } else {
                                             crate::vm::SessionTab::default()
                                         };
+                                        // 遮罩期间不挂 iframe。开工成功且不是 OD:
+                                        // 记下树,撤遮罩挂页后再 activate(和 Open 同一条)。
+                                        let started_ok = events.iter().any(|e| {
+                                            matches!(
+                                                e,
+                                                bw::command::Event::IssueRan {
+                                                    id,
+                                                    ok: true,
+                                                    ..
+                                                } if *id == issue_id
+                                            )
+                                        });
+                                        if running_issue
+                                            && started_ok
+                                            && tool != "open_design"
+                                            && app
+                                                .conversation_for_issue(issue_id)
+                                                .await
+                                                .ok()
+                                                .flatten()
+                                                .is_some()
+                                        {
+                                            reveal_after_busy = Some(issue_id);
+                                        }
                                     }
                                     if let Some(id) = events.iter().find_map(|e| match e {
                                         bw::command::Event::SessionDeleted { id, .. } => Some(*id),
@@ -788,7 +821,14 @@ pub fn spawn(deep_link: DeepLink) -> Bridge {
                                 Err(e) => ui.set_note(Some(format!("没做成:{e}"))),
                             }
                             if running_issue {
+                                // create / run_issue 已经回来。先撤遮罩把嵌页挂上,
+                                // 别等后面 gather(issue list / mr list)再撤 ——
+                                // 「开始本周」那一刀比计划屏 Start 多建一张活,
+                                // gather 又更慢,遮罩会和 Start 差一截。
                                 ui.busy = None;
+                                let snap =
+                                    vm_build::assemble(&app, &mut ui, &last_gather).await;
+                                let _ = vm_tx.send(snap);
                             }
                         }
                         Req::Open(id) => {
@@ -1125,6 +1165,19 @@ pub fn spawn(deep_link: DeepLink) -> Bridge {
                             }
                         }
                         Req::FocusSkill(slug) => ui.focus_skill = slug,
+                        Req::PrNumbersFilled {
+                            project,
+                            gen,
+                            entries,
+                        } => {
+                            // 采的时候是哪个项目、第几代 gather,回来还得对上。
+                            if ui.open == Some(project) && last_gather.gen == gen {
+                                for &(id, pr, open) in &entries {
+                                    ui.mr_cache.insert(id, (pr, open));
+                                }
+                                last_gather.apply_pr_numbers(&entries);
+                            }
+                        }
                         Req::Refresh => {
                             // 顶栏「刷新」以前只重拼 ViewModel、不拉仓。同事把
                             // v2 指标合进远端之后,本机仍停在旧提交,点刷新还是
@@ -1161,6 +1214,9 @@ pub fn spawn(deep_link: DeepLink) -> Bridge {
                         vm.note_seq = ui.note_seq;
                     }
                     let _ = vm_tx.send(vm.clone());
+                    if needs_gather {
+                        kick_pr_fill(&last_gather, &ui, &tx_back);
+                    }
                 }
             });
             }));
@@ -1248,6 +1304,28 @@ async fn register_orca_repo(app: &App, ui: &mut vm_build::UiState, pid: ProjectI
     if bw_engine::orca::ensure_repo(&rt, &ws).await.is_ok() {
         ui.orca_repos_ready.insert(pid);
     }
+}
+
+/// 第一屏推完再查 MR。不 await —— 占着内核线程又把切页堵回去。
+fn kick_pr_fill(
+    g: &vm_build::Gathered,
+    ui: &vm_build::UiState,
+    tx_back: &mpsc::UnboundedSender<Req>,
+) {
+    let Some(spec) = g.pr_fill_spec(&ui.mr_cache) else {
+        return;
+    };
+    let back = tx_back.clone();
+    tokio::spawn(async move {
+        let project = spec.project_id;
+        let gen = spec.gen;
+        let entries = vm_build::fill_pr_numbers_parallel(spec).await;
+        let _ = back.send(Req::PrNumbersFilled {
+            project,
+            gen,
+            entries,
+        });
+    });
 }
 
 /// 进项目时后台采一轮。不 await 脚本 —— 占着内核线程会卡住终端节拍。
