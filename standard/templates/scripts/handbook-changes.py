@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""手册修正频次 —— buddy 铺的现成采集脚本(可回溯,retro = true)。过程指标包。
+"""手册修正频次 —— Workbench 铺的现成采集脚本(可回溯,retro = true)。过程指标包。
 
 口径:仓根 `AGENTS.md` 与 `CLAUDE.md`(项目自己的开发手册)每周被提交改动的
 次数,数当前分支的本仓 git 历史。playbook 的用法:错两次的纠正就该进手册——
@@ -13,7 +13,7 @@
 
     git log --oneline -- AGENTS.md CLAUDE.md
 
-铺一次就归这个项目,buddy 之后再也不覆盖它。
+铺一次就归这个项目,Workbench 之后再也不覆盖它。
 """
 
 import argparse

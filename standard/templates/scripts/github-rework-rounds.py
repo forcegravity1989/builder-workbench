@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""返工轮数 —— buddy 铺的现成采集脚本(可回溯,retro = true)。过程指标包。
+"""返工轮数 —— Workbench 铺的现成采集脚本(可回溯,retro = true)。过程指标包。
 
 口径:本周合入的 PR,平均每张「开出之后追加的提交数」。它是首过率的另一面:
 首过率数「零追加的占比」,这条数「追加了几个」。同一份数据,两种读法,各自
@@ -17,7 +17,7 @@
     gh pr list --state merged --json number,createdAt,mergedAt --limit 1000
     gh pr view <号> --json commits   # 窗内每张
 
-铺一次就归这个项目,buddy 之后再也不覆盖它。
+铺一次就归这个项目,Workbench 之后再也不覆盖它。
 """
 
 import argparse

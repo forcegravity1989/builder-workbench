@@ -96,7 +96,7 @@ Workbench 读回用类别查开工工具,不打类别就开不了工。不要只
 
 打完周标签之后,codehub 上还要把这张 issue 挂到**同名里程碑** `YYYY-Www`(没有就建,
 `start_date` / `due_date` 用那一周周一到周日)。失败说出来,不要回滚标签。GitHub 不
-投影。会话里 `issue update --labels` **不会**走 buddy 内核投影,要自己挂。
+投影。会话里 `issue update --labels` **不会**走 Workbench 内核投影,要自己挂。
 
 `git diff --stat` 只许出现:
 

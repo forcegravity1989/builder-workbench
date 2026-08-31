@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
-"""距上次发版天数 —— buddy 铺的现成采集脚本(可回溯,retro = true)。过程指标包。
+"""距上次发版天数 —— Workbench 铺的现成采集脚本(可回溯,retro = true)。过程指标包。
 
 口径:每个周末(周日)距最近一个 **git 标签**日期的天数。发版的正本就是打标签
-——buddy 的交付判据读的也是标签日期,两边同源。这是 DORA「部署频率」的单人版:
+——Workbench 的交付判据读的也是标签日期,两边同源。这是 DORA「部署频率」的单人版:
 数字越小说明发得越勤,一路涨说明这条产线在断供。
 
 那一周还没有任何标签的,不出点(断开)——不是 0:0 天意味着当天刚发版。
@@ -12,7 +12,7 @@
 
     git tag --list --format='%(creatordate:short) %(refname:short)'
 
-铺一次就归这个项目,buddy 之后再也不覆盖它。
+铺一次就归这个项目,Workbench 之后再也不覆盖它。
 """
 
 import argparse

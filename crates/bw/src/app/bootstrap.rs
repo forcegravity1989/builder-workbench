@@ -402,8 +402,8 @@ pub struct ReferencePointer {
 /// 这张活要读哪几份阶段规范 references。按活的类别/workflow 匹配,只返**硬盘
 /// 上真存在**的那几份(文件不在就如实不指,不编路径)。
 ///
-/// 起手只两份:`metrics`(指标活,workflow=更新指标与周计划)、`build`(改仓类活,
-/// 类别=构建/优化/运维)。其余按实践长。
+/// 起手三份:`metrics`(指标活,workflow=更新指标与周计划)、`build`(改仓类活,
+/// 类别=构建/优化/运维)、`week-plan-comment`(运作活①评论格式)。其余按实践长。
 pub fn references_for(issue: &Issue, refs_dir: &std::path::Path) -> Vec<ReferencePointer> {
     let mut out = vec![];
     for pack in standard::system_prompt::references() {

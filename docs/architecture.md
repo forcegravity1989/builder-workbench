@@ -101,7 +101,7 @@ references(`standard/system-prompt/references/*.md`)是「干某类活需要额�
 
 **评审会话另有一份外置主提示词** `standard/system-prompt/REVIEW.md.tmpl`(独立评审身份 + 只评不改/绝不合并/意见落 MR 评论),渲染与摊开同机制;阶段规范第四份 `review`、评审剧本 `mr-review` 走同一条注入链(见模块7「请评审」)。
 
-**代码**:bw 的 `app/bootstrap.rs`(`agent_system_prompt` / `review_system_prompt` 渲染模板 + `skill_pointer` + `references_for` / `review_references`)+ `standard/system_prompt.rs`(`SYSTEM_PROMPT_TMPL` + `REVIEW_PROMPT_TMPL` + references 表)+ `standard/skills.rs`(运作剧本与评审剧本 `include_str!`)+ `app/mod.rs`(`ensure_skill_assets` / `ensure_prompt_assets`)。
+**代码**:bw 的 `app/bootstrap.rs`(`agent_system_prompt` 渲染模板 + `skill_pointer` + `references_for`)+ `standard/system_prompt.rs`(`SYSTEM_PROMPT_TMPL` + references 表)+ `standard/skills.rs`(四份运作剧本 `include_str!`)+ `app/mod.rs`(`ensure_skill_assets` / `ensure_prompt_assets`)。评审三件套(`REVIEW.md.tmpl` / `references/review.md` / `mr-review`)已入库但**未编进二进制、未派发**——见模块7「没建」。
 **数据**:主提示词模板 + references + 技能正本都编进二进制,开工时摊到 `<asset_root>/`;提示词是一次性字符串经 `--append-system-prompt` 送进 CLI,不落盘不缓存。
 **依赖**:standard::system_prompt、standard::skills、standard::render、bw_engine::LaunchPlan(`--add-dir`)、codehub issue 正本。
 **没建**:`proto-design`(原型阶段默认 workflow)源还没 vendor 进来、未打包;vendor 摊是 dev 期从源码树 runtime 复制(分发态无源码树时降级为不摊,入口仍注入但子技能读不到——bundle 进二进制留后续);references 起手三份(指标铁律 / 运作活①评论格式 / 改仓规则,按实践长);运营推广/竞品阶段无业界默认(留白)。
