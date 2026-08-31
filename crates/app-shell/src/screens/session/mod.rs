@@ -5,7 +5,7 @@
 //! 两个页签常驻:原型活默认停 Open Design,构建类默认停 Orca。
 //! 没接到就如实说,不假装嵌进去。Orca / Open Design 都走 iframe。
 
-use crate::bridge::{Bridge, Req};
+use crate::bridge::{Bridge, ChromeBusy, Req};
 use crate::vm::{ProjectVm, SessionTab};
 use dioxus::prelude::*;
 
@@ -57,8 +57,14 @@ fn mid_body(p: &ProjectVm, bridge: Bridge) -> Element {
 /// (`settings.toml` 的 `orca_web_url`),`BW_ORCA_WEB_URL` 可覆盖;都只认 loopback。
 #[component]
 fn OrcaView(orca_url: String, bridge: Bridge) -> Element {
+    let starting = use_context::<ChromeBusy>().get().is_some();
     let url = bw_engine::orca::web_embed_url(Some(&orca_url));
     let body_style = "flex:1;min-height:0;display:flex;flex-direction:column;height:100%;";
+    if starting {
+        return rsx! {
+            div { class: "sess-col sess-midbody", style: "{body_style}" }
+        };
+    }
     if let Some(u) = url {
         let iframe_src = iframe_src(&u);
         let ready = bridge.clone();
