@@ -63,6 +63,9 @@ impl PanelNav {
 /// Orca iframe 是 WebView 原生层,只靠 `.busy-mask` 盖不住已经挂上的嵌页。
 pub const STARTING_SESSION: &str = "正在开工,Orca 要几秒把会话拉起来。先别点嵌页。";
 
+/// 拖拽 / 详情改状态:等远端写标签,不重拉 issue 名单。
+pub const SWITCHING_STATUS: &str = "issue 状态切换中";
+
 #[derive(Clone, Copy)]
 pub struct ChromeBusy(pub dioxus::prelude::Signal<Option<String>>);
 

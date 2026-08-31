@@ -7,7 +7,7 @@
 use crate::vm::*;
 use bw::app::App;
 use bw::command::Event;
-use bw::model::{IssueKind, IssueStatus, Project, ProjectId};
+use bw::model::{IssueId, IssueKind, IssueStatus, Project, ProjectId};
 use bw::repo::{issue_policy_file, project_file};
 
 use super::vm_derive::{build_card_mr, build_ops, build_week_counts};
@@ -45,8 +45,9 @@ pub(super) fn read_or_warn<T>(
 }
 
 /// 一次 `gather()` 采回来的**与导航无关**的贵数据。导航请求只跑 `assemble()`,
-/// 复用这里的东西,不重跑 git 子进程 / 远端 / OD 探活。数据真变了(真命令、换
-/// 项目、刷新、到点建活)才重新 `gather` 刷新它。
+/// 复用这里的东西,不重跑 git 子进程 / 远端 / OD 探活。数据真变了(换项目、
+/// 刷新、到点建活、开工/合入/建活等真命令)才重新 `gather`。只改一张活状态
+/// 标签的命令补丁 [`Gathered::apply_issue_status`],不重拉 issue list。
 ///
 /// 换项目时 `gather` 只跑第一波(名单 / 周目标 / 发版 / 健康 / 环境),推完
 /// ViewModel 就切页;`pr_number` 后台回填,见 [`PrFillSpec`]。设计见
@@ -93,6 +94,10 @@ pub(super) struct ProjectGathered {
     issue_url_prefix: String,
     week_started: bool,
     ops1_status: Option<String>,
+    /// 版本列表 + 当前登录用户。gather 采一次,assemble 只克隆 —— 切周 / 改
+    /// 一张卡状态时不再打 `project view` / milestones / `/user`。
+    plan_versions: Vec<PlanVersionVm>,
+    current_user: String,
 }
 
 /// 会话工作台缓存键 + 值。切周 / 选卡片时会话相关 ui 字段没变,直接复用。
@@ -233,6 +238,50 @@ impl Gathered {
             }
         }
     }
+
+    /// 远端刚写成功的那一张:只改内存里的状态,不重拉 issue list。
+    /// 墙卡片的本周计数跟着这张活走。找不到这张活就不动。
+    pub fn apply_issue_status(&mut self, id: IssueId, to: IssueStatus, settled: bool) {
+        let Some(pg) = self.open.as_mut() else {
+            return;
+        };
+        if !patch_issue_status(&mut pg.issues, id, to, settled) {
+            return;
+        }
+        let pid = pg.id;
+        let week = pg.current_week.clone();
+        let ops1_title = bw::app::ops1_title(&week);
+        let ops1 = pg.issues.iter().find(|i| i.title == ops1_title);
+        pg.week_started = ops1.is_some();
+        pg.ops1_status = ops1
+            .filter(|i| i.status != IssueStatus::Done)
+            .map(|i| i.status.label().to_string());
+        let week_counts = build_week_counts(&pg.issues, Some(week.as_str()));
+        let unread = bw::app::count_unseen(&pg.issues);
+        if let Some(card) = self.projects.iter_mut().find(|c| c.id == pid) {
+            card.week_total = week_counts.total() as u32;
+            card.week_done = week_counts.done as u32;
+            card.unread = unread;
+        }
+    }
+}
+
+fn patch_issue_status(
+    issues: &mut [bw::Issue],
+    id: IssueId,
+    to: IssueStatus,
+    settled: bool,
+) -> bool {
+    let Some(issue) = issues.iter_mut().find(|i| i.id == id) else {
+        return false;
+    };
+    issue.status = to;
+    if settled {
+        issue.settled_at = Some(time::OffsetDateTime::now_utc().unix_timestamp());
+    } else if to == IssueStatus::Cancelled {
+        issue.settled_at = None;
+    }
+    true
 }
 
 /// 深链按 slug 找,找不到再按显示名找。
@@ -667,8 +716,8 @@ async fn wall_extras_many(
 /// 从上次 [`gather`] 的结果 + 当前 `UiState` 视图字段现切一份 `Vm`。只做依赖
 /// `viewing_week` / `view_all` / `selected_issue` / 会话 / 页签 的重切:看板按周
 /// 过滤、四段计数、运作活状态点、指标读数、会话工作台、知识库扫描。**健康 /
-/// Release / 环境 / issue / ops3 的 git 子进程与远端一律不跑**(都在 gather 采
-/// 过);**会话工作台**(`build_workbench`)在会话相关字段变(展开目录 / 切会话 /
+/// Release / 环境 / issue / 版本列表 / 当前用户 / ops3 的 git 子进程与远端
+/// 一律不跑**(都在 gather 采过);**会话工作台**(`build_workbench`)在会话相关字段变(展开目录 / 切会话 /
 /// 换页签)时仍跑 `list_dir` / `changed_files` / `ahead_behind` / `file_diff`
 /// 几个 git——但同代 gather 内键没变就复用缓存,**切周 / 选卡片时不会跑**。
 /// 导航请求只调它。设计见 ADR 0002。
@@ -875,7 +924,7 @@ async fn gather_project(
     let mr_url_prefix = p.mr_url_prefix();
     let issue_url_prefix = p.issue_url_prefix();
 
-    let (sessions, week_goals, releases, ops3_landed, last_delivery) = tokio::join!(
+    let (sessions, week_goals, releases, ops3_landed, last_delivery, plan_versions, current_user) = tokio::join!(
         build_sessions(app, id, &issues),
         app.week_goals_from_ops1(&p, &issues),
         load_releases(app, &p, &ws),
@@ -888,6 +937,8 @@ async fn gather_project(
                 .map(|(tag, date)| format!("{date} {tag}"))
                 .unwrap_or_default()
         },
+        build_plan_versions(app, &p, &issues),
+        current_user(app, &p),
     );
 
     let inputs = bw::app::collect_health_inputs(
@@ -942,6 +993,8 @@ async fn gather_project(
         issue_url_prefix,
         week_started,
         ops1_status,
+        plan_versions,
+        current_user,
     })
 }
 
@@ -949,7 +1002,7 @@ async fn gather_project(
 /// (`ops3_landed` 已采)、不重探 OD(`env` 已采)。会话工作台用键缓存住,
 /// 切周 / 选卡片时会话字段没变就直接复用。见 [`assemble`]。
 async fn assemble_project(
-    app: &App,
+    _app: &App,
     ui: &mut UiState,
     pg: &ProjectGathered,
     gen: u64,
@@ -1041,8 +1094,8 @@ async fn assemble_project(
         viewing_plan: ui.viewing_plan.clone(),
         view_all: ui.view_all,
         board: build_board(&pg.issues, week, plan, pg.policy.as_ref()),
-        plan_versions: build_plan_versions(app, &pg.project, &pg.issues).await,
-        current_user: current_user(app, &pg.project).await,
+        plan_versions: pg.plan_versions.clone(),
+        current_user: pg.current_user.clone(),
         // 两份计数,各有各的归属:总览那块标题写着「本周」,就只能是本周;
         // 计划屏的进度条画在它正在看的那个看板上面,就跟着看板的范围走。
         week_counts: build_week_counts(&pg.issues, Some(pg.current_week.as_str())),
@@ -1222,4 +1275,76 @@ pub(super) async fn load_releases(app: &App, p: &Project, ws: &std::path::Path) 
             origin: "git 标签".into(),
         })
         .collect()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use bw::model::{Issue, IssueKind, IssueOrigin, ProjectId};
+
+    fn issue(iid: u32, status: IssueStatus) -> Issue {
+        Issue {
+            id: IssueId::from_remote(ProjectId::nil(), iid),
+            project_id: ProjectId::nil(),
+            number: iid,
+            remote_number: iid,
+            title: "测".into(),
+            body: String::new(),
+            status,
+            branch: String::new(),
+            pr_number: 0,
+            has_open_mr: false,
+            week_of: "2026-W35".into(),
+            version: String::new(),
+            tool: String::new(),
+            kind: IssueKind::Business,
+            origin: IssueOrigin::Human,
+            workflow: String::new(),
+            category: None,
+            sort_order: 0.0,
+            metric_key: String::new(),
+            created_at: 0,
+            updated_at: 0,
+            settled_at: None,
+            assignee: String::new(),
+            author: String::new(),
+            plan_version: String::new(),
+        }
+    }
+
+    #[test]
+    fn patch_moves_status_and_settles_done() {
+        let id = IssueId::from_remote(ProjectId::nil(), 7);
+        let mut issues = vec![issue(7, IssueStatus::InReview)];
+        assert!(patch_issue_status(&mut issues, id, IssueStatus::Done, true));
+        assert_eq!(issues[0].status, IssueStatus::Done);
+        assert!(issues[0].settled_at.is_some());
+    }
+
+    #[test]
+    fn patch_cancel_clears_settled() {
+        let id = IssueId::from_remote(ProjectId::nil(), 3);
+        let mut issues = vec![issue(3, IssueStatus::Todo)];
+        issues[0].settled_at = Some(1);
+        assert!(patch_issue_status(
+            &mut issues,
+            id,
+            IssueStatus::Cancelled,
+            false
+        ));
+        assert_eq!(issues[0].status, IssueStatus::Cancelled);
+        assert!(issues[0].settled_at.is_none());
+    }
+
+    #[test]
+    fn patch_unknown_id_is_false() {
+        let mut issues = vec![issue(1, IssueStatus::Todo)];
+        assert!(!patch_issue_status(
+            &mut issues,
+            IssueId::from_remote(ProjectId::nil(), 99),
+            IssueStatus::Blocked,
+            false
+        ));
+        assert_eq!(issues[0].status, IssueStatus::Todo);
+    }
 }
