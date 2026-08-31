@@ -10,7 +10,7 @@
 
 - 桌面窗口 1440×900 起;左栏图标 + 项目栏。进项目后:**总览 · 计划 · 会话 · 配置 · 知识库**。
 - 顶栏:屏名 · 头像 · 「演示数据 ✱」+ 「重置」。没有铃铛。
-- 路由:`#/wall` `#/onboard` `#/settings` `#/p/buddy/overview|plan|session|config|kb`。
+- 路由:`#/wall` `#/onboard` `#/settings` `#/p/workbench/overview|plan|session|config|kb`。
 
 ## 2 · 逐屏(跟壳对齐的口径)
 
