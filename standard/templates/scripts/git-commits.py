@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""每周提交数 —— buddy 铺的现成采集脚本(可回溯,retro = true)。
+"""每周提交数 —— Workbench 铺的现成采集脚本(可回溯,retro = true)。
 
 口径:**当前分支**上,提交时刻落在 `[周一 00:00, 下周一 00:00)`(本机时区)
 的提交数。
@@ -19,7 +19,7 @@
 
     git log --pretty=format:%ct | awk -v s=<s> -v u=<u> '$1>=s && $1<u' | wc -l
 
-铺一次就归这个项目,buddy 之后再也不覆盖它 —— 要改口径直接改这里。
+铺一次就归这个项目,Workbench 之后再也不覆盖它 —— 要改口径直接改这里。
 """
 
 import argparse

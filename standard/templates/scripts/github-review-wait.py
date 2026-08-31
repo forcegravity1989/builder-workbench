@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""评审等待 —— buddy 铺的现成采集脚本(可回溯,retro = true)。过程指标包。
+"""评审等待 —— Workbench 铺的现成采集脚本(可回溯,retro = true)。过程指标包。
 
 口径:本周**合入**的 PR,从开出到合入的中位时长,单位小时。合没合入看远端,
 那个造不了假。
@@ -12,7 +12,7 @@
 
     gh pr list --state merged --json createdAt,mergedAt --limit 1000
 
-铺一次就归这个项目,buddy 之后再也不覆盖它。
+铺一次就归这个项目,Workbench 之后再也不覆盖它。
 """
 
 import argparse

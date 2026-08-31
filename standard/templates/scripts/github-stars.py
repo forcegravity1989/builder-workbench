@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""GitHub star 数 —— buddy 铺的现成采集脚本(可回溯,retro = true)。
+"""GitHub star 数 —— Workbench 铺的现成采集脚本(可回溯,retro = true)。
 
 口径:到**每周周末那一刻**为止,这个仓被 star 的累计数。存量,不是流量。
 
@@ -16,7 +16,7 @@ star 数看起来只有「当前值」,像是典型的不可回溯指标。但 s
     gh api -H "Accept: application/vnd.github.star+json" \\
       "repos/<owner>/<repo>/stargazers?per_page=100&page=N" --jq '[.[].starred_at]'
 
-铺一次就归这个项目,buddy 之后再也不覆盖它。
+铺一次就归这个项目,Workbench 之后再也不覆盖它。
 """
 
 import argparse

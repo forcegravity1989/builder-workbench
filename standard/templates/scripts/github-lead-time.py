@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""变更前置时间 —— buddy 铺的现成采集脚本(可回溯,retro = true)。过程指标包。
+"""变更前置时间 —— Workbench 铺的现成采集脚本(可回溯,retro = true)。过程指标包。
 
 口径:按**合入**的那一周分桶,从这张 PR 分支上最早一笔提交的作者时刻到合入的
 中位时长,单位小时。这是 DORA 四件套里的「变更前置时间」(lead time for
@@ -18,7 +18,7 @@ changes):动手到上主干隔了多久。
     gh pr list --state merged --json number,mergedAt --limit 1000
     gh pr view <号> --json commits   # 窗内每张
 
-铺一次就归这个项目,buddy 之后再也不覆盖它。
+铺一次就归这个项目,Workbench 之后再也不覆盖它。
 """
 
 import argparse

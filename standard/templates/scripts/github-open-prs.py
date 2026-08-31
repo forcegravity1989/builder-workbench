@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""同时开着的 MR 数 —— buddy 铺的现成采集脚本(可回溯,retro = true)。过程指标包。
+"""同时开着的 MR 数 —— Workbench 铺的现成采集脚本(可回溯,retro = true)。过程指标包。
 
 口径:每个周末时点(下周一 00:00 之前的那一刻)**还开着**的 PR 存量。这是并行
 度的仓本位口径:本机「进行中」的活数仓看不见,同一时刻开着几张 PR 仓远端记得
@@ -14,7 +14,7 @@
 
     gh pr list --state all --json createdAt,closedAt --limit 1000
 
-铺一次就归这个项目,buddy 之后再也不覆盖它。
+铺一次就归这个项目,Workbench 之后再也不覆盖它。
 """
 
 import argparse
