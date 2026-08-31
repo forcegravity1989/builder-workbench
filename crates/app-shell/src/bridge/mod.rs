@@ -10,7 +10,7 @@ mod vm_derive;
 mod vm_kb;
 mod vm_panels;
 
-pub use nav::{GuideNav, Panel, PanelNav, TopView};
+pub use nav::{ChromeBusy, GuideNav, Panel, PanelNav, TopView, STARTING_SESSION};
 
 use crate::vm::Vm;
 use bw::app::App;
@@ -667,10 +667,7 @@ pub fn spawn(deep_link: DeepLink) -> Bridge {
                                     | Command::StartWeekPlanning { .. }
                             );
                             if running_issue {
-                                ui.busy = Some(
-                                    "正在开工,Orca 要几秒把会话拉起来。先别点嵌页。"
-                                        .into(),
-                                );
+                                ui.busy = Some(STARTING_SESSION.into());
                                 let snap =
                                     vm_build::assemble(&app, &mut ui, &last_gather).await;
                                 let _ = vm_tx.send(snap);

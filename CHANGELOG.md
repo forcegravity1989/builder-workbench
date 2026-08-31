@@ -6,7 +6,7 @@
 
 ## 最近 · 2026-08-31
 
-打开 / 接入项目先问 Orca `repo.show`。仓已在就不盖「正在让 Orca 认得这个仓」遮罩、不再 `repo.add`。`orca_repos_ready` 只是同进程连点加速,不落盘。Orca 没开仍不挡进项目。总览「开始本周」create 会话时盖和计划屏 Start 同一块「正在开工」遮罩,先前只认 `RunIssue`、这条命令漏了。
+打开 / 接入项目先问 Orca `repo.show`。仓已在就不盖「正在让 Orca 认得这个仓」遮罩、不再 `repo.add`。`orca_repos_ready` 只是同进程连点加速,不落盘。Orca 没开仍不挡进项目。总览「开始本周」/ 计划屏 Start:点下去先立遮罩再切会话,busy 期间不挂 Orca iframe(嵌页是原生层,后到的 HTML 遮罩盖不住)。
 
 ## 最近 · 2026-08-29
 
