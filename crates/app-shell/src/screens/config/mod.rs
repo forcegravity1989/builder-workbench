@@ -6,7 +6,7 @@
 //! 三条如实:
 //!
 //! 1. **「用过几次」是现算的** —— 扫活的 workflow 列聚合,没有战绩表可查。
-//! 2. **技能清单没有登记表** —— buddy 自带的那四份编在二进制里(摊在 buddy
+//! 2. **技能清单没有登记表** —— Workbench 自带的那四份编在二进制里(摊在 Workbench
 //!    自己的资产目录,不复制进用户的仓),项目自有的扫仓里 `.claude/skills/`
 //!    得到,同名以仓里那份为准。高保真把「workflow」和「skill」分成两张表,
 //!    V4 里它们是同一样东西(workflow = SOP 类技能包),所以合成一张,不假装
@@ -153,11 +153,11 @@ fn skill_block(p: &ProjectVm) -> Element {
             div { class: "cfg-section-head",
                 h3 { "技能与 workflow" }
                 span { style: "font-size:11.5px;color:var(--ink-3);",
-                    "buddy 自带 + 本仓 .claude/skills/,共 {p.config.skills.len()} 个"
+                    "Workbench 自带 + 本仓 .claude/skills/,共 {p.config.skills.len()} 个"
                 }
             }
             if p.config.skills.is_empty() {
-                div { class: "detail-empty", "一个都没有 —— buddy 自带的那份没读出来,这不正常。" }
+                div { class: "detail-empty", "一个都没有 —— Workbench 自带的那份没读出来,这不正常。" }
             } else {
                 div { class: "tbl-wrap",
                     table { class: "tbl",
@@ -201,7 +201,7 @@ fn skill_block(p: &ProjectVm) -> Element {
                  —— 所以 V4 里 workflow 和技能是同一样东西,不分两张表。「用过几次」现算:\
                  扫活的 workflow 列聚合,没有战绩表。导入按钮还没接:用户自己的技能放进\
                  这个仓的 `.claude/skills/<目录名>/SKILL.md`,这里会扫成「项目自有」。\
-                 不要拷进 buddy 资产目录(那是自带剧本摊出来的)。启用/停用也还没接。"
+                 不要拷进 Workbench 资产目录(那是自带剧本摊出来的)。启用/停用也还没接。"
             }
         }
     }

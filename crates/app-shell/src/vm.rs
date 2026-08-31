@@ -62,7 +62,7 @@ pub enum RepoProbe {
     #[default]
     NotAsked,
     Loading,
-    /// 读到了 `.bw/project.toml` —— 这个仓被 buddy 接管过。
+    /// 读到了 `.bw/project.toml` —— 这个仓被 Workbench 接管过。
     Adopted,
     /// 平台明确回「没有这个文件」,而且**这个仓确实在**(另问了一次)——
     /// 这个仓没被接管过。
@@ -85,7 +85,7 @@ pub struct RepoRowVm {
     pub pushed_at: String,
 }
 
-/// 已经被 buddy 接管过的仓,名片直接回显,不用人再填一遍。
+/// 已经被 Workbench 接管过的仓,名片直接回显,不用人再填一遍。
 #[derive(Clone, Debug, Default, PartialEq)]
 pub struct RepoPrefillVm {
     pub name: String,
@@ -99,7 +99,7 @@ pub struct SettingsVm {
     pub workspaces_root: String,
     /// Orca 网页配对 URL(带 token,只在本地)。设置屏可改;会话屏 iframe 打开它。
     pub orca_web_url: String,
-    /// buddy 本机数据目录(注册表 / 设置 / 会话都在这下面)。刀6 起不再有 SQLite
+    /// Workbench 本机数据目录(注册表 / 设置 / 会话都在这下面)。刀6 起不再有 SQLite
     /// 库文件,这格显示的是 asset_root 目录名,不是 DB 路径。
     pub data_dir: String,
     pub claude_binary: Option<String>,
@@ -522,7 +522,7 @@ pub struct SkillVm {
     pub slug: String,
     pub title: String,
     pub uses: u32,
-    /// 「内置」(随 buddy 出厂、铺底时复制进来)/「项目自有」/「蒸馏」。
+    /// 「内置」(随 Workbench 出厂、铺底时复制进来)/「项目自有」/「蒸馏」。
     pub origin: String,
     /// SKILL.md 头里的 `description:`。读不到就空着,不替它写一句。
     pub desc: String,

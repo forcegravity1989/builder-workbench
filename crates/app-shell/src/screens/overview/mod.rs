@@ -273,7 +273,7 @@ fn card_and_health(
                         span { class: "mono", "{c.remote}" }
                         span { "规范 v{c.standard_version}" }
                         span { style: "margin-left:auto;display:flex;gap:6px;",
-                            // 人在网页上直接合了 MR 时,buddy 是不知道的 ——
+                            // 人在网页上直接合了 MR 时,Workbench 是不知道的 ——
                             // 工作区会一直停在旧提交,而界面照常显示旧内容。
                             // 这颗按钮是补那一下的唯一入口。
                             button {
