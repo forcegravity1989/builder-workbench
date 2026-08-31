@@ -1,4 +1,4 @@
-//! `adopted_probe` —— 「这个仓被 buddy 接管过没有」这一问的读回证据。
+//! `adopted_probe` —— 「这个仓被 Workbench 接管过没有」这一问的读回证据。
 //!
 //! ```bash
 //! cargo run -p bw-engine --example adopted_probe -- <owner/repo> [分支]

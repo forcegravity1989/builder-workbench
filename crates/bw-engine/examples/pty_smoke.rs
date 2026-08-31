@@ -1,7 +1,7 @@
-//! PTY 烟测:不开界面,直接走 `InteractiveCliExecutor::run_skill_pty`(桌面壳
-//! ▶跑 用的同一条路径),在当前平台的 PTY 后端里起一个最小的 shell 命令
-//! (macOS/Linux 是 `bash -c 'echo pty-ok'`,Windows 是 `cmd /C echo pty-ok`),
-//! 读回字节,核对里面确实有 `pty-ok`。
+//! PTY 烟测:不开界面,直接走 `InteractiveCliExecutor::run_skill_pty`(PTY
+//! 封存前的开工路径;现行 ▶跑 走 Orca,见 `orca.rs`),在当前平台的 PTY 后端
+//! 里起一个最小的 shell 命令(macOS/Linux 是 `bash -c 'echo pty-ok'`,Windows
+//! 是 `cmd /C echo pty-ok`),读回字节,核对里面确实有 `pty-ok`。
 //!
 //! 用途:证明「内嵌终端在这台机器上能真起子进程、真读到输出、真收尾」——
 //! 这是主环在 macOS 上能跑的前提。不碰 `claude`,不碰网关,可随时重跑。
