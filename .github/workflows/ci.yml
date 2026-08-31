@@ -47,3 +47,37 @@ jobs:
 
       - name: codegraph.db not staged in feature commits
         run: ./scripts/guard-codegraph-clean.sh
+
+  # 行为读回:跑仓里那几个不碰网络、不碰 claude 的 smoke,把它们的输出收成一份
+  # 报告贴在 PR 上。CI 原本只验代码卫生(编得过、格式对),从不验产品行为——
+  # 这一段补的就是那块。
+  behavior:
+    name: 行为读回(无网)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+      - name: 构建 smoke
+        run: cargo build --examples -p bw -p bw-engine
+      - name: 逐个真跑并收报告
+        run: |
+          R=$GITHUB_STEP_SUMMARY
+          echo "## 行为读回报告" >> $R
+          echo "" >> $R
+          echo "提交 \`${GITHUB_SHA:0:8}\` · 无网络、无 claude 环境下真跑" >> $R
+          echo "" >> $R
+          fail=0
+          for e in pty_smoke health_smoke metrics_smoke settings_smoke prompt_smoke onboard_smoke; do
+            d=$(mktemp -d)
+            if out=$(./target/debug/examples/$e "$d" 2>&1); then st="通过"; else st="**失败**"; fail=1; fi
+            echo "<details><summary>$st · $e</summary>" >> $R
+            echo "" >> $R
+            echo '```' >> $R
+            echo "$out" | head -60 >> $R
+            echo '```' >> $R
+            echo "</details>" >> $R
+            echo "$e: $st"
+          done
+          exit $fail
+
