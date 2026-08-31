@@ -1,6 +1,6 @@
 # Intent · 过程指标接入(playbook 引领/滞后指标)
 
-> **30 秒导读**:这是什么——本次变更的**意图件**:用发起人自己的话说清「要解决什么问题、盼到什么结果」。给谁看——审这批改动的人、以及接手后续批次的会话。现在作数吗——**已接受**(2026-08-25 拍板,活已建:[#118](https://github.com/forcegravity1989/loop-buddy/issues/118)~#124)。**这是 playbook 产物链(intent → spec → plan)在 buddy 自己开发流程上的首次实例**;这一层的仓库位置已由 [`principles/01-document-organization.md`](../../principles/01-document-organization.md) 固化为仓根 `changes/<id>/`(本目录 2026-08-25 随合并从 `docs/changes/` 迁入,补 `STATUS.md`)。
+> **30 秒导读**:这是什么——本次变更的**意图件**:用发起人自己的话说清「要解决什么问题、盼到什么结果」。给谁看——审这批改动的人、以及接手后续批次的会话。现在作数吗——**已接受**(2026-08-25 拍板,活已建:[#118](https://github.com/forcegravity1989/builder-workbench/issues/118)~#124)。**这是 playbook 产物链(intent → spec → plan)在 Workbench 自己开发流程上的首次实例**;这一层的仓库位置已由 [`principles/01-document-organization.md`](../../principles/01-document-organization.md) 固化为仓根 `changes/<id>/`(本目录 2026-08-25 随合并从 `docs/changes/` 迁入,补 `STATUS.md`)。
 
 **发起人**:Gravity(2026-08-25 会话拍板,本文由会话转述,拍板原话见引文)。**状态**:已接受。
 
@@ -18,7 +18,7 @@ BW 的指标体系(北极星 / 滞后 / 引领三层)今天只对着**业务成�
 ## 盼到的结果
 
 - playbook 全部 26 条指标,每条在 BW 里**有一个明确的统计方式**:能算的指到脚本,等前置的写明等什么,不建的写明为什么——一条不糊弄。
-- 当前项目**今天就能算**的那批(约 12 条)以现成脚本随规范铺进项目,任何人 clone 仓 + 装 gh 就能复算,不装 buddy 也一样。
+- 当前项目**今天就能算**的那批(约 12 条)以现成脚本随规范铺进项目,任何人 clone 仓 + 装 gh 就能复算,不装 Workbench 也一样。
 - 想点灯的条目可晋升进引领/滞后三格(同脚本 + 目标),与既有的健康推导、见红判据(遗留清单③)衔接。
 
 ## 影响的用户与系统

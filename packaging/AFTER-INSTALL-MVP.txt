@@ -20,6 +20,6 @@ Builders' Workbench（MVP）已装到本机。装完请先做这几步，再新�
 数据与资产：D:\builders-workbench\data\（注册表/设置/会话/技能摊）
 工作区：D:\builders-workbench\workspaces\（项目 clone 与 worktree）
 （D 盘不在的机器退回 %APPDATA%\BuildersWorkbench\）
-codehub-cli：%USERPROFILE%\bin\codehub-cli.exe（卸载 buddy 时不会删它）
+codehub-cli：%USERPROFILE%\bin\codehub-cli.exe（卸载 Workbench 时不会删它）
 
 注：这是 MVP 版（0.1.0-mvp）。装它会把旧版 V3（0.3.0-v3）自动卸掉。
