@@ -81,7 +81,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             continue;
         }
         if r.points.is_empty() {
-            println!("   手填 —— 这一类不由 buddy 采");
+            println!("   手填 —— 这一类不由 Workbench 采");
             continue;
         }
         let cells: Vec<String> = r
@@ -103,7 +103,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         );
     }
 
-    println!("\n自己复算(把 buddy 传的窗口原样敲一遍,数字应该一模一样):");
+    println!("\n自己复算(把 Workbench 传的窗口原样敲一遍,数字应该一模一样):");
     for d in file.all() {
         if d.collect.run.is_empty() {
             continue;

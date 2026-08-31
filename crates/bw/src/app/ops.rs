@@ -1,4 +1,4 @@
-//! 运作活:buddy 自己发起的三张标准动作。
+//! 运作活:Workbench 自己发起的三张标准动作。
 //!
 //! 三张活的 `workflow` 字段取值是它们的身份证——定时判据、注入哪份剧本、配置
 //! 屏「用过几次」全靠它:
@@ -11,7 +11,7 @@
 //!
 //! **没有定时任务表**。「这周该不该建②」这个问题的答案不存在任何一张状态表
 //! 里,它是现查出来的:本周有没有一张标题以「资产盘点 」开头的活。这条查询
-//! 本身就是幂等锁,也是补建逻辑——错过一次 tick(那会儿 buddy 没开着)下次
+//! 本身就是幂等锁,也是补建逻辑——错过一次 tick(那会儿 Workbench 没开着)下次
 //! 启动的第一次 tick 天然成立,自动补上。
 
 use super::{issue_store, App, AppError, ProgressLine, Result};
@@ -27,7 +27,7 @@ pub const OPS1_WORKFLOW: &str = "更新指标与周计划";
 pub const OPS2_WORKFLOW: &str = "资产盘点";
 pub const OPS3_WORKFLOW: &str = "规范铺底";
 
-/// 剧本名。开工时按这个 slug 在 **buddy 自己的技能目录**里找到那份
+/// 剧本名。开工时按这个 slug 在 **Workbench 自己的技能目录**里找到那份
 /// `SKILL.md`,把**名字 + 一句话 + 路径**给 agent(正文它自己按需读,见
 /// [`crate::standard::skills`])。
 /// 运作活①这一周那张活的标题。**它同时是建活的幂等键和「本周开没开过工」
@@ -116,7 +116,7 @@ impl App {
     /// 定时:到点就自己建运作活②并自己开工。
     ///
     /// 三张运作活里唯一不需要人点一下才开工的一张——所以它也是唯一一处
-    /// buddy 自动**建**活的地方。**自动建不等于自动完成**:这张活和别的活
+    /// Workbench 自动**建**活的地方。**自动建不等于自动完成**:这张活和别的活
     /// 走同一条状态机,最远只到「评审中」。
     pub(super) async fn tick_scheduler(&mut self, project_id: ProjectId) -> Result<Vec<Event>> {
         // 高优1:读本机设置,这个项目关了定时就不建活(缺省 true)。开关在
@@ -181,7 +181,7 @@ impl App {
 }
 
 impl App {
-    /// 「合入并完成」:先真的把 MR 合了,再由 buddy 主动把 issue 关掉(= Done)。
+    /// 「合入并完成」:先真的把 MR 合了,再由 Workbench 主动把 issue 关掉(= Done)。
     ///
     /// 顺序不能反。先推完成再合入的话,合入失败就留下一张「已完成」但改动还
     /// 挂在分支上的活 —— 账目和仓对不上。
@@ -278,7 +278,7 @@ impl App {
             self.step(ProgressLine::ok(2, "合入:不用拉主检出"));
         }
 
-        // 合入由人点;buddy 这一下把 issue 关掉 = Done。本地无远端项目(没 MR
+        // 合入由人点;Workbench 这一下把 issue 关掉 = Done。本地无远端项目(没 MR
         // 可合)也走这一步 —— 合理。
         self.step(ProgressLine::doing(3, "合入:结清这张活…"));
         if let Err(e) = issue_store::set_status(self, &project, id.iid(), IssueStatus::Done).await {

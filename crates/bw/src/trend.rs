@@ -88,7 +88,7 @@ async fn recent_weeks_inner(
     // 不在这儿手写字符串比较。GitHub 走 gh、codehub 走 codehub-cli,各按周分桶。
     if remote.is_none() && has_remote {
         trend.remote_note =
-            "这个项目的远端 provider buddy 不认识,合入的 PR 与未处理 issue 走势没查 —— 只画提交那一条".into();
+            "这个项目的远端 provider Workbench 不认识,合入的 PR 与未处理 issue 走势没查 —— 只画提交那一条".into();
     }
 
     // 一趟拉全、本地按周分桶。**不按周去查** —— 见 `bw_engine::github` 里那两个

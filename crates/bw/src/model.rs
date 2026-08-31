@@ -205,7 +205,7 @@ impl IssueStatus {
     }
 }
 
-/// 活的三个种类。`Light`(轻量活)= 没有 agent 会话、只有 buddy 自己写仓 +
+/// 活的三个种类。`Light`(轻量活)= 没有 agent 会话、只有 Workbench 自己写仓 +
 /// 开 MR 的活,名片编辑与发版本用它。
 #[derive(Clone, Copy, PartialEq, Eq, Debug, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
@@ -304,7 +304,7 @@ impl Project {
 
     /// 这个仓在浏览器里的根地址,比如 `https://github.com/owner/repo`。
     ///
-    /// **按 provider 拼,不从 `origin` 推**。codehub 是局域网平台,buddy clone
+    /// **按 provider 拼,不从 `origin` 推**。codehub 是局域网平台,Workbench clone
     /// 走 SSH(`bw_engine::codehub::clone_repo`:HTTPS 经代理被拦),于是
     /// `origin` 长这样:`ssh://git@szv-open.codehub.huawei.com:2222/组/仓.git`
     /// —— 主机是 SSH 主机、后面还挂着 SSH 端口,拿它当网址必然点不开。真正的

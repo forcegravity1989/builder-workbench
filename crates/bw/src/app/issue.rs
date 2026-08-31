@@ -61,7 +61,7 @@ impl App {
             number: issue.number,
         }];
         // 新建活并临时纳入本周 → 发群通知(版本计划那件由 start_week_planning 单独
-        // 发,不在这里重复;运作活是 buddy 内部,不发)。
+        // 发,不在这里重复;运作活是 Workbench 内部,不发)。
         if !week_of.is_empty() && kind != IssueKind::Ops {
             let ev = crate::chat::NotifyEvent::IssueCreated;
             let text = crate::chat::notify_text(
@@ -125,9 +125,9 @@ impl App {
                 let project = self.project_of(issue.project_id).await?;
                 issue_store::set_status(self, &project, id.iid(), IssueStatus::InProgress).await?;
             }
-            // 灌系统提示词:让 OD 内部 spawn 的 AI 知道在 buddy 管理下(身份+铁律+
+            // 灌系统提示词:让 OD 内部 spawn 的 AI 知道在 Workbench 管理下(身份+铁律+
             // 本活挂的技能/references 指针)。OD 独立——它有自己的 skill 体系(skillId),
-            // 灌不进 buddy 技能文件,只灌 systemPrompt(技能指针在文本里,OD 的 AI
+            // 灌不进 Workbench 技能文件,只灌 systemPrompt(技能指针在文本里,OD 的 AI
             // best-effort 读)。探不到 OD / POST 失败不阻断(OD 仍内嵌),如实降级。
             let prompt = format!("#{} {}\n\n{}", issue.number, issue.title, issue.body);
             let skills_dir = self.ensure_skill_assets();
@@ -154,7 +154,7 @@ impl App {
                     "Open Design 已内嵌——到会话屏「Open Design」标签里干;原型导出落这棵\
                      工作树,再「提交并开 MR」{}",
                     if injected {
-                        "(已灌系统提示词,OD 内 AI 知道在 buddy 管理下)"
+                        "(已灌系统提示词,OD 内 AI 知道在 Workbench 管理下)"
                     } else {
                         ""
                     }
@@ -196,7 +196,7 @@ impl App {
         // 照活上记的工具走 —— 不许悄悄换(见 `tools::agent_for`)。
         let agent: &TuiAgentConfig = super::tools::agent_for(&issue.tool)?;
         let prompt = format!("#{} {}\n\n{}", issue.number, issue.title, issue.body);
-        // 剧本在 buddy 自己的技能目录里,不在用户的仓里(见
+        // 剧本在 Workbench 自己的技能目录里,不在用户的仓里(见
         // `standard::skills`)。提示词只带路径,正文按需读。
         let skills_dir = self.ensure_skill_assets();
         // 摊 vendor 业界 workflow 库(workflow 入口 body 指向这,如 mattpocock-skills)。
@@ -507,11 +507,11 @@ impl App {
         }
 
         let mut body = format!(
-            "buddy 管理的第 {} 号活「{}」干出来的改动,等人评审。\n\n",
+            "Workbench 管理的第 {} 号活「{}」干出来的改动,等人评审。\n\n",
             issue.number, issue.title
         );
         body.push_str(&format!(
-            "这条分支上有 {commits} 个提交。合入之后回 buddy 点「合入并完成」结清这张活。"
+            "这条分支上有 {commits} 个提交。合入之后回 Workbench 点「合入并完成」结清这张活。"
         ));
         let mr = worktree::push_and_open_mr(
             &project,
