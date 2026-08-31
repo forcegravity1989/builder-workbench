@@ -6,7 +6,7 @@
 # 上限简单粗暴(不排除注释、不排除测试),比「聪明的排除规则」更不容易被绕过。
 set -euo pipefail
 cd "$(dirname "$0")/.."
-LIMIT=${LIMIT:-1500}
+LIMIT=${LIMIT:-2000}
 SOFT=${SOFT:-600}
 
 roots=()
