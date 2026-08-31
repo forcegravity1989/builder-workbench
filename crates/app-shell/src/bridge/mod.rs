@@ -10,13 +10,13 @@ mod vm_derive;
 mod vm_kb;
 mod vm_panels;
 
-pub use nav::{ChromeBusy, GuideNav, Panel, PanelNav, TopView, STARTING_SESSION};
+pub use nav::{ChromeBusy, GuideNav, Panel, PanelNav, TopView, STARTING_SESSION, SWITCHING_STATUS};
 
 use crate::vm::Vm;
 use bw::app::App;
-use bw::command::Command;
+use bw::command::{Command, Event};
 use bw::local::Settings;
-use bw::model::ProjectId;
+use bw::model::{IssueId, IssueStatus, ProjectId};
 use std::path::PathBuf;
 use std::sync::Arc;
 use std::time::Duration;
@@ -655,14 +655,24 @@ pub fn spawn(deep_link: DeepLink) -> Bridge {
                     // 目录 / 后台采回发 / MR 回填)不重跑 gather —— 复用上次
                     // 采的那份,只重切依赖视图字段的片段。真命令、换项目、刷新、
                     // FlushOrcaReveal 可能改了底层数据,才重 gather。
-                    // SelectSession 只记账等嵌页,走快路径。设计见 ADR 0002。
+                    // 只改一张活状态标签(拖拽 / 详情下拉)写成功后补丁
+                    // last_gather,不重拉 issue list。SelectSession 只记账等
+                    // 嵌页,走快路径。设计见 ADR 0002。
+                    let status_patch = matches!(
+                        &req,
+                        Req::Cmd(
+                            Command::TransitionIssue { .. }
+                                | Command::BlockIssue { .. }
+                                | Command::CancelIssue { .. }
+                        )
+                    );
                     let needs_gather = matches!(
                         &req,
                         Req::Cmd(_)
                             | Req::Open(_)
                             | Req::Refresh
                             | Req::FlushOrcaReveal { .. }
-                    );
+                    ) && !status_patch;
                     match req {
                         Req::Cmd(c) => {
                             let confirming = matches!(c, Command::ConfirmWeekDraft { .. });
@@ -680,10 +690,21 @@ pub fn spawn(deep_link: DeepLink) -> Bridge {
                                 let snap =
                                     vm_build::assemble(&app, &mut ui, &last_gather).await;
                                 let _ = vm_tx.send(snap);
+                            } else if status_patch {
+                                ui.busy = Some(SWITCHING_STATUS.into());
+                                let snap =
+                                    vm_build::assemble(&app, &mut ui, &last_gather).await;
+                                let _ = vm_tx.send(snap);
                             }
                             match app.dispatch(c).await {
                                 Ok(events) => {
                                     ui.set_note(vm_build::note_of(&events));
+                                    if status_patch {
+                                        if let Some((id, to, settled)) = status_patch_of(&events)
+                                        {
+                                            last_gather.apply_issue_status(id, to, settled);
+                                        }
+                                    }
                                     // 「开始本周」产出的草稿活标先接住,等人在计划屏
                                     // 点确认才真的建活。
                                     if let Some((week, titles)) = drafts_of(&events) {
@@ -820,12 +841,31 @@ pub fn spawn(deep_link: DeepLink) -> Bridge {
                                 // 失败就把失败的原话摆出来。壳不替内核圆场。
                                 Err(e) => ui.set_note(Some(format!("没做成:{e}"))),
                             }
+                            if status_patch {
+                                ui.busy = None;
+                            }
                             if running_issue {
                                 // create / run_issue 已经回来。先撤遮罩把嵌页挂上,
                                 // 别等后面 gather(issue list / mr list)再撤 ——
                                 // 「开始本周」那一刀比计划屏 Start 多建一张活,
                                 // gather 又更慢,遮罩会和 Start 差一截。
                                 ui.busy = None;
+                                if let Some(iid) = reveal_after_busy {
+                                    orca_reveal_seq = orca_reveal_seq.wrapping_add(1);
+                                    pending_orca_reveal = Some(iid);
+                                    let seq = orca_reveal_seq;
+                                    if bw_engine::orca::web_embed_url(Some(&ui.orca_web_url))
+                                        .is_some()
+                                    {
+                                        schedule_orca_flush(
+                                            &tx_back,
+                                            seq,
+                                            ORCA_EMBED_FALLBACK,
+                                        );
+                                    } else {
+                                        let _ = tx_back.send(Req::FlushOrcaReveal { seq });
+                                    }
+                                }
                                 let snap =
                                     vm_build::assemble(&app, &mut ui, &last_gather).await;
                                 let _ = vm_tx.send(snap);
@@ -1200,8 +1240,9 @@ pub fn spawn(deep_link: DeepLink) -> Bridge {
                             refresh_receipt = true;
                         }
                     }
-                    // 纯导航复用上次 gather,不重跑;真命令 / 换项目 / 刷新 /
-                    // FlushOrcaReveal 在 match 前判过 needs_gather,这里重 gather。
+                    // 纯导航 / 状态标签补丁复用上次 gather,不重跑;换项目 /
+                    // 刷新 / 开工合入建活 / FlushOrcaReveal 在 match 前判过
+                    // needs_gather,这里重 gather。
                     if needs_gather {
                         last_gather = vm_build::gather(&app, &mut ui).await;
                     }
@@ -1304,6 +1345,16 @@ async fn register_orca_repo(app: &App, ui: &mut vm_build::UiState, pid: ProjectI
     if bw_engine::orca::ensure_repo(&rt, &ws).await.is_ok() {
         ui.orca_repos_ready.insert(pid);
     }
+}
+
+/// 写远端成功后,从回执里取出「哪张活到了哪一态」。没有这类回执 = 不是状态补丁。
+fn status_patch_of(events: &[Event]) -> Option<(IssueId, IssueStatus, bool)> {
+    events.iter().find_map(|e| match e {
+        Event::IssueTransitioned { id, to, settled } => Some((*id, *to, *settled)),
+        Event::IssueBlocked { id } => Some((*id, IssueStatus::Blocked, false)),
+        Event::IssueCancelled { id } => Some((*id, IssueStatus::Cancelled, false)),
+        _ => None,
+    })
 }
 
 /// 第一屏推完再查 MR。不 await —— 占着内核线程又把切页堵回去。
