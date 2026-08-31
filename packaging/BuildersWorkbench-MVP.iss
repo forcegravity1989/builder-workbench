@@ -7,15 +7,15 @@
 ;
 ; AppId 复用 V3 的 GUID —— 同 GUID + 同目录 = 装 MVP 自动卸 V3（升级替换）。
 ;
-; ── 出包旅程（出包人照做，只吃「clone + cargo + 装过 buddy」必然有的东西）────
+; ── 出包旅程（出包人照做，只吃「clone + cargo + 装过 Workbench」必然有的东西）────
 ; 1) 构建：在仓根 cargo build --release -p app-shell。出 target\release\bw-dev.exe，
 ;    build.rs 已把 app.ico 嵌进 exe（GNU 走 windres + 强制收入 resource.o，MSVC
 ;    走 rc）。可抽验 exe 的 .rsrc 段含 RT_ICON（类型 3），没嵌进去就别出包。
 ; 2) 把 WebView2Loader.dll 拷到稳定路径（hash 子目录不稳定，.iss 不直接取）：
 ;      cp target/release/build/webview2-com-sys-*/out/x64/WebView2Loader.dll target/release/
 ; 3) codehub-cli（可选）：默认从 %USERPROFILE%\bin\codehub-cli.exe 取（装过
-;    buddy 就有）；不在就用 BW_CODEHUB_CLI_SRC 环境变量指一个；都没有则告警
-;    跳过、不阻断（buddy 运行不依赖它进包——出包机该有就有）。
+;    Workbench 就有）；不在就用 BW_CODEHUB_CLI_SRC 环境变量指一个；都没有则告警
+;    跳过、不阻断（Workbench 运行不依赖它进包——出包机该有就有）。
 ; 4) 跑 ISCC：cd packaging && "<InnoSetup>\ISCC.exe" BuildersWorkbench-MVP.iss
 ;    setup.exe 落到 packaging\output\（.gitignore 忽略，不进仓）。
 ;
@@ -84,7 +84,7 @@ Source: "..\target\release\WebView2Loader.dll"; DestDir: "{app}"; Flags: ignorev
 Source: "{#CodehubCliSrc}"; DestDir: "{%USERPROFILE}\bin"; Flags: ignoreversion onlyifdoesntexist uninsneveruninstall
 #else
   ; codehub-cli 未找到（找过 BW_CODEHUB_CLI_SRC 与 %USERPROFILE%\bin\codehub-cli.exe），跳过。
-  ; 出包机装过 buddy 默认有；真没有也不阻断打包，buddy 运行不依赖它进包。
+  ; 出包机装过 Workbench 默认有；真没有也不阻断打包，Workbench 运行不依赖它进包。
 #endif
 
 [Icons]
@@ -138,7 +138,7 @@ begin
       '终端里 claude --version 能过即可。安装器认：' #13#13
       '1. ' + ClaudeExePath + #13
       '2. ' + ClaudeCmdPath + #13#13
-      '有 cmd、没有 exe 也能装；buddy 开工会走 cmd.exe /c。', mbError, MB_OK);
+      '有 cmd、没有 exe 也能装；Workbench 开工会走 cmd.exe /c。', mbError, MB_OK);
     Result := False;
   end
   else
@@ -197,6 +197,6 @@ begin
       '数据与资产：D:\builders-workbench\data\（注册表/设置/会话/技能摊）' #13#10
       '工作区：D:\builders-workbench\workspaces\（项目 clone 与 worktree）' #13#10
       '（D 盘不在的机器退回 %APPDATA%\BuildersWorkbench\）' #13#10
-      'codehub-cli：%USERPROFILE%\bin\codehub-cli.exe（卸载 buddy 时不会删它）';
+      'codehub-cli：%USERPROFILE%\bin\codehub-cli.exe（卸载 Workbench 时不会删它）';
   end;
 end;

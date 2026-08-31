@@ -41,7 +41,7 @@ changes/process-metrics/                         本产物链四件(intent/spec/
 4. **【合并 main 时的适配,2026-08-25】**:主干大重构(V3 删除、`standard/` 收敛为 `templates/`、发版正本改 git 标签、铺底瘦身为三件)。三处取舍:①脚本与目录迁入 `standard/templates/`,与既有三份同队;②**放弃 Rust 铺底登记**——main 的铺底表有意不再预铺脚本(「跟会话走」哲学),脚本落进项目的机制与既有三份共用同一个待接缺口,本变更回归零 Rust;③`release-gap.py` 重写为 git 标签口径(与交付判据同源)。
 5. **口径边界**:首过率把「开出后追加提交」一律记返工(BW 流程是干完才开 MR,合理;先开空 PR 再干活的流程不适用,intent-lead 明确跳过负值)。
 
-## 证明(真实读回,本仓 = forcegravity1989/loop-buddy,窗口 2026-07-28 → 08-25)
+## 证明(真实读回,本仓 = forcegravity1989/builder-workbench,窗口 2026-07-28 → 08-25)
 
 ```
 github-review-wait   {"points": [W31:0.7, W32:0.2, W33:0.1, W34:2.1]}(小时)

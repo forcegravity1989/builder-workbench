@@ -1,8 +1,7 @@
 #!/usr/bin/env bash
 # 单文件超限直接拒绝 —— 不再走回 op.rs 2524 行的老路。
 #
-# 只查 V4 那三个 crate(新壳 / V4 内核 / V4 底座),不追溯旧壳:旧壳反正要删,
-# 没必要为将死的代码返工。
+# 只查 Workbench MVP 三 crate(app-shell / bw / bw-engine)。
 # 上限简单粗暴(不排除注释、不排除测试),比「聪明的排除规则」更不容易被绕过。
 set -euo pipefail
 cd "$(dirname "$0")/.."
