@@ -81,7 +81,9 @@ pub enum Req {
     OrcaEmbedReady,
     /// 嵌页已挂(或兜底超时):把挂着的那张活 `worktree.activate`。
     /// `seq` 对不上就丢掉 —— 人又点了另一张。
-    FlushOrcaReveal { seq: u64 },
+    FlushOrcaReveal {
+        seq: u64,
+    },
     SessionTab(crate::vm::SessionTab),
     /// 知识库屏切页签。代码图与资产两个页签**切过去那一刻现跑一次**
     /// (起 codegraph 子进程、走 `git log`、采仓统计),结果留到下次再点。
@@ -657,7 +659,13 @@ pub fn spawn(deep_link: DeepLink) -> Bridge {
                     match req {
                         Req::Cmd(c) => {
                             let confirming = matches!(c, Command::ConfirmWeekDraft { .. });
-                            let running_issue = matches!(c, Command::RunIssue { .. });
+                            // 计划屏 Start 和总览「开始本周」都会 create 会话,
+                            // 同一块遮罩挡住嵌页。
+                            let running_issue = matches!(
+                                c,
+                                Command::RunIssue { .. }
+                                    | Command::StartWeekPlanning { .. }
+                            );
                             if running_issue {
                                 ui.busy = Some(
                                     "正在开工,Orca 要几秒把会话拉起来。先别点嵌页。"
@@ -789,12 +797,24 @@ pub fn spawn(deep_link: DeepLink) -> Bridge {
                         Req::Open(id) => {
                             if let Some(pid) = id {
                                 if !ui.orca_repos_ready.contains(&pid) {
-                                    ui.busy = Some("正在让 Orca 认得这个仓…".into());
-                                    let snap =
-                                        vm_build::assemble(&app, &mut ui, &last_gather).await;
-                                    let _ = vm_tx.send(snap);
-                                    register_orca_repo(&app, &mut ui, pid).await;
-                                    ui.busy = None;
+                                    match peek_orca_repo(&app, pid).await {
+                                        OrcaPeek::Present => {
+                                            ui.orca_repos_ready.insert(pid);
+                                        }
+                                        OrcaPeek::Missing => {
+                                            ui.busy = Some("正在让 Orca 认得这个仓…".into());
+                                            let snap = vm_build::assemble(
+                                                &app,
+                                                &mut ui,
+                                                &last_gather,
+                                            )
+                                            .await;
+                                            let _ = vm_tx.send(snap);
+                                            register_orca_repo(&app, &mut ui, pid).await;
+                                            ui.busy = None;
+                                        }
+                                        OrcaPeek::Skip => {}
+                                    }
                                 }
                             }
                             ui.open = id;
@@ -1180,8 +1200,41 @@ fn schedule_orca_flush(tx: &mpsc::UnboundedSender<Req>, seq: u64, delay: Duratio
     });
 }
 
-/// 打开项目时把被管仓登记进 Orca。已成功过的项目这个进程里不再打。
-/// Orca 没开不挡进项目。
+/// 打开项目先问 Orca 这仓在不在。正本是 `repo.show`,内存表只加速连点。
+enum OrcaPeek {
+    Present,
+    Missing,
+    Skip,
+}
+
+async fn peek_orca_repo(app: &App, pid: ProjectId) -> OrcaPeek {
+    let Ok(ws) = app.workspace_of(pid).await else {
+        return OrcaPeek::Skip;
+    };
+    if !ws.is_dir() {
+        return OrcaPeek::Skip;
+    }
+    let Ok(rt) = bw_engine::orca::connect() else {
+        return OrcaPeek::Skip;
+    };
+    match bw_engine::orca::repo_present(&rt, &ws).await {
+        Ok(true) => {
+            bw_engine::orca::diag(&format!("open peek present worktree={}", ws.display()));
+            OrcaPeek::Present
+        }
+        Ok(false) => {
+            bw_engine::orca::diag(&format!("open peek missing worktree={}", ws.display()));
+            OrcaPeek::Missing
+        }
+        Err(e) => {
+            bw_engine::orca::diag(&format!("open peek fail:{e}"));
+            OrcaPeek::Skip
+        }
+    }
+}
+
+/// 打开项目时把被管仓登记进 Orca。先 `repo.show`,没有才 `repo.add`。
+/// 已问过且在的项目这个进程里不再打。Orca 没开不挡进项目。
 async fn register_orca_repo(app: &App, ui: &mut vm_build::UiState, pid: ProjectId) {
     if ui.orca_repos_ready.contains(&pid) {
         return;
