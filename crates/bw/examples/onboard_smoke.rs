@@ -63,7 +63,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let (prog_tx, mut prog_rx) = tokio::sync::broadcast::channel::<ProgressLine>(64);
     let mut app = App::new(
         workspaces.clone(),
-        Arc::new(bw_engine::MockInteractiveExecutor::default()),
+        Arc::new(bw_engine::MockInteractiveExecutor),
     )
     .with_asset_root(workspaces.join(".bw-assets"))
     .with_progress(prog_tx);
@@ -202,14 +202,14 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     std::fs::create_dir_all(&mature)?;
     git(&mature, &["init", "-q"]).await;
     std::fs::write(
-        &mature.join("CLAUDE.md"),
+        mature.join("CLAUDE.md"),
         "# 人写了很久的 CLAUDE.md\n别动我\n",
     )?;
-    std::fs::write(&mature.join("AGENTS.md"), "# 人写的 AGENTS.md\n也别动我\n")?;
-    std::fs::write(&mature.join("README.md"), "# 人写的 README\n")?;
+    std::fs::write(mature.join("AGENTS.md"), "# 人写的 AGENTS.md\n也别动我\n")?;
+    std::fs::write(mature.join("README.md"), "# 人写的 README\n")?;
     // 有构建文件,才验得了「怎么建怎么测」那一节是真探出来的还是编的。
     std::fs::write(
-        &mature.join("Cargo.toml"),
+        mature.join("Cargo.toml"),
         "[package]\nname = \"mature\"\nversion = \"0.1.0\"\n",
     )?;
     std::fs::create_dir_all(mature.join("src"))?;

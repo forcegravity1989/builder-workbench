@@ -40,7 +40,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let mut app = App::new(
         old_root.clone(),
-        Arc::new(bw_engine::MockInteractiveExecutor::default()),
+        Arc::new(bw_engine::MockInteractiveExecutor),
     )
     .with_asset_root(assets.clone());
 

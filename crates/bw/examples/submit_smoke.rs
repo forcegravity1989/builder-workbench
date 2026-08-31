@@ -238,7 +238,7 @@ async fn status_of(
     app: &App,
     id: bw::model::IssueId,
 ) -> Result<IssueStatus, Box<dyn std::error::Error>> {
-    Ok(app.issue_or_err(id).await.ok().expect("活没了").status)
+    Ok(app.issue_or_err(id).await.expect("活没了").status)
 }
 
 fn say(step: &str, detail: &str) {
