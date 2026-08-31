@@ -24,7 +24,7 @@ Workbench MVP 由三个 Rust crate 组成,各管一件事、互锁而不互相�
 2. **共享数据只经共用的 ViewModel 模块流转**——两屏都展示同一样东西时类型定义在共用模块里各自引用,**永远不允许一屏直接引用另一屏**;
 3. **每个适配模块的 README 固定三段**——借自哪个项目哪个文件、借了什么、没借什么。以后持续借鉴只在该模块内增量,不散弹。
 
-门禁里还有三条纯文本结构守卫(不编译,CI 照跑):屏与屏不互相引用、单文件 1500 行硬上限、用界面框架 hook 的函数必须是组件(后者是评审抓到真 bug 后补的——普通函数在渲染宏里被直接调用时 hook 落在调用方槽位,切屏类型一变整次渲染崩溃,编译期一点征兆都没有)。
+门禁里还有三条纯文本结构守卫(不编译,CI 照跑):屏与屏不互相引用、单文件 2000 行硬上限、用界面框架 hook 的函数必须是组件(后者是评审抓到真 bug 后补的——普通函数在渲染宏里被直接调用时 hook 落在调用方槽位,切屏类型一变整次渲染崩溃,编译期一点征兆都没有)。
 
 ---
 
@@ -130,9 +130,9 @@ references(`standard/system-prompt/references/*.md`)是「干某类活需要额�
 
 **两条通道别混**:本地 pipe 是 Workbench 对 Orca 桌面下命令(开工、接回),同机读 `orca-runtime.json` 的 token,不需要配对。嵌网页是把本机已开的 Orca web 给人看,要带 `#pairing=` 才能看见桌面那份状态;配对码 Orca 不经 pipe 发,人从桌面「给 web 配对」拿完整 URL,贴进本机 `settings.toml`(设置屏可改;开发期 `BW_ORCA_WEB_URL` 可覆盖)。没喂 URL 则这块如实空着,开工不受影响。
 
-**网页跟随是 Orca 内核,不是 buddy 第二条 RPC。** create 句柄交成功后,带这刀的 Orca 会推配对网页;句柄超时那条路 Orca 不发跟随,buddy 自己再 `worktree.activate`(`notifyClients`)。官方安装包今天没有跟随这刀,开工和桌面切换仍成立,嵌进去的网页可能停在旧位置,人要点侧栏。buddy 不绕 URL / postMessage。源码桌面+浏览器已人眼过;buddy 会话屏 iframe **能亮**已人验。去会话 / Open 先挂嵌页再切树,配对网页能跟上;create 句柄成功那条跟随仍看 Orca 带不带这刀。
+**网页跟随是 Orca 内核,不是 Workbench 第二条 RPC。** create 句柄交成功后,带这刀的 Orca 会推配对网页;句柄超时那条路 Orca 不发跟随,Workbench 自己再 `worktree.activate`(`notifyClients`)。官方安装包今天没有跟随这刀,开工和桌面切换仍成立,嵌进去的网页可能停在旧位置,人要点侧栏。Workbench 不绕 URL / postMessage。源码桌面+浏览器已人眼过;Workbench 会话屏 iframe **能亮**已人验。去会话 / Open 先挂嵌页再切树,配对网页能跟上;create 句柄成功那条跟随仍看 Orca 带不带这刀。
 
-**嵌网页走 iframe**(Orca 和 Open Design 同一条路)。新版 Orca SPA boot 调 `crypto.randomUUID()`,只在 Secure Context 有。buddy 父页是 `http://dioxus.index.html`(dioxus 虚拟主机,非 localhost / 非 https),默认不算 secure,子 iframe 跟着不算 → SPA 一抛、纯白。旧版 Orca 不调这个 API,所以一度能嵌。Windows 主 WebView 用 `with_windows_browser_args` 把该 origin 当 secure 对待(`--unsafely-treat-insecure-origin-as-secure=http://dioxus.index.html`),并关掉 `LocalNetworkAccessChecks`(iframe 嵌 loopback)。不另开顶级 wry 窗、不 `build_as_child`。顶级 `load_url` 仍会把 `http(s)` 扔给系统浏览器,所以嵌页必须是 iframe,不能把主 WebView 导航到 pairing URL。
+**嵌网页走 iframe**(Orca 和 Open Design 同一条路)。新版 Orca SPA boot 调 `crypto.randomUUID()`,只在 Secure Context 有。Workbench 父页是 `http://dioxus.index.html`(dioxus 虚拟主机,非 localhost / 非 https),默认不算 secure,子 iframe 跟着不算 → SPA 一抛、纯白。旧版 Orca 不调这个 API,所以一度能嵌。Windows 主 WebView 用 `with_windows_browser_args` 把该 origin 当 secure 对待(`--unsafely-treat-insecure-origin-as-secure=http://dioxus.index.html`),并关掉 `LocalNetworkAccessChecks`(iframe 嵌 loopback)。不另开顶级 wry 窗、不 `build_as_child`。顶级 `load_url` 仍会把 `http(s)` 扔给系统浏览器,所以嵌页必须是 iframe,不能把主 WebView 导航到 pairing URL。
 
 **新 worktree**:`issue_worktree_path` 只写 `<仓根>/.bw/worktrees/issue-<n>`,分支仍 `bw/issue-<n>`。目录忽略提交(本仓 `.gitignore` 已写;被管仓铺底或开工时补 `.bw/worktrees/`,没有才补,不改人别的 ignore 规则)。**旧平级兄弟不迁、不删**;接回时先看会话记下的路径,没有再看新目录,再没有才看旧兄弟。账本 worktree 这版不动。
 
@@ -140,7 +140,7 @@ references(`standard/system-prompt/references/*.md`)是「干某类活需要额�
 
 - `connect() -> OrcaRuntime` — 读本机 `orca-runtime.json`,token 不落盘
 - `ensure_repo` — 纳入、以及打开项目时先 `repo.show`。Orca 已认这个仓就原样返回,不盖「正在让 Orca 认得」遮罩、不再 `repo.add`;没有才 add。同进程内存表只加速连点,不落盘。不跟开工 / 去会话绑在一起。人不去 Orca 里手导 `workspaces/xx`。计划屏 Start 和总览「开始本周」那几秒盖同一块遮罩挡住嵌页
-- `refresh_worktrees` — 开工在 `git worktree add` 之后、create 之前:再写一次 `worktreeBasePath`(回写 Orca 已有值;误写成 `.bw/worktrees` 的清掉)。Orca 没有「刷新扫描」RPC;`path:` 走 30s `worktreeScanCache`,刚 add 的树立刻 create 会 `selector_not_found`;只有 payload 带 `worktreeBasePath` 的 `repo.update` 才清这级缓存。不把扫描根改成 buddy 目录(Orca 会把那当自己的工作区根、新树开空窗、提示词灌不进你看见的那扇)。不 `repo.add`、不用 Orca 的 `worktree.create`(树已在会和 git 打架)
+- `refresh_worktrees` — 开工在 `git worktree add` 之后、create 之前:再写一次 `worktreeBasePath`(回写 Orca 已有值;误写成 `.bw/worktrees` 的清掉)。Orca 没有「刷新扫描」RPC;`path:` 走 30s `worktreeScanCache`,刚 add 的树立刻 create 会 `selector_not_found`;只有 payload 带 `worktreeBasePath` 的 `repo.update` 才清这级缓存。不把扫描根改成 Workbench 目录(Orca 会把那当自己的工作区根、新树开空窗、提示词灌不进你看见的那扇)。不 `repo.add`、不用 Orca 的 `worktree.create`(树已在会和 git 打架)
 - `reveal_tree` / `activate_worktree` — 去会话和开工成功后跟网页:只 `worktree.activate`(12s)。不 ensure、不 resume
 - `create_session(worktree, agent, prompt, system)` — Orca 预设名是 `claude` / `cursor`(`cursor-agent` 是启动二进制,打出去会被 `Unknown agent preset` 拒)。Claude:`agentArgs` 一条单行(`--append-system-prompt '<压成单行的系统提示词>' '<标题+正文>' --dangerously-skip-permissions --disallowedTools 'Bash(gh pr merge)'`,和 PTY 开工同一套旗标),不走句柄回来之后的 `auto-submit`(Windows 上多行 `agentArgs` 打进 shell 每个换行是 Enter,启动变慢并撞 10 秒句柄超时,窗在词不在)。Cursor:没有系统提示词开关,system 拼进 Orca `prompt` 再 auto-submit。`clientOperationId` 用 Orca 规定形状(13 位毫秒 + `-` + 32 hex,不是 RPC 帧 id),形状不对立刻 `agent_session_operation_invalid` 被拒。Orca 回「等终端句柄超时」:窗已在,先停 5 秒再收 jsonl / 切树,对照日志记下超时与 jsonl 前后。create 成功后只给 Claude 短等 jsonl 收 session id;Cursor 不等;然后切树
 - `web_embed_url(fallback)` — 给会话屏 iframe 的 loopback;先 `BW_ORCA_WEB_URL` 后本机设置。WebView2 部分导航会丢 fragment,把 `#pairing=` 搬成 `?pairing=`(Orca 两边都认,只搬家不 mint code)

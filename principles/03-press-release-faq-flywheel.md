@@ -2,7 +2,7 @@
 
 - 状态：**现在作数**（2026-08-26）
 - 位置：`principles/` —— **整个产品**的逆向工作法正本（不是单次特性的 `changes/`）
-- 相关：`[02-working-backwards.md](02-working-backwards.md)`（方法）、`[../plan/07-product-proposition.md](../plan/07-product-proposition.md)`（**现行实现**的拆解与工程对照）、`[../docs/v4-prototype/design.md](../docs/v4-prototype/design.md)`（V4 设计实况；落后于本文时以本文为主张、以实况为「做到哪」）
+- 相关：[`02-working-backwards.md`](02-working-backwards.md)（方法）、[`../docs/architecture.md`](../docs/architecture.md)（**现行实现**的拆解与工程对照；落后于本文时以本文为主张、以实况为「做到哪」）
 - 读者：对外讲清用「新闻稿 + 外部 FAQ」；立项/技术/代价挑战用「内部 FAQ」；选型约束用「飞轮」
 
 > **30 秒导读**：Builders' Workbench 是帮 **super builder** 用 AI 时代的方式构建产品 / 完成项目的工作台——一站式，高效，高可靠性完成规划、设计、构建、发布、维护、运营。
@@ -303,7 +303,7 @@ Kruchten 4+1：逻辑、过程、开发、物理四视图 + 场景。正本在�
 | ---------------------- | ------------------------------------------- |
 | 本文                     | **产品级**目标主张：PR / FAQ / 飞轮（慢变，拍板才改）          |
 | `02-working-backwards` | **怎么用**逆向工作法做特性；特性 intent 应对齐本文，不得用草稿实现推翻主张 |
-| `plan/07`、V4 设计正本      | **现行实现**做到哪、工程对照；与本文冲突时改代码与实况，不把草稿写成已发布的体验  |
+| [`docs/architecture.md`](../docs/architecture.md) | **现行实现**做到哪、工程对照；与本文冲突时改代码与实况，不把草稿写成已发布的体验  |
 | `changes/<id>/`        | **特性级**新闻稿式 intent / FAQ 式 spec；颗粒度见 01     |
 
 
