@@ -11,10 +11,10 @@
 //! 管道用 `OpenOptions` 加 `share_mode`,不走 unsafe。
 //!
 //! 接口一次定住,不跟着穿刺脚本改形状。create 不回 Claude session id
-//! (Orca 只回自己的 `terminal.handle`),所以 buddy 不编 id —— 没 id 才
+//! (Orca 只回自己的 `terminal.handle`),所以 Workbench 不编 id —— 没 id 才
 //! create;去会话和再开工接回都只切树,不 `ensure`(Orca 的 ensure 是
 //! `--resume` 再开一扇,树上已有的窗切过去就能看见)。
-//! web 配对码 buddy 自己拿不到(Orca 只在桌面 IPC / `orca serve` 里发,
+//! web 配对码 Workbench 自己拿不到(Orca 只在桌面 IPC / `orca serve` 里发,
 //! 没开本地 pipe 的 RPC),由人从 Orca 桌面「给 web 配对」拿到 URL 贴进
 //! 设置屏或 `BW_ORCA_WEB_URL`;本机 pipe 的开工不靠 pairing,靠
 //! runtime.json 的 authToken。
@@ -183,7 +183,7 @@ pub fn connect() -> Result<OrcaRuntime, OrcaError> {
 }
 
 /// Orca `terminal.ensureAgentSession` 的 agent 枚举只收可 resume 的 TUI
-/// (`claude` / `codex` / …)。buddy 会发出去的只有 `claude` 和 `cursor`;
+/// (`claude` / `codex` / …)。Workbench 会发出去的只有 `claude` 和 `cursor`;
 /// **`cursor` 不在名单里**,硬打 ensure 会被 Zod 拒成
 /// `invalid_argument · Invalid input`。Cursor 接回改走 [`activate_worktree`]。
 /// create 的预设名也是 `cursor`,不是二进制名 `cursor-agent`。
@@ -210,7 +210,7 @@ pub async fn repo_present(rt: &OrcaRuntime, repo: &Path) -> Result<bool, OrcaErr
     Ok(require_ok(&shown, "repo.show").is_ok())
 }
 
-/// 让 Orca 认得这份被管仓。人纳入 buddy 时不该再去 Orca 里手加
+/// 让 Orca 认得这份被管仓。人纳入 Workbench 时不该再去 Orca 里手加
 /// `workspaces/xx`。先 `repo.show`,已有则原样返回;没有才 `repo.add`,
 /// 再把外部 worktree 设成可见,`.bw/worktrees/issue-N` 才能被 `path:` 选到。
 pub async fn ensure_repo(rt: &OrcaRuntime, repo: &Path) -> Result<(), OrcaError> {
@@ -252,7 +252,7 @@ pub async fn ensure_repo(rt: &OrcaRuntime, repo: &Path) -> Result<(), OrcaError>
 /// 刚 `git worktree add` 完,Orca 的扫描缓存(30s)还是打开项目时那份,
 /// `path:<新树>` 会 `selector_not_found`。再写一次 `worktreeBasePath` 会刷掉
 /// 扫描(Orca 只在这个字段再写时 invalidate)。**不是 `repo.add`**。
-/// 只回写 Orca 已有的值(我们误写成 `.bw/worktrees` 的清掉),不把扫描根改成 buddy 目录。
+/// 只回写 Orca 已有的值(我们误写成 `.bw/worktrees` 的清掉),不把扫描根改成 Workbench 目录。
 pub async fn refresh_worktrees(rt: &OrcaRuntime, repo: &Path) -> Result<(), OrcaError> {
     let shown = call(
         rt,
@@ -266,7 +266,7 @@ pub async fn refresh_worktrees(rt: &OrcaRuntime, repo: &Path) -> Result<(), Orca
         .pointer("/result/repo/worktreeBasePath")
         .and_then(|v| v.as_str())
         .unwrap_or("");
-    // 上一刀误把扫描根写成 buddy 目录;空串经 Orca OptionalString 变 undefined,清掉误写。
+    // 上一刀误把扫描根写成 Workbench 目录;空串经 Orca OptionalString 变 undefined,清掉误写。
     let base = if current == ".bw/worktrees" {
         ""
     } else {
@@ -314,7 +314,7 @@ pub async fn activate_worktree(rt: &OrcaRuntime, worktree: &Path) -> Result<(), 
 }
 
 /// 在 Orca 里给这张活开一场新会话。`prompt` 是用户话(活标题+正文),
-/// `system` 是 buddy 渲染的系统提示词。**调用方不要自己拼 flag** —— 内部按
+/// `system` 是 Workbench 渲染的系统提示词。**调用方不要自己拼 flag** —— 内部按
 /// agent 分流:
 /// - Claude:系统提示词压成单行进 `agentArgs` 的 `--append-system-prompt`
 ///   (必须加引号,否则 Orca 拆 token 后只剩 You);标题+正文也挂在同一条启动
@@ -326,7 +326,7 @@ pub async fn activate_worktree(rt: &OrcaRuntime, worktree: &Path) -> Result<(), 
 /// - Cursor(`cursor` 预设,二进制才是 cursor-agent):没有系统提示词开关,
 ///   把 system 拼在 Orca `prompt` 最前面,再 `auto-submit`。
 ///
-/// web 端会把 focused 改成 background,这是 Orca 行为,buddy 仍传 focused。
+/// web 端会把 focused 改成 background,这是 Orca 行为,Workbench 仍传 focused。
 pub async fn create_session(
     rt: &OrcaRuntime,
     worktree: &Path,
@@ -405,7 +405,7 @@ pub async fn create_session(
 
 /// 给会话屏 iframe 的 loopback。**不依赖 `connect()`** —— 人把安装版
 /// 「给 web 配对」的完整 URL 贴进设置屏(存本机 `settings.toml`),或开发期
-/// 塞 `BW_ORCA_WEB_URL` 覆盖;启动 buddy 后原样打开。**先 env 后 `fallback`**
+/// 塞 `BW_ORCA_WEB_URL` 覆盖;启动 Workbench 后原样打开。**先 env 后 `fallback`**
 /// (fallback 是壳从本机设置读出来喂进来的),都只过 `looks_loopback_http`,
 /// 不拼会话深链、不 postMessage。没设 / 不是 loopback → `None`。pipe 开工
 /// 不读这个。**只认一份**(env 或设置),不在壳和这里各开一条嵌页。
@@ -875,22 +875,25 @@ mod tests {
 
     #[test]
     fn cursor_preset_splices_system_into_prompt() {
-        let (prompt, args) = split_prompt_and_args("cursor", "do the work", "You are buddy.");
-        assert_eq!(prompt, "You are buddy.\n\ndo the work");
+        let (prompt, args) = split_prompt_and_args("cursor", "do the work", "You are Workbench.");
+        assert_eq!(prompt, "You are Workbench.\n\ndo the work");
         assert!(args.is_empty());
     }
 
     #[test]
     fn claude_puts_system_and_body_on_one_line_startup() {
-        let (prompt, args) =
-            split_prompt_and_args("claude", "#1 title\n\nbody line", "You are buddy.\nRule 1.");
+        let (prompt, args) = split_prompt_and_args(
+            "claude",
+            "#1 title\n\nbody line",
+            "You are Workbench.\nRule 1.",
+        );
         assert!(
             prompt.is_empty(),
             "Claude 不走 Orca auto-submit,避免和启动命令重复"
         );
         assert!(!args.contains('\n'));
         assert!(args.contains("--append-system-prompt"));
-        assert!(args.contains("You are buddy."));
+        assert!(args.contains("You are Workbench."));
         assert!(args.contains("#1 title"));
         assert!(args.contains("body line"));
         assert!(args.contains("--dangerously-skip-permissions"));
@@ -900,7 +903,7 @@ mod tests {
 
     #[test]
     fn text_stats_count_newlines_and_preview_strips_breaks() {
-        let (chars, bytes, nl) = super::text_stats("你是\nbuddy");
+        let (chars, bytes, nl) = super::text_stats("你是\nWorkbench");
         assert_eq!(nl, 1);
         assert!(chars > 0 && bytes > 0);
         assert_eq!(super::preview("a\nb\rc", 8), "a\\nb\\rc");

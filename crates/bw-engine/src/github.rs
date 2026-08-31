@@ -81,7 +81,7 @@ pub async fn probe_repo(owner_repo: &str) -> Result<String, GithubError> {
     Ok(format!("{name} · {vis} · 最近推送 {pushed}"))
 }
 
-// ─────────────── P1 · 存量项目接仓 (loop-buddy↔aihot 接线 spec) ───────────────
+// ─────────────── P1 · 存量项目接仓 ───────────────
 //
 // `Command::AttachRepo` 给「绑定本地目录」建的项目补上 GitHub 远端。这里只管
 // 本地 `origin` 这一侧的真实读写;探活(`probe_repo`)、写 `remote_path`、
@@ -191,13 +191,12 @@ impl PrOpened {
 
 /// 在**已经推上去的分支**上开一个 PR —— `gh pr create` 就这一处实现。
 ///
-/// 三个调用方各自准备分支的方式不同([`open_pr`] 走 `stage_commit_push`、
-/// [`open_project_init_pr`] 先 checkout 再提交、V4 的规范铺底自己在 worktree
-/// 里只提交点名的那几个文件),但「开 PR」这一步是同一段代码,所以只留一份。
+/// 唯一调用方是规范铺底:它在自己的 worktree 里只提交点名的那几个文件、推
+/// 分支,再调这里开 PR。
 ///
 /// `body` 由调用方给:带不带 `Closes #<n>` 是调用方的决定 —— **不能默认带**。
-/// V4 的活是本机号,和远端 issue 号没有对应关系,拼一句 `Closes #3` 会去关掉
-/// 那个仓里毫不相干的第 3 号 issue。
+/// Workbench 的活是本机号,和远端 issue 号没有对应关系,拼一句 `Closes #3` 会
+/// 去关掉那个仓里毫不相干的第 3 号 issue。
 ///
 /// gh 从 `workspace` 的 origin 远端推断目标仓与默认基线分支。
 pub async fn create_pr_on_branch(
@@ -522,7 +521,7 @@ pub async fn fetch_project_toml(
         // **分支不存在也是 404**,但它和「这个仓里没有这份文件」是两件事:
         // 前者是「没查成」(多半是默认分支不叫 main),后者才是「没接管过」。
         // 一起当成 Ok(None) 的话,一个默认分支叫 master 的仓会被报成
-        // 「还没被 buddy 接管过」,人照着填一遍就会盖掉仓里真正的名片。
+        // 「还没被 Workbench 接管过」,人照着填一遍就会盖掉仓里真正的名片。
         if lower.contains("no commit found for the ref") {
             return Err(GithubError::Command(err));
         }

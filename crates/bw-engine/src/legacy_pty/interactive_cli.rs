@@ -1,7 +1,7 @@
 //! Interactive CLI engine (V1 Issue 2 Phase 1, option (c)).
 //!
 //! Launches a TUI agent (claude CLI) in an interactive terminal session,
-//! pre-loaded with a skill body (as the first user message) and a buddy
+//! pre-loaded with a skill body (as the first user message) and a Workbench
 //! system prompt (static `system-prompt.md` + dynamic project context).
 //! One skill = one interactive session — no phase splitting, no
 //! adversarial loop.
@@ -59,7 +59,7 @@ pub enum PromptInjectionMode {
 // ─── TuiAgentConfig (declarative CLI table) ──────────────────
 
 /// Declarative config for a TUI agent CLI. The static table names the
-/// agents buddy can launch interactively; `supported` gates whether
+/// agents Workbench can launch interactively; `supported` gates whether
 /// [`build_startup_plan`] will produce a plan or error honestly.
 #[derive(Clone, Debug)]
 pub struct TuiAgentConfig {
@@ -137,7 +137,7 @@ pub struct LaunchPlan {
     pub cwd: PathBuf,
     /// V1 Issue2 W2: whether `run_skill_pty` should submit the
     /// positional prompt after the TUI loads. claude interactive's
-    /// positional argv doesn't auto-submit in buddy's GLM-gateway environment
+    /// positional argv doesn't auto-submit in Workbench's GLM-gateway environment
     /// (the TUI starts and waits for Enter). `true` on first run (the startup
     /// plan has a positional skill body) → `run_skill_pty` sends `\r` after a
     /// brief ready-wait. `false` on resume (no positional — the session
@@ -147,7 +147,7 @@ pub struct LaunchPlan {
 
 /// 宿主会话注入的变量,**按前缀剥,不按名字列**。
 ///
-/// 从 buddy 自己被一个 Claude Code 会话启动时(开发期与试点期就是这样),宿主
+/// 从 Workbench 自己被一个 Claude Code 会话启动时(开发期与试点期就是这样),宿主
 /// 会往环境里塞一大批 `CLAUDE…` 打头的变量。这里原本列了固定的四个名字,而实测
 /// 宿主注入了十几个 —— 漏掉的 `CLAUDE_CODE_MESSAGING_SOCKET` /
 /// `CLAUDE_CODE_MESSAGING_TOKEN` / `CLAUDE_CODE_HOST_SESSION_ID` 足以让子
@@ -156,7 +156,7 @@ pub struct LaunchPlan {
 ///
 /// 按名字列的做法保证会随宿主加变量而再次腐烂,所以改成前缀:凡是 `CLAUDE`
 /// 打头的一律不进子进程 —— 它们都是**父会话的身份**,对子进程只有害处。
-/// 真实用户从 Finder 双击启动 buddy 时,这一族一个都不存在,剥了也不损失什么。
+/// 真实用户从 Finder 双击启动 Workbench 时,这一族一个都不存在,剥了也不损失什么。
 const HOST_ENV_PREFIX: &str = "CLAUDE";
 
 /// 人自己配的厂商端点。默认剥(宿主的凭据同样不该漏进子进程),但试点后门
@@ -178,8 +178,8 @@ fn is_spawnable_env_key(key: &str) -> bool {
 /// (它们是宿主会话的身份,漏进子进程一定串台,见 [`HOST_ENV_PREFIX`])。
 ///
 /// **它存在的唯一理由**:本机 `claude` 的登录过期、人一时不方便重登,想先拿
-/// 另一个厂商的端点把旅程跑起来。buddy 的正常姿态是**不管**机器上的 `claude`
-/// 怎么鉴权 —— 那是 CLI 自己该保证的事,buddy 只负责起进程。所以这不是一个
+/// 另一个厂商的端点把旅程跑起来。Workbench 的正常姿态是**不管**机器上的 `claude`
+/// 怎么鉴权 —— 那是 CLI 自己该保证的事,Workbench 只负责起进程。所以这不是一个
 /// 产品功能,不进设置屏、不写进仓、不做界面提示。
 fn keep_anthropic_env() -> bool {
     std::env::var_os("BW_KEEP_ANTHROPIC_ENV").is_some_and(|v| !v.is_empty())
@@ -279,8 +279,8 @@ pub fn build_startup_plan(
     // not a wall: it doesn't cover `codehub-cli mr merge` (the CodeHub
     // equivalent) and a deny list under `--dangerously-skip-permissions` is
     // only as strong as the CLI's own enforcement. 「合并永远是人」的真正
-    // 约束在 buddy 系统提示词(`bw` 的 `agent_system_prompt`)里说清楚,
-    // 且 buddy 侧 Done 入边由状态机守死 —— 别把这两行当成拦得住的保证。
+    // 约束在 Workbench 系统提示词(`bw` 的 `agent_system_prompt`)里说清楚,
+    // 且 Workbench 侧 Done 入边由状态机守死 —— 别把这两行当成拦得住的保证。
     args.push("--disallowedTools".to_string());
     args.push("Bash(gh pr merge)".to_string());
 
@@ -502,7 +502,7 @@ impl InteractiveExecutor for InteractiveCliExecutor {
     /// Flow: read loop drains PTY output → `bytes_tx`; `input_rx` bytes are
     /// written to the PTY, resizes applied; on first run (`plan.submit_prompt`)
     /// a `\r` is sent after a brief ready-wait to submit the positional skill
-    /// body (claude interactive positional argv doesn't auto-submit in buddy's
+    /// body (claude interactive positional argv doesn't auto-submit in Workbench's
     /// GLM-gateway env); child exit → kill (idempotent) → return completed.
     async fn run_skill_pty(
         &self,

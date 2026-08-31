@@ -241,7 +241,7 @@ impl Remote {
                 Ok(github::create_pr_on_branch(workspace, branch, title, body).await?)
             }
             Remote::Codehub { host, path } => Ok(codehub::create_mr_on_branch(
-                host, path, workspace, branch, title, body, None,
+                host, path, workspace, branch, title, body,
             )
             .await?),
             // Mock:不开真 MR。回一个假号,让调用方的那条「MR 已开」流程走得下去;
@@ -271,7 +271,7 @@ impl Remote {
 
     /// V1 Issue2 Phase2a: read back whether an open PR/MR exists for the
     /// issue's `bw/issue-<n>` branch — the InReview detection poller's
-    /// query (读回为证: buddy checks the remote itself, not agent self-report).
+    /// query (读回为证: Workbench checks the remote itself, not agent self-report).
     /// Github: `gh pr list --head <branch> --state open` (delegates to
     /// [`github::open_pr_for_branch`]); codehub: `codehub-cli mr list
     /// --source-branch <branch> --state opened` (delegates to
@@ -404,7 +404,7 @@ impl Remote {
         }
     }
 
-    /// 按状态/标签过滤,读回一张只读的 issue 列表(读回为证: buddy 直接问远端,
+    /// 按状态/标签过滤,读回一张只读的 issue 列表(读回为证: Workbench 直接问远端,
     /// 不靠谁自报)。`filter.state=None` 两态都要;`filter.labels` 取交集。对应
     /// `gh issue list --state --label --json` / `codehub-cli issue list --state
     /// --labels --jq`。无副作用。
