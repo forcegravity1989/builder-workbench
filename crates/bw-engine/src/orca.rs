@@ -20,8 +20,8 @@
 //! runtime.json 的 authToken。
 
 use std::io::{Read, Write};
-use std::path::Path;
-use std::time::{Duration, Instant};
+use std::path::{Path, PathBuf};
+use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
 
 use serde_json::{json, Value};
 
@@ -29,6 +29,8 @@ use serde_json::{json, Value};
 const RPC_TIMEOUT: Duration = Duration::from_secs(45);
 /// 切树不该等 agent 拉起。官方包偶发慢回,12s 内没切过去就报,别空等 45s。
 const ACTIVATE_TIMEOUT: Duration = Duration::from_secs(12);
+/// 句柄超时后先停几秒再收 id / 切树,给渲染进程把 Claude 拉完。
+pub const HANDLE_TIMEOUT_SETTLE: Duration = Duration::from_secs(5);
 
 #[derive(Debug, thiserror::Error)]
 pub enum OrcaError {
@@ -48,9 +50,16 @@ pub enum OrcaError {
     BadFrame(String),
 }
 
+/// `createAgentSession` 的结果。句柄超时窗已经在,调用方要先 settle 再切树。
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum CreateSessionOutcome {
+    Ready,
+    HandleTimeout,
+}
+
 impl OrcaError {
     /// Orca 渲染进程已经建了 tab / 拉起 agent,主进程 10 秒没把句柄交回。
-    /// 回包是失败,活已经起来了 —— 当成功,再切树让网页跟上。
+    /// 回包是失败,活已经起来了 —— 当 HandleTimeout,调用方先 settle 再切树。
     pub fn is_terminal_handle_timeout(&self) -> bool {
         matches!(
             self,
@@ -67,6 +76,52 @@ pub struct OrcaRuntime {
     auth_token: String,
     runtime_id: String,
     pid: Option<i64>,
+}
+
+/// 开工对照日志落哪。默认 `%TEMP%/bw-orca.log`;`BW_ORCA_LOG` 覆盖。
+pub fn diag_log_path() -> PathBuf {
+    std::env::var("BW_ORCA_LOG")
+        .ok()
+        .map(PathBuf::from)
+        .filter(|p| !p.as_os_str().is_empty())
+        .unwrap_or_else(|| std::env::temp_dir().join("bw-orca.log"))
+}
+
+/// 对照日志:stderr + 文件各一行。不写 token / pairing / 提示词正文。
+pub fn diag(msg: &str) {
+    let line = format!("[BW_ORCA] {msg}");
+    eprintln!("{line}");
+    let path = diag_log_path();
+    if let Some(dir) = path.parent() {
+        let _ = std::fs::create_dir_all(dir);
+    }
+    if let Ok(mut f) = std::fs::OpenOptions::new()
+        .create(true)
+        .append(true)
+        .open(&path)
+    {
+        let ms = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .map(|d| d.as_millis())
+            .unwrap_or(0);
+        let _ = writeln!(f, "{ms} {line}");
+    }
+}
+
+fn text_stats(s: &str) -> (usize, usize, usize) {
+    (
+        s.chars().count(),
+        s.len(),
+        s.as_bytes().iter().filter(|&&b| b == b'\n').count(),
+    )
+}
+
+fn preview(s: &str, n: usize) -> String {
+    s.chars()
+        .take(n)
+        .collect::<String>()
+        .replace('\n', "\\n")
+        .replace('\r', "\\r")
 }
 
 impl OrcaRuntime {
@@ -117,12 +172,14 @@ pub fn connect() -> Result<OrcaRuntime, OrcaError> {
         .unwrap_or("")
         .to_string();
     let pid = meta.get("pid").and_then(|v| v.as_i64());
-    Ok(OrcaRuntime {
+    let rt = OrcaRuntime {
         endpoint,
         auth_token,
         runtime_id,
         pid,
-    })
+    };
+    diag(&format!("connect ok · {}", rt.log_tag()));
+    Ok(rt)
 }
 
 /// Orca `terminal.ensureAgentSession` 的 agent 枚举只收可 resume 的 TUI
@@ -140,10 +197,43 @@ pub async fn reveal_tree(rt: &OrcaRuntime, worktree: &Path) -> Result<(), OrcaEr
     activate_worktree(rt, worktree).await
 }
 
+/// Orca 是否已经认这份仓。问 `repo.show`,不落盘。问不成把错交出去,
+/// 调用方自己决定挡不挡进项目。
+pub async fn repo_present(rt: &OrcaRuntime, repo: &Path) -> Result<bool, OrcaError> {
+    let shown = call(
+        rt,
+        "repo.show",
+        json!({ "repo": path_prefixed(repo) }),
+        ACTIVATE_TIMEOUT,
+    )
+    .await?;
+    Ok(require_ok(&shown, "repo.show").is_ok())
+}
+
 /// 让 Orca 认得这份被管仓。人纳入 buddy 时不该再去 Orca 里手加
-/// `workspaces/xx`。已有则原样返回(老用户无感)。随后把外部 worktree 设成
-/// 可见,`.bw/worktrees/issue-N` 才能被 `path:` 选到。
+/// `workspaces/xx`。先 `repo.show`,已有则原样返回;没有才 `repo.add`,
+/// 再把外部 worktree 设成可见,`.bw/worktrees/issue-N` 才能被 `path:` 选到。
 pub async fn ensure_repo(rt: &OrcaRuntime, repo: &Path) -> Result<(), OrcaError> {
+    match repo_present(rt, repo).await {
+        Ok(true) => {
+            diag(&format!("repo present worktree={}", path_prefixed(repo)));
+            return Ok(());
+        }
+        Ok(false) => {
+            diag(&format!(
+                "repo missing, add worktree={}",
+                path_prefixed(repo)
+            ));
+        }
+        Err(e) => {
+            diag(&format!(
+                "repo show fail:{e} · {} · worktree={}",
+                rt.log_tag(),
+                path_prefixed(repo)
+            ));
+            return Err(e);
+        }
+    }
     let path = repo.display().to_string();
     let added = call(
         rt,
@@ -223,40 +313,93 @@ pub async fn activate_worktree(rt: &OrcaRuntime, worktree: &Path) -> Result<(), 
     require_ok(&frame, "worktree.activate")
 }
 
-/// 在 Orca 里给这张活开一场新会话并把首条用户话发出去。`prompt` 是用户话
-/// (活标题+正文),不是系统提示词;`system` 是 buddy 渲染的系统提示词。
-/// `promptDelivery = "auto-submit"`(开工要真发出去;穿刺 draft/submit 都通,
-/// 产品走 submit)。web 端会把 focused 改成 background,这是 Orca 行为,buddy 仍
-/// 传 focused。**调用方不要自己拼 flag** —— 内部按 agent 分流:
-/// - Claude:`agentArgs = --append-system-prompt '<system>'`(必须加引号,否则
-///   Orca 拆 token 后只剩 You 进系统提示词,后半截被当用户话发出 —— 穿刺踩过)。
+/// 在 Orca 里给这张活开一场新会话。`prompt` 是用户话(活标题+正文),
+/// `system` 是 buddy 渲染的系统提示词。**调用方不要自己拼 flag** —— 内部按
+/// agent 分流:
+/// - Claude:系统提示词压成单行进 `agentArgs` 的 `--append-system-prompt`
+///   (必须加引号,否则 Orca 拆 token 后只剩 You);标题+正文也挂在同一条启动
+///   命令上当位置参数;后面跟上 `--dangerously-skip-permissions` 和
+///   `--disallowedTools 'Bash(gh pr merge)'`(和 PTY `LaunchPlan` 同一套,
+///   不另起通道)。不走句柄回来之后的 `auto-submit` —— Windows 上 Orca
+///   把多行 `agentArgs` 打进 shell,每个换行是 Enter,启动变慢并撞 10 秒句柄
+///   超时,窗在词不在。
 /// - Cursor(`cursor` 预设,二进制才是 cursor-agent):没有系统提示词开关,
-///   把 system 拼在 prompt 最前面。
+///   把 system 拼在 Orca `prompt` 最前面,再 `auto-submit`。
+///
+/// web 端会把 focused 改成 background,这是 Orca 行为,buddy 仍传 focused。
 pub async fn create_session(
     rt: &OrcaRuntime,
     worktree: &Path,
     agent: &str,
     prompt: &str,
     system: &str,
-) -> Result<(), OrcaError> {
+) -> Result<CreateSessionOutcome, OrcaError> {
     let (prompt, agent_args) = split_prompt_and_args(agent, prompt, system);
+    let (p_chars, p_bytes, p_nl) = text_stats(&prompt);
+    let (s_chars, s_bytes, s_nl) = text_stats(system);
+    let (a_chars, a_bytes, a_nl) = text_stats(&agent_args);
+    let orca_prompt = !prompt.is_empty();
+    let system_via = if agent == "cursor" {
+        "prompt"
+    } else {
+        "agentArgs"
+    };
+    diag(&format!(
+        "create begin agent={agent} system_via={system_via} orca_prompt={orca_prompt} \
+         worktree={} prompt_chars={p_chars} prompt_bytes={p_bytes} prompt_nl={p_nl} \
+         system_chars={s_chars} system_bytes={s_bytes} system_nl={s_nl} \
+         agent_args_chars={a_chars} agent_args_bytes={a_bytes} agent_args_nl={a_nl} \
+         agent_args_sent={} yolo={} prompt_preview={} system_preview={} · {}",
+        path_prefixed(worktree),
+        !agent_args.is_empty(),
+        agent_args.contains("--dangerously-skip-permissions"),
+        preview(&prompt, 48),
+        preview(system, 32),
+        rt.log_tag()
+    ));
     let mut params = json!({
         "clientOperationId": client_operation_id(),
         "worktree": path_prefixed(worktree),
         "agent": agent,
-        "prompt": prompt,
-        "promptDelivery": "auto-submit",
         "presentation": "focused",
     });
+    if orca_prompt {
+        params["prompt"] = json!(prompt);
+        params["promptDelivery"] = json!("auto-submit");
+    }
     if !agent_args.is_empty() {
         params["agentArgs"] = json!(agent_args);
     }
-    let frame = call(rt, "terminal.createAgentSession", params, RPC_TIMEOUT).await?;
+    let started = Instant::now();
+    let frame = call(rt, "terminal.createAgentSession", params, RPC_TIMEOUT).await;
+    let elapsed_ms = started.elapsed().as_millis();
+    let frame = match frame {
+        Ok(f) => f,
+        Err(e) => {
+            diag(&format!(
+                "create rpc elapsed_ms={elapsed_ms} verdict=transport_err err={e}"
+            ));
+            return Err(e);
+        }
+    };
     match require_ok(&frame, "terminal.createAgentSession") {
-        Ok(()) => Ok(()),
-        // 渲染进程已经建了 tab,句柄没交回。当成功,调用方再切树。
-        Err(e) if e.is_terminal_handle_timeout() => Ok(()),
-        Err(e) => Err(e),
+        Ok(()) => {
+            diag(&format!("create rpc elapsed_ms={elapsed_ms} verdict=ready"));
+            Ok(CreateSessionOutcome::Ready)
+        }
+        // 渲染进程已经建了 tab,句柄没交回。不立刻切树,调用方先 settle。
+        Err(e) if e.is_terminal_handle_timeout() => {
+            diag(&format!(
+                "create rpc elapsed_ms={elapsed_ms} verdict=handle_timeout brief={e}"
+            ));
+            Ok(CreateSessionOutcome::HandleTimeout)
+        }
+        Err(e) => {
+            diag(&format!(
+                "create rpc elapsed_ms={elapsed_ms} verdict=rpc_error brief={e}"
+            ));
+            Err(e)
+        }
     }
 }
 
@@ -433,7 +576,7 @@ fn looks_session_id(stem: &str) -> bool {
     (32..80).contains(&s.len()) && s.chars().all(|c| c.is_ascii_hexdigit() || c == '-')
 }
 
-/// 按 agent 分流:返回 (真正发出去的 prompt, agentArgs 字符串)。
+/// 按 agent 分流:返回 (Orca `prompt` 字段, `agentArgs` 字符串)。
 fn split_prompt_and_args(agent: &str, prompt: &str, system: &str) -> (String, String) {
     if agent == "cursor" {
         // Cursor 没有系统提示词开关 —— 把 system 拼在 prompt 最前面。
@@ -444,15 +587,34 @@ fn split_prompt_and_args(agent: &str, prompt: &str, system: &str) -> (String, St
         };
         (combined, String::new())
     } else {
-        // Claude(默认):agentArgs = --append-system-prompt '<system>'。
-        // 必须 shell 加引号,否则 Orca 拆 token 后只剩 You 进系统提示词。
-        let agent_args = if system.is_empty() {
-            String::new()
-        } else {
-            format!("--append-system-prompt {}", shell_quote_single(system))
-        };
-        (prompt.to_string(), agent_args)
+        // Claude:启动命令一条单行。系统提示词 `--append-system-prompt`,
+        // 标题+正文当位置参数。必须 shell 加引号,否则 Orca 拆 token 后只剩 You。
+        // 裸换行压成空格:Orca 在 Windows 上把 agentArgs 打进 shell,换行=Enter。
+        // 权限旗标和 PTY `build_startup_plan` 同一套,不另拼 LaunchPlan。
+        let system = flatten_for_argv(system);
+        let prompt = flatten_for_argv(prompt);
+        let mut parts = Vec::new();
+        if !system.is_empty() {
+            parts.push(format!(
+                "--append-system-prompt {}",
+                shell_quote_single(&system)
+            ));
+        }
+        if !prompt.is_empty() {
+            parts.push(shell_quote_single(&prompt));
+        }
+        parts.push("--dangerously-skip-permissions".into());
+        parts.push(format!(
+            "--disallowedTools {}",
+            shell_quote_single("Bash(gh pr merge)")
+        ));
+        (String::new(), parts.join(" "))
     }
+}
+
+/// 启动命令不能带裸换行(Windows shell 里就是 Enter)。空白压成单空格,语义不变。
+fn flatten_for_argv(s: &str) -> String {
+    s.split_whitespace().collect::<Vec<_>>().join(" ")
 }
 
 /// 把一个值用单引号包起来给 Orca 的 shell 拆 token 用。Windows 用 PowerShell
@@ -716,9 +878,32 @@ mod tests {
         let (prompt, args) = split_prompt_and_args("cursor", "do the work", "You are buddy.");
         assert_eq!(prompt, "You are buddy.\n\ndo the work");
         assert!(args.is_empty());
-        let (p2, a2) = split_prompt_and_args("claude", "do the work", "You are buddy.");
-        assert_eq!(p2, "do the work");
-        assert!(a2.contains("--append-system-prompt"));
+    }
+
+    #[test]
+    fn claude_puts_system_and_body_on_one_line_startup() {
+        let (prompt, args) =
+            split_prompt_and_args("claude", "#1 title\n\nbody line", "You are buddy.\nRule 1.");
+        assert!(
+            prompt.is_empty(),
+            "Claude 不走 Orca auto-submit,避免和启动命令重复"
+        );
+        assert!(!args.contains('\n'));
+        assert!(args.contains("--append-system-prompt"));
+        assert!(args.contains("You are buddy."));
+        assert!(args.contains("#1 title"));
+        assert!(args.contains("body line"));
+        assert!(args.contains("--dangerously-skip-permissions"));
+        assert!(args.contains("--disallowedTools"));
+        assert!(args.contains("Bash(gh pr merge)"));
+    }
+
+    #[test]
+    fn text_stats_count_newlines_and_preview_strips_breaks() {
+        let (chars, bytes, nl) = super::text_stats("你是\nbuddy");
+        assert_eq!(nl, 1);
+        assert!(chars > 0 && bytes > 0);
+        assert_eq!(super::preview("a\nb\rc", 8), "a\\nb\\rc");
     }
 
     #[test]
