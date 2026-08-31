@@ -54,7 +54,7 @@ pub async fn collect_health_inputs(
     let committed_last_week = counts.get(&last_week).is_some_and(|c| c.commits > 0);
     let merged_last_week = counts.get(&last_week).is_some_and(|c| c.merges > 0);
 
-    // (b) has_metric_reading + any_metric_red:读仓 `.bw/metrics/readings.jsonl`。
+    // (b) has_metric_reading + red_metrics:读仓 `.bw/metrics/readings.jsonl`。
     let readings = read_metric_readings(workspace, week);
     let last_readings = if last_week.is_empty() {
         Vec::new()
@@ -62,7 +62,7 @@ pub async fn collect_health_inputs(
         read_metric_readings(workspace, &last_week)
     };
     let has_metric_reading = !readings.is_empty() || !last_readings.is_empty();
-    let any_metric_red = check_metric_red(workspace, &readings).await;
+    let red_metrics = breached_metrics(workspace, &readings);
 
     // (c) delivered_last_week:上周有合入 或 上周有发版(git 标签日期)。
     let released = git_tag_in_week(workspace, &last_week).await;
@@ -74,74 +74,38 @@ pub async fn collect_health_inputs(
         committed_last_week,
         git_readable,
         has_metric_reading,
-        any_metric_red,
+        red_metrics,
         delivered_last_week: merged_last_week || released,
     }
 }
 
-/// 比对读数与 `.bw/metrics.toml` 的 target。无读数 / 无定义 / 解析不出 → false
-/// (不假装红)。
-async fn check_metric_red(workspace: &Path, readings: &[MetricReading]) -> bool {
+/// 拿本周读数对每条**设了目标**的指标判一次越线,越线的一条一句人话
+/// (「名」现值 X,目标 Y)——红灯的理由行要能第一眼说清是哪条,不给一个
+/// 孤零零的颜色。判读全在 [`crate::derive::target::breach`] 那个纯函数里:
+/// 目标未设、格式认不出、读数解析不出,都是「判不了」——不参与,绝不当成
+/// 越线(此前的实现解析失败时会拿 ±INFINITY 顶上,`≥ 5` 带个空格就误红)。
+fn breached_metrics(workspace: &Path, readings: &[MetricReading]) -> Vec<String> {
     if readings.is_empty() {
-        return false;
+        return Vec::new();
     }
     let Ok(Some(metrics)) = metrics_file::read(workspace) else {
-        return false;
+        return Vec::new();
     };
-    for r in readings {
-        let Some(def) = metrics.all().into_iter().find(|d| d.name == r.name) else {
+    let mut out = Vec::new();
+    for def in metrics.all() {
+        let Some(r) = readings.iter().find(|r| r.name.trim() == def.name.trim()) else {
             continue;
         };
-        if target_violated(&def.target, &r.value) {
-            return true;
+        if crate::derive::target::breach(&def.target, &r.value) == Some(true) {
+            out.push(format!(
+                "「{}」现值 {},目标 {}",
+                def.name,
+                r.value.trim(),
+                def.target.trim()
+            ));
         }
     }
-    false
-}
-
-/// 简单比对 target(如 `≥5` `≤24h`)与读数值。解析不出就当没越线(false)。
-fn target_violated(target: &str, value: &str) -> bool {
-    let target = target.trim();
-    if target.is_empty() {
-        return false;
-    }
-    // 拆运算符和数值。
-    let (op, num_str) = if let Some(s) = target.strip_prefix("≥") {
-        (">=", s)
-    } else if let Some(s) = target.strip_prefix("≤") {
-        ("<=", s)
-    } else if let Some(s) = target.strip_prefix(">") {
-        (">", s)
-    } else if let Some(s) = target.strip_prefix("<") {
-        ("<", s)
-    } else if let Some(s) = target.strip_prefix("=") {
-        ("==", s)
-    } else {
-        return false;
-    };
-    // 去掉单位后缀(h、d、% 等),只比数值。
-    let target_num: f64 = num_str
-        .chars()
-        .take_while(|c| c.is_ascii_digit() || *c == '.')
-        .collect::<String>()
-        .parse()
-        .ok()
-        .unwrap_or(f64::INFINITY);
-    let value_num: f64 = value
-        .chars()
-        .take_while(|c| c.is_ascii_digit() || *c == '.')
-        .collect::<String>()
-        .parse()
-        .ok()
-        .unwrap_or(f64::NEG_INFINITY);
-    match op {
-        ">=" => value_num < target_num,
-        "<=" => value_num > target_num,
-        ">" => value_num <= target_num,
-        "<" => value_num >= target_num,
-        "==" => (value_num - target_num).abs() > f64::EPSILON,
-        _ => false,
-    }
+    out
 }
 
 /// git 标签日期落在指定周 → true。读不动 = false(不假装发过版)。
