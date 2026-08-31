@@ -45,7 +45,7 @@ BW_OPEN=<项目名> BW_PANEL=overview|plan|session|config|kb ./target/debug/bw-d
 BW_VIEW=onboard|settings ./target/debug/bw-dev   # 顶层屏深链
 cargo run -p bw-engine --example pty_smoke [-- --teardown|-- --abort]  # PTY 地基烟测(不碰 claude/网关)
 cargo test --workspace                                # 本地含壳;CI 同命令加 --exclude app-shell(ubuntu 无 WebKit/GTK)
-# 出包(Windows 安装器,非门禁/非 CI):流程见 packaging/BuildersWorkbench-MVP.iss 头注释,只吃仓内相对路径 + 装过 buddy 的机器
+# 出包(Windows 安装器,非门禁/非 CI):流程见 packaging/BuildersWorkbench-MVP.iss 头注释,只吃仓内相对路径 + 装过 Workbench(旧名 buddy)的机器
 #   cargo build --release -p app-shell                                                    # 出带图标 bw-dev.exe(build.rs 嵌 app.ico)
 #   cp target/release/build/webview2-com-sys-*/out/x64/WebView2Loader.dll target/release/  # dll 落稳定路径(hash 子目录不稳)
 #   cd packaging && "<InnoSetup>\ISCC.exe" BuildersWorkbench-MVP.iss                       # setup.exe 落 packaging\output\(gitignore)
@@ -62,7 +62,7 @@ cargo check -p app-shell          # Workbench MVP 壳编译过
 ./scripts/guard-kernel-ui-free.sh
 ./scripts/guard-no-cross-screen-import.sh   # 屏与屏不互相引用
 ./scripts/guard-screen-hooks.sh             # 用 hook 的函数必须是组件
-./scripts/guard-file-lines.sh               # 单文件 1500 行硬上限(只查 Workbench MVP 三 crate)
+./scripts/guard-file-lines.sh               # 单文件 2000 行硬上限(只查 Workbench MVP 三 crate)
 ./scripts/guard-codegraph-clean.sh           # codegraph.db 不进 feature commit(CI 在 main 发布)
 cargo test --workspace
 ```

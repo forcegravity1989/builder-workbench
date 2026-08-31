@@ -60,7 +60,7 @@ cargo run -p app-shell
 # 二进制名 bw-dev；本地零数据库
 
 # 深链直达某一屏（stderr 出现 [BW_OPEN] = 真的渲染到了）
-BW_OPEN=<项目名> BW_PANEL=overview|plan|session|notify|config|kb ./target/debug/bw-dev
+BW_OPEN=<项目名> BW_PANEL=overview|plan|session|config|kb ./target/debug/bw-dev
 
 # 不开界面：证明内嵌终端 PTY 在本机能跑（不碰 claude / 网关）
 cargo run -p bw-engine --example pty_smoke
@@ -89,7 +89,7 @@ cargo run -p bw-engine --example pty_smoke
 
 | 层           | 职责                                  |
 | ----------- | ----------------------------------- |
-| `app-shell` | 九屏桌面壳（bin `bw-dev`）                 |
+| `app-shell` | 八屏桌面壳（bin `bw-dev`）                 |
 | `bw`        | MVP 内核：仓文件解析、现算推导、Command/Event     |
 | `bw-engine` | 交互式 claude、内嵌终端 PTY、worktree、git、远端 |
 | `standard/` | 推给被管项目的规范正本（`include_str!` 进二进制）    |
