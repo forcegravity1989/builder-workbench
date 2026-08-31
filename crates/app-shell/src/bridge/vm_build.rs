@@ -162,7 +162,8 @@ pub struct UiState {
     pub workbench_cache: Option<WorkbenchCache>,
     /// 长操作遮罩文案。空 = 不挡。
     pub busy: Option<String>,
-    /// 这个进程里已经对 Orca `repo.add` 成功过的项目。再进项目不再登记。
+    /// 这个进程里已经问过 Orca、仓已在的项目。只加速同进程连点,不落盘;
+    /// 正本是 Orca `repo.show`。
     pub orca_repos_ready: std::collections::HashSet<bw::model::ProjectId>,
 }
 
