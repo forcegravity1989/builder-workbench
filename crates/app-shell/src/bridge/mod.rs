@@ -479,7 +479,7 @@ pub fn spawn(deep_link: DeepLink) -> Bridge {
                     focus_skill: String::new(),
                     viewing_week: bw::isoweek::current_week(),
                     viewing_plan: String::new(),
-                    view_all: false,
+                    view_all: true,
                     open_doc: None,
                     note: None,
                     note_seq: 0,
@@ -835,7 +835,8 @@ pub fn spawn(deep_link: DeepLink) -> Bridge {
                                         ui.open = Some(*id);
                                         ui.open_doc = None;
                                         ui.viewing_week = bw::isoweek::current_week();
-                                        ui.view_all = false;
+                                        ui.viewing_plan = String::new();
+                                        ui.view_all = true;
                                         ui.kb_tab = crate::vm::KbTab::default();
                                         ui.kb_codegraph = None;
                                         ui.kb_assets = None;
@@ -947,7 +948,8 @@ pub fn spawn(deep_link: DeepLink) -> Bridge {
                             ui.open = id;
                             ui.open_doc = None;
                             ui.viewing_week = bw::isoweek::current_week();
-                            ui.view_all = false;
+                            ui.viewing_plan = String::new();
+                            ui.view_all = true;
                             // 知识库那两个页签的结果是**上一个项目**的:它的技能
                             // 清单、它的 git 产物、它的发版记录、它的仓统计。留着
                             // 的话换个项目点进去,一屏数字没有一个是这个项目的,
