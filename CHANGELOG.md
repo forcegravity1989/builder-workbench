@@ -10,6 +10,8 @@ post-sync 代码评审收口 4 处:5.10 版本账回正(5.10 实为运作活①�
 
 另:开 `changes/process-hardening/` 产物链(intent/spec/plan/STATUS)——deepseek-harness 考古可借鉴项的固化计划:4 个新 guard(死链/字数预算/门禁自测/冻结件)+「放弃方案:」commit 约定 + standard/ 对标另行立项,六项各带可复算判据与目标值。待意图 gate,未动工。
 
+另:开 `changes/repo-archaeology/` 产物链(intent/spec/prototype-report/plan/STATUS)+ skill 草稿 `.claude/skills/repo-archaeology/`——把 dsh 考古方法固化成可复跑的「仓考古」能力(七维制度化阶梯 0-3,面向内网仓群的 native 缺失分析);原型=本仓真扫样例,与 process-hardening 清单互证。按 02 §6 小特性豁免 spec+原型+skill 草稿一并送评审;待意图 gate,内网首扫未动。
+
 ## 最近 · 2026-08-31
 
 **Builder 设计系统落仓**:Claude Design 项目「builder」的设计系统转成仓内规范资产 `docs/design-system/`(唯一样式表 + 机读 theme.json + 双语 spec + 14 张纯 HTML 示例页 + 参考照片),画布机器件(_ds_bundle.js/support.js/Canvas.dc.html/缩略图/manifest/oxlint 配置)全部剥离,templates/ 留在设计项目。readme→spec 改名避大小写撞名;README 记来源、剥离清单与双向演进剧本(DesignSync 拉回 / /design-sync 回推)。未接线到壳,hifi 仍是九屏视觉正本。

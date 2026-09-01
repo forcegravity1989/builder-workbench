@@ -11,6 +11,8 @@ node_modules/
 !.claude/skills/workbench-start/**
 !.claude/skills/design-system-import/
 !.claude/skills/design-system-import/**
+!.claude/skills/repo-archaeology/
+!.claude/skills/repo-archaeology/**
 
 # Rust
 /target/
