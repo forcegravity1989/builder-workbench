@@ -323,8 +323,12 @@ pub async fn activate_worktree(rt: &OrcaRuntime, worktree: &Path) -> Result<(), 
 ///   不另起通道)。不走句柄回来之后的 `auto-submit` —— Windows 上 Orca
 ///   把多行 `agentArgs` 打进 shell,每个换行是 Enter,启动变慢并撞 10 秒句柄
 ///   超时,窗在词不在。
-/// - Cursor(`cursor` 预设,二进制才是 cursor-agent):没有系统提示词开关,
-///   把 system 拼在 Orca `prompt` 最前面,再 `auto-submit`。
+/// - Cursor(`cursor` 预设,二进制才是 cursor-agent):没有 `--append-system-prompt`。
+///   `agentArgs` 和 Claude 同一套拼法:一条单行,值用 `shell_quote_single`
+///   (`--force --trust '<压成单行的系统提示词>'`)。Orca 的 cwd 已是这棵树,
+///   不再另塞 `--workspace`。标题+正文走 Orca `prompt` + `auto-submit`。
+///   create 前仍写 cursor-agent 认的 `.workspace-trusted`(Orca 预写的 slug
+///   对不上 `.bw` 路径)。
 ///
 /// web 端会把 focused 改成 background,这是 Orca 行为,Workbench 仍传 focused。
 pub async fn create_session(
@@ -334,25 +338,37 @@ pub async fn create_session(
     prompt: &str,
     system: &str,
 ) -> Result<CreateSessionOutcome, OrcaError> {
-    let (prompt, agent_args) = split_prompt_and_args(agent, prompt, system);
+    let (prompt, agent_args) = split_prompt_and_args(agent, prompt, system, worktree);
     let (p_chars, p_bytes, p_nl) = text_stats(&prompt);
     let (s_chars, s_bytes, s_nl) = text_stats(system);
     let (a_chars, a_bytes, a_nl) = text_stats(&agent_args);
     let orca_prompt = !prompt.is_empty();
     let system_via = if agent == "cursor" {
-        "prompt"
+        "agentArgs-positional"
     } else {
         "agentArgs"
     };
+    let yolo = agent_args.contains("--dangerously-skip-permissions")
+        || agent_args.contains("--force")
+        || agent_args.contains("--yolo");
+    let workspace_arg = cursor_workspace_arg(worktree);
+    let cursor_trust = if agent == "cursor" {
+        ensure_cursor_workspace_trusted(worktree)
+    } else {
+        "-".into()
+    };
     diag(&format!(
         "create begin agent={agent} system_via={system_via} orca_prompt={orca_prompt} \
-         worktree={} prompt_chars={p_chars} prompt_bytes={p_bytes} prompt_nl={p_nl} \
+         worktree={} workspace_arg={workspace_arg} cursor_trust={cursor_trust} \
+         prompt_chars={p_chars} \
+         prompt_bytes={p_bytes} prompt_nl={p_nl} \
          system_chars={s_chars} system_bytes={s_bytes} system_nl={s_nl} \
          agent_args_chars={a_chars} agent_args_bytes={a_bytes} agent_args_nl={a_nl} \
-         agent_args_sent={} yolo={} prompt_preview={} system_preview={} · {}",
+         agent_args_sent={} yolo={yolo} agent_cmd={} prompt_preview={} \
+         system_preview={} · {}",
         path_prefixed(worktree),
         !agent_args.is_empty(),
-        agent_args.contains("--dangerously-skip-permissions"),
+        redact_agent_cmd(&agent_args),
         preview(&prompt, 48),
         preview(system, 32),
         rt.log_tag()
@@ -577,15 +593,23 @@ fn looks_session_id(stem: &str) -> bool {
 }
 
 /// 按 agent 分流:返回 (Orca `prompt` 字段, `agentArgs` 字符串)。
-fn split_prompt_and_args(agent: &str, prompt: &str, system: &str) -> (String, String) {
+fn split_prompt_and_args(
+    agent: &str,
+    prompt: &str,
+    system: &str,
+    _worktree: &Path,
+) -> (String, String) {
     if agent == "cursor" {
-        // Cursor 没有系统提示词开关 —— 把 system 拼在 prompt 最前面。
-        let combined = if system.is_empty() {
-            prompt.to_string()
-        } else {
-            format!("{system}\n\n{prompt}")
-        };
-        (combined, String::new())
+        // 和 Claude 同一条路:一条单行交给 Orca,值用 shell_quote_single。
+        // Orca 拆 token 再重引号(穿刺过)。旗标是 --force --trust;
+        // 系统提示词是位置参数。cwd 已是 worktree,不另传 --workspace。
+        // 标题+正文留在 Orca prompt,走 auto-submit。
+        let system = flatten_for_argv(system);
+        let mut parts = vec!["--force".into(), "--trust".into()];
+        if !system.is_empty() {
+            parts.push(shell_quote_single(&system));
+        }
+        (prompt.to_string(), parts.join(" "))
     } else {
         // Claude:启动命令一条单行。系统提示词 `--append-system-prompt`,
         // 标题+正文当位置参数。必须 shell 加引号,否则 Orca 拆 token 后只剩 You。
@@ -651,6 +675,132 @@ fn shell_quote_single(value: &str) -> String {
         out.push('\'');
         out
     }
+}
+
+/// cursor-agent 认的项目目录名:非字母数字一段收成一个 `-`。
+/// `D:\...\bridge\.bw\worktrees\issue-46` →
+/// `D-builders-workbench-workspaces-bridge-bw-worktrees-issue-46`
+fn cursor_agent_project_slug(abs: &str) -> String {
+    let mut out = String::new();
+    let mut dash = false;
+    for c in abs.chars() {
+        if c.is_ascii_alphanumeric() {
+            out.push(c);
+            dash = false;
+        } else if !dash {
+            out.push('-');
+            dash = true;
+        }
+    }
+    out.trim_matches('-').to_string()
+}
+
+/// Orca `markCursorWorkspaceTrusted` 用的目录名:只把 `\ / : * ? " < > |` 收成
+/// `-`,`.` 留下 → `...-bridge-.bw-worktrees-...`。cursor-agent 不认这份。
+fn orca_cursor_project_slug(abs: &str) -> String {
+    let mut out = String::new();
+    let mut dash = false;
+    for c in abs.chars() {
+        if matches!(c, '\\' | '/' | ':' | '*' | '?' | '"' | '<' | '>' | '|') {
+            if !dash {
+                out.push('-');
+                dash = true;
+            }
+        } else {
+            out.push(c);
+            dash = false;
+        }
+    }
+    out.trim_matches('-').to_string()
+}
+
+fn cursor_home() -> Option<PathBuf> {
+    std::env::var("USERPROFILE")
+        .or_else(|_| std::env::var("HOME"))
+        .ok()
+        .filter(|s| !s.is_empty())
+        .map(|h| PathBuf::from(h).join(".cursor"))
+}
+
+/// 开工前写 cursor-agent 会查的 `.workspace-trusted`。Orca 自己也会预写,但
+/// slug 对不上;人点 Trust 之后盘上会出现两份同路径、不同目录名的标记。
+fn ensure_cursor_workspace_trusted(worktree: &Path) -> String {
+    let abs = cursor_workspace_arg(worktree);
+    let Some(home) = cursor_home() else {
+        return "home=missing".into();
+    };
+    let projects = home.join("projects");
+    let slugs = [
+        ("agent", cursor_agent_project_slug(&abs)),
+        ("orca", orca_cursor_project_slug(&abs)),
+    ];
+    let mut parts = Vec::new();
+    for (kind, slug) in slugs {
+        if slug.is_empty() {
+            parts.push(format!("{kind}=empty"));
+            continue;
+        }
+        let dir = projects.join(&slug);
+        let file = dir.join(".workspace-trusted");
+        if file.exists() {
+            parts.push(format!("{kind}={slug}:exists"));
+            continue;
+        }
+        if let Err(e) = std::fs::create_dir_all(&dir) {
+            parts.push(format!("{kind}={slug}:mkdir_err={e}"));
+            continue;
+        }
+        let body = json!({
+            "trustedAt": SystemTime::now()
+                .duration_since(UNIX_EPOCH)
+                .map(|d| d.as_millis())
+                .unwrap_or(0),
+            "workspacePath": abs,
+        });
+        match std::fs::write(&file, format!("{body}\n")) {
+            Ok(()) => parts.push(format!("{kind}={slug}:wrote")),
+            Err(e) => parts.push(format!("{kind}={slug}:write_err={e}")),
+        }
+    }
+    parts.join(" ")
+}
+
+/// `--workspace` 用的绝对路径:能 canonicalize 就用(去掉 Windows `\\?\`),
+/// 斜杠在 Windows 上收成 `\`,和人在终端里贴的一致。
+fn cursor_workspace_arg(worktree: &Path) -> String {
+    let raw = worktree
+        .canonicalize()
+        .ok()
+        .map(|p| p.display().to_string())
+        .unwrap_or_else(|| worktree.display().to_string());
+    let raw = raw
+        .strip_prefix(r"\\?\")
+        .or_else(|| raw.strip_prefix("//?/"))
+        .unwrap_or(&raw);
+    if cfg!(windows) {
+        raw.replace('/', "\\")
+    } else {
+        raw.to_string()
+    }
+}
+
+/// 对照日志用:旗标和 `--workspace` 路径原样留下,最后一段引号里的系统提示词
+/// 只报字数,不写正文。
+fn redact_agent_cmd(args: &str) -> String {
+    if args.is_empty() {
+        return "-".into();
+    }
+    for sep in [" \"", " '"] {
+        if let Some(start) = args.rfind(sep) {
+            let head = &args[..start];
+            let q = sep.chars().last().unwrap();
+            let inner = args[start + 2..]
+                .strip_suffix(q)
+                .unwrap_or(&args[start + 2..]);
+            return format!("{head} {q}<system {} chars>{q}", inner.chars().count());
+        }
+    }
+    args.to_string()
 }
 
 /// 一次本地 pipe RPC。`spawn_blocking` 跑阻塞的 open+读写,外面套 `timeout`
@@ -820,8 +970,9 @@ fn open_duplex(path: &str) -> Option<std::os::unix::net::UnixStream> {
 #[cfg(test)]
 mod tests {
     use super::{
-        agent_supports_ensure, claude_project_slug, client_operation_id, looks_session_id,
-        pairing_as_query, split_prompt_and_args, OrcaError,
+        agent_supports_ensure, claude_project_slug, client_operation_id, cursor_agent_project_slug,
+        looks_session_id, orca_cursor_project_slug, pairing_as_query, split_prompt_and_args,
+        OrcaError,
     };
     use std::path::Path;
 
@@ -867,6 +1018,18 @@ mod tests {
     }
 
     #[test]
+    fn cursor_trust_slug_drops_dot_in_bw_orca_keeps_it() {
+        let p = r"D:\builders-workbench\workspaces\bridge\.bw\worktrees\issue-46";
+        assert_eq!(
+            cursor_agent_project_slug(p),
+            "D-builders-workbench-workspaces-bridge-bw-worktrees-issue-46"
+        );
+        assert_eq!(
+            orca_cursor_project_slug(p),
+            "D-builders-workbench-workspaces-bridge-.bw-worktrees-issue-46"
+        );
+    }
+
     fn cursor_agent_cannot_ensure_claude_can() {
         assert!(agent_supports_ensure("claude"));
         assert!(!agent_supports_ensure("cursor"));
@@ -874,10 +1037,26 @@ mod tests {
     }
 
     #[test]
-    fn cursor_preset_splices_system_into_prompt() {
-        let (prompt, args) = split_prompt_and_args("cursor", "do the work", "You are Workbench.");
-        assert_eq!(prompt, "You are Workbench.\n\ndo the work");
-        assert!(args.is_empty());
+    fn cursor_force_trust_system_as_positional_body_stays_on_prompt() {
+        let tree = Path::new(r"D:\builders-workbench\workspaces\bridge\.bw\worktrees\issue-44");
+        let (prompt, args) = split_prompt_and_args(
+            "cursor",
+            "#1 title\n\nbody line",
+            "You are Workbench.\nRule 1.",
+            tree,
+        );
+        assert_eq!(prompt, "#1 title\n\nbody line");
+        assert!(
+            args.starts_with("--force --trust '"),
+            "和 Claude 同一套单引号: {args}"
+        );
+        assert!(!args.contains("--workspace"));
+        assert!(!args.contains('\n'));
+        assert!(args.contains("You are Workbench."));
+        assert!(args.contains("Rule 1."));
+        assert!(!args.contains("#1 title"));
+        assert!(!args.contains("--append-system-prompt"));
+        assert!(!args.contains("--dangerously-skip-permissions"));
     }
 
     #[test]
@@ -886,6 +1065,7 @@ mod tests {
             "claude",
             "#1 title\n\nbody line",
             "You are Workbench.\nRule 1.",
+            Path::new("/tmp/unused"),
         );
         assert!(
             prompt.is_empty(),

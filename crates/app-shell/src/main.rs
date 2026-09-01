@@ -21,7 +21,7 @@ mod screens;
 mod theme;
 mod vm;
 
-use bridge::{Bridge, DeepLink, Panel, Req, TopView};
+use bridge::{Bridge, ChromeBusy, DeepLink, Panel, Req, TopView};
 use dioxus::prelude::*;
 
 fn main() {
@@ -85,6 +85,7 @@ fn Root() -> Element {
     let mut vm = use_signal(vm::Vm::default);
     let nav = use_context_provider(move || bridge::PanelNav(Signal::new(initial_panel)));
     use_context_provider(|| bridge::GuideNav(Signal::new(None)));
+    let chrome_busy = use_context_provider(|| ChromeBusy(Signal::new(None)));
     let mut panel = nav.0;
     let mut top_view = use_signal(move || initial_view);
 
@@ -118,6 +119,19 @@ fn Root() -> Element {
             top_view.set(None);
         }
         last_open.set(now);
+    });
+
+    // 点开工先立的遮罩,等内核 Vm.busy 接上;内核撤了也跟着撤。
+    let mut prev_kernel_busy = use_signal(|| false);
+    use_effect(move || {
+        let now = vm.read().busy.clone();
+        let had = *prev_kernel_busy.peek();
+        if let Some(msg) = now.clone() {
+            chrome_busy.set(msg);
+        } else if had {
+            chrome_busy.clear();
+        }
+        prev_kernel_busy.set(now.is_some());
     });
 
     let v = vm.read().clone();
@@ -213,7 +227,10 @@ fn Root() -> Element {
                 }
             }
             chrome::GuideDrawer {}
-            if let Some(msg) = v.busy.as_deref() {
+            if let Some(msg) = {
+                let chrome_msg = chrome_busy.get();
+                v.busy.clone().or(chrome_msg)
+            } {
                 div { class: "busy-mask",
                     div { class: "busy-card",
                         div { class: "busy-spin" }

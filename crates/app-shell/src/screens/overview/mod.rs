@@ -6,7 +6,7 @@
 //! `.bw/metrics/readings.jsonl`,发版记录来自 git 标签 + 远端 Release。**没有读数就说
 //! 无数据,不显示 0**。
 
-use crate::bridge::{Bridge, Panel, PanelNav, Req};
+use crate::bridge::{Bridge, ChromeBusy, Panel, PanelNav, Req, STARTING_SESSION};
 use crate::chrome::light_dot;
 use crate::vm::{MetricCardVm, ProjectVm};
 use bw::command::{Command, ProjectIntent};
@@ -17,6 +17,7 @@ use dioxus::prelude::*;
 pub fn View(p: ProjectVm, bridge: Bridge) -> Element {
     // 名片是不是正在编辑。草稿含名片 + 在研版本 + 项目群,纯本机,没确认前不发命令。
     let nav = use_context::<PanelNav>();
+    let start_busy = use_context::<ChromeBusy>();
     let editing = use_signal(|| false);
     let draft = use_signal(CardDraft::default);
 
@@ -25,7 +26,7 @@ pub fn View(p: ProjectVm, bridge: Bridge) -> Element {
             // 本周还没有运作活①才给「开始本周」。做完(含已完成)不再冒出来。
             // 还开着时只指路去会话屏,再点一次会重建一张同名活。
             if !p.week_started {
-                {start_banner(&p, &bridge, nav)}
+                {start_banner(&p, &bridge, nav, start_busy)}
             } else if let Some(st) = p.ops1_status.clone() {
                 {running_banner(st, nav)}
             }
@@ -43,7 +44,7 @@ pub fn View(p: ProjectVm, bridge: Bridge) -> Element {
     }
 }
 
-fn start_banner(p: &ProjectVm, bridge: &Bridge, nav: PanelNav) -> Element {
+fn start_banner(p: &ProjectVm, bridge: &Bridge, nav: PanelNav, busy: ChromeBusy) -> Element {
     let b = bridge.clone();
     let (pid, week) = (p.id, p.current_week.clone());
     rsx! {
@@ -52,6 +53,8 @@ fn start_banner(p: &ProjectVm, bridge: &Bridge, nav: PanelNav) -> Element {
             button {
                 class: "btn btn-primary btn-sm",
                 onclick: move |_| {
+                    // 先立遮罩再切会话:iframe 一挂就是原生层,后到的 HTML 遮罩盖不住。
+                    busy.set(STARTING_SESSION);
                     b.cmd(Command::StartWeekPlanning {
                         project_id: pid,
                         week: week.clone(),

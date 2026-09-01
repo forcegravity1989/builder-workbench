@@ -53,7 +53,7 @@ body 自足;workflow 入口 body 是 SOP 链 + 指向 `../vendor/` 库子技能�
 `standard/VERSION` 抬一档 + 这里记一行。项目侧 `.bw/managed.toml` 记这几份 SKILL.md
 的指纹,规范对账能测出落后。
 
-- 5.10:运作活①指标单独确认、纳入先看已有 issue、打周标签后挂里程碑;周目标整段展示。
+- 5.10:独立评审——评审剧本 `mr-review` 入库(见 `changes/reviewer-agent/`);github CI 自动评审 workflow(`.github/workflows/claude-code-review.yml`)落仓。
 
 ## 三条共同的规矩
 

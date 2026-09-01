@@ -2,7 +2,7 @@
 //! 十条里从当前状态能走到的;选了走和看板拖拽同一条命令。底栏只留 Start /
 //! Open / Complete。Start 确认框建 worktree,业务活可改/补类别后再 RunIssue。
 
-use crate::bridge::{Bridge, Panel, PanelNav, Req};
+use crate::bridge::{Bridge, ChromeBusy, Panel, PanelNav, Req, STARTING_SESSION};
 use crate::vm::{CardItemVm, ProjectVm};
 use bw::command::Command;
 use bw::model::{category_from_key, category_key, IssueId, IssueStatus, StageKind};
@@ -285,6 +285,7 @@ pub fn StartModal(
     bridge: Bridge,
 ) -> Element {
     let nav = use_context::<PanelNav>();
+    let start_busy = use_context::<ChromeBusy>();
     let picked = pick_card(&p, sid);
     let init_cat = picked.as_ref().and_then(|c| {
         StageKind::ALL
@@ -353,6 +354,7 @@ pub fn StartModal(
                                         b_cat.cmd(Command::SetIssueCategory { id, category: cat });
                                     }
                                 }
+                                start_busy.set(STARTING_SESSION);
                                 b_run.cmd(Command::RunIssue { id });
                                 start.set(None);
                                 nav.go(Panel::Session);
