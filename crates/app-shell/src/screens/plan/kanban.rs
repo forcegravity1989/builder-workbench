@@ -403,7 +403,12 @@ fn apply_drop(
         return;
     }
 
-    apply_status_move(card, drop_target_status(col_status, drop_seg), start, pending);
+    apply_status_move(
+        card,
+        drop_target_status(col_status, drop_seg),
+        start,
+        pending,
+    );
 }
 
 fn move_to(card: &CardItemVm, to: IssueStatus) -> PendingMove {

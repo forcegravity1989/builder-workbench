@@ -6,7 +6,17 @@
 
 ## 最近 · 2026-08-31
 
-打开 / 接入项目先问 Orca `repo.show`。仓已在就不盖「正在让 Orca 认得这个仓」遮罩、不再 `repo.add`。`orca_repos_ready` 只是同进程连点加速,不落盘。Orca 没开仍不挡进项目。总览「开始本周」create 会话时盖和计划屏 Start 同一块「正在开工」遮罩,先前只认 `RunIssue`、这条命令漏了。
+Cursor 开工 `agentArgs` 改回和 Claude 同一套:一条单行、值用 `shell_quote_single`(`--force --trust '<系统提示词>'`)。不再为 cmd 另拼双引号 / `--workspace`。create 前仍写 cursor-agent 认的 `.workspace-trusted`。标题+正文仍走 auto-submit。
+
+计划屏拖拽 / 详情改状态:写远端成功后只改内存里这一张卡,不再全量拉 issue 名单。等待时中间转圈「issue 状态切换中」。写失败卡停在原列。开工 / 合入 / 建活 / 刷新仍全量重采。
+
+运作活开工工具读被管仓 `.bw/issue-policy.toml` 的运维行(`category = "ops"`),不再写死 `claude_cli`。workflow 仍按标题推断,不打五阶段类别。配置 Cursor 要改运维那一行。
+
+计划屏 Start / 总览「开始本周」撤遮罩挂上嵌页后,按 Open 同一条等 iframe onload(再短等配对)再 `worktree.activate`。遮罩期间不挂 iframe,开工里那次切树嵌页听不见。
+
+点项目墙进项目:第一屏不再等每张活串行查 MR。名单、周目标、发版、健康、环境条并行拉齐就切页;MR 号后台最多 8 路回填。已完成的活直接查已合入,不再先打一遍 opened。
+
+打开 / 接入项目先问 Orca `repo.show`。仓已在就不盖「正在让 Orca 认得这个仓」遮罩、不再 `repo.add`。`orca_repos_ready` 只是同进程连点加速,不落盘。Orca 没开仍不挡进项目。总览「开始本周」/ 计划屏 Start:点下去先立遮罩再切会话,busy 期间不挂 Orca iframe(嵌页是原生层,后到的 HTML 遮罩盖不住)。遮罩跟开工命令结束就撤,不等后面 gather;「开始本周」仍比 Start 多一段建运作活①。
 
 ## 最近 · 2026-08-29
 
