@@ -32,13 +32,10 @@
 
 ## 怎么演进
 
-**设计侧改了(在 Claude Design 应用里调视觉)→ 拉回仓里:**
-在 Claude Code 会话里用 DesignSync 读项目「builder」,按上面的文件地图与改名对应关系落盘;本机需做过一次 `/design-login` 授权(交互式 claude 会话里跑,一次永久)。拉回后过一遍剥离清单,机器件不进仓。
+拉回(设计侧改了)与回推(仓侧改了)的完整步骤在 skill **`design-system-import`** 里,那是唯一正本——授权怎么拿、分拣怎么判、回推走哪条链,都在那份。本节只记本资产自己的约定:
 
-**仓侧改了(改 token / 组件类 / 规范)→ 三处同步:**
-`styles.css` 是实现正本;token 或约定变了,`theme.json` 与 spec.md/spec.zh.md 同步改——三者不同步就是账错了。要回推设计项目,用 `/design-sync`(增量、按组件,不整包覆盖)。
-
-**规矩:**
-- token 先行:新颜色/间距先进 `styles.css` 的 `:root`(两套配色都要给值),再谈使用。
+- token 先行:新颜色 / 间距先进 `styles.css` 的 `:root`(两套配色都要给值),再谈使用。
+- 三处同步:`styles.css` 是实现正本,token 或约定变了,`theme.json` 与 spec.md / spec.zh.md 一起改。
 - 新组件类先进 spec 的组件对照表、配示例页,再在产品里用。
 - 示例页保持纯 HTML + 一份样式表,无脚本、无构建——这是「查源码即抄」的前提。
+- 各页首行 `@dsCard` 注释保留:设计画布靠它建卡片索引,删了回推就断。
