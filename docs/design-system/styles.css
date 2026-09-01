@@ -1,0 +1,325 @@
+/* Builder — design-system tokens and component classes. Two color systems ship in this one file: Apple (default, on :root) and Claude (on [data-theme="claude"]). Set <html data-theme="claude"> to switch; see spec.md. */
+
+:root {
+  /* ── Apple palette (default) ─────────────────────────────────────────── */
+  --color-bg: #ffffff;
+  --color-surface: #f5f5f7;
+  --color-card: #ffffff;
+  --color-text: #1d1d1f;
+  --color-accent: #0071e3;
+  --color-accent-2: #5856d6;
+
+  /* Tonal ramps — generated in OKLCH on one shared lightness scale, so the
+     same step of any role (in either theme) has the same visual weight. */
+  --color-neutral-100: #f2f3f5;
+  --color-neutral-200: #e6e8ea;
+  --color-neutral-300: #d1d3d5;
+  --color-neutral-400: #b2b4b7;
+  --color-neutral-500: #909295;
+  --color-neutral-600: #6f7274;
+  --color-neutral-700: #535558;
+  --color-neutral-800: #393b3d;
+  --color-neutral-900: #232426;
+
+  --color-accent-100: #edf4fe;
+  --color-accent-200: #dae9fe;
+  --color-accent-300: #b7d5fe;
+  --color-accent-400: #82b7ff;
+  --color-accent-500: #3b91fe;
+  --color-accent-600: #006ddc;
+  --color-accent-700: #0152a8;
+  --color-accent-800: #003877;
+  --color-accent-900: #00224e;
+
+  --color-accent-2-100: #f1f3ff;
+  --color-accent-2-200: #e2e6fe;
+  --color-accent-2-300: #c8cffe;
+  --color-accent-2-400: #a3acff;
+  --color-accent-2-500: #7d83f7;
+  --color-accent-2-600: #5e5eda;
+  --color-accent-2-700: #4544ab;
+  --color-accent-2-800: #2f2d7c;
+  --color-accent-2-900: #1c1c4e;
+
+  /* Semantic status — base fill, soft tint, deep (text on the tint). */
+  --color-success: #34c759; --color-success-soft: #d9f8dc; --color-success-deep: #1d622c;
+  --color-warning: #ff9500; --color-warning-soft: #ffead9; --color-warning-deep: #7c4602;
+  --color-danger: #ff3b30; --color-danger-soft: #fee7e3; --color-danger-deep: #97261e;
+
+  /* ── Shared (both themes) ────────────────────────────────────────────── */
+  --color-divider: color-mix(in srgb, var(--color-text) 12%, transparent);
+
+  /* Han is deliberately unnamed: no listed family covers it, so every
+     platform falls to its per-script system default — PingFang SC on
+     macOS/iOS, Microsoft YaHei on Windows, Noto Sans CJK SC on Android and
+     Linux. Naming those system faces would register them as uploadable web
+     fonts; the unnamed fallback renders the same glyphs. */
+  --font-body: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, "Helvetica Neue", Arial, sans-serif;
+  --font-heading: var(--font-body);
+  --font-heading-weight: 600;
+  --font-mono: ui-monospace, "SF Mono", SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-6: 24px;
+  --space-8: 32px;
+
+  --radius-sm: 6px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+
+  /* Elevation — three levels only: hairline border (default), subtle lift
+     (sm), menu (md), floating (lg). Never invent a fourth. */
+  --shadow-sm: 0 1px 2px color-mix(in srgb, var(--color-neutral-900) 4%, transparent), 0 1px 1px color-mix(in srgb, var(--color-neutral-900) 3%, transparent);
+  --shadow-md: 0 8px 24px color-mix(in srgb, var(--color-neutral-900) 8%, transparent), 0 2px 6px color-mix(in srgb, var(--color-neutral-900) 5%, transparent);
+  --shadow-lg: 0 16px 40px color-mix(in srgb, var(--color-neutral-900) 14%, transparent), 0 3px 10px color-mix(in srgb, var(--color-neutral-900) 8%, transparent);
+}
+
+/* ── Claude palette ──────────────────────────────────────────────────────
+   Warm ivory ground, terracotta accent, slate second voice. Apply
+   data-theme="claude" on <html>, <body> or any subtree. */
+[data-theme="claude"] {
+  --color-bg: #faf9f5;
+  --color-surface: #f0eee6;
+  --color-card: #fefdfa;
+  --color-text: #1f1e1d;
+  --color-accent: #d97757;
+  --color-accent-2: #4c73a5;
+
+  --color-neutral-100: #f6f3ef;
+  --color-neutral-200: #ebe7e1;
+  --color-neutral-300: #d7d2ca;
+  --color-neutral-400: #b8b3ac;
+  --color-neutral-500: #96918a;
+  --color-neutral-600: #75716a;
+  --color-neutral-700: #58554f;
+  --color-neutral-800: #3d3a36;
+  --color-neutral-900: #262421;
+
+  --color-accent-100: #fef0eb;
+  --color-accent-200: #ffe0d7;
+  --color-accent-300: #fec3af;
+  --color-accent-400: #f19b80;
+  --color-accent-500: #d47354;
+  --color-accent-600: #af5233;
+  --color-accent-700: #893a1f;
+  --color-accent-800: #602613;
+  --color-accent-900: #3c180c;
+
+  --color-accent-2-100: #edf4fe;
+  --color-accent-2-200: #dbe9fc;
+  --color-accent-2-300: #bdd5f4;
+  --color-accent-2-400: #96b7e1;
+  --color-accent-2-500: #6c95c9;
+  --color-accent-2-600: #4c73a5;
+  --color-accent-2-700: #355781;
+  --color-accent-2-800: #243c59;
+  --color-accent-2-900: #142539;
+
+  --color-success: #579766; --color-success-soft: #dcf7e1; --color-success-deep: #286037;
+  --color-warning: #ce9042; --color-warning-soft: #feecce; --color-warning-deep: #774a03;
+  --color-danger: #c15f4d; --color-danger-soft: #ffe4df; --color-danger-deep: #883324;
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   Base + components — plain CSS on plain HTML: no JavaScript, no build step.
+   Each class is documented in spec.md and demonstrated in foundations/
+   and components/.
+   ══════════════════════════════════════════════════════════════════════ */
+
+*, *::before, *::after { box-sizing: border-box; }
+body { margin: 0; background: var(--color-bg); color: var(--color-text); font-family: var(--font-body); font-size: 13px; line-height: 1.5; font-weight: 400; letter-spacing: 0.01em; -webkit-font-smoothing: antialiased; }
+h1, h2, h3, h4, h5, h6 { font-family: var(--font-heading); font-weight: var(--font-heading-weight); line-height: 1.25; letter-spacing: -0.014em; margin: 0 0 var(--space-2); }
+h1 { font-size: 28px; letter-spacing: -0.022em; }
+h2 { font-size: 22px; letter-spacing: -0.018em; }
+h3 { font-size: 17px; }
+h4 { font-size: 15px; }
+h5 { font-size: 13px; }
+h6 { font-size: 11px; letter-spacing: 0.06em; text-transform: uppercase; color: color-mix(in srgb, var(--color-text) 55%, transparent); }
+p { margin: 0 0 var(--space-3); }
+a { color: var(--color-accent); text-decoration: none; }
+a:hover { text-decoration: underline; text-underline-offset: 3px; }
+img { display: block; max-width: 100%; }
+figure { margin: 0; }
+figcaption { font-size: 11px; margin-top: var(--space-1); color: color-mix(in srgb, var(--color-text) 55%, transparent); }
+code { font-family: var(--font-mono); font-size: 0.92em; }
+.text-muted { color: color-mix(in srgb, var(--color-text) 55%, transparent); }
+:focus { outline: none; }
+:focus-visible { outline: 2px solid var(--color-accent); outline-offset: 2px; }
+::selection { background: color-mix(in srgb, var(--color-accent) 22%, transparent); }
+
+/* — rules — */
+.hr { height: 1px; border: 0; margin: var(--space-4) 0; background: var(--color-divider); }
+
+/* — buttons — */
+.btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; cursor: pointer; text-decoration: none; font-family: var(--font-body); font-weight: 500; font-size: 13px; line-height: 1; color: var(--color-text); background: transparent; border: 1px solid transparent; height: 28px; padding: 0 var(--space-3); border-radius: var(--radius-sm); }
+.btn svg { display: block; }
+.btn:disabled { opacity: 0.45; cursor: not-allowed; }
+.btn-primary { background: var(--color-accent); border-color: var(--color-accent); color: #fff; }
+.btn-primary:hover { background: var(--color-accent-600); border-color: var(--color-accent-600); }
+.btn-primary:active { background: var(--color-accent-700); border-color: var(--color-accent-700); }
+.btn-secondary { background: var(--color-card); border-color: var(--color-divider); box-shadow: var(--shadow-sm); }
+.btn-secondary:hover { background: var(--color-neutral-100); }
+.btn-secondary:active { background: var(--color-neutral-200); }
+.btn-ghost { color: var(--color-accent); }
+.btn-ghost:hover { background: color-mix(in srgb, var(--color-accent) 9%, transparent); }
+.btn-ghost:active { background: color-mix(in srgb, var(--color-accent) 16%, transparent); }
+.btn-danger { background: var(--color-danger); border-color: var(--color-danger); color: #fff; }
+.btn-danger:hover { background: color-mix(in srgb, var(--color-danger) 84%, var(--color-neutral-900)); }
+.btn-danger:active { background: color-mix(in srgb, var(--color-danger) 70%, var(--color-neutral-900)); }
+.btn-icon { width: 28px; padding: 0; }
+.btn-block { width: 100%; }
+
+/* — tags & status pills — */
+.tag { display: inline-flex; align-items: center; gap: 5px; font-size: 11px; font-weight: 500; line-height: 1; letter-spacing: 0.01em; padding: 4px 8px; border-radius: 999px; }
+.tag-accent { background: var(--color-accent-100); color: var(--color-accent-700); }
+.tag-accent-2 { background: var(--color-accent-2-100); color: var(--color-accent-2-700); }
+.tag-neutral { background: var(--color-neutral-100); color: var(--color-neutral-700); }
+.tag-outline { border: 1px solid var(--color-divider); color: color-mix(in srgb, var(--color-text) 70%, transparent); padding: 3px 8px; }
+.tag-success { background: var(--color-success-soft); color: var(--color-success-deep); }
+.tag-warning { background: var(--color-warning-soft); color: var(--color-warning-deep); }
+.tag-danger { background: var(--color-danger-soft); color: var(--color-danger-deep); }
+
+/* — keyboard keys — */
+.kbd { display: inline-flex; align-items: center; justify-content: center; min-width: 18px; height: 18px; padding: 0 5px; font-family: var(--font-mono); font-size: 10.5px; color: color-mix(in srgb, var(--color-text) 65%, transparent); background: var(--color-neutral-100); border: 1px solid var(--color-divider); border-bottom-width: 2px; border-radius: 4px; }
+
+/* — forms — */
+.field > label { display: block; font-size: 11px; font-weight: 500; margin-bottom: 5px; color: color-mix(in srgb, var(--color-text) 65%, transparent); }
+.input { width: 100%; min-height: 30px; padding: 5px 9px; font: inherit; font-size: 13px; color: var(--color-text); caret-color: var(--color-accent); background: var(--color-card); border: 1px solid var(--color-divider); border-radius: var(--radius-sm); }
+.input::placeholder { color: color-mix(in srgb, var(--color-text) 35%, transparent); }
+.input:hover { border-color: color-mix(in srgb, var(--color-text) 28%, transparent); }
+.input:focus-visible { outline: none; border-color: var(--color-accent); box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-accent) 18%, transparent); }
+textarea.input { min-height: 72px; resize: vertical; }
+.radio { display: inline-flex; align-items: center; gap: 7px; cursor: pointer; font-size: 13px; }
+.radio input, .seg-opt input { position: absolute; opacity: 0; width: 0; height: 0; pointer-events: none; }
+.radio .dot { width: 14px; height: 14px; flex: none; border-radius: 50%; border: 1.5px solid color-mix(in srgb, var(--color-text) 30%, transparent); background: var(--color-card); }
+.radio:hover .dot { border-color: var(--color-accent); }
+.radio input:checked + .dot { border-color: var(--color-accent); background: var(--color-accent); box-shadow: inset 0 0 0 3px var(--color-card); }
+.radio input:focus-visible + .dot { outline: 2px solid var(--color-accent); outline-offset: 2px; }
+.seg { display: inline-flex; gap: 2px; padding: 2px; background: var(--color-neutral-100); border: 1px solid color-mix(in srgb, var(--color-text) 6%, transparent); border-radius: var(--radius-md); }
+.seg-opt { display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; font-size: 12px; font-weight: 500; color: color-mix(in srgb, var(--color-text) 65%, transparent); border-radius: var(--radius-sm); cursor: pointer; }
+.seg-opt:has(input:checked) { background: var(--color-card); color: var(--color-text); box-shadow: var(--shadow-sm); }
+.seg-opt:not(:has(input:checked)):hover { color: var(--color-text); }
+.seg-opt:has(input:focus-visible) { outline: 2px solid var(--color-accent); outline-offset: -2px; }
+
+/* — cards — */
+.card { display: flex; flex-direction: column; gap: var(--space-2); padding: var(--space-4); border-radius: var(--radius-md); background: var(--color-card); border: 1px solid var(--color-divider); }
+.card-kicker { font-size: 10px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--color-accent); }
+.card-title { font-family: var(--font-heading); font-weight: var(--font-heading-weight); font-size: 14px; line-height: 1.3; letter-spacing: -0.01em; }
+.card-body { margin: 0; font-size: 12.5px; color: color-mix(in srgb, var(--color-text) 70%, transparent); flex: 1; }
+.card-meta { display: flex; align-items: center; gap: 6px; font-size: 11px; color: color-mix(in srgb, var(--color-text) 50%, transparent); }
+.elev-sm { box-shadow: var(--shadow-sm); }
+.elev-md { box-shadow: var(--shadow-md); }
+.elev-lg { box-shadow: var(--shadow-lg); }
+
+/* — status — */
+.status { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 500; color: color-mix(in srgb, var(--color-text) 75%, transparent); }
+.status-dot { width: 8px; height: 8px; flex: none; border-radius: 50%; background: var(--status-c, var(--color-neutral-400)); }
+.status-todo { --status-c: var(--color-neutral-400); }
+.status-progress { --status-c: var(--color-warning); }
+.status-review { --status-c: var(--color-accent-2); }
+.status-done { --status-c: var(--color-success); }
+.status-blocked { --status-c: var(--color-danger); }
+
+/* — avatars — */
+.avatar { width: 24px; height: 24px; flex: none; display: inline-flex; align-items: center; justify-content: center; border-radius: 50%; font-size: 10px; font-weight: 600; letter-spacing: 0.02em; color: #fff; background: var(--color-neutral-500); overflow: hidden; }
+.avatar img { width: 100%; height: 100%; object-fit: cover; }
+.avatar-sm { width: 18px; height: 18px; font-size: 8px; }
+.avatar-lg { width: 32px; height: 32px; font-size: 12px; }
+.avatar-agent { border-radius: var(--radius-sm); background: var(--color-accent-2); }
+.avatar-group { display: inline-flex; }
+.avatar-group .avatar { box-shadow: 0 0 0 2px var(--color-bg); }
+.avatar-group .avatar + .avatar { margin-left: -6px; }
+
+/* — navigation (top bar) — */
+.nav { display: flex; align-items: center; gap: var(--space-4); min-height: 44px; padding: 0 var(--space-4); border-bottom: 1px solid var(--color-divider); background: var(--color-bg); }
+.nav-brand { display: inline-flex; align-items: center; gap: 8px; font-family: var(--font-heading); font-weight: var(--font-heading-weight); font-size: 13px; margin-right: auto; }
+.nav a { color: color-mix(in srgb, var(--color-text) 62%, transparent); text-decoration: none; font-size: 12.5px; font-weight: 500; }
+.nav a:hover { color: var(--color-text); }
+.nav a[aria-current='page'] { color: var(--color-text); }
+
+/* — sidebar — */
+.sidebar { width: 220px; flex: none; display: flex; flex-direction: column; padding: var(--space-2); background: var(--color-surface); border-right: 1px solid color-mix(in srgb, var(--color-text) 8%, transparent); }
+.sidebar-section { font-size: 10px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: color-mix(in srgb, var(--color-text) 45%, transparent); padding: var(--space-2) var(--space-2) var(--space-1); margin-top: var(--space-2); }
+.sidebar-item { display: flex; align-items: center; gap: 8px; height: 28px; padding: 0 var(--space-2); border-radius: var(--radius-sm); font-size: 13px; color: color-mix(in srgb, var(--color-text) 80%, transparent); text-decoration: none; cursor: pointer; }
+.sidebar-item svg { flex: none; opacity: 0.75; }
+.sidebar-item:hover { background: color-mix(in srgb, var(--color-text) 6%, transparent); text-decoration: none; color: var(--color-text); }
+.sidebar-item:active { background: color-mix(in srgb, var(--color-text) 10%, transparent); }
+.sidebar-item[aria-current='page'] { background: color-mix(in srgb, var(--color-text) 8%, transparent); color: var(--color-text); font-weight: 500; }
+.sidebar-item .count { margin-left: auto; font-family: var(--font-mono); font-size: 10.5px; color: color-mix(in srgb, var(--color-text) 45%, transparent); }
+
+/* — tabs — */
+.tabs { display: flex; gap: var(--space-4); border-bottom: 1px solid var(--color-divider); }
+.tab { appearance: none; background: none; border: 0; font: inherit; font-size: 13px; font-weight: 500; color: color-mix(in srgb, var(--color-text) 55%, transparent); padding: var(--space-2) 2px 9px; margin-bottom: -1px; border-bottom: 2px solid transparent; cursor: pointer; }
+.tab:hover { color: var(--color-text); }
+.tab[aria-selected='true'] { color: var(--color-text); border-bottom-color: var(--color-accent); }
+
+/* — list rows — */
+.list { display: flex; flex-direction: column; }
+.list-row { display: flex; align-items: center; gap: var(--space-3); min-height: 36px; padding: 0 var(--space-3); font-size: 13px; color: var(--color-text); text-decoration: none; border-bottom: 1px solid color-mix(in srgb, var(--color-text) 6%, transparent); }
+.list-row:hover { background: color-mix(in srgb, var(--color-text) 3.5%, transparent); text-decoration: none; }
+.row-id { flex: none; width: 52px; font-family: var(--font-mono); font-size: 11px; color: color-mix(in srgb, var(--color-text) 45%, transparent); }
+.row-title { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-weight: 500; }
+.row-meta { display: flex; align-items: center; gap: var(--space-2); flex: none; font-size: 11px; color: color-mix(in srgb, var(--color-text) 50%, transparent); }
+
+/* — board (kanban) — */
+.board { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(220px, 1fr); gap: var(--space-3); align-items: start; }
+.board-col { display: flex; flex-direction: column; gap: var(--space-2); padding: var(--space-2); border-radius: var(--radius-md); background: var(--color-surface); }
+.board-col-head { display: flex; align-items: center; gap: 6px; padding: 2px var(--space-1); font-size: 12px; font-weight: 500; color: color-mix(in srgb, var(--color-text) 65%, transparent); }
+.board-col-head .count { margin-left: auto; font-family: var(--font-mono); font-size: 10.5px; color: color-mix(in srgb, var(--color-text) 40%, transparent); }
+
+/* — tables — */
+.table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+.table th { text-align: left; font-size: 10.5px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: color-mix(in srgb, var(--color-text) 55%, transparent); padding: var(--space-2) var(--space-3); border-bottom: 1px solid var(--color-divider); }
+.table td { padding: var(--space-2) var(--space-3); border-bottom: 1px solid color-mix(in srgb, var(--color-text) 6%, transparent); }
+.table tbody tr:hover { background: color-mix(in srgb, var(--color-text) 3.5%, transparent); }
+
+/* — dialog — */
+.dialog-backdrop { position: fixed; inset: 0; display: grid; place-items: center; padding: var(--space-4); background: color-mix(in srgb, var(--color-neutral-900) 40%, transparent); }
+.dialog { width: min(420px, 100%); display: flex; flex-direction: column; gap: var(--space-3); padding: var(--space-6); border-radius: var(--radius-lg); background: var(--color-card); border: 1px solid var(--color-divider); box-shadow: var(--shadow-lg); }
+.dialog-title { font-family: var(--font-heading); font-weight: var(--font-heading-weight); font-size: 15px; letter-spacing: -0.01em; }
+.dialog-body { font-size: 13px; color: color-mix(in srgb, var(--color-text) 70%, transparent); }
+.dialog-actions { display: flex; justify-content: flex-end; gap: var(--space-2); margin-top: var(--space-2); }
+
+/* — command palette — */
+.cmdk { width: min(560px, 100%); display: flex; flex-direction: column; border-radius: var(--radius-lg); background: var(--color-card); border: 1px solid var(--color-divider); box-shadow: var(--shadow-lg); overflow: hidden; }
+.cmdk-input { width: 100%; padding: var(--space-3) var(--space-4); font: inherit; font-size: 14px; color: var(--color-text); caret-color: var(--color-accent); background: transparent; border: 0; border-bottom: 1px solid var(--color-divider); outline: none; }
+.cmdk-input::placeholder { color: color-mix(in srgb, var(--color-text) 35%, transparent); }
+.cmdk-list { max-height: 320px; overflow: auto; padding: var(--space-1); }
+.cmdk-section { font-size: 10px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: color-mix(in srgb, var(--color-text) 40%, transparent); padding: var(--space-2) var(--space-2) var(--space-1); }
+.cmdk-item { display: flex; align-items: center; gap: 10px; height: 36px; padding: 0 var(--space-2); border-radius: var(--radius-sm); font-size: 13px; color: color-mix(in srgb, var(--color-text) 85%, transparent); cursor: pointer; }
+.cmdk-item svg { flex: none; opacity: 0.7; }
+.cmdk-item:hover { background: color-mix(in srgb, var(--color-text) 6%, transparent); color: var(--color-text); }
+.cmdk-item[aria-selected='true'] { background: color-mix(in srgb, var(--color-text) 9%, transparent); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--color-text) 14%, transparent); color: var(--color-text); }
+.cmdk-item .keys { margin-left: auto; display: flex; gap: 3px; }
+
+/* — toast — */
+.toast { display: flex; align-items: flex-start; gap: 10px; width: fit-content; max-width: 360px; padding: 10px var(--space-3); border-radius: var(--radius-md); background: var(--color-neutral-900); color: var(--color-neutral-100); font-size: 12.5px; line-height: 1.45; box-shadow: var(--shadow-lg); }
+.toast svg { flex: none; margin-top: 1px; }
+.toast-title { font-weight: 600; }
+.toast-body { opacity: 0.7; }
+.toast-action { margin-left: var(--space-3); flex: none; align-self: center; font: inherit; font-weight: 600; color: var(--color-accent-400); background: none; border: 0; padding: 0; cursor: pointer; }
+.toast-action:hover { text-decoration: underline; }
+
+/* — imagery: crisp frame, hairline edge — */
+.frame { border-radius: var(--radius-md); border: 1px solid var(--color-divider); overflow: hidden; }
+
+/* ── CJK (中文) layer ────────────────────────────────────────────────────
+   Mixed script works untouched: the stacks set Latin faces first, han falls
+   through to PingFang / YaHei; digits, IDs, code and shortcuts stay Latin
+   mono inside Chinese copy. Declare lang="zh" on <html> or any subtree and
+   these rules re-tune han: headings drop the Latin negative tracking (it
+   makes han glyphs collide), copy gains leading, emphasis becomes weight
+   (han has no italics), and the smallest labels step up to 11px. */
+:lang(zh) { text-autospace: normal; text-spacing-trim: normal; }
+p:lang(zh), li:lang(zh), dd:lang(zh), .card-body:lang(zh), .dialog-body:lang(zh) { line-height: 1.7; letter-spacing: 0.02em; }
+:is(h1, h2, h3, h4, h5, .card-title, .dialog-title, .row-title, .nav-brand, .toast-title):lang(zh) { letter-spacing: 0; }
+h1:lang(zh), h2:lang(zh) { line-height: 1.35; }
+em:lang(zh), i:lang(zh), cite:lang(zh) { font-style: normal; font-weight: 600; }
+:is(h6, .card-kicker, .sidebar-section, .cmdk-section):lang(zh) { font-size: 11px; letter-spacing: 0.1em; }
+.table th:lang(zh) { font-size: 11px; }
+.tag:lang(zh) { font-size: 11.5px; letter-spacing: 0.02em; }
+.avatar:lang(zh) { font-size: 12px; }
+.avatar-sm:lang(zh) { font-size: 10px; }

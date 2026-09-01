@@ -10,6 +10,8 @@ post-sync 代码评审收口 4 处:5.10 版本账回正(5.10 实为运作活①�
 
 ## 最近 · 2026-08-31
 
+**Builder 设计系统落仓**:Claude Design 项目「builder」的设计系统转成仓内规范资产 `docs/design-system/`(唯一样式表 + 机读 theme.json + 双语 spec + 14 张纯 HTML 示例页 + 参考照片),画布机器件(_ds_bundle.js/support.js/Canvas.dc.html/缩略图/manifest/oxlint 配置)全部剥离,templates/ 留在设计项目。readme→spec 改名避大小写撞名;README 记来源、剥离清单与双向演进剧本(DesignSync 拉回 / /design-sync 回推)。未接线到壳,hifi 仍是九屏视觉正本。
+
 Cursor 开工 `agentArgs` 改回和 Claude 同一套:一条单行、值用 `shell_quote_single`(`--force --trust '<系统提示词>'`)。不再为 cmd 另拼双引号 / `--workspace`。create 前仍写 cursor-agent 认的 `.workspace-trusted`。标题+正文仍走 auto-submit。
 
 计划屏拖拽 / 详情改状态:写远端成功后只改内存里这一张卡,不再全量拉 issue 名单。等待时中间转圈「issue 状态切换中」。写失败卡停在原列。开工 / 合入 / 建活 / 刷新仍全量重采。
