@@ -121,6 +121,9 @@ impl App {
     ) -> Result<Vec<Event>> {
         let issue = self.issue_or_err(id).await?;
         let target = week_of.unwrap_or_default();
+        if !target.is_empty() {
+            return Err(AppError::Refused("排期请用版本,不再写周标签".into()));
+        }
         let project = self.project_of(issue.project_id).await?;
         issue_store::set_week(self, &project, id.iid(), &target).await?;
 

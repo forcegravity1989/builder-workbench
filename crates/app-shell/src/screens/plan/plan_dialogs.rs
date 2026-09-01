@@ -116,9 +116,8 @@ pub fn NewIssueDialog(
                             onclick: move |_| {
                                 let t = title.read().trim().to_string();
                                 if t.is_empty() { return; }
-                                // 一张活只属于一个版本。看人起名的版本只带 plan;
-                                // 看周版本只带 week;「全部」两个都空(进待办池)。
-                                // 看版本时 viewing_week 会被拼成本周,绝不能一起发。
+                                // 看某个计划版本只带 plan;看周或全部进待办池。
+                                // 不再给新建活打 bw:week。
                                 let viewing_custom = !p.viewing_plan.is_empty();
                                 b.cmd(Command::CreateIssue {
                                     project_id: pid,
@@ -145,7 +144,7 @@ pub fn NewIssueDialog(
     }
 }
 
-/// 创建版本弹窗。人起名的版本,和每周一出现的周版本是同一类。
+/// 创建版本弹窗。只要 `v0.x`。
 #[component]
 pub fn CreateVersionDialog(
     p: ProjectVm,
@@ -306,7 +305,7 @@ fn check_row(c: &CardItemVm, mut picked: Signal<Vec<IssueId>>) -> Element {
     }
 }
 
-/// 排期弹窗(拖未排期卡到已排期段触发):下拉选未结束周 / 已建版本。
+/// 排期弹窗(拖未排期卡到已排期段触发):只排进已有计划版本,不再写周标签。
 #[component]
 pub fn ScheduleDialog(
     p: ProjectVm,
@@ -320,7 +319,6 @@ pub fn ScheduleDialog(
         .plan_versions
         .first()
         .map(|v| format!("version:{}", v.name))
-        .or_else(|| p.weeks.first().map(|w| format!("week:{}", w.week)))
         .unwrap_or_default();
     let mut sel = use_signal(move || default_sel.clone());
     rsx! {
@@ -328,33 +326,29 @@ pub fn ScheduleDialog(
             div { class: "modal", onclick: move |e| e.stop_propagation(),
                 h3 { "排期" }
                 div { style: "font-size:13px;line-height:1.7;color:var(--ink-2);",
-                    "把「{ps.title}」排进一周或一个版本。一张活只属于一个槽。"
+                    "把「{ps.title}」排进一个版本。一张活只属于一个槽。"
                 }
                 div { class: "formrow",
                     label { class: "label", "排进" }
                     select {
                         class: "select",
                         onchange: move |e| sel.set(e.value()),
-                        for w in p.weeks.iter() {
-                            {let val = format!("week:{}", w.week); rsx! { option { value: "{val}", "{w.week}" } }}
-                        }
                         for v in p.plan_versions.iter() {
                             {let val = format!("version:{}", v.name); rsx! { option { value: "{val}", "{v.name}" } }}
                         }
                     }
                 }
                 div { class: "cfg-readonly-note",
-                    "周打 bw:week:YYYY-Www;人起名的版本打 bw:plan:。新建版本仍用 v0.x。"
+                    "打 bw:plan:。旧周标签只读回显示,排期不再新写。"
                 }
                 div { class: "modal-actions",
                     button { class: "btn btn-secondary", onclick: move |_| schedule.set(None), "取消" }
                     button {
                         class: "btn btn-primary",
+                        disabled: p.plan_versions.is_empty(),
                         onclick: move |_| {
                             let s = sel.read().clone();
-                            if let Some(rest) = s.strip_prefix("week:") {
-                                b.cmd(Command::ScheduleIssue { id, week_of: Some(rest.to_string()) });
-                            } else if let Some(rest) = s.strip_prefix("version:") {
+                            if let Some(rest) = s.strip_prefix("version:") {
                                 b.cmd(Command::ScheduleToPlan { id, plan: rest.to_string() });
                             }
                             schedule.set(None);
@@ -463,13 +457,14 @@ pub fn DeleteVersionDialog(
 ) -> Element {
     let b = bridge.clone();
     let pid = p.id;
-    let default_sel = p
+    let versions: Vec<String> = p
         .plan_versions
-        .first()
+        .iter()
+        .filter(|v| bw::version::is_v0x(&v.name) && !v.released)
         .map(|v| v.name.clone())
-        .unwrap_or_default();
+        .collect();
+    let default_sel = versions.first().cloned().unwrap_or_default();
     let mut sel = use_signal(move || default_sel.clone());
-    let versions: Vec<String> = p.plan_versions.iter().map(|v| v.name.clone()).collect();
     rsx! {
         div { class: "modal-backdrop", onclick: move |_| dialog.set(None),
             div { class: "modal plan-modal", onclick: move |e| e.stop_propagation(),
@@ -496,6 +491,7 @@ pub fn DeleteVersionDialog(
                         button { class: "btn btn-secondary", onclick: move |_| dialog.set(None), "取消" }
                         button {
                             class: "btn btn-danger",
+                            disabled: versions.is_empty(),
                             onclick: move |_| {
                                 let s = sel.read().clone();
                                 b.cmd(Command::DeletePlanVersion {

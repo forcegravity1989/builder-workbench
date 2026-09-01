@@ -164,15 +164,13 @@ pub fn DetailModal(
                                     let v = e.value();
                                     if v == "unscheduled" {
                                         b_sched.cmd(Command::ScheduleIssue { id, week_of: None });
-                                    } else if let Some(w) = v.strip_prefix("week:") {
-                                        b_sched.cmd(Command::ScheduleIssue { id, week_of: Some(w.to_string()) });
                                     } else if let Some(pl) = v.strip_prefix("version:") {
                                         b_sched.cmd(Command::ScheduleToPlan { id, plan: pl.to_string() });
                                     }
                                 },
                                 option { value: "unscheduled", selected: c.week_of.is_empty() && c.plan_version.is_empty(), "未排期" }
-                                for w in p.weeks.iter() {
-                                    {let val = format!("week:{}", w.week); let sel = c.week_of == w.week; rsx! { option { value: "{val}", selected: sel, "{w.week}" } }}
+                                if !c.week_of.is_empty() {
+                                    {let val = format!("week:{}", c.week_of); rsx! { option { value: "{val}", selected: true, "{c.week_of}" } }}
                                 }
                                 for v in p.plan_versions.iter() {
                                     {let val = format!("version:{}", v.name); let sel = c.plan_version == v.name; rsx! { option { value: "{val}", selected: sel, "{v.name}" } }}

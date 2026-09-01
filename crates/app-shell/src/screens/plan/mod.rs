@@ -323,11 +323,11 @@ fn Toolbar(
                     }
                     button {
                         class: "btn btn-sm btn-secondary",
-                        disabled: p.plan_versions.is_empty(),
+                        disabled: !p.plan_versions.iter().any(|v| bw::version::is_v0x(&v.name) && !v.released),
                         onclick: move |_| dialog.set(Some(DialogKind::DeleteVersion)),
                         "删除版本"
                     }
-                } else if !p.viewing_plan.is_empty() {
+                } else if bw::version::is_v0x(&p.viewing_plan) && !released {
                     button {
                         class: "btn btn-sm",
                         disabled: done_ids.is_empty(),

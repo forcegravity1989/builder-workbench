@@ -95,17 +95,15 @@ pub enum Command {
         /// 和 `week_of` 是同一槽位:有 plan 就只打版本,丢掉周。
         plan: String,
     },
-    /// 排期:排进某个周版本,或传空串移回待办池。
+    /// 摘排期:壳侧只传空 `week_of` 把活移回待办池。不再用这条新写周标签。
     ScheduleIssue {
         id: IssueId,
         week_of: Option<String>,
     },
-    /// 排进人起名的版本(`bw:plan:<name>`)。和 `ScheduleIssue` 是同一槽位的
-    /// 两种写法:一张活只属于一个版本。正本走 codehub milestone + 标签。
+    /// 排进计划版本(`bw:plan:<name>`)。一张活只属于一个版本。
     ScheduleToPlan { id: IssueId, plan: String },
-    /// 建一个人起名的版本:建 codehub milestone(title=name,start,due),
-    /// 并给 `included` 每张打 `bw:plan:<name>` 标签、挂到这个里程碑。
-    /// 周版本每周一按周号出现,不用这条建。与发版号 `CutRelease` 不同。
+    /// 建一个 `v0.x` 版本:建 codehub milestone,给 `included` 打 `bw:plan:<name>`。
+    /// 与发版号 `CutRelease` 不同。
     CreatePlanVersion {
         project_id: ProjectId,
         name: String,
