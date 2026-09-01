@@ -95,9 +95,14 @@ pub struct LedgerSummary {
 
 /// 现读现算名片摘要。只认清单里登记过的条目——`project.toml` 与 `metrics.toml`
 /// 从来不进这份清单,名片也就不把它们算进「在管」。
-pub fn summarize(workspace: &Path) -> LedgerSummary {
-    let Ok(Some(file)) = read(workspace) else {
-        return LedgerSummary::default();
+///
+/// **读不动要如实往上抛,不许和「还没有这份清单」揉成一个默认值**:两者在
+/// 界面上是两句完全不同的话——后者说「这个仓还没铺过规范件」,那是个确定的
+/// 断言;清单坏了却说这句就是在瞎说。调用方拿 `Err` 去挂黄条(和隔壁读
+/// `project.toml`、`issue-policy.toml` 同一套做法)。
+pub fn summarize(workspace: &Path) -> Result<Option<LedgerSummary>> {
+    let Some(file) = read(workspace)? else {
+        return Ok(None);
     };
     let mut out = LedgerSummary {
         managed: file.files.len(),
@@ -113,7 +118,7 @@ pub fn summarize(workspace: &Path) -> LedgerSummary {
             out.version = e.version.clone();
         }
     }
-    out
+    Ok(Some(out))
 }
 
 /// `a` 是不是比 `b` 低。按点分数字段比,比不出来(不是数字)就退回字符串比 ——

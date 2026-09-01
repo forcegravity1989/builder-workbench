@@ -641,7 +641,7 @@ async fn build_project(
             remote: remote_label(&p),
             current_version: or_blank(&file.current_version),
             current_version_raw: file.current_version.clone(),
-            standard: standard_label(&ws),
+            standard: standard_label(&ws, warnings),
             chat: match &file.chat {
                 None => "未配".into(),
                 Some(c) => format!("{} · 群号 {}", c.provider, c.group_id),
@@ -750,8 +750,16 @@ pub(super) fn or_blank(s: &str) -> String {
 /// 三处显示(总览名片 / 知识库顶栏 / 配置屏)共用这一句,**同一个数只有一个
 /// 算法**。「铺的版本比现在旧」有意不出现在这里:今天没有升级重铺的入口,
 /// 挂上去就是个人永远消不掉的提醒;它只在配置屏「对一遍账」里如实报。
-pub(super) fn standard_label(ws: &std::path::Path) -> String {
-    let s = bw::repo::managed_file::summarize(ws);
+pub(super) fn standard_label(ws: &std::path::Path, warnings: &mut Vec<String>) -> String {
+    // 读不动 → 黄条 + 「—」;清单不在 / 没有条目 → 「—」。两者都显示「—」,
+    // 但前者会说话(「读不出来」),不冒充「这个仓还没铺过规范件」。
+    let Some(s) = read_or_warn(
+        ".bw/state/managed.toml",
+        bw::repo::managed_file::summarize(ws),
+        warnings,
+    ) else {
+        return "—".into();
+    };
     if s.managed == 0 {
         return "—".into();
     }

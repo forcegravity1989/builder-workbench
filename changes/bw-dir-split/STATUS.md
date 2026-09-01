@@ -1,6 +1,6 @@
 # STATUS
 
-**building → 待人评审合入**(2026-08-29,分支 claude/bw-dir-split,承载活 [#133](https://github.com/forcegravity1989/builder-workbench/issues/133),9 个 commit 未 push)
+**in_review**(2026-08-29,分支 claude/bw-dir-split,承载活 [#133](https://github.com/forcegravity1989/builder-workbench/issues/133),9 个 commit 未 push)
 
 - 2026-08-29 · 发起人两句定向(「给人看的、给 agent 看的,用目录隔离」「去冗留真」,上游是同日对 `.bw/` 五份文件的谁读谁写审计)→ 产物链成文,**未动任何代码与 `.bw/` 实物**。
 - 2026-08-29 · 发起人点名过程缺口(产物链没先建活)→ 补建活 #133(状态/周/类别三枚标签首次真实建进 GitHub 仓)+「先建活」写成正式规矩,进 02 §6 与 AGENTS.md 起手路径。
