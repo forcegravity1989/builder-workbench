@@ -1,4 +1,4 @@
-//! 规范铺底第 1 步:buddy 自己把核心件写进项目仓,不起 agent。
+//! 规范铺底第 1 步:Workbench 自己把核心件写进项目仓,不起 agent。
 //!
 //! 三条规矩:
 //!
@@ -7,7 +7,7 @@
 //!    如实报出来(调用方写进这张活的说明里,评审的人不用猜为什么少了一份)。
 //! 2. **指纹清单最后写**。`.bw/state/managed.toml` 记的是刚落盘那一刻的真实内容,
 //!    先写它就会记成上一轮的旧值。
-//! 3. **落盘方式看仓是不是 buddy 自己建的**。是(空仓例外)就直接提交当前
+//! 3. **落盘方式看仓是不是 Workbench 自己建的**。是(空仓例外)就直接提交当前
 //!    分支;不是就交给调用方走分支与 MR —— 这一层只负责写文件,不决定怎么合。
 
 use crate::repo::managed_file::{self, ManagedEntry, ManagedFile};
@@ -23,10 +23,10 @@ pub struct BootstrapReport {
     /// 跳过的路径 + 为什么跳。
     pub skipped: Vec<(String, String)>,
     /// **这一站本来就不铺**(要用到那一站才铺),可仓里已经有一份了,而且不是
-    /// buddy 铺的。
+    /// Workbench 铺的。
     ///
     /// 为什么必须单独报一声:界面会把这份文件**当正本读**(指标卡、走势、健康
-    /// 判据都从它来),可它来路不明 —— 可能是上一代 buddy 留下的、可能是别的
+    /// 判据都从它来),可它来路不明 —— 可能是上一代 Workbench 留下的、可能是别的
     /// 项目的、也可能格式早就过期了。第 0 站试点真撞上过:项目仓里躺着一份
     /// 另一个项目的 `.bw/config/metrics.toml`,铺底连看都没看它一眼,人以为铺完了,
     /// 而总览上显示的是别人的指标。
@@ -74,7 +74,7 @@ pub fn write_core_files(
     for tmpl in standard::CORE_TEMPLATES {
         // 接入只铺 Adopt。清单里现在没有 OnFirstUse 件。
         if !all && tmpl.lay_at != standard::LayAt::Adopt {
-            // **不铺不等于不看。** 仓里已经躺着一份、而且不是 buddy 管的,就得
+            // **不铺不等于不看。** 仓里已经躺着一份、而且不是 Workbench 管的,就得
             // 报一声:界面等会儿会把它当正本读(见 `preexisting` 字段的说明)。
             if workspace.join(tmpl.target).exists() && managed.entry(tmpl.target).is_none() {
                 report.preexisting.push(tmpl.target.to_string());
@@ -94,13 +94,13 @@ pub fn write_core_files(
 
     // **技能剧本不再复制进用户的仓。**
     //
-    // 原来复制 13 份 SKILL.md 进去,是为了 buddy 自己等会儿再从那儿读一遍
-    // 正文塞进 `--append-system-prompt` —— 绕了一圈,而正本本来就编在 buddy
-    // 二进制里。代价还很实在:项目只要把 `.claude/` 写进 .gitignore(buddy
+    // 原来复制 13 份 SKILL.md 进去,是为了 Workbench 自己等会儿再从那儿读一遍
+    // 正文塞进 `--append-system-prompt` —— 绕了一圈,而正本本来就编在 Workbench
+    // 二进制里。代价还很实在:项目只要把 `.claude/` 写进 .gitignore(Workbench
     // 自己的仓就是),这 13 份就进不了版本控制,只活在某一台机器的检出里,
     // 人根本说不清「bw 的资产到底是哪些」。
     //
-    // 现在 buddy 把自带的剧本摊在自己的目录里,开工时按需给 agent 指路(见
+    // 现在 Workbench 把自带的剧本摊在自己的目录里,开工时按需给 agent 指路(见
     // `app::bootstrap::agent_system_prompt`)。真想让**你自己**在这个仓里敲
     // `claude` 时也能 `/skill-name`,那是另一件事,该做成「想要就铺一份」的
     // 选项,不是默认往每个仓里塞。
@@ -150,18 +150,18 @@ fn lay_one(
 
     if let Some(existing) = &on_disk {
         match managed.entry(target) {
-            // buddy 从没管过这个文件,而它已经在仓里 —— 那是项目自己的东西,不碰。
+            // Workbench 从没管过这个文件,而它已经在仓里 —— 那是项目自己的东西,不碰。
             None => {
                 report.skipped.push((
                     target.to_string(),
-                    "已存在且非 buddy 管理,跳过(不覆盖人手写的内容)".into(),
+                    "已存在且非 Workbench 管理,跳过(不覆盖人手写的内容)".into(),
                 ));
                 return Ok(());
             }
             Some(entry) if managed_file::fingerprint(existing) != entry.fingerprint => {
                 report.skipped.push((
                     target.to_string(),
-                    "buddy 铺过之后有人改过,跳过(升级请走对账,不静默覆盖)".into(),
+                    "Workbench 铺过之后有人改过,跳过(升级请走对账,不静默覆盖)".into(),
                 ));
                 return Ok(());
             }
@@ -182,11 +182,11 @@ fn lay_one(
 /// 铺底探测:这张活要跑几步。全部现算,不问用户。
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub struct BootstrapProbe {
-    /// 仓是 buddy 自己建的(根提交作者是 buddy)—— 直推,不走 MR。
+    /// 仓是 Workbench 自己建的(根提交作者是 Workbench)—— 直推,不走 MR。
     pub owned: bool,
     /// 仓根已经有 README / CLAUDE.md / AGENTS.md —— 这个仓自己已经有一套约定了。
     ///
-    /// **这条不触发铺底的任何一步。** 铺底只铺 `.bw/`(buddy 自己的资产),
+    /// **这条不触发铺底的任何一步。** 铺底只铺 `.bw/`(Workbench 自己的资产),
     /// 仓根一个字不写。要不要给这个项目写一份开发手册,是资产盘点(运作活②)
     /// 首次模式去问人的事 —— 那是在改人家的项目,得先问过。这条只是写进活的
     /// 正文当证据,顺带给将来那次盘点当输入。
@@ -197,7 +197,7 @@ pub struct BootstrapProbe {
     pub reasons: Vec<String>,
 }
 
-/// buddy 自己 scaffold 出来的空仓,根提交作者就是这个名字。
+/// Workbench 自己 scaffold 出来的空仓,根提交作者就是这个名字。
 const OWNED_AUTHOR: &str = "Builders' Workbench";
 
 pub async fn probe(workspace: &Path) -> BootstrapProbe {
@@ -222,7 +222,7 @@ pub async fn probe(workspace: &Path) -> BootstrapProbe {
     p.has_own_conventions = ["README.md", "CLAUDE.md", "AGENTS.md"]
         .iter()
         .any(|f| workspace.join(f).is_file());
-    // 1 条提交 = buddy 自己那次 scaffold,不算历史。
+    // 1 条提交 = Workbench 自己那次 scaffold,不算历史。
     p.has_history = commits > 1 || !tags.is_empty() || has_changelog;
 
     p.reasons.push(format!("仓有 {commits} 条提交"));

@@ -205,7 +205,7 @@ impl IssueStatus {
     }
 }
 
-/// 活的三个种类。`Light`(轻量活)= 没有 agent 会话、只有 buddy 自己写仓 +
+/// 活的三个种类。`Light`(轻量活)= 没有 agent 会话、只有 Workbench 自己写仓 +
 /// 开 MR 的活,名片编辑与发版本用它。
 #[derive(Clone, Copy, PartialEq, Eq, Debug, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
@@ -304,7 +304,7 @@ impl Project {
 
     /// 这个仓在浏览器里的根地址,比如 `https://github.com/owner/repo`。
     ///
-    /// **按 provider 拼,不从 `origin` 推**。codehub 是局域网平台,buddy clone
+    /// **按 provider 拼,不从 `origin` 推**。codehub 是局域网平台,Workbench clone
     /// 走 SSH(`bw_engine::codehub::clone_repo`:HTTPS 经代理被拦),于是
     /// `origin` 长这样:`ssh://git@szv-open.codehub.huawei.com:2222/组/仓.git`
     /// —— 主机是 SSH 主机、后面还挂着 SSH 端口,拿它当网址必然点不开。真正的
@@ -381,8 +381,11 @@ pub struct Issue {
     pub body: String,
     pub status: IssueStatus,
     pub branch: String,
-    /// MR 号;`0` = 没有 MR。「干没干成看远端 MR 合没合入」这条判据的落点。
+    /// MR 号;`0` = 没有 MR。壳现查填上,开着的或已合入的都算,给详情展示。
     pub pr_number: u32,
+    /// 这张活的 `bw/issue-<号>` 分支上现在有没有**开着的** MR。合入走
+    /// `MergeAndSettle`;没有开着的(人可能已经在网页合过)走确认后只关 issue。
+    pub has_open_mr: bool,
     pub week_of: String,
     pub version: String,
     pub tool: String,
@@ -396,12 +399,19 @@ pub struct Issue {
     pub updated_at: i64,
     /// 人显式点「完成」的那一刻;`None` = 还没结清。
     pub settled_at: Option<i64>,
+    /// 责任人(codehub issue assignee)。空 = 未指派。正本在远端,本地只透传。
+    pub assignee: String,
+    /// 提出人(codehub issue author)。空 = 认不出。正本在远端,本地只透传。
+    pub author: String,
+    /// 排进人起名的版本(`bw:plan:<name>` 标签);空 = 没挂这个写法。
+    /// 和 `week_of` 是同一槽位的两种写法:周版本走 `week_of`,人起名的走这里。
+    pub plan_version: String,
 }
 
 impl Issue {
-    /// 排进某一周了没有。`week_of` 为空 = 还在待办池。
+    /// 排进某个版本了没有(周版本或人起名的都算)。两个都空 = 还在待办池。
     pub fn is_scheduled(&self) -> bool {
-        !self.week_of.is_empty()
+        !self.week_of.is_empty() || !self.plan_version.is_empty()
     }
 }
 

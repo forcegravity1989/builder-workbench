@@ -53,7 +53,7 @@ pub fn View(vm: Vm, bridge: Bridge, go_top: EventHandler<TopView>) -> Element {
                             font-size:14px;line-height:2;",
                     "还没有接入任何项目。"
                     br {}
-                    "点右上角「接入项目」,填四个字段,buddy 会把管理体系铺进这个仓。"
+                    "点右上角「接入项目」,填四个字段,Workbench 会把管理体系铺进这个仓。"
                 }
             } else {
                 div { class: "wall-grid",
@@ -190,7 +190,7 @@ fn project_card(
                 }
                 span { class: "chip", "{p.week}" }
                 if p.unread > 0 {
-                    span { class: "chip chip-clay", title: "评审中或阻塞、你还没在通知屏看过的活", "⚑ {p.unread}" }
+                    span { class: "chip chip-clay", title: "评审中的活有几张等你合入", "⚑ {p.unread}" }
                 }
                 span { style: "margin-left:auto;" }
                 {light_dot(p.signal, true)}

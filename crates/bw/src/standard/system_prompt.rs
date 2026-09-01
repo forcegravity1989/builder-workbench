@@ -1,4 +1,4 @@
-//! buddy 的系统提示词主文件 + 阶段规范 references —— 编进二进制,
+//! Workbench 的系统提示词主文件 + 阶段规范 references —— 编进二进制,
 //! **不硬编码在 Rust `format!` 里**。
 //!
 //! 改身份/铁律 = 改这里的 `SYSTEM.md.tmpl` + 抬 `standard/VERSION` + 规范
@@ -6,8 +6,8 @@
 //! 重编译,人审得读 Rust,不可对账)。`{{...}}` 占位由 `app/bootstrap.rs`
 //! 的 `agent_system_prompt` 渲染。
 //!
-//! `references/` 下每个 md 是「干某类活需要额外知道的 buddy 规范」,开工时
-//! 摊到 buddy 自己的资产目录(`assets/system-prompt/references/`),提示词
+//! `references/` 下每个 md 是「干某类活需要额外知道的 Workbench 规范」,开工时
+//! 摊到 Workbench 自己的资产目录(`assets/system-prompt/references/`),提示词
 //! 里只给路径,agent 按需读 —— 和 `skills/` 同一套渐进加载规矩。
 
 /// 一份阶段规范 md:文件名、一句话、相对 `<asset_root>/system-prompt/references/`
@@ -22,27 +22,20 @@ pub struct ReferencePack {
 
 pub const SYSTEM_PROMPT_TMPL: &str =
     include_str!("../../../../standard/system-prompt/SYSTEM.md.tmpl");
-/// 评审会话的主提示词 —— 和 `SYSTEM.md.tmpl` 同机制外置:独立评审身份 +
-/// 只评不改/绝不合并/意见落 MR 评论。由 `app/bootstrap.rs` 的
-/// `review_system_prompt` 渲染。
-pub const REVIEW_PROMPT_TMPL: &str =
-    include_str!("../../../../standard/system-prompt/REVIEW.md.tmpl");
 pub const REF_METRICS: &str =
     include_str!("../../../../standard/system-prompt/references/metrics.md");
 pub const REF_BUILD: &str = include_str!("../../../../standard/system-prompt/references/build.md");
 pub const REF_WEEK_PLAN_COMMENT: &str =
     include_str!("../../../../standard/system-prompt/references/week-plan-comment.md");
-pub const REF_REVIEW: &str =
-    include_str!("../../../../standard/system-prompt/references/review.md");
 
-/// buddy 自带的阶段规范 md —— 起手三份(指标铁律、运作活①评论格式、
-/// 改仓规则)加评审一份,其余按实践长,不预置一堆没用的。
+/// Workbench 自带的阶段规范 md —— **起手三份**(指标铁律、运作活①评论格式、
+/// 改仓规则),其余按实践长,不预置一堆没用的。
 pub fn references() -> Vec<ReferencePack> {
     // (slug, 一句话, 正文)
-    const REFS: [(&str, &str, &str); 4] = [
+    const REFS: [(&str, &str, &str); 3] = [
         (
             "metrics",
-            "干指标活的 buddy 规范(可回溯/不许写0/窗口由 buddy 给)",
+            "干指标活的 Workbench 规范(可回溯/不许写0/窗口由 Workbench 给)",
             REF_METRICS,
         ),
         (
@@ -52,13 +45,8 @@ pub fn references() -> Vec<ReferencePack> {
         ),
         (
             "build",
-            "干改仓活的 buddy 规范(活自己的分支/提 MR/合并是人/不自动 Done)",
+            "干改仓活的 Workbench 规范(活自己的分支/提 MR/合并是人/不自动 Done)",
             REF_BUILD,
-        ),
-        (
-            "review",
-            "干评审活的 buddy 规范(独立评审/唯一落点 MR 评论/大风险顶格标出)",
-            REF_REVIEW,
         ),
     ];
     REFS.iter()

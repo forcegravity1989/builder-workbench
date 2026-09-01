@@ -9,7 +9,7 @@
 //!
 //! 四条取舍,如实写在这里:
 //!
-//! 1. **工作区是 buddy 自己这个仓的本地浅拷贝**(`git clone --local`),不是空
+//! 1. **工作区是 Workbench 自己这个仓的本地浅拷贝**(`git clone --local`),不是空
 //!    仓——健康判据里「本周有没有真实提交」「上周合入了几次」要读真实 git 历史
 //!    才有意义,数字能对着 `git log` 复算。
 //! 2. **▶跑走的是自我标注的替身执行器**,产出带【mock】字样。不碰真 `claude`、
@@ -48,7 +48,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .position(|a| a == "--project")
         .and_then(|i| args.get(i + 1))
         .cloned()
-        .unwrap_or_else(|| "buddy-v4-demo".to_string());
+        .unwrap_or_else(|| "workbench-demo".to_string());
 
     std::fs::create_dir_all(&ws_root)?;
     // 远端走自我标注的内存 mock(不碰 codehub/gh/网关)。**共享同一个
@@ -68,7 +68,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     say(&mut log, &format!("本周 = {week}"));
 
     // ── 步骤 1:接入项目 ──────────────────────────────────
-    let workspace = clone_buddy_repo(&ws_root, &slug)?;
+    let workspace = clone_workbench_repo(&ws_root, &slug)?;
     say(
         &mut log,
         &format!("步骤 1 · 接入项目:工作区 = {}", workspace.display()),
@@ -77,15 +77,16 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .dispatch(Command::CreateProject {
             slug: slug.clone(),
             intent: ProjectIntent {
-                name: "buddy V4 演示项目".into(),
+                name: "Workbench V4 演示项目".into(),
                 brief: "验证 V4 主环:接入 → 铺底 → 开始本周 → 干一张活 → 发版本".into(),
                 benchmark: "Linear".into(),
                 north_star: "每周被真实合入的活数".into(),
+                ..Default::default()
             },
             remote: RemoteRef {
                 provider: "mock".into(),
                 host: String::new(),
-                path: "mock/buddy-v4-demo".into(),
+                path: "mock/workbench-demo".into(),
             },
             workspace_path: workspace.display().to_string(),
         })
@@ -172,6 +173,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             kind: IssueKind::Business,
             origin: IssueOrigin::Human,
             week_of: week.clone(),
+            plan: String::new(),
         })
         .await?;
     let main_issue = events
@@ -335,7 +337,12 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         file.chat = Some(bw::repo::project_file::ChatConfig {
             provider: "mock".into(),
             group_id: "demo-group".into(),
-            notify: Some(vec!["review".into(), "merged".into(), "release".into()]),
+            notify: Some(
+                bw::chat::NotifyEvent::ALL
+                    .iter()
+                    .map(|e| e.key().to_string())
+                    .collect(),
+            ),
         });
         let _ = bw::repo::project_file::write(&workspace, &file);
     }
@@ -349,14 +356,14 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         for _ in 0..2 {
             app.dispatch(Command::SyncNotifyToChat {
                 issue_id: one.id,
-                event_type: "review".into(),
+                event_type: "merged".into(),
             })
             .await?;
         }
         say(
             &mut log,
             &format!(
-                "步骤 10 · 项目群(mock):对 #{} 连发两次「评审中」—— stderr 上应该有两行 \
+                "步骤 10 · 项目群(mock):对 #{} 连发两次「已合入」—— stderr 上应该有两行 \
                  [BW_CHAT_SENT],这是设计上认了的重复,不是 bug",
                 one.number
             ),
@@ -368,20 +375,12 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         say(&mut log, "步骤 10 收尾 · [chat] 段改回演示项目原来的样子");
     }
 
-    // 收尾提交:周计划与发版记录是铺底之后才写的,这里一并进仓,免得下一次
+    // 收尾提交:把铺底之后才写的仓文件一并进仓,免得下一次
     // 跑的时候被上一轮的残留改动混进提交里。
-    let tail = bw::git::commit_paths(
-        &workspace,
-        &[
-            ".bw/plan".to_string(),
-            ".bw/releases.md".to_string(),
-            ".bw".to_string(),
-        ],
-        "docs(bw): 本周计划与发版记录(指挥器)",
-    )
-    .await
-    .unwrap_or_default()
-    .committed;
+    let tail = bw::git::commit_paths(&workspace, &[".bw".to_string()], "docs(bw): 收尾(指挥器)")
+        .await
+        .unwrap_or_default()
+        .committed;
     say(
         &mut log,
         &format!(
@@ -415,8 +414,8 @@ fn say(log: &mut Vec<String>, line: &str) {
     log.push(line.to_string());
 }
 
-/// 把 buddy 自己这个仓浅拷贝一份当工作区。已经拷过就原样用(幂等)。
-fn clone_buddy_repo(root: &Path, slug: &str) -> std::io::Result<PathBuf> {
+/// 把 Workbench 自己这个仓浅拷贝一份当工作区。已经拷过就原样用(幂等)。
+fn clone_workbench_repo(root: &Path, slug: &str) -> std::io::Result<PathBuf> {
     let target = root.join(slug);
     if target.join(".git").is_dir() {
         return Ok(target);
@@ -467,9 +466,6 @@ async fn build_evidence(
         })
         .collect();
 
-    let plan_path = workspace.join(format!(".bw/plan/{week}.md"));
-    let releases_path = workspace.join(".bw/releases.md");
-
     let v = serde_json::json!({
         "说明": "每个数字都是从真实本地持久化与真实仓文件读回来的,没有一个是硬编码。\
                  ▶跑走的是自我标注的替身执行器(产出带【mock】字样);推评审中与\
@@ -491,8 +487,6 @@ async fn build_evidence(
         "活": issue_json,
         "workflow 用过几次(现算,没有战绩表)": usage,
         "仓文件": {
-            "周计划": plan_path.is_file(),
-            "发版记录": releases_path.is_file(),
             "指纹清单": workspace.join(".bw/state/managed.toml").is_file(),
             "活的约定": workspace.join(".bw/config/issue-policy.toml").is_file(),
             "预置技能包数": count_skill_packages(workspace),

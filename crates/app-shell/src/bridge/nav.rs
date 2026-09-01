@@ -11,7 +11,6 @@ pub enum Panel {
     Overview,
     Plan,
     Session,
-    Notify,
     Config,
     Kb,
 }
@@ -22,7 +21,6 @@ impl Panel {
             "overview" => Panel::Overview,
             "plan" => Panel::Plan,
             "session" => Panel::Session,
-            "notify" => Panel::Notify,
             "config" => Panel::Config,
             "kb" => Panel::Kb,
             _ => return None,
@@ -34,23 +32,21 @@ impl Panel {
             Panel::Overview => "总览",
             Panel::Plan => "计划",
             Panel::Session => "会话",
-            Panel::Notify => "通知",
             Panel::Config => "配置",
             Panel::Kb => "知识库",
         }
     }
 
-    pub const ALL: [Panel; 6] = [
+    pub const ALL: [Panel; 5] = [
         Panel::Overview,
         Panel::Plan,
         Panel::Session,
-        Panel::Notify,
         Panel::Config,
         Panel::Kb,
     ];
 }
 
-/// 「跳到另一个入口」的口子。六入口之间切换是**纯本机导航**,不经内核 ——
+/// 「跳到另一个入口」的口子。五入口之间切换是**纯本机导航**,不经内核 ——
 /// 所以它不是一条 `Req`,而是一个各屏都拿得到的信号。屏里想跳(总览的
 /// 通知里点一条跳会话)就 `use_context::<PanelNav>()`。
 #[derive(Clone, Copy)]
@@ -60,6 +56,33 @@ impl PanelNav {
     pub fn go(mut self, p: Panel) {
         use dioxus::prelude::WritableExt;
         self.0.set(p);
+    }
+}
+
+/// 开工立刻盖住。点「开始本周」/ Start 时先立,等内核 `Vm.busy` 接上或收工再撤。
+/// Orca iframe 是 WebView 原生层,只靠 `.busy-mask` 盖不住已经挂上的嵌页。
+pub const STARTING_SESSION: &str = "正在开工,Orca 要几秒把会话拉起来。先别点嵌页。";
+
+/// 拖拽 / 详情改状态:等远端写标签,不重拉 issue 名单。
+pub const SWITCHING_STATUS: &str = "issue 状态切换中";
+
+#[derive(Clone, Copy)]
+pub struct ChromeBusy(pub dioxus::prelude::Signal<Option<String>>);
+
+impl ChromeBusy {
+    pub fn set(mut self, msg: impl Into<String>) {
+        use dioxus::prelude::WritableExt;
+        self.0.set(Some(msg.into()));
+    }
+
+    pub fn clear(mut self) {
+        use dioxus::prelude::WritableExt;
+        self.0.set(None);
+    }
+
+    pub fn get(self) -> Option<String> {
+        use dioxus::prelude::ReadableExt;
+        self.0.read().clone()
     }
 }
 

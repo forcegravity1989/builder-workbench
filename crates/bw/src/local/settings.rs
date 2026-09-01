@@ -1,7 +1,8 @@
 //! `asset_root/settings.toml` —— 全局本机设置。
 //!
-//! 替代旧的 `app_meta` 表里的 `workspaces_root` 键。今天只有这一个全局键;
-//! `notify_seen` 是 per-project,住在项目注册表里([`super::registry`])。
+//! 替代旧的 `app_meta` 表里的 `workspaces_root` 键。今天两个全局键:
+//! 工作区根目录 + Orca 网页地址(配对 URL,带 token,**只在本地**,不进仓/Event
+//! 原文/日志)。
 
 use crate::repo::RepoFileError;
 use std::path::Path;
@@ -15,6 +16,12 @@ pub struct Settings {
     /// 「我这台机器上项目放哪」只是这台机器的事。
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub workspaces_root: Option<String>,
+    /// Orca 网页配对 URL(安装版「给 web 配对」给的那条,带 token)。
+    /// **本机设置,绝不进仓 / Event 原文 / 日志** —— 是这台机器看 Orca web 用的,
+    /// 换台机器就失效。读侧 [`crate`] 不校验;会话屏 `web_embed_url` 用
+    /// `looks_loopback_http` 过滤,非 loopback 如实滤成空。空 = 没配,会话屏空着。
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub orca_web_url: Option<String>,
 }
 
 impl Settings {
@@ -69,6 +76,27 @@ impl Settings {
     pub fn set_workspaces_root(asset_root: &Path, path: &str) -> Result<(), RepoFileError> {
         let mut s = Self::load(asset_root).unwrap_or_default();
         s.workspaces_root = Some(path.to_string());
+        Self::save(asset_root, &s)
+    }
+
+    /// 读 `orca_web_url`(已 trim、空当无)。
+    pub fn get_orca_web_url(asset_root: &Path) -> Option<String> {
+        Self::load(asset_root)
+            .ok()
+            .and_then(|s| s.orca_web_url)
+            .map(|s| s.trim().to_string())
+            .filter(|s| !s.is_empty())
+    }
+
+    /// 写 `orca_web_url`。空串 = 清掉(没配)。
+    pub fn set_orca_web_url(asset_root: &Path, url: &str) -> Result<(), RepoFileError> {
+        let mut s = Self::load(asset_root).unwrap_or_default();
+        let url = url.trim();
+        s.orca_web_url = if url.is_empty() {
+            None
+        } else {
+            Some(url.to_string())
+        };
         Self::save(asset_root, &s)
     }
 }

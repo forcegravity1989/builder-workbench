@@ -11,14 +11,14 @@
 //!   只有 send-to-user / send-to-group,**没有读群历史**的子命令。这是提供方
 //!   天生拉不了历史(和钉钉/企微/Ts 群机器人一个性质),是正常
 //!   返回值、不是错。**群摘要因此 defer**——它要 fetch_history。
-//! - **`probe` 已实现**:往该群发一条 `【buddy 探活】` 测试消息。welink-cli 没有
+//! - **`probe` 已实现**:往该群发一条 `【Workbench 探活】` 测试消息。welink-cli 没有
 //!   按群号只读校验的命令(`search group` 按关键字搜,验不了具体 group_id),
 //!   只有真发一条才答得出「这个群号能不能收到」。人点「测一下」才发,不是
 //!   静默 spam。
 //!
-//! # 登录态不归 buddy 管
+//! # 登录态不归 Workbench 管
 //!
-//! 用户在本机用官方渠道自己登好 welink-cli(`welink-cli auth login`),buddy 不碰、
+//! 用户在本机用官方渠道自己登好 welink-cli(`welink-cli auth login`),Workbench 不碰、
 //! 不存这份凭证,设置屏也没有「聊天工具登录」按钮。welink-cli 老是提示 token
 //! 过期——用户实测**不影响实际发送**(那是刷新提示,非失败);本实现认退出码,
 //! 退出 0 = 发送即完成(「发送即完成」,不追踪投递)。
@@ -144,7 +144,7 @@ impl ChatGroup for WelinkChatGroup {
     /// 往该群发一条探活消息。welink-cli 没有按群号只读校验的命令,只有真发
     /// 一条才答得出「这个群号能不能收到」;人点「测一下」才发,不是静默 spam。
     async fn probe(&self) -> Result<String, ChatError> {
-        self.run_send("【buddy 探活】这是「测一下」发出的一条测试消息,群连通正常。")
+        self.run_send("【Workbench 探活】这是「测一下」发出的一条测试消息,群连通正常。")
             .await?;
         Ok(format!(
             "已往群 {} 发一条探活消息,welink-cli 退出 0 = 发送即完成",

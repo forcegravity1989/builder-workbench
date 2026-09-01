@@ -3,13 +3,15 @@
 //! 界面只发 [`Command`]、只收 [`Event`],别的一概不做:不直接开库、不直接写
 //! 仓文件、不自己判断状态能不能转。所有用例与守卫都在 [`crate::app`]。
 //!
-//! 这里只列 A 刀真接了实现的命令。**没接的不放进枚举** —— 一条能发出去但内核
-//! 悄悄什么都不做的命令,比没有这条命令更糟;会话屏、项目群那几条随
-//! B / C 刀落地时再加。
+//! 这里只列真接了实现的命令。**没接的不放进枚举** —— 一条能发出去但内核
+//! 悄悄什么都不做的命令,比没有这条命令更糟。
 
-use crate::model::{Category, ConversationId, IssueId, IssueStatus, ProjectId};
+use crate::model::{Category, IssueId, IssueStatus, ProjectId};
 
-/// 接入一个项目时填的四个字段(意图卡)。
+/// 总览「编辑项目名片」一次填完的仓文件字段。
+///
+/// 正本仍是 `.bw/PROJECT.md` + `.bw/config/project.toml` 两份。接入时只填前四项,
+/// 在研版本 / 项目群落默认或仓里已有的;总览保存会把后几项一并写回。
 #[derive(Clone, Debug, PartialEq, Eq, Default)]
 pub struct ProjectIntent {
     pub name: String,
@@ -19,6 +21,13 @@ pub struct ProjectIntent {
     pub benchmark: String,
     /// 三个月长成什么样(北极星一句话)。
     pub north_star: String,
+    /// 在研版本。接入时空着 = 不覆盖仓里已有的 / 新建默认 `v0.1`。
+    pub current_version: String,
+    /// 项目群提供方。空或 `"none"` = 不配群。
+    pub chat_provider: String,
+    pub chat_group: String,
+    /// 同步哪些事件(`review` / `merged` / `release`)。空数组 = 静音。
+    pub chat_notify: Vec<String>,
 }
 
 /// 远端仓的地址。两个字段都空 = 没挂远端(本地仓),如实留白。
@@ -34,7 +43,7 @@ pub struct RemoteRef {
 #[derive(Clone, Debug, PartialEq)]
 pub enum Command {
     // ── 接入 ──────────────────────────────────────────────
-    /// 接入项目:写项目行 + 备好工作区。名片四字段落 `PROJECT.md`,不落库。
+    /// 接入项目:写项目行 + 备好工作区。名片字段落 `PROJECT.md`,不落库。
     CreateProject {
         slug: String,
         intent: ProjectIntent,
@@ -42,18 +51,11 @@ pub enum Command {
         /// 空 = 用工作区根目录下的 `<slug>`。
         workspace_path: String,
     },
-    /// 名片「编辑→保存」:改 `PROJECT.md` 与 `.bw/config/project.toml`,走一张轻量活。
+    /// 总览「编辑→保存」:改 `PROJECT.md` 与 `.bw/config/project.toml`
+    /// (名片 + 在研版本 + 项目群),走一张轻量活。
     EditProjectCard {
         project_id: ProjectId,
         intent: ProjectIntent,
-    },
-    /// 配项目群:写 `.bw/config/project.toml` 的 `[chat]` 段。`provider` 传 `"none"`
-    /// 就是明确不配群。
-    SetProjectChat {
-        project_id: ProjectId,
-        provider: String,
-        group_id: String,
-        notify: Vec<String>,
     },
 
     // ── 规范铺底(运作活③)─────────────────────────────────
@@ -62,10 +64,10 @@ pub enum Command {
     /// 把一个项目从工作台上移走。**只动库,不动仓** —— 仓是正本,里面是真实
     /// 的劳动成果。界面上要人点两下才发得出这条(第一下问「真移走?」)。
     RemoveProject { project_id: ProjectId },
-    /// 把这张活上次那场会话接回来看看(`claude --resume <id>`)。
+    /// 去会话:把 Orca 切到这张活的树。有 Claude session id 再尽量点回那条 tab。
     ///
-    /// **不改活的状态、不发任何 prompt** —— 纯粹是「让我看看上次聊到哪了」。
-    /// 和 ▶开工 的区别就在这:▶开工 会把活推到「进行中」,这条不会。
+    /// **不改活的状态、不发任何 prompt** —— 切树成功就算成功。和 ▶开工 的
+    /// 区别:▶开工 会把活推到「进行中」,这条不会。
     ReopenSession { issue_id: IssueId },
     /// 纯读:按「缺 / 过期 / 人改过 / 一致」四类对账,不建活不写仓。
     ReconcileStandard { project_id: ProjectId },
@@ -89,17 +91,32 @@ pub enum Command {
         kind: crate::model::IssueKind,
         origin: crate::model::IssueOrigin,
         week_of: String,
+        /// 排进人起名的版本(`bw:plan:<name>`)。空 = 不走这个写法。
+        /// 和 `week_of` 是同一槽位:有 plan 就只打版本,丢掉周。
+        plan: String,
     },
-    /// 排期:排进某一周,或传空串移回待办池。
+    /// 排期:排进某个周版本,或传空串移回待办池。
     ScheduleIssue {
         id: IssueId,
         week_of: Option<String>,
     },
-    /// 切在研版本,纯本机动作,不建活。
-    SetCurrentVersion {
+    /// 排进人起名的版本(`bw:plan:<name>`)。和 `ScheduleIssue` 是同一槽位的
+    /// 两种写法:一张活只属于一个版本。正本走 codehub milestone + 标签。
+    ScheduleToPlan { id: IssueId, plan: String },
+    /// 建一个人起名的版本:建 codehub milestone(title=name,start,due),
+    /// 并给 `included` 每张打 `bw:plan:<name>` 标签、挂到这个里程碑。
+    /// 周版本每周一按周号出现,不用这条建。与发版号 `CutRelease` 不同。
+    CreatePlanVersion {
         project_id: ProjectId,
-        version: String,
+        name: String,
+        start: String,
+        due: String,
+        note: String,
+        included: Vec<IssueId>,
     },
+    /// 删一个人起名的版本:给挂着 `bw:plan:<name>` 的活摘掉该标签,再删同名
+    /// 里程碑。周版本每周一固定出现,周格式标题拒收。
+    DeletePlanVersion { project_id: ProjectId, name: String },
     /// 发版本:给选中的活写版本号 + 建远端 codehub/GitHub Release + 打 `bw:released:*` 标签。
     CutRelease {
         project_id: ProjectId,
@@ -109,8 +126,8 @@ pub enum Command {
     },
     /// 把项目工作区的主检出快进到远端最新。
     ///
-    /// **为什么需要人手点这一下**:buddy 只在「合入并完成」某张活的时候自动拉
-    /// 一次。人在 GitHub / codehub 网页上直接合了 MR,buddy 完全不知道 —— 工作
+    /// **为什么需要人手点这一下**:Workbench 只在「合入并完成」某张活的时候自动拉
+    /// 一次。人在 GitHub / codehub 网页上直接合了 MR,Workbench 完全不知道 —— 工作
     /// 区就一直停在旧提交,合进去的 `.bw/` 那些件在本机根本不存在,而界面还照
     /// 常显示旧内容。以前没有任何入口能补这一下。
     PullWorkspace { project_id: ProjectId },
@@ -130,6 +147,15 @@ pub enum Command {
     TransitionIssue { id: IssueId, to: IssueStatus },
     /// 给已有的活补/改类别标签。读回时用它查 issue-policy 的开工工具。
     SetIssueCategory { id: IssueId, category: Category },
+    /// 改 issue 的责任人(codehub assignee)。空串 = 取消指派。走 codehub API,
+    /// 不在本地另存一套。
+    SetIssueAssignee { id: IssueId, assignee: String },
+    /// 改 issue 的标题与正文(codehub issue update)。详情弹窗双击编辑后发这条。
+    EditIssue {
+        id: IssueId,
+        title: String,
+        body: String,
+    },
     /// 卡住了。如实停在原地,可以重试,不假装前进。
     BlockIssue { id: IssueId, reason: String },
     /// 作废:写取消原因进评论、打 `bw:status:cancelled`、关掉远端 issue。
@@ -137,12 +163,6 @@ pub enum Command {
     CancelIssue { id: IssueId, reason: String },
     /// 删掉这张活的本机会话行和它的 worktree。不动远端 issue。
     DeleteSession { id: IssueId },
-    /// 「请评审」:给一张**评审中**且 MR 开着的活起一场**独立评审会话**(不是
-    /// 写代码那场),评它的 MR。评审产物只落 MR 评论;**这条命令不写任何状态**,
-    /// 合入/打回仍由人点。
-    ReviewIssue { id: IssueId },
-    /// ■停止评审:关掉这张活的评审 PTY。活和写码会话都原地不动。
-    CancelReview { id: IssueId },
 
     // ── 配置 ──────────────────────────────────────────────
     /// 保存一行「类别→工具→workflow」映射,写 `.bw/config/issue-policy.toml`。
@@ -160,10 +180,10 @@ pub enum Command {
     /// 只影响**之后**接入的项目:已接入的项目行里各自记着自己的仓路径,不会被这
     /// 一改牵着走(不然改一下根目录,已有项目就集体找不到仓了)。
     SetWorkspacesRoot { path: String },
-
-    // ── 通知 ──────────────────────────────────────────────
-    /// 记「这个项目的事件流看到哪个时间点」。只影响视觉状态,不参与待处理计数。
-    MarkNotifySeen { project_id: ProjectId, at: i64 },
+    /// 改「Orca 网页地址」——会话屏 iframe 打开的那条配对 URL(带 token)。
+    /// **只存本机 `settings.toml`,不进仓** —— 是这台机器看 Orca web 的事。
+    /// `BW_ORCA_WEB_URL` 仍可覆盖(开发期)。空串 = 清掉。
+    SetOrcaWebUrl { url: String },
 
     /// 定时的一跳。**只会自动建活,绝不自动完成活**——到点了就查本周有没有
     /// 那张资产盘点活,没有就建一张并自动开工。没到点、已经有了,都是原地
@@ -180,21 +200,11 @@ pub enum Command {
         /// `review` / `merged` / `release`。
         event_type: String,
     },
-    /// ■停止:关掉这件活的内嵌终端。**状态原地不动**——停下来既不是失败也
-    /// 不是完成,人随时能再点▶跑接回去。
+    /// ■停止:停掉这件活的运行。**状态原地不动**——停下来既不是失败也
+    /// 不是完成,人随时能再点▶跑接回去。PTY 已封存,这条现在只停本机记账
+    /// (live=false),不真去关什么进程 —— 没真实进程信号就当空闲,不假 live。
     CancelRun { id: IssueId },
-    /// 人在内嵌终端里敲的字节。
-    TerminalInput {
-        conversation_id: ConversationId,
-        bytes: Vec<u8>,
-    },
-    /// 终端框大小变了,PTY 那头也要跟着变,否则 agent 输出会按 80×24 折行。
-    TerminalResize {
-        conversation_id: ConversationId,
-        cols: u16,
-        rows: u16,
-    },
-    /// 总览手填卡:把人填的今天这个数追加进 `.bw/state/metrics-readings.jsonl`。
+    /// 总览手填卡:把人填的今天这个数记进账本 `.bw/state/metrics-readings.jsonl`(当天覆盖)。
     /// 只收 C 类(`collect.kind = "manual"`)。空值拒。
     RecordManualMetric {
         project_id: ProjectId,
@@ -226,10 +236,6 @@ pub enum Event {
     ProjectCardEditPending {
         issue_id: IssueId,
     },
-    ProjectChatChanged {
-        project_id: ProjectId,
-    },
-    /// 规范铺底第 1 步真的把文件写进仓并提交了。`files` 是实际落盘的路径。
     /// 项目从工作台上移走了。`issues` = 跟着一起删掉的活数,好让人知道
     /// 自己刚才丢掉了多少账;仓和活自己的 worktree 都还在硬盘上。
     ProjectRemoved {
@@ -242,6 +248,7 @@ pub enum Event {
         issue_id: IssueId,
         live: bool,
     },
+    /// 规范铺底第 1 步真的把文件写进仓并提交了。`files` 是实际落盘的路径。
     StandardBootstrapped {
         project_id: ProjectId,
         issue_id: IssueId,
@@ -284,9 +291,32 @@ pub enum Event {
         id: IssueId,
         week_of: String,
     },
+    IssueScheduledToPlan {
+        id: IssueId,
+        plan: String,
+    },
+    PlanVersionCreated {
+        project_id: ProjectId,
+        name: String,
+        /// codehub milestone id;0 = 没建里程碑(只打了标签)。
+        milestone_id: u64,
+    },
+    PlanVersionDeleted {
+        project_id: ProjectId,
+        name: String,
+        /// 摘掉 `bw:plan` 的活有几张。
+        issues_cleared: u32,
+    },
     IssueCategorySet {
         id: IssueId,
         category: String,
+    },
+    IssueAssigneeSet {
+        id: IssueId,
+        assignee: String,
+    },
+    IssueEdited {
+        id: IssueId,
     },
     /// 一次 ▶跑 结束。`summary` 原样来自执行器(mock 的自带【mock】字样)。
     /// `tool` 是这张活读回的开工工具,壳用来决定会话屏落在哪一页。
@@ -313,6 +343,9 @@ pub enum Event {
         path: String,
         pinned: u32,
     },
+    /// Orca 网页地址改了。**不带 URL 原文**(配对 URL 带 token,不进 Event);
+    /// 壳收到后自己重读本机 `settings.toml` 刷新显示。
+    OrcaWebUrlChanged,
     IssueTransitioned {
         id: IssueId,
         to: IssueStatus,
@@ -328,9 +361,6 @@ pub enum Event {
     ReleaseCut {
         version: String,
         rows_written: bool,
-    },
-    CurrentVersionChanged {
-        version: String,
     },
     /// 拉工作区的结果。`moved` = 主检出真的往前走了;`note` 是给人看的一句话,
     /// 拉不动时装的是 git 的原话(压成一行),**不吞**。
@@ -376,16 +406,6 @@ pub enum Event {
         id: IssueId,
         note: String,
     },
-    /// 评审会话起来了。意见会落在 MR !`mr_number` 的评论上;活的状态没动。
-    ReviewStarted {
-        id: IssueId,
-        mr_number: u32,
-    },
-    /// ■停止评审按下去之后。`was_live=false` = 本来就没有活着的评审会话可停。
-    ReviewCancelled {
-        id: IssueId,
-        was_live: bool,
-    },
     /// 定时真的建出了一张活。界面上「本周运作」栏据此显示「已自动开工」。
     OpsAutoFired {
         id: IssueId,
@@ -404,9 +424,6 @@ pub enum Event {
         name: String,
         day: String,
         value: String,
-    },
-    NotifySeenMarked {
-        project_id: ProjectId,
     },
     /// 项目健康算完了一次。灯与理由都是现算出来的,库里那两列只是显示缓存。
     HealthDerived {

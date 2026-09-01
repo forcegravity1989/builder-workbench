@@ -1,4 +1,4 @@
-//! V4 桌面壳 —— 六入口 + 顶层三屏。
+//! Workbench MVP 桌面壳 —— 五入口 + 顶层三屏。
 //!
 //! 一条规矩:**这个 crate 只渲染和转发意图,它自己什么都不算**。健康是什么
 //! 颜色、活能不能转到那一列、指标有没有读数,全部由内核算好塞进 ViewModel。
@@ -7,7 +7,7 @@
 //! 深链(启动即打读回证据,和旧壳同一套机制):
 //!
 //! ```bash
-//! BW_DB=<db> BW_OPEN=<项目> BW_PANEL=overview|plan|session|notify|config|kb ./bw-dev
+//! BW_DB=<数据目录> BW_OPEN=<项目> BW_PANEL=overview|plan|session|config|kb ./bw-dev
 //! BW_VIEW=onboard|settings ./bw-dev
 //! ```
 
@@ -21,27 +21,12 @@ mod screens;
 mod theme;
 mod vm;
 
-use adapters::terminal_xterm::TerminalWidget;
-use bridge::{Bridge, DeepLink, Panel, Req, TopView};
+use bridge::{Bridge, ChromeBusy, DeepLink, Panel, Req, TopView};
 use dioxus::prelude::*;
-use vm::SessionTab;
 
 fn main() {
     // 起任何线程之前先把本机时区定住 —— 周是按本机时区算的。
     bw::isoweek::init_local_offset();
-    // 会话屏 iframe 嵌本机 Open Design。WebView2 默认拦 loopback,V3 壳关过,这里同样关。
-    #[cfg(windows)]
-    {
-        const FLAG: &str = "--disable-features=LocalNetworkAccessChecks";
-        match std::env::var("WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS") {
-            Ok(existing) if existing.contains("LocalNetworkAccessChecks") => {}
-            Ok(existing) => std::env::set_var(
-                "WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS",
-                format!("{existing} {FLAG}"),
-            ),
-            Err(_) => std::env::set_var("WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS", FLAG),
-        }
-    }
     let deep_link = bridge::read_deep_link();
     let builder = dioxus::desktop::WindowBuilder::new()
         .with_title("Builders' Workbench")
@@ -52,6 +37,18 @@ fn main() {
     // 六列就拖不动了。必须关掉。
     #[cfg(windows)]
     let cfg = cfg.with_disable_drag_drop_handler(true);
+    // iframe 嵌 Orca / OD。新版 Orca SPA boot 调 crypto.randomUUID,只在
+    // Secure Context 有;父页 http://dioxus.index.html 默认不算 secure,子
+    // iframe 跟着不算 → 白屏。把该 origin 当 secure 对待。走
+    // with_windows_browser_args(透传 wry additional_browser_args),不走
+    // WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS —— wry 设了显式默认 args 会盖掉
+    // env。必须带上 wry 默认那几条,否则回退;LocalNetworkAccessChecks 是
+    // iframe 嵌 loopback 要关的。
+    #[cfg(windows)]
+    let cfg = cfg.with_windows_browser_args(
+        "--disable-features=msWebOOUI,msPdfOOUI,msSmartScreenProtection,LocalNetworkAccessChecks \
+         --unsafely-treat-insecure-origin-as-secure=http://dioxus.index.html",
+    );
 
     LAUNCH_DEEP_LINK.with(|c| *c.borrow_mut() = Some(deep_link));
     dioxus::LaunchBuilder::new().with_cfg(cfg).launch(Root);
@@ -88,6 +85,7 @@ fn Root() -> Element {
     let mut vm = use_signal(vm::Vm::default);
     let nav = use_context_provider(move || bridge::PanelNav(Signal::new(initial_panel)));
     use_context_provider(|| bridge::GuideNav(Signal::new(None)));
+    let chrome_busy = use_context_provider(|| ChromeBusy(Signal::new(None)));
     let mut panel = nav.0;
     let mut top_view = use_signal(move || initial_view);
 
@@ -123,6 +121,19 @@ fn Root() -> Element {
         last_open.set(now);
     });
 
+    // 点开工先立的遮罩,等内核 Vm.busy 接上;内核撤了也跟着撤。
+    let mut prev_kernel_busy = use_signal(|| false);
+    use_effect(move || {
+        let now = vm.read().busy.clone();
+        let had = *prev_kernel_busy.peek();
+        if let Some(msg) = now.clone() {
+            chrome_busy.set(msg);
+        } else if had {
+            chrome_busy.clear();
+        }
+        prev_kernel_busy.set(now.is_some());
+    });
+
     let v = vm.read().clone();
 
     if let Some(fatal) = &v.fatal {
@@ -152,7 +163,7 @@ fn Root() -> Element {
     let in_project = project.is_some() && tv.is_none();
     let source = data_dir_label(&v.settings.data_dir);
 
-    // 顶栏标题:项目内是六入口的名字,顶层是那一屏的名字。
+    // 顶栏标题:项目内是五入口的名字,顶层是那一屏的名字。
     let title = match (tv, in_project) {
         (Some(TopView::Onboard), _) => "接入项目".to_string(),
         (Some(TopView::Settings), _) => "设置".to_string(),
@@ -161,8 +172,9 @@ fn Root() -> Element {
     };
 
     let b_rail = bridge.clone();
-    // 项目轨的红点和项目墙卡片上的 ⚑ 是同一个数(见 `NotifyVm::unread`)——
-    // 点过「读到这里」它就该掉下去,不能永远等于「评审中 + 阻塞」。
+    // 项目轨头部徽章和项目墙卡片上的 ⚑ 是同一个数(见 `NotifyVm::unread`)
+    // —— 评审中的活张数,现算。通知页签已删(ADR-0003),个人弹窗落地前
+    // 它撑着「有几张等你合入」。
     let unread = project.as_ref().map(|p| p.notify.unread).unwrap_or(0);
 
     rsx! {
@@ -207,20 +219,31 @@ fn Root() -> Element {
                 for (i, w) in v.warnings.iter().enumerate() {
                     div { key: "{i}", class: "warnbar", "{w}" }
                 }
-                // 会话屏的三栏由 .content 自己摆 —— 终端挂在这一层,靠这套
-                // 网格落进中栏下半格(理由见 screens/session 的头注)。
+                // 会话屏的布局由 .content 自己摆 —— session-mode 三栏网格已随
+                // PTY 封存删掉(终端不挂这里了,会话屏只剩 Orca/OD 两组件)。
                 div {
-                    class: if in_project && cur == Panel::Session { "content session-mode" } else { "content" },
+                    class: "content",
                     {body(tv, cur, &v, &project, &bridge, top_view)}
                 }
             }
             chrome::GuideDrawer {}
+            if let Some(msg) = {
+                let chrome_msg = chrome_busy.get();
+                v.busy.clone().or(chrome_msg)
+            } {
+                div { class: "busy-mask",
+                    div { class: "busy-card",
+                        div { class: "busy-spin" }
+                        "{msg}"
+                    }
+                }
+            }
             chrome::Toast { note: v.note.clone(), seq: v.note_seq }
         }
     }
 }
 
-/// 内容区分发。终端**挂在屏的外面**,理由见下面那段注释。
+/// 内容区分发:顶层三屏 / 项目内六屏。PTY 已封存,终端不再挂在屏外。
 fn body(
     tv: Option<TopView>,
     cur: Panel,
@@ -252,43 +275,5 @@ fn body(
     };
     rsx! {
         {screens::route(cur, &p, bridge)}
-        // 终端本体挂在**屏的外面**,不在会话屏里面。
-        //
-        // 挂在会话屏里的话,人一切到别的面板,整个屏连同终端一起被卸载
-        // —— 收字节的那条循环也就没了,这期间 agent 说的话是**真丢的**,
-        // 切回来只剩一个空终端。挂在这里,六个面板怎么切它都活着;不是
-        // 当前焦点的那个只是被挪到屏外(不是 display:none —— 那会让
-        // xterm 以 0×0 打开,再回来一片空白)。
-        //
-        // 只挂「进程还活着」或「正被选中」的会话:早就跑完的会话再挂一
-        // 个每 30ms 轮询一次的循环纯属白烧。代价是切走再回来看一个已经
-        // 结束的会话,回放是空的 —— 存不存回放还没做。
-        for s in p.sessions.iter().filter(|s| s.live || p.session_open == Some(s.issue_id)) {
-            TerminalWidget {
-                key: "{s.conversation_id:?}",
-                conversation_id: s.conversation_id,
-                focused: cur == Panel::Session
-                    && p.session_open == Some(s.issue_id)
-                    && p.workbench.tab == SessionTab::Terminal,
-                bridge: bridge.clone(),
-            }
-        }
-        // 评审会话的终端:同一套挂载,路由到评审那场的字节流,焦点在「评审」
-        // 页签上时归它。一张活最多两个终端(写码 + 评审),互不遮挡。
-        for (s, rid) in p
-            .sessions
-            .iter()
-            .filter_map(|s| s.review_conversation_id.map(|rid| (s, rid)))
-            .filter(|(s, _)| s.review_live || p.session_open == Some(s.issue_id))
-        {
-            TerminalWidget {
-                key: "{rid:?}",
-                conversation_id: rid,
-                focused: cur == Panel::Session
-                    && p.session_open == Some(s.issue_id)
-                    && p.workbench.tab == SessionTab::Review,
-                bridge: bridge.clone(),
-            }
-        }
     }
 }

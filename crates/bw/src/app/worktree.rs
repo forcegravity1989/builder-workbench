@@ -8,9 +8,10 @@
 //! 供给这一步走**底座的
 //! [`provision_issue_worktree`](bw_engine::workspace::provision_issue_worktree)**
 //! ——`bw-engine` 是 2026-08-21 从 `bw-engine` 拷来接管的一份(不是复用):
-//! 在主仓的**兄弟目录**
-//! `<主仓名>-issue-<号>` 里开一棵,分支 `bw/issue-<号>`,已经存在就原样接着用
-//! (重跑幂等)。
+//! 新树落在仓根下 `<仓根>/.bw/worktrees/issue-<号>`,分支 `bw/issue-<号>`,
+//! 已经存在就原样接着用(重跑幂等)。**旧平级兄弟 `<主仓名>-issue-<号>` 不迁、
+//! 不删** —— 接回时 [`bw_engine::workspace::resolve_issue_worktree`] 先看会话记下
+//! 的路径、再看新目录、最后看旧兄弟,旧活就地接着用。
 //!
 //! **不给 RAII guard,不跑完就删**。V3 是跑完 `Drop` 里把 worktree 删掉;V4
 //! 不能那样:会话屏的文件树和 diff 读的就是这棵 worktree,跑完立刻删,人点开
@@ -19,7 +20,7 @@
 //! [`remove_if_clean`]。
 //!
 //! **两个根的分工**(别混):进得了版本控制的件写进 worktree,走分支和 MR;
-//! 仓自己的 `.gitignore` 拒收的件(buddy 自己的仓就忽略 `.claude/`)属于**本机
+//! 仓自己的 `.gitignore` 拒收的件(Workbench 自己的仓就忽略 `.claude/`)属于**本机
 //! 检出**,不属于任何分支 —— 它们要落在主工作区,否则技能包只存在于这一张活
 //! 的 worktree 里,下一张活开新 worktree 就读不到剧本了。见 [`mirror_ignored`]。
 
@@ -155,7 +156,7 @@ impl MrOutcome {
 
 /// 把这张活的分支推上去,再开一个 MR。**每一条不做的理由都说出来**。
 ///
-/// 两处在用:规范铺底(buddy 自己写的核心件)和「提交并开 MR」(agent 干完的
+/// 两处在用:规范铺底(Workbench 自己写的核心件)和「提交并开 MR」(agent 干完的
 /// 活)。两边准备分支的方式不同,推分支和开 MR 这一步是同一件事,只留一份。
 ///
 /// `has_work` = 这条分支上到底有没有可评审的东西。调用方各自判断:铺底看这次

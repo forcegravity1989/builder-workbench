@@ -38,18 +38,17 @@ pub(super) fn build_week_counts(issues: &[bw::Issue], week: Option<&str>) -> Wee
 }
 
 /// 运作活①②③三个状态点。开着的优先;本周已关的①②写「已完成」。
-/// ③关过但默认分支没有指纹清单仍算未建(旧铺底关掉、MR 没合不能冒充铺过)。
+/// ③关过但默认分支没有指纹清单仍算未建(旧铺底关掉、MR 没合
+/// 不能冒充铺过)。
 ///
-/// **判据认的是指纹清单,不是某一份规范件**:清单是铺底最后写的那一份,铺
-/// 什么件都跑不掉它;盯某一份具体的件,那份件哪天从清单里去掉,这个判据就
-/// 会连着假红——2026-08-29 删掉一份规范件时正好撞上,所以改到这里。
-pub(super) async fn build_ops(
+/// `ops3_landed` 从外部传:它只跟仓走、不跟周走,在 `gather` 里采一次,
+/// 不再每重切都跑一遍 `git::path_in_head`(原来一次重拼跑两遍)。
+pub(super) fn build_ops(
     issues: &[bw::Issue],
     current_week: &str,
-    ws: &Path,
+    ops3_landed: bool,
 ) -> Vec<OpsChipVm> {
     use bw::app::{OPS1_WORKFLOW, OPS2_WORKFLOW, OPS3_WORKFLOW};
-    let ops3_landed = bw::git::path_in_head(ws, bw::repo::managed_file::REL_PATH).await;
     let pick = |wf: &str, done: bool| {
         issues
             .iter()
@@ -125,7 +124,10 @@ pub(super) fn build_card_mr(issues: &[bw::Issue]) -> Option<CardMrVm> {
         .filter(|i| {
             matches!(
                 i.status,
-                IssueStatus::InReview | IssueStatus::InProgress | IssueStatus::Todo
+                IssueStatus::InReview
+                    | IssueStatus::InProgress
+                    | IssueStatus::Todo
+                    | IssueStatus::Backlog
             )
         })
         .max_by_key(|i| i.number)?;
@@ -135,6 +137,7 @@ pub(super) fn build_card_mr(issues: &[bw::Issue]) -> Option<CardMrVm> {
         status: i.status.label().to_string(),
         pr_number: i.pr_number,
         mergeable: i.status == IssueStatus::InReview,
+        has_open_mr: i.has_open_mr,
     })
 }
 
@@ -208,92 +211,6 @@ pub(super) async fn collect_repo_stats(
     }
 }
 
-/// 事件流。**没有事件表** —— 这条流是从四张表里现算的:
-///
-/// - 活建出来了(`issue.created_at`)
-/// - 活结清了(`issue.settled_at`,只结一次,所以这条不会重复)
-/// - 会话开出来了(`claude_conversation.created_at`)
-///
-/// 存不下来的事(某一次运行失败、某一条群消息发没发出去)就**不在流里**。
-/// 与其补一条编的,不如少一条。
-pub(super) fn build_notify_events(
-    issues: &[bw::Issue],
-    convs: &[bw::model::Conversation],
-) -> Vec<NotifyEventVm> {
-    let mut out: Vec<(i64, NotifyEventVm)> = Vec::new();
-    let done_of = |id| {
-        issues
-            .iter()
-            .find(|i| i.id == id)
-            .is_some_and(|i| i.status == IssueStatus::Done)
-    };
-    for i in issues {
-        if i.created_at > 0 {
-            out.push((
-                i.created_at,
-                NotifyEventVm {
-                    time: stamp(i.created_at),
-                    text: format!("建了活 #{} {}", i.number, i.title),
-                    issue: Some(i.id),
-                    done: done_of(i.id),
-                },
-            ));
-        }
-        if let Some(t) = i.settled_at {
-            out.push((
-                t,
-                NotifyEventVm {
-                    time: stamp(t),
-                    text: format!("#{} {} 完成并结清", i.number, i.title),
-                    issue: Some(i.id),
-                    done: true,
-                },
-            ));
-        }
-    }
-    for c in convs {
-        let Some(i) = issues.iter().find(|i| i.id == c.issue_id) else {
-            continue;
-        };
-        if c.created_at > 0 {
-            out.push((
-                c.created_at,
-                NotifyEventVm {
-                    time: stamp(c.created_at),
-                    text: format!("#{} {} 开了会话({})", i.number, i.title, c.branch_name),
-                    issue: Some(i.id),
-                    done: done_of(i.id),
-                },
-            ));
-        }
-    }
-    // 新的在前。同一秒的保持稳定顺序,不让它每次重拼都跳。
-    out.sort_by_key(|(t, _)| std::cmp::Reverse(*t));
-    out.into_iter().take(80).map(|(_, e)| e).collect()
-}
-
-/// 时间戳按**本机时区**格式化 —— 周也是按本机时区算的,两处得一致。
-///
-/// 偏移取的是 `isoweek` 在启动单线程阶段探好存下来的那一份。**这里绝不能自己
-/// 再调一次 `current_local_offset()`**:那个系统调用在多线程进程里必然返回
-/// Err,退回 UTC 之后事件流比真实时间早 8 小时,而同屏的周号仍是本机周。
-fn stamp(unix: i64) -> String {
-    let offset = bw::isoweek::local_offset();
-    match time::OffsetDateTime::from_unix_timestamp(unix) {
-        Ok(t) => {
-            let t = t.to_offset(offset);
-            format!(
-                "{:02}-{:02} {:02}:{:02}",
-                t.month() as u8,
-                t.day(),
-                t.hour(),
-                t.minute()
-            )
-        }
-        Err(_) => String::new(),
-    }
-}
-
 #[cfg(test)]
 mod ops_chip_display_tests {
     use super::ops_chip_display;
@@ -332,6 +249,7 @@ mod ops_chip_display_tests {
             status: bw::model::IssueStatus::Done,
             branch: String::new(),
             pr_number: 0,
+            has_open_mr: false,
             week_of: "2026-W35".into(),
             version: String::new(),
             tool: String::new(),
@@ -344,6 +262,9 @@ mod ops_chip_display_tests {
             created_at: 0,
             updated_at: 0,
             settled_at: None,
+            assignee: String::new(),
+            author: String::new(),
+            plan_version: String::new(),
         }
     }
 }

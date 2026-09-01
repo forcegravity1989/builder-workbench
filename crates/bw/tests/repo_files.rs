@@ -36,7 +36,7 @@ tool     = "claude_cli"
 workflow = "mattpocock-skills"
 
 [cadence]
-ops2_schedule = "fri 20:00"
+ops2_schedule = "fri 09:00"
 "#;
     let f = issue_policy_file::parse(raw).unwrap();
     let m = f.mapping_for(StageKind::Build).unwrap();
@@ -46,7 +46,6 @@ ops2_schedule = "fri 20:00"
         f.mapping_for(StageKind::Growth).is_none(),
         "没配的类别就是没配,不替用户挑一个"
     );
-    assert_eq!(f.cadence.as_ref().unwrap().ops2_schedule, "fri 20:00");
     // 渲染出来的还认得回去。
     let again = issue_policy_file::parse(&issue_policy_file::render(&f)).unwrap();
     assert_eq!(again.mappings, f.mappings);

@@ -1,6 +1,6 @@
 //! 规范铺底(运作活③)与规范对账。
 //!
-//! 只做**第 1 步**:buddy 自己把核心件写进项目仓、记指纹,在**这张活自己的
+//! 只做**第 1 步**:Workbench 自己把核心件写进项目仓、记指纹,在**这张活自己的
 //! worktree 和分支上**提交,推上去,开一个 MR 等人合。
 //!
 //! **就这一步,没有第二步。** 仓根一个字不写 —— `AGENTS.md` / `CLAUDE.md` 是
@@ -9,7 +9,7 @@
 //! 老仓历史要出现在计划屏:给已有 issue 打周标签,需要周目标再补运作活①。
 //! 探测到了什么如实写进这张活的正文,没跑就是没跑。
 //!
-//! **技能不往用户仓里复制**(2026-08-20 改):buddy 自带那四份摊在自己的资产
+//! **技能不往用户仓里复制**(2026-08-20 改):Workbench 自带那四份摊在自己的资产
 //! 目录,开工时只把名字、一句话和完整路径写进系统提示词,正文让 agent 按需读。
 //!
 //! **不在主检出上动手**。写文件、提交、开分支全在
@@ -47,7 +47,7 @@ impl App {
         let title = boot::issue_title();
         let body = format!(
             "探测结果:{}。\n\n本次要跑的步骤:{}\
-             \n\n本次执行:写核心件(buddy 自己写,不起 agent)。\
+             \n\n本次执行:写核心件(Workbench 自己写,不起 agent)。\
              \n\n还没跑的步骤如实列在这里,不假装做过:{}",
             probe.reasons.join("、"),
             boot::planned_steps(&probe),
@@ -115,9 +115,14 @@ impl App {
         // 再写一遍是同一份内容;进 `written` 是为了让它被提交。
         project_file::write(&tree.path, &file)?;
         report.written.push(project_file::REL_PATH.to_string());
+        // 接入写在主检出上的那份只是为了当场能渲染。正本走这张活的 MR,
+        // 主检出上留下未提交的名片会挡「拉到最新」。
+        if tree.isolated {
+            let _ = super::plan::salvage_main_checkout_dirt(&ws).await;
+        }
 
         // 只提交这次真写下去的那些件,不用 `add -A`:这棵树是干净的检出,但
-        // 规矩就是规矩 —— 提交里出现的每一个文件都该是 buddy 自己写的。
+        // 规矩就是规矩 —— 提交里出现的每一个文件都该是 Workbench 自己写的。
         let outcome = crate::git::commit_paths(
             &tree.path,
             &report.written,
@@ -145,8 +150,8 @@ impl App {
             committed,
             &format!("规范铺底 v{} · 核心件", standard::version()),
             concat!(
-                "buddy 的「规范铺底」写下的核心件。合入之后这个项目就有管理体系的正本了。\n\n",
-                "这些件全是 buddy 自己写的,没有起 agent。"
+                "Workbench 的「规范铺底」写下的核心件。合入之后这个项目就有管理体系的正本了。\n\n",
+                "这些件全是 Workbench 自己写的,没有起 agent。"
             ),
         )
         .await;
@@ -169,14 +174,14 @@ impl App {
                 b.push_str(&format!("- `{path}`:{why}\n"));
             }
         }
-        // 仓里已经有、但不是 buddy 铺的件。**必须显眼地说一声** —— 界面会把它们
-        // 当正本读,而它们的来路 buddy 一无所知。
+        // 仓里已经有、但不是 Workbench 铺的件。**必须显眼地说一声** —— 界面会把它们
+        // 当正本读,而它们的来路 Workbench 一无所知。
         if !report.preexisting.is_empty() {
             b.push_str(
-                "\n\n⚠️ 仓里本来就有这几份件,不是 buddy 铺的,这次也没碰它们 —— \
+                "\n\n⚠️ 仓里本来就有这几份件,不是 Workbench 铺的,这次也没碰它们 —— \
                  但界面会把它们当正本读(指标卡、健康判据都从这里来)。\
                  请确认它们确实属于这个项目、格式也还作数;不作数就先删掉,\
-                 走到那一站时 buddy 会铺一份干净的:\n",
+                 走到那一站时 Workbench 会铺一份干净的:\n",
             );
             for path in &report.preexisting {
                 b.push_str(&format!("- `{path}`\n"));
@@ -185,7 +190,7 @@ impl App {
         if !outcome.refused.is_empty() {
             b.push_str(
                 "\n\n写下去了但没进版本控制的件(这个仓的 .gitignore 忽略了它们,\
-                 buddy 不用 -f 顶回去 —— 那是项目自己的决定)。它们属于本机检出,\
+                 Workbench 不用 -f 顶回去 —— 那是项目自己的决定)。它们属于本机检出,\
                  不属于分支,合 MR 不会带上:\n",
             );
             // 一条路径只出现一次,后面跟它的下落 —— 三份互相重复的清单谁都不会看。
@@ -286,7 +291,7 @@ impl App {
         let mut human_edited = Vec::new();
 
         // 只对账**铺进用户仓的规范件**。技能包不在这张表里 —— 它们住在
-        // buddy 自己的资产目录,不进用户的仓,自然也没有「人手改过没有」这
+        // Workbench 自己的资产目录,不进用户的仓,自然也没有「人手改过没有」这
         // 个问题(见 `standard::skills`)。
         for t in standard::CORE_TEMPLATES {
             let target = t.target.to_string();
@@ -387,34 +392,6 @@ pub fn agent_system_prompt(
     )
 }
 
-/// 评审会话的系统提示词 —— 主文件是外置的
-/// `standard/system-prompt/REVIEW.md.tmpl`(独立评审身份 + 只评不改/绝不合并/
-/// 意见落 MR 评论),渲染规矩与 [`agent_system_prompt`] 完全一套:占位运行时
-/// 填、正文不塞提示词、改身份 = 改 md + 抬 `standard/VERSION`。
-///
-/// `mr` 是被评的 MR/PR 号的显示文本(查不到时如实是「—(没查到开着的 MR)」,
-/// 那种情况只出现在 briefing 预览里——真「请评审」查不到号根本不起会话)。
-pub fn review_system_prompt(
-    issue: &Issue,
-    mr: &str,
-    skill: Option<&SkillPointer>,
-    references: &[ReferencePointer],
-) -> String {
-    let number = issue.number.to_string();
-    let refs = references_block(references);
-    let skill_str = skill_block(skill);
-    standard::render(
-        standard::system_prompt::REVIEW_PROMPT_TMPL,
-        &[
-            ("number", number.as_str()),
-            ("title", issue.title.as_str()),
-            ("mr", mr),
-            ("references", refs.as_str()),
-            ("skill", skill_str.as_str()),
-        ],
-    )
-}
-
 /// 指给 agent 的一份阶段规范:名字、一句话、**完整路径**。正文不在这里。
 pub struct ReferencePointer {
     pub name: String,
@@ -425,8 +402,8 @@ pub struct ReferencePointer {
 /// 这张活要读哪几份阶段规范 references。按活的类别/workflow 匹配,只返**硬盘
 /// 上真存在**的那几份(文件不在就如实不指,不编路径)。
 ///
-/// 起手只两份:`metrics`(指标活,workflow=更新指标与周计划)、`build`(改仓类活,
-/// 类别=构建/优化/运维)。其余按实践长。
+/// 起手三份:`metrics`(指标活,workflow=更新指标与周计划)、`build`(改仓类活,
+/// 类别=构建/优化/运维)、`week-plan-comment`(运作活①评论格式)。其余按实践长。
 pub fn references_for(issue: &Issue, refs_dir: &std::path::Path) -> Vec<ReferencePointer> {
     let mut out = vec![];
     for pack in standard::system_prompt::references() {
@@ -442,23 +419,6 @@ pub fn references_for(issue: &Issue, refs_dir: &std::path::Path) -> Vec<Referenc
         }
     }
     out
-}
-
-/// 评审会话要读的阶段规范 —— 固定 `review` 一份,与活的类别/workflow 无关
-/// (评审评的是 MR,不是重干那件活)。文件不在硬盘就如实不指。
-pub fn review_references(refs_dir: &std::path::Path) -> Vec<ReferencePointer> {
-    standard::system_prompt::references()
-        .into_iter()
-        .filter(|pack| pack.slug == "review")
-        .filter_map(|pack| {
-            let path = refs_dir.join(&pack.rel);
-            path.is_file().then(|| ReferencePointer {
-                name: pack.slug.to_string(),
-                desc: pack.desc.to_string(),
-                path: path.display().to_string(),
-            })
-        })
-        .collect()
 }
 
 /// 这份 reference 要不要给这张活。
@@ -484,7 +444,7 @@ fn references_block(references: &[ReferencePointer]) -> String {
         return String::new();
     }
     let mut s = String::from(
-        "\n\n干这件活,开工前还要读这几份 buddy 规范(正文自己按需读,路径在 buddy 资产目录):\n",
+        "\n\n干这件活,开工前还要读这几份 Workbench 规范(正文自己按需读,路径在 Workbench 资产目录):\n",
     );
     for r in references {
         s.push_str(&format!("- `{}` —— {}\n", r.path, r.desc));
@@ -512,8 +472,8 @@ pub struct SkillPointer {
 
 /// 这张活挂的那一份技能在哪。文件不在硬盘上就返回 `None`,调用方如实少一段。
 ///
-/// 找的是 **buddy 自己的技能目录**(`App::skills_dir`),不是用户的仓 ——
-/// 用户仓里从来就不该有 buddy 的技能副本。
+/// 找的是 **Workbench 自己的技能目录**(`App::skills_dir`),不是用户的仓 ——
+/// 用户仓里从来就不该有 Workbench 的技能副本。
 pub fn skill_pointer(skills_dir: &std::path::Path, workflow: &str) -> Option<SkillPointer> {
     let slug = super::ops::skill_slug(workflow)?;
     let pack = standard::skills::all()
@@ -530,83 +490,11 @@ pub fn skill_pointer(skills_dir: &std::path::Path, workflow: &str) -> Option<Ski
     })
 }
 
-/// 把 buddy 的技能目录加进 CLI 的可读目录 —— 它在 agent 的工作目录外面。
+/// 把 Workbench 的技能目录加进 CLI 的可读目录 —— 它在 agent 的工作目录外面。
 ///
 /// 提示词里给的是绝对路径,不加这一句,CLI 那边读不读得到取决于它当天的权限
 /// 策略;显式声明一句,别赌。
 pub(crate) fn allow_skills_dir(plan: &mut bw_engine::LaunchPlan, dir: &std::path::Path) {
     plan.args.push("--add-dir".to_string());
     plan.args.push(dir.display().to_string());
-}
-
-/// 给这次开工配一份只属于 buddy 的 Claude settings(不写用户仓)。
-/// SessionStart hook 把 `--resume` id 落到
-/// `<asset_root>/claude/runs/<project>_<iid>/session_id.txt`。
-pub(crate) fn attach_session_hook(
-    plan: &mut bw_engine::LaunchPlan,
-    asset_root: &std::path::Path,
-    project_id: ProjectId,
-    iid: u32,
-) {
-    let dir = asset_root
-        .join("claude")
-        .join("runs")
-        .join(format!("{}_{iid}", project_id.uuid()));
-    if std::fs::create_dir_all(&dir).is_err() {
-        return;
-    }
-    let settings = dir.join("settings.json");
-    let command = if cfg!(windows) {
-        let ps1 = dir.join("capture.ps1");
-        let script = "\
-$out = Join-Path $PSScriptRoot 'session_id.txt'\n\
-$raw = [Console]::In.ReadToEnd()\n\
-try {\n\
-  $j = $raw | ConvertFrom-Json\n\
-  $id = $j.session_id\n\
-  if (-not $id) { $id = $j.sessionId }\n\
-  if ($id) { Set-Content -Path $out -Value ([string]$id).Trim() -Encoding ascii }\n\
-  else { Set-Content -Path $out -Value $raw -Encoding utf8 }\n\
-} catch { Set-Content -Path $out -Value $raw -Encoding utf8 }\n";
-        if std::fs::write(&ps1, script).is_err() {
-            return;
-        }
-        format!(
-            "powershell -NoProfile -ExecutionPolicy Bypass -File \"{}\"",
-            ps1.display()
-        )
-    } else {
-        let sh = dir.join("capture.sh");
-        let script = "#!/bin/sh\n\
-out=\"$(dirname \"$0\")/session_id.txt\"\n\
-raw=$(cat)\n\
-id=$(printf '%s' \"$raw\" | sed -n 's/.*\"session_id\"[[:space:]]*:[[:space:]]*\"\\([^\"]*\\)\".*/\\1/p')\n\
-if [ -n \"$id\" ]; then printf '%s\\n' \"$id\" > \"$out\"\n\
-else printf '%s\\n' \"$raw\" > \"$out\"\n\
-fi\n";
-        if std::fs::write(&sh, script).is_err() {
-            return;
-        }
-        #[cfg(unix)]
-        {
-            use std::os::unix::fs::PermissionsExt;
-            let _ = std::fs::set_permissions(&sh, std::fs::Permissions::from_mode(0o755));
-        }
-        format!("sh \"{}\"", sh.display())
-    };
-    let body = serde_json::json!({
-        "hooks": {
-            "SessionStart": [{
-                "hooks": [{
-                    "type": "command",
-                    "command": command
-                }]
-            }]
-        }
-    });
-    if std::fs::write(&settings, body.to_string()).is_err() {
-        return;
-    }
-    plan.args.push("--settings".to_string());
-    plan.args.push(settings.display().to_string());
 }

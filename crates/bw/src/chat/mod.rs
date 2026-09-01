@@ -1,6 +1,6 @@
 //! 项目群适配工厂。
 //!
-//! 项目在聊天工具里本来就有一个群,buddy 只做两件事:**往群里发一条**、
+//! 项目在聊天工具里本来就有一个群,Workbench 只做两件事:**往群里发一条**、
 //! **定计划时把上周群消息拉出来当参考**。不做双向机器人、不做群里点按钮改
 //! 活状态(那会绕开「完成永远由人点」)、不做多群路由。
 //!
@@ -88,22 +88,90 @@ pub fn for_project(provider: &str, group_id: &str) -> Box<dyn ChatGroup> {
     }
 }
 
-/// 哪些事默认同步到群。`.bw/config/project.toml` 的 `[chat] notify` 没写就是这三样。
-pub const DEFAULT_NOTIFY: [&str; 3] = ["review", "merged", "release"];
+/// 群通知事件——一张**固定枚举注册表**。加新事件(如周报触发)= 加一个
+/// variant + 在对应动作点调一次 [`App::chat_send`](crate::app::App::chat_send),
+/// 不是散落硬编码字符串。详见 ADR-0003。
+///
+/// 顺序即总览「同步哪些通知」里勾选项的稳定顺序,别随意调。
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum NotifyEvent {
+    /// 本周版本计划创建完成(用户点「开始本周」建出运作活①那一下)。
+    WeekPlan,
+    /// 新建活并临时纳入本周(`create_issue` 带 `week_of` 的业务活)。
+    IssueCreated,
+    /// PR 合入。
+    Merged,
+    /// 发版。
+    Release,
+    /// 周报。**占位**:枚举项 + 配置开关 + dispatch 槽都在,但本轮无触发、无
+    /// 生成逻辑——后续单独会话补,接入点已留。
+    Weekly,
+}
+
+impl NotifyEvent {
+    /// 全部事件,稳定顺序。配置屏按它渲染勾选项;默认集也按它。
+    pub const ALL: [Self; 5] = [
+        Self::WeekPlan,
+        Self::IssueCreated,
+        Self::Merged,
+        Self::Release,
+        Self::Weekly,
+    ];
+
+    /// 配置正本(`.bw/config/project.toml [chat] notify`)里匹配用的字符串 key。
+    pub fn key(self) -> &'static str {
+        match self {
+            Self::WeekPlan => "week_plan",
+            Self::IssueCreated => "issue_created",
+            Self::Merged => "merged",
+            Self::Release => "release",
+            Self::Weekly => "weekly",
+        }
+    }
+
+    /// 群消息里 `【…】` 的中文标签。
+    pub fn label(self) -> &'static str {
+        match self {
+            Self::WeekPlan => "本周版本计划",
+            Self::IssueCreated => "新建活",
+            Self::Merged => "已合入",
+            Self::Release => "发版",
+            Self::Weekly => "周报",
+        }
+    }
+
+    /// 配置 key → 事件。认不出返回 `None`(旧值如 `review` 升级后即如此,
+    /// 它不会再匹配任何事件,等于该项静音——不为旧值留兼容路径)。
+    pub fn from_key(key: &str) -> Option<Self> {
+        Some(match key {
+            "week_plan" => Self::WeekPlan,
+            "issue_created" => Self::IssueCreated,
+            "merged" => Self::Merged,
+            "release" => Self::Release,
+            "weekly" => Self::Weekly,
+            _ => return None,
+        })
+    }
+}
+
+/// 哪些事默认同步到群。`.bw/config/project.toml` 的 `[chat] notify` 没写就是这五样。
+/// `review`(进评审)已移除——它该在计划屏看见,不占群通知位。
+pub const DEFAULT_NOTIFY: [NotifyEvent; 5] = NotifyEvent::ALL;
 
 /// 事件类型 → 中文标签。认不出的原样返回,不替它编一个名字。
+///
+/// 仍按字符串取(群消息回执 `Event::ChatNotifySent` 带的是 key 字符串,不是
+/// 枚举)——配置里写过的旧 key 走到这里,原样回显让人看明白是哪一项。
 pub fn event_label(event: &str) -> &str {
-    match event {
-        "review" => "评审中",
-        "merged" => "已合入",
-        "release" => "发版",
-        other => other,
+    match NotifyEvent::from_key(event) {
+        Some(e) => e.label(),
+        None => event,
     }
 }
 
 /// 一行文案:`【<事件>】#<活号> <标题> · <MR 状态> · <谁该动> → <深链>`。
 ///
-/// **不 @ 人**:buddy 不建成员,没有身份映射可 @。
+/// **不 @ 人**:Workbench 不建成员,没有身份映射可 @。
 /// `number == 0` 表示这条不挂在某张活上(发版就是这样),此时不写活号、也不
 /// 写深链——写一个 `#0` 和一条点不开的链接比不写更糟。
 pub fn notify_text(event: &str, number: u32, title: &str, mr: &str, who: &str) -> String {

@@ -96,12 +96,9 @@ async fn project_default_branch(host: &str, path: &str) -> Result<String, Codehu
 
 /// 在**已经推上去的分支**上开一个 MR —— `codehub-cli mr create` 就这一处实现。
 ///
-/// 调用方各自准备分支的方式不同([`create_mr`] 走 `stage_commit_push`、
-/// [`create_project_init_mr`] 先 checkout 再提交、V4 的规范铺底自己在 worktree
-/// 里只提交点名的那几个文件),开 MR 这一步是同一段代码,只留一份。
-///
-/// `body` 与 `issue_number` 都由调用方给:**带不带 `Closes` / `--issue-nums`
-/// 是调用方的决定**。V4 的活是本机号,和远端 issue 号没有对应关系,自作主张
+/// 唯一调用方是规范铺底:它在自己的 worktree 里只提交点名的那几个文件、推
+/// 分支,再调这里开 MR。`body` 由调用方给:带不带 `Closes` 是调用方的决定 ——
+/// 不能默认带,Workbench 的活是本机号,和远端 issue 号没有对应关系,自作主张
 /// 挂上去会把那个仓里毫不相干的一号活关掉。
 ///
 /// target-branch = 项目默认分支,运行时从 `origin/HEAD` 解析(maas 是
@@ -115,7 +112,6 @@ pub async fn create_mr_on_branch(
     branch: &str,
     title: &str,
     body: &str,
-    issue_number: Option<u32>,
 ) -> Result<crate::github::PrOpened, CodehubError> {
     let tgt = crate::win_cmd::tokio_cmd("git")
         .current_dir(workspace)
@@ -139,7 +135,6 @@ pub async fn create_mr_on_branch(
     if let Ok(Some(iid)) = open_mr_for_branch(host, path, branch).await {
         return Ok(crate::github::PrOpened::Adopted(iid));
     }
-    let issue_nums = issue_number.map(|n| format!("issue{n}"));
     let mut args: Vec<&str> = vec![
         "mr",
         "create",
@@ -156,10 +151,6 @@ pub async fn create_mr_on_branch(
         "--description",
         body,
     ];
-    if let Some(nums) = issue_nums.as_deref() {
-        args.push("--issue-nums");
-        args.push(nums);
-    }
     args.push("--jq");
     args.push(".iid");
     let out = crate::win_cmd::tokio_cmd("codehub-cli")
@@ -184,7 +175,7 @@ pub async fn create_mr_on_branch(
 /// → the iid of the first open MR sourced from `branch`, or `None` if no
 /// such MR exists. Read-only, zero repo side effects. Used by the InReview
 /// detection poller (V1 Issue2 Phase2a) to detect an MR the agent opened
-/// in-session — buddy doesn't create it (the agent does), buddy just reads
+/// in-session — Workbench doesn't create it (the agent does), Workbench just reads
 /// it back (读回为证, not agent self-report).
 ///
 /// Mirrors the existing `create_mr` adoption path's `mr list` call exactly
@@ -229,7 +220,45 @@ pub async fn open_mr_for_branch(
         .map_err(|_| CodehubError::Parse(format!("无法解析 codehub MR iid:{text:?}")))
 }
 
-/// `codehub-cli mr merge <iid> --squash -y` — the codehub parity of
+/// 同 `open_mr_for_branch` 但 `--state all`(找开着或已合入的 MR)。
+/// 给 Done 的 issue 用 —— 它的 MR 已合入,`open_mr_for_branch` 查不到。
+pub async fn mr_for_branch(
+    host: &str,
+    path: &str,
+    branch: &str,
+) -> Result<Option<u32>, CodehubError> {
+    let out = crate::win_cmd::tokio_cmd("codehub-cli")
+        .args([
+            "mr",
+            "list",
+            "-p",
+            path,
+            "-H",
+            host,
+            "--source-branch",
+            branch,
+            "--state",
+            "all",
+            "--jq",
+            ".[0].iid",
+        ])
+        .stdin(Stdio::null())
+        .stdout(Stdio::piped())
+        .stderr(Stdio::piped())
+        .output()
+        .await
+        .map_err(spawn_err)?;
+    if !out.status.success() {
+        return Err(CodehubError::Command(stderr_text(&out)));
+    }
+    let text = String::from_utf8_lossy(&out.stdout).trim().to_string();
+    if text.is_empty() || text == "null" {
+        return Ok(None);
+    }
+    text.parse::<u32>()
+        .map(Some)
+        .map_err(|_| CodehubError::Parse(format!("无法解析 codehub MR iid:{text:?}")))
+}
 /// [`crate::github::merge_pr`]: the human验收 action that integrates the
 /// source branch into the target. Squash-merges (matches github's `--squash`).
 /// The caller ([`crate::Remote::merge_mr`] ← `MergeIssuePr`) settles the
@@ -615,7 +644,7 @@ pub async fn update_issue(
                 })
                 .cloned()
                 .collect();
-            for &l in lbls {
+            for l in crate::remote::filter_persistent_labels(lbls) {
                 if !final_set.iter().any(|s| s == l) {
                     final_set.push(l.to_string());
                 }
@@ -682,7 +711,7 @@ pub async fn list_issues(
     // `(. // [])` 兜 null:开着的 issue 为零时 codehub-cli 返 null,
     // 裸 `.[]` 会 jq 运行期失败(实测 2026-08-24:接入后铺底先查同标题开着的
     // 活,这里一炸就建不出新活、开不出 MR)。走势那对查询已经兜过,这里漏了。
-    args.push(r#"(. // []) | [.[] | {iid: .iid, number: (.id // .iid), title: (.title // ""), state: (.state // ""), labels: ((.labels // []) | map(.name? // .)), created_at: (.created_at // null), closed_at: (.closed_at // null)}]"#);
+    args.push(r#"(. // []) | [.[] | {iid: .iid, number: (.id // .iid), title: (.title // ""), state: (.state // ""), labels: ((.labels // []) | map(.name? // .)), created_at: (.created_at // null), closed_at: (.closed_at // null), assignee: .assignee, author: .author}]"#);
     let out = crate::win_cmd::tokio_cmd("codehub-cli")
         .args(&args)
         .stdin(Stdio::null())
@@ -706,6 +735,8 @@ pub async fn list_issues(
             body: String::new(),
             created_at: r.created_at,
             closed_at: r.closed_at,
+            assignee: person_name(r.assignee.as_ref()),
+            author: person_name(r.author.as_ref()),
         })
         .collect())
 }
@@ -746,6 +777,8 @@ pub async fn view_issue(
         body: r.body.unwrap_or_default(),
         created_at: r.created_at,
         closed_at: r.closed_at,
+        assignee: person_name(r.assignee.as_ref()),
+        author: person_name(r.author.as_ref()),
     })
 }
 
@@ -757,6 +790,19 @@ fn label_name(v: &serde_json::Value) -> String {
         .map(|s| s.to_string())
         .or_else(|| v.as_str().map(|s| s.to_string()))
         .unwrap_or_default()
+}
+
+/// 从 codehub/GitLab 的 `assignee`/`author` 对象里取人名。codehub 用 `user_name`,
+/// GitLab 用 `username`;两个都试,认不出返空串。`null`(未指派)= None。
+fn person_name(v: Option<&serde_json::Value>) -> Option<String> {
+    let v = v?;
+    if v.is_null() {
+        return None;
+    }
+    ["user_name", "username", "name"]
+        .iter()
+        .find_map(|k| v.get(k).and_then(|x| x.as_str()).filter(|s| !s.is_empty()))
+        .map(|s| s.to_string())
 }
 
 #[derive(serde::Deserialize)]
@@ -777,6 +823,10 @@ struct CodehubIssueViewJson {
     created_at: Option<String>,
     #[serde(default)]
     closed_at: Option<String>,
+    #[serde(default)]
+    assignee: Option<serde_json::Value>,
+    #[serde(default)]
+    author: Option<serde_json::Value>,
 }
 
 /// 把 `issue list --jq` 的 stdout 收成行。空串 / `null` = 一张都没有,不是解析失败。
@@ -804,6 +854,10 @@ struct CodehubIssueJson {
     created_at: Option<String>,
     #[serde(default)]
     closed_at: Option<String>,
+    #[serde(default)]
+    assignee: Option<serde_json::Value>,
+    #[serde(default)]
+    author: Option<serde_json::Value>,
 }
 
 /// `codehub-cli issue comment create <iid> -p <path> -H <host> --body <text>`
@@ -1069,6 +1123,250 @@ pub async fn project_week(
     set_issue_milestone(host, &pid, iid, mid).await
 }
 
+// ── 人起名的版本 → 里程碑 ──
+// 和周版本同一套存法:codehub milestone(title=版本名)+ `bw:plan:<name>`
+// 标签。正本是标签,里程碑是 codehub 侧镜像。周版本走 `bw:week:`。与发版号(bw:released:*)不同。
+
+/// 建/复用一个版本里程碑,返回 mid。同名复用(不更新日期);找不到才建。
+pub async fn ensure_plan_milestone(
+    host: &str,
+    path: &str,
+    name: &str,
+    start: &str,
+    due: &str,
+) -> Result<u64, CodehubError> {
+    let project_id = project_numeric_id(host, path).await?;
+    let pid = project_id.to_string();
+    let listed = api_json(
+        host,
+        "GET",
+        "/api/v4/projects/:id/milestones",
+        &[("id", pid.as_str()), ("per_page", "100")],
+        &[],
+    )
+    .await?;
+    for m in milestone_rows(&listed) {
+        if m["title"].as_str() == Some(name) {
+            if let Some(id) = m["id"].as_u64() {
+                return Ok(id);
+            }
+        }
+    }
+    let desc = format!("Workbench 投影 · 正本是 bw:plan:{name}");
+    let fields = milestone_create_fields(&pid, name, start, due);
+    let created = api_json(
+        host,
+        "POST",
+        "/api/v4/projects/:id/milestones",
+        &fields,
+        &[("description", desc.as_str())],
+    )
+    .await?;
+    created["id"]
+        .as_u64()
+        .ok_or_else(|| CodehubError::Parse(format!("新建版本里程碑没有 id:{created}")))
+}
+
+/// 把一张 issue 挂到**已存在**的版本里程碑（按标题找，不建、不更新日期）。
+/// 找不到就如实空过 —— 正本是 `bw:plan:` 标签，里程碑只是 codehub 侧的镜像。
+pub async fn project_plan(
+    host: &str,
+    path: &str,
+    iid: u32,
+    name: &str,
+) -> Result<(), CodehubError> {
+    let project_id = project_numeric_id(host, path).await?;
+    let pid = project_id.to_string();
+    let listed = api_json(
+        host,
+        "GET",
+        "/api/v4/projects/:id/milestones",
+        &[("id", pid.as_str())],
+        &[],
+    )
+    .await?;
+    for m in milestone_rows(&listed) {
+        if m["title"].as_str() == Some(name) {
+            if let Some(id) = m["id"].as_u64() {
+                return set_issue_milestone(host, &pid, iid, id).await;
+            }
+        }
+    }
+    Ok(())
+}
+
+/// 列出所有里程碑 (title, start, due)。跳过周格式(YYYY-Www)的,余下是版本。
+pub async fn list_milestones(
+    host: &str,
+    path: &str,
+) -> Result<Vec<(String, String, String)>, CodehubError> {
+    let project_id = project_numeric_id(host, path).await?;
+    let pid = project_id.to_string();
+    let listed = api_json(
+        host,
+        "GET",
+        "/api/v4/projects/:id/milestones",
+        &[("id", pid.as_str())],
+        &[],
+    )
+    .await?;
+    Ok(milestone_rows(&listed)
+        .iter()
+        .filter_map(|m| {
+            let title = m["title"].as_str()?.to_string();
+            if is_week_title(&title) {
+                return None;
+            }
+            let start = m["start_date"].as_str().unwrap_or("").to_string();
+            let due = m["due_date"].as_str().unwrap_or("").to_string();
+            Some((title, start, due))
+        })
+        .collect())
+}
+
+/// 按标题删一个版本里程碑。找不到当成功(已经没了)。周格式标题不删。
+pub async fn delete_plan_milestone(host: &str, path: &str, name: &str) -> Result<(), CodehubError> {
+    if name.trim().is_empty() || is_week_title(name) {
+        return Ok(());
+    }
+    let project_id = project_numeric_id(host, path).await?;
+    let pid = project_id.to_string();
+    let listed = api_json(
+        host,
+        "GET",
+        "/api/v4/projects/:id/milestones",
+        &[("id", pid.as_str())],
+        &[],
+    )
+    .await?;
+    let Some(mid) = milestone_rows(&listed).iter().find_map(|m| {
+        if m["title"].as_str() == Some(name) {
+            m["id"].as_u64()
+        } else {
+            None
+        }
+    }) else {
+        return Ok(());
+    };
+    let mid_s = mid.to_string();
+    api_json(
+        host,
+        "DELETE",
+        "/api/v4/projects/:id/milestones/:milestone_id",
+        &[("id", pid.as_str()), ("milestone_id", mid_s.as_str())],
+        &[],
+    )
+    .await?;
+    Ok(())
+}
+
+/// 把 issue 从里程碑摘下(镜像,失败不挡标签正本)。
+pub async fn clear_issue_milestone(host: &str, path: &str, iid: u32) -> Result<(), CodehubError> {
+    let project_id = project_numeric_id(host, path).await?;
+    set_issue_milestone(host, &project_id.to_string(), iid, 0).await
+}
+
+/// `YYYY-Www` 周格式?形如 2026-W35。
+fn is_week_title(s: &str) -> bool {
+    let b = s.as_bytes();
+    b.len() == 8
+        && s[5..6].eq_ignore_ascii_case("W")
+        && s[..4].chars().all(|c| c.is_ascii_digit())
+        && s[6..].chars().all(|c| c.is_ascii_digit())
+}
+
+/// 改 issue 责任人。空 = 取消指派。先 username→userid,再 PUT `assignee_id`。
+pub async fn set_issue_assignee(
+    host: &str,
+    path: &str,
+    iid: u32,
+    assignee: &str,
+) -> Result<(), CodehubError> {
+    let project_id = project_numeric_id(host, path).await?;
+    let pid = project_id.to_string();
+    let iid_s = iid.to_string();
+    let endpoint = format!("/api/v4/projects/:id/issues/{iid_s}");
+    if assignee.is_empty() {
+        // 取消指派:assignee_id 传空串让 GitLab 清空(部分版本接受;不行就走
+        // assignee_ids=[] raw JSON,先按这版)。
+        api_json(
+            host,
+            "PUT",
+            &endpoint,
+            &[("id", pid.as_str()), ("assignee_id", "")],
+            &[],
+        )
+        .await?;
+        return Ok(());
+    }
+    let uid = user_id_by_username(host, assignee).await?.to_string();
+    // GitLab v4 单指派用 assignee_id(单数,接受 int 字符串);assignee_ids 要数组,
+    // codehub-cli --field 传成字符串会被忽略,故用单数。
+    api_json(
+        host,
+        "PUT",
+        &endpoint,
+        &[("id", pid.as_str()), ("assignee_id", uid.as_str())],
+        &[],
+    )
+    .await?;
+    Ok(())
+}
+
+/// `GET /api/v4/users?username=<name>` → 第一个匹配的数字 id。认不出报错。
+/// `GET /api/v4/user` → 当前登录用户名(给「我的」筛选用)。认不出返 None。
+pub async fn current_user(host: &str) -> Option<String> {
+    let v = api_json(host, "GET", "/api/v4/user", &[], &[]).await.ok()?;
+    person_name(Some(&v)).or_else(|| {
+        v.get("user_name")
+            .and_then(|x| x.as_str())
+            .or_else(|| v.get("username").and_then(|x| x.as_str()))
+            .map(|s| s.to_string())
+    })
+}
+
+async fn user_id_by_username(host: &str, username: &str) -> Result<u64, CodehubError> {
+    let listed = api_json(host, "GET", "/api/v4/users", &[("username", username)], &[]).await?;
+    let arr = listed
+        .as_array()
+        .ok_or_else(|| CodehubError::Parse(format!("users 查询不是数组:{listed}")))?;
+    for u in arr {
+        if let Some(id) = u["id"].as_u64() {
+            return Ok(id);
+        }
+    }
+    Err(CodehubError::Command(format!(
+        "codehub 查不到用户名 {username}"
+    )))
+}
+
+/// 改一张 issue 的标题与正文（GitLab v4 `title`/`description`）。
+pub async fn edit_issue(
+    host: &str,
+    path: &str,
+    iid: u32,
+    title: &str,
+    body: &str,
+) -> Result<(), CodehubError> {
+    let project_id = project_numeric_id(host, path).await?;
+    let pid = project_id.to_string();
+    let iid_s = iid.to_string();
+    let endpoint = format!("/api/v4/projects/:id/issues/{iid_s}");
+    api_json(
+        host,
+        "PUT",
+        &endpoint,
+        &[
+            ("id", pid.as_str()),
+            ("title", title),
+            ("description", body),
+        ],
+        &[],
+    )
+    .await?;
+    Ok(())
+}
+
 async fn project_numeric_id(host: &str, path: &str) -> Result<u64, CodehubError> {
     let out = crate::win_cmd::tokio_cmd("codehub-cli")
         .args(["project", "view", "-p", path, "-H", host])
@@ -1110,17 +1408,13 @@ async fn ensure_week_milestone(
             }
         }
     }
-    let desc = format!("buddy 投影 · 正本是 bw:week:{week}");
+    let desc = format!("Workbench 投影 · 正本是 bw:week:{week}");
+    let fields = milestone_create_fields(project_id, week, start, due);
     let created = api_json(
         host,
         "POST",
         "/api/v4/projects/:id/milestones",
-        &[
-            ("id", project_id),
-            ("title", week),
-            ("start_date", start),
-            ("due_date", due),
-        ],
+        &fields,
         &[("description", desc.as_str())],
     )
     .await?;
@@ -1201,6 +1495,24 @@ fn unwrap_api_body(stdout: &[u8]) -> Result<serde_json::Value, CodehubError> {
     Ok(v)
 }
 
+/// 建里程碑的 `--field`。日期可空:空串传给 codehub 会回
+/// `Failed to create milestone`,有值才带 `start_date` / `due_date`。
+fn milestone_create_fields<'a>(
+    id: &'a str,
+    title: &'a str,
+    start: &'a str,
+    due: &'a str,
+) -> Vec<(&'a str, &'a str)> {
+    let mut fields = vec![("id", id), ("title", title)];
+    if !start.trim().is_empty() {
+        fields.push(("start_date", start));
+    }
+    if !due.trim().is_empty() {
+        fields.push(("due_date", due));
+    }
+    fields
+}
+
 fn milestone_rows(body: &serde_json::Value) -> Vec<&serde_json::Value> {
     if let Some(arr) = body.get("milestones").and_then(|v| v.as_array()) {
         return arr.iter().collect();
@@ -1245,7 +1557,22 @@ mod parse_issue_list_json_tests {
 
 #[cfg(test)]
 mod api_body_tests {
-    use super::{milestone_rows, unwrap_api_body};
+    use super::{milestone_create_fields, milestone_rows, unwrap_api_body};
+
+    #[test]
+    fn omits_empty_milestone_dates() {
+        let f = milestone_create_fields("9", "MVP收尾", "", "");
+        assert_eq!(f, vec![("id", "9"), ("title", "MVP收尾")]);
+        let f = milestone_create_fields("9", "MVP收尾", "2026-08-01", "");
+        assert_eq!(
+            f,
+            vec![
+                ("id", "9"),
+                ("title", "MVP收尾"),
+                ("start_date", "2026-08-01")
+            ]
+        );
+    }
 
     #[test]
     fn unwraps_status_wrapper() {

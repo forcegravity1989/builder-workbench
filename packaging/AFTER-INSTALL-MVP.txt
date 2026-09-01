@@ -1,0 +1,25 @@
+Builders' Workbench（MVP）已装到本机。装完请先做这几步，再新建项目。
+
+1. 关掉本安装向导，从开始菜单打开「Builders' Workbench」
+   （刚写入的环境变量，安装器里点「立即运行」有时带不上；开始菜单重开最稳。）
+
+2. CodeHub 登录（token，管列仓 / 开 Issue / 采指标，不管 clone）
+   codehub-cli -H open auth login --token <你的 token>
+   黄区另登：-H yellow
+
+3. SSH 公钥（clone / push 走 SSH，不走 token/HTTP）
+   在 CodeHub 账户里配好本机公钥。
+   clone 主机是 szv-open.codehub.huawei.com:2222
+   （和 API 主机 open.codehub.huawei.com 不是同一个，别混。）
+
+4. claude 网关
+   本机能跑 claude --version，且 ~/.claude.json 已指向可用网关。
+   安装器认 claude.exe 或 %APPDATA%\npm\claude.cmd，并写入 BW_CLAUDE_BIN。
+
+程序目录：你选的安装路径（默认 D:\BuildersWorkbench）
+数据与资产：D:\builders-workbench\data\（注册表/设置/会话/技能摊）
+工作区：D:\builders-workbench\workspaces\（项目 clone 与 worktree）
+（D 盘不在的机器退回 %APPDATA%\BuildersWorkbench\）
+codehub-cli：%USERPROFILE%\bin\codehub-cli.exe（卸载 Workbench 时不会删它）
+
+注：这是 MVP 版（0.1.0-mvp）。装它会把旧版 V3（0.3.0-v3）自动卸掉。

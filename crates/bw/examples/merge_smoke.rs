@@ -67,6 +67,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                 brief: "验合入之后本机收没收干净".into(),
                 benchmark: "—".into(),
                 north_star: "—".into(),
+                ..Default::default()
             },
             remote: RemoteRef {
                 provider: "github".into(),
@@ -146,7 +147,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             tree.is_dir()
         ),
     );
-    let issue = app.issue_or_err(id).await.ok().expect("活没了");
+    let issue = app.issue_or_err(id).await.expect("活没了");
     say(
         "①合之后 · 库里读回",
         &format!("状态={:?} settled_at={:?}", issue.status, issue.settled_at),
@@ -166,7 +167,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         Ok(e) => say("②合不成", &format!("**没弹回,是 bug** {e:?}")),
         Err(e) => say("②合不成 · 如实弹回", &e.to_string()),
     }
-    let issue2 = app.issue_or_err(id2).await.ok().expect("活没了");
+    let issue2 = app.issue_or_err(id2).await.expect("活没了");
     say(
         "②合不成 · 库里读回",
         &format!(
@@ -218,7 +219,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             say("③拉不动", &format!("真合了={merged} 本机收尾={local_note}"));
         }
     }
-    let issue3 = app.issue_or_err(id3).await.ok().expect("活没了");
+    let issue3 = app.issue_or_err(id3).await.expect("活没了");
     say(
         "③拉不动 · 库里读回",
         &format!(
@@ -245,6 +246,7 @@ async fn new_issue(
             kind: IssueKind::Business,
             origin: IssueOrigin::Human,
             week_of: bw::isoweek::current_week(),
+            plan: String::new(),
         })
         .await?;
     Ok(events

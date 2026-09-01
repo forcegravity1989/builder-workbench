@@ -6,7 +6,7 @@
 //!
 //! 验四件事:
 //!
-//! 1. buddy 自带的技能**摊在 buddy 自己的目录**里,不在用户的仓里。
+//! 1. Workbench 自带的技能**摊在 Workbench 自己的目录**里,不在用户的仓里。
 //! 2. 系统提示词里给的那条路径**真的是个文件**(不是编出来的路径)。
 //! 3. 提示词里**没有技能正文** —— 拿全文的第一段去提示词里找,找不到。
 //! 4. 规范索引**只列仓里真有的件**:先在一个空仓上跑一遍(一条都不列),
@@ -39,7 +39,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     )
     .with_asset_root(root.join("assets"));
 
-    // ── 1 · 技能摊在 buddy 自己的目录 ─────────────────────────
+    // ── 1 · 技能摊在 Workbench 自己的目录 ─────────────────────────
     let skills_dir = app.ensure_skill_assets().expect("技能没摊出来");
     let packs = bw::standard::skills::all();
     let on_disk = packs
@@ -58,7 +58,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     say(
         "步骤 1 · 用户的仓里有没有 .claude/skills/",
         &format!(
-            "{}(该是 false —— buddy 不往用户仓里塞自己的技能)",
+            "{}(该是 false —— Workbench 不往用户仓里塞自己的技能)",
             repo.join(".claude/skills").exists()
         ),
     );
@@ -76,6 +76,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         status: IssueStatus::Todo,
         branch: String::new(),
         pr_number: 0,
+        has_open_mr: false,
         week_of: String::new(),
         version: String::new(),
         tool: String::new(),
@@ -88,6 +89,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         created_at: 0,
         updated_at: 0,
         settled_at: None,
+        assignee: String::new(),
+        author: String::new(),
+        plan_version: String::new(),
     };
     let skill = bw::app::skill_pointer(&skills_dir, &issue.workflow).expect("挑不到剧本");
     let prompt_empty = bw::app::agent_system_prompt(&issue, Some(&skill), &[]);

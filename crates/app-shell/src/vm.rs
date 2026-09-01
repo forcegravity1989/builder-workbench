@@ -23,6 +23,9 @@ pub struct Vm {
     /// 这是第几条回执。**同一句话第二次发生时序号也会变**,toast 才不会把它
     /// 当成「已经关过的那条」而静默吞掉。
     pub note_seq: u64,
+    /// 长操作进行中(开工起 TUI / 第一次给 Orca 登记仓)。盖一层挡住嵌页,
+    /// 免得人在那几秒里乱点。空 = 没有。
+    pub busy: Option<String>,
     /// 接入屏那份「我账号下的仓」列表 —— 现去平台问的,不是库里的。
     pub repos: RepoPickerVm,
     /// 仓文件读不动或者解析炸了的实话。**不退回默认值假装文件不存在** ——
@@ -59,7 +62,7 @@ pub enum RepoProbe {
     #[default]
     NotAsked,
     Loading,
-    /// 读到了 `.bw/config/project.toml` —— 这个仓被 buddy 接管过。
+    /// 读到了 `.bw/config/project.toml` —— 这个仓被 Workbench 接管过。
     Adopted,
     /// 平台明确回「没有这个文件」,而且**这个仓确实在**(另问了一次)——
     /// 这个仓没被接管过。
@@ -82,7 +85,7 @@ pub struct RepoRowVm {
     pub pushed_at: String,
 }
 
-/// 已经被 buddy 接管过的仓,名片直接回显,不用人再填一遍。
+/// 已经被 Workbench 接管过的仓,名片直接回显,不用人再填一遍。
 #[derive(Clone, Debug, Default, PartialEq)]
 pub struct RepoPrefillVm {
     pub name: String,
@@ -94,7 +97,9 @@ pub struct RepoPrefillVm {
 #[derive(Clone, Debug, Default, PartialEq)]
 pub struct SettingsVm {
     pub workspaces_root: String,
-    /// buddy 本机数据目录(注册表 / 设置 / 会话都在这下面)。刀6 起不再有 SQLite
+    /// Orca 网页配对 URL(带 token,只在本地)。设置屏可改;会话屏 iframe 打开它。
+    pub orca_web_url: String,
+    /// Workbench 本机数据目录(注册表 / 设置 / 会话都在这下面)。刀6 起不再有 SQLite
     /// 库文件,这格显示的是 asset_root 目录名,不是 DB 路径。
     pub data_dir: String,
     pub claude_binary: Option<String>,
@@ -120,7 +125,7 @@ pub struct ProjectCardVm {
     /// 还没看过的动静:评审中 + 阻塞里,更新时间晚于「读到这里」那一下的。
     /// 通知屏点过之后这个数会掉下去。
     pub unread: u32,
-    /// 本周目标一句话,来自运作活①评论。没有或解析不到 = 空。
+    /// 本周目标这一段,来自运作活①评论。没有或解析不到 = 空。
     pub week_goal: String,
     /// 上次交付:发版记录最后一行的日期与版本。仓里没有发版记录 = 空。
     pub last_delivery: String,
@@ -153,9 +158,15 @@ pub struct ProjectVm {
     pub weeks: Vec<WeekVm>,
     /// 正在看哪一周。
     pub viewing_week: String,
+    /// 看某个人起名的版本。空 = 在看周版本或「全部」。
+    pub viewing_plan: String,
     /// 左栏点的是「全部」——看板不按周过滤。
     pub view_all: bool,
     pub board: BoardVm,
+    /// 人起名的版本列表,扫 issues 的 `bw:plan:*` 标签去重得来。周版本在 `weeks` 里。
+    pub plan_versions: Vec<PlanVersionVm>,
+    /// 当前登录用户名(给列表「我的」筛选用)。空 = 认不出。
+    pub current_user: String,
     /// 本周四段计数:待办 / 进行中 / 评审中 / 完成。总览与计划屏的进度条都用它。
     /// **当前周**的五段计数。总览那块「本周计划进度」用它。
     pub week_counts: WeekCountsVm,
@@ -179,11 +190,6 @@ pub struct ProjectVm {
     pub sessions: Vec<SessionVm>,
     /// 会话屏选中的那一个(按活)。
     pub session_open: Option<IssueId>,
-    /// 会话屏「看看喂了什么」面板的内容。`None` = 面板关着。**这是开工时真会
-    /// 送给 agent 的那份系统提示词**,和真开工算的是同一份,不是示意。
-    pub briefing: Option<String>,
-    /// 计划屏右侧详情抽屉开着哪张活。通知点「去看这张活」也是设这个。
-    pub selected_issue: Option<IssueId>,
     /// MR / PR 网页地址的前缀,后面直接拼号码(`.../pull/` 或 codehub 的
     /// `.../-/merge_requests/`)。**按 provider 拼**,不是从 `.git/config` 的
     /// origin 推 —— codehub clone 走 SSH,origin 里是 SSH 主机加端口,拿它当
@@ -345,9 +351,12 @@ pub struct CardMrVm {
     pub pr_number: u32,
     /// 能不能点「合入并完成」——只有停在评审中的才能。
     pub mergeable: bool,
+    /// 现在有没有开着的 MR。合入按钮用它;已合入的只展示号。
+    pub has_open_mr: bool,
 }
 
-/// 六列看板。列的顺序就是活的生命周期顺序。
+/// 四列看板(合并后:待办/进行中/待处理/已完成)。列的顺序是活的生命周期顺序,
+/// 列内再分段(待办=未排期/已排期,待处理=待评审/阻塞,已完成=完成/拒绝)。
 #[derive(Clone, Debug, Default, PartialEq)]
 pub struct BoardVm {
     pub columns: Vec<ColumnVm>,
@@ -359,6 +368,19 @@ pub struct BoardVm {
 pub struct ColumnVm {
     pub status: IssueStatus,
     pub title: String,
+    pub cards: Vec<CardItemVm>,
+    /// 合并列内的分段。单段列(进行中)只一段。两段列默认显示第一段。
+    pub segments: Vec<ColumnSegVm>,
+}
+
+/// 看板一列里的段(如「未排期」「已排期」)。`cards` 是这段的卡(build_board
+/// 已按排期/状态分好,屏直接渲染,不再二次过滤)。
+#[derive(Clone, Debug, Default, PartialEq)]
+pub struct ColumnSegVm {
+    pub key: String,
+    pub label: String,
+    pub statuses: Vec<IssueStatus>,
+    pub count: u32,
     pub cards: Vec<CardItemVm>,
 }
 
@@ -377,14 +399,34 @@ pub struct CardItemVm {
     pub metric_key: String,
     pub settled: bool,
     pub status: IssueStatus,
-    /// 远端 MR 号。0 = 还没开 MR。通知那一类的判据就是它 > 0。
+    /// 远端 MR 号。0 = 没有 MR。开着的或已合入的都算,详情链接用它。
     pub pr_number: u32,
+    /// 分支上现在有没有开着的 MR。待评审→完成时:有则合入,没有则确认后只关 issue。
+    pub has_open_mr: bool,
     /// 远端 issue 号。0 = 这张活只在本机,没有对应的远端 issue。
     pub remote_number: u32,
     /// 这张活的分支。空 = 还没开过工。
     pub branch: String,
     /// 活的正文。详情抽屉里要看的就是它 —— 光有标题看不出这张活要干什么。
     pub body: String,
+    /// 责任人(codehub assignee)。空 = 未指派。
+    pub assignee: String,
+    /// 提出人(codehub author)。空 = 认不出。
+    pub author: String,
+    /// 排进人起名的版本(`bw:plan:*`)。空 = 没挂这个写法;与 week_of 是同一槽位。
+    pub plan_version: String,
+    /// 最近更新时间(unix 秒)。0 = 认不出。卡片「已更新」用它现算相对时间。
+    pub updated_at: i64,
+}
+
+/// 自定义版本(计划包)。和发版号(ReleaseVm)不是一回事 —— 版本是把若干
+/// 待办活划归到一个计划包里排期,正本是 `bw:plan:*` 标签 + codehub milestone。
+#[derive(Clone, Debug, Default, PartialEq)]
+pub struct PlanVersionVm {
+    pub name: String,
+    pub start: String,
+    pub end: String,
+    pub issue_count: u32,
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -410,104 +452,40 @@ pub struct SessionVm {
     /// PTY 进程还活着没有。**只有这一个信号是真的**——「等你输入」那种细粒度
     /// 状态要靠 claude 的 hook 回传,还没接,所以不显示,不猜。
     pub live: bool,
-    /// 这张活的**评审会话**(独立评审那场,不是写码这场)。`None` = 没请过评审。
-    pub review_conversation_id: Option<ConversationId>,
-    /// 评审 PTY 还活着没有。规矩同 `live`:只报真的。
-    pub review_live: bool,
 }
 
-/// 会话屏中栏三个页签。
+/// 会话屏中栏两个组件:Orca + Open Design(都常驻,不按活露不露)。原型活
+/// 默认停 Open Design,构建类默认停 Orca。
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
 pub enum SessionTab {
     #[default]
-    Terminal,
-    /// 从文件树点开的只读视图。
-    File,
-    /// 从改动文件列表点开的单文件 diff。
-    Diff,
-    /// 内嵌 Open Design(仅原型类活——开工工具是 open_design 时才有这个
-    /// 标签)。不是起 CLI,是把本机已开的 Open Design 的 loopback 首页嵌进
-    /// 一个 iframe(「本机网页内嵌类」)。
+    Orca,
     OpenDesign,
-    /// 评审会话的终端(请过评审的活才有这个标签)。和「终端」同一套挂载
-    /// 机制,只是路由到评审那场会话的字节流。
-    Review,
 }
 
-/// 会话屏右栏:文件树 / 改动文件 / git 状态 / MR 卡。全部现算,没有一张表
-/// 缓存它们。
+/// 会话屏两个组件要的那点状态。右栏(文件树 / 改动 / git / MR)和终端页签删了,
+/// 那些能力在 Orca 里;这里只剩页签、开工工具和 OD iframe 的 src/gen。
 #[derive(Clone, Debug, Default, PartialEq)]
 pub struct WorkbenchVm {
-    /// 当前选中的那个会话在哪个 worktree 里干活。空 = 没选中任何会话。
-    pub workspace: String,
-    pub branch: String,
-    /// 相对主干领先 / 落后。`None` = 问不出来(没有主干、没有上游),
-    /// 界面显示「—」,不显示 0。
-    pub ahead_behind: Option<(u32, u32)>,
-    pub dirty: bool,
-    /// 展开着的目录(相对仓根)。根目录恒在里面。
-    pub expanded: Vec<String>,
-    /// 已经读出来的目录内容:`(目录, 这一层的条目)`。
-    pub tree: Vec<(String, Vec<TreeEntryVm>)>,
-    pub changed: Vec<ChangedFileVm>,
-    /// MR 号 + 状态。0 = 没有 MR,如实说没有,不编一个号。
-    pub pr_number: u32,
     pub tab: SessionTab,
     /// 当前打开的会话那张活的开工工具(`claude_cli`/`cursor`/`open_design`)。
-    /// `open_design` 时会话屏多一个内嵌 Open Design 标签(本机网页内嵌类,
-    /// 不起 CLI)。空 = 没选中会话。
+    /// 默认页签按它选:open_design → OpenDesign,其余 → Orca。空 = 没选中会话。
     pub tool: String,
-    /// 中栏打开的文件:路径 + 正文(只读)或 diff 正文。
-    pub open_path: String,
-    pub open_body: String,
     /// Open Design iframe。空 = 组件自己探首页。
     pub od_src: String,
     pub od_gen: u64,
-}
-
-#[derive(Clone, Debug, Default, PartialEq)]
-pub struct TreeEntryVm {
-    pub rel: String,
-    pub name: String,
-    pub is_dir: bool,
-}
-
-#[derive(Clone, Debug, Default, PartialEq)]
-pub struct ChangedFileVm {
-    pub path: String,
-    pub label: String,
+    /// Orca 网页配对 URL(本机设置读出来,带 token)。会话屏 iframe 打开它;
+    /// `BW_ORCA_WEB_URL` 在 `web_embed_url` 里覆盖。空 = 没配,会话屏空着。
+    pub orca_web_url: String,
 }
 
 #[derive(Clone, Debug, Default, PartialEq)]
 pub struct NotifyVm {
-    /// **通知只有一类:有 MR 等你合入。**
-    ///
-    /// 试点第一天定的边界:通知就该是「有件事非你不可、而且现在就能做」。
-    /// 「活阻塞了」「agent 停下来等你回话」这些是**状态**,该在计划屏和会话屏
-    /// 上看见,不该也来占通知位 —— 尤其「等你回话」那种,真要提醒也该是系统级
-    /// 的弹窗,不是一个你得先点进来才看得到的列表。那些等实践清楚了再单独设计,
-    /// 现在不摆冗余的位。
-    pub to_merge: Vec<CardItemVm>,
-    pub seen_at: Option<i64>,
-    /// 还没看过的动静有几件。**和项目墙卡片上那个 ⚑ 是同一个定义**,也和上面
-    /// 那一类同口径:评审中、有 MR、更新时间晚于「读到这里」。点过「读到这里」
-    /// 之后它会掉到 0,而不是永远亮着。
+    /// 还没看的动静有几件 = 评审中的活张数(现算,不靠「读到哪个时间点」的
+    /// 账本)。项目墙卡片上的 ⚑ 和项目轨头部徽章读它。**通知页签已删**(见
+    /// ADR-0003),个人提醒改走 OS 弹窗(后建);这个数先撑着「有几张等你
+    /// 合入」,弹窗到位后它的角色再看。
     pub unread: u32,
-    /// 事件流。**没有事件表** —— 这条流是从四张表里现算出来的:活什么时候建
-    /// 的、什么时候结清的、会话什么时候开的。存不下来的事(比如某次运行失败)
-    /// 就不在流里,不补一条假的。
-    pub events: Vec<NotifyEventVm>,
-}
-
-#[derive(Clone, Debug, Default, PartialEq)]
-pub struct NotifyEventVm {
-    /// 本机时区的「MM-DD HH:MM」。
-    pub time: String,
-    pub text: String,
-    /// 点它跳到哪张活。`None` = 不可点。
-    pub issue: Option<IssueId>,
-    /// 这件事后来被处理掉了(活已完成)。
-    pub done: bool,
 }
 
 #[derive(Clone, Debug, Default, PartialEq)]
@@ -527,7 +505,7 @@ pub struct ConfigVm {
     pub chat_group: String,
     pub chat_events: Vec<(String, bool)>,
     /// `.bw/config/project.toml` 的 `[chat]` 段:项目群。**仓是正本**,这里只显示;
-    /// 改它走「编辑项目信息」那条轻量活 + MR,不在配置屏直接写仓。
+    /// 改它走总览「编辑项目名片」那张轻量活 + MR。
     pub chat: String,
     /// 从活详情点 workflow 跳过来时要亮的那一行(slug)。空 = 没指定。
     pub focus_skill: String,
@@ -546,7 +524,7 @@ pub struct SkillVm {
     pub slug: String,
     pub title: String,
     pub uses: u32,
-    /// 「内置」(随 buddy 出厂、铺底时复制进来)/「项目自有」/「蒸馏」。
+    /// 「内置」(随 Workbench 出厂、铺底时复制进来)/「项目自有」/「蒸馏」。
     pub origin: String,
     /// SKILL.md 头里的 `description:`。读不到就空着,不替它写一句。
     pub desc: String,
@@ -588,6 +566,7 @@ impl KbTab {
 #[derive(Clone, Debug, Default, PartialEq)]
 pub struct KbVm {
     pub tab: KbTab,
+    /// 规范管账(`.bw/state/managed.toml`)里登记了几份核心件。**不做对账** ——
     /// 知识页签:按规范八大类分组的文件清单。**只列存在的文件**,不列位置。
     pub groups: Vec<KbGroupVm>,
     /// 打开的那份文档:路径 + 原文。懒加载 —— 点了才现读。

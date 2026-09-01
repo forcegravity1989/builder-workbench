@@ -53,9 +53,9 @@ use crate::local::{ProjectRegistry, SessionStore, Settings};
 use crate::model::{Conversation, ProjectId};
 use crate::repo::RepoFileError;
 use bw_engine::remote::{Remote, RemoteError};
-use bw_engine::{InteractiveExecutor, TerminalManager};
+use bw_engine::InteractiveExecutor;
 use std::path::PathBuf;
-use std::sync::{Arc, Mutex};
+use std::sync::Arc;
 
 /// 远端工厂:从项目行造一个 `Remote`。默认走 `Remote::for_project`(真
 /// codehub/gh);`real_demo_v4` / 测试注入一份返回**共享的** `Remote::Mock`
@@ -95,26 +95,23 @@ pub struct App {
     /// 干活入口的后端。没配真实工作区的项目用自我标注的替身
     /// ([`bw_engine::MockInteractiveExecutor`]),产出带【mock】字样。
     pub(crate) executor: Arc<dyn InteractiveExecutor>,
-    /// 活着的 PTY 会话。纯内存,进程死了就没了 —— 会话的**身份**在
-    /// `asset_root/sessions/` 里的 jsonl 文件中,那才是重启后接得回来的东西。
-    pub(crate) terminal: TerminalManager,
-    /// 桌面壳开、headless 不开。见 [`App::with_pty`]。
+    /// 桌面壳开、headless 不开。见 [`App::with_pty`]。**PTY 已封存** —— 这条门闩
+    /// 现在管的是「桌面 ▶跑 走 Orca 本地 pipe」,不是起 PTY;headless 仍走
+    /// 阻塞 `run_skill`。
     pub(crate) pty_enabled: bool,
     /// 长命令边做边报的口子。桌面壳接上,headless 不接。见
     /// [`progress`](crate::app::progress) —— 只为让人看得见,不承担账目。
     pub(crate) progress: Option<tokio::sync::broadcast::Sender<ProgressLine>>,
-    /// buddy 自己的资产目录 —— 技能库摊在这儿(`<asset_root>/skills/`),
+    /// Workbench 自己的资产目录 —— 技能库摊在这儿(`<asset_root>/skills/`),
     /// 项目注册表(`<asset_root>/projects.toml`)、全局设置
     /// (`<asset_root>/settings.toml`)、会话记录
     /// (`<asset_root>/sessions/<slug>/<iid>.jsonl`)也都在这儿。
-    /// **不在任何一个用户项目的仓里**:用户的 `.gitignore` 怎么写不该由 buddy
-    /// 决定,而 buddy 自带的剧本每个项目都一样,没有复制 N 份的道理。
+    /// **不在任何一个用户项目的仓里**:用户的 `.gitignore` 怎么写不该由 Workbench
+    /// 决定,而 Workbench 自带的剧本每个项目都一样,没有复制 N 份的道理。
     pub(crate) asset_root: PathBuf,
     /// 远端工厂。issue_store 等内部模块经 [`App::remote_for`] 拿远端,统一经
     /// 这里派发 —— 这也是 mock 注入的唯一口子。
     pub(crate) remote_factory: RemoteFactory,
-    /// PTY 子进程退出后由后台任务塞进来,内核节拍里收掉 live 标记。
-    pub(crate) pty_ended: Arc<Mutex<Vec<uuid::Uuid>>>,
 }
 
 impl App {
@@ -130,7 +127,6 @@ impl App {
             asset_root: workspaces_root.join(".bw-assets"),
             workspaces_root,
             executor,
-            terminal: TerminalManager::new(),
             pty_enabled: false,
             progress: None,
             // 默认远端工厂 = 真 `Remote::for_project`(codehub/gh)。`real_demo_v4`
@@ -138,18 +134,17 @@ impl App {
             remote_factory: Box::new(|p| {
                 Remote::for_project(&p.provider, &p.remote_host, &p.remote_path)
             }),
-            pty_ended: Arc::new(Mutex::new(Vec::new())),
         }
     }
 
-    /// buddy 自己的资产放哪。**改工作区根目录不会跟着搬** —— 这里放的是
-    /// buddy 自带的东西,和用户把仓放在哪没关系。
+    /// Workbench 自己的资产放哪。**改工作区根目录不会跟着搬** —— 这里放的是
+    /// Workbench 自带的东西,和用户把仓放在哪没关系。
     pub fn with_asset_root(mut self, root: impl Into<PathBuf>) -> Self {
         self.asset_root = root.into();
         self
     }
 
-    /// buddy 本机数据目录(注册表/设置/会话/技能都在这下面)。
+    /// Workbench 本机数据目录(注册表/设置/会话/技能都在这下面)。
     pub fn asset_root(&self) -> &std::path::Path {
         &self.asset_root
     }
@@ -168,12 +163,12 @@ impl App {
         (self.remote_factory)(project).map_err(|e| AppError::Exec(format!("认不出远端类型:{e}")))
     }
 
-    /// buddy 技能库摊在哪。开工前 [`App::ensure_skill_assets`] 保证它是齐的。
+    /// Workbench 技能库摊在哪。开工前 [`App::ensure_skill_assets`] 保证它是齐的。
     pub fn skills_dir(&self) -> PathBuf {
         self.asset_root.join("skills")
     }
 
-    /// 把 buddy 自带的技能摊到 [`App::skills_dir`],返回那个目录。
+    /// 把 Workbench 自带的技能摊到 [`App::skills_dir`],返回那个目录。
     ///
     /// 幂等:内容一致就不写。**写不下去不算开工失败** —— 调用方拿到 `None`
     /// 就不给 agent 指技能这条路,如实少一段,不编一个路径出来。
@@ -197,7 +192,7 @@ impl App {
         self.asset_root.join("system-prompt").join("references")
     }
 
-    /// 把 buddy 自带的阶段规范 references 摊到 [`App::prompt_dir`],返回那个目录。
+    /// 把 Workbench 自带的阶段规范 references 摊到 [`App::prompt_dir`],返回那个目录。
     /// 和 [`App::ensure_skill_assets`] 同一套规矩:幂等、写不下去返回 `None`
     /// 如实少一段。
     pub fn ensure_prompt_assets(&self) -> Option<PathBuf> {
@@ -246,63 +241,6 @@ impl App {
         if let Some(tx) = &self.progress {
             let _ = tx.send(line);
         }
-    }
-
-    /// 这张活开工时会喂给 agent 的那份系统提示词。**只读、纯算**,不起进程、
-    /// 不改任何状态 —— 和真开工走的是同一个函数,所以它显示什么,agent 收到的
-    /// 就是什么。
-    ///
-    /// 为什么要有这个口子:提示词是经 `--append-system-prompt` 送进去的,
-    /// **终端里一个字都看不见**。试点第一天用户就问「我看没有技能路径」——
-    /// 路径其实一直在,只是没有任何地方能看到它。agent 跑偏时,第一步就该是
-    /// 看它到底被告知了什么。
-    pub async fn agent_briefing(&self, id: crate::model::IssueId) -> Result<String> {
-        let issue = self.issue_or_err(id).await?;
-        let skill = self
-            .ensure_skill_assets()
-            .and_then(|d| bootstrap::skill_pointer(&d, &issue.workflow));
-        let references = self
-            .ensure_prompt_assets()
-            .map(|d| bootstrap::references_for(&issue, &d))
-            .unwrap_or_default();
-        Ok(bootstrap::agent_system_prompt(
-            &issue,
-            skill.as_ref(),
-            &references,
-        ))
-    }
-
-    /// 「看看喂了什么」的评审版:**评审会话**开场时真会注入的那份系统提示词。
-    /// 和真「请评审」走同一条渲染链,显示什么、评审 agent 收到的就是什么。
-    /// MR 号查不到就如实显示「—」—— 那时「请评审」本来也起不了会话。
-    pub async fn review_briefing(&self, id: crate::model::IssueId) -> Result<String> {
-        let issue = self.issue_or_err(id).await?;
-        let mr = match self.project_of(issue.project_id).await {
-            Ok(project) => match self.remote_for(&project) {
-                Ok(remote) => {
-                    let branch = bw_engine::github::issue_branch(issue.number);
-                    remote.open_mr_for_branch(&branch).await.unwrap_or(None)
-                }
-                Err(_) => None,
-            },
-            Err(_) => None,
-        };
-        let mr_label = mr
-            .map(|n| n.to_string())
-            .unwrap_or_else(|| "—(没查到开着的 MR)".into());
-        let skill = self
-            .ensure_skill_assets()
-            .and_then(|d| bootstrap::skill_pointer(&d, "mr-review"));
-        let references = self
-            .ensure_prompt_assets()
-            .map(|d| bootstrap::review_references(&d))
-            .unwrap_or_default();
-        Ok(bootstrap::review_system_prompt(
-            &issue,
-            &mr_label,
-            skill.as_ref(),
-            &references,
-        ))
     }
 
     pub fn workspaces_root(&self) -> &std::path::Path {
@@ -398,14 +336,8 @@ impl App {
         Ok(Settings::set_workspaces_root(&self.asset_root, path)?)
     }
 
-    // ── 通知屏已读(替代 store.meta notify_seen:*)────────────────────
-
-    pub async fn notify_seen(&self, id: ProjectId) -> Option<i64> {
-        ProjectRegistry::get_notify_seen(&self.asset_root, id)
-    }
-
-    pub(crate) async fn set_notify_seen(&self, id: ProjectId, at: i64) -> Result<()> {
-        Ok(ProjectRegistry::set_notify_seen(&self.asset_root, id, at)?)
+    pub(crate) async fn set_orca_web_url_setting(&self, url: &str) -> Result<()> {
+        Ok(Settings::set_orca_web_url(&self.asset_root, url)?)
     }
 
     // ── 会话(替代 store.conversation_*)────────────────────────────────
@@ -436,42 +368,6 @@ impl App {
         }
         let slug = self.slug_of(c.project_id).await?;
         SessionStore::append(&self.asset_root, &slug, c)?;
-        Ok(c.clone())
-    }
-
-    /// 追加一条会话记录(更新 `--resume` id)。不走 upsert 的「已有就原样返回」。
-    pub(crate) async fn append_conversation(&self, c: &Conversation) -> Result<()> {
-        let slug = self.slug_of(c.project_id).await?;
-        SessionStore::append(&self.asset_root, &slug, c)?;
-        Ok(())
-    }
-
-    /// 这张活的**评审会话**(第二条会话轴,独立于写码会话)。没有就 `None`。
-    pub async fn review_conversation_for_issue(
-        &self,
-        id: crate::model::IssueId,
-    ) -> Result<Option<Conversation>> {
-        let project = self.project(id.project_id()).await?;
-        let Some(p) = project else {
-            return Ok(None);
-        };
-        Ok(SessionStore::read_review(
-            &self.asset_root,
-            &p.slug,
-            id.iid(),
-        )?)
-    }
-
-    pub(crate) async fn upsert_review_conversation(
-        &self,
-        c: &Conversation,
-    ) -> Result<Conversation> {
-        // 已经有评审会话就返回既有行(幂等)—— 和写码会话同一套规矩。
-        if let Some(existing) = self.review_conversation_for_issue(c.issue_id).await? {
-            return Ok(existing);
-        }
-        let slug = self.slug_of(c.project_id).await?;
-        SessionStore::append_review(&self.asset_root, &slug, c)?;
         Ok(c.clone())
     }
 
@@ -520,15 +416,6 @@ impl App {
             Command::EditProjectCard { project_id, intent } => {
                 self.edit_project_card(project_id, intent).await
             }
-            Command::SetProjectChat {
-                project_id,
-                provider,
-                group_id,
-                notify,
-            } => {
-                self.set_project_chat(project_id, provider, group_id, notify)
-                    .await
-            }
             Command::RunStandardBootstrap { project_id } => {
                 self.run_standard_bootstrap(project_id, true).await
             }
@@ -549,15 +436,29 @@ impl App {
                 kind,
                 origin,
                 week_of,
+                plan,
             } => {
-                self.create_issue(project_id, title, body, category, kind, origin, week_of)
-                    .await
+                self.create_issue(
+                    project_id, title, body, category, kind, origin, week_of, plan,
+                )
+                .await
             }
             Command::ScheduleIssue { id, week_of } => self.schedule_issue(id, week_of).await,
-            Command::SetCurrentVersion {
+            Command::ScheduleToPlan { id, plan } => self.schedule_to_plan(id, plan).await,
+            Command::CreatePlanVersion {
                 project_id,
-                version,
-            } => self.set_current_version(project_id, version).await,
+                name,
+                start,
+                due,
+                note,
+                included,
+            } => {
+                self.create_plan_version(project_id, name, start, due, note, included)
+                    .await
+            }
+            Command::DeletePlanVersion { project_id, name } => {
+                self.delete_plan_version(project_id, name).await
+            }
             Command::CutRelease {
                 project_id,
                 version,
@@ -567,14 +468,17 @@ impl App {
             Command::RunIssue { id } => self.run_issue(id).await,
             Command::SubmitIssueWork { id } => self.submit_issue_work(id).await,
             Command::SetWorkspacesRoot { path } => self.set_workspaces_root(path).await,
+            Command::SetOrcaWebUrl { url } => self.set_orca_web_url(url).await,
             Command::TransitionIssue { id, to } => self.transition_issue(id, to).await,
             Command::SetIssueCategory { id, category } => {
                 self.set_issue_category(id, category).await
             }
+            Command::SetIssueAssignee { id, assignee } => {
+                self.set_issue_assignee(id, assignee).await
+            }
+            Command::EditIssue { id, title, body } => self.edit_issue(id, title, body).await,
             Command::CancelIssue { id, reason } => self.cancel_issue(id, reason).await,
             Command::DeleteSession { id } => self.delete_session(id).await,
-            Command::ReviewIssue { id } => self.review_issue(id).await,
-            Command::CancelReview { id } => self.cancel_review(id).await,
             Command::BlockIssue { id, reason } => self.block_issue(id, reason).await,
             Command::SaveToolMapping {
                 project_id,
@@ -586,9 +490,6 @@ impl App {
                     .await
             }
             Command::ProbeTool { name } => self.probe_tool(name).await,
-            Command::MarkNotifySeen { project_id, at } => {
-                self.mark_notify_seen(project_id, at).await
-            }
             Command::PullWorkspace { project_id } => self.pull_workspace(project_id).await,
             Command::TickScheduler { project_id } => self.tick_scheduler(project_id).await,
             Command::MergeAndSettle { id } => self.merge_and_settle(id).await,
@@ -597,15 +498,6 @@ impl App {
                 event_type,
             } => self.sync_notify_to_chat(issue_id, event_type).await,
             Command::CancelRun { id } => self.cancel_run(id).await,
-            Command::TerminalInput {
-                conversation_id,
-                bytes,
-            } => self.terminal_input(conversation_id, bytes).await,
-            Command::TerminalResize {
-                conversation_id,
-                cols,
-                rows,
-            } => self.terminal_resize(conversation_id, cols, rows).await,
             Command::RecordManualMetric {
                 project_id,
                 name,

@@ -2,7 +2,7 @@
 //!
 //! 「这周有没有真实提交」「上周合入了几次」「有哪些标签」——V3 是把这些写进
 //! `observation`/`workflow_run` 表再读回来,V4 直接问 git。代价是打开项目要
-//! 现算(buddy 自己的仓几百个提交是几十毫秒级),换来的是**造不了假**:界面上
+//! 现算(Workbench 自己的仓几百个提交是几十毫秒级),换来的是**造不了假**:界面上
 //! 每个数字都能用同一条 git 命令在终端里复算出来。
 
 use crate::isoweek;
@@ -224,7 +224,7 @@ pub async fn branch_exists(workspace: &Path, branch: &str) -> bool {
 ///
 /// 先试 `git branch -d`,让 git 自己确认它真的合过。远端按 squash 合的时候这
 /// 一步会被拒:squash 把一串提交压成主干上的一条新提交,原来那几条并不是主干
-/// 的祖先,git 看不出「合过」——而 buddy 这两个远端(GitHub / codehub)合 MR
+/// 的祖先,git 看不出「合过」——而 Workbench 这两个远端(GitHub / codehub)合 MR
 /// 走的都是 squash。所以这里会退到 `-D`。
 ///
 /// **只准在读回确认远端真的合了之后调用**:那时候改动已经在远端主干上、分支
@@ -264,7 +264,44 @@ pub async fn is_dirty(workspace: &Path) -> Result<bool, GitError> {
         .is_empty())
 }
 
-/// 提交**这次 buddy 自己写过的那几个文件**(铺底第 1 步、发版本这类动作)。
+/// 工作区未提交路径(相对仓根)。空 = 干净。
+pub async fn dirty_paths(workspace: &Path) -> Result<Vec<String>, GitError> {
+    let raw = git(workspace, &["status", "--porcelain"]).await?;
+    Ok(raw
+        .lines()
+        .filter_map(|l| {
+            // porcelain: 两列状态 + 一个空格 + 路径。不能 trim 整行,否则
+            // ` M path` 会变成 `M path`,切掉的就不是路径了。
+            if l.len() < 4 {
+                return None;
+            }
+            let path = l[3..].trim().trim_matches('"').replace('\\', "/");
+            (!path.is_empty()).then_some(path)
+        })
+        .collect())
+}
+
+/// 脏的是不是只有读数流水(Workbench 自己写进主检出的那份)。别的脏文件不动。
+pub fn is_readings_dirt(paths: &[String]) -> bool {
+    !paths.is_empty() && paths.iter().all(|p| is_readings_path(p))
+}
+
+fn is_readings_path(p: &str) -> bool {
+    p == ".bw/state/metrics-readings.jsonl" || p == ".bw/metrics" || p.starts_with(".bw/metrics/")
+}
+
+/// 接入写在主检出上、等人合入才算正本的那两份名片。
+pub fn is_card_preview_path(p: &str) -> bool {
+    p == ".bw/config/project.toml" || p == ".bw/PROJECT.md"
+}
+
+/// 把一个路径恢复成 HEAD。未跟踪的文件这条会失败,调用方自己删。
+pub async fn restore_path(workspace: &Path, rel: &str) -> Result<(), GitError> {
+    git(workspace, &["restore", "--worktree", "--staged", "--", rel]).await?;
+    Ok(())
+}
+
+/// 提交**这次 Workbench 自己写过的那几个文件**(铺底第 1 步、发版本这类动作)。
 /// 没有改动就返回 `Ok(false)`,不造一个空提交。
 ///
 /// 只 add 点名的路径,不用 `add -A`:用户点「规范铺底」的时候工作区多半是
@@ -281,7 +318,7 @@ pub async fn commit_paths(
     }
     for p in paths {
         // **单个路径 add 失败不能拖垮整次提交。** 最常见的原因是项目把这个路径
-        // 写进了 `.gitignore`(buddy 自己的仓就忽略 `.claude/`)—— 那是项目的
+        // 写进了 `.gitignore`(Workbench 自己的仓就忽略 `.claude/`)—— 那是项目的
         // 决定,不该用 `-f` 顶回去,如实记一笔就好。
         if git(workspace, &["add", "--", p]).await.is_err() {
             out.refused.push(p.clone());
@@ -349,7 +386,7 @@ pub struct CommitOutcome {
     pub refused: Vec<String>,
 }
 
-/// 根提交的作者 —— 判「这个仓是不是 buddy 自己建的空仓」。
+/// 根提交的作者 —— 判「这个仓是不是 Workbench 自己建的空仓」。
 pub async fn root_commit_author(workspace: &Path) -> Result<String, GitError> {
     let roots = git(workspace, &["rev-list", "--max-parents=0", "HEAD"]).await?;
     let Some(first) = roots.lines().last().map(str::trim) else {

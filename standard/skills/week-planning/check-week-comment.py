@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""校验运作活①评论是不是 buddy 能解析的周计划格式。
+"""校验运作活①评论是不是 Workbench 能解析的周计划格式。
 
 读标准输入或第一个文件参数。退出码 0 = 过;非 0 把缺什么打到 stderr。
 挂评论之前跑一遍,过了再贴。
@@ -59,7 +59,7 @@ def main() -> int:
     if not has_heading(body, HEAD_GOAL):
         errs.append(f"缺二级标题 `## {HEAD_GOAL}`")
     elif not first_line_under(body, HEAD_GOAL):
-        errs.append(f"`## {HEAD_GOAL}` 下面要有一句话,不能空着")
+        errs.append(f"`## {HEAD_GOAL}` 下面要有内容,不能空着")
     if not has_heading(body, HEAD_SCOPE):
         errs.append(f"缺二级标题 `## {HEAD_SCOPE}`")
     if not has_heading(body, HEAD_READINGS):

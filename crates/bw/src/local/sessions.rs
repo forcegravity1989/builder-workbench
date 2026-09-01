@@ -65,16 +65,6 @@ impl SessionStore {
             .join(format!("{iid}.jsonl"))
     }
 
-    /// **评审会话**文件路径:`<iid>-review.jsonl`。评审会话是同一张活上的第二条
-    /// 会话轴(独立于写码会话),记录分开存,互不覆盖;[`Self::list`] 不收它,
-    /// 会话列表里评审不冒充第二行活。
-    fn review_path(asset_root: &Path, slug: &str, iid: u32) -> PathBuf {
-        asset_root
-            .join("sessions")
-            .join(slug)
-            .join(format!("{iid}-review.jsonl"))
-    }
-
     /// 读一张活的会话(取文件里最后一条记录 = 最新状态)。
     /// 文件不存在 = 没有会话(`Ok(None)`)。
     pub fn read(
@@ -82,19 +72,7 @@ impl SessionStore {
         slug: &str,
         iid: u32,
     ) -> Result<Option<Conversation>, RepoFileError> {
-        Self::read_at(Self::path(asset_root, slug, iid))
-    }
-
-    /// 读一张活的**评审会话**。规矩同 [`Self::read`]。
-    pub fn read_review(
-        asset_root: &Path,
-        slug: &str,
-        iid: u32,
-    ) -> Result<Option<Conversation>, RepoFileError> {
-        Self::read_at(Self::review_path(asset_root, slug, iid))
-    }
-
-    fn read_at(path: PathBuf) -> Result<Option<Conversation>, RepoFileError> {
+        let path = Self::path(asset_root, slug, iid);
         let raw = match std::fs::read_to_string(&path) {
             Ok(s) => s,
             Err(e) if e.kind() == std::io::ErrorKind::NotFound => return Ok(None),
@@ -121,19 +99,7 @@ impl SessionStore {
 
     /// 追加一条会话记录。父目录不存在就建。
     pub fn append(asset_root: &Path, slug: &str, c: &Conversation) -> Result<(), RepoFileError> {
-        Self::append_at(Self::path(asset_root, slug, c.issue_id.iid()), c)
-    }
-
-    /// 追加一条**评审会话**记录。规矩同 [`Self::append`]。
-    pub fn append_review(
-        asset_root: &Path,
-        slug: &str,
-        c: &Conversation,
-    ) -> Result<(), RepoFileError> {
-        Self::append_at(Self::review_path(asset_root, slug, c.issue_id.iid()), c)
-    }
-
-    fn append_at(path: PathBuf, c: &Conversation) -> Result<(), RepoFileError> {
+        let path = Self::path(asset_root, slug, c.issue_id.iid());
         if let Some(parent) = path.parent() {
             std::fs::create_dir_all(parent).map_err(|e| RepoFileError::Io {
                 path: path.display().to_string(),
@@ -185,15 +151,6 @@ impl SessionStore {
             if path.extension().is_none_or(|ext| ext != "jsonl") {
                 continue;
             }
-            // 评审会话不进会话列表 —— 它是同一张活上的第二条轴,收进来会让
-            // 同一张活在列表里冒出两行。
-            if path
-                .file_stem()
-                .and_then(|s| s.to_str())
-                .is_some_and(|s| s.ends_with("-review"))
-            {
-                continue;
-            }
             if let Ok(raw) = std::fs::read_to_string(&path) {
                 if let Some(last) = raw.lines().rfind(|l| !l.trim().is_empty()) {
                     if let Ok(rec) = serde_json::from_str::<Record>(last) {
@@ -212,14 +169,9 @@ impl SessionStore {
         let _ = std::fs::remove_dir_all(&dir);
     }
 
-    /// 人点「删除会话」:整份 jsonl 拿掉,**连同评审会话那份**。这张活下次
-    /// 开工/请评审会各自再建一行。
+    /// 人点「删除会话」:整份 jsonl 拿掉。这张活下次开工会再建一行。
     pub fn remove_issue(asset_root: &Path, slug: &str, iid: u32) -> Result<(), RepoFileError> {
-        Self::remove_at(Self::review_path(asset_root, slug, iid))?;
-        Self::remove_at(Self::path(asset_root, slug, iid))
-    }
-
-    fn remove_at(path: PathBuf) -> Result<(), RepoFileError> {
+        let path = Self::path(asset_root, slug, iid);
         match std::fs::remove_file(&path) {
             Ok(()) => Ok(()),
             Err(e) if e.kind() == std::io::ErrorKind::NotFound => Ok(()),

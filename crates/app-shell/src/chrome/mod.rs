@@ -103,13 +103,12 @@ pub fn light_dot(signal: Option<Signal>, big: bool) -> Element {
     rsx! { span { class: "{cls}", style: "background:{color}" } }
 }
 
-/// 六个入口各自的图标名。原型里知识库那一格用的是 `space`(内部沿用旧命名)。
+/// 五个入口各自的图标名。原型里知识库那一格用的是 `space`(内部沿用旧命名)。
 fn panel_icon(p: Panel) -> &'static str {
     match p {
         Panel::Overview => "overview",
         Panel::Plan => "plan",
         Panel::Session => "session",
-        Panel::Notify => "notify",
         Panel::Config => "config",
         Panel::Kb => "space",
     }
@@ -174,6 +173,12 @@ pub fn ProjectRail(
                 div { class: "pr-head-meta",
                     span { "{version}" }
                     {light_dot(signal, false)}
+                    // 未读徽章:评审中的活有几张。原挂在已删的通知页签上
+                    // (ADR-0003),挪到项目轨头部——它是项目级属性,不该绑在
+                    // 某个页签上。个人弹窗落地后再看它的角色。
+                    if unread > 0 {
+                        span { class: "pr-badge", title: "评审中的活有几张", "{unread}" }
+                    }
                 }
             }
             nav { class: "pr-nav",
@@ -184,9 +189,6 @@ pub fn ProjectRail(
                         onclick: move |_| on_nav.call(p),
                         span { style: "width:15px;height:15px;display:flex;", {icon(panel_icon(p))} }
                         span { "{p.label()}" }
-                        if p == Panel::Notify && unread > 0 {
-                            span { class: "pr-badge", "{unread}" }
-                        }
                     }
                 }
             }
@@ -212,6 +214,7 @@ pub fn TopBar(title: String, project: Option<String>, source: String, bridge: Br
             button {
                 class: "btn btn-sm btn-ghost",
                 onclick: move |_| b.send(Req::Refresh),
+                title: "打开着的项目会先快进主检出再重读;项目墙只重读本机",
                 "刷新"
             }
         }

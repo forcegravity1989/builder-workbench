@@ -6,7 +6,7 @@
 //! `.bw/state/metrics-readings.jsonl`,发版记录来自 git 标签 + 远端 Release。**没有读数就说
 //! 无数据,不显示 0**。
 
-use crate::bridge::{Bridge, Panel, PanelNav, Req};
+use crate::bridge::{Bridge, ChromeBusy, Panel, PanelNav, Req, STARTING_SESSION};
 use crate::chrome::light_dot;
 use crate::vm::{MetricCardVm, ProjectVm};
 use bw::command::{Command, ProjectIntent};
@@ -15,17 +15,18 @@ use dioxus::prelude::*;
 
 #[component]
 pub fn View(p: ProjectVm, bridge: Bridge) -> Element {
-    // 名片是不是正在编辑,以及编辑中的三个字段。纯本机状态,没确认前不发命令。
+    // 名片是不是正在编辑。草稿含名片 + 在研版本 + 项目群,纯本机,没确认前不发命令。
     let nav = use_context::<PanelNav>();
+    let start_busy = use_context::<ChromeBusy>();
     let editing = use_signal(|| false);
-    let draft = use_signal(|| (String::new(), String::new(), String::new()));
+    let draft = use_signal(CardDraft::default);
 
     rsx! {
         section { class: "ov-stack",
             // 本周还没有运作活①才给「开始本周」。做完(含已完成)不再冒出来。
             // 还开着时只指路去会话屏,再点一次会重建一张同名活。
             if !p.week_started {
-                {start_banner(&p, &bridge, nav)}
+                {start_banner(&p, &bridge, nav, start_busy)}
             } else if let Some(st) = p.ops1_status.clone() {
                 {running_banner(st, nav)}
             }
@@ -43,7 +44,7 @@ pub fn View(p: ProjectVm, bridge: Bridge) -> Element {
     }
 }
 
-fn start_banner(p: &ProjectVm, bridge: &Bridge, nav: PanelNav) -> Element {
+fn start_banner(p: &ProjectVm, bridge: &Bridge, nav: PanelNav, busy: ChromeBusy) -> Element {
     let b = bridge.clone();
     let (pid, week) = (p.id, p.current_week.clone());
     rsx! {
@@ -52,6 +53,8 @@ fn start_banner(p: &ProjectVm, bridge: &Bridge, nav: PanelNav) -> Element {
             button {
                 class: "btn btn-primary btn-sm",
                 onclick: move |_| {
+                    // 先立遮罩再切会话:iframe 一挂就是原生层,后到的 HTML 遮罩盖不住。
+                    busy.set(STARTING_SESSION);
                     b.cmd(Command::StartWeekPlanning {
                         project_id: pid,
                         week: week.clone(),
@@ -82,13 +85,66 @@ fn running_banner(status: String, nav: PanelNav) -> Element {
     }
 }
 
+/// 总览「编辑」一份草稿。仓文件仍是 `PROJECT.md` + `project.toml` 两份。
+#[derive(Clone, Default)]
+struct CardDraft {
+    brief: String,
+    benchmark: String,
+    north: String,
+    version: String,
+    chat_provider: String,
+    chat_group: String,
+    /// 五件群通知事件各开不开,顺序按 [`bw::chat::NotifyEvent::ALL`]。
+    notify: Vec<bool>,
+}
+
+impl CardDraft {
+    fn from_project(p: &ProjectVm) -> Self {
+        let ev = &p.config.chat_events;
+        // `ev` 为空(没配群)= 默认全开;配了就按表里的勾。
+        let on = |i: usize| ev.get(i).map(|(_, o)| *o).unwrap_or(ev.is_empty());
+        let provider = if p.config.chat_provider == "未配" {
+            String::new()
+        } else {
+            p.config.chat_provider.clone()
+        };
+        let group = if p.config.chat_group == "—" {
+            String::new()
+        } else {
+            p.config.chat_group.clone()
+        };
+        Self {
+            brief: p.card.brief.clone(),
+            benchmark: p.card.benchmark.clone(),
+            north: p.card.north_star.clone(),
+            version: p.card.current_version_raw.clone(),
+            chat_provider: provider,
+            chat_group: group,
+            notify: bw::chat::NotifyEvent::ALL
+                .iter()
+                .enumerate()
+                .map(|(i, _)| on(i))
+                .collect(),
+        }
+    }
+
+    fn notify_keys(&self) -> Vec<String> {
+        bw::chat::NotifyEvent::ALL
+            .iter()
+            .zip(self.notify.iter().chain(std::iter::repeat(&false)))
+            .filter(|(_, on)| **on)
+            .map(|(e, _)| e.key().to_string())
+            .collect()
+    }
+}
+
 // ── ① 名片 + 健康(并排两栏)────────────────────────────
 
 fn card_and_health(
     p: &ProjectVm,
     bridge: &Bridge,
     mut editing: Signal<bool>,
-    mut draft: Signal<(String, String, String)>,
+    mut draft: Signal<CardDraft>,
 ) -> Element {
     let c = &p.card;
     let is_editing = *editing.read();
@@ -98,10 +154,9 @@ fn card_and_health(
     let name = p.name.clone();
 
     let start_edit = {
-        let (brief, benchmark, north) =
-            (c.brief.clone(), c.benchmark.clone(), c.north_star.clone());
+        let seed = CardDraft::from_project(p);
         move |_| {
-            draft.set((brief.clone(), benchmark.clone(), north.clone()));
+            draft.set(seed.clone());
             editing.set(true);
         }
     };
@@ -115,24 +170,71 @@ fn card_and_health(
                         label { class: "label", "想做什么" }
                         textarea {
                             class: "textarea",
-                            value: "{draft.read().0}",
-                            oninput: move |e| draft.write().0 = e.value(),
+                            value: "{draft.read().brief}",
+                            oninput: move |e| draft.write().brief = e.value(),
                         }
                     }
                     div { class: "formrow",
                         label { class: "label", "最像的对标" }
                         input {
                             class: "input",
-                            value: "{draft.read().1}",
-                            oninput: move |e| draft.write().1 = e.value(),
+                            value: "{draft.read().benchmark}",
+                            oninput: move |e| draft.write().benchmark = e.value(),
                         }
                     }
                     div { class: "formrow",
                         label { class: "label", "三个月长成什么样(北极星)" }
                         textarea {
                             class: "textarea",
-                            value: "{draft.read().2}",
-                            oninput: move |e| draft.write().2 = e.value(),
+                            value: "{draft.read().north}",
+                            oninput: move |e| draft.write().north = e.value(),
+                        }
+                    }
+                    div { class: "formrow",
+                        label { class: "label", "在研版本" }
+                        input {
+                            class: "input mono",
+                            value: "{draft.read().version}",
+                            oninput: move |e| draft.write().version = e.value(),
+                        }
+                    }
+                    div { class: "formrow",
+                        label { class: "label", "项目群" }
+                        select {
+                            class: "select",
+                            value: "{draft.read().chat_provider}",
+                            onchange: move |e| draft.write().chat_provider = e.value(),
+                            option { value: "", "不配" }
+                            option { value: "welink", "WeLink" }
+                        }
+                    }
+                    if !draft.read().chat_provider.is_empty() {
+                        div { class: "formrow",
+                            label { class: "label", "群号" }
+                            input {
+                                class: "input mono",
+                                value: "{draft.read().chat_group}",
+                                oninput: move |e| draft.write().chat_group = e.value(),
+                            }
+                        }
+                        div { class: "formrow",
+                            label { class: "label", "同步哪些通知" }
+                            div { style: "display:flex;gap:14px;flex-wrap:wrap;font-size:12px;",
+                                for (i, ev) in bw::chat::NotifyEvent::ALL.iter().enumerate() {
+                                    label {
+                                        input {
+                                            r#type: "checkbox",
+                                            checked: draft.read().notify.get(i).copied().unwrap_or(false),
+                                            oninput: move |e| {
+                                                if let Some(slot) = draft.write().notify.get_mut(i) {
+                                                    *slot = e.checked();
+                                                }
+                                            },
+                                        }
+                                        " {ev.label()}"
+                                    }
+                                }
+                            }
                         }
                     }
                     div { style: "display:flex;gap:8px;justify-content:flex-end;",
@@ -145,13 +247,18 @@ fn card_and_health(
                             class: "btn btn-sm btn-primary",
                             onclick: move |_| {
                                 let d = draft.read().clone();
+                                let chat_notify = d.notify_keys();
                                 b_edit.cmd(Command::EditProjectCard {
                                     project_id: pid,
                                     intent: ProjectIntent {
                                         name: name.clone(),
-                                        brief: d.0,
-                                        benchmark: d.1,
-                                        north_star: d.2,
+                                        brief: d.brief,
+                                        benchmark: d.benchmark,
+                                        north_star: d.north,
+                                        current_version: d.version.trim().to_string(),
+                                        chat_provider: d.chat_provider.clone(),
+                                        chat_group: d.chat_group.trim().to_string(),
+                                        chat_notify,
                                     },
                                 });
                                 editing.set(false);
@@ -163,12 +270,13 @@ fn card_and_health(
                     {charter_line("想做什么", &c.brief)}
                     {charter_line("对标", &c.benchmark)}
                     {charter_line("北极星", &c.north_star)}
+                    {charter_line("在研版本", &c.current_version)}
                     {charter_line("项目群", &c.chat)}
                     div { class: "charter-meta",
                         span { class: "mono", "{c.remote}" }
                         span { "规范 {c.standard}" }
                         span { style: "margin-left:auto;display:flex;gap:6px;",
-                            // 人在网页上直接合了 MR 时,buddy 是不知道的 ——
+                            // 人在网页上直接合了 MR 时,Workbench 是不知道的 ——
                             // 工作区会一直停在旧提交,而界面照常显示旧内容。
                             // 这颗按钮是补那一下的唯一入口。
                             button {
@@ -228,13 +336,24 @@ fn card_mr_banner(p: &ProjectVm, bridge: &Bridge) -> Element {
     };
     rsx! {
         div { class: "mr-banner",
-            span { "名片改动在 #{mr.number}「{mr.status}」· {pr}" }
+            span { "项目信息改动在 #{mr.number}「{mr.status}」· {pr}" }
             if mr.mergeable {
                 if let Some(id) = id {
-                    button {
-                        class: "btn btn-sm btn-primary",
-                        onclick: move |_| b.cmd(Command::MergeAndSettle { id }),
-                        "合入并完成"
+                    if mr.has_open_mr {
+                        button {
+                            class: "btn btn-sm btn-primary",
+                            onclick: move |_| b.cmd(Command::MergeAndSettle { id }),
+                            "合入并完成"
+                        }
+                    } else {
+                        button {
+                            class: "btn btn-sm btn-primary",
+                            onclick: move |_| b.cmd(Command::TransitionIssue {
+                                id,
+                                to: bw::model::IssueStatus::Done,
+                            }),
+                            "完成(无开着的 MR)"
+                        }
                     }
                 }
             }
@@ -642,12 +761,8 @@ fn week_block(p: &ProjectVm) -> Element {
 fn version_block(p: &ProjectVm) -> Element {
     rsx! {
         div { class: "card ov-block",
-            div { class: "ov-block-title", "在研版本与发版记录" }
+            div { class: "ov-block-title", "发版记录" }
             div { class: "version-cols",
-                div { class: "version-col",
-                    div { class: "k", "在研版本" }
-                    div { class: "v mono", "{p.card.current_version}" }
-                }
                 div { class: "version-col",
                     div { class: "k", "已发版次数" }
                     div { class: "v mono", "{p.releases.len()}" }

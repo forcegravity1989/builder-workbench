@@ -81,7 +81,7 @@ pub async fn probe_repo(owner_repo: &str) -> Result<String, GithubError> {
     Ok(format!("{name} · {vis} · 最近推送 {pushed}"))
 }
 
-// ─────────────── P1 · 存量项目接仓 (loop-buddy↔aihot 接线 spec) ───────────────
+// ─────────────── P1 · 存量项目接仓 ───────────────
 //
 // `Command::AttachRepo` 给「绑定本地目录」建的项目补上 GitHub 远端。这里只管
 // 本地 `origin` 这一侧的真实读写;探活(`probe_repo`)、写 `remote_path`、
@@ -191,13 +191,12 @@ impl PrOpened {
 
 /// 在**已经推上去的分支**上开一个 PR —— `gh pr create` 就这一处实现。
 ///
-/// 三个调用方各自准备分支的方式不同([`open_pr`] 走 `stage_commit_push`、
-/// [`open_project_init_pr`] 先 checkout 再提交、V4 的规范铺底自己在 worktree
-/// 里只提交点名的那几个文件),但「开 PR」这一步是同一段代码,所以只留一份。
+/// 唯一调用方是规范铺底:它在自己的 worktree 里只提交点名的那几个文件、推
+/// 分支,再调这里开 PR。
 ///
 /// `body` 由调用方给:带不带 `Closes #<n>` 是调用方的决定 —— **不能默认带**。
-/// V4 的活是本机号,和远端 issue 号没有对应关系,拼一句 `Closes #3` 会去关掉
-/// 那个仓里毫不相干的第 3 号 issue。
+/// Workbench 的活是本机号,和远端 issue 号没有对应关系,拼一句 `Closes #3` 会
+/// 去关掉那个仓里毫不相干的第 3 号 issue。
 ///
 /// gh 从 `workspace` 的 origin 远端推断目标仓与默认基线分支。
 pub async fn create_pr_on_branch(
@@ -382,6 +381,44 @@ pub async fn open_pr_for_branch(
         .map_err(|_| GithubError::Command(format!("无法解析 PR 号:{text:?}")))
 }
 
+/// 同 `open_pr_for_branch` 但 `--state all`(开着或已合入)。给详情展示用。
+pub async fn pr_for_branch(
+    owner_repo: &str,
+    head_branch: &str,
+) -> Result<Option<u32>, GithubError> {
+    let output = crate::win_cmd::tokio_cmd("gh")
+        .args([
+            "pr",
+            "list",
+            "--repo",
+            owner_repo,
+            "--head",
+            head_branch,
+            "--state",
+            "all",
+            "--json",
+            "number",
+            "--jq",
+            ".[0].number // empty",
+        ])
+        .stdin(Stdio::null())
+        .stdout(Stdio::piped())
+        .stderr(Stdio::piped())
+        .output()
+        .await
+        .map_err(spawn_err)?;
+    if !output.status.success() {
+        return Err(GithubError::Command(stderr_text(&output)));
+    }
+    let text = String::from_utf8_lossy(&output.stdout).trim().to_string();
+    if text.is_empty() {
+        return Ok(None);
+    }
+    text.parse::<u32>()
+        .map(Some)
+        .map_err(|_| GithubError::Command(format!("无法解析 PR 号:{text:?}")))
+}
+
 /// C16: `defaultBranchRef` comes back as a nested object (`{"name":"main"}`),
 /// not a bare string — `gh repo list --json defaultBranchRef` shape per its
 /// own JSON FIELDS reference (`gh repo list --help`). An empty repo with no
@@ -484,7 +521,7 @@ pub async fn fetch_project_toml(
         // **分支不存在也是 404**,但它和「这个仓里没有这份文件」是两件事:
         // 前者是「没查成」(多半是默认分支不叫 main),后者才是「没接管过」。
         // 一起当成 Ok(None) 的话,一个默认分支叫 master 的仓会被报成
-        // 「还没被 buddy 接管过」,人照着填一遍就会盖掉仓里真正的名片。
+        // 「还没被 Workbench 接管过」,人照着填一遍就会盖掉仓里真正的名片。
         if lower.contains("no commit found for the ref") {
             return Err(GithubError::Command(err));
         }
@@ -693,7 +730,7 @@ pub async fn update_issue(
             }
             // 加:入参里现有已经有的不加(gh 对已存在 label 报错)
             let mut add: Vec<&str> = Vec::new();
-            for &l in lbls {
+            for l in crate::remote::filter_persistent_labels(lbls) {
                 if !current_set.contains(l) {
                     add.push(l);
                 }
@@ -771,7 +808,7 @@ pub async fn list_issues(
     args.push("--limit".into());
     args.push("200".into());
     args.push("--json".into());
-    args.push("number,title,state,labels,createdAt,closedAt".into());
+    args.push("number,title,state,labels,createdAt,closedAt,assignee,author".into());
     // tokio_cmd 要 &[&str]/Vec<String> 转 OsString;这里先把 Vec<String> 拼成
     // Vec<&str> 不行(生命周期),故用 args(&[String]) 的重载。
     let arg_refs: Vec<&str> = args.iter().map(|s| s.as_str()).collect();
@@ -799,6 +836,8 @@ pub async fn list_issues(
             body: String::new(),
             created_at: r.created_at,
             closed_at: r.closed_at,
+            assignee: r.assignee.map(|p| p.login).filter(|s| !s.is_empty()),
+            author: r.author.map(|p| p.login).filter(|s| !s.is_empty()),
         })
         .collect())
 }
@@ -818,7 +857,7 @@ pub async fn view_issue(
             "--repo",
             owner_repo,
             "--json",
-            "number,title,state,labels,body,createdAt,closedAt",
+            "number,title,state,labels,body,createdAt,closedAt,assignee,author",
         ])
         .stdin(Stdio::null())
         .stdout(Stdio::piped())
@@ -840,7 +879,80 @@ pub async fn view_issue(
         body: r.body.unwrap_or_default(),
         created_at: r.created_at,
         closed_at: r.closed_at,
+        assignee: r.assignee.map(|p| p.login).filter(|s| !s.is_empty()),
+        author: r.author.map(|p| p.login).filter(|s| !s.is_empty()),
     })
+}
+
+/// `gh issue edit <n> --repo <r> --add-assignee <name>` / `--remove-assignee`。
+/// 空串 = `--remove-assignee **`(取消全部指派)。
+pub async fn set_issue_assignee(
+    owner_repo: &str,
+    number: u32,
+    assignee: &str,
+) -> Result<(), GithubError> {
+    let num_s = number.to_string();
+    let mut args = vec!["issue", "edit", &num_s, "--repo", owner_repo];
+    if assignee.is_empty() {
+        args.push("--remove-assignee");
+        args.push("**");
+    } else {
+        args.push("--add-assignee");
+        args.push(assignee);
+    }
+    let output = crate::win_cmd::tokio_cmd("gh")
+        .args(&args)
+        .stdin(Stdio::null())
+        .stdout(Stdio::piped())
+        .stderr(Stdio::piped())
+        .output()
+        .await
+        .map_err(spawn_err)?;
+    if !output.status.success() {
+        return Err(GithubError::Command(stderr_text(&output)));
+    }
+    Ok(())
+}
+
+/// `gh api user --jq .login` → 当前登录用户。认不出返错。
+pub async fn current_user(owner_repo: &str) -> Result<String, GithubError> {
+    let _ = owner_repo;
+    let output = crate::win_cmd::tokio_cmd("gh")
+        .args(["api", "user", "--jq", ".login"])
+        .stdin(Stdio::null())
+        .stdout(Stdio::piped())
+        .stderr(Stdio::piped())
+        .output()
+        .await
+        .map_err(spawn_err)?;
+    if !output.status.success() {
+        return Err(GithubError::Command(stderr_text(&output)));
+    }
+    Ok(String::from_utf8_lossy(&output.stdout).trim().to_string())
+}
+
+/// `gh issue edit <n> --repo <r> --title <t> --body <b>`。
+pub async fn edit_issue(
+    owner_repo: &str,
+    number: u32,
+    title: &str,
+    body: &str,
+) -> Result<(), GithubError> {
+    let num_s = number.to_string();
+    let output = crate::win_cmd::tokio_cmd("gh")
+        .args([
+            "issue", "edit", &num_s, "--repo", owner_repo, "--title", title, "--body", body,
+        ])
+        .stdin(Stdio::null())
+        .stdout(Stdio::piped())
+        .stderr(Stdio::piped())
+        .output()
+        .await
+        .map_err(spawn_err)?;
+    if !output.status.success() {
+        return Err(GithubError::Command(stderr_text(&output)));
+    }
+    Ok(())
 }
 
 #[derive(serde::Deserialize)]
@@ -857,6 +969,10 @@ struct GhIssueViewJson {
     created_at: Option<String>,
     #[serde(default)]
     closed_at: Option<String>,
+    #[serde(default)]
+    assignee: Option<GhPersonJson>,
+    #[serde(default)]
+    author: Option<GhPersonJson>,
 }
 
 #[derive(serde::Deserialize)]
@@ -871,6 +987,16 @@ struct GhIssueFullJson {
     created_at: Option<String>,
     #[serde(default)]
     closed_at: Option<String>,
+    #[serde(default)]
+    assignee: Option<GhPersonJson>,
+    #[serde(default)]
+    author: Option<GhPersonJson>,
+}
+
+#[derive(serde::Deserialize)]
+struct GhPersonJson {
+    #[serde(default)]
+    login: String,
 }
 
 #[derive(serde::Deserialize)]

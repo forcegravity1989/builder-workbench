@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""首过率 —— buddy 铺的现成采集脚本(可回溯,retro = true)。过程指标包。
+"""首过率 —— Workbench 铺的现成采集脚本(可回溯,retro = true)。过程指标包。
 
 口径:本周合入的 PR 里,**开出之后零追加提交**就合入的占比(0-100 的百分数)。
 
@@ -21,7 +21,7 @@
     gh pr list --state merged --json number,createdAt,mergedAt --limit 1000
     gh pr view <号> --json commits   # 窗内每张
 
-铺一次就归这个项目,buddy 之后再也不覆盖它。
+铺一次就归这个项目,Workbench 之后再也不覆盖它。
 """
 
 import argparse

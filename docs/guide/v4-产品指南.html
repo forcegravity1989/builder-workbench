@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Workbench MVP · 产品指南</title>
+<title>Workbench MVP · 使用指南</title>
 <style>
   :root{
     /* 配色取自 crates/app-shell/assets/hifi.css 的 :root（V4 高保真原型正本），非自造 */
@@ -160,12 +160,15 @@
   .rstop.todo .tag{background:var(--surface-2);color:var(--muted-2);border:1px dashed var(--border-deep)}
   .rstop .body .t{font-weight:600;margin-bottom:3px}
   .rstop .body .d{font-size:13.5px;color:var(--muted);line-height:1.55}
+
+  .find{margin:8px 0 4px}
+  .next{margin-top:22px}
 </style>
 </head>
 <body>
 
 <aside class="sidebar">
-  <div class="brand"><div class="mark">Workbench<span class="dot">.</span></div><div class="sub">MVP · 产品指南</div></div>
+  <div class="brand"><div class="mark">Workbench<span class="dot">.</span></div><div class="sub">MVP · 使用指南</div></div>
   <nav>
     <div class="nav-group">
       <div class="nav-group-title">怎么用</div>
@@ -176,11 +179,11 @@
       <div class="nav-item" data-screen="u1d"><svg viewBox="0 0 24 24"><path d="M4 19V5M4 19h16M8 16l3-5 3 3 4-6"/></svg>第 4 站 · 干活</div>
       <div class="nav-item" data-screen="u1e"><svg viewBox="0 0 24 24"><path d="M12 3l8 4v5c0 5-3.5 8-8 9-4.5-1-8-4-8-9V7z"/></svg>第 5 站 · 验收记发版</div>
       <div class="nav-item" data-screen="u1f"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>第 6 站 · 定时盘点</div>
-      <div class="nav-item" data-screen="u2"><svg viewBox="0 0 24 24"><path d="M4 19V5M4 19h16M8 16l3-5 3 3 4-6"/></svg>先记着的缺口</div>
+      <div class="nav-item" data-screen="u2"><svg viewBox="0 0 24 24"><path d="M4 7h16M4 12h10M4 17h7"/></svg>规矩与查找</div>
     </div>
-      </nav>
+  </nav>
   <div class="nav-foot">
-    只写<strong>已经真走过一遍</strong>的站。<br>怎么建 / 跑 / 测看仓根 <code>AGENTS.md</code>。<br>正本：<code>docs/guide/v4-产品指南.html</code>
+    按站查「点什么、得到什么」。<br>怎么建 / 跑 / 测看仓根 <code>AGENTS.md</code>。
   </div>
 </aside>
 
@@ -194,24 +197,21 @@
 
     <!-- ============ U0 每周怎么转 ============ -->
     <section class="screen active" id="u0" data-title="每周怎么转" data-sec-name="怎么用">
-      <div class="eyebrow">Workbench MVP · 产品指南</div>
-      <h1 class="disp">30 秒导读</h1>
+      <div class="eyebrow">Workbench MVP · 使用指南</div>
+      <h1 class="disp">接进来，每周转一圈</h1>
+      <p class="lede">Workbench 是单人项目工作台。你说清楚要什么，在路口点头；查资料、写代码、开 MR 交给 agent。正本在仓和代码平台上，不在 Workbench 本地库里。</p>
+
       <div class="banner">
-        这是什么——Workbench MVP 的<strong>使用指南</strong>，一站一站写，从零把一个项目接进来、每周转一圈。给谁看——第一次打开 Workbench 的人（先是我们自己，然后是同事）。现在还作数吗——作数（2026-08-25）。
+        一条主线：<strong>接进来 → 定本周 → 派活 → agent 干 → 你验收</strong>。
         <ul class="rules-mini">
-          <li>只写<strong>已经真走过一遍</strong>的站。没走到的站列在「先记着的缺口」，不提前编。</li>
-          <li>怎么建 / 跑 / 测、门禁，看仓根 <code>AGENTS.md</code>。机制为什么这么定，看 <code>docs/architecture.md</code>。</li>
+          <li>「完成」永远你点。agent 最远到「评审中」。定时任务只会<strong>建</strong>活，绝不<strong>完成</strong>活。</li>
+          <li>没数据就是灰，不是绿。界面上的数字都能用 <code>codehub-cli</code> / <code>gh</code> 或打开仓文件独立核对。</li>
         </ul>
-        还没做的活看各模块「没建什么」，不另开清单。<code>Workbench-guide.html</code> 是 V3 种子，不作数。
       </div>
 
-      <h2 class="sec"><span class="n">怎么干活</span></h2>
-      <p>一个项目接进来一次,之后<strong>每周转一圈,一圈六站</strong>(下面那张图就是这一圈)。<strong>你做的事只有两类</strong>：说清楚要什么，以及在关键路口点头。剩下的——查资料、写代码、写文档、提交、开 MR——交给 agent。</p>
-      <p>所以整份指南只有一条主线：<strong>接进来 → 每周定目标 → 派活 → agent 干 → 你验收</strong>。</p>
-
-      <h2 class="sec"><span class="n">六站旅程环</span>一个项目每周怎么转</h2>
+      <h2 class="sec"><span class="n">六站</span>一个项目每周怎么转</h2>
       <div class="diagram">
-        <div class="cap">0 只做一次；1–6 已经走过一圈</div>
+        <div class="cap">0 只做一次；1–6 每周一圈</div>
         <div class="scroll">
           <svg viewBox="0 0 480 450" width="480" height="450" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="六站旅程环：0 接入项目一次性完成后，1 看总览、2/3 定本周、4 干活、5 验收记发版、6 定时盘点循环往复，6 之后回到 1">
             <defs>
@@ -236,7 +236,7 @@
             <!-- node 0：接入项目，已走过，实心 -->
             <rect x="8" y="28" width="140" height="64" rx="12" fill="var(--accent)" stroke="var(--accent-ink)" stroke-width="1.4"/>
             <text x="78" y="55" text-anchor="middle" font-size="13" font-weight="700" fill="#fff">0 · 接入项目</text>
-            <text x="78" y="72" text-anchor="middle" font-size="11" fill="#fff" opacity=".92">一次性 · 已经走过</text>
+            <text x="78" y="72" text-anchor="middle" font-size="11" fill="#fff" opacity=".92">一次性</text>
 
             <!-- node 1 看总览 -->
             <rect x="180" y="43" width="140" height="64" rx="12" fill="var(--accent)" stroke="var(--accent-ink)" stroke-width="1.4"/>
@@ -264,26 +264,40 @@
             <text x="107" y="191" text-anchor="middle" font-size="11" fill="#fff" opacity=".92">自动建活，停评审中</text>
           </svg>
         </div>
-        <div class="legend">
-          <span class="sw"><span class="box" style="background:var(--accent)"></span>实心 = 已经真走过一遍</span>
-          <span class="sw"><span class="box" style="background:var(--accent-soft);border:1.5px solid var(--accent)"></span>浅实心 = 这一站正在走、还没走完</span>
-          <span class="sw"><span class="box" style="background:var(--surface);border:1.5px dashed var(--border-deep)"></span>虚线 = 设计定了，还没真走到</span>
-        </div>
       </div>
-      <p class="note-line">这份指南跟着实践走：每走完一站、那一站的改动合入之前，把这一站从「还没走到」搬进「已经走过」。今天第 0–6 站都走过一遍；还没建的记在「先记着的缺口」，不挡这一圈打结。</p>
 
-      <div class="callout note">
-        <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/></svg>
-        <div class="body"><strong>两条你随时可以拿去核对的规矩</strong>「完成」永远由人点：agent 干完最远只到「评审中」；定时任务只会自动<strong>建</strong>活，绝不自动<strong>完成</strong>活。没数据就是灰，不是绿：健康灯只能从真实数据推出来，界面上任何一个数字都能用 <code>codehub-cli</code> / <code>gh</code> 或打开仓文件独立核对。</div>
+      <h2 class="sec"><span class="n">找信息</span>从问题跳到那一站</h2>
+      <div class="ktable-wrap find">
+        <table class="ktable">
+          <thead><tr><th>我想…</th><th>去哪</th></tr></thead>
+          <tbody>
+            <tr><td>接一个仓、看铺了哪些文件、合铺底 MR</td><td><a href="#" onclick="go('u1');return false">第 0 站 · 接入项目</a></td></tr>
+            <tr><td>看健康灯、指标、改名片 / 在研版本 / 项目群</td><td><a href="#" onclick="go('u1b');return false">第 1 站 · 看总览</a></td></tr>
+            <tr><td>开始本周、写周目标、建活、看某一周</td><td><a href="#" onclick="go('u1c');return false">第 2/3 站 · 定本周</a></td></tr>
+            <tr><td>开工、作废、去会话、原型进 Open Design</td><td><a href="#" onclick="go('u1d');return false">第 4 站 · 干活</a></td></tr>
+            <tr><td>合 MR、点完成、发版本</td><td><a href="#" onclick="go('u1e');return false">第 5 站 · 验收记发版</a></td></tr>
+            <tr><td>周五自动盘点、每天自动采数</td><td><a href="#" onclick="go('u1f');return false">第 6 站 · 定时盘点</a></td></tr>
+            <tr><td>灯为什么是灰、完成为什么必须人点</td><td><a href="#" onclick="go('u2');return false">规矩与查找</a></td></tr>
+          </tbody>
+        </table>
       </div>
-      <div class="foot">设计正本 <code>docs/architecture.md</code>；还没做的活看各模块「没建什么」。</div>
+      <p class="note-line">怎么建 / 跑 / 测看仓根 <code>AGENTS.md</code>。机制为什么这么定看 <code>docs/architecture.md</code>。右侧「指南」打开的就是这份。</p>
+      <div class="foot">使用指南正本 <code>docs/guide/v4-产品指南.html</code>。</div>
     </section>
 
     <!-- ============ U1 第 0 站 · 接入项目 ============ -->
     <section class="screen" id="u1" data-title="第 0 站 · 接入项目" data-sec-name="怎么用">
       <div class="eyebrow">怎么用 · 第 0 站</div>
       <h1 class="disp">把一个项目接进来</h1>
-      <p class="lede">这一站已经走过，下面写的都是实际发生的。</p>
+      <p class="lede">只做一次。选仓、填名片、Workbench 自动铺 <code>.bw/</code> 骨架并开 MR。仓根一个字不动。合入由你点。</p>
+      <div class="res">
+        <div class="h">这一站能查到</div>
+        <ul>
+          <li><span class="b"></span><div>要准备什么、工作区目录怎么改</div></li>
+          <li><span class="b"></span><div>两步怎么接、这个仓以前被接管过没有</div></li>
+          <li><span class="b"></span><div>点「完成接入」之后仓里多了什么、谁合那个 MR</div></li>
+        </ul>
+      </div>
 
       <h2 class="sec"><span class="n">你要准备什么</span></h2>
       <div class="checklist">
@@ -291,8 +305,8 @@
         <div class="chk"><div class="mk"><svg viewBox="0 0 24 24"><path d="M5 12l4 4 10-10"/></svg></div><div><div class="t">本机装好命令行工具并登录过</div><div class="d"><code>gh</code>（GitHub）或 <code>codehub-cli</code>（内部）。项目墙上那条环境条会当场去 PATH 里找这些命令，找得到绿、找不到红。<strong>红的不影响别的事，只影响对应那条路能不能走。</strong></div></div></div>
       </div>
 
-      <h3 class="sub">工作区目录先看一眼</h3>
-      <p>「设置」里有一格「工作区根目录」。以后接进来的项目，仓就 clone 到这个目录下面，一个项目一个子目录。默认值在 macOS 上是 <code>~/.builders-workbench/workspaces</code>，Windows 上是用户目录下的同名路径；要放到别的盘，现在就在这格里改掉、点保存——<strong>改完立刻生效，重启还在，而且已经接进来的项目不会跟着搬家</strong>（它们的路径当场被钉死在原处）。</p>
+      <h3 class="sub">工作区目录</h3>
+      <p>「设置」里有一格「工作区根目录」。以后接进来的项目，仓 clone 到这个目录下，一个项目一个子目录。默认在用户目录下的 <code>.builders-workbench/workspaces</code>。要换盘，现在改、点保存：立刻生效，重启还在。<strong>已经接进来的项目不会跟着搬家</strong>。</p>
 
       <h2 class="sec"><span class="n">接：两步</span></h2>
       <div class="ops">
@@ -329,7 +343,7 @@
         <div class="li"><div class="n">5</div><div class="t"><strong>自动进这个项目</strong>。</div></div>
       </div>
 
-      <p>第 4 步只铺马上要用的骨架，全在 <code>.bw/</code> 底下，不是一口气铺二十几份：</p>
+      <p>第 4 步只铺马上要用的骨架，全在 <code>.bw/</code> 底下：</p>
       <div class="ktable-wrap">
         <table class="ktable">
           <thead><tr><th>文件</th><th>是什么</th></tr></thead>
@@ -342,23 +356,25 @@
           </tbody>
         </table>
       </div>
-      <p class="note-line">指标正文和采集脚本不在这一站预铺——跟第 2/3 站那张运作活①走，已有的不覆盖。「配置」屏只对账，<strong>不再二次铺底</strong>。</p>
+      <p class="note-line">指标正文和采集脚本不在这一站预铺，跟第 2/3 站运作活①走。配置屏只探活和对账，<strong>不改名片、不再二次铺底</strong>。</p>
 
-      <h2 class="sec"><span class="n">两件事你会注意到</span></h2>
+      <h2 class="sec"><span class="n">仓里会多什么、不会多什么</span></h2>
       <div class="res">
         <ul>
-          <li><span class="b"></span><div><strong>Workbench 铺进你仓里的东西，全都在 <code>.bw/</code> 里，一个例外都没有。</strong>仓根一个字不动——<code>README.md</code>、<code>AGENTS.md</code>、<code>CLAUDE.md</code>、<code>docs/</code>，接项目这一步全都不碰。「哪些是 bw 的资产」<code>ls .bw/</code> 一眼可数。</div></li>
-          <li><span class="b"></span><div><strong>Workbench 自己的规矩不往你仓里写。</strong>完成由人点、指标只能真采、合并永远是人——这些每次开工都会现给 agent，写进你仓里只会变成第二份会过时的副本。</div></li>
-          <li><span class="b"></span><div><strong>想让 Workbench 给你的项目写一份开发手册</strong>（仓根 <code>AGENTS.md</code>：怎么建、怎么跑、怎么测、目录里什么在哪）——那是另一件事，不在接项目这一步。它归资产盘点首次模式里的 <code>project-handbook</code>：问过你才写，走 MR。今天还没接上，见 <code>docs/architecture.md</code> 资产盘点模块「没建什么」。</div></li>
-          <li><span class="b"></span><div><strong>Workbench 自带的技能不会进你的仓。</strong>它们住在 Workbench 自己的目录里，agent 开工时 Workbench 只把这张活要用的那一份的名字和路径告诉它，正文让它自己去读。你仓里 <code>.claude/skills/</code> 下的技能仍然是你自己的，Workbench 不碰。</div></li>
+          <li><span class="b"></span><div>Workbench 写进仓的东西<strong>全在 <code>.bw/</code></strong>。仓根 <code>README.md</code> / <code>AGENTS.md</code> / <code>CLAUDE.md</code> 这一步一个字不碰。自带技能也不进你的仓。</div></li>
+          <li><span class="b"></span><div>第 4 步没成，前面仍然算数：项目已接进来、仓已在本机。配置屏没有第二次铺底，点「对一遍账」能看见缺哪些件。要再铺，接入会认开着的同标题活，不会多建一张。</div></li>
+          <li><span class="b"></span><div>以前铺过、MR 没合、issue 也关了：默认分支没有 <code>.bw/config/project.toml</code>，仍算没纳入过，接入后再开一张新铺底。总览③写「已完成」只看默认分支上有没有指纹清单 <code>.bw/state/managed.toml</code>，关过的旧活不冒充铺过。</div></li>
         </ul>
       </div>
+<<<<<<< HEAD
       <p class="note-line">你仓里本来就有的 <code>README.md</code>、<code>CLAUDE.md</code>、<code>AGENTS.md</code>，<strong>Workbench 根本不碰</strong>——不是「已存在就跳过」，是这一步压根不往仓根写东西。</p>
       <p class="note-line">第 4 步没成不会推翻前面：项目已经接进来了、仓已经在本机了，这两件是真的。回头在「配置」屏点一次「规范铺底」重来就行——它按标题幂等（只认<strong>开着的</strong>同标题活），重来不会多建一张活。</p>
       <div class="callout note">
         <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/></svg>
         <div class="body"><strong>以前铺过、但 MR 没合、issue 也关了</strong>——远端默认分支没有 <code>.bw/config/project.toml</code>，这一站仍算「还没纳入过」，接入后应再开一张新铺底和 MR。总览那三个运作活点只看开着的活；③写「已完成」只当件已经在默认分支上，关过的旧活不冒充铺过。</div>
       </div>
+=======
+>>>>>>> origin/main
 
       <h2 class="sec"><span class="n">接错了怎么办</span></h2>
       <div class="callout note">
@@ -367,10 +383,10 @@
       </div>
 
       <h2 class="sec"><span class="n">最后一下：你点完成，合那个 MR</span></h2>
-      <p>接入只把活推到「评审中」。<strong>合入永远是人点的</strong>——计划屏把这张「规范铺底」从「评审中」拖到「已完成」（详情抽屉里那颗「✓ 点完成」是同一下）。松手会弹出确认框，写明先合哪个 MR；确认之后框不关，一步一句写正在合 MR、拉仓、结清（要两三秒）。合不成就整条不算数，活留在评审中，可以重试。</p>
+      <p>接入只把活推到「评审中」。<strong>合入永远是人点的</strong>——计划屏把这张「规范铺底」从「评审中」拖到「已完成」（详情弹窗里那颗「✓ 点完成」是同一下）。松手会弹出确认框，写明先合哪个 MR；确认之后框不关，一步一句写正在合 MR、拉仓、结清（要两三秒）。合不成就整条不算数，活留在评审中，可以重试。</p>
       <div class="callout note">
         <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/></svg>
-        <div class="body"><strong>通知屏只通知，不在那儿合。</strong>「等你合入」告诉你有一张 MR 等着；去计划屏拖到「已完成」，或总览上那颗「合入并完成」。不要只在 codehub 网页关 issue——那不会合 MR。</div>
+        <div class="body"><strong>项目墙 ⚑ 只提醒，不在那儿合。</strong>「等你合入」告诉你有一张 MR 等着；去计划屏拖到「已完成」，或总览上那颗「合入并完成」。不要只在 codehub 网页关 issue——那不会合 MR。</div>
       </div>
 
       <h2 class="sec"><span class="n">这一站结束时</span>你手上有什么</h2>
@@ -382,28 +398,44 @@
           <li><span class="b"></span><div>那张「规范铺底」活已完成，对应 MR 已合</div></li>
         </ul>
       </div>
-      <p>合完这一下，第 0 站结束。下一站是<a href="#" onclick="go('u1b');return false">周一看总览</a>。</p>
+      <p class="next">下一站：<a href="#" onclick="go('u1b');return false">第 1 站 · 看总览</a></p>
     </section>
 
     <!-- ============ U1b 第 1 站 · 看总览 ============ -->
     <section class="screen" id="u1b" data-title="第 1 站 · 看总览" data-sec-name="怎么用">
       <div class="eyebrow">怎么用 · 第 1 站</div>
-      <h1 class="disp">周一看总览</h1>
-      <p class="lede">项目已经接进来。这一站是打开它，看清「这是什么、健康吗、这周要推什么、指标现在几个数」。</p>
+      <h1 class="disp">打开总览，看清这一周</h1>
+      <p class="lede">看清「这是什么、健康吗、这周要推什么、指标现在几个数」。改名片、在研版本、项目群也在这里，一张活一次 MR。</p>
+      <div class="res">
+        <div class="h">这一站能查到</div>
+        <ul>
+          <li><span class="b"></span><div>健康灯为什么是灰 / 黄 / 红</div></li>
+          <li><span class="b"></span><div>指标三类怎么看、手填怎么记</div></li>
+          <li><span class="b"></span><div>怎么改名片、在研版本、项目群；顶栏刷新真正拉什么</div></li>
+        </ul>
+      </div>
 
       <h2 class="sec"><span class="n">操作</span></h2>
       <div class="ops">
         <div class="li"><div class="n">1</div><div class="t">项目墙点进这个项目。侧栏默认停在「总览」。</div></div>
-        <div class="li"><div class="n">2</div><div class="t">从上往下看：名片和健康灯、北极星、本周计划进度、滞后性、引领性、代码仓级、在研版本。</div></div>
-        <div class="li"><div class="n">3</div><div class="t">进项目这一下，Workbench 会自己采一轮指标和仓统计（本会话第一次打开这个项目）。卡上会先写「正在采…」，采完折线出现。还想再采，用各块上的「重新采集」。</div></div>
+        <div class="li"><div class="n">2</div><div class="t">从上往下看：名片和健康灯（名片上有在研版本和项目群）、北极星、本周计划进度、滞后、引领、代码仓统计、发版记录。</div></div>
+        <div class="li"><div class="n">3</div><div class="t">本会话第一次打开这个项目，Workbench 会自己采一轮指标和仓统计。卡上先写「正在采…」，采完折线出现。还想再采，用各块上的「重新采集」。</div></div>
+        <div class="li"><div class="n">4</div><div class="t">顶栏「刷新」会先把打开着的项目拉到远端最新，再重采。主检出上若只脏了读数或接入留下的未提交名片，Workbench 会先让开再拉。只重画界面、不拉仓，会继续看见同事已经合进主干的旧 <code>metrics.toml</code>。</div></div>
+        <div class="li"><div class="n">5</div><div class="t">改项目名称 / 想做什么 / 对标 / 三个月长成什么样，或改在研版本、项目群：点「编辑项目名片」。保存后这张活在「评审中」（计划屏右上角下拉切「全部 issue」就能看见，不进待办池）。总览横幅或看板拖到「已完成」合入。</div></div>
       </div>
 
       <h2 class="sec"><span class="n">背后</span></h2>
       <div class="res">
         <ul>
+<<<<<<< HEAD
           <li><span class="b"></span><div><strong>对远端代码仓</strong>：读这个项目的 issue 列表（开着的和关过的都读）。周目标那一句话来自本周运作活①最新一条评论里的 <code>## 周目标</code>。纳入了哪些活看 <code>bw:week:YYYY-Www</code> 标签。</div></li>
           <li><span class="b"></span><div><strong>对你的机器</strong>：在项目工作区跑 <code>.bw/config/metrics.toml</code> 里的采集脚本，窗口是近四周。脚本只吐一个当下值时，折线只在本周那一格画一个点，前几周断开。仓统计走 git（再问远端合入的 PR）。</div></li>
           <li><span class="b"></span><div><strong>对 <code>.bw/</code></strong>：指标定义读 <code>metrics.toml</code>。B 类点「采集」或每天 09:00 自动采，都把<strong>当天</strong>的值追加进 <code>readings.jsonl</code>（只追加，键是日历日，和 V3 一天一行对齐）。折线按周画，取那一周最后一天。没有 <code>run</code> 的 B 类仍然采不到。C 类在卡上填今天这个数，同一天再记覆盖读回。</div></li>
+=======
+          <li><span class="b"></span><div><strong>对远端代码仓</strong>：读 issue 列表。周目标来自本周运作活①最新评论里 <code>## 周目标</code> 那一段。纳入了哪些活看 <code>bw:week:YYYY-Www</code> 标签。</div></li>
+          <li><span class="b"></span><div><strong>对你的机器</strong>：跑 <code>.bw/config/metrics.toml</code> 里的采集脚本，窗口近四周。脚本只吐一个当下值时，折线只在本周画一个点。仓统计走 git，再问远端合入的 PR。</div></li>
+          <li><span class="b"></span><div><strong>对 <code>.bw/</code></strong>：指标定义读 <code>metrics.toml</code>。B 类点「采集」或每天 20:00 自动采，把<strong>当天</strong>的值记进账本 <code>readings.jsonl</code>（同一天再采覆盖这一行，不写主检出）。折线按周画，取那一周最后一天。没有采集脚本的 B 类仍然采不到。C 类在卡上填今天的数，和 B 类同一份流水、同一套覆盖。</div></li>
+>>>>>>> origin/main
         </ul>
       </div>
 
@@ -411,47 +443,65 @@
       <div class="res">
         <ul>
           <li><span class="b"></span><div>健康灯和三条理由。没数据就是灰，不是绿。</div></li>
-          <li><span class="b"></span><div>北极星 / 滞后 / 引领每张卡：<strong>有读数</strong>才有现值和折线。A 类点「采一次」现算四周；B 类同样点采集，当下值进流水。穿刺北极星已经是 B 类：脚本 <code>.bw/scripts/stars.py</code> 在、Workbench 会把当下值写进 <code>readings.jsonl</code>。这周读到 <strong>0</strong> 是真值（CodeHub 上 0 star），不是「没采到」。CodeHub 没有 star 时间戳，升不了按日的 A 类。卡片「口径」认字段 <code>def</code>，写成 <code>definition</code> 会空着。</div></li>
-          <li><span class="b"></span><div>本周计划进度：周号 + 周目标一句 + 五段计数。运作活①本周已关会写「已完成」，不是「未建」。侧栏下面就是计划，总览上不再放「去计划」。</div></li>
+          <li><span class="b"></span><div>北极星 / 滞后 / 引领每张卡：<strong>有读数</strong>才有现值和折线。A 类每次现算四周；B 类采到的当下值进流水；读到 <strong>0</strong> 是真值，不是「没采到」。</div></li>
+          <li><span class="b"></span><div>本周计划进度：周号 + 周目标这段 + 五段计数。运作活①本周已关会写「已完成」。侧栏下一格就是计划。</div></li>
         </ul>
       </div>
 
       <div class="callout note">
         <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/></svg>
+<<<<<<< HEAD
         <div class="body"><strong>运作活③写「已完成」只看默认分支有没有指纹清单 <code>.bw/state/managed.toml</code>。</strong>以前铺过、issue 也关了、但合入的 MR 没进默认分支——件不在主干上，总览仍写「未建」。关 issue 不等于铺进了仓。</div>
+=======
+        <div class="body"><strong>运作活③写「已完成」只看默认分支有没有指纹清单 <code>.bw/state/managed.toml</code>。</strong>关过 issue 但 MR 没进默认分支，总览仍写「未建」。关 issue 不等于铺进了仓。</div>
+>>>>>>> origin/main
       </div>
 
-      <h2 class="sec"><span class="n">健康灯怎么亮</span>只从真实数据推,不能被人调</h2>
-      <p>灯旁边同时列出这次判断的理由。界面上原样显示的就是这几句（成立打勾、不成立打圈）：</p>
+      <h2 class="sec"><span class="n">健康灯怎么亮</span>只从数据推，不能手点</h2>
+      <p>灯旁边同时列出这次判断的理由（成立打勾、不成立打圈）：</p>
       <ul class="checklist">
+<<<<<<< HEAD
         <li>本周定了周目标，仓里也有真实提交。目标要写进运作活①评论的 <code>## 周目标</code>，只开着这张活还不算定了。不成立时会说周目标还没写进评论、这张活还没开，或者有目标但本周还没有真实提交。</li>
         <li>本周或上周有指标读数。读的是仓里 <code>.bw/state/metrics-readings.jsonl</code>。点过采集、脚本吐了数，这一条才会打勾。</li>
+=======
+        <li>本周定了周目标，仓里也有真实提交。目标要写进运作活①评论的 <code>## 周目标</code>，只开着这张活还不算定了。</li>
+        <li>本周或上周有指标读数。读的是 <code>.bw/state/metrics-readings.jsonl</code>。点过采集、脚本吐了数，这一条才打勾。</li>
+>>>>>>> origin/main
         <li>上周有合入或发版。不成立时显示「上周既没有合入也没有发版」。</li>
       </ul>
-      <p class="note-line">三条怎么合成一盏灯，见 <code>docs/architecture.md</code> 健康推导模块。没数据 = 灰，不是绿。</p>
-      <div class="foot">穿刺项目 CodeHub <code>z30026659/oh-my-hw-claudecode</code> · 2026-W35。事实源 <code>docs/architecture.md</code> 模块 6 / 12 / 13。</div>
+      <p class="note-line">三条怎么合成一盏灯，见 <a href="#" onclick="go('u2');return false">规矩与查找</a>。没数据 = 灰，不是绿。</p>
+      <p class="next">下一站：<a href="#" onclick="go('u1c');return false">第 2/3 站 · 定本周</a></p>
+      <div class="foot">事实源 <code>docs/architecture.md</code> 模块 6 / 12 / 13。</div>
     </section>
 
     <!-- ============ U1c 第 2/3 站 · 定本周 ============ -->
     <section class="screen" id="u1c" data-title="第 2/3 站 · 定本周" data-sec-name="怎么用">
       <div class="eyebrow">怎么用 · 第 2/3 站</div>
       <h1 class="disp">开始本周，写下目标和纳入的活</h1>
-      <p class="lede">总览上看过了。这一站用一次会话把「复盘 → 指标 → 本周目标和活清单」做完。计划正本挂在运作活①的评论上，不另写周计划文件。</p>
+      <p class="lede">一次会话做完「复盘 → 指标 → 本周目标和活清单」。计划正本挂在运作活①的评论上，不另写周计划文件。</p>
+      <div class="res">
+        <div class="h">这一站能查到</div>
+        <ul>
+          <li><span class="b"></span><div>「开始本周」什么时候出现</div></li>
+          <li><span class="b"></span><div>周目标写在哪、计划屏怎么按周看卡</div></li>
+          <li><span class="b"></span><div>「新建活」能建哪几种</div></li>
+        </ul>
+      </div>
 
       <h2 class="sec"><span class="n">操作</span></h2>
       <div class="ops">
-        <div class="li"><div class="n">1</div><div class="t">总览顶上「开始本周」。本周还没开过运作活①才会出现这颗按钮；已经做过（含已完成）不再冒出来。</div></div>
-        <div class="li"><div class="n">2</div><div class="t">跳到会话屏。agent 按 <code>week-planning</code> 剧本走：复盘、采指标、起草周目标与纳入清单。你在内嵌终端里看着、随时能停。</div></div>
-        <div class="li"><div class="n">3</div><div class="t">你确认之后，agent 当场建纳入的业务活，并打上本周 <code>bw:week:YYYY-Www</code>。周目标、纳入清单、指标读数快照写成运作活①的三条评论，标题必须是 <code>## 周目标</code> / <code>## 本周纳入</code> / <code>## 本周指标读数</code>（旧评 <code>## 本周目标</code> 也能读）。</div></div>
-        <div class="li"><div class="n">4</div><div class="t">侧栏点「计划」。周头是那句周目标；点某一周只看打了那一周标签的活，没打周标签的只在「issue总览」。运作活①做完、issue 关掉之后，总览那三个点里①应写「已完成」。</div></div>
+        <div class="li"><div class="n">1</div><div class="t">总览顶上「开始本周」。本周还没有这张运作活①、也还没有周目标，才会出现；已经做过（含已完成）不再冒出来。</div></div>
+        <div class="li"><div class="n">2</div><div class="t">跳到会话屏。agent 按周计划剧本走：复盘、采指标、起草周目标与纳入清单。你在会话屏的 Orca 页看着、随时能停。</div></div>
+        <div class="li"><div class="n">3</div><div class="t">你确认之后，agent 当场建纳入的业务活，并打上本周 <code>bw:week:YYYY-Www</code>（codehub 还挂同名里程碑）。周目标、纳入清单、指标读数快照写成运作活①的三条评论，标题必须是 <code>## 周目标</code> / <code>## 本周纳入</code> / <code>## 本周指标读数</code>。周目标那一段一句或一段都行。</div></div>
+        <div class="li"><div class="n">4</div><div class="t">侧栏点「计划」。周头是周目标那段，默认只露两行，点右下角小框展开，再点收起。点某一周只看打了那一周标签的活；没打周标签的切到右上角下拉「全部 issue」就能看见。</div></div>
       </div>
 
       <h2 class="sec"><span class="n">背后</span></h2>
       <div class="res">
         <ul>
-          <li><span class="b"></span><div><strong>对远端代码仓</strong>：建一张标题为 <code>更新指标 + 制定本周计划 YYYY-Www</code> 的运作活①（同一周标题幂等，不会建第二张）。评论挂在这张 issue 上。纳入的活是真的 codehub issue，不是本地草稿。</div></li>
-          <li><span class="b"></span><div><strong>对你的机器</strong>：这张活自己的 worktree。缺的 <code>metrics.toml</code> 空壳和采集脚本会在开工时铺上（已有不覆盖），经这张活的 MR 合进默认分支。</div></li>
-          <li><span class="b"></span><div><strong>对 <code>.bw/</code></strong>：指标定义和脚本进仓。周目标不进 <code>.bw/plan/</code>——那个目录已经不存在。</div></li>
+          <li><span class="b"></span><div><strong>对远端代码仓</strong>：建一张标题为 <code>更新指标 + 制定本周计划 YYYY-Www</code> 的运作活①（同一周不会建第二张）。纳入的活是真的远端 issue，不是本地草稿。</div></li>
+          <li><span class="b"></span><div><strong>对你的机器</strong>：这张活自己的工作目录。缺的 <code>metrics.toml</code> 和采集脚本会在开工时铺上（已有不覆盖），经这张活的 MR 合进默认分支。</div></li>
+          <li><span class="b"></span><div><strong>对 <code>.bw/</code></strong>：指标定义和脚本进仓。周目标只在 issue 评论里，不另写一份计划文件。</div></li>
         </ul>
       </div>
 
@@ -459,110 +509,141 @@
       <div class="res">
         <ul>
           <li><span class="b"></span><div>总览和计划屏同一句周目标，杀进程重开还能读回来（读的是 issue 评论）。</div></li>
-          <li><span class="b"></span><div>本周范围内的活：看板上能点开。穿刺这一周纳入了「精品 skill 打磨」那张业务活。旧会话建的卡可能没打类别——详情里选一次即可；定本周剧本现在要求新建卡必须打 <code>bw:category:*</code>。</div></li>
-          <li><span class="b"></span><div>运作活①可以关。关了不等于铺底没合入——那是另一张活、另一条 MR。</div></li>
+          <li><span class="b"></span><div>本周范围内的活，看板上能点开。旧卡没打类别时，详情里选一次即可。</div></li>
+          <li><span class="b"></span><div>运作活①可以关。关了不等于第 0 站那张铺底没合入——那是另一张活、另一条 MR。</div></li>
         </ul>
       </div>
 
       <div class="callout warn">
         <svg viewBox="0 0 24 24"><path d="M12 3l9 16H3z"/><path d="M12 9v5M12 17h.01"/></svg>
-        <div class="body"><strong>计划屏「新建活」先弹种类、标题、正文。</strong>业务活再选五阶段类别（原型默认 Open Design）。运作活选①或②，标题按本周幂等，类别锁成运作。周中要补一张计划或盘点，就在这里建运作活，不必等周五。要验 OD：种类选业务活、类别选「原型」，创建后点开卡片再「▶ 开工」。两种入口都会跳到会话屏。</div>
+        <div class="body"><strong>计划屏「新建活」先弹种类、标题、正文。</strong>业务活再选五阶段类别（原型默认 Open Design）。运作活选①或②，标题按本周幂等，类别锁成「运作」。周中要补一张计划或盘点，就在这里建，不必等周五。要走 Open Design：种类选业务活、类别选「原型」，创建后点开卡片再「▶ 开工」。</div>
       </div>
-      <div class="foot">穿刺 2026-W35 · 运作活① #8 已关 · 业务活 #9 已打本周标签。事实源 <code>docs/architecture.md</code> 模块 13；评论校验 <code>standard/skills/week-planning/check-week-comment.py</code>。</div>
+      <p class="next">下一站：<a href="#" onclick="go('u1d');return false">第 4 站 · 干活</a></p>
+      <div class="foot">事实源 <code>docs/architecture.md</code> 模块 13。</div>
     </section>
 
     <!-- ============ U1d 第 4 站 · 干活 ============ -->
     <section class="screen" id="u1d" data-title="第 4 站 · 干活" data-sec-name="怎么用">
       <div class="eyebrow">怎么用 · 第 4 站</div>
       <h1 class="disp">把一张活开起来干</h1>
-      <p class="lede">这一站已经走过。开工、作废、收会话、原型进 Open Design、计划屏按周看卡，都是真碰到过的。提交开 MR、合入、点完成、记发版在<a href="#" onclick="go('u1e');return false">第 5 站</a>。</p>
+      <p class="lede">开工、作废、去会话、原型进 Open Design。合入、点完成、发版在<a href="#" onclick="go('u1e');return false">第 5 站</a>。</p>
+      <div class="res">
+        <div class="h">这一站能查到</div>
+        <ul>
+          <li><span class="b"></span><div>怎么开工（按钮和拖进「进行中」是同一条路）</div></li>
+          <li><span class="b"></span><div>构建停会话屏 Orca 页、原型停 Open Design</div></li>
+          <li><span class="b"></span><div>「去会话」只切树、不改活的状态</div></li>
+        </ul>
+      </div>
 
       <h2 class="sec"><span class="n">操作</span></h2>
       <div class="ops">
-        <div class="li"><div class="n">1</div><div class="t">计划屏点开一张卡（整张都能点）。没打类别的先在详情里补一类——不开工工具的活会被拒绝开工，不会悄悄起 Claude。</div></div>
-        <div class="li"><div class="n">2</div><div class="t">卡片或详情上「▶ 开工」，或把卡拖进「进行中」。确认框写开工工具和 workflow。确认后跳会话屏。</div></div>
-        <div class="li"><div class="n">3</div><div class="t">原型类默认停在 Open Design 标签，嵌的是本机 OD 首页。<strong>不会自动开跑</strong>，你在 OD 里打一句发出去，它的 AI 才动。提示词尽量灌进 OD 的系统提示；对话列表里不一定看得见这一单。构建类走内嵌终端里的 Claude。</div></div>
-        <div class="li"><div class="n">4</div><div class="t">不想干了：详情「作废」，写原因。这不是完成——打已取消标签并关掉远端 issue，卡到「已取消」。</div></div>
-        <div class="li"><div class="n">5</div><div class="t">作废不会拆本机会话。要收掉：会话屏「删除会话」，确认之后才停终端、收这棵工作目录、删本机会话行。远端那张 issue 不动。</div></div>
-        <div class="li"><div class="n">6</div><div class="t">计划屏点某一周，只看打了那一周标签的活；没打周标签的只在「issue总览」。顶栏刷新读远端，右栏跟着改文件自己刷新不做。</div></div>
-        <div class="li"><div class="n">7</div><div class="t">会话屏左右两栏都能收，把中间终端撑大。右侧「指南」哪一屏都在，打开就是这份产品指南。</div></div>
+        <div class="li"><div class="n">1</div><div class="t">计划屏点开一张卡（看板或列表都行）。业务活详情会带上已有类别；没打的可在详情或开工确认框补一类——不开工工具的活会被拒绝开工，不会悄悄起 Claude。状态下拉只列出从现在能走到的：待办能去进行中/阻塞/拒绝，进行中能去待办/阻塞/拒绝，待评审能去完成/拒绝，阻塞能去进行中/拒绝。选了和拖拽是同一条路。点 Start / Open / Complete 或改状态下拉后详情会自己关。</div></div>
+        <div class="li"><div class="n">2</div><div class="t">详情「Start」，或把卡拖进「进行中」。确认框写 worktree，业务活可改类别。确认后跳会话屏。</div></div>
+        <div class="li"><div class="n">3</div><div class="t">原型类默认停在 Open Design 标签，嵌的是本机 OD 首页。<strong>不会自动开跑</strong>，你在 OD 里打一句发出去，它的 AI 才动。构建类停在 Orca 页，嵌的是本机已配对的 Orca web；agent 在 Orca 里跑，过程在那看。</div></div>
+        <div class="li"><div class="n">4</div><div class="t">卡住了：待办或进行中拖到待处理列的「阻塞」段，或详情状态下拉选「阻塞」，写原因。阻塞卡可拖回进行中（只改状态，不会再开一轮工），或拖进「拒绝」作废。不想干了：详情状态下拉选「拒绝」，或把卡拖到已完成列的「拒绝」段（待办 / 进行中 / 待评审 / 阻塞都能拖）。写原因。这不是完成——打已取消标签并关掉远端 issue，卡到「拒绝」。</div></div>
+        <div class="li"><div class="n">5</div><div class="t">作废不会动本机会话行。停止、开 MR、评审在 Orca 里做，或在计划屏拖列；会话屏这版不露「删除会话」按钮（内核命令还在，屏上暂不露）。远端那张 issue 不动。</div></div>
+        <div class="li"><div class="n">6</div><div class="t">会话屏只剩 Orca / Open Design 两个页签，都常驻；右侧「指南」哪一屏都在，打开就是这份。</div></div>
       </div>
 
       <h2 class="sec"><span class="n">背后</span></h2>
       <div class="res">
         <ul>
-          <li><span class="b"></span><div><strong>对远端代码仓</strong>：开工改状态标签到进行中。作废写原因评论、打 <code>bw:status:cancelled</code>、关掉 issue。删除会话不碰远端。周范围认 <code>bw:week:YYYY-Www</code>。</div></li>
-          <li><span class="b"></span><div><strong>对你的机器</strong>：每张活一棵工作目录。原型开工探活后嵌 OD 首页，并向 <code>/api/runs</code> 灌系统提示词；灌不上就说没灌上，不假装已经进了某一单对话。构建类在伪终端里起 Claude。删会话才强制收掉这棵目录。</div></li>
-          <li><span class="b"></span><div><strong>对 <code>.bw/</code></strong>：会话身份落本机 sessions 文件。指标读数不在这一站写——点采集才追加 <code>readings.jsonl</code>。</div></li>
+          <li><span class="b"></span><div><strong>对远端代码仓</strong>：开工改状态到进行中。作废写原因、打取消标签、关掉 issue。去会话不碰远端。</div></li>
+          <li><span class="b"></span><div><strong>对你的机器</strong>：每张活一棵工作目录。原型开工后嵌 OD 首页，并尽量灌进系统提示词；灌不上就说没灌上，不假装已经进了某一单对话。构建类在 Orca 里起 Claude（本机本地 pipe 开工）。新树落 <code>&lt;仓&gt;/.bw/worktrees/</code>，旧平级树不搬还能打开。</div></li>
+          <li><span class="b"></span><div><strong>对 <code>.bw/</code></strong>：会话身份落本机。指标读数不在这一站写——点采集才记。</div></li>
         </ul>
       </div>
 
       <h2 class="sec"><span class="n">得到什么</span></h2>
       <div class="res">
         <ul>
-          <li><span class="b"></span><div>拖进进行中 = 开工，和按钮是同一条路。</div></li>
-          <li><span class="b"></span><div>作废卡不会冒充已完成。作废后再点开工，会说这张活已经取消。</div></li>
-          <li><span class="b"></span><div>原型：会话停在 Open Design 标签。退路是「看看喂了什么」，把提示词拷过去。不在 OD 里另建一单、也不深链到某一会话。</div></li>
-          <li><span class="b"></span><div>右侧文件树是问这棵工作目录；「改动」只列还没提交的脏文件；「MR」只在评审中才去查开着的合并请求。刚开工、目录干净，写「无改动 / 还没有 MR」是实话。</div></li>
+          <li><span class="b"></span><div>待办拖进进行中 = 开工，和 Start 是同一条路。进行中也可以拖回待办、拖进阻塞或拒绝。阻塞拖回进行中只改状态，不开新工。</div></li>
+          <li><span class="b"></span><div>作废卡不会冒充已完成。已完成列要先切到「拒绝」再松手才是作废；切在「完成」上仍是合入。作废后再点开工，会说这张活已经取消。</div></li>
+          <li><span class="b"></span><div>原型：会话停在 Open Design 标签。OD 不自动开跑，你打一句发出去它才动。不在 OD 里另建一单。</div></li>
+          <li><span class="b"></span><div>去会话：先切到这张活的工作目录树；树上有几扇窗、是否正好落到这条对话是其次，切树成功就算跳到了。</div></li>
         </ul>
       </div>
 
       <div class="callout note">
         <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/></svg>
-        <div class="body"><strong>这一站没建、也不挡打结的。</strong>OD 不自动开跑；导出怎么稳落进这张活的目录还没做；会话屏是否只留 Open Design 还没做。右栏点刷新即可。</div>
+        <div class="body"><strong>Open Design 不会自动开跑。</strong>导出怎么稳落进这张活的目录还没做。要最新内容，点顶栏刷新。</div>
       </div>
-      <div class="foot">穿刺 2026-W35 · 原型 #13 · 构建 #9。事实源 <code>docs/architecture.md</code> 模块 5 / 7 / 9 / 13。</div>
+      <p class="next">下一站：<a href="#" onclick="go('u1e');return false">第 5 站 · 验收记发版</a></p>
+      <div class="foot">事实源 <code>docs/architecture.md</code> 模块 5 / 7 / 9 / 13。</div>
     </section>
 
     <!-- ============ U1e 第 5 站 · 验收记发版 ============ -->
     <section class="screen" id="u1e" data-title="第 5 站 · 验收记发版" data-sec-name="怎么用">
       <div class="eyebrow">怎么用 · 第 5 站</div>
       <h1 class="disp">合入、点完成、记进一个版本</h1>
-      <p class="lede">这一站已经走过。不是到点自动结束一周：活到评审中之后，<strong>你点完成</strong>才合 MR、结清；本周做完的活，再点「发版本」记进远端的一个 Release。</p>
+      <p class="lede">活到评审中之后，<strong>你点完成</strong>才合 MR、结清。本周做完的活，再点「发版本」记进远端的一个 Release。不是到点自动结束一周。</p>
+      <div class="res">
+        <div class="h">这一站能查到</div>
+        <ul>
+          <li><span class="b"></span><div>怎么合入并完成（项目墙 ⚑ 只提醒，不合 MR）</div></li>
+          <li><span class="b"></span><div>发版先建远端 Release，再打标签</div></li>
+          <li><span class="b"></span><div>在研号不会跟着发版改</div></li>
+        </ul>
+      </div>
 
       <h2 class="sec"><span class="n">操作</span></h2>
       <div class="ops">
-        <div class="li"><div class="n">1</div><div class="t">计划屏把评审中的卡拖到「已完成」，或详情里「✓ 点完成」。确认框写明先合哪个 MR。合不成就整条不算，活留在评审中，可以重试。</div></div>
-        <div class="li"><div class="n">2</div><div class="t">通知屏只告诉你有 MR 等着，不在那儿合。不要只在 codehub 网页关 issue——那不会合 MR。</div></div>
-        <div class="li"><div class="n">3</div><div class="t">本周有已完成的活，计划屏点「发版本」。弹窗里填版本号，默认是在研号的下一位（接入默认在研 <code>v0.1</code>，所以默认常是 <code>v0.2</code>），可以改。确认后才建远端 Release。</div></div>
-        <div class="li"><div class="n">4</div><div class="t">去 codehub 的版本页，或跑 <code>codehub-cli release list</code>，核对远端真有这个版本。总览「已发版次数」优先读远端 Release。</div></div>
+        <div class="li"><div class="n">1</div><div class="t">计划屏把评审中的卡拖到「已完成」，先确认列上切的是「完成」不是「拒绝」，或详情里 Complete / 状态下拉选「完成」。有开着的 MR 就先合再关；没有开着的（可能已经在网页合过）确认后只关 issue。待办拖到「完成」不会过——完成只能从评审中来。</div></div>
+        <div class="li"><div class="n">2</div><div class="t">项目墙 ⚑ 只提醒你有 MR 等着，不在那儿合。不要只在代码平台网页关 issue——那不会合 MR。</div></div>
+        <div class="li"><div class="n">3</div><div class="t">本周有已完成的活，计划屏点「发版本」。弹窗里填版本号，默认是在研号的下一位，可以改。确认后才建远端 Release。</div></div>
+        <div class="li"><div class="n">4</div><div class="t">去代码平台的版本页，或跑 <code>codehub-cli release list</code> / <code>gh release list</code>，核对远端真有这个版本。总览「已发版次数」优先读远端 Release。</div></div>
       </div>
 
       <h2 class="sec"><span class="n">背后</span></h2>
       <div class="res">
         <ul>
-          <li><span class="b"></span><div><strong>对远端代码仓</strong>：先合那张 MR，再关掉 issue（完成）。发版先建 codehub Release（打 git 标签），成功后再给勾过的活打 <code>bw:released:vX</code>。顺序不能反。</div></li>
-          <li><span class="b"></span><div><strong>对你的机器</strong>：合入后尽量把主检出拉到最新，收掉这张活的工作目录。本机不会多出一个发版文件。</div></li>
-          <li><span class="b"></span><div><strong>对 <code>.bw/</code></strong>：在研版本仍是 <code>project.toml</code> 里那一行，发版<strong>不改</strong>它。要切号，去配置屏改完点保存。</div></li>
+          <li><span class="b"></span><div><strong>对远端代码仓</strong>：先合那张 MR，再关掉 issue。发版先建远端 Release，成功后再给勾过的活打 <code>bw:released:vX</code>。顺序不能反。</div></li>
+          <li><span class="b"></span><div><strong>对你的机器</strong>：合入后尽量把主仓拉到最新，收掉这张活的工作目录。本机不会多出一个发版文件。</div></li>
+          <li><span class="b"></span><div><strong>对 <code>.bw/</code></strong>：在研版本仍是名片里那一行，发版<strong>不改</strong>它。要切号，去总览点「编辑项目名片」，和四字段、项目群一起保存，走同一张活的 MR。</div></li>
         </ul>
       </div>
 
       <h2 class="sec"><span class="n">得到什么</span></h2>
       <div class="res">
         <ul>
-          <li><span class="b"></span><div>远端多一个 Release；选中的活带上版本标签。穿刺仓读回是 <code>v0.2</code>。</div></li>
-          <li><span class="b"></span><div>总览「在研版本」还是名片上的 <code>v0.1</code>，不是写死，是发版没去改那一行。</div></li>
+          <li><span class="b"></span><div>远端多一个 Release；选中的活带上版本标签。</div></li>
+          <li><span class="b"></span><div>总览「在研版本」还是名片上的号——发版没去改那一行。</div></li>
           <li><span class="b"></span><div>总览「已发版次数」跟远端 Release 列表走；远端读不到才退回本机 git 标签。</div></li>
         </ul>
       </div>
 
       <div class="callout note">
         <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/></svg>
-        <div class="body"><strong>发版不是只打 issue 标签。</strong>标签是第二步。第一步是远端 Release。在研号发完不改——切号去配置屏。次数读的是已经发出去的 Release，不是名片上的在研号。</div>
+        <div class="body"><strong>发版不是只打 issue 标签。</strong>第一步是远端 Release，标签是第二步。次数读的是已经发出去的 Release，不是名片上的在研号。</div>
       </div>
-      <div class="foot">穿刺 2026-W35 · 仓 <code>z30026659/oh-my-hw-claudecode</code> · 远端 Release <code>v0.2</code>。事实源 <code>docs/architecture.md</code> 模块 8 / 13。</div>
+      <p class="next">下一站：<a href="#" onclick="go('u1f');return false">第 6 站 · 定时盘点</a></p>
+      <div class="foot">事实源 <code>docs/architecture.md</code> 模块 8 / 13。</div>
     </section>
 
     <!-- ============ U1f 第 6 站 · 定时盘点 ============ -->
     <section class="screen" id="u1f" data-title="第 6 站 · 定时盘点" data-sec-name="怎么用">
       <div class="eyebrow">怎么用 · 第 6 站</div>
       <h1 class="disp">到点建一张盘点，停在评审中</h1>
-      <p class="lede">这一站已经走过。周五晚上（默认可改）Workbench 开着，会自己建「资产盘点」并开工，最远评审中。完成仍要你点。仓根手册不会这一周写出来。</p>
+      <p class="lede">周五 09:00（默认可改）Workbench 开着，会自己建「资产盘点」并开工，最远评审中。完成仍要你点。每天 20:00 自动采一轮 B 类指标。</p>
+      <div class="res">
+        <div class="h">这一站能查到</div>
+        <ul>
+          <li><span class="b"></span><div>盘点什么时候自动建、最远到哪</div></li>
+          <li><span class="b"></span><div>B 类每天几点自动采</div></li>
+          <li><span class="b"></span><div>运作活①为什么不会自动开始</div></li>
+        </ul>
+      </div>
 
       <h2 class="sec"><span class="n">操作</span></h2>
       <div class="ops">
+<<<<<<< HEAD
         <div class="li"><div class="n">1</div><div class="t">配置屏能看见「资产盘点 · 到点自动建 · fri 20:00」，还有一行「B 类指标采集 · daily 09:00 · 今天还没采过」。盘点节律写在 <code>.bw/config/issue-policy.toml</code>；B 类日采是写死的 09:00，不另开一张定时表。</div></div>
         <div class="li"><div class="n">2</div><div class="t">Workbench 开着、过了本周那个时刻，计划屏会出现「资产盘点 YYYY-Www」。类别锁成「运作」，改不了五阶段。剧本跟标题走，不跟映射走。</div></div>
+=======
+        <div class="li"><div class="n">1</div><div class="t">配置屏能看见「资产盘点 · 到点自动建 · fri 09:00」，还有一行「B 类指标采集 · daily 20:00」。盘点节律写在 <code>.bw/config/issue-policy.toml</code>；B 类日采固定 20:00。运作活①仍是人点「开始本周」。</div></div>
+        <div class="li"><div class="n">2</div><div class="t">Workbench 开着、过了本周那个时刻，计划屏会出现「资产盘点 YYYY-Www」。类别锁成「运作」，改不了五阶段。</div></div>
+>>>>>>> origin/main
         <div class="li"><div class="n">3</div><div class="t">这张活会自己开工。看会话或详情：最远到评审中。合入、点完成仍是你来。</div></div>
         <div class="li"><div class="n">4</div><div class="t">周一回到总览，开始下一圈。盘点报告挂在这张活的评论里；微重构只出建议，不直接改业务代码。</div></div>
       </div>
@@ -571,7 +652,7 @@
       <div class="res">
         <ul>
           <li><span class="b"></span><div><strong>对远端代码仓</strong>：建一张标题固定的运作活（本周有了就不建第二张），打本周标签，开工后改状态。每周模式只对账、写报告；首次模式才给老 issue 补周标签。</div></li>
-          <li><span class="b"></span><div><strong>对你的机器</strong>：Workbench 开着每 60 秒判一次「本周这一刻过了没有」。当时没开着，下次开着会补建。注入的是 <code>asset-audit</code>，不是构建类那套对齐→实现→评审。</div></li>
+          <li><span class="b"></span><div><strong>对你的机器</strong>：Workbench 开着每 60 秒判一次「本周这一刻过了没有」。当时没开着，下次开着会补建。注入的是资产盘点剧本，不是构建类那套。</div></li>
           <li><span class="b"></span><div><strong>对 <code>.bw/</code></strong>：每周盘点对照指纹看规范件落后没有，只记差异、不擅自升级。仓根 <code>AGENTS.md</code> 不在这一周写。</div></li>
         </ul>
       </div>
@@ -579,33 +660,42 @@
       <h2 class="sec"><span class="n">得到什么</span></h2>
       <div class="res">
         <ul>
-          <li><span class="b"></span><div>多一张运作活②，类别显示「运作」、改不了五阶段。剧本跟标题走，不跟映射走。</div></li>
-          <li><span class="b"></span><div>写仓根开发手册的 <code>project-handbook</code> 还在技能表里，挂在首次盘点「问过你再写」上，会话没接上。先记着，不挡这一站。</div></li>
-          <li><span class="b"></span><div>Workbench 开着、过了本机 09:00，会自动采一轮 B 类，按<strong>当天</strong>写入 <code>readings.jsonl</code>。折线按周，取那一周最后一天。点「采集」也能立刻再采今天。</div></li>
+          <li><span class="b"></span><div>多一张运作活②，类别显示「运作」、改不了五阶段。</div></li>
+          <li><span class="b"></span><div>Workbench 开着、过了本机 20:00，会自动采一轮 B 类，按<strong>当天</strong>写入账本（同一天再采覆盖）。点「采集」也能立刻再采今天。</div></li>
         </ul>
       </div>
 
       <div class="callout note">
         <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/></svg>
-        <div class="body"><strong>运作活和五阶段类别是两套。</strong>优化 / 运维 / 运营推广是业务活的默认打法，不要把盘点、周计划塞进去。组内项目要有 <code>AGENTS.md</code>，靠首次盘点里的手册剧本，不是每周五那次对账。</div>
+        <div class="body"><strong>运作活和五阶段类别是两套。</strong>不要把盘点、周计划塞进「优化 / 运维 / 运营推广」。仓根 <code>AGENTS.md</code> 不会每周五自动写出来——那条路还没接上，见<a href="#" onclick="go('u2');return false">规矩与查找</a>。</div>
       </div>
-      <div class="foot">穿刺 2026-W35 · 仓 <code>z30026659/oh-my-hw-claudecode</code>。事实源 <code>docs/architecture.md</code> 模块 14 / 15；剧本 <code>standard/skills/asset-audit</code>、<code>project-handbook</code>。</div>
+      <p class="next">下周一回到<a href="#" onclick="go('u1b');return false">第 1 站 · 看总览</a>。</p>
+      <div class="foot">事实源 <code>docs/architecture.md</code> 模块 14 / 15。</div>
     </section>
 
-    <!-- ============ U2 先记着的缺口 ============ -->
-    <section class="screen" id="u2" data-title="先记着的缺口" data-sec-name="怎么用">
-      <div class="eyebrow">怎么用 · 站点地图</div>
-      <h1 class="disp">这一圈走完了，这些先记着</h1>
-      <p class="lede">第 0–6 站都走过一遍。下面不是下一站，是走过之后还不改产品、先记下的缺口。设计仍以 <code>docs/architecture.md</code> 各模块「没建什么」为准。</p>
+    <!-- ============ U2 规矩与查找 ============ -->
+    <section class="screen" id="u2" data-title="规矩与查找" data-sec-name="怎么用">
+      <div class="eyebrow">怎么用 · 规矩</div>
+      <h1 class="disp">两条规矩，一张查找表</h1>
+      <p class="lede">完成永远你点；没数据就是灰。下面两张图是这两条的形状。具体操作回各站。</p>
 
-      <div class="roadmap">
-        <div class="rstop done"><div class="tag">第 5 站</div><div class="body"><div class="t">验收记发版 · 已经走过</div><div class="d">合入后人点完成；发版本先建远端 Release，再打发版标签。操作写在「第 5 站 · 验收记发版」。</div></div></div>
-        <div class="rstop done"><div class="tag">第 6 站</div><div class="body"><div class="t">定时盘点 · 已经走过</div><div class="d">到点自动建活并开工，停在评审中。操作写在「第 6 站 · 定时盘点」。</div></div></div>
-        <div class="rstop todo"><div class="tag">记下</div><div class="body"><div class="t">仓根开发手册</div><div class="d"><code>project-handbook</code> 写仓根 <code>AGENTS.md</code> 还没接到首次盘点会话。先记着，不接。</div></div></div>
+      <h2 class="sec"><span class="n">找信息</span></h2>
+      <div class="ktable-wrap find">
+        <table class="ktable">
+          <thead><tr><th>我想…</th><th>去哪</th></tr></thead>
+          <tbody>
+            <tr><td>接一个仓、看铺了哪些文件、合铺底 MR</td><td><a href="#" onclick="go('u1');return false">第 0 站</a></td></tr>
+            <tr><td>健康灯、指标、改名片 / 在研 / 项目群、顶栏刷新</td><td><a href="#" onclick="go('u1b');return false">第 1 站</a></td></tr>
+            <tr><td>开始本周、周目标、新建活、全部 issue 下拉</td><td><a href="#" onclick="go('u1c');return false">第 2/3 站</a></td></tr>
+            <tr><td>开工、作废、去会话、Open Design</td><td><a href="#" onclick="go('u1d');return false">第 4 站</a></td></tr>
+            <tr><td>合 MR、点完成、发版本</td><td><a href="#" onclick="go('u1e');return false">第 5 站</a></td></tr>
+            <tr><td>周五盘点、每天 20:00 采数</td><td><a href="#" onclick="go('u1f');return false">第 6 站</a></td></tr>
+          </tbody>
+        </table>
       </div>
 
-      <h2 class="sec"><span class="n">健康灯怎么亮</span>只从真实数据推,不能被人调</h2>
-      <p>第 1 站已经走过，判断依据和界面上那三条理由写在「第 1 站 · 看总览」。下面这张图只留机制形状。</p>
+      <h2 class="sec"><span class="n">健康灯怎么亮</span>只从数据推，不能手点</h2>
+      <p>判断依据和界面上那三条理由写在<a href="#" onclick="go('u1b');return false">第 1 站</a>。这张图只留形状。</p>
       <div class="diagram">
         <div class="cap">数据推导，不能手点；没数据就停在灰</div>
         <div class="scroll">
@@ -650,14 +740,6 @@
           </svg>
         </div>
       </div>
-      <p class="note-line"><strong>灯下面那三条理由,界面上原样显示的就是这三句</strong>(成立打勾、不成立打圈):</p>
-      <ul class="checklist">
-        <li>本周定了周目标,仓里也有真实提交。目标要写进运作活①评论的 <code>## 周目标</code>，只开着这张活还不算定了。不成立时会说周目标还没写进评论、这张活还没开，或者有目标但本周还没有真实提交。</li>
-        <li>本周或上周有指标读数 —— 不成立时显示「最近两周都没有记过指标读数」。</li>
-        <li>上周有合入或发版 —— 不成立时显示「上周既没有合入也没有发版」。</li>
-      </ul>
-      <p class="note-line">三条怎么合成一盏灯(什么时候黄、什么时候红、为什么没数据是灰不是绿),见 <code>docs/architecture.md</code> 健康推导模块。</p>
-
       <h2 class="sec"><span class="n">一件活怎么走到完成</span>唯一入边是评审中</h2>
       <div class="diagram">
         <div class="cap">agent 只能推到评审中；完成只有一个入口，且必须是人点的</div>
@@ -715,9 +797,13 @@
           <span class="sw">红色虚线 + × = 定时任务被结构性挡在完成之外，不是靠自觉</span>
         </div>
       </div>
-      <p class="note-line">这张图画的是第 4、5、6 站会经过的活状态，以及贯穿全文档的两条铁律之一。评审中变成完成：计划屏拖到「已完成」或详情「✓ 点完成」，写在第 5 站。</p>
+      <p class="note-line">评审中变成完成：计划屏拖到「已完成」或详情「✓ 点完成」，写在<a href="#" onclick="go('u1e');return false">第 5 站</a>。</p>
 
-      <div class="foot">健康灯四色见 <code>docs/architecture.md</code> 健康推导模块。</div>
+      <div class="callout note">
+        <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/></svg>
+        <div class="body"><strong>还没做、先说清楚。</strong>仓根 <code>AGENTS.md</code> 不会在接入或每周盘点时自动写出来。别的没建项看 <code>docs/architecture.md</code> 各模块「没建什么」，不在这份指南另开清单。</div>
+      </div>
+      <div class="foot">健康灯见 <code>docs/architecture.md</code> 健康推导模块。</div>
     </section>
 
   </div>

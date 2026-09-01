@@ -13,7 +13,7 @@
 | 活的 `workflow` 字段 | 目录 | 谁触发 | 一次会话大概 |
 |---|---|---|---|
 | `更新指标与周计划` | `week-planning/` | 人(总览横幅「开始本周」) | 20-40 分钟,人机 3-6 轮 |
-| `资产盘点` | `asset-audit/` | 定时(默认周五 20:00)或接入老仓时一次 | 10-25 分钟,通常 0 轮 |
+| `资产盘点` | `asset-audit/` | 定时(默认周五 09:00)或接入老仓时一次 | 10-25 分钟,通常 0 轮 |
 | —(子技能) | `metrics-refresh/` | `week-planning` 第二步指名调用 | 随宿主 |
 | —(子技能) | `project-handbook/` | `asset-audit` 首次模式里**问过人**之后调用 | 随宿主 |
 
@@ -52,6 +52,8 @@ body 自足;workflow 入口 body 是 SOP 链 + 指向 `../vendor/` 库子技能�
 不单开版本线——版本号就是 `standard/VERSION`,随 Workbench 整体发布走。改了内容 =
 `standard/VERSION` 抬一档 + 这里记一行。项目侧 `.bw/state/managed.toml` 记这几份 SKILL.md
 的指纹,规范对账能测出落后。
+
+- 5.10:运作活①指标单独确认、纳入先看已有 issue、打周标签后挂里程碑;周目标整段展示。
 
 ## 三条共同的规矩
 

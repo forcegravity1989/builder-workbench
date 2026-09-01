@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""意图成文时长 —— buddy 铺的现成采集脚本(可回溯,retro = true)。过程指标包。
+"""意图成文时长 —— Workbench 铺的现成采集脚本(可回溯,retro = true)。过程指标包。
 
 口径:按 PR **开出**的那一周分桶,从这张 PR 分支上**最早一笔提交的作者时刻**
 到 PR 开出的中位时长,单位小时。量的是「动手到把东西端出来给人看」隔了多久。
@@ -18,7 +18,7 @@
     gh pr list --state all --json number,createdAt --limit 1000
     gh pr view <号> --json commits   # 窗内每张
 
-铺一次就归这个项目,buddy 之后再也不覆盖它。
+铺一次就归这个项目,Workbench 之后再也不覆盖它。
 """
 
 import argparse

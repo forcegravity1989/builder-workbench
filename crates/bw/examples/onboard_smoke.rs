@@ -33,9 +33,7 @@ fn say(step: &str, detail: &str) {
 fn intent(n: &str) -> ProjectIntent {
     ProjectIntent {
         name: n.to_string(),
-        brief: String::new(),
-        benchmark: String::new(),
-        north_star: String::new(),
+        ..Default::default()
     }
 }
 
@@ -65,13 +63,13 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let (prog_tx, mut prog_rx) = tokio::sync::broadcast::channel::<ProgressLine>(64);
     let mut app = App::new(
         workspaces.clone(),
-        Arc::new(bw_engine::MockInteractiveExecutor::default()),
+        Arc::new(bw_engine::MockInteractiveExecutor),
     )
     .with_asset_root(workspaces.join(".bw-assets"))
     .with_progress(prog_tx);
 
     // 每一档跑完就把这一档报的进度行倒出来 —— 界面上看到的就是这些。
-    let mut drain = |label: &str, rx: &mut tokio::sync::broadcast::Receiver<ProgressLine>| {
+    let drain = |label: &str, rx: &mut tokio::sync::broadcast::Receiver<ProgressLine>| {
         while let Ok(l) = rx.try_recv() {
             println!(
                 "[ONBOARD_SMOKE]   {label} 进度 · 第{}步 {:?} {}",
@@ -168,7 +166,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     );
 
     // ── 6 · 接入自动建的那张「规范铺底」活 ────────────────────
-    // 母文档 §2 第 0 站:接入完 buddy 自己建一张一次性运作活③。这里读回它
+    // 母文档 §2 第 0 站:接入完 Workbench 自己建一张一次性运作活③。这里读回它
     // 真的建了、来源是 auto、而且**状态最远只到评审中** —— 自动建的活绝不
     // 自动完成,这条是铁律。
     for slug in ["no-remote", "already"] {
@@ -198,20 +196,20 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     }
 
     // ── 8 · 成熟仓不许被盖 ──────────────────────────────────
-    // loop-buddy 自己就是这种仓:根目录有一份人写了很久的 CLAUDE.md。铺底
+    // workbench 自己就是这种仓:根目录有一份人写了很久的 CLAUDE.md。铺底
     // 要往仓里写 AGENTS.md 和 CLAUDE.md,**盖掉就是事故**。
     let mature = workspaces.join("mature");
     std::fs::create_dir_all(&mature)?;
     git(&mature, &["init", "-q"]).await;
     std::fs::write(
-        &mature.join("CLAUDE.md"),
+        mature.join("CLAUDE.md"),
         "# 人写了很久的 CLAUDE.md\n别动我\n",
     )?;
-    std::fs::write(&mature.join("AGENTS.md"), "# 人写的 AGENTS.md\n也别动我\n")?;
-    std::fs::write(&mature.join("README.md"), "# 人写的 README\n")?;
+    std::fs::write(mature.join("AGENTS.md"), "# 人写的 AGENTS.md\n也别动我\n")?;
+    std::fs::write(mature.join("README.md"), "# 人写的 README\n")?;
     // 有构建文件,才验得了「怎么建怎么测」那一节是真探出来的还是编的。
     std::fs::write(
-        &mature.join("Cargo.toml"),
+        mature.join("Cargo.toml"),
         "[package]\nname = \"mature\"\nversion = \"0.1.0\"\n",
     )?;
     std::fs::create_dir_all(mature.join("src"))?;
@@ -277,24 +275,18 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     );
 
     // ── 10 · 接项目时,仓根一个字都不写 ──────────────────────
-    // 这条是第 0 站的边界:buddy 只铺**自己的**资产,全在 `.bw/` 底下。仓根的
+    // 这条是第 0 站的边界:Workbench 只铺**自己的**资产,全在 `.bw/` 底下。仓根的
     // `AGENTS.md` / `CLAUDE.md` 是这个项目自己的文件 —— 要不要给它写一份开发
     // 手册,是资产盘点(运作活②)首次模式去问人的事,那是在改人家的项目。
-    // 接项目的时候 buddy 才刚 clone 完,既没读过这个仓,也没人问过人家愿不愿意。
+    // 接项目的时候 Workbench 才刚 clone 完,既没读过这个仓,也没人问过人家愿不愿意。
     for (label, ws) in [
         ("成熟仓", mature.clone()),
         ("空仓", workspaces.join("no-remote")),
     ] {
         // 分支上写了什么最能说明问题 —— 主检出可能本来就有人写的那几份。
-        let tree = ws
-            .parent()
-            .map(|p| {
-                p.join(format!(
-                    "{}-issue-1",
-                    ws.file_name().unwrap().to_string_lossy()
-                ))
-            })
-            .unwrap_or_else(|| ws.clone());
+        // 活的 worktree 落在仓根下 `.bw/worktrees/issue-1`(新路径);旧平级兄弟
+        // 不再建。这里照底座的路径函数找那棵树,找不到就回退看主检出。
+        let tree = bw_engine::workspace::issue_worktree_path(&ws, 1).unwrap_or_else(|| ws.clone());
         let look = if tree.is_dir() { tree } else { ws.clone() };
         let listed = std::fs::read_dir(&look)
             .map(|d| {
@@ -310,7 +302,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         say(
             &format!("档 10 · {label}的仓根,铺底之后有哪些 .md/.toml"),
             &format!(
-                "{listed:?} · 有 buddy 写的 AGENTS.md/CLAUDE.md={}(该是 false)",
+                "{listed:?} · 有 Workbench 写的 AGENTS.md/CLAUDE.md={}(该是 false)",
                 ["AGENTS.md", "CLAUDE.md"].iter().any(|f| {
                     std::fs::read_to_string(look.join(f))
                         .map(|t| t.contains("bw:managed"))

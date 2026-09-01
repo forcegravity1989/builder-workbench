@@ -1,8 +1,8 @@
-//! 接入项目、改名片、配项目群。
+//! 接入项目、改项目信息(名片 + 在研版本 + 项目群)。
 //!
-//! 名片四字段(名称 / 想做什么 / 最像的对标 / 北极星)的正本是 `.bw/PROJECT.md`
-//! 与 `.bw/config/project.toml`,**不落库**——`project` 表只有定位与显示缓存。所以
-//! 改名片就是改仓文件,得走一张轻量活与一次 MR,不是直接 UPDATE 一行。
+//! 正本是 `.bw/PROJECT.md` 与 `.bw/config/project.toml`,**不落库**——`project`
+//! 表只有定位与显示缓存。改这些就是改仓文件,得走一张轻量活与一次 MR,
+//! 不是直接 UPDATE 一行。
 
 use super::worktree;
 use super::{issue_store, App, AppError, ProgressLine, Result};
@@ -103,6 +103,22 @@ impl App {
                 5,
                 format!("规范铺底没成:{e} —— 项目已经接进来了。配置屏「对一遍账」能看见缺哪些件"),
             )),
+        }
+        // 纳入时替人把仓登记进 Orca。Orca 没开不推翻接入,第一次开工 / Open 再补。
+        if self.pty_enabled {
+            match bw_engine::orca::connect() {
+                Ok(rt) => match bw_engine::orca::ensure_repo(&rt, &ws).await {
+                    Ok(()) => self.step(ProgressLine::ok(6, "Orca 已经认得这个仓")),
+                    Err(e) => self.step(ProgressLine::fail(
+                        6,
+                        format!("Orca 还没记下这个仓:{e} —— 第一次开工会再试"),
+                    )),
+                },
+                Err(_) => self.step(ProgressLine::fail(
+                    6,
+                    "Orca 没开,仓没登记 —— 第一次开工会再试",
+                )),
+            }
         }
         Ok(events)
     }
@@ -237,7 +253,7 @@ impl App {
             .ok_or_else(|| AppError::NoSuchProject(project_id.uuid().to_string()))?;
 
         // B 类固定枚举标题「编辑项目名片」——在途复用:有则拿同一张,
-        // 无则建一张轻量活。
+        // 无则建一张轻量活。项目群、在研版本也走这一张,不再另开两张。
         let issue = match issue_store::find_open_by_title(self, &project, issue_store::LIGHT_TITLE)
             .await?
         {
@@ -247,7 +263,7 @@ impl App {
                     self,
                     &project,
                     issue_store::LIGHT_TITLE,
-                    "名片四字段改动:名称 / 想做什么 / 最像的对标 / 北极星。改的是 \
+                    "项目信息改动:名片四字段 / 在研版本 / 项目群。改的是 \
                      .bw/PROJECT.md 与 .bw/config/project.toml 两份仓文件,等人评审合入。",
                     crate::model::IssueKind::Light,
                     "",
@@ -264,6 +280,16 @@ impl App {
         file.brief = intent.brief.clone();
         file.benchmark = intent.benchmark.clone();
         file.opportunity = intent.north_star.clone();
+        file.current_version = intent.current_version.clone();
+        file.chat = if intent.chat_provider.is_empty() || intent.chat_provider == "none" {
+            None
+        } else {
+            Some(ChatConfig {
+                provider: intent.chat_provider.clone(),
+                group_id: intent.chat_group.clone(),
+                notify: Some(intent.chat_notify.clone()),
+            })
+        };
         project_file::write(&tree.path, &file)?;
 
         // 章程也要跟着改 —— PROJECT.md 才是给人读的那一份。
@@ -291,68 +317,8 @@ impl App {
         )
         .await?;
 
-        Ok(vec![Event::ProjectCardEditPending { issue_id: issue.id }])
-    }
-
-    /// 配项目群:走一张轻量活(固定标题「配置项目群」)+ worktree 写 +
-    /// 提交开 MR。高优3:不再直写主检出 —— 群配置是仓文件,改它得走分支与
-    /// MR,和「编辑项目名片」同一个 B 类形状。没远端就只提交(分支在本机,
-    /// 合的时候直接 merge)。
-    pub(super) async fn set_project_chat(
-        &mut self,
-        project_id: ProjectId,
-        provider: String,
-        group_id: String,
-        notify: Vec<String>,
-    ) -> Result<Vec<Event>> {
-        let ws = self.workspace_of(project_id).await?;
-        let project = self
-            .project(project_id)
-            .await?
-            .ok_or_else(|| AppError::NoSuchProject(project_id.uuid().to_string()))?;
-
-        // B 类固定枚举标题「配置项目群」—— 在途复用:有则拿同一张,
-        // 无则建一张轻量活。
-        let issue =
-            match issue_store::find_open_by_title(self, &project, issue_store::LIGHT_CHAT_TITLE)
-                .await?
-            {
-                Some(existing) => existing,
-                None => issue_store::create(
-                    self,
-                    &project,
-                    issue_store::LIGHT_CHAT_TITLE,
-                    "项目群配置改动:provider / 群号 / 通知名单。改的是 .bw/config/project.toml \
-                     的 [chat] 段,等人评审合入。",
-                    crate::model::IssueKind::Light,
-                    "",
-                    &[],
-                )
-                .await?,
-            };
-
-        // 在这张活自己的 worktree 里写文件(主检出不动,走 MR 合入才落地)。
-        let tree = worktree::provision(&ws, issue.number).await?;
-        let mut file = project_file::read(&tree.path)?.unwrap_or_default();
-        // "none" = 明确不配群:整段不写,而不是写一个空 provider 假装配过。
-        file.chat = if provider == "none" || provider.is_empty() {
-            None
-        } else {
-            Some(ChatConfig {
-                provider,
-                group_id,
-                // 命令带过来的名单原样写回。空数组 = 静音,是一个明确的选择,
-                // 不折成「没写」。
-                notify: Some(notify),
-            })
-        };
-        project_file::write(&tree.path, &file)?;
-
-        // 提交 + 推分支 + 开 MR(有远端时)。没隔出树(不是 git 仓 / 空仓)
-        // 就只说一声,不假装有 MR —— 和「编辑项目名片」不同,这张活改动很小,
-        // 提交了就算完,不开 MR 这一步也如实交代。
         let base = crate::git::head_sha(&ws).await.unwrap_or_default();
-        let title = format!("#{} {}", issue.number, issue_store::LIGHT_CHAT_TITLE);
+        let title = format!("#{} {}", issue.number, issue_store::LIGHT_TITLE);
         crate::git::commit_all(&tree.path, &title).await?;
         let commits = if base.is_empty() {
             0
@@ -366,15 +332,14 @@ impl App {
             &tree,
             commits > 0,
             &title,
-            "项目群配置改动,等人评审合入。",
+            "项目信息改动,等人评审合入。",
         )
         .await;
 
-        let mut events = vec![Event::ProjectChatChanged { project_id }];
-        // 推「评审中」(有提交就算有可评审的东西)。
-        if issue.status != IssueStatus::InReview
-            && issue.status.can_transition_to(IssueStatus::InReview)
-        {
+        let mut events = vec![Event::ProjectCardEditPending { issue_id: issue.id }];
+        // 新建轻量活是待办池。状态机不许待办池直接进评审中,要先到进行中
+        // (规范铺底同一条跳法)。只在 MR 真开着时推——没交出评审就不假装在审。
+        if mr.number > 0 && issue.status != IssueStatus::InReview {
             if issue.status.can_transition_to(IssueStatus::InProgress) {
                 events.extend(
                     self.transition_issue(issue.id, IssueStatus::InProgress)
@@ -394,15 +359,6 @@ impl App {
             note: mr.note,
         });
         Ok(events)
-    }
-
-    pub(super) async fn mark_notify_seen(
-        &mut self,
-        project_id: ProjectId,
-        at: i64,
-    ) -> Result<Vec<Event>> {
-        self.set_notify_seen(project_id, at).await?;
-        Ok(vec![Event::NotifySeenMarked { project_id }])
     }
 }
 

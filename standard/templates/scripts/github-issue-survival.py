@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""活存活率 —— buddy 铺的现成采集脚本(可回溯,retro = true)。过程指标包。
+"""活存活率 —— Workbench 铺的现成采集脚本(可回溯,retro = true)。过程指标包。
 
 口径:本周**关闭**的远端 issue 里,「完成关闭」(stateReason = COMPLETED)的
 占比(0-100 的百分数)。另一头是「不做了」(NOT_PLANNED)。量的是端出来的
@@ -13,7 +13,7 @@ BW 的机制保证了这个口径的硬度:合入 PR 经 `Closes #n` 连带完�
 
     gh issue list --state all --json closedAt,stateReason --limit 1000
 
-铺一次就归这个项目,buddy 之后再也不覆盖它。
+铺一次就归这个项目,Workbench 之后再也不覆盖它。
 """
 
 import argparse

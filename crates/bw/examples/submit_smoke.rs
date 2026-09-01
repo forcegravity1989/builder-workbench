@@ -61,6 +61,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                 brief: "验第 4 站到第 5 站".into(),
                 benchmark: "—".into(),
                 north_star: "—".into(),
+                ..Default::default()
             },
             remote: RemoteRef {
                 provider: "github".into(),
@@ -88,6 +89,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             kind: IssueKind::Business,
             origin: IssueOrigin::Human,
             week_of: bw::isoweek::current_week(),
+            plan: String::new(),
         })
         .await?;
     let (id, number) = events
@@ -129,6 +131,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             kind: IssueKind::Business,
             origin: IssueOrigin::Human,
             week_of: bw::isoweek::current_week(),
+            plan: String::new(),
         })
         .await?;
     let empty_id = events
@@ -235,7 +238,7 @@ async fn status_of(
     app: &App,
     id: bw::model::IssueId,
 ) -> Result<IssueStatus, Box<dyn std::error::Error>> {
-    Ok(app.issue_or_err(id).await.ok().expect("活没了").status)
+    Ok(app.issue_or_err(id).await.expect("活没了").status)
 }
 
 fn say(step: &str, detail: &str) {

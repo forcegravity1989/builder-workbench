@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""每周合入的 PR 数 —— buddy 铺的现成采集脚本(可回溯,retro = true)。
+"""每周合入的 PR 数 —— Workbench 铺的现成采集脚本(可回溯,retro = true)。
 
 口径:**远端**上 merged 时刻落在这一周的 PR 数。
 
@@ -14,7 +14,7 @@
 
     gh pr list --state merged --json mergedAt --limit 1000
 
-铺一次就归这个项目,buddy 之后再也不覆盖它。
+铺一次就归这个项目,Workbench 之后再也不覆盖它。
 """
 
 import argparse

@@ -48,12 +48,12 @@ use std::time::Duration;
 use async_trait::async_trait;
 use tokio::sync::mpsc;
 
-use crate::interactive_cli::{LaunchPlan, PtyInput, SkillOutput};
+use super::interactive_cli::{LaunchPlan, PtyInput, SkillOutput};
 use crate::ExecError;
 
 /// 首启后等多久再替用户按一次 Enter(`\r`)提交位置 prompt。
 ///
-/// claude 交互式启动时位置 argv 不会自动提交(buddy 的 GLM 网关环境下实测),
+/// claude 交互式启动时位置 argv 不会自动提交(Workbench 的 GLM 网关环境下实测),
 /// TUI 起来后停在输入框等 Enter。这是启发式(赌 TUI 到这个点已加载完),不是
 /// 侦测到了就绪信号;更慢的网络/机器上可能不够,失效模式是 `\r` 送进一个还
 /// 没起来的输入框、等于没发。两份后端共用同一个值。
@@ -121,7 +121,9 @@ pub mod windows {
     use tokio::sync::mpsc;
 
     use super::{PtyBackend, SUBMIT_READY_DELAY};
-    use crate::interactive_cli::{apply_child_env, EnvSink, LaunchPlan, PtyInput, SkillOutput};
+    use crate::legacy_pty::interactive_cli::{
+        apply_child_env, EnvSink, LaunchPlan, PtyInput, SkillOutput,
+    };
     use crate::ExecError;
 
     /// Same strip list as the tokio `Command` paths — see
@@ -148,7 +150,7 @@ pub mod windows {
         ///  - `controller.resize(Size)` ← `PtyInput::Resize`
         ///  - on first run (`plan.submit_prompt`), send `\r` after a brief
         ///    ready-wait to submit the positional skill body (claude interactive
-        ///    positional argv doesn't auto-submit in buddy's GLM-gateway env).
+        ///    positional argv doesn't auto-submit in Workbench's GLM-gateway env).
         ///  - Child exit (EOF on output) → kill (idempotent) → return completed.
         async fn run(
             &self,
@@ -244,7 +246,7 @@ pub mod windows {
             });
 
             // claude interactive positional argv doesn't auto-submit in
-            // buddy's GLM-gateway environment — the TUI starts and waits for
+            // Workbench's GLM-gateway environment — the TUI starts and waits for
             // Enter. On first run (submit_prompt), wait briefly for the TUI to
             // load, then send `\r` to submit the positional skill body. The read
             // loop drains concurrently so the pipe can't fill during this wait.
@@ -332,7 +334,9 @@ pub mod unix {
     use tokio::sync::mpsc;
 
     use super::{PtyBackend, SUBMIT_READY_DELAY};
-    use crate::interactive_cli::{apply_child_env, EnvSink, LaunchPlan, PtyInput, SkillOutput};
+    use crate::legacy_pty::interactive_cli::{
+        apply_child_env, EnvSink, LaunchPlan, PtyInput, SkillOutput,
+    };
     use crate::ExecError;
 
     /// Same strip list as the tokio `Command` paths and the Windows backend —

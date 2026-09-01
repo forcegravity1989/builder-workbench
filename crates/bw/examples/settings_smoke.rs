@@ -40,15 +40,13 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let mut app = App::new(
         old_root.clone(),
-        Arc::new(bw_engine::MockInteractiveExecutor::default()),
+        Arc::new(bw_engine::MockInteractiveExecutor),
     )
     .with_asset_root(assets.clone());
 
     let intent = |n: &str| ProjectIntent {
         name: n.to_string(),
-        brief: String::new(),
-        benchmark: String::new(),
-        north_star: String::new(),
+        ..Default::default()
     };
 
     // ── 老根目录下先接一个项目 ───────────────────────────────

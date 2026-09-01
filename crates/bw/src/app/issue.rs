@@ -27,6 +27,7 @@ impl App {
         kind: IssueKind,
         _origin: IssueOrigin,
         week_of: String,
+        plan: String,
     ) -> Result<Vec<Event>> {
         let project = self.project_of(project_id).await?;
         // 幂等:同一个项目里标题一样的、开着的活不建第二张(指挥器重跑靠它)。
@@ -37,17 +38,47 @@ impl App {
             }]);
         }
         // 业务活打五阶段类别;运作活不打。
-        let extra: Vec<String> = match (kind, category) {
+        let mut extra: Vec<String> = match (kind, category) {
             (IssueKind::Ops, _) | (_, None) => Vec::new(),
             (_, Some(c)) => vec![format!("bw:category:{}", crate::model::category_key(c))],
         };
+        // 一张活只属于一个版本。人起名的版本只打 bw:plan,周版本只打
+        // bw:week。壳看自定义版本时 viewing_week 会被拼成本周,两个都传来
+        // 就丢掉周,只留版本。
+        let (week_of, plan) = if !plan.is_empty() {
+            (String::new(), plan)
+        } else {
+            (week_of, String::new())
+        };
+        if !plan.is_empty() {
+            extra.push(format!("bw:plan:{plan}"));
+        }
         let extra_refs: Vec<&str> = extra.iter().map(String::as_str).collect();
         let issue =
             issue_store::create(self, &project, &title, &body, kind, &week_of, &extra_refs).await?;
-        Ok(vec![Event::IssueCreated {
+        let mut events = vec![Event::IssueCreated {
             id: issue.id,
             number: issue.number,
-        }])
+        }];
+        // 新建活并临时纳入本周 → 发群通知(版本计划那件由 start_week_planning 单独
+        // 发,不在这里重复;运作活是 Workbench 内部,不发)。
+        if !week_of.is_empty() && kind != IssueKind::Ops {
+            let ev = crate::chat::NotifyEvent::IssueCreated;
+            let text = crate::chat::notify_text(
+                ev.key(),
+                issue.number,
+                &title,
+                "",
+                &format!("纳入本周 {week_of}"),
+            );
+            if let Some(e) = self
+                .chat_send(project_id, ev.key(), issue.number, text)
+                .await
+            {
+                events.push(e);
+            }
+        }
+        Ok(events)
     }
 
     /// 唯一的干活入口。
@@ -94,9 +125,9 @@ impl App {
                 let project = self.project_of(issue.project_id).await?;
                 issue_store::set_status(self, &project, id.iid(), IssueStatus::InProgress).await?;
             }
-            // 灌系统提示词:让 OD 内部 spawn 的 AI 知道在 buddy 管理下(身份+铁律+
+            // 灌系统提示词:让 OD 内部 spawn 的 AI 知道在 Workbench 管理下(身份+铁律+
             // 本活挂的技能/references 指针)。OD 独立——它有自己的 skill 体系(skillId),
-            // 灌不进 buddy 技能文件,只灌 systemPrompt(技能指针在文本里,OD 的 AI
+            // 灌不进 Workbench 技能文件,只灌 systemPrompt(技能指针在文本里,OD 的 AI
             // best-effort 读)。探不到 OD / POST 失败不阻断(OD 仍内嵌),如实降级。
             let prompt = format!("#{} {}\n\n{}", issue.number, issue.title, issue.body);
             let skills_dir = self.ensure_skill_assets();
@@ -123,7 +154,7 @@ impl App {
                     "Open Design 已内嵌——到会话屏「Open Design」标签里干;原型导出落这棵\
                      工作树,再「提交并开 MR」{}",
                     if injected {
-                        "(已灌系统提示词,OD 内 AI 知道在 buddy 管理下)"
+                        "(已灌系统提示词,OD 内 AI 知道在 Workbench 管理下)"
                     } else {
                         ""
                     }
@@ -133,20 +164,14 @@ impl App {
             }]);
         }
 
-        // 桌面壳里开工 = 起一个内嵌终端,人看着 agent 干活。这条路不等执行器
-        // 返回,所以下面阻塞那一段不再走。
-        if self.run_issue_pty(id).await? {
-            return Ok(vec![Event::IssueRan {
-                id,
-                ok: true,
-                summary: "已在内嵌终端里开工,过程看会话屏".into(),
-                tool: issue.tool.clone(),
-                embed_url: String::new(),
-            }]);
-        }
-
         let ws = self.workspace_of(issue.project_id).await?;
-        // 有真实工作区就在**这张活自己的 worktree** 里干,和 PTY 那条路一样;
+        // 桌面壳里 ▶跑 走 Orca 本地 pipe(PTY 已封存)。有真实工作区才打;没有
+        // 工作区不硬打 Orca —— 退到下面的阻塞替身路(headless 同款,自我标注)。
+        // 桌面有工作区但 Orca 没开:人话报错,不静默 mock 成功(见 `run_issue_orca`)。
+        if self.pty_enabled && ws.is_dir() {
+            return self.run_issue_orca(id, &issue, &ws).await;
+        }
+        // 有真实工作区就在**这张活自己的 worktree** 里干,和 Orca 那条路一样;
         // 没有工作区就没什么可隔离的,下面走自我标注的替身。
         let tree = if ws.is_dir() {
             let t = worktree::provision(&ws, issue.number).await?;
@@ -171,7 +196,7 @@ impl App {
         // 照活上记的工具走 —— 不许悄悄换(见 `tools::agent_for`)。
         let agent: &TuiAgentConfig = super::tools::agent_for(&issue.tool)?;
         let prompt = format!("#{} {}\n\n{}", issue.number, issue.title, issue.body);
-        // 剧本在 buddy 自己的技能目录里,不在用户的仓里(见
+        // 剧本在 Workbench 自己的技能目录里,不在用户的仓里(见
         // `standard::skills`)。提示词只带路径,正文按需读。
         let skills_dir = self.ensure_skill_assets();
         // 摊 vendor 业界 workflow 库(workflow 入口 body 指向这,如 mattpocock-skills)。
@@ -208,16 +233,13 @@ impl App {
                 // 最远到「评审中」。这一步不是人点的,所以到此为止。
                 let project = self.project_of(issue.project_id).await?;
                 issue_store::set_status(self, &project, id.iid(), IssueStatus::InReview).await?;
-                let mut events = vec![Event::IssueRan {
+                let events = vec![Event::IssueRan {
                     id,
                     ok: true,
                     summary: o.summary,
                     tool: issue.tool.clone(),
                     embed_url: String::new(),
                 }];
-                if let Some(e) = self.chat_notify_issue(id, "review", 0).await {
-                    events.push(e);
-                }
                 Ok(events)
             }
             Ok(o) => Ok(vec![Event::IssueRan {
@@ -235,6 +257,207 @@ impl App {
                 embed_url: String::new(),
             }]),
         }
+    }
+
+    /// 桌面 ▶跑 的 Orca 分支。开/复用 worktree(走 resolve,旧平级兄弟接着用)→
+    /// upsert 会话行(workspace_path 写实际用的路径)→ 推进行中 → connect Orca →
+    /// 刷扫描(刚 add 的树才能被 `path:` 选到,不 `repo.add`)→ 没 id 才 create;
+    /// 有 id / create 完了只切树,不 ensure。
+    /// 成功回执「已在 Orca 里开工」。**Orca 没开 / 连不上:人话报错,不静默 mock
+    /// 成功**;桌面有工作区才进这条。
+    /// 系统提示词仍走 `bootstrap::agent_system_prompt`(身份+铁律+技能指针),不新模板。
+    /// Orca 不吃 LaunchPlan,不 attach_session_hook(那是给 PTY 收割 `--resume` id 的,
+    /// Orca 自己认 Claude session id)—— 技能靠提示词里的绝对路径让 agent 自己读。
+    async fn run_issue_orca(
+        &mut self,
+        id: IssueId,
+        issue: &Issue,
+        ws: &std::path::Path,
+    ) -> Result<Vec<Event>> {
+        // 开/复用 worktree:resolve 会接住旧平级兄弟,不建第二棵新树。
+        let tree = worktree::provision(ws, issue.number).await?;
+        if issue.workflow == super::OPS1_WORKFLOW {
+            crate::standard::bootstrap::write_missing_on_first_use(&tree.path)
+                .map_err(|e| AppError::Exec(format!("给这张活铺指标空壳没成:{e}")))?;
+        }
+        // upsert 会话行:workspace_path 写实际用的路径(可能是旧兄弟)。幂等:已有就返回既有行。
+        let conv = self
+            .upsert_conversation(&crate::model::Conversation {
+                id: crate::model::ConversationId::new(),
+                project_id: issue.project_id,
+                issue_id: id,
+                claude_session_id: String::new(),
+                workspace_path: tree.path.display().to_string(),
+                branch_name: tree.branch.clone(),
+                created_at: 0,
+                last_opened_at: 0,
+            })
+            .await?;
+        // 先推进行中 —— 界面上立刻看得出它开工了。
+        if issue.status != IssueStatus::InProgress {
+            let project = self.project_of(issue.project_id).await?;
+            issue_store::set_status(self, &project, id.iid(), IssueStatus::InProgress).await?;
+        }
+        // 系统提示词:身份+四铁律+技能/references 指针(和 OD 分支、阻塞路同一个函数)。
+        let prompt = format!("#{} {}\n\n{}", issue.number, issue.title, issue.body);
+        let skills_dir = self.ensure_skill_assets();
+        self.ensure_vendor_assets();
+        let skill = skills_dir
+            .as_deref()
+            .and_then(|d| super::bootstrap::skill_pointer(d, &issue.workflow));
+        let references = self
+            .ensure_prompt_assets()
+            .map(|d| super::bootstrap::references_for(issue, &d))
+            .unwrap_or_default();
+        let system_prompt =
+            super::bootstrap::agent_system_prompt(issue, skill.as_ref(), &references);
+
+        let agent = super::tools::orca_agent(&issue.tool)?;
+        let mut sid = conv.claude_session_id.clone();
+        let mut sid_source = if sid.is_empty() { "empty" } else { "conv" };
+        if sid.is_empty() {
+            if let Some(found) = bw_engine::orca::session_id_for_worktree(&tree.path) {
+                sid = found;
+                sid_source = "jsonl";
+            }
+        }
+        bw_engine::orca::diag(&format!(
+            "start issue=#{} tool={} agent={agent} isolated={} \
+             worktree={} sid_source={sid_source} sid_prefix={} \
+             prompt_chars={} system_chars={} skill={} refs={} log={}",
+            issue.number,
+            issue.tool,
+            tree.isolated,
+            tree.path.display(),
+            sid.chars().take(8).collect::<String>(),
+            prompt.chars().count(),
+            system_prompt.chars().count(),
+            skill.as_ref().map(|s| s.name.as_str()).unwrap_or("-"),
+            references.len(),
+            bw_engine::orca::diag_log_path().display()
+        ));
+        let outcome = match bw_engine::orca::connect() {
+            Ok(rt) => {
+                // 树刚 provision 完;Orca 打开项目时扫的那份还没有这棵。
+                // 刷扫描,不 repo.add。
+                if let Err(e) = bw_engine::orca::refresh_worktrees(&rt, ws).await {
+                    bw_engine::orca::diag(&format!(
+                        "refresh fail:{e} · {} · repo={}",
+                        rt.log_tag(),
+                        ws.display()
+                    ));
+                    return Ok(vec![Event::IssueRan {
+                        id,
+                        ok: false,
+                        summary: format!("开工失败:Orca 还没刷到这棵树:{e}"),
+                        tool: issue.tool.clone(),
+                        embed_url: String::new(),
+                    }]);
+                }
+                bw_engine::orca::diag(&format!("refresh ok repo={}", ws.display()));
+                let r = if sid.is_empty() {
+                    match bw_engine::orca::create_session(
+                        &rt,
+                        &tree.path,
+                        agent,
+                        &prompt,
+                        &system_prompt,
+                    )
+                    .await
+                    {
+                        Ok(verdict) => {
+                            if verdict == bw_engine::orca::CreateSessionOutcome::HandleTimeout {
+                                let jsonl_before =
+                                    bw_engine::orca::session_id_for_worktree(&tree.path).is_some();
+                                let settle = bw_engine::orca::HANDLE_TIMEOUT_SETTLE;
+                                bw_engine::orca::diag(&format!(
+                                    "handle_timeout: wait {}s before wait_session_id/reveal \
+                                     jsonl_before={jsonl_before} worktree={}",
+                                    settle.as_secs(),
+                                    tree.path.display()
+                                ));
+                                tokio::time::sleep(settle).await;
+                                let jsonl_after =
+                                    bw_engine::orca::session_id_for_worktree(&tree.path).is_some();
+                                bw_engine::orca::diag(&format!(
+                                    "handle_timeout: settle done jsonl_after={jsonl_after} \
+                                     next=wait_session_id/reveal"
+                                ));
+                            } else {
+                                bw_engine::orca::diag("create ready, next=wait_session_id/reveal");
+                            }
+                            // Claude 的 jsonl 可能晚几拍落到盘,短等再收 id。
+                            // Cursor 不写这份文件,空等满 8 秒才回「开工成功」。
+                            if bw_engine::orca::agent_supports_ensure(agent) {
+                                if let Some(found) =
+                                    bw_engine::orca::wait_session_id_for_worktree(&tree.path).await
+                                {
+                                    sid = found;
+                                    bw_engine::orca::diag(&format!(
+                                        "wait_session_id found prefix={}",
+                                        sid.chars().take(8).collect::<String>()
+                                    ));
+                                } else {
+                                    bw_engine::orca::diag(
+                                        "wait_session_id miss (jsonl 8s 内没落下)",
+                                    );
+                                }
+                            }
+                            Ok(())
+                        }
+                        Err(e) => Err(e),
+                    }
+                } else {
+                    bw_engine::orca::diag(&format!(
+                        "skip create sid_source={sid_source} (只切树,不灌词)"
+                    ));
+                    Ok(())
+                };
+                // 开成了(含句柄超时 settle 后再走)或树上已有会话:切树,网页才跟得上。
+                // 切树失败只打日志,不把已经起来的窗打成开工失败。
+                if r.is_ok() {
+                    if let Err(e) = bw_engine::orca::reveal_tree(&rt, &tree.path).await {
+                        bw_engine::orca::diag(&format!(
+                            "reveal fail:{e} · {} · worktree={}",
+                            rt.log_tag(),
+                            tree.path.display()
+                        ));
+                    } else {
+                        bw_engine::orca::diag(&format!(
+                            "reveal ok worktree={}",
+                            tree.path.display()
+                        ));
+                    }
+                } else if let Err(e) = &r {
+                    bw_engine::orca::diag(&format!(
+                        "{e} · {} · worktree={}",
+                        rt.log_tag(),
+                        tree.path.display()
+                    ));
+                }
+                r
+            }
+            Err(e) => {
+                bw_engine::orca::diag(&format!("connect fail:{e}"));
+                Err(e)
+            }
+        };
+        if !sid.is_empty() {
+            let _ = self.remember_session_id(&conv, &sid).await;
+        }
+        let ok = outcome.is_ok();
+        let log = bw_engine::orca::diag_log_path();
+        let summary = match outcome {
+            Ok(()) => format!("已在 Orca 里开工,过程看会话屏(对照日志 {})", log.display()),
+            Err(e) => format!("开工失败:{e}(对照日志 {})", log.display()),
+        };
+        Ok(vec![Event::IssueRan {
+            id,
+            ok,
+            summary,
+            tool: issue.tool.clone(),
+            embed_url: String::new(),
+        }])
     }
 
     /// 「提交并开 MR」——第 4 站到第 5 站之间那一下。
@@ -284,11 +507,11 @@ impl App {
         }
 
         let mut body = format!(
-            "buddy 管理的第 {} 号活「{}」干出来的改动,等人评审。\n\n",
+            "Workbench 管理的第 {} 号活「{}」干出来的改动,等人评审。\n\n",
             issue.number, issue.title
         );
         body.push_str(&format!(
-            "这条分支上有 {commits} 个提交。合入之后回 buddy 点「合入并完成」结清这张活。"
+            "这条分支上有 {commits} 个提交。合入之后回 Workbench 点「合入并完成」结清这张活。"
         ));
         let mr = worktree::push_and_open_mr(
             &project,
@@ -344,12 +567,7 @@ impl App {
         if settled {
             self.cleanup_issue_worktree(&issue).await;
         }
-        let mut events = vec![Event::IssueTransitioned { id, to, settled }];
-        if to == IssueStatus::InReview {
-            if let Some(e) = self.chat_notify_issue(id, "review", 0).await {
-                events.push(e);
-            }
-        }
+        let events = vec![Event::IssueTransitioned { id, to, settled }];
         Ok(events)
     }
 
@@ -385,6 +603,32 @@ impl App {
         }])
     }
 
+    /// 改责任人(codehub assignee)。空串 = 取消指派。走 codehub API,
+    /// 不在本地另存一套 —— 重启读回一致(四铁律一)。
+    pub(super) async fn set_issue_assignee(
+        &mut self,
+        id: IssueId,
+        assignee: String,
+    ) -> Result<Vec<Event>> {
+        let issue = self.issue_or_err(id).await?;
+        let project = self.project_of(issue.project_id).await?;
+        issue_store::set_assignee(self, &project, id.iid(), &assignee).await?;
+        Ok(vec![Event::IssueAssigneeSet { id, assignee }])
+    }
+
+    /// 改 issue 标题与正文(codehub issue update)。详情弹窗双击编辑后发这条。
+    pub(super) async fn edit_issue(
+        &mut self,
+        id: IssueId,
+        title: String,
+        body: String,
+    ) -> Result<Vec<Event>> {
+        let issue = self.issue_or_err(id).await?;
+        let project = self.project_of(issue.project_id).await?;
+        issue_store::edit_issue(self, &project, id.iid(), &title, &body).await?;
+        Ok(vec![Event::IssueEdited { id }])
+    }
+
     /// 作废:原因进评论,打取消标签并关掉远端 issue。不是完成。
     pub(super) async fn cancel_issue(&mut self, id: IssueId, reason: String) -> Result<Vec<Event>> {
         let why = reason.trim().to_string();
@@ -411,11 +655,24 @@ impl App {
     /// worktree 干净就删分支;脏的(有未提交的劳动成果)原样留着。刀3-fix:
     /// `merge_and_settle` 和 `transition_issue` 两条结清路都走这同一个收尾,
     /// 不再各自判 `merged&&main_has_it`(那条靠 lossy 的 `issue.branch`,恒空)。
+    ///
+    /// 不能只看新路径 `.bw/worktrees/issue-<n>`:旧活记的是平级兄弟,结清时要
+    /// 能收掉那棵。先看会话行记下的路径,再看新目录,再看旧兄弟(走底座的
+    /// `resolve_issue_worktree`)。
     pub(super) async fn cleanup_issue_worktree(&self, issue: &Issue) {
         let Ok(ws) = self.workspace_of(issue.project_id).await else {
             return;
         };
-        let Some(tree) = bw_engine::workspace::issue_worktree_path(&ws, issue.number) else {
+        let recorded = self
+            .conversation_for_issue(issue.id)
+            .await
+            .ok()
+            .flatten()
+            .filter(|c| !c.workspace_path.is_empty())
+            .map(|c| std::path::PathBuf::from(&c.workspace_path));
+        let Some(tree) =
+            bw_engine::workspace::resolve_issue_worktree(&ws, issue.number, recorded.as_deref())
+        else {
             return;
         };
         // worktree 干净才收(脏的有未提交的劳动成果,不删)。

@@ -29,7 +29,7 @@ pub const SCHEMA_VERSION: u32 = 2;
 pub enum MetricClass {
     /// A 类 · 可回溯:能。**一个字都不存**,要看几周就现算几个窗口。
     Retro,
-    /// B 类 · 不可回溯:过了那一刻就没了,必须把每次读数追加进读数流水。
+    /// B 类 · 不可回溯:过了那一刻就没了,记进读数流水(当天一行,再采覆盖)。
     PointInTime,
     /// C 类 · 手填:压根没有采集路径。
     Manual,
@@ -45,7 +45,7 @@ pub struct CollectPlan {
     ///
     /// 写成数组而不是一行命令,是为了在 Windows 上也能明确指定解释器:
     /// `["python", …]` 和 `["python3", …]` 是两回事,让人自己写清楚,
-    /// buddy 不去猜。
+    /// Workbench 不去猜。
     #[serde(default)]
     pub run: Vec<String>,
     /// 历史还能不能重新算出来。见 [`MetricClass`]。

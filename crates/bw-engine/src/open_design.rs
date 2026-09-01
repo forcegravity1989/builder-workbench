@@ -124,12 +124,15 @@ fn parse_status_url(bytes: &[u8]) -> Option<String> {
 
 /// `http://127.0.0.1:<port>` 或 `http://localhost:<port>` 才放行。拒绝
 /// userinfo(`@`)、缺端口、以及非 loopback 的 host。
-fn looks_loopback_http(url: &str) -> bool {
+pub(crate) fn looks_loopback_http(url: &str) -> bool {
     let rest = match url.trim().strip_prefix("http://") {
         Some(r) => r,
         None => return false,
     };
-    if rest.contains('@') {
+    // `@` 只禁在 authority(第一个 `/` 或 `#` 之前)。pairing hash 里可能有 `@`,
+    // 整段扫描会把合法的 Orca web URL 误拒。
+    let authority = rest.split(['/', '#']).next().unwrap_or("");
+    if authority.contains('@') {
         return false;
     }
     let hostport = rest.split('/').next().unwrap_or("");
@@ -156,13 +159,13 @@ fn loopback_host_port(url: &str) -> Option<(&str, u16)> {
     Some((host, port.parse::<u16>().ok()?))
 }
 
-/// 给 OD 起一个 run,把 buddy 的系统提示词灌进去——让 OD 内部 spawn 的 AI
-/// 知道自己处在 buddy 的管理下(身份 + 四铁律 + 本活挂的技能/references 指针)。
+/// 给 OD 起一个 run,把 Workbench 的系统提示词灌进去——让 OD 内部 spawn 的 AI
+/// 知道自己处在 Workbench 的管理下(身份 + 四铁律 + 本活挂的技能/references 指针)。
 ///
-/// **OD 是独立的**:它有自己的 skill 体系(`skillId`,162 份),和 buddy 的
+/// **OD 是独立的**:它有自己的 skill 体系(`skillId`,162 份),和 Workbench 的
 /// 技能文件(`--add-dir` 挂路径)不兼容——所以只灌 `systemPrompt` + `prompt`,
 /// 不灌技能文件。技能指针/references 在 systemPrompt 文本里,OD 的 AI 能不能
-/// 真读到那个路径是 best-effort(它在 OD 的进程上下文里,未必有 buddy 资产目录
+/// 真读到那个路径是 best-effort(它在 OD 的进程上下文里,未必有 Workbench 资产目录
 /// 的访问权);读不到也不阻断,OD 仍按它自己的能力干。
 ///
 /// 探不到 url、连不上、POST 失败一律返 `None`——不阻断开工(OD 仍内嵌在会话屏,
@@ -196,4 +199,25 @@ pub async fn start_run(base_url: &str, prompt: &str, system_prompt: &str) -> Opt
     })
     .await
     .ok()?
+}
+
+#[cfg(test)]
+mod tests {
+    use super::looks_loopback_http;
+
+    #[test]
+    fn pairing_hash_is_still_loopback() {
+        assert!(looks_loopback_http(
+            "http://127.0.0.1:6768/web-index.html#pairing=orca://pair?code=abc"
+        ));
+        assert!(looks_loopback_http(
+            "http://127.0.0.1:6768/web-index.html#pairing=orca://pair?code=a@b"
+        ));
+        assert!(!looks_loopback_http(
+            "http://user@127.0.0.1:6768/web-index.html"
+        ));
+        assert!(!looks_loopback_http(
+            "http://example.com:6768/web-index.html"
+        ));
+    }
 }

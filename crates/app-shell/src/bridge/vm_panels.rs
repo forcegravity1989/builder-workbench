@@ -9,18 +9,17 @@ use bw::model::{IssueStatus, Project, ProjectId};
 use bw::repo::{issue_policy_file, project_file};
 use std::path::Path;
 
-use super::vm_build::{card_item, probe_env, remote_label, tool_label};
+use super::vm_build::{card_item, remote_label, tool_label};
 
-/// 六列看板。
+/// 四列看板(合并后)。列内分段;段按原始状态算。
 ///
-/// **两条维度别混**:待办池是「排没排周」,其余五列是「干到哪一步」。
-///
-/// `week` 传 `None` = 左栏「全部」:没打周标签的未动手活进待办池,其余按状态。
-/// `week` 传某一周 = 只显示打了那一周 `bw:week` 的活。未排周不串进任何一周,
-/// 只在「全部」里找。
+/// `week` 传 `None` = 左栏「全部」:未排周的未动手活进待办列·未排期段,其余按状态。
+/// `week` 传某一周 = 只显示打了那一周 `bw:week` 的活;待办列只「待开始」段(已排期本周),
+/// 不显示未排期。版本(`bw:plan:*`)排期的活在「全部」里也算已排期。
 pub(super) fn build_board(
     issues: &[bw::Issue],
     week: Option<&str>,
+    plan: Option<&str>,
     policy: Option<&issue_policy_file::IssuePolicyFile>,
 ) -> BoardVm {
     let labels = policy.and_then(|p| p.kanban.clone());
@@ -32,76 +31,167 @@ pub(super) fn build_board(
         .as_ref()
         .map(|k| k.todo_label.clone())
         .unwrap_or_else(|| "待办 · 已排进本周,等开工".into());
+    let _ = (pool_label.as_str(), todo_label.as_str()); // 段文案沿用固定词,这两个留作回执/兼容
 
-    let in_week = |i: &&bw::Issue| match week {
+    let in_week = |i: &bw::Issue| match week {
         None => true,
         Some(w) => i.week_of == w,
     };
-    let untouched = |i: &&bw::Issue| matches!(i.status, IssueStatus::Backlog | IssueStatus::Todo);
+    let in_plan = |i: &bw::Issue| match plan {
+        None => true,
+        Some(p) => i.plan_version == p,
+    };
+    // 已排期 = 排进了某一周或某个版本(任一非空)。未排期 = 都空。
+    let scheduled = |i: &bw::Issue| !i.week_of.is_empty() || !i.plan_version.is_empty();
+
+    // 待办列:未排期(Backlog 或 Todo 但 week_of/plan_version 都空,仅全部)
+    // + 已排期(Todo 且排进了周/版本)。周视图只已排期段,名「待开始」。
+    // 新建 issue 默认打 bw:status:todo 但 week_of 空 —— 它是 Todo 但未排期,
+    // 归未排期段,不能靠 status==Backlog 漏掉。
+    let backlog_cards: Vec<_> = issues
+        .iter()
+        .filter(|i| {
+            week.is_none()
+                && in_plan(i)
+                && !scheduled(i)
+                && matches!(i.status, IssueStatus::Backlog | IssueStatus::Todo)
+        })
+        .map(card_item)
+        .collect();
+    let todo_cards: Vec<_> = issues
+        .iter()
+        .filter(|i| scheduled(i) && in_week(i) && in_plan(i) && i.status == IssueStatus::Todo)
+        .map(card_item)
+        .collect();
+    let todo_segs = if week.is_some() || plan.is_some() {
+        vec![ColumnSegVm {
+            key: "assigned".into(),
+            label: String::new(),
+            statuses: vec![IssueStatus::Todo],
+            count: todo_cards.len() as u32,
+            cards: todo_cards.clone(),
+        }]
+    } else {
+        vec![
+            ColumnSegVm {
+                key: "unassigned".into(),
+                label: "未排期".into(),
+                statuses: vec![IssueStatus::Backlog, IssueStatus::Todo],
+                count: backlog_cards.len() as u32,
+                cards: backlog_cards.clone(),
+            },
+            ColumnSegVm {
+                key: "assigned".into(),
+                label: "已排期".into(),
+                statuses: vec![IssueStatus::Todo],
+                count: todo_cards.len() as u32,
+                cards: todo_cards.clone(),
+            },
+        ]
+    };
+    let todo_cards_all = {
+        let mut v = backlog_cards.clone();
+        v.extend(todo_cards.clone());
+        v
+    };
+
+    let doing_cards: Vec<_> = issues
+        .iter()
+        .filter(|i| in_week(i) && in_plan(i) && i.status == IssueStatus::InProgress)
+        .map(card_item)
+        .collect();
+    let review_cards: Vec<_> = issues
+        .iter()
+        .filter(|i| in_week(i) && in_plan(i) && i.status == IssueStatus::InReview)
+        .map(card_item)
+        .collect();
+    let blocked_cards: Vec<_> = issues
+        .iter()
+        .filter(|i| in_week(i) && in_plan(i) && i.status == IssueStatus::Blocked)
+        .map(card_item)
+        .collect();
+    let done_cards: Vec<_> = issues
+        .iter()
+        .filter(|i| in_week(i) && in_plan(i) && i.status == IssueStatus::Done)
+        .map(card_item)
+        .collect();
+    let cancelled_cards: Vec<_> = issues
+        .iter()
+        .filter(|i| in_week(i) && in_plan(i) && i.status == IssueStatus::Cancelled)
+        .map(card_item)
+        .collect();
+
+    let pending_all = {
+        let mut v = review_cards.clone();
+        v.extend(blocked_cards.clone());
+        v
+    };
+    let done_all = {
+        let mut v = done_cards.clone();
+        v.extend(cancelled_cards.clone());
+        v
+    };
+
     let columns = vec![
         ColumnVm {
-            status: IssueStatus::Backlog,
-            title: pool_label.clone(),
-            // 未排周只出现在「全部」。看某一周时这列空着。
-            cards: issues
-                .iter()
-                .filter(|i| week.is_none() && i.week_of.is_empty() && untouched(i))
-                .map(card_item)
-                .collect(),
-        },
-        ColumnVm {
             status: IssueStatus::Todo,
-            title: todo_label.clone(),
-            cards: issues
-                .iter()
-                .filter(|i| !i.week_of.is_empty() && in_week(i) && i.status == IssueStatus::Todo)
-                .map(card_item)
-                .collect(),
+            title: "待办".into(),
+            cards: todo_cards_all,
+            segments: todo_segs,
         },
         ColumnVm {
             status: IssueStatus::InProgress,
             title: "进行中".into(),
-            cards: issues
-                .iter()
-                .filter(|i| in_week(i) && i.status == IssueStatus::InProgress)
-                .map(card_item)
-                .collect(),
+            cards: doing_cards.clone(),
+            segments: vec![ColumnSegVm {
+                key: "doing".into(),
+                label: String::new(),
+                statuses: vec![IssueStatus::InProgress],
+                count: doing_cards.len() as u32,
+                cards: doing_cards.clone(),
+            }],
         },
         ColumnVm {
             status: IssueStatus::InReview,
-            title: "评审中".into(),
-            cards: issues
-                .iter()
-                .filter(|i| in_week(i) && i.status == IssueStatus::InReview)
-                .map(card_item)
-                .collect(),
+            title: "待处理".into(),
+            cards: pending_all,
+            segments: vec![
+                ColumnSegVm {
+                    key: "review".into(),
+                    label: "待评审".into(),
+                    statuses: vec![IssueStatus::InReview],
+                    count: review_cards.len() as u32,
+                    cards: review_cards.clone(),
+                },
+                ColumnSegVm {
+                    key: "blocked".into(),
+                    label: "阻塞".into(),
+                    statuses: vec![IssueStatus::Blocked],
+                    count: blocked_cards.len() as u32,
+                    cards: blocked_cards.clone(),
+                },
+            ],
         },
         ColumnVm {
             status: IssueStatus::Done,
             title: "已完成".into(),
-            cards: issues
-                .iter()
-                .filter(|i| in_week(i) && i.status == IssueStatus::Done)
-                .map(card_item)
-                .collect(),
-        },
-        ColumnVm {
-            status: IssueStatus::Blocked,
-            title: "阻塞".into(),
-            cards: issues
-                .iter()
-                .filter(|i| in_week(i) && i.status == IssueStatus::Blocked)
-                .map(card_item)
-                .collect(),
-        },
-        ColumnVm {
-            status: IssueStatus::Cancelled,
-            title: "已取消".into(),
-            cards: issues
-                .iter()
-                .filter(|i| in_week(i) && i.status == IssueStatus::Cancelled)
-                .map(card_item)
-                .collect(),
+            cards: done_all,
+            segments: vec![
+                ColumnSegVm {
+                    key: "done".into(),
+                    label: "完成".into(),
+                    statuses: vec![IssueStatus::Done],
+                    count: done_cards.len() as u32,
+                    cards: done_cards.clone(),
+                },
+                ColumnSegVm {
+                    key: "cancelled".into(),
+                    label: "拒绝".into(),
+                    statuses: vec![IssueStatus::Cancelled],
+                    count: cancelled_cards.len() as u32,
+                    cards: cancelled_cards.clone(),
+                },
+            ],
         },
     ];
     BoardVm {
@@ -281,117 +371,55 @@ pub(super) async fn build_sessions(
     id: ProjectId,
     issues: &[bw::Issue],
 ) -> Vec<SessionVm> {
-    let mut out = Vec::new();
-    for c in app.conversations(id).await.unwrap_or_default() {
-        let Some(issue) = issues.iter().find(|i| i.id == c.issue_id) else {
-            continue;
-        };
-        // 这张活的评审会话(第二条轴)。没有就如实 None,页签不出现。
-        let review = app
-            .review_conversation_for_issue(c.issue_id)
-            .await
-            .unwrap_or(None);
-        out.push(SessionVm {
-            issue_id: c.issue_id,
-            conversation_id: c.id,
-            issue_number: issue.number,
-            issue_title: issue.title.clone(),
-            issue_status: issue.status.label().to_string(),
-            branch: c.branch_name,
-            workspace_path: c.workspace_path,
-            session_id: c.claude_session_id,
-            // 唯一真实的信号:这个会话的 PTY 进程还在不在。
-            live: app.pty_live(c.id),
-            review_live: review.as_ref().is_some_and(|r| app.pty_live(r.id)),
-            review_conversation_id: review.map(|r| r.id),
-        });
-    }
-    out
+    app.conversations(id)
+        .await
+        .unwrap_or_default()
+        .into_iter()
+        .filter_map(|c| {
+            let issue = issues.iter().find(|i| i.id == c.issue_id)?;
+            Some(SessionVm {
+                issue_id: c.issue_id,
+                conversation_id: c.id,
+                issue_number: issue.number,
+                issue_title: issue.title.clone(),
+                issue_status: issue.status.label().to_string(),
+                branch: c.branch_name,
+                workspace_path: c.workspace_path,
+                session_id: c.claude_session_id,
+                // PTY 已封存,没真进程信号 —— live 如实是 false,不假绿。
+                live: false,
+            })
+        })
+        .collect()
 }
 
-/// 会话屏右栏 + 中栏。全部现算:文件树点开哪层读哪层、改动文件问 git、
-/// diff 也问 git。**没选中会话就整块是空的**,不摆一个假的工作台。
-#[allow(clippy::too_many_arguments)]
-pub(super) async fn build_workbench(
+/// 会话屏两个组件要的那点状态:页签 + 开工工具 + OD iframe 的 src/gen +
+/// Orca 网页地址。两个页签常驻,不依赖「先选中一场会话」——左列表已经删了,
+/// 没选中也要能切 Orca / Open Design,否则点页签会被 `Default` 打回 Orca。
+pub(super) fn build_workbench(
     sessions: &[SessionVm],
     issues: &[bw::Issue],
     open: Option<bw::model::IssueId>,
     tab: SessionTab,
-    expanded: &[String],
-    open_path: &str,
     od_src: &str,
     od_gen: u64,
+    orca_web_url: &str,
 ) -> WorkbenchVm {
-    let Some(s) = open.and_then(|id| sessions.iter().find(|s| s.issue_id == id)) else {
-        return WorkbenchVm::default();
-    };
-    let ws = std::path::PathBuf::from(&s.workspace_path);
-    let issue = issues.iter().find(|i| i.id == s.issue_id);
-    let pr_number = issue.map(|i| i.pr_number).unwrap_or(0);
-    // 开工工具:open_design 时会话屏多一个内嵌 Open Design 标签。
+    let s = open.and_then(|id| sessions.iter().find(|s| s.issue_id == id));
+    let issue = s.and_then(|s| issues.iter().find(|i| i.id == s.issue_id));
     let tool = issue.map(|i| i.tool.clone()).unwrap_or_default();
-
-    let mut expanded: Vec<String> = expanded.to_vec();
-    if !expanded.iter().any(|d| d.is_empty()) {
-        expanded.push(String::new());
-    }
-    let tree: Vec<(String, Vec<TreeEntryVm>)> = expanded
-        .iter()
-        .map(|dir| {
-            let entries = bw::git::list_dir(&ws, dir)
-                .into_iter()
-                .map(|e| TreeEntryVm {
-                    rel: e.rel,
-                    name: e.name,
-                    is_dir: e.is_dir,
-                })
-                .collect();
-            (dir.clone(), entries)
-        })
-        .collect();
-
-    let changed: Vec<ChangedFileVm> = bw::git::changed_files(&ws)
-        .await
-        .unwrap_or_default()
-        .into_iter()
-        .map(|c| ChangedFileVm {
-            label: c.label(),
-            path: c.path,
-        })
-        .collect();
-
-    // 中栏正文:文件页签给全文(只读),diff 页签问 git 要 diff。读不出来就
-    // 把读不出来这件事本身摆出来,不显示空白。
-    let open_body = if open_path.is_empty() {
-        String::new()
-    } else if tab == SessionTab::Diff {
-        bw::git::file_diff(&ws, open_path)
-            .await
-            .unwrap_or_else(|e| format!("(diff 取不到:{e})"))
-    } else {
-        std::fs::read_to_string(ws.join(open_path))
-            .unwrap_or_else(|e| format!("(这个文件读不出来:{e})"))
-    };
-
     WorkbenchVm {
-        workspace: s.workspace_path.clone(),
-        branch: s.branch.clone(),
-        ahead_behind: bw::git::ahead_behind(&ws, "main").await,
-        dirty: !changed.is_empty(),
-        expanded,
-        tree,
-        changed,
-        pr_number,
         tab,
         tool,
-        open_path: open_path.to_string(),
-        open_body,
         od_src: od_src.to_string(),
         od_gen,
+        orca_web_url: orca_web_url.to_string(),
     }
 }
 
-pub(super) async fn build_config(
+/// 配置屏。`tools`(环境条)从外部传:它在 `gather` 里探一次,不再每次重切
+/// 都重探(OD 管道 400ms + PATH 扫)——原来这条是 `probe_env` 第二遍的来源。
+pub(super) fn build_config(
     ws: &Path,
     policy: Option<&issue_policy_file::IssuePolicyFile>,
     project: &Project,
@@ -400,6 +428,7 @@ pub(super) async fn build_config(
     // 「项目群未配」,而真相是文件里有一行写错了。
     file: &project_file::ProjectFile,
     issues: &[bw::Issue],
+    env: &[ToolProbeVm],
 ) -> ConfigVm {
     let usage = bw::app::workflow_usage(issues);
     let mappings = policy
@@ -429,7 +458,7 @@ pub(super) async fn build_config(
         mappings,
         skills,
         focus_skill: String::new(),
-        tools: probe_env().await,
+        tools: env.to_vec(),
         remote: remote_label(project),
         // ①永远人触发、②永远定时 —— 这两件是代码写死的行为,不是配出来的,
         // 所以这里直接说人话。文件里只有②的时刻是真能配的。
@@ -456,9 +485,9 @@ pub(super) async fn build_config(
 ///
 /// 三个来源,`origin` 如实标出来自哪:
 ///
-/// - **buddy 自带**:编在二进制里的四份(全是运作剧本)。
-///   它们摊在 buddy 自己的资产目录,**不复制进用户的仓** —— 用户的
-///   `.gitignore` 怎么写不该由 buddy 决定(见 `bw::standard::skills`)。
+/// - **Workbench 自带**:编在二进制里的四份(全是运作剧本)。
+///   它们摊在 Workbench 自己的资产目录,**不复制进用户的仓** —— 用户的
+///   `.gitignore` 怎么写不该由 Workbench 决定(见 `bw::standard::skills`)。
 /// - **项目自有**:这个仓自己的 `.claude/skills/`,扫目录得到。
 /// - **不在册**:活上挂了这个名字,两处都找不到包。用量是真的,包确实没有。
 pub(super) fn skill_list(ws: &Path, usage: &[(String, u32)]) -> Vec<SkillVm> {
@@ -477,7 +506,7 @@ pub(super) fn skill_list(ws: &Path, usage: &[(String, u32)]) -> Vec<SkillVm> {
             title: bw::app::workflow_label(p.slug)
                 .unwrap_or(p.slug)
                 .to_string(),
-            origin: "buddy 自带".into(),
+            origin: "Workbench 自带".into(),
             desc: p.desc.to_string(),
             slug: p.slug.to_string(),
         })
@@ -537,7 +566,7 @@ fn build_crons(policy: Option<&issue_policy_file::IssuePolicyFile>) -> Vec<CronV
     let mut rows = vec![CronVm {
         name: "B 类指标采集".into(),
         trigger: "到点自动采".into(),
-        schedule: "daily 09:00".into(),
+        schedule: "daily 20:00".into(),
         rule: "今天还没采过".into(),
     }];
     let Some(c) = policy.and_then(|p| p.cadence.clone()) else {
@@ -571,25 +600,22 @@ fn chat_group(chat: Option<&project_file::ChatConfig>) -> String {
         .unwrap_or_else(|| "—".into())
 }
 
-/// 同步哪些事件。`notify` 没写 = 用默认三件;写成空列表 = 明确要求安静。
+/// 同步哪些事件。`notify` 没写 = 用默认五件;写成空列表 = 明确要求安静。
+/// 顺序按 [`bw::chat::NotifyEvent::ALL`],稳定不跳。
 fn chat_events(chat: Option<&project_file::ChatConfig>) -> Vec<(String, bool)> {
+    use bw::chat::NotifyEvent;
     let on: Vec<String> = match chat {
         None => return Vec::new(),
         Some(c) => c.notify.clone().unwrap_or_else(|| {
-            bw::chat::DEFAULT_NOTIFY
+            NotifyEvent::ALL
                 .iter()
-                .map(|s| s.to_string())
+                .map(|e| e.key().to_string())
                 .collect()
         }),
     };
-    bw::chat::DEFAULT_NOTIFY
+    NotifyEvent::ALL
         .iter()
-        .map(|e| {
-            (
-                bw::chat::event_label(e).to_string(),
-                on.iter().any(|x| x == e),
-            )
-        })
+        .map(|e| (e.label().to_string(), on.iter().any(|x| x == e.key())))
         .collect()
 }
 
@@ -603,11 +629,11 @@ fn chat_label(ws: &Path) -> String {
     else {
         return "—(没配项目群。配了就在 .bw/config/project.toml 里加一段 [chat])".into();
     };
-    // 整行没写 = 默认那三样;写了空数组 = 静音,如实说「一件都不发」。
+    // 整行没写 = 默认那五样;写了空数组 = 静音,如实说「一件都不发」。
     let notify = match &cfg.notify {
-        None => bw::chat::DEFAULT_NOTIFY
+        None => bw::chat::NotifyEvent::ALL
             .iter()
-            .map(|e| bw::chat::event_label(e))
+            .map(|e| e.label())
             .collect::<Vec<_>>()
             .join(" / "),
         Some(list) if list.is_empty() => "一件都不发(静音)".to_string(),
