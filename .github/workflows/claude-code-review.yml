@@ -23,38 +23,25 @@ jobs:
         id: claude
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
-          # 机器人开的 PR 默认一律不评审。claude[bot] 在这个仓真开过 PR
-          # (#90/#94/#98/#100 那批死码清理),点名放行它一个,不开 "*"。
+          # 默认拒一切机器人 actor;claude[bot] 在这个仓真开过 PR,点名放行它一个。
           allowed_bots: "claude[bot]"
           # gh pr view --comments 的查询里带 CI 检查数据,App 令牌默认读不到,
           # 整条命令会以 "Resource not accessible by integration" 失败。
           additional_permissions: |
             actions: read
-          # 不用 code-review 插件:它把活派给后台子代理再等结果,而 CI 是非交互
-          # 运行、没有下一轮,整场会以「我在等子代理」结束、一个字都不产出
-          # (2026-08-29 实测,证据在 claude-execution artifact 里)。
-          prompt: |
-            评审 PR #${{ github.event.pull_request.number }}。评审口径以仓根 AGENTS.md 为准。
-
-            **自己在这一轮里做完,不许派子代理。** 这是 CI 非交互运行,派出去就收不回来,
-            整场会以「在等子代理」结束、什么都不产出。
-
-            1. `gh pr view <号> --json title,body,isDraft,state` 看意图。draft 或已关就停,
-               什么都不做也不发评论。
-            2. `gh pr diff <号>` 看改动,需要上下文就 Read 具体文件、Grep 找调用点。
-            3. 找这几类问题,**只报有把握的,拿不准就不报**:真 bug(会出错的输入或状态);
-               与 AGENTS.md 或 docs/architecture.md 说的不一致;留下的假东西(没人读的配置、
-               说错话的注释、没人调用的公开项);扩了 scope 的改动。
-            4. 每个发现用 mcp__github_inline_comment__create_inline_comment 落在具体那一行。
-            5. 最后 `gh pr comment <号> --body "..."` 发一条总结;**没有发现也要发一条**,
-               说明看了什么、没发现问题。
-
-            你不合并、不改 PR 状态——合入永远由人点。
-          # 这一长串必需,别精简:Bash 在这个 action 里默认关闭,而评审全靠 gh 干活;
-          # 发 inline comment 的 MCP server 也只在点名时才装。
+          plugin_marketplaces: "https://github.com/anthropics/claude-code.git"
+          plugins: "code-review@claude-code-plugins"
+          # 只传 PR 号:这条命令没有 $ARGUMENTS,多传的会被静默忽略。
+          prompt: "/code-review:code-review --comment ${{ github.event.pull_request.number }}"
+          # 三样缺一不可:放行 gh(Bash 在这个 action 里默认关闭,而 code-review
+          # 全靠 gh 干活)、禁掉 Agent/Task(插件会派后台子代理再等结果,CI 没有
+          # 下一轮,整场会以「在等子代理」结束、零产出)、再用 system prompt 说明
+          # 这是非交互运行做双保险。
           claude_args: >-
             --model claude-sonnet-5
             --allowedTools "mcp__github_inline_comment__create_inline_comment,Bash(gh pr view:*),Bash(gh pr diff:*),Bash(gh pr comment:*),Bash(gh pr list:*),Bash(gh issue view:*),Bash(gh issue list:*),Bash(gh search:*),Bash(git log:*),Bash(git blame:*),Bash(git diff:*),Read,Glob,Grep"
+            --disallowedTools "Agent,Task"
+            --append-system-prompt "你运行在 GitHub Actions 的非交互环境里:没有下一轮,你这一轮结束运行就结束。所有检查与评审都必须自己在本轮内做完并把结果落到 PR 上,不要把工作交给别人再等回复。"
       # 空跑时靠这份日志查哪一步被挡。不开 show_full_output——它会把工具结果
       # (可能含 secret)打进公开日志。
       - if: always() && steps.claude.outputs.execution_file != ''
