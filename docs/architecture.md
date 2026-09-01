@@ -108,9 +108,9 @@ references(`standard/system-prompt/references/*.md`)是「干某类活需要额�
 
 ### 5 · command-event-与状态机
 
-**是什么**:Workbench MVP 自己的 Command/Event 枚举(界面只发命令、只收事件,内核是唯一执行点)+ 活的生命周期状态机与合法转移表。"完成"永远只能从"评审中"来、且只能由人显式点;回执带"真发生了什么"而不是"命令收到了"。关键取舍是转移表逐字拷自 V3(一条边没加没减),Event 不做事件溯源、fire-and-forget 给 UI。
+**是什么**:Workbench MVP 自己的 Command/Event 枚举(界面只发命令、只收事件,内核是唯一执行点)+ 活的生命周期状态机与合法转移表。"完成"永远只能从"评审中"来、且只能由人显式点;回执带"真发生了什么"而不是"命令收到了"。关键取舍是转移表逐字拷自 V3(一条边没加没减),Event 不做事件溯源、fire-and-forget 给 UI。右侧「Issue」上报走 `ReportWorkbenchIssue`:host/path 从当前目录 git 的 origin 现读,对照日志有文件就附上,回执 toast 写「issue上报成功」,不写打开着的被管项目。
 
-**代码**:bw 的 `command.rs`(Command/Event 枚举)+ `model.rs`(`IssueStatus` 七态、`can_transition_to` 唯一事实源)+ `app/mod.rs`(dispatch)+ `app/issue.rs`(run_issue / transition_issue)。
+**代码**:bw 的 `command.rs`(Command/Event 枚举)+ `model.rs`(`IssueStatus` 七态、`can_transition_to` 唯一事实源)+ `app/mod.rs`(dispatch)+ `app/issue.rs`(run_issue / transition_issue / report_workbench_issue)。
 **数据**:本模块不落库;状态机是内存态求值,转移成立后把新状态交给 issue_store(模块1)写远端正本;Event 只活在当次运行里不持久化。
 **依赖**:crate::model 领域类型(本 crate 自持);issue_store 是转移落盘唯一出口;bw_engine 执行器 trait(▶跑下游,但状态推进判定在本模块)。
 **没建**:V3 那对 Command/Event 枚举不继承不引用。会话屏已接 `ReopenSession` / `DeleteSession` / `CancelRun`;项目群和在研版本跟名片走同一条 `EditProjectCard` 命令,缺口在对应模块「没建」段。
@@ -142,7 +142,7 @@ references(`standard/system-prompt/references/*.md`)是「干某类活需要额�
 - `ensure_repo` — 纳入、以及打开项目时先 `repo.show`。Orca 已认这个仓就原样返回,不盖「正在让 Orca 认得」遮罩、不再 `repo.add`;没有才 add。同进程内存表只加速连点,不落盘。不跟开工 / 去会话绑在一起。人不去 Orca 里手导 `workspaces/xx`。计划屏 Start 和总览「开始本周」点下去先立遮罩再切会话,那几秒不挂 Orca iframe(嵌页是原生层,后到的 HTML 遮罩盖不住);撤遮罩挂上后按 Open 同一条等 onload 再 `worktree.activate`
 - `refresh_worktrees` — 开工在 `git worktree add` 之后、create 之前:再写一次 `worktreeBasePath`(回写 Orca 已有值;误写成 `.bw/worktrees` 的清掉)。Orca 没有「刷新扫描」RPC;`path:` 走 30s `worktreeScanCache`,刚 add 的树立刻 create 会 `selector_not_found`;只有 payload 带 `worktreeBasePath` 的 `repo.update` 才清这级缓存。不把扫描根改成 Workbench 目录(Orca 会把那当自己的工作区根、新树开空窗、提示词灌不进你看见的那扇)。不 `repo.add`、不用 Orca 的 `worktree.create`(树已在会和 git 打架)
 - `reveal_tree` / `activate_worktree` — 去会话和开工成功后跟网页:只 `worktree.activate`(12s)。不 ensure、不 resume
-- `create_session(worktree, agent, prompt, system)` — Orca 预设名是 `claude` / `cursor`(`cursor-agent` 是启动二进制,打出去会被 `Unknown agent preset` 拒)。Claude:`agentArgs` 一条单行(`--append-system-prompt '<压成单行的系统提示词>' '<标题+正文>' --dangerously-skip-permissions --disallowedTools 'Bash(gh pr merge)'`,和 PTY 开工同一套旗标),不走句柄回来之后的 `auto-submit`(Windows 上多行 `agentArgs` 打进 shell 每个换行是 Enter,启动变慢并撞 10 秒句柄超时,窗在词不在)。Cursor:没有 `--append-system-prompt`;`agentArgs` 和 Claude 同一套拼法(一条单行、值用 `shell_quote_single`):`--force --trust '<压成单行的系统提示词>'`。Orca cwd 已是这棵树,不另传 `--workspace`。create 前写 cursor-agent 认的 `~/.cursor/projects/<slug>/.workspace-trusted`(Orca 预写的 slug 会留下 `.bw` 的点,对不上仍弹框)。标题+正文走 Orca `prompt` + `auto-submit`。`clientOperationId` 用 Orca 规定形状(13 位毫秒 + `-` + 32 hex,不是 RPC 帧 id),形状不对立刻 `agent_session_operation_invalid` 被拒。Orca 回「等终端句柄超时」:窗已在,先停 5 秒再收 jsonl / 切树,对照日志记下超时与 jsonl 前后。create 成功后只给 Claude 短等 jsonl 收 session id;Cursor 不等;然后切树
+- `create_session(worktree, agent, prompt, system)` — Orca 预设名是 `claude` / `cursor`(`cursor-agent` 是启动二进制,打出去会被 `Unknown agent preset` 拒)。Claude:`agentArgs` 一条单行(`--append-system-prompt '<压成单行的系统提示词>' '<标题+正文>' --dangerously-skip-permissions --disallowedTools 'Bash(gh pr merge)'`,和 PTY 开工同一套旗标),不走句柄回来之后的 `auto-submit`(Windows 上多行 `agentArgs` 打进 shell 每个换行是 Enter,启动变慢并撞 10 秒句柄超时,窗在词不在)。Cursor:没有 `--append-system-prompt`;`agentArgs` 和 Claude 同一套拼法(一条单行、值用 `shell_quote_single`):`--force --trust '<压成单行的系统提示词>'`。Orca cwd 已是这棵树,不另传 `--workspace`。create 前写 cursor-agent 认的 `~/.cursor/projects/<slug>/.workspace-trusted`(Orca 预写的 slug 会留下 `.bw` 的点,对不上仍弹框)。标题+正文走 Orca `prompt` + `auto-submit`。`clientOperationId` 用 Orca 规定形状(13 位毫秒 + `-` + 32 hex,不是 RPC 帧 id),形状不对立刻 `agent_session_operation_invalid` 被拒。Orca 回「等终端句柄超时」:窗已在,先停 5 秒再收 jsonl / 切树,对照日志记下超时与 jsonl 前后。create 成功后只给 Claude 短等 jsonl 收 session id;Cursor 不等;然后切树。对照日志见模块11,不再另写 `%TEMP%/bw-orca.log`
 - `web_embed_url(fallback)` — 给会话屏 iframe 的 loopback;先 `BW_ORCA_WEB_URL` 后本机设置。WebView2 部分导航会丢 fragment,把 `#pairing=` 搬成 `?pairing=`(Orca 两边都认,只搬家不 mint code)
 
 **代码**:会话屏 `app-shell/screens/session/mod.rs`(只剩 Orca/OD 两页签);开工在计划屏 → `run_issue` / `run_issue_orca`;路径 `bw-engine/workspace.rs`;Orca 客户端 `bw-engine/orca.rs`;PTY 封存 `bw-engine/legacy_pty/`。
@@ -182,9 +182,9 @@ references(`standard/system-prompt/references/*.md`)是「干某类活需要额�
 **是什么**:Workbench MVP 的桌面应用壳(`bw-dev`,Dioxus 0.7 / wry WebView,macOS+Windows)。壳只渲染和转发意图——健康什么颜色、活能不能转到那一列、指标有没有读数,全部由内核算好塞进 ViewModel;壳里没有一行业务判断,命令失败就把原话放进 toast 不假装做成了。关键取舍是终端挂在屏的外面(切面板不卸载,否则字节真丢);PTY 字节流和长命令进度走 broadcast 不走 ViewModel;屏与屏之间只经 `Vm` 共享数据结构(守卫拦着不能互相 import)。
 
 **代码**:app-shell 的 `main.rs`(Root)+ `bridge/`(独立线程持有 App + nav + vm_build/vm_derive/vm_kb/vm_panels 四分文件拼 VM)+ `vm.rs`(全体 ViewModel)+ `theme/` + `chrome/` + `screens/`(八屏各一目录)+ `adapters/`(一能力一目录)。Windows exe 图标走 `app.ico` + `build.rs`(`winres`),编不过只告警。换项目时内核桥第一波并行拉 issue 名单 / 周目标 / 发版 / 健康 / 版本列表 / 当前用户就推 ViewModel 切页;每张活的 MR 号后台回填,不挡第一屏。拖拽改状态写成功只补丁这一张,不重拉名单(ADR 0002)。
-**数据**:本地零数据库——本机数据是 TOML/JSONL 落 `data_dir()` 下;codehub/GitHub issue+标签是唯一 issue 正本;壳自己不存任何业务数据,每个数字都是拼 ViewModel 那一刻从内核现算塞进来的。
+**数据**:本地零数据库——本机数据是 TOML/JSONL 落 `data_dir()` 下;codehub/GitHub issue+标签是唯一 issue 正本;壳自己不存任何业务数据,每个数字都是拼 ViewModel 那一刻从内核现算塞进来的。对照日志全仓一份 `bw.log`:`cargo run` 写到启动目录,直接跑 exe 写到项目目录(仓根或安装目录);`BW_LOG` 可改路径。一行是 `[时间] [模块] [文件] [行] [ok|err|warn] 正文`。E2E 标签(`[BW_OPEN]` 等)留在正文里。toast / 命令进出 / Orca RPC 都进这份文件。不写 token / pairing / 提示词正文。
 **依赖**:bw(内核 App / Command / Model)、bw_engine(执行器 / 远端)、dioxus 0.7 hard-pin + wry、tokio;对 V3 任何 crate 零依赖;xterm.js 前端资产 `include_str!` 编进二进制不联网拉。
-**没建**:Cursor 适配模块;蒸馏按钮、MR 检查列、"等你输入"那种 agent 细粒度状态(要靠 hook 回传还没接);已结束的会话切走再回来回放仍空;Windows 安装包不在本仓;删旧壳判据一条都不满足。会话左右栏可收,中栏终端跟着撑开。右侧「指南」全局都在,打开是仓里那份产品指南,不是另写的四章。
+**没建**:Cursor 适配模块;蒸馏按钮、MR 检查列、"等你输入"那种 agent 细粒度状态(要靠 hook 回传还没接);已结束的会话切走再回来回放仍空;Windows 安装包不在本仓;删旧壳判据一条都不满足。会话左右栏可收,中栏终端跟着撑开。右侧「指南」全局都在,打开是仓里那份产品指南,不是另写的四章。指南下面是「Issue」:填标题后把本机对照日志报到当前目录 git 的 workbench 仓,中间转圈「日志上传中」,成功走底栏 toast「issue上报成功」。
 
 ### 12 · 指标采集与读数
 

@@ -375,8 +375,12 @@ _Avoid_: 原则(可权衡的才叫原则)、最佳实践。
 _Avoid_: 可重入(是另一个并发概念,别混用)。
 
 **深链 / Deep link (启动直达)**:
-启动应用时用环境变量(`BW_OPEN` / `BW_PANEL` / `BW_HUB` / `BW_SEL`)直接跳到指定项目/面板/资产的方式。stderr 的 `[BW_OPEN]` 日志是"真的渲染到了"的可靠证明,E2E 验证靠它。
+启动应用时用环境变量(`BW_OPEN` / `BW_PANEL` / `BW_HUB` / `BW_SEL`)直接跳到指定项目/面板/资产的方式。对照日志正文里的 `[BW_OPEN]` 是"真的渲染到了"的可靠证明,E2E 验证靠它(同时打 stderr)。
 _Avoid_: 快捷方式;URL scheme(深链走环境变量,不走 URL)。
+
+**对照日志 / Diagnostic log**:
+全仓一份 `bw.log`,给人(和模型)拿着源码对原因。`cargo run` 写到启动目录;直接跑 exe 写到项目目录(能摸到 `Cargo.toml` 的仓根,安装包则是 exe 所在目录)。`BW_LOG` 可改整条路径。一行:`[时间] [模块] [文件] [行] [ok|err|warn] 正文`。toast、命令进出、Orca RPC 都进这里。不写 token / pairing / 提示词正文。右侧「Issue」把这份文件附到 workbench 仓的新 issue 上。
+_Avoid_: 读数流水(那是指标,不是对照日志);再拆第二份 `bw-orca.log`;`BW_ORCA_LOG`(已去掉)。
 
 ---
 

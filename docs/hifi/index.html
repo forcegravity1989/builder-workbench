@@ -498,8 +498,13 @@ select.select-multi{padding:3px;font-size:11.5px;border:1px solid var(--border-d
 .toast.show{opacity:1;transform:translateX(-50%) translateY(-6px);}
 
 /* ---------- guide drawer (wall) ---------- */
-.guide-tab{position:fixed;top:130px;right:0;background:var(--card);border:1px solid var(--border);border-right:none;border-radius:8px 0 0 8px;padding:12px 7px;writing-mode:vertical-rl;font-size:12px;color:var(--ink-2);cursor:pointer;box-shadow:var(--shadow);z-index:50;letter-spacing:.05em;}
-.guide-tab:hover{color:var(--clay);border-color:var(--clay);}
+.side-tabs{position:fixed;top:130px;right:0;z-index:57;display:flex;flex-direction:column;gap:6px;}
+.guide-tab,.issue-tab{background:var(--card);border:1px solid var(--border);border-right:none;border-radius:8px 0 0 8px;padding:12px 7px;writing-mode:vertical-rl;font-size:12px;color:var(--ink-2);cursor:pointer;box-shadow:var(--shadow);letter-spacing:.05em;}
+.guide-tab:hover,.issue-tab:hover{color:var(--clay);border-color:var(--clay);}
+.busy-mask{position:fixed;inset:0;z-index:90;background:rgba(250,249,245,.72);display:flex;align-items:center;justify-content:center;}
+.busy-card{display:flex;flex-direction:column;align-items:center;gap:12px;padding:22px 28px;background:var(--paper);border:1px solid var(--border);border-radius:12px;max-width:360px;text-align:center;font-size:13px;color:var(--ink-2);line-height:1.6;box-shadow:0 8px 28px rgba(0,0,0,.08);}
+.busy-spin{width:22px;height:22px;border:2px solid var(--border-deep);border-top-color:var(--clay);border-radius:50%;animation:repo-spin .8s linear infinite;}
+@keyframes repo-spin{from{transform:rotate(0)}to{transform:rotate(360deg)}}
 .guide-panel{position:fixed;top:0;right:0;bottom:0;width:320px;background:var(--card);border-left:1px solid var(--border);box-shadow:var(--shadow);z-index:56;display:flex;flex-direction:column;}
 .guide-panel-head{padding:15px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex:none;}
 .guide-chapters{display:flex;flex-direction:column;padding:8px;border-bottom:1px solid var(--border);flex:none;}
@@ -887,7 +892,8 @@ function freshState(){
       spaceTab:{Workbench:'knowledge'}, spaceDoc:{Workbench:'k-project'},
       symbolQuery:{Workbench:''},
       modal:null, settingsProbe:{},
-      deletedSessions:{}
+      deletedSessions:{},
+      reportBusy:false
     }
   };
 }
@@ -993,6 +999,14 @@ var ACTIONS = {
   toggleSessRight:function(){ state.ui.sessRight=state.ui.sessRight===false; render(); },
   openGuide:function(){ state.ui.guideOpen=true; render(); },
   closeGuide:function(){ state.ui.guideOpen=false; render(); },
+  openReport:function(){ state.ui.modal={type:'report-issue',title:''}; render(); },
+  closeReport:function(){ if(state.ui.modal&&state.ui.modal.type==='report-issue') state.ui.modal=null; render(); },
+  submitReport:function(){
+    var m=state.ui.modal; if(!m||m.type!=='report-issue')return;
+    if(!(m.title||'').trim()){ toast('请填标题'); return; }
+    state.ui.modal=null; state.ui.reportBusy=true; render();
+    setTimeout(function(){ state.ui.reportBusy=false; render(); toast('issue上报成功'); },800);
+  },
   selectGuideChapter:function(id){ state.ui.guideChapter=id; state.ui.guideOpen=true; render(); },
   toggleWorkspaceRootEdit:function(){ state.ui.workspaceRootEditing=!state.ui.workspaceRootEditing; render(); },
 
@@ -1437,7 +1451,7 @@ document.addEventListener('dragend', function(e){
 document.addEventListener('click', function(e){
   var el=e.target.closest('[data-action]'); if(!el)return;
   var name=el.getAttribute('data-action');
-  if(name==='closeModal' && el.classList.contains('modal-backdrop') && e.target!==el) return;
+  if((name==='closeModal'||name==='closeReport') && el.classList.contains('modal-backdrop') && e.target!==el) return;
   if(name==='closePlanDetail' && el.classList.contains('modal-backdrop') && e.target!==el) return;
   var raw=el.getAttribute('data-arg');
   var args=[];
@@ -1525,16 +1539,25 @@ function topbarHTML(inProject,pid,screenSeg){
 }
 function guideMarkupHTML(){
   var open=state.ui.guideOpen;
+  var tabs='<div class="side-tabs">'
+    + (open?'':'<div class="guide-tab" data-action="openGuide">指南</div>')
+    + '<div class="issue-tab" data-action="openReport">Issue</div></div>';
   if(!open){
-    return '<div data-guide><div class="guide-tab" data-action="openGuide">指南</div></div>';
+    return '<div data-guide>'+tabs+'</div>';
   }
-  return '<div data-guide><div class="guide-panel guide-panel-wide">'
+  return '<div data-guide>'+tabs+'<div class="guide-panel guide-panel-wide">'
     + '<div class="guide-panel-head"><h3 style="font-size:15px;margin:0;font-family:var(--serif);">产品指南</h3><button class="drawer-close" data-action="closeGuide">✕</button></div>'
     + '<iframe class="guide-frame" src="../guide/v4-产品指南.html"></iframe>'
     + '</div></div>';
 }
 function modalHTML(){
   var m=state.ui.modal; if(!m) return '';
+  if(m.type==='report-issue'){
+    return '<div class="modal-backdrop" data-action="closeReport"><div class="modal" onclick="event.stopPropagation()">'
+      + '<h3>上报 issue</h3>'
+      + '<input class="input" data-bind="ui.modal.title" value="'+esc(m.title||'')+'" placeholder="issue的标题" onfocus="this.placeholder=\'\'" onblur="if(!this.value)this.placeholder=\'issue的标题\'">'
+      + '<div class="modal-actions"><button class="btn-primary" data-action="submitReport">提交</button><button class="btn" data-action="closeReport">取消</button></div></div></div>';
+  }
   if(m.type==='preview-charter'){
     var d=m.draft;
     return '<div class="modal-backdrop" data-action="closeModal"><div class="modal">'
@@ -2263,7 +2286,8 @@ function shellHTML(){
     + (r.inProject?projectRailHTML(r.pid,r.screenSeg):'')
     + '<div class="main">'+topbarHTML(r.inProject,r.pid,r.screenSeg)+'<div class="content">'+r.html+'</div></div>'
     + guideMarkupHTML()
-    + modalHTML();
+    + modalHTML()
+    + (state.ui.reportBusy?'<div class="busy-mask"><div class="busy-card"><div class="busy-spin"></div>日志上传中</div></div>':'');
 }
 function render(){
   var active=document.activeElement;

@@ -6,6 +6,10 @@
 
 ## 最近 · 2026-09-01
 
+右侧「指南」下面加了「Issue」。点开填标题,提交后中间转圈「日志上传中」,把本机对照日志报到当前目录 git 的 workbench 仓(`codehub-cli issue create --attachment`)。成功走底栏 toast「issue上报成功」。不是报到打开着的被管项目。
+
+对照日志收成一份 `bw.log`。`cargo run` 写到启动目录,直接跑 exe 写到项目目录(仓根或安装目录),`BW_LOG` 可改路径。一行是 `[时间] [模块] [文件] [行] [ok|err|warn] 正文`。命令进出、toast、gather 警告、Orca 每条 RPC 都进这份;不再另写 `%TEMP%/bw-orca.log`。不写 token / pairing / 提示词正文。E2E 标签(`[BW_OPEN]` 等)留在正文里。
+
 post-sync 代码评审收口 4 处:5.10 版本账回正(5.10 实为运作活①周计划抬档、`0d586ce`;评审三件套落进已有 5.10、未编进二进制,不再记「5.9→5.10」);架构模块4「走同一条注入链」改述为「设计走、尚未编进/派发」(与模块7「请评审」口径一致);`orca.rs` 补回 `cursor_agent_cannot_ensure_claude_can` 丢的 `#[test]`(死函数转活,绿测现在真跑它);CHANGELOG 第 29 行「buddy 目录」→「Workbench 目录」(代码早已是 Workbench)。
 
 ## 最近 · 2026-08-31

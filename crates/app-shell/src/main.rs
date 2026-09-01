@@ -27,6 +27,7 @@ use dioxus::prelude::*;
 fn main() {
     // 起任何线程之前先把本机时区定住 —— 周是按本机时区算的。
     bw::isoweek::init_local_offset();
+    bw_engine::dlog::init();
     let deep_link = bridge::read_deep_link();
     let builder = dioxus::desktop::WindowBuilder::new()
         .with_title("Builders' Workbench")
@@ -226,7 +227,7 @@ fn Root() -> Element {
                     {body(tv, cur, &v, &project, &bridge, top_view)}
                 }
             }
-            chrome::GuideDrawer {}
+            chrome::GuideDrawer { bridge: bridge.clone() }
             if let Some(msg) = {
                 let chrome_msg = chrome_busy.get();
                 v.busy.clone().or(chrome_msg)

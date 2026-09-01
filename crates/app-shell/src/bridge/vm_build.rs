@@ -515,6 +515,7 @@ fn primary_note(events: &[Event]) -> Option<String> {
             }
         }
         Event::IssueEdited { .. } => "issue 标题/正文已改 · 已同步到 codehub".into(),
+        Event::WorkbenchIssueReported { .. } => "issue上报成功".into(),
     })
 }
 
@@ -522,8 +523,30 @@ impl UiState {
     /// 写一条回执,并把序号往前推一格。**所有写 `note` 的地方都走这里**,
     /// 漏掉一处就会出现「关过一次之后同样的话再也不弹」。
     pub fn set_note(&mut self, note: Option<String>) {
+        if let Some(ref n) = note {
+            let kind = toast_kind(n);
+            bw_engine::dlog::write(kind, "toast", file!(), line!(), n);
+        }
         self.note = note;
         self.note_seq = self.note_seq.wrapping_add(1);
+    }
+}
+
+fn toast_kind(s: &str) -> &'static str {
+    const MARKS: &[&str] = &[
+        "没做成",
+        "没成",
+        "失败",
+        "采不了",
+        "没拉到",
+        "崩了",
+        "去会话没成",
+        "定时没跑成",
+    ];
+    if MARKS.iter().any(|p| s.contains(p)) {
+        "err"
+    } else {
+        "ok"
     }
 }
 
@@ -638,6 +661,9 @@ pub async fn gather(app: &App, ui: &mut UiState) -> Gathered {
 
     let mut seen = std::collections::HashSet::new();
     warnings.retain(|w| seen.insert(w.clone()));
+    for w in &warnings {
+        bw_engine::dlog!(warn, "gather", "[BW_WARN] {w}");
+    }
 
     Gathered {
         gen,

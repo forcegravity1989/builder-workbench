@@ -530,16 +530,21 @@ struct CodehubRepoJson {
 // labels 逗号拼成一条串;空切片不打 `--labels`(codehub 对空 label 会报错)。
 
 /// `codehub-cli issue create -p <path> -H <host> --title <t> --description <body>
-/// [--labels a,b,c] --jq .iid` → 新 issue 的 `iid`(项目内号,对标 github
-/// issue number)。调它真开 issue,只在创建流调,绝不自动。
+/// [--labels a,b,c] [--attachment <file>] --jq .iid` → 新 issue 的 `iid`(项目内号,对标 github
+/// issue number)。调它真开 issue,只在创建流调,绝不自动。`attachment` 指向本机文件,
+/// 没有或不存在就不打 `--attachment`。
 pub async fn create_issue(
     host: &str,
     path: &str,
     title: &str,
     body: &str,
     labels: &[&str],
+    attachment: Option<&Path>,
 ) -> Result<u32, CodehubError> {
     let labels_csv = labels.join(",");
+    let attach = attachment
+        .filter(|p| p.is_file())
+        .map(|p| p.to_string_lossy().into_owned());
     let mut args: Vec<&str> = vec![
         "issue",
         "create",
@@ -555,6 +560,10 @@ pub async fn create_issue(
     if !labels_csv.is_empty() {
         args.push("--labels");
         args.push(&labels_csv);
+    }
+    if let Some(ref p) = attach {
+        args.push("--attachment");
+        args.push(p);
     }
     args.push("--jq");
     args.push(".iid");

@@ -108,8 +108,10 @@ impl App {
         let rt = bw_engine::orca::connect()
             .map_err(|e| AppError::Exec(format!("连 Orca 没成,接不回会话:{e}")))?;
         if let Err(e) = bw_engine::orca::reveal_tree(&rt, &path).await {
-            eprintln!(
-                "[BW_ORCA] {e} · {} · worktree={}",
+            bw_engine::dlog!(
+                err,
+                "session",
+                "reveal fail:{e} · {} · worktree={}",
                 rt.log_tag(),
                 path.display()
             );

@@ -108,6 +108,43 @@ pub async fn origin_remote_url(workspace: &Path) -> Result<Option<String>, Githu
     Ok(if url.is_empty() { None } else { Some(url) })
 }
 
+/// 从 `git remote` URL 拆出 host 和 `owner/repo`。认 https / ssh / `git@host:path`。
+///
+/// 认不出返回 `None`,不猜。`.git` 后缀和末尾 `/` 会剥掉。
+pub fn parse_git_remote_url(url: &str) -> Option<(String, String)> {
+    let url = url.trim();
+    if url.is_empty() {
+        return None;
+    }
+    if let Some(rest) = url.strip_prefix("git@") {
+        let (host, path) = rest.split_once(':')?;
+        let host = host.trim();
+        if host.is_empty() {
+            return None;
+        }
+        return Some((host.to_string(), strip_git_suffix(path)));
+    }
+    let rest = url
+        .strip_prefix("https://")
+        .or_else(|| url.strip_prefix("http://"))
+        .or_else(|| url.strip_prefix("ssh://git@"))
+        .or_else(|| url.strip_prefix("ssh://"))?;
+    let rest = rest.strip_prefix("git@").unwrap_or(rest);
+    let (hostport, path) = rest.split_once('/')?;
+    let host = hostport.split(':').next()?.trim();
+    if host.is_empty() || path.trim().is_empty() {
+        return None;
+    }
+    Some((host.to_string(), strip_git_suffix(path)))
+}
+
+fn strip_git_suffix(path: &str) -> String {
+    path.trim()
+        .trim_end_matches('/')
+        .trim_end_matches(".git")
+        .to_string()
+}
+
 /// Clone an already-existing GitHub repo the user picked into `dest`.
 pub async fn clone_repo(
     owner: &str,
@@ -1099,4 +1136,35 @@ pub async fn list_releases(owner_repo: &str) -> Result<Vec<String>, GithubError>
 struct GhReleaseJson {
     #[serde(rename = "tagName")]
     tag_name: String,
+}
+
+#[cfg(test)]
+mod tests {
+    use super::parse_git_remote_url;
+
+    #[test]
+    fn parse_https_codehub_origin() {
+        let (host, path) =
+            parse_git_remote_url("https://codehub-dg-g.huawei.com/z30026659/workbench.git")
+                .expect("https origin");
+        assert_eq!(host, "codehub-dg-g.huawei.com");
+        assert_eq!(path, "z30026659/workbench");
+    }
+
+    #[test]
+    fn parse_ssh_and_git_at() {
+        let a =
+            parse_git_remote_url("git@codehub-dg-g.huawei.com:z30026659/workbench.git").unwrap();
+        let b =
+            parse_git_remote_url("ssh://git@codehub-dg-g.huawei.com:2222/z30026659/workbench.git")
+                .unwrap();
+        assert_eq!(
+            a,
+            (
+                "codehub-dg-g.huawei.com".into(),
+                "z30026659/workbench".into()
+            )
+        );
+        assert_eq!(b, a);
+    }
 }

@@ -18,7 +18,7 @@ pub fn init_local_offset() {
     let offset = match UtcOffset::current_local_offset() {
         Ok(o) => o,
         Err(_) => {
-            eprintln!("[BW_TIME] 取不到本机时区,周按 UTC 算");
+            bw_engine::dlog!(warn, "time", "[BW_TIME] 取不到本机时区,周按 UTC 算");
             UtcOffset::UTC
         }
     };
