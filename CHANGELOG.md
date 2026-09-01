@@ -10,7 +10,7 @@ post-sync 代码评审收口 4 处:5.10 版本账回正(5.10 实为运作活①�
 
 另:开 `changes/process-hardening/` 产物链(intent/spec/plan/STATUS)——deepseek-harness 考古可借鉴项的固化计划:4 个新 guard(死链/字数预算/门禁自测/冻结件)+「放弃方案:」commit 约定 + standard/ 对标另行立项,六项各带可复算判据与目标值。待意图 gate,未动工。
 
-另:开 `changes/repo-archaeology/` 产物链(intent/spec/prototype-report/plan/STATUS)+ skill 草稿 `.claude/skills/repo-archaeology/`——把 dsh 考古方法固化成可复跑的「仓考古」能力(七维制度化阶梯 0-3,面向内网仓群的 native 缺失分析);原型=本仓真扫样例,与 process-hardening 清单互证。按 02 §6 小特性豁免 spec+原型+skill 草稿一并送评审;待意图 gate,内网首扫未动。
+另:开 `changes/native-audit/` 产物链(intent/spec/prototype-report/plan/STATUS)+ skill 草稿 `.claude/skills/native-audit/`——把 dsh 考古方法固化成可复跑的「仓考古」能力(七维制度化阶梯 0-3,面向内网仓群的 native 缺失分析);原型=本仓真扫样例,与 process-hardening 清单互证。意图 gate 已过(决策卡:落点=会话 skill、命名 native-audit、首扫每项目一代表仓约 10 仓、按 02 §6 一并评审);待评审合入,内网首扫需在有 codehub-cli 的机器发起。
 
 ## 最近 · 2026-08-31
 

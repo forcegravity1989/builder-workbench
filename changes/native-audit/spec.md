@@ -1,6 +1,6 @@
-# Spec · 仓考古（repo-archaeology）
+# Spec · native-audit（仓考古）
 
-> **30 秒导读**：这是什么——仓考古能力的**规格件**：判读准则正本、操作逻辑（主路径/仓群路径/出错）、外/内 FAQ。原型在哪——[prototype-report.md](prototype-report.md)（对本仓的真实扫描）+ [skill 草稿](../../.claude/skills/repo-archaeology/SKILL.md)。现在作数吗——随 intent 待 gate。
+> **30 秒导读**：这是什么——仓考古能力的**规格件**：判读准则正本、操作逻辑（主路径/仓群路径/出错）、外/内 FAQ。原型在哪——[prototype-report.md](prototype-report.md)（对本仓的真实扫描）+ [skill 草稿](../../.claude/skills/native-audit/SKILL.md)。现在作数吗——意图 gate 已过（拍板记录在 intent 末节），待评审合入。
 
 ## 判读准则（正本）
 
@@ -43,4 +43,4 @@
 
 ## 术语登记
 
-「**仓考古**（repo archaeology）：对一个 git 仓的全量历史与过程制度件做只读分析，量出 AI-native 制度化水位与缺失清单」——合入时进 `CONTEXT.md` 词表。
+「**native-audit**（人话：仓考古）：对一个 git 仓的全量历史与过程制度件做只读分析，量出 AI-native 制度化水位与缺失清单。与规范 5.10『知识库体检』（查被管项目 `.bw/` 知识件）、『资产盘点』（盘 BW 可见物）是三件事」——合入时进 `CONTEXT.md` 词表。

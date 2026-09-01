@@ -1,5 +1,5 @@
 ---
-name: repo-archaeology
+name: native-audit
 description: >-
   仓考古:对任意 git 仓(单仓或仓群清单)做只读的 AI-native 制度化水位分析,
   产出考古报告与缺失清单。Use when the user asks to 考古/扫描/分析一个仓或内网仓群的
@@ -7,9 +7,9 @@ description: >-
   archaeology rubric. Read-only; never modifies the target repos.
 ---
 
-# repo-archaeology — 仓考古
+# native-audit — 仓考古
 
-对目标仓量「AI-native 制度化水位」：七个维度，每维按制度化阶梯打 0-3。**准则正本在 [`changes/repo-archaeology/spec.md`](../../../changes/repo-archaeology/spec.md)，本文件只是执行剧本；两处冲突以 spec 为准。**
+对目标仓量「AI-native 制度化水位」：七个维度，每维按制度化阶梯打 0-3。**准则正本在 [`changes/native-audit/spec.md`](../../../changes/native-audit/spec.md)，本文件只是执行剧本；两处冲突以 spec 为准。**
 
 ## 硬纪律
 
@@ -37,7 +37,7 @@ ls .github/workflows/ 2>/dev/null | wc -l; git ls-files | grep -cE 'scripts/(gua
 ```
 
 3. **读样本**（限额，防炸上下文）：根 AGENTS.md/CLAUDE.md/CONTRIBUTING 与 CI 主 workflow 各读前 150 行；决策记录目录抽 2 份。只为定级取证，不通读。
-4. **定级**：对照 spec 七维表打 0-3。两个锚定样例防漂移：deepseek-harness ≈ 七维门禁层（3），builders-workbench 2026-09-01 ≈ 成文层（多数 2），实测数见 [`prototype-report.md`](../../../changes/repo-archaeology/prototype-report.md)。
+4. **定级**：对照 spec 七维表打 0-3。两个锚定样例防漂移：deepseek-harness ≈ 七维门禁层（3），builders-workbench 2026-09-01 ≈ 成文层（多数 2），实测数见 [`prototype-report.md`](../../../changes/native-audit/prototype-report.md)。
 5. **出报告**：度量表（带命令）→ 七维评分（带证据路径）→ 缺失清单按「升一级最便宜」排序。
 
 ## 仓群路径
