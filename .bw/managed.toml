@@ -3,15 +3,15 @@
 
 [[file]]
 path        = ".bw/PROJECT.md"
-version     = "5.0"
-fingerprint = "sha256:953286411de4d43e598d8a3d3b61ffc520c60719d780ac5a2f1c27fd39d35b7b"
+version     = "5.10"
+fingerprint = "sha256:658370647101d7b4659b9be8f1692208a91a7c4f5f2b18ec6bd0b66c7ab3daee"
 
 [[file]]
 path        = ".bw/standard.toml"
-version     = "5.8"
-fingerprint = "sha256:b01c6d1e37df153e8fdfba71a53d2f5098b777e2cf057409aa61b53e4c5c60ee"
+version     = "5.10"
+fingerprint = "sha256:e52c882028977d4f7bf98a6f9b0df5ccb105fcecc2738796a38bccac1c24b82d"
 
 [[file]]
 path        = ".bw/issue-policy.toml"
-version     = "5.8"
-fingerprint = "sha256:27dc22076e832f61e2e48d9e571f1e6d575f9602b0078e9145df0bc9823c810a"
+version     = "5.10"
+fingerprint = "sha256:ca5a6280132dbde94e9ef56ae6d6d643b019b4b5e0243e144010ebb1e2fe8d8e"
