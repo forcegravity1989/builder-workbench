@@ -8,6 +8,8 @@
 
 post-sync 代码评审收口 4 处:5.10 版本账回正(5.10 实为运作活①周计划抬档、`0d586ce`;评审三件套落进已有 5.10、未编进二进制,不再记「5.9→5.10」);架构模块4「走同一条注入链」改述为「设计走、尚未编进/派发」(与模块7「请评审」口径一致);`orca.rs` 补回 `cursor_agent_cannot_ensure_claude_can` 丢的 `#[test]`(死函数转活,绿测现在真跑它);CHANGELOG 第 29 行「buddy 目录」→「Workbench 目录」(代码早已是 Workbench)。
 
+另:开 `changes/process-hardening/` 产物链(intent/spec/plan/STATUS)——deepseek-harness 考古可借鉴项的固化计划:4 个新 guard(死链/字数预算/门禁自测/冻结件)+「放弃方案:」commit 约定 + standard/ 对标另行立项,六项各带可复算判据与目标值。待意图 gate,未动工。
+
 ## 最近 · 2026-08-31
 
 **Builder 设计系统落仓**:Claude Design 项目「builder」的设计系统转成仓内规范资产 `docs/design-system/`(唯一样式表 + 机读 theme.json + 双语 spec + 14 张纯 HTML 示例页 + 参考照片),画布机器件(_ds_bundle.js/support.js/Canvas.dc.html/缩略图/manifest/oxlint 配置)全部剥离,templates/ 留在设计项目。readme→spec 改名避大小写撞名;README 记来源、剥离清单与双向演进剧本(DesignSync 拉回 / /design-sync 回推)。未接线到壳,hifi 仍是九屏视觉正本。
