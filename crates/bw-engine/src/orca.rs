@@ -1030,6 +1030,7 @@ mod tests {
         );
     }
 
+    #[test]
     fn cursor_agent_cannot_ensure_claude_can() {
         assert!(agent_supports_ensure("claude"));
         assert!(!agent_supports_ensure("cursor"));

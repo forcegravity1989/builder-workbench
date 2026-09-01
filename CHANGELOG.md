@@ -4,6 +4,10 @@
 
 本文件按**六站 + 底座**收口,不再按每次窗口一条流水往下堆。最近一次改动永远写在最上面。
 
+## 最近 · 2026-09-01
+
+post-sync 代码评审收口 4 处:5.10 版本账回正(5.10 实为运作活①周计划抬档、`0d586ce`;评审三件套落进已有 5.10、未编进二进制,不再记「5.9→5.10」);架构模块4「走同一条注入链」改述为「设计走、尚未编进/派发」(与模块7「请评审」口径一致);`orca.rs` 补回 `cursor_agent_cannot_ensure_claude_can` 丢的 `#[test]`(死函数转活,绿测现在真跑它);CHANGELOG 第 29 行「buddy 目录」→「Workbench 目录」(代码早已是 Workbench)。
+
 ## 最近 · 2026-08-31
 
 Cursor 开工 `agentArgs` 改回和 Claude 同一套:一条单行、值用 `shell_quote_single`(`--force --trust '<系统提示词>'`)。不再为 cmd 另拼双引号 / `--workspace`。create 前仍写 cursor-agent 认的 `.workspace-trusted`。标题+正文仍走 auto-submit。
@@ -26,7 +30,7 @@ Claude 开工把系统提示词压成单行 `--append-system-prompt`,标题+正�
 
 开工那几秒盖遮罩挡住嵌页。被管仓只在纳入和打开项目时 `repo.add` 进 Orca(这个进程里登过不再打),不跟开工 / 去会话绑。人不去 Orca 里手导 `workspaces/xx`。Orca 没开不推翻接入。
 
-开工刚 `git worktree add` 完、create 之前再写一次 `worktreeBasePath`(回写已有值,误写成 `.bw/worktrees` 的清掉),刷掉 Orca 30s 扫描缓存。不刷会 `selector_not_found`。不把扫描根改成 buddy 目录,否则 Orca 把新树当自己的工作区、开空窗、提示词灌不进你看见的那扇。不是再 `repo.add`。
+开工刚 `git worktree add` 完、create 之前再写一次 `worktreeBasePath`(回写已有值,误写成 `.bw/worktrees` 的清掉),刷掉 Orca 30s 扫描缓存。不刷会 `selector_not_found`。不把扫描根改成 Workbench 目录,否则 Orca 把新树当自己的工作区、开空窗、提示词灌不进你看见的那扇。不是再 `repo.add`。
 
 计划屏 Open / 去会话先切到会话屏、等 Orca iframe onload(再短等配对)才 `worktree.activate`;没配对 URL 仍切树。连点只跟最后一张。不 ensure、不按当前全局工具 create。
 
@@ -74,7 +78,7 @@ Open / 去会话只 `worktree.activate`,不再 `ensureAgentSession`(那条是 `-
 
 ## 最近 · 2026-08-27
 
-**独立评审(规范入库,按钮未接)**:评审剧本 `mr-review`、阶段规范 `review`、评审主提示词 `REVIEW.md.tmpl` 和产物链 `changes/reviewer-agent/` 收进仓(standard 5.9→5.10)。GitHub 仓的自动触发放 CI 层(`.github/workflows/claude-code-review.yml`,配好 secret 才生效)。工作台里的「请评审」按钮和独立评审会话**还没接到 Orca 会话屏**;CodeHub 仓要评 MR,等这条接到 Orca 之后。合入仍由人点。
+**独立评审(规范入库,按钮未接)**:评审剧本 `mr-review`、阶段规范 `review`、评审主提示词 `REVIEW.md.tmpl` 和产物链 `changes/reviewer-agent/` 收进仓(落进已有 5.10,未编进二进制)。GitHub 仓的自动触发放 CI 层(`.github/workflows/claude-code-review.yml`,配好 secret 才生效)。工作台里的「请评审」按钮和独立评审会话**还没接到 Orca 会话屏**;CodeHub 仓要评 MR,等这条接到 Orca 之后。合入仍由人点。
 
 ## 2026-08-26
 
