@@ -1,0 +1,39 @@
+<!-- @dsCard group="Components" name="Command palette · 命令面板" subtitle="⌘K — search first, keyboard cursor with inset ring, shortcut chips right" viewport="680x560" -->
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Builder — Command palette</title>
+<link rel="stylesheet" href="../styles.css" />
+<style>
+.demo { max-width: 640px; margin: 0 auto; padding: var(--space-6) var(--space-4) var(--space-8); }
+.demo-head { font-size: 10px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: color-mix(in srgb, var(--color-text) 45%, transparent); margin: var(--space-6) 0 var(--space-3); }
+.demo-head:first-child { margin-top: 0; }
+.note { font-size: 12px; color: color-mix(in srgb, var(--color-text) 60%, transparent); max-width: 60ch; }
+code { font-family: var(--font-mono); font-size: 0.92em; }
+.stagebox { position: relative; inset: auto; height: 420px; border-radius: var(--radius-md); align-items: start; padding-top: var(--space-8); }
+</style>
+</head>
+<body>
+<main class="demo">
+  <div class="demo-head">⌘K · 命令面板</div>
+  <div class="dialog-backdrop stagebox">
+    <div class="cmdk" role="dialog" aria-label="Command palette">
+      <input class="cmdk-input" type="text" value="de" aria-label="Type a command or search" />
+      <div class="cmdk-list">
+        <div class="cmdk-section">Actions</div>
+        <div class="cmdk-item" aria-selected="true"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"></path><path d="m12 5 7 7-7 7"></path></svg>Deploy to production<span class="keys"><span class="kbd">⌘</span><span class="kbd">⏎</span></span></div>
+        <div class="cmdk-item"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"></path><path d="M12 5v14"></path></svg>Deploy preview…</div>
+        <div class="cmdk-item"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"></path><path d="m6 6 12 12"></path></svg>Cancel running build <span style="font-family: var(--font-mono); font-size: 10.5px; color: color-mix(in srgb, var(--color-text) 45%, transparent)">#1283</span></div>
+        <div class="cmdk-section">Go to</div>
+        <div class="cmdk-item"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12.83 2.18a2 2 0 0 0-1.66 0L2.6 6.08a1 1 0 0 0 0 1.83l8.58 3.91a2 2 0 0 0 1.66 0l8.58-3.9a1 1 0 0 0 0-1.83z"></path><path d="M2 12a1 1 0 0 0 .58.91l8.6 3.91a2 2 0 0 0 1.65 0l8.58-3.9A1 1 0 0 0 22 12"></path><path d="M2 17a1 1 0 0 0 .58.91l8.6 3.91a2 2 0 0 0 1.65 0l8.58-3.9A1 1 0 0 0 22 17"></path></svg>Deploys<span class="keys"><span class="kbd">G</span><span class="kbd">D</span></span></div>
+        <div class="cmdk-item"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="6" x2="6" y1="3" y2="15"></line><circle cx="18" cy="6" r="3"></circle><circle cx="6" cy="18" r="3"></circle><path d="M18 9a9 9 0 0 1-9 9"></path></svg>Branch <code>fix/error-codes</code></div>
+      </div>
+    </div>
+  </div>
+  <p class="note" style="margin-top: var(--space-6)">The keyboard cursor is a 9% ink tint <em>plus an inset hairline ring</em> (<code>aria-selected</code>) — flat tints alone vanish on light surfaces. Shortcut chips sit right, in <code>.kbd</code>, and only for bindings that exist. Long lists get search before they get scroll.</p>
+  <p class="note" lang="zh">键盘光标 = 9% 墨色加一圈内嵌发丝描边(<code>aria-selected</code>)— 浅色表面上仅靠平铺底色会消失。快捷键芯片右对齐、用 <code>.kbd</code>,且只展示真实存在的绑定。长列表先给搜索,再给滚动。</p>
+</main>
+</body>
+</html>

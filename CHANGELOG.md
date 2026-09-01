@@ -4,7 +4,11 @@
 
 本文件按**六站 + 底座**收口,不再按每次窗口一条流水往下堆。最近一次改动永远写在最上面。
 
-## 最近 · 2026-08-29
+## 最近 · 2026-08-31
+
+**Builder 设计系统落仓**:Claude Design 项目「builder」的设计系统转成仓内规范资产 `docs/design-system/`(唯一样式表 + 机读 theme.json + 双语 spec + 14 张纯 HTML 示例页 + 参考照片),画布机器件(_ds_bundle.js/support.js/Canvas.dc.html/缩略图/manifest/oxlint 配置)全部剥离,templates/ 留在设计项目。readme→spec 改名避大小写撞名;README 记来源、剥离清单与双向演进剧本(DesignSync 拉回 / /design-sync 回推)。未接线到壳,hifi 仍是九屏视觉正本。
+
+## 2026-08-29
 
 **`.bw/` 人机分目录 + 去冗留真(已实现,规范版本 6.0)**:被管项目的 `.bw/` 按「谁写的」分三层——顶层 Markdown 给人和 agent 通读、`config/` 是人拍板的输入(经 MR 或配置屏当场确认)、`state/` 是机器自己记的台账。搬了五份:project / issue-policy / metrics.toml → `config/`;managed.toml 与读数流水 → `state/`(读数改名 `metrics-readings.jsonl`)。不留兼容路径,旧布局项目由人删掉旧 `.bw/` 后重新接入。
 
