@@ -40,7 +40,7 @@ pub fn references() -> Vec<ReferencePack> {
         ),
         (
             "week-plan-comment",
-            "运作活①评论格式(周目标/本周纳入/读数快照,挂前要过校验脚本)",
+            "运作活①评论格式(版本目标/本周纳入/读数快照,挂前要过校验脚本)",
             REF_WEEK_PLAN_COMMENT,
         ),
         (

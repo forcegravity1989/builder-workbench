@@ -340,7 +340,7 @@ async fn drop_untracked_twin(main: &std::path::Path, tree: &std::path::Path, rel
 fn pending_steps(probe: &boot::BootstrapProbe) -> String {
     let mut v = Vec::new();
     if probe.has_history {
-        v.push("资产盘点首次模式:给已有 issue 打 bw:week(需要周目标再补一张运作活①,评论写明补记)");
+        v.push("资产盘点首次模式:能对上已有 v0.x 的活打 bw:plan:v0.x(需要对版本目标再补一张运作活①,评论写明补记)");
     }
     if probe.has_own_conventions {
         v.push(
@@ -369,6 +369,7 @@ pub fn agent_system_prompt(
     issue: &Issue,
     skill: Option<&SkillPointer>,
     references: &[ReferencePointer],
+    version_context: &str,
 ) -> String {
     let number = issue.number.to_string();
     let category = issue.category.map(|c| c.label()).unwrap_or("—(没定类别)");
@@ -388,6 +389,7 @@ pub fn agent_system_prompt(
             ("workflow", workflow),
             ("references", refs.as_str()),
             ("skill", skill_str.as_str()),
+            ("version_context", version_context),
         ],
     )
 }

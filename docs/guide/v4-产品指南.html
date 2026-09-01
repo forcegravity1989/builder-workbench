@@ -273,7 +273,7 @@
           <tbody>
             <tr><td>接一个仓、看铺了哪些文件、合铺底 MR</td><td><a href="#" onclick="go('u1');return false">第 0 站 · 接入项目</a></td></tr>
             <tr><td>看健康灯、指标、改名片 / 在研版本 / 项目群</td><td><a href="#" onclick="go('u1b');return false">第 1 站 · 看总览</a></td></tr>
-            <tr><td>开始本周、写周目标、建活、看某一周</td><td><a href="#" onclick="go('u1c');return false">第 2/3 站 · 定本周</a></td></tr>
+            <tr><td>开始本版本、写版本目标、建活、看某个版本</td><td><a href="#" onclick="go('u1c');return false">第 2/3 站 · 定本周</a></td></tr>
             <tr><td>开工、作废、去会话、原型进 Open Design</td><td><a href="#" onclick="go('u1d');return false">第 4 站 · 干活</a></td></tr>
             <tr><td>合 MR、点完成、发版本</td><td><a href="#" onclick="go('u1e');return false">第 5 站 · 验收记发版</a></td></tr>
             <tr><td>周五自动盘点、每天自动采数</td><td><a href="#" onclick="go('u1f');return false">第 6 站 · 定时盘点</a></td></tr>
@@ -419,7 +419,7 @@
       <h2 class="sec"><span class="n">背后</span></h2>
       <div class="res">
         <ul>
-          <li><span class="b"></span><div><strong>对远端代码仓</strong>：读 issue 列表。周目标来自本周运作活①最新评论里 <code>## 周目标</code> 那一段。纳入了哪些活看 <code>bw:week:YYYY-Www</code> 标签。</div></li>
+          <li><span class="b"></span><div><strong>对远端代码仓</strong>：读 issue 列表。版本目标来自本周运作活①最新评论里 <code>## 版本目标</code> 那一段。纳入了哪些活看 <code>bw:plan:v0.x</code> 标签。</div></li>
           <li><span class="b"></span><div><strong>对你的机器</strong>：跑 <code>.bw/metrics.toml</code> 里的采集脚本，窗口近四周。脚本只吐一个当下值时，折线只在本周画一个点。仓统计走 git，再问远端合入的 PR。</div></li>
           <li><span class="b"></span><div><strong>对 <code>.bw/</code></strong>：指标定义读 <code>metrics.toml</code>。B 类点「采集」或每天 20:00 自动采，把<strong>当天</strong>的值记进账本 <code>readings.jsonl</code>（同一天再采覆盖这一行，不写主检出）。折线按周画，取那一周最后一天。没有采集脚本的 B 类仍然采不到。C 类在卡上填今天的数，和 B 类同一份流水、同一套覆盖。</div></li>
         </ul>
@@ -430,7 +430,7 @@
         <ul>
           <li><span class="b"></span><div>健康灯和三条理由。没数据就是灰，不是绿。</div></li>
           <li><span class="b"></span><div>北极星 / 滞后 / 引领每张卡：<strong>有读数</strong>才有现值和折线。A 类每次现算四周；B 类采到的当下值进流水；读到 <strong>0</strong> 是真值，不是「没采到」。</div></li>
-          <li><span class="b"></span><div>本周计划进度：周号 + 周目标这段 + 五段计数。运作活①本周已关会写「已完成」。侧栏下一格就是计划。</div></li>
+          <li><span class="b"></span><div>本周计划进度：确认的 <code>v0.x</code> + 版本目标这段 + 五段计数。运作活①本周已关会写「已完成」。侧栏下一格就是计划。</div></li>
         </ul>
       </div>
 
@@ -442,7 +442,7 @@
       <h2 class="sec"><span class="n">健康灯怎么亮</span>只从数据推，不能手点</h2>
       <p>灯旁边同时列出这次判断的理由（成立打勾、不成立打圈）：</p>
       <ul class="checklist">
-        <li>本周定了周目标，仓里也有真实提交。目标要写进运作活①评论的 <code>## 周目标</code>，只开着这张活还不算定了。</li>
+        <li>本周定了版本目标，仓里也有真实提交。目标要写进运作活①评论的 <code>## 版本目标</code>，只开着这张活还不算定了。</li>
         <li>本周或上周有指标读数。读的是 <code>.bw/metrics/readings.jsonl</code>。点过采集、脚本吐了数，这一条才打勾。</li>
         <li>上周有合入或发版。不成立时显示「上周既没有合入也没有发版」。</li>
       </ul>
@@ -454,38 +454,38 @@
     <!-- ============ U1c 第 2/3 站 · 定本周 ============ -->
     <section class="screen" id="u1c" data-title="第 2/3 站 · 定本周" data-sec-name="怎么用">
       <div class="eyebrow">怎么用 · 第 2/3 站</div>
-      <h1 class="disp">开始本周，写下目标和纳入的活</h1>
-      <p class="lede">一次会话做完「复盘 → 指标 → 本周目标和活清单」。计划正本挂在运作活①的评论上，不另写周计划文件。</p>
+      <h1 class="disp">开始本版本，写下目标和纳入的活</h1>
+      <p class="lede">一次会话做完「复盘 → 指标 → 确认版本 → 版本目标和活清单」。计划正本挂在运作活①的评论上，不另写周计划文件。</p>
       <div class="res">
         <div class="h">这一站能查到</div>
         <ul>
-          <li><span class="b"></span><div>「开始本周」什么时候出现</div></li>
-          <li><span class="b"></span><div>周目标写在哪、计划屏怎么按周看卡</div></li>
+          <li><span class="b"></span><div>「开始本版本」什么时候出现</div></li>
+          <li><span class="b"></span><div>版本目标写在哪、计划屏怎么按版本看卡</div></li>
           <li><span class="b"></span><div>「新建活」能建哪几种</div></li>
         </ul>
       </div>
 
       <h2 class="sec"><span class="n">操作</span></h2>
       <div class="ops">
-        <div class="li"><div class="n">1</div><div class="t">总览顶上「开始本周」。本周还没有这张运作活①、也还没有周目标，才会出现；已经做过（含已完成）不再冒出来。</div></div>
-        <div class="li"><div class="n">2</div><div class="t">跳到会话屏。agent 按周计划剧本走：复盘、采指标、起草周目标与纳入清单。你在会话屏的 Orca 页看着、随时能停。</div></div>
-        <div class="li"><div class="n">3</div><div class="t">你确认之后，agent 当场建纳入的业务活，并打上本周 <code>bw:week:YYYY-Www</code>（codehub 还挂同名里程碑）。周目标、纳入清单、指标读数快照写成运作活①的三条评论，标题必须是 <code>## 周目标</code> / <code>## 本周纳入</code> / <code>## 本周指标读数</code>。周目标那一段一句或一段都行。</div></div>
-        <div class="li"><div class="n">4</div><div class="t">侧栏点「计划」。周头是周目标那段，默认只露两行，点右下角小框展开，再点收起。点某一周只看打了那一周标签的活；没打周标签的切到右上角下拉「全部 issue」就能看见。</div></div>
+        <div class="li"><div class="n">1</div><div class="t">总览顶上「开始本版本」。本周还没有这张运作活①才会出现；已经做过（含已完成）不再冒出来。</div></div>
+        <div class="li"><div class="n">2</div><div class="t">跳到会话屏。agent 按版本计划剧本走：复盘、采指标、先确认本周这个 <code>v0.x</code>，再起草版本目标与纳入清单。你在会话屏的 Orca 页看着、随时能停。</div></div>
+        <div class="li"><div class="n">3</div><div class="t">你确认之后，agent 当场建纳入的业务活，并打上 <code>bw:plan:v0.x</code>（codehub 还挂同名里程碑）。版本目标、纳入清单、指标读数快照写成运作活①的三条评论，标题必须是 <code>## 版本目标</code> / <code>## 本周纳入</code> / <code>## 本周指标读数</code>。版本目标那一段一句或一段都行。不要打 <code>bw:week</code>。</div></div>
+        <div class="li"><div class="n">4</div><div class="t">侧栏点「计划」。版本头是版本目标那段，默认只露两行，点右下角小框展开，再点收起。点某个版本只看打了那个 <code>bw:plan:v0.x</code> 的活；没打版本标签的切到右上角下拉「全部 issue」就能看见。</div></div>
       </div>
 
       <h2 class="sec"><span class="n">背后</span></h2>
       <div class="res">
         <ul>
-          <li><span class="b"></span><div><strong>对远端代码仓</strong>：建一张标题为 <code>更新指标 + 制定本周计划 YYYY-Www</code> 的运作活①（同一周不会建第二张）。纳入的活是真的远端 issue，不是本地草稿。</div></li>
+          <li><span class="b"></span><div><strong>对远端代码仓</strong>：建一张标题为 <code>更新指标 + 制定版本计划</code> 的运作活①（确认版本后标题带上 <code>v0.x</code>，同一 ISO 周不会建第二张）。纳入的活是真的远端 issue，不是本地草稿。</div></li>
           <li><span class="b"></span><div><strong>对你的机器</strong>：这张活自己的工作目录。缺的 <code>metrics.toml</code> 和采集脚本会在开工时铺上（已有不覆盖），经这张活的 MR 合进默认分支。</div></li>
-          <li><span class="b"></span><div><strong>对 <code>.bw/</code></strong>：指标定义和脚本进仓。周目标只在 issue 评论里，不另写一份计划文件。</div></li>
+          <li><span class="b"></span><div><strong>对 <code>.bw/</code></strong>：指标定义和脚本进仓。版本目标只在 issue 评论里，不另写一份计划文件。</div></li>
         </ul>
       </div>
 
       <h2 class="sec"><span class="n">得到什么</span></h2>
       <div class="res">
         <ul>
-          <li><span class="b"></span><div>总览和计划屏同一句周目标，杀进程重开还能读回来（读的是 issue 评论）。</div></li>
+          <li><span class="b"></span><div>总览和计划屏同一段版本目标，杀进程重开还能读回来（读的是 issue 评论）。</div></li>
           <li><span class="b"></span><div>本周范围内的活，看板上能点开。旧卡没打类别时，详情里选一次即可。</div></li>
           <li><span class="b"></span><div>运作活①可以关。关了不等于第 0 站那张铺底没合入——那是另一张活、另一条 MR。</div></li>
         </ul>
@@ -614,7 +614,7 @@
 
       <h2 class="sec"><span class="n">操作</span></h2>
       <div class="ops">
-        <div class="li"><div class="n">1</div><div class="t">配置屏能看见「资产盘点 · 到点自动建 · fri 09:00」，还有一行「B 类指标采集 · daily 20:00」。盘点节律写在 <code>.bw/issue-policy.toml</code>；B 类日采固定 20:00。运作活①仍是人点「开始本周」。</div></div>
+        <div class="li"><div class="n">1</div><div class="t">配置屏能看见「资产盘点 · 到点自动建 · fri 09:00」，还有一行「B 类指标采集 · daily 20:00」。盘点节律写在 <code>.bw/issue-policy.toml</code>；B 类日采固定 20:00。运作活①仍是人点「开始本版本」。</div></div>
         <div class="li"><div class="n">2</div><div class="t">Workbench 开着、过了本周那个时刻，计划屏会出现「资产盘点 YYYY-Www」。类别锁成「运作」，改不了五阶段。</div></div>
         <div class="li"><div class="n">3</div><div class="t">这张活会自己开工。看会话或详情：最远到评审中。合入、点完成仍是你来。</div></div>
         <div class="li"><div class="n">4</div><div class="t">周一回到总览，开始下一圈。盘点报告挂在这张活的评论里；微重构只出建议，不直接改业务代码。</div></div>
@@ -658,7 +658,7 @@
           <tbody>
             <tr><td>接一个仓、看铺了哪些文件、合铺底 MR</td><td><a href="#" onclick="go('u1');return false">第 0 站</a></td></tr>
             <tr><td>健康灯、指标、改名片 / 在研 / 项目群、顶栏刷新</td><td><a href="#" onclick="go('u1b');return false">第 1 站</a></td></tr>
-            <tr><td>开始本周、周目标、新建活、全部 issue 下拉</td><td><a href="#" onclick="go('u1c');return false">第 2/3 站</a></td></tr>
+            <tr><td>开始本版本、版本目标、新建活、全部 issue 下拉</td><td><a href="#" onclick="go('u1c');return false">第 2/3 站</a></td></tr>
             <tr><td>开工、作废、去会话、Open Design</td><td><a href="#" onclick="go('u1d');return false">第 4 站</a></td></tr>
             <tr><td>合 MR、点完成、发版本</td><td><a href="#" onclick="go('u1e');return false">第 5 站</a></td></tr>
             <tr><td>周五盘点、每天 20:00 采数</td><td><a href="#" onclick="go('u1f');return false">第 6 站</a></td></tr>

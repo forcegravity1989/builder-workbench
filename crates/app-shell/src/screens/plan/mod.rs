@@ -1,6 +1,6 @@
 //! 项目内 · 计划。结构照 `docs/hifi/plan-23-opt.html` 的 `midBar`/`kanban`/
-//! `detail`/`listView`/弹窗排:左栏周列表(全部issue/本周/未来/版本/历史周/
-//! 在研版本)+ 中栏(工具条 + 周目标/进度条/运作活,或列表视图)+ 四列看板。
+//! `detail`/`listView`/弹窗排:右上角下拉(全部 issue / 各 `v0.x`)+ 中栏
+//! (工具条 + 版本目标/进度条/运作活,或列表视图)+ 四列看板。
 //! 详情与弹窗都是屏幕居中浮层。
 //!
 //! 看板四列:待办(未排期/已排期)→ 进行中 → 待处理(待评审/阻塞)→ 已完成
@@ -63,21 +63,11 @@ impl ListFilter {
         // open 预设不过滤(显示全部);assigned/mine 已过滤
         if !self.plan.is_empty() {
             if self.plan == "unscheduled" {
-                // 未排期 = week_of 和 plan_version 都空
-                if !c.week_of.is_empty() || !c.plan_version.is_empty() {
+                if !c.plan_version.is_empty() || !c.week_of.is_empty() {
                     return false;
                 }
-            } else {
-                let pl = if !c.week_of.is_empty() {
-                    &c.week_of
-                } else if !c.plan_version.is_empty() {
-                    &c.plan_version
-                } else {
-                    return false;
-                };
-                if pl != &self.plan {
-                    return false;
-                }
+            } else if c.plan_version != self.plan && c.week_of != self.plan {
+                return false;
             }
         }
         if !self.stage.is_empty() && format!("{:?}", c.status) != self.stage {
@@ -128,30 +118,20 @@ pub fn View(p: ProjectVm, bridge: Bridge) -> Element {
     let col_seg = use_signal(std::collections::HashMap::<String, String>::new);
     let nav = use_context::<PanelNav>();
 
-    let rows: Vec<&crate::vm::CardItemVm> = if p.view_all {
-        p.board
-            .columns
-            .iter()
-            .flat_map(|c| c.cards.iter())
-            .collect()
-    } else {
-        p.board
-            .columns
-            .iter()
-            .flat_map(|c| c.cards.iter())
-            .filter(|c| {
-                c.week_of == p.viewing_week || !c.plan_version.is_empty() || c.kind != "业务活"
-            })
-            .collect()
-    };
+    let rows: Vec<&crate::vm::CardItemVm> = p
+        .board
+        .columns
+        .iter()
+        .flat_map(|c| c.cards.iter())
+        .collect();
 
     rsx! {
         section {
             class: "plan-grid",
             style: "height:calc(100vh - 112px);",
             div { class: "plan-col plan-mid",
-                {toolbar(p, bridge, view_mode, dialog)}
-                if !p.view_all && p.viewing_plan.is_empty() {
+                Toolbar { p: p.clone(), bridge: bridge.clone(), view_mode, dialog }
+                if !p.view_all {
                     WeekHead { p: p.clone() }
                 }
                 {draft_confirm(p, bridge)}
@@ -187,14 +167,14 @@ pub fn View(p: ProjectVm, bridge: Bridge) -> Element {
 
 // ── 中栏顶部 ────────────────────────────────────────
 
-fn toolbar(
-    p: &ProjectVm,
-    _bridge: &Bridge,
+#[component]
+fn Toolbar(
+    p: ProjectVm,
+    bridge: Bridge,
     mut view_mode: Signal<ViewMode>,
     mut dialog: Signal<Option<DialogKind>>,
 ) -> Element {
     let pid = p.id;
-    let version = p.card.current_version_raw.clone();
     let done_ids: Vec<IssueId> = p
         .board
         .columns
@@ -202,6 +182,21 @@ fn toolbar(
         .find(|c| c.status == bw::model::IssueStatus::Done)
         .map(|c| c.cards.iter().map(|x| x.id).collect())
         .unwrap_or_default();
+    let viewing_plan = p.viewing_plan.clone();
+    let released = p
+        .plan_versions
+        .iter()
+        .find(|v| v.name == viewing_plan)
+        .is_some_and(|v| v.released);
+    let mut editing = use_signal(|| false);
+    let mut draft = use_signal(String::new);
+    let mut last_view = use_signal(String::new);
+    if last_view.peek().as_str() != viewing_plan.as_str() {
+        last_view.set(viewing_plan.clone());
+        if *editing.peek() {
+            editing.set(false);
+        }
+    }
     let title = if p.view_all {
         "全部 issue".to_string()
     } else if !p.viewing_plan.is_empty() {
@@ -211,24 +206,25 @@ fn toolbar(
     } else {
         p.viewing_week.clone()
     };
-    // 视图切换下拉(取代左栏):全部 issue / 各周 / 各版本
-    let b_view = _bridge.clone();
+    let b_view = bridge.clone();
+    let b_rename = bridge.clone();
     let view_opts: Vec<(String, String)> = {
         let mut v: Vec<(String, String)> = vec![("all".into(), "全部 issue".into())];
         for w in &p.weeks {
-            let val = format!("week:{}", w.week);
             let label = if w.week == p.current_week {
                 format!("{} · 本周", w.week)
             } else {
                 w.week.clone()
             };
-            v.push((val, label));
+            v.push((format!("week:{}", w.week), label));
         }
         for v2 in &p.plan_versions {
-            v.push((
-                format!("version:{}", v2.name),
-                format!("版本 · {}", v2.name),
-            ));
+            let label = if bw::version::is_v0x(&v2.name) {
+                v2.name.clone()
+            } else {
+                format!("版本 · {}", v2.name)
+            };
+            v.push((format!("version:{}", v2.name), label));
         }
         v
     };
@@ -239,9 +235,69 @@ fn toolbar(
     } else {
         format!("week:{}", p.viewing_week)
     };
+    let can_rename = bw::version::is_v0x(&viewing_plan) && !released;
+    let taken: Vec<String> = p
+        .plan_versions
+        .iter()
+        .map(|v| v.name.clone())
+        .chain(std::iter::once(p.last_released.clone()))
+        .filter(|s| !s.is_empty())
+        .collect();
+    let from = viewing_plan.clone();
     rsx! {
         div { class: "plan-toolbar",
-            div { class: "left", "{title}" }
+            div { class: "left",
+                if *editing.read() && can_rename {
+                    span { class: "ver-wrap",
+                        input {
+                            class: "input",
+                            style: "width:88px;padding:2px 6px;font:inherit;",
+                            value: "{draft}",
+                            oninput: move |e| draft.set(e.value()),
+                            onkeydown: move |e| {
+                                if e.key() == Key::Escape {
+                                    editing.set(false);
+                                }
+                            },
+                        }
+                        button {
+                            class: "icon-btn ok",
+                            title: "保存",
+                            onclick: move |_| {
+                                let to = draft.read().trim().to_string();
+                                let clash = !bw::version::is_v0x(&to)
+                                    || (to != from && taken.iter().any(|s| s == &to));
+                                editing.set(false);
+                                if clash {
+                                    b_rename.send(Req::Note("版本名不合法或已经有了".into()));
+                                    return;
+                                }
+                                b_rename.cmd(Command::RenamePlanVersion {
+                                    project_id: pid,
+                                    from: from.clone(),
+                                    to,
+                                });
+                            },
+                            "✓"
+                        }
+                    }
+                } else if can_rename {
+                    span { class: "ver-wrap",
+                        "{title}"
+                        button {
+                            class: "icon-btn",
+                            title: "改名",
+                            onclick: move |_| {
+                                draft.set(viewing_plan.clone());
+                                editing.set(true);
+                            },
+                            "✎"
+                        }
+                    }
+                } else {
+                    "{title}"
+                }
+            }
             div { class: "right",
                 select {
                     class: "il-dd-btn",
@@ -271,14 +327,14 @@ fn toolbar(
                         onclick: move |_| dialog.set(Some(DialogKind::DeleteVersion)),
                         "删除版本"
                     }
-                } else {
+                } else if !p.viewing_plan.is_empty() {
                     button {
                         class: "btn btn-sm",
                         disabled: done_ids.is_empty(),
                         onclick: move |_| dialog.set(Some(DialogKind::Release(ReleaseDraft {
                             project_id: pid,
-                            version: default_release_version(&version),
-                            note: "本周完成的活".into(),
+                            version: p.viewing_plan.clone(),
+                            note: format!("版本 {} 完成的活", p.viewing_plan),
                             included: done_ids.clone(),
                         }))),
                         "发版本"
@@ -302,10 +358,25 @@ fn toolbar(
 
 #[component]
 fn WeekHead(p: ProjectVm) -> Element {
-    let w = p.weeks.iter().find(|w| w.week == p.viewing_week);
-    let goal = w
+    let current_goal = p
+        .weeks
+        .iter()
+        .find(|w| w.week == p.current_week)
         .and_then(|w| w.goal.clone())
-        .unwrap_or_else(|| "(这一周还没写周目标)".into());
+        .unwrap_or_default();
+    let goal = if !p.viewing_plan.is_empty() {
+        if p.viewing_plan == p.confirmed_version && !current_goal.is_empty() {
+            current_goal
+        } else {
+            "（这个版本还没写版本目标）".into()
+        }
+    } else {
+        p.weeks
+            .iter()
+            .find(|w| w.week == p.viewing_week)
+            .and_then(|w| w.goal.clone())
+            .unwrap_or_else(|| "（这一周还没写周目标）".into())
+    };
     let mut open = use_signal(|| false);
     let c = &p.board_counts;
     rsx! {
@@ -340,7 +411,7 @@ fn WeekHead(p: ProjectVm) -> Element {
     }
 }
 
-/// 「开始本周」产出的草稿活标,等人确认。
+/// 「开始本版本」产出的草稿活标,等人确认。
 fn draft_confirm(p: &ProjectVm, bridge: &Bridge) -> Element {
     if p.pending_drafts.is_empty() {
         return rsx! {};
@@ -375,25 +446,5 @@ fn draft_confirm(p: &ProjectVm, bridge: &Bridge) -> Element {
                 }
             }
         }
-    }
-}
-
-fn default_release_version(cur: &str) -> String {
-    let next = next_version(cur);
-    if next.is_empty() {
-        cur.trim().to_string()
-    } else {
-        next
-    }
-}
-
-fn next_version(cur: &str) -> String {
-    let t = cur.trim().trim_start_matches('v');
-    let Some((head, tail)) = t.rsplit_once('.') else {
-        return String::new();
-    };
-    match tail.parse::<u32>() {
-        Ok(n) if !head.is_empty() => format!("v{head}.{}", n + 1),
-        _ => String::new(),
     }
 }

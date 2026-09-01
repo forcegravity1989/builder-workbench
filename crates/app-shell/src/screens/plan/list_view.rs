@@ -12,7 +12,7 @@ use super::ListFilter;
 /// 状态 → 胶囊 css + 中文。按 scheduled 判断未排期/已排期(而非纯 status),
 /// 因为历史 issue 可能 status=Todo 但 week_of 空(旧默认 Todo),那样该显示"未排期"。
 fn stage_pill(c: &CardItemVm) -> (&'static str, String) {
-    let scheduled = !c.week_of.is_empty() || !c.plan_version.is_empty();
+    let scheduled = !c.plan_version.is_empty();
     match c.status {
         IssueStatus::Backlog => ("il-pill status-todo", "未排期".into()),
         IssueStatus::Todo if !scheduled => ("il-pill status-todo", "未排期".into()),
@@ -27,7 +27,7 @@ fn stage_pill(c: &CardItemVm) -> (&'static str, String) {
 
 /// 行操作类型。按 scheduled 判断:未排期→schedule,已排期 Todo→start。
 fn action_kind(c: &CardItemVm) -> &'static str {
-    let scheduled = !c.week_of.is_empty() || !c.plan_version.is_empty();
+    let scheduled = !c.plan_version.is_empty();
     match c.status {
         IssueStatus::Backlog => "schedule",
         IssueStatus::Todo if !scheduled => "schedule",
@@ -70,11 +70,9 @@ pub fn list_view(
     ];
     filtered.sort_by_key(|c| order.iter().position(|s| *s == c.status).unwrap_or(99));
 
-    // 计划下拉:从全部 rows(非 filtered)+ p.weeks + p.plan_versions 构建,避免
-    // 选"未排期"后 W35 从下拉消失(bug 5)。
     let mut plans: Vec<String> = Vec::new();
     for w in &p.weeks {
-        if !plans.contains(&w.week) {
+        if !w.week.is_empty() && !plans.contains(&w.week) {
             plans.push(w.week.clone());
         }
     }

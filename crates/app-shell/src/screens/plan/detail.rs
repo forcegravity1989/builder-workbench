@@ -171,11 +171,11 @@ pub fn DetailModal(
                                     }
                                 },
                                 option { value: "unscheduled", selected: c.week_of.is_empty() && c.plan_version.is_empty(), "未排期" }
-                                for w in p.weeks.iter().filter(|w| w.week >= p.current_week) {
-                                    {let val = format!("week:{}", w.week); let sel = c.week_of == w.week; rsx! { option { value: "{val}", selected: sel, "周 · {w.week}" } }}
+                                for w in p.weeks.iter() {
+                                    {let val = format!("week:{}", w.week); let sel = c.week_of == w.week; rsx! { option { value: "{val}", selected: sel, "{w.week}" } }}
                                 }
                                 for v in p.plan_versions.iter() {
-                                    {let val = format!("version:{}", v.name); let sel = c.plan_version == v.name; rsx! { option { value: "{val}", selected: sel, "版本 · {v.name}" } }}
+                                    {let val = format!("version:{}", v.name); let sel = c.plan_version == v.name; rsx! { option { value: "{val}", selected: sel, "{v.name}" } }}
                                 }
                             }
                         }

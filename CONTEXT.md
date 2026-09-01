@@ -45,7 +45,7 @@ _Avoid_: 用裸词 "环 / Loop / operating loop" 指五阶段——五阶段的�
 _Avoid_: 审批、gate(交棒只留痕,不是要人拍板才能过的 gate)、阶段切换。
 
 **迭代**:
-六个阶段(规划、设计、构建、发布、维护、运营)走完一次。对 super builder 通常一周一次:每次迭代由你定的周目标开头,以真实增量与回流的欠账收尾。产品主张见 `principles/03`。
+六个阶段(规划、设计、构建、发布、维护、运营)走完一次。对 super builder 通常一周一次:每次迭代由你定的版本目标开头,以真实增量与回流的欠账收尾。产品主张见 `principles/03`。
 _Avoid_: 转圈 / 周环 / 这一圈 / 一圈(都改写成"这次迭代 / 下一次迭代");也不要拿"环 / Loop"指五阶段(见「阶段」条)——五阶段的成环性叫"闭环回流"。
 
 **gate**:
@@ -91,12 +91,16 @@ _Avoid_: 按旧五步(仓→意图→快速问题→起草→确认)描述它—
 ### 活与状态
 
 **Issue / 活**:
-一件要干的具体工作,最小单位。"活"是口语规范词,"卡"只在指界面卡片形态时用。codehub/GitHub 的 issue+标签是唯一正本(标题=标识,`bw:status:*`/`bw:week:*`/`bw:plan:*`/`bw:released:*`/`bw:category:*` 标签=状态/排期(版本)/发版号/类别,issue closed=Done);开工工具和 workflow 不另打标签。业务活读回时用类别去查 `.bw/issue-policy.toml`;运作活开工工具读同一份文件的运维行,workflow 仍按标题推断。本地零库,读都走 CLI、不留读缓存。没挂仓的项目如实留白、不假装已同步。
+一件要干的具体工作,最小单位。"活"是口语规范词,"卡"只在指界面卡片形态时用。codehub/GitHub 的 issue+标签是唯一正本(标题=标识,`bw:status:*`/`bw:plan:*`/`bw:released:*`/`bw:category:*` 标签=状态/排期(版本)/发版号/类别,issue closed=Done);不再写 `bw:week:*`。开工工具和 workflow 不另打标签。业务活读回时用类别去查 `.bw/issue-policy.toml`;运作活开工工具读同一份文件的运维行,workflow 仍按标题推断。本地零库,读都走 CLI、不留读缓存。没挂仓的项目如实留白、不假装已同步。
 _Avoid_: 任务(与"定时任务"撞)、卡片(指实体时用"活",指 UI 时才用"卡")、ticket、工单。详见 [codehub-issue-正本 模块](docs/architecture.md)。
 
 **计划 / 版本 (Plan version)**:
-一张活排进哪个版本。**周版本**是每周一按 ISO 周号自动出现的那个(`2026-W35`);人也可以另起名字建版本。一张活只属于一个版本。标签是同一槽位的两种写法:周号形态打 `bw:week:YYYY-Www`,其他人名打 `bw:plan:<name>`。发版号(`bw:released:vX`)是另一件事——给已完成的活打上的发布标记。
-_Avoid_: 把周和人起名的版本当成两套排期;一张活同时挂周标签和版本标签;和发版号混为一谈。详见 [周循环与计划 模块](docs/architecture.md)。
+一张活排进哪个版本。号就是 `v0.x`(`v0.1`、`v0.2`),三处同一串:`bw:plan:v0.x`、里程碑标题、Release / `bw:released:v0.x`。ISO 周只做节律(运作活①该不该开、健康时间窗、资产盘点周五),不当排期名。旧非 `v0.x` 读回当未分配。
+_Avoid_: 再写 `bw:week:*`;把周号、自建名、发版号当成三套;一张活挂两个版本。详见 [周循环与计划 模块](docs/architecture.md)。
+
+**版本目标**:
+本周确认的那个 `v0.x` 要推到哪。写在运作活①评论的 `## 版本目标`。旧评 `## 周目标` / `## 本周目标` 还能读,新写必须用「版本目标」。指标卡上的「本周目标 ≥3」是指标的周数值,不是这个词。
+_Avoid_: 周目标 / 本周目标(指计划时)。`principles/03` 里的「周目标」本次不改。
 
 **Issue 状态流转**:
 Backlog → Todo → InProgress → InReview → Done 的单向明路;另有 Blocked(阻塞,必填原因)、Cancelled。**Done 的唯一入边是 InReview**。状态以 `bw:status:*` 标签为正本,由 `can_transition_to` 守卫锁死;Backlog 在 codehub 映射里没有对应标签,如实弹回不编。Cancelled 打 `bw:status:cancelled` 再关远端 issue,读回先认取消标签,不当完成。

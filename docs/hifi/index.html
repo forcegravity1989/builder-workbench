@@ -567,7 +567,7 @@ var STATUS_DOT={pool:'gray',todo:'gray',doing:'amber',review:'amber',merged:'amb
 var CATS=['构建','构建(文档)','原型','优化','运维','运营推广','运作'];
 var WEEKS=['W34'];
 var HISTORY_WEEKS=['W33','W32','W31','W30','W29','W28','W27'];
-// 回填出来的历史周:数字来自 git 合入记录(按 ISO 周)。周目标正本是运作活①评论,不另写 docs/plan/。
+// 回填出来的历史周:数字来自 git 合入记录(按 ISO 周)。版本目标正本是运作活①评论,不另写 docs/plan/。
 var HISTORY_WEEK_MERGED={W33:3,W32:17,W31:7,W30:12,W29:3,W28:3,W27:1};
 var VERSIONS=['0.4.0-v4','0.3.0-v3','0.2.0-v3'];
 // 四列看板(对齐 kanban.rs:待办/进行中/待处理/已完成),列内分段。
@@ -630,25 +630,25 @@ function normView(key){
 var GUIDE_CHAPTERS=[
   {id:'env',label:'环境准备',body:'claude CLI、Open Design、codehub-cli / gh 按需装。缺一项不影响接入,只影响对应类别的活能不能开工。「测一下」如实探活,没找到就是红,没接探活就是灰,不假装绿。Cursor 还没接。'},
   {id:'onboard',label:'接入项目',body:'接入问仓在哪、这个项目想做什么。规范铺底(运作活③)是路径 A:不起 agent,往 .bw/ 写名片、开工映射、规范版本,开 MR,停在评审中等你合。仓根 AGENTS.md 不写。'},
-  {id:'cycle',label:'一周一圈',body:'每周由运作活①开场:复盘 → 更新指标 → 聊出周目标与活清单。正本写在这张活的评论里。agent 最远到评审中,「完成」永远由你点。'},
+  {id:'cycle',label:'一周一圈',body:'每周由运作活①开场:复盘 → 更新指标 → 确认版本 → 聊出版本目标与活清单。正本写在这张活的评论里。agent 最远到评审中,「完成」永远由你点。'},
   {id:'faq',label:'常见问题',body:'灯是灰的不是坏了:没数据就是灰。更完整的流程见仓里的产品指南,它只写已经走过的站。'}
 ];
 
 /* ===================== 终端 transcript(沿用第一版三套) ===================== */
 var OPS1_TRANSCRIPT=[
   {cls:'sys',text:'[Workbench] 系统提示词已注入 · 单人构建者工作台 · 一活一分支一 MR · 完成永远由人点'},
-  {cls:'sys',text:'[workflow] workflow 已注入:更新指标与周计划(Workbench 自建 · 合并自 north-star-discovery + metrics-binding)'},
+  {cls:'sys',text:'[workflow] workflow 已注入:更新指标与版本计划(Workbench 自建 · 合并自 north-star-discovery + metrics-binding)'},
   {cls:'sys',text:'[read] AGENTS.md'},
   {cls:'sys',text:'[read] PROJECT.md'},
   {cls:'sys',text:'[read] .bw/PROJECT.md'},
   {cls:'agent',text:'agent> 复盘上周(2026-W33):减负线两轮收尾在途、V4 全貌草案与规范铺底稿收口,原型仍在做。'},
   {cls:'agent',text:'agent> 更新指标:「默认件被真实使用次数」还没有采集脚本。脚本跟人在这张运作活里写,不预铺空壳。'},
   {cls:'human',text:'人> 先记一条 TODO,这周先把高保真原型和减负线合入收口。'},
-  {cls:'agent',text:'agent> 引导本周目标:「V4 MVP 从口述收口成设计事实源并出高保真;减负线合入 main」,你看呢?'},
+  {cls:'agent',text:'agent> 引导版本目标:「V4 MVP 从口述收口成设计事实源并出高保真;减负线合入 main」,你看呢?'},
   {cls:'human',text:'人> 可以,就这句。'},
-  {cls:'agent',text:'agent> 已按类别拆出业务活草稿,你确认后我建活并打 bw:week。'},
+  {cls:'agent',text:'agent> 已按类别拆出业务活草稿,你确认后我建活并打 bw:plan:v0.x。'},
   {cls:'human',text:'人> 确认,建吧。'},
-  {cls:'git',text:'[comment] ## 周目标 / ## 本周纳入 / ## 本周指标读数 已挂到这张运作活'},
+  {cls:'git',text:'[comment] ## 版本目标 / ## 本周纳入 / ## 本周指标读数 已挂到这张运作活'},
   {cls:'git',text:'[git] 分支 bw/issue-plan-2026-W34 → 提交 .bw/metrics.toml(指标定义跟人写的)'},
   {cls:'git',text:'[hook] 已推到评审中'}
 ];
@@ -664,7 +664,7 @@ function buildOps2Transcript(pid,issueId){
     {cls:'sys',text:'[read] docs/'},
     {cls:'sys',text:'[read] .bw/standard.toml(默认件清单与版本)'},
     {cls:'agent',text:'agent> 盘点 docs/、产物登记、技能与 workflow、规范对账、指标新鲜度。'},
-    {cls:'agent',text:'agent> 周目标读运作活①评论,发版读远端 Release,不另写周计划文件。'},
+    {cls:'agent',text:'agent> 版本目标读运作活①评论,发版读远端 Release,不另写周计划文件。'},
     {cls:'agent',text:'agent> codegraph files -j 找候选大文件,列进大文件榜。'},
     {cls:'agent',text:'agent> 发现 3 处可微重构点,已列为建议活草稿(类别:优化),等你勾选'},
     {cls:'git',text:'[comment] 盘点报告挂到这张运作活的评论'},
@@ -695,7 +695,7 @@ function buildGenericTranscript(pid,issueId){
   lines.push(
     {cls:'sys',text:'[read] AGENTS.md'},
     {cls:'sys',text:'[read] .bw/PROJECT.md'},
-    {cls:'sys',text:'[read] 运作活①评论 · ## 周目标'},
+    {cls:'sys',text:'[read] 运作活①评论 · ## 版本目标'},
     {cls:'agent',text:'agent> 读活说明:'+issue.title},
     {cls:'agent',text:'agent> '+categoryWorkHint(issue.category)},
     {cls:'git',text:'[write] 改了 '+files.length+' 个文件:'+files.map(function(f){return f[0];}).join('、')},
@@ -728,7 +728,7 @@ function makeIssues(){
     'w1-2':{id:'w1-2',title:'纳入时 codehub clone 堵命令循环',category:'优化',tool:'claude_cli',kind:'business',status:'todo',source:'人建',metricIds:[],mr:null,week:'W34',version:'0.4.0-v4',workflow:'mattpocock-skills',skill:'systematic-debugging',desc:'纳入已有仓时 codehub clone 在某些网络下会卡住命令循环,需要加超时与重试。Cursor 还没接,这张活用 Claude CLI。'},
     'std-1':{id:'std-1',title:'规范铺底模块落地(standard/ 目录 + 铺底命令)',category:'构建',tool:'claude_cli',kind:'business',status:'pool',source:'人建',metricIds:['lag-1'],mr:null,week:'W34',version:'0.4.0-v4',workflow:'mattpocock-skills',skill:'—',desc:'把铺底落成 standard/ 目录 + 接入时写三份骨架 + 对账。'},
     'suggest-1':{id:'suggest-1',title:'建议活 · 拆过长的计划屏',category:'优化',tool:'claude_cli',kind:'business',status:'pool',source:'建议',metricIds:[],mr:null,week:'W34',version:'0.4.0-v4',workflow:'mattpocock-skills',skill:'—',desc:'运作活②「资产盘点 2026-W33」评审后生成的建议活草稿:crates/app-shell/src/screens/plan/ 建议按文件拆。人勾选后才真正建活。'},
-    'ops1-w34':{id:'ops1-w34',title:'运作活①更新指标 + 制定本周计划 2026-W34',category:'运作',tool:'claude_cli',kind:'ops',status:'done',doneDate:'08-17',source:'人触发',metricIds:[],mr:{id:'!bw/plan-2026-W34',label:'!bw/plan-2026-W34',status:'merged'},week:'W34',version:'0.4.0-v4',workflow:'week-planning',skill:'—',desc:'复盘上周 → 更新指标 → 引导本周目标与活清单。周目标写在这张活的评论里。'},
+    'ops1-w34':{id:'ops1-w34',title:'运作活①更新指标 + 制定版本计划 v0.4',category:'运作',tool:'claude_cli',kind:'ops',status:'done',doneDate:'08-17',source:'人触发',metricIds:[],mr:{id:'!bw/plan-2026-W34',label:'!bw/plan-2026-W34',status:'merged'},week:'W34',version:'0.4.0-v4',workflow:'week-planning',skill:'—',desc:'复盘上周 → 更新指标 → 确认版本 → 引导版本目标与活清单。版本目标写在这张活的评论里。'},
     'ops2-w33':{id:'ops2-w33',title:'运作活②资产盘点 2026-W33',category:'运作',tool:'claude_cli',kind:'ops',status:'review',source:'人触发',auto:false,metricIds:[],mr:{id:'!bw/ops-2026-W33',label:'!bw/ops-2026-W33',status:'open'},week:'W33',version:'0.3.0-v3',workflow:'asset-audit',skill:'—',desc:'盘点仓内资产。报告挂这张活的评论;建议活草稿等人勾选。周五到点会自动建,最远评审中。'},
     'ops3':{id:'ops3',title:'运作活③规范铺底',category:'运作',tool:'—',kind:'ops',status:'done',doneDate:'08-17',doneAssumed:true,source:'自动建(接入时)',auto:true,metricIds:[],mr:{id:'!bw/standard-4.0',label:'!bw/standard-4.0',status:'merged'},week:'W33',version:'0.3.0-v3',workflow:'—',skill:'—',desc:'路径 A,不起 agent。写入 .bw/PROJECT.md、issue-policy.toml、standard.toml,开 MR 等人合。仓根不写。'},
     'w33-legacy':{id:'w33-legacy',title:'减负线第一轮六切片(旧聊天式引擎整链退役第一轮)',category:'构建',tool:'claude_cli',kind:'business',status:'done',doneDate:'08-17',source:'人建',metricIds:['lead-1'],mr:{id:'#102',label:'PR #102(第一轮)',status:'merged'},week:'W33',version:'0.3.0-v3',workflow:'mattpocock-skills',skill:'—',desc:'六个切片依次删除旧聊天式工作流引擎的各处依赖,为第二轮收尾铺路。'},
@@ -749,7 +749,7 @@ function makeMetrics(){
 }
 function makeSkillsList(){
   return [
-    {slug:'week-planning',name:'更新指标与周计划',origin:'内置',desc:'复盘上周 → 更新指标 → 聊出本周目标与活清单。',uses:1},
+    {slug:'week-planning',name:'更新指标与版本计划',origin:'内置',desc:'复盘上周 → 更新指标 → 确认版本 → 聊出版本目标与活清单。',uses:1},
     {slug:'asset-audit',name:'资产盘点',origin:'内置',desc:'每周盘点;老仓历史回填是它的首次模式。',uses:1},
     {slug:'metrics-refresh',name:'更新指标',origin:'内置',desc:'把 .bw/metrics.toml 里的指标真采一遍。',uses:0},
     {slug:'project-handbook',name:'项目开发手册',origin:'内置',desc:'先读懂、先问你,你点头才写仓根 AGENTS.md。还没接上。',uses:0},
@@ -868,7 +868,7 @@ function freshState(){
       W34:{goal:'V4 MVP 从口述收口成设计事实源并出高保真;减负线合入 main',version:'0.4.0-v4'}
     }},
     health:{Workbench:{level:'yellow',reasons:[
-      {ok:true,text:'本周有周目标,3 张业务活有进展',jump:'week'},
+      {ok:true,text:'本周有版本目标,3 张业务活有进展',jump:'week'},
       {ok:false,text:'业务指标 5 个里 2 个无观测(灰)',jump:'lagging'},
       {ok:true,text:'上周有交付:PR #101 合入(08-17)、0.3.0-v3 重出包(08-17)',jump:'version'}
     ]}},
@@ -947,7 +947,7 @@ function onIssueCompleted(pid,issue){
   if(issue.category==='运作' && /运作活①/.test(issue.title)){
     var wk=issue.week||CURRENT_WEEK;
     state.weekPlans[pid]=state.weekPlans[pid]||{};
-    if(!state.weekPlans[pid][wk]){ state.weekPlans[pid][wk]={goal:'(演示)已由运作活①产出周目标',version:getProject(pid).version}; }
+    if(!state.weekPlans[pid][wk]){ state.weekPlans[pid][wk]={goal:'(演示)已由运作活①产出版本目标',version:getProject(pid).version}; }
   }
   if(issue.kind==='release'){
     state.releases[pid]=state.releases[pid]||[];
@@ -1075,7 +1075,7 @@ var ACTIONS = {
     if(existing){ nav('#/p/'+pid+'/session/'+existing.id); return; }
     var opsId='ops1-'+pid;
     state.issues[pid]=state.issues[pid]||{};
-    state.issues[pid][opsId]={ id:opsId,title:'运作活①更新指标 + 制定本周计划 2026-'+wk,category:'运作',tool:'claude_cli',kind:'ops',status:'todo',source:'人触发',metricIds:[],mr:null,week:wk,workflow:'更新指标与周计划',skill:'—',desc:'复盘上周 → 更新指标 → 引导本周目标与活清单。' };
+    state.issues[pid][opsId]={ id:opsId,title:'运作活①更新指标 + 制定版本计划',category:'运作',tool:'claude_cli',kind:'ops',status:'todo',source:'人触发',metricIds:[],mr:null,week:wk,workflow:'更新指标与版本计划',skill:'—',desc:'复盘上周 → 更新指标 → 确认版本 → 引导版本目标与活清单。' };
     state.ui.selectedIssue[pid]=opsId; state.ui.currentSession[pid]=opsId;
     nav('#/p/'+pid+'/session/'+opsId);
   },
@@ -1679,7 +1679,7 @@ function renderWall(){
       + '<div class="pcard-name">'+esc(p.name)+'</div>'
       + '<div class="pcard-oneliner">'+esc(p.oneLiner)+'</div>'
       + '<div class="pcard-meta">'
-      +   (wk?('<span>本周目标:'+esc(wk.length>30?wk.slice(0,30)+'…':wk)+'</span>'):'<span>本周目标:'+(pid==='Workbench'?'—':'✱ 未展开')+'</span>')
+      +   (wk?('<span>版本目标:'+esc(wk.length>30?wk.slice(0,30)+'…':wk)+'</span>'):'<span>版本目标:'+(pid==='Workbench'?'—':'✱ 未展开')+'</span>')
       +   '<span>上次交付 '+esc(p.lastDelivery)+'</span>'
       + '</div>'
       + '<div class="pcard-bar"><div class="pcard-bar-fill" style="width:'+pct+'%"></div></div>'
@@ -1862,7 +1862,7 @@ function renderOverview(pid){
   }).join('');
   var opsChips=opsChipsHTML(pid);
   return '<section data-screen="overview"><div class="ov-stack">'
-    + (showStartBanner ? ('<div class="ov-banner"><span>本周('+CURRENT_WEEK+')还没开始「更新指标 + 制定本周计划」</span><button class="btn btn-primary btn-sm" data-action="startWeek" data-arg=\'"'+pid+'"\'>开始本周</button></div>')
+    + (showStartBanner ? ('<div class="ov-banner"><span>还没开始「更新指标 + 制定版本计划」</span><button class="btn btn-primary btn-sm" data-action="startWeek" data-arg=\'"'+pid+'"\'>开始本版本</button></div>')
         : (ops1 && ops1.status!=='done' ? ('<div class="ov-banner"><span>运作活①已开工 · '+esc(STATUS_LABEL[ops1.status]||ops1.status)+'。去会话屏接着聊。</span><button class="btn btn-sm" data-action="goSession" data-arg=\'["'+pid+'","'+ops1.id+'"]\'>去会话屏</button></div>') : ''))
     + '<div class="card ov-block ov-block1" data-block="card">'
     +   '<div class="info">'
@@ -1884,7 +1884,7 @@ function renderOverview(pid){
     + '<div class="card ov-block" data-block="northstar"><div class="ov-block-title">北极星</div>'+metricCardHTML(pid,metrics.northstar,true)+'</div>'
     + '<div class="card ov-block" data-block="week">'
     +   '<div class="ov-block-title">本周计划进度</div>'
-    +   '<div class="week-goal"><b>'+CURRENT_WEEK+'</b> · '+esc(wk?wk.goal:'（周目标还没写进运作活①评论）')+(wk&&wk.assumed?' <span class="asterisk">✱</span>':'')+'</div>'
+    +   '<div class="week-goal"><b>'+CURRENT_WEEK+'</b> · '+esc(wk?wk.goal:'（这个版本还没写版本目标）')+(wk&&wk.assumed?' <span class="asterisk">✱</span>':'')+'</div>'
     +   '<div class="week-progress">'
     +     '<div style="width:'+segPct(weekProg.done)+'%;background:var(--green);"></div>'
     +     '<div style="width:'+segPct(weekProg.review)+'%;background:var(--amber);"></div>'
@@ -1964,7 +1964,7 @@ function listViewHTML(pid,issuesList){
   });
   var presets=[['open','开放'],['assigned','分配我的'],['mine','我的']];
   var presetHTML=presets.map(function(p){return '<button class="il-preset '+(p[0]==='open'?'on':'')+'" data-action="toastOnly" data-arg=\'"预设筛选(演示:开放)"\'>'+p[1]+'</button>';}).join('');
-  var planOpts=[['','全部'],['unscheduled','未排期']].concat(WEEKS.concat(HISTORY_WEEKS).map(function(w){return ['week:'+w,w];})).concat(VERSIONS.map(function(v){return ['version:'+v,v];}));
+  var planOpts=[['','全部'],['unscheduled','未排期']].concat(VERSIONS.map(function(v){return ['version:'+v,v];}));
   var stageOpts=[['','全部'],['Todo','已排期'],['InProgress','进行中'],['InReview','待评审'],['Blocked','阻塞'],['Done','完成'],['Cancelled','已取消']];
   function sel(opts,cur,bind){return '<select class="il-dd-btn" data-bindchange="'+bind+'">'+opts.map(function(o){return '<option value="'+esc(o[0])+'" '+(o[0]===cur?'selected':'')+'>'+esc(o[1])+'</option>';}).join('')+'</select>';}
   var bar='<div class="il-bar"><div class="il-presets">'+presetHTML+'</div><div class="il-tools">'
@@ -1999,8 +1999,8 @@ function planDetailModalHTML(pid,di){
     + '<option value="'+seg+'" selected>'+esc(SEG_LABEL[seg]||di.status)+'</option>'
     + allowed.map(function(s){return '<option value="'+s+'">'+esc(SEG_LABEL[s]||s)+'</option>';}).join('')
     + '</select>';
-  var planOpts=[['unscheduled','未排期']].concat(WEEKS.concat(HISTORY_WEEKS).map(function(w){return ['week:'+w,'周·'+w];})).concat(VERSIONS.map(function(v){return ['version:'+v,'版本·'+v];}));
-  var curPlan = di.week?('week:'+di.week):(di.version?('version:'+di.version):'unscheduled');
+  var planOpts=[['unscheduled','未排期']].concat(VERSIONS.map(function(v){return ['version:'+v,v];}));
+  var curPlan = di.version?('version:'+di.version):'unscheduled';
   var planSel='<select class="select" style="width:100%;" data-set-plan="1" data-pid="'+pid+'" data-issue="'+di.id+'">'+planOpts.map(function(o){return '<option value="'+o[0]+'" '+(o[0]===curPlan?'selected':'')+'>'+esc(o[1])+'</option>';}).join('')+'</select>';
   var foot='';
   if(seg==='unassigned'){ foot='<button class="btn btn-sm btn-secondary" data-action="scheduleToWeek" data-arg=\'["'+pid+'","'+di.id+'"]\'>schedule</button>'; }
@@ -2037,19 +2037,17 @@ function renderPlan(pid){
   var viewMode=state.ui.planViewMode[pid]||'board';
 
   var viewOpts=[['all','全部 issue']];
-  WEEKS.concat(HISTORY_WEEKS).forEach(function(w){ viewOpts.push(['week:'+w, '2026-'+w+(w===CURRENT_WEEK?' · 本周':'')+(HISTORY_WEEKS.indexOf(w)>=0?' · 回填':'')]); });
-  VERSIONS.forEach(function(v){ viewOpts.push(['version:'+v, '版本 · '+v]); });
+  VERSIONS.forEach(function(v){ viewOpts.push(['version:'+v, v]); });
   function viewSel(){return '<select class="il-dd-btn" data-bindchange="ui.planLeft.'+pid+'">'+viewOpts.map(function(o){return '<option value="'+o[0]+'" '+(o[0]===left?'selected':'')+'>'+esc(o[1])+'</option>';}).join('')+'</select>';}
 
   var title, issuesList;
+  if(left.indexOf('week:')===0){ left='all'; state.ui.planLeft[pid]='all'; }
   if(left==='all'){ title='全部 issue'; issuesList=allIssuesArr(pid); }
-  else if(left.indexOf('week:')===0){ var wk=left.slice(5); title='2026-'+wk+(wk===CURRENT_WEEK?' · 本周':'')+(HISTORY_WEEKS.indexOf(wk)>=0?' · 回填':''); issuesList=allIssuesArr(pid).filter(function(i){return i.week===wk;}); }
-  else { var vn=left.slice(8); title='版本 · '+vn; issuesList=allIssuesArr(pid).filter(function(i){return i.version===vn;}); }
+  else { var vn=left.slice(8); title=vn; issuesList=allIssuesArr(pid).filter(function(i){return i.version===vn;}); }
 
   var rightBtns='';
   if(left==='all'){ rightBtns='<button class="btn btn-sm btn-secondary" data-action="toastOnly" data-arg=\'"演示:在 codehub 建里程碑(版本)"\'>创建版本</button><button class="btn btn-sm btn-secondary" data-action="toastOnly" data-arg=\'"演示:删 codehub 里程碑 + 摘 bw:plan 标签"\'>删除版本</button>'; }
-  else if(left.indexOf('version:')===0){ rightBtns=''; }
-  else { rightBtns='<button class="btn btn-sm" data-action="openReleaseModal" data-arg=\'"'+pid+'"\'>发版本</button>'; }
+  else if(left.indexOf('version:')===0){ rightBtns='<button class="btn btn-sm" data-action="openReleaseModal" data-arg=\'"'+pid+'"\'>发版本</button>'; }
   var viewToggleLabel=viewMode==='board'?'☰ 列表':'▦ 看板';
   var toolbar='<div class="plan-toolbar"><div class="left">'+esc(title)+'</div><div class="right">'+viewSel()+rightBtns
     + '<button class="btn btn-sm btn-primary" data-action="newIssueDraft" data-arg=\'"'+pid+'"\'>新建issue</button>'
@@ -2057,33 +2055,22 @@ function renderPlan(pid){
     + '</div></div>';
 
   var weekHead='';
-  if(left.indexOf('week:')===0){
-    var wk=left.slice(5);
-    if(HISTORY_WEEKS.indexOf(wk)>=0){
-      var mg=HISTORY_WEEK_MERGED[wk]||0;
-      weekHead='<div class="goal-box">(回填,无周目标)本周合入 '+mg+' 个 MR</div>';
-    } else {
-      var wp=getPath(state,'weekPlans.'+pid+'.'+wk);
-      var prog=weekProgress(pid,wk);
-      var totalW=prog.todo+prog.doing+prog.review+prog.done;
-      function segPct(n){ return totalW? Math.round(n/totalW*100) : 0; }
-      weekHead='<div class="goal-box">'+esc(wp?wp.goal:'（这一周还没写周目标)')+'</div>'
-        + '<div class="week-progress">'
-        +   '<div style="width:'+segPct(prog.done)+'%;background:var(--green);"></div>'
-        +   '<div style="width:'+segPct(prog.review)+'%;background:var(--amber);"></div>'
-        +   '<div style="width:'+segPct(prog.doing)+'%;background:var(--clay);"></div>'
-        +   '<div style="width:'+segPct(prog.todo)+'%;background:#E4DDC8;"></div>'
-        + '</div>'
-        + '<div class="ops-chip-row">'+opsChipsHTML(pid)+'</div>';
-    }
+  if(left.indexOf('version:')===0){
+    var wp=getPath(state,'weekPlans.'+pid+'.'+CURRENT_WEEK);
+    var prog=weekProgress(pid,CURRENT_WEEK);
+    var totalW=prog.todo+prog.doing+prog.review+prog.done;
+    function segPct(n){ return totalW? Math.round(n/totalW*100) : 0; }
+    weekHead='<div class="goal-box">'+esc(wp?wp.goal:'（这个版本还没写版本目标）')+'</div>'
+      + '<div class="week-progress">'
+      +   '<div style="width:'+segPct(prog.done)+'%;background:var(--green);"></div>'
+      +   '<div style="width:'+segPct(prog.review)+'%;background:var(--amber);"></div>'
+      +   '<div style="width:'+segPct(prog.doing)+'%;background:var(--clay);"></div>'
+      +   '<div style="width:'+segPct(prog.todo)+'%;background:#E4DDC8;"></div>'
+      + '</div>'
+      + '<div class="ops-chip-row">'+opsChipsHTML(pid)+'</div>';
   }
 
-  var body;
-  if(left.indexOf('week:')===0 && HISTORY_WEEKS.indexOf(left.slice(5))>=0 && issuesList.length===0){
-    body='<div class="detail-empty" style="margin-top:10px;">这一周是接入时由「资产盘点」首次模式从 git 历史回填出来的。当时项目还没在 Workbench 上运作,所以没有活卡,也不倒推周目标。</div>';
-  } else {
-    body = viewMode==='list' ? listViewHTML(pid,issuesList) : kanbanHTML(pid,issuesList);
-  }
+  var body = viewMode==='list' ? listViewHTML(pid,issuesList) : kanbanHTML(pid,issuesList);
 
   var detailModal='';
   var di=selIssue?getIssue(pid,selIssue):null;
@@ -2160,7 +2147,7 @@ function cronBlockHTML(pid){
     + crons.map(function(c){
       return '<tr><td>'+esc(c.name)+'</td><td><span class="chip">'+esc(c.trigger||'到点建活')+'</span></td><td class="mono">'+esc(c.schedule)+'</td><td>'+esc(c.rule||'')+'</td></tr>';
     }).join('') + '</tbody></table></div>'
-    + '<div class="cfg-readonly-note"><strong>没有定时表</strong>,所以没有「下次触发」列。到点只会自动<strong>建</strong>活,绝不自动完成。资产盘点读 issue-policy 的周五节律;运作活①仍是人点「开始本周」。</div></div>';
+    + '<div class="cfg-readonly-note"><strong>没有定时表</strong>,所以没有「下次触发」列。到点只会自动<strong>建</strong>活,绝不自动完成。资产盘点读 issue-policy 的周五节律;运作活①仍是人点「开始本版本」。</div></div>';
 }
 function standardBlockHTML(pid){
   var proj=getProject(pid)||{};

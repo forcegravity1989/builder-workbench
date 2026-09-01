@@ -73,8 +73,8 @@ pub enum Command {
     ReconcileStandard { project_id: ProjectId },
 
     // ── 计划 ──────────────────────────────────────────────
-    /// 总览「开始本周」:建本周运作活①并开工。同一标题做过(含已完成)不再建。
-    /// 判据是「本周文件不存在」——查文件,不查任何索引表。
+    /// 总览「开始本版本」:建本周运作活①并开工。同一标题做过(含已完成)不再建。
+    /// 判据是标题 + 本 ISO 周创建的 `v0.x` 标签。
     StartWeekPlanning { project_id: ProjectId, week: String },
     /// 人确认草稿后真的建活(`origin = agent_split`)。
     ConfirmWeekDraft {
@@ -114,9 +114,15 @@ pub enum Command {
         note: String,
         included: Vec<IssueId>,
     },
-    /// 删一个人起名的版本:给挂着 `bw:plan:<name>` 的活摘掉该标签,再删同名
-    /// 里程碑。周版本每周一固定出现,周格式标题拒收。
+    /// 删一个未发的 `v0.x` 版本:给挂着 `bw:plan:<name>` 的活摘掉该标签,再删同名
+    /// 里程碑。已发的号拒收。
     DeletePlanVersion { project_id: ProjectId, name: String },
+    /// 未发版本改名:同步里程碑标题、标签定义、已打在 issue 上的 `bw:plan:`。
+    RenamePlanVersion {
+        project_id: ProjectId,
+        from: String,
+        to: String,
+    },
     /// 发版本:给选中的活写版本号 + 建远端 codehub/GitHub Release + 打 `bw:released:*` 标签。
     CutRelease {
         project_id: ProjectId,
@@ -279,7 +285,7 @@ pub enum Event {
         week: String,
     },
     /// 本周那张运作活①还在路上,这次什么
-    /// 都没做。**不是错误** —— 人再点一次「开始本周」该被平静地挡住,而不是
+    /// 都没做。**不是错误** —— 人再点一次「开始本版本」该被平静地挡住,而不是
     /// 收到一句「这张活现在是评审中,不是能开工的状态」。
     WeekPlanInProgress {
         project_id: ProjectId,
@@ -310,6 +316,12 @@ pub enum Event {
         name: String,
         /// 摘掉 `bw:plan` 的活有几张。
         issues_cleared: u32,
+    },
+    PlanVersionRenamed {
+        project_id: ProjectId,
+        from: String,
+        to: String,
+        issues_moved: u32,
     },
     IssueCategorySet {
         id: IssueId,

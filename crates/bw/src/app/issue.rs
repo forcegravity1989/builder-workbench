@@ -47,9 +47,7 @@ impl App {
             (IssueKind::Ops, _) | (_, None) => Vec::new(),
             (_, Some(c)) => vec![format!("bw:category:{}", crate::model::category_key(c))],
         };
-        // 一张活只属于一个版本。人起名的版本只打 bw:plan,周版本只打
-        // bw:week。壳看自定义版本时 viewing_week 会被拼成本周,两个都传来
-        // 就丢掉周,只留版本。
+        // 一张活只属于一个版本。只打 bw:plan:v0.x,不再写 bw:week。
         let (week_of, plan) = if !plan.is_empty() {
             (String::new(), plan)
         } else {
@@ -144,8 +142,13 @@ impl App {
                 .ensure_prompt_assets()
                 .map(|d| super::bootstrap::references_for(&issue, &d))
                 .unwrap_or_default();
-            let system_prompt =
-                super::bootstrap::agent_system_prompt(&issue, skill.as_ref(), &references);
+            let version_context = self.version_context_for(&issue).await;
+            let system_prompt = super::bootstrap::agent_system_prompt(
+                &issue,
+                skill.as_ref(),
+                &references,
+                &version_context,
+            );
             let injected = match bw_engine::open_design::discover_web_url().await {
                 Some(url) => bw_engine::open_design::start_run(&url, &prompt, &system_prompt)
                     .await
@@ -213,8 +216,13 @@ impl App {
             .ensure_prompt_assets()
             .map(|d| super::bootstrap::references_for(&issue, &d))
             .unwrap_or_default();
-        let system_prompt =
-            super::bootstrap::agent_system_prompt(&issue, skill.as_ref(), &references);
+        let version_context = self.version_context_for(&issue).await;
+        let system_prompt = super::bootstrap::agent_system_prompt(
+            &issue,
+            skill.as_ref(),
+            &references,
+            &version_context,
+        );
         let mut plan = build_startup_plan(agent, &prompt, &system_prompt, &run_dir)
             .map_err(|e| AppError::Exec(e.to_string()))?;
         // 挂整个 asset_root 给 agent 读:技能 + references + vendor 库都在下面。
@@ -314,8 +322,13 @@ impl App {
             .ensure_prompt_assets()
             .map(|d| super::bootstrap::references_for(issue, &d))
             .unwrap_or_default();
-        let system_prompt =
-            super::bootstrap::agent_system_prompt(issue, skill.as_ref(), &references);
+        let version_context = self.version_context_for(issue).await;
+        let system_prompt = super::bootstrap::agent_system_prompt(
+            issue,
+            skill.as_ref(),
+            &references,
+            &version_context,
+        );
 
         let agent = super::tools::orca_agent(&issue.tool)?;
         let mut sid = conv.claude_session_id.clone();
@@ -709,6 +722,19 @@ impl App {
                 let _ = crate::git::delete_merged_branch(&ws, &branch).await;
             }
         }
+    }
+
+    async fn version_context_for(&self, issue: &Issue) -> String {
+        if issue.workflow != super::OPS1_WORKFLOW {
+            return String::new();
+        }
+        let Ok(project) = self.project_of(issue.project_id).await else {
+            return String::new();
+        };
+        let Ok((plans, released)) = self.collect_version_names(&project).await else {
+            return String::new();
+        };
+        crate::version::context_block(&crate::version::inventory(&plans, &released))
     }
 
     pub async fn issue_or_err(&self, id: IssueId) -> Result<Issue> {
