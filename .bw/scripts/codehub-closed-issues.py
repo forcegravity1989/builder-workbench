@@ -14,7 +14,7 @@
 
     codehub-cli issue list --state closed --json iid,closed_at --limit 1000
 
-铺一次就归这个项目,buddy 之后再也不覆盖它 —— 要改口径直接改这里。
+铺一次就归这个项目,Workbench 之后再也不覆盖它 —— 要改口径直接改这里。
 """
 
 import argparse

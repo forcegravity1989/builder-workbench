@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>buddy MVP · 使用指南</title>
+<title>Workbench MVP · 使用指南</title>
 <style>
   :root{
     /* 配色取自 crates/app-shell/assets/hifi.css 的 :root（V4 高保真原型正本），非自造 */
@@ -168,7 +168,7 @@
 <body>
 
 <aside class="sidebar">
-  <div class="brand"><div class="mark">buddy<span class="dot">.</span></div><div class="sub">MVP · 使用指南</div></div>
+  <div class="brand"><div class="mark">Workbench<span class="dot">.</span></div><div class="sub">MVP · 使用指南</div></div>
   <nav>
     <div class="nav-group">
       <div class="nav-group-title">怎么用</div>
@@ -197,9 +197,9 @@
 
     <!-- ============ U0 每周怎么转 ============ -->
     <section class="screen active" id="u0" data-title="每周怎么转" data-sec-name="怎么用">
-      <div class="eyebrow">buddy MVP · 使用指南</div>
+      <div class="eyebrow">Workbench MVP · 使用指南</div>
       <h1 class="disp">接进来，每周转一圈</h1>
-      <p class="lede">buddy 是单人项目工作台。你说清楚要什么，在路口点头；查资料、写代码、开 MR 交给 agent。正本在仓和代码平台上，不在 buddy 本地库里。</p>
+      <p class="lede">Workbench 是单人项目工作台。你说清楚要什么，在路口点头；查资料、写代码、开 MR 交给 agent。正本在仓和代码平台上，不在 Workbench 本地库里。</p>
 
       <div class="banner">
         一条主线：<strong>接进来 → 定本周 → 派活 → agent 干 → 你验收</strong>。
@@ -289,7 +289,7 @@
     <section class="screen" id="u1" data-title="第 0 站 · 接入项目" data-sec-name="怎么用">
       <div class="eyebrow">怎么用 · 第 0 站</div>
       <h1 class="disp">把一个项目接进来</h1>
-      <p class="lede">只做一次。选仓、填名片、buddy 自动铺 <code>.bw/</code> 骨架并开 MR。仓根一个字不动。合入由你点。</p>
+      <p class="lede">只做一次。选仓、填名片、Workbench 自动铺 <code>.bw/</code> 骨架并开 MR。仓根一个字不动。合入由你点。</p>
       <div class="res">
         <div class="h">这一站能查到</div>
         <ul>
@@ -310,7 +310,7 @@
 
       <h2 class="sec"><span class="n">接：两步</span></h2>
       <div class="ops">
-        <div class="li"><div class="n">1</div><div class="t">点「+ 接入项目」。<strong>第一步只问一件事：这个项目在哪。</strong>光标点进「项目地址」那格，buddy 就去问平台要你账号下的仓，列成下拉框；打字即在这批里检索，点一行即选中。不想理列表就直接把 <code>owner/repo</code> 打进去，一样算数。框里右边那个 ⟳ 是重新拉一次。</div></div>
+        <div class="li"><div class="n">1</div><div class="t">点「+ 接入项目」。<strong>第一步只问一件事：这个项目在哪。</strong>光标点进「项目地址」那格，Workbench 就去问平台要你账号下的仓，列成下拉框；打字即在这批里检索，点一行即选中。不想理列表就直接把 <code>owner/repo</code> 打进去，一样算数。框里右边那个 ⟳ 是重新拉一次。</div></div>
         <div class="li"><div class="n">2</div><div class="t"><strong>第二步是基础信息</strong>，四格：项目名称、你想做什么、最像的对标、三个月长成什么样。</div></div>
       </div>
       <div class="callout warn">
@@ -318,14 +318,14 @@
         <div class="body"><strong>列不出来的时候</strong>会把命令的原话摆给你看（多半是没装或没登录），<strong>不会摆一张假列表</strong>。</div>
       </div>
 
-      <h3 class="sub">第二步顶上：这个仓被 buddy 接管过没有</h3>
+      <h3 class="sub">第二步顶上：这个仓被 Workbench 接管过没有</h3>
       <p>判据是去它远端读 <code>.bw/project.toml</code>：</p>
       <div class="ktable-wrap">
         <table class="ktable">
           <thead><tr><th>你会看到</th><th>意思</th><th>你该做什么</th></tr></thead>
           <tbody>
-            <tr><td>已经被 buddy 接管过</td><td>同事先接过，或者你以前接过</td><td>四格是回显出来的，直接改就行；接进来时不会覆盖仓里已有的字</td></tr>
-            <tr><td>还没被 buddy 接管过</td><td>仓在、就是没这份文件</td><td>四格自己填</td></tr>
+            <tr><td>已经被 Workbench 接管过</td><td>同事先接过，或者你以前接过</td><td>四格是回显出来的，直接改就行；接进来时不会覆盖仓里已有的字</td></tr>
+            <tr><td>还没被 Workbench 接管过</td><td>仓在、就是没这份文件</td><td>四格自己填</td></tr>
             <tr><td>找不到这个仓</td><td>地址敲错了、私有仓没权限、没登录</td><td><strong>先把地址改对</strong>，接一个不存在的仓后面每步都会失败</td></tr>
             <tr><td>没查成</td><td>没登录、网不通、或没从列表点选（没带上默认分支时会去查 <code>main</code>）</td><td>照样能接；仓里真有名片的话，接入时以仓里的为准</td></tr>
           </tbody>
@@ -361,7 +361,7 @@
       <h2 class="sec"><span class="n">仓里会多什么、不会多什么</span></h2>
       <div class="res">
         <ul>
-          <li><span class="b"></span><div>buddy 写进仓的东西<strong>全在 <code>.bw/</code></strong>。仓根 <code>README.md</code> / <code>AGENTS.md</code> / <code>CLAUDE.md</code> 这一步一个字不碰。自带技能也不进你的仓。</div></li>
+          <li><span class="b"></span><div>Workbench 写进仓的东西<strong>全在 <code>.bw/</code></strong>。仓根 <code>README.md</code> / <code>AGENTS.md</code> / <code>CLAUDE.md</code> 这一步一个字不碰。自带技能也不进你的仓。</div></li>
           <li><span class="b"></span><div>第 4 步没成，前面仍然算数：项目已接进来、仓已在本机。配置屏没有第二次铺底，点「对一遍账」能看见缺哪些件。要再铺，接入会认开着的同标题活，不会多建一张。</div></li>
           <li><span class="b"></span><div>以前铺过、MR 没合、issue 也关了：默认分支没有 <code>.bw/project.toml</code>，仍算没纳入过，接入后再开一张新铺底。总览③写「已完成」只看默认分支上有没有 <code>.bw/standard.toml</code>，关过的旧活不冒充铺过。</div></li>
         </ul>
@@ -410,8 +410,8 @@
       <div class="ops">
         <div class="li"><div class="n">1</div><div class="t">项目墙点进这个项目。侧栏默认停在「总览」。</div></div>
         <div class="li"><div class="n">2</div><div class="t">从上往下看：名片和健康灯（名片上有在研版本和项目群）、北极星、本周计划进度、滞后、引领、代码仓统计、发版记录。</div></div>
-        <div class="li"><div class="n">3</div><div class="t">本会话第一次打开这个项目，buddy 会自己采一轮指标和仓统计。卡上先写「正在采…」，采完折线出现。还想再采，用各块上的「重新采集」。</div></div>
-        <div class="li"><div class="n">4</div><div class="t">顶栏「刷新」会先把打开着的项目拉到远端最新，再重采。主检出上若只脏了读数或接入留下的未提交名片，buddy 会先让开再拉。只重画界面、不拉仓，会继续看见同事已经合进主干的旧 <code>metrics.toml</code>。</div></div>
+        <div class="li"><div class="n">3</div><div class="t">本会话第一次打开这个项目，Workbench 会自己采一轮指标和仓统计。卡上先写「正在采…」，采完折线出现。还想再采，用各块上的「重新采集」。</div></div>
+        <div class="li"><div class="n">4</div><div class="t">顶栏「刷新」会先把打开着的项目拉到远端最新，再重采。主检出上若只脏了读数或接入留下的未提交名片，Workbench 会先让开再拉。只重画界面、不拉仓，会继续看见同事已经合进主干的旧 <code>metrics.toml</code>。</div></div>
         <div class="li"><div class="n">5</div><div class="t">改项目名称 / 想做什么 / 对标 / 三个月长成什么样，或改在研版本、项目群：点「编辑项目名片」。保存后这张活在「评审中」（计划屏右上角下拉切「全部 issue」就能看见，不进待办池）。总览横幅或看板拖到「已完成」合入。</div></div>
       </div>
 
@@ -601,7 +601,7 @@
     <section class="screen" id="u1f" data-title="第 6 站 · 定时盘点" data-sec-name="怎么用">
       <div class="eyebrow">怎么用 · 第 6 站</div>
       <h1 class="disp">到点建一张盘点，停在评审中</h1>
-      <p class="lede">周五 09:00（默认可改）buddy 开着，会自己建「资产盘点」并开工，最远评审中。完成仍要你点。每天 20:00 自动采一轮 B 类指标。</p>
+      <p class="lede">周五 09:00（默认可改）Workbench 开着，会自己建「资产盘点」并开工，最远评审中。完成仍要你点。每天 20:00 自动采一轮 B 类指标。</p>
       <div class="res">
         <div class="h">这一站能查到</div>
         <ul>
@@ -614,7 +614,7 @@
       <h2 class="sec"><span class="n">操作</span></h2>
       <div class="ops">
         <div class="li"><div class="n">1</div><div class="t">配置屏能看见「资产盘点 · 到点自动建 · fri 09:00」，还有一行「B 类指标采集 · daily 20:00」。盘点节律写在 <code>.bw/issue-policy.toml</code>；B 类日采固定 20:00。运作活①仍是人点「开始本周」。</div></div>
-        <div class="li"><div class="n">2</div><div class="t">buddy 开着、过了本周那个时刻，计划屏会出现「资产盘点 YYYY-Www」。类别锁成「运作」，改不了五阶段。</div></div>
+        <div class="li"><div class="n">2</div><div class="t">Workbench 开着、过了本周那个时刻，计划屏会出现「资产盘点 YYYY-Www」。类别锁成「运作」，改不了五阶段。</div></div>
         <div class="li"><div class="n">3</div><div class="t">这张活会自己开工。看会话或详情：最远到评审中。合入、点完成仍是你来。</div></div>
         <div class="li"><div class="n">4</div><div class="t">周一回到总览，开始下一圈。盘点报告挂在这张活的评论里；微重构只出建议，不直接改业务代码。</div></div>
       </div>
@@ -623,7 +623,7 @@
       <div class="res">
         <ul>
           <li><span class="b"></span><div><strong>对远端代码仓</strong>：建一张标题固定的运作活（本周有了就不建第二张），打本周标签，开工后改状态。每周模式只对账、写报告；首次模式才给老 issue 补周标签。</div></li>
-          <li><span class="b"></span><div><strong>对你的机器</strong>：buddy 开着每 60 秒判一次「本周这一刻过了没有」。当时没开着，下次开着会补建。注入的是资产盘点剧本，不是构建类那套。</div></li>
+          <li><span class="b"></span><div><strong>对你的机器</strong>：Workbench 开着每 60 秒判一次「本周这一刻过了没有」。当时没开着，下次开着会补建。注入的是资产盘点剧本，不是构建类那套。</div></li>
           <li><span class="b"></span><div><strong>对 <code>.bw/</code></strong>：每周盘点对照指纹看规范件落后没有，只记差异、不擅自升级。仓根 <code>AGENTS.md</code> 不在这一周写。</div></li>
         </ul>
       </div>
@@ -632,7 +632,7 @@
       <div class="res">
         <ul>
           <li><span class="b"></span><div>多一张运作活②，类别显示「运作」、改不了五阶段。</div></li>
-          <li><span class="b"></span><div>buddy 开着、过了本机 20:00，会自动采一轮 B 类，按<strong>当天</strong>写入账本（同一天再采覆盖）。点「采集」也能立刻再采今天。</div></li>
+          <li><span class="b"></span><div>Workbench 开着、过了本机 20:00，会自动采一轮 B 类，按<strong>当天</strong>写入账本（同一天再采覆盖）。点「采集」也能立刻再采今天。</div></li>
         </ul>
       </div>
 
@@ -683,7 +683,7 @@
             <line x1="164" y1="102" x2="196" y2="102" stroke="var(--muted-2)" stroke-width="2" marker-end="url(#hArrow)"/>
 
             <rect x="200" y="70" width="150" height="64" rx="10" fill="var(--accent-soft)" stroke="var(--accent)" stroke-width="1.6"/>
-            <text x="275" y="97" text-anchor="middle" font-size="12.5" font-weight="700" fill="var(--accent-ink)">buddy 综合判定</text>
+            <text x="275" y="97" text-anchor="middle" font-size="12.5" font-weight="700" fill="var(--accent-ink)">Workbench 综合判定</text>
             <text x="275" y="114" text-anchor="middle" font-size="11" fill="var(--accent-ink)">不能手点</text>
 
             <line x1="354" y1="102" x2="386" y2="102" stroke="var(--muted-2)" stroke-width="2" marker-end="url(#hArrow)"/>
@@ -788,7 +788,7 @@
   var crumbCur = document.getElementById('crumb-cur');
   var badge = document.getElementById('top-badge');
   var content = document.getElementById('content');
-  var KEY = 'buddy-v4-guide-screen';
+  var KEY = 'Workbench-v4-guide-screen';
   window.go = show;
 
   function show(id){

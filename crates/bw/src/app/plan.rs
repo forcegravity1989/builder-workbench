@@ -320,7 +320,7 @@ impl App {
     }
 }
 
-/// 拉主干之前清掉 buddy 自己留在主检出上的预览:
+/// 拉主干之前清掉 Workbench 自己留在主检出上的预览:
 /// 读数挪进账本;接入写下的名片恢复成 HEAD(正本在已合入的 MR 里)。
 /// 人自己的源码脏文件不动。
 pub(super) async fn salvage_main_checkout_dirt(ws: &std::path::Path) -> String {

@@ -126,7 +126,7 @@ pub enum Req {
         error: Option<String>,
     },
     /// 接入屏:点了某一行仓 —— 去读那个仓远端的 `.bw/project.toml`,
-    /// 读得到就说明这个项目已经被 buddy 接管过,名片直接回显。
+    /// 读得到就说明这个项目已经被 Workbench 接管过,名片直接回显。
     PickRepo {
         github: bool,
         host: String,
@@ -187,7 +187,7 @@ impl Bridge {
     }
 }
 
-/// buddy 本机数据(注册表、设置、会话)落在哪个目录。和旧壳同一个位置,
+/// Workbench 本机数据(注册表、设置、会话)落在哪个目录。和旧壳同一个位置,
 /// 但不再有 `.db` 文件 —— 全是 TOML/JSONL。`BW_DB` 仍可覆盖目录(取 parent)。
 ///
 /// **Windows 默认落 `D:\builders-workbench\data`**(D 盘在时;与
@@ -245,8 +245,8 @@ pub fn workspaces_root() -> PathBuf {
         })
 }
 
-/// buddy 自己的资产放哪(技能库摊在 `<这里>/skills/`,注册表/设置/会话也在
-/// 这儿)。**跟着本机数据目录走,不跟工作区走** —— 它是 buddy 自带的东西,
+/// Workbench 自己的资产放哪(技能库摊在 `<这里>/skills/`,注册表/设置/会话也在
+/// 这儿)。**跟着本机数据目录走,不跟工作区走** —— 它是 Workbench 自带的东西,
 /// 和用户把仓放在哪没关系;工作区根目录是可以随时改的,资产不该跟着搬家。
 pub fn asset_root() -> PathBuf {
     data_dir().join("assets")
@@ -338,7 +338,7 @@ async fn list_repos(github: bool, host: &str) -> (Vec<crate::vm::RepoRowVm>, Opt
     }
 }
 
-/// 读某个仓远端的 `.bw/project.toml`。读得到 = 这个项目已经被 buddy 接管过
+/// 读某个仓远端的 `.bw/project.toml`。读得到 = 这个项目已经被 Workbench 接管过
 /// (你自己接过、或者同事先接的),名片四个字段直接回显,人不用再填一遍。
 /// 读不到就是 `None` —— **不猜、不拿仓描述冒充名片**。
 async fn fetch_prefill(
@@ -431,7 +431,7 @@ pub fn spawn(deep_link: DeepLink) -> Bridge {
         .spawn(move || {
             // 内核这条线程一处 panic 就整条死掉,而界面那头只会停在最后一份
             // ViewModel 上 —— 之后发出去的命令石沉大海,**没有任何提示**。
-            // 人以为 buddy 还在正常跑,其实早就没人接活了。裹一层,把死因送进
+            // 人以为 Workbench 还在正常跑,其实早就没人接活了。裹一层,把死因送进
             // 「起不来」那块红字:**宁可显眼地坏掉,也不要安静地坏掉。**
             let vm_tx_panic = vm_tx.clone();
             let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(move || {
@@ -609,7 +609,7 @@ pub fn spawn(deep_link: DeepLink) -> Bridge {
 
                 // 定时判据 60s 一次 —— 它查的是「本周有没有那张活」,快一点慢一点都
                 // 不影响结论。(终端字节 60ms 节拍已随 PTY 封存删掉 —— 桌面 ▶跑 走
-                // Orca 本地 pipe,字节在 Orca 那个 tab 里,不经过 buddy。)
+                // Orca 本地 pipe,字节在 Orca 那个 tab 里,不经过 Workbench。)
                 let mut sched_tick = tokio::time::interval(Duration::from_secs(60));
                 loop {
                     let req = tokio::select! {
@@ -1271,7 +1271,7 @@ pub fn spawn(deep_link: DeepLink) -> Bridge {
                     .unwrap_or_else(|| "(panic 没带可读的原因)".into());
                 let _ = vm_tx_panic.send(Vm {
                     fatal: Some(format!(
-                        "内核线程崩了,已经没人处理命令了 —— 请重启 buddy。\n死因:{why}"
+                        "内核线程崩了,已经没人处理命令了 —— 请重启 Workbench。\n死因:{why}"
                     )),
                     ..Default::default()
                 });

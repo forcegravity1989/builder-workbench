@@ -1,6 +1,6 @@
-# 干指标活需要知道的 buddy 规范
+# 干指标活需要知道的 Workbench 规范
 
-> 这份是 buddy 给干「指标」活的 agent 的阶段规范补充。主系统提示词里的四条
+> 这份是 Workbench 给干「指标」活的 agent 的阶段规范补充。主系统提示词里的四条
 > 铁律照样守,这里讲指标这一件特有的事。开工前读它,和主提示词不是一回事。
 
 ## 一条判据贯穿全设计
@@ -24,26 +24,26 @@
 2. **手填** `collect = { kind = "manual" }`
 
 连 git、连 GitHub、连 codehub、连内网系统、读本地文件 —— 全是脚本自己的事。
-buddy 不认识这些系统,它只会「起进程、传时间窗、读标准输出的 JSON」。
+Workbench 不认识这些系统,它只会「起进程、传时间窗、读标准输出的 JSON」。
 接口没有时,也可以先写一份采集规范,脚本去读规范并调模型出数——仍是脚本,不是第三种。
 
 **不要把总览已经在画的项目指标再写进业务指标。** 提交数、合入 MR 数、开放
-issue 数 buddy 自动画、不点灯。业务指标再写一条「每周合入 MR 数」是重复。
+issue 数 Workbench 自动画、不点灯。业务指标再写一条「每周合入 MR 数」是重复。
 
-## 脚本窗口由 buddy 给,不是脚本自己决定
+## 脚本窗口由 Workbench 给,不是脚本自己决定
 
-buddy 起脚本时追加:`--since YYYY-MM-DD --until YYYY-MM-DD --granularity week`
+Workbench 起脚本时追加:`--since YYYY-MM-DD --until YYYY-MM-DD --granularity week`
 (左闭右开)。面板要几周就传几周,**采多少和画多少永远一致**。脚本不能自己
 决定窗口。
 
 **标准输出必须是 UTF-8。** Windows 控制台默认常是 gbk,中文 `unit` 会乱码,
-buddy 解析失败或读到错值。脚本里显式把 stdout 设成 UTF-8(Python:
+Workbench 解析失败或读到错值。脚本里显式把 stdout 设成 UTF-8(Python:
 `sys.stdout.reconfigure(encoding="utf-8")`)。
 
 **A 类脚本吐按周序列,不是一个当下值:**
 `{"points":[{"week":"2026-W35","value":8},…]}`。只给 `{"value":8}` 会落在
 窗口最后一周一个孤点、前几周断开——折线能画,但看不出走势。B 类才是
-`{"value":12}`。**判成 B 不等于不写脚本**——`collect` 仍是 `kind = "script", retro = false`,必须有 `run`。不写 `run` 就是写了一半。buddy 点采集时跑脚本,把**当天**的值记进账本 `.bw/metrics/readings.jsonl`(键是日历日 `YYYY-MM-DD`,同一天再采覆盖这一行)。buddy 开着、过了本机 20:00,还会自动采一轮 B 类(失败也盖今日戳,避免反复打失败脚本)。展示按周,取那一周日期最大的一天。C 类在总览卡手填今天的数,和 B 类同一份流水、同一套覆盖。不写 `run` 的 B 类仍然采不到。
+`{"value":12}`。**判成 B 不等于不写脚本**——`collect` 仍是 `kind = "script", retro = false`,必须有 `run`。不写 `run` 就是写了一半。Workbench 点采集时跑脚本,把**当天**的值记进账本 `.bw/metrics/readings.jsonl`(键是日历日 `YYYY-MM-DD`,同一天再采覆盖这一行)。Workbench 开着、过了本机 20:00,还会自动采一轮 B 类(失败也盖今日戳,避免反复打失败脚本)。展示按周,取那一周日期最大的一天。C 类在总览卡手填今天的数,和 B 类同一份流水、同一套覆盖。不写 `run` 的 B 类仍然采不到。
 
 字段名照 `.bw/metrics.toml` 顶部注释:`name` / `def` / `target` / `collect`。
 `definition` 不是 `def`,界面口径会空着。

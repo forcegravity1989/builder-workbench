@@ -2,10 +2,10 @@
 //!
 //! 这个模块只做那三件事,**一件业务判断都不做**:
 //!
-//! 1. **采集方式只有两种** —— 脚本、手填。没有第三种,尤其**没有「buddy 内建的
+//! 1. **采集方式只有两种** —— 脚本、手填。没有第三种,尤其**没有「Workbench 内建的
 //!    git 算子」**:那等于把算法藏进二进制,项目看不见、改不了、也说不清这个数
-//!    怎么来的。git 类统计一样走脚本,只不过脚本由 buddy 铺一份现成的。
-//! 2. **窗口由 buddy 给,不是脚本自己决定**。面板要四周就传四周,要八周就传
+//!    怎么来的。git 类统计一样走脚本,只不过脚本由 Workbench 铺一份现成的。
+//! 2. **窗口由 Workbench 给,不是脚本自己决定**。面板要四周就传四周,要八周就传
 //!    八周 —— 采多少和画多少永远一致。V3 把这个决定权留在脚本里(自带脚本硬编码
 //!    30 天)而面板按 8 周画,于是前三四周永远是空的,长期对不上还没人发现。
 //! 3. **只认标准输出的一个 JSON 对象**,不是 JSON 就算这次采集失败。V3 只读脚本
@@ -249,7 +249,7 @@ fn fill_from_readings(ws: &Path, name: &str, labels: &[String], r: &mut MetricRe
     r.current = r.points.last().and_then(|p| p.value.clone());
 }
 
-/// 本机「今日已试过 B 类日采」的戳。写在 buddy 资产目录,不进被管仓。
+/// 本机「今日已试过 B 类日采」的戳。写在 Workbench 资产目录,不进被管仓。
 fn collect_stamp_path(asset_root: &Path, slug: &str) -> PathBuf {
     asset_root.join("collect-stamp").join(slug)
 }
@@ -321,7 +321,7 @@ impl App {
         }])
     }
 
-    /// buddy 开着、过了本机 20:00、今天还没试过,就采一轮 B 类。
+    /// Workbench 开着、过了本机 20:00、今天还没试过,就采一轮 B 类。
     /// 不建活。失败也落今日戳,避免每 60 秒重打失败脚本。
     pub(super) async fn maybe_auto_collect_b(&self, project_id: ProjectId) -> Vec<Event> {
         if !isoweek::local_hm_reached(20, 0) {
@@ -382,7 +382,7 @@ fn snapshot_as_last_week(labels: &[String], value: &str) -> Vec<MetricPoint> {
         .collect()
 }
 
-/// 脚本吐回来的 JSON。可回溯的给序列;不可回溯的给一个当下的值,buddy 记进流水。
+/// 脚本吐回来的 JSON。可回溯的给序列;不可回溯的给一个当下的值,Workbench 记进流水。
 #[derive(Deserialize)]
 struct ScriptOut {
     #[serde(default)]
@@ -445,7 +445,7 @@ async fn run_script(ws: &Path, run: &[String], labels: &[String]) -> Result<Scri
     align_script_out(parsed, labels)
 }
 
-/// 把脚本吐的 JSON 对齐到 buddy 要的周。抽出来是为了单测「只给 value」和
+/// 把脚本吐的 JSON 对齐到 Workbench 要的周。抽出来是为了单测「只给 value」和
 /// 「周号对不上」这两条,不靠起真脚本。
 fn align_script_out(parsed: ScriptOut, labels: &[String]) -> Result<ScriptOutcome, String> {
     if parsed.points.is_empty() {
@@ -454,7 +454,7 @@ fn align_script_out(parsed: ScriptOut, labels: &[String]) -> Result<ScriptOutcom
         }
         return Err("采集脚本没给出任何数据点".into());
     }
-    // 按 buddy 要的周对齐:脚本多给的周丢掉,少给的周留 `None`(断开,不补前值)。
+    // 按 Workbench 要的周对齐:脚本多给的周丢掉,少给的周留 `None`(断开,不补前值)。
     // **每一周都占一格** —— 缺的周如果直接不放进序列,走势图会把剩下的点均匀
     // 铺开,四周看起来还是连续的四周,读的人发现不了中间断过。
     let mut points = Vec::with_capacity(labels.len());
@@ -470,7 +470,9 @@ fn align_script_out(parsed: ScriptOut, labels: &[String]) -> Result<ScriptOutcom
         });
     }
     if points.iter().all(|p| p.value.is_none()) {
-        return Err("采集脚本给的周号和 buddy 要的对不上(要的是 `2026-W34` 这种 ISO 周)".into());
+        return Err(
+            "采集脚本给的周号和 Workbench 要的对不上(要的是 `2026-W34` 这种 ISO 周)".into(),
+        );
     }
     Ok(ScriptOutcome::Series(points))
 }

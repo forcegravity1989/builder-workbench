@@ -159,13 +159,13 @@ fn loopback_host_port(url: &str) -> Option<(&str, u16)> {
     Some((host, port.parse::<u16>().ok()?))
 }
 
-/// 给 OD 起一个 run,把 buddy 的系统提示词灌进去——让 OD 内部 spawn 的 AI
-/// 知道自己处在 buddy 的管理下(身份 + 四铁律 + 本活挂的技能/references 指针)。
+/// 给 OD 起一个 run,把 Workbench 的系统提示词灌进去——让 OD 内部 spawn 的 AI
+/// 知道自己处在 Workbench 的管理下(身份 + 四铁律 + 本活挂的技能/references 指针)。
 ///
-/// **OD 是独立的**:它有自己的 skill 体系(`skillId`,162 份),和 buddy 的
+/// **OD 是独立的**:它有自己的 skill 体系(`skillId`,162 份),和 Workbench 的
 /// 技能文件(`--add-dir` 挂路径)不兼容——所以只灌 `systemPrompt` + `prompt`,
 /// 不灌技能文件。技能指针/references 在 systemPrompt 文本里,OD 的 AI 能不能
-/// 真读到那个路径是 best-effort(它在 OD 的进程上下文里,未必有 buddy 资产目录
+/// 真读到那个路径是 best-effort(它在 OD 的进程上下文里,未必有 Workbench 资产目录
 /// 的访问权);读不到也不阻断,OD 仍按它自己的能力干。
 ///
 /// 探不到 url、连不上、POST 失败一律返 `None`——不阻断开工(OD 仍内嵌在会话屏,

@@ -4,7 +4,7 @@
 //! 每行「名字 / 取值 / 右侧一个灯点」。
 //!
 //! **没有登录**。V4 不管任何账号:远端凭证在系统钥匙串、群登录态由用户自己在
-//! 本机登好,buddy 只探活。
+//! 本机登好,Workbench 只探活。
 //!
 //! **工作区根目录可以在这里改**(存本机库的 `app_meta`,立刻生效):它只决定
 //! 「以后新接进来的项目默认落在哪」。已接入的项目各自记着自己的仓路径,一个都
@@ -43,7 +43,7 @@ pub fn View(vm: Vm, bridge: Bridge, close: EventHandler<MouseEvent>) -> Element 
                 }
             }
             div { style: "margin-top:14px;color:var(--ink-3);font-size:11.5px;line-height:1.9;",
-                "这里没有登录 —— buddy 不管账号。远端凭证在系统钥匙串里,项目群的登录态由你自己在本机登好。"
+                "这里没有登录 —— Workbench 不管账号。远端凭证在系统钥匙串里,项目群的登录态由你自己在本机登好。"
                 br {}
                 "灰灯是「这项探活还没接」,不是「有问题」;红灯才是「本机路径里真的没找到」。"
             }
@@ -68,7 +68,7 @@ fn root_row(value: String, bridge: Bridge) -> Element {
                         class: "input mono",
                         style: "flex:1;min-width:0;",
                         value: "{draft}",
-                        placeholder: "Windows 填 D:\\buddy\\workspaces,macOS 填 /Users/你/projects",
+                        placeholder: "Windows 填 D:\\Workbench\\workspaces,macOS 填 /Users/你/projects",
                         oninput: move |e| draft.set(e.value()),
                     }
                     button {

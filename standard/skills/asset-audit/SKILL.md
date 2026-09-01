@@ -38,9 +38,9 @@ category: 运作
    `.bw/metrics/readings.jsonl` 与本周 ops① issue 评论里的读数快照段)。
 5. **代码图大文件榜**——`codegraph files -j` 找超过行数上限的文件。
 6. **V3 铺底残留**——下面白名单里还在的,这次在这张活自己的工作目录里删掉,随盘点
-   MR 走。不是建议,是修复。拿不准的(不像 buddy 铺的、人或项目自己的文件)只写报告。
+   MR 走。不是建议,是修复。拿不准的(不像 Workbench 铺的、人或项目自己的文件)只写报告。
    - `.bw/connectors.toml`
-   - `docs/buddy/`(整棵)
+   - `docs/Workbench/`(整棵)
    - `.bw/plan/`
    - `docs/plan/`
    - 确认没人再跑的 V3 采集脚本
@@ -85,7 +85,7 @@ category: 运作
 
 ## 首次模式(`mode=first`) · 给老仓的历史活挂上周
 
-一个项目通常只跑一次:这个仓接入之前就已经有 issue。buddy 没有单独的「回填」命令,
+一个项目通常只跑一次:这个仓接入之前就已经有 issue。Workbench 没有单独的「回填」命令,
 也不按 git 周去建假文件。历史要出现在计划屏某一周,就是给那些 issue 打
 `bw:week:YYYY-Www`。
 

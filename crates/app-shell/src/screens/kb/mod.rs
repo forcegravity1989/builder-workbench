@@ -189,7 +189,7 @@ fn codegraph_tab(cg: Option<&CodeGraphVm>, bridge: &Bridge) -> Element {
                     "只摆原始数字,不下结论。特别是:零调用者不等于死代码 —— 这个仓大量用 \
                      dyn Trait 动态派发,调用关系本来就查不全。"
                     br {}
-                    "高保真顶上那张 crate 依赖图是照 buddy 自己的仓画死的,换个项目就不对了;\
+                    "高保真顶上那张 crate 依赖图是照 Workbench 自己的仓画死的,换个项目就不对了;\
                      真画它要有一份真实的依赖来源,还没接,所以这里没有那张图。"
                 }
             }
@@ -207,7 +207,7 @@ fn assets_tab(a: Option<&AssetsVm>, bridge: &Bridge) -> Element {
                 div { class: "detail-empty",
                     "点一下上面的「资产」页签就现扫一次。"
                     br {}
-                    "五个区块全部现算:列 buddy 自带的技能 + 扫本仓 .claude/skills/、\
+                    "五个区块全部现算:列 Workbench 自带的技能 + 扫本仓 .claude/skills/、\
                      走 git log、发版记录扫 git 标签 + 远端 Release。没有登记表可查。"
                 }
             }
@@ -229,7 +229,7 @@ fn assets_tab(a: Option<&AssetsVm>, bridge: &Bridge) -> Element {
 
         div { class: "asset-sect-title", "技能与 workflow" }
         div { class: "cfg-readonly-note",
-            "buddy 自带的四份(摊在 buddy 自己的资产目录,不进你的仓)+ 本仓 \
+            "Workbench 自带的四份(摊在 Workbench 自己的资产目录,不进你的仓)+ 本仓 \
              .claude/skills/ 里自有的。「用过几次」按活挂的 workflow 现算,\
              没有胜率 —— V4 不留战绩账本。"
         }

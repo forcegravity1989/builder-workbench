@@ -102,12 +102,12 @@ pub struct App {
     /// 长命令边做边报的口子。桌面壳接上,headless 不接。见
     /// [`progress`](crate::app::progress) —— 只为让人看得见,不承担账目。
     pub(crate) progress: Option<tokio::sync::broadcast::Sender<ProgressLine>>,
-    /// buddy 自己的资产目录 —— 技能库摊在这儿(`<asset_root>/skills/`),
+    /// Workbench 自己的资产目录 —— 技能库摊在这儿(`<asset_root>/skills/`),
     /// 项目注册表(`<asset_root>/projects.toml`)、全局设置
     /// (`<asset_root>/settings.toml`)、会话记录
     /// (`<asset_root>/sessions/<slug>/<iid>.jsonl`)也都在这儿。
-    /// **不在任何一个用户项目的仓里**:用户的 `.gitignore` 怎么写不该由 buddy
-    /// 决定,而 buddy 自带的剧本每个项目都一样,没有复制 N 份的道理。
+    /// **不在任何一个用户项目的仓里**:用户的 `.gitignore` 怎么写不该由 Workbench
+    /// 决定,而 Workbench 自带的剧本每个项目都一样,没有复制 N 份的道理。
     pub(crate) asset_root: PathBuf,
     /// 远端工厂。issue_store 等内部模块经 [`App::remote_for`] 拿远端,统一经
     /// 这里派发 —— 这也是 mock 注入的唯一口子。
@@ -137,14 +137,14 @@ impl App {
         }
     }
 
-    /// buddy 自己的资产放哪。**改工作区根目录不会跟着搬** —— 这里放的是
-    /// buddy 自带的东西,和用户把仓放在哪没关系。
+    /// Workbench 自己的资产放哪。**改工作区根目录不会跟着搬** —— 这里放的是
+    /// Workbench 自带的东西,和用户把仓放在哪没关系。
     pub fn with_asset_root(mut self, root: impl Into<PathBuf>) -> Self {
         self.asset_root = root.into();
         self
     }
 
-    /// buddy 本机数据目录(注册表/设置/会话/技能都在这下面)。
+    /// Workbench 本机数据目录(注册表/设置/会话/技能都在这下面)。
     pub fn asset_root(&self) -> &std::path::Path {
         &self.asset_root
     }
@@ -163,12 +163,12 @@ impl App {
         (self.remote_factory)(project).map_err(|e| AppError::Exec(format!("认不出远端类型:{e}")))
     }
 
-    /// buddy 技能库摊在哪。开工前 [`App::ensure_skill_assets`] 保证它是齐的。
+    /// Workbench 技能库摊在哪。开工前 [`App::ensure_skill_assets`] 保证它是齐的。
     pub fn skills_dir(&self) -> PathBuf {
         self.asset_root.join("skills")
     }
 
-    /// 把 buddy 自带的技能摊到 [`App::skills_dir`],返回那个目录。
+    /// 把 Workbench 自带的技能摊到 [`App::skills_dir`],返回那个目录。
     ///
     /// 幂等:内容一致就不写。**写不下去不算开工失败** —— 调用方拿到 `None`
     /// 就不给 agent 指技能这条路,如实少一段,不编一个路径出来。
@@ -192,7 +192,7 @@ impl App {
         self.asset_root.join("system-prompt").join("references")
     }
 
-    /// 把 buddy 自带的阶段规范 references 摊到 [`App::prompt_dir`],返回那个目录。
+    /// 把 Workbench 自带的阶段规范 references 摊到 [`App::prompt_dir`],返回那个目录。
     /// 和 [`App::ensure_skill_assets`] 同一套规矩:幂等、写不下去返回 `None`
     /// 如实少一段。
     pub fn ensure_prompt_assets(&self) -> Option<PathBuf> {

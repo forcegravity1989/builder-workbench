@@ -2,7 +2,7 @@
 //!
 //! `bin\claude.exe` is copied by npm `postinstall` from an optional package —
 //! a machine can have a working `%APPDATA%\npm\claude.cmd` and still lack the
-//! PE. Buddy's Issue terminal is ConPTY (`CreateProcess`); a `.cmd` is not a
+//! PE. Workbench's issue terminal is ConPTY (`CreateProcess`); a `.cmd` is not a
 //! Win32 image, so spawn must go through `cmd.exe /c` (see [`crate::win_cmd`]).
 
 use std::path::{Path, PathBuf};

@@ -1,4 +1,4 @@
-//! V4 桌面壳 —— 六入口 + 顶层三屏。
+//! Workbench MVP 桌面壳 —— 五入口 + 顶层三屏。
 //!
 //! 一条规矩:**这个 crate 只渲染和转发意图,它自己什么都不算**。健康是什么
 //! 颜色、活能不能转到那一列、指标有没有读数,全部由内核算好塞进 ViewModel。
@@ -7,7 +7,7 @@
 //! 深链(启动即打读回证据,和旧壳同一套机制):
 //!
 //! ```bash
-//! BW_DB=<db> BW_OPEN=<项目> BW_PANEL=overview|plan|session|config|kb ./bw-dev
+//! BW_DB=<数据目录> BW_OPEN=<项目> BW_PANEL=overview|plan|session|config|kb ./bw-dev
 //! BW_VIEW=onboard|settings ./bw-dev
 //! ```
 
@@ -163,7 +163,7 @@ fn Root() -> Element {
     let in_project = project.is_some() && tv.is_none();
     let source = data_dir_label(&v.settings.data_dir);
 
-    // 顶栏标题:项目内是六入口的名字,顶层是那一屏的名字。
+    // 顶栏标题:项目内是五入口的名字,顶层是那一屏的名字。
     let title = match (tv, in_project) {
         (Some(TopView::Onboard), _) => "接入项目".to_string(),
         (Some(TopView::Settings), _) => "设置".to_string(),

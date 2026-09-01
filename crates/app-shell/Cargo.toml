@@ -1,6 +1,6 @@
 [package]
 name = "app-shell"
-description = "V4 桌面壳(Dioxus 0.7 / wry):六入口 + 顶层三屏,一屏一目录,一个外部能力一个适配模块。"
+description = "Workbench MVP 桌面壳(Dioxus 0.7 / wry):五入口 + 顶层三屏,一屏一目录,一个外部能力一个适配模块。"
 edition.workspace = true
 version.workspace = true
 license.workspace = true

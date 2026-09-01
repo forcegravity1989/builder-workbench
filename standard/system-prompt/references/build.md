@@ -1,11 +1,11 @@
-# 干改仓类活需要知道的 buddy 规范
+# 干改仓类活需要知道的 Workbench 规范
 
-> 这份是 buddy 给干「构建 / 优化 / 运维」类改仓活的 agent 的阶段规范补充。
+> 这份是 Workbench 给干「构建 / 优化 / 运维」类改仓活的 agent 的阶段规范补充。
 > 主系统提示词里的四条铁律照样守,这里讲改仓这一件特有的事。
 
 ## 改动落在这张活自己的分支
 
-buddy 给每张活开了一棵独立的 git worktree(分支名按 issue 编号确定性生成)。
+Workbench 给每张活开了一棵独立的 git worktree(分支名按 issue 编号确定性生成)。
 你的所有改动都落在这棵树里,**不碰人的主分支**。主分支一个字节不碰是底线。
 
 ## 正常提交 + 提 MR,合并永远是人
@@ -13,7 +13,7 @@ buddy 给每张活开了一棵独立的 git worktree(分支名按 issue 编号�
 - 提交走 `git commit`,该几个就几个,写清消息。
 - 开 MR(`gh pr create` / `codehub-cli mr create`),把 MR 地址打屏。
 - **合并永远是人**:`gh pr merge`、`codehub-cli mr merge` 以及任何等价的
-  合并或直推主干动作,**一律不许执行**。你提完 MR 就到头了,合入由人在 buddy 里点。
+  合并或直推主干动作,**一律不许执行**。你提完 MR 就到头了,合入由人在 Workbench 里点。
 
 ## 干完最远只到「评审中」
 

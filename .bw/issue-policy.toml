@@ -4,9 +4,12 @@ schema_version = 1
 # 五阶段方法论一一对应)各配一行默认映射——这里只有五行,没有第六类:
 # 五阶段方法论本身就是五个阶段,不无中生有出一个第六类别。
 
-# 开工工具声明:name → 接法类型(kind:terminal 终端类 / web_embed 本机网
+# 开工工具声明:name → 接法类型(kind:terminal 终端类 CLI / web_embed 本机网
 # 页内嵌类)→ 探活方式 → 能力清单。这里的 kind 与下面 [[mapping]] 段的
 # category(活的类别标签)是两件不同的事,字段名特意分开,不要混。
+# kind 描述的是工具本身的接法类型(terminal=CLI 类、web_embed=本机网页类),
+# 不是 Workbench 的启动机制——claude_cli 现走 Orca 本地 pipe 启动(PTY 已封存,
+# 见 architecture 模块7),kind 仍 terminal 是因为 claude 是 CLI 工具。
 [[tool]]
 name = "claude_cli"
 kind = "terminal"

@@ -3,12 +3,14 @@
 node_modules/
 .vscode/
 .idea/
-# Claude 本机会话 / 缓存不进仓;仓外起手 skill 要进仓
+# Claude 本机会话 / 缓存不进仓;入仓 skill 逐个放行——新加 skill 要在这里补两行,否则静默不进仓
 .claude/*
 !.claude/skills/
 .claude/skills/*
-!.claude/skills/buddy-start/
-!.claude/skills/buddy-start/**
+!.claude/skills/workbench-start/
+!.claude/skills/workbench-start/**
+!.claude/skills/design-system-import/
+!.claude/skills/design-system-import/**
 
 # Rust
 /target/
@@ -27,8 +29,11 @@ demo-workspaces/
 # subagent 隔离工作区(git worktree),不是源码
 /.worktrees/
 
-# buddy 每活一棵树:新树落 `.bw/worktrees/`,不进仓;旧平级兄弟不搬
+# Workbench 每活一棵树:新树落 `.bw/worktrees/`,不进仓;旧平级兄弟不搬
 .bw/worktrees/
+
+# 本地草稿/穿刺工作目录,不进仓
+/.scratch/
 
 # 指南截图本地占位(验证时填,不进仓)
 docs/guide/img/

@@ -96,12 +96,9 @@ async fn project_default_branch(host: &str, path: &str) -> Result<String, Codehu
 
 /// 在**已经推上去的分支**上开一个 MR —— `codehub-cli mr create` 就这一处实现。
 ///
-/// 调用方各自准备分支的方式不同([`create_mr`] 走 `stage_commit_push`、
-/// [`create_project_init_mr`] 先 checkout 再提交、V4 的规范铺底自己在 worktree
-/// 里只提交点名的那几个文件),开 MR 这一步是同一段代码,只留一份。
-///
-/// `body` 与 `issue_number` 都由调用方给:**带不带 `Closes` / `--issue-nums`
-/// 是调用方的决定**。V4 的活是本机号,和远端 issue 号没有对应关系,自作主张
+/// 唯一调用方是规范铺底:它在自己的 worktree 里只提交点名的那几个文件、推
+/// 分支,再调这里开 MR。`body` 由调用方给:带不带 `Closes` 是调用方的决定 ——
+/// 不能默认带,Workbench 的活是本机号,和远端 issue 号没有对应关系,自作主张
 /// 挂上去会把那个仓里毫不相干的一号活关掉。
 ///
 /// target-branch = 项目默认分支,运行时从 `origin/HEAD` 解析(maas 是
@@ -115,7 +112,6 @@ pub async fn create_mr_on_branch(
     branch: &str,
     title: &str,
     body: &str,
-    issue_number: Option<u32>,
 ) -> Result<crate::github::PrOpened, CodehubError> {
     let tgt = crate::win_cmd::tokio_cmd("git")
         .current_dir(workspace)
@@ -139,7 +135,6 @@ pub async fn create_mr_on_branch(
     if let Ok(Some(iid)) = open_mr_for_branch(host, path, branch).await {
         return Ok(crate::github::PrOpened::Adopted(iid));
     }
-    let issue_nums = issue_number.map(|n| format!("issue{n}"));
     let mut args: Vec<&str> = vec![
         "mr",
         "create",
@@ -156,10 +151,6 @@ pub async fn create_mr_on_branch(
         "--description",
         body,
     ];
-    if let Some(nums) = issue_nums.as_deref() {
-        args.push("--issue-nums");
-        args.push(nums);
-    }
     args.push("--jq");
     args.push(".iid");
     let out = crate::win_cmd::tokio_cmd("codehub-cli")
@@ -184,7 +175,7 @@ pub async fn create_mr_on_branch(
 /// → the iid of the first open MR sourced from `branch`, or `None` if no
 /// such MR exists. Read-only, zero repo side effects. Used by the InReview
 /// detection poller (V1 Issue2 Phase2a) to detect an MR the agent opened
-/// in-session — buddy doesn't create it (the agent does), buddy just reads
+/// in-session — Workbench doesn't create it (the agent does), Workbench just reads
 /// it back (读回为证, not agent self-report).
 ///
 /// Mirrors the existing `create_mr` adoption path's `mr list` call exactly
@@ -1161,7 +1152,7 @@ pub async fn ensure_plan_milestone(
             }
         }
     }
-    let desc = format!("buddy 投影 · 正本是 bw:plan:{name}");
+    let desc = format!("Workbench 投影 · 正本是 bw:plan:{name}");
     let fields = milestone_create_fields(&pid, name, start, due);
     let created = api_json(
         host,
@@ -1417,7 +1408,7 @@ async fn ensure_week_milestone(
             }
         }
     }
-    let desc = format!("buddy 投影 · 正本是 bw:week:{week}");
+    let desc = format!("Workbench 投影 · 正本是 bw:week:{week}");
     let fields = milestone_create_fields(project_id, week, start, due);
     let created = api_json(
         host,

@@ -1,7 +1,7 @@
 //! 顶层 · 接入项目。**两步**:先指到一个真实的仓,再说清「这是个什么项目」。
 //!
 //! 为什么是两步而不是并排两张卡:第二步的四个字段**取决于第一步选了哪个仓** ——
-//! 那个仓要是已经被 buddy 接管过,名片是回显出来的,人一个字都不用填。并排摆着
+//! 那个仓要是已经被 Workbench 接管过,名片是回显出来的,人一个字都不用填。并排摆着
 //! 就等于让人对着一堆空格子先填一遍、选完仓再看见它被覆盖。
 //!
 //! 选仓用的是**一个输入框**:点「刷新」把你账号下的仓拉进来,然后在框里打字即
@@ -34,7 +34,7 @@ use dioxus::prelude::*;
 const DROPDOWN_CAP: usize = 30;
 
 /// codehub 的三个区。`codehub-cli -H <这个 key>` —— 收的是别名,不是域名。
-/// V3 用了大半年就是这三个,别再让人填一个 buddy 自己也不知道的域名。
+/// V3 用了大半年就是这三个,别再让人填一个 Workbench 自己也不知道的域名。
 const CODEHUB_ZONES: &[(&str, &str)] = &[("green", "绿区"), ("open", "内源"), ("yellow", "黄区")];
 
 #[component]
@@ -42,7 +42,7 @@ pub fn View(vm: Vm, bridge: Bridge, close: EventHandler<MouseEvent>) -> Element 
     let (vm, bridge) = (&vm, &bridge);
     // 第 1 步 = 项目地址,第 2 步 = 基础信息。
     let mut step = use_signal(|| 1u8);
-    // 「新建」= buddy 只在本机把目录建出来;「已有」= 指到一个已经存在的仓。
+    // 「新建」= Workbench 只在本机把目录建出来;「已有」= 指到一个已经存在的仓。
     let mut existing_tab = use_signal(|| false);
     let github = use_signal(|| true);
 
@@ -209,7 +209,7 @@ pub fn View(vm: Vm, bridge: Bridge, close: EventHandler<MouseEvent>) -> Element 
                                 label { class: "label", "本机仓路径" }
                                 input {
                                     class: "input mono", value: "{workspace}",
-                                    placeholder: "/Users/you/projects/loop-buddy",
+                                    placeholder: "/Users/you/projects/workbench",
                                     oninput: move |e| workspace.set(e.value()),
                                 }
                             }
@@ -242,13 +242,13 @@ pub fn View(vm: Vm, bridge: Bridge, close: EventHandler<MouseEvent>) -> Element 
                                 label { class: "label", "远端仓(命名空间/仓名,可留空)" }
                                 input {
                                     class: "input mono", value: "{remote}",
-                                    placeholder: "forcegravity1989/loop-buddy",
+                                    placeholder: "forcegravity1989/builder-workbench",
                                     oninput: move |e| remote.set(e.value()),
                                 }
                             }
                             div { class: "ob-note",
                                 "「新建」只在本机把目录建出来并写进名片。远端仓要你自己先建好 —— "
-                                "buddy 还不会替你在平台上开仓,也就没有公开/私有可选。"
+                                "Workbench 还不会替你在平台上开仓,也就没有公开/私有可选。"
                                 br {}
                                 "远端留空也能用 —— 没挂远端的项目一样能建活、能干活,只是没有 MR 可评审。"
                             }
@@ -410,7 +410,7 @@ fn RepoField(
                 input {
                     class: "input mono",
                     value: "{remote}",
-                    placeholder: "forcegravity1989/loop-buddy",
+                    placeholder: "forcegravity1989/builder-workbench",
                     onfocus: move |_| {
                         open.set(true);
                         if need_first_fetch {
@@ -538,7 +538,7 @@ fn repo_option(
     }
 }
 
-/// 「这个仓被 buddy 接管过没有」的几种结局,一句都不能混。
+/// 「这个仓被 Workbench 接管过没有」的几种结局,一句都不能混。
 ///
 /// 判据是**去远端读 `.bw/project.toml` 读不读得到**(GitHub 走
 /// `gh api .../contents/.bw/project.toml`,codehub 走 codehub-cli)。读到 = 接管过。
@@ -555,19 +555,19 @@ fn adopted_note(probe: &RepoProbe) -> Element {
         div { class: "ob-note",
             match probe {
                 RepoProbe::NotAsked => rsx! {
-                    "没查这个仓被 buddy 接管过没有 —— 上一步没选/没填远端地址。四格要你自己填。"
+                    "没查这个仓被 Workbench 接管过没有 —— 上一步没选/没填远端地址。四格要你自己填。"
                 },
                 RepoProbe::Loading => rsx! { "正在读这个仓的 .bw/project.toml…" },
                 RepoProbe::Adopted => rsx! {
                     "这个仓"
-                    strong { "已经被 buddy 接管过" }
+                    strong { "已经被 Workbench 接管过" }
                     ",下面四格是从它远端的 .bw/project.toml 回显的。"
                     br {}
                     "直接改就行 —— 你改过的格子以你为准,接进来时也不会覆盖仓里已有的字。"
                 },
                 RepoProbe::Absent => rsx! {
                     "这个仓"
-                    strong { "还没被 buddy 接管过" }
+                    strong { "还没被 Workbench 接管过" }
                     "(平台明确回「没有 .bw/project.toml」),四格要你自己填。"
                 },
                 RepoProbe::NoRepo(e) => rsx! {

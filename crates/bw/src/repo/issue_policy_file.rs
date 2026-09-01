@@ -39,7 +39,7 @@ pub struct CategoryMapping {
 }
 
 impl CategoryMapping {
-    /// 认得出的类别键才返回 `Some`。认不出就是文件里写了个 buddy 不懂的类别,
+    /// 认得出的类别键才返回 `Some`。认不出就是文件里写了个 Workbench 不懂的类别,
     /// 调用方按「没有映射」处理,不猜。
     pub fn category(&self) -> Option<Category> {
         category_from_key(&self.category)
