@@ -95,7 +95,7 @@ changes/<change-id>/
 **人 gate（必须过）：**
 
 1. **意图 gate** —— 批 `intent.md`（做不做、是否落在周目标/03 飞轮里）。  
-2. **规格 gate** —— 批 `spec.md`：**缺可点原型或操作逻辑 → 直接退回**，不许「先做着」。
+2. **规格 gate** —— 批 `spec.md`：**缺可点原型或操作逻辑 → 直接退回**，不许「先做着」。**非 UI 变更**（纯脚本/规范包）豁免「可点原型」：仍须有操作逻辑（脚本协议 / 输入输出契约 / 样例输出当原型替代），但不必是可点的界面原型。
 
 **默认不进 gate：**
 
@@ -154,3 +154,4 @@ changes/<change-id>/
 | 2026-08-25 | 特性立项指向 [02 逆向工作法](02-working-backwards.md) |
 | 2026-08-26 | 术语改 gate；制品链改为 intent+带原型 spec 为人 gate，plan 仅大风险；兼容 Superpowers/grill-me（过程工具，正本在 changes/） |
 | 2026-08-26 | 撤销仓根 `iterations/` 层；读回归 changes / guide / architecture；与 lean 仓（AGENTS 正本、无 plan/archive）对齐 |
+| 2026-09-01 | 规格 gate 加「非 UI 变更豁免可点原型」：纯脚本/规范包仍须操作逻辑（协议/样例输出当原型），但不必可点界面 |
