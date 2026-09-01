@@ -211,17 +211,25 @@ async fn project_week_best_effort(remote: &Remote, iid: u32, week: &str) {
     } else if let Some(pair) = week_span(week) {
         pair
     } else {
-        eprintln!("[BW_MILESTONE] 周号认不出,不投影:{week}");
+        bw_engine::dlog!(warn, "milestone", "[BW_MILESTONE] 周号认不出,不投影:{week}");
         return;
     };
     if let Err(e) = remote.project_week(iid, week, &start, &due).await {
-        eprintln!("[BW_MILESTONE] #{iid} {week} 投影没成:{e}");
+        bw_engine::dlog!(
+            err,
+            "milestone",
+            "[BW_MILESTONE] #{iid} {week} 投影没成:{e}"
+        );
     }
 }
 
 async fn project_plan_best_effort(remote: &Remote, path: &str, iid: u32, plan: &str) {
     if let Err(e) = remote.project_plan(iid, path, plan).await {
-        eprintln!("[BW_MILESTONE] #{iid} 版本 {plan} 投影没成:{e}");
+        bw_engine::dlog!(
+            err,
+            "milestone",
+            "[BW_MILESTONE] #{iid} 版本 {plan} 投影没成:{e}"
+        );
     }
 }
 
@@ -289,7 +297,11 @@ pub async fn assign_to_plan(app: &App, project: &Project, iid: u32, plan: &str) 
         .map_err(|e| map_remote_err("远端打 bw:plan 标签没成", e))?;
     // 里程碑是 codehub 侧镜像,失败只打 stderr,不挡正本(标签)。
     if let Err(e) = remote.project_plan(iid, &project.remote_path, plan).await {
-        eprintln!("[BW_MILESTONE] #{iid} 版本 {plan} 投影没成:{e}");
+        bw_engine::dlog!(
+            err,
+            "milestone",
+            "[BW_MILESTONE] #{iid} 版本 {plan} 投影没成:{e}"
+        );
     }
     Ok(())
 }
@@ -305,7 +317,11 @@ pub async fn clear_plan(app: &App, project: &Project, iid: u32) -> Result<()> {
         .await
         .map_err(|e| map_remote_err("远端摘 bw:plan 标签没成", e))?;
     if let Err(e) = remote.clear_issue_milestone(iid).await {
-        eprintln!("[BW_MILESTONE] #{iid} 从版本里程碑摘下没成:{e}");
+        bw_engine::dlog!(
+            err,
+            "milestone",
+            "[BW_MILESTONE] #{iid} 从版本里程碑摘下没成:{e}"
+        );
     }
     Ok(())
 }

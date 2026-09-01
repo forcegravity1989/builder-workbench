@@ -401,7 +401,10 @@ impl App {
 
     /// 唯一的入口。
     pub async fn dispatch(&mut self, cmd: Command) -> Result<Vec<Event>> {
-        match cmd {
+        let label = cmd_log_label(&cmd);
+        let started = std::time::Instant::now();
+        bw_engine::dlog!(ok, "dispatch", "begin {label}");
+        let out = match cmd {
             Command::CreateProject {
                 slug,
                 intent,
@@ -503,6 +506,146 @@ impl App {
                 name,
                 value,
             } => self.record_manual_metric(project_id, name, value).await,
+            Command::ReportWorkbenchIssue { title } => self.report_workbench_issue(title).await,
+        };
+        let elapsed_ms = started.elapsed().as_millis();
+        match &out {
+            Ok(evs) => bw_engine::dlog!(
+                ok,
+                "dispatch",
+                "ok {label} events={} elapsed_ms={elapsed_ms}",
+                evs.len()
+            ),
+            Err(e) => bw_engine::dlog!(
+                err,
+                "dispatch",
+                "fail {label} elapsed_ms={elapsed_ms} err={e}"
+            ),
+        }
+        out
+    }
+}
+
+/// 对照日志用:命令名 + id / slug,不写 pairing URL、提示词、token。
+fn cmd_log_label(cmd: &Command) -> String {
+    match cmd {
+        Command::CreateProject { slug, .. } => format!("CreateProject slug={slug}"),
+        Command::RemoveProject { project_id } => {
+            format!("RemoveProject project={}", project_id.uuid())
+        }
+        Command::ReopenSession { issue_id } => format!("ReopenSession #{}", issue_id.iid()),
+        Command::EditProjectCard { project_id, .. } => {
+            format!("EditProjectCard project={}", project_id.uuid())
+        }
+        Command::RunStandardBootstrap { project_id } => {
+            format!("RunStandardBootstrap project={}", project_id.uuid())
+        }
+        Command::ReconcileStandard { project_id } => {
+            format!("ReconcileStandard project={}", project_id.uuid())
+        }
+        Command::StartWeekPlanning { project_id, week } => {
+            format!(
+                "StartWeekPlanning project={} week={week}",
+                project_id.uuid()
+            )
+        }
+        Command::ConfirmWeekDraft {
+            project_id,
+            week,
+            titles,
+        } => format!(
+            "ConfirmWeekDraft project={} week={week} titles={}",
+            project_id.uuid(),
+            titles.len()
+        ),
+        Command::CreateIssue {
+            project_id,
+            title,
+            category,
+            week_of,
+            plan,
+            ..
+        } => format!(
+            "CreateIssue project={} title={title:?} category={category:?} week={week_of} plan={plan}",
+            project_id.uuid()
+        ),
+        Command::ScheduleIssue { id, week_of } => {
+            format!("ScheduleIssue #{} week={week_of:?}", id.iid())
+        }
+        Command::ScheduleToPlan { id, plan } => format!("ScheduleToPlan #{} plan={plan}", id.iid()),
+        Command::CreatePlanVersion {
+            project_id,
+            name,
+            included,
+            ..
+        } => format!(
+            "CreatePlanVersion project={} name={name} included={}",
+            project_id.uuid(),
+            included.len()
+        ),
+        Command::DeletePlanVersion { project_id, name } => {
+            format!("DeletePlanVersion project={} name={name}", project_id.uuid())
+        }
+        Command::CutRelease {
+            project_id,
+            version,
+            included,
+            ..
+        } => format!(
+            "CutRelease project={} version={version} included={}",
+            project_id.uuid(),
+            included.len()
+        ),
+        Command::RunIssue { id } => format!("RunIssue #{}", id.iid()),
+        Command::SubmitIssueWork { id } => format!("SubmitIssueWork #{}", id.iid()),
+        Command::SetWorkspacesRoot { .. } => "SetWorkspacesRoot".into(),
+        Command::SetOrcaWebUrl { .. } => "SetOrcaWebUrl".into(),
+        Command::TransitionIssue { id, to } => {
+            format!("TransitionIssue #{} to={}", id.iid(), to.label())
+        }
+        Command::SetIssueCategory { id, category } => {
+            format!("SetIssueCategory #{} category={}", id.iid(), category.label())
+        }
+        Command::SetIssueAssignee { id, assignee } => {
+            format!("SetIssueAssignee #{} assignee={assignee}", id.iid())
+        }
+        Command::EditIssue { id, title, .. } => {
+            format!("EditIssue #{} title={title:?}", id.iid())
+        }
+        Command::CancelIssue { id, .. } => format!("CancelIssue #{}", id.iid()),
+        Command::DeleteSession { id } => format!("DeleteSession #{}", id.iid()),
+        Command::BlockIssue { id, .. } => format!("BlockIssue #{}", id.iid()),
+        Command::SaveToolMapping {
+            project_id,
+            category,
+            tool,
+            workflow,
+        } => format!(
+            "SaveToolMapping project={} category={} tool={tool} workflow={workflow}",
+            project_id.uuid(),
+            category.label()
+        ),
+        Command::ProbeTool { name } => format!("ProbeTool name={name}"),
+        Command::PullWorkspace { project_id } => {
+            format!("PullWorkspace project={}", project_id.uuid())
+        }
+        Command::TickScheduler { project_id } => {
+            format!("TickScheduler project={}", project_id.uuid())
+        }
+        Command::MergeAndSettle { id } => format!("MergeAndSettle #{}", id.iid()),
+        Command::SyncNotifyToChat {
+            issue_id,
+            event_type,
+        } => format!("SyncNotifyToChat #{} event={event_type}", issue_id.iid()),
+        Command::CancelRun { id } => format!("CancelRun #{}", id.iid()),
+        Command::RecordManualMetric {
+            project_id, name, ..
+        } => format!(
+            "RecordManualMetric project={} name={name}",
+            project_id.uuid()
+        ),
+        Command::ReportWorkbenchIssue { title } => {
+            format!("ReportWorkbenchIssue title={title:?}")
         }
     }
 }

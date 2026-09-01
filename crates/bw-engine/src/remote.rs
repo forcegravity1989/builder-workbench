@@ -316,7 +316,7 @@ impl Remote {
         match self {
             Remote::Github(r) => Ok(github::create_issue(r, title, body, labels).await?),
             Remote::Codehub { host, path } => {
-                Ok(codehub::create_issue(host, path, title, body, labels).await?)
+                Ok(codehub::create_issue(host, path, title, body, labels, None).await?)
             }
             Remote::Mock(state) => {
                 let mut s = state.lock().expect("mock state 未中毒");
@@ -338,6 +338,24 @@ impl Remote {
                 );
                 Ok(iid)
             }
+        }
+    }
+
+    /// 建 issue 并可附一份本机文件。codehub 走 `--attachment`;github 臂没有
+    /// 对等旗标,附件忽略、正文里应写清文件在哪。mock 只记正文。
+    pub async fn create_issue_with_attachment(
+        &self,
+        title: &str,
+        body: &str,
+        labels: &[&str],
+        attachment: Option<&Path>,
+    ) -> Result<u32, RemoteError> {
+        match self {
+            Remote::Github(r) => Ok(github::create_issue(r, title, body, labels).await?),
+            Remote::Codehub { host, path } => {
+                Ok(codehub::create_issue(host, path, title, body, labels, attachment).await?)
+            }
+            Remote::Mock(_) => self.create_issue(title, body, labels).await,
         }
     }
 

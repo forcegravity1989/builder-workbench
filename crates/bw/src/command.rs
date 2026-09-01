@@ -211,6 +211,10 @@ pub enum Command {
         name: String,
         value: String,
     },
+
+    /// 把本机对照日志报到 **workbench 自己的仓**(当前目录 git 的 origin),
+    /// 不是打开着的被管项目。标题人填,附件是 `bw.log`。
+    ReportWorkbenchIssue { title: String },
 }
 
 /// 一个工具探活的结果。探不到就是探不到,不猜。
@@ -430,5 +434,10 @@ pub enum Event {
         project_id: ProjectId,
         signal: crate::model::Signal,
         reasons: Vec<String>,
+    },
+    /// 对照日志已报到 workbench 仓。`url` 给人点开核对,toast 只说成功。
+    WorkbenchIssueReported {
+        iid: u32,
+        url: String,
     },
 }

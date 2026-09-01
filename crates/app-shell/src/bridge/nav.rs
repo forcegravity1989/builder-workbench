@@ -66,6 +66,9 @@ pub const STARTING_SESSION: &str = "正在开工,Orca 要几秒把会话拉起�
 /// 拖拽 / 详情改状态:等远端写标签,不重拉 issue 名单。
 pub const SWITCHING_STATUS: &str = "issue 状态切换中";
 
+/// 右侧 Issue 上报:等 codehub 建单并附对照日志。
+pub const REPORTING_LOG: &str = "日志上传中";
+
 #[derive(Clone, Copy)]
 pub struct ChromeBusy(pub dioxus::prelude::Signal<Option<String>>);
 
