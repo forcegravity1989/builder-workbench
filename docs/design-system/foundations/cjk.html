@@ -1,0 +1,72 @@
+<!-- @dsCard group="Foundations" name="CJK · 中文排版" subtitle="Mixed script by default; :lang(zh) re-tunes tracking, leading, emphasis and size floors" viewport="680x1060" -->
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Builder — CJK 中文排版</title>
+<link rel="stylesheet" href="../styles.css" />
+<style>
+.demo { max-width: 640px; margin: 0 auto; padding: var(--space-6) var(--space-4) var(--space-8); }
+.demo-head { font-size: 11px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: color-mix(in srgb, var(--color-text) 45%, transparent); margin: var(--space-6) 0 var(--space-3); }
+.demo-head:first-child { margin-top: 0; }
+.note { font-size: 12px; color: color-mix(in srgb, var(--color-text) 60%, transparent); max-width: 62ch; }
+code { font-family: var(--font-mono); font-size: 0.92em; }
+.row { display: flex; align-items: center; gap: var(--space-2); flex-wrap: wrap; }
+.cap { font-size: 11px; color: color-mix(in srgb, var(--color-text) 50%, transparent); margin: 6px 0 0; }
+.chrome { border: 1px solid var(--color-divider); border-radius: var(--radius-md); overflow: hidden; }
+</style>
+</head>
+<body>
+<main class="demo">
+  <div class="demo-head">Mixed script · 混排即默认</div>
+  <p style="font-size: 15px; margin: 0">构建 <code>#1284</code> 从 <code>main</code> 分支通过了全部 14 项检查,部署到生产环境只差一次确认。</p>
+  <p class="cap">拉丁字形与数字落在 SF Pro / Segoe UI,汉字回退至苹方 / 微软雅黑;ID、路径与数字始终保持拉丁等宽 — 无需任何额外声明。</p>
+  <div class="demo-head">Headings · 标题字距归零</div>
+  <h2 style="margin: 0">推送分支,交付构建</h2>
+  <p class="cap">拉丁标题的负字距(-0.02em)会让汉字粘连 — <code>:lang(zh)</code> 层将标题字距归零、行高放宽到 1.35。</p>
+  <div class="demo-head">Body · 正文行高 1.7</div>
+  <p style="margin: 0; max-width: 40em">汉字笔画密度远高于拉丁字母,默认 1.5 的行高在整段中文里会显得拥挤。声明语言后正文自动取 1.7 行高与 0.02em 字距,长段落的灰度立刻均匀下来,扫读节奏与英文页面保持一致。</p>
+  <div class="demo-head">Emphasis · 强调即字重</div>
+  <p style="margin: 0">汉字没有斜体 — <em>需要强调的词</em>渲染为 600 字重,绝不倾斜;引用与出处同理。</p>
+  <div class="demo-head">Components · 组件中文示例</div>
+  <div class="row">
+    <button type="button" class="btn btn-primary">新建构建</button>
+    <button type="button" class="btn btn-secondary">预览</button>
+    <button type="button" class="btn btn-ghost">查看日志</button>
+    <span style="font-size: 12.5px"><span class="kbd">⌘</span> <span class="kbd">K</span> <span style="color: color-mix(in srgb, var(--color-text) 55%, transparent)">全局可用</span></span>
+  </div>
+  <div class="row" style="margin-top: var(--space-3)">
+    <div class="seg" role="group" aria-label="环境">
+      <label class="seg-opt"><input type="radio" name="env" checked />生产</label>
+      <label class="seg-opt"><input type="radio" name="env" />预发</label>
+      <label class="seg-opt"><input type="radio" name="env" />开发</label>
+    </div>
+    <span class="tag tag-success">已通过</span>
+    <span class="tag tag-warning">运行中</span>
+    <span class="tag tag-danger">失败</span>
+    <span class="tag tag-neutral">排队中</span>
+  </div>
+  <div class="row" style="margin-top: var(--space-3); gap: var(--space-4)">
+    <span class="status status-todo"><span class="status-dot"></span>待办</span>
+    <span class="status status-progress"><span class="status-dot"></span>进行中</span>
+    <span class="status status-review"><span class="status-dot"></span>评审中</span>
+    <span class="status status-done"><span class="status-dot"></span>已完成</span>
+    <span class="status status-blocked"><span class="status-dot"></span>受阻</span>
+  </div>
+  <div class="chrome" style="margin-top: var(--space-3)">
+    <div class="list">
+      <a class="list-row" href="#"><span class="status-dot" style="--status-c: var(--color-warning)"></span><span class="row-id">BLD-241</span><span class="row-title">统一各处理器的错误响应格式</span><span class="row-meta"><span class="tag tag-neutral">接口</span><span class="avatar avatar-sm" style="background: var(--color-accent-2)">陈</span><span>2天</span></span></a>
+      <a class="list-row" href="#" style="border-bottom: none"><span class="status-dot" style="--status-c: var(--color-accent-2)"></span><span class="row-id">BLD-236</span><span class="row-title">发布分支的预览链接 — 过长的标题按省略号截断而非换行</span><span class="row-meta"><span class="tag tag-neutral">网页</span><span class="avatar avatar-sm">林</span><span>3天</span></span></a>
+    </div>
+  </div>
+  <div class="toast" role="status" style="margin-top: var(--space-3)">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"></path></svg>
+    <div><span class="toast-title">已部署 #1284</span><span class="toast-body"> · 生产环境 · 38 秒</span></div>
+    <button type="button" class="toast-action">查看</button>
+  </div>
+  <div class="demo-head">Rules · 规则</div>
+  <p class="note">在 <code>&lt;html&gt;</code> 或任意子树声明 <code>lang="zh"</code> 即启用本层,组件零改动。最小字号下限 11px — 10px 的汉字不可读,最小标签自动升档;头像取单个姓氏字;数字、ID、时长与快捷键保持拉丁等宽,中西文间距与标点挤压在支持的浏览器交由 <code>text-autospace</code> / <code>text-spacing-trim</code>。字重:苹方原生支持 500 / 600,微软雅黑映射为粗体。</p>
+</main>
+</body>
+</html>

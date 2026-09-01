@@ -4,7 +4,11 @@
 
 本文件按**六站 + 底座**收口,不再按每次窗口一条流水往下堆。最近一次改动永远写在最上面。
 
-## 最近 · 2026-08-27
+## 最近 · 2026-08-31
+
+**Builder 设计系统落仓**:Claude Design 项目「builder」的设计系统转成仓内规范资产 `docs/design-system/`(唯一样式表 + 机读 theme.json + 双语 spec + 14 张纯 HTML 示例页 + 参考照片),画布机器件(_ds_bundle.js/support.js/Canvas.dc.html/缩略图/manifest/oxlint 配置)全部剥离,templates/ 留在设计项目。readme→spec 改名避大小写撞名;README 记来源、剥离清单与双向演进剧本(DesignSync 拉回 / /design-sync 回推)。未接线到壳,hifi 仍是九屏视觉正本。
+
+## 2026-08-27
 
 **独立评审(reviewer agent)**:评审中且 MR 开着的活可一键「请评审」——起一场独立评审会话(不是写码那场;评审剧本 `mr-review` + 阶段规范 `review` + 外置评审提示词 `REVIEW.md.tmpl`,standard 5.9→5.10),两轴评审(项目手册 + 活的意图),意见落 MR 评论;不合并、不改状态,合入仍由人点。会话记录另存 `<iid>-review.jsonl`,会话屏加「评审」页签,MVP 无接回、不派生「已评审」灯。产物链见 `changes/reviewer-agent/`。
 
