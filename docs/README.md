@@ -28,6 +28,7 @@
 | [`guide/`](guide/) | 产品指南(怎么用 Workbench,给用户/同事)+ 填写规范 |
 | [`adr/`](adr/) | 架构决策(难回头一条一篇) |
 | [`hifi/`](hifi/) | 视觉正本(`index.html` 单文件高保真 + 逐屏简报),桌面壳样式表从它搬过去 |
+| [`design-system/`](design-system/) | Builder 设计系统资产(唯一样式表 + 机读 token + 双语规范 + 14 张示例页),镜像自 Claude Design 项目「builder」;未接线到壳,供界面演进采用 |
 | [`reference/`](reference/) | 外部参考的**提炼版**(转述非原文,原文只存链接)。现有一篇:[AI-native SDLC playbook](reference/ai-native-sdlc-playbook.md)——做法与治理哲学,每段带 BW 落点或不采纳理由 |
 
 ## 找东西
