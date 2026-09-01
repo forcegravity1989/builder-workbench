@@ -685,6 +685,47 @@ impl Remote {
         }
     }
 
+    /// 改版本里程碑标题。GitHub/mock 不投(返 Ok)。
+    pub async fn rename_plan_milestone(
+        &self,
+        path: &str,
+        from: &str,
+        to: &str,
+    ) -> Result<(), RemoteError> {
+        match self {
+            Remote::Codehub { host, .. } => {
+                Ok(codehub::rename_plan_milestone(host, path, from, to).await?)
+            }
+            Remote::Github(_) | Remote::Mock(_) => Ok(()),
+        }
+    }
+
+    /// 改 `bw:plan:` 标签定义名。mock 里同步改 issue 上已打的标。
+    pub async fn rename_plan_label(
+        &self,
+        path: &str,
+        from_label: &str,
+        to_label: &str,
+    ) -> Result<(), RemoteError> {
+        match self {
+            Remote::Codehub { host, .. } => {
+                Ok(codehub::rename_plan_label(host, path, from_label, to_label).await?)
+            }
+            Remote::Github(_) => Ok(()),
+            Remote::Mock(state) => {
+                let mut s = state.lock().expect("mock state 未中毒");
+                for i in s.issues.values_mut() {
+                    for l in &mut i.labels {
+                        if l == from_label {
+                            *l = to_label.to_string();
+                        }
+                    }
+                }
+                Ok(())
+            }
+        }
+    }
+
     /// 改 issue 责任人。空串 = 取消指派。
     pub async fn set_issue_assignee(&self, iid: u32, assignee: &str) -> Result<(), RemoteError> {
         match self {

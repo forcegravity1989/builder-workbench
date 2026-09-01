@@ -22,7 +22,7 @@ use crate::model::Signal;
 /// 健康的三条判据。每条都能被独立复算,不存任何中间值。
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct HealthInputs {
-    /// (a) 本周真有周目标正文(ops① 评论里那一句)。issue 开着 ≠ 目标已定。
+    /// (a) 本周真有版本目标正文(ops① 评论里那一句)。issue 开着 ≠ 目标已定。
     pub has_week_goal: bool,
     /// 本周运作活①还在(没点完成)。用来把「还没开这张活」和「活开了但目标
     /// 还没落到评论」说成两句,不把「开始本周」当成已经定了目标。
@@ -110,13 +110,13 @@ pub fn derive_project_health(inputs: &HealthInputs) -> DerivedHealth {
         HealthReason {
             ok: a,
             text: if a {
-                "本周定了周目标,仓里也有真实提交".into()
+                "本周定了版本目标,仓里也有真实提交".into()
             } else if !inputs.has_week_goal && inputs.ops1_open {
-                "本周计划还在做,周目标还没写进这张活的评论".into()
+                "本周计划还在做,版本目标还没写进这张活的评论".into()
             } else if !inputs.has_week_goal {
-                "没有从本周运作活评论里读到周目标一句话".into()
+                "没有从本周运作活评论里读到版本目标一句话".into()
             } else {
-                "本周有周目标,但仓里还没有真实提交".into()
+                "本周有版本目标,但仓里还没有真实提交".into()
             },
         },
         HealthReason {

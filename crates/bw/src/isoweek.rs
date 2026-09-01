@@ -82,6 +82,11 @@ pub fn current_week() -> String {
     iso_week_of(now_local().date())
 }
 
+/// 是不是 `2026-W34` 这种 ISO 周号。计划屏用来把周版本和人起名的版本分开。
+pub fn is_week(s: &str) -> bool {
+    week_start(s).is_some()
+}
+
 /// `2026-W34` → 那一周的周一。认不出格式返回 `None`,不猜。
 pub fn week_start(week: &str) -> Option<Date> {
     let (year, rest) = week.split_once("-W")?;
@@ -156,6 +161,20 @@ pub fn parse_schedule(spec: &str) -> Option<(u8, u8, u8)> {
 /// 靠的是「本周有没有建过这张活」那条查询,这里只要回答「这一周里该触发的那
 /// 一刻是不是已经过去了」。错过一次(比如那会儿 Workbench 没开着)下次照样成立,
 /// 自动补建,不需要另记一张「上次触发时间」的表。
+/// 这个 Unix 秒落在不在给定 ISO 周。`ts <= 0` 或解析不出 → false。
+pub fn unix_in_week(ts: i64, week: &str) -> bool {
+    week_of_unix(ts).as_deref() == Some(week)
+}
+
+/// Unix 秒对应的本机 ISO 周。`ts <= 0` 或解析不出 → `None`。
+pub fn week_of_unix(ts: i64) -> Option<String> {
+    if ts <= 0 {
+        return None;
+    }
+    let dt = OffsetDateTime::from_unix_timestamp(ts).ok()?;
+    Some(iso_week_of(dt.to_offset(local_offset()).date()))
+}
+
 pub fn schedule_passed_this_week(spec: &str) -> bool {
     let Some((dow, h, m)) = parse_schedule(spec) else {
         return false;
@@ -163,4 +182,37 @@ pub fn schedule_passed_this_week(spec: &str) -> bool {
     let now = now_local();
     let today = now.weekday().number_from_monday();
     (today, now.hour(), now.minute()) >= (dow, h, m)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn is_week_accepts_iso_and_rejects_plan_names() {
+        assert!(is_week("2026-W35"));
+        assert!(!is_week("v0.3"));
+        assert!(!is_week("MVP收尾"));
+    }
+
+    #[test]
+    fn unix_in_week_rejects_zero() {
+        assert!(!unix_in_week(0, "2026-W36"));
+        assert!(!unix_in_week(-1, "2026-W36"));
+    }
+
+    #[test]
+    fn unix_in_week_matches_iso_week_of_that_instant() {
+        let ts = time::OffsetDateTime::from_unix_timestamp(1_725_000_000)
+            .expect("fixed ts")
+            .unix_timestamp();
+        let week = iso_week_of(
+            time::OffsetDateTime::from_unix_timestamp(ts)
+                .expect("roundtrip")
+                .to_offset(local_offset())
+                .date(),
+        );
+        assert!(unix_in_week(ts, &week));
+        assert!(!unix_in_week(ts, "1999-W01"));
+    }
 }

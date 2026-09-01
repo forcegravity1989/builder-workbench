@@ -69,7 +69,7 @@ pub fn NewIssueDialog(
     } else if !p.viewing_plan.is_empty() {
         format!("新建的 issue 排进版本「{}」。", p.viewing_plan)
     } else {
-        format!("新建的 issue 排进版本「{}」。", p.viewing_week)
+        "新建的 issue 进待办池·未排期。".to_string()
     };
     rsx! {
         div { class: "modal-backdrop", onclick: move |_| dialog.set(None),
@@ -116,9 +116,8 @@ pub fn NewIssueDialog(
                             onclick: move |_| {
                                 let t = title.read().trim().to_string();
                                 if t.is_empty() { return; }
-                                // 一张活只属于一个版本。看人起名的版本只带 plan;
-                                // 看周版本只带 week;「全部」两个都空(进待办池)。
-                                // 看版本时 viewing_week 会被拼成本周,绝不能一起发。
+                                // 看某个计划版本只带 plan;看周或全部进待办池。
+                                // 不再给新建活打 bw:week。
                                 let viewing_custom = !p.viewing_plan.is_empty();
                                 b.cmd(Command::CreateIssue {
                                     project_id: pid,
@@ -127,11 +126,7 @@ pub fn NewIssueDialog(
                                     category: Some(*category.read()),
                                     kind: IssueKind::Business,
                                     origin: IssueOrigin::Human,
-                                    week_of: if p.view_all || viewing_custom {
-                                        String::new()
-                                    } else {
-                                        p.viewing_week.clone()
-                                    },
+                                    week_of: String::new(),
                                     plan: if viewing_custom {
                                         p.viewing_plan.clone()
                                     } else {
@@ -149,7 +144,7 @@ pub fn NewIssueDialog(
     }
 }
 
-/// 创建版本弹窗。人起名的版本,和每周一出现的周版本是同一类。
+/// 创建版本弹窗。只要 `v0.x`。
 #[component]
 pub fn CreateVersionDialog(
     p: ProjectVm,
@@ -157,7 +152,7 @@ pub fn CreateVersionDialog(
     bridge: Bridge,
 ) -> Element {
     // 草稿存组件局部 state(use_signal),弹窗关了就丢。
-    let mut name = use_signal(String::new);
+    let mut name = use_signal(|| p.suggested_next.clone());
     let mut start = use_signal(String::new);
     let mut due = use_signal(String::new);
     let mut note = use_signal(String::new);
@@ -176,7 +171,15 @@ pub fn CreateVersionDialog(
     let due_v = due.read().clone();
     let dates_ok = !start_v.is_empty() && !due_v.is_empty();
     let range_bad = dates_ok && start_v > due_v;
-    let can_create = name_ok && dates_ok && !range_bad;
+    let name_v = name.read().trim().to_string();
+    let taken = p
+        .plan_versions
+        .iter()
+        .any(|v| v.name == name_v)
+        || p.last_released == name_v
+        || p.unreleased.iter().any(|s| s == &name_v);
+    let shape_ok = bw::version::is_v0x(&name_v);
+    let can_create = name_ok && dates_ok && !range_bad && shape_ok && !taken;
     rsx! {
         div { class: "modal-backdrop", onclick: move |_| dialog.set(None),
             div { class: "modal plan-modal", onclick: move |e| e.stop_propagation(),
@@ -188,8 +191,13 @@ pub fn CreateVersionDialog(
                 div { class: "plan-modal-body",
                     div { class: "formrow",
                         label { class: "label", "版本名 *" }
-                        input { class: "input", value: "{name}", placeholder: "例如 MVP收尾",
+                        input { class: "input", value: "{name}", placeholder: "例如 v0.3",
                             oninput: move |e| name.set(e.value()) }
+                        if !name_v.is_empty() && !shape_ok {
+                            div { class: "field-err", "版本名必须是 v0.1 这种" }
+                        } else if taken {
+                            div { class: "field-err", "{name_v} 已经有了" }
+                        }
                     }
                     div { class: "formrow",
                         label { class: "label", "时间" }
@@ -234,7 +242,11 @@ pub fn CreateVersionDialog(
                         }
                     }
                     div { class: "cfg-readonly-note",
-                        "人起名的版本,和每周一出现的周版本是同一类东西;与发版号(如 {p.card.current_version})不是一回事。"
+                        {
+                            let last = if p.last_released.is_empty() { "没有" } else { p.last_released.as_str() };
+                            let unrel = if p.unreleased.is_empty() { "没有".to_string() } else { p.unreleased.join("、") };
+                            format!("上一发 · {last}　未发 · {unrel}　推荐 · {}", p.suggested_next)
+                        }
                     }
                 }
                 div { class: "plan-modal-foot",
@@ -293,7 +305,7 @@ fn check_row(c: &CardItemVm, mut picked: Signal<Vec<IssueId>>) -> Element {
     }
 }
 
-/// 排期弹窗(拖未排期卡到已排期段触发):下拉选未结束周 / 已建版本。
+/// 排期弹窗(拖未排期卡到已排期段触发):只排进已有计划版本,不再写周标签。
 #[component]
 pub fn ScheduleDialog(
     p: ProjectVm,
@@ -303,57 +315,40 @@ pub fn ScheduleDialog(
 ) -> Element {
     let b = bridge.clone();
     let id = ps.id;
-    let open_weeks: Vec<&crate::vm::WeekVm> = p
-        .weeks
-        .iter()
-        .filter(|w| w.week >= p.current_week)
-        .collect();
-    // 默认选本周
-    let default_sel = format!("week:{}", p.current_week);
+    let default_sel = p
+        .plan_versions
+        .first()
+        .map(|v| format!("version:{}", v.name))
+        .unwrap_or_default();
     let mut sel = use_signal(move || default_sel.clone());
     rsx! {
         div { class: "modal-backdrop", onclick: move |_| schedule.set(None),
             div { class: "modal", onclick: move |e| e.stop_propagation(),
                 h3 { "排期" }
                 div { style: "font-size:13px;line-height:1.7;color:var(--ink-2);",
-                    "把「{ps.title}」排进哪个版本。周版本每周一按周号出现,也可以排进人起名的版本。一张活只属于一个版本。"
+                    "把「{ps.title}」排进一个版本。一张活只属于一个槽。"
                 }
                 div { class: "formrow",
                     label { class: "label", "排进" }
                     select {
                         class: "select",
                         onchange: move |e| sel.set(e.value()),
-                        for w in open_weeks {
-                            {
-                                let label = if w.week == p.current_week {
-                                    format!("周计划 · {} (本周)", w.week)
-                                } else {
-                                    format!("周计划 · {}", w.week)
-                                };
-                                let val = format!("week:{}", w.week);
-                                let sel = w.week == p.current_week;
-                                rsx! {
-                                    option { value: "{val}", selected: sel, "{label}" }
-                                }
-                            }
-                        }
                         for v in p.plan_versions.iter() {
-                            {let val = format!("version:{}", v.name); rsx! { option { value: "{val}", "版本 · {v.name}" } }}
+                            {let val = format!("version:{}", v.name); rsx! { option { value: "{val}", "{v.name}" } }}
                         }
                     }
                 }
                 div { class: "cfg-readonly-note",
-                    "排进一个版本 = 从未排期变已排期。周号形态和人起名的是同一类版本,不是两套排期。"
+                    "打 bw:plan:。旧周标签只读回显示,排期不再新写。"
                 }
                 div { class: "modal-actions",
                     button { class: "btn btn-secondary", onclick: move |_| schedule.set(None), "取消" }
                     button {
                         class: "btn btn-primary",
+                        disabled: p.plan_versions.is_empty(),
                         onclick: move |_| {
                             let s = sel.read().clone();
-                            if let Some(rest) = s.strip_prefix("week:") {
-                                b.cmd(Command::ScheduleIssue { id, week_of: Some(rest.to_string()) });
-                            } else if let Some(rest) = s.strip_prefix("version:") {
+                            if let Some(rest) = s.strip_prefix("version:") {
                                 b.cmd(Command::ScheduleToPlan { id, plan: rest.to_string() });
                             }
                             schedule.set(None);
@@ -462,13 +457,14 @@ pub fn DeleteVersionDialog(
 ) -> Element {
     let b = bridge.clone();
     let pid = p.id;
-    let default_sel = p
+    let versions: Vec<String> = p
         .plan_versions
-        .first()
+        .iter()
+        .filter(|v| bw::version::is_v0x(&v.name) && !v.released)
         .map(|v| v.name.clone())
-        .unwrap_or_default();
+        .collect();
+    let default_sel = versions.first().cloned().unwrap_or_default();
     let mut sel = use_signal(move || default_sel.clone());
-    let versions: Vec<String> = p.plan_versions.iter().map(|v| v.name.clone()).collect();
     rsx! {
         div { class: "modal-backdrop", onclick: move |_| dialog.set(None),
             div { class: "modal plan-modal", onclick: move |e| e.stop_propagation(),
@@ -495,6 +491,7 @@ pub fn DeleteVersionDialog(
                         button { class: "btn btn-secondary", onclick: move |_| dialog.set(None), "取消" }
                         button {
                             class: "btn btn-danger",
+                            disabled: versions.is_empty(),
                             onclick: move |_| {
                                 let s = sel.read().clone();
                                 b.cmd(Command::DeletePlanVersion {
@@ -512,14 +509,14 @@ pub fn DeleteVersionDialog(
     }
 }
 
-/// 发版本弹窗(周视图)。
+/// 发版本弹窗。号锁死当前版本视图,不能改。
 #[component]
 pub fn ReleaseDialog(
     draft: ReleaseDraft,
     mut dialog: Signal<Option<DialogKind>>,
     bridge: Bridge,
 ) -> Element {
-    let mut version = use_signal(move || draft.version.clone());
+    let version = use_signal(move || draft.version.clone());
     let mut note = use_signal(move || draft.note.clone());
     let included = draft.included.clone();
     let pid = draft.project_id;
@@ -536,14 +533,13 @@ pub fn ReleaseDialog(
                 h3 { "发版本" }
                 div { class: "formrow",
                     label { class: "label", "版本号" }
-                    input { class: "input", value: "{version}", placeholder: "例如 v0.2",
-                        oninput: move |e| version.set(e.value()) }
+                    input { class: "input", value: "{version}", readonly: true }
                 }
                 div { class: "formrow",
                     label { class: "label", "说明" }
                     textarea { class: "textarea", value: "{note}", oninput: move |e| note.set(e.value()) }
                 }
-                div { class: "cfg-readonly-note", "确认后在代码平台建 Release,再给本周已完成的活打发版标签。" }
+                div { class: "cfg-readonly-note", "确认后在代码平台建 Release,再给本版本已完成的活打发版标签。" }
                 div { class: "modal-actions",
                     button { class: "btn btn-secondary", onclick: move |_| dialog.set(None), "取消" }
                     button {

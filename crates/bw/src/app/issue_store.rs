@@ -21,8 +21,8 @@ use super::{App, AppError, Result};
 // 匹配。前缀与 `app/ops.rs` / `app/project.rs` / `standard/bootstrap.rs` 里建
 // 活时拼标题用的那几个串一字不差,改那边要同步改这里。
 
-/// 运作活①的标题前缀。完整标题 = 这个前缀 + 周号(`ops1_title(week)`)。
-const OPS1_TITLE_PREFIX: &str = "更新指标 + 制定本周计划 ";
+/// 运作活①的标题前缀。光杆或后面跟 ` v0.x` 都认。
+const OPS1_TITLE_PREFIX: &str = "更新指标 + 制定版本计划";
 /// 运作活②的标题前缀。完整标题 = 这个前缀 + 周号(`"资产盘点 {week}"`)。
 const OPS2_TITLE_PREFIX: &str = "资产盘点 ";
 /// 运作活③的标题前缀。完整标题 = 这个前缀 + 版本号(`"规范铺底 v{version}"`)。
@@ -46,8 +46,8 @@ fn map_remote_err<E: std::fmt::Display>(ctx: &str, e: E) -> AppError {
 
 /// 在远端仓里真开一个 issue,返回填好 `number`/`remote_number` 的 `Issue`。
 ///
-/// labels = `bw:status:todo`(新活默认待办)+ 一个版本槽(`bw:week:` 或
-/// `bw:plan:`,见 [`one_schedule`])+ `extra_labels`(调用方自塞,如类别)。
+/// labels = `bw:status:todo`(新活默认待办)+ 一个版本槽(`bw:plan:v0.x`,
+/// 见 [`one_schedule`])+ `extra_labels`(调用方自塞,如类别)。不再写 `bw:week:`。
 /// kind 由参数显式给(不推断),决定回填 `tool`/`workflow`/`origin`。
 ///
 /// issue 读写唯一入口:app 层各用例(issue / plan / ops / bootstrap / project /
@@ -70,12 +70,7 @@ pub async fn create(
         "bw:status:todo"
     };
     let mut labels: Vec<String> = vec![status_label.to_string()];
-    if let Some(w) = &week {
-        labels.push(format!("bw:week:{w}"));
-    }
     for x in extra_labels {
-        // plan 已在 extra 里;week 与 plan 同时传来时 one_schedule 丢掉了周,
-        // 这里不再补 bw:week。
         labels.push((*x).to_string());
     }
     let label_refs: Vec<&str> = labels.iter().map(|s| s.as_str()).collect();
@@ -85,8 +80,6 @@ pub async fn create(
         .map_err(|e| map_remote_err("远端建活没成", e))?;
     if let Some(name) = &plan {
         project_plan_best_effort(&remote, &project.remote_path, iid, name).await;
-    } else if let Some(w) = &week {
-        project_week_best_effort(&remote, iid, w).await;
     }
     Ok(issue_from_create(
         project,
@@ -375,21 +368,15 @@ pub async fn find_open_by_title(
 
 // ─────────────── Issue 构造(两条路:create 直接拼 / 从 RemoteIssue 映射)────
 
-/// 一张活只属于一个版本槽。`bw:plan:` 在 extra 里就只留版本,不留周;
-/// 否则 week_of 非空就留周。两个都给时丢掉周(壳看自定义版本时曾误带本周)。
-fn one_schedule(week_of: &str, extra_labels: &[&str]) -> (Option<String>, Option<String>) {
+/// 一张活只属于一个版本槽。合法 `bw:plan:v0.x` 才排期;`week_of` 即使非空
+/// 也不再生成周排期(不再写 `bw:week:`)。
+fn one_schedule(_week_of: &str, extra_labels: &[&str]) -> (Option<String>, Option<String>) {
     let plan = extra_labels
         .iter()
         .find_map(|l| l.strip_prefix("bw:plan:"))
-        .filter(|s| !s.is_empty())
+        .filter(|s| crate::version::is_v0x(s))
         .map(|s| s.to_string());
-    if plan.is_some() {
-        (None, plan)
-    } else if !week_of.is_empty() {
-        (Some(week_of.to_string()), None)
-    } else {
-        (None, None)
-    }
+    (None, plan)
 }
 
 /// `create` 成功后拼 `Issue`——这会儿没有 `RemoteIssue` 快照,但 title/body/
@@ -524,7 +511,7 @@ fn kind_from_title(title: &str) -> IssueKind {
     }
 }
 
-/// 运作活的 workflow 从标题推断:①→`更新指标与周计划`,②→`资产盘点`,
+/// 运作活的 workflow 从标题推断:①→`更新指标与版本计划`,②→`资产盘点`,
 /// ③→`规范铺底`(③没有 agent 步骤,skill_slug 回 None,但 workflow 字段
 /// 仍需有值给配置屏「用过几次」与演示读回用)。
 fn ops_workflow_from_title(title: &str) -> String {
@@ -645,7 +632,14 @@ fn parse_status_from_labels(labels: &[String]) -> IssueStatus {
 fn parse_week(labels: &[String]) -> String {
     labels
         .iter()
-        .find_map(|l| l.strip_prefix("bw:week:").map(|s| s.to_string()))
+        .find_map(|l| {
+            let s = l.strip_prefix("bw:week:")?;
+            if s.is_empty() {
+                None
+            } else {
+                Some(s.to_string())
+            }
+        })
         .unwrap_or_default()
 }
 
@@ -656,11 +650,19 @@ fn parse_released(labels: &[String]) -> String {
         .unwrap_or_default()
 }
 
-/// 从 `bw:plan:<name>` 标签取这张活排进的自定义版本。空 = 不属于任何版本。
+/// 从 `bw:plan:<name>` 标签取这张活排进的版本。空后缀当没排。
+/// 读回认旧名(`MVP收尾`)和新的 `v0.x`,新建仍只写 `v0.x`。
 fn parse_plan(labels: &[String]) -> String {
     labels
         .iter()
-        .find_map(|l| l.strip_prefix("bw:plan:").map(|s| s.to_string()))
+        .find_map(|l| {
+            let s = l.strip_prefix("bw:plan:")?;
+            if s.is_empty() {
+                None
+            } else {
+                Some(s.to_string())
+            }
+        })
         .unwrap_or_default()
 }
 
@@ -720,17 +722,30 @@ mod tests {
     }
 
     #[test]
-    fn one_schedule_keeps_only_plan_when_both_given() {
-        let (week, plan) = one_schedule("2026-W35", &["bw:plan:MVP收尾"]);
+    fn one_schedule_keeps_only_v0x_plan() {
+        let (week, plan) = one_schedule("2026-W35", &["bw:plan:v0.3"]);
         assert!(week.is_none());
-        assert_eq!(plan.as_deref(), Some("MVP收尾"));
+        assert_eq!(plan.as_deref(), Some("v0.3"));
     }
 
     #[test]
-    fn one_schedule_keeps_week_when_no_plan() {
-        let (week, plan) = one_schedule("2026-W35", &["bw:category:build"]);
-        assert_eq!(week.as_deref(), Some("2026-W35"));
+    fn one_schedule_drops_week_and_invalid_plan() {
+        let (week, plan) = one_schedule("2026-W35", &["bw:plan:MVP收尾"]);
+        assert!(week.is_none());
         assert!(plan.is_none());
+    }
+
+    #[test]
+    fn parse_plan_keeps_old_and_v0x() {
+        assert_eq!(parse_plan(&["bw:plan:MVP收尾".into()]), "MVP收尾");
+        assert_eq!(parse_plan(&["bw:plan:v0.3".into()]), "v0.3");
+        assert_eq!(parse_plan(&["bw:plan:".into()]), "");
+    }
+
+    #[test]
+    fn parse_week_reads_iso_week() {
+        assert_eq!(parse_week(&["bw:week:2026-W35".into()]), "2026-W35");
+        assert_eq!(parse_week(&["bw:week:".into()]), "");
     }
 
     #[test]
@@ -742,10 +757,10 @@ mod tests {
             "",
             IssueKind::Business,
             "2026-W35",
-            &["bw:plan:MVP收尾", "bw:category:build"],
+            &["bw:plan:v0.3", "bw:category:build"],
         );
         assert_eq!(i.week_of, "");
-        assert_eq!(i.plan_version, "MVP收尾");
+        assert_eq!(i.plan_version, "v0.3");
         assert_eq!(i.status, IssueStatus::Todo);
     }
 
@@ -774,7 +789,7 @@ workflow = "mattpocock-skills"
         let mut p = proj();
         p.workspace_path = dir.display().to_string();
         let (tool, workflow) =
-            resolve_tool_workflow(&p, IssueKind::Ops, "更新指标 + 制定本周计划 2026-W35", None);
+            resolve_tool_workflow(&p, IssueKind::Ops, "更新指标 + 制定版本计划", None);
         let _ = std::fs::remove_dir_all(&dir);
         assert_eq!(tool, "cursor");
         assert_eq!(workflow, super::super::OPS1_WORKFLOW);
