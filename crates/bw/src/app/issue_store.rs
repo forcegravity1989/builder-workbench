@@ -531,18 +531,22 @@ fn workflow_for(kind: IssueKind, title: &str) -> String {
     }
 }
 
-fn tool_for(kind: IssueKind) -> String {
-    match kind {
-        // 机读键必须是 `tools::agent_for` 认的那一套(`claude_cli` / `cursor` /
-        // `open_design`)。早年写过 `"claude"`,但 `agent_for` 只认 `claude_cli`,
-        // 运作活一开工就被它拒掉。
-        IssueKind::Ops => "claude_cli".into(),
-        _ => String::new(),
-    }
+/// 读 `.bw/issue-policy.toml` 某一类的开工工具。文件没有 / 这类没配 → 空,
+/// 不猜 `claude_cli`。
+fn policy_tool(project: &Project, category: crate::model::Category) -> String {
+    let Ok(Some(file)) =
+        crate::repo::issue_policy_file::read(std::path::Path::new(&project.workspace_path))
+    else {
+        return String::new();
+    };
+    file.mapping_for(category)
+        .map(|m| m.tool.clone())
+        .unwrap_or_default()
 }
 
 /// 业务活:类别标签 → `.bw/issue-policy.toml` 映射出工具和 workflow。
-/// 运作活仍从标题推断。查不到映射就空着,不猜 claude。
+/// 运作活不打五阶段类别;开工工具读运维行(`category = "ops"`),workflow
+/// 仍按标题推断。查不到映射就空着,不猜 claude。
 fn resolve_tool_workflow(
     project: &Project,
     kind: IssueKind,
@@ -550,7 +554,10 @@ fn resolve_tool_workflow(
     category: Option<crate::model::Category>,
 ) -> (String, String) {
     if kind == IssueKind::Ops {
-        return (tool_for(kind), workflow_for(kind, title));
+        return (
+            policy_tool(project, crate::model::Category::Ops),
+            workflow_for(kind, title),
+        );
     }
     let Some(cat) = category else {
         return (String::new(), String::new());
@@ -724,5 +731,44 @@ mod tests {
         assert_eq!(i.week_of, "");
         assert_eq!(i.plan_version, "MVP收尾");
         assert_eq!(i.status, IssueStatus::Todo);
+    }
+
+    #[test]
+    fn ops_tool_reads_ops_mapping_workflow_stays_on_title() {
+        let dir = std::env::temp_dir().join(format!(
+            "bw-ops-policy-{}-{}",
+            std::process::id(),
+            std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .map(|d| d.as_nanos())
+                .unwrap_or(0)
+        ));
+        std::fs::create_dir_all(dir.join(".bw")).unwrap();
+        std::fs::write(
+            dir.join(".bw/issue-policy.toml"),
+            r#"
+schema_version = 1
+[[mapping]]
+category = "ops"
+tool     = "cursor"
+workflow = "mattpocock-skills"
+"#,
+        )
+        .unwrap();
+        let mut p = proj();
+        p.workspace_path = dir.display().to_string();
+        let (tool, workflow) =
+            resolve_tool_workflow(&p, IssueKind::Ops, "更新指标 + 制定本周计划 2026-W35", None);
+        let _ = std::fs::remove_dir_all(&dir);
+        assert_eq!(tool, "cursor");
+        assert_eq!(workflow, super::super::OPS1_WORKFLOW);
+    }
+
+    #[test]
+    fn ops_tool_empty_when_ops_mapping_missing() {
+        let (tool, workflow) =
+            resolve_tool_workflow(&proj(), IssueKind::Ops, "资产盘点 2026-W35", None);
+        assert!(tool.is_empty(), "没配运维行不猜 claude_cli");
+        assert_eq!(workflow, super::super::OPS2_WORKFLOW);
     }
 }

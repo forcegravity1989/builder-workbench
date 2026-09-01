@@ -59,6 +59,33 @@ impl PanelNav {
     }
 }
 
+/// 开工立刻盖住。点「开始本周」/ Start 时先立,等内核 `Vm.busy` 接上或收工再撤。
+/// Orca iframe 是 WebView 原生层,只靠 `.busy-mask` 盖不住已经挂上的嵌页。
+pub const STARTING_SESSION: &str = "正在开工,Orca 要几秒把会话拉起来。先别点嵌页。";
+
+/// 拖拽 / 详情改状态:等远端写标签,不重拉 issue 名单。
+pub const SWITCHING_STATUS: &str = "issue 状态切换中";
+
+#[derive(Clone, Copy)]
+pub struct ChromeBusy(pub dioxus::prelude::Signal<Option<String>>);
+
+impl ChromeBusy {
+    pub fn set(mut self, msg: impl Into<String>) {
+        use dioxus::prelude::WritableExt;
+        self.0.set(Some(msg.into()));
+    }
+
+    pub fn clear(mut self) {
+        use dioxus::prelude::WritableExt;
+        self.0.set(None);
+    }
+
+    pub fn get(self) -> Option<String> {
+        use dioxus::prelude::ReadableExt;
+        self.0.read().clone()
+    }
+}
+
 /// 指南抽屉开着还是收着。`None` = 收着。和 [`PanelNav`] 一样是纯本机导航,
 /// 所以也走 context 不走 `Req` —— 项目墙环境条「怎么处理 →」也能打开。
 /// 正文是编进二进制的产品指南,不再自写章节。

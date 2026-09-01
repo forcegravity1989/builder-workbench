@@ -102,30 +102,55 @@ const OPS1_PREFIX: &str = "更新指标 + 制定本周计划 ";
 
 impl super::App {
     /// 各周运作活①评论里解析出的周目标这一段。读失败的周就空着,不挡整屏。
+    /// 周与周互不依赖,评论两两并行拉,不按周串行等。
     pub async fn week_goals_from_ops1(
         &self,
         project: &crate::model::Project,
         issues: &[crate::model::Issue],
     ) -> std::collections::HashMap<String, String> {
+        let jobs: Vec<(String, u32)> = issues
+            .iter()
+            .filter_map(|i| {
+                let week = i.title.strip_prefix(OPS1_PREFIX).map(str::trim)?;
+                let week = if i.week_of.is_empty() {
+                    week.to_string()
+                } else {
+                    i.week_of.clone()
+                };
+                Some((week, i.id.iid()))
+            })
+            .collect();
         let mut out = std::collections::HashMap::new();
-        for i in issues {
-            let Some(week) = i.title.strip_prefix(OPS1_PREFIX).map(str::trim) else {
-                continue;
-            };
-            let week = if i.week_of.is_empty() {
-                week.to_string()
+        let mut i = 0;
+        while i < jobs.len() {
+            if i + 1 < jobs.len() {
+                let (a, b) = tokio::join!(
+                    super::issue_store::list_comments(self, project, jobs[i].1),
+                    super::issue_store::list_comments(self, project, jobs[i + 1].1),
+                );
+                insert_goal(&mut out, &jobs[i].0, a);
+                insert_goal(&mut out, &jobs[i + 1].0, b);
+                i += 2;
             } else {
-                i.week_of.clone()
-            };
-            let Ok(bodies) = super::issue_store::list_comments(self, project, i.id.iid()).await
-            else {
-                continue;
-            };
-            if let Some(goal) = parse_comments(&bodies).goal {
-                out.insert(week, goal);
+                let a = super::issue_store::list_comments(self, project, jobs[i].1).await;
+                insert_goal(&mut out, &jobs[i].0, a);
+                i += 1;
             }
         }
         out
+    }
+}
+
+fn insert_goal(
+    out: &mut std::collections::HashMap<String, String>,
+    week: &str,
+    bodies: super::Result<Vec<String>>,
+) {
+    let Ok(bodies) = bodies else {
+        return;
+    };
+    if let Some(goal) = parse_comments(&bodies).goal {
+        out.insert(week.to_string(), goal);
     }
 }
 
