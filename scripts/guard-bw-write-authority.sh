@@ -7,14 +7,32 @@
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
-# 仓文件的写入口。`write_file` 是底层那个,其余是各解析器自己的。
-#
+# 仓文件的写入口。**名字写错过两次**(`append_metric_reading` 根本不存在,真名是
+# `upsert_metric_reading`),所以下面用 WRITE_FNS 单独列出来,并在跑之前**逐个
+# 核对它们真的存在** —— 守卫拿不存在的名字去 grep,只会一直打勾。
+WRITE_FNS=(
+  "project_file::write"
+  "issue_policy_file::write"
+  "managed_file::write"
+  "metrics_file::write"
+  "readings_file::upsert_metric_reading"
+  "readings_file::absorb_main_readings"
+)
+
+# 自检:名单里的每个函数都必须在 crates/ 里真实存在,否则这条守卫是在守空气。
+for fn in "${WRITE_FNS[@]}"; do
+  name="${fn##*::}"
+  if ! grep -rqE "fn[[:space:]]+${name}[[:space:]]*[(<]" crates --include="*.rs"; then
+    echo "✗ 守卫自检失败:名单里的 ${fn} 在 crates/ 里找不到定义。"
+    echo "  名字改过就跟着改这份名单 —— 否则这条守卫会一直报绿,却什么都没守住。"
+    exit 1
+  fi
+done
+
 # 按**词边界**匹配,不按行首锚定:`write_file(` 前面可以是任意限定前缀
-# (`crate::repo::` / `bw::repo::` / 裸导入),也可以出现在赋值右边。原来那版
-# 用 `^\s*write_file\(` 行首锚 + 写死 `crate::repo::` 前缀,壳里一句
-# `let _ = bw::repo::write_file(...)` 两条都不匹配 —— 守卫会报绿。用
-# POSIX 字符类而不是 `\s`,BSD/macOS 的 grep 也认(本仓门禁以本机为准)。
-WRITERS='(issue_policy_file|project_file|managed_file|metrics_file)::write[[:space:]]*\(|append_metric_reading[[:space:]]*\(|(^|[^A-Za-z0-9_])write_file[[:space:]]*\('
+# (`crate::repo::` / `bw::repo::` / 裸导入),也可以出现在赋值右边。用 POSIX
+# 字符类而不是 `\s`,BSD/macOS 的 grep 也认(本仓门禁以本机为准)。
+WRITERS="$(printf '%s[[:space:]]*\\(|' "${WRITE_FNS[@]}")(^|[^A-Za-z0-9_])write_file[[:space:]]*\\("
 
 # 允许写的模块。加一处新的写入点 = 明着改这份名单,让它出现在 diff 里。
 ALLOW=(

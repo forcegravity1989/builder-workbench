@@ -287,7 +287,7 @@ pub fn is_readings_dirt(paths: &[String]) -> bool {
 }
 
 fn is_readings_path(p: &str) -> bool {
-    p == ".bw/state/metrics-readings.jsonl" || p == ".bw/metrics" || p.starts_with(".bw/metrics/")
+    p == ".bw/state/metrics-readings.jsonl"
 }
 
 /// 接入写在主检出上、等人合入才算正本的那两份名片。

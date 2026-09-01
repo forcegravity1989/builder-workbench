@@ -303,10 +303,9 @@ fn StandardBlock(p: ProjectVm, bridge: Bridge) -> Element {
     let (p, bridge) = (&p, &bridge);
     let b_rec = bridge.clone();
     let pid = p.id;
-    let std_ver = if p.card.standard == "—" {
-        "—(这个仓还没铺过规范件)".to_string()
-    } else {
-        p.card.standard.clone()
+    let std_ver = match &p.card.standard {
+        None => "—(这个仓还没铺过规范件)".to_string(),
+        Some(s) => s.clone(),
     };
     rsx! {
         div { class: "cfg-section",

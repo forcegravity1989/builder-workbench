@@ -108,10 +108,14 @@ pub fn summarize(workspace: &Path) -> Result<Option<LedgerSummary>> {
         ..Default::default()
     };
     for e in &file.files {
-        match std::fs::read(workspace.join(&e.path)) {
-            Err(_) => out.missing += 1,
-            Ok(disk) if fingerprint(&disk) != e.fingerprint => out.human_edited += 1,
-            Ok(_) => {}
+        // 复用 `reconcile` 这条唯一判据,不在这里再抄一遍指纹比对。
+        // `current_version` 传条目自己的版本 —— 于是 `Stale` 永不触发,恰好表达
+        // 「摘要有意不算过期」(名片不挂人消不掉的提醒,过期只在对账详情里报)。
+        let disk = std::fs::read(workspace.join(&e.path)).ok();
+        match reconcile(Some(e), disk.as_deref(), &e.version) {
+            Reconcile::Missing => out.missing += 1,
+            Reconcile::HumanEdited => out.human_edited += 1,
+            Reconcile::Stale | Reconcile::UpToDate => {}
         }
         if out.version.is_empty() || version_lt(&e.version, &out.version) {
             out.version = e.version.clone();
@@ -120,8 +124,10 @@ pub fn summarize(workspace: &Path) -> Result<Option<LedgerSummary>> {
     Ok(Some(out))
 }
 
-/// `a` 是不是比 `b` 低。按点分数字段比,比不出来就退回字符串比 —— 退回这条真会
-/// 用上:`5.10` 和 `5.8` 按字符串比会得出 `5.10` 更低,而版本走的是 5.8 → 5.10。
+/// `a` 是不是比 `b` 低。按点分数字段比 —— 必须按数字:`5.10` 和 `5.8` 若按字符串
+/// 比会得出 `5.10` 更低,而版本走的就是 5.8 → 5.10。
+///
+/// 字符串那条是防御性兜底:今天版本号永远是纯数字点分(`standard/VERSION`),走不到。
 fn version_lt(a: &str, b: &str) -> bool {
     let nums = |v: &str| -> Option<Vec<u32>> { v.split('.').map(|p| p.parse().ok()).collect() };
     match (nums(a), nums(b)) {

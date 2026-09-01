@@ -19,10 +19,9 @@ use dioxus::prelude::*;
 pub fn View(p: ProjectVm, bridge: Bridge) -> Element {
     let nav = use_context::<PanelNav>();
     let (p, bridge) = (&p, &bridge);
-    let std_ver = if p.card.standard == "—" {
-        "—(还没铺过规范件)".to_string()
-    } else {
-        format!("规范 {}", p.card.standard)
+    let std_ver = match &p.card.standard {
+        None => "—(还没铺过规范件)".to_string(),
+        Some(s) => format!("规范 {s}"),
     };
     rsx! {
         section {

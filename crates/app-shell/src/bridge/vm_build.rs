@@ -89,7 +89,7 @@ pub(super) struct ProjectGathered {
     /// 所以这里算一次传给 `build_ops`,不再每重切都跑一遍 git。
     ops3_landed: bool,
     /// 名片「规范」那一句,gather 阶段算好(读指纹清单要 `warnings` 兜读不动)。
-    standard: String,
+    standard: Option<String>,
     week_goals: std::collections::HashMap<String, String>,
     current_week: String,
     mr_url_prefix: String,
@@ -1152,16 +1152,14 @@ async fn assemble_project(
 ///
 /// 读不动 → 黄条 + 「—」;清单不在 → 「—」。两者都显示「—」,但前者会说话,
 /// 不冒充「这个仓还没铺过规范件」。
-pub(super) fn standard_label(ws: &std::path::Path, warnings: &mut Vec<String>) -> String {
-    let Some(s) = read_or_warn(
+pub(super) fn standard_label(ws: &std::path::Path, warnings: &mut Vec<String>) -> Option<String> {
+    let s = read_or_warn(
         ".bw/state/managed.toml",
         bw::repo::managed_file::summarize(ws),
         warnings,
-    ) else {
-        return "—".into();
-    };
+    )?;
     if s.managed == 0 {
-        return "—".into();
+        return None;
     }
     let mut out = format!("v{} · {} 件在管", s.version, s.managed);
     if s.missing > 0 {
@@ -1170,7 +1168,7 @@ pub(super) fn standard_label(ws: &std::path::Path, warnings: &mut Vec<String>) -
     if s.human_edited > 0 {
         out.push_str(&format!(" · 人改 {}", s.human_edited));
     }
-    out
+    Some(out)
 }
 
 pub(super) fn or_blank(s: &str) -> String {

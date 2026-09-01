@@ -1,8 +1,10 @@
-//! `.bw/config/issue-policy.toml` —— 活的约定:开工工具清单、「类别→工具→workflow」
-//! 三列映射、评审规则、节律、看板列文案。
+//! `.bw/config/issue-policy.toml` —— 活的约定:「类别→工具→workflow」三列映射、
+//! 节律、看板列文案。
 //!
-//! 这份文件**不入库**。配置屏、▶开工、定时判据每次现读现解析——所以新增一个
-//! 开工工具只要在这里加一行 `[[tool]]` 加一个适配模块目录,不碰内核。
+//! 这份文件**不入库**,每次现读现解析。
+//!
+//! **开工工具的探活与接法不在这里**:那是适配模块的事(`app/tools.rs` 的 `probe`
+//! 与 `agent_for`、壳的 `probe_env`)。这份文件只说「哪个类别默认用哪个工具」。
 
 use super::{parse_toml, read_to_string, write_file, Result};
 use crate::model::{category_from_key, Category};

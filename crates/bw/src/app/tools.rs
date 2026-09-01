@@ -106,10 +106,16 @@ fn sync_managed_fingerprint(ws: &Path, rel: &str, body: &[u8]) -> Result<()> {
     let Some(mut managed) = managed_file::read(ws)? else {
         return Ok(());
     };
-    let Some(entry) = managed.files.iter_mut().find(|f| f.path == rel) else {
+    // 用 `ManagedFile` 自己的 entry/upsert,别手写查找 —— 铺底那条路
+    // (`standard::bootstrap::lay_one`)用的就是这一对。
+    let Some(version) = managed.entry(rel).map(|e| e.version.clone()) else {
         return Ok(());
     };
-    entry.fingerprint = managed_file::fingerprint(body);
+    managed.upsert(managed_file::ManagedEntry {
+        path: rel.to_string(),
+        version,
+        fingerprint: managed_file::fingerprint(body),
+    });
     managed_file::write(ws, &managed).map_err(|e| {
         AppError::Refused(format!(
             "{rel} 已经写进去了,但指纹清单没跟上({e})—— 下次对账会把这份文件\
