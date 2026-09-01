@@ -209,7 +209,7 @@ h1,h2,h3,h4{font-family:var(--serif);font-weight:700;margin:0 0 8px;}
 
 /* ---------- plan ---------- */
 [data-screen="plan"]{height:calc(100vh - 92px);max-width:1560px;}
-.plan-grid{display:grid;grid-template-columns:180px 1fr;gap:14px;height:100%;min-height:0;}
+.plan-grid{display:flex;flex-direction:column;height:100%;min-height:0;}
 .plan-col{background:var(--card);border:1px solid var(--border);border-radius:10px;overflow-y:auto;padding:12px;}
 .plan-allrow{padding:7px 9px;border-radius:7px;font-size:12.5px;cursor:pointer;margin-bottom:2px;display:flex;justify-content:space-between;align-items:center;}
 .plan-allrow:hover{background:#EEE6D3;}
@@ -257,7 +257,7 @@ h1,h2,h3,h4{font-family:var(--serif);font-weight:700;margin:0 0 8px;}
 
 /* ---------- session (Orca-style) ---------- */
 [data-screen="session"]{height:calc(100vh - 92px);max-width:1600px;}
-.sess-grid{display:grid;grid-template-columns:auto 1fr auto;gap:14px;height:100%;min-height:0;}
+.sess-grid{display:flex;flex-direction:column;height:100%;min-height:0;}
 .sess-grid .sess-left{width:216px;}
 .sess-grid .sess-right{width:264px;}
 .sess-grid .sess-left.is-collapsed,.sess-grid .sess-right.is-collapsed{width:40px;}
@@ -339,6 +339,87 @@ h1,h2,h3,h4{font-family:var(--serif);font-weight:700;margin:0 0 8px;}
 .git-box{font-family:var(--mono);font-size:11.3px;background:#fff;border:1px solid var(--border);border-radius:7px;padding:8px 10px;line-height:1.8;}
 .mr-card{margin-top:8px;font-size:12px;background:#fff;border:1px solid var(--border);border-radius:8px;padding:9px 10px;}
 .mr-card .row{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;}
+
+/* ---------- plan: kanban segments / list view / centered modal ---------- */
+.status-dot{width:9px;height:9px;border-radius:50%;display:inline-block;flex:none;}
+.status-dot.dot-gray{background:var(--gray);}
+.status-dot.dot-amber{background:var(--amber);}
+.status-dot.dot-amber.dot-run{animation:pulse 1.2s ease-in-out infinite;}
+.status-dot.dot-green{background:var(--green);}
+.status-dot.dot-red{background:var(--red);}
+.avatar{display:inline-flex;align-items:center;justify-content:center;border-radius:50%;background:var(--clay);color:#fff;font-size:10px;font-weight:700;flex:none;}
+.avatar-sm{width:18px;height:18px;font-size:9.5px;}
+.kanban-col.col-todo{border-left:3px solid var(--gray);}
+.kanban-col.col-doing{border-left:3px solid var(--amber);}
+.kanban-col.col-pending{border-left:3px solid var(--clay);}
+.kanban-col.col-done{border-left:3px solid var(--green);}
+.kanban-col-head .count{margin-left:6px;font-family:var(--mono);color:var(--ink-3);}
+.kanban-segtabs{display:flex;gap:4px;margin-bottom:8px;flex:none;flex-wrap:wrap;}
+.seg-tab{padding:3px 9px;border-radius:6px;font-size:10.8px;cursor:pointer;border:1px solid var(--border);background:#fff;color:var(--ink-3);}
+.seg-tab.active{background:var(--clay);color:#fff;border-color:var(--clay);}
+.seg-tab .seg-count{margin-left:4px;opacity:.7;}
+.kanban-seg-box{flex:1;min-height:0;overflow-y:auto;}
+.kanban-empty{font-size:11.3px;color:var(--ink-4);padding:10px 4px;text-align:center;}
+.kcard-src{font-size:9.5px;background:#EFE9DA;color:var(--ink-3);border-radius:4px;padding:0 5px;}
+.kcard-desc{font-size:11.5px;color:var(--ink-2);margin-bottom:6px;line-height:1.4;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.kcard-place{font-size:10.8px;color:var(--ink-3);margin-bottom:6px;font-family:var(--mono);}
+.kcard-folder{margin-right:3px;}
+.kcard-foot{display:flex;align-items:center;justify-content:space-between;font-size:10.8px;color:var(--ink-3);}
+.kcard-who{display:flex;align-items:center;gap:5px;}
+.kcard-ago{font-family:var(--mono);}
+.il-wrap{flex:1;display:flex;flex-direction:column;min-height:0;}
+.il-bar{display:flex;align-items:center;gap:10px;margin-bottom:10px;flex-wrap:wrap;flex:none;}
+.il-presets{display:flex;gap:4px;}
+.il-preset{padding:5px 11px;border-radius:7px;font-size:11.5px;cursor:pointer;border:1px solid var(--border);background:#fff;color:var(--ink-2);}
+.il-preset.on{background:var(--clay);color:#fff;border-color:var(--clay);}
+.il-tools{display:flex;gap:8px;align-items:center;flex-wrap:wrap;}
+.il-dd-btn{padding:5px 8px;font-size:11.5px;border:1px solid var(--border-deep);border-radius:6px;background:#FFFDF8;}
+.il-search-wrap{flex:1;min-width:120px;}
+.il-search{width:100%;padding:5px 8px;font-size:11.5px;border:1px solid var(--border);border-radius:6px;background:#fff;}
+.issue-list{flex:1;overflow-y:auto;border:1px solid var(--border);border-radius:9px;background:#fff;}
+.il-row{display:flex;align-items:center;gap:8px;padding:8px 10px;border-bottom:1px solid var(--border);cursor:pointer;font-size:12px;}
+.il-row:hover{background:#FAF6EA;}
+.il-row.il-head{background:#FAF6EA;cursor:default;font-size:10.3px;color:var(--ink-3);text-transform:uppercase;letter-spacing:.03em;}
+.il-row.il-head:hover{background:#FAF6EA;}
+.il-num{flex:none;width:54px;font-family:var(--mono);}
+.il-idmark{display:inline-block;width:3px;height:13px;background:var(--clay);border-radius:2px;margin-right:5px;vertical-align:-2px;}
+.il-title{flex:1;min-width:0;display:flex;flex-direction:column;}
+.il-t1{font-size:12.3px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.il-t2{font-size:10.5px;color:var(--ink-3);}
+.il-owner{flex:none;width:120px;display:flex;align-items:center;gap:5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.il-status{flex:none;width:78px;}
+.il-pill{display:inline-block;padding:2px 8px;border-radius:6px;font-size:10.5px;}
+.il-pill.status-todo{background:#EFEADF;color:var(--ink-3);}
+.il-pill.status-progress{background:#FBEEE9;color:var(--clay);}
+.il-pill.status-review{background:#F3E3C4;color:var(--warn-text);}
+.il-pill.status-done{background:#E7EDE2;color:#4A5E42;}
+.il-pill.status-blocked{background:#F3DFD8;color:var(--alert-deep);}
+.il-pill.status-cancelled{background:#EFEADF;color:var(--ink-4);}
+.il-updated{flex:none;width:70px;font-size:10.5px;color:var(--ink-4);font-family:var(--mono);}
+.il-act{flex:none;width:78px;text-align:right;}
+.il-btn{background:transparent;border:1px solid var(--border);border-radius:6px;padding:3px 8px;font-size:10.8px;cursor:pointer;color:var(--ink-2);}
+.il-btn:hover{border-color:var(--clay);color:var(--clay);}
+.il-btn.primary{background:var(--clay);color:#fff;border-color:var(--clay);}
+.il-dash{color:var(--ink-4);}
+.il-empty{padding:24px 10px;text-align:center;font-size:12px;color:var(--ink-3);}
+.plan-modal{max-width:580px;}
+.plan-modal-head{display:flex;align-items:center;gap:10px;margin-bottom:14px;}
+.plan-modal-tag{font-family:var(--mono);font-size:10px;color:var(--ink-3);background:#EFE9DA;border-radius:5px;padding:2px 7px;flex:none;}
+.plan-modal-title{font-family:var(--serif);font-size:15px;font-weight:700;flex:1;}
+.plan-modal-title-input{flex:1;font-family:var(--serif);font-size:15px;font-weight:700;padding:5px 9px;}
+.plan-modal-x{background:transparent;border:none;font-size:16px;color:var(--ink-3);cursor:pointer;flex:none;}
+.plan-modal-x:hover{color:var(--clay);}
+.plan-modal-body{margin-bottom:10px;}
+.detail-body-text{min-height:54px;margin-bottom:12px;}
+.plan-meta-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px 16px;}
+.plan-review-hint{font-size:11.3px;color:var(--ink-3);background:#FBEEE9;border:1px solid var(--clay-dim);border-radius:7px;padding:7px 10px;margin-top:6px;}
+.plan-modal-foot{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;padding-top:10px;border-top:1px solid var(--border);}
+.detail-link{color:var(--clay);cursor:pointer;text-decoration:underline;}
+
+/* ---------- session: two iframe tabs ---------- */
+.sess-midhead{flex:none;}
+.sess-iframe{flex:1;width:100%;min-height:0;border:1px solid var(--border);border-radius:9px;background:#fff;}
+.sess-empty{margin:auto;padding:24px;max-width:520px;text-align:center;color:var(--ink-3);font-size:13px;line-height:1.8;}
 
 /* ---------- config ---------- */
 .tabbtn-row{display:flex;gap:6px;margin-bottom:14px;flex-wrap:wrap;}
@@ -476,23 +557,70 @@ function colorOf(c){return {green:'var(--green)',yellow:'var(--amber)',amber:'va
 var TODAY='2026-08-18', TODAY_SHORT='08-18', CURRENT_WEEK='W34';
 var TOOL_LABEL={claude_cli:'Claude CLI',cursor:'Cursor',open_design:'Open Design'};
 var TOOL_ICON={claude_cli:'▣',cursor:'◧',open_design:'◐'};
-var STATUS_LABEL={pool:'待办池',todo:'待办',doing:'进行中',review:'评审中',merged:'评审中·已合入',done:'完成',blocked:'阻塞'};
-var STATUS_DOT={pool:'gray',todo:'gray',doing:'amber',review:'amber',merged:'amber',done:'green',blocked:'red'};
+var STATUS_LABEL={pool:'待办池',todo:'待办',doing:'进行中',review:'评审中',merged:'评审中·已合入',done:'完成',blocked:'阻塞',cancelled:'已拒绝'};
+var STATUS_DOT={pool:'gray',todo:'gray',doing:'amber',review:'amber',merged:'amber',done:'green',blocked:'red',cancelled:'gray'};
 var CATS=['构建','构建(文档)','原型','优化','运维','运营推广','运作'];
 var WEEKS=['W34'];
 var HISTORY_WEEKS=['W33','W32','W31','W30','W29','W28','W27'];
 // 回填出来的历史周:数字来自 git 合入记录(按 ISO 周)。周目标正本是运作活①评论,不另写 docs/plan/。
 var HISTORY_WEEK_MERGED={W33:3,W32:17,W31:7,W30:12,W29:3,W28:3,W27:1};
 var VERSIONS=['0.4.0-v4','0.3.0-v3','0.2.0-v3'];
-var KANBAN_COLS=[['pool','待办池'],['todo','待办'],['doing','进行中'],['review','评审中'],['done','已完成'],['blocked','阻塞']];
-var KANBAN_COL_DEF={pool:'未排进任何一周',todo:'已排进本周,等开工',doing:'agent 在干',review:'MR 开着,等人审',done:'人点过完成',blocked:'填了原因'};
-var COL_LABEL={}; KANBAN_COLS.forEach(function(c){ COL_LABEL[c[0]]=c[1]; });
+// 四列看板(对齐 kanban.rs:待办/进行中/待处理/已完成),列内分段。
+// 段 key 对齐 drop_target_status:unassigned/assigned/doing/review/blocked/done/cancelled。
+var KANBAN_COLS=[
+  ['todo','待办',[['unassigned','未排期'],['assigned','已排期']]],
+  ['doing','进行中',[['doing','进行中']]],
+  ['pending','待处理',[['review','待评审'],['blocked','阻塞']]],
+  ['done','已完成',[['done','完成'],['cancelled','拒绝']]]
+];
+var KANBAN_COL_DEF={unassigned:'未排进任何一周',assigned:'已排进本周,等开工',doing:'agent 在干',review:'MR 开着,等人审',done:'人点过完成',blocked:'填了原因',cancelled:'人点过拒绝'};
+var COL_LABEL={}; KANBAN_COLS.forEach(function(c){COL_LABEL[c[0]]=c[1];});
+var SEG_LABEL={}; KANBAN_COLS.forEach(function(c){c[2].forEach(function(s){SEG_LABEL[s[0]]=s[1];});});
 var HISTORY_WEEKLY_PR=[['W26',0],['W27',1],['W28',3],['W29',3],['W30',12],['W31',7],['W32',17],['W33',3],['W34',3]];
 var HISTORY_WEEKLY_MR={}; HISTORY_WEEKLY_PR.forEach(function(w){ HISTORY_WEEKLY_MR[w[0]]=w[1]; });
 function colOf(status){
-  if(status==='review'||status==='merged')return 'review';
-  if(KANBAN_COLS.some(function(c){return c[0]===status;}))return status;
+  if(status==='pool'||status==='todo')return 'todo';
+  if(status==='doing')return 'doing';
+  if(status==='review'||status==='merged')return 'pending';
+  if(status==='blocked')return 'pending';
+  if(status==='done'||status==='cancelled')return 'done';
   return 'todo';
+}
+function segOf(status){
+  if(status==='pool')return 'unassigned';
+  if(status==='todo')return 'assigned';
+  if(status==='doing')return 'doing';
+  if(status==='review'||status==='merged')return 'review';
+  if(status==='blocked')return 'blocked';
+  if(status==='done')return 'done';
+  if(status==='cancelled')return 'cancelled';
+  return 'unassigned';
+}
+function segStatus(seg){
+  return {unassigned:'pool',assigned:'todo',doing:'doing',review:'review',blocked:'blocked',done:'done',cancelled:'cancelled'}[seg]||'pool';
+}
+function statusDotClass(s){
+  if(s==='pool'||s==='todo'||s==='cancelled')return 'dot-gray';
+  if(s==='doing')return 'dot-amber dot-run';
+  if(s==='review'||s==='merged')return 'dot-amber';
+  if(s==='done')return 'dot-green';
+  if(s==='blocked')return 'dot-red';
+  return 'dot-gray';
+}
+// 计划/版本认的十条(对齐 kanban.rs allowed_plan_targets)。段→段。
+var KANBAN_LEGAL={
+  unassigned:['assigned'],
+  assigned:['unassigned','doing','blocked','cancelled'],
+  doing:['assigned','blocked','cancelled'],
+  review:['done','cancelled'],
+  blocked:['doing','cancelled'],
+  done:[],
+  cancelled:[]
+};
+function normView(key){
+  if(!key||key==='all')return 'all';
+  if(/^week:/.test(key)||/^version:/.test(key))return key;
+  return 'week:'+key;
 }
 var GUIDE_CHAPTERS=[
   {id:'env',label:'环境准备',body:'claude CLI、Open Design、codehub-cli / gh 按需装。缺一项不影响接入,只影响对应类别的活能不能开工。「测一下」如实探活,没找到就是红,没接探活就是灰,不假装绿。Cursor 还没接。'},
@@ -748,11 +876,13 @@ function freshState(){
       deleteConfirm:{},
       charterEditing:{},charterDraft:{},
       selectedWeek:{Workbench:CURRENT_WEEK}, planLeft:{Workbench:CURRENT_WEEK}, selectedIssue:{Workbench:'pr-102'},
-      planFilter:{Workbench:{cat:'',version:'',source:'',keyword:''}},
+      planFilter:{Workbench:{cat:'',version:'',source:'',keyword:'',plan:'',stage:''}},
       planSort:{Workbench:{col:'week',dir:'desc'}},
       previewMode:{Workbench:false},
+      planSeg:{Workbench:{}}, planViewMode:{Workbench:'board'},
+      planDetailTitle:{}, planDetailBody:{}, planDetailAssignee:{},
       currentSession:{Workbench:'pr-102'},
-      sessionTabs:{}, sessionActiveTab:{},
+      sessionTabs:{}, sessionActiveTab:{}, sessTab:{},
       treeExpanded:{Workbench:{'':true,'crates':true,'docs':true}},
       spaceTab:{Workbench:'knowledge'}, spaceDoc:{Workbench:'k-project'},
       symbolQuery:{Workbench:''},
@@ -937,9 +1067,45 @@ var ACTIONS = {
   },
 
   selectPlanLeft:function(pid,key){ state.ui.planLeft[pid]=key; render(); },
-  selectPlanIssue:function(pid,id){ state.ui.selectedIssue[pid]=id; render(); },
+  selectPlanIssue:function(pid,id){
+    state.ui.selectedIssue[pid]=id;
+    var i=getIssue(pid,id);
+    if(i){
+      state.ui.planDetailTitle[pid]=i.title;
+      state.ui.planDetailBody[pid]=i.desc||'';
+      state.ui.planDetailAssignee[pid]=i.assignee||'';
+    }
+    render();
+  },
   togglePreview:function(pid){ state.ui.previewMode[pid]=!state.ui.previewMode[pid]; render(); },
+  togglePlanView:function(pid){ state.ui.planViewMode[pid]=((state.ui.planViewMode[pid]||'board')==='board')?'list':'board'; render(); },
+  selectPlanSeg:function(pid,colKey,segKey){ state.ui.planSeg[pid]=state.ui.planSeg[pid]||{}; state.ui.planSeg[pid][colKey]=segKey; render(); },
   setPlanFilter:function(pid,field,val){ state.ui.planFilter[pid]=state.ui.planFilter[pid]||{}; state.ui.planFilter[pid][field]=val; render(); },
+  applyPlanMove:function(pid,issueId,toSeg){
+    var issue=getIssue(pid,issueId); if(!issue)return;
+    var fromSeg=segOf(issue.status);
+    if(fromSeg===toSeg)return;
+    if(!kanbanLegal(fromSeg,toSeg)){ toast(KANBAN_ILLEGAL_REASON[fromSeg+'>'+toSeg]||'不允许'); render(); return; }
+    if((fromSeg==='unassigned'&&toSeg==='assigned')||(fromSeg==='assigned'&&toSeg==='unassigned')){ handleKanbanDrop(pid,issueId,fromSeg,toSeg,null); return; }
+    var kind = toSeg==='doing' ? (fromSeg==='blocked'?'unblock':'start') : toSeg==='done' ? 'done' : toSeg==='blocked' ? 'block' : toSeg==='cancelled' ? 'reject' : toSeg==='assigned' ? 'revert' : null;
+    if(!kind){ render(); return; }
+    state.ui.selectedIssue[pid]=null;
+    openKanbanConfirm(kind,pid,issueId,fromSeg,toSeg);
+  },
+  setIssuePlan:function(pid,issueId,val){
+    var issue=getIssue(pid,issueId); if(!issue)return;
+    if(val==='unscheduled'){ issue.week=''; issue.version=''; if(issue.status==='todo')issue.status='pool'; toast('已移到未排期'); }
+    else if(val.indexOf('week:')===0){ issue.week=val.slice(5); issue.version=''; if(issue.status==='pool')issue.status='todo'; toast('已排进 '+issue.week); }
+    else if(val.indexOf('version:')===0){ issue.version=val.slice(8); issue.week=''; toast('已划归版本 '+issue.version); }
+    render();
+  },
+  savePlanDetail:function(pid,issueId){
+    var issue=getIssue(pid,issueId); if(!issue)return;
+    var t=getPath(state,'ui.planDetailTitle.'+pid); if(t!=null&&t!=='')issue.title=t;
+    var b=getPath(state,'ui.planDetailBody.'+pid); if(b!=null)issue.desc=b;
+    var a=getPath(state,'ui.planDetailAssignee.'+pid); if(a!=null)issue.assignee=a;
+    state.ui.selectedIssue[pid]=null; render(); toast('已保存(演示)');
+  },
   goSession:function(pid,id){ nav('#/p/'+pid+'/session/'+id); },
   newIssueDraft:function(pid){ state.ui.modal={type:'new-issue',pid:pid,title:'',body:'',kind:'business',ops:'week',category:'构建',tool:'claude_cli'}; render(); },
   confirmNewIssue:function(){
@@ -984,6 +1150,7 @@ var ACTIONS = {
   },
 
   selectSession:function(pid,id){ state.ui.currentSession[pid]=id; nav('#/p/'+pid+'/session/'+id); },
+  selectSessTab:function(pid,tab){ state.ui.sessTab[pid]=tab; render(); },
   startWork:function(pid,issueId){
     var issue=getIssue(pid,issueId); if(!issue)return;
     if(issue.tool==='cursor'){ toast('Cursor 还没接,选了开不了工,不会悄悄换成 Claude CLI'); return; }
@@ -1052,7 +1219,7 @@ var ACTIONS = {
     var m=state.ui.modal; if(!m||m.type!=='kanban-confirm')return;
     var pid=m.pid, issueId=m.issueId, issue=getIssue(pid,issueId);
     if(!issue){ state.ui.modal=null; render(); return; }
-    if(m.kind==='block' && !(m.reason&&m.reason.trim())){ toast('请填写阻塞原因'); return; }
+    if((m.kind==='block'||m.kind==='reject') && !(m.reason&&m.reason.trim())){ toast(m.kind==='block'?'请填写阻塞原因':'请填写拒绝原因'); return; }
     state.ui.modal=null;
     if(m.kind==='start'){ ACTIONS.startWork(pid,issueId); }
     else if(m.kind==='review'){ ACTIONS.pushReview(pid,issueId); }
@@ -1064,16 +1231,19 @@ var ACTIONS = {
       issue.prevStatus=issue.status; issue.status='blocked'; issue.blockReason=m.reason.trim();
       render(); toast('已标记阻塞:'+issue.blockReason);
     }
+    else if(m.kind==='unblock'){ issue.status='doing'; render(); toast('已解除阻塞 → 进行中'); }
+    else if(m.kind==='reject'){ issue.prevStatus=issue.status; issue.status='cancelled'; issue.blockReason=m.reason.trim(); render(); toast('已拒绝(已取消)'); }
     else if(m.kind==='revert'){ ACTIONS.revertToTodo(pid,issueId); }
   },
   blockIssue:function(pid,issueId){ var i=getIssue(pid,issueId); if(!i)return; i.prevStatus=i.status; i.status='blocked'; render(); toast('已标记阻塞'); },
   unblockIssue:function(pid,issueId,target){ var i=getIssue(pid,issueId); if(!i)return; i.status=target||i.prevStatus||'todo'; render(); toast('已解除阻塞'); },
   scheduleToWeek:function(pid,issueId){
     var issue=getIssue(pid,issueId); if(!issue)return;
-    var wk=state.ui.planLeft[pid]; if(!wk||wk==='all') wk=CURRENT_WEEK;
+    var v=normView(state.ui.planLeft[pid]||CURRENT_WEEK);
+    var wk = v.indexOf('week:')===0 ? v.slice(5) : CURRENT_WEEK;
     issue.status='todo'; issue.week=wk;
-    removeFromOrder(pid,'pool',issueId);
-    insertIntoOrder(pid,'todo',issueId,null);
+    removeFromOrder(pid,'unassigned',issueId);
+    insertIntoOrder(pid,'assigned',issueId,null);
     render(); toast('已排进 2026-'+wk);
   },
   closePlanDetail:function(pid){ state.ui.selectedIssue[pid]=null; render(); },
@@ -1165,82 +1335,97 @@ function sortByOrder(pid,col,items){
     return ai-bi;
   });
 }
-/* 真实状态机(IssueStatus::can_transition_to)在看板列级别的镜像:哪列能拖到哪列 */
-var KANBAN_LEGAL={ pool:['todo','doing'], todo:['pool','doing','blocked'], doing:['todo','review','blocked'], review:['doing','done','blocked'], blocked:['todo','doing'], done:['todo','doing'] };
 var KANBAN_ILLEGAL_REASON={
-  'pool>review':'待办池不能直接进入评审中,要先经过待办与进行中',
-  'pool>done':'待办池不能直接完成,要先经过评审中',
-  'pool>blocked':'待办池不能直接标记阻塞,要先排进待办或开工',
-  'todo>review':'待办不能直接进入评审中,要先开工',
-  'todo>done':'待办不能直接完成,要先经过进行中与评审中',
-  'doing>pool':'进行中不能退回待办池,只能退回待办',
-  'doing>done':'进行中不能直接完成,要先推到评审中',
-  'review>pool':'评审中不能退回待办池,只能退回进行中',
-  'review>todo':'评审中不能直接退回待办,只能退回进行中或标记阻塞',
-  'blocked>pool':'阻塞不能直接回到待办池,只能退回待办或进行中',
-  'blocked>review':'阻塞不能直接进入评审中,要先解除阻塞',
+  'unassigned>doing':'未排期不能直接开工,要先排进本周(已排期)',
+  'unassigned>review':'未排期不能直接进待评审,要先排期再开工',
+  'unassigned>blocked':'未排期不能直接标记阻塞,要先排进待办',
+  'unassigned>done':'未排期不能直接完成,要先经过待评审',
+  'unassigned>cancelled':'未排期不能直接拒绝,要先排进待办',
+  'assigned>review':'已排期不能直接进待评审 —— 推评审在会话里开 MR,不在计划屏拖',
+  'assigned>done':'已排期不能直接完成,要先经过进行中与待评审',
+  'doing>review':'进行中不能直接拖到待评审 —— 推评审在会话里开 MR,不在计划屏拖',
+  'doing>done':'进行中不能直接完成,要先推到待评审',
+  'review>assigned':'待评审不能直接退回待办,只能完成或拒绝',
+  'review>doing':'待评审不能退回进行中,只能完成或拒绝',
+  'review>blocked':'待评审不能标记阻塞,只能完成或拒绝',
+  'review>unassigned':'待评审不能退回未排期,只能完成或拒绝',
+  'blocked>assigned':'阻塞不能直接退回待办,只能解除阻塞回到进行中',
+  'blocked>review':'阻塞不能直接进待评审,要先解除阻塞',
   'blocked>done':'阻塞不能直接完成,要先解除阻塞',
-  'done>pool':'已完成不能退回待办池,只能退回待办或进行中',
-  'done>review':'已完成不能直接回到评审中',
-  'done>blocked':'已完成不能直接标记阻塞'
+  'blocked>unassigned':'阻塞不能退回未排期,只能解除阻塞回到进行中',
+  'done>unassigned':'已完成是终态,不能退回',
+  'done>assigned':'已完成是终态,不能退回',
+  'done>doing':'已完成是终态,不能退回',
+  'done>review':'已完成是终态,不能退回',
+  'done>blocked':'已完成是终态,不能标记阻塞',
+  'done>cancelled':'已完成是终态,不能改为拒绝',
+  'cancelled>unassigned':'已拒绝是终态,不能退回',
+  'cancelled>assigned':'已拒绝是终态,不能退回',
+  'cancelled>doing':'已拒绝是终态,不能退回',
+  'cancelled>review':'已拒绝是终态,不能退回',
+  'cancelled>done':'已拒绝是终态,不能改为完成',
+  'cancelled>blocked':'已拒绝是终态,不能标记阻塞'
 };
-function kanbanLegal(fromCol,toCol){ if(fromCol===toCol)return true; return (KANBAN_LEGAL[fromCol]||[]).indexOf(toCol)>=0; }
+function kanbanLegal(fromSeg,toSeg){ if(fromSeg===toSeg)return true; return (KANBAN_LEGAL[fromSeg]||[]).indexOf(toSeg)>=0; }
 function openKanbanConfirm(kind,pid,issueId,fromCol,toCol){
   state.ui.modal={type:'kanban-confirm',kind:kind,pid:pid,issueId:issueId,fromCol:fromCol,toCol:toCol,reason:''};
   render();
 }
-function handleKanbanDrop(pid,issueId,fromCol,toCol,overId){
+function handleKanbanDrop(pid,issueId,fromSeg,toSeg,overId){
   var issue=getIssue(pid,issueId); if(!issue)return;
-  if(fromCol===toCol){ insertIntoOrder(pid,toCol,issueId,overId===issueId?null:overId); render(); return; }
-  if(!kanbanLegal(fromCol,toCol)){
-    var reason=KANBAN_ILLEGAL_REASON[fromCol+'>'+toCol]||'状态不允许这样跳转';
-    toast((COL_LABEL[fromCol]||fromCol)+' → '+(COL_LABEL[toCol]||toCol)+' 不允许:'+reason);
+  if(fromSeg===toSeg){ insertIntoOrder(pid,toSeg,issueId,overId===issueId?null:overId); render(); return; }
+  if(!kanbanLegal(fromSeg,toSeg)){
+    var reason=KANBAN_ILLEGAL_REASON[fromSeg+'>'+toSeg]||'状态不允许这样跳转';
+    toast((SEG_LABEL[fromSeg]||fromSeg)+' → '+(SEG_LABEL[toSeg]||toSeg)+' 不允许:'+reason);
     render();
     return;
   }
-  if((fromCol==='pool'&&toCol==='todo')||(fromCol==='todo'&&toCol==='pool')){
-    var wk=state.ui.planLeft[pid]; if(!wk||wk==='all') wk=CURRENT_WEEK;
-    if(toCol==='todo'){ issue.status='todo'; issue.week=wk; toast('已排进 2026-'+wk); }
-    else { issue.status='pool'; issue.week=''; toast('已移出本周,回到待办池'); }
-    removeFromOrder(pid,fromCol,issueId);
-    insertIntoOrder(pid,toCol,issueId,overId===issueId?null:overId);
+  // 排期/取消排期:unassigned↔assigned(只改 week,不改状态机)
+  if((fromSeg==='unassigned'&&toSeg==='assigned')||(fromSeg==='assigned'&&toSeg==='unassigned')){
+    var wk=state.ui.planLeft[pid];
+    if(!wk||wk==='all'||/^version:/.test(wk)) wk=CURRENT_WEEK;
+    else if(/^week:/.test(wk)) wk=wk.slice(5);
+    if(toSeg==='assigned'){ issue.status='todo'; issue.week=wk; toast('已排进 2026-'+wk); }
+    else { issue.status='pool'; issue.week=''; toast('已移出本周,回到未排期'); }
+    removeFromOrder(pid,fromSeg,issueId);
+    insertIntoOrder(pid,toSeg,issueId,overId===issueId?null:overId);
     render();
     return;
   }
-  var kind = toCol==='doing' ? 'start' : toCol==='review' ? 'review' : toCol==='done' ? 'done' : toCol==='blocked' ? 'block' : toCol==='todo' ? 'revert' : null;
+  var kind = toSeg==='doing' ? (fromSeg==='blocked'?'unblock':'start') : toSeg==='done' ? 'done' : toSeg==='blocked' ? 'block' : toSeg==='cancelled' ? 'reject' : toSeg==='assigned' ? 'revert' : null;
   if(!kind){ render(); return; }
-  openKanbanConfirm(kind,pid,issueId,fromCol,toCol);
+  openKanbanConfirm(kind,pid,issueId,fromSeg,toSeg);
 }
 document.addEventListener('dragstart', function(e){
   var el=e.target.closest('.kcard[draggable="true"]'); if(!el)return;
   dragState.issueId=el.getAttribute('data-issue');
-  var colEl=el.closest('.kanban-col');
-  dragState.fromCol=colEl?colEl.getAttribute('data-col'):null;
+  var segEl=el.closest('.kanban-seg-box');
+  dragState.fromCol=segEl?segEl.getAttribute('data-col'):null;
   el.classList.add('dragging');
   if(e.dataTransfer){ e.dataTransfer.effectAllowed='move'; try{ e.dataTransfer.setData('text/plain',dragState.issueId); }catch(_){} }
 });
 document.addEventListener('dragover', function(e){
   if(!dragState.issueId)return;
-  var col=e.target.closest('.kanban-col'); if(!col)return;
+  var seg=e.target.closest('.kanban-seg-box'); if(!seg)return;
   e.preventDefault();
-  var key=col.getAttribute('data-col');
+  var key=seg.getAttribute('data-col');
   var allowed=kanbanLegal(dragState.fromCol,key);
-  col.classList.remove('kanban-col-droppable','kanban-col-noDrop');
-  col.classList.add(allowed?'kanban-col-droppable':'kanban-col-noDrop');
+  var col=seg.closest('.kanban-col');
+  if(col){ col.classList.remove('kanban-col-droppable','kanban-col-noDrop'); col.classList.add(allowed?'kanban-col-droppable':'kanban-col-noDrop'); }
 });
 document.addEventListener('dragleave', function(e){
-  var col=e.target.closest('.kanban-col');
-  if(col && (!e.relatedTarget || !col.contains(e.relatedTarget))){ col.classList.remove('kanban-col-droppable','kanban-col-noDrop'); }
+  var seg=e.target.closest('.kanban-seg-box');
+  if(seg){ var col=seg.closest('.kanban-col'); if(col && (!e.relatedTarget || !col.contains(e.relatedTarget))){ col.classList.remove('kanban-col-droppable','kanban-col-noDrop'); } }
 });
 document.addEventListener('drop', function(e){
   if(!dragState.issueId)return;
-  var col=e.target.closest('.kanban-col'); if(!col)return;
+  var seg=e.target.closest('.kanban-seg-box'); if(!seg)return;
   e.preventDefault();
-  col.classList.remove('kanban-col-droppable','kanban-col-noDrop');
+  var col=seg.closest('.kanban-col'); if(col){ col.classList.remove('kanban-col-droppable','kanban-col-noDrop'); }
   var overCard=e.target.closest('.kcard');
-  var toCol=col.getAttribute('data-col'), pid=col.getAttribute('data-pid');
+  var toSeg=seg.getAttribute('data-col'), pid=seg.getAttribute('data-pid');
   var overId=overCard?overCard.getAttribute('data-issue'):null;
-  handleKanbanDrop(pid,dragState.issueId,dragState.fromCol,toCol,overId);
+  handleKanbanDrop(pid,dragState.issueId,dragState.fromCol,toSeg,overId);
   dragState.issueId=null; dragState.fromCol=null;
 });
 document.addEventListener('dragend', function(e){
@@ -1253,6 +1438,7 @@ document.addEventListener('click', function(e){
   var el=e.target.closest('[data-action]'); if(!el)return;
   var name=el.getAttribute('data-action');
   if(name==='closeModal' && el.classList.contains('modal-backdrop') && e.target!==el) return;
+  if(name==='closePlanDetail' && el.classList.contains('modal-backdrop') && e.target!==el) return;
   var raw=el.getAttribute('data-arg');
   var args=[];
   if(raw){ try{ args=JSON.parse(raw); if(!Array.isArray(args))args=[args]; }catch(_){ args=[raw]; } }
@@ -1264,6 +1450,10 @@ document.addEventListener('input', function(e){
 });
 document.addEventListener('change', function(e){
   var el=e.target;
+  var planMove=el.getAttribute&&el.getAttribute('data-plan-move');
+  if(planMove){ ACTIONS.applyPlanMove(el.getAttribute('data-pid'),el.getAttribute('data-issue'),el.value); return; }
+  var setPlan=el.getAttribute&&el.getAttribute('data-set-plan');
+  if(setPlan){ ACTIONS.setIssuePlan(el.getAttribute('data-pid'),el.getAttribute('data-issue'),el.value); return; }
   var bindMulti=el.getAttribute&&el.getAttribute('data-bindchange-multi');
   if(bindMulti){ var vals=Array.prototype.slice.call(el.selectedOptions).map(function(o){return o.value;}); setPath(state,bindMulti,vals); render(); return; }
   var bind=el.getAttribute&&el.getAttribute('data-bindchange'); if(!bind)return;
@@ -1400,6 +1590,8 @@ function modalHTML(){
       review:{title:'推到评审中确认',label:'推到评审中'},
       done:{title:'完成确认',label:'完成'},
       block:{title:'标记阻塞',label:'确认阻塞'},
+      unblock:{title:'解除阻塞',label:'解除→进行中'},
+      reject:{title:'拒绝(取消)',label:'确认拒绝'},
       revert:{title:'退回待办确认',label:'退回待办'}
     }[m.kind]||{title:'确认',label:'确认'};
     var bodyHTML='<div class="detail-row"><div class="k">活</div>'+esc(issue.title)+'</div>';
@@ -1410,11 +1602,14 @@ function modalHTML(){
     if(m.kind==='done'){
       bodyHTML+='<div style="font-size:11.5px;color:var(--ink-3);margin:2px 0 10px;">完成永远由人点——这一下就是。</div>';
     }
-    if(m.kind==='block'){
-      bodyHTML+='<div class="formrow"><label class="label">阻塞原因(必填)</label><textarea class="textarea" data-bind="ui.modal.reason" placeholder="写清楚卡在哪">'+esc(m.reason||'')+'</textarea></div>';
+    if(m.kind==='block'||m.kind==='reject'){
+      bodyHTML+='<div class="formrow"><label class="label">'+(m.kind==='block'?'阻塞原因(必填)':'拒绝原因(必填)')+'</label><textarea class="textarea" data-bind="ui.modal.reason" placeholder="'+(m.kind==='block'?'写清楚卡在哪':'写清楚为什么作废')+'">'+esc(m.reason||'')+'</textarea></div>';
     }
     if(m.kind==='revert'){
-      bodyHTML+='<div style="font-size:11.5px;color:var(--ink-3);margin:2px 0 10px;">从「'+esc(COL_LABEL[m.fromCol]||m.fromCol)+'」退回「待办」。</div>';
+      bodyHTML+='<div style="font-size:11.5px;color:var(--ink-3);margin:2px 0 10px;">从「'+esc(SEG_LABEL[m.fromCol]||m.fromCol)+'」退回「已排期(待办)」。</div>';
+    }
+    if(m.kind==='unblock'){
+      bodyHTML+='<div style="font-size:11.5px;color:var(--ink-3);margin:2px 0 10px;">从「阻塞」解除回到「进行中」(只改标签,不开工)。</div>';
     }
     return '<div class="modal-backdrop" data-action="closeModal"><div class="modal">'
       + '<h3>'+kindMeta.title+'</h3>' + bodyHTML
@@ -1694,314 +1889,213 @@ function renderOverview(pid){
 }
 
 /* ===================== 渲染:计划 ===================== */
-function issueActionsHTML(pid,i){
-  var playing=!!state.ui.playing[i.id];
-  if(i.status==='blocked'){
-    return '<span style="color:var(--alert-deep);">⛔ 阻塞</span>'
-      + '<button data-action="unblockIssue" data-arg=\'["'+pid+'","'+i.id+'","todo"]\' style="color:var(--clay);">解除→待办</button>';
-  }
-  if(playing){
-    return '<button data-action="stopWork" data-arg=\'["'+pid+'","'+i.id+'"]\' style="color:var(--alert-deep);font-weight:600;">■ 停止</button>';
-  }
-  if(i.status==='pool'){
-    return '<button data-action="startWork" data-arg=\'["'+pid+'","'+i.id+'"]\' style="color:var(--clay);">▶ 开工</button>'
-      + '<button data-action="scheduleToWeek" data-arg=\'["'+pid+'","'+i.id+'"]\' style="color:var(--ink-3);">排进本周</button>';
-  }
-  if(i.status==='todo'){
-    return '<button data-action="startWork" data-arg=\'["'+pid+'","'+i.id+'"]\' style="color:var(--clay);">▶ 开工</button>'
-      + '<button data-action="blockIssue" data-arg=\'["'+pid+'","'+i.id+'"]\' style="color:var(--ink-3);">⛔ 阻塞</button>';
-  }
-  if(i.status==='doing'){
-    return '<button data-action="goSession" data-arg=\'["'+pid+'","'+i.id+'"]\' style="color:var(--clay);">续聊</button>'
-      + '<button data-action="pushReview" data-arg=\'["'+pid+'","'+i.id+'"]\' style="color:var(--clay);">推到评审</button>'
-      + '<button data-action="blockIssue" data-arg=\'["'+pid+'","'+i.id+'"]\' style="color:var(--ink-3);">⛔ 阻塞</button>';
-  }
-  if(i.status==='review'){
-    if(i.mr){ return '<button data-action="mergeMR" data-arg=\'["'+pid+'","'+i.id+'"]\' style="color:var(--clay);">⬇ 合入 '+esc(i.mr.label)+'</button>'
-      + '<button data-action="mergeAndCompleteIssue" data-arg=\'["'+pid+'","'+i.id+'"]\' style="color:var(--clay);font-weight:600;">合入并完成</button>'; }
-    return '<span style="color:var(--ink-3);">等待提 MR</span>';
-  }
-  if(i.status==='merged'){
-    return '<button data-action="completeIssue" data-arg=\'["'+pid+'","'+i.id+'"]\' style="color:var(--clay);font-weight:600;">✓ 点完成</button>';
-  }
-  if(i.status==='done'){
-    return '<span style="color:var(--ink-3);">已完成'+(i.doneDate?(' · '+esc(i.doneDate)):'')+'</span>';
-  }
-  return '';
-}
 function issueCardHTML(pid,i){
   var kindChip = i.kind==='ops' ? '<span class="chip chip-outline">运作</span>' : (i.auto?'<span class="chip chip-gray">自动</span>':(i.source==='建议'?'<span class="chip chip-gray">待确认</span>':''));
+  var remoteBadge = i.mr ? '<span class="kcard-src">MR</span>' : '';
+  var assignee = i.assignee || '未指派';
+  var initial = (assignee||'?').charAt(0).toUpperCase();
   return '<div class="kcard" data-issue="'+i.id+'" draggable="true" style="border-left-color:var(--'+STATUS_DOT[i.status]+');">'
-    + '<div class="kcard-top"><span class="chip chip-outline">'+esc(i.category)+'</span>'+kindChip+'<span style="margin-left:auto;" title="'+esc(STATUS_LABEL[i.status]||'')+'">'+lightDot(STATUS_DOT[i.status])+'</span></div>'
+    + '<div class="kcard-top"><span class="mono">#'+esc(issueSuffix(i.id))+'</span>'+remoteBadge+kindChip+'<span class="status-dot '+statusDotClass(i.status)+'" style="margin-left:auto;" title="'+esc(STATUS_LABEL[i.status]||'')+'"></span></div>'
     + '<div class="kcard-title" data-action="selectPlanIssue" data-arg=\'["'+pid+'","'+i.id+'"]\'>'+esc(i.title)+'</div>'
+    + (i.desc?('<div class="kcard-desc">'+esc((i.desc||'').slice(0,64))+'</div>'):'')
+    + '<div class="kcard-foot"><span class="kcard-who"><span class="avatar avatar-sm">'+esc(initial)+'</span>'+esc(assignee)+'</span></div>'
     + '</div>';
 }
 function kanbanHTML(pid,issuesList){
-  var byCol={pool:[],todo:[],doing:[],review:[],done:[],blocked:[]};
-  issuesList.forEach(function(i){ (byCol[colOf(i.status)]=byCol[colOf(i.status)]||[]).push(i); });
-  KANBAN_COLS.forEach(function(c){ byCol[c[0]]=sortByOrder(pid,c[0],byCol[c[0]]); });
+  var bySeg={unassigned:[],assigned:[],doing:[],review:[],blocked:[],done:[],cancelled:[]};
+  issuesList.forEach(function(i){ var s=segOf(i.status); (bySeg[s]=bySeg[s]||[]).push(i); });
+  Object.keys(bySeg).forEach(function(s){ bySeg[s]=sortByOrder(pid,s,bySeg[s]); });
+  var segs = state.ui.planSeg[pid]=state.ui.planSeg[pid]||{};
   var cols=KANBAN_COLS.map(function(c){
-    var key=c[0],label=c[1],items=byCol[key]||[];
-    return '<div class="kanban-col" data-col="'+key+'" data-pid="'+pid+'"><div class="kanban-col-head">'+label+' · '+items.length+'<div class="kanban-col-def">'+esc(KANBAN_COL_DEF[key]||'')+'</div></div>'
-      + items.map(function(i){return issueCardHTML(pid,i);}).join('')
-      + '</div>';
+    var colKey=c[0],colLabel=c[1],segDefs=c[2];
+    if(!segs[colKey]||!segDefs.some(function(s){return s[0]===segs[colKey];})) segs[colKey]=segDefs[0][0];
+    var activeSeg=segs[colKey];
+    var tabsHTML='';
+    if(segDefs.length>1){
+      tabsHTML='<div class="kanban-segtabs">'+segDefs.map(function(s){
+        var cnt=bySeg[s[0]].length;
+        return '<button class="seg-tab '+(activeSeg===s[0]?'active':'')+'" data-action="selectPlanSeg" data-arg=\'["'+pid+'","'+colKey+'","'+s[0]+'"]\'>'+esc(s[1])+'<span class="seg-count">'+cnt+'</span></button>';
+      }).join('')+'</div>';
+    }
+    var total=segDefs.reduce(function(n,s){return n+bySeg[s[0]].length;},0);
+    var cards=bySeg[activeSeg].map(function(i){return issueCardHTML(pid,i);}).join('') || '<div class="kanban-empty">无 issue</div>';
+    var colTint={todo:'col-todo',doing:'col-doing',pending:'col-pending',done:'col-done'}[colKey]||'col-todo';
+    return '<div class="kanban-col '+colTint+'"><div class="kanban-col-head"><span class="status-dot '+statusDotClass(segStatus(activeSeg))+'"></span>'+esc(colLabel)+'<span class="count">'+total+'</span></div>'+tabsHTML+'<div class="kanban-seg-box" data-col="'+activeSeg+'" data-pid="'+pid+'">'+cards+'</div></div>';
   }).join('');
   return '<div class="kanban">'+cols+'</div>';
 }
+function listViewHTML(pid,issuesList){
+  var filt=state.ui.planFilter[pid]=state.ui.planFilter[pid]||{cat:'',version:'',source:'',keyword:'',plan:'',stage:''};
+  var rows=issuesList.filter(function(i){
+    if(filt.cat&&i.category!==filt.cat)return false;
+    if(filt.version&&i.version!==filt.version)return false;
+    if(filt.source&&(i.source||'').indexOf(filt.source)<0)return false;
+    if(filt.keyword&&i.title.toLowerCase().indexOf(filt.keyword.toLowerCase())<0)return false;
+    if(filt.plan){
+      if(filt.plan==='unscheduled'){ if(i.week||i.version)return false; }
+      else if(filt.plan.indexOf('version:')===0){ if(i.version!==filt.plan.slice(8))return false; }
+      else if(filt.plan.indexOf('week:')===0){ if(i.week!==filt.plan.slice(5))return false; }
+    }
+    if(filt.stage){ var sm={Todo:['todo'],InProgress:['doing'],InReview:['review','merged'],Blocked:['blocked'],Done:['done'],Cancelled:['cancelled']}; var arr=sm[filt.stage]; if(arr&&arr.indexOf(i.status)<0)return false; }
+    return true;
+  });
+  var presets=[['open','开放'],['assigned','分配我的'],['mine','我的']];
+  var presetHTML=presets.map(function(p){return '<button class="il-preset '+(p[0]==='open'?'on':'')+'" data-action="toastOnly" data-arg=\'"预设筛选(演示:开放)"\'>'+p[1]+'</button>';}).join('');
+  var planOpts=[['','全部'],['unscheduled','未排期']].concat(WEEKS.concat(HISTORY_WEEKS).map(function(w){return ['week:'+w,w];})).concat(VERSIONS.map(function(v){return ['version:'+v,v];}));
+  var stageOpts=[['','全部'],['Todo','已排期'],['InProgress','进行中'],['InReview','待评审'],['Blocked','阻塞'],['Done','完成'],['Cancelled','已取消']];
+  function sel(opts,cur,bind){return '<select class="il-dd-btn" data-bindchange="'+bind+'">'+opts.map(function(o){return '<option value="'+esc(o[0])+'" '+(o[0]===cur?'selected':'')+'>'+esc(o[1])+'</option>';}).join('')+'</select>';}
+  var bar='<div class="il-bar"><div class="il-presets">'+presetHTML+'</div><div class="il-tools">'
+    + sel(planOpts,filt.plan||'','ui.planFilter.'+pid+'.plan')
+    + sel(stageOpts,filt.stage||'','ui.planFilter.'+pid+'.stage')
+    + '<div class="il-search-wrap"><input class="il-search" placeholder="Search issues..." data-bind="ui.planFilter.'+pid+'.keyword" value="'+esc(filt.keyword||'')+'"></div>'
+    + '</div></div>';
+  var head='<div class="il-row il-head"><span class="il-num">ID</span><span class="il-title">标题</span><span class="il-owner">负责人</span><span class="il-status">状态</span><span class="il-updated">已更新</span><span class="il-act"></span></div>';
+  var pillMap={pool:['status-todo','未排期'],todo:['status-todo','已排期'],doing:['status-progress','进行中'],review:['status-review','待评审'],merged:['status-review','待评审'],done:['status-done','完成'],blocked:['status-blocked','阻塞'],cancelled:['status-cancelled','已拒绝']};
+  function rowHTML(i){
+    var pill=pillMap[i.status]||['status-todo',i.status];
+    var assignee=i.assignee||'未指派';
+    var initial=(assignee||'?').charAt(0).toUpperCase();
+    var planTag=i.week?('周·'+i.week):(i.version?('版本·'+i.version):'未排期');
+    var sub='by '+(i.source||'—')+' · '+planTag;
+    var act = (i.status==='pool'||(i.status==='todo'&&!i.week)) ? '<button class="il-btn" data-action="scheduleToWeek" data-arg=\'["'+pid+'","'+i.id+'"]\'>schedule</button>'
+      : i.status==='todo' ? '<button class="il-btn primary" data-action="startWork" data-arg=\'["'+pid+'","'+i.id+'"]\'>Start →</button>'
+      : '<button class="il-btn primary" data-action="goSession" data-arg=\'["'+pid+'","'+i.id+'"]\'>Open →</button>';
+    return '<div class="il-row"><span class="il-num"><span class="il-idmark"></span>#'+esc(issueSuffix(i.id))+'</span>'
+      + '<span class="il-title"><span class="il-t1" data-action="selectPlanIssue" data-arg=\'["'+pid+'","'+i.id+'"]\' style="cursor:pointer;">'+esc(i.title)+'</span><span class="il-t2">'+esc(sub)+'</span></span>'
+      + '<span class="il-owner"><span class="avatar avatar-sm">'+esc(initial)+'</span>'+esc(assignee)+'</span>'
+      + '<span class="il-status"><span class="il-pill '+pill[0]+'">'+pill[1]+'</span></span>'
+      + '<span class="il-updated"></span><span class="il-act">'+act+'</span></div>';
+  }
+  var body=rows.length?rows.map(rowHTML).join(''):'<div class="il-empty">没有符合的 issue</div>';
+  return '<div class="il-wrap">'+bar+'<div class="issue-list">'+head+body+'</div></div>';
+}
+function planDetailModalHTML(pid,di){
+  var seg=segOf(di.status);
+  var allowed={unassigned:['assigned'],assigned:['unassigned','doing','blocked','cancelled'],doing:['assigned','blocked','cancelled'],review:['done','cancelled'],blocked:['doing','cancelled'],done:[],cancelled:[]}[seg]||[];
+  var statusSel='<select class="select" style="width:100%;" data-plan-move="1" data-pid="'+pid+'" data-issue="'+di.id+'">'
+    + '<option value="'+seg+'" selected>'+esc(SEG_LABEL[seg]||di.status)+'</option>'
+    + allowed.map(function(s){return '<option value="'+s+'">'+esc(SEG_LABEL[s]||s)+'</option>';}).join('')
+    + '</select>';
+  var planOpts=[['unscheduled','未排期']].concat(WEEKS.concat(HISTORY_WEEKS).map(function(w){return ['week:'+w,'周·'+w];})).concat(VERSIONS.map(function(v){return ['version:'+v,'版本·'+v];}));
+  var curPlan = di.week?('week:'+di.week):(di.version?('version:'+di.version):'unscheduled');
+  var planSel='<select class="select" style="width:100%;" data-set-plan="1" data-pid="'+pid+'" data-issue="'+di.id+'">'+planOpts.map(function(o){return '<option value="'+o[0]+'" '+(o[0]===curPlan?'selected':'')+'>'+esc(o[1])+'</option>';}).join('')+'</select>';
+  var foot='';
+  if(seg==='unassigned'){ foot='<button class="btn btn-sm btn-secondary" data-action="scheduleToWeek" data-arg=\'["'+pid+'","'+di.id+'"]\'>schedule</button>'; }
+  else if(seg==='assigned'){ foot='<button class="btn btn-sm btn-primary" data-action="startWork" data-arg=\'["'+pid+'","'+di.id+'"]\'>Start</button>'; }
+  else if(seg==='doing'){ foot='<button class="btn btn-sm btn-secondary" data-action="goSession" data-arg=\'["'+pid+'","'+di.id+'"]\'>Open</button>'; }
+  else if(seg==='review'){ foot='<button class="btn btn-sm btn-secondary" data-action="goSession" data-arg=\'["'+pid+'","'+di.id+'"]\'>Open</button><button class="btn btn-sm btn-primary" data-action="mergeAndCompleteIssue" data-arg=\'["'+pid+'","'+di.id+'"]\'>Complete</button>'; }
+  else { foot='<button class="btn btn-sm btn-secondary" data-action="goSession" data-arg=\'["'+pid+'","'+di.id+'"]\'>Open</button>'; }
+  var reviewHint = (di.status==='review'||di.status==='merged') ? '<div class="plan-review-hint">Complete 由人确认。agent 跑完只到待评审。</div>' : '';
+  var linkRow = di.mr ? ('<span class="mono">'+esc(di.mr.label)+'</span> · '+esc(di.mr.status)) : '<span style="color:var(--ink-3);">— 只在本机</span>';
+  var catRow = di.kind==='ops' ? '运作(不能改)' : esc(di.category||'—');
+  return '<div class="modal-backdrop" data-action="closePlanDetail" data-arg=\'"'+pid+'\'>'
+    + '<div class="modal plan-modal">'
+    + '<div class="plan-modal-head"><div class="plan-modal-tag">详情 · #'+esc(issueSuffix(di.id))+'</div>'
+    + '<input class="input plan-modal-title-input" data-bind="ui.planDetailTitle.'+pid+'" value="'+esc(getPath(state,'ui.planDetailTitle.'+pid)!=null?getPath(state,'ui.planDetailTitle.'+pid):di.title)+'">'
+    + '<button class="plan-modal-x" data-action="closePlanDetail" data-arg=\'"'+pid+'\'>✕</button></div>'
+    + '<div class="plan-modal-body">'
+    + '<textarea class="textarea detail-body-text" data-bind="ui.planDetailBody.'+pid+'" placeholder="正文">'+esc(getPath(state,'ui.planDetailBody.'+pid)!=null?getPath(state,'ui.planDetailBody.'+pid):(di.desc||''))+'</textarea>'
+    + '<div class="plan-meta-grid">'
+    + '<div class="detail-row" style="grid-column:1/-1;"><div class="k">链接</div>'+linkRow+'</div>'
+    + '<div class="detail-row" style="grid-column:1/-1;"><div class="k">类别</div>'+catRow+'</div>'
+    + '<div class="detail-row"><div class="k">状态</div>'+statusSel+'</div>'
+    + '<div class="detail-row"><div class="k">计划</div>'+planSel+'</div>'
+    + '<div class="detail-row" style="grid-column:1/-1;"><div class="k">负责人</div><input class="input" data-bind="ui.planDetailAssignee.'+pid+'" value="'+esc(getPath(state,'ui.planDetailAssignee.'+pid)!=null?getPath(state,'ui.planDetailAssignee.'+pid):(di.assignee||''))+'" placeholder="指派谁(可空)"></div>'
+    + '</div>'+reviewHint+'</div>'
+    + '<div class="plan-modal-foot"><div style="display:flex;gap:8px;flex-wrap:wrap;">'+foot+'</div>'
+    + '<button class="btn btn-sm btn-primary" data-action="savePlanDetail" data-arg=\'["'+pid+'","'+di.id+'"]\'>保存</button></div>'
+    + '</div></div>';
+}
 function renderPlan(pid){
   var proj=getProject(pid); if(!proj) return '<section data-screen="plan"><div class="detail-empty">项目不存在</div></section>';
-  var left=state.ui.planLeft[pid]||CURRENT_WEEK;
+  var left=normView(state.ui.planLeft[pid]||CURRENT_WEEK);
+  state.ui.planLeft[pid]=left;
   var selIssue=state.ui.selectedIssue[pid];
-  var preview=state.ui.previewMode[pid];
-  var weekRows=WEEKS.map(function(w){
-    return '<div class="plan-weekrow '+(left===w?'active':'')+'" data-action="selectPlanLeft" data-arg=\'["'+pid+'","'+w+'"]\'><span>2026-'+w+(w===CURRENT_WEEK?' · 本周':'')+'</span></div>';
-  }).join('');
-  var histRows=HISTORY_WEEKS.map(function(w){
-    return '<div class="plan-weekrow '+(left===w?'active':'')+'" data-action="selectPlanLeft" data-arg=\'["'+pid+'","'+w+'"]\'><span>2026-'+w+'</span><span class="chip chip-muted">回填</span></div>';
-  }).join('');
-  var leftHTML='<div class="plan-weekrow '+(left==='all'?'active':'')+'" data-action="selectPlanLeft" data-arg=\'["'+pid+'","all"]\'>issue总览</div>'
-    + weekRows
-    + '<div class="plan-weekgroup">历史周</div>'
-    + histRows
-    + '<div class="plan-versionsel"><label class="label">在研版本</label><select class="select"><option>'+esc(proj.version)+'</option></select></div>';
+  var viewMode=state.ui.planViewMode[pid]||'board';
 
-  var midHTML='';
-  if(left==='all'){
-    var filt=state.ui.planFilter[pid]||{};
-    var rows=allIssuesArr(pid).filter(function(i){
-      if(filt.cat&&i.category!==filt.cat)return false;
-      if(filt.version&&i.version!==filt.version)return false;
-      if(filt.source&&(i.source||'').indexOf(filt.source)<0)return false;
-      if(filt.keyword&&i.title.toLowerCase().indexOf(filt.keyword.toLowerCase())<0)return false;
-      return true;
-    });
-    midHTML='<div class="plan-toolbar"><div class="left">issue总览</div></div>'
-      + '<div class="filter-bar">'
-      +   '<select data-bindchange="ui.planFilter.'+pid+'.cat"><option value="">类别·全部</option>'+CATS.map(function(c){return '<option value="'+c+'">'+c+'</option>';}).join('')+'</select>'
-      +   '<select data-bindchange="ui.planFilter.'+pid+'.version"><option value="">版本·全部</option>'+VERSIONS.map(function(v){return '<option value="'+v+'">'+v+'</option>';}).join('')+'</select>'
-      +   '<select data-bindchange="ui.planFilter.'+pid+'.source"><option value="">来源·全部</option><option value="人建">人建</option><option value="agent">agent 拆</option><option value="自动建">自动建</option><option value="人触发">人触发</option></select>'
-      +   '<input data-bind="ui.planFilter.'+pid+'.keyword" value="'+esc(filt.keyword||'')+'" placeholder="关键字…">'
-      + '</div>'
-      + kanbanHTML(pid,rows);
-  } else if(HISTORY_WEEKS.indexOf(left)>=0){
-    // 回填出来的历史周:合入数来自 git。周目标不倒推,没有就是没有。
-    var mg=HISTORY_WEEK_MERGED[left]||0;
-    midHTML='<div class="plan-toolbar"><div class="left">2026-'+left+' <span class="chip chip-muted">回填</span></div></div>'
-      + '<div class="goal-box">(回填,无周目标)本周合入 '+mg+' 个 MR</div>'
-      + '<div class="detail-empty" style="margin-top:10px;">这一周是接入时由「资产盘点」首次模式从 git 历史回填出来的。当时项目还没在 Workbench 上运作,所以没有活卡,也不倒推周目标。</div>';
-  } else {
-    var wk=getPath(state,'weekPlans.'+pid+'.'+left);
-    var weekIssues=allIssuesArr(pid).filter(function(i){return i.kind==='business'&&i.week===left;});
-    var opsRows=opsIssuesFor(pid).filter(function(i){return i.week===left;});
-    var weekProg=weekProgress(pid,left);
-    var totalW=weekProg.todo+weekProg.doing+weekProg.review+weekProg.done;
-    function segPct(n){ return totalW? Math.round(n/totalW*100) : 0; }
-    midHTML='<div class="plan-toolbar"><div class="left">2026-'+left+(left===CURRENT_WEEK?' · 本周':'')+'</div>'
-      + '<div class="right">'
-      +   '<button class="btn btn-sm" data-action="newIssueDraft" data-arg=\'"'+pid+'"\'>新建活</button>'
-      +   '<button class="btn btn-sm" data-action="openReleaseModal" data-arg=\'"'+pid+'"\'>发版本</button>'
-      +   '<label class="switch" title="还没接:要去读活自己 worktree 里未合入的仓文件"><input type="checkbox" disabled> 预览 · 未合入</label>'
-      + '</div></div>'
-      + '<div class="goal-box">'+esc(wk?wk.goal:'（这一周还没写周目标)')+'</div>'
-      + '<div class="week-progress">'
-      +   '<div style="width:'+segPct(weekProg.done)+'%;background:var(--green);"></div>'
-      +   '<div style="width:'+segPct(weekProg.review)+'%;background:var(--amber);"></div>'
-      +   '<div style="width:'+segPct(weekProg.doing)+'%;background:var(--clay);"></div>'
-      +   '<div style="width:'+segPct(weekProg.todo)+'%;background:#E4DDC8;"></div>'
-      + '</div>'
-      + '<div class="ops-chip-row">'+opsChipsHTML(pid)+'</div>'
-      + kanbanHTML(pid,weekIssues.concat(opsRows));
+  var viewOpts=[['all','全部 issue']];
+  WEEKS.concat(HISTORY_WEEKS).forEach(function(w){ viewOpts.push(['week:'+w, '2026-'+w+(w===CURRENT_WEEK?' · 本周':'')+(HISTORY_WEEKS.indexOf(w)>=0?' · 回填':'')]); });
+  VERSIONS.forEach(function(v){ viewOpts.push(['version:'+v, '版本 · '+v]); });
+  function viewSel(){return '<select class="il-dd-btn" data-bindchange="ui.planLeft.'+pid+'">'+viewOpts.map(function(o){return '<option value="'+o[0]+'" '+(o[0]===left?'selected':'')+'>'+esc(o[1])+'</option>';}).join('')+'</select>';}
+
+  var title, issuesList;
+  if(left==='all'){ title='全部 issue'; issuesList=allIssuesArr(pid); }
+  else if(left.indexOf('week:')===0){ var wk=left.slice(5); title='2026-'+wk+(wk===CURRENT_WEEK?' · 本周':'')+(HISTORY_WEEKS.indexOf(wk)>=0?' · 回填':''); issuesList=allIssuesArr(pid).filter(function(i){return i.week===wk;}); }
+  else { var vn=left.slice(8); title='版本 · '+vn; issuesList=allIssuesArr(pid).filter(function(i){return i.version===vn;}); }
+
+  var rightBtns='';
+  if(left==='all'){ rightBtns='<button class="btn btn-sm btn-secondary" data-action="toastOnly" data-arg=\'"演示:在 codehub 建里程碑(版本)"\'>创建版本</button><button class="btn btn-sm btn-secondary" data-action="toastOnly" data-arg=\'"演示:删 codehub 里程碑 + 摘 bw:plan 标签"\'>删除版本</button>'; }
+  else if(left.indexOf('version:')===0){ rightBtns=''; }
+  else { rightBtns='<button class="btn btn-sm" data-action="openReleaseModal" data-arg=\'"'+pid+'"\'>发版本</button>'; }
+  var viewToggleLabel=viewMode==='board'?'☰ 列表':'▦ 看板';
+  var toolbar='<div class="plan-toolbar"><div class="left">'+esc(title)+'</div><div class="right">'+viewSel()+rightBtns
+    + '<button class="btn btn-sm btn-primary" data-action="newIssueDraft" data-arg=\'"'+pid+'"\'>新建issue</button>'
+    + '<button class="btn btn-sm btn-secondary" data-action="togglePlanView" data-arg="'+pid+'">'+viewToggleLabel+'</button>'
+    + '</div></div>';
+
+  var weekHead='';
+  if(left.indexOf('week:')===0){
+    var wk=left.slice(5);
+    if(HISTORY_WEEKS.indexOf(wk)>=0){
+      var mg=HISTORY_WEEK_MERGED[wk]||0;
+      weekHead='<div class="goal-box">(回填,无周目标)本周合入 '+mg+' 个 MR</div>';
+    } else {
+      var wp=getPath(state,'weekPlans.'+pid+'.'+wk);
+      var prog=weekProgress(pid,wk);
+      var totalW=prog.todo+prog.doing+prog.review+prog.done;
+      function segPct(n){ return totalW? Math.round(n/totalW*100) : 0; }
+      weekHead='<div class="goal-box">'+esc(wp?wp.goal:'（这一周还没写周目标)')+'</div>'
+        + '<div class="week-progress">'
+        +   '<div style="width:'+segPct(prog.done)+'%;background:var(--green);"></div>'
+        +   '<div style="width:'+segPct(prog.review)+'%;background:var(--amber);"></div>'
+        +   '<div style="width:'+segPct(prog.doing)+'%;background:var(--clay);"></div>'
+        +   '<div style="width:'+segPct(prog.todo)+'%;background:#E4DDC8;"></div>'
+        + '</div>'
+        + '<div class="ops-chip-row">'+opsChipsHTML(pid)+'</div>';
+    }
   }
 
-  var detailHTML='';
+  var body;
+  if(left.indexOf('week:')===0 && HISTORY_WEEKS.indexOf(left.slice(5))>=0 && issuesList.length===0){
+    body='<div class="detail-empty" style="margin-top:10px;">这一周是接入时由「资产盘点」首次模式从 git 历史回填出来的。当时项目还没在 Workbench 上运作,所以没有活卡,也不倒推周目标。</div>';
+  } else {
+    body = viewMode==='list' ? listViewHTML(pid,issuesList) : kanbanHTML(pid,issuesList);
+  }
+
+  var detailModal='';
   var di=selIssue?getIssue(pid,selIssue):null;
-  if(di){
-    detailHTML='<div class="plan-detail"><div class="plan-detail-head"><h3 style="font-size:15px;margin:0;font-family:var(--serif);">详情</h3><button class="drawer-close" data-action="closePlanDetail" data-arg=\'"'+pid+'"\'>✕</button></div>'
-      + '<div class="plan-detail-body">'
-      + '<div class="detail-title">'+esc(di.title)+'</div>'
-      + '<div class="detail-row"><div class="k">说明</div>'+esc(di.desc||'—')+'</div>'
-      + '<div class="detail-row"><div class="k">类别</div>'+(di.kind==='ops'?'运作(不能改)':esc(di.category))+'</div>'
-      + '<div class="detail-row"><div class="k">开工工具</div>'+esc(TOOL_LABEL[di.tool]||'—')+'</div>'
-      + '<div class="detail-row"><div class="k">workflow / 技能</div>'+esc(di.workflow||'—')+' / '+esc(di.skill||'—')+'</div>'
-      + '<div class="detail-row"><div class="k">推动指标</div>'+((di.metricIds||[]).map(function(mid){var m=getMetric(pid,mid);return m?esc(m.label):'';}).join('、')||'—')+'</div>'
-      + '<div class="detail-row"><div class="k">MR</div>'+(di.mr?('<span class="mono">'+esc(di.mr.label)+'</span> · '+esc(di.mr.status)):'—')+'</div>'
-      + '<div class="detail-row"><div class="k">来源</div>'+esc(di.source||'—')+'</div>'
-      + '<div class="detail-row"><div class="k">week_of / 版本</div>'+esc(di.week||'—')+' / '+esc(di.version||'—')+'</div>'
-      + '<div class="detail-row"><div class="k">操作(键盘 / 替代路径,拖拽同效)</div><div class="kcard-actions" style="margin-top:3px;">'+issueActionsHTML(pid,di)+'</div></div>'
-      + '<div class="detail-actions"><button class="btn btn-primary btn-sm" data-action="goSession" data-arg=\'["'+pid+'","'+di.id+'"]\'>去会话 →</button><button class="btn btn-sm" disabled title="V4 还没接蒸馏">蒸馏</button></div>'
-      + '</div></div>';
-  }
+  if(di){ detailModal=planDetailModalHTML(pid,di); }
+
   return '<section data-screen="plan"><div class="plan-grid">'
-    + '<div class="plan-col">'+leftHTML+'</div>'
-    + '<div class="plan-col plan-mid">'+midHTML+'</div>'
-    + '</div>'+detailHTML+'</section>';
+    + '<div class="plan-col plan-mid">'+toolbar+weekHead+body+'</div>'
+    + '</div>'+detailModal+'</section>';
 }
 
-/* ===================== 渲染:会话(Orca 式三栏) ===================== */
-function sessionGroups(pid){
-  var proj=getProject(pid); if(!proj) return [];
-  var repoShort=(proj.repo||'repo').split('/').pop();
-  var groups=[{sid:'shell',groupLabel:repoShort+' · main',title:'仓根 shell',sub:'常驻',dot:'gray',issue:null}];
-  var ids = pid==='Workbench' ? ['pr-102','w1-2','v4-4','ops2-w33'] : Object.keys(getIssues(pid)).filter(function(id){var i=getIssue(pid,id);return i&&i.kind!=='charter'&&i.status!=='done';});
-  ids.forEach(function(id){
-    var i=getIssue(pid,id); if(!i)return;
-    var dot='gray', sub='空闲';
-    if(state.ui.playing[id]){ dot='green'; sub='运行中'; }
-    else if(i.tool==='open_design'){ dot='green'; sub='Open Design 打开中'; }
-    else if(i.status==='review'||i.status==='merged'){ dot='amber'; sub=(i.auto?'自动 · 已推评审':'等你输入 · 3 分钟前'); }
-    else if(i.status==='doing'){ dot='amber'; sub='等你输入'; }
-    else if(i.status==='done'){ dot='gray'; sub='已完成'; }
-    if(state.ui.deletedSessions && state.ui.deletedSessions[pid+':'+id]) return;
-    groups.push({sid:id,groupLabel:repoShort+'-issue-'+issueSuffix(id)+' · '+branchOf(id),title:i.title,sub:sub,dot:dot,issue:i});
-  });
-  return groups;
-}
-function baseTabs(issue){
-  var tabs=[];
-  if(issue&&issue.tool==='open_design'){ tabs.push({id:'od',kind:'od',label:'Open Design'}); }
-  tabs.push({id:'terminal',kind:'terminal',label:'终端'});
-  return tabs;
-}
-function highlightLine(line){
-  var trimmed=line.replace(/^\s*/,'');
-  if(/^(\/\/|#)/.test(trimmed)){ return '<span class="tok-com">'+esc(line)+'</span>'; }
-  var out=esc(line);
-  out=out.replace(/(&quot;.*?&quot;)/g,'<span class="tok-str">$1</span>');
-  out=out.replace(/\b(fn|let|pub|struct|impl|match|if|else|return|use|mod|const|static|async|await|self|mut|for|while|loop|enum|trait|type|where|dyn|Self|workspace|members|label|target)\b/g,'<span class="tok-kw">$1</span>');
-  return out;
-}
-function terminalHTML(pid,sid,issue){
-  if(!issue){
-    var proj=getProject(pid);
-    return '<div class="terminal" data-terminal><div class="term-titlebar"><span>'+esc((proj&&proj.repo)||'')+' · main</span><span style="opacity:.5;">演示</span></div>'
-      + '<div class="term-body" data-terminal-body="'+sid+'"><div class="term-line term-idle">$ 等待输入…</div></div>'
-      + '<div class="term-input-row"><input placeholder="在此输入…" data-term-input data-pid="'+pid+'" data-sid="'+sid+'"></div></div>';
-  }
-  var shownCount=state.ui.terminalLines[sid]||0;
-  var lines=TRANSCRIPTS_FOR(pid,sid).slice(0,shownCount);
-  var body=lines.map(function(l){return '<div class="term-line '+l.cls+'">'+esc(l.text)+'</div>';}).join('')||'<div class="term-line term-idle">$ 等待 ▶开工…</div>';
-  return '<div class="terminal" data-terminal><div class="term-titlebar"><span>'+esc(branchOf(sid))+' · '+esc(TOOL_LABEL[issue.tool]||'')+'</span><span style="opacity:.5;">演示</span><span class="spacer"></span><button class="copybtn" data-action="copyTerminal" data-arg=\'"'+sid+'"\'>复制</button></div>'
-    + '<div class="term-body" data-terminal-body="'+sid+'">'+body+'</div>'
-    + '<div class="term-input-row"><input placeholder="继续对话…" data-term-input data-pid="'+pid+'" data-sid="'+sid+'"></div></div>';
-}
-function codeViewHTML(path){
-  var lines=FILE_CONTENTS[path]||['// '+path,'(未纳入原型演示内容,真实内容以仓为准)'];
-  var body=lines.map(function(l,idx){return '<div class="codeline"><span class="ln">'+(idx+1)+'</span><span class="src">'+highlightLine(l)+'</span></div>';}).join('');
-  return '<div class="codeview"><div class="codeview-head">'+esc(path)+' · 只读</div><div class="codeview-body">'+body+'</div></div>';
-}
-function diffViewHTML(issue,path){
-  var files=issue?changedFilesFor(issue):[];
-  var f=files.filter(function(x){return x[0]===path;})[0]||[path,'+4','-1'];
-  var plus=parseInt(f[1])||1, minus=Math.abs(parseInt(f[2]))||0;
-  var lines=[{t:'ctx',s:'--- a/'+path},{t:'ctx',s:'+++ b/'+path},{t:'ctx',s:'@@ -1,'+Math.max(1,minus)+' +1,'+Math.max(1,plus)+' @@'}];
-  for(var i=0;i<Math.min(6,Math.max(1,plus));i++){ lines.push({t:'add',s:'+ '+(i===0?'// 新增改动(演示行)':'    line_'+(i+1)+'();')}); }
-  if(minus>0){ lines.push({t:'del',s:'- // 旧实现(已移除,演示行)'}); }
-  var body=lines.map(function(l){return '<div class="diffline '+l.t+'">'+esc(l.s)+'</div>';}).join('');
-  return '<div class="diffview">'+body+'</div>';
-}
-function odEmbedHTML(){
-  return '<div class="od-embed"><div class="od-embed-head">Open Design · 本机内嵌(演示)</div><div class="od-embed-canvas"><span style="font-size:22px;">◐</span><span>Open Design</span></div></div>';
-}
-function renderTree(pid,sid,node,depth,changedSet){
-  var ex=state.ui.treeExpanded[pid]=state.ui.treeExpanded[pid]||{};
-  var html='';
-  if(node.type==='dir'){
-    var expanded=ex.hasOwnProperty(node.path)?ex[node.path]:(node.path===''||node.path==='crates'||node.path==='docs');
-    html+='<div class="tree-node dir" style="padding-left:'+(depth*12)+'px;" data-action="toggleTreeDir" data-arg=\'["'+pid+'","'+node.path+'"]\'><span class="tree-arrow">'+(expanded?'▾':'▸')+'</span>'+esc(node.name)+'/</div>';
-    if(expanded&&node.children){ node.children.forEach(function(c){ html+=renderTree(pid,sid,c,depth+1,changedSet); }); }
-  } else {
-    var changed=changedSet[node.path];
-    html+='<div class="tree-node file'+(changed?' changed':'')+'" style="padding-left:'+(depth*12+11)+'px;" data-action="openFileTab" data-arg=\'["'+pid+'","'+sid+'","'+node.path+'"]\'>'+esc(node.name)+(changed?' ✱':'')+'</div>';
-  }
-  return html;
-}
-function sessionRightHTML(pid,sid,issue){
-  var changedSet={}, changedList=issue?changedFilesFor(issue):[];
-  changedList.forEach(function(f){ changedSet[f[0]]=f; });
-  var treeHTML=renderTree(pid,sid,FILE_TREE,0,changedSet);
-  var changedHTML=changedList.length?changedList.map(function(f){
-    return '<div class="changed-row" data-action="openDiffTab" data-arg=\'["'+pid+'","'+sid+'","'+f[0]+'"]\'><span>'+esc(f[0])+'</span><span class="diffnum"><span class="plus">'+f[1]+'</span><span class="minus">'+f[2]+'</span></span></div>';
-  }).join(''):'<div class="detail-empty" style="padding:6px 2px;">无改动</div>';
-  var gitHTML=issue
-    ?('<div class="git-box">分支 '+esc(branchOf(sid))+'<br>ahead '+(changedList.length||1)+' · behind 0<br>未提交 '+(issue.status==='doing'?1:0)+'</div>')
-    :('<div class="git-box">分支 main<br>ahead 0 · behind 0<br>未提交 0</div>');
-  var mrHTML='';
-  if(issue&&issue.mr){
-    mrHTML='<div class="mr-card"><div class="row"><span class="mono">'+esc(issue.mr.label)+'</span><span class="chip '+(issue.mr.status==='merged'?'chip-green':'chip-outline')+'">'+esc(issue.mr.status==='merged'?'已合入':'开着')+'</span></div>'
-      + '<div style="font-size:11px;color:var(--ink-3);margin-bottom:6px;">检查 ✓ 通过</div>'
-      + (issue.status==='review'?('<button class="btn btn-sm btn-primary" data-action="mergeMR" data-arg=\'["'+pid+'","'+sid+'"]\'>合入</button>'):'')
-      + '</div>';
-  }
-  return '<div class="sr-h">文件树</div><div data-filetree>'+treeHTML+'</div>'
-    + '<div class="sr-h">改动文件</div>'+changedHTML
-    + '<div class="sr-h">git</div>'+gitHTML
-    + (mrHTML?('<div class="sr-h">MR</div>'+mrHTML):'');
-}
+/* ===================== 渲染:会话(两 iframe 页签) ===================== */
 function renderSession(pid,sidParam){
   var proj=getProject(pid); if(!proj) return '<section data-screen="session"><div class="detail-empty">项目不存在</div></section>';
-  var groups=sessionGroups(pid);
-  var sid=sidParam||state.ui.currentSession[pid]||(groups[1]?groups[1].sid:'shell');
-  if(!groups.some(function(g){return g.sid===sid;})){
-    var dynIssue=getIssue(pid,sid);
-    if(dynIssue){
-      var repoShort=(proj.repo||'repo').split('/').pop();
-      groups.push({sid:sid,groupLabel:repoShort+'-issue-'+issueSuffix(sid)+' · '+branchOf(sid),title:dynIssue.title,sub:STATUS_LABEL[dynIssue.status],dot:STATUS_DOT[dynIssue.status]==='red'?'red':(dynIssue.status==='done'?'gray':'amber'),issue:dynIssue});
-    } else { sid='shell'; }
-  }
-  state.ui.currentSession[pid]=sid;
-  var leftHTML=groups.map(function(g){
-    return '<div class="sess-group-label">'+esc(g.groupLabel)+'</div>'
-      + '<div class="sess-row '+(sid===g.sid?'sel':'')+'"'+(g.issue?(' data-issue="'+g.issue.id+'"'):'')+' data-action="selectSession" data-arg=\'["'+pid+'","'+g.sid+'"]\'>'
-      +   '<span class="dot'+(g.dot==='green'?' dot-run':'')+'" style="background:'+colorOf(g.dot)+';margin-top:4px;"></span>'
-      +   '<div class="body"><div class="ttl">'+esc(g.title)+'</div><div class="sub">'+esc(g.sub)+'</div></div>'
-      + '</div>'
-      + '<div class="sess-addnew">+ 新会话</div>';
-  }).join('');
-  var cur=groups.filter(function(g){return g.sid===sid;})[0];
-  var issue=cur?cur.issue:null;
-  var tabs=baseTabs(issue).concat(state.ui.sessionTabs[sid]||[]);
-  var activeTab=state.ui.sessionActiveTab[sid]||tabs[0].id;
-  if(!tabs.some(function(t){return t.id===activeTab;}))activeTab=tabs[0].id;
-  var tabsHTML=tabs.map(function(t){
-    var closable=t.kind==='file'||t.kind==='diff';
-    return '<div class="sess-tab '+(activeTab===t.id?'active':'')+'" data-action="selectTab" data-arg=\'["'+sid+'","'+t.id+'"]\'><span>'+esc(t.label)+'</span>'+(closable?('<span class="x" data-action="closeTab" data-arg=\'["'+sid+'","'+t.id+'"]\'>✕</span>'):'')+'</div>';
-  }).join('');
-  var bodyHTML='', activeTabObj=tabs.filter(function(t){return t.id===activeTab;})[0];
-  if(activeTabObj){
-    if(activeTabObj.kind==='terminal') bodyHTML=terminalHTML(pid,sid,issue);
-    else if(activeTabObj.kind==='od') bodyHTML=odEmbedHTML();
-    else if(activeTabObj.kind==='file') bodyHTML=codeViewHTML(activeTabObj.path);
-    else if(activeTabObj.kind==='diff') bodyHTML=diffViewHTML(issue,activeTabObj.path);
-  }
-  var actionBar='';
-  if(issue){
-    var playing=!!state.ui.playing[sid];
-    var canPlay=!playing&&issue.status!=='review'&&issue.status!=='merged'&&issue.status!=='done';
-    var canPush=issue.status==='todo'||issue.status==='pool'||issue.status==='doing';
-    actionBar='<div class="sess-actionbar" data-actionbar="'+sid+'">'
-      + '<span class="ttl">'+esc(issue.title)+'</span>'
-      + '<span class="chip" data-status-text>'+esc(STATUS_LABEL[issue.status])+'</span>'
-      + '<button class="btn btn-sm" data-btn="play" data-action="startWork" data-arg=\'["'+pid+'","'+sid+'"]\' '+(canPlay?'':'disabled')+'>▶ 开工</button>'
-      + '<button class="btn btn-sm" data-btn="stop" data-action="stopWork" data-arg=\'["'+pid+'","'+sid+'"]\' '+(playing?'':'disabled')+'>■ 停止</button>'
-      + '<button class="btn btn-sm" data-action="pushReview" data-arg=\'["'+pid+'","'+sid+'"]\' '+(canPush?'':'disabled')+'>推到评审</button>'
-      + '<button class="btn btn-sm" disabled title="V4 还没接蒸馏">蒸馏</button>'
-      + '<button class="btn btn-sm" data-action="askDeleteSession" data-arg=\'["'+pid+'","'+sid+'"]\'>删除会话</button>'
+  // 只剩两个 iframe 页签:Orca / Open Design(对齐 session/mod.rs + 模块7)。
+  // 动作条 / 灌词条不要 —— 开工在计划屏(拖进进行中或详情 ▶跑);停止 / MR / 评审
+  // 在 Orca 里或计划屏拖列;Workbench 不知 Orca 里当前哪条会话,灌会对错。
+  var tab=state.ui.sessTab[pid]||'orca';
+  state.ui.sessTab[pid]=tab;
+  var tabsHTML='<div class="sess-tab '+(tab==='orca'?'active':'')+'" data-action="selectSessTab" data-arg=\'["'+pid+'","orca"]\'>Orca</div>'
+    + '<div class="sess-tab '+(tab==='opendesign'?'active':'')+'" data-action="selectSessTab" data-arg=\'["'+pid+'","opendesign"]\'>Open Design</div>';
+  var body;
+  if(tab==='orca'){
+    body='<div class="sess-iframe" style="display:flex;flex-direction:column;overflow:hidden;">'
+      + '<div class="od-embed-head">Orca · 本机网页内嵌(loopback · #pairing=)</div>'
+      + '<div class="od-embed-canvas"><span style="font-size:22px;">⬢</span><span>演示:本机已开的 Orca web 配对页嵌在这里</span><span style="font-size:11px;">贴「给 web 配对」完整 URL 到设置屏后 iframe 亮 · 开工在计划屏 ▶跑 · 停止 / MR / 评审在 Orca 里或计划屏拖列</span></div>'
       + '</div>';
   } else {
-    actionBar='<div class="sess-actionbar"><span class="ttl">仓根 · main</span><span class="chip">常驻 shell</span></div>';
+    body='<div class="sess-iframe" style="display:flex;flex-direction:column;overflow:hidden;">'
+      + '<div class="od-embed-head">Open Design · 本机网页内嵌(loopback)</div>'
+      + '<div class="od-embed-canvas"><span style="font-size:22px;">◐</span><span>演示:本机已打开的 Open Design 首页嵌在这里</span><span style="font-size:11px;">原型类活默认停这页 · 探活拿 loopback 首页</span></div>'
+      + '</div>';
   }
-  var leftOn=state.ui.sessLeft!==false;
-  var rightOn=state.ui.sessRight!==false;
-  var leftCol=leftOn
-    ? '<div class="sess-col sess-left"><button class="sess-rail" data-action="toggleSessLeft" title="收起会话列表">‹</button><div class="sess-left-scroll">'+leftHTML+'</div></div>'
-    : '<div class="sess-col sess-left is-collapsed"><button class="sess-rail" data-action="toggleSessLeft" title="展开会话列表">会话</button></div>';
-  var rightCol=rightOn
-    ? '<div class="sess-col sess-right"><button class="sess-rail" data-action="toggleSessRight" title="收起工作区">›</button><div class="sess-right-scroll">'+sessionRightHTML(pid,sid,issue)+'</div></div>'
-    : '<div class="sess-col sess-right is-collapsed"><button class="sess-rail" data-action="toggleSessRight" title="展开工作区">工作区</button></div>';
   return '<section data-screen="session"><div class="sess-grid">'
-    + leftCol
-    + '<div class="sess-col sess-mid">'+actionBar+'<div class="sess-tabs">'+tabsHTML+'</div><div class="sess-body">'+bodyHTML+'</div></div>'
-    + rightCol
+    + '<div class="sess-col sess-midhead"><div class="sess-tabs">'+tabsHTML+'</div></div>'
+    + '<div class="sess-col sess-mid"><div class="sess-body">'+body+'</div></div>'
     + '</div></section>';
 }
 
