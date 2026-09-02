@@ -1,10 +1,7 @@
-//! `.bw/issue-policy.toml` —— 活的约定:开工工具清单、「类别→工具→workflow」
-//! 三列映射、评审规则、节律、看板列文案。
-//!
-//! 这份文件**不入库**。配置屏、▶开工、定时判据每次现读现解析——所以新增一个
-//! 开工工具只要在这里加一行 `[[tool]]` 加一个适配模块目录,不碰内核。
+//! `.bw/issue-policy.toml` —— **残留格式**。产品不读、不写、不铺。
+//! 解析只给测试和对账认得出旧文件;每周资产盘点整份删掉。
 
-use super::{parse_toml, read_to_string, write_file, Result};
+use super::{parse_toml, read_to_string, Result};
 use crate::model::{category_from_key, Category};
 use serde::{Deserialize, Serialize};
 use std::path::Path;
@@ -119,60 +116,4 @@ pub fn read(workspace: &Path) -> Result<Option<IssuePolicyFile>> {
         None => Ok(None),
         Some(raw) => parse(&raw).map(Some),
     }
-}
-
-/// 配置屏改完映射保存时写回。整份重写(内容来自解析后的结构),所以人手加
-/// 的注释会掉——配置屏保存前会提示这一点,和指标文件同一条已知代价。
-pub fn write(workspace: &Path, f: &IssuePolicyFile) -> Result<String> {
-    let body = render(f);
-    write_file(workspace, REL_PATH, &body)?;
-    Ok(body)
-}
-
-pub fn render(f: &IssuePolicyFile) -> String {
-    let q = |s: &str| format!("\"{}\"", s.replace('\\', "\\\\").replace('"', "\\\""));
-    let arr = |v: &[String]| {
-        let items: Vec<String> = v.iter().map(|x| q(x)).collect();
-        format!("[{}]", items.join(", "))
-    };
-    let mut s = String::new();
-    s.push_str(&format!("schema_version = {}\n", f.schema_version.max(1)));
-    s.push_str("\n# 开工工具声明:name → 接法类型(terminal 终端类 / web_embed 本机网页\n");
-    s.push_str("# 内嵌类)→ 探活方式 → 能力清单。这里的 kind 与下面 [[mapping]] 段的\n");
-    s.push_str("# category(活的类别标签)是两件不同的事,字段名特意分开,不要混。\n");
-    for t in &f.tools {
-        s.push_str("\n[[tool]]\n");
-        s.push_str(&format!("name = {}\n", q(&t.name)));
-        s.push_str(&format!("kind = {}\n", q(&t.kind)));
-        s.push_str(&format!("probe = {}\n", q(&t.probe)));
-        if !t.version_cmd.is_empty() {
-            s.push_str(&format!("version_cmd = {}\n", q(&t.version_cmd)));
-        }
-        s.push_str(&format!("capabilities = {}\n", arr(&t.capabilities)));
-    }
-    s.push_str("\n# 三列映射:类别 → 默认开工工具 → 默认 workflow。\n");
-    s.push_str("# workflow = SOP 类技能包(自己调度 agent),不是单个技能。\n");
-    for m in &f.mappings {
-        s.push_str("\n[[mapping]]\n");
-        s.push_str(&format!("category = {}\n", q(&m.category)));
-        s.push_str(&format!("tool     = {}\n", q(&m.tool)));
-        s.push_str(&format!("workflow = {}\n", q(&m.workflow)));
-    }
-    if let Some(r) = &f.review {
-        s.push_str("\n[review]\n");
-        s.push_str(&format!("who_can_merge  = {}\n", q(&r.who_can_merge)));
-        s.push_str(&format!("require_pr_for = {}\n", arr(&r.require_pr_for)));
-    }
-    if let Some(c) = &f.cadence {
-        s.push_str("\n[cadence]\n");
-        s.push_str(&format!("ops1_trigger  = {}\n", q(&c.ops1_trigger)));
-        s.push_str(&format!("ops2_trigger  = {}\n", q(&c.ops2_trigger)));
-        s.push_str(&format!("ops2_schedule = {}\n", q(&c.ops2_schedule)));
-    }
-    if let Some(k) = &f.kanban {
-        s.push_str("\n[kanban]\n");
-        s.push_str(&format!("pool_label = {}\n", q(&k.pool_label)));
-        s.push_str(&format!("todo_label = {}\n", q(&k.todo_label)));
-    }
-    s
 }

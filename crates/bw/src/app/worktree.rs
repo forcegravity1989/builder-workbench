@@ -20,9 +20,8 @@
 //! [`remove_if_clean`]。
 //!
 //! **两个根的分工**(别混):进得了版本控制的件写进 worktree,走分支和 MR;
-//! 仓自己的 `.gitignore` 拒收的件(Workbench 自己的仓就忽略 `.claude/`)属于**本机
-//! 检出**,不属于任何分支 —— 它们要落在主工作区,否则技能包只存在于这一张活
-//! 的 worktree 里,下一张活开新 worktree 就读不到剧本了。见 [`mirror_ignored`]。
+//! 仓自己的 `.gitignore` 拒收的件不属于任何分支。技能包摊在 Workbench
+//! 自己的资产目录,不复制进用户仓,所以不再往主检出镜像。
 
 use super::{AppError, Result};
 use crate::model::Project;
@@ -78,6 +77,30 @@ pub(super) async fn provision(main: &Path, number: u32) -> Result<IssueTree> {
     })
 }
 
+/// 给「项目约定」开(或接着用)常驻树,分支 `bw/project`。
+///
+/// 不是 git 仓 / 还没有 HEAD:就地写,`isolated=false`(空仓首提交那条例外)。
+pub(super) async fn provision_project(main: &Path) -> Result<IssueTree> {
+    if !crate::git::is_repo(main).await || !crate::git::has_head(main).await {
+        let branch = crate::git::current_branch(main)
+            .await
+            .unwrap_or_else(|_| "—(不是 git 仓或还没有提交)".into());
+        return Ok(IssueTree {
+            path: main.to_path_buf(),
+            branch,
+            isolated: false,
+        });
+    }
+    let path = bw_engine::workspace::provision_project_worktree(main)
+        .await
+        .map_err(|e| AppError::Exec(format!("给项目约定开 worktree 没成:{e}")))?;
+    Ok(IssueTree {
+        path,
+        branch: bw_engine::workspace::PROJECT_BRANCH.to_string(),
+        isolated: true,
+    })
+}
+
 /// 结清时收掉这棵树 —— **只在它干净的时候**。
 ///
 /// 树里还有没提交的改动就原样留着(返回 `false`):那是真实存在的劳动成果,
@@ -98,46 +121,6 @@ pub(super) async fn remove_if_clean(main: &Path, tree: &Path) -> bool {
     true
 }
 
-/// 一件被仓拒收的件,最后去哪了。
-pub(super) enum Mirrored {
-    /// 放进主工作区了。
-    Copied,
-    /// 主工作区已经有同名文件,没覆盖。
-    Kept,
-    /// 想放但没放成,附上原话。**不吞** —— 吞掉的话活的正文会说得像一切正常。
-    Failed(String),
-}
-
-/// 把仓拒收的那几个件同步一份到主工作区。
-///
-/// 只在主工作区**还没有**同名文件时才放 —— 绝不覆盖已经在那儿的东西。回来的
-/// 是「路径 → 下落」的对照,由调用方如实写进活的说明。
-pub(super) fn mirror_ignored(main: &Path, tree: &Path, rels: &[String]) -> Vec<(String, Mirrored)> {
-    let mut out = Vec::new();
-    for rel in rels {
-        let dst = main.join(rel);
-        if dst.exists() {
-            out.push((rel.clone(), Mirrored::Kept));
-            continue;
-        }
-        let src = tree.join(rel);
-        if !src.is_file() {
-            continue;
-        }
-        if let Some(parent) = dst.parent() {
-            if let Err(e) = std::fs::create_dir_all(parent) {
-                out.push((rel.clone(), Mirrored::Failed(e.to_string())));
-                continue;
-            }
-        }
-        match std::fs::copy(&src, &dst) {
-            Ok(_) => out.push((rel.clone(), Mirrored::Copied)),
-            Err(e) => out.push((rel.clone(), Mirrored::Failed(e.to_string()))),
-        }
-    }
-    out
-}
-
 /// 开 MR 的结果。`number == 0` = 没有 MR,`note` 说明为什么 —— 两件事永远一起
 /// 走,界面上不会出现一个来历不明的空号。
 pub(super) struct MrOutcome {
@@ -156,10 +139,10 @@ impl MrOutcome {
 
 /// 把这张活的分支推上去,再开一个 MR。**每一条不做的理由都说出来**。
 ///
-/// 两处在用:规范铺底(Workbench 自己写的核心件)和「提交并开 MR」(agent 干完的
+/// 两处在用:项目约定(Workbench 自己写的名片)和「提交并开 MR」(agent 干完的
 /// 活)。两边准备分支的方式不同,推分支和开 MR 这一步是同一件事,只留一份。
 ///
-/// `has_work` = 这条分支上到底有没有可评审的东西。调用方各自判断:铺底看这次
+/// `has_work` = 这条分支上到底有没有可评审的东西。调用方各自判断:项目约定看这次
 /// 有没有提交出文件,提交并开 MR 看这棵树比基线多几个提交。
 pub(super) async fn push_and_open_mr(
     project: &Project,

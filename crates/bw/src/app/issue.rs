@@ -182,12 +182,7 @@ impl App {
         // 有真实工作区就在**这张活自己的 worktree** 里干,和 Orca 那条路一样;
         // 没有工作区就没什么可隔离的,下面走自我标注的替身。
         let tree = if ws.is_dir() {
-            let t = worktree::provision(&ws, issue.number).await?;
-            if issue.workflow == super::OPS1_WORKFLOW {
-                crate::standard::bootstrap::write_missing_on_first_use(&t.path)
-                    .map_err(|e| AppError::Exec(format!("给这张活铺指标空壳没成:{e}")))?;
-            }
-            Some(t)
+            Some(worktree::provision(&ws, issue.number).await?)
         } else {
             None
         };
@@ -289,10 +284,6 @@ impl App {
     ) -> Result<Vec<Event>> {
         // 开/复用 worktree:resolve 会接住旧平级兄弟,不建第二棵新树。
         let tree = worktree::provision(ws, issue.number).await?;
-        if issue.workflow == super::OPS1_WORKFLOW {
-            crate::standard::bootstrap::write_missing_on_first_use(&tree.path)
-                .map_err(|e| AppError::Exec(format!("给这张活铺指标空壳没成:{e}")))?;
-        }
         // upsert 会话行:workspace_path 写实际用的路径(可能是旧兄弟)。幂等:已有就返回既有行。
         let conv = self
             .upsert_conversation(&crate::model::Conversation {
@@ -697,6 +688,9 @@ impl App {
     /// 能收掉那棵。先看会话行记下的路径,再看新目录,再看旧兄弟(走底座的
     /// `resolve_issue_worktree`)。
     pub(super) async fn cleanup_issue_worktree(&self, issue: &Issue) {
+        if issue.title == issue_store::CHARTER_TITLE {
+            return;
+        }
         let Ok(ws) = self.workspace_of(issue.project_id).await else {
             return;
         };
@@ -717,7 +711,7 @@ impl App {
             // worktree 收掉了,顺手删分支(只删 merged 的;未合的 `git -d` 会
             // 拒绝,不强删 —— 留着也不影响)。分支名从 issue.number 现算,
             // 不靠 lossy 的 `issue.branch`。
-            let branch = bw_engine::github::issue_branch(issue.number);
+            let branch = issue_store::work_branch(issue);
             if crate::git::branch_exists(&ws, &branch).await {
                 let _ = crate::git::delete_merged_branch(&ws, &branch).await;
             }

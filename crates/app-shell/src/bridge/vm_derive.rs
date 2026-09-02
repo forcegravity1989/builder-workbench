@@ -38,7 +38,7 @@ pub(super) fn build_week_counts(issues: &[bw::Issue], week: Option<&str>) -> Wee
 }
 
 /// 运作活①②③三个状态点。开着的优先;本周已关的①②写「已完成」。
-/// ③关过但默认分支没有 `.bw/standard.toml` 仍算未建(旧铺底关掉、MR 没合
+/// ③关过但默认分支没有 `.bw/project.toml` 仍算未建(旧铺底关掉、MR 没合
 /// 不能冒充铺过)。
 ///
 /// `ops3_landed` 从外部传:它只跟仓走、不跟周走,在 `gather` 里采一次,
@@ -87,9 +87,30 @@ pub(super) fn build_ops(
         chip(
             "运作活② 资产盘点",
             OPS2_WORKFLOW,
-            "到点自动建(节律配在 .bw/issue-policy.toml)",
+            "到点自动建(产品默认周五 09:00)",
         ),
-        chip("运作活③ 规范铺底", OPS3_WORKFLOW, "接入项目时铺"),
+        {
+            let open = issues
+                .iter()
+                .filter(|i| bw::app::is_open_charter(i))
+                .max_by_key(|i| i.number);
+            let done = issues
+                .iter()
+                .filter(|i| bw::app::is_charter_title(&i.title) && i.status == IssueStatus::Done)
+                .max_by_key(|i| i.number);
+            let (status, note) = ops_chip_display(
+                open,
+                done,
+                true,
+                ops3_landed,
+                "接入时写名片,之后改名片也走这张",
+            );
+            OpsChipVm {
+                title: "项目约定".into(),
+                status,
+                note,
+            }
+        },
     ]
 }
 
@@ -118,20 +139,16 @@ fn ops_chip_display(
 
 /// 名片改动那张在途的轻量活。名片是仓文件,改它走分支 + MR,所以总览要能
 /// 看见「改了、还没合」。只认最新的一张。
-pub(super) fn build_card_mr(issues: &[bw::Issue]) -> Option<CardMrVm> {
+/// 铺底没合进默认分支:开着的运作活③。合入之后配置才作数,别人再纳入也才看得见。
+pub(super) fn build_bootstrap_pending(issues: &[bw::Issue], ops3_landed: bool) -> Option<CardMrVm> {
     let i = issues
         .iter()
-        .filter(|i| i.title.starts_with("编辑项目名片"))
-        .filter(|i| {
-            matches!(
-                i.status,
-                IssueStatus::InReview
-                    | IssueStatus::InProgress
-                    | IssueStatus::Todo
-                    | IssueStatus::Backlog
-            )
-        })
+        .filter(|i| bw::app::is_open_charter(i))
         .max_by_key(|i| i.number)?;
+    // 合入后横幅消失;人还没点完成时计划里仍是待评审。后来再改:件已在 HEAD 但 MR 开着,再出横幅。
+    if ops3_landed && !i.has_open_mr {
+        return None;
+    }
     Some(CardMrVm {
         issue_id: Some(i.id),
         number: i.number,
@@ -228,6 +245,30 @@ mod ops_chip_display_tests {
         let (st, note) = ops_chip_display(None, None, true, true, "接入项目时铺");
         assert_eq!(st, "已完成");
         assert_eq!(note, "件已在默认分支");
+    }
+
+    #[test]
+    fn bootstrap_pending_hides_when_landed_and_no_open_mr() {
+        let mut open = dummy_ops("规范铺底 v5.11");
+        open.status = bw::model::IssueStatus::InReview;
+        open.workflow = bw::app::OPS3_WORKFLOW.into();
+        open.has_open_mr = true;
+        open.pr_number = 4;
+        assert!(super::build_bootstrap_pending(&[open.clone()], true).is_some());
+        open.has_open_mr = false;
+        assert!(super::build_bootstrap_pending(&[open.clone()], true).is_none());
+        let pending = super::build_bootstrap_pending(&[open], false).expect("open leftover");
+        assert_eq!(pending.number, 8);
+        assert!(pending.mergeable);
+    }
+
+    #[test]
+    fn charter_title_shows_until_merged() {
+        let mut open = dummy_ops(bw::app::CHARTER_TITLE);
+        open.kind = bw::model::IssueKind::Light;
+        open.status = bw::model::IssueStatus::InReview;
+        open.has_open_mr = true;
+        assert!(super::build_bootstrap_pending(&[open], false).is_some());
     }
 
     #[test]

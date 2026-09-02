@@ -10,7 +10,7 @@ use crate::model::{Category, IssueId, IssueStatus, ProjectId};
 
 /// 总览「编辑项目名片」一次填完的仓文件字段。
 ///
-/// 正本仍是 `.bw/PROJECT.md` + `.bw/project.toml` 两份。接入时只填前四项,
+/// 正本是 `.bw/project.toml`。接入时只填前四项,
 /// 在研版本 / 项目群落默认或仓里已有的;总览保存会把后几项一并写回。
 #[derive(Clone, Debug, PartialEq, Eq, Default)]
 pub struct ProjectIntent {
@@ -43,7 +43,7 @@ pub struct RemoteRef {
 #[derive(Clone, Debug, PartialEq)]
 pub enum Command {
     // ── 接入 ──────────────────────────────────────────────
-    /// 接入项目:写项目行 + 备好工作区。名片字段落 `PROJECT.md`,不落库。
+    /// 接入项目:写项目行 + 备好工作区。名片字段落 `.bw/project.toml`,不落库。
     CreateProject {
         slug: String,
         intent: ProjectIntent,
@@ -51,16 +51,14 @@ pub enum Command {
         /// 空 = 用工作区根目录下的 `<slug>`。
         workspace_path: String,
     },
-    /// 总览「编辑→保存」:改 `PROJECT.md` 与 `.bw/project.toml`
+    /// 总览「编辑→保存」:改 `.bw/project.toml`
     /// (名片 + 在研版本 + 项目群),走一张轻量活。
     EditProjectCard {
         project_id: ProjectId,
         intent: ProjectIntent,
     },
 
-    // ── 规范铺底(运作活③)─────────────────────────────────
-    /// 一次性运作活③:按探测结果决定要跑几步,A 刀只做第 1 步(写核心件)。
-    RunStandardBootstrap { project_id: ProjectId },
+    // ── 规范铺底(运作活③)只在第一次纳入时自动跑,没有二次铺底命令 ──
     /// 把一个项目从工作台上移走。**只动库,不动仓** —— 仓是正本,里面是真实
     /// 的劳动成果。界面上要人点两下才发得出这条(第一下问「真移走?」)。
     RemoveProject { project_id: ProjectId },
@@ -82,7 +80,7 @@ pub enum Command {
         week: String,
         titles: Vec<String>,
     },
-    /// 建一张活。`category` 决定默认工具与 workflow(查 `.bw/issue-policy.toml`)。
+    /// 建一张活。`category` 决定默认工具与 workflow(本机 settings → 残留映射 → 产品默认)。
     CreateIssue {
         project_id: ProjectId,
         title: String,
@@ -155,7 +153,7 @@ pub enum Command {
     /// 状态转移。合法性由 `can_transition_to` 守;「完成」只能从「评审中」来,
     /// 而且只能是人显式发这条命令。作废走 `Cancelled`,不是 Done。
     TransitionIssue { id: IssueId, to: IssueStatus },
-    /// 给已有的活补/改类别标签。读回时用它查 issue-policy 的开工工具。
+    /// 给已有的活补/改类别标签。读回时用它查本机开工工具(再回退残留/产品默认)。
     SetIssueCategory { id: IssueId, category: Category },
     /// 改 issue 的责任人(codehub assignee)。空串 = 取消指派。走 codehub API,
     /// 不在本地另存一套。
@@ -175,7 +173,7 @@ pub enum Command {
     DeleteSession { id: IssueId },
 
     // ── 配置 ──────────────────────────────────────────────
-    /// 保存一行「类别→工具→workflow」映射,写 `.bw/issue-policy.toml`。
+    /// 保存本机「我用什么工具」。只写 settings,不进仓。`workflow` 带着不存。
     SaveToolMapping {
         project_id: ProjectId,
         category: Category,

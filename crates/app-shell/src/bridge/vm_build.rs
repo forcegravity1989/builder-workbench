@@ -8,9 +8,9 @@ use crate::vm::*;
 use bw::app::App;
 use bw::command::Event;
 use bw::model::{IssueId, IssueKind, IssueStatus, Project, ProjectId};
-use bw::repo::{issue_policy_file, project_file};
+use bw::repo::project_file;
 
-use super::vm_derive::{build_card_mr, build_ops, build_week_counts};
+use super::vm_derive::{build_bootstrap_pending, build_ops, build_week_counts};
 use super::vm_kb::build_kb;
 use super::vm_panels::{
     build_board, build_config, build_metrics, build_sessions, build_weeks, build_workbench,
@@ -76,7 +76,6 @@ pub(super) struct ProjectGathered {
     project: Project,
     ws: std::path::PathBuf,
     file: project_file::ProjectFile,
-    policy: Option<issue_policy_file::IssuePolicyFile>,
     /// issue 列表。`pr_number` 第一屏只带 `mr_cache` 命中的;没查过的后台回填。
     issues: Vec<bw::Issue>,
     /// 项目墙「上次交付」。打开项目在 gather 里和发版/健康一起采,借给那张卡。
@@ -189,11 +188,13 @@ pub struct PrFillSpec {
 }
 
 /// 一张还没查过 MR 的活。`done` = 已完成,直接打 `--state all`,跳过 opened。
+/// `charter` = 项目约定常驻分支 `bw/project`,不是 `bw/issue-<号>`。
 #[derive(Clone, Copy)]
 pub struct PrPending {
     pub id: bw::model::IssueId,
     pub number: u32,
     pub done: bool,
+    pub charter: bool,
 }
 
 impl Gathered {
@@ -211,6 +212,7 @@ impl Gathered {
                 id: i.id,
                 number: i.number,
                 done: i.status == IssueStatus::Done,
+                charter: i.title == bw::app::CHARTER_TITLE,
             })
             .collect();
         if pending.is_empty() {
@@ -879,7 +881,7 @@ fn needs_pr_lookup(i: &bw::Issue) -> bool {
     if i.number == 0 {
         return false;
     }
-    let card_edit = i.title.starts_with("编辑项目名片")
+    let card_edit = bw::app::is_charter_title(&i.title)
         && matches!(
             i.status,
             IssueStatus::Backlog | IssueStatus::Todo | IssueStatus::InProgress
@@ -936,7 +938,11 @@ async fn lookup_pr_one(
     remote: &bw_engine::remote::Remote,
     item: PrPending,
 ) -> (bw::model::IssueId, u32, bool) {
-    let branch = bw_engine::github::issue_branch(item.number);
+    let branch = if item.charter {
+        bw_engine::workspace::PROJECT_BRANCH.to_string()
+    } else {
+        bw_engine::github::issue_branch(item.number)
+    };
     if item.done {
         return match remote.mr_for_branch(&branch).await {
             Ok(Some(n)) => (item.id, n, false),
@@ -965,9 +971,12 @@ async fn gather_project(
 ) -> Option<ProjectGathered> {
     let p = app.project(id).await.ok()??;
     let ws = app.workspace_of(id).await.ok()?;
-    let file =
+    let mut file =
         read_or_warn(".bw/project.toml", project_file::read(&ws), warnings).unwrap_or_default();
     apply_mr_cache(&mut issues, &ui.mr_cache);
+    if let Some(overlay) = bw::app::overlay_project_file(&ws, &issues) {
+        file = overlay;
+    }
     let mr_url_prefix = p.mr_url_prefix();
     let issue_url_prefix = p.issue_url_prefix();
 
@@ -975,7 +984,7 @@ async fn gather_project(
         build_sessions(app, id, &issues),
         app.week_goals_from_ops1(&p, &issues),
         load_releases(app, &p, &ws),
-        bw::git::path_in_head(&ws, ".bw/standard.toml"),
+        bw::git::path_in_head(&ws, ".bw/project.toml"),
         async {
             bw::git::tags_with_dates(&ws)
                 .await
@@ -1001,11 +1010,6 @@ async fn gather_project(
         let _ = app.cache_project_health(id, &derived).await;
     }
 
-    let policy = read_or_warn(
-        ".bw/issue-policy.toml",
-        issue_policy_file::read(&ws),
-        warnings,
-    );
     let week_started = bw::app::week_started(&issues, current_week);
     let ops1 = issues.iter().find(|i| {
         bw::app::is_ops1_issue(i)
@@ -1022,7 +1026,6 @@ async fn gather_project(
         project: p.clone(),
         ws,
         file,
-        policy,
         issues,
         last_delivery,
         sessions,
@@ -1162,12 +1165,13 @@ async fn assemble_project(
         suggested_next: inv.suggested_next.clone(),
         confirmed_version: confirmed.clone(),
         ops1_status: pg.ops1_status.clone(),
+        bootstrap_pending: build_bootstrap_pending(&pg.issues, pg.ops3_landed),
         weeks: build_weeks(&pg.issues, &pg.current_week, &pg.week_goals),
         current_week: pg.current_week.clone(),
         viewing_week: viewing_week.clone(),
         viewing_plan: ui.viewing_plan.clone(),
         view_all,
-        board: build_board(&pg.issues, week, plan, pg.policy.as_ref()),
+        board: build_board(&pg.issues, week, plan),
         plan_versions,
         current_user: pg.current_user.clone(),
         week_counts: if confirmed.is_empty() {
@@ -1180,7 +1184,6 @@ async fn assemble_project(
         board_ops: build_ops(&pg.issues, viewing_week.as_str(), pg.ops3_landed),
         // 采不采由界面点 —— 现算一次要起好几个 git 子进程,不能每次重切都跑。
         repo_stats: ui.repo_stats.clone(),
-        card_mr: build_card_mr(&pg.issues),
         pending_drafts: match &ui.pending_drafts {
             Some((w, titles)) if *w == viewing_week => titles.clone(),
             _ => Vec::new(),
@@ -1197,9 +1200,10 @@ async fn assemble_project(
             unread: bw::app::count_unseen(&pg.issues),
         },
         config: {
+            let settings = bw::local::Settings::load(std::path::Path::new(&ui.data_dir)).ok();
             let mut c = build_config(
                 &pg.ws,
-                pg.policy.as_ref(),
+                settings.as_ref(),
                 &pg.project,
                 &pg.file,
                 &pg.issues,

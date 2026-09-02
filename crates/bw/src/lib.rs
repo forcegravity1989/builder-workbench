@@ -17,6 +17,7 @@
 pub mod app;
 pub mod chat;
 pub mod command;
+pub mod defaults;
 pub mod derive;
 pub mod git;
 pub mod isoweek;

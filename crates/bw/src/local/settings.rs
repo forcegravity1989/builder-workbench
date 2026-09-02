@@ -1,10 +1,11 @@
 //! `asset_root/settings.toml` —— 全局本机设置。
 //!
-//! 替代旧的 `app_meta` 表里的 `workspaces_root` 键。今天两个全局键:
+//! 替代旧的 `app_meta` 表里的 `workspaces_root` 键。今天三个全局键:
 //! 工作区根目录 + Orca 网页地址(配对 URL,带 token,**只在本地**,不进仓/Event
-//! 原文/日志)。
+//! 原文/日志)+ 本机开工工具(类别 → 工具,跟人走这台机器,不进被管仓)。
 
 use crate::repo::RepoFileError;
+use std::collections::BTreeMap;
 use std::path::Path;
 
 const FILENAME: &str = "settings.toml";
@@ -22,6 +23,10 @@ pub struct Settings {
     /// `looks_loopback_http` 过滤,非 loopback 如实滤成空。空 = 没配,会话屏空着。
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub orca_web_url: Option<String>,
+    /// 本机「我用什么工具」:类别键(`prototype` / `build` / …)→ 工具 id。
+    /// **跟人走这台机器**,不进被管仓。空 = 还没选过,读侧回退残留映射或产品默认。
+    #[serde(default, skip_serializing_if = "BTreeMap::is_empty")]
+    pub tools: BTreeMap<String, String>,
 }
 
 impl Settings {
@@ -97,6 +102,31 @@ impl Settings {
         } else {
             Some(url.to_string())
         };
+        Self::save(asset_root, &s)
+    }
+
+    /// 读某一类的本机开工工具。没有 / 空 = `None`(读侧再回退残留或产品默认)。
+    pub fn get_tool(asset_root: &Path, category_key: &str) -> Option<String> {
+        Self::load(asset_root)
+            .ok()
+            .and_then(|s| s.tools.get(category_key).cloned())
+            .map(|t| t.trim().to_string())
+            .filter(|t| !t.is_empty())
+    }
+
+    /// 写某一类的本机开工工具。空串 = 清掉,下次回退残留或产品默认。
+    pub fn set_tool(
+        asset_root: &Path,
+        category_key: &str,
+        tool: &str,
+    ) -> Result<(), RepoFileError> {
+        let mut s = Self::load(asset_root).unwrap_or_default();
+        let tool = tool.trim();
+        if tool.is_empty() {
+            s.tools.remove(category_key);
+        } else {
+            s.tools.insert(category_key.to_string(), tool.to_string());
+        }
         Self::save(asset_root, &s)
     }
 }

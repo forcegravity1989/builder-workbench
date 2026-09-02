@@ -42,6 +42,10 @@ pub use bootstrap::{
 };
 pub use health::{collect_health_inputs, read_metric_readings, MetricReading};
 pub use issue::{count_unseen, issues_in_week, workflow_usage};
+pub use issue_store::{
+    is_charter_title, is_open_charter, overlay_project_file, work_branch, CHARTER_TITLE,
+    LIGHT_TITLE,
+};
 pub use ops::{
     is_ops1_issue, ops1_title, ops2_title, skill_slug, week_started, workflow_label, OPS1_WORKFLOW,
     OPS2_WORKFLOW, OPS3_WORKFLOW,
@@ -422,9 +426,6 @@ impl App {
             Command::EditProjectCard { project_id, intent } => {
                 self.edit_project_card(project_id, intent).await
             }
-            Command::RunStandardBootstrap { project_id } => {
-                self.run_standard_bootstrap(project_id, true).await
-            }
             Command::ReconcileStandard { project_id } => self.reconcile_standard(project_id).await,
             Command::StartWeekPlanning { project_id, week } => {
                 self.start_week_planning(project_id, week).await
@@ -548,9 +549,6 @@ fn cmd_log_label(cmd: &Command) -> String {
         Command::ReopenSession { issue_id } => format!("ReopenSession #{}", issue_id.iid()),
         Command::EditProjectCard { project_id, .. } => {
             format!("EditProjectCard project={}", project_id.uuid())
-        }
-        Command::RunStandardBootstrap { project_id } => {
-            format!("RunStandardBootstrap project={}", project_id.uuid())
         }
         Command::ReconcileStandard { project_id } => {
             format!("ReconcileStandard project={}", project_id.uuid())
