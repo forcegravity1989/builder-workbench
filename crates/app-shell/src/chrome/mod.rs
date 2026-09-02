@@ -222,7 +222,7 @@ pub fn TopBar(title: String, project: Option<String>, source: String, bridge: Br
 }
 
 /// 侧栏指南就是仓里那份产品指南,编进二进制,不另写一套。
-const GUIDE_HTML: &str = include_str!("../../../../docs/guide/v4-产品指南.html");
+const GUIDE_HTML: &str = include_str!("../../../../docs/03-guide/v4-产品指南.html");
 
 #[component]
 pub fn GuideDrawer(bridge: Bridge) -> Element {

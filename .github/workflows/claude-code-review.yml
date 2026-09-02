@@ -1,4 +1,4 @@
-# PR 自动评审。谈定见 changes/reviewer-agent/;codehub 仓走 Workbench 内建「请评审」。
+# PR 自动评审。谈定见 05-features/reviewer-agent/;codehub 仓走 Workbench 内建「请评审」。
 # 前提(人做一次):给仓装 Claude GitHub App + 配 secret CLAUDE_CODE_OAUTH_TOKEN。
 name: Code Review
 on:
