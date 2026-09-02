@@ -6,7 +6,7 @@
 
 ## 最近 · 2026-09-02
 
-规范 5.13:工作台不写被管仓主检出。仓里只留两辆常驻车——项目约定(`.bw/project.toml`,分支 `bw/project`)和指标(定义走运作活①、读数走 `bw/ledger`)。开工工具跟人走本机 `settings.toml`,不进仓;类别→workflow 和周五盘点是产品默认。不再铺、不再写 `.bw/issue-policy.toml`;解析只读残留,周盘点整份删掉。规范铺底与「编辑项目名片」收成「项目约定」。主检出 `.gitignore` 补丁删掉,`.bw/worktrees/` 的忽略写在约定树上的 `.bw/.gitignore`。
+规范 5.13:工作台不写被管仓主检出。方案正本在 [`docs/architecture.md`](docs/architecture.md) §3 模块 3「项目约定」;词表在 [`CONTEXT.md`](CONTEXT.md)。仓里只留两辆常驻车——项目约定(`.bw/project.toml`,分支 `bw/project`)和指标(定义走运作活①、读数走 `bw/ledger`)。开工工具跟人走本机 `settings.toml`;类别→workflow 和周五盘点只认产品默认,残留 `issue-policy` 不再驱动任何行为。不再铺、不再写、产品不再读 `.bw/issue-policy.toml`;周盘点整份删掉。规范铺底与「编辑项目名片」收成「项目约定」。接入跳过只认 HEAD 或开着的约定活,不把主检出脏文件当已接入。拉主干不再 restore/删主检出名片。叠着的「编辑项目名片」横幅删掉。`.bw/worktrees/` 的忽略写在约定树上的 `.bw/.gitignore`。
 
 ## 最近 · 2026-09-01
 

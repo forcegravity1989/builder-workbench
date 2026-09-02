@@ -1,9 +1,7 @@
 # standard/ 是什么
 
-<!-- 30 秒导读:这是 standard/ 目录本身的说明文件,给三种人看——复核规范
-     设计的用户、维护铺底代码的会话、以后要往这里提 PR 的同事。现在作数:
-     这里是 V4「规范铺底」用的模板正本,代码侧已经在读它、铺它了
-     (`crates/bw/src/standard/`)。 -->
+<!-- 30 秒导读:这是 standard/ 目录本身的说明。第一次纳入只写名片到项目约定
+     常驻树,不摊 issue-policy。模板里的 issue-policy 仅残留测,不是仓正本。 -->
 
 `standard/` 是 Builders' Workbench 的规范正本(系统提示词、运作剧本、业界 workflow)。
 第一次纳入只写名片 `.bw/project.toml`(项目约定常驻树),不摊 issue-policy。
@@ -28,16 +26,10 @@
 
 ## 谁会读这些文件
 
-- **人**:复核这套规范设计对不对的用户;评审「规范铺底」这次合并请求时,
-  人看到的骨架内容就是这里模板渲染出来的样子。
-- **代码**:这个目录会在编译时整个打进 Workbench 二进制(用 `include_str!`),
-  铺底命令运行时从二进制里取模板写进项目仓,不是运行时去读磁盘上的这个
-  目录——**改这里任何一份文件的内容,就是在改 Workbench 的产品行为**,不是
-  改一份纯文档。
-- **agent**:铺进项目仓之后,仓根 `AGENTS.md`(经 `CLAUDE.md` 一行导入)会被
-  每次开工的 agent 会话读到;其余模板渲染出的文件(`.bw/project.toml`、
-  `.bw/issue-policy.toml` 等)是项目
-  自己的正本文件,供人和 agent 日常打开查阅、按需要修改。
+- **人**:复核规范设计;评审「项目约定」那张 MR 时,人看到的是名片,不是摊一堆模板。
+- **代码**:这个目录编译时 `include_str!` 进二进制。**改这里任何一份,就是改产品行为**。
+- **agent**:仓根 `AGENTS.md` 是项目自己的(问过人才写)。`.bw/project.toml` 是名片正本;
+  `issue-policy.toml` 不再铺,旧仓残留由周盘点删。
 
 ## 目前这里有什么
 
@@ -46,7 +38,7 @@
 | 块 | 内容 | 落点 |
 |---|---|---|
 | `VERSION` | 当前规范版本号 | 铺底与对账时读 |
-| `templates/` | **铺进项目仓 `.bw/` 的模板**,镜像 `.bw/` 结构 | 渲染进项目仓 `.bw/` |
+| `templates/` | 指标等格式样例;接入不摊 | 运作活①照着写;issue-policy 模板仅残留测 |
 | `system-prompt/` | **Workbench runtime 用的系统提示词**,不进项目仓 | 编进二进制,渲染后经 `--append-system-prompt` 送 agent |
 | `skills/` | **Workbench 自带技能**(四份运作剧本 + 评审剧本 `mr-review` + workflow 入口) | 摊到 `<asset_root>/skills/`,不进项目仓 |
 | `vendor/` | **业界 workflow 库原样副本**(mattpocock / mohit) | 待打包,不进项目仓 |
@@ -56,7 +48,7 @@
 | 文件 | 一句话 |
 |---|---|
 | `templates/metrics.toml.tmpl` | 指标格式正本,不随接入铺;运作活①照着写 |
-| `templates/issue-policy.toml.tmpl` | 类别映射 + 周五盘点节律 |
+| `templates/issue-policy.toml.tmpl` | 旧格式样例,仅残留测;非正式正本 |
 | `templates/scripts/*.py`(13 份) | 现成采集脚本,铺进 `.bw/scripts/`:仓级三份(每周提交数 / 合入 PR 数 / star 数)+ 过程指标包十份(评审等待 / 首过率 / 返工轮数 / 首审等待 / 意图成文时长 / 变更前置时间 / 同时开着的 MR 数 / 活存活率 / 手册修正频次 / 距上次发版天数)——全部可回溯、只读代码仓与远端 |
 | `templates/process-catalog.md` | 过程指标目录(playbook 26 条的总账:能算的指到脚本、等前置的写明等什么、不建的写明为什么),铺进 `.bw/process-catalog.md`;荐入规则见 `skills/metrics-refresh` |
 
@@ -78,7 +70,7 @@
 阶段方法论(原型/构建/优化/运营推广/运维/竞品)默认 workflow 没打包、一份
 没被真正派发过,删光了:阶段方法论该由业界 workflow(`vendor/`)提供,
 Workbench 每个环节挑一个最好的默认;要从实践里长出 Workbench 自己的方法论,到时候
-再建,不预先搞一堆没用的。规范铺底不起 agent,所以没有它的剧本。技能编进
+再建,不预先搞一堆没用的。项目约定不起 agent,所以没有它的剧本。技能编进
 二进制,开工时摊在 **Workbench 自己的资产目录**,**不复制进用户的仓** —— 用户
 `.gitignore` 怎么写不该由 Workbench 决定,而每个项目复制一份 Workbench 自带的东西也
 没有道理。系统提示词里只给名字 + 一句话 + 路径,正文按需读
@@ -88,12 +80,12 @@ Workbench 每个环节挑一个最好的默认;要从实践里长出 Workbench �
 原样副本。**mattpocock-skills 已打包**:Workbench 写一份入口 SKILL.md(在
 `skills/mattpocock-skills/`,body 是 grill→implement→review SOP + 指向 vendor 库
 子技能路径)作 SkillPack 走 `skill_pointer` 注入,vendor 库整树摊到
-`<asset>/vendor/`(dev 期从源码树 runtime 摊,分发态 defer),issue-policy
-build/优化/运维默认值已回填 `mattpocock-skills`。**proto-design**(原型阶段默认
+`<asset>/vendor/`(dev 期从源码树 runtime 摊,分发态 defer),产品默认
+build/优化/运维 workflow 是 `mattpocock-skills`。**proto-design**(原型阶段默认
 workflow)源还没 vendor 进来、未打包。vendor 摊的分发态 bundle 进二进制留后续
 (见 `docs/architecture.md` 的「没建什么」)。
 
-铺底流程与对账细节见
-[`docs/architecture.md`](../docs/architecture.md) 的「规范铺底」模块;
+接入与名片见
+[`docs/architecture.md`](../docs/architecture.md) 的「项目约定」模块;
 文件格式的完整样例见
 [`docs/architecture.md`](../docs/architecture.md) 的「仓文件解析」模块。

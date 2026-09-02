@@ -159,32 +159,6 @@ pub(super) fn build_bootstrap_pending(issues: &[bw::Issue], ops3_landed: bool) -
     })
 }
 
-/// 名片改动那张在途的轻量活。名片是仓文件,改它走分支 + MR,所以总览要能
-/// 看见「改了、还没合」。只认最新的一张。
-pub(super) fn build_card_mr(issues: &[bw::Issue]) -> Option<CardMrVm> {
-    let i = issues
-        .iter()
-        .filter(|i| i.title.starts_with("编辑项目名片"))
-        .filter(|i| {
-            matches!(
-                i.status,
-                IssueStatus::InReview
-                    | IssueStatus::InProgress
-                    | IssueStatus::Todo
-                    | IssueStatus::Backlog
-            )
-        })
-        .max_by_key(|i| i.number)?;
-    Some(CardMrVm {
-        issue_id: Some(i.id),
-        number: i.number,
-        status: i.status.label().to_string(),
-        pr_number: i.pr_number,
-        mergeable: i.status == IssueStatus::InReview,
-        has_open_mr: i.has_open_mr,
-    })
-}
-
 /// 代码仓级指标。**每一项都注明从哪采的**;采不到就整块给出原话,不填 0。
 ///
 /// 高保真那张网格上还有几项是远端来的(合入的 PR、远端 issue、开放 PR),

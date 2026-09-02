@@ -56,14 +56,13 @@ impl App {
         let row = self.upsert_project(&row).await?;
         self.step(ProgressLine::ok(3, format!("项目 {slug} 已落库")));
 
-        // 意图落仓文件。
+        // 磁盘上的名片只用来补空字段(seed),不拿来判断「已经接入」。
+        // 跳过建车只认:默认分支 HEAD 已有名片,或已经开着项目约定/残留旧标题。
         self.step(ProgressLine::doing(4, "读仓里的名片(.bw/project.toml)…"));
-        // **仓里已经有 `.bw/project.toml` 就以它为准**(后来者接入:同事先接过
-        // 这个项目,或者开发期删库重建之后重新接入)。人手填过的东西一个字都
-        // 不覆盖,只补空着的字段;读不出来(文件坏了)也不覆盖,如实往上报。
         let existing = project_file::read(&ws)?;
         let in_head = crate::git::path_in_head(&ws, project_file::REL_PATH).await;
-        let adopted = existing.is_some() || in_head;
+        let open_charter = issue_store::find_open_charter(self, &row).await?.is_some();
+        let adopted = in_head || open_charter;
         let mut file = existing.unwrap_or_else(|| ProjectFile {
             // 新建项目默认在研版本 v0.1。
             current_version: "v0.1".into(),

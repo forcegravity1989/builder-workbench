@@ -591,57 +591,21 @@ fn ops_workflow_from_title(title: &str) -> String {
 fn workflow_for(kind: IssueKind, title: &str) -> String {
     match kind {
         IssueKind::Ops => ops_workflow_from_title(title),
-        // light→无;business→无(MVP 无 category 标签,查不到 issue_policy 映射)。
+        // light→无;business 的 workflow 走产品默认,不在这里。
         _ => String::new(),
     }
 }
 
-/// 残留 `.bw/issue-policy.toml` 某一类的开工工具。文件没有 / 这类没配 → 空。
-fn leftover_tool(project: &Project, category: crate::model::Category) -> String {
-    leftover_mapping(project, category)
-        .map(|m| m.tool)
-        .unwrap_or_default()
-}
-
-/// 残留映射的 workflow。文件没有 / 这类没配 → 空。
-fn leftover_workflow(project: &Project, category: crate::model::Category) -> String {
-    leftover_mapping(project, category)
-        .map(|m| m.workflow)
-        .unwrap_or_default()
-}
-
-fn leftover_mapping(
-    project: &Project,
-    category: crate::model::Category,
-) -> Option<crate::repo::issue_policy_file::CategoryMapping> {
-    crate::repo::issue_policy_file::read(std::path::Path::new(&project.workspace_path))
-        .ok()
-        .flatten()?
-        .mapping_for(category)
-        .cloned()
-}
-
-/// 开工工具:本机 settings → 残留 issue-policy → 产品默认。
-/// workflow:残留映射(非空)→ 产品默认。运作活 workflow 仍按标题推断。
-fn resolve_tool(
-    project: &Project,
-    asset_root: &std::path::Path,
-    cat: crate::model::Category,
-) -> String {
+/// 开工工具:本机 settings → 产品默认。不读仓里的残留文件。
+fn resolve_tool(asset_root: &std::path::Path, cat: crate::model::Category) -> String {
     let key = crate::model::category_key(cat);
-    if let Some(t) = crate::local::Settings::get_tool(asset_root, key) {
-        return t;
-    }
-    let leftover = leftover_tool(project, cat);
-    if leftover.trim().is_empty() {
-        crate::defaults::default_tool(cat).to_string()
-    } else {
-        leftover
-    }
+    crate::local::Settings::get_tool(asset_root, key)
+        .filter(|t| !t.trim().is_empty())
+        .unwrap_or_else(|| crate::defaults::default_tool(cat).to_string())
 }
 
 fn resolve_tool_workflow(
-    project: &Project,
+    _project: &Project,
     asset_root: &std::path::Path,
     kind: IssueKind,
     title: &str,
@@ -649,7 +613,7 @@ fn resolve_tool_workflow(
 ) -> (String, String) {
     if kind == IssueKind::Ops {
         return (
-            resolve_tool(project, asset_root, crate::model::Category::Ops),
+            resolve_tool(asset_root, crate::model::Category::Ops),
             workflow_for(kind, title),
         );
     }
@@ -659,14 +623,10 @@ fn resolve_tool_workflow(
     let Some(cat) = category else {
         return (String::new(), String::new());
     };
-    let tool = resolve_tool(project, asset_root, cat);
-    let leftover = leftover_workflow(project, cat);
-    let workflow = if leftover.trim().is_empty() {
-        crate::defaults::default_workflow(cat).to_string()
-    } else {
-        leftover
-    };
-    (tool, workflow)
+    (
+        resolve_tool(asset_root, cat),
+        crate::defaults::default_workflow(cat).to_string(),
+    )
 }
 
 fn parse_category<S: AsRef<str>>(labels: &[S]) -> Option<crate::model::Category> {
@@ -860,7 +820,7 @@ mod tests {
     }
 
     #[test]
-    fn ops_tool_reads_ops_mapping_workflow_stays_on_title() {
+    fn leftover_issue_policy_does_not_drive_tool() {
         let dir = std::env::temp_dir().join(format!(
             "bw-ops-policy-{}-{}",
             std::process::id(),
@@ -891,7 +851,10 @@ workflow = "mattpocock-skills"
             None,
         );
         let _ = std::fs::remove_dir_all(&dir);
-        assert_eq!(tool, "cursor");
+        assert_eq!(
+            tool,
+            crate::defaults::default_tool(crate::model::Category::Ops)
+        );
         assert_eq!(workflow, super::super::OPS1_WORKFLOW);
     }
 
@@ -912,7 +875,7 @@ workflow = "mattpocock-skills"
     }
 
     #[test]
-    fn settings_tool_wins_over_leftover_mapping() {
+    fn settings_tool_wins_over_product_default() {
         let dir = std::env::temp_dir().join(format!(
             "bw-ops-settings-{}-{}",
             std::process::id(),

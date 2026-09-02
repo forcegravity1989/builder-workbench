@@ -8,9 +8,9 @@ use crate::vm::*;
 use bw::app::App;
 use bw::command::Event;
 use bw::model::{IssueId, IssueKind, IssueStatus, Project, ProjectId};
-use bw::repo::{issue_policy_file, project_file};
+use bw::repo::project_file;
 
-use super::vm_derive::{build_bootstrap_pending, build_card_mr, build_ops, build_week_counts};
+use super::vm_derive::{build_bootstrap_pending, build_ops, build_week_counts};
 use super::vm_kb::build_kb;
 use super::vm_panels::{
     build_board, build_config, build_metrics, build_sessions, build_weeks, build_workbench,
@@ -76,7 +76,6 @@ pub(super) struct ProjectGathered {
     project: Project,
     ws: std::path::PathBuf,
     file: project_file::ProjectFile,
-    policy: Option<issue_policy_file::IssuePolicyFile>,
     /// issue 列表。`pr_number` 第一屏只带 `mr_cache` 命中的;没查过的后台回填。
     issues: Vec<bw::Issue>,
     /// 项目墙「上次交付」。打开项目在 gather 里和发版/健康一起采,借给那张卡。
@@ -1005,8 +1004,6 @@ async fn gather_project(
         let _ = app.cache_project_health(id, &derived).await;
     }
 
-    // 残留才读;缺这份不是问题,新项目不再铺。
-    let policy = issue_policy_file::read(&ws).ok().flatten();
     let week_started = bw::app::week_started(&issues, current_week);
     let ops1 = issues.iter().find(|i| {
         bw::app::is_ops1_issue(i)
@@ -1023,7 +1020,6 @@ async fn gather_project(
         project: p.clone(),
         ws,
         file,
-        policy,
         issues,
         last_delivery,
         sessions,
@@ -1169,7 +1165,7 @@ async fn assemble_project(
         viewing_week: viewing_week.clone(),
         viewing_plan: ui.viewing_plan.clone(),
         view_all,
-        board: build_board(&pg.issues, week, plan, pg.policy.as_ref()),
+        board: build_board(&pg.issues, week, plan),
         plan_versions,
         current_user: pg.current_user.clone(),
         week_counts: if confirmed.is_empty() {
@@ -1182,7 +1178,6 @@ async fn assemble_project(
         board_ops: build_ops(&pg.issues, viewing_week.as_str(), pg.ops3_landed),
         // 采不采由界面点 —— 现算一次要起好几个 git 子进程,不能每次重切都跑。
         repo_stats: ui.repo_stats.clone(),
-        card_mr: build_card_mr(&pg.issues),
         pending_drafts: match &ui.pending_drafts {
             Some((w, titles)) if *w == viewing_week => titles.clone(),
             _ => Vec::new(),
@@ -1202,7 +1197,6 @@ async fn assemble_project(
             let settings = bw::local::Settings::load(std::path::Path::new(&ui.data_dir)).ok();
             let mut c = build_config(
                 &pg.ws,
-                pg.policy.as_ref(),
                 settings.as_ref(),
                 &pg.project,
                 &pg.file,

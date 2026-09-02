@@ -107,7 +107,7 @@ pub enum Signal {
 }
 
 /// 活的类别 —— V3 的五阶段在 V4 降级成的标签。类别决定默认开工工具与默认
-/// workflow(本机 settings → 残留 issue-policy → 产品编译默认)。
+/// workflow(本机 settings → 产品编译默认)。
 /// V4 只用到标签和全集;V3 那套阶段方法论元数据(角色、下一棒、DoD)不拷。
 #[derive(Clone, Copy, PartialEq, Eq, Hash, Debug, Serialize, Deserialize)]
 // 拷贝时漏过一次(评审抓的)。少了它,serde 名字从 `build` 变成 `Build`,

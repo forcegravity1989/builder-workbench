@@ -14,7 +14,7 @@
 ├── CHANGELOG.md       版本变更记录(本次合入了什么)
 ├── DESIGN.md          设计指向(各模块设计 + workflow 文档指过去)
 ├── crates/            bw(内核)· bw-engine(底座)· app-shell(壳,bin bw-dev)
-├── standard/          规范正本(include_str! 进 bw):铺底 `templates/` + 系统提示词 `system-prompt/` + 运作剧本 `skills/` 4 份 + 业界 workflow `vendor/`(mattpocock/mohit)
+├── standard/          规范正本(include_str! 进 bw):模板 `templates/`(接入不摊)+ 系统提示词 + 运作剧本 + vendor
 ├── scripts/           门禁脚本(guard-*)+ codegraph 联调
 ├── docs/              ← 你在这
 └── .bw/               Workbench 自己作为被管项目的资产(project.toml / metrics.toml; issue-policy.toml 是残留)

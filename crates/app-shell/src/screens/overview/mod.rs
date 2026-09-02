@@ -325,7 +325,6 @@ fn card_and_health(
                         }
                     }
                 }
-                {card_mr_banner(p, bridge)}
             }
             div { class: "health",
                 div { class: "health-big",
@@ -354,45 +353,6 @@ fn charter_line(k: &str, v: &str) -> Element {
         div { class: "charter-line",
             span { class: "k", "{k}" }
             "{v}"
-        }
-    }
-}
-
-/// 名片是仓文件,改它一律走分支 + MR。改完到合入之间这条横幅一直在。
-fn card_mr_banner(p: &ProjectVm, bridge: &Bridge) -> Element {
-    let Some(mr) = p.card_mr.as_ref() else {
-        return rsx! {};
-    };
-    let b = bridge.clone();
-    let id = mr.issue_id;
-    let pr = if mr.pr_number > 0 {
-        format!("MR !{}", mr.pr_number)
-    } else {
-        "还没提 MR".to_string()
-    };
-    rsx! {
-        div { class: "mr-banner",
-            span { "项目信息改动在 #{mr.number}「{mr.status}」· {pr}" }
-            if mr.mergeable {
-                if let Some(id) = id {
-                    if mr.has_open_mr {
-                        button {
-                            class: "btn btn-sm btn-primary",
-                            onclick: move |_| b.cmd(Command::MergeAndSettle { id }),
-                            "合入并完成"
-                        }
-                    } else {
-                        button {
-                            class: "btn btn-sm btn-primary",
-                            onclick: move |_| b.cmd(Command::TransitionIssue {
-                                id,
-                                to: bw::model::IssueStatus::Done,
-                            }),
-                            "完成(无开着的 MR)"
-                        }
-                    }
-                }
-            }
         }
     }
 }

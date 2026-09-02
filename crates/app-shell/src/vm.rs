@@ -188,8 +188,6 @@ pub struct ProjectVm {
     /// 代码仓级指标。**现算很贵(要起好几个 git 子进程),所以按需**:
     /// `None` = 还没采过,界面显示一颗「立即采集」。
     pub repo_stats: Option<RepoStatsVm>,
-    /// 名片改动那张轻量活走到哪了。`None` = 没有在途的名片改动。
-    pub card_mr: Option<CardMrVm>,
     /// 「开始本版本」刚产出、**还没经人确认**的草稿活标。确认之前一张活都不建
     /// —— 这是「活由人确认才存在」那条,不是界面装饰。
     pub pending_drafts: Vec<String>,

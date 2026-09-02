@@ -1,6 +1,6 @@
 # 高保真原型 · 逐屏简报
 
-> **30 秒导读**:[index.html](index.html) 是单文件、浏览器直接打开的可点击原型。**给谁看**:要改 Workbench 界面的人。**现在还作数吗**:作数,而且是**视觉目标态**——壳 `crates/app-shell` 的八个屏按它排,样式从这里搬到 `hifi.css`。原型是演示,真壳没有的东西不假装有。三条总原则:①目标态,不是演示走场;②成熟组件原样沿用;③信息密度优先。样例数据仍用 Workbench 自己仓的故事(GitHub `forcegravity1989/builder-workbench`,2026-W34),路径和 crate 名跟现行三 crate 对齐。
+> **30 秒导读**:[index.html](index.html) 是单文件、浏览器直接打开的可点击原型。**给谁看**:要改 Workbench 界面的人。**现在还作数吗**:排版和八屏布局仍是视觉目标态;页内演示数据还是旧「规范铺底 / issue-policy」,现行方案看本页接入段和 [`docs/architecture.md`](../architecture.md) §3「项目约定」。三条总原则:①目标态,不是演示走场;②成熟组件原样沿用;③信息密度优先。
 
 2026-08-25 按现行壳收过一轮:去掉连接器表、下次触发、聊天登录、V3 六个 crate、`docs/plan/` / `docs/releases.md`、规范铺底当 agent workflow、发版本那张活。本地状态前缀 `bw-v4-hifi7-state`(旧 `hifi6` 不串味)。
 
