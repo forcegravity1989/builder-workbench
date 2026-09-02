@@ -52,7 +52,14 @@ pub fn read_deep_link() -> DeepLink {
     }
     if let Ok(v) = std::env::var("BW_VIEW") {
         match TopView::parse(&v) {
-            Some(view) => dl.view = Some(view),
+            Some(view) => {
+                let label = match view {
+                    TopView::Settings => "settings",
+                    TopView::Onboard => "onboard",
+                };
+                bw_engine::dlog!(ok, "bridge", "[BW_VIEW] {label}");
+                dl.view = Some(view);
+            }
             None => bw_engine::dlog!(warn, "bridge", "[BW_OPEN] 未知 BW_VIEW={v:?},忽略"),
         }
     }

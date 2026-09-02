@@ -45,6 +45,7 @@ docs/guide/img/
 /.superpowers/
 evidence-v4-*.json
 
-# 出包暂存(payload 产物 + ISCC 输出)不进仓;出包脚本本身在 packaging/ 入库。
-packaging/**/payload/
-packaging/**/output/
+# 出包产物与验包依赖不进仓;脚本在 .bw/release/pack 与 e2e。
+.bw/release/out/
+.bw/release/e2e/node_modules/
+.bw/release/node_modules/

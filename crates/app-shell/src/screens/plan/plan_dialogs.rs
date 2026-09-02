@@ -1,8 +1,9 @@
-//! 计划屏的弹窗:新建issue / 创建版本 / 排期 / 作废确认 / 发版本。
+//! 计划屏的弹窗:新建issue / 创建版本 / 排期 / 作废确认 / 出包 / 发版本。
 //! 全部屏幕居中(modal-backdrop + plan-modal)。
 
 use crate::bridge::Bridge;
 use crate::vm::{CardItemVm, ProjectVm};
+use bw::app::{ProgressLine, StepState};
 use bw::command::Command;
 use bw::model::{
     category_from_key, category_key, IssueId, IssueKind, IssueOrigin, IssueStatus, StageKind,
@@ -17,7 +18,14 @@ pub enum DialogKind {
     NewIssue(NewIssueDraft),
     CreateVersion,
     DeleteVersion,
+    Pack(PackDraft),
     Release(ReleaseDraft),
+}
+
+#[derive(Clone, PartialEq)]
+pub struct PackDraft {
+    pub project_id: bw::model::ProjectId,
+    pub version: String,
 }
 
 #[derive(Clone, PartialEq)]
@@ -506,6 +514,110 @@ pub fn DeleteVersionDialog(
     }
 }
 
+/// 出包弹窗。号锁死当前版本视图。确认后出包再验包,不打标签。
+#[component]
+pub fn PackDialog(
+    draft: PackDraft,
+    mut dialog: Signal<Option<DialogKind>>,
+    bridge: Bridge,
+) -> Element {
+    let version = use_signal(move || draft.version.clone());
+    let mut packing = use_signal(|| false);
+    let mut finished = use_signal(|| false);
+    let mut pack_line = use_signal(|| None::<ProgressLine>);
+    let mut e2e_line = use_signal(|| None::<ProgressLine>);
+    let pid = draft.project_id;
+    let b = bridge.clone();
+    let version_ok = {
+        let t = version.read().trim().to_string();
+        !t.is_empty() && !t.contains('(')
+    };
+
+    let prog = bridge.progress.clone();
+    use_future(move || {
+        let mut rx = prog.subscribe();
+        async move {
+            while let Ok(line) = rx.recv().await {
+                match line.step {
+                    21 => {
+                        let fail = line.state == StepState::Fail;
+                        pack_line.set(Some(line));
+                        if fail {
+                            packing.set(false);
+                            finished.set(true);
+                        }
+                    }
+                    22 if line.state != StepState::Doing => {
+                        e2e_line.set(Some(line));
+                        packing.set(false);
+                        finished.set(true);
+                    }
+                    22 => e2e_line.set(Some(line)),
+                    _ => {}
+                }
+            }
+        }
+    });
+
+    let busy = *packing.read();
+    let done = *finished.read();
+    let close_label = if done { "关闭" } else { "取消" };
+    let pack = pack_line.read().clone();
+    let e2e = e2e_line.read().clone();
+    rsx! {
+        div {
+            class: "modal-backdrop",
+            onclick: move |_| {
+                if !*packing.read() {
+                    dialog.set(None);
+                }
+            },
+            div { class: "modal", onclick: move |e| e.stop_propagation(),
+                h3 { "出包" }
+                div { class: "formrow",
+                    label { class: "label", "版本号" }
+                    input { class: "input", value: "{version}", readonly: true }
+                }
+                div { class: "ship-rows",
+                    {ship_status_row("出包", "还没开始", pack.clone(), false)}
+                    {ship_status_row("验包", "出包过了再验", e2e.clone(), true)}
+                }
+                div { class: "cfg-readonly-note",
+                    "确认后先出包、再对包装好的安装包做验收。不建远端 Release,也不打发版标签。"
+                }
+                div { class: "modal-actions",
+                    if done || !busy {
+                        button {
+                            class: "btn btn-secondary",
+                            onclick: move |_| dialog.set(None),
+                            "{close_label}"
+                        }
+                    }
+                    if !busy && !done {
+                        button {
+                            class: "btn btn-primary",
+                            disabled: !version_ok,
+                            onclick: move |_| {
+                                let v = version.read().trim().to_string();
+                                if v.is_empty() || v.contains('(') { return; }
+                                pack_line.set(None);
+                                e2e_line.set(None);
+                                finished.set(false);
+                                packing.set(true);
+                                b.cmd(Command::PackRelease {
+                                    project_id: pid,
+                                    version: v,
+                                });
+                            },
+                            "确认 · 出包"
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
 /// 发版本弹窗。号锁死当前版本视图,不能改。
 #[component]
 pub fn ReleaseDialog(
@@ -536,7 +648,7 @@ pub fn ReleaseDialog(
                     label { class: "label", "说明" }
                     textarea { class: "textarea", value: "{note}", oninput: move |e| note.set(e.value()) }
                 }
-                div { class: "cfg-readonly-note", "确认后在代码平台建 Release,再给本版本已完成的活打发版标签。" }
+                div { class: "cfg-readonly-note", "确认后在代码平台建 Release,再给本版本已完成的活打发版标签。不出包。" }
                 div { class: "modal-actions",
                     button { class: "btn btn-secondary", onclick: move |_| dialog.set(None), "取消" }
                     button {
@@ -558,5 +670,59 @@ pub fn ReleaseDialog(
                 }
             }
         }
+    }
+}
+
+fn ship_status_row(
+    label: &'static str,
+    idle: &'static str,
+    line: Option<ProgressLine>,
+    treat_ok_as_done: bool,
+) -> Element {
+    let (cls, spinning, text, open_dir_path) = match line.as_ref() {
+        None => ("ship-row--idle", false, idle.to_string(), None),
+        Some(l) => match l.state {
+            StepState::Doing => ("ship-row--doing", true, l.text.clone(), None),
+            StepState::Ok if treat_ok_as_done => ("ship-row--done", false, l.text.clone(), None),
+            StepState::Ok => ("ship-row--ok", false, String::new(), Some(l.text.clone())),
+            StepState::Fail => ("ship-row--fail", false, l.text.clone(), None),
+        },
+    };
+    rsx! {
+        div { class: "ship-row {cls}",
+            if spinning {
+                span { class: "ship-spin", aria_hidden: "true" }
+            } else {
+                span { class: "ship-dot", aria_hidden: "true" }
+            }
+            span { class: "ship-row-label", "{label}" }
+            span { class: "ship-row-text", "{text}" }
+            if let Some(dir) = open_dir_path {
+                button {
+                    class: "btn btn-sm",
+                    onclick: move |_| open_artifact_dir(&dir),
+                    "打开目录"
+                }
+            }
+        }
+    }
+}
+
+fn open_artifact_dir(path: &str) {
+    let path = path.trim();
+    if path.is_empty() {
+        return;
+    }
+    #[cfg(windows)]
+    {
+        let _ = std::process::Command::new("explorer").arg(path).spawn();
+    }
+    #[cfg(target_os = "macos")]
+    {
+        let _ = std::process::Command::new("open").arg(path).spawn();
+    }
+    #[cfg(not(any(windows, target_os = "macos")))]
+    {
+        let _ = std::process::Command::new("xdg-open").arg(path).spawn();
     }
 }
