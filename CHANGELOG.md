@@ -8,6 +8,8 @@
 
 native-audit 准则重写为 v2:七维 → **九段三十七条**,正本 `changes/native-audit/rubric.md`,段落按 AI-Native SDLC playbook 六阶段 + 贯穿机制(产物链)+ 治理四条组织;附两张覆盖矩阵——M1 dsh 58 组做法→准则零孤儿,M2 playbook 每阶段/机制/治理条全有准则承接(禁改测试、回滚排练、指标越线三条 dsh 无一手实证,如实标注)。探针从 SKILL.md 内联命令改为随 skill 携带的 `battery.sh`(两仓同一把尺),R5–R6 在本仓与 dsh 两仓真跑成 2 分/3 分锚点卡,修掉空结果双打、自身准则文本污染读数、冻结件死链假阳性等电池缺陷。spec 准则段改为指向 rubric;迭代记录在 rubric 末节。
 
+native-audit 术语对齐:SKILL.md 加「用词对照」表(本技能用词→人话→词表对应);词表已有词直接换(postmortem→复盘、工单→活、N/A→Unknown);自造词收拢(度量电池→探针脚本、假阳性→误报、自证→门禁自测、dogfood→自扫);英文黑话首次出现带人话(playbook / slop / hook / flake / harness / SDLC);`CONTEXT.md` 工程操作词登记「仓考古 / native-audit」「制度化阶梯」两条。顺手校正 dsh 门禁计数:verify 脚本 34 个(17 个自带自测),此前 51 把自测文件算进去了,探针脚本同步改为门禁脚本数与自测文件数分列。
+
 ## 最近 · 2026-09-01
 
 post-sync 代码评审收口 4 处:5.10 版本账回正(5.10 实为运作活①周计划抬档、`0d586ce`;评审三件套落进已有 5.10、未编进二进制,不再记「5.9→5.10」);架构模块4「走同一条注入链」改述为「设计走、尚未编进/派发」(与模块7「请评审」口径一致);`orca.rs` 补回 `cursor_agent_cannot_ensure_claude_can` 丢的 `#[test]`(死函数转活,绿测现在真跑它);CHANGELOG 第 29 行「buddy 目录」→「Workbench 目录」(代码早已是 Workbench)。

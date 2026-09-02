@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
-# native-audit 度量电池:对一个 git 仓输出 9 段 37 条准则的机械探针读数。
-# 用法: battery.sh <repo-path>   只读;每行 "C## 键=值";拿不到的值输出 NA(报告里标 Unknown)。
+# native-audit 探针脚本:对一个 git 仓输出 9 段 37 条准则的只读读数。
+# 用法: battery.sh <repo-path>   每行 "C## 键=值";拿不到的值输出 Unknown(词表用词,不写 N/A)。
 set -u
 R="${1:?repo path}"
-cd "$R" || { echo "NA repo=unreadable"; exit 1; }
+cd "$R" || { echo "Unknown repo=unreadable"; exit 1; }
 g() { git -c core.quotepath=off "$@" 2>/dev/null; }
 files() { g ls-files; }
 cnt() { local n; n=$(grep -c . 2>/dev/null); echo "${n:-0}"; }          # 空输入也只打一个 0
@@ -18,7 +18,7 @@ echo "C01 entry_files=$(files | grep -iE '(^|/)(AGENTS|CLAUDE)\.md$|\.cursorrule
 echo "C01 subtree_agents_md=$(files | grep -E '/AGENTS\.md$' | cnt)"
 W_ALL=$(g log --format=%ad --date=format:%G-W%V | sort -u | cnt); W_HB=$(g log --format=%ad --date=format:%G-W%V -- AGENTS.md CLAUDE.md | sort -u | cnt)
 echo "C01 handbook_weeks_changed=${W_HB}/${W_ALL}"
-echo "C02 handbook_chars=$( [ -f AGENTS.md ] && wc -c < AGENTS.md | tr -d ' ' || echo NA)"
+echo "C02 handbook_chars=$( [ -f AGENTS.md ] && wc -c < AGENTS.md | tr -d ' ' || echo Unknown)"
 echo "C02 budget_gate_scripts=$(ls scripts 2>/dev/null | grep -ciE 'budget')"
 echo "C02 self_edit_section=$(gc '^## (editing these|怎么改|修订)' AGENTS.md)"
 echo "C03 map_glossary_files=$(ls docs/architecture.md docs/glossary.md CONTEXT.md DESIGN.md 2>/dev/null | cnt)"
@@ -52,8 +52,9 @@ echo "## S3 构建"
 echo "C31 plan_files=$(files | grep -ciE '/plan\.md$|acceptance')"
 echo "C31 plan_first_rule=$(rgx 'plan(ning)? before|先计划后动手|acceptance criteria')"
 echo "C32 hook_config=$(ls lefthook.yml .husky .pre-commit-config.yaml .githooks 2>/dev/null | cnt)"
-echo "C32 gate_scripts=$(ls scripts 2>/dev/null | grep -ciE '^(verify|guard|check)-' )"
-echo "C32 gate_scripts_with_spec=$(ls scripts 2>/dev/null | grep -ciE '^(verify|guard|check)-.*\.(spec|test)\.')"
+# 门禁脚本数不含自测文件;自测文件数单列(门禁自测 = 用已知坏例证明门禁真会拦)。
+echo "C32 gate_scripts=$(ls scripts 2>/dev/null | grep -iE '^(verify|guard|check)-' | grep -vE '\.(spec|test)\.' | cnt)"
+echo "C32 gate_selftests=$(ls scripts 2>/dev/null | grep -ciE '^(verify|guard|check)-.*\.(spec|test)\.')"
 echo "C32 ci_workflows=$(ls .github/workflows 2>/dev/null | cnt)"
 MERGES=$(g rev-list --count --merges HEAD); AI_MERGES=$(g log --merges --format=%s HEAD | grep -ciE 'codex/|claude|copilot|worktree|cursor/')
 echo "C33 ai_or_worktree_merges=${AI_MERGES}/${MERGES}"
