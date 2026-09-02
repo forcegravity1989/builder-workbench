@@ -94,7 +94,7 @@
 ```text
 五大拷问 + 新闻稿式 intent
         → 意图 gate（批 intent）
-        → 按标准建活（活=承载正本；bw:category / bw:week 标签；活号与 docs/05-features/<id>/ 互链）
+        → 按标准建活（活 = codehub issue，承载正本；打 bw:category / bw:plan 标签；活号与 docs/05-features/<id>/ 互链）
         → spec（含外/内 FAQ + 可点原型 + 操作逻辑）→ 规格 gate
         → plan.md：默认自动跑；仅大风险升 gate
         → 实现（认过之后中间段自动跑；可选用 gate 上开独立 worktree 探路）
