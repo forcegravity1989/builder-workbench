@@ -53,6 +53,9 @@ body 自足;workflow 入口 body 是 SOP 链 + 指向 `../vendor/` 库子技能�
 `standard/VERSION` 抬一档 + 这里记一行。项目侧 `.bw/state/managed.toml` 记这几份 SKILL.md
 的指纹,规范对账能测出落后。
 
+- 6.0:`.bw/` 分三层(顶层 Markdown 给人读 / `config/` 人拍板 / `state/` 机器自写),四份剧本里的
+  路径全部跟着改;`standard.toml` 整份删除,「铺了哪一版」逐份记在 `.bw/state/managed.toml`。
+  **旧布局项目不自动迁移**:人删掉旧 `.bw/` 后重新接入。
 - 5.10:运作活①指标单独确认、纳入先看已有 issue、打周标签后挂里程碑;周目标整段展示。
 
 ## 三条共同的规矩

@@ -27,7 +27,7 @@ _Avoid_: user、owner、开发者。
 > **MVP 不再有「队友」概念**——活上挂的是 workflow/技能(见 [系统提示词与渐进加载 模块](docs/architecture.md)),开工时按活记的工具起 agent(见 [远端与工具探活 模块](docs/architecture.md))。「干没干成」看远端 MR 合没合入,不记战绩。别处见到 teammate 一律按此消歧,不是指某个具名 AI 人格。
 
 **开工工具 / Agent CLI**:
-一件活开工时真实调起的智能体 CLI 或内嵌工具(Claude Code / Cursor / Open Design 内嵌等)。声明住在项目仓的 `.bw/config/issue-policy.toml`,探活分三种机制(候选路径 / 版本命令 / 套接字握手);选了 Cursor 但探活失败就拒绝开工,绝不悄悄退回 Claude Code。未接的工具如实回灰、不假装可用。
+一件活开工时真实调起的智能体 CLI 或内嵌工具(Claude Code / Cursor / Open Design 内嵌等)。哪个类别默认用哪个工具写在项目仓的 `.bw/config/issue-policy.toml` 的 `[[mapping]]` 段;工具的探活与接法在 Workbench 的适配模块里硬编码(`app/tools.rs` 的 `probe` / `agent_for`、壳的 `probe_env`),不在仓文件里配。选了 Cursor 但探活失败就拒绝开工,绝不悄悄退回 Claude Code。未接的工具如实回灰、不假装可用。
 _Avoid_: 和"模型"混为一谈(model 是模型标签,开工工具是执行引擎);开工走 Orca(Claude / Cursor)或会话屏内嵌页(Open Design),探不通就拒绝开工、不悄悄换工具;把它当装饰性标签——它真实生效,探不通就不开工。详见 [远端与工具探活 模块](docs/architecture.md)。
 
 **发言方 / Author**:
