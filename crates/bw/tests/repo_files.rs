@@ -74,10 +74,16 @@ ops2_schedule = "fri 09:00"
         f.mapping_for(StageKind::Growth).is_none(),
         "没配的类别就是没配,不替用户挑一个"
     );
-    // 渲染出来的还认得回去。
+    // 旧段解析得进来;写回只留 mapping + cadence。
     let again = issue_policy_file::parse(&issue_policy_file::render(&f)).unwrap();
     assert_eq!(again.mappings, f.mappings);
-    assert_eq!(again.tools, f.tools);
+    assert_eq!(
+        again.cadence.as_ref().map(|c| c.ops2_schedule.as_str()),
+        Some("fri 09:00")
+    );
+    assert!(again.tools.is_empty(), "新写入不写 [[tool]]");
+    assert!(again.review.is_none(), "新写入不写 [review]");
+    assert!(again.kanban.is_none(), "新写入不写 [kanban]");
 }
 
 #[test]

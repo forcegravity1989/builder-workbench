@@ -122,44 +122,27 @@ pub fn read(workspace: &Path) -> Result<Option<IssuePolicyFile>> {
 
 /// 配置屏改完映射保存时写回。整份重写(内容来自解析后的结构),所以人手加
 /// 的注释会掉——配置屏保存前会提示这一点,和指标文件同一条已知代价。
+/// 旧仓解析进来的 `[[tool]]` / `[review]` / `[kanban]` 不写回。
 pub fn write(workspace: &Path, f: &IssuePolicyFile) -> Result<String> {
     let body = render(f);
     write_file(workspace, REL_PATH, &body)?;
     Ok(body)
 }
 
+/// 只写 mapping + cadence。`tools` / `review` / `kanban` 解析收下、写入丢掉。
 pub fn render(f: &IssuePolicyFile) -> String {
     let q = |s: &str| format!("\"{}\"", s.replace('\\', "\\\\").replace('"', "\\\""));
-    let arr = |v: &[String]| {
-        let items: Vec<String> = v.iter().map(|x| q(x)).collect();
-        format!("[{}]", items.join(", "))
-    };
     let mut s = String::from(
         "# 开工约定。配置屏改映射、保存，写的就是这份。\n\
          # [[mapping]] 五类各一行：类别 → 用哪个工具 → 挂哪份 workflow（空=无默认）。\n\
          # [cadence] 资产盘点到点；改周五几点改这一行。\n",
     );
     s.push_str(&format!("schema_version = {}\n", f.schema_version.max(1)));
-    for t in &f.tools {
-        s.push_str("\n[[tool]]\n");
-        s.push_str(&format!("name = {}\n", q(&t.name)));
-        s.push_str(&format!("kind = {}\n", q(&t.kind)));
-        s.push_str(&format!("probe = {}\n", q(&t.probe)));
-        if !t.version_cmd.is_empty() {
-            s.push_str(&format!("version_cmd = {}\n", q(&t.version_cmd)));
-        }
-        s.push_str(&format!("capabilities = {}\n", arr(&t.capabilities)));
-    }
     for m in &f.mappings {
         s.push_str("\n[[mapping]]\n");
         s.push_str(&format!("category = {}\n", q(&m.category)));
         s.push_str(&format!("tool     = {}\n", q(&m.tool)));
         s.push_str(&format!("workflow = {}\n", q(&m.workflow)));
-    }
-    if let Some(r) = &f.review {
-        s.push_str("\n[review]\n");
-        s.push_str(&format!("who_can_merge  = {}\n", q(&r.who_can_merge)));
-        s.push_str(&format!("require_pr_for = {}\n", arr(&r.require_pr_for)));
     }
     if let Some(c) = &f.cadence {
         s.push_str("\n[cadence]\n");
@@ -172,11 +155,6 @@ pub fn render(f: &IssuePolicyFile) -> String {
         if !c.ops2_schedule.is_empty() {
             s.push_str(&format!("ops2_schedule = {}\n", q(&c.ops2_schedule)));
         }
-    }
-    if let Some(k) = &f.kanban {
-        s.push_str("\n[kanban]\n");
-        s.push_str(&format!("pool_label = {}\n", q(&k.pool_label)));
-        s.push_str(&format!("todo_label = {}\n", q(&k.todo_label)));
     }
     s
 }
