@@ -1,11 +1,11 @@
 # 02 · 产品开发：逆向工作法（Working Backwards）
 
 - 状态：**现在作数**（2026-08-26）
-- 位置：`principles/` 产品开发原则篇
-- 相关：[`01-document-organization.md`](01-document-organization.md)（`changes/` 粒度与制品链）、[`03-press-release-faq-flywheel.md`](03-press-release-faq-flywheel.md)（**产品级**新闻稿/FAQ/飞轮正本）、[`../docs/architecture.md`](../docs/architecture.md)（现行工程设计正本）
+- 位置：`01-principles/` 产品开发原则篇
+- 相关：[`01-document-organization.md`](01-document-organization.md)（`docs/05-features/` 粒度与制品链）、[`03-press-release-faq-flywheel.md`](03-press-release-faq-flywheel.md)（**产品级**新闻稿/FAQ/飞轮正本）、[`../architecture.md`](../architecture.md)（现行工程设计正本）
 - 方法来源：亚马逊 Working Backwards / PR·FAQ / 叙事备忘录文化（外部实践；本仓取其机制，不照搬组织流程）
 
-> **30 秒导读**：特性级变更**先写清客户体验与证据，再写代码**。产品级 PR/FAQ/飞轮在 [03](03-press-release-faq-flywheel.md)；单次特性落在 `changes/<id>/`——**人 gate = intent + 带原型的 spec**；plan 仅大风险升 gate；小修直修。可用 Superpowers / grill-me 辅助发散与质询，结论必须落回 `changes/`。
+> **30 秒导读**：特性级变更**先写清客户体验与证据，再写代码**。产品级 PR/FAQ/飞轮在 [03](03-press-release-faq-flywheel.md)；单次特性落在 `docs/05-features/<id>/`——**人 gate = intent + 带原型的 spec**；plan 仅大风险升 gate；小修直修。可用 Superpowers / grill-me 辅助发散与质询，结论必须落回 `docs/05-features/`。
 
 > **用词**：一律 **gate**（不再写「人闸」）；与工程**门禁**区分见 01 / `CONTEXT.md`。
 
@@ -14,7 +14,7 @@
 | 层 | 正本 | 何时改 |
 |---|---|---|
 | **产品级** | [03 新闻稿·FAQ·飞轮](03-press-release-faq-flywheel.md) | 慢变；改主张/客群/飞轮须拍板 |
-| **特性级** | `changes/<id>/intent.md` + 带原型的 `spec.md` | 每个大特性一条；必须对齐 03，不得偷偷改写产品主张 |
+| **特性级** | `docs/05-features/<id>/intent.md` + 带原型的 `spec.md` | 每个大特性一条；必须对齐 03，不得偷偷改写产品主张 |
 
 ## 1. 原则一句话
 
@@ -25,7 +25,7 @@
 
 ## 2. 五大灵魂拷问（立项与写 intent 时必答）
 
-写 `changes/<id>/intent.md`（及后续讨论）时，必须能回答：
+写 `docs/05-features/<id>/intent.md`（及后续讨论）时，必须能回答：
 
 1. **谁是客户？** —— 清晰画像，禁止「所有人」。
 2. **客户有什么痛点或机会？** —— 真实、迫切，不是闭门想象。
@@ -94,12 +94,15 @@
 ```text
 五大拷问 + 新闻稿式 intent
         → 意图 gate（批 intent）
+        → 按标准建活（活=承载正本；bw:category / bw:week 标签；活号与 docs/05-features/<id>/ 互链）
         → spec（含外/内 FAQ + 可点原型 + 操作逻辑）→ 规格 gate
         → plan.md：默认自动跑；仅大风险升 gate
         → 实现（认过之后中间段自动跑；可选用 gate 上开独立 worktree 探路）
 ```
 
 - gate 要快：决策投影应突出拷问答案、痛点/利益、FAQ 风险、原型，而不是全文墙。  
+- **活是承载正本**：意图 gate 一过（或发起人当面拍板）**先建活再写 spec**。活号写进 `docs/05-features/<id>/`（intent 状态行与 STATUS），目录 id 写进活正文；**无活承载的产物链 = 未立项**——看板、周记账、过程指标都看不见它，自狗食就断在这一步。  
+- **两 gate 可合并送审**：发起人已当面拍板「做不做」时，意图 gate 与规格 gate 可合并为一次送审（单人节奏的取舍）；批的仍是制品文件，缺可点原型或操作逻辑照样退回。  
 - Agent 可起草 PR/FAQ 式 intent/spec；**纠错与放行必须是人**。聊过 / grill-me 质询过 ≠ 过 gate；谈定须改写制品正文。  
 - **小 bug：不走本篇全套；直修即可。**
 - **小特性豁免**：体量小的特性可把 spec + 原型 + 实现一并送评审（不必「规格 gate 先过再动代码」）；但 spec 仍须含原型与操作逻辑，缺则退回。认可即合，不认可按意见改或退回。大特性仍按规格 gate → 实现 的次序。
@@ -108,11 +111,11 @@
 
 | 工具 | 怎么用 | 落点 |
 |---|---|---|
-| Superpowers brainstorming 等 | 发散、澄清、写设计草稿 | 结论迁入 / 写成 `changes/<id>/intent.md`·`spec.md` |
-| grill-me | 对 intent/spec（或草稿）做质询加压 | 修订必须回写 `changes/<id>/` 正文 |
+| Superpowers brainstorming 等 | 发散、澄清、写设计草稿 | 结论迁入 / 写成 `docs/05-features/<id>/intent.md`·`spec.md` |
+| grill-me | 对 intent/spec（或草稿）做质询加压 | 修订必须回写 `docs/05-features/<id>/` 正文 |
 | writing-plans | 起草实现步骤与风险 | 进 `plan.md`；默认不另开必批 gate，大风险才升 |
 
-禁止：只在 `docs/superpowers/specs/` 或聊天里「批过」就开干，而 `changes/` 无对应已接受制品。细则见 [01 §4.3](01-document-organization.md)。
+禁止：只在 `docs/superpowers/specs/` 或聊天里「批过」就开干，而 `docs/05-features/` 无对应已接受制品。细则见 [01 §4.3](01-document-organization.md)。
 
 ## 7. 明确不做
 
@@ -127,6 +130,7 @@
 
 | 日期 | 改什么 |
 |---|---|
-| 2026-08-25 | 首篇：逆向工作法 / PR·FAQ 映射到 `changes/` |
+| 2026-08-25 | 首篇：逆向工作法 / PR·FAQ 映射到 `docs/05-features/` |
 | 2026-08-26 | 术语改 gate；制品链对齐 03（intent+带原型 spec；plan 仅大风险；小修直修）；嵌入飞轮检验；兼容 Superpowers/grill-me |
+| 2026-08-29 | 制品链补「按标准建活」硬步骤（活号与 `docs/05-features/<id>/` 互链，无活=未立项）。由来：08-25 首链口头拍板过此步但未成文，后两条链连漏，活 #133 补建后成文。同批写死：发起人当面拍板时两 gate 可合并送审 |
 | 2026-09-01 | §6 加「小特性豁免」：体量小的特性可 spec+原型+实现一并送评审，不必规格 gate 先过再动代码；大特性仍按次序 |

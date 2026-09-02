@@ -10,7 +10,7 @@
 
 每个阶段以「提交一份进版本控制的产物」收尾,下个阶段从读这份产物开始:**意图件 → 规格件 → 实施计划 → 带测试的改动 → 带评审结论的 PR → 事故记录**,事故记录又写成新的意图件,环闭合。每份产物有具名的验收人,接受与否用合入/关闭留痕。
 
-**BW 落点**:这就是「仓是正本」的企业版。`.bw/` 件是我们的产物层;**单变更的产物链已由 [`principles/01-document-organization.md`](../../principles/01-document-organization.md) 固化**——特性级变更走仓根 `changes/<id>/`(intent → spec → plan → STATUS,小 bug 直修不开链),本次过程指标变更的三件随 PR #125 迁入 `changes/process-metrics/`。
+**BW 落点**:这就是「仓是正本」的企业版。`.bw/` 件是我们的产物层;**单变更的产物链已由 [`01-principles/01-document-organization.md`](../01-principles/01-document-organization.md) 固化**——特性级变更走仓根 `05-features/<id>/`(intent → spec → plan → STATUS,小 bug 直修不开链),本次过程指标变更的三件随 PR #125 迁入 `05-features/process-metrics/`。
 
 ## 六阶段逐段:主张、关键做法、BW 落点
 
@@ -62,5 +62,5 @@
 
 - 原文:<https://claude.com/blog/the-ai-native-sdlc-playbook>(本篇为转述,复核以原文为准)
 - 指标 26 条的 BW 统计方式 → 过程指标总账(随 PR #125 落 `standard/templates/process-catalog.md`)
-- 产物链原则 → [`principles/01-document-organization.md`](../../principles/01-document-organization.md)(特性级走 `changes/<id>/`,小 bug 直修)
+- 产物链原则 → [`01-principles/01-document-organization.md`](../01-principles/01-document-organization.md)(特性级走 `05-features/<id>/`,小 bug 直修)
 - 施工追踪:#118 规范包(PR #125,按 `standard/templates/` 新布局改造)· #119 指标见红(main 已接读数流水路线,PR #126 补具名理由与判读修正)· #120 过程指标块 · #121 先计划后动手 · #122 评审剧本 · #123 手册回路 · #124 事件触发(MVP 后)
