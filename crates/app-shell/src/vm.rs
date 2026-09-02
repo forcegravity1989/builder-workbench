@@ -216,14 +216,27 @@ pub struct CardVm {
     /// 只能用这一个 —— 把「(待填)」当版本号发出去,发版记录里就多一行叫
     /// 「(待填)」的版本,而且按版本号幂等,这个项目以后再也发不出版。
     pub current_version_raw: String,
-    /// 规范那一格,**已经拼成一句话**:`v5.0 · 2 件在管 · 人改 2`。
-    /// `None` = 还没铺过规范件(或清单读不动,那种情况另挂黄条)。
-    ///
-    /// **用 `Option` 不用哨兵字符串**:下游三个屏各有各的兜底文案,让它们
-    /// `match` 而不是拿 `== "—"` 去比对我刚拼出来的展示文本。
-    pub standard: Option<String>,
+    /// 规范那一格。三种结局各自可辨,见 [`StandardCell`]。
+    pub standard: StandardCell,
     /// 项目群。没配就是「未配」。
     pub chat: String,
+}
+
+/// 名片「规范」那一格的三种结局。
+///
+/// **「读不动」和「还没铺过」必须分开**:后者是一句肯定的断言,而清单坏掉时
+/// 说这句就是假话——黄条那边已经在说「读不出来」,两句会当场打架。这正是
+/// `managed_file::summarize` 返回 `Result<Option<..>>` 而不是吞成默认值的理由,
+/// 分到这里再揉回一个 `None` 等于把那份区分白做了。
+#[derive(Clone, Debug, Default, PartialEq)]
+pub enum StandardCell {
+    /// 清单读不动(已挂黄条)。界面只写「—」,**不补任何断言**。
+    Unreadable,
+    /// 清单不在、或一条记录都没有 = 还没铺过规范件。
+    #[default]
+    NeverLaid,
+    /// 拼好的一句话:`v5.10 · 2 件在管 · 人改 2`。
+    Label(String),
 }
 
 #[derive(Clone, Debug, Default, PartialEq)]

@@ -15,7 +15,7 @@
 //!    任何定时表,所以那一列写的是判据本身。
 
 use crate::bridge::Bridge;
-use crate::vm::{MappingVm, ProjectVm};
+use crate::vm::{MappingVm, ProjectVm, StandardCell};
 use bw::command::Command;
 use bw::model::category_from_key;
 use dioxus::prelude::*;
@@ -304,8 +304,10 @@ fn StandardBlock(p: ProjectVm, bridge: Bridge) -> Element {
     let b_rec = bridge.clone();
     let pid = p.id;
     let std_ver = match &p.card.standard {
-        None => "—(这个仓还没铺过规范件)".to_string(),
-        Some(s) => s.clone(),
+        // 读不动时只写「—」:黄条已经在说「读不出来」,这里再断言「没铺过」就是假话。
+        StandardCell::Unreadable => "—".to_string(),
+        StandardCell::NeverLaid => "—(这个仓还没铺过规范件)".to_string(),
+        StandardCell::Label(s) => s.clone(),
     };
     rsx! {
         div { class: "cfg-section",

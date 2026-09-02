@@ -8,7 +8,7 @@
 
 use crate::bridge::{Bridge, ChromeBusy, Panel, PanelNav, Req, STARTING_SESSION};
 use crate::chrome::light_dot;
-use crate::vm::{MetricCardVm, ProjectVm};
+use crate::vm::{MetricCardVm, ProjectVm, StandardCell};
 use bw::command::{Command, ProjectIntent};
 use bw::model::ProjectId;
 use dioxus::prelude::*;
@@ -275,8 +275,8 @@ fn card_and_health(
                     div { class: "charter-meta",
                         span { class: "mono", "{c.remote}" }
                         match &c.standard {
-                            None => rsx! { span { "规范 —" } },
-                            Some(v) => rsx! { span { "规范 {v}" } },
+                            StandardCell::Label(v) => rsx! { span { "规范 {v}" } },
+                            _ => rsx! { span { "规范 —" } },
                         }
                         span { style: "margin-left:auto;display:flex;gap:6px;",
                             // 人在网页上直接合了 MR 时,Workbench 是不知道的 ——

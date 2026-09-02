@@ -12,7 +12,7 @@
 //! 4. **只读**。改文档一律走活 + MR,这一屏不提供编辑框。
 
 use crate::bridge::{Bridge, Panel, PanelNav, Req};
-use crate::vm::{AssetsVm, CodeGraphVm, KbFileVm, KbTab, ProjectVm, SkillVm};
+use crate::vm::{AssetsVm, CodeGraphVm, KbFileVm, KbTab, ProjectVm, SkillVm, StandardCell};
 use dioxus::prelude::*;
 
 #[component]
@@ -20,8 +20,9 @@ pub fn View(p: ProjectVm, bridge: Bridge) -> Element {
     let nav = use_context::<PanelNav>();
     let (p, bridge) = (&p, &bridge);
     let std_ver = match &p.card.standard {
-        None => "—(还没铺过规范件)".to_string(),
-        Some(s) => format!("规范 {s}"),
+        StandardCell::Unreadable => "规范 —".to_string(),
+        StandardCell::NeverLaid => "—(还没铺过规范件)".to_string(),
+        StandardCell::Label(s) => format!("规范 {s}"),
     };
     rsx! {
         section {
