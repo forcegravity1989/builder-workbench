@@ -19,7 +19,7 @@ standard/templates/process-catalog.md            新增(26 条总账)
 standard/templates/metrics.toml.tmpl             追加过程指标示例段
 standard/skills/metrics-refresh/SKILL.md         加「过程指标包」荐入节 + 三处引子
 standard/VERSION                                 5.8 → 5.9(合并 main 后顺位)
-changes/process-metrics/                         本产物链四件(intent/spec/plan/STATUS,principles/01 定的家)
+docs/05-features/process-metrics/                         本产物链四件(intent/spec/plan/STATUS,01-principles/01 定的家)
 ```
 
 ## 顺序与进度

@@ -29,6 +29,6 @@ CI 首跑通过率(#120,与 MR 检查列同数据源)、等前置的 8 条(#121-
 
 ## 标注的冲突(playbook 要求 spec 把矛盾摆出来)
 
-1. ~~文档边界没有本产物链的位置~~——已解决:`principles/01-document-organization.md` 把产物链固化为仓根 `changes/<id>/`,本目录已迁入。
+1. ~~文档边界没有本产物链的位置~~——已解决:`01-principles/01-document-organization.md` 把产物链固化为`docs/05-features/<id>/`,本目录已迁入。
 2. **`.bw/process-catalog.md` 的身份**:它是「Workbench 的方法论件」铺进用户仓,但它引用的部分能力(评审剧本、事件触发)Workbench 还没交付——目录里已如实写「等 Workbench 的哪个能力」,不写 issue 号(用户仓读者无从查号)。
 3. **两步拉取的成本**:四份吃提交清单的脚本按窗内 PR 数逐张查(GraphQL 节点预算所迫,见 plan.md 风险一节),重窗口一次采集约 1-2 分钟——与「点了才采」的交互契合,但配置定时采集时要留意。
