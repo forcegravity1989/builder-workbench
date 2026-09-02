@@ -148,7 +148,7 @@ references(`standard/system-prompt/references/*.md`)是「干某类活需要额�
 **代码**:会话屏 `app-shell/screens/session/mod.rs`(只剩 Orca/OD 两页签);开工在计划屏 → `run_issue` / `run_issue_orca`;路径 `bw-engine/workspace.rs`;Orca 客户端 `bw-engine/orca.rs`;PTY 封存 `bw-engine/legacy_pty/`。
 **数据**:issue 正本不变。会话正文不进 Workbench 库。token 不入库。worktree 目录不入库。系统提示词开工时现算、一次性灌进 Orca/OD,不落配置屏、不跟会话屏当前页签走。
 **依赖**:本机 Orca(官方包或源码桌面)+ named-pipe;会话屏 iframe 吃本机设置里的 pairing URL(开发期可被 `BW_ORCA_WEB_URL` 覆盖)。`#![forbid(unsafe_code)]` 仍守。
-**没建**:不能自己 mint 配对码,人从 Orca 桌面「给 web 配对」拿「Open in browser」贴进设置屏(存本机 `settings.toml`,带 token 不进仓 / Event 原文 / 日志);开发期 `BW_ORCA_WEB_URL` 可覆盖。跟随在带这刀的 Orca 里已兑现、官方包还没有;去会话 / Open 先挂嵌页再切树;Start / 「开始本周」撤遮罩挂上后再切一次。`DeleteSession` 内核还在,会话屏没有按钮。稿未改。账本路径未改。不做:自己 mint pairing、postMessage、会话 URL、新 crate、Cursor 专模块、`worktree-orca-adapter`、迁旧树、源码版与安装版并行。人不去 Orca 手导仓——纳入 / 打开项目走 `ensure_repo`,不跟开工 / 去会话绑。**请评审**(规范已入库,按钮未接):剧本 `mr-review`、阶段规范 `review`、提示词 `REVIEW.md.tmpl` 和 `changes/reviewer-agent/` 已在仓里;计划屏/会话屏没有按钮,内核没有评审命令。接到 Orca 上另开一张活。
+**没建**:不能自己 mint 配对码,人从 Orca 桌面「给 web 配对」拿「Open in browser」贴进设置屏(存本机 `settings.toml`,带 token 不进仓 / Event 原文 / 日志);开发期 `BW_ORCA_WEB_URL` 可覆盖。跟随在带这刀的 Orca 里已兑现、官方包还没有;去会话 / Open 先挂嵌页再切树;Start / 「开始本周」撤遮罩挂上后再切一次。`DeleteSession` 内核还在,会话屏没有按钮。稿未改。账本路径未改。不做:自己 mint pairing、postMessage、会话 URL、新 crate、Cursor 专模块、`worktree-orca-adapter`、迁旧树、源码版与安装版并行。人不去 Orca 手导仓——纳入 / 打开项目走 `ensure_repo`,不跟开工 / 去会话绑。**请评审**(规范已入库,按钮未接):剧本 `mr-review`、阶段规范 `review`、提示词 `REVIEW.md.tmpl` 和 `05-features/reviewer-agent/` 已在仓里;计划屏/会话屏没有按钮,内核没有评审命令。接到 Orca 上另开一张活。
 
 ### 8 · 远端与工具探活
 
@@ -245,5 +245,5 @@ references(`standard/system-prompt/references/*.md`)是「干某类活需要额�
 | 界面长什么样 | [`docs/hifi/index.html`](hifi/index.html) + [`docs/hifi/README.md`](hifi/README.md) |
 | 版本变更 | [`CHANGELOG.md`](../CHANGELOG.md) |
 | 领域词 | [`CONTEXT.md`](../CONTEXT.md) |
-| 架构决策 | [`docs/adr/`](adr/) |
+| 架构决策 | [`docs/02-adr/`](02-adr/) |
 | V3 史实 | `v3` 分支(V3 已删,仓里不留历史) |
