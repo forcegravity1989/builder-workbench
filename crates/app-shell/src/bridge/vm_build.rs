@@ -189,11 +189,13 @@ pub struct PrFillSpec {
 }
 
 /// 一张还没查过 MR 的活。`done` = 已完成,直接打 `--state all`,跳过 opened。
+/// `charter` = 项目约定常驻分支 `bw/project`,不是 `bw/issue-<号>`。
 #[derive(Clone, Copy)]
 pub struct PrPending {
     pub id: bw::model::IssueId,
     pub number: u32,
     pub done: bool,
+    pub charter: bool,
 }
 
 impl Gathered {
@@ -211,6 +213,7 @@ impl Gathered {
                 id: i.id,
                 number: i.number,
                 done: i.status == IssueStatus::Done,
+                charter: i.title == bw::app::CHARTER_TITLE,
             })
             .collect();
         if pending.is_empty() {
@@ -873,7 +876,7 @@ fn needs_pr_lookup(i: &bw::Issue) -> bool {
     if i.number == 0 {
         return false;
     }
-    let card_edit = i.title.starts_with("编辑项目名片")
+    let card_edit = bw::app::is_charter_title(&i.title)
         && matches!(
             i.status,
             IssueStatus::Backlog | IssueStatus::Todo | IssueStatus::InProgress
@@ -930,7 +933,11 @@ async fn lookup_pr_one(
     remote: &bw_engine::remote::Remote,
     item: PrPending,
 ) -> (bw::model::IssueId, u32, bool) {
-    let branch = bw_engine::github::issue_branch(item.number);
+    let branch = if item.charter {
+        bw_engine::workspace::PROJECT_BRANCH.to_string()
+    } else {
+        bw_engine::github::issue_branch(item.number)
+    };
     if item.done {
         return match remote.mr_for_branch(&branch).await {
             Ok(Some(n)) => (item.id, n, false),
@@ -959,9 +966,12 @@ async fn gather_project(
 ) -> Option<ProjectGathered> {
     let p = app.project(id).await.ok()??;
     let ws = app.workspace_of(id).await.ok()?;
-    let file =
+    let mut file =
         read_or_warn(".bw/project.toml", project_file::read(&ws), warnings).unwrap_or_default();
     apply_mr_cache(&mut issues, &ui.mr_cache);
+    if let Some(overlay) = bw::app::overlay_project_file(&ws, &issues) {
+        file = overlay;
+    }
     let mr_url_prefix = p.mr_url_prefix();
     let issue_url_prefix = p.issue_url_prefix();
 
@@ -995,11 +1005,8 @@ async fn gather_project(
         let _ = app.cache_project_health(id, &derived).await;
     }
 
-    let policy = read_or_warn(
-        ".bw/issue-policy.toml",
-        issue_policy_file::read(&ws),
-        warnings,
-    );
+    // 残留才读;缺这份不是问题,新项目不再铺。
+    let policy = issue_policy_file::read(&ws).ok().flatten();
     let week_started = bw::app::week_started(&issues, current_week);
     let ops1 = issues.iter().find(|i| {
         bw::app::is_ops1_issue(i)
@@ -1192,9 +1199,11 @@ async fn assemble_project(
             unread: bw::app::count_unseen(&pg.issues),
         },
         config: {
+            let settings = bw::local::Settings::load(std::path::Path::new(&ui.data_dir)).ok();
             let mut c = build_config(
                 &pg.ws,
                 pg.policy.as_ref(),
+                settings.as_ref(),
                 &pg.project,
                 &pg.file,
                 &pg.issues,

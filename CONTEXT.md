@@ -27,8 +27,8 @@ _Avoid_: user、owner、开发者。
 > **MVP 不再有「队友」概念**——活上挂的是 workflow/技能(见 [系统提示词与渐进加载 模块](docs/architecture.md)),开工时按活记的工具起 agent(见 [远端与工具探活 模块](docs/architecture.md))。「干没干成」看远端 MR 合没合入,不记战绩。别处见到 teammate 一律按此消歧,不是指某个具名 AI 人格。
 
 **开工工具 / Agent CLI**:
-一件活开工时真实调起的智能体 CLI 或内嵌工具(Claude Code / Cursor / Open Design 内嵌等)。声明住在项目仓的 `.bw/issue-policy.toml`,探活分三种机制(候选路径 / 版本命令 / 套接字握手);选了 Cursor 但探活失败就拒绝开工,绝不悄悄退回 Claude Code。未接的工具如实回灰、不假装可用。
-_Avoid_: 和"模型"混为一谈(model 是模型标签,开工工具是执行引擎);开工走 Orca(Claude / Cursor)或会话屏内嵌页(Open Design),探不通就拒绝开工、不悄悄换工具;把它当装饰性标签——它真实生效,探不通就不开工。详见 [远端与工具探活 模块](docs/architecture.md)。
+一件活开工时真实调起的智能体 CLI 或内嵌工具(Claude Code / Cursor / Open Design 内嵌等)。跟人走这台机器,正本是本机 `settings.toml`;旧仓残留的 `.bw/issue-policy.toml` 只在还没选过时当回退,再否则产品默认。探活分三种机制(候选路径 / 版本命令 / 套接字握手);选了 Cursor 但探活失败就拒绝开工,绝不悄悄退回 Claude Code。未接的工具如实回灰、不假装可用。
+_Avoid_: 和"模型"混为一谈(model 是模型标签,开工工具是执行引擎);开工走 Orca(Claude / Cursor)或会话屏内嵌页(Open Design),探不通就拒绝开工、不悄悄换工具;把它写进被管仓——那是人的习惯,不是仓的正本。详见 [远端与工具探活 模块](docs/architecture.md)。
 
 **发言方 / Author**:
 一条对话消息出自谁——人(Builder)还是 AI。纯 UI 归属轴。
@@ -91,7 +91,7 @@ _Avoid_: 按旧五步(仓→意图→快速问题→起草→确认)描述它—
 ### 活与状态
 
 **Issue / 活**:
-一件要干的具体工作,最小单位。"活"是口语规范词,"卡"只在指界面卡片形态时用。codehub/GitHub 的 issue+标签是唯一正本(标题=标识,`bw:status:*`/`bw:plan:*`/`bw:released:*`/`bw:category:*` 标签=状态/排期(版本)/发版号/类别,issue closed=Done);不再写 `bw:week:*`。开工工具和 workflow 不另打标签。业务活读回时用类别去查 `.bw/issue-policy.toml`;运作活开工工具读同一份文件的运维行,workflow 仍按标题推断。本地零库,读都走 CLI、不留读缓存。没挂仓的项目如实留白、不假装已同步。
+一件要干的具体工作,最小单位。"活"是口语规范词,"卡"只在指界面卡片形态时用。codehub/GitHub 的 issue+标签是唯一正本(标题=标识,`bw:status:*`/`bw:plan:*`/`bw:released:*`/`bw:category:*` 标签=状态/排期(版本)/发版号/类别,issue closed=Done);不再写 `bw:week:*`。开工工具和 workflow 不另打标签。业务活读回时用类别去查本机 settings(再回退残留 issue-policy、再否则产品默认);运作活开工工具同一条路,workflow 仍按标题推断。本地零库,读都走 CLI、不留读缓存。没挂仓的项目如实留白、不假装已同步。
 _Avoid_: 任务(与"定时任务"撞)、卡片(指实体时用"活",指 UI 时才用"卡")、ticket、工单。详见 [codehub-issue-正本 模块](docs/architecture.md)。
 
 **计划 / 版本 (Plan version)**:
@@ -124,7 +124,7 @@ _Avoid_: 失败(失败是"运行"的结局,不是活的状态)、挂起。
 
 ### 运行与执行
 
-> **消歧**:workflow 在 MVP = 活上挂的 SOP 技能包(在 `.bw/issue-policy.toml` 的 `mapping.workflow` 里给每类活记一个,如构建类挂 `mattpocock-skills`、原型类挂 `proto-design`,可换),Workbench 按它注入对应剧本(见 [系统提示词与渐进加载 模块](docs/architecture.md))。不再是聊天式工作流引擎(静态/动态、阶段角色、打回、解析为流程图那一套已退场)。
+> **消歧**:workflow 在 MVP = 活上挂的 SOP 技能包(产品默认:构建/优化/运维挂 `mattpocock-skills`,原型/运营推广空着;旧仓残留映射非空时仍认),Workbench 按它注入对应剧本(见 [系统提示词与渐进加载 模块](docs/architecture.md))。不再是聊天式工作流引擎(静态/动态、阶段角色、打回、解析为流程图那一套已退场)。
 
 **运行 / Run**:
 一件活的真实执行(▶跑),有成败与耗时,全结局都入账(成功、失败都记)。运行在该活专属的 issue worktree 里干活(每张活一棵,两张同时跑互不撞车;收尾后拆除,主工作区留着提供 master 视角)。**新树**落 `<仓>/.bw/worktrees/…`(忽略提交);旧平级 `<仓名>-issue-N` 不搬,还能看。

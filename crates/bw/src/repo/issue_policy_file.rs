@@ -1,7 +1,7 @@
-//! `.bw/issue-policy.toml` —— 活的约定:「类别→工具→workflow」映射和盘点节律。
+//! `.bw/issue-policy.toml` —— **残留**。新项目不再铺、不再写。
 //!
-//! 这份文件**不入库**。配置屏点保存、▶开工查映射、定时读节律,都现读这份。
-//! 开工工具名单编译在 Workbench 里,不靠这里的 `[[tool]]`(旧仓可能还有,解析收下、新写入不写)。
+//! 解析只给读回旧仓:settings 还没记过该类时回退 mapping;文件还在时回退节律。
+//! 每周资产盘点整份删掉。`write` 只给测试用。
 
 use super::{parse_toml, read_to_string, write_file, Result};
 use crate::model::{category_from_key, Category};

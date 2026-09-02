@@ -36,13 +36,9 @@ pub const ISSUE_POLICY_TMPL: &str =
 #[allow(dead_code)]
 pub const METRICS_TMPL: &str = include_str!("../../../../standard/templates/metrics.toml.tmpl");
 
-/// 铺底要落的核心件。名片是接入时写的 `.bw/project.toml`,不在这张表里。
-/// 仓根 `AGENTS.md` / `CLAUDE.md` 是项目自己的,铺底不写。
-pub const CORE_TEMPLATES: &[Template] = &[Template {
-    target: ".bw/issue-policy.toml",
-    body: ISSUE_POLICY_TMPL,
-    note: "活的分类 → 用什么工具开工、挂哪份剧本;周五资产盘点节律",
-}];
+/// 第一次接入不再往仓里摊模板。开工工具跟人走本机,节律是产品默认。
+/// `ISSUE_POLICY_TMPL` 只给残留文件解析 / 测试用。
+pub const CORE_TEMPLATES: &[Template] = &[];
 
 /// 把 `{{key}}` 换成值。没给到的占位符**原样留着**,而不是替换成空串——
 /// 留着能在文件里一眼看出「这里本来该填什么但没填到」,替成空串就查不出来了。

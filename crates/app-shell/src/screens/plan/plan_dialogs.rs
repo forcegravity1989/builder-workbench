@@ -172,10 +172,7 @@ pub fn CreateVersionDialog(
     let dates_ok = !start_v.is_empty() && !due_v.is_empty();
     let range_bad = dates_ok && start_v > due_v;
     let name_v = name.read().trim().to_string();
-    let taken = p
-        .plan_versions
-        .iter()
-        .any(|v| v.name == name_v)
+    let taken = p.plan_versions.iter().any(|v| v.name == name_v)
         || p.last_released == name_v
         || p.unreleased.iter().any(|s| s == &name_v);
     let shape_ok = bw::version::is_v0x(&name_v);

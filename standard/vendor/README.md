@@ -19,7 +19,7 @@ Workbench 默认给被管项目带的 workflow(构建类 `mattpocock-skills`)的
 
 ## 现状(如实)
 
-**打包机制未实现**——Workbench 还没把这些 vendor 库摊进自己的资产目录、注入提示词(issue-policy 默认值已诚实化,不指向没打包的)。这里先备好源,full bundle 是后续 subagent 任务(见 `docs/architecture.md` 的「没建什么」)。proto-design(原型阶段默认 workflow)的源**还没 vendor 进来**——也是 gap。
+**打包机制未实现**——Workbench 还没把这些 vendor 库摊进自己的资产目录、注入提示词。这里先备好源,full bundle 是后续 subagent 任务(见 `docs/architecture.md` 的「没建什么」)。proto-design(原型阶段默认 workflow)的源**还没 vendor 进来**——也是 gap。
 
 ## 诚实的局限
 

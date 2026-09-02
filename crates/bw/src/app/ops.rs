@@ -16,6 +16,7 @@
 
 use super::{issue_store, App, AppError, ProgressLine, Result};
 use crate::command::Event;
+use crate::defaults;
 use crate::isoweek;
 use crate::local::ProjectRegistry;
 use crate::model::{Issue, IssueId, IssueKind, IssueOrigin, IssueStatus, ProjectId};
@@ -157,14 +158,16 @@ impl App {
         let Ok(ws) = self.workspace_of(project_id).await else {
             return Ok(events);
         };
-        let Some(policy) = issue_policy_file::read(&ws).ok().flatten() else {
-            return Ok(events);
-        };
-        let Some(cadence) = policy.cadence else {
-            return Ok(events);
-        };
-        let spec = cadence.ops2_schedule.trim().to_string();
-        if spec.is_empty() || !isoweek::schedule_passed_this_week(&spec) {
+        // 节律:残留 issue-policy 的 [cadence] 还在就用它,否则产品默认周五 09:00。
+        // 没有这份文件也照样到点建盘点 —— 新项目不再铺 issue-policy。
+        let spec = issue_policy_file::read(&ws)
+            .ok()
+            .flatten()
+            .and_then(|p| p.cadence)
+            .map(|c| c.ops2_schedule.trim().to_string())
+            .filter(|s| !s.is_empty())
+            .unwrap_or_else(|| defaults::DEFAULT_OPS2_SCHEDULE.to_string());
+        if !isoweek::schedule_passed_this_week(&spec) {
             return Ok(events);
         }
 
@@ -247,7 +250,7 @@ impl App {
 
         // 分支名从 issue.number(=iid)现算 —— 确定性 `bw/issue-<iid>`,不靠
         // lossy 的 `issue.branch`(刀3-fix:旧逻辑拿它查 MR,恒空永远查不到)。
-        let branch = bw_engine::github::issue_branch(issue.number);
+        let branch = issue_store::work_branch(&issue);
 
         let remote = if project.has_remote() {
             Some(self.remote_for(&project).map_err(|e| {
@@ -364,6 +367,9 @@ impl App {
     /// 改动)原样留着,如实说一声。旧活记的是平级兄弟路径,这里走
     /// `resolve_issue_worktree`(会话记下的路径 → 新目录 → 旧兄弟)才能收掉。
     async fn cleanup_issue_branch_note(&self, issue: &crate::model::Issue) -> Option<String> {
+        if issue.title == issue_store::CHARTER_TITLE {
+            return Some("项目约定是常驻分支,树和分支不收".into());
+        }
         let Ok(ws) = self.workspace_of(issue.project_id).await else {
             return None;
         };

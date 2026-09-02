@@ -27,7 +27,7 @@ body 自足;workflow 入口 body 是 SOP 链 + 指向 `../vendor/` 库子技能�
 
 | 活的 `workflow` 字段 | 目录 | body 指向 | 状态 |
 |---|---|---|---|
-| `mattpocock-skills` | `mattpocock-skills/` | `../vendor/mattpocock-skills/skills/engineering/` 下 grill-with-docs→implement→code-review | ✅ build 阶段默认,已打包 + issue-policy 回填 |
+| `mattpocock-skills` | `mattpocock-skills/` | `../vendor/mattpocock-skills/skills/engineering/` 下 grill-with-docs→implement→code-review | ✅ build 阶段产品默认,已打包 |
 | `proto-design` | — | (源还没 vendor 进 `../vendor/`) | ⏸ 原型阶段默认,待 vendor + 入口 |
 
 ## 不预置方法论技能

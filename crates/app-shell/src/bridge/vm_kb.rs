@@ -64,7 +64,7 @@ pub(super) fn build_kb(ws: &Path, tab: KbTab, open: Option<&str>) -> KbVm {
     for (rel, label) in [
         (".bw/project.toml", "项目名片"),
         (".bw/metrics.toml", "指标"),
-        (".bw/issue-policy.toml", "类别映射与节律"),
+        (".bw/issue-policy.toml", "旧开工约定(残留,周盘点会删)"),
         (".bw/standard.toml", "旧规范版本账(新项目不再铺)"),
         (".bw/managed.toml", "旧指纹账(新项目不再铺)"),
         (".bw/PROJECT.md", "旧名片副本(新项目不再铺)"),

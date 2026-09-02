@@ -502,7 +502,7 @@ pub struct ConfigVm {
     pub skills: Vec<SkillVm>,
     pub tools: Vec<ToolProbeVm>,
     pub remote: String,
-    /// `.bw/issue-policy.toml` 的 `[cadence]` 段:定时节律。原样一句话。
+    /// 定时节律:残留 issue-policy 或产品默认。
     pub cadence: String,
     /// 节律拆成表格行:哪张运作活、怎么触发、判据是什么。
     pub crons: Vec<CronVm>,
@@ -511,7 +511,7 @@ pub struct ConfigVm {
     pub chat_group: String,
     pub chat_events: Vec<(String, bool)>,
     /// `.bw/project.toml` 的 `[chat]` 段:项目群。**仓是正本**,这里只显示;
-    /// 改它走总览「编辑项目名片」那张轻量活 + MR。
+    /// 改它走总览「项目约定」那张轻量活 + MR。
     pub chat: String,
     /// 从活详情点 workflow 跳过来时要亮的那一行(slug)。空 = 没指定。
     pub focus_skill: String,

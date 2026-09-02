@@ -287,9 +287,7 @@ impl App {
             return Err(AppError::Refused(format!("{version} 已经发过")));
         }
         if !plans.iter().any(|s| s == &version) {
-            return Err(AppError::Refused(format!(
-                "先有计划版本 {version} 再发"
-            )));
+            return Err(AppError::Refused(format!("先有计划版本 {version} 再发")));
         }
 
         // 1. 先在远端建 Release(tag + title + notes)—— 成功才往下。

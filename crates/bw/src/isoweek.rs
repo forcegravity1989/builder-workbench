@@ -126,15 +126,15 @@ pub fn starts_on_monday(week: &str) -> bool {
 
 /// `"fri 20:00"` → 星期几(周一 = 1)+ 时 + 分。认不出返回 `None`,不猜。
 ///
-/// 只认这一种写法。cron 表达式不支持——`.bw/issue-policy.toml` 是给人读的,
-/// 一周一次的节律不值得请一整套 cron 语法进来。
+/// 只认这一种写法。cron 表达式不支持——一周一次的节律不值得请一整套 cron
+/// 语法进来。产品默认 `fri 09:00`;残留 issue-policy 还在才读旧值。
 pub fn parse_schedule(spec: &str) -> Option<(u8, u8, u8)> {
     let spec = spec.trim().to_ascii_lowercase();
     let (day, time) = spec.split_once(char::is_whitespace)?;
     // **按字符取前三个,不是按字节**。`&day[..3]` 在 "mié 20:00"(第 4 个字节
     // 落在 é 中间)这种输入上直接 panic,而这条解析跑在内核线程里 —— 一次
     // panic 整条线程静默死掉,界面停在最后一帧,点什么都没反应。
-    // 这个值是人手写进 `.bw/issue-policy.toml` 的,什么都可能写。
+    // 这个值可能来自残留 issue-policy,什么都可能写。
     let head: String = day.chars().take(3).collect();
     let dow = match head.as_str() {
         "mon" => 1,

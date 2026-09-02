@@ -422,6 +422,7 @@ pub(super) fn build_workbench(
 pub(super) fn build_config(
     ws: &Path,
     policy: Option<&issue_policy_file::IssuePolicyFile>,
+    settings: Option<&bw::local::Settings>,
     project: &Project,
     // 名片文件由上层读一次(而且是走 `read_or_warn`,文件坏了会说话)。这里
     // **不再自己读一遍** —— 自己读的那条路 `.ok()` 会把解析错误吞掉,表现成
@@ -431,28 +432,45 @@ pub(super) fn build_config(
     env: &[ToolProbeVm],
 ) -> ConfigVm {
     let usage = bw::app::workflow_usage(issues);
-    let mappings = policy
-        .map(|p| {
-            p.mappings
-                .iter()
-                .map(|m| MappingVm {
-                    category_key: m.category.clone(),
-                    category_label: m
-                        .category()
-                        .map(|c| c.label().to_string())
-                        .unwrap_or_else(|| m.category.clone()),
-                    tool: tool_label(&m.tool).into(),
-                    workflow: if m.workflow.is_empty() {
-                        "—(无默认,从鱼塘挑)".into()
-                    } else {
-                        m.workflow.clone()
-                    },
+    let mappings = bw::model::StageKind::ALL
+        .iter()
+        .map(|cat| {
+            let key = bw::model::category_key(*cat);
+            let leftover = policy.and_then(|p| p.mapping_for(*cat));
+            let tool = settings
+                .and_then(|s| s.tools.get(key))
+                .cloned()
+                .filter(|t| !t.trim().is_empty())
+                .or_else(|| {
+                    leftover
+                        .map(|m| m.tool.clone())
+                        .filter(|t| !t.trim().is_empty())
                 })
-                .collect()
+                .unwrap_or_else(|| bw::defaults::default_tool(*cat).to_string());
+            let workflow = leftover
+                .map(|m| m.workflow.clone())
+                .filter(|w| !w.trim().is_empty())
+                .unwrap_or_else(|| bw::defaults::default_workflow(*cat).to_string());
+            MappingVm {
+                category_key: key.to_string(),
+                category_label: cat.label().to_string(),
+                tool: tool_label(&tool).into(),
+                workflow: if workflow.is_empty() {
+                    "—(产品默认无)".into()
+                } else {
+                    workflow
+                },
+            }
         })
-        .unwrap_or_default();
+        .collect();
 
     let skills = skill_list(ws, &usage);
+    let leftover_cadence = policy.and_then(|p| p.cadence.clone());
+    let ops2 = leftover_cadence
+        .as_ref()
+        .map(|c| c.ops2_schedule.trim().to_string())
+        .filter(|s| !s.is_empty())
+        .unwrap_or_else(|| bw::defaults::DEFAULT_OPS2_SCHEDULE.to_string());
 
     ConfigVm {
         mappings,
@@ -460,17 +478,17 @@ pub(super) fn build_config(
         focus_skill: String::new(),
         tools: env.to_vec(),
         remote: remote_label(project),
-        cadence: policy
-            .and_then(|p| p.cadence.clone())
+        cadence: leftover_cadence
+            .as_ref()
             .map(|c| {
                 format!(
-                    "运作活①:{};运作活②:{} {}",
+                    "运作活①:{};运作活②:{} {}(残留)",
                     blank_dash(&c.ops1_trigger),
                     blank_dash(&c.ops2_trigger),
                     blank_dash(&c.ops2_schedule)
                 )
             })
-            .unwrap_or_else(|| "—(.bw/issue-policy.toml 里没有节律段)".into()),
+            .unwrap_or_else(|| format!("产品默认 · 运作活② {ops2}")),
         crons: build_crons(policy),
         chat_provider: chat_provider(file.chat.as_ref()),
         chat_group: chat_group(file.chat.as_ref()),
@@ -569,9 +587,7 @@ fn build_crons(policy: Option<&issue_policy_file::IssuePolicyFile>) -> Vec<CronV
         schedule: "daily 20:00".into(),
         rule: "今天还没采过".into(),
     }];
-    let Some(c) = policy.and_then(|p| p.cadence.clone()) else {
-        return rows;
-    };
+    let c = policy.and_then(|p| p.cadence.clone());
     let word = |t: &str| match t {
         "manual" => "人触发".to_string(),
         "scheduled" => "到点自动建".to_string(),
@@ -580,14 +596,25 @@ fn build_crons(policy: Option<&issue_policy_file::IssuePolicyFile>) -> Vec<CronV
     };
     rows.push(CronVm {
         name: "更新指标与制定版本计划".into(),
-        trigger: word(&c.ops1_trigger),
+        trigger: c
+            .as_ref()
+            .map(|c| word(&c.ops1_trigger))
+            .unwrap_or_else(|| "人触发".into()),
         schedule: "—".into(),
         rule: "本周还没有运作活①「更新指标 + 制定版本计划」".into(),
     });
+    let ops2 = c
+        .as_ref()
+        .map(|c| c.ops2_schedule.trim().to_string())
+        .filter(|s| !s.is_empty())
+        .unwrap_or_else(|| bw::defaults::DEFAULT_OPS2_SCHEDULE.to_string());
     rows.push(CronVm {
         name: "资产盘点".into(),
-        trigger: word(&c.ops2_trigger),
-        schedule: blank_dash(&c.ops2_schedule).to_string(),
+        trigger: c
+            .as_ref()
+            .map(|c| word(&c.ops2_trigger))
+            .unwrap_or_else(|| "到点自动建".into()),
+        schedule: ops2,
         rule: "本周还没有这张活(不查任何定时表)".into(),
     });
     rows

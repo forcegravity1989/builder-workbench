@@ -82,7 +82,7 @@ principles/ 慢变原则正本(01 分层/changes · 02 逆向工作法 · 03 新
 docs/      architecture(设计正本)+ guide(产品指南)+ adr + hifi + README(地图)
 scripts/   门禁脚本(guard-*)+ codegraph 联调
 packaging/  BW 自身出包(Inno Setup 脚本 + 装完说明;ISCC 编译,产物落仓外暂存,不入 CI/门禁)
-.bw/       Workbench 自己作为被管项目的资产(project.toml/metrics.toml/issue-policy.toml/…)
+.bw/       Workbench 自己作为被管项目的资产(project.toml / metrics.toml; issue-policy.toml 是残留)
 ```
 
 ## Workbench 特有规矩(只写仓里真还在用的)
@@ -120,7 +120,7 @@ packaging/  BW 自身出包(Inno Setup 脚本 + 装完说明;ISCC 编译,产物�
 
 ### codehub issue 标签词表
 
-`bw:status:{todo|inprogress|inreview|blocked}`(closed=Done,不打)、`bw:week:YYYY-Www`(周版本)/`bw:plan:<name>`(人起名的版本——与周版本是同一槽位,一张活只挂一个)、`bw:released:vX`(发版号,另一件事)、`bw:category:{prototype|build|optimize|growth|ops}`。**不打**:`kind`(从标题推断)、`tool`/`workflow`(走 `.bw/issue-policy.toml` 映射)。仓改动两类:issue 数据(状态/排期/版本/类别)→ codehub 标签 Workbench 直接改;仓文件产物(名片/配置/规范件)→ worktree + MR,幂等键=固定枚举标题。详见 `standard/templates/issue-policy.toml.tmpl`。
+`bw:status:{todo|inprogress|inreview|blocked}`(closed=Done,不打)、`bw:week:YYYY-Www`(周版本)/`bw:plan:<name>`(人起名的版本——与周版本是同一槽位,一张活只挂一个)、`bw:released:vX`(发版号,另一件事)、`bw:category:{prototype|build|optimize|growth|ops}`。**不打**:`kind`(从标题推断)、`tool`/`workflow`(开工工具跟人走本机 settings;workflow 是产品默认)。仓改动两类:issue 数据(状态/排期/版本/类别)→ codehub 标签 Workbench 直接改;仓文件产物(名片)→ 项目约定常驻树 `bw/project` + MR。
 
 ### 写作纪律(给人看的东西先让人看得懂)
 

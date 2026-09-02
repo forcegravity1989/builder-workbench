@@ -32,8 +32,8 @@ category: 运作
 1. **文档**——本周 ops① issue 在不在、codehub Release 有没有落下版本;这周新增
    的文档有没有登记进知识库资产页。
 2. **产物与技能 / workflow**——新增的技能包、新挂的 workflow 有没有登记。
-3. **规范对账**——该有的件(`.bw/project.toml`、`.bw/issue-policy.toml`)在不在。
-   缺的只记报告,不在这次补铺(补铺是接入那一次的事)。
+3. **规范对账**——该有的件(`.bw/project.toml`)在不在。
+   缺的只记报告,不在这次补写(补写走项目约定)。`.bw/issue-policy.toml` 不再是该有的件。
 4. **指标数据新鲜度**——`.bw/metrics.toml` 里哪些指标超过保鲜期没有真实读数(读数在
    `.bw/metrics/readings.jsonl` 与本周 ops① issue 评论里的读数快照段)。
 5. **代码图大文件榜**——`codegraph files -j` 找超过行数上限的文件。
@@ -44,15 +44,12 @@ category: 运作
    - `.bw/standard.toml`(版本账)
    - `.bw/managed.toml`(指纹账)
    - `.bw/PROJECT.md`(和 `.bw/project.toml` 重复的名片副本)
+   - `.bw/issue-policy.toml`(开工工具跟人走本机;workflow / 周五盘点是产品默认。若 `[cadence]` 不是 `fri 09:00`,报告里写一句「他们改过盘点钟点,删掉后改用产品默认」)
    - `.bw/connectors.toml`
    - `docs/Workbench/`(整棵)
    - `.bw/plan/`
    - `docs/plan/`
    - 确认没人再跑的 V3 采集脚本
-
-   **`.bw/issue-policy.toml` 只瘦、不换正本**:若还有 `[[tool]]` / `[review]` / `[kanban]`
-   段,删掉这三段;mapping 五行和 `[cadence] ops2_schedule` 原样留着,人手改过的工具/
-   workflow/周五几点一个字不覆盖。文件头可改成现行三行注释。不要整份换成模板默认值。
 
    旧格式 `.bw/metrics.toml`(schema 1)不要在盘点里重写——那是运作活①的事,这里只
    记一句「指标还是旧格式,下周或现在开运作活①重定」。
@@ -91,7 +88,7 @@ category: 运作
 - 报告确实挂进了本周 ops② issue 的评论。
 - 建议活草稿都在 MR 说明里,一条不落。
 - **这次会话自己没有直接改动业务代码**:`git diff --stat` 应当只见格式/命名类小改动、
-  白名单里的旧铺底残留删除或 issue-policy 瘦身,或者完全没有代码改动。
+  白名单里的旧铺底残留删除,或者完全没有代码改动。
 
 ## 首次模式(`mode=first`) · 给老仓的历史活对上版本
 

@@ -47,7 +47,7 @@ pub fn View(p: ProjectVm, bridge: Bridge) -> Element {
     }
 }
 
-/// 规范铺底还没合进默认分支:配置用不上,别人再纳入也看不出已经被管过。
+/// 项目约定还没合进默认分支:别人再纳入看不出这次改动。
 fn bootstrap_banner(mr: crate::vm::CardMrVm, bridge: &Bridge, nav: PanelNav) -> Element {
     let b = bridge.clone();
     let id = mr.issue_id;
@@ -59,7 +59,7 @@ fn bootstrap_banner(mr: crate::vm::CardMrVm, bridge: &Bridge, nav: PanelNav) -> 
     rsx! {
         div { class: "ov-banner",
             span {
-                "规范铺底还没合进默认分支 · #{mr.number}「{mr.status}」· {pr}。不合入的话配置用不上,别人再纳入也看不出这个仓已经被管过。"
+                "项目约定还没合进默认分支 · #{mr.number}「{mr.status}」· {pr}。不合入的话别人再纳入看不见这次改动。"
             }
             if mr.mergeable {
                 if let Some(id) = id {

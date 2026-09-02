@@ -107,7 +107,7 @@ impl App {
         let Ok(remote) = self.remote_for(&project) else {
             return 0;
         };
-        let branch = bw_engine::github::issue_branch(issue.number);
+        let branch = super::issue_store::work_branch(issue);
         match remote.open_mr_for_branch(&branch).await {
             Ok(Some(n)) => n,
             _ => 0,

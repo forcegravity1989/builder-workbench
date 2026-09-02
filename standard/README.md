@@ -5,10 +5,9 @@
      这里是 V4「规范铺底」用的模板正本,代码侧已经在读它、铺它了
      (`crates/bw/src/standard/`)。 -->
 
-`standard/` 是 Builders' Workbench(Workbench)往被管项目仓 `.bw/` 里铺的骨架
-文件的**正本**。第一次纳入时铺名片和开工映射;指标跟运作活①走,不预铺空壳。
-改这里的模板,就是在改 Workbench 给每个新项目铺出来的起点长什么样。仓根
-`AGENTS.md` 不在这套模板里。
+`standard/` 是 Builders' Workbench 的规范正本(系统提示词、运作剧本、业界 workflow)。
+第一次纳入只写名片 `.bw/project.toml`(项目约定常驻树),不摊 issue-policy。
+指标跟运作活①走,不预铺空壳。仓根 `AGENTS.md` 不在这套模板里。
 
 **落点分两类,别混**:
 
@@ -21,11 +20,11 @@
 
 规范版本因此从 4.0 跳到 **5.0** —— 落点变了,老版本铺出来的文件在新版本眼里
 就是「不在册」,不做迁移。续三(系统提示词外置 + 扁平铺底 + 删方法论)又
-抬到 **5.1**,当前值见 `VERSION`。续五(默认 workflow 打包:mattpocock 入口 + vendor 摊 + issue-policy 回填)抬到 **5.2**。续十六(指标空壳到站才铺 + 脚本 UTF-8 / A 类 points / `def` 字段)抬到 **5.3**。续十七(运作活①评论三标题 + 挂评校验脚本)抬到 **5.4**。续二十(B 类仍要写脚本)抬到 **5.5**。续二十二(B 类写入 + 定本周建卡必打类别)抬到 **5.6**。续二十三(mattpocock 入口写清 `/xxx`=读路径,并补 grilling/domain-modeling/tdd)抬到 **5.7**。B/C 读数改日历日键、展示按周抬到 **5.8**。过程指标包(十份脚本 + 目录总账)抬到 **5.9**。独立评审(评审剧本 `mr-review` + 阶段规范 `review` + 评审主提示词 `REVIEW.md.tmpl`)抬到 **5.10**。计划版本收成 `v0.x`、不再写 `bw:week` 抬到 **5.11**。名片只留 `project.toml`、开工约定不再写工具声明、不再铺 `standard.toml` / `managed.toml`、周盘点清旧件抬到 **5.12**。
+抬到 **5.1**,当前值见 `VERSION`。续五(默认 workflow 打包:mattpocock 入口 + vendor 摊 + issue-policy 回填)抬到 **5.2**。续十六(指标空壳到站才铺 + 脚本 UTF-8 / A 类 points / `def` 字段)抬到 **5.3**。续十七(运作活①评论三标题 + 挂评校验脚本)抬到 **5.4**。续二十(B 类仍要写脚本)抬到 **5.5**。续二十二(B 类写入 + 定本周建卡必打类别)抬到 **5.6**。续二十三(mattpocock 入口写清 `/xxx`=读路径,并补 grilling/domain-modeling/tdd)抬到 **5.7**。B/C 读数改日历日键、展示按周抬到 **5.8**。过程指标包(十份脚本 + 目录总账)抬到 **5.9**。独立评审(评审剧本 `mr-review` + 阶段规范 `review` + 评审主提示词 `REVIEW.md.tmpl`)抬到 **5.10**。计划版本收成 `v0.x`、不再写 `bw:week` 抬到 **5.11**。名片只留 `project.toml`、开工约定不再写工具声明、不再铺 `standard.toml` / `managed.toml`、周盘点清旧件抬到 **5.12**。不写主检出、开工工具跟人走、不再铺 issue-policy 抬到 **5.13**。
 
-编进 `CORE_TEMPLATES`、随第一次纳入摊开的:issue-policy(开工映射 + 周五盘点)。
-名片是接入时写的 `.bw/project.toml`,不在这张表里。metrics 有模板但不铺(运作活①跟人写)。
-`.bw/standard.toml` / `managed.toml` / `PROJECT.md` 不再铺;旧仓里那几份由每周资产盘点清掉。
+第一次纳入不再摊 `CORE_TEMPLATES`(空表)。名片走项目约定。metrics 有模板但不铺(运作活①跟人写)。
+`.bw/standard.toml` / `managed.toml` / `PROJECT.md` / `issue-policy.toml` 不再铺;旧仓里那几份由每周资产盘点清掉。
+开工工具跟人走本机;workflow 和周五盘点是产品默认。
 
 ## 谁会读这些文件
 

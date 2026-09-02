@@ -34,7 +34,7 @@ Workbench MVP 由三个 Rust crate 组成,各管一件事、互锁而不互相�
 
 Workbench 给一个项目赋能走两条路径,信息落点分清:
 
-- **路径 A · 轻量(不走会话)**:规范铺底(运作活③)把 Workbench 资产写进项目仓的 `.bw/`,无 agent、无系统提示词。Workbench 在活自己的 worktree+MR 里写,人的主分支一个字节不碰。
+- **路径 A · 轻量(不走会话)**:项目约定把名片写进常驻树 `bw/project`,无 agent、无系统提示词。不写人的主检出。
 - **路径 B · 走会话**:挂了 workflow 的活开工,agent 在活的工作区里跑。系统提示词兜底 Workbench 统一要求,workflow 自己管流程。
 
 三类产出各有落点:**顶层文档**(README / AGENTS / CLAUDE / CHANGELOG)归 `project-handbook` 这份剧本管——Workbench 管该有的集合,问过人才写、从仓真读、走 MR;**dev 过程件**(CONTEXT / adr / spec / ticket)由 workflow 自己产;`.bw/` 永远走路径 A,不进会话。
@@ -47,7 +47,7 @@ references(`standard/system-prompt/references/*.md`)是「干某类活需要额�
 
 ### 默认 workflow
 
-`issue-policy.toml` 里类别→工具→workflow 的默认映射:构建/优化/运维默认 `mattpocock-skills`、原型类默认 `proto-design`,可换。**默认 workflow 应由 Workbench 打包统一管理**(像自带技能一样摊到资产目录、开机即用),不丢给鱼塘/外部自取。现状:**`mattpocock-skills` 已打包**——Workbench 写一份入口 SKILL.md(body 是 grill→implement→review SOP,指向 vendor 库子技能路径)作 SkillPack 走 `skill_pointer` 注入,vendor 库整树摊到 `<asset>/vendor/`(dev 期从源码树 runtime 摊,分发态 defer),issue-policy 已回填默认值;`proto-design`(原型)源还没 vendor 进来、未打包。
+类别→workflow 是产品编译默认:构建/优化/运维默认 `mattpocock-skills`、原型/运营推广空着。**默认 workflow 由 Workbench 打包统一管理**(像自带技能一样摊到资产目录、开机即用),不写进被管仓。现状:**`mattpocock-skills` 已打包**——Workbench 写一份入口 SKILL.md(body 是 grill→implement→review SOP,指向 vendor 库子技能路径)作 SkillPack 走 `skill_pointer` 注入,vendor 库整树摊到 `<asset>/vendor/`(dev 期从源码树 runtime 摊,分发态 defer);`proto-design`(原型)源还没 vendor 进来、未打包。
 
 ### 数据流
 
@@ -70,7 +70,7 @@ references(`standard/system-prompt/references/*.md`)是「干某类活需要额�
 
 ### 1 · codehub-issue-正本
 
-**是什么**:codehub/GitHub 的 issue+标签是唯一 issue 正本,本地零数据库。这个模块是 `Issue` 领域对象与远端 issue+标签的互转层:状态、排期(版本)、发版号、类别全部以标签表达,两台 Workbench 接同一个 codehub 仓读出来的是同一份活态——这就是"共享正本",leader 看 4/7 进展无盲区。排期只有一个槽:打 `bw:plan:v0.x`,里程碑标题同字;不再写 `bw:week:*`。关键取舍是放弃本地读缓存(MVP 卡点认了),读全走 CLI。业务活的开工工具和 workflow 不另打标签,读回时用 `bw:category:*` 去查 `.bw/issue-policy.toml`。运作活不打五阶段类别;开工工具读同一份文件的运维行(`category = "ops"`),workflow 仍按标题推断(①版本计划 / ②资产盘点 / ③铺底),不拿运维行里的 workflow。
+**是什么**:codehub/GitHub 的 issue+标签是唯一 issue 正本,本地零数据库。这个模块是 `Issue` 领域对象与远端 issue+标签的互转层:状态、排期(版本)、发版号、类别全部以标签表达,两台 Workbench 接同一个 codehub 仓读出来的是同一份活态——这就是"共享正本",leader 看 4/7 进展无盲区。排期只有一个槽:打 `bw:plan:v0.x`,里程碑标题同字;不再写 `bw:week:*`。关键取舍是放弃本地读缓存(MVP 卡点认了),读全走 CLI。业务活的开工工具和 workflow 不另打标签,读回时用 `bw:category:*` 去查本机 settings(再回退残留 issue-policy、再否则产品默认)。运作活不打五阶段类别;开工工具同一条路,workflow 仍按标题推断(①版本计划 / ②资产盘点),不拿残留映射里的 workflow。
 
 **代码**:bw 的 `app/issue_store.rs`(互转主逻辑)、`model.rs`(`Issue`/`IssueId`)、`app/issue.rs`(读写入口)。
 **数据**:issue 正本在 codehub/GitHub 的 issue+标签;本地零库,不留读缓存。
@@ -86,14 +86,14 @@ references(`standard/system-prompt/references/*.md`)是「干某类活需要额�
 **依赖**:serde / toml 反序列化、sha2 算指纹;对 V3 任何 crate 零依赖。
 **没建**:采集执行落在 `app/collect.rs`(模块12),规范铺底编排见模块3。B/C 读写 `.bw/metrics/readings.jsonl` 已接(键是日历日,同一天同一指标只留一行;展示按周取那一周日期最大的一天)。C 类定时建提醒活没做。
 
-### 3 · 规范铺底
+### 3 · 项目约定
 
-**是什么**:Workbench **第一次纳入**一个项目时自动建一张运作活③"规范铺底",把二进制里编进的 `standard/` 模板渲染成最少骨架,写进这张活自己的 worktree+分支、开 MR 等人合。全程不起 agent(路径 A 轻量)。仓里已经有名片(工作区 `.bw/project.toml`、默认分支 HEAD 有这份、或已经开着一张铺底活)就整段不跑——不建活、不开 MR。铺底没合进默认分支时,总览常驻横幅(和「开始本周」同一位置),提醒不合入则配置用不上、别人再纳入也看不出已经被管过。之后改名片走「编辑项目名片」、改指标走运作活①、改映射走配置屏,都和铺底无关。关键取舍是"完成永远人点"——MR 开着才推评审中,没写出东西原地不动、不留分支不留号;仓根一个字不写。没有二次铺底命令。
+**是什么**:Workbench **第一次纳入**一个项目时自动建一张轻量活「项目约定」,只写 `.bw/project.toml`(外加 `.bw/.gitignore` 忽略 `worktrees/`),落在常驻分支 `bw/project` 上,开 MR 等人合。全程不起 agent。仓里已经有名片、或已经开着项目约定 / 残留「编辑项目名片」/ 残留「规范铺底」就整段不跑。没合进默认分支、或后来改名片时 MR 还开着,总览常驻横幅。之后改名片 / 在研版本 / 项目群复用同一标题、同一棵树。开工工具跟人走本机,不进仓。关键取舍是**不写主检出**、完成永远人点、常驻分支合入后不删。仓根一个字不写。
 
-**代码**:bw 的 `standard/`(模板/版本)+ `standard/bootstrap.rs`(写件/探测)+ `app/bootstrap.rs`(建活→开树→写→提交→推分支→开 MR 编排)。
-**数据**:铺进项目仓 `.bw/` 的只有名片 `project.toml` 和 `issue-policy.toml`(开工映射 + 周五盘点)。不铺 `PROJECT.md`(和 toml 重复)、不铺 `standard.toml`、不铺 `managed.toml`(指纹账对使用没有用)。指标空壳不预铺。旧仓里那几份接入时不覆盖,每周资产盘点在运作活②的 worktree 里删,随盘点 MR 走。
-**依赖**:git、standard、worktree、issue_store。
-**没建**:节律目录 / 鱼塘 `pond/` 未建。旧仓里的 `.bw/standard.toml` / `managed.toml` / `PROJECT.md` 接入时不碰,每周资产盘点会删。
+**代码**:bw 的 `app/bootstrap.rs`(第一次接入)+ `app/project.rs`(改名片)+ `bw-engine` `PROJECT_BRANCH`。
+**数据**:仓里站着的只有名片 `project.toml`。不铺 `issue-policy.toml`(开工工具 / workflow / 周五盘点不再是仓文件)。不铺 `PROJECT.md` / `standard.toml` / `managed.toml`。指标空壳不预铺。旧仓残留由每周资产盘点在运作活②的 worktree 里删,随盘点 MR 走。
+**依赖**:git、worktree、issue_store。
+**没建**:节律目录 / 鱼塘 `pond/` 未建。旧仓里的 `.bw/standard.toml` / `managed.toml` / `PROJECT.md` / `issue-policy.toml` 接入时不碰,每周资产盘点会删。
 
 ### 4 · 系统提示词与渐进加载
 
@@ -152,10 +152,10 @@ references(`standard/system-prompt/references/*.md`)是「干某类活需要额�
 
 ### 8 · 远端与工具探活
 
-**是什么**:两件互锁的事。一是远端分发层:`Remote` enum 按 provider 把 issue 正本读写、MR 开合、Release、走势时序统一路由到 `gh` 或 `codehub-cli`,调用方只见方法不见 provider 分支。二是开工工具声明与探活:工具声明住项目仓 `.bw/issue-policy.toml`,探活分三种机制(候选路径 / 版本命令 / 套接字握手),探不通如实回灰。关键取舍是 MR 合入后复跑 `mr view` 读回 state 真变 `merged` 才算成功(退出码靠不住绝不假 Done);选了 Cursor 探活失败就拒绝开工,不悄悄退回 Claude CLI。运作活开工工具也读 issue-policy 运维行,不写死 Claude。codehub `issue list --state opened` 在零开着的活时返 null,jq 用 `(. // [])` 收成空列表——不兜的话铺底查幂等键先炸,建不出新活也开不出 MR。绿区建 Release 强制 `--ref`,取 `project view` 的默认分支(空则 `master`,跟开 MR 同口径);`gh` 自己从默认分支打,不传。打/改 `bw:week` 之后,codehub 臂用 `codehub-cli api`(`/api/v4/.../milestones`)投影一个同名里程碑并挂上这张 issue——不当正本,失败不回滚标签。GitHub 臂不投。
+**是什么**:两件互锁的事。一是远端分发层:`Remote` enum 按 provider 把 issue 正本读写、MR 开合、Release、走势时序统一路由到 `gh` 或 `codehub-cli`,调用方只见方法不见 provider 分支。二是开工工具与探活:工具跟人走本机 `settings.toml`,探活分三种机制(候选路径 / 版本命令 / 套接字握手),探不通如实回灰。关键取舍是 MR 合入后复跑 `mr view` 读回 state 真变 `merged` 才算成功(退出码靠不住绝不假 Done);选了 Cursor 探活失败就拒绝开工,不悄悄退回 Claude CLI。运作活开工工具同一条路,不写死 Claude。codehub `issue list --state opened` 在零开着的活时返 null,jq 用 `(. // [])` 收成空列表——不兜的话铺底查幂等键先炸,建不出新活也开不出 MR。绿区建 Release 强制 `--ref`,取 `project view` 的默认分支(空则 `master`,跟开 MR 同口径);`gh` 自己从默认分支打,不传。打/改 `bw:week` 之后,codehub 臂用 `codehub-cli api`(`/api/v4/.../milestones`)投影一个同名里程碑并挂上这张 issue——不当正本,失败不回滚标签。GitHub 臂不投。
 
 **代码**:bw-engine 的 `remote.rs`(`Remote` enum 工厂 + issue 存取六法 + MR 三件套)+ `codehub.rs` / `github.rs`(两臂)+ `claude_bin.rs`(候选路径)+ `open_design.rs`(套接字握手);bw 的 `app/tools.rs`(工具注册探活)。
-**数据**:issue 正本在 codehub/GitHub;工具声明在 `.bw/issue-policy.toml`;本地零库——远端读全走 CLI 不留缓存,探活结果只在内存走一圈不落盘。
+**数据**:issue 正本在 codehub/GitHub;开工工具在本机 `settings.toml`;本地零库——远端读全走 CLI 不留缓存,探活结果只在内存走一圈不落盘。
 **依赖**:bw-engine 的 tokio_cmd、OS keyring(codehub-cli token)、本机 `gh` / `codehub-cli` / `agent` / Open Design 进程;自身 `Remote` 依赖两臂。
 **没建**:本地读缓存(MVP 不要)。"MR 检查失败"今天还判不出。已合入的 MR 号详情能查(`state=all`);开着没仍走 `open_mr_for_branch`。Cursor 能力清单(空数组);新增 provider 仍需填一条臂;GitHub 里程碑投影。
 
@@ -206,13 +206,13 @@ references(`standard/system-prompt/references/*.md`)是「干某类活需要额�
 
 ### 14 · 资产盘点与项目接入
 
-**是什么**:两件互锁的事。资产盘点(运作活②)一个包两种模式——每周模式盘这周变化,并在这张活的 worktree 里清掉旧铺底残留(版本账 / 指纹账 / 重复名片 / V3 件,issue-policy 只瘦不换正本);首次模式给老仓已有 issue 对上已有 `v0.x` 的打 `bw:plan:v0.x`(对不上就未分配;需要对版本目标再补一张运作活①,评论写明补记)。项目接入把一个仓弄到本机、落一行项目、把名片四字段写进仓文件(不落库;在研版本和项目群接入时用默认或仓里已有的,之后在总览名片改)。已有名片的仓接入时不重铺、不覆盖人手改过的 mapping。没有单独的「历史回填」命令,也不按 git 周去建假文件。不再写 `bw:week:*`。补记不假装当时写过,健康灯只看本周。
+**是什么**:两件互锁的事。资产盘点(运作活②)一个包两种模式——每周模式盘这周变化,并在这张活的 worktree 里清掉旧铺底残留(版本账 / 指纹账 / 重复名片 / V3 件 / 整份残留 `issue-policy.toml`);首次模式给老仓已有 issue 对上已有 `v0.x` 的打 `bw:plan:v0.x`(对不上就未分配;需要对版本目标再补一张运作活①,评论写明补记)。项目接入把一个仓弄到本机、落一行项目、把名片写进「项目约定」常驻树(不写主检出)。已有名片的仓接入时不重开约定。没有单独的「历史回填」命令,也不按 git 周去建假文件。不再写 `bw:week:*`。补记不假装当时写过,健康灯只看本周。
 
 **代码**:bw 的 `app/project.rs`(接入 / 名片 / 群)+ `git.rs`(`first_commit_date` / `tags_with_dates` / `week_counts_many` 现算);standard/skills 的 `asset-audit` + `project-handbook` 两份剧本。
 **数据**:零本地库;名片四字段只落 `.bw/project.toml`;`project` 表只有定位与显示缓存;历史呈现不写仓文件。
 **依赖**:crate::git / isoweek / repo::project_file / standard、worktree、issue_store;外部 bw_engine::github / codehub(clone、list/create Release)。
 
-**没建**:首次模式打标签+补记靠 agent 会话,没有 Workbench 先算证据文件那一层;`BackfillHistory` 已删;五条历史探测判据只实现前三条(提交数 / 标签 / CHANGELOG),远端已关闭 issue、已合并 MR 两条没对应查询;project-handbook 写 `AGENTS.md` 只记遗留、不接首次会话。每周模式定时已接:读 `.bw/issue-policy.toml` 的 `ops2_schedule`(模板默认 `fri 09:00`),Workbench 开着每 60 秒判一次「本周这一刻过了没有」;过了且没有开着的「资产盘点 YYYY-Www」就建一张并开工,最远评审中。错过(当时没开着)下次开着照样补建,不另记触发表。运作活①仍是人触发(`ops1_trigger = manual`),总览「开始本版本」看本周有没有这张活(标题 + 本 ISO 周创建的 `v0.x` 标签)。运作活没有五阶段类别,详情锁死显示「运作」,内核拒改。旧铺底残留(`.bw/standard.toml`、`.bw/managed.toml`、`.bw/PROJECT.md`)和 V3 残留件(`.bw/connectors.toml`、`docs/Workbench/`、`.bw/plan/` 等)由资产盘点 skill 在这张活的 worktree 里删,走 MR,不在主检出动手。issue-policy 若还带 `[[tool]]` / `[review]` / `[kanban]`,盘点只删这几段,mapping 和节律原样留。
+**没建**:首次模式打标签+补记靠 agent 会话,没有 Workbench 先算证据文件那一层;`BackfillHistory` 已删;五条历史探测判据只实现前三条(提交数 / 标签 / CHANGELOG),远端已关闭 issue、已合并 MR 两条没对应查询;project-handbook 写 `AGENTS.md` 只记遗留、不接首次会话。每周模式定时已接:节律是产品默认 `fri 09:00`(残留 issue-policy 的 `[cadence]` 还在就用它),Workbench 开着每 60 秒判一次「本周这一刻过了没有」;过了且没有开着的「资产盘点 YYYY-Www」就建一张并开工,最远评审中。错过(当时没开着)下次开着照样补建,不另记触发表。运作活①仍是人触发,总览「开始本版本」看本周有没有这张活(标题 + 本 ISO 周创建的 `v0.x` 标签)。运作活没有五阶段类别,详情锁死显示「运作」,内核拒改。旧铺底残留(`.bw/standard.toml`、`.bw/managed.toml`、`.bw/PROJECT.md`、`.bw/issue-policy.toml`)和 V3 残留件(`.bw/connectors.toml`、`docs/Workbench/`、`.bw/plan/` 等)由资产盘点 skill 在这张活的 worktree 里删,走 MR,不在主检出动手。
 
 ### 15 · 技能与蒸馏
 
