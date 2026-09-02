@@ -37,11 +37,10 @@ WRITERS="$(printf '%s[[:space:]]*\\(|' "${WRITE_FNS[@]}")(^|[^A-Za-z0-9_])write_
 # 允许写的模块。加一处新的写入点 = 明着改这份名单,让它出现在 diff 里。
 ALLOW=(
   "crates/bw/src/repo/"            # 写入口自己的定义处
-  "crates/bw/src/standard/"        # 规范铺底:唯一往项目落件的地方
-  "crates/bw/src/app/bootstrap.rs" # 铺底那张活
-  "crates/bw/src/app/project.rs"   # 接入与项目信息
-  "crates/bw/src/app/plan.rs"      # 切在研版本
-  "crates/bw/src/app/collect.rs"   # 采集追加读数流水
+  "crates/bw/src/app/bootstrap.rs" # 项目约定那张活:往常驻树写名片
+  "crates/bw/src/app/project.rs"   # 接入与改项目信息:写名片
+  "crates/bw/src/app/plan.rs"      # 把主检出的读数吸进流水
+  "crates/bw/src/app/collect.rs"   # 采集把读数写进流水
 )
 
 fail=0

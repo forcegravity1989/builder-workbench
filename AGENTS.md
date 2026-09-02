@@ -64,6 +64,7 @@ cargo check -p app-shell          # Workbench MVP 壳编译过
 ./scripts/guard-screen-hooks.sh             # 用 hook 的函数必须是组件
 ./scripts/guard-file-lines.sh               # 单文件 2000 行硬上限(只查 Workbench MVP 三 crate)
 ./scripts/guard-codegraph-clean.sh           # codegraph.db 不进 feature commit(CI 在 main 发布)
+./scripts/guard-bw-write-authority.sh        # 只有名单内的模块能往被管项目 .bw/ 里写
 cargo test --workspace
 ```
 
