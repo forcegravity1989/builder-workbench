@@ -110,7 +110,7 @@ pub struct ProjectCardVm {
     pub id: ProjectId,
     pub slug: String,
     pub name: String,
-    /// 「想做什么」一句话,来自 `PROJECT.md` / `.bw/project.toml`。
+    /// 「想做什么」一句话,来自 `.bw/project.toml`。
     pub brief: String,
     pub signal: Option<Signal>,
     pub workspace_path: String,
@@ -159,7 +159,9 @@ pub struct ProjectVm {
     pub confirmed_version: String,
     /// 本周运作活①若还开着,走到哪了。`None` = 还没建,或已经完成。
     pub ops1_status: Option<String>,
-    /// 本周运作活①评论解析出的版本目标,给总览进度块。
+    /// 规范铺底还开着、默认分支还没有名片。总览常驻横幅。`None` = 已合入或没建。
+    pub bootstrap_pending: Option<CardMrVm>,
+    /// 计划屏左栏:节律周列表(新的在前,本周置顶)。排期名走 `v0.x`,不在这里。
     pub weeks: Vec<WeekVm>,
     /// 正在看哪一周(节律用,不再当排期名)。
     pub viewing_week: String,
@@ -208,7 +210,7 @@ pub struct ProjectVm {
     pub kb: KbVm,
 }
 
-/// 名片。四个字段的正本是 `PROJECT.md` 与 `.bw/project.toml`,不在库里。
+/// 名片。四个字段的正本是 `.bw/project.toml`,不在库里。
 #[derive(Clone, Debug, Default, PartialEq)]
 pub struct CardVm {
     pub brief: String,
@@ -570,7 +572,7 @@ impl KbTab {
 #[derive(Clone, Debug, Default, PartialEq)]
 pub struct KbVm {
     pub tab: KbTab,
-    /// 规范管账(`.bw/managed.toml`)里登记了几份核心件。**不做对账** ——
+    /// 仓里实际有几份 `.bw` 规范件。**不做对账** ——
     /// 对账是配置屏那颗按钮的事,这里只报个数。
     pub managed_count: usize,
     /// 知识页签:按规范八大类分组的文件清单。**只列存在的文件**,不列位置。

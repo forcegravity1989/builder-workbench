@@ -82,7 +82,7 @@ principles/ 慢变原则正本(01 分层/changes · 02 逆向工作法 · 03 新
 docs/      architecture(设计正本)+ guide(产品指南)+ adr + hifi + README(地图)
 scripts/   门禁脚本(guard-*)+ codegraph 联调
 packaging/  BW 自身出包(Inno Setup 脚本 + 装完说明;ISCC 编译,产物落仓外暂存,不入 CI/门禁)
-.bw/       Workbench 自己作为被管项目的资产(PROJECT.md/metrics.toml/issue-policy.toml/…)
+.bw/       Workbench 自己作为被管项目的资产(project.toml/metrics.toml/issue-policy.toml/…)
 ```
 
 ## Workbench 特有规矩(只写仓里真还在用的)

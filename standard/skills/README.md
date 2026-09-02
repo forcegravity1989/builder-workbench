@@ -50,10 +50,11 @@ body 自足;workflow 入口 body 是 SOP 链 + 指向 `../vendor/` 库子技能�
 ## 版本
 
 不单开版本线——版本号就是 `standard/VERSION`,随 Workbench 整体发布走。改了内容 =
-`standard/VERSION` 抬一档 + 这里记一行。项目侧 `.bw/managed.toml` 记这几份 SKILL.md
-的指纹,规范对账能测出落后。
+`standard/VERSION` 抬一档 + 这里记一行。技能不进用户仓,没有项目侧指纹账。
 
+- 5.12:名片只留 project.toml;开工约定不再写工具声明;不再铺 standard.toml / managed.toml;周盘点清旧件。
 - 5.11:运作活①确认 `v0.x`、纳入打 `bw:plan:v0.x`;对人说版本目标;不再写 `bw:week:*`。
+
 - 5.10:运作活①指标单独确认、纳入先看已有 issue、打周标签后挂里程碑;周目标整段展示。
 
 ## 三条共同的规矩

@@ -10,7 +10,7 @@ use bw::command::Event;
 use bw::model::{IssueId, IssueKind, IssueStatus, Project, ProjectId};
 use bw::repo::{issue_policy_file, project_file};
 
-use super::vm_derive::{build_card_mr, build_ops, build_week_counts};
+use super::vm_derive::{build_bootstrap_pending, build_card_mr, build_ops, build_week_counts};
 use super::vm_kb::build_kb;
 use super::vm_panels::{
     build_board, build_config, build_metrics, build_sessions, build_weeks, build_workbench,
@@ -969,7 +969,7 @@ async fn gather_project(
         build_sessions(app, id, &issues),
         app.week_goals_from_ops1(&p, &issues),
         load_releases(app, &p, &ws),
-        bw::git::path_in_head(&ws, ".bw/standard.toml"),
+        bw::git::path_in_head(&ws, ".bw/project.toml"),
         async {
             bw::git::tags_with_dates(&ws)
                 .await
@@ -1156,6 +1156,7 @@ async fn assemble_project(
         suggested_next: inv.suggested_next.clone(),
         confirmed_version: confirmed.clone(),
         ops1_status: pg.ops1_status.clone(),
+        bootstrap_pending: build_bootstrap_pending(&pg.issues, pg.ops3_landed),
         weeks: build_weeks(&pg.issues, &pg.current_week, &pg.week_goals),
         current_week: pg.current_week.clone(),
         viewing_week: viewing_week.clone(),

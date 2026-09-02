@@ -1,6 +1,6 @@
 //! `real_demo_v4` —— V4 主环的 headless 指挥器。
 //!
-//! 不开界面,直接驱动内核走完一圈:接入项目 → 规范铺底 → 开始本周 → 代人确认
+//! 不开界面,直接驱动内核走完一圈:接入项目(顺带第一次铺底) → 开始本周 → 代人确认
 //! 建活 → 一张活开工 → 代人推评审中 → 代人点完成 → 发版本 → 导出证据。
 //!
 //! ```bash
@@ -98,21 +98,19 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             _ => None,
         })
         .expect("项目没建出来");
-
-    // ── 步骤 2:规范铺底第 1 步 ────────────────────────────
-    let events = app
-        .dispatch(Command::RunStandardBootstrap { project_id: pid })
-        .await?;
-    let (bootstrap_files, committed) = match events.first() {
-        Some(Event::StandardBootstrapped {
-            files, committed, ..
-        }) => (files.clone(), *committed),
-        _ => (Vec::new(), false),
-    };
+    let (bootstrap_files, committed) = events
+        .iter()
+        .find_map(|e| match e {
+            Event::StandardBootstrapped {
+                files, committed, ..
+            } => Some((files.clone(), *committed)),
+            _ => None,
+        })
+        .unwrap_or((Vec::new(), false));
     say(
         &mut log,
         &format!(
-            "步骤 2 · 规范铺底:落盘 {} 个文件,{}",
+            "步骤 2 · 规范铺底(接入时自动跑):落盘 {} 个文件,{}",
             bootstrap_files.len(),
             if committed {
                 "已提交"
@@ -486,7 +484,7 @@ async fn build_evidence(
         "活": issue_json,
         "workflow 用过几次(现算,没有战绩表)": usage,
         "仓文件": {
-            "规范元信息": workspace.join(".bw/standard.toml").is_file(),
+            "名片": workspace.join(".bw/project.toml").is_file(),
             "指纹清单": workspace.join(".bw/managed.toml").is_file(),
             "活的约定": workspace.join(".bw/issue-policy.toml").is_file(),
             "预置技能包数": count_skill_packages(workspace),

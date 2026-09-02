@@ -44,7 +44,7 @@ fn mapping_block(p: &ProjectVm, bridge: &Bridge) -> Element {
             div { class: "cfg-section-head", h3 { "开工工具映射" } }
             if p.config.mappings.is_empty() {
                 div { class: "detail-empty",
-                    "这个项目还没有 .bw/issue-policy.toml。接入时的规范铺底合进默认分支之后才会有。"
+                    "这个项目还没有 .bw/issue-policy.toml。第一次纳入时那张规范铺底合进默认分支之后才会有。"
                 }
             } else {
                 div { class: "tbl-wrap",
@@ -297,17 +297,12 @@ fn cron_block(p: &ProjectVm) -> Element {
 // ── ⑤ 规范件对账 ────────────────────────────────────
 
 /// 对账是**纯读**的:只回报缺 / 过期 / 人改过,不动仓、不建活。
-/// 写仓只发生在接入那一次规范铺底。在研版本去总览名片里改。
+/// 写仓只发生在第一次纳入。在研版本去总览名片里改。
 #[component]
 fn StandardBlock(p: ProjectVm, bridge: Bridge) -> Element {
     let (p, bridge) = (&p, &bridge);
     let b_rec = bridge.clone();
     let pid = p.id;
-    let std_ver = if p.card.standard_version.is_empty() {
-        "—(这个仓还没铺过规范件)".to_string()
-    } else {
-        p.card.standard_version.clone()
-    };
     rsx! {
         div { class: "cfg-section",
             div { class: "cfg-section-head",
@@ -318,11 +313,6 @@ fn StandardBlock(p: ProjectVm, bridge: Bridge) -> Element {
                         onclick: move |_| b_rec.cmd(Command::ReconcileStandard { project_id: pid }),
                         "对一遍账"
                     }
-                }
-            }
-            div { class: "settings-list",
-                div { class: "settings-row",
-                    div { div { class: "k", "规范版本" } div { class: "v", "{std_ver}" } }
                 }
             }
             div { class: "cfg-readonly-note",
