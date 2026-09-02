@@ -28,7 +28,7 @@ workflow = ""                     # 无默认,从鱼塘挑
 
 # 运作活②「资产盘点」到点自动建活;运作活①永远人触发,不在这里配。
 [cadence]
-ops2_schedule = "fri 20:00"
+ops2_schedule = "fri 09:00"
 
 # 看板前两列的标题。
 [kanban]

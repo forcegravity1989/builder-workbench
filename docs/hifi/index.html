@@ -725,7 +725,7 @@ function makeIssues(){
     'suggest-1':{id:'suggest-1',title:'建议活 · 拆过长的计划屏',category:'优化',tool:'claude_cli',kind:'business',status:'pool',source:'建议',metricIds:[],mr:null,week:'W34',version:'0.4.0-v4',workflow:'mattpocock-skills',skill:'—',desc:'运作活②「资产盘点 2026-W33」评审后生成的建议活草稿:crates/app-shell/src/screens/plan/ 建议按文件拆。人勾选后才真正建活。'},
     'ops1-w34':{id:'ops1-w34',title:'运作活①更新指标 + 制定本周计划 2026-W34',category:'运作',tool:'claude_cli',kind:'ops',status:'done',doneDate:'08-17',source:'人触发',metricIds:[],mr:{id:'!bw/plan-2026-W34',label:'!bw/plan-2026-W34',status:'merged'},week:'W34',version:'0.4.0-v4',workflow:'week-planning',skill:'—',desc:'复盘上周 → 更新指标 → 引导本周目标与活清单。周目标写在这张活的评论里。'},
     'ops2-w33':{id:'ops2-w33',title:'运作活②资产盘点 2026-W33',category:'运作',tool:'claude_cli',kind:'ops',status:'review',source:'人触发',auto:false,metricIds:[],mr:{id:'!bw/ops-2026-W33',label:'!bw/ops-2026-W33',status:'open'},week:'W33',version:'0.3.0-v3',workflow:'asset-audit',skill:'—',desc:'盘点仓内资产。报告挂这张活的评论;建议活草稿等人勾选。周五到点会自动建,最远评审中。'},
-    'ops3':{id:'ops3',title:'运作活③规范铺底',category:'运作',tool:'—',kind:'ops',status:'done',doneDate:'08-17',doneAssumed:true,source:'自动建(接入时)',auto:true,metricIds:[],mr:{id:'!bw/standard-4.0',label:'!bw/standard-4.0',status:'merged'},week:'W33',version:'0.3.0-v3',workflow:'—',skill:'—',desc:'路径 A,不起 agent。写入 .bw/PROJECT.md、issue-policy.toml、standard.toml,开 MR 等人合。仓根不写。'},
+    'ops3':{id:'ops3',title:'运作活③规范铺底',category:'运作',tool:'—',kind:'ops',status:'done',doneDate:'08-17',doneAssumed:true,source:'自动建(接入时)',auto:true,metricIds:[],mr:{id:'!bw/standard-4.0',label:'!bw/standard-4.0',status:'merged'},week:'W33',version:'0.3.0-v3',workflow:'—',skill:'—',desc:'路径 A,不起 agent。写入 .bw/PROJECT.md、.bw/config/issue-policy.toml,指纹记进 .bw/state/managed.toml,开 MR 等人合。仓根不写。'},
     'w33-legacy':{id:'w33-legacy',title:'减负线第一轮六切片(旧聊天式引擎整链退役第一轮)',category:'构建',tool:'claude_cli',kind:'business',status:'done',doneDate:'08-17',source:'人建',metricIds:['lead-1'],mr:{id:'#102',label:'PR #102(第一轮)',status:'merged'},week:'W33',version:'0.3.0-v3',workflow:'mattpocock-skills',skill:'—',desc:'六个切片依次删除旧聊天式工作流引擎的各处依赖,为第二轮收尾铺路。'},
     'w33-usefix':{id:'w33-usefix',title:'V3-use-fix:Claude 探测 / 列仓搜索 / 测一下',category:'构建',tool:'claude_cli',kind:'business',status:'done',doneDate:'08-17',source:'人建',metricIds:[],mr:{id:'#101',label:'PR #101',status:'merged'},week:'W33',version:'0.3.0-v3',workflow:'mattpocock-skills',skill:'—',desc:'三张真实体验修复:claude 可执行探测、列仓搜索、探活「测一下」按钮。'},
     'w32-odembed':{id:'w32-odembed',title:'V3-OD-embed:原型进度内嵌 Open Design',category:'原型',tool:'open_design',kind:'business',status:'done',doneDate:'08-12',source:'人建',metricIds:[],mr:{id:'#99',label:'PR #99',status:'merged'},week:'W32',version:'0.3.0-v3',workflow:'—',skill:'—',desc:'原型阶段进度面板内嵌本机 Open Design 首页,替换占位卡。'},
@@ -795,7 +795,7 @@ var FILE_CONTENTS={
   'crates/app-shell/src/screens/overview/mod.rs':['// crates/app-shell/src/screens/overview/mod.rs','// 北极星 → 本周进度 → 滞后 → 引领 → 仓指标 → 发版'],
   'docs/architecture.md':['# architecture.md — Workbench MVP 设计正本','三个 crate:bw / bw-engine / app-shell。本地零数据库。'],
   'docs/hifi/index.html':['<!-- 高保真 · 视觉目标态,跟现行壳对齐 -->'],
-  'standard/README.md':['# standard/','Workbench 推给被管项目的规范正本。接入铺名片 + issue-policy + standard.toml。'],
+  'standard/README.md':['# standard/','Workbench 推给被管项目的规范正本。接入铺名片 + config/issue-policy.toml。'],
   '.bw/PROJECT.md':['# 项目名片','Builders\' Workbench:AI Coding 里一个人的一张工作台。'],
   '.bw/config/issue-policy.toml':['# 类别 → 工具 → workflow;节律也在这里','[cadence]','asset_audit = "周五 09:00"'],
   '.bw/config/project.toml':['# .bw/config/project.toml','name = "Builders\' Workbench (Workbench)"','current_version = "0.4.0-v4"'],
@@ -1008,7 +1008,7 @@ var ACTIONS = {
       oneLiner:'刚接入,规范铺底待合入',version:'v0.1',repo:repoLabel&&repoLabel.real?repoLabel.id:repoName,
       owner:'Gravity',standardVersion:'5.7(待合入)',lastDelivery:'—',
       card:{name:displayName,intent:ob.intentWhat||'(未填,沿用仓 README)',benchmark:ob.intentBenchmark||'(未填)',northstar:ob.intentNorthstar||'(未填)',northstarAssumed:!ob.intentNorthstar}};
-    var ops3Desc = '路径 A,不起 agent。往 .bw/ 写名片、issue-policy.toml、standard.toml,开 MR !1,停在评审中。仓根 AGENTS.md 不写。';
+    var ops3Desc = '路径 A,不起 agent。往 .bw/ 写名片与 config/issue-policy.toml,指纹记进 state/managed.toml,开 MR !1,停在评审中。仓根 AGENTS.md 不写。';
     state.issues.new={ 'ops3-new':{id:'ops3-new',title:'运作活③规范铺底',category:'运作',tool:'—',kind:'ops',status:'review',source:'自动建(接入时)',auto:true,metricIds:[],mr:{id:'!1',label:'!1',status:'open'},workflow:'—',skill:'—',desc:ops3Desc} };
     state.inbox.new=[{id:'inbox-new-ops3',kind:'issue',issueId:'ops3-new',text:'运作活③「规范铺底」评审中(MR !1)',state:'pending'}];
     state.metrics.new={ northstar:{id:'northstar',tier:'北极星',label:state.newProject.card.northstar,gray:true,drivenBy:[]} };

@@ -14,17 +14,21 @@ WRITE_FNS=(
   "project_file::write"
   "issue_policy_file::write"
   "managed_file::write"
-  "metrics_file::write"
   "readings_file::upsert_metric_reading"
   "readings_file::absorb_main_readings"
 )
 
-# 自检:名单里的每个函数都必须在 crates/ 里真实存在,否则这条守卫是在守空气。
+# 自检:名单里的每个函数必须在**它自己那个模块文件**里真实存在。
+# 早先这里拿裸名(`${fn##*::}`)满 crates/ 找,于是 `metrics_file::write` 这个
+# 根本不存在的条目被 `project_file.rs` 里的 `fn write` 匹上,一路绿灯 —— 守卫
+# 与它的自检同时失效。按模块定位才防得住改名。
 for fn in "${WRITE_FNS[@]}"; do
+  module="${fn%%::*}"
   name="${fn##*::}"
-  if ! grep -rqE "fn[[:space:]]+${name}[[:space:]]*[(<]" crates --include="*.rs"; then
-    echo "✗ 守卫自检失败:名单里的 ${fn} 在 crates/ 里找不到定义。"
-    echo "  名字改过就跟着改这份名单 —— 否则这条守卫会一直报绿,却什么都没守住。"
+  src="crates/bw/src/repo/${module}.rs"
+  if [ ! -f "$src" ] || ! grep -qE "fn[[:space:]]+${name}[[:space:]]*[(<]" "$src"; then
+    echo "✗ 守卫自检失败:${fn} 在 ${src} 里找不到定义。"
+    echo "  函数改名或搬家了就跟着改这份名单 —— 否则守卫会一直报绿,却什么都没守住。"
     exit 1
   fi
 done
