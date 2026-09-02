@@ -6,7 +6,7 @@
 
 use crate::vm::*;
 use bw::model::{IssueStatus, Project, ProjectId};
-use bw::repo::{issue_policy_file, project_file};
+use bw::repo::project_file;
 use std::path::Path;
 
 use super::vm_build::{card_item, remote_label, tool_label};
@@ -16,23 +16,7 @@ use super::vm_build::{card_item, remote_label, tool_label};
 /// `week` 传 `None` = 左栏「全部」:未排周的未动手活进待办列·未排期段,其余按状态。
 /// `week` 传某一周 = 只显示打了那一周 `bw:week` 的活;待办列只「待开始」段(已排期本周),
 /// 不显示未排期。版本(`bw:plan:*`)排期的活在「全部」里也算已排期。
-pub(super) fn build_board(
-    issues: &[bw::Issue],
-    week: Option<&str>,
-    plan: Option<&str>,
-    policy: Option<&issue_policy_file::IssuePolicyFile>,
-) -> BoardVm {
-    let labels = policy.and_then(|p| p.kanban.clone());
-    let pool_label = labels
-        .as_ref()
-        .map(|k| k.pool_label.clone())
-        .unwrap_or_else(|| "待办池 · 未排进任何一周".into());
-    let todo_label = labels
-        .as_ref()
-        .map(|k| k.todo_label.clone())
-        .unwrap_or_else(|| "待办 · 已排进本周,等开工".into());
-    let _ = (pool_label.as_str(), todo_label.as_str()); // 段文案沿用固定词,这两个留作回执/兼容
-
+pub(super) fn build_board(issues: &[bw::Issue], week: Option<&str>, plan: Option<&str>) -> BoardVm {
     let in_week = |i: &bw::Issue| match week {
         None => true,
         Some(w) => i.week_of == w,
@@ -196,8 +180,8 @@ pub(super) fn build_board(
     ];
     BoardVm {
         columns,
-        pool_label,
-        todo_label,
+        pool_label: "待办池 · 未排进任何一周".into(),
+        todo_label: "待办 · 已排进本周,等开工".into(),
     }
 }
 
@@ -250,7 +234,7 @@ fn trend_from_readings(ws: &Path, name: &str) -> Vec<(String, Option<f64>)> {
         .collect()
 }
 
-/// 指标卡:定义来自 `.bw/config/metrics.toml`,读数来自仓 `.bw/state/metrics-readings.jsonl`
+/// 指标卡:定义来自 `.bw/metrics.toml`,读数来自仓 `.bw/metrics/readings.jsonl`
 /// (刀6:不再读周计划文件的「本周指标读数」段)。**没有读数就显示「无数据」,
 /// 不显示 0**。
 pub(super) fn build_metrics(
@@ -268,7 +252,7 @@ pub(super) fn build_metrics(
         Ok(None) => {
             return MetricsVm {
                 collected: collected_once,
-                note: Some("这个项目还没有 .bw/config/metrics.toml,指标是空的(不是 0)".into()),
+                note: Some("这个项目还没有 .bw/metrics.toml,指标是空的(不是 0)".into()),
                 ..Default::default()
             }
         }
@@ -294,10 +278,10 @@ pub(super) fn build_metrics(
             .map(|i| i.title.clone())
             .collect()
     };
-    // `.bw/config/metrics.toml` 里的指标没有单独的 id 字段 —— 名字就是它的键。
+    // `.bw/metrics.toml` 里的指标没有单独的 id 字段 —— 名字就是它的键。
     // `issue.metric_key` 存的因此是指标的名字。
     // `target` / `def` / 采集方式来自指标定义文件;读数来自
-    // `.bw/state/metrics-readings.jsonl`。两边各是各的正本,这里只是拼到同一张卡上。
+    // `.bw/metrics/readings.jsonl`。两边各是各的正本,这里只是拼到同一张卡上。
     // 采到的现值与走势来自「采一次指标」那一下(`ui.metrics`),不在这里跑
     // ——起脚本要几百毫秒到几秒,每重拼一次 ViewModel 都跑一遍会把界面按住。
     let readout_of = |name: &str| collected.iter().find(|r| r.name.trim() == name.trim());
@@ -421,7 +405,7 @@ pub(super) fn build_workbench(
 /// 都重探(OD 管道 400ms + PATH 扫)——原来这条是 `probe_env` 第二遍的来源。
 pub(super) fn build_config(
     ws: &Path,
-    policy: Option<&issue_policy_file::IssuePolicyFile>,
+    settings: Option<&bw::local::Settings>,
     project: &Project,
     // 名片文件由上层读一次(而且是走 `read_or_warn`,文件坏了会说话)。这里
     // **不再自己读一遍** —— 自己读的那条路 `.ok()` 会把解析错误吞掉,表现成
@@ -431,28 +415,31 @@ pub(super) fn build_config(
     env: &[ToolProbeVm],
 ) -> ConfigVm {
     let usage = bw::app::workflow_usage(issues);
-    let mappings = policy
-        .map(|p| {
-            p.mappings
-                .iter()
-                .map(|m| MappingVm {
-                    category_key: m.category.clone(),
-                    category_label: m
-                        .category()
-                        .map(|c| c.label().to_string())
-                        .unwrap_or_else(|| m.category.clone()),
-                    tool: tool_label(&m.tool).into(),
-                    workflow: if m.workflow.is_empty() {
-                        "—(无默认,从鱼塘挑)".into()
-                    } else {
-                        m.workflow.clone()
-                    },
-                })
-                .collect()
+    let mappings = bw::model::StageKind::ALL
+        .iter()
+        .map(|cat| {
+            let key = bw::model::category_key(*cat);
+            let tool = settings
+                .and_then(|s| s.tools.get(key))
+                .cloned()
+                .filter(|t| !t.trim().is_empty())
+                .unwrap_or_else(|| bw::defaults::default_tool(*cat).to_string());
+            let workflow = bw::defaults::default_workflow(*cat).to_string();
+            MappingVm {
+                category_key: key.to_string(),
+                category_label: cat.label().to_string(),
+                tool: tool_label(&tool).into(),
+                workflow: if workflow.is_empty() {
+                    "—(产品默认无)".into()
+                } else {
+                    workflow
+                },
+            }
         })
-        .unwrap_or_default();
+        .collect();
 
     let skills = skill_list(ws, &usage);
+    let ops2 = bw::defaults::DEFAULT_OPS2_SCHEDULE;
 
     ConfigVm {
         mappings,
@@ -460,18 +447,8 @@ pub(super) fn build_config(
         focus_skill: String::new(),
         tools: env.to_vec(),
         remote: remote_label(project),
-        // ①永远人触发、②永远定时 —— 这两件是代码写死的行为,不是配出来的,
-        // 所以这里直接说人话。文件里只有②的时刻是真能配的。
-        cadence: policy
-            .and_then(|p| p.cadence.clone())
-            .map(|c| {
-                format!(
-                    "运作活①:人触发;运作活②:定时 {}",
-                    blank_dash(&c.ops2_schedule)
-                )
-            })
-            .unwrap_or_else(|| "—(.bw/config/issue-policy.toml 里没有节律段)".into()),
-        crons: build_crons(policy),
+        cadence: format!("产品默认 · 运作活② {ops2}"),
+        crons: build_crons(),
         chat_provider: chat_provider(file.chat.as_ref()),
         chat_group: chat_group(file.chat.as_ref()),
         chat_events: chat_events(file.chat.as_ref()),
@@ -562,31 +539,27 @@ pub(super) fn skill_desc(path: &Path) -> String {
 }
 
 /// 定时那张表。**没有定时表** —— 判据写在这里,让人知道它到底看什么。
-fn build_crons(policy: Option<&issue_policy_file::IssuePolicyFile>) -> Vec<CronVm> {
-    let mut rows = vec![CronVm {
-        name: "B 类指标采集".into(),
-        trigger: "到点自动采".into(),
-        schedule: "daily 20:00".into(),
-        rule: "今天还没采过".into(),
-    }];
-    let Some(c) = policy.and_then(|p| p.cadence.clone()) else {
-        return rows;
-    };
-    // 两行的「怎么触发」是代码写死的行为,不从文件读:①只有人点总览的
-    // 「开始本周」才会有,②到点自己建。文件里只有②的时刻是真能配的。
-    rows.push(CronVm {
-        name: "更新指标与制定本周计划".into(),
-        trigger: "人触发".into(),
-        schedule: "—".into(),
-        rule: "本周还没有运作活①「更新指标 + 制定本周计划」".into(),
-    });
-    rows.push(CronVm {
-        name: "资产盘点".into(),
-        trigger: "到点自动建".into(),
-        schedule: blank_dash(&c.ops2_schedule).to_string(),
-        rule: "本周还没有这张活(不查任何定时表)".into(),
-    });
-    rows
+fn build_crons() -> Vec<CronVm> {
+    vec![
+        CronVm {
+            name: "B 类指标采集".into(),
+            trigger: "到点自动采".into(),
+            schedule: "daily 20:00".into(),
+            rule: "今天还没采过".into(),
+        },
+        CronVm {
+            name: "更新指标与制定版本计划".into(),
+            trigger: "人触发".into(),
+            schedule: "—".into(),
+            rule: "本周还没有运作活①「更新指标 + 制定版本计划」".into(),
+        },
+        CronVm {
+            name: "资产盘点".into(),
+            trigger: "到点自动建".into(),
+            schedule: bw::defaults::DEFAULT_OPS2_SCHEDULE.into(),
+            rule: "本周还没有这张活(不查任何定时表)".into(),
+        },
+    ]
 }
 
 fn chat_provider(chat: Option<&project_file::ChatConfig>) -> String {
@@ -627,7 +600,7 @@ fn chat_label(ws: &Path) -> String {
         .and_then(|f| f.chat)
         .filter(|c| !c.provider.trim().is_empty() && c.provider.trim() != "none")
     else {
-        return "—(没配项目群。配了就在 .bw/config/project.toml 里加一段 [chat])".into();
+        return "—(没配项目群。配了就在 .bw/project.toml 里加一段 [chat])".into();
     };
     // 整行没写 = 默认那五样;写了空数组 = 静音,如实说「一件都不发」。
     let notify = match &cfg.notify {

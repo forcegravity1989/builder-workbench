@@ -21,13 +21,17 @@ use super::{App, AppError, Result};
 // 匹配。前缀与 `app/ops.rs` / `app/project.rs` / `standard/bootstrap.rs` 里建
 // 活时拼标题用的那几个串一字不差,改那边要同步改这里。
 
-/// 运作活①的标题前缀。完整标题 = 这个前缀 + 周号(`ops1_title(week)`)。
-const OPS1_TITLE_PREFIX: &str = "更新指标 + 制定本周计划 ";
+/// 运作活①的标题前缀。光杆或后面跟 ` v0.x` 都认。
+const OPS1_TITLE_PREFIX: &str = "更新指标 + 制定版本计划";
 /// 运作活②的标题前缀。完整标题 = 这个前缀 + 周号(`"资产盘点 {week}"`)。
 const OPS2_TITLE_PREFIX: &str = "资产盘点 ";
 /// 运作活③的标题前缀。完整标题 = 这个前缀 + 版本号(`"规范铺底 v{version}"`)。
+/// **不再新建**;读回旧活仍认,给在途 MR / 横幅 / 跳过接入用。
 const OPS3_TITLE_PREFIX: &str = "规范铺底 v";
-/// 轻量活「编辑项目名片」的固定标题(B 类在途复用的幂等键)。
+/// 项目信息常驻车的固定标题。接入第一次写名片、之后改名片 / 在研版本 / 项目群
+/// 都复用这一张(开着就接着写,合入后人点完成,下次再开一张同名)。
+pub const CHARTER_TITLE: &str = "项目约定";
+/// 轻量活「编辑项目名片」的旧标题。**不再新建**;读回旧活仍认。
 pub const LIGHT_TITLE: &str = "编辑项目名片";
 /// 轻量活「配置项目群」的固定标题(B 类在途复用的幂等键)。高优3:改群配置
 /// 也走 worktree + MR,不再直写主检出。
@@ -46,8 +50,8 @@ fn map_remote_err<E: std::fmt::Display>(ctx: &str, e: E) -> AppError {
 
 /// 在远端仓里真开一个 issue,返回填好 `number`/`remote_number` 的 `Issue`。
 ///
-/// labels = `bw:status:todo`(新活默认待办)+ 一个版本槽(`bw:week:` 或
-/// `bw:plan:`,见 [`one_schedule`])+ `extra_labels`(调用方自塞,如类别)。
+/// labels = `bw:status:todo`(新活默认待办)+ 一个版本槽(`bw:plan:v0.x`,
+/// 见 [`one_schedule`])+ `extra_labels`(调用方自塞,如类别)。不再写 `bw:week:`。
 /// kind 由参数显式给(不推断),决定回填 `tool`/`workflow`/`origin`。
 ///
 /// issue 读写唯一入口:app 层各用例(issue / plan / ops / bootstrap / project /
@@ -70,12 +74,7 @@ pub async fn create(
         "bw:status:todo"
     };
     let mut labels: Vec<String> = vec![status_label.to_string()];
-    if let Some(w) = &week {
-        labels.push(format!("bw:week:{w}"));
-    }
     for x in extra_labels {
-        // plan 已在 extra 里;week 与 plan 同时传来时 one_schedule 丢掉了周,
-        // 这里不再补 bw:week。
         labels.push((*x).to_string());
     }
     let label_refs: Vec<&str> = labels.iter().map(|s| s.as_str()).collect();
@@ -85,11 +84,10 @@ pub async fn create(
         .map_err(|e| map_remote_err("远端建活没成", e))?;
     if let Some(name) = &plan {
         project_plan_best_effort(&remote, &project.remote_path, iid, name).await;
-    } else if let Some(w) = &week {
-        project_week_best_effort(&remote, iid, w).await;
     }
     Ok(issue_from_create(
         project,
+        &app.asset_root,
         iid,
         title,
         body,
@@ -106,7 +104,7 @@ pub async fn fetch(app: &App, project: &Project, iid: u32) -> Result<Issue> {
         .view_issue(iid)
         .await
         .map_err(|e| map_remote_err("远端读 issue 没成", e))?;
-    Ok(issue_from_remote(project, &r))
+    Ok(issue_from_remote(project, &app.asset_root, &r))
 }
 
 /// 按过滤条件读回 issue 列表,逐条映射回 `Issue`。
@@ -116,7 +114,10 @@ pub async fn list(app: &App, project: &Project, filter: IssueFilter) -> Result<V
         .list_issues(&filter)
         .await
         .map_err(|e| map_remote_err("远端读 issue 列表没成", e))?;
-    Ok(list.iter().map(|r| issue_from_remote(project, r)).collect())
+    Ok(list
+        .iter()
+        .map(|r| issue_from_remote(project, &app.asset_root, r))
+        .collect())
 }
 
 /// 改 issue 的状态标签(`bw:status:*`,namespace-replace 会换掉旧 status)。
@@ -211,17 +212,25 @@ async fn project_week_best_effort(remote: &Remote, iid: u32, week: &str) {
     } else if let Some(pair) = week_span(week) {
         pair
     } else {
-        eprintln!("[BW_MILESTONE] 周号认不出,不投影:{week}");
+        bw_engine::dlog!(warn, "milestone", "[BW_MILESTONE] 周号认不出,不投影:{week}");
         return;
     };
     if let Err(e) = remote.project_week(iid, week, &start, &due).await {
-        eprintln!("[BW_MILESTONE] #{iid} {week} 投影没成:{e}");
+        bw_engine::dlog!(
+            err,
+            "milestone",
+            "[BW_MILESTONE] #{iid} {week} 投影没成:{e}"
+        );
     }
 }
 
 async fn project_plan_best_effort(remote: &Remote, path: &str, iid: u32, plan: &str) {
     if let Err(e) = remote.project_plan(iid, path, plan).await {
-        eprintln!("[BW_MILESTONE] #{iid} 版本 {plan} 投影没成:{e}");
+        bw_engine::dlog!(
+            err,
+            "milestone",
+            "[BW_MILESTONE] #{iid} 版本 {plan} 投影没成:{e}"
+        );
     }
 }
 
@@ -289,7 +298,11 @@ pub async fn assign_to_plan(app: &App, project: &Project, iid: u32, plan: &str) 
         .map_err(|e| map_remote_err("远端打 bw:plan 标签没成", e))?;
     // 里程碑是 codehub 侧镜像,失败只打 stderr,不挡正本(标签)。
     if let Err(e) = remote.project_plan(iid, &project.remote_path, plan).await {
-        eprintln!("[BW_MILESTONE] #{iid} 版本 {plan} 投影没成:{e}");
+        bw_engine::dlog!(
+            err,
+            "milestone",
+            "[BW_MILESTONE] #{iid} 版本 {plan} 投影没成:{e}"
+        );
     }
     Ok(())
 }
@@ -305,7 +318,11 @@ pub async fn clear_plan(app: &App, project: &Project, iid: u32) -> Result<()> {
         .await
         .map_err(|e| map_remote_err("远端摘 bw:plan 标签没成", e))?;
     if let Err(e) = remote.clear_issue_milestone(iid).await {
-        eprintln!("[BW_MILESTONE] #{iid} 从版本里程碑摘下没成:{e}");
+        bw_engine::dlog!(
+            err,
+            "milestone",
+            "[BW_MILESTONE] #{iid} 从版本里程碑摘下没成:{e}"
+        );
     }
     Ok(())
 }
@@ -354,32 +371,42 @@ pub async fn find_open_by_title(
     Ok(list
         .into_iter()
         .find(|r| r.title == title)
-        .map(|r| issue_from_remote(project, &r)))
+        .map(|r| issue_from_remote(project, &app.asset_root, &r)))
+}
+
+/// 开着的项目约定类活:「项目约定」或残留的「编辑项目名片」/「规范铺底 v*」。
+pub async fn find_open_charter(app: &App, project: &Project) -> Result<Option<Issue>> {
+    let list = list(
+        app,
+        project,
+        IssueFilter {
+            state: Some(IssueState::Open),
+            labels: vec![],
+        },
+    )
+    .await?;
+    Ok(list.into_iter().find(is_open_charter))
 }
 
 // ─────────────── Issue 构造(两条路:create 直接拼 / 从 RemoteIssue 映射)────
 
-/// 一张活只属于一个版本槽。`bw:plan:` 在 extra 里就只留版本,不留周;
-/// 否则 week_of 非空就留周。两个都给时丢掉周(壳看自定义版本时曾误带本周)。
-fn one_schedule(week_of: &str, extra_labels: &[&str]) -> (Option<String>, Option<String>) {
+/// 一张活只属于一个版本槽。合法 `bw:plan:v0.x` 才排期;`week_of` 即使非空
+/// 也不再生成周排期(不再写 `bw:week:`)。
+fn one_schedule(_week_of: &str, extra_labels: &[&str]) -> (Option<String>, Option<String>) {
     let plan = extra_labels
         .iter()
         .find_map(|l| l.strip_prefix("bw:plan:"))
-        .filter(|s| !s.is_empty())
+        .filter(|s| crate::version::is_v0x(s))
         .map(|s| s.to_string());
-    if plan.is_some() {
-        (None, plan)
-    } else if !week_of.is_empty() {
-        (Some(week_of.to_string()), None)
-    } else {
-        (None, None)
-    }
+    (None, plan)
 }
 
 /// `create` 成功后拼 `Issue`——这会儿没有 `RemoteIssue` 快照,但 title/body/
 /// kind/week 都是调用方给的,其余 lossy 字段给默认值。
+#[allow(clippy::too_many_arguments)]
 fn issue_from_create(
     project: &Project,
+    asset_root: &std::path::Path,
     iid: u32,
     title: &str,
     body: &str,
@@ -388,7 +415,7 @@ fn issue_from_create(
     extra_labels: &[&str],
 ) -> Issue {
     let category = parse_category(extra_labels);
-    let (tool, workflow) = resolve_tool_workflow(project, kind, title, category);
+    let (tool, workflow) = resolve_tool_workflow(project, asset_root, kind, title, category);
     let (week, plan) = one_schedule(week_of, extra_labels);
     let scheduled = week.is_some() || plan.is_some();
     Issue {
@@ -429,7 +456,7 @@ fn issue_from_create(
 /// `created_at`/`settled_at` 从远端 RFC3339 串解析(刀3-fix:以前写死 0/None,
 /// 事件流恒空)。`settled_at`:关闭的 issue 取 `closed_at`;`closed_at` 缺失
 /// 但确实关了,退回 `created_at` 当近似(事件流至少能进「结清」那条)。
-fn issue_from_remote(project: &Project, r: &RemoteIssue) -> Issue {
+fn issue_from_remote(project: &Project, asset_root: &std::path::Path, r: &RemoteIssue) -> Issue {
     let closed = r.state.eq_ignore_ascii_case("closed");
     let cancelled = has_cancelled_label(&r.labels);
     let kind = kind_from_title(&r.title);
@@ -448,7 +475,7 @@ fn issue_from_remote(project: &Project, r: &RemoteIssue) -> Issue {
         None
     };
     let category = parse_category(&r.labels);
-    let (tool, workflow) = resolve_tool_workflow(project, kind, &r.title, category);
+    let (tool, workflow) = resolve_tool_workflow(project, asset_root, kind, &r.title, category);
     Issue {
         id: IssueId::from_remote(project.id, r.iid),
         project_id: project.id,
@@ -501,14 +528,52 @@ fn is_ops_title(title: &str) -> bool {
 fn kind_from_title(title: &str) -> IssueKind {
     if is_ops_title(title) {
         IssueKind::Ops
-    } else if title == LIGHT_TITLE || title == LIGHT_CHAT_TITLE || title == LIGHT_VERSION_TITLE {
+    } else if title == CHARTER_TITLE
+        || title == LIGHT_TITLE
+        || title == LIGHT_CHAT_TITLE
+        || title == LIGHT_VERSION_TITLE
+    {
         IssueKind::Light
     } else {
         IssueKind::Business
     }
 }
 
-/// 运作活的 workflow 从标题推断:①→`更新指标与周计划`,②→`资产盘点`,
+/// 项目约定类标题:现行「项目约定」+ 残留的名片轻量活 / 规范铺底。
+pub fn is_charter_title(title: &str) -> bool {
+    title == CHARTER_TITLE || title == LIGHT_TITLE || title.starts_with(OPS3_TITLE_PREFIX)
+}
+
+/// 开着的项目约定类活(没完成、没作废)。
+pub fn is_open_charter(i: &Issue) -> bool {
+    is_charter_title(&i.title) && !matches!(i.status, IssueStatus::Done | IssueStatus::Cancelled)
+}
+
+/// 这张活干活的分支。项目约定走常驻 `bw/project`;其余 `bw/issue-<号>`。
+pub fn work_branch(issue: &Issue) -> String {
+    if issue.title == CHARTER_TITLE {
+        bw_engine::workspace::PROJECT_BRANCH.to_string()
+    } else {
+        bw_engine::github::issue_branch(issue.number)
+    }
+}
+
+/// 未合入的项目约定:从常驻树或残留 issue 树读名片,盖过主检出/HEAD。
+pub fn overlay_project_file(
+    ws: &std::path::Path,
+    issues: &[Issue],
+) -> Option<crate::repo::project_file::ProjectFile> {
+    let i = issues.iter().find(|i| is_open_charter(i))?;
+    let tree = if i.title == CHARTER_TITLE {
+        bw_engine::workspace::project_worktree_path(ws)?
+    } else {
+        bw_engine::workspace::resolve_issue_worktree(ws, i.number, None)
+            .or_else(|| bw_engine::workspace::issue_worktree_path(ws, i.number))?
+    };
+    crate::repo::project_file::read(&tree).ok().flatten()
+}
+
+/// 运作活的 workflow 从标题推断:①→`更新指标与版本计划`,②→`资产盘点`,
 /// ③→`规范铺底`(③没有 agent 步骤,skill_slug 回 None,但 workflow 字段
 /// 仍需有值给配置屏「用过几次」与演示读回用)。
 fn ops_workflow_from_title(title: &str) -> String {
@@ -526,51 +591,42 @@ fn ops_workflow_from_title(title: &str) -> String {
 fn workflow_for(kind: IssueKind, title: &str) -> String {
     match kind {
         IssueKind::Ops => ops_workflow_from_title(title),
-        // light→无;business→无(MVP 无 category 标签,查不到 issue_policy 映射)。
+        // light→无;business 的 workflow 走产品默认,不在这里。
         _ => String::new(),
     }
 }
 
-/// 读 `.bw/config/issue-policy.toml` 某一类的开工工具。文件没有 / 这类没配 → 空,
-/// 不猜 `claude_cli`。
-fn policy_tool(project: &Project, category: crate::model::Category) -> String {
-    let Ok(Some(file)) =
-        crate::repo::issue_policy_file::read(std::path::Path::new(&project.workspace_path))
-    else {
-        return String::new();
-    };
-    file.mapping_for(category)
-        .map(|m| m.tool.clone())
-        .unwrap_or_default()
+/// 开工工具:本机 settings → 产品默认。不读仓里的残留文件。
+fn resolve_tool(asset_root: &std::path::Path, cat: crate::model::Category) -> String {
+    let key = crate::model::category_key(cat);
+    crate::local::Settings::get_tool(asset_root, key)
+        .filter(|t| !t.trim().is_empty())
+        .unwrap_or_else(|| crate::defaults::default_tool(cat).to_string())
 }
 
-/// 业务活:类别标签 → `.bw/config/issue-policy.toml` 映射出工具和 workflow。
-/// 运作活不打五阶段类别;开工工具读运维行(`category = "ops"`),workflow
-/// 仍按标题推断。查不到映射就空着,不猜 claude。
 fn resolve_tool_workflow(
-    project: &Project,
+    _project: &Project,
+    asset_root: &std::path::Path,
     kind: IssueKind,
     title: &str,
     category: Option<crate::model::Category>,
 ) -> (String, String) {
     if kind == IssueKind::Ops {
         return (
-            policy_tool(project, crate::model::Category::Ops),
+            resolve_tool(asset_root, crate::model::Category::Ops),
             workflow_for(kind, title),
         );
+    }
+    if kind == IssueKind::Light {
+        return (String::new(), String::new());
     }
     let Some(cat) = category else {
         return (String::new(), String::new());
     };
-    let Ok(Some(file)) =
-        crate::repo::issue_policy_file::read(std::path::Path::new(&project.workspace_path))
-    else {
-        return (String::new(), String::new());
-    };
-    match file.mapping_for(cat) {
-        Some(m) => (m.tool.clone(), m.workflow.clone()),
-        None => (String::new(), String::new()),
-    }
+    (
+        resolve_tool(asset_root, cat),
+        crate::defaults::default_workflow(cat).to_string(),
+    )
 }
 
 fn parse_category<S: AsRef<str>>(labels: &[S]) -> Option<crate::model::Category> {
@@ -629,7 +685,14 @@ fn parse_status_from_labels(labels: &[String]) -> IssueStatus {
 fn parse_week(labels: &[String]) -> String {
     labels
         .iter()
-        .find_map(|l| l.strip_prefix("bw:week:").map(|s| s.to_string()))
+        .find_map(|l| {
+            let s = l.strip_prefix("bw:week:")?;
+            if s.is_empty() {
+                None
+            } else {
+                Some(s.to_string())
+            }
+        })
         .unwrap_or_default()
 }
 
@@ -640,11 +703,19 @@ fn parse_released(labels: &[String]) -> String {
         .unwrap_or_default()
 }
 
-/// 从 `bw:plan:<name>` 标签取这张活排进的自定义版本。空 = 不属于任何版本。
+/// 从 `bw:plan:<name>` 标签取这张活排进的版本。空后缀当没排。
+/// 读回认旧名(`MVP收尾`)和新的 `v0.x`,新建仍只写 `v0.x`。
 fn parse_plan(labels: &[String]) -> String {
     labels
         .iter()
-        .find_map(|l| l.strip_prefix("bw:plan:").map(|s| s.to_string()))
+        .find_map(|l| {
+            let s = l.strip_prefix("bw:plan:")?;
+            if s.is_empty() {
+                None
+            } else {
+                Some(s.to_string())
+            }
+        })
         .unwrap_or_default()
 }
 
@@ -690,6 +761,7 @@ mod tests {
     fn closed_with_cancelled_is_cancelled_not_done() {
         let i = issue_from_remote(
             &proj(),
+            std::path::Path::new(""),
             &remote("closed", &["bw:status:cancelled", "bw:week:2026-W35"]),
         );
         assert_eq!(i.status, IssueStatus::Cancelled);
@@ -698,43 +770,57 @@ mod tests {
 
     #[test]
     fn closed_without_cancelled_is_done() {
-        let i = issue_from_remote(&proj(), &remote("closed", &[]));
+        let i = issue_from_remote(&proj(), std::path::Path::new(""), &remote("closed", &[]));
         assert_eq!(i.status, IssueStatus::Done);
         assert!(i.settled_at.is_some());
     }
 
     #[test]
-    fn one_schedule_keeps_only_plan_when_both_given() {
-        let (week, plan) = one_schedule("2026-W35", &["bw:plan:MVP收尾"]);
+    fn one_schedule_keeps_only_v0x_plan() {
+        let (week, plan) = one_schedule("2026-W35", &["bw:plan:v0.3"]);
         assert!(week.is_none());
-        assert_eq!(plan.as_deref(), Some("MVP收尾"));
+        assert_eq!(plan.as_deref(), Some("v0.3"));
     }
 
     #[test]
-    fn one_schedule_keeps_week_when_no_plan() {
-        let (week, plan) = one_schedule("2026-W35", &["bw:category:build"]);
-        assert_eq!(week.as_deref(), Some("2026-W35"));
+    fn one_schedule_drops_week_and_invalid_plan() {
+        let (week, plan) = one_schedule("2026-W35", &["bw:plan:MVP收尾"]);
+        assert!(week.is_none());
         assert!(plan.is_none());
+    }
+
+    #[test]
+    fn parse_plan_keeps_old_and_v0x() {
+        assert_eq!(parse_plan(&["bw:plan:MVP收尾".into()]), "MVP收尾");
+        assert_eq!(parse_plan(&["bw:plan:v0.3".into()]), "v0.3");
+        assert_eq!(parse_plan(&["bw:plan:".into()]), "");
+    }
+
+    #[test]
+    fn parse_week_reads_iso_week() {
+        assert_eq!(parse_week(&["bw:week:2026-W35".into()]), "2026-W35");
+        assert_eq!(parse_week(&["bw:week:".into()]), "");
     }
 
     #[test]
     fn issue_from_create_writes_plan_not_week() {
         let i = issue_from_create(
             &proj(),
+            std::path::Path::new(""),
             3,
             "收口看板",
             "",
             IssueKind::Business,
             "2026-W35",
-            &["bw:plan:MVP收尾", "bw:category:build"],
+            &["bw:plan:v0.3", "bw:category:build"],
         );
         assert_eq!(i.week_of, "");
-        assert_eq!(i.plan_version, "MVP收尾");
+        assert_eq!(i.plan_version, "v0.3");
         assert_eq!(i.status, IssueStatus::Todo);
     }
 
     #[test]
-    fn ops_tool_reads_ops_mapping_workflow_stays_on_title() {
+    fn leftover_issue_policy_does_not_drive_tool() {
         let dir = std::env::temp_dir().join(format!(
             "bw-ops-policy-{}-{}",
             std::process::id(),
@@ -743,10 +829,11 @@ mod tests {
                 .map(|d| d.as_nanos())
                 .unwrap_or(0)
         ));
-        std::fs::create_dir_all(dir.join(".bw/config")).unwrap();
+        std::fs::create_dir_all(dir.join(".bw")).unwrap();
         std::fs::write(
-            dir.join(".bw/config/issue-policy.toml"),
+            dir.join(".bw/issue-policy.toml"),
             r#"
+schema_version = 1
 [[mapping]]
 category = "ops"
 tool     = "cursor"
@@ -756,18 +843,68 @@ workflow = "mattpocock-skills"
         .unwrap();
         let mut p = proj();
         p.workspace_path = dir.display().to_string();
-        let (tool, workflow) =
-            resolve_tool_workflow(&p, IssueKind::Ops, "更新指标 + 制定本周计划 2026-W35", None);
+        let (tool, workflow) = resolve_tool_workflow(
+            &p,
+            std::path::Path::new(""),
+            IssueKind::Ops,
+            "更新指标 + 制定版本计划",
+            None,
+        );
         let _ = std::fs::remove_dir_all(&dir);
-        assert_eq!(tool, "cursor");
+        assert_eq!(
+            tool,
+            crate::defaults::default_tool(crate::model::Category::Ops)
+        );
         assert_eq!(workflow, super::super::OPS1_WORKFLOW);
     }
 
     #[test]
-    fn ops_tool_empty_when_ops_mapping_missing() {
-        let (tool, workflow) =
-            resolve_tool_workflow(&proj(), IssueKind::Ops, "资产盘点 2026-W35", None);
-        assert!(tool.is_empty(), "没配运维行不猜 claude_cli");
+    fn ops_tool_falls_back_to_product_default() {
+        let (tool, workflow) = resolve_tool_workflow(
+            &proj(),
+            std::path::Path::new(""),
+            IssueKind::Ops,
+            "资产盘点 2026-W35",
+            None,
+        );
+        assert_eq!(
+            tool,
+            crate::defaults::default_tool(crate::model::Category::Ops)
+        );
         assert_eq!(workflow, super::super::OPS2_WORKFLOW);
+    }
+
+    #[test]
+    fn settings_tool_wins_over_product_default() {
+        let dir = std::env::temp_dir().join(format!(
+            "bw-ops-settings-{}-{}",
+            std::process::id(),
+            std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .map(|d| d.as_nanos())
+                .unwrap_or(0)
+        ));
+        std::fs::create_dir_all(dir.join(".bw")).unwrap();
+        std::fs::write(
+            dir.join(".bw/issue-policy.toml"),
+            r#"
+schema_version = 1
+[[mapping]]
+category = "ops"
+tool     = "cursor"
+workflow = "mattpocock-skills"
+"#,
+        )
+        .unwrap();
+        let assets = dir.join("assets");
+        std::fs::create_dir_all(&assets).unwrap();
+        crate::local::Settings::set_tool(&assets, "ops", "claude_cli").unwrap();
+        let mut p = proj();
+        p.workspace_path = dir.display().to_string();
+        let (tool, workflow) =
+            resolve_tool_workflow(&p, &assets, IssueKind::Ops, "更新指标 + 制定版本计划", None);
+        let _ = std::fs::remove_dir_all(&dir);
+        assert_eq!(tool, "claude_cli");
+        assert_eq!(workflow, super::super::OPS1_WORKFLOW);
     }
 }

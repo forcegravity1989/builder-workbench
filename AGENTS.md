@@ -18,7 +18,7 @@
 
 | 场景 | 怎么走 |
 |---|---|
-| **特性级变更** | 对齐 03 → **先按标准建活**（活号与 `docs/05-features/<id>/` 互链，无活=未立项，见 02 §6）→ 按 **02** 开 / 改 `docs/05-features/<id>/intent.md` + 带原型的 `spec.md`（人 gate）；`plan.md` 仅大风险升 gate；小修直修（见 01） |
+| **特性级变更** | 对齐 03 → 按 **02** 开 / 改 `docs/05-features/<id>/intent.md` + 带原型的 `spec.md`（人 gate）；`plan.md` 仅大风险升 gate；小修直修（见 01） |
 | **Superpowers / grill-me** | **可用**：发散、质询、写计划草稿。产出必须落回 `docs/05-features/<id>/`。不得把聊天或旁路 specs 当成已过 gate 的正本 |
 | **小 bug / 琐修** | 直接改 + 门禁 / 验证；不开 `docs/05-features/` |
 
@@ -45,10 +45,10 @@ BW_OPEN=<项目名> BW_PANEL=overview|plan|session|config|kb ./target/debug/bw-d
 BW_VIEW=onboard|settings ./target/debug/bw-dev   # 顶层屏深链
 cargo run -p bw-engine --example pty_smoke [-- --teardown|-- --abort]  # PTY 地基烟测(不碰 claude/网关)
 cargo test --workspace                                # 本地含壳;CI 同命令加 --exclude app-shell(ubuntu 无 WebKit/GTK)
-# 出包(Windows 安装器,非门禁/非 CI):流程见 packaging/BuildersWorkbench-MVP.iss 头注释,只吃仓内相对路径 + 装过 Workbench(旧名 buddy)的机器
-#   cargo build --release -p app-shell                                                    # 出带图标 bw-dev.exe(build.rs 嵌 app.ico)
-#   cp target/release/build/webview2-com-sys-*/out/x64/WebView2Loader.dll target/release/  # dll 落稳定路径(hash 子目录不稳)
-#   cd packaging && "<InnoSetup>\ISCC.exe" BuildersWorkbench-MVP.iss                       # setup.exe 落 packaging\output\(gitignore)
+# 出包 / 验包(Windows,非门禁/非 CI):入口只认 .cmd,协议见 docs/adr/0005
+#   .bw/release/pack/pack.cmd --version <号> --workdir <仓根绝对路径>
+#   .bw/release/e2e/e2e.cmd --version <号> --workdir <仓根绝对路径>
+# 正源 .bw/release/pack/*.iss；产物 .bw/release/out/<号>/(gitignore)
 ```
 
 ▶跑(干一张活)走交互式 `claude` 在内嵌终端里;需本机 `claude` CLI(`BW_CLAUDE_BIN` 可指定路径)。真跑受 claude 信任对话框与网关状态影响,不作为门禁。`BW_CLAUDE_MAX_BUDGET_USD` 控预算。
@@ -64,7 +64,6 @@ cargo check -p app-shell          # Workbench MVP 壳编译过
 ./scripts/guard-screen-hooks.sh             # 用 hook 的函数必须是组件
 ./scripts/guard-file-lines.sh               # 单文件 2000 行硬上限(只查 Workbench MVP 三 crate)
 ./scripts/guard-codegraph-clean.sh           # codegraph.db 不进 feature commit(CI 在 main 发布)
-./scripts/guard-bw-write-authority.sh        # 只有允许的模块能往被管项目 .bw/ 里写
 cargo test --workspace
 ```
 
@@ -78,13 +77,11 @@ cargo test --workspace
 crates/   bw(MVP 内核:本地零库+仓文件解析+现算推导+Command/Event)
           bw-engine(MVP 底座:交互式 claude+PTY+worktree+git+codehub/github 远端)
           app-shell(MVP 壳:八屏+主题+内核桥+适配模块,bin bw-dev)
-standard/  Workbench 推给被管项目的规范正本(include_str! 进 bw):铺底 `templates/` + 系统提示词 `system-prompt/`(SYSTEM.md.tmpl+references)+ 自维护运作剧本 `skills/` 4 份 + 业界 workflow `vendor/`(mattpocock/mohit,给默认 workflow 打包)
+standard/  Workbench 规范正本(include_str! 进 bw):模板 `templates/`(接入不摊;issue-policy 模板仅残留测)+ 系统提示词 `system-prompt/` + 运作剧本 `skills/` 4 份 + 业界 workflow `vendor/`
 docs/01-principles/ 慢变原则正本(01 分层/changes · 02 逆向工作法 · 03 新闻稿/FAQ/飞轮)
 docs/      architecture(设计正本)+ guide(产品指南)+ adr + hifi + README(地图)
 scripts/   门禁脚本(guard-*)+ codegraph 联调
-packaging/  BW 自身出包(Inno Setup 脚本 + 装完说明;ISCC 编译,产物落仓外暂存,不入 CI/门禁)
-.bw/       Workbench 自己作为被管项目的资产。按谁写的分层:顶层 Markdown 给人读、
-           config/ 人拍板(经 MR 或配置屏)、state/ 机器自写的台账、scripts/ 采集脚本
+.bw/       被管项目资产(project.toml / metrics.toml) + 出包/验包样例(.bw/release/pack、.bw/release/e2e；产物 out/ 不进仓)
 ```
 
 ## Workbench 特有规矩(只写仓里真还在用的)
@@ -101,7 +98,7 @@ packaging/  BW 自身出包(Inno Setup 脚本 + 装完说明;ISCC 编译,产物�
 | 产品主张 / 飞轮 | [`docs/01-principles/03`](docs/01-principles/03-press-release-faq-flywheel.md) | 目标体验与选型约束；特性 intent 必须对齐 |
 | 开发规矩 + 词表 | 本文件 + [`CONTEXT.md`](CONTEXT.md) | 怎么建/跑/测、用哪个词 |
 
-自己作为被管项目跟被管仓同一套落点:`.bw/` 走规范铺底;`AGENTS.md` 走 project-handbook;`CONTEXT` / adr / spec 走 `mattpocock-skills`;旅程 / 高保真 / 架构是产品自己的可见物,业界 workflow 不会代写。资产盘点盘这些齐不齐,它本身不产规范。
+自己作为被管项目跟被管仓同一套落点:`.bw/` 走项目约定(名片)与指标(ops① / `bw/ledger`);`AGENTS.md` 走 project-handbook;`CONTEXT` / adr / spec 走 `mattpocock-skills`;旅程 / 高保真 / 架构是产品自己的可见物,业界 workflow 不会代写。资产盘点盘这些齐不齐,它本身不产规范。方案正本在 [`docs/architecture.md`](docs/architecture.md) §3 模块 3。
 
 ### 四铁律(产品行为不可违反约束)
 
@@ -122,7 +119,7 @@ packaging/  BW 自身出包(Inno Setup 脚本 + 装完说明;ISCC 编译,产物�
 
 ### codehub issue 标签词表
 
-`bw:status:{todo|inprogress|inreview|blocked}`(closed=Done,不打)、`bw:week:YYYY-Www`(周版本)/`bw:plan:<name>`(人起名的版本——与周版本是同一槽位,一张活只挂一个)、`bw:released:vX`(发版号,另一件事)、`bw:category:{prototype|build|optimize|growth|ops}`。**不打**:`kind`(从标题推断)、`tool`/`workflow`(走 `.bw/config/issue-policy.toml` 映射)。仓改动两类:issue 数据(状态/排期/版本/类别)→ codehub 标签 Workbench 直接改;仓文件产物(名片/配置/规范件)→ worktree + MR,幂等键=固定枚举标题。详见 `standard/templates/issue-policy.toml.tmpl`。
+`bw:status:{todo|inprogress|inreview|blocked}`(closed=Done,不打)、`bw:week:YYYY-Www`(周版本)/`bw:plan:<name>`(人起名的版本——与周版本是同一槽位,一张活只挂一个)、`bw:released:vX`(发版号,另一件事)、`bw:category:{prototype|build|optimize|growth|ops}`。**不打**:`kind`(从标题推断)、`tool`/`workflow`(开工工具跟人走本机 settings;workflow 是产品默认)。仓改动两类:issue 数据(状态/排期/版本/类别)→ codehub 标签 Workbench 直接改;仓文件产物(名片)→ 项目约定常驻树 `bw/project` + MR。
 
 ### 写作纪律(给人看的东西先让人看得懂)
 

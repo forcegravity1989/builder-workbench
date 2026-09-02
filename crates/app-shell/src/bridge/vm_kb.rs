@@ -12,6 +12,20 @@ const PLAN_DIR: &str = ".bw/plan";
 /// 发版记录文件路径。同上:知识树只看它在不在。
 const RELEASES_PATH: &str = ".bw/releases.md";
 
+/// 仓里实际有的规范件。不靠指纹账。
+pub(super) fn managed_paths(ws: &Path) -> Vec<String> {
+    [
+        ".bw/project.toml",
+        ".bw/issue-policy.toml",
+        ".bw/metrics.toml",
+        ".bw/PROJECT.md",
+    ]
+    .into_iter()
+    .filter(|rel| ws.join(rel).is_file())
+    .map(|rel| rel.to_string())
+    .collect()
+}
+
 /// 只读文件开头这么多字节。周文件的徽记就在 front matter 里,为了一行标记把
 /// 一份几十 KB 的周计划整篇读进内存不值 —— 老项目回填后这里有上百份。
 const HEAD_BYTES: usize = 512;
@@ -31,13 +45,11 @@ fn read_head(path: &Path) -> String {
 /// 知识页签的树:**不扫全仓**,按规范八大类固定分组、每组按约定路径找文件。
 /// 只列真实存在的,不列位置。
 pub(super) fn build_kb(ws: &Path, tab: KbTab, open: Option<&str>) -> KbVm {
+    let managed_count = managed_paths(ws).len();
     let mut groups = Vec::new();
 
     let mut charter = Vec::new();
-    for (rel, label) in [
-        (".bw/PROJECT.md", "项目名片"),
-        ("AGENTS.md", "这个项目的开发与维护手册"),
-    ] {
+    for (rel, label) in [("AGENTS.md", "这个项目的开发与维护手册")] {
         if ws.join(rel).is_file() {
             charter.push(KbFileVm {
                 rel: rel.into(),
@@ -50,10 +62,12 @@ pub(super) fn build_kb(ws: &Path, tab: KbTab, open: Option<&str>) -> KbVm {
 
     let mut spec = Vec::new();
     for (rel, label) in [
-        (".bw/config/project.toml", "项目名片"),
-        (".bw/config/metrics.toml", "指标"),
-        (".bw/config/issue-policy.toml", "类别映射与节律"),
-        (".bw/state/managed.toml", "铺底文件的指纹"),
+        (".bw/project.toml", "项目名片"),
+        (".bw/metrics.toml", "指标"),
+        (".bw/issue-policy.toml", "旧开工约定(残留,周盘点会删)"),
+        (".bw/standard.toml", "旧规范版本账(新项目不再铺)"),
+        (".bw/managed.toml", "旧指纹账(新项目不再铺)"),
+        (".bw/PROJECT.md", "旧名片副本(新项目不再铺)"),
     ] {
         if ws.join(rel).is_file() {
             spec.push(KbFileVm {
@@ -135,6 +149,7 @@ pub(super) fn build_kb(ws: &Path, tab: KbTab, open: Option<&str>) -> KbVm {
                 .ok()
         }),
         groups,
+        managed_count,
         codegraph: None,
         assets: None,
     }

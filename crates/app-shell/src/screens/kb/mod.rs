@@ -12,23 +12,17 @@
 //! 4. **只读**。改文档一律走活 + MR,这一屏不提供编辑框。
 
 use crate::bridge::{Bridge, Panel, PanelNav, Req};
-use crate::vm::{AssetsVm, CodeGraphVm, KbFileVm, KbTab, ProjectVm, SkillVm, StandardCell};
+use crate::vm::{AssetsVm, CodeGraphVm, KbFileVm, KbTab, ProjectVm, SkillVm};
 use dioxus::prelude::*;
 
 #[component]
 pub fn View(p: ProjectVm, bridge: Bridge) -> Element {
     let nav = use_context::<PanelNav>();
     let (p, bridge) = (&p, &bridge);
-    let std_ver = match &p.card.standard {
-        StandardCell::Unreadable => "规范 —".to_string(),
-        StandardCell::NeverLaid => "—(还没铺过规范件)".to_string(),
-        StandardCell::Label(s) => format!("规范 {s}"),
-    };
     rsx! {
         section {
             div { class: "card sp-topinfo",
-                // 「几份在管」已经在规范那一句里,不再单列一格说同一个数。
-                span { "{std_ver}" }
+                span { "仓里有 {p.kb.managed_count} 份 .bw 规范件" }
                 span { class: "spacer" }
                 button {
                     class: "btn btn-sm",
@@ -70,7 +64,7 @@ fn docs_tab(p: &ProjectVm, bridge: &Bridge) -> Element {
             div { class: "card sp-tree",
                 if p.kb.groups.is_empty() {
                     div { class: "detail-empty",
-                        "这个仓还没有铺底。接入时那张规范铺底合进默认分支之后才会有。"
+                        "这个仓还没有管理体系。第一次纳入时那张规范铺底合进默认分支之后才会有。"
                     }
                 }
                 for g in p.kb.groups.iter() {

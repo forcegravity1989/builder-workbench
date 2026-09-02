@@ -69,7 +69,7 @@ pub async fn has_head(workspace: &Path) -> bool {
 
 /// HEAD 里有没有这个相对路径。工作区未提交的同名文件不算。
 ///
-/// 规范铺底「已完成」看这个:件合进默认分支才算落地,关过的铺底 issue 不算。
+/// 规范铺底「已完成」看这个:默认分支有 `.bw/project.toml` 才算落地,关过的铺底 issue 不算。
 pub async fn path_in_head(workspace: &Path, rel: &str) -> bool {
     match git(
         workspace,
@@ -287,12 +287,7 @@ pub fn is_readings_dirt(paths: &[String]) -> bool {
 }
 
 fn is_readings_path(p: &str) -> bool {
-    p == ".bw/state/metrics-readings.jsonl"
-}
-
-/// 接入写在主检出上、等人合入才算正本的那两份名片。
-pub fn is_card_preview_path(p: &str) -> bool {
-    p == ".bw/config/project.toml" || p == ".bw/PROJECT.md"
+    p == ".bw/metrics/readings.jsonl" || p == ".bw/metrics" || p.starts_with(".bw/metrics/")
 }
 
 /// 把一个路径恢复成 HEAD。未跟踪的文件这条会失败,调用方自己删。

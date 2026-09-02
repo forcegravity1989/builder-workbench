@@ -1,38 +1,32 @@
-# 铺底默认给五个活的类别(原型 / 构建 / 优化 / 运营推广 / 运维)各配一行默认映射。
+# 开工约定。配置屏改映射、保存，写的就是这份。
+# [[mapping]] 五类各一行：类别 → 用哪个工具 → 挂哪份 workflow（空=无默认）。
+# [cadence] 资产盘点到点；改周五几点改这一行。
+schema_version = 1
 
-# 三列映射:类别 → 默认开工工具 → 默认 workflow。
-# workflow = SOP 类技能包(自己调度 agent),不是单个技能。
-# mattpocock-skills 已打包(build/优化/运维 默认),proto-design(原型)源还没
-# vendor 进来、未打包。见 docs/architecture.md 的「系统提示词与渐进加载」模块。
 [[mapping]]
-category = "prototype"            # 原型
+category = "prototype"
 tool     = "open_design"
-workflow = ""                     # 意图默认 proto-design,源还没 vendor,待打包
+workflow = ""
 
 [[mapping]]
-category = "build"                # 构建
+category = "build"
 tool     = "claude_cli"
-workflow = "mattpocock-skills"     # 默认:grill-with-docs → implement → code-review
-
-[[mapping]]
-category = "optimize"             # 优化
-tool     = "claude_cli"
-workflow = "mattpocock-skills"     # 和构建同款默认
-
-[[mapping]]
-category = "ops"                  # 运维,和优化同款默认
-tool     = "claude_cli"           # 运作活①②③开工也读这一列;workflow 仍按标题
 workflow = "mattpocock-skills"
 
 [[mapping]]
-category = "growth"               # 运营推广
+category = "optimize"
 tool     = "claude_cli"
-workflow = ""                     # 无默认,从鱼塘挑
+workflow = "mattpocock-skills"
+
+[[mapping]]
+category = "ops"
+tool     = "claude_cli"
+workflow = "mattpocock-skills"
+
+[[mapping]]
+category = "growth"
+tool     = "claude_cli"
+workflow = ""
 
 [cadence]
-ops2_schedule = "fri 09:00"       # 运作活②「资产盘点」:定时,默认周五早,可改;
-                                    # 判据 = 本周有没有这张活(查 issue,不查 cron 表)
-
-[kanban]
-pool_label = "待办池 · 未排进任何一周"
-todo_label = "待办 · 已排进本周,等开工"
+ops2_schedule = "fri 09:00"

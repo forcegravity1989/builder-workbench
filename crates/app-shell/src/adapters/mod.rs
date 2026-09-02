@@ -12,7 +12,7 @@
 //! 终端(旧 xterm.js + PTY 字节桥整包已删)。
 //!
 //! Cursor 与 Open Design 不单开适配模块:前者是开工工具声明+探活(见
-//! `bw::app::tools`、`.bw/config/issue-policy.toml`),后者走会话屏内嵌(见
+//! `bw::app::tools`、本机 settings),后者走会话屏内嵌(见
 //! architecture 模块 8/9)。
 //!
 //! **项目群不在这里**:它是内核那一层的能力(通知同步、周计划拉群历史都在

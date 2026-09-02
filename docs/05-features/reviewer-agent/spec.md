@@ -60,6 +60,5 @@
 ## 标注的冲突
 
 1. **高保真正本（`docs/hifi/index.html`）未同步**：原型先落在本目录，hifi 大文件的整合等规格 gate 过了再做，避免未认的样子进视觉正本。
-2. **`[review]` 段的关系**:`.bw/config/issue-policy.toml` 当时有 `[review] who_can_merge` 人类治理配置；本变更不动它、也不往里加评审开关（要不要「自动评审」等用出真需求再谈，见 intent 开放问题 1）。
-   **2026-09-02 补记**:`[review]` 段已随 `.bw/` 去冗批(活 #133)整段删除——它当时就没有任何代码读。现在文件里再出现 `[review]` 会因 `deny_unknown_fields` **当场解析失败**(`retired_fake_config_is_rejected` 断言的就是这条)。这条冲突自然消解;人类治理配置若要重建,另立活。
+2. **`[review]` 段的关系**：`.bw/issue-policy.toml` 已有 `[review] who_can_merge` 人类治理配置；本变更不动它、也不往里加评审开关（要不要「自动评审」等用出真需求再谈，见 intent 开放问题 1）。
 3. **评审会话无接回**：与「会话身份进 jsonl、进程死了靠 --resume 接回」的既有设计（architecture 模块 7）相比是一处如实的降级，原因见内部 FAQ；不做兼容层，后续要接就把 run-dir 键控加上评审轴。

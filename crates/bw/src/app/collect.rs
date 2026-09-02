@@ -42,7 +42,7 @@ pub struct MetricPoint {
 /// 一条指标采完之后的样子。
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct MetricReadout {
-    /// 指标名 —— `.bw/config/metrics.toml` 里没有单独的 id,名字就是键。
+    /// 指标名 —— `.bw/metrics.toml` 里没有单独的 id,名字就是键。
     pub name: String,
     pub class: MetricClass,
     /// 近 N 周,旧的在前,**每一周都有一格**(没采到的那格是 `None`)。
@@ -58,12 +58,12 @@ pub struct MetricReadout {
 /// 采一遍这个项目的全部指标。
 ///
 /// 三类各走各的路:可回溯的现算(传窗口跑脚本);不可回溯的跑脚本拿当下值,
-/// 记进账本 worktree 的 `.bw/state/metrics-readings.jsonl`(当天一行,再采覆盖),
+/// 记进账本 worktree 的 `.bw/metrics/readings.jsonl`(当天一行,再采覆盖),
 /// 走势从流水里铺;手填不跑脚本,走势从流水铺,数由 [`App::record_manual_metric`] 写入。
 pub async fn collect_all(ws: &Path, weeks: u32) -> Result<Vec<MetricReadout>, String> {
     let file = metrics_file::read(ws)
         .map_err(|e| e.to_string())?
-        .ok_or_else(|| "这个项目还没有 .bw/config/metrics.toml".to_string())?;
+        .ok_or_else(|| "这个项目还没有 .bw/metrics.toml".to_string())?;
     let labels = week_labels(weeks);
     let ledger = write_ledger(ws).await;
     let mut out = Vec::new();
@@ -77,7 +77,7 @@ pub async fn collect_all(ws: &Path, weeks: u32) -> Result<Vec<MetricReadout>, St
 pub async fn collect_b_class(ws: &Path, weeks: u32) -> Result<Vec<MetricReadout>, String> {
     let file = metrics_file::read(ws)
         .map_err(|e| e.to_string())?
-        .ok_or_else(|| "这个项目还没有 .bw/config/metrics.toml".to_string())?;
+        .ok_or_else(|| "这个项目还没有 .bw/metrics.toml".to_string())?;
     let labels = week_labels(weeks);
     let ledger = write_ledger(ws).await;
     let mut out = Vec::new();
@@ -225,8 +225,8 @@ async fn write_ledger(main: &Path) -> Option<PathBuf> {
 }
 
 fn seed_ledger(main: &Path, ledger: &Path) {
-    let src = main.join(".bw/state/metrics-readings.jsonl");
-    let dst = ledger.join(".bw/state/metrics-readings.jsonl");
+    let src = main.join(".bw/metrics/readings.jsonl");
+    let dst = ledger.join(".bw/metrics/readings.jsonl");
     if dst.is_file() || !src.is_file() {
         return;
     }
@@ -287,9 +287,8 @@ impl App {
         let ledger = write_ledger(&ws)
             .await
             .ok_or_else(|| super::AppError::Refused("开不出读数账本,手填不能写进主检出".into()))?;
-        let file = metrics_file::read(&ws)?.ok_or_else(|| {
-            super::AppError::Refused("这个项目还没有 .bw/config/metrics.toml".into())
-        })?;
+        let file = metrics_file::read(&ws)?
+            .ok_or_else(|| super::AppError::Refused("这个项目还没有 .bw/metrics.toml".into()))?;
         let def = file
             .all()
             .into_iter()

@@ -5,7 +5,7 @@
 `codehub-cli issue list --state closed`,不走 gh。
 
 为什么收这条:workbench 平台本身会记项目级**代码仓**指标(提交数 / MR 合入数),
-那些不进 `.bw/config/metrics.toml` 免得重复记。issue 闭环数是**工作管理**类指标(活被
+那些不进 `.bw/metrics.toml` 免得重复记。issue 闭环数是**工作管理**类指标(活被
 提出又被解决),平台不代记,所以这里自己采。
 
 **一趟拉全,本地按周分桶**,不按周去发查询。

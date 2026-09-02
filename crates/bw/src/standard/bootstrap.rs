@@ -1,185 +1,9 @@
-//! 规范铺底第 1 步:Workbench 自己把核心件写进项目仓,不起 agent。
-//!
-//! 三条规矩:
-//!
-//! 1. **人手改过的不覆盖**。只在目标路径不存在、或存在且指纹与
-//!    `.bw/state/managed.toml` 记的一致时才写;两者都不满足就跳过,并把跳过的路径
-//!    如实报出来(调用方写进这张活的说明里,评审的人不用猜为什么少了一份)。
-//! 2. **指纹清单最后写**。`.bw/state/managed.toml` 记的是刚落盘那一刻的真实内容,
-//!    先写它就会记成上一轮的旧值。
-//! 3. **落盘方式看仓是不是 Workbench 自己建的**。是(空仓例外)就直接提交当前
-//!    分支;不是就交给调用方走分支与 MR —— 这一层只负责写文件,不决定怎么合。
+//! 第一次接入时的仓探测:历史、自己的约定。写进「项目约定」正文当证据。
+//! 不再往仓里摊模板。
 
-use crate::repo::managed_file::{self, ManagedEntry, ManagedFile};
-use crate::repo::{write_file, RepoFileError};
-use crate::standard;
 use std::path::Path;
 
-/// 一次铺底第 1 步的结果。全部是真实发生过的事实,没有一项是「打算做」。
-#[derive(Debug, Clone, Default, PartialEq, Eq)]
-pub struct BootstrapReport {
-    /// 真的写进去的路径。
-    pub written: Vec<String>,
-    /// 跳过的路径 + 为什么跳。
-    pub skipped: Vec<(String, String)>,
-    /// **这一站本来就不铺**(要用到那一站才铺),可仓里已经有一份了,而且不是
-    /// Workbench 铺的。
-    ///
-    /// 为什么必须单独报一声:界面会把这份文件**当正本读**(指标卡、走势、健康
-    /// 判据都从它来),可它来路不明 —— 可能是上一代 Workbench 留下的、可能是别的
-    /// 项目的、也可能格式早就过期了。第 0 站试点真撞上过:项目仓里躺着一份
-    /// 另一个项目的 `.bw/config/metrics.toml`,铺底连看都没看它一眼,人以为铺完了,
-    /// 而总览上显示的是别人的指标。
-    pub preexisting: Vec<String>,
-}
-
-/// 渲染模板要用的变量。
-#[derive(Debug, Clone, Default)]
-pub struct BootstrapVars {
-    pub name: String,
-    pub brief: String,
-    pub benchmark: String,
-    pub north_star: String,
-    pub remote: String,
-    pub owner: String,
-    pub current_version: String,
-    pub chat: String,
-}
-
-/// 写规范件 + 记指纹。幂等:重跑一遍,已经一致的件原样跳过。
-///
-/// `all` 今天没有分别:铺底清单里的件全是接入一次该有的。
-/// 参数还在,接入仍传 `false`;配置屏不再提供第二次铺底。
-pub fn write_core_files(
-    workspace: &Path,
-    vars: &BootstrapVars,
-    all: bool,
-) -> Result<BootstrapReport, RepoFileError> {
-    let version = standard::version();
-    let mut managed = managed_file::read(workspace)?.unwrap_or_default();
-    let mut report = BootstrapReport::default();
-
-    let vars_list: Vec<(&str, &str)> = vec![
-        ("name", &vars.name),
-        ("brief", &vars.brief),
-        ("benchmark", &vars.benchmark),
-        ("north_star", &vars.north_star),
-        ("remote", &vars.remote),
-        ("owner", &vars.owner),
-        ("current_version", &vars.current_version),
-        ("chat", &vars.chat),
-        ("version", version),
-    ];
-
-    for tmpl in standard::CORE_TEMPLATES {
-        // 接入只铺 Adopt。清单里现在没有 OnFirstUse 件。
-        if !all && tmpl.lay_at != standard::LayAt::Adopt {
-            // **不铺不等于不看。** 仓里已经躺着一份、而且不是 Workbench 管的,就得
-            // 报一声:界面等会儿会把它当正本读(见 `preexisting` 字段的说明)。
-            if workspace.join(tmpl.target).exists() && managed.entry(tmpl.target).is_none() {
-                report.preexisting.push(tmpl.target.to_string());
-            }
-            continue;
-        }
-        let body = standard::render(tmpl.body, &vars_list);
-        lay_one(
-            workspace,
-            tmpl.target,
-            &body,
-            version,
-            &mut managed,
-            &mut report,
-        )?;
-    }
-
-    // **技能剧本不再复制进用户的仓。**
-    //
-    // 原来复制 13 份 SKILL.md 进去,是为了 Workbench 自己等会儿再从那儿读一遍
-    // 正文塞进 `--append-system-prompt` —— 绕了一圈,而正本本来就编在 Workbench
-    // 二进制里。代价还很实在:项目只要把 `.claude/` 写进 .gitignore(Workbench
-    // 自己的仓就是),这 13 份就进不了版本控制,只活在某一台机器的检出里,
-    // 人根本说不清「bw 的资产到底是哪些」。
-    //
-    // 现在 Workbench 把自带的剧本摊在自己的目录里,开工时按需给 agent 指路(见
-    // `app::bootstrap::agent_system_prompt`)。真想让**你自己**在这个仓里敲
-    // `claude` 时也能 `/skill-name`,那是另一件事,该做成「想要就铺一份」的
-    // 选项,不是默认往每个仓里塞。
-
-    // 指纹清单最后写 —— 记的必须是刚落盘那一刻的内容。
-    managed_file::write(workspace, &managed)?;
-    report.written.push(managed_file::REL_PATH.to_string());
-    Ok(report)
-}
-
-/// 清单里若还有 `OnFirstUse` 件,目标路径不存在才写,已有的不覆盖。
-/// 今天没有这类件,调用方得到空列表。不改 `.bw/state/managed.toml`。
-pub fn write_missing_on_first_use(workspace: &Path) -> Result<Vec<String>, RepoFileError> {
-    let mut written = Vec::new();
-    for tmpl in standard::CORE_TEMPLATES {
-        if tmpl.lay_at != standard::LayAt::OnFirstUse {
-            continue;
-        }
-        if workspace.join(tmpl.target).exists() {
-            continue;
-        }
-        crate::repo::write_file(workspace, tmpl.target, tmpl.body)?;
-        written.push(tmpl.target.to_string());
-    }
-    Ok(written)
-}
-
-fn lay_one(
-    workspace: &Path,
-    target: &str,
-    body: &str,
-    version: &str,
-    managed: &mut ManagedFile,
-    report: &mut BootstrapReport,
-) -> Result<(), RepoFileError> {
-    let path = workspace.join(target);
-    let on_disk = match std::fs::read(&path) {
-        Ok(b) => Some(b),
-        Err(e) if e.kind() == std::io::ErrorKind::NotFound => None,
-        Err(e) => {
-            return Err(RepoFileError::Io {
-                path: target.into(),
-                source: e,
-            })
-        }
-    };
-
-    if let Some(existing) = &on_disk {
-        match managed.entry(target) {
-            // Workbench 从没管过这个文件,而它已经在仓里 —— 那是项目自己的东西,不碰。
-            None => {
-                report.skipped.push((
-                    target.to_string(),
-                    "已存在且非 Workbench 管理,跳过(不覆盖人手写的内容)".into(),
-                ));
-                return Ok(());
-            }
-            Some(entry) if managed_file::fingerprint(existing) != entry.fingerprint => {
-                report.skipped.push((
-                    target.to_string(),
-                    "Workbench 铺过之后有人改过,跳过(升级请走对账,不静默覆盖)".into(),
-                ));
-                return Ok(());
-            }
-            Some(_) => {}
-        }
-    }
-
-    write_file(workspace, target, body)?;
-    managed.upsert(ManagedEntry {
-        path: target.to_string(),
-        version: version.to_string(),
-        fingerprint: managed_file::fingerprint(body.as_bytes()),
-    });
-    report.written.push(target.to_string());
-    Ok(())
-}
-
-/// 铺底探测:这张活要跑几步。全部现算,不问用户。
+/// 接入探测:这张活要跑几步。全部现算,不问用户。
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub struct BootstrapProbe {
     /// 仓是 Workbench 自己建的(根提交作者是 Workbench)—— 直推,不走 MR。
@@ -237,35 +61,14 @@ pub async fn probe(workspace: &Path) -> BootstrapProbe {
     p
 }
 
-/// 这张活的标题:固定前缀 + 命中项后缀。写死进标题,是「打算跑什么」的快照。
-/// 铺底那张活的标题。**只跟规范版本走,不跟探测结果走** —— 它同时是建活的
-/// 幂等键,跟着探测结果变的话重跑就会多建一张活(第一次铺底自己写了
-/// `CLAUDE.md` 并提交,第二次探测结论就不一样了)。
-pub fn issue_title() -> String {
-    format!("规范铺底 v{}", standard::version())
-}
-
-/// 探测到需要跑哪几步 —— 这句话写进活的正文,不写进标题。
-pub fn planned_steps(probe: &BootstrapProbe) -> String {
-    let mut steps = vec!["写核心件(全部落在 `.bw/` 下,仓根一个字不写)"];
-    if probe.has_history {
-        steps.push("资产盘点首次模式:给已有 issue 打 bw:week(这个仓已经有历史了)");
-    }
-    steps.join("、")
-}
-
 #[cfg(test)]
-mod first_use_tests {
-    use super::*;
-
+mod bootstrap_list_tests {
     #[test]
-    fn first_use_lays_nothing_while_list_is_adopt_only() {
-        let dir = std::env::temp_dir().join(format!("bw-first-use-{}", std::process::id()));
-        let _ = std::fs::remove_dir_all(&dir);
-        std::fs::create_dir_all(&dir).expect("temp dir");
-        let written = write_missing_on_first_use(&dir).expect("first lay");
-        assert!(written.is_empty(), "no OnFirstUse templates: {written:?}");
-        assert!(!dir.join(".bw/config/metrics.toml").is_file());
-        let _ = std::fs::remove_dir_all(&dir);
+    fn adopt_list_does_not_include_standard_toml() {
+        let targets: Vec<&str> = crate::standard::CORE_TEMPLATES
+            .iter()
+            .map(|t| t.target)
+            .collect();
+        assert!(targets.is_empty(), "第一次接入不再摊 issue-policy");
     }
 }

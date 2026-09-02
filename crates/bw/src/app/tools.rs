@@ -5,39 +5,20 @@
 
 use super::{App, AppError, Result};
 use crate::command::{Event, ProbeResult};
+use crate::local::Settings;
 use crate::model::{category_key, Category, ProjectId};
-use crate::repo::issue_policy_file::{self, CategoryMapping};
-use crate::repo::managed_file;
-use std::path::Path;
 
 impl App {
+    /// 本机「我用什么工具」。只写 `asset_root/settings.toml`,不碰被管仓。
+    /// `workflow` 是产品编译默认,命令里带着是为少改 Command 形状,这里不存。
     pub(super) async fn save_tool_mapping(
         &mut self,
-        project_id: ProjectId,
+        _project_id: ProjectId,
         category: Category,
         tool: String,
-        workflow: String,
+        _workflow: String,
     ) -> Result<Vec<Event>> {
-        let ws = self.workspace_of(project_id).await?;
-        let mut file = issue_policy_file::read(&ws)?.unwrap_or_else(|| {
-            issue_policy_file::parse(crate::standard::ISSUE_POLICY_TMPL).unwrap_or_default()
-        });
-        let key = category_key(category).to_string();
-        match file.mappings.iter_mut().find(|m| m.category == key) {
-            Some(m) => {
-                m.tool = tool;
-                m.workflow = workflow;
-            }
-            None => file.mappings.push(CategoryMapping {
-                category: key,
-                tool,
-                workflow,
-            }),
-        }
-        // 先写文件、再更指纹 —— 顺序不能反:指纹记的必须是**已经落盘**的那份
-        // 内容(和铺底那条「指纹清单最后写」是同一条规矩)。
-        let body = issue_policy_file::write(&ws, &file)?;
-        sync_managed_fingerprint(&ws, issue_policy_file::REL_PATH, body.as_bytes())?;
+        Settings::set_tool(&self.asset_root, category_key(category), &tool)?;
         Ok(vec![Event::ToolMappingSaved { category }])
     }
 
@@ -94,35 +75,6 @@ impl App {
         let result = probe(&name).await;
         Ok(vec![Event::ToolProbed { name, result }])
     }
-}
-
-/// Workbench 替人改完 `config/` 里的一份文件之后,把指纹清单里那一条更新掉,
-/// 免得对账把自己写的记成「人改过」。
-///
-/// 两处**有意**什么都不做:清单不在(铺底 MR 还没合入,主检出本来就没有它)——
-/// 造一份出来会把从没铺过底的项目说成「接管过」,还会让铺底 MR 快进不进来;
-/// 清单在但没有这份文件的记录——那它就不归 Workbench 管,不擅自认领。
-fn sync_managed_fingerprint(ws: &Path, rel: &str, body: &[u8]) -> Result<()> {
-    let Some(mut managed) = managed_file::read(ws)? else {
-        return Ok(());
-    };
-    // 用 `ManagedFile` 自己的 entry/upsert,别手写查找 —— 铺底那条路
-    // (`standard::bootstrap::lay_one`)用的就是这一对。
-    let Some(version) = managed.entry(rel).map(|e| e.version.clone()) else {
-        return Ok(());
-    };
-    managed.upsert(managed_file::ManagedEntry {
-        path: rel.to_string(),
-        version,
-        fingerprint: managed_file::fingerprint(body),
-    });
-    managed_file::write(ws, &managed).map_err(|e| {
-        AppError::Refused(format!(
-            "{rel} 已经写进去了,但指纹清单没跟上({e})—— 下次对账会把这份文件\
-             判成「人改过」。手动跑一次对账,或者把这次改动重新保存一遍。"
-        ))
-    })?;
-    Ok(())
 }
 
 /// 活上记着的开工工具 → 真正要起的那个 CLI。

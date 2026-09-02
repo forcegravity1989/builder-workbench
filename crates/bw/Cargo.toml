@@ -11,7 +11,7 @@ rust-version.workspace = true
 bw-engine = { workspace = true }
 
 # process/fs:起 git 子进程与读写仓文件;net:Open Design 的本机端口探活。
-tokio = { workspace = true, features = ["process", "fs", "net"] }
+tokio = { workspace = true, features = ["process", "fs", "net", "io-util"] }
 async-trait = { workspace = true }
 thiserror = { workspace = true }
 serde = { workspace = true }
@@ -19,7 +19,7 @@ serde_json = { workspace = true }
 toml = { workspace = true }
 time = { workspace = true, features = ["std", "formatting", "parsing", "macros", "local-offset"] }
 uuid = { workspace = true, features = ["v4"] }
-# `.bw/state/managed.toml` 的指纹(03 篇 §3.1:sha256:<hex>)。已在 lock 里,不新增下载。
+# `.bw/managed.toml` 的指纹(03 篇 §3.1:sha256:<hex>)。已在 lock 里,不新增下载。
 sha2 = "0.10"
 
 [dev-dependencies]

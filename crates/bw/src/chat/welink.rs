@@ -3,7 +3,7 @@
 //! # 已实现 / 未实现
 //!
 //! - **`send` 已实现**:`welink-cli im send-to-group --group-id <gid> --text <text>`。
-//!   群号从 `.bw/config/project.toml` 的 `[chat] group_id` 取(经 [`super::for_project`] 工厂
+//!   群号从 `.bw/project.toml` 的 `[chat] group_id` 取(经 [`super::for_project`] 工厂
 //!   注入)。只发 `text`——welink-cli 的 send-to-group 只收纯文本,不收富文本,
 //!   [`ChatMessage::link`] 拼成 `{title}: {url}` 追加在正文后;`markdown` 不发
 //!   (welink-cli 不渲染 markdown,发了也是乱码正文)。

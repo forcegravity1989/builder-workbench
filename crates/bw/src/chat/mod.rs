@@ -118,7 +118,7 @@ impl NotifyEvent {
         Self::Weekly,
     ];
 
-    /// 配置正本(`.bw/config/project.toml [chat] notify`)里匹配用的字符串 key。
+    /// 配置正本(`.bw/project.toml [chat] notify`)里匹配用的字符串 key。
     pub fn key(self) -> &'static str {
         match self {
             Self::WeekPlan => "week_plan",
@@ -154,7 +154,7 @@ impl NotifyEvent {
     }
 }
 
-/// 哪些事默认同步到群。`.bw/config/project.toml` 的 `[chat] notify` 没写就是这五样。
+/// 哪些事默认同步到群。`.bw/project.toml` 的 `[chat] notify` 没写就是这五样。
 /// `review`(进评审)已移除——它该在计划屏看见,不占群通知位。
 pub const DEFAULT_NOTIFY: [NotifyEvent; 5] = NotifyEvent::ALL;
 

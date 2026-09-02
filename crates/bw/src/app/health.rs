@@ -4,14 +4,14 @@
 //! 分开,才能保证「灯只可能是算出来的」。
 //!
 //! 刀5(2026-08-22)迁完:判据不再读 `week_plan_file` / `release_file`(这两个
-//! 模块已删)。`has_week_goal` 读 ops① 评论里解析出的周目标一句话;
+//! 模块已删)。`has_week_goal` 读 ops① 评论里解析出的版本目标一句话;
 //! `ops1_open` 只说明这张活还开着;`has_metric_reading` 和 `any_metric_red` 改读
-//! 仓 `.bw/state/metrics-readings.jsonl`;`released` 改读 git 标签日期。
+//! 仓 `.bw/metrics/readings.jsonl`;`released` 改读 git 标签日期。
 
 use super::{App, Result};
 use crate::derive::{derive_project_health, DerivedHealth, HealthInputs};
 use crate::isoweek;
-use crate::model::{Issue, IssueStatus, Project, ProjectId};
+use crate::model::{Issue, Project, ProjectId};
 use crate::repo::metrics_file;
 use crate::repo::readings_file;
 use std::path::Path;
@@ -29,11 +29,14 @@ pub async fn collect_health_inputs(
 ) -> HealthInputs {
     let last_week = isoweek::previous_week(week).unwrap_or_default();
 
-    // (a) 运作活①开着 ≠ 周目标已定。目标正文从 ops① 评论解析,没读到就不打勾。
-    let ops1_title = crate::app::ops1_title(week);
-    let ops1_open = issues
-        .iter()
-        .any(|i| i.title == ops1_title && i.status != IssueStatus::Done);
+    // (a) 运作活①开着 ≠ 版本目标已定。目标正文从 ops① 评论解析,没读到就不打勾。
+    // 认本周那张:未完成,或创建时间落在本 ISO 周。
+    let ops1_open = issues.iter().any(|i| {
+        crate::app::is_ops1_issue(i)
+            && i.status != crate::model::IssueStatus::Done
+            && i.status != crate::model::IssueStatus::Cancelled
+            && (crate::isoweek::unix_in_week(i.created_at, week) || i.plan_version.is_empty())
+    });
     let has_week_goal = week_goal.is_some_and(|s| !s.trim().is_empty());
 
     // 「这个仓 git 读得动吗」单独问一次:读不动的时候「零提交」说明不了任何
@@ -54,7 +57,7 @@ pub async fn collect_health_inputs(
     let committed_last_week = counts.get(&last_week).is_some_and(|c| c.commits > 0);
     let merged_last_week = counts.get(&last_week).is_some_and(|c| c.merges > 0);
 
-    // (b) has_metric_reading + red_metrics:读仓 `.bw/state/metrics-readings.jsonl`。
+    // (b) has_metric_reading + red_metrics:读仓 `.bw/metrics/readings.jsonl`。
     let readings = read_metric_readings(workspace, week);
     let last_readings = if last_week.is_empty() {
         Vec::new()

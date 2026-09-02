@@ -1,14 +1,14 @@
 //! 项目内 · 总览。**结构照 `hifi/index.html` 的 `renderOverview` 排**:七块
 //! 竖排,名片与健康并排在第一块的左右两栏。
 //!
-//! 每一块的数字都是现算的:名片来自 `PROJECT.md` / `.bw/config/project.toml`,健康来
-//! 自仓文件与 git 的三条判据,指标定义来自 `.bw/config/metrics.toml`、读数来自
-//! `.bw/state/metrics-readings.jsonl`,发版记录来自 git 标签 + 远端 Release。**没有读数就说
+//! 每一块的数字都是现算的:名片来自 `.bw/project.toml`,健康来
+//! 自仓文件与 git 的三条判据,指标定义来自 `.bw/metrics.toml`、读数来自
+//! `.bw/metrics/readings.jsonl`,发版记录来自 git 标签 + 远端 Release。**没有读数就说
 //! 无数据,不显示 0**。
 
 use crate::bridge::{Bridge, ChromeBusy, Panel, PanelNav, Req, STARTING_SESSION};
 use crate::chrome::light_dot;
-use crate::vm::{MetricCardVm, ProjectVm, StandardCell};
+use crate::vm::{MetricCardVm, ProjectVm};
 use bw::command::{Command, ProjectIntent};
 use bw::model::ProjectId;
 use dioxus::prelude::*;
@@ -23,8 +23,11 @@ pub fn View(p: ProjectVm, bridge: Bridge) -> Element {
 
     rsx! {
         section { class: "ov-stack",
-            // 本周还没有运作活①才给「开始本周」。做完(含已完成)不再冒出来。
+            // 本周还没有运作活①才给「开始本版本」。做完(含已完成)不再冒出来。
             // 还开着时只指路去会话屏,再点一次会重建一张同名活。
+            if let Some(pending) = p.bootstrap_pending.clone() {
+                {bootstrap_banner(pending, &bridge, nav)}
+            }
             if !p.week_started {
                 {start_banner(&p, &bridge, nav, start_busy)}
             } else if let Some(st) = p.ops1_status.clone() {
@@ -44,12 +47,46 @@ pub fn View(p: ProjectVm, bridge: Bridge) -> Element {
     }
 }
 
+/// 项目约定还没合进默认分支:别人再纳入看不出这次改动。
+fn bootstrap_banner(mr: crate::vm::CardMrVm, bridge: &Bridge, nav: PanelNav) -> Element {
+    let b = bridge.clone();
+    let id = mr.issue_id;
+    let pr = if mr.pr_number > 0 {
+        format!("MR !{}", mr.pr_number)
+    } else {
+        "还没提 MR".to_string()
+    };
+    rsx! {
+        div { class: "ov-banner",
+            span {
+                "项目约定还没合进默认分支 · #{mr.number}「{mr.status}」· {pr}。不合入的话别人再纳入看不见这次改动。"
+            }
+            if mr.mergeable {
+                if let Some(id) = id {
+                    if mr.has_open_mr {
+                        button {
+                            class: "btn btn-primary btn-sm",
+                            onclick: move |_| b.cmd(Command::MergeAndSettle { id }),
+                            "合入并完成"
+                        }
+                    }
+                }
+            }
+            button {
+                class: "btn btn-sm",
+                onclick: move |_| nav.go(Panel::Plan),
+                "去计划屏"
+            }
+        }
+    }
+}
+
 fn start_banner(p: &ProjectVm, bridge: &Bridge, nav: PanelNav, busy: ChromeBusy) -> Element {
     let b = bridge.clone();
     let (pid, week) = (p.id, p.current_week.clone());
     rsx! {
         div { class: "ov-banner",
-            span { "本周({p.current_week})还没开始「更新指标 + 制定本周计划」" }
+            span { "还没开始「更新指标 + 制定版本计划」" }
             button {
                 class: "btn btn-primary btn-sm",
                 onclick: move |_| {
@@ -59,22 +96,22 @@ fn start_banner(p: &ProjectVm, bridge: &Bridge, nav: PanelNav, busy: ChromeBusy)
                         project_id: pid,
                         week: week.clone(),
                     });
-                    // 剩下的在会话屏里发生(复盘上周 → 更新指标 → 聊出本周),
+                    // 剩下的在会话屏里发生(复盘上周 → 更新指标 → 确认版本),
                     // 人点完这一下就该看到那场会话,不是留在总览上猜。
                     nav.go(Panel::Session);
                 },
-                "开始本周"
+                "开始本版本"
             }
         }
     }
 }
 
-/// 运作活①还开着:横幅只指路,不再给「开始本周」。
+/// 运作活①还开着:横幅只指路,不再给「开始本版本」。
 fn running_banner(status: String, nav: PanelNav) -> Element {
     rsx! {
         div { class: "ov-banner",
             span {
-                "运作活①(更新指标 + 制定本周计划)已开工 · {status}。去会话屏接着聊。"
+                "运作活①(更新指标 + 制定版本计划)已开工 · {status}。去会话屏接着聊。"
             }
             button {
                 class: "btn btn-sm",
@@ -85,7 +122,7 @@ fn running_banner(status: String, nav: PanelNav) -> Element {
     }
 }
 
-/// 总览「编辑」一份草稿。仓文件仍是 `PROJECT.md` + `project.toml` 两份。
+/// 总览「编辑」一份草稿。仓文件是 `.bw/project.toml`。
 #[derive(Clone, Default)]
 struct CardDraft {
     brief: String,
@@ -274,10 +311,6 @@ fn card_and_health(
                     {charter_line("项目群", &c.chat)}
                     div { class: "charter-meta",
                         span { class: "mono", "{c.remote}" }
-                        match &c.standard {
-                            StandardCell::Label(v) => rsx! { span { "规范 {v}" } },
-                            _ => rsx! { span { "规范 —" } },
-                        }
                         span { style: "margin-left:auto;display:flex;gap:6px;",
                             // 人在网页上直接合了 MR 时,Workbench 是不知道的 ——
                             // 工作区会一直停在旧提交,而界面照常显示旧内容。
@@ -292,7 +325,6 @@ fn card_and_health(
                         }
                     }
                 }
-                {card_mr_banner(p, bridge)}
             }
             div { class: "health",
                 div { class: "health-big",
@@ -321,45 +353,6 @@ fn charter_line(k: &str, v: &str) -> Element {
         div { class: "charter-line",
             span { class: "k", "{k}" }
             "{v}"
-        }
-    }
-}
-
-/// 名片是仓文件,改它一律走分支 + MR。改完到合入之间这条横幅一直在。
-fn card_mr_banner(p: &ProjectVm, bridge: &Bridge) -> Element {
-    let Some(mr) = p.card_mr.as_ref() else {
-        return rsx! {};
-    };
-    let b = bridge.clone();
-    let id = mr.issue_id;
-    let pr = if mr.pr_number > 0 {
-        format!("MR !{}", mr.pr_number)
-    } else {
-        "还没提 MR".to_string()
-    };
-    rsx! {
-        div { class: "mr-banner",
-            span { "项目信息改动在 #{mr.number}「{mr.status}」· {pr}" }
-            if mr.mergeable {
-                if let Some(id) = id {
-                    if mr.has_open_mr {
-                        button {
-                            class: "btn btn-sm btn-primary",
-                            onclick: move |_| b.cmd(Command::MergeAndSettle { id }),
-                            "合入并完成"
-                        }
-                    } else {
-                        button {
-                            class: "btn btn-sm btn-primary",
-                            onclick: move |_| b.cmd(Command::TransitionIssue {
-                                id,
-                                to: bw::model::IssueStatus::Done,
-                            }),
-                            "完成(无开着的 MR)"
-                        }
-                    }
-                }
-            }
         }
     }
 }
@@ -719,9 +712,12 @@ fn repo_block(p: &ProjectVm, bridge: &Bridge) -> Element {
 
 fn week_block(p: &ProjectVm) -> Element {
     let w = p.weeks.iter().find(|w| w.week == p.current_week);
-    let goal = w
-        .and_then(|w| w.goal.clone())
-        .unwrap_or_else(|| "(本周尚无计划)".into());
+    let goal = if p.confirmed_version.is_empty() {
+        "还没有确认本周版本".to_string()
+    } else {
+        w.and_then(|wk| wk.goal.clone())
+            .unwrap_or_else(|| "（这个版本还没写版本目标）".into())
+    };
     let c = &p.week_counts;
     rsx! {
         div { class: "card ov-block",

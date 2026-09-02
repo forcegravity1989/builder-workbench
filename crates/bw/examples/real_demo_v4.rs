@@ -1,6 +1,6 @@
 //! `real_demo_v4` —— V4 主环的 headless 指挥器。
 //!
-//! 不开界面,直接驱动内核走完一圈:接入项目 → 规范铺底 → 开始本周 → 代人确认
+//! 不开界面,直接驱动内核走完一圈:接入项目(顺带第一次铺底) → 开始本周 → 代人确认
 //! 建活 → 一张活开工 → 代人推评审中 → 代人点完成 → 发版本 → 导出证据。
 //!
 //! ```bash
@@ -98,21 +98,19 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             _ => None,
         })
         .expect("项目没建出来");
-
-    // ── 步骤 2:规范铺底第 1 步 ────────────────────────────
-    let events = app
-        .dispatch(Command::RunStandardBootstrap { project_id: pid })
-        .await?;
-    let (bootstrap_files, committed) = match events.first() {
-        Some(Event::StandardBootstrapped {
-            files, committed, ..
-        }) => (files.clone(), *committed),
-        _ => (Vec::new(), false),
-    };
+    let (bootstrap_files, committed) = events
+        .iter()
+        .find_map(|e| match e {
+            Event::StandardBootstrapped {
+                files, committed, ..
+            } => Some((files.clone(), *committed)),
+            _ => None,
+        })
+        .unwrap_or((Vec::new(), false));
     say(
         &mut log,
         &format!(
-            "步骤 2 · 规范铺底:落盘 {} 个文件,{}",
+            "步骤 2 · 规范铺底(接入时自动跑):落盘 {} 个文件,{}",
             bootstrap_files.len(),
             if committed {
                 "已提交"
@@ -264,22 +262,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     }
 
     // ── 步骤 8:定时的一跳 ────────────────────────────────
-    // 判据是「到点了没有」+「本周有没有那张活」。**不改系统时间、不假装到
-    // 点**:周五 20:00 之前跑这个指挥器,这一跳就该什么都不做,如实说没到点。
-    // 演示项目的节律先改成「周一 00:00」——**不是伪造时间**,是把这个项目自
-    // 己的配置改成一个已经过去的时刻,让这一跳真的到点。正式项目的默认值是
-    // 周五 20:00,`.bw/config/issue-policy.toml` 里写着,人随时能改。
-    let mut restore_schedule: Option<String> = None;
-    if let Ok(Some(mut policy)) = bw::repo::issue_policy_file::read(&workspace) {
-        if let Some(c) = policy.cadence.as_mut() {
-            restore_schedule = Some(std::mem::replace(&mut c.ops2_schedule, "mon 00:00".into()));
-        }
-        let _ = bw::repo::issue_policy_file::write(&workspace, &policy);
-        say(
-            &mut log,
-            "步骤 8 前置 · 把演示项目的 ops2_schedule 改成「mon 00:00」(正式默认是 fri 20:00)",
-        );
-    }
+    // 判据是「到点了没有」+「本周有没有那张活」。节律是产品默认 fri 09:00
+    // (残留 issue-policy 还在才读它)。**不改仓文件、不假装到点**。
     let before: usize = app.issues(pid).await.unwrap_or_default().len();
     app.dispatch(Command::TickScheduler { project_id: pid })
         .await?;
@@ -298,27 +282,11 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                 i.status.label()
             ),
             None if after.len() == before => {
-                "步骤 8 · 定时:还没到 .bw/config/issue-policy.toml 里那个时刻,这一跳什么都没做"
-                    .into()
+                "步骤 8 · 定时:还没到产品默认(或残留节律)那个时刻,这一跳什么都没做".into()
             }
             None => "步骤 8 · 定时:建出了活但不是资产盘点 —— 判据对不上,如实记下".into(),
         },
     );
-
-    // 这一跳完了就把节律改回去 —— 这是演示为了让「到点」真的发生临时动的,
-    // 留在仓里的话人打开演示项目会看见一个不是默认值的时刻,以为产品就长这样。
-    if let Some(orig) = restore_schedule {
-        if let Ok(Some(mut policy)) = bw::repo::issue_policy_file::read(&workspace) {
-            if let Some(c) = policy.cadence.as_mut() {
-                c.ops2_schedule = orig.clone();
-            }
-            let _ = bw::repo::issue_policy_file::write(&workspace, &policy);
-            say(
-                &mut log,
-                &format!("步骤 8 收尾 · ops2_schedule 改回「{orig}」"),
-            );
-        }
-    }
 
     // ── 步骤 9:历史呈现(不再走内置回填)────────────────
     // 某一周要出现在计划屏,给已有 issue 打 `bw:week:YYYY-Www`。
@@ -487,8 +455,9 @@ async fn build_evidence(
         "活": issue_json,
         "workflow 用过几次(现算,没有战绩表)": usage,
         "仓文件": {
-            "指纹清单": workspace.join(".bw/state/managed.toml").is_file(),
-            "活的约定": workspace.join(".bw/config/issue-policy.toml").is_file(),
+            "名片": workspace.join(".bw/project.toml").is_file(),
+            "指纹清单": workspace.join(".bw/managed.toml").is_file(),
+            "残留开工约定": workspace.join(".bw/issue-policy.toml").is_file(),
             "预置技能包数": count_skill_packages(workspace),
         },
         "步骤日志": log,

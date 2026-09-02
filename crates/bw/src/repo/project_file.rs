@@ -1,18 +1,14 @@
-//! `.bw/config/project.toml` —— 项目意图与配置的正本。
+//! `.bw/project.toml` —— 项目意图与配置的正本。
 //!
-//! V3 的解析器(`bw_engine::project_file`)只认五个意图字段,这份多两样:
-//! `[chat]` 项目群与 `current_version`(在研版本)。**都不入库**——总览、计划屏
-//! 每次要显示就现读现解析这份文件。
-//!
-//! **这里没有「项目用的是哪版规范」**:那个数只有 `.bw/state/managed.toml` 说了算
-//! (它逐份记着铺的时候是哪版、内容指纹是什么)。在这儿再存一份镜像,没有
-//! 任何代码维护它,放几周就和真相对不上了——2026-08-29 删掉的正是那个字段。
+//! 意图字段 + `[chat]` 项目群 + `current_version`(在研版本)。都不入库——
+//! 总览、计划屏每次要显示就现读现解析这份文件。旧仓可能还有 `standard_version`,
+//! 读到就收下,新写入不再写这一行。
 
 use super::{parse_toml, read_to_string, write_file, Result};
 use serde::{Deserialize, Serialize};
 use std::path::Path;
 
-pub const REL_PATH: &str = ".bw/config/project.toml";
+pub const REL_PATH: &str = ".bw/project.toml";
 
 /// 项目群配置。不配就整段不写,总览名片显示「未配 · 配置」。
 #[derive(Debug, Clone, Default, Deserialize, Serialize, PartialEq, Eq)]
@@ -42,6 +38,9 @@ pub struct ProjectFile {
     pub benchmark: String,
     #[serde(default)]
     pub opportunity: String,
+    /// 旧仓里的规范版本镜像。新写入不再写这一行。
+    #[serde(default)]
+    pub standard_version: String,
     /// 计划屏顶部可切的「在研版本」。新项目默认 `v0.1`。
     #[serde(default)]
     pub current_version: String,
@@ -77,6 +76,12 @@ pub fn render(f: &ProjectFile) -> String {
     s.push_str(&format!("benchmark = {}\n", quote(&f.benchmark)));
     s.push_str(&format!("opportunity = {}\n", quote(&f.opportunity)));
     s.push_str("\n# 在研版本。不进本机库,总览与计划屏每次要显示都现解析这个文件。\n");
+    if !f.standard_version.is_empty() {
+        s.push_str(&format!(
+            "standard_version = {}\n",
+            quote(&f.standard_version)
+        ));
+    }
     s.push_str(&format!(
         "current_version = {}\n",
         quote(&f.current_version)

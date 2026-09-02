@@ -1,31 +1,27 @@
 #!/usr/bin/env bash
-# 只有允许的模块能往被管项目的 .bw/config/ 与 .bw/state/ 里写文件。
+# 只有允许的模块能往被管项目的 `.bw/` 里写文件。
 #
 # 只查写、不查读(远端拿名片路径去 gh api 取文件是合法的)。查不住两件事:
-# 「写完 config 要跟着更新指纹」是数据流约束,按模块归属判断对它天生是绿的
-# (由端到端验收兜);agent 按剧本写 config/ 不经过 Rust,静态检查看不见。
+# 「写完要不要跟着更新别的账」是数据流约束,按模块归属判断对它天生是绿的;
+# agent 按剧本写 `.bw/` 不经过 Rust,静态检查看不见。
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
-# 仓文件的写入口。**名字写错过两次**(`append_metric_reading` 根本不存在,真名是
-# `upsert_metric_reading`),所以下面用 WRITE_FNS 单独列出来,并在跑之前**逐个
-# 核对它们真的存在** —— 守卫拿不存在的名字去 grep,只会一直打勾。
+# 仓文件的写入口。**名字写错过两次**,所以单独列出来并在跑之前逐个核对它们
+# 真的存在 —— 守卫拿不存在的名字去 grep,只会一直打勾。
 WRITE_FNS=(
   "project_file::write"
-  "issue_policy_file::write"
   "managed_file::write"
+  "standard_file::write"
   "readings_file::upsert_metric_reading"
   "readings_file::absorb_main_readings"
 )
 
-# 自检:名单里的每个函数必须在**它自己那个模块文件**里真实存在。
-# 早先这里拿裸名(`${fn##*::}`)满 crates/ 找,于是 `metrics_file::write` 这个
-# 根本不存在的条目被 `project_file.rs` 里的 `fn write` 匹上,一路绿灯 —— 守卫
-# 与它的自检同时失效。按模块定位才防得住改名。
+# 自检:名单里的每个函数必须在**它自己那个模块文件**里真实存在。按模块定位,
+# 不拿裸名满 crates/ 找 —— 那样 `metrics_file::write` 这种不存在的条目会被别的
+# 模块里的同名函数匹上,守卫与它的自检同时失效。
 for fn in "${WRITE_FNS[@]}"; do
-  module="${fn%%::*}"
-  name="${fn##*::}"
-  src="crates/bw/src/repo/${module}.rs"
+  module="${fn%%::*}"; name="${fn##*::}"; src="crates/bw/src/repo/${module}.rs"
   if [ ! -f "$src" ] || ! grep -qE "fn[[:space:]]+${name}[[:space:]]*[(<]" "$src"; then
     echo "✗ 守卫自检失败:${fn} 在 ${src} 里找不到定义。"
     echo "  函数改名或搬家了就跟着改这份名单 —— 否则守卫会一直报绿,却什么都没守住。"
@@ -40,30 +36,21 @@ WRITERS="$(printf '%s[[:space:]]*\\(|' "${WRITE_FNS[@]}")(^|[^A-Za-z0-9_])write_
 
 # 允许写的模块。加一处新的写入点 = 明着改这份名单,让它出现在 diff 里。
 ALLOW=(
-  "crates/bw/src/repo/"                 # 写入口自己的定义处
-  "crates/bw/src/standard/bootstrap.rs" # 规范铺底:唯一往新项目落件的地方
-  "crates/bw/src/app/bootstrap.rs"      # 铺底那张活:名片也进同一个 MR
-  "crates/bw/src/app/project.rs"        # 接入与名片编辑
-  "crates/bw/src/app/plan.rs"           # 切在研版本
-  "crates/bw/src/app/tools.rs"          # 配置屏保存映射(+ 同步指纹)
-  "crates/bw/src/app/collect.rs"        # 采集追加读数流水
+  "crates/bw/src/repo/"            # 写入口自己的定义处
+  "crates/bw/src/standard/"        # 规范铺底:唯一往项目落件的地方
+  "crates/bw/src/app/bootstrap.rs" # 铺底那张活
+  "crates/bw/src/app/project.rs"   # 接入与项目信息
+  "crates/bw/src/app/plan.rs"      # 切在研版本
+  "crates/bw/src/app/collect.rs"   # 采集追加读数流水
 )
 
 fail=0
 while IFS= read -r hit; do
   file="${hit%%:*}"
-  # 测试与示例豁免:它们造的是临时目录里的仓,不是真被管项目。
-  case "$file" in
-    */tests/*|*/examples/*) continue ;;
-  esac
+  case "$file" in */tests/*|*/examples/*) continue ;; esac   # 临时目录里的仓,不是真被管项目
   ok=0
-  for a in "${ALLOW[@]}"; do
-    case "$file" in "$a"*) ok=1; break ;; esac
-  done
-  if [ "$ok" -eq 0 ]; then
-    echo "✗ $hit"
-    fail=1
-  fi
+  for a in "${ALLOW[@]}"; do case "$file" in "$a"*) ok=1; break ;; esac; done
+  [ "$ok" -eq 0 ] && { echo "✗ $hit"; fail=1; }
 done < <(grep -rnE "$WRITERS" crates --include="*.rs" || true)
 
 if [ "$fail" -ne 0 ]; then

@@ -1,9 +1,8 @@
-//! 开始本周、排期、发版本。
+//! 开始本版本、排期、发版本、改未发版本名。
 //!
-//! 刀3 起,issue 的正本在远端 codehub/GitHub issue + 标签,本地不建 issue 表,
-//! 不写周计划文件。排期 = 给 issue 打一个版本标签(周版本 `bw:week:*` /
-//! 人起名的 `bw:plan:*`,同一槽位);发版 = 给活打 `bw:released:*` 标签 +
-//! 在远端建 Release。
+//! 刀3 起,issue 的正本在远端 codehub/GitHub issue + 标签,本地不建 issue 表。
+//! 排期 = 给 issue 打 `bw:plan:v0.x`;发版 = 给活打 `bw:released:v0.x` +
+//! 在远端建同名 Release。不再写 `bw:week:*`。
 
 use super::{issue_store, App, AppError, Result};
 use crate::command::Event;
@@ -12,26 +11,22 @@ use crate::repo::readings_file;
 use crate::{IssueKind, IssueOrigin};
 
 impl App {
-    /// 总览「开始本周」。判据是**本周的运作活① issue 在不在**——查远端 issue,
-    /// 不查任何索引表。已经有了且还没完成就平静挡住,不重复建、也不去动那场
-    /// 可能正开着的会话。
+    /// 总览「开始本版本」。判据是标题 + 本 ISO 周创建的 `v0.x` 标签——查远端
+    /// issue,不查任何索引表。已经有了且还没完成就平静挡住。
     pub(super) async fn start_week_planning(
         &mut self,
         project_id: ProjectId,
         week: String,
     ) -> Result<Vec<Event>> {
         let ws = self.workspace_of(project_id).await?;
-        let title = super::ops1_title(&week);
-
-        // 按标题查本周的运作活①(含已关闭)。关过再点「开始本周」会再建一张
-        // 同名活 —— 合入 #8 之后总览横幅又出来,就是这条漏了。
-        let existing = self
-            .issues(project_id)
-            .await?
-            .into_iter()
-            .find(|i| i.title == title);
-        if let Some(found) = existing {
-            if found.status != IssueStatus::Done {
+        let title = super::ops1_title();
+        let listed = self.issues(project_id).await?;
+        if super::week_started(&listed, &week) {
+            if let Some(found) = listed.iter().find(|i| {
+                super::is_ops1_issue(i)
+                    && i.status != IssueStatus::Done
+                    && i.status != IssueStatus::Cancelled
+            }) {
                 return Ok(vec![Event::WeekPlanInProgress {
                     project_id,
                     week,
@@ -61,11 +56,11 @@ impl App {
             .create_ops_issue(
                 project_id,
                 title,
-                "复盘上周、补齐 .bw/config/metrics.toml、和人交流出本周目标与业务活草稿。\n\n草稿没经人确认之前不许建活、不许落文件。"
+                "复盘上周、补齐 .bw/metrics.toml、和人确认本周版本,再交流出版本目标与业务活草稿。\n\n草稿没经人确认之前不许建活、不许落文件。"
                     .into(),
                 super::OPS1_WORKFLOW,
                 IssueOrigin::Human,
-                week.clone(),
+                String::new(),
             )
             .await?;
         // 本周版本计划创建完成 → 发群(仅在新建那一下,不是重复点开始本周)。
@@ -126,6 +121,9 @@ impl App {
     ) -> Result<Vec<Event>> {
         let issue = self.issue_or_err(id).await?;
         let target = week_of.unwrap_or_default();
+        if !target.is_empty() {
+            return Err(AppError::Refused("排期请用版本,不再写周标签".into()));
+        }
         let project = self.project_of(issue.project_id).await?;
         issue_store::set_week(self, &project, id.iid(), &target).await?;
 
@@ -163,9 +161,8 @@ impl App {
         Ok(vec![Event::IssueScheduledToPlan { id, plan }])
     }
 
-    /// 建一个人起名的版本:建 codehub milestone(title=name,start,due),
+    /// 建一个 `v0.x` 版本:建 codehub milestone(title=name,start,due),
     /// 并给 `included` 每张打 `bw:plan:<name>` 标签、挂到这个里程碑。
-    /// 周号形态拒收(那是每周一固定出现的版本)。与发版号 `cut_release` 不同。
     pub(super) async fn create_plan_version(
         &mut self,
         project_id: ProjectId,
@@ -176,13 +173,8 @@ impl App {
         included: Vec<IssueId>,
     ) -> Result<Vec<Event>> {
         let name = name.trim().to_string();
-        if name.is_empty() {
-            return Err(AppError::Refused("版本名不能空".into()));
-        }
-        if looks_like_week(&name) {
-            return Err(AppError::Refused(
-                "周号是每周一固定出现的版本,不用在这里再建".into(),
-            ));
+        if !crate::version::is_v0x(&name) {
+            return Err(AppError::Refused("版本名必须是 v0.1 这种".into()));
         }
         let start = start.trim().to_string();
         let due = due.trim().to_string();
@@ -199,6 +191,10 @@ impl App {
             return Err(AppError::Refused("开始不能晚于结束".into()));
         }
         let project = self.project_of(project_id).await?;
+        let (plans, released) = self.collect_version_names(&project).await?;
+        if plans.iter().any(|s| s == &name) || released.iter().any(|s| s == &name) {
+            return Err(AppError::Refused(format!("{name} 已经有了")));
+        }
         let mid = issue_store::create_plan_version(self, &project, &name, &start, &due).await?;
         for id in &included {
             issue_store::assign_to_plan(self, &project, id.iid(), &name).await?;
@@ -210,23 +206,21 @@ impl App {
         }])
     }
 
-    /// 删人起名的版本:给挂着 `bw:plan:<name>` 的活摘标签,再删同名里程碑。
-    /// 周版本每周一固定出现,周格式标题拒收。
+    /// 删未发的 `v0.x` 版本:给挂着 `bw:plan:<name>` 的活摘标签,再删同名里程碑。
     pub(super) async fn delete_plan_version(
         &mut self,
         project_id: ProjectId,
         name: String,
     ) -> Result<Vec<Event>> {
         let name = name.trim().to_string();
-        if name.is_empty() {
-            return Err(AppError::Refused("没选要删的版本".into()));
-        }
-        if looks_like_week(&name) {
-            return Err(AppError::Refused(
-                "周版本每周一固定出现,不能从这里删".into(),
-            ));
+        if !crate::version::is_v0x(&name) {
+            return Err(AppError::Refused("版本名必须是 v0.1 这种".into()));
         }
         let project = self.project_of(project_id).await?;
+        let (_plans, released) = self.collect_version_names(&project).await?;
+        if released.iter().any(|s| s == &name) {
+            return Err(AppError::Refused("已发过,不能删".into()));
+        }
         let issues = self.issues(project_id).await?;
         let mut issues_cleared = 0u32;
         for issue in issues {
@@ -252,7 +246,7 @@ impl App {
         if !ws.is_dir() {
             return Err(AppError::NoWorkspace(project_id.uuid().to_string()));
         }
-        let cleared = salvage_main_checkout_dirt(&ws).await;
+        let cleared = salvage_readings_dirt(&ws).await;
         let (moved, mut note) = match crate::git::pull_ff(&ws).await {
             Ok(true) => (true, "工作区已拉到最新".to_string()),
             Ok(false) => (false, "工作区本来就是最新的".to_string()),
@@ -284,12 +278,17 @@ impl App {
         included: Vec<IssueId>,
     ) -> Result<Vec<Event>> {
         let version = version.trim().to_string();
-        if version.is_empty() || version.contains('(') {
-            return Err(AppError::Refused(format!(
-                "「{version}」不像一个版本号。不要空、不要带括号。"
-            )));
+        if !crate::version::is_v0x(&version) {
+            return Err(AppError::Refused("版本名必须是 v0.1 这种".into()));
         }
         let project = self.project_of(project_id).await?;
+        let (plans, released) = self.collect_version_names(&project).await?;
+        if released.iter().any(|s| s == &version) {
+            return Err(AppError::Refused(format!("{version} 已经发过")));
+        }
+        if !plans.iter().any(|s| s == &version) {
+            return Err(AppError::Refused(format!("先有计划版本 {version} 再发")));
+        }
 
         // 1. 先在远端建 Release(tag + title + notes)—— 成功才往下。
         if project.has_remote() {
@@ -318,43 +317,108 @@ impl App {
         }
         Ok(events)
     }
+
+    /// 未发版本改名:标签定义 → issue 上的标 → 里程碑标题。已发拒改,新名撞名拒。
+    pub(super) async fn rename_plan_version(
+        &mut self,
+        project_id: ProjectId,
+        from: String,
+        to: String,
+    ) -> Result<Vec<Event>> {
+        let from = from.trim().to_string();
+        let to = to.trim().to_string();
+        if !crate::version::is_v0x(&from) || !crate::version::is_v0x(&to) {
+            return Err(AppError::Refused("版本名必须是 v0.1 这种".into()));
+        }
+        if from == to {
+            return Ok(vec![]);
+        }
+        let project = self.project_of(project_id).await?;
+        let (plans, released) = self.collect_version_names(&project).await?;
+        if released.iter().any(|s| s == &from) {
+            return Err(AppError::Refused("已发过,不能改名".into()));
+        }
+        if plans.iter().any(|s| s == &to) || released.iter().any(|s| s == &to) {
+            return Err(AppError::Refused(format!("{to} 已经有了")));
+        }
+        let remote = self.remote_for(&project)?;
+        remote
+            .rename_plan_label(
+                &project.remote_path,
+                &format!("bw:plan:{from}"),
+                &format!("bw:plan:{to}"),
+            )
+            .await
+            .map_err(|e| AppError::Exec(format!("改标签名没成:{e}")))?;
+        let issues = self.issues(project_id).await?;
+        let mut issues_moved = 0u32;
+        for issue in issues {
+            if issue.plan_version == from {
+                issue_store::assign_to_plan(self, &project, issue.number, &to).await?;
+                issues_moved += 1;
+            }
+        }
+        remote
+            .rename_plan_milestone(&project.remote_path, &from, &to)
+            .await
+            .map_err(|e| AppError::Exec(format!("改里程碑标题没成:{e}")))?;
+        Ok(vec![Event::PlanVersionRenamed {
+            project_id,
+            from,
+            to,
+            issues_moved,
+        }])
+    }
+
+    pub(super) async fn collect_version_names(
+        &self,
+        project: &crate::model::Project,
+    ) -> Result<(Vec<String>, Vec<String>)> {
+        let issues = self.issues(project.id).await.unwrap_or_default();
+        let mut plan_names: Vec<String> = issues
+            .iter()
+            .filter(|i| crate::version::is_v0x(&i.plan_version))
+            .map(|i| i.plan_version.clone())
+            .collect();
+        let mut released_names: Vec<String> = issues
+            .iter()
+            .filter(|i| crate::version::is_v0x(&i.version))
+            .map(|i| i.version.clone())
+            .collect();
+        if let Ok(remote) = self.remote_for(project) {
+            if let Ok(rows) = remote.list_milestones(&project.remote_path).await {
+                for (title, _, _) in rows {
+                    if crate::version::is_v0x(&title) {
+                        plan_names.push(title);
+                    }
+                }
+            }
+            if let Ok(tags) = remote.list_releases().await {
+                for t in tags {
+                    if crate::version::is_v0x(&t) {
+                        released_names.push(t);
+                    }
+                }
+            }
+        }
+        Ok((plan_names, released_names))
+    }
 }
 
-/// 拉主干之前清掉 Workbench 自己留在主检出上的预览:
-/// 读数挪进账本;接入写下的名片恢复成 HEAD(正本在已合入的 MR 里)。
-/// 人自己的源码脏文件不动。
-pub(super) async fn salvage_main_checkout_dirt(ws: &std::path::Path) -> String {
+/// 拉主干之前:主检出若只脏了读数流水,挪进账本再拉。不碰名片、不碰人的源码。
+pub(super) async fn salvage_readings_dirt(ws: &std::path::Path) -> String {
     let Ok(paths) = crate::git::dirty_paths(ws).await else {
         return String::new();
     };
-    let mut bits = Vec::new();
     if paths
         .iter()
         .any(|p| crate::git::is_readings_dirt(std::slice::from_ref(p)))
         && salvage_readings_into_ledger(ws).await
     {
-        bits.push("主检出上的读数已挪进账本。");
+        "主检出上的读数已挪进账本。".into()
+    } else {
+        String::new()
     }
-    let mut restored = false;
-    for rel in [".bw/config/project.toml", ".bw/PROJECT.md"] {
-        if !paths
-            .iter()
-            .any(|p| p == rel && crate::git::is_card_preview_path(p))
-        {
-            continue;
-        }
-        if crate::git::restore_path(ws, rel).await.is_ok() {
-            restored = true;
-            continue;
-        }
-        // 未跟踪:restore 无效。接入写下、还没合进主干的那份,删掉才能拉。
-        let _ = std::fs::remove_file(ws.join(rel));
-        restored = true;
-    }
-    if restored {
-        bits.push("主检出上未提交的名片已让开,改以主干为准。");
-    }
-    bits.concat()
 }
 
 /// 主检出若脏了读数流水,把内容并进账本,再把主检出那份恢复成 HEAD。
@@ -372,16 +436,8 @@ async fn salvage_readings_into_ledger(ws: &std::path::Path) -> bool {
     if readings_file::absorb_main_readings(&ledger, ws).is_err() {
         return false;
     }
-    let _ = crate::git::restore_path(ws, ".bw/state/metrics-readings.jsonl").await;
+    let _ = crate::git::restore_path(ws, ".bw/metrics/readings.jsonl").await;
     true
-}
-
-/// `YYYY-Www` 周格式?跟 codehub 里程碑投影同一口径,这里拒收。
-fn looks_like_week(s: &str) -> bool {
-    s.len() == 8
-        && s.get(4..6).is_some_and(|m| m.eq_ignore_ascii_case("-W"))
-        && s[..4].chars().all(|c| c.is_ascii_digit())
-        && s[6..].chars().all(|c| c.is_ascii_digit())
 }
 
 fn looks_like_ymd(s: &str) -> bool {

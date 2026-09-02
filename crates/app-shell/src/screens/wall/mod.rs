@@ -163,12 +163,12 @@ fn project_card(
     let confirming = *asking.read() == Some(id);
     let pct = (p.week_done * 100).checked_div(p.week_total).unwrap_or(0);
     let goal = if p.week_goal.trim().is_empty() {
-        "本周目标:还没定".to_string()
+        "版本目标:还没定".to_string()
     } else {
         let g = p.week_goal.trim();
         let short: String = g.chars().take(30).collect();
         format!(
-            "本周目标:{short}{}",
+            "版本目标:{short}{}",
             if g.chars().count() > 30 { "…" } else { "" }
         )
     };
@@ -184,7 +184,7 @@ fn project_card(
             onclick: move |_| b.send(Req::Open(Some(id))),
             div { class: "pcard-top",
                 if p.version.trim().is_empty() {
-                    span { class: "chip chip-outline mono", title: "仓里的 .bw/config/project.toml 没写在研版本", "版本未定" }
+                    span { class: "chip chip-outline mono", title: "仓里的 .bw/project.toml 没写在研版本", "版本未定" }
                 } else {
                     span { class: "chip chip-outline mono", "{p.version}" }
                 }

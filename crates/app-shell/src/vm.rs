@@ -48,7 +48,7 @@ pub struct RepoPickerVm {
     pub rows: Vec<RepoRowVm>,
     /// 现在盯着哪个仓(点中的那一行,或者人手打进去的地址)。
     pub picked: Option<String>,
-    /// 从那个仓的远端 `.bw/config/project.toml` 读回来的名片。
+    /// 从那个仓的远端 `.bw/project.toml` 读回来的名片。
     pub prefill: Option<RepoPrefillVm>,
     /// 那一读的结局。**「没读到」和「没读成」必须分开** —— 网络断了、没登录、
     /// 默认分支不叫 main,这些都会读不到,但它们**不等于**「这个仓没被接管过」。
@@ -62,7 +62,7 @@ pub enum RepoProbe {
     #[default]
     NotAsked,
     Loading,
-    /// 读到了 `.bw/config/project.toml` —— 这个仓被 Workbench 接管过。
+    /// 读到了 `.bw/project.toml` —— 这个仓被 Workbench 接管过。
     Adopted,
     /// 平台明确回「没有这个文件」,而且**这个仓确实在**(另问了一次)——
     /// 这个仓没被接管过。
@@ -110,7 +110,7 @@ pub struct ProjectCardVm {
     pub id: ProjectId,
     pub slug: String,
     pub name: String,
-    /// 「想做什么」一句话,来自 `PROJECT.md` / `.bw/config/project.toml`。
+    /// 「想做什么」一句话,来自 `.bw/project.toml`。
     pub brief: String,
     pub signal: Option<Signal>,
     pub workspace_path: String,
@@ -118,14 +118,14 @@ pub struct ProjectCardVm {
     /// 本周排了几张活、完成了几张。
     pub week_total: u32,
     pub week_done: u32,
-    /// 在研版本(仓里 `.bw/config/project.toml` 写的)。没写就是空,不猜一个。
+    /// 在研版本(仓里 `.bw/project.toml` 写的)。没写就是空,不猜一个。
     pub version: String,
     /// 当前 ISO 周,卡片上那个周 chip 显示它。
     pub week: String,
     /// 还没看过的动静:评审中 + 阻塞里,更新时间晚于「读到这里」那一下的。
     /// 通知屏点过之后这个数会掉下去。
     pub unread: u32,
-    /// 本周目标这一段,来自运作活①评论。没有或解析不到 = 空。
+    /// 本周版本目标这一段,来自运作活①评论。没有或解析不到 = 空。
     pub week_goal: String,
     /// 上次交付:发版记录最后一行的日期与版本。仓里没有发版记录 = 空。
     pub last_delivery: String,
@@ -149,21 +149,28 @@ pub struct ProjectVm {
     pub health: HealthVm,
     pub metrics: MetricsVm,
     pub current_week: String,
-    /// 本周是否已经有过运作活①(含已完成)。总览「开始本周」只在还没有时出现;
-    /// 做完再点会再建一张同名活。
+    /// 本周是否已经有过运作活①(含已完成)。总览「开始本版本」只在还没有时出现。
     pub week_started: bool,
+    /// 上一发 / 未发 / 推荐下一号,给创建版本弹窗。
+    pub last_released: String,
+    pub unreleased: Vec<String>,
+    pub suggested_next: String,
+    /// 本周运作活①已确认的 `v0.x`。空 = 还没确认,总览进度空态。
+    pub confirmed_version: String,
     /// 本周运作活①若还开着,走到哪了。`None` = 还没建,或已经完成。
     pub ops1_status: Option<String>,
-    /// 计划屏左栏:活上的 `bw:week:*` 标签 ∪ 本周(新的在前,本周置顶)。
+    /// 规范铺底还开着、默认分支还没有名片。总览常驻横幅。`None` = 已合入或没建。
+    pub bootstrap_pending: Option<CardMrVm>,
+    /// 计划屏左栏:节律周列表(新的在前,本周置顶)。排期名走 `v0.x`,不在这里。
     pub weeks: Vec<WeekVm>,
-    /// 正在看哪一周。
+    /// 正在看哪一周(节律用,不再当排期名)。
     pub viewing_week: String,
-    /// 看某个人起名的版本。空 = 在看周版本或「全部」。
+    /// 看哪个 `v0.x`。空 = 「全部」。
     pub viewing_plan: String,
     /// 左栏点的是「全部」——看板不按周过滤。
     pub view_all: bool,
     pub board: BoardVm,
-    /// 人起名的版本列表,扫 issues 的 `bw:plan:*` 标签去重得来。周版本在 `weeks` 里。
+    /// `v0.x` 版本列表。旧非 v0.x 不进这里。
     pub plan_versions: Vec<PlanVersionVm>,
     /// 当前登录用户名(给列表「我的」筛选用)。空 = 认不出。
     pub current_user: String,
@@ -181,9 +188,7 @@ pub struct ProjectVm {
     /// 代码仓级指标。**现算很贵(要起好几个 git 子进程),所以按需**:
     /// `None` = 还没采过,界面显示一颗「立即采集」。
     pub repo_stats: Option<RepoStatsVm>,
-    /// 名片改动那张轻量活走到哪了。`None` = 没有在途的名片改动。
-    pub card_mr: Option<CardMrVm>,
-    /// 「开始本周」刚产出、**还没经人确认**的草稿活标。确认之前一张活都不建
+    /// 「开始本版本」刚产出、**还没经人确认**的草稿活标。确认之前一张活都不建
     /// —— 这是「活由人确认才存在」那条,不是界面装饰。
     pub pending_drafts: Vec<String>,
     pub releases: Vec<ReleaseVm>,
@@ -203,7 +208,7 @@ pub struct ProjectVm {
     pub kb: KbVm,
 }
 
-/// 名片。四个字段的正本是 `PROJECT.md` 与 `.bw/config/project.toml`,不在库里。
+/// 名片。四个字段的正本是 `.bw/project.toml`,不在库里。
 #[derive(Clone, Debug, Default, PartialEq)]
 pub struct CardVm {
     pub brief: String,
@@ -216,27 +221,9 @@ pub struct CardVm {
     /// 只能用这一个 —— 把「(待填)」当版本号发出去,发版记录里就多一行叫
     /// 「(待填)」的版本,而且按版本号幂等,这个项目以后再也发不出版。
     pub current_version_raw: String,
-    /// 规范那一格。三种结局各自可辨,见 [`StandardCell`]。
-    pub standard: StandardCell,
+    pub standard_version: String,
     /// 项目群。没配就是「未配」。
     pub chat: String,
-}
-
-/// 名片「规范」那一格的三种结局。
-///
-/// **「读不动」和「还没铺过」必须分开**:后者是一句肯定的断言,而清单坏掉时
-/// 说这句就是假话——黄条那边已经在说「读不出来」,两句会当场打架。这正是
-/// `managed_file::summarize` 返回 `Result<Option<..>>` 而不是吞成默认值的理由,
-/// 分到这里再揉回一个 `None` 等于把那份区分白做了。
-#[derive(Clone, Debug, Default, PartialEq)]
-pub enum StandardCell {
-    /// 清单读不动(已挂黄条)。界面只写「—」,**不补任何断言**。
-    Unreadable,
-    /// 清单不在、或一条记录都没有 = 还没铺过规范件。
-    #[default]
-    NeverLaid,
-    /// 拼好的一句话:`v5.10 · 2 件在管 · 人改 2`。
-    Label(String),
 }
 
 #[derive(Clone, Debug, Default, PartialEq)]
@@ -254,7 +241,7 @@ pub struct MetricsVm {
     /// 这轮会话里人点过「采一次指标」。空着的走势和「还没点」是两件事,
     /// 后者要在滞后/引领上写出和代码仓级同一句「点了才采」。
     pub collected: bool,
-    /// 读不到 `.bw/config/metrics.toml` 时的实话(还没有这份文件 —— 正常状态)。
+    /// 读不到 `.bw/metrics.toml` 时的实话(还没有这份文件 —— 正常状态)。
     pub note: Option<String>,
     /// 有这份文件、但**读不动**时的原话(格式错、旧格式)。和 `note` 分开:
     /// 前者是「还没定出来」,后者是「定了但我读不了」,**两件事不能混成一句
@@ -268,7 +255,7 @@ pub struct MetricCardVm {
     pub name: String,
     /// 本周读数。`None` = 没读数,显示「无数据」而不是 0。
     pub reading: Option<String>,
-    /// `.bw/config/metrics.toml` 里写的目标。空 = 还没定目标,显示「目标未设」。
+    /// `.bw/metrics.toml` 里写的目标。空 = 还没定目标,显示「目标未设」。
     pub target: String,
     /// 这条指标的定义(`def`),给人看「这个数到底数的是什么」。
     pub def: String,
@@ -435,14 +422,15 @@ pub struct CardItemVm {
     pub updated_at: i64,
 }
 
-/// 自定义版本(计划包)。和发版号(ReleaseVm)不是一回事 —— 版本是把若干
-/// 待办活划归到一个计划包里排期,正本是 `bw:plan:*` 标签 + codehub milestone。
+/// 计划版本,号就是 `v0.x`,与发版号同一串。
 #[derive(Clone, Debug, Default, PartialEq)]
 pub struct PlanVersionVm {
     pub name: String,
     pub start: String,
     pub end: String,
     pub issue_count: u32,
+    /// 远端 Release 或 issue 的 `bw:released:` 里有同名。
+    pub released: bool,
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -512,7 +500,7 @@ pub struct ConfigVm {
     pub skills: Vec<SkillVm>,
     pub tools: Vec<ToolProbeVm>,
     pub remote: String,
-    /// `.bw/config/issue-policy.toml` 的 `[cadence]` 段:定时节律。原样一句话。
+    /// 定时节律:残留 issue-policy 或产品默认。
     pub cadence: String,
     /// 节律拆成表格行:哪张运作活、怎么触发、判据是什么。
     pub crons: Vec<CronVm>,
@@ -520,8 +508,8 @@ pub struct ConfigVm {
     pub chat_provider: String,
     pub chat_group: String,
     pub chat_events: Vec<(String, bool)>,
-    /// `.bw/config/project.toml` 的 `[chat]` 段:项目群。**仓是正本**,这里只显示;
-    /// 改它走总览「编辑项目名片」那张轻量活 + MR。
+    /// `.bw/project.toml` 的 `[chat]` 段:项目群。**仓是正本**,这里只显示;
+    /// 改它走总览「项目约定」那张轻量活 + MR。
     pub chat: String,
     /// 从活详情点 workflow 跳过来时要亮的那一行(slug)。空 = 没指定。
     pub focus_skill: String,
@@ -582,6 +570,9 @@ impl KbTab {
 #[derive(Clone, Debug, Default, PartialEq)]
 pub struct KbVm {
     pub tab: KbTab,
+    /// 仓里实际有几份 `.bw` 规范件。**不做对账** ——
+    /// 对账是配置屏那颗按钮的事,这里只报个数。
+    pub managed_count: usize,
     /// 知识页签:按规范八大类分组的文件清单。**只列存在的文件**,不列位置。
     pub groups: Vec<KbGroupVm>,
     /// 打开的那份文档:路径 + 原文。懒加载 —— 点了才现读。

@@ -22,7 +22,7 @@ use crate::model::Signal;
 /// 健康的三条判据。每条都能被独立复算,不存任何中间值。
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct HealthInputs {
-    /// (a) 本周真有周目标正文(ops① 评论里那一句)。issue 开着 ≠ 目标已定。
+    /// (a) 本周真有版本目标正文(ops① 评论里那一句)。issue 开着 ≠ 目标已定。
     pub has_week_goal: bool,
     /// 本周运作活①还在(没点完成)。用来把「还没开这张活」和「活开了但目标
     /// 还没落到评论」说成两句,不把「开始本周」当成已经定了目标。
@@ -35,11 +35,11 @@ pub struct HealthInputs {
     /// 这一条是假 —— 此时「两周零提交」说明不了任何事,不能当成「这个项目
     /// 停了」判红。没数据是灰,不是红,也不是绿。
     pub git_readable: bool,
-    /// (b) 本周或上周的 `.bw/state/metrics-readings.jsonl` 里有指标读数(刀6 起不再读
+    /// (b) 本周或上周的 `.bw/metrics/readings.jsonl` 里有指标读数(刀6 起不再读
     /// 周计划文件的「本周指标读数」段)。
     pub has_metric_reading: bool,
-    /// 按 `.bw/config/metrics.toml` 的目标判下来**越线**的指标,一条一句人话
-    /// (「名」现值 X,目标 Y),读数来自 `.bw/state/metrics-readings.jsonl`。
+    /// 按 `.bw/metrics.toml` 的目标判下来**越线**的指标,一条一句人话
+    /// (「名」现值 X,目标 Y),读数来自 `.bw/metrics/readings.jsonl`。
     /// 空 = 没有越线的。判读在 [`target::breach`]:目标未设、格式认不出、
     /// 读数没采到,都是「判不了」不进这里 —— **缺数是灰的事,不是红的事**。
     pub red_metrics: Vec<String>,
@@ -110,13 +110,13 @@ pub fn derive_project_health(inputs: &HealthInputs) -> DerivedHealth {
         HealthReason {
             ok: a,
             text: if a {
-                "本周定了周目标,仓里也有真实提交".into()
+                "本周定了版本目标,仓里也有真实提交".into()
             } else if !inputs.has_week_goal && inputs.ops1_open {
-                "本周计划还在做,周目标还没写进这张活的评论".into()
+                "本周计划还在做,版本目标还没写进这张活的评论".into()
             } else if !inputs.has_week_goal {
-                "没有从本周运作活评论里读到周目标一句话".into()
+                "没有从本周运作活评论里读到版本目标一句话".into()
             } else {
-                "本周有周目标,但仓里还没有真实提交".into()
+                "本周有版本目标,但仓里还没有真实提交".into()
             },
         },
         HealthReason {

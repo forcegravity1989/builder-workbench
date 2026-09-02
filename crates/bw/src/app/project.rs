@@ -1,6 +1,6 @@
 //! 接入项目、改项目信息(名片 + 在研版本 + 项目群)。
 //!
-//! 正本是 `.bw/PROJECT.md` 与 `.bw/config/project.toml`,**不落库**——`project`
+//! 正本是 `.bw/project.toml`,**不落库**——`project`
 //! 表只有定位与显示缓存。改这些就是改仓文件,得走一张轻量活与一次 MR,
 //! 不是直接 UPDATE 一行。
 
@@ -9,7 +9,6 @@ use super::{issue_store, App, AppError, ProgressLine, Result};
 use crate::command::{Event, ProjectIntent, RemoteRef};
 use crate::model::{IssueStatus, Project, ProjectId};
 use crate::repo::project_file::{self, ChatConfig, ProjectFile};
-use crate::standard;
 
 impl App {
     pub(super) async fn create_project(
@@ -57,16 +56,13 @@ impl App {
         let row = self.upsert_project(&row).await?;
         self.step(ProgressLine::ok(3, format!("项目 {slug} 已落库")));
 
-        // 意图落仓文件。
-        self.step(ProgressLine::doing(
-            4,
-            "读仓里的名片(.bw/config/project.toml)…",
-        ));
-        // **仓里已经有 `.bw/config/project.toml` 就以它为准**(后来者接入:同事先接过
-        // 这个项目,或者开发期删库重建之后重新接入)。人手填过的东西一个字都
-        // 不覆盖,只补空着的字段;读不出来(文件坏了)也不覆盖,如实往上报。
+        // 磁盘上的名片只用来补空字段(seed),不拿来判断「已经接入」。
+        // 跳过建车只认:默认分支 HEAD 已有名片,或已经开着项目约定/残留旧标题。
+        self.step(ProgressLine::doing(4, "读仓里的名片(.bw/project.toml)…"));
         let existing = project_file::read(&ws)?;
-        let adopted = existing.is_some();
+        let in_head = crate::git::path_in_head(&ws, project_file::REL_PATH).await;
+        let open_charter = issue_store::find_open_charter(self, &row).await?.is_some();
+        let adopted = in_head || open_charter;
         let mut file = existing.unwrap_or_else(|| ProjectFile {
             // 新建项目默认在研版本 v0.1。
             current_version: "v0.1".into(),
@@ -76,33 +72,32 @@ impl App {
         fill_if_blank(&mut file.brief, &intent.brief);
         fill_if_blank(&mut file.benchmark, &intent.benchmark);
         fill_if_blank(&mut file.opportunity, &intent.north_star);
-        project_file::write(&ws, &file)?;
+        // **不写主检出**。第一次接入的名片只落在「项目约定」那棵树上。
         self.step(ProgressLine::ok(
             4,
             if adopted {
-                "仓里本来就有名片,一个字没覆盖,只补了空着的字段".to_string()
+                "仓里本来就有名片,一个字没覆盖,只补了空着的字段。不重复开项目约定".to_string()
             } else {
-                "名片写好了,下一步铺底会把它提交到这张活的分支上".to_string()
+                "名片只写在项目约定那棵树上,主检出不动".to_string()
             },
         ));
 
-        // 第 0 站的后半截:**接入完自动建那张一次性运作活③「规范铺底」**
-        // 它建分支、往仓里写全套规范骨架、开一个 MR,
-        // **停在评审中等人合** —— 不自动合、不自动完成,一条铁律都没松。
-        //
-        // 铺底没成**不推翻接入**:项目已经建好了、仓已经在本机了,这两件事是
-        // 真的。配置屏不再提供第二次铺底;对账能看见缺哪些件。
+        // 仓里已经有名片,或已经开着项目约定 / 残留铺底 / 残留改名片,不再建第二张。
         let mut events = vec![Event::ProjectCreated {
             id: row.id,
             slug,
             adopted,
         }];
-        match self.run_standard_bootstrap(row.id, false).await {
-            Ok(more) => events.extend(more),
-            Err(e) => self.step(ProgressLine::fail(
-                5,
-                format!("规范铺底没成:{e} —— 项目已经接进来了。配置屏「对一遍账」能看见缺哪些件"),
-            )),
+        if adopted {
+            self.step(ProgressLine::ok(5, "仓里已有项目信息,跳过项目约定"));
+        } else {
+            match self.run_standard_bootstrap(row.id, &file).await {
+                Ok(more) => events.extend(more),
+                Err(e) => self.step(ProgressLine::fail(
+                    5,
+                    format!("项目约定没写成:{e} —— 项目已经接进来了。总览横幅会提示还没合入"),
+                )),
+            }
         }
         // 纳入时替人把仓登记进 Orca。Orca 没开不推翻接入,第一次开工 / Open 再补。
         if self.pty_enabled {
@@ -252,19 +247,17 @@ impl App {
             .await?
             .ok_or_else(|| AppError::NoSuchProject(project_id.uuid().to_string()))?;
 
-        // B 类固定枚举标题「编辑项目名片」——在途复用:有则拿同一张,
-        // 无则建一张轻量活。项目群、在研版本也走这一张,不再另开两张。
-        let issue = match issue_store::find_open_by_title(self, &project, issue_store::LIGHT_TITLE)
-            .await?
-        {
+        // 项目约定常驻车:开着的「项目约定」/ 残留「编辑项目名片」/ 残留铺底
+        // 接着写;没有就建一张「项目约定」。主检出不动。
+        let issue = match issue_store::find_open_charter(self, &project).await? {
             Some(existing) => existing,
             None => {
                 issue_store::create(
                     self,
                     &project,
-                    issue_store::LIGHT_TITLE,
+                    issue_store::CHARTER_TITLE,
                     "项目信息改动:名片四字段 / 在研版本 / 项目群。改的是 \
-                     .bw/PROJECT.md 与 .bw/config/project.toml 两份仓文件,等人评审合入。",
+                     .bw/project.toml,等人评审合入。",
                     crate::model::IssueKind::Light,
                     "",
                     &[],
@@ -273,8 +266,11 @@ impl App {
             }
         };
 
-        // 在这张活自己的 worktree 里写文件(主检出不动,走 MR 合入才落地)。
-        let tree = worktree::provision(&ws, issue.number).await?;
+        let tree = if issue.title == issue_store::CHARTER_TITLE {
+            worktree::provision_project(&ws).await?
+        } else {
+            worktree::provision(&ws, issue.number).await?
+        };
         let mut file = project_file::read(&tree.path)?.unwrap_or_default();
         file.name = intent.name.clone();
         file.brief = intent.brief.clone();
@@ -292,20 +288,6 @@ impl App {
         };
         project_file::write(&tree.path, &file)?;
 
-        // 章程也要跟着改 —— PROJECT.md 才是给人读的那一份。
-        let body = standard::render(
-            standard::CHARTER_TMPL,
-            &[
-                ("name", &intent.name),
-                ("brief", &intent.brief),
-                ("benchmark", &intent.benchmark),
-                ("north_star", &intent.north_star),
-                ("current_version", &file.current_version),
-                ("chat", &chat_label(&file.chat)),
-            ],
-        );
-        crate::repo::write_file(&tree.path, standard::CHARTER_REL_PATH, &body)?;
-
         // 库里的名字是项目墙的显示缓存,跟着改一次。
         self.update_project_location(
             project_id,
@@ -318,7 +300,7 @@ impl App {
         .await?;
 
         let base = crate::git::head_sha(&ws).await.unwrap_or_default();
-        let title = format!("#{} {}", issue.number, issue_store::LIGHT_TITLE);
+        let title = format!("#{} {}", issue.number, issue.title);
         crate::git::commit_all(&tree.path, &title).await?;
         let commits = if base.is_empty() {
             0
@@ -359,14 +341,6 @@ impl App {
             note: mr.note,
         });
         Ok(events)
-    }
-}
-
-/// 名片上「项目群」那一行怎么写。没配就如实说没配。
-pub(super) fn chat_label(chat: &Option<ChatConfig>) -> String {
-    match chat {
-        None => "未配".into(),
-        Some(c) => format!("{}(群号 {})", c.provider, c.group_id),
     }
 }
 

@@ -1,7 +1,7 @@
 //! 本机 Orca 的本地 pipe 客户端(会话开工)。对标 [`crate::open_design`]:
 //! 本机资源发现 + 薄 RPC 客户端,不进 [`crate::legacy_pty`] 的 Executor 体系,
 //! 不新 crate。token 只活在 [`OrcaRuntime`] 内存 —— 不落盘、不进 Event、不进
-//! jsonl、不进日志原文(日志只打 method / runtimeId / pid / worktree)。
+//! jsonl、不进对照日志原文(日志只打 method / runtimeId / pid / worktree)。
 //!
 //! 协议(与 `.scratch/orca-rpc-smoke.cjs` 同语义,照抄不发明):本地
 //! named-pipe(Windows)/ unix socket(macOS·Linux)发一行 JSON
@@ -69,7 +69,7 @@ impl OrcaError {
 }
 
 /// 本机 Orca 运行时:本地 pipe 端点 + 一次性 token(只活在内存)。clone 只在
-/// 内存流转;token 不落盘、不进 Event/jsonl/日志。
+/// 内存流转;token 不落盘、不进 Event/jsonl/对照日志。
 #[derive(Clone, Debug)]
 pub struct OrcaRuntime {
     endpoint: String,
@@ -78,34 +78,9 @@ pub struct OrcaRuntime {
     pid: Option<i64>,
 }
 
-/// 开工对照日志落哪。默认 `%TEMP%/bw-orca.log`;`BW_ORCA_LOG` 覆盖。
+/// 对照日志落哪。全仓一份,见 [`crate::dlog`]。
 pub fn diag_log_path() -> PathBuf {
-    std::env::var("BW_ORCA_LOG")
-        .ok()
-        .map(PathBuf::from)
-        .filter(|p| !p.as_os_str().is_empty())
-        .unwrap_or_else(|| std::env::temp_dir().join("bw-orca.log"))
-}
-
-/// 对照日志:stderr + 文件各一行。不写 token / pairing / 提示词正文。
-pub fn diag(msg: &str) {
-    let line = format!("[BW_ORCA] {msg}");
-    eprintln!("{line}");
-    let path = diag_log_path();
-    if let Some(dir) = path.parent() {
-        let _ = std::fs::create_dir_all(dir);
-    }
-    if let Ok(mut f) = std::fs::OpenOptions::new()
-        .create(true)
-        .append(true)
-        .open(&path)
-    {
-        let ms = SystemTime::now()
-            .duration_since(UNIX_EPOCH)
-            .map(|d| d.as_millis())
-            .unwrap_or(0);
-        let _ = writeln!(f, "{ms} {line}");
-    }
+    crate::dlog::log_path()
 }
 
 fn text_stats(s: &str) -> (usize, usize, usize) {
@@ -178,7 +153,7 @@ pub fn connect() -> Result<OrcaRuntime, OrcaError> {
         runtime_id,
         pid,
     };
-    diag(&format!("connect ok · {}", rt.log_tag()));
+    crate::dlog!(ok, "orca", "connect ok · {}", rt.log_tag());
     Ok(rt)
 }
 
@@ -216,21 +191,25 @@ pub async fn repo_present(rt: &OrcaRuntime, repo: &Path) -> Result<bool, OrcaErr
 pub async fn ensure_repo(rt: &OrcaRuntime, repo: &Path) -> Result<(), OrcaError> {
     match repo_present(rt, repo).await {
         Ok(true) => {
-            diag(&format!("repo present worktree={}", path_prefixed(repo)));
+            crate::dlog!(ok, "orca", "repo present worktree={}", path_prefixed(repo));
             return Ok(());
         }
         Ok(false) => {
-            diag(&format!(
+            crate::dlog!(
+                ok,
+                "orca",
                 "repo missing, add worktree={}",
                 path_prefixed(repo)
-            ));
+            );
         }
         Err(e) => {
-            diag(&format!(
+            crate::dlog!(
+                err,
+                "orca",
                 "repo show fail:{e} · {} · worktree={}",
                 rt.log_tag(),
                 path_prefixed(repo)
-            ));
+            );
             return Err(e);
         }
     }
@@ -357,7 +336,9 @@ pub async fn create_session(
     } else {
         "-".into()
     };
-    diag(&format!(
+    crate::dlog!(
+        ok,
+        "orca",
         "create begin agent={agent} system_via={system_via} orca_prompt={orca_prompt} \
          worktree={} workspace_arg={workspace_arg} cursor_trust={cursor_trust} \
          prompt_chars={p_chars} \
@@ -372,7 +353,7 @@ pub async fn create_session(
         preview(&prompt, 48),
         preview(system, 32),
         rt.log_tag()
-    ));
+    );
     let mut params = json!({
         "clientOperationId": client_operation_id(),
         "worktree": path_prefixed(worktree),
@@ -392,28 +373,38 @@ pub async fn create_session(
     let frame = match frame {
         Ok(f) => f,
         Err(e) => {
-            diag(&format!(
+            crate::dlog!(
+                err,
+                "orca",
                 "create rpc elapsed_ms={elapsed_ms} verdict=transport_err err={e}"
-            ));
+            );
             return Err(e);
         }
     };
     match require_ok(&frame, "terminal.createAgentSession") {
         Ok(()) => {
-            diag(&format!("create rpc elapsed_ms={elapsed_ms} verdict=ready"));
+            crate::dlog!(
+                ok,
+                "orca",
+                "create rpc elapsed_ms={elapsed_ms} verdict=ready"
+            );
             Ok(CreateSessionOutcome::Ready)
         }
         // 渲染进程已经建了 tab,句柄没交回。不立刻切树,调用方先 settle。
         Err(e) if e.is_terminal_handle_timeout() => {
-            diag(&format!(
+            crate::dlog!(
+                warn,
+                "orca",
                 "create rpc elapsed_ms={elapsed_ms} verdict=handle_timeout brief={e}"
-            ));
+            );
             Ok(CreateSessionOutcome::HandleTimeout)
         }
         Err(e) => {
-            diag(&format!(
+            crate::dlog!(
+                err,
+                "orca",
                 "create rpc elapsed_ms={elapsed_ms} verdict=rpc_error brief={e}"
-            ));
+            );
             Err(e)
         }
     }
@@ -821,15 +812,39 @@ async fn call(
     let endpoint = rt.endpoint.clone();
     let id_for_recv = id.clone();
     let method_for_err = method.to_string();
+    let started = Instant::now();
     let handle =
         tokio::task::spawn_blocking(move || send_recv(&endpoint, &frame, &id_for_recv, timeout));
     // 三层 peel:Elapsed(外层 timeout)→ JoinError(spawn_blocking)→ OrcaError(任务内)。
-    tokio::time::timeout(timeout, handle)
-        .await
-        .map_err(|_| OrcaError::Timeout {
+    let result: Result<Value, OrcaError> = match tokio::time::timeout(timeout, handle).await {
+        Err(_) => Err(OrcaError::Timeout {
             method: method_for_err,
-        })?
-        .map_err(|e| OrcaError::Connect(e.to_string()))?
+        }),
+        Ok(Err(e)) => Err(OrcaError::Connect(e.to_string())),
+        Ok(Ok(inner)) => inner,
+    };
+    let elapsed_ms = started.elapsed().as_millis();
+    match &result {
+        Ok(v) if v.get("ok").and_then(|o| o.as_bool()) == Some(true) => {
+            crate::dlog!(ok, "orca", "rpc method={method} elapsed_ms={elapsed_ms} ok");
+        }
+        Ok(v) => {
+            crate::dlog!(
+                err,
+                "orca",
+                "rpc method={method} elapsed_ms={elapsed_ms} {}",
+                error_brief(v, method)
+            );
+        }
+        Err(e) => {
+            crate::dlog!(
+                err,
+                "orca",
+                "rpc method={method} elapsed_ms={elapsed_ms} err={e}"
+            );
+        }
+    }
+    result
 }
 
 /// 同步:开 pipe → 发一行 JSON → 增量读、按行解析,跳过 keepalive,取 id 匹配的

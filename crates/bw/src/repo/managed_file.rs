@@ -1,5 +1,5 @@
-//! `.bw/state/managed.toml` —— 哪些文件是 Workbench 铺下去的、什么版本、铺那一刻的内容
-//! 指纹。规范对账的唯一权威记录。
+//! `.bw/managed.toml` —— 旧铺底留下的指纹账。新项目不再铺;每周资产盘点会删。
+//! 旧仓里这份还在时仍解析(对账区能看见差异),接入不覆盖。
 //!
 //! 为什么是一份清单而不是给每个被铺的文件配一个同名旁路文件:铺一次底就在
 //! 仓里撒一地隐藏文件太脏。
@@ -13,7 +13,7 @@ use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 use std::path::Path;
 
-pub const REL_PATH: &str = ".bw/state/managed.toml";
+pub const REL_PATH: &str = ".bw/managed.toml";
 
 #[derive(Debug, Clone, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(deny_unknown_fields)]
@@ -77,63 +77,6 @@ pub fn reconcile(
 /// `sha256:<64 位 hex>`。只在铺底/升级那一刻算一次。
 pub fn fingerprint(bytes: &[u8]) -> String {
     format!("sha256:{:x}", Sha256::digest(bytes))
-}
-
-/// 名片上「规范」那一格要显示的东西。从这份清单现算,不存第二份。
-#[derive(Debug, Clone, Default, PartialEq, Eq)]
-pub struct LedgerSummary {
-    /// 清单里**最低**的那个版本(最高说的是「最近铺过什么」,不是「还停在
-    /// 哪一版」)。空 = 清单不存在或没有记录。
-    pub version: String,
-    /// 清单里登记着几份。
-    pub managed: usize,
-    /// 记录还在、磁盘上文件没了。
-    pub missing: usize,
-    /// 内容与记录对不上 = 人改过。
-    pub human_edited: usize,
-}
-
-/// 现读现算名片摘要。只认清单里登记过的条目——`project.toml` 与 `metrics.toml`
-/// 从来不进这份清单,名片也就不把它们算进「在管」。
-///
-/// **读不动要如实往上抛,不许和「还没有这份清单」揉成一个默认值**:两者在
-/// 界面上是两句完全不同的话——后者说「这个仓还没铺过规范件」,那是个确定的
-/// 断言;清单坏了却说这句就是在瞎说。
-pub fn summarize(workspace: &Path) -> Result<Option<LedgerSummary>> {
-    let Some(file) = read(workspace)? else {
-        return Ok(None);
-    };
-    let mut out = LedgerSummary {
-        managed: file.files.len(),
-        ..Default::default()
-    };
-    for e in &file.files {
-        // 复用 `reconcile` 这条唯一判据,不在这里再抄一遍指纹比对。
-        // `current_version` 传条目自己的版本 —— 于是 `Stale` 永不触发,恰好表达
-        // 「摘要有意不算过期」(名片不挂人消不掉的提醒,过期只在对账详情里报)。
-        let disk = std::fs::read(workspace.join(&e.path)).ok();
-        match reconcile(Some(e), disk.as_deref(), &e.version) {
-            Reconcile::Missing => out.missing += 1,
-            Reconcile::HumanEdited => out.human_edited += 1,
-            Reconcile::Stale | Reconcile::UpToDate => {}
-        }
-        if out.version.is_empty() || version_lt(&e.version, &out.version) {
-            out.version = e.version.clone();
-        }
-    }
-    Ok(Some(out))
-}
-
-/// `a` 是不是比 `b` 低。按点分数字段比 —— 必须按数字:`5.10` 和 `5.8` 若按字符串
-/// 比会得出 `5.10` 更低,而版本走的就是 5.8 → 5.10。
-///
-/// 字符串那条是防御性兜底:今天版本号永远是纯数字点分(`standard/VERSION`),走不到。
-fn version_lt(a: &str, b: &str) -> bool {
-    let nums = |v: &str| -> Option<Vec<u32>> { v.split('.').map(|p| p.parse().ok()).collect() };
-    match (nums(a), nums(b)) {
-        (Some(x), Some(y)) => x < y,
-        _ => a < b,
-    }
 }
 
 pub fn parse(raw: &str) -> Result<ManagedFile> {

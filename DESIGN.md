@@ -11,7 +11,7 @@
 
 ## workflow 自带文档去哪找
 
-被管项目按 issue-policy 给活挂的 workflow(build 默认 `mattpocock-skills`、原型默认 `proto-design`,可换),其自带文档由该 workflow 自己承载——Workbench 不重抄,只在 `docs/architecture.md` 的「系统提示词与渐进加载」模块指明怎么注入。若该 workflow 有自己的设计/约定文档,以它为准;`DESIGN.md` 只做指向,不替它写。
+被管项目按本机 settings / 产品默认给活挂的 workflow(build 默认 `mattpocock-skills`、原型默认 Open Design 等 proto-design 打包),其自带文档由该 workflow 自己承载——Workbench 不重抄,只在 `docs/architecture.md` 的「系统提示词与渐进加载」模块指明怎么注入。接入与名片方案见同篇 §3「项目约定」。若该 workflow 有自己的设计/约定文档,以它为准;`DESIGN.md` 只做指向,不替它写。
 
 ## 没建什么(如实)
 

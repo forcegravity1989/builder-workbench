@@ -15,7 +15,7 @@
 //!    任何定时表,所以那一列写的是判据本身。
 
 use crate::bridge::Bridge;
-use crate::vm::{MappingVm, ProjectVm, StandardCell};
+use crate::vm::{MappingVm, ProjectVm};
 use bw::command::Command;
 use bw::model::category_from_key;
 use dioxus::prelude::*;
@@ -42,37 +42,30 @@ fn mapping_block(p: &ProjectVm, bridge: &Bridge) -> Element {
     rsx! {
         div { class: "cfg-section",
             div { class: "cfg-section-head", h3 { "开工工具映射" } }
-            if p.config.mappings.is_empty() {
-                div { class: "detail-empty",
-                    "这个项目还没有 .bw/config/issue-policy.toml。接入时的规范铺底合进默认分支之后才会有。"
-                }
-            } else {
-                div { class: "tbl-wrap",
-                    table { class: "tbl",
-                        thead {
-                            tr {
-                                th { "类别" }
-                                th { "开工工具" }
-                                th { "workflow" }
-                                th { "" }
-                            }
+            div { class: "tbl-wrap",
+                table { class: "tbl",
+                    thead {
+                        tr {
+                            th { "类别" }
+                            th { "开工工具(本机)" }
+                            th { "workflow(产品默认)" }
+                            th { "" }
                         }
-                        tbody {
-                            for m in p.config.mappings.iter() {
-                                MappingRow {
-                                    key: "{m.category_key}",
-                                    m: m.clone(),
-                                    pid: p.id,
-                                    bridge: bridge.clone(),
-                                }
+                    }
+                    tbody {
+                        for m in p.config.mappings.iter() {
+                            MappingRow {
+                                key: "{m.category_key}",
+                                m: m.clone(),
+                                pid: p.id,
+                                bridge: bridge.clone(),
                             }
                         }
                     }
                 }
             }
             div { class: "cfg-readonly-note",
-                "建一张活的时候,类别决定它默认用哪个工具、挂哪个 workflow。正本是仓里的 \
-                 .bw/config/issue-policy.toml —— 点「保存」就是改那份文件。"
+                "开工工具跟人走这台机器,写本机 settings,不进仓。workflow 是产品默认,不能改。"
             }
         }
     }
@@ -84,7 +77,7 @@ fn mapping_block(p: &ProjectVm, bridge: &Bridge) -> Element {
 #[component]
 fn MappingRow(m: MappingVm, pid: bw::model::ProjectId, bridge: Bridge) -> Element {
     let mut tool = use_signal(|| m.tool.clone());
-    let mut workflow = use_signal(|| m.workflow.clone());
+    let workflow = m.workflow.clone();
     let b = bridge.clone();
     let key = m.category_key.clone();
     let save = move |_| {
@@ -95,7 +88,7 @@ fn MappingRow(m: MappingVm, pid: bw::model::ProjectId, bridge: Bridge) -> Elemen
             project_id: pid,
             category: cat,
             tool: normalize_tool(&tool.read()),
-            workflow: workflow.read().trim().to_string(),
+            workflow: String::new(),
         });
     };
     rsx! {
@@ -122,15 +115,7 @@ fn MappingRow(m: MappingVm, pid: bw::model::ProjectId, bridge: Bridge) -> Elemen
                     " —— 配了起不来的工具,▶开工 会当场如实报错。"
                 }
             }
-            td {
-                input {
-                    class: "input",
-                    style: "min-width:200px;",
-                    value: "{workflow}",
-                    placeholder: "workflow / 技能包名,留空 = 无默认",
-                    oninput: move |e| workflow.set(e.value()),
-                }
-            }
+            td { "{workflow}" }
             td { button { class: "btn btn-sm btn-primary", onclick: save, "保存" } }
         }
     }
@@ -297,18 +282,12 @@ fn cron_block(p: &ProjectVm) -> Element {
 // ── ⑤ 规范件对账 ────────────────────────────────────
 
 /// 对账是**纯读**的:只回报缺 / 过期 / 人改过,不动仓、不建活。
-/// 写仓只发生在接入那一次规范铺底。在研版本去总览名片里改。
+/// 写仓只发生在第一次纳入。在研版本去总览名片里改。
 #[component]
 fn StandardBlock(p: ProjectVm, bridge: Bridge) -> Element {
     let (p, bridge) = (&p, &bridge);
     let b_rec = bridge.clone();
     let pid = p.id;
-    let std_ver = match &p.card.standard {
-        // 读不动时只写「—」:黄条已经在说「读不出来」,这里再断言「没铺过」就是假话。
-        StandardCell::Unreadable => "—".to_string(),
-        StandardCell::NeverLaid => "—(这个仓还没铺过规范件)".to_string(),
-        StandardCell::Label(s) => s.clone(),
-    };
     rsx! {
         div { class: "cfg-section",
             div { class: "cfg-section-head",
@@ -319,11 +298,6 @@ fn StandardBlock(p: ProjectVm, bridge: Bridge) -> Element {
                         onclick: move |_| b_rec.cmd(Command::ReconcileStandard { project_id: pid }),
                         "对一遍账"
                     }
-                }
-            }
-            div { class: "settings-list",
-                div { class: "settings-row",
-                    div { div { class: "k", "规范版本" } div { class: "v", "{std_ver}" } }
                 }
             }
             div { class: "cfg-readonly-note",

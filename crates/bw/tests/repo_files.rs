@@ -28,17 +28,45 @@ fn iso_week_math_round_trips() {
 }
 
 #[test]
-fn issue_policy_round_trips_and_maps_categories() {
+fn slim_issue_policy_tmpl_parses_without_review_or_kanban() {
+    let f = issue_policy_file::parse(bw::standard::ISSUE_POLICY_TMPL).unwrap();
+    assert_eq!(f.mappings.len(), 5);
+    assert_eq!(f.cadence.as_ref().unwrap().ops2_schedule, "fri 09:00");
+    assert!(
+        f.tools.is_empty(),
+        "工具声明不进用户仓,开工工具是编译进 Workbench 的"
+    );
+    assert!(f.review.is_none(), "评审段不铺,合入规则不写进用户仓");
+    assert!(f.kanban.is_none(), "看板文案不铺");
+}
+
+#[test]
+fn leftover_issue_policy_still_parses() {
     let raw = r#"
+schema_version = 1
+
+[[tool]]
+name = "claude_cli"
+kind = "terminal"
+probe = "path_candidates"
+capabilities = ["inject_skills", "resume", "hooks"]
+
 [[mapping]]
 category = "build"
 tool     = "claude_cli"
 workflow = "mattpocock-skills"
 
+[review]
+who_can_merge  = "repo_write"
+require_pr_for = ["code", "docs"]
+
 [cadence]
+ops2_trigger  = "scheduled"
 ops2_schedule = "fri 09:00"
 "#;
     let f = issue_policy_file::parse(raw).unwrap();
+    assert_eq!(f.tools.len(), 1);
+    assert_eq!(f.tool("claude_cli").unwrap().kind, "terminal");
     let m = f.mapping_for(StageKind::Build).unwrap();
     assert_eq!(m.tool, "claude_cli");
     assert_eq!(m.workflow, "mattpocock-skills");
@@ -46,27 +74,6 @@ ops2_schedule = "fri 09:00"
         f.mapping_for(StageKind::Growth).is_none(),
         "没配的类别就是没配,不替用户挑一个"
     );
-    // 渲染出来的还认得回去。
-    let again = issue_policy_file::parse(&issue_policy_file::render(&f)).unwrap();
-    assert_eq!(again.mappings, f.mappings);
-    assert_eq!(again.cadence, f.cadence);
-}
-
-/// 删掉的那批假配置(`[[tool]]` / `[review]` / trigger 两字段 / `schema_version`)
-/// 再出现就当场报错,不静默忽略——静默忽略等于让人以为改它还有用。
-#[test]
-fn retired_fake_config_is_rejected() {
-    for raw in [
-        "[[tool]]\nname = \"claude_cli\"\nkind = \"terminal\"\nprobe = \"x\"\n",
-        "[review]\nwho_can_merge = \"repo_write\"\n",
-        "[cadence]\nops1_trigger = \"manual\"\nops2_schedule = \"fri 20:00\"\n",
-        "schema_version = 1\n",
-    ] {
-        assert!(
-            issue_policy_file::parse(raw).is_err(),
-            "这段早就没人读了,再写进文件必须当场报错:{raw}"
-        );
-    }
 }
 
 #[test]
@@ -142,6 +149,7 @@ fn a_multiline_brief_survives_a_write_read_round_trip() {
         brief: "第一行\n第二行\t带制表符\n还有一个反斜杠 \\".into(),
         benchmark: "Linear".into(),
         opportunity: "北极星\n也是多行的".into(),
+        standard_version: "4.0".into(),
         current_version: "v0.1".into(),
         chat: None,
     };

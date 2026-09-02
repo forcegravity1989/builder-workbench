@@ -255,7 +255,7 @@ impl Remote {
     /// human/auto semantics: `MergeIssuePr` — the **human验收** action
     /// (one-click merge → caller settles `Done`); on `Err` the Issue stays
     /// `InReview` retryable, never fabricated, never reverse-settled.
-    /// `write_project_toml_pr` — the **auto-merge** of a `.bw/config/project.toml`
+    /// `write_project_toml_pr` — the **auto-merge** of a `.bw/project.toml`
     /// config PR (project.toml is configuration, not an Issue, so auto-merging
     /// it doesn't break "Done 永不自动"; issue PRs are never auto-merged —
     /// that path is unchanged). Bug③ (2026-07-30): before this, `MergeIssuePr`
@@ -316,7 +316,7 @@ impl Remote {
         match self {
             Remote::Github(r) => Ok(github::create_issue(r, title, body, labels).await?),
             Remote::Codehub { host, path } => {
-                Ok(codehub::create_issue(host, path, title, body, labels).await?)
+                Ok(codehub::create_issue(host, path, title, body, labels, None).await?)
             }
             Remote::Mock(state) => {
                 let mut s = state.lock().expect("mock state 未中毒");
@@ -338,6 +338,24 @@ impl Remote {
                 );
                 Ok(iid)
             }
+        }
+    }
+
+    /// 建 issue 并可附一份本机文件。codehub 走 `--attachment`;github 臂没有
+    /// 对等旗标,附件忽略、正文里应写清文件在哪。mock 只记正文。
+    pub async fn create_issue_with_attachment(
+        &self,
+        title: &str,
+        body: &str,
+        labels: &[&str],
+        attachment: Option<&Path>,
+    ) -> Result<u32, RemoteError> {
+        match self {
+            Remote::Github(r) => Ok(github::create_issue(r, title, body, labels).await?),
+            Remote::Codehub { host, path } => {
+                Ok(codehub::create_issue(host, path, title, body, labels, attachment).await?)
+            }
+            Remote::Mock(_) => self.create_issue(title, body, labels).await,
         }
     }
 
@@ -664,6 +682,47 @@ impl Remote {
                 Ok(codehub::delete_plan_milestone(host, path, name).await?)
             }
             Remote::Github(_) | Remote::Mock(_) => Ok(()),
+        }
+    }
+
+    /// 改版本里程碑标题。GitHub/mock 不投(返 Ok)。
+    pub async fn rename_plan_milestone(
+        &self,
+        path: &str,
+        from: &str,
+        to: &str,
+    ) -> Result<(), RemoteError> {
+        match self {
+            Remote::Codehub { host, .. } => {
+                Ok(codehub::rename_plan_milestone(host, path, from, to).await?)
+            }
+            Remote::Github(_) | Remote::Mock(_) => Ok(()),
+        }
+    }
+
+    /// 改 `bw:plan:` 标签定义名。mock 里同步改 issue 上已打的标。
+    pub async fn rename_plan_label(
+        &self,
+        path: &str,
+        from_label: &str,
+        to_label: &str,
+    ) -> Result<(), RemoteError> {
+        match self {
+            Remote::Codehub { host, .. } => {
+                Ok(codehub::rename_plan_label(host, path, from_label, to_label).await?)
+            }
+            Remote::Github(_) => Ok(()),
+            Remote::Mock(state) => {
+                let mut s = state.lock().expect("mock state 未中毒");
+                for i in s.issues.values_mut() {
+                    for l in &mut i.labels {
+                        if l == from_label {
+                            *l = to_label.to_string();
+                        }
+                    }
+                }
+                Ok(())
+            }
         }
     }
 

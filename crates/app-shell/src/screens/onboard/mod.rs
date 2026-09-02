@@ -13,14 +13,14 @@
 //! 在 `bw-engine` 里本来就有,V3 期就在用,见 v3 分支)。问不出来就把 CLI 的原话摆出来,绝不
 //! 拿假数据顶上;高保真里那份 `REPO_LIST` 是工厂造的,不抄。
 //!
-//! 四个基础字段全部落仓文件(`PROJECT.md` 与 `.bw/config/project.toml`),库里只记路径
+//! 四个基础字段全部落仓文件(`.bw/project.toml`),库里只记路径
 //! 与显示用的名字 —— 名片的正本在仓里,换台机器拉下来就有。
 //!
 //! **「完成接入」按下去会发生什么**:把仓弄到本机(该 clone
-//! 就 clone)→ 库里落一行项目 → 读/写仓里的名片 → 自动建一张运作活③「规范铺底」,
-//! 它写规范骨架、开一条分支、提一个 MR,**停在评审中等人合** → 进这个项目。
-//! 每一步都往那条 broadcast 通道报一行,界面上原地覆盖 —— 这一下要十几秒,不报
-//! 进度人会以为没点上、然后猛点。
+//! 就 clone)→ 库里落一行项目 → 读/写仓里的名片。仓里还没有名片才建运作活③
+//! 「规范铺底」(写骨架、开分支、提 MR,停在评审中等人合);已有名片不再铺。
+//! 铺底没合入时总览会一直提示。每一步都往那条 broadcast 通道报一行,界面上原地
+//! 覆盖 —— 这一下要十几秒,不报进度人会以为没点上、然后猛点。
 
 use crate::bridge::{Bridge, Req};
 use crate::chrome::{light_dot, progress_log};
@@ -216,7 +216,7 @@ pub fn View(vm: Vm, bridge: Bridge, close: EventHandler<MouseEvent>) -> Element 
                             div { class: "ob-note",
                                 "选中一个仓会顺手猜一个本机路径,不对就改。"
                                 br {}
-                                "仓里已经有 .bw/config/project.toml 就以它为准 —— 同事先接过这个项目的话,"
+                                "仓里已经有 .bw/project.toml 就以它为准 —— 同事先接过这个项目的话,"
                                 "你填的名片字段只补空着的,一个字都不覆盖。"
                             }
                         } else {
@@ -331,7 +331,7 @@ pub fn View(vm: Vm, bridge: Bridge, close: EventHandler<MouseEvent>) -> Element 
                             }
                         }
                         div { class: "ob-note",
-                            "这四个字段会写进仓里的 PROJECT.md 与 .bw/config/project.toml —— 换台机器拉下来就有,"
+                            "这四个字段会写进仓里的 .bw/project.toml —— 换台机器拉下来就有,"
                             "不是只存在你这台电脑上。"
                         }
                     }
@@ -356,8 +356,7 @@ pub fn View(vm: Vm, bridge: Bridge, close: EventHandler<MouseEvent>) -> Element 
 
                 if !vm.projects.is_empty() {
                     div { class: "ob-note",
-                        "已接入 {vm.projects.len()} 个项目。接入会顺手把管理体系写进这个仓 ——"
-                        "建一张「规范铺底」的活、开一条分支、提一个 MR,停在评审中等你合。"
+                        "已接入 {vm.projects.len()} 个项目。仓里还没有名片时,会建一张「规范铺底」的活、开分支、提 MR,停在评审中等你合。已有名片不再铺。没合入时总览会一直提示。"
                     }
                 }
             }
@@ -540,8 +539,8 @@ fn repo_option(
 
 /// 「这个仓被 Workbench 接管过没有」的几种结局,一句都不能混。
 ///
-/// 判据是**去远端读 `.bw/config/project.toml` 读不读得到**(GitHub 走
-/// `gh api .../contents/.bw/config/project.toml`,codehub 走 codehub-cli)。读到 = 接管过。
+/// 判据是**去远端读 `.bw/project.toml` 读不读得到**(GitHub 走
+/// `gh api .../contents/.bw/project.toml`,codehub 走 codehub-cli)。读到 = 接管过。
 /// 麻烦在于**读不到有三种,平台回的都是 404**,得一层层剥开:
 ///
 /// - 仓不在(地址敲错、私有仓没权限)→ 再问一次 `gh repo view` 就露馅 → 「找不到这个仓」
@@ -557,18 +556,18 @@ fn adopted_note(probe: &RepoProbe) -> Element {
                 RepoProbe::NotAsked => rsx! {
                     "没查这个仓被 Workbench 接管过没有 —— 上一步没选/没填远端地址。四格要你自己填。"
                 },
-                RepoProbe::Loading => rsx! { "正在读这个仓的 .bw/config/project.toml…" },
+                RepoProbe::Loading => rsx! { "正在读这个仓的 .bw/project.toml…" },
                 RepoProbe::Adopted => rsx! {
                     "这个仓"
                     strong { "已经被 Workbench 接管过" }
-                    ",下面四格是从它远端的 .bw/config/project.toml 回显的。"
+                    ",下面四格是从它远端的 .bw/project.toml 回显的。"
                     br {}
                     "直接改就行 —— 你改过的格子以你为准,接进来时也不会覆盖仓里已有的字。"
                 },
                 RepoProbe::Absent => rsx! {
                     "这个仓"
                     strong { "还没被 Workbench 接管过" }
-                    "(平台明确回「没有 .bw/config/project.toml」),四格要你自己填。"
+                    "(平台明确回「没有 .bw/project.toml」),四格要你自己填。"
                 },
                 RepoProbe::NoRepo(e) => rsx! {
                     strong { "这个地址上找不到仓" }
@@ -584,7 +583,7 @@ fn adopted_note(probe: &RepoProbe) -> Element {
                     br {}
                     "常见原因:没登录、网不通、这个仓的默认分支不叫 main。"
                     br {}
-                    "照样能接:仓里真有 .bw/config/project.toml 的话,接入时以仓里的为准,你填的只补空着的字段,一个字都不会被覆盖。"
+                    "照样能接:仓里真有 .bw/project.toml 的话,接入时以仓里的为准,你填的只补空着的字段,一个字都不会被覆盖。"
                 },
             }
         }

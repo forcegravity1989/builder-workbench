@@ -12,12 +12,12 @@
 
 | 活的 `workflow` 字段 | 目录 | 谁触发 | 一次会话大概 |
 |---|---|---|---|
-| `更新指标与周计划` | `week-planning/` | 人(总览横幅「开始本周」) | 20-40 分钟,人机 3-6 轮 |
+| `更新指标与版本计划` | `week-planning/` | 人(总览横幅「开始本版本」) | 20-40 分钟,人机 3-6 轮 |
 | `资产盘点` | `asset-audit/` | 定时(默认周五 09:00)或接入老仓时一次 | 10-25 分钟,通常 0 轮 |
 | —(子技能) | `metrics-refresh/` | `week-planning` 第二步指名调用 | 随宿主 |
 | —(子技能) | `project-handbook/` | `asset-audit` 首次模式里**问过人**之后调用 | 随宿主 |
 
-规范铺底(运作活③)**没有剧本** —— 它没有 agent 步骤,Workbench 自己把核心件写进 `.bw/`。
+项目约定**没有剧本** —— 不起 agent,只把 `.bw/project.toml` 写到常驻树 `bw/project`。
 
 ## workflow 入口(业界 SOP 链,Workbench 写入口 body 指向 vendor 库)
 
@@ -27,7 +27,7 @@ body 自足;workflow 入口 body 是 SOP 链 + 指向 `../vendor/` 库子技能�
 
 | 活的 `workflow` 字段 | 目录 | body 指向 | 状态 |
 |---|---|---|---|
-| `mattpocock-skills` | `mattpocock-skills/` | `../vendor/mattpocock-skills/skills/engineering/` 下 grill-with-docs→implement→code-review | ✅ build 阶段默认,已打包 + issue-policy 回填 |
+| `mattpocock-skills` | `mattpocock-skills/` | `../vendor/mattpocock-skills/skills/engineering/` 下 grill-with-docs→implement→code-review | ✅ build 阶段产品默认,已打包 |
 | `proto-design` | — | (源还没 vendor 进 `../vendor/`) | ⏸ 原型阶段默认,待 vendor + 入口 |
 
 ## 不预置方法论技能
@@ -50,12 +50,11 @@ body 自足;workflow 入口 body 是 SOP 链 + 指向 `../vendor/` 库子技能�
 ## 版本
 
 不单开版本线——版本号就是 `standard/VERSION`,随 Workbench 整体发布走。改了内容 =
-`standard/VERSION` 抬一档 + 这里记一行。项目侧 `.bw/state/managed.toml` 记这几份 SKILL.md
-的指纹,规范对账能测出落后。
+`standard/VERSION` 抬一档 + 这里记一行。技能不进用户仓,没有项目侧指纹账。
 
-- 6.0:`.bw/` 分三层(顶层 Markdown 给人读 / `config/` 人拍板 / `state/` 机器自写),四份剧本里的
-  路径全部跟着改;`standard.toml` 整份删除,「铺了哪一版」逐份记在 `.bw/state/managed.toml`。
-  **旧布局项目不自动迁移**:人删掉旧 `.bw/` 后重新接入。
+- 5.12:名片只留 project.toml;开工约定不再写工具声明;不再铺 standard.toml / managed.toml;周盘点清旧件。
+- 5.11:运作活①确认 `v0.x`、纳入打 `bw:plan:v0.x`;对人说版本目标;不再写 `bw:week:*`。
+
 - 5.10:运作活①指标单独确认、纳入先看已有 issue、打周标签后挂里程碑;周目标整段展示。
 
 ## 三条共同的规矩

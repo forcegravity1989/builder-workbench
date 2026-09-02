@@ -1,20 +1,20 @@
-//! 运作活①评论里的周计划段落。界面取「周目标」这一段(一句或一段都算);
+//! 运作活①评论里的版本计划段落。界面取「版本目标」这一段(一句或一段都算);
 //! 纳入清单和读数快照留在 issue 评论里给人点开看。
 //!
 //! 多条评论从新到旧扫,同一段以最新一条为准。认不出标题就当没有,
 //! 不猜正文。
 
 /// 机器认的三个二级标题。agent 必须写这两个字,括号说明可以跟在后面。
-pub const HEADING_GOAL: &str = "周目标";
+pub const HEADING_GOAL: &str = "版本目标";
 pub const HEADING_SCOPE: &str = "本周纳入";
 pub const HEADING_READINGS: &str = "本周指标读数";
 
 /// 旧评论用过的标题,只在读的时候认,新写的不许再用。
-const GOAL_ALIASES: &[&str] = &["周目标", "本周目标"];
+const GOAL_ALIASES: &[&str] = &["版本目标", "周目标", "本周目标"];
 
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub struct WeekComment {
-    /// `## 周目标` 到下一个二级标题之间的正文。没有或解析不到 = `None`。
+    /// `## 版本目标` 到下一个二级标题之间的正文。没有或解析不到 = `None`。
     pub goal: Option<String>,
 }
 
@@ -69,7 +69,7 @@ fn heading_matches(line: &str, name: &str) -> bool {
         || rest.starts_with(&format!("{name} "))
 }
 
-/// `## 周目标` 到下一个 `##` 的整段,保留换行。前后空行去掉。
+/// `## 版本目标` 到下一个 `##` 的整段,保留换行。前后空行去掉。
 fn section_text(body: &str, names: &[&str]) -> Option<String> {
     let mut lines = body.lines();
     loop {
@@ -98,26 +98,22 @@ fn section_text(body: &str, names: &[&str]) -> Option<String> {
     }
 }
 
-const OPS1_PREFIX: &str = "更新指标 + 制定本周计划 ";
-
 impl super::App {
-    /// 各周运作活①评论里解析出的周目标这一段。读失败的周就空着,不挡整屏。
+    /// 各 ISO 周运作活①评论里解析出的版本目标这一段。读失败的周就空着,不挡整屏。
     /// 周与周互不依赖,评论两两并行拉,不按周串行等。
     pub async fn week_goals_from_ops1(
         &self,
         project: &crate::model::Project,
         issues: &[crate::model::Issue],
     ) -> std::collections::HashMap<String, String> {
+        let current = crate::isoweek::current_week();
         let jobs: Vec<(String, u32)> = issues
             .iter()
-            .filter_map(|i| {
-                let week = i.title.strip_prefix(OPS1_PREFIX).map(str::trim)?;
-                let week = if i.week_of.is_empty() {
-                    week.to_string()
-                } else {
-                    i.week_of.clone()
-                };
-                Some((week, i.id.iid()))
+            .filter(|i| crate::version::is_ops1_title(&i.title))
+            .map(|i| {
+                let week =
+                    crate::isoweek::week_of_unix(i.created_at).unwrap_or_else(|| current.clone());
+                (week, i.id.iid())
             })
             .collect();
         let mut out = std::collections::HashMap::new();
@@ -180,9 +176,10 @@ mod tests {
 
     #[test]
     fn validate_requires_three_headings() {
-        assert!(validate_comment("## 周目标\n一句话\n").is_err());
+        assert!(validate_comment("## 版本目标\n一句话\n").is_err());
         assert!(
-            validate_comment("## 周目标\n一句话\n## 本周纳入\n- #2\n## 本周指标读数\n快照").is_ok()
+            validate_comment("## 版本目标\n一句话\n## 本周纳入\n- #2\n## 本周指标读数\n快照")
+                .is_ok()
         );
     }
 

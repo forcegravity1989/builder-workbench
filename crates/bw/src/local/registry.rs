@@ -2,7 +2,7 @@
 //!
 //! 替代旧的 `project` 表(显示缓存 + 定位字段)+ `app_meta` 的 `notify_seen:*` 键。
 //! 仓是正本,这里只是本机缓存:项目行的 name/provider/remote 在打开项目时从
-//! `.bw/config/project.toml` 刷新。
+//! `.bw/project.toml` 刷新。
 
 use crate::derive::DerivedHealth;
 use crate::model::{Project, ProjectId, Signal};

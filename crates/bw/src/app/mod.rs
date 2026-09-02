@@ -6,12 +6,13 @@
 //! 一屏一屏地看,这层的分工是:
 //!
 //! - [`project`] —— 接入、改名片、配项目群
-//! - [`plan`] —— 开始本周、排期、发版本、缓存对账
+//! - [`plan`] —— 开始本版本、排期、发版本、改名、缓存对账
+//! - [`release_ship`] —— 人点「出包」:出包 → 验包,不打标签
 //! - [`issue`] —— 建活、▶跑、状态转移
 //! - [`bootstrap`] —— 规范铺底与对账
 //! - [`chat_notify`] —— 三件事同步进项目群(发出去就算完,不记账)
-//! - [`week_comment`] —— 运作活①评论里的周目标
-//! - [`ops`] —— 三张运作活:周计划、资产盘点、规范铺底
+//! - [`week_comment`] —— 运作活①评论里的版本目标
+//! - [`ops`] —— 三张运作活:版本计划、资产盘点、规范铺底
 //! - [`session`] —— 内嵌终端的 PTY 生命周期
 //! - [`tools`] —— 开工工具映射与探活
 //! - [`worktree`] —— 每张活一棵自己的 worktree 与分支
@@ -30,6 +31,7 @@ mod ops;
 mod plan;
 mod progress;
 mod project;
+mod release_ship;
 mod session;
 mod tools;
 mod week_comment;
@@ -40,8 +42,13 @@ pub use bootstrap::{
 };
 pub use health::{collect_health_inputs, read_metric_readings, MetricReading};
 pub use issue::{count_unseen, issues_in_week, workflow_usage};
+pub use issue_store::{
+    is_charter_title, is_open_charter, overlay_project_file, work_branch, CHARTER_TITLE,
+    LIGHT_TITLE,
+};
 pub use ops::{
-    ops1_title, ops2_title, skill_slug, workflow_label, OPS1_WORKFLOW, OPS2_WORKFLOW, OPS3_WORKFLOW,
+    is_ops1_issue, ops1_title, ops2_title, skill_slug, week_started, workflow_label, OPS1_WORKFLOW,
+    OPS2_WORKFLOW, OPS3_WORKFLOW,
 };
 pub use progress::{ProgressLine, StepState};
 pub use week_comment::{
@@ -401,7 +408,10 @@ impl App {
 
     /// 唯一的入口。
     pub async fn dispatch(&mut self, cmd: Command) -> Result<Vec<Event>> {
-        match cmd {
+        let label = cmd_log_label(&cmd);
+        let started = std::time::Instant::now();
+        bw_engine::dlog!(ok, "dispatch", "begin {label}");
+        let out = match cmd {
             Command::CreateProject {
                 slug,
                 intent,
@@ -415,9 +425,6 @@ impl App {
             Command::ReopenSession { issue_id } => self.reopen_session(issue_id).await,
             Command::EditProjectCard { project_id, intent } => {
                 self.edit_project_card(project_id, intent).await
-            }
-            Command::RunStandardBootstrap { project_id } => {
-                self.run_standard_bootstrap(project_id, true).await
             }
             Command::ReconcileStandard { project_id } => self.reconcile_standard(project_id).await,
             Command::StartWeekPlanning { project_id, week } => {
@@ -459,12 +466,21 @@ impl App {
             Command::DeletePlanVersion { project_id, name } => {
                 self.delete_plan_version(project_id, name).await
             }
+            Command::RenamePlanVersion {
+                project_id,
+                from,
+                to,
+            } => self.rename_plan_version(project_id, from, to).await,
             Command::CutRelease {
                 project_id,
                 version,
                 note,
                 included,
             } => self.cut_release(project_id, version, note, included).await,
+            Command::PackRelease {
+                project_id,
+                version,
+            } => self.pack_release(project_id, version).await,
             Command::RunIssue { id } => self.run_issue(id).await,
             Command::SubmitIssueWork { id } => self.submit_issue_work(id).await,
             Command::SetWorkspacesRoot { path } => self.set_workspaces_root(path).await,
@@ -503,6 +519,158 @@ impl App {
                 name,
                 value,
             } => self.record_manual_metric(project_id, name, value).await,
+            Command::ReportWorkbenchIssue { title } => self.report_workbench_issue(title).await,
+        };
+        let elapsed_ms = started.elapsed().as_millis();
+        match &out {
+            Ok(evs) => bw_engine::dlog!(
+                ok,
+                "dispatch",
+                "ok {label} events={} elapsed_ms={elapsed_ms}",
+                evs.len()
+            ),
+            Err(e) => bw_engine::dlog!(
+                err,
+                "dispatch",
+                "fail {label} elapsed_ms={elapsed_ms} err={e}"
+            ),
+        }
+        out
+    }
+}
+
+/// 对照日志用:命令名 + id / slug,不写 pairing URL、提示词、token。
+fn cmd_log_label(cmd: &Command) -> String {
+    match cmd {
+        Command::CreateProject { slug, .. } => format!("CreateProject slug={slug}"),
+        Command::RemoveProject { project_id } => {
+            format!("RemoveProject project={}", project_id.uuid())
+        }
+        Command::ReopenSession { issue_id } => format!("ReopenSession #{}", issue_id.iid()),
+        Command::EditProjectCard { project_id, .. } => {
+            format!("EditProjectCard project={}", project_id.uuid())
+        }
+        Command::ReconcileStandard { project_id } => {
+            format!("ReconcileStandard project={}", project_id.uuid())
+        }
+        Command::StartWeekPlanning { project_id, week } => {
+            format!(
+                "StartWeekPlanning project={} week={week}",
+                project_id.uuid()
+            )
+        }
+        Command::ConfirmWeekDraft {
+            project_id,
+            week,
+            titles,
+        } => format!(
+            "ConfirmWeekDraft project={} week={week} titles={}",
+            project_id.uuid(),
+            titles.len()
+        ),
+        Command::CreateIssue {
+            project_id,
+            title,
+            category,
+            week_of,
+            plan,
+            ..
+        } => format!(
+            "CreateIssue project={} title={title:?} category={category:?} week={week_of} plan={plan}",
+            project_id.uuid()
+        ),
+        Command::ScheduleIssue { id, week_of } => {
+            format!("ScheduleIssue #{} week={week_of:?}", id.iid())
+        }
+        Command::ScheduleToPlan { id, plan } => format!("ScheduleToPlan #{} plan={plan}", id.iid()),
+        Command::CreatePlanVersion {
+            project_id,
+            name,
+            included,
+            ..
+        } => format!(
+            "CreatePlanVersion project={} name={name} included={}",
+            project_id.uuid(),
+            included.len()
+        ),
+        Command::DeletePlanVersion { project_id, name } => {
+            format!("DeletePlanVersion project={} name={name}", project_id.uuid())
+        }
+        Command::RenamePlanVersion {
+            project_id,
+            from,
+            to,
+        } => format!(
+            "RenamePlanVersion project={} from={from} to={to}",
+            project_id.uuid()
+        ),
+        Command::CutRelease {
+            project_id,
+            version,
+            included,
+            ..
+        } => format!(
+            "CutRelease project={} version={version} included={}",
+            project_id.uuid(),
+            included.len()
+        ),
+        Command::PackRelease {
+            project_id,
+            version,
+        } => format!(
+            "PackRelease project={} version={version}",
+            project_id.uuid()
+        ),
+        Command::RunIssue { id } => format!("RunIssue #{}", id.iid()),
+        Command::SubmitIssueWork { id } => format!("SubmitIssueWork #{}", id.iid()),
+        Command::SetWorkspacesRoot { .. } => "SetWorkspacesRoot".into(),
+        Command::SetOrcaWebUrl { .. } => "SetOrcaWebUrl".into(),
+        Command::TransitionIssue { id, to } => {
+            format!("TransitionIssue #{} to={}", id.iid(), to.label())
+        }
+        Command::SetIssueCategory { id, category } => {
+            format!("SetIssueCategory #{} category={}", id.iid(), category.label())
+        }
+        Command::SetIssueAssignee { id, assignee } => {
+            format!("SetIssueAssignee #{} assignee={assignee}", id.iid())
+        }
+        Command::EditIssue { id, title, .. } => {
+            format!("EditIssue #{} title={title:?}", id.iid())
+        }
+        Command::CancelIssue { id, .. } => format!("CancelIssue #{}", id.iid()),
+        Command::DeleteSession { id } => format!("DeleteSession #{}", id.iid()),
+        Command::BlockIssue { id, .. } => format!("BlockIssue #{}", id.iid()),
+        Command::SaveToolMapping {
+            project_id,
+            category,
+            tool,
+            workflow,
+        } => format!(
+            "SaveToolMapping project={} category={} tool={tool} workflow={workflow}",
+            project_id.uuid(),
+            category.label()
+        ),
+        Command::ProbeTool { name } => format!("ProbeTool name={name}"),
+        Command::PullWorkspace { project_id } => {
+            format!("PullWorkspace project={}", project_id.uuid())
+        }
+        Command::TickScheduler { project_id } => {
+            format!("TickScheduler project={}", project_id.uuid())
+        }
+        Command::MergeAndSettle { id } => format!("MergeAndSettle #{}", id.iid()),
+        Command::SyncNotifyToChat {
+            issue_id,
+            event_type,
+        } => format!("SyncNotifyToChat #{} event={event_type}", issue_id.iid()),
+        Command::CancelRun { id } => format!("CancelRun #{}", id.iid()),
+        Command::RecordManualMetric {
+            project_id, name, ..
+        } => format!(
+            "RecordManualMetric project={} name={name}",
+            project_id.uuid()
+        ),
+        Command::ReportWorkbenchIssue { title } => {
+            format!("ReportWorkbenchIssue title={title:?}")
         }
     }
 }
