@@ -1,10 +1,8 @@
 //! `.bw/project.toml` —— 项目意图与配置的正本。
 //!
-//! V3 的解析器(`bw_engine::project_file`)只认五个意图字段。V4 多三样:
-//! `[chat]` 项目群、`standard_version`(项目用的是哪版规范)、
-//! `current_version`(在研版本)。这三样**都不入库**——总览、计划屏每次要显示
-//! 就现读现解析这份文件。V4 自己写一份解析器而不是改 V3 那份,是为了让旧壳
-//! 一行不动继续可跑。
+//! 意图字段 + `[chat]` 项目群 + `current_version`(在研版本)。都不入库——
+//! 总览、计划屏每次要显示就现读现解析这份文件。旧仓可能还有 `standard_version`,
+//! 读到就收下,新写入不再写这一行。
 
 use super::{parse_toml, read_to_string, write_file, Result};
 use serde::{Deserialize, Serialize};
@@ -40,8 +38,7 @@ pub struct ProjectFile {
     pub benchmark: String,
     #[serde(default)]
     pub opportunity: String,
-    /// 这个项目用的是哪版规范。与 `.bw/standard.toml` 的 `version` 一致;
-    /// 这里是给总览快速展示的镜像,不是第二个正本。
+    /// 旧仓里的规范版本镜像。新写入不再写这一行。
     #[serde(default)]
     pub standard_version: String,
     /// 计划屏顶部可切的「在研版本」。新项目默认 `v0.1`。
@@ -78,12 +75,13 @@ pub fn render(f: &ProjectFile) -> String {
     s.push_str(&format!("brief = {}\n", quote(&f.brief)));
     s.push_str(&format!("benchmark = {}\n", quote(&f.benchmark)));
     s.push_str(&format!("opportunity = {}\n", quote(&f.opportunity)));
-    s.push_str("\n# 规范版本与在研版本。这两个值不进本机库,总览与计划屏每次要\n");
-    s.push_str("# 显示都现解析这个文件。\n");
-    s.push_str(&format!(
-        "standard_version = {}\n",
-        quote(&f.standard_version)
-    ));
+    s.push_str("\n# 在研版本。不进本机库,总览与计划屏每次要显示都现解析这个文件。\n");
+    if !f.standard_version.is_empty() {
+        s.push_str(&format!(
+            "standard_version = {}\n",
+            quote(&f.standard_version)
+        ));
+    }
     s.push_str(&format!(
         "current_version = {}\n",
         quote(&f.current_version)

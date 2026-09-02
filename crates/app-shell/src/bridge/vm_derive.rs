@@ -19,7 +19,7 @@ use std::path::Path;
 pub(super) fn build_week_counts(issues: &[bw::Issue], week: Option<&str>) -> WeekCountsVm {
     let in_scope = |i: &&bw::Issue| match week {
         None => true,
-        Some(w) => i.week_of == w,
+        Some(w) => i.plan_version == w || i.week_of == w,
     };
     let n = |st: IssueStatus| {
         issues
@@ -38,7 +38,7 @@ pub(super) fn build_week_counts(issues: &[bw::Issue], week: Option<&str>) -> Wee
 }
 
 /// 运作活①②③三个状态点。开着的优先;本周已关的①②写「已完成」。
-/// ③关过但默认分支没有 `.bw/standard.toml` 仍算未建(旧铺底关掉、MR 没合
+/// ③关过但默认分支没有 `.bw/project.toml` 仍算未建(旧铺底关掉、MR 没合
 /// 不能冒充铺过)。
 ///
 /// `ops3_landed` 从外部传:它只跟仓走、不跟周走,在 `gather` 里采一次,
@@ -57,6 +57,7 @@ pub(super) fn build_ops(
                 // ①②认本周:标签优先,标题里的周号兜底(关卡时标签偶发掉了,
                 // 计划屏仍能从标题读出周目标,这里不能因此退回「未建」)。
                 wf == OPS3_WORKFLOW
+                    || (wf == OPS1_WORKFLOW && bw::app::is_ops1_issue(i))
                     || i.week_of == current_week
                     || i.title.ends_with(&format!(" {current_week}"))
             })
@@ -79,9 +80,9 @@ pub(super) fn build_ops(
     };
     vec![
         chip(
-            "运作活① 更新指标与周计划",
+            "运作活① 更新指标与版本计划",
             OPS1_WORKFLOW,
-            "点总览的「开始本周」触发",
+            "点总览的「开始本版本」触发",
         ),
         chip(
             "运作活② 资产盘点",
@@ -113,6 +114,28 @@ fn ops_chip_display(
         return ("已完成".into(), "件已在默认分支".into());
     }
     ("未建".into(), idle_note.to_string())
+}
+
+/// 名片改动那张在途的轻量活。名片是仓文件,改它走分支 + MR,所以总览要能
+/// 看见「改了、还没合」。只认最新的一张。
+/// 铺底没合进默认分支:开着的运作活③。合入之后配置才作数,别人再纳入也才看得见。
+pub(super) fn build_bootstrap_pending(issues: &[bw::Issue], ops3_landed: bool) -> Option<CardMrVm> {
+    if ops3_landed {
+        return None;
+    }
+    let i = issues
+        .iter()
+        .filter(|i| i.kind == bw::model::IssueKind::Ops && i.workflow == bw::app::OPS3_WORKFLOW)
+        .filter(|i| !matches!(i.status, IssueStatus::Done | IssueStatus::Cancelled))
+        .max_by_key(|i| i.number)?;
+    Some(CardMrVm {
+        issue_id: Some(i.id),
+        number: i.number,
+        status: i.status.label().to_string(),
+        pr_number: i.pr_number,
+        mergeable: i.status == IssueStatus::InReview,
+        has_open_mr: i.has_open_mr,
+    })
 }
 
 /// 名片改动那张在途的轻量活。名片是仓文件,改它走分支 + MR,所以总览要能
@@ -227,6 +250,21 @@ mod ops_chip_display_tests {
         let (st, note) = ops_chip_display(None, None, true, true, "接入项目时铺");
         assert_eq!(st, "已完成");
         assert_eq!(note, "件已在默认分支");
+    }
+
+    #[test]
+    fn bootstrap_pending_only_when_open_and_not_landed() {
+        let open = dummy_ops("#12 规范铺底 v5.11");
+        let mut open = open;
+        open.status = bw::model::IssueStatus::InReview;
+        open.workflow = bw::app::OPS3_WORKFLOW.into();
+        open.has_open_mr = true;
+        open.pr_number = 4;
+        assert!(super::build_bootstrap_pending(&[open.clone()], true).is_none());
+        let pending = super::build_bootstrap_pending(&[open], false).expect("open ops3");
+        assert_eq!(pending.number, 8);
+        assert!(pending.mergeable);
+        assert!(pending.has_open_mr);
     }
 
     #[test]

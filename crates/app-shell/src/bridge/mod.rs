@@ -65,12 +65,14 @@ pub enum Req {
     Cmd(Command),
     /// 打开某个项目(纯本机导航,不改任何数据)。
     Open(Option<ProjectId>),
-    /// 计划屏切到看某一周。
+    /// 计划屏切到看某一周(旧周版本,读回仍认)。
     ViewWeek(String),
-    /// 计划屏切到看某个自定义版本(计划包)。
+    /// 计划屏切到看某个计划版本(`v0.x` 或旧名)。
     ViewPlan(String),
-    /// 计划屏左栏点「全部」/ 点回某一周。
+    /// 计划屏回到全部 issue。
     ViewAll(bool),
+    /// 壳侧预判失败(改名撞名等),走同一条 toast。
+    Note(String),
     /// 知识库屏打开某份文档。
     OpenDoc(Option<String>),
     /// 「先不建」——把还没确认的草稿丢掉。草稿本来就没进库,丢掉不留痕。
@@ -407,7 +409,7 @@ async fn fetch_prefill(
     }
 }
 
-/// 从一批事件里挑出「开始本周」产出的草稿活标。真跑路径没有草稿(周计划由
+/// 从一批事件里挑出「开始本版本」产出的草稿活标。真跑路径没有草稿(版本计划由
 /// agent 会话产出、走 MR),那时候不该弹「等你确认草稿」的卡。
 fn drafts_of(events: &[bw::command::Event]) -> Option<(String, Vec<String>)> {
     events.iter().find_map(|e| match e {
@@ -479,7 +481,7 @@ pub fn spawn(deep_link: DeepLink) -> Bridge {
                     focus_skill: String::new(),
                     viewing_week: bw::isoweek::current_week(),
                     viewing_plan: String::new(),
-                    view_all: false,
+                    view_all: true,
                     open_doc: None,
                     note: None,
                     note_seq: 0,
@@ -745,6 +747,14 @@ pub fn spawn(deep_link: DeepLink) -> Bridge {
                             match app.dispatch(c).await {
                                 Ok(events) => {
                                     ui.set_note(vm_build::note_of(&events));
+                                    if let Some((_, to)) = events.iter().find_map(|e| match e {
+                                        bw::command::Event::PlanVersionRenamed { from, to, .. } => {
+                                            Some((from.clone(), to.clone()))
+                                        }
+                                        _ => None,
+                                    }) {
+                                        ui.viewing_plan = to;
+                                    }
                                     if status_patch {
                                         if let Some((id, to, settled)) = status_patch_of(&events)
                                         {
@@ -835,7 +845,8 @@ pub fn spawn(deep_link: DeepLink) -> Bridge {
                                         ui.open = Some(*id);
                                         ui.open_doc = None;
                                         ui.viewing_week = bw::isoweek::current_week();
-                                        ui.view_all = false;
+                                        ui.viewing_plan = String::new();
+                                        ui.view_all = true;
                                         ui.kb_tab = crate::vm::KbTab::default();
                                         ui.kb_codegraph = None;
                                         ui.kb_assets = None;
@@ -947,7 +958,8 @@ pub fn spawn(deep_link: DeepLink) -> Bridge {
                             ui.open = id;
                             ui.open_doc = None;
                             ui.viewing_week = bw::isoweek::current_week();
-                            ui.view_all = false;
+                            ui.viewing_plan = String::new();
+                            ui.view_all = true;
                             // 知识库那两个页签的结果是**上一个项目**的:它的技能
                             // 清单、它的 git 产物、它的发版记录、它的仓统计。留着
                             // 的话换个项目点进去,一屏数字没有一个是这个项目的,
@@ -975,11 +987,12 @@ pub fn spawn(deep_link: DeepLink) -> Bridge {
                             ui.view_all = false;
                         }
                         Req::ViewAll(v) => {
-                            ui.view_all = v;
                             if v {
                                 ui.viewing_plan = String::new();
+                                ui.view_all = true;
                             }
                         }
+                        Req::Note(n) => ui.set_note(Some(n)),
                         Req::OpenDoc(p) => ui.open_doc = p,
                         Req::DropDrafts => ui.pending_drafts = None,
                         Req::SelectSession(id) => {

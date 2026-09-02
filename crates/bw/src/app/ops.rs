@@ -5,7 +5,7 @@
 //!
 //! | 活 | `kind` | `origin` | `workflow` |
 //! |---|---|---|---|
-//! | ①更新指标 + 制定本周计划 | `ops` | `human` | `更新指标与周计划` |
+//! | ①更新指标 + 制定版本计划 | `ops` | `human` | `更新指标与版本计划` |
 //! | ②资产盘点 | `ops` | `auto` | `资产盘点` |
 //! | ③规范铺底 | `ops` | `auto` | `规范铺底`([`super::bootstrap`] 那边建) |
 //!
@@ -18,25 +18,48 @@ use super::{issue_store, App, AppError, ProgressLine, Result};
 use crate::command::Event;
 use crate::isoweek;
 use crate::local::ProjectRegistry;
-use crate::model::{IssueId, IssueKind, IssueOrigin, IssueStatus, ProjectId};
+use crate::model::{Issue, IssueId, IssueKind, IssueOrigin, IssueStatus, ProjectId};
 use crate::repo::issue_policy_file;
 
 /// 运作活①的 `workflow` 字段值,对应剧本 `week-planning`。两者的对应关系在
 /// `standard/skills/README.md` 那张表里。
-pub const OPS1_WORKFLOW: &str = "更新指标与周计划";
+pub const OPS1_WORKFLOW: &str = "更新指标与版本计划";
 pub const OPS2_WORKFLOW: &str = "资产盘点";
 pub const OPS3_WORKFLOW: &str = "规范铺底";
 
 /// 剧本名。开工时按这个 slug 在 **Workbench 自己的技能目录**里找到那份
 /// `SKILL.md`,把**名字 + 一句话 + 路径**给 agent(正文它自己按需读,见
 /// [`crate::standard::skills`])。
-/// 运作活①这一周那张活的标题。**它同时是建活的幂等键和「本周开没开过工」
-/// 的判据** —— 两者必须是同一个东西:按 `week_of` 查的话,人把这张卡从本周拖
-/// 回待办池,判据就落空了,而建活按标题去重又拿回同一张活,于是「开始本周」
-/// 会对一张已经在评审中的活重新开工,弹一句「不是能开工的状态」。定时那条路
-/// 早踩过同一个坑(见 [`App::tick_scheduler`]),这里不重踩。
-pub fn ops1_title(week: &str) -> String {
-    format!("更新指标 + 制定本周计划 {week}")
+/// 运作活①刚建时的标题(确认版本后会在后面加 ` v0.x`)。
+pub fn ops1_title() -> String {
+    crate::version::OPS1_TITLE.to_string()
+}
+
+/// 认运作活①:标题是光杆或光杆 + ` v0.x`,或 workflow 对得上。
+pub fn is_ops1_issue(i: &Issue) -> bool {
+    i.kind == IssueKind::Ops
+        && (i.workflow == OPS1_WORKFLOW || crate::version::is_ops1_title(&i.title))
+}
+
+/// 这一 ISO 周要不要再开一张运作活①:有未完成的,或本周已有打了 `v0.x` 的
+/// (含已完成)。
+pub fn week_started(issues: &[Issue], current_week: &str) -> bool {
+    let mut open = false;
+    let mut tagged_this_week = false;
+    for i in issues {
+        if !is_ops1_issue(i) {
+            continue;
+        }
+        if i.status != IssueStatus::Done && i.status != IssueStatus::Cancelled {
+            open = true;
+        }
+        if crate::version::is_v0x(&i.plan_version)
+            && crate::isoweek::unix_in_week(i.created_at, current_week)
+        {
+            tagged_this_week = true;
+        }
+    }
+    crate::version::ops1_already_started(open, tagged_this_week)
 }
 
 pub fn ops2_title(week: &str) -> String {

@@ -70,7 +70,7 @@ references(`standard/system-prompt/references/*.md`)是「干某类活需要额�
 
 ### 1 · codehub-issue-正本
 
-**是什么**:codehub/GitHub 的 issue+标签是唯一 issue 正本,本地零数据库。这个模块是 `Issue` 领域对象与远端 issue+标签的互转层:状态、排期(版本)、发版号、类别全部以标签表达,两台 Workbench 接同一个 codehub 仓读出来的是同一份活态——这就是"共享正本",leader 看 4/7 进展无盲区。排期只有一个槽:周版本打 `bw:week:YYYY-Www`,人起名的版本打 `bw:plan:<name>`,不是两套排期。关键取舍是放弃本地读缓存(MVP 卡点认了),读全走 CLI。业务活的开工工具和 workflow 不另打标签,读回时用 `bw:category:*` 去查 `.bw/issue-policy.toml`。运作活不打五阶段类别;开工工具读同一份文件的运维行(`category = "ops"`),workflow 仍按标题推断(①周计划 / ②资产盘点 / ③铺底),不拿运维行里的 workflow。
+**是什么**:codehub/GitHub 的 issue+标签是唯一 issue 正本,本地零数据库。这个模块是 `Issue` 领域对象与远端 issue+标签的互转层:状态、排期(版本)、发版号、类别全部以标签表达,两台 Workbench 接同一个 codehub 仓读出来的是同一份活态——这就是"共享正本",leader 看 4/7 进展无盲区。排期只有一个槽:打 `bw:plan:v0.x`,里程碑标题同字;不再写 `bw:week:*`。关键取舍是放弃本地读缓存(MVP 卡点认了),读全走 CLI。业务活的开工工具和 workflow 不另打标签,读回时用 `bw:category:*` 去查 `.bw/issue-policy.toml`。运作活不打五阶段类别;开工工具读同一份文件的运维行(`category = "ops"`),workflow 仍按标题推断(①版本计划 / ②资产盘点 / ③铺底),不拿运维行里的 workflow。
 
 **代码**:bw 的 `app/issue_store.rs`(互转主逻辑)、`model.rs`(`Issue`/`IssueId`)、`app/issue.rs`(读写入口)。
 **数据**:issue 正本在 codehub/GitHub 的 issue+标签;本地零库,不留读缓存。
@@ -81,19 +81,19 @@ references(`standard/system-prompt/references/*.md`)是「干某类活需要额�
 
 **是什么**:把项目仓 `.bw/` 下的配置/定义文件解析成内存结构供各屏现读现用。仓是正本——人、agent、第二台机器要看的都住仓里走 MR,本地不存第二份;这一层是读写正本的唯一入口,别处不许自己拼路径读 `.bw/*.toml`。关键取舍是不做 `deny_unknown_fields`(人手写多一个字段就整份崩代价太大),metrics 只认 `schema_version=2`、内核读到旧格式整份拒收(不上屏、不在打开项目时改仓)。重定+迁读数+借鉴旧脚本+删 V3 废弃件,跟运作活①的 skill 走,不写进系统提示词、不做内核静默迁移。
 
-**代码**:bw 的 `repo/`(共用读写口 + 五个解析器:project / metrics / issue-policy / managed / standard)+ `standard/mod.rs`(章程模板渲染)。
+**代码**:bw 的 `repo/`(共用读写口 + 解析器:project / metrics / issue-policy;旧仓还有 managed / standard)+ `standard/mod.rs`(模板渲染)。
 **数据**:不落本地库,仓文件就是正本,解析结果只在内存里现用;写回手写渲染而非 `toml::to_string`,为把注释留给人看。
 **依赖**:serde / toml 反序列化、sha2 算指纹;对 V3 任何 crate 零依赖。
 **没建**:采集执行落在 `app/collect.rs`(模块12),规范铺底编排见模块3。B/C 读写 `.bw/metrics/readings.jsonl` 已接(键是日历日,同一天同一指标只留一行;展示按周取那一周日期最大的一天)。C 类定时建提醒活没做。
 
 ### 3 · 规范铺底
 
-**是什么**:Workbench 接入项目时自动建一张运作活③"规范铺底",把二进制里编进的 `standard/` 模板渲染成 `.bw/` 骨架文件,写进这张活自己的 worktree+分支、开 MR 等人合。全程不起 agent(路径 A 轻量),Workbench 自己写文件、记指纹、提交,人的主分支一个字节不碰。关键取舍是"完成永远人点"——MR 开着才推评审中,没写出东西原地不动、不留分支不留号;仓根一个字不写(`AGENTS.md` 是项目自己的文件,归资产盘点首次模式问过人才写)。
+**是什么**:Workbench **第一次纳入**一个项目时自动建一张运作活③"规范铺底",把二进制里编进的 `standard/` 模板渲染成最少骨架,写进这张活自己的 worktree+分支、开 MR 等人合。全程不起 agent(路径 A 轻量)。仓里已经有名片(工作区 `.bw/project.toml`、默认分支 HEAD 有这份、或已经开着一张铺底活)就整段不跑——不建活、不开 MR。铺底没合进默认分支时,总览常驻横幅(和「开始本周」同一位置),提醒不合入则配置用不上、别人再纳入也看不出已经被管过。之后改名片走「编辑项目名片」、改指标走运作活①、改映射走配置屏,都和铺底无关。关键取舍是"完成永远人点"——MR 开着才推评审中,没写出东西原地不动、不留分支不留号;仓根一个字不写。没有二次铺底命令。
 
-**代码**:bw 的 `standard/`(模板/版本)+ `standard/bootstrap.rs`(写件/探测)+ `app/bootstrap.rs`(建活→开树→写→提交→推分支→开 MR 编排)+ `repo/managed_file.rs`(指纹对账)。
-**数据**:铺进项目仓 `.bw/`;零本地库;仓根一个字不写。
-**依赖**:repo::managed_file、git、standard、worktree、issue_store;外部 sha2 / serde。
-**没建**:升级流程(对账代码在,但"过期→看差异→建活→提 MR"动作未实现);节律(cadence)目录 / 鱼塘 `pond/` 未建。接入一次铺名片 + `issue-policy.toml`(映射与周五资产盘点节律);指标正文和业务脚本跟运作活①会话走,不预铺空壳,也不再从配置屏二次铺底。
+**代码**:bw 的 `standard/`(模板/版本)+ `standard/bootstrap.rs`(写件/探测)+ `app/bootstrap.rs`(建活→开树→写→提交→推分支→开 MR 编排)。
+**数据**:铺进项目仓 `.bw/` 的只有名片 `project.toml` 和 `issue-policy.toml`(开工映射 + 周五盘点)。不铺 `PROJECT.md`(和 toml 重复)、不铺 `standard.toml`、不铺 `managed.toml`(指纹账对使用没有用)。指标空壳不预铺。旧仓里那几份接入时不覆盖,每周资产盘点在运作活②的 worktree 里删,随盘点 MR 走。
+**依赖**:git、standard、worktree、issue_store。
+**没建**:节律目录 / 鱼塘 `pond/` 未建。旧仓里的 `.bw/standard.toml` / `managed.toml` / `PROJECT.md` 接入时不碰,每周资产盘点会删。
 
 ### 4 · 系统提示词与渐进加载
 
@@ -122,7 +122,7 @@ references(`standard/system-prompt/references/*.md`)是「干某类活需要额�
 **代码**:bw 的 `derive/`(`derive_project_health` 唯一判色纯函数 + `sealed.rs` 密封件 + `HealthInputs`)+ `app/health.rs`(只读采集 + `recompute_health` 唯一写入者)+ `trend.rs`(走势现算)。
 **数据**:本地零库不存灯;结果只在 `local/registry.rs` 项目显示缓存里留两列服务项目墙;判据每次打开现算。
 **依赖**:上游模块12的读数流水 + `.bw/metrics.toml` 目标定义;git / isoweek;只消费读数不负责采集。对 V3 任何 crate 零依赖。
-**没建**:C 类定时建提醒活没做(总览卡手填今天的数已接)。周目标从 ops① 评论解析整段(多条从新到旧,认 `## 周目标` / 旧评 `## 本周目标`);没读到就不打勾。点过采集或每日自动采过、流水里有本周或上周的行,灯可以因读数难看变红。
+**没建**:C 类定时建提醒活没做(总览卡手填今天的数已接)。版本目标从 ops① 评论解析整段(多条从新到旧,认 `## 版本目标` / 旧评 `## 周目标` / `## 本周目标`);没读到就不打勾。点过采集或每日自动采过、流水里有本周或上周的行,灯可以因读数难看变红。
 
 ### 7 · 会话与执行
 
@@ -130,7 +130,7 @@ references(`standard/system-prompt/references/*.md`)是「干某类活需要额�
 
 **两条通道别混**:本地 pipe 是 Workbench 对 Orca 桌面下命令(开工、接回),同机读 `orca-runtime.json` 的 token,不需要配对。嵌网页是把本机已开的 Orca web 给人看,要带 `#pairing=` 才能看见桌面那份状态;配对码 Orca 不经 pipe 发,人从桌面「给 web 配对」拿完整 URL,贴进本机 `settings.toml`(设置屏可改;开发期 `BW_ORCA_WEB_URL` 可覆盖)。没喂 URL 则这块如实空着,开工不受影响。
 
-**网页跟随是 Orca 内核,不是 Workbench 第二条 RPC。** create 句柄交成功后,带这刀的 Orca 会推配对网页;句柄超时那条路 Orca 不发跟随,Workbench 自己再 `worktree.activate`(`notifyClients`)。官方安装包今天没有跟随这刀,开工和桌面切换仍成立,嵌进去的网页可能停在旧位置,人要点侧栏。Workbench 不绕 URL / postMessage。源码桌面+浏览器已人眼过;Workbench 会话屏 iframe **能亮**已人验。去会话 / Open 先挂嵌页再切树;Start / 「开始本周」撤遮罩挂上嵌页后再切一次。配对网页能跟上;create 句柄成功那条跟随仍看 Orca 带不带这刀。
+**网页跟随是 Orca 内核,不是 Workbench 第二条 RPC。** create 句柄交成功后,带这刀的 Orca 会推配对网页;句柄超时那条路 Orca 不发跟随,Workbench 自己再 `worktree.activate`(`notifyClients`)。官方安装包今天没有跟随这刀,开工和桌面切换仍成立,嵌进去的网页可能停在旧位置,人要点侧栏。Workbench 不绕 URL / postMessage。源码桌面+浏览器已人眼过;Workbench 会话屏 iframe **能亮**已人验。去会话 / Open 先挂嵌页再切树;Start / 「开始本版本」撤遮罩挂上嵌页后再切一次。配对网页能跟上;create 句柄成功那条跟随仍看 Orca 带不带这刀。
 
 **嵌网页走 iframe**(Orca 和 Open Design 同一条路)。新版 Orca SPA boot 调 `crypto.randomUUID()`,只在 Secure Context 有。Workbench 父页是 `http://dioxus.index.html`(dioxus 虚拟主机,非 localhost / 非 https),默认不算 secure,子 iframe 跟着不算 → SPA 一抛、纯白。旧版 Orca 不调这个 API,所以一度能嵌。Windows 主 WebView 用 `with_windows_browser_args` 把该 origin 当 secure 对待(`--unsafely-treat-insecure-origin-as-secure=http://dioxus.index.html`),并关掉 `LocalNetworkAccessChecks`(iframe 嵌 loopback)。不另开顶级 wry 窗、不 `build_as_child`。顶级 `load_url` 仍会把 `http(s)` 扔给系统浏览器,所以嵌页必须是 iframe,不能把主 WebView 导航到 pairing URL。
 
@@ -139,7 +139,7 @@ references(`standard/system-prompt/references/*.md`)是「干某类活需要额�
 **PTY 封存**:`interactive_cli` / `pty_backend` / `terminal_manager` 整包挪到 `bw-engine` 的 `legacy_pty/`,开工路径不再调用。新模块 `orca`(对标 `open_design.rs`)接口一次定住:
 
 - `connect() -> OrcaRuntime` — 读本机 `orca-runtime.json`,token 不落盘
-- `ensure_repo` — 纳入、以及打开项目时先 `repo.show`。Orca 已认这个仓就原样返回,不盖「正在让 Orca 认得」遮罩、不再 `repo.add`;没有才 add。同进程内存表只加速连点,不落盘。不跟开工 / 去会话绑在一起。人不去 Orca 里手导 `workspaces/xx`。计划屏 Start 和总览「开始本周」点下去先立遮罩再切会话,那几秒不挂 Orca iframe(嵌页是原生层,后到的 HTML 遮罩盖不住);撤遮罩挂上后按 Open 同一条等 onload 再 `worktree.activate`
+- `ensure_repo` — 纳入、以及打开项目时先 `repo.show`。Orca 已认这个仓就原样返回,不盖「正在让 Orca 认得」遮罩、不再 `repo.add`;没有才 add。同进程内存表只加速连点,不落盘。不跟开工 / 去会话绑在一起。人不去 Orca 里手导 `workspaces/xx`。计划屏 Start 和总览「开始本版本」点下去先立遮罩再切会话,那几秒不挂 Orca iframe(嵌页是原生层,后到的 HTML 遮罩盖不住);撤遮罩挂上后按 Open 同一条等 onload 再 `worktree.activate`
 - `refresh_worktrees` — 开工在 `git worktree add` 之后、create 之前:再写一次 `worktreeBasePath`(回写 Orca 已有值;误写成 `.bw/worktrees` 的清掉)。Orca 没有「刷新扫描」RPC;`path:` 走 30s `worktreeScanCache`,刚 add 的树立刻 create 会 `selector_not_found`;只有 payload 带 `worktreeBasePath` 的 `repo.update` 才清这级缓存。不把扫描根改成 Workbench 目录(Orca 会把那当自己的工作区根、新树开空窗、提示词灌不进你看见的那扇)。不 `repo.add`、不用 Orca 的 `worktree.create`(树已在会和 git 打架)
 - `reveal_tree` / `activate_worktree` — 去会话和开工成功后跟网页:只 `worktree.activate`(12s)。不 ensure、不 resume
 - `create_session(worktree, agent, prompt, system)` — Orca 预设名是 `claude` / `cursor`(`cursor-agent` 是启动二进制,打出去会被 `Unknown agent preset` 拒)。Claude:`agentArgs` 一条单行(`--append-system-prompt '<压成单行的系统提示词>' '<标题+正文>' --dangerously-skip-permissions --disallowedTools 'Bash(gh pr merge)'`,和 PTY 开工同一套旗标),不走句柄回来之后的 `auto-submit`(Windows 上多行 `agentArgs` 打进 shell 每个换行是 Enter,启动变慢并撞 10 秒句柄超时,窗在词不在)。Cursor:没有 `--append-system-prompt`;`agentArgs` 和 Claude 同一套拼法(一条单行、值用 `shell_quote_single`):`--force --trust '<压成单行的系统提示词>'`。Orca cwd 已是这棵树,不另传 `--workspace`。create 前写 cursor-agent 认的 `~/.cursor/projects/<slug>/.workspace-trusted`(Orca 预写的 slug 会留下 `.bw` 的点,对不上仍弹框)。标题+正文走 Orca `prompt` + `auto-submit`。`clientOperationId` 用 Orca 规定形状(13 位毫秒 + `-` + 32 hex,不是 RPC 帧 id),形状不对立刻 `agent_session_operation_invalid` 被拒。Orca 回「等终端句柄超时」:窗已在,先停 5 秒再收 jsonl / 切树,对照日志记下超时与 jsonl 前后。create 成功后只给 Claude 短等 jsonl 收 session id;Cursor 不等;然后切树。对照日志见模块11,不再另写 `%TEMP%/bw-orca.log`
@@ -148,7 +148,7 @@ references(`standard/system-prompt/references/*.md`)是「干某类活需要额�
 **代码**:会话屏 `app-shell/screens/session/mod.rs`(只剩 Orca/OD 两页签);开工在计划屏 → `run_issue` / `run_issue_orca`;路径 `bw-engine/workspace.rs`;Orca 客户端 `bw-engine/orca.rs`;PTY 封存 `bw-engine/legacy_pty/`。
 **数据**:issue 正本不变。会话正文不进 Workbench 库。token 不入库。worktree 目录不入库。系统提示词开工时现算、一次性灌进 Orca/OD,不落配置屏、不跟会话屏当前页签走。
 **依赖**:本机 Orca(官方包或源码桌面)+ named-pipe;会话屏 iframe 吃本机设置里的 pairing URL(开发期可被 `BW_ORCA_WEB_URL` 覆盖)。`#![forbid(unsafe_code)]` 仍守。
-**没建**:不能自己 mint 配对码,人从 Orca 桌面「给 web 配对」拿「Open in browser」贴进设置屏(存本机 `settings.toml`,带 token 不进仓 / Event 原文 / 日志);开发期 `BW_ORCA_WEB_URL` 可覆盖。跟随在带这刀的 Orca 里已兑现、官方包还没有;去会话 / Open 先挂嵌页再切树;Start / 「开始本周」撤遮罩挂上后再切一次。`DeleteSession` 内核还在,会话屏没有按钮。稿未改。账本路径未改。不做:自己 mint pairing、postMessage、会话 URL、新 crate、Cursor 专模块、`worktree-orca-adapter`、迁旧树、源码版与安装版并行。人不去 Orca 手导仓——纳入 / 打开项目走 `ensure_repo`,不跟开工 / 去会话绑。**请评审**(规范已入库,按钮未接):剧本 `mr-review`、阶段规范 `review`、提示词 `REVIEW.md.tmpl` 和 `changes/reviewer-agent/` 已在仓里;计划屏/会话屏没有按钮,内核没有评审命令。接到 Orca 上另开一张活。
+**没建**:不能自己 mint 配对码,人从 Orca 桌面「给 web 配对」拿「Open in browser」贴进设置屏(存本机 `settings.toml`,带 token 不进仓 / Event 原文 / 日志);开发期 `BW_ORCA_WEB_URL` 可覆盖。跟随在带这刀的 Orca 里已兑现、官方包还没有;去会话 / Open 先挂嵌页再切树;Start / 「开始本版本」撤遮罩挂上后再切一次。`DeleteSession` 内核还在,会话屏没有按钮。稿未改。账本路径未改。不做:自己 mint pairing、postMessage、会话 URL、新 crate、Cursor 专模块、`worktree-orca-adapter`、迁旧树、源码版与安装版并行。人不去 Orca 手导仓——纳入 / 打开项目走 `ensure_repo`,不跟开工 / 去会话绑。**请评审**(规范已入库,按钮未接):剧本 `mr-review`、阶段规范 `review`、提示词 `REVIEW.md.tmpl` 和 `changes/reviewer-agent/` 已在仓里;计划屏/会话屏没有按钮,内核没有评审命令。接到 Orca 上另开一张活。
 
 ### 8 · 远端与工具探活
 
@@ -184,7 +184,7 @@ references(`standard/system-prompt/references/*.md`)是「干某类活需要额�
 **代码**:app-shell 的 `main.rs`(Root)+ `bridge/`(独立线程持有 App + nav + vm_build/vm_derive/vm_kb/vm_panels 四分文件拼 VM)+ `vm.rs`(全体 ViewModel)+ `theme/` + `chrome/` + `screens/`(八屏各一目录)+ `adapters/`(一能力一目录)。Windows exe 图标走 `app.ico` + `build.rs`(`winres`),编不过只告警。换项目时内核桥第一波并行拉 issue 名单 / 周目标 / 发版 / 健康 / 版本列表 / 当前用户就推 ViewModel 切页;每张活的 MR 号后台回填,不挡第一屏。拖拽改状态写成功只补丁这一张,不重拉名单(ADR 0002)。
 **数据**:本地零数据库——本机数据是 TOML/JSONL 落 `data_dir()` 下;codehub/GitHub issue+标签是唯一 issue 正本;壳自己不存任何业务数据,每个数字都是拼 ViewModel 那一刻从内核现算塞进来的。对照日志全仓一份 `bw.log`:`cargo run` 写到启动目录,直接跑 exe 写到项目目录(仓根或安装目录);`BW_LOG` 可改路径。一行是 `[时间] [模块] [文件] [行] [ok|err|warn] 正文`。E2E 标签(`[BW_OPEN]` 等)留在正文里。toast / 命令进出 / Orca RPC 都进这份文件。不写 token / pairing / 提示词正文。
 **依赖**:bw(内核 App / Command / Model)、bw_engine(执行器 / 远端)、dioxus 0.7 hard-pin + wry、tokio;对 V3 任何 crate 零依赖;xterm.js 前端资产 `include_str!` 编进二进制不联网拉。
-**没建**:Cursor 适配模块;蒸馏按钮、MR 检查列、"等你输入"那种 agent 细粒度状态(要靠 hook 回传还没接);已结束的会话切走再回来回放仍空;Windows 安装包不在本仓;删旧壳判据一条都不满足。会话左右栏可收,中栏终端跟着撑开。右侧「指南」全局都在,打开是仓里那份产品指南,不是另写的四章。指南下面是「Issue」:填标题后把本机对照日志报到当前目录 git 的 workbench 仓,中间转圈「日志上传中」,成功走底栏 toast「issue上报成功」。
+**没建**:Cursor 适配模块;蒸馏按钮、MR 检查列、"等你输入"那种 agent 细粒度状态(要靠 hook 回传还没接);已结束的会话切走再回来回放仍空;Windows 安装包不在本仓;删旧壳判据一条都不满足。发版本按钮、过了再 `cut_release` 未建。会话左右栏可收,中栏终端跟着撑开。右侧「指南」全局都在,打开是仓里那份产品指南,不是另写的四章。指南下面是「Issue」:填标题后把本机对照日志报到当前目录 git 的 workbench 仓,中间转圈「日志上传中」,成功走底栏 toast「issue上报成功」。
 
 ### 12 · 指标采集与读数
 
@@ -197,21 +197,22 @@ references(`standard/system-prompt/references/*.md`)是「干某类活需要额�
 
 ### 13 · 周循环与计划
 
-**是什么**:项目里的"计划屏":中栏周头/四列看板 + 屏幕居中的活详情弹窗,把"这个版本干什么"和"活的推进状态"装在一个界面里。**周和人起名的版本是一件事**——周版本是每周一按 ISO 周号(`2026-W34`,周一为起点、按机器本地时区)自动出现的那个版本;人也可以另起名字建版本。一张活只属于一个版本。周列表、发版、看板计数全部现算——没有周计划索引表、没有发版表。关键取舍是发版先建 codehub Release 成功再给活打 `bw:released` 标签(顺序不能反,否则重复点会重复打标签账对不上),发版号按版本号幂等;看板拖拽落定那一刻标签就是新的(排期是 issue 数据,不走 MR)。拖拽 / 详情改状态:等 `codehub-cli` 写标签成功再挪卡,中间转圈「issue 状态切换中」;成功只改内存里这一张(`last_gather` 补丁),不重拉本仓更不拉别的项目。写失败停在原列、失败原话进 toast。开工 / 合入 / 建活 / 顶栏刷新仍全量现拉。松手认的是当前子标题那段,不是列头。计划/版本认十条:待办→进行中(开工)/拒绝/阻塞;进行中→阻塞/拒绝/待办;待评审→完成/拒绝;阻塞→进行中(只改标签,不开工)/拒绝。完成只能从待评审来。详情有状态下拉,选项只列十条里从当前状态能走到的(列表用户不拖看板也靠这一份);选了走和拖拽同一条命令——待办→进行中开工、待评审→完成(有开着的 MR 就合入,没有则确认后只关 issue)、拒绝/阻塞写原因、阻塞→进行中只改标签。底栏只留 Start / Open / Complete。拖进「进行中」从待办来=开工(▶跑),确认后切到会话屏;从阻塞来只解除阻塞。详情点 Start / Open / Complete 或改状态下拉后弹窗自动关;Start 确认框建 worktree,业务活可改或补类别(没打的必须选,开工工具按映射走),运作活锁「运作」。垃圾卡作废要人写原因(进 issue 评论),打 `bw:status:cancelled` 并关掉远端 issue(codehub 不能删)。读回先认取消标签,关着的作废卡不是已完成。总览/计划上的运作活点:①②开着的写它的状态,本周已关的写「已完成」(标签或标题里的周号都认);③「已完成」仍只看默认分支 HEAD 有没有 `.bw/standard.toml`,关过但没合入的旧铺底不冒充完成。
+**是什么**:项目里的"计划屏":中栏版本头/四列看板 + 屏幕居中的活详情弹窗,把"这个版本干什么"和"活的推进状态"装在一个界面里。**计划版本、自建版本、发版号是同一个 `v0.x`**——三处同一串(`bw:plan:v0.x` / 里程碑标题 / Release)。ISO 周只做节律(运作活①该不该开、健康时间窗、资产盘点周五),不当排期名。一张活只属于一个版本。版本列表、发版、看板计数全部现算——没有周计划索引表、没有发版表。关键取舍是发版先建 codehub Release 成功再给活打 `bw:released:v0.x` 标签(顺序不能反,否则重复点会重复打标签账对不上),发版号就是当前视图那个 `v0.x`、不能另填;看板拖拽落定那一刻标签就是新的(排期是 issue 数据,不走 MR)。拖拽 / 详情改状态:等 `codehub-cli` 写标签成功再挪卡,中间转圈「issue 状态切换中」;成功只改内存里这一张(`last_gather` 补丁),不重拉本仓更不拉别的项目。写失败停在原列、失败原话进 toast。开工 / 合入 / 建活 / 顶栏刷新仍全量现拉。松手认的是当前子标题那段,不是列头。计划/版本认十条:待办→进行中(开工)/拒绝/阻塞;进行中→阻塞/拒绝/待办;待评审→完成/拒绝;阻塞→进行中(只改标签,不开工)/拒绝。完成只能从待评审来。详情有状态下拉,选项只列十条里从当前状态能走到的(列表用户不拖看板也靠这一份);选了走和拖拽同一条命令——待办→进行中开工、待评审→完成(有开着的 MR 就合入,没有则确认后只关 issue)、拒绝/阻塞写原因、阻塞→进行中只改标签。底栏只留 Start / Open / Complete。拖进「进行中」从待办来=开工(▶跑),确认后切到会话屏;从阻塞来只解除阻塞。详情点 Start / Open / Complete 或改状态下拉后弹窗自动关;Start 确认框建 worktree,业务活可改或补类别(没打的必须选,开工工具按映射走),运作活锁「运作」。垃圾卡作废要人写原因(进 issue 评论),打 `bw:status:cancelled` 并关掉远端 issue(codehub 不能删)。读回先认取消标签,关着的作废卡不是已完成。总览/计划上的运作活点:①②开着的写它的状态,本周已关的写「已完成」(标题或本 ISO 周创建的 `v0.x` 标签都认);③「已完成」仍只看默认分支 HEAD 有没有 `.bw/project.toml`,关过但没合入的旧铺底不冒充完成。
 
 **代码**:bw 的 `app/plan.rs`(用例)+ `app/ops.rs`(运作活①②标题幂等键与定时)+ `isoweek.rs` + `trend.rs`(近 N 周走势全现算);app-shell 的 `screens/plan/`(mod / kanban / detail)。
-**数据**:零本地库——codehub/GitHub issue+标签是唯一正本;排期只有一个槽(Workbench 直接改标签):周版本打 `bw:week:YYYY-Www`,人起名的版本打 `bw:plan:<name>`,一张活不能两套都挂。codehub 上顺带投影同名里程碑,计划屏仍只认标签。删除人起名的版本 = 摘 `bw:plan:<name>` + 删同名里程碑;周版本每周一固定出现,标题是周格式的拒收、不能从「删版本」删。发版 = 远端建 Release + 打 `bw:released:vX` 标签按版本号幂等(发版号不是计划版本);发版弹窗默认号 = 在研号自增一位,人可改。在研版本和项目群跟名片四字段同一张轻量活「编辑项目名片」,总览编辑,不写主检出。总览/知识库发版次数优先读远端 Release,读不到再退本机 git 标签。点某个版本只看挂了那个版本的活;没挂版本的只在「issue总览」。项目墙「本周 x/y 完成」跟总览五段同一口径,作废不进分母。
+**数据**:零本地库——codehub/GitHub issue+标签是唯一正本;排期只有一个槽(Workbench 直接改标签):`bw:plan:v0.x`,一张活只挂一个。codehub 上顺带投影同名里程碑,计划屏仍只认标签。旧 `bw:plan:` 名和 `bw:week:` 读回仍显示、能切视图;新建只写 `v0.x`,不迁旧标。删除未发布的版本 = 摘 `bw:plan:v0.x` + 删同名里程碑;已发的不能删、不能改名。发版 = 远端建 Release + 打 `bw:released:v0.x`,号锁死当前版本视图。在研版本和项目群跟名片四字段同一张轻量活「编辑项目名片」,总览编辑,不写主检出。总览/知识库发版次数优先读远端 Release,读不到再退本机 git 标签。进计划屏默认就是全部 issue。点某个版本只看挂了那个版本的活;没挂版本的只在全部 issue。项目墙「本周 x/y 完成」跟总览五段同一口径,作废不进分母。
 **依赖**:issue_store、repo::project_file、git(`pull_ff`)、isoweek、trend、bw_engine::remote(建 Release / 查 MR)、bw_engine::github(`issue_branch` 确定性);节律规则读 `.bw/issue-policy.toml`。
-**没建**:"预览·未合入"做成灰态(从活 worktree 读未合入的 metrics.toml 与 ops① 评论重渲染周头未接);"蒸馏"灰态(见模块15);给活挂指标的命令没接(建活时"推的指标"列恒空);macOS 页面内拖放还没真机验证过一次。周目标在总览「本周计划进度」、计划屏周头显示 `## 周目标` **整段**(一句或一段都行,旧的一句话评论不用迁);计划屏周头默认收成两行,右下角展开框打开整段,再点收起。项目墙卡片仍截短。正本是 ops① 评论,多条从新到旧。纳入清单和读数快照留在评论里,人点开运作活看。范围内的活认当前这个版本的标签(周版本认 `bw:week`,人起名的认 `bw:plan`)。剧本要求人确认后当场建卡并打本周版本标签 + `bw:category:*`,打完还要挂 codehub 同名里程碑;替身路径仍走 `ConfirmWeekDraft`。挂评前用 `week-planning/check-week-comment.py` 校验标题。计划屏「新建活」可选业务活或运作活①②,都能填正文。业务活打 `bw:category:*`;运作活不打五阶段类别,标题按本周幂等。业务活工具和 workflow 读回时按类别查 issue-policy(原型默认 Open Design,workflow 空着等 proto-design 打包);运作活开工工具读运维行,workflow 仍按标题。总览不再放「去计划」(侧栏下一格就是计划)。
+**没建**:"预览·未合入"做成灰态(从活 worktree 读未合入的 metrics.toml 与 ops① 评论重渲染周头未接);"蒸馏"灰态(见模块15);给活挂指标的命令没接(建活时"推的指标"列恒空);macOS 页面内拖放还没真机验证过一次。版本目标在总览「本周计划进度」、计划屏版本头显示 `## 版本目标` **整段**(一句或一段都行,旧的一句话评论不用迁);计划屏默认收成两行,右下角展开框打开整段,再点收起。项目墙卡片仍截短。正本是 ops① 评论,多条从新到旧。纳入清单和读数快照留在评论里,人点开运作活看。范围内的活认 `bw:plan:v0.x`。剧本要求人先确认本周版本,再当场建卡并打 `bw:plan:v0.x` + `bw:category:*`,打完还要挂 codehub 同名里程碑;替身路径仍走 `ConfirmWeekDraft`。不再写 `bw:week:*`。挂评前用 `week-planning/check-week-comment.py` 校验标题。计划屏「新建活」可选业务活或运作活①②,都能填正文。业务活打 `bw:category:*`;运作活不打五阶段类别,标题按本周幂等。业务活工具和 workflow 读回时按类别查 issue-policy(原型默认 Open Design,workflow 空着等 proto-design 打包);运作活开工工具读运维行,workflow 仍按标题。总览不再放「去计划」(侧栏下一格就是计划)。
 
 ### 14 · 资产盘点与项目接入
 
-**是什么**:两件互锁的事。资产盘点(运作活②)一个包两种模式——每周模式盘这周变化、首次模式给老仓已有 issue 挂上周标签(需要周目标再补一张运作活①,评论写明补记);项目接入把一个仓弄到本机、落一行项目、把名片四字段写进仓文件(不落库;在研版本和项目群接入时用默认或仓里已有的,之后在总览名片改)。没有单独的「历史回填」命令,也不按 git 周去建假文件。历史要出现在计划屏某个周版本,就是给那些 issue 打 `bw:week:YYYY-Www`(周版本的标签写法)。补记不假装当时写过,健康灯只看本周。
+**是什么**:两件互锁的事。资产盘点(运作活②)一个包两种模式——每周模式盘这周变化,并在这张活的 worktree 里清掉旧铺底残留(版本账 / 指纹账 / 重复名片 / V3 件,issue-policy 只瘦不换正本);首次模式给老仓已有 issue 对上已有 `v0.x` 的打 `bw:plan:v0.x`(对不上就未分配;需要对版本目标再补一张运作活①,评论写明补记)。项目接入把一个仓弄到本机、落一行项目、把名片四字段写进仓文件(不落库;在研版本和项目群接入时用默认或仓里已有的,之后在总览名片改)。已有名片的仓接入时不重铺、不覆盖人手改过的 mapping。没有单独的「历史回填」命令,也不按 git 周去建假文件。不再写 `bw:week:*`。补记不假装当时写过,健康灯只看本周。
 
 **代码**:bw 的 `app/project.rs`(接入 / 名片 / 群)+ `git.rs`(`first_commit_date` / `tags_with_dates` / `week_counts_many` 现算);standard/skills 的 `asset-audit` + `project-handbook` 两份剧本。
-**数据**:零本地库;名片四字段落 `.bw/PROJECT.md` + `.bw/project.toml`;`project` 表只有定位与显示缓存;历史呈现不写仓文件。
+**数据**:零本地库;名片四字段只落 `.bw/project.toml`;`project` 表只有定位与显示缓存;历史呈现不写仓文件。
 **依赖**:crate::git / isoweek / repo::project_file / standard、worktree、issue_store;外部 bw_engine::github / codehub(clone、list/create Release)。
-**没建**:首次模式打标签+补记靠 agent 会话,没有 Workbench 先算证据文件那一层;`BackfillHistory` 已删;五条历史探测判据只实现前三条(提交数 / 标签 / CHANGELOG),远端已关闭 issue、已合并 MR 两条没对应查询;project-handbook 写 `AGENTS.md` 只记遗留、不接首次会话。每周模式定时已接:读 `.bw/issue-policy.toml` 的 `ops2_schedule`(模板默认 `fri 09:00`),Workbench 开着每 60 秒判一次「本周这一刻过了没有」;过了且没有开着的「资产盘点 YYYY-Www」就建一张并开工,最远评审中。错过(当时没开着)下次开着照样补建,不另记触发表。运作活①仍是人触发(`ops1_trigger = manual`),总览「开始本周」看本周有没有这张活/有没有周目标。运作活没有五阶段类别,详情锁死显示「运作」,内核拒改。V3 残留件(`.bw/connectors.toml`、`docs/Workbench/`、`.bw/plan/` 等)由资产盘点 skill 在这张活的 worktree 里删,走 MR,不在主检出动手。
+
+**没建**:首次模式打标签+补记靠 agent 会话,没有 Workbench 先算证据文件那一层;`BackfillHistory` 已删;五条历史探测判据只实现前三条(提交数 / 标签 / CHANGELOG),远端已关闭 issue、已合并 MR 两条没对应查询;project-handbook 写 `AGENTS.md` 只记遗留、不接首次会话。每周模式定时已接:读 `.bw/issue-policy.toml` 的 `ops2_schedule`(模板默认 `fri 09:00`),Workbench 开着每 60 秒判一次「本周这一刻过了没有」;过了且没有开着的「资产盘点 YYYY-Www」就建一张并开工,最远评审中。错过(当时没开着)下次开着照样补建,不另记触发表。运作活①仍是人触发(`ops1_trigger = manual`),总览「开始本版本」看本周有没有这张活(标题 + 本 ISO 周创建的 `v0.x` 标签)。运作活没有五阶段类别,详情锁死显示「运作」,内核拒改。旧铺底残留(`.bw/standard.toml`、`.bw/managed.toml`、`.bw/PROJECT.md`)和 V3 残留件(`.bw/connectors.toml`、`docs/Workbench/`、`.bw/plan/` 等)由资产盘点 skill 在这张活的 worktree 里删,走 MR,不在主检出动手。issue-policy 若还带 `[[tool]]` / `[review]` / `[kanban]`,盘点只删这几段,mapping 和节律原样留。
 
 ### 15 · 技能与蒸馏
 

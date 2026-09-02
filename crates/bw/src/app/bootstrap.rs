@@ -20,19 +20,42 @@ use super::worktree;
 use super::{issue_store, App, AppError, ProgressLine, Result};
 use crate::command::Event;
 use crate::model::{Issue, IssueOrigin, IssueStatus, ProjectId};
-use crate::repo::managed_file::{self, Reconcile};
 use crate::repo::project_file;
 use crate::standard;
-use crate::standard::bootstrap::{self as boot, BootstrapVars};
+use crate::standard::bootstrap::{self as boot};
 
 impl App {
-    /// 接入自动跑。`all` 今天没有分别,配置屏不再二次铺底。
+    /// 只在第一次纳入时跑。仓里已经有名片、或已经开着一张铺底活,整段跳过。
     pub(super) async fn run_standard_bootstrap(
         &mut self,
         project_id: ProjectId,
-        all: bool,
     ) -> Result<Vec<Event>> {
         let ws = self.workspace_of(project_id).await?;
+        // 默认分支已经有名片 = 这个仓被接管过,后面改名片/指标/映射走各自的活。
+        if crate::git::path_in_head(&ws, project_file::REL_PATH).await {
+            self.step(ProgressLine::ok(
+                5,
+                "规范铺底:默认分支已有名片,这次不建活也不开 MR",
+            ));
+            return Ok(vec![]);
+        }
+        // 铺底 MR 还没合:别人再纳入会看见这张开着的活,不再建第二张。
+        let open_ops3 = self
+            .issues(project_id)
+            .await
+            .unwrap_or_default()
+            .into_iter()
+            .any(|i| {
+                i.workflow == super::OPS3_WORKFLOW
+                    && !matches!(i.status, IssueStatus::Done | IssueStatus::Cancelled)
+            });
+        if open_ops3 {
+            self.step(ProgressLine::ok(
+                5,
+                "规范铺底:已有开着的铺底活,不重复建。合入之前总览会一直提示",
+            ));
+            return Ok(vec![]);
+        }
         let project = self
             .project(project_id)
             .await?
@@ -69,45 +92,15 @@ impl App {
             )
             .await?;
 
-        let remote = if project.has_remote() {
-            format!("{} · `{}`", project.provider, project.remote_path)
-        } else {
-            "—(还没挂远端)".to_string()
-        };
-        // 名片四格可能是空的(接入时人没填)。渲染进模板时补一句「(还没填)」——
-        // 留空的话文件里就是一节空标题,看不出是没填还是漏渲染了。
-        let or_blank = |v: &str| {
-            if v.trim().is_empty() {
-                "(还没填)".to_string()
-            } else {
-                v.trim().to_string()
-            }
-        };
-        let vars = BootstrapVars {
-            name: file.name.clone(),
-            brief: or_blank(&file.brief),
-            benchmark: or_blank(&file.benchmark),
-            north_star: or_blank(&file.opportunity),
-            remote,
-            owner: "—(单人项目,Builder 本人)".into(),
-            current_version: if file.current_version.is_empty() {
-                "v0.1".into()
-            } else {
-                file.current_version.clone()
-            },
-            chat: super::project::chat_label(&file.chat),
-            // 这两节从**主检出**探 —— 那才是这个仓完整的样子;活自己的 worktree
-            // 这会儿还没建出来,而且就算建了内容也一样。
-        };
         // 这张活自己的一棵树、自己的一个分支。人的主检出不动。
         let issue = self.issue_or_err(issue_id).await?;
         let tree = worktree::provision(&ws, issue.number).await?;
         self.step(ProgressLine::doing(5, "规范铺底:往那棵树里写规范骨架…"));
-        let mut report = boot::write_core_files(&tree.path, &vars, all)?;
+        let mut report = boot::write_core_files(&tree.path)?;
 
         // **名片也得进这个 MR。** 接入那一步把 `.bw/project.toml` 写在人的主
-        // 检出里(得先有它,PROJECT.md 才渲染得出项目名),但铺底是在**这张活
-        // 自己的树**上提交的 —— 不把它复制过来,人的工作目录里就永远挂着一份
+        // 检出里,但铺底是在**这张活自己的树**上提交的 —— 不把它复制过来,
+        // 人的工作目录里就永远挂着一份
         // 没提交的 `.bw/`,而仓里到今天都没有名片。「仓是正本、换台机器拉下来
         // 就有」这句话就是从这里开始不成立的。
         //
@@ -280,29 +273,17 @@ impl App {
         Ok(events)
     }
 
-    /// 纯读的对账:缺 / 过期 / 人改过。不建活、不写仓。
+    /// 纯读的对账:该有的件在不在。不建活、不写仓。
     pub(super) async fn reconcile_standard(&mut self, project_id: ProjectId) -> Result<Vec<Event>> {
         let ws = self.workspace_of(project_id).await?;
-        let managed = managed_file::read(&ws)?.unwrap_or_default();
-        let version = standard::version();
-
         let mut missing = Vec::new();
-        let mut stale = Vec::new();
-        let mut human_edited = Vec::new();
-
-        // 只对账**铺进用户仓的规范件**。技能包不在这张表里 —— 它们住在
-        // Workbench 自己的资产目录,不进用户的仓,自然也没有「人手改过没有」这
-        // 个问题(见 `standard::skills`)。
         for t in standard::CORE_TEMPLATES {
-            let target = t.target.to_string();
-            let disk = std::fs::read(ws.join(&target)).ok();
-            match managed_file::reconcile(managed.entry(&target), disk.as_deref(), version) {
-                Reconcile::Missing => missing.push(target),
-                Reconcile::Stale => stale.push(target),
-                Reconcile::HumanEdited => human_edited.push(target),
-                Reconcile::UpToDate => {}
+            if !ws.join(t.target).is_file() {
+                missing.push(t.target.to_string());
             }
         }
+        let stale = Vec::new();
+        let human_edited = Vec::new();
 
         Ok(vec![Event::StandardReconciled {
             project_id,
@@ -340,7 +321,7 @@ async fn drop_untracked_twin(main: &std::path::Path, tree: &std::path::Path, rel
 fn pending_steps(probe: &boot::BootstrapProbe) -> String {
     let mut v = Vec::new();
     if probe.has_history {
-        v.push("资产盘点首次模式:给已有 issue 打 bw:week(需要周目标再补一张运作活①,评论写明补记)");
+        v.push("资产盘点首次模式:能对上已有 v0.x 的活打 bw:plan:v0.x(需要对版本目标再补一张运作活①,评论写明补记)");
     }
     if probe.has_own_conventions {
         v.push(
@@ -369,6 +350,7 @@ pub fn agent_system_prompt(
     issue: &Issue,
     skill: Option<&SkillPointer>,
     references: &[ReferencePointer],
+    version_context: &str,
 ) -> String {
     let number = issue.number.to_string();
     let category = issue.category.map(|c| c.label()).unwrap_or("—(没定类别)");
@@ -388,6 +370,7 @@ pub fn agent_system_prompt(
             ("workflow", workflow),
             ("references", refs.as_str()),
             ("skill", skill_str.as_str()),
+            ("version_context", version_context),
         ],
     )
 }

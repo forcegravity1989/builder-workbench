@@ -71,7 +71,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         project_id: ProjectId::new(),
         number: 1,
         remote_number: 0,
-        title: "更新指标 + 制定本周计划".into(),
+        title: "更新指标 + 制定版本计划".into(),
         body: String::new(),
         status: IssueStatus::Todo,
         branch: String::new(),
@@ -94,7 +94,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         plan_version: String::new(),
     };
     let skill = bw::app::skill_pointer(&skills_dir, &issue.workflow).expect("挑不到剧本");
-    let prompt_empty = bw::app::agent_system_prompt(&issue, Some(&skill), &[]);
+    let prompt_empty = bw::app::agent_system_prompt(&issue, Some(&skill), &[], "");
     say(
         "步骤 2 · 没指 references 时提示词里几条路径",
         &format!("{}(该是 0)", prompt_empty.matches("\n- `").count()),
@@ -103,7 +103,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // ── 3 · 摊 references:指标活该命中 metrics.md ─────────────
     let refs_dir = app.ensure_prompt_assets().expect("references 没摊出来");
     let references = bw::app::references_for(&issue, &refs_dir);
-    let prompt = bw::app::agent_system_prompt(&issue, Some(&skill), &references);
+    let prompt = bw::app::agent_system_prompt(&issue, Some(&skill), &references, "");
     say(
         "步骤 3 · 指标活命中几份 reference",
         &format!(

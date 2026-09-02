@@ -6,9 +6,9 @@
      (`crates/bw/src/standard/`)。 -->
 
 `standard/` 是 Builders' Workbench(Workbench)往被管项目仓 `.bw/` 里铺的骨架
-文件的**正本**。项目仓里看到的 `.bw/PROJECT.md`、`.bw/standard.toml`、
-`.bw/metrics.toml` 等内容都来自这里的模板渲染——改这里的模板,就是在改
-Workbench 给每个新项目铺出来的起点长什么样。仓根 `AGENTS.md` 不在这套模板里。
+文件的**正本**。第一次纳入时铺名片和开工映射;指标跟运作活①走,不预铺空壳。
+改这里的模板,就是在改 Workbench 给每个新项目铺出来的起点长什么样。仓根
+`AGENTS.md` 不在这套模板里。
 
 **落点分两类,别混**:
 
@@ -21,12 +21,11 @@ Workbench 给每个新项目铺出来的起点长什么样。仓根 `AGENTS.md` 
 
 规范版本因此从 4.0 跳到 **5.0** —— 落点变了,老版本铺出来的文件在新版本眼里
 就是「不在册」,不做迁移。续三(系统提示词外置 + 扁平铺底 + 删方法论)又
-抬到 **5.1**,当前值见 `VERSION`。续五(默认 workflow 打包:mattpocock 入口 + vendor 摊 + issue-policy 回填)抬到 **5.2**。续十六(指标空壳到站才铺 + 脚本 UTF-8 / A 类 points / `def` 字段)抬到 **5.3**。续十七(运作活①评论三标题 + 挂评校验脚本)抬到 **5.4**。续二十(B 类仍要写脚本)抬到 **5.5**。续二十二(B 类写入 + 定本周建卡必打类别)抬到 **5.6**。续二十三(mattpocock 入口写清 `/xxx`=读路径,并补 grilling/domain-modeling/tdd)抬到 **5.7**。B/C 读数改日历日键、展示按周抬到 **5.8**。过程指标包(十份脚本 + 目录总账)抬到 **5.9**。独立评审(评审剧本 `mr-review` + 阶段规范 `review` + 评审主提示词 `REVIEW.md.tmpl`)抬到 **5.10**。
+抬到 **5.1**,当前值见 `VERSION`。续五(默认 workflow 打包:mattpocock 入口 + vendor 摊 + issue-policy 回填)抬到 **5.2**。续十六(指标空壳到站才铺 + 脚本 UTF-8 / A 类 points / `def` 字段)抬到 **5.3**。续十七(运作活①评论三标题 + 挂评校验脚本)抬到 **5.4**。续二十(B 类仍要写脚本)抬到 **5.5**。续二十二(B 类写入 + 定本周建卡必打类别)抬到 **5.6**。续二十三(mattpocock 入口写清 `/xxx`=读路径,并补 grilling/domain-modeling/tdd)抬到 **5.7**。B/C 读数改日历日键、展示按周抬到 **5.8**。过程指标包(十份脚本 + 目录总账)抬到 **5.9**。独立评审(评审剧本 `mr-review` + 阶段规范 `review` + 评审主提示词 `REVIEW.md.tmpl`)抬到 **5.10**。计划版本收成 `v0.x`、不再写 `bw:week` 抬到 **5.11**。名片只留 `project.toml`、开工约定不再写工具声明、不再铺 `standard.toml` / `managed.toml`、周盘点清旧件抬到 **5.12**。
 
-编进 `CORE_TEMPLATES`、随铺底摊开的三类:charter、meta、issue-policy。
-docs-core 与 metrics 有模板文件但不在 `CORE_TEMPLATES`(项目自有人填,不随
-铺底摊)。旧名单里的 agents / defaults-core / cadence 没有对应
-模板(仓根手册归资产盘点、节律目录标了没建),不写进 `.bw/standard.toml`。
+编进 `CORE_TEMPLATES`、随第一次纳入摊开的:issue-policy(开工映射 + 周五盘点)。
+名片是接入时写的 `.bw/project.toml`,不在这张表里。metrics 有模板但不铺(运作活①跟人写)。
+`.bw/standard.toml` / `managed.toml` / `PROJECT.md` 不再铺;旧仓里那几份由每周资产盘点清掉。
 
 ## 谁会读这些文件
 
@@ -37,8 +36,8 @@ docs-core 与 metrics 有模板文件但不在 `CORE_TEMPLATES`(项目自有人�
   目录——**改这里任何一份文件的内容,就是在改 Workbench 的产品行为**,不是
   改一份纯文档。
 - **agent**:铺进项目仓之后,仓根 `AGENTS.md`(经 `CLAUDE.md` 一行导入)会被
-  每次开工的 agent 会话读到;其余模板渲染出的文件(`.bw/PROJECT.md`、
-  `.bw/*.toml` 等)是项目
+  每次开工的 agent 会话读到;其余模板渲染出的文件(`.bw/project.toml`、
+  `.bw/issue-policy.toml` 等)是项目
   自己的正本文件,供人和 agent 日常打开查阅、按需要修改。
 
 ## 目前这里有什么
@@ -57,11 +56,8 @@ docs-core 与 metrics 有模板文件但不在 `CORE_TEMPLATES`(项目自有人�
 
 | 文件 | 一句话 |
 |---|---|
-| `templates/PROJECT.md.tmpl` | 项目章程:想做什么、最像的对标、北极星、项目信息 |
-| `templates/design/README.md` | `.bw/design/` 目录用途与写作约定(30 秒导读、过期加横幅) |
-| `templates/metrics.toml.tmpl` | `.bw/metrics.toml` 骨架:北极星占位 + 滞后/引领指标写法示例(注释掉) |
-| `templates/issue-policy.toml.tmpl` | `.bw/issue-policy.toml` 骨架:开工工具声明、类别→工具→workflow 默认映射、评审/节律/看板规则 |
-| `templates/standard.toml.tmpl` | `.bw/standard.toml` 骨架:记这个项目铺的规范版本与启用/扩展的大类 |
+| `templates/metrics.toml.tmpl` | 指标格式正本,不随接入铺;运作活①照着写 |
+| `templates/issue-policy.toml.tmpl` | 类别映射 + 周五盘点节律 |
 | `templates/scripts/*.py`(13 份) | 现成采集脚本,铺进 `.bw/scripts/`:仓级三份(每周提交数 / 合入 PR 数 / star 数)+ 过程指标包十份(评审等待 / 首过率 / 返工轮数 / 首审等待 / 意图成文时长 / 变更前置时间 / 同时开着的 MR 数 / 活存活率 / 手册修正频次 / 距上次发版天数)——全部可回溯、只读代码仓与远端 |
 | `templates/process-catalog.md` | 过程指标目录(playbook 26 条的总账:能算的指到脚本、等前置的写明等什么、不建的写明为什么),铺进 `.bw/process-catalog.md`;荐入规则见 `skills/metrics-refresh` |
 

@@ -1,6 +1,6 @@
 //! 接入项目、改项目信息(名片 + 在研版本 + 项目群)。
 //!
-//! 正本是 `.bw/PROJECT.md` 与 `.bw/project.toml`,**不落库**——`project`
+//! 正本是 `.bw/project.toml`,**不落库**——`project`
 //! 表只有定位与显示缓存。改这些就是改仓文件,得走一张轻量活与一次 MR,
 //! 不是直接 UPDATE 一行。
 
@@ -9,7 +9,6 @@ use super::{issue_store, App, AppError, ProgressLine, Result};
 use crate::command::{Event, ProjectIntent, RemoteRef};
 use crate::model::{IssueStatus, Project, ProjectId};
 use crate::repo::project_file::{self, ChatConfig, ProjectFile};
-use crate::standard;
 
 impl App {
     pub(super) async fn create_project(
@@ -65,7 +64,6 @@ impl App {
         let existing = project_file::read(&ws)?;
         let adopted = existing.is_some();
         let mut file = existing.unwrap_or_else(|| ProjectFile {
-            standard_version: standard::version().to_string(),
             // 新建项目默认在研版本 v0.1。
             current_version: "v0.1".into(),
             ..Default::default()
@@ -78,29 +76,32 @@ impl App {
         self.step(ProgressLine::ok(
             4,
             if adopted {
-                "仓里本来就有名片,一个字没覆盖,只补了空着的字段".to_string()
+                "仓里本来就有名片,一个字没覆盖,只补了空着的字段。不重复铺底".to_string()
             } else {
                 "名片写好了,下一步铺底会把它提交到这张活的分支上".to_string()
             },
         ));
 
-        // 第 0 站的后半截:**接入完自动建那张一次性运作活③「规范铺底」**
-        // 它建分支、往仓里写全套规范骨架、开一个 MR,
-        // **停在评审中等人合** —— 不自动合、不自动完成,一条铁律都没松。
-        //
-        // 铺底没成**不推翻接入**:项目已经建好了、仓已经在本机了,这两件事是
-        // 真的。配置屏不再提供第二次铺底;对账能看见缺哪些件。
+        // 第 0 站的后半截:仓里还没有名片才建运作活③「规范铺底」。
+        // 已有名片 = 这个仓被接管过,不再建活、不开 MR。
+        // 铺底没成**不推翻接入**:项目已经建好了、仓已经在本机了。
         let mut events = vec![Event::ProjectCreated {
             id: row.id,
             slug,
             adopted,
         }];
-        match self.run_standard_bootstrap(row.id, false).await {
-            Ok(more) => events.extend(more),
-            Err(e) => self.step(ProgressLine::fail(
-                5,
-                format!("规范铺底没成:{e} —— 项目已经接进来了。配置屏「对一遍账」能看见缺哪些件"),
-            )),
+        if adopted {
+            self.step(ProgressLine::ok(5, "仓里已有项目信息,跳过规范铺底"));
+        } else {
+            match self.run_standard_bootstrap(row.id).await {
+                Ok(more) => events.extend(more),
+                Err(e) => self.step(ProgressLine::fail(
+                    5,
+                    format!(
+                        "规范铺底没成:{e} —— 项目已经接进来了。配置屏「对一遍账」能看见缺哪些件"
+                    ),
+                )),
+            }
         }
         // 纳入时替人把仓登记进 Orca。Orca 没开不推翻接入,第一次开工 / Open 再补。
         if self.pty_enabled {
@@ -262,7 +263,7 @@ impl App {
                     &project,
                     issue_store::LIGHT_TITLE,
                     "项目信息改动:名片四字段 / 在研版本 / 项目群。改的是 \
-                     .bw/PROJECT.md 与 .bw/project.toml 两份仓文件,等人评审合入。",
+                     .bw/project.toml,等人评审合入。",
                     crate::model::IssueKind::Light,
                     "",
                     &[],
@@ -289,20 +290,6 @@ impl App {
             })
         };
         project_file::write(&tree.path, &file)?;
-
-        // 章程也要跟着改 —— PROJECT.md 才是给人读的那一份。
-        let body = standard::render(
-            standard::CHARTER_TMPL,
-            &[
-                ("name", &intent.name),
-                ("brief", &intent.brief),
-                ("benchmark", &intent.benchmark),
-                ("north_star", &intent.north_star),
-                ("current_version", &file.current_version),
-                ("chat", &chat_label(&file.chat)),
-            ],
-        );
-        crate::repo::write_file(&tree.path, standard::CHARTER_REL_PATH, &body)?;
 
         // 库里的名字是项目墙的显示缓存,跟着改一次。
         self.update_project_location(
@@ -357,14 +344,6 @@ impl App {
             note: mr.note,
         });
         Ok(events)
-    }
-}
-
-/// 名片上「项目群」那一行怎么写。没配就如实说没配。
-pub(super) fn chat_label(chat: &Option<ChatConfig>) -> String {
-    match chat {
-        None => "未配".into(),
-        Some(c) => format!("{}(群号 {})", c.provider, c.group_id),
     }
 }
 
