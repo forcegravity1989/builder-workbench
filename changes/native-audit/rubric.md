@@ -28,7 +28,7 @@
 
 | # | 准则 | 机械探针 | 3 分的样子 | dsh 实证 | playbook |
 |---|---|---|---|---|---|
-| C11 | 意图件成文、验收人具名、接受留痕 | issue 模板数与字段；`proposed/` 类目录；issue 类型 / 标签体系；接受 = 合入/关闭 | 意图件有模板与必填节，接受走合入/关闭并由脚本守 | `.github/ISSUE_TEMPLATE/{bug,feature,idea,research,task}.md`；`proposed/` 26 份（Problem/Proposal/Alternatives/Acceptance/Risks）；`issue-lifecycle.yml` 脚本守 | 阶段 1；贯穿「具名验收人、留痕」 |
+| C11 | 意图件成文、验收人具名、接受留痕 | 活（issue）模板数与字段；`proposed/` 类目录；活的类型 / 标签体系；接受 = 合入/关闭 | 意图件有模板与必填节，接受走合入/关闭并由脚本守 | `.github/ISSUE_TEMPLATE/{bug,feature,idea,research,task}.md`；`proposed/` 26 份（Problem/Proposal/Alternatives/Acceptance/Risks）；`issue-lifecycle.yml` 脚本守 | 阶段 1；贯穿「具名验收人、留痕」 |
 | C12 | 产物链连通（意图→规格→计划→PR→复盘→意图） | 制品间相对链接是否可机械校验；PR 模板是否要求引用意图/决策件 | 每级产物引用上一级，链接死了会红 | Agent Note 互链「never bare prose or numbers」+ `verify-md-links`；`pull_request_template.md`；复盘 链 guardrails | 贯穿机制「产物链」 |
 
 ### S2 · 设计·决策（playbook 阶段 2）
@@ -77,7 +77,7 @@
 |---|---|---|---|---|---|
 | C61 | 复盘制度 | 复盘目录与数量；结构强制；写不写的判据成文 | 结构固定（摘要/时间线/根因/为何漏网/防护）并有入选判据 | `docs/postmortem/` 4 份；结构 Executive summary→Guardrails added→Lessons；判据 subtle/systemic/costly | 阶段 6 |
 | C62 | 复盘→防护回流 | 复盘链到 tests/规矩/记录的比例；手册中引用复盘的规矩数 | 每份事故都落成门禁或手册规矩，链接可查 | 复盘必「Link the guardrails motivated」；testing.md 引复盘 0001 立「smoke tests 最高价值」 | 阶段 6 环闭合；§3 错两次进手册 |
-| C63 | 检测零模型、响应分层 | issue/PR 自动化是否纯脚本；自动动作上限（只开 PR/只记录） | 检测与流转是脚本，越线才唤模型，自动动作到评审门为止 | `.github/issue-management/policy.mjs`（issue-lifecycle / issue-policy 纯脚本）；dependabot 只开 PR | 阶段 6 检测纯脚本 |
+| C63 | 检测零模型、响应分层 | 活/PR 流转自动化是否纯脚本；自动动作上限（只开 PR/只记录） | 检测与流转是脚本，越线才唤模型，自动动作到评审门为止 | `.github/issue-management/policy.mjs`（issue-lifecycle / issue-policy 纯脚本）；dependabot 只开 PR | 阶段 6 检测纯脚本 |
 
 ### S7 · 知识维护·反 slop（贯穿；slop = AI 写作垃圾，dsh 文档纪律用词）
 
@@ -197,7 +197,7 @@
 |---|---|---|
 | R1 | v1 七维（规范/决策/门禁/AI/commit/验证/反 slop） | 能扫，但只覆盖 playbook 阶段 3/4/5 的一部分 |
 | R2 | 对照 playbook 六阶段找缺口 | 缺：计划·意图（S1）、发布工艺与回滚（C54/C55）、运维·复盘·环闭合（S6）、产物链连通（C12）、先计划后动手（C31）、agent 配置回归（C84）→ 重组为 9 段 37 条 |
-| R3 | 重盘 dsh 全部制度件（34 门禁 / 12 skill / 19 workflow / 模板 / lefthook / 发布 / 复盘）逐项映射 | 新增被 v1 漏掉的：生成物新鲜度（C34）、依赖政策（C35）、issue 自动化（C63）、标签体系（C53）、多 harness 元数据门禁（C82）、测试可靠性（C46）；58 组做法零孤儿 |
+| R3 | 重盘 dsh 全部制度件（34 门禁 / 12 skill / 19 workflow / 模板 / lefthook / 发布 / 复盘）逐项映射 | 新增被 v1 漏掉的：生成物新鲜度（C34）、依赖政策（C35）、活流转自动化（C63）、标签体系（C53）、多 harness 元数据门禁（C82）、测试可靠性（C46）；58 组做法零孤儿 |
 | R4 | 反向检查 playbook 每条主张有无准则 | 全覆盖；三条无 dsh 实证如实标注（C44 禁改测试、C55 回滚、C63 指标越线） |
 | R5 | 探针脚本化为 `battery.sh`，在 BW + dsh 真跑 | 方向对（dsh 决策记录 820/839 带替代方案 vs BW 0/11；门禁脚本 38 个、自测 18 个 vs 6/0；手册 12/13 周有修正 vs 7/12），但抓出 4 类探针脚本缺陷：空结果双打 `0`、`wc` 带空格、关键词探针被本仓 rubric/spec 自身文本污染（C44 在 BW 命中的 4 个文件全是准则原文）、死链探针在 dsh 出 401 条成批误报（378 条在冻结归档 `archived/` 与举例路径） |
 | R6 | 修探针脚本：`cnt/gc` 助手、排除 native-audit 自身与 `archived/`、C55 改发布语境窄模式、C61 只数英文原件 | 重跑两仓：无多余输出；dsh 死链 401→27（残余分类见 prototype-report）；C55 dsh 3 / BW 1；两仓读数落成锚点卡 |
