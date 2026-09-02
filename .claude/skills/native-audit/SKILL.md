@@ -24,19 +24,24 @@ description: >-
 2. **跑度量电池**（纯脚本，零 token）：
 
 ```bash
-git rev-list --count HEAD                                  # 总量
-git log --reverse --format=%ad --date=short HEAD | head -1  # 起点(对照尾点得跨度)
-git shortlog -sn --no-merges HEAD | head -15               # 作者集中度
-git log --no-merges --format=%s -500 HEAD | grep -oE '^[a-z]+' | sort | uniq -c | sort -rn   # 类型前缀分布
-git log --merges --format=%s HEAD | grep -oiEc 'codex/|claude|copilot|worktree|cursor/'      # AI 分支痕迹
-git log --format='%(trailers:key=Co-Authored-By,valueonly)' HEAD | grep -c .                 # AI 署名
-git log --format=%ad --date=format:%Y-W%V --no-merges HEAD | sort | uniq -c                  # 周节奏
-git ls-files | grep -ciE 'AGENTS\.md|CLAUDE\.md|\.cursorrules|copilot-instructions'  # 规范正本
-git ls-files | grep -cE 'adr|decisions|changes/|rfc'        # 决策记录踪迹
-ls .github/workflows/ 2>/dev/null | wc -l; git ls-files | grep -cE 'scripts/(guard|verify|check)'  # 门禁密度
+git rev-list --count HEAD; git rev-list --count --no-merges HEAD          # 总量 / 实改
+git log --reverse --format=%ad --date=short HEAD | head -1                # 起点(对照尾点得跨度)
+git shortlog -sn --no-merges HEAD | head -15                              # 作者集中度
+git log --no-merges --format=%s -500 HEAD | grep -cE '^[a-z]+(\(|:)'      # 类型前缀率(分母 500)
+git log --no-merges --format=%s -500 HEAD | grep -oE '^[a-z]+' | sort | uniq -c | sort -rn | head  # 前缀分布
+git log --merges --format=%s HEAD | grep -oiEc 'codex/|claude|copilot|worktree|cursor/'   # AI 分支痕迹
+git log --format='%(trailers:key=Co-Authored-By,valueonly)' HEAD | grep . | sed -E 's/<.*//' | sort | uniq -c | sort -rn  # AI 署名,按署名人聚合
+git log --format=%ad --date=format:%Y-W%V --no-merges HEAD | sort | uniq -c              # 周节奏
+git -c core.quotepath=off ls-files | grep -iE 'AGENTS\.md|CLAUDE\.md|\.cursorrules|copilot-instructions'  # 规范正本(入口件)
+git -c core.quotepath=off ls-files | grep -E 'adr|decisions|changes/|rfc' | wc -l         # 决策记录踪迹
+ls .github/workflows/ 2>/dev/null; git ls-files | grep -E 'scripts/(guard|verify|check)'  # 门禁密度
+grep -rc '#\[test\]' --include='*.rs' . 2>/dev/null | awk -F: '{s+=$NF} END {print s}'     # 测试存量(按语言换模式;--include 必须加引号)
+git -c core.quotepath=off ls-files '*.md' | while IFS= read -r f; do d=$(dirname "$f"); grep -oE '\]\(([^)#: ]+\.md)' "$f" 2>/dev/null | sed -E 's/\]\(//' | while IFS= read -r l; do [ -e "$d/$l" ] || echo "$f -> $l"; done; done   # 死链探测
 ```
 
-3. **读样本**（限额，防炸上下文）：根 AGENTS.md/CLAUDE.md/CONTRIBUTING 与 CI 主 workflow 各读前 150 行；决策记录目录抽 2 份。只为定级取证，不通读。
+电池已知坑：`git ls-files` 必须带 `-c core.quotepath=off`，否则非 ASCII 文件名被八进制转义、整份文件漏扫；死链探测对散文里的举例路径会假阳性，命中行必须人工复核后再计数；vendored 第三方目录另行计数不并入。
+
+3. **读样本**（限额，防炸上下文）：根 AGENTS.md/CLAUDE.md/CONTRIBUTING 与 CI 主 workflow 各读前 150 行，**再顺着 AGENTS.md 的链接看它指向哪些正本**（原则篇、词表、skill 等入口件模式抓不到的规范件）；决策记录目录抽 2 份，看有没有「替代方案」节。只为定级取证，不通读。
 4. **定级**：对照 spec 七维表打 0-3。两个锚定样例防漂移：deepseek-harness ≈ 七维门禁层（3），builders-workbench 2026-09-01 ≈ 成文层（多数 2），实测数见 [`prototype-report.md`](../../../changes/native-audit/prototype-report.md)。
 5. **出报告**：度量表（带命令）→ 七维评分（带证据路径）→ 缺失清单按「升一级最便宜」排序。
 
