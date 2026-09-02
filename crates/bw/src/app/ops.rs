@@ -1,13 +1,9 @@
-//! 运作活:Workbench 自己发起的三张标准动作。
-//!
-//! 三张活的 `workflow` 字段取值是它们的身份证——定时判据、注入哪份剧本、配置
-//! 屏「用过几次」全靠它:
+//! 运作活:Workbench 自己发起的两张标准动作。项目约定不是运作活,走轻量常驻树。
 //!
 //! | 活 | `kind` | `origin` | `workflow` |
 //! |---|---|---|---|
 //! | ①更新指标 + 制定版本计划 | `ops` | `human` | `更新指标与版本计划` |
 //! | ②资产盘点 | `ops` | `auto` | `资产盘点` |
-//! | ③规范铺底 | `ops` | `auto` | `规范铺底`([`super::bootstrap`] 那边建) |
 //!
 //! **没有定时任务表**。「这周该不该建②」这个问题的答案不存在任何一张状态表
 //! 里,它是现查出来的:本周有没有一张标题以「资产盘点 」开头的活。这条查询
@@ -16,10 +12,10 @@
 
 use super::{issue_store, App, AppError, ProgressLine, Result};
 use crate::command::Event;
+use crate::defaults;
 use crate::isoweek;
 use crate::local::ProjectRegistry;
 use crate::model::{Issue, IssueId, IssueKind, IssueOrigin, IssueStatus, ProjectId};
-use crate::repo::issue_policy_file;
 
 /// 运作活①的 `workflow` 字段值,对应剧本 `week-planning`。两者的对应关系在
 /// `standard/skills/README.md` 那张表里。
@@ -83,9 +79,6 @@ pub fn skill_slug(workflow: &str) -> Option<&'static str> {
         // build 阶段默认 workflow 入口(mattpocock grill→implement→review SOP)。
         // proto-design(原型)源还没 vendor,待补。
         "mattpocock-skills" => Some("mattpocock-skills"),
-        // 规范铺底**没有 agent 步骤**(2026-08-20:只铺 `.bw/`,仓根一个字不写),
-        // 所以它没有剧本可挂。给这个项目写开发手册的那份剧本已经挪进资产盘点,
-        // 见 `standard/skills/project-handbook/`。
         _ => None,
     }
 }
@@ -154,17 +147,11 @@ impl App {
         }
         let mut events = self.maybe_auto_collect_b(project_id).await;
 
-        let Ok(ws) = self.workspace_of(project_id).await else {
+        if self.workspace_of(project_id).await.is_err() {
             return Ok(events);
-        };
-        let Some(policy) = issue_policy_file::read(&ws).ok().flatten() else {
-            return Ok(events);
-        };
-        let Some(cadence) = policy.cadence else {
-            return Ok(events);
-        };
-        let spec = cadence.ops2_schedule.trim().to_string();
-        if spec.is_empty() || !isoweek::schedule_passed_this_week(&spec) {
+        }
+        let spec = defaults::DEFAULT_OPS2_SCHEDULE;
+        if !isoweek::schedule_passed_this_week(spec) {
             return Ok(events);
         }
 
@@ -247,7 +234,7 @@ impl App {
 
         // 分支名从 issue.number(=iid)现算 —— 确定性 `bw/issue-<iid>`,不靠
         // lossy 的 `issue.branch`(刀3-fix:旧逻辑拿它查 MR,恒空永远查不到)。
-        let branch = bw_engine::github::issue_branch(issue.number);
+        let branch = issue_store::work_branch(&issue);
 
         let remote = if project.has_remote() {
             Some(self.remote_for(&project).map_err(|e| {
@@ -340,7 +327,7 @@ impl App {
         let Ok(ws) = self.workspace_of(project_id).await else {
             return (false, "主检出没拉:算不出这个项目的工作区路径".into());
         };
-        let cleared = super::plan::salvage_main_checkout_dirt(&ws).await;
+        let cleared = super::plan::salvage_readings_dirt(&ws).await;
         let (ok, note) = match crate::git::pull_ff(&ws).await {
             Ok(true) => (true, "主检出已拉到最新".into()),
             Ok(false) => (true, "主检出本来就是最新的".into()),
@@ -364,6 +351,9 @@ impl App {
     /// 改动)原样留着,如实说一声。旧活记的是平级兄弟路径,这里走
     /// `resolve_issue_worktree`(会话记下的路径 → 新目录 → 旧兄弟)才能收掉。
     async fn cleanup_issue_branch_note(&self, issue: &crate::model::Issue) -> Option<String> {
+        if issue.title == issue_store::CHARTER_TITLE {
+            return Some("项目约定是常驻分支,树和分支不收".into());
+        }
         let Ok(ws) = self.workspace_of(issue.project_id).await else {
             return None;
         };

@@ -161,10 +161,7 @@ mod tests {
 
     #[test]
     fn max_v0x_is_numeric() {
-        assert_eq!(
-            max_v0x(["v0.9", "v0.10", "v0.2"]),
-            Some("v0.10".into())
-        );
+        assert_eq!(max_v0x(["v0.9", "v0.10", "v0.2"]), Some("v0.10".into()));
     }
 
     #[test]

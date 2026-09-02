@@ -107,7 +107,7 @@ pub enum Signal {
 }
 
 /// 活的类别 —— V3 的五阶段在 V4 降级成的标签。类别决定默认开工工具与默认
-/// workflow(映射正本在 `.bw/issue-policy.toml` 的 `[[mapping]]` 段)。
+/// workflow(本机 settings → 产品编译默认)。
 /// V4 只用到标签和全集;V3 那套阶段方法论元数据(角色、下一棒、DoD)不拷。
 #[derive(Clone, Copy, PartialEq, Eq, Hash, Debug, Serialize, Deserialize)]
 // 拷贝时漏过一次(评审抓的)。少了它,serde 名字从 `build` 变成 `Build`,
@@ -248,13 +248,12 @@ impl IssueOrigin {
 }
 
 /// 活的类别标签 —— 五阶段在 V4 降级成的东西。类别决定默认开工工具与默认
-/// workflow(映射正本在 `.bw/issue-policy.toml` 的 `[[mapping]]` 段)。
+/// workflow(本机 settings → 残留映射 → 产品编译默认)。
 /// 用 `bw_core::StageKind` 的五个变体,不另造一套枚举。
 pub type Category = StageKind;
 
-/// `.bw/issue-policy.toml` 里 `[[mapping]]` 段用的类别键。与
-/// `StageKind` 的 serde 名字(snake_case)一致,所以文件里写 `build` 就是
-/// `StageKind::Build`。
+/// 类别键。与 `StageKind` 的 serde 名字(snake_case)一致,文件里写 `build`
+/// 就是 `StageKind::Build`。残留 `.bw/issue-policy.toml` 也用这套键。
 pub fn category_from_key(key: &str) -> Option<Category> {
     match key {
         "prototype" => Some(StageKind::Prototype),

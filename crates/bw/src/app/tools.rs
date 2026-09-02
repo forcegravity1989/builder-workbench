@@ -5,34 +5,20 @@
 
 use super::{App, AppError, Result};
 use crate::command::{Event, ProbeResult};
+use crate::local::Settings;
 use crate::model::{category_key, Category, ProjectId};
-use crate::repo::issue_policy_file::{self, CategoryMapping};
 
 impl App {
+    /// 本机「我用什么工具」。只写 `asset_root/settings.toml`,不碰被管仓。
+    /// `workflow` 是产品编译默认,命令里带着是为少改 Command 形状,这里不存。
     pub(super) async fn save_tool_mapping(
         &mut self,
-        project_id: ProjectId,
+        _project_id: ProjectId,
         category: Category,
         tool: String,
-        workflow: String,
+        _workflow: String,
     ) -> Result<Vec<Event>> {
-        let ws = self.workspace_of(project_id).await?;
-        let mut file = issue_policy_file::read(&ws)?.unwrap_or_else(|| {
-            issue_policy_file::parse(crate::standard::ISSUE_POLICY_TMPL).unwrap_or_default()
-        });
-        let key = category_key(category).to_string();
-        match file.mappings.iter_mut().find(|m| m.category == key) {
-            Some(m) => {
-                m.tool = tool;
-                m.workflow = workflow;
-            }
-            None => file.mappings.push(CategoryMapping {
-                category: key,
-                tool,
-                workflow,
-            }),
-        }
-        issue_policy_file::write(&ws, &file)?;
+        Settings::set_tool(&self.asset_root, category_key(category), &tool)?;
         Ok(vec![Event::ToolMappingSaved { category }])
     }
 

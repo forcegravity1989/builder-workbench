@@ -688,6 +688,9 @@ impl App {
     /// 能收掉那棵。先看会话行记下的路径,再看新目录,再看旧兄弟(走底座的
     /// `resolve_issue_worktree`)。
     pub(super) async fn cleanup_issue_worktree(&self, issue: &Issue) {
+        if issue.title == issue_store::CHARTER_TITLE {
+            return;
+        }
         let Ok(ws) = self.workspace_of(issue.project_id).await else {
             return;
         };
@@ -708,7 +711,7 @@ impl App {
             // worktree 收掉了,顺手删分支(只删 merged 的;未合的 `git -d` 会
             // 拒绝,不强删 —— 留着也不影响)。分支名从 issue.number 现算,
             // 不靠 lossy 的 `issue.branch`。
-            let branch = bw_engine::github::issue_branch(issue.number);
+            let branch = issue_store::work_branch(issue);
             if crate::git::branch_exists(&ws, &branch).await {
                 let _ = crate::git::delete_merged_branch(&ws, &branch).await;
             }

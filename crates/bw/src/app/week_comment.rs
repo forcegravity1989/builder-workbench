@@ -110,10 +110,10 @@ impl super::App {
         let jobs: Vec<(String, u32)> = issues
             .iter()
             .filter(|i| crate::version::is_ops1_title(&i.title))
-            .filter_map(|i| {
-                let week = crate::isoweek::week_of_unix(i.created_at)
-                    .unwrap_or_else(|| current.clone());
-                Some((week, i.id.iid()))
+            .map(|i| {
+                let week =
+                    crate::isoweek::week_of_unix(i.created_at).unwrap_or_else(|| current.clone());
+                (week, i.id.iid())
             })
             .collect();
         let mut out = std::collections::HashMap::new();

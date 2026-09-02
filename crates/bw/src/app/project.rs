@@ -56,13 +56,13 @@ impl App {
         let row = self.upsert_project(&row).await?;
         self.step(ProgressLine::ok(3, format!("项目 {slug} 已落库")));
 
-        // 意图落仓文件。
+        // 磁盘上的名片只用来补空字段(seed),不拿来判断「已经接入」。
+        // 跳过建车只认:默认分支 HEAD 已有名片,或已经开着项目约定/残留旧标题。
         self.step(ProgressLine::doing(4, "读仓里的名片(.bw/project.toml)…"));
-        // **仓里已经有 `.bw/project.toml` 就以它为准**(后来者接入:同事先接过
-        // 这个项目,或者开发期删库重建之后重新接入)。人手填过的东西一个字都
-        // 不覆盖,只补空着的字段;读不出来(文件坏了)也不覆盖,如实往上报。
         let existing = project_file::read(&ws)?;
-        let adopted = existing.is_some();
+        let in_head = crate::git::path_in_head(&ws, project_file::REL_PATH).await;
+        let open_charter = issue_store::find_open_charter(self, &row).await?.is_some();
+        let adopted = in_head || open_charter;
         let mut file = existing.unwrap_or_else(|| ProjectFile {
             // 新建项目默认在研版本 v0.1。
             current_version: "v0.1".into(),
@@ -72,34 +72,30 @@ impl App {
         fill_if_blank(&mut file.brief, &intent.brief);
         fill_if_blank(&mut file.benchmark, &intent.benchmark);
         fill_if_blank(&mut file.opportunity, &intent.north_star);
-        project_file::write(&ws, &file)?;
+        // **不写主检出**。第一次接入的名片只落在「项目约定」那棵树上。
         self.step(ProgressLine::ok(
             4,
             if adopted {
-                "仓里本来就有名片,一个字没覆盖,只补了空着的字段。不重复铺底".to_string()
+                "仓里本来就有名片,一个字没覆盖,只补了空着的字段。不重复开项目约定".to_string()
             } else {
-                "名片写好了,下一步铺底会把它提交到这张活的分支上".to_string()
+                "名片只写在项目约定那棵树上,主检出不动".to_string()
             },
         ));
 
-        // 第 0 站的后半截:仓里还没有名片才建运作活③「规范铺底」。
-        // 已有名片 = 这个仓被接管过,不再建活、不开 MR。
-        // 铺底没成**不推翻接入**:项目已经建好了、仓已经在本机了。
+        // 仓里已经有名片,或已经开着项目约定 / 残留铺底 / 残留改名片,不再建第二张。
         let mut events = vec![Event::ProjectCreated {
             id: row.id,
             slug,
             adopted,
         }];
         if adopted {
-            self.step(ProgressLine::ok(5, "仓里已有项目信息,跳过规范铺底"));
+            self.step(ProgressLine::ok(5, "仓里已有项目信息,跳过项目约定"));
         } else {
-            match self.run_standard_bootstrap(row.id).await {
+            match self.run_standard_bootstrap(row.id, &file).await {
                 Ok(more) => events.extend(more),
                 Err(e) => self.step(ProgressLine::fail(
                     5,
-                    format!(
-                        "规范铺底没成:{e} —— 项目已经接进来了。配置屏「对一遍账」能看见缺哪些件"
-                    ),
+                    format!("项目约定没写成:{e} —— 项目已经接进来了。总览横幅会提示还没合入"),
                 )),
             }
         }
@@ -251,17 +247,15 @@ impl App {
             .await?
             .ok_or_else(|| AppError::NoSuchProject(project_id.uuid().to_string()))?;
 
-        // B 类固定枚举标题「编辑项目名片」——在途复用:有则拿同一张,
-        // 无则建一张轻量活。项目群、在研版本也走这一张,不再另开两张。
-        let issue = match issue_store::find_open_by_title(self, &project, issue_store::LIGHT_TITLE)
-            .await?
-        {
+        // 项目约定常驻车:开着的「项目约定」/ 残留「编辑项目名片」/ 残留铺底
+        // 接着写;没有就建一张「项目约定」。主检出不动。
+        let issue = match issue_store::find_open_charter(self, &project).await? {
             Some(existing) => existing,
             None => {
                 issue_store::create(
                     self,
                     &project,
-                    issue_store::LIGHT_TITLE,
+                    issue_store::CHARTER_TITLE,
                     "项目信息改动:名片四字段 / 在研版本 / 项目群。改的是 \
                      .bw/project.toml,等人评审合入。",
                     crate::model::IssueKind::Light,
@@ -272,8 +266,11 @@ impl App {
             }
         };
 
-        // 在这张活自己的 worktree 里写文件(主检出不动,走 MR 合入才落地)。
-        let tree = worktree::provision(&ws, issue.number).await?;
+        let tree = if issue.title == issue_store::CHARTER_TITLE {
+            worktree::provision_project(&ws).await?
+        } else {
+            worktree::provision(&ws, issue.number).await?
+        };
         let mut file = project_file::read(&tree.path)?.unwrap_or_default();
         file.name = intent.name.clone();
         file.brief = intent.brief.clone();
@@ -303,7 +300,7 @@ impl App {
         .await?;
 
         let base = crate::git::head_sha(&ws).await.unwrap_or_default();
-        let title = format!("#{} {}", issue.number, issue_store::LIGHT_TITLE);
+        let title = format!("#{} {}", issue.number, issue.title);
         crate::git::commit_all(&tree.path, &title).await?;
         let commits = if base.is_empty() {
             0

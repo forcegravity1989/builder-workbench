@@ -22,7 +22,7 @@ use detail::{DetailModal, StartModal};
 use kanban::{board, PendingMove, PendingSchedule};
 use plan_dialogs::{
     ConfirmMoveDialog, CreateVersionDialog, DeleteVersionDialog, DialogKind, NewIssueDialog,
-    NewIssueDraft, ReleaseDialog, ReleaseDraft, ScheduleDialog,
+    NewIssueDraft, PackDialog, PackDraft, ReleaseDialog, ReleaseDraft, ScheduleDialog,
 };
 
 /// 列表/看板视图模式。
@@ -159,6 +159,7 @@ pub fn View(p: ProjectVm, bridge: Bridge) -> Element {
                 DialogKind::NewIssue(_) => rsx! { NewIssueDialog { p: p.clone(), dialog, bridge: bridge.clone() } },
                 DialogKind::CreateVersion => rsx! { CreateVersionDialog { p: p.clone(), dialog, bridge: bridge.clone() } },
                 DialogKind::DeleteVersion => rsx! { DeleteVersionDialog { p: p.clone(), dialog, bridge: bridge.clone() } },
+                DialogKind::Pack(draft) => rsx! { PackDialog { draft, dialog, bridge: bridge.clone() } },
                 DialogKind::Release(draft) => rsx! { ReleaseDialog { draft, dialog, bridge: bridge.clone() } },
             }
         }
@@ -244,6 +245,8 @@ fn Toolbar(
         .filter(|s| !s.is_empty())
         .collect();
     let from = viewing_plan.clone();
+    let pack_ver = p.viewing_plan.clone();
+    let rel_ver = p.viewing_plan.clone();
     rsx! {
         div { class: "plan-toolbar",
             div { class: "left",
@@ -330,11 +333,19 @@ fn Toolbar(
                 } else if bw::version::is_v0x(&p.viewing_plan) && !released {
                     button {
                         class: "btn btn-sm",
+                        onclick: move |_| dialog.set(Some(DialogKind::Pack(PackDraft {
+                            project_id: pid,
+                            version: pack_ver.clone(),
+                        }))),
+                        "出包"
+                    }
+                    button {
+                        class: "btn btn-sm",
                         disabled: done_ids.is_empty(),
                         onclick: move |_| dialog.set(Some(DialogKind::Release(ReleaseDraft {
                             project_id: pid,
-                            version: p.viewing_plan.clone(),
-                            note: format!("版本 {} 完成的活", p.viewing_plan),
+                            version: rel_ver.clone(),
+                            note: format!("版本 {} 完成的活", rel_ver),
                             included: done_ids.clone(),
                         }))),
                         "发版本"

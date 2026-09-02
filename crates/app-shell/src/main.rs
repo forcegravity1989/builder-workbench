@@ -24,6 +24,29 @@ mod vm;
 use bridge::{Bridge, ChromeBusy, DeepLink, Panel, Req, TopView};
 use dioxus::prelude::*;
 
+/// Windows WebView2 启动参数。字面必须带上 wry 默认那几条,否则回退。
+/// `BW_CDP_PORT` 是纯数字才追加调试口,没设与今天完全一样。
+#[cfg(windows)]
+fn windows_browser_args() -> String {
+    let base =
+        "--disable-features=msWebOOUI,msPdfOOUI,msSmartScreenProtection,LocalNetworkAccessChecks \
+         --unsafely-treat-insecure-origin-as-secure=http://dioxus.index.html";
+    match std::env::var("BW_CDP_PORT") {
+        Ok(p) if !p.is_empty() && p.chars().all(|c| c.is_ascii_digit()) => {
+            bw_engine::dlog!(ok, "boot", "[BW_CDP] port={p}");
+            format!("{base} --remote-debugging-port={p} --remote-allow-origins=*")
+        }
+        Ok(p) => {
+            bw_engine::dlog!(warn, "boot", "[BW_CDP] ignored={p:?}");
+            base.to_string()
+        }
+        Err(_) => {
+            bw_engine::dlog!(ok, "boot", "[BW_CDP] unset");
+            base.to_string()
+        }
+    }
+}
+
 fn main() {
     // 起任何线程之前先把本机时区定住 —— 周是按本机时区算的。
     bw::isoweek::init_local_offset();
@@ -44,12 +67,9 @@ fn main() {
     // with_windows_browser_args(透传 wry additional_browser_args),不走
     // WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS —— wry 设了显式默认 args 会盖掉
     // env。必须带上 wry 默认那几条,否则回退;LocalNetworkAccessChecks 是
-    // iframe 嵌 loopback 要关的。
+    // iframe 嵌 loopback 要关的。验包设 BW_CDP_PORT 才开调试口。
     #[cfg(windows)]
-    let cfg = cfg.with_windows_browser_args(
-        "--disable-features=msWebOOUI,msPdfOOUI,msSmartScreenProtection,LocalNetworkAccessChecks \
-         --unsafely-treat-insecure-origin-as-secure=http://dioxus.index.html",
-    );
+    let cfg = cfg.with_windows_browser_args(windows_browser_args());
 
     LAUNCH_DEEP_LINK.with(|c| *c.borrow_mut() = Some(deep_link));
     dioxus::LaunchBuilder::new().with_cfg(cfg).launch(Root);
@@ -276,5 +296,16 @@ fn body(
     };
     rsx! {
         {screens::route(cur, &p, bridge)}
+    }
+}
+
+#[cfg(all(test, windows))]
+mod windows_args_tests {
+    #[test]
+    fn no_port_keeps_old_args() {
+        std::env::remove_var("BW_CDP_PORT");
+        let a = super::windows_browser_args();
+        assert!(a.contains("LocalNetworkAccessChecks"));
+        assert!(!a.contains("remote-debugging-port"));
     }
 }

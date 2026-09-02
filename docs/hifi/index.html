@@ -493,6 +493,18 @@ select.select-multi{padding:3px;font-size:11.5px;border:1px solid var(--border-d
 .modal h3{font-size:15.5px;margin-bottom:14px;}
 .modal-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:14px;}
 .check-row{display:flex;align-items:center;gap:8px;font-size:12.5px;padding:5px 0;}
+.ship-rows{display:flex;flex-direction:column;gap:8px;margin:12px 0 4px;}
+.ship-row{display:flex;align-items:center;gap:10px;padding:10px 12px;border:1px solid var(--border);border-radius:8px;background:var(--card-alt);font-size:13px;}
+.ship-row-label{flex:none;font-weight:600;min-width:2.5em;}
+.ship-row-text{flex:1;line-height:1.45;}
+.ship-row--idle{color:var(--ink-3);}
+.ship-row--doing{color:var(--amber);}
+.ship-row--ok{color:var(--green);}
+.ship-row--fail{color:var(--red);}
+.ship-row--done{color:var(--ink);}
+@keyframes ship-spin{from{transform:rotate(0)}to{transform:rotate(360deg)}}
+.ship-spin{width:14px;height:14px;flex:none;border:2px solid var(--border-deep);border-top-color:var(--amber);border-radius:50%;animation:ship-spin .8s linear infinite;}
+.ship-dot{width:8px;height:8px;border-radius:50%;flex:none;background:currentColor;}
 
 .toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%);background:var(--ink);color:var(--paper);padding:9px 16px;border-radius:8px;font-size:12.5px;z-index:100;opacity:0;pointer-events:none;transition:opacity .25s,transform .25s;max-width:520px;text-align:center;}
 .toast.show{opacity:1;transform:translateX(-50%) translateY(-6px);}
@@ -516,6 +528,7 @@ select.select-multi{padding:3px;font-size:11.5px;border:1px solid var(--border-d
 </style>
 </head>
 <body>
+<div role="note" style="position:sticky;top:0;z-index:9999;padding:8px 14px;background:#3d3428;color:#EFEBE2;font-size:12px;line-height:1.45;">历史演示：页内样例仍是旧「规范铺底 / issue-policy」。现行方案见 docs/hifi/README.md 与 architecture §3「项目约定」。</div>
 <div id="app"></div>
 <div id="toast" class="toast"></div>
 <script>
@@ -539,6 +552,17 @@ function nextVersion(cur){
   var n=parseInt(t.slice(i+1),10);
   if(isNaN(n)) return String(cur||'').trim();
   return 'v'+t.slice(0,i)+'.'+(n+1);
+}
+function shipRowsHtml(m){
+  function row(label, r, open){
+    r=r||{state:'idle',text:''};
+    var spin=r.state==='doing'?'<span class="ship-spin"></span>':'<span class="ship-dot"></span>';
+    var btn=(open&&r.state==='ok')?'<button class="btn btn-sm" data-action="openArtifactDir">打开目录</button>':'';
+    return '<div class="ship-row ship-row--'+esc(r.state||'idle')+'">'+spin
+      +'<span class="ship-row-label">'+esc(label)+'</span>'
+      +'<span class="ship-row-text">'+esc(r.text||'')+'</span>'+btn+'</div>';
+  }
+  return '<div class="ship-rows">'+row('出包',m.pack,true)+row('验包',m.e2e,false)+'</div>';
 }
 function icon(name){
   var p={
@@ -1138,6 +1162,11 @@ var ACTIONS = {
     state.ui.modal={type:'release',pid:pid,wk:wk,checked:done.map(function(i){return i.id;}),version:nextVersion(proj.version),desc:'agent 起草(演示):本次发版包含 '+done.length+' 张已完成活,详见各活 MR。'};
     render();
   },
+  openPackModal:function(pid){
+    var proj=getProject(pid);
+    state.ui.modal={type:'pack',pid:pid,version:nextVersion(proj.version),pack:{state:'idle',text:'还没开始'},e2e:{state:'idle',text:'出包过了再验'},shipping:false,finished:false};
+    render();
+  },
   toggleReleaseCheck:function(id){ var m=state.ui.modal; if(!m||m.type!=='release')return; var i=m.checked.indexOf(id); if(i>=0)m.checked.splice(i,1); else m.checked.push(id); render(); },
   confirmRelease:function(){
     var m=state.ui.modal; if(!m||m.type!=='release')return;
@@ -1147,7 +1176,28 @@ var ACTIONS = {
     (m.checked||[]).forEach(function(id){ var iss=getIssue(pid,id); if(iss) iss.released=m.version; });
     state.ui.modal=null; render(); toast('已在代码平台建 Release '+m.version+' · 选中的活打了发版标签');
   },
-  closeModal:function(){ state.ui.modal=null; render(); },
+  confirmPack:function(){
+    var m=state.ui.modal; if(!m||m.type!=='pack'||m.shipping)return;
+    m.shipping=true; m.finished=false;
+    m.pack={state:'doing',text:'正在出包…'};
+    m.e2e={state:'idle',text:'出包过了再验'};
+    render();
+    setTimeout(function(){
+      var cur=state.ui.modal; if(!cur||cur.type!=='pack')return;
+      cur.pack={state:'ok',text:'',dir:'.bw/release/out/'+cur.version};
+      cur.e2e={state:'doing',text:'正在验包…'};
+      render();
+    },700);
+    setTimeout(function(){
+      var cur=state.ui.modal; if(!cur||cur.type!=='pack')return;
+      cur.e2e={state:'done',text:'3/3'};
+      cur.shipping=false; cur.finished=true;
+      render();
+      toast(cur.version+' 出包好了,验包 3/3');
+    },1600);
+  },
+  openArtifactDir:function(){ toast('演示：会打开产物目录'); },
+  closeModal:function(){ var m=state.ui.modal; if(m&&m.shipping)return; state.ui.modal=null; render(); },
   askDeleteSession:function(pid,sid){
     var issue=getIssue(pid,sid); if(!issue)return;
     state.ui.modal={type:'delete-session',pid:pid,sid:sid,title:issue.title};
@@ -1569,6 +1619,17 @@ function modalHTML(){
       + '<div class="charter-line"><span class="k">项目群</span>'+(d.chatProvider?(esc(d.chatProvider)+' · '+esc(d.chatGroup||'')):'不配')+'</div>'
       + '<div class="modal-actions"><button class="btn" data-action="closeModal">关闭</button></div></div></div>';
   }
+  if(m.type==='pack'){
+    return '<div class="modal-backdrop" data-action="closeModal"><div class="modal">'
+      + '<h3>出包</h3>'
+      + '<div class="formrow"><label class="label">版本号</label><input class="input" value="'+esc(m.version)+'" readonly></div>'
+      + shipRowsHtml(m)
+      + '<div style="font-size:11.3px;color:var(--ink-3);margin:2px 0 10px;">号锁死当前版本。确认后先出包、再对包装好的安装包做验收。不建远端 Release,也不打发版标签。</div>'
+      + '<div class="modal-actions">'
+      + ((m.finished||!m.shipping)?'<button class="btn" data-action="closeModal">'+(m.finished?'关闭':'取消')+'</button>':'')
+      + ((!m.shipping&&!m.finished)?'<button class="btn btn-primary" data-action="confirmPack">确认 · 出包</button>':'')
+      + '</div></div></div>';
+  }
   if(m.type==='release'){
     var doneIssues=allIssuesArr(m.pid).filter(function(i){return i.kind==='business'&&i.week===m.wk&&i.status==='done';});
     var rows=doneIssues.map(function(i){
@@ -1578,7 +1639,7 @@ function modalHTML(){
       + '<h3>发版本</h3>' + rows
       + '<div class="formrow" style="margin-top:10px;"><label class="label">版本号</label><input class="input" data-bind="ui.modal.version" value="'+esc(m.version)+'"></div>'
       + '<div class="formrow"><label class="label">说明</label><textarea class="textarea" data-bind="ui.modal.desc">'+esc(m.desc)+'</textarea></div>'
-      + '<div style="font-size:11.3px;color:var(--ink-3);margin:2px 0 10px;">默认是在研号的下一位,可以改。确认后立刻在代码平台建 Release 并给勾选的活打发版标签。不另建一张「发版本」活,也不写仓文件。</div>'
+      + '<div style="font-size:11.3px;color:var(--ink-3);margin:2px 0 10px;">默认是在研号的下一位,可以改。确认后立刻在代码平台建 Release 并给勾选的活打发版标签。不出包。不另建一张「发版本」活,也不写仓文件。</div>'
       + '<div class="modal-actions"><button class="btn" data-action="closeModal">取消</button><button class="btn btn-primary" data-action="confirmRelease">确认 · 发版</button></div></div></div>';
   }
   if(m.type==='new-issue'){
@@ -2049,7 +2110,7 @@ function renderPlan(pid){
 
   var rightBtns='';
   if(left==='all'){ rightBtns='<button class="btn btn-sm btn-secondary" data-action="toastOnly" data-arg=\'"演示:在 codehub 建里程碑(版本)"\'>创建版本</button><button class="btn btn-sm btn-secondary" data-action="toastOnly" data-arg=\'"演示:删 codehub 里程碑 + 摘 bw:plan 标签"\'>删除版本</button>'; }
-  else if(left.indexOf('version:')===0){ rightBtns='<button class="btn btn-sm" data-action="openReleaseModal" data-arg=\'"'+pid+'"\'>发版本</button>'; }
+  else if(left.indexOf('version:')===0){ rightBtns='<button class="btn btn-sm" data-action="openPackModal" data-arg=\'"'+pid+'"\'>出包</button><button class="btn btn-sm" data-action="openReleaseModal" data-arg=\'"'+pid+'"\'>发版本</button>'; }
   var viewToggleLabel=viewMode==='board'?'☰ 列表':'▦ 看板';
   var toolbar='<div class="plan-toolbar"><div class="left">'+esc(title)+'</div><div class="right">'+viewSel()+rightBtns
     + '<button class="btn btn-sm btn-primary" data-action="newIssueDraft" data-arg=\'"'+pid+'"\'>新建issue</button>'

@@ -80,7 +80,7 @@ pub enum Command {
         week: String,
         titles: Vec<String>,
     },
-    /// 建一张活。`category` 决定默认工具与 workflow(查 `.bw/issue-policy.toml`)。
+    /// 建一张活。`category` 决定默认工具与 workflow(本机 settings → 残留映射 → 产品默认)。
     CreateIssue {
         project_id: ProjectId,
         title: String,
@@ -120,11 +120,17 @@ pub enum Command {
         to: String,
     },
     /// 发版本:给选中的活写版本号 + 建远端 codehub/GitHub Release + 打 `bw:released:*` 标签。
+    /// 不做出包。出包走 [`Command::PackRelease`]。
     CutRelease {
         project_id: ProjectId,
         version: String,
         note: String,
         included: Vec<IssueId>,
+    },
+    /// 出包:拉仓里 `pack.cmd` 再拉 `e2e.cmd`,不打标签、不建 Release。协议见 ADR-0005。
+    PackRelease {
+        project_id: ProjectId,
+        version: String,
     },
     /// 把项目工作区的主检出快进到远端最新。
     ///
@@ -147,7 +153,7 @@ pub enum Command {
     /// 状态转移。合法性由 `can_transition_to` 守;「完成」只能从「评审中」来,
     /// 而且只能是人显式发这条命令。作废走 `Cancelled`,不是 Done。
     TransitionIssue { id: IssueId, to: IssueStatus },
-    /// 给已有的活补/改类别标签。读回时用它查 issue-policy 的开工工具。
+    /// 给已有的活补/改类别标签。读回时用它查本机开工工具(再回退残留/产品默认)。
     SetIssueCategory { id: IssueId, category: Category },
     /// 改 issue 的责任人(codehub assignee)。空串 = 取消指派。走 codehub API,
     /// 不在本地另存一套。
@@ -167,7 +173,7 @@ pub enum Command {
     DeleteSession { id: IssueId },
 
     // ── 配置 ──────────────────────────────────────────────
-    /// 保存一行「类别→工具→workflow」映射,写 `.bw/issue-policy.toml`。
+    /// 保存本机「我用什么工具」。只写 settings,不进仓。`workflow` 带着不存。
     SaveToolMapping {
         project_id: ProjectId,
         category: Category,
@@ -373,6 +379,13 @@ pub enum Event {
     ReleaseCut {
         version: String,
         rows_written: bool,
+    },
+    /// 出包 + 验包都过了。不表示已经发版。
+    ReleasePacked {
+        version: String,
+        artifact_dir: String,
+        passed: u32,
+        total: u32,
     },
     /// 拉工作区的结果。`moved` = 主检出真的往前走了;`note` 是给人看的一句话,
     /// 拉不动时装的是 git 的原话(压成一行),**不吞**。

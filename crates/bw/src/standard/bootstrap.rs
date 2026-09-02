@@ -1,48 +1,9 @@
-//! 规范铺底第 1 步:Workbench 自己把核心件写进项目仓,不起 agent。
-//!
-//! 目标路径已经有文件就不覆盖。这一层只负责写文件,开分支和 MR 是调用方的事。
+//! 第一次接入时的仓探测:历史、自己的约定。写进「项目约定」正文当证据。
+//! 不再往仓里摊模板。
 
-use crate::repo::{write_file, RepoFileError};
-use crate::standard;
 use std::path::Path;
 
-/// 一次铺底第 1 步的结果。全部是真实发生过的事实,没有一项是「打算做」。
-#[derive(Debug, Clone, Default, PartialEq, Eq)]
-pub struct BootstrapReport {
-    /// 真的写进去的路径。
-    pub written: Vec<String>,
-    /// 跳过的路径 + 为什么跳。
-    pub skipped: Vec<(String, String)>,
-    /// **这一站本来就不铺**(要用到那一站才铺),可仓里已经有一份了,而且不是
-    /// Workbench 铺的。
-    ///
-    /// 为什么必须单独报一声:界面会把这份文件**当正本读**(指标卡、走势、健康
-    /// 判据都从它来),可它来路不明 —— 可能是上一代 Workbench 留下的、可能是别的
-    /// 项目的、也可能格式早就过期了。第 0 站试点真撞上过:项目仓里躺着一份
-    /// 另一个项目的 `.bw/metrics.toml`,铺底连看都没看它一眼,人以为铺完了,
-    /// 而总览上显示的是别人的指标。
-    pub preexisting: Vec<String>,
-}
-
-/// 写规范件。目标已经在就不覆盖。只在第一次纳入时调用。
-pub fn write_core_files(workspace: &Path) -> Result<BootstrapReport, RepoFileError> {
-    let mut report = BootstrapReport::default();
-    for tmpl in standard::CORE_TEMPLATES {
-        if workspace.join(tmpl.target).exists() {
-            report.preexisting.push(tmpl.target.to_string());
-            report.skipped.push((
-                tmpl.target.to_string(),
-                "已存在,跳过(不覆盖人手写的内容)".into(),
-            ));
-            continue;
-        }
-        write_file(workspace, tmpl.target, tmpl.body)?;
-        report.written.push(tmpl.target.to_string());
-    }
-    Ok(report)
-}
-
-/// 铺底探测:这张活要跑几步。全部现算,不问用户。
+/// 接入探测:这张活要跑几步。全部现算,不问用户。
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub struct BootstrapProbe {
     /// 仓是 Workbench 自己建的(根提交作者是 Workbench)—— 直推,不走 MR。
@@ -100,23 +61,6 @@ pub async fn probe(workspace: &Path) -> BootstrapProbe {
     p
 }
 
-/// 这张活的标题:固定前缀 + 命中项后缀。写死进标题,是「打算跑什么」的快照。
-/// 铺底那张活的标题。**只跟规范版本走,不跟探测结果走** —— 它同时是建活的
-/// 幂等键,跟着探测结果变的话重跑就会多建一张活(第一次铺底自己写了
-/// `CLAUDE.md` 并提交,第二次探测结论就不一样了)。
-pub fn issue_title() -> String {
-    format!("规范铺底 v{}", standard::version())
-}
-
-/// 探测到需要跑哪几步 —— 这句话写进活的正文,不写进标题。
-pub fn planned_steps(probe: &BootstrapProbe) -> String {
-    let mut steps = vec!["写核心件(全部落在 `.bw/` 下,仓根一个字不写)"];
-    if probe.has_history {
-        steps.push("资产盘点首次模式:能对上已有 v0.x 的活打 bw:plan:v0.x(这个仓已经有历史了)");
-    }
-    steps.join("、")
-}
-
 #[cfg(test)]
 mod bootstrap_list_tests {
     #[test]
@@ -125,6 +69,6 @@ mod bootstrap_list_tests {
             .iter()
             .map(|t| t.target)
             .collect();
-        assert_eq!(targets, [".bw/issue-policy.toml"]);
+        assert!(targets.is_empty(), "第一次接入不再摊 issue-policy");
     }
 }
