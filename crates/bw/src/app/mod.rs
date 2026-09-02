@@ -7,6 +7,7 @@
 //!
 //! - [`project`] —— 接入、改名片、配项目群
 //! - [`plan`] —— 开始本版本、排期、发版本、改名、缓存对账
+//! - [`release_ship`] —— 人点「出包」:出包 → 验包,不打标签
 //! - [`issue`] —— 建活、▶跑、状态转移
 //! - [`bootstrap`] —— 规范铺底与对账
 //! - [`chat_notify`] —— 三件事同步进项目群(发出去就算完,不记账)
@@ -30,6 +31,7 @@ mod ops;
 mod plan;
 mod progress;
 mod project;
+mod release_ship;
 mod session;
 mod tools;
 mod week_comment;
@@ -474,6 +476,10 @@ impl App {
                 note,
                 included,
             } => self.cut_release(project_id, version, note, included).await,
+            Command::PackRelease {
+                project_id,
+                version,
+            } => self.pack_release(project_id, version).await,
             Command::RunIssue { id } => self.run_issue(id).await,
             Command::SubmitIssueWork { id } => self.submit_issue_work(id).await,
             Command::SetWorkspacesRoot { path } => self.set_workspaces_root(path).await,
@@ -609,6 +615,13 @@ fn cmd_log_label(cmd: &Command) -> String {
             "CutRelease project={} version={version} included={}",
             project_id.uuid(),
             included.len()
+        ),
+        Command::PackRelease {
+            project_id,
+            version,
+        } => format!(
+            "PackRelease project={} version={version}",
+            project_id.uuid()
         ),
         Command::RunIssue { id } => format!("RunIssue #{}", id.iid()),
         Command::SubmitIssueWork { id } => format!("SubmitIssueWork #{}", id.iid()),

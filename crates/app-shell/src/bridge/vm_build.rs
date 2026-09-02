@@ -493,6 +493,12 @@ fn primary_note(events: &[Event]) -> Option<String> {
                 format!("{version} 已经在发版记录里了,没写第二行")
             }
         }
+        Event::ReleasePacked {
+            version,
+            passed,
+            total,
+            ..
+        } => format!("{version} 出包好了,验包 {passed}/{total}"),
         Event::MetricsAutoCollected { count, .. } => {
             format!("今日自动采了 {count} 条 B 类指标")
         }

@@ -554,12 +554,12 @@
     <section class="screen" id="u1e" data-title="第 5 站 · 验收记发版" data-sec-name="怎么用">
       <div class="eyebrow">怎么用 · 第 5 站</div>
       <h1 class="disp">合入、点完成、记进一个版本</h1>
-      <p class="lede">活到评审中之后，<strong>你点完成</strong>才合 MR、结清。本周做完的活，再点「发版本」记进远端的一个 Release。不是到点自动结束一周。</p>
+      <p class="lede">活到评审中之后，<strong>你点完成</strong>才合 MR、结清。本周做完的活，再点「发版本」记进远端的一个 Release。要安装包，点左侧「出包」。不是到点自动结束一周。</p>
       <div class="res">
         <div class="h">这一站能查到</div>
         <ul>
           <li><span class="b"></span><div>怎么合入并完成（项目墙 ⚑ 只提醒，不合 MR）</div></li>
-          <li><span class="b"></span><div>发版先建远端 Release，再打标签</div></li>
+          <li><span class="b"></span><div>发版先建远端 Release，再打标签；出包是旁边另一颗按钮</div></li>
           <li><span class="b"></span><div>在研号不会跟着发版改</div></li>
         </ul>
       </div>
@@ -568,15 +568,15 @@
       <div class="ops">
         <div class="li"><div class="n">1</div><div class="t">计划屏把评审中的卡拖到「已完成」，先确认列上切的是「完成」不是「拒绝」，或详情里 Complete / 状态下拉选「完成」。有开着的 MR 就先合再关；没有开着的（可能已经在网页合过）确认后只关 issue。待办拖到「完成」不会过——完成只能从评审中来。</div></div>
         <div class="li"><div class="n">2</div><div class="t">项目墙 ⚑ 只提醒你有 MR 等着，不在那儿合。不要只在代码平台网页关 issue——那不会合 MR。</div></div>
-        <div class="li"><div class="n">3</div><div class="t">本周有已完成的活，计划屏点「发版本」。弹窗里填版本号，默认是在研号的下一位，可以改。确认后才建远端 Release。</div></div>
+        <div class="li"><div class="n">3</div><div class="t">本周有已完成的活，计划屏点「发版本」。号锁死当前版本，不能改。确认后才建远端 Release。要安装包，点左侧「出包」：先出包（黄转圈，过了变绿，可打开产物目录），再验包（写出过了几条 / 一共几条）。出包不打发版标签。</div></div>
         <div class="li"><div class="n">4</div><div class="t">去代码平台的版本页，或跑 <code>codehub-cli release list</code> / <code>gh release list</code>，核对远端真有这个版本。总览「已发版次数」优先读远端 Release。</div></div>
       </div>
 
       <h2 class="sec"><span class="n">背后</span></h2>
       <div class="res">
         <ul>
-          <li><span class="b"></span><div><strong>对远端代码仓</strong>：先合那张 MR，再关掉 issue。发版先建远端 Release，成功后再给勾过的活打 <code>bw:released:vX</code>。顺序不能反。</div></li>
-          <li><span class="b"></span><div><strong>对你的机器</strong>：合入后尽量把主仓拉到最新，收掉这张活的工作目录。本机不会多出一个发版文件。</div></li>
+          <li><span class="b"></span><div><strong>对远端代码仓</strong>：先合那张 MR，再关掉 issue。发版先建远端 Release，成功后再给勾过的活打 <code>bw:released:vX</code>。顺序不能反。出包不碰远端 Release。</div></li>
+          <li><span class="b"></span><div><strong>对你的机器</strong>：合入后尽量把主仓拉到最新，收掉这张活的工作目录。点「出包」会在仓里 <code>.bw/release/out/版本号/</code> 落下安装包；验包在隔离桌面点两屏，不抢你正在用的窗口。</div></li>
           <li><span class="b"></span><div><strong>对 <code>.bw/</code></strong>：在研版本仍是名片里那一行，发版<strong>不改</strong>它。要切号，去总览点「编辑项目名片」，和四字段、项目群一起保存，走同一张活的 MR。</div></li>
         </ul>
       </div>
@@ -584,7 +584,7 @@
       <h2 class="sec"><span class="n">得到什么</span></h2>
       <div class="res">
         <ul>
-          <li><span class="b"></span><div>远端多一个 Release；选中的活带上版本标签。</div></li>
+          <li><span class="b"></span><div>点「出包」：仓里多一份这个版本的安装包（弹窗第一行「打开目录」）。点「发版本」：远端多一个 Release，选中的活带上版本标签。</div></li>
           <li><span class="b"></span><div>总览「在研版本」还是名片上的号——发版没去改那一行。</div></li>
           <li><span class="b"></span><div>总览「已发版次数」跟远端 Release 列表走；远端读不到才退回本机 git 标签。</div></li>
         </ul>
