@@ -90,7 +90,7 @@
 1. **commit 1 · 去冗(可单独先合入)**:两份 toml 的格式瘦身 + `standard.toml` **整份删除**(文件、解析器、模板、铺底条目、清单里的遗留记录、知识库屏里那一行——是删除,不是改路径)+ 运作活③完成判据改查 managed.toml + **三处版本显示改用 §4 新算法**(读 managed 经代码常量,换路径前后都能用)+ 注释减量 + tests/examples 同步 + 本仓两份 toml 内容瘦身(清单指纹不动)。单独合入后没有任何屏断显示。如果目录方案在 gate 上有分歧,这个 commit 单独成 PR 先合——假配置不多活一天。
 2. **commit 2 · 换路径(一次换完,不拆)**:全部路径常量与文档里的字面引用 + `VERSION → 6.0` + 本仓 `.bw/` 实物搬迁 + 清单条目路径重记。
 3. **commit 3 · 写入行为**:`save_tool_mapping` 写完同步指纹(按 §1.2 细则)+ 配置屏定时文案写死。
-4. **commit 4 · 守卫与文档**:R6 守卫 + `docs/architecture.md` 纠错(§2 说「不做 deny_unknown_fields」,代码事实是除 metrics 外一律做——这也是一条「文档说的和代码干的不一样」,顺同批修;「五个解析器」改四个)+ AGENTS 导览 + CHANGELOG。
+4. **commit 4 · 守卫与文档**:R6 守卫 + `docs/architecture.md` 纠错(§2 说「不做 deny_unknown_fields」,代码事实是三份 toml 都做、`metrics.toml` 与读数流水是两处例外——这也是一条「文档说的和代码干的不一样」,顺同批修;解析器清单里的 `standard` 换成 `readings`,数目仍是五份)+ AGENTS 导览 + CHANGELOG。
 5. **commit 5 · 验收**:R1–R6 全跑,证据记进活 #133。
 
 机械改路径的 diff 和改行为的 diff 分开,评审各看各的。

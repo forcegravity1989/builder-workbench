@@ -27,7 +27,7 @@
    - 顺手收掉两处指着空气的注释:`standard/mod.rs:9-10,20`、`interactive_cli.rs:542`。
 2. **换路径(一个 commit 一次换完,不拆)**:五个要搬文件的路径常量(`repo/*` 的 `REL_PATH` 与 `readings_file.rs` 的 **`REL`**——名字不一样,按字符串搜不要按标识符搜)+ 铺底模板落点 + `bootstrap.rs` + 引擎常量(`github.rs::PROJECT_FILE_REL_PATH`、`codehub.rs`)+ `vm_kb.rs` 余下清单行 + `standard/`(templates/skills/system-prompt)+ `docs/` + 仓根 `AGENTS.md`/`CONTEXT.md`/`README.md` + examples + **`VERSION → 6.0`**(和换路径必须同一个 commit,拆开会造出对账结果错乱的中间提交)+ 本仓 `.bw/` 实物搬迁 + 清单条目**只改路径(版本、指纹不动)**。**代码里拼出来的路径清单**(字面 grep 吃不到,逐个核):`readings_file.rs` 里建目录那步(`.bw/metrics/` → `.bw/state/`);`vm_kb.rs` 的 `PLAN_DIR`/`RELEASES_PATH` 不搬,核对确认即可。
 3. **写入行为**:`save_tool_mapping` 写完同步指纹(spec §1.2 细则:先 config 后 managed;清单不存在不建不同步;失败报错点名)+ 配置屏定时文案写死「人触发/定时」。
-4. **守卫与文档**:`guard-bw-write-authority.sh` 进 AGENTS 门禁清单与 CI;`docs/architecture.md` 纠错(§2 的 deny_unknown_fields 那句、「五个解析器」改四个)+ AGENTS 顶层导览 + 指南 + CHANGELOG。
+4. **守卫与文档**:`guard-bw-write-authority.sh` 进 AGENTS 门禁清单与 CI;`docs/architecture.md` 纠错(§2 的 deny_unknown_fields 那句改实:三份 toml 都做、metrics 与读数流水是两处例外;解析器清单里的 `standard` 换成 `readings`,数目仍是五份)+ AGENTS 顶层导览 + 指南 + CHANGELOG。
 5. **验收**:R1–R6 全跑(R1 在 commit 2 完成后先跑一遍,不等到最后),证据记进活 #133。
 
 ## R6 守卫实现口径(评审轮修订)
