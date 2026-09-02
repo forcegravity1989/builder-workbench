@@ -25,6 +25,7 @@ pub mod model;
 pub mod repo;
 pub mod standard;
 pub mod trend;
+pub mod version;
 
 pub use command::{Command, Event};
 pub use model::{Issue, IssueKind, IssueOrigin, IssueStatus, Project, Signal};

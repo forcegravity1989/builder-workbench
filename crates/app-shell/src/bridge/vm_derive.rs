@@ -19,7 +19,7 @@ use std::path::Path;
 pub(super) fn build_week_counts(issues: &[bw::Issue], week: Option<&str>) -> WeekCountsVm {
     let in_scope = |i: &&bw::Issue| match week {
         None => true,
-        Some(w) => i.week_of == w,
+        Some(w) => i.plan_version == w || i.week_of == w,
     };
     let n = |st: IssueStatus| {
         issues
@@ -57,6 +57,7 @@ pub(super) fn build_ops(
                 // ①②认本周:标签优先,标题里的周号兜底(关卡时标签偶发掉了,
                 // 计划屏仍能从标题读出周目标,这里不能因此退回「未建」)。
                 wf == OPS3_WORKFLOW
+                    || (wf == OPS1_WORKFLOW && bw::app::is_ops1_issue(i))
                     || i.week_of == current_week
                     || i.title.ends_with(&format!(" {current_week}"))
             })
@@ -79,9 +80,9 @@ pub(super) fn build_ops(
     };
     vec![
         chip(
-            "运作活① 更新指标与周计划",
+            "运作活① 更新指标与版本计划",
             OPS1_WORKFLOW,
-            "点总览的「开始本周」触发",
+            "点总览的「开始本版本」触发",
         ),
         chip(
             "运作活② 资产盘点",

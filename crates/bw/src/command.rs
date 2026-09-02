@@ -71,8 +71,8 @@ pub enum Command {
     ReconcileStandard { project_id: ProjectId },
 
     // ── 计划 ──────────────────────────────────────────────
-    /// 总览「开始本周」:建本周运作活①并开工。同一标题做过(含已完成)不再建。
-    /// 判据是「本周文件不存在」——查文件,不查任何索引表。
+    /// 总览「开始本版本」:建本周运作活①并开工。同一标题做过(含已完成)不再建。
+    /// 判据是标题 + 本 ISO 周创建的 `v0.x` 标签。
     StartWeekPlanning { project_id: ProjectId, week: String },
     /// 人确认草稿后真的建活(`origin = agent_split`)。
     ConfirmWeekDraft {
@@ -93,17 +93,15 @@ pub enum Command {
         /// 和 `week_of` 是同一槽位:有 plan 就只打版本,丢掉周。
         plan: String,
     },
-    /// 排期:排进某个周版本,或传空串移回待办池。
+    /// 摘排期:壳侧只传空 `week_of` 把活移回待办池。不再用这条新写周标签。
     ScheduleIssue {
         id: IssueId,
         week_of: Option<String>,
     },
-    /// 排进人起名的版本(`bw:plan:<name>`)。和 `ScheduleIssue` 是同一槽位的
-    /// 两种写法:一张活只属于一个版本。正本走 codehub milestone + 标签。
+    /// 排进计划版本(`bw:plan:<name>`)。一张活只属于一个版本。
     ScheduleToPlan { id: IssueId, plan: String },
-    /// 建一个人起名的版本:建 codehub milestone(title=name,start,due),
-    /// 并给 `included` 每张打 `bw:plan:<name>` 标签、挂到这个里程碑。
-    /// 周版本每周一按周号出现,不用这条建。与发版号 `CutRelease` 不同。
+    /// 建一个 `v0.x` 版本:建 codehub milestone,给 `included` 打 `bw:plan:<name>`。
+    /// 与发版号 `CutRelease` 不同。
     CreatePlanVersion {
         project_id: ProjectId,
         name: String,
@@ -112,9 +110,15 @@ pub enum Command {
         note: String,
         included: Vec<IssueId>,
     },
-    /// 删一个人起名的版本:给挂着 `bw:plan:<name>` 的活摘掉该标签,再删同名
-    /// 里程碑。周版本每周一固定出现,周格式标题拒收。
+    /// 删一个未发的 `v0.x` 版本:给挂着 `bw:plan:<name>` 的活摘掉该标签,再删同名
+    /// 里程碑。已发的号拒收。
     DeletePlanVersion { project_id: ProjectId, name: String },
+    /// 未发版本改名:同步里程碑标题、标签定义、已打在 issue 上的 `bw:plan:`。
+    RenamePlanVersion {
+        project_id: ProjectId,
+        from: String,
+        to: String,
+    },
     /// 发版本:给选中的活写版本号 + 建远端 codehub/GitHub Release + 打 `bw:released:*` 标签。
     CutRelease {
         project_id: ProjectId,
@@ -277,7 +281,7 @@ pub enum Event {
         week: String,
     },
     /// 本周那张运作活①还在路上,这次什么
-    /// 都没做。**不是错误** —— 人再点一次「开始本周」该被平静地挡住,而不是
+    /// 都没做。**不是错误** —— 人再点一次「开始本版本」该被平静地挡住,而不是
     /// 收到一句「这张活现在是评审中,不是能开工的状态」。
     WeekPlanInProgress {
         project_id: ProjectId,
@@ -308,6 +312,12 @@ pub enum Event {
         name: String,
         /// 摘掉 `bw:plan` 的活有几张。
         issues_cleared: u32,
+    },
+    PlanVersionRenamed {
+        project_id: ProjectId,
+        from: String,
+        to: String,
+        issues_moved: u32,
     },
     IssueCategorySet {
         id: IssueId,

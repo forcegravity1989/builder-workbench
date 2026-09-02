@@ -579,10 +579,10 @@ fn build_crons(policy: Option<&issue_policy_file::IssuePolicyFile>) -> Vec<CronV
         other => other.to_string(),
     };
     rows.push(CronVm {
-        name: "更新指标与制定本周计划".into(),
+        name: "更新指标与制定版本计划".into(),
         trigger: word(&c.ops1_trigger),
         schedule: "—".into(),
-        rule: "本周还没有运作活①「更新指标 + 制定本周计划」".into(),
+        rule: "本周还没有运作活①「更新指标 + 制定版本计划」".into(),
     });
     rows.push(CronVm {
         name: "资产盘点".into(),

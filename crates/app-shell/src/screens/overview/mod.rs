@@ -23,7 +23,7 @@ pub fn View(p: ProjectVm, bridge: Bridge) -> Element {
 
     rsx! {
         section { class: "ov-stack",
-            // 本周还没有运作活①才给「开始本周」。做完(含已完成)不再冒出来。
+            // 本周还没有运作活①才给「开始本版本」。做完(含已完成)不再冒出来。
             // 还开着时只指路去会话屏,再点一次会重建一张同名活。
             if let Some(pending) = p.bootstrap_pending.clone() {
                 {bootstrap_banner(pending, &bridge, nav)}
@@ -86,7 +86,7 @@ fn start_banner(p: &ProjectVm, bridge: &Bridge, nav: PanelNav, busy: ChromeBusy)
     let (pid, week) = (p.id, p.current_week.clone());
     rsx! {
         div { class: "ov-banner",
-            span { "本周({p.current_week})还没开始「更新指标 + 制定本周计划」" }
+            span { "还没开始「更新指标 + 制定版本计划」" }
             button {
                 class: "btn btn-primary btn-sm",
                 onclick: move |_| {
@@ -96,22 +96,22 @@ fn start_banner(p: &ProjectVm, bridge: &Bridge, nav: PanelNav, busy: ChromeBusy)
                         project_id: pid,
                         week: week.clone(),
                     });
-                    // 剩下的在会话屏里发生(复盘上周 → 更新指标 → 聊出本周),
+                    // 剩下的在会话屏里发生(复盘上周 → 更新指标 → 确认版本),
                     // 人点完这一下就该看到那场会话,不是留在总览上猜。
                     nav.go(Panel::Session);
                 },
-                "开始本周"
+                "开始本版本"
             }
         }
     }
 }
 
-/// 运作活①还开着:横幅只指路,不再给「开始本周」。
+/// 运作活①还开着:横幅只指路,不再给「开始本版本」。
 fn running_banner(status: String, nav: PanelNav) -> Element {
     rsx! {
         div { class: "ov-banner",
             span {
-                "运作活①(更新指标 + 制定本周计划)已开工 · {status}。去会话屏接着聊。"
+                "运作活①(更新指标 + 制定版本计划)已开工 · {status}。去会话屏接着聊。"
             }
             button {
                 class: "btn btn-sm",
@@ -752,9 +752,12 @@ fn repo_block(p: &ProjectVm, bridge: &Bridge) -> Element {
 
 fn week_block(p: &ProjectVm) -> Element {
     let w = p.weeks.iter().find(|w| w.week == p.current_week);
-    let goal = w
-        .and_then(|w| w.goal.clone())
-        .unwrap_or_else(|| "(本周尚无计划)".into());
+    let goal = if p.confirmed_version.is_empty() {
+        "还没有确认本周版本".to_string()
+    } else {
+        w.and_then(|wk| wk.goal.clone())
+            .unwrap_or_else(|| "（这个版本还没写版本目标）".into())
+    };
     let c = &p.week_counts;
     rsx! {
         div { class: "card ov-block",

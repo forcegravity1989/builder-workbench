@@ -6,12 +6,12 @@
 //! 一屏一屏地看,这层的分工是:
 //!
 //! - [`project`] —— 接入、改名片、配项目群
-//! - [`plan`] —— 开始本周、排期、发版本、缓存对账
+//! - [`plan`] —— 开始本版本、排期、发版本、改名、缓存对账
 //! - [`issue`] —— 建活、▶跑、状态转移
 //! - [`bootstrap`] —— 规范铺底与对账
 //! - [`chat_notify`] —— 三件事同步进项目群(发出去就算完,不记账)
-//! - [`week_comment`] —— 运作活①评论里的周目标
-//! - [`ops`] —— 三张运作活:周计划、资产盘点、规范铺底
+//! - [`week_comment`] —— 运作活①评论里的版本目标
+//! - [`ops`] —— 三张运作活:版本计划、资产盘点、规范铺底
 //! - [`session`] —— 内嵌终端的 PTY 生命周期
 //! - [`tools`] —— 开工工具映射与探活
 //! - [`worktree`] —— 每张活一棵自己的 worktree 与分支
@@ -41,7 +41,8 @@ pub use bootstrap::{
 pub use health::{collect_health_inputs, read_metric_readings, MetricReading};
 pub use issue::{count_unseen, issues_in_week, workflow_usage};
 pub use ops::{
-    ops1_title, ops2_title, skill_slug, workflow_label, OPS1_WORKFLOW, OPS2_WORKFLOW, OPS3_WORKFLOW,
+    is_ops1_issue, ops1_title, ops2_title, skill_slug, week_started, workflow_label, OPS1_WORKFLOW,
+    OPS2_WORKFLOW, OPS3_WORKFLOW,
 };
 pub use progress::{ProgressLine, StepState};
 pub use week_comment::{
@@ -459,6 +460,11 @@ impl App {
             Command::DeletePlanVersion { project_id, name } => {
                 self.delete_plan_version(project_id, name).await
             }
+            Command::RenamePlanVersion {
+                project_id,
+                from,
+                to,
+            } => self.rename_plan_version(project_id, from, to).await,
             Command::CutRelease {
                 project_id,
                 version,
@@ -580,6 +586,14 @@ fn cmd_log_label(cmd: &Command) -> String {
         Command::DeletePlanVersion { project_id, name } => {
             format!("DeletePlanVersion project={} name={name}", project_id.uuid())
         }
+        Command::RenamePlanVersion {
+            project_id,
+            from,
+            to,
+        } => format!(
+            "RenamePlanVersion project={} from={from} to={to}",
+            project_id.uuid()
+        ),
         Command::CutRelease {
             project_id,
             version,

@@ -250,13 +250,21 @@ impl Gathered {
         }
         let pid = pg.id;
         let week = pg.current_week.clone();
-        let ops1_title = bw::app::ops1_title(&week);
-        let ops1 = pg.issues.iter().find(|i| i.title == ops1_title);
-        pg.week_started = ops1.is_some();
+        pg.week_started = bw::app::week_started(&pg.issues, &week);
+        let ops1 = pg.issues.iter().find(|i| {
+            bw::app::is_ops1_issue(i)
+                && i.status != IssueStatus::Done
+                && i.status != IssueStatus::Cancelled
+        });
         pg.ops1_status = ops1
             .filter(|i| i.status != IssueStatus::Done)
             .map(|i| i.status.label().to_string());
-        let week_counts = build_week_counts(&pg.issues, Some(week.as_str()));
+        let confirmed = confirmed_version(&pg.issues, &week);
+        let week_counts = if confirmed.is_empty() {
+            WeekCountsVm::default()
+        } else {
+            build_week_counts(&pg.issues, Some(confirmed.as_str()))
+        };
         let unread = bw::app::count_unseen(&pg.issues);
         if let Some(card) = self.projects.iter_mut().find(|c| c.id == pid) {
             card.week_total = week_counts.total() as u32;
@@ -439,7 +447,7 @@ fn primary_note(events: &[Event]) -> Option<String> {
             format!("定时到点:{week} 的「{workflow}」已自动建活并开工")
         }
         Event::WeekPlanAlreadyExists { week, .. } => {
-            format!("{week} 的「更新指标 + 制定本周计划」已经做过,没有重开")
+            format!("{week} 的「更新指标 + 制定版本计划」已经做过,没有重开")
         }
         Event::WeekPlanInProgress { week, status, .. } => {
             format!("{week} 的运作活①还在路上({status})—— 去会话屏接着聊")
@@ -497,16 +505,18 @@ fn primary_note(events: &[Event]) -> Option<String> {
         Event::IssueScheduledToPlan { plan, .. } => {
             format!("已排进版本 {plan} —— 正本是 bw:plan 标签,codehub 里程碑同步中")
         }
-        Event::PlanVersionCreated { name, .. } => {
-            format!("版本 {name} 已建 —— 和周版本是同一类,和发版号不是一回事")
-        }
+        Event::PlanVersionCreated { name, .. } => format!("版本 {name} 已建"),
         Event::PlanVersionDeleted {
             name,
             issues_cleared,
             ..
-        } => {
-            format!("版本 {name} 已删,摘了 {issues_cleared} 张活的计划标签(周排期没动)")
-        }
+        } => format!("版本 {name} 已删,摘了 {issues_cleared} 张活的计划标签"),
+        Event::PlanVersionRenamed {
+            from,
+            to,
+            issues_moved,
+            ..
+        } => format!("版本 {from} 已改成 {to},同步了 {issues_moved} 张活"),
         Event::IssueAssigneeSet { assignee, .. } => {
             if assignee.is_empty() {
                 "已取消指派 · 已同步到 codehub".into()
@@ -633,7 +643,12 @@ pub async fn gather(app: &App, ui: &mut UiState) -> Gathered {
                 job.ws.display().to_string(),
             )
         };
-        let week_counts = build_week_counts(&issues, Some(current_week.as_str()));
+        let confirmed = confirmed_version(&issues, &current_week);
+        let week_counts = if confirmed.is_empty() {
+            WeekCountsVm::default()
+        } else {
+            build_week_counts(&issues, Some(confirmed.as_str()))
+        };
         let week_total = (week_counts.todo
             + week_counts.doing
             + week_counts.review
@@ -985,9 +1000,12 @@ async fn gather_project(
         issue_policy_file::read(&ws),
         warnings,
     );
-    let ops1_title = bw::app::ops1_title(current_week);
-    let ops1 = issues.iter().find(|i| i.title == ops1_title);
-    let week_started = ops1.is_some();
+    let week_started = bw::app::week_started(&issues, current_week);
+    let ops1 = issues.iter().find(|i| {
+        bw::app::is_ops1_issue(i)
+            && i.status != bw::model::IssueStatus::Done
+            && i.status != bw::model::IssueStatus::Cancelled
+    });
     let ops1_status = ops1
         .filter(|i| i.status != IssueStatus::Done)
         .map(|i| i.status.label().to_string());
@@ -1040,16 +1058,18 @@ async fn assemble_project(
     } else {
         ui.viewing_week.clone()
     };
-    let week = if ui.view_all || !ui.viewing_plan.is_empty() {
-        None
-    } else {
-        Some(viewing_week.as_str())
-    };
+    // 全部 / 某个计划版本 / 某一周。周和旧计划名仍能切出来看。
     let plan = if !ui.viewing_plan.is_empty() {
         Some(ui.viewing_plan.as_str())
     } else {
         None
     };
+    let week = if ui.view_all || plan.is_some() {
+        None
+    } else {
+        Some(viewing_week.as_str())
+    };
+    let view_all = ui.view_all && plan.is_none();
     // 指标读数按正在看的那一周现读(本机 jsonl,便宜)。
     let readings = bw::app::read_metric_readings(&pg.ws, &viewing_week);
     // 会话 live:PTY 已封存,build_sessions 已经如实置 false(没真进程信号,不假
@@ -1087,6 +1107,24 @@ async fn assemble_project(
         });
         vm
     };
+    let confirmed = confirmed_version(&pg.issues, &pg.current_week);
+    let mut plan_versions = pg.plan_versions.clone();
+    let released_names: Vec<String> = pg
+        .releases
+        .iter()
+        .map(|r| r.version.clone())
+        .chain(
+            pg.issues
+                .iter()
+                .filter(|i| bw::version::is_v0x(&i.version))
+                .map(|i| i.version.clone()),
+        )
+        .collect();
+    for v in &mut plan_versions {
+        v.released = released_names.iter().any(|r| r == &v.name);
+    }
+    let plan_names: Vec<String> = plan_versions.iter().map(|v| v.name.clone()).collect();
+    let inv = bw::version::inventory(&plan_names, &released_names);
     ProjectVm {
         id: pg.id,
         slug: pg.slug.clone(),
@@ -1113,20 +1151,26 @@ async fn assemble_project(
             !ui.metrics.is_empty(),
         ),
         week_started: pg.week_started,
+        last_released: inv.last_released.clone().unwrap_or_default(),
+        unreleased: inv.unreleased.clone(),
+        suggested_next: inv.suggested_next.clone(),
+        confirmed_version: confirmed.clone(),
         ops1_status: pg.ops1_status.clone(),
         bootstrap_pending: build_bootstrap_pending(&pg.issues, pg.ops3_landed),
         weeks: build_weeks(&pg.issues, &pg.current_week, &pg.week_goals),
         current_week: pg.current_week.clone(),
         viewing_week: viewing_week.clone(),
         viewing_plan: ui.viewing_plan.clone(),
-        view_all: ui.view_all,
+        view_all,
         board: build_board(&pg.issues, week, plan, pg.policy.as_ref()),
-        plan_versions: pg.plan_versions.clone(),
+        plan_versions,
         current_user: pg.current_user.clone(),
-        // 两份计数,各有各的归属:总览那块标题写着「本周」,就只能是本周;
-        // 计划屏的进度条画在它正在看的那个看板上面,就跟着看板的范围走。
-        week_counts: build_week_counts(&pg.issues, Some(pg.current_week.as_str())),
-        board_counts: build_week_counts(&pg.issues, week),
+        week_counts: if confirmed.is_empty() {
+            WeekCountsVm::default()
+        } else {
+            build_week_counts(&pg.issues, Some(confirmed.as_str()))
+        },
+        board_counts: build_week_counts(&pg.issues, week.or(plan)),
         ops: build_ops(&pg.issues, pg.current_week.as_str(), pg.ops3_landed),
         board_ops: build_ops(&pg.issues, viewing_week.as_str(), pg.ops3_landed),
         // 采不采由界面点 —— 现算一次要起好几个 git 子进程,不能每次重切都跑。
@@ -1218,6 +1262,7 @@ async fn build_plan_versions(app: &App, p: &Project, issues: &[bw::Issue]) -> Ve
     }
     order
         .into_iter()
+        .filter(|name| !name.is_empty() && !bw::isoweek::is_week(name))
         .map(|name| {
             let (start, end) = meta.get(&name).cloned().unwrap_or_default();
             PlanVersionVm {
@@ -1225,9 +1270,23 @@ async fn build_plan_versions(app: &App, p: &Project, issues: &[bw::Issue]) -> Ve
                 start,
                 end,
                 issue_count: counts.remove(&name).unwrap_or(0),
+                released: false,
             }
         })
         .collect()
+}
+
+fn confirmed_version(issues: &[bw::Issue], current_week: &str) -> String {
+    issues
+        .iter()
+        .find(|i| {
+            bw::app::is_ops1_issue(i)
+                && bw::version::is_v0x(&i.plan_version)
+                && (i.status != IssueStatus::Done && i.status != IssueStatus::Cancelled
+                    || bw::isoweek::unix_in_week(i.created_at, current_week))
+        })
+        .map(|i| i.plan_version.clone())
+        .unwrap_or_default()
 }
 
 pub(super) fn card_item(i: &bw::Issue) -> CardItemVm {

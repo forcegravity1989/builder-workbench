@@ -112,7 +112,7 @@ pub fn issue_title() -> String {
 pub fn planned_steps(probe: &BootstrapProbe) -> String {
     let mut steps = vec!["写核心件(全部落在 `.bw/` 下,仓根一个字不写)"];
     if probe.has_history {
-        steps.push("资产盘点首次模式:给已有 issue 打 bw:week(这个仓已经有历史了)");
+        steps.push("资产盘点首次模式:能对上已有 v0.x 的活打 bw:plan:v0.x(这个仓已经有历史了)");
     }
     steps.join("、")
 }
