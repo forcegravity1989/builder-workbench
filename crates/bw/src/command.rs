@@ -80,7 +80,7 @@ pub enum Command {
         week: String,
         titles: Vec<String>,
     },
-    /// 建一张活。`category` 决定默认工具与 workflow(查 `.bw/issue-policy.toml`)。
+    /// 建一张活。`category` 决定默认工具与 workflow(本机 settings → 残留映射 → 产品默认)。
     CreateIssue {
         project_id: ProjectId,
         title: String,
@@ -147,7 +147,7 @@ pub enum Command {
     /// 状态转移。合法性由 `can_transition_to` 守;「完成」只能从「评审中」来,
     /// 而且只能是人显式发这条命令。作废走 `Cancelled`,不是 Done。
     TransitionIssue { id: IssueId, to: IssueStatus },
-    /// 给已有的活补/改类别标签。读回时用它查 issue-policy 的开工工具。
+    /// 给已有的活补/改类别标签。读回时用它查本机开工工具(再回退残留/产品默认)。
     SetIssueCategory { id: IssueId, category: Category },
     /// 改 issue 的责任人(codehub assignee)。空串 = 取消指派。走 codehub API,
     /// 不在本地另存一套。
@@ -167,7 +167,7 @@ pub enum Command {
     DeleteSession { id: IssueId },
 
     // ── 配置 ──────────────────────────────────────────────
-    /// 保存一行「类别→工具→workflow」映射,写 `.bw/issue-policy.toml`。
+    /// 保存本机「我用什么工具」。只写 settings,不进仓。`workflow` 带着不存。
     SaveToolMapping {
         project_id: ProjectId,
         category: Category,

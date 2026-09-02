@@ -246,7 +246,7 @@ impl App {
         if !ws.is_dir() {
             return Err(AppError::NoWorkspace(project_id.uuid().to_string()));
         }
-        let cleared = salvage_main_checkout_dirt(&ws).await;
+        let cleared = salvage_readings_dirt(&ws).await;
         let (moved, mut note) = match crate::git::pull_ff(&ws).await {
             Ok(true) => (true, "工作区已拉到最新".to_string()),
             Ok(false) => (false, "工作区本来就是最新的".to_string()),
@@ -287,9 +287,7 @@ impl App {
             return Err(AppError::Refused(format!("{version} 已经发过")));
         }
         if !plans.iter().any(|s| s == &version) {
-            return Err(AppError::Refused(format!(
-                "先有计划版本 {version} 再发"
-            )));
+            return Err(AppError::Refused(format!("先有计划版本 {version} 再发")));
         }
 
         // 1. 先在远端建 Release(tag + title + notes)—— 成功才往下。
@@ -407,41 +405,20 @@ impl App {
     }
 }
 
-/// 拉主干之前清掉 Workbench 自己留在主检出上的预览:
-/// 读数挪进账本;接入写下的名片恢复成 HEAD(正本在已合入的 MR 里)。
-/// 人自己的源码脏文件不动。
-pub(super) async fn salvage_main_checkout_dirt(ws: &std::path::Path) -> String {
+/// 拉主干之前:主检出若只脏了读数流水,挪进账本再拉。不碰名片、不碰人的源码。
+pub(super) async fn salvage_readings_dirt(ws: &std::path::Path) -> String {
     let Ok(paths) = crate::git::dirty_paths(ws).await else {
         return String::new();
     };
-    let mut bits = Vec::new();
     if paths
         .iter()
         .any(|p| crate::git::is_readings_dirt(std::slice::from_ref(p)))
         && salvage_readings_into_ledger(ws).await
     {
-        bits.push("主检出上的读数已挪进账本。");
+        "主检出上的读数已挪进账本。".into()
+    } else {
+        String::new()
     }
-    let mut restored = false;
-    for rel in [".bw/project.toml", ".bw/PROJECT.md"] {
-        if !paths
-            .iter()
-            .any(|p| p == rel && crate::git::is_card_preview_path(p))
-        {
-            continue;
-        }
-        if crate::git::restore_path(ws, rel).await.is_ok() {
-            restored = true;
-            continue;
-        }
-        // 未跟踪:restore 无效。接入写下、还没合进主干的那份,删掉才能拉。
-        let _ = std::fs::remove_file(ws.join(rel));
-        restored = true;
-    }
-    if restored {
-        bits.push("主检出上未提交的名片已让开,改以主干为准。");
-    }
-    bits.concat()
 }
 
 /// 主检出若脏了读数流水,把内容并进账本,再把主检出那份恢复成 HEAD。

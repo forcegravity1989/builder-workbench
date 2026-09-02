@@ -1,9 +1,7 @@
-//! `.bw/issue-policy.toml` —— 活的约定:「类别→工具→workflow」映射和盘点节律。
-//!
-//! 这份文件**不入库**。配置屏点保存、▶开工查映射、定时读节律,都现读这份。
-//! 开工工具名单编译在 Workbench 里,不靠这里的 `[[tool]]`(旧仓可能还有,解析收下、新写入不写)。
+//! `.bw/issue-policy.toml` —— **残留格式**。产品不读、不写、不铺。
+//! 解析只给测试和对账认得出旧文件;每周资产盘点整份删掉。
 
-use super::{parse_toml, read_to_string, write_file, Result};
+use super::{parse_toml, read_to_string, Result};
 use crate::model::{category_from_key, Category};
 use serde::{Deserialize, Serialize};
 use std::path::Path;
@@ -118,43 +116,4 @@ pub fn read(workspace: &Path) -> Result<Option<IssuePolicyFile>> {
         None => Ok(None),
         Some(raw) => parse(&raw).map(Some),
     }
-}
-
-/// 配置屏改完映射保存时写回。整份重写(内容来自解析后的结构),所以人手加
-/// 的注释会掉——配置屏保存前会提示这一点,和指标文件同一条已知代价。
-/// 旧仓解析进来的 `[[tool]]` / `[review]` / `[kanban]` 不写回。
-pub fn write(workspace: &Path, f: &IssuePolicyFile) -> Result<String> {
-    let body = render(f);
-    write_file(workspace, REL_PATH, &body)?;
-    Ok(body)
-}
-
-/// 只写 mapping + cadence。`tools` / `review` / `kanban` 解析收下、写入丢掉。
-pub fn render(f: &IssuePolicyFile) -> String {
-    let q = |s: &str| format!("\"{}\"", s.replace('\\', "\\\\").replace('"', "\\\""));
-    let mut s = String::from(
-        "# 开工约定。配置屏改映射、保存，写的就是这份。\n\
-         # [[mapping]] 五类各一行：类别 → 用哪个工具 → 挂哪份 workflow（空=无默认）。\n\
-         # [cadence] 资产盘点到点；改周五几点改这一行。\n",
-    );
-    s.push_str(&format!("schema_version = {}\n", f.schema_version.max(1)));
-    for m in &f.mappings {
-        s.push_str("\n[[mapping]]\n");
-        s.push_str(&format!("category = {}\n", q(&m.category)));
-        s.push_str(&format!("tool     = {}\n", q(&m.tool)));
-        s.push_str(&format!("workflow = {}\n", q(&m.workflow)));
-    }
-    if let Some(c) = &f.cadence {
-        s.push_str("\n[cadence]\n");
-        if !c.ops1_trigger.is_empty() {
-            s.push_str(&format!("ops1_trigger  = {}\n", q(&c.ops1_trigger)));
-        }
-        if !c.ops2_trigger.is_empty() {
-            s.push_str(&format!("ops2_trigger  = {}\n", q(&c.ops2_trigger)));
-        }
-        if !c.ops2_schedule.is_empty() {
-            s.push_str(&format!("ops2_schedule = {}\n", q(&c.ops2_schedule)));
-        }
-    }
-    s
 }

@@ -17,7 +17,7 @@
 | —(子技能) | `metrics-refresh/` | `week-planning` 第二步指名调用 | 随宿主 |
 | —(子技能) | `project-handbook/` | `asset-audit` 首次模式里**问过人**之后调用 | 随宿主 |
 
-规范铺底(运作活③)**没有剧本** —— 它没有 agent 步骤,Workbench 自己把核心件写进 `.bw/`。
+项目约定**没有剧本** —— 不起 agent,只把 `.bw/project.toml` 写到常驻树 `bw/project`。
 
 ## workflow 入口(业界 SOP 链,Workbench 写入口 body 指向 vendor 库)
 
@@ -27,7 +27,7 @@ body 自足;workflow 入口 body 是 SOP 链 + 指向 `../vendor/` 库子技能�
 
 | 活的 `workflow` 字段 | 目录 | body 指向 | 状态 |
 |---|---|---|---|
-| `mattpocock-skills` | `mattpocock-skills/` | `../vendor/mattpocock-skills/skills/engineering/` 下 grill-with-docs→implement→code-review | ✅ build 阶段默认,已打包 + issue-policy 回填 |
+| `mattpocock-skills` | `mattpocock-skills/` | `../vendor/mattpocock-skills/skills/engineering/` 下 grill-with-docs→implement→code-review | ✅ build 阶段产品默认,已打包 |
 | `proto-design` | — | (源还没 vendor 进 `../vendor/`) | ⏸ 原型阶段默认,待 vendor + 入口 |
 
 ## 不预置方法论技能

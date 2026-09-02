@@ -188,8 +188,6 @@ pub struct ProjectVm {
     /// 代码仓级指标。**现算很贵(要起好几个 git 子进程),所以按需**:
     /// `None` = 还没采过,界面显示一颗「立即采集」。
     pub repo_stats: Option<RepoStatsVm>,
-    /// 名片改动那张轻量活走到哪了。`None` = 没有在途的名片改动。
-    pub card_mr: Option<CardMrVm>,
     /// 「开始本版本」刚产出、**还没经人确认**的草稿活标。确认之前一张活都不建
     /// —— 这是「活由人确认才存在」那条,不是界面装饰。
     pub pending_drafts: Vec<String>,
@@ -502,7 +500,7 @@ pub struct ConfigVm {
     pub skills: Vec<SkillVm>,
     pub tools: Vec<ToolProbeVm>,
     pub remote: String,
-    /// `.bw/issue-policy.toml` 的 `[cadence]` 段:定时节律。原样一句话。
+    /// 定时节律:残留 issue-policy 或产品默认。
     pub cadence: String,
     /// 节律拆成表格行:哪张运作活、怎么触发、判据是什么。
     pub crons: Vec<CronVm>,
@@ -511,7 +509,7 @@ pub struct ConfigVm {
     pub chat_group: String,
     pub chat_events: Vec<(String, bool)>,
     /// `.bw/project.toml` 的 `[chat]` 段:项目群。**仓是正本**,这里只显示;
-    /// 改它走总览「编辑项目名片」那张轻量活 + MR。
+    /// 改它走总览「项目约定」那张轻量活 + MR。
     pub chat: String,
     /// 从活详情点 workflow 跳过来时要亮的那一行(slug)。空 = 没指定。
     pub focus_skill: String,

@@ -290,11 +290,6 @@ fn is_readings_path(p: &str) -> bool {
     p == ".bw/metrics/readings.jsonl" || p == ".bw/metrics" || p.starts_with(".bw/metrics/")
 }
 
-/// 接入写在主检出上、等人合入才算正本的那两份名片。
-pub fn is_card_preview_path(p: &str) -> bool {
-    p == ".bw/project.toml" || p == ".bw/PROJECT.md"
-}
-
 /// 把一个路径恢复成 HEAD。未跟踪的文件这条会失败,调用方自己删。
 pub async fn restore_path(workspace: &Path, rel: &str) -> Result<(), GitError> {
     git(workspace, &["restore", "--worktree", "--staged", "--", rel]).await?;

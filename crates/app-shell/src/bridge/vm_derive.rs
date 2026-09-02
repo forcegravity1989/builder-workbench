@@ -87,9 +87,30 @@ pub(super) fn build_ops(
         chip(
             "运作活② 资产盘点",
             OPS2_WORKFLOW,
-            "到点自动建(节律配在 .bw/issue-policy.toml)",
+            "到点自动建(产品默认周五 09:00)",
         ),
-        chip("运作活③ 规范铺底", OPS3_WORKFLOW, "接入项目时铺"),
+        {
+            let open = issues
+                .iter()
+                .filter(|i| bw::app::is_open_charter(i))
+                .max_by_key(|i| i.number);
+            let done = issues
+                .iter()
+                .filter(|i| bw::app::is_charter_title(&i.title) && i.status == IssueStatus::Done)
+                .max_by_key(|i| i.number);
+            let (status, note) = ops_chip_display(
+                open,
+                done,
+                true,
+                ops3_landed,
+                "接入时写名片,之后改名片也走这张",
+            );
+            OpsChipVm {
+                title: "项目约定".into(),
+                status,
+                note,
+            }
+        },
     ]
 }
 
@@ -120,40 +141,14 @@ fn ops_chip_display(
 /// 看见「改了、还没合」。只认最新的一张。
 /// 铺底没合进默认分支:开着的运作活③。合入之后配置才作数,别人再纳入也才看得见。
 pub(super) fn build_bootstrap_pending(issues: &[bw::Issue], ops3_landed: bool) -> Option<CardMrVm> {
-    if ops3_landed {
+    let i = issues
+        .iter()
+        .filter(|i| bw::app::is_open_charter(i))
+        .max_by_key(|i| i.number)?;
+    // 合入后横幅消失;人还没点完成时计划里仍是待评审。后来再改:件已在 HEAD 但 MR 开着,再出横幅。
+    if ops3_landed && !i.has_open_mr {
         return None;
     }
-    let i = issues
-        .iter()
-        .filter(|i| i.kind == bw::model::IssueKind::Ops && i.workflow == bw::app::OPS3_WORKFLOW)
-        .filter(|i| !matches!(i.status, IssueStatus::Done | IssueStatus::Cancelled))
-        .max_by_key(|i| i.number)?;
-    Some(CardMrVm {
-        issue_id: Some(i.id),
-        number: i.number,
-        status: i.status.label().to_string(),
-        pr_number: i.pr_number,
-        mergeable: i.status == IssueStatus::InReview,
-        has_open_mr: i.has_open_mr,
-    })
-}
-
-/// 名片改动那张在途的轻量活。名片是仓文件,改它走分支 + MR,所以总览要能
-/// 看见「改了、还没合」。只认最新的一张。
-pub(super) fn build_card_mr(issues: &[bw::Issue]) -> Option<CardMrVm> {
-    let i = issues
-        .iter()
-        .filter(|i| i.title.starts_with("编辑项目名片"))
-        .filter(|i| {
-            matches!(
-                i.status,
-                IssueStatus::InReview
-                    | IssueStatus::InProgress
-                    | IssueStatus::Todo
-                    | IssueStatus::Backlog
-            )
-        })
-        .max_by_key(|i| i.number)?;
     Some(CardMrVm {
         issue_id: Some(i.id),
         number: i.number,
@@ -253,18 +248,27 @@ mod ops_chip_display_tests {
     }
 
     #[test]
-    fn bootstrap_pending_only_when_open_and_not_landed() {
-        let open = dummy_ops("#12 规范铺底 v5.11");
-        let mut open = open;
+    fn bootstrap_pending_hides_when_landed_and_no_open_mr() {
+        let mut open = dummy_ops("规范铺底 v5.11");
         open.status = bw::model::IssueStatus::InReview;
         open.workflow = bw::app::OPS3_WORKFLOW.into();
         open.has_open_mr = true;
         open.pr_number = 4;
+        assert!(super::build_bootstrap_pending(&[open.clone()], true).is_some());
+        open.has_open_mr = false;
         assert!(super::build_bootstrap_pending(&[open.clone()], true).is_none());
-        let pending = super::build_bootstrap_pending(&[open], false).expect("open ops3");
+        let pending = super::build_bootstrap_pending(&[open], false).expect("open leftover");
         assert_eq!(pending.number, 8);
         assert!(pending.mergeable);
-        assert!(pending.has_open_mr);
+    }
+
+    #[test]
+    fn charter_title_shows_until_merged() {
+        let mut open = dummy_ops(bw::app::CHARTER_TITLE);
+        open.kind = bw::model::IssueKind::Light;
+        open.status = bw::model::IssueStatus::InReview;
+        open.has_open_mr = true;
+        assert!(super::build_bootstrap_pending(&[open], false).is_some());
     }
 
     #[test]
