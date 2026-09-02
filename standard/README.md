@@ -14,11 +14,11 @@
   `README.md` / `docs/` 打架。
 - **仓根 `AGENTS.md` 与 `CLAUDE.md` 是项目自己的** —— 那是 Claude Code /
   Cursor / Codex 都在找的位置,塞进 `.bw/` 谁都读不到。铺底**仓根一个字
-  不写**;要不要写开发手册,是资产盘点首次模式问过人才写的事(今天还没接上)。
+  不写**;要不要写开发手册是项目自己的事,本轮资产盘点不代写。
 
 规范版本因此从 4.0 跳到 **5.0** —— 落点变了,老版本铺出来的文件在新版本眼里
 就是「不在册」,不做迁移。续三(系统提示词外置 + 扁平铺底 + 删方法论)又
-抬到 **5.1**,当前值见 `VERSION`。续五(默认 workflow 打包:mattpocock 入口 + vendor 摊 + issue-policy 回填)抬到 **5.2**。续十六(指标空壳到站才铺 + 脚本 UTF-8 / A 类 points / `def` 字段)抬到 **5.3**。续十七(运作活①评论三标题 + 挂评校验脚本)抬到 **5.4**。续二十(B 类仍要写脚本)抬到 **5.5**。续二十二(B 类写入 + 定本周建卡必打类别)抬到 **5.6**。续二十三(mattpocock 入口写清 `/xxx`=读路径,并补 grilling/domain-modeling/tdd)抬到 **5.7**。B/C 读数改日历日键、展示按周抬到 **5.8**。过程指标包(十份脚本 + 目录总账)抬到 **5.9**。独立评审(评审剧本 `mr-review` + 阶段规范 `review` + 评审主提示词 `REVIEW.md.tmpl`)抬到 **5.10**。计划版本收成 `v0.x`、不再写 `bw:week` 抬到 **5.11**。名片只留 `project.toml`、开工约定不再写工具声明、不再铺 `standard.toml` / `managed.toml`、周盘点清旧件抬到 **5.12**。不写主检出、开工工具跟人走、不再铺 issue-policy 抬到 **5.13**。
+抬到 **5.1**,当前值见 `VERSION`。续五(默认 workflow 打包:mattpocock 入口 + vendor 摊 + issue-policy 回填)抬到 **5.2**。续十六(指标空壳到站才铺 + 脚本 UTF-8 / A 类 points / `def` 字段)抬到 **5.3**。续十七(运作活①评论三标题 + 挂评校验脚本)抬到 **5.4**。续二十(B 类仍要写脚本)抬到 **5.5**。续二十二(B 类写入 + 定本周建卡必打类别)抬到 **5.6**。续二十三(mattpocock 入口写清 `/xxx`=读路径,并补 grilling/domain-modeling/tdd)抬到 **5.7**。B/C 读数改日历日键、展示按周抬到 **5.8**。过程指标包(十份脚本 + 目录总账)抬到 **5.9**。独立评审(评审剧本 `mr-review` + 阶段规范 `review` + 评审主提示词 `REVIEW.md.tmpl`)抬到 **5.10**。计划版本收成 `v0.x`、不再写 `bw:week` 抬到 **5.11**。名片只留 `project.toml`、开工约定不再写工具声明、不再铺 `standard.toml` / `managed.toml`、周盘点清旧件抬到 **5.12**。不写主检出、开工工具跟人走、不再铺 issue-policy 抬到 **5.13**。资产盘点收成两步 + `.bw` 契约 reference + 运作活开工工具跟构建抬到 **5.14**。主提示词 / reference / skill 分工与同步对照表在 [`docs/architecture.md`](../docs/architecture.md) §3 模块 4,不在本 README 另写一套。
 
 第一次纳入不再摊 `CORE_TEMPLATES`(空表)。名片走项目约定。metrics 有模板但不铺(运作活①跟人写)。
 `.bw/standard.toml` / `managed.toml` / `PROJECT.md` / `issue-policy.toml` 不再铺;旧仓里那几份由每周资产盘点清掉。
@@ -28,7 +28,7 @@
 
 - **人**:复核规范设计;评审「项目约定」那张 MR 时,人看到的是名片,不是摊一堆模板。
 - **代码**:这个目录编译时 `include_str!` 进二进制。**改这里任何一份,就是改产品行为**。
-- **agent**:仓根 `AGENTS.md` 是项目自己的(问过人才写)。`.bw/project.toml` 是名片正本;
+- **agent**:仓根 `AGENTS.md` 是项目自己的。`.bw/project.toml` 是名片正本;
   `issue-policy.toml` 不再铺,旧仓残留由周盘点删。
 
 ## 目前这里有什么
@@ -59,7 +59,9 @@
 | `system-prompt/SYSTEM.md.tmpl` | 主提示词模板:身份 + 四铁律 + 读项目规范件指引,`{{...}}` 占位运行时渲染 |
 | `system-prompt/REVIEW.md.tmpl` | **评审会话**主提示词:独立评审身份 + 只评不改/绝不合并/意见落 MR 评论,占位同上 |
 | `system-prompt/references/metrics.md` | 干指标活的 Workbench 规范(可回溯/不许写0/窗口 Workbench 给) |
+| `system-prompt/references/week-plan-comment.md` | 运作活①评论三个标题 |
 | `system-prompt/references/build.md` | 干改仓活的 Workbench 规范(分支/MR/合并是人/不自动 Done) |
+| `system-prompt/references/bw-assets.md` | 运作活②对照的 `.bw` 现行契约(该有/整份可删/现行格式) |
 | `system-prompt/references/review.md` | 干评审活的 Workbench 规范(独立评审/唯一落点 MR 评论/大风险顶格标出) |
 
 ## 还没做的部分(如实说明,不是遗漏)

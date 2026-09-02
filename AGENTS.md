@@ -94,11 +94,11 @@ scripts/   门禁脚本(guard-*)+ codegraph 联调
 |---|---|---|
 | 用户旅程 / 产品指南 | [`docs/03-guide/`](docs/03-guide/) | 点什么、背后发生什么、手上多了什么;按站把活交给人或 AI |
 | 高保真 | [`docs/hifi/`](docs/hifi/) | 界面长什么样 |
-| 架构与特性关键设计 | [`docs/architecture.md`](docs/architecture.md) | 模块为什么这样、数据归哪、没建什么;按模块交活 |
+| 架构与特性关键设计 | [`docs/architecture.md`](docs/architecture.md) | 模块为什么这样、数据归哪、没建什么;按模块交活。**主提示词 / reference / skill 对照表在 §3 模块 4** |
 | 产品主张 / 飞轮 | [`docs/01-principles/03`](docs/01-principles/03-press-release-faq-flywheel.md) | 目标体验与选型约束；特性 intent 必须对齐 |
 | 开发规矩 + 词表 | 本文件 + [`CONTEXT.md`](CONTEXT.md) | 怎么建/跑/测、用哪个词 |
 
-自己作为被管项目跟被管仓同一套落点:`.bw/` 走项目约定(名片)与指标(ops① / `bw/ledger`);`AGENTS.md` 走 project-handbook;`CONTEXT` / adr / spec 走 `mattpocock-skills`;旅程 / 高保真 / 架构是产品自己的可见物,业界 workflow 不会代写。资产盘点盘这些齐不齐,它本身不产规范。方案正本在 [`docs/architecture.md`](docs/architecture.md) §3 模块 3。
+自己作为被管项目跟被管仓同一套落点:`.bw/` 走项目约定(名片)与指标(ops① / `bw/ledger`);`AGENTS.md` 是项目自己的(project-handbook 本轮不接盘点);`CONTEXT` / adr / spec 走 `mattpocock-skills`;旅程 / 高保真 / 架构是产品自己的可见物,业界 workflow 不会代写。资产盘点只盘 Workbench 给项目的 `.bw/` 是否跟上现行契约,再审查本周项目改动;它本身不产规范。方案正本在 [`docs/architecture.md`](docs/architecture.md) §3 模块 3 / 14。
 
 ### 四铁律(产品行为不可违反约束)
 
@@ -112,7 +112,7 @@ scripts/   门禁脚本(guard-*)+ codegraph 联调
 ### 三层模型(怎么给 Workbench 做一个特性)
 
 - **承载 · codehub issue**:issue+标签=唯一正本,本地零数据库;状态走标签、工作产物走 MR。
-- **规范 · 系统提示词 + 渐进加载**(主提示词外置 `standard/system-prompt/SYSTEM.md.tmpl` + `references/` 阶段规范,运行时渲染注入;设计见 [`docs/architecture.md`](docs/architecture.md) 的「系统提示词与渐进加载」模块):不论哪个 workflow 都兜住 Workbench 统一要求。
+- **规范 · 系统提示词 + 渐进加载**(主提示词外置 `standard/system-prompt/SYSTEM.md.tmpl` + `references/` 阶段规范,运行时渲染注入):不论哪个 workflow 都兜住 Workbench 统一要求。**主提示词 / references / skill 各装什么、改了哪条流程要同步哪份**,对照表在 [`docs/architecture.md`](docs/architecture.md) §3 模块 4。改 `standard/` 之前先对那张表,不要只改内核或只改 skill。
 - **方法论 · skill / workflow**(此层含**运作剧本**——Workbench 自发动作,非方法论——在 `skills/`;**业界 workflow**——方法论来源——在 `vendor/`,build 默认 `mattpocock-skills` 可换):怎么做能做得更好。
 
 改一个特性前,先对齐 [`docs/01-principles/03`](docs/01-principles/03-press-release-faq-flywheel.md) 飞轮检验,再按「特性起手路径」写 `docs/05-features/`(见上);工程落点在 [`docs/architecture.md`](docs/architecture.md) 的模块设计上定位:旅程哪一站 → 三层里改哪层 → 数据归哪 → 模块落点。找不到先补文档、再动代码——不清晰不写代码。

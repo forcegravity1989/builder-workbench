@@ -13,9 +13,9 @@
 | 活的 `workflow` 字段 | 目录 | 谁触发 | 一次会话大概 |
 |---|---|---|---|
 | `更新指标与版本计划` | `week-planning/` | 人(总览横幅「开始本版本」) | 20-40 分钟,人机 3-6 轮 |
-| `资产盘点` | `asset-audit/` | 定时(默认周五 09:00)或接入老仓时一次 | 10-25 分钟,通常 0 轮 |
+| `资产盘点` | `asset-audit/` | 定时(默认周五 09:00) | 10-25 分钟,通常 0 轮;两步:盘 `.bw` + 盘项目 |
 | —(子技能) | `metrics-refresh/` | `week-planning` 第二步指名调用 | 随宿主 |
-| —(子技能) | `project-handbook/` | `asset-audit` 首次模式里**问过人**之后调用 | 随宿主 |
+| —(子技能) | `project-handbook/` | 写仓根 `AGENTS.md`;本轮不接盘点会话 | 未派发 |
 
 项目约定**没有剧本** —— 不起 agent,只把 `.bw/project.toml` 写到常驻树 `bw/project`。
 
@@ -40,7 +40,7 @@ body 自足;workflow 入口 body 是 SOP 链 + 指向 `../vendor/` 库子技能�
 
 - **阶段方法论该由业界 workflow 提供**(build 默认 `mattpocock-skills`、原型
   默认 `proto-design`,见 `../vendor/`),Workbench 每个环节只挑一个最好的默认;
-- **阶段规范约束**(指标铁律、改仓规则)不叫方法论,归 `../system-prompt/references/`,
+- **阶段规范约束**(指标铁律、改仓规则、`.bw` 现行契约 `bw-assets.md`)不叫方法论,归 `../system-prompt/references/`,
   按活注入提示词,不进 `skills/`;
 - 真要从实践里长出 Workbench 自己的方法论,**到时候再单独建,不预置**。
 
@@ -52,6 +52,7 @@ body 自足;workflow 入口 body 是 SOP 链 + 指向 `../vendor/` 库子技能�
 不单开版本线——版本号就是 `standard/VERSION`,随 Workbench 整体发布走。改了内容 =
 `standard/VERSION` 抬一档 + 这里记一行。技能不进用户仓,没有项目侧指纹账。
 
+- 5.14:资产盘点只留两步(盘 `.bw` 跟上现行契约 + 盘项目本周改动);现行契约进 `references/bw-assets.md`;`mode: first` 本轮不跑。
 - 5.12:名片只留 project.toml;开工约定不再写工具声明;不再铺 standard.toml / managed.toml;周盘点清旧件。
 - 5.11:运作活①确认 `v0.x`、纳入打 `bw:plan:v0.x`;对人说版本目标;不再写 `bw:week:*`。
 

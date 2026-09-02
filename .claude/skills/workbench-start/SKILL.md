@@ -42,7 +42,7 @@ Workbench MVP 还不能在工作台里维护自己。这份 skill 按住仓外�
 
 1. `AGENTS.md` → 2. `docs/architecture.md` → 3. `CONTEXT.md` → 4. 动到哪站再读指南与高保真。
 
-定位:旅程哪一站 → 三层哪一层 → 数据归哪 → architecture §3 哪个模块。找不到先补文档。未锁定决策走 grill / domain-modeling。构建类活走仓内 `mattpocock-skills`,不要自造流程。
+定位:旅程哪一站 → 三层哪一层 → 数据归哪 → architecture §3 哪个模块。找不到先补文档。未锁定决策走 grill / domain-modeling。构建类活走仓内 `mattpocock-skills`,不要自造流程。改 `standard/`(主提示词 / reference / skill)先对 `AGENTS.md`「三层模型」指向的 architecture 模块 4 对照表,不要只改内核或只改 skill。
 
 先审已有实现和提示词,不对再改那一份;不新增平行方案。正本见 `AGENTS.md`「不要做的」。
 

@@ -612,8 +612,9 @@ fn resolve_tool_workflow(
     category: Option<crate::model::Category>,
 ) -> (String, String) {
     if kind == IssueKind::Ops {
+        // 运作活①② 跟构建的本机开工工具,不走配置屏「运维」。
         return (
-            resolve_tool(asset_root, crate::model::Category::Ops),
+            resolve_tool(asset_root, crate::model::Category::Build),
             workflow_for(kind, title),
         );
     }
@@ -853,7 +854,7 @@ workflow = "mattpocock-skills"
         let _ = std::fs::remove_dir_all(&dir);
         assert_eq!(
             tool,
-            crate::defaults::default_tool(crate::model::Category::Ops)
+            crate::defaults::default_tool(crate::model::Category::Build)
         );
         assert_eq!(workflow, super::super::OPS1_WORKFLOW);
     }
@@ -869,7 +870,7 @@ workflow = "mattpocock-skills"
         );
         assert_eq!(
             tool,
-            crate::defaults::default_tool(crate::model::Category::Ops)
+            crate::defaults::default_tool(crate::model::Category::Build)
         );
         assert_eq!(workflow, super::super::OPS2_WORKFLOW);
     }
@@ -898,13 +899,13 @@ workflow = "mattpocock-skills"
         .unwrap();
         let assets = dir.join("assets");
         std::fs::create_dir_all(&assets).unwrap();
-        crate::local::Settings::set_tool(&assets, "ops", "claude_cli").unwrap();
+        crate::local::Settings::set_tool(&assets, "build", "cursor").unwrap();
         let mut p = proj();
         p.workspace_path = dir.display().to_string();
         let (tool, workflow) =
             resolve_tool_workflow(&p, &assets, IssueKind::Ops, "更新指标 + 制定版本计划", None);
         let _ = std::fs::remove_dir_all(&dir);
-        assert_eq!(tool, "claude_cli");
+        assert_eq!(tool, "cursor");
         assert_eq!(workflow, super::super::OPS1_WORKFLOW);
     }
 }

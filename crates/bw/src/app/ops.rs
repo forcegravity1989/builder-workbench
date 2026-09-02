@@ -170,7 +170,7 @@ impl App {
             .create_ops_issue(
                 project_id,
                 title,
-                "mode: weekly\n\n盘点这一周仓内的全部资产,微重构只写建议不动手。".into(),
+                "mode: weekly\n\n两步:盘 Workbench 资产(.bw 跟上现行契约、点出未闭环的环),再盘项目本周改动。".into(),
                 OPS2_WORKFLOW,
                 IssueOrigin::Auto,
                 week.clone(),
