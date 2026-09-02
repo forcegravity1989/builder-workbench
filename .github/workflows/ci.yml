@@ -47,3 +47,6 @@ jobs:
 
       - name: codegraph.db not staged in feature commits
         run: ./scripts/guard-codegraph-clean.sh
+
+      - name: only allowed modules write into a managed repo's .bw/
+        run: ./scripts/guard-bw-write-authority.sh

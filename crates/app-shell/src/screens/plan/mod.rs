@@ -83,9 +83,10 @@ impl ListFilter {
         if !self.stage.is_empty() && format!("{:?}", c.status) != self.stage {
             return false;
         }
-        if !self.q.is_empty()
-            && !(c.title.to_lowercase().contains(&self.q.to_lowercase())
-                || c.assignee.to_lowercase().contains(&self.q.to_lowercase()))
+        // 搜索框空 = 不过滤;非空则标题或负责人命中才留。
+        if !(self.q.is_empty()
+            || c.title.to_lowercase().contains(&self.q.to_lowercase())
+            || c.assignee.to_lowercase().contains(&self.q.to_lowercase()))
         {
             return false;
         }

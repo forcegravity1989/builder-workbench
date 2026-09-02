@@ -35,7 +35,9 @@
 
 **复算**：`./scripts/guard-selftest.sh`，输出 `covered/total`。
 
-**样例**：坏例 = 删掉某 guard 的自测块 → guard-selftest 红并点名；好例 = 六个存量 + 三个新增 guard 各有断言 → `9/9` 绿。
+**样例**：坏例 = 删掉某 guard 的自测块 → guard-selftest 红并点名；好例 = 七个存量 + 三个新增 guard 各有断言 → `10/10` 绿。
+
+**现成范式**:`scripts/guard-bw-write-authority.sh`(从 #134 提取并入)是全仓第一条自带自测的 guard,A3 照它的形状做即可。它还提供了本条规矩最硬的实证——**同一条 guard 在评审里被抓出三个洞、每次都在「打勾但什么都没守住」**:①正则写死 `crate::repo::` 前缀,匹不到壳里会用的 `bw::repo::`;②点名了一个仓里根本不存在的函数(`append_metric_reading`,真名是 `upsert_metric_reading`);③自检拿裸名满仓找,被别的模块里的同名函数匹上,于是不存在的条目一路绿灯。三次全是 CI 全绿。**这就是为什么 guard 必须自证,而不是靠写它的人记得对。**
 
 ## B1 · 「放弃方案:」commit 约定（半自动，如实标注）
 

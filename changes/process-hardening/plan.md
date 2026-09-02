@@ -5,6 +5,7 @@
 ## 改哪些文件
 
 ```
+scripts/guard-bw-write-authority.sh  已完工并入（见「已在仓里的那一条」）
 scripts/guard-doc-links.sh        新增（A1）
 scripts/guard-doc-budgets.sh      新增（A2）
 scripts/doc-budgets.txt           新增（A2 预算清单，初值见 spec）
@@ -23,6 +24,7 @@ changes/<standard-对标-id>/       C1 立项时新开（仅 intent 草稿）
 | # | 步 | gate 档位 | 状态 |
 |---|---|---|---|
 | 0 | 意图 gate：人批 intent（含未决四问）+ 规格 gate 认可「判定样例代替原型」 | 人 | 未过 |
+| 0.5 | **已完工并入**：`guard-bw-write-authority.sh` 从 #134 提取，接进门禁与 CI | 评审合入 | **已完成** |
 | 1 | 按标准建活：本批 1 张 + C1 立项 1 张（codehub issue，标题即幂等键） | 窗口 AI | 未动工 |
 | 2 | 批次 A：写 A1/A2 两 guard + 首跑修存量死链（修复数如实记 CHANGELOG） | 评审合入 | 未动工 |
 | 3 | 批次 A：A3 guard-selftest，给全部 guard（含存量 6 个）配坏例断言到 100% | 评审合入 | 未动工 |
@@ -45,8 +47,8 @@ changes/<standard-对标-id>/       C1 立项时新开（仅 intent 草稿）
 
 | 数 | 目标 |
 |---|---|
-| guard 脚本数 | 6 → 10，全部挂 CI |
-| guard 自测覆盖率 | 10/10 |
+| guard 脚本数 | 6 →（+1 已并入）7 → 11，全部挂 CI |
+| guard 自测覆盖率 | 11/11（`guard-bw-write-authority` 已自带，是现成范式）|
 | 全仓 md 死链 | 0 |
 | 预算清单 8 份文档 | 全部 ≤ 上限 |
 | 冻结清单 | ≥ 1 件盘入，guard 生效 |
