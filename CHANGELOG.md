@@ -6,6 +6,8 @@
 
 ## 最近 · 2026-09-02
 
+native-audit 人话名改名:「仓考古」→**native 评估**(技能名 `native-audit` 不变)。SKILL.md 描述/标题/用词对照表、spec.md 标题/导读/FAQ/术语登记、`CONTEXT.md` 词条同步;intent.md 末节记改名说明,不改写原拍板记录。另:散文里裸写 issue 改为「活」(词表规范口语词),用词对照表补一行。
+
 native-audit 准则重写为 v2:七维 → **九段三十七条**,正本 `changes/native-audit/rubric.md`,段落按 AI-Native SDLC playbook 六阶段 + 贯穿机制(产物链)+ 治理四条组织;附两张覆盖矩阵——M1 dsh 58 组做法→准则零孤儿,M2 playbook 每阶段/机制/治理条全有准则承接(禁改测试、回滚排练、指标越线三条 dsh 无一手实证,如实标注)。探针从 SKILL.md 内联命令改为随 skill 携带的 `battery.sh`(两仓同一把尺),R5–R6 在本仓与 dsh 两仓真跑成 2 分/3 分锚点卡,修掉空结果双打、自身准则文本污染读数、冻结件死链假阳性等电池缺陷。spec 准则段改为指向 rubric;迭代记录在 rubric 末节。
 
 native-audit 术语对齐:SKILL.md 加「用词对照」表(本技能用词→人话→词表对应);词表已有词直接换(postmortem→复盘、工单→活、N/A→Unknown);自造词收拢(度量电池→探针脚本、假阳性→误报、自证→门禁自测、dogfood→自扫);英文黑话首次出现带人话(playbook / slop / hook / flake / harness / SDLC);`CONTEXT.md` 工程操作词登记「仓考古 / native-audit」「制度化阶梯」两条。顺手校正 dsh 门禁计数:verify 脚本 34 个(17 个自带自测),此前 51 把自测文件算进去了,探针脚本同步改为门禁脚本数与自测文件数分列。

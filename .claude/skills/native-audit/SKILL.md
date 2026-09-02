@@ -1,14 +1,14 @@
 ---
 name: native-audit
 description: >-
-  仓考古:对任意 git 仓(单仓或仓群清单)做只读的 AI-native 制度化水位分析,
-  按 AI-Native SDLC 九段三十七条准则打 0-3,产出考古报告与缺失清单。
-  Use when the user asks to 考古/扫描/分析一个仓或内网仓群的 AI-native 实践、
+  native 评估:对任意 git 仓(单仓或仓群清单)做只读的 AI-native 制度化水位分析,
+  按 AI-Native SDLC 九段三十七条准则打 0-3,产出评估报告与缺失清单。
+  Use when the user asks to 评估/考古/扫描/分析一个仓或内网仓群的 AI-native 实践、
   过程制度、native 缺失, or to compare repos against the rubric. Read-only;
   never modifies the target repos.
 ---
 
-# native-audit — 仓考古
+# native-audit — native 评估
 
 给一个 git 仓量「AI-native 制度化水位」：它把「让 AI 安全高速干活」的那套规矩，做到了口头、成文、还是机器强制的哪一级。**准则唯一正本是 [`changes/native-audit/rubric.md`](../../../changes/native-audit/rubric.md)**（9 段 37 条、阶梯 0-3、每条带 dsh 一手证据与 SDLC 对应）；本文件只写怎么执行，两处冲突以 rubric 为准。
 
@@ -16,7 +16,7 @@ description: >-
 
 | 本技能用词 | 人话 | 来源 / 词表对应 |
 |---|---|---|
-| **仓考古**（native-audit） | 对一个仓的全量 git 历史与过程制度件做只读分析，量出制度化水位与缺失清单 | 已登记 `CONTEXT.md` 工程操作词 |
+| **native 评估**（native-audit，此前叫「仓考古」） | 对一个仓的全量 git 历史与过程制度件做只读分析，量出制度化水位与缺失清单 | 已登记 `CONTEXT.md` 工程操作词 |
 | **制度化阶梯** | 一条规矩的四级：0 无/不可考 → 1 有痕迹（散见）→ 2 成文（写进仓）→ 3 机器强制（违规会被拦） | 已登记 `CONTEXT.md` 工程操作词 |
 | **探针** / **探针脚本**（`battery.sh`） | 探针 = 一条只读命令出一个读数；探针脚本 = 把 37 条准则的探针打包成一个脚本。文件名 battery 取英文「一组测试」的惯用语 | 本技能自造，只在这里用 |
 | **读数** | 探针输出的原始数字或字串，未经判读 | 词表「读数 / Reading」 |
