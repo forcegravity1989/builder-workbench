@@ -79,9 +79,9 @@ references(`standard/system-prompt/references/*.md`)是「干某类活需要额�
 
 ### 2 · 仓文件解析
 
-**是什么**:把项目仓 `.bw/` 下的配置/定义文件解析成内存结构供各屏现读现用。仓是正本——人、agent、第二台机器要看的都住仓里走 MR,本地不存第二份;这一层是读写正本的唯一入口,别处不许自己拼路径读 `.bw/*.toml`。关键取舍是不做 `deny_unknown_fields`(人手写多一个字段就整份崩代价太大),metrics 只认 `schema_version=2`、内核读到旧格式整份拒收(不上屏、不在打开项目时改仓)。重定+迁读数+借鉴旧脚本+删 V3 废弃件,跟运作活①的 skill 走,不写进系统提示词、不做内核静默迁移。
+**是什么**:把项目仓 `.bw/` 下的配置/定义文件解析成内存结构供各屏现读现用。仓是正本——人、agent、第二台机器要看的都住仓里走 MR,本地不存第二份;这一层是读写正本的唯一入口,别处不许自己拼路径读 `.bw/*.toml`。关键取舍是**除 metrics 外一律 `deny_unknown_fields`**(键名写错当场报错,不静默丢半个文件);metrics 是唯一例外——它是人手写的,多一个字段就整份崩代价太大,另外只认 `schema_version=2`、内核读到旧格式整份拒收(不上屏、不在打开项目时改仓)。重定+迁读数+借鉴旧脚本+删 V3 废弃件,跟运作活①的 skill 走,不写进系统提示词、不做内核静默迁移。
 
-**代码**:bw 的 `repo/`(共用读写口 + 五个解析器:project / metrics / issue-policy / managed / standard)+ `standard/mod.rs`(章程模板渲染)。
+**代码**:bw 的 `repo/`(共用读写口 + 五个解析器:project / metrics / issue-policy / managed / readings)+ `standard/mod.rs`(章程模板渲染)。
 **数据**:不落本地库,仓文件就是正本,解析结果只在内存里现用;写回手写渲染而非 `toml::to_string`,为把注释留给人看。
 **依赖**:serde / toml 反序列化、sha2 算指纹;对 V3 任何 crate 零依赖。
 **没建**:采集执行落在 `app/collect.rs`(模块12),规范铺底编排见模块3。B/C 读写 `.bw/state/metrics-readings.jsonl` 已接(键是日历日,同一天同一指标只留一行;展示按周取那一周日期最大的一天)。C 类定时建提醒活没做。
