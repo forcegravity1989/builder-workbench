@@ -17,7 +17,7 @@
 ├── standard/          规范正本(include_str! 进 bw):铺底 `templates/` + 系统提示词 `system-prompt/` + 运作剧本 `skills/` 4 份 + 业界 workflow `vendor/`(mattpocock/mohit)
 ├── scripts/           门禁脚本(guard-*)+ codegraph 联调
 ├── docs/              ← 你在这
-└── .bw/               Workbench 自己作为被管项目的资产(PROJECT.md/metrics.toml/issue-policy.toml/…)
+└── .bw/               Workbench 自己作为被管项目的资产(project.toml/metrics.toml/issue-policy.toml/…)
 ```
 
 ## docs/ 里有什么

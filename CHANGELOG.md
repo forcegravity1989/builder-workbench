@@ -6,6 +6,10 @@
 
 ## 最近 · 2026-09-01
 
+规范铺底 v5.12:名片只留 `.bw/project.toml`,不再铺/改 `PROJECT.md`。开工约定不再写 `[[tool]]`(工具是编译进 Workbench 的)。不再写 `.bw/managed.toml`。`issue-policy.toml` 文件头留三行注释。仓里已有名片或开着铺底活就不再铺;铺底没合入时总览常驻横幅。旧仓里的版本账/指纹账/重复名片由每周资产盘点删掉,接入不覆盖人手改过的 mapping。
+
+规范铺底 v5.11:接入只铺名片 + 开工映射,不再铺 `.bw/standard.toml`。三份模板砍掉说明书式注释和没用的段。已纳入的仓文件接入时不动(5.12 起每周资产盘点会删旧版本账)。
+
 右侧「指南」下面加了「Issue」。点开填标题,提交后中间转圈「日志上传中」,把本机对照日志报到当前目录 git 的 workbench 仓(`codehub-cli issue create --attachment`)。成功走底栏 toast「issue上报成功」。不是报到打开着的被管项目。
 
 对照日志收成一份 `bw.log`。`cargo run` 写到启动目录,直接跑 exe 写到项目目录(仓根或安装目录),`BW_LOG` 可改路径。一行是 `[时间] [模块] [文件] [行] [ok|err|warn] 正文`。命令进出、toast、gather 警告、Orca 每条 RPC 都进这份;不再另写 `%TEMP%/bw-orca.log`。不写 token / pairing / 提示词正文。E2E 标签(`[BW_OPEN]` 等)留在正文里。

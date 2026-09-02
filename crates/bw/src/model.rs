@@ -276,8 +276,7 @@ pub fn category_key(c: Category) -> &'static str {
     }
 }
 
-/// 项目行:定位 + 项目墙显示缓存。名片/群/版本不在这里(正本 `PROJECT.md`
-/// 与 `.bw/project.toml`,打开项目时现读)。
+/// 项目行:定位 + 项目墙显示缓存。名片/群/版本不在这里(正本 `.bw/project.toml`,打开项目时现读)。
 #[derive(Clone, Debug, PartialEq)]
 pub struct Project {
     pub id: ProjectId,

@@ -419,9 +419,6 @@ impl App {
             Command::EditProjectCard { project_id, intent } => {
                 self.edit_project_card(project_id, intent).await
             }
-            Command::RunStandardBootstrap { project_id } => {
-                self.run_standard_bootstrap(project_id, true).await
-            }
             Command::ReconcileStandard { project_id } => self.reconcile_standard(project_id).await,
             Command::StartWeekPlanning { project_id, week } => {
                 self.start_week_planning(project_id, week).await
@@ -536,9 +533,6 @@ fn cmd_log_label(cmd: &Command) -> String {
         Command::ReopenSession { issue_id } => format!("ReopenSession #{}", issue_id.iid()),
         Command::EditProjectCard { project_id, .. } => {
             format!("EditProjectCard project={}", project_id.uuid())
-        }
-        Command::RunStandardBootstrap { project_id } => {
-            format!("RunStandardBootstrap project={}", project_id.uuid())
         }
         Command::ReconcileStandard { project_id } => {
             format!("ReconcileStandard project={}", project_id.uuid())

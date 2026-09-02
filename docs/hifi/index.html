@@ -629,7 +629,7 @@ function normView(key){
 }
 var GUIDE_CHAPTERS=[
   {id:'env',label:'环境准备',body:'claude CLI、Open Design、codehub-cli / gh 按需装。缺一项不影响接入,只影响对应类别的活能不能开工。「测一下」如实探活,没找到就是红,没接探活就是灰,不假装绿。Cursor 还没接。'},
-  {id:'onboard',label:'接入项目',body:'接入问仓在哪、这个项目想做什么。规范铺底(运作活③)是路径 A:不起 agent,往 .bw/ 写名片、开工映射、规范版本,开 MR,停在评审中等你合。仓根 AGENTS.md 不写。'},
+  {id:'onboard',label:'接入项目',body:'接入问仓在哪、这个项目想做什么。仓里还没有名片才铺:路径 A,不起 agent,往 .bw/ 写名片和开工映射,开 MR,停在评审中等你合。已有名片不再铺。没合入时总览常驻横幅。仓根 AGENTS.md 不写。'},
   {id:'cycle',label:'一周一圈',body:'每周由运作活①开场:复盘 → 更新指标 → 聊出周目标与活清单。正本写在这张活的评论里。agent 最远到评审中,「完成」永远由你点。'},
   {id:'faq',label:'常见问题',body:'灯是灰的不是坏了:没数据就是灰。更完整的流程见仓里的产品指南,它只写已经走过的站。'}
 ];
@@ -639,8 +639,7 @@ var OPS1_TRANSCRIPT=[
   {cls:'sys',text:'[Workbench] 系统提示词已注入 · 单人构建者工作台 · 一活一分支一 MR · 完成永远由人点'},
   {cls:'sys',text:'[workflow] workflow 已注入:更新指标与周计划(Workbench 自建 · 合并自 north-star-discovery + metrics-binding)'},
   {cls:'sys',text:'[read] AGENTS.md'},
-  {cls:'sys',text:'[read] PROJECT.md'},
-  {cls:'sys',text:'[read] .bw/PROJECT.md'},
+  {cls:'sys',text:'[read] .bw/project.toml'},
   {cls:'agent',text:'agent> 复盘上周(2026-W33):减负线两轮收尾在途、V4 全貌草案与规范铺底稿收口,原型仍在做。'},
   {cls:'agent',text:'agent> 更新指标:「默认件被真实使用次数」还没有采集脚本。脚本跟人在这张运作活里写,不预铺空壳。'},
   {cls:'human',text:'人> 先记一条 TODO,这周先把高保真原型和减负线合入收口。'},
@@ -694,7 +693,7 @@ function buildGenericTranscript(pid,issueId){
   if(issue.skill && issue.skill!=='—'){ lines.push({cls:'sys',text:'[skill] 技能已注入:'+issue.skill}); }
   lines.push(
     {cls:'sys',text:'[read] AGENTS.md'},
-    {cls:'sys',text:'[read] .bw/PROJECT.md'},
+    {cls:'sys',text:'[read] .bw/project.toml'},
     {cls:'sys',text:'[read] 运作活①评论 · ## 周目标'},
     {cls:'agent',text:'agent> 读活说明:'+issue.title},
     {cls:'agent',text:'agent> '+categoryWorkHint(issue.category)},
@@ -712,7 +711,7 @@ function TRANSCRIPTS_FOR(pid,issueId){
 }
 function changedFilesFor(issue){
   if(issue.tool==='open_design')return [['docs/hifi/index.html','+880','-0'],['docs/hifi/README.md','+40','-0']];
-  return [['standard/README.md','+120','-0'],['standard/templates/PROJECT.md.tmpl','+40','-0'],
+  return [['standard/README.md','+120','-0'],['standard/templates/issue-policy.toml.tmpl','+40','-0'],
     ['crates/bw/src/standard/mod.rs','+85','-3'],['crates/app-shell/src/screens/overview/mod.rs','+12','-1']];
 }
 var DISTILL_NAMES={'std-1':'规范铺底核对清单','pr-102':'旧引擎退役核对法','w1-2':'codehub clone 排障笔记','v4-4':'高保真原型走查法'};
@@ -730,7 +729,7 @@ function makeIssues(){
     'suggest-1':{id:'suggest-1',title:'建议活 · 拆过长的计划屏',category:'优化',tool:'claude_cli',kind:'business',status:'pool',source:'建议',metricIds:[],mr:null,week:'W34',version:'0.4.0-v4',workflow:'mattpocock-skills',skill:'—',desc:'运作活②「资产盘点 2026-W33」评审后生成的建议活草稿:crates/app-shell/src/screens/plan/ 建议按文件拆。人勾选后才真正建活。'},
     'ops1-w34':{id:'ops1-w34',title:'运作活①更新指标 + 制定本周计划 2026-W34',category:'运作',tool:'claude_cli',kind:'ops',status:'done',doneDate:'08-17',source:'人触发',metricIds:[],mr:{id:'!bw/plan-2026-W34',label:'!bw/plan-2026-W34',status:'merged'},week:'W34',version:'0.4.0-v4',workflow:'week-planning',skill:'—',desc:'复盘上周 → 更新指标 → 引导本周目标与活清单。周目标写在这张活的评论里。'},
     'ops2-w33':{id:'ops2-w33',title:'运作活②资产盘点 2026-W33',category:'运作',tool:'claude_cli',kind:'ops',status:'review',source:'人触发',auto:false,metricIds:[],mr:{id:'!bw/ops-2026-W33',label:'!bw/ops-2026-W33',status:'open'},week:'W33',version:'0.3.0-v3',workflow:'asset-audit',skill:'—',desc:'盘点仓内资产。报告挂这张活的评论;建议活草稿等人勾选。周五到点会自动建,最远评审中。'},
-    'ops3':{id:'ops3',title:'运作活③规范铺底',category:'运作',tool:'—',kind:'ops',status:'done',doneDate:'08-17',doneAssumed:true,source:'自动建(接入时)',auto:true,metricIds:[],mr:{id:'!bw/standard-4.0',label:'!bw/standard-4.0',status:'merged'},week:'W33',version:'0.3.0-v3',workflow:'—',skill:'—',desc:'路径 A,不起 agent。写入 .bw/PROJECT.md、issue-policy.toml、standard.toml,开 MR 等人合。仓根不写。'},
+    'ops3':{id:'ops3',title:'运作活③规范铺底',category:'运作',tool:'—',kind:'ops',status:'done',doneDate:'08-17',doneAssumed:true,source:'自动建(接入时)',auto:true,metricIds:[],mr:{id:'!bw/standard-4.0',label:'!bw/standard-4.0',status:'merged'},week:'W33',version:'0.3.0-v3',workflow:'—',skill:'—',desc:'路径 A,不起 agent。仓里还没有名片时写入 .bw/project.toml、issue-policy.toml,开 MR 等人合。不铺 PROJECT.md / standard.toml / managed.toml。仓根不写。'},
     'w33-legacy':{id:'w33-legacy',title:'减负线第一轮六切片(旧聊天式引擎整链退役第一轮)',category:'构建',tool:'claude_cli',kind:'business',status:'done',doneDate:'08-17',source:'人建',metricIds:['lead-1'],mr:{id:'#102',label:'PR #102(第一轮)',status:'merged'},week:'W33',version:'0.3.0-v3',workflow:'mattpocock-skills',skill:'—',desc:'六个切片依次删除旧聊天式工作流引擎的各处依赖,为第二轮收尾铺路。'},
     'w33-usefix':{id:'w33-usefix',title:'V3-use-fix:Claude 探测 / 列仓搜索 / 测一下',category:'构建',tool:'claude_cli',kind:'business',status:'done',doneDate:'08-17',source:'人建',metricIds:[],mr:{id:'#101',label:'PR #101',status:'merged'},week:'W33',version:'0.3.0-v3',workflow:'mattpocock-skills',skill:'—',desc:'三张真实体验修复:claude 可执行探测、列仓搜索、探活「测一下」按钮。'},
     'w32-odembed':{id:'w32-odembed',title:'V3-OD-embed:原型进度内嵌 Open Design',category:'原型',tool:'open_design',kind:'business',status:'done',doneDate:'08-12',source:'人建',metricIds:[],mr:{id:'#99',label:'PR #99',status:'merged'},week:'W32',version:'0.3.0-v3',workflow:'—',skill:'—',desc:'原型阶段进度面板内嵌本机 Open Design 首页,替换占位卡。'},
@@ -789,7 +788,7 @@ var FILE_TREE={name:'builder-workbench',type:'dir',path:'',children:[
     {name:'hifi',type:'dir',path:'docs/hifi',children:[{name:'index.html',type:'file',path:'docs/hifi/index.html'}]}
   ]},
   {name:'standard',type:'dir',path:'standard',children:[{name:'README.md',type:'file',path:'standard/README.md'}]},
-  {name:'.bw',type:'dir',path:'.bw',children:[{name:'PROJECT.md',type:'file',path:'.bw/PROJECT.md'},{name:'issue-policy.toml',type:'file',path:'.bw/issue-policy.toml'},{name:'standard.toml',type:'file',path:'.bw/standard.toml'},{name:'project.toml',type:'file',path:'.bw/project.toml'}]},
+  {name:'.bw',type:'dir',path:'.bw',children:[{name:'issue-policy.toml',type:'file',path:'.bw/issue-policy.toml'},{name:'project.toml',type:'file',path:'.bw/project.toml'},{name:'metrics.toml',type:'file',path:'.bw/metrics.toml'}]},
   {name:'AGENTS.md',type:'file',path:'AGENTS.md'},
   {name:'Cargo.toml',type:'file',path:'Cargo.toml'}
 ]};
@@ -800,20 +799,17 @@ var FILE_CONTENTS={
   'crates/app-shell/src/screens/overview/mod.rs':['// crates/app-shell/src/screens/overview/mod.rs','// 北极星 → 本周进度 → 滞后 → 引领 → 仓指标 → 发版'],
   'docs/architecture.md':['# architecture.md — Workbench MVP 设计正本','三个 crate:bw / bw-engine / app-shell。本地零数据库。'],
   'docs/hifi/index.html':['<!-- 高保真 · 视觉目标态,跟现行壳对齐 -->'],
-  'standard/README.md':['# standard/','Workbench 推给被管项目的规范正本。接入铺名片 + issue-policy + standard.toml。'],
+  'standard/README.md':['# standard/','Workbench 推给被管项目的规范正本。接入铺名片 + issue-policy。不铺 standard.toml。'],
   '.bw/PROJECT.md':['# 项目名片','Builders\' Workbench:AI Coding 里一个人的一张工作台。'],
   '.bw/issue-policy.toml':['# 类别 → 工具 → workflow;节律也在这里','[cadence]','asset_audit = "周五 09:00"'],
-  '.bw/standard.toml':['schema_version = 1','standard_version = "5.7"'],
-  '.bw/project.toml':['# .bw/project.toml','name = "Builders\' Workbench (Workbench)"','standard_version = "5.7"','current_version = "0.4.0-v4"'],
+  '.bw/project.toml':['# .bw/project.toml','name = "Builders\' Workbench (Workbench)"','current_version = "v0.3"'],
   '.bw/metrics.toml':['# .bw/metrics.toml · 指标定义跟人在运作活①里写,不预铺空壳'],
   'AGENTS.md':['# AGENTS.md · 项目自己的开发手册','铺底不写仓根。资产盘点首次模式问过人才写。'],
   'Cargo.toml':['[workspace]','members = ["crates/bw","crates/bw-engine","crates/app-shell"]']
 };
 var KNOWLEDGE_DOCS=[
-  {group:'章程',id:'k-project',name:'.bw/PROJECT.md',path:'.bw/PROJECT.md'},
+  {group:'章程',id:'k-project',name:'.bw/project.toml',path:'.bw/project.toml'},
   {group:'规范件',id:'k-policy',name:'.bw/issue-policy.toml',path:'.bw/issue-policy.toml'},
-  {group:'规范件',id:'k-std',name:'.bw/standard.toml',path:'.bw/standard.toml'},
-  {group:'规范件',id:'k-projecttoml',name:'.bw/project.toml',path:'.bw/project.toml'},
   {group:'规范件',id:'k-metrics',name:'.bw/metrics.toml',path:'.bw/metrics.toml'},
   {group:'设计',id:'k-arch',name:'docs/architecture.md',path:'docs/architecture.md'},
   {group:'设计',id:'k-hifi',name:'docs/hifi/index.html',path:'docs/hifi/index.html'},
@@ -1024,7 +1020,7 @@ var ACTIONS = {
       oneLiner:'刚接入,规范铺底待合入',version:'v0.1',repo:repoLabel&&repoLabel.real?repoLabel.id:repoName,
       owner:'Gravity',standardVersion:'5.7(待合入)',lastDelivery:'—',
       card:{name:displayName,intent:ob.intentWhat||'(未填,沿用仓 README)',benchmark:ob.intentBenchmark||'(未填)',northstar:ob.intentNorthstar||'(未填)',northstarAssumed:!ob.intentNorthstar}};
-    var ops3Desc = '路径 A,不起 agent。往 .bw/ 写名片、issue-policy.toml、standard.toml,开 MR !1,停在评审中。仓根 AGENTS.md 不写。';
+    var ops3Desc = '路径 A,不起 agent。往 .bw/ 写名片、issue-policy.toml,开 MR !1,停在评审中。已有名片不再铺。仓根 AGENTS.md 不写。';
     state.issues.new={ 'ops3-new':{id:'ops3-new',title:'运作活③规范铺底',category:'运作',tool:'—',kind:'ops',status:'review',source:'自动建(接入时)',auto:true,metricIds:[],mr:{id:'!1',label:'!1',status:'open'},workflow:'—',skill:'—',desc:ops3Desc} };
     state.inbox.new=[{id:'inbox-new-ops3',kind:'issue',issueId:'ops3-new',text:'运作活③「规范铺底」评审中(MR !1)',state:'pending'}];
     state.metrics.new={ northstar:{id:'northstar',tier:'北极星',label:state.newProject.card.northstar,gray:true,drivenBy:[]} };
@@ -1121,6 +1117,7 @@ var ACTIONS = {
     state.ui.selectedIssue[pid]=null; render(); toast('已保存(演示)');
   },
   goSession:function(pid,id){ nav('#/p/'+pid+'/session/'+id); },
+  goPlan:function(pid){ nav('#/p/'+pid+'/plan'); },
   newIssueDraft:function(pid){ state.ui.modal={type:'new-issue',pid:pid,title:'',body:'',kind:'business',ops:'week',category:'构建',tool:'claude_cli'}; render(); },
   confirmNewIssue:function(){
     var m=state.ui.modal; if(!m||m.type!=='new-issue')return;
@@ -1812,6 +1809,7 @@ function renderOverview(pid){
   var proj=getProject(pid); if(!proj) return '<section data-screen="overview"><div class="detail-empty">项目不存在</div></section>';
   var wk=getPath(state,'weekPlans.'+pid+'.'+CURRENT_WEEK);
   var ops1=allIssuesArr(pid).filter(function(i){return i.kind==='ops' && /运作活①/.test(i.title) && i.week===CURRENT_WEEK;})[0];
+  var ops3Open=allIssuesArr(pid).filter(function(i){return i.kind==='ops' && /规范铺底/.test(i.title) && i.status!=='done';})[0];
   var showStartBanner = !ops1;
   var health=(state.health[pid])||{level:'gray',reasons:[]};
   var editing=state.ui.charterEditing[pid];
@@ -1862,6 +1860,7 @@ function renderOverview(pid){
   }).join('');
   var opsChips=opsChipsHTML(pid);
   return '<section data-screen="overview"><div class="ov-stack">'
+    + (ops3Open ? ('<div class="ov-banner"><span>规范铺底还没合进默认分支。不合入的话配置用不上,别人再纳入也看不出这个仓已经被管过。</span><button class="btn btn-sm" data-action="goPlan" data-arg=\'"'+pid+'"\'>去计划屏</button></div>') : '')
     + (showStartBanner ? ('<div class="ov-banner"><span>本周('+CURRENT_WEEK+')还没开始「更新指标 + 制定本周计划」</span><button class="btn btn-primary btn-sm" data-action="startWeek" data-arg=\'"'+pid+'"\'>开始本周</button></div>')
         : (ops1 && ops1.status!=='done' ? ('<div class="ov-banner"><span>运作活①已开工 · '+esc(STATUS_LABEL[ops1.status]||ops1.status)+'。去会话屏接着聊。</span><button class="btn btn-sm" data-action="goSession" data-arg=\'["'+pid+'","'+ops1.id+'"]\'>去会话屏</button></div>') : ''))
     + '<div class="card ov-block ov-block1" data-block="card">'
@@ -1873,7 +1872,7 @@ function renderOverview(pid){
             + '<div class="charter-line"><span class="k">北极星</span>'+esc(card.northstar)+(card.northstarAssumed?' <span class="asterisk">✱</span>':'')+'</div>'
             + '<div class="charter-line"><span class="k">在研版本</span>'+esc(proj.version||'（待填）')+'</div>'
             + '<div class="charter-line"><span class="k">项目群</span>'+chatGroupLineHTML(pid)+'</div>'
-            + '<div class="charter-meta"><span class="mono">'+esc(proj.repo)+'</span><span>规范 v'+esc(proj.standardVersion)+'</span><span style="margin-left:auto;display:flex;gap:6px;"><button class="btn btn-sm" data-action="toastOnly" data-arg=\'"工作区已快进到远端最新(演示)"\'>↻ 拉到最新</button><button class="btn btn-sm" data-action="editCard" data-arg=\'"'+pid+'"\'>编辑</button></span></div>'))
+            + '<div class="charter-meta"><span class="mono">'+esc(proj.repo)+'</span><span style="margin-left:auto;display:flex;gap:6px;"><button class="btn btn-sm" data-action="toastOnly" data-arg=\'"工作区已快进到远端最新(演示)"\'>↻ 拉到最新</button><button class="btn btn-sm" data-action="editCard" data-arg=\'"'+pid+'"\'>编辑</button></span></div>'))
     +     mrBanner
     +   '</div>'
     +   '<div class="health">'
@@ -2166,7 +2165,6 @@ function standardBlockHTML(pid){
   var proj=getProject(pid)||{};
   return '<div class="cfg-section"><div class="cfg-section-head"><h3>规范件</h3>'
     + '<button class="btn btn-sm" data-action="toastOnly" data-arg=\'"对账只看不改:缺哪几份、哪几份过期、哪几份被人手改过(演示)"\'>对一遍账</button></div>'
-    + '<div class="settings-list"><div class="settings-row"><div><div class="k">规范版本</div><div class="v">'+esc(proj.standardVersion||'—')+'</div></div></div></div>'
     + '<div class="cfg-readonly-note">对账只看不改。在研版本和项目群在总览名片里改。指标正文跟运作活①会话走,不预铺空壳。没有「规范铺底」按钮。</div></div>';
 }
 function renderConfig(pid){
@@ -2252,7 +2250,7 @@ function renderSpace(pid,subTab){
       + '<div class="asset-sect-title">仓统计指标</div>'
       + '<div class="repostats" style="border:none;padding:0;">30 天提交 464 · Rust 115 文件 / 60,824 行 · docs 80 篇 · 技能 9 · 30 天 PR 数 7 · 开放 PR 4</div>';
   }
-  return '<section data-screen="kb"><div class="card sp-topinfo"><span>规范 v5.7</span><span>对账只看不改</span><span style="margin-left:auto;"></span><button class="btn btn-sm" data-action="toastOnly" data-arg=\'"对账:缺 / 过期 / 人改过,结果显示在回执里(演示)"\'>对一遍账</button></div>'
+  return '<section data-screen="kb"><div class="card sp-topinfo"><span>管账里登记着核心件</span><span>对账只看不改</span><span style="margin-left:auto;"></span><button class="btn btn-sm" data-action="toastOnly" data-arg=\'"对账:缺 / 过期 / 人改过,结果显示在回执里(演示)"\'>对一遍账</button></div>'
     + '<div class="tabbtn-row">'+tabsHTML+'</div>' + body + '</section>';
 }
 

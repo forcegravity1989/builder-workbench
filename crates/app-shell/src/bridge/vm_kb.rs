@@ -4,7 +4,6 @@
 //! 都是打开那一刻现扫仓目录、现走 git、现起子进程得来的。
 
 use crate::vm::*;
-use bw::repo::managed_file;
 use std::path::Path;
 
 /// 知识树里周计划文件所在目录(刀6:这层不再解析它们,知识树只列仓里存在的
@@ -13,15 +12,18 @@ const PLAN_DIR: &str = ".bw/plan";
 /// 发版记录文件路径。同上:知识树只看它在不在。
 const RELEASES_PATH: &str = ".bw/releases.md";
 
-/// 铺底管账里登记过的文件路径。**一次读完传下去** —— 原来是每个技能包各读
-/// 一次、各解析一次 `.bw/managed.toml`,十几个包就是十几次全文解析,而这段
-/// 每重拼一次 ViewModel 就跑一遍。
+/// 仓里实际有的规范件。不靠指纹账。
 pub(super) fn managed_paths(ws: &Path) -> Vec<String> {
-    managed_file::read(ws)
-        .ok()
-        .flatten()
-        .map(|m| m.files.into_iter().map(|e| e.path).collect())
-        .unwrap_or_default()
+    [
+        ".bw/project.toml",
+        ".bw/issue-policy.toml",
+        ".bw/metrics.toml",
+        ".bw/PROJECT.md",
+    ]
+    .into_iter()
+    .filter(|rel| ws.join(rel).is_file())
+    .map(|rel| rel.to_string())
+    .collect()
 }
 
 /// 只读文件开头这么多字节。周文件的徽记就在 front matter 里,为了一行标记把
@@ -47,10 +49,7 @@ pub(super) fn build_kb(ws: &Path, tab: KbTab, open: Option<&str>) -> KbVm {
     let mut groups = Vec::new();
 
     let mut charter = Vec::new();
-    for (rel, label) in [
-        (".bw/PROJECT.md", "项目名片"),
-        ("AGENTS.md", "这个项目的开发与维护手册"),
-    ] {
+    for (rel, label) in [("AGENTS.md", "这个项目的开发与维护手册")] {
         if ws.join(rel).is_file() {
             charter.push(KbFileVm {
                 rel: rel.into(),
@@ -66,8 +65,9 @@ pub(super) fn build_kb(ws: &Path, tab: KbTab, open: Option<&str>) -> KbVm {
         (".bw/project.toml", "项目名片"),
         (".bw/metrics.toml", "指标"),
         (".bw/issue-policy.toml", "类别映射与节律"),
-        (".bw/standard.toml", "铺了哪版规范"),
-        (".bw/managed.toml", "铺底文件的指纹"),
+        (".bw/standard.toml", "旧规范版本账(新项目不再铺)"),
+        (".bw/managed.toml", "旧指纹账(新项目不再铺)"),
+        (".bw/PROJECT.md", "旧名片副本(新项目不再铺)"),
     ] {
         if ws.join(rel).is_file() {
             spec.push(KbFileVm {

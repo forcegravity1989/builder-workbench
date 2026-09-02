@@ -28,6 +28,19 @@ fn iso_week_math_round_trips() {
 }
 
 #[test]
+fn slim_issue_policy_tmpl_parses_without_review_or_kanban() {
+    let f = issue_policy_file::parse(bw::standard::ISSUE_POLICY_TMPL).unwrap();
+    assert_eq!(f.mappings.len(), 5);
+    assert_eq!(f.cadence.as_ref().unwrap().ops2_schedule, "fri 09:00");
+    assert!(
+        f.tools.is_empty(),
+        "工具声明不进用户仓,开工工具是编译进 Workbench 的"
+    );
+    assert!(f.review.is_none(), "评审段不铺,合入规则不写进用户仓");
+    assert!(f.kanban.is_none(), "看板文案不铺");
+}
+
+#[test]
 fn issue_policy_round_trips_and_maps_categories() {
     let raw = r#"
 schema_version = 1

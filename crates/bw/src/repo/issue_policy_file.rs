@@ -1,8 +1,7 @@
-//! `.bw/issue-policy.toml` —— 活的约定:开工工具清单、「类别→工具→workflow」
-//! 三列映射、评审规则、节律、看板列文案。
+//! `.bw/issue-policy.toml` —— 活的约定:「类别→工具→workflow」映射和盘点节律。
 //!
-//! 这份文件**不入库**。配置屏、▶开工、定时判据每次现读现解析——所以新增一个
-//! 开工工具只要在这里加一行 `[[tool]]` 加一个适配模块目录,不碰内核。
+//! 这份文件**不入库**。配置屏点保存、▶开工查映射、定时读节律,都现读这份。
+//! 开工工具名单编译在 Workbench 里,不靠这里的 `[[tool]]`(旧仓可能还有,解析收下、新写入不写)。
 
 use super::{parse_toml, read_to_string, write_file, Result};
 use crate::model::{category_from_key, Category};
@@ -135,11 +134,12 @@ pub fn render(f: &IssuePolicyFile) -> String {
         let items: Vec<String> = v.iter().map(|x| q(x)).collect();
         format!("[{}]", items.join(", "))
     };
-    let mut s = String::new();
+    let mut s = String::from(
+        "# 开工约定。配置屏改映射、保存，写的就是这份。\n\
+         # [[mapping]] 五类各一行：类别 → 用哪个工具 → 挂哪份 workflow（空=无默认）。\n\
+         # [cadence] 资产盘点到点；改周五几点改这一行。\n",
+    );
     s.push_str(&format!("schema_version = {}\n", f.schema_version.max(1)));
-    s.push_str("\n# 开工工具声明:name → 接法类型(terminal 终端类 / web_embed 本机网页\n");
-    s.push_str("# 内嵌类)→ 探活方式 → 能力清单。这里的 kind 与下面 [[mapping]] 段的\n");
-    s.push_str("# category(活的类别标签)是两件不同的事,字段名特意分开,不要混。\n");
     for t in &f.tools {
         s.push_str("\n[[tool]]\n");
         s.push_str(&format!("name = {}\n", q(&t.name)));
@@ -150,8 +150,6 @@ pub fn render(f: &IssuePolicyFile) -> String {
         }
         s.push_str(&format!("capabilities = {}\n", arr(&t.capabilities)));
     }
-    s.push_str("\n# 三列映射:类别 → 默认开工工具 → 默认 workflow。\n");
-    s.push_str("# workflow = SOP 类技能包(自己调度 agent),不是单个技能。\n");
     for m in &f.mappings {
         s.push_str("\n[[mapping]]\n");
         s.push_str(&format!("category = {}\n", q(&m.category)));
@@ -165,9 +163,15 @@ pub fn render(f: &IssuePolicyFile) -> String {
     }
     if let Some(c) = &f.cadence {
         s.push_str("\n[cadence]\n");
-        s.push_str(&format!("ops1_trigger  = {}\n", q(&c.ops1_trigger)));
-        s.push_str(&format!("ops2_trigger  = {}\n", q(&c.ops2_trigger)));
-        s.push_str(&format!("ops2_schedule = {}\n", q(&c.ops2_schedule)));
+        if !c.ops1_trigger.is_empty() {
+            s.push_str(&format!("ops1_trigger  = {}\n", q(&c.ops1_trigger)));
+        }
+        if !c.ops2_trigger.is_empty() {
+            s.push_str(&format!("ops2_trigger  = {}\n", q(&c.ops2_trigger)));
+        }
+        if !c.ops2_schedule.is_empty() {
+            s.push_str(&format!("ops2_schedule = {}\n", q(&c.ops2_schedule)));
+        }
     }
     if let Some(k) = &f.kanban {
         s.push_str("\n[kanban]\n");
