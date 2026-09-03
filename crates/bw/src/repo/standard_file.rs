@@ -40,8 +40,7 @@ pub fn write(workspace: &Path, f: &StandardFile) -> Result<String> {
         format!("[{}]", items.join(", "))
     };
     let body = format!(
-        "# 这个项目用的是哪版规范、铺了哪几类件。Workbench 二进制自带哪版记在\n\
-         # Workbench 侧的 standard/VERSION 里,是另一件事,不要混。\n\
+        "# 旧版本账。新项目不再铺,每周资产盘点整份删。\n\
          version    = {}\n\
          enabled    = {}\n\
          extensions = {}\n\

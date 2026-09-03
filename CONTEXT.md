@@ -99,7 +99,7 @@ _Avoid_: 按旧五步(仓→意图→快速问题→起草→确认)描述它—
 ### 活与状态
 
 **Issue / 活**:
-一件要干的具体工作,最小单位。"活"是口语规范词,"卡"只在指界面卡片形态时用。codehub/GitHub 的 issue+标签是唯一正本(标题=标识,`bw:status:*`/`bw:plan:*`/`bw:released:*`/`bw:category:*` 标签=状态/排期(版本)/发版号/类别,issue closed=Done);不再写 `bw:week:*`。开工工具和 workflow 不另打标签。业务活读回时用类别去查本机 settings,没有就用产品默认;运作活开工工具同一条路,workflow 仍按标题推断。本地零库,读都走 CLI、不留读缓存。没挂仓的项目如实留白、不假装已同步。
+一件要干的具体工作,最小单位。"活"是口语规范词,"卡"只在指界面卡片形态时用。codehub/GitHub 的 issue+标签是唯一正本(标题=标识,`bw:status:*`/`bw:plan:*`/`bw:released:*`/`bw:category:*` 标签=状态/排期(版本)/发版号/类别,issue closed=Done);不再写 `bw:week:*`。开工工具和 workflow 不另打标签。业务活读回时用类别去查本机 settings,没有就用产品默认;运作活开工工具跟构建(配置屏「构建」那条),workflow 仍按标题推断。本地零库,读都走 CLI、不留读缓存。没挂仓的项目如实留白、不假装已同步。
 _Avoid_: 任务(与"定时任务"撞)、卡片(指实体时用"活",指 UI 时才用"卡")、ticket、工单。详见 [codehub-issue-正本 模块](docs/architecture.md)。
 
 **计划 / 版本 (Plan version)**:
@@ -147,7 +147,7 @@ MVP 两条执行轨,都在这张活自己的 git worktree 里干:构建类走会
 _Avoid_: 把交互式活的空运行史当「没跑过」;把后台轨的自动兜底照搬到交互轨;嵌入终端(指 UI 载体时可用,指这条执行轨时统一说「交互式运行」)。详见 [会话与执行 模块](docs/architecture.md)。
 
 **系统提示词 / System prompt**:
-Workbench 给每张开工的活渲染的一份常驻提示,主提示词是外置的 `standard/system-prompt/SYSTEM.md.tmpl`(身份 + 通用铁律:最远到评审中、合并永远是人、指标只来自真实采集、干砸如实停 + 读项目 `.bw/` 规范件与仓根 `AGENTS.md` 的指引),`{{...}}` 占位运行时填:活的信息、本活要读的 references 阶段规范(指标铁律/改仓规则)、本活挂的技能指针。不硬编码在 Rust `format!` 里(改铁律=改 md + 抬 `standard/VERSION` + 对账)。分工:系统提示词不可换(契约与铁律由它兜住),技能/references 可换。提示词只放索引(名字+一句话+路径),正文让 agent 按需读(渐进加载)。
+Workbench 给每张开工的活渲染的一份常驻提示,主提示词是外置的 `standard/system-prompt/SYSTEM.md.tmpl`(身份 + 通用铁律:最远到评审中、合并永远是人、指标只来自真实采集、干砸如实停 + 读项目 `.bw/` 规范件与仓根 `AGENTS.md` 的指引),`{{...}}` 占位运行时填:活的信息、本活要读的 references 阶段规范、本活挂的技能指针。哪类活读哪份见 [系统提示词与渐进加载 模块](docs/architecture.md) §3 模块 4。不硬编码在 Rust `format!` 里(改铁律=改那份 md)。分工:系统提示词不可换(契约与铁律由它兜住),技能/references 可换。提示词只放索引(名字+一句话+路径),正文让 agent 按需读(渐进加载)。
 _Avoid_: 把契约写进技能正文(换技能就丢);把系统提示词当成技能的一部分。详见 [系统提示词与渐进加载 模块](docs/architecture.md)。
 
 **Agent Loop**(产品命题层):
@@ -165,7 +165,7 @@ _Avoid_: 记录、log(读数是结构化数据点,不是日志文本)、埋点�
 _Avoid_: 数据、统计值;不要和"读数"混用——读数是原料,指标是产物。
 
 **指标正本 / Metrics Source of Truth**:
-一个项目的北极星 + 滞后指标 + 引领指标定义,写在仓里一份机读文件 `.bw/metrics.toml`(**只认 `schema_version = 2`**,内核读到旧格式整份拒收、不上屏)。重定+迁已有读数+借鉴旧脚本+删 V3 废弃件,跟运作活① skill 走,不做内核静默迁移。改指标和改代码一样走 MR 评审。Workbench 本地不缓存定义,每次现读。MVP **不要中间连接器层**——一条指标直接指向一个脚本:起进程、传时间窗、读标准输出的 JSON,Workbench 不认识被连的是什么系统;采集方式只有脚本和手填两种。
+一个项目的北极星 + 滞后指标 + 引领指标定义,写在仓里一份机读文件 `.bw/metrics.toml`(**只认 `schema_version = 2`**,内核读到旧格式整份拒收、不上屏)。北极星/口径重定跟运作活①;旧格式升到现行、迁读数、清残留跟运作活②。不做内核静默迁移。改指标和改代码一样走 MR 评审。Workbench 本地不缓存定义,每次现读。MVP **不要中间连接器层**——一条指标直接指向一个脚本:起进程、传时间窗、读标准输出的 JSON,Workbench 不认识被连的是什么系统;采集方式只有脚本和手填两种。
 _Avoid_: 绕开 MR 直接在界面里"定义"一条指标;把 V3 的 `.bw/connectors.toml` / `docs/buddy/standards/metrics.md` 当现行正本(V3 已删,见 `v3` 分支)。详见 [仓文件解析 模块](docs/architecture.md)。
 
 **业务指标 / 项目指标(两层分流)**:

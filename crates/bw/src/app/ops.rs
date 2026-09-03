@@ -131,8 +131,7 @@ impl App {
 
     /// 定时:到点就自己建运作活②并自己开工。
     ///
-    /// 三张运作活里唯一不需要人点一下才开工的一张——所以它也是唯一一处
-    /// Workbench 自动**建**活的地方。**自动建不等于自动完成**:这张活和别的活
+    /// 两张运作活里唯一自动开工的一张。**自动建不等于自动完成**:这张活和别的活
     /// 走同一条状态机,最远只到「评审中」。
     pub(super) async fn tick_scheduler(&mut self, project_id: ProjectId) -> Result<Vec<Event>> {
         // 高优1:读本机设置,这个项目关了定时就不建活(缺省 true)。开关在
@@ -170,7 +169,7 @@ impl App {
             .create_ops_issue(
                 project_id,
                 title,
-                "mode: weekly\n\n盘点这一周仓内的全部资产,微重构只写建议不动手。".into(),
+                "mode: weekly\n\n两步:盘 Workbench 资产(.bw 跟上现行契约、点出未闭环的环),再盘项目本周改动。".into(),
                 OPS2_WORKFLOW,
                 IssueOrigin::Auto,
                 week.clone(),
