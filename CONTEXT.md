@@ -391,7 +391,7 @@ _Avoid_: 可重入(是另一个并发概念,别混用)。
 _Avoid_: 快捷方式;URL scheme(深链走环境变量,不走 URL)。
 
 **native 评估 / native-audit**(此前称"仓考古"):
-对一个 git 仓(不必是被管项目)的全量历史与过程制度件做**只读**分析,量出它把「让 AI 安全高速干活」的规矩做到了哪一级(见制度化阶梯),产出评估报告与按「升一级最便宜」排序的缺失清单。技能在 `.claude/skills/native-audit/`,准则正本在 `changes/native-audit/rubric.md`。
+对一个 git 仓(不必是被管项目)的全量历史与过程制度件做**只读**分析,量出它把「让 AI 安全高速干活」的规矩做到了哪一级(见制度化阶梯),产出评估报告与按「升一级最便宜」排序的缺失清单。技能在 `.claude/skills/native-audit/`(自足:准则正本 `references/rubric.md`、校准参考 `references/calibration.md`、模式表 `patterns/` 都随它走);本仓的立项记录与自扫报告在 `docs/05-features/native-audit/`。
 _Avoid_: 仓考古(2026-09-02 改名,旧称不再用);与「知识库体检」(查被管项目 `.bw/` 知识件健康度)、「资产盘点」(盘 Workbench 可见物齐不齐)混用——那两个对着 BW 规范查存量,native 评估对任意仓拉新证据;审计(它不评代码质量、不做安全审计)。
 
 **制度化阶梯**:

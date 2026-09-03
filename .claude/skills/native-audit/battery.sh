@@ -8,19 +8,27 @@
 #   patterns/dialect.*.conf  某组织私有词汇(仅 --dialect 显式加载)
 #
 # 用法: battery.sh <repo-path> [--dialect <file>] [--patterns <dir>]
+#                              [--self-exclude <仓内相对路径前缀>]...
 # 输出: 每行 "C## 键=值";拿不到的值输出 Unknown(不写 N/A、不猜、不补分)。
+#
+# --self-exclude:自扫时排除「写着准则原文的地方」。引擎能自动认出扫描器自己所在的
+# 目录,但认不出准则、规格、评估报告被放在了哪 —— 那些文件逐条复述准则用语,不排除
+# 会被当成「这个仓有这条规矩」计进读数。自扫一个带 native-audit 产物链的仓时,把那条
+# 产物链路径也传进来。可重复。
 set -u
 
 SELF_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PATTERNS_DIR="$SELF_DIR/patterns"
 DIALECT=""
 REPO=""
+EXTRA_SELF_EXCL=()
 
 while [ $# -gt 0 ]; do
   case "$1" in
-    --dialect)  DIALECT="$(cd "$(dirname "$2")" && pwd)/$(basename "$2")"; shift 2 ;;
-    --patterns) PATTERNS_DIR="$(cd "$2" && pwd)"; shift 2 ;;
-    *)          REPO="$1"; shift ;;
+    --dialect)      DIALECT="$(cd "$(dirname "$2")" && pwd)/$(basename "$2")"; shift 2 ;;
+    --patterns)     PATTERNS_DIR="$(cd "$2" && pwd)"; shift 2 ;;
+    --self-exclude) EXTRA_SELF_EXCL+=("${2%/}"); shift 2 ;;
+    *)              REPO="$1"; shift ;;
   esac
 done
 [ -n "$REPO" ] || { echo "用法: battery.sh <repo-path> [--dialect <file>] [--patterns <dir>]" >&2; exit 2; }
@@ -47,9 +55,23 @@ git rev-parse --git-dir >/dev/null 2>&1 || { echo "Unknown repo=not-a-git-repo";
 
 # ── 助手 ────────────────────────────────────────────────────
 g() { git -c core.quotepath=off "$@" 2>/dev/null; }
-# 入库文件清单,已剔除 vendored / 第三方 / 子模块 —— 别人的代码不反映本仓的实践水位。
+
+# ── 自我排除清单(必须先于任何 files()/rgx() 调用建好) ──────────
+# 排除两处「写着准则原文的地方」:扫描器自己所在目录(引擎能推导),以及调用方用
+# --self-exclude 指定的准则/规格/评估报告目录(引擎推导不出,它们可以在仓里任何地方)。
+SELF_EXCL="$(mktemp)"; trap 'rm -f "$SELF_EXCL"' EXIT
+case "$SELF_DIR" in "$REPO_ABS"/*) echo "${SELF_DIR#"$REPO_ABS"/}" >>"$SELF_EXCL" ;; esac
+for p in ${EXTRA_SELF_EXCL+"${EXTRA_SELF_EXCL[@]}"}; do [ -n "$p" ] && echo "$p" >>"$SELF_EXCL"; done
+# 两处都不在被扫仓内时,写一个绝不会出现在路径里的哨兵 —— 空文件或空行会让
+# `grep -vFf` 把每一行都当命中排除掉(踩过:某仓的技能与决策记录整个被清零)。
+[ -s "$SELF_EXCL" ] || echo '__native_audit_no_self_exclusion__' >"$SELF_EXCL"
+SELF_EXCL_SHOWN="$(tr '\n' ' ' <"$SELF_EXCL" | sed 's/__native_audit_no_self_exclusion__/none/')"
+
+# 入库文件清单,已剔除 vendored / 第三方 / 子模块与自我排除项 —— 别人的代码、
+# 以及写着准则原文的文件,都不反映这个仓自己的实践水位。
 # (git ls-files 不吃 grep 的 --exclude-dir,所以在这里按路径模式剔。)
-files() { g ls-files | grep -vE "$P_VENDORED_PATH"; }
+files() { g ls-files | grep -vE "$P_VENDORED_PATH" | grep -vFf "$SELF_EXCL"; }
+# 不做任何剔除的原始清单。只给「要找的东西本来就住在被剔目录里」的探针用(如 vendor 清单)。
 files_all() { g ls-files; }
 cnt() { local n; n=$(grep -c . 2>/dev/null); echo "${n:-0}"; }
 # 按 ERE 数「含该模式的文件数」——弱信号:只证成文与否,不证做得好不好。
@@ -65,13 +87,6 @@ ROOT_HANDBOOK="$(echo "$HANDBOOKS" | grep -vE '/' | head -1)"
 hb() { [ -n "$ROOT_HANDBOOK" ] && { local n; n=$(grep -ciE "$1" "$ROOT_HANDBOOK" 2>/dev/null); echo "${n:-0}"; } || echo Unknown; }
 
 EXCL=""; for d in $P_EXCLUDE_DIR; do EXCL="$EXCL --exclude-dir=$d"; done
-# 排除扫描器自身:若 patterns/ 或本脚本恰好在被扫仓内(自扫场景),它们的模式文本
-# 会污染读数。按真实路径排除,不写死自己叫什么名字。
-SELF_EXCL="$(mktemp)"; trap 'rm -f "$SELF_EXCL"' EXIT
-case "$SELF_DIR" in "$REPO_ABS"/*) echo "${SELF_DIR#"$REPO_ABS"/}" >>"$SELF_EXCL" ;; esac
-# 扫描器不在被扫仓内时,写一个绝不会出现在路径里的哨兵 —— 空文件或空行会让
-# `grep -vFf` 把每一行都当命中排除掉(踩过:dsh 的 skill 与决策记录整个被清零)。
-[ -s "$SELF_EXCL" ] || echo '__native_audit_no_self_exclusion__' >"$SELF_EXCL"
 
 # 脚本目录(不假设一定叫 scripts/)
 SCRIPT_FILES=""
@@ -98,6 +113,7 @@ ECOS="${ECOS# }"; [ -n "$ECOS" ] || ECOS="unknown"
 
 echo "## META"
 echo "M00 scanner=native-audit/battery.sh patterns=$(basename "$PATTERNS_DIR") dialect=${DIALECT_NAME}"
+echo "M04 self_excluded=${SELF_EXCL_SHOWN% }"
 echo "M01 ecosystems=${ECOS}"
 echo "M02 ci_platform_files=${CI_N}"
 echo "M03 handbook_detected=${ROOT_HANDBOOK:-none}"
@@ -156,7 +172,9 @@ MERGES=$(g rev-list --count --merges HEAD); AI_MERGES=$(g log --merges --format=
 echo "C33 ai_or_worktree_merges=${AI_MERGES}/${MERGES}"
 echo "C33 parallel_unit_rule=$(hb 'worktree|parallel session|并行')"
 echo "C34 gen_scripts=$(echo "$SCRIPT_FILES" | tr ' ' '\n' | sed 's|.*/||' | grep -icE "$P_GEN_SCRIPT")"
-echo "C34 vendor_manifest=$(files | grep -iE "$P_VENDOR_MANIFEST" | cnt)"
+# 用 files_all:vendor 清单本身就住在 vendored 目录里(vendor/README、third_party/MANIFEST),
+# files() 已按 P_VENDORED_PATH 把那些路径整段剔掉,拿它来找清单永远找不到。
+echo "C34 vendor_manifest=$(files_all | grep -iE "$P_VENDOR_MANIFEST" | cnt)"
 if [ "$ECOS" = "unknown" ]; then
   echo "C35 strict_config=Unknown reason=no-known-ecosystem-marker"
   echo "C35 lint_config=Unknown reason=no-known-ecosystem-marker"

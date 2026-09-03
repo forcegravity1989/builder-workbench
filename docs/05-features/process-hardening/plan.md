@@ -47,8 +47,8 @@ docs/05-features/<standard-对标-id>/       C1 立项时新开（仅 intent 草
 
 | 数 | 目标 |
 |---|---|
-| guard 脚本数 | 6 →（+1 已并入）7 → 11，全部挂 CI |
-| guard 自测覆盖率 | 11/11（`guard-bw-write-authority` 已自带，是现成范式）|
+| guard 脚本数 | 6（`ls scripts/guard-*.sh` 现值，已含并入的 `guard-bw-write-authority`）→ 10，全部挂 CI |
+| guard 自测覆盖率 | 10/10（分母跟随 `ls scripts/guard-*.sh`；`guard-bw-write-authority` 自带的是「名单有效性自检」，A3 要的坏例断言仍需补）|
 | 全仓 md 死链 | 0 |
 | 预算清单 8 份文档 | 全部 ≤ 上限 |
 | 冻结清单 | ≥ 1 件盘入，guard 生效 |
