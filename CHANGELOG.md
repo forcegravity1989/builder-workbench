@@ -6,6 +6,8 @@
 
 ## 最近 · 2026-09-02
 
+native-audit 正文与业务解耦第二刀:**技能本身不再知道本仓是谁**。SKILL.md 的用词对照表原先逐条引 `CONTEXT.md` 词表、本仓产物链路径与 dsh 目录名——一把量别人的尺刻着自己家的词。改成只解释本工具自己的术语(阶梯/探针/读数/弱信号/误报/Unknown/门禁自测/校准参考/方言),不借用任何被评估方的内部词汇。**准则正本 `rubric.md` 移进技能** `references/`(此前在 `docs/05-features/native-audit/`,技能拿到别的仓就找不到准则);锚点由写死的「dsh 3 分锚、BW 2 分锚」改为可追加的 `references/calibration.md`,参考仓按「生态-规模-日期」中性描述;本仓方言 `dialect.bw.conf` 移出技能、落回产物链,技能只留 `dialect.example.conf` 教格式;rubric 的「dsh 实证」列改名「实证来源(举例,非判据)」并在导读讲清出处,S8 段标题的组织理念署名换成 playbook 原话,「探针可执行性/迭代记录」两段(属本次立项过程)移进产物链 spec。仓群汇总段的「BW 规范铺底可直接补哪些」改为通用的缺失归类;平台 CLI 探测不再点名某产品。核验:技能内零组织痕迹、内部链接自足、两仓实跑正常、方言可从技能外部加载。
+
 合入主干 + 评审意见修复(PR #140)。产物链按主干新布局迁位:`changes/native-audit`、`changes/process-hardening` → `docs/05-features/`,全链相对引用重定基(skill ↔ 产物链 ↔ `docs/10-reference/`、`docs/01-principles/`),死链复核为零。评审四条:①A2 字数预算口径由 `wc -m` 改 `wc -c`(本仓中文为主,两者差 1.5–2.4 倍,且 `wc -m` 随 locale 漂;上限按合入后实测 ×1.15 重算八行,余量口径回到 15%);②A3 存量门禁分解改为「六个存量 + 四个新增 = 10/10」(与 plan 一致,不再一处 9/9 一处 10/10);③native-audit intent 状态行早前已回写「意图 gate 已过」,复核无残留;④两处裸用「buddy」改「Workbench(旧名 buddy)」(其中一处会进 skill 报错文案)。合并中两处门禁真红并已修:`guard-bw-write-authority` 名单里的 `issue_policy_file::write` 被主干规范 5.13 删除(守卫自检抓到,名单跟着删)、`guard-codegraph-clean` 无法区分「合并带入 CI 快照」与「本分支自改」(补 MERGE_HEAD 同内容放行,worktree 里用 `rev-parse` 查而非 `.git/` 路径)。
 
 native-audit 人话名改名:「仓考古」→**native 评估**(技能名 `native-audit` 不变)。SKILL.md 描述/标题/用词对照表、spec.md 标题/导读/FAQ/术语登记、`CONTEXT.md` 词条同步;intent.md 末节记改名说明,不改写原拍板记录。另:散文里裸写 issue 改为「活」(词表规范口语词),用词对照表补一行。

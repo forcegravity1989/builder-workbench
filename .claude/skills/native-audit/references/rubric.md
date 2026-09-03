@@ -1,12 +1,14 @@
-# native-audit 准则正本 v2 · 与 dsh 实证、AI-Native SDLC 的双向映射
+# native-audit 判读准则 · 九段三十七条
 
-> **30 秒导读**：这是什么——native-audit 的**判读准则唯一正本**（spec 与 SKILL.md 只引用不复述）。v2 把 v1 的七维重组为 **9 段 37 条**，段落按 [AI-Native SDLC playbook 提炼版](../../10-reference/ai-native-sdlc-playbook.md) 的六阶段 + 贯穿机制 + 治理四条排列（playbook = Anthropic 的 AI 原生研发流程手册；dsh = DeepSeek Harness，一个 agent 运行时），每条准则给出机械探针、3 分的样子、dsh 一手实证与 playbook 对应。末尾两张矩阵是映射证明：M1 dsh 做法 → 准则（每条 dsh 做法至少落一条），M2 playbook 主张 → 准则（每个阶段 / 贯穿机制 / 治理条至少落一条）。**dsh 无实证的准则如实标注**，不编证据。
+> **30 秒导读**：这是 native-audit 的**判读准则正本**，随技能走。九段按《AI-Native SDLC Playbook》（Anthropic，<https://claude.com/blog/the-ai-native-sdlc-playbook>）的六阶段 + 贯穿机制 + 治理四条排列。每条准则给出：要量什么、3 分长什么样、实证来源、对应 playbook 哪一条。末尾两张矩阵是覆盖证明——M1 实证来源的每一项做法都落到至少一条准则，M2 playbook 的每个阶段／机制／治理条都有准则承接。**无实证支撑的准则如实标注**，不编证据。
+>
+> **实证来源**：准则的证据主要取自 DeepSeek Harness（`deepseek-ai/deepseek-harness`，一个开源 agent 运行时，2026-06 至 08 的完整公开历史）的一次全量分析。表里出现的具体路径、文件名、数字都是**那个仓的实证举例，不是判定条件**——照抄它当判据会把别的仓判错。判定条件永远是「3 分的样子」那一列描述的性质。
 
 ## 探针与准则的关系（读这张表之前先看这段）
 
 「机械探针」列写的是**要量什么**，不是**去哪个文件量**。具体认哪些文件名、哪些目录、哪些词，由技能携带的模式表决定（`patterns/core.conf` 通用惯例、`patterns/ecosystem.conf` 语言与 CI 平台、`patterns/dialect.*.conf` 组织私有词汇，默认不加载）——换一个组织、换一门语言、换一个 CI 平台，改模式表即可，准则和引擎都不动。
 
-因此本表里出现的 `AGENTS.md`、`docs/postmortem/`、`verify-*` 这类名字，一律是**举例**（多半来自 dsh 实证列），不是判定条件。判定条件是「有没有这一类东西」。dsh 实证列里的路径是那个仓的真实证据，照抄它当判据会把别的仓判错。
+因此本表里出现的 `AGENTS.md`、`docs/postmortem/`、`verify-*` 这类名字，一律是**举例**（多半来自实证来源那一列），不是判定条件。判定条件是「有没有这一类东西」——被评估的仓把它叫什么、放在哪，由模式表去认。
 
 ## 阶梯（所有准则共用）
 
@@ -17,13 +19,13 @@
 | 2 | 成文 | 规矩写在仓里给人和 AI 读（AGENTS.md / 原则 / 剧本），执行靠自觉与评审 |
 | 3 | 机器强制 | 违规会被 git 钩子（hook）/ CI / 门禁脚本 / 类型系统拦下；门禁本身有已知坏例可证 |
 
-阶梯的一手依据：dsh `quality-gates` 决策记录（2026-06-11）开头——「这个代码库主要由 coding agent 开发；agent 遵守机器门禁远比遵守散文约定可靠」。**BW 私货只有两条**：Unknown 纪律（对齐四铁律「没数据就是 Unknown」）；验证形态不限（E2E-only 与 100% 单测同为 3 分候选，看强制程度不看形态）。
+阶梯的一手依据是实证来源仓的一份门禁决策记录（2026-06-11）:「这个代码库主要由 coding agent 开发；agent 遵守机器门禁远比遵守散文约定可靠」。**本准则自定的取舍只有两条**（其余均出自实证来源或 playbook）：Unknown 纪律（数据拿不到就是 Unknown，不推断补分）；验证形态不限（E2E-only 与 100% 单测同为 3 分候选，看强制程度不看形态）。
 
 ## 九段三十七条
 
 ### S0 · 规矩正本（贯穿；playbook §3「项目手册当代码维护」）
 
-| # | 准则 | 机械探针 | 3 分的样子 | dsh 实证 | playbook |
+| # | 准则 | 机械探针 | 3 分的样子 | 实证来源（举例，非判据） | playbook 对应 |
 |---|---|---|---|---|---|
 | C01 | 手册存在、分层、有修正回路 | 入口件清单（AGENTS/CLAUDE/.cursorrules/copilot-instructions）、子树数、`git log -- AGENTS.md` 周频 | 根 + 子树手册；每周有修正（错两次进手册） | 根 AGENTS.md 154 行 + 21 份子树；AGENTS.md 每周 12–64 次改动，12 周无空档 | §3 手册当代码维护 |
 | C02 | 手册有预算且自描述 | 字符数；是否有字数预算门禁；是否有「怎么改本文件」段 | 字数上限进 CI，超额须论证提额 | `verify-doc-budgets` + `doc-budgets.manifest.json`（根 ≤1,950 词）；「Editing these instructions」段 | §3「一页内」 |
@@ -32,14 +34,14 @@
 
 ### S1 · 计划·意图（playbook 阶段 1）
 
-| # | 准则 | 机械探针 | 3 分的样子 | dsh 实证 | playbook |
+| # | 准则 | 机械探针 | 3 分的样子 | 实证来源（举例，非判据） | playbook 对应 |
 |---|---|---|---|---|---|
 | C11 | 意图件成文、验收人具名、接受留痕 | 活（issue）模板数与字段；`proposed/` 类目录；活的类型 / 标签体系；接受 = 合入/关闭 | 意图件有模板与必填节，接受走合入/关闭并由脚本守 | `.github/ISSUE_TEMPLATE/{bug,feature,idea,research,task}.md`；`proposed/` 26 份（Problem/Proposal/Alternatives/Acceptance/Risks）；`issue-lifecycle.yml` 脚本守 | 阶段 1；贯穿「具名验收人、留痕」 |
 | C12 | 产物链连通（意图→规格→计划→PR→复盘→意图） | 制品间相对链接是否可机械校验；PR 模板是否要求引用意图/决策件 | 每级产物引用上一级，链接死了会红 | Agent Note 互链「never bare prose or numbers」+ `verify-md-links`；`pull_request_template.md`；复盘 链 guardrails | 贯穿机制「产物链」 |
 
 ### S2 · 设计·决策（playbook 阶段 2）
 
-| # | 准则 | 机械探针 | 3 分的样子 | dsh 实证 | playbook |
+| # | 准则 | 机械探针 | 3 分的样子 | 实证来源（举例，非判据） | playbook 对应 |
 |---|---|---|---|---|---|
 | C21 | 决策记录制度化程度 | adr/notes/changes 数量；是否成文「何时必写」；是否有格式门禁 | 非琐碎变更同 PR 强制附记录，格式与分类由脚本查 | 838 份 Agent Notes；「Non-trivial changes MUST include an Agent Note in the same PR」；`verify-agent-note-format/-classification` | 阶段 2 规格件 |
 | C22 | 记「打败了谁」与后果 | 记录中含替代方案节的比例；含后果/代价节的比例 | 替代方案节强制，缺则门禁红 | 「Alternatives considered — mandatory」；`## Consequences` 必有；格式门禁 | 阶段 2「冲突当场标出」 |
@@ -47,7 +49,7 @@
 
 ### S3 · 构建（playbook 阶段 3）
 
-| # | 准则 | 机械探针 | 3 分的样子 | dsh 实证 | playbook |
+| # | 准则 | 机械探针 | 3 分的样子 | 实证来源（举例，非判据） | playbook 对应 |
 |---|---|---|---|---|---|
 | C31 | 先计划后动手，偏离回写 | 计划产物（plan / acceptance criteria）存在；是否成文「计划批准前不动文件」「偏离同提交改计划」 | 计划件必有且与实况同步由评审/门禁守 | `proposed/` 的 `## Acceptance criteria`；proposed→implemented 须「rewrite Proposal into present-tense Decision」并有格式门禁 | §3 先计划后动手 |
 | C32 | 建议与拦截分层（含门禁自测） | hook 配置（lefthook/husky）；CI 必过检查数；verify/guard 脚本数；有 .spec 的门禁数 | 「凡机械可查者必有非零退出命令」成文；门禁自测 | 34 个 `verify-*`（17 个自带 `.spec.ts` 自测）；lefthook pre-commit/pre-push；quality-gates 决策「Every mechanically checkable promise gets a command that exits non-zero」 | §3 建议性 vs 确定性；治理 1 |
@@ -58,7 +60,7 @@
 
 ### S4 · 测试·验证（playbook 阶段 4）
 
-| # | 准则 | 机械探针 | 3 分的样子 | dsh 实证 | playbook |
+| # | 准则 | 机械探针 | 3 分的样子 | 实证来源（举例，非判据） | playbook 对应 |
 |---|---|---|---|---|---|
 | C41 | 自验路径成文且 AI 可自跑 | 手册命令段；测试分层文档；`test:*` 脚本数 | 分层成文（单元/快照/e2e/预期输出），命令一处可查 | `docs/testing.md` 六层；AGENTS.md「Commands」段 20+ 条 | §4 能自己跑的验证路 |
 | C42 | 验证强制程度（形态不限） | CI 是否必过测试；覆盖率/快照门禁；required checks | 主判据形态进 CI 必过（E2E-only 亦可） | per-file 100% coverage gate（D2 起）；web snapshot 为 Linux PR 必过；`check:ci:*` 族 | §4 |
@@ -69,7 +71,7 @@
 
 ### S5 · 评审·合入·发布（playbook 阶段 5）
 
-| # | 准则 | 机械探针 | 3 分的样子 | dsh 实证 | playbook |
+| # | 准则 | 机械探针 | 3 分的样子 | 实证来源（举例，非判据） | playbook 对应 |
 |---|---|---|---|---|---|
 | C51 | 统一评审遍成文且 agent 可执行 | 评审剧本存在；agent 评审 workflow / 分支；阻断项清单 | 每个 PR 过同一套遍（bug/安全/与规格一致），agent 跑得动 | `dsh-code-review`（7 条阻断 + 手工检查）；`codex/pr-*-review` 分支；`maintaining-dsh-code-review` cookbook | 阶段 5 同一套评审遍 |
 | C52 | 写码者不自批，门在人手 | 合并执行人分布；agent 是否被禁 merge；分支保护（可读时） | agent 可做到门前一切、过不了门，由权限/拦截守 | 合并执行人全是人或 GitHub 按钮；不收外部 PR | 阶段 5；治理 3「门先于加速」 |
@@ -79,7 +81,7 @@
 
 ### S6 · 运维·复盘·环闭合（playbook 阶段 6；复盘 = postmortem，事故的结构化记录）
 
-| # | 准则 | 机械探针 | 3 分的样子 | dsh 实证 | playbook |
+| # | 准则 | 机械探针 | 3 分的样子 | 实证来源（举例，非判据） | playbook 对应 |
 |---|---|---|---|---|---|
 | C61 | 复盘制度 | 复盘目录与数量；结构强制；写不写的判据成文 | 结构固定（摘要/时间线/根因/为何漏网/防护）并有入选判据 | `docs/postmortem/` 4 份；结构 Executive summary→Guardrails added→Lessons；判据 subtle/systemic/costly | 阶段 6 |
 | C62 | 复盘→防护回流 | 复盘链到 tests/规矩/记录的比例；手册中引用复盘的规矩数 | 每份事故都落成门禁或手册规矩，链接可查 | 复盘必「Link the guardrails motivated」；testing.md 引复盘 0001 立「smoke tests 最高价值」 | 阶段 6 环闭合；§3 错两次进手册 |
@@ -87,16 +89,16 @@
 
 ### S7 · 知识维护·反 slop（贯穿；slop = AI 写作垃圾，dsh 文档纪律用词）
 
-| # | 准则 | 机械探针 | 3 分的样子 | dsh 实证 | playbook |
+| # | 准则 | 机械探针 | 3 分的样子 | 实证来源（举例，非判据） | playbook 对应 |
 |---|---|---|---|---|---|
 | C71 | 文档结构纪律 | 分层表；tutorial/reference 分类；「写现状不写历史」成文 | 分层与归属成文并有预算 | `docs/AGENTS.md` tier 表、tutorial vs reference、「Document current state, not change history」 | §3 手册当代码维护 |
 | C72 | 反 slop 审计 | slop 清单成文；prose 剧本；CoT 泄漏审计 | 清单成文并被剧本当审计跑 | 「The slop checklist」9 项；`dsh-prose-standard`；`dsh-trim-cot-leakage` | —（dsh 特有） |
 | C73 | 文档机器门禁 | 死链/换行/mermaid/代码块编译/引用/预算/双语配对门禁数 | 文档承诺尽数脚本化 | `verify-md-links/-md-wrap/-mermaid/-doc-refs/-type-equiv/-doc-budgets/-translation-pairing` + `doc-typecheck`；`doc-sync` 聚合 | 治理 1 |
 | C74 | 减法与归档 | 简化剧本；归档流程；过时件处理（冻结/横幅/删除） | 减法有剧本，归档有门禁，过时件不可再改 | `dsh-find-simplifications`；`dsh-archive-agent-notes` + 冻结 manifest；`remove-knip` 类删除决策 | §3 遗留唯一事实源 |
 
-### S8 · AI 协作方式（贯穿；BW 理念「人在首尾」）
+### S8 · AI 协作方式（贯穿；playbook 题眼「环一直转，人的判断在环之上」）
 
-| # | 准则 | 机械探针 | 3 分的样子 | dsh 实证 | playbook |
+| # | 准则 | 机械探针 | 3 分的样子 | 实证来源（举例，非判据） | playbook 对应 |
 |---|---|---|---|---|---|
 | C81 | AI 产出走同一验收通道 | AI 分支/署名占比；agent 评审进流程；是否有 AI 专用旁路 | AI 与人同通道（分支+PR+评审），无旁路 | ~950 codex/* + 63 claude* 合并全走 PR；Co-Authored-By 几乎为零（记账在分支） | 贯穿「人的判断在环之上」 |
 | C82 | 多 harness 兼容 | CLAUDE.md 是否软链/导入 AGENTS.md；hook 桥接；skill 元数据对齐门禁 | 一份正本多 harness 共用，元数据由脚本对齐 | CLAUDE.md→AGENTS.md 软链（根与 packages/）；`hooks/` 包桥接 Claude Code/Codex；`verify-skill-invocation-metadata` | —（dsh 特有） |
@@ -193,17 +195,6 @@
 
 **M2 结论**：六阶段、贯穿机制、治理四条全部有准则承接；playbook 三条主张 dsh 无一手实证（禁改测试、回滚排练、指标越线检测），准则保留、实证栏如实标「dsh 无」。
 
-## 探针可执行性（R5 自扫 结果）
+## 探针跑不出数的条目
 
-见 [prototype-report.md](prototype-report.md)：v2 探针在 BW 与 dsh 两个真仓上各跑一遍，dsh 作 3 分锚、BW 作 2 分锚。探针跑不出数的准则在那里逐条标注。
-
-## 迭代记录
-
-| 轮 | 做了什么 | 结果 |
-|---|---|---|
-| R1 | v1 七维（规范/决策/门禁/AI/commit/验证/反 slop） | 能扫，但只覆盖 playbook 阶段 3/4/5 的一部分 |
-| R2 | 对照 playbook 六阶段找缺口 | 缺：计划·意图（S1）、发布工艺与回滚（C54/C55）、运维·复盘·环闭合（S6）、产物链连通（C12）、先计划后动手（C31）、agent 配置回归（C84）→ 重组为 9 段 37 条 |
-| R3 | 重盘 dsh 全部制度件（34 门禁 / 12 skill / 19 workflow / 模板 / lefthook / 发布 / 复盘）逐项映射 | 新增被 v1 漏掉的：生成物新鲜度（C34）、依赖政策（C35）、活流转自动化（C63）、标签体系（C53）、多 harness 元数据门禁（C82）、测试可靠性（C46）；58 组做法零孤儿 |
-| R4 | 反向检查 playbook 每条主张有无准则 | 全覆盖；三条无 dsh 实证如实标注（C44 禁改测试、C55 回滚、C63 指标越线） |
-| R5 | 探针脚本化为 `battery.sh`，在 BW + dsh 真跑 | 方向对（dsh 决策记录 820/839 带替代方案 vs BW 0/11；门禁脚本 38 个、自测 18 个 vs 6/0；手册 12/13 周有修正 vs 7/12），但抓出 4 类探针脚本缺陷：空结果双打 `0`、`wc` 带空格、关键词探针被本仓 rubric/spec 自身文本污染（C44 在 BW 命中的 4 个文件全是准则原文）、死链探针在 dsh 出 401 条成批误报（378 条在冻结归档 `archived/` 与举例路径） |
-| R6 | 修探针脚本：`cnt/gc` 助手、排除 native-audit 自身与 `archived/`、C55 改发布语境窄模式、C61 只数英文原件 | 重跑两仓：无多余输出；dsh 死链 401→27（残余分类见 prototype-report）；C55 dsh 3 / BW 1；两仓读数落成锚点卡 |
+模式表认不出、或该仓根本没有对应载体时，探针输出 `Unknown reason=...`。这类条目按阶梯记 0 并在报告里写明原因，**不推断补分**。已定级仓的实测读数见 [`calibration.md`](calibration.md)。
