@@ -1,120 +1,237 @@
 #!/usr/bin/env bash
-# native-audit 探针脚本:对一个 git 仓输出 9 段 37 条准则的只读读数。
-# 用法: battery.sh <repo-path>   每行 "C## 键=值";拿不到的值输出 Unknown(词表用词,不写 N/A)。
+# native-audit 探针引擎 —— 对一个 git 仓输出 9 段 37 条准则的只读读数。
+#
+# 引擎不含任何业务知识:它只会「按模式表数东西」。所有「什么算手册、什么算决策
+# 记录、什么算门禁」的判断都在 patterns/ 里,是可读、可换、可为别的组织重写的数据。
+#   patterns/core.conf       跨组织通用惯例(默认加载)
+#   patterns/ecosystem.conf  语言与 CI 平台(按仓里的标志文件自动选)
+#   patterns/dialect.*.conf  某组织私有词汇(仅 --dialect 显式加载)
+#
+# 用法: battery.sh <repo-path> [--dialect <file>] [--patterns <dir>]
+# 输出: 每行 "C## 键=值";拿不到的值输出 Unknown(不写 N/A、不猜、不补分)。
 set -u
-R="${1:?repo path}"
-cd "$R" || { echo "Unknown repo=unreadable"; exit 1; }
+
+SELF_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PATTERNS_DIR="$SELF_DIR/patterns"
+DIALECT=""
+REPO=""
+
+while [ $# -gt 0 ]; do
+  case "$1" in
+    --dialect)  DIALECT="$(cd "$(dirname "$2")" && pwd)/$(basename "$2")"; shift 2 ;;
+    --patterns) PATTERNS_DIR="$(cd "$2" && pwd)"; shift 2 ;;
+    *)          REPO="$1"; shift ;;
+  esac
+done
+[ -n "$REPO" ] || { echo "用法: battery.sh <repo-path> [--dialect <file>] [--patterns <dir>]" >&2; exit 2; }
+
+# shellcheck source=patterns/core.conf
+. "$PATTERNS_DIR/core.conf" || { echo "Unknown patterns=core.conf-unreadable"; exit 1; }
+. "$PATTERNS_DIR/ecosystem.conf" || { echo "Unknown patterns=ecosystem.conf-unreadable"; exit 1; }
+
+# 方言以 `|` 追加到同名通用模式后面(不覆盖),这样通用信号永远还在。
+DIALECT_NAME="none"
+if [ -n "$DIALECT" ]; then
+  . "$DIALECT" || { echo "Unknown dialect=unreadable"; exit 1; }
+  DIALECT_NAME="$(basename "$DIALECT")"
+  for v in $(set | sed -n 's/^\(D_[A-Z_]*\)=.*/\1/p'); do
+    base="P_${v#D_}"; add="${!v}"
+    [ -n "${!base:-}" ] && printf -v "$base" '%s|%s' "${!base}" "$add" || printf -v "$base" '%s' "$add"
+  done
+fi
+
+cd "$REPO" 2>/dev/null || { echo "Unknown repo=unreadable"; exit 1; }
+REPO_ABS="$(pwd)"
+
+git rev-parse --git-dir >/dev/null 2>&1 || { echo "Unknown repo=not-a-git-repo"; exit 1; }
+
+# ── 助手 ────────────────────────────────────────────────────
 g() { git -c core.quotepath=off "$@" 2>/dev/null; }
-files() { g ls-files; }
-cnt() { local n; n=$(grep -c . 2>/dev/null); echo "${n:-0}"; }          # 空输入也只打一个 0
-gc() { local n; n=$(grep -ciE "$1" "$2" 2>/dev/null); echo "${n:-0}"; }   # 单文件计数,缺文件记 0
-# 含模式的文件数——弱信号(只证成文与否,不证质量);排除 vendor、构建产物、测试夹具,
-# 以及 native-audit 自己的准则/剧本文件(否则准则文本会污染被扫仓的读数)。
-ex="--exclude-dir=node_modules --exclude-dir=target --exclude-dir=.git --exclude-dir=vendor --exclude-dir=snapshots --exclude-dir=fixtures --exclude-dir=native-audit"
-rgx() { grep -rliE $ex "$1" . 2>/dev/null | grep -vE 'native-audit|rubric\.md' | cnt; }
+# 入库文件清单,已剔除 vendored / 第三方 / 子模块 —— 别人的代码不反映本仓的实践水位。
+# (git ls-files 不吃 grep 的 --exclude-dir,所以在这里按路径模式剔。)
+files() { g ls-files | grep -vE "$P_VENDORED_PATH"; }
+files_all() { g ls-files; }
+cnt() { local n; n=$(grep -c . 2>/dev/null); echo "${n:-0}"; }
+# 按 ERE 数「含该模式的文件数」——弱信号:只证成文与否,不证做得好不好。
+rgx() { grep -rliE $EXCL "$1" . 2>/dev/null | grep -vFf "$SELF_EXCL" | cnt; }
+# 数一组候选路径里存在几个(空格分隔的 glob,不存在的不计)
+haveN() { local n=0 p; for p in $1; do for e in $p; do [ -e "$e" ] && n=$((n+1)); done; done; echo "$n"; }
+# 在一组文件里数含模式的文件数
+grepN() { local pat="$1" list="$2" n=0 f; for f in $list; do for e in $f; do [ -f "$e" ] && grep -qiE "$pat" "$e" 2>/dev/null && n=$((n+1)); done; done; echo "$n"; }
+# 手册文件清单(按通用模式找,不写死叫 AGENTS.md)
+HANDBOOKS="$(files | grep -iE "$P_HANDBOOK_FILE" | head -20)"
+ROOT_HANDBOOK="$(echo "$HANDBOOKS" | grep -vE '/' | head -1)"
+# 在「本仓的手册」里数模式(手册叫什么由模式表决定)
+hb() { [ -n "$ROOT_HANDBOOK" ] && { local n; n=$(grep -ciE "$1" "$ROOT_HANDBOOK" 2>/dev/null); echo "${n:-0}"; } || echo Unknown; }
+
+EXCL=""; for d in $P_EXCLUDE_DIR; do EXCL="$EXCL --exclude-dir=$d"; done
+# 排除扫描器自身:若 patterns/ 或本脚本恰好在被扫仓内(自扫场景),它们的模式文本
+# 会污染读数。按真实路径排除,不写死自己叫什么名字。
+SELF_EXCL="$(mktemp)"; trap 'rm -f "$SELF_EXCL"' EXIT
+case "$SELF_DIR" in "$REPO_ABS"/*) echo "${SELF_DIR#"$REPO_ABS"/}" >>"$SELF_EXCL" ;; esac
+# 扫描器不在被扫仓内时,写一个绝不会出现在路径里的哨兵 —— 空文件或空行会让
+# `grep -vFf` 把每一行都当命中排除掉(踩过:dsh 的 skill 与决策记录整个被清零)。
+[ -s "$SELF_EXCL" ] || echo '__native_audit_no_self_exclusion__' >"$SELF_EXCL"
+
+# 脚本目录(不假设一定叫 scripts/)
+SCRIPT_FILES=""
+for d in $P_SCRIPT_DIR; do [ -d "$d" ] && SCRIPT_FILES="$SCRIPT_FILES $(ls "$d" 2>/dev/null | sed "s|^|$d/|")"; done
+sN() { echo "$SCRIPT_FILES" | tr ' ' '\n' | grep -iE "$1" | cnt; }
+
+# CI 配置文件清单(跨平台)
+CI_FILES=""; for p in $CI_GLOB; do for e in $p; do [ -f "$e" ] && CI_FILES="$CI_FILES $e"; done; done
+CI_N=$(echo "$CI_FILES" | tr ' ' '\n' | grep -c . )
+
+# 生态探测:仓里有哪些标志文件就叠加哪些语言的模式
+ECOS=""; STRICT_PAT=""; LINT_FILES=""; TEST_CMD=""; TESTMARK=""; SRC_EXT=""
+for e in $ECO_ALL; do
+  mv="ECO_${e}_MARKER"; found=0
+  for m in ${!mv}; do for x in $m; do [ -e "$x" ] && found=1; done; done
+  [ "$found" -eq 1 ] || continue
+  ECOS="$ECOS $e"
+  sv="ECO_${e}_STRICT"; lv="ECO_${e}_LINT"; tv="ECO_${e}_TEST"; mkv="ECO_${e}_TESTMARK"; ev="ECO_${e}_SRC"
+  STRICT_PAT="${STRICT_PAT:+$STRICT_PAT|}${!sv}"; LINT_FILES="$LINT_FILES ${!lv}"
+  TEST_CMD="${TEST_CMD:+$TEST_CMD|}${!tv}"; TESTMARK="${TESTMARK:+$TESTMARK|}${!mkv}"
+  SRC_EXT="${SRC_EXT:+$SRC_EXT|}${!ev}"
+done
+ECOS="${ECOS# }"; [ -n "$ECOS" ] || ECOS="unknown"
+
+echo "## META"
+echo "M00 scanner=native-audit/battery.sh patterns=$(basename "$PATTERNS_DIR") dialect=${DIALECT_NAME}"
+echo "M01 ecosystems=${ECOS}"
+echo "M02 ci_platform_files=${CI_N}"
+echo "M03 handbook_detected=${ROOT_HANDBOOK:-none}"
 
 echo "## S0 规矩正本"
-echo "C01 entry_files=$(files | grep -iE '(^|/)(AGENTS|CLAUDE)\.md$|\.cursorrules|copilot-instructions' | cnt)"
-echo "C01 subtree_agents_md=$(files | grep -E '/AGENTS\.md$' | cnt)"
-W_ALL=$(g log --format=%ad --date=format:%G-W%V | sort -u | cnt); W_HB=$(g log --format=%ad --date=format:%G-W%V -- AGENTS.md CLAUDE.md | sort -u | cnt)
-echo "C01 handbook_weeks_changed=${W_HB}/${W_ALL}"
-echo "C02 handbook_chars=$( [ -f AGENTS.md ] && wc -c < AGENTS.md | tr -d ' ' || echo Unknown)"
-echo "C02 budget_gate_scripts=$(ls scripts 2>/dev/null | grep -ciE 'budget')"
-echo "C02 self_edit_section=$(gc '^## (editing these|怎么改|修订)' AGENTS.md)"
-echo "C03 map_glossary_files=$(ls docs/architecture.md docs/glossary.md CONTEXT.md DESIGN.md 2>/dev/null | cnt)"
-echo "C03 read_before_change_rule=$(gc 'read .* before (changing|editing)|先读|改.*前.*先' AGENTS.md)"
-echo "C04 skills=$(files | grep -E '(^|/)SKILL\.md$' | grep -vE 'vendor/|native-audit' | cnt)"
-echo "C04 skills_ref_in_handbook=$(gc 'skills?/' AGENTS.md)"
+echo "C01 handbook_entry_files=$(echo "$HANDBOOKS" | cnt)"
+echo "C01 handbook_subtree=$(files | grep -iE "$P_HANDBOOK_SUBTREE" | cnt)"
+if [ -n "$ROOT_HANDBOOK" ]; then
+  W_ALL=$(g log --format=%ad --date=format:%G-W%V | sort -u | cnt)
+  W_HB=$(g log --format=%ad --date=format:%G-W%V -- $HANDBOOKS | sort -u | cnt)
+  echo "C01 handbook_weeks_changed=${W_HB}/${W_ALL}"
+  echo "C02 handbook_bytes=$(wc -c < "$ROOT_HANDBOOK" | tr -d ' ')"
+else
+  echo "C01 handbook_weeks_changed=Unknown reason=no-handbook-file"
+  echo "C02 handbook_bytes=Unknown reason=no-handbook-file"
+fi
+echo "C02 budget_gate_scripts=$(sN 'budget|wordcount|length')"
+echo "C02 self_edit_section=$(hb "$P_SELF_EDIT")"
+echo "C03 map_glossary_files=$(files | grep -iE "$P_MAP_FILE" | cnt)"
+echo "C03 read_before_change_rule=$(hb "$P_READ_BEFORE")"
+echo "C04 skill_files=$(files | grep -iE "$P_SKILL_FILE" | grep -vFf "$SELF_EXCL" | cnt)"
+echo "C04 skills_ref_in_handbook=$(hb 'skill|playbook|prompt')"
 
 echo "## S1 计划·意图"
-echo "C11 issue_templates=$(ls .github/ISSUE_TEMPLATE 2>/dev/null | grep -vi config | cnt)"
-echo "C11 pr_template=$(ls .github/pull_request_template.md .github/PULL_REQUEST_TEMPLATE.md .github/PULL_REQUEST_TEMPLATE 2>/dev/null | cnt)"
-echo "C11 intent_files=$(files | grep -ciE 'proposed/.*\.md$|/intent\.md$')"
-echo "C11 issue_automation_workflows=$(grep -lE '^\s*issues:' .github/workflows/*.yml 2>/dev/null | cnt)"
+echo "C11 issue_templates=$(haveN "$P_ISSUE_TEMPLATE_DIR")"
+echo "C11 pr_template=$(haveN "$P_PR_TEMPLATE")"
+echo "C11 intent_files=$(files | grep -iE "$P_INTENT_FILE" | cnt)"
+echo "C11 issue_automation_ci=$(grepN 'issues:|issue_comment|issue事件' "$CI_FILES")"
 echo "C12 md_files=$(files | grep -c '\.md$')"
-# 死链探针:只查相对 .md 链接;排除 vendor、冻结归档(archived/)、含省略号的举例路径;命中仍须人工复核。
-DEAD=$(files | grep '\.md$' | grep -vE '^(standard/)?vendor/|/archived/|native-audit' | while IFS= read -r f; do d=$(dirname "$f"); grep -oE '\]\(([^)#: `…]+\.md)' "$f" 2>/dev/null | sed -E 's/\]\(//' | while IFS= read -r l; do [ -e "$d/$l" ] || echo "$f -> $l"; done; done | cnt)
-echo "C12 dead_relative_md_links_nonvendor=${DEAD}"
+DEAD=$(files | grep '\.md$' | grep -vE '/(archived|vendor|third_party)/' | grep -vFf "$SELF_EXCL" | while IFS= read -r f; do d=$(dirname "$f"); grep -oE '\]\(([^)#: `…]+\.md)' "$f" 2>/dev/null | sed -E 's/\]\(//' | while IFS= read -r l; do [ -e "$d/$l" ] || echo "$f -> $l"; done; done | cnt)
+echo "C12 dead_relative_md_links=${DEAD}"
 
 echo "## S2 设计·决策"
-# 决策记录:adr / Agent Notes / 产物链的 intent|spec(仓根 changes/ 与 docs/NN-features/ 两种布局都认)
-DEC=$(files | grep -E 'adr/|/notes/(implemented|proposed|rejected|archived)/|(^|/)(changes|[0-9]*-?features)/.*/(intent|spec)\.md$' | grep -vE '\.zh\.md$|\.i18n\.yaml$|/AGENTS\.md$|README' )
+DEC=$(files | grep -iE "$P_DECISION_PATH" | grep -vE '\.zh\.md$|\.i18n\.ya?ml$|/(AGENTS|README)\.md$' | grep -vFf "$SELF_EXCL")
 DEC_N=$(echo "$DEC" | cnt)
-ALT_N=$(echo "$DEC" | while IFS= read -r f; do [ -n "$f" ] && grep -qiE '^## (alternatives|替代方案|放弃方案|考虑过)' "$f" && echo x; done | cnt)
+ALT_N=$(echo "$DEC" | while IFS= read -r f; do [ -n "$f" ] && [ -f "$f" ] && grep -qiE "$P_ALTERNATIVES_SECTION" "$f" && echo x; done | cnt)
+CON_N=$(echo "$DEC" | while IFS= read -r f; do [ -n "$f" ] && [ -f "$f" ] && grep -qiE "$P_CONSEQUENCE_SECTION" "$f" && echo x; done | cnt)
 echo "C21 decision_records=${DEC_N}"
-echo "C21 decision_format_gates=$(ls scripts 2>/dev/null | grep -ciE 'agent-note|adr|decision')"
-echo "C21 mandate_written=$(gc 'must include an agent note|决策记录|changes/<id>|features/<id>' AGENTS.md)"
+echo "C21 decision_format_gates=$(sN 'adr|decision|agent-note|rfc')"
+echo "C21 mandate_written=$(hb "$P_DECISION_MANDATE")"
 echo "C22 records_with_alternatives=${ALT_N}/${DEC_N}"
-echo "C23 lifecycle_dirs=$(ls -d .agents/notes/*/ 2>/dev/null | cnt)"
-echo "C23 status_files=$(files | grep -c 'STATUS\.md$')"
-echo "C23 frozen_manifest=$(ls .agents/notes/archived/manifest.json 2>/dev/null | cnt)"
+echo "C22 records_with_consequences=${CON_N}/${DEC_N}"
+LC_N=$(echo "$DEC" | sed -E 's|/[^/]*$||' | sort -u | grep -icE "/$P_LIFECYCLE_DIR(/|$)")
+echo "C23 lifecycle_dirs=${LC_N}"
+echo "C23 status_files=$(files | grep -iE "$P_STATUS_FILE" | cnt)"
+echo "C23 frozen_manifest=$(files | grep -iE "$P_FROZEN_MANIFEST" | cnt)"
 
 echo "## S3 构建"
-echo "C31 plan_files=$(files | grep -ciE '/plan\.md$|acceptance')"
-echo "C31 plan_first_rule=$(rgx 'plan(ning)? before|先计划后动手|acceptance criteria')"
-echo "C32 hook_config=$(ls lefthook.yml .husky .pre-commit-config.yaml .githooks 2>/dev/null | cnt)"
-# 门禁脚本数不含自测文件;自测文件数单列(门禁自测 = 用已知坏例证明门禁真会拦)。
-echo "C32 gate_scripts=$(ls scripts 2>/dev/null | grep -iE '^(verify|guard|check)-' | grep -vE '\.(spec|test)\.' | cnt)"
-echo "C32 gate_selftests=$(ls scripts 2>/dev/null | grep -ciE '^(verify|guard|check)-.*\.(spec|test)\.')"
-echo "C32 ci_workflows=$(ls .github/workflows 2>/dev/null | cnt)"
-MERGES=$(g rev-list --count --merges HEAD); AI_MERGES=$(g log --merges --format=%s HEAD | grep -ciE 'codex/|claude|copilot|worktree|cursor/')
+echo "C31 plan_files=$(files | grep -iE "$P_PLAN_FILE" | cnt)"
+echo "C31 plan_first_rule=$(rgx "$P_PLAN_FIRST")"
+echo "C32 hook_config=$(haveN "$P_HOOK_CONFIG")"
+echo "C32 gate_scripts=$(echo "$SCRIPT_FILES" | tr ' ' '\n' | sed 's|.*/||' | grep -iE "$P_GATE_SCRIPT" | grep -vE '\.(spec|test)\.' | cnt)"
+echo "C32 gate_selftests=$(echo "$SCRIPT_FILES" | tr ' ' '\n' | sed 's|.*/||' | grep -icE "$P_GATE_SELFTEST")"
+echo "C32 ci_configs=${CI_N}"
+MERGES=$(g rev-list --count --merges HEAD); AI_MERGES=$(g log --merges --format=%s HEAD | grep -ciE "$P_AI_BRANCH")
 echo "C33 ai_or_worktree_merges=${AI_MERGES}/${MERGES}"
-echo "C33 worktree_rule=$(gc 'worktree' AGENTS.md)"
-echo "C34 gen_scripts=$(ls scripts 2>/dev/null | grep -ciE '^gen-')"
-echo "C34 vendor_manifest=$(ls vendor/README.md standard/vendor/*/MANIFEST* standard/vendor/README.md 2>/dev/null | cnt)"
-echo "C35 strict_type_config=$(grep -lsE '"strict": *true|forbid\(unsafe_code\)|-D warnings' tsconfig*.json .github/workflows/*.yml crates/*/src/lib.rs crates/*/src/main.rs 2>/dev/null | cnt)"
-echo "C35 lint_dup_config=$(ls .oxlintrc* .eslintrc* eslint.config.* .jscpd.json clippy.toml rustfmt.toml 2>/dev/null | cnt)"
-echo "C35 dependabot=$(ls .github/dependabot.yml 2>/dev/null | cnt)"
-echo "C35 dependency_policy_written=$(rgx 'hand-roll|dependenc(y|ies) (policy|over)|成熟 CLI|自建须举证|不为.*兼容')"
-echo "C36 conventional_prefix_rate=$(g log --no-merges --format=%s -500 HEAD | grep -cE '^[a-z]+(\(|:)')/$(g log --no-merges --format=%s -500 HEAD | cnt)"
+echo "C33 parallel_unit_rule=$(hb 'worktree|parallel session|并行')"
+echo "C34 gen_scripts=$(echo "$SCRIPT_FILES" | tr ' ' '\n' | sed 's|.*/||' | grep -icE "$P_GEN_SCRIPT")"
+echo "C34 vendor_manifest=$(files | grep -iE "$P_VENDOR_MANIFEST" | cnt)"
+if [ "$ECOS" = "unknown" ]; then
+  echo "C35 strict_config=Unknown reason=no-known-ecosystem-marker"
+  echo "C35 lint_config=Unknown reason=no-known-ecosystem-marker"
+else
+  echo "C35 strict_config=$(grepN "$STRICT_PAT" "$CI_FILES $(files | grep -E '\.(toml|json|props)$' | head -40 | tr '\n' ' ')")"
+  echo "C35 lint_config=$(haveN "$LINT_FILES")"
+fi
+echo "C35 dep_bot=$(haveN "$BOT_CONFIG")"
+echo "C35 dependency_policy=$(rgx "$P_DEPENDENCY_POLICY")"
+SAMPLE=$(g log --no-merges --format=%s -500 HEAD | cnt)
+echo "C36 conventional_prefix_rate=$(g log --no-merges --format=%s -500 HEAD | grep -cE '^[a-z]+(\(|!|:)')/${SAMPLE}"
 echo "C36 commits_total=$(g rev-list --count HEAD) nonmerge=$(g rev-list --count --no-merges HEAD)"
 echo "C36 span=$(g log --reverse --format=%ad --date=short HEAD | head -1)..$(g log -1 --format=%ad --date=short HEAD)"
-echo "C36 authors=$(g shortlog -sn --no-merges HEAD | cnt) top1=$(g shortlog -sn --no-merges HEAD | head -1 | awk '{print $1}')"
+echo "C36 authors=$(g shortlog -sn --no-merges HEAD | cnt) top1_commits=$(g shortlog -sn --no-merges HEAD | head -1 | awk '{print $1}')"
 
 echo "## S4 测试·验证"
-echo "C41 testing_doc=$(ls docs/testing.md docs/TESTING.md 2>/dev/null | cnt)"
-echo "C41 test_commands_in_handbook=$(gc 'test|测' AGENTS.md)"
-echo "C42 ci_mentions_test=$(grep -lsiE 'cargo test|pnpm (run )?test|npm test|pytest|vitest' .github/workflows/*.yml 2>/dev/null | cnt)"
-echo "C42 ci_coverage_or_snapshot_gate=$(grep -lsiE 'coverage|snapshot' .github/workflows/*.yml 2>/dev/null | cnt)"
-echo "C43 evidence_rule=$(rgx 'report only commands run|证据.*(进|入) ?(PR|MR)|only .*commands.* run|读回')"
-echo "C43 change_scope_tool=$(ls scripts 2>/dev/null | grep -ciE 'change-scope|changed-files')"
-echo "C44 regression_first_rule=$(rgx 'watch red|introduce the regression|先写.*失败测试|坏例')"
-echo "C44 test_file_protection=$(rgx 'never (modify|edit) tests|do not (modify|edit) (the )?tests|禁止.*改.*测试')"
-echo "C45 real_entry_rule=$(rgx 'built-bin|verify the world|self-report|真实入口|读回')"
-echo "C46 flake_policy=$(rgx 'flak(e|y)|nondeterministic|抖动')"
+echo "C41 testing_doc=$(files | grep -iE "$P_TESTING_DOC" | cnt)"
+echo "C41 test_cmds_in_handbook=$(hb 'test|测试')"
+if [ "$ECOS" = "unknown" ]; then
+  echo "C42 ci_runs_tests=Unknown reason=no-known-ecosystem-marker"
+  echo "C42 test_marks=Unknown reason=no-known-ecosystem-marker"
+else
+  echo "C42 ci_runs_tests=$(grepN "$TEST_CMD" "$CI_FILES")"
+  echo "C42 test_marks=$(grep -rcE "$TESTMARK" $EXCL --include='*' . 2>/dev/null | awk -F: '{s+=$NF} END {print s+0}')"
+fi
+echo "C42 ci_coverage_or_snapshot=$(grepN "$CI_COVERAGE_SIGNAL" "$CI_FILES")"
+echo "C43 evidence_rule=$(rgx "$P_EVIDENCE_RULE")"
+echo "C43 change_scope_tool=$(sN "$P_CHANGE_SCOPE_TOOL")"
+echo "C44 regression_first_rule=$(rgx "$P_REGRESSION_FIRST")"
+echo "C44 test_file_protection=$(rgx "$P_TEST_PROTECTION")"
+echo "C45 real_entry_rule=$(rgx "$P_REAL_ENTRY")"
+echo "C46 flake_policy=$(rgx "$P_FLAKE_POLICY")"
 
 echo "## S5 评审·合入·发布"
-echo "C51 review_skill=$(files | grep -ciE 'skills/[^/]*review[^/]*/SKILL\.md$')"
-echo "C51 review_workflow=$(grep -lsiE 'review' .github/workflows/*.yml 2>/dev/null | cnt)"
-echo "C52 merge_committers=$(g log --merges --format=%cn HEAD | sort | uniq -c | sort -rn | head -3 | awk '{printf "%s:%s ", $2, $1}')"
-echo "C52 agent_merge_ban=$(rgx 'gh pr merge|不.*merge|no.*merge.*own|cannot approve')"
-echo "C53 label_taxonomy_written=$(rgx 'kind/|area/|bw:status:')"
-echo "C53 force_policy=$(rgx 'force-with-lease|不.*force|never raw')"
-echo "C54 tags=$(g tag | cnt) release_workflows=$(ls .github/workflows 2>/dev/null | grep -ci release) release_merges=$(g log --merges --format=%s HEAD | grep -ci 'release/')"
-echo "C54 changelog_safety_notices=$(ls CHANGELOG.md SAFETY.md THIRD_PARTY_NOTICES.md LICENSE 2>/dev/null | cnt)"
-# 「rollback」在 agent 产品里常是运行时概念(效果撤销/会话回滚),只认发布/运维语境的窄模式。
-echo "C55 rollback_written=$(rgx 'rollback (plan|procedure|drill|runbook|path)|(release|deploy|发版|部署).{0,20}(rollback|回滚)|回滚(演练|剧本|步骤|路径)')"
+echo "C51 review_skill=$(files | grep -iE "$P_REVIEW_SKILL" | grep -vFf "$SELF_EXCL" | cnt)"
+echo "C51 review_ci=$(grepN "$P_REVIEW_CI" "$CI_FILES")"
+echo "C52 merge_committers=$(g log --merges --format=%cn HEAD | sort | uniq -c | sort -rn | head -3 | awk '{c=$1; $1=""; printf "%s:%s ", substr($0,2), c}')"
+echo "C52 self_merge_ban=$(rgx "$P_SELF_MERGE_BAN")"
+echo "C53 label_taxonomy=$(rgx "$P_LABEL_TAXONOMY")"
+echo "C53 force_policy=$(rgx "$P_FORCE_POLICY")"
+echo "C54 tags=$(g tag | cnt) release_ci=$(grepN "$P_RELEASE_CI" "$CI_FILES") release_merges=$(g log --merges --format=%s HEAD | grep -ciE 'release|version bump')"
+echo "C54 release_files=$(haveN "$P_RELEASE_FILE")"
+echo "C55 rollback_written=$(rgx "$P_ROLLBACK")"
 
-echo "## S6 运维·事故"
-echo "C61 postmortems=$(files | grep -iE 'postmortem|post-mortem|incident|复盘|事故' | grep -vE '\.zh\.md$|\.i18n\.yaml$|README|native-audit' | cnt)"
-echo "C61 postmortem_criteria_written=$(rgx 'post-?mortem|复盘|事故记录')"
-echo "C62 handbook_cites_postmortem=$(grep -ciE 'postmortem|复盘|事故' AGENTS.md docs/testing.md 2>/dev/null | awk -F: '{s+=$NF} END {print s+0}')"
-echo "C63 issue_automation_scripts=$(ls .github/issue-management 2>/dev/null | cnt) metric_scripts=$(ls .bw/scripts 2>/dev/null | cnt)"
+echo "## S6 运维·复盘"
+echo "C61 postmortem_files=$(files | grep -iE "$P_DOC_EXT" | grep -iE "$P_POSTMORTEM_PATH" | grep -vE '\.zh\.md$|\.i18n\.ya?ml$|README' | grep -vFf "$SELF_EXCL" | cnt)"
+echo "C61 postmortem_rule=$(rgx "$P_POSTMORTEM_RULE")"
+echo "C62 handbook_cites_postmortem=$(hb "$P_POSTMORTEM_RULE")"
+echo "C63 automation_scripts=$(sN "$P_AUTOMATION_SCRIPT")$( files | grep -icE "$P_AUTOMATION_SCRIPT" | sed 's/^/+/')"
 
 echo "## S7 知识维护·反 slop"
-echo "C71 doc_structure_rule=$(rgx 'one home per fact|一事一家|current state, not|写现状|历史横幅|30 秒导读')"
-echo "C72 slop_checklist=$(rgx 'slop|黑话|写作纪律|reasoning transcript')"
-echo "C73 doc_gate_scripts=$(ls scripts 2>/dev/null | grep -ciE 'md-|doc|link|budget|mermaid|translation')"
-echo "C74 simplify_archive_skill=$(files | grep -ciE 'skills/[^/]*(simplif|archive|减法)[^/]*/SKILL\.md$')"
-echo "C74 frozen_or_banner_rule=$(rgx 'frozen|冻结|历史横幅|过时不删')"
+echo "C71 doc_structure_rule=$(rgx "$P_DOC_STRUCTURE")"
+echo "C72 slop_checklist=$(rgx "$P_SLOP_CHECKLIST")"
+echo "C73 doc_gate_scripts=$(sN "$P_DOC_GATE_SCRIPT")"
+echo "C74 simplify_archive_skill=$(files | grep -iE "$P_SKILL_FILE" | grep -iE "$P_SIMPLIFY_SKILL" | grep -vFf "$SELF_EXCL" | cnt)"
+echo "C74 frozen_rule=$(rgx "$P_FROZEN_RULE")"
 
 echo "## S8 AI 协作"
-TOTAL=$(g rev-list --count HEAD); AI_TR=$(g log --format='%(trailers:key=Co-Authored-By,valueonly)' HEAD | grep -ciE 'claude|codex|cursor|copilot|gpt|gemini|deepseek|bot')
+TOTAL=$(g rev-list --count HEAD)
+AI_TR=$(g log --format='%(trailers:key=Co-Authored-By,valueonly)' HEAD | grep -ciE "$P_AI_TRAILER")
 echo "C81 ai_coauthor_trailers=${AI_TR}/${TOTAL}"
-echo "C81 ai_trailer_by_name=$(g log --format='%(trailers:key=Co-Authored-By,valueonly)' HEAD | grep . | sed -E 's/ *<.*//' | sort | uniq -c | sort -rn | head -4 | awk '{c=$1; $1=""; printf "%s:%s ", substr($0,2), c}')"
+echo "C81 ai_trailer_by_name=$(g log --format='%(trailers:key=Co-Authored-By,valueonly)' HEAD | grep -iE "$P_AI_TRAILER" | sed -E 's/ *<.*//' | sort | uniq -c | sort -rn | head -4 | awk '{c=$1; $1=""; printf "%s:%s ", substr($0,2), c}')"
 echo "C81 ai_merges=${AI_MERGES}/${MERGES}"
-echo "C82 claude_md_is_link_or_import=$( [ -L CLAUDE.md ] && echo symlink || (grep -qE '^@AGENTS\.md' CLAUDE.md 2>/dev/null && echo import || echo none) )"
-echo "C82 multiharness_metadata_gate=$(ls scripts 2>/dev/null | grep -ciE 'skill|harness')"
-echo "C83 secret_policy_written=$(rgx 'never commit credential|不.*提交.*(密钥|凭据)|secrets? (policy|never)|不入仓')"
-echo "C83 env_gitignored=$(gc '^\.env|\*\.env|secrets?' .gitignore)"
-echo "C84 snapshot_or_eval_regression=$(rgx 'snapshot|回放|评测集|eval suite')"
+# 多 harness 共用一份正本:软链 / 导入 / 内容相同,三种做法都算
+MH="none"
+if [ -n "$ROOT_HANDBOOK" ]; then
+  for h in $(echo "$HANDBOOKS" | grep -vE '/'); do
+    [ "$h" = "$ROOT_HANDBOOK" ] && continue
+    if [ -L "$h" ]; then MH="symlink"; break
+    elif grep -qE "^@?$ROOT_HANDBOOK|^@" "$h" 2>/dev/null; then MH="import"; break
+    elif [ -f "$h" ] && cmp -s "$h" "$ROOT_HANDBOOK"; then MH="copy"; break; fi
+  done
+fi
+echo "C82 handbook_shared_across_harness=${MH}"
+echo "C82 multiharness_gate=$(sN "$P_MULTIHARNESS_GATE")"
+echo "C83 secret_policy=$(rgx "$P_SECRET_POLICY")"
+echo "C83 secret_ignored=$( [ -f .gitignore ] && { n=$(grep -ciE "$P_SECRET_IGNORE" .gitignore); echo "${n:-0}"; } || echo Unknown )"
+echo "C84 agent_regression=$(rgx "$P_AGENT_REGRESSION")"

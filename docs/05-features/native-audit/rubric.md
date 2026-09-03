@@ -2,6 +2,12 @@
 
 > **30 秒导读**：这是什么——native-audit 的**判读准则唯一正本**（spec 与 SKILL.md 只引用不复述）。v2 把 v1 的七维重组为 **9 段 37 条**，段落按 [AI-Native SDLC playbook 提炼版](../../10-reference/ai-native-sdlc-playbook.md) 的六阶段 + 贯穿机制 + 治理四条排列（playbook = Anthropic 的 AI 原生研发流程手册；dsh = DeepSeek Harness，一个 agent 运行时），每条准则给出机械探针、3 分的样子、dsh 一手实证与 playbook 对应。末尾两张矩阵是映射证明：M1 dsh 做法 → 准则（每条 dsh 做法至少落一条），M2 playbook 主张 → 准则（每个阶段 / 贯穿机制 / 治理条至少落一条）。**dsh 无实证的准则如实标注**，不编证据。
 
+## 探针与准则的关系（读这张表之前先看这段）
+
+「机械探针」列写的是**要量什么**，不是**去哪个文件量**。具体认哪些文件名、哪些目录、哪些词，由技能携带的模式表决定（`patterns/core.conf` 通用惯例、`patterns/ecosystem.conf` 语言与 CI 平台、`patterns/dialect.*.conf` 组织私有词汇，默认不加载）——换一个组织、换一门语言、换一个 CI 平台，改模式表即可，准则和引擎都不动。
+
+因此本表里出现的 `AGENTS.md`、`docs/postmortem/`、`verify-*` 这类名字，一律是**举例**（多半来自 dsh 实证列），不是判定条件。判定条件是「有没有这一类东西」。dsh 实证列里的路径是那个仓的真实证据，照抄它当判据会把别的仓判错。
+
 ## 阶梯（所有准则共用）
 
 | 级 | 含义 | 判据 |
