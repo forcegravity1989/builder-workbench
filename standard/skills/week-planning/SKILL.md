@@ -20,7 +20,7 @@ description: Use when 运作活①开工(标题以「更新指标 + 制定版本
 
 - 仓根 `AGENTS.md`:没有就说没有,不编。
 - 名片 `.bw/project.toml`(`brief` / `benchmark` / `opportunity`):空着就问人,不当指标正本。
-- 文末版本块:没有就只问人要哪个版本名,不猜。推荐 `vX.X`,人要用别的也行。
+- 文末版本块:没有就只问人要哪个版本名,不猜。名字怎么写听 `week-plan-comment.md`。
 - 子技能:刚读的本 `SKILL.md` 所在目录的同级 `../metrics-refresh/SKILL.md`(Workbench 资产目录,不是这张活的工作区)
 - 挂评脚本:本文件所在目录的 `check-week-comment.py`(不是工作区根,也不是 reference 目录)
 
