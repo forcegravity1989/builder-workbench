@@ -111,7 +111,7 @@ _Avoid_: 再写 `bw:week:*`;一张活挂两个 `bw:plan:`;把在研写进 `.bw/p
 _Avoid_: 周目标 / 本周目标(指计划时)。`docs/01-principles/03` 里的「周目标」本次不改。
 
 **Issue 状态流转**:
-Backlog → Todo → InProgress → InReview → Done 的单向明路;另有 Blocked(阻塞,必填原因)、Cancelled。**Done 的唯一入边是 InReview**。状态以 `bw:status:*` 标签为正本,由 `can_transition_to` 守卫锁死;Backlog 在 codehub 映射里没有对应标签,如实弹回不编。Cancelled 打 `bw:status:cancelled` 再关远端 issue,读回先认取消标签,不当完成。
+Backlog → Todo → InProgress → InReview → Done 的单向明路;另有 Blocked(阻塞,必填原因)、Cancelled。**完成永远由人点**:未排期 / 待办 / 进行中 / 待评审 / 阻塞都可以进 Done(有开着的 MR 就合入,没有则只关 issue);自动化、agent、定时不得推到 Done。状态以 `bw:status:*` 标签为正本,由 `can_transition_to` 守卫锁死;Backlog 在 codehub 映射里没有对应标签,如实弹回不编。Cancelled 打 `bw:status:cancelled` 再关远端 issue,读回先认取消标签,不当完成。拒绝不是完成。
 _Avoid_: 自造中间态;把 InReview 当终态。详见 [command-event-与状态机 模块](docs/architecture.md)。
 
 **PR / Pull Request**:
@@ -119,11 +119,11 @@ _Avoid_: 自造中间态;把 InReview 当终态。详见 [command-event-与状�
 _Avoid_: 把"提 PR"当成活已经完成;跳过 PR 直接推主干。
 
 **评审中 / InReview**:
-agent 把活干完后能到达的最远状态。到此为止,人还没确认。挂了仓的活,这个状态由"存在一个开放 PR"派生;落 Done 时 issue 关闭是它的后果。
+agent 把活干完后能到达的最远状态。到此为止,人还没确认。正本是 `bw:status:inreview` 标签,由 agent 提完 MR 后改、或人在计划屏拖进待评审;有没有 MR 不自动改标签。落 Done 时 issue 关闭是它的后果。
 _Avoid_: 完成、待办结。
 
 **完成 / Done**:
-活的终态,**永远由人显式点**——任何自动化都不许把活推到 Done。人点的这一下:合入那个 MR(merge 后 issue 关闭是它的后果,不是要再点一次的第二步)。落 Done 的同一刻,产物登记、阶段吞吐同时入账,且**同一件活绝不记两次**(代码里叫 settle-once,已 Done 直接短路);`settled_at` 现读远端 issue 的 `closed_at`,不自己写。
+活的终态,**永远由人显式点**——任何自动化都不许把活推到 Done。人可以在计划屏从待办 / 进行中 / 待评审 / 阻塞 / 未排期拖到完成(或详情 Complete):有开着的 MR 就先合再关,没有则确认后只关 issue。落 Done 的同一刻,产物登记、阶段吞吐同时入账,且**同一件活绝不记两次**(代码里叫 settle-once,已 Done 直接短路);`settled_at` 现读远端 issue 的 `closed_at`,不自己写。
 _Avoid_: 自动完成、agent 自判完成、执行器自己 merge;agent 提了 PR 就当 Done。
 
 **阻塞 / Blocked**:

@@ -16,7 +16,7 @@ use bw::{
 };
 use dioxus::prelude::*;
 
-use super::kanban::{PendingMove, PendingSchedule};
+use super::kanban::{plan_status_label, PendingMove, PendingReject, PendingSchedule};
 
 /// 当前打开哪个弹窗。`None` = 没有。
 #[derive(Clone, PartialEq)]
@@ -417,11 +417,8 @@ pub fn ConfirmMoveDialog(
     let pm2 = pm.clone();
     let mut reason = use_signal(String::new);
     let need_reason = matches!(pm.to, IssueStatus::Cancelled | IssueStatus::Blocked);
-    let to_label = match pm.to {
-        IssueStatus::Cancelled => "拒绝",
-        IssueStatus::Blocked => "阻塞",
-        other => other.label(),
-    };
+    let to_label = plan_status_label(pm.to);
+    let from_label = plan_status_label(pm.from);
     let reason_label = if pm.to == IssueStatus::Blocked {
         "阻塞原因"
     } else {
@@ -437,11 +434,21 @@ pub fn ConfirmMoveDialog(
             div { class: "modal", onclick: move |e| e.stop_propagation(),
                 h3 { "确认一下" }
                 div { style: "font-size:13px;line-height:1.85;color:var(--ink-2);margin-bottom:8px;",
-                    "把「{pm.title}」从「{pm.from.label()}」移到「{to_label}」。"
+                    "把「{pm.title}」从「{from_label}」移到「{to_label}」。"
+                }
+                if pm.to == IssueStatus::Done && pm.has_open_mr {
+                    div { style: "font-size:13px;line-height:1.85;color:var(--ink-2);margin-bottom:8px;",
+                        "有开着的 MR。确认后会合入再完成。"
+                    }
                 }
                 if pm.to == IssueStatus::Done && !pm.has_open_mr {
                     div { style: "font-size:13px;line-height:1.85;color:var(--ink-2);margin-bottom:8px;",
                         "没有开着的 MR。可能已经在网页合过了。确认后只关这张 issue,不会再去合。"
+                    }
+                }
+                if pm.to == IssueStatus::InReview && pm.pr_number == 0 {
+                    div { style: "font-size:13px;line-height:1.85;color:var(--ink-2);margin-bottom:8px;",
+                        "这张活没有绑定的 MR。确认后仍移到待评审,合入时只会关 issue。"
                     }
                 }
                 if need_reason {
@@ -487,6 +494,29 @@ pub fn ConfirmMoveDialog(
                         },
                         "确认"
                     }
+                }
+            }
+        }
+    }
+}
+
+/// 非法拖的说明。只有「知道了」。
+#[component]
+pub fn RejectMoveDialog(pr: PendingReject, mut reject: Signal<Option<PendingReject>>) -> Element {
+    let from = plan_status_label(pr.from);
+    let to = plan_status_label(pr.to);
+    rsx! {
+        div { class: "modal-backdrop", onclick: move |_| reject.set(None),
+            div { class: "modal", onclick: move |e| e.stop_propagation(),
+                h3 { "不能这样拖" }
+                div { style: "font-size:13px;line-height:1.85;color:var(--ink-2);margin-bottom:8px;",
+                    "不能从「{from}」拖到「{to}」。"
+                }
+                div { style: "font-size:13px;line-height:1.85;color:var(--ink-2);margin-bottom:8px;",
+                    "{pr.reason}"
+                }
+                div { class: "modal-actions",
+                    button { class: "btn btn-primary", onclick: move |_| reject.set(None), "知道了" }
                 }
             }
         }
