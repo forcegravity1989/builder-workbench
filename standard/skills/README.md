@@ -9,7 +9,7 @@ Workbench 自带技能。一个目录一份 `SKILL.md`,全部平级。开工摊�
 | `更新指标与版本计划` | `week-planning/` | 人点「开始本版本」 | 定口径、写三个标题的评论 |
 | `资产盘点` | `asset-audit/` | 定时(产品默认周五 09:00) | 两步:盘 `.bw` + 盘项目本周改动 |
 | — | `metrics-refresh/` | `week-planning` 指名 | 采 / 荐入脚本 |
-| — | `project-handbook/` | 不派发 | 写仓根 `AGENTS.md`;本轮不接盘点 |
+| — | `project-handbook/` | 不派发 | 写仓根 `AGENTS.md` |
 
 项目约定没有剧本:不起 agent,只写 `.bw/project.toml` 到 `bw/project`。
 

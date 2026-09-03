@@ -98,7 +98,7 @@ scripts/   门禁脚本(guard-*)+ codegraph 联调
 | 产品主张 / 飞轮 | [`docs/01-principles/03`](docs/01-principles/03-press-release-faq-flywheel.md) | 目标体验与选型约束；特性 intent 必须对齐 |
 | 开发规矩 + 词表 | 本文件 + [`CONTEXT.md`](CONTEXT.md) | 怎么建/跑/测、用哪个词 |
 
-自己作为被管项目跟被管仓同一套落点:`.bw/` 走项目约定(名片)与指标(ops① / `bw/ledger`);`AGENTS.md` 是项目自己的(project-handbook 本轮不接盘点);`CONTEXT` / adr / spec 走 `mattpocock-skills`;旅程 / 高保真 / 架构是产品自己的可见物,业界 workflow 不会代写。资产盘点只盘 Workbench 给项目的 `.bw/` 是否跟上现行契约,再审查本周项目改动;它本身不产规范。方案正本在 [`docs/architecture.md`](docs/architecture.md) §3 模块 3 / 14。
+自己作为被管项目跟被管仓同一套落点:`.bw/` 走项目约定(名片)与指标(ops① / `bw/ledger`);`AGENTS.md` 是项目自己的,盘点不代写;`CONTEXT` / adr / spec 走 `mattpocock-skills`;旅程 / 高保真 / 架构是产品自己的可见物,业界 workflow 不会代写。资产盘点只盘 Workbench 给项目的 `.bw/` 是否跟上现行契约,再审查本周项目改动;它本身不产规范。方案正本在 [`docs/architecture.md`](docs/architecture.md) §3 模块 3 / 14。
 
 ### 四铁律(产品行为不可违反约束)
 

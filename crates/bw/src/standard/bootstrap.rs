@@ -9,13 +9,9 @@ pub struct BootstrapProbe {
     /// 仓是 Workbench 自己建的(根提交作者是 Workbench)—— 直推,不走 MR。
     pub owned: bool,
     /// 仓根已经有 README / CLAUDE.md / AGENTS.md —— 这个仓自己已经有一套约定了。
-    ///
-    /// **这条不触发铺底的任何一步。** 铺底只铺 `.bw/`(Workbench 自己的资产),
-    /// 仓根一个字不写。要不要写开发手册是项目自己的事,本轮资产盘点不代写。
-    /// 这条只写进项目约定正文当证据。
+    /// 不触发铺底。铺底只写 `.bw/`。这条只写进项目约定正文当证据。
     pub has_own_conventions: bool,
-    /// 有历史(提交数 > 1、有标签、有 CHANGELOG)。只写进项目约定正文当证据;
-    /// 不再触发资产盘点首次模式(本轮不跑 `mode: first`)。
+    /// 有历史(提交数 > 1、有标签、有 CHANGELOG)。只写进项目约定正文当证据。
     pub has_history: bool,
     /// 写进这张活说明里的证据句子。评审的人不用猜这张活为什么跑了这几步。
     pub reasons: Vec<String>,

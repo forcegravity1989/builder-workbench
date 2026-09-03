@@ -14,7 +14,7 @@
 //! 3. 目录里有东西、又不是 git 仓 → **弹回**,而且库里不许留下半个项目
 //! 4. 同一个 slug 再接一次 → 幂等,不建第二行
 //! 5. 填了远端、目录不在 → 真 clone 下来,HEAD 能读回
-//! 6. 每一档接完都自动建了那张「规范铺底」的活,而且**它最远只到评审中**
+//! 6. 每一档接完都自动建了那张「项目约定」的活,而且**它最远只到评审中**
 //! 7. 从工作台移走一个项目:库里干干净净,**仓一个字节都不动**
 //! 8. **成熟仓**(自己已经有 CLAUDE.md / AGENTS.md / README):铺底不许盖掉它们
 //!
@@ -165,9 +165,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         ),
     );
 
-    // ── 6 · 接入自动建的那张「规范铺底」活 ────────────────────
-    // 母文档 §2 第 0 站:接入完 Workbench 自己建一张一次性运作活③。这里读回它
-    // 真的建了、来源是 auto、而且**状态最远只到评审中** —— 自动建的活绝不
+    // ── 6 · 接入自动建的那张「项目约定」活 ────────────────────
+    // 第 0 站:接入完 Workbench 自己建一张轻量活「项目约定」。这里读回它
+    // 真的建了、而且**状态最远只到评审中** —— 自动建的活绝不
     // 自动完成,这条是铁律。
     for slug in ["no-remote", "already"] {
         let pid = app.project_by_slug(slug).await?.unwrap().id;
@@ -196,8 +196,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     }
 
     // ── 8 · 成熟仓不许被盖 ──────────────────────────────────
-    // workbench 自己就是这种仓:根目录有一份人写了很久的 CLAUDE.md。铺底
-    // 要往仓里写 AGENTS.md 和 CLAUDE.md,**盖掉就是事故**。
+    // workbench 自己就是这种仓:根目录有一份人写了很久的 CLAUDE.md。
+    // 接入不写仓根。盖掉就是事故。
     let mature = workspaces.join("mature");
     std::fs::create_dir_all(&mature)?;
     git(&mature, &["init", "-q"]).await;

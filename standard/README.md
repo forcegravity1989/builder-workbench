@@ -40,7 +40,7 @@ Workbench 规范正本。编译期 `include_str!` 进二进制——改这里就
 
 ## skills/
 
-清单与触发见 [`skills/README.md`](skills/README.md)。四份运作剧本(`week-planning` / `asset-audit` / `metrics-refresh` / `project-handbook`)+ 构建入口 `mattpocock-skills` 已派发;`mr-review` 未派发;`project-handbook` 本轮不接盘点。不预置阶段方法论——那是 `vendor/` 的事。
+清单与触发见 [`skills/README.md`](skills/README.md)。运作剧本 `week-planning` / `asset-audit` / `metrics-refresh` 与构建入口 `mattpocock-skills` 已派发;`project-handbook` 在仓里、盘点不派发;`mr-review` 未派发。不预置阶段方法论——那是 `vendor/` 的事。
 
 ## vendor/
 

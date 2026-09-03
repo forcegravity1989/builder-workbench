@@ -204,7 +204,7 @@ fn pending_steps(probe: &boot::BootstrapProbe) -> String {
         v.push("仓根已有 README / AGENTS.md / CLAUDE.md,接项目时一个字没动");
     }
     if v.is_empty() {
-        "无 —— 这个仓没有历史,写核心件就是全部".into()
+        "无 —— 这个仓没有历史,写名片就是全部".into()
     } else {
         v.join(";")
     }

@@ -37,7 +37,7 @@ Workbench 给一个项目赋能走两条路径,信息落点分清:
 - **路径 A · 轻量(不走会话)**:项目约定把名片写进常驻树 `bw/project`,无 agent、无系统提示词。不写人的主检出。
 - **路径 B · 走会话**:挂了 workflow 的活开工,agent 在活的工作区里跑。系统提示词兜底 Workbench 统一要求,workflow 自己管流程。
 
-三类产出各有落点:**顶层文档**(README / AGENTS / CLAUDE / CHANGELOG)是项目自己的;`project-handbook` 本轮不接盘点会话。**dev 过程件**(CONTEXT / adr / spec / ticket)由 workflow 自己产。**名片** `.bw/project.toml` 走路径 A。运作活②走路径 B:对照 `references/bw-assets.md` 清残留、升格式、点未闭环的环,不重写名片意图。
+三类产出各有落点:**顶层文档**(README / AGENTS / CLAUDE / CHANGELOG)是项目自己的,盘点不代写。**dev 过程件**(CONTEXT / adr / spec / ticket)由 workflow 自己产。**名片** `.bw/project.toml` 走路径 A。运作活②走路径 B:对照 `references/bw-assets.md` 清残留、升格式、点未闭环的环,不重写名片意图。
 
 ### 系统提示词(文件 + references + 技能指针)
 
@@ -97,9 +97,9 @@ references(`standard/system-prompt/references/*.md`)是「干某类活需要额�
 
 ### 4 · 系统提示词与渐进加载
 
-**是什么**:每张活开工渲染一份系统提示词,主提示词是**外置的 `standard/system-prompt/SYSTEM.md.tmpl`**(身份 + 四铁律 + 读项目规范件的指引),`{{...}}` 占位在运行时填:活的信息、本活要读的 references 阶段规范、本活挂的技能。references(`standard/system-prompt/references/*.md`)是「干某类活需要额外知道的 Workbench 规范」(指标铁律、改仓规则、`.bw` 现行契约),按活的 category/workflow 匹配后摊到 `<asset_root>/system-prompt/references/`、提示词只给路径,agent 按需读。技能同理摊到 `<asset_root>/skills/`。关键取舍:**正文一律不塞进提示词**(只给「一句话 + 完整路径」),references/技能文件不在硬盘就如实少一段不编路径,主提示词不硬编码在 `format!` 里(改身份/铁律 = 改那份 md)。`standard/README` 只记现行结构,不叠版本流水。**归一**:技能注入只有**一个模型**——`skill_pointer`(workflow→slug→`SkillPack`→入口 SKILL.md 路径)。运作剧本(week-planning 等)的入口 body 自足;业界 workflow(mattpocock-skills)的入口 body 是 SOP 链 + 指向 `vendor/` 库子技能路径(库由 `ensure_vendor_assets` 摊)。两类同机制,不另开第二条注入路径。
+**是什么**:每张活开工渲染一份系统提示词,主提示词是**外置的 `standard/system-prompt/SYSTEM.md.tmpl`**(身份 + 四铁律 + 读项目规范件的指引),`{{...}}` 占位在运行时填:活的信息、本活要读的 references 阶段规范、本活挂的技能。references(`standard/system-prompt/references/*.md`)是「干某类活需要额外知道的 Workbench 规范」(指标铁律、改仓规则、`.bw` 现行契约),按活的 category/workflow 匹配后摊到 `<asset_root>/system-prompt/references/`、提示词只给路径,agent 按需读。技能同理摊到 `<asset_root>/skills/`。关键取舍:**正文一律不塞进提示词**(只给「一句话 + 完整路径」),references/技能文件不在硬盘就如实少一段不编路径,主提示词不硬编码在 `format!` 里(改身份/铁律 = 改那份 md)。技能注入只有**一个模型**——`skill_pointer`(workflow→slug→`SkillPack`→入口 SKILL.md 路径)。运作剧本的入口 body 自足;业界 workflow(mattpocock-skills)的入口 body 是 SOP 链 + 指向 `vendor/` 库子技能路径(库由 `ensure_vendor_assets` 摊)。两类同机制。
 
-三层各装什么、改了哪条流程要同步哪份——对照表就在本模块下面。`AGENTS.md`「三层模型」指到这里;`standard/README` 只记现行结构,不另写一套规则。改 `standard/` 之前先对表。被管项目里的 agent 看不见本篇,现场对照靠开工注入的 reference 路径。
+三层各装什么、改了哪条流程要同步哪份——对照表就在本模块下面。`AGENTS.md`「三层模型」指到这里。仓根 `standard/README` 记现行目录结构。改 `standard/` 之前先对表。被管项目里的 agent 看不见本篇,现场对照靠开工注入的 reference 路径。
 
 **分工**(改提示词 / 加 reference / 改 skill 之前先对):
 
@@ -111,7 +111,7 @@ references(`standard/system-prompt/references/*.md`)是「干某类活需要额�
 
 本周项目侧变化(`git log`、开着的 MR、账本)每次现算,不写进上述任何一层。
 
-**维护**(产品流程变了,同步哪份;`standard/README` 跟着改成现行结构,不另记版本流水):
+**维护**(产品流程变了,同步哪份;目录变了就改 `standard/README` 那张表):
 
 | 变了什么 | 同步哪份 | 谁在开工时读到 |
 |---|---|---|
@@ -236,13 +236,13 @@ references(`standard/system-prompt/references/*.md`)是「干某类活需要额�
 
 ### 14 · 资产盘点与项目接入
 
-**是什么**:两件互锁的事。资产盘点(运作活②)每周两步:先对照 `references/bw-assets.md` 盘 Workbench 给项目的 `.bw/`(清残留、升格式让当前工作台读得动、点出未闭环的环),再盘项目本周提交与开着的 MR(建议只落这张活的评论,不改业务代码)。自动触发只建 `mode: weekly`。`mode: first` 本轮不跑。开工工具跟构建。项目接入把一个仓弄到本机、落一行项目、把名片写进「项目约定」常驻树(不写主检出)。默认分支已有名片、或开着项目约定/残留旧标题的仓接入时不重开约定。没有单独的「历史回填」命令,也不按 git 周去建假文件。不再写 `bw:week:*`。健康灯只看本周。
+**是什么**:两件互锁的事。资产盘点(运作活②)每周两步:先对照 `references/bw-assets.md` 盘 Workbench 给项目的 `.bw/`(清残留、升格式让当前工作台读得动、点出未闭环的环),再盘项目本周提交与开着的 MR(建议只落这张活的评论,不改业务代码)。定时建的说明写 `mode: weekly`。开工工具跟构建。项目接入把一个仓弄到本机、落一行项目、把名片写进「项目约定」常驻树(不写主检出)。默认分支已有名片、或开着项目约定/残留旧标题的仓接入时不重开约定。没有单独的「历史回填」命令,也不按 git 周去建假文件。健康灯只看本周。
 
-**代码**:bw 的 `app/project.rs`(接入 / 名片 / 群)+ `git.rs`(`first_commit_date` / `tags_with_dates` / `week_counts_many` 现算);standard/skills 的 `asset-audit` + `project-handbook` 两份剧本。
+**代码**:bw 的 `app/project.rs`(接入 / 名片 / 群)+ `git.rs`(`first_commit_date` / `tags_with_dates` / `week_counts_many` 现算);standard/skills 的 `asset-audit`。`project-handbook` 在仓里,盘点不派发。
 **数据**:零本地库;名片四字段只落 `.bw/project.toml`;`project` 表只有定位与显示缓存;历史呈现不写仓文件。
 **依赖**:crate::git / isoweek / repo::project_file / standard、worktree、issue_store;外部 bw_engine::github / codehub(clone、list/create Release)。
 
-**没建**:`mode: first`(给老 issue 打 `bw:plan:v0.x`、补记、问人写 AGENTS.md)本轮不跑;`BackfillHistory` 已删;project-handbook 只记遗留、不接盘点会话。五条历史探测判据只实现前三条(提交数 / 标签 / CHANGELOG),远端已关闭 issue、已合并 MR 两条没对应查询。每周定时已接:节律只认产品默认 `fri 09:00`,Workbench 开着每 60 秒判一次「本周这一刻过了没有」;过了且没有开着的「资产盘点 YYYY-Www」就建一张并开工,最远评审中。错过(当时没开着)下次开着照样补建,不另记触发表。运作活①仍是人触发,总览「开始本版本」看本周有没有这张活(标题 + 本 ISO 周创建的 `v0.x` 标签)。运作活没有五阶段类别,详情锁死显示「运作」,内核拒改。旧铺底残留由盘点对照 `bw-assets.md` 在这张活的 worktree 里删,走 MR,不在主检出动手。
+**没建**:`mode: first`(给老 issue 打 `bw:plan:v0.x`、补记、问人写 AGENTS.md);`BackfillHistory` 已删。五条历史探测判据只实现前三条(提交数 / 标签 / CHANGELOG),远端已关闭 issue、已合并 MR 两条没对应查询。每周定时已接:节律只认产品默认 `fri 09:00`,Workbench 开着每 60 秒判一次「本周这一刻过了没有」;过了且没有开着的「资产盘点 YYYY-Www」就建一张并开工,最远评审中。错过(当时没开着)下次开着照样补建,不另记触发表。运作活①仍是人触发,总览「开始本版本」看本周有没有这张活(标题 + 本 ISO 周创建的 `v0.x` 标签)。运作活没有五阶段类别,详情锁死显示「运作」,内核拒改。旧铺底残留由盘点对照 `bw-assets.md` 在这张活的 worktree 里删,走 MR,不在主检出动手。
 
 ### 15 · 技能与蒸馏
 

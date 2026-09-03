@@ -1,9 +1,9 @@
 //! codehub/GitHub issue 持久化映射层(数据层迁移刀2/刀3)。
 //!
 //! 把 bw 的 `Issue` 领域对象 ↔ codehub/GitHub issue 互转。issue 的状态、
-//! 排期、版本、类别从本地 SQLite 搬到远端 issue + 标签(`bw:status:*` /
-//! `bw:week:*` / `bw:plan:*` / `bw:released:*` / `bw:category:*`),这是那条映射的正本。
-//! 周版本和人起名的版本是同一槽位,一张活只挂一个。
+//! 排期、版本、类别以远端 issue + 标签为正本(`bw:status:*` /
+//! `bw:plan:*` / `bw:released:*` / `bw:category:*`)。新建不写 `bw:week:*`;
+//! 读回旧周标仍填 `week_of`。一张活只挂一个版本槽。
 //!
 //! 字段映射的取舍:每一条都不自作主张加标签。**lossy**:远端 issue 的 `body` 经
 //! `view_issue` 单查带回(列表查询不带正文);`branch`/`pr_number`、
