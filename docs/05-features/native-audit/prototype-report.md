@@ -32,7 +32,7 @@
 | C22 | 带替代方案 0/11 | 820/839 | **1** | 3 | BW `docs/adr/0001-0003` 无替代方案节；dsh mandatory |
 | C23 | 生命周期目录 0，STATUS 4，冻结 0 | 4 / 0 / 1 | 2 | 3 | BW 用 STATUS.md 记状态；dsh 路径即状态+冻结 manifest |
 | C31 | plan 4，先计划成文 2 | 1 / 53 | 2 | 2 | 两仓皆成文（BW `02` plan 段 / dsh acceptance criteria），皆无「批准前不动文件」拦截 |
-| C32 | hook 0，门禁 6（自测 0），workflow 4 | 1 / 38（自测 18）/ 19 | 3 | 3 | BW `ci.yml` L21-49 强制 6 guard+fmt/clippy/test；扣分注：自测 0/6 |
+| C32 | hook 0，门禁 6（自测 0），workflow 4 | 1 / 38（自测 18）/ 19 | 3 | 3 | BW `ci.yml` L38-52 强制 6 guard+fmt/clippy/test；扣分注：自测 0/6 |
 | C33 | AI/worktree 合并 67/130，成文 2 | 3557/6313 / 0 | 3 | 3 | BW worktree+MR 唯一通道成文且由 ▶跑 产品化；dsh worktree-local hooks |
 | C34 | gen 脚本 0，vendor 清单 1 | 19 / 1 | **1** | 3 | BW 无生成物新鲜度门禁（codegraph 例外走 CI 发布）；dsh 19 对 gen/verify |
 | C35 | 严格编译 4，lint 配置 0（clippy -D 在 CI），dependabot 0，依赖政策 5 | 1 / 3 / 1 / 71 | 3 | 3 | BW `forbid(unsafe_code)`+`-D warnings` CI；dsh oxlint/jscpd/publint/dependabot |
