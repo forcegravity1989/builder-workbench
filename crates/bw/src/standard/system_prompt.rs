@@ -45,11 +45,7 @@ pub fn references() -> Vec<ReferencePack> {
             "运作活①评论三个标题、标签和里程碑",
             REF_WEEK_PLAN_COMMENT,
         ),
-        (
-            "build",
-            "活的树在哪;评论和标签不是改仓",
-            REF_BUILD,
-        ),
+        ("build", "活的树在哪;评论和标签不是改仓", REF_BUILD),
         (
             "bw-assets",
             "运作活②对照的 .bw 现行契约(该有/整份可删/现行格式/和①的分工)",

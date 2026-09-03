@@ -1,6 +1,8 @@
 schema_version = 2
 
-# 北极星 1 条;滞后 / 引领各 ≤3。字段:name / def / target / collect。
+# 北极星 1 条;滞后 / 引领各 ≤3。字段:name / def / target / collect / feature / leads。
+# feature = ""            # 所属特性。空 = 整体页签;有值才出「XX特性」页签
+# leads = "某条滞后的 name" # 只写在引领上:这条引领盯的是哪条滞后。空 = 挂到同页签第一条滞后
 # collect 两种:{ kind = "script", run = ["python", ".bw/scripts/x.py"], retro = true|false }
 #             或 { kind = "manual" }
 # retro=true 吐 {"points":[{"week":"YYYY-Www","value":…}]};false 吐 {"value":…}。

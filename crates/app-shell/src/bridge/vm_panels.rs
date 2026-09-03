@@ -210,7 +210,7 @@ pub(super) fn build_weeks(
 fn trend_from_readings(ws: &Path, name: &str) -> Vec<(String, Option<f64>)> {
     let mut weeks = Vec::new();
     let mut w = bw::isoweek::current_week();
-    for _ in 0..4 {
+    for _ in 0..5 {
         weeks.push(w.clone());
         let Some(prev) = bw::isoweek::previous_week(&w) else {
             break;
@@ -223,6 +223,16 @@ fn trend_from_readings(ws: &Path, name: &str) -> Vec<(String, Option<f64>)> {
         .into_iter()
         .zip(values)
         .map(|(week, v)| (week, v.and_then(|s| s.parse::<f64>().ok())))
+        .collect()
+}
+
+/// 近 14 个日历日。没日行的格是 `None`,不补 0。
+fn day_trend_from_readings(ws: &Path, name: &str) -> Vec<(String, Option<f64>)> {
+    let days = bw::isoweek::recent_days(14);
+    let values = bw::repo::readings_file::latest_values_for_days(ws, name, &days);
+    days.into_iter()
+        .zip(values)
+        .map(|(day, v)| (day, v.and_then(|s| s.parse::<f64>().ok())))
         .collect()
 }
 
@@ -277,13 +287,15 @@ pub(super) fn build_metrics(
     // 采到的现值与走势来自「采一次指标」那一下(`ui.metrics`),不在这里跑
     // ——起脚本要几百毫秒到几秒,每重拼一次 ViewModel 都跑一遍会把界面按住。
     let readout_of = |name: &str| collected.iter().find(|r| r.name.trim() == name.trim());
-    let mk = |name: &str, def: &str, target: &str, plan: &bw::repo::metrics_file::CollectPlan| {
+    let mk = |d: &bw::repo::metrics_file::MetricDef, target: &str| {
+        let name = d.name.as_str();
+        let plan = &d.collect;
         MetricCardVm {
             id: name.to_string(),
             name: name.to_string(),
             reading: reading_of(name).map(|r| r.value.clone()),
             target: target.to_string(),
-            def: def.to_string(),
+            def: d.def.clone(),
             manual: plan.is_manual(),
             source: reading_of(name)
                 .map(|r| r.source.clone())
@@ -313,6 +325,9 @@ pub(super) fn build_metrics(
                     None => Vec::new(),
                 }
             },
+            day_trend: day_trend_from_readings(ws, name),
+            feature: d.feature.clone(),
+            leads: d.leads.clone(),
             collect_error: readout_of(name)
                 .map(|r| r.error.clone())
                 .unwrap_or_default(),
@@ -324,20 +339,9 @@ pub(super) fn build_metrics(
         error: None,
         // 北极星没有 target 字段 —— 它的目标就是它自己那句定义。
         // 北极星可以缺席:刚接入、还没定指标的项目就是这样。**不摆空卡。**
-        north_star: m
-            .north_star
-            .as_ref()
-            .map(|n| mk(&n.name, &n.def, "", &n.collect)),
-        lagging: m
-            .lagging
-            .iter()
-            .map(|d| mk(&d.name, &d.def, &d.target, &d.collect))
-            .collect(),
-        leading: m
-            .leading
-            .iter()
-            .map(|d| mk(&d.name, &d.def, &d.target, &d.collect))
-            .collect(),
+        north_star: m.north_star.as_ref().map(|n| mk(n, "")),
+        lagging: m.lagging.iter().map(|d| mk(d, &d.target)).collect(),
+        leading: m.leading.iter().map(|d| mk(d, &d.target)).collect(),
         note: None,
     }
 }

@@ -88,8 +88,7 @@ impl App {
             .create_ops_issue(
                 project_id,
                 title,
-                "运作活①。人没确认版本、纳入和指标口径之前,不建业务活、不落文件。"
-                    .into(),
+                "运作活①。人没确认版本、纳入和指标口径之前,不建业务活、不落文件。".into(),
                 super::OPS1_WORKFLOW,
                 IssueOrigin::Human,
                 String::new(),

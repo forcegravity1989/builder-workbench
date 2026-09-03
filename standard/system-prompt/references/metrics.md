@@ -7,6 +7,7 @@ Workbench 只认这份。没有文件不是错,界面显示「还没定出来」
 
 北极星可以缺席。三层键:`[north_star]`、`[[lagging]]`、`[[leading]]`。
 每条:`name` / `def` / `target` / `collect`。不要写 `definition`。
+可选:`feature`(所属特性,空=整体页签)、`leads`(只写在引领上,值是它盯的那条滞后的 `name`;空=挂到同页签第一条滞后)。
 
 ## 采集
 

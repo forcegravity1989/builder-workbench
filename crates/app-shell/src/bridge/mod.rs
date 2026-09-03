@@ -1200,7 +1200,7 @@ pub fn spawn(deep_link: DeepLink) -> Bridge {
                                         let back = tx_back.clone();
                                         tokio::spawn(async move {
                                             let (readouts, error) =
-                                                match bw::app::collect::collect_all(&ws, 4).await
+                                                match bw::app::collect::collect_all(&ws, 5).await
                                                 {
                                                     Ok(r) => (r, None),
                                                     Err(e) => (Vec::new(), Some(e)),
@@ -1487,7 +1487,7 @@ async fn kick_project_collect(app: &App, pid: ProjectId, tx_back: &mpsc::Unbound
     let back_r = tx_back.clone();
     let ws_m = ws.clone();
     tokio::spawn(async move {
-        let (readouts, error) = match bw::app::collect::collect_all(&ws_m, 4).await {
+        let (readouts, error) = match bw::app::collect::collect_all(&ws_m, 5).await {
             Ok(r) => (r, None),
             Err(e) => (Vec::new(), Some(e)),
         };

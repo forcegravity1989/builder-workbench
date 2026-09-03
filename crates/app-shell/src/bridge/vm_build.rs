@@ -1324,6 +1324,7 @@ async fn build_plan_versions(app: &App, p: &Project, issues: &[bw::Issue]) -> Ve
                 issue_count: counts.remove(&name).unwrap_or(0),
                 released: false,
                 goal: String::new(),
+                counts: build_week_counts(issues, Some(name.as_str())),
             }
         })
         .collect()

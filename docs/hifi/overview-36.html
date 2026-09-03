@@ -1,0 +1,1162 @@
+<!doctype html>
+<html lang="zh" data-theme="claude">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>BW · 总览目标态(#36)</title>
+<!--
+  #36 总览目标态稿（独立可点原型，不改壳、不改 index.html）。
+  数据截止日期 2026-09-03 / ISO 2026-W36。视觉对齐 docs/04-design-system/ Claude 板。
+
+  一张图 = 一条滞后 + 0..n 条引领。同一页签多条滞后 → 图横向排。
+  leads 空 = 挂到该页签第一条滞后。图上系列行纵向往下排。
+  图例可点，显隐系列。手填写在对应滞后那一行。
+
+  仓内真值：见上一版头。v0.3 目标句仍是注释（评论原文没拉到）。
+-->
+<link rel="stylesheet" href="../04-design-system/styles.css">
+<style>
+html, body { height: 100%; }
+body {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  background: var(--color-surface);
+  overflow: auto;
+}
+.stage {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100%;
+  padding: var(--space-4);
+}
+.desktop {
+  width: 1440px;
+  height: 900px;
+  display: flex;
+  flex-direction: column;
+  background: var(--color-bg);
+  border: 1px solid var(--color-divider);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg);
+  overflow: hidden;
+  flex: none;
+}
+.winbar {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  height: var(--space-8);
+  padding: 0 var(--space-3);
+  background: var(--color-surface);
+  border-bottom: 1px solid var(--color-divider);
+  flex: none;
+}
+.win-dots { display: flex; gap: var(--space-1); }
+.win-dot {
+  width: var(--space-3);
+  height: var(--space-3);
+  border-radius: 50%;
+  background: var(--color-neutral-400);
+}
+.win-title {
+  flex: 1;
+  text-align: center;
+  font-size: 12px;
+  color: color-mix(in srgb, var(--color-text) 55%, transparent);
+  font-family: var(--font-mono);
+}
+.app { display: flex; flex: 1; min-height: 0; }
+.iconrail {
+  width: calc(var(--space-8) + var(--space-6));
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: var(--space-3) 0 var(--space-2);
+  gap: var(--space-1);
+  background: var(--color-surface);
+  border-right: 1px solid var(--color-divider);
+}
+.rail-logo {
+  width: var(--space-8);
+  height: var(--space-8);
+  border-radius: var(--radius-sm);
+  background: var(--color-accent);
+  color: var(--color-card);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-heading);
+  font-weight: 700;
+  font-size: 15px;
+  margin-bottom: var(--space-2);
+  flex: none;
+}
+.iconrail .btn-icon { color: color-mix(in srgb, var(--color-text) 62%, transparent); }
+.iconrail .btn-icon[aria-current="true"] {
+  background: color-mix(in srgb, var(--color-accent) 14%, transparent);
+  color: var(--color-accent);
+}
+.sidebar { display: flex; }
+.sidebar-back {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  height: var(--space-8);
+  padding: 0 var(--space-2);
+  color: color-mix(in srgb, var(--color-text) 62%, transparent);
+  font-size: 12px;
+  cursor: pointer;
+  border: 0;
+  background: none;
+  font-family: inherit;
+  border-radius: var(--radius-sm);
+}
+.sidebar-back:hover {
+  background: color-mix(in srgb, var(--color-text) 6%, transparent);
+  color: var(--color-text);
+}
+.pr-head {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  padding: var(--space-2);
+  border-bottom: 1px solid var(--color-divider);
+  margin-bottom: var(--space-2);
+}
+.pr-name {
+  font-family: var(--font-heading);
+  font-weight: var(--font-heading-weight);
+  font-size: 14px;
+}
+.pr-meta {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: color-mix(in srgb, var(--color-text) 50%, transparent);
+}
+.main { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.nav { flex: none; }
+.nav-right { margin-left: auto; display: flex; align-items: center; gap: var(--space-2); }
+.content {
+  flex: 1;
+  overflow: auto;
+  padding: var(--space-4) var(--space-6) var(--space-6);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+.row-2 {
+  display: grid;
+  grid-template-columns: minmax(0, 1.2fr) minmax(0, 0.8fr);
+  gap: var(--space-3);
+}
+.row-between {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+.row-start {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-width: 0;
+  flex-wrap: wrap;
+}
+.stack { display: flex; flex-direction: column; gap: var(--space-2); }
+.mono { font-family: var(--font-mono); }
+.metric-value {
+  font-family: var(--font-mono);
+  font-weight: 600;
+  line-height: 1.2;
+  margin: 0;
+}
+.metric-target {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: color-mix(in srgb, var(--color-text) 50%, transparent);
+}
+.btn-sm { height: var(--space-6); padding: 0 var(--space-2); }
+.detail-grid {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: var(--space-2) var(--space-4);
+  padding-top: var(--space-3);
+  border-top: 1px solid var(--color-divider);
+}
+.detail-k {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  color: color-mix(in srgb, var(--color-text) 50%, transparent);
+}
+.detail-v { font-size: 13px; }
+.prog {
+  display: flex;
+  height: 6px;
+  border-radius: 999px;
+  overflow: hidden;
+  background: var(--color-neutral-100);
+}
+.prog > span { display: block; min-width: 0; }
+.prog-todo { background: var(--color-neutral-300); }
+.prog-doing { background: var(--color-warning); }
+.prog-review { background: var(--color-accent-2); }
+.prog-done { background: var(--color-success); }
+.counts {
+  display: flex;
+  gap: var(--space-4);
+  font-size: 12px;
+  color: color-mix(in srgb, var(--color-text) 70%, transparent);
+}
+.counts b { font-family: var(--font-mono); color: var(--color-text); }
+.empty {
+  color: color-mix(in srgb, var(--color-text) 50%, transparent);
+  font-size: 13px;
+}
+.text-box {
+  box-sizing: border-box;
+  min-height: calc(13px * 1.7 * 6);
+  max-height: calc(13px * 1.7 * 6);
+  overflow-y: auto;
+  font-size: 13px;
+  line-height: 1.7;
+}
+h6 { margin: 0; }
+.card-head {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+.card-head .tabs { margin: 0; }
+.card-head .tab { padding-top: 4px; }
+.goal-week {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 0;
+}
+.goal-week > div { min-width: 0; padding-right: var(--space-4); }
+.goal-week > div + div {
+  padding-right: 0;
+  padding-left: var(--space-4);
+  border-left: 1px solid var(--color-divider);
+}
+.week-tabs { margin: var(--space-1) 0 var(--space-2); }
+.plots {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--space-4);
+}
+.plots.is-multi {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+.plot { min-width: 0; }
+.plots.is-multi .plot + .plot {
+  padding-left: var(--space-4);
+  border-left: 1px solid var(--color-divider);
+}
+.series { display: flex; flex-direction: column; }
+.series-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-height: 36px;
+  width: 100%;
+  margin: 0;
+  padding: 0 var(--space-1);
+  color: var(--color-text);
+  border-radius: var(--radius-sm);
+}
+.series-toggle {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  flex: 1;
+  min-width: 0;
+  cursor: pointer;
+}
+.series-row:hover { background: color-mix(in srgb, var(--color-text) 3.5%, transparent); }
+.series-toggle:focus-within { outline: 2px solid var(--color-accent); outline-offset: 2px; border-radius: var(--radius-sm); }
+.series-row input {
+  appearance: none;
+  width: 12px;
+  height: 12px;
+  flex: none;
+  margin: 0;
+  border-radius: 2px;
+  border: 1px solid color-mix(in srgb, var(--color-text) 28%, transparent);
+  background: var(--color-card);
+  cursor: pointer;
+}
+.series-row input:checked {
+  background: var(--swatch, var(--color-accent));
+  border-color: var(--swatch, var(--color-accent));
+  box-shadow: inset 0 0 0 2px var(--color-card);
+}
+.series-row:not(:has(input:checked)) { color: color-mix(in srgb, var(--color-text) 40%, transparent); }
+.series-row .swatch {
+  width: 14px;
+  height: 2px;
+  flex: none;
+  border-radius: 1px;
+  background: var(--swatch, var(--color-accent));
+}
+.series-row:not(:has(input:checked)) .swatch {
+  background: color-mix(in srgb, var(--color-text) 22%, transparent);
+}
+.series-row .name {
+  flex: 1;
+  min-width: 0;
+  font-size: 13px;
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.series-row .kind {
+  flex: none;
+  font-size: 11px;
+  color: color-mix(in srgb, var(--color-text) 45%, transparent);
+}
+.series-row .val {
+  flex: none;
+  font-family: var(--font-mono);
+  font-weight: 600;
+  font-size: 14px;
+}
+.series-row .tgt {
+  flex: none;
+  width: 48px;
+  text-align: right;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: color-mix(in srgb, var(--color-text) 50%, transparent);
+}
+.series-row .manual-slot {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  flex: none;
+}
+.series-row .manual-slot .input { width: 72px; }
+.chart-wrap {
+  position: relative;
+  width: 100%;
+  height: calc(var(--space-8) * 4 + var(--space-4));
+}
+.chart-wrap svg { width: 100%; height: 100%; display: block; }
+.chart-tip {
+  position: absolute;
+  z-index: 4;
+  pointer-events: none;
+  min-width: calc(var(--space-8) * 4);
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-md);
+  background: var(--color-neutral-900);
+  color: var(--color-neutral-100);
+  font-size: 12px;
+  line-height: 1.45;
+  box-shadow: var(--shadow-lg);
+  transform: translate(-50%, calc(-100% - var(--space-2)));
+}
+.chart-tip .wk { font-family: var(--font-mono); font-weight: 600; }
+.chart-tip .vl { font-family: var(--font-mono); opacity: 0.8; }
+.field-help {
+  font-size: 11px;
+  color: color-mix(in srgb, var(--color-text) 50%, transparent);
+  margin-top: 4px;
+}
+.field-help { font-size: 11px; color: color-mix(in srgb, var(--color-text) 50%, transparent); }
+.sdlc-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0;
+}
+.sdlc-cell { min-width: 0; padding-right: var(--space-4); }
+.sdlc-cell + .sdlc-cell {
+  padding-left: var(--space-4);
+  border-left: 1px solid var(--color-divider);
+}
+.sdlc-cell:last-child { padding-right: 0; }
+.sdlc-head {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-2);
+  min-height: 28px;
+}
+.sdlc-head .name { font-size: 13px; font-weight: 500; }
+.sdlc-head .val {
+  margin-left: auto;
+  font-family: var(--font-mono);
+  font-weight: 600;
+  font-size: 15px;
+}
+.head-tools { display: flex; align-items: center; gap: var(--space-3); }
+.toast-host {
+  position: fixed;
+  right: var(--space-4);
+  bottom: var(--space-4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  z-index: 80;
+  align-items: flex-end;
+}
+.hidden { display: none !important; }
+@media (max-width: 1100px) {
+  .row-2, .goal-week, .sdlc-grid, .plots.is-multi { grid-template-columns: 1fr; }
+  .goal-week > div + div,
+  .sdlc-cell + .sdlc-cell,
+  .plots.is-multi .plot + .plot {
+    padding-left: 0;
+    border-left: 0;
+    padding-top: var(--space-3);
+    border-top: 1px solid var(--color-divider);
+  }
+}
+</style>
+</head>
+<body>
+<div class="stage">
+  <div class="desktop" role="application" aria-label="总览目标态 1440×900">
+    <div class="winbar">
+      <div class="win-dots" aria-hidden="true">
+        <span class="win-dot"></span><span class="win-dot"></span><span class="win-dot"></span>
+      </div>
+      <div class="win-title">Builders' Workbench · workbench · 总览</div>
+    </div>
+    <div class="app">
+      <nav class="iconrail" aria-label="全局">
+        <div class="rail-logo">b</div>
+        <button type="button" class="btn btn-ghost btn-icon" data-toast="演示：项目墙" title="项目墙" aria-label="项目墙">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/></svg>
+        </button>
+        <a class="btn btn-ghost btn-icon" href="plan-23.html" title="计划" aria-label="计划">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 2v4"/><path d="M16 2v4"/><rect width="18" height="18" x="3" y="4" rx="2"/><path d="M3 10h18"/></svg>
+        </a>
+        <button type="button" class="btn btn-ghost btn-icon" data-toast="演示：会话" title="会话" aria-label="会话">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="4 17 10 11 4 5"/><line x1="12" x2="20" y1="19" y2="19"/></svg>
+        </button>
+        <button type="button" class="btn btn-ghost btn-icon" data-toast="演示：知识" title="知识" aria-label="知识">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20"/></svg>
+        </button>
+        <button type="button" class="btn btn-ghost btn-icon" data-toast="演示：配置" title="配置" aria-label="配置">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg>
+        </button>
+      </nav>
+
+      <aside class="sidebar" aria-label="项目">
+        <button type="button" class="sidebar-back" data-toast="演示：回工作台">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg>
+          工作台
+        </button>
+        <div class="pr-head">
+          <div class="pr-name">workbench</div>
+          <div class="pr-meta">v0.3 · 2026-W36</div>
+        </div>
+        <a class="sidebar-item" href="#" aria-current="page">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="2.6"/></svg>
+          总览
+        </a>
+        <a class="sidebar-item" href="plan-23.html">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 2v4"/><path d="M16 2v4"/><rect width="18" height="18" x="3" y="4" rx="2"/><path d="M3 10h18"/></svg>
+          计划
+        </a>
+        <a class="sidebar-item" href="#" data-toast="演示：会话">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="4 17 10 11 4 5"/><line x1="12" x2="20" y1="19" y2="19"/></svg>
+          会话
+        </a>
+        <a class="sidebar-item" href="#" data-toast="演示：知识">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20"/></svg>
+          知识
+        </a>
+        <a class="sidebar-item" href="#" data-toast="演示：配置">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg>
+          配置
+        </a>
+      </aside>
+
+      <div class="main">
+        <nav class="nav" aria-label="顶栏">
+          <span class="nav-brand">总览</span>
+          <span class="text-muted mono">workbench · 2026-W36</span>
+          <div class="nav-right"><span class="avatar avatar-sm avatar-agent">b</span></div>
+        </nav>
+
+        <div class="content">
+          <div class="row-2">
+            <section class="card" id="project-card">
+              <div class="row-between">
+                <div class="row-start">
+                  <span class="card-title">workbench</span>
+                  <span class="status status-todo" title="北极星无读数，健康灯保持未知">
+                    <span class="status-dot"></span>未知
+                  </span>
+                  <span class="tag tag-outline mono" id="proj-ver-chip">v0.3 · 本周</span>
+                </div>
+                <button type="button" class="btn btn-ghost btn-sm" data-toast="演示：编辑名片">编辑</button>
+              </div>
+              <div class="detail-grid">
+                <div class="detail-k">想做什么</div>
+                <div class="detail-v">1、所有项目都一样。 2、加速并规范项目运作。3、一张工作台打通所有系统，集成各种好用组件和工作流</div>
+                <div class="detail-k">对标</div>
+                <div class="detail-v"><span class="mono">workbuddy</span></div>
+                <div class="detail-k">名片北极星</div>
+                <div class="detail-v">更多的项目纳入到workbench管理</div>
+                <div class="detail-k">项目群</div>
+                <div class="detail-v">WeLink · 群 <span class="mono">996840920634630304</span> · 通知 merged + release</div>
+                <div class="detail-k">远端</div>
+                <div class="detail-v mono">codehub · z30026659/workbench</div>
+              </div>
+            </section>
+
+            <section class="card">
+              <span class="card-kicker">北极星</span>
+              <span class="card-title">(还没填)被 Workbench 纳入的项目是否又快又好</span>
+              <div class="row-start">
+                <h2 class="metric-value">—</h2>
+                <span class="metric-target">目标未设</span>
+                <span class="tag tag-neutral">Unknown</span>
+              </div>
+            </section>
+          </div>
+
+          <section class="card" id="version-card">
+            <div class="card-head">
+              <div class="row-between">
+                <h6>版本计划与进展</h6>
+                <span class="tag tag-warning" id="ver-state-tag">进行中</span>
+              </div>
+              <div class="tabs" role="tablist" aria-label="版本" id="ver-tabs">
+                <button type="button" class="tab" role="tab" data-ver="v03" aria-selected="true">v0.3 · 本周</button>
+                <button type="button" class="tab" role="tab" data-ver="v02" aria-selected="false">v0.2</button>
+              </div>
+            </div>
+            <div class="goal-week">
+              <div>
+                <span class="card-kicker">版本目标</span>
+                <div class="text-box" id="ver-goal"></div>
+              </div>
+              <div>
+                <span class="card-kicker">每周进展</span>
+                <div class="tabs week-tabs" role="tablist" aria-label="该版本的周进展" id="week-tabs"></div>
+                <div class="text-box" id="week-note"></div>
+              </div>
+            </div>
+            <div class="stack" id="ver-bar"></div>
+          </section>
+
+          <section class="card" id="biz-card">
+            <div class="card-head">
+              <div class="row-between">
+                <h6>滞后性指标和引领性指标</h6>
+                <div class="seg" role="group" aria-label="业务指标粒度">
+                  <label class="seg-opt"><input type="radio" name="biz-grain" value="week" checked />周</label>
+                  <label class="seg-opt"><input type="radio" name="biz-grain" value="day" />天</label>
+                </div>
+              </div>
+              <div class="tabs" role="tablist" aria-label="指标范围" id="biz-tabs"></div>
+            </div>
+            <div id="biz-plots"></div>
+          </section>
+
+          <section class="card" id="repo-card">
+            <div class="row-between">
+              <h6>项目指标 · SDLC</h6>
+              <div class="head-tools">
+                <div class="seg" role="group" aria-label="SDLC 粒度">
+                  <label class="seg-opt"><input type="radio" name="sdlc-grain" value="week" checked />周</label>
+                  <label class="seg-opt"><input type="radio" name="sdlc-grain" value="day" />天</label>
+                </div>
+                <button type="button" class="btn btn-primary btn-sm" id="btn-collect">立即采集</button>
+              </div>
+            </div>
+            <div class="sdlc-grid">
+              <div class="sdlc-cell">
+                <div class="sdlc-head"><span class="name">每周提交</span><span class="val" id="sdlc-commits">181</span></div>
+                <div class="chart-wrap" id="chart-commits"></div>
+              </div>
+              <div class="sdlc-cell">
+                <div class="sdlc-head"><span class="name">每周合入的 PR</span><span class="val" id="sdlc-prs">18</span></div>
+                <div class="chart-wrap" id="chart-prs"></div>
+              </div>
+              <div class="sdlc-cell">
+                <div class="sdlc-head"><span class="name">未处理 issue</span><span class="val" id="sdlc-issues">11</span></div>
+                <div class="chart-wrap" id="chart-issues"></div>
+              </div>
+            </div>
+          </section>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<div class="toast-host" id="toasts" aria-live="polite"></div>
+
+<script>
+(function () {
+  "use strict";
+
+  var WEEK_LABELS = ["2026-W32", "2026-W33", "2026-W34", "2026-W35", "2026-W36"];
+  var DAY_LABELS = ["08-21", "08-22", "08-23", "08-24", "08-25", "08-26", "08-27", "08-28", "08-29", "08-30", "08-31", "09-01", "09-02", "09-03"];
+
+  var VER = {
+    v03: {
+      state: { cls: "tag-warning", text: "进行中" },
+      chip: "v0.3 · 本周",
+      goalNote: true,
+      goal: "把总览做成能看清目标、版本进度和代码仓过程的健康看板。",
+      bar: { doing: 2, todo: 2, done: 0, review: 0 },
+      weeks: [{ id: "2026-W36", label: "W36", latest: true, empty: true, text: "还没有周进展" }]
+    },
+    v02: {
+      state: { cls: "tag-success", text: "已发 · tag v0.2" },
+      chip: "v0.2",
+      goalNote: false,
+      goal: "",
+      bar: null,
+      weeks: [{ id: "2026-W35", label: "W35", latest: true, empty: true, text: "还没有周进展" }]
+    }
+  };
+
+  var SCOPES = [
+    {
+      id: "overall",
+      label: "整体",
+      lags: [
+        {
+          id: "lag-projects",
+          name: "纳入 workbench 管理的项目数",
+          target: "≥3",
+          targetN: 3,
+          collect: "manual",
+          weekValue: 7,
+          dayValue: 7,
+          week: [null, null, null, 7, null],
+          day: [null, null, null, null, null, null, null, 7, null, null, null, null, null, null]
+        },
+        {
+          id: "lag-demo",
+          name: "注释 · 第二条滞后",
+          note: true,
+          target: "≥1",
+          targetN: 1,
+          collect: "script",
+          weekValue: 3,
+          dayValue: 1,
+          week: [null, 1, 1, 2, 3],
+          day: [null, null, null, null, null, null, 1, 1, 1, 2, 2, 2, 3, 1]
+        }
+      ],
+      leads: [
+        {
+          id: "lead-closed",
+          name: "每周闭环的 issue 数",
+          leads: "纳入 workbench 管理的项目数",
+          target: "≥1",
+          targetN: 1,
+          weekValue: 16,
+          dayValue: 7,
+          week: [0, 0, 0, 21, 16],
+          day: [0, 0, 0, 0, 1, 4, 5, 0, 11, 0, 2, 3, 4, 7]
+        },
+        {
+          id: "lead-unlinked",
+          name: "注释 · 未写 leads 的引领",
+          note: true,
+          leads: "",
+          target: "≥2",
+          targetN: 2,
+          weekValue: 4,
+          dayValue: 1,
+          week: [1, 1, 2, 3, 4],
+          day: [0, 0, 1, 1, 1, 1, 2, 2, 2, 3, 3, 3, 4, 1]
+        },
+        {
+          id: "lead-demo",
+          name: "注释 · 盯第二条滞后",
+          note: true,
+          leads: "注释 · 第二条滞后",
+          target: "≥1",
+          targetN: 1,
+          weekValue: 5,
+          dayValue: 2,
+          week: [2, 2, 3, 4, 5],
+          day: [1, 1, 1, 1, 2, 2, 2, 3, 3, 3, 4, 4, 5, 2]
+        }
+      ]
+    }
+  ];
+
+  var SDLC = {
+    week: {
+      labels: WEEK_LABELS,
+      commits: [194, 51, 230, 244, 181],
+      prs: [0, 0, 0, 17, 18],
+      issues: [0, 0, 0, 11, 11],
+      now: { commits: 181, prs: 18, issues: 11 }
+    },
+    day: {
+      labels: DAY_LABELS,
+      commits: [53, 9, 6, 21, 10, 54, 18, 32, 109, 0, 70, 61, 37, 13],
+      prs: [0, 0, 0, 0, 1, 5, 2, 1, 8, 0, 4, 5, 5, 4],
+      issues: [0, 0, 0, 0, 4, 9, 14, 17, 11, 11, 18, 16, 16, 11],
+      now: { commits: 13, prs: 4, issues: 11 }
+    }
+  };
+
+  var COLORS = {
+    lag: "var(--color-accent-2)",
+    lead: ["var(--color-accent)", "var(--color-success)", "var(--color-warning)"],
+    commits: "var(--color-accent)",
+    prs: "var(--color-accent-2)",
+    issues: "var(--color-warning)"
+  };
+
+  var bizScope = "overall";
+  var bizGrain = "week";
+  var sdlcGrain = "week";
+  var hidden = {};
+
+  function toast(title, body) {
+    var host = document.getElementById("toasts");
+    var el = document.createElement("div");
+    el.className = "toast";
+    el.setAttribute("role", "status");
+    el.innerHTML =
+      '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>' +
+      "<div><span class=\"toast-title\"></span><span class=\"toast-body\"></span></div>";
+    el.querySelector(".toast-title").textContent = title;
+    el.querySelector(".toast-body").textContent = body ? " · " + body : "";
+    host.appendChild(el);
+    setTimeout(function () {
+      if (el.parentNode) el.parentNode.removeChild(el);
+    }, 3200);
+  }
+
+  document.addEventListener("click", function (ev) {
+    var t = ev.target.closest("[data-toast]");
+    if (!t) return;
+    ev.preventDefault();
+    toast(t.getAttribute("data-toast"), "");
+  });
+
+  document.getElementById("btn-collect").addEventListener("click", function () {
+    toast("演示：采集住 Workbench，codehub + GitHub 两臂，不铺进被管仓", "");
+  });
+
+  function renderWeekNote(verKey, weekId) {
+    var v = VER[verKey];
+    var w = v.weeks.filter(function (x) { return x.id === weekId; })[0] || v.weeks[0];
+    document.querySelectorAll("#week-tabs .tab").forEach(function (t) {
+      t.setAttribute("aria-selected", t.getAttribute("data-week") === w.id ? "true" : "false");
+    });
+    var host = document.getElementById("week-note");
+    host.innerHTML = w.empty ? '<div class="empty">' + w.text + "</div>" : w.text;
+  }
+
+  function renderVersion(key) {
+    var v = VER[key];
+    var tag = document.getElementById("ver-state-tag");
+    var chip = document.getElementById("proj-ver-chip");
+    tag.className = "tag " + v.state.cls;
+    tag.textContent = v.state.text;
+    chip.textContent = v.chip;
+
+    var goal = document.getElementById("ver-goal");
+    if (v.goal) {
+      goal.innerHTML = (v.goalNote ? '<span class="tag tag-outline">注释</span> ' : "") + v.goal;
+    } else {
+      goal.innerHTML = "";
+    }
+
+    var weekTabs = document.getElementById("week-tabs");
+    weekTabs.innerHTML = v.weeks.map(function (w) {
+      return (
+        '<button type="button" class="tab" role="tab" data-week="' + w.id + '"' +
+        (w.latest ? ' aria-selected="true"' : ' aria-selected="false"') + ">" +
+        w.label + (w.latest ? " · 最新" : "") + "</button>"
+      );
+    }).join("");
+    weekTabs.querySelectorAll(".tab").forEach(function (t) {
+      t.addEventListener("click", function () {
+        renderWeekNote(key, t.getAttribute("data-week"));
+      });
+    });
+    renderWeekNote(key, (v.weeks.filter(function (w) { return w.latest; })[0] || v.weeks[0]).id);
+
+    var bar = document.getElementById("ver-bar");
+    if (!v.bar) {
+      bar.innerHTML = "";
+      return;
+    }
+    var b = v.bar;
+    bar.innerHTML =
+      '<div class="prog" aria-label="版本进度">' +
+        (b.done ? '<span class="prog-done" style="flex:' + b.done + '"></span>' : "") +
+        (b.review ? '<span class="prog-review" style="flex:' + b.review + '"></span>' : "") +
+        (b.doing ? '<span class="prog-doing" style="flex:' + b.doing + '"></span>' : "") +
+        (b.todo ? '<span class="prog-todo" style="flex:' + b.todo + '"></span>' : "") +
+      "</div>" +
+      '<div class="counts">' +
+        "<span>完成 <b>" + b.done + "</b></span>" +
+        "<span>进行中 <b>" + b.doing + "</b></span>" +
+        "<span>待办 <b>" + b.todo + "</b></span>" +
+      "</div>";
+  }
+
+  function selectVer(key) {
+    document.querySelectorAll("#ver-tabs .tab").forEach(function (t) {
+      t.setAttribute("aria-selected", t.getAttribute("data-ver") === key ? "true" : "false");
+    });
+    renderVersion(key);
+  }
+
+  document.querySelectorAll("#ver-tabs .tab").forEach(function (t) {
+    t.addEventListener("click", function () {
+      selectVer(t.getAttribute("data-ver"));
+    });
+  });
+
+  function knownOf(values) {
+    return values.filter(function (x) { return x !== null && x !== undefined; });
+  }
+
+  function yMaxOf(seriesList) {
+    var k = [];
+    seriesList.forEach(function (s) {
+      k = k.concat(knownOf(s.values));
+      if (s.target != null) k.push(s.target);
+    });
+    if (!k.length) return 1;
+    return Math.max.apply(null, k.concat([1]));
+  }
+
+  function drawChart(host, opt) {
+    host.innerHTML = "";
+    var labels = opt.labels;
+    var series = (opt.series || []).filter(function (s) { return s.on !== false; });
+    var any = series.some(function (s) { return knownOf(s.values).length; });
+    if (!any) {
+      var empty = document.createElement("div");
+      empty.className = "empty";
+      empty.style.height = "100%";
+      empty.style.display = "flex";
+      empty.style.alignItems = "center";
+      empty.textContent = opt.empty || "点上面的系列，决定画哪几条";
+      host.appendChild(empty);
+      return;
+    }
+
+    var left = series.filter(function (s) { return s.axis !== "right"; });
+    var right = series.filter(function (s) { return s.axis === "right"; });
+    var yMaxL = yMaxOf(left.length ? left : series);
+    var yMaxR = right.length ? yMaxOf(right) : yMaxL;
+    var hasRight = right.length > 0;
+    var vh = 148;
+
+    var svgNS = "http://www.w3.org/2000/svg";
+    var svg = document.createElementNS(svgNS, "svg");
+    svg.setAttribute("viewBox", "0 0 640 " + vh);
+    svg.setAttribute("role", "img");
+    host.appendChild(svg);
+
+    var tip = document.createElement("div");
+    tip.className = "chart-tip hidden";
+    host.appendChild(tip);
+
+    var pad = { l: 32, r: hasRight ? 32 : 8, t: 10, b: 22 };
+    var iw = 640 - pad.l - pad.r;
+    var ih = vh - pad.t - pad.b;
+    function xAt(i) { return pad.l + (labels.length === 1 ? iw / 2 : (iw * i) / (labels.length - 1)); }
+    function yAt(v, max) { return pad.t + ih - (v / max) * ih; }
+
+    function el(name, attrs) {
+      var n = document.createElementNS(svgNS, name);
+      Object.keys(attrs).forEach(function (k) { n.setAttribute(k, attrs[k]); });
+      svg.appendChild(n);
+      return n;
+    }
+
+    var ticks = 3;
+    for (var g = 0; g <= ticks; g++) {
+      var gy = pad.t + (ih * g) / ticks;
+      el("line", {
+        x1: pad.l, y1: gy, x2: 640 - pad.r, y2: gy,
+        stroke: "var(--color-divider)", "stroke-width": "1"
+      });
+      if (g === 0 || g === ticks) {
+        el("text", {
+          x: pad.l - 6, y: gy + 3, fill: "var(--color-neutral-500)",
+          "font-family": "var(--font-mono)", "font-size": "10", "text-anchor": "end"
+        }).textContent = String(Math.round(yMaxL - (yMaxL * g) / ticks));
+        if (hasRight) {
+          el("text", {
+            x: 640 - pad.r + 6, y: gy + 3, fill: "var(--color-neutral-500)",
+            "font-family": "var(--font-mono)", "font-size": "10", "text-anchor": "start"
+          }).textContent = String(Math.round(yMaxR - (yMaxR * g) / ticks));
+        }
+      }
+    }
+
+    series.forEach(function (s) {
+      if (s.target == null) return;
+      var max = s.axis === "right" ? yMaxR : yMaxL;
+      el("line", {
+        x1: pad.l, y1: yAt(s.target, max), x2: 640 - pad.r, y2: yAt(s.target, max),
+        stroke: s.color, "stroke-width": "1", "stroke-dasharray": "3 3", opacity: "0.4"
+      });
+    });
+
+    labels.forEach(function (w, i) {
+      var step = labels.length > 10 ? 3 : 1;
+      if (i % step !== 0 && i !== labels.length - 1) return;
+      el("text", {
+        x: xAt(i), y: vh - 6, fill: "var(--color-neutral-600)",
+        "font-family": "var(--font-mono)", "font-size": "10", "text-anchor": "middle"
+      }).textContent = String(w).replace("2026-", "");
+    });
+
+    function segments(values) {
+      var segs = [];
+      var cur = [];
+      values.forEach(function (v, i) {
+        if (v === null || v === undefined) {
+          if (cur.length) { segs.push(cur); cur = []; }
+        } else {
+          cur.push([i, v]);
+        }
+      });
+      if (cur.length) segs.push(cur);
+      return segs;
+    }
+
+    var cross = el("line", {
+      x1: 0, y1: pad.t, x2: 0, y2: pad.t + ih,
+      stroke: "var(--color-neutral-500)", "stroke-width": "1", opacity: "0"
+    });
+
+    function showTip(i, cx, cy) {
+      var rows = series.map(function (s) {
+        var v = s.values[i];
+        var shown = (v === null || v === undefined) ? "—" : v;
+        return '<div class="vl">' + s.name + " · " + shown + "</div>";
+      }).join("");
+      tip.innerHTML = '<div class="wk">' + labels[i] + "</div>" + rows;
+      tip.classList.remove("hidden");
+      var rect = host.getBoundingClientRect();
+      tip.style.left = ((cx / 640) * rect.width) + "px";
+      tip.style.top = ((cy / vh) * rect.height) + "px";
+      cross.setAttribute("x1", cx);
+      cross.setAttribute("x2", cx);
+      cross.setAttribute("opacity", "0.35");
+    }
+
+    function hideTip() {
+      tip.classList.add("hidden");
+      cross.setAttribute("opacity", "0");
+    }
+
+    series.forEach(function (s, si) {
+      var max = s.axis === "right" ? yMaxR : yMaxL;
+      var segs = segments(s.values);
+      if (s.fill) {
+        segs.forEach(function (seg) {
+          if (seg.length < 2) return;
+          var d = seg.map(function (p, idx) {
+            return (idx ? "L" : "M") + xAt(p[0]) + " " + yAt(p[1], max);
+          }).join(" ");
+          d += " L" + xAt(seg[seg.length - 1][0]) + " " + (pad.t + ih);
+          d += " L" + xAt(seg[0][0]) + " " + (pad.t + ih) + " Z";
+          el("path", { d: d, fill: s.color, opacity: "0.12", stroke: "none" });
+        });
+      }
+      segs.forEach(function (seg) {
+        if (seg.length < 2) return;
+        var d = seg.map(function (p, idx) {
+          return (idx ? "L" : "M") + xAt(p[0]) + " " + yAt(p[1], max);
+        }).join(" ");
+        el("path", { d: d, fill: "none", stroke: s.color, "stroke-width": si === 0 ? "2" : "1.6", "stroke-linejoin": "round" });
+      });
+      s.values.forEach(function (v, i) {
+        if (v === null || v === undefined) return;
+        var cx = xAt(i);
+        var cy = yAt(v, max);
+        var hit = el("circle", { cx: cx, cy: cy, r: "9", fill: "transparent", style: "cursor:pointer" });
+        var dot = el("circle", {
+          cx: cx, cy: cy, r: s.fill ? "4.5" : "3.5",
+          fill: "var(--color-card)", stroke: s.color, "stroke-width": "2"
+        });
+        hit.addEventListener("mouseenter", function () { showTip(i, cx, cy); });
+        hit.addEventListener("mouseleave", hideTip);
+        dot.addEventListener("mouseenter", function () { showTip(i, cx, cy); });
+        dot.addEventListener("mouseleave", hideTip);
+      });
+    });
+  }
+
+  function currentScope() {
+    return SCOPES.filter(function (s) { return s.id === bizScope; })[0] || SCOPES[0];
+  }
+
+  function groupPlots(scope) {
+    var lags = scope.lags || [];
+    var leads = scope.leads || [];
+    if (!lags.length) return [];
+    var first = lags[0].name;
+    var by = {};
+    lags.forEach(function (lag) {
+      by[lag.name] = { lag: lag, leads: [] };
+    });
+    leads.forEach(function (lead) {
+      var key = (lead.leads || "").trim();
+      if (!key || !by[key]) key = first;
+      by[key].leads.push(lead);
+    });
+    return lags.map(function (lag) { return by[lag.name]; });
+  }
+
+  function shownVal(m) {
+    var v = bizGrain === "day" ? m.dayValue : m.weekValue;
+    return (v === null || v === undefined) ? "—" : v;
+  }
+
+  function renderBiz() {
+    var tabs = document.getElementById("biz-tabs");
+    tabs.innerHTML = SCOPES.map(function (s) {
+      return (
+        '<button type="button" class="tab" role="tab" data-scope="' + s.id + '"' +
+        (s.id === bizScope ? ' aria-selected="true"' : ' aria-selected="false"') + ">" +
+        s.label + "</button>"
+      );
+    }).join("");
+    tabs.querySelectorAll(".tab").forEach(function (t) {
+      t.addEventListener("click", function () {
+        bizScope = t.getAttribute("data-scope");
+        renderBiz();
+      });
+    });
+
+    var host = document.getElementById("biz-plots");
+    host.innerHTML = "";
+    var plots = groupPlots(currentScope());
+    host.className = "plots" + (plots.length > 1 ? " is-multi" : "");
+    host.setAttribute("data-count", String(plots.length));
+    plots.forEach(function (plot, pi) {
+      var wrap = document.createElement("div");
+      wrap.className = "plot";
+      var seriesList = [{ kind: "滞后", m: plot.lag, color: COLORS.lag, axis: "left", fill: true }].concat(
+        plot.leads.map(function (l, i) {
+          return { kind: "引领", m: l, color: COLORS.lead[i % COLORS.lead.length], axis: "right", fill: false };
+        })
+      );
+
+      var list = document.createElement("div");
+      list.className = "series";
+      list.setAttribute("role", "list");
+      seriesList.forEach(function (s) {
+        var on = hidden[s.m.id] !== true;
+        var row = document.createElement("div");
+        row.className = "series-row";
+        row.setAttribute("role", "listitem");
+        row.style.setProperty("--swatch", s.color);
+        var manual = (s.kind === "滞后" && s.m.collect === "manual")
+          ? ('<span class="manual-slot">' +
+              '<input class="input mono" id="lag-input-' + pi + '" type="text" inputmode="numeric" aria-label="手填 ' + s.m.name + '" value="' +
+                (s.m.weekValue == null ? "" : s.m.weekValue) + '">' +
+              '<button type="button" class="btn btn-ghost btn-sm" data-lag-save="' + pi + '">记下</button>' +
+              '<span class="field-help">手填</span>' +
+            "</span>")
+          : "";
+        row.innerHTML =
+          '<label class="series-toggle">' +
+            '<input type="checkbox"' + (on ? " checked" : "") + '>' +
+            '<i class="swatch"></i>' +
+            '<span class="name">' + s.m.name + "</span>" +
+          "</label>" +
+          manual +
+          '<span class="kind">' + s.kind + "</span>" +
+          '<span class="val">' + shownVal(s.m) + "</span>" +
+          '<span class="tgt">' + s.m.target + "</span>";
+        row.querySelector("input[type=checkbox]").addEventListener("change", function (ev) {
+          hidden[s.m.id] = !ev.target.checked;
+          renderBiz();
+        });
+        list.appendChild(row);
+      });
+      wrap.appendChild(list);
+
+      var chart = document.createElement("div");
+      chart.className = "chart-wrap";
+      chart.setAttribute("aria-label", plot.lag.name);
+      wrap.appendChild(chart);
+
+      host.appendChild(wrap);
+
+      var labels = bizGrain === "day" ? DAY_LABELS : WEEK_LABELS;
+      drawChart(chart, {
+        labels: labels,
+        series: seriesList.map(function (s) {
+          return {
+            name: s.m.name,
+            values: bizGrain === "day" ? s.m.day : s.m.week,
+            color: s.color,
+            axis: s.axis,
+            fill: s.fill,
+            target: s.m.targetN,
+            on: hidden[s.m.id] !== true
+          };
+        })
+      });
+    });
+
+    host.querySelectorAll("[data-lag-save]").forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        var i = btn.getAttribute("data-lag-save");
+        var plot = groupPlots(currentScope())[+i];
+        var input = document.getElementById("lag-input-" + i);
+        var v = input ? input.value.trim() : "";
+        toast("记下「" + plot.lag.name + "」", v ? v + "（不写回仓）" : "空值未记");
+      });
+    });
+  }
+
+  function renderSdlc() {
+    var pack = SDLC[sdlcGrain];
+    document.getElementById("sdlc-commits").textContent = pack.now.commits;
+    document.getElementById("sdlc-prs").textContent = pack.now.prs;
+    document.getElementById("sdlc-issues").textContent = pack.now.issues;
+    [
+      ["chart-commits", "提交", pack.commits, COLORS.commits],
+      ["chart-prs", "合入 PR", pack.prs, COLORS.prs],
+      ["chart-issues", "未处理 issue", pack.issues, COLORS.issues]
+    ].forEach(function (row) {
+      drawChart(document.getElementById(row[0]), {
+        labels: pack.labels,
+        empty: "无观测",
+        series: [{ name: row[1], values: row[2], color: row[3], axis: "left", fill: true, on: true }]
+      });
+    });
+  }
+
+  document.querySelectorAll('input[name="biz-grain"]').forEach(function (el) {
+    el.addEventListener("change", function () {
+      if (el.checked) { bizGrain = el.value; renderBiz(); }
+    });
+  });
+  document.querySelectorAll('input[name="sdlc-grain"]').forEach(function (el) {
+    el.addEventListener("change", function () {
+      if (el.checked) { sdlcGrain = el.value; renderSdlc(); }
+    });
+  });
+
+  selectVer("v03");
+  renderBiz();
+  renderSdlc();
+})();
+</script>
+</body>
+</html>

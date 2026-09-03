@@ -272,8 +272,14 @@ pub struct MetricCardVm {
     /// 上一次「采一次指标」真采到的现值。**`None` ≠ 0** —— 没采过、没采到、
     /// 手填,都是 `None`。
     pub collected: Option<String>,
-    /// 近四周走势,旧的在前。采不到的点是 `None`,画的时候断开,不补前值。
+    /// 近几周走势,旧的在前。采不到的点是 `None`,画的时候断开,不补前值。
     pub trend: Vec<(String, Option<f64>)>,
+    /// 近 14 个日历日走势。没日行的格是 `None`,断开,不补 0。
+    pub day_trend: Vec<(String, Option<f64>)>,
+    /// `.bw/metrics.toml` 的 `feature`。空 = 总览「整体」页签。
+    pub feature: String,
+    /// 引领盯的滞后 `name`。空 = 同页签第一条滞后。滞后 / 北极星上无意义。
+    pub leads: String,
     /// 这次为什么没采到。空 = 采到了,或者压根不该采。**不吞错误。**
     pub collect_error: String,
 }
@@ -323,9 +329,11 @@ pub struct OpsChipVm {
 pub struct RepoStatsVm {
     /// `(数值, 这个数是什么, 从哪采的)`。压成一行小字,不再是一格格的卡片。
     pub items: Vec<(String, String, String)>,
-    /// 近四周走势,**旧的在前**。全部现算 —— 能采今天就能采过去任意一周,
+    /// 近几周走势,**旧的在前**。全部现算 —— 能采今天就能采过去任意一周,
     /// 所以新接入的项目第一天就有走势,不用先攒几周。
     pub trend: Vec<TrendPointVm>,
+    /// 近 14 个日历日走势,旧的在前。没采到的点是 `None`。
+    pub day_trend: Vec<TrendPointVm>,
     /// git 那两条线为什么是空的。空字符串 = 没有话要说。
     pub git_note: String,
     /// 远端那条线为什么是空的。空字符串 = 没有话要说。
@@ -436,6 +444,8 @@ pub struct PlanVersionVm {
     pub released: bool,
     /// 打了这个版本标签的运作活①评论里的版本目标。没有就是空。
     pub goal: String,
+    /// 挂了这个版本的活的五段计数。没有开放活就是全 0,进度条空着。
+    pub counts: WeekCountsVm,
 }
 
 #[derive(Clone, Debug, PartialEq)]

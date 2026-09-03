@@ -84,6 +84,13 @@ pub struct MetricDef {
     /// 迷你门槛,如 `≥5` `≤24h`。空 = 还没定目标,界面显示「目标未设」。
     #[serde(default)]
     pub target: String,
+    /// 所属特性。空 = 整体,总览落在「整体」页签;有值才出「XX特性」页签。
+    #[serde(default)]
+    pub feature: String,
+    /// 引领盯的那条滞后的 `name`。空 = 落到同一 `feature` 页签的第一条滞后。
+    /// 滞后 / 北极星上此字段无意义。
+    #[serde(default)]
+    pub leads: String,
     #[serde(default)]
     pub collect: CollectPlan,
 }

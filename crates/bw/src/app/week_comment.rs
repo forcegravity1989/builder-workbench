@@ -99,21 +99,22 @@ fn section_text(body: &str, names: &[&str]) -> Option<String> {
 }
 
 impl super::App {
-    /// 各 ISO 周运作活①评论里解析出的版本目标这一段。读失败的周就空着,不挡整屏。
-    /// 周与周互不依赖,评论两两并行拉,不按周串行等。
+    /// 运作活①评论里解析出的版本目标。键是 ISO 周**和** `bw:plan:` 版本名
+    /// (有就各写一份),总览按版本名取,健康仍按本周取。读失败就空着,不挡整屏。
+    /// 活与活互不依赖,评论两两并行拉。
     pub async fn week_goals_from_ops1(
         &self,
         project: &crate::model::Project,
         issues: &[crate::model::Issue],
     ) -> std::collections::HashMap<String, String> {
         let current = crate::isoweek::current_week();
-        let jobs: Vec<(String, u32)> = issues
+        let jobs: Vec<(String, String, u32)> = issues
             .iter()
             .filter(|i| crate::version::is_ops1_title(&i.title))
             .map(|i| {
                 let week =
                     crate::isoweek::week_of_unix(i.created_at).unwrap_or_else(|| current.clone());
-                (week, i.id.iid())
+                (week, i.plan_version.clone(), i.id.iid())
             })
             .collect();
         let mut out = std::collections::HashMap::new();
@@ -121,15 +122,15 @@ impl super::App {
         while i < jobs.len() {
             if i + 1 < jobs.len() {
                 let (a, b) = tokio::join!(
-                    super::issue_store::list_comments(self, project, jobs[i].1),
-                    super::issue_store::list_comments(self, project, jobs[i + 1].1),
+                    super::issue_store::list_comments(self, project, jobs[i].2),
+                    super::issue_store::list_comments(self, project, jobs[i + 1].2),
                 );
-                insert_goal(&mut out, &jobs[i].0, a);
-                insert_goal(&mut out, &jobs[i + 1].0, b);
+                insert_goal(&mut out, &jobs[i].0, &jobs[i].1, a);
+                insert_goal(&mut out, &jobs[i + 1].0, &jobs[i + 1].1, b);
                 i += 2;
             } else {
-                let a = super::issue_store::list_comments(self, project, jobs[i].1).await;
-                insert_goal(&mut out, &jobs[i].0, a);
+                let a = super::issue_store::list_comments(self, project, jobs[i].2).await;
+                insert_goal(&mut out, &jobs[i].0, &jobs[i].1, a);
                 i += 1;
             }
         }
@@ -140,13 +141,17 @@ impl super::App {
 fn insert_goal(
     out: &mut std::collections::HashMap<String, String>,
     week: &str,
+    plan: &str,
     bodies: super::Result<Vec<String>>,
 ) {
     let Ok(bodies) = bodies else {
         return;
     };
     if let Some(goal) = parse_comments(&bodies).goal {
-        out.insert(week.to_string(), goal);
+        out.insert(week.to_string(), goal.clone());
+        if !plan.is_empty() && plan != week {
+            out.insert(plan.to_string(), goal);
+        }
     }
 }
 

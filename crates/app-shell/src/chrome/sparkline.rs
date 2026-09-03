@@ -160,3 +160,250 @@ fn fmt_tick(v: f64) -> String {
         format!("{v:.1}")
     }
 }
+
+/// 总览合图上的一条线。左轴滞后、右轴引领。`on = false` 不画。
+#[derive(Clone)]
+pub struct MultiSeries {
+    pub points: Vec<(String, Option<f64>)>,
+    pub color: &'static str,
+    pub right: bool,
+    pub fill: bool,
+    pub on: bool,
+}
+
+const MW: f64 = 560.0;
+const MH: f64 = 176.0;
+const MPAD_L: f64 = 34.0;
+const MPAD_R: f64 = 34.0;
+const MPAD_T: f64 = 16.0;
+const MPAD_B: f64 = 20.0;
+
+/// 多系列双轴。没勾上或没数的线不画;一个已知点都没有就写「尚无观测」。
+pub fn trend_chart_multi(series: &[MultiSeries]) -> Element {
+    let n = series
+        .iter()
+        .find(|s| s.on && !s.points.is_empty())
+        .map(|s| s.points.len())
+        .unwrap_or(0);
+    let labels: Vec<String> = series
+        .iter()
+        .find(|s| s.on && !s.points.is_empty())
+        .map(|s| s.points.iter().map(|(l, _)| l.clone()).collect())
+        .unwrap_or_default();
+
+    let left_known: Vec<f64> = series
+        .iter()
+        .filter(|s| s.on && !s.right)
+        .flat_map(|s| s.points.iter().filter_map(|(_, v)| *v))
+        .collect();
+    let right_known: Vec<f64> = series
+        .iter()
+        .filter(|s| s.on && s.right)
+        .flat_map(|s| s.points.iter().filter_map(|(_, v)| *v))
+        .collect();
+
+    if left_known.is_empty() && right_known.is_empty() {
+        return rsx! {
+            div { class: "ov-chart",
+                div { class: "detail-empty", style: "padding:18px 0;font-size:12px;", "尚无观测" }
+            }
+        };
+    }
+
+    let (ly0, ly1) = scale(&left_known);
+    let (ry0, ry1) = scale(&right_known);
+    let plot_w = MW - MPAD_L - MPAD_R;
+    let plot_h = MH - MPAD_T - MPAD_B;
+    let x_at = |i: usize| -> f64 {
+        if n <= 1 {
+            MPAD_L + plot_w / 2.0
+        } else {
+            MPAD_L + (i as f64 / (n - 1) as f64) * plot_w
+        }
+    };
+    let y_left = |v: f64| -> f64 { MPAD_T + plot_h - (v - ly0) / (ly1 - ly0) * plot_h };
+    let y_right = |v: f64| -> f64 { MPAD_T + plot_h - (v - ry0) / (ry1 - ry0) * plot_h };
+    let plot_bottom = MPAD_T + plot_h;
+    let skip_label = n > 8;
+    let drawn: Vec<DrawnLine> = series
+        .iter()
+        .enumerate()
+        .filter(|(_, s)| s.on)
+        .map(|(si, s)| {
+            if s.right {
+                draw_line(s, n, &x_at, y_right, si)
+            } else {
+                draw_line(s, n, &x_at, y_left, si)
+            }
+        })
+        .collect();
+    let left_ticks = if left_known.is_empty() {
+        vec![]
+    } else {
+        vec![(ly1, y_left(ly1)), (ly0, y_left(ly0))]
+    };
+    let right_ticks = if right_known.is_empty() {
+        vec![]
+    } else {
+        vec![(ry1, y_right(ry1)), (ry0, y_right(ry0))]
+    };
+
+    rsx! {
+        div { class: "ov-chart",
+            svg {
+                width: "100%",
+                height: "{MH}",
+                view_box: "0 0 {MW} {MH}",
+                preserve_aspect_ratio: "xMidYMid meet",
+                for (v, y) in left_ticks {
+                    g { key: "lt{v}",
+                        line {
+                            x1: "{MPAD_L}", y1: "{y:.1}", x2: "{MW - MPAD_R}", y2: "{y:.1}",
+                            stroke: "var(--border)", stroke_width: "1", stroke_dasharray: "3 3",
+                        }
+                        text {
+                            x: "{MPAD_L - 5.0}", y: "{y + 3.5:.1}", text_anchor: "end",
+                            style: "font-family:var(--mono);font-size:9px;fill:var(--ink-3);",
+                            "{fmt_tick(v)}"
+                        }
+                    }
+                }
+                for (v, y) in right_ticks {
+                    g { key: "rt{v}",
+                        text {
+                            x: "{MW - MPAD_R + 5.0}", y: "{y + 3.5:.1}", text_anchor: "start",
+                            style: "font-family:var(--mono);font-size:9px;fill:var(--ink-3);",
+                            "{fmt_tick(v)}"
+                        }
+                    }
+                }
+                for line in drawn.iter() {
+                    g { key: "{line.key}",
+                        if line.fill && !line.fill_d.is_empty() {
+                            path {
+                                d: "{line.fill_d}", fill: "{line.color}",
+                                fill_opacity: "0.12", stroke: "none",
+                            }
+                        }
+                        path {
+                            d: "{line.d}", fill: "none", stroke: "{line.color}",
+                            stroke_width: "2", stroke_linejoin: "round", stroke_linecap: "round",
+                        }
+                        for (i, (x, y)) in line.dots.iter().enumerate() {
+                            circle {
+                                key: "c{i}",
+                                cx: "{x:.1}", cy: "{y:.1}", r: "2.6",
+                                fill: "var(--card)", stroke: "{line.color}", stroke_width: "1.5",
+                            }
+                        }
+                    }
+                }
+                for (i, label) in labels.iter().enumerate() {
+                    if !skip_label || i % 2 == 0 || i + 1 == n {
+                        text {
+                            key: "xl{i}",
+                            x: "{x_at(i):.1}",
+                            y: "{plot_bottom + 13.0:.1}",
+                            text_anchor: "middle",
+                            style: "font-family:var(--mono);font-size:9px;fill:var(--ink-3);",
+                            "{label}"
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+struct DrawnLine {
+    key: String,
+    color: &'static str,
+    d: String,
+    fill_d: String,
+    fill: bool,
+    dots: Vec<(f64, f64)>,
+}
+
+fn draw_line(
+    s: &MultiSeries,
+    n: usize,
+    x_at: &impl Fn(usize) -> f64,
+    y_at: impl Fn(f64) -> f64,
+    si: usize,
+) -> DrawnLine {
+    let mut d = String::new();
+    let mut fill_d = String::new();
+    let mut dots = Vec::new();
+    let mut pen_down = false;
+    let mut first_xy: Option<(f64, f64)> = None;
+    let mut last_xy: Option<(f64, f64)> = None;
+    let plot_bottom = MPAD_T + (MH - MPAD_T - MPAD_B);
+    let close_fill = |fill_d: &mut String, first: Option<(f64, f64)>, last: Option<(f64, f64)>| {
+        if let (Some((fx, _)), Some((lx, _))) = (first, last) {
+            fill_d.push_str(&format!(
+                " L{lx:.1} {plot_bottom:.1} L{fx:.1} {plot_bottom:.1} Z"
+            ));
+        }
+    };
+    for (i, (_, v)) in s.points.iter().take(n).enumerate() {
+        match v {
+            None => {
+                if s.fill {
+                    close_fill(&mut fill_d, first_xy, last_xy);
+                }
+                pen_down = false;
+                first_xy = None;
+                last_xy = None;
+            }
+            Some(v) => {
+                let (x, y) = (x_at(i), y_at(*v));
+                dots.push((x, y));
+                if pen_down {
+                    d.push_str(&format!(" L{x:.1} {y:.1}"));
+                    if s.fill {
+                        fill_d.push_str(&format!(" L{x:.1} {y:.1}"));
+                    }
+                } else {
+                    d.push_str(&format!(" M{x:.1} {y:.1}"));
+                    if s.fill {
+                        fill_d.push_str(&format!(" M{x:.1} {y:.1}"));
+                    }
+                    first_xy = Some((x, y));
+                    pen_down = true;
+                }
+                last_xy = Some((x, y));
+            }
+        }
+    }
+    if s.fill {
+        close_fill(&mut fill_d, first_xy, last_xy);
+    }
+    DrawnLine {
+        key: format!("ms{si}"),
+        color: s.color,
+        d,
+        fill_d,
+        fill: s.fill,
+        dots,
+    }
+}
+
+fn scale(known: &[f64]) -> (f64, f64) {
+    if known.is_empty() {
+        return (0.0, 1.0);
+    }
+    let min = known.iter().copied().fold(f64::INFINITY, f64::min);
+    let max = known.iter().copied().fold(f64::NEG_INFINITY, f64::max);
+    if (max - min).abs() <= f64::EPSILON {
+        let lo = if min >= 0.0 { 0.0 } else { min - 1.0 };
+        (lo, min + 1.0)
+    } else {
+        let pad = (max - min) * 0.08;
+        let lo = if min >= 0.0 {
+            (min - pad).max(0.0)
+        } else {
+            min - pad
+        };
+        (lo, max + pad)
+    }
+}
