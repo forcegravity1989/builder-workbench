@@ -1,9 +1,9 @@
 //! codehub/GitHub issue 持久化映射层(数据层迁移刀2/刀3)。
 //!
 //! 把 bw 的 `Issue` 领域对象 ↔ codehub/GitHub issue 互转。issue 的状态、
-//! 排期、版本、类别从本地 SQLite 搬到远端 issue + 标签(`bw:status:*` /
-//! `bw:plan:*` / `bw:released:*` / `bw:category:*`),这是那条映射的正本。旧 `bw:week:` 不认。
-//! 周版本和人起名的版本是同一槽位,一张活只挂一个。
+//! 排期、版本、类别以远端 issue + 标签为正本(`bw:status:*` /
+//! `bw:plan:*` / `bw:released:*` / `bw:category:*`)。旧 `bw:week:` 不认。
+//! 每个里程碑都是一个版本,一张活只挂一个。
 //!
 //! 字段映射的取舍:每一条都不自作主张加标签。**lossy**:远端 issue 的 `body` 经
 //! `view_issue` 单查带回(列表查询不带正文);`branch`/`pr_number`、
@@ -569,8 +569,9 @@ fn resolve_tool_workflow(
     category: Option<crate::model::Category>,
 ) -> (String, String) {
     if kind == IssueKind::Ops {
+        // 运作活①② 跟构建的本机开工工具,不走配置屏「运维」。
         return (
-            resolve_tool(asset_root, crate::model::Category::Ops),
+            resolve_tool(asset_root, crate::model::Category::Build),
             workflow_for(kind, title),
         );
     }
@@ -800,7 +801,7 @@ workflow = "mattpocock-skills"
         let _ = std::fs::remove_dir_all(&dir);
         assert_eq!(
             tool,
-            crate::defaults::default_tool(crate::model::Category::Ops)
+            crate::defaults::default_tool(crate::model::Category::Build)
         );
         assert_eq!(workflow, super::super::OPS1_WORKFLOW);
     }
@@ -816,7 +817,7 @@ workflow = "mattpocock-skills"
         );
         assert_eq!(
             tool,
-            crate::defaults::default_tool(crate::model::Category::Ops)
+            crate::defaults::default_tool(crate::model::Category::Build)
         );
         assert_eq!(workflow, super::super::OPS2_WORKFLOW);
     }
@@ -845,13 +846,13 @@ workflow = "mattpocock-skills"
         .unwrap();
         let assets = dir.join("assets");
         std::fs::create_dir_all(&assets).unwrap();
-        crate::local::Settings::set_tool(&assets, "ops", "claude_cli").unwrap();
+        crate::local::Settings::set_tool(&assets, "build", "cursor").unwrap();
         let mut p = proj();
         p.workspace_path = dir.display().to_string();
         let (tool, workflow) =
             resolve_tool_workflow(&p, &assets, IssueKind::Ops, "更新指标 + 制定版本计划", None);
         let _ = std::fs::remove_dir_all(&dir);
-        assert_eq!(tool, "claude_cli");
+        assert_eq!(tool, "cursor");
         assert_eq!(workflow, super::super::OPS1_WORKFLOW);
     }
 }

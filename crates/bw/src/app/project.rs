@@ -8,7 +8,7 @@ use super::worktree;
 use super::{issue_store, App, AppError, ProgressLine, Result};
 use crate::command::{Event, ProjectIntent, RemoteRef};
 use crate::model::{IssueStatus, Project, ProjectId};
-use crate::repo::project_file::{self, ChatConfig, ProjectFile};
+use crate::repo::project_file::{self, ChatConfig};
 
 impl App {
     pub(super) async fn create_project(
@@ -63,11 +63,7 @@ impl App {
         let in_head = crate::git::path_in_head(&ws, project_file::REL_PATH).await;
         let open_charter = issue_store::find_open_charter(self, &row).await?.is_some();
         let adopted = in_head || open_charter;
-        let mut file = existing.unwrap_or_else(|| ProjectFile {
-            // 新建项目默认在研版本 v0.1。
-            current_version: "v0.1".into(),
-            ..Default::default()
-        });
+        let mut file = existing.unwrap_or_default();
         fill_if_blank(&mut file.name, &intent.name);
         fill_if_blank(&mut file.brief, &intent.brief);
         fill_if_blank(&mut file.benchmark, &intent.benchmark);
@@ -276,7 +272,6 @@ impl App {
         file.brief = intent.brief.clone();
         file.benchmark = intent.benchmark.clone();
         file.opportunity = intent.north_star.clone();
-        file.current_version = intent.current_version.clone();
         file.chat = if intent.chat_provider.is_empty() || intent.chat_provider == "none" {
             None
         } else {

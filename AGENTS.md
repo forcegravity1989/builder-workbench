@@ -4,23 +4,23 @@
 
 ## 原则正本（最高优先级）
 
-**`principles/` 是本仓最重要、最慢变的原则。** 开特性、改产品主张、写给人看的文档之前必须对齐这里；不得用草稿实现或口头约定推翻。
+**`docs/01-principles/` 是本仓最重要、最慢变的原则。** 开特性、改产品主张、写给人看的文档之前必须对齐这里；不得用草稿实现或口头约定推翻。
 
 | 篇 | 管什么 |
 |---|---|
-| [`principles/01-document-organization.md`](principles/01-document-organization.md) | 整仓知识/文档怎么分层；`changes/` 少 gate |
-| [`principles/02-working-backwards.md`](principles/02-working-backwards.md) | 逆向工作法：特性怎么写 intent / 带原型的 spec |
-| [`principles/03-press-release-faq-flywheel.md`](principles/03-press-release-faq-flywheel.md) | **整个产品**的新闻稿、外/内 FAQ、飞轮（主张正本） |
+| [`docs/01-principles/01-document-organization.md`](docs/01-principles/01-document-organization.md) | 整仓知识/文档怎么分层；`docs/05-features/` 少 gate |
+| [`docs/01-principles/02-working-backwards.md`](docs/01-principles/02-working-backwards.md) | 逆向工作法：特性怎么写 intent / 带原型的 spec |
+| [`docs/01-principles/03-press-release-faq-flywheel.md`](docs/01-principles/03-press-release-faq-flywheel.md) | **整个产品**的新闻稿、外/内 FAQ、飞轮（主张正本） |
 
-索引见 [`principles/README.md`](principles/README.md)。改客群 / 飞轮 / 对外主张 → 先议再改 03；特性 intent 不得偷偷改写。现行实现对照听 [`docs/architecture.md`](docs/architecture.md)，**不得把草稿界面讲成 03 里已经交付的体验**。
+索引见 [`docs/01-principles/README.md`](docs/01-principles/README.md)。改客群 / 飞轮 / 对外主张 → 先议再改 03；特性 intent 不得偷偷改写。现行实现对照听 [`docs/architecture.md`](docs/architecture.md)，**不得把草稿界面讲成 03 里已经交付的体验**。
 
 ### 特性起手路径（硬约定）
 
 | 场景 | 怎么走 |
 |---|---|
-| **特性级变更** | 对齐 03 → 按 **02** 开 / 改 `changes/<id>/intent.md` + 带原型的 `spec.md`（人 gate）；`plan.md` 仅大风险升 gate；小修直修（见 01） |
-| **Superpowers / grill-me** | **可用**：发散、质询、写计划草稿。产出必须落回 `changes/<id>/`。不得把聊天或旁路 specs 当成已过 gate 的正本 |
-| **小 bug / 琐修** | 直接改 + 门禁 / 验证；不开 `changes/` |
+| **特性级变更** | 对齐 03 → 按 **02** 开 / 改 `docs/05-features/<id>/intent.md` + 带原型的 `spec.md`（人 gate）；`plan.md` 仅大风险升 gate；小修直修（见 01） |
+| **Superpowers / grill-me** | **可用**：发散、质询、写计划草稿。产出必须落回 `docs/05-features/<id>/`。不得把聊天或旁路 specs 当成已过 gate 的正本 |
+| **小 bug / 琐修** | 直接改 + 门禁 / 验证；不开 `docs/05-features/` |
 
 
 ## 这是什么
@@ -31,7 +31,7 @@
 
 ## 语言和构建
 
-Rust 1.82+,cargo workspace。桌面壳另需 Dioxus 0.7 的系统依赖(macOS 自带 WebKit,Windows 用 WebView2)。`#![forbid(unsafe_code)]` 是 `bw-engine` 的规矩。跨会话只认本仓的 `principles/` + `AGENTS.md` + `CONTEXT.md` + `docs/` + `CHANGELOG.md` + `DESIGN.md`,不凭上一会话口头结论改代码。
+Rust 1.82+,cargo workspace。桌面壳另需 Dioxus 0.7 的系统依赖(macOS 自带 WebKit,Windows 用 WebView2)。`#![forbid(unsafe_code)]` 是 `bw-engine` 的规矩。跨会话只认本仓的 `docs/01-principles/` + `AGENTS.md` + `CONTEXT.md` + `docs/` + `CHANGELOG.md` + `DESIGN.md`,不凭上一会话口头结论改代码。
 
 仓外 IDE(Claude Code / Cursor / Codex)开新会话,先读 [`.claude/skills/workbench-start/SKILL.md`](.claude/skills/workbench-start/SKILL.md)——只是闸门,正本仍是本文件。工作台内嵌终端里不要用它(那边已经灌了系统提示词)。Workbench MVP 还不能在工作台里维护自己,所以仓外起手暂时靠这份 skill,不是再做一套伴飞/需求/修 bug 流程。
 
@@ -78,7 +78,7 @@ crates/   bw(MVP 内核:本地零库+仓文件解析+现算推导+Command/Event)
           bw-engine(MVP 底座:交互式 claude+PTY+worktree+git+codehub/github 远端)
           app-shell(MVP 壳:八屏+主题+内核桥+适配模块,bin bw-dev)
 standard/  Workbench 规范正本(include_str! 进 bw):模板 `templates/`(接入不摊;issue-policy 模板仅残留测)+ 系统提示词 `system-prompt/` + 运作剧本 `skills/` 4 份 + 业界 workflow `vendor/`
-principles/ 慢变原则正本(01 分层/changes · 02 逆向工作法 · 03 新闻稿/FAQ/飞轮)
+docs/01-principles/ 慢变原则正本(01 分层/changes · 02 逆向工作法 · 03 新闻稿/FAQ/飞轮)
 docs/      architecture(设计正本)+ guide(产品指南)+ adr + hifi + README(地图)
 scripts/   门禁脚本(guard-*)+ codegraph 联调
 .bw/       被管项目资产(project.toml / metrics.toml) + 出包/验包样例(.bw/release/pack、.bw/release/e2e；产物 out/ 不进仓)
@@ -92,13 +92,13 @@ scripts/   门禁脚本(guard-*)+ codegraph 联调
 
 | 可见物 | 在哪 | 用来干什么 |
 |---|---|---|
-| 用户旅程 / 产品指南 | [`docs/guide/`](docs/guide/) | 点什么、背后发生什么、手上多了什么;按站把活交给人或 AI |
+| 用户旅程 / 产品指南 | [`docs/03-guide/`](docs/03-guide/) | 点什么、背后发生什么、手上多了什么;按站把活交给人或 AI |
 | 高保真 | [`docs/hifi/`](docs/hifi/) | 界面长什么样 |
-| 架构与特性关键设计 | [`docs/architecture.md`](docs/architecture.md) | 模块为什么这样、数据归哪、没建什么;按模块交活 |
-| 产品主张 / 飞轮 | [`principles/03`](principles/03-press-release-faq-flywheel.md) | 目标体验与选型约束；特性 intent 必须对齐 |
+| 架构与特性关键设计 | [`docs/architecture.md`](docs/architecture.md) | 模块为什么这样、数据归哪、没建什么;按模块交活。**主提示词 / reference / skill 对照表在 §3 模块 4** |
+| 产品主张 / 飞轮 | [`docs/01-principles/03`](docs/01-principles/03-press-release-faq-flywheel.md) | 目标体验与选型约束；特性 intent 必须对齐 |
 | 开发规矩 + 词表 | 本文件 + [`CONTEXT.md`](CONTEXT.md) | 怎么建/跑/测、用哪个词 |
 
-自己作为被管项目跟被管仓同一套落点:`.bw/` 走项目约定(名片)与指标(ops① / `bw/ledger`);`AGENTS.md` 走 project-handbook;`CONTEXT` / adr / spec 走 `mattpocock-skills`;旅程 / 高保真 / 架构是产品自己的可见物,业界 workflow 不会代写。资产盘点盘这些齐不齐,它本身不产规范。方案正本在 [`docs/architecture.md`](docs/architecture.md) §3 模块 3。
+自己作为被管项目跟被管仓同一套落点:`.bw/` 走项目约定(名片)与指标(ops① / `bw/ledger`);`AGENTS.md` 是项目自己的,盘点不代写;`CONTEXT` / adr / spec 走 `mattpocock-skills`;旅程 / 高保真 / 架构是产品自己的可见物,业界 workflow 不会代写。资产盘点只盘 Workbench 给项目的 `.bw/` 是否跟上现行契约,再审查本周项目改动;它本身不产规范。方案正本在 [`docs/architecture.md`](docs/architecture.md) §3 模块 3 / 14。
 
 ### 四铁律(产品行为不可违反约束)
 
@@ -112,10 +112,10 @@ scripts/   门禁脚本(guard-*)+ codegraph 联调
 ### 三层模型(怎么给 Workbench 做一个特性)
 
 - **承载 · codehub issue**:issue+标签=唯一正本,本地零数据库;状态走标签、工作产物走 MR。
-- **规范 · 系统提示词 + 渐进加载**(主提示词外置 `standard/system-prompt/SYSTEM.md.tmpl` + `references/` 阶段规范,运行时渲染注入;设计见 [`docs/architecture.md`](docs/architecture.md) 的「系统提示词与渐进加载」模块):不论哪个 workflow 都兜住 Workbench 统一要求。
+- **规范 · 系统提示词 + 渐进加载**(主提示词外置 `standard/system-prompt/SYSTEM.md.tmpl` + `references/` 阶段规范,运行时渲染注入):不论哪个 workflow 都兜住 Workbench 统一要求。**主提示词 / references / skill 各装什么、改了哪条流程要同步哪份**,对照表在 [`docs/architecture.md`](docs/architecture.md) §3 模块 4。改 `standard/` 之前先对那张表,不要只改内核或只改 skill。
 - **方法论 · skill / workflow**(此层含**运作剧本**——Workbench 自发动作,非方法论——在 `skills/`;**业界 workflow**——方法论来源——在 `vendor/`,build 默认 `mattpocock-skills` 可换):怎么做能做得更好。
 
-改一个特性前,先对齐 [`principles/03`](principles/03-press-release-faq-flywheel.md) 飞轮检验,再按「特性起手路径」写 `changes/`(见上);工程落点在 [`docs/architecture.md`](docs/architecture.md) 的模块设计上定位:旅程哪一站 → 三层里改哪层 → 数据归哪 → 模块落点。找不到先补文档、再动代码——不清晰不写代码。
+改一个特性前,先对齐 [`docs/01-principles/03`](docs/01-principles/03-press-release-faq-flywheel.md) 飞轮检验,再按「特性起手路径」写 `docs/05-features/`(见上);工程落点在 [`docs/architecture.md`](docs/architecture.md) 的模块设计上定位:旅程哪一站 → 三层里改哪层 → 数据归哪 → 模块落点。找不到先补文档、再动代码——不清晰不写代码。
 
 ### codehub issue 标签词表
 
@@ -126,7 +126,7 @@ scripts/   门禁脚本(guard-*)+ codegraph 联调
 1. 汇报用人话:做了什么、结果如何、下一步。代号第一次出现带一句人话。
 2. 实现术语留在代码(settle-once / derive-only 这类只进代码注释与对照表,写给人的正文说人话)。
 3. 用词以 [`CONTEXT.md`](CONTEXT.md) 词表为准;新造词先进词表。
-4. 代号先登记再用(开新代号系列前,先确认旧系列没撞;登记处随用随建进 `docs/adr/` 或 `CONTEXT.md`)。
+4. 代号先登记再用(开新代号系列前,先确认旧系列没撞;登记处随用随建进 `docs/02-adr/` 或 `CONTEXT.md`)。
 5. 每篇新文档开头给 30 秒导读;过时不删但顶部加历史横幅。
 6. **不为向后兼容留旧路径**:发现过时实现直接移除,不加兼容层/回退/迁移。
 

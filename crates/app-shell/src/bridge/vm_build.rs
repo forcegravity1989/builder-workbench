@@ -55,7 +55,7 @@ pub(super) fn read_or_warn<T>(
 ///
 /// 换项目时 `gather` 只跑第一波(名单 / 周目标 / 发版 / 健康 / 环境),推完
 /// ViewModel 就切页;`pr_number` 后台回填,见 [`PrFillSpec`]。设计见
-/// [`docs/adr/0002-导航快路径-gather缓存.md`](../../../docs/adr/0002-导航快路径-gather缓存.md)。
+/// [`docs/02-adr/0002-导航快路径-gather缓存.md`](../../../docs/02-adr/0002-导航快路径-gather缓存.md)。
 pub struct Gathered {
     /// 第几代 gather。`assemble` 用它判断 workbench 缓存是不是同一代采的。
     pub gen: u64,

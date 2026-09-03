@@ -602,7 +602,7 @@
     <section class="screen" id="u1f" data-title="第 6 站 · 定时盘点" data-sec-name="怎么用">
       <div class="eyebrow">怎么用 · 第 6 站</div>
       <h1 class="disp">到点建一张盘点，停在评审中</h1>
-      <p class="lede">周五 09:00（默认可改）Workbench 开着，会自己建「资产盘点」并开工，最远评审中。完成仍要你点。每天 20:00 自动采一轮 B 类指标。</p>
+      <p class="lede">周五 09:00（产品默认）Workbench 开着，会自己建「资产盘点」并开工，最远评审中。完成仍要你点。每天 20:00 自动采一轮 B 类指标。</p>
       <div class="res">
         <div class="h">这一站能查到</div>
         <ul>
@@ -614,18 +614,18 @@
 
       <h2 class="sec"><span class="n">操作</span></h2>
       <div class="ops">
-        <div class="li"><div class="n">1</div><div class="t">配置屏能看见「资产盘点 · 到点自动建 · fri 09:00」，还有一行「B 类指标采集 · daily 20:00」。盘点节律写在 <code>.bw/issue-policy.toml</code>；B 类日采固定 20:00。运作活①仍是人点「开始本版本」。</div></div>
+        <div class="li"><div class="n">1</div><div class="t">配置屏能看见「资产盘点 · 到点自动建 · fri 09:00」，还有一行「B 类指标采集 · daily 20:00」。盘点节律只认产品默认，不写进仓。B 类日采固定 20:00。运作活①仍是人点「开始本版本」。</div></div>
         <div class="li"><div class="n">2</div><div class="t">Workbench 开着、过了本周那个时刻，计划屏会出现「资产盘点 YYYY-Www」。类别锁成「运作」，改不了五阶段。</div></div>
         <div class="li"><div class="n">3</div><div class="t">这张活会自己开工。看会话或详情：最远到评审中。合入、点完成仍是你来。</div></div>
-        <div class="li"><div class="n">4</div><div class="t">周一回到总览，开始下一圈。盘点报告挂在这张活的评论里；微重构只出建议，不直接改业务代码。</div></div>
+        <div class="li"><div class="n">4</div><div class="t">周一回到总览，开始下一圈。盘点报告挂在这张活的评论里（Workbench 资产 / 闭环 / 项目审查）。改了 <code>.bw/</code> 才有 MR；项目审查只出建议，不改业务代码。</div></div>
       </div>
 
       <h2 class="sec"><span class="n">背后</span></h2>
       <div class="res">
         <ul>
-          <li><span class="b"></span><div><strong>对远端代码仓</strong>：建一张标题固定的运作活（本周有了就不建第二张），打本周标签，开工后改状态。每周模式只对账、写报告；首次模式才给老 issue 补周标签。</div></li>
-          <li><span class="b"></span><div><strong>对你的机器</strong>：Workbench 开着每 60 秒判一次「本周这一刻过了没有」。当时没开着，下次开着会补建。注入的是资产盘点剧本，不是构建类那套。</div></li>
-          <li><span class="b"></span><div><strong>对 <code>.bw/</code></strong>：每周盘点对照指纹看规范件落后没有，只记差异、不擅自升级。仓根 <code>AGENTS.md</code> 不在这一周写。</div></li>
+          <li><span class="b"></span><div><strong>对远端代码仓</strong>：建一张标题固定的运作活（本周有了就不建第二张），打本周标签，开工后改状态。每周两步：盘 `.bw/` 跟上现行契约，再盘项目本周改动；建议落评论，不改业务代码。</div></li>
+          <li><span class="b"></span><div><strong>对你的机器</strong>：Workbench 开着每 60 秒判一次「本周这一刻过了没有」。当时没开着，下次开着会补建。注入的剧本是资产盘点；开工用的 CLI 跟配置屏「构建」那条。</div></li>
+          <li><span class="b"></span><div><strong>对 <code>.bw/</code></strong>：对照现行契约清残留、升格式，让当前工作台读得动；点出未闭环的环。不重写名片，不重定北极星。仓根 <code>AGENTS.md</code> 不由周五盘点代写。</div></li>
         </ul>
       </div>
 
@@ -639,7 +639,7 @@
 
       <div class="callout note">
         <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/></svg>
-        <div class="body"><strong>运作活和五阶段类别是两套。</strong>不要把盘点、周计划塞进「优化 / 运维 / 运营推广」。仓根 <code>AGENTS.md</code> 不会每周五自动写出来——那条路还没接上，见<a href="#" onclick="go('u2');return false">规矩与查找</a>。</div>
+        <div class="body"><strong>运作活和五阶段类别是两套。</strong>不要把盘点、周计划塞进「优化 / 运维 / 运营推广」。仓根 <code>AGENTS.md</code> 是项目自己的，周五盘点不代写。</div>
       </div>
       <p class="next">下周一回到<a href="#" onclick="go('u1b');return false">第 1 站 · 看总览</a>。</p>
       <div class="foot">事实源 <code>docs/architecture.md</code> 模块 14 / 15。</div>
