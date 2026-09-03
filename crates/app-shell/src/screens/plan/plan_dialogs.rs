@@ -1,12 +1,18 @@
 //! 计划屏的弹窗:新建issue / 创建版本 / 排期 / 作废确认 / 出包 / 发版本。
 //! 全部屏幕居中(modal-backdrop + plan-modal)。
+//!
+//! 出包进度活在 [`PackJob`] 上,关弹窗不打断后台。
 
-use crate::bridge::Bridge;
-use crate::vm::{CardItemVm, ProjectVm};
-use bw::app::{ProgressLine, StepState};
-use bw::command::Command;
-use bw::model::{
-    category_from_key, category_key, IssueId, IssueKind, IssueOrigin, IssueStatus, StageKind,
+use crate::{
+    bridge::Bridge,
+    vm::{CardItemVm, ProjectVm},
+};
+use bw::{
+    app::{ProgressCase, ProgressLine, StepState},
+    command::Command,
+    model::{
+        category_from_key, category_key, IssueId, IssueKind, IssueOrigin, IssueStatus, StageKind,
+    },
 };
 use dioxus::prelude::*;
 
@@ -26,6 +32,39 @@ pub enum DialogKind {
 pub struct PackDraft {
     pub project_id: bw::model::ProjectId,
     pub version: String,
+}
+
+/// 出包这一趟的界面账。关弹窗也留着,按钮三个点再点回来。
+#[derive(Clone, PartialEq, Default)]
+pub struct PackJob {
+    pub project_id: Option<bw::model::ProjectId>,
+    pub version: String,
+    pub packing: bool,
+    pub finished: bool,
+    pub pack_line: Option<ProgressLine>,
+    pub e2e_line: Option<ProgressLine>,
+}
+
+impl PackJob {
+    pub fn apply_progress(&mut self, line: ProgressLine) {
+        match line.step {
+            21 => {
+                let fail = line.state == StepState::Fail;
+                self.pack_line = Some(line);
+                if fail {
+                    self.packing = false;
+                    self.finished = true;
+                }
+            }
+            22 if line.state != StepState::Doing => {
+                self.e2e_line = Some(line);
+                self.packing = false;
+                self.finished = true;
+            }
+            22 => self.e2e_line = Some(line),
+            _ => {}
+        }
+    }
 }
 
 #[derive(Clone, PartialEq)]
@@ -152,7 +191,7 @@ pub fn NewIssueDialog(
     }
 }
 
-/// 创建版本弹窗。只要 `v0.x`。
+/// 创建版本弹窗。默认起止是本周周一到周五。
 #[component]
 pub fn CreateVersionDialog(
     p: ProjectVm,
@@ -161,8 +200,9 @@ pub fn CreateVersionDialog(
 ) -> Element {
     // 草稿存组件局部 state(use_signal),弹窗关了就丢。
     let mut name = use_signal(|| p.suggested_next.clone());
-    let mut start = use_signal(String::new);
-    let mut due = use_signal(String::new);
+    let week = p.current_week.clone();
+    let mut start = use_signal(|| bw::isoweek::week_monday_ymd(&week).unwrap_or_default());
+    let mut due = use_signal(|| bw::isoweek::week_friday_ymd(&week).unwrap_or_default());
     let mut note = use_signal(String::new);
     let picked = use_signal(Vec::<IssueId>::new);
     let unassigned: Vec<&CardItemVm> = p
@@ -183,7 +223,7 @@ pub fn CreateVersionDialog(
     let taken = p.plan_versions.iter().any(|v| v.name == name_v)
         || p.last_released == name_v
         || p.unreleased.iter().any(|s| s == &name_v);
-    let shape_ok = bw::version::is_v0x(&name_v);
+    let shape_ok = !name_v.is_empty();
     let can_create = name_ok && dates_ok && !range_bad && shape_ok && !taken;
     rsx! {
         div { class: "modal-backdrop", onclick: move |_| dialog.set(None),
@@ -199,7 +239,7 @@ pub fn CreateVersionDialog(
                         input { class: "input", value: "{name}", placeholder: "例如 v0.3",
                             oninput: move |e| name.set(e.value()) }
                         if !name_v.is_empty() && !shape_ok {
-                            div { class: "field-err", "版本名必须是 v0.1 这种" }
+                            div { class: "field-err", "版本名不能是周号" }
                         } else if taken {
                             div { class: "field-err", "{name_v} 已经有了" }
                         }
@@ -465,7 +505,7 @@ pub fn DeleteVersionDialog(
     let versions: Vec<String> = p
         .plan_versions
         .iter()
-        .filter(|v| bw::version::is_v0x(&v.name) && !v.released)
+        .filter(|v| !v.released)
         .map(|v| v.name.clone())
         .collect();
     let default_sel = versions.first().cloned().unwrap_or_default();
@@ -515,95 +555,73 @@ pub fn DeleteVersionDialog(
 }
 
 /// 出包弹窗。号锁死当前版本视图。确认后出包再验包,不打标签。
+/// 关闭只收窗,后台继续;停止再问一句,确认后杀进程并清中间件。
 #[component]
 pub fn PackDialog(
     draft: PackDraft,
     mut dialog: Signal<Option<DialogKind>>,
+    mut pack_job: Signal<PackJob>,
     bridge: Bridge,
 ) -> Element {
-    let version = use_signal(move || draft.version.clone());
-    let mut packing = use_signal(|| false);
-    let mut finished = use_signal(|| false);
-    let mut pack_line = use_signal(|| None::<ProgressLine>);
-    let mut e2e_line = use_signal(|| None::<ProgressLine>);
+    let mut asking_stop = use_signal(|| false);
+    let asking_detail = use_signal(|| false);
+    let version = draft.version.clone();
+    let version_show = version.clone();
     let pid = draft.project_id;
     let b = bridge.clone();
+    let job = pack_job.read().clone();
+    let busy = job.packing;
+    let pack = job.pack_line.clone();
+    let e2e = job.e2e_line.clone();
     let version_ok = {
-        let t = version.read().trim().to_string();
+        let t = version.trim();
         !t.is_empty() && !t.contains('(')
     };
-
-    let prog = bridge.progress.clone();
-    use_future(move || {
-        let mut rx = prog.subscribe();
-        async move {
-            while let Ok(line) = rx.recv().await {
-                match line.step {
-                    21 => {
-                        let fail = line.state == StepState::Fail;
-                        pack_line.set(Some(line));
-                        if fail {
-                            packing.set(false);
-                            finished.set(true);
-                        }
-                    }
-                    22 if line.state != StepState::Doing => {
-                        e2e_line.set(Some(line));
-                        packing.set(false);
-                        finished.set(true);
-                    }
-                    22 => e2e_line.set(Some(line)),
-                    _ => {}
-                }
-            }
-        }
-    });
-
-    let busy = *packing.read();
-    let done = *finished.read();
-    let close_label = if done { "关闭" } else { "取消" };
-    let pack = pack_line.read().clone();
-    let e2e = e2e_line.read().clone();
     rsx! {
         div {
             class: "modal-backdrop",
-            onclick: move |_| {
-                if !*packing.read() {
-                    dialog.set(None);
-                }
-            },
+            onclick: move |_| dialog.set(None),
             div { class: "modal", onclick: move |e| e.stop_propagation(),
                 h3 { "出包" }
                 div { class: "formrow",
                     label { class: "label", "版本号" }
-                    input { class: "input", value: "{version}", readonly: true }
+                    input { class: "input", value: "{version_show}", readonly: true }
                 }
                 div { class: "ship-rows",
-                    {ship_status_row("出包", "还没开始", pack.clone(), false)}
-                    {ship_status_row("验包", "出包过了再验", e2e.clone(), true)}
+                    {ship_status_row("出包", "还没开始", pack.clone(), false, None)}
+                    {ship_status_row("验包", "出包过了再验", e2e.clone(), true, Some(asking_detail))}
                 }
                 div { class: "cfg-readonly-note",
-                    "确认后先出包、再对包装好的安装包做验收。不建远端 Release,也不打发版标签。"
+                    "确认后先出包、再对包装好的安装包做验收。不建远端 Release,也不打发版标签。关闭只收窗,出包还在后台跑。"
                 }
                 div { class: "modal-actions",
-                    if done || !busy {
+                    button {
+                        class: "btn btn-secondary",
+                        onclick: move |_| dialog.set(None),
+                        "关闭"
+                    }
+                    if busy {
                         button {
-                            class: "btn btn-secondary",
-                            onclick: move |_| dialog.set(None),
-                            "{close_label}"
+                            class: "btn btn-danger",
+                            onclick: move |_| asking_stop.set(true),
+                            "停止"
                         }
                     }
-                    if !busy && !done {
+                    if !busy {
                         button {
                             class: "btn btn-primary",
                             disabled: !version_ok,
                             onclick: move |_| {
-                                let v = version.read().trim().to_string();
+                                let v = version.trim().to_string();
                                 if v.is_empty() || v.contains('(') { return; }
-                                pack_line.set(None);
-                                e2e_line.set(None);
-                                finished.set(false);
-                                packing.set(true);
+                                pack_job.set(PackJob {
+                                    project_id: Some(pid),
+                                    version: v.clone(),
+                                    packing: true,
+                                    finished: false,
+                                    pack_line: None,
+                                    e2e_line: None,
+                                });
                                 b.cmd(Command::PackRelease {
                                     project_id: pid,
                                     version: v,
@@ -611,6 +629,136 @@ pub fn PackDialog(
                             },
                             "确认 · 出包"
                         }
+                    }
+                }
+            }
+        }
+        if *asking_stop.read() {
+            PackStopConfirm {
+                asking_stop,
+                dialog,
+                pack_job,
+                bridge: bridge.clone(),
+            }
+        }
+        if *asking_detail.read() {
+            PackE2eDetail {
+                cases: e2e.as_ref().map(|l| l.cases.clone()).unwrap_or_default(),
+                fallback: e2e.as_ref().map(|l| l.text.clone()).unwrap_or_default(),
+                asking_detail,
+            }
+        }
+    }
+}
+
+#[component]
+fn PackE2eDetail(
+    cases: Vec<ProgressCase>,
+    fallback: String,
+    mut asking_detail: Signal<bool>,
+) -> Element {
+    rsx! {
+        div {
+            class: "modal-backdrop",
+            style: "z-index: 80;",
+            onclick: move |_| asking_detail.set(false),
+            div { class: "modal", onclick: move |e| e.stop_propagation(),
+                h3 { "验包详情" }
+                if cases.is_empty() {
+                    div { class: "cfg-readonly-note",
+                        if fallback.is_empty() { "这次验包没打出用例明细。" } else { "{fallback}" }
+                    }
+                } else {
+                    div { class: "ship-cases",
+                        for c in cases.iter() {
+                            PackE2eCaseRow { c: c.clone() }
+                        }
+                    }
+                }
+                div { class: "modal-actions",
+                    button {
+                        class: "btn btn-secondary",
+                        onclick: move |_| asking_detail.set(false),
+                        "关闭"
+                    }
+                }
+            }
+        }
+    }
+}
+
+#[component]
+fn PackE2eCaseRow(c: ProgressCase) -> Element {
+    let skipped = !c.ok && c.message.starts_with("未跑");
+    let mark = if c.ok {
+        "过了"
+    } else if skipped {
+        "未跑"
+    } else {
+        "没过"
+    };
+    let mark_cls = if c.ok {
+        "ship-case-mark--ok"
+    } else {
+        "ship-case-mark--fail"
+    };
+    let title = e2e_case_label(&c.name);
+    let show_msg = !c.ok && !c.message.is_empty();
+    let msg = c.message.clone();
+    rsx! {
+        div { class: "ship-case",
+            div { class: "ship-case-head",
+                span { class: "ship-case-name", "{title}" }
+                span { class: "ship-case-mark {mark_cls}", "{mark}" }
+            }
+            if show_msg {
+                div { class: "ship-case-msg", "{msg}" }
+            }
+        }
+    }
+}
+
+fn e2e_case_label(name: &str) -> String {
+    match name {
+        "shell_launches" => "壳能亮".into(),
+        "cu_settings" => "设置屏".into(),
+        "cu_onboard" => "接入屏".into(),
+        other => other.to_string(),
+    }
+}
+
+#[component]
+fn PackStopConfirm(
+    mut asking_stop: Signal<bool>,
+    mut dialog: Signal<Option<DialogKind>>,
+    mut pack_job: Signal<PackJob>,
+    bridge: Bridge,
+) -> Element {
+    rsx! {
+        div {
+            class: "modal-backdrop",
+            style: "z-index: 80;",
+            onclick: move |_| asking_stop.set(false),
+            div { class: "modal", onclick: move |e| e.stop_propagation(),
+                h3 { "停止这次出包？" }
+                div { class: "cfg-readonly-note",
+                    "确认后会停掉正在跑的出包 / 验包,并清掉这次的中间生成件。已经落到产物目录里的半成品也会删掉。"
+                }
+                div { class: "modal-actions",
+                    button {
+                        class: "btn btn-secondary",
+                        onclick: move |_| asking_stop.set(false),
+                        "取消"
+                    }
+                    button {
+                        class: "btn btn-danger",
+                        onclick: move |_| {
+                            bridge.abort_pack();
+                            asking_stop.set(false);
+                            dialog.set(None);
+                            pack_job.set(PackJob::default());
+                        },
+                        "确认"
                     }
                 }
             }
@@ -678,16 +826,26 @@ fn ship_status_row(
     idle: &'static str,
     line: Option<ProgressLine>,
     treat_ok_as_done: bool,
+    on_detail: Option<Signal<bool>>,
 ) -> Element {
-    let (cls, spinning, text, open_dir_path) = match line.as_ref() {
-        None => ("ship-row--idle", false, idle.to_string(), None),
+    let (cls, spinning, text, open_dir_path, failed) = match line.as_ref() {
+        None => ("ship-row--idle", false, idle.to_string(), None, false),
         Some(l) => match l.state {
-            StepState::Doing => ("ship-row--doing", true, l.text.clone(), None),
-            StepState::Ok if treat_ok_as_done => ("ship-row--done", false, l.text.clone(), None),
-            StepState::Ok => ("ship-row--ok", false, String::new(), Some(l.text.clone())),
-            StepState::Fail => ("ship-row--fail", false, l.text.clone(), None),
+            StepState::Doing => ("ship-row--doing", true, l.text.clone(), None, false),
+            StepState::Ok if treat_ok_as_done => {
+                ("ship-row--done", false, l.text.clone(), None, false)
+            }
+            StepState::Ok => (
+                "ship-row--ok",
+                false,
+                String::new(),
+                Some(l.text.clone()),
+                false,
+            ),
+            StepState::Fail => ("ship-row--fail", false, l.text.clone(), None, true),
         },
     };
+    let detail = if failed { on_detail } else { None };
     rsx! {
         div { class: "ship-row {cls}",
             if spinning {
@@ -702,6 +860,13 @@ fn ship_status_row(
                     class: "btn btn-sm",
                     onclick: move |_| open_artifact_dir(&dir),
                     "打开目录"
+                }
+            }
+            if let Some(mut open) = detail {
+                button {
+                    class: "btn btn-sm",
+                    onclick: move |_| open.set(true),
+                    "详情"
                 }
             }
         }

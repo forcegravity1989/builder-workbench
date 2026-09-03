@@ -10,15 +10,15 @@
 //! 刀3 起,issue 的正本在远端 codehub/GitHub issue + 标签,本地不建 issue 表。
 //! 所有 issue 读写经 [`super::issue_store`] 走远端。
 
-use super::worktree;
-use super::{issue_store, App, AppError, Result};
-use crate::command::Event;
-use crate::model::{
-    codehub_alias_to_domain, Category, Issue, IssueId, IssueKind, IssueOrigin, IssueStatus,
-    ProjectId,
+use super::{issue_store, worktree, App, AppError, Result};
+use crate::{
+    command::Event,
+    model::{
+        codehub_alias_to_domain, Category, Issue, IssueId, IssueKind, IssueOrigin, IssueStatus,
+        ProjectId,
+    },
 };
-use bw_engine::remote::Remote;
-use bw_engine::{build_startup_plan, InteractiveExecutor, RunCtx, TuiAgentConfig};
+use bw_engine::{build_startup_plan, remote::Remote, InteractiveExecutor, RunCtx, TuiAgentConfig};
 use std::path::{Path, PathBuf};
 
 impl App {
@@ -853,7 +853,7 @@ fn walk_git(start: &Path) -> Option<PathBuf> {
 // 2N+ 次,UI 卡 2-6 秒。现在只 spawn 一次(取 issues 列表),过滤在内存里做。
 // 不引入持久缓存(MVP 不要):单次 build 内去重 spawn。
 
-/// 某一周的活。`week` 传空串就是待办池那一列(没挂 bw:week 标签的)。
+/// 某一版本的活。`week` 现已不用(排期只认 `bw:plan:`);留下以免调用方大拆。
 pub fn issues_in_week<'a>(issues: &'a [Issue], week: &str) -> Vec<&'a Issue> {
     issues.iter().filter(|i| i.week_of == week).collect()
 }

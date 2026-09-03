@@ -12,11 +12,15 @@
 //! provider means filling the arm here, not revisiting N call sites in
 //! `app-shell`).
 
-use crate::codehub::{self, CodehubError};
-use crate::github::{self, GithubError};
-use std::collections::HashMap;
-use std::path::Path;
-use std::sync::{Arc, Mutex};
+use crate::{
+    codehub::{self, CodehubError},
+    github::{self, GithubError},
+};
+use std::{
+    collections::HashMap,
+    path::Path,
+    sync::{Arc, Mutex},
+};
 
 #[derive(Debug, thiserror::Error)]
 pub enum RemoteError {
@@ -110,7 +114,7 @@ impl MockState {
 // V4 数据层把 issue 的状态/排期/版本从本地 SQLite 搬到 codehub/GitHub issue +
 // 标签(正本在远端,本地只是缓存)。下面这些类型是 provider 无关的 DTO,两实现
 // 各自构造同一个 [`RemoteIssue`],trait 只透传 `labels: &[&str]`,**不硬编词表**
-// (状态 `bw:status:*` / 周 `bw:week:*` / 发版 `bw:released:*` / 种类 `bw:kind:*`
+// (状态 `bw:status:*` / 排期 `bw:plan:*` / 发版 `bw:released:*` / 种类 `bw:kind:*`
 // 都是调用方的事)。`IssueState` 故意不碰 bw 的 `IssueStatus`(那是活的完整
 // 生命周期状态机,这里只是远端 issue 的开/关二态)。
 
@@ -363,7 +367,7 @@ impl Remote {
     /// 语义:入参每个 label 的前缀([`label_prefix`]:`bw:status:todo` →
     /// `bw:status`)命中的现有 label 被摘掉,入参再全加上(裸 label 无前缀,
     /// 只加不摘)。调 `update_issue(iid, Some(&["bw:status:inprogress"]), None)`
-    /// 只换 `bw:status:*`,`bw:week:*`/`bw:released:*` 不动。`labels=None`
+    /// 只换 `bw:status:*`,`bw:plan:*`/`bw:released:*` 不动。`labels=None`
     /// 不动标签,`state_event=None` 不动状态;两者都 `None` 是 no-op(直接
     /// `Ok(())`,不发调用)。两 provider 各自 list 一次现有 labels 再算
     /// (github 无 set-absolute 旗标、codehub 是全量替换,都得多 list 一次
@@ -603,23 +607,6 @@ impl Remote {
         }
     }
 
-    /// 周标签的投影：codehub 建/复用标题=`week` 的里程碑并挂上 issue。
-    /// `week` 空 = 从里程碑摘下。不当正本。GitHub 臂诚实不投。
-    pub async fn project_week(
-        &self,
-        iid: u32,
-        week: &str,
-        start: &str,
-        due: &str,
-    ) -> Result<(), RemoteError> {
-        match self {
-            Remote::Codehub { host, path } => {
-                Ok(codehub::project_week(host, path, iid, week, start, due).await?)
-            }
-            Remote::Github(_) | Remote::Mock(_) => Ok(()),
-        }
-    }
-
     /// 当前登录用户名(给「我的」筛选用)。认不出返 None。
     pub async fn current_user(&self) -> Option<String> {
         match self {
@@ -629,12 +616,12 @@ impl Remote {
         }
     }
 
-    /// 列出所有里程碑 (title, start, due)。左栏版本组用:扫一遍,标题不是
-    /// 周格式的就是自定义版本。GitHub/mock 不投(返空)。
+    /// 列出所有里程碑 `(title, start, due, created_at)`。每个标题都是一个版本。
+    /// GitHub/mock 不投(返空)。
     pub async fn list_milestones(
         &self,
         path: &str,
-    ) -> Result<Vec<(String, String, String)>, RemoteError> {
+    ) -> Result<Vec<(String, String, String, String)>, RemoteError> {
         match self {
             Remote::Codehub { host, .. } => Ok(codehub::list_milestones(host, path).await?),
             Remote::Github(_) | Remote::Mock(_) => Ok(Vec::new()),

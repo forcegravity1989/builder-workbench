@@ -11,7 +11,7 @@ use crate::model::{Category, IssueId, IssueStatus, ProjectId};
 /// 总览「编辑项目名片」一次填完的仓文件字段。
 ///
 /// 正本是 `.bw/project.toml`。接入时只填前四项,
-/// 在研版本 / 项目群落默认或仓里已有的;总览保存会把后几项一并写回。
+/// 项目群落默认或仓里已有的;总览保存会把后几项一并写回。在研版本不进仓文件。
 #[derive(Clone, Debug, PartialEq, Eq, Default)]
 pub struct ProjectIntent {
     pub name: String,
@@ -21,8 +21,6 @@ pub struct ProjectIntent {
     pub benchmark: String,
     /// 三个月长成什么样(北极星一句话)。
     pub north_star: String,
-    /// 在研版本。接入时空着 = 不覆盖仓里已有的 / 新建默认 `v0.1`。
-    pub current_version: String,
     /// 项目群提供方。空或 `"none"` = 不配群。
     pub chat_provider: String,
     pub chat_group: String,
@@ -52,7 +50,7 @@ pub enum Command {
         workspace_path: String,
     },
     /// 总览「编辑→保存」:改 `.bw/project.toml`
-    /// (名片 + 在研版本 + 项目群),走一张轻量活。
+    /// (名片 + 项目群),走一张轻量活。
     EditProjectCard {
         project_id: ProjectId,
         intent: ProjectIntent,
@@ -71,8 +69,8 @@ pub enum Command {
     ReconcileStandard { project_id: ProjectId },
 
     // ── 计划 ──────────────────────────────────────────────
-    /// 总览「开始本版本」:建本周运作活①并开工。同一标题做过(含已完成)不再建。
-    /// 判据是标题 + 本 ISO 周创建的 `v0.x` 标签。
+    /// 总览「开始本版本」:建本周运作活①并开工。当周没有覆盖中的版本才出现。
+    /// 有光杆未打版本标签的运作活①就复用,没有再新建。
     StartWeekPlanning { project_id: ProjectId, week: String },
     /// 人确认草稿后真的建活(`origin = agent_split`)。
     ConfirmWeekDraft {
@@ -89,8 +87,7 @@ pub enum Command {
         kind: crate::model::IssueKind,
         origin: crate::model::IssueOrigin,
         week_of: String,
-        /// 排进人起名的版本(`bw:plan:<name>`)。空 = 不走这个写法。
-        /// 和 `week_of` 是同一槽位:有 plan 就只打版本,丢掉周。
+        /// 排进版本(`bw:plan:<name>`)。空 = 未排期。`week_of` 不再写标签。
         plan: String,
     },
     /// 摘排期:壳侧只传空 `week_of` 把活移回待办池。不再用这条新写周标签。
@@ -100,7 +97,7 @@ pub enum Command {
     },
     /// 排进计划版本(`bw:plan:<name>`)。一张活只属于一个版本。
     ScheduleToPlan { id: IssueId, plan: String },
-    /// 建一个 `v0.x` 版本:建 codehub milestone,给 `included` 打 `bw:plan:<name>`。
+    /// 建一个版本:建 codehub milestone,给 `included` 打 `bw:plan:<name>`。
     /// 与发版号 `CutRelease` 不同。
     CreatePlanVersion {
         project_id: ProjectId,
@@ -110,7 +107,7 @@ pub enum Command {
         note: String,
         included: Vec<IssueId>,
     },
-    /// 删一个未发的 `v0.x` 版本:给挂着 `bw:plan:<name>` 的活摘掉该标签,再删同名
+    /// 删一个未发版本:给挂着 `bw:plan:<name>` 的活摘掉该标签,再删同名
     /// 里程碑。已发的号拒收。
     DeletePlanVersion { project_id: ProjectId, name: String },
     /// 未发版本改名:同步里程碑标题、标签定义、已打在 issue 上的 `bw:plan:`。
@@ -386,6 +383,10 @@ pub enum Event {
         artifact_dir: String,
         passed: u32,
         total: u32,
+    },
+    /// 人点停止：进程树已杀、这次中间件已清。
+    ReleasePackStopped {
+        version: String,
     },
     /// 拉工作区的结果。`moved` = 主检出真的往前走了;`note` 是给人看的一句话,
     /// 拉不动时装的是 git 的原话(压成一行),**不吞**。

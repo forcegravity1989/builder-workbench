@@ -2,10 +2,14 @@
 //! 十条里从当前状态能走到的;选了走和看板拖拽同一条命令。底栏只留 Start /
 //! Open / Complete。Start 确认框建 worktree,业务活可改/补类别后再 RunIssue。
 
-use crate::bridge::{Bridge, ChromeBusy, Panel, PanelNav, Req, STARTING_SESSION};
-use crate::vm::{CardItemVm, ProjectVm};
-use bw::command::Command;
-use bw::model::{category_from_key, category_key, IssueId, IssueStatus, StageKind};
+use crate::{
+    bridge::{Bridge, ChromeBusy, Panel, PanelNav, Req, STARTING_SESSION},
+    vm::{CardItemVm, ProjectVm},
+};
+use bw::{
+    command::Command,
+    model::{category_from_key, category_key, IssueId, IssueStatus, StageKind},
+};
 use dioxus::prelude::*;
 
 use super::kanban::{
@@ -40,9 +44,7 @@ pub fn DetailModal(
         .then(|| format!("{}{}", p.mr_url_prefix, c.pr_number));
     let issue_url = (!p.issue_url_prefix.is_empty() && c.remote_number > 0)
         .then(|| format!("{}{}", p.issue_url_prefix, c.remote_number));
-    let _place = if !c.week_of.is_empty() {
-        c.week_of.clone()
-    } else if !c.plan_version.is_empty() {
+    let _place = if !c.plan_version.is_empty() {
         format!("版本·{}", c.plan_version)
     } else {
         "未排期".into()
@@ -168,10 +170,7 @@ pub fn DetailModal(
                                         b_sched.cmd(Command::ScheduleToPlan { id, plan: pl.to_string() });
                                     }
                                 },
-                                option { value: "unscheduled", selected: c.week_of.is_empty() && c.plan_version.is_empty(), "未排期" }
-                                if !c.week_of.is_empty() {
-                                    {let val = format!("week:{}", c.week_of); rsx! { option { value: "{val}", selected: true, "{c.week_of}" } }}
-                                }
+                                option { value: "unscheduled", selected: c.plan_version.is_empty(), "未排期" }
                                 for v in p.plan_versions.iter() {
                                     {let val = format!("version:{}", v.name); let sel = c.plan_version == v.name; rsx! { option { value: "{val}", selected: sel, "{v.name}" } }}
                                 }

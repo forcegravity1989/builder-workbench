@@ -5,15 +5,19 @@
 //! 填一个 0 或者一个假名字。
 
 use crate::vm::*;
-use bw::app::App;
-use bw::command::Event;
-use bw::model::{IssueId, IssueKind, IssueStatus, Project, ProjectId};
-use bw::repo::project_file;
+use bw::{
+    app::App,
+    command::Event,
+    model::{IssueId, IssueKind, IssueStatus, Project, ProjectId},
+    repo::project_file,
+};
 
-use super::vm_derive::{build_bootstrap_pending, build_ops, build_week_counts};
-use super::vm_kb::build_kb;
-use super::vm_panels::{
-    build_board, build_config, build_metrics, build_sessions, build_weeks, build_workbench,
+use super::{
+    vm_derive::{build_bootstrap_pending, build_ops, build_week_counts},
+    vm_kb::build_kb,
+    vm_panels::{
+        build_board, build_config, build_metrics, build_sessions, build_weeks, build_workbench,
+    },
 };
 
 /// 开工工具的机读键 → 人话标签。从 `week_plan_file` 搬来(刀6:那个模块删了,
@@ -124,6 +128,8 @@ pub struct UiState {
     pub viewing_week: String,
     /// 看某个自定义版本(计划包)。空 = 不在看版本。
     pub viewing_plan: String,
+    /// 总览在研下拉选中的版本。空 = 用覆盖当天里最后创建的。
+    pub overview_version: String,
     /// 计划屏左栏点的是「全部」。
     pub view_all: bool,
     pub open_doc: Option<String>,
@@ -261,7 +267,9 @@ impl Gathered {
         pg.ops1_status = ops1
             .filter(|i| i.status != IssueStatus::Done)
             .map(|i| i.status.label().to_string());
-        let confirmed = confirmed_version(&pg.issues, &week);
+        let today = bw::isoweek::today_ymd();
+        let covering = covering_version_names(&pg.plan_versions, &today);
+        let confirmed = pick_overview_version(&covering, "");
         let week_counts = if confirmed.is_empty() {
             WeekCountsVm::default()
         } else {
@@ -501,6 +509,7 @@ fn primary_note(events: &[Event]) -> Option<String> {
             total,
             ..
         } => format!("{version} 出包好了,验包 {passed}/{total}"),
+        Event::ReleasePackStopped { version } => format!("{version} 出包已停止,中间件清掉了"),
         Event::MetricsAutoCollected { count, .. } => {
             format!("今日自动采了 {count} 条 B 类指标")
         }
@@ -635,27 +644,33 @@ pub async fn gather(app: &App, ui: &mut UiState) -> Gathered {
                 g.map(|g| g.week_goals.clone()).unwrap_or_default(),
                 g.map(|g| g.last_delivery.clone()).unwrap_or_default(),
                 g.map(|g| g.file.brief.clone()).unwrap_or_default(),
-                g.map(|g| g.file.current_version.clone())
-                    .unwrap_or_default(),
+                g.map(|g| {
+                    let today = bw::isoweek::today_ymd();
+                    covering_version_names(&g.plan_versions, &today)
+                        .into_iter()
+                        .next()
+                        .unwrap_or_default()
+                })
+                .unwrap_or_default(),
                 g.map(|g| g.ws.display().to_string())
                     .unwrap_or_else(|| p.workspace_path.clone()),
             )
         } else {
-            let (job, (goals, last_delivery)) = extras.next().expect("墙项目与 extras 对齐");
+            let (job, (goals, last_delivery, version)) =
+                extras.next().expect("墙项目与 extras 对齐");
             (
                 job.issues,
                 goals,
                 last_delivery,
                 job.file.brief,
-                job.file.current_version,
+                version,
                 job.ws.display().to_string(),
             )
         };
-        let confirmed = confirmed_version(&issues, &current_week);
-        let week_counts = if confirmed.is_empty() {
+        let week_counts = if version.is_empty() {
             WeekCountsVm::default()
         } else {
-            build_week_counts(&issues, Some(confirmed.as_str()))
+            build_week_counts(&issues, Some(version.as_str()))
         };
         let week_total = (week_counts.todo
             + week_counts.doing
@@ -663,7 +678,11 @@ pub async fn gather(app: &App, ui: &mut UiState) -> Gathered {
             + week_counts.done
             + week_counts.blocked) as u32;
         let unread = bw::app::count_unseen(&issues);
-        let week_goal = goals.get(&current_week).cloned().unwrap_or_default();
+        let week_goal = if version.is_empty() {
+            String::new()
+        } else {
+            goals.get(&version).cloned().unwrap_or_default()
+        };
         cards.push(ProjectCardVm {
             id: p.id,
             slug: p.slug.clone(),
@@ -729,23 +748,35 @@ async fn fetch_issues_many(
 async fn wall_extra(
     app: &App,
     job: &WallJob,
-) -> (std::collections::HashMap<String, String>, String) {
-    let (goals, last_delivery) =
-        tokio::join!(app.week_goals_from_ops1(&job.p, &job.issues), async {
+) -> (std::collections::HashMap<String, String>, String, String) {
+    let (goals, last_delivery, version) = tokio::join!(
+        app.week_goals_from_ops1(&job.p, &job.issues),
+        async {
             bw::git::tags_with_dates(&job.ws)
                 .await
                 .into_iter()
                 .last()
                 .map(|(tag, date)| format!("{date} {tag}"))
                 .unwrap_or_default()
-        },);
-    (goals, last_delivery)
+        },
+        async {
+            let Ok(remote) = app.remote_for(&job.p) else {
+                return String::new();
+            };
+            let Ok(rows) = remote.list_milestones(&job.p.remote_path).await else {
+                return String::new();
+            };
+            bw::version::current_from_milestones(&rows, &bw::isoweek::today_ymd())
+                .unwrap_or_default()
+        },
+    );
+    (goals, last_delivery, version)
 }
 
 async fn wall_extras_many(
     app: &App,
     jobs: &[WallJob],
-) -> Vec<(std::collections::HashMap<String, String>, String)> {
+) -> Vec<(std::collections::HashMap<String, String>, String, String)> {
     let mut out = Vec::with_capacity(jobs.len());
     let mut i = 0;
     while i < jobs.len() {
@@ -997,12 +1028,14 @@ async fn gather_project(
         current_user(app, &p),
     );
 
+    let covering_now = covering_version_names(&plan_versions, &bw::isoweek::today_ymd());
+    let goal_key = covering_now.first().cloned().unwrap_or_default();
     let inputs = bw::app::collect_health_inputs(
         &p,
         &ws,
         current_week,
         &issues,
-        week_goals.get(current_week).map(String::as_str),
+        week_goals.get(&goal_key).map(String::as_str),
     )
     .await;
     let derived = bw::derive::derive_project_health(&inputs);
@@ -1067,18 +1100,13 @@ async fn assemble_project(
     } else {
         ui.viewing_week.clone()
     };
-    // 全部 / 某个计划版本 / 某一周。周和旧计划名仍能切出来看。
+    // 全部 / 某个版本。不再按旧 bw:week 切视图。
     let plan = if !ui.viewing_plan.is_empty() {
         Some(ui.viewing_plan.as_str())
     } else {
         None
     };
-    let week = if ui.view_all || plan.is_some() {
-        None
-    } else {
-        Some(viewing_week.as_str())
-    };
-    let view_all = ui.view_all && plan.is_none();
+    let view_all = plan.is_none();
     // 指标读数按正在看的那一周现读(本机 jsonl,便宜)。
     let readings = bw::app::read_metric_readings(&pg.ws, &viewing_week);
     // 会话 live:PTY 已封存,build_sessions 已经如实置 false(没真进程信号,不假
@@ -1116,7 +1144,10 @@ async fn assemble_project(
         });
         vm
     };
-    let confirmed = confirmed_version(&pg.issues, &pg.current_week);
+    let today = bw::isoweek::today_ymd();
+    let covering = covering_version_names(&pg.plan_versions, &today);
+    let confirmed = pick_overview_version(&covering, &ui.overview_version);
+    let week_covered = week_is_covered(&pg.plan_versions, &pg.current_week);
     let mut plan_versions = pg.plan_versions.clone();
     let released_names: Vec<String> = pg
         .releases
@@ -1125,12 +1156,17 @@ async fn assemble_project(
         .chain(
             pg.issues
                 .iter()
-                .filter(|i| bw::version::is_v0x(&i.version))
+                .filter(|i| !i.version.is_empty())
                 .map(|i| i.version.clone()),
         )
         .collect();
     for v in &mut plan_versions {
         v.released = released_names.iter().any(|r| r == &v.name);
+        if v.goal.is_empty() {
+            if let Some(g) = pg.week_goals.get(&v.name) {
+                v.goal = g.clone();
+            }
+        }
     }
     let plan_names: Vec<String> = plan_versions.iter().map(|v| v.name.clone()).collect();
     let inv = bw::version::inventory(&plan_names, &released_names);
@@ -1143,8 +1179,12 @@ async fn assemble_project(
             benchmark: or_blank(&pg.file.benchmark),
             north_star: or_blank(&pg.file.opportunity),
             remote: remote_label(&pg.project),
-            current_version: or_blank(&pg.file.current_version),
-            current_version_raw: pg.file.current_version.clone(),
+            current_version: if confirmed.is_empty() {
+                "（空）".into()
+            } else {
+                confirmed.clone()
+            },
+            current_version_raw: confirmed.clone(),
             standard_version: or_blank(&pg.file.standard_version),
             chat: match &pg.file.chat {
                 None => "未配".into(),
@@ -1160,6 +1200,8 @@ async fn assemble_project(
             !ui.metrics.is_empty(),
         ),
         week_started: pg.week_started,
+        week_covered,
+        covering_versions: covering.clone(),
         last_released: inv.last_released.clone().unwrap_or_default(),
         unreleased: inv.unreleased.clone(),
         suggested_next: inv.suggested_next.clone(),
@@ -1171,7 +1213,7 @@ async fn assemble_project(
         viewing_week: viewing_week.clone(),
         viewing_plan: ui.viewing_plan.clone(),
         view_all,
-        board: build_board(&pg.issues, week, plan),
+        board: build_board(&pg.issues, plan),
         plan_versions,
         current_user: pg.current_user.clone(),
         week_counts: if confirmed.is_empty() {
@@ -1179,7 +1221,7 @@ async fn assemble_project(
         } else {
             build_week_counts(&pg.issues, Some(confirmed.as_str()))
         },
-        board_counts: build_week_counts(&pg.issues, week.or(plan)),
+        board_counts: build_week_counts(&pg.issues, plan),
         ops: build_ops(&pg.issues, pg.current_week.as_str(), pg.ops3_landed),
         board_ops: build_ops(&pg.issues, viewing_week.as_str(), pg.ops3_landed),
         // 采不采由界面点 —— 现算一次要起好几个 git 子进程,不能每次重切都跑。
@@ -1238,8 +1280,8 @@ async fn current_user(app: &App, p: &Project) -> String {
     }
 }
 
-/// 自定义版本(计划包)列表:扫 issues 的 `plan_version` 字段去重 + 读 codehub
-/// milestone 列表(标题非周格式的就是版本)补 start/end,让空版本也能出现。
+/// 版本列表:扫 issues 的 `plan_version` + 读全部里程碑补 start/end,
+/// 没挂活的空版本也能出现。每个里程碑标题都是一个版本。
 async fn build_plan_versions(app: &App, p: &Project, issues: &[bw::Issue]) -> Vec<PlanVersionVm> {
     let mut counts: std::collections::HashMap<String, u32> = std::collections::HashMap::new();
     for i in issues {
@@ -1248,18 +1290,18 @@ async fn build_plan_versions(app: &App, p: &Project, issues: &[bw::Issue]) -> Ve
         }
         *counts.entry(i.plan_version.clone()).or_default() += 1;
     }
-    // 从 codehub milestone 列表读版本(标题非周格式),补上 start/end,且让
+    // 从 codehub milestone 列表读全部版本,补上 start/end,且让
     // 没勾 issue 的空版本也能出现。读不到(没挂远端/cli 失败)就只靠 issues 标签。
     let mut order: Vec<String> = Vec::new();
-    let mut meta: std::collections::HashMap<String, (String, String)> =
+    let mut meta: std::collections::HashMap<String, (String, String, String)> =
         std::collections::HashMap::new();
     if let Ok(remote) = app.remote_for(p) {
         if let Ok(rows) = remote.list_milestones(&p.remote_path).await {
-            for (title, start, due) in rows {
+            for (title, start, due, created) in rows {
                 if !order.contains(&title) {
                     order.push(title.clone());
                 }
-                meta.insert(title, (start, due));
+                meta.insert(title, (start, due, created));
             }
         }
     }
@@ -1271,31 +1313,52 @@ async fn build_plan_versions(app: &App, p: &Project, issues: &[bw::Issue]) -> Ve
     }
     order
         .into_iter()
-        .filter(|name| !name.is_empty() && !bw::isoweek::is_week(name))
+        .filter(|name| !name.is_empty())
         .map(|name| {
-            let (start, end) = meta.get(&name).cloned().unwrap_or_default();
+            let (start, end, created_at) = meta.get(&name).cloned().unwrap_or_default();
             PlanVersionVm {
                 name: name.clone(),
                 start,
                 end,
+                created_at,
                 issue_count: counts.remove(&name).unwrap_or(0),
                 released: false,
+                goal: String::new(),
             }
         })
         .collect()
 }
 
-fn confirmed_version(issues: &[bw::Issue], current_week: &str) -> String {
-    issues
+fn covering_version_names(versions: &[PlanVersionVm], day: &str) -> Vec<String> {
+    let rows: Vec<(String, String, String, String)> = versions
         .iter()
-        .find(|i| {
-            bw::app::is_ops1_issue(i)
-                && bw::version::is_v0x(&i.plan_version)
-                && (i.status != IssueStatus::Done && i.status != IssueStatus::Cancelled
-                    || bw::isoweek::unix_in_week(i.created_at, current_week))
+        .map(|v| {
+            (
+                v.name.clone(),
+                v.start.clone(),
+                v.end.clone(),
+                v.created_at.clone(),
+            )
         })
-        .map(|i| i.plan_version.clone())
-        .unwrap_or_default()
+        .collect();
+    bw::version::covering_on(&rows, day)
+        .into_iter()
+        .map(str::to_string)
+        .collect()
+}
+
+fn week_is_covered(versions: &[PlanVersionVm], week: &str) -> bool {
+    versions
+        .iter()
+        .any(|v| bw::version::overlaps_week(&v.start, &v.end, week))
+}
+
+fn pick_overview_version(covering: &[String], selected: &str) -> String {
+    if covering.iter().any(|n| n == selected) {
+        selected.to_string()
+    } else {
+        covering.first().cloned().unwrap_or_default()
+    }
 }
 
 pub(super) fn card_item(i: &bw::Issue) -> CardItemVm {

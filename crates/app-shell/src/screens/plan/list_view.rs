@@ -2,8 +2,10 @@
 //! 阶段下拉 + 搜索 + 表格行(ID/标题双行/负责人/状态胶囊/已更新/行操作)。
 //! 行操作:未排期→schedule、已排期→Start、进行中/待评审/阻塞/完成/取消→Open。
 
-use crate::bridge::{Bridge, Panel, PanelNav, Req};
-use crate::vm::{CardItemVm, ProjectVm};
+use crate::{
+    bridge::{Bridge, Panel, PanelNav, Req},
+    vm::{CardItemVm, ProjectVm},
+};
 use bw::model::{IssueId, IssueStatus};
 use dioxus::prelude::*;
 
@@ -70,17 +72,7 @@ pub fn list_view(
     ];
     filtered.sort_by_key(|c| order.iter().position(|s| *s == c.status).unwrap_or(99));
 
-    let mut plans: Vec<String> = Vec::new();
-    for w in &p.weeks {
-        if !w.week.is_empty() && !plans.contains(&w.week) {
-            plans.push(w.week.clone());
-        }
-    }
-    for v in &p.plan_versions {
-        if !plans.contains(&v.name) {
-            plans.push(v.name.clone());
-        }
-    }
+    let plans: Vec<String> = p.plan_versions.iter().map(|v| v.name.clone()).collect();
 
     // 阶段下拉联动:选了"未排期"后,未排期的 issue 状态都是 Backlog/Todo,
     // 阶段下拉只剩"全部"(bug 5b)。
@@ -230,9 +222,7 @@ fn list_row(
         .unwrap_or('—')
         .to_uppercase()
         .collect::<String>();
-    let plan_tag = if !c.week_of.is_empty() {
-        c.week_of.clone()
-    } else if !c.plan_version.is_empty() {
+    let plan_tag = if !c.plan_version.is_empty() {
         format!("版本·{}", c.plan_version)
     } else {
         "未排期".into()

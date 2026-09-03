@@ -6,8 +6,7 @@
 /// —— 解析是上层的事(`bw` 有自己的一份)。
 pub const PROJECT_FILE_REL_PATH: &str = ".bw/project.toml";
 use crate::win_cmd::stderr_text;
-use std::path::Path;
-use std::process::Stdio;
+use std::{path::Path, process::Stdio};
 
 #[derive(Debug, thiserror::Error)]
 pub enum GithubError {
@@ -701,7 +700,7 @@ pub async fn create_issue(
 /// 对每个入参 label 算前缀([`crate::remote::label_prefix`]),把 issue 现有
 /// labels 里前缀命中的摘掉,再把入参全加上(裸 label 无前缀,只加不摘)。
 /// 这样调 `update_issue(n, Some(&["bw:status:inprogress"]), None)` 只把
-/// `bw:status:*` 换成 `inprogress`,`bw:week:*`/`bw:released:*` 不动。
+/// `bw:status:*` 换成 `inprogress`,`bw:plan:*`/`bw:released:*` 不动。
 ///
 /// gh 没有 set-absolute 标签旗标,`--add-label` 是追加、`--remove-label` 是
 /// 摘除——为了凑出 namespace-replace,得多 list 一次现有 labels 再算 diff,

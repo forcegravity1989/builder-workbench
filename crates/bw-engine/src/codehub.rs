@@ -10,8 +10,7 @@
 //! 不是 agent 执行器(对标 `claude`)。两种 shell-out 模式别混。
 
 use crate::win_cmd::stderr_text;
-use std::path::Path;
-use std::process::Stdio;
+use std::{path::Path, process::Stdio};
 
 #[derive(Debug, thiserror::Error)]
 pub enum CodehubError {
@@ -588,7 +587,7 @@ pub async fn create_issue(
 /// 对每个入参 label 算前缀([`crate::remote::label_prefix`]),把 issue 现有
 /// labels 里前缀命中的摘掉,再把入参全加上(裸 label 无前缀,只加不摘)。
 /// 这样调 `update_issue(iid, Some(&["bw:status:inprogress"]), None)` 只换
-/// `bw:status:*`,`bw:week:*`/`bw:released:*` 不动。
+/// `bw:status:*`,`bw:plan:*`/`bw:released:*` 不动。
 ///
 /// GitLab 的 issue update API 对 `labels` 是**全量替换**(传啥整张盖掉旧
 /// 标签)——为了凑出 namespace-replace,得多 list 一次现有 labels,算出
@@ -1108,33 +1107,9 @@ pub async fn issue_times(
         .collect())
 }
 
-// ───────────────────────── 周标签 → 里程碑投影 ─────────────────────────
-//
-// codehub-cli 没有 milestone 子命令。走 `api`，路径必须带 `/api/v4`
-//（不带会 302 到登录页）。只认标题整段等于 `YYYY-Www` 的里程碑，不碰
-// 别人的 `5.8.0`。`week` 空 = 从里程碑摘下（`milestone_id=0`）。
-
-/// 把一张 issue 挂到（或摘下）同名周里程碑。幂等：同名已在就复用。
-pub async fn project_week(
-    host: &str,
-    path: &str,
-    iid: u32,
-    week: &str,
-    start: &str,
-    due: &str,
-) -> Result<(), CodehubError> {
-    let project_id = project_numeric_id(host, path).await?;
-    let pid = project_id.to_string();
-    if week.is_empty() {
-        return set_issue_milestone(host, &pid, iid, 0).await;
-    }
-    let mid = ensure_week_milestone(host, &pid, week, start, due).await?;
-    set_issue_milestone(host, &pid, iid, mid).await
-}
-
-// ── 人起名的版本 → 里程碑 ──
-// 和周版本同一套存法:codehub milestone(title=版本名)+ `bw:plan:<name>`
-// 标签。正本是标签,里程碑是 codehub 侧镜像。周版本走 `bw:week:`。与发版号(bw:released:*)不同。
+// ── 版本 → 里程碑 ──
+// codehub milestone(title=版本名)+ `bw:plan:<name>` 标签。正本是标签,
+// 里程碑是 codehub 侧镜像。每个标题都是一个版本。与发版号(bw:released:*)不同。
 
 /// 建/复用一个版本里程碑,返回 mid。同名复用(不更新日期);找不到才建。
 pub async fn ensure_plan_milestone(
@@ -1204,11 +1179,11 @@ pub async fn project_plan(
     Ok(())
 }
 
-/// 列出所有里程碑 (title, start, due)。跳过周格式(YYYY-Www)的,余下是版本。
+/// 列出所有里程碑 (title, start, due, created_at)。每个标题都是一个版本。
 pub async fn list_milestones(
     host: &str,
     path: &str,
-) -> Result<Vec<(String, String, String)>, CodehubError> {
+) -> Result<Vec<(String, String, String, String)>, CodehubError> {
     let project_id = project_numeric_id(host, path).await?;
     let pid = project_id.to_string();
     let listed = api_json(
@@ -1223,19 +1198,20 @@ pub async fn list_milestones(
         .iter()
         .filter_map(|m| {
             let title = m["title"].as_str()?.to_string();
-            if is_week_title(&title) {
+            if title.trim().is_empty() {
                 return None;
             }
             let start = m["start_date"].as_str().unwrap_or("").to_string();
             let due = m["due_date"].as_str().unwrap_or("").to_string();
-            Some((title, start, due))
+            let created = m["created_at"].as_str().unwrap_or("").to_string();
+            Some((title, start, due, created))
         })
         .collect())
 }
 
-/// 按标题删一个版本里程碑。找不到当成功(已经没了)。周格式标题不删。
+/// 按标题删一个版本里程碑。找不到当成功(已经没了)。
 pub async fn delete_plan_milestone(host: &str, path: &str, name: &str) -> Result<(), CodehubError> {
-    if name.trim().is_empty() || is_week_title(name) {
+    if name.trim().is_empty() {
         return Ok(());
     }
     let project_id = project_numeric_id(host, path).await?;
@@ -1341,15 +1317,6 @@ pub async fn rename_plan_label(
 pub async fn clear_issue_milestone(host: &str, path: &str, iid: u32) -> Result<(), CodehubError> {
     let project_id = project_numeric_id(host, path).await?;
     set_issue_milestone(host, &project_id.to_string(), iid, 0).await
-}
-
-/// `YYYY-Www` 周格式?形如 2026-W35。
-fn is_week_title(s: &str) -> bool {
-    let b = s.as_bytes();
-    b.len() == 8
-        && s[5..6].eq_ignore_ascii_case("W")
-        && s[..4].chars().all(|c| c.is_ascii_digit())
-        && s[6..].chars().all(|c| c.is_ascii_digit())
 }
 
 /// 改 issue 责任人。空 = 取消指派。先 username→userid,再 PUT `assignee_id`。
@@ -1461,43 +1428,6 @@ async fn project_numeric_id(host: &str, path: &str) -> Result<u64, CodehubError>
     v["id"]
         .as_u64()
         .ok_or_else(|| CodehubError::Parse("project view 没有数字 id".into()))
-}
-
-async fn ensure_week_milestone(
-    host: &str,
-    project_id: &str,
-    week: &str,
-    start: &str,
-    due: &str,
-) -> Result<u64, CodehubError> {
-    let listed = api_json(
-        host,
-        "GET",
-        "/api/v4/projects/:id/milestones",
-        &[("id", project_id)],
-        &[],
-    )
-    .await?;
-    for m in milestone_rows(&listed) {
-        if m["title"].as_str() == Some(week) {
-            if let Some(id) = m["id"].as_u64() {
-                return Ok(id);
-            }
-        }
-    }
-    let desc = format!("Workbench 投影 · 正本是 bw:week:{week}");
-    let fields = milestone_create_fields(project_id, week, start, due);
-    let created = api_json(
-        host,
-        "POST",
-        "/api/v4/projects/:id/milestones",
-        &fields,
-        &[("description", desc.as_str())],
-    )
-    .await?;
-    created["id"]
-        .as_u64()
-        .ok_or_else(|| CodehubError::Parse(format!("新建里程碑没有 id:{created}")))
 }
 
 async fn set_issue_milestone(
