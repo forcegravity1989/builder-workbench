@@ -22,7 +22,11 @@ use bw::{
     local::Settings,
     model::{IssueId, IssueStatus, ProjectId},
 };
-use std::{path::PathBuf, sync::Arc, time::Duration};
+use std::{
+    path::PathBuf,
+    sync::Arc,
+    time::{Duration, Instant},
+};
 use tokio::sync::{broadcast, mpsc, watch};
 
 /// iframe onload 之后再给配对 WS 的时间。短于这个,嵌页还没订上 `notifyClients`。
@@ -539,8 +543,10 @@ pub fn spawn(deep_link: DeepLink) -> Bridge {
                     }
                 }
 
-                let mut last_gather = vm_build::gather(&app, &mut ui).await;
+                let mut last_gather = vm_build::gather(&app, &mut ui, &[]).await;
                 let mut vm = vm_build::assemble(&app, &mut ui, &last_gather).await;
+                let mut open_t0: Option<Instant> = None;
+                let mut open_slug = String::new();
                 bw_engine::dlog!(
                     ok,
                     "bridge",
@@ -698,8 +704,9 @@ pub fn spawn(deep_link: DeepLink) -> Bridge {
                             if let Some(n) = note {
                                 ui.set_note(Some(n));
                             }
-                            // 到点可能建活,数据真变了,走全量 gather。
-                            last_gather = vm_build::gather(&app, &mut ui).await;
+                            // 到点可能建活。打开着某个仓只重采那一个;在墙上才拉全墙。
+                            let keep = last_gather.projects.clone();
+                            last_gather = vm_build::gather(&app, &mut ui, &keep).await;
                             vm = vm_build::assemble(&app, &mut ui, &last_gather).await;
                             let _ = vm_tx.send(vm.clone());
                             kick_pr_fill(&last_gather, &ui, &tx_back);
@@ -949,14 +956,48 @@ pub fn spawn(deep_link: DeepLink) -> Bridge {
                             }
                         }
                         Req::Open(id) => {
-                            bw_engine::dlog!(ok, "bridge", "open project={id:?}");
+                            open_t0 = Some(Instant::now());
+                            open_slug = match id {
+                                Some(pid) => app
+                                    .project(pid)
+                                    .await
+                                    .ok()
+                                    .flatten()
+                                    .map(|p| p.slug)
+                                    .unwrap_or_else(|| "-".into()),
+                                None => "wall".into(),
+                            };
+                            bw_engine::dlog!(
+                                ok,
+                                "bridge",
+                                "open start slug={open_slug} project={id:?}"
+                            );
                             if let Some(pid) = id {
-                                if !ui.orca_repos_ready.contains(&pid) {
+                                if ui.orca_repos_ready.contains(&pid) {
+                                    bw_engine::dlog!(
+                                        ok,
+                                        "bridge",
+                                        "open peek cached slug={open_slug}"
+                                    );
+                                } else {
+                                    let t_peek = Instant::now();
                                     match peek_orca_repo(&app, pid).await {
                                         OrcaPeek::Present => {
                                             ui.orca_repos_ready.insert(pid);
+                                            bw_engine::dlog!(
+                                                ok,
+                                                "bridge",
+                                                "open peek present elapsed_ms={} slug={open_slug}",
+                                                t_peek.elapsed().as_millis()
+                                            );
                                         }
                                         OrcaPeek::Missing => {
+                                            bw_engine::dlog!(
+                                                ok,
+                                                "bridge",
+                                                "open peek missing elapsed_ms={} slug={open_slug}",
+                                                t_peek.elapsed().as_millis()
+                                            );
                                             ui.busy = Some("正在让 Orca 认得这个仓…".into());
                                             let snap = vm_build::assemble(
                                                 &app,
@@ -965,10 +1006,24 @@ pub fn spawn(deep_link: DeepLink) -> Bridge {
                                             )
                                             .await;
                                             let _ = vm_tx.send(snap);
+                                            let t_reg = Instant::now();
                                             register_orca_repo(&app, &mut ui, pid).await;
+                                            bw_engine::dlog!(
+                                                ok,
+                                                "bridge",
+                                                "open register elapsed_ms={} slug={open_slug}",
+                                                t_reg.elapsed().as_millis()
+                                            );
                                             ui.busy = None;
                                         }
-                                        OrcaPeek::Skip => {}
+                                        OrcaPeek::Skip => {
+                                            bw_engine::dlog!(
+                                                ok,
+                                                "bridge",
+                                                "open peek skip elapsed_ms={} slug={open_slug}",
+                                                t_peek.elapsed().as_millis()
+                                            );
+                                        }
                                     }
                                 }
                             }
@@ -990,6 +1045,11 @@ pub fn spawn(deep_link: DeepLink) -> Bridge {
                             ui.repo_stats = None;
                             ui.metrics = Vec::new();
                             if let Some(pid) = id {
+                                bw_engine::dlog!(
+                                    ok,
+                                    "bridge",
+                                    "open collect kick slug={open_slug} (spawn, not first-screen)"
+                                );
                                 kick_project_collect(&app, pid, &tx_back).await;
                                 ui.set_note(Some("正在采本项目指标与仓统计…".into()));
                             }
@@ -1323,9 +1383,19 @@ pub fn spawn(deep_link: DeepLink) -> Bridge {
                     // 刷新 / 开工合入建活 / FlushOrcaReveal 在 match 前判过
                     // needs_gather,这里重 gather。
                     if needs_gather {
-                        last_gather = vm_build::gather(&app, &mut ui).await;
+                        let keep = last_gather.projects.clone();
+                        last_gather = vm_build::gather(&app, &mut ui, &keep).await;
                     }
+                    let t_asm = Instant::now();
                     vm = vm_build::assemble(&app, &mut ui, &last_gather).await;
+                    if needs_gather {
+                        bw_engine::dlog!(
+                            ok,
+                            "bridge",
+                            "assemble elapsed_ms={}",
+                            t_asm.elapsed().as_millis()
+                        );
+                    }
                     // 刷新的回执在这里补:此刻的 vm 才是「刚读出来的那一份」。
                     if refresh_receipt {
                         refresh_receipt = false;
@@ -1334,6 +1404,15 @@ pub fn spawn(deep_link: DeepLink) -> Bridge {
                         vm.note_seq = ui.note_seq;
                     }
                     let _ = vm_tx.send(vm.clone());
+                    if let Some(t0) = open_t0.take() {
+                        bw_engine::dlog!(
+                            ok,
+                            "bridge",
+                            "open first-screen elapsed_ms={} slug={open_slug} gen={}",
+                            t0.elapsed().as_millis(),
+                            last_gather.gen
+                        );
+                    }
                     if needs_gather {
                         kick_pr_fill(&last_gather, &ui, &tx_back);
                     }
@@ -1393,14 +1472,8 @@ async fn peek_orca_repo(app: &App, pid: ProjectId) -> OrcaPeek {
         return OrcaPeek::Skip;
     };
     match bw_engine::orca::repo_present(&rt, &ws).await {
-        Ok(true) => {
-            bw_engine::dlog!(ok, "bridge", "open peek present worktree={}", ws.display());
-            OrcaPeek::Present
-        }
-        Ok(false) => {
-            bw_engine::dlog!(ok, "bridge", "open peek missing worktree={}", ws.display());
-            OrcaPeek::Missing
-        }
+        Ok(true) => OrcaPeek::Present,
+        Ok(false) => OrcaPeek::Missing,
         Err(e) => {
             bw_engine::dlog!(err, "bridge", "open peek fail:{e}");
             OrcaPeek::Skip
@@ -1464,11 +1537,26 @@ fn kick_pr_fill(
     let Some(spec) = g.pr_fill_spec(&ui.mr_cache) else {
         return;
     };
+    let pending = spec.pending.len();
+    bw_engine::dlog!(
+        ok,
+        "bridge",
+        "pr fill start pending={pending} gen={}",
+        spec.gen
+    );
     let back = tx_back.clone();
     tokio::spawn(async move {
         let project = spec.project_id;
         let gen = spec.gen;
+        let t0 = Instant::now();
         let entries = vm_build::fill_pr_numbers_parallel(spec).await;
+        bw_engine::dlog!(
+            ok,
+            "bridge",
+            "pr fill done elapsed_ms={} n={} pending={pending} gen={gen}",
+            t0.elapsed().as_millis(),
+            entries.len()
+        );
         let _ = back.send(Req::PrNumbersFilled {
             project,
             gen,
