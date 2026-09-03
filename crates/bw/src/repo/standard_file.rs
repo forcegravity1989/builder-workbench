@@ -1,7 +1,6 @@
-//! `.bw/standard.toml` —— 这个项目用的是哪版规范、铺了哪几类件。
-//!
-//! 与 `standard/VERSION`(Workbench 二进制自带哪版)是两件事:这份记「项目侧」,
-//! 那个记「Workbench 侧」,数值常相等但含义不同,不合并成一个字段。
+//! `.bw/standard.toml` —— 旧铺底留下的版本账。新项目不再铺;每周资产盘点会删。
+//! 解析器留着只为已纳入的仓还能读;对账/知识库看到就列,不把它当「已纳入」判据。
+//! 接入不覆盖。
 
 use super::{parse_toml, read_to_string, write_file, Result};
 use serde::{Deserialize, Serialize};

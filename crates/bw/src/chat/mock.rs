@@ -1,8 +1,7 @@
 //! 本机自测用的假群。内存态,**不落库不进仓**。
 //!
-//! 发出去的每一条同时往 stderr 打一行 `[BW_CHAT_SENT] …` —— 和 `[BW_OPEN]`
-//! 是同一条纪律:结构化 stderr 就是证据,E2E 直接 grep 它,不需要为了验收
-//! 去建一张表。
+//! 发出去的每一条对照日志打一行 `[BW_CHAT_SENT] …` —— 和 `[BW_OPEN]`
+//! 是同一条纪律:正文里留 E2E 标签,不需要为了验收去建一张表。
 //!
 //! 拉历史返回**调用方提前塞好的**消息(`MockChatGroup::with_history`),
 //! 不自己编内容。
@@ -47,7 +46,13 @@ impl ChatGroup for MockChatGroup {
     async fn send(&self, msg: &ChatMessage) -> Result<(), ChatError> {
         // 一行一条,**不去重** —— 同一件事触发两次就打两行。验收要确认的正是
         // 「它确实会重复」,不是反过来验证「不会重复」。
-        eprintln!("[BW_CHAT_SENT] group={} text={:?}", self.group_id, msg.text);
+        bw_engine::dlog!(
+            ok,
+            "chat",
+            "[BW_CHAT_SENT] group={} text={:?}",
+            self.group_id,
+            msg.text
+        );
         if let Ok(mut v) = self.sent.lock() {
             v.push(msg.clone());
         }

@@ -4,9 +4,6 @@ brief = "1、所有项目都一样。 2、加速并规范项目运作。3、一�
 benchmark = "workbuddy"
 opportunity = "更多的项目纳入到workbench管理"
 
-# 规范版本与在研版本。这两个值不进本机库,总览与计划屏每次要
-# 显示都现解析这个文件。
-standard_version = "5.10"
 current_version = "v0.3"
 
 [chat]

@@ -1,4 +1,4 @@
-//! 外壳骨架:图标轨 / 项目轨 / 顶栏 / 指南抽屉 / toast。
+//! 外壳骨架:图标轨 / 项目轨 / 顶栏 / 指南抽屉 / Issue 上报 / toast。
 //!
 //! 结构照 `docs/hifi/index.html` 的 `iconRailHTML` /
 //! `projectRailHTML` / `topbarHTML` / `guideMarkupHTML` 搬,类名同名同义,
@@ -15,7 +15,7 @@
 
 pub mod sparkline;
 
-use crate::bridge::{Bridge, Panel, Req, TopView};
+use crate::bridge::{Bridge, ChromeBusy, Panel, Req, TopView, REPORTING_LOG};
 use crate::theme;
 use bw::model::Signal;
 use dioxus::prelude::*;
@@ -222,23 +222,64 @@ pub fn TopBar(title: String, project: Option<String>, source: String, bridge: Br
 }
 
 /// 侧栏指南就是仓里那份产品指南,编进二进制,不另写一套。
-const GUIDE_HTML: &str = include_str!("../../../../docs/guide/v4-产品指南.html");
+const GUIDE_HTML: &str = include_str!("../../../../docs/03-guide/v4-产品指南.html");
 
 #[component]
-pub fn GuideDrawer() -> Element {
+pub fn GuideDrawer(bridge: Bridge) -> Element {
     let guide = use_context::<crate::bridge::GuideNav>();
-    if guide.0.read().is_none() {
-        return rsx! {
-            div { class: "guide-tab", onclick: move |_| guide.open("u0"), "指南" }
-        };
-    }
+    let mut report_open = use_signal(|| false);
+    let mut title = use_signal(String::new);
+    let mut title_focus = use_signal(|| false);
+    let chrome_busy = use_context::<ChromeBusy>();
+    let b = bridge.clone();
+    let title_ok = !title.read().trim().is_empty();
     rsx! {
-        div { class: "guide-panel guide-panel-wide",
-            div { class: "guide-panel-head",
-                h3 { style: "font-size:15px;margin:0;", "产品指南" }
-                button { class: "drawer-close", onclick: move |_| guide.close(), "✕" }
+        div { class: "side-tabs",
+            if guide.0.read().is_none() {
+                div { class: "guide-tab", onclick: move |_| guide.open("u0"), "指南" }
             }
-            iframe { class: "guide-frame", srcdoc: GUIDE_HTML }
+            div { class: "issue-tab", onclick: move |_| report_open.set(true), "Issue" }
+        }
+        if guide.0.read().is_some() {
+            div { class: "guide-panel guide-panel-wide",
+                div { class: "guide-panel-head",
+                    h3 { style: "font-size:15px;margin:0;", "产品指南" }
+                    button { class: "drawer-close", onclick: move |_| guide.close(), "✕" }
+                }
+                iframe { class: "guide-frame", srcdoc: GUIDE_HTML }
+            }
+        }
+        if *report_open.read() {
+            div { class: "modal-backdrop", onclick: move |_| report_open.set(false),
+                div { class: "modal", onclick: move |e| e.stop_propagation(),
+                    h3 { "上报 issue" }
+                    input {
+                        class: "input",
+                        value: "{title}",
+                        placeholder: if *title_focus.read() { "" } else { "issue的标题" },
+                        onfocus: move |_| title_focus.set(true),
+                        onblur: move |_| title_focus.set(false),
+                        oninput: move |e| title.set(e.value()),
+                    }
+                    div { class: "modal-actions",
+                        button {
+                            class: "btn btn-primary",
+                            disabled: !title_ok,
+                            onclick: move |_| {
+                                let t = title.read().trim().to_string();
+                                if t.is_empty() { return; }
+                                report_open.set(false);
+                                title.set(String::new());
+                                title_focus.set(false);
+                                chrome_busy.set(REPORTING_LOG);
+                                b.cmd(bw::command::Command::ReportWorkbenchIssue { title: t });
+                            },
+                            "提交"
+                        }
+                        button { class: "btn btn-secondary", onclick: move |_| report_open.set(false), "取消" }
+                    }
+                }
+            }
         }
     }
 }

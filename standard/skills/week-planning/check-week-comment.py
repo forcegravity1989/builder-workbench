@@ -7,7 +7,7 @@
 import sys
 from typing import Optional
 
-HEAD_GOAL = "周目标"
+HEAD_GOAL = "版本目标"
 HEAD_SCOPE = "本周纳入"
 HEAD_READINGS = "本周指标读数"
 

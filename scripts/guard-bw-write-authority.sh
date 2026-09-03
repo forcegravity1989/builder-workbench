@@ -9,9 +9,10 @@ cd "$(dirname "$0")/.."
 
 # 仓文件的写入口。**名字写错过两次**,所以单独列出来并在跑之前逐个核对它们
 # 真的存在 —— 守卫拿不存在的名字去 grep,只会一直打勾。
+# `issue_policy_file` 只剩 parse/read —— 规范 5.13「产品不再写 .bw/issue-policy.toml」
+# 把写入口删了,名单跟着删。守卫自检就是这么发现的(合入主干时它红了)。
 WRITE_FNS=(
   "project_file::write"
-  "issue_policy_file::write"
   "managed_file::write"
   "standard_file::write"
   "readings_file::upsert_metric_reading"

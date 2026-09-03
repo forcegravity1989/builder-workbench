@@ -11,7 +11,7 @@ rust-version.workspace = true
 bw-engine = { workspace = true }
 
 # process/fs:起 git 子进程与读写仓文件;net:Open Design 的本机端口探活。
-tokio = { workspace = true, features = ["process", "fs", "net"] }
+tokio = { workspace = true, features = ["process", "fs", "net", "io-util"] }
 async-trait = { workspace = true }
 thiserror = { workspace = true }
 serde = { workspace = true }

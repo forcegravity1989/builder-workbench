@@ -10,7 +10,7 @@ use crate::model::{Category, IssueId, IssueStatus, ProjectId};
 
 /// 总览「编辑项目名片」一次填完的仓文件字段。
 ///
-/// 正本仍是 `.bw/PROJECT.md` + `.bw/project.toml` 两份。接入时只填前四项,
+/// 正本是 `.bw/project.toml`。接入时只填前四项,
 /// 在研版本 / 项目群落默认或仓里已有的;总览保存会把后几项一并写回。
 #[derive(Clone, Debug, PartialEq, Eq, Default)]
 pub struct ProjectIntent {
@@ -43,7 +43,7 @@ pub struct RemoteRef {
 #[derive(Clone, Debug, PartialEq)]
 pub enum Command {
     // ── 接入 ──────────────────────────────────────────────
-    /// 接入项目:写项目行 + 备好工作区。名片字段落 `PROJECT.md`,不落库。
+    /// 接入项目:写项目行 + 备好工作区。名片字段落 `.bw/project.toml`,不落库。
     CreateProject {
         slug: String,
         intent: ProjectIntent,
@@ -51,16 +51,14 @@ pub enum Command {
         /// 空 = 用工作区根目录下的 `<slug>`。
         workspace_path: String,
     },
-    /// 总览「编辑→保存」:改 `PROJECT.md` 与 `.bw/project.toml`
+    /// 总览「编辑→保存」:改 `.bw/project.toml`
     /// (名片 + 在研版本 + 项目群),走一张轻量活。
     EditProjectCard {
         project_id: ProjectId,
         intent: ProjectIntent,
     },
 
-    // ── 规范铺底(运作活③)─────────────────────────────────
-    /// 一次性运作活③:按探测结果决定要跑几步,A 刀只做第 1 步(写核心件)。
-    RunStandardBootstrap { project_id: ProjectId },
+    // ── 规范铺底(运作活③)只在第一次纳入时自动跑,没有二次铺底命令 ──
     /// 把一个项目从工作台上移走。**只动库,不动仓** —— 仓是正本,里面是真实
     /// 的劳动成果。界面上要人点两下才发得出这条(第一下问「真移走?」)。
     RemoveProject { project_id: ProjectId },
@@ -73,8 +71,8 @@ pub enum Command {
     ReconcileStandard { project_id: ProjectId },
 
     // ── 计划 ──────────────────────────────────────────────
-    /// 总览「开始本周」:建本周运作活①并开工。同一标题做过(含已完成)不再建。
-    /// 判据是「本周文件不存在」——查文件,不查任何索引表。
+    /// 总览「开始本版本」:建本周运作活①并开工。同一标题做过(含已完成)不再建。
+    /// 判据是标题 + 本 ISO 周创建的 `v0.x` 标签。
     StartWeekPlanning { project_id: ProjectId, week: String },
     /// 人确认草稿后真的建活(`origin = agent_split`)。
     ConfirmWeekDraft {
@@ -82,7 +80,7 @@ pub enum Command {
         week: String,
         titles: Vec<String>,
     },
-    /// 建一张活。`category` 决定默认工具与 workflow(查 `.bw/issue-policy.toml`)。
+    /// 建一张活。`category` 决定默认工具与 workflow(本机 settings → 残留映射 → 产品默认)。
     CreateIssue {
         project_id: ProjectId,
         title: String,
@@ -95,17 +93,15 @@ pub enum Command {
         /// 和 `week_of` 是同一槽位:有 plan 就只打版本,丢掉周。
         plan: String,
     },
-    /// 排期:排进某个周版本,或传空串移回待办池。
+    /// 摘排期:壳侧只传空 `week_of` 把活移回待办池。不再用这条新写周标签。
     ScheduleIssue {
         id: IssueId,
         week_of: Option<String>,
     },
-    /// 排进人起名的版本(`bw:plan:<name>`)。和 `ScheduleIssue` 是同一槽位的
-    /// 两种写法:一张活只属于一个版本。正本走 codehub milestone + 标签。
+    /// 排进计划版本(`bw:plan:<name>`)。一张活只属于一个版本。
     ScheduleToPlan { id: IssueId, plan: String },
-    /// 建一个人起名的版本:建 codehub milestone(title=name,start,due),
-    /// 并给 `included` 每张打 `bw:plan:<name>` 标签、挂到这个里程碑。
-    /// 周版本每周一按周号出现,不用这条建。与发版号 `CutRelease` 不同。
+    /// 建一个 `v0.x` 版本:建 codehub milestone,给 `included` 打 `bw:plan:<name>`。
+    /// 与发版号 `CutRelease` 不同。
     CreatePlanVersion {
         project_id: ProjectId,
         name: String,
@@ -114,15 +110,27 @@ pub enum Command {
         note: String,
         included: Vec<IssueId>,
     },
-    /// 删一个人起名的版本:给挂着 `bw:plan:<name>` 的活摘掉该标签,再删同名
-    /// 里程碑。周版本每周一固定出现,周格式标题拒收。
+    /// 删一个未发的 `v0.x` 版本:给挂着 `bw:plan:<name>` 的活摘掉该标签,再删同名
+    /// 里程碑。已发的号拒收。
     DeletePlanVersion { project_id: ProjectId, name: String },
+    /// 未发版本改名:同步里程碑标题、标签定义、已打在 issue 上的 `bw:plan:`。
+    RenamePlanVersion {
+        project_id: ProjectId,
+        from: String,
+        to: String,
+    },
     /// 发版本:给选中的活写版本号 + 建远端 codehub/GitHub Release + 打 `bw:released:*` 标签。
+    /// 不做出包。出包走 [`Command::PackRelease`]。
     CutRelease {
         project_id: ProjectId,
         version: String,
         note: String,
         included: Vec<IssueId>,
+    },
+    /// 出包:拉仓里 `pack.cmd` 再拉 `e2e.cmd`,不打标签、不建 Release。协议见 ADR-0005。
+    PackRelease {
+        project_id: ProjectId,
+        version: String,
     },
     /// 把项目工作区的主检出快进到远端最新。
     ///
@@ -145,7 +153,7 @@ pub enum Command {
     /// 状态转移。合法性由 `can_transition_to` 守;「完成」只能从「评审中」来,
     /// 而且只能是人显式发这条命令。作废走 `Cancelled`,不是 Done。
     TransitionIssue { id: IssueId, to: IssueStatus },
-    /// 给已有的活补/改类别标签。读回时用它查 issue-policy 的开工工具。
+    /// 给已有的活补/改类别标签。读回时用它查本机开工工具(再回退残留/产品默认)。
     SetIssueCategory { id: IssueId, category: Category },
     /// 改 issue 的责任人(codehub assignee)。空串 = 取消指派。走 codehub API,
     /// 不在本地另存一套。
@@ -165,7 +173,7 @@ pub enum Command {
     DeleteSession { id: IssueId },
 
     // ── 配置 ──────────────────────────────────────────────
-    /// 保存一行「类别→工具→workflow」映射,写 `.bw/issue-policy.toml`。
+    /// 保存本机「我用什么工具」。只写 settings,不进仓。`workflow` 带着不存。
     SaveToolMapping {
         project_id: ProjectId,
         category: Category,
@@ -211,6 +219,10 @@ pub enum Command {
         name: String,
         value: String,
     },
+
+    /// 把本机对照日志报到 **workbench 自己的仓**(当前目录 git 的 origin),
+    /// 不是打开着的被管项目。标题人填,附件是 `bw.log`。
+    ReportWorkbenchIssue { title: String },
 }
 
 /// 一个工具探活的结果。探不到就是探不到,不猜。
@@ -275,7 +287,7 @@ pub enum Event {
         week: String,
     },
     /// 本周那张运作活①还在路上,这次什么
-    /// 都没做。**不是错误** —— 人再点一次「开始本周」该被平静地挡住,而不是
+    /// 都没做。**不是错误** —— 人再点一次「开始本版本」该被平静地挡住,而不是
     /// 收到一句「这张活现在是评审中,不是能开工的状态」。
     WeekPlanInProgress {
         project_id: ProjectId,
@@ -306,6 +318,12 @@ pub enum Event {
         name: String,
         /// 摘掉 `bw:plan` 的活有几张。
         issues_cleared: u32,
+    },
+    PlanVersionRenamed {
+        project_id: ProjectId,
+        from: String,
+        to: String,
+        issues_moved: u32,
     },
     IssueCategorySet {
         id: IssueId,
@@ -361,6 +379,13 @@ pub enum Event {
     ReleaseCut {
         version: String,
         rows_written: bool,
+    },
+    /// 出包 + 验包都过了。不表示已经发版。
+    ReleasePacked {
+        version: String,
+        artifact_dir: String,
+        passed: u32,
+        total: u32,
     },
     /// 拉工作区的结果。`moved` = 主检出真的往前走了;`note` 是给人看的一句话,
     /// 拉不动时装的是 git 的原话(压成一行),**不吞**。
@@ -430,5 +455,10 @@ pub enum Event {
         project_id: ProjectId,
         signal: crate::model::Signal,
         reasons: Vec<String>,
+    },
+    /// 对照日志已报到 workbench 仓。`url` 给人点开核对,toast 只说成功。
+    WorkbenchIssueReported {
+        iid: u32,
+        url: String,
     },
 }

@@ -93,4 +93,4 @@ curl -s -X POST --data-raw 'file:///绝对路径/components/buttons.html' http:/
 
 ## 本仓的完成实例
 
-`docs/design-system/` 是这套流程跑完的样子:2026-08-31 从项目 `dd2af572-7839-44f2-9cb9-b9619144586d` 导入,14 张示例页 + 双语规范 + 双配色 token。要对着一个真实结果核对判断时,读它的 `README.md`。
+`docs/04-design-system/` 是这套流程跑完的样子:2026-08-31 从项目 `dd2af572-7839-44f2-9cb9-b9619144586d` 导入,14 张示例页 + 双语规范 + 双配色 token。要对着一个真实结果核对判断时,读它的 `README.md`。

@@ -1,0 +1,826 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Workbench MVP · 使用指南</title>
+<style>
+  :root{
+    /* 配色取自 crates/app-shell/assets/hifi.css 的 :root（V4 高保真原型正本），非自造 */
+    --bg:#EFEBE2; --surface:#FBFAF6; --surface-2:#F4F0E7; --rail:#E9E3D7;
+    --fg:#23211C; --muted:#57534A; --muted-2:#8C867A; --muted-3:#A19B8D;
+    --border:#E2DCCF; --border-deep:#DBD4C5;
+    --accent:#C5654A; --accent-ink:#A8432B; --accent-soft:#EFD9CE;
+    --sig-green:#6B8E5A; --sig-amber:#D3A24A; --sig-red:#C0463A; --sig-gray:#9A9590;
+    --shadow:0 8px 26px rgba(35,33,28,.08);
+    --font-display:'Noto Serif SC','Songti SC','STSong','SimSun',serif;
+    --font-body:'Noto Sans SC','PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif;
+    --font-mono:'JetBrains Mono','SF Mono',Menlo,Consolas,monospace;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%}
+  body{background:var(--bg);color:var(--fg);font-family:var(--font-body);font-size:15px;line-height:1.6;-webkit-font-smoothing:antialiased;display:flex;overflow:hidden}
+  ::selection{background:var(--accent-soft)}
+  ::-webkit-scrollbar{width:10px;height:10px} ::-webkit-scrollbar-thumb{background:var(--border-deep);border-radius:6px}
+
+  aside.sidebar{width:272px;flex:0 0 272px;height:100vh;background:var(--rail);border-right:1px solid var(--border);display:flex;flex-direction:column;padding:22px 0 16px;overflow-y:auto}
+  .brand{padding:0 22px 20px;border-bottom:1px solid var(--border)}
+  .brand .mark{font-family:var(--font-display);font-weight:700;font-size:22px;letter-spacing:-0.01em}
+  .brand .mark .dot{color:var(--accent)}
+  .brand .sub{font-size:11px;letter-spacing:0.08em;text-transform:uppercase;color:var(--muted-2);margin-top:6px}
+  nav{padding:14px 0;flex:1}
+  .nav-group{margin-bottom:6px}
+  .nav-group-title{font-size:11px;letter-spacing:0.1em;text-transform:uppercase;color:var(--muted-2);padding:8px 22px 6px;font-weight:500}
+  .nav-item{display:flex;align-items:center;gap:10px;padding:8px 22px;cursor:pointer;font-size:14px;border-left:3px solid transparent;transition:background .12s,border-color .12s}
+  .nav-item:hover{background:rgba(197,101,74,.08)}
+  .nav-item.active{background:var(--accent-soft);border-left-color:var(--accent);color:var(--accent-ink);font-weight:500}
+  .nav-item svg{width:16px;height:16px;flex:0 0 16px;stroke:currentColor;stroke-width:1.6;fill:none}
+  .nav-foot{padding:12px 22px;border-top:1px solid var(--border);font-size:11px;color:var(--muted-2);line-height:1.5}
+  .nav-foot code{font-family:var(--font-mono);color:var(--accent-ink)}
+
+  main.main{flex:1;height:100vh;display:flex;flex-direction:column;overflow:hidden}
+  header.topbar{height:56px;flex:0 0 56px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:14px;padding:0 32px;background:var(--bg)}
+  .crumb{display:flex;align-items:center;gap:10px;font-size:13px}
+  .crumb .sec{color:var(--muted-2)} .crumb .sep{color:var(--border-deep)} .crumb .cur{color:var(--fg);font-weight:500}
+  .badge{margin-left:auto;font-size:11px;letter-spacing:0.06em;padding:4px 10px;border-radius:999px;border:1px solid var(--border);color:var(--muted-2);background:var(--surface);text-transform:uppercase}
+  .badge.use{color:#5f7d57;border-color:#c4d2bc} .badge.maint{color:var(--accent-ink);border-color:var(--accent-soft)}
+  .content{flex:1;overflow-y:auto;padding:34px 40px 90px}
+
+  .screen{display:none;max-width:900px}
+  .screen.active{display:block;animation:fade .18s ease}
+  @keyframes fade{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+  .eyebrow{font-size:11px;letter-spacing:0.12em;text-transform:uppercase;color:var(--accent-ink);font-weight:500;margin-bottom:10px}
+  h1.disp{font-family:var(--font-display);font-weight:700;font-size:32px;line-height:1.2;letter-spacing:-0.02em;margin-bottom:14px}
+  .lede{font-size:16px;color:var(--muted);line-height:1.65;max-width:66ch;margin-bottom:22px}
+  h2.sec{font-family:var(--font-display);font-weight:600;font-size:20px;letter-spacing:-0.01em;margin:30px 0 12px;display:flex;align-items:center;gap:9px}
+  h2.sec .n{font-family:var(--font-mono);font-size:12px;font-weight:500;color:var(--accent-ink);background:var(--accent-soft);padding:2px 7px;border-radius:5px}
+  h3.sub{font-size:15px;font-weight:600;margin:18px 0 8px}
+  p{margin-bottom:12px;max-width:68ch} .muted{color:var(--muted-2)}
+  strong{font-weight:600} code,.mono{font-family:var(--font-mono);font-size:.9em;background:var(--surface-2);padding:.05em .35em;border-radius:4px}
+  a{color:var(--accent-ink);text-decoration:none;border-bottom:1px solid var(--accent-soft)} a:hover{border-bottom-color:var(--accent-ink)}
+
+  .cards{display:grid;grid-template-columns:repeat(2,1fr);gap:14px;margin:8px 0 6px}
+  .card{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:16px 18px;box-shadow:var(--shadow)}
+  .card .t{font-weight:600;margin-bottom:5px;display:flex;align-items:center;gap:8px}
+  .card .d{font-size:13.5px;color:var(--muted);line-height:1.55}
+
+  .callout{display:flex;gap:12px;border-radius:10px;padding:14px 16px;margin:16px 0;border:1px solid var(--border)}
+  .callout svg{width:18px;height:18px;flex:0 0 18px;stroke-width:1.6;fill:none;margin-top:2px}
+  .callout.warn{background:#FBF1E2;border-color:#EAD0A6} .callout.warn svg{stroke:var(--sig-amber)}
+  .callout.note{background:var(--surface)} .callout.note svg{stroke:var(--accent)}
+  .callout.danger{background:#F6E3DE;border-color:#E3B7AD} .callout.danger svg{stroke:var(--sig-red)}
+  .callout .body{font-size:14px} .callout .body strong{display:block;margin-bottom:2px}
+
+  pre.code{background:var(--surface-2);border:1px solid var(--border);border-radius:8px;padding:14px 16px;overflow-x:auto;font-family:var(--font-mono);font-size:12.5px;line-height:1.6;color:#3a332b;margin:12px 0}
+  pre.code .c{color:var(--muted-2)}
+
+  .ops{margin:6px 0}
+  .ops .li{display:grid;grid-template-columns:28px 1fr;gap:12px;padding:9px 0;border-bottom:1px dashed var(--border)}
+  .ops .li:last-child{border-bottom:none}
+  .ops .li .n{font-family:var(--font-mono);font-size:12px;color:#fff;background:var(--accent);width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center}
+  .ops .li .t{font-size:14px;padding-top:1px}
+
+  .res{background:var(--surface-2);border:1px solid var(--border);border-radius:10px;padding:14px 16px;margin:12px 0}
+  .res .h{font-size:12px;text-transform:uppercase;letter-spacing:0.08em;color:var(--muted-2);margin-bottom:8px}
+  .res ul{list-style:none}
+  .res li{padding:5px 0;font-size:13.5px;display:grid;grid-template-columns:14px 1fr;gap:8px}
+  .res li .b{width:6px;height:6px;border-radius:50%;background:var(--accent);margin-top:8px}
+
+  .linker{font-size:13px;color:var(--muted-2);margin:14px 0 0}
+  .linker a{font-family:var(--font-mono);font-size:12.5px}
+
+  .checklist{display:flex;flex-direction:column;gap:0;margin:8px 0}
+  .chk{display:grid;grid-template-columns:22px 1fr;gap:12px;padding:13px 0;border-bottom:1px solid var(--border)}
+  .chk:last-child{border-bottom:none}
+  .chk .mk{width:20px;height:20px;border-radius:5px;border:1.5px solid var(--accent);display:flex;align-items:center;justify-content:center;color:var(--accent);margin-top:1px}
+  .chk .mk svg{width:13px;height:13px;stroke:var(--accent);stroke-width:2;fill:none}
+  .chk .t{font-size:14px;font-weight:600;margin-bottom:3px}
+  .chk .d{font-size:13px;color:var(--muted);line-height:1.55}
+
+  .rules{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:8px 0}
+  .rule{border:1px solid var(--border);border-left:3px solid var(--accent);border-radius:0 8px 8px 0;padding:13px 16px;background:var(--surface)}
+  .rule .n{font-family:var(--font-mono);font-size:11px;color:var(--accent-ink);margin-bottom:4px}
+  .rule .t{font-weight:600;margin-bottom:3px} .rule .d{font-size:13px;color:var(--muted);line-height:1.55}
+
+  .foot{margin-top:36px;padding-top:16px;border-top:1px solid var(--border);font-size:12px;color:var(--muted-2);max-width:76ch}
+  .foot code{color:var(--accent-ink)}
+
+  .diagram{border:1px solid var(--border);border-radius:12px;background:var(--surface);padding:18px 16px;margin:14px 0 10px}
+  .diagram .cap{font-size:11px;letter-spacing:0.08em;text-transform:uppercase;color:var(--muted-2);margin-bottom:12px}
+  .diagram .scroll{overflow-x:auto}
+  .diagram svg{display:block;min-width:460px}
+  .diagram .legend{display:flex;gap:18px;flex-wrap:wrap;margin-top:10px;font-size:11.5px;color:var(--muted-2)}
+  .diagram .legend .sw{display:inline-flex;align-items:center;gap:6px;margin-right:4px}
+  .diagram .legend .box{width:14px;height:10px;border-radius:2px;display:inline-block}
+
+  .pipe{display:flex;align-items:stretch;gap:0;flex-wrap:wrap;margin:4px 0}
+  .pipe .box{flex:1 1 110px;min-width:100px;border:1px solid var(--border);border-radius:8px;padding:10px 11px;background:var(--bg);text-align:center}
+  .pipe .box .t{font-family:var(--font-mono);font-size:12px;font-weight:600;color:var(--accent-ink);margin-bottom:4px}
+  .pipe .box .d{font-size:12px;color:var(--muted-2);line-height:1.45}
+  .pipe .box.lock{border-color:var(--accent);background:var(--accent-soft)}
+  .pipe .box.warn{border-color:#E3B7AD;background:#F6E3DE}
+  .pipe .arr{display:flex;align-items:center;padding:0 6px;color:var(--accent-ink);font-family:var(--font-mono);font-size:14px}
+
+  .split2{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:8px 0}
+  @media(max-width:900px){.split2{grid-template-columns:1fr}}
+  .pane{border:1px solid var(--border);border-radius:10px;padding:12px 14px;background:var(--bg)}
+  .pane .ph{font-family:var(--font-mono);font-size:12px;color:var(--accent-ink);margin-bottom:8px;font-weight:600}
+  .pane ul{margin:0;padding-left:1.1em;font-size:13px;color:var(--fg)}
+  .pane li{margin:4px 0}
+
+  .ktable-wrap{overflow-x:auto;margin:10px 0 6px}
+  .ktable{width:100%;border-collapse:collapse;font-size:13px;background:var(--surface);min-width:480px}
+  .ktable th,.ktable td{border:1px solid var(--border);padding:8px 10px;text-align:left;vertical-align:top;line-height:1.45}
+  .ktable th{background:var(--surface-2);font-weight:600;font-size:12px;color:var(--muted-2);letter-spacing:0.02em}
+  .ktable .k{font-family:var(--font-mono);font-size:12px;white-space:nowrap}
+
+  .ex{border:1px dashed var(--border-deep);border-radius:10px;padding:12px 14px;margin:12px 0;background:rgba(244,239,227,.55)}
+  .ex .eh{font-size:11px;letter-spacing:0.08em;text-transform:uppercase;color:var(--accent-ink);margin-bottom:6px}
+  .ex .ed{font-size:13.5px;line-height:1.55}
+  .where{font-size:13px;color:var(--fg);margin:8px 0 4px;line-height:1.55}
+  .bullets{margin:8px 0 4px;padding-left:1.15em;font-size:13.5px}
+  .bullets li{margin:5px 0}
+  .note-line{font-size:13px;color:var(--muted-2);margin:6px 0 12px;line-height:1.55}
+
+  .stages{display:flex;gap:6px;flex-wrap:wrap;margin:4px 0 14px}
+  .stages .sl{font-size:11px;color:var(--muted-2);align-self:center;margin-right:2px}
+  .stages .s{font-family:var(--font-mono);font-size:11px;padding:2px 8px;border-radius:5px;background:var(--accent-soft);color:var(--accent-ink);letter-spacing:0.02em}
+
+  .banner{border:1px solid var(--border);border-left:3px solid var(--accent);border-radius:0 10px 10px 0;background:var(--surface);padding:14px 18px;margin-bottom:22px;font-size:13.5px;line-height:1.7;color:var(--muted)}
+  .banner strong{color:var(--fg)}
+  .banner .rules-mini{margin-top:8px;padding-left:1.2em}
+  .banner .rules-mini li{margin:3px 0}
+
+  .roadmap{display:flex;flex-direction:column;gap:0;margin:10px 0}
+  .rstop{display:grid;grid-template-columns:70px 1fr;gap:14px;padding:14px 0;border-bottom:1px dashed var(--border)}
+  .rstop:last-child{border-bottom:none}
+  .rstop .tag{align-self:start;font-family:var(--font-mono);font-size:11px;padding:3px 8px;border-radius:5px;text-align:center;white-space:nowrap}
+  .rstop.done .tag{background:var(--accent);color:#fff}
+  .rstop.doing .tag{background:var(--accent-soft);color:var(--accent-ink);border:1px solid var(--accent)}
+  .rstop.todo .tag{background:var(--surface-2);color:var(--muted-2);border:1px dashed var(--border-deep)}
+  .rstop .body .t{font-weight:600;margin-bottom:3px}
+  .rstop .body .d{font-size:13.5px;color:var(--muted);line-height:1.55}
+
+  .find{margin:8px 0 4px}
+  .next{margin-top:22px}
+</style>
+</head>
+<body>
+
+<aside class="sidebar">
+  <div class="brand"><div class="mark">Workbench<span class="dot">.</span></div><div class="sub">MVP · 使用指南</div></div>
+  <nav>
+    <div class="nav-group">
+      <div class="nav-group-title">怎么用</div>
+      <div class="nav-item active" data-screen="u0"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>每周怎么转</div>
+      <div class="nav-item" data-screen="u1"><svg viewBox="0 0 24 24"><path d="M5 6h11l4 4v8H5z"/></svg>第 0 站 · 接入项目</div>
+      <div class="nav-item" data-screen="u1b"><svg viewBox="0 0 24 24"><path d="M4 19V5M4 19h16M8 16l3-5 3 3 4-6"/></svg>第 1 站 · 看总览</div>
+      <div class="nav-item" data-screen="u1c"><svg viewBox="0 0 24 24"><path d="M4 7h16M4 12h10M4 17h7"/></svg>第 2/3 站 · 定本周</div>
+      <div class="nav-item" data-screen="u1d"><svg viewBox="0 0 24 24"><path d="M4 19V5M4 19h16M8 16l3-5 3 3 4-6"/></svg>第 4 站 · 干活</div>
+      <div class="nav-item" data-screen="u1e"><svg viewBox="0 0 24 24"><path d="M12 3l8 4v5c0 5-3.5 8-8 9-4.5-1-8-4-8-9V7z"/></svg>第 5 站 · 验收记发版</div>
+      <div class="nav-item" data-screen="u1f"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>第 6 站 · 定时盘点</div>
+      <div class="nav-item" data-screen="u2"><svg viewBox="0 0 24 24"><path d="M4 7h16M4 12h10M4 17h7"/></svg>规矩与查找</div>
+    </div>
+  </nav>
+  <div class="nav-foot">
+    按站查「点什么、得到什么」。<br>怎么建 / 跑 / 测看仓根 <code>AGENTS.md</code>。
+  </div>
+</aside>
+
+<main class="main">
+  <header class="topbar">
+    <div class="crumb"><span class="sec" id="crumb-sec">怎么用</span><span class="sep">/</span><span class="cur" id="crumb-cur">每周怎么转</span></div>
+    <span class="badge use" id="top-badge">Usage</span>
+  </header>
+
+  <div class="content" id="content">
+
+    <!-- ============ U0 每周怎么转 ============ -->
+    <section class="screen active" id="u0" data-title="每周怎么转" data-sec-name="怎么用">
+      <div class="eyebrow">Workbench MVP · 使用指南</div>
+      <h1 class="disp">接进来，每周转一圈</h1>
+      <p class="lede">Workbench 是单人项目工作台。你说清楚要什么，在路口点头；查资料、写代码、开 MR 交给 agent。正本在仓和代码平台上，不在 Workbench 本地库里。</p>
+
+      <div class="banner">
+        一条主线：<strong>接进来 → 定本周 → 派活 → agent 干 → 你验收</strong>。
+        <ul class="rules-mini">
+          <li>「完成」永远你点。agent 最远到「评审中」。定时任务只会<strong>建</strong>活，绝不<strong>完成</strong>活。</li>
+          <li>没数据就是灰，不是绿。界面上的数字都能用 <code>codehub-cli</code> / <code>gh</code> 或打开仓文件独立核对。</li>
+        </ul>
+      </div>
+
+      <h2 class="sec"><span class="n">六站</span>一个项目每周怎么转</h2>
+      <div class="diagram">
+        <div class="cap">0 只做一次；1–6 每周一圈</div>
+        <div class="scroll">
+          <svg viewBox="0 0 480 450" width="480" height="450" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="六站旅程环：0 接入项目一次性完成后，1 看总览、2/3 定本周、4 干活、5 验收记发版、6 定时盘点循环往复，6 之后回到 1">
+            <defs>
+              <marker id="pgArrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+                <path d="M0 0L10 5L0 10z" fill="var(--muted-2)"/>
+              </marker>
+              <marker id="pgArrowAccent" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+                <path d="M0 0L10 5L0 10z" fill="var(--accent-ink)"/>
+              </marker>
+            </defs>
+            <!-- 环边（1→2/3→4→5→6，细箭头） -->
+            <line x1="310" y1="119" x2="333" y2="135" stroke="var(--muted-2)" stroke-width="2" marker-end="url(#pgArrow)"/>
+            <line x1="370" y1="249" x2="361" y2="276" stroke="var(--muted-2)" stroke-width="2" marker-end="url(#pgArrow)"/>
+            <line x1="264" y1="346" x2="236" y2="346" stroke="var(--muted-2)" stroke-width="2" marker-end="url(#pgArrow)"/>
+            <line x1="139" y1="276" x2="130" y2="249" stroke="var(--muted-2)" stroke-width="2" marker-end="url(#pgArrow)"/>
+            <!-- 闭环边（6→1，重点标出） -->
+            <line x1="167" y1="135" x2="190" y2="119" stroke="var(--accent-ink)" stroke-width="2.4" marker-end="url(#pgArrowAccent)"/>
+            <text x="250" y="132" text-anchor="middle" font-size="11.5" fill="var(--accent-ink)" font-weight="700">↺ 下周一回到总览</text>
+            <!-- 入口边（0→1） -->
+            <line x1="150" y1="66" x2="178" y2="69" stroke="var(--accent-ink)" stroke-width="2" marker-end="url(#pgArrowAccent)"/>
+
+            <!-- node 0：接入项目，已走过，实心 -->
+            <rect x="8" y="28" width="140" height="64" rx="12" fill="var(--accent)" stroke="var(--accent-ink)" stroke-width="1.4"/>
+            <text x="78" y="55" text-anchor="middle" font-size="13" font-weight="700" fill="#fff">0 · 接入项目</text>
+            <text x="78" y="72" text-anchor="middle" font-size="11" fill="#fff" opacity=".92">一次性</text>
+
+            <!-- node 1 看总览 -->
+            <rect x="180" y="43" width="140" height="64" rx="12" fill="var(--accent)" stroke="var(--accent-ink)" stroke-width="1.4"/>
+            <text x="250" y="70" text-anchor="middle" font-size="13" font-weight="700" fill="#fff">1 · 看总览</text>
+            <text x="250" y="87" text-anchor="middle" font-size="11" fill="#fff" opacity=".92">健康灯 · 指标 · 本周</text>
+
+            <!-- node 2/3 定本周 -->
+            <rect x="323" y="147" width="140" height="64" rx="12" fill="var(--accent)" stroke="var(--accent-ink)" stroke-width="1.4"/>
+            <text x="393" y="174" text-anchor="middle" font-size="13" font-weight="700" fill="#fff">2/3 · 定本周</text>
+            <text x="393" y="191" text-anchor="middle" font-size="11" fill="#fff" opacity=".92">一次会话定目标</text>
+
+            <!-- node 4 干活：已走过 -->
+            <rect x="268" y="314" width="140" height="64" rx="12" fill="var(--accent)" stroke="var(--accent-ink)" stroke-width="1.4"/>
+            <text x="338" y="341" text-anchor="middle" font-size="13" font-weight="700" fill="#fff">4 · 干活</text>
+            <text x="338" y="358" text-anchor="middle" font-size="11" fill="#fff" opacity=".92">开工 · 作废 · 会话</text>
+
+            <!-- node 5 验收/记发版：已走过 -->
+            <rect x="92" y="314" width="140" height="64" rx="12" fill="var(--accent)" stroke="var(--accent-ink)" stroke-width="1.4"/>
+            <text x="162" y="341" text-anchor="middle" font-size="13" font-weight="700" fill="#fff">5 · 验收记发版</text>
+            <text x="162" y="358" text-anchor="middle" font-size="11" fill="#fff" opacity=".92">合入 · 点完成 · 发版</text>
+
+            <!-- node 6 定时盘点：已走过 -->
+            <rect x="37" y="147" width="140" height="64" rx="12" fill="var(--accent)" stroke="var(--accent-ink)" stroke-width="1.4"/>
+            <text x="107" y="174" text-anchor="middle" font-size="13" font-weight="700" fill="#fff">6 · 定时盘点</text>
+            <text x="107" y="191" text-anchor="middle" font-size="11" fill="#fff" opacity=".92">自动建活，停评审中</text>
+          </svg>
+        </div>
+      </div>
+
+      <h2 class="sec"><span class="n">找信息</span>从问题跳到那一站</h2>
+      <div class="ktable-wrap find">
+        <table class="ktable">
+          <thead><tr><th>我想…</th><th>去哪</th></tr></thead>
+          <tbody>
+            <tr><td>接一个仓、看铺了哪些文件、合铺底 MR</td><td><a href="#" onclick="go('u1');return false">第 0 站 · 接入项目</a></td></tr>
+            <tr><td>看健康灯、指标、改名片 / 在研版本 / 项目群</td><td><a href="#" onclick="go('u1b');return false">第 1 站 · 看总览</a></td></tr>
+            <tr><td>开始本版本、写版本目标、建活、看某个版本</td><td><a href="#" onclick="go('u1c');return false">第 2/3 站 · 定本周</a></td></tr>
+            <tr><td>开工、作废、去会话、原型进 Open Design</td><td><a href="#" onclick="go('u1d');return false">第 4 站 · 干活</a></td></tr>
+            <tr><td>合 MR、点完成、发版本</td><td><a href="#" onclick="go('u1e');return false">第 5 站 · 验收记发版</a></td></tr>
+            <tr><td>周五自动盘点、每天自动采数</td><td><a href="#" onclick="go('u1f');return false">第 6 站 · 定时盘点</a></td></tr>
+            <tr><td>灯为什么是灰、完成为什么必须人点</td><td><a href="#" onclick="go('u2');return false">规矩与查找</a></td></tr>
+            <tr><td>把对照日志报到 workbench 仓</td><td>右侧「指南」下面的「Issue」</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="note-line">怎么建 / 跑 / 测看仓根 <code>AGENTS.md</code>。机制为什么这么定看 <code>docs/architecture.md</code>。右侧「指南」打开的就是这份。</p>
+      <div class="foot">使用指南正本 <code>docs/guide/v4-产品指南.html</code>。</div>
+    </section>
+
+    <!-- ============ U1 第 0 站 · 接入项目 ============ -->
+    <section class="screen" id="u1" data-title="第 0 站 · 接入项目" data-sec-name="怎么用">
+      <div class="eyebrow">怎么用 · 第 0 站</div>
+      <h1 class="disp">把一个项目接进来</h1>
+      <p class="lede">只做一次。选仓、填名片。仓里还没有项目信息时，Workbench 自动铺 <code>.bw/</code> 骨架并开 MR。已有名片不再铺。仓根一个字不动。合入由你点。</p>
+      <div class="res">
+        <div class="h">这一站能查到</div>
+        <ul>
+          <li><span class="b"></span><div>要准备什么、工作区目录怎么改</div></li>
+          <li><span class="b"></span><div>两步怎么接、这个仓以前被接管过没有</div></li>
+          <li><span class="b"></span><div>点「完成接入」之后仓里多了什么、谁合那个 MR</div></li>
+        </ul>
+      </div>
+
+      <h2 class="sec"><span class="n">你要准备什么</span></h2>
+      <div class="checklist">
+        <div class="chk"><div class="mk"><svg viewBox="0 0 24 24"><path d="M5 12l4 4 10-10"/></svg></div><div><div class="t">一个 git 仓</div><div class="d">GitHub 或 codehub 上的都行，你有它的读权限。</div></div></div>
+        <div class="chk"><div class="mk"><svg viewBox="0 0 24 24"><path d="M5 12l4 4 10-10"/></svg></div><div><div class="t">本机装好命令行工具并登录过</div><div class="d"><code>gh</code>（GitHub）或 <code>codehub-cli</code>（内部）。项目墙上那条环境条会当场去 PATH 里找这些命令，找得到绿、找不到红。<strong>红的不影响别的事，只影响对应那条路能不能走。</strong></div></div></div>
+      </div>
+
+      <h3 class="sub">工作区目录</h3>
+      <p>「设置」里有一格「工作区根目录」。以后接进来的项目，仓 clone 到这个目录下，一个项目一个子目录。默认在用户目录下的 <code>.builders-workbench/workspaces</code>。要换盘，现在改、点保存：立刻生效，重启还在。<strong>已经接进来的项目不会跟着搬家</strong>。</p>
+
+      <h2 class="sec"><span class="n">接：两步</span></h2>
+      <div class="ops">
+        <div class="li"><div class="n">1</div><div class="t">点「+ 接入项目」。<strong>第一步只问一件事：这个项目在哪。</strong>光标点进「项目地址」那格，Workbench 就去问平台要你账号下的仓，列成下拉框；打字即在这批里检索，点一行即选中。不想理列表就直接把 <code>owner/repo</code> 打进去，一样算数。框里右边那个 ⟳ 是重新拉一次。</div></div>
+        <div class="li"><div class="n">2</div><div class="t"><strong>第二步是基础信息</strong>，四格：项目名称、你想做什么、最像的对标、三个月长成什么样。</div></div>
+      </div>
+      <div class="callout warn">
+        <svg viewBox="0 0 24 24"><path d="M12 3l9 16H3z"/><path d="M12 9v5M12 17h.01"/></svg>
+        <div class="body"><strong>列不出来的时候</strong>会把命令的原话摆给你看（多半是没装或没登录），<strong>不会摆一张假列表</strong>。</div>
+      </div>
+
+      <h3 class="sub">第二步顶上：这个仓被 Workbench 接管过没有</h3>
+      <p>判据是去它远端读 <code>.bw/project.toml</code>：</p>
+      <div class="ktable-wrap">
+        <table class="ktable">
+          <thead><tr><th>你会看到</th><th>意思</th><th>你该做什么</th></tr></thead>
+          <tbody>
+            <tr><td>已经被 Workbench 接管过</td><td>同事先接过，或者你以前接过</td><td>四格是回显出来的，直接改就行；接进来时不会覆盖仓里已有的字</td></tr>
+            <tr><td>还没被 Workbench 接管过</td><td>仓在、就是没这份文件</td><td>四格自己填</td></tr>
+            <tr><td>找不到这个仓</td><td>地址敲错了、私有仓没权限、没登录</td><td><strong>先把地址改对</strong>，接一个不存在的仓后面每步都会失败</td></tr>
+            <tr><td>没查成</td><td>没登录、网不通、或没从列表点选（没带上默认分支时会去查 <code>main</code>）</td><td>照样能接；仓里真有名片的话，接入时以仓里的为准</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="note-line">最后两行是特意分开的：<strong>「没查成」不等于「没被接管过」</strong>。混成一句的话，你会照着空格子填一遍，接进去反而把仓里真正的名片盖掉。</p>
+
+      <h2 class="sec"><span class="n">点「完成接入」之后</span>会发生什么</h2>
+      <p>界面上一步一句地摆出来，做完的那行原地换成结果——<strong>这一下要十几秒，别猛点</strong>：</p>
+      <div class="ops">
+        <div class="li"><div class="n">1</div><div class="t"><strong>取仓</strong>——目录里已经是 git 仓就直接用（顺带把它的 origin 报出来给你核对）；目录不在或是空的就 clone；没填远端就建个空目录并说明它是空的；<strong>目录里有东西又不是 git 仓就当场弹回</strong>，既不敢往里 clone，也不敢把别人的目录当成这个项目的仓。</div></div>
+        <div class="li"><div class="n">2</div><div class="t"><strong>本机清单落一行项目</strong>——只存定位：名字、本机路径、远端地址。名片不进这份清单。</div></div>
+        <div class="li"><div class="n">3</div><div class="t"><strong>写名片</strong>——<code>.bw/project.toml</code>。仓里已经有就一个字不覆盖、只补空着的字段。</div></div>
+        <div class="li"><div class="n">4</div><div class="t"><strong>仓里还没有名片，才建一张「规范铺底」的活</strong>——它开一条分支、往仓里写规范骨架、<strong>提一个 MR</strong>，然后<strong>停在评审中等你合</strong>。仓里已经有项目信息、或已经开着一张铺底活，这一步整段跳过。它不会自动合，也不会自动把活标成完成。</div></div>
+        <div class="li"><div class="n">5</div><div class="t"><strong>自动进这个项目</strong>。</div></div>
+      </div>
+
+      <p>第 4 步只铺马上要用的骨架，全在 <code>.bw/</code> 底下：</p>
+      <div class="ktable-wrap">
+        <table class="ktable">
+          <thead><tr><th>文件</th><th>是什么</th></tr></thead>
+          <tbody>
+            <tr><td class="k">.bw/project.toml</td><td>第 3 步写的名片机读件（仓里已有就不覆盖）</td></tr>
+            <tr><td class="k">.bw/PROJECT.md</td><td>旧铺底才有。新项目不再铺；每周资产盘点会删</td></tr>
+            <tr><td class="k">.bw/standard.toml</td><td>旧铺底才有。新项目不再铺，也不再显示「规范版本」；每周资产盘点会删</td></tr>
+            <tr><td class="k">.bw/managed.toml</td><td>旧铺底才有。新项目不再铺；每周资产盘点会删</td></tr>
+            <tr><td class="k">.bw/issue-policy.toml</td><td>类别 → 开工工具 → workflow 的映射，加上周五资产盘点节律。接入这一次一起铺。</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="note-line">指标正文和采集脚本不在这一站预铺，跟第 2/3 站运作活①走。配置屏只探活和对账，<strong>不改名片、不再二次铺底</strong>。</p>
+
+      <h2 class="sec"><span class="n">仓里会多什么、不会多什么</span></h2>
+      <div class="res">
+        <ul>
+          <li><span class="b"></span><div>Workbench 写进仓的东西<strong>全在 <code>.bw/</code></strong>。仓根 <code>README.md</code> / <code>AGENTS.md</code> / <code>CLAUDE.md</code> 这一步一个字不碰。自带技能也不进你的仓。</div></li>
+          <li><span class="b"></span><div>第 4 步没成，前面仍然算数：项目已接进来、仓已在本机。没有第二次铺底命令。仓里已有名片或开着铺底活，再纳入也不会再铺一张。</div></li>
+          <li><span class="b"></span><div>铺底还没合进默认分支：总览顶上常驻一条横幅（和「开始本周」同一位置），提醒不合入则配置用不上、别人再纳入也看不出已经被管过。总览③写「已完成」只看默认分支上有没有 <code>.bw/project.toml</code>，关过的旧活不冒充铺过。</div></li>
+        </ul>
+      </div>
+
+      <h2 class="sec"><span class="n">接错了怎么办</span></h2>
+      <div class="callout note">
+        <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/></svg>
+        <div class="body"><strong>项目卡右上角有个 ✕。</strong>点一下先问一句，再点「移走」才真移走。它只把这个项目从工作台移出去（项目行、它所有活的账），<strong>仓一个字节都不动</strong>——硬盘上的代码还在原地，活自己的工作目录也还在。回执里会告诉你仓在哪儿，你真要删自己去删。</div>
+      </div>
+
+      <h2 class="sec"><span class="n">最后一下：你点完成，合那个 MR</span></h2>
+      <p>接入只把活推到「评审中」。<strong>合入永远是人点的</strong>——计划屏把这张「规范铺底」从「评审中」拖到「已完成」（详情弹窗里那颗「✓ 点完成」是同一下）。松手会弹出确认框，写明先合哪个 MR；确认之后框不关，一步一句写正在合 MR、拉仓、结清（要两三秒）。合不成就整条不算数，活留在评审中，可以重试。</p>
+      <div class="callout note">
+        <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/></svg>
+        <div class="body"><strong>项目墙 ⚑ 只提醒，不在那儿合。</strong>「等你合入」告诉你有一张 MR 等着；去计划屏拖到「已完成」，或总览上那颗「合入并完成」。不要只在 codehub 网页关 issue——那不会合 MR。</div>
+      </div>
+
+      <h2 class="sec"><span class="n">这一站结束时</span>你手上有什么</h2>
+      <div class="res">
+        <ul>
+          <li><span class="b"></span><div>本机一个真实的仓（clone 下来的）</div></li>
+          <li><span class="b"></span><div>工作台上一个项目</div></li>
+          <li><span class="b"></span><div>默认分支上有 <code>.bw/</code> 骨架（合入之后才有；合之前只在铺底那条分支上）</div></li>
+          <li><span class="b"></span><div>那张「规范铺底」活已完成，对应 MR 已合</div></li>
+        </ul>
+      </div>
+      <p class="next">下一站：<a href="#" onclick="go('u1b');return false">第 1 站 · 看总览</a></p>
+    </section>
+
+    <!-- ============ U1b 第 1 站 · 看总览 ============ -->
+    <section class="screen" id="u1b" data-title="第 1 站 · 看总览" data-sec-name="怎么用">
+      <div class="eyebrow">怎么用 · 第 1 站</div>
+      <h1 class="disp">打开总览，看清这一周</h1>
+      <p class="lede">看清「这是什么、健康吗、这周要推什么、指标现在几个数」。改名片、在研版本、项目群也在这里，一张活一次 MR。</p>
+      <div class="res">
+        <div class="h">这一站能查到</div>
+        <ul>
+          <li><span class="b"></span><div>健康灯为什么是灰 / 黄 / 红</div></li>
+          <li><span class="b"></span><div>指标三类怎么看、手填怎么记</div></li>
+          <li><span class="b"></span><div>怎么改名片、在研版本、项目群；顶栏刷新真正拉什么</div></li>
+        </ul>
+      </div>
+
+      <h2 class="sec"><span class="n">操作</span></h2>
+      <div class="ops">
+        <div class="li"><div class="n">1</div><div class="t">项目墙点进这个项目。侧栏默认停在「总览」。</div></div>
+        <div class="li"><div class="n">2</div><div class="t">从上往下看：规范铺底还没合入时顶上会有一条常驻横幅；然后是名片和健康灯（名片上有在研版本和项目群）、北极星、本周计划进度、滞后、引领、代码仓统计、发版记录。</div></div>
+        <div class="li"><div class="n">3</div><div class="t">本会话第一次打开这个项目，Workbench 会自己采一轮指标和仓统计。卡上先写「正在采…」，采完折线出现。还想再采，用各块上的「重新采集」。</div></div>
+        <div class="li"><div class="n">4</div><div class="t">顶栏「刷新」会先把打开着的项目拉到远端最新，再重采。主检出上若只脏了读数或接入留下的未提交名片，Workbench 会先让开再拉。只重画界面、不拉仓，会继续看见同事已经合进主干的旧 <code>metrics.toml</code>。</div></div>
+        <div class="li"><div class="n">5</div><div class="t">改项目名称 / 想做什么 / 对标 / 三个月长成什么样，或改在研版本、项目群：点「编辑项目名片」。保存后这张活在「评审中」（计划屏右上角下拉切「全部 issue」就能看见，不进待办池）。总览横幅或看板拖到「已完成」合入。</div></div>
+      </div>
+
+      <h2 class="sec"><span class="n">背后</span></h2>
+      <div class="res">
+        <ul>
+          <li><span class="b"></span><div><strong>对远端代码仓</strong>：读 issue 列表。版本目标来自本周运作活①最新评论里 <code>## 版本目标</code> 那一段。纳入了哪些活看 <code>bw:plan:v0.x</code> 标签。</div></li>
+          <li><span class="b"></span><div><strong>对你的机器</strong>：跑 <code>.bw/metrics.toml</code> 里的采集脚本，窗口近四周。脚本只吐一个当下值时，折线只在本周画一个点。仓统计走 git，再问远端合入的 PR。</div></li>
+          <li><span class="b"></span><div><strong>对 <code>.bw/</code></strong>：指标定义读 <code>metrics.toml</code>。B 类点「采集」或每天 20:00 自动采，把<strong>当天</strong>的值记进账本 <code>readings.jsonl</code>（同一天再采覆盖这一行，不写主检出）。折线按周画，取那一周最后一天。没有采集脚本的 B 类仍然采不到。C 类在卡上填今天的数，和 B 类同一份流水、同一套覆盖。</div></li>
+        </ul>
+      </div>
+
+      <h2 class="sec"><span class="n">得到什么</span></h2>
+      <div class="res">
+        <ul>
+          <li><span class="b"></span><div>健康灯和三条理由。没数据就是灰，不是绿。</div></li>
+          <li><span class="b"></span><div>北极星 / 滞后 / 引领每张卡：<strong>有读数</strong>才有现值和折线。A 类每次现算四周；B 类采到的当下值进流水；读到 <strong>0</strong> 是真值，不是「没采到」。</div></li>
+          <li><span class="b"></span><div>本周计划进度：确认的 <code>v0.x</code> + 版本目标这段 + 五段计数。运作活①本周已关会写「已完成」。侧栏下一格就是计划。</div></li>
+        </ul>
+      </div>
+
+      <div class="callout note">
+        <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/></svg>
+        <div class="body"><strong>运作活③写「已完成」只看默认分支有没有 <code>.bw/project.toml</code>。</strong>关过 issue 但 MR 没进默认分支，总览仍写「未建」。关 issue 不等于铺进了仓。</div>
+      </div>
+
+      <h2 class="sec"><span class="n">健康灯怎么亮</span>只从数据推，不能手点</h2>
+      <p>灯旁边同时列出这次判断的理由（成立打勾、不成立打圈）：</p>
+      <ul class="checklist">
+        <li>本周定了版本目标，仓里也有真实提交。目标要写进运作活①评论的 <code>## 版本目标</code>，只开着这张活还不算定了。</li>
+        <li>本周或上周有指标读数。读的是 <code>.bw/metrics/readings.jsonl</code>。点过采集、脚本吐了数，这一条才打勾。</li>
+        <li>上周有合入或发版。不成立时显示「上周既没有合入也没有发版」。</li>
+      </ul>
+      <p class="note-line">三条怎么合成一盏灯，见 <a href="#" onclick="go('u2');return false">规矩与查找</a>。没数据 = 灰，不是绿。</p>
+      <p class="next">下一站：<a href="#" onclick="go('u1c');return false">第 2/3 站 · 定本周</a></p>
+      <div class="foot">事实源 <code>docs/architecture.md</code> 模块 6 / 12 / 13。</div>
+    </section>
+
+    <!-- ============ U1c 第 2/3 站 · 定本周 ============ -->
+    <section class="screen" id="u1c" data-title="第 2/3 站 · 定本周" data-sec-name="怎么用">
+      <div class="eyebrow">怎么用 · 第 2/3 站</div>
+      <h1 class="disp">开始本版本，写下目标和纳入的活</h1>
+      <p class="lede">一次会话做完「复盘 → 指标 → 确认版本 → 版本目标和活清单」。计划正本挂在运作活①的评论上，不另写周计划文件。</p>
+      <div class="res">
+        <div class="h">这一站能查到</div>
+        <ul>
+          <li><span class="b"></span><div>「开始本版本」什么时候出现</div></li>
+          <li><span class="b"></span><div>版本目标写在哪、计划屏怎么按版本看卡</div></li>
+          <li><span class="b"></span><div>「新建活」能建哪几种</div></li>
+        </ul>
+      </div>
+
+      <h2 class="sec"><span class="n">操作</span></h2>
+      <div class="ops">
+        <div class="li"><div class="n">1</div><div class="t">总览顶上「开始本版本」。本周还没有这张运作活①才会出现；已经做过（含已完成）不再冒出来。</div></div>
+        <div class="li"><div class="n">2</div><div class="t">跳到会话屏。agent 按版本计划剧本走：复盘、采指标、先确认本周这个 <code>v0.x</code>，再起草版本目标与纳入清单。你在会话屏的 Orca 页看着、随时能停。</div></div>
+        <div class="li"><div class="n">3</div><div class="t">你确认之后，agent 当场建纳入的业务活，并打上 <code>bw:plan:v0.x</code>（codehub 还挂同名里程碑）。版本目标、纳入清单、指标读数快照写成运作活①的三条评论，标题必须是 <code>## 版本目标</code> / <code>## 本周纳入</code> / <code>## 本周指标读数</code>。版本目标那一段一句或一段都行。不要打 <code>bw:week</code>。</div></div>
+        <div class="li"><div class="n">4</div><div class="t">侧栏点「计划」。版本头是版本目标那段，默认只露两行，点右下角小框展开，再点收起。点某个版本只看打了那个 <code>bw:plan:v0.x</code> 的活；没打版本标签的切到右上角下拉「全部 issue」就能看见。</div></div>
+      </div>
+
+      <h2 class="sec"><span class="n">背后</span></h2>
+      <div class="res">
+        <ul>
+          <li><span class="b"></span><div><strong>对远端代码仓</strong>：建一张标题为 <code>更新指标 + 制定版本计划</code> 的运作活①（确认版本后标题带上 <code>v0.x</code>，同一 ISO 周不会建第二张）。纳入的活是真的远端 issue，不是本地草稿。</div></li>
+          <li><span class="b"></span><div><strong>对你的机器</strong>：这张活自己的工作目录。缺的 <code>metrics.toml</code> 和采集脚本会在开工时铺上（已有不覆盖），经这张活的 MR 合进默认分支。</div></li>
+          <li><span class="b"></span><div><strong>对 <code>.bw/</code></strong>：指标定义和脚本进仓。版本目标只在 issue 评论里，不另写一份计划文件。</div></li>
+        </ul>
+      </div>
+
+      <h2 class="sec"><span class="n">得到什么</span></h2>
+      <div class="res">
+        <ul>
+          <li><span class="b"></span><div>总览和计划屏同一段版本目标，杀进程重开还能读回来（读的是 issue 评论）。</div></li>
+          <li><span class="b"></span><div>本周范围内的活，看板上能点开。旧卡没打类别时，详情里选一次即可。</div></li>
+          <li><span class="b"></span><div>运作活①可以关。关了不等于第 0 站那张铺底没合入——那是另一张活、另一条 MR。</div></li>
+        </ul>
+      </div>
+
+      <div class="callout warn">
+        <svg viewBox="0 0 24 24"><path d="M12 3l9 16H3z"/><path d="M12 9v5M12 17h.01"/></svg>
+        <div class="body"><strong>计划屏「新建活」先弹种类、标题、正文。</strong>业务活再选五阶段类别（原型默认 Open Design）。运作活选①或②，标题按本周幂等，类别锁成「运作」。周中要补一张计划或盘点，就在这里建，不必等周五。要走 Open Design：种类选业务活、类别选「原型」，创建后点开卡片再「▶ 开工」。</div>
+      </div>
+      <p class="next">下一站：<a href="#" onclick="go('u1d');return false">第 4 站 · 干活</a></p>
+      <div class="foot">事实源 <code>docs/architecture.md</code> 模块 13。</div>
+    </section>
+
+    <!-- ============ U1d 第 4 站 · 干活 ============ -->
+    <section class="screen" id="u1d" data-title="第 4 站 · 干活" data-sec-name="怎么用">
+      <div class="eyebrow">怎么用 · 第 4 站</div>
+      <h1 class="disp">把一张活开起来干</h1>
+      <p class="lede">开工、作废、去会话、原型进 Open Design。合入、点完成、发版在<a href="#" onclick="go('u1e');return false">第 5 站</a>。</p>
+      <div class="res">
+        <div class="h">这一站能查到</div>
+        <ul>
+          <li><span class="b"></span><div>怎么开工（按钮和拖进「进行中」是同一条路）</div></li>
+          <li><span class="b"></span><div>构建停会话屏 Orca 页、原型停 Open Design</div></li>
+          <li><span class="b"></span><div>「去会话」只切树、不改活的状态</div></li>
+        </ul>
+      </div>
+
+      <h2 class="sec"><span class="n">操作</span></h2>
+      <div class="ops">
+        <div class="li"><div class="n">1</div><div class="t">计划屏点开一张卡（看板或列表都行）。业务活详情会带上已有类别；没打的可在详情或开工确认框补一类——不开工工具的活会被拒绝开工，不会悄悄起 Claude。状态下拉只列出从现在能走到的：待办能去进行中/阻塞/拒绝，进行中能去待办/阻塞/拒绝，待评审能去完成/拒绝，阻塞能去进行中/拒绝。选了和拖拽是同一条路。点 Start / Open / Complete 或改状态下拉后详情会自己关。</div></div>
+        <div class="li"><div class="n">2</div><div class="t">详情「Start」，或把卡拖进「进行中」。确认框写 worktree，业务活可改类别。确认后跳会话屏。</div></div>
+        <div class="li"><div class="n">3</div><div class="t">原型类默认停在 Open Design 标签，嵌的是本机 OD 首页。<strong>不会自动开跑</strong>，你在 OD 里打一句发出去，它的 AI 才动。构建类停在 Orca 页，嵌的是本机已配对的 Orca web；agent 在 Orca 里跑，过程在那看。</div></div>
+        <div class="li"><div class="n">4</div><div class="t">卡住了：待办或进行中拖到待处理列的「阻塞」段，或详情状态下拉选「阻塞」，写原因。阻塞卡可拖回进行中（只改状态，不会再开一轮工），或拖进「拒绝」作废。不想干了：详情状态下拉选「拒绝」，或把卡拖到已完成列的「拒绝」段（待办 / 进行中 / 待评审 / 阻塞都能拖）。写原因。这不是完成——打已取消标签并关掉远端 issue，卡到「拒绝」。</div></div>
+        <div class="li"><div class="n">5</div><div class="t">作废不会动本机会话行。停止、开 MR、评审在 Orca 里做，或在计划屏拖列；会话屏这版不露「删除会话」按钮（内核命令还在，屏上暂不露）。远端那张 issue 不动。</div></div>
+        <div class="li"><div class="n">6</div><div class="t">会话屏只剩 Orca / Open Design 两个页签，都常驻；右侧「指南」哪一屏都在，打开就是这份。指南下面是「Issue」：填标题后提交，中间转圈「日志上传中」，成功后底栏说「issue上报成功」。报到的是当前目录 git 的 workbench 仓，并附上本机对照日志，不是打开着的被管项目。</div></div>
+      </div>
+
+      <h2 class="sec"><span class="n">背后</span></h2>
+      <div class="res">
+        <ul>
+          <li><span class="b"></span><div><strong>对远端代码仓</strong>：开工改状态到进行中。作废写原因、打取消标签、关掉 issue。去会话不碰远端。</div></li>
+          <li><span class="b"></span><div><strong>对你的机器</strong>：每张活一棵工作目录。原型开工后嵌 OD 首页，并尽量灌进系统提示词；灌不上就说没灌上，不假装已经进了某一单对话。构建类在 Orca 里起 Claude（本机本地 pipe 开工）。新树落 <code>&lt;仓&gt;/.bw/worktrees/</code>，旧平级树不搬还能打开。</div></li>
+          <li><span class="b"></span><div><strong>对 <code>.bw/</code></strong>：会话身份落本机。指标读数不在这一站写——点采集才记。</div></li>
+        </ul>
+      </div>
+
+      <h2 class="sec"><span class="n">得到什么</span></h2>
+      <div class="res">
+        <ul>
+          <li><span class="b"></span><div>待办拖进进行中 = 开工，和 Start 是同一条路。进行中也可以拖回待办、拖进阻塞或拒绝。阻塞拖回进行中只改状态，不开新工。</div></li>
+          <li><span class="b"></span><div>作废卡不会冒充已完成。已完成列要先切到「拒绝」再松手才是作废；切在「完成」上仍是合入。作废后再点开工，会说这张活已经取消。</div></li>
+          <li><span class="b"></span><div>原型：会话停在 Open Design 标签。OD 不自动开跑，你打一句发出去它才动。不在 OD 里另建一单。</div></li>
+          <li><span class="b"></span><div>去会话：先切到这张活的工作目录树；树上有几扇窗、是否正好落到这条对话是其次，切树成功就算跳到了。</div></li>
+        </ul>
+      </div>
+
+      <div class="callout note">
+        <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/></svg>
+        <div class="body"><strong>Open Design 不会自动开跑。</strong>导出怎么稳落进这张活的目录还没做。要最新内容，点顶栏刷新。</div>
+      </div>
+      <p class="next">下一站：<a href="#" onclick="go('u1e');return false">第 5 站 · 验收记发版</a></p>
+      <div class="foot">事实源 <code>docs/architecture.md</code> 模块 5 / 7 / 9 / 13。</div>
+    </section>
+
+    <!-- ============ U1e 第 5 站 · 验收记发版 ============ -->
+    <section class="screen" id="u1e" data-title="第 5 站 · 验收记发版" data-sec-name="怎么用">
+      <div class="eyebrow">怎么用 · 第 5 站</div>
+      <h1 class="disp">合入、点完成、记进一个版本</h1>
+      <p class="lede">活到评审中之后，<strong>你点完成</strong>才合 MR、结清。本周做完的活，再点「发版本」记进远端的一个 Release。要安装包，点左侧「出包」。不是到点自动结束一周。</p>
+      <div class="res">
+        <div class="h">这一站能查到</div>
+        <ul>
+          <li><span class="b"></span><div>怎么合入并完成（项目墙 ⚑ 只提醒，不合 MR）</div></li>
+          <li><span class="b"></span><div>发版先建远端 Release，再打标签；出包是旁边另一颗按钮</div></li>
+          <li><span class="b"></span><div>在研号不会跟着发版改</div></li>
+        </ul>
+      </div>
+
+      <h2 class="sec"><span class="n">操作</span></h2>
+      <div class="ops">
+        <div class="li"><div class="n">1</div><div class="t">计划屏把评审中的卡拖到「已完成」，先确认列上切的是「完成」不是「拒绝」，或详情里 Complete / 状态下拉选「完成」。有开着的 MR 就先合再关；没有开着的（可能已经在网页合过）确认后只关 issue。待办拖到「完成」不会过——完成只能从评审中来。</div></div>
+        <div class="li"><div class="n">2</div><div class="t">项目墙 ⚑ 只提醒你有 MR 等着，不在那儿合。不要只在代码平台网页关 issue——那不会合 MR。</div></div>
+        <div class="li"><div class="n">3</div><div class="t">本周有已完成的活，计划屏点「发版本」。号锁死当前版本，不能改。确认后才建远端 Release。要安装包，点左侧「出包」：先出包（黄转圈，过了变绿，可打开产物目录），再验包（写出过了几条 / 一共几条）。出包不打发版标签。</div></div>
+        <div class="li"><div class="n">4</div><div class="t">去代码平台的版本页，或跑 <code>codehub-cli release list</code> / <code>gh release list</code>，核对远端真有这个版本。总览「已发版次数」优先读远端 Release。</div></div>
+      </div>
+
+      <h2 class="sec"><span class="n">背后</span></h2>
+      <div class="res">
+        <ul>
+          <li><span class="b"></span><div><strong>对远端代码仓</strong>：先合那张 MR，再关掉 issue。发版先建远端 Release，成功后再给勾过的活打 <code>bw:released:vX</code>。顺序不能反。出包不碰远端 Release。</div></li>
+          <li><span class="b"></span><div><strong>对你的机器</strong>：合入后尽量把主仓拉到最新，收掉这张活的工作目录。点「出包」会在仓里 <code>.bw/release/out/版本号/</code> 落下安装包；验包在隔离桌面点两屏，不抢你正在用的窗口。</div></li>
+          <li><span class="b"></span><div><strong>对 <code>.bw/</code></strong>：在研版本仍是名片里那一行，发版<strong>不改</strong>它。要切号，去总览点「编辑项目名片」，和四字段、项目群一起保存，走同一张活的 MR。</div></li>
+        </ul>
+      </div>
+
+      <h2 class="sec"><span class="n">得到什么</span></h2>
+      <div class="res">
+        <ul>
+          <li><span class="b"></span><div>点「出包」：仓里多一份这个版本的安装包（弹窗第一行「打开目录」）。点「发版本」：远端多一个 Release，选中的活带上版本标签。</div></li>
+          <li><span class="b"></span><div>总览「在研版本」还是名片上的号——发版没去改那一行。</div></li>
+          <li><span class="b"></span><div>总览「已发版次数」跟远端 Release 列表走；远端读不到才退回本机 git 标签。</div></li>
+        </ul>
+      </div>
+
+      <div class="callout note">
+        <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/></svg>
+        <div class="body"><strong>发版不是只打 issue 标签。</strong>第一步是远端 Release，标签是第二步。次数读的是已经发出去的 Release，不是名片上的在研号。</div>
+      </div>
+      <p class="next">下一站：<a href="#" onclick="go('u1f');return false">第 6 站 · 定时盘点</a></p>
+      <div class="foot">事实源 <code>docs/architecture.md</code> 模块 8 / 13。</div>
+    </section>
+
+    <!-- ============ U1f 第 6 站 · 定时盘点 ============ -->
+    <section class="screen" id="u1f" data-title="第 6 站 · 定时盘点" data-sec-name="怎么用">
+      <div class="eyebrow">怎么用 · 第 6 站</div>
+      <h1 class="disp">到点建一张盘点，停在评审中</h1>
+      <p class="lede">周五 09:00（默认可改）Workbench 开着，会自己建「资产盘点」并开工，最远评审中。完成仍要你点。每天 20:00 自动采一轮 B 类指标。</p>
+      <div class="res">
+        <div class="h">这一站能查到</div>
+        <ul>
+          <li><span class="b"></span><div>盘点什么时候自动建、最远到哪</div></li>
+          <li><span class="b"></span><div>B 类每天几点自动采</div></li>
+          <li><span class="b"></span><div>运作活①为什么不会自动开始</div></li>
+        </ul>
+      </div>
+
+      <h2 class="sec"><span class="n">操作</span></h2>
+      <div class="ops">
+        <div class="li"><div class="n">1</div><div class="t">配置屏能看见「资产盘点 · 到点自动建 · fri 09:00」，还有一行「B 类指标采集 · daily 20:00」。盘点节律写在 <code>.bw/issue-policy.toml</code>；B 类日采固定 20:00。运作活①仍是人点「开始本版本」。</div></div>
+        <div class="li"><div class="n">2</div><div class="t">Workbench 开着、过了本周那个时刻，计划屏会出现「资产盘点 YYYY-Www」。类别锁成「运作」，改不了五阶段。</div></div>
+        <div class="li"><div class="n">3</div><div class="t">这张活会自己开工。看会话或详情：最远到评审中。合入、点完成仍是你来。</div></div>
+        <div class="li"><div class="n">4</div><div class="t">周一回到总览，开始下一圈。盘点报告挂在这张活的评论里；微重构只出建议，不直接改业务代码。</div></div>
+      </div>
+
+      <h2 class="sec"><span class="n">背后</span></h2>
+      <div class="res">
+        <ul>
+          <li><span class="b"></span><div><strong>对远端代码仓</strong>：建一张标题固定的运作活（本周有了就不建第二张），打本周标签，开工后改状态。每周模式只对账、写报告；首次模式才给老 issue 补周标签。</div></li>
+          <li><span class="b"></span><div><strong>对你的机器</strong>：Workbench 开着每 60 秒判一次「本周这一刻过了没有」。当时没开着，下次开着会补建。注入的是资产盘点剧本，不是构建类那套。</div></li>
+          <li><span class="b"></span><div><strong>对 <code>.bw/</code></strong>：每周盘点对照指纹看规范件落后没有，只记差异、不擅自升级。仓根 <code>AGENTS.md</code> 不在这一周写。</div></li>
+        </ul>
+      </div>
+
+      <h2 class="sec"><span class="n">得到什么</span></h2>
+      <div class="res">
+        <ul>
+          <li><span class="b"></span><div>多一张运作活②，类别显示「运作」、改不了五阶段。</div></li>
+          <li><span class="b"></span><div>Workbench 开着、过了本机 20:00，会自动采一轮 B 类，按<strong>当天</strong>写入账本（同一天再采覆盖）。点「采集」也能立刻再采今天。</div></li>
+        </ul>
+      </div>
+
+      <div class="callout note">
+        <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/></svg>
+        <div class="body"><strong>运作活和五阶段类别是两套。</strong>不要把盘点、周计划塞进「优化 / 运维 / 运营推广」。仓根 <code>AGENTS.md</code> 不会每周五自动写出来——那条路还没接上，见<a href="#" onclick="go('u2');return false">规矩与查找</a>。</div>
+      </div>
+      <p class="next">下周一回到<a href="#" onclick="go('u1b');return false">第 1 站 · 看总览</a>。</p>
+      <div class="foot">事实源 <code>docs/architecture.md</code> 模块 14 / 15。</div>
+    </section>
+
+    <!-- ============ U2 规矩与查找 ============ -->
+    <section class="screen" id="u2" data-title="规矩与查找" data-sec-name="怎么用">
+      <div class="eyebrow">怎么用 · 规矩</div>
+      <h1 class="disp">两条规矩，一张查找表</h1>
+      <p class="lede">完成永远你点；没数据就是灰。下面两张图是这两条的形状。具体操作回各站。</p>
+
+      <h2 class="sec"><span class="n">找信息</span></h2>
+      <div class="ktable-wrap find">
+        <table class="ktable">
+          <thead><tr><th>我想…</th><th>去哪</th></tr></thead>
+          <tbody>
+            <tr><td>接一个仓、看铺了哪些文件、合铺底 MR</td><td><a href="#" onclick="go('u1');return false">第 0 站</a></td></tr>
+            <tr><td>健康灯、指标、改名片 / 在研 / 项目群、顶栏刷新</td><td><a href="#" onclick="go('u1b');return false">第 1 站</a></td></tr>
+            <tr><td>开始本版本、版本目标、新建活、全部 issue 下拉</td><td><a href="#" onclick="go('u1c');return false">第 2/3 站</a></td></tr>
+            <tr><td>开工、作废、去会话、Open Design</td><td><a href="#" onclick="go('u1d');return false">第 4 站</a></td></tr>
+            <tr><td>合 MR、点完成、发版本</td><td><a href="#" onclick="go('u1e');return false">第 5 站</a></td></tr>
+            <tr><td>周五盘点、每天 20:00 采数</td><td><a href="#" onclick="go('u1f');return false">第 6 站</a></td></tr>
+            <tr><td>把对照日志报到 workbench 仓</td><td>右侧「指南」下面的「Issue」</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h2 class="sec"><span class="n">健康灯怎么亮</span>只从数据推，不能手点</h2>
+      <p>判断依据和界面上那三条理由写在<a href="#" onclick="go('u1b');return false">第 1 站</a>。这张图只留形状。</p>
+      <div class="diagram">
+        <div class="cap">数据推导，不能手点；没数据就停在灰</div>
+        <div class="scroll">
+          <svg viewBox="0 0 700 210" width="700" height="210" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="真实数据读数经过综合判定后点亮四态健康灯：绿色平稳、黄色需要关注、红色阻塞、灰色没数据；灰色特别标注为没数据不是绿色">
+            <defs>
+              <marker id="hArrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+                <path d="M0 0L10 5L0 10z" fill="var(--muted-2)"/>
+              </marker>
+            </defs>
+            <rect x="10" y="70" width="150" height="64" rx="10" fill="var(--surface)" stroke="var(--border-deep)" stroke-width="1.6"/>
+            <text x="85" y="97" text-anchor="middle" font-size="12.5" font-weight="700" fill="var(--fg)">真实数据读数</text>
+            <text x="85" y="114" text-anchor="middle" font-size="11" fill="var(--muted-2)">多条 · 只追加</text>
+
+            <line x1="164" y1="102" x2="196" y2="102" stroke="var(--muted-2)" stroke-width="2" marker-end="url(#hArrow)"/>
+
+            <rect x="200" y="70" width="150" height="64" rx="10" fill="var(--accent-soft)" stroke="var(--accent)" stroke-width="1.6"/>
+            <text x="275" y="97" text-anchor="middle" font-size="12.5" font-weight="700" fill="var(--accent-ink)">Workbench 综合判定</text>
+            <text x="275" y="114" text-anchor="middle" font-size="11" fill="var(--accent-ink)">不能手点</text>
+
+            <line x1="354" y1="102" x2="386" y2="102" stroke="var(--muted-2)" stroke-width="2" marker-end="url(#hArrow)"/>
+
+            <circle cx="430" cy="102" r="22" fill="var(--sig-green)" opacity=".45"/>
+            <text x="430" y="145" text-anchor="middle" font-size="12" font-weight="700" fill="var(--fg)">绿</text>
+            <text x="430" y="160" text-anchor="middle" font-size="11" fill="var(--muted-2)">平稳</text>
+
+            <circle cx="500" cy="102" r="22" fill="var(--sig-amber)"/>
+            <text x="500" y="145" text-anchor="middle" font-size="12" font-weight="700" fill="var(--fg)">黄</text>
+            <text x="500" y="160" text-anchor="middle" font-size="11" fill="var(--muted-2)">需要关注</text>
+
+            <circle cx="570" cy="102" r="22" fill="var(--sig-red)"/>
+            <text x="570" y="145" text-anchor="middle" font-size="12" font-weight="700" fill="var(--fg)">红</text>
+            <text x="570" y="160" text-anchor="middle" font-size="11" fill="var(--muted-2)">阻塞</text>
+
+            <circle cx="640" cy="102" r="22" fill="var(--sig-gray)"/>
+            <text x="640" y="145" text-anchor="middle" font-size="12" font-weight="700" fill="var(--fg)">灰</text>
+            <text x="640" y="160" text-anchor="middle" font-size="11" fill="var(--muted-2)">没数据</text>
+
+            <path d="M640 80 L640 40" stroke="var(--accent-ink)" stroke-width="1.6" stroke-dasharray="3 3"/>
+            <text x="640" y="30" text-anchor="middle" font-size="12.5" font-weight="700" fill="var(--accent-ink)">没数据 = 灰，不是绿</text>
+
+            <text x="360" y="188" text-anchor="middle" font-size="12" fill="var(--muted-2)">灯旁边同时列出这次判断的理由（通常三条）——不是一个孤零零的圆点让你猜</text>
+          </svg>
+        </div>
+      </div>
+      <h2 class="sec"><span class="n">一件活怎么走到完成</span>唯一入边是评审中</h2>
+      <div class="diagram">
+        <div class="cap">agent 只能推到评审中；完成只有一个入口，且必须是人点的</div>
+        <div class="scroll">
+          <svg viewBox="0 0 760 260" width="760" height="260" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="活从建活到进行中到评审中到完成的主链，完成只能从评审中经人工点击进入；定时任务只能自动建活，绝不能自动把活推到完成">
+            <defs>
+              <marker id="sArrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+                <path d="M0 0L10 5L0 10z" fill="var(--muted-2)"/>
+              </marker>
+              <marker id="sArrowLock" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+                <path d="M0 0L10 5L0 10z" fill="var(--accent-ink)"/>
+              </marker>
+            </defs>
+
+            <rect x="16" y="26" width="128" height="58" rx="10" fill="var(--surface)" stroke="var(--border-deep)" stroke-width="1.5"/>
+            <text x="80" y="51" text-anchor="middle" font-size="12.5" font-weight="700" fill="var(--fg)">建活</text>
+            <text x="80" y="67" text-anchor="middle" font-size="11" fill="var(--muted-2)">定本周活清单</text>
+
+            <line x1="148" y1="55" x2="184" y2="55" stroke="var(--muted-2)" stroke-width="2" marker-end="url(#sArrow)"/>
+
+            <rect x="188" y="26" width="148" height="58" rx="10" fill="var(--surface)" stroke="var(--border-deep)" stroke-width="1.5"/>
+            <text x="262" y="51" text-anchor="middle" font-size="12.5" font-weight="700" fill="var(--fg)">干活 · 进行中</text>
+            <text x="262" y="67" text-anchor="middle" font-size="11" fill="var(--muted-2)">agent 在活的目录里</text>
+
+            <line x1="340" y1="55" x2="376" y2="55" stroke="var(--muted-2)" stroke-width="2" marker-end="url(#sArrow)"/>
+
+            <rect x="380" y="26" width="138" height="58" rx="10" fill="var(--surface)" stroke="var(--border-deep)" stroke-width="1.5"/>
+            <text x="449" y="51" text-anchor="middle" font-size="12.5" font-weight="700" fill="var(--fg)">评审中</text>
+            <text x="449" y="67" text-anchor="middle" font-size="11" fill="var(--muted-2)">agent 提交并开 MR</text>
+
+            <line x1="522" y1="55" x2="556" y2="55" stroke="var(--accent-ink)" stroke-width="2.4" marker-end="url(#sArrowLock)"/>
+            <text x="504" y="40" text-anchor="middle" font-size="11" font-weight="700" fill="var(--accent-ink)">唯一入边</text>
+
+            <rect x="560" y="20" width="130" height="70" rx="10" fill="var(--accent-soft)" stroke="var(--accent)" stroke-width="2"/>
+            <text x="625" y="48" text-anchor="middle" font-size="12.5" font-weight="700" fill="var(--accent-ink)">完成</text>
+            <text x="625" y="64" text-anchor="middle" font-size="11" fill="var(--accent-ink)">人显式点</text>
+            <text x="625" y="80" text-anchor="middle" font-size="11" fill="var(--accent-ink)">🔒</text>
+
+            <rect x="188" y="164" width="170" height="58" rx="10" fill="var(--surface-2)" stroke="var(--border-deep)" stroke-width="1.5"/>
+            <text x="273" y="189" text-anchor="middle" font-size="12.5" font-weight="700" fill="var(--fg)">定时任务 · 第 6 站</text>
+            <text x="273" y="205" text-anchor="middle" font-size="11" fill="var(--muted-2)">资产盘点，到点自动开工</text>
+
+            <path d="M200 164 C 130 140, 100 110, 82 88" fill="none" stroke="var(--muted-2)" stroke-width="1.8" marker-end="url(#sArrow)"/>
+            <text x="105" y="145" font-size="11" fill="var(--muted-2)">自动建活</text>
+
+            <path d="M358 178 C 480 210, 560 190, 610 96" fill="none" stroke="var(--sig-red)" stroke-width="1.8" stroke-dasharray="4 4"/>
+            <circle cx="612" cy="92" r="7" fill="none" stroke="var(--sig-red)" stroke-width="2"/>
+            <line x1="608" y1="88" x2="616" y2="96" stroke="var(--sig-red)" stroke-width="2"/>
+            <line x1="616" y1="88" x2="608" y2="96" stroke="var(--sig-red)" stroke-width="2"/>
+            <text x="470" y="238" text-anchor="middle" font-size="11" font-weight="700" fill="var(--sig-red)">绝不自动完成</text>
+          </svg>
+        </div>
+        <div class="legend">
+          <span class="sw"><span class="box" style="background:var(--accent-soft);border:1.5px solid var(--accent)"></span>完成 = 锁定态，只能人工点开</span>
+          <span class="sw">红色虚线 + × = 定时任务被结构性挡在完成之外，不是靠自觉</span>
+        </div>
+      </div>
+      <p class="note-line">评审中变成完成：计划屏拖到「已完成」或详情「✓ 点完成」，写在<a href="#" onclick="go('u1e');return false">第 5 站</a>。</p>
+
+      <div class="callout note">
+        <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/></svg>
+        <div class="body"><strong>还没做、先说清楚。</strong>仓根 <code>AGENTS.md</code> 不会在接入或每周盘点时自动写出来。别的没建项看 <code>docs/architecture.md</code> 各模块「没建什么」，不在这份指南另开清单。</div>
+      </div>
+      <div class="foot">健康灯见 <code>docs/architecture.md</code> 健康推导模块。</div>
+    </section>
+
+  </div>
+</main>
+
+<script>
+(function(){
+  var items = Array.prototype.slice.call(document.querySelectorAll('.nav-item'));
+  var screens = Array.prototype.slice.call(document.querySelectorAll('.screen'));
+  var crumbSec = document.getElementById('crumb-sec');
+  var crumbCur = document.getElementById('crumb-cur');
+  var badge = document.getElementById('top-badge');
+  var content = document.getElementById('content');
+  var KEY = 'Workbench-v4-guide-screen';
+  window.go = show;
+
+  function show(id){
+    var el = document.getElementById(id); if(!el) return;
+    screens.forEach(function(s){ s.classList.remove('active'); });
+    el.classList.add('active');
+    items.forEach(function(n){ n.classList.toggle('active', n.dataset.screen === id); });
+    crumbSec.textContent = el.dataset.secName || '';
+    crumbCur.textContent = el.dataset.title || '';
+    var isMaint = id.charAt(0) === 'm';
+    badge.textContent = isMaint ? 'Maintenance' : 'Usage';
+    badge.className = 'badge ' + (isMaint ? 'maint' : 'use');
+    try{ localStorage.setItem(KEY, id); }catch(e){}
+    if(history.replaceState){ history.replaceState(null, '', '#' + id); }
+    else { location.hash = id; }
+    content.scrollTop = 0;
+  }
+  items.forEach(function(n){ n.addEventListener('click', function(){ show(n.dataset.screen); }); });
+  document.addEventListener('keydown', function(e){
+    if(e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+    var cur = document.querySelector('.screen.active'); if(!cur) return;
+    var idx = screens.indexOf(cur);
+    if(e.key === 'ArrowRight' && idx < screens.length - 1){ show(screens[idx+1].id); }
+    else if(e.key === 'ArrowLeft' && idx > 0){ show(screens[idx-1].id); }
+  });
+  var fromHash = (location.hash || '').replace(/^#/, '');
+  var saved = null; try{ saved = localStorage.getItem(KEY); }catch(e){}
+  if(fromHash && document.getElementById(fromHash)){ show(fromHash); }
+  else if(saved && document.getElementById(saved)){ show(saved); }
+  else { show('u0'); }
+})();
+</script>
+</body></html>

@@ -1,0 +1,8 @@
+{
+  "name": "bw-release-e2e",
+  "private": true,
+  "description": "验包装出来的 bw-dev：Playwright 连 WebView2 调试口。",
+  "dependencies": {
+    "playwright": "^1.55.0"
+  }
+}

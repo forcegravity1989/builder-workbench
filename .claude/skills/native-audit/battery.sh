@@ -37,12 +37,13 @@ DEAD=$(files | grep '\.md$' | grep -vE '^(standard/)?vendor/|/archived/|native-a
 echo "C12 dead_relative_md_links_nonvendor=${DEAD}"
 
 echo "## S2 设计·决策"
-DEC=$(files | grep -E 'adr/|/notes/(implemented|proposed|rejected|archived)/|^changes/.*/(intent|spec)\.md$' | grep -vE '\.zh\.md$|\.i18n\.yaml$|/AGENTS\.md$|README' )
+# 决策记录:adr / Agent Notes / 产物链的 intent|spec(仓根 changes/ 与 docs/NN-features/ 两种布局都认)
+DEC=$(files | grep -E 'adr/|/notes/(implemented|proposed|rejected|archived)/|(^|/)(changes|[0-9]*-?features)/.*/(intent|spec)\.md$' | grep -vE '\.zh\.md$|\.i18n\.yaml$|/AGENTS\.md$|README' )
 DEC_N=$(echo "$DEC" | cnt)
 ALT_N=$(echo "$DEC" | while IFS= read -r f; do [ -n "$f" ] && grep -qiE '^## (alternatives|替代方案|放弃方案|考虑过)' "$f" && echo x; done | cnt)
 echo "C21 decision_records=${DEC_N}"
 echo "C21 decision_format_gates=$(ls scripts 2>/dev/null | grep -ciE 'agent-note|adr|decision')"
-echo "C21 mandate_written=$(gc 'must include an agent note|决策记录|changes/<id>' AGENTS.md)"
+echo "C21 mandate_written=$(gc 'must include an agent note|决策记录|changes/<id>|features/<id>' AGENTS.md)"
 echo "C22 records_with_alternatives=${ALT_N}/${DEC_N}"
 echo "C23 lifecycle_dirs=$(ls -d .agents/notes/*/ 2>/dev/null | cnt)"
 echo "C23 status_files=$(files | grep -c 'STATUS\.md$')"

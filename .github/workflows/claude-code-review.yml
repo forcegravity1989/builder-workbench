@@ -1,4 +1,4 @@
-# PR 自动评审。谈定见 changes/reviewer-agent/;codehub 仓走 Workbench 内建「请评审」。
+# PR 自动评审。谈定见 05-features/reviewer-agent/;codehub 仓走 Workbench 内建「请评审」。
 # 前提(人做一次):给仓装 Claude GitHub App + 配 secret CLAUDE_CODE_OAUTH_TOKEN。
 name: Code Review
 on:
@@ -23,15 +23,29 @@ jobs:
         id: claude
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          # 默认拒一切机器人 actor;claude[bot] 在这个仓真开过 PR,点名放行它一个。
+          allowed_bots: "claude[bot]"
+          # gh pr view --comments 的查询里带 CI 检查数据,App 令牌默认读不到,
+          # 整条命令会以 "Resource not accessible by integration" 失败。
+          additional_permissions: |
+            actions: read
           plugin_marketplaces: "https://github.com/anthropics/claude-code.git"
           plugins: "code-review@claude-code-plugins"
           # 只传 PR 号:这条命令没有 $ARGUMENTS,多传的会被静默忽略。
           prompt: "/code-review:code-review --comment ${{ github.event.pull_request.number }}"
-          # 这一长串必需,别精简:Bash 在这个 action 里默认关闭,而 code-review
-          # 全靠 gh 干活;发 inline comment 的 MCP server 也只在点名时才装。
+          # 用 opus:GitHub 侧的代码没有别的验证(没空实跑),评审是这一侧唯一的
+          # 质量闸,值得用最强的。实测同一份规格,opus 评审找出的是设计错误,
+          # sonnet 找出的是格式与合规问题——CI 评审要的是前者。
+          #
+          # 另三样缺一不可:放行 gh(Bash 在这个 action 里默认关闭,而 code-review
+          # 全靠 gh 干活)、禁掉 Agent/Task(插件会派后台子代理再等结果,CI 没有
+          # 下一轮,整场会以「在等子代理」结束、零产出)、再用 system prompt 说明
+          # 这是非交互运行做双保险。
           claude_args: >-
-            --model claude-sonnet-5
+            --model claude-opus-5
             --allowedTools "mcp__github_inline_comment__create_inline_comment,Bash(gh pr view:*),Bash(gh pr diff:*),Bash(gh pr comment:*),Bash(gh pr list:*),Bash(gh issue view:*),Bash(gh issue list:*),Bash(gh search:*),Bash(git log:*),Bash(git blame:*),Bash(git diff:*),Read,Glob,Grep"
+            --disallowedTools "Agent,Task"
+            --append-system-prompt "你运行在 GitHub Actions 的非交互环境里:没有下一轮,你这一轮结束运行就结束。所有检查与评审都必须自己在本轮内做完并把结果落到 PR 上,不要把工作交给别人再等回复。"
       # 空跑时靠这份日志查哪一步被挡。不开 show_full_output——它会把工具结果
       # (可能含 secret)打进公开日志。
       - if: always() && steps.claude.outputs.execution_file != ''

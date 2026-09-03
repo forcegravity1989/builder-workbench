@@ -1,10 +1,12 @@
 # CHANGELOG.md
 
-版本变更记录。决策动机进 [`docs/adr/`](docs/adr/),不写这里。Workbench MVP 起记(2026-08-24);MVP 之前的 V1/V2/V3 史实在 git 历史与 `v3` 分支,不补抄。
+版本变更记录。决策动机进 [`docs/02-adr/`](docs/02-adr/),不写这里。Workbench MVP 起记(2026-08-24);MVP 之前的 V1/V2/V3 史实在 git 历史与 `v3` 分支,不补抄。
 
 本文件按**六站 + 底座**收口,不再按每次窗口一条流水往下堆。最近一次改动永远写在最上面。
 
 ## 最近 · 2026-09-02
+
+合入主干 + 评审意见修复(PR #140)。产物链按主干新布局迁位:`changes/native-audit`、`changes/process-hardening` → `docs/05-features/`,全链相对引用重定基(skill ↔ 产物链 ↔ `docs/10-reference/`、`docs/01-principles/`),死链复核为零。评审四条:①A2 字数预算口径由 `wc -m` 改 `wc -c`(本仓中文为主,两者差 1.5–2.4 倍,且 `wc -m` 随 locale 漂;上限按合入后实测 ×1.15 重算八行,余量口径回到 15%);②A3 存量门禁分解改为「六个存量 + 四个新增 = 10/10」(与 plan 一致,不再一处 9/9 一处 10/10);③native-audit intent 状态行早前已回写「意图 gate 已过」,复核无残留;④两处裸用「buddy」改「Workbench(旧名 buddy)」(其中一处会进 skill 报错文案)。合并中两处门禁真红并已修:`guard-bw-write-authority` 名单里的 `issue_policy_file::write` 被主干规范 5.13 删除(守卫自检抓到,名单跟着删)、`guard-codegraph-clean` 无法区分「合并带入 CI 快照」与「本分支自改」(补 MERGE_HEAD 同内容放行,worktree 里用 `rev-parse` 查而非 `.git/` 路径)。
 
 native-audit 人话名改名:「仓考古」→**native 评估**(技能名 `native-audit` 不变)。SKILL.md 描述/标题/用词对照表、spec.md 标题/导读/FAQ/术语登记、`CONTEXT.md` 词条同步;intent.md 末节记改名说明,不改写原拍板记录。另:散文里裸写 issue 改为「活」(词表规范口语词),用词对照表补一行。
 
@@ -12,7 +14,23 @@ native-audit 准则重写为 v2:七维 → **九段三十七条**,正本 `change
 
 native-audit 术语对齐:SKILL.md 加「用词对照」表(本技能用词→人话→词表对应);词表已有词直接换(postmortem→复盘、工单→活、N/A→Unknown);自造词收拢(度量电池→探针脚本、假阳性→误报、自证→门禁自测、dogfood→自扫);英文黑话首次出现带人话(playbook / slop / hook / flake / harness / SDLC);`CONTEXT.md` 工程操作词登记「仓考古 / native-audit」「制度化阶梯」两条。顺手校正 dsh 门禁计数:verify 脚本 34 个(17 个自带自测),此前 51 把自测文件算进去了,探针脚本同步改为门禁脚本数与自测文件数分列。
 
+计划屏版本视图左侧单独一颗「出包」，两行弹窗吃 JSONL（出包黄转圈 / 绿+打开目录 / 红+原话；验包等出包过了再转，结束写成功数/总数，相等黑不等红）。不打标签。「发版本」仍只建远端 Release / 打发版标签。
+
+验包缝：`BW_CDP_PORT` 是纯数字才把 WebView2 调试口拼进现有 browser args，没设与今天一样。设置 / 接入深链成功打对照日志 `[BW_VIEW] settings|onboard`。出包入口 `.bw/release/pack/pack.cmd`，验包入口 `.bw/release/e2e/e2e.cmd`（只认 `.cmd`）。E2E 只记项目功能（设置 / 接入等）；包在不在、静默装、卸载是出包校验和清理。
+
+规范 5.13:工作台不写被管仓主检出。方案正本在 [`docs/architecture.md`](docs/architecture.md) §3 模块 3「项目约定」;词表在 [`CONTEXT.md`](CONTEXT.md)。仓里只留两辆常驻车——项目约定(`.bw/project.toml`,分支 `bw/project`)和指标(定义走运作活①、读数走 `bw/ledger`)。开工工具跟人走本机 `settings.toml`;类别→workflow 和周五盘点只认产品默认,残留 `issue-policy` 不再驱动任何行为。不再铺、不再写、产品不再读 `.bw/issue-policy.toml`;周盘点整份删掉。规范铺底与「编辑项目名片」收成「项目约定」。接入跳过只认 HEAD 或开着的约定活,不把主检出脏文件当已接入。拉主干不再 restore/删主检出名片。叠着的「编辑项目名片」横幅删掉。`.bw/worktrees/` 的忽略写在约定树上的 `.bw/.gitignore`。
+
+**全仓文档分层重组**:`01-principles/` 与 `05-features/`(原 `changes/`)从仓根迁入 `docs/`,与既有 docs 子目录统一编号——`docs/01-principles/`、`docs/02-adr/`、`docs/03-guide/`、`docs/04-design-system/`、`docs/05-features/`、`docs/10-reference/`。`docs/01-architecture.md` 去编号为 `docs/architecture.md`(docs 内设计正本,同根 README/CHANGELOG 之不编号例外)。仓根只剩入口件(README/AGENTS/CLAUDE/CONTEXT)+ 惯例置根件(DESIGN 指针/CHANGELOG),其余知识目录一律落 `docs/`——这条「落点铁律」写进 [`docs/01-principles/01`](docs/01-principles/01-document-organization.md) §6.1。全仓相对引用重定基(含 `.claude/skills/`、`standard/vendor/`、`.github/workflows/`),markdown 链接检查器 258 链零新断链。cargo check/clippy/fmt + 5 个 guard 全绿。**取舍**:principles 从「入口件」降为 docs 内编号知识目录(它慢变但不是「建立初始心智」的骨架);architecture 不编号是为保它作 docs 设计正本的特殊地位。
+
 ## 最近 · 2026-09-01
+
+规范铺底 v5.12:名片只留 `.bw/project.toml`,不再铺/改 `PROJECT.md`。开工约定不再写 `[[tool]]`(工具是编译进 Workbench 的)。不再写 `.bw/standard.toml` / `.bw/managed.toml`。`issue-policy.toml` 文件头留三行注释。仓里已有名片或开着铺底活就不再铺;铺底没合入时总览常驻横幅。旧仓里的版本账/指纹账/重复名片由每周资产盘点删掉,接入不覆盖人手改过的 mapping。配置屏保存映射只改 `[[mapping]]`,不把旧 `[[tool]]` / `[review]` / `[kanban]` 写回去。
+
+计划版本、自建版本、发版号收成同一个 `v0.x`(规范 5.11)。排期只打 `bw:plan:v0.x`,不再写 `bw:week:*`。运作活①标题改为「更新指标 + 制定版本计划」,本周版本在会话里确认。对人说版本目标;计划屏版本视图左上角笔改未发的号。计划屏默认就是全部 issue(创建/删除版本 + 全部活);不再用本周空过滤冒充全部。项目墙 / 状态补丁的五段计数跟总览一样,认本周运作活①确认的那个 `v0.x`。旧周版本(`bw:week:`)和旧计划名(`bw:plan:MVP收尾` 这类)读回仍显示,下拉能切。排期不再新写周标签;删、发、改名只对未发的 `v0.x`。
+
+右侧「指南」下面加了「Issue」。点开填标题,提交后中间转圈「日志上传中」,把本机对照日志报到当前目录 git 的 workbench 仓(`codehub-cli issue create --attachment`)。成功走底栏 toast「issue上报成功」。不是报到打开着的被管项目。
+
+对照日志收成一份 `bw.log`。`cargo run` 写到启动目录,直接跑 exe 写到项目目录(仓根或安装目录),`BW_LOG` 可改路径。一行是 `[时间] [模块] [文件] [行] [ok|err|warn] 正文`。命令进出、toast、gather 警告、Orca 每条 RPC 都进这份;不再另写 `%TEMP%/bw-orca.log`。不写 token / pairing / 提示词正文。E2E 标签(`[BW_OPEN]` 等)留在正文里。
 
 post-sync 代码评审收口 4 处:5.10 版本账回正(5.10 实为运作活①周计划抬档、`0d586ce`;评审三件套落进已有 5.10、未编进二进制,不再记「5.9→5.10」);架构模块4「走同一条注入链」改述为「设计走、尚未编进/派发」(与模块7「请评审」口径一致);`orca.rs` 补回 `cursor_agent_cannot_ensure_claude_can` 丢的 `#[test]`(死函数转活,绿测现在真跑它);CHANGELOG 第 29 行「buddy 目录」→「Workbench 目录」(代码早已是 Workbench)。
 
@@ -22,7 +40,7 @@ post-sync 代码评审收口 4 处:5.10 版本账回正(5.10 实为运作活①�
 
 ## 最近 · 2026-08-31
 
-**Builder 设计系统落仓**:Claude Design 项目「builder」的设计系统转成仓内规范资产 `docs/design-system/`(唯一样式表 + 机读 theme.json + 双语 spec + 14 张纯 HTML 示例页 + 参考照片),画布机器件(_ds_bundle.js/support.js/Canvas.dc.html/缩略图/manifest/oxlint 配置)全部剥离,templates/ 留在设计项目。readme→spec 改名避大小写撞名;README 记来源、剥离清单与双向演进剧本(DesignSync 拉回 / /design-sync 回推)。未接线到壳,hifi 仍是九屏视觉正本。
+**Builder 设计系统落仓**:Claude Design 项目「builder」的设计系统转成仓内规范资产 `docs/04-design-system/`(唯一样式表 + 机读 theme.json + 双语 spec + 14 张纯 HTML 示例页 + 参考照片),画布机器件(_ds_bundle.js/support.js/Canvas.dc.html/缩略图/manifest/oxlint 配置)全部剥离,templates/ 留在设计项目。readme→spec 改名避大小写撞名;README 记来源、剥离清单与双向演进剧本(DesignSync 拉回 / /design-sync 回推)。未接线到壳,hifi 仍是九屏视觉正本。
 
 Cursor 开工 `agentArgs` 改回和 Claude 同一套:一条单行、值用 `shell_quote_single`(`--force --trust '<系统提示词>'`)。不再为 cmd 另拼双引号 / `--workspace`。create 前仍写 cursor-agent 认的 `.workspace-trusted`。标题+正文仍走 auto-submit。
 
@@ -64,7 +82,7 @@ Open / 去会话只 `worktree.activate`,不再 `ensureAgentSession`(那条是 `-
 
 计划屏详情:点 Start / Open / 阻塞 / Cancel / Complete 后弹窗自动关。待评审 / 已完成 / 已取消也有 Open(去会话,不改状态)。业务活显示已有类别(不再误锁成「运作」),计划和负责人同一行。Start 建 worktree 时可改/补类别,没选不能开工。删除自定义版本走真命令 `DeletePlanVersion`:摘 `bw:plan:<name>` + 删同名里程碑,不碰 `bw:week`(周格式标题拒收);弹窗不再用 `ScheduleIssue { week_of: None }` 清周排期。
 
-通知模块整改(#18):群通知从自由字符串重做成固定枚举事件注册表 `NotifyEvent`(本周版本计划 / 新建活纳入本周 / PR 合入 / 发版 / 周报)。`review`(进评审)移除。删通知页签整片(`screens/notify/`、`Panel::Notify`、`BW_PANEL=notify` 深链等全清)。决策见 `docs/adr/0003-通知模块整改-事件注册表与删页签.md`(原误编成 ADR-0002;导航快路径仍是 ADR-0002,别混)。
+通知模块整改(#18):群通知从自由字符串重做成固定枚举事件注册表 `NotifyEvent`(本周版本计划 / 新建活纳入本周 / PR 合入 / 发版 / 周报)。`review`(进评审)移除。删通知页签整片(`screens/notify/`、`Panel::Notify`、`BW_PANEL=notify` 深链等全清)。决策见 `docs/02-adr/0003-通知模块整改-事件注册表与删页签.md`(原误编成 ADR-0002;导航快路径仍是 ADR-0002,别混)。
 
 门禁收口:补三个冒烟示例(`merge_smoke` / `submit_smoke` / `real_demo_v4`)漏掉的 `CreateIssue.plan` 字段(#23 后漏,`cargo test` 编不过),`onboard_smoke` 去掉一个无用 `mut`;`plan.rs::looks_like_week` 的 `as_bytes().len()` 改 `len()`;`list_view.rs` 去掉被 `Cancelled` 盖住后不可达的 `_ => "dash"`。fmt / clippy / test(除 app-shell)/ 其余 guard 全绿。**仍红一项**:`guard-file-lines`——`bw-engine/codehub.rs` 1580 行(本分支加 42 行;`origin/master` 已 1538 超 1500),拆分留后续单独会话,不在本次收口 scope。
 
@@ -72,7 +90,7 @@ Open / 去会话只 `worktree.activate`,不再 `ensureAgentSession`(那条是 `-
 
 会话屏改嵌 Orca(仍在 `pierce/orca-session`)。人改口:会话屏只留 Orca / Open Design 两个组件,动作条和灌词条不要(开工在计划屏拖进进行中;停止/MR/评审/删会话不在这屏;buddy 不知 Orca 里当前哪条会话)。pipe 开工与 iframe 配对是两件事。先用安装版 Orca 验,web 地址用进程环境 `BW_ORCA_WEB_URL`,不建设置页。同一张活再开工接回上一场(从本机 Claude jsonl 收 session id,不编)。启动时设 `BW_ORCA_WEB_URL` 会话屏就能接到网页地址(不再先要求 pipe 连上)。
 
-计划屏操作卡顿(#16):纯导航(切周 / 点总览 / 选卡片看详情 / 切页签 / 展开目录 / 后台采回发)走快路径,复用上次 gather、不重跑 git 子进程 / 远端 / OD 探活;真命令、换项目、刷新、`SelectSession` 仍走全量。`build()` 拆成 `gather`(贵、数据变更时跑)+ `assemble`(便宜、每次跑)。顺带去掉三处重复:`probe_env` 每重建跑两遍 → 探一次;打开项目 `app.issues` 拉两遍 → 拉一次;`build_ops` 的 `git::path_in_head` 跑两遍 → 算一次传参。决策见 [`docs/adr/0002`](docs/adr/0002-导航快路径-gather缓存.md),是 [ADR 0001](docs/adr/0001-codehub-issue-正本-本地零库.md)「优化(本地只读缓存、失效策略)留后续」那条的落地。
+计划屏操作卡顿(#16):纯导航(切周 / 点总览 / 选卡片看详情 / 切页签 / 展开目录 / 后台采回发)走快路径,复用上次 gather、不重跑 git 子进程 / 远端 / OD 探活;真命令、换项目、刷新、`SelectSession` 仍走全量。`build()` 拆成 `gather`(贵、数据变更时跑)+ `assemble`(便宜、每次跑)。顺带去掉三处重复:`probe_env` 每重建跑两遍 → 探一次;打开项目 `app.issues` 拉两遍 → 拉一次;`build_ops` 的 `git::path_in_head` 跑两遍 → 算一次传参。决策见 [`docs/02-adr/0002`](docs/02-adr/0002-导航快路径-gather缓存.md),是 [ADR 0001](docs/02-adr/0001-codehub-issue-正本-本地零库.md)「优化(本地只读缓存、失效策略)留后续」那条的落地。
 
 ## 最近 · 2026-08-28(#23 源码同步)
 
@@ -92,7 +110,7 @@ Open / 去会话只 `worktree.activate`,不再 `ensureAgentSession`(那条是 `-
 
 ## 最近 · 2026-08-27
 
-**独立评审(规范入库,按钮未接)**:评审剧本 `mr-review`、阶段规范 `review`、评审主提示词 `REVIEW.md.tmpl` 和产物链 `changes/reviewer-agent/` 收进仓(落进已有 5.10,未编进二进制)。GitHub 仓的自动触发放 CI 层(`.github/workflows/claude-code-review.yml`,配好 secret 才生效)。工作台里的「请评审」按钮和独立评审会话**还没接到 Orca 会话屏**;CodeHub 仓要评 MR,等这条接到 Orca 之后。合入仍由人点。
+**独立评审(规范入库,按钮未接)**:评审剧本 `mr-review`、阶段规范 `review`、评审主提示词 `REVIEW.md.tmpl` 和产物链 `docs/05-features/reviewer-agent/` 收进仓(落进已有 5.10,未编进二进制)。GitHub 仓的自动触发放 CI 层(`.github/workflows/claude-code-review.yml`,配好 secret 才生效)。工作台里的「请评审」按钮和独立评审会话**还没接到 Orca 会话屏**;CodeHub 仓要评 MR,等这条接到 Orca 之后。合入仍由人点。
 
 ## 2026-08-26
 

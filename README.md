@@ -6,7 +6,7 @@
 
 ![CI](https://github.com/forcegravity1989/builder-workbench/actions/workflows/ci.yml/badge.svg)
 
-主张正本 · [principles/03](principles/03-press-release-faq-flywheel.md) · 开发规矩 · [AGENTS.md](AGENTS.md) · 设计 · [docs/architecture.md](docs/architecture.md) · 词表 · [CONTEXT.md](CONTEXT.md)
+主张正本 · [docs/01-principles/03](docs/01-principles/03-press-release-faq-flywheel.md) · 开发规矩 · [AGENTS.md](AGENTS.md) · 设计 · [docs/architecture.md](docs/architecture.md) · 词表 · [CONTEXT.md](CONTEXT.md)
 
 ---
 
@@ -23,7 +23,7 @@ AI 时代写代码已经很快，六个阶段——规划、设计、构建、�
 
 它不是又一块看板，也不是 Cursor / Claude Code 外面套一层壳。编辑器解决「这段代码怎么改」；Workbench 管整次迭代里人该坐在哪、要点头的地方有多少。
 
-> **主张与现状**：上面写的是目标体验（见 [principles/03](principles/03-press-release-faq-flywheel.md)）。仓里现行主路径仍有脚手架成分（项目墙 / 看板 / ▶跑 / 人点完成等），**不得把草稿界面讲成已交付**。做到哪以 [docs/architecture.md](docs/architecture.md) 与指南为准。
+> **主张与现状**：上面写的是目标体验（见 [docs/01-principles/03](docs/01-principles/03-press-release-faq-flywheel.md)）。仓里现行主路径仍有脚手架成分（项目墙 / 看板 / ▶跑 / 人点完成等），**不得把草稿界面讲成已交付**。做到哪以 [docs/architecture.md](docs/architecture.md) 与指南为准。
 
 ---
 
@@ -47,7 +47,7 @@ GitHub 仓库 slug 是 `builder-workbench`。已废弃：`buddy`、`loop-buddy`�
 - **架构盘账** — 架构全景随代码养账；你与架构师队友定期盘欠账，排进下一次迭代。
 - **健康难造假** — 信号只能从真实数据推导；无数据 = Unknown，不装绿。
 
-更完整的新闻稿、外/内 FAQ 与飞轮见 [principles/03](principles/03-press-release-faq-flywheel.md)。
+更完整的新闻稿、外/内 FAQ 与飞轮见 [docs/01-principles/03](docs/01-principles/03-press-release-faq-flywheel.md)。
 
 ---
 
@@ -101,14 +101,14 @@ cargo run -p bw-engine --example pty_smoke
 
 ## 开发
 
-给贡献者与 Agent 的规矩在 [AGENTS.md](AGENTS.md)（唯一开发正本）：怎么建/跑/测、门禁、目录导览、铁律、特性起手（`principles/02` + `changes/`）、写作与 commit 约定。
+给贡献者与 Agent 的规矩在 [AGENTS.md](AGENTS.md)（唯一开发正本）：怎么建/跑/测、门禁、目录导览、铁律、特性起手（`docs/01-principles/02` + `docs/05-features/`）、写作与 commit 约定。
 
 
 | 你在找             | 去哪                                                                                                     |
 | --------------- | ------------------------------------------------------------------------------------------------------ |
-| 产品主张 / FAQ / 飞轮 | [principles/03](principles/03-press-release-faq-flywheel.md)                                         |
-| 文档怎么分层、特性制品链    | [principles/01](principles/01-document-organization.md) · [02](principles/02-working-backwards.md) |
-| 怎么用（指南）         | [docs/guide/](docs/guide/)                                                                           |
+| 产品主张 / FAQ / 飞轮 | [docs/01-principles/03](docs/01-principles/03-press-release-faq-flywheel.md)                                         |
+| 文档怎么分层、特性制品链    | [docs/01-principles/01](docs/01-principles/01-document-organization.md) · [02](docs/01-principles/02-working-backwards.md) |
+| 怎么用（指南）         | [docs/03-guide/](docs/03-guide/)                                                                           |
 | 全仓文档地图          | [docs/README.md](docs/README.md)                                                                     |
 | 领域用词            | [CONTEXT.md](CONTEXT.md)                                                                             |
 | 版本记录            | [CHANGELOG.md](CHANGELOG.md)                                                                         |

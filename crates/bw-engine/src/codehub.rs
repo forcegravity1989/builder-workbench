@@ -530,16 +530,21 @@ struct CodehubRepoJson {
 // labels 逗号拼成一条串;空切片不打 `--labels`(codehub 对空 label 会报错)。
 
 /// `codehub-cli issue create -p <path> -H <host> --title <t> --description <body>
-/// [--labels a,b,c] --jq .iid` → 新 issue 的 `iid`(项目内号,对标 github
-/// issue number)。调它真开 issue,只在创建流调,绝不自动。
+/// [--labels a,b,c] [--attachment <file>] --jq .iid` → 新 issue 的 `iid`(项目内号,对标 github
+/// issue number)。调它真开 issue,只在创建流调,绝不自动。`attachment` 指向本机文件,
+/// 没有或不存在就不打 `--attachment`。
 pub async fn create_issue(
     host: &str,
     path: &str,
     title: &str,
     body: &str,
     labels: &[&str],
+    attachment: Option<&Path>,
 ) -> Result<u32, CodehubError> {
     let labels_csv = labels.join(",");
+    let attach = attachment
+        .filter(|p| p.is_file())
+        .map(|p| p.to_string_lossy().into_owned());
     let mut args: Vec<&str> = vec![
         "issue",
         "create",
@@ -555,6 +560,10 @@ pub async fn create_issue(
     if !labels_csv.is_empty() {
         args.push("--labels");
         args.push(&labels_csv);
+    }
+    if let Some(ref p) = attach {
+        args.push("--attachment");
+        args.push(p);
     }
     args.push("--jq");
     args.push(".iid");
@@ -1254,6 +1263,74 @@ pub async fn delete_plan_milestone(host: &str, path: &str, name: &str) -> Result
         "DELETE",
         "/api/v4/projects/:id/milestones/:milestone_id",
         &[("id", pid.as_str()), ("milestone_id", mid_s.as_str())],
+        &[],
+    )
+    .await?;
+    Ok(())
+}
+
+/// 按标题改版本里程碑名。找不到当失败。
+pub async fn rename_plan_milestone(
+    host: &str,
+    path: &str,
+    from: &str,
+    to: &str,
+) -> Result<(), CodehubError> {
+    let project_id = project_numeric_id(host, path).await?;
+    let pid = project_id.to_string();
+    let listed = api_json(
+        host,
+        "GET",
+        "/api/v4/projects/:id/milestones",
+        &[("id", pid.as_str())],
+        &[],
+    )
+    .await?;
+    let Some(mid) = milestone_rows(&listed).iter().find_map(|m| {
+        if m["title"].as_str() == Some(from) {
+            m["id"].as_u64()
+        } else {
+            None
+        }
+    }) else {
+        return Err(CodehubError::Command(format!(
+            "找不到里程碑 {from},改不成 {to}"
+        )));
+    };
+    let mid_s = mid.to_string();
+    api_json(
+        host,
+        "PUT",
+        "/api/v4/projects/:id/milestones/:milestone_id",
+        &[
+            ("id", pid.as_str()),
+            ("milestone_id", mid_s.as_str()),
+            ("title", to),
+        ],
+        &[],
+    )
+    .await?;
+    Ok(())
+}
+
+/// 改 `bw:plan:` 标签定义名。GitLab `PUT /labels` 的 `name` + `new_name`。
+pub async fn rename_plan_label(
+    host: &str,
+    path: &str,
+    from_label: &str,
+    to_label: &str,
+) -> Result<(), CodehubError> {
+    let project_id = project_numeric_id(host, path).await?;
+    let pid = project_id.to_string();
+    api_json(
+        host,
+        "PUT",
+        "/api/v4/projects/:id/labels",
+        &[
+            ("id", pid.as_str()),
+            ("name", from_label),
+            ("new_name", to_label),
+        ],
         &[],
     )
     .await?;

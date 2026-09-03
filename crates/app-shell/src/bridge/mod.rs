@@ -10,7 +10,10 @@ mod vm_derive;
 mod vm_kb;
 mod vm_panels;
 
-pub use nav::{ChromeBusy, GuideNav, Panel, PanelNav, TopView, STARTING_SESSION, SWITCHING_STATUS};
+pub use nav::{
+    ChromeBusy, GuideNav, Panel, PanelNav, TopView, REPORTING_LOG, STARTING_SESSION,
+    SWITCHING_STATUS,
+};
 
 use crate::vm::Vm;
 use bw::app::App;
@@ -44,13 +47,20 @@ pub fn read_deep_link() -> DeepLink {
         match Panel::parse(&p) {
             Some(panel) => dl.panel = panel,
             // 认不出的值如实打出来,不静默 fallback 到某个默认屏。
-            None => eprintln!("[BW_OPEN] 未知 BW_PANEL={p:?},忽略"),
+            None => bw_engine::dlog!(warn, "bridge", "[BW_OPEN] 未知 BW_PANEL={p:?},忽略"),
         }
     }
     if let Ok(v) = std::env::var("BW_VIEW") {
         match TopView::parse(&v) {
-            Some(view) => dl.view = Some(view),
-            None => eprintln!("[BW_OPEN] 未知 BW_VIEW={v:?},忽略"),
+            Some(view) => {
+                let label = match view {
+                    TopView::Settings => "settings",
+                    TopView::Onboard => "onboard",
+                };
+                bw_engine::dlog!(ok, "bridge", "[BW_VIEW] {label}");
+                dl.view = Some(view);
+            }
+            None => bw_engine::dlog!(warn, "bridge", "[BW_OPEN] 未知 BW_VIEW={v:?},忽略"),
         }
     }
     dl
@@ -62,12 +72,14 @@ pub enum Req {
     Cmd(Command),
     /// 打开某个项目(纯本机导航,不改任何数据)。
     Open(Option<ProjectId>),
-    /// 计划屏切到看某一周。
+    /// 计划屏切到看某一周(旧周版本,读回仍认)。
     ViewWeek(String),
-    /// 计划屏切到看某个自定义版本(计划包)。
+    /// 计划屏切到看某个计划版本(`v0.x` 或旧名)。
     ViewPlan(String),
-    /// 计划屏左栏点「全部」/ 点回某一周。
+    /// 计划屏回到全部 issue。
     ViewAll(bool),
+    /// 壳侧预判失败(改名撞名等),走同一条 toast。
+    Note(String),
     /// 知识库屏打开某份文档。
     OpenDoc(Option<String>),
     /// 「先不建」——把还没确认的草稿丢掉。草稿本来就没进库,丢掉不留痕。
@@ -404,7 +416,7 @@ async fn fetch_prefill(
     }
 }
 
-/// 从一批事件里挑出「开始本周」产出的草稿活标。真跑路径没有草稿(周计划由
+/// 从一批事件里挑出「开始本版本」产出的草稿活标。真跑路径没有草稿(版本计划由
 /// agent 会话产出、走 MR),那时候不该弹「等你确认草稿」的卡。
 fn drafts_of(events: &[bw::command::Event]) -> Option<(String, Vec<String>)> {
     events.iter().find_map(|e| match e {
@@ -476,7 +488,7 @@ pub fn spawn(deep_link: DeepLink) -> Bridge {
                     focus_skill: String::new(),
                     viewing_week: bw::isoweek::current_week(),
                     viewing_plan: String::new(),
-                    view_all: false,
+                    view_all: true,
                     open_doc: None,
                     note: None,
                     note_seq: 0,
@@ -505,18 +517,27 @@ pub fn spawn(deep_link: DeepLink) -> Bridge {
                     match vm_build::find_project(&app, want).await {
                         Some(p) => {
                             ui.open = Some(p.id);
-                            eprintln!(
+                            bw_engine::dlog!(
+                                ok,
+                                "bridge",
                                 "[BW_OPEN] {want:?} -> project={} panel={:?}",
-                                p.slug, deep_link.panel
+                                p.slug,
+                                deep_link.panel
                             );
                         }
-                        None => eprintln!("[BW_OPEN] 找不到项目 {want:?}"),
+                        None => bw_engine::dlog!(err, "bridge", "[BW_OPEN] 找不到项目 {want:?}"),
                     }
                 }
 
                 let mut last_gather = vm_build::gather(&app, &mut ui).await;
                 let mut vm = vm_build::assemble(&app, &mut ui, &last_gather).await;
-                eprintln!("[BW_BOOT] projects={} assets={}", vm.projects.len(), assets.display());
+                bw_engine::dlog!(
+                    ok,
+                    "bridge",
+                    "[BW_BOOT] projects={} assets={}",
+                    vm.projects.len(),
+                    assets.display()
+                );
                 // 环境条的探活结果也打出来 —— 它说「找不到 claude」的时候,人
                 // 得能在终端里拿 `which claude` 当场对。2026-08-20 就栽在这上面:
                 // 探活在 macOS 上恒返回「找不到」,而界面上没有任何办法核。
@@ -526,13 +547,22 @@ pub fn spawn(deep_link: DeepLink) -> Bridge {
                         Some(false) => "没有",
                         None => "没探",
                     };
-                    eprintln!("[BW_ENV] {} = {} · {}", t.label, state, t.detail);
+                    bw_engine::dlog!(
+                        ok,
+                        "bridge",
+                        "[BW_ENV] {} = {} · {}",
+                        t.label,
+                        state,
+                        t.detail
+                    );
                 }
                 // 打开了项目就把这一份 ViewModel 的关键计数打出来 —— 这些数
                 // 都能用 codehub-cli/gh/git/cat 当场对(活 = codehub issue、
                 // 会话 = session.jsonl、周 = issue 的 bw:week 标签),比截图硬。
                 if let Some(o) = &vm.open {
-                    eprintln!(
+                    bw_engine::dlog!(
+                        ok,
+                        "bridge",
                         "[BW_VM] project={} 活={} 会话={} 周={} 技能={}",
                         o.slug,
                         o.board.columns.iter().map(|c| c.cards.len()).sum::<usize>(),
@@ -543,11 +573,20 @@ pub fn spawn(deep_link: DeepLink) -> Bridge {
                     // 总览那条「本周计划进度」的五段。**只认当前周**,与计划屏
                     // 左栏看的是哪一周无关 —— 这一行就是那条纪律的读回。
                     let c = &o.week_counts;
-                    eprintln!(
+                    bw_engine::dlog!(
+                        ok,
+                        "bridge",
                         "[BW_VM] 本周{} 待办={} 进行中={} 评审中={} 完成={} 阻塞={}",
-                        o.current_week, c.todo, c.doing, c.review, c.done, c.blocked,
+                        o.current_week,
+                        c.todo,
+                        c.doing,
+                        c.review,
+                        c.done,
+                        c.blocked,
                     );
-                    eprintln!(
+                    bw_engine::dlog!(
+                        ok,
+                        "bridge",
                         "[BW_VM] 映射={} 定时={} 群={} 指标={} 未读={}",
                         o.config.mappings.len(),
                         o.config.crons.len(),
@@ -571,10 +610,18 @@ pub fn spawn(deep_link: DeepLink) -> Bridge {
                         if let Ok(ws) = app.workspace_of(pid).await {
                             let kb = vm_kb::build_kb(&ws, crate::vm::KbTab::Docs, None);
                             for g in &kb.groups {
-                                eprintln!("[BW_KB] 组「{}」{} 个文件", g.title, g.files.len());
+                                bw_engine::dlog!(
+                                    ok,
+                                    "bridge",
+                                    "[BW_KB] 组「{}」{} 个文件",
+                                    g.title,
+                                    g.files.len()
+                                );
                             }
                             let cg = vm_kb::build_codegraph(&ws).await;
-                            eprintln!(
+                            bw_engine::dlog!(
+                                ok,
+                                "bridge",
                                 "[BW_KB] 代码图 state={} 榜上 {} 行 头一名={} 头一名体积={} err={:?}",
                                 cg.state,
                                 cg.rows.len(),
@@ -589,7 +636,9 @@ pub fn spawn(deep_link: DeepLink) -> Bridge {
                                 _ => vec![],
                             };
                             let a = vm_kb::build_assets(&usage, &ws, releases).await;
-                            eprintln!(
+                            bw_engine::dlog!(
+                                ok,
+                                "bridge",
                                 "[BW_KB] 资产:技能 {} · 蒸馏 {} · 产物 {} · 发版 {} · 仓统计 {:?}",
                                 a.skills.len(),
                                 a.distilled.len(),
@@ -600,11 +649,7 @@ pub fn spawn(deep_link: DeepLink) -> Bridge {
                         }
                     }
                 }
-                // 仓文件读不动的实话也打进 stderr:界面上有横幅,命令行验收
-                // 也看得见,不用靠截图。
-                for w in &vm.warnings {
-                    eprintln!("[BW_WARN] {w}");
-                }
+                // gather 已经把 warnings 打进对照日志,这里不再打第二遍。
                 let _ = vm_tx.send(vm.clone());
 
                 // 定时判据 60s 一次 —— 它查的是「本周有没有那张活」,快一点慢一点都
@@ -666,13 +711,18 @@ pub fn spawn(deep_link: DeepLink) -> Bridge {
                                 | Command::CancelIssue { .. }
                         )
                     );
+                    let reporting = matches!(
+                        &req,
+                        Req::Cmd(Command::ReportWorkbenchIssue { .. })
+                    );
                     let needs_gather = matches!(
                         &req,
                         Req::Cmd(_)
                             | Req::Open(_)
                             | Req::Refresh
                             | Req::FlushOrcaReveal { .. }
-                    ) && !status_patch;
+                    ) && !status_patch
+                        && !reporting;
                     match req {
                         Req::Cmd(c) => {
                             let confirming = matches!(c, Command::ConfirmWeekDraft { .. });
@@ -695,10 +745,23 @@ pub fn spawn(deep_link: DeepLink) -> Bridge {
                                 let snap =
                                     vm_build::assemble(&app, &mut ui, &last_gather).await;
                                 let _ = vm_tx.send(snap);
+                            } else if reporting {
+                                ui.busy = Some(REPORTING_LOG.into());
+                                let snap =
+                                    vm_build::assemble(&app, &mut ui, &last_gather).await;
+                                let _ = vm_tx.send(snap);
                             }
                             match app.dispatch(c).await {
                                 Ok(events) => {
                                     ui.set_note(vm_build::note_of(&events));
+                                    if let Some((_, to)) = events.iter().find_map(|e| match e {
+                                        bw::command::Event::PlanVersionRenamed { from, to, .. } => {
+                                            Some((from.clone(), to.clone()))
+                                        }
+                                        _ => None,
+                                    }) {
+                                        ui.viewing_plan = to;
+                                    }
                                     if status_patch {
                                         if let Some((id, to, settled)) = status_patch_of(&events)
                                         {
@@ -789,7 +852,8 @@ pub fn spawn(deep_link: DeepLink) -> Bridge {
                                         ui.open = Some(*id);
                                         ui.open_doc = None;
                                         ui.viewing_week = bw::isoweek::current_week();
-                                        ui.view_all = false;
+                                        ui.viewing_plan = String::new();
+                                        ui.view_all = true;
                                         ui.kb_tab = crate::vm::KbTab::default();
                                         ui.kb_codegraph = None;
                                         ui.kb_assets = None;
@@ -844,6 +908,9 @@ pub fn spawn(deep_link: DeepLink) -> Bridge {
                             if status_patch {
                                 ui.busy = None;
                             }
+                            if reporting {
+                                ui.busy = None;
+                            }
                             if running_issue {
                                 // create / run_issue 已经回来。先撤遮罩把嵌页挂上,
                                 // 别等后面 gather(issue list / mr list)再撤 ——
@@ -872,6 +939,7 @@ pub fn spawn(deep_link: DeepLink) -> Bridge {
                             }
                         }
                         Req::Open(id) => {
+                            bw_engine::dlog!(ok, "bridge", "open project={id:?}");
                             if let Some(pid) = id {
                                 if !ui.orca_repos_ready.contains(&pid) {
                                     match peek_orca_repo(&app, pid).await {
@@ -897,7 +965,8 @@ pub fn spawn(deep_link: DeepLink) -> Bridge {
                             ui.open = id;
                             ui.open_doc = None;
                             ui.viewing_week = bw::isoweek::current_week();
-                            ui.view_all = false;
+                            ui.viewing_plan = String::new();
+                            ui.view_all = true;
                             // 知识库那两个页签的结果是**上一个项目**的:它的技能
                             // 清单、它的 git 产物、它的发版记录、它的仓统计。留着
                             // 的话换个项目点进去,一屏数字没有一个是这个项目的,
@@ -925,11 +994,12 @@ pub fn spawn(deep_link: DeepLink) -> Bridge {
                             ui.view_all = false;
                         }
                         Req::ViewAll(v) => {
-                            ui.view_all = v;
                             if v {
                                 ui.viewing_plan = String::new();
+                                ui.view_all = true;
                             }
                         }
+                        Req::Note(n) => ui.set_note(Some(n)),
                         Req::OpenDoc(p) => ui.open_doc = p,
                         Req::DropDrafts => ui.pending_drafts = None,
                         Req::SelectSession(id) => {
@@ -1269,6 +1339,7 @@ pub fn spawn(deep_link: DeepLink) -> Bridge {
                     .map(|s| (*s).to_string())
                     .or_else(|| e.downcast_ref::<String>().cloned())
                     .unwrap_or_else(|| "(panic 没带可读的原因)".into());
+                bw_engine::dlog!(err, "bridge", "内核线程崩了 死因:{why}");
                 let _ = vm_tx_panic.send(Vm {
                     fatal: Some(format!(
                         "内核线程崩了,已经没人处理命令了 —— 请重启 Workbench。\n死因:{why}"
@@ -1313,15 +1384,15 @@ async fn peek_orca_repo(app: &App, pid: ProjectId) -> OrcaPeek {
     };
     match bw_engine::orca::repo_present(&rt, &ws).await {
         Ok(true) => {
-            bw_engine::orca::diag(&format!("open peek present worktree={}", ws.display()));
+            bw_engine::dlog!(ok, "bridge", "open peek present worktree={}", ws.display());
             OrcaPeek::Present
         }
         Ok(false) => {
-            bw_engine::orca::diag(&format!("open peek missing worktree={}", ws.display()));
+            bw_engine::dlog!(ok, "bridge", "open peek missing worktree={}", ws.display());
             OrcaPeek::Missing
         }
         Err(e) => {
-            bw_engine::orca::diag(&format!("open peek fail:{e}"));
+            bw_engine::dlog!(err, "bridge", "open peek fail:{e}");
             OrcaPeek::Skip
         }
     }
@@ -1340,10 +1411,27 @@ async fn register_orca_repo(app: &App, ui: &mut vm_build::UiState, pid: ProjectI
         return;
     }
     let Ok(rt) = bw_engine::orca::connect() else {
+        bw_engine::dlog!(warn, "bridge", "register_orca_repo skip: Orca 没开");
         return;
     };
-    if bw_engine::orca::ensure_repo(&rt, &ws).await.is_ok() {
-        ui.orca_repos_ready.insert(pid);
+    match bw_engine::orca::ensure_repo(&rt, &ws).await {
+        Ok(()) => {
+            ui.orca_repos_ready.insert(pid);
+            bw_engine::dlog!(
+                ok,
+                "bridge",
+                "register_orca_repo ok worktree={}",
+                ws.display()
+            );
+        }
+        Err(e) => {
+            bw_engine::dlog!(
+                err,
+                "bridge",
+                "register_orca_repo fail:{e} worktree={}",
+                ws.display()
+            );
+        }
     }
 }
 

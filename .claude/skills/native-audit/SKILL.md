@@ -10,7 +10,7 @@ description: >-
 
 # native-audit — native 评估
 
-给一个 git 仓量「AI-native 制度化水位」：它把「让 AI 安全高速干活」的那套规矩，做到了口头、成文、还是机器强制的哪一级。**准则唯一正本是 [`changes/native-audit/rubric.md`](../../../changes/native-audit/rubric.md)**（9 段 37 条、阶梯 0-3、每条带 dsh 一手证据与 SDLC 对应）；本文件只写怎么执行，两处冲突以 rubric 为准。
+给一个 git 仓量「AI-native 制度化水位」：它把「让 AI 安全高速干活」的那套规矩，做到了口头、成文、还是机器强制的哪一级。**准则唯一正本是 [`docs/05-features/native-audit/rubric.md`](../../../docs/05-features/native-audit/rubric.md)**（9 段 37 条、阶梯 0-3、每条带 dsh 一手证据与 SDLC 对应）；本文件只写怎么执行，两处冲突以 rubric 为准。
 
 ## 用词对照（本技能用词 → 人话；词表已有的词直接用词表）
 
@@ -23,12 +23,12 @@ description: >-
 | **活**（issue） | 一件要干的具体工作，最小单位；远端 codehub/GitHub 的 issue+标签是它的唯一正本。散文里一律写「活」，issue 只出现在代码、路径与 GitHub 功能名里 | 词表「活 / Issue」——不写工单、任务、ticket |
 | **锚点** | 已经定过级的参照仓，用来校准定级手感：dsh ≈ 3 分、本仓 ≈ 2 分 | 本技能自造 |
 | **门禁** | 机器跑的检查组（hook / CI / verify 脚本），违规就红 | 词表「门禁 / Gate checks」——**与 gate 不同**：gate 是人拍板的关卡 |
-| **门禁自测** | 用一个故意做错的输入（已知坏例）证明门禁真会拦；dsh 的 verify 脚本 17/34 带这种自测 | 与 `changes/process-hardening` A3 同词 |
+| **门禁自测** | 用一个故意做错的输入（已知坏例）证明门禁真会拦；dsh 的 verify 脚本 17/34 带这种自测 | 与 `docs/05-features/process-hardening` A3 同词 |
 | **Unknown** | 拿不到数据时的诚实态；不写 N/A、不写待定、不补分 | 词表「未知 / Unknown」 |
 | **读回** | 报告里的每个数都能用一条命令独立重新查出来 | 词表「读回 / Read-back」 |
 | **复盘**（postmortem） | 事故写成的结构化记录：什么坏了、为什么每道防线都没拦住、加了什么防护 | 词表生命周期「运维复盘回流到原型」；dsh 目录名 `docs/postmortem/` 保留英文 |
-| **产物链** | 意图件 → 规格件 → 计划 → 带测试的改动 → 带评审结论的 PR → 复盘 → 新意图件，每级进 git | `docs/reference/ai-native-sdlc-playbook.md` 用词；`principles/01` 称制品链，同一个东西 |
-| **playbook** | Anthropic《AI-Native SDLC Playbook》，AI 原生研发流程手册；仓内正本是它的提炼版 | `docs/reference/ai-native-sdlc-playbook.md` |
+| **产物链** | 意图件 → 规格件 → 计划 → 带测试的改动 → 带评审结论的 PR → 复盘 → 新意图件，每级进 git | `docs/10-reference/ai-native-sdlc-playbook.md` 用词；`docs/01-principles/01` 称制品链，同一个东西 |
+| **playbook** | Anthropic《AI-Native SDLC Playbook》，AI 原生研发流程手册；仓内正本是它的提炼版 | `docs/10-reference/ai-native-sdlc-playbook.md` |
 | **SDLC** | 软件研发全流程（计划→设计→构建→测试→发布→运维） | playbook 六阶段 |
 | **slop** | AI 写作垃圾：重复复述、叙述历史、推理过程留在文档里、强调符号通胀 | dsh `docs/AGENTS.md`「slop checklist」；对应本仓「写作纪律」与「黑话」 |
 | **worktree** | 每张活一棵独立的 git 工作树 | 词表「运行」条用词 |
@@ -45,7 +45,7 @@ description: >-
 - **只读**：不向目标仓写任何东西；远端仓 clone 进会话 scratchpad。
 - **Unknown 纪律**：探针输出 `Unknown` 或拿不到的数据 → 该条记 0 并写明原因（浅历史 / squash / 无权限 / 超时），绝不推断补分。
 - **可读回**：报告每个数字来自探针脚本的一行输出或一条给出的命令；每个定级带仓内证据路径。
-- **两个锚点防漂移**：deepseek-harness（dd6322d604）≈ 3 分锚、builders-workbench（2026-09-02）≈ 2 分锚，两仓 37 条读数与定级在 [`prototype-report.md`](../../../changes/native-audit/prototype-report.md)。给新仓定级前先对照。
+- **两个锚点防漂移**：deepseek-harness（dd6322d604）≈ 3 分锚、builders-workbench（2026-09-02）≈ 2 分锚，两仓 37 条读数与定级在 [`prototype-report.md`](../../../docs/05-features/native-audit/prototype-report.md)。给新仓定级前先对照。
 - **子代理**：仓群模式每仓一个子代理，模型 sonnet（难仓 opus），一律不用 Fable；并发 ≤5。
 
 ## 主路径（单仓）
@@ -79,9 +79,9 @@ bash <skill 目录>/battery.sh <repo-path>
 
 ## 仓群路径
 
-1. 入参：清单文件（每行一仓）或 codehub 组名。组名模式先探测 `codehub-cli`；不可用则明确报「内网模式在此机不可用，需在装过 buddy 的机器跑」，不装死、不降级成猜。
+1. 入参：清单文件（每行一仓）或 codehub 组名。组名模式先探测 `codehub-cli`；不可用则明确报「内网模式在此机不可用，需在装过 Workbench（旧名 buddy）的机器跑」，不装死、不降级成猜。
 2. 每仓派一个子代理跑主路径，只回传评分卡（九段分 + 37 条级 + top3 缺失 + 探针异常，≤60 行）。
-3. 主线程汇总：九段 × 仓矩阵榜、全群 top 缺失（按条计频）、失败清单（含原因）、「BW 规范铺底可直接补哪些」对照段（AGENTS.md 铺底 → S0；changes/ 链 → S1/S2；guard 脚本 → C32/C73；技能 → C04/C51/C74）。
+3. 主线程汇总：九段 × 仓矩阵榜、全群 top 缺失（按条计频）、失败清单（含原因）、「BW 规范铺底可直接补哪些」对照段（AGENTS.md 铺底 → S0；docs/05-features/ 链 → S1/S2；guard 脚本 → C32/C73；技能 → C04/C51/C74）。
 4. 超过 20 仓先扫每项目代表仓校准一轮（对照两个锚点看有没有系统性偏高/偏低），再全量。
 
 ## 出错与降级

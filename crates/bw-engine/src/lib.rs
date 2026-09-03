@@ -26,6 +26,7 @@
 
 pub mod claude_bin;
 pub mod codehub;
+pub mod dlog;
 pub mod evidence;
 pub mod github;
 pub mod legacy_pty;

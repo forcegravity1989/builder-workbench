@@ -13,8 +13,13 @@
 use super::worktree;
 use super::{issue_store, App, AppError, Result};
 use crate::command::Event;
-use crate::model::{Category, Issue, IssueId, IssueKind, IssueOrigin, IssueStatus, ProjectId};
+use crate::model::{
+    codehub_alias_to_domain, Category, Issue, IssueId, IssueKind, IssueOrigin, IssueStatus,
+    ProjectId,
+};
+use bw_engine::remote::Remote;
 use bw_engine::{build_startup_plan, InteractiveExecutor, RunCtx, TuiAgentConfig};
+use std::path::{Path, PathBuf};
 
 impl App {
     #[allow(clippy::too_many_arguments)]
@@ -42,9 +47,7 @@ impl App {
             (IssueKind::Ops, _) | (_, None) => Vec::new(),
             (_, Some(c)) => vec![format!("bw:category:{}", crate::model::category_key(c))],
         };
-        // 一张活只属于一个版本。人起名的版本只打 bw:plan,周版本只打
-        // bw:week。壳看自定义版本时 viewing_week 会被拼成本周,两个都传来
-        // 就丢掉周,只留版本。
+        // 一张活只属于一个版本。只打 bw:plan:v0.x,不再写 bw:week。
         let (week_of, plan) = if !plan.is_empty() {
             (String::new(), plan)
         } else {
@@ -139,8 +142,13 @@ impl App {
                 .ensure_prompt_assets()
                 .map(|d| super::bootstrap::references_for(&issue, &d))
                 .unwrap_or_default();
-            let system_prompt =
-                super::bootstrap::agent_system_prompt(&issue, skill.as_ref(), &references);
+            let version_context = self.version_context_for(&issue).await;
+            let system_prompt = super::bootstrap::agent_system_prompt(
+                &issue,
+                skill.as_ref(),
+                &references,
+                &version_context,
+            );
             let injected = match bw_engine::open_design::discover_web_url().await {
                 Some(url) => bw_engine::open_design::start_run(&url, &prompt, &system_prompt)
                     .await
@@ -174,12 +182,7 @@ impl App {
         // 有真实工作区就在**这张活自己的 worktree** 里干,和 Orca 那条路一样;
         // 没有工作区就没什么可隔离的,下面走自我标注的替身。
         let tree = if ws.is_dir() {
-            let t = worktree::provision(&ws, issue.number).await?;
-            if issue.workflow == super::OPS1_WORKFLOW {
-                crate::standard::bootstrap::write_missing_on_first_use(&t.path)
-                    .map_err(|e| AppError::Exec(format!("给这张活铺指标空壳没成:{e}")))?;
-            }
-            Some(t)
+            Some(worktree::provision(&ws, issue.number).await?)
         } else {
             None
         };
@@ -208,8 +211,13 @@ impl App {
             .ensure_prompt_assets()
             .map(|d| super::bootstrap::references_for(&issue, &d))
             .unwrap_or_default();
-        let system_prompt =
-            super::bootstrap::agent_system_prompt(&issue, skill.as_ref(), &references);
+        let version_context = self.version_context_for(&issue).await;
+        let system_prompt = super::bootstrap::agent_system_prompt(
+            &issue,
+            skill.as_ref(),
+            &references,
+            &version_context,
+        );
         let mut plan = build_startup_plan(agent, &prompt, &system_prompt, &run_dir)
             .map_err(|e| AppError::Exec(e.to_string()))?;
         // 挂整个 asset_root 给 agent 读:技能 + references + vendor 库都在下面。
@@ -276,10 +284,6 @@ impl App {
     ) -> Result<Vec<Event>> {
         // 开/复用 worktree:resolve 会接住旧平级兄弟,不建第二棵新树。
         let tree = worktree::provision(ws, issue.number).await?;
-        if issue.workflow == super::OPS1_WORKFLOW {
-            crate::standard::bootstrap::write_missing_on_first_use(&tree.path)
-                .map_err(|e| AppError::Exec(format!("给这张活铺指标空壳没成:{e}")))?;
-        }
         // upsert 会话行:workspace_path 写实际用的路径(可能是旧兄弟)。幂等:已有就返回既有行。
         let conv = self
             .upsert_conversation(&crate::model::Conversation {
@@ -309,8 +313,13 @@ impl App {
             .ensure_prompt_assets()
             .map(|d| super::bootstrap::references_for(issue, &d))
             .unwrap_or_default();
-        let system_prompt =
-            super::bootstrap::agent_system_prompt(issue, skill.as_ref(), &references);
+        let version_context = self.version_context_for(issue).await;
+        let system_prompt = super::bootstrap::agent_system_prompt(
+            issue,
+            skill.as_ref(),
+            &references,
+            &version_context,
+        );
 
         let agent = super::tools::orca_agent(&issue.tool)?;
         let mut sid = conv.claude_session_id.clone();
@@ -321,7 +330,9 @@ impl App {
                 sid_source = "jsonl";
             }
         }
-        bw_engine::orca::diag(&format!(
+        bw_engine::dlog!(
+            ok,
+            "issue",
             "start issue=#{} tool={} agent={agent} isolated={} \
              worktree={} sid_source={sid_source} sid_prefix={} \
              prompt_chars={} system_chars={} skill={} refs={} log={}",
@@ -334,18 +345,20 @@ impl App {
             system_prompt.chars().count(),
             skill.as_ref().map(|s| s.name.as_str()).unwrap_or("-"),
             references.len(),
-            bw_engine::orca::diag_log_path().display()
-        ));
+            bw_engine::dlog::log_path().display()
+        );
         let outcome = match bw_engine::orca::connect() {
             Ok(rt) => {
                 // 树刚 provision 完;Orca 打开项目时扫的那份还没有这棵。
                 // 刷扫描,不 repo.add。
                 if let Err(e) = bw_engine::orca::refresh_worktrees(&rt, ws).await {
-                    bw_engine::orca::diag(&format!(
+                    bw_engine::dlog!(
+                        err,
+                        "issue",
                         "refresh fail:{e} · {} · repo={}",
                         rt.log_tag(),
                         ws.display()
-                    ));
+                    );
                     return Ok(vec![Event::IssueRan {
                         id,
                         ok: false,
@@ -354,7 +367,7 @@ impl App {
                         embed_url: String::new(),
                     }]);
                 }
-                bw_engine::orca::diag(&format!("refresh ok repo={}", ws.display()));
+                bw_engine::dlog!(ok, "issue", "refresh ok repo={}", ws.display());
                 let r = if sid.is_empty() {
                     match bw_engine::orca::create_session(
                         &rt,
@@ -370,21 +383,29 @@ impl App {
                                 let jsonl_before =
                                     bw_engine::orca::session_id_for_worktree(&tree.path).is_some();
                                 let settle = bw_engine::orca::HANDLE_TIMEOUT_SETTLE;
-                                bw_engine::orca::diag(&format!(
+                                bw_engine::dlog!(
+                                    warn,
+                                    "issue",
                                     "handle_timeout: wait {}s before wait_session_id/reveal \
                                      jsonl_before={jsonl_before} worktree={}",
                                     settle.as_secs(),
                                     tree.path.display()
-                                ));
+                                );
                                 tokio::time::sleep(settle).await;
                                 let jsonl_after =
                                     bw_engine::orca::session_id_for_worktree(&tree.path).is_some();
-                                bw_engine::orca::diag(&format!(
+                                bw_engine::dlog!(
+                                    ok,
+                                    "issue",
                                     "handle_timeout: settle done jsonl_after={jsonl_after} \
                                      next=wait_session_id/reveal"
-                                ));
+                                );
                             } else {
-                                bw_engine::orca::diag("create ready, next=wait_session_id/reveal");
+                                bw_engine::dlog!(
+                                    ok,
+                                    "issue",
+                                    "create ready, next=wait_session_id/reveal"
+                                );
                             }
                             // Claude 的 jsonl 可能晚几拍落到盘,短等再收 id。
                             // Cursor 不写这份文件,空等满 8 秒才回「开工成功」。
@@ -393,13 +414,17 @@ impl App {
                                     bw_engine::orca::wait_session_id_for_worktree(&tree.path).await
                                 {
                                     sid = found;
-                                    bw_engine::orca::diag(&format!(
+                                    bw_engine::dlog!(
+                                        ok,
+                                        "issue",
                                         "wait_session_id found prefix={}",
                                         sid.chars().take(8).collect::<String>()
-                                    ));
+                                    );
                                 } else {
-                                    bw_engine::orca::diag(
-                                        "wait_session_id miss (jsonl 8s 内没落下)",
+                                    bw_engine::dlog!(
+                                        warn,
+                                        "issue",
+                                        "wait_session_id miss (jsonl 8s 内没落下)"
                                     );
                                 }
                             }
@@ -408,37 +433,40 @@ impl App {
                         Err(e) => Err(e),
                     }
                 } else {
-                    bw_engine::orca::diag(&format!(
+                    bw_engine::dlog!(
+                        ok,
+                        "issue",
                         "skip create sid_source={sid_source} (只切树,不灌词)"
-                    ));
+                    );
                     Ok(())
                 };
                 // 开成了(含句柄超时 settle 后再走)或树上已有会话:切树,网页才跟得上。
                 // 切树失败只打日志,不把已经起来的窗打成开工失败。
                 if r.is_ok() {
                     if let Err(e) = bw_engine::orca::reveal_tree(&rt, &tree.path).await {
-                        bw_engine::orca::diag(&format!(
+                        bw_engine::dlog!(
+                            warn,
+                            "issue",
                             "reveal fail:{e} · {} · worktree={}",
                             rt.log_tag(),
                             tree.path.display()
-                        ));
+                        );
                     } else {
-                        bw_engine::orca::diag(&format!(
-                            "reveal ok worktree={}",
-                            tree.path.display()
-                        ));
+                        bw_engine::dlog!(ok, "issue", "reveal ok worktree={}", tree.path.display());
                     }
                 } else if let Err(e) = &r {
-                    bw_engine::orca::diag(&format!(
+                    bw_engine::dlog!(
+                        err,
+                        "issue",
                         "{e} · {} · worktree={}",
                         rt.log_tag(),
                         tree.path.display()
-                    ));
+                    );
                 }
                 r
             }
             Err(e) => {
-                bw_engine::orca::diag(&format!("connect fail:{e}"));
+                bw_engine::dlog!(err, "issue", "connect fail:{e}");
                 Err(e)
             }
         };
@@ -446,7 +474,7 @@ impl App {
             let _ = self.remember_session_id(&conv, &sid).await;
         }
         let ok = outcome.is_ok();
-        let log = bw_engine::orca::diag_log_path();
+        let log = bw_engine::dlog::log_path();
         let summary = match outcome {
             Ok(()) => format!("已在 Orca 里开工,过程看会话屏(对照日志 {})", log.display()),
             Err(e) => format!("开工失败:{e}(对照日志 {})", log.display()),
@@ -660,6 +688,9 @@ impl App {
     /// 能收掉那棵。先看会话行记下的路径,再看新目录,再看旧兄弟(走底座的
     /// `resolve_issue_worktree`)。
     pub(super) async fn cleanup_issue_worktree(&self, issue: &Issue) {
+        if issue.title == issue_store::CHARTER_TITLE {
+            return;
+        }
         let Ok(ws) = self.workspace_of(issue.project_id).await else {
             return;
         };
@@ -680,11 +711,24 @@ impl App {
             // worktree 收掉了,顺手删分支(只删 merged 的;未合的 `git -d` 会
             // 拒绝,不强删 —— 留着也不影响)。分支名从 issue.number 现算,
             // 不靠 lossy 的 `issue.branch`。
-            let branch = bw_engine::github::issue_branch(issue.number);
+            let branch = issue_store::work_branch(issue);
             if crate::git::branch_exists(&ws, &branch).await {
                 let _ = crate::git::delete_merged_branch(&ws, &branch).await;
             }
         }
+    }
+
+    async fn version_context_for(&self, issue: &Issue) -> String {
+        if issue.workflow != super::OPS1_WORKFLOW {
+            return String::new();
+        }
+        let Ok(project) = self.project_of(issue.project_id).await else {
+            return String::new();
+        };
+        let Ok((plans, released)) = self.collect_version_names(&project).await else {
+            return String::new();
+        };
+        crate::version::context_block(&crate::version::inventory(&plans, &released))
     }
 
     pub async fn issue_or_err(&self, id: IssueId) -> Result<Issue> {
@@ -714,6 +758,94 @@ impl App {
         )
         .await
     }
+
+    /// 报到 workbench 自己的仓:host/path 从当前目录 git 的 origin 现读,
+    /// 对照日志有文件就 `--attachment` 附上。不碰打开着的被管项目。
+    pub(super) async fn report_workbench_issue(&mut self, title: String) -> Result<Vec<Event>> {
+        let title = title.trim().to_string();
+        if title.is_empty() {
+            return Err(AppError::Refused("issue 标题不能空".into()));
+        }
+        let repo = workbench_git_dir();
+        let origin = bw_engine::github::origin_remote_url(&repo)
+            .await
+            .map_err(|e| AppError::Exec(format!("读 workbench origin 没成:{e}")))?
+            .ok_or_else(|| AppError::Refused(format!("{} 没有 origin,上报不了", repo.display())))?;
+        let (host, path) = bw_engine::github::parse_git_remote_url(&origin)
+            .ok_or_else(|| AppError::Refused(format!("认不出 origin:{origin}")))?;
+        bw_engine::dlog!(
+            ok,
+            "report",
+            "workbench origin host={host} path={path} repo={}",
+            repo.display()
+        );
+        let log = bw_engine::dlog::log_path();
+        let attach = log.is_file();
+        let body = if attach {
+            format!("对照日志已附上。本机路径:{}", log.display())
+        } else {
+            format!("本机对照日志还不存在({}),只建了 issue。", log.display())
+        };
+        let provider = if host.eq_ignore_ascii_case("github.com") || host.ends_with(".github.com") {
+            "github"
+        } else {
+            "codehub"
+        };
+        let remote = Remote::for_project(provider, &host, &path)
+            .map_err(|e| AppError::Exec(e.to_string()))?;
+        let attachment = if attach { Some(log.as_path()) } else { None };
+        let iid = remote
+            .create_issue_with_attachment(&title, &body, &[], attachment)
+            .await
+            .map_err(|e| AppError::Exec(format!("上报 issue 没成:{e}")))?;
+        let url = if provider == "github" {
+            format!("https://github.com/{path}/issues/{iid}")
+        } else {
+            format!(
+                "https://{}/{path}/-/issues/{iid}",
+                codehub_alias_to_domain(&host)
+            )
+        };
+        bw_engine::dlog!(ok, "report", "ok iid={iid} url={url} attached={attach}");
+        Ok(vec![Event::WorkbenchIssueReported { iid, url }])
+    }
+}
+
+/// 当前目录的 git 仓。cwd 不是就往上走,再从 exe 往上摸。安装包摸不到就回 cwd。
+fn workbench_git_dir() -> PathBuf {
+    if let Ok(cwd) = std::env::current_dir() {
+        if looks_git(&cwd) {
+            return cwd;
+        }
+        if let Some(d) = walk_git(&cwd) {
+            return d;
+        }
+    }
+    if let Ok(exe) = std::env::current_exe() {
+        if let Some(d) = walk_git(&exe) {
+            return d;
+        }
+    }
+    std::env::current_dir().unwrap_or_else(|_| PathBuf::from("."))
+}
+
+fn looks_git(dir: &Path) -> bool {
+    dir.join(".git").exists()
+}
+
+fn walk_git(start: &Path) -> Option<PathBuf> {
+    let mut dir = if start.is_file() {
+        start.parent()?.to_path_buf()
+    } else {
+        start.to_path_buf()
+    };
+    for _ in 0..12 {
+        if looks_git(&dir) {
+            return Some(dir);
+        }
+        dir = dir.parent()?.to_path_buf();
+    }
+    None
 }
 
 // ── 纯内存过滤:调用方先 `App::issues(project_id).await` 拿一次,再借进来 ──────

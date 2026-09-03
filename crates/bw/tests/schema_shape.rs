@@ -67,6 +67,14 @@ async fn settings_roundtrip() {
         Settings::get_workspaces_root(&root).as_deref(),
         Some("/tmp/work")
     );
+    assert!(Settings::get_tool(&root, "build").is_none());
+    Settings::set_tool(&root, "build", "cursor").unwrap();
+    assert_eq!(
+        Settings::get_tool(&root, "build").as_deref(),
+        Some("cursor")
+    );
+    Settings::set_tool(&root, "build", "").unwrap();
+    assert!(Settings::get_tool(&root, "build").is_none());
     let _ = std::fs::remove_dir_all(&root);
 }
 
