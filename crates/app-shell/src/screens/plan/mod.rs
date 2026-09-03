@@ -20,10 +20,11 @@ use bw::{command::Command, model::IssueId};
 use dioxus::prelude::*;
 
 use detail::{DetailModal, StartModal};
-use kanban::{board, PendingMove, PendingSchedule};
+use kanban::{board, PendingMove, PendingReject, PendingSchedule};
 use plan_dialogs::{
     ConfirmMoveDialog, CreateVersionDialog, DeleteVersionDialog, DialogKind, NewIssueDialog,
-    NewIssueDraft, PackDialog, PackDraft, PackJob, ReleaseDialog, ReleaseDraft, ScheduleDialog,
+    NewIssueDraft, PackDialog, PackDraft, PackJob, RejectMoveDialog, ReleaseDialog, ReleaseDraft,
+    ScheduleDialog,
 };
 
 /// 列表/看板视图模式。
@@ -113,6 +114,7 @@ pub fn View(p: ProjectVm, bridge: Bridge) -> Element {
     let selected = use_signal(|| None::<IssueId>);
     let schedule = use_signal(|| None::<PendingSchedule>);
     let start = use_signal(|| None::<IssueId>);
+    let reject = use_signal(|| None::<PendingReject>);
     let dialog = use_signal(|| None::<DialogKind>);
     let mut pack_job = use_signal(|| PackJob {
         packing: bridge.pack_ctl.in_flight(),
@@ -154,7 +156,7 @@ pub fn View(p: ProjectVm, bridge: Bridge) -> Element {
                 if *view_mode.read() == ViewMode::List {
                     {list_view::list_view(p, rows, list_filter, selected, schedule, start, bridge, nav)}
                 } else {
-                    {board(p, Some(Filters::default()), list_filter.read().plan.clone(), bridge, dragging, pending, schedule, selected, start, use_signal(String::new), col_seg, nav)}
+                    {board(p, Some(Filters::default()), list_filter.read().plan.clone(), bridge, dragging, pending, schedule, selected, start, reject, col_seg, nav)}
                 }
             }
         }
@@ -166,6 +168,9 @@ pub fn View(p: ProjectVm, bridge: Bridge) -> Element {
         }
         if let Some(pm) = pending.read().clone() {
             ConfirmMoveDialog { pm, pending, bridge: bridge.clone() }
+        }
+        if let Some(pr) = reject.read().clone() {
+            RejectMoveDialog { pr, reject }
         }
         if let Some(ps) = schedule.read().clone() {
             ScheduleDialog { p: p.clone(), ps, schedule, bridge: bridge.clone() }

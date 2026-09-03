@@ -9,7 +9,14 @@
 
 提交 + 开 MR 后把地址打屏。没产出就停,不空提交、空 MR。
 
+## 干完推到「评审中」
+
+提完 MR 后改本活的状态标签,不要关 issue、不要 merge。
+
+- codehub:`codehub-cli issue update <iid> -p <path> -H <host> --labels bw:status:inreview`(只换 `bw:status:*` 槽)
+- GitHub:`gh issue edit <n> --remove-label bw:status:inprogress --add-label bw:status:inreview`
+
 ## 不是改仓的事
 
 贴 issue 评论、打/摘标签、挂里程碑:直接在远端做,不必为此开 MR。
-权限不够就说出来;该贴的评论、该打的标签照做。
+权限不够就说出来;该贴的评论、该打的标签照做。推到评审中的那一下标签就走这条,不必另开 MR。

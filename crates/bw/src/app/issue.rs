@@ -4,8 +4,9 @@
 //!
 //! - **▶跑最远只到「评审中」**。执行器返回成功也只推到 InReview,不会自己
 //!   推到「已完成」。
-//! - **「完成」永远由人点**。`TransitionIssue { to: Done }` 是唯一入口,而且
-//!   状态机只允许从「评审中」进 Done。
+//! - **「完成」永远由人点**。`TransitionIssue { to: Done }` / `MergeAndSettle`
+//!   是人点的入口;自动化不得发。人可以从未排期 / 待办 / 进行中 / 评审中 /
+//!   阻塞进 Done。
 //!
 //! 刀3 起,issue 的正本在远端 codehub/GitHub issue + 标签,本地不建 issue 表。
 //! 所有 issue 读写经 [`super::issue_store`] 走远端。

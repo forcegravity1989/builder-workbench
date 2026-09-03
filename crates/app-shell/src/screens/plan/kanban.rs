@@ -32,6 +32,14 @@ pub struct PendingSchedule {
     pub title: String,
 }
 
+/// 看板松手落在不开的边上:弹窗说明,不是没拖准。
+#[derive(Clone, PartialEq)]
+pub struct PendingReject {
+    pub from: IssueStatus,
+    pub to: IssueStatus,
+    pub reason: String,
+}
+
 /// 状态 → 状态点 css 类 + 标签。照 opt 的 `STATUS_META`。
 fn status_dot_class(s: IssueStatus) -> &'static str {
     match s {
@@ -92,7 +100,7 @@ pub fn board(
     schedule: Signal<Option<PendingSchedule>>,
     selected: Signal<Option<IssueId>>,
     start: Signal<Option<IssueId>>,
-    bounced: Signal<String>,
+    reject: Signal<Option<PendingReject>>,
     col_seg: Signal<HashMap<String, String>>,
     nav: PanelNav,
 ) -> Element {
@@ -101,7 +109,7 @@ pub fn board(
     rsx! {
         div { class: "kanban",
             for col in p.board.columns.iter() {
-                {column(col, f.clone(), &plan_filter, view_all, bridge, dragging, schedule, selected, start, pending, bounced, col_seg, nav)}
+                {column(col, f.clone(), &plan_filter, view_all, bridge, dragging, schedule, selected, start, pending, reject, col_seg, nav)}
             }
         }
     }
@@ -119,7 +127,7 @@ fn column(
     selected: Signal<Option<IssueId>>,
     start: Signal<Option<IssueId>>,
     pending: Signal<Option<PendingMove>>,
-    _bounced: Signal<String>,
+    reject: Signal<Option<PendingReject>>,
     col_seg: Signal<HashMap<String, String>>,
     nav: PanelNav,
 ) -> Element {
@@ -209,7 +217,7 @@ fn column(
                 ondragover: move |e| e.prevent_default(),
                 ondrop: move |_| {
                     if let Some(card) = dragging.read().clone() {
-                        apply_drop(&card, col_status, &drop_seg, start, pending, schedule);
+                        apply_drop(&card, col_status, &drop_seg, start, pending, schedule, reject);
                     }
                     dragging.set(None);
                 },
@@ -234,14 +242,6 @@ fn card_view(
 ) -> Element {
     let c1 = c.clone();
     let cid = c.id;
-    let can_drag = matches!(
-        c.status,
-        IssueStatus::Backlog
-            | IssueStatus::Todo
-            | IssueStatus::InProgress
-            | IssueStatus::InReview
-            | IssueStatus::Blocked
-    );
     let assignee = if c.assignee.is_empty() {
         "未指派".to_string()
     } else {
@@ -262,7 +262,7 @@ fn card_view(
     rsx! {
         div {
             class: "kcard",
-            draggable: can_drag,
+            draggable: true,
             ondragstart: move |_| dragging.set(Some(c1.clone())),
             ondragend: move |_| dragging.set(None),
             onclick: move |_| selected.set(Some(cid)),
@@ -294,22 +294,53 @@ fn card_view(
     }
 }
 
-/// 周计划/版本认的十条。详情下拉和看板拖拽共用,别的合法边不从这里开。
+/// 计划屏开口。详情下拉和看板拖拽共用;不开的边松手走拒绝弹窗。
 pub fn allowed_plan_targets(from: IssueStatus) -> &'static [IssueStatus] {
     match from {
+        IssueStatus::Backlog => &[IssueStatus::Done, IssueStatus::Cancelled],
         IssueStatus::Todo => &[
             IssueStatus::InProgress,
             IssueStatus::Blocked,
             IssueStatus::Cancelled,
+            IssueStatus::Done,
         ],
         IssueStatus::InProgress => &[
             IssueStatus::Todo,
             IssueStatus::Blocked,
             IssueStatus::Cancelled,
+            IssueStatus::InReview,
+            IssueStatus::Done,
         ],
-        IssueStatus::InReview => &[IssueStatus::Done, IssueStatus::Cancelled],
-        IssueStatus::Blocked => &[IssueStatus::InProgress, IssueStatus::Cancelled],
+        IssueStatus::InReview => &[
+            IssueStatus::Done,
+            IssueStatus::Cancelled,
+            IssueStatus::InProgress,
+        ],
+        IssueStatus::Blocked => &[
+            IssueStatus::InProgress,
+            IssueStatus::Cancelled,
+            IssueStatus::Done,
+        ],
         _ => &[],
+    }
+}
+
+/// 非法松手的人话。同一状态不走这里。
+pub fn reject_move_reason(from: IssueStatus, to: IssueStatus) -> String {
+    use IssueStatus::*;
+    match (from, to) {
+        (Todo | Backlog | Blocked, InReview) => {
+            "不能直接到待评审。要送审请先到进行中；已经在外面做完了请拖到完成。".into()
+        }
+        (InReview, Todo | Backlog) => "打回请拖到进行中。".into(),
+        (InReview, Blocked) => "卡住请先拖回进行中，再拖到阻塞。".into(),
+        (Blocked, Todo | Backlog) => "解除阻塞请拖到进行中，或不干了拖到拒绝。".into(),
+        (Done | Cancelled, _) => "已经结束的活不能再改状态。".into(),
+        _ => format!(
+            "不能从「{}」拖到「{}」。",
+            plan_status_label(from),
+            plan_status_label(to)
+        ),
     }
 }
 
@@ -389,6 +420,7 @@ fn apply_drop(
     start: Signal<Option<IssueId>>,
     pending: Signal<Option<PendingMove>>,
     mut schedule: Signal<Option<PendingSchedule>>,
+    mut reject: Signal<Option<PendingReject>>,
 ) {
     // 未排期拖到已排期 → 排期弹窗(改标签,不改状态)
     if drop_seg == "assigned"
@@ -402,12 +434,19 @@ fn apply_drop(
         return;
     }
 
-    apply_status_move(
-        card,
-        drop_target_status(col_status, drop_seg),
-        start,
-        pending,
-    );
+    let target = drop_target_status(col_status, drop_seg);
+    if target == card.status {
+        return;
+    }
+    if !allowed_plan_targets(card.status).contains(&target) {
+        reject.set(Some(PendingReject {
+            from: card.status,
+            to: target,
+            reason: reject_move_reason(card.status, target),
+        }));
+        return;
+    }
+    apply_status_move(card, target, start, pending);
 }
 
 fn move_to(card: &CardItemVm, to: IssueStatus) -> PendingMove {

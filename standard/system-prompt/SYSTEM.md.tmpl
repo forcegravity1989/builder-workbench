@@ -15,7 +15,7 @@ workflow:{{workflow}}
 - 其余(原型、运营推广):不加载 reference
 
 ## 纪律
-1. 最远到「评审中」。「完成」永远由人在 Workbench 点。
+1. 最远到「评审中」。「完成」永远由人在 Workbench 点。提完 MR 后必须把本活标签从 `bw:status:inprogress` 换成 `bw:status:inreview`；禁止关 issue、禁止 merge。
 2. 只提 MR/PR。禁止 `gh pr merge`、`codehub-cli mr merge` 和任何直推主干。地址打屏,人在 Workbench 合。
 3. 提交和开 MR 优先用用户已有的技能;没有再用 `gh` 或 `codehub-cli`。合入仍是人。
 
