@@ -586,7 +586,7 @@ pub fn spawn(deep_link: DeepLink) -> Bridge {
                         o.weeks.len(),
                         o.config.skills.len(),
                     );
-                    // 总览那条「本周计划进度」的五段。**只认当前周**,与计划屏
+                    // 总览「版本计划与进展」的五段。**只认在研版本**,与计划屏
                     // 左栏看的是哪一周无关 —— 这一行就是那条纪律的读回。
                     let c = &o.week_counts;
                     bw_engine::dlog!(

@@ -29,6 +29,21 @@ pub struct Ops1Notes {
     pub progress: std::collections::HashMap<String, String>,
 }
 
+impl Ops1Notes {
+    /// 优先版本名,没有再回退本周。两个都空 = `None`。
+    pub fn goal_for(&self, version: &str, week: &str) -> Option<&str> {
+        if !version.is_empty() {
+            if let Some(g) = self.goals.get(version) {
+                return Some(g.as_str());
+            }
+        }
+        if !week.is_empty() {
+            return self.goals.get(week).map(String::as_str);
+        }
+        None
+    }
+}
+
 /// `bodies` 旧的在前。同一段以最新一条为准;目标和进展各自取最新,不必同条。
 pub fn parse_comments(bodies: &[String]) -> WeekComment {
     let mut goal = None;
@@ -115,7 +130,7 @@ fn section_text(body: &str, names: &[&str]) -> Option<String> {
 
 impl super::App {
     /// 运作活①评论里解析出的版本目标与每周进展。键是 ISO 周**和** `bw:plan:`
-    /// 版本名(有就各写一份),总览按版本名取,健康仍按本周取目标。读失败就空着,
+    /// 版本名(有就各写一份)。取目标优先版本名,没有再回退本周。读失败就空着,
     /// 不挡整屏。活与活互不依赖,评论两两并行拉。
     pub async fn week_goals_from_ops1(
         &self,

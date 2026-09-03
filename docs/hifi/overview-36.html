@@ -244,7 +244,6 @@ h6 { margin: 0; }
   padding-left: var(--space-4);
   border-left: 1px solid var(--color-divider);
 }
-.week-tabs { margin: var(--space-1) 0 var(--space-2); }
 .plots {
   display: grid;
   grid-template-columns: 1fr;
@@ -503,7 +502,7 @@ h6 { margin: 0; }
                 <div class="detail-k">想做什么</div>
                 <div class="detail-v">1、所有项目都一样。 2、加速并规范项目运作。3、一张工作台打通所有系统，集成各种好用组件和工作流</div>
                 <div class="detail-k">对标</div>
-                <div class="detail-v"><span class="mono">workbuddy</span></div>
+                <div class="detail-v"><span class="mono">Workbench</span></div>
                 <div class="detail-k">名片北极星</div>
                 <div class="detail-v">更多的项目纳入到workbench管理</div>
                 <div class="detail-k">项目群</div>
@@ -542,7 +541,6 @@ h6 { margin: 0; }
               </div>
               <div>
                 <span class="card-kicker">每周进展</span>
-                <div class="tabs week-tabs" role="tablist" aria-label="该版本的周进展" id="week-tabs"></div>
                 <div class="text-box" id="week-note"></div>
               </div>
             </div>
@@ -610,7 +608,8 @@ h6 { margin: 0; }
       goalNote: true,
       goal: "把总览做成能看清目标、版本进度和代码仓过程的健康看板。",
       bar: { doing: 2, todo: 2, done: 0, review: 0 },
-      weeks: [{ id: "2026-W36", label: "W36", latest: true, empty: true, text: "还没有周进展" }]
+      progress: "",
+      progressEmpty: "还没有周进展"
     },
     v02: {
       state: { cls: "tag-success", text: "已发 · tag v0.2" },
@@ -618,7 +617,8 @@ h6 { margin: 0; }
       goalNote: false,
       goal: "",
       bar: null,
-      weeks: [{ id: "2026-W35", label: "W35", latest: true, empty: true, text: "还没有周进展" }]
+      progress: "",
+      progressEmpty: "还没有周进展"
     }
   };
 
@@ -748,16 +748,6 @@ h6 { margin: 0; }
     toast("演示：采集住 Workbench，codehub + GitHub 两臂，不铺进被管仓", "");
   });
 
-  function renderWeekNote(verKey, weekId) {
-    var v = VER[verKey];
-    var w = v.weeks.filter(function (x) { return x.id === weekId; })[0] || v.weeks[0];
-    document.querySelectorAll("#week-tabs .tab").forEach(function (t) {
-      t.setAttribute("aria-selected", t.getAttribute("data-week") === w.id ? "true" : "false");
-    });
-    var host = document.getElementById("week-note");
-    host.innerHTML = w.empty ? '<div class="empty">' + w.text + "</div>" : w.text;
-  }
-
   function renderVersion(key) {
     var v = VER[key];
     var tag = document.getElementById("ver-state-tag");
@@ -773,20 +763,10 @@ h6 { margin: 0; }
       goal.innerHTML = "";
     }
 
-    var weekTabs = document.getElementById("week-tabs");
-    weekTabs.innerHTML = v.weeks.map(function (w) {
-      return (
-        '<button type="button" class="tab" role="tab" data-week="' + w.id + '"' +
-        (w.latest ? ' aria-selected="true"' : ' aria-selected="false"') + ">" +
-        w.label + (w.latest ? " · 最新" : "") + "</button>"
-      );
-    }).join("");
-    weekTabs.querySelectorAll(".tab").forEach(function (t) {
-      t.addEventListener("click", function () {
-        renderWeekNote(key, t.getAttribute("data-week"));
-      });
-    });
-    renderWeekNote(key, (v.weeks.filter(function (w) { return w.latest; })[0] || v.weeks[0]).id);
+    var note = document.getElementById("week-note");
+    note.innerHTML = v.progress
+      ? v.progress
+      : '<div class="empty">' + v.progressEmpty + "</div>";
 
     var bar = document.getElementById("ver-bar");
     if (!v.bar) {

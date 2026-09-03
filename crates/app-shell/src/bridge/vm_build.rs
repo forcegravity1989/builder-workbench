@@ -1239,7 +1239,7 @@ async fn gather_project(
         &ws,
         current_week,
         &issues,
-        ops1_notes.goals.get(&goal_key).map(String::as_str),
+        ops1_notes.goal_for(&goal_key, current_week),
     )
     .await;
     bw_engine::dlog!(
@@ -1566,9 +1566,18 @@ fn covering_version_names(versions: &[PlanVersionVm], day: &str) -> Vec<String> 
 }
 
 fn week_is_covered(versions: &[PlanVersionVm], week: &str) -> bool {
-    versions
+    let rows: Vec<(String, String, String, String)> = versions
         .iter()
-        .any(|v| bw::version::overlaps_week(&v.start, &v.end, week))
+        .map(|v| {
+            (
+                v.name.clone(),
+                v.start.clone(),
+                v.end.clone(),
+                v.created_at.clone(),
+            )
+        })
+        .collect();
+    bw::version::week_has_covering(&rows, week)
 }
 
 fn pick_overview_version(covering: &[String], selected: &str) -> String {

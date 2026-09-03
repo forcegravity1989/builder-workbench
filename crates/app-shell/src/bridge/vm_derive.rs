@@ -11,7 +11,7 @@ use std::path::Path;
 /// 某个版本的五段计数。`week` 传 `None` = 不按版本过滤(计划屏的「全部活」)。
 /// 传版本名则只数挂了 `bw:plan:<名>` 的活。
 ///
-/// **直接数活,不数看板列**:看板跟着计划屏下拉走,总览「本周计划进度」跟在研。
+/// **直接数活,不数看板列**:看板跟着计划屏下拉走,总览进度条跟在研版本。
 /// 待办池不算进去;**阻塞单独一段**。
 pub(super) fn build_week_counts(issues: &[bw::Issue], week: Option<&str>) -> WeekCountsVm {
     let in_scope = |i: &&bw::Issue| match week {

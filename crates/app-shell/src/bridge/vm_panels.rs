@@ -177,8 +177,8 @@ pub(super) fn build_board(issues: &[bw::Issue], plan: Option<&str>) -> BoardVm {
     }
 }
 
-/// 周列表从 issues 的 `bw:week:*` 标签取(刀6:不再扫 `.bw/plan/` 目录 ——
-/// 那个文件没人写了,扫到也是旧的)。本周永远在列表里(置顶)。新的在前。
+/// 节律周列表。ISO 周只做节律,不当排期名;`bw:week:` 已不写,这里只剩
+/// `week_of` 残留 + 本周置顶,给日志/读数窗口用。新的在前。
 pub(super) fn build_weeks(
     issues: &[bw::Issue],
     current_week: &str,
