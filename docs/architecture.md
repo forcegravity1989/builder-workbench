@@ -41,7 +41,7 @@ Workbench 给一个项目赋能走两条路径,信息落点分清:
 
 ### 系统提示词(文件 + references + 技能指针)
 
-每张活开工时给 agent 的系统提示词:主提示词是**外置的 `standard/system-prompt/SYSTEM.md.tmpl`**(身份 + 四铁律 + 读项目规范件的指引),`{{...}}` 占位在运行时填——活的信息、本活要读的 references 阶段规范、本活挂的技能。**不论哪个 workflow 都被这层兜住 Workbench 统一要求**——要加"所有项目都该遵守的统一要求",改这份 md + 抬 `standard/VERSION`,不加进 workflow 本身,也不硬编码在 Rust `format!` 里。
+每张活开工时给 agent 的系统提示词:主提示词是**外置的 `standard/system-prompt/SYSTEM.md.tmpl`**(身份 + 四铁律 + 读项目规范件的指引),`{{...}}` 占位在运行时填——活的信息、本活要读的 references 阶段规范、本活挂的技能。**不论哪个 workflow 都被这层兜住 Workbench 统一要求**——要加"所有项目都该遵守的统一要求",改这份 md,不加进 workflow 本身,也不硬编码在 Rust `format!` 里。
 
 references(`standard/system-prompt/references/*.md`)是「干某类活需要额外知道的 Workbench 规范」(指标铁律、改仓规则、`.bw` 现行契约),按活的 category/workflow 匹配后摊到 `<asset_root>/system-prompt/references/`、提示词只给路径。技能同理。分工与同步对照表在 §3 模块 4。文件不在硬盘就如实少一段不指,不编路径。这就是渐进加载:提示词放索引,正文让 agent 按需读(单个技能正文均值八千多字符,而注入护栏上限约六千字符,整包塞进提示词根本装不下)。
 
@@ -97,9 +97,9 @@ references(`standard/system-prompt/references/*.md`)是「干某类活需要额�
 
 ### 4 · 系统提示词与渐进加载
 
-**是什么**:每张活开工渲染一份系统提示词,主提示词是**外置的 `standard/system-prompt/SYSTEM.md.tmpl`**(身份 + 四铁律 + 读项目规范件的指引),`{{...}}` 占位在运行时填:活的信息、本活要读的 references 阶段规范、本活挂的技能。references(`standard/system-prompt/references/*.md`)是「干某类活需要额外知道的 Workbench 规范」(指标铁律、改仓规则、`.bw` 现行契约),按活的 category/workflow 匹配后摊到 `<asset_root>/system-prompt/references/`、提示词只给路径,agent 按需读。技能同理摊到 `<asset_root>/skills/`。关键取舍:**正文一律不塞进提示词**(只给「一句话 + 完整路径」),references/技能文件不在硬盘就如实少一段不编路径,主提示词不硬编码在 `format!` 里(改身份/铁律 = 改 md + 抬 `standard/VERSION`,规范对账测得出落后)。**归一**:技能注入只有**一个模型**——`skill_pointer`(workflow→slug→`SkillPack`→入口 SKILL.md 路径)。运作剧本(week-planning 等)的入口 body 自足;业界 workflow(mattpocock-skills)的入口 body 是 SOP 链 + 指向 `vendor/` 库子技能路径(库由 `ensure_vendor_assets` 摊)。两类同机制,不另开第二条注入路径。
+**是什么**:每张活开工渲染一份系统提示词,主提示词是**外置的 `standard/system-prompt/SYSTEM.md.tmpl`**(身份 + 四铁律 + 读项目规范件的指引),`{{...}}` 占位在运行时填:活的信息、本活要读的 references 阶段规范、本活挂的技能。references(`standard/system-prompt/references/*.md`)是「干某类活需要额外知道的 Workbench 规范」(指标铁律、改仓规则、`.bw` 现行契约),按活的 category/workflow 匹配后摊到 `<asset_root>/system-prompt/references/`、提示词只给路径,agent 按需读。技能同理摊到 `<asset_root>/skills/`。关键取舍:**正文一律不塞进提示词**(只给「一句话 + 完整路径」),references/技能文件不在硬盘就如实少一段不编路径,主提示词不硬编码在 `format!` 里(改身份/铁律 = 改那份 md)。`standard/README` 只记现行结构,不叠版本流水。**归一**:技能注入只有**一个模型**——`skill_pointer`(workflow→slug→`SkillPack`→入口 SKILL.md 路径)。运作剧本(week-planning 等)的入口 body 自足;业界 workflow(mattpocock-skills)的入口 body 是 SOP 链 + 指向 `vendor/` 库子技能路径(库由 `ensure_vendor_assets` 摊)。两类同机制,不另开第二条注入路径。
 
-三层各装什么、改了哪条流程要同步哪份——对照表就在本模块下面。`AGENTS.md`「三层模型」指到这里;`standard/README` 只记现有文件与版本流水,不另写一套规则。改 `standard/` 之前先对表。被管项目里的 agent 看不见本篇,现场对照靠开工注入的 reference 路径。
+三层各装什么、改了哪条流程要同步哪份——对照表就在本模块下面。`AGENTS.md`「三层模型」指到这里;`standard/README` 只记现行结构,不另写一套规则。改 `standard/` 之前先对表。被管项目里的 agent 看不见本篇,现场对照靠开工注入的 reference 路径。
 
 **分工**(改提示词 / 加 reference / 改 skill 之前先对):
 
@@ -111,7 +111,7 @@ references(`standard/system-prompt/references/*.md`)是「干某类活需要额�
 
 本周项目侧变化(`git log`、开着的 MR、账本)每次现算,不写进上述任何一层。
 
-**维护**(产品流程变了,同步哪份;每次改这些都抬 `standard/VERSION`,`standard/README` 记一行):
+**维护**(产品流程变了,同步哪份;`standard/README` 跟着改成现行结构,不另记版本流水):
 
 | 变了什么 | 同步哪份 | 谁在开工时读到 |
 |---|---|---|

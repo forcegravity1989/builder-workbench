@@ -6,7 +6,7 @@
 
 ## 最近 · 2026-09-02
 
-资产盘点收成两步:盘 Workbench 给项目的 `.bw/`(清残留、升格式、点未闭环的环),再盘项目本周改动(建议只落评论)。现行 `.bw` 契约进 `standard/system-prompt/references/bw-assets.md`,skill 只当 SOP。运作活开工工具跟构建。主提示词 / reference / skill 分工与同步对照表在 [`docs/architecture.md`](docs/architecture.md) §3 模块 4,`AGENTS.md`「三层模型」指到那里。规范 5.14。
+资产盘点收成两步:盘 Workbench 给项目的 `.bw/`(清残留、升格式、点未闭环的环),再盘项目本周改动(建议只落评论)。现行 `.bw` 契约进 `standard/system-prompt/references/bw-assets.md`(格式 + 样例,后附变更纪要),skill 只当 SOP。运作活开工工具跟构建。主提示词 / reference / skill 分工与同步对照表在 [`docs/architecture.md`](docs/architecture.md) §3 模块 4,`AGENTS.md`「三层模型」指到那里。删掉没有调用方的 `standard/VERSION`;`standard/README` 只记现行结构,不叠 5.x 流水。
 
 计划屏版本视图左侧单独一颗「出包」，两行弹窗吃 JSONL（出包黄转圈 / 绿+打开目录 / 红+原话；验包等出包过了再转，结束写成功数/总数，相等黑不等红）。不打标签。「发版本」仍只建远端 Release / 打发版标签。
 
