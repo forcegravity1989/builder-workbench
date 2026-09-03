@@ -53,8 +53,9 @@ pub(super) fn read_or_warn<T>(
 /// 刷新、到点建活、开工/合入/建活等真命令)才重新 `gather`。只改一张活状态
 /// 标签的命令补丁 [`Gathered::apply_issue_status`],不重拉 issue list。
 ///
-/// 换项目时 `gather` 只跑第一波(名单 / 周目标 / 发版 / 健康 / 环境),推完
-/// ViewModel 就切页;`pr_number` 后台回填,见 [`PrFillSpec`]。设计见
+/// 打开某个项目时只采**那一个仓**(名单 + extras),墙上其他卡沿用
+/// `prev_cards`,不顺手刷。还在项目墙(`ui.open=None`)才拉全墙。
+/// `pr_number` 后台回填,见 [`PrFillSpec`]。设计见
 /// [`docs/02-adr/0002-导航快路径-gather缓存.md`](../../../docs/02-adr/0002-导航快路径-gather缓存.md)。
 pub struct Gathered {
     /// 第几代 gather。`assemble` 用它判断 workbench 缓存是不是同一代采的。
@@ -577,18 +578,126 @@ fn toast_kind(s: &str) -> &'static str {
     }
 }
 
-/// 全量采集:跑所有跟导航无关的贵 I/O(环境探活、issue 列表、健康三判据、
-/// Release、会话、ops3_landed)。数据真变了(真命令、换项目、刷新、到点建活)
-/// 才调它;导航请求复用上次结果(见 [`assemble`])。设计见 ADR 0002。
-pub async fn gather(app: &App, ui: &mut UiState) -> Gathered {
+/// 采集跟导航无关的贵 I/O。`ui.open=Some` 只采那一个仓(名单 + extras),
+/// 其他墙卡沿用 `prev_cards`。还在项目墙才拉全墙。设计见 ADR 0002。
+pub async fn gather(app: &App, ui: &mut UiState, prev_cards: &[ProjectCardVm]) -> Gathered {
+    let t0 = std::time::Instant::now();
     ui.gather_gen = ui.gather_gen.wrapping_add(1);
     let gen = ui.gather_gen;
     let projects = app.projects().await.unwrap_or_default();
-    let mut warnings: Vec<String> = Vec::new();
+    let warnings: Vec<String> = Vec::new();
     let current_week = bw::isoweek::current_week();
+    let open_slug = ui
+        .open
+        .and_then(|id| {
+            projects
+                .iter()
+                .find(|p| p.id == id)
+                .map(|p| p.slug.as_str())
+        })
+        .unwrap_or("-");
+    bw_engine::dlog!(
+        ok,
+        "gather",
+        "gather start gen={gen} open={open_slug} wall={}",
+        projects.len()
+    );
+
+    if let Some(open_id) = ui.open {
+        return gather_open(
+            app,
+            ui,
+            &projects,
+            open_id,
+            prev_cards,
+            warnings,
+            current_week,
+            gen,
+            t0,
+        )
+        .await;
+    }
+
+    gather_wall(app, ui, projects, warnings, current_week, gen, t0).await
+}
+
+/// 点进一个项目:只打这一个仓的名单 + extras。2c(其他仓 extras)整段不做。
+async fn gather_open(
+    app: &App,
+    ui: &mut UiState,
+    projects: &[Project],
+    open_id: ProjectId,
+    prev_cards: &[ProjectCardVm],
+    mut warnings: Vec<String>,
+    current_week: String,
+    gen: u64,
+    t0: std::time::Instant,
+) -> Gathered {
+    let t_issues = std::time::Instant::now();
+    let (env, issues_r) = tokio::join!(probe_env(), app.issues(open_id));
+    let issues = match issues_r {
+        Ok(v) => v,
+        Err(e) => {
+            warnings.push(format!("读 issue 失败:{e}"));
+            Vec::new()
+        }
+    };
+    bw_engine::dlog!(
+        ok,
+        "gather",
+        "gather issues elapsed_ms={} n={} wall=1",
+        t_issues.elapsed().as_millis(),
+        issues.len()
+    );
+    let claude_binary = bw_engine::resolve_claude_binary(None);
+    let n = issues.len();
+    let t_open = std::time::Instant::now();
+    let open_g = gather_project(app, open_id, ui, &mut warnings, &current_week, issues).await;
+    let slug = open_g.as_ref().map(|p| p.slug.as_str()).unwrap_or("-");
+    bw_engine::dlog!(
+        ok,
+        "gather",
+        "gather open extras elapsed_ms={} slug={slug} issues={n}",
+        t_open.elapsed().as_millis()
+    );
+
+    let mut cards = Vec::with_capacity(projects.len());
+    for p in projects {
+        if p.id == open_id {
+            cards.push(card_from_open(p, open_g.as_ref(), &current_week));
+        } else if let Some(old) = prev_cards.iter().find(|c| c.id == p.id) {
+            cards.push(old.clone());
+        } else {
+            cards.push(card_stub(p, &current_week));
+        }
+    }
+    finish_gather(gen, cards, env, warnings, claude_binary, open_g, t0)
+}
+
+/// 人在项目墙:每个仓的名单 + extras。打开项目不走这里。
+async fn gather_wall(
+    app: &App,
+    _ui: &mut UiState,
+    projects: Vec<Project>,
+    mut warnings: Vec<String>,
+    current_week: String,
+    gen: u64,
+    t0: std::time::Instant,
+) -> Gathered {
     let ids: Vec<ProjectId> = projects.iter().map(|p| p.id).collect();
-    // 第一波:环境条和各项目 issue list 一起打。名单齐了才能切页。
+    let t_issues = std::time::Instant::now();
     let (env, issue_rows) = tokio::join!(probe_env(), fetch_issues_many(app, &ids));
+    let issue_n: usize = issue_rows
+        .iter()
+        .filter_map(|(_, r)| r.as_ref().ok().map(Vec::len))
+        .sum();
+    bw_engine::dlog!(
+        ok,
+        "gather",
+        "gather issues elapsed_ms={} n={issue_n} wall={}",
+        t_issues.elapsed().as_millis(),
+        ids.len()
+    );
     let claude_binary = bw_engine::resolve_claude_binary(None);
 
     let mut issues_by_id = std::collections::HashMap::new();
@@ -604,19 +713,8 @@ pub async fn gather(app: &App, ui: &mut UiState) -> Gathered {
         }
     }
 
-    let open_g = match ui.open {
-        Some(id) => {
-            let issues = issues_by_id.remove(&id).unwrap_or_default();
-            gather_project(app, id, ui, &mut warnings, &current_week, issues).await
-        }
-        None => None,
-    };
-
     let mut wall_jobs: Vec<WallJob> = Vec::new();
     for p in &projects {
-        if Some(p.id) == ui.open {
-            continue;
-        }
         let ws = app.workspace_of(p.id).await.unwrap_or_default();
         let file = read_or_warn(
             &format!("{} 的 .bw/project.toml", p.slug),
@@ -632,88 +730,174 @@ pub async fn gather(app: &App, ui: &mut UiState) -> Gathered {
             issues,
         });
     }
+    let t_wall = std::time::Instant::now();
+    let wall_n = wall_jobs.len();
     let wall_extras = wall_extras_many(app, &wall_jobs).await;
-    let mut extras = wall_jobs.into_iter().zip(wall_extras);
+    bw_engine::dlog!(
+        ok,
+        "gather",
+        "gather wall extras elapsed_ms={} n={wall_n}",
+        t_wall.elapsed().as_millis()
+    );
 
     let mut cards = Vec::with_capacity(projects.len());
-    for p in &projects {
-        let (issues, goals, last_delivery, brief, version, ws_path) = if Some(p.id) == ui.open {
-            let g = open_g.as_ref();
-            (
-                g.map(|g| g.issues.clone()).unwrap_or_default(),
-                g.map(|g| g.week_goals.clone()).unwrap_or_default(),
-                g.map(|g| g.last_delivery.clone()).unwrap_or_default(),
-                g.map(|g| g.file.brief.clone()).unwrap_or_default(),
-                g.map(|g| {
-                    let today = bw::isoweek::today_ymd();
-                    covering_version_names(&g.plan_versions, &today)
-                        .into_iter()
-                        .next()
-                        .unwrap_or_default()
-                })
-                .unwrap_or_default(),
-                g.map(|g| g.ws.display().to_string())
-                    .unwrap_or_else(|| p.workspace_path.clone()),
-            )
-        } else {
-            let (job, (goals, last_delivery, version)) =
-                extras.next().expect("墙项目与 extras 对齐");
-            (
-                job.issues,
-                goals,
-                last_delivery,
-                job.file.brief,
-                version,
-                job.ws.display().to_string(),
-            )
-        };
-        let week_counts = if version.is_empty() {
-            WeekCountsVm::default()
-        } else {
-            build_week_counts(&issues, Some(version.as_str()))
-        };
-        let week_total = (week_counts.todo
-            + week_counts.doing
-            + week_counts.review
-            + week_counts.done
-            + week_counts.blocked) as u32;
-        let unread = bw::app::count_unseen(&issues);
-        let week_goal = if version.is_empty() {
-            String::new()
-        } else {
-            goals.get(&version).cloned().unwrap_or_default()
-        };
-        cards.push(ProjectCardVm {
-            id: p.id,
-            slug: p.slug.clone(),
-            name: p.name.clone(),
-            brief,
-            signal: p.signal,
-            workspace_path: ws_path,
-            remote: remote_label(p),
-            week_total,
-            week_done: week_counts.done as u32,
-            version,
-            week: current_week.clone(),
-            unread,
-            week_goal,
+    for (job, (goals, last_delivery, version)) in wall_jobs.into_iter().zip(wall_extras) {
+        cards.push(card_from_wall(
+            &job.p,
+            &job.issues,
+            &job.file.brief,
+            &job.ws,
+            &goals,
             last_delivery,
-        });
+            version,
+            &current_week,
+        ));
     }
+    finish_gather(gen, cards, env, warnings, claude_binary, None, t0)
+}
 
+fn card_from_open(p: &Project, g: Option<&ProjectGathered>, current_week: &str) -> ProjectCardVm {
+    let today = bw::isoweek::today_ymd();
+    let version = g
+        .map(|g| {
+            covering_version_names(&g.plan_versions, &today)
+                .into_iter()
+                .next()
+                .unwrap_or_default()
+        })
+        .unwrap_or_default();
+    let issues = g.map(|g| g.issues.as_slice()).unwrap_or(&[]);
+    let goals = g.map(|g| &g.week_goals);
+    let brief = g.map(|g| g.file.brief.clone()).unwrap_or_default();
+    let last_delivery = g.map(|g| g.last_delivery.clone()).unwrap_or_default();
+    let ws_path = g
+        .map(|g| g.ws.display().to_string())
+        .unwrap_or_else(|| p.workspace_path.clone());
+    card_from_parts(
+        p,
+        issues,
+        &brief,
+        &ws_path,
+        goals,
+        last_delivery,
+        version,
+        current_week,
+    )
+}
+
+fn card_from_wall(
+    p: &Project,
+    issues: &[bw::Issue],
+    brief: &str,
+    ws: &std::path::Path,
+    goals: &std::collections::HashMap<String, String>,
+    last_delivery: String,
+    version: String,
+    current_week: &str,
+) -> ProjectCardVm {
+    card_from_parts(
+        p,
+        issues,
+        brief,
+        &ws.display().to_string(),
+        Some(goals),
+        last_delivery,
+        version,
+        current_week,
+    )
+}
+
+fn card_stub(p: &Project, current_week: &str) -> ProjectCardVm {
+    ProjectCardVm {
+        id: p.id,
+        slug: p.slug.clone(),
+        name: p.name.clone(),
+        brief: String::new(),
+        signal: p.signal,
+        workspace_path: p.workspace_path.clone(),
+        remote: remote_label(p),
+        week_total: 0,
+        week_done: 0,
+        version: String::new(),
+        week: current_week.to_string(),
+        unread: 0,
+        week_goal: String::new(),
+        last_delivery: String::new(),
+    }
+}
+
+fn card_from_parts(
+    p: &Project,
+    issues: &[bw::Issue],
+    brief: &str,
+    ws_path: &str,
+    goals: Option<&std::collections::HashMap<String, String>>,
+    last_delivery: String,
+    version: String,
+    current_week: &str,
+) -> ProjectCardVm {
+    let week_counts = if version.is_empty() {
+        WeekCountsVm::default()
+    } else {
+        build_week_counts(issues, Some(version.as_str()))
+    };
+    let week_total = (week_counts.todo
+        + week_counts.doing
+        + week_counts.review
+        + week_counts.done
+        + week_counts.blocked) as u32;
+    let week_goal = if version.is_empty() {
+        String::new()
+    } else {
+        goals
+            .and_then(|g| g.get(&version).cloned())
+            .unwrap_or_default()
+    };
+    ProjectCardVm {
+        id: p.id,
+        slug: p.slug.clone(),
+        name: p.name.clone(),
+        brief: brief.to_string(),
+        signal: p.signal,
+        workspace_path: ws_path.to_string(),
+        remote: remote_label(p),
+        week_total,
+        week_done: week_counts.done as u32,
+        version,
+        week: current_week.to_string(),
+        unread: bw::app::count_unseen(issues),
+        week_goal,
+        last_delivery,
+    }
+}
+
+fn finish_gather(
+    gen: u64,
+    cards: Vec<ProjectCardVm>,
+    env: Vec<ToolProbeVm>,
+    mut warnings: Vec<String>,
+    claude_binary: Option<String>,
+    open: Option<ProjectGathered>,
+    t0: std::time::Instant,
+) -> Gathered {
     let mut seen = std::collections::HashSet::new();
     warnings.retain(|w| seen.insert(w.clone()));
     for w in &warnings {
         bw_engine::dlog!(warn, "gather", "[BW_WARN] {w}");
     }
-
+    bw_engine::dlog!(
+        ok,
+        "gather",
+        "gather done elapsed_ms={} gen={gen}",
+        t0.elapsed().as_millis()
+    );
     Gathered {
         gen,
         projects: cards,
         env,
         warnings,
         claude_binary,
-        open: open_g,
+        open,
     }
 }
 
@@ -989,6 +1173,21 @@ async fn lookup_pr_one(
     }
 }
 
+async fn log_elapsed<F, T>(name: &str, fut: F) -> T
+where
+    F: std::future::Future<Output = T>,
+{
+    let t0 = std::time::Instant::now();
+    let v = fut.await;
+    bw_engine::dlog!(
+        ok,
+        "gather",
+        "gather extras {name} elapsed_ms={}",
+        t0.elapsed().as_millis()
+    );
+    v
+}
+
 /// 采打开项目那份贵数据。issue 列表由 [`gather`] 第一波并行拉齐后传入,
 /// 这里不再起第二次 codehub。健康 / 发版 / 周目标 / 会话 / 标签一起打。
 /// `pr_number` 只套 `mr_cache`;没查过的后台回填,不挡第一屏。
@@ -1012,24 +1211,25 @@ async fn gather_project(
     let issue_url_prefix = p.issue_url_prefix();
 
     let (sessions, week_goals, releases, ops3_landed, last_delivery, plan_versions, current_user) = tokio::join!(
-        build_sessions(app, id, &issues),
-        app.week_goals_from_ops1(&p, &issues),
-        load_releases(app, &p, &ws),
-        bw::git::path_in_head(&ws, ".bw/project.toml"),
-        async {
+        log_elapsed("sessions", build_sessions(app, id, &issues)),
+        log_elapsed("comments", app.week_goals_from_ops1(&p, &issues)),
+        log_elapsed("releases", load_releases(app, &p, &ws)),
+        log_elapsed("ops3", bw::git::path_in_head(&ws, ".bw/project.toml")),
+        log_elapsed("git-tags", async {
             bw::git::tags_with_dates(&ws)
                 .await
                 .into_iter()
                 .last()
                 .map(|(tag, date)| format!("{date} {tag}"))
                 .unwrap_or_default()
-        },
-        build_plan_versions(app, &p, &issues),
-        current_user(app, &p),
+        }),
+        log_elapsed("milestones", build_plan_versions(app, &p, &issues)),
+        log_elapsed("user", current_user(app, &p)),
     );
 
     let covering_now = covering_version_names(&plan_versions, &bw::isoweek::today_ymd());
     let goal_key = covering_now.first().cloned().unwrap_or_default();
+    let t_health = std::time::Instant::now();
     let inputs = bw::app::collect_health_inputs(
         &p,
         &ws,
@@ -1038,6 +1238,12 @@ async fn gather_project(
         week_goals.get(&goal_key).map(String::as_str),
     )
     .await;
+    bw_engine::dlog!(
+        ok,
+        "gather",
+        "gather extras health elapsed_ms={}",
+        t_health.elapsed().as_millis()
+    );
     let derived = bw::derive::derive_project_health(&inputs);
     if p.signal != Some(derived.signal()) || p.weekly_signal != Some(derived.weekly_signal()) {
         let _ = app.cache_project_health(id, &derived).await;
