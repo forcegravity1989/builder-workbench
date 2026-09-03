@@ -36,7 +36,7 @@ description: Use when 运作活①走到「更新指标」、被 week-planning �
 走到问人。每条要写的指标问清:叫什么、怎么算、目标、脚本还是手填。手填再问「能不能写成脚本」(能 / 暂时缺什么 / 永远不能)。可选字段(所属特性、引领盯哪条滞后)听 `metrics.md`,不问清单。总览已画的仓统计(提交、合入 MR、开放 issue)不要再写成业务指标。过程脚本只当菜单,人没点头不写进文件。
 
 **第 3 步 · 人点头再写、再跑**  
-走到落定义。按 `metrics.md` 写 `.bw/metrics.toml`。`kind=script` 的当场跑一遍(窗口参数按 reference)。跑不通如实写「脚本已写、未跑通」。采到的数留给 week-planning 第 4 步抄进评论快照;不要手写 `readings.jsonl`,不要写 0。本步不单独开 MR。
+走到落定义。按 `metrics.md` 写 `.bw/metrics.toml`。`kind=script` 的当场跑一遍(窗口参数按 reference;`retro=true` 必须认 `--granularity week` 和 `day`,总览会各跑一次)。跑不通如实写「脚本已写、未跑通」。采到的数留给 week-planning 第 4 步抄进评论快照;不要手写 `readings.jsonl`,不要写 0。本步不单独开 MR。
 
 ## 5. 参考资源
 

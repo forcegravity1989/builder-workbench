@@ -5,7 +5,7 @@ schema_version = 2
 # leads = "某条滞后的 name" # 只写在引领上:这条引领盯的是哪条滞后。空 = 挂到同页签第一条滞后
 # collect 两种:{ kind = "script", run = ["python", ".bw/scripts/x.py"], retro = true|false }
 #             或 { kind = "manual" }
-# retro=true 吐 {"points":[{"week":"YYYY-Www","value":…}]};false 吐 {"value":…}。
+# retro=true 周粒度吐 {"points":[{"week":"YYYY-Www","value":…}]},天粒度吐 {"points":[{"day":"YYYY-MM-DD","value":…}]};false 吐 {"value":…}。
 # 窗口由 Workbench 传。失败不写 0。协议见 references/metrics.md。
 
 [north_star]

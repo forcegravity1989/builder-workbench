@@ -35,6 +35,15 @@ def weeks_in(since: datetime.date, until: datetime.date):
     return out
 
 
+def days_in(since: datetime.date, until: datetime.date):
+    """窗口内的日历日,旧的在前。until 是开区间右端。"""
+    out, cur = [], since
+    while cur < until:
+        out.append((cur.isoformat(), cur))
+        cur += datetime.timedelta(days=1)
+    return out
+
+
 def ts(raw):
     try:
         return datetime.datetime.fromisoformat(raw.replace("Z", "+00:00")).timestamp()
@@ -49,8 +58,8 @@ def main() -> int:
     ap.add_argument("--granularity", default="week")
     args = ap.parse_args()
 
-    if args.granularity != "week":
-        print(f"只支持 --granularity week,收到 {args.granularity}", file=sys.stderr)
+    if args.granularity not in ("week", "day"):
+        print(f"只支持 --granularity week|day,收到 {args.granularity}", file=sys.stderr)
         return 2
 
     try:
@@ -90,15 +99,25 @@ def main() -> int:
     since = datetime.date.fromisoformat(args.since)
     until = datetime.date.fromisoformat(args.until)
     points = []
-    for label, monday in weeks_in(since, until):
-        # 周末时点 = 下周一 00:00(本机时区);左闭右开和别的脚本一致。
-        t = datetime.datetime.combine(
-            monday + datetime.timedelta(days=7), datetime.time(0, 0), tz
-        ).timestamp()
-        open_count = sum(
-            1 for (c, closed) in spans if c < t and (closed is None or closed >= t)
-        )
-        points.append({"week": label, "value": open_count})
+    if args.granularity == "day":
+        for label, day in days_in(since, until):
+            t = datetime.datetime.combine(
+                day + datetime.timedelta(days=1), datetime.time(0, 0), tz
+            ).timestamp()
+            open_count = sum(
+                1 for (c, closed) in spans if c < t and (closed is None or closed >= t)
+            )
+            points.append({"day": label, "value": open_count})
+    else:
+        for label, monday in weeks_in(since, until):
+            # 周末时点 = 下周一 00:00(本机时区);左闭右开和别的脚本一致。
+            t = datetime.datetime.combine(
+                monday + datetime.timedelta(days=7), datetime.time(0, 0), tz
+            ).timestamp()
+            open_count = sum(
+                1 for (c, closed) in spans if c < t and (closed is None or closed >= t)
+            )
+            points.append({"week": label, "value": open_count})
 
     json.dump({"points": points}, sys.stdout, ensure_ascii=False)
     return 0

@@ -38,6 +38,15 @@ def weeks_in(since: datetime.date, until: datetime.date):
     return out
 
 
+def days_in(since: datetime.date, until: datetime.date):
+    """窗口内的日历日,旧的在前。until 是开区间右端。"""
+    out, cur = [], since
+    while cur < until:
+        out.append((cur.isoformat(), cur))
+        cur += datetime.timedelta(days=1)
+    return out
+
+
 def repo_slug() -> str:
     proc = subprocess.run(
         ["gh", "repo", "view", "--json", "nameWithOwner", "--jq", ".nameWithOwner"],
@@ -80,8 +89,8 @@ def main() -> int:
     ap.add_argument("--granularity", default="week")
     args = ap.parse_args()
 
-    if args.granularity != "week":
-        print(f"只支持 --granularity week,收到 {args.granularity}", file=sys.stderr)
+    if args.granularity not in ("week", "day"):
+        print(f"只支持 --granularity week|day,收到 {args.granularity}", file=sys.stderr)
         return 2
 
     try:
@@ -108,12 +117,19 @@ def main() -> int:
     until = datetime.date.fromisoformat(args.until)
 
     points = []
-    for label, monday in weeks_in(since, until):
-        # 存量:到这一周末(= 下周一 00:00)之前 star 过的累计数。
-        end = datetime.datetime.combine(
-            monday + datetime.timedelta(days=7), datetime.time(0, 0), tz
-        ).timestamp()
-        points.append({"week": label, "value": sum(1 for t in stamps if t < end)})
+    if args.granularity == "day":
+        for label, day in days_in(since, until):
+            end = datetime.datetime.combine(
+                day + datetime.timedelta(days=1), datetime.time(0, 0), tz
+            ).timestamp()
+            points.append({"day": label, "value": sum(1 for t in stamps if t < end)})
+    else:
+        for label, monday in weeks_in(since, until):
+            # 存量:到这一周末(= 下周一 00:00)之前 star 过的累计数。
+            end = datetime.datetime.combine(
+                monday + datetime.timedelta(days=7), datetime.time(0, 0), tz
+            ).timestamp()
+            points.append({"week": label, "value": sum(1 for t in stamps if t < end)})
 
     json.dump({"points": points}, sys.stdout, ensure_ascii=False)
     return 0

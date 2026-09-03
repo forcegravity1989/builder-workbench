@@ -6,11 +6,12 @@
 
 ## 最近 · 2026-09-03
 
-总览改成项目健康看板(#36):名片旁一颗健康灯、北极星并排;版本计划与进展带页签(目标 / 周进展各 6 行);滞后与引领按 `feature` 分页签、按 `leads` 叠到同一张图(空则挂该页签第一条滞后),图例可勾选,周/天可切;项目指标 · SDLC 只画现行三条真数。定义字段进 `.bw/metrics.toml`。原型 `docs/hifi/overview-36.html`,规格 `docs/05-features/overview-health-36/`。周五资产盘点多一步:在该版本运作活①上追加 `## 每周进展`;总览右栏从同一条评论现算。② 开工也注入 `week-plan-comment.md`。总览折线业务/SDLC 同一套(从 0 起的纵轴、悬停读数、固定高度);页签默认「主要」;A 类引领按天也能出点。运作活②建出来的说明跟上收口每周进展。
+总览改成项目健康看板(#36):名片旁一颗健康灯、北极星并排;版本计划与进展带页签(目标 / 周进展各 6 行);滞后与引领按 `feature` 分页签、按 `leads` 叠到同一张图(空则挂该页签第一条滞后),图例可勾选,周/天可切;项目指标 · SDLC 只画现行三条真数。定义字段进 `.bw/metrics.toml`。原型 `docs/hifi/overview-36.html`,规格 `docs/05-features/overview-health-36/`。周五资产盘点多一步:在该版本运作活①上追加 `## 每周进展`;总览右栏从同一条评论现算。② 开工也注入 `week-plan-comment.md`。总览折线业务/SDLC 同一套(从 0 起的纵轴、悬停读数、固定高度);页签默认「主要」;A 类引领按天也能出点。采集模板脚本认 `--granularity week|day`,跟 `metrics.md` 对齐。运作活②建出来的说明跟上收口每周进展。
 
 计划屏:进行中 ↔ 待评审可以人拖(打回只改标签、不开工;无绑定 MR 进待评审要确认)。人可以从待办 / 进行中 / 待评审 / 阻塞 / 未排期拖到完成——有开着的 MR 确认后合入,没有则确认只关 issue;「完成永远由人点」仍守,自动化不得推到 Done。非法松手弹窗说明不给拖,不再静默弹回。Orca 干完靠提示词自己把标签改成 `bw:status:inreview`,不因有 MR 自动推态。
 
 点进项目只拉这一个仓的名单和 extras,不再顺手刷墙上其他仓。还在项目墙才拉全墙。对照日志补齐点卡到第一屏的分段:`open start` / Orca peek / 每枪 `codehub-cli` / gather extras / `open first-screen` / `pr fill`。
+
 技能写作正本落到 `standard/skills/SKILL-MD-SPEC.md`(frontmatter + 8 节,SOP=第 4 节)。五份现行剧本按规范、第一层目标和现行内核删掉重写:指标/版本/纳入人定,不再代写打分或四段 gate。`mr-review` 未动。盘点走每周两步(对照 `bw-assets.md`);校验脚本按技能目录找;版本块不再复述打标字面。SYSTEM 收成三块——项目入口只点 `AGENTS.md`;按任务点名加载 reference(① metrics + week-plan-comment;② bw-assets + build);纪律三条。`standard/VERSION` 已删。
 
 每个远端里程碑都是一个版本，名字不设限。计划屏下拉只列版本，「· 本周」跟总览在研走。总览只读行只展示在研；编辑表单永远有下拉，选项是覆盖今天的里程碑；覆盖集变了自动切，不写仓。产品忽略 `bw:week:`（不读不写、不批量改远端）。`project.toml` 的 `current_version` 丢掉不展示，多一行不报错。运作活②建出来时挂当时的在研。
