@@ -181,7 +181,10 @@ impl App {
     /// 就不给 agent 指技能这条路,如实少一段,不编一个路径出来。
     pub fn ensure_skill_assets(&self) -> Option<PathBuf> {
         let dir = self.skills_dir();
-        for pack in crate::standard::skills::all() {
+        for pack in crate::standard::skills::all()
+            .into_iter()
+            .chain(crate::standard::skills::sidecars())
+        {
             let path = dir.join(&pack.rel);
             if std::fs::read_to_string(&path).is_ok_and(|on_disk| on_disk == pack.raw) {
                 continue;

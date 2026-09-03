@@ -35,17 +35,17 @@ pub fn references() -> Vec<ReferencePack> {
     const REFS: [(&str, &str, &str); 3] = [
         (
             "metrics",
-            "干指标活的 Workbench 规范(可回溯/不许写0/窗口由 Workbench 给)",
+            "指标怎么采、怎么写 .bw/metrics.toml(不定北极星该是什么)",
             REF_METRICS,
         ),
         (
             "week-plan-comment",
-            "运作活①评论格式(版本目标/本周纳入/读数快照,挂前要过校验脚本)",
+            "运作活①评论三个标题;先列已有活;里程碑可失败",
             REF_WEEK_PLAN_COMMENT,
         ),
         (
             "build",
-            "干改仓活的 Workbench 规范(活自己的分支/提 MR/合并是人/不自动 Done)",
+            "改仓多出来的:落在这张活的树;贴评论/打标不是改仓",
             REF_BUILD,
         ),
     ];

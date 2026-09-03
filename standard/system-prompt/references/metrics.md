@@ -1,59 +1,35 @@
-# 干指标活需要知道的 Workbench 规范
+# 指标采集(Workbench 要能画出灯)
 
-> 这份是 Workbench 给干「指标」活的 agent 的阶段规范补充。主系统提示词里的四条
-> 铁律照样守,这里讲指标这一件特有的事。开工前读它,和主提示词不是一回事。
+主提示词的铁律照守。这里只讲怎么采、怎么写 `.bw/metrics.toml`。
+北极星该量什么由人在会话里定,不在这份里下结论。
 
-## 一条判据贯穿全设计
+## 先判能不能回溯
 
-**今天能采到这个数,「上周三那天的值」现在还能算出来吗?**
+今天能采到这个数,「上周三那天的值」现在还能算出来吗?
 
-- 能 → **可回溯(A 类)**:一个字都不存,要看几周就现算几个窗口。新接入的
-  项目第一天就有完整四周走势,不用先攒。
-- 不能 → **不可回溯(B 类)**:过了那一刻就没了,记进
-  `.bw/metrics/readings.jsonl`(同一天同一指标只留一行,当天再采覆盖)。
-  和手填是同一份流水。写在账本 worktree,不写主检出。
+- 能 → **A 类**:一个字不存,要看几周就现算几个窗口。
+- 不能 → **B 类**:记进 `.bw/metrics/readings.jsonl`(同一天同一指标一行,当天再采覆盖)。写在账本 worktree,不写主检出。手填同一份流水。
 
-**判 B 类之前,先真的去找一遍有没有带时间戳的接口。** 判错的代价很实:一条
-本来能画出四周走势的指标,会被画成只有一个孤点。真实反例:GitHub 的 star 数
-看起来只有当前值,但 stargazers 接口带特殊 Accept 头就返回每个 star 的时刻,
-所以它其实是 A 类。
+判 B 之前先找带时间戳的接口。GitHub star 用 stargazers + `star+json` 头能拿到时刻,是 A,不是 B。
 
-## 采集方式只有两种,没有第三种
+## 采集只有两种
 
-1. **脚本** `collect = { kind = "script", run = [...], retro = true|false }`
-2. **手填** `collect = { kind = "manual" }`
+1. 脚本 `collect = { kind = "script", run = [...], retro = true|false }`
+2. 手填 `collect = { kind = "manual" }`
 
-连 git、连 GitHub、连 codehub、连内网系统、读本地文件 —— 全是脚本自己的事。
-Workbench 不认识这些系统,它只会「起进程、传时间窗、读标准输出的 JSON」。
-接口没有时,也可以先写一份采集规范,脚本去读规范并调模型出数——仍是脚本,不是第三种。
+连 git / GitHub / codehub / 内网 / 本地文件,全是脚本自己的事。Workbench 只起进程、传窗口、读 stdout 的 JSON。
 
-**不要把总览已经在画的项目指标再写进业务指标。** 提交数、合入 MR 数、开放
-issue 数 Workbench 自动画、不点灯。业务指标再写一条「每周合入 MR 数」是重复。
+总览已经在画的仓统计(提交数、合入 MR、开放 issue)不要再写进业务指标。
 
-## 脚本窗口由 Workbench 给,不是脚本自己决定
+## 窗口和输出
 
-Workbench 起脚本时追加:`--since YYYY-MM-DD --until YYYY-MM-DD --granularity week`
-(左闭右开)。面板要几周就传几周,**采多少和画多少永远一致**。脚本不能自己
-决定窗口。
+Workbench 追加 `--since YYYY-MM-DD --until YYYY-MM-DD --granularity week`(左闭右开)。脚本不准自己定窗口。stdout 必须 UTF-8。
 
-**标准输出必须是 UTF-8。** Windows 控制台默认常是 gbk,中文 `unit` 会乱码,
-Workbench 解析失败或读到错值。脚本里显式把 stdout 设成 UTF-8(Python:
-`sys.stdout.reconfigure(encoding="utf-8")`)。
+- A 类吐 `{"points":[{"week":"YYYY-Www","value":…},…]}`。只吐 `{"value":…}` 会只剩最后一周一个点。
+- B 类吐 `{"value":…}`。B 仍要有 `run`;不写 `run` 采不到。
 
-**A 类脚本吐按周序列,不是一个当下值:**
-`{"points":[{"week":"2026-W35","value":8},…]}`。只给 `{"value":8}` 会落在
-窗口最后一周一个孤点、前几周断开——折线能画,但看不出走势。B 类才是
-`{"value":12}`。**判成 B 不等于不写脚本**——`collect` 仍是 `kind = "script", retro = false`,必须有 `run`。不写 `run` 就是写了一半。Workbench 点采集时跑脚本,把**当天**的值记进账本 `.bw/metrics/readings.jsonl`(键是日历日 `YYYY-MM-DD`,同一天再采覆盖这一行)。Workbench 开着、过了本机 20:00,还会自动采一轮 B 类(失败也盖今日戳,避免反复打失败脚本)。展示按周,取那一周日期最大的一天。C 类在总览卡手填今天的数,和 B 类同一份流水、同一套覆盖。不写 `run` 的 B 类仍然采不到。
+字段:`name` / `def` / `target` / `collect`。不要写 `definition`。
 
-字段名照 `.bw/metrics.toml` 顶部注释:`name` / `def` / `target` / `collect`。
-`definition` 不是 `def`,界面口径会空着。
+## 失败不写 0
 
-## 失败一律如实,绝不写 0
-
-非零退出、超时、输出不是 JSON、缺字段 —— 都记这条指标这次「没采到」,
-**绝不写一个 0 进去**。`0` 是一个真实的数值,「没采到」不是。空数据整块不画,
-显示「尚无观测」—— 画一条 0 高的线等于宣称「这几周都是 0」,那是编。
-
-## 采不到的点断开,绝不当 0 连过去
-
-宁可断,不要用「补前值」把空档填平 —— 读的人分不出「没变」和「没数」。
+非零退出、超时、非 JSON、缺字段 = 这次没采到。`0` 是真值。空段不画,不补前值。

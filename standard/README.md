@@ -18,7 +18,7 @@
 
 规范版本因此从 4.0 跳到 **5.0** —— 落点变了,老版本铺出来的文件在新版本眼里
 就是「不在册」,不做迁移。续三(系统提示词外置 + 扁平铺底 + 删方法论)又
-抬到 **5.1**,当前值见 `VERSION`。续五(默认 workflow 打包:mattpocock 入口 + vendor 摊 + issue-policy 回填)抬到 **5.2**。续十六(指标空壳到站才铺 + 脚本 UTF-8 / A 类 points / `def` 字段)抬到 **5.3**。续十七(运作活①评论三标题 + 挂评校验脚本)抬到 **5.4**。续二十(B 类仍要写脚本)抬到 **5.5**。续二十二(B 类写入 + 定本周建卡必打类别)抬到 **5.6**。续二十三(mattpocock 入口写清 `/xxx`=读路径,并补 grilling/domain-modeling/tdd)抬到 **5.7**。B/C 读数改日历日键、展示按周抬到 **5.8**。过程指标包(十份脚本 + 目录总账)抬到 **5.9**。独立评审(评审剧本 `mr-review` + 阶段规范 `review` + 评审主提示词 `REVIEW.md.tmpl`)抬到 **5.10**。计划版本收成 `v0.x`、不再写 `bw:week` 抬到 **5.11**。名片只留 `project.toml`、开工约定不再写工具声明、不再铺 `standard.toml` / `managed.toml`、周盘点清旧件抬到 **5.12**。不写主检出、开工工具跟人走、不再铺 issue-policy 抬到 **5.13**。
+抬到 **5.1**,当前值见 `VERSION`。续五(默认 workflow 打包:mattpocock 入口 + vendor 摊 + issue-policy 回填)抬到 **5.2**。续十六(指标空壳到站才铺 + 脚本 UTF-8 / A 类 points / `def` 字段)抬到 **5.3**。续十七(运作活①评论三标题 + 挂评校验脚本)抬到 **5.4**。续二十(B 类仍要写脚本)抬到 **5.5**。续二十二(B 类写入 + 定本周建卡必打类别)抬到 **5.6**。续二十三(mattpocock 入口写清 `/xxx`=读路径,并补 grilling/domain-modeling/tdd)抬到 **5.7**。B/C 读数改日历日键、展示按周抬到 **5.8**。过程指标包(十份脚本 + 目录总账)抬到 **5.9**。独立评审(评审剧本 `mr-review` + 阶段规范 `review` + 评审主提示词 `REVIEW.md.tmpl`)抬到 **5.10**。计划版本收成 `v0.x`、不再写 `bw:week` 抬到 **5.11**。名片只留 `project.toml`、开工约定不再写工具声明、不再铺 `standard.toml` / `managed.toml`、周盘点清旧件抬到 **5.12**。不写主检出、开工工具跟人走、不再铺 issue-policy 抬到 **5.13**。运作活①四段索引 + 项目正本地图、评论校验脚本随技能摊出抬到 **5.14**。SYSTEM 与三份现行 references 按层削薄抬到 **5.15**。
 
 第一次纳入不再摊 `CORE_TEMPLATES`(空表)。名片走项目约定。metrics 有模板但不铺(运作活①跟人写)。
 `.bw/standard.toml` / `managed.toml` / `PROJECT.md` / `issue-policy.toml` 不再铺;旧仓里那几份由每周资产盘点清掉。

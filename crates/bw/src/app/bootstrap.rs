@@ -262,7 +262,7 @@ pub struct ReferencePointer {
 /// 这张活要读哪几份阶段规范 references。按活的类别/workflow 匹配,只返**硬盘
 /// 上真存在**的那几份(文件不在就如实不指,不编路径)。
 ///
-/// 起手三份:`metrics`(指标活,workflow=更新指标与周计划)、`build`(改仓类活,
+/// 起手三份:`metrics`(指标活,workflow=更新指标与版本计划)、`build`(改仓类活,
 /// 类别=构建/优化/运维)、`week-plan-comment`(运作活①评论格式)。其余按实践长。
 pub fn references_for(issue: &Issue, refs_dir: &std::path::Path) -> Vec<ReferencePointer> {
     let mut out = vec![];
@@ -284,7 +284,7 @@ pub fn references_for(issue: &Issue, refs_dir: &std::path::Path) -> Vec<Referenc
 /// 这份 reference 要不要给这张活。
 fn want_ref(issue: &Issue, slug: &str) -> bool {
     match slug {
-        // 指标活:更新指标与周计划
+        // 指标活:更新指标与版本计划
         "metrics" | "week-plan-comment" => issue.workflow == super::ops::OPS1_WORKFLOW,
         // 改仓类活:构建 / 优化 / 运维
         "build" => matches!(

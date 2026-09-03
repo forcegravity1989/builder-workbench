@@ -93,3 +93,14 @@ pub fn all() -> Vec<SkillPack> {
         })
         .collect()
 }
+
+/// 技能目录里跟剧本同住、但不是入口 SKILL.md 的附件。
+/// [`crate::app::App::ensure_skill_assets`] 会摊;[`crate::app::skill_pointer`] 不认它们。
+pub fn sidecars() -> Vec<SkillPack> {
+    vec![SkillPack {
+        slug: "week-planning",
+        rel: "week-planning/check-week-comment.py".into(),
+        desc: "运作活①评论格式校验",
+        raw: WEEK_PLANNING_COMMENT_CHECK,
+    }]
+}
