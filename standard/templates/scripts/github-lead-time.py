@@ -39,6 +39,15 @@ def weeks_in(since: datetime.date, until: datetime.date):
     return out
 
 
+def days_in(since: datetime.date, until: datetime.date):
+    """窗口内的日历日,旧的在前。until 是开区间右端。"""
+    out, cur = [], since
+    while cur < until:
+        out.append((cur.isoformat(), cur))
+        cur += datetime.timedelta(days=1)
+    return out
+
+
 def ts(raw):
     try:
         return datetime.datetime.fromisoformat(raw.replace("Z", "+00:00")).timestamp()
@@ -86,8 +95,8 @@ def main() -> int:
     ap.add_argument("--granularity", default="week")
     args = ap.parse_args()
 
-    if args.granularity != "week":
-        print(f"只支持 --granularity week,收到 {args.granularity}", file=sys.stderr)
+    if args.granularity not in ("week", "day"):
+        print(f"只支持 --granularity week|day,收到 {args.granularity}", file=sys.stderr)
         return 2
 
     rows = gh_json(["pr", "list", "--state", "merged", "--json",
@@ -101,13 +110,18 @@ def main() -> int:
     tz = datetime.datetime.now().astimezone().tzinfo
     since = datetime.date.fromisoformat(args.since)
     until = datetime.date.fromisoformat(args.until)
-    weeks = weeks_in(since, until)
-    if not weeks:
+    if args.granularity == "day":
+        buckets = [("day", label, day) for label, day in days_in(since, until)]
+        span = datetime.timedelta(days=1)
+    else:
+        buckets = [("week", label, monday) for label, monday in weeks_in(since, until)]
+        span = datetime.timedelta(days=7)
+    if not buckets:
         json.dump({"points": []}, sys.stdout, ensure_ascii=False)
         return 0
-    lo_all = datetime.datetime.combine(weeks[0][1], datetime.time(0, 0), tz).timestamp()
+    lo_all = datetime.datetime.combine(buckets[0][2], datetime.time(0, 0), tz).timestamp()
     hi_all = datetime.datetime.combine(
-        weeks[-1][1] + datetime.timedelta(days=7), datetime.time(0, 0), tz
+        buckets[-1][2] + span, datetime.time(0, 0), tz
     ).timestamp()
 
     pairs = []  # (合入时间戳, 前置小时数) —— 只查窗内的
@@ -121,12 +135,12 @@ def main() -> int:
         pairs.append((m, (m - first) / 3600))
 
     points = []
-    for label, monday in weeks:
-        lo = datetime.datetime.combine(monday, datetime.time(0, 0), tz).timestamp()
-        hi = lo + 7 * 24 * 3600
+    for key, label, start in buckets:
+        lo = datetime.datetime.combine(start, datetime.time(0, 0), tz).timestamp()
+        hi = datetime.datetime.combine(start + span, datetime.time(0, 0), tz).timestamp()
         leads = [h for (m, h) in pairs if lo <= m < hi]
         if leads:
-            points.append({"week": label, "value": round(median(leads), 1)})
+            points.append({key: label, "value": round(median(leads), 1)})
 
     json.dump({"points": points}, sys.stdout, ensure_ascii=False)
     return 0

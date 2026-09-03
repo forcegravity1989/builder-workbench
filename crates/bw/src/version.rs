@@ -68,7 +68,7 @@ pub fn inventory(plan_names: &[String], released_names: &[String]) -> VersionInv
     let mut unreleased: Vec<String> = plan_names
         .iter()
         .map(|s| s.trim().to_string())
-        .filter(|s| !s.is_empty() && !released.iter().any(|r| r == s))
+        .filter(|s| is_plan_name(s) && !released.iter().any(|r| r == s))
         .collect();
     unreleased.sort_by_key(|s| parse_pair(s).unwrap_or((0, 0)));
     unreleased.dedup();
@@ -121,6 +121,11 @@ pub fn context_block(inv: &VersionInventory) -> String {
     )
 }
 
+/// 排期名。非空即可;名字不设限。ISO 周只做节律,产品不新建周号版本,但不在这里滤。
+pub fn is_plan_name(s: &str) -> bool {
+    !s.trim().is_empty()
+}
+
 /// 里程碑起止都是 `YYYY-MM-DD`。缺一边就不覆盖,不猜。
 pub fn covers_ymd(start: &str, due: &str, day: &str) -> bool {
     !start.is_empty() && !due.is_empty() && start <= day && day <= due
@@ -141,7 +146,7 @@ pub fn overlaps_week(start: &str, due: &str, week: &str) -> bool {
 pub fn covering_on<'a>(rows: &'a [(String, String, String, String)], day: &str) -> Vec<&'a str> {
     let mut v: Vec<_> = rows
         .iter()
-        .filter(|r| covers_ymd(&r.1, &r.2, day))
+        .filter(|r| is_plan_name(&r.0) && covers_ymd(&r.1, &r.2, day))
         .collect();
     v.sort_by(|a, b| b.3.cmp(&a.3));
     v.into_iter().map(|r| r.0.as_str()).collect()
@@ -157,7 +162,8 @@ pub fn current_from_milestones(
 
 /// 有没有里程碑覆盖到这一 ISO 周。
 pub fn week_has_covering(rows: &[(String, String, String, String)], week: &str) -> bool {
-    rows.iter().any(|r| overlaps_week(&r.1, &r.2, week))
+    rows.iter()
+        .any(|r| is_plan_name(&r.0) && overlaps_week(&r.1, &r.2, week))
 }
 
 #[cfg(test)]
@@ -236,9 +242,33 @@ mod tests {
             current_from_milestones(&rows, "2026-09-02").as_deref(),
             Some("v0.3")
         );
+        let with_week = [
+            (
+                "2026-W36".into(),
+                "2026-08-31".into(),
+                "2026-09-04".into(),
+                "2026-09-03T18:00:00Z".into(),
+            ),
+            (
+                "v0.3".into(),
+                "2026-09-01".into(),
+                "2026-09-05".into(),
+                "2026-09-01T12:00:00Z".into(),
+            ),
+        ];
+        assert_eq!(
+            current_from_milestones(&with_week, "2026-09-03").as_deref(),
+            Some("2026-W36")
+        );
+        assert!(covering_on(&with_week, "2026-09-03").contains(&"2026-W36"));
+        assert!(is_plan_name("v0.3"));
+        assert!(is_plan_name("MVP收尾"));
+        assert!(is_plan_name("2026-W36"));
+        assert!(!is_plan_name(""));
         assert!(current_from_milestones(&rows, "2026-09-08").is_none());
         assert!(week_has_covering(&rows, "2026-W36"));
         assert!(!week_has_covering(&rows, "2026-W37"));
+        assert!(week_has_covering(&with_week[..1], "2026-W36"));
     }
 
     #[test]

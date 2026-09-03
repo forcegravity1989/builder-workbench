@@ -67,6 +67,22 @@ pub fn latest_values_for(workspace: &Path, name: &str, weeks: &[String]) -> Vec<
         .collect()
 }
 
+/// 某指标在近 N 个日历日里、当天那一行的值。`None` = 那一天没有日行。
+pub fn latest_values_for_days(
+    workspace: &Path,
+    name: &str,
+    days: &[String],
+) -> Vec<Option<String>> {
+    let rows: Vec<MetricReading> = collapse_days(
+        read_merged(workspace)
+            .into_iter()
+            .filter(|r| r.name == name && !r.value.is_empty()),
+    );
+    days.iter()
+        .map(|d| rows.iter().find(|r| r.day == *d).map(|r| r.value.clone()))
+        .collect()
+}
+
 /// 记下或覆盖当天这一行。写到 `workspace`(调用方应传入账本目录,不是主检出)。
 /// 同一天同一指标值没变就不动文件。
 pub fn upsert_metric_reading(workspace: &Path, row: &MetricReading) -> Result<()> {

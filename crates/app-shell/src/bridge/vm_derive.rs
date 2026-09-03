@@ -11,7 +11,7 @@ use std::path::Path;
 /// 某个版本的五段计数。`week` 传 `None` = 不按版本过滤(计划屏的「全部活」)。
 /// 传版本名则只数挂了 `bw:plan:<名>` 的活。
 ///
-/// **直接数活,不数看板列**:看板跟着计划屏下拉走,总览「本周计划进度」跟在研。
+/// **直接数活,不数看板列**:看板跟着计划屏下拉走,总览进度条跟在研版本。
 /// 待办池不算进去;**阻塞单独一段**。
 pub(super) fn build_week_counts(issues: &[bw::Issue], week: Option<&str>) -> WeekCountsVm {
     let in_scope = |i: &&bw::Issue| match week {
@@ -198,28 +198,33 @@ pub(super) async fn collect_repo_stats(
     if let Ok(tags) = bw::git::tags(ws).await {
         items.push((tags.len().to_string(), "打过的标签".into(), "git".into()));
     }
-    // 近四周走势。**现算** —— git 那两条一趟遍历出齐,远端那条各周并发。
-    // 项目行读不出来时只算 git 那两条,远端如实留空,不整块不采。
-    let trend = match project {
-        Some(p) => bw::trend::recent_weeks(ws, p, 4).await,
+    // 近五周 + 近 14 日。**现算** —— git 一趟遍历出齐,远端一趟拉全再按窗切。
+    // 项目行读不出来时只算 git,远端如实留空,不整块不采。
+    let (trend, day) = match project {
+        Some(p) => tokio::join!(
+            bw::trend::recent_weeks(ws, p, 5),
+            bw::trend::recent_days(ws, p, 14),
+        ),
         None => {
-            let mut t = bw::trend::recent_weeks_git_only(ws, 4).await;
+            let (mut t, mut d) = tokio::join!(
+                bw::trend::recent_weeks_git_only(ws, 5),
+                bw::trend::recent_days_git_only(ws, 14),
+            );
             t.remote_note = "这个项目的库内记录读不出来,远端那条线这次没采".into();
-            t
+            d.remote_note = t.remote_note.clone();
+            (t, d)
         }
+    };
+    let to_vm = |p: &bw::trend::WeekPoint| crate::vm::TrendPointVm {
+        week: p.week.clone(),
+        commits: p.commits,
+        merged_prs: p.merged_prs,
+        open_issues: p.open_issues,
     };
     RepoStatsVm {
         items,
-        trend: trend
-            .points
-            .iter()
-            .map(|p| crate::vm::TrendPointVm {
-                week: p.week.clone(),
-                commits: p.commits,
-                merged_prs: p.merged_prs,
-                open_issues: p.open_issues,
-            })
-            .collect(),
+        trend: trend.points.iter().map(to_vm).collect(),
+        day_trend: day.points.iter().map(to_vm).collect(),
         git_note: trend.git_note,
         trend_note: trend.remote_note,
         error: String::new(),

@@ -7,6 +7,7 @@ Workbench 只认这份。没有文件不是错,界面显示「还没定出来」
 
 北极星可以缺席。三层键:`[north_star]`、`[[lagging]]`、`[[leading]]`。
 每条:`name` / `def` / `target` / `collect`。不要写 `definition`。
+可选:`feature`(所属特性,空=总览「主要」页签;有值画出「XX特性」)、`leads`(只写在引领上,值是它盯的那条滞后的 `name`;空=挂到同页签第一条滞后)。总览按 `feature` 分页签、按 `leads` 把引领叠到对应滞后的一张图上,不另建特性表。
 
 ## 采集
 
@@ -20,10 +21,10 @@ collect = { kind = "manual" }
 `run` 是 argv,不走 shell。`kind=script` 且 `run` 空 = 写了一半,采不起来。
 
 Workbench 起脚本时:工作目录是仓根,追加
-`--since YYYY-MM-DD --until YYYY-MM-DD --granularity week`(左闭右开),超时 90 秒。
+`--since YYYY-MM-DD --until YYYY-MM-DD --granularity week|day`(左闭右开),超时 90 秒。
 只认 **stdout 的一个 JSON 对象**。往文件里写不算数。
 
-- `retro = true`(A):吐 `{"points":[{"week":"2026-W35","value":8},…]}`。周号要对上窗口里的 ISO 周;少给的周断开,不补前值。只吐 `{"value":8}` 会落成最后一周一个点。
+- `retro = true`(A):周粒度吐 `{"points":[{"week":"2026-W35","value":8},…]}`;天粒度吐 `{"points":[{"day":"2026-09-01","value":2},…]}`。点号要对上窗口;少给的断开,不补前值。只吐 `{"value":8}` 会落成最后一周一个点。
 - `retro = false`(B):吐 `{"value":12}`。Workbench 记进账本 `.bw/metrics/readings.jsonl`(键是日历日,同一天同一指标一行)。不要自己往主检出写流水。
 - `kind = "manual"`:不跑脚本,人在总览手填。
 

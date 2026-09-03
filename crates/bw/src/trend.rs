@@ -18,6 +18,7 @@ use std::path::Path;
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
 pub struct WeekPoint {
     /// ISO 周,如 `2026-W34`。
+    /// 横坐标标签:ISO 周(`2026-W34`)或日历日(`2026-09-03`)。
     pub week: String,
     /// 本机提交数。复算命令见 `git::week_counts_many` 的文档。
     pub commits: Option<u32>,
@@ -54,29 +55,45 @@ pub async fn recent_weeks(ws: &Path, project: &Project, weeks: u32) -> Trend {
         &project.remote_path,
     )
     .ok();
-    recent_weeks_inner(ws, remote, project.has_remote(), weeks).await
+    let mut list = week_labels(weeks);
+    list.reverse();
+    recent_inner(ws, remote, project.has_remote(), list).await
+}
+
+/// 近 `days` 个日历日(含今天),旧的在前。窗口切法和周那条同一把刀。
+pub async fn recent_days(ws: &Path, project: &Project, days: u32) -> Trend {
+    let remote = bw_engine::remote::Remote::for_project(
+        &project.provider,
+        &project.remote_host,
+        &project.remote_path,
+    )
+    .ok();
+    recent_inner(ws, remote, project.has_remote(), isoweek::recent_days(days)).await
 }
 
 /// 只算 git 那两条,不问远端。项目行读不出来时用它 —— **不伪造一个空项目**
 /// 去问远端,那等于拿一个假地址去查。
 pub async fn recent_weeks_git_only(ws: &Path, weeks: u32) -> Trend {
-    recent_weeks_inner(ws, None, false, weeks).await
+    let mut list = week_labels(weeks);
+    list.reverse();
+    recent_inner(ws, None, false, list).await
 }
 
-async fn recent_weeks_inner(
+pub async fn recent_days_git_only(ws: &Path, days: u32) -> Trend {
+    recent_inner(ws, None, false, isoweek::recent_days(days)).await
+}
+
+async fn recent_inner(
     ws: &Path,
     remote: Option<bw_engine::remote::Remote>,
     has_remote: bool,
-    weeks: u32,
+    list: Vec<String>,
 ) -> Trend {
-    let mut list = week_labels(weeks);
-    list.reverse(); // week_labels 从本周往回数,这里翻成「旧的在前」
-
-    // git 那条:**一趟遍历出齐所有周**,不按周循环(逐周查会把全史遍历次数
-    // 乘上周数 —— 第一版就是这么让回填冻屏一分钟的)。读不动就整体留空 +
+    // git 那条:**一趟遍历出齐所有窗**,不按窗循环(逐窗查会把全史遍历次数
+    // 乘上窗数 —— 第一版就是这么让回填冻屏一分钟的)。读不动就整体留空 +
     // 一句原话,绝不 0 充数。
     let mut trend = Trend::default();
-    let counts = match crate::git::week_counts_many(ws, &list).await {
+    let counts = match crate::git::stamp_counts_many(ws, &list).await {
         Ok(m) => Some(m),
         Err(e) => {
             trend.git_note = format!("本机提交数没读成:{e}");
@@ -198,12 +215,16 @@ async fn open_issues_by_week(owner_repo: &str, weeks: &[String]) -> Result<Vec<u
     Ok(out)
 }
 
-/// 那一周的 `[周一 00:00, 下周一 00:00)`,unix 秒,**按本机时区切**。
+/// 一个横坐标标签对应的 `[起, 止)`,unix 秒,**按本机时区切**。
 ///
-/// 和 git 那条线用的是同一个函数,所以两条线切在同一刀上 —— 曾经远端那条按
-/// UTC 切、git 那条按本机切,UTC+8 下周一早上的动静掉进上一周(评审抓的)。
-fn window_of(week: &str) -> Result<(i64, i64), String> {
-    crate::git::week_window(week).map_err(|e| e.to_string())
+/// 认 ISO 周或 `YYYY-MM-DD`。和 git 那条线用同一把刀 —— 曾经远端按 UTC 切、
+/// git 按本机切,UTC+8 下周一早上的动静掉进上一周(评审抓的)。
+fn window_of(label: &str) -> Result<(i64, i64), String> {
+    if isoweek::is_week(label) {
+        crate::git::week_window(label).map_err(|e| e.to_string())
+    } else {
+        crate::git::day_window(label).map_err(|e| e.to_string())
+    }
 }
 
 /// codehub 版的「每周合入 MR 数」,对仗 [`merged_prs_by_week`]。codehub-cli
