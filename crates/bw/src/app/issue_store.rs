@@ -731,10 +731,10 @@ mod tests {
     }
 
     #[test]
-    fn one_schedule_drops_week_named_plan() {
-        let (week, plan) = one_schedule("2026-W35", &["bw:plan:2026-W35"]);
+    fn one_schedule_keeps_any_nonempty_plan() {
+        let (week, plan) = one_schedule("2026-W35", &["bw:plan:MVP收尾"]);
         assert!(week.is_none());
-        assert!(plan.is_none());
+        assert_eq!(plan.as_deref(), Some("MVP收尾"));
     }
 
     #[test]
@@ -742,7 +742,7 @@ mod tests {
         assert_eq!(parse_plan(&["bw:plan:MVP收尾".into()]), "MVP收尾");
         assert_eq!(parse_plan(&["bw:plan:v0.3".into()]), "v0.3");
         assert_eq!(parse_plan(&["bw:plan:".into()]), "");
-        assert_eq!(parse_plan(&["bw:plan:2026-W36".into()]), "");
+        assert_eq!(parse_plan(&["bw:plan:2026-W36".into()]), "2026-W36");
     }
 
     #[test]

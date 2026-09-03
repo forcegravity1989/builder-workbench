@@ -38,6 +38,7 @@ def weeks_in(since: datetime.date, until: datetime.date):
 
 def main() -> int:
     sys.stdout.reconfigure(encoding="utf-8")  # Windows 默认 gbk,中文会乱码
+    sys.stderr.reconfigure(encoding="utf-8")
 
     ap = argparse.ArgumentParser()
     ap.add_argument("--since", required=True)

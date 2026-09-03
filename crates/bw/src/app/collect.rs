@@ -446,6 +446,8 @@ async fn run_script(ws: &Path, run: &[String], labels: &[String]) -> Result<Scri
         .arg("--granularity")
         .arg(grain_of(labels))
         .current_dir(ws)
+        .env("PYTHONUTF8", "1")
+        .env("PYTHONIOENCODING", "utf-8")
         .stdin(Stdio::null())
         .stdout(Stdio::piped())
         .stderr(Stdio::piped());

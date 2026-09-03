@@ -420,7 +420,7 @@
       <h2 class="sec"><span class="n">背后</span></h2>
       <div class="res">
         <ul>
-          <li><span class="b"></span><div><strong>对远端代码仓</strong>：读 issue 列表和里程碑。每个里程碑都是一个版本，标题是 ISO 周号（<code>2026-W36</code>）的旧里程碑除外——不进下拉、不当在研、也不标「本周」。在研版本是覆盖当天的版本里程碑（多个取最后创建，编辑表单下拉可切）。版本目标来自打了该版本标签的运作活①最新评论里 <code>## 版本目标</code> 那一段。纳入了哪些活看 <code>bw:plan:&lt;名&gt;</code> 标签。</div></li>
+          <li><span class="b"></span><div><strong>对远端代码仓</strong>：读 issue 列表和里程碑。每个里程碑都是一个版本。在研版本是覆盖当天的里程碑（多个取最后创建，编辑表单下拉可切）。版本目标来自打了该版本标签的运作活①最新评论里 <code>## 版本目标</code> 那一段。纳入了哪些活看 <code>bw:plan:&lt;名&gt;</code> 标签。</div></li>
           <li><span class="b"></span><div><strong>对你的机器</strong>：跑 <code>.bw/metrics.toml</code> 里的采集脚本，窗口近四周。脚本只吐一个当下值时，折线只在本周画一个点。仓统计走 git，再问远端合入的 PR。</div></li>
           <li><span class="b"></span><div><strong>对 <code>.bw/</code></strong>：指标定义读 <code>metrics.toml</code>。B 类点「采集」或每天 20:00 自动采，把<strong>当天</strong>的值记进账本 <code>readings.jsonl</code>（同一天再采覆盖这一行，不写主检出）。折线按周画，取那一周最后一天。没有采集脚本的 B 类仍然采不到。C 类在卡上填今天的数，和 B 类同一份流水、同一套覆盖。</div></li>
         </ul>

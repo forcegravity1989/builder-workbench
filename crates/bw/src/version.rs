@@ -121,10 +121,9 @@ pub fn context_block(inv: &VersionInventory) -> String {
     )
 }
 
-/// 排期名。ISO 周只做节律,不当版本(旧 `2026-W35` 里程碑 / `bw:plan:` 不进下拉)。
+/// 排期名。非空即可;名字不设限。ISO 周只做节律,产品不新建周号版本,但不在这里滤。
 pub fn is_plan_name(s: &str) -> bool {
-    let s = s.trim();
-    !s.is_empty() && !crate::isoweek::is_week(s)
+    !s.trim().is_empty()
 }
 
 /// 里程碑起止都是 `YYYY-MM-DD`。缺一边就不覆盖,不猜。
@@ -161,7 +160,7 @@ pub fn current_from_milestones(
     covering_on(rows, day).first().map(|s| (*s).to_string())
 }
 
-/// 有没有**版本**里程碑覆盖到这一 ISO 周。周号标题不当版本。
+/// 有没有里程碑覆盖到这一 ISO 周。
 pub fn week_has_covering(rows: &[(String, String, String, String)], week: &str) -> bool {
     rows.iter()
         .any(|r| is_plan_name(&r.0) && overlaps_week(&r.1, &r.2, week))
@@ -259,17 +258,17 @@ mod tests {
         ];
         assert_eq!(
             current_from_milestones(&with_week, "2026-09-03").as_deref(),
-            Some("v0.3")
+            Some("2026-W36")
         );
-        assert!(!covering_on(&with_week, "2026-09-03").contains(&"2026-W36"));
+        assert!(covering_on(&with_week, "2026-09-03").contains(&"2026-W36"));
         assert!(is_plan_name("v0.3"));
         assert!(is_plan_name("MVP收尾"));
-        assert!(!is_plan_name("2026-W36"));
+        assert!(is_plan_name("2026-W36"));
         assert!(!is_plan_name(""));
         assert!(current_from_milestones(&rows, "2026-09-08").is_none());
         assert!(week_has_covering(&rows, "2026-W36"));
         assert!(!week_has_covering(&rows, "2026-W37"));
-        assert!(!week_has_covering(&with_week[..1], "2026-W36"));
+        assert!(week_has_covering(&with_week[..1], "2026-W36"));
     }
 
     #[test]
