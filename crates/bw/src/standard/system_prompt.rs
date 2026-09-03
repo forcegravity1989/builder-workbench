@@ -1,7 +1,7 @@
 //! Workbench 的系统提示词主文件 + 阶段规范 references —— 编进二进制,
 //! **不硬编码在 Rust `format!` 里**。
 //!
-//! 改身份/铁律 = 改这里的 `SYSTEM.md.tmpl`(以前塞在 `app/bootstrap.rs` 的
+//! 改身份/纪律 = 改这里的 `SYSTEM.md.tmpl`(以前塞在 `app/bootstrap.rs` 的
 //! `format!` 里,改=改代码=重编译,人审得读 Rust)。`{{...}}` 占位由
 //! `app/bootstrap.rs` 的 `agent_system_prompt` 渲染。
 //!
@@ -37,17 +37,17 @@ pub fn references() -> Vec<ReferencePack> {
     const REFS: [(&str, &str, &str); 4] = [
         (
             "metrics",
-            "干指标活的 Workbench 规范(可回溯/不许写0/窗口由 Workbench 给)",
+            "怎么写 .bw/metrics.toml、脚本怎么吐数",
             REF_METRICS,
         ),
         (
             "week-plan-comment",
-            "运作活①评论格式(版本目标/本周纳入/读数快照,挂前要过校验脚本)",
+            "运作活①评论三个标题、标签和里程碑",
             REF_WEEK_PLAN_COMMENT,
         ),
         (
             "build",
-            "干改仓活的 Workbench 规范(活自己的分支/提 MR/合并是人/不自动 Done)",
+            "活的树在哪;评论和标签不是改仓",
             REF_BUILD,
         ),
         (

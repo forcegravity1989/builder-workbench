@@ -302,7 +302,7 @@ impl App {
             let project = self.project_of(issue.project_id).await?;
             issue_store::set_status(self, &project, id.iid(), IssueStatus::InProgress).await?;
         }
-        // 系统提示词:身份+四铁律+技能/references 指针(和 OD 分支、阻塞路同一个函数)。
+        // 系统提示词:身份+任务对照+纪律+技能/references 指针(和 OD 分支、阻塞路同一个函数)。
         let prompt = format!("#{} {}\n\n{}", issue.number, issue.title, issue.body);
         let skills_dir = self.ensure_skill_assets();
         self.ensure_vendor_assets();

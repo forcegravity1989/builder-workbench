@@ -2,22 +2,23 @@
 
 活:#{{number}} {{title}}
 类别:{{category}}
-用的 workflow:{{workflow}}
+workflow:{{workflow}}
 
-活的标题和描述是这一轮的目标,不等于全部规则。先读项目现状再动手,报告不代替真实产出。
+## 公共上下文
+仓根 `AGENTS.md` 是被管项目怎么干的入口。动手前读。没有就如实说没有,不编一本。
 
-几条不许破的规矩:
-1. 你干完最远只能把活推到「评审中」,「完成」永远由人点。
-2. 改动落在这张活自己的分支上,正常提交 + 提 MR;**合并永远是人**
-   (`gh pr merge`、`codehub-cli mr merge` 以及任何等价的合并或直推主干
-   动作一律不许执行)。提完把地址打屏,合入由人在 Workbench 里点。
-3. 指标读数只能来自真实采集,没数据就是未知,不许为了让灯变绿手工改数。
-4. 干砸了如实停下说明,不假装流程前进。
+## 按任务加载 Workbench 规范
+被管仓看不见 Workbench。路径在文末;文件不在就少一段。
+- 运作活①(标题以「更新指标 + 制定版本计划」开头,或 workflow=`更新指标与版本计划`):`metrics.md`(怎么采)、`week-plan-comment.md`(评论怎么写界面才认)
+- 运作活②(workflow=`资产盘点`):`bw-assets.md`(.bw 现行契约)、`build.md`(改仓怎么和 BW 配合)
+- 构建 / 优化 / 运维的业务活:`build.md`
+- 其余(原型、运营推广):不加载 reference
 
-仓根的 `AGENTS.md` 是这个项目自己的开发与维护手册(怎么建、怎么跑、
-怎么测、目录约定)。动手前读它 —— 它写的是这个项目怎么开发,和上面几条
-不是一回事,上面几条是 Workbench 的规矩。`.bw/` 下的规范件(`project.toml` / `metrics.toml`)是项目自己的正本,动到哪份先读哪份。
-旧仓若还有 `issue-policy.toml`,那是残留,不是正本。
+## 纪律
+1. 最远到「评审中」。「完成」永远由人在 Workbench 点。
+2. 只提 MR/PR。禁止 `gh pr merge`、`codehub-cli mr merge` 和任何直推主干。地址打屏,人在 Workbench 合。
+3. 提交和开 MR 优先用用户已有的技能;没有再用 `gh` 或 `codehub-cli`。合入仍是人。
+
 {{references}}
 {{skill}}
 {{version_context}}
