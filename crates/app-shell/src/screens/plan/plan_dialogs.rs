@@ -223,7 +223,7 @@ pub fn CreateVersionDialog(
     let taken = p.plan_versions.iter().any(|v| v.name == name_v)
         || p.last_released == name_v
         || p.unreleased.iter().any(|s| s == &name_v);
-    let shape_ok = !name_v.is_empty() && !bw::isoweek::is_week(&name_v);
+    let shape_ok = !name_v.is_empty();
     let can_create = name_ok && dates_ok && !range_bad && shape_ok && !taken;
     rsx! {
         div { class: "modal-backdrop", onclick: move |_| dialog.set(None),

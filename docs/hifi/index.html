@@ -662,8 +662,8 @@ var KANBAN_LEGAL={
 };
 function normView(key){
   if(!key||key==='all')return 'all';
-  if(/^week:/.test(key)||/^version:/.test(key))return key;
-  return 'week:'+key;
+  if(/^version:/.test(key))return key;
+  return 'all';
 }
 var GUIDE_CHAPTERS=[
   {id:'env',label:'环境准备',body:'claude CLI、Open Design、codehub-cli / gh 按需装。缺一项不影响接入,只影响对应类别的活能不能开工。「测一下」如实探活,没找到就是红,没接探活就是灰,不假装绿。Cursor 还没接。'},
@@ -1977,6 +1977,7 @@ function renderOverview(pid){
     charterEditHTML='<div class="formrow"><label class="label">想做什么</label><textarea class="textarea" data-bind="ui.charterDraft.'+pid+'.intent">'+esc(d.intent)+'</textarea></div>'
       + '<div class="formrow"><label class="label">最像的对标</label><input class="input" data-bind="ui.charterDraft.'+pid+'.benchmark" value="'+esc(d.benchmark)+'"></div>'
       + '<div class="formrow"><label class="label">三个月长成什么样(北极星)</label><textarea class="textarea" data-bind="ui.charterDraft.'+pid+'.northstar">'+esc(d.northstar)+'</textarea></div>'
+      + '<div class="formrow"><label class="label">在研版本</label><select class="select mono" data-bindchange="ui.overviewVersion.'+pid+'">'+(proj.version?'<option value="'+esc(proj.version)+'" selected>'+esc(proj.version)+'</option>':'<option value="" selected>（空）</option>')+'</select></div>'
       + '<div class="formrow"><label class="label">项目群</label><select class="select" data-bindchange="ui.charterDraft.'+pid+'.chatProvider"><option value="" '+(!d.chatProvider?'selected':'')+'>不配</option><option value="welink" '+(d.chatProvider==='welink'?'selected':'')+'>WeLink</option></select></div>'
       + (d.chatProvider?('<div class="formrow"><label class="label">群号</label><input class="input mono" data-bind="ui.charterDraft.'+pid+'.chatGroup" value="'+esc(d.chatGroup||'')+'"></div>'
         + '<div class="formrow"><label class="label">同步哪些通知</label>'
@@ -2026,7 +2027,7 @@ function renderOverview(pid){
             + '<div class="charter-line"><span class="k">想做什么</span>'+esc(card.intent)+'</div>'
             + '<div class="charter-line"><span class="k">对标</span>'+esc(card.benchmark)+'</div>'
             + '<div class="charter-line"><span class="k">北极星</span>'+esc(card.northstar)+(card.northstarAssumed?' <span class="asterisk">✱</span>':'')+'</div>'
-            + '<div class="charter-line"><span class="k">在研版本</span>'+esc(proj.version||'（空）')+'</div>'
+            + '<div class="charter-line"><span class="k">在研版本</span>'+esc(proj.version?proj.version+' · 本周':'（空）')+'</div>'
             + '<div class="charter-line"><span class="k">项目群</span>'+chatGroupLineHTML(pid)+'</div>'
             + '<div class="charter-meta"><span class="mono">'+esc(proj.repo)+'</span><span style="margin-left:auto;display:flex;gap:6px;"><button class="btn btn-sm" data-action="toastOnly" data-arg=\'"工作区已快进到远端最新(演示)"\'>↻ 拉到最新</button><button class="btn btn-sm" data-action="editCard" data-arg=\'"'+pid+'"\'>编辑</button></span></div>'))
     +     mrBanner
@@ -2192,13 +2193,13 @@ function renderPlan(pid){
   var viewMode=state.ui.planViewMode[pid]||'board';
 
   var viewOpts=[['all','全部 issue']];
-  VERSIONS.forEach(function(v){ viewOpts.push(['version:'+v, v]); });
+  VERSIONS.forEach(function(v){ viewOpts.push(['version:'+v, (proj.version&&v===proj.version)?(v+' · 本周'):v]); });
   function viewSel(){return '<select class="il-dd-btn" data-bindchange="ui.planLeft.'+pid+'">'+viewOpts.map(function(o){return '<option value="'+o[0]+'" '+(o[0]===left?'selected':'')+'>'+esc(o[1])+'</option>';}).join('')+'</select>';}
 
   var title, issuesList;
   if(left.indexOf('week:')===0){ left='all'; state.ui.planLeft[pid]='all'; }
   if(left==='all'){ title='全部 issue'; issuesList=allIssuesArr(pid); }
-  else { var vn=left.slice(8); title=vn; issuesList=allIssuesArr(pid).filter(function(i){return i.version===vn;}); }
+  else { var vn=left.slice(8); title=(proj.version&&vn===proj.version)?(vn+' · 本周'):vn; issuesList=allIssuesArr(pid).filter(function(i){return i.version===vn;}); }
 
   var rightBtns='';
   if(left==='all'){ rightBtns='<button class="btn btn-sm btn-secondary" data-action="toastOnly" data-arg=\'"演示:在 codehub 建里程碑(版本)"\'>创建版本</button><button class="btn btn-sm btn-secondary" data-action="toastOnly" data-arg=\'"演示:删 codehub 里程碑 + 摘 bw:plan 标签"\'>删除版本</button>'; }

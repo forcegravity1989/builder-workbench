@@ -1,8 +1,8 @@
 //! `.bw/project.toml` —— 项目意图与配置的正本。
 //!
-//! 意图字段 + `[chat]` 项目群 + `current_version`(在研版本)。都不入库——
-//! 总览、计划屏每次要显示就现读现解析这份文件。旧仓可能还有 `standard_version`,
-//! 读到就收下,新写入不再写这一行。
+//! 意图字段 + `[chat]` 项目群。都不入库——总览、计划屏每次要显示就现读现解析。
+//! 旧仓可能还有 `standard_version`(读到收下,新写入非空才写)和
+//! `current_version`(解析前丢掉,不进结构体,多一行不报错)。
 
 use super::{parse_toml, read_to_string, write_file, Result};
 use serde::{Deserialize, Serialize};
@@ -41,15 +41,23 @@ pub struct ProjectFile {
     /// 旧仓里的规范版本镜像。新写入不再写这一行。
     #[serde(default)]
     pub standard_version: String,
-    /// 计划屏顶部可切的「在研版本」。新项目默认 `v0.1`。
-    #[serde(default)]
-    pub current_version: String,
     #[serde(default)]
     pub chat: Option<ChatConfig>,
 }
 
 pub fn parse(raw: &str) -> Result<ProjectFile> {
-    parse_toml(REL_PATH, raw)
+    let mut kept = String::new();
+    for line in raw.lines() {
+        let t = line.trim_start();
+        if let Some(rest) = t.strip_prefix("current_version") {
+            if rest.trim_start().starts_with('=') {
+                continue;
+            }
+        }
+        kept.push_str(line);
+        kept.push('\n');
+    }
+    parse_toml(REL_PATH, &kept)
 }
 
 /// 不存在返回 `Ok(None)` —— 诚实的无事发生。
@@ -75,17 +83,12 @@ pub fn render(f: &ProjectFile) -> String {
     s.push_str(&format!("brief = {}\n", quote(&f.brief)));
     s.push_str(&format!("benchmark = {}\n", quote(&f.benchmark)));
     s.push_str(&format!("opportunity = {}\n", quote(&f.opportunity)));
-    s.push_str("\n# 在研版本。不进本机库,总览与计划屏每次要显示都现解析这个文件。\n");
     if !f.standard_version.is_empty() {
         s.push_str(&format!(
             "standard_version = {}\n",
             quote(&f.standard_version)
         ));
     }
-    s.push_str(&format!(
-        "current_version = {}\n",
-        quote(&f.current_version)
-    ));
     match &f.chat {
         None => {
             s.push_str("\n# 项目群没配。配了就在这里加一段 [chat](提供方 / 群号 / 同步哪些\n");

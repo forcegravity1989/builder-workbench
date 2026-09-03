@@ -272,7 +272,7 @@
           <thead><tr><th>我想…</th><th>去哪</th></tr></thead>
           <tbody>
             <tr><td>接一个仓、看铺了哪些文件、合铺底 MR</td><td><a href="#" onclick="go('u1');return false">第 0 站 · 接入项目</a></td></tr>
-            <tr><td>看健康灯、指标、改名片 / 在研版本 / 项目群</td><td><a href="#" onclick="go('u1b');return false">第 1 站 · 看总览</a></td></tr>
+            <tr><td>看健康灯、指标、改名片 / 项目群、看在研版本</td><td><a href="#" onclick="go('u1b');return false">第 1 站 · 看总览</a></td></tr>
             <tr><td>开始本版本、写版本目标、建活、看某个版本</td><td><a href="#" onclick="go('u1c');return false">第 2/3 站 · 定本周</a></td></tr>
             <tr><td>开工、作废、去会话、原型进 Open Design</td><td><a href="#" onclick="go('u1d');return false">第 4 站 · 干活</a></td></tr>
             <tr><td>合 MR、点完成、发版本</td><td><a href="#" onclick="go('u1e');return false">第 5 站 · 验收记发版</a></td></tr>
@@ -397,29 +397,29 @@
     <section class="screen" id="u1b" data-title="第 1 站 · 看总览" data-sec-name="怎么用">
       <div class="eyebrow">怎么用 · 第 1 站</div>
       <h1 class="disp">打开总览，看清这一周</h1>
-      <p class="lede">看清「这是什么、健康吗、这周要推什么、指标现在几个数」。改名片、在研版本、项目群也在这里，一张活一次 MR。</p>
+      <p class="lede">看清「这是什么、健康吗、这周要推什么、指标现在几个数」。改名片、项目群也在这里，一张活一次 MR。在研版本看覆盖当天的里程碑。</p>
       <div class="res">
         <div class="h">这一站能查到</div>
         <ul>
           <li><span class="b"></span><div>健康灯为什么是灰 / 黄 / 红</div></li>
           <li><span class="b"></span><div>指标三类怎么看、手填怎么记</div></li>
-          <li><span class="b"></span><div>怎么改名片、在研版本、项目群；顶栏刷新真正拉什么</div></li>
+          <li><span class="b"></span><div>怎么改名片、项目群；在研版本从哪来；顶栏刷新真正拉什么</div></li>
         </ul>
       </div>
 
       <h2 class="sec"><span class="n">操作</span></h2>
       <div class="ops">
         <div class="li"><div class="n">1</div><div class="t">项目墙点进这个项目。侧栏默认停在「总览」。</div></div>
-        <div class="li"><div class="n">2</div><div class="t">从上往下看：规范铺底还没合入时顶上会有一条常驻横幅；然后是名片和健康灯（名片上有在研版本和项目群）、北极星、本周计划进度、滞后、引领、代码仓统计、发版记录。</div></div>
+        <div class="li"><div class="n">2</div><div class="t">从上往下看：规范铺底还没合入时顶上会有一条常驻横幅；然后是名片和健康灯（名片上有在研版本——覆盖当天的里程碑，有值后面带「本周」——和项目群）、北极星、本周计划进度、滞后、引领、代码仓统计、发版记录。</div></div>
         <div class="li"><div class="n">3</div><div class="t">本会话第一次打开这个项目，Workbench 会自己采一轮指标和仓统计。卡上先写「正在采…」，采完折线出现。还想再采，用各块上的「重新采集」。</div></div>
         <div class="li"><div class="n">4</div><div class="t">顶栏「刷新」会先把打开着的项目拉到远端最新，再重采。主检出上若只脏了读数或接入留下的未提交名片，Workbench 会先让开再拉。只重画界面、不拉仓，会继续看见同事已经合进主干的旧 <code>metrics.toml</code>。</div></div>
-        <div class="li"><div class="n">5</div><div class="t">改项目名称 / 想做什么 / 对标 / 三个月长成什么样，或改在研版本、项目群：点「编辑项目名片」。保存后这张活在「评审中」（计划屏右上角下拉切「全部 issue」就能看见，不进待办池）。总览横幅或看板拖到「已完成」合入。</div></div>
+        <div class="li"><div class="n">5</div><div class="t">改项目名称 / 想做什么 / 对标 / 三个月长成什么样，或改项目群：点「编辑」。编辑表单里「在研版本」下拉永远在，选项是覆盖今天的里程碑，改了只切本机选中、不建 MR。保存名片后这张活在「评审中」（计划屏右上角下拉切「全部 issue」就能看见，不进待办池）。总览横幅或看板拖到「已完成」合入。</div></div>
       </div>
 
       <h2 class="sec"><span class="n">背后</span></h2>
       <div class="res">
         <ul>
-          <li><span class="b"></span><div><strong>对远端代码仓</strong>：读 issue 列表。版本目标来自本周运作活①最新评论里 <code>## 版本目标</code> 那一段。纳入了哪些活看 <code>bw:plan:v0.x</code> 标签。</div></li>
+          <li><span class="b"></span><div><strong>对远端代码仓</strong>：读 issue 列表和里程碑。每个里程碑都是一个版本。在研版本是覆盖当天的里程碑（多个取最后创建，编辑表单下拉可切）。版本目标来自打了该版本标签的运作活①最新评论里 <code>## 版本目标</code> 那一段。纳入了哪些活看 <code>bw:plan:&lt;名&gt;</code> 标签。</div></li>
           <li><span class="b"></span><div><strong>对你的机器</strong>：跑 <code>.bw/metrics.toml</code> 里的采集脚本，窗口近四周。脚本只吐一个当下值时，折线只在本周画一个点。仓统计走 git，再问远端合入的 PR。</div></li>
           <li><span class="b"></span><div><strong>对 <code>.bw/</code></strong>：指标定义读 <code>metrics.toml</code>。B 类点「采集」或每天 20:00 自动采，把<strong>当天</strong>的值记进账本 <code>readings.jsonl</code>（同一天再采覆盖这一行，不写主检出）。折线按周画，取那一周最后一天。没有采集脚本的 B 类仍然采不到。C 类在卡上填今天的数，和 B 类同一份流水、同一套覆盖。</div></li>
         </ul>
@@ -430,7 +430,7 @@
         <ul>
           <li><span class="b"></span><div>健康灯和三条理由。没数据就是灰，不是绿。</div></li>
           <li><span class="b"></span><div>北极星 / 滞后 / 引领每张卡：<strong>有读数</strong>才有现值和折线。A 类每次现算四周；B 类采到的当下值进流水；读到 <strong>0</strong> 是真值，不是「没采到」。</div></li>
-          <li><span class="b"></span><div>本周计划进度：确认的 <code>v0.x</code> + 版本目标这段 + 五段计数。运作活①本周已关会写「已完成」。侧栏下一格就是计划。</div></li>
+          <li><span class="b"></span><div>本周计划进度：覆盖当天的版本 + 版本目标这段 + 五段计数。运作活①本周已关会写「已完成」。侧栏下一格就是计划。</div></li>
         </ul>
       </div>
 
@@ -467,16 +467,16 @@
 
       <h2 class="sec"><span class="n">操作</span></h2>
       <div class="ops">
-        <div class="li"><div class="n">1</div><div class="t">总览顶上「开始本版本」。本周还没有这张运作活①才会出现；已经做过（含已完成）不再冒出来。</div></div>
-        <div class="li"><div class="n">2</div><div class="t">跳到会话屏。agent 按版本计划剧本走：复盘、采指标、先确认本周这个 <code>v0.x</code>，再起草版本目标与纳入清单。你在会话屏的 Orca 页看着、随时能停。</div></div>
-        <div class="li"><div class="n">3</div><div class="t">你确认之后，agent 当场建纳入的业务活，并打上 <code>bw:plan:v0.x</code>（codehub 还挂同名里程碑）。版本目标、纳入清单、指标读数快照写成运作活①的三条评论，标题必须是 <code>## 版本目标</code> / <code>## 本周纳入</code> / <code>## 本周指标读数</code>。版本目标那一段一句或一段都行。不要打 <code>bw:week</code>。</div></div>
-        <div class="li"><div class="n">4</div><div class="t">侧栏点「计划」。版本头是版本目标那段，默认只露两行，点右下角小框展开，再点收起。点某个版本只看打了那个 <code>bw:plan:v0.x</code> 的活；没打版本标签的切到右上角下拉「全部 issue」就能看见。</div></div>
+        <div class="li"><div class="n">1</div><div class="t">总览顶上「开始本版本」。本周没有覆盖中的里程碑、也没有开着的运作活①才会出现；上周那张还开着也会挡住。新的一周若上一版周五已截止，在研为空，按钮回来。</div></div>
+        <div class="li"><div class="n">2</div><div class="t">跳到会话屏。agent 按版本计划剧本走：复盘、采指标、先确认本周版本（推荐 <code>v0.x</code>，别的名字也行），再起草版本目标与纳入清单。你在会话屏的 Orca 页看着、随时能停。</div></div>
+        <div class="li"><div class="n">3</div><div class="t">你确认之后，agent 当场建纳入的业务活，并打上 <code>bw:plan:&lt;版本名&gt;</code>（codehub 还挂同名里程碑，起止默认本周周一到周五）。版本目标、纳入清单、指标读数快照写成运作活①的三条评论，标题必须是 <code>## 版本目标</code> / <code>## 本周纳入</code> / <code>## 本周指标读数</code>。版本目标那一段一句或一段都行。版本名推荐 <code>vX.X</code>，别的也行。</div></div>
+        <div class="li"><div class="n">4</div><div class="t">侧栏点「计划」。版本头是版本目标那段，默认只露两行，点右下角小框展开，再点收起。点某个版本只看打了那个 <code>bw:plan:&lt;名&gt;</code> 的活；没打版本标签的切到右上角下拉「全部 issue」就能看见。</div></div>
       </div>
 
       <h2 class="sec"><span class="n">背后</span></h2>
       <div class="res">
         <ul>
-          <li><span class="b"></span><div><strong>对远端代码仓</strong>：建一张标题为 <code>更新指标 + 制定版本计划</code> 的运作活①（确认版本后标题带上 <code>v0.x</code>，同一 ISO 周不会建第二张）。纳入的活是真的远端 issue，不是本地草稿。</div></li>
+          <li><span class="b"></span><div><strong>对远端代码仓</strong>：有光杆未打版本标签的运作活①就复用，没有再新建（标题 <code>更新指标 + 制定版本计划</code>；确认版本后标题带上版本名）。纳入的活是真的远端 issue，不是本地草稿。</div></li>
           <li><span class="b"></span><div><strong>对你的机器</strong>：这张活自己的工作目录。缺的 <code>metrics.toml</code> 和采集脚本会在开工时铺上（已有不覆盖），经这张活的 MR 合进默认分支。</div></li>
           <li><span class="b"></span><div><strong>对 <code>.bw/</code></strong>：指标定义和脚本进仓。版本目标只在 issue 评论里，不另写一份计划文件。</div></li>
         </ul>
@@ -577,7 +577,7 @@
         <ul>
           <li><span class="b"></span><div><strong>对远端代码仓</strong>：先合那张 MR，再关掉 issue。发版先建远端 Release，成功后再给勾过的活打 <code>bw:released:vX</code>。顺序不能反。出包不碰远端 Release。</div></li>
           <li><span class="b"></span><div><strong>对你的机器</strong>：合入后尽量把主仓拉到最新，收掉这张活的工作目录。点「出包」会在仓里 <code>.bw/release/out/版本号/</code> 落下安装包；验包在隔离桌面点两屏，不抢你正在用的窗口。</div></li>
-          <li><span class="b"></span><div><strong>对 <code>.bw/</code></strong>：在研版本仍是名片里那一行，发版<strong>不改</strong>它。要切号，去总览点「编辑项目名片」，和四字段、项目群一起保存，走同一张活的 MR。</div></li>
+          <li><span class="b"></span><div><strong>对 <code>.bw/</code></strong>：在研版本不进仓文件。发版也不改名片。号就是刚发的那个里程碑名；下一周若里程碑已截止，总览在研为空。</div></li>
         </ul>
       </div>
 
@@ -585,7 +585,7 @@
       <div class="res">
         <ul>
           <li><span class="b"></span><div>点「出包」：仓里多一份这个版本的安装包（弹窗第一行「打开目录」）。点「发版本」：远端多一个 Release，选中的活带上版本标签。</div></li>
-          <li><span class="b"></span><div>总览「在研版本」还是名片上的号——发版没去改那一行。</div></li>
+          <li><span class="b"></span><div>总览「在研版本」仍看覆盖当天的里程碑——发版没去改覆盖时间的话，号还在。</div></li>
           <li><span class="b"></span><div>总览「已发版次数」跟远端 Release 列表走；远端读不到才退回本机 git 标签。</div></li>
         </ul>
       </div>

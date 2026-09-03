@@ -8,18 +8,15 @@ use crate::vm::*;
 use bw::model::IssueStatus;
 use std::path::Path;
 
-/// 某一周的五段计数。`week` 传 `None` = 不按周过滤(计划屏的「全部活」视图)。
+/// 某个版本的五段计数。`week` 传 `None` = 不按版本过滤(计划屏的「全部活」)。
+/// 传版本名则只数挂了 `bw:plan:<名>` 的活。
 ///
-/// **直接数活,不数看板列**:看板的范围跟着计划屏左栏走,总览那块「本周计划
-/// 进度」要的是本周,两者不能共用一份数——共用的后果是人在计划屏点了历史周,
-/// 总览的「本周」标题下摆着那一周的数。
-///
-/// 待办池不算进去,它按定义就是「没排进任何一周」;**阻塞单独一段**,不能像
-/// 早先那样整列漏掉——红的那张活正是最该被看见的。
+/// **直接数活,不数看板列**:看板跟着计划屏下拉走,总览「本周计划进度」跟在研。
+/// 待办池不算进去;**阻塞单独一段**。
 pub(super) fn build_week_counts(issues: &[bw::Issue], week: Option<&str>) -> WeekCountsVm {
     let in_scope = |i: &&bw::Issue| match week {
         None => true,
-        Some(w) => i.plan_version == w || i.week_of == w,
+        Some(w) => i.plan_version == w,
     };
     let n = |st: IssueStatus| {
         issues

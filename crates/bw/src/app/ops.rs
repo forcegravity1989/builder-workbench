@@ -11,11 +11,12 @@
 //! 启动的第一次 tick 天然成立,自动补上。
 
 use super::{issue_store, App, AppError, ProgressLine, Result};
-use crate::command::Event;
-use crate::defaults;
-use crate::isoweek;
-use crate::local::ProjectRegistry;
-use crate::model::{Issue, IssueId, IssueKind, IssueOrigin, IssueStatus, ProjectId};
+use crate::{
+    command::Event,
+    defaults, isoweek,
+    local::ProjectRegistry,
+    model::{Issue, IssueId, IssueKind, IssueOrigin, IssueStatus, ProjectId},
+};
 
 /// 运作活①的 `workflow` 字段值,对应剧本 `week-planning`。两者的对应关系在
 /// `standard/skills/README.md` 那张表里。
@@ -26,18 +27,18 @@ pub const OPS3_WORKFLOW: &str = "规范铺底";
 /// 剧本名。开工时按这个 slug 在 **Workbench 自己的技能目录**里找到那份
 /// `SKILL.md`,把**名字 + 一句话 + 路径**给 agent(正文它自己按需读,见
 /// [`crate::standard::skills`])。
-/// 运作活①刚建时的标题(确认版本后会在后面加 ` v0.x`)。
+/// 运作活①刚建时的标题(确认版本后会在后面加空格和版本名)。
 pub fn ops1_title() -> String {
     crate::version::OPS1_TITLE.to_string()
 }
 
-/// 认运作活①:标题是光杆或光杆 + ` v0.x`,或 workflow 对得上。
+/// 认运作活①:标题是光杆或光杆 + 空格 + 版本名,或 workflow 对得上。
 pub fn is_ops1_issue(i: &Issue) -> bool {
     i.kind == IssueKind::Ops
         && (i.workflow == OPS1_WORKFLOW || crate::version::is_ops1_title(&i.title))
 }
 
-/// 这一 ISO 周要不要再开一张运作活①:有未完成的,或本周已有打了 `v0.x` 的
+/// 这一 ISO 周要不要再开一张运作活①:有未完成的,或本周已有打了版本标签的
 /// (含已完成)。
 pub fn week_started(issues: &[Issue], current_week: &str) -> bool {
     let mut open = false;
@@ -49,9 +50,7 @@ pub fn week_started(issues: &[Issue], current_week: &str) -> bool {
         if i.status != IssueStatus::Done && i.status != IssueStatus::Cancelled {
             open = true;
         }
-        if crate::version::is_v0x(&i.plan_version)
-            && crate::isoweek::unix_in_week(i.created_at, current_week)
-        {
+        if !i.plan_version.is_empty() && crate::isoweek::unix_in_week(i.created_at, current_week) {
             tagged_this_week = true;
         }
     }
@@ -178,6 +177,19 @@ impl App {
         events.append(&mut ops_events);
         if !created {
             return Ok(events);
+        }
+        if let Ok(remote) = self.remote_for(&project) {
+            if let Ok(rows) = remote.list_milestones(&project.remote_path).await {
+                if let Some(ver) =
+                    crate::version::current_from_milestones(&rows, &isoweek::today_ymd())
+                {
+                    if let Err(e) =
+                        issue_store::assign_to_plan(self, &project, id.iid(), &ver).await
+                    {
+                        bw_engine::dlog!(warn, "ops", "[BW_OPS] 资产盘点挂在研 {ver} 没成:{e}");
+                    }
+                }
+            }
         }
         events.push(Event::OpsAutoFired {
             id,

@@ -47,10 +47,29 @@ pub fn today_local() -> Date {
     now_local().date()
 }
 
+/// 某一天的 `YYYY-MM-DD`。
+pub fn format_ymd(d: Date) -> String {
+    format!("{:04}-{:02}-{:02}", d.year(), u8::from(d.month()), d.day())
+}
+
 /// 本机今天的 `YYYY-MM-DD`,给「今日采过没有」这种戳用。
 pub fn today_ymd() -> String {
-    let d = today_local();
-    format!("{:04}-{:02}-{:02}", d.year(), u8::from(d.month()), d.day())
+    format_ymd(today_local())
+}
+
+/// 这一 ISO 周的周一。认不出返回 `None`。
+pub fn week_monday_ymd(week: &str) -> Option<String> {
+    week_start(week).map(format_ymd)
+}
+
+/// 这一 ISO 周的周五。建版本里程碑默认结束日。
+pub fn week_friday_ymd(week: &str) -> Option<String> {
+    week_start(week).map(|d| format_ymd(d + Duration::days(4)))
+}
+
+/// 这一 ISO 周的周日。给「覆盖到这周」做重叠判断。
+pub fn week_sunday_ymd(week: &str) -> Option<String> {
+    week_start(week).map(|d| format_ymd(d + Duration::days(6)))
 }
 
 /// `"2026-08-25"` → 那一天。认不出返回 `None`。

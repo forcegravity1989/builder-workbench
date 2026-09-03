@@ -72,10 +72,10 @@ pub enum Req {
     Cmd(Command),
     /// 打开某个项目(纯本机导航,不改任何数据)。
     Open(Option<ProjectId>),
-    /// 计划屏切到看某一周(旧周版本,读回仍认)。
-    ViewWeek(String),
-    /// 计划屏切到看某个计划版本(`v0.x` 或旧名)。
+    /// 计划屏切到看某个计划版本。
     ViewPlan(String),
+    /// 总览在研下拉选中某个覆盖当天的版本。
+    SelectOverviewVersion(String),
     /// 计划屏回到全部 issue。
     ViewAll(bool),
     /// 壳侧预判失败(改名撞名等),走同一条 toast。
@@ -497,6 +497,7 @@ pub fn spawn(deep_link: DeepLink) -> Bridge {
                     focus_skill: String::new(),
                     viewing_week: bw::isoweek::current_week(),
                     viewing_plan: String::new(),
+                    overview_version: String::new(),
                     view_all: true,
                     open_doc: None,
                     note: None,
@@ -975,6 +976,7 @@ pub fn spawn(deep_link: DeepLink) -> Bridge {
                             ui.open_doc = None;
                             ui.viewing_week = bw::isoweek::current_week();
                             ui.viewing_plan = String::new();
+                            ui.overview_version = String::new();
                             ui.view_all = true;
                             // 知识库那两个页签的结果是**上一个项目**的:它的技能
                             // 清单、它的 git 产物、它的发版记录、它的仓统计。留着
@@ -992,15 +994,13 @@ pub fn spawn(deep_link: DeepLink) -> Bridge {
                                 ui.set_note(Some("正在采本项目指标与仓统计…".into()));
                             }
                         }
-                        Req::ViewWeek(w) => {
-                            ui.viewing_week = w;
-                            ui.viewing_plan = String::new();
-                            ui.view_all = false;
-                        }
                         Req::ViewPlan(p) => {
                             ui.viewing_plan = p;
                             ui.viewing_week = String::new();
                             ui.view_all = false;
+                        }
+                        Req::SelectOverviewVersion(v) => {
+                            ui.overview_version = v;
                         }
                         Req::ViewAll(v) => {
                             if v {

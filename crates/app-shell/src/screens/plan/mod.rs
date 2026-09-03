@@ -64,10 +64,10 @@ impl ListFilter {
         // open 预设不过滤(显示全部);assigned/mine 已过滤
         if !self.plan.is_empty() {
             if self.plan == "unscheduled" {
-                if !c.plan_version.is_empty() || !c.week_of.is_empty() {
+                if !c.plan_version.is_empty() {
                     return false;
                 }
-            } else if c.plan_version != self.plan && c.week_of != self.plan {
+            } else if c.plan_version != self.plan {
                 return false;
             }
         }
@@ -215,39 +215,33 @@ fn Toolbar(
             editing.set(false);
         }
     }
+    let benzhou = |name: &str| -> String {
+        if !p.confirmed_version.is_empty() && name == p.confirmed_version {
+            format!("{name} · 本周")
+        } else {
+            name.to_string()
+        }
+    };
     let title = if p.view_all {
         "全部 issue".to_string()
     } else if !p.viewing_plan.is_empty() {
-        p.viewing_plan.clone()
-    } else if p.viewing_week == p.current_week {
-        format!("{} · 本周", p.viewing_week)
+        benzhou(&p.viewing_plan)
     } else {
-        p.viewing_week.clone()
+        "全部 issue".to_string()
     };
     let b_view = bridge.clone();
     let b_rename = bridge.clone();
     let view_opts: Vec<(String, String)> = {
         let mut v: Vec<(String, String)> = vec![("all".into(), "全部 issue".into())];
-        for w in &p.weeks {
-            let label = if w.week == p.current_week {
-                format!("{} · 本周", w.week)
-            } else {
-                w.week.clone()
-            };
-            v.push((format!("week:{}", w.week), label));
-        }
         for v2 in &p.plan_versions {
-            let label = v2.name.clone();
-            v.push((format!("version:{}", v2.name), label));
+            v.push((format!("version:{}", v2.name), benzhou(&v2.name)));
         }
         v
     };
-    let cur_view = if p.view_all {
+    let cur_view = if p.view_all || p.viewing_plan.is_empty() {
         "all".to_string()
-    } else if !p.viewing_plan.is_empty() {
-        format!("version:{}", p.viewing_plan)
     } else {
-        format!("week:{}", p.viewing_week)
+        format!("version:{}", p.viewing_plan)
     };
     let can_rename = !viewing_plan.is_empty() && !released;
     let taken: Vec<String> = p
@@ -282,7 +276,6 @@ fn Toolbar(
                             onclick: move |_| {
                                 let to = draft.read().trim().to_string();
                                 let clash = to.is_empty()
-                                    || bw::isoweek::is_week(&to)
                                     || (to != from && taken.iter().any(|s| s == &to));
                                 editing.set(false);
                                 if clash {
@@ -322,8 +315,6 @@ fn Toolbar(
                         let v = e.value();
                         if v == "all" {
                             b_view.send(Req::ViewAll(true));
-                        } else if let Some(w) = v.strip_prefix("week:") {
-                            b_view.send(Req::ViewWeek(w.to_string()));
                         } else if let Some(pl) = v.strip_prefix("version:") {
                             b_view.send(Req::ViewPlan(pl.to_string()));
                         }
@@ -400,12 +391,15 @@ fn WeekHead(p: ProjectVm) -> Element {
             .map(|v| v.goal.clone())
             .filter(|s| !s.is_empty())
             .unwrap_or_else(|| "（这个版本还没写版本目标）".into())
-    } else {
-        p.weeks
+    } else if !p.confirmed_version.is_empty() {
+        p.plan_versions
             .iter()
-            .find(|w| w.week == p.viewing_week)
-            .and_then(|w| w.goal.clone())
-            .unwrap_or_else(|| "（这一周还没写周目标）".into())
+            .find(|v| v.name == p.confirmed_version)
+            .map(|v| v.goal.clone())
+            .filter(|s| !s.is_empty())
+            .unwrap_or_else(|| "（在研版本还没写版本目标）".into())
+    } else {
+        "（还没有在研版本）".into()
     };
     let mut open = use_signal(|| false);
     let c = &p.board_counts;
