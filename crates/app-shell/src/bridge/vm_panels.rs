@@ -325,7 +325,23 @@ pub(super) fn build_metrics(
                     None => Vec::new(),
                 }
             },
-            day_trend: day_trend_from_readings(ws, name),
+            day_trend: {
+                let from_run = readout_of(name).map(|r| {
+                    r.day_points
+                        .iter()
+                        .map(|p| {
+                            (
+                                p.week.clone(),
+                                p.value.as_ref().and_then(|v| v.parse::<f64>().ok()),
+                            )
+                        })
+                        .collect::<Vec<_>>()
+                });
+                match from_run {
+                    Some(t) if t.iter().any(|(_, v)| v.is_some()) => t,
+                    _ => day_trend_from_readings(ws, name),
+                }
+            },
             feature: d.feature.clone(),
             leads: d.leads.clone(),
             collect_error: readout_of(name)

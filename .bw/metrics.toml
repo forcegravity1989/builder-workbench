@@ -1,7 +1,7 @@
 schema_version = 2
 
 # 北极星 1 条;滞后 / 引领各 ≤3。字段:name / def / target / collect / feature / leads。
-# feature 空 = 整体页签;有值 = 「XX特性」页签。
+# feature 空 = 主要页签;有值 = 「XX特性」页签。
 # leads 只写在引领上,值是它盯的那条滞后的 name。空 = 挂到同页签第一条滞后。
 # collect 两种:{ kind = "script", run = ["python", ".bw/scripts/x.py"], retro = true|false }
 #             或 { kind = "manual" }

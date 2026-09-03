@@ -45,8 +45,8 @@ def main() -> int:
     ap.add_argument("--granularity", default="week")
     args = ap.parse_args()
 
-    if args.granularity != "week":
-        print(f"只支持 --granularity week,收到 {args.granularity}", file=sys.stderr)
+    if args.granularity not in ("week", "day"):
+        print(f"只支持 --granularity week|day,收到 {args.granularity}", file=sys.stderr)
         return 2
 
     try:
@@ -94,10 +94,21 @@ def main() -> int:
     since = datetime.date.fromisoformat(args.since)
     until = datetime.date.fromisoformat(args.until)
     points = []
-    for label, monday in weeks_in(since, until):
-        lo = datetime.datetime.combine(monday, datetime.time(0, 0), tz).timestamp()
-        hi = lo + 7 * 24 * 3600
-        points.append({"week": label, "value": sum(1 for t in stamps if lo <= t < hi)})
+    if args.granularity == "day":
+        cur = since
+        while cur < until:
+            lo = datetime.datetime.combine(cur, datetime.time(0, 0), tz).timestamp()
+            hi = lo + 24 * 3600
+            points.append({
+                "day": cur.isoformat(),
+                "value": sum(1 for t in stamps if lo <= t < hi),
+            })
+            cur += datetime.timedelta(days=1)
+    else:
+        for label, monday in weeks_in(since, until):
+            lo = datetime.datetime.combine(monday, datetime.time(0, 0), tz).timestamp()
+            hi = lo + 7 * 24 * 3600
+            points.append({"week": label, "value": sum(1 for t in stamps if lo <= t < hi)})
 
     json.dump({"points": points}, sys.stdout, ensure_ascii=False)
     return 0

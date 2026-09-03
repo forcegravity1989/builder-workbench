@@ -92,6 +92,7 @@ pub(super) struct ProjectGathered {
     /// 所以这里算一次传给 `build_ops`,不再每重切都跑一遍 git。
     ops3_landed: bool,
     week_goals: std::collections::HashMap<String, String>,
+    week_progress: std::collections::HashMap<String, String>,
     current_week: String,
     mr_url_prefix: String,
     issue_url_prefix: String,
@@ -749,7 +750,7 @@ async fn wall_extra(
     app: &App,
     job: &WallJob,
 ) -> (std::collections::HashMap<String, String>, String, String) {
-    let (goals, last_delivery, version) = tokio::join!(
+    let (notes, last_delivery, version) = tokio::join!(
         app.week_goals_from_ops1(&job.p, &job.issues),
         async {
             bw::git::tags_with_dates(&job.ws)
@@ -770,7 +771,7 @@ async fn wall_extra(
                 .unwrap_or_default()
         },
     );
-    (goals, last_delivery, version)
+    (notes.goals, last_delivery, version)
 }
 
 async fn wall_extras_many(
@@ -1011,7 +1012,7 @@ async fn gather_project(
     let mr_url_prefix = p.mr_url_prefix();
     let issue_url_prefix = p.issue_url_prefix();
 
-    let (sessions, week_goals, releases, ops3_landed, last_delivery, plan_versions, current_user) = tokio::join!(
+    let (sessions, ops1_notes, releases, ops3_landed, last_delivery, plan_versions, current_user) = tokio::join!(
         build_sessions(app, id, &issues),
         app.week_goals_from_ops1(&p, &issues),
         load_releases(app, &p, &ws),
@@ -1035,7 +1036,7 @@ async fn gather_project(
         &ws,
         current_week,
         &issues,
-        week_goals.get(&goal_key).map(String::as_str),
+        ops1_notes.goals.get(&goal_key).map(String::as_str),
     )
     .await;
     let derived = bw::derive::derive_project_health(&inputs);
@@ -1072,7 +1073,8 @@ async fn gather_project(
                 .collect(),
         },
         ops3_landed,
-        week_goals,
+        week_goals: ops1_notes.goals,
+        week_progress: ops1_notes.progress,
         current_week: current_week.to_string(),
 
         mr_url_prefix,
@@ -1165,6 +1167,11 @@ async fn assemble_project(
         if v.goal.is_empty() {
             if let Some(g) = pg.week_goals.get(&v.name) {
                 v.goal = g.clone();
+            }
+        }
+        if v.week_progress.is_empty() {
+            if let Some(note) = pg.week_progress.get(&v.name) {
+                v.week_progress = note.clone();
             }
         }
     }
@@ -1313,7 +1320,7 @@ async fn build_plan_versions(app: &App, p: &Project, issues: &[bw::Issue]) -> Ve
     }
     order
         .into_iter()
-        .filter(|name| !name.is_empty())
+        .filter(|name| bw::version::is_plan_name(name))
         .map(|name| {
             let (start, end, created_at) = meta.get(&name).cloned().unwrap_or_default();
             PlanVersionVm {
@@ -1324,6 +1331,7 @@ async fn build_plan_versions(app: &App, p: &Project, issues: &[bw::Issue]) -> Ve
                 issue_count: counts.remove(&name).unwrap_or(0),
                 released: false,
                 goal: String::new(),
+                week_progress: String::new(),
                 counts: build_week_counts(issues, Some(name.as_str())),
             }
         })

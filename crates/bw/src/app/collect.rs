@@ -48,6 +48,8 @@ pub struct MetricReadout {
     /// 近 N 周,旧的在前,**每一周都有一格**(没采到的那格是 `None`)。
     /// 手填与整条采集失败时是空的。
     pub points: Vec<MetricPoint>,
+    /// 近 14 个日历日。A 类按天再跑一趟脚本;跑不动就空着,不挡周走势。
+    pub day_points: Vec<MetricPoint>,
     /// 现值 = **最后那一周**的值。最后一周没采到就是 `None` —— 绝不拿上一周的
     /// 数顶上当现值,那会把一个过期的数字标成「现在是多少」。
     pub current: Option<String>,
@@ -113,6 +115,7 @@ async fn collect_one(
         name: def.name.clone(),
         class,
         points: Vec::new(),
+        day_points: Vec::new(),
         current: None,
         error: String::new(),
     };
@@ -142,6 +145,11 @@ async fn collect_one(
             r.current = Some(value);
         }
         Err(e) => r.error = e,
+    }
+    // 天粒度另跑一趟。脚本还不认 day 就空着,周走势照旧。
+    let days = isoweek::recent_days(14);
+    if let Ok(ScriptOutcome::Series(pts)) = run_script(ws, &def.collect.run, &days).await {
+        r.day_points = pts;
     }
     r
 }
@@ -393,8 +401,19 @@ struct ScriptOut {
 
 #[derive(Deserialize)]
 struct ScriptPoint {
+    #[serde(default)]
     week: String,
+    #[serde(default)]
+    day: String,
     value: serde_json::Value,
+}
+
+fn point_key(p: &ScriptPoint) -> &str {
+    if !p.day.is_empty() {
+        p.day.trim()
+    } else {
+        p.week.trim()
+    }
 }
 
 /// 把 JSON 值变成给人看的字符串。**数不带小数点尾巴,字符串原样。**
@@ -415,7 +434,7 @@ async fn run_script(ws: &Path, run: &[String], labels: &[String]) -> Result<Scri
         .arg("--until")
         .arg(&until)
         .arg("--granularity")
-        .arg("week")
+        .arg(grain_of(labels))
         .current_dir(ws)
         .stdin(Stdio::null())
         .stdout(Stdio::piped())
@@ -462,7 +481,7 @@ fn align_script_out(parsed: ScriptOut, labels: &[String]) -> Result<ScriptOutcom
         let value = parsed
             .points
             .iter()
-            .find(|p| p.week.trim() == w.as_str())
+            .find(|p| point_key(p) == w.as_str())
             .and_then(|p| as_text(&p.value));
         points.push(MetricPoint {
             week: w.clone(),
@@ -471,7 +490,7 @@ fn align_script_out(parsed: ScriptOut, labels: &[String]) -> Result<ScriptOutcom
     }
     if points.iter().all(|p| p.value.is_none()) {
         return Err(
-            "采集脚本给的周号和 Workbench 要的对不上(要的是 `2026-W34` 这种 ISO 周)".into(),
+            "采集脚本给的点号和 Workbench 要的对不上(周是 `2026-W34`,天是 `2026-09-01`)".into(),
         );
     }
     Ok(ScriptOutcome::Series(points))
@@ -492,15 +511,31 @@ fn week_labels(weeks: u32) -> Vec<String> {
     out
 }
 
-/// 这一串周对应的 `[since, until)`,都是本机时区的日期。**左闭右开** ——
-/// `until` 是最后一周的下周一,不是那一周的周日,免得少算一天。
+fn grain_of(labels: &[String]) -> &'static str {
+    if labels
+        .first()
+        .is_some_and(|s| isoweek::parse_ymd(s).is_some())
+    {
+        "day"
+    } else {
+        "week"
+    }
+}
+
+/// `[since, until)`,本机时区,左闭右开。周窗的 until 是最后一周的下周一;
+/// 天窗的 until 是最后一天的下一天。
 fn window_of(labels: &[String]) -> Result<(String, String), String> {
-    let first = labels.first().ok_or("没有要采的周")?;
-    let last = labels.last().ok_or("没有要采的周")?;
+    let first = labels.first().ok_or("没有要采的窗")?;
+    let last = labels.last().ok_or("没有要采的窗")?;
+    if let (Some(since), Some(last_day)) = (isoweek::parse_ymd(first), isoweek::parse_ymd(last)) {
+        return Ok((
+            isoweek::format_ymd(since),
+            isoweek::format_ymd(last_day + time::Duration::days(1)),
+        ));
+    }
     let (since, _) = isoweek::week_bounds(first).ok_or(format!("认不出周号 {first}"))?;
     let (_, until) = isoweek::week_bounds(last).ok_or(format!("认不出周号 {last}"))?;
-    let fmt = |d: time::Date| format!("{:04}-{:02}-{:02}", d.year(), u8::from(d.month()), d.day());
-    Ok((fmt(since), fmt(until)))
+    Ok((isoweek::format_ymd(since), isoweek::format_ymd(until)))
 }
 
 #[cfg(test)]
@@ -522,6 +557,33 @@ mod tests {
             ScriptOutcome::Snapshot(v) => assert_eq!(v, "8"),
             ScriptOutcome::Series(_) => panic!("must not invent a weekly series"),
         }
+    }
+
+    #[test]
+    fn daily_points_align_by_day_field() {
+        let out = align_script_out(
+            parse(r#"{"points":[{"day":"2026-09-01","value":2},{"day":"2026-09-03","value":4}]}"#),
+            &[
+                "2026-09-01".into(),
+                "2026-09-02".into(),
+                "2026-09-03".into(),
+            ],
+        )
+        .unwrap();
+        let ScriptOutcome::Series(points) = out else {
+            panic!("expected series");
+        };
+        assert_eq!(
+            points
+                .iter()
+                .map(|p| (p.week.as_str(), p.value.as_deref()))
+                .collect::<Vec<_>>(),
+            vec![
+                ("2026-09-01", Some("2")),
+                ("2026-09-02", None),
+                ("2026-09-03", Some("4")),
+            ]
+        );
     }
 
     #[test]

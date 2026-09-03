@@ -35,6 +35,7 @@ pub fn VersionPlan(p: ProjectVm, bridge: Bridge) -> Element {
     };
     let released = ver.released || p.releases.iter().any(|r| r.version == chosen);
     let goal = ver.goal;
+    let week_progress = ver.week_progress;
     let tag = if chosen.is_empty() {
         ""
     } else if released {
@@ -93,7 +94,11 @@ pub fn VersionPlan(p: ProjectVm, bridge: Bridge) -> Element {
                     div {
                         div { class: "ov-kicker", "每周进展" }
                         div { class: "ov-text-box",
-                            span { class: "detail-empty", "还没有周进展" }
+                            if week_progress.trim().is_empty() {
+                                span { class: "detail-empty", "还没有周进展" }
+                            } else {
+                                "{week_progress}"
+                            }
                         }
                     }
                 }

@@ -42,7 +42,7 @@ pub fn references() -> Vec<ReferencePack> {
         ),
         (
             "week-plan-comment",
-            "运作活①评论三个标题、标签和里程碑",
+            "运作活①评论三标题、标签、里程碑;周五每周进展怎么写",
             REF_WEEK_PLAN_COMMENT,
         ),
         ("build", "活的树在哪;评论和标签不是改仓", REF_BUILD),

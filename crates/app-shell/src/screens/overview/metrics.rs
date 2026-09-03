@@ -15,6 +15,7 @@ enum Grain {
     Day,
 }
 
+const TAB_MAIN: &str = "主要";
 const LAG_COLOR: &str = "var(--clay)";
 const LEAD_COLORS: [&str; 4] = [
     "var(--green)",
@@ -26,7 +27,7 @@ const LEAD_COLORS: [&str; 4] = [
 #[component]
 pub fn BizMetrics(p: ProjectVm, bridge: Bridge) -> Element {
     let tabs = feature_tabs(&p.metrics.lagging, &p.metrics.leading);
-    let mut tab = use_signal(|| "整体".to_string());
+    let mut tab = use_signal(|| TAB_MAIN.to_string());
     let grain = use_signal(|| Grain::Week);
     let off = use_signal(HashSet::<String>::new);
     let chosen = tab();
@@ -43,24 +44,22 @@ pub fn BizMetrics(p: ProjectVm, bridge: Bridge) -> Element {
                     div { class: "ov-block-title", "滞后性指标和引领性指标" }
                     {grain_seg(grain, "biz-grain")}
                     button {
-                        class: "btn btn-sm",
+                        class: "btn btn-sm btn-primary",
                         onclick: move |_| b.send(crate::bridge::Req::CollectMetrics),
-                        {if p.metrics.collected { "↻ 重新采集" } else { "↻ 采一次指标" }}
+                        "立即采集"
                     }
                 }
-                if tabs.len() > 1 {
-                    div { class: "ov-tabs", role: "tablist",
-                        for t in tabs.iter() {
-                            button {
-                                key: "{t}",
-                                class: if t == &chosen { "ov-tab on" } else { "ov-tab" },
-                                role: "tab",
-                                onclick: {
-                                    let t = t.clone();
-                                    move |_| tab.set(t.clone())
-                                },
-                                "{t}"
-                            }
+                div { class: "ov-tabs", role: "tablist",
+                    for t in tabs.iter() {
+                        button {
+                            key: "{t}",
+                            class: if t == &chosen { "ov-tab on" } else { "ov-tab" },
+                            role: "tab",
+                            onclick: {
+                                let t = t.clone();
+                                move |_| tab.set(t.clone())
+                            },
+                            "{tab_label(t)}"
                         }
                     }
                 }
@@ -99,6 +98,7 @@ fn plot_block(
     let series: Vec<MultiSeries> = rows
         .iter()
         .map(|(m, right, color)| MultiSeries {
+            name: m.name.clone(),
             points: points_of(m, day),
             color,
             right: *right,
@@ -185,7 +185,7 @@ pub fn ManualFill(pid: ProjectId, name: String, current: String, bridge: Bridge)
                 oninput: move |e| draft.set(e.value()),
             }
             button {
-                class: "btn btn-sm btn-primary",
+                class: "btn btn-sm",
                 disabled: draft.read().trim().is_empty(),
                 onclick: move |_| {
                     let v = draft.read().trim().to_string();
@@ -218,7 +218,7 @@ pub fn SdlcMetrics(p: ProjectVm, bridge: Bridge) -> Element {
                     button {
                         class: "btn btn-sm btn-primary",
                         onclick: move |_| b.send(crate::bridge::Req::CollectRepoStats),
-                        {if p.repo_stats.is_some() { "↻ 重新采集" } else { "立即采集" }}
+                        "立即采集"
                     }
                 }
             }
@@ -268,7 +268,7 @@ fn sdlc_grid(s: &RepoStatsVm, day: bool) -> Element {
                         span { class: "val", "{last_known(pts, pick)}" }
                     }
                     {sparkline::trend_chart(&Series {
-                        label: String::new(),
+                        label: label.to_string(),
                         points: pts.iter().map(|p| (axis_label(&p.week), pick(p))).collect(),
                         color,
                     })}
@@ -313,24 +313,34 @@ fn grain_seg(mut grain: Signal<Grain>, _name: &str) -> Element {
 fn feature_of(m: &MetricCardVm) -> String {
     let f = m.feature.trim();
     if f.is_empty() {
-        "整体".into()
+        TAB_MAIN.into()
     } else {
         f.to_string()
     }
 }
 
+fn tab_label(key: &str) -> String {
+    if key == TAB_MAIN {
+        TAB_MAIN.into()
+    } else if key.ends_with("特性") {
+        key.to_string()
+    } else {
+        format!("{key}特性")
+    }
+}
+
 pub(super) fn feature_tabs(lagging: &[MetricCardVm], leading: &[MetricCardVm]) -> Vec<String> {
-    let mut tabs = vec!["整体".to_string()];
+    let mut tabs = vec![TAB_MAIN.to_string()];
     for m in lagging.iter().chain(leading.iter()) {
         let f = feature_of(m);
-        if f != "整体" && !tabs.iter().any(|t| t == &f) {
+        if f != TAB_MAIN && !tabs.iter().any(|t| t == &f) {
             tabs.push(f);
         }
     }
     tabs
 }
 
-/// 该页签要画的图。只有引领、没有滞后的特性不另开空图,那些引领落到整体第一条。
+/// 该页签要画的图。只有引领、没有滞后的特性不另开空图,那些引领落到主要第一条。
 pub(super) fn plots_for<'a>(
     tab: &str,
     lagging: &'a [MetricCardVm],
@@ -342,10 +352,10 @@ pub(super) fn plots_for<'a>(
     }
     let mut leads: Vec<&'a MetricCardVm> =
         leading.iter().filter(|m| feature_of(m) == tab).collect();
-    if tab == "整体" {
+    if tab == TAB_MAIN {
         for m in leading {
             let f = feature_of(m);
-            if f != "整体" && !lagging.iter().any(|l| feature_of(l) == f) {
+            if f != TAB_MAIN && !lagging.iter().any(|l| feature_of(l) == f) {
                 leads.push(m);
             }
         }
@@ -429,11 +439,18 @@ mod tests {
     }
 
     #[test]
+    fn tab_label_adds_特性() {
+        assert_eq!(tab_label(TAB_MAIN), "主要");
+        assert_eq!(tab_label("会话"), "会话特性");
+        assert_eq!(tab_label("会话特性"), "会话特性");
+    }
+
+    #[test]
     fn empty_feature_is_overall_tab() {
         let lags = vec![card("滞后甲", "", "")];
         let leads = vec![card("引领甲", "", "滞后甲")];
-        assert_eq!(feature_tabs(&lags, &leads), vec!["整体".to_string()]);
-        let plots = plots_for("整体", &lags, &leads);
+        assert_eq!(feature_tabs(&lags, &leads), vec![TAB_MAIN.to_string()]);
+        let plots = plots_for(TAB_MAIN, &lags, &leads);
         assert_eq!(plots.len(), 1);
         assert_eq!(plots[0].0.name, "滞后甲");
         assert_eq!(plots[0].1.len(), 1);
@@ -444,7 +461,7 @@ mod tests {
     fn missing_leads_attaches_to_first_lag() {
         let lags = vec![card("滞后甲", "", ""), card("滞后乙", "", "")];
         let leads = vec![card("引领甲", "", "")];
-        let plots = plots_for("整体", &lags, &leads);
+        let plots = plots_for(TAB_MAIN, &lags, &leads);
         assert_eq!(plots[0].1.len(), 1);
         assert!(plots[1].1.is_empty());
     }
@@ -453,7 +470,7 @@ mod tests {
     fn named_leads_attaches_to_second_lag() {
         let lags = vec![card("滞后甲", "", ""), card("滞后乙", "", "")];
         let leads = vec![card("引领乙", "", "滞后乙")];
-        let plots = plots_for("整体", &lags, &leads);
+        let plots = plots_for(TAB_MAIN, &lags, &leads);
         assert!(plots[0].1.is_empty());
         assert_eq!(plots[1].1.len(), 1);
         assert_eq!(plots[1].1[0].name, "引领乙");
@@ -465,10 +482,10 @@ mod tests {
         let leads = vec![card("引领甲", "某特性", "")];
         assert_eq!(
             feature_tabs(&lags, &leads),
-            vec!["整体".to_string(), "某特性".to_string()]
+            vec![TAB_MAIN.to_string(), "某特性".to_string()]
         );
         assert!(plots_for("某特性", &lags, &leads).is_empty());
-        let overall = plots_for("整体", &lags, &leads);
+        let overall = plots_for(TAB_MAIN, &lags, &leads);
         assert_eq!(overall[0].1.len(), 1);
         assert_eq!(overall[0].1[0].name, "引领甲");
     }

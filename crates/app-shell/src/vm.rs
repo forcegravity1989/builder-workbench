@@ -276,7 +276,7 @@ pub struct MetricCardVm {
     pub trend: Vec<(String, Option<f64>)>,
     /// 近 14 个日历日走势。没日行的格是 `None`,断开,不补 0。
     pub day_trend: Vec<(String, Option<f64>)>,
-    /// `.bw/metrics.toml` 的 `feature`。空 = 总览「整体」页签。
+    /// `.bw/metrics.toml` 的 `feature`。空 = 总览「主要」页签。
     pub feature: String,
     /// 引领盯的滞后 `name`。空 = 同页签第一条滞后。滞后 / 北极星上无意义。
     pub leads: String,
@@ -444,6 +444,8 @@ pub struct PlanVersionVm {
     pub released: bool,
     /// 打了这个版本标签的运作活①评论里的版本目标。没有就是空。
     pub goal: String,
+    /// 同一张①上周五收口的每周进展。没有就是空。
+    pub week_progress: String,
     /// 挂了这个版本的活的五段计数。没有开放活就是全 0,进度条空着。
     pub counts: WeekCountsVm,
 }

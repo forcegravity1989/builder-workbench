@@ -168,7 +168,7 @@ impl App {
             .create_ops_issue(
                 project_id,
                 title,
-                "mode: weekly\n\n两步:盘 Workbench 资产(.bw 跟上现行契约、点出未闭环的环),再盘项目本周改动。".into(),
+                "mode: weekly\n\n先盘 Workbench 资产(.bw 跟上现行契约、点出未闭环的环),再盘项目本周改动,再给在研版本那张运作活①追加每周进展。".into(),
                 OPS2_WORKFLOW,
                 IssueOrigin::Auto,
                 week.clone(),

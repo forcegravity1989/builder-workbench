@@ -142,13 +142,13 @@ impl App {
         let ws = self.workspace_of(project_id).await?;
         let week = isoweek::current_week();
         let issues = self.issues(project_id).await?;
-        let goals = self.week_goals_from_ops1(&project, &issues).await;
+        let notes = self.week_goals_from_ops1(&project, &issues).await;
         let inputs = collect_health_inputs(
             &project,
             &ws,
             &week,
             &issues,
-            goals.get(&week).map(String::as_str),
+            notes.goals.get(&week).map(String::as_str),
         )
         .await;
         let health = derive_project_health(&inputs);
