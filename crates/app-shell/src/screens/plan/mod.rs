@@ -12,17 +12,18 @@ mod kanban;
 mod list_view;
 mod plan_dialogs;
 
-use crate::bridge::{Bridge, PanelNav, Req};
-use crate::vm::ProjectVm;
-use bw::command::Command;
-use bw::model::IssueId;
+use crate::{
+    bridge::{Bridge, PanelNav, Req},
+    vm::ProjectVm,
+};
+use bw::{command::Command, model::IssueId};
 use dioxus::prelude::*;
 
 use detail::{DetailModal, StartModal};
 use kanban::{board, PendingMove, PendingSchedule};
 use plan_dialogs::{
     ConfirmMoveDialog, CreateVersionDialog, DeleteVersionDialog, DialogKind, NewIssueDialog,
-    NewIssueDraft, PackDialog, PackDraft, ReleaseDialog, ReleaseDraft, ScheduleDialog,
+    NewIssueDraft, PackDialog, PackDraft, PackJob, ReleaseDialog, ReleaseDraft, ScheduleDialog,
 };
 
 /// 列表/看板视图模式。
@@ -113,10 +114,25 @@ pub fn View(p: ProjectVm, bridge: Bridge) -> Element {
     let schedule = use_signal(|| None::<PendingSchedule>);
     let start = use_signal(|| None::<IssueId>);
     let dialog = use_signal(|| None::<DialogKind>);
+    let mut pack_job = use_signal(|| PackJob {
+        packing: bridge.pack_ctl.in_flight(),
+        version: bridge.pack_ctl.version().unwrap_or_default(),
+        ..PackJob::default()
+    });
     let view_mode = use_signal(|| ViewMode::Board);
     let list_filter = use_signal(ListFilter::default);
     let col_seg = use_signal(std::collections::HashMap::<String, String>::new);
     let nav = use_context::<PanelNav>();
+
+    let prog = bridge.progress.clone();
+    use_future(move || {
+        let mut rx = prog.subscribe();
+        async move {
+            while let Ok(line) = rx.recv().await {
+                pack_job.with_mut(|job| job.apply_progress(line));
+            }
+        }
+    });
 
     let rows: Vec<&crate::vm::CardItemVm> = p
         .board
@@ -130,7 +146,7 @@ pub fn View(p: ProjectVm, bridge: Bridge) -> Element {
             class: "plan-grid",
             style: "height:calc(100vh - 112px);",
             div { class: "plan-col plan-mid",
-                Toolbar { p: p.clone(), bridge: bridge.clone(), view_mode, dialog }
+                Toolbar { p: p.clone(), bridge: bridge.clone(), view_mode, dialog, pack_job }
                 if !p.view_all {
                     WeekHead { p: p.clone() }
                 }
@@ -159,7 +175,7 @@ pub fn View(p: ProjectVm, bridge: Bridge) -> Element {
                 DialogKind::NewIssue(_) => rsx! { NewIssueDialog { p: p.clone(), dialog, bridge: bridge.clone() } },
                 DialogKind::CreateVersion => rsx! { CreateVersionDialog { p: p.clone(), dialog, bridge: bridge.clone() } },
                 DialogKind::DeleteVersion => rsx! { DeleteVersionDialog { p: p.clone(), dialog, bridge: bridge.clone() } },
-                DialogKind::Pack(draft) => rsx! { PackDialog { draft, dialog, bridge: bridge.clone() } },
+                DialogKind::Pack(draft) => rsx! { PackDialog { draft, dialog, pack_job, bridge: bridge.clone() } },
                 DialogKind::Release(draft) => rsx! { ReleaseDialog { draft, dialog, bridge: bridge.clone() } },
             }
         }
@@ -174,6 +190,7 @@ fn Toolbar(
     bridge: Bridge,
     mut view_mode: Signal<ViewMode>,
     mut dialog: Signal<Option<DialogKind>>,
+    mut pack_job: Signal<PackJob>,
 ) -> Element {
     let pid = p.id;
     let done_ids: Vec<IssueId> = p
@@ -220,11 +237,7 @@ fn Toolbar(
             v.push((format!("week:{}", w.week), label));
         }
         for v2 in &p.plan_versions {
-            let label = if bw::version::is_v0x(&v2.name) {
-                v2.name.clone()
-            } else {
-                format!("版本 · {}", v2.name)
-            };
+            let label = v2.name.clone();
             v.push((format!("version:{}", v2.name), label));
         }
         v
@@ -236,7 +249,7 @@ fn Toolbar(
     } else {
         format!("week:{}", p.viewing_week)
     };
-    let can_rename = bw::version::is_v0x(&viewing_plan) && !released;
+    let can_rename = !viewing_plan.is_empty() && !released;
     let taken: Vec<String> = p
         .plan_versions
         .iter()
@@ -268,7 +281,8 @@ fn Toolbar(
                             title: "保存",
                             onclick: move |_| {
                                 let to = draft.read().trim().to_string();
-                                let clash = !bw::version::is_v0x(&to)
+                                let clash = to.is_empty()
+                                    || bw::isoweek::is_week(&to)
                                     || (to != from && taken.iter().any(|s| s == &to));
                                 editing.set(false);
                                 if clash {
@@ -326,18 +340,28 @@ fn Toolbar(
                     }
                     button {
                         class: "btn btn-sm btn-secondary",
-                        disabled: !p.plan_versions.iter().any(|v| bw::version::is_v0x(&v.name) && !v.released),
+                        disabled: !p.plan_versions.iter().any(|v| !v.released),
                         onclick: move |_| dialog.set(Some(DialogKind::DeleteVersion)),
                         "删除版本"
                     }
-                } else if bw::version::is_v0x(&p.viewing_plan) && !released {
+                } else if !p.viewing_plan.is_empty() && !released {
                     button {
                         class: "btn btn-sm",
-                        onclick: move |_| dialog.set(Some(DialogKind::Pack(PackDraft {
-                            project_id: pid,
-                            version: pack_ver.clone(),
-                        }))),
-                        "出包"
+                        onclick: move |_| {
+                            let job = pack_job.read().clone();
+                            if job.packing || (job.finished && !job.version.is_empty()) {
+                                dialog.set(Some(DialogKind::Pack(PackDraft {
+                                    project_id: pid,
+                                    version: job.version,
+                                })));
+                                return;
+                            }
+                            dialog.set(Some(DialogKind::Pack(PackDraft {
+                                project_id: pid,
+                                version: pack_ver.clone(),
+                            })));
+                        },
+                        {if pack_job.read().packing { "出包..." } else { "出包" }}
                     }
                     button {
                         class: "btn btn-sm",
@@ -369,18 +393,13 @@ fn Toolbar(
 
 #[component]
 fn WeekHead(p: ProjectVm) -> Element {
-    let current_goal = p
-        .weeks
-        .iter()
-        .find(|w| w.week == p.current_week)
-        .and_then(|w| w.goal.clone())
-        .unwrap_or_default();
     let goal = if !p.viewing_plan.is_empty() {
-        if p.viewing_plan == p.confirmed_version && !current_goal.is_empty() {
-            current_goal
-        } else {
-            "（这个版本还没写版本目标）".into()
-        }
+        p.plan_versions
+            .iter()
+            .find(|v| v.name == p.viewing_plan)
+            .map(|v| v.goal.clone())
+            .filter(|s| !s.is_empty())
+            .unwrap_or_else(|| "（这个版本还没写版本目标）".into())
     } else {
         p.weeks
             .iter()

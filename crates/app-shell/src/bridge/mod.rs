@@ -16,13 +16,13 @@ pub use nav::{
 };
 
 use crate::vm::Vm;
-use bw::app::App;
-use bw::command::{Command, Event};
-use bw::local::Settings;
-use bw::model::{IssueId, IssueStatus, ProjectId};
-use std::path::PathBuf;
-use std::sync::Arc;
-use std::time::Duration;
+use bw::{
+    app::App,
+    command::{Command, Event},
+    local::Settings,
+    model::{IssueId, IssueStatus, ProjectId},
+};
+use std::{path::PathBuf, sync::Arc, time::Duration};
 use tokio::sync::{broadcast, mpsc, watch};
 
 /// iframe onload 之后再给配对 WS 的时间。短于这个,嵌页还没订上 `notifyClients`。
@@ -181,6 +181,8 @@ pub struct Bridge {
     /// 不走 ViewModel**:命令还没做完,ViewModel 根本没重拼的机会 —— 内核那条
     /// 队列此刻正卡在 `dispatch` 里,进度得从旁边这条道出来。
     pub progress: broadcast::Sender<bw::app::ProgressLine>,
+    /// 出包中途停。不走命令队列（队列正被 PackRelease 占着）。
+    pub pack_ctl: Arc<bw::app::PackCtl>,
 }
 
 impl PartialEq for Bridge {
@@ -196,6 +198,10 @@ impl Bridge {
 
     pub fn cmd(&self, c: Command) {
         self.send(Req::Cmd(c));
+    }
+
+    pub fn abort_pack(&self) {
+        self.pack_ctl.abort();
     }
 }
 
@@ -435,6 +441,8 @@ pub fn spawn(deep_link: DeepLink) -> Bridge {
     let (prog_tx, _) = broadcast::channel(64);
 
     let prog_tx_handle = prog_tx.clone();
+    let pack_ctl = Arc::new(bw::app::PackCtl::new());
+    let pack_ctl_app = pack_ctl.clone();
     // 内核往自己这条队列里回发用的口子(知识库那两个页签算完之后发回来)。
     let tx_back = tx.clone();
 
@@ -474,7 +482,8 @@ pub fn spawn(deep_link: DeepLink) -> Bridge {
                 )
                 .with_pty()
                 .with_asset_root(assets.clone())
-                .with_progress(prog_tx.clone());
+                .with_progress(prog_tx.clone())
+                .with_pack_ctl(pack_ctl_app);
 
                 let mut ui = vm_build::UiState {
                     open: None,
@@ -1354,6 +1363,7 @@ pub fn spawn(deep_link: DeepLink) -> Bridge {
         tx,
         vm: vm_rx,
         progress: prog_tx_handle,
+        pack_ctl,
     }
 }
 

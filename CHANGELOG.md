@@ -4,6 +4,10 @@
 
 本文件按**六站 + 底座**收口,不再按每次窗口一条流水往下堆。最近一次改动永远写在最上面。
 
+## 最近 · 2026-09-03
+
+出包弹窗可关着继续跑，按钮上三个点再点回来；停止再问一句，确认后杀进程并清这次的中间件。验包不过时行上有「详情」，点开看每条用例过了没有、报了什么错。出包读脚本 stdout 按行切字节：协议行必须 UTF-8，cargo / ISCC 漏出来的本机码页不再整段报「stream did not contain valid UTF-8」。
+
 ## 最近 · 2026-09-02
 
 资产盘点收成两步:盘 Workbench 给项目的 `.bw/`(清残留、升格式、点未闭环的环),再盘项目本周改动(建议只落评论)。现行 `.bw` 契约进 `standard/system-prompt/references/bw-assets.md`(格式 + 样例,后附变更纪要),skill 只当 SOP。运作活开工工具跟构建。主提示词 / reference / skill 分工与同步对照表在 [`docs/architecture.md`](docs/architecture.md) §3 模块 4,`AGENTS.md`「三层模型」指到那里。删掉没有调用方的 `standard/VERSION`;`standard/README` 只记现行结构,不叠 5.x 流水。
