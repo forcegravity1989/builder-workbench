@@ -159,6 +159,9 @@ fn series_row(
             }
             span { class: "ov-series-val", "{shown}" }
             span { class: "ov-series-tgt", "{target}" }
+            if !m.collect_error.is_empty() {
+                span { class: "detail-empty", style: "flex-basis:100%;color:var(--alert-deep);", "{m.collect_error}" }
+            }
             if !right && m.manual {
                 ManualFill {
                     pid,

@@ -146,10 +146,20 @@ async fn collect_one(
         }
         Err(e) => r.error = e,
     }
-    // 天粒度另跑一趟。脚本还不认 day 就空着,周走势照旧。
+    // 天粒度另跑一趟。脚本还不认 day / 对不上号就记下原因,周走势照旧。
     let days = isoweek::recent_days(14);
-    if let Ok(ScriptOutcome::Series(pts)) = run_script(ws, &def.collect.run, &days).await {
-        r.day_points = pts;
+    match run_script(ws, &def.collect.run, &days).await {
+        Ok(ScriptOutcome::Series(pts)) => r.day_points = pts,
+        Ok(ScriptOutcome::Snapshot(_)) => {
+            if r.error.is_empty() {
+                r.error = "按天只吐了一个当下值,画不出日走势".into();
+            }
+        }
+        Err(e) => {
+            if r.error.is_empty() {
+                r.error = format!("按周有数,按天没有:{e}");
+            }
+        }
     }
     r
 }

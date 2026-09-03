@@ -95,7 +95,7 @@ pub fn VersionPlan(p: ProjectVm, bridge: Bridge) -> Element {
                         div { class: "ov-kicker", "每周进展" }
                         div { class: "ov-text-box",
                             if week_progress.trim().is_empty() {
-                                span { class: "detail-empty", "还没有周进展" }
+                                span { class: "detail-empty", "还没有周进展。在该版本运作活①上追加一条 ## 每周进展。" }
                             } else {
                                 "{week_progress}"
                             }

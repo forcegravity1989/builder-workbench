@@ -179,10 +179,81 @@ fn insert_notes(out: &mut Ops1Notes, week: &str, plan: &str, bodies: super::Resu
             out.goals.insert(plan.to_string(), goal);
         }
     }
-    if let Some(progress) = parsed.progress {
-        out.progress.insert(week.to_string(), progress.clone());
-        if !plan.is_empty() && plan != week {
-            out.progress.insert(plan.to_string(), progress);
+    if let Some(text) = all_progress_text(&bodies) {
+        merge_note(&mut out.progress, week, plan, &text);
+    }
+}
+
+/// 该版本所有 `## 每周进展`,新的在前。多周 / 多次登记都留着。
+fn all_progress_text(bodies: &[String]) -> Option<String> {
+    let mut parts = Vec::new();
+    for body in bodies.iter().rev() {
+        if let Some((label, text)) = progress_block(body) {
+            parts.push(format!("{label}\n{text}"));
+        }
+    }
+    if parts.is_empty() {
+        None
+    } else {
+        Some(parts.join("\n\n"))
+    }
+}
+
+fn progress_block(body: &str) -> Option<(String, String)> {
+    let mut lines = body.lines();
+    let label = loop {
+        let line = lines.next()?;
+        if heading_matches(line, HEADING_PROGRESS) {
+            let rest = line.trim().trim_start_matches('#').trim();
+            let suffix = rest
+                .strip_prefix(HEADING_PROGRESS)
+                .unwrap_or("")
+                .trim()
+                .to_string();
+            break if suffix.is_empty() {
+                HEADING_PROGRESS.to_string()
+            } else {
+                suffix
+            };
+        }
+    };
+    let mut buf = Vec::new();
+    for line in lines {
+        if line.trim().starts_with("##") {
+            break;
+        }
+        buf.push(line);
+    }
+    while buf.first().is_some_and(|l| l.trim().is_empty()) {
+        buf.remove(0);
+    }
+    while buf.last().is_some_and(|l| l.trim().is_empty()) {
+        buf.pop();
+    }
+    if buf.iter().all(|l| l.trim().is_empty()) {
+        return None;
+    }
+    Some((label, buf.join("\n")))
+}
+
+fn merge_note(
+    map: &mut std::collections::HashMap<String, String>,
+    week: &str,
+    plan: &str,
+    text: &str,
+) {
+    for key in [week, plan] {
+        if key.is_empty() {
+            continue;
+        }
+        match map.get(key) {
+            Some(old) if old != text => {
+                map.insert(key.to_string(), format!("{text}\n\n{old}"));
+            }
+            None => {
+                map.insert(key.to_string(), text.to_string());
+            }
+            _ => {}
         }
     }
 }
@@ -235,6 +306,10 @@ mod tests {
         let p = parse_comments(&[plan.into(), old.into(), new.into()]);
         assert_eq!(p.goal.as_deref(), Some("推到能演示。"));
         assert_eq!(p.progress.as_deref(), Some("合入了会话屏,发版还没动。"));
+        assert_eq!(
+            all_progress_text(&[plan.into(), old.into(), new.into()]).as_deref(),
+            Some("2026-W36\n合入了会话屏,发版还没动。\n\n2026-W35\n旧的一句。")
+        );
     }
 
     #[test]
