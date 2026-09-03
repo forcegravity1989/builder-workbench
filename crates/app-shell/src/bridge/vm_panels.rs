@@ -5,38 +5,30 @@
 //! 长什么样」,这半截管「各块面板长什么样」。
 
 use crate::vm::*;
-use bw::model::{IssueStatus, Project, ProjectId};
-use bw::repo::project_file;
+use bw::{
+    model::{IssueStatus, Project, ProjectId},
+    repo::project_file,
+};
 use std::path::Path;
 
 use super::vm_build::{card_item, remote_label, tool_label};
 
 /// 四列看板(合并后)。列内分段;段按原始状态算。
 ///
-/// `week` 传 `None` = 左栏「全部」:未排周的未动手活进待办列·未排期段,其余按状态。
-/// `week` 传某一周 = 只显示打了那一周 `bw:week` 的活;待办列只「待开始」段(已排期本周),
-/// 不显示未排期。版本(`bw:plan:*`)排期的活在「全部」里也算已排期。
-pub(super) fn build_board(issues: &[bw::Issue], week: Option<&str>, plan: Option<&str>) -> BoardVm {
-    let in_week = |i: &bw::Issue| match week {
-        None => true,
-        Some(w) => i.week_of == w,
-    };
+/// `plan` 传 `None` = 「全部」:没挂版本的未动手活进待办列·未排期段,其余按状态。
+pub(super) fn build_board(issues: &[bw::Issue], plan: Option<&str>) -> BoardVm {
     let in_plan = |i: &bw::Issue| match plan {
         None => true,
         Some(p) => i.plan_version == p,
     };
-    // 已排期 = 排进了某一周或某个版本(任一非空)。未排期 = 都空。
-    let scheduled = |i: &bw::Issue| !i.week_of.is_empty() || !i.plan_version.is_empty();
+    let scheduled = |i: &bw::Issue| !i.plan_version.is_empty();
 
-    // 待办列:未排期(Backlog 或 Todo 但 week_of/plan_version 都空,仅全部)
-    // + 已排期(Todo 且排进了周/版本)。周视图只已排期段,名「待开始」。
-    // 新建 issue 默认打 bw:status:todo 但 week_of 空 —— 它是 Todo 但未排期,
-    // 归未排期段,不能靠 status==Backlog 漏掉。
+    // 待办列:未排期(Backlog 或 Todo 但没挂 bw:plan,仅全部)
+    // + 已排期(Todo 且挂了版本)。
     let backlog_cards: Vec<_> = issues
         .iter()
         .filter(|i| {
-            week.is_none()
-                && in_plan(i)
+            in_plan(i)
                 && !scheduled(i)
                 && matches!(i.status, IssueStatus::Backlog | IssueStatus::Todo)
         })
@@ -44,10 +36,10 @@ pub(super) fn build_board(issues: &[bw::Issue], week: Option<&str>, plan: Option
         .collect();
     let todo_cards: Vec<_> = issues
         .iter()
-        .filter(|i| scheduled(i) && in_week(i) && in_plan(i) && i.status == IssueStatus::Todo)
+        .filter(|i| scheduled(i) && in_plan(i) && i.status == IssueStatus::Todo)
         .map(card_item)
         .collect();
-    let todo_segs = if week.is_some() || plan.is_some() {
+    let todo_segs = if plan.is_some() {
         vec![ColumnSegVm {
             key: "assigned".into(),
             label: String::new(),
@@ -81,27 +73,27 @@ pub(super) fn build_board(issues: &[bw::Issue], week: Option<&str>, plan: Option
 
     let doing_cards: Vec<_> = issues
         .iter()
-        .filter(|i| in_week(i) && in_plan(i) && i.status == IssueStatus::InProgress)
+        .filter(|i| in_plan(i) && i.status == IssueStatus::InProgress)
         .map(card_item)
         .collect();
     let review_cards: Vec<_> = issues
         .iter()
-        .filter(|i| in_week(i) && in_plan(i) && i.status == IssueStatus::InReview)
+        .filter(|i| in_plan(i) && i.status == IssueStatus::InReview)
         .map(card_item)
         .collect();
     let blocked_cards: Vec<_> = issues
         .iter()
-        .filter(|i| in_week(i) && in_plan(i) && i.status == IssueStatus::Blocked)
+        .filter(|i| in_plan(i) && i.status == IssueStatus::Blocked)
         .map(card_item)
         .collect();
     let done_cards: Vec<_> = issues
         .iter()
-        .filter(|i| in_week(i) && in_plan(i) && i.status == IssueStatus::Done)
+        .filter(|i| in_plan(i) && i.status == IssueStatus::Done)
         .map(card_item)
         .collect();
     let cancelled_cards: Vec<_> = issues
         .iter()
-        .filter(|i| in_week(i) && in_plan(i) && i.status == IssueStatus::Cancelled)
+        .filter(|i| in_plan(i) && i.status == IssueStatus::Cancelled)
         .map(card_item)
         .collect();
 

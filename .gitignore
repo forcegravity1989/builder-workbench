@@ -49,3 +49,12 @@ evidence-v4-*.json
 .bw/release/out/
 .bw/release/e2e/node_modules/
 .bw/release/node_modules/
+
+# oh-my-claudecode 插件本地状态(会话/记事本/project-memory),不是源码
+/.omc/
+
+# 非文档规范正本的草稿/演示工作件(本地穿刺,不进仓)
+/docs/draft/
+
+# 非本 workspace 的本地实验工程(desktop/web 脚手架),不进 Workbench MVP
+/apps/

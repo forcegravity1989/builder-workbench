@@ -25,7 +25,7 @@ crates/app-shell/src/bridge/mod.rs                 ShowBriefing 加 review 位;R
 crates/app-shell/src/main.rs                       评审终端挂载(与写码终端同机制)
 crates/app-shell/src/screens/session/mod.rs        动作条「请评审 / ■ 停止评审」+「评审」页签
 crates/app-shell/src/screens/plan/detail.rs        评审中活的详情加「请评审」
-changes/reviewer-agent/                            本产物链五件(intent/spec/prototype/plan/STATUS)
+05-features/reviewer-agent/                            本产物链五件(intent/spec/prototype/plan/STATUS)
 docs/architecture.md                               模块 4/7/15 各补一句评审落点
 CHANGELOG.md                                       一行
 .github/workflows/claude-code-review.yml           新增(谈定补入:GitHub 仓 PR 事件自动 review,OAuth token 认证)

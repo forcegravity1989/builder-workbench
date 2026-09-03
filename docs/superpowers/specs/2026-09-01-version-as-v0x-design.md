@@ -1,5 +1,5 @@
 # 2026-09-01 · 版本收成 v0.x（过程稿）
 
-> Superpowers 发散落点。**特性 gate 正本**在 [`changes/version-as-v0x/`](../../../changes/version-as-v0x/intent.md)（intent + spec + 原型）。不要拿这篇当第二份规格。
+> Superpowers 发散落点。**特性 gate 正本**在 [`changes/version-as-v0x/`](../../05-features/version-as-v0x/intent.md)（intent + spec + 原型）。不要拿这篇当第二份规格。
 
 谈定：计划版本 = 自建版本 = 发版号 = `v0.x`；新建只写 `bw:plan:v0.x`；里程碑同名；会话里确认本周版本；发版锁死当前视图且不提示上一发 / 未发；创建版本才提示；已发不改名；运作活①去重改成标题 + 版本标签。旧周标签和旧计划名不迁，读回仍显示、能切视图。

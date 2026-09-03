@@ -16,13 +16,13 @@ pub use nav::{
 };
 
 use crate::vm::Vm;
-use bw::app::App;
-use bw::command::{Command, Event};
-use bw::local::Settings;
-use bw::model::{IssueId, IssueStatus, ProjectId};
-use std::path::PathBuf;
-use std::sync::Arc;
-use std::time::Duration;
+use bw::{
+    app::App,
+    command::{Command, Event},
+    local::Settings,
+    model::{IssueId, IssueStatus, ProjectId},
+};
+use std::{path::PathBuf, sync::Arc, time::Duration};
 use tokio::sync::{broadcast, mpsc, watch};
 
 /// iframe onload 之后再给配对 WS 的时间。短于这个,嵌页还没订上 `notifyClients`。
@@ -72,10 +72,10 @@ pub enum Req {
     Cmd(Command),
     /// 打开某个项目(纯本机导航,不改任何数据)。
     Open(Option<ProjectId>),
-    /// 计划屏切到看某一周(旧周版本,读回仍认)。
-    ViewWeek(String),
-    /// 计划屏切到看某个计划版本(`v0.x` 或旧名)。
+    /// 计划屏切到看某个计划版本。
     ViewPlan(String),
+    /// 总览在研下拉选中某个覆盖当天的版本。
+    SelectOverviewVersion(String),
     /// 计划屏回到全部 issue。
     ViewAll(bool),
     /// 壳侧预判失败(改名撞名等),走同一条 toast。
@@ -181,6 +181,8 @@ pub struct Bridge {
     /// 不走 ViewModel**:命令还没做完,ViewModel 根本没重拼的机会 —— 内核那条
     /// 队列此刻正卡在 `dispatch` 里,进度得从旁边这条道出来。
     pub progress: broadcast::Sender<bw::app::ProgressLine>,
+    /// 出包中途停。不走命令队列（队列正被 PackRelease 占着）。
+    pub pack_ctl: Arc<bw::app::PackCtl>,
 }
 
 impl PartialEq for Bridge {
@@ -196,6 +198,10 @@ impl Bridge {
 
     pub fn cmd(&self, c: Command) {
         self.send(Req::Cmd(c));
+    }
+
+    pub fn abort_pack(&self) {
+        self.pack_ctl.abort();
     }
 }
 
@@ -435,6 +441,8 @@ pub fn spawn(deep_link: DeepLink) -> Bridge {
     let (prog_tx, _) = broadcast::channel(64);
 
     let prog_tx_handle = prog_tx.clone();
+    let pack_ctl = Arc::new(bw::app::PackCtl::new());
+    let pack_ctl_app = pack_ctl.clone();
     // 内核往自己这条队列里回发用的口子(知识库那两个页签算完之后发回来)。
     let tx_back = tx.clone();
 
@@ -474,7 +482,8 @@ pub fn spawn(deep_link: DeepLink) -> Bridge {
                 )
                 .with_pty()
                 .with_asset_root(assets.clone())
-                .with_progress(prog_tx.clone());
+                .with_progress(prog_tx.clone())
+                .with_pack_ctl(pack_ctl_app);
 
                 let mut ui = vm_build::UiState {
                     open: None,
@@ -488,6 +497,7 @@ pub fn spawn(deep_link: DeepLink) -> Bridge {
                     focus_skill: String::new(),
                     viewing_week: bw::isoweek::current_week(),
                     viewing_plan: String::new(),
+                    overview_version: String::new(),
                     view_all: true,
                     open_doc: None,
                     note: None,
@@ -966,6 +976,7 @@ pub fn spawn(deep_link: DeepLink) -> Bridge {
                             ui.open_doc = None;
                             ui.viewing_week = bw::isoweek::current_week();
                             ui.viewing_plan = String::new();
+                            ui.overview_version = String::new();
                             ui.view_all = true;
                             // 知识库那两个页签的结果是**上一个项目**的:它的技能
                             // 清单、它的 git 产物、它的发版记录、它的仓统计。留着
@@ -983,15 +994,13 @@ pub fn spawn(deep_link: DeepLink) -> Bridge {
                                 ui.set_note(Some("正在采本项目指标与仓统计…".into()));
                             }
                         }
-                        Req::ViewWeek(w) => {
-                            ui.viewing_week = w;
-                            ui.viewing_plan = String::new();
-                            ui.view_all = false;
-                        }
                         Req::ViewPlan(p) => {
                             ui.viewing_plan = p;
                             ui.viewing_week = String::new();
                             ui.view_all = false;
+                        }
+                        Req::SelectOverviewVersion(v) => {
+                            ui.overview_version = v;
                         }
                         Req::ViewAll(v) => {
                             if v {
@@ -1354,6 +1363,7 @@ pub fn spawn(deep_link: DeepLink) -> Bridge {
         tx,
         vm: vm_rx,
         progress: prog_tx_handle,
+        pack_ctl,
     }
 }
 

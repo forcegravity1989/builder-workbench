@@ -20,13 +20,17 @@
 //! 4. **重复跑不产生重复数据**:项目按 slug、活按标题、周计划按文件在不在、
 //!    发版按版本号判断跳不跳过。
 
-use bw::app::App;
-use bw::command::{Command, Event, ProjectIntent, RemoteRef};
-use bw::isoweek;
-use bw::model::{IssueKind, IssueOrigin, IssueStatus, ProjectId, StageKind};
+use bw::{
+    app::App,
+    command::{Command, Event, ProjectIntent, RemoteRef},
+    isoweek,
+    model::{IssueKind, IssueOrigin, IssueStatus, ProjectId, StageKind},
+};
 use bw_engine::remote::{MockState, Remote};
-use std::path::{Path, PathBuf};
-use std::sync::{Arc, Mutex};
+use std::{
+    path::{Path, PathBuf},
+    sync::{Arc, Mutex},
+};
 
 #[tokio::main(flavor = "current_thread")]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -170,7 +174,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             category: Some(StageKind::Build),
             kind: IssueKind::Business,
             origin: IssueOrigin::Human,
-            week_of: week.clone(),
+            week_of: String::new(),
             plan: String::new(),
         })
         .await?;
@@ -289,11 +293,11 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     );
 
     // ── 步骤 9:历史呈现(不再走内置回填)────────────────
-    // 某一周要出现在计划屏,给已有 issue 打 `bw:week:YYYY-Www`。
-    // 需要周目标就补一张运作活①,评论写明补记。没有 BackfillHistory 命令。
+    // 某个版本要出现在计划屏,给已有 issue 打 `bw:plan:<里程碑名>`。
+    // 需要版本目标就补一张运作活①,评论写明补记。没有 BackfillHistory 命令。
     say(
         &mut log,
-        "步骤 9 · 历史呈现:给已有 issue 打 bw:week,需要周目标再补运作活①(内置回填已删)",
+        "步骤 9 · 历史呈现:给已有 issue 打 bw:plan,需要版本目标再补运作活①(内置回填已删)",
     );
 
     // ── 步骤 10:项目群(mock 提供方)────────────────────

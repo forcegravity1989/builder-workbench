@@ -505,6 +505,15 @@ select.select-multi{padding:3px;font-size:11.5px;border:1px solid var(--border-d
 @keyframes ship-spin{from{transform:rotate(0)}to{transform:rotate(360deg)}}
 .ship-spin{width:14px;height:14px;flex:none;border:2px solid var(--border-deep);border-top-color:var(--amber);border-radius:50%;animation:ship-spin .8s linear infinite;}
 .ship-dot{width:8px;height:8px;border-radius:50%;flex:none;background:currentColor;}
+.ship-cases{display:flex;flex-direction:column;gap:10px;margin:4px 0 2px;}
+.ship-case{padding:10px 0;border-bottom:1px solid var(--border);}
+.ship-case:last-child{border-bottom:none;padding-bottom:0;}
+.ship-case-head{display:flex;align-items:baseline;gap:10px;}
+.ship-case-name{font-weight:600;font-size:13px;}
+.ship-case-mark{font-size:12px;}
+.ship-case-mark--ok{color:var(--ink-3);}
+.ship-case-mark--fail{color:var(--red);}
+.ship-case-msg{margin-top:6px;font-size:12px;color:var(--ink-2);line-height:1.45;white-space:pre-wrap;word-break:break-word;}
 
 .toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%);background:var(--ink);color:var(--paper);padding:9px 16px;border-radius:8px;font-size:12.5px;z-index:100;opacity:0;pointer-events:none;transition:opacity .25s,transform .25s;max-width:520px;text-align:center;}
 .toast.show{opacity:1;transform:translateX(-50%) translateY(-6px);}
@@ -557,12 +566,17 @@ function shipRowsHtml(m){
   function row(label, r, open){
     r=r||{state:'idle',text:''};
     var spin=r.state==='doing'?'<span class="ship-spin"></span>':'<span class="ship-dot"></span>';
-    var btn=(open&&r.state==='ok')?'<button class="btn btn-sm" data-action="openArtifactDir">打开目录</button>':'';
+    var btn='';
+    if(open&&r.state==='ok') btn='<button class="btn btn-sm" data-action="openArtifactDir">打开目录</button>';
+    if(!open&&r.state==='fail') btn='<button class="btn btn-sm" data-action="openE2eDetail">详情</button>';
     return '<div class="ship-row ship-row--'+esc(r.state||'idle')+'">'+spin
       +'<span class="ship-row-label">'+esc(label)+'</span>'
       +'<span class="ship-row-text">'+esc(r.text||'')+'</span>'+btn+'</div>';
   }
   return '<div class="ship-rows">'+row('出包',m.pack,true)+row('验包',m.e2e,false)+'</div>';
+}
+function e2eCaseLabel(name){
+  return ({shell_launches:'壳能亮',cu_settings:'设置屏',cu_onboard:'接入屏'})[name]||name;
 }
 function icon(name){
   var p={
@@ -648,8 +662,8 @@ var KANBAN_LEGAL={
 };
 function normView(key){
   if(!key||key==='all')return 'all';
-  if(/^week:/.test(key)||/^version:/.test(key))return key;
-  return 'week:'+key;
+  if(/^version:/.test(key))return key;
+  return 'all';
 }
 var GUIDE_CHAPTERS=[
   {id:'env',label:'环境准备',body:'claude CLI、Open Design、codehub-cli / gh 按需装。缺一项不影响接入,只影响对应类别的活能不能开工。「测一下」如实探活,没找到就是红,没接探活就是灰,不假装绿。Cursor 还没接。'},
@@ -828,7 +842,7 @@ var FILE_CONTENTS={
   'standard/README.md':['# standard/','Workbench 推给被管项目的规范正本。接入铺名片 + issue-policy。不铺 standard.toml。'],
   '.bw/PROJECT.md':['# 项目名片','Builders\' Workbench:AI Coding 里一个人的一张工作台。'],
   '.bw/issue-policy.toml':['# 类别 → 工具 → workflow;节律也在这里','[cadence]','asset_audit = "周五 09:00"'],
-  '.bw/project.toml':['# .bw/project.toml','name = "Builders\' Workbench (Workbench)"','current_version = "v0.3"'],
+  '.bw/project.toml':['# .bw/project.toml','name = "Builders\' Workbench (Workbench)"'],
   '.bw/metrics.toml':['# .bw/metrics.toml · 指标定义跟人在运作活①里写,不预铺空壳'],
   'AGENTS.md':['# AGENTS.md · 项目自己的开发手册','铺底不写仓根。资产盘点首次模式问过人才写。'],
   'Cargo.toml':['[workspace]','members = ["crates/bw","crates/bw-engine","crates/app-shell"]']
@@ -913,7 +927,7 @@ function freshState(){
       treeExpanded:{Workbench:{'':true,'crates':true,'docs':true}},
       spaceTab:{Workbench:'knowledge'}, spaceDoc:{Workbench:'k-project'},
       symbolQuery:{Workbench:''},
-      modal:null, settingsProbe:{},
+      modal:null, packJob:null, settingsProbe:{},
       deletedSessions:{},
       reportBusy:false
     }
@@ -982,7 +996,6 @@ function mergeIssueGeneric(pid,issueId){
   if(issue.kind==='charter'&&issue.draft){
     var proj=getProject(pid); var d=issue.draft;
     Object.assign(proj.card,{name:d.name||proj.card.name,intent:d.intent,benchmark:d.benchmark,northstar:d.northstar});
-    if(typeof d.version==='string') proj.version=d.version;
     if(typeof d.chatProvider==='string'){
       state.chatGroup[pid]={configured:!!d.chatProvider,provider:d.chatProvider||'welink',kind:'internal',groupId:d.chatGroup||'',sync:d.chatSync||{review:true,merged:true,release:true}};
     }
@@ -1063,7 +1076,7 @@ var ACTIONS = {
     state.ui.charterEditing[pid]=true;
     state.ui.charterDraft[pid]={
       name:proj.card.name,intent:proj.card.intent,benchmark:proj.card.benchmark,northstar:proj.card.northstar,
-      version:proj.version||'',chatProvider:g.configured?(g.provider||'welink'):'',chatGroup:g.groupId||'',
+      chatProvider:g.configured?(g.provider||'welink'):'',chatGroup:g.groupId||'',
       chatSync:clone(g.sync||{review:true,merged:true,release:true})
     };
     render();
@@ -1074,7 +1087,7 @@ var ACTIONS = {
     var draft=state.ui.charterDraft[pid];
     state.issues[pid]=state.issues[pid]||{};
     state.issues[pid]['charter-edit']={ id:'charter-edit',title:'名片修改',category:'轻量活',tool:null,kind:'charter',status:'review',source:'人建',metricIds:[],
-      mr:{id:'!bw/charter-edit',label:'!bw/charter-edit',status:'open'},desc:'更新名片四字段 / 在研版本 / 项目群。',draft:draft };
+      mr:{id:'!bw/charter-edit',label:'!bw/charter-edit',status:'open'},desc:'更新名片四字段 / 项目群。',draft:draft };
     state.inbox[pid]=state.inbox[pid]||[];
     if(!state.inbox[pid].some(function(x){return x.id==='inbox-charter';})){
       state.inbox[pid].unshift({id:'inbox-charter',kind:'issue',issueId:'charter-edit',text:'名片修改已提 MR !bw/charter-edit',state:'pending'});
@@ -1163,9 +1176,41 @@ var ACTIONS = {
     render();
   },
   openPackModal:function(pid){
+    var job=state.ui.packJob;
+    if(job && (job.shipping || job.finished)){
+      state.ui.modal={type:'pack',pid:job.pid,version:job.version,pack:job.pack,e2e:job.e2e,shipping:!!job.shipping,finished:!!job.finished};
+      render();
+      return;
+    }
     var proj=getProject(pid);
     state.ui.modal={type:'pack',pid:pid,version:nextVersion(proj.version),pack:{state:'idle',text:'还没开始'},e2e:{state:'idle',text:'出包过了再验'},shipping:false,finished:false};
     render();
+  },
+  closePackModal:function(){
+    var m=state.ui.modal;
+    if(m && m.type==='pack' && m.shipping){
+      state.ui.packJob={pid:m.pid,version:m.version,pack:m.pack,e2e:m.e2e,shipping:true,finished:false};
+    }
+    state.ui.modal=null;
+    render();
+  },
+  askStopPack:function(){
+    var m=state.ui.modal;
+    if(!m || m.type!=='pack' || !m.shipping) return;
+    state.ui.modal={type:'pack-stop',under:m};
+    render();
+  },
+  cancelStopPack:function(){
+    var m=state.ui.modal;
+    if(!m || m.type!=='pack-stop') return;
+    state.ui.modal=m.under;
+    render();
+  },
+  confirmStopPack:function(){
+    state.ui.packJob=null;
+    state.ui.modal=null;
+    render();
+    toast('出包已停止,中间件清掉了');
   },
   toggleReleaseCheck:function(id){ var m=state.ui.modal; if(!m||m.type!=='release')return; var i=m.checked.indexOf(id); if(i>=0)m.checked.splice(i,1); else m.checked.push(id); render(); },
   confirmRelease:function(){
@@ -1181,23 +1226,50 @@ var ACTIONS = {
     m.shipping=true; m.finished=false;
     m.pack={state:'doing',text:'正在出包…'};
     m.e2e={state:'idle',text:'出包过了再验'};
+    state.ui.packJob={pid:m.pid,version:m.version,pack:m.pack,e2e:m.e2e,shipping:true,finished:false};
     render();
     setTimeout(function(){
-      var cur=state.ui.modal; if(!cur||cur.type!=='pack')return;
+      var cur=state.ui.modal && state.ui.modal.type==='pack' ? state.ui.modal : (state.ui.packJob && state.ui.packJob.shipping ? state.ui.packJob : null);
+      if(!cur) return;
       cur.pack={state:'ok',text:'',dir:'.bw/release/out/'+cur.version};
       cur.e2e={state:'doing',text:'正在验包…'};
+      if(state.ui.packJob){ state.ui.packJob.pack=cur.pack; state.ui.packJob.e2e=cur.e2e; }
       render();
     },700);
     setTimeout(function(){
-      var cur=state.ui.modal; if(!cur||cur.type!=='pack')return;
-      cur.e2e={state:'done',text:'3/3'};
+      var cur=state.ui.modal && state.ui.modal.type==='pack' ? state.ui.modal : (state.ui.packJob || null);
+      if(!cur) return;
+      cur.e2e={state:'fail',text:'1/3',cases:[
+        {name:'shell_launches',ok:true,message:''},
+        {name:'cu_settings',ok:false,message:'Timeout: waiting for getByText(\'工作区根目录\')'},
+        {name:'cu_onboard',ok:false,message:'未跑：上一条失败'}
+      ]};
       cur.shipping=false; cur.finished=true;
+      if(state.ui.packJob){ state.ui.packJob.e2e=cur.e2e; state.ui.packJob.shipping=false; state.ui.packJob.finished=true; }
       render();
-      toast(cur.version+' 出包好了,验包 3/3');
+      toast(cur.version+' 出包好了,验包 1/3');
     },1600);
   },
   openArtifactDir:function(){ toast('演示：会打开产物目录'); },
-  closeModal:function(){ var m=state.ui.modal; if(m&&m.shipping)return; state.ui.modal=null; render(); },
+  openE2eDetail:function(){
+    var m=state.ui.modal;
+    if(!m || m.type!=='pack' || !m.e2e || m.e2e.state!=='fail') return;
+    state.ui.modal={type:'pack-e2e',under:m,cases:m.e2e.cases||[],fallback:m.e2e.text||''};
+    render();
+  },
+  closeE2eDetail:function(){
+    var m=state.ui.modal;
+    if(!m || m.type!=='pack-e2e') return;
+    state.ui.modal=m.under;
+    render();
+  },
+  closeModal:function(){
+    var m=state.ui.modal;
+    if(m && m.type==='pack'){ actions.closePackModal(); return; }
+    if(m && m.type==='pack-stop'){ actions.cancelStopPack(); return; }
+    if(m && m.type==='pack-e2e'){ actions.closeE2eDetail(); return; }
+    state.ui.modal=null; render();
+  },
   askDeleteSession:function(pid,sid){
     var issue=getIssue(pid,sid); if(!issue)return;
     state.ui.modal={type:'delete-session',pid:pid,sid:sid,title:issue.title};
@@ -1615,20 +1687,40 @@ function modalHTML(){
       + '<div class="charter-line"><span class="k">想做什么</span>'+esc(d.intent)+'</div>'
       + '<div class="charter-line"><span class="k">对标</span>'+esc(d.benchmark)+'</div>'
       + '<div class="charter-line"><span class="k">北极星</span>'+esc(d.northstar)+'</div>'
-      + '<div class="charter-line"><span class="k">在研版本</span>'+esc(d.version||'（空）')+'</div>'
       + '<div class="charter-line"><span class="k">项目群</span>'+(d.chatProvider?(esc(d.chatProvider)+' · '+esc(d.chatGroup||'')):'不配')+'</div>'
       + '<div class="modal-actions"><button class="btn" data-action="closeModal">关闭</button></div></div></div>';
   }
   if(m.type==='pack'){
-    return '<div class="modal-backdrop" data-action="closeModal"><div class="modal">'
+    return '<div class="modal-backdrop" data-action="closePackModal"><div class="modal">'
       + '<h3>出包</h3>'
       + '<div class="formrow"><label class="label">版本号</label><input class="input" value="'+esc(m.version)+'" readonly></div>'
       + shipRowsHtml(m)
-      + '<div style="font-size:11.3px;color:var(--ink-3);margin:2px 0 10px;">号锁死当前版本。确认后先出包、再对包装好的安装包做验收。不建远端 Release,也不打发版标签。</div>'
+      + '<div style="font-size:11.3px;color:var(--ink-3);margin:2px 0 10px;">号锁死当前版本。确认后先出包、再对包装好的安装包做验收。不建远端 Release,也不打发版标签。关闭只收窗,出包还在后台跑。</div>'
       + '<div class="modal-actions">'
-      + ((m.finished||!m.shipping)?'<button class="btn" data-action="closeModal">'+(m.finished?'关闭':'取消')+'</button>':'')
-      + ((!m.shipping&&!m.finished)?'<button class="btn btn-primary" data-action="confirmPack">确认 · 出包</button>':'')
+      + '<button class="btn" data-action="closePackModal">关闭</button>'
+      + (m.shipping?'<button class="btn btn-danger" data-action="askStopPack">停止</button>':'')
+      + ((!m.shipping)?'<button class="btn btn-primary" data-action="confirmPack">确认 · 出包</button>':'')
       + '</div></div></div>';
+  }
+  if(m.type==='pack-e2e'){
+    var rows=(m.cases||[]).map(function(c){
+      var skipped=!c.ok && String(c.message||'').indexOf('未跑')===0;
+      var mark=c.ok?'过了':(skipped?'未跑':'没过');
+      var markCls=c.ok?'ship-case-mark--ok':'ship-case-mark--fail';
+      var msg=(!c.ok && c.message)?'<div class="ship-case-msg">'+esc(c.message)+'</div>':'';
+      return '<div class="ship-case"><div class="ship-case-head"><span class="ship-case-name">'+esc(e2eCaseLabel(c.name))+'</span><span class="ship-case-mark '+markCls+'">'+mark+'</span></div>'+msg+'</div>';
+    }).join('');
+    var body=rows || '<div class="cfg-readonly-note">'+(m.fallback?esc(m.fallback):'这次验包没打出用例明细。')+'</div>';
+    return '<div class="modal-backdrop" data-action="closeE2eDetail"><div class="modal">'
+      + '<h3>验包详情</h3>'
+      + '<div class="ship-cases">'+body+'</div>'
+      + '<div class="modal-actions"><button class="btn" data-action="closeE2eDetail">关闭</button></div></div></div>';
+  }
+  if(m.type==='pack-stop'){
+    return '<div class="modal-backdrop" data-action="cancelStopPack"><div class="modal">'
+      + '<h3>停止这次出包？</h3>'
+      + '<div style="font-size:11.3px;color:var(--ink-3);margin:2px 0 10px;">确认后会停掉正在跑的出包 / 验包,并清掉这次的中间生成件。已经落到产物目录里的半成品也会删掉。</div>'
+      + '<div class="modal-actions"><button class="btn" data-action="cancelStopPack">取消</button><button class="btn btn-danger" data-action="confirmStopPack">确认</button></div></div></div>';
   }
   if(m.type==='release'){
     var doneIssues=allIssuesArr(m.pid).filter(function(i){return i.kind==='business'&&i.week===m.wk&&i.status==='done';});
@@ -1871,9 +1963,10 @@ function chatGroupLineHTML(pid){
 function renderOverview(pid){
   var proj=getProject(pid); if(!proj) return '<section data-screen="overview"><div class="detail-empty">项目不存在</div></section>';
   var wk=getPath(state,'weekPlans.'+pid+'.'+CURRENT_WEEK);
-  var ops1=allIssuesArr(pid).filter(function(i){return i.kind==='ops' && /运作活①/.test(i.title) && i.week===CURRENT_WEEK;})[0];
+  var ops1=allIssuesArr(pid).filter(function(i){return i.kind==='ops' && /运作活①/.test(i.title) && i.status!=='done';})[0];
   var ops3Open=allIssuesArr(pid).filter(function(i){return i.kind==='ops' && /规范铺底/.test(i.title) && i.status!=='done';})[0];
-  var showStartBanner = !ops1;
+  var weekCovered=!!proj.version;
+  var showStartBanner = !weekCovered && !ops1;
   var health=(state.health[pid])||{level:'gray',reasons:[]};
   var editing=state.ui.charterEditing[pid];
   var card=proj.card;
@@ -1884,7 +1977,7 @@ function renderOverview(pid){
     charterEditHTML='<div class="formrow"><label class="label">想做什么</label><textarea class="textarea" data-bind="ui.charterDraft.'+pid+'.intent">'+esc(d.intent)+'</textarea></div>'
       + '<div class="formrow"><label class="label">最像的对标</label><input class="input" data-bind="ui.charterDraft.'+pid+'.benchmark" value="'+esc(d.benchmark)+'"></div>'
       + '<div class="formrow"><label class="label">三个月长成什么样(北极星)</label><textarea class="textarea" data-bind="ui.charterDraft.'+pid+'.northstar">'+esc(d.northstar)+'</textarea></div>'
-      + '<div class="formrow"><label class="label">在研版本</label><input class="input mono" data-bind="ui.charterDraft.'+pid+'.version" value="'+esc(d.version||'')+'"></div>'
+      + '<div class="formrow"><label class="label">在研版本</label><select class="select mono" data-bindchange="ui.overviewVersion.'+pid+'">'+(proj.version?'<option value="'+esc(proj.version)+'" selected>'+esc(proj.version)+'</option>':'<option value="" selected>（空）</option>')+'</select></div>'
       + '<div class="formrow"><label class="label">项目群</label><select class="select" data-bindchange="ui.charterDraft.'+pid+'.chatProvider"><option value="" '+(!d.chatProvider?'selected':'')+'>不配</option><option value="welink" '+(d.chatProvider==='welink'?'selected':'')+'>WeLink</option></select></div>'
       + (d.chatProvider?('<div class="formrow"><label class="label">群号</label><input class="input mono" data-bind="ui.charterDraft.'+pid+'.chatGroup" value="'+esc(d.chatGroup||'')+'"></div>'
         + '<div class="formrow"><label class="label">同步哪些通知</label>'
@@ -1934,7 +2027,7 @@ function renderOverview(pid){
             + '<div class="charter-line"><span class="k">想做什么</span>'+esc(card.intent)+'</div>'
             + '<div class="charter-line"><span class="k">对标</span>'+esc(card.benchmark)+'</div>'
             + '<div class="charter-line"><span class="k">北极星</span>'+esc(card.northstar)+(card.northstarAssumed?' <span class="asterisk">✱</span>':'')+'</div>'
-            + '<div class="charter-line"><span class="k">在研版本</span>'+esc(proj.version||'（待填）')+'</div>'
+            + '<div class="charter-line"><span class="k">在研版本</span>'+esc(proj.version?proj.version+' · 本周':'（空）')+'</div>'
             + '<div class="charter-line"><span class="k">项目群</span>'+chatGroupLineHTML(pid)+'</div>'
             + '<div class="charter-meta"><span class="mono">'+esc(proj.repo)+'</span><span style="margin-left:auto;display:flex;gap:6px;"><button class="btn btn-sm" data-action="toastOnly" data-arg=\'"工作区已快进到远端最新(演示)"\'>↻ 拉到最新</button><button class="btn btn-sm" data-action="editCard" data-arg=\'"'+pid+'"\'>编辑</button></span></div>'))
     +     mrBanner
@@ -2100,17 +2193,17 @@ function renderPlan(pid){
   var viewMode=state.ui.planViewMode[pid]||'board';
 
   var viewOpts=[['all','全部 issue']];
-  VERSIONS.forEach(function(v){ viewOpts.push(['version:'+v, v]); });
+  VERSIONS.forEach(function(v){ viewOpts.push(['version:'+v, (proj.version&&v===proj.version)?(v+' · 本周'):v]); });
   function viewSel(){return '<select class="il-dd-btn" data-bindchange="ui.planLeft.'+pid+'">'+viewOpts.map(function(o){return '<option value="'+o[0]+'" '+(o[0]===left?'selected':'')+'>'+esc(o[1])+'</option>';}).join('')+'</select>';}
 
   var title, issuesList;
   if(left.indexOf('week:')===0){ left='all'; state.ui.planLeft[pid]='all'; }
   if(left==='all'){ title='全部 issue'; issuesList=allIssuesArr(pid); }
-  else { var vn=left.slice(8); title=vn; issuesList=allIssuesArr(pid).filter(function(i){return i.version===vn;}); }
+  else { var vn=left.slice(8); title=(proj.version&&vn===proj.version)?(vn+' · 本周'):vn; issuesList=allIssuesArr(pid).filter(function(i){return i.version===vn;}); }
 
   var rightBtns='';
   if(left==='all'){ rightBtns='<button class="btn btn-sm btn-secondary" data-action="toastOnly" data-arg=\'"演示:在 codehub 建里程碑(版本)"\'>创建版本</button><button class="btn btn-sm btn-secondary" data-action="toastOnly" data-arg=\'"演示:删 codehub 里程碑 + 摘 bw:plan 标签"\'>删除版本</button>'; }
-  else if(left.indexOf('version:')===0){ rightBtns='<button class="btn btn-sm" data-action="openPackModal" data-arg=\'"'+pid+'"\'>出包</button><button class="btn btn-sm" data-action="openReleaseModal" data-arg=\'"'+pid+'"\'>发版本</button>'; }
+  else if(left.indexOf('version:')===0){ rightBtns='<button class="btn btn-sm" data-action="openPackModal" data-arg=\'"'+pid+'"\'>'+((state.ui.packJob&&state.ui.packJob.shipping)?'出包...':'出包')+'</button><button class="btn btn-sm" data-action="openReleaseModal" data-arg=\'"'+pid+'"\'>发版本</button>'; }
   var viewToggleLabel=viewMode==='board'?'☰ 列表':'▦ 看板';
   var toolbar='<div class="plan-toolbar"><div class="left">'+esc(title)+'</div><div class="right">'+viewSel()+rightBtns
     + '<button class="btn btn-sm btn-primary" data-action="newIssueDraft" data-arg=\'"'+pid+'"\'>新建issue</button>'
@@ -2216,7 +2309,7 @@ function standardBlockHTML(pid){
   var proj=getProject(pid)||{};
   return '<div class="cfg-section"><div class="cfg-section-head"><h3>规范件</h3>'
     + '<button class="btn btn-sm" data-action="toastOnly" data-arg=\'"对账只看不改:缺哪几份、哪几份过期、哪几份被人手改过(演示)"\'>对一遍账</button></div>'
-    + '<div class="cfg-readonly-note">对账只看不改。在研版本和项目群在总览名片里改。指标正文跟运作活①会话走,不预铺空壳。没有「规范铺底」按钮。</div></div>';
+    + '<div class="cfg-readonly-note">对账只看不改。项目群在总览名片里改。在研版本看远端里程碑。指标正文跟运作活①会话走,不预铺空壳。没有「规范铺底」按钮。</div></div>';
 }
 function renderConfig(pid){
   return '<section data-screen="config">'

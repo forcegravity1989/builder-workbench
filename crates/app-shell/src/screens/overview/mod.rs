@@ -6,16 +6,20 @@
 //! `.bw/metrics/readings.jsonl`,发版记录来自 git 标签 + 远端 Release。**没有读数就说
 //! 无数据,不显示 0**。
 
-use crate::bridge::{Bridge, ChromeBusy, Panel, PanelNav, Req, STARTING_SESSION};
-use crate::chrome::light_dot;
-use crate::vm::{MetricCardVm, ProjectVm};
-use bw::command::{Command, ProjectIntent};
-use bw::model::ProjectId;
+use crate::{
+    bridge::{Bridge, ChromeBusy, Panel, PanelNav, Req, STARTING_SESSION},
+    chrome::light_dot,
+    vm::{MetricCardVm, ProjectVm},
+};
+use bw::{
+    command::{Command, ProjectIntent},
+    model::ProjectId,
+};
 use dioxus::prelude::*;
 
 #[component]
 pub fn View(p: ProjectVm, bridge: Bridge) -> Element {
-    // 名片是不是正在编辑。草稿含名片 + 在研版本 + 项目群,纯本机,没确认前不发命令。
+    // 名片是不是正在编辑。草稿含名片 + 项目群,纯本机,没确认前不发命令。
     let nav = use_context::<PanelNav>();
     let start_busy = use_context::<ChromeBusy>();
     let editing = use_signal(|| false);
@@ -23,12 +27,12 @@ pub fn View(p: ProjectVm, bridge: Bridge) -> Element {
 
     rsx! {
         section { class: "ov-stack",
-            // 本周还没有运作活①才给「开始本版本」。做完(含已完成)不再冒出来。
-            // 还开着时只指路去会话屏,再点一次会重建一张同名活。
+            // 「开始本版本」只在本周没有覆盖中的里程碑、也没有开着的运作活①时出现。
+            // 上周那张还开着也会挡住。有覆盖或已开过就不再冒出来。
             if let Some(pending) = p.bootstrap_pending.clone() {
                 {bootstrap_banner(pending, &bridge, nav)}
             }
-            if !p.week_started {
+            if !p.week_covered && !p.week_started {
                 {start_banner(&p, &bridge, nav, start_busy)}
             } else if let Some(st) = p.ops1_status.clone() {
                 {running_banner(st, nav)}
@@ -128,7 +132,6 @@ struct CardDraft {
     brief: String,
     benchmark: String,
     north: String,
-    version: String,
     chat_provider: String,
     chat_group: String,
     /// 五件群通知事件各开不开,顺序按 [`bw::chat::NotifyEvent::ALL`]。
@@ -154,7 +157,6 @@ impl CardDraft {
             brief: p.card.brief.clone(),
             benchmark: p.card.benchmark.clone(),
             north: p.card.north_star.clone(),
-            version: p.card.current_version_raw.clone(),
             chat_provider: provider,
             chat_group: group,
             notify: bw::chat::NotifyEvent::ALL
@@ -187,6 +189,9 @@ fn card_and_health(
     let is_editing = *editing.read();
     let b_edit = bridge.clone();
     let b_pull = bridge.clone();
+    let b_ver = bridge.clone();
+    let covering = p.covering_versions.clone();
+    let selected_ver = p.card.current_version_raw.clone();
     let pid = p.id;
     let name = p.name.clone();
 
@@ -229,10 +234,20 @@ fn card_and_health(
                     }
                     div { class: "formrow",
                         label { class: "label", "在研版本" }
-                        input {
-                            class: "input mono",
-                            value: "{draft.read().version}",
-                            oninput: move |e| draft.write().version = e.value(),
+                        select {
+                            class: "select mono",
+                            value: "{selected_ver}",
+                            onchange: move |e| b_ver.send(Req::SelectOverviewVersion(e.value())),
+                            if covering.is_empty() {
+                                option { value: "", selected: true, "（空）" }
+                            }
+                            for name in covering.iter() {
+                                option {
+                                    value: "{name}",
+                                    selected: name.as_str() == selected_ver.as_str(),
+                                    "{name}"
+                                }
+                            }
                         }
                     }
                     div { class: "formrow",
@@ -292,7 +307,6 @@ fn card_and_health(
                                         brief: d.brief,
                                         benchmark: d.benchmark,
                                         north_star: d.north,
-                                        current_version: d.version.trim().to_string(),
                                         chat_provider: d.chat_provider.clone(),
                                         chat_group: d.chat_group.trim().to_string(),
                                         chat_notify,
@@ -307,7 +321,7 @@ fn card_and_health(
                     {charter_line("想做什么", &c.brief)}
                     {charter_line("对标", &c.benchmark)}
                     {charter_line("北极星", &c.north_star)}
-                    {charter_line("在研版本", &c.current_version)}
+                    {current_version_line(p)}
                     {charter_line("项目群", &c.chat)}
                     div { class: "charter-meta",
                         span { class: "mono", "{c.remote}" }
@@ -344,6 +358,21 @@ fn card_and_health(
                     }
                 }
             }
+        }
+    }
+}
+
+fn current_version_line(p: &ProjectVm) -> Element {
+    let selected = p.card.current_version_raw.clone();
+    let shown = if selected.is_empty() {
+        "（空）".to_string()
+    } else {
+        format!("{selected} · 本周")
+    };
+    rsx! {
+        div { class: "charter-line",
+            span { class: "k", "在研版本" }
+            span { class: "mono", "{shown}" }
         }
     }
 }
@@ -711,11 +740,14 @@ fn repo_block(p: &ProjectVm, bridge: &Bridge) -> Element {
 // ── ⑥ 本周计划进度 ──────────────────────────────────
 
 fn week_block(p: &ProjectVm) -> Element {
-    let w = p.weeks.iter().find(|w| w.week == p.current_week);
     let goal = if p.confirmed_version.is_empty() {
         "还没有确认本周版本".to_string()
     } else {
-        w.and_then(|wk| wk.goal.clone())
+        p.plan_versions
+            .iter()
+            .find(|v| v.name == p.confirmed_version)
+            .map(|v| v.goal.clone())
+            .filter(|s| !s.is_empty())
             .unwrap_or_else(|| "（这个版本还没写版本目标）".into())
     };
     let c = &p.week_counts;

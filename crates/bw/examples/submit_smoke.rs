@@ -18,12 +18,16 @@
 //! 3. **不碰 claude、不碰网络**。agent 干活这一段由脚本直接往 worktree 里写文件
 //!    模拟,因为这一刀要验的是它**之后**那一下。
 
-use bw::app::App;
-use bw::command::{Command, Event, ProjectIntent, RemoteRef};
-use bw::model::{IssueKind, IssueOrigin, IssueStatus};
-use std::path::{Path, PathBuf};
-use std::process::Command as Cmd;
-use std::sync::Arc;
+use bw::{
+    app::App,
+    command::{Command, Event, ProjectIntent, RemoteRef},
+    model::{IssueKind, IssueOrigin, IssueStatus},
+};
+use std::{
+    path::{Path, PathBuf},
+    process::Command as Cmd,
+    sync::Arc,
+};
 
 #[tokio::main(flavor = "current_thread")]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -88,7 +92,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             category: None,
             kind: IssueKind::Business,
             origin: IssueOrigin::Human,
-            week_of: bw::isoweek::current_week(),
+            week_of: String::new(),
             plan: String::new(),
         })
         .await?;
@@ -130,7 +134,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             category: None,
             kind: IssueKind::Business,
             origin: IssueOrigin::Human,
-            week_of: bw::isoweek::current_week(),
+            week_of: String::new(),
             plan: String::new(),
         })
         .await?;

@@ -118,7 +118,7 @@ pub struct ProjectCardVm {
     /// 本周排了几张活、完成了几张。
     pub week_total: u32,
     pub week_done: u32,
-    /// 在研版本(仓里 `.bw/project.toml` 写的)。没写就是空,不猜一个。
+    /// 在研版本(覆盖当天的里程碑,多个取最后创建)。没有就是空。
     pub version: String,
     /// 当前 ISO 周,卡片上那个周 chip 显示它。
     pub week: String,
@@ -149,28 +149,32 @@ pub struct ProjectVm {
     pub health: HealthVm,
     pub metrics: MetricsVm,
     pub current_week: String,
-    /// 本周是否已经有过运作活①(含已完成)。总览「开始本版本」只在还没有时出现。
+    /// 本周是否已经有过运作活①(含已完成),或还有开着的运作活①。
     pub week_started: bool,
+    /// 有没有里程碑覆盖到本 ISO 周。总览「开始本版本」只在没有时出现。
+    pub week_covered: bool,
+    /// 覆盖当天的版本名,按创建时间新的在前。总览下拉用。
+    pub covering_versions: Vec<String>,
     /// 上一发 / 未发 / 推荐下一号,给创建版本弹窗。
     pub last_released: String,
     pub unreleased: Vec<String>,
     pub suggested_next: String,
-    /// 本周运作活①已确认的 `v0.x`。空 = 还没确认,总览进度空态。
+    /// 总览在研:覆盖当天的里程碑,人在下拉里选中的那个。空 = 今天没有覆盖中的版本。
     pub confirmed_version: String,
     /// 本周运作活①若还开着,走到哪了。`None` = 还没建,或已经完成。
     pub ops1_status: Option<String>,
     /// 规范铺底还开着、默认分支还没有名片。总览常驻横幅。`None` = 已合入或没建。
     pub bootstrap_pending: Option<CardMrVm>,
-    /// 计划屏左栏:节律周列表(新的在前,本周置顶)。排期名走 `v0.x`,不在这里。
+    /// 计划屏左栏:节律周列表(新的在前,本周置顶)。排期名不在这里。
     pub weeks: Vec<WeekVm>,
     /// 正在看哪一周(节律用,不再当排期名)。
     pub viewing_week: String,
-    /// 看哪个 `v0.x`。空 = 「全部」。
+    /// 看哪个版本。空 = 「全部」。
     pub viewing_plan: String,
-    /// 左栏点的是「全部」——看板不按周过滤。
+    /// 下拉点的是「全部」——看板不按版本过滤。
     pub view_all: bool,
     pub board: BoardVm,
-    /// `v0.x` 版本列表。旧非 v0.x 不进这里。
+    /// 版本列表(每个里程碑标题都是一个版本)。
     pub plan_versions: Vec<PlanVersionVm>,
     /// 当前登录用户名(给列表「我的」筛选用)。空 = 认不出。
     pub current_user: String,
@@ -215,11 +219,9 @@ pub struct CardVm {
     pub benchmark: String,
     pub north_star: String,
     pub remote: String,
-    /// 在研版本,**显示用**:空的时候是「(待填)」。
+    /// 在研版本,**显示用**:空的时候是「(空)」。
     pub current_version: String,
-    /// 在研版本,**机读用**:空就是空。发版这类要把它当负载送进命令的地方
-    /// 只能用这一个 —— 把「(待填)」当版本号发出去,发版记录里就多一行叫
-    /// 「(待填)」的版本,而且按版本号幂等,这个项目以后再也发不出版。
+    /// 在研版本,**机读用**:空就是空。
     pub current_version_raw: String,
     pub standard_version: String,
     /// 项目群。没配就是「未配」。
@@ -422,15 +424,18 @@ pub struct CardItemVm {
     pub updated_at: i64,
 }
 
-/// 计划版本,号就是 `v0.x`,与发版号同一串。
+/// 计划版本。号就是里程碑标题,与发版号同一串。
 #[derive(Clone, Debug, Default, PartialEq)]
 pub struct PlanVersionVm {
     pub name: String,
     pub start: String,
     pub end: String,
+    pub created_at: String,
     pub issue_count: u32,
     /// 远端 Release 或 issue 的 `bw:released:` 里有同名。
     pub released: bool,
+    /// 打了这个版本标签的运作活①评论里的版本目标。没有就是空。
+    pub goal: String,
 }
 
 #[derive(Clone, Debug, PartialEq)]

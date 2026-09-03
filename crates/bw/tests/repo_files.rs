@@ -4,9 +4,11 @@
 //! 刀5:week_plan_file 和 release_file 已从 bw 删掉(搬到 app-shell),
 //! 这两个解析器的测试也跟着搬走了。这里只剩还在 bw 里的仓文件解析器。
 
-use bw::isoweek;
-use bw::model::StageKind;
-use bw::repo::{issue_policy_file, managed_file, project_file};
+use bw::{
+    isoweek,
+    model::StageKind,
+    repo::{issue_policy_file, managed_file, project_file},
+};
 
 #[test]
 fn iso_week_math_round_trips() {
@@ -125,9 +127,13 @@ fn project_file_chat_section_is_optional() {
     )
     .unwrap();
     assert_eq!(with.chat.as_ref().unwrap().group_id, "638201");
-    assert_eq!(with.current_version, "v0.3");
-    let again = project_file::parse(&project_file::render(&with)).unwrap();
-    assert_eq!(again, with, "渲染出来的还认得回去");
+    let rendered = project_file::render(&with);
+    assert!(
+        !rendered.contains("current_version"),
+        "新写入不再写 current_version"
+    );
+    let again = project_file::parse(&rendered).unwrap();
+    assert_eq!(again.chat, with.chat, "渲染出来的还认得回去");
 }
 
 fn tempdir(tag: &str) -> std::path::PathBuf {
@@ -150,7 +156,6 @@ fn a_multiline_brief_survives_a_write_read_round_trip() {
         benchmark: "Linear".into(),
         opportunity: "北极星\n也是多行的".into(),
         standard_version: "4.0".into(),
-        current_version: "v0.1".into(),
         chat: None,
     };
     project_file::write(&dir, &f).expect("写得出去");

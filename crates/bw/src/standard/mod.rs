@@ -2,7 +2,9 @@
 //!
 //! 仓根 `standard/` 与 `crates/`、`docs/` 平级,`include_str!` 在编译期读进
 //! 常量(零 IO)。**改 `standard/` 就是改产品行为**,不要搬。
-//! 项目仓不再铺 `.bw/standard.toml`;旧仓里那份由每周资产盘点删掉,接入时不碰。
+//!
+//! 现行结构见仓根 `standard/README.md`。项目仓不再铺 `.bw/standard.toml`;
+//! 旧仓里那份由每周资产盘点删掉,接入时不碰。
 
 pub mod bootstrap;
 pub mod skills;

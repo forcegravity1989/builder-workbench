@@ -4,8 +4,10 @@
 //! 入口在详情弹窗)。
 
 use super::Filters;
-use crate::bridge::{Bridge, PanelNav};
-use crate::vm::{CardItemVm, ColumnVm, ProjectVm};
+use crate::{
+    bridge::{Bridge, PanelNav},
+    vm::{CardItemVm, ColumnVm, ProjectVm},
+};
 use bw::model::{IssueId, IssueStatus};
 use dioxus::prelude::*;
 use std::collections::HashMap;
@@ -70,11 +72,9 @@ fn ago(unix: i64) -> String {
     }
 }
 
-/// 一张活「排在哪」:周 > 版本 > 未排期。
+/// 一张活「排在哪」:只认 `bw:plan:`。
 fn place_of(c: &CardItemVm) -> String {
-    if !c.week_of.is_empty() {
-        c.week_of.clone()
-    } else if !c.plan_version.is_empty() {
+    if !c.plan_version.is_empty() {
         format!("版本·{}", c.plan_version)
     } else {
         "未排期".into()
@@ -129,9 +129,9 @@ fn column(
             return true;
         }
         if plan_filter == "unscheduled" {
-            c.week_of.is_empty() && c.plan_version.is_empty()
+            c.plan_version.is_empty()
         } else {
-            c.week_of == plan_filter || c.plan_version == plan_filter
+            c.plan_version == plan_filter
         }
     };
     // 预拷贝成 owned 数据,rsx 闭包不借用 col。段自带 cards(build_board 已按
@@ -392,7 +392,6 @@ fn apply_drop(
 ) {
     // 未排期拖到已排期 → 排期弹窗(改标签,不改状态)
     if drop_seg == "assigned"
-        && card.week_of.is_empty()
         && card.plan_version.is_empty()
         && matches!(card.status, IssueStatus::Backlog | IssueStatus::Todo)
     {

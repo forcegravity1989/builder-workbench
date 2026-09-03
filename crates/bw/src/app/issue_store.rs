@@ -1,9 +1,9 @@
 //! codehub/GitHub issue 持久化映射层(数据层迁移刀2/刀3)。
 //!
 //! 把 bw 的 `Issue` 领域对象 ↔ codehub/GitHub issue 互转。issue 的状态、
-//! 排期、版本、类别从本地 SQLite 搬到远端 issue + 标签(`bw:status:*` /
-//! `bw:week:*` / `bw:plan:*` / `bw:released:*` / `bw:category:*`),这是那条映射的正本。
-//! 周版本和人起名的版本是同一槽位,一张活只挂一个。
+//! 排期、版本、类别以远端 issue + 标签为正本(`bw:status:*` /
+//! `bw:plan:*` / `bw:released:*` / `bw:category:*`)。旧 `bw:week:` 不认。
+//! 每个里程碑都是一个版本,一张活只挂一个。
 //!
 //! 字段映射的取舍:每一条都不自作主张加标签。**lossy**:远端 issue 的 `body` 经
 //! `view_issue` 单查带回(列表查询不带正文);`branch`/`pr_number`、
@@ -191,39 +191,6 @@ pub async fn set_category(
     Ok(())
 }
 
-/// 改 issue 的周版本标签(`bw:week:*`,namespace-replace 会换掉旧 week)。
-/// 同时摘 `bw:plan:`(空后缀) —— 一张活只属于一个版本,换到周版本就把人起名的那个摘掉。
-pub async fn set_week(app: &App, project: &Project, iid: u32, week: &str) -> Result<()> {
-    let remote = app.remote_for(project)?;
-    let labels = [format!("bw:week:{week}"), "bw:plan:".to_string()];
-    let label_refs: Vec<&str> = labels.iter().map(|s| s.as_str()).collect();
-    remote
-        .update_issue(iid, Some(&label_refs), None)
-        .await
-        .map_err(|e| map_remote_err("远端改 issue 周没成", e))?;
-    project_week_best_effort(&remote, iid, week).await;
-    Ok(())
-}
-
-/// 标签已经写成功之后才投影。失败只打 stderr，不回滚、不挡正本。
-async fn project_week_best_effort(remote: &Remote, iid: u32, week: &str) {
-    let (start, due) = if week.is_empty() {
-        (String::new(), String::new())
-    } else if let Some(pair) = week_span(week) {
-        pair
-    } else {
-        bw_engine::dlog!(warn, "milestone", "[BW_MILESTONE] 周号认不出,不投影:{week}");
-        return;
-    };
-    if let Err(e) = remote.project_week(iid, week, &start, &due).await {
-        bw_engine::dlog!(
-            err,
-            "milestone",
-            "[BW_MILESTONE] #{iid} {week} 投影没成:{e}"
-        );
-    }
-}
-
 async fn project_plan_best_effort(remote: &Remote, path: &str, iid: u32, plan: &str) {
     if let Err(e) = remote.project_plan(iid, path, plan).await {
         bw_engine::dlog!(
@@ -232,16 +199,6 @@ async fn project_plan_best_effort(remote: &Remote, path: &str, iid: u32, plan: &
             "[BW_MILESTONE] #{iid} 版本 {plan} 投影没成:{e}"
         );
     }
-}
-
-fn week_span(week: &str) -> Option<(String, String)> {
-    let start = crate::isoweek::week_start(week)?;
-    let due = start + time::Duration::days(6);
-    Some((ymd(start), ymd(due)))
-}
-
-fn ymd(d: time::Date) -> String {
-    format!("{:04}-{:02}-{:02}", d.year(), u8::from(d.month()), d.day())
 }
 
 /// 改 issue 的发版标签(`bw:released:*`,namespace-replace 会换掉旧 released)。
@@ -307,11 +264,11 @@ pub async fn assign_to_plan(app: &App, project: &Project, iid: u32, plan: &str) 
     Ok(())
 }
 
-/// 从自定义版本拿下:只摘 `bw:plan:`(空后缀),不碰 `bw:week:`。
+/// 从版本拿下:摘 `bw:plan:`(空后缀),顺手摘旧 `bw:week:`。
 /// 里程碑镜像 best-effort 摘下。
 pub async fn clear_plan(app: &App, project: &Project, iid: u32) -> Result<()> {
     let remote = app.remote_for(project)?;
-    let labels = ["bw:plan:".to_string()];
+    let labels = ["bw:plan:".to_string(), "bw:week:".to_string()];
     let label_refs: Vec<&str> = labels.iter().map(|s| s.as_str()).collect();
     remote
         .update_issue(iid, Some(&label_refs), None)
@@ -390,13 +347,13 @@ pub async fn find_open_charter(app: &App, project: &Project) -> Result<Option<Is
 
 // ─────────────── Issue 构造(两条路:create 直接拼 / 从 RemoteIssue 映射)────
 
-/// 一张活只属于一个版本槽。合法 `bw:plan:v0.x` 才排期;`week_of` 即使非空
+/// 一张活只属于一个版本槽。有 `bw:plan:<name>` 就排期;`week_of` 即使非空
 /// 也不再生成周排期(不再写 `bw:week:`)。
 fn one_schedule(_week_of: &str, extra_labels: &[&str]) -> (Option<String>, Option<String>) {
     let plan = extra_labels
         .iter()
         .find_map(|l| l.strip_prefix("bw:plan:"))
-        .filter(|s| crate::version::is_v0x(s))
+        .filter(|s| !s.is_empty())
         .map(|s| s.to_string());
     (None, plan)
 }
@@ -612,8 +569,9 @@ fn resolve_tool_workflow(
     category: Option<crate::model::Category>,
 ) -> (String, String) {
     if kind == IssueKind::Ops {
+        // 运作活①② 跟构建的本机开工工具,不走配置屏「运维」。
         return (
-            resolve_tool(asset_root, crate::model::Category::Ops),
+            resolve_tool(asset_root, crate::model::Category::Build),
             workflow_for(kind, title),
         );
     }
@@ -682,18 +640,9 @@ fn parse_status_from_labels(labels: &[String]) -> IssueStatus {
     IssueStatus::Todo
 }
 
-fn parse_week(labels: &[String]) -> String {
-    labels
-        .iter()
-        .find_map(|l| {
-            let s = l.strip_prefix("bw:week:")?;
-            if s.is_empty() {
-                None
-            } else {
-                Some(s.to_string())
-            }
-        })
-        .unwrap_or_default()
+/// 旧 `bw:week:` 产品不再认。字段留下以免大拆,解析一律空。
+fn parse_week(_labels: &[String]) -> String {
+    String::new()
 }
 
 fn parse_released(labels: &[String]) -> String {
@@ -704,7 +653,6 @@ fn parse_released(labels: &[String]) -> String {
 }
 
 /// 从 `bw:plan:<name>` 标签取这张活排进的版本。空后缀当没排。
-/// 读回认旧名(`MVP收尾`)和新的 `v0.x`,新建仍只写 `v0.x`。
 fn parse_plan(labels: &[String]) -> String {
     labels
         .iter()
@@ -797,8 +745,8 @@ mod tests {
     }
 
     #[test]
-    fn parse_week_reads_iso_week() {
-        assert_eq!(parse_week(&["bw:week:2026-W35".into()]), "2026-W35");
+    fn parse_week_ignores_old_label() {
+        assert_eq!(parse_week(&["bw:week:2026-W35".into()]), "");
         assert_eq!(parse_week(&["bw:week:".into()]), "");
     }
 
@@ -853,7 +801,7 @@ workflow = "mattpocock-skills"
         let _ = std::fs::remove_dir_all(&dir);
         assert_eq!(
             tool,
-            crate::defaults::default_tool(crate::model::Category::Ops)
+            crate::defaults::default_tool(crate::model::Category::Build)
         );
         assert_eq!(workflow, super::super::OPS1_WORKFLOW);
     }
@@ -869,7 +817,7 @@ workflow = "mattpocock-skills"
         );
         assert_eq!(
             tool,
-            crate::defaults::default_tool(crate::model::Category::Ops)
+            crate::defaults::default_tool(crate::model::Category::Build)
         );
         assert_eq!(workflow, super::super::OPS2_WORKFLOW);
     }
@@ -898,13 +846,13 @@ workflow = "mattpocock-skills"
         .unwrap();
         let assets = dir.join("assets");
         std::fs::create_dir_all(&assets).unwrap();
-        crate::local::Settings::set_tool(&assets, "ops", "claude_cli").unwrap();
+        crate::local::Settings::set_tool(&assets, "build", "cursor").unwrap();
         let mut p = proj();
         p.workspace_path = dir.display().to_string();
         let (tool, workflow) =
             resolve_tool_workflow(&p, &assets, IssueKind::Ops, "更新指标 + 制定版本计划", None);
         let _ = std::fs::remove_dir_all(&dir);
-        assert_eq!(tool, "claude_cli");
+        assert_eq!(tool, "cursor");
         assert_eq!(workflow, super::super::OPS1_WORKFLOW);
     }
 }

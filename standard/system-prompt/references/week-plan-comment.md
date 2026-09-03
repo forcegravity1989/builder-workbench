@@ -20,11 +20,11 @@
 挂评前跑 `week-planning` 技能目录里的 `check-week-comment.py`(和注入的 `week-planning/SKILL.md` 同级,不在本 reference 目录,也不在工作区根)。过了再贴。缺任一标题、或「版本目标」空着会失败。
 不要写「周目标」「本周目标」(旧评界面还能读,新写不认)。
 
-`## 本周纳入` 先写已经挂了这个 `v0.x` 的 `#iid`,再写新拆。
+`## 本周纳入` 先写已经挂了这个版本的 `#iid`,再写新拆。
 
 ## 标签
 
-确认版本后,先给**这张运作活①自己**改标题为「更新指标 + 制定版本计划 v0.x」,并打 `bw:plan:v0.x`(界面靠这个判断本周做过)。纳入的业务活也打 `bw:plan:v0.x`,再打 `bw:category:{prototype|build|optimize|growth|ops}`。
-不要打 `bw:week`。会话里改标签不会走 Workbench 投影,要自己打。
+确认版本后,先给**这张运作活①自己**改标题为「更新指标 + 制定版本计划 <版本名>」,并打 `bw:plan:<版本名>`(界面靠这个判断本周做过)。纳入的业务活也打 `bw:plan:<版本名>`,再打 `bw:category:{prototype|build|optimize|growth|ops}`。
+版本名推荐 `vX.X`(如 `v0.3` / `v1.0`),人要用别的也行。不要打 `bw:week`。会话里改标签不会走 Workbench 投影,要自己打。
 
-codehub 再挂同名里程碑 `v0.x`。挂不上就说,不回滚标签,不阻塞评论。GitHub 不投影。
+codehub 再挂同名里程碑(没有就建,起止默认本周周一到周五)。挂不上就说,不回滚标签,不阻塞评论。GitHub 不投影。
