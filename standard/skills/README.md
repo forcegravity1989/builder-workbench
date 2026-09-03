@@ -1,12 +1,14 @@
 # Workbench 自带的技能库(唯一正本目录)
 
 > **30 秒导读**:Workbench 自带的全部技能住在这里 —— **一个目录、全部平级**,一个技能一个
-> 子目录,里面一份 `SKILL.md`。开工时 Workbench 把这些摊到**自己的资产目录**(不复制进用
-> 户的仓),按活挂的 `workflow` 挑出对应那份,只把**名字 + 一句话 + 完整路径**写进
-> agent 的系统提示词,正文让 agent 自己按需读 —— 渐进式加载,见
-> `crates/bw/src/standard/skills.rs`。给接手技能这块的人看。**现在作数**
-> (2026-08-21 收敛:此前散在 `docs/skills/`(已删,见 v3 分支)与 `standard/06-defaults/ops/` 两处、
-> 还用目录层级表达「谁调用谁」;现在从属关系写在正文里,目录不表达任何结构)。
+> 子目录,里面一份 `SKILL.md`。怎么写 skill、SOP 是哪一节,正本在
+> [`SKILL-MD-SPEC.md`](SKILL-MD-SPEC.md)。分层听上一级 [`../README.md`](../README.md)。
+> 开工时摊到 Workbench 资产目录,提示词只给名字 + 一句话 + 路径。见
+> `crates/bw/src/standard/skills.rs`。
+
+## 写法
+
+写或改 `SKILL.md` 前读 [`SKILL-MD-SPEC.md`](SKILL-MD-SPEC.md)。SOP 是各份正文第 4 节「标准执行流程」,不写在本 README。
 
 ## 四份运作剧本(Workbench 自己发起的标准动作)
 
@@ -15,7 +17,7 @@
 | `更新指标与版本计划` | `week-planning/` | 人(总览横幅「开始本版本」) | 20-40 分钟,人机 3-6 轮 |
 | `资产盘点` | `asset-audit/` | 定时(默认周五 09:00)或接入老仓时一次 | 10-25 分钟,通常 0 轮 |
 | —(子技能) | `metrics-refresh/` | `week-planning` 第二步指名调用 | 随宿主 |
-| —(子技能) | `project-handbook/` | `asset-audit` 首次模式里**问过人**之后调用 | 随宿主 |
+| —(子技能) | `project-handbook/` | 剧本在、产品不自动开首次会话;盘点只记报告 | 未自动接 |
 
 项目约定**没有剧本** —— 不起 agent,只把 `.bw/project.toml` 写到常驻树 `bw/project`。
 
@@ -49,21 +51,12 @@ body 自足;workflow 入口 body 是 SOP 链 + 指向 `../vendor/` 库子技能�
 
 ## 版本
 
-不单开版本线——版本号就是 `standard/VERSION`,随 Workbench 整体发布走。改了内容 =
-`standard/VERSION` 抬一档 + 这里记一行。技能不进用户仓,没有项目侧指纹账。
+改了内容在这里记一行。技能不进用户仓,没有项目侧指纹账。不另开 `VERSION` 文件。
 
-- 5.15:SYSTEM + 三份现行 references 按层削薄(采集 / 评论格式 / 改仓增量)。
+- 5.17:写作正本 `SKILL-MD-SPEC.md`;五份现行 SKILL.md 按规范重写。`mr-review` 未动。
+- 5.16:SYSTEM 只留 AGENTS.md 入口、任务→reference 对照、三条纪律。
+- 5.15:SYSTEM + 三份现行 reference 按层削薄(采集 / 评论格式 / 改仓增量)。
 - 5.14:系统提示词给项目正本地图 + 运作活①四段进度;评论校验脚本随 week-planning 摊出。
 - 5.12:名片只留 project.toml;开工约定不再写工具声明;不再铺 standard.toml / managed.toml;周盘点清旧件。
 - 5.11:运作活①确认 `v0.x`、纳入打 `bw:plan:v0.x`;对人说版本目标;不再写 `bw:week:*`。
-
 - 5.10:运作活①指标单独确认、纳入先看已有 issue、打周标签后挂里程碑;周目标整段展示。
-
-## 三条共同的规矩
-
-1. **最远只到「评审中」**。这些活和所有 Issue 共用同一条铁律:agent 干完提 MR,
-   状态最远推到「评审中」;「完成」永远是人自己点的那一下。
-2. **不许伪造数据**。指标读数只能来自真实采集;采不到就如实说采不到,不为了让灯变绿
-   手工改数、改定义。
-3. **可能没人在场**。资产盘点是定时触发的——按「能做的先做、拿不准的写进报告等人看」
-   推进,不要因为没人回应就卡住。

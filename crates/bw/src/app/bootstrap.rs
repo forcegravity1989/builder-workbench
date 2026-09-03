@@ -216,13 +216,11 @@ fn pending_steps(probe: &boot::BootstrapProbe) -> String {
 /// ▶开工 时注入给 agent 的系统提示词。**渐进式加载**:提示词里只放索引,
 /// 正文让 agent 自己按需读。
 ///
-/// 主提示词是外置的 `standard/system-prompt/SYSTEM.md.tmpl`(身份 + 四铁律 +
-/// 读项目规范件的指引),`{{...}}` 占位在这里渲染:活的信息、本活要读的
-/// references 阶段规范、本活挂的技能。**正文一律不塞进提示词** —— references
-/// 和技能都只给「一句话 + 完整路径」,agent 按需自己读,和主提示词同一套规矩。
+/// 主提示词是外置的 `standard/system-prompt/SYSTEM.md.tmpl`(身份 + 读仓根
+/// `AGENTS.md` + 按任务加载哪份 reference + 三条纪律),`{{...}}` 占位在这里渲染。
+/// **正文一律不塞进提示词** —— references 和技能都只给「一句话 + 完整路径」。
 ///
-/// 不硬编码在 `format!` 里:改身份/铁律 = 改那份 md + 抬 `standard/VERSION`,
-/// 规范对账测得出落后(以前塞在 `base_prompt` 的 `format!` 里,改=改代码,不可对账)。
+/// 不硬编码在 `format!` 里:改身份/纪律 = 改那份 md。
 pub fn agent_system_prompt(
     issue: &Issue,
     skill: Option<&SkillPointer>,

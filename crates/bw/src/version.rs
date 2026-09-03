@@ -115,7 +115,7 @@ pub fn context_block(inv: &VersionInventory) -> String {
         inv.unreleased.join("、")
     };
     format!(
-        "本周版本（人确认之前不要打标）：\n- 上一发：{last}\n- 未发：{unreleased}\n- 推荐下一号：{}\n确认后：标题改成「更新指标 + 制定版本计划 v0.x」，打 bw:plan:v0.x，里程碑同名。不要打 bw:week，不要起 W35。",
+        "本周版本（人确认之前不要打标）：\n- 上一发：{last}\n- 未发：{unreleased}\n- 推荐下一号：{}\n确认后怎么改标题、打标、挂里程碑,见 week-plan-comment.md。",
         inv.suggested_next
     )
 }

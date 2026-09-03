@@ -2,10 +2,7 @@
 //!
 //! 仓根 `standard/` 与 `crates/`、`docs/` 平级,`include_str!` 在编译期读进
 //! 常量(零 IO)。**改 `standard/` 就是改产品行为**,不要搬。
-//!
-//! `standard/VERSION` 是 Workbench 二进制自带哪一版规范。项目仓不再铺
-//! `.bw/standard.toml`(版本账对使用没有用);旧仓里那份由每周资产盘点删掉,
-//! 接入时不碰。
+//! 项目仓不再铺 `.bw/standard.toml`;旧仓里那份由每周资产盘点删掉,接入时不碰。
 
 pub mod bootstrap;
 pub mod skills;
@@ -19,13 +16,6 @@ pub struct Template {
     /// 一句话:这份件是干什么的。**开工时进 agent 的规范索引** —— agent 拿到
     /// 的是「这句话 + 路径」,正文自己按需去读,不整篇塞进系统提示词。
     pub note: &'static str,
-}
-
-const VERSION_RAW: &str = include_str!("../../../../standard/VERSION");
-
-/// Workbench 二进制自带的规范版本,如 `5.0`。
-pub fn version() -> &'static str {
-    VERSION_RAW.trim()
 }
 
 pub const ISSUE_POLICY_TMPL: &str =

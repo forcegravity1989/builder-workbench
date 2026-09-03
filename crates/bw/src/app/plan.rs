@@ -56,7 +56,7 @@ impl App {
             .create_ops_issue(
                 project_id,
                 title,
-                "复盘上周、补齐 .bw/metrics.toml、和人确认本周版本,再交流出版本目标与业务活草稿。\n\n草稿没经人确认之前不许建活、不许落文件。"
+                "运作活①。人没确认版本、纳入和指标口径之前,不建业务活、不落文件。"
                     .into(),
                 super::OPS1_WORKFLOW,
                 IssueOrigin::Human,

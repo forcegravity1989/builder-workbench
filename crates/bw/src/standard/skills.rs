@@ -12,8 +12,7 @@
 pub struct SkillPack {
     /// 技能名(= 目录名 = frontmatter 的 `name`)。agent 在提示词里看到的就是它。
     pub slug: &'static str,
-    /// 相对 `<asset_root>/skills/` 的落点。子技能挂在入口包目录下面,
-    /// 不是平级的第二个技能。
+    /// 相对 `<asset_root>/skills/` 的落点。运作剧本全部平级,各占一个目录。
     pub rel: String,
     /// frontmatter 那句 `description`,原样取自文件。
     pub desc: &'static str,

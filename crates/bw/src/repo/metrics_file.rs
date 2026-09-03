@@ -129,7 +129,7 @@ pub fn read(workspace: &Path) -> Result<Option<MetricsFile>> {
             why: format!(
                 "这份指标文件是旧格式(schema_version = {},当前是 {})。\
                  旧格式里那几种采集方式从来没有实现过,不做迁移 —— \
-                 运作活①「更新指标 + 制定本周计划」会带你重定一遍。",
+                 运作活①「更新指标 + 制定版本计划」会带你重定一遍。",
                 file.schema_version, SCHEMA_VERSION
             ),
         });

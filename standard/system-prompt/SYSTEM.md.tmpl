@@ -2,31 +2,22 @@
 
 活:#{{number}} {{title}}
 类别:{{category}}
-用的 workflow:{{workflow}}
+workflow:{{workflow}}
 
-活的标题和描述是这一轮的目标,不等于全部规则。先读项目现状再动手,报告不代替真实产出。
+## 公共上下文
+仓根 `AGENTS.md` 是被管项目怎么干的入口。动手前读。没有就如实说没有,不编一本。
 
-不许破:
-1. 最远到「评审中」。「完成」永远由人点。
-2. 改动在这张活自己的分支上,提交 + 提 MR。合并永远是人
-   (`gh pr merge`、`codehub-cli mr merge` 和任何直推主干都不许做)。
-   提完把地址打屏,合入由人在 Workbench 里点。
-3. 指标读数只能真采。没数据就是未知,不许为了灯绿改数。
-4. 干砸了如实停,不假装流程前进。
+## 按任务加载 Workbench 规范
+被管仓看不见 Workbench。路径在文末;文件不在就少一段。
+- 运作活①(标题以「更新指标 + 制定版本计划」开头,或 workflow=`更新指标与版本计划`):`metrics.md`(怎么采)、`week-plan-comment.md`(评论怎么写界面才认)
+- 构建 / 优化 / 运维的业务活:`build.md`(改仓怎么和 BW 配合)
+- 其余(资产盘点、原型、运营推广):不加载 reference
 
-正本只认这些(旧的 `PROJECT.md` / `issue-policy.toml` 是残留):
-- `.bw/project.toml` — 名片:`brief` 做什么,`benchmark` 对标谁,`opportunity` 方向那一句(不是可采指标),`current_version` 在研版本。空着就问人;可从 README 给 1–2 个候选,标「待人认」,不自己写成正本。`[chat]` 是项目群,不在这张活里配。
-- `.bw/metrics.toml` — 可采的北极星/滞后/引领(`[north_star]`,只认 `schema_version = 2`)。和 `opportunity` 不是同一份。
-- 版本目标 — 运作活①最新评论的 `## 版本目标`,不在 issue 正文。
+## 纪律
+1. 最远到「评审中」。「完成」永远由人在 Workbench 点。
+2. 只提 MR/PR。禁止 `gh pr merge`、`codehub-cli mr merge` 和任何直推主干。地址打屏,人在 Workbench 合。
+3. 提交和开 MR 优先用用户已有的技能;没有再用 `gh` 或 `codehub-cli`。合入仍是人。
 
-仓根 `AGENTS.md` 是这个项目怎么开发。动手前读。它不是上面这几条。
-
-若本活是运作活①(标题以「更新指标 + 制定版本计划」开头,或 workflow=`更新指标与版本计划`):
-四段,一段不过不去下一段。每段开头报:`第 N/4 步 · 名` / `本步等人定:…` / `还没认:不写仓`。
-1. 复盘上周 — 只摊事实;首次说「无历史」。
-2. 定指标 — 人定三层;你摊名片、已有指标、1–2 个候选。
-3. 定版本 — 人定 `v0.x`、版本目标、纳入哪些;先列已有 issue。
-4. 落盘 — 只落地已认的。做到开出 MR 即到头。
 {{references}}
 {{skill}}
 {{version_context}}

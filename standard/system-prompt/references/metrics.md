@@ -1,35 +1,32 @@
-# 指标采集(Workbench 要能画出灯)
+# `.bw/metrics.toml` — 指标定义
 
-主提示词的铁律照守。这里只讲怎么采、怎么写 `.bw/metrics.toml`。
-北极星该量什么由人在会话里定,不在这份里下结论。
+Workbench 只认这份。没有文件不是错,界面显示「还没定出来」。
+名片正本是 `.bw/project.toml`,不是这份;空着就问人,不把名片字段抄进这里。
+`schema_version` 必须是 `2`,旧格式整份拒收、不迁移。字段骨架照仓里模板
+`standard/templates/metrics.toml.tmpl`(被管仓没有这份,按下面写即可)。
 
-## 先判能不能回溯
+北极星可以缺席。三层键:`[north_star]`、`[[lagging]]`、`[[leading]]`。
+每条:`name` / `def` / `target` / `collect`。不要写 `definition`。
 
-今天能采到这个数,「上周三那天的值」现在还能算出来吗?
+## 采集
 
-- 能 → **A 类**:一个字不存,要看几周就现算几个窗口。
-- 不能 → **B 类**:记进 `.bw/metrics/readings.jsonl`(同一天同一指标一行,当天再采覆盖)。写在账本 worktree,不写主检出。手填同一份流水。
+只有两种,没有第三种:
 
-判 B 之前先找带时间戳的接口。GitHub star 用 stargazers + `star+json` 头能拿到时刻,是 A,不是 B。
+```
+collect = { kind = "script", run = ["python", ".bw/scripts/x.py"], retro = true }
+collect = { kind = "manual" }
+```
 
-## 采集只有两种
+`run` 是 argv,不走 shell。`kind=script` 且 `run` 空 = 写了一半,采不起来。
 
-1. 脚本 `collect = { kind = "script", run = [...], retro = true|false }`
-2. 手填 `collect = { kind = "manual" }`
+Workbench 起脚本时:工作目录是仓根,追加
+`--since YYYY-MM-DD --until YYYY-MM-DD --granularity week`(左闭右开),超时 90 秒。
+只认 **stdout 的一个 JSON 对象**。往文件里写不算数。
 
-连 git / GitHub / codehub / 内网 / 本地文件,全是脚本自己的事。Workbench 只起进程、传窗口、读 stdout 的 JSON。
+- `retro = true`(A):吐 `{"points":[{"week":"2026-W35","value":8},…]}`。周号要对上窗口里的 ISO 周;少给的周断开,不补前值。只吐 `{"value":8}` 会落成最后一周一个点。
+- `retro = false`(B):吐 `{"value":12}`。Workbench 记进账本 `.bw/metrics/readings.jsonl`(键是日历日,同一天同一指标一行)。不要自己往主检出写流水。
+- `kind = "manual"`:不跑脚本,人在总览手填。
 
-总览已经在画的仓统计(提交数、合入 MR、开放 issue)不要再写进业务指标。
+`value` 可以是数或给人看的字符串。失败(非零退出、超时、不是 JSON、没数据)记「没采到」,**不要写 0**。
 
-## 窗口和输出
-
-Workbench 追加 `--since YYYY-MM-DD --until YYYY-MM-DD --granularity week`(左闭右开)。脚本不准自己定窗口。stdout 必须 UTF-8。
-
-- A 类吐 `{"points":[{"week":"YYYY-Www","value":…},…]}`。只吐 `{"value":…}` 会只剩最后一周一个点。
-- B 类吐 `{"value":…}`。B 仍要有 `run`;不写 `run` 采不到。
-
-字段:`name` / `def` / `target` / `collect`。不要写 `definition`。
-
-## 失败不写 0
-
-非零退出、超时、非 JSON、缺字段 = 这次没采到。`0` 是真值。空段不画,不补前值。
+总览已经在画的仓统计(提交、合入 MR、开放 issue)不要再写进业务指标。

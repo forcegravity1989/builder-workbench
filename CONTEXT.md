@@ -147,8 +147,8 @@ MVP 两条执行轨,都在这张活自己的 git worktree 里干:构建类走会
 _Avoid_: 把交互式活的空运行史当「没跑过」;把后台轨的自动兜底照搬到交互轨;嵌入终端(指 UI 载体时可用,指这条执行轨时统一说「交互式运行」)。详见 [会话与执行 模块](docs/architecture.md)。
 
 **系统提示词 / System prompt**:
-Workbench 给每张开工的活渲染的一份常驻提示,主提示词是外置的 `standard/system-prompt/SYSTEM.md.tmpl`(身份 + 通用铁律:最远到评审中、合并永远是人、指标只来自真实采集、干砸如实停 + 读项目 `.bw/` 规范件与仓根 `AGENTS.md` 的指引),`{{...}}` 占位运行时填:活的信息、本活要读的 references 阶段规范(指标铁律/改仓规则)、本活挂的技能指针。不硬编码在 Rust `format!` 里(改铁律=改 md + 抬 `standard/VERSION` + 对账)。分工:系统提示词不可换(契约与铁律由它兜住),技能/references 可换。提示词只放索引(名字+一句话+路径),正文让 agent 按需读(渐进加载)。
-_Avoid_: 把契约写进技能正文(换技能就丢);把系统提示词当成技能的一部分。详见 [系统提示词与渐进加载 模块](docs/architecture.md)。
+Workbench 给每张开工的活渲染的一份常驻提示,主提示词是外置的 `standard/system-prompt/SYSTEM.md.tmpl`(哪张活、读被管仓 `AGENTS.md`、按任务加载哪份 reference、和 BW 状态机怎么配合)。`{{...}}` 占位运行时填路径。references 写 `.bw/` / 评论 / 标签等界面认什么;skill 写这场怎么带人。三层各写什么见 [`standard/README.md`](standard/README.md)。不硬编码在 Rust `format!` 里。
+_Avoid_: 把契约写进技能正文(换技能就丢);把系统提示词当成技能的一部分;把四段 gate / 代填正本写进 SYSTEM。详见 [系统提示词与渐进加载 模块](docs/architecture.md)。
 
 **Agent Loop**(产品命题层):
 "1 个 Builder + Agent Loop 取代 5 个专职角色"里的运作模式——人守质量门、agent 干 80% 的活。是产品主张的说法,专用于命题语境。
@@ -269,8 +269,12 @@ _Avoid_: 和群通知混(群通知发团队、个人提醒弹你);以为有应�
 _Avoid_: 总结、归档、沉淀(沉淀指整个复利过程,别专指这一步)。
 
 **技能 / Skill**:
-一篇可复用的做法说明,真实形态是一个**文件夹**(SKILL.md 正文 + 任意数量的支撑文件)。Workbench 自带的技能正本 `include_str!` 编进二进制,开工时摊到本地资产目录供 agent 按需读;下次干同类活时按活挂的 workflow 注入对应剧本,用一次记一次(uses 按 workflow 标签分组现算)。
-_Avoid_: 文档、知识、SOP;把技能等同于它的 SKILL.md 正文(支撑文件也是它的一部分)。详见 [系统提示词与渐进加载 模块](docs/architecture.md)。
+一篇可复用的做法说明,真实形态是一个**文件夹**(SKILL.md 正文 + 任意数量的支撑文件)。Workbench 自带的技能正本 `include_str!` 编进二进制,开工时摊到本地资产目录供 agent 按需读;下次干同类活时按活挂的 workflow 注入对应剧本。怎么写见 [`standard/skills/SKILL-MD-SPEC.md`](standard/skills/SKILL-MD-SPEC.md)。
+_Avoid_: 文档、知识;把整个技能叫 SOP;把技能等同于它的 SKILL.md 正文(支撑文件也是它的一部分)。详见 [系统提示词与渐进加载 模块](docs/architecture.md)。
+
+**SOP / 标准执行流程**:
+一份 `SKILL.md` 第 4 节——这场按哪几步干。不是技能的别名,也不写在目录 README 里。
+_Avoid_: 把 SOP 当 skill 的同义词;把步骤写进 `description`。
 
 **注入 / Inject**:
 干活时按活挂的 workflow 把对应技能带进开工工具的上下文(提示词只放索引,正文让 agent 按需读,即渐进加载)。

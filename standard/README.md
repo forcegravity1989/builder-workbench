@@ -4,7 +4,7 @@
      常驻树,不摊 issue-policy。模板里的 issue-policy 仅残留测,不是仓正本。 -->
 
 `standard/` 是 Builders' Workbench 的规范正本(系统提示词、运作剧本、业界 workflow)。
-第一次纳入只写名片 `.bw/project.toml`(项目约定常驻树),不摊 issue-policy。
+从仓根 [`AGENTS.md`](../AGENTS.md)「三层模型」点过来。第一次纳入只写名片 `.bw/project.toml`(项目约定常驻树),不摊 issue-policy。
 指标跟运作活①走,不预铺空壳。仓根 `AGENTS.md` 不在这套模板里。
 
 **落点分两类,别混**:
@@ -18,11 +18,23 @@
 
 规范版本因此从 4.0 跳到 **5.0** —— 落点变了,老版本铺出来的文件在新版本眼里
 就是「不在册」,不做迁移。续三(系统提示词外置 + 扁平铺底 + 删方法论)又
-抬到 **5.1**,当前值见 `VERSION`。续五(默认 workflow 打包:mattpocock 入口 + vendor 摊 + issue-policy 回填)抬到 **5.2**。续十六(指标空壳到站才铺 + 脚本 UTF-8 / A 类 points / `def` 字段)抬到 **5.3**。续十七(运作活①评论三标题 + 挂评校验脚本)抬到 **5.4**。续二十(B 类仍要写脚本)抬到 **5.5**。续二十二(B 类写入 + 定本周建卡必打类别)抬到 **5.6**。续二十三(mattpocock 入口写清 `/xxx`=读路径,并补 grilling/domain-modeling/tdd)抬到 **5.7**。B/C 读数改日历日键、展示按周抬到 **5.8**。过程指标包(十份脚本 + 目录总账)抬到 **5.9**。独立评审(评审剧本 `mr-review` + 阶段规范 `review` + 评审主提示词 `REVIEW.md.tmpl`)抬到 **5.10**。计划版本收成 `v0.x`、不再写 `bw:week` 抬到 **5.11**。名片只留 `project.toml`、开工约定不再写工具声明、不再铺 `standard.toml` / `managed.toml`、周盘点清旧件抬到 **5.12**。不写主检出、开工工具跟人走、不再铺 issue-policy 抬到 **5.13**。运作活①四段索引 + 项目正本地图、评论校验脚本随技能摊出抬到 **5.14**。SYSTEM 与三份现行 references 按层削薄抬到 **5.15**。
+抬到 **5.1**。续五(默认 workflow 打包:mattpocock 入口 + vendor 摊 + issue-policy 回填)抬到 **5.2**。续十六(指标空壳到站才铺 + 脚本 UTF-8 / A 类 points / `def` 字段)抬到 **5.3**。续十七(运作活①评论三标题 + 挂评校验脚本)抬到 **5.4**。续二十(B 类仍要写脚本)抬到 **5.5**。续二十二(B 类写入 + 定本周建卡必打类别)抬到 **5.6**。续二十三(mattpocock 入口写清 `/xxx`=读路径,并补 grilling/domain-modeling/tdd)抬到 **5.7**。B/C 读数改日历日键、展示按周抬到 **5.8**。过程指标包(十份脚本 + 目录总账)抬到 **5.9**。独立评审(评审剧本 `mr-review` + 阶段规范 `review` + 评审主提示词 `REVIEW.md.tmpl`)抬到 **5.10**。计划版本收成 `v0.x`、不再写 `bw:week` 抬到 **5.11**。名片只留 `project.toml`、开工约定不再写工具声明、不再铺 `standard.toml` / `managed.toml`、周盘点清旧件抬到 **5.12**。不写主检出、开工工具跟人走、不再铺 issue-policy 抬到 **5.13**。运作活①四段索引 + 项目正本地图、评论校验脚本随技能摊出抬到 **5.14**。SYSTEM 与三份现行 references 按层削薄抬到 **5.15**。SYSTEM 收成「AGENTS.md + 任务对照 + 纪律」。不再单独维护 `VERSION` 文件。
 
 第一次纳入不再摊 `CORE_TEMPLATES`(空表)。名片走项目约定。metrics 有模板但不铺(运作活①跟人写)。
 `.bw/standard.toml` / `managed.toml` / `PROJECT.md` / `issue-policy.toml` 不再铺;旧仓里那几份由每周资产盘点清掉。
 开工工具跟人走本机;workflow 和周五盘点是产品默认。
+
+## 系统提示词 / references / skill 各写什么
+
+被管仓里的模型看不见 Workbench 源码,也默认不认识 `.bw/`。这三层只补它看不见的,各写一层:
+
+| 层 | 补什么 | 现在(第一层:转得顺) | 先不写(第二层:少问人) |
+|---|---|---|---|
+| SYSTEM | 哪张活、项目入口、哪类活加载哪份 reference、和 BW 状态机怎么配合 | 索引 + 全场纪律 | 四段 gate、代填正本 |
+| references | `.bw/`、评论、标签、灯、界面认什么 | 格式/落点/失败怎么说 | 北极星该量什么、打分 |
+| skill | 这场怎么带人 | 走到哪、一次问一件。写法正本 [`skills/SKILL-MD-SPEC.md`](skills/SKILL-MD-SPEC.md)；SOP 是各份 `SKILL.md` 第 4 节 | 熟练后自动走完 |
+
+一句只住一处。后一层只点名,不复述。过时词直接删。
 
 ## 谁会读这些文件
 
@@ -37,7 +49,6 @@
 
 | 块 | 内容 | 落点 |
 |---|---|---|
-| `VERSION` | 当前规范版本号 | 铺底与对账时读 |
 | `templates/` | 指标等格式样例;接入不摊 | 运作活①照着写;issue-policy 模板仅残留测 |
 | `system-prompt/` | **Workbench runtime 用的系统提示词**,不进项目仓 | 编进二进制,渲染后经 `--append-system-prompt` 送 agent |
 | `skills/` | **Workbench 自带技能**(四份运作剧本 + 评审剧本 `mr-review` + workflow 入口) | 摊到 `<asset_root>/skills/`,不进项目仓 |
@@ -50,21 +61,22 @@
 | `templates/metrics.toml.tmpl` | 指标格式正本,不随接入铺;运作活①照着写 |
 | `templates/issue-policy.toml.tmpl` | 旧格式样例,仅残留测;非正式正本 |
 | `templates/scripts/*.py`(13 份) | 现成采集脚本,铺进 `.bw/scripts/`:仓级三份(每周提交数 / 合入 PR 数 / star 数)+ 过程指标包十份(评审等待 / 首过率 / 返工轮数 / 首审等待 / 意图成文时长 / 变更前置时间 / 同时开着的 MR 数 / 活存活率 / 手册修正频次 / 距上次发版天数)——全部可回溯、只读代码仓与远端 |
-| `templates/process-catalog.md` | 过程指标目录(playbook 26 条的总账:能算的指到脚本、等前置的写明等什么、不建的写明为什么),铺进 `.bw/process-catalog.md`;荐入规则见 `skills/metrics-refresh` |
+| `templates/process-catalog.md` | 过程指标目录,铺进 `.bw/process-catalog.md`;给人看现成脚本,写不写进 `metrics.toml` 人定 |
 
 `system-prompt/` 是 Workbench 自己 runtime 用的(不进项目仓):
 
 | 文件 | 一句话 |
 |---|---|
-| `system-prompt/SYSTEM.md.tmpl` | 主提示词模板:身份 + 四铁律 + 读项目规范件指引,`{{...}}` 占位运行时渲染 |
+| `system-prompt/SYSTEM.md.tmpl` | 主提示词模板:哪张活、读 `AGENTS.md`、按任务加载哪份 reference、全场纪律 |
 | `system-prompt/REVIEW.md.tmpl` | **评审会话**主提示词:独立评审身份 + 只评不改/绝不合并/意见落 MR 评论,占位同上 |
-| `system-prompt/references/metrics.md` | 干指标活的 Workbench 规范(可回溯/不许写0/窗口 Workbench 给) |
-| `system-prompt/references/build.md` | 干改仓活的 Workbench 规范(分支/MR/合并是人/不自动 Done) |
-| `system-prompt/references/review.md` | 干评审活的 Workbench 规范(独立评审/唯一落点 MR 评论/大风险顶格标出) |
+| `system-prompt/references/metrics.md` | 指标文件格式、采集脚本、ledger;不写北极星该量什么 |
+| `system-prompt/references/week-plan-comment.md` | 版本计划评论三标题、校验脚本、计划标签;不写 `bw:week` |
+| `system-prompt/references/build.md` | 改仓 worktree/分支/远端评论;合并是人、不自动 Done |
+| `system-prompt/references/review.md` | 干评审活的规范(独立评审/意见落 MR 评论);尚未编进注入链 |
 
 ## 还没做的部分(如实说明,不是遗漏)
 
-`skills/` 现在只有**四份运作剧本**(更新指标与周计划、资产盘点 + 子技能
+`skills/` 现在只有**四份运作剧本**(更新指标与版本计划、资产盘点 + 子技能
 `project-handbook`、`metrics-refresh`)加**一份评审剧本**(`mr-review`,独立
 评审会话专用,由「请评审」派发)。**不预置方法论**——原来预置的六份
 阶段方法论(原型/构建/优化/运营推广/运维/竞品)默认 workflow 没打包、一份
