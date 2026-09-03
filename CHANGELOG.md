@@ -6,27 +6,13 @@
 
 ## 最近 · 2026-09-02
 
-native-audit 扫描与业务解耦第一刀:探针脚本拆成**引擎 + 三份数据表**。`battery.sh` 只按模式表数东西,不认识任何目录名、词汇、语言;`patterns/core.conf` 装跨组织通用惯例(入表门槛=能在两个以上无关组织的公开仓见到),`patterns/ecosystem.conf` 装八种语言与七种 CI 布局(此前只认 `.github/workflows`,**内网 CodeHub / GitLab 仓会被整段判 0**),`patterns/dialect.*.conf` 装组织私有词汇、默认不加载。新增 `--dialect` / `--patterns` / `--self-exclude` 入参。**读数会变,变在哪**:vendored 第三方件不再算作本仓实践(技能数 52→9、md 141→56);决策目录认数字前缀后 `docs/02-adr/` 不再漏(决策记录 11→14);`rca` 加词边界后复盘件由误报的 1 回到 0(此前命中 `orca.rs`);AI 署名模式由裸 `bot` 收紧为 `\[bot\]`,dsh 由误计的 1/14,577 修正为 0/14,577;C34 改用未剔除清单,vendor 清单由 1 修正为 3。另修一处会清零读数的哨兵 bug:自我排除文件写 `$'\0'`,bash 存不下 NUL 塌成空串,`grep -vFf` 拿空行匹配所有行,曾把 dsh 的技能与决策记录整个抹成 0。
+**native-audit（native 评估）落仓**:对任意 git 仓做只读的 AI-native 制度化水位分析,按九段三十七条准则打 0-3(0 无 / 1 有痕迹 / 2 成文 / 3 机器强制),产出评估报告与「升一级最省力」的缺失清单。技能自足在 `.claude/skills/native-audit/`(执行剧本 + 探针引擎 `battery.sh` + 准则 `references/rubric.md` + 校准 `references/calibration.md` + 模式表 `patterns/`),整目录拷到任何仓都能用;本仓的立项记录与自扫报告在 `docs/05-features/native-audit/`。
 
-native-audit 正文与业务解耦第二刀:**技能本身不再知道本仓是谁**。SKILL.md 的用词对照表原先逐条引 `CONTEXT.md` 词表、本仓产物链路径与 dsh 目录名——一把量别人的尺刻着自己家的词。改成只解释本工具自己的术语(阶梯/探针/读数/弱信号/误报/Unknown/门禁自测/校准参考/方言),不借用任何被评估方的内部词汇。**准则正本 `rubric.md` 移进技能** `references/`(此前在 `docs/05-features/native-audit/`,技能拿到别的仓就找不到准则);锚点由写死的「dsh 3 分锚、BW 2 分锚」改为可追加的 `references/calibration.md`,参考仓按「生态-规模-日期」中性描述;本仓方言 `dialect.bw.conf` 移出技能、落回产物链,技能只留 `dialect.example.conf` 教格式;rubric 的「dsh 实证」列改名「实证来源(举例,非判据)」并在导读讲清出处,S8 段标题的组织理念署名换成 playbook 原话,「探针可执行性/迭代记录」两段(属本次立项过程)移进产物链 spec。仓群汇总段的「BW 规范铺底可直接补哪些」改为通用的缺失归类;平台 CLI 探测不再点名某产品。核验:技能内零组织痕迹、内部链接自足、两仓实跑正常、方言可从技能外部加载。
+设计要点是**扫描与业务解耦**:引擎只按模式表数东西,不认识任何目录名、词汇、语言;`patterns/core.conf` 装跨组织通用惯例(入表门槛=能在两个以上无关组织的公开仓见到),`patterns/ecosystem.conf` 装八种语言与七种 CI 布局,`patterns/dialect.*.conf` 装组织私有词汇、默认不加载(方言词是自家高频词,会把读数抬起来,**跨仓比较一律不用**)。入参 `--dialect` / `--patterns` / `--self-exclude`。
 
-native-audit 评审补修:自我排除范围补回。解耦后 `SELF_EXCL` 只认「扫描器所在目录」,而准则副本、规格、自扫报告在另一棵树,不再被排除——自扫时它们逐条复述准则用语,会被当成「本仓有这条规矩」计进读数(实测 C72 6→10 虚高、C46 3→5、C31 0→1、C55 1→2、C61 11→13)。新增可重复的 `--self-exclude <路径前缀>` 由调用方指定,排除项打进 META 的 `M04`;顺带修顺序 bug(`files()` 引用 `SELF_EXCL` 但手册探测跑在它初始化之前,`set -u` 下手册整个探不到)。锚点卡按新引擎全量重跑(R7):键名与口径都变了,R6 及更早读数无法复算,`prototype-report.md` 与技能内 `references/calibration.md` 整体重写,并记下 R6→R7 每处差异的原因。`CONTEXT.md` 词表的准则正本指针修死链(指向已迁走的 `changes/`,现改为技能自足路径)。
+**读数会变,变在哪**(此前的口径都偏了,如实记):此前只认 `.github/workflows`,内网 CodeHub / GitLab 仓会被整段判 0;vendored 第三方件曾被算作本仓实践(技能数 52→9);决策目录不认数字前缀导致 `docs/02-adr/` 整个漏掉;`rca` 无词边界把 `orca.rs` 当复盘件;AI 署名模式裸 `bot` 误计;自我排除只认扫描器目录,自扫时准则原文被当成「本仓有这条规矩」(C72 虚高 6→10)。另修一处会清零读数的哨兵 bug——排除文件写 `$'\0'`,bash 存不下 NUL 塌成空串,`grep -vFf` 拿空行匹配所有行,曾把某仓的技能与决策记录整个抹成 0。锚点卡已按新引擎全量重跑(R7),差异逐条记在 `prototype-report.md`。
 
-合入主干 + 评审意见修复(PR #140)。产物链按主干新布局迁位:`changes/native-audit`、`changes/process-hardening` → `docs/05-features/`,全链相对引用重定基(skill ↔ 产物链 ↔ `docs/10-reference/`、`docs/01-principles/`),死链复核为零。评审四条:①A2 字数预算口径由 `wc -m` 改 `wc -c`(本仓中文为主,两者差 1.5–2.4 倍,且 `wc -m` 随 locale 漂;上限按合入后实测 ×1.15 重算八行,余量口径回到 15%);②A3 存量门禁分解改为「六个存量 + 四个新增 = 10/10」(与 plan 一致,不再一处 9/9 一处 10/10);③native-audit intent 状态行早前已回写「意图 gate 已过」,复核无残留;④两处裸用「buddy」改「Workbench(旧名 buddy)」(其中一处会进 skill 报错文案)。合并中两处门禁真红并已修:`guard-bw-write-authority` 名单里的 `issue_policy_file::write` 被主干规范 5.13 删除(守卫自检抓到,名单跟着删)、`guard-codegraph-clean` 无法区分「合并带入 CI 快照」与「本分支自改」(补 MERGE_HEAD 同内容放行,worktree 里用 `rev-parse` 查而非 `.git/` 路径)。
-
-native-audit 人话名改名:「仓考古」→**native 评估**(技能名 `native-audit` 不变)。SKILL.md 描述/标题/用词对照表、spec.md 标题/导读/FAQ/术语登记、`CONTEXT.md` 词条同步;intent.md 末节记改名说明,不改写原拍板记录。另:散文里裸写 issue 改为「活」(词表规范口语词),用词对照表补一行。
-
-native-audit 准则重写为 v2:七维 → **九段三十七条**,正本 `changes/native-audit/rubric.md`,段落按 AI-Native SDLC playbook 六阶段 + 贯穿机制(产物链)+ 治理四条组织;附两张覆盖矩阵——M1 dsh 58 组做法→准则零孤儿,M2 playbook 每阶段/机制/治理条全有准则承接(禁改测试、回滚排练、指标越线三条 dsh 无一手实证,如实标注)。探针从 SKILL.md 内联命令改为随 skill 携带的 `battery.sh`(两仓同一把尺),R5–R6 在本仓与 dsh 两仓真跑成 2 分/3 分锚点卡,修掉空结果双打、自身准则文本污染读数、冻结件死链假阳性等电池缺陷。spec 准则段改为指向 rubric;迭代记录在 rubric 末节。
-
-native-audit 术语对齐:SKILL.md 加「用词对照」表(本技能用词→人话→词表对应);词表已有词直接换(postmortem→复盘、工单→活、N/A→Unknown);自造词收拢(度量电池→探针脚本、假阳性→误报、自证→门禁自测、dogfood→自扫);英文黑话首次出现带人话(playbook / slop / hook / flake / harness / SDLC);`CONTEXT.md` 工程操作词登记「仓考古 / native-audit」「制度化阶梯」两条。顺手校正 dsh 门禁计数:verify 脚本 34 个(17 个自带自测),此前 51 把自测文件算进去了,探针脚本同步改为门禁脚本数与自测文件数分列。
-
-计划屏版本视图左侧单独一颗「出包」，两行弹窗吃 JSONL（出包黄转圈 / 绿+打开目录 / 红+原话；验包等出包过了再转，结束写成功数/总数，相等黑不等红）。不打标签。「发版本」仍只建远端 Release / 打发版标签。
-
-验包缝：`BW_CDP_PORT` 是纯数字才把 WebView2 调试口拼进现有 browser args，没设与今天一样。设置 / 接入深链成功打对照日志 `[BW_VIEW] settings|onboard`。出包入口 `.bw/release/pack/pack.cmd`，验包入口 `.bw/release/e2e/e2e.cmd`（只认 `.cmd`）。E2E 只记项目功能（设置 / 接入等）；包在不在、静默装、卸载是出包校验和清理。
-
-规范 5.13:工作台不写被管仓主检出。方案正本在 [`docs/architecture.md`](docs/architecture.md) §3 模块 3「项目约定」;词表在 [`CONTEXT.md`](CONTEXT.md)。仓里只留两辆常驻车——项目约定(`.bw/project.toml`,分支 `bw/project`)和指标(定义走运作活①、读数走 `bw/ledger`)。开工工具跟人走本机 `settings.toml`;类别→workflow 和周五盘点只认产品默认,残留 `issue-policy` 不再驱动任何行为。不再铺、不再写、产品不再读 `.bw/issue-policy.toml`;周盘点整份删掉。规范铺底与「编辑项目名片」收成「项目约定」。接入跳过只认 HEAD 或开着的约定活,不把主检出脏文件当已接入。拉主干不再 restore/删主检出名片。叠着的「编辑项目名片」横幅删掉。`.bw/worktrees/` 的忽略写在约定树上的 `.bw/.gitignore`。
-
-**全仓文档分层重组**:`01-principles/` 与 `05-features/`(原 `changes/`)从仓根迁入 `docs/`,与既有 docs 子目录统一编号——`docs/01-principles/`、`docs/02-adr/`、`docs/03-guide/`、`docs/04-design-system/`、`docs/05-features/`、`docs/10-reference/`。`docs/01-architecture.md` 去编号为 `docs/architecture.md`(docs 内设计正本,同根 README/CHANGELOG 之不编号例外)。仓根只剩入口件(README/AGENTS/CLAUDE/CONTEXT)+ 惯例置根件(DESIGN 指针/CHANGELOG),其余知识目录一律落 `docs/`——这条「落点铁律」写进 [`docs/01-principles/01`](docs/01-principles/01-document-organization.md) §6.1。全仓相对引用重定基(含 `.claude/skills/`、`standard/vendor/`、`.github/workflows/`),markdown 链接检查器 258 链零新断链。cargo check/clippy/fmt + 5 个 guard 全绿。**取舍**:principles 从「入口件」降为 docs 内编号知识目录(它慢变但不是「建立初始心智」的骨架);architecture 不编号是为保它作 docs 设计正本的特殊地位。
+合入主干:产物链按新布局迁进 `docs/05-features/`,全链相对引用重定基。合并中两处门禁真红并已修——`guard-bw-write-authority` 名单里的 `issue_policy_file::write` 被主干规范 5.13 删除(守卫自检抓到的);`guard-codegraph-clean` 分不清「合并带入 CI 快照」与「本分支自改」,补 MERGE_HEAD 同内容放行。
 
 ## 最近 · 2026-09-01
 
