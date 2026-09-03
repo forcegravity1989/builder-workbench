@@ -1,6 +1,7 @@
 //! 详情弹窗(屏幕居中)。点卡片打开,三段式:头/体/底。字段精简。状态下拉只列
-//! 十条里从当前状态能走到的;选了走和看板拖拽同一条命令。底栏只留 Start /
-//! Open / Complete。Start 确认框建 worktree,业务活可改/补类别后再 RunIssue。
+//! 开口里从当前状态能走到的;选了走和看板拖拽同一条命令。底栏 Start /
+//! Open / Complete。Complete 在未排期/待办/进行中/待评审/阻塞都有。
+//! Start 确认框建 worktree,业务活可改/补类别后再 RunIssue。
 
 use crate::{
     bridge::{Bridge, ChromeBusy, Panel, PanelNav, Req, STARTING_SESSION},
@@ -187,7 +188,14 @@ pub fn DetailModal(
                             }
                         }
                     }
-                    if c.status == IssueStatus::InReview {
+                    if matches!(
+                        c.status,
+                        IssueStatus::Backlog
+                            | IssueStatus::Todo
+                            | IssueStatus::InProgress
+                            | IssueStatus::InReview
+                            | IssueStatus::Blocked
+                    ) {
                         div { class: "plan-review-hint", "Complete 由人确认。agent 跑完只到待评审。" }
                     }
                 }
@@ -199,12 +207,14 @@ pub fn DetailModal(
                                     selected.set(None);
                                     schedule.set(Some(PendingSchedule { id, title: String::new() }));
                                 }, "schedule" }
+                                {complete_btn(&c, pending, selected)}
                             },
                             IssueStatus::Todo => rsx! {
                                 button { class: "btn btn-sm btn-primary", onclick: move |_| {
                                     selected.set(None);
                                     start.set(Some(id));
                                 }, "Start" }
+                                {complete_btn(&c, pending, selected)}
                             },
                             IssueStatus::InProgress => rsx! {
                                 button { class: "btn btn-sm btn-secondary", onclick: move |_| {
@@ -212,6 +222,7 @@ pub fn DetailModal(
                                     b_sess.send(Req::SelectSession(Some(id)));
                                     nav.go(Panel::Session);
                                 }, "Open" }
+                                {complete_btn(&c, pending, selected)}
                             },
                             IssueStatus::InReview => rsx! {
                                 button { class: "btn btn-sm btn-secondary", onclick: move |_| {
@@ -219,22 +230,7 @@ pub fn DetailModal(
                                     b_sess.send(Req::SelectSession(Some(id)));
                                     nav.go(Panel::Session);
                                 }, "Open" }
-                                button { class: "btn btn-sm btn-primary", onclick: {
-                                    let title = c.title.clone();
-                                    let pr = c.pr_number;
-                                    let open = c.has_open_mr;
-                                    move |_| {
-                                        pending.set(Some(PendingMove {
-                                            id,
-                                            title: title.clone(),
-                                            from: IssueStatus::InReview,
-                                            to: IssueStatus::Done,
-                                            pr_number: pr,
-                                            has_open_mr: open,
-                                        }));
-                                        selected.set(None);
-                                    }
-                                }, "Complete" }
+                                {complete_btn(&c, pending, selected)}
                             },
                             IssueStatus::Done | IssueStatus::Cancelled => rsx! {
                                 button { class: "btn btn-sm btn-secondary", onclick: move |_| {
@@ -249,6 +245,7 @@ pub fn DetailModal(
                                     b_sess.send(Req::SelectSession(Some(id)));
                                     nav.go(Panel::Session);
                                 }, "Open" }
+                                {complete_btn(&c, pending, selected)}
                             },
                         }}
                     }
@@ -361,6 +358,35 @@ pub fn StartModal(
                     }
                 }
             }
+        }
+    }
+}
+
+fn complete_btn(
+    c: &CardItemVm,
+    mut pending: Signal<Option<PendingMove>>,
+    mut selected: Signal<Option<IssueId>>,
+) -> Element {
+    let id = c.id;
+    let title = c.title.clone();
+    let from = c.status;
+    let pr = c.pr_number;
+    let open = c.has_open_mr;
+    rsx! {
+        button {
+            class: "btn btn-sm btn-primary",
+            onclick: move |_| {
+                pending.set(Some(PendingMove {
+                    id,
+                    title: title.clone(),
+                    from,
+                    to: IssueStatus::Done,
+                    pr_number: pr,
+                    has_open_mr: open,
+                }));
+                selected.set(None);
+            },
+            "Complete"
         }
     }
 }

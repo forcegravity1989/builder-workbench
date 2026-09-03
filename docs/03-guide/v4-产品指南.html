@@ -516,7 +516,7 @@
 
       <h2 class="sec"><span class="n">操作</span></h2>
       <div class="ops">
-        <div class="li"><div class="n">1</div><div class="t">计划屏点开一张卡（看板或列表都行）。业务活详情会带上已有类别；没打的可在详情或开工确认框补一类——不开工工具的活会被拒绝开工，不会悄悄起 Claude。状态下拉只列出从现在能走到的：待办能去进行中/阻塞/拒绝，进行中能去待办/阻塞/拒绝，待评审能去完成/拒绝，阻塞能去进行中/拒绝。选了和拖拽是同一条路。点 Start / Open / Complete 或改状态下拉后详情会自己关。</div></div>
+        <div class="li"><div class="n">1</div><div class="t">计划屏点开一张卡（看板或列表都行）。业务活详情会带上已有类别；没打的可在详情或开工确认框补一类——不开工工具的活会被拒绝开工，不会悄悄起 Claude。状态下拉只列出从现在能走到的：待办能去进行中/阻塞/拒绝/完成，进行中能去待办/阻塞/拒绝/待评审/完成，待评审能去完成/拒绝/进行中，阻塞能去进行中/拒绝/完成。选了和拖拽是同一条路。不能拖的松手会弹窗说明，不是没拖准。点 Start / Open / Complete 或改状态下拉后详情会自己关。</div></div>
         <div class="li"><div class="n">2</div><div class="t">详情「Start」，或把卡拖进「进行中」。确认框写 worktree，业务活可改类别。确认后跳会话屏。</div></div>
         <div class="li"><div class="n">3</div><div class="t">原型类默认停在 Open Design 标签，嵌的是本机 OD 首页。<strong>不会自动开跑</strong>，你在 OD 里打一句发出去，它的 AI 才动。构建类停在 Orca 页，嵌的是本机已配对的 Orca web；agent 在 Orca 里跑，过程在那看。</div></div>
         <div class="li"><div class="n">4</div><div class="t">卡住了：待办或进行中拖到待处理列的「阻塞」段，或详情状态下拉选「阻塞」，写原因。阻塞卡可拖回进行中（只改状态，不会再开一轮工），或拖进「拒绝」作废。不想干了：详情状态下拉选「拒绝」，或把卡拖到已完成列的「拒绝」段（待办 / 进行中 / 待评审 / 阻塞都能拖）。写原因。这不是完成——打已取消标签并关掉远端 issue，卡到「拒绝」。</div></div>
@@ -536,7 +536,7 @@
       <h2 class="sec"><span class="n">得到什么</span></h2>
       <div class="res">
         <ul>
-          <li><span class="b"></span><div>待办拖进进行中 = 开工，和 Start 是同一条路。进行中也可以拖回待办、拖进阻塞或拒绝。阻塞拖回进行中只改状态，不开新工。</div></li>
+          <li><span class="b"></span><div>待办拖进进行中 = 开工，和 Start 是同一条路。进行中也可以拖回待办、拖进待评审 / 阻塞 / 拒绝 / 完成。待评审可拖回进行中（只改状态，不开新工）。阻塞拖回进行中只改状态，不开新工。工作态拖到完成：有开着的 MR 确认合入，没有则确认只关 issue。</div></li>
           <li><span class="b"></span><div>作废卡不会冒充已完成。已完成列要先切到「拒绝」再松手才是作废；切在「完成」上仍是合入。作废后再点开工，会说这张活已经取消。</div></li>
           <li><span class="b"></span><div>原型：会话停在 Open Design 标签。OD 不自动开跑，你打一句发出去它才动。不在 OD 里另建一单。</div></li>
           <li><span class="b"></span><div>去会话：先切到这张活的工作目录树；树上有几扇窗、是否正好落到这条对话是其次，切树成功就算跳到了。</div></li>
@@ -567,7 +567,7 @@
 
       <h2 class="sec"><span class="n">操作</span></h2>
       <div class="ops">
-        <div class="li"><div class="n">1</div><div class="t">计划屏把评审中的卡拖到「已完成」，先确认列上切的是「完成」不是「拒绝」，或详情里 Complete / 状态下拉选「完成」。有开着的 MR 就先合再关；没有开着的（可能已经在网页合过）确认后只关 issue。待办拖到「完成」不会过——完成只能从评审中来。</div></div>
+        <div class="li"><div class="n">1</div><div class="t">计划屏把卡拖到「已完成」的完成段（待办 / 进行中 / 待评审 / 阻塞 / 未排期都行），先确认列上切的是「完成」不是「拒绝」，或详情里 Complete / 状态下拉选「完成」。有开着的 MR 就先确认再合；没有开着的确认后只关 issue。点「算了」停在原列。完成永远由人点，agent 不会自己完成。</div></div>
         <div class="li"><div class="n">2</div><div class="t">项目墙 ⚑ 只提醒你有 MR 等着，不在那儿合。不要只在代码平台网页关 issue——那不会合 MR。</div></div>
         <div class="li"><div class="n">3</div><div class="t">本周有已完成的活，计划屏点「发版本」。号锁死当前版本，不能改。确认后才建远端 Release。要安装包，点左侧「出包」：先出包（黄转圈，过了变绿，可打开产物目录），再验包（写出过了几条 / 一共几条）。验包不过时点「详情」看是哪条用例、报了什么错。出包不打发版标签。弹窗可关掉继续跑，按钮上三个点再点回来；要停就点「停止」，确认后清中间件。</div></div>
         <div class="li"><div class="n">4</div><div class="t">去代码平台的版本页，或跑 <code>codehub-cli release list</code> / <code>gh release list</code>，核对远端真有这个版本。总览「已发版次数」优先读远端 Release。</div></div>
@@ -720,7 +720,7 @@
       <div class="diagram">
         <div class="cap">agent 只能推到评审中；完成只有一个入口，且必须是人点的</div>
         <div class="scroll">
-          <svg viewBox="0 0 760 260" width="760" height="260" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="活从建活到进行中到评审中到完成的主链，完成只能从评审中经人工点击进入；定时任务只能自动建活，绝不能自动把活推到完成">
+          <svg viewBox="0 0 760 260" width="760" height="260" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="活从建活到进行中到评审中到完成的主链，完成永远由人点；定时任务只能自动建活，绝不能自动把活推到完成">
             <defs>
               <marker id="sArrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
                 <path d="M0 0L10 5L0 10z" fill="var(--muted-2)"/>

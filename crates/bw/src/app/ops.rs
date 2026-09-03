@@ -210,7 +210,7 @@ impl App {
     /// **合入失败就整条失败**,活留在「评审中」原地,人看得见原话、可以重试。
     /// 没挂远端的本地项目确实没有 MR 可合 —— 那种只走「完成」那一步,合理。
     /// **挂了远端但查不到这张活的 MR** —— 不关 issue,报错「没找到这活的 MR,
-    /// 活留评审中」(MR 正本在远端,现查,不靠 lossy 的 `issue.branch`/`pr_number`,
+    /// 活留在原状态」(MR 正本在远端,现查,不靠 lossy 的 `issue.branch`/`pr_number`,
     /// 那俩在 `issue_from_remote` 里恒空,旧逻辑因此永远 `merged=false` 却照常
     /// `set_status(Done)`,活关了显示完成、MR 没合、主检出没拉、worktree 没清)。
     ///
@@ -272,13 +272,14 @@ impl App {
                     self.step(ProgressLine::ok(1, format!("合入:MR #{n} 已合")));
                 }
                 Ok(None) => {
-                    // 挂了远端但分支上没有开着的 MR —— 不关 issue,活留评审中。
-                    let why = format!("没找到这活的 MR(分支 {branch} 上没有开着的 MR),活留评审中");
+                    // 挂了远端但分支上没有开着的 MR —— 不关 issue,活留原状态。
+                    let why =
+                        format!("没找到这活的 MR(分支 {branch} 上没有开着的 MR),活留在原状态");
                     self.step(ProgressLine::fail(1, format!("合入:{why}")));
                     return Err(AppError::Refused(why));
                 }
                 Err(e) => {
-                    // 查 MR 本身失败(网络/权限)—— 不关 issue,活留评审中。
+                    // 查 MR 本身失败(网络/权限)—— 不关 issue,活留原状态。
                     self.step(ProgressLine::fail(1, format!("合入:查 MR 没成:{e}")));
                     return Err(AppError::Exec(format!("查 MR 没成:{e}")));
                 }

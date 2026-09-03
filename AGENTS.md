@@ -106,7 +106,7 @@ scripts/   门禁脚本(guard-*)+ codegraph 联调
 |---|---|
 | 杀进程重开,所有数字能重算出来、前后一致 | 现算推导;E2E 重启后读回一致 |
 | 信号只能从数据推导;没数据就是 Unknown,不是绿 | `Derived<Signal>` 密封、store 无 `set_signal`;现算唯一写入者 |
-| 「完成」永远由人点;同一件活绝不重复记账 | 状态机 `can_transition_to` 守卫、Done 入边仅 InReview;`settled_at` settle-once |
+| 「完成」永远由人点;同一件活绝不重复记账 | 状态机 `can_transition_to` 守卫;人可从待办/进行中/待评审/阻塞/未排期拖到完成(有开着 MR 就合入,没有则只关 issue);自动化/agent/定时不得推到 Done;`settled_at` settle-once |
 | 定时任务真实到点触发;自动建的活绝不被自动推进到完成 | E2E:到点 tick 后读回新建活,状态正常 |
 
 ### 三层模型(怎么给 Workbench 做一个特性)

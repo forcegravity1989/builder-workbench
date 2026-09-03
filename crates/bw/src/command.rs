@@ -147,8 +147,9 @@ pub enum Command {
     /// 的视线,不该由程序替人决定。它**最远只到「评审中」** —— 「完成」还是得
     /// 人在评审完之后再点一次。
     SubmitIssueWork { id: IssueId },
-    /// 状态转移。合法性由 `can_transition_to` 守;「完成」只能从「评审中」来,
-    /// 而且只能是人显式发这条命令。作废走 `Cancelled`,不是 Done。
+    /// 状态转移。合法性由 `can_transition_to` 守;「完成」只能是人显式发这条
+    /// (或 `MergeAndSettle`)。未排期 / 待办 / 进行中 / 评审中 / 阻塞都能进 Done。
+    /// 作废走 `Cancelled`,不是 Done。
     TransitionIssue { id: IssueId, to: IssueStatus },
     /// 给已有的活补/改类别标签。读回时用它查本机开工工具(再回退残留/产品默认)。
     SetIssueCategory { id: IssueId, category: Category },
