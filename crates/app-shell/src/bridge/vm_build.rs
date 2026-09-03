@@ -501,6 +501,7 @@ fn primary_note(events: &[Event]) -> Option<String> {
             total,
             ..
         } => format!("{version} 出包好了,验包 {passed}/{total}"),
+        Event::ReleasePackStopped { version } => format!("{version} 出包已停止,中间件清掉了"),
         Event::MetricsAutoCollected { count, .. } => {
             format!("今日自动采了 {count} 条 B 类指标")
         }

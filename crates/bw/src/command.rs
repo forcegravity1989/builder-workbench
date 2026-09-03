@@ -387,6 +387,10 @@ pub enum Event {
         passed: u32,
         total: u32,
     },
+    /// 人点停止：进程树已杀、这次中间件已清。
+    ReleasePackStopped {
+        version: String,
+    },
     /// 拉工作区的结果。`moved` = 主检出真的往前走了;`note` 是给人看的一句话,
     /// 拉不动时装的是 git 的原话(压成一行),**不吞**。
     WorkspacePulled {

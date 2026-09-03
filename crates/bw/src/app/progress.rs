@@ -19,6 +19,14 @@ pub enum StepState {
     Fail,
 }
 
+/// 验包 `result.cases` 里的一条。别的长命令不填。
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct ProgressCase {
+    pub name: String,
+    pub ok: bool,
+    pub message: String,
+}
+
 /// 一行回执。
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct ProgressLine {
@@ -27,6 +35,8 @@ pub struct ProgressLine {
     pub step: u8,
     pub state: StepState,
     pub text: String,
+    /// 验包结束才有。过了的条 `message` 常空。
+    pub cases: Vec<ProgressCase>,
 }
 
 impl ProgressLine {
@@ -35,6 +45,7 @@ impl ProgressLine {
             step,
             state: StepState::Doing,
             text: text.into(),
+            cases: Vec::new(),
         }
     }
     pub fn ok(step: u8, text: impl Into<String>) -> Self {
@@ -42,6 +53,7 @@ impl ProgressLine {
             step,
             state: StepState::Ok,
             text: text.into(),
+            cases: Vec::new(),
         }
     }
     pub fn fail(step: u8, text: impl Into<String>) -> Self {
@@ -49,6 +61,12 @@ impl ProgressLine {
             step,
             state: StepState::Fail,
             text: text.into(),
+            cases: Vec::new(),
         }
+    }
+
+    pub fn with_cases(mut self, cases: Vec<ProgressCase>) -> Self {
+        self.cases = cases;
+        self
     }
 }

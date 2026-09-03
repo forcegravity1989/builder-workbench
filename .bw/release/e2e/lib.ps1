@@ -1,5 +1,13 @@
 ﻿# e2e impl. Keep this first line ASCII.
 $ErrorActionPreference = 'Stop'
+# CREATE_NO_WINDOW + piped stdout: Write-Output follows the OEM code page (GBK on
+# Chinese Windows). Protocol lines must be raw UTF-8 bytes (ADR-0005).
+function Write-BwLine([string]$Line) {
+    $bytes = [Text.Encoding]::UTF8.GetBytes(($Line + "`n"))
+    $out = [Console]::OpenStandardOutput()
+    $out.Write($bytes, 0, $bytes.Length)
+    $out.Flush()
+}
 
 function Test-BwVersion([string]$v) {
     if ([string]::IsNullOrWhiteSpace($v)) { return $false }
@@ -10,7 +18,7 @@ function Test-BwVersion([string]$v) {
 function Write-BwProgress {
     param([string]$Phase, [string]$Message)
     $o = [ordered]@{ v = 1; type = 'progress'; phase = $Phase; message = $Message }
-    Write-Output ($o | ConvertTo-Json -Compress)
+    Write-BwLine ($o | ConvertTo-Json -Compress)
 }
 
 function Write-BwResult {
@@ -28,7 +36,7 @@ function Write-BwResult {
     if ($Passed -ge 0) { $o.passed = $Passed }
     if ($Total -ge 0) { $o.total = $Total }
     if ($null -ne $Cases) { $o.cases = @($Cases) }
-    Write-Output ($o | ConvertTo-Json -Compress -Depth 6)
+    Write-BwLine ($o | ConvertTo-Json -Compress -Depth 6)
 }
 
 function Parse-BwArgs {
@@ -260,7 +268,7 @@ try {
             Push-Location $PSScriptRoot
             try {
                 if (-not (Test-Path 'node_modules\playwright')) {
-                    npm install --omit=dev
+                    cmd.exe /c "npm install --omit=dev 1>&2"
                     if ($LASTEXITCODE -ne 0) { $npmOk = $false; $npmErr = 'npm install playwright failed' }
                 }
             } catch { $npmOk = $false; $npmErr = "$_" }
@@ -283,22 +291,36 @@ try {
                 function Invoke-Drive($caseName) {
                     Write-BwProgress -Phase $caseName -Message ("CDP " + $caseName)
                     $node = (Get-Command node).Source
-                    $p = Start-Process -FilePath $node -ArgumentList @(
-                        (Join-Path $PSScriptRoot 'drive.mjs'),
-                        '--port', "$port",
-                        '--shot-dir', $shotDir,
-                        '--case', $caseName
-                    ) -Wait -PassThru -NoNewWindow
-                    $script:lastDriveOk = ($p.ExitCode -eq 0)
+                    $errLog = [IO.Path]::GetTempFileName()
+                    try {
+                        $p = Start-Process -FilePath $node -ArgumentList @(
+                            (Join-Path $PSScriptRoot 'drive.mjs'),
+                            '--port', "$port",
+                            '--shot-dir', $shotDir,
+                            '--case', $caseName
+                        ) -Wait -PassThru -NoNewWindow -RedirectStandardError $errLog
+                        $script:lastDriveOk = ($p.ExitCode -eq 0)
+                        $err = ''
+                        if (Test-Path -LiteralPath $errLog) {
+                            $err = ((Get-Content -LiteralPath $errLog -Raw -ErrorAction SilentlyContinue) + '').Trim()
+                        }
+                        $script:lastDriveErr = $err
+                    } finally {
+                        Remove-Item -LiteralPath $errLog -Force -ErrorAction SilentlyContinue
+                    }
+                }
+                function Drive-FailText($fallback) {
+                    if ($script:lastDriveErr) { return $script:lastDriveErr }
+                    return $fallback
                 }
                 Invoke-Drive cu_settings
                 if ($script:lastDriveOk) {
                     Add-Case cu_settings $true ''
                     Invoke-Drive cu_onboard
                     if ($script:lastDriveOk) { Add-Case cu_onboard $true '' }
-                    else { Add-Case cu_onboard $false '接入屏没对上（截图在产物目录 e2e-shots）' }
+                    else { Add-Case cu_onboard $false (Drive-FailText '接入屏没对上（截图在产物目录 e2e-shots）') }
                 } else {
-                    Add-Case cu_settings $false '设置屏没对上（截图在产物目录 e2e-shots）'
+                    Add-Case cu_settings $false (Drive-FailText '设置屏没对上（截图在产物目录 e2e-shots）')
                     Add-Case cu_onboard $false '未跑：上一条失败'
                 }
             }
