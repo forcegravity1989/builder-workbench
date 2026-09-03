@@ -353,7 +353,7 @@ fn one_schedule(_week_of: &str, extra_labels: &[&str]) -> (Option<String>, Optio
     let plan = extra_labels
         .iter()
         .find_map(|l| l.strip_prefix("bw:plan:"))
-        .filter(|s| !s.is_empty())
+        .filter(|s| crate::version::is_plan_name(s))
         .map(|s| s.to_string());
     (None, plan)
 }
@@ -658,10 +658,10 @@ fn parse_plan(labels: &[String]) -> String {
         .iter()
         .find_map(|l| {
             let s = l.strip_prefix("bw:plan:")?;
-            if s.is_empty() {
-                None
-            } else {
+            if crate::version::is_plan_name(s) {
                 Some(s.to_string())
+            } else {
+                None
             }
         })
         .unwrap_or_default()
@@ -731,8 +731,8 @@ mod tests {
     }
 
     #[test]
-    fn one_schedule_drops_week_and_invalid_plan() {
-        let (week, plan) = one_schedule("2026-W35", &["bw:plan:MVP收尾"]);
+    fn one_schedule_drops_week_named_plan() {
+        let (week, plan) = one_schedule("2026-W35", &["bw:plan:2026-W35"]);
         assert!(week.is_none());
         assert!(plan.is_none());
     }
@@ -742,6 +742,7 @@ mod tests {
         assert_eq!(parse_plan(&["bw:plan:MVP收尾".into()]), "MVP收尾");
         assert_eq!(parse_plan(&["bw:plan:v0.3".into()]), "v0.3");
         assert_eq!(parse_plan(&["bw:plan:".into()]), "");
+        assert_eq!(parse_plan(&["bw:plan:2026-W36".into()]), "");
     }
 
     #[test]
