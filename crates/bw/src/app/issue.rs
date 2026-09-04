@@ -64,8 +64,7 @@ impl App {
             id: issue.id,
             number: issue.number,
         }];
-        // 新建活并临时纳入本周 → 发群通知(版本计划那件由 start_week_planning 单独
-        // 发,不在这里重复;运作活是 Workbench 内部,不发)。
+        // 新建活并临时纳入本周 → 发群通知。运作活不发。
         if !week_of.is_empty() && kind != IssueKind::Ops {
             let ev = crate::chat::NotifyEvent::IssueCreated;
             let text = crate::chat::notify_text(
@@ -99,6 +98,11 @@ impl App {
                 "这张活现在是「{}」,不是能开工的状态",
                 issue.status.label()
             )));
+        }
+        if issue.workflow == super::OPS1_WORKFLOW || issue.workflow == super::OPS2_WORKFLOW {
+            return Err(AppError::Refused(
+                "运作活①②的会话在 Orca 自动化里开。错过了到 Orca 里点 Run now。".into(),
+            ));
         }
 
         // Open Design = 本机网页内嵌类工具,**不起 CLI**:开工 = 在会话屏的

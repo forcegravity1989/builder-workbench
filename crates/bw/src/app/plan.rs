@@ -1,4 +1,4 @@
-//! 开始本版本、排期、发版本、改未发版本名。
+//! 排期、发版本、改未发版本名。
 //!
 //! 刀3 起,issue 的正本在远端 codehub/GitHub issue + 标签,本地不建 issue 表。
 //! 排期 = 给 issue 打 `bw:plan:<版本名>`;发版 = 给活打 `bw:released:<版本名>` +
@@ -13,112 +13,6 @@ use crate::{
 };
 
 impl App {
-    /// 总览「开始本版本」。当周没有覆盖中的里程碑才该点。有光杆未打版本
-    /// 标签的运作活①就复用,没有再新建。上周还开着的运作活①会挡住。
-    pub(super) async fn start_week_planning(
-        &mut self,
-        project_id: ProjectId,
-        week: String,
-    ) -> Result<Vec<Event>> {
-        let ws = self.workspace_of(project_id).await?;
-        let title = super::ops1_title();
-        let listed = self.issues(project_id).await?;
-        let project = self.project_of(project_id).await?;
-        let rows = match self.remote_for(&project) {
-            Ok(remote) => remote
-                .list_milestones(&project.remote_path)
-                .await
-                .unwrap_or_default(),
-            Err(_) => Vec::new(),
-        };
-        if crate::version::week_has_covering(&rows, &week) {
-            if let Some(found) = listed.iter().find(|i| {
-                super::is_ops1_issue(i)
-                    && i.status != IssueStatus::Done
-                    && i.status != IssueStatus::Cancelled
-            }) {
-                return Ok(vec![Event::WeekPlanInProgress {
-                    project_id,
-                    week,
-                    issue_id: found.id,
-                    status: found.status.label().to_string(),
-                }]);
-            }
-            return Ok(vec![Event::WeekPlanAlreadyExists { project_id, week }]);
-        }
-        if let Some(found) = listed.iter().find(|i| {
-            super::is_ops1_issue(i)
-                && i.status != IssueStatus::Done
-                && i.status != IssueStatus::Cancelled
-                && !i.plan_version.is_empty()
-        }) {
-            return Ok(vec![Event::WeekPlanInProgress {
-                project_id,
-                week,
-                issue_id: found.id,
-                status: found.status.label().to_string(),
-            }]);
-        }
-        if super::week_started(&listed, &week)
-            && listed.iter().any(|i| {
-                super::is_ops1_issue(i)
-                    && !i.plan_version.is_empty()
-                    && crate::isoweek::unix_in_week(i.created_at, &week)
-            })
-        {
-            return Ok(vec![Event::WeekPlanAlreadyExists { project_id, week }]);
-        }
-
-        // 真跑与替身是两条路。真跑(桌面壳开着内嵌终端 + 项目有真实工作区):
-        // 文件由 agent 会话产出、走 MR,这里一个文件都不写。替身(headless):
-        // 没有真会话可以产文件,草稿活标就是这条路的全部产出。
-        let real_session = self.pty_enabled && ws.is_dir();
-        let draft_titles = if real_session {
-            Vec::new()
-        } else {
-            // 替身路径:草稿活标给人确认(【mock】字样自我标注)。
-            vec![
-                format!("【mock】{week} 第一件业务活(草稿,等人确认)"),
-                format!("【mock】{week} 第二件业务活(草稿,等人确认)"),
-            ]
-        };
-
-        // 光杆未打版本标签的运作活①复用;没有再新建。
-        let (issue_id, created, mut events) = self
-            .create_ops_issue(
-                project_id,
-                title,
-                "运作活①。人没确认版本、纳入和指标口径之前,不建业务活、不落文件。".into(),
-                super::OPS1_WORKFLOW,
-                IssueOrigin::Human,
-                String::new(),
-            )
-            .await?;
-        // 本周版本计划创建完成 → 发群(仅在新建那一下,不是重复点开始本周)。
-        if created {
-            let number = events
-                .iter()
-                .find_map(|e| match e {
-                    Event::IssueCreated { number, .. } => Some(*number),
-                    _ => None,
-                })
-                .unwrap_or(0);
-            let ev = crate::chat::NotifyEvent::WeekPlan;
-            let text = crate::chat::notify_text(ev.key(), number, &week, "", "");
-            if let Some(e) = self.chat_send(project_id, ev.key(), number, text).await {
-                events.push(e);
-            }
-        }
-        events.extend(self.run_issue(issue_id).await?);
-        events.push(Event::WeekPlanStarted {
-            project_id,
-            week,
-            issue_id,
-            draft_titles,
-        });
-        Ok(events)
-    }
-
     /// 人确认草稿之后真的建活。
     pub(super) async fn confirm_week_draft(
         &mut self,

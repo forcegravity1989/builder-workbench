@@ -5,7 +5,7 @@ mod metrics;
 mod version;
 
 use crate::{
-    bridge::{Bridge, ChromeBusy, Panel, PanelNav, Req, STARTING_SESSION},
+    bridge::{Bridge, Panel, PanelNav, Req},
     chrome::light_dot,
     vm::ProjectVm,
 };
@@ -15,7 +15,6 @@ use dioxus::prelude::*;
 #[component]
 pub fn View(p: ProjectVm, bridge: Bridge) -> Element {
     let nav = use_context::<PanelNav>();
-    let start_busy = use_context::<ChromeBusy>();
     let editing = use_signal(|| false);
     let draft = use_signal(CardDraft::default);
 
@@ -23,11 +22,6 @@ pub fn View(p: ProjectVm, bridge: Bridge) -> Element {
         section { class: "ov-stack",
             if let Some(pending) = p.bootstrap_pending.clone() {
                 {bootstrap_banner(pending, &bridge, nav)}
-            }
-            if !p.week_covered && !p.week_started {
-                {start_banner(&p, &bridge, nav, start_busy)}
-            } else if let Some(st) = p.ops1_status.clone() {
-                {running_banner(st, nav)}
             }
             div { class: "ov-top-row",
                 {card_block(&p, &bridge, editing, draft)}
@@ -68,43 +62,6 @@ fn bootstrap_banner(mr: crate::vm::CardMrVm, bridge: &Bridge, nav: PanelNav) -> 
                 class: "btn btn-sm",
                 onclick: move |_| nav.go(Panel::Plan),
                 "去计划屏"
-            }
-        }
-    }
-}
-
-fn start_banner(p: &ProjectVm, bridge: &Bridge, nav: PanelNav, busy: ChromeBusy) -> Element {
-    let b = bridge.clone();
-    let (pid, week) = (p.id, p.current_week.clone());
-    rsx! {
-        div { class: "ov-banner",
-            span { "还没开始「更新指标 + 制定版本计划」" }
-            button {
-                class: "btn btn-primary btn-sm",
-                onclick: move |_| {
-                    busy.set(STARTING_SESSION);
-                    b.cmd(Command::StartWeekPlanning {
-                        project_id: pid,
-                        week: week.clone(),
-                    });
-                    nav.go(Panel::Session);
-                },
-                "开始本版本"
-            }
-        }
-    }
-}
-
-fn running_banner(status: String, nav: PanelNav) -> Element {
-    rsx! {
-        div { class: "ov-banner",
-            span {
-                "运作活①(更新指标 + 制定版本计划)已开工 · {status}。去会话屏接着聊。"
-            }
-            button {
-                class: "btn btn-sm",
-                onclick: move |_| nav.go(Panel::Session),
-                "去会话屏"
             }
         }
     }

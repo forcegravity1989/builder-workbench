@@ -97,8 +97,6 @@ pub(super) struct ProjectGathered {
     current_week: String,
     mr_url_prefix: String,
     issue_url_prefix: String,
-    week_started: bool,
-    ops1_status: Option<String>,
     /// 版本列表 + 当前登录用户。gather 采一次,assemble 只克隆 —— 切周 / 改
     /// 一张卡状态时不再打 `project view` / milestones / `/user`。
     plan_versions: Vec<PlanVersionVm>,
@@ -259,16 +257,6 @@ impl Gathered {
             return;
         }
         let pid = pg.id;
-        let week = pg.current_week.clone();
-        pg.week_started = bw::app::week_started(&pg.issues, &week);
-        let ops1 = pg.issues.iter().find(|i| {
-            bw::app::is_ops1_issue(i)
-                && i.status != IssueStatus::Done
-                && i.status != IssueStatus::Cancelled
-        });
-        pg.ops1_status = ops1
-            .filter(|i| i.status != IssueStatus::Done)
-            .map(|i| i.status.label().to_string());
         let today = bw::isoweek::today_ymd();
         let covering = covering_version_names(&pg.plan_versions, &today);
         let confirmed = pick_overview_version(&covering, "");
@@ -384,16 +372,6 @@ fn primary_note(events: &[Event]) -> Option<String> {
             stale.len(),
             human_edited.len()
         ),
-        Event::WeekPlanStarted {
-            week, draft_titles, ..
-        } => {
-            if draft_titles.is_empty() {
-                // 真跑:文件由 agent 会话产出、走 MR,这里没有骨架也没有草稿。
-                format!("运作活①已开工:{week} 的周计划由这场会话产出,提交走 MR,人合入后总览才亮")
-            } else {
-                format!("{week} 的运作活①已开工(流程演示),等你确认草稿")
-            }
-        }
         Event::WorkspacesRootChanged { path, pinned } => {
             let tail = if *pinned > 0 {
                 format!(",已接入的 {pinned} 个项目已就地钉在原位置、不会跟着搬")
@@ -455,15 +433,6 @@ fn primary_note(events: &[Event]) -> Option<String> {
                 format!("发群失败(合入/完成本身已经生效,不会自动重发):{note}")
             }
         }
-        Event::OpsAutoFired { workflow, week, .. } => {
-            format!("定时到点:{week} 的「{workflow}」已自动建活并开工")
-        }
-        Event::WeekPlanAlreadyExists { week, .. } => {
-            format!("{week} 的「更新指标 + 制定版本计划」已经做过,没有重开")
-        }
-        Event::WeekPlanInProgress { week, status, .. } => {
-            format!("{week} 的运作活①还在路上({status})—— 去会话屏接着聊")
-        }
         Event::IssueCreated { number, .. } => format!("建了一张活 #{number}"),
         Event::IssueScheduled { week_of, .. } => {
             if week_of.is_empty() {
@@ -512,9 +481,6 @@ fn primary_note(events: &[Event]) -> Option<String> {
             ..
         } => format!("{version} 出包好了,验包 {passed}/{total}"),
         Event::ReleasePackStopped { version } => format!("{version} 出包已停止,中间件清掉了"),
-        Event::MetricsAutoCollected { count, .. } => {
-            format!("今日自动采了 {count} 条 B 类指标")
-        }
         Event::MetricRecorded {
             name, day, value, ..
         } => format!("记下了 {name} = {value}({day})"),
@@ -1253,15 +1219,6 @@ async fn gather_project(
         let _ = app.cache_project_health(id, &derived).await;
     }
 
-    let week_started = bw::app::week_started(&issues, current_week);
-    let ops1 = issues.iter().find(|i| {
-        bw::app::is_ops1_issue(i)
-            && i.status != bw::model::IssueStatus::Done
-            && i.status != bw::model::IssueStatus::Cancelled
-    });
-    let ops1_status = ops1
-        .filter(|i| i.status != IssueStatus::Done)
-        .map(|i| i.status.label().to_string());
     Some(ProjectGathered {
         id,
         slug: p.slug.clone(),
@@ -1288,8 +1245,6 @@ async fn gather_project(
 
         mr_url_prefix,
         issue_url_prefix,
-        week_started,
-        ops1_status,
         plan_versions,
         current_user,
     })
@@ -1358,7 +1313,6 @@ async fn assemble_project(
     let today = bw::isoweek::today_ymd();
     let covering = covering_version_names(&pg.plan_versions, &today);
     let confirmed = pick_overview_version(&covering, &ui.overview_version);
-    let week_covered = week_is_covered(&pg.plan_versions, &pg.current_week);
     let mut plan_versions = pg.plan_versions.clone();
     let released_names: Vec<String> = pg
         .releases
@@ -1415,14 +1369,11 @@ async fn assemble_project(
             &readings,
             !ui.metrics.is_empty(),
         ),
-        week_started: pg.week_started,
-        week_covered,
         covering_versions: covering.clone(),
         last_released: inv.last_released.clone().unwrap_or_default(),
         unreleased: inv.unreleased.clone(),
         suggested_next: inv.suggested_next.clone(),
         confirmed_version: confirmed.clone(),
-        ops1_status: pg.ops1_status.clone(),
         bootstrap_pending: build_bootstrap_pending(&pg.issues, pg.ops3_landed),
         weeks: build_weeks(&pg.issues, &pg.current_week, &pg.week_goals),
         current_week: pg.current_week.clone(),
@@ -1563,21 +1514,6 @@ fn covering_version_names(versions: &[PlanVersionVm], day: &str) -> Vec<String> 
         .into_iter()
         .map(str::to_string)
         .collect()
-}
-
-fn week_is_covered(versions: &[PlanVersionVm], week: &str) -> bool {
-    let rows: Vec<(String, String, String, String)> = versions
-        .iter()
-        .map(|v| {
-            (
-                v.name.clone(),
-                v.start.clone(),
-                v.end.clone(),
-                v.created_at.clone(),
-            )
-        })
-        .collect();
-    bw::version::week_has_covering(&rows, week)
 }
 
 fn pick_overview_version(covering: &[String], selected: &str) -> String {

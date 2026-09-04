@@ -6,7 +6,7 @@
 //! 一屏一屏地看,这层的分工是:
 //!
 //! - [`project`] —— 接入、改名片、配项目群
-//! - [`plan`] —— 开始本版本、排期、发版本、改名、缓存对账
+//! - [`plan`] —— 排期、发版本、改名、缓存对账
 //! - [`release_ship`] —— 人点「出包」:出包 → 验包,不打标签
 //! - [`issue`] —— 建活、▶跑、状态转移
 //! - [`bootstrap`] —— 规范铺底与对账
@@ -28,6 +28,7 @@ mod issue;
 /// 等刀3 切远端正本时再用——在那之前靠模块级 `#[allow(dead_code)]` 压住警告。
 mod issue_store;
 mod ops;
+mod orca_inject;
 mod pack_ctl;
 mod plan;
 mod progress;
@@ -443,9 +444,6 @@ impl App {
                 self.edit_project_card(project_id, intent).await
             }
             Command::ReconcileStandard { project_id } => self.reconcile_standard(project_id).await,
-            Command::StartWeekPlanning { project_id, week } => {
-                self.start_week_planning(project_id, week).await
-            }
             Command::ConfirmWeekDraft {
                 project_id,
                 week,
@@ -523,7 +521,6 @@ impl App {
             }
             Command::ProbeTool { name } => self.probe_tool(name).await,
             Command::PullWorkspace { project_id } => self.pull_workspace(project_id).await,
-            Command::TickScheduler { project_id } => self.tick_scheduler(project_id).await,
             Command::MergeAndSettle { id } => self.merge_and_settle(id).await,
             Command::SyncNotifyToChat {
                 issue_id,
@@ -568,12 +565,6 @@ fn cmd_log_label(cmd: &Command) -> String {
         }
         Command::ReconcileStandard { project_id } => {
             format!("ReconcileStandard project={}", project_id.uuid())
-        }
-        Command::StartWeekPlanning { project_id, week } => {
-            format!(
-                "StartWeekPlanning project={} week={week}",
-                project_id.uuid()
-            )
         }
         Command::ConfirmWeekDraft {
             project_id,
@@ -669,9 +660,6 @@ fn cmd_log_label(cmd: &Command) -> String {
         Command::ProbeTool { name } => format!("ProbeTool name={name}"),
         Command::PullWorkspace { project_id } => {
             format!("PullWorkspace project={}", project_id.uuid())
-        }
-        Command::TickScheduler { project_id } => {
-            format!("TickScheduler project={}", project_id.uuid())
         }
         Command::MergeAndSettle { id } => format!("MergeAndSettle #{}", id.iid()),
         Command::SyncNotifyToChat {

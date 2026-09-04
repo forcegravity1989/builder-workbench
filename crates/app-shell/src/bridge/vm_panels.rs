@@ -451,7 +451,6 @@ pub(super) fn build_config(
         .collect();
 
     let skills = skill_list(ws, &usage);
-    let ops2 = bw::defaults::DEFAULT_OPS2_SCHEDULE;
 
     ConfigVm {
         mappings,
@@ -459,8 +458,8 @@ pub(super) fn build_config(
         focus_skill: String::new(),
         tools: env.to_vec(),
         remote: remote_label(project),
-        cadence: format!("产品默认 · 运作活② {ops2}"),
-        crons: build_crons(),
+        cadence: "Orca · 周一 09:00 定计划 · 周五 15:00 盘点 · 每天 20:00 采 B 类（默认关）".into(),
+        crons: vec![],
         chat_provider: chat_provider(file.chat.as_ref()),
         chat_group: chat_group(file.chat.as_ref()),
         chat_events: chat_events(file.chat.as_ref()),
@@ -548,30 +547,6 @@ pub(super) fn skill_desc(path: &Path) -> String {
         .find_map(|l| l.strip_prefix("description:"))
         .map(|v| v.trim().trim_matches('"').to_string())
         .unwrap_or_default()
-}
-
-/// 定时那张表。**没有定时表** —— 判据写在这里,让人知道它到底看什么。
-fn build_crons() -> Vec<CronVm> {
-    vec![
-        CronVm {
-            name: "B 类指标采集".into(),
-            trigger: "到点自动采".into(),
-            schedule: "daily 20:00".into(),
-            rule: "今天还没采过".into(),
-        },
-        CronVm {
-            name: "更新指标与制定版本计划".into(),
-            trigger: "人触发".into(),
-            schedule: "—".into(),
-            rule: "本周还没有运作活①「更新指标 + 制定版本计划」".into(),
-        },
-        CronVm {
-            name: "资产盘点".into(),
-            trigger: "到点自动建".into(),
-            schedule: bw::defaults::DEFAULT_OPS2_SCHEDULE.into(),
-            rule: "本周还没有这张活(不查任何定时表)".into(),
-        },
-    ]
 }
 
 fn chat_provider(chat: Option<&project_file::ChatConfig>) -> String {

@@ -267,24 +267,6 @@ fn fill_from_readings(ws: &Path, name: &str, labels: &[String], r: &mut MetricRe
     r.current = r.points.last().and_then(|p| p.value.clone());
 }
 
-/// 本机「今日已试过 B 类日采」的戳。写在 Workbench 资产目录,不进被管仓。
-fn collect_stamp_path(asset_root: &Path, slug: &str) -> PathBuf {
-    asset_root.join("collect-stamp").join(slug)
-}
-
-fn stamp_is_today(path: &Path) -> bool {
-    std::fs::read_to_string(path)
-        .ok()
-        .is_some_and(|s| s.trim() == isoweek::today_ymd())
-}
-
-fn write_today_stamp(path: &Path) {
-    if let Some(dir) = path.parent() {
-        let _ = std::fs::create_dir_all(dir);
-    }
-    let _ = std::fs::write(path, isoweek::today_ymd());
-}
-
 impl App {
     /// 人在总览手填卡记下今天这个数。只收 C 类,覆盖进账本当天那一行。
     pub(super) async fn record_manual_metric(
@@ -337,46 +319,6 @@ impl App {
             day,
             value,
         }])
-    }
-
-    /// Workbench 开着、过了本机 20:00、今天还没试过,就采一轮 B 类。
-    /// 不建活。失败也落今日戳,避免每 60 秒重打失败脚本。
-    pub(super) async fn maybe_auto_collect_b(&self, project_id: ProjectId) -> Vec<Event> {
-        if !isoweek::local_hm_reached(20, 0) {
-            return vec![];
-        }
-        let Ok(slug) = self.slug_of(project_id).await else {
-            return vec![];
-        };
-        if slug.is_empty() {
-            return vec![];
-        }
-        let stamp = collect_stamp_path(&self.asset_root, &slug);
-        if stamp_is_today(&stamp) {
-            return vec![];
-        }
-        let Ok(ws) = self.workspace_of(project_id).await else {
-            return vec![];
-        };
-        if !has_b_class(&ws) {
-            return vec![];
-        }
-        write_today_stamp(&stamp);
-        let Ok(rows) = collect_b_class(&ws, 4).await else {
-            return vec![];
-        };
-        let count = rows
-            .iter()
-            .filter(|r| r.error.is_empty() && r.current.is_some())
-            .count() as u32;
-        if count == 0 {
-            return vec![];
-        }
-        vec![Event::MetricsAutoCollected {
-            project_id,
-            week: isoweek::current_week(),
-            count,
-        }]
     }
 }
 

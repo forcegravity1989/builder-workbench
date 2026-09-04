@@ -69,9 +69,6 @@ pub enum Command {
     ReconcileStandard { project_id: ProjectId },
 
     // ── 计划 ──────────────────────────────────────────────
-    /// 总览「开始本版本」:建本周运作活①并开工。当周没有覆盖中的版本才出现。
-    /// 有光杆未打版本标签的运作活①就复用,没有再新建。
-    StartWeekPlanning { project_id: ProjectId, week: String },
     /// 人确认草稿后真的建活(`origin = agent_split`)。
     ConfirmWeekDraft {
         project_id: ProjectId,
@@ -191,11 +188,6 @@ pub enum Command {
     /// `BW_ORCA_WEB_URL` 仍可覆盖(开发期)。空串 = 清掉。
     SetOrcaWebUrl { url: String },
 
-    /// 定时的一跳。**只会自动建活,绝不自动完成活**——到点了就查本周有没有
-    /// 那张资产盘点活,没有就建一张并自动开工。没到点、已经有了,都是原地
-    /// 返回空事件,不是错误。
-    TickScheduler { project_id: ProjectId },
-
     /// 通知屏的「合入并完成」。先真的合 MR,再把活推「完成」——顺序反了,
     /// 合入失败就会留下一张已完成、改动却还挂在分支上的活。
     MergeAndSettle { id: IssueId },
@@ -270,28 +262,6 @@ pub enum Event {
         missing: Vec<String>,
         stale: Vec<String>,
         human_edited: Vec<String>,
-    },
-    /// 本周运作活①已建并开工。
-    WeekPlanStarted {
-        project_id: ProjectId,
-        week: String,
-        /// 运作活①本身那张活。界面据此跳会话屏。
-        issue_id: IssueId,
-        draft_titles: Vec<String>,
-    },
-    /// 本周运作活①已经做过(含已完成),这次什么都没做。
-    WeekPlanAlreadyExists {
-        project_id: ProjectId,
-        week: String,
-    },
-    /// 本周那张运作活①还在路上,这次什么
-    /// 都没做。**不是错误** —— 人再点一次「开始本版本」该被平静地挡住,而不是
-    /// 收到一句「这张活现在是评审中,不是能开工的状态」。
-    WeekPlanInProgress {
-        project_id: ProjectId,
-        week: String,
-        issue_id: IssueId,
-        status: String,
     },
     IssueCreated {
         id: IssueId,
@@ -432,18 +402,6 @@ pub enum Event {
     SessionDeleted {
         id: IssueId,
         note: String,
-    },
-    /// 定时真的建出了一张活。界面上「本周运作」栏据此显示「已自动开工」。
-    OpsAutoFired {
-        id: IssueId,
-        workflow: String,
-        week: String,
-    },
-    /// B 类指标今日自动采了一轮。不建活、不完成活。
-    MetricsAutoCollected {
-        project_id: ProjectId,
-        week: String,
-        count: u32,
     },
     /// 人记下了一条 C 类读数。同一天再记覆盖读回(只追加,最后一行算)。
     MetricRecorded {

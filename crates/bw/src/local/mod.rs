@@ -4,7 +4,7 @@
 //!
 //! - [`registry`] —— `asset_root/projects.toml`,Workbench 纳管的项目清单。每条
 //!   记着项目的定位字段(slug / workspace_path / provider / remote_*)、显示
-//!   缓存(健康灯)与本机设置(`cron_enabled`)。替代旧的 `project` 表。
+//!   缓存(健康灯)。替代旧的 `project` 表。
 //! - [`settings`] —— `asset_root/settings.toml`,全局本机设置:工作区根、
 //!   Orca 网页地址、本机开工工具。
 //! - [`sessions`] —— `asset_root/sessions/<slug>/<iid>.jsonl`,append-only

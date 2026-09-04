@@ -426,17 +426,6 @@ async fn fetch_prefill(
     }
 }
 
-/// 从一批事件里挑出「开始本版本」产出的草稿活标。真跑路径没有草稿(版本计划由
-/// agent 会话产出、走 MR),那时候不该弹「等你确认草稿」的卡。
-fn drafts_of(events: &[bw::command::Event]) -> Option<(String, Vec<String>)> {
-    events.iter().find_map(|e| match e {
-        bw::command::Event::WeekPlanStarted {
-            week, draft_titles, ..
-        } if !draft_titles.is_empty() => Some((week.clone(), draft_titles.clone())),
-        _ => None,
-    })
-}
-
 /// 起内核线程。返回的桥可以被界面各处 clone。
 pub fn spawn(deep_link: DeepLink) -> Bridge {
     let (tx, mut rx) = mpsc::unbounded_channel::<Req>();
@@ -668,50 +657,9 @@ pub fn spawn(deep_link: DeepLink) -> Bridge {
                 // gather 已经把 warnings 打进对照日志,这里不再打第二遍。
                 let _ = vm_tx.send(vm.clone());
 
-                // 定时判据 60s 一次 —— 它查的是「本周有没有那张活」,快一点慢一点都
-                // 不影响结论。(终端字节 60ms 节拍已随 PTY 封存删掉 —— 桌面 ▶跑 走
-                // Orca 本地 pipe,字节在 Orca 那个 tab 里,不经过 Workbench。)
-                let mut sched_tick = tokio::time::interval(Duration::from_secs(60));
                 loop {
-                    let req = tokio::select! {
-                        r = rx.recv() => match r {
-                            Some(r) => r,
-                            None => break,
-                        },
-                        _ = sched_tick.tick() => {
-                            // 特性9:fanout —— 遍历所有纳管项目逐个查
-                            // cron_enabled + 到点建活,不再只对打开着的项目跑
-                            // (已拍板)。tick_scheduler 本身单项目
-                            // 幂等,到点没到点、本周有没有那张活都原地返空;
-                            // cron_enabled=false 也自己挡掉(高优1)。
-                            let mut note: Option<String> = None;
-                            if let Ok(projects) = app.projects().await {
-                                for p in &projects {
-                                    match app
-                                        .dispatch(Command::TickScheduler { project_id: p.id })
-                                        .await
-                                    {
-                                        Ok(events) if events.is_empty() => {}
-                                        Ok(events) => {
-                                            note = vm_build::note_of(&events);
-                                        }
-                                        Err(e) => {
-                                            note = Some(format!("定时没跑成:{e}"))
-                                        }
-                                    }
-                                }
-                            }
-                            if let Some(n) = note {
-                                ui.set_note(Some(n));
-                            }
-                            // 到点可能建活。打开着某个仓只重采那一个;在墙上才拉全墙。
-                            let keep = last_gather.projects.clone();
-                            last_gather = vm_build::gather(&app, &mut ui, &keep).await;
-                            vm = vm_build::assemble(&app, &mut ui, &last_gather).await;
-                            let _ = vm_tx.send(vm.clone());
-                            kick_pr_fill(&last_gather, &ui, &tx_back);
-                            continue;
-                        }
+                    let Some(req) = rx.recv().await else {
+                        break;
                     };
                     // 纯导航(切周 / 点总览 / 选卡片看详情 / 切页签 / 展开
                     // 目录 / 后台采回发 / MR 回填)不重跑 gather —— 复用上次
@@ -745,11 +693,7 @@ pub fn spawn(deep_link: DeepLink) -> Bridge {
                             let confirming = matches!(c, Command::ConfirmWeekDraft { .. });
                             // 计划屏 Start 和总览「开始本周」都会 create 会话,
                             // 同一块遮罩挡住嵌页。
-                            let running_issue = matches!(
-                                c,
-                                Command::RunIssue { .. }
-                                    | Command::StartWeekPlanning { .. }
-                            );
+                            let running_issue = matches!(c, Command::RunIssue { .. });
                             // 遮罩撤了再切:开工里那次 activate 嵌页听不见。
                             let mut reveal_after_busy: Option<bw::model::IssueId> = None;
                             if running_issue {
@@ -787,17 +731,7 @@ pub fn spawn(deep_link: DeepLink) -> Bridge {
                                     }
                                     // 「开始本周」产出的草稿活标先接住,等人在计划屏
                                     // 点确认才真的建活。
-                                    if let Some((week, titles)) = drafts_of(&events) {
-                                        ui.pending_drafts = Some((week, titles));
-                                    }
-                                    // 「开始本周」起了一场会话,就把它选中 ——
-                                    // 总览那颗按钮会把人带到会话屏,落地时该正
-                                    // 好停在这场会话上,而不是让人自己在左列里
-                                    // 找哪一条是刚才那下点出来的。
                                     if let Some((issue_id, tool)) = events.iter().find_map(|e| match e {
-                                        bw::command::Event::WeekPlanStarted { issue_id, .. } => {
-                                            Some((*issue_id, String::new()))
-                                        }
                                         bw::command::Event::IssueRan { id, tool, .. } => {
                                             Some((*id, tool.clone()))
                                         }
@@ -1498,15 +1432,25 @@ async fn register_orca_repo(app: &App, ui: &mut vm_build::UiState, pid: ProjectI
         return;
     };
     match bw_engine::orca::ensure_repo(&rt, &ws).await {
-        Ok(()) => {
-            ui.orca_repos_ready.insert(pid);
-            bw_engine::dlog!(
-                ok,
-                "bridge",
-                "register_orca_repo ok worktree={}",
-                ws.display()
-            );
-        }
+        Ok(()) => match app.ensure_orca_automations(&rt, &ws).await {
+            Ok(()) => {
+                ui.orca_repos_ready.insert(pid);
+                bw_engine::dlog!(
+                    ok,
+                    "bridge",
+                    "register_orca_repo ok worktree={}",
+                    ws.display()
+                );
+            }
+            Err(e) => {
+                bw_engine::dlog!(
+                    err,
+                    "bridge",
+                    "register_orca_repo inject fail:{e} worktree={}",
+                    ws.display()
+                );
+            }
+        },
         Err(e) => {
             bw_engine::dlog!(
                 err,

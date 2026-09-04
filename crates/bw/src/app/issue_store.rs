@@ -506,10 +506,14 @@ pub fn is_open_charter(i: &Issue) -> bool {
     is_charter_title(&i.title) && !matches!(i.status, IssueStatus::Done | IssueStatus::Cancelled)
 }
 
-/// 这张活干活的分支。项目约定走常驻 `bw/project`;其余 `bw/issue-<号>`。
+/// 这张活干活的分支。常驻车走固定名;其余 `bw/issue-<号>`。
 pub fn work_branch(issue: &Issue) -> String {
     if issue.title == CHARTER_TITLE {
         bw_engine::workspace::PROJECT_BRANCH.to_string()
+    } else if issue.workflow == super::OPS1_WORKFLOW || issue.title.starts_with(OPS1_TITLE_PREFIX) {
+        bw_engine::workspace::WEEK_PLAN_BRANCH.to_string()
+    } else if issue.workflow == super::OPS2_WORKFLOW || issue.title.starts_with(OPS2_TITLE_PREFIX) {
+        bw_engine::workspace::OPS_AUDIT_BRANCH.to_string()
     } else {
         bw_engine::github::issue_branch(issue.number)
     }

@@ -607,18 +607,18 @@
       <div class="res">
         <div class="h">这一站能查到</div>
         <ul>
-          <li><span class="b"></span><div>盘点什么时候自动建、最远到哪</div></li>
+          <li><span class="b"></span><div>三条自动化在 Orca 里、默认关</div></li>
+          <li><span class="b"></span><div>错过了怎么补跑</div></li>
           <li><span class="b"></span><div>周五会不会给总览写每周进展</div></li>
-          <li><span class="b"></span><div>B 类每天几点自动采</div></li>
-          <li><span class="b"></span><div>运作活①为什么不会自动开始</div></li>
+          <li><span class="b"></span><div>B 类每天几点采</div></li>
         </ul>
       </div>
 
       <h2 class="sec"><span class="n">操作</span></h2>
       <div class="ops">
-        <div class="li"><div class="n">1</div><div class="t">配置屏能看见「资产盘点 · 到点自动建 · fri 09:00」，还有一行「B 类指标采集 · daily 20:00」。盘点节律只认产品默认，不写进仓。B 类日采固定 20:00。运作活①仍是人点「开始本版本」。</div></div>
-        <div class="li"><div class="n">2</div><div class="t">Workbench 开着、过了本周那个时刻，计划屏会出现「资产盘点 YYYY-Www」。类别锁成「运作」，改不了五阶段。</div></div>
-        <div class="li"><div class="n">3</div><div class="t">这张活会自己开工。看会话或详情：最远到评审中。合入、点完成仍是你来。</div></div>
+        <div class="li"><div class="n">1</div><div class="t">纳入或打开项目后，Orca 里会有三条默认关掉的自动化：周一 09:00 定计划、周五 15:00 盘点、每天 20:00 采 B 类。要跑就在 Orca 里打开或点 Run now。</div></div>
+        <div class="li"><div class="n">2</div><div class="t">盘点、定计划的改动分别在常驻树 <code>bw/ops-audit</code> / <code>bw/week-plan</code>。类别锁成「运作」，改不了五阶段。</div></div>
+        <div class="li"><div class="n">3</div><div class="t">会话在 Orca 开。最远到评审中。合入、点完成仍是你来。</div></div>
         <div class="li"><div class="n">4</div><div class="t">周一回到总览，开始下一圈。盘点报告挂在这张活的评论里（Workbench 资产 / 闭环 / 项目审查）。当周进展另挂在该版本运作活①上（<code>## 每周进展</code>），总览右栏按新到旧列出该版本所有进展。改了 <code>.bw/</code> 才有 MR；项目审查只出建议，不改业务代码。</div></div>
       </div>
 
@@ -626,7 +626,7 @@
       <div class="res">
         <ul>
           <li><span class="b"></span><div><strong>对远端代码仓</strong>：建一张标题固定的运作活（本周有了就不建第二张；标题含 ISO 周，如 <code>资产盘点 2026-W36</code>），有在研版本就挂 <code>bw:plan:&lt;名&gt;</code>，不打 <code>bw:week:</code>。开工后改状态。先盘 <code>.bw/</code> 跟上现行契约，再盘项目本周改动（建议落评论，不改业务代码），再给该版本运作活①追加一条每周进展。</div></li>
-          <li><span class="b"></span><div><strong>对你的机器</strong>：Workbench 开着每 60 秒判一次「本周这一刻过了没有」。当时没开着，下次开着会补建。注入的剧本是资产盘点；开工用的 CLI 跟配置屏「构建」那条。</div></li>
+          <li><span class="b"></span><div><strong>对你的机器</strong>：Workbench 不自己守钟。Orca 没开就下次打开项目再补打自动化。错过了到 Orca 点 Run now。</div></li>
           <li><span class="b"></span><div><strong>对 <code>.bw/</code></strong>：对照现行契约清残留、升格式，让当前工作台读得动；点出未闭环的环。不重写名片，不重定北极星。仓根 <code>AGENTS.md</code> 不由周五盘点代写。</div></li>
         </ul>
       </div>

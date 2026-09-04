@@ -267,6 +267,91 @@ pub async fn refresh_worktrees(rt: &OrcaRuntime, repo: &Path) -> Result<(), Orca
     require_ok(&updated, "repo.update")
 }
 
+/// `automation.list` 里一条,只带匹配注入需要的字段。
+#[derive(Clone, Debug)]
+pub struct AutomationRow {
+    pub name: String,
+    pub project_id: String,
+}
+
+/// 往 Orca 打一条自动化。业务名 / 提示词 / 节律由上层定;这里只发 RPC。
+pub struct AutomationCreate<'a> {
+    pub name: &'a str,
+    pub prompt: &'a str,
+    pub repo: &'a Path,
+    pub workspace: &'a Path,
+    pub reuse_session: bool,
+    pub rrule: &'a str,
+    pub timezone: &'a str,
+    pub enabled: bool,
+}
+
+/// 这份仓在 Orca 里的 repo id。注入匹配「同名 + 同仓」用。
+pub async fn repo_id(rt: &OrcaRuntime, repo: &Path) -> Result<String, OrcaError> {
+    let shown = call(
+        rt,
+        "repo.show",
+        json!({ "repo": path_prefixed(repo) }),
+        ACTIVATE_TIMEOUT,
+    )
+    .await?;
+    require_ok(&shown, "repo.show")?;
+    shown
+        .pointer("/result/repo/id")
+        .and_then(|v| v.as_str())
+        .map(str::to_string)
+        .ok_or_else(|| OrcaError::BadFrame("repo.show 回包没有 result.repo.id".into()))
+}
+
+pub async fn list_automations(rt: &OrcaRuntime) -> Result<Vec<AutomationRow>, OrcaError> {
+    let frame = call(rt, "automation.list", json!({}), ACTIVATE_TIMEOUT).await?;
+    require_ok(&frame, "automation.list")?;
+    let rows = frame
+        .pointer("/result/automations")
+        .or_else(|| frame.get("automations"))
+        .and_then(|v| v.as_array())
+        .cloned()
+        .unwrap_or_default();
+    Ok(rows
+        .iter()
+        .filter_map(|v| {
+            let name = v.get("name")?.as_str()?.to_string();
+            let project_id = v
+                .get("projectId")
+                .or_else(|| v.get("project_id"))
+                .and_then(|p| p.as_str())
+                .unwrap_or("")
+                .to_string();
+            Some(AutomationRow { name, project_id })
+        })
+        .collect())
+}
+
+pub async fn create_automation(
+    rt: &OrcaRuntime,
+    spec: &AutomationCreate<'_>,
+) -> Result<(), OrcaError> {
+    let now_ms = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .map(|d| d.as_millis() as u64)
+        .unwrap_or(0);
+    let params = json!({
+        "name": spec.name,
+        "prompt": spec.prompt,
+        "agentId": "claude",
+        "repo": path_prefixed(spec.repo),
+        "workspace": path_prefixed(spec.workspace),
+        "workspaceMode": "existing",
+        "reuseSession": spec.reuse_session,
+        "timezone": spec.timezone,
+        "rrule": spec.rrule,
+        "dtstart": now_ms,
+        "enabled": spec.enabled,
+    });
+    let frame = call(rt, "automation.create", params, ACTIVATE_TIMEOUT).await?;
+    require_ok(&frame, "automation.create")
+}
+
 async fn publish_visibility(rt: &OrcaRuntime, repo: &Path) -> Result<(), OrcaError> {
     let updated = call(
         rt,

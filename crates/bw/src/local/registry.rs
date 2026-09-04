@@ -17,8 +17,7 @@ fn now_ts() -> i64 {
 /// 注册表文件名。
 const FILENAME: &str = "projects.toml";
 
-/// 一条项目注册项。比 [`Project`] 多一个本机字段:`cron_enabled`(定时到点
-/// 要不要建活,缺省 true)。
+/// 一条项目注册项。
 #[derive(Clone, Debug, serde::Serialize, serde::Deserialize)]
 pub struct ProjectEntry {
     pub id: ProjectId,
@@ -41,13 +40,6 @@ pub struct ProjectEntry {
     pub created_at: i64,
     #[serde(default)]
     pub updated_at: i64,
-    /// 定时到点要不要自动建运作活②。缺省 true。
-    #[serde(default = "default_true")]
-    pub cron_enabled: bool,
-}
-
-fn default_true() -> bool {
-    true
 }
 
 impl From<&Project> for ProjectEntry {
@@ -66,7 +58,6 @@ impl From<&Project> for ProjectEntry {
             sort_order: p.sort_order,
             created_at: p.created_at,
             updated_at: p.updated_at,
-            cron_enabled: true,
         }
     }
 }

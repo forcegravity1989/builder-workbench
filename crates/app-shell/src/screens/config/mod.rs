@@ -270,10 +270,8 @@ fn cron_block(p: &ProjectVm) -> Element {
                 }
             }
             div { class: "cfg-readonly-note",
-                strong { "没有定时表" }
-                ",所以没有「下次触发时间」这一列。到点只会自动"
-                strong { "建" }
-                "活,绝不自动推进 —— 自动建出来的活一样停在待办,「完成」永远由人点。"
+                "节律在 Orca 自动化。纳入或打开项目时注入,默认关。"
+                "错过了到 Orca 里点 Run now。「完成」永远由人点。"
             }
         }
     }

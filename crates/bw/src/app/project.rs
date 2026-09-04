@@ -99,7 +99,15 @@ impl App {
         if self.pty_enabled {
             match bw_engine::orca::connect() {
                 Ok(rt) => match bw_engine::orca::ensure_repo(&rt, &ws).await {
-                    Ok(()) => self.step(ProgressLine::ok(6, "Orca 已经认得这个仓")),
+                    Ok(()) => {
+                        self.step(ProgressLine::ok(6, "Orca 已经认得这个仓"));
+                        if let Err(e) = self.ensure_orca_automations(&rt, &ws).await {
+                            self.step(ProgressLine::fail(
+                                6,
+                                format!("Orca 定时没打上:{e} —— 打开项目会再试"),
+                            ));
+                        }
+                    }
                     Err(e) => self.step(ProgressLine::fail(
                         6,
                         format!("Orca 还没记下这个仓:{e} —— 第一次开工会再试"),
