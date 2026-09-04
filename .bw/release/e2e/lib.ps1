@@ -223,8 +223,10 @@ $port = ([Net.IPEndPoint]$listener.LocalEndpoint).Port
 $listener.Stop()
 $logFile = Join-Path $installDir 'e2e-bw.log'
 $dataPlaceholder = Join-Path $installDir 'data\placeholder'
+$webviewDir = Join-Path $installDir 'webview'
 New-Item -ItemType Directory -Force -Path (Split-Path $dataPlaceholder) | Out-Null
 New-Item -ItemType Directory -Force -Path (Join-Path $installDir 'workspaces') | Out-Null
+New-Item -ItemType Directory -Force -Path $webviewDir | Out-Null
 
 try {
     Write-BwProgress -Phase launch -Message ("isolated desktop port=" + $port)
@@ -234,6 +236,7 @@ try {
         BW_LOG        = $logFile
         BW_DB         = $dataPlaceholder
         BW_WORKSPACES = (Join-Path $installDir 'workspaces')
+        WEBVIEW2_USER_DATA_FOLDER = $webviewDir
         WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS = "--remote-debugging-port=$port --remote-allow-origins=*"
     }
     $hDesk = $started.Desktop
