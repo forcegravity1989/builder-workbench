@@ -535,7 +535,9 @@ impl App {
                 name,
                 value,
             } => self.record_manual_metric(project_id, name, value).await,
-            Command::ReportWorkbenchIssue { title } => self.report_workbench_issue(title).await,
+            Command::ReportWorkbenchIssue { title, attach_log } => {
+                self.report_workbench_issue(title, attach_log).await
+            }
         };
         let elapsed_ms = started.elapsed().as_millis();
         match &out {
@@ -685,8 +687,8 @@ fn cmd_log_label(cmd: &Command) -> String {
             "RecordManualMetric project={} name={name}",
             project_id.uuid()
         ),
-        Command::ReportWorkbenchIssue { title } => {
-            format!("ReportWorkbenchIssue title={title:?}")
+        Command::ReportWorkbenchIssue { title, attach_log } => {
+            format!("ReportWorkbenchIssue title={title:?} attach_log={attach_log}")
         }
     }
 }
