@@ -79,12 +79,12 @@ pub(super) fn build_ops(
         chip(
             "运作活① 更新指标与版本计划",
             OPS1_WORKFLOW,
-            "点总览的「开始本版本」触发",
+            "Orca 周一 09:00（默认关；错过点 Run now）",
         ),
         chip(
             "运作活② 资产盘点",
             OPS2_WORKFLOW,
-            "到点自动建(产品默认周五 09:00)",
+            "Orca 周五 15:00（默认关；错过点 Run now）",
         ),
         {
             let open = issues

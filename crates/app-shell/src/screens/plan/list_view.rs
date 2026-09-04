@@ -33,6 +33,7 @@ fn action_kind(c: &CardItemVm) -> &'static str {
     match c.status {
         IssueStatus::Backlog => "schedule",
         IssueStatus::Todo if !scheduled => "schedule",
+        IssueStatus::Todo if super::is_orca_ops(c) => "",
         IssueStatus::Todo => "start",
         IssueStatus::InProgress
         | IssueStatus::InReview

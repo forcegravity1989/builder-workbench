@@ -210,10 +210,14 @@ pub fn DetailModal(
                                 {complete_btn(&c, pending, selected)}
                             },
                             IssueStatus::Todo => rsx! {
-                                button { class: "btn btn-sm btn-primary", onclick: move |_| {
-                                    selected.set(None);
-                                    start.set(Some(id));
-                                }, "Start" }
+                                if super::is_orca_ops(&c) {
+                                    span { class: "cfg-readonly-note", "会话在 Orca。错过了点 Run now。" }
+                                } else {
+                                    button { class: "btn btn-sm btn-primary", onclick: move |_| {
+                                        selected.set(None);
+                                        start.set(Some(id));
+                                    }, "Start" }
+                                }
                                 {complete_btn(&c, pending, selected)}
                             },
                             IssueStatus::InProgress => rsx! {
@@ -297,7 +301,8 @@ pub fn StartModal(
         c.branch.clone()
     };
     let is_ops = c.kind == "运作活";
-    let can_start = is_ops || cat_sel.read().is_some();
+    let orca_ops = super::is_orca_ops(&c);
+    let can_start = !orca_ops && (is_ops || cat_sel.read().is_some());
     let current_cat = c.category.clone();
     let b_run = bridge.clone();
     let b_cat = bridge.clone();
@@ -333,27 +338,33 @@ pub fn StartModal(
                             }
                         }
                     }
-                    div { class: "cfg-readonly-note", "确认后建 worktree,issue 切到进行中,并打开会话。没类别的业务活先选一类,开工工具按映射走。" }
+                    if orca_ops {
+                        div { class: "cfg-readonly-note", "运作活①②的会话在 Orca 自动化里开。错过了到 Orca 里点 Run now。工作台不建 worktree、不切进行中。" }
+                    } else {
+                        div { class: "cfg-readonly-note", "确认后建 worktree,issue 切到进行中,并打开会话。没类别的业务活先选一类,开工工具按映射走。" }
+                    }
                 }
                 div { class: "plan-modal-foot",
                     span {}
                     div { style: "display:flex;gap:8px;",
                         button { class: "btn btn-secondary", onclick: move |_| start.set(None), "取消" }
-                        button {
-                            class: "btn btn-primary",
-                            disabled: !can_start,
-                            onclick: move |_| {
-                                if let Some(cat) = *cat_sel.read() {
-                                    if current_cat != cat.label() {
-                                        b_cat.cmd(Command::SetIssueCategory { id, category: cat });
+                        if !orca_ops {
+                            button {
+                                class: "btn btn-primary",
+                                disabled: !can_start,
+                                onclick: move |_| {
+                                    if let Some(cat) = *cat_sel.read() {
+                                        if current_cat != cat.label() {
+                                            b_cat.cmd(Command::SetIssueCategory { id, category: cat });
+                                        }
                                     }
-                                }
-                                start_busy.set(STARTING_SESSION);
-                                b_run.cmd(Command::RunIssue { id });
-                                start.set(None);
-                                nav.go(Panel::Session);
-                            },
-                            "Start"
+                                    start_busy.set(STARTING_SESSION);
+                                    b_run.cmd(Command::RunIssue { id });
+                                    start.set(None);
+                                    nav.go(Panel::Session);
+                                },
+                                "Start"
+                            }
                         }
                     }
                 }

@@ -157,7 +157,7 @@ references(`standard/system-prompt/references/*.md`)是「干某类活需要额�
 
 **两条通道别混**:本地 pipe 是 Workbench 对 Orca 桌面下命令(开工、接回),同机读 `orca-runtime.json` 的 token,不需要配对。嵌网页是把本机已开的 Orca web 给人看,要带 `#pairing=` 才能看见桌面那份状态;配对码 Orca 不经 pipe 发,人从桌面「给 web 配对」拿完整 URL,贴进本机 `settings.toml`(设置屏可改;开发期 `BW_ORCA_WEB_URL` 可覆盖)。没喂 URL 则这块如实空着,开工不受影响。
 
-**网页跟随是 Orca 内核,不是 Workbench 第二条 RPC。** create 句柄交成功后,带这刀的 Orca 会推配对网页;句柄超时那条路 Orca 不发跟随,Workbench 自己再 `worktree.activate`(`notifyClients`)。官方安装包今天没有跟随这刀,开工和桌面切换仍成立,嵌进去的网页可能停在旧位置,人要点侧栏。Workbench 不绕 URL / postMessage。源码桌面+浏览器已人眼过;Workbench 会话屏 iframe **能亮**已人验。去会话 / Open 先挂嵌页再切树;Start / 「开始本版本」撤遮罩挂上嵌页后再切一次。配对网页能跟上;create 句柄成功那条跟随仍看 Orca 带不带这刀。
+**网页跟随是 Orca 内核,不是 Workbench 第二条 RPC。** create 句柄交成功后,带这刀的 Orca 会推配对网页;句柄超时那条路 Orca 不发跟随,Workbench 自己再 `worktree.activate`(`notifyClients`)。官方安装包今天没有跟随这刀,开工和桌面切换仍成立,嵌进去的网页可能停在旧位置,人要点侧栏。Workbench 不绕 URL / postMessage。源码桌面+浏览器已人眼过;Workbench 会话屏 iframe **能亮**已人验。去会话 / Open 先挂嵌页再切树;Start 撤遮罩挂上嵌页后再切一次。配对网页能跟上;create 句柄成功那条跟随仍看 Orca 带不带这刀。
 
 **嵌网页走 iframe**(Orca 和 Open Design 同一条路)。新版 Orca SPA boot 调 `crypto.randomUUID()`,只在 Secure Context 有。Workbench 父页是 `http://dioxus.index.html`(dioxus 虚拟主机,非 localhost / 非 https),默认不算 secure,子 iframe 跟着不算 → SPA 一抛、纯白。旧版 Orca 不调这个 API,所以一度能嵌。Windows 主 WebView 用 `with_windows_browser_args` 把该 origin 当 secure 对待(`--unsafely-treat-insecure-origin-as-secure=http://dioxus.index.html`),并关掉 `LocalNetworkAccessChecks`(iframe 嵌 loopback)。不另开顶级 wry 窗、不 `build_as_child`。顶级 `load_url` 仍会把 `http(s)` 扔给系统浏览器,所以嵌页必须是 iframe,不能把主 WebView 导航到 pairing URL。
 
@@ -175,7 +175,7 @@ references(`standard/system-prompt/references/*.md`)是「干某类活需要额�
 **代码**:会话屏 `app-shell/screens/session/mod.rs`(只剩 Orca/OD 两页签);开工在计划屏 → `run_issue` / `run_issue_orca`;路径 `bw-engine/workspace.rs`;Orca 客户端 `bw-engine/orca.rs`;PTY 封存 `bw-engine/legacy_pty/`。
 **数据**:issue 正本不变。会话正文不进 Workbench 库。token 不入库。worktree 目录不入库。系统提示词开工时现算、一次性灌进 Orca/OD,不落配置屏、不跟会话屏当前页签走。
 **依赖**:本机 Orca(官方包或源码桌面)+ named-pipe;会话屏 iframe 吃本机设置里的 pairing URL(开发期可被 `BW_ORCA_WEB_URL` 覆盖)。`#![forbid(unsafe_code)]` 仍守。
-**没建**:不能自己 mint 配对码,人从 Orca 桌面「给 web 配对」拿「Open in browser」贴进设置屏(存本机 `settings.toml`,带 token 不进仓 / Event 原文 / 日志);开发期 `BW_ORCA_WEB_URL` 可覆盖。跟随在带这刀的 Orca 里已兑现、官方包还没有;去会话 / Open 先挂嵌页再切树;Start / 「开始本版本」撤遮罩挂上后再切一次。`DeleteSession` 内核还在,会话屏没有按钮。稿未改。账本路径未改。不做:自己 mint pairing、postMessage、会话 URL、新 crate、Cursor 专模块、`worktree-orca-adapter`、迁旧树、源码版与安装版并行。人不去 Orca 手导仓——纳入 / 打开项目走 `ensure_repo`,不跟开工 / 去会话绑。**请评审**(规范已入库,按钮未接):剧本 `mr-review`、阶段规范 `review`、提示词 `REVIEW.md.tmpl` 和 `05-features/reviewer-agent/` 已在仓里;计划屏/会话屏没有按钮,内核没有评审命令。接到 Orca 上另开一张活。
+**没建**:不能自己 mint 配对码,人从 Orca 桌面「给 web 配对」拿「Open in browser」贴进设置屏(存本机 `settings.toml`,带 token 不进仓 / Event 原文 / 日志);开发期 `BW_ORCA_WEB_URL` 可覆盖。跟随在带这刀的 Orca 里已兑现、官方包还没有;去会话 / Open 先挂嵌页再切树;Start 撤遮罩挂上后再切一次。`DeleteSession` 内核还在,会话屏没有按钮。稿未改。账本路径未改。不做:自己 mint pairing、postMessage、会话 URL、新 crate、Cursor 专模块、`worktree-orca-adapter`、迁旧树、源码版与安装版并行。人不去 Orca 手导仓——纳入 / 打开项目走 `ensure_repo`,不跟开工 / 去会话绑。**请评审**(规范已入库,按钮未接):剧本 `mr-review`、阶段规范 `review`、提示词 `REVIEW.md.tmpl` 和 `05-features/reviewer-agent/` 已在仓里;计划屏/会话屏没有按钮,内核没有评审命令。接到 Orca 上另开一张活。
 
 
 

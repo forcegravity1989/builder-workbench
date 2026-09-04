@@ -815,6 +815,9 @@ pub fn spawn(deep_link: DeepLink) -> Bridge {
                                         ui.repos = crate::vm::RepoPickerVm::default();
                                         kick_project_collect(&app, *id, &tx_back).await;
                                         ui.set_note(Some("正在采本项目指标与仓统计…".into()));
+                                        // 接入后直接进项目,不走 Req::Open。
+                                        // 纳入时 Orca 没开或注入失败,这里再试一次。
+                                        register_orca_repo(&app, &mut ui, *id).await;
                                     }
                                     // 项目被移走了:它要是正开着,得回项目墙 ——
                                     // 留在一个已经不存在的项目上,整屏都是空的。
@@ -916,23 +919,24 @@ pub fn spawn(deep_link: DeepLink) -> Bridge {
                                 } else {
                                     let t_peek = Instant::now();
                                     match peek_orca_repo(&app, pid).await {
-                                        OrcaPeek::Present => {
-                                            ui.orca_repos_ready.insert(pid);
+                                        // 仓已在 Orca 也要走注入:只认「这个进程已经打过」,
+                                        // 不能把 repo.show 成功当成自动化已在。
+                                        peek @ (OrcaPeek::Present | OrcaPeek::Missing) => {
                                             bw_engine::dlog!(
                                                 ok,
                                                 "bridge",
-                                                "open peek present elapsed_ms={} slug={open_slug}",
+                                                "open peek {:?} elapsed_ms={} slug={open_slug}",
+                                                peek,
                                                 t_peek.elapsed().as_millis()
                                             );
-                                        }
-                                        OrcaPeek::Missing => {
-                                            bw_engine::dlog!(
-                                                ok,
-                                                "bridge",
-                                                "open peek missing elapsed_ms={} slug={open_slug}",
-                                                t_peek.elapsed().as_millis()
+                                            ui.busy = Some(
+                                                if matches!(peek, OrcaPeek::Missing) {
+                                                    "正在让 Orca 认得这个仓…"
+                                                } else {
+                                                    "正在补打运作自动化…"
+                                                }
+                                                .into(),
                                             );
-                                            ui.busy = Some("正在让 Orca 认得这个仓…".into());
                                             let snap = vm_build::assemble(
                                                 &app,
                                                 &mut ui,
@@ -1389,6 +1393,7 @@ fn schedule_orca_flush(tx: &mpsc::UnboundedSender<Req>, seq: u64, delay: Duratio
 }
 
 /// 打开项目先问 Orca 这仓在不在。正本是 `repo.show`,内存表只加速连点。
+#[derive(Debug)]
 enum OrcaPeek {
     Present,
     Missing,
@@ -1415,8 +1420,9 @@ async fn peek_orca_repo(app: &App, pid: ProjectId) -> OrcaPeek {
     }
 }
 
-/// 打开项目时把被管仓登记进 Orca。先 `repo.show`,没有才 `repo.add`。
-/// 已问过且在的项目这个进程里不再打。Orca 没开不挡进项目。
+/// 打开项目时把被管仓登记进 Orca,并补打运作自动化。
+/// 先 `repo.show`,没有才 `repo.add`;仓已在也要走注入。
+/// 注入成功才记进本进程 `orca_repos_ready`。Orca 没开不挡进项目。
 async fn register_orca_repo(app: &App, ui: &mut vm_build::UiState, pid: ProjectId) {
     if ui.orca_repos_ready.contains(&pid) {
         return;
