@@ -458,7 +458,7 @@
     <section class="screen" id="u1c" data-title="第 2/3 站 · 定本周" data-sec-name="怎么用">
       <div class="eyebrow">怎么用 · 第 2/3 站</div>
       <h1 class="disp">在 Orca 定版本，写下目标和纳入的活</h1>
-      <p class="lede">一次会话做完「复盘 → 指标 → 确认版本 → 版本目标和活清单」。计划正本挂在运作活①的评论上，不另写周计划文件。会话在 Orca 开，工作台不再有「开始本版本」。</p>
+      <p class="lede">一次会话做完「复盘 → 指标 → 确认版本 → 版本目标和活清单」。计划正本挂在运作活①的评论上，不另写周计划文件。到点由 Orca 开会话；计划屏已有这张活也可以 Start。工作台不再有「开始本版本」。</p>
       <div class="res">
         <div class="h">这一站能查到</div>
         <ul>
@@ -470,7 +470,7 @@
 
       <h2 class="sec"><span class="n">操作</span></h2>
       <div class="ops">
-        <div class="li"><div class="n">1</div><div class="t">纳入或打开项目后，Orca 里会有「定版本计划（Workbench）」自动化（默认关）。要跑先在 Orca 里打开，或点 Run now。关着不会到点。工作台这张活不出 Start。</div></div>
+        <div class="li"><div class="n">1</div><div class="t">纳入或打开项目后，Orca 里会有「定版本计划（Workbench）」自动化（默认关）。要跑先在 Orca 里打开，或点 Run now。关着不会到点。</div></div>
         <div class="li"><div class="n">2</div><div class="t">会话在常驻树 <code>bw/week-plan</code>。agent 按版本计划剧本走：复盘、采指标、先确认本周版本（推荐 <code>v0.x</code>，别的名字也行），再起草版本目标与纳入清单。你在 Orca 里看着、随时能停。</div></div>
         <div class="li"><div class="n">3</div><div class="t">你确认之后，agent 当场建纳入的业务活，并打上 <code>bw:plan:&lt;版本名&gt;</code>（codehub 还挂同名里程碑，起止默认本周周一到周五）。版本目标、纳入清单、指标读数快照写成运作活①的三条评论，标题必须是 <code>## 版本目标</code> / <code>## 本周纳入</code> / <code>## 本周指标读数</code>。版本目标那一段一句或一段都行。版本名推荐 <code>vX.X</code>，别的也行。</div></div>
         <div class="li"><div class="n">4</div><div class="t">侧栏点「计划」。版本头是版本目标那段，默认只露两行，点右下角小框展开，再点收起。点某个版本只看打了那个 <code>bw:plan:&lt;名&gt;</code> 的活；没打版本标签的切到右上角下拉「全部 issue」就能看见。</div></div>
@@ -496,7 +496,7 @@
 
       <div class="callout warn">
         <svg viewBox="0 0 24 24"><path d="M12 3l9 16H3z"/><path d="M12 9v5M12 17h.01"/></svg>
-        <div class="body"><strong>计划屏「新建 issue」只建业务活</strong>（标题、正文、五阶段类别；原型默认 Open Design）。运作活①②不要在工作台建，去 Orca 对那条自动化点 Run now。要走 Open Design：类别选「原型」，创建后点开卡片再「Start」。</div>
+        <div class="body"><strong>计划屏「新建 issue」建业务活</strong>（标题、正文、五阶段类别；原型默认 Open Design）。要走 Open Design：类别选「原型」，创建后点开卡片再「Start」。</div>
       </div>
       <p class="next">下一站：<a href="#" onclick="go('u1d');return false">第 4 站 · 干活</a></p>
       <div class="foot">事实源 <code>docs/architecture.md</code> 模块 13。</div>
@@ -519,7 +519,7 @@
       <h2 class="sec"><span class="n">操作</span></h2>
       <div class="ops">
         <div class="li"><div class="n">1</div><div class="t">计划屏点开一张卡（看板或列表都行）。业务活详情会带上已有类别；没打的可在详情或开工确认框补一类——不开工工具的活会被拒绝开工，不会悄悄起 Claude。状态下拉只列出从现在能走到的：待办能去进行中/阻塞/拒绝/完成，进行中能去待办/阻塞/拒绝/待评审/完成，待评审能去完成/拒绝/进行中，阻塞能去进行中/拒绝/完成。选了和拖拽是同一条路。不能拖的松手会弹窗说明，不是没拖准。点 Start / Open / Complete 或改状态下拉后详情会自己关。</div></div>
-        <div class="li"><div class="n">2</div><div class="t">详情「Start」，或把卡拖进「进行中」。确认框写 worktree，业务活可改类别。确认后跳会话屏。运作活①②不出 Start，详情写去 Orca 点 Run now。</div></div>
+        <div class="li"><div class="n">2</div><div class="t">详情「Start」，或把卡拖进「进行中」。确认框写 worktree，业务活可改类别。确认后跳会话屏。</div></div>
         <div class="li"><div class="n">3</div><div class="t">原型类默认停在 Open Design 标签，嵌的是本机 OD 首页。<strong>不会自动开跑</strong>，你在 OD 里打一句发出去，它的 AI 才动。构建类停在 Orca 页，嵌的是本机已配对的 Orca web；agent 在 Orca 里跑，过程在那看。</div></div>
         <div class="li"><div class="n">4</div><div class="t">卡住了：待办或进行中拖到待处理列的「阻塞」段，或详情状态下拉选「阻塞」，写原因。阻塞卡可拖回进行中（只改状态，不会再开一轮工），或拖进「拒绝」作废。不想干了：详情状态下拉选「拒绝」，或把卡拖到已完成列的「拒绝」段（待办 / 进行中 / 待评审 / 阻塞都能拖）。写原因。这不是完成——打已取消标签并关掉远端 issue，卡到「拒绝」。</div></div>
         <div class="li"><div class="n">5</div><div class="t">作废不会动本机会话行。停止、开 MR、评审在 Orca 里做，或在计划屏拖列；会话屏这版不露「删除会话」按钮（内核命令还在，屏上暂不露）。远端那张 issue 不动。</div></div>

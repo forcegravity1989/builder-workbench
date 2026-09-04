@@ -272,11 +272,7 @@ impl App {
             }
         };
 
-        let tree = if issue.title == issue_store::CHARTER_TITLE {
-            worktree::provision_project(&ws).await?
-        } else {
-            worktree::provision(&ws, issue.number).await?
-        };
+        let tree = worktree::provision_for(&ws, &issue).await?;
         let mut file = project_file::read(&tree.path)?.unwrap_or_default();
         file.name = intent.name.clone();
         file.brief = intent.brief.clone();

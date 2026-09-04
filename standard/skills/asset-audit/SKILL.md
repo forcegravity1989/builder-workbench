@@ -1,6 +1,6 @@
 ---
 name: asset-audit
-description: Use when 运作活②「资产盘点」被开工(Orca 周五 15:00)。别处不用。
+description: Use when 运作活②「资产盘点」被开工(Orca 周五 15:00,或人在计划屏 Start)。别处不用。
 ---
 
 # asset-audit：资产盘点

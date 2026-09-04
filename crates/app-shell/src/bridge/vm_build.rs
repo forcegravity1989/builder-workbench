@@ -1550,7 +1550,7 @@ pub(super) fn card_item(i: &bw::Issue) -> CardItemVm {
         pr_number: i.pr_number,
         has_open_mr: i.has_open_mr,
         remote_number: i.remote_number,
-        branch: i.branch.clone(),
+        branch: bw::app::work_branch(i),
         body: i.body.clone(),
         assignee: i.assignee.clone(),
         author: i.author.clone(),

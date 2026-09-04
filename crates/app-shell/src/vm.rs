@@ -412,7 +412,7 @@ pub struct CardItemVm {
     pub has_open_mr: bool,
     /// 远端 issue 号。0 = 这张活只在本机,没有对应的远端 issue。
     pub remote_number: u32,
-    /// 这张活的分支。空 = 还没开过工。
+    /// 这张活该走的车。常驻车是固定名;其余 `bw/issue-<号>`。
     pub branch: String,
     /// 活的正文。详情抽屉里要看的就是它 —— 光有标题看不出这张活要干什么。
     pub body: String,

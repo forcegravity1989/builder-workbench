@@ -1455,6 +1455,9 @@ async fn register_orca_repo(app: &App, ui: &mut vm_build::UiState, pid: ProjectI
                     "register_orca_repo inject fail:{e} worktree={}",
                     ws.display()
                 );
+                ui.set_note(Some(format!(
+                    "Orca 定时没打上:{e} —— 退回项目墙再点进来会再打"
+                )));
             }
         },
         Err(e) => {
@@ -1464,6 +1467,9 @@ async fn register_orca_repo(app: &App, ui: &mut vm_build::UiState, pid: ProjectI
                 "register_orca_repo fail:{e} worktree={}",
                 ws.display()
             );
+            ui.set_note(Some(format!(
+                "Orca 还没记下这个仓:{e} —— 退回项目墙再点进来会再打"
+            )));
         }
     }
 }

@@ -12,17 +12,11 @@ mod kanban;
 mod list_view;
 mod plan_dialogs;
 
-use crate::vm::CardItemVm;
 use crate::{
     bridge::{Bridge, PanelNav, Req},
     vm::ProjectVm,
 };
 use bw::{command::Command, model::IssueId};
-
-/// 运作活①②的会话只在 Orca 自动化里开,工作台不出 Start。
-pub(super) fn is_orca_ops(c: &CardItemVm) -> bool {
-    c.workflow == bw::app::OPS1_WORKFLOW || c.workflow == bw::app::OPS2_WORKFLOW
-}
 use dioxus::prelude::*;
 
 use detail::{DetailModal, StartModal};
