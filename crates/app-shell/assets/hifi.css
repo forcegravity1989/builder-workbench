@@ -544,6 +544,13 @@ select.select-multi{padding:3px;font-size:11.5px;border:1px solid var(--border-d
 .modal-backdrop{position:fixed;inset:0;background:rgba(35,33,28,.45);display:flex;align-items:center;justify-content:center;z-index:70;padding:20px;}
 .modal{background:#fff;border-radius:12px;max-width:540px;width:100%;padding:20px 22px;max-height:82vh;overflow-y:auto;}
 .modal h3{font-size:15.5px;margin-bottom:14px;}
+.modal-lead{font-size:12.5px;color:var(--ink-3);line-height:1.55;margin:-6px 0 12px;}
+.modal-banner{background:var(--card-alt);border:1px solid var(--border);border-radius:8px;padding:10px 12px;font-size:12.3px;color:var(--ink-2);line-height:1.55;margin-bottom:12px;}
+.report-attach{display:flex;align-items:flex-start;gap:10px;margin:12px 0 4px;padding:10px 12px;border:1px solid var(--border);border-radius:8px;background:var(--card-alt);cursor:pointer;}
+.report-attach input{margin:2px 0 0;accent-color:var(--clay);}
+.report-attach-copy{display:flex;flex-direction:column;gap:2px;}
+.report-attach-title{font-size:12.5px;font-weight:600;color:var(--ink);}
+.report-attach-hint{font-size:12px;color:var(--ink-3);line-height:1.5;}
 .modal-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:14px;}
 .check-row{display:flex;align-items:center;gap:8px;font-size:12.5px;padding:5px 0;}
 .ship-rows{display:flex;flex-direction:column;gap:8px;margin:12px 0 4px;}

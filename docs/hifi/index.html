@@ -491,6 +491,13 @@ select.select-multi{padding:3px;font-size:11.5px;border:1px solid var(--border-d
 .modal-backdrop{position:fixed;inset:0;background:rgba(35,33,28,.45);display:flex;align-items:center;justify-content:center;z-index:70;padding:20px;}
 .modal{background:#fff;border-radius:12px;max-width:540px;width:100%;padding:20px 22px;max-height:82vh;overflow-y:auto;}
 .modal h3{font-size:15.5px;margin-bottom:14px;}
+.modal-lead{font-size:12.5px;color:var(--ink-3);line-height:1.55;margin:-6px 0 12px;}
+.modal-banner{background:var(--card-alt);border:1px solid var(--border);border-radius:8px;padding:10px 12px;font-size:12.3px;color:var(--ink-2);line-height:1.55;margin-bottom:12px;}
+.report-attach{display:flex;align-items:flex-start;gap:10px;margin:12px 0 4px;padding:10px 12px;border:1px solid var(--border);border-radius:8px;background:var(--card-alt);cursor:pointer;}
+.report-attach input{margin:2px 0 0;accent-color:var(--clay);}
+.report-attach-copy{display:flex;flex-direction:column;gap:2px;}
+.report-attach-title{font-size:12.5px;font-weight:600;color:var(--ink);}
+.report-attach-hint{font-size:12px;color:var(--ink-3);line-height:1.5;}
 .modal-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:14px;}
 .check-row{display:flex;align-items:center;gap:8px;font-size:12.5px;padding:5px 0;}
 .ship-rows{display:flex;flex-direction:column;gap:8px;margin:12px 0 4px;}
@@ -1034,13 +1041,19 @@ var ACTIONS = {
   toggleSessRight:function(){ state.ui.sessRight=state.ui.sessRight===false; render(); },
   openGuide:function(){ state.ui.guideOpen=true; render(); },
   closeGuide:function(){ state.ui.guideOpen=false; render(); },
-  openReport:function(){ state.ui.modal={type:'report-issue',title:''}; render(); },
+  openReport:function(){ state.ui.modal={type:'report-issue',title:'',attachLog:true}; render(); },
   closeReport:function(){ if(state.ui.modal&&state.ui.modal.type==='report-issue') state.ui.modal=null; render(); },
+  toggleReportAttach:function(){
+    var m=state.ui.modal; if(!m||m.type!=='report-issue')return;
+    m.attachLog = m.attachLog===false;
+    render();
+  },
   submitReport:function(){
     var m=state.ui.modal; if(!m||m.type!=='report-issue')return;
     if(!(m.title||'').trim()){ toast('请填标题'); return; }
-    state.ui.modal=null; state.ui.reportBusy=true; render();
-    setTimeout(function(){ state.ui.reportBusy=false; render(); toast('issue上报成功'); },800);
+    var attaching = m.attachLog!==false;
+    state.ui.modal=null; state.ui.reportBusy=attaching?'日志上传中':'上报中'; render();
+    setTimeout(function(){ state.ui.reportBusy=false; render(); toast('问题已上报'); },800);
   },
   selectGuideChapter:function(id){ state.ui.guideChapter=id; state.ui.guideOpen=true; render(); },
   toggleWorkspaceRootEdit:function(){ state.ui.workspaceRootEditing=!state.ui.workspaceRootEditing; render(); },
@@ -1662,7 +1675,7 @@ function guideMarkupHTML(){
   var open=state.ui.guideOpen;
   var tabs='<div class="side-tabs">'
     + (open?'':'<div class="guide-tab" data-action="openGuide">指南</div>')
-    + '<div class="issue-tab" data-action="openReport">Issue</div></div>';
+    + '<div class="issue-tab" data-action="openReport">上报问题</div></div>';
   if(!open){
     return '<div data-guide>'+tabs+'</div>';
   }
@@ -1675,9 +1688,12 @@ function modalHTML(){
   var m=state.ui.modal; if(!m) return '';
   if(m.type==='report-issue'){
     return '<div class="modal-backdrop" data-action="closeReport"><div class="modal" onclick="event.stopPropagation()">'
-      + '<h3>上报 issue</h3>'
-      + '<input class="input" data-bind="ui.modal.title" value="'+esc(m.title||'')+'" placeholder="issue的标题" onfocus="this.placeholder=\'\'" onblur="if(!this.value)this.placeholder=\'issue的标题\'">'
-      + '<div class="modal-actions"><button class="btn-primary" data-action="submitReport">提交</button><button class="btn" data-action="closeReport">取消</button></div></div></div>';
+      + '<h3>上报问题</h3>'
+      + '<p class="modal-lead">把问题和本机对照日志报到 Workbench 仓。默认会附上对照日志。</p>'
+      + '<div class="modal-banner">本机有对照日志。勾选后会随 issue 附上。</div>'
+      + '<input class="input" data-bind="ui.modal.title" value="'+esc(m.title||'')+'" placeholder="问题标题" onfocus="this.placeholder=\'\'" onblur="if(!this.value)this.placeholder=\'问题标题\'">'
+      + '<label class="report-attach" data-action="toggleReportAttach"><input type="checkbox" '+(m.attachLog!==false?'checked':'')+'><span class="report-attach-copy"><span class="report-attach-title">附加对照日志</span><span class="report-attach-hint">随 issue 发送本机对照日志（bw.log）。有文件才附上。</span></span></label>'
+      + '<div class="modal-actions"><button class="btn" data-action="closeReport">取消</button><button class="btn-primary" data-action="submitReport">发送报告</button></div></div></div>';
   }
   if(m.type==='preview-charter'){
     var d=m.draft;
@@ -2429,7 +2445,7 @@ function shellHTML(){
     + '<div class="main">'+topbarHTML(r.inProject,r.pid,r.screenSeg)+'<div class="content">'+r.html+'</div></div>'
     + guideMarkupHTML()
     + modalHTML()
-    + (state.ui.reportBusy?'<div class="busy-mask"><div class="busy-card"><div class="busy-spin"></div>日志上传中</div></div>':'');
+    + (state.ui.reportBusy?'<div class="busy-mask"><div class="busy-card"><div class="busy-spin"></div>'+esc(state.ui.reportBusy)+'</div></div>':'');
 }
 function render(){
   var active=document.activeElement;

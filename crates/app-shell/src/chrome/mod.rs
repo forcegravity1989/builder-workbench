@@ -1,4 +1,4 @@
-//! 外壳骨架:图标轨 / 项目轨 / 顶栏 / 指南抽屉 / Issue 上报 / toast。
+//! 外壳骨架:图标轨 / 项目轨 / 顶栏 / 指南抽屉 / 上报问题 / toast。
 //!
 //! 结构照 `docs/hifi/index.html` 的 `iconRailHTML` /
 //! `projectRailHTML` / `topbarHTML` / `guideMarkupHTML` 搬,类名同名同义,
@@ -15,7 +15,7 @@
 
 pub mod sparkline;
 
-use crate::bridge::{Bridge, ChromeBusy, Panel, Req, TopView, REPORTING_LOG};
+use crate::bridge::{Bridge, ChromeBusy, Panel, Req, TopView, REPORTING, REPORTING_LOG};
 use crate::theme;
 use bw::model::Signal;
 use dioxus::prelude::*;
@@ -230,15 +230,24 @@ pub fn GuideDrawer(bridge: Bridge) -> Element {
     let mut report_open = use_signal(|| false);
     let mut title = use_signal(String::new);
     let mut title_focus = use_signal(|| false);
+    let mut attach_log = use_signal(|| true);
     let chrome_busy = use_context::<ChromeBusy>();
     let b = bridge.clone();
     let title_ok = !title.read().trim().is_empty();
+    let log_ready = bw_engine::dlog::log_path().is_file();
     rsx! {
         div { class: "side-tabs",
             if guide.0.read().is_none() {
                 div { class: "guide-tab", onclick: move |_| guide.open("u0"), "指南" }
             }
-            div { class: "issue-tab", onclick: move |_| report_open.set(true), "Issue" }
+            div {
+                class: "issue-tab",
+                onclick: move |_| {
+                    attach_log.set(true);
+                    report_open.set(true);
+                },
+                "上报问题"
+            }
         }
         if guide.0.read().is_some() {
             div { class: "guide-panel guide-panel-wide",
@@ -252,31 +261,55 @@ pub fn GuideDrawer(bridge: Bridge) -> Element {
         if *report_open.read() {
             div { class: "modal-backdrop", onclick: move |_| report_open.set(false),
                 div { class: "modal", onclick: move |e| e.stop_propagation(),
-                    h3 { "上报 issue" }
+                    h3 { "上报问题" }
+                    p { class: "modal-lead", "把问题和本机对照日志报到 Workbench 仓。默认会附上对照日志。" }
+                    div { class: "modal-banner",
+                        if log_ready {
+                            "本机有对照日志。勾选后会随 issue 附上。"
+                        } else {
+                            "本机还没有对照日志。你仍然可以上报，有文件时才会附上。"
+                        }
+                    }
                     input {
                         class: "input",
                         value: "{title}",
-                        placeholder: if *title_focus.read() { "" } else { "issue的标题" },
+                        placeholder: if *title_focus.read() { "" } else { "问题标题" },
                         onfocus: move |_| title_focus.set(true),
                         onblur: move |_| title_focus.set(false),
                         oninput: move |e| title.set(e.value()),
                     }
+                    label { class: "report-attach",
+                        input {
+                            r#type: "checkbox",
+                            checked: *attach_log.read(),
+                            onchange: move |e| attach_log.set(e.checked()),
+                        }
+                        span { class: "report-attach-copy",
+                            span { class: "report-attach-title", "附加对照日志" }
+                            span { class: "report-attach-hint", "随 issue 发送本机对照日志（bw.log）。有文件才附上。" }
+                        }
+                    }
                     div { class: "modal-actions",
+                        button { class: "btn btn-secondary", onclick: move |_| report_open.set(false), "取消" }
                         button {
                             class: "btn btn-primary",
                             disabled: !title_ok,
                             onclick: move |_| {
                                 let t = title.read().trim().to_string();
                                 if t.is_empty() { return; }
+                                let attach = *attach_log.read();
                                 report_open.set(false);
                                 title.set(String::new());
                                 title_focus.set(false);
-                                chrome_busy.set(REPORTING_LOG);
-                                b.cmd(bw::command::Command::ReportWorkbenchIssue { title: t });
+                                attach_log.set(true);
+                                chrome_busy.set(if attach { REPORTING_LOG } else { REPORTING });
+                                b.cmd(bw::command::Command::ReportWorkbenchIssue {
+                                    title: t,
+                                    attach_log: attach,
+                                });
                             },
-                            "提交"
+                            "发送报告"
                         }
-                        button { class: "btn btn-secondary", onclick: move |_| report_open.set(false), "取消" }
                     }
                 }
             }

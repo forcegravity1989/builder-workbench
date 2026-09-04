@@ -761,11 +761,15 @@ impl App {
     }
 
     /// 报到 workbench 自己的仓:host/path 从当前目录 git 的 origin 现读,
-    /// 对照日志有文件就 `--attachment` 附上。不碰打开着的被管项目。
-    pub(super) async fn report_workbench_issue(&mut self, title: String) -> Result<Vec<Event>> {
+    /// 人勾了附加且对照日志有文件才 `--attachment` 附上。不碰打开着的被管项目。
+    pub(super) async fn report_workbench_issue(
+        &mut self,
+        title: String,
+        attach_log: bool,
+    ) -> Result<Vec<Event>> {
         let title = title.trim().to_string();
         if title.is_empty() {
-            return Err(AppError::Refused("issue 标题不能空".into()));
+            return Err(AppError::Refused("问题标题不能空".into()));
         }
         let repo = workbench_git_dir();
         let origin = bw_engine::github::origin_remote_url(&repo)
@@ -777,15 +781,20 @@ impl App {
         bw_engine::dlog!(
             ok,
             "report",
-            "workbench origin host={host} path={path} repo={}",
+            "workbench origin host={host} path={path} attach_log={attach_log} repo={}",
             repo.display()
         );
         let log = bw_engine::dlog::log_path();
-        let attach = log.is_file();
+        let attach = attach_log && log.is_file();
         let body = if attach {
             format!("对照日志已附上。本机路径:{}", log.display())
+        } else if attach_log {
+            format!(
+                "人勾了附加日志,但本机对照日志还不存在({}),只建了 issue。",
+                log.display()
+            )
         } else {
-            format!("本机对照日志还不存在({}),只建了 issue。", log.display())
+            "人未勾选附加对照日志,只建了 issue。".into()
         };
         let provider = if host.eq_ignore_ascii_case("github.com") || host.ends_with(".github.com") {
             "github"

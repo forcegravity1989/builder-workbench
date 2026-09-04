@@ -218,9 +218,9 @@ pub enum Command {
         value: String,
     },
 
-    /// 把本机对照日志报到 **workbench 自己的仓**(当前目录 git 的 origin),
-    /// 不是打开着的被管项目。标题人填,附件是 `bw.log`。
-    ReportWorkbenchIssue { title: String },
+    /// 把问题报到 **workbench 自己的仓**(当前目录 git 的 origin),
+    /// 不是打开着的被管项目。标题人填;`attach_log` 为真且 `bw.log` 有文件才附上。
+    ReportWorkbenchIssue { title: String, attach_log: bool },
 }
 
 /// 一个工具探活的结果。探不到就是探不到,不猜。
