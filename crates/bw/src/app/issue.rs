@@ -64,8 +64,7 @@ impl App {
             id: issue.id,
             number: issue.number,
         }];
-        // 新建活并临时纳入本周 → 发群通知(版本计划那件由 start_week_planning 单独
-        // 发,不在这里重复;运作活是 Workbench 内部,不发)。
+        // 新建活并临时纳入本周 → 发群通知。运作活不发。
         if !week_of.is_empty() && kind != IssueKind::Ops {
             let ev = crate::chat::NotifyEvent::IssueCreated;
             let text = crate::chat::notify_text(
@@ -111,7 +110,7 @@ impl App {
             let already = self.conversation_for_issue(id).await?.is_some();
             if !already {
                 let ws = self.workspace_of(issue.project_id).await?;
-                let tree = worktree::provision(&ws, issue.number).await?;
+                let tree = worktree::provision_for(&ws, &issue).await?;
                 let _conv = self
                     .upsert_conversation(&crate::model::Conversation {
                         id: crate::model::ConversationId::new(),
@@ -183,7 +182,7 @@ impl App {
         // 有真实工作区就在**这张活自己的 worktree** 里干,和 Orca 那条路一样;
         // 没有工作区就没什么可隔离的,下面走自我标注的替身。
         let tree = if ws.is_dir() {
-            Some(worktree::provision(&ws, issue.number).await?)
+            Some(worktree::provision_for(&ws, &issue).await?)
         } else {
             None
         };
@@ -284,7 +283,7 @@ impl App {
         ws: &std::path::Path,
     ) -> Result<Vec<Event>> {
         // 开/复用 worktree:resolve 会接住旧平级兄弟,不建第二棵新树。
-        let tree = worktree::provision(ws, issue.number).await?;
+        let tree = worktree::provision_for(ws, issue).await?;
         // upsert 会话行:workspace_path 写实际用的路径(可能是旧兄弟)。幂等:已有就返回既有行。
         let conv = self
             .upsert_conversation(&crate::model::Conversation {
@@ -510,7 +509,7 @@ impl App {
         let project = self.project_of(issue.project_id).await?;
         let ws = self.workspace_of(issue.project_id).await?;
         // 幂等:这张活开过工就已经有一棵树,这里拿到的是同一棵。
-        let tree = worktree::provision(&ws, issue.number).await?;
+        let tree = worktree::provision_for(&ws, &issue).await?;
         if !tree.isolated {
             return Err(AppError::Refused(
                 "这个工作区不是 git 仓,没有分支可提,也就没有可开的 MR".into(),
@@ -689,7 +688,8 @@ impl App {
     /// 能收掉那棵。先看会话行记下的路径,再看新目录,再看旧兄弟(走底座的
     /// `resolve_issue_worktree`)。
     pub(super) async fn cleanup_issue_worktree(&self, issue: &Issue) {
-        if issue.title == issue_store::CHARTER_TITLE {
+        let branch = issue_store::work_branch(issue);
+        if bw_engine::workspace::is_standing_branch(&branch) {
             return;
         }
         let Ok(ws) = self.workspace_of(issue.project_id).await else {

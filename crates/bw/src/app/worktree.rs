@@ -24,7 +24,7 @@
 //! 自己的资产目录,不复制进用户仓,所以不再往主检出镜像。
 
 use super::{AppError, Result};
-use crate::model::Project;
+use crate::model::{Issue, Project};
 use std::path::{Path, PathBuf};
 
 /// 一张活干活的地方。
@@ -36,6 +36,63 @@ pub(super) struct IssueTree {
     /// 真的隔出来了没有。`false` = 这个工作区不是 git 仓,开不了 worktree,
     /// 只能就地干 —— 如实标出来,不假装隔离过。
     pub isolated: bool,
+}
+
+/// 按这张活该走的车开(或接着用)树。常驻车复用那一棵,不另开 `bw/issue-N`。
+pub(super) async fn provision_for(main: &Path, issue: &Issue) -> Result<IssueTree> {
+    let branch = super::issue_store::work_branch(issue);
+    if branch == bw_engine::workspace::PROJECT_BRANCH {
+        return provision_project(main).await;
+    }
+    if branch == bw_engine::workspace::WEEK_PLAN_BRANCH {
+        return provision_week_plan(main).await;
+    }
+    if branch == bw_engine::workspace::OPS_AUDIT_BRANCH {
+        return provision_ops_audit(main).await;
+    }
+    provision(main, issue.number).await
+}
+
+async fn provision_week_plan(main: &Path) -> Result<IssueTree> {
+    if !crate::git::is_repo(main).await || !crate::git::has_head(main).await {
+        let branch = crate::git::current_branch(main)
+            .await
+            .unwrap_or_else(|_| "—(不是 git 仓或还没有提交)".into());
+        return Ok(IssueTree {
+            path: main.to_path_buf(),
+            branch,
+            isolated: false,
+        });
+    }
+    let path = bw_engine::workspace::provision_week_plan_worktree(main)
+        .await
+        .map_err(|e| AppError::Exec(format!("给定版本计划开 worktree 没成:{e}")))?;
+    Ok(IssueTree {
+        path,
+        branch: bw_engine::workspace::WEEK_PLAN_BRANCH.to_string(),
+        isolated: true,
+    })
+}
+
+async fn provision_ops_audit(main: &Path) -> Result<IssueTree> {
+    if !crate::git::is_repo(main).await || !crate::git::has_head(main).await {
+        let branch = crate::git::current_branch(main)
+            .await
+            .unwrap_or_else(|_| "—(不是 git 仓或还没有提交)".into());
+        return Ok(IssueTree {
+            path: main.to_path_buf(),
+            branch,
+            isolated: false,
+        });
+    }
+    let path = bw_engine::workspace::provision_ops_audit_worktree(main)
+        .await
+        .map_err(|e| AppError::Exec(format!("给资产盘点开 worktree 没成:{e}")))?;
+    Ok(IssueTree {
+        path,
+        branch: bw_engine::workspace::OPS_AUDIT_BRANCH.to_string(),
+        isolated: true,
+    })
 }
 
 /// 给这张活开(或接着用)一棵 worktree。

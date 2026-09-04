@@ -5,16 +5,11 @@
 //! | ①更新指标 + 制定版本计划 | `ops` | `human` | `更新指标与版本计划` |
 //! | ②资产盘点 | `ops` | `auto` | `资产盘点` |
 //!
-//! **没有定时任务表**。「这周该不该建②」这个问题的答案不存在任何一张状态表
-//! 里,它是现查出来的:本周有没有一张标题以「资产盘点 」开头的活。这条查询
-//! 本身就是幂等锁,也是补建逻辑——错过一次 tick(那会儿 Workbench 没开着)下次
-//! 启动的第一次 tick 天然成立,自动补上。
+//! 钟在 Orca。Workbench 只在纳入 / 打开时注入自动化,不自己到点建活。
 
 use super::{issue_store, App, AppError, ProgressLine, Result};
 use crate::{
     command::Event,
-    defaults, isoweek,
-    local::ProjectRegistry,
     model::{Issue, IssueId, IssueKind, IssueOrigin, IssueStatus, ProjectId},
 };
 
@@ -84,6 +79,8 @@ pub fn skill_slug(workflow: &str) -> Option<&'static str> {
 
 impl App {
     /// 建一张运作活。标题幂等(同一周重跑拿回同一张),建完立刻回 id。
+    /// 钟迁走之后内核暂时不调;计划屏「新建」走 `CreateIssue`。留着给 skill / 人建卡。
+    #[allow(dead_code)]
     pub(super) async fn create_ops_issue(
         &mut self,
         project_id: ProjectId,
@@ -94,9 +91,7 @@ impl App {
         week_of: String,
     ) -> Result<(IssueId, bool, Vec<Event>)> {
         let project = self.project_of(project_id).await?;
-        // 建活是按标题幂等的。调用方**必须知道这一张是不是新建的** —— 定时那
-        // 条路会在建完之后立刻开工,拿到一张老活还去开工,就会把上一次正跑着
-        // 的会话掐掉重开。
+        // 建活按标题幂等。调用方必须知道是不是新建的,免得拿到老活再开工。
         let created = issue_store::find_open_by_title(self, &project, &title)
             .await?
             .is_none();
@@ -126,78 +121,6 @@ impl App {
             // 不会发生(标题前缀与 workflow 映射是固定的),但如实记着。
         }
         Ok((id, created, events))
-    }
-
-    /// 定时:到点就自己建运作活②并自己开工。
-    ///
-    /// 两张运作活里唯一自动开工的一张。**自动建不等于自动完成**:这张活和别的活
-    /// 走同一条状态机,最远只到「评审中」。
-    pub(super) async fn tick_scheduler(&mut self, project_id: ProjectId) -> Result<Vec<Event>> {
-        // 高优1:读本机设置,这个项目关了定时就不建活(缺省 true)。开关在
-        // `projects.toml` 的 `cron_enabled` 字段,配置屏能改;false 就直接返空。
-        let cron_on = ProjectRegistry::find_by_id(&self.asset_root, project_id)
-            .ok()
-            .flatten()
-            .map(|e| e.cron_enabled)
-            .unwrap_or(true);
-        if !cron_on {
-            return Ok(vec![]);
-        }
-        let mut events = self.maybe_auto_collect_b(project_id).await;
-
-        if self.workspace_of(project_id).await.is_err() {
-            return Ok(events);
-        }
-        let spec = defaults::DEFAULT_OPS2_SCHEDULE;
-        if !isoweek::schedule_passed_this_week(spec) {
-            return Ok(events);
-        }
-
-        let week = isoweek::current_week();
-        let title = format!("资产盘点 {week}");
-        let project = self.project_of(project_id).await?;
-        // **判据必须和建活的幂等键是同一个东西**(都是标题)。
-        if issue_store::find_open_by_title(self, &project, &title)
-            .await?
-            .is_some()
-        {
-            return Ok(events);
-        }
-
-        let (id, created, mut ops_events) = self
-            .create_ops_issue(
-                project_id,
-                title,
-                "mode: weekly\n\n先盘 Workbench 资产(.bw 跟上现行契约、点出未闭环的环),再盘项目本周改动,再给在研版本那张运作活①追加每周进展。".into(),
-                OPS2_WORKFLOW,
-                IssueOrigin::Auto,
-                week.clone(),
-            )
-            .await?;
-        events.append(&mut ops_events);
-        if !created {
-            return Ok(events);
-        }
-        if let Ok(remote) = self.remote_for(&project) {
-            if let Ok(rows) = remote.list_milestones(&project.remote_path).await {
-                if let Some(ver) =
-                    crate::version::current_from_milestones(&rows, &isoweek::today_ymd())
-                {
-                    if let Err(e) =
-                        issue_store::assign_to_plan(self, &project, id.iid(), &ver).await
-                    {
-                        bw_engine::dlog!(warn, "ops", "[BW_OPS] 资产盘点挂在研 {ver} 没成:{e}");
-                    }
-                }
-            }
-        }
-        events.push(Event::OpsAutoFired {
-            id,
-            workflow: OPS2_WORKFLOW.into(),
-            week,
-        });
-        events.extend(self.run_issue(id).await?);
-        Ok(events)
     }
 }
 
@@ -363,8 +286,9 @@ impl App {
     /// 改动)原样留着,如实说一声。旧活记的是平级兄弟路径,这里走
     /// `resolve_issue_worktree`(会话记下的路径 → 新目录 → 旧兄弟)才能收掉。
     async fn cleanup_issue_branch_note(&self, issue: &crate::model::Issue) -> Option<String> {
-        if issue.title == issue_store::CHARTER_TITLE {
-            return Some("项目约定是常驻分支,树和分支不收".into());
+        let branch = issue_store::work_branch(issue);
+        if bw_engine::workspace::is_standing_branch(&branch) {
+            return Some(format!("{branch} 是常驻分支,树和分支不收"));
         }
         let Ok(ws) = self.workspace_of(issue.project_id).await else {
             return None;

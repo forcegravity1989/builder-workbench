@@ -149,10 +149,6 @@ pub struct ProjectVm {
     pub health: HealthVm,
     pub metrics: MetricsVm,
     pub current_week: String,
-    /// 本周是否已经有过运作活①(含已完成),或还有开着的运作活①。
-    pub week_started: bool,
-    /// 有没有里程碑覆盖到本 ISO 周。总览「开始本版本」只在没有时出现。
-    pub week_covered: bool,
     /// 覆盖当天的版本名,按创建时间新的在前。总览下拉用。
     pub covering_versions: Vec<String>,
     /// 上一发 / 未发 / 推荐下一号,给创建版本弹窗。
@@ -161,8 +157,6 @@ pub struct ProjectVm {
     pub suggested_next: String,
     /// 总览在研:覆盖当天的里程碑,人在下拉里选中的那个。空 = 今天没有覆盖中的版本。
     pub confirmed_version: String,
-    /// 本周运作活①若还开着,走到哪了。`None` = 还没建,或已经完成。
-    pub ops1_status: Option<String>,
     /// 规范铺底还开着、默认分支还没有名片。总览常驻横幅。`None` = 已合入或没建。
     pub bootstrap_pending: Option<CardMrVm>,
     /// 计划屏左栏:节律周列表(新的在前,本周置顶)。排期名不在这里。
@@ -418,7 +412,7 @@ pub struct CardItemVm {
     pub has_open_mr: bool,
     /// 远端 issue 号。0 = 这张活只在本机,没有对应的远端 issue。
     pub remote_number: u32,
-    /// 这张活的分支。空 = 还没开过工。
+    /// 这张活该走的车。常驻车是固定名;其余 `bw/issue-<号>`。
     pub branch: String,
     /// 活的正文。详情抽屉里要看的就是它 —— 光有标题看不出这张活要干什么。
     pub body: String,

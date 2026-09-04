@@ -95,19 +95,29 @@ impl App {
                 )),
             }
         }
-        // 纳入时替人把仓登记进 Orca。Orca 没开不推翻接入,第一次开工 / Open 再补。
+        // 纳入时替人把仓登记进 Orca。Orca 没开不推翻接入;
+        // 接入后会进项目,那一次不是 Open,所以没打上要人退回项目墙再点进来。
         if self.pty_enabled {
             match bw_engine::orca::connect() {
                 Ok(rt) => match bw_engine::orca::ensure_repo(&rt, &ws).await {
-                    Ok(()) => self.step(ProgressLine::ok(6, "Orca 已经认得这个仓")),
+                    Ok(()) => match self.ensure_orca_automations(&rt, &ws).await {
+                        Ok(()) => self.step(ProgressLine::ok(
+                            6,
+                            "Orca 认得这个仓,三条运作自动化已写入(默认关)",
+                        )),
+                        Err(e) => self.step(ProgressLine::fail(
+                            6,
+                            format!("Orca 定时没打上:{e} —— 退回项目墙再点进来会再打"),
+                        )),
+                    },
                     Err(e) => self.step(ProgressLine::fail(
                         6,
-                        format!("Orca 还没记下这个仓:{e} —— 第一次开工会再试"),
+                        format!("Orca 还没记下这个仓:{e} —— 退回项目墙再点进来会再打"),
                     )),
                 },
                 Err(_) => self.step(ProgressLine::fail(
                     6,
-                    "Orca 没开,仓没登记 —— 第一次开工会再试",
+                    "Orca 没开,仓没登记 —— 退回项目墙再点进来会再打",
                 )),
             }
         }
@@ -262,11 +272,7 @@ impl App {
             }
         };
 
-        let tree = if issue.title == issue_store::CHARTER_TITLE {
-            worktree::provision_project(&ws).await?
-        } else {
-            worktree::provision(&ws, issue.number).await?
-        };
+        let tree = worktree::provision_for(&ws, &issue).await?;
         let mut file = project_file::read(&tree.path)?.unwrap_or_default();
         file.name = intent.name.clone();
         file.brief = intent.brief.clone();

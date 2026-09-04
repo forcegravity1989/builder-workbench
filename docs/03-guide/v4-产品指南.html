@@ -261,7 +261,7 @@
             <!-- node 6 定时盘点：已走过 -->
             <rect x="37" y="147" width="140" height="64" rx="12" fill="var(--accent)" stroke="var(--accent-ink)" stroke-width="1.4"/>
             <text x="107" y="174" text-anchor="middle" font-size="13" font-weight="700" fill="#fff">6 · 定时盘点</text>
-            <text x="107" y="191" text-anchor="middle" font-size="11" fill="#fff" opacity=".92">自动建活，停评审中</text>
+            <text x="107" y="191" text-anchor="middle" font-size="11" fill="#fff" opacity=".92">Orca 到点，默认关</text>
           </svg>
         </div>
       </div>
@@ -273,7 +273,7 @@
           <tbody>
             <tr><td>接一个仓、看铺了哪些文件、合铺底 MR</td><td><a href="#" onclick="go('u1');return false">第 0 站 · 接入项目</a></td></tr>
             <tr><td>看健康灯、指标、改名片 / 项目群、看在研版本</td><td><a href="#" onclick="go('u1b');return false">第 1 站 · 看总览</a></td></tr>
-            <tr><td>开始本版本、写版本目标、建活、看某个版本</td><td><a href="#" onclick="go('u1c');return false">第 2/3 站 · 定本周</a></td></tr>
+            <tr><td>定版本、写版本目标、建活、看某个版本</td><td><a href="#" onclick="go('u1c');return false">第 2/3 站 · 定本周</a></td></tr>
             <tr><td>开工、作废、去会话、原型进 Open Design</td><td><a href="#" onclick="go('u1d');return false">第 4 站 · 干活</a></td></tr>
             <tr><td>合 MR、点完成、发版本</td><td><a href="#" onclick="go('u1e');return false">第 5 站 · 验收记发版</a></td></tr>
             <tr><td>周五自动盘点、每天自动采数</td><td><a href="#" onclick="go('u1f');return false">第 6 站 · 定时盘点</a></td></tr>
@@ -342,6 +342,7 @@
         <div class="li"><div class="n">3</div><div class="t"><strong>写名片</strong>——<code>.bw/project.toml</code>。仓里已经有就一个字不覆盖、只补空着的字段。</div></div>
         <div class="li"><div class="n">4</div><div class="t"><strong>仓里还没有名片，才建一张「项目约定」的活</strong>——它开一条分支、只写 <code>.bw/project.toml</code> 和 <code>.bw/.gitignore</code>、<strong>提一个 MR</strong>，然后<strong>停在评审中等你合</strong>。仓里已经有项目信息、或已经开着一张项目约定 / 残留旧标题活，这一步整段跳过。它不会自动合，也不会自动把活标成完成。</div></div>
         <div class="li"><div class="n">5</div><div class="t"><strong>自动进这个项目</strong>。</div></div>
+        <div class="li"><div class="n">6</div><div class="t"><strong>Orca 开着时</strong>会登记这个仓，并写入三条默认关掉的运作自动化。Orca 没开或没打上，进度会说「退回项目墙再点进来会再打」。接入本身照样成功。</div></div>
       </div>
 
       <p>第 4 步只铺马上要用的骨架，全在 <code>.bw/</code> 底下：</p>
@@ -358,14 +359,14 @@
           </tbody>
         </table>
       </div>
-      <p class="note-line">指标正文和采集脚本不在这一站预铺，跟第 2/3 站运作活①走。配置屏只探活和对账，<strong>不改名片、不再二次铺底</strong>。</p>
+      <p class="note-line">指标正文和采集脚本不在这一站预铺，跟第 2/3 站运作活①走。配置屏只改开工工具映射、看技能，<strong>不改名片、不再二次铺底</strong>。节律在 Orca。</p>
 
       <h2 class="sec"><span class="n">仓里会多什么、不会多什么</span></h2>
       <div class="res">
         <ul>
           <li><span class="b"></span><div>Workbench 写进仓的东西<strong>全在 <code>.bw/</code></strong>。仓根 <code>README.md</code> / <code>AGENTS.md</code> / <code>CLAUDE.md</code> 这一步一个字不碰。自带技能也不进你的仓。</div></li>
           <li><span class="b"></span><div>第 4 步没成，前面仍然算数：项目已接进来、仓已在本机。没有第二次铺底命令。仓里已有名片或开着铺底活，再纳入也不会再铺一张。</div></li>
-          <li><span class="b"></span><div>项目约定还没合进默认分支：总览顶上常驻一条横幅（和「开始本版本」同一位置），提醒不合入则配置用不上、别人再纳入也看不出已经被管过。「项目约定」写「已完成」只看默认分支上有没有 <code>.bw/project.toml</code>，关过的旧活不冒充铺过。这颗状态在计划屏，总览不另放芯片。</div></li>
+          <li><span class="b"></span><div>项目约定还没合进默认分支：总览顶上常驻一条横幅，提醒不合入则配置用不上、别人再纳入也看不出已经被管过。「项目约定」写「已完成」只看默认分支上有没有 <code>.bw/project.toml</code>，关过的旧活不冒充铺过。这颗状态在计划屏，总览不另放芯片。</div></li>
         </ul>
       </div>
 
@@ -389,6 +390,7 @@
           <li><span class="b"></span><div>工作台上一个项目</div></li>
           <li><span class="b"></span><div>默认分支上有 <code>.bw/</code> 骨架（合入之后才有；合之前只在铺底那条分支上）</div></li>
           <li><span class="b"></span><div>那张「项目约定」活已完成，对应 MR 已合</div></li>
+          <li><span class="b"></span><div>Orca 开着时，Automations 里多了三条关掉的自动化；要跑去打开或点 Run now</div></li>
         </ul>
       </div>
       <p class="next">下一站：<a href="#" onclick="go('u1b');return false">第 1 站 · 看总览</a></p>
@@ -422,7 +424,7 @@
         <ul>
           <li><span class="b"></span><div><strong>对远端代码仓</strong>：读 issue 列表和里程碑。每个里程碑都是一个版本。在研版本是覆盖当天的里程碑（多个取最后创建，编辑表单下拉可切）。版本目标来自打了该版本标签的运作活①最新评论里 <code>## 版本目标</code> 那一段。纳入了哪些活看 <code>bw:plan:&lt;名&gt;</code> 标签。</div></li>
           <li><span class="b"></span><div><strong>对你的机器</strong>：跑 <code>.bw/metrics.toml</code> 里的采集脚本，窗口近四周。脚本只吐一个当下值时，折线只在本周画一个点。仓统计走 git，再问远端合入的 PR。</div></li>
-          <li><span class="b"></span><div><strong>对 <code>.bw/</code></strong>：指标定义读 <code>metrics.toml</code>。B 类点「采集」或每天 20:00 自动采，把<strong>当天</strong>的值记进账本 <code>readings.jsonl</code>（同一天再采覆盖这一行，不写主检出）。折线按周画，取那一周最后一天。没有采集脚本的 B 类仍然采不到。C 类在卡上填今天的数，和 B 类同一份流水、同一套覆盖。</div></li>
+          <li><span class="b"></span><div><strong>对 <code>.bw/</code></strong>：指标定义读 <code>metrics.toml</code>。B 类点「立即采集」，或打开 Orca 里「每日指标采集」后每天 20:00 自动采，把<strong>当天</strong>的值记进账本 <code>readings.jsonl</code>（同一天再采覆盖这一行，不写主检出）。折线按周画，取那一周最后一天。没有采集脚本的 B 类仍然采不到。C 类在卡上填今天的数，和 B 类同一份流水、同一套覆盖。</div></li>
         </ul>
       </div>
 
@@ -455,12 +457,12 @@
     <!-- ============ U1c 第 2/3 站 · 定本周 ============ -->
     <section class="screen" id="u1c" data-title="第 2/3 站 · 定本周" data-sec-name="怎么用">
       <div class="eyebrow">怎么用 · 第 2/3 站</div>
-      <h1 class="disp">开始本版本，写下目标和纳入的活</h1>
-      <p class="lede">一次会话做完「复盘 → 指标 → 确认版本 → 版本目标和活清单」。计划正本挂在运作活①的评论上，不另写周计划文件。</p>
+      <h1 class="disp">在 Orca 定版本，写下目标和纳入的活</h1>
+      <p class="lede">一次会话做完「复盘 → 指标 → 确认版本 → 版本目标和活清单」。计划正本挂在运作活①的评论上，不另写周计划文件。到点由 Orca 开会话；计划屏已有这张活也可以 Start。工作台不再有「开始本版本」。</p>
       <div class="res">
         <div class="h">这一站能查到</div>
         <ul>
-          <li><span class="b"></span><div>「开始本版本」什么时候出现</div></li>
+          <li><span class="b"></span><div>定版本计划在 Orca 里怎么开</div></li>
           <li><span class="b"></span><div>版本目标写在哪、计划屏怎么按版本看卡</div></li>
           <li><span class="b"></span><div>「新建活」能建哪几种</div></li>
         </ul>
@@ -468,8 +470,8 @@
 
       <h2 class="sec"><span class="n">操作</span></h2>
       <div class="ops">
-        <div class="li"><div class="n">1</div><div class="t">总览顶上「开始本版本」。本周没有覆盖中的里程碑、也没有开着的运作活①才会出现；上周那张还开着也会挡住。新的一周若上一版周五已截止，在研为空，按钮回来。</div></div>
-        <div class="li"><div class="n">2</div><div class="t">跳到会话屏。agent 按版本计划剧本走：复盘、采指标、先确认本周版本（推荐 <code>v0.x</code>，别的名字也行），再起草版本目标与纳入清单。你在会话屏的 Orca 页看着、随时能停。</div></div>
+        <div class="li"><div class="n">1</div><div class="t">纳入或打开项目后，Orca 里会有「定版本计划（Workbench）」自动化（默认关）。要跑先在 Orca 里打开，或点 Run now。关着不会到点。</div></div>
+        <div class="li"><div class="n">2</div><div class="t">会话在常驻树 <code>bw/week-plan</code>。agent 按版本计划剧本走：复盘、采指标、先确认本周版本（推荐 <code>v0.x</code>，别的名字也行），再起草版本目标与纳入清单。你在 Orca 里看着、随时能停。</div></div>
         <div class="li"><div class="n">3</div><div class="t">你确认之后，agent 当场建纳入的业务活，并打上 <code>bw:plan:&lt;版本名&gt;</code>（codehub 还挂同名里程碑，起止默认本周周一到周五）。版本目标、纳入清单、指标读数快照写成运作活①的三条评论，标题必须是 <code>## 版本目标</code> / <code>## 本周纳入</code> / <code>## 本周指标读数</code>。版本目标那一段一句或一段都行。版本名推荐 <code>vX.X</code>，别的也行。</div></div>
         <div class="li"><div class="n">4</div><div class="t">侧栏点「计划」。版本头是版本目标那段，默认只露两行，点右下角小框展开，再点收起。点某个版本只看打了那个 <code>bw:plan:&lt;名&gt;</code> 的活；没打版本标签的切到右上角下拉「全部 issue」就能看见。</div></div>
       </div>
@@ -478,7 +480,7 @@
       <div class="res">
         <ul>
           <li><span class="b"></span><div><strong>对远端代码仓</strong>：有光杆未打版本标签的运作活①就复用，没有再新建（标题 <code>更新指标 + 制定版本计划</code>；确认版本后标题带上版本名）。纳入的活是真的远端 issue，不是本地草稿。</div></li>
-          <li><span class="b"></span><div><strong>对你的机器</strong>：这张活自己的工作目录。缺的 <code>metrics.toml</code> 和采集脚本会在开工时铺上（已有不覆盖），经这张活的 MR 合进默认分支。</div></li>
+          <li><span class="b"></span><div><strong>对你的机器</strong>：改动落在常驻树 <code>bw/week-plan</code>，不写主检出。缺的 <code>metrics.toml</code> 和采集脚本会在这场里铺上（已有不覆盖），经这张活的 MR 合进默认分支。</div></li>
           <li><span class="b"></span><div><strong>对 <code>.bw/</code></strong>：指标定义和脚本进仓。版本目标只在 issue 评论里，不另写一份计划文件。</div></li>
         </ul>
       </div>
@@ -494,7 +496,7 @@
 
       <div class="callout warn">
         <svg viewBox="0 0 24 24"><path d="M12 3l9 16H3z"/><path d="M12 9v5M12 17h.01"/></svg>
-        <div class="body"><strong>计划屏「新建活」先弹种类、标题、正文。</strong>业务活再选五阶段类别（原型默认 Open Design）。运作活选①或②，标题按本周幂等，类别锁成「运作」。周中要补一张计划或盘点，就在这里建，不必等周五。要走 Open Design：种类选业务活、类别选「原型」，创建后点开卡片再「▶ 开工」。</div>
+        <div class="body"><strong>计划屏「新建 issue」建业务活</strong>（标题、正文、五阶段类别；原型默认 Open Design）。要走 Open Design：类别选「原型」，创建后点开卡片再「Start」。</div>
       </div>
       <p class="next">下一站：<a href="#" onclick="go('u1d');return false">第 4 站 · 干活</a></p>
       <div class="foot">事实源 <code>docs/architecture.md</code> 模块 13。</div>
@@ -603,22 +605,22 @@
     <section class="screen" id="u1f" data-title="第 6 站 · 定时盘点" data-sec-name="怎么用">
       <div class="eyebrow">怎么用 · 第 6 站</div>
       <h1 class="disp">到点建一张盘点，停在评审中</h1>
-      <p class="lede">周五 09:00（产品默认）Workbench 开着，会自己建「资产盘点」并开工，最远评审中。完成仍要你点。每天 20:00 自动采一轮 B 类指标。</p>
+      <p class="lede">节律在 Orca。周五 15:00 盘点、每天 20:00 采 B 类，默认关。Workbench 开着也不会自己守钟。完成仍要你点。</p>
       <div class="res">
         <div class="h">这一站能查到</div>
         <ul>
-          <li><span class="b"></span><div>盘点什么时候自动建、最远到哪</div></li>
+          <li><span class="b"></span><div>三条自动化在 Orca 里、默认关</div></li>
+          <li><span class="b"></span><div>错过了怎么补跑</div></li>
           <li><span class="b"></span><div>周五会不会给总览写每周进展</div></li>
-          <li><span class="b"></span><div>B 类每天几点自动采</div></li>
-          <li><span class="b"></span><div>运作活①为什么不会自动开始</div></li>
+          <li><span class="b"></span><div>B 类每天几点采</div></li>
         </ul>
       </div>
 
       <h2 class="sec"><span class="n">操作</span></h2>
       <div class="ops">
-        <div class="li"><div class="n">1</div><div class="t">配置屏能看见「资产盘点 · 到点自动建 · fri 09:00」，还有一行「B 类指标采集 · daily 20:00」。盘点节律只认产品默认，不写进仓。B 类日采固定 20:00。运作活①仍是人点「开始本版本」。</div></div>
-        <div class="li"><div class="n">2</div><div class="t">Workbench 开着、过了本周那个时刻，计划屏会出现「资产盘点 YYYY-Www」。类别锁成「运作」，改不了五阶段。</div></div>
-        <div class="li"><div class="n">3</div><div class="t">这张活会自己开工。看会话或详情：最远到评审中。合入、点完成仍是你来。</div></div>
+        <div class="li"><div class="n">1</div><div class="t">纳入或打开项目后，Orca 里会有三条默认关掉的自动化：周一 09:00 定计划、周五 15:00 盘点、每天 20:00 采 B 类。要跑就在 Orca 里打开或点 Run now。</div></div>
+        <div class="li"><div class="n">2</div><div class="t">盘点、定计划的改动分别在常驻树 <code>bw/ops-audit</code> / <code>bw/week-plan</code>。类别锁成「运作」，改不了五阶段。</div></div>
+        <div class="li"><div class="n">3</div><div class="t">会话在 Orca 开。最远到评审中。合入、点完成仍是你来。</div></div>
         <div class="li"><div class="n">4</div><div class="t">周一回到总览，开始下一圈。盘点报告挂在这张活的评论里（Workbench 资产 / 闭环 / 项目审查）。当周进展另挂在该版本运作活①上（<code>## 每周进展</code>），总览右栏按新到旧列出该版本所有进展。改了 <code>.bw/</code> 才有 MR；项目审查只出建议，不改业务代码。</div></div>
       </div>
 
@@ -626,7 +628,7 @@
       <div class="res">
         <ul>
           <li><span class="b"></span><div><strong>对远端代码仓</strong>：建一张标题固定的运作活（本周有了就不建第二张；标题含 ISO 周，如 <code>资产盘点 2026-W36</code>），有在研版本就挂 <code>bw:plan:&lt;名&gt;</code>，不打 <code>bw:week:</code>。开工后改状态。先盘 <code>.bw/</code> 跟上现行契约，再盘项目本周改动（建议落评论，不改业务代码），再给该版本运作活①追加一条每周进展。</div></li>
-          <li><span class="b"></span><div><strong>对你的机器</strong>：Workbench 开着每 60 秒判一次「本周这一刻过了没有」。当时没开着，下次开着会补建。注入的剧本是资产盘点；开工用的 CLI 跟配置屏「构建」那条。</div></li>
+          <li><span class="b"></span><div><strong>对你的机器</strong>：Workbench 不自己守钟。Orca 没开就下次打开项目再补打自动化。错过了到 Orca 点 Run now。</div></li>
           <li><span class="b"></span><div><strong>对 <code>.bw/</code></strong>：对照现行契约清残留、升格式，让当前工作台读得动；点出未闭环的环。不重写名片，不重定北极星。仓根 <code>AGENTS.md</code> 不由周五盘点代写。</div></li>
         </ul>
       </div>
@@ -636,7 +638,7 @@
         <ul>
           <li><span class="b"></span><div>多一张运作活②，类别显示「运作」、改不了五阶段。</div></li>
           <li><span class="b"></span><div>总览「每周进展」有当周收口（有几条列几条，没有仍空着）。</div></li>
-          <li><span class="b"></span><div>Workbench 开着、过了本机 20:00，会自动采一轮 B 类，按<strong>当天</strong>写入账本（同一天再采覆盖）。点「采集」也能立刻再采今天。</div></li>
+          <li><span class="b"></span><div>打开 Orca 里「每日指标采集」后，每天 20:00 采一轮 B 类，按<strong>当天</strong>写入账本（同一天再采覆盖）。总览「立即采集」也能立刻再采今天。</div></li>
         </ul>
       </div>
 
@@ -661,7 +663,7 @@
           <tbody>
             <tr><td>接一个仓、看铺了哪些文件、合铺底 MR</td><td><a href="#" onclick="go('u1');return false">第 0 站</a></td></tr>
             <tr><td>健康灯、指标、改名片 / 在研 / 项目群、顶栏刷新</td><td><a href="#" onclick="go('u1b');return false">第 1 站</a></td></tr>
-            <tr><td>开始本版本、版本目标、新建活、全部 issue 下拉</td><td><a href="#" onclick="go('u1c');return false">第 2/3 站</a></td></tr>
+            <tr><td>定版本、版本目标、新建活、全部 issue 下拉</td><td><a href="#" onclick="go('u1c');return false">第 2/3 站</a></td></tr>
             <tr><td>开工、作废、去会话、Open Design</td><td><a href="#" onclick="go('u1d');return false">第 4 站</a></td></tr>
             <tr><td>合 MR、点完成、发版本</td><td><a href="#" onclick="go('u1e');return false">第 5 站</a></td></tr>
             <tr><td>周五盘点、每天 20:00 采数</td><td><a href="#" onclick="go('u1f');return false">第 6 站</a></td></tr>
@@ -756,7 +758,7 @@
 
             <rect x="188" y="164" width="170" height="58" rx="10" fill="var(--surface-2)" stroke="var(--border-deep)" stroke-width="1.5"/>
             <text x="273" y="189" text-anchor="middle" font-size="12.5" font-weight="700" fill="var(--fg)">定时任务 · 第 6 站</text>
-            <text x="273" y="205" text-anchor="middle" font-size="11" fill="var(--muted-2)">资产盘点，到点自动开工</text>
+            <text x="273" y="205" text-anchor="middle" font-size="11" fill="var(--muted-2)">资产盘点，Orca 打开后到点</text>
 
             <path d="M200 164 C 130 140, 100 110, 82 88" fill="none" stroke="var(--muted-2)" stroke-width="1.8" marker-end="url(#sArrow)"/>
             <text x="105" y="145" font-size="11" fill="var(--muted-2)">自动建活</text>

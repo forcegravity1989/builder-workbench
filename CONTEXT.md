@@ -79,8 +79,8 @@ _Avoid_: 把 Workbench 当项目的唯一数据源;把仓说成"备份"或"同�
 _Avoid_: 规范铺底、编辑项目名片(旧标题只认残留、不再新建);往主检出写名片。
 
 **常驻车**:
-仓里站着的两辆:项目约定(分支 `bw/project`,名片)和指标账本(分支 `bw/ledger`,读数)。业务活与运作活①②仍是一活一树。
-_Avoid_: 第三张运作活「规范铺底」;把 issue-policy 当仓里的第三辆车。
+仓里站着四辆:项目约定(`bw/project`,名片)、指标账本(`bw/ledger`,读数)、定版本计划(`bw/week-plan`)、资产盘点(`bw/ops-audit`)。业务活仍是一活一树。节律在 Orca,不在 Workbench。
+_Avoid_: 第三张运作活「规范铺底」;把 issue-policy 当仓里的车;运作活①②再开 `bw/issue-N`。
 
 **仓 / Repo**:
 项目背后真实的 codehub/GitHub 仓库——新建或接入。Issue、PR、指标定义的正本都挂在它上面;没挂仓的项目(纯本地项目)如实留白,绝不假装有仓。
