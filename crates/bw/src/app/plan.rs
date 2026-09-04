@@ -235,8 +235,13 @@ impl App {
             rows_written,
         }];
         let release_ev = crate::chat::NotifyEvent::Release;
-        let text =
+        let mut text =
             crate::chat::notify_text(release_ev.key(), 0, &format!("发版 {version}"), "", "");
+        let note = note.trim();
+        if !note.is_empty() {
+            text.push('\n');
+            text.push_str(note);
+        }
         if let Some(e) = self.chat_send(project_id, release_ev.key(), 0, text).await {
             events.push(e);
         }

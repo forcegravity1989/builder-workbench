@@ -571,7 +571,7 @@
       <div class="ops">
         <div class="li"><div class="n">1</div><div class="t">计划屏把卡拖到「已完成」的完成段（待办 / 进行中 / 待评审 / 阻塞 / 未排期都行），先确认列上切的是「完成」不是「拒绝」，或详情里 Complete / 状态下拉选「完成」。有开着的 MR 就先确认再合；没有开着的确认后只关 issue。点「算了」停在原列。完成永远由人点，agent 不会自己完成。</div></div>
         <div class="li"><div class="n">2</div><div class="t">项目墙 ⚑ 只提醒你有 MR 等着，不在那儿合。不要只在代码平台网页关 issue——那不会合 MR。</div></div>
-        <div class="li"><div class="n">3</div><div class="t">本周有已完成的活，计划屏点「发版本」。号锁死当前版本，不能改。确认后才建远端 Release。要安装包，点左侧「出包」：先出包（黄转圈，过了变绿，可打开产物目录），再验包（写出过了几条 / 一共几条）。验包不过时点「详情」看是哪条用例、报了什么错。出包不打发版标签。弹窗可关掉继续跑，按钮上三个点再点回来；要停就点「停止」，确认后清中间件。</div></div>
+        <div class="li"><div class="n">3</div><div class="t">本周有已完成的活，计划屏点「发版本」。号锁死当前版本，不能改。弹窗里的说明会写进远端 Release，也会跟在项目群那条「发版」消息后面。确认后才建远端 Release。要安装包，点左侧「出包」：先出包（黄转圈，过了变绿，可打开产物目录），再验包（写出过了几条 / 一共几条）。验包不过时点「详情」看是哪条用例、报了什么错。出包不打发版标签。弹窗可关掉继续跑，按钮上三个点再点回来；要停就点「停止」，确认后清中间件。</div></div>
         <div class="li"><div class="n">4</div><div class="t">去代码平台的版本页，或跑 <code>codehub-cli release list</code> / <code>gh release list</code>，核对远端真有这个版本。总览「已发版次数」优先读远端 Release。</div></div>
       </div>
 
@@ -587,7 +587,7 @@
       <h2 class="sec"><span class="n">得到什么</span></h2>
       <div class="res">
         <ul>
-          <li><span class="b"></span><div>点「出包」：仓里多一份这个版本的安装包（弹窗第一行「打开目录」）。点「发版本」：远端多一个 Release，选中的活带上版本标签。</div></li>
+          <li><span class="b"></span><div>点「出包」：仓里多一份这个版本的安装包（弹窗第一行「打开目录」）。点「发版本」：远端多一个 Release，选中的活带上版本标签；配了项目群且勾了发版通知时，群里那条带上弹窗说明。</div></li>
           <li><span class="b"></span><div>总览「在研版本」仍看覆盖当天的里程碑——发版没去改覆盖时间的话，号还在。</div></li>
           <li><span class="b"></span><div>总览「已发版次数」跟远端 Release 列表走；远端读不到才退回本机 git 标签。</div></li>
         </ul>
