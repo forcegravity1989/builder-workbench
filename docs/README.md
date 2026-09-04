@@ -29,7 +29,7 @@
 | [`03-guide/`](03-guide/) | 产品指南(怎么用 Workbench,给用户/同事)+ 填写规范 |
 | [`04-design-system/`](04-design-system/) | Builder 设计系统资产(唯一样式表 + 机读 token + 双语规范 + 14 张示例页),镜像自 Claude Design 项目「builder」;未接线到壳,供界面演进采用 |
 | [`05-features/`](05-features/) | **特性级变更制品链**——intent + 带原型的 spec 为人 gate;plan 仅大风险升 gate;小修不进。粒度与制品链见 [01 §4](01-principles/01-document-organization.md) |
-| [`10-reference/`](10-reference/) | 外部参考的**提炼版**(转述非原文,原文只存链接)。现有一篇:[AI-native SDLC playbook](10-reference/ai-native-sdlc-playbook.md)——做法与治理哲学,每段带 BW 落点或不采纳理由 |
+| [`10-reference/`](10-reference/) | 外部参考的**提炼版**(转述非原文,原文只存链接)。现有两篇:[AI-native SDLC playbook](10-reference/ai-native-sdlc-playbook.md)——做法与治理哲学,每段带 BW 落点或不采纳理由;[BSC Designer 能力评估](10-reference/bsc-designer-capabilities.md)——平衡计分卡软件的能力与方法论逐条对照,引入 / 改造 / 不引入(评估稿,待裁决) |
 | [`hifi/`](hifi/) | 视觉正本(`index.html` 单文件高保真 + 逐屏简报),桌面壳样式表从它搬过去 |
 
 ## 找东西
