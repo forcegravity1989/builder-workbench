@@ -1,18 +1,5 @@
-//! 项目内 · 配置。开工工具映射 / 技能与 workflow / 项目群 + 工具探活 / 定时,
-//! 四大块,都是真表格。(高保真里还有一张「连接器」表,2026-08-21 按指标采集
-//! 的新设计整块退场 —— V4 没有任何采集在消费 `.bw/connectors.toml`,显示一个
-//! 没人用的东西比不显示更糟。)
-//!
-//! 三条如实:
-//!
-//! 1. **「用过几次」是现算的** —— 扫活的 workflow 列聚合,没有战绩表可查。
-//! 2. **技能清单没有登记表** —— Workbench 自带的那四份编在二进制里(摊在 Workbench
-//!    自己的资产目录,不复制进用户的仓),项目自有的扫仓里 `.claude/skills/`
-//!    得到,同名以仓里那份为准。高保真把「workflow」和「skill」分成两张表,
-//!    V4 里它们是同一样东西(workflow = SOP 类技能包),所以合成一张,不假装
-//!    有两套。
-//! 3. **定时那张表没有「下次触发」列** —— 判据是「本周有没有这张活」,不查
-//!    任何定时表,所以那一列写的是判据本身。
+//! 项目内 · 配置。只留两块:开工工具映射、技能与 workflow。
+//! 探活在项目墙 / 设置屏;节律在 Orca;对账没有人点。
 
 use crate::bridge::Bridge;
 use crate::vm::{MappingVm, ProjectVm};
@@ -27,11 +14,6 @@ pub fn View(p: ProjectVm, bridge: Bridge) -> Element {
         section {
             {mapping_block(p, bridge)}
             {skill_block(p)}
-            div { class: "cfg-pair",
-                {probe_block(p, bridge)}
-                {cron_block(p)}
-            }
-            StandardBlock { p: p.clone(), bridge: bridge.clone() }
         }
     }
 }
@@ -197,111 +179,5 @@ fn desc_or_dash(d: &str) -> String {
         "—(SKILL.md 里没写 description)".into()
     } else {
         d.to_string()
-    }
-}
-
-// ── ③ 开工工具探活 ────────────────────────────────
-//
-// 项目群改到总览名片一起编。这里只留探活,免得 ProbeTool 又没入口。
-
-fn probe_block(p: &ProjectVm, bridge: &Bridge) -> Element {
-    let c = &p.config;
-    rsx! {
-        div { class: "cfg-section",
-            div { class: "cfg-section-head", h3 { "开工工具探活" } }
-            div { style: "font-size:11.5px;color:var(--ink-3);margin-bottom:8px;",
-                "远端仓 {c.remote}"
-            }
-            div { style: "display:flex;gap:8px;flex-wrap:wrap;",
-                for t in c.tools.iter() {
-                    {probe_chip(&t.name, &t.label, t.ok, &t.detail, bridge)}
-                }
-            }
-            div { class: "cfg-readonly-note",
-                "项目群和在研版本在总览名片里改,跟四字段一张活、一次 MR。"
-            }
-        }
-    }
-}
-
-fn probe_chip(name: &str, label: &str, ok: Option<bool>, detail: &str, bridge: &Bridge) -> Element {
-    let b = bridge.clone();
-    let n = name.to_string();
-    let color = match ok {
-        Some(true) => "var(--green)",
-        Some(false) => "var(--red)",
-        None => "var(--gray)",
-    };
-    rsx! {
-        button {
-            key: "{name}",
-            class: "btn btn-sm",
-            title: "{detail}",
-            onclick: move |_| b.cmd(Command::ProbeTool { name: n.clone() }),
-            span { class: "dot", style: "background:{color};margin-right:6px;" }
-            "{label} · 测一下"
-        }
-    }
-}
-
-// ── ④ 定时 ──────────────────────────────────────────
-
-fn cron_block(p: &ProjectVm) -> Element {
-    rsx! {
-        div { class: "cfg-section",
-            div { class: "cfg-section-head", h3 { "定时" } }
-            if p.config.crons.is_empty() {
-                div { class: "detail-empty", "{p.config.cadence}" }
-            } else {
-                div { class: "tbl-wrap",
-                    table { class: "tbl",
-                        thead { tr { th { "运作活" } th { "怎么触发" } th { "节律" } th { "判据" } } }
-                        tbody {
-                            for c in p.config.crons.iter() {
-                                tr { key: "{c.name}",
-                                    td { "{c.name}" }
-                                    td { span { class: "chip", "{c.trigger}" } }
-                                    td { class: "mono", "{c.schedule}" }
-                                    td { style: "color:var(--ink-2);", "{c.rule}" }
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-            div { class: "cfg-readonly-note",
-                "节律在 Orca 自动化。纳入或打开项目时注入,默认关。"
-                "错过了到 Orca 里点 Run now。「完成」永远由人点。"
-            }
-        }
-    }
-}
-
-// ── ⑤ 规范件对账 ────────────────────────────────────
-
-/// 对账是**纯读**的:只回报缺 / 过期 / 人改过,不动仓、不建活。
-/// 写仓只发生在第一次纳入。在研版本去总览名片里改。
-#[component]
-fn StandardBlock(p: ProjectVm, bridge: Bridge) -> Element {
-    let (p, bridge) = (&p, &bridge);
-    let b_rec = bridge.clone();
-    let pid = p.id;
-    rsx! {
-        div { class: "cfg-section",
-            div { class: "cfg-section-head",
-                h3 { "规范件" }
-                div { style: "display:flex;gap:8px;",
-                    button {
-                        class: "btn btn-sm",
-                        onclick: move |_| b_rec.cmd(Command::ReconcileStandard { project_id: pid }),
-                        "对一遍账"
-                    }
-                }
-            }
-            div { class: "cfg-readonly-note",
-                "对账只看不改:缺哪几份、哪几份过期了、哪几份被人手改过,结果显示在页脚回执里。\
-                 在研版本和项目群在总览名片里改。指标正文跟运作活①会话走,不预铺空壳。"
-            }
-        }
     }
 }

@@ -304,7 +304,15 @@ pub async fn repo_id(rt: &OrcaRuntime, repo: &Path) -> Result<String, OrcaError>
 }
 
 pub async fn list_automations(rt: &OrcaRuntime) -> Result<Vec<AutomationRow>, OrcaError> {
-    let frame = call(rt, "automation.list", json!({}), ACTIVATE_TIMEOUT).await?;
+    // 只看本机主机。不带 selector 时 Orca 会把 Local Windows 和 Orca Server
+    // 的行都回过来,Web 端看起来像每种任务两份。
+    let frame = call(
+        rt,
+        "automation.list",
+        json!({ "selector": { "kind": "self" } }),
+        ACTIVATE_TIMEOUT,
+    )
+    .await?;
     require_ok(&frame, "automation.list")?;
     let rows = frame
         .pointer("/result/automations")
@@ -347,6 +355,8 @@ pub async fn create_automation(
         "rrule": spec.rrule,
         "dtstart": now_ms,
         "enabled": spec.enabled,
+        // 钉本机。不写的话 Web 目录会再挂一份 Orca Server,本地树在那边跑不了。
+        "destination": { "selector": { "kind": "self" } },
     });
     let frame = call(rt, "automation.create", params, ACTIVATE_TIMEOUT).await?;
     require_ok(&frame, "automation.create")

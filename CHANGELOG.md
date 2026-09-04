@@ -6,7 +6,7 @@
 
 ## 最近 · 2026-09-04
 
-运作节律迁到 Orca。纳入 / 打开项目时在现有 `ensure_repo` 成功后注入三条自动化(默认关,已有不覆盖):定版本计划周一 09:00(常驻树 `bw/week-plan`,每周新会话)、资产盘点周五 15:00(`bw/ops-audit`,每周新会话)、B 类日采每天 20:00(`bw/ledger`,复用会话)。仓已经在 Orca 里也要补打,不能只凭 `repo.show` 成功就跳过。纳入后直接进项目也会再试;没打上写明退回项目墙再点进来。运作活①②在计划屏不出 Start。删掉 Workbench 60 秒 tick、日采闹钟、「开始本版本」横幅。打开 / 立即采集 / 手填仍走 `collect.rs`。错过了到 Orca 点 Run now。
+运作节律迁到 Orca。纳入 / 打开项目时在现有 `ensure_repo` 成功后注入三条自动化(默认关,已有不覆盖):定版本计划周一 09:00(常驻树 `bw/week-plan`,每周新会话)、资产盘点周五 15:00(`bw/ops-audit`,每周新会话)、B 类日采每天 20:00(`bw/ledger`,复用会话)。仓已经在 Orca 里也要补打,不能只凭 `repo.show` 成功就跳过。纳入后直接进项目也会再试;没打上写明退回项目墙再点进来。运作活①②在计划屏不出 Start。删掉 Workbench 60 秒 tick、日采闹钟、「开始本版本」横幅。打开 / 立即采集 / 手填仍走 `collect.rs`。错过了到 Orca 点 Run now。自动化钉本机主机(`destination=self`),Web 里 Orca Server 那份不能跑本地树。配置屏去掉探活 / 定时 / 规范件三块(探活仍在项目墙和设置)。
 
 验包拉起的那只壳单独用临时树里的 WebView2 用户目录（`WEBVIEW2_USER_DATA_FOLDER`），不再和正在用的 `bw-dev` 抢 `%LOCALAPPDATA%\bw-dev`。
 
