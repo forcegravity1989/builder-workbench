@@ -11,7 +11,7 @@ mod vm_kb;
 mod vm_panels;
 
 pub use nav::{
-    ChromeBusy, GuideNav, Panel, PanelNav, TopView, REPORTING_LOG, STARTING_SESSION,
+    ChromeBusy, GuideNav, Panel, PanelNav, TopView, REPORTING, REPORTING_LOG, STARTING_SESSION,
     SWITCHING_STATUS,
 };
 
@@ -676,6 +676,13 @@ pub fn spawn(deep_link: DeepLink) -> Bridge {
                                 | Command::CancelIssue { .. }
                         )
                     );
+                    let reporting_log = matches!(
+                        &req,
+                        Req::Cmd(Command::ReportWorkbenchIssue {
+                            attach_log: true,
+                            ..
+                        })
+                    );
                     let reporting = matches!(
                         &req,
                         Req::Cmd(Command::ReportWorkbenchIssue { .. })
@@ -707,7 +714,11 @@ pub fn spawn(deep_link: DeepLink) -> Bridge {
                                     vm_build::assemble(&app, &mut ui, &last_gather).await;
                                 let _ = vm_tx.send(snap);
                             } else if reporting {
-                                ui.busy = Some(REPORTING_LOG.into());
+                                ui.busy = Some(if reporting_log {
+                                    REPORTING_LOG.into()
+                                } else {
+                                    REPORTING.into()
+                                });
                                 let snap =
                                     vm_build::assemble(&app, &mut ui, &last_gather).await;
                                 let _ = vm_tx.send(snap);

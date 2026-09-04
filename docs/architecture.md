@@ -135,7 +135,7 @@ references(`standard/system-prompt/references/*.md`)是「干某类活需要额�
 
 ### 5 · command-event-与状态机
 
-**是什么**:Workbench MVP 自己的 Command/Event 枚举(界面只发命令、只收事件,内核是唯一执行点)+ 活的生命周期状态机与合法转移表。"完成"永远由人显式点(待办 / 进行中 / 待评审 / 阻塞 / 未排期都能进 Done);自动化、agent、定时不得推到 Done;回执带"真发生了什么"而不是"命令收到了"。转移表是产品铁律的代码正本,加人完成入边要先改铁律再改表。Event 不做事件溯源、fire-and-forget 给 UI。右侧「Issue」上报走 `ReportWorkbenchIssue`:host/path 从当前目录 git 的 origin 现读,对照日志有文件就附上,回执 toast 写「issue上报成功」,不写打开着的被管项目。
+**是什么**:Workbench MVP 自己的 Command/Event 枚举(界面只发命令、只收事件,内核是唯一执行点)+ 活的生命周期状态机与合法转移表。"完成"永远由人显式点(待办 / 进行中 / 待评审 / 阻塞 / 未排期都能进 Done);自动化、agent、定时不得推到 Done;回执带"真发生了什么"而不是"命令收到了"。转移表是产品铁律的代码正本,加人完成入边要先改铁律再改表。Event 不做事件溯源、fire-and-forget 给 UI。右侧「上报问题」走 `ReportWorkbenchIssue`:host/path 从当前目录 git 的 origin 现读,人勾了附加且对照日志有文件才附上,回执 toast 写「问题已上报」,不写打开着的被管项目。
 
 **代码**:bw 的 `command.rs`(Command/Event 枚举)+ `model.rs`(`IssueStatus` 七态、`can_transition_to` 唯一事实源)+ `app/mod.rs`(dispatch)+ `app/issue.rs`(run_issue / transition_issue / report_workbench_issue)。
 **数据**:本模块不落库;状态机是内存态求值,转移成立后把新状态交给 issue_store(模块1)写远端正本;Event 只活在当次运行里不持久化。
@@ -214,7 +214,7 @@ references(`standard/system-prompt/references/*.md`)是「干某类活需要额�
 **代码**:app-shell 的 `main.rs`(Root)+ `bridge/`(独立线程持有 App + nav + vm_build/vm_derive/vm_kb/vm_panels 四分文件拼 VM)+ `vm.rs`(全体 ViewModel)+ `theme/` + `chrome/` + `screens/`(八屏各一目录)+ `adapters/`(一能力一目录)。Windows exe 图标走 `app.ico` + `build.rs`(`winres`),编不过只告警。换项目时内核桥只采打开的那个仓(issue 名单 / 周目标 / 发版 / 健康 / 版本列表 / 当前用户)就推 ViewModel 切页,不顺手刷墙上其他仓;每张活的 MR 号后台回填,不挡第一屏。还在项目墙才拉全墙。拖拽改状态写成功只补丁这一张,不重拉名单(ADR 0002)。
 **数据**:本地零数据库——本机数据是 TOML/JSONL 落 `data_dir()` 下;codehub/GitHub issue+标签是唯一 issue 正本;壳自己不存任何业务数据,每个数字都是拼 ViewModel 那一刻从内核现算塞进来的。对照日志全仓一份 `bw.log`:`cargo run` 写到启动目录,直接跑 exe 写到项目目录(仓根或安装目录);`BW_LOG` 可改路径。一行是 `[时间] [模块] [文件] [行] [ok|err|warn] 正文`。E2E 标签(`[BW_OPEN]` 等)留在正文里。toast / 命令进出 / Orca RPC 都进这份文件。不写 token / pairing / 提示词正文。
 **依赖**:bw(内核 App / Command / Model)、bw_engine(执行器 / 远端)、dioxus 0.7 hard-pin + wry、tokio;对 V3 任何 crate 零依赖;xterm.js 前端资产 `include_str!` 编进二进制不联网拉。
-**没建**:Cursor 适配模块;蒸馏按钮、MR 检查列、"等你输入"那种 agent 细粒度状态(要靠 hook 回传还没接);已结束的会话切走再回来回放仍空;Windows 安装包正源在 `.bw/release/pack/`（入口 `pack.cmd` / `e2e/e2e.cmd`，协议 ADR-0005）;删旧壳判据一条都不满足。计划屏「出包」走 `PackRelease`:两行弹窗吃出包 / 验包进度,不打标签;关弹窗后台继续,按钮三个点再点回来;停止再确认,杀进程树并清 `.bw/release/out/{version}` 与临时装目录。验包不过时「详情」列出 JSONL `cases`（哪条、过没过、报错原话）。「发版本」仍只走 `CutRelease`。`BW_CDP_PORT` 有值才开 WebView2 调试口;设置 / 接入深链打 `[BW_VIEW]`。会话左右栏可收,中栏终端跟着撑开。右侧「指南」全局都在,打开是仓里那份产品指南,不是另写的四章。指南下面是「Issue」:填标题后把本机对照日志报到当前目录 git 的 workbench 仓,中间转圈「日志上传中」,成功走底栏 toast「issue上报成功」。
+**没建**:Cursor 适配模块;蒸馏按钮、MR 检查列、"等你输入"那种 agent 细粒度状态(要靠 hook 回传还没接);已结束的会话切走再回来回放仍空;Windows 安装包正源在 `.bw/release/pack/`（入口 `pack.cmd` / `e2e/e2e.cmd`，协议 ADR-0005）;删旧壳判据一条都不满足。计划屏「出包」走 `PackRelease`:两行弹窗吃出包 / 验包进度,不打标签;关弹窗后台继续,按钮三个点再点回来;停止再确认,杀进程树并清 `.bw/release/out/{version}` 与临时装目录。验包不过时「详情」列出 JSONL `cases`（哪条、过没过、报错原话）。「发版本」仍只走 `CutRelease`。`BW_CDP_PORT` 有值才开 WebView2 调试口;设置 / 接入深链打 `[BW_VIEW]`。会话左右栏可收,中栏终端跟着撑开。右侧「指南」全局都在,打开是仓里那份产品指南,不是另写的四章。指南下面是「上报问题」:弹窗写明会附对照日志,默认勾选;填标题后报到当前目录 git 的 workbench 仓,勾了附加就转圈「日志上传中」,成功走底栏 toast「问题已上报」。
 
 ### 12 · 指标采集与读数
 

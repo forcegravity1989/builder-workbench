@@ -510,7 +510,7 @@ fn primary_note(events: &[Event]) -> Option<String> {
             }
         }
         Event::IssueEdited { .. } => "issue 标题/正文已改 · 已同步到 codehub".into(),
-        Event::WorkbenchIssueReported { .. } => "issue上报成功".into(),
+        Event::WorkbenchIssueReported { .. } => "问题已上报".into(),
     })
 }
 
