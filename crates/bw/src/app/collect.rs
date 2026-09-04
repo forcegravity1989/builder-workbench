@@ -25,7 +25,7 @@ use std::process::Stdio;
 use std::time::Duration;
 
 /// 单个脚本最多跑多久。超时按「没采到」算,不是按 0 算。
-const TIMEOUT: Duration = Duration::from_secs(90);
+const TIMEOUT: Duration = Duration::from_secs(900);
 
 /// 一周一个点。`value` **原样保留脚本给的东西** —— 数也好、`"87%"` 这种给人看的
 /// 字符串也好,要画走势时才解析,解析不出来的点跳过、不画、不猜。

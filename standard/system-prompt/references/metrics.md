@@ -20,7 +20,7 @@ collect = { kind = "manual" }
 `run` 是 argv,不走 shell。`kind=script` 且 `run` 空 = 写了一半,采不起来。
 
 Workbench 起脚本时:工作目录是仓根,追加
-`--since YYYY-MM-DD --until YYYY-MM-DD --granularity week`(左闭右开),超时 90 秒。
+`--since YYYY-MM-DD --until YYYY-MM-DD --granularity week`(左闭右开),超时 900 秒。
 只认 **stdout 的一个 JSON 对象**。往文件里写不算数。
 
 - `retro = true`(A):吐 `{"points":[{"week":"2026-W35","value":8},…]}`。周号要对上窗口里的 ISO 周;少给的周断开,不补前值。只吐 `{"value":8}` 会落成最后一周一个点。

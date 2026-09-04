@@ -202,7 +202,7 @@ references(`standard/system-prompt/references/*.md`)是「干某类活需要额�
 
 **是什么**:适配项目本来就有的一个群(今天只有 WeLink)。Workbench 往群里发一类**固定枚举事件**——本周版本计划 / 新建活纳入本周 / PR 合入 / 发版 / 周报,每件可在总览单项开关。事件挂在 `NotifyEvent` 注册表上(加新事件=加 variant + 动作点调一次统一 dispatch,不散落硬编码字符串,见 ADR-0003)。定计划时拉一段上周群历史当参考。不是发明新的协作面,也不做双向机器人。关键取舍是发送不落库(没有"已发送"账本 / 去重键 / 重试队列,发送即完成),重复触发允许真的重发一条是已接受的知情代价;群号是项目的事(走仓文件+MR)、登录是机器的事(Workbench 不碰不存凭证)。
 
-**代码**:bw 的 `chat/`(`ChatGroup` trait + 工厂 + `welink` / `mock` / `none` 三实现 + `NotifyEvent` 枚举注册表 + `notify_text`)+ `app/chat_notify.rs`(`chat_send` 统一 dispatch / `chat_notify_issue`)+ `repo/project_file.rs`(`[chat]` 段)。触发点:`start_week_planning`(本周版本计划)、`create_issue` 带 `week_of`(新建活纳入本周)、合入路径(PR 合入)、`cut_release`(发版)。
+**代码**:bw 的 `chat/`(`ChatGroup` trait + 工厂 + `welink` / `mock` / `none` 三实现 + `NotifyEvent` 枚举注册表 + `notify_text`)+ `app/chat_notify.rs`(`chat_send` 统一 dispatch / `chat_notify_issue`)+ `repo/project_file.rs`(`[chat]` 段)。触发点:`start_week_planning`(本周版本计划)、`create_issue` 带 `week_of`(新建活纳入本周)、合入路径(PR 合入)、`cut_release`(发版;弹窗说明非空时接到 `【发版】发版 <号>` 后面)。
 **数据**:配置在 `.bw/project.toml [chat]` 段(正本走总览「项目约定」那张轻量活+MR,和名片四字段同一张);发送不落库;探活与时间戳只写本机设置文件不开表。
 **依赖**:`welink-cli`(npm 全局装,用户自己 `auth login`,Workbench 不碰凭证)经 bw_engine::tokio_cmd shell-out;`Box<dyn ChatGroup>` + async_trait。
 **没建**:群摘要 defer——welink-cli 天生拉不了群历史(只发不读),`fetch_history` 稳定返 `HistoryUnsupported` 是正常返回值不是错;不做双向机器人、群里点按钮改活状态、一个项目多个群、除 WeLink 外任何一家正式实现(WeLink 实现由同事补,Workbench 侧只留接口)。**周报**(`weekly`)是已注册事件项(枚举 + 配置开关 + dispatch 槽都在),但本轮**无触发、无生成逻辑**——后续单独会话补,接入点已留(见 ADR-0003)。**个人 Windows 弹窗**本轮不建,后续单独会话——通知页签已删,个人提醒改走 OS 弹窗(推送式,不是点进来才看得见的列表),未落地前「有几张等你合入」由项目墙 ⚑ + 项目轨头部徽章撑着。
