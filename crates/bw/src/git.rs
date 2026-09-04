@@ -94,6 +94,18 @@ pub fn week_window(week: &str) -> Result<(i64, i64), GitError> {
     Ok((at(start), at(end)))
 }
 
+/// 一天的窗口,换算成本机时区的 unix 秒:`[当天 00:00, 次日 00:00)`。
+pub fn day_window(day: &str) -> Result<(i64, i64), GitError> {
+    let start = isoweek::parse_ymd(day).ok_or_else(|| GitError::BadWeek(day.into()))?;
+    let at = |d: time::Date| {
+        d.with_hms(0, 0, 0)
+            .expect("00:00:00 一定合法")
+            .assume_offset(isoweek::local_offset())
+            .unix_timestamp()
+    };
+    Ok((at(start), at(start + time::Duration::days(1))))
+}
+
 /// 多个周的提交/合入计数,**一趟遍历全部出齐**。
 ///
 /// **不用 `git log --since/--until` 截窗口**,而是把提交时间全取回来自己按
@@ -122,13 +134,26 @@ pub async fn week_counts_many(
     workspace: &Path,
     weeks: &[String],
 ) -> Result<std::collections::HashMap<String, WeekCounts>, GitError> {
-    let mut windows = Vec::with_capacity(weeks.len());
-    for w in weeks {
-        windows.push((w.clone(), week_window(w)?));
+    stamp_counts_many(workspace, weeks).await
+}
+
+/// 多个时间窗的提交/合入计数。标签是 ISO 周或 `YYYY-MM-DD`,一趟遍历出齐。
+pub async fn stamp_counts_many(
+    workspace: &Path,
+    labels: &[String],
+) -> Result<std::collections::HashMap<String, WeekCounts>, GitError> {
+    let mut windows = Vec::with_capacity(labels.len());
+    for label in labels {
+        let win = if isoweek::is_week(label) {
+            week_window(label)?
+        } else {
+            day_window(label)?
+        };
+        windows.push((label.clone(), win));
     }
     // 每行:`<unix 秒> <父提交…>`。父提交 ≥ 2 = 合入。
     let out = git(workspace, &["log", "--pretty=format:%ct %P"]).await?;
-    let mut map: std::collections::HashMap<String, WeekCounts> = weeks
+    let mut map: std::collections::HashMap<String, WeekCounts> = labels
         .iter()
         .map(|w| (w.clone(), WeekCounts::default()))
         .collect();
@@ -140,7 +165,7 @@ pub async fn week_counts_many(
         let parents = fields.count();
         for (w, (since, until)) in &windows {
             if ts >= *since && ts < *until {
-                let c = map.get_mut(w).expect("map 由同一份 weeks 建出");
+                let c = map.get_mut(w).expect("map 由同一份 labels 建出");
                 c.commits += 1;
                 if parents >= 2 {
                     c.merges += 1;

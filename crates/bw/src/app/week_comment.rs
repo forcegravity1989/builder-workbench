@@ -1,13 +1,15 @@
-//! 运作活①评论里的版本计划段落。界面取「版本目标」这一段(一句或一段都算);
+//! 运作活①评论里的版本计划段落。界面取「版本目标」和「每周进展」;
 //! 纳入清单和读数快照留在 issue 评论里给人点开看。
 //!
 //! 多条评论从新到旧扫,同一段以最新一条为准。认不出标题就当没有,
 //! 不猜正文。
 
-/// 机器认的三个二级标题。agent 必须写这两个字,括号说明可以跟在后面。
+/// 机器认的周初三个二级标题。agent 必须写这两个字,括号说明可以跟在后面。
 pub const HEADING_GOAL: &str = "版本目标";
 pub const HEADING_SCOPE: &str = "本周纳入";
 pub const HEADING_READINGS: &str = "本周指标读数";
+/// 周五收口。周初三标题评论不要带这一段;`validate_comment` 也不查它。
+pub const HEADING_PROGRESS: &str = "每周进展";
 
 /// 旧评论用过的标题,只在读的时候认,新写的不许再用。
 const GOAL_ALIASES: &[&str] = &["版本目标", "周目标", "本周目标"];
@@ -16,20 +18,48 @@ const GOAL_ALIASES: &[&str] = &["版本目标", "周目标", "本周目标"];
 pub struct WeekComment {
     /// `## 版本目标` 到下一个二级标题之间的正文。没有或解析不到 = `None`。
     pub goal: Option<String>,
+    /// `## 每周进展` 到下一个二级标题之间的正文。没有或解析不到 = `None`。
+    pub progress: Option<String>,
 }
 
-/// `bodies` 旧的在前。同一段以最新一条为准。
+/// 运作活①评论现算出的版本目标 / 每周进展。键是 ISO 周**和** `bw:plan:` 版本名。
+#[derive(Debug, Clone, Default)]
+pub struct Ops1Notes {
+    pub goals: std::collections::HashMap<String, String>,
+    pub progress: std::collections::HashMap<String, String>,
+}
+
+impl Ops1Notes {
+    /// 优先版本名,没有再回退本周。两个都空 = `None`。
+    pub fn goal_for(&self, version: &str, week: &str) -> Option<&str> {
+        if !version.is_empty() {
+            if let Some(g) = self.goals.get(version) {
+                return Some(g.as_str());
+            }
+        }
+        if !week.is_empty() {
+            return self.goals.get(week).map(String::as_str);
+        }
+        None
+    }
+}
+
+/// `bodies` 旧的在前。同一段以最新一条为准;目标和进展各自取最新,不必同条。
 pub fn parse_comments(bodies: &[String]) -> WeekComment {
     let mut goal = None;
+    let mut progress = None;
     for body in bodies.iter().rev() {
         if goal.is_none() {
             goal = section_text(body, GOAL_ALIASES);
         }
-        if goal.is_some() {
+        if progress.is_none() {
+            progress = section_text(body, &[HEADING_PROGRESS]);
+        }
+        if goal.is_some() && progress.is_some() {
             break;
         }
     }
-    WeekComment { goal }
+    WeekComment { goal, progress }
 }
 
 /// 挂评论之前的格式检查。只认规范标题,不认别名。
@@ -99,37 +129,38 @@ fn section_text(body: &str, names: &[&str]) -> Option<String> {
 }
 
 impl super::App {
-    /// 各 ISO 周运作活①评论里解析出的版本目标这一段。读失败的周就空着,不挡整屏。
-    /// 周与周互不依赖,评论两两并行拉,不按周串行等。
+    /// 运作活①评论里解析出的版本目标与每周进展。键是 ISO 周**和** `bw:plan:`
+    /// 版本名(有就各写一份)。取目标优先版本名,没有再回退本周。读失败就空着,
+    /// 不挡整屏。活与活互不依赖,评论两两并行拉。
     pub async fn week_goals_from_ops1(
         &self,
         project: &crate::model::Project,
         issues: &[crate::model::Issue],
-    ) -> std::collections::HashMap<String, String> {
+    ) -> Ops1Notes {
         let current = crate::isoweek::current_week();
-        let jobs: Vec<(String, u32)> = issues
+        let jobs: Vec<(String, String, u32)> = issues
             .iter()
             .filter(|i| crate::version::is_ops1_title(&i.title))
             .map(|i| {
                 let week =
                     crate::isoweek::week_of_unix(i.created_at).unwrap_or_else(|| current.clone());
-                (week, i.id.iid())
+                (week, i.plan_version.clone(), i.id.iid())
             })
             .collect();
-        let mut out = std::collections::HashMap::new();
+        let mut out = Ops1Notes::default();
         let mut i = 0;
         while i < jobs.len() {
             if i + 1 < jobs.len() {
                 let (a, b) = tokio::join!(
-                    super::issue_store::list_comments(self, project, jobs[i].1),
-                    super::issue_store::list_comments(self, project, jobs[i + 1].1),
+                    super::issue_store::list_comments(self, project, jobs[i].2),
+                    super::issue_store::list_comments(self, project, jobs[i + 1].2),
                 );
-                insert_goal(&mut out, &jobs[i].0, a);
-                insert_goal(&mut out, &jobs[i + 1].0, b);
+                insert_notes(&mut out, &jobs[i].0, &jobs[i].1, a);
+                insert_notes(&mut out, &jobs[i + 1].0, &jobs[i + 1].1, b);
                 i += 2;
             } else {
-                let a = super::issue_store::list_comments(self, project, jobs[i].1).await;
-                insert_goal(&mut out, &jobs[i].0, a);
+                let a = super::issue_store::list_comments(self, project, jobs[i].2).await;
+                insert_notes(&mut out, &jobs[i].0, &jobs[i].1, a);
                 i += 1;
             }
         }
@@ -137,16 +168,93 @@ impl super::App {
     }
 }
 
-fn insert_goal(
-    out: &mut std::collections::HashMap<String, String>,
-    week: &str,
-    bodies: super::Result<Vec<String>>,
-) {
+fn insert_notes(out: &mut Ops1Notes, week: &str, plan: &str, bodies: super::Result<Vec<String>>) {
     let Ok(bodies) = bodies else {
         return;
     };
-    if let Some(goal) = parse_comments(&bodies).goal {
-        out.insert(week.to_string(), goal);
+    let parsed = parse_comments(&bodies);
+    if let Some(goal) = parsed.goal {
+        out.goals.insert(week.to_string(), goal.clone());
+        if !plan.is_empty() && plan != week {
+            out.goals.insert(plan.to_string(), goal);
+        }
+    }
+    if let Some(text) = all_progress_text(&bodies) {
+        merge_note(&mut out.progress, week, plan, &text);
+    }
+}
+
+/// 该版本所有 `## 每周进展`,新的在前。多周 / 多次登记都留着。
+fn all_progress_text(bodies: &[String]) -> Option<String> {
+    let mut parts = Vec::new();
+    for body in bodies.iter().rev() {
+        if let Some((label, text)) = progress_block(body) {
+            parts.push(format!("{label}\n{text}"));
+        }
+    }
+    if parts.is_empty() {
+        None
+    } else {
+        Some(parts.join("\n\n"))
+    }
+}
+
+fn progress_block(body: &str) -> Option<(String, String)> {
+    let mut lines = body.lines();
+    let label = loop {
+        let line = lines.next()?;
+        if heading_matches(line, HEADING_PROGRESS) {
+            let rest = line.trim().trim_start_matches('#').trim();
+            let suffix = rest
+                .strip_prefix(HEADING_PROGRESS)
+                .unwrap_or("")
+                .trim()
+                .to_string();
+            break if suffix.is_empty() {
+                HEADING_PROGRESS.to_string()
+            } else {
+                suffix
+            };
+        }
+    };
+    let mut buf = Vec::new();
+    for line in lines {
+        if line.trim().starts_with("##") {
+            break;
+        }
+        buf.push(line);
+    }
+    while buf.first().is_some_and(|l| l.trim().is_empty()) {
+        buf.remove(0);
+    }
+    while buf.last().is_some_and(|l| l.trim().is_empty()) {
+        buf.pop();
+    }
+    if buf.iter().all(|l| l.trim().is_empty()) {
+        return None;
+    }
+    Some((label, buf.join("\n")))
+}
+
+fn merge_note(
+    map: &mut std::collections::HashMap<String, String>,
+    week: &str,
+    plan: &str,
+    text: &str,
+) {
+    for key in [week, plan] {
+        if key.is_empty() {
+            continue;
+        }
+        match map.get(key) {
+            Some(old) if old != text => {
+                map.insert(key.to_string(), format!("{text}\n\n{old}"));
+            }
+            None => {
+                map.insert(key.to_string(), text.to_string());
+            }
+            _ => {}
+        }
     }
 }
 
@@ -188,6 +296,28 @@ mod tests {
         assert!(parse_comments(&["## 周目标\n\n## 本周纳入\n".into()])
             .goal
             .is_none());
+    }
+
+    #[test]
+    fn newest_progress_wins_independently() {
+        let plan = "## 版本目标\n\n推到能演示。\n\n## 本周纳入\n- #2\n\n## 本周指标读数\n快照";
+        let old = "## 每周进展 2026-W35\n\n旧的一句。";
+        let new = "## 每周进展 2026-W36\n\n合入了会话屏,发版还没动。";
+        let p = parse_comments(&[plan.into(), old.into(), new.into()]);
+        assert_eq!(p.goal.as_deref(), Some("推到能演示。"));
+        assert_eq!(p.progress.as_deref(), Some("合入了会话屏,发版还没动。"));
+        assert_eq!(
+            all_progress_text(&[plan.into(), old.into(), new.into()]).as_deref(),
+            Some("2026-W36\n合入了会话屏,发版还没动。\n\n2026-W35\n旧的一句。")
+        );
+    }
+
+    #[test]
+    fn monday_comment_has_no_progress() {
+        let body = "## 版本目标\n一句话\n## 本周纳入\n- #2\n## 本周指标读数\n快照";
+        let p = parse_comments(&[body.into()]);
+        assert_eq!(p.goal.as_deref(), Some("一句话"));
+        assert!(p.progress.is_none());
     }
 
     #[test]

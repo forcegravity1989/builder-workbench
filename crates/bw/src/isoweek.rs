@@ -57,6 +57,16 @@ pub fn today_ymd() -> String {
     format_ymd(today_local())
 }
 
+/// 近 `n` 个日历日(含今天),旧的在前。总览按天画走势用。
+pub fn recent_days(n: u32) -> Vec<String> {
+    let today = today_local();
+    let n = n.max(1) as i64;
+    (0..n)
+        .rev()
+        .map(|i| format_ymd(today - Duration::days(i)))
+        .collect()
+}
+
 /// 这一 ISO 周的周一。认不出返回 `None`。
 pub fn week_monday_ymd(week: &str) -> Option<String> {
     week_start(week).map(format_ymd)

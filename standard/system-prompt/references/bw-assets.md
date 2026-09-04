@@ -13,8 +13,7 @@ brief = "一句话产品"
 benchmark = ""
 opportunity = ""
 
-# 在研版本。总览 / 计划屏每次现读。
-current_version = "v0.3"
+# 在研版本不写在这里:看远端里程碑覆盖当天。旧 `current_version` 多一行不报错、不展示。
 
 [chat]
 provider = "welink"
@@ -23,7 +22,7 @@ group_id = "996840920634630304"
 notify = ["merged", "release"]
 ```
 
-不写 `standard_version`。不重写 `name` / `brief` / `benchmark` / `opportunity` / `current_version`。
+不写 `standard_version`。不重写 `name` / `brief` / `benchmark` / `opportunity`。旧 `current_version` 不删不改不展示。
 
 ## `.bw/.gitignore`
 
@@ -96,5 +95,6 @@ B/C 类读数。写在账本 `bw/ledger`,不写主检出。键是日历日,同�
 | 北极星 / 目标 / 采集方案 | 重定 | 不改;可疑只提醒开① |
 | 旧格式升到上面这样、迁读数、清残留 | — | 做 |
 | 本周读数快照 / 版本目标 / 纳入 | 评论 | — |
+| 每周进展 | ① 上追加 | ② 写到① |
 
 人才能合的环只写评论,不 merge:开着的项目约定 / 指标 / 账本 MR;本周没有运作活①;指标读不动;残留 `issue-policy`;读数还躺在主检出。

@@ -117,7 +117,7 @@ references(`standard/system-prompt/references/*.md`)是「干某类活需要额�
 |---|---|---|
 | 所有活都守的纪律(最远评审中 / 提完 MR 改 inreview 标签 / 只提 MR / 提交优先用户技能) | `SYSTEM.md.tmpl`(评审会话另改 `REVIEW.md.tmpl`) | 每张活 |
 | 指标协议(可回溯、窗口、不许写 0、schema) | `references/metrics.md` + `templates/metrics.toml.tmpl` | 运作活①;② 升格式时 skill 会再指过去 |
-| 运作活①评论三个标题 | `references/week-plan-comment.md` + `week-planning` skill / 校验脚本 | 运作活① |
+| 运作活①评论三标题 + 周五每周进展 | `references/week-plan-comment.md` + `week-planning` / `asset-audit` skill / 校验脚本(只查周初三标题) | 运作活①;运作活②(只写进展) |
 | 改仓:分支 / 提 MR / 合并是人 / 提完 MR 改 `bw:status:inreview` | `references/build.md` | 构建/优化/运维业务活;运作活②(改 `.bw` 也是改仓) |
 | `.bw` 该有、整份可删、现行格式、和①的分工 | `references/bw-assets.md` | 运作活② |
 | 独立评审只评不改 | `references/review.md` + `REVIEW.md.tmpl` + `mr-review`(尚未派发) | 评审会话 |
@@ -131,7 +131,7 @@ references(`standard/system-prompt/references/*.md`)是「干某类活需要额�
 **代码**:bw 的 `app/bootstrap.rs`(`agent_system_prompt` 渲染模板 + `skill_pointer` + `references_for`)+ `standard/system_prompt.rs`(`SYSTEM_PROMPT_TMPL` + references 表)+ `standard/skills.rs`(四份运作剧本 `include_str!` + 评论校验脚本 sidecar)+ `app/mod.rs`(`ensure_skill_assets` / `ensure_prompt_assets`)。评审三件套(`REVIEW.md.tmpl` / `references/review.md` / `mr-review`)已入库但**未编进二进制、未派发**——见模块7「没建」。
 **数据**:主提示词模板 + references + 技能正本都编进二进制,开工时摊到 `<asset_root>/`;提示词是一次性字符串经 `--append-system-prompt` 送进 CLI,不落盘不缓存。
 **依赖**:standard::system_prompt、standard::skills、standard::render、bw_engine::LaunchPlan(`--add-dir`)、codehub issue 正本。
-**没建**:`proto-design`(原型阶段默认 workflow)源还没 vendor 进来、未打包;vendor 摊是 dev 期从源码树 runtime 复制(分发态无源码树时降级为不摊,入口仍注入但子技能读不到——bundle 进二进制留后续);references 现四份已派发(指标 / 运作活①评论 / 改仓 / `.bw` 契约)+ 评审一份未派发;运营推广/竞品阶段无业界默认(留白)。
+**没建**:`proto-design`(原型阶段默认 workflow)源还没 vendor 进来、未打包;vendor 摊是 dev 期从源码树 runtime 复制(分发态无源码树时降级为不摊,入口仍注入但子技能读不到——bundle 进二进制留后续);references 现四份已派发(指标 / 运作活①评论 / 改仓 / `.bw` 契约)+ 评审一份未派发;② 收口每周进展时也注入 `week-plan-comment`;运营推广/竞品阶段无业界默认(留白)。
 
 ### 5 · command-event-与状态机
 
@@ -223,7 +223,7 @@ references(`standard/system-prompt/references/*.md`)是「干某类活需要额�
 **代码**:bw 的 `repo/metrics_file.rs`(`MetricClass` / `CollectPlan` / `read`)+ `repo/readings_file.rs`(流水读写)+ `app/collect.rs`(`collect_all` / `collect_one` / `run_script`);app-shell 的 `bridge/mod.rs`(命令/事件对)+ `screens/overview/mod.rs`(采按钮)。业务采集脚本由运作活①跟人写进项目仓,Workbench 不预铺。
 **数据**:可回溯(A 类)一个字不存现算;不可回溯(B 类)与手填(C 类)进同一份 `.bw/metrics/readings.jsonl`(键是日历日 `YYYY-MM-DD`,同一天同一指标只留一行,当天再采覆盖)。写在固定账本 worktree,分支 `bw/ledger`、目录是主仓兄弟 `<仓名>-bw-ledger`,不写人的主检出;读的时候主检出(已合入的历史)和账本叠在一起,同一天以账本为准。合进主干跟运作活①走。指标定义 `.bw/metrics.toml`(人手写正本);A 类采集结果本机纯缓存丢了重算。
 **依赖**:仓文件解析器读定义;bw_engine::tokio_cmd 起子进程;isoweek 算 ISO 周号;serde_json 解析 stdout;不认识任何远端系统,只会"起进程、传窗口、读 JSON"。
-**没建**:C 类定时建提醒活没做。脚本 stdout 必须 UTF-8、A 类必须吐按周 `points` 已写进 `references/metrics.md` 与模板顶部注释。北极星/滞后/引领每张卡固定一块折线,卡顶一行现值 + 相对上周(序列里最后两个已知数;不够就「—」);多条引领同一行并排。只吐当下一个 `value` 的落在窗口最后一周一个孤点,前几周断开,不把整张卡打成没采到。本会话第一次打开一个项目会自动采一轮指标和仓统计;B 类另有每日 20:00 自动采(Workbench 开着、今天还没试过才跑,戳在 Workbench 资产目录 `collect-stamp/<slug>`,不进被管仓;失败也盖戳避免 60 秒重打)。**记账键是日历日**,与 V3 `observation` 一天一行对齐,迁过去不亏周内点;折线按周画,一周取最后一天。V3 没有「每条指标自选日/周粒度」——当时全局日采、按日存、面板按 8 周画。C 类在总览卡手填今天的数,和 B 类同一份流水、同一套覆盖。B 类没写 `run` 仍采不到——脚本在被管项目里,Workbench 只负责跑和记账。旧流水只有 `week`、没有 `day` 的行不认。顶栏「刷新」会先把打开着的项目主检出快进到远端(脏的若是读数流水,先挪进账本)。不碰主检出上的名片。人的源码脏文件不动。只重拼界面、不拉仓,会继续看见旧的 `metrics.toml`。
+**没建**:C 类定时建提醒活没做。脚本 stdout 必须 UTF-8、A 类必须吐按周 `points` 已写进 `references/metrics.md` 与模板顶部注释。总览业务指标按 `feature` 分页签(空=主要)、按 `leads` 把引领叠到对应滞后的一张图上(空=该页签第一条滞后);图例勾选显隐;周/天可切。只吐当下一个 `value` 的落在窗口最后一周一个孤点,前几周断开,不把整张卡打成没采到。更多 SDLC 指标另窗。本会话第一次打开一个项目会自动采一轮指标和仓统计;B 类另有每日 20:00 自动采(Workbench 开着、今天还没试过才跑,戳在 Workbench 资产目录 `collect-stamp/<slug>`,不进被管仓;失败也盖戳避免 60 秒重打)。**记账键是日历日**,与 V3 `observation` 一天一行对齐,迁过去不亏周内点;折线按周画,一周取最后一天。V3 没有「每条指标自选日/周粒度」——当时全局日采、按日存、面板按 8 周画。C 类在总览卡手填今天的数,和 B 类同一份流水、同一套覆盖。B 类没写 `run` 仍采不到——脚本在被管项目里,Workbench 只负责跑和记账。旧流水只有 `week`、没有 `day` 的行不认。顶栏「刷新」会先把打开着的项目主检出快进到远端(脏的若是读数流水,先挪进账本)。不碰主检出上的名片。人的源码脏文件不动。只重拼界面、不拉仓,会继续看见旧的 `metrics.toml`。
 
 ### 13 · 周循环与计划
 
@@ -232,11 +232,11 @@ references(`standard/system-prompt/references/*.md`)是「干某类活需要额�
 **代码**:bw 的 `app/plan.rs`(用例)+ `app/release_ship.rs`(`PackRelease` 出包→验包)+ `app/ops.rs`(运作活①②标题幂等键与定时)+ `isoweek.rs` + `trend.rs`(近 N 周走势全现算);app-shell 的 `screens/plan/`(mod / kanban / detail / plan_dialogs)。
 **数据**:零本地库——codehub/GitHub issue+标签是唯一正本;排期只有一个槽(Workbench 直接改标签):`bw:plan:<版本名>`,一张活只挂一个。codehub 上顺带投影同名里程碑,计划屏仍只认标签。旧 `bw:week:` 忽略,不迁旧标。删除未发布的版本 = 摘 `bw:plan:<名>` + 删同名里程碑;已发的不能删、不能改名。出包 = 仓里 `.bw/release/pack/pack.cmd` 与 `e2e/e2e.cmd`,产物在 `{仓根}/.bw/release/out/{version}/`。发版 = 远端建 Release + 打 `bw:released:<名>`,号锁死当前版本视图。在研版本看远端里程碑覆盖当天,不进仓文件;项目群跟名片四字段同一张轻量活「项目约定」,总览编辑,不写主检出。总览/知识库发版次数优先读远端 Release,读不到再退本机 git 标签。进计划屏默认就是全部 issue。点某个版本只看挂了那个版本的活;没挂版本的只在全部 issue。项目墙「本周 x/y 完成」跟总览五段同一口径,作废不进分母。
 **依赖**:issue_store、repo::project_file、git(`pull_ff`)、isoweek、trend、bw_engine::remote(建 Release / 查 MR)、bw_engine::github(`issue_branch` 确定性);节律用产品默认 `fri 09:00`。
-**没建**:"预览·未合入"做成灰态(从活 worktree 读未合入的 metrics.toml 与 ops① 评论重渲染周头未接);"蒸馏"灰态(见模块15);给活挂指标的命令没接(建活时"推的指标"列恒空);macOS 页面内拖放还没真机验证过一次。版本目标在总览「本周计划进度」、计划屏版本头显示 `## 版本目标` **整段**(一句或一段都行,旧的一句话评论不用迁);计划屏默认收成两行,右下角展开框打开整段,再点收起。项目墙卡片仍截短。正本是 ops① 评论,多条从新到旧。纳入清单和读数快照留在评论里,人点开运作活看。范围内的活认 `bw:plan:<版本名>`。剧本要求人先确认本周版本(推荐 `vX.X`),再当场建卡并打 `bw:plan:<名>` + `bw:category:*`,打完还要挂 codehub 同名里程碑(起止默认本周周一到周五);替身路径仍走 `ConfirmWeekDraft`。不再写 `bw:week:*`。挂评前用 `week-planning/check-week-comment.py` 校验标题。计划屏「新建活」可选业务活或运作活①②,都能填正文。业务活打 `bw:category:*`;运作活不打五阶段类别,标题按本周幂等。业务活工具和 workflow 读回时按类别查本机 settings,没有就用产品默认(原型默认 Open Design,workflow 空着等 proto-design 打包);运作活开工工具跟构建,workflow 仍按标题。总览不再放「去计划」(侧栏下一格就是计划)。
+**没建**:"预览·未合入"做成灰态(从活 worktree 读未合入的 metrics.toml 与 ops① 评论重渲染周头未接);"蒸馏"灰态(见模块15);给活挂指标的命令没接(建活时"推的指标"列恒空);macOS 页面内拖放还没真机验证过一次。版本目标在总览「版本计划与进展」、计划屏版本头显示 `## 版本目标` **整段**(一句或一段都行,旧的一句话评论不用迁);计划屏默认收成两行,右下角展开框打开整段,再点收起。每周进展同样从该版本运作活①评论现算(`## 每周进展`,周五②收口追加,只追加不改周初那条);没有就空着。总览不另开「发版记录」(历史版本在版本页签)。项目墙卡片仍截短。正本是 ops① 评论,多条从新到旧。纳入清单和读数快照留在评论里,人点开运作活看。范围内的活认 `bw:plan:<版本名>`。剧本要求人先确认本周版本(推荐 `vX.X`),再当场建卡并打 `bw:plan:<名>` + `bw:category:*`,打完还要挂 codehub 同名里程碑(起止默认本周周一到周五);替身路径仍走 `ConfirmWeekDraft`。不再写 `bw:week:*`。挂评前用 `week-planning/check-week-comment.py` 校验标题。计划屏「新建活」可选业务活或运作活①②,都能填正文。业务活打 `bw:category:*`;运作活不打五阶段类别,标题按本周幂等。业务活工具和 workflow 读回时按类别查本机 settings,没有就用产品默认(原型默认 Open Design,workflow 空着等 proto-design 打包);运作活开工工具跟构建,workflow 仍按标题。总览不再放「去计划」(侧栏下一格就是计划)。
 
 ### 14 · 资产盘点与项目接入
 
-**是什么**:两件互锁的事。资产盘点(运作活②)每周两步:先对照 `references/bw-assets.md` 盘 Workbench 给项目的 `.bw/`(清残留、升格式让当前工作台读得动、点出未闭环的环),再盘项目本周提交与开着的 MR(建议只落这张活的评论,不改业务代码)。定时建的说明写 `mode: weekly`。开工工具跟构建。项目接入把一个仓弄到本机、落一行项目、把名片写进「项目约定」常驻树(不写主检出)。默认分支已有名片、或开着项目约定/残留旧标题的仓接入时不重开约定。没有单独的「历史回填」命令,也不按 git 周去建假文件。健康灯只看本周。
+**是什么**:两件互锁的事。资产盘点(运作活②)每周先对照 `references/bw-assets.md` 盘 Workbench 给项目的 `.bw/`(清残留、升格式让当前工作台读得动、点出未闭环的环),再盘项目本周提交与开着的 MR(建议只落这张活的评论,不改业务代码),再按 `week-plan-comment.md` 给本周在研版本那张运作活①追加一条每周进展(找不到①才写在②上并说一句)。定时建的说明写 `mode: weekly`。开工工具跟构建。项目接入把一个仓弄到本机、落一行项目、把名片写进「项目约定」常驻树(不写主检出)。默认分支已有名片、或开着项目约定/残留旧标题的仓接入时不重开约定。没有单独的「历史回填」命令,也不按 git 周去建假文件。健康灯只看本周。
 
 **代码**:bw 的 `app/project.rs`(接入 / 名片 / 群)+ `git.rs`(`first_commit_date` / `tags_with_dates` / `week_counts_many` 现算);standard/skills 的 `asset-audit`。`project-handbook` 在仓里,盘点不派发。
 **数据**:零本地库;名片四字段只落 `.bw/project.toml`;`project` 表只有定位与显示缓存;历史呈现不写仓文件。

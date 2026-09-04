@@ -586,7 +586,7 @@ pub fn spawn(deep_link: DeepLink) -> Bridge {
                         o.weeks.len(),
                         o.config.skills.len(),
                     );
-                    // 总览那条「本周计划进度」的五段。**只认当前周**,与计划屏
+                    // 总览「版本计划与进展」的五段。**只认在研版本**,与计划屏
                     // 左栏看的是哪一周无关 —— 这一行就是那条纪律的读回。
                     let c = &o.week_counts;
                     bw_engine::dlog!(
@@ -1260,7 +1260,7 @@ pub fn spawn(deep_link: DeepLink) -> Bridge {
                                         let back = tx_back.clone();
                                         tokio::spawn(async move {
                                             let (readouts, error) =
-                                                match bw::app::collect::collect_all(&ws, 4).await
+                                                match bw::app::collect::collect_all(&ws, 5).await
                                                 {
                                                     Ok(r) => (r, None),
                                                     Err(e) => (Vec::new(), Some(e)),
@@ -1575,7 +1575,7 @@ async fn kick_project_collect(app: &App, pid: ProjectId, tx_back: &mpsc::Unbound
     let back_r = tx_back.clone();
     let ws_m = ws.clone();
     tokio::spawn(async move {
-        let (readouts, error) = match bw::app::collect::collect_all(&ws_m, 4).await {
+        let (readouts, error) = match bw::app::collect::collect_all(&ws_m, 5).await {
             Ok(r) => (r, None),
             Err(e) => (Vec::new(), Some(e)),
         };

@@ -413,7 +413,7 @@ impl App {
         let issues = self.issues(project.id).await.unwrap_or_default();
         let mut plan_names: Vec<String> = issues
             .iter()
-            .filter(|i| !i.plan_version.is_empty())
+            .filter(|i| crate::version::is_plan_name(&i.plan_version))
             .map(|i| i.plan_version.clone())
             .collect();
         let mut released_names: Vec<String> = issues
@@ -424,7 +424,7 @@ impl App {
         if let Ok(remote) = self.remote_for(project) {
             if let Ok(rows) = remote.list_milestones(&project.remote_path).await {
                 for (title, _, _, _) in rows {
-                    if !title.is_empty() {
+                    if crate::version::is_plan_name(&title) {
                         plan_names.push(title);
                     }
                 }

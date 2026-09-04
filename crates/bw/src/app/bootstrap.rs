@@ -258,8 +258,8 @@ pub struct ReferencePointer {
 /// 这张活要读哪几份阶段规范 references。按活的类别/workflow 匹配,只返**硬盘
 /// 上真存在**的那几份(文件不在就如实不指,不编路径)。
 ///
-/// 已派发:`metrics` / `week-plan-comment`(运作活①)、`build`(改仓类 + 运作活②)、
-/// `bw-assets`(运作活②)。其余按实践长。对照表在 architecture 模块 4。
+/// 已派发:`metrics`(运作活①)、`week-plan-comment`(运作活① + ② 收口进展)、
+/// `build`(改仓类 + 运作活②)、`bw-assets`(运作活②)。其余按实践长。对照表在 architecture 模块 4。
 pub fn references_for(issue: &Issue, refs_dir: &std::path::Path) -> Vec<ReferencePointer> {
     let mut out = vec![];
     for pack in standard::system_prompt::references() {
@@ -282,7 +282,9 @@ fn want_ref(issue: &Issue, slug: &str) -> bool {
     let ops2 = issue.workflow == super::ops::OPS2_WORKFLOW;
     match slug {
         // 指标活:更新指标与版本计划。② 升格式时 skill 会再指过去,这里不预注入。
-        "metrics" | "week-plan-comment" => issue.workflow == super::ops::OPS1_WORKFLOW,
+        "metrics" => issue.workflow == super::ops::OPS1_WORKFLOW,
+        // 周初三标题给①;周五每周进展给②。同一份 reference。
+        "week-plan-comment" => issue.workflow == super::ops::OPS1_WORKFLOW || ops2,
         // 改仓类活:构建 / 优化 / 运维;运作活②改 `.bw` 也是改仓。
         "build" => {
             ops2 || matches!(
@@ -400,7 +402,7 @@ mod want_ref_tests {
         assert!(want_ref(&i, "bw-assets"));
         assert!(want_ref(&i, "build"));
         assert!(!want_ref(&i, "metrics"));
-        assert!(!want_ref(&i, "week-plan-comment"));
+        assert!(want_ref(&i, "week-plan-comment"));
     }
 
     #[test]

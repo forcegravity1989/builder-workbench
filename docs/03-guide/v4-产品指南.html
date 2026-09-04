@@ -340,7 +340,7 @@
         <div class="li"><div class="n">1</div><div class="t"><strong>取仓</strong>——目录里已经是 git 仓就直接用（顺带把它的 origin 报出来给你核对）；目录不在或是空的就 clone；没填远端就建个空目录并说明它是空的；<strong>目录里有东西又不是 git 仓就当场弹回</strong>，既不敢往里 clone，也不敢把别人的目录当成这个项目的仓。</div></div>
         <div class="li"><div class="n">2</div><div class="t"><strong>本机清单落一行项目</strong>——只存定位：名字、本机路径、远端地址。名片不进这份清单。</div></div>
         <div class="li"><div class="n">3</div><div class="t"><strong>写名片</strong>——<code>.bw/project.toml</code>。仓里已经有就一个字不覆盖、只补空着的字段。</div></div>
-        <div class="li"><div class="n">4</div><div class="t"><strong>仓里还没有名片，才建一张「规范铺底」的活</strong>——它开一条分支、往仓里写规范骨架、<strong>提一个 MR</strong>，然后<strong>停在评审中等你合</strong>。仓里已经有项目信息、或已经开着一张铺底活，这一步整段跳过。它不会自动合，也不会自动把活标成完成。</div></div>
+        <div class="li"><div class="n">4</div><div class="t"><strong>仓里还没有名片，才建一张「项目约定」的活</strong>——它开一条分支、只写 <code>.bw/project.toml</code> 和 <code>.bw/.gitignore</code>、<strong>提一个 MR</strong>，然后<strong>停在评审中等你合</strong>。仓里已经有项目信息、或已经开着一张项目约定 / 残留旧标题活，这一步整段跳过。它不会自动合，也不会自动把活标成完成。</div></div>
         <div class="li"><div class="n">5</div><div class="t"><strong>自动进这个项目</strong>。</div></div>
       </div>
 
@@ -350,10 +350,11 @@
           <thead><tr><th>文件</th><th>是什么</th></tr></thead>
           <tbody>
             <tr><td class="k">.bw/project.toml</td><td>第 3 步写的名片机读件（仓里已有就不覆盖）</td></tr>
+            <tr><td class="k">.bw/.gitignore</td><td>只一条 <code>worktrees/</code>。缺了就补</td></tr>
             <tr><td class="k">.bw/PROJECT.md</td><td>旧铺底才有。新项目不再铺；每周资产盘点会删</td></tr>
             <tr><td class="k">.bw/standard.toml</td><td>旧铺底才有。新项目不再铺，也不再显示「规范版本」；每周资产盘点会删</td></tr>
             <tr><td class="k">.bw/managed.toml</td><td>旧铺底才有。新项目不再铺；每周资产盘点会删</td></tr>
-            <tr><td class="k">.bw/issue-policy.toml</td><td>类别 → 开工工具 → workflow 的映射，加上周五资产盘点节律。接入这一次一起铺。</td></tr>
+            <tr><td class="k">.bw/issue-policy.toml</td><td>旧铺底才有。新项目不再铺（开工工具跟人走本机 settings）；每周资产盘点会删</td></tr>
           </tbody>
         </table>
       </div>
@@ -364,7 +365,7 @@
         <ul>
           <li><span class="b"></span><div>Workbench 写进仓的东西<strong>全在 <code>.bw/</code></strong>。仓根 <code>README.md</code> / <code>AGENTS.md</code> / <code>CLAUDE.md</code> 这一步一个字不碰。自带技能也不进你的仓。</div></li>
           <li><span class="b"></span><div>第 4 步没成，前面仍然算数：项目已接进来、仓已在本机。没有第二次铺底命令。仓里已有名片或开着铺底活，再纳入也不会再铺一张。</div></li>
-          <li><span class="b"></span><div>铺底还没合进默认分支：总览顶上常驻一条横幅（和「开始本周」同一位置），提醒不合入则配置用不上、别人再纳入也看不出已经被管过。总览③写「已完成」只看默认分支上有没有 <code>.bw/project.toml</code>，关过的旧活不冒充铺过。</div></li>
+          <li><span class="b"></span><div>项目约定还没合进默认分支：总览顶上常驻一条横幅（和「开始本版本」同一位置），提醒不合入则配置用不上、别人再纳入也看不出已经被管过。「项目约定」写「已完成」只看默认分支上有没有 <code>.bw/project.toml</code>，关过的旧活不冒充铺过。这颗状态在计划屏，总览不另放芯片。</div></li>
         </ul>
       </div>
 
@@ -375,7 +376,7 @@
       </div>
 
       <h2 class="sec"><span class="n">最后一下：你点完成，合那个 MR</span></h2>
-      <p>接入只把活推到「评审中」。<strong>合入永远是人点的</strong>——计划屏把这张「规范铺底」从「评审中」拖到「已完成」（详情弹窗里那颗「✓ 点完成」是同一下）。松手会弹出确认框，写明先合哪个 MR；确认之后框不关，一步一句写正在合 MR、拉仓、结清（要两三秒）。合不成就整条不算数，活留在评审中，可以重试。</p>
+      <p>接入只把活推到「评审中」。<strong>合入永远是人点的</strong>——计划屏把这张「项目约定」从「评审中」拖到「已完成」（详情弹窗里那颗「✓ 点完成」是同一下）。松手会弹出确认框，写明先合哪个 MR；确认之后框不关，一步一句写正在合 MR、拉仓、结清（要两三秒）。合不成就整条不算数，活留在评审中，可以重试。</p>
       <div class="callout note">
         <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/></svg>
         <div class="body"><strong>项目墙 ⚑ 只提醒，不在那儿合。</strong>「等你合入」告诉你有一张 MR 等着；去计划屏拖到「已完成」，或总览上那颗「合入并完成」。不要只在 codehub 网页关 issue——那不会合 MR。</div>
@@ -387,7 +388,7 @@
           <li><span class="b"></span><div>本机一个真实的仓（clone 下来的）</div></li>
           <li><span class="b"></span><div>工作台上一个项目</div></li>
           <li><span class="b"></span><div>默认分支上有 <code>.bw/</code> 骨架（合入之后才有；合之前只在铺底那条分支上）</div></li>
-          <li><span class="b"></span><div>那张「规范铺底」活已完成，对应 MR 已合</div></li>
+          <li><span class="b"></span><div>那张「项目约定」活已完成，对应 MR 已合</div></li>
         </ul>
       </div>
       <p class="next">下一站：<a href="#" onclick="go('u1b');return false">第 1 站 · 看总览</a></p>
@@ -410,8 +411,8 @@
       <h2 class="sec"><span class="n">操作</span></h2>
       <div class="ops">
         <div class="li"><div class="n">1</div><div class="t">项目墙点进这个项目。侧栏默认停在「总览」。</div></div>
-        <div class="li"><div class="n">2</div><div class="t">从上往下看：规范铺底还没合入时顶上会有一条常驻横幅；然后是名片和健康灯（名片上有在研版本——覆盖当天的里程碑，有值后面带「本周」——和项目群）、北极星、本周计划进度、滞后、引领、代码仓统计、发版记录。</div></div>
-        <div class="li"><div class="n">3</div><div class="t">本会话第一次打开这个项目，Workbench 会自己采一轮指标和仓统计。卡上先写「正在采…」，采完折线出现。还想再采，用各块上的「重新采集」。</div></div>
+        <div class="li"><div class="n">2</div><div class="t">从上往下看：项目约定还没合入时顶上会有一条常驻横幅；然后是名片（健康灯在名字旁，在研版本覆盖当天的里程碑，有值带「本周」）和北极星并排、版本计划与进展、滞后和引领同一块（按特性分页签，一张图一条滞后带着它的引领）、项目指标 · SDLC 三条。没有单独的发版记录。</div></div>
+        <div class="li"><div class="n">3</div><div class="t">本会话第一次打开这个项目，Workbench 会自己采一轮指标和仓统计。卡上先写「正在采…」，采完折线出现。还想再采，用各块上的「立即采集」。</div></div>
         <div class="li"><div class="n">4</div><div class="t">顶栏「刷新」会先把打开着的项目拉到远端最新，再重采。主检出上若只脏了读数或接入留下的未提交名片，Workbench 会先让开再拉。只重画界面、不拉仓，会继续看见同事已经合进主干的旧 <code>metrics.toml</code>。</div></div>
         <div class="li"><div class="n">5</div><div class="t">改项目名称 / 想做什么 / 对标 / 三个月长成什么样，或改项目群：点「编辑」。编辑表单里「在研版本」下拉永远在，选项是覆盖今天的里程碑，改了只切本机选中、不建 MR。保存名片后这张活在「评审中」（计划屏右上角下拉切「全部 issue」就能看见，不进待办池）。总览横幅或看板拖到「已完成」合入。</div></div>
       </div>
@@ -428,19 +429,19 @@
       <h2 class="sec"><span class="n">得到什么</span></h2>
       <div class="res">
         <ul>
-          <li><span class="b"></span><div>健康灯和三条理由。没数据就是灰，不是绿。</div></li>
-          <li><span class="b"></span><div>北极星 / 滞后 / 引领每张卡：<strong>有读数</strong>才有现值和折线。A 类每次现算四周；B 类采到的当下值进流水；读到 <strong>0</strong> 是真值，不是「没采到」。</div></li>
-          <li><span class="b"></span><div>本周计划进度：覆盖当天的版本 + 版本目标这段 + 五段计数。运作活①本周已关会写「已完成」。侧栏下一格就是计划。</div></li>
+          <li><span class="b"></span><div>名片名字旁一颗健康灯。没数据就是灰，不是绿。三条判据只用来推灯，不再占一栏。</div></li>
+          <li><span class="b"></span><div>北极星单独一块。滞后和引领按所属特性分页签；一张图 = 一条滞后 + 它带着的引领，图例可勾选，可切周/天。<strong>有读数</strong>才有现值和折线。没写关联的引领挂到该页签第一条滞后。手填写在对应滞后那一行。读到 <strong>0</strong> 是真值，不是「没采到」。</div></li>
+          <li><span class="b"></span><div>版本计划与进展：页签切在研 / 历史版本；左版本目标、右每周进展（各 6 行，多了滚）；下面进度条只报数。活的列表在计划屏。</div></li>
         </ul>
       </div>
 
       <div class="callout note">
         <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/></svg>
-        <div class="body"><strong>运作活③写「已完成」只看默认分支有没有 <code>.bw/project.toml</code>。</strong>关过 issue 但 MR 没进默认分支，总览仍写「未建」。关 issue 不等于铺进了仓。</div>
+        <div class="body"><strong>「项目约定」写「已完成」只看默认分支有没有 <code>.bw/project.toml</code>。</strong>关过 issue 但 MR 没进默认分支，总览横幅还在。关 issue 不等于铺进了仓。这颗状态在计划屏，总览不另放芯片。</div>
       </div>
 
       <h2 class="sec"><span class="n">健康灯怎么亮</span>只从数据推，不能手点</h2>
-      <p>灯旁边同时列出这次判断的理由（成立打勾、不成立打圈）：</p>
+      <p>灯在名字旁。下面三条只说明怎么推，界面不再列出理由：</p>
       <ul class="checklist">
         <li>本周定了版本目标，仓里也有真实提交。目标要写进运作活①评论的 <code>## 版本目标</code>，只开着这张活还不算定了。</li>
         <li>本周或上周有指标读数。读的是 <code>.bw/metrics/readings.jsonl</code>。点过采集、脚本吐了数，这一条才打勾。</li>
@@ -607,6 +608,7 @@
         <div class="h">这一站能查到</div>
         <ul>
           <li><span class="b"></span><div>盘点什么时候自动建、最远到哪</div></li>
+          <li><span class="b"></span><div>周五会不会给总览写每周进展</div></li>
           <li><span class="b"></span><div>B 类每天几点自动采</div></li>
           <li><span class="b"></span><div>运作活①为什么不会自动开始</div></li>
         </ul>
@@ -617,13 +619,13 @@
         <div class="li"><div class="n">1</div><div class="t">配置屏能看见「资产盘点 · 到点自动建 · fri 09:00」，还有一行「B 类指标采集 · daily 20:00」。盘点节律只认产品默认，不写进仓。B 类日采固定 20:00。运作活①仍是人点「开始本版本」。</div></div>
         <div class="li"><div class="n">2</div><div class="t">Workbench 开着、过了本周那个时刻，计划屏会出现「资产盘点 YYYY-Www」。类别锁成「运作」，改不了五阶段。</div></div>
         <div class="li"><div class="n">3</div><div class="t">这张活会自己开工。看会话或详情：最远到评审中。合入、点完成仍是你来。</div></div>
-        <div class="li"><div class="n">4</div><div class="t">周一回到总览，开始下一圈。盘点报告挂在这张活的评论里（Workbench 资产 / 闭环 / 项目审查）。改了 <code>.bw/</code> 才有 MR；项目审查只出建议，不改业务代码。</div></div>
+        <div class="li"><div class="n">4</div><div class="t">周一回到总览，开始下一圈。盘点报告挂在这张活的评论里（Workbench 资产 / 闭环 / 项目审查）。当周进展另挂在该版本运作活①上（<code>## 每周进展</code>），总览右栏按新到旧列出该版本所有进展。改了 <code>.bw/</code> 才有 MR；项目审查只出建议，不改业务代码。</div></div>
       </div>
 
       <h2 class="sec"><span class="n">背后</span></h2>
       <div class="res">
         <ul>
-          <li><span class="b"></span><div><strong>对远端代码仓</strong>：建一张标题固定的运作活（本周有了就不建第二张），打本周标签，开工后改状态。每周两步：盘 `.bw/` 跟上现行契约，再盘项目本周改动；建议落评论，不改业务代码。</div></li>
+          <li><span class="b"></span><div><strong>对远端代码仓</strong>：建一张标题固定的运作活（本周有了就不建第二张；标题含 ISO 周，如 <code>资产盘点 2026-W36</code>），有在研版本就挂 <code>bw:plan:&lt;名&gt;</code>，不打 <code>bw:week:</code>。开工后改状态。先盘 <code>.bw/</code> 跟上现行契约，再盘项目本周改动（建议落评论，不改业务代码），再给该版本运作活①追加一条每周进展。</div></li>
           <li><span class="b"></span><div><strong>对你的机器</strong>：Workbench 开着每 60 秒判一次「本周这一刻过了没有」。当时没开着，下次开着会补建。注入的剧本是资产盘点；开工用的 CLI 跟配置屏「构建」那条。</div></li>
           <li><span class="b"></span><div><strong>对 <code>.bw/</code></strong>：对照现行契约清残留、升格式，让当前工作台读得动；点出未闭环的环。不重写名片，不重定北极星。仓根 <code>AGENTS.md</code> 不由周五盘点代写。</div></li>
         </ul>
@@ -633,6 +635,7 @@
       <div class="res">
         <ul>
           <li><span class="b"></span><div>多一张运作活②，类别显示「运作」、改不了五阶段。</div></li>
+          <li><span class="b"></span><div>总览「每周进展」有当周收口（有几条列几条，没有仍空着）。</div></li>
           <li><span class="b"></span><div>Workbench 开着、过了本机 20:00，会自动采一轮 B 类，按<strong>当天</strong>写入账本（同一天再采覆盖）。点「采集」也能立刻再采今天。</div></li>
         </ul>
       </div>
@@ -668,7 +671,7 @@
       </div>
 
       <h2 class="sec"><span class="n">健康灯怎么亮</span>只从数据推，不能手点</h2>
-      <p>判断依据和界面上那三条理由写在<a href="#" onclick="go('u1b');return false">第 1 站</a>。这张图只留形状。</p>
+      <p>判断依据写在<a href="#" onclick="go('u1b');return false">第 1 站</a>。灯在名字旁，理由不再占栏。这张图只留形状。</p>
       <div class="diagram">
         <div class="cap">数据推导，不能手点；没数据就停在灰</div>
         <div class="scroll">
