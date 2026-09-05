@@ -1,9 +1,17 @@
 #!/usr/bin/env bash
 # 只有允许的模块能往被管项目的 `.bw/` 里写文件。
 #
-# 只查写、不查读(远端拿名片路径去 gh api 取文件是合法的)。查不住两件事:
-# 「写完要不要跟着更新别的账」是数据流约束,按模块归属判断对它天生是绿的;
-# agent 按剧本写 `.bw/` 不经过 Rust,静态检查看不见。
+# 两遍:第一遍认内核那几个写入口,第二遍认裸文件写(`std::fs::write` 这种,
+# 一行也不经过写入口)。
+#
+# 只查写、不查读(远端拿名片路径去 gh api 取文件是合法的)。查不住这些,别把
+# 它的绿当成比它能力更大的承诺:
+# - 「写完要不要跟着更新别的账」是数据流约束,按模块归属判断对它天生是绿的;
+# - agent 按剧本写 `.bw/` 不经过 Rust,静态检查看不见;
+# - 第二遍是窗口启发式(命中行前 15 后 3 行里提到 `.bw` 才算),路径在更远处
+#   拼好再传进来的写会漏;
+# - 删除类原语(`remove_file` / `remove_dir_all`)不在覆盖内 —— 仓里这类几乎
+#   全是临时目录清理,收进来只会把真信号淹掉。
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
@@ -43,6 +51,45 @@ ALLOW=(
   "crates/bw/src/app/collect.rs"   # 采集把读数写进流水
 )
 
+# 第二遍要找的裸写原语。仓里这个写法是活的 —— `bootstrap.rs` 写 `.bw/.gitignore`、
+# `collect.rs` 播种读数流水,都是裸写,第一遍一个都看不见。照抄一行进壳或引擎,
+# 第一遍照样打勾。
+BARE_WRITE='(fs::write|fs::copy|File::create|OpenOptions::new)[[:space:]]*\('
+
+# 文件内的 `#[cfg(test)]` 段跳过:那里写的是临时目录里的假仓,不是被管项目。
+# 按括号配对只跳那一段 —— 「从第一个 cfg(test) 跳到文件尾」会连它后面的真代码
+# 一起吞掉(`orca.rs` 的测试模块后面就还有代码,自测时正是这么漏的)。
+scan_bare_writes() {
+  local f
+  for f in $(grep -rlE "$BARE_WRITE" crates --include='*.rs' || true); do
+    case "$f" in */tests/*|*/examples/*) continue ;; esac
+    awk -v F="$f" '
+      { L[NR] = $0 }
+      END {
+        for (i = 1; i <= NR; i++) {
+          if (L[i] !~ /#\[cfg\(test\)\]/) continue
+          depth = 0; opened = 0
+          for (j = i; j <= NR; j++) {
+            skip[j] = 1
+            t = L[j]; o = gsub(/\{/, "&", t)
+            t = L[j]; c = gsub(/\}/, "&", t)
+            depth += o - c
+            if (o > 0) opened = 1
+            if (opened && depth <= 0) break
+          }
+          i = j
+        }
+        for (i = 1; i <= NR; i++) {
+          if (skip[i]) continue
+          if (L[i] !~ /(fs::write|fs::copy|File::create|OpenOptions::new)[ \t]*\(/) continue
+          lo = (i - 15 > 1 ? i - 15 : 1); hi = (i + 3 < NR ? i + 3 : NR)
+          for (j = lo; j <= hi; j++)
+            if (L[j] ~ /\.bw/) { printf "%s:%d:%s\n", F, i, L[i]; break }
+        }
+      }' "$f"
+  done
+}
+
 fail=0
 while IFS= read -r hit; do
   file="${hit%%:*}"
@@ -50,7 +97,7 @@ while IFS= read -r hit; do
   ok=0
   for a in "${ALLOW[@]}"; do case "$file" in "$a"*) ok=1; break ;; esac; done
   [ "$ok" -eq 0 ] && { echo "✗ $hit"; fail=1; }
-done < <(grep -rnE "$WRITERS" crates --include="*.rs" || true)
+done < <({ grep -rnE "$WRITERS" crates --include="*.rs" || true; scan_bare_writes; })
 
 if [ "$fail" -ne 0 ]; then
   echo
