@@ -8,18 +8,15 @@ use crate::vm::*;
 use bw::model::IssueStatus;
 use std::path::Path;
 
-/// 某一周的五段计数。`week` 传 `None` = 不按周过滤(计划屏的「全部活」视图)。
+/// 某个版本的五段计数。`week` 传 `None` = 不按版本过滤(计划屏的「全部活」)。
+/// 传版本名则只数挂了 `bw:plan:<名>` 的活。
 ///
-/// **直接数活,不数看板列**:看板的范围跟着计划屏左栏走,总览那块「本周计划
-/// 进度」要的是本周,两者不能共用一份数——共用的后果是人在计划屏点了历史周,
-/// 总览的「本周」标题下摆着那一周的数。
-///
-/// 待办池不算进去,它按定义就是「没排进任何一周」;**阻塞单独一段**,不能像
-/// 早先那样整列漏掉——红的那张活正是最该被看见的。
+/// **直接数活,不数看板列**:看板跟着计划屏下拉走,总览进度条跟在研版本。
+/// 待办池不算进去;**阻塞单独一段**。
 pub(super) fn build_week_counts(issues: &[bw::Issue], week: Option<&str>) -> WeekCountsVm {
     let in_scope = |i: &&bw::Issue| match week {
         None => true,
-        Some(w) => i.plan_version == w || i.week_of == w,
+        Some(w) => i.plan_version == w,
     };
     let n = |st: IssueStatus| {
         issues
@@ -82,12 +79,12 @@ pub(super) fn build_ops(
         chip(
             "运作活① 更新指标与版本计划",
             OPS1_WORKFLOW,
-            "点总览的「开始本版本」触发",
+            "Orca 周一 09:00（默认关；错过点 Run now）",
         ),
         chip(
             "运作活② 资产盘点",
             OPS2_WORKFLOW,
-            "到点自动建(产品默认周五 09:00)",
+            "Orca 周五 15:00（默认关；错过点 Run now）",
         ),
         {
             let open = issues
@@ -201,28 +198,33 @@ pub(super) async fn collect_repo_stats(
     if let Ok(tags) = bw::git::tags(ws).await {
         items.push((tags.len().to_string(), "打过的标签".into(), "git".into()));
     }
-    // 近四周走势。**现算** —— git 那两条一趟遍历出齐,远端那条各周并发。
-    // 项目行读不出来时只算 git 那两条,远端如实留空,不整块不采。
-    let trend = match project {
-        Some(p) => bw::trend::recent_weeks(ws, p, 4).await,
+    // 近五周 + 近 14 日。**现算** —— git 一趟遍历出齐,远端一趟拉全再按窗切。
+    // 项目行读不出来时只算 git,远端如实留空,不整块不采。
+    let (trend, day) = match project {
+        Some(p) => tokio::join!(
+            bw::trend::recent_weeks(ws, p, 5),
+            bw::trend::recent_days(ws, p, 14),
+        ),
         None => {
-            let mut t = bw::trend::recent_weeks_git_only(ws, 4).await;
+            let (mut t, mut d) = tokio::join!(
+                bw::trend::recent_weeks_git_only(ws, 5),
+                bw::trend::recent_days_git_only(ws, 14),
+            );
             t.remote_note = "这个项目的库内记录读不出来,远端那条线这次没采".into();
-            t
+            d.remote_note = t.remote_note.clone();
+            (t, d)
         }
+    };
+    let to_vm = |p: &bw::trend::WeekPoint| crate::vm::TrendPointVm {
+        week: p.week.clone(),
+        commits: p.commits,
+        merged_prs: p.merged_prs,
+        open_issues: p.open_issues,
     };
     RepoStatsVm {
         items,
-        trend: trend
-            .points
-            .iter()
-            .map(|p| crate::vm::TrendPointVm {
-                week: p.week.clone(),
-                commits: p.commits,
-                merged_prs: p.merged_prs,
-                open_issues: p.open_issues,
-            })
-            .collect(),
+        trend: trend.points.iter().map(to_vm).collect(),
+        day_trend: day.points.iter().map(to_vm).collect(),
         git_note: trend.git_note,
         trend_note: trend.remote_note,
         error: String::new(),

@@ -137,38 +137,55 @@ pub async fn provision_issue_worktree(
     Ok(tree_path)
 }
 
-/// 读数账本 worktree 的兄弟目录:`<主仓名>-bw-ledger`。B/C 采和手填写这里,
-/// 不写人的主检出。`None` = 主工作区没有上级或名字不是 UTF-8。
-pub fn ledger_worktree_path(main_workspace: &Path) -> Option<PathBuf> {
-    let parent = main_workspace.parent()?;
-    let stem = main_workspace.file_name().and_then(|n| n.to_str())?;
-    Some(parent.join(format!("{stem}-bw-ledger")))
-}
-
-/// 账本分支名。固定一条,所有项目各自一棵树,互不撞。
+/// 账本分支。B/C 读数写这里,不写人的主检出。
 pub const LEDGER_BRANCH: &str = "bw/ledger";
-
-/// 项目约定常驻分支。名片 / 在研版本 / 项目群都走这一条,合入后分支留着。
+/// 项目约定常驻分支。名片走这一条,合入后分支留着。
 pub const PROJECT_BRANCH: &str = "bw/project";
+/// 运作活①常驻分支。定版本计划的仓文件改动走这里。
+pub const WEEK_PLAN_BRANCH: &str = "bw/week-plan";
+/// 运作活②常驻分支。资产盘点的仓文件改动走这里。
+pub const OPS_AUDIT_BRANCH: &str = "bw/ops-audit";
 
-/// 项目约定 worktree 的兄弟目录:`<主仓名>-bw-project`。不写人的主检出。
-/// `None` = 主工作区没有上级或名字不是 UTF-8。
-pub fn project_worktree_path(main_workspace: &Path) -> Option<PathBuf> {
-    let parent = main_workspace.parent()?;
-    let stem = main_workspace.file_name().and_then(|n| n.to_str())?;
-    Some(parent.join(format!("{stem}-bw-project")))
+/// 常驻车:合入后树和分支都留着,结清活时不收。
+pub fn is_standing_branch(branch: &str) -> bool {
+    matches!(
+        branch,
+        PROJECT_BRANCH | LEDGER_BRANCH | WEEK_PLAN_BRANCH | OPS_AUDIT_BRANCH
+    )
 }
 
-/// 给这个项目开(或接着用)项目约定 worktree。已经在就原样返回,不开第二次。
-///
-/// 不是 git 仓 / 没有 HEAD 时返回 `Err`,调用方退到就地写(空仓首提交那条例外)。
-pub async fn provision_project_worktree(main_workspace: &Path) -> Result<PathBuf, ProvisionError> {
-    let sibling = project_worktree_path(main_workspace).ok_or_else(|| {
-        ProvisionError::CreateDir(format!(
-            "算不出项目约定 worktree 路径(主工作区没有上级目录,或者目录名不是 UTF-8):{}",
-            main_workspace.display()
-        ))
-    })?;
+fn sibling_worktree_path(main_workspace: &Path, suffix: &str) -> Option<PathBuf> {
+    let parent = main_workspace.parent()?;
+    let stem = main_workspace.file_name().and_then(|n| n.to_str())?;
+    Some(parent.join(format!("{stem}-{suffix}")))
+}
+
+/// 读数账本:`<主仓名>-bw-ledger`。
+pub fn ledger_worktree_path(main_workspace: &Path) -> Option<PathBuf> {
+    sibling_worktree_path(main_workspace, "bw-ledger")
+}
+
+/// 项目约定:`<主仓名>-bw-project`。
+pub fn project_worktree_path(main_workspace: &Path) -> Option<PathBuf> {
+    sibling_worktree_path(main_workspace, "bw-project")
+}
+
+/// 定版本计划:`<主仓名>-bw-week-plan`。
+pub fn week_plan_worktree_path(main_workspace: &Path) -> Option<PathBuf> {
+    sibling_worktree_path(main_workspace, "bw-week-plan")
+}
+
+/// 资产盘点:`<主仓名>-bw-ops-audit`。
+pub fn ops_audit_worktree_path(main_workspace: &Path) -> Option<PathBuf> {
+    sibling_worktree_path(main_workspace, "bw-ops-audit")
+}
+
+async fn provision_sibling_worktree(
+    main_workspace: &Path,
+    sibling: PathBuf,
+    branch: &str,
+    what: &str,
+) -> Result<PathBuf, ProvisionError> {
     if sibling.join(".git").exists() {
         return Ok(sibling);
     }
@@ -176,7 +193,7 @@ pub async fn provision_project_worktree(main_workspace: &Path) -> Result<PathBuf
         .to_str()
         .ok_or_else(|| {
             ProvisionError::CreateDir(format!(
-                "项目约定 worktree 路径非 UTF-8:{}",
+                "{what} worktree 路径非 UTF-8:{}",
                 sibling.display()
             ))
         })?
@@ -194,64 +211,67 @@ pub async fn provision_project_worktree(main_workspace: &Path) -> Result<PathBuf
     }
     if git_in(
         main_workspace,
-        &["worktree", "add", "-b", PROJECT_BRANCH, &sibling_str],
+        &["worktree", "add", "-b", branch, &sibling_str],
     )
     .await
     .is_err()
     {
-        git_in(
-            main_workspace,
-            &["worktree", "add", &sibling_str, PROJECT_BRANCH],
-        )
-        .await?;
+        git_in(main_workspace, &["worktree", "add", &sibling_str, branch]).await?;
     }
     Ok(sibling)
 }
 
-/// 给这个项目开(或接着用)读数账本 worktree。已经在就原样返回,不开第二次。
-///
-/// 不是 git 仓 / 没有 HEAD 时返回 `Err`,调用方退到同路径的普通目录(仍不写主检出)。
-pub async fn provision_ledger_worktree(main_workspace: &Path) -> Result<PathBuf, ProvisionError> {
-    let sibling = ledger_worktree_path(main_workspace).ok_or_else(|| {
+fn sibling_or_err(
+    main_workspace: &Path,
+    path: Option<PathBuf>,
+    what: &str,
+) -> Result<PathBuf, ProvisionError> {
+    path.ok_or_else(|| {
         ProvisionError::CreateDir(format!(
-            "算不出账本 worktree 路径(主工作区没有上级目录,或者目录名不是 UTF-8):{}",
+            "算不出{what} worktree 路径(主工作区没有上级目录,或者目录名不是 UTF-8):{}",
             main_workspace.display()
         ))
-    })?;
-    if sibling.join(".git").exists() {
-        return Ok(sibling);
-    }
-    let sibling_str = sibling
-        .to_str()
-        .ok_or_else(|| {
-            ProvisionError::CreateDir(format!("账本 worktree 路径非 UTF-8:{}", sibling.display()))
-        })?
-        .to_string();
-    let _ = crate::win_cmd::tokio_cmd("git")
-        .current_dir(main_workspace)
-        .args(["worktree", "prune"])
-        .stdin(Stdio::null())
-        .stdout(Stdio::piped())
-        .stderr(Stdio::piped())
-        .output()
-        .await;
-    if sibling.exists() && !sibling.join(".git").exists() {
-        let _ = std::fs::remove_dir_all(&sibling);
-    }
-    if git_in(
+    })
+}
+
+/// 给这个项目开(或接着用)项目约定 worktree。已经在就原样返回,不开第二次。
+pub async fn provision_project_worktree(main_workspace: &Path) -> Result<PathBuf, ProvisionError> {
+    let sibling = sibling_or_err(
         main_workspace,
-        &["worktree", "add", "-b", LEDGER_BRANCH, &sibling_str],
-    )
-    .await
-    .is_err()
-    {
-        git_in(
-            main_workspace,
-            &["worktree", "add", &sibling_str, LEDGER_BRANCH],
-        )
-        .await?;
-    }
-    Ok(sibling)
+        project_worktree_path(main_workspace),
+        "项目约定",
+    )?;
+    provision_sibling_worktree(main_workspace, sibling, PROJECT_BRANCH, "项目约定").await
+}
+
+/// 给这个项目开(或接着用)读数账本 worktree。已经在就原样返回,不开第二次。
+pub async fn provision_ledger_worktree(main_workspace: &Path) -> Result<PathBuf, ProvisionError> {
+    let sibling = sibling_or_err(main_workspace, ledger_worktree_path(main_workspace), "账本")?;
+    provision_sibling_worktree(main_workspace, sibling, LEDGER_BRANCH, "账本").await
+}
+
+/// 运作活①常驻树。已经在就原样返回。
+pub async fn provision_week_plan_worktree(
+    main_workspace: &Path,
+) -> Result<PathBuf, ProvisionError> {
+    let sibling = sibling_or_err(
+        main_workspace,
+        week_plan_worktree_path(main_workspace),
+        "定版本计划",
+    )?;
+    provision_sibling_worktree(main_workspace, sibling, WEEK_PLAN_BRANCH, "定版本计划").await
+}
+
+/// 运作活②常驻树。已经在就原样返回。
+pub async fn provision_ops_audit_worktree(
+    main_workspace: &Path,
+) -> Result<PathBuf, ProvisionError> {
+    let sibling = sibling_or_err(
+        main_workspace,
+        ops_audit_worktree_path(main_workspace),
+        "资产盘点",
+    )?;
+    provision_sibling_worktree(main_workspace, sibling, OPS_AUDIT_BRANCH, "资产盘点").await
 }
 
 /// One file's real change stat between two commits (`git diff --numstat`).

@@ -4,7 +4,34 @@
 
 本文件按**六站 + 底座**收口,不再按每次窗口一条流水往下堆。最近一次改动永远写在最上面。
 
+## 最近 · 2026-09-04
+
+运作节律迁到 Orca。纳入 / 打开项目时在现有 `ensure_repo` 成功后注入三条自动化(默认关,已有不覆盖):定版本计划周一 09:00(常驻树 `bw/week-plan`,每周新会话)、资产盘点周五 15:00(`bw/ops-audit`,每周新会话)、B 类日采每天 20:00(`bw/ledger`,复用会话)。仓已经在 Orca 里也要补打,不能只凭 `repo.show` 成功就跳过。纳入后直接进项目也会再试;没打上写明退回项目墙再点进来。删掉 Workbench 60 秒 tick、日采闹钟、「开始本版本」横幅。打开 / 立即采集 / 手填仍走 `collect.rs`。自动化钉本机主机(`destination=self`),Web 里 Orca Server 那份不能跑本地树。配置屏去掉探活 / 定时 / 规范件三块(探活仍在项目墙和设置)。
+
+右侧「Issue」改成「上报问题」。弹窗写明会把本机对照日志带到 issue 里，默认勾选「附加对照日志」，取消勾选就只建单不附文件。主按钮是「发送报告」，成功 toast 写「问题已上报」。
+
+验包拉起的那只壳单独用临时树里的 WebView2 用户目录（`WEBVIEW2_USER_DATA_FOLDER`），不再和正在用的 `bw-dev` 抢 `%LOCALAPPDATA%\bw-dev`。
+
+发版本弹窗里的说明除了写进远端 Release，也会接到 WeLink 群消息后面（`【发版】发版 <号>` 下一行）；空说明仍只发那一行。
+
+指标采集单个脚本超时从 90 秒改成 900 秒。条与条仍串行；超时仍按「没采到」算，不写 0。
+## 最近 · 2026-09-03
+
+总览改成项目健康看板(#36):名片旁一颗健康灯、北极星并排;版本计划与进展带页签(目标 / 周进展各 6 行);滞后与引领按 `feature` 分页签、按 `leads` 叠到同一张图(空则挂该页签第一条滞后),图例可勾选,周/天可切;项目指标 · SDLC 只画现行三条真数。定义字段进 `.bw/metrics.toml`。原型 `docs/hifi/overview-36.html`,规格 `docs/05-features/overview-health-36/`。周五资产盘点多一步:在该版本运作活①上追加 `## 每周进展`;总览右栏从同一条评论现算。② 开工也注入 `week-plan-comment.md`。总览折线业务/SDLC 同一套(从 0 起的纵轴、悬停读数、固定高度);页签默认「主要」;A 类引领按天也能出点。采集模板脚本认 `--granularity week|day`,跟 `metrics.md` 对齐。运作活②建出来的说明跟上收口每周进展。
+
+计划屏:进行中 ↔ 待评审可以人拖(打回只改标签、不开工;无绑定 MR 进待评审要确认)。人可以从待办 / 进行中 / 待评审 / 阻塞 / 未排期拖到完成——有开着的 MR 确认后合入,没有则确认只关 issue;「完成永远由人点」仍守,自动化不得推到 Done。非法松手弹窗说明不给拖,不再静默弹回。Orca 干完靠提示词自己把标签改成 `bw:status:inreview`,不因有 MR 自动推态。
+
+点进项目只拉这一个仓的名单和 extras,不再顺手刷墙上其他仓。还在项目墙才拉全墙。对照日志补齐点卡到第一屏的分段:`open start` / Orca peek / 每枪 `codehub-cli` / gather extras / `open first-screen` / `pr fill`。
+
+技能写作正本落到 `standard/skills/SKILL-MD-SPEC.md`(frontmatter + 8 节,SOP=第 4 节)。五份现行剧本按规范、第一层目标和现行内核删掉重写:指标/版本/纳入人定,不再代写打分或四段 gate。`mr-review` 未动。盘点走每周两步(对照 `bw-assets.md`);校验脚本按技能目录找;版本块不再复述打标字面。SYSTEM 收成三块——项目入口只点 `AGENTS.md`;按任务点名加载 reference(① metrics + week-plan-comment;② bw-assets + build);纪律三条。`standard/VERSION` 已删。
+
+每个远端里程碑都是一个版本，名字不设限。计划屏下拉只列版本，「· 本周」跟总览在研走。总览只读行只展示在研；编辑表单永远有下拉，选项是覆盖今天的里程碑；覆盖集变了自动切，不写仓。产品忽略 `bw:week:`（不读不写、不批量改远端）。`project.toml` 的 `current_version` 丢掉不展示，多一行不报错。运作活②建出来时挂当时的在研。
+
+出包弹窗可关着继续跑，按钮上三个点再点回来；停止再问一句，确认后杀进程并清这次的中间件。验包不过时行上有「详情」，点开看每条用例过了没有、报了什么错。出包读脚本 stdout 按行切字节：协议行必须 UTF-8，cargo / ISCC 漏出来的本机码页不再整段报「stream did not contain valid UTF-8」。
+
 ## 最近 · 2026-09-02
+
+资产盘点收成两步:盘 Workbench 给项目的 `.bw/`(清残留、升格式、点未闭环的环),再盘项目本周改动(建议只落评论)。现行 `.bw` 契约进 `standard/system-prompt/references/bw-assets.md`(格式 + 样例,后附变更纪要),skill 只当 SOP。运作活开工工具跟构建。主提示词 / reference / skill 分工与同步对照表在 [`docs/architecture.md`](docs/architecture.md) §3 模块 4,`AGENTS.md`「三层模型」指到那里。删掉没有调用方的 `standard/VERSION`;`standard/README` 只记现行结构,不叠 5.x 流水。
 
 **门禁多一道**:`scripts/guard-bw-write-authority.sh` —— 只有名单内的模块能往被管项目 `.bw/` 里写文件(壳和引擎一处都不许有)。已进 [`AGENTS.md`](AGENTS.md) 门禁清单与 CI,清单现在六条。它是本仓第一条**自带自测**的守卫:名单里的函数必须在它自己那个模块文件里真实存在,改名或搬家会当场报错,不会一直报绿却什么都没守住。名单删掉了 `crates/bw/src/standard/`——那里现在零写入点,留着等于给将来偷偷加写入开口子。
 

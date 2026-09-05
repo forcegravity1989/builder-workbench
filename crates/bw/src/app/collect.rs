@@ -25,7 +25,7 @@ use std::process::Stdio;
 use std::time::Duration;
 
 /// 单个脚本最多跑多久。超时按「没采到」算,不是按 0 算。
-const TIMEOUT: Duration = Duration::from_secs(90);
+const TIMEOUT: Duration = Duration::from_secs(900);
 
 /// 一周一个点。`value` **原样保留脚本给的东西** —— 数也好、`"87%"` 这种给人看的
 /// 字符串也好,要画走势时才解析,解析不出来的点跳过、不画、不猜。
@@ -48,6 +48,8 @@ pub struct MetricReadout {
     /// 近 N 周,旧的在前,**每一周都有一格**(没采到的那格是 `None`)。
     /// 手填与整条采集失败时是空的。
     pub points: Vec<MetricPoint>,
+    /// 近 14 个日历日。A 类按天再跑一趟脚本;跑不动就空着,不挡周走势。
+    pub day_points: Vec<MetricPoint>,
     /// 现值 = **最后那一周**的值。最后一周没采到就是 `None` —— 绝不拿上一周的
     /// 数顶上当现值,那会把一个过期的数字标成「现在是多少」。
     pub current: Option<String>,
@@ -113,6 +115,7 @@ async fn collect_one(
         name: def.name.clone(),
         class,
         points: Vec::new(),
+        day_points: Vec::new(),
         current: None,
         error: String::new(),
     };
@@ -142,6 +145,21 @@ async fn collect_one(
             r.current = Some(value);
         }
         Err(e) => r.error = e,
+    }
+    // 天粒度另跑一趟。脚本还不认 day / 对不上号就记下原因,周走势照旧。
+    let days = isoweek::recent_days(14);
+    match run_script(ws, &def.collect.run, &days).await {
+        Ok(ScriptOutcome::Series(pts)) => r.day_points = pts,
+        Ok(ScriptOutcome::Snapshot(_)) => {
+            if r.error.is_empty() {
+                r.error = "按天只吐了一个当下值,画不出日走势".into();
+            }
+        }
+        Err(e) => {
+            if r.error.is_empty() {
+                r.error = format!("按周有数,按天没有:{e}");
+            }
+        }
     }
     r
 }
@@ -249,24 +267,6 @@ fn fill_from_readings(ws: &Path, name: &str, labels: &[String], r: &mut MetricRe
     r.current = r.points.last().and_then(|p| p.value.clone());
 }
 
-/// 本机「今日已试过 B 类日采」的戳。写在 Workbench 资产目录,不进被管仓。
-fn collect_stamp_path(asset_root: &Path, slug: &str) -> PathBuf {
-    asset_root.join("collect-stamp").join(slug)
-}
-
-fn stamp_is_today(path: &Path) -> bool {
-    std::fs::read_to_string(path)
-        .ok()
-        .is_some_and(|s| s.trim() == isoweek::today_ymd())
-}
-
-fn write_today_stamp(path: &Path) {
-    if let Some(dir) = path.parent() {
-        let _ = std::fs::create_dir_all(dir);
-    }
-    let _ = std::fs::write(path, isoweek::today_ymd());
-}
-
 impl App {
     /// 人在总览手填卡记下今天这个数。只收 C 类,覆盖进账本当天那一行。
     pub(super) async fn record_manual_metric(
@@ -320,46 +320,6 @@ impl App {
             value,
         }])
     }
-
-    /// Workbench 开着、过了本机 20:00、今天还没试过,就采一轮 B 类。
-    /// 不建活。失败也落今日戳,避免每 60 秒重打失败脚本。
-    pub(super) async fn maybe_auto_collect_b(&self, project_id: ProjectId) -> Vec<Event> {
-        if !isoweek::local_hm_reached(20, 0) {
-            return vec![];
-        }
-        let Ok(slug) = self.slug_of(project_id).await else {
-            return vec![];
-        };
-        if slug.is_empty() {
-            return vec![];
-        }
-        let stamp = collect_stamp_path(&self.asset_root, &slug);
-        if stamp_is_today(&stamp) {
-            return vec![];
-        }
-        let Ok(ws) = self.workspace_of(project_id).await else {
-            return vec![];
-        };
-        if !has_b_class(&ws) {
-            return vec![];
-        }
-        write_today_stamp(&stamp);
-        let Ok(rows) = collect_b_class(&ws, 4).await else {
-            return vec![];
-        };
-        let count = rows
-            .iter()
-            .filter(|r| r.error.is_empty() && r.current.is_some())
-            .count() as u32;
-        if count == 0 {
-            return vec![];
-        }
-        vec![Event::MetricsAutoCollected {
-            project_id,
-            week: isoweek::current_week(),
-            count,
-        }]
-    }
 }
 
 /// 脚本跑完的两种诚实结果。
@@ -393,8 +353,19 @@ struct ScriptOut {
 
 #[derive(Deserialize)]
 struct ScriptPoint {
+    #[serde(default)]
     week: String,
+    #[serde(default)]
+    day: String,
     value: serde_json::Value,
+}
+
+fn point_key(p: &ScriptPoint) -> &str {
+    if !p.day.is_empty() {
+        p.day.trim()
+    } else {
+        p.week.trim()
+    }
 }
 
 /// 把 JSON 值变成给人看的字符串。**数不带小数点尾巴,字符串原样。**
@@ -415,8 +386,10 @@ async fn run_script(ws: &Path, run: &[String], labels: &[String]) -> Result<Scri
         .arg("--until")
         .arg(&until)
         .arg("--granularity")
-        .arg("week")
+        .arg(grain_of(labels))
         .current_dir(ws)
+        .env("PYTHONUTF8", "1")
+        .env("PYTHONIOENCODING", "utf-8")
         .stdin(Stdio::null())
         .stdout(Stdio::piped())
         .stderr(Stdio::piped());
@@ -462,7 +435,7 @@ fn align_script_out(parsed: ScriptOut, labels: &[String]) -> Result<ScriptOutcom
         let value = parsed
             .points
             .iter()
-            .find(|p| p.week.trim() == w.as_str())
+            .find(|p| point_key(p) == w.as_str())
             .and_then(|p| as_text(&p.value));
         points.push(MetricPoint {
             week: w.clone(),
@@ -471,7 +444,7 @@ fn align_script_out(parsed: ScriptOut, labels: &[String]) -> Result<ScriptOutcom
     }
     if points.iter().all(|p| p.value.is_none()) {
         return Err(
-            "采集脚本给的周号和 Workbench 要的对不上(要的是 `2026-W34` 这种 ISO 周)".into(),
+            "采集脚本给的点号和 Workbench 要的对不上(周是 `2026-W34`,天是 `2026-09-01`)".into(),
         );
     }
     Ok(ScriptOutcome::Series(points))
@@ -492,15 +465,31 @@ fn week_labels(weeks: u32) -> Vec<String> {
     out
 }
 
-/// 这一串周对应的 `[since, until)`,都是本机时区的日期。**左闭右开** ——
-/// `until` 是最后一周的下周一,不是那一周的周日,免得少算一天。
+fn grain_of(labels: &[String]) -> &'static str {
+    if labels
+        .first()
+        .is_some_and(|s| isoweek::parse_ymd(s).is_some())
+    {
+        "day"
+    } else {
+        "week"
+    }
+}
+
+/// `[since, until)`,本机时区,左闭右开。周窗的 until 是最后一周的下周一;
+/// 天窗的 until 是最后一天的下一天。
 fn window_of(labels: &[String]) -> Result<(String, String), String> {
-    let first = labels.first().ok_or("没有要采的周")?;
-    let last = labels.last().ok_or("没有要采的周")?;
+    let first = labels.first().ok_or("没有要采的窗")?;
+    let last = labels.last().ok_or("没有要采的窗")?;
+    if let (Some(since), Some(last_day)) = (isoweek::parse_ymd(first), isoweek::parse_ymd(last)) {
+        return Ok((
+            isoweek::format_ymd(since),
+            isoweek::format_ymd(last_day + time::Duration::days(1)),
+        ));
+    }
     let (since, _) = isoweek::week_bounds(first).ok_or(format!("认不出周号 {first}"))?;
     let (_, until) = isoweek::week_bounds(last).ok_or(format!("认不出周号 {last}"))?;
-    let fmt = |d: time::Date| format!("{:04}-{:02}-{:02}", d.year(), u8::from(d.month()), d.day());
-    Ok((fmt(since), fmt(until)))
+    Ok((isoweek::format_ymd(since), isoweek::format_ymd(until)))
 }
 
 #[cfg(test)]
@@ -522,6 +511,33 @@ mod tests {
             ScriptOutcome::Snapshot(v) => assert_eq!(v, "8"),
             ScriptOutcome::Series(_) => panic!("must not invent a weekly series"),
         }
+    }
+
+    #[test]
+    fn daily_points_align_by_day_field() {
+        let out = align_script_out(
+            parse(r#"{"points":[{"day":"2026-09-01","value":2},{"day":"2026-09-03","value":4}]}"#),
+            &[
+                "2026-09-01".into(),
+                "2026-09-02".into(),
+                "2026-09-03".into(),
+            ],
+        )
+        .unwrap();
+        let ScriptOutcome::Series(points) = out else {
+            panic!("expected series");
+        };
+        assert_eq!(
+            points
+                .iter()
+                .map(|p| (p.week.as_str(), p.value.as_deref()))
+                .collect::<Vec<_>>(),
+            vec![
+                ("2026-09-01", Some("2")),
+                ("2026-09-02", None),
+                ("2026-09-03", Some("4")),
+            ]
+        );
     }
 
     #[test]

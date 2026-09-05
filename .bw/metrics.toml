@@ -1,6 +1,8 @@
 schema_version = 2
 
-# 北极星 1 条;滞后 / 引领各 ≤3。字段:name / def / target / collect。
+# 北极星 1 条;滞后 / 引领各 ≤3。字段:name / def / target / collect / feature / leads。
+# feature 空 = 主要页签;有值 = 「XX特性」页签。
+# leads 只写在引领上,值是它盯的那条滞后的 name。空 = 挂到同页签第一条滞后。
 # collect 两种:{ kind = "script", run = ["python", ".bw/scripts/x.py"], retro = true|false }
 #             或 { kind = "manual" }
 # retro=true 吐 {"points":[{"week":"YYYY-Www","value":…}]};false 吐 {"value":…}。
@@ -14,12 +16,15 @@ collect = { kind = "manual" }
 
 [[lagging]]
 name = "纳入 workbench 管理的项目数"
+feature = ""
 def = "真实接入 Workbench、跑通过至少一次运作活①(更新指标 + 周计划)、且当周仍活着的项目去重计数。只在 Workbench 里挂了仓链接但没跑过运作活的不算。"
 target = "≥3"
 collect = { kind = "manual" }
 
 [[leading]]
 name = "每周闭环的 issue 数"
+feature = ""
+leads = "纳入 workbench 管理的项目数"
 def = "远端上 closed 时刻落在这一周的 issue 数;本机合并提交 / MR 合入不算(口径不同)。反映『有人提活 + 项目自己闭环快』,对采纳滞后有预测性。"
 target = "≥1"
 collect = { kind = "script", run = ["python", ".bw/scripts/codehub-closed-issues.py"], retro = true }

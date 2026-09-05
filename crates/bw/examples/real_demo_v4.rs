@@ -1,6 +1,6 @@
 //! `real_demo_v4` —— V4 主环的 headless 指挥器。
 //!
-//! 不开界面,直接驱动内核走完一圈:接入项目(顺带第一次铺底) → 开始本周 → 代人确认
+//! 不开界面,直接驱动内核走完一圈:接入项目(顺带第一次铺底) → 建运作活①卡 → 代人确认
 //! 建活 → 一张活开工 → 代人推评审中 → 代人点完成 → 发版本 → 导出证据。
 //!
 //! ```bash
@@ -20,13 +20,17 @@
 //! 4. **重复跑不产生重复数据**:项目按 slug、活按标题、周计划按文件在不在、
 //!    发版按版本号判断跳不跳过。
 
-use bw::app::App;
-use bw::command::{Command, Event, ProjectIntent, RemoteRef};
-use bw::isoweek;
-use bw::model::{IssueKind, IssueOrigin, IssueStatus, ProjectId, StageKind};
+use bw::{
+    app::App,
+    command::{Command, Event, ProjectIntent, RemoteRef},
+    isoweek,
+    model::{IssueKind, IssueOrigin, IssueStatus, ProjectId, StageKind},
+};
 use bw_engine::remote::{MockState, Remote};
-use std::path::{Path, PathBuf};
-use std::sync::{Arc, Mutex};
+use std::{
+    path::{Path, PathBuf},
+    sync::{Arc, Mutex},
+};
 
 #[tokio::main(flavor = "current_thread")]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -120,46 +124,34 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         ),
     );
 
-    // ── 步骤 3-4:开始本周 + 脚本代人确认建活 ──────────────
-    let events = app
-        .dispatch(Command::StartWeekPlanning {
-            project_id: pid,
-            week: week.clone(),
-        })
-        .await?;
-    // 「开始本周」现在回一串事件:建运作活① → ▶跑 → 周计划已写出。**按类型
-    // 找,不按位置取** —— 上一版取 events.first(),运作活①插进来之后这一步
-    // 就默默什么都不做了,日志里连行都没有。
-    let drafts = if let Some(Event::WeekPlanStarted { draft_titles, .. }) = events
-        .iter()
-        .find(|e| matches!(e, Event::WeekPlanStarted { .. }))
-    {
-        say(
-            &mut log,
-            "步骤 3 · 开始本周:建了运作活①、开了工,周计划文件已写出(mock 草稿)",
-        );
-        draft_titles.clone()
-    } else if events
-        .iter()
-        .any(|e| matches!(e, Event::WeekPlanAlreadyExists { .. }))
-    {
-        say(&mut log, "步骤 3 · 本周文件已存在,跳过(重跑不产生重复数据)");
-        Vec::new()
-    } else {
-        Vec::new()
-    };
-    if !drafts.is_empty() {
-        app.dispatch(Command::ConfirmWeekDraft {
-            project_id: pid,
-            week: week.clone(),
-            titles: drafts.clone(),
-        })
-        .await?;
-        say(
-            &mut log,
-            &format!("步骤 4 · 脚本代人确认,建了 {} 张业务活", drafts.len()),
-        );
-    }
+    // ── 步骤 3-4:建运作活①卡 + 脚本代人建业务活 ──────────
+    // 运作会话在 Orca,这里只建卡,不开工。
+    app.dispatch(Command::CreateIssue {
+        project_id: pid,
+        title: bw::app::ops1_title(),
+        body: "运作活①。headless 演示只建卡,不开会话。".into(),
+        category: None,
+        kind: IssueKind::Ops,
+        origin: IssueOrigin::Human,
+        week_of: String::new(),
+        plan: String::new(),
+    })
+    .await?;
+    say(&mut log, "步骤 3 · 建了运作活①(不开工,会话在 Orca)");
+    let drafts = vec![
+        format!("【mock】{week} 第一件业务活(草稿,等人确认)"),
+        format!("【mock】{week} 第二件业务活(草稿,等人确认)"),
+    ];
+    app.dispatch(Command::ConfirmWeekDraft {
+        project_id: pid,
+        week: week.clone(),
+        titles: drafts.clone(),
+    })
+    .await?;
+    say(
+        &mut log,
+        &format!("步骤 4 · 脚本代人确认,建了 {} 张业务活", drafts.len()),
+    );
 
     // 另建一张挂了类别的业务活 —— 用来验证「类别→工具→workflow」映射真的生效。
     let events = app
@@ -170,7 +162,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             category: Some(StageKind::Build),
             kind: IssueKind::Business,
             origin: IssueOrigin::Human,
-            week_of: week.clone(),
+            week_of: String::new(),
             plan: String::new(),
         })
         .await?;
@@ -261,39 +253,18 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         );
     }
 
-    // ── 步骤 8:定时的一跳 ────────────────────────────────
-    // 判据是「到点了没有」+「本周有没有那张活」。节律是产品默认 fri 09:00
-    // (残留 issue-policy 还在才读它)。**不改仓文件、不假装到点**。
-    let before: usize = app.issues(pid).await.unwrap_or_default().len();
-    app.dispatch(Command::TickScheduler { project_id: pid })
-        .await?;
-    let after = app.issues(pid).await.unwrap_or_default();
-    let audit = after
-        .iter()
-        .find(|i| i.workflow == bw::app::OPS2_WORKFLOW && i.week_of == week);
+    // ── 步骤 8:钟在 Orca ────────────────────────────────
     say(
         &mut log,
-        &match audit {
-            Some(i) => format!(
-                "步骤 8 · 定时:本周的「资产盘点」在了 —— #{} 来源 {} 状态「{}」\
-                 (自动建的活绝不被自动推进到完成)",
-                i.number,
-                i.origin.label(),
-                i.status.label()
-            ),
-            None if after.len() == before => {
-                "步骤 8 · 定时:还没到产品默认(或残留节律)那个时刻,这一跳什么都没做".into()
-            }
-            None => "步骤 8 · 定时:建出了活但不是资产盘点 —— 判据对不上,如实记下".into(),
-        },
+        "步骤 8 · 节律在 Orca(周一 09:00 定计划 / 周五 15:00 盘点 / 每天 20:00 采 B 类),Workbench 不再 tick",
     );
 
     // ── 步骤 9:历史呈现(不再走内置回填)────────────────
-    // 某一周要出现在计划屏,给已有 issue 打 `bw:week:YYYY-Www`。
-    // 需要周目标就补一张运作活①,评论写明补记。没有 BackfillHistory 命令。
+    // 某个版本要出现在计划屏,给已有 issue 打 `bw:plan:<里程碑名>`。
+    // 需要版本目标就补一张运作活①,评论写明补记。没有 BackfillHistory 命令。
     say(
         &mut log,
-        "步骤 9 · 历史呈现:给已有 issue 打 bw:week,需要周目标再补运作活①(内置回填已删)",
+        "步骤 9 · 历史呈现:给已有 issue 打 bw:plan,需要版本目标再补运作活①(内置回填已删)",
     );
 
     // ── 步骤 10:项目群(mock 提供方)────────────────────

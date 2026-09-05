@@ -75,12 +75,12 @@ _Avoid_: Phase / ProjectPhase(与"阶段 Stage"撞;代码里对应类型为 `Rea
 _Avoid_: 把 Workbench 当项目的唯一数据源;把仓说成"备份"或"同步目标"(它才是正本所在地)。
 
 **项目约定**:
-第一次纳入和之后改名片 / 在研版本 / 项目群,都走同一张轻量活「项目约定」,只写 `.bw/project.toml` 到常驻树 `bw/project`,不写主检出。合入后人点完成,枝留下。方案正本见 [项目约定模块](docs/architecture.md)。
+第一次纳入和之后改名片 / 项目群,都走同一张轻量活「项目约定」,只写 `.bw/project.toml` 到常驻树 `bw/project`,不写主检出。在研版本看远端里程碑覆盖当天,不进仓文件。合入后人点完成,枝留下。方案正本见 [项目约定模块](docs/architecture.md)。
 _Avoid_: 规范铺底、编辑项目名片(旧标题只认残留、不再新建);往主检出写名片。
 
 **常驻车**:
-仓里站着的两辆:项目约定(分支 `bw/project`,名片)和指标账本(分支 `bw/ledger`,读数)。业务活与运作活①②仍是一活一树。
-_Avoid_: 第三张运作活「规范铺底」;把 issue-policy 当仓里的第三辆车。
+仓里站着四辆:项目约定(`bw/project`,名片)、指标账本(`bw/ledger`,读数)、定版本计划(`bw/week-plan`)、资产盘点(`bw/ops-audit`)。业务活仍是一活一树。节律在 Orca,不在 Workbench。
+_Avoid_: 第三张运作活「规范铺底」;把 issue-policy 当仓里的车;运作活①②再开 `bw/issue-N`。
 
 **仓 / Repo**:
 项目背后真实的 codehub/GitHub 仓库——新建或接入。Issue、PR、指标定义的正本都挂在它上面;没挂仓的项目(纯本地项目)如实留白,绝不假装有仓。
@@ -99,19 +99,23 @@ _Avoid_: 按旧五步(仓→意图→快速问题→起草→确认)描述它—
 ### 活与状态
 
 **Issue / 活**:
-一件要干的具体工作,最小单位。"活"是口语规范词,"卡"只在指界面卡片形态时用。codehub/GitHub 的 issue+标签是唯一正本(标题=标识,`bw:status:*`/`bw:plan:*`/`bw:released:*`/`bw:category:*` 标签=状态/排期(版本)/发版号/类别,issue closed=Done);不再写 `bw:week:*`。开工工具和 workflow 不另打标签。业务活读回时用类别去查本机 settings,没有就用产品默认;运作活开工工具同一条路,workflow 仍按标题推断。本地零库,读都走 CLI、不留读缓存。没挂仓的项目如实留白、不假装已同步。
+一件要干的具体工作,最小单位。"活"是口语规范词,"卡"只在指界面卡片形态时用。codehub/GitHub 的 issue+标签是唯一正本(标题=标识,`bw:status:*`/`bw:plan:*`/`bw:released:*`/`bw:category:*` 标签=状态/排期(版本)/发版号/类别,issue closed=Done)。旧 `bw:week:` 不认。开工工具和 workflow 不另打标签。业务活读回时用类别去查本机 settings,没有就用产品默认;运作活开工工具跟构建(配置屏「构建」那条),workflow 仍按标题推断。本地零库,读都走 CLI、不留读缓存。没挂仓的项目如实留白、不假装已同步。
 _Avoid_: 任务(与"定时任务"撞)、卡片(指实体时用"活",指 UI 时才用"卡")、ticket、工单。详见 [codehub-issue-正本 模块](docs/architecture.md)。
 
 **计划 / 版本 (Plan version)**:
-一张活排进哪个版本。号就是 `v0.x`(`v0.1`、`v0.2`),三处同一串:`bw:plan:v0.x`、里程碑标题、Release / `bw:released:v0.x`。ISO 周只做节律(运作活①该不该开、健康时间窗、资产盘点周五),不当排期名。旧 `bw:week:` 和旧 `bw:plan:` 名读回仍显示、能切视图;新建只写 `v0.x`,不迁旧标。
-_Avoid_: 再写 `bw:week:*`;把周号、自建名、发版号当成三套;一张活挂两个版本。详见 [周循环与计划 模块](docs/architecture.md)。
+一张活排进哪个版本。号就是里程碑标题,三处同一串:`bw:plan:<名>`、里程碑标题、Release / `bw:released:<名>`。每个里程碑都是一个版本,名字不设限(推荐 `vX.X`)。ISO 周只做节律(周初定版本计划、健康时间窗、周五盘点),不当排期名。在研 = 起止覆盖当天的里程碑,多个取最后创建,总览编辑表单下拉可切;只读行带「· 本周」。旧 `bw:week:` 忽略,不迁。
+_Avoid_: 再写 `bw:week:*`;一张活挂两个 `bw:plan:`;把在研写进 `.bw/project.toml`。详见 [周循环与计划 模块](docs/architecture.md)。
 
 **版本目标**:
-本周确认的那个 `v0.x` 要推到哪。写在运作活①评论的 `## 版本目标`。旧评 `## 周目标` / `## 本周目标` 还能读,新写必须用「版本目标」。指标卡上的「本周目标 ≥3」是指标的周数值,不是这个词。
-_Avoid_: 周目标 / 本周目标(指计划时)。`docs/01-docs/01-principles/03` 里的「周目标」本次不改。
+某个版本要推到哪。写在打了该版本标签的运作活①评论的 `## 版本目标`。旧评 `## 周目标` / `## 本周目标` 还能读,新写必须用「版本目标」。指标卡上的「本周目标 ≥3」是指标的周数值,不是这个词。
+_Avoid_: 周目标 / 本周目标(指计划时)。`docs/01-principles/03` 里的「周目标」本次不改。
+
+**每周进展**:
+周五发版或运作活②盘点才收口当周。追加在该版本运作活①上,标题 `## 每周进展`(后面可以跟 ISO 周)。总览右栏按新到旧列出该版本所有进展;没有就空着。不要改周初那条三标题评论,也不要编周报。
+_Avoid_: 写进②报告顶替这一条;新开一份 reference;要求周初评论也带这一段。
 
 **Issue 状态流转**:
-Backlog → Todo → InProgress → InReview → Done 的单向明路;另有 Blocked(阻塞,必填原因)、Cancelled。**Done 的唯一入边是 InReview**。状态以 `bw:status:*` 标签为正本,由 `can_transition_to` 守卫锁死;Backlog 在 codehub 映射里没有对应标签,如实弹回不编。Cancelled 打 `bw:status:cancelled` 再关远端 issue,读回先认取消标签,不当完成。
+Backlog → Todo → InProgress → InReview → Done 的单向明路;另有 Blocked(阻塞,必填原因)、Cancelled。**完成永远由人点**:未排期 / 待办 / 进行中 / 待评审 / 阻塞都可以进 Done(有开着的 MR 就合入,没有则只关 issue);自动化、agent、定时不得推到 Done。状态以 `bw:status:*` 标签为正本,由 `can_transition_to` 守卫锁死;Backlog 在 codehub 映射里没有对应标签,如实弹回不编。Cancelled 打 `bw:status:cancelled` 再关远端 issue,读回先认取消标签,不当完成。拒绝不是完成。
 _Avoid_: 自造中间态;把 InReview 当终态。详见 [command-event-与状态机 模块](docs/architecture.md)。
 
 **PR / Pull Request**:
@@ -119,11 +123,11 @@ _Avoid_: 自造中间态;把 InReview 当终态。详见 [command-event-与状�
 _Avoid_: 把"提 PR"当成活已经完成;跳过 PR 直接推主干。
 
 **评审中 / InReview**:
-agent 把活干完后能到达的最远状态。到此为止,人还没确认。挂了仓的活,这个状态由"存在一个开放 PR"派生;落 Done 时 issue 关闭是它的后果。
+agent 把活干完后能到达的最远状态。到此为止,人还没确认。正本是 `bw:status:inreview` 标签,由 agent 提完 MR 后改、或人在计划屏拖进待评审;有没有 MR 不自动改标签。落 Done 时 issue 关闭是它的后果。
 _Avoid_: 完成、待办结。
 
 **完成 / Done**:
-活的终态,**永远由人显式点**——任何自动化都不许把活推到 Done。人点的这一下:合入那个 MR(merge 后 issue 关闭是它的后果,不是要再点一次的第二步)。落 Done 的同一刻,产物登记、阶段吞吐同时入账,且**同一件活绝不记两次**(代码里叫 settle-once,已 Done 直接短路);`settled_at` 现读远端 issue 的 `closed_at`,不自己写。
+活的终态,**永远由人显式点**——任何自动化都不许把活推到 Done。人可以在计划屏从待办 / 进行中 / 待评审 / 阻塞 / 未排期拖到完成(或详情 Complete):有开着的 MR 就先合再关,没有则确认后只关 issue。落 Done 的同一刻,产物登记、阶段吞吐同时入账,且**同一件活绝不记两次**(代码里叫 settle-once,已 Done 直接短路);`settled_at` 现读远端 issue 的 `closed_at`,不自己写。
 _Avoid_: 自动完成、agent 自判完成、执行器自己 merge;agent 提了 PR 就当 Done。
 
 **阻塞 / Blocked**:
@@ -147,8 +151,8 @@ MVP 两条执行轨,都在这张活自己的 git worktree 里干:构建类走会
 _Avoid_: 把交互式活的空运行史当「没跑过」;把后台轨的自动兜底照搬到交互轨;嵌入终端(指 UI 载体时可用,指这条执行轨时统一说「交互式运行」)。详见 [会话与执行 模块](docs/architecture.md)。
 
 **系统提示词 / System prompt**:
-Workbench 给每张开工的活渲染的一份常驻提示,主提示词是外置的 `standard/system-prompt/SYSTEM.md.tmpl`(身份 + 通用铁律:最远到评审中、合并永远是人、指标只来自真实采集、干砸如实停 + 读项目 `.bw/` 规范件与仓根 `AGENTS.md` 的指引),`{{...}}` 占位运行时填:活的信息、本活要读的 references 阶段规范(指标铁律/改仓规则)、本活挂的技能指针。不硬编码在 Rust `format!` 里(改铁律=改 md + 抬 `standard/VERSION` + 对账)。分工:系统提示词不可换(契约与铁律由它兜住),技能/references 可换。提示词只放索引(名字+一句话+路径),正文让 agent 按需读(渐进加载)。
-_Avoid_: 把契约写进技能正文(换技能就丢);把系统提示词当成技能的一部分。详见 [系统提示词与渐进加载 模块](docs/architecture.md)。
+Workbench 给每张开工的活渲染的一份常驻提示,主提示词是外置的 `standard/system-prompt/SYSTEM.md.tmpl`(哪张活、读被管仓 `AGENTS.md`、按任务加载哪份 reference、和 BW 状态机怎么配合)。`{{...}}` 占位运行时填路径。references 写 `.bw/` / 评论 / 标签等界面认什么;skill 写这场怎么带人。三层各写什么见 [`standard/README.md`](standard/README.md);哪类活读哪份见 [系统提示词与渐进加载 模块](docs/architecture.md) §3 模块 4。不硬编码在 Rust `format!` 里。
+_Avoid_: 把契约写进技能正文(换技能就丢);把系统提示词当成技能的一部分;把四段 gate / 代填正本写进 SYSTEM。详见 [系统提示词与渐进加载 模块](docs/architecture.md)。
 
 **Agent Loop**(产品命题层):
 "1 个 Builder + Agent Loop 取代 5 个专职角色"里的运作模式——人守质量门、agent 干 80% 的活。是产品主张的说法,专用于命题语境。
@@ -165,7 +169,7 @@ _Avoid_: 记录、log(读数是结构化数据点,不是日志文本)、埋点�
 _Avoid_: 数据、统计值;不要和"读数"混用——读数是原料,指标是产物。
 
 **指标正本 / Metrics Source of Truth**:
-一个项目的北极星 + 滞后指标 + 引领指标定义,写在仓里一份机读文件 `.bw/metrics.toml`(**只认 `schema_version = 2`**,内核读到旧格式整份拒收、不上屏)。重定+迁已有读数+借鉴旧脚本+删 V3 废弃件,跟运作活① skill 走,不做内核静默迁移。改指标和改代码一样走 MR 评审。Workbench 本地不缓存定义,每次现读。MVP **不要中间连接器层**——一条指标直接指向一个脚本:起进程、传时间窗、读标准输出的 JSON,Workbench 不认识被连的是什么系统;采集方式只有脚本和手填两种。
+一个项目的北极星 + 滞后指标 + 引领指标定义,写在仓里一份机读文件 `.bw/metrics.toml`(**只认 `schema_version = 2`**,内核读到旧格式整份拒收、不上屏)。北极星/口径重定跟运作活①;旧格式升到现行、迁读数、清残留跟运作活②。不做内核静默迁移。改指标和改代码一样走 MR 评审。Workbench 本地不缓存定义,每次现读。MVP **不要中间连接器层**——一条指标直接指向一个脚本:起进程、传时间窗、读标准输出的 JSON,Workbench 不认识被连的是什么系统;采集方式只有脚本和手填两种。
 _Avoid_: 绕开 MR 直接在界面里"定义"一条指标;把 V3 的 `.bw/connectors.toml` / `docs/buddy/standards/metrics.md` 当现行正本(V3 已删,见 `v3` 分支)。详见 [仓文件解析 模块](docs/architecture.md)。
 
 **业务指标 / 项目指标(两层分流)**:
@@ -197,7 +201,7 @@ _Avoid_: 默认绿、N/A、待定。
 _Avoid_: KPI、OKR、总目标;不要有多个"北极星"。
 
 **引领指标 / 滞后指标 (Leading / Lagging)**:
-引领指标=可控、可提前统计、能被真实采集的先行量;滞后指标=结果量。控制点 4 要求引领指标可控且难造假。
+引领指标=可控、可提前统计、能被真实采集的先行量;滞后指标=结果量。控制点 4 要求引领指标可控且难造假。一条引领在 `.bw/metrics.toml` 用 `leads` 标明它盯的那条滞后(`name`);空则落到同页签第一条滞后。一条滞后可以挂多条引领,图上系列行从上往下排。同一页签多条滞后就多张图横向排。`feature` 空=主要,有值=「XX特性」页签。
 _Avoid_: 先行/结果指标混用不同词;过程指标。
 
 **手填 / Manual**:
@@ -269,8 +273,12 @@ _Avoid_: 和群通知混(群通知发团队、个人提醒弹你);以为有应�
 _Avoid_: 总结、归档、沉淀(沉淀指整个复利过程,别专指这一步)。
 
 **技能 / Skill**:
-一篇可复用的做法说明,真实形态是一个**文件夹**(SKILL.md 正文 + 任意数量的支撑文件)。Workbench 自带的技能正本 `include_str!` 编进二进制,开工时摊到本地资产目录供 agent 按需读;下次干同类活时按活挂的 workflow 注入对应剧本,用一次记一次(uses 按 workflow 标签分组现算)。
-_Avoid_: 文档、知识、SOP;把技能等同于它的 SKILL.md 正文(支撑文件也是它的一部分)。详见 [系统提示词与渐进加载 模块](docs/architecture.md)。
+一篇可复用的做法说明,真实形态是一个**文件夹**(SKILL.md 正文 + 任意数量的支撑文件)。Workbench 自带的技能正本 `include_str!` 编进二进制,开工时摊到本地资产目录供 agent 按需读;下次干同类活时按活挂的 workflow 注入对应剧本。怎么写见 [`standard/skills/SKILL-MD-SPEC.md`](standard/skills/SKILL-MD-SPEC.md)。
+_Avoid_: 文档、知识;把整个技能叫 SOP;把技能等同于它的 SKILL.md 正文(支撑文件也是它的一部分)。详见 [系统提示词与渐进加载 模块](docs/architecture.md)。
+
+**SOP / 标准执行流程**:
+一份 `SKILL.md` 第 4 节——这场按哪几步干。不是技能的别名,也不写在目录 README 里。
+_Avoid_: 把 SOP 当 skill 的同义词;把步骤写进 `description`。
 
 **注入 / Inject**:
 干活时按活挂的 workflow 把对应技能带进开工工具的上下文(提示词只放索引,正文让 agent 按需读,即渐进加载)。
@@ -391,7 +399,7 @@ _Avoid_: 可重入(是另一个并发概念,别混用)。
 _Avoid_: 快捷方式;URL scheme(深链走环境变量,不走 URL)。
 
 **对照日志 / Diagnostic log**:
-全仓一份 `bw.log`,给人(和模型)拿着源码对原因。`cargo run` 写到启动目录;直接跑 exe 写到项目目录(能摸到 `Cargo.toml` 的仓根,安装包则是 exe 所在目录)。`BW_LOG` 可改整条路径。一行:`[时间] [模块] [文件] [行] [ok|err|warn] 正文`。toast、命令进出、Orca RPC 都进这里。不写 token / pairing / 提示词正文。右侧「Issue」把这份文件附到 workbench 仓的新 issue 上。
+全仓一份 `bw.log`,给人(和模型)拿着源码对原因。`cargo run` 写到启动目录;直接跑 exe 写到项目目录(能摸到 `Cargo.toml` 的仓根,安装包则是 exe 所在目录)。`BW_LOG` 可改整条路径。一行:`[时间] [模块] [文件] [行] [ok|err|warn] 正文`。toast、命令进出、Orca RPC 都进这里。不写 token / pairing / 提示词正文。右侧「上报问题」默认把这份文件附到 workbench 仓的新 issue 上。
 _Avoid_: 读数流水(那是指标,不是对照日志);再拆第二份 `bw-orca.log`;`BW_ORCA_LOG`(已去掉)。
 
 ---

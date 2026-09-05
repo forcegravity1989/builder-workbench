@@ -3,9 +3,8 @@
 //! 定义(和 `bw-engine` 同一个「拷贝接管」逻辑:V3 那一整个目录最终要删,
 //! V4 不能有依赖指向那边),serde 形状一字未动,所以库里已有的行照读。
 //!
-//! 「完成」的唯一入边是「评审中」这条铁律锁在 [`IssueStatus::can_transition_to`]
-//! 里 —— 那张转移表是**逐字拷贝**的,改它任何一条边都等于改产品铁律,先去
-//! 读 CLAUDE.md 的铁律表再动。
+//! 「完成」永远由人点,自动化不得推到 Done。人可以从未排期 / 待办 / 进行中 /
+//! 评审中 / 阻塞进 Done,锁在 [`IssueStatus::can_transition_to`]。拒绝不是完成。
 
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
@@ -175,8 +174,8 @@ impl IssueStatus {
     }
 
     /// 状态机的**唯一**事实源 —— 每一处转移守卫都问这张表,谁都不许自己发明边。
-    /// 「完成」的唯一入边是「评审中」(`(InReview, Done)`),这条是产品铁律。
-    /// 逐字拷自 V3 内核,一条边没加没减。
+    /// 「完成」永远由人点;未排期 / 待办 / 进行中 / 评审中 / 阻塞都可以进 Done。
+    /// 自动化、agent、定时仍不得发这条。拒绝(`Cancelled`)不是完成。
     pub fn can_transition_to(self, to: IssueStatus) -> bool {
         use IssueStatus::*;
         matches!(
@@ -184,14 +183,17 @@ impl IssueStatus {
             (Backlog, Todo)
                 | (Backlog, InProgress)
                 | (Backlog, Cancelled)
+                | (Backlog, Done)
                 | (Todo, InProgress)
                 | (Todo, Backlog)
                 | (Todo, Blocked)
                 | (Todo, Cancelled)
+                | (Todo, Done)
                 | (InProgress, InReview)
                 | (InProgress, Todo)
                 | (InProgress, Blocked)
                 | (InProgress, Cancelled)
+                | (InProgress, Done)
                 | (InReview, Done)
                 | (InReview, InProgress)
                 | (InReview, Blocked)
@@ -199,6 +201,7 @@ impl IssueStatus {
                 | (Blocked, Todo)
                 | (Blocked, InProgress)
                 | (Blocked, Cancelled)
+                | (Blocked, Done)
                 | (Done, Todo)
                 | (Done, InProgress)
         )
@@ -401,15 +404,14 @@ pub struct Issue {
     pub assignee: String,
     /// 提出人(codehub issue author)。空 = 认不出。正本在远端,本地只透传。
     pub author: String,
-    /// 排进人起名的版本(`bw:plan:<name>` 标签);空 = 没挂这个写法。
-    /// 和 `week_of` 是同一槽位的两种写法:周版本走 `week_of`,人起名的走这里。
+    /// 排进哪个版本(`bw:plan:<里程碑名>`)。空 = 未排期。旧 `bw:week:` 不认。
     pub plan_version: String,
 }
 
 impl Issue {
-    /// 排进某个版本了没有(周版本或人起名的都算)。两个都空 = 还在待办池。
+    /// 排进某个版本了没有。只认 `bw:plan:`。
     pub fn is_scheduled(&self) -> bool {
-        !self.week_of.is_empty() || !self.plan_version.is_empty()
+        !self.plan_version.is_empty()
     }
 }
 

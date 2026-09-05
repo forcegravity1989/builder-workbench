@@ -35,6 +35,15 @@ def weeks_in(since: datetime.date, until: datetime.date):
     return out
 
 
+def days_in(since: datetime.date, until: datetime.date):
+    """窗口内的日历日,旧的在前。until 是开区间右端。"""
+    out, cur = [], since
+    while cur < until:
+        out.append((cur.isoformat(), cur))
+        cur += datetime.timedelta(days=1)
+    return out
+
+
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--since", required=True)
@@ -42,8 +51,8 @@ def main() -> int:
     ap.add_argument("--granularity", default="week")
     args = ap.parse_args()
 
-    if args.granularity != "week":
-        print(f"只支持 --granularity week,收到 {args.granularity}", file=sys.stderr)
+    if args.granularity not in ("week", "day"):
+        print(f"只支持 --granularity week|day,收到 {args.granularity}", file=sys.stderr)
         return 2
 
     try:
@@ -90,10 +99,16 @@ def main() -> int:
     since = datetime.date.fromisoformat(args.since)
     until = datetime.date.fromisoformat(args.until)
     points = []
-    for label, monday in weeks_in(since, until):
-        lo = datetime.datetime.combine(monday, datetime.time(0, 0), tz).timestamp()
-        hi = lo + 7 * 24 * 3600
-        points.append({"week": label, "value": sum(1 for t in stamps if lo <= t < hi)})
+    if args.granularity == "day":
+        for label, day in days_in(since, until):
+            lo = datetime.datetime.combine(day, datetime.time(0, 0), tz).timestamp()
+            hi = lo + 24 * 3600
+            points.append({"day": label, "value": sum(1 for t in stamps if lo <= t < hi)})
+    else:
+        for label, monday in weeks_in(since, until):
+            lo = datetime.datetime.combine(monday, datetime.time(0, 0), tz).timestamp()
+            hi = lo + 7 * 24 * 3600
+            points.append({"week": label, "value": sum(1 for t in stamps if lo <= t < hi)})
 
     json.dump({"points": points}, sys.stdout, ensure_ascii=False)
     return 0

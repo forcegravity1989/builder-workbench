@@ -4,21 +4,22 @@
 //!
 //! - **▶跑最远只到「评审中」**。执行器返回成功也只推到 InReview,不会自己
 //!   推到「已完成」。
-//! - **「完成」永远由人点**。`TransitionIssue { to: Done }` 是唯一入口,而且
-//!   状态机只允许从「评审中」进 Done。
+//! - **「完成」永远由人点**。`TransitionIssue { to: Done }` / `MergeAndSettle`
+//!   是人点的入口;自动化不得发。人可以从未排期 / 待办 / 进行中 / 评审中 /
+//!   阻塞进 Done。
 //!
 //! 刀3 起,issue 的正本在远端 codehub/GitHub issue + 标签,本地不建 issue 表。
 //! 所有 issue 读写经 [`super::issue_store`] 走远端。
 
-use super::worktree;
-use super::{issue_store, App, AppError, Result};
-use crate::command::Event;
-use crate::model::{
-    codehub_alias_to_domain, Category, Issue, IssueId, IssueKind, IssueOrigin, IssueStatus,
-    ProjectId,
+use super::{issue_store, worktree, App, AppError, Result};
+use crate::{
+    command::Event,
+    model::{
+        codehub_alias_to_domain, Category, Issue, IssueId, IssueKind, IssueOrigin, IssueStatus,
+        ProjectId,
+    },
 };
-use bw_engine::remote::Remote;
-use bw_engine::{build_startup_plan, InteractiveExecutor, RunCtx, TuiAgentConfig};
+use bw_engine::{build_startup_plan, remote::Remote, InteractiveExecutor, RunCtx, TuiAgentConfig};
 use std::path::{Path, PathBuf};
 
 impl App {
@@ -63,8 +64,7 @@ impl App {
             id: issue.id,
             number: issue.number,
         }];
-        // 新建活并临时纳入本周 → 发群通知(版本计划那件由 start_week_planning 单独
-        // 发,不在这里重复;运作活是 Workbench 内部,不发)。
+        // 新建活并临时纳入本周 → 发群通知。运作活不发。
         if !week_of.is_empty() && kind != IssueKind::Ops {
             let ev = crate::chat::NotifyEvent::IssueCreated;
             let text = crate::chat::notify_text(
@@ -110,7 +110,7 @@ impl App {
             let already = self.conversation_for_issue(id).await?.is_some();
             if !already {
                 let ws = self.workspace_of(issue.project_id).await?;
-                let tree = worktree::provision(&ws, issue.number).await?;
+                let tree = worktree::provision_for(&ws, &issue).await?;
                 let _conv = self
                     .upsert_conversation(&crate::model::Conversation {
                         id: crate::model::ConversationId::new(),
@@ -182,7 +182,7 @@ impl App {
         // 有真实工作区就在**这张活自己的 worktree** 里干,和 Orca 那条路一样;
         // 没有工作区就没什么可隔离的,下面走自我标注的替身。
         let tree = if ws.is_dir() {
-            Some(worktree::provision(&ws, issue.number).await?)
+            Some(worktree::provision_for(&ws, &issue).await?)
         } else {
             None
         };
@@ -283,7 +283,7 @@ impl App {
         ws: &std::path::Path,
     ) -> Result<Vec<Event>> {
         // 开/复用 worktree:resolve 会接住旧平级兄弟,不建第二棵新树。
-        let tree = worktree::provision(ws, issue.number).await?;
+        let tree = worktree::provision_for(ws, issue).await?;
         // upsert 会话行:workspace_path 写实际用的路径(可能是旧兄弟)。幂等:已有就返回既有行。
         let conv = self
             .upsert_conversation(&crate::model::Conversation {
@@ -302,7 +302,7 @@ impl App {
             let project = self.project_of(issue.project_id).await?;
             issue_store::set_status(self, &project, id.iid(), IssueStatus::InProgress).await?;
         }
-        // 系统提示词:身份+四铁律+技能/references 指针(和 OD 分支、阻塞路同一个函数)。
+        // 系统提示词:身份+任务对照+纪律+技能/references 指针(和 OD 分支、阻塞路同一个函数)。
         let prompt = format!("#{} {}\n\n{}", issue.number, issue.title, issue.body);
         let skills_dir = self.ensure_skill_assets();
         self.ensure_vendor_assets();
@@ -509,7 +509,7 @@ impl App {
         let project = self.project_of(issue.project_id).await?;
         let ws = self.workspace_of(issue.project_id).await?;
         // 幂等:这张活开过工就已经有一棵树,这里拿到的是同一棵。
-        let tree = worktree::provision(&ws, issue.number).await?;
+        let tree = worktree::provision_for(&ws, &issue).await?;
         if !tree.isolated {
             return Err(AppError::Refused(
                 "这个工作区不是 git 仓,没有分支可提,也就没有可开的 MR".into(),
@@ -688,7 +688,8 @@ impl App {
     /// 能收掉那棵。先看会话行记下的路径,再看新目录,再看旧兄弟(走底座的
     /// `resolve_issue_worktree`)。
     pub(super) async fn cleanup_issue_worktree(&self, issue: &Issue) {
-        if issue.title == issue_store::CHARTER_TITLE {
+        let branch = issue_store::work_branch(issue);
+        if bw_engine::workspace::is_standing_branch(&branch) {
             return;
         }
         let Ok(ws) = self.workspace_of(issue.project_id).await else {
@@ -760,11 +761,15 @@ impl App {
     }
 
     /// 报到 workbench 自己的仓:host/path 从当前目录 git 的 origin 现读,
-    /// 对照日志有文件就 `--attachment` 附上。不碰打开着的被管项目。
-    pub(super) async fn report_workbench_issue(&mut self, title: String) -> Result<Vec<Event>> {
+    /// 人勾了附加且对照日志有文件才 `--attachment` 附上。不碰打开着的被管项目。
+    pub(super) async fn report_workbench_issue(
+        &mut self,
+        title: String,
+        attach_log: bool,
+    ) -> Result<Vec<Event>> {
         let title = title.trim().to_string();
         if title.is_empty() {
-            return Err(AppError::Refused("issue 标题不能空".into()));
+            return Err(AppError::Refused("问题标题不能空".into()));
         }
         let repo = workbench_git_dir();
         let origin = bw_engine::github::origin_remote_url(&repo)
@@ -776,15 +781,20 @@ impl App {
         bw_engine::dlog!(
             ok,
             "report",
-            "workbench origin host={host} path={path} repo={}",
+            "workbench origin host={host} path={path} attach_log={attach_log} repo={}",
             repo.display()
         );
         let log = bw_engine::dlog::log_path();
-        let attach = log.is_file();
+        let attach = attach_log && log.is_file();
         let body = if attach {
             format!("对照日志已附上。本机路径:{}", log.display())
+        } else if attach_log {
+            format!(
+                "人勾了附加日志,但本机对照日志还不存在({}),只建了 issue。",
+                log.display()
+            )
         } else {
-            format!("本机对照日志还不存在({}),只建了 issue。", log.display())
+            "人未勾选附加对照日志,只建了 issue。".into()
         };
         let provider = if host.eq_ignore_ascii_case("github.com") || host.ends_with(".github.com") {
             "github"
@@ -853,7 +863,7 @@ fn walk_git(start: &Path) -> Option<PathBuf> {
 // 2N+ 次,UI 卡 2-6 秒。现在只 spawn 一次(取 issues 列表),过滤在内存里做。
 // 不引入持久缓存(MVP 不要):单次 build 内去重 spawn。
 
-/// 某一周的活。`week` 传空串就是待办池那一列(没挂 bw:week 标签的)。
+/// 某一版本的活。`week` 现已不用(排期只认 `bw:plan:`);留下以免调用方大拆。
 pub fn issues_in_week<'a>(issues: &'a [Issue], week: &str) -> Vec<&'a Issue> {
     issues.iter().filter(|i| i.week_of == week).collect()
 }

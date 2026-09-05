@@ -10,8 +10,12 @@
 //! 不是 agent 执行器(对标 `claude`)。两种 shell-out 模式别混。
 
 use crate::win_cmd::stderr_text;
-use std::path::Path;
-use std::process::Stdio;
+use std::{
+    ffi::{OsStr, OsString},
+    path::Path,
+    process::Stdio,
+    time::Instant,
+};
 
 #[derive(Debug, thiserror::Error)]
 pub enum CodehubError {
@@ -45,17 +49,59 @@ fn spawn_err(e: std::io::Error) -> CodehubError {
     }
 }
 
-/// `codehub-cli project view -p <path> -H <host>` → 一行人话详情
-/// (`path · 可见性[ · 已归档] · 最近活跃`)。Read-only,零仓副作用。
-pub async fn probe(host: &str, path: &str) -> Result<String, CodehubError> {
+/// 每一枪 `codehub-cli` 打一行耗时。`--jq` / `--body` / `--description` 不进正文。
+async fn run_cli(
+    args: impl IntoIterator<Item = impl AsRef<OsStr>>,
+) -> Result<std::process::Output, CodehubError> {
+    let args: Vec<OsString> = args
+        .into_iter()
+        .map(|a| a.as_ref().to_os_string())
+        .collect();
+    let label = cli_label(&args);
+    let t0 = Instant::now();
     let out = crate::win_cmd::tokio_cmd("codehub-cli")
-        .args(["project", "view", "-p", path, "-H", host])
+        .args(&args)
         .stdin(Stdio::null())
         .stdout(Stdio::piped())
         .stderr(Stdio::piped())
         .output()
         .await
         .map_err(spawn_err)?;
+    let ok = out.status.success();
+    crate::dlog!(
+        ok,
+        "codehub",
+        "cli {label} elapsed_ms={} ok={ok}",
+        t0.elapsed().as_millis()
+    );
+    Ok(out)
+}
+
+fn cli_label(args: &[OsString]) -> String {
+    let mut out = Vec::new();
+    let mut skip = false;
+    for a in args {
+        if skip {
+            skip = false;
+            continue;
+        }
+        let s = a.to_string_lossy();
+        if matches!(s.as_ref(), "--jq" | "--body" | "--description") {
+            skip = true;
+            continue;
+        }
+        if s.len() > 80 {
+            continue;
+        }
+        out.push(s.into_owned());
+    }
+    out.join(" ")
+}
+
+/// `codehub-cli project view -p <path> -H <host>` → 一行人话详情
+/// (`path · 可见性[ · 已归档] · 最近活跃`)。Read-only,零仓副作用。
+pub async fn probe(host: &str, path: &str) -> Result<String, CodehubError> {
+    let out = run_cli(["project", "view", "-p", path, "-H", host]).await?;
     if !out.status.success() {
         return Err(CodehubError::Command(stderr_text(&out)));
     }
@@ -73,14 +119,7 @@ pub async fn probe(host: &str, path: &str) -> Result<String, CodehubError> {
 /// 不传就 HTTP 422 `CH.00404131`。空则 `master`(内部仓常见,跟
 /// [`create_mr_on_branch`] 同口径)。
 async fn project_default_branch(host: &str, path: &str) -> Result<String, CodehubError> {
-    let out = crate::win_cmd::tokio_cmd("codehub-cli")
-        .args(["project", "view", "-p", path, "-H", host])
-        .stdin(Stdio::null())
-        .stdout(Stdio::piped())
-        .stderr(Stdio::piped())
-        .output()
-        .await
-        .map_err(spawn_err)?;
+    let out = run_cli(["project", "view", "-p", path, "-H", host]).await?;
     if !out.status.success() {
         return Err(CodehubError::Command(stderr_text(&out)));
     }
@@ -153,14 +192,7 @@ pub async fn create_mr_on_branch(
     ];
     args.push("--jq");
     args.push(".iid");
-    let out = crate::win_cmd::tokio_cmd("codehub-cli")
-        .args(&args)
-        .stdin(Stdio::null())
-        .stdout(Stdio::piped())
-        .stderr(Stdio::piped())
-        .output()
-        .await
-        .map_err(spawn_err)?;
+    let out = run_cli(&args).await?;
     if !out.status.success() {
         return Err(CodehubError::Command(stderr_text(&out)));
     }
@@ -187,27 +219,21 @@ pub async fn open_mr_for_branch(
     path: &str,
     branch: &str,
 ) -> Result<Option<u32>, CodehubError> {
-    let out = crate::win_cmd::tokio_cmd("codehub-cli")
-        .args([
-            "mr",
-            "list",
-            "-p",
-            path,
-            "-H",
-            host,
-            "--source-branch",
-            branch,
-            "--state",
-            "opened",
-            "--jq",
-            ".[0].iid",
-        ])
-        .stdin(Stdio::null())
-        .stdout(Stdio::piped())
-        .stderr(Stdio::piped())
-        .output()
-        .await
-        .map_err(spawn_err)?;
+    let out = run_cli([
+        "mr",
+        "list",
+        "-p",
+        path,
+        "-H",
+        host,
+        "--source-branch",
+        branch,
+        "--state",
+        "opened",
+        "--jq",
+        ".[0].iid",
+    ])
+    .await?;
     if !out.status.success() {
         return Err(CodehubError::Command(stderr_text(&out)));
     }
@@ -227,27 +253,21 @@ pub async fn mr_for_branch(
     path: &str,
     branch: &str,
 ) -> Result<Option<u32>, CodehubError> {
-    let out = crate::win_cmd::tokio_cmd("codehub-cli")
-        .args([
-            "mr",
-            "list",
-            "-p",
-            path,
-            "-H",
-            host,
-            "--source-branch",
-            branch,
-            "--state",
-            "all",
-            "--jq",
-            ".[0].iid",
-        ])
-        .stdin(Stdio::null())
-        .stdout(Stdio::piped())
-        .stderr(Stdio::piped())
-        .output()
-        .await
-        .map_err(spawn_err)?;
+    let out = run_cli([
+        "mr",
+        "list",
+        "-p",
+        path,
+        "-H",
+        host,
+        "--source-branch",
+        branch,
+        "--state",
+        "all",
+        "--jq",
+        ".[0].iid",
+    ])
+    .await?;
     if !out.status.success() {
         return Err(CodehubError::Command(stderr_text(&out)));
     }
@@ -267,24 +287,18 @@ pub async fn mr_for_branch(
 /// never fabricated. **Only ever called from `MergeIssuePr` (a human click),
 /// never from any run/executor path**.
 pub async fn merge_mr(host: &str, path: &str, mr_iid: u32) -> Result<(), CodehubError> {
-    let out = crate::win_cmd::tokio_cmd("codehub-cli")
-        .args([
-            "mr",
-            "merge",
-            &mr_iid.to_string(),
-            "-p",
-            path,
-            "-H",
-            host,
-            "--squash",
-            "-y",
-        ])
-        .stdin(Stdio::null())
-        .stdout(Stdio::piped())
-        .stderr(Stdio::piped())
-        .output()
-        .await
-        .map_err(spawn_err)?;
+    let out = run_cli([
+        "mr",
+        "merge",
+        &mr_iid.to_string(),
+        "-p",
+        path,
+        "-H",
+        host,
+        "--squash",
+        "-y",
+    ])
+    .await?;
     let merge_stderr = stderr_text(&out);
     if !out.status.success() {
         return Err(CodehubError::Command(merge_stderr));
@@ -294,24 +308,18 @@ pub async fn merge_mr(host: &str, path: &str, mr_iid: u32) -> Result<(), Codehub
     // stderr)、MR 实际没合(state 仍 "opened")。只信「MR state 真变 merged」
     // 才算成功,绝不假 Done。复跑 mr view 拿 state(`--jq .merged` 对未合 MR
     // 返 null,故用 `.state`)。
-    let verify = crate::win_cmd::tokio_cmd("codehub-cli")
-        .args([
-            "mr",
-            "view",
-            &mr_iid.to_string(),
-            "-p",
-            path,
-            "-H",
-            host,
-            "--jq",
-            ".state",
-        ])
-        .stdin(Stdio::null())
-        .stdout(Stdio::piped())
-        .stderr(Stdio::piped())
-        .output()
-        .await
-        .map_err(spawn_err)?;
+    let verify = run_cli([
+        "mr",
+        "view",
+        &mr_iid.to_string(),
+        "-p",
+        path,
+        "-H",
+        host,
+        "--jq",
+        ".state",
+    ])
+    .await?;
     if !verify.status.success() {
         return Err(CodehubError::Command(format!(
             "merge 后读回 MR 状态失败:{} | merge stderr: {merge_stderr}",
@@ -346,23 +354,17 @@ pub async fn merge_mr(host: &str, path: &str, mr_iid: u32) -> Result<(), Codehub
 /// 免非交互卡死)+ `BatchMode=yes`(只走 key、不弹密码,密码会挂死非交互进程)。
 pub async fn clone_repo(host: &str, path: &str, dest: &Path) -> Result<(), CodehubError> {
     // 1. 取 ssh_url(--template 出裸串,无引号)
-    let out = crate::win_cmd::tokio_cmd("codehub-cli")
-        .args([
-            "project",
-            "view",
-            "-p",
-            path,
-            "-H",
-            host,
-            "--template",
-            "{{.ssh_url_to_repo}}",
-        ])
-        .stdin(Stdio::null())
-        .stdout(Stdio::piped())
-        .stderr(Stdio::piped())
-        .output()
-        .await
-        .map_err(spawn_err)?;
+    let out = run_cli([
+        "project",
+        "view",
+        "-p",
+        path,
+        "-H",
+        host,
+        "--template",
+        "{{.ssh_url_to_repo}}",
+    ])
+    .await?;
     if !out.status.success() {
         return Err(CodehubError::Command(format!(
             "取 ssh_url 失败(project view):{}",
@@ -422,27 +424,21 @@ pub async fn fetch_project_toml(
     } else {
         git_ref.trim()
     };
-    let out = crate::win_cmd::tokio_cmd("codehub-cli")
-        .args([
-            "-H",
-            host,
-            "repo",
-            "file",
-            "raw",
-            "-p",
-            path,
-            "--file-path",
-            crate::github::PROJECT_FILE_REL_PATH,
-            "--ref",
-            git_ref,
-            "--no-cache",
-        ])
-        .stdin(Stdio::null())
-        .stdout(Stdio::piped())
-        .stderr(Stdio::piped())
-        .output()
-        .await
-        .map_err(spawn_err)?;
+    let out = run_cli([
+        "-H",
+        host,
+        "repo",
+        "file",
+        "raw",
+        "-p",
+        path,
+        "--file-path",
+        crate::github::PROJECT_FILE_REL_PATH,
+        "--ref",
+        git_ref,
+        "--no-cache",
+    ])
+    .await?;
     if !out.status.success() {
         let err = stderr_text(&out);
         let lower = err.to_lowercase();
@@ -469,24 +465,18 @@ pub async fn fetch_project_toml(
 /// `path_with_namespace`/`visibility`/`default_branch`/`last_activity_at`/
 /// `description` 成 [`CodehubRepoSummary`]。
 pub async fn list_repos(host: &str, limit: u32) -> Result<Vec<CodehubRepoSummary>, CodehubError> {
-    let out = crate::win_cmd::tokio_cmd("codehub-cli")
-        .args([
-            "-H",
-            host,
-            "project",
-            "list",
-            "--mine",
-            "--limit",
-            &limit.to_string(),
-            "--json",
-            "path_with_namespace,visibility,default_branch,last_activity_at,description",
-        ])
-        .stdin(Stdio::null())
-        .stdout(Stdio::piped())
-        .stderr(Stdio::piped())
-        .output()
-        .await
-        .map_err(spawn_err)?;
+    let out = run_cli([
+        "-H",
+        host,
+        "project",
+        "list",
+        "--mine",
+        "--limit",
+        &limit.to_string(),
+        "--json",
+        "path_with_namespace,visibility,default_branch,last_activity_at,description",
+    ])
+    .await?;
     if !out.status.success() {
         return Err(CodehubError::Command(stderr_text(&out)));
     }
@@ -567,14 +557,7 @@ pub async fn create_issue(
     }
     args.push("--jq");
     args.push(".iid");
-    let out = crate::win_cmd::tokio_cmd("codehub-cli")
-        .args(&args)
-        .stdin(Stdio::null())
-        .stdout(Stdio::piped())
-        .stderr(Stdio::piped())
-        .output()
-        .await
-        .map_err(spawn_err)?;
+    let out = run_cli(&args).await?;
     if !out.status.success() {
         return Err(CodehubError::Command(stderr_text(&out)));
     }
@@ -588,7 +571,7 @@ pub async fn create_issue(
 /// 对每个入参 label 算前缀([`crate::remote::label_prefix`]),把 issue 现有
 /// labels 里前缀命中的摘掉,再把入参全加上(裸 label 无前缀,只加不摘)。
 /// 这样调 `update_issue(iid, Some(&["bw:status:inprogress"]), None)` 只换
-/// `bw:status:*`,`bw:week:*`/`bw:released:*` 不动。
+/// `bw:status:*`,`bw:plan:*`/`bw:released:*` 不动。
 ///
 /// GitLab 的 issue update API 对 `labels` 是**全量替换**(传啥整张盖掉旧
 /// 标签)——为了凑出 namespace-replace,得多 list 一次现有 labels,算出
@@ -611,24 +594,18 @@ pub async fn update_issue(
             // 1a. list 现有 labels(codehub 的 labels 是对象数组 `[{name,color}]`,
             // 不是字符串数组——直接 `[.labels[]]` 会回对象、按 Vec<String> 解析炸,
             // 这里抽 .name;裸字符串 label 也兼容(`.name? // .`)。
-            let view = crate::win_cmd::tokio_cmd("codehub-cli")
-                .args([
-                    "issue",
-                    "view",
-                    &iid_s,
-                    "-p",
-                    path,
-                    "-H",
-                    host,
-                    "--jq",
-                    "(.labels // []) | [.[] | (.name? // .)]",
-                ])
-                .stdin(Stdio::null())
-                .stdout(Stdio::piped())
-                .stderr(Stdio::piped())
-                .output()
-                .await
-                .map_err(spawn_err)?;
+            let view = run_cli([
+                "issue",
+                "view",
+                &iid_s,
+                "-p",
+                path,
+                "-H",
+                host,
+                "--jq",
+                "(.labels // []) | [.[] | (.name? // .)]",
+            ])
+            .await?;
             if !view.status.success() {
                 return Err(CodehubError::Command(stderr_text(&view)));
             }
@@ -675,14 +652,7 @@ pub async fn update_issue(
         args.push("--state-event");
         args.push(ev);
     }
-    let out = crate::win_cmd::tokio_cmd("codehub-cli")
-        .args(&args)
-        .stdin(Stdio::null())
-        .stdout(Stdio::piped())
-        .stderr(Stdio::piped())
-        .output()
-        .await
-        .map_err(spawn_err)?;
+    let out = run_cli(&args).await?;
     if !out.status.success() {
         return Err(CodehubError::Command(stderr_text(&out)));
     }
@@ -721,18 +691,17 @@ pub async fn list_issues(
     // 裸 `.[]` 会 jq 运行期失败(实测 2026-08-24:接入后铺底先查同标题开着的
     // 活,这里一炸就建不出新活、开不出 MR)。走势那对查询已经兜过,这里漏了。
     args.push(r#"(. // []) | [.[] | {iid: .iid, number: (.id // .iid), title: (.title // ""), state: (.state // ""), labels: ((.labels // []) | map(.name? // .)), created_at: (.created_at // null), closed_at: (.closed_at // null), assignee: .assignee, author: .author}]"#);
-    let out = crate::win_cmd::tokio_cmd("codehub-cli")
-        .args(&args)
-        .stdin(Stdio::null())
-        .stdout(Stdio::piped())
-        .stderr(Stdio::piped())
-        .output()
-        .await
-        .map_err(spawn_err)?;
+    let out = run_cli(&args).await?;
     if !out.status.success() {
         return Err(CodehubError::Command(stderr_text(&out)));
     }
     let rows = parse_issue_list_json(&out.stdout)?;
+    crate::dlog!(
+        ok,
+        "codehub",
+        "issue list -H {host} -p {path} n={}",
+        rows.len()
+    );
     Ok(rows
         .into_iter()
         .map(|r| crate::remote::RemoteIssue {
@@ -760,16 +729,10 @@ pub async fn view_issue(
     iid: u32,
 ) -> Result<crate::remote::RemoteIssue, CodehubError> {
     let iid_s = iid.to_string();
-    let out = crate::win_cmd::tokio_cmd("codehub-cli")
-        .args([
-            "issue", "view", &iid_s, "-p", path, "-H", host, "--format", "json",
-        ])
-        .stdin(Stdio::null())
-        .stdout(Stdio::piped())
-        .stderr(Stdio::piped())
-        .output()
-        .await
-        .map_err(spawn_err)?;
+    let out = run_cli([
+        "issue", "view", &iid_s, "-p", path, "-H", host, "--format", "json",
+    ])
+    .await?;
     if !out.status.success() {
         return Err(CodehubError::Command(stderr_text(&out)));
     }
@@ -882,16 +845,10 @@ pub async fn comment_issue(
     body: &str,
 ) -> Result<(), CodehubError> {
     let iid_s = iid.to_string();
-    let out = crate::win_cmd::tokio_cmd("codehub-cli")
-        .args([
-            "issue", "comment", "create", &iid_s, "-p", path, "-H", host, "--body", body,
-        ])
-        .stdin(Stdio::null())
-        .stdout(Stdio::piped())
-        .stderr(Stdio::piped())
-        .output()
-        .await
-        .map_err(spawn_err)?;
+    let out = run_cli([
+        "issue", "comment", "create", &iid_s, "-p", path, "-H", host, "--body", body,
+    ])
+    .await?;
     if !out.status.success() {
         return Err(CodehubError::Command(stderr_text(&out)));
     }
@@ -906,29 +863,23 @@ pub async fn list_issue_comments(
     iid: u32,
 ) -> Result<Vec<String>, CodehubError> {
     let iid_s = iid.to_string();
-    let out = crate::win_cmd::tokio_cmd("codehub-cli")
-        .args([
-            "issue",
-            "comment",
-            "list",
-            &iid_s,
-            "-p",
-            path,
-            "-H",
-            host,
-            "-l",
-            "0",
-            "--sort",
-            "asc",
-            "--jq",
-            r#"(. // []) | [.[] | select((.system // false) | not) | .body // ""]"#,
-        ])
-        .stdin(Stdio::null())
-        .stdout(Stdio::piped())
-        .stderr(Stdio::piped())
-        .output()
-        .await
-        .map_err(spawn_err)?;
+    let out = run_cli([
+        "issue",
+        "comment",
+        "list",
+        &iid_s,
+        "-p",
+        path,
+        "-H",
+        host,
+        "-l",
+        "0",
+        "--sort",
+        "asc",
+        "--jq",
+        r#"(. // []) | [.[] | select((.system // false) | not) | .body // ""]"#,
+    ])
+    .await?;
     if !out.status.success() {
         return Err(CodehubError::Command(stderr_text(&out)));
     }
@@ -954,29 +905,23 @@ pub async fn create_release(
     body: &str,
 ) -> Result<(), CodehubError> {
     let git_ref = project_default_branch(host, path).await?;
-    let out = crate::win_cmd::tokio_cmd("codehub-cli")
-        .args([
-            "release",
-            "create",
-            "-p",
-            path,
-            "-H",
-            host,
-            "--tag-name",
-            tag,
-            "--name",
-            title,
-            "--description",
-            body,
-            "--ref",
-            &git_ref,
-        ])
-        .stdin(Stdio::null())
-        .stdout(Stdio::piped())
-        .stderr(Stdio::piped())
-        .output()
-        .await
-        .map_err(spawn_err)?;
+    let out = run_cli([
+        "release",
+        "create",
+        "-p",
+        path,
+        "-H",
+        host,
+        "--tag-name",
+        tag,
+        "--name",
+        title,
+        "--description",
+        body,
+        "--ref",
+        &git_ref,
+    ])
+    .await?;
     if !out.status.success() {
         return Err(CodehubError::Command(stderr_text(&out)));
     }
@@ -987,24 +932,18 @@ pub async fn create_release(
 /// → 所有版本的 tag 串(只回 tag,正文/资源数留给上层另查)。`tag_name` 是
 /// GitLab release payload 的字段名;codehub-cli 同构封装,沿用。
 pub async fn list_releases(host: &str, path: &str) -> Result<Vec<String>, CodehubError> {
-    let out = crate::win_cmd::tokio_cmd("codehub-cli")
-        .args([
-            "release",
-            "list",
-            "-p",
-            path,
-            "-H",
-            host,
-            "--jq",
-            // 与 list_issues 同形:空仓返 null,裸 `.[]` 会炸。
-            "(. // []) | [.[] | .tag_name]",
-        ])
-        .stdin(Stdio::null())
-        .stdout(Stdio::piped())
-        .stderr(Stdio::piped())
-        .output()
-        .await
-        .map_err(spawn_err)?;
+    let out = run_cli([
+        "release",
+        "list",
+        "-p",
+        path,
+        "-H",
+        host,
+        "--jq",
+        // 与 list_issues 同形:空仓返 null,裸 `.[]` 会炸。
+        "(. // []) | [.[] | .tag_name]",
+    ])
+    .await?;
     if !out.status.success() {
         return Err(CodehubError::Command(stderr_text(&out)));
     }
@@ -1029,29 +968,23 @@ pub async fn list_releases(host: &str, path: &str) -> Result<Vec<String>, Codehu
 ///
 /// 复算:`codehub-cli -H <host> mr list -p <path> --state merged -l 0 --jq '[.[] | .merged_at]'`
 pub async fn merged_mr_times(host: &str, path: &str) -> Result<Vec<String>, CodehubError> {
-    let out = crate::win_cmd::tokio_cmd("codehub-cli")
-        .args([
-            "mr",
-            "list",
-            "-p",
-            path,
-            "-H",
-            host,
-            "--state",
-            "merged",
-            "-l",
-            "0",
-            "--jq",
-            // `(. // [])` 兜 null:仓里没有已合并 MR 时 codehub-cli 返 null,不兜的话
-            // `.[]` 迭代 null 会报错(实测)。
-            "(. // []) | [.[] | .merged_at]",
-        ])
-        .stdin(Stdio::null())
-        .stdout(Stdio::piped())
-        .stderr(Stdio::piped())
-        .output()
-        .await
-        .map_err(spawn_err)?;
+    let out = run_cli([
+        "mr",
+        "list",
+        "-p",
+        path,
+        "-H",
+        host,
+        "--state",
+        "merged",
+        "-l",
+        "0",
+        "--jq",
+        // `(. // [])` 兜 null:仓里没有已合并 MR 时 codehub-cli 返 null,不兜的话
+        // `.[]` 迭代 null 会报错(实测)。
+        "(. // []) | [.[] | .merged_at]",
+    ])
+    .await?;
     if !out.status.success() {
         return Err(CodehubError::Command(stderr_text(&out)));
     }
@@ -1073,27 +1006,21 @@ pub async fn issue_times(
     host: &str,
     path: &str,
 ) -> Result<Vec<(String, Option<String>)>, CodehubError> {
-    let out = crate::win_cmd::tokio_cmd("codehub-cli")
-        .args([
-            "issue",
-            "list",
-            "-p",
-            path,
-            "-H",
-            host,
-            "--state",
-            "all",
-            "-l",
-            "0",
-            "--jq",
-            "(. // []) | [.[] | {created_at: .created_at, closed_at: .closed_at}]",
-        ])
-        .stdin(Stdio::null())
-        .stdout(Stdio::piped())
-        .stderr(Stdio::piped())
-        .output()
-        .await
-        .map_err(spawn_err)?;
+    let out = run_cli([
+        "issue",
+        "list",
+        "-p",
+        path,
+        "-H",
+        host,
+        "--state",
+        "all",
+        "-l",
+        "0",
+        "--jq",
+        "(. // []) | [.[] | {created_at: .created_at, closed_at: .closed_at}]",
+    ])
+    .await?;
     if !out.status.success() {
         return Err(CodehubError::Command(stderr_text(&out)));
     }
@@ -1108,33 +1035,9 @@ pub async fn issue_times(
         .collect())
 }
 
-// ───────────────────────── 周标签 → 里程碑投影 ─────────────────────────
-//
-// codehub-cli 没有 milestone 子命令。走 `api`，路径必须带 `/api/v4`
-//（不带会 302 到登录页）。只认标题整段等于 `YYYY-Www` 的里程碑，不碰
-// 别人的 `5.8.0`。`week` 空 = 从里程碑摘下（`milestone_id=0`）。
-
-/// 把一张 issue 挂到（或摘下）同名周里程碑。幂等：同名已在就复用。
-pub async fn project_week(
-    host: &str,
-    path: &str,
-    iid: u32,
-    week: &str,
-    start: &str,
-    due: &str,
-) -> Result<(), CodehubError> {
-    let project_id = project_numeric_id(host, path).await?;
-    let pid = project_id.to_string();
-    if week.is_empty() {
-        return set_issue_milestone(host, &pid, iid, 0).await;
-    }
-    let mid = ensure_week_milestone(host, &pid, week, start, due).await?;
-    set_issue_milestone(host, &pid, iid, mid).await
-}
-
-// ── 人起名的版本 → 里程碑 ──
-// 和周版本同一套存法:codehub milestone(title=版本名)+ `bw:plan:<name>`
-// 标签。正本是标签,里程碑是 codehub 侧镜像。周版本走 `bw:week:`。与发版号(bw:released:*)不同。
+// ── 版本 → 里程碑 ──
+// codehub milestone(title=版本名)+ `bw:plan:<name>` 标签。正本是标签,
+// 里程碑是 codehub 侧镜像。每个标题都是一个版本。与发版号(bw:released:*)不同。
 
 /// 建/复用一个版本里程碑,返回 mid。同名复用(不更新日期);找不到才建。
 pub async fn ensure_plan_milestone(
@@ -1204,11 +1107,11 @@ pub async fn project_plan(
     Ok(())
 }
 
-/// 列出所有里程碑 (title, start, due)。跳过周格式(YYYY-Www)的,余下是版本。
+/// 列出所有里程碑 (title, start, due, created_at)。每个标题都是一个版本。
 pub async fn list_milestones(
     host: &str,
     path: &str,
-) -> Result<Vec<(String, String, String)>, CodehubError> {
+) -> Result<Vec<(String, String, String, String)>, CodehubError> {
     let project_id = project_numeric_id(host, path).await?;
     let pid = project_id.to_string();
     let listed = api_json(
@@ -1223,19 +1126,20 @@ pub async fn list_milestones(
         .iter()
         .filter_map(|m| {
             let title = m["title"].as_str()?.to_string();
-            if is_week_title(&title) {
+            if title.trim().is_empty() {
                 return None;
             }
             let start = m["start_date"].as_str().unwrap_or("").to_string();
             let due = m["due_date"].as_str().unwrap_or("").to_string();
-            Some((title, start, due))
+            let created = m["created_at"].as_str().unwrap_or("").to_string();
+            Some((title, start, due, created))
         })
         .collect())
 }
 
-/// 按标题删一个版本里程碑。找不到当成功(已经没了)。周格式标题不删。
+/// 按标题删一个版本里程碑。找不到当成功(已经没了)。
 pub async fn delete_plan_milestone(host: &str, path: &str, name: &str) -> Result<(), CodehubError> {
-    if name.trim().is_empty() || is_week_title(name) {
+    if name.trim().is_empty() {
         return Ok(());
     }
     let project_id = project_numeric_id(host, path).await?;
@@ -1343,15 +1247,6 @@ pub async fn clear_issue_milestone(host: &str, path: &str, iid: u32) -> Result<(
     set_issue_milestone(host, &project_id.to_string(), iid, 0).await
 }
 
-/// `YYYY-Www` 周格式?形如 2026-W35。
-fn is_week_title(s: &str) -> bool {
-    let b = s.as_bytes();
-    b.len() == 8
-        && s[5..6].eq_ignore_ascii_case("W")
-        && s[..4].chars().all(|c| c.is_ascii_digit())
-        && s[6..].chars().all(|c| c.is_ascii_digit())
-}
-
 /// 改 issue 责任人。空 = 取消指派。先 username→userid,再 PUT `assignee_id`。
 pub async fn set_issue_assignee(
     host: &str,
@@ -1445,14 +1340,7 @@ pub async fn edit_issue(
 }
 
 async fn project_numeric_id(host: &str, path: &str) -> Result<u64, CodehubError> {
-    let out = crate::win_cmd::tokio_cmd("codehub-cli")
-        .args(["project", "view", "-p", path, "-H", host])
-        .stdin(Stdio::null())
-        .stdout(Stdio::piped())
-        .stderr(Stdio::piped())
-        .output()
-        .await
-        .map_err(spawn_err)?;
+    let out = run_cli(["project", "view", "-p", path, "-H", host]).await?;
     if !out.status.success() {
         return Err(CodehubError::Command(stderr_text(&out)));
     }
@@ -1461,43 +1349,6 @@ async fn project_numeric_id(host: &str, path: &str) -> Result<u64, CodehubError>
     v["id"]
         .as_u64()
         .ok_or_else(|| CodehubError::Parse("project view 没有数字 id".into()))
-}
-
-async fn ensure_week_milestone(
-    host: &str,
-    project_id: &str,
-    week: &str,
-    start: &str,
-    due: &str,
-) -> Result<u64, CodehubError> {
-    let listed = api_json(
-        host,
-        "GET",
-        "/api/v4/projects/:id/milestones",
-        &[("id", project_id)],
-        &[],
-    )
-    .await?;
-    for m in milestone_rows(&listed) {
-        if m["title"].as_str() == Some(week) {
-            if let Some(id) = m["id"].as_u64() {
-                return Ok(id);
-            }
-        }
-    }
-    let desc = format!("Workbench 投影 · 正本是 bw:week:{week}");
-    let fields = milestone_create_fields(project_id, week, start, due);
-    let created = api_json(
-        host,
-        "POST",
-        "/api/v4/projects/:id/milestones",
-        &fields,
-        &[("description", desc.as_str())],
-    )
-    .await?;
-    created["id"]
-        .as_u64()
-        .ok_or_else(|| CodehubError::Parse(format!("新建里程碑没有 id:{created}")))
 }
 
 async fn set_issue_milestone(
@@ -1541,14 +1392,7 @@ async fn api_json(
         args.push("--raw-field");
         args.push(a);
     }
-    let out = crate::win_cmd::tokio_cmd("codehub-cli")
-        .args(&args)
-        .stdin(Stdio::null())
-        .stdout(Stdio::piped())
-        .stderr(Stdio::piped())
-        .output()
-        .await
-        .map_err(spawn_err)?;
+    let out = run_cli(&args).await?;
     if !out.status.success() {
         return Err(CodehubError::Command(stderr_text(&out)));
     }

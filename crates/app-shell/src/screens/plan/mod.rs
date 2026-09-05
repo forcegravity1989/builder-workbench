@@ -12,17 +12,19 @@ mod kanban;
 mod list_view;
 mod plan_dialogs;
 
-use crate::bridge::{Bridge, PanelNav, Req};
-use crate::vm::ProjectVm;
-use bw::command::Command;
-use bw::model::IssueId;
+use crate::{
+    bridge::{Bridge, PanelNav, Req},
+    vm::ProjectVm,
+};
+use bw::{command::Command, model::IssueId};
 use dioxus::prelude::*;
 
 use detail::{DetailModal, StartModal};
-use kanban::{board, PendingMove, PendingSchedule};
+use kanban::{board, PendingMove, PendingReject, PendingSchedule};
 use plan_dialogs::{
     ConfirmMoveDialog, CreateVersionDialog, DeleteVersionDialog, DialogKind, NewIssueDialog,
-    NewIssueDraft, PackDialog, PackDraft, ReleaseDialog, ReleaseDraft, ScheduleDialog,
+    NewIssueDraft, PackDialog, PackDraft, PackJob, RejectMoveDialog, ReleaseDialog, ReleaseDraft,
+    ScheduleDialog,
 };
 
 /// 列表/看板视图模式。
@@ -63,10 +65,10 @@ impl ListFilter {
         // open 预设不过滤(显示全部);assigned/mine 已过滤
         if !self.plan.is_empty() {
             if self.plan == "unscheduled" {
-                if !c.plan_version.is_empty() || !c.week_of.is_empty() {
+                if !c.plan_version.is_empty() {
                     return false;
                 }
-            } else if c.plan_version != self.plan && c.week_of != self.plan {
+            } else if c.plan_version != self.plan {
                 return false;
             }
         }
@@ -113,11 +115,27 @@ pub fn View(p: ProjectVm, bridge: Bridge) -> Element {
     let selected = use_signal(|| None::<IssueId>);
     let schedule = use_signal(|| None::<PendingSchedule>);
     let start = use_signal(|| None::<IssueId>);
+    let reject = use_signal(|| None::<PendingReject>);
     let dialog = use_signal(|| None::<DialogKind>);
+    let mut pack_job = use_signal(|| PackJob {
+        packing: bridge.pack_ctl.in_flight(),
+        version: bridge.pack_ctl.version().unwrap_or_default(),
+        ..PackJob::default()
+    });
     let view_mode = use_signal(|| ViewMode::Board);
     let list_filter = use_signal(ListFilter::default);
     let col_seg = use_signal(std::collections::HashMap::<String, String>::new);
     let nav = use_context::<PanelNav>();
+
+    let prog = bridge.progress.clone();
+    use_future(move || {
+        let mut rx = prog.subscribe();
+        async move {
+            while let Ok(line) = rx.recv().await {
+                pack_job.with_mut(|job| job.apply_progress(line));
+            }
+        }
+    });
 
     let rows: Vec<&crate::vm::CardItemVm> = p
         .board
@@ -131,7 +149,7 @@ pub fn View(p: ProjectVm, bridge: Bridge) -> Element {
             class: "plan-grid",
             style: "height:calc(100vh - 112px);",
             div { class: "plan-col plan-mid",
-                Toolbar { p: p.clone(), bridge: bridge.clone(), view_mode, dialog }
+                Toolbar { p: p.clone(), bridge: bridge.clone(), view_mode, dialog, pack_job }
                 if !p.view_all {
                     WeekHead { p: p.clone() }
                 }
@@ -139,7 +157,7 @@ pub fn View(p: ProjectVm, bridge: Bridge) -> Element {
                 if *view_mode.read() == ViewMode::List {
                     {list_view::list_view(p, rows, list_filter, selected, schedule, start, bridge, nav)}
                 } else {
-                    {board(p, Some(Filters::default()), list_filter.read().plan.clone(), bridge, dragging, pending, schedule, selected, start, use_signal(String::new), col_seg, nav)}
+                    {board(p, Some(Filters::default()), list_filter.read().plan.clone(), bridge, dragging, pending, schedule, selected, start, reject, col_seg, nav)}
                 }
             }
         }
@@ -152,6 +170,9 @@ pub fn View(p: ProjectVm, bridge: Bridge) -> Element {
         if let Some(pm) = pending.read().clone() {
             ConfirmMoveDialog { pm, pending, bridge: bridge.clone() }
         }
+        if let Some(pr) = reject.read().clone() {
+            RejectMoveDialog { pr, reject }
+        }
         if let Some(ps) = schedule.read().clone() {
             ScheduleDialog { p: p.clone(), ps, schedule, bridge: bridge.clone() }
         }
@@ -160,7 +181,7 @@ pub fn View(p: ProjectVm, bridge: Bridge) -> Element {
                 DialogKind::NewIssue(_) => rsx! { NewIssueDialog { p: p.clone(), dialog, bridge: bridge.clone() } },
                 DialogKind::CreateVersion => rsx! { CreateVersionDialog { p: p.clone(), dialog, bridge: bridge.clone() } },
                 DialogKind::DeleteVersion => rsx! { DeleteVersionDialog { p: p.clone(), dialog, bridge: bridge.clone() } },
-                DialogKind::Pack(draft) => rsx! { PackDialog { draft, dialog, bridge: bridge.clone() } },
+                DialogKind::Pack(draft) => rsx! { PackDialog { draft, dialog, pack_job, bridge: bridge.clone() } },
                 DialogKind::Release(draft) => rsx! { ReleaseDialog { draft, dialog, bridge: bridge.clone() } },
             }
         }
@@ -175,6 +196,7 @@ fn Toolbar(
     bridge: Bridge,
     mut view_mode: Signal<ViewMode>,
     mut dialog: Signal<Option<DialogKind>>,
+    mut pack_job: Signal<PackJob>,
 ) -> Element {
     let pid = p.id;
     let done_ids: Vec<IssueId> = p
@@ -199,45 +221,35 @@ fn Toolbar(
             editing.set(false);
         }
     }
+    let benzhou = |name: &str| -> String {
+        if !p.confirmed_version.is_empty() && name == p.confirmed_version {
+            format!("{name} · 本周")
+        } else {
+            name.to_string()
+        }
+    };
     let title = if p.view_all {
         "全部 issue".to_string()
     } else if !p.viewing_plan.is_empty() {
-        p.viewing_plan.clone()
-    } else if p.viewing_week == p.current_week {
-        format!("{} · 本周", p.viewing_week)
+        benzhou(&p.viewing_plan)
     } else {
-        p.viewing_week.clone()
+        "全部 issue".to_string()
     };
     let b_view = bridge.clone();
     let b_rename = bridge.clone();
     let view_opts: Vec<(String, String)> = {
         let mut v: Vec<(String, String)> = vec![("all".into(), "全部 issue".into())];
-        for w in &p.weeks {
-            let label = if w.week == p.current_week {
-                format!("{} · 本周", w.week)
-            } else {
-                w.week.clone()
-            };
-            v.push((format!("week:{}", w.week), label));
-        }
         for v2 in &p.plan_versions {
-            let label = if bw::version::is_v0x(&v2.name) {
-                v2.name.clone()
-            } else {
-                format!("版本 · {}", v2.name)
-            };
-            v.push((format!("version:{}", v2.name), label));
+            v.push((format!("version:{}", v2.name), benzhou(&v2.name)));
         }
         v
     };
-    let cur_view = if p.view_all {
+    let cur_view = if p.view_all || p.viewing_plan.is_empty() {
         "all".to_string()
-    } else if !p.viewing_plan.is_empty() {
-        format!("version:{}", p.viewing_plan)
     } else {
-        format!("week:{}", p.viewing_week)
+        format!("version:{}", p.viewing_plan)
     };
-    let can_rename = bw::version::is_v0x(&viewing_plan) && !released;
+    let can_rename = !viewing_plan.is_empty() && !released;
     let taken: Vec<String> = p
         .plan_versions
         .iter()
@@ -269,7 +281,7 @@ fn Toolbar(
                             title: "保存",
                             onclick: move |_| {
                                 let to = draft.read().trim().to_string();
-                                let clash = !bw::version::is_v0x(&to)
+                                let clash = to.is_empty()
                                     || (to != from && taken.iter().any(|s| s == &to));
                                 editing.set(false);
                                 if clash {
@@ -309,8 +321,6 @@ fn Toolbar(
                         let v = e.value();
                         if v == "all" {
                             b_view.send(Req::ViewAll(true));
-                        } else if let Some(w) = v.strip_prefix("week:") {
-                            b_view.send(Req::ViewWeek(w.to_string()));
                         } else if let Some(pl) = v.strip_prefix("version:") {
                             b_view.send(Req::ViewPlan(pl.to_string()));
                         }
@@ -327,18 +337,28 @@ fn Toolbar(
                     }
                     button {
                         class: "btn btn-sm btn-secondary",
-                        disabled: !p.plan_versions.iter().any(|v| bw::version::is_v0x(&v.name) && !v.released),
+                        disabled: !p.plan_versions.iter().any(|v| !v.released),
                         onclick: move |_| dialog.set(Some(DialogKind::DeleteVersion)),
                         "删除版本"
                     }
-                } else if bw::version::is_v0x(&p.viewing_plan) && !released {
+                } else if !p.viewing_plan.is_empty() && !released {
                     button {
                         class: "btn btn-sm",
-                        onclick: move |_| dialog.set(Some(DialogKind::Pack(PackDraft {
-                            project_id: pid,
-                            version: pack_ver.clone(),
-                        }))),
-                        "出包"
+                        onclick: move |_| {
+                            let job = pack_job.read().clone();
+                            if job.packing || (job.finished && !job.version.is_empty()) {
+                                dialog.set(Some(DialogKind::Pack(PackDraft {
+                                    project_id: pid,
+                                    version: job.version,
+                                })));
+                                return;
+                            }
+                            dialog.set(Some(DialogKind::Pack(PackDraft {
+                                project_id: pid,
+                                version: pack_ver.clone(),
+                            })));
+                        },
+                        {if pack_job.read().packing { "出包..." } else { "出包" }}
                     }
                     button {
                         class: "btn btn-sm",
@@ -370,24 +390,22 @@ fn Toolbar(
 
 #[component]
 fn WeekHead(p: ProjectVm) -> Element {
-    let current_goal = p
-        .weeks
-        .iter()
-        .find(|w| w.week == p.current_week)
-        .and_then(|w| w.goal.clone())
-        .unwrap_or_default();
     let goal = if !p.viewing_plan.is_empty() {
-        if p.viewing_plan == p.confirmed_version && !current_goal.is_empty() {
-            current_goal
-        } else {
-            "（这个版本还没写版本目标）".into()
-        }
-    } else {
-        p.weeks
+        p.plan_versions
             .iter()
-            .find(|w| w.week == p.viewing_week)
-            .and_then(|w| w.goal.clone())
-            .unwrap_or_else(|| "（这一周还没写周目标）".into())
+            .find(|v| v.name == p.viewing_plan)
+            .map(|v| v.goal.clone())
+            .filter(|s| !s.is_empty())
+            .unwrap_or_else(|| "（这个版本还没写版本目标）".into())
+    } else if !p.confirmed_version.is_empty() {
+        p.plan_versions
+            .iter()
+            .find(|v| v.name == p.confirmed_version)
+            .map(|v| v.goal.clone())
+            .filter(|s| !s.is_empty())
+            .unwrap_or_else(|| "（在研版本还没写版本目标）".into())
+    } else {
+        "（还没有在研版本）".into()
     };
     let mut open = use_signal(|| false);
     let c = &p.board_counts;

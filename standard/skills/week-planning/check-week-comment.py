@@ -3,6 +3,7 @@
 
 读标准输入或第一个文件参数。退出码 0 = 过;非 0 把缺什么打到 stderr。
 挂评论之前跑一遍,过了再贴。
+缺标题、或「版本目标」「本周纳入」空着会失败。不猜会话有没有问过人。
 """
 import sys
 from typing import Optional
@@ -62,6 +63,8 @@ def main() -> int:
         errs.append(f"`## {HEAD_GOAL}` 下面要有内容,不能空着")
     if not has_heading(body, HEAD_SCOPE):
         errs.append(f"缺二级标题 `## {HEAD_SCOPE}`")
+    elif not first_line_under(body, HEAD_SCOPE):
+        errs.append(f"`## {HEAD_SCOPE}` 下面要有内容,不能空着")
     if not has_heading(body, HEAD_READINGS):
         errs.append(f"缺二级标题 `## {HEAD_READINGS}`")
     if errs:

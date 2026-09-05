@@ -33,6 +33,15 @@ def weeks_in(since: datetime.date, until: datetime.date):
     return out
 
 
+def days_in(since: datetime.date, until: datetime.date):
+    """窗口内的日历日,旧的在前。until 是开区间右端。"""
+    out, cur = [], since
+    while cur < until:
+        out.append((cur.isoformat(), cur))
+        cur += datetime.timedelta(days=1)
+    return out
+
+
 def ts(raw):
     # `2026-08-17T01:02:03Z` → 时间戳。解析不出来的给 None,不猜。
     try:
@@ -54,8 +63,8 @@ def main() -> int:
     ap.add_argument("--granularity", default="week")
     args = ap.parse_args()
 
-    if args.granularity != "week":
-        print(f"只支持 --granularity week,收到 {args.granularity}", file=sys.stderr)
+    if args.granularity not in ("week", "day"):
+        print(f"只支持 --granularity week|day,收到 {args.granularity}", file=sys.stderr)
         return 2
 
     try:
@@ -96,12 +105,20 @@ def main() -> int:
     since = datetime.date.fromisoformat(args.since)
     until = datetime.date.fromisoformat(args.until)
     points = []
-    for label, monday in weeks_in(since, until):
-        lo = datetime.datetime.combine(monday, datetime.time(0, 0), tz).timestamp()
-        hi = lo + 7 * 24 * 3600
-        waits = [h for (m, h) in pairs if lo <= m < hi]
-        if waits:
-            points.append({"week": label, "value": round(median(waits), 1)})
+    if args.granularity == "day":
+        for label, day in days_in(since, until):
+            lo = datetime.datetime.combine(day, datetime.time(0, 0), tz).timestamp()
+            hi = lo + 24 * 3600
+            waits = [h for (m, h) in pairs if lo <= m < hi]
+            if waits:
+                points.append({"day": label, "value": round(median(waits), 1)})
+    else:
+        for label, monday in weeks_in(since, until):
+            lo = datetime.datetime.combine(monday, datetime.time(0, 0), tz).timestamp()
+            hi = lo + 7 * 24 * 3600
+            waits = [h for (m, h) in pairs if lo <= m < hi]
+            if waits:
+                points.append({"week": label, "value": round(median(waits), 1)})
 
     json.dump({"points": points}, sys.stdout, ensure_ascii=False)
     return 0

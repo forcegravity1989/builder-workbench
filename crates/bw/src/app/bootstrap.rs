@@ -198,16 +198,13 @@ fn ensure_bw_gitignore(tree: &std::path::Path) -> bool {
 fn pending_steps(probe: &boot::BootstrapProbe) -> String {
     let mut v = Vec::new();
     if probe.has_history {
-        v.push("资产盘点首次模式:能对上已有 v0.x 的活打 bw:plan:v0.x(需要对版本目标再补一张运作活①,评论写明补记)");
+        v.push("这个仓接入前已有历史;未分配的活由人排进 v0.x,不自动打标");
     }
     if probe.has_own_conventions {
-        v.push(
-            "资产盘点首次模式:提议给这个项目写一份开发手册(仓根 `AGENTS.md`)\
-             —— 那是在改你的项目,得先问过你才写,不在接项目这一步做",
-        );
+        v.push("仓根已有 README / AGENTS.md / CLAUDE.md,接项目时一个字没动");
     }
     if v.is_empty() {
-        "无 —— 这个仓没有历史,写核心件就是全部".into()
+        "无 —— 这个仓没有历史,写名片就是全部".into()
     } else {
         v.join(";")
     }
@@ -216,13 +213,12 @@ fn pending_steps(probe: &boot::BootstrapProbe) -> String {
 /// ▶开工 时注入给 agent 的系统提示词。**渐进式加载**:提示词里只放索引,
 /// 正文让 agent 自己按需读。
 ///
-/// 主提示词是外置的 `standard/system-prompt/SYSTEM.md.tmpl`(身份 + 四铁律 +
-/// 读项目规范件的指引),`{{...}}` 占位在这里渲染:活的信息、本活要读的
-/// references 阶段规范、本活挂的技能。**正文一律不塞进提示词** —— references
-/// 和技能都只给「一句话 + 完整路径」,agent 按需自己读,和主提示词同一套规矩。
+/// 主提示词是外置的 `standard/system-prompt/SYSTEM.md.tmpl`(身份 + 读仓根
+/// `AGENTS.md` + 按任务加载哪份 reference + 三条纪律),`{{...}}` 占位在这里渲染。
+/// **正文一律不塞进提示词** —— references 和技能都只给「一句话 + 完整路径」。
 ///
-/// 不硬编码在 `format!` 里:改身份/铁律 = 改那份 md + 抬 `standard/VERSION`,
-/// 规范对账测得出落后(以前塞在 `base_prompt` 的 `format!` 里,改=改代码,不可对账)。
+/// 不硬编码在 `format!` 里:改身份/纪律 = 改那份 md(以前塞在 `base_prompt`
+/// 的 `format!` 里,改=改代码,人审得读 Rust)。
 pub fn agent_system_prompt(
     issue: &Issue,
     skill: Option<&SkillPointer>,
@@ -262,8 +258,8 @@ pub struct ReferencePointer {
 /// 这张活要读哪几份阶段规范 references。按活的类别/workflow 匹配,只返**硬盘
 /// 上真存在**的那几份(文件不在就如实不指,不编路径)。
 ///
-/// 起手三份:`metrics`(指标活,workflow=更新指标与周计划)、`build`(改仓类活,
-/// 类别=构建/优化/运维)、`week-plan-comment`(运作活①评论格式)。其余按实践长。
+/// 已派发:`metrics`(运作活①)、`week-plan-comment`(运作活① + ② 收口进展)、
+/// `build`(改仓类 + 运作活②)、`bw-assets`(运作活②)。其余按实践长。对照表在 architecture 模块 4。
 pub fn references_for(issue: &Issue, refs_dir: &std::path::Path) -> Vec<ReferencePointer> {
     let mut out = vec![];
     for pack in standard::system_prompt::references() {
@@ -283,18 +279,24 @@ pub fn references_for(issue: &Issue, refs_dir: &std::path::Path) -> Vec<Referenc
 
 /// 这份 reference 要不要给这张活。
 fn want_ref(issue: &Issue, slug: &str) -> bool {
+    let ops2 = issue.workflow == super::ops::OPS2_WORKFLOW;
     match slug {
-        // 指标活:更新指标与周计划
-        "metrics" | "week-plan-comment" => issue.workflow == super::ops::OPS1_WORKFLOW,
-        // 改仓类活:构建 / 优化 / 运维
-        "build" => matches!(
-            issue.category,
-            Some(
-                crate::model::StageKind::Build
-                    | crate::model::StageKind::Optimize
-                    | crate::model::StageKind::Ops
+        // 指标活:更新指标与版本计划。② 升格式时 skill 会再指过去,这里不预注入。
+        "metrics" => issue.workflow == super::ops::OPS1_WORKFLOW,
+        // 周初三标题给①;周五每周进展给②。同一份 reference。
+        "week-plan-comment" => issue.workflow == super::ops::OPS1_WORKFLOW || ops2,
+        // 改仓类活:构建 / 优化 / 运维;运作活②改 `.bw` 也是改仓。
+        "build" => {
+            ops2 || matches!(
+                issue.category,
+                Some(
+                    crate::model::StageKind::Build
+                        | crate::model::StageKind::Optimize
+                        | crate::model::StageKind::Ops
+                )
             )
-        ),
+        }
+        "bw-assets" => ops2,
         _ => false,
     }
 }
@@ -357,4 +359,65 @@ pub fn skill_pointer(skills_dir: &std::path::Path, workflow: &str) -> Option<Ski
 pub(crate) fn allow_skills_dir(plan: &mut bw_engine::LaunchPlan, dir: &std::path::Path) {
     plan.args.push("--add-dir".to_string());
     plan.args.push(dir.display().to_string());
+}
+
+#[cfg(test)]
+mod want_ref_tests {
+    use super::want_ref;
+    use crate::model::{Issue, IssueId, IssueKind, IssueOrigin, IssueStatus, ProjectId, StageKind};
+
+    fn issue(workflow: &str, category: Option<StageKind>) -> Issue {
+        Issue {
+            id: IssueId::nil(),
+            project_id: ProjectId::nil(),
+            number: 0,
+            remote_number: 0,
+            title: String::new(),
+            body: String::new(),
+            status: IssueStatus::Todo,
+            branch: String::new(),
+            pr_number: 0,
+            has_open_mr: false,
+            week_of: String::new(),
+            version: String::new(),
+            tool: String::new(),
+            kind: IssueKind::Ops,
+            origin: IssueOrigin::Auto,
+            workflow: workflow.into(),
+            category,
+            sort_order: 0.0,
+            metric_key: String::new(),
+            created_at: 0,
+            updated_at: 0,
+            settled_at: None,
+            assignee: String::new(),
+            author: String::new(),
+            plan_version: String::new(),
+        }
+    }
+
+    #[test]
+    fn ops2_gets_bw_assets_and_build() {
+        let i = issue(crate::app::OPS2_WORKFLOW, None);
+        assert!(want_ref(&i, "bw-assets"));
+        assert!(want_ref(&i, "build"));
+        assert!(!want_ref(&i, "metrics"));
+        assert!(want_ref(&i, "week-plan-comment"));
+    }
+
+    #[test]
+    fn ops1_gets_metrics_not_bw_assets() {
+        let i = issue(crate::app::OPS1_WORKFLOW, None);
+        assert!(want_ref(&i, "metrics"));
+        assert!(want_ref(&i, "week-plan-comment"));
+        assert!(!want_ref(&i, "bw-assets"));
+        assert!(!want_ref(&i, "build"));
+    }
+
+    #[test]
+    fn build_category_gets_build_ref() {
+        let i = issue("", Some(StageKind::Build));
+        assert!(want_ref(&i, "build"));
+        assert!(!want_ref(&i, "bw-assets"));
+    }
 }

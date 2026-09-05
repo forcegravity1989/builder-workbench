@@ -1,5 +1,13 @@
 ﻿# pack impl. Keep this first line ASCII.
 $ErrorActionPreference = 'Stop'
+# CREATE_NO_WINDOW + piped stdout: Write-Output follows the OEM code page (GBK on
+# Chinese Windows). Protocol lines must be raw UTF-8 bytes (ADR-0005).
+function Write-BwLine([string]$Line) {
+    $bytes = [Text.Encoding]::UTF8.GetBytes(($Line + "`n"))
+    $out = [Console]::OpenStandardOutput()
+    $out.Write($bytes, 0, $bytes.Length)
+    $out.Flush()
+}
 
 function Test-BwVersion([string]$v) {
     if ([string]::IsNullOrWhiteSpace($v)) { return $false }
@@ -10,7 +18,7 @@ function Test-BwVersion([string]$v) {
 function Write-BwProgress {
     param([string]$Phase, [string]$Message)
     $o = [ordered]@{ v = 1; type = 'progress'; phase = $Phase; message = $Message }
-    Write-Output ($o | ConvertTo-Json -Compress)
+    Write-BwLine ($o | ConvertTo-Json -Compress)
 }
 
 function Write-BwResult {
@@ -24,7 +32,7 @@ function Write-BwResult {
     if ($ArtifactDir) { $o.artifact_dir = $ArtifactDir }
     if ($Code) { $o.code = $Code }
     if ($Message) { $o.message = $Message }
-    Write-Output ($o | ConvertTo-Json -Compress)
+    Write-BwLine ($o | ConvertTo-Json -Compress)
 }
 
 function Parse-BwArgs {
@@ -54,6 +62,20 @@ function Parse-BwArgs {
 function Fail($code, $msg) {
     Write-BwResult -Ok:$false -Code $code -Message $msg
     exit 1
+}
+
+function Invoke-BwRedirected([string]$Exe, [string[]]$Argv) {
+    $outLog = [IO.Path]::GetTempFileName()
+    $errLog = [IO.Path]::GetTempFileName()
+    try {
+        $p = Start-Process -FilePath $Exe -ArgumentList $Argv -Wait -PassThru -NoNewWindow `
+            -RedirectStandardOutput $outLog -RedirectStandardError $errLog
+        Get-Content -LiteralPath $outLog, $errLog -ErrorAction SilentlyContinue |
+            ForEach-Object { [Console]::Error.WriteLine($_) }
+        return [int]$p.ExitCode
+    } finally {
+        Remove-Item -LiteralPath $outLog, $errLog -Force -ErrorAction SilentlyContinue
+    }
 }
 
 function Invoke-SilentSetup([string]$setupExe, [string]$dir, [string]$log) {
@@ -114,8 +136,8 @@ if (-not $iscc) { Fail missing_tool '本机没有 Inno Setup（ISCC.exe）' }
 Write-BwProgress -Phase build -Message 'cargo build --release -p app-shell'
 Push-Location $root
 try {
-    & cargo build --release -p app-shell
-    if ($LASTEXITCODE -ne 0) { Fail build_failed "cargo build 退出 $LASTEXITCODE" }
+    $buildCode = Invoke-BwRedirected cargo @('build', '--release', '-p', 'app-shell')
+    if ($buildCode -ne 0) { Fail build_failed "cargo build 退出 $buildCode" }
 } finally { Pop-Location }
 
 Write-BwProgress -Phase payload -Message '拷 WebView2Loader.dll 到 target\release'
@@ -127,8 +149,8 @@ Copy-Item -Force $dllHits[0].FullName (Join-Path $root 'target\release\WebView2L
 Write-BwProgress -Phase iss -Message "ISCC -> $outDir"
 New-Item -ItemType Directory -Force -Path $outDir | Out-Null
 $iss = Join-Path $here 'BuildersWorkbench-MVP.iss'
-& $iscc "/DMyAppVersion=$version" "/DBwOutputDir=$outDir" $iss
-if ($LASTEXITCODE -ne 0) { Fail pack_failed "ISCC 退出 $LASTEXITCODE" }
+$issCode = Invoke-BwRedirected $iscc @("/DMyAppVersion=$version", "/DBwOutputDir=$outDir", $iss)
+if ($issCode -ne 0) { Fail pack_failed "ISCC 退出 $issCode" }
 $setup = Get-ChildItem -LiteralPath $outDir -Filter '*Setup*.exe' | Where-Object { $_.Length -gt 0 } | Select-Object -First 1
 if (-not $setup) { Fail pack_failed "ISCC 跑完了，$outDir 里没有 *Setup*.exe" }
 

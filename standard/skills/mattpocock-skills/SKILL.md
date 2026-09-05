@@ -1,50 +1,62 @@
 ---
 name: mattpocock-skills
-description: Use when a build/optimize/ops活开工且挂了 workflow=mattpocock-skills——build 阶段默认 workflow,走 grill-with-docs→implement→code-review 的 SOP
+description: Use when 构建/优化/运维活开工且 workflow=mattpocock-skills。
 ---
 
-# build 阶段默认 workflow:grill-with-docs → implement → code-review
+# mattpocock-skills：build 默认 workflow 入口
 
-这件活走 mattpocock-skills 的标准 build 链。先读完这份入口,再按下面的路径
-去读下一步的 `SKILL.md`,照正文干,别跳步。
+## 1. 核心目标
 
-**`/xxx` 在这里的意思**:读本入口已经写明的那份文件。不是调 Skill 工具,
-不是凭一个斜杠名去技能库里猜。叶子技能正文里还会再写 `/grilling`、
-`/domain-modeling`、`/tdd`、`/code-review`——那些也按下面的路径读。
+按 grill → implement → code-review 读 vendor 里的技能,照它们的正文干。本篇只指路,不复述业界步骤,不复述 SYSTEM。
 
-资产根 = 这份入口所在 `skills/` 目录的上一级。下面路径都相对资产根。
+## 2. When to Use / When NOT to Use
 
-## 1. 对齐 —— grill-with-docs
+- 用:活上挂了 `mattpocock-skills`(产品给构建/优化/运维的默认)。
+- 不用:运作活、原型、运营推广、空 workflow。
 
-路径:`vendor/mattpocock-skills/skills/engineering/grill-with-docs/SKILL.md`
+`/xxx` 在这里 = 读本入口写明的那份文件,不是去技能库猜名字。
 
-逼问式访谈磨利这个活的目标与设计,顺带产出 ADR 与词表。**对齐完再动手**——
-没对齐就写代码是这链最常见的翻车点。读它的正文照它问。
+## 3. 前置依赖检查
 
-它正文会点到这两份,接着读:
+资产根 = 本文件所在 `skills/` 的上一级。下面路径相对资产根。缺文件就停,说哪份不在,不编步骤。`build.md` 已注入。
 
-- grilling:`vendor/mattpocock-skills/skills/productivity/grilling/SKILL.md`
-- domain-modeling:`vendor/mattpocock-skills/skills/engineering/domain-modeling/SKILL.md`
+## 4. 标准执行流程
 
-## 2. 实现 —— implement
+**第 1 步 · 对齐**  
+走到对齐。读 `vendor/mattpocock-skills/skills/engineering/grill-with-docs/SKILL.md`,照它问。它点到的接着读:
 
-路径:`vendor/mattpocock-skills/skills/engineering/implement/SKILL.md`
+- `vendor/mattpocock-skills/skills/productivity/grilling/SKILL.md`
+- `vendor/mattpocock-skills/skills/engineering/domain-modeling/SKILL.md`
 
-按 spec/tickets 干活,内部走 TDD。它收尾会自己去读 code-review——别替它提前读。
+没对齐不写代码。
 
-它正文会点到 TDD,读:
+**第 2 步 · 实现**  
+走到实现。读 `vendor/mattpocock-skills/skills/engineering/implement/SKILL.md`。它收尾会自己去 code-review,别提前读。它点到 TDD 时读 `vendor/mattpocock-skills/skills/engineering/tdd/SKILL.md`。改仓落点见 `build.md`。
 
-- tdd:`vendor/mattpocock-skills/skills/engineering/tdd/SKILL.md`
+**第 3 步 · 评审**  
+走到评审。读 `vendor/mattpocock-skills/skills/engineering/code-review/SKILL.md`。有遗留回第 2 步。干完开 MR,地址打屏。
 
-## 3. 评审 —— code-review
+## 5. 参考资源
 
-路径:`vendor/mattpocock-skills/skills/engineering/code-review/SKILL.md`
+- 上列 vendor 路径:步骤正文在那里。
+- `build.md`(已注入):worktree、分支、评论/打标不是改仓。
 
-双轴评审(规范轴 + spec 轴),并行子 agent,并排报告。有遗留就回 step 2。
+## 6. error_handling
 
-## 收尾
+| 现象 | 处理 |
+|---|---|
+| vendor 文件不在 | 停,报路径,不编 SOP |
+| 还没对齐就想写代码 | 回到第 1 步 |
+| 评审有遗留 | 回第 2 步 |
 
-干完提 MR(活自己的分支,正常提交 + `gh pr create` / `codehub-cli mr create`),
-把 MR 地址打屏。**合并永远是人**(`gh pr merge` / `codehub-cli mr merge` 一律不许
-执行);**最远到「评审中」**,「完成」永远由人点——主系统提示词的四铁律照守,
-这份入口只讲怎么做,不讲那些。
+## 7. 示例
+
+构建活挂 `mattpocock-skills`。先读 grill-with-docs 把目标和 ADR 问清,再 implement,最后 code-review,开 MR。
+
+## 8. 纪律表
+
+| | |
+|---|---|
+| 必须 | 按路径读完再干;对齐完再动手 |
+| 禁止 | 跳步;改 `vendor/` 正文 |
+| 你不做的事 | 复述 SYSTEM 纪律;发明第三条注入链 |

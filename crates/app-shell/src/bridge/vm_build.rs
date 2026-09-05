@@ -5,15 +5,19 @@
 //! 填一个 0 或者一个假名字。
 
 use crate::vm::*;
-use bw::app::App;
-use bw::command::Event;
-use bw::model::{IssueId, IssueKind, IssueStatus, Project, ProjectId};
-use bw::repo::project_file;
+use bw::{
+    app::App,
+    command::Event,
+    model::{IssueId, IssueKind, IssueStatus, Project, ProjectId},
+    repo::project_file,
+};
 
-use super::vm_derive::{build_bootstrap_pending, build_ops, build_week_counts};
-use super::vm_kb::build_kb;
-use super::vm_panels::{
-    build_board, build_config, build_metrics, build_sessions, build_weeks, build_workbench,
+use super::{
+    vm_derive::{build_bootstrap_pending, build_ops, build_week_counts},
+    vm_kb::build_kb,
+    vm_panels::{
+        build_board, build_config, build_metrics, build_sessions, build_weeks, build_workbench,
+    },
 };
 
 /// 开工工具的机读键 → 人话标签。从 `week_plan_file` 搬来(刀6:那个模块删了,
@@ -49,8 +53,9 @@ pub(super) fn read_or_warn<T>(
 /// 刷新、到点建活、开工/合入/建活等真命令)才重新 `gather`。只改一张活状态
 /// 标签的命令补丁 [`Gathered::apply_issue_status`],不重拉 issue list。
 ///
-/// 换项目时 `gather` 只跑第一波(名单 / 周目标 / 发版 / 健康 / 环境),推完
-/// ViewModel 就切页;`pr_number` 后台回填,见 [`PrFillSpec`]。设计见
+/// 打开某个项目时只采**那一个仓**(名单 + extras),墙上其他卡沿用
+/// `prev_cards`,不顺手刷。还在项目墙(`ui.open=None`)才拉全墙。
+/// `pr_number` 后台回填,见 [`PrFillSpec`]。设计见
 /// [`docs/02-adr/0002-导航快路径-gather缓存.md`](../../../docs/02-adr/0002-导航快路径-gather缓存.md)。
 pub struct Gathered {
     /// 第几代 gather。`assemble` 用它判断 workbench 缓存是不是同一代采的。
@@ -88,11 +93,10 @@ pub(super) struct ProjectGathered {
     /// 所以这里算一次传给 `build_ops`,不再每重切都跑一遍 git。
     ops3_landed: bool,
     week_goals: std::collections::HashMap<String, String>,
+    week_progress: std::collections::HashMap<String, String>,
     current_week: String,
     mr_url_prefix: String,
     issue_url_prefix: String,
-    week_started: bool,
-    ops1_status: Option<String>,
     /// 版本列表 + 当前登录用户。gather 采一次,assemble 只克隆 —— 切周 / 改
     /// 一张卡状态时不再打 `project view` / milestones / `/user`。
     plan_versions: Vec<PlanVersionVm>,
@@ -124,6 +128,8 @@ pub struct UiState {
     pub viewing_week: String,
     /// 看某个自定义版本(计划包)。空 = 不在看版本。
     pub viewing_plan: String,
+    /// 总览在研下拉选中的版本。空 = 用覆盖当天里最后创建的。
+    pub overview_version: String,
     /// 计划屏左栏点的是「全部」。
     pub view_all: bool,
     pub open_doc: Option<String>,
@@ -251,17 +257,9 @@ impl Gathered {
             return;
         }
         let pid = pg.id;
-        let week = pg.current_week.clone();
-        pg.week_started = bw::app::week_started(&pg.issues, &week);
-        let ops1 = pg.issues.iter().find(|i| {
-            bw::app::is_ops1_issue(i)
-                && i.status != IssueStatus::Done
-                && i.status != IssueStatus::Cancelled
-        });
-        pg.ops1_status = ops1
-            .filter(|i| i.status != IssueStatus::Done)
-            .map(|i| i.status.label().to_string());
-        let confirmed = confirmed_version(&pg.issues, &week);
+        let today = bw::isoweek::today_ymd();
+        let covering = covering_version_names(&pg.plan_versions, &today);
+        let confirmed = pick_overview_version(&covering, "");
         let week_counts = if confirmed.is_empty() {
             WeekCountsVm::default()
         } else {
@@ -374,16 +372,6 @@ fn primary_note(events: &[Event]) -> Option<String> {
             stale.len(),
             human_edited.len()
         ),
-        Event::WeekPlanStarted {
-            week, draft_titles, ..
-        } => {
-            if draft_titles.is_empty() {
-                // 真跑:文件由 agent 会话产出、走 MR,这里没有骨架也没有草稿。
-                format!("运作活①已开工:{week} 的周计划由这场会话产出,提交走 MR,人合入后总览才亮")
-            } else {
-                format!("{week} 的运作活①已开工(流程演示),等你确认草稿")
-            }
-        }
         Event::WorkspacesRootChanged { path, pinned } => {
             let tail = if *pinned > 0 {
                 format!(",已接入的 {pinned} 个项目已就地钉在原位置、不会跟着搬")
@@ -445,15 +433,6 @@ fn primary_note(events: &[Event]) -> Option<String> {
                 format!("发群失败(合入/完成本身已经生效,不会自动重发):{note}")
             }
         }
-        Event::OpsAutoFired { workflow, week, .. } => {
-            format!("定时到点:{week} 的「{workflow}」已自动建活并开工")
-        }
-        Event::WeekPlanAlreadyExists { week, .. } => {
-            format!("{week} 的「更新指标 + 制定版本计划」已经做过,没有重开")
-        }
-        Event::WeekPlanInProgress { week, status, .. } => {
-            format!("{week} 的运作活①还在路上({status})—— 去会话屏接着聊")
-        }
         Event::IssueCreated { number, .. } => format!("建了一张活 #{number}"),
         Event::IssueScheduled { week_of, .. } => {
             if week_of.is_empty() {
@@ -501,9 +480,7 @@ fn primary_note(events: &[Event]) -> Option<String> {
             total,
             ..
         } => format!("{version} 出包好了,验包 {passed}/{total}"),
-        Event::MetricsAutoCollected { count, .. } => {
-            format!("今日自动采了 {count} 条 B 类指标")
-        }
+        Event::ReleasePackStopped { version } => format!("{version} 出包已停止,中间件清掉了"),
         Event::MetricRecorded {
             name, day, value, ..
         } => format!("记下了 {name} = {value}({day})"),
@@ -533,7 +510,7 @@ fn primary_note(events: &[Event]) -> Option<String> {
             }
         }
         Event::IssueEdited { .. } => "issue 标题/正文已改 · 已同步到 codehub".into(),
-        Event::WorkbenchIssueReported { .. } => "issue上报成功".into(),
+        Event::WorkbenchIssueReported { .. } => "问题已上报".into(),
     })
 }
 
@@ -568,18 +545,127 @@ fn toast_kind(s: &str) -> &'static str {
     }
 }
 
-/// 全量采集:跑所有跟导航无关的贵 I/O(环境探活、issue 列表、健康三判据、
-/// Release、会话、ops3_landed)。数据真变了(真命令、换项目、刷新、到点建活)
-/// 才调它;导航请求复用上次结果(见 [`assemble`])。设计见 ADR 0002。
-pub async fn gather(app: &App, ui: &mut UiState) -> Gathered {
+/// 采集跟导航无关的贵 I/O。`ui.open=Some` 只采那一个仓(名单 + extras),
+/// 其他墙卡沿用 `prev_cards`。还在项目墙才拉全墙。设计见 ADR 0002。
+pub async fn gather(app: &App, ui: &mut UiState, prev_cards: &[ProjectCardVm]) -> Gathered {
+    let t0 = std::time::Instant::now();
     ui.gather_gen = ui.gather_gen.wrapping_add(1);
     let gen = ui.gather_gen;
     let projects = app.projects().await.unwrap_or_default();
-    let mut warnings: Vec<String> = Vec::new();
+    let warnings: Vec<String> = Vec::new();
     let current_week = bw::isoweek::current_week();
+    let open_slug = ui
+        .open
+        .and_then(|id| {
+            projects
+                .iter()
+                .find(|p| p.id == id)
+                .map(|p| p.slug.as_str())
+        })
+        .unwrap_or("-");
+    bw_engine::dlog!(
+        ok,
+        "gather",
+        "gather start gen={gen} open={open_slug} wall={}",
+        projects.len()
+    );
+
+    if let Some(open_id) = ui.open {
+        return gather_open(
+            app,
+            ui,
+            &projects,
+            open_id,
+            prev_cards,
+            warnings,
+            current_week,
+            gen,
+            t0,
+        )
+        .await;
+    }
+
+    gather_wall(app, ui, projects, warnings, current_week, gen, t0).await
+}
+
+/// 点进一个项目:只打这一个仓的名单 + extras。2c(其他仓 extras)整段不做。
+#[allow(clippy::too_many_arguments)]
+async fn gather_open(
+    app: &App,
+    ui: &mut UiState,
+    projects: &[Project],
+    open_id: ProjectId,
+    prev_cards: &[ProjectCardVm],
+    mut warnings: Vec<String>,
+    current_week: String,
+    gen: u64,
+    t0: std::time::Instant,
+) -> Gathered {
+    let t_issues = std::time::Instant::now();
+    let (env, issues_r) = tokio::join!(probe_env(), app.issues(open_id));
+    let issues = match issues_r {
+        Ok(v) => v,
+        Err(e) => {
+            warnings.push(format!("读 issue 失败:{e}"));
+            Vec::new()
+        }
+    };
+    bw_engine::dlog!(
+        ok,
+        "gather",
+        "gather issues elapsed_ms={} n={} wall=1",
+        t_issues.elapsed().as_millis(),
+        issues.len()
+    );
+    let claude_binary = bw_engine::resolve_claude_binary(None);
+    let n = issues.len();
+    let t_open = std::time::Instant::now();
+    let open_g = gather_project(app, open_id, ui, &mut warnings, &current_week, issues).await;
+    let slug = open_g.as_ref().map(|p| p.slug.as_str()).unwrap_or("-");
+    bw_engine::dlog!(
+        ok,
+        "gather",
+        "gather open extras elapsed_ms={} slug={slug} issues={n}",
+        t_open.elapsed().as_millis()
+    );
+
+    let mut cards = Vec::with_capacity(projects.len());
+    for p in projects {
+        if p.id == open_id {
+            cards.push(card_from_open(p, open_g.as_ref(), &current_week));
+        } else if let Some(old) = prev_cards.iter().find(|c| c.id == p.id) {
+            cards.push(old.clone());
+        } else {
+            cards.push(card_stub(p, &current_week));
+        }
+    }
+    finish_gather(gen, cards, env, warnings, claude_binary, open_g, t0)
+}
+
+/// 人在项目墙:每个仓的名单 + extras。打开项目不走这里。
+async fn gather_wall(
+    app: &App,
+    _ui: &mut UiState,
+    projects: Vec<Project>,
+    mut warnings: Vec<String>,
+    current_week: String,
+    gen: u64,
+    t0: std::time::Instant,
+) -> Gathered {
     let ids: Vec<ProjectId> = projects.iter().map(|p| p.id).collect();
-    // 第一波:环境条和各项目 issue list 一起打。名单齐了才能切页。
+    let t_issues = std::time::Instant::now();
     let (env, issue_rows) = tokio::join!(probe_env(), fetch_issues_many(app, &ids));
+    let issue_n: usize = issue_rows
+        .iter()
+        .filter_map(|(_, r)| r.as_ref().ok().map(Vec::len))
+        .sum();
+    bw_engine::dlog!(
+        ok,
+        "gather",
+        "gather issues elapsed_ms={} n={issue_n} wall={}",
+        t_issues.elapsed().as_millis(),
+        ids.len()
+    );
     let claude_binary = bw_engine::resolve_claude_binary(None);
 
     let mut issues_by_id = std::collections::HashMap::new();
@@ -595,19 +681,8 @@ pub async fn gather(app: &App, ui: &mut UiState) -> Gathered {
         }
     }
 
-    let open_g = match ui.open {
-        Some(id) => {
-            let issues = issues_by_id.remove(&id).unwrap_or_default();
-            gather_project(app, id, ui, &mut warnings, &current_week, issues).await
-        }
-        None => None,
-    };
-
     let mut wall_jobs: Vec<WallJob> = Vec::new();
     for p in &projects {
-        if Some(p.id) == ui.open {
-            continue;
-        }
         let ws = app.workspace_of(p.id).await.unwrap_or_default();
         let file = read_or_warn(
             &format!("{} 的 .bw/project.toml", p.slug),
@@ -623,78 +698,176 @@ pub async fn gather(app: &App, ui: &mut UiState) -> Gathered {
             issues,
         });
     }
+    let t_wall = std::time::Instant::now();
+    let wall_n = wall_jobs.len();
     let wall_extras = wall_extras_many(app, &wall_jobs).await;
-    let mut extras = wall_jobs.into_iter().zip(wall_extras);
+    bw_engine::dlog!(
+        ok,
+        "gather",
+        "gather wall extras elapsed_ms={} n={wall_n}",
+        t_wall.elapsed().as_millis()
+    );
 
     let mut cards = Vec::with_capacity(projects.len());
-    for p in &projects {
-        let (issues, goals, last_delivery, brief, version, ws_path) = if Some(p.id) == ui.open {
-            let g = open_g.as_ref();
-            (
-                g.map(|g| g.issues.clone()).unwrap_or_default(),
-                g.map(|g| g.week_goals.clone()).unwrap_or_default(),
-                g.map(|g| g.last_delivery.clone()).unwrap_or_default(),
-                g.map(|g| g.file.brief.clone()).unwrap_or_default(),
-                g.map(|g| g.file.current_version.clone())
-                    .unwrap_or_default(),
-                g.map(|g| g.ws.display().to_string())
-                    .unwrap_or_else(|| p.workspace_path.clone()),
-            )
-        } else {
-            let (job, (goals, last_delivery)) = extras.next().expect("墙项目与 extras 对齐");
-            (
-                job.issues,
-                goals,
-                last_delivery,
-                job.file.brief,
-                job.file.current_version,
-                job.ws.display().to_string(),
-            )
-        };
-        let confirmed = confirmed_version(&issues, &current_week);
-        let week_counts = if confirmed.is_empty() {
-            WeekCountsVm::default()
-        } else {
-            build_week_counts(&issues, Some(confirmed.as_str()))
-        };
-        let week_total = (week_counts.todo
-            + week_counts.doing
-            + week_counts.review
-            + week_counts.done
-            + week_counts.blocked) as u32;
-        let unread = bw::app::count_unseen(&issues);
-        let week_goal = goals.get(&current_week).cloned().unwrap_or_default();
-        cards.push(ProjectCardVm {
-            id: p.id,
-            slug: p.slug.clone(),
-            name: p.name.clone(),
-            brief,
-            signal: p.signal,
-            workspace_path: ws_path,
-            remote: remote_label(p),
-            week_total,
-            week_done: week_counts.done as u32,
-            version,
-            week: current_week.clone(),
-            unread,
-            week_goal,
+    for (job, (goals, last_delivery, version)) in wall_jobs.into_iter().zip(wall_extras) {
+        cards.push(card_from_wall(
+            &job.p,
+            &job.issues,
+            &job.file.brief,
+            &job.ws,
+            &goals,
             last_delivery,
-        });
+            version,
+            &current_week,
+        ));
     }
+    finish_gather(gen, cards, env, warnings, claude_binary, None, t0)
+}
 
+fn card_from_open(p: &Project, g: Option<&ProjectGathered>, current_week: &str) -> ProjectCardVm {
+    let today = bw::isoweek::today_ymd();
+    let version = g
+        .map(|g| {
+            covering_version_names(&g.plan_versions, &today)
+                .into_iter()
+                .next()
+                .unwrap_or_default()
+        })
+        .unwrap_or_default();
+    let issues = g.map(|g| g.issues.as_slice()).unwrap_or(&[]);
+    let goals = g.map(|g| &g.week_goals);
+    let brief = g.map(|g| g.file.brief.clone()).unwrap_or_default();
+    let last_delivery = g.map(|g| g.last_delivery.clone()).unwrap_or_default();
+    let ws_path = g
+        .map(|g| g.ws.display().to_string())
+        .unwrap_or_else(|| p.workspace_path.clone());
+    card_from_parts(
+        p,
+        issues,
+        &brief,
+        &ws_path,
+        goals,
+        last_delivery,
+        version,
+        current_week,
+    )
+}
+
+#[allow(clippy::too_many_arguments)]
+fn card_from_wall(
+    p: &Project,
+    issues: &[bw::Issue],
+    brief: &str,
+    ws: &std::path::Path,
+    goals: &std::collections::HashMap<String, String>,
+    last_delivery: String,
+    version: String,
+    current_week: &str,
+) -> ProjectCardVm {
+    card_from_parts(
+        p,
+        issues,
+        brief,
+        &ws.display().to_string(),
+        Some(goals),
+        last_delivery,
+        version,
+        current_week,
+    )
+}
+
+fn card_stub(p: &Project, current_week: &str) -> ProjectCardVm {
+    ProjectCardVm {
+        id: p.id,
+        slug: p.slug.clone(),
+        name: p.name.clone(),
+        brief: String::new(),
+        signal: p.signal,
+        workspace_path: p.workspace_path.clone(),
+        remote: remote_label(p),
+        week_total: 0,
+        week_done: 0,
+        version: String::new(),
+        week: current_week.to_string(),
+        unread: 0,
+        week_goal: String::new(),
+        last_delivery: String::new(),
+    }
+}
+
+#[allow(clippy::too_many_arguments)]
+fn card_from_parts(
+    p: &Project,
+    issues: &[bw::Issue],
+    brief: &str,
+    ws_path: &str,
+    goals: Option<&std::collections::HashMap<String, String>>,
+    last_delivery: String,
+    version: String,
+    current_week: &str,
+) -> ProjectCardVm {
+    let week_counts = if version.is_empty() {
+        WeekCountsVm::default()
+    } else {
+        build_week_counts(issues, Some(version.as_str()))
+    };
+    let week_total = (week_counts.todo
+        + week_counts.doing
+        + week_counts.review
+        + week_counts.done
+        + week_counts.blocked) as u32;
+    let week_goal = if version.is_empty() {
+        String::new()
+    } else {
+        goals
+            .and_then(|g| g.get(&version).cloned())
+            .unwrap_or_default()
+    };
+    ProjectCardVm {
+        id: p.id,
+        slug: p.slug.clone(),
+        name: p.name.clone(),
+        brief: brief.to_string(),
+        signal: p.signal,
+        workspace_path: ws_path.to_string(),
+        remote: remote_label(p),
+        week_total,
+        week_done: week_counts.done as u32,
+        version,
+        week: current_week.to_string(),
+        unread: bw::app::count_unseen(issues),
+        week_goal,
+        last_delivery,
+    }
+}
+
+fn finish_gather(
+    gen: u64,
+    cards: Vec<ProjectCardVm>,
+    env: Vec<ToolProbeVm>,
+    mut warnings: Vec<String>,
+    claude_binary: Option<String>,
+    open: Option<ProjectGathered>,
+    t0: std::time::Instant,
+) -> Gathered {
     let mut seen = std::collections::HashSet::new();
     warnings.retain(|w| seen.insert(w.clone()));
     for w in &warnings {
         bw_engine::dlog!(warn, "gather", "[BW_WARN] {w}");
     }
-
+    bw_engine::dlog!(
+        ok,
+        "gather",
+        "gather done elapsed_ms={} gen={gen}",
+        t0.elapsed().as_millis()
+    );
     Gathered {
         gen,
         projects: cards,
         env,
         warnings,
         claude_binary,
-        open: open_g,
+        open,
     }
 }
 
@@ -729,23 +902,35 @@ async fn fetch_issues_many(
 async fn wall_extra(
     app: &App,
     job: &WallJob,
-) -> (std::collections::HashMap<String, String>, String) {
-    let (goals, last_delivery) =
-        tokio::join!(app.week_goals_from_ops1(&job.p, &job.issues), async {
+) -> (std::collections::HashMap<String, String>, String, String) {
+    let (notes, last_delivery, version) = tokio::join!(
+        app.week_goals_from_ops1(&job.p, &job.issues),
+        async {
             bw::git::tags_with_dates(&job.ws)
                 .await
                 .into_iter()
                 .last()
                 .map(|(tag, date)| format!("{date} {tag}"))
                 .unwrap_or_default()
-        },);
-    (goals, last_delivery)
+        },
+        async {
+            let Ok(remote) = app.remote_for(&job.p) else {
+                return String::new();
+            };
+            let Ok(rows) = remote.list_milestones(&job.p.remote_path).await else {
+                return String::new();
+            };
+            bw::version::current_from_milestones(&rows, &bw::isoweek::today_ymd())
+                .unwrap_or_default()
+        },
+    );
+    (notes.goals, last_delivery, version)
 }
 
 async fn wall_extras_many(
     app: &App,
     jobs: &[WallJob],
-) -> Vec<(std::collections::HashMap<String, String>, String)> {
+) -> Vec<(std::collections::HashMap<String, String>, String, String)> {
     let mut out = Vec::with_capacity(jobs.len());
     let mut i = 0;
     while i < jobs.len() {
@@ -958,6 +1143,21 @@ async fn lookup_pr_one(
     }
 }
 
+async fn log_elapsed<F, T>(name: &str, fut: F) -> T
+where
+    F: std::future::Future<Output = T>,
+{
+    let t0 = std::time::Instant::now();
+    let v = fut.await;
+    bw_engine::dlog!(
+        ok,
+        "gather",
+        "gather extras {name} elapsed_ms={}",
+        t0.elapsed().as_millis()
+    );
+    v
+}
+
 /// 采打开项目那份贵数据。issue 列表由 [`gather`] 第一波并行拉齐后传入,
 /// 这里不再起第二次 codehub。健康 / 发版 / 周目标 / 会话 / 标签一起打。
 /// `pr_number` 只套 `mr_cache`;没查过的后台回填,不挡第一屏。
@@ -980,45 +1180,45 @@ async fn gather_project(
     let mr_url_prefix = p.mr_url_prefix();
     let issue_url_prefix = p.issue_url_prefix();
 
-    let (sessions, week_goals, releases, ops3_landed, last_delivery, plan_versions, current_user) = tokio::join!(
-        build_sessions(app, id, &issues),
-        app.week_goals_from_ops1(&p, &issues),
-        load_releases(app, &p, &ws),
-        bw::git::path_in_head(&ws, ".bw/project.toml"),
-        async {
+    let (sessions, ops1_notes, releases, ops3_landed, last_delivery, plan_versions, current_user) = tokio::join!(
+        log_elapsed("sessions", build_sessions(app, id, &issues)),
+        log_elapsed("comments", app.week_goals_from_ops1(&p, &issues)),
+        log_elapsed("releases", load_releases(app, &p, &ws)),
+        log_elapsed("ops3", bw::git::path_in_head(&ws, ".bw/project.toml")),
+        log_elapsed("git-tags", async {
             bw::git::tags_with_dates(&ws)
                 .await
                 .into_iter()
                 .last()
                 .map(|(tag, date)| format!("{date} {tag}"))
                 .unwrap_or_default()
-        },
-        build_plan_versions(app, &p, &issues),
-        current_user(app, &p),
+        }),
+        log_elapsed("milestones", build_plan_versions(app, &p, &issues)),
+        log_elapsed("user", current_user(app, &p)),
     );
 
+    let covering_now = covering_version_names(&plan_versions, &bw::isoweek::today_ymd());
+    let goal_key = covering_now.first().cloned().unwrap_or_default();
+    let t_health = std::time::Instant::now();
     let inputs = bw::app::collect_health_inputs(
         &p,
         &ws,
         current_week,
         &issues,
-        week_goals.get(current_week).map(String::as_str),
+        ops1_notes.goal_for(&goal_key, current_week),
     )
     .await;
+    bw_engine::dlog!(
+        ok,
+        "gather",
+        "gather extras health elapsed_ms={}",
+        t_health.elapsed().as_millis()
+    );
     let derived = bw::derive::derive_project_health(&inputs);
     if p.signal != Some(derived.signal()) || p.weekly_signal != Some(derived.weekly_signal()) {
         let _ = app.cache_project_health(id, &derived).await;
     }
 
-    let week_started = bw::app::week_started(&issues, current_week);
-    let ops1 = issues.iter().find(|i| {
-        bw::app::is_ops1_issue(i)
-            && i.status != bw::model::IssueStatus::Done
-            && i.status != bw::model::IssueStatus::Cancelled
-    });
-    let ops1_status = ops1
-        .filter(|i| i.status != IssueStatus::Done)
-        .map(|i| i.status.label().to_string());
     Some(ProjectGathered {
         id,
         slug: p.slug.clone(),
@@ -1039,13 +1239,12 @@ async fn gather_project(
                 .collect(),
         },
         ops3_landed,
-        week_goals,
+        week_goals: ops1_notes.goals,
+        week_progress: ops1_notes.progress,
         current_week: current_week.to_string(),
 
         mr_url_prefix,
         issue_url_prefix,
-        week_started,
-        ops1_status,
         plan_versions,
         current_user,
     })
@@ -1067,18 +1266,13 @@ async fn assemble_project(
     } else {
         ui.viewing_week.clone()
     };
-    // 全部 / 某个计划版本 / 某一周。周和旧计划名仍能切出来看。
+    // 全部 / 某个版本。不再按旧 bw:week 切视图。
     let plan = if !ui.viewing_plan.is_empty() {
         Some(ui.viewing_plan.as_str())
     } else {
         None
     };
-    let week = if ui.view_all || plan.is_some() {
-        None
-    } else {
-        Some(viewing_week.as_str())
-    };
-    let view_all = ui.view_all && plan.is_none();
+    let view_all = plan.is_none();
     // 指标读数按正在看的那一周现读(本机 jsonl,便宜)。
     let readings = bw::app::read_metric_readings(&pg.ws, &viewing_week);
     // 会话 live:PTY 已封存,build_sessions 已经如实置 false(没真进程信号,不假
@@ -1116,7 +1310,9 @@ async fn assemble_project(
         });
         vm
     };
-    let confirmed = confirmed_version(&pg.issues, &pg.current_week);
+    let today = bw::isoweek::today_ymd();
+    let covering = covering_version_names(&pg.plan_versions, &today);
+    let confirmed = pick_overview_version(&covering, &ui.overview_version);
     let mut plan_versions = pg.plan_versions.clone();
     let released_names: Vec<String> = pg
         .releases
@@ -1125,12 +1321,22 @@ async fn assemble_project(
         .chain(
             pg.issues
                 .iter()
-                .filter(|i| bw::version::is_v0x(&i.version))
+                .filter(|i| !i.version.is_empty())
                 .map(|i| i.version.clone()),
         )
         .collect();
     for v in &mut plan_versions {
         v.released = released_names.iter().any(|r| r == &v.name);
+        if v.goal.is_empty() {
+            if let Some(g) = pg.week_goals.get(&v.name) {
+                v.goal = g.clone();
+            }
+        }
+        if v.week_progress.is_empty() {
+            if let Some(note) = pg.week_progress.get(&v.name) {
+                v.week_progress = note.clone();
+            }
+        }
     }
     let plan_names: Vec<String> = plan_versions.iter().map(|v| v.name.clone()).collect();
     let inv = bw::version::inventory(&plan_names, &released_names);
@@ -1143,8 +1349,12 @@ async fn assemble_project(
             benchmark: or_blank(&pg.file.benchmark),
             north_star: or_blank(&pg.file.opportunity),
             remote: remote_label(&pg.project),
-            current_version: or_blank(&pg.file.current_version),
-            current_version_raw: pg.file.current_version.clone(),
+            current_version: if confirmed.is_empty() {
+                "（空）".into()
+            } else {
+                confirmed.clone()
+            },
+            current_version_raw: confirmed.clone(),
             standard_version: or_blank(&pg.file.standard_version),
             chat: match &pg.file.chat {
                 None => "未配".into(),
@@ -1159,19 +1369,18 @@ async fn assemble_project(
             &readings,
             !ui.metrics.is_empty(),
         ),
-        week_started: pg.week_started,
+        covering_versions: covering.clone(),
         last_released: inv.last_released.clone().unwrap_or_default(),
         unreleased: inv.unreleased.clone(),
         suggested_next: inv.suggested_next.clone(),
         confirmed_version: confirmed.clone(),
-        ops1_status: pg.ops1_status.clone(),
         bootstrap_pending: build_bootstrap_pending(&pg.issues, pg.ops3_landed),
         weeks: build_weeks(&pg.issues, &pg.current_week, &pg.week_goals),
         current_week: pg.current_week.clone(),
         viewing_week: viewing_week.clone(),
         viewing_plan: ui.viewing_plan.clone(),
         view_all,
-        board: build_board(&pg.issues, week, plan),
+        board: build_board(&pg.issues, plan),
         plan_versions,
         current_user: pg.current_user.clone(),
         week_counts: if confirmed.is_empty() {
@@ -1179,7 +1388,7 @@ async fn assemble_project(
         } else {
             build_week_counts(&pg.issues, Some(confirmed.as_str()))
         },
-        board_counts: build_week_counts(&pg.issues, week.or(plan)),
+        board_counts: build_week_counts(&pg.issues, plan),
         ops: build_ops(&pg.issues, pg.current_week.as_str(), pg.ops3_landed),
         board_ops: build_ops(&pg.issues, viewing_week.as_str(), pg.ops3_landed),
         // 采不采由界面点 —— 现算一次要起好几个 git 子进程,不能每次重切都跑。
@@ -1238,8 +1447,8 @@ async fn current_user(app: &App, p: &Project) -> String {
     }
 }
 
-/// 自定义版本(计划包)列表:扫 issues 的 `plan_version` 字段去重 + 读 codehub
-/// milestone 列表(标题非周格式的就是版本)补 start/end,让空版本也能出现。
+/// 版本列表:扫 issues 的 `plan_version` + 读全部里程碑补 start/end,
+/// 没挂活的空版本也能出现。每个里程碑标题都是一个版本。
 async fn build_plan_versions(app: &App, p: &Project, issues: &[bw::Issue]) -> Vec<PlanVersionVm> {
     let mut counts: std::collections::HashMap<String, u32> = std::collections::HashMap::new();
     for i in issues {
@@ -1248,18 +1457,18 @@ async fn build_plan_versions(app: &App, p: &Project, issues: &[bw::Issue]) -> Ve
         }
         *counts.entry(i.plan_version.clone()).or_default() += 1;
     }
-    // 从 codehub milestone 列表读版本(标题非周格式),补上 start/end,且让
+    // 从 codehub milestone 列表读全部版本,补上 start/end,且让
     // 没勾 issue 的空版本也能出现。读不到(没挂远端/cli 失败)就只靠 issues 标签。
     let mut order: Vec<String> = Vec::new();
-    let mut meta: std::collections::HashMap<String, (String, String)> =
+    let mut meta: std::collections::HashMap<String, (String, String, String)> =
         std::collections::HashMap::new();
     if let Ok(remote) = app.remote_for(p) {
         if let Ok(rows) = remote.list_milestones(&p.remote_path).await {
-            for (title, start, due) in rows {
+            for (title, start, due, created) in rows {
                 if !order.contains(&title) {
                     order.push(title.clone());
                 }
-                meta.insert(title, (start, due));
+                meta.insert(title, (start, due, created));
             }
         }
     }
@@ -1271,31 +1480,48 @@ async fn build_plan_versions(app: &App, p: &Project, issues: &[bw::Issue]) -> Ve
     }
     order
         .into_iter()
-        .filter(|name| !name.is_empty() && !bw::isoweek::is_week(name))
+        .filter(|name| bw::version::is_plan_name(name))
         .map(|name| {
-            let (start, end) = meta.get(&name).cloned().unwrap_or_default();
+            let (start, end, created_at) = meta.get(&name).cloned().unwrap_or_default();
             PlanVersionVm {
                 name: name.clone(),
                 start,
                 end,
+                created_at,
                 issue_count: counts.remove(&name).unwrap_or(0),
                 released: false,
+                goal: String::new(),
+                week_progress: String::new(),
+                counts: build_week_counts(issues, Some(name.as_str())),
             }
         })
         .collect()
 }
 
-fn confirmed_version(issues: &[bw::Issue], current_week: &str) -> String {
-    issues
+fn covering_version_names(versions: &[PlanVersionVm], day: &str) -> Vec<String> {
+    let rows: Vec<(String, String, String, String)> = versions
         .iter()
-        .find(|i| {
-            bw::app::is_ops1_issue(i)
-                && bw::version::is_v0x(&i.plan_version)
-                && (i.status != IssueStatus::Done && i.status != IssueStatus::Cancelled
-                    || bw::isoweek::unix_in_week(i.created_at, current_week))
+        .map(|v| {
+            (
+                v.name.clone(),
+                v.start.clone(),
+                v.end.clone(),
+                v.created_at.clone(),
+            )
         })
-        .map(|i| i.plan_version.clone())
-        .unwrap_or_default()
+        .collect();
+    bw::version::covering_on(&rows, day)
+        .into_iter()
+        .map(str::to_string)
+        .collect()
+}
+
+fn pick_overview_version(covering: &[String], selected: &str) -> String {
+    if covering.iter().any(|n| n == selected) {
+        selected.to_string()
+    } else {
+        covering.first().cloned().unwrap_or_default()
+    }
 }
 
 pub(super) fn card_item(i: &bw::Issue) -> CardItemVm {
@@ -1324,7 +1550,7 @@ pub(super) fn card_item(i: &bw::Issue) -> CardItemVm {
         pr_number: i.pr_number,
         has_open_mr: i.has_open_mr,
         remote_number: i.remote_number,
-        branch: i.branch.clone(),
+        branch: bw::app::work_branch(i),
         body: i.body.clone(),
         assignee: i.assignee.clone(),
         author: i.author.clone(),

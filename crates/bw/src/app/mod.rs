@@ -6,7 +6,7 @@
 //! 一屏一屏地看,这层的分工是:
 //!
 //! - [`project`] —— 接入、改名片、配项目群
-//! - [`plan`] —— 开始本版本、排期、发版本、改名、缓存对账
+//! - [`plan`] —— 排期、发版本、改名、缓存对账
 //! - [`release_ship`] —— 人点「出包」:出包 → 验包,不打标签
 //! - [`issue`] —— 建活、▶跑、状态转移
 //! - [`bootstrap`] —— 规范铺底与对账
@@ -28,6 +28,8 @@ mod issue;
 /// 等刀3 切远端正本时再用——在那之前靠模块级 `#[allow(dead_code)]` 压住警告。
 mod issue_store;
 mod ops;
+mod orca_inject;
+mod pack_ctl;
 mod plan;
 mod progress;
 mod project;
@@ -50,19 +52,23 @@ pub use ops::{
     is_ops1_issue, ops1_title, ops2_title, skill_slug, week_started, workflow_label, OPS1_WORKFLOW,
     OPS2_WORKFLOW, OPS3_WORKFLOW,
 };
-pub use progress::{ProgressLine, StepState};
+pub use pack_ctl::{cleanup_pack_intermediates, PackCtl};
+pub use progress::{ProgressCase, ProgressLine, StepState};
 pub use week_comment::{
     parse_comments, validate_comment, WeekComment, HEADING_GOAL, HEADING_READINGS, HEADING_SCOPE,
 };
 
-use crate::command::{Command, Event};
-use crate::local::{ProjectRegistry, SessionStore, Settings};
-use crate::model::{Conversation, ProjectId};
-use crate::repo::RepoFileError;
-use bw_engine::remote::{Remote, RemoteError};
-use bw_engine::InteractiveExecutor;
-use std::path::PathBuf;
-use std::sync::Arc;
+use crate::{
+    command::{Command, Event},
+    local::{ProjectRegistry, SessionStore, Settings},
+    model::{Conversation, ProjectId},
+    repo::RepoFileError,
+};
+use bw_engine::{
+    remote::{Remote, RemoteError},
+    InteractiveExecutor,
+};
+use std::{path::PathBuf, sync::Arc};
 
 /// 远端工厂:从项目行造一个 `Remote`。默认走 `Remote::for_project`(真
 /// codehub/gh);`real_demo_v4` / 测试注入一份返回**共享的** `Remote::Mock`
@@ -109,6 +115,8 @@ pub struct App {
     /// 长命令边做边报的口子。桌面壳接上,headless 不接。见
     /// [`progress`](crate::app::progress) —— 只为让人看得见,不承担账目。
     pub(crate) progress: Option<tokio::sync::broadcast::Sender<ProgressLine>>,
+    /// 出包中途停。壳不走命令队列,直接 [`PackCtl::abort`]。
+    pub pack_ctl: Arc<PackCtl>,
     /// Workbench 自己的资产目录 —— 技能库摊在这儿(`<asset_root>/skills/`),
     /// 项目注册表(`<asset_root>/projects.toml`)、全局设置
     /// (`<asset_root>/settings.toml`)、会话记录
@@ -136,6 +144,7 @@ impl App {
             executor,
             pty_enabled: false,
             progress: None,
+            pack_ctl: Arc::new(PackCtl::new()),
             // 默认远端工厂 = 真 `Remote::for_project`(codehub/gh)。`real_demo_v4`
             // 与测试用 [`App::with_remote_factory`] 注入共享的 `Remote::Mock`。
             remote_factory: Box::new(|p| {
@@ -181,7 +190,10 @@ impl App {
     /// 就不给 agent 指技能这条路,如实少一段,不编一个路径出来。
     pub fn ensure_skill_assets(&self) -> Option<PathBuf> {
         let dir = self.skills_dir();
-        for pack in crate::standard::skills::all() {
+        for pack in crate::standard::skills::all()
+            .into_iter()
+            .chain(crate::standard::skills::sidecars())
+        {
             let path = dir.join(&pack.rel);
             if std::fs::read_to_string(&path).is_ok_and(|on_disk| on_disk == pack.raw) {
                 continue;
@@ -240,6 +252,11 @@ impl App {
     /// 把「一步一句」的回执接出去。不接的话长命令照跑,只是没人看得见中间过程。
     pub fn with_progress(mut self, tx: tokio::sync::broadcast::Sender<ProgressLine>) -> Self {
         self.progress = Some(tx);
+        self
+    }
+
+    pub fn with_pack_ctl(mut self, ctl: Arc<PackCtl>) -> Self {
+        self.pack_ctl = ctl;
         self
     }
 
@@ -427,9 +444,6 @@ impl App {
                 self.edit_project_card(project_id, intent).await
             }
             Command::ReconcileStandard { project_id } => self.reconcile_standard(project_id).await,
-            Command::StartWeekPlanning { project_id, week } => {
-                self.start_week_planning(project_id, week).await
-            }
             Command::ConfirmWeekDraft {
                 project_id,
                 week,
@@ -507,7 +521,6 @@ impl App {
             }
             Command::ProbeTool { name } => self.probe_tool(name).await,
             Command::PullWorkspace { project_id } => self.pull_workspace(project_id).await,
-            Command::TickScheduler { project_id } => self.tick_scheduler(project_id).await,
             Command::MergeAndSettle { id } => self.merge_and_settle(id).await,
             Command::SyncNotifyToChat {
                 issue_id,
@@ -519,7 +532,9 @@ impl App {
                 name,
                 value,
             } => self.record_manual_metric(project_id, name, value).await,
-            Command::ReportWorkbenchIssue { title } => self.report_workbench_issue(title).await,
+            Command::ReportWorkbenchIssue { title, attach_log } => {
+                self.report_workbench_issue(title, attach_log).await
+            }
         };
         let elapsed_ms = started.elapsed().as_millis();
         match &out {
@@ -552,12 +567,6 @@ fn cmd_log_label(cmd: &Command) -> String {
         }
         Command::ReconcileStandard { project_id } => {
             format!("ReconcileStandard project={}", project_id.uuid())
-        }
-        Command::StartWeekPlanning { project_id, week } => {
-            format!(
-                "StartWeekPlanning project={} week={week}",
-                project_id.uuid()
-            )
         }
         Command::ConfirmWeekDraft {
             project_id,
@@ -654,9 +663,6 @@ fn cmd_log_label(cmd: &Command) -> String {
         Command::PullWorkspace { project_id } => {
             format!("PullWorkspace project={}", project_id.uuid())
         }
-        Command::TickScheduler { project_id } => {
-            format!("TickScheduler project={}", project_id.uuid())
-        }
         Command::MergeAndSettle { id } => format!("MergeAndSettle #{}", id.iid()),
         Command::SyncNotifyToChat {
             issue_id,
@@ -669,8 +675,8 @@ fn cmd_log_label(cmd: &Command) -> String {
             "RecordManualMetric project={} name={name}",
             project_id.uuid()
         ),
-        Command::ReportWorkbenchIssue { title } => {
-            format!("ReportWorkbenchIssue title={title:?}")
+        Command::ReportWorkbenchIssue { title, attach_log } => {
+            format!("ReportWorkbenchIssue title={title:?} attach_log={attach_log}")
         }
     }
 }

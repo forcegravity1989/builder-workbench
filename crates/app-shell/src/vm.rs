@@ -118,7 +118,7 @@ pub struct ProjectCardVm {
     /// 本周排了几张活、完成了几张。
     pub week_total: u32,
     pub week_done: u32,
-    /// 在研版本(仓里 `.bw/project.toml` 写的)。没写就是空,不猜一个。
+    /// 在研版本(覆盖当天的里程碑,多个取最后创建)。没有就是空。
     pub version: String,
     /// 当前 ISO 周,卡片上那个周 chip 显示它。
     pub week: String,
@@ -149,33 +149,31 @@ pub struct ProjectVm {
     pub health: HealthVm,
     pub metrics: MetricsVm,
     pub current_week: String,
-    /// 本周是否已经有过运作活①(含已完成)。总览「开始本版本」只在还没有时出现。
-    pub week_started: bool,
+    /// 覆盖当天的版本名,按创建时间新的在前。总览下拉用。
+    pub covering_versions: Vec<String>,
     /// 上一发 / 未发 / 推荐下一号,给创建版本弹窗。
     pub last_released: String,
     pub unreleased: Vec<String>,
     pub suggested_next: String,
-    /// 本周运作活①已确认的 `v0.x`。空 = 还没确认,总览进度空态。
+    /// 总览在研:覆盖当天的里程碑,人在下拉里选中的那个。空 = 今天没有覆盖中的版本。
     pub confirmed_version: String,
-    /// 本周运作活①若还开着,走到哪了。`None` = 还没建,或已经完成。
-    pub ops1_status: Option<String>,
     /// 规范铺底还开着、默认分支还没有名片。总览常驻横幅。`None` = 已合入或没建。
     pub bootstrap_pending: Option<CardMrVm>,
-    /// 计划屏左栏:节律周列表(新的在前,本周置顶)。排期名走 `v0.x`,不在这里。
+    /// 计划屏左栏:节律周列表(新的在前,本周置顶)。排期名不在这里。
     pub weeks: Vec<WeekVm>,
     /// 正在看哪一周(节律用,不再当排期名)。
     pub viewing_week: String,
-    /// 看哪个 `v0.x`。空 = 「全部」。
+    /// 看哪个版本。空 = 「全部」。
     pub viewing_plan: String,
-    /// 左栏点的是「全部」——看板不按周过滤。
+    /// 下拉点的是「全部」——看板不按版本过滤。
     pub view_all: bool,
     pub board: BoardVm,
-    /// `v0.x` 版本列表。旧非 v0.x 不进这里。
+    /// 版本列表(每个里程碑标题都是一个版本)。
     pub plan_versions: Vec<PlanVersionVm>,
     /// 当前登录用户名(给列表「我的」筛选用)。空 = 认不出。
     pub current_user: String,
     /// 本周四段计数:待办 / 进行中 / 评审中 / 完成。总览与计划屏的进度条都用它。
-    /// **当前周**的五段计数。总览那块「本周计划进度」用它。
+    /// 在研版本的五段计数。总览「版本计划与进展」进度条用它。
     pub week_counts: WeekCountsVm,
     /// 计划屏正在看的那个看板的五段计数(看某一周就是那一周,点了「全部」就是
     /// 全部)。它跟着左栏走,所以**不能拿去当「本周」**。
@@ -215,11 +213,9 @@ pub struct CardVm {
     pub benchmark: String,
     pub north_star: String,
     pub remote: String,
-    /// 在研版本,**显示用**:空的时候是「(待填)」。
+    /// 在研版本,**显示用**:空的时候是「(空)」。
     pub current_version: String,
-    /// 在研版本,**机读用**:空就是空。发版这类要把它当负载送进命令的地方
-    /// 只能用这一个 —— 把「(待填)」当版本号发出去,发版记录里就多一行叫
-    /// 「(待填)」的版本,而且按版本号幂等,这个项目以后再也发不出版。
+    /// 在研版本,**机读用**:空就是空。
     pub current_version_raw: String,
     pub standard_version: String,
     /// 项目群。没配就是「未配」。
@@ -270,8 +266,14 @@ pub struct MetricCardVm {
     /// 上一次「采一次指标」真采到的现值。**`None` ≠ 0** —— 没采过、没采到、
     /// 手填,都是 `None`。
     pub collected: Option<String>,
-    /// 近四周走势,旧的在前。采不到的点是 `None`,画的时候断开,不补前值。
+    /// 近几周走势,旧的在前。采不到的点是 `None`,画的时候断开,不补前值。
     pub trend: Vec<(String, Option<f64>)>,
+    /// 近 14 个日历日走势。没日行的格是 `None`,断开,不补 0。
+    pub day_trend: Vec<(String, Option<f64>)>,
+    /// `.bw/metrics.toml` 的 `feature`。空 = 总览「主要」页签。
+    pub feature: String,
+    /// 引领盯的滞后 `name`。空 = 同页签第一条滞后。滞后 / 北极星上无意义。
+    pub leads: String,
     /// 这次为什么没采到。空 = 采到了,或者压根不该采。**不吞错误。**
     pub collect_error: String,
 }
@@ -321,9 +323,11 @@ pub struct OpsChipVm {
 pub struct RepoStatsVm {
     /// `(数值, 这个数是什么, 从哪采的)`。压成一行小字,不再是一格格的卡片。
     pub items: Vec<(String, String, String)>,
-    /// 近四周走势,**旧的在前**。全部现算 —— 能采今天就能采过去任意一周,
+    /// 近几周走势,**旧的在前**。全部现算 —— 能采今天就能采过去任意一周,
     /// 所以新接入的项目第一天就有走势,不用先攒几周。
     pub trend: Vec<TrendPointVm>,
+    /// 近 14 个日历日走势,旧的在前。没采到的点是 `None`。
+    pub day_trend: Vec<TrendPointVm>,
     /// git 那两条线为什么是空的。空字符串 = 没有话要说。
     pub git_note: String,
     /// 远端那条线为什么是空的。空字符串 = 没有话要说。
@@ -408,7 +412,7 @@ pub struct CardItemVm {
     pub has_open_mr: bool,
     /// 远端 issue 号。0 = 这张活只在本机,没有对应的远端 issue。
     pub remote_number: u32,
-    /// 这张活的分支。空 = 还没开过工。
+    /// 这张活该走的车。常驻车是固定名;其余 `bw/issue-<号>`。
     pub branch: String,
     /// 活的正文。详情抽屉里要看的就是它 —— 光有标题看不出这张活要干什么。
     pub body: String,
@@ -422,15 +426,22 @@ pub struct CardItemVm {
     pub updated_at: i64,
 }
 
-/// 计划版本,号就是 `v0.x`,与发版号同一串。
+/// 计划版本。号就是里程碑标题,与发版号同一串。
 #[derive(Clone, Debug, Default, PartialEq)]
 pub struct PlanVersionVm {
     pub name: String,
     pub start: String,
     pub end: String,
+    pub created_at: String,
     pub issue_count: u32,
     /// 远端 Release 或 issue 的 `bw:released:` 里有同名。
     pub released: bool,
+    /// 打了这个版本标签的运作活①评论里的版本目标。没有就是空。
+    pub goal: String,
+    /// 同一张①上周五收口的每周进展。没有就是空。
+    pub week_progress: String,
+    /// 挂了这个版本的活的五段计数。没有开放活就是全 0,进度条空着。
+    pub counts: WeekCountsVm,
 }
 
 #[derive(Clone, Debug, PartialEq)]

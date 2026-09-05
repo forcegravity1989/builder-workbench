@@ -11,18 +11,22 @@ mod vm_kb;
 mod vm_panels;
 
 pub use nav::{
-    ChromeBusy, GuideNav, Panel, PanelNav, TopView, REPORTING_LOG, STARTING_SESSION,
+    ChromeBusy, GuideNav, Panel, PanelNav, TopView, REPORTING, REPORTING_LOG, STARTING_SESSION,
     SWITCHING_STATUS,
 };
 
 use crate::vm::Vm;
-use bw::app::App;
-use bw::command::{Command, Event};
-use bw::local::Settings;
-use bw::model::{IssueId, IssueStatus, ProjectId};
-use std::path::PathBuf;
-use std::sync::Arc;
-use std::time::Duration;
+use bw::{
+    app::App,
+    command::{Command, Event},
+    local::Settings,
+    model::{IssueId, IssueStatus, ProjectId},
+};
+use std::{
+    path::PathBuf,
+    sync::Arc,
+    time::{Duration, Instant},
+};
 use tokio::sync::{broadcast, mpsc, watch};
 
 /// iframe onload 之后再给配对 WS 的时间。短于这个,嵌页还没订上 `notifyClients`。
@@ -72,10 +76,10 @@ pub enum Req {
     Cmd(Command),
     /// 打开某个项目(纯本机导航,不改任何数据)。
     Open(Option<ProjectId>),
-    /// 计划屏切到看某一周(旧周版本,读回仍认)。
-    ViewWeek(String),
-    /// 计划屏切到看某个计划版本(`v0.x` 或旧名)。
+    /// 计划屏切到看某个计划版本。
     ViewPlan(String),
+    /// 总览在研下拉选中某个覆盖当天的版本。
+    SelectOverviewVersion(String),
     /// 计划屏回到全部 issue。
     ViewAll(bool),
     /// 壳侧预判失败(改名撞名等),走同一条 toast。
@@ -181,6 +185,8 @@ pub struct Bridge {
     /// 不走 ViewModel**:命令还没做完,ViewModel 根本没重拼的机会 —— 内核那条
     /// 队列此刻正卡在 `dispatch` 里,进度得从旁边这条道出来。
     pub progress: broadcast::Sender<bw::app::ProgressLine>,
+    /// 出包中途停。不走命令队列（队列正被 PackRelease 占着）。
+    pub pack_ctl: Arc<bw::app::PackCtl>,
 }
 
 impl PartialEq for Bridge {
@@ -196,6 +202,10 @@ impl Bridge {
 
     pub fn cmd(&self, c: Command) {
         self.send(Req::Cmd(c));
+    }
+
+    pub fn abort_pack(&self) {
+        self.pack_ctl.abort();
     }
 }
 
@@ -416,17 +426,6 @@ async fn fetch_prefill(
     }
 }
 
-/// 从一批事件里挑出「开始本版本」产出的草稿活标。真跑路径没有草稿(版本计划由
-/// agent 会话产出、走 MR),那时候不该弹「等你确认草稿」的卡。
-fn drafts_of(events: &[bw::command::Event]) -> Option<(String, Vec<String>)> {
-    events.iter().find_map(|e| match e {
-        bw::command::Event::WeekPlanStarted {
-            week, draft_titles, ..
-        } if !draft_titles.is_empty() => Some((week.clone(), draft_titles.clone())),
-        _ => None,
-    })
-}
-
 /// 起内核线程。返回的桥可以被界面各处 clone。
 pub fn spawn(deep_link: DeepLink) -> Bridge {
     let (tx, mut rx) = mpsc::unbounded_channel::<Req>();
@@ -435,6 +434,8 @@ pub fn spawn(deep_link: DeepLink) -> Bridge {
     let (prog_tx, _) = broadcast::channel(64);
 
     let prog_tx_handle = prog_tx.clone();
+    let pack_ctl = Arc::new(bw::app::PackCtl::new());
+    let pack_ctl_app = pack_ctl.clone();
     // 内核往自己这条队列里回发用的口子(知识库那两个页签算完之后发回来)。
     let tx_back = tx.clone();
 
@@ -474,7 +475,8 @@ pub fn spawn(deep_link: DeepLink) -> Bridge {
                 )
                 .with_pty()
                 .with_asset_root(assets.clone())
-                .with_progress(prog_tx.clone());
+                .with_progress(prog_tx.clone())
+                .with_pack_ctl(pack_ctl_app);
 
                 let mut ui = vm_build::UiState {
                     open: None,
@@ -488,6 +490,7 @@ pub fn spawn(deep_link: DeepLink) -> Bridge {
                     focus_skill: String::new(),
                     viewing_week: bw::isoweek::current_week(),
                     viewing_plan: String::new(),
+                    overview_version: String::new(),
                     view_all: true,
                     open_doc: None,
                     note: None,
@@ -529,8 +532,10 @@ pub fn spawn(deep_link: DeepLink) -> Bridge {
                     }
                 }
 
-                let mut last_gather = vm_build::gather(&app, &mut ui).await;
+                let mut last_gather = vm_build::gather(&app, &mut ui, &[]).await;
                 let mut vm = vm_build::assemble(&app, &mut ui, &last_gather).await;
+                let mut open_t0: Option<Instant> = None;
+                let mut open_slug = String::new();
                 bw_engine::dlog!(
                     ok,
                     "bridge",
@@ -570,7 +575,7 @@ pub fn spawn(deep_link: DeepLink) -> Bridge {
                         o.weeks.len(),
                         o.config.skills.len(),
                     );
-                    // 总览那条「本周计划进度」的五段。**只认当前周**,与计划屏
+                    // 总览「版本计划与进展」的五段。**只认在研版本**,与计划屏
                     // 左栏看的是哪一周无关 —— 这一行就是那条纪律的读回。
                     let c = &o.week_counts;
                     bw_engine::dlog!(
@@ -652,49 +657,9 @@ pub fn spawn(deep_link: DeepLink) -> Bridge {
                 // gather 已经把 warnings 打进对照日志,这里不再打第二遍。
                 let _ = vm_tx.send(vm.clone());
 
-                // 定时判据 60s 一次 —— 它查的是「本周有没有那张活」,快一点慢一点都
-                // 不影响结论。(终端字节 60ms 节拍已随 PTY 封存删掉 —— 桌面 ▶跑 走
-                // Orca 本地 pipe,字节在 Orca 那个 tab 里,不经过 Workbench。)
-                let mut sched_tick = tokio::time::interval(Duration::from_secs(60));
                 loop {
-                    let req = tokio::select! {
-                        r = rx.recv() => match r {
-                            Some(r) => r,
-                            None => break,
-                        },
-                        _ = sched_tick.tick() => {
-                            // 特性9:fanout —— 遍历所有纳管项目逐个查
-                            // cron_enabled + 到点建活,不再只对打开着的项目跑
-                            // (已拍板)。tick_scheduler 本身单项目
-                            // 幂等,到点没到点、本周有没有那张活都原地返空;
-                            // cron_enabled=false 也自己挡掉(高优1)。
-                            let mut note: Option<String> = None;
-                            if let Ok(projects) = app.projects().await {
-                                for p in &projects {
-                                    match app
-                                        .dispatch(Command::TickScheduler { project_id: p.id })
-                                        .await
-                                    {
-                                        Ok(events) if events.is_empty() => {}
-                                        Ok(events) => {
-                                            note = vm_build::note_of(&events);
-                                        }
-                                        Err(e) => {
-                                            note = Some(format!("定时没跑成:{e}"))
-                                        }
-                                    }
-                                }
-                            }
-                            if let Some(n) = note {
-                                ui.set_note(Some(n));
-                            }
-                            // 到点可能建活,数据真变了,走全量 gather。
-                            last_gather = vm_build::gather(&app, &mut ui).await;
-                            vm = vm_build::assemble(&app, &mut ui, &last_gather).await;
-                            let _ = vm_tx.send(vm.clone());
-                            kick_pr_fill(&last_gather, &ui, &tx_back);
-                            continue;
-                        }
+                    let Some(req) = rx.recv().await else {
+                        break;
                     };
                     // 纯导航(切周 / 点总览 / 选卡片看详情 / 切页签 / 展开
                     // 目录 / 后台采回发 / MR 回填)不重跑 gather —— 复用上次
@@ -710,6 +675,13 @@ pub fn spawn(deep_link: DeepLink) -> Bridge {
                                 | Command::BlockIssue { .. }
                                 | Command::CancelIssue { .. }
                         )
+                    );
+                    let reporting_log = matches!(
+                        &req,
+                        Req::Cmd(Command::ReportWorkbenchIssue {
+                            attach_log: true,
+                            ..
+                        })
                     );
                     let reporting = matches!(
                         &req,
@@ -728,11 +700,7 @@ pub fn spawn(deep_link: DeepLink) -> Bridge {
                             let confirming = matches!(c, Command::ConfirmWeekDraft { .. });
                             // 计划屏 Start 和总览「开始本周」都会 create 会话,
                             // 同一块遮罩挡住嵌页。
-                            let running_issue = matches!(
-                                c,
-                                Command::RunIssue { .. }
-                                    | Command::StartWeekPlanning { .. }
-                            );
+                            let running_issue = matches!(c, Command::RunIssue { .. });
                             // 遮罩撤了再切:开工里那次 activate 嵌页听不见。
                             let mut reveal_after_busy: Option<bw::model::IssueId> = None;
                             if running_issue {
@@ -746,7 +714,11 @@ pub fn spawn(deep_link: DeepLink) -> Bridge {
                                     vm_build::assemble(&app, &mut ui, &last_gather).await;
                                 let _ = vm_tx.send(snap);
                             } else if reporting {
-                                ui.busy = Some(REPORTING_LOG.into());
+                                ui.busy = Some(if reporting_log {
+                                    REPORTING_LOG.into()
+                                } else {
+                                    REPORTING.into()
+                                });
                                 let snap =
                                     vm_build::assemble(&app, &mut ui, &last_gather).await;
                                 let _ = vm_tx.send(snap);
@@ -770,17 +742,7 @@ pub fn spawn(deep_link: DeepLink) -> Bridge {
                                     }
                                     // 「开始本周」产出的草稿活标先接住,等人在计划屏
                                     // 点确认才真的建活。
-                                    if let Some((week, titles)) = drafts_of(&events) {
-                                        ui.pending_drafts = Some((week, titles));
-                                    }
-                                    // 「开始本周」起了一场会话,就把它选中 ——
-                                    // 总览那颗按钮会把人带到会话屏,落地时该正
-                                    // 好停在这场会话上,而不是让人自己在左列里
-                                    // 找哪一条是刚才那下点出来的。
                                     if let Some((issue_id, tool)) = events.iter().find_map(|e| match e {
-                                        bw::command::Event::WeekPlanStarted { issue_id, .. } => {
-                                            Some((*issue_id, String::new()))
-                                        }
                                         bw::command::Event::IssueRan { id, tool, .. } => {
                                             Some((*id, tool.clone()))
                                         }
@@ -864,6 +826,9 @@ pub fn spawn(deep_link: DeepLink) -> Bridge {
                                         ui.repos = crate::vm::RepoPickerVm::default();
                                         kick_project_collect(&app, *id, &tx_back).await;
                                         ui.set_note(Some("正在采本项目指标与仓统计…".into()));
+                                        // 接入后直接进项目,不走 Req::Open。
+                                        // 纳入时 Orca 没开或注入失败,这里再试一次。
+                                        register_orca_repo(&app, &mut ui, *id).await;
                                     }
                                     // 项目被移走了:它要是正开着,得回项目墙 ——
                                     // 留在一个已经不存在的项目上,整屏都是空的。
@@ -939,15 +904,50 @@ pub fn spawn(deep_link: DeepLink) -> Bridge {
                             }
                         }
                         Req::Open(id) => {
-                            bw_engine::dlog!(ok, "bridge", "open project={id:?}");
+                            open_t0 = Some(Instant::now());
+                            open_slug = match id {
+                                Some(pid) => app
+                                    .project(pid)
+                                    .await
+                                    .ok()
+                                    .flatten()
+                                    .map(|p| p.slug)
+                                    .unwrap_or_else(|| "-".into()),
+                                None => "wall".into(),
+                            };
+                            bw_engine::dlog!(
+                                ok,
+                                "bridge",
+                                "open start slug={open_slug} project={id:?}"
+                            );
                             if let Some(pid) = id {
-                                if !ui.orca_repos_ready.contains(&pid) {
+                                if ui.orca_repos_ready.contains(&pid) {
+                                    bw_engine::dlog!(
+                                        ok,
+                                        "bridge",
+                                        "open peek cached slug={open_slug}"
+                                    );
+                                } else {
+                                    let t_peek = Instant::now();
                                     match peek_orca_repo(&app, pid).await {
-                                        OrcaPeek::Present => {
-                                            ui.orca_repos_ready.insert(pid);
-                                        }
-                                        OrcaPeek::Missing => {
-                                            ui.busy = Some("正在让 Orca 认得这个仓…".into());
+                                        // 仓已在 Orca 也要走注入:只认「这个进程已经打过」,
+                                        // 不能把 repo.show 成功当成自动化已在。
+                                        peek @ (OrcaPeek::Present | OrcaPeek::Missing) => {
+                                            bw_engine::dlog!(
+                                                ok,
+                                                "bridge",
+                                                "open peek {:?} elapsed_ms={} slug={open_slug}",
+                                                peek,
+                                                t_peek.elapsed().as_millis()
+                                            );
+                                            ui.busy = Some(
+                                                if matches!(peek, OrcaPeek::Missing) {
+                                                    "正在让 Orca 认得这个仓…"
+                                                } else {
+                                                    "正在补打运作自动化…"
+                                                }
+                                                .into(),
+                                            );
                                             let snap = vm_build::assemble(
                                                 &app,
                                                 &mut ui,
@@ -955,10 +955,24 @@ pub fn spawn(deep_link: DeepLink) -> Bridge {
                                             )
                                             .await;
                                             let _ = vm_tx.send(snap);
+                                            let t_reg = Instant::now();
                                             register_orca_repo(&app, &mut ui, pid).await;
+                                            bw_engine::dlog!(
+                                                ok,
+                                                "bridge",
+                                                "open register elapsed_ms={} slug={open_slug}",
+                                                t_reg.elapsed().as_millis()
+                                            );
                                             ui.busy = None;
                                         }
-                                        OrcaPeek::Skip => {}
+                                        OrcaPeek::Skip => {
+                                            bw_engine::dlog!(
+                                                ok,
+                                                "bridge",
+                                                "open peek skip elapsed_ms={} slug={open_slug}",
+                                                t_peek.elapsed().as_millis()
+                                            );
+                                        }
                                     }
                                 }
                             }
@@ -966,6 +980,7 @@ pub fn spawn(deep_link: DeepLink) -> Bridge {
                             ui.open_doc = None;
                             ui.viewing_week = bw::isoweek::current_week();
                             ui.viewing_plan = String::new();
+                            ui.overview_version = String::new();
                             ui.view_all = true;
                             // 知识库那两个页签的结果是**上一个项目**的:它的技能
                             // 清单、它的 git 产物、它的发版记录、它的仓统计。留着
@@ -979,19 +994,22 @@ pub fn spawn(deep_link: DeepLink) -> Bridge {
                             ui.repo_stats = None;
                             ui.metrics = Vec::new();
                             if let Some(pid) = id {
+                                bw_engine::dlog!(
+                                    ok,
+                                    "bridge",
+                                    "open collect kick slug={open_slug} (spawn, not first-screen)"
+                                );
                                 kick_project_collect(&app, pid, &tx_back).await;
                                 ui.set_note(Some("正在采本项目指标与仓统计…".into()));
                             }
-                        }
-                        Req::ViewWeek(w) => {
-                            ui.viewing_week = w;
-                            ui.viewing_plan = String::new();
-                            ui.view_all = false;
                         }
                         Req::ViewPlan(p) => {
                             ui.viewing_plan = p;
                             ui.viewing_week = String::new();
                             ui.view_all = false;
+                        }
+                        Req::SelectOverviewVersion(v) => {
+                            ui.overview_version = v;
                         }
                         Req::ViewAll(v) => {
                             if v {
@@ -1191,7 +1209,7 @@ pub fn spawn(deep_link: DeepLink) -> Bridge {
                                         let back = tx_back.clone();
                                         tokio::spawn(async move {
                                             let (readouts, error) =
-                                                match bw::app::collect::collect_all(&ws, 4).await
+                                                match bw::app::collect::collect_all(&ws, 5).await
                                                 {
                                                     Ok(r) => (r, None),
                                                     Err(e) => (Vec::new(), Some(e)),
@@ -1314,9 +1332,19 @@ pub fn spawn(deep_link: DeepLink) -> Bridge {
                     // 刷新 / 开工合入建活 / FlushOrcaReveal 在 match 前判过
                     // needs_gather,这里重 gather。
                     if needs_gather {
-                        last_gather = vm_build::gather(&app, &mut ui).await;
+                        let keep = last_gather.projects.clone();
+                        last_gather = vm_build::gather(&app, &mut ui, &keep).await;
                     }
+                    let t_asm = Instant::now();
                     vm = vm_build::assemble(&app, &mut ui, &last_gather).await;
+                    if needs_gather {
+                        bw_engine::dlog!(
+                            ok,
+                            "bridge",
+                            "assemble elapsed_ms={}",
+                            t_asm.elapsed().as_millis()
+                        );
+                    }
                     // 刷新的回执在这里补:此刻的 vm 才是「刚读出来的那一份」。
                     if refresh_receipt {
                         refresh_receipt = false;
@@ -1325,6 +1353,15 @@ pub fn spawn(deep_link: DeepLink) -> Bridge {
                         vm.note_seq = ui.note_seq;
                     }
                     let _ = vm_tx.send(vm.clone());
+                    if let Some(t0) = open_t0.take() {
+                        bw_engine::dlog!(
+                            ok,
+                            "bridge",
+                            "open first-screen elapsed_ms={} slug={open_slug} gen={}",
+                            t0.elapsed().as_millis(),
+                            last_gather.gen
+                        );
+                    }
                     if needs_gather {
                         kick_pr_fill(&last_gather, &ui, &tx_back);
                     }
@@ -1354,6 +1391,7 @@ pub fn spawn(deep_link: DeepLink) -> Bridge {
         tx,
         vm: vm_rx,
         progress: prog_tx_handle,
+        pack_ctl,
     }
 }
 
@@ -1366,6 +1404,7 @@ fn schedule_orca_flush(tx: &mpsc::UnboundedSender<Req>, seq: u64, delay: Duratio
 }
 
 /// 打开项目先问 Orca 这仓在不在。正本是 `repo.show`,内存表只加速连点。
+#[derive(Debug)]
 enum OrcaPeek {
     Present,
     Missing,
@@ -1383,14 +1422,8 @@ async fn peek_orca_repo(app: &App, pid: ProjectId) -> OrcaPeek {
         return OrcaPeek::Skip;
     };
     match bw_engine::orca::repo_present(&rt, &ws).await {
-        Ok(true) => {
-            bw_engine::dlog!(ok, "bridge", "open peek present worktree={}", ws.display());
-            OrcaPeek::Present
-        }
-        Ok(false) => {
-            bw_engine::dlog!(ok, "bridge", "open peek missing worktree={}", ws.display());
-            OrcaPeek::Missing
-        }
+        Ok(true) => OrcaPeek::Present,
+        Ok(false) => OrcaPeek::Missing,
         Err(e) => {
             bw_engine::dlog!(err, "bridge", "open peek fail:{e}");
             OrcaPeek::Skip
@@ -1398,8 +1431,9 @@ async fn peek_orca_repo(app: &App, pid: ProjectId) -> OrcaPeek {
     }
 }
 
-/// 打开项目时把被管仓登记进 Orca。先 `repo.show`,没有才 `repo.add`。
-/// 已问过且在的项目这个进程里不再打。Orca 没开不挡进项目。
+/// 打开项目时把被管仓登记进 Orca,并补打运作自动化。
+/// 先 `repo.show`,没有才 `repo.add`;仓已在也要走注入。
+/// 注入成功才记进本进程 `orca_repos_ready`。Orca 没开不挡进项目。
 async fn register_orca_repo(app: &App, ui: &mut vm_build::UiState, pid: ProjectId) {
     if ui.orca_repos_ready.contains(&pid) {
         return;
@@ -1415,15 +1449,28 @@ async fn register_orca_repo(app: &App, ui: &mut vm_build::UiState, pid: ProjectI
         return;
     };
     match bw_engine::orca::ensure_repo(&rt, &ws).await {
-        Ok(()) => {
-            ui.orca_repos_ready.insert(pid);
-            bw_engine::dlog!(
-                ok,
-                "bridge",
-                "register_orca_repo ok worktree={}",
-                ws.display()
-            );
-        }
+        Ok(()) => match app.ensure_orca_automations(&rt, &ws).await {
+            Ok(()) => {
+                ui.orca_repos_ready.insert(pid);
+                bw_engine::dlog!(
+                    ok,
+                    "bridge",
+                    "register_orca_repo ok worktree={}",
+                    ws.display()
+                );
+            }
+            Err(e) => {
+                bw_engine::dlog!(
+                    err,
+                    "bridge",
+                    "register_orca_repo inject fail:{e} worktree={}",
+                    ws.display()
+                );
+                ui.set_note(Some(format!(
+                    "Orca 定时没打上:{e} —— 退回项目墙再点进来会再打"
+                )));
+            }
+        },
         Err(e) => {
             bw_engine::dlog!(
                 err,
@@ -1431,6 +1478,9 @@ async fn register_orca_repo(app: &App, ui: &mut vm_build::UiState, pid: ProjectI
                 "register_orca_repo fail:{e} worktree={}",
                 ws.display()
             );
+            ui.set_note(Some(format!(
+                "Orca 还没记下这个仓:{e} —— 退回项目墙再点进来会再打"
+            )));
         }
     }
 }
@@ -1454,11 +1504,26 @@ fn kick_pr_fill(
     let Some(spec) = g.pr_fill_spec(&ui.mr_cache) else {
         return;
     };
+    let pending = spec.pending.len();
+    bw_engine::dlog!(
+        ok,
+        "bridge",
+        "pr fill start pending={pending} gen={}",
+        spec.gen
+    );
     let back = tx_back.clone();
     tokio::spawn(async move {
         let project = spec.project_id;
         let gen = spec.gen;
+        let t0 = Instant::now();
         let entries = vm_build::fill_pr_numbers_parallel(spec).await;
+        bw_engine::dlog!(
+            ok,
+            "bridge",
+            "pr fill done elapsed_ms={} n={} pending={pending} gen={gen}",
+            t0.elapsed().as_millis(),
+            entries.len()
+        );
         let _ = back.send(Req::PrNumbersFilled {
             project,
             gen,
@@ -1477,7 +1542,7 @@ async fn kick_project_collect(app: &App, pid: ProjectId, tx_back: &mpsc::Unbound
     let back_r = tx_back.clone();
     let ws_m = ws.clone();
     tokio::spawn(async move {
-        let (readouts, error) = match bw::app::collect::collect_all(&ws_m, 4).await {
+        let (readouts, error) = match bw::app::collect::collect_all(&ws_m, 5).await {
             Ok(r) => (r, None),
             Err(e) => (Vec::new(), Some(e)),
         };

@@ -5,38 +5,30 @@
 //! 长什么样」,这半截管「各块面板长什么样」。
 
 use crate::vm::*;
-use bw::model::{IssueStatus, Project, ProjectId};
-use bw::repo::project_file;
+use bw::{
+    model::{IssueStatus, Project, ProjectId},
+    repo::project_file,
+};
 use std::path::Path;
 
 use super::vm_build::{card_item, remote_label, tool_label};
 
 /// 四列看板(合并后)。列内分段;段按原始状态算。
 ///
-/// `week` 传 `None` = 左栏「全部」:未排周的未动手活进待办列·未排期段,其余按状态。
-/// `week` 传某一周 = 只显示打了那一周 `bw:week` 的活;待办列只「待开始」段(已排期本周),
-/// 不显示未排期。版本(`bw:plan:*`)排期的活在「全部」里也算已排期。
-pub(super) fn build_board(issues: &[bw::Issue], week: Option<&str>, plan: Option<&str>) -> BoardVm {
-    let in_week = |i: &bw::Issue| match week {
-        None => true,
-        Some(w) => i.week_of == w,
-    };
+/// `plan` 传 `None` = 「全部」:没挂版本的未动手活进待办列·未排期段,其余按状态。
+pub(super) fn build_board(issues: &[bw::Issue], plan: Option<&str>) -> BoardVm {
     let in_plan = |i: &bw::Issue| match plan {
         None => true,
         Some(p) => i.plan_version == p,
     };
-    // 已排期 = 排进了某一周或某个版本(任一非空)。未排期 = 都空。
-    let scheduled = |i: &bw::Issue| !i.week_of.is_empty() || !i.plan_version.is_empty();
+    let scheduled = |i: &bw::Issue| !i.plan_version.is_empty();
 
-    // 待办列:未排期(Backlog 或 Todo 但 week_of/plan_version 都空,仅全部)
-    // + 已排期(Todo 且排进了周/版本)。周视图只已排期段,名「待开始」。
-    // 新建 issue 默认打 bw:status:todo 但 week_of 空 —— 它是 Todo 但未排期,
-    // 归未排期段,不能靠 status==Backlog 漏掉。
+    // 待办列:未排期(Backlog 或 Todo 但没挂 bw:plan,仅全部)
+    // + 已排期(Todo 且挂了版本)。
     let backlog_cards: Vec<_> = issues
         .iter()
         .filter(|i| {
-            week.is_none()
-                && in_plan(i)
+            in_plan(i)
                 && !scheduled(i)
                 && matches!(i.status, IssueStatus::Backlog | IssueStatus::Todo)
         })
@@ -44,10 +36,10 @@ pub(super) fn build_board(issues: &[bw::Issue], week: Option<&str>, plan: Option
         .collect();
     let todo_cards: Vec<_> = issues
         .iter()
-        .filter(|i| scheduled(i) && in_week(i) && in_plan(i) && i.status == IssueStatus::Todo)
+        .filter(|i| scheduled(i) && in_plan(i) && i.status == IssueStatus::Todo)
         .map(card_item)
         .collect();
-    let todo_segs = if week.is_some() || plan.is_some() {
+    let todo_segs = if plan.is_some() {
         vec![ColumnSegVm {
             key: "assigned".into(),
             label: String::new(),
@@ -81,27 +73,27 @@ pub(super) fn build_board(issues: &[bw::Issue], week: Option<&str>, plan: Option
 
     let doing_cards: Vec<_> = issues
         .iter()
-        .filter(|i| in_week(i) && in_plan(i) && i.status == IssueStatus::InProgress)
+        .filter(|i| in_plan(i) && i.status == IssueStatus::InProgress)
         .map(card_item)
         .collect();
     let review_cards: Vec<_> = issues
         .iter()
-        .filter(|i| in_week(i) && in_plan(i) && i.status == IssueStatus::InReview)
+        .filter(|i| in_plan(i) && i.status == IssueStatus::InReview)
         .map(card_item)
         .collect();
     let blocked_cards: Vec<_> = issues
         .iter()
-        .filter(|i| in_week(i) && in_plan(i) && i.status == IssueStatus::Blocked)
+        .filter(|i| in_plan(i) && i.status == IssueStatus::Blocked)
         .map(card_item)
         .collect();
     let done_cards: Vec<_> = issues
         .iter()
-        .filter(|i| in_week(i) && in_plan(i) && i.status == IssueStatus::Done)
+        .filter(|i| in_plan(i) && i.status == IssueStatus::Done)
         .map(card_item)
         .collect();
     let cancelled_cards: Vec<_> = issues
         .iter()
-        .filter(|i| in_week(i) && in_plan(i) && i.status == IssueStatus::Cancelled)
+        .filter(|i| in_plan(i) && i.status == IssueStatus::Cancelled)
         .map(card_item)
         .collect();
 
@@ -185,8 +177,8 @@ pub(super) fn build_board(issues: &[bw::Issue], week: Option<&str>, plan: Option
     }
 }
 
-/// 周列表从 issues 的 `bw:week:*` 标签取(刀6:不再扫 `.bw/plan/` 目录 ——
-/// 那个文件没人写了,扫到也是旧的)。本周永远在列表里(置顶)。新的在前。
+/// 节律周列表。ISO 周只做节律,不当排期名;`bw:week:` 已不写,这里只剩
+/// `week_of` 残留 + 本周置顶,给日志/读数窗口用。新的在前。
 pub(super) fn build_weeks(
     issues: &[bw::Issue],
     current_week: &str,
@@ -218,7 +210,7 @@ pub(super) fn build_weeks(
 fn trend_from_readings(ws: &Path, name: &str) -> Vec<(String, Option<f64>)> {
     let mut weeks = Vec::new();
     let mut w = bw::isoweek::current_week();
-    for _ in 0..4 {
+    for _ in 0..5 {
         weeks.push(w.clone());
         let Some(prev) = bw::isoweek::previous_week(&w) else {
             break;
@@ -231,6 +223,16 @@ fn trend_from_readings(ws: &Path, name: &str) -> Vec<(String, Option<f64>)> {
         .into_iter()
         .zip(values)
         .map(|(week, v)| (week, v.and_then(|s| s.parse::<f64>().ok())))
+        .collect()
+}
+
+/// 近 14 个日历日。没日行的格是 `None`,不补 0。
+fn day_trend_from_readings(ws: &Path, name: &str) -> Vec<(String, Option<f64>)> {
+    let days = bw::isoweek::recent_days(14);
+    let values = bw::repo::readings_file::latest_values_for_days(ws, name, &days);
+    days.into_iter()
+        .zip(values)
+        .map(|(day, v)| (day, v.and_then(|s| s.parse::<f64>().ok())))
         .collect()
 }
 
@@ -285,13 +287,15 @@ pub(super) fn build_metrics(
     // 采到的现值与走势来自「采一次指标」那一下(`ui.metrics`),不在这里跑
     // ——起脚本要几百毫秒到几秒,每重拼一次 ViewModel 都跑一遍会把界面按住。
     let readout_of = |name: &str| collected.iter().find(|r| r.name.trim() == name.trim());
-    let mk = |name: &str, def: &str, target: &str, plan: &bw::repo::metrics_file::CollectPlan| {
+    let mk = |d: &bw::repo::metrics_file::MetricDef, target: &str| {
+        let name = d.name.as_str();
+        let plan = &d.collect;
         MetricCardVm {
             id: name.to_string(),
             name: name.to_string(),
             reading: reading_of(name).map(|r| r.value.clone()),
             target: target.to_string(),
-            def: def.to_string(),
+            def: d.def.clone(),
             manual: plan.is_manual(),
             source: reading_of(name)
                 .map(|r| r.source.clone())
@@ -321,6 +325,25 @@ pub(super) fn build_metrics(
                     None => Vec::new(),
                 }
             },
+            day_trend: {
+                let from_run = readout_of(name).map(|r| {
+                    r.day_points
+                        .iter()
+                        .map(|p| {
+                            (
+                                p.week.clone(),
+                                p.value.as_ref().and_then(|v| v.parse::<f64>().ok()),
+                            )
+                        })
+                        .collect::<Vec<_>>()
+                });
+                match from_run {
+                    Some(t) if t.iter().any(|(_, v)| v.is_some()) => t,
+                    _ => day_trend_from_readings(ws, name),
+                }
+            },
+            feature: d.feature.clone(),
+            leads: d.leads.clone(),
             collect_error: readout_of(name)
                 .map(|r| r.error.clone())
                 .unwrap_or_default(),
@@ -332,20 +355,9 @@ pub(super) fn build_metrics(
         error: None,
         // 北极星没有 target 字段 —— 它的目标就是它自己那句定义。
         // 北极星可以缺席:刚接入、还没定指标的项目就是这样。**不摆空卡。**
-        north_star: m
-            .north_star
-            .as_ref()
-            .map(|n| mk(&n.name, &n.def, "", &n.collect)),
-        lagging: m
-            .lagging
-            .iter()
-            .map(|d| mk(&d.name, &d.def, &d.target, &d.collect))
-            .collect(),
-        leading: m
-            .leading
-            .iter()
-            .map(|d| mk(&d.name, &d.def, &d.target, &d.collect))
-            .collect(),
+        north_star: m.north_star.as_ref().map(|n| mk(n, "")),
+        lagging: m.lagging.iter().map(|d| mk(d, &d.target)).collect(),
+        leading: m.leading.iter().map(|d| mk(d, &d.target)).collect(),
         note: None,
     }
 }
@@ -439,7 +451,6 @@ pub(super) fn build_config(
         .collect();
 
     let skills = skill_list(ws, &usage);
-    let ops2 = bw::defaults::DEFAULT_OPS2_SCHEDULE;
 
     ConfigVm {
         mappings,
@@ -447,8 +458,8 @@ pub(super) fn build_config(
         focus_skill: String::new(),
         tools: env.to_vec(),
         remote: remote_label(project),
-        cadence: format!("产品默认 · 运作活② {ops2}"),
-        crons: build_crons(),
+        cadence: "Orca · 周一 09:00 定计划 · 周五 15:00 盘点 · 每天 20:00 采 B 类（默认关）".into(),
+        crons: vec![],
         chat_provider: chat_provider(file.chat.as_ref()),
         chat_group: chat_group(file.chat.as_ref()),
         chat_events: chat_events(file.chat.as_ref()),
@@ -536,30 +547,6 @@ pub(super) fn skill_desc(path: &Path) -> String {
         .find_map(|l| l.strip_prefix("description:"))
         .map(|v| v.trim().trim_matches('"').to_string())
         .unwrap_or_default()
-}
-
-/// 定时那张表。**没有定时表** —— 判据写在这里,让人知道它到底看什么。
-fn build_crons() -> Vec<CronVm> {
-    vec![
-        CronVm {
-            name: "B 类指标采集".into(),
-            trigger: "到点自动采".into(),
-            schedule: "daily 20:00".into(),
-            rule: "今天还没采过".into(),
-        },
-        CronVm {
-            name: "更新指标与制定版本计划".into(),
-            trigger: "人触发".into(),
-            schedule: "—".into(),
-            rule: "本周还没有运作活①「更新指标 + 制定版本计划」".into(),
-        },
-        CronVm {
-            name: "资产盘点".into(),
-            trigger: "到点自动建".into(),
-            schedule: bw::defaults::DEFAULT_OPS2_SCHEDULE.into(),
-            rule: "本周还没有这张活(不查任何定时表)".into(),
-        },
-    ]
 }
 
 fn chat_provider(chat: Option<&project_file::ChatConfig>) -> String {

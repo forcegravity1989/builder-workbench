@@ -5,17 +5,13 @@
 //! | ①更新指标 + 制定版本计划 | `ops` | `human` | `更新指标与版本计划` |
 //! | ②资产盘点 | `ops` | `auto` | `资产盘点` |
 //!
-//! **没有定时任务表**。「这周该不该建②」这个问题的答案不存在任何一张状态表
-//! 里,它是现查出来的:本周有没有一张标题以「资产盘点 」开头的活。这条查询
-//! 本身就是幂等锁,也是补建逻辑——错过一次 tick(那会儿 Workbench 没开着)下次
-//! 启动的第一次 tick 天然成立,自动补上。
+//! 钟在 Orca。Workbench 只在纳入 / 打开时注入自动化,不自己到点建活。
 
 use super::{issue_store, App, AppError, ProgressLine, Result};
-use crate::command::Event;
-use crate::defaults;
-use crate::isoweek;
-use crate::local::ProjectRegistry;
-use crate::model::{Issue, IssueId, IssueKind, IssueOrigin, IssueStatus, ProjectId};
+use crate::{
+    command::Event,
+    model::{Issue, IssueId, IssueKind, IssueOrigin, IssueStatus, ProjectId},
+};
 
 /// 运作活①的 `workflow` 字段值,对应剧本 `week-planning`。两者的对应关系在
 /// `standard/skills/README.md` 那张表里。
@@ -26,18 +22,18 @@ pub const OPS3_WORKFLOW: &str = "规范铺底";
 /// 剧本名。开工时按这个 slug 在 **Workbench 自己的技能目录**里找到那份
 /// `SKILL.md`,把**名字 + 一句话 + 路径**给 agent(正文它自己按需读,见
 /// [`crate::standard::skills`])。
-/// 运作活①刚建时的标题(确认版本后会在后面加 ` v0.x`)。
+/// 运作活①刚建时的标题(确认版本后会在后面加空格和版本名)。
 pub fn ops1_title() -> String {
     crate::version::OPS1_TITLE.to_string()
 }
 
-/// 认运作活①:标题是光杆或光杆 + ` v0.x`,或 workflow 对得上。
+/// 认运作活①:标题是光杆或光杆 + 空格 + 版本名,或 workflow 对得上。
 pub fn is_ops1_issue(i: &Issue) -> bool {
     i.kind == IssueKind::Ops
         && (i.workflow == OPS1_WORKFLOW || crate::version::is_ops1_title(&i.title))
 }
 
-/// 这一 ISO 周要不要再开一张运作活①:有未完成的,或本周已有打了 `v0.x` 的
+/// 这一 ISO 周要不要再开一张运作活①:有未完成的,或本周已有打了版本标签的
 /// (含已完成)。
 pub fn week_started(issues: &[Issue], current_week: &str) -> bool {
     let mut open = false;
@@ -49,9 +45,7 @@ pub fn week_started(issues: &[Issue], current_week: &str) -> bool {
         if i.status != IssueStatus::Done && i.status != IssueStatus::Cancelled {
             open = true;
         }
-        if crate::version::is_v0x(&i.plan_version)
-            && crate::isoweek::unix_in_week(i.created_at, current_week)
-        {
+        if !i.plan_version.is_empty() && crate::isoweek::unix_in_week(i.created_at, current_week) {
             tagged_this_week = true;
         }
     }
@@ -85,6 +79,8 @@ pub fn skill_slug(workflow: &str) -> Option<&'static str> {
 
 impl App {
     /// 建一张运作活。标题幂等(同一周重跑拿回同一张),建完立刻回 id。
+    /// 钟迁走之后内核暂时不调;计划屏「新建」走 `CreateIssue`。留着给 skill / 人建卡。
+    #[allow(dead_code)]
     pub(super) async fn create_ops_issue(
         &mut self,
         project_id: ProjectId,
@@ -95,9 +91,7 @@ impl App {
         week_of: String,
     ) -> Result<(IssueId, bool, Vec<Event>)> {
         let project = self.project_of(project_id).await?;
-        // 建活是按标题幂等的。调用方**必须知道这一张是不是新建的** —— 定时那
-        // 条路会在建完之后立刻开工,拿到一张老活还去开工,就会把上一次正跑着
-        // 的会话掐掉重开。
+        // 建活按标题幂等。调用方必须知道是不是新建的,免得拿到老活再开工。
         let created = issue_store::find_open_by_title(self, &project, &title)
             .await?
             .is_none();
@@ -128,66 +122,6 @@ impl App {
         }
         Ok((id, created, events))
     }
-
-    /// 定时:到点就自己建运作活②并自己开工。
-    ///
-    /// 三张运作活里唯一不需要人点一下才开工的一张——所以它也是唯一一处
-    /// Workbench 自动**建**活的地方。**自动建不等于自动完成**:这张活和别的活
-    /// 走同一条状态机,最远只到「评审中」。
-    pub(super) async fn tick_scheduler(&mut self, project_id: ProjectId) -> Result<Vec<Event>> {
-        // 高优1:读本机设置,这个项目关了定时就不建活(缺省 true)。开关在
-        // `projects.toml` 的 `cron_enabled` 字段,配置屏能改;false 就直接返空。
-        let cron_on = ProjectRegistry::find_by_id(&self.asset_root, project_id)
-            .ok()
-            .flatten()
-            .map(|e| e.cron_enabled)
-            .unwrap_or(true);
-        if !cron_on {
-            return Ok(vec![]);
-        }
-        let mut events = self.maybe_auto_collect_b(project_id).await;
-
-        if self.workspace_of(project_id).await.is_err() {
-            return Ok(events);
-        }
-        let spec = defaults::DEFAULT_OPS2_SCHEDULE;
-        if !isoweek::schedule_passed_this_week(spec) {
-            return Ok(events);
-        }
-
-        let week = isoweek::current_week();
-        let title = format!("资产盘点 {week}");
-        let project = self.project_of(project_id).await?;
-        // **判据必须和建活的幂等键是同一个东西**(都是标题)。
-        if issue_store::find_open_by_title(self, &project, &title)
-            .await?
-            .is_some()
-        {
-            return Ok(events);
-        }
-
-        let (id, created, mut ops_events) = self
-            .create_ops_issue(
-                project_id,
-                title,
-                "mode: weekly\n\n盘点这一周仓内的全部资产,微重构只写建议不动手。".into(),
-                OPS2_WORKFLOW,
-                IssueOrigin::Auto,
-                week.clone(),
-            )
-            .await?;
-        events.append(&mut ops_events);
-        if !created {
-            return Ok(events);
-        }
-        events.push(Event::OpsAutoFired {
-            id,
-            workflow: OPS2_WORKFLOW.into(),
-            week,
-        });
-        events.extend(self.run_issue(id).await?);
-        Ok(events)
-    }
 }
 
 impl App {
@@ -199,7 +133,7 @@ impl App {
     /// **合入失败就整条失败**,活留在「评审中」原地,人看得见原话、可以重试。
     /// 没挂远端的本地项目确实没有 MR 可合 —— 那种只走「完成」那一步,合理。
     /// **挂了远端但查不到这张活的 MR** —— 不关 issue,报错「没找到这活的 MR,
-    /// 活留评审中」(MR 正本在远端,现查,不靠 lossy 的 `issue.branch`/`pr_number`,
+    /// 活留在原状态」(MR 正本在远端,现查,不靠 lossy 的 `issue.branch`/`pr_number`,
     /// 那俩在 `issue_from_remote` 里恒空,旧逻辑因此永远 `merged=false` 却照常
     /// `set_status(Done)`,活关了显示完成、MR 没合、主检出没拉、worktree 没清)。
     ///
@@ -261,13 +195,14 @@ impl App {
                     self.step(ProgressLine::ok(1, format!("合入:MR #{n} 已合")));
                 }
                 Ok(None) => {
-                    // 挂了远端但分支上没有开着的 MR —— 不关 issue,活留评审中。
-                    let why = format!("没找到这活的 MR(分支 {branch} 上没有开着的 MR),活留评审中");
+                    // 挂了远端但分支上没有开着的 MR —— 不关 issue,活留原状态。
+                    let why =
+                        format!("没找到这活的 MR(分支 {branch} 上没有开着的 MR),活留在原状态");
                     self.step(ProgressLine::fail(1, format!("合入:{why}")));
                     return Err(AppError::Refused(why));
                 }
                 Err(e) => {
-                    // 查 MR 本身失败(网络/权限)—— 不关 issue,活留评审中。
+                    // 查 MR 本身失败(网络/权限)—— 不关 issue,活留原状态。
                     self.step(ProgressLine::fail(1, format!("合入:查 MR 没成:{e}")));
                     return Err(AppError::Exec(format!("查 MR 没成:{e}")));
                 }
@@ -351,8 +286,9 @@ impl App {
     /// 改动)原样留着,如实说一声。旧活记的是平级兄弟路径,这里走
     /// `resolve_issue_worktree`(会话记下的路径 → 新目录 → 旧兄弟)才能收掉。
     async fn cleanup_issue_branch_note(&self, issue: &crate::model::Issue) -> Option<String> {
-        if issue.title == issue_store::CHARTER_TITLE {
-            return Some("项目约定是常驻分支,树和分支不收".into());
+        let branch = issue_store::work_branch(issue);
+        if bw_engine::workspace::is_standing_branch(&branch) {
+            return Some(format!("{branch} 是常驻分支,树和分支不收"));
         }
         let Ok(ws) = self.workspace_of(issue.project_id).await else {
             return None;

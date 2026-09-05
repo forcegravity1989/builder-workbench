@@ -11,7 +11,7 @@ use crate::model::{Category, IssueId, IssueStatus, ProjectId};
 /// 总览「编辑项目名片」一次填完的仓文件字段。
 ///
 /// 正本是 `.bw/project.toml`。接入时只填前四项,
-/// 在研版本 / 项目群落默认或仓里已有的;总览保存会把后几项一并写回。
+/// 项目群落默认或仓里已有的;总览保存会把后几项一并写回。在研版本不进仓文件。
 #[derive(Clone, Debug, PartialEq, Eq, Default)]
 pub struct ProjectIntent {
     pub name: String,
@@ -21,8 +21,6 @@ pub struct ProjectIntent {
     pub benchmark: String,
     /// 三个月长成什么样(北极星一句话)。
     pub north_star: String,
-    /// 在研版本。接入时空着 = 不覆盖仓里已有的 / 新建默认 `v0.1`。
-    pub current_version: String,
     /// 项目群提供方。空或 `"none"` = 不配群。
     pub chat_provider: String,
     pub chat_group: String,
@@ -52,7 +50,7 @@ pub enum Command {
         workspace_path: String,
     },
     /// 总览「编辑→保存」:改 `.bw/project.toml`
-    /// (名片 + 在研版本 + 项目群),走一张轻量活。
+    /// (名片 + 项目群),走一张轻量活。
     EditProjectCard {
         project_id: ProjectId,
         intent: ProjectIntent,
@@ -71,9 +69,6 @@ pub enum Command {
     ReconcileStandard { project_id: ProjectId },
 
     // ── 计划 ──────────────────────────────────────────────
-    /// 总览「开始本版本」:建本周运作活①并开工。同一标题做过(含已完成)不再建。
-    /// 判据是标题 + 本 ISO 周创建的 `v0.x` 标签。
-    StartWeekPlanning { project_id: ProjectId, week: String },
     /// 人确认草稿后真的建活(`origin = agent_split`)。
     ConfirmWeekDraft {
         project_id: ProjectId,
@@ -89,8 +84,7 @@ pub enum Command {
         kind: crate::model::IssueKind,
         origin: crate::model::IssueOrigin,
         week_of: String,
-        /// 排进人起名的版本(`bw:plan:<name>`)。空 = 不走这个写法。
-        /// 和 `week_of` 是同一槽位:有 plan 就只打版本,丢掉周。
+        /// 排进版本(`bw:plan:<name>`)。空 = 未排期。`week_of` 不再写标签。
         plan: String,
     },
     /// 摘排期:壳侧只传空 `week_of` 把活移回待办池。不再用这条新写周标签。
@@ -100,7 +94,7 @@ pub enum Command {
     },
     /// 排进计划版本(`bw:plan:<name>`)。一张活只属于一个版本。
     ScheduleToPlan { id: IssueId, plan: String },
-    /// 建一个 `v0.x` 版本:建 codehub milestone,给 `included` 打 `bw:plan:<name>`。
+    /// 建一个版本:建 codehub milestone,给 `included` 打 `bw:plan:<name>`。
     /// 与发版号 `CutRelease` 不同。
     CreatePlanVersion {
         project_id: ProjectId,
@@ -110,7 +104,7 @@ pub enum Command {
         note: String,
         included: Vec<IssueId>,
     },
-    /// 删一个未发的 `v0.x` 版本:给挂着 `bw:plan:<name>` 的活摘掉该标签,再删同名
+    /// 删一个未发版本:给挂着 `bw:plan:<name>` 的活摘掉该标签,再删同名
     /// 里程碑。已发的号拒收。
     DeletePlanVersion { project_id: ProjectId, name: String },
     /// 未发版本改名:同步里程碑标题、标签定义、已打在 issue 上的 `bw:plan:`。
@@ -150,8 +144,9 @@ pub enum Command {
     /// 的视线,不该由程序替人决定。它**最远只到「评审中」** —— 「完成」还是得
     /// 人在评审完之后再点一次。
     SubmitIssueWork { id: IssueId },
-    /// 状态转移。合法性由 `can_transition_to` 守;「完成」只能从「评审中」来,
-    /// 而且只能是人显式发这条命令。作废走 `Cancelled`,不是 Done。
+    /// 状态转移。合法性由 `can_transition_to` 守;「完成」只能是人显式发这条
+    /// (或 `MergeAndSettle`)。未排期 / 待办 / 进行中 / 评审中 / 阻塞都能进 Done。
+    /// 作废走 `Cancelled`,不是 Done。
     TransitionIssue { id: IssueId, to: IssueStatus },
     /// 给已有的活补/改类别标签。读回时用它查本机开工工具(再回退残留/产品默认)。
     SetIssueCategory { id: IssueId, category: Category },
@@ -193,11 +188,6 @@ pub enum Command {
     /// `BW_ORCA_WEB_URL` 仍可覆盖(开发期)。空串 = 清掉。
     SetOrcaWebUrl { url: String },
 
-    /// 定时的一跳。**只会自动建活,绝不自动完成活**——到点了就查本周有没有
-    /// 那张资产盘点活,没有就建一张并自动开工。没到点、已经有了,都是原地
-    /// 返回空事件,不是错误。
-    TickScheduler { project_id: ProjectId },
-
     /// 通知屏的「合入并完成」。先真的合 MR,再把活推「完成」——顺序反了,
     /// 合入失败就会留下一张已完成、改动却还挂在分支上的活。
     MergeAndSettle { id: IssueId },
@@ -220,9 +210,9 @@ pub enum Command {
         value: String,
     },
 
-    /// 把本机对照日志报到 **workbench 自己的仓**(当前目录 git 的 origin),
-    /// 不是打开着的被管项目。标题人填,附件是 `bw.log`。
-    ReportWorkbenchIssue { title: String },
+    /// 把问题报到 **workbench 自己的仓**(当前目录 git 的 origin),
+    /// 不是打开着的被管项目。标题人填;`attach_log` 为真且 `bw.log` 有文件才附上。
+    ReportWorkbenchIssue { title: String, attach_log: bool },
 }
 
 /// 一个工具探活的结果。探不到就是探不到,不猜。
@@ -272,28 +262,6 @@ pub enum Event {
         missing: Vec<String>,
         stale: Vec<String>,
         human_edited: Vec<String>,
-    },
-    /// 本周运作活①已建并开工。
-    WeekPlanStarted {
-        project_id: ProjectId,
-        week: String,
-        /// 运作活①本身那张活。界面据此跳会话屏。
-        issue_id: IssueId,
-        draft_titles: Vec<String>,
-    },
-    /// 本周运作活①已经做过(含已完成),这次什么都没做。
-    WeekPlanAlreadyExists {
-        project_id: ProjectId,
-        week: String,
-    },
-    /// 本周那张运作活①还在路上,这次什么
-    /// 都没做。**不是错误** —— 人再点一次「开始本版本」该被平静地挡住,而不是
-    /// 收到一句「这张活现在是评审中,不是能开工的状态」。
-    WeekPlanInProgress {
-        project_id: ProjectId,
-        week: String,
-        issue_id: IssueId,
-        status: String,
     },
     IssueCreated {
         id: IssueId,
@@ -387,6 +355,10 @@ pub enum Event {
         passed: u32,
         total: u32,
     },
+    /// 人点停止：进程树已杀、这次中间件已清。
+    ReleasePackStopped {
+        version: String,
+    },
     /// 拉工作区的结果。`moved` = 主检出真的往前走了;`note` 是给人看的一句话,
     /// 拉不动时装的是 git 的原话(压成一行),**不吞**。
     WorkspacePulled {
@@ -430,18 +402,6 @@ pub enum Event {
     SessionDeleted {
         id: IssueId,
         note: String,
-    },
-    /// 定时真的建出了一张活。界面上「本周运作」栏据此显示「已自动开工」。
-    OpsAutoFired {
-        id: IssueId,
-        workflow: String,
-        week: String,
-    },
-    /// B 类指标今日自动采了一轮。不建活、不完成活。
-    MetricsAutoCollected {
-        project_id: ProjectId,
-        week: String,
-        count: u32,
     },
     /// 人记下了一条 C 类读数。同一天再记覆盖读回(只追加,最后一行算)。
     MetricRecorded {

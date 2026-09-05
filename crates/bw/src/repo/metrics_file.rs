@@ -84,6 +84,13 @@ pub struct MetricDef {
     /// 迷你门槛,如 `≥5` `≤24h`。空 = 还没定目标,界面显示「目标未设」。
     #[serde(default)]
     pub target: String,
+    /// 所属特性。空 = 主要,总览落在「主要」页签;有值才出「XX特性」页签。
+    #[serde(default)]
+    pub feature: String,
+    /// 引领盯的那条滞后的 `name`。空 = 落到同一 `feature` 页签的第一条滞后。
+    /// 滞后 / 北极星上此字段无意义。
+    #[serde(default)]
+    pub leads: String,
     #[serde(default)]
     pub collect: CollectPlan,
 }
@@ -129,7 +136,7 @@ pub fn read(workspace: &Path) -> Result<Option<MetricsFile>> {
             why: format!(
                 "这份指标文件是旧格式(schema_version = {},当前是 {})。\
                  旧格式里那几种采集方式从来没有实现过,不做迁移 —— \
-                 运作活①「更新指标 + 制定本周计划」会带你重定一遍。",
+                 运作活①「更新指标 + 制定版本计划」会带你重定一遍。",
                 file.schema_version, SCHEMA_VERSION
             ),
         });

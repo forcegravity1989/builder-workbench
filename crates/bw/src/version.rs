@@ -1,6 +1,6 @@
-//! 计划版本 / 发版号共用的 `v0.x` 格式与集合算法。
+//! 版本名、运作活①标题、里程碑覆盖时间。
 //!
-//! 三处同一串:`bw:plan:v0.3`、里程碑标题 `v0.3`、Release / `bw:released:v0.3`。
+//! 号就是里程碑标题,标签 `bw:plan:<名>`。`vX.X` 只推荐,不设限。
 //! 这里只做纯函数,不碰远端。
 
 /// 运作活①刚建、还没确认版本时的标题。确认后在后面加空格和 `v0.x`。
@@ -56,18 +56,19 @@ pub struct VersionInventory {
 }
 
 /// `plan_names` = 里程碑或 `bw:plan:` 上的名;`released_names` = 已发号。
-/// 对不上 `v0.x` 的丢掉。
+/// 非空都进清单;`suggested_next` 仍从已有 `v0.x` bump,没有就 `v0.1`。
 pub fn inventory(plan_names: &[String], released_names: &[String]) -> VersionInventory {
     let released: Vec<String> = released_names
         .iter()
-        .filter(|s| is_v0x(s))
-        .cloned()
+        .map(|s| s.trim().to_string())
+        .filter(|s| !s.is_empty())
         .collect();
-    let last_released = max_v0x(released.iter().map(String::as_str));
+    let last_released =
+        max_v0x(released.iter().map(String::as_str)).or_else(|| released.last().cloned());
     let mut unreleased: Vec<String> = plan_names
         .iter()
-        .filter(|s| is_v0x(s) && !released.iter().any(|r| r == *s))
-        .cloned()
+        .map(|s| s.trim().to_string())
+        .filter(|s| is_plan_name(s) && !released.iter().any(|r| r == s))
         .collect();
     unreleased.sort_by_key(|s| parse_pair(s).unwrap_or((0, 0)));
     unreleased.dedup();
@@ -86,7 +87,7 @@ pub fn inventory(plan_names: &[String], released_names: &[String]) -> VersionInv
     }
 }
 
-/// 光杆标题,或光杆 + 空格 + 合法 `v0.x`。带周号的不算。
+/// 光杆标题,或光杆 + 空格 + 任意非空后缀。版本以 label 为准,不认标题后缀形状。
 pub fn is_ops1_title(title: &str) -> bool {
     let t = title.trim();
     if t == OPS1_TITLE {
@@ -94,14 +95,14 @@ pub fn is_ops1_title(title: &str) -> bool {
     }
     t.strip_prefix(OPS1_TITLE)
         .and_then(|rest| rest.strip_prefix(' '))
-        .is_some_and(is_v0x)
+        .is_some_and(|s| !s.is_empty())
 }
 
 pub fn ops1_title_for(version: &str) -> String {
     format!("{OPS1_TITLE} {version}")
 }
 
-/// 有未完成的运作活①,或本 ISO 周已有打了 `v0.x` 的运作活①(含已完成)。
+/// 有未完成的运作活①,或本 ISO 周已有打了版本标签的运作活①(含已完成)。
 pub fn ops1_already_started(open_ops1: bool, tagged_ops1_created_this_week: bool) -> bool {
     open_ops1 || tagged_ops1_created_this_week
 }
@@ -115,9 +116,54 @@ pub fn context_block(inv: &VersionInventory) -> String {
         inv.unreleased.join("、")
     };
     format!(
-        "本周版本（人确认之前不要打标）：\n- 上一发：{last}\n- 未发：{unreleased}\n- 推荐下一号：{}\n确认后：标题改成「更新指标 + 制定版本计划 v0.x」，打 bw:plan:v0.x，里程碑同名。不要打 bw:week，不要起 W35。",
+        "本周版本（人确认之前不要打标）：\n- 上一发：{last}\n- 未发：{unreleased}\n- 推荐下一号：{}（推荐 vX.X，例如 v0.3 / v1.0，人要用别的名字也行）\n确认后怎么改标题、打标、挂里程碑,见 week-plan-comment.md。",
         inv.suggested_next
     )
+}
+
+/// 排期名。非空即可;名字不设限。ISO 周只做节律,产品不新建周号版本,但不在这里滤。
+pub fn is_plan_name(s: &str) -> bool {
+    !s.trim().is_empty()
+}
+
+/// 里程碑起止都是 `YYYY-MM-DD`。缺一边就不覆盖,不猜。
+pub fn covers_ymd(start: &str, due: &str, day: &str) -> bool {
+    !start.is_empty() && !due.is_empty() && start <= day && day <= due
+}
+
+/// `[start, due]` 和这一 ISO 周(周一到周日)有没有重叠。
+pub fn overlaps_week(start: &str, due: &str, week: &str) -> bool {
+    let Some(mon) = crate::isoweek::week_monday_ymd(week) else {
+        return false;
+    };
+    let Some(sun) = crate::isoweek::week_sunday_ymd(week) else {
+        return false;
+    };
+    !start.is_empty() && !due.is_empty() && start <= sun.as_str() && due >= mon.as_str()
+}
+
+/// `(title, start, due, created_at)`。覆盖 `day` 的,按创建时间新的在前。
+pub fn covering_on<'a>(rows: &'a [(String, String, String, String)], day: &str) -> Vec<&'a str> {
+    let mut v: Vec<_> = rows
+        .iter()
+        .filter(|r| is_plan_name(&r.0) && covers_ymd(&r.1, &r.2, day))
+        .collect();
+    v.sort_by(|a, b| b.3.cmp(&a.3));
+    v.into_iter().map(|r| r.0.as_str()).collect()
+}
+
+/// 覆盖当天的最后一个(创建时间最晚)。没有就 `None`。
+pub fn current_from_milestones(
+    rows: &[(String, String, String, String)],
+    day: &str,
+) -> Option<String> {
+    covering_on(rows, day).first().map(|s| (*s).to_string())
+}
+
+/// 有没有里程碑覆盖到这一 ISO 周。
+pub fn week_has_covering(rows: &[(String, String, String, String)], week: &str) -> bool {
+    rows.iter()
+        .any(|r| is_plan_name(&r.0) && overlaps_week(&r.1, &r.2, week))
 }
 
 #[cfg(test)]
@@ -168,9 +214,61 @@ mod tests {
     fn ops1_title_shapes() {
         assert!(is_ops1_title(OPS1_TITLE));
         assert!(is_ops1_title("更新指标 + 制定版本计划 v0.3"));
-        assert!(!is_ops1_title("更新指标 + 制定版本计划 2026-W36"));
+        assert!(is_ops1_title("更新指标 + 制定版本计划 MVP收尾"));
         assert!(!is_ops1_title("更新指标 + 制定本周计划 2026-W36"));
         assert_eq!(ops1_title_for("v0.3"), "更新指标 + 制定版本计划 v0.3");
+    }
+
+    #[test]
+    fn covers_and_picks_last_created() {
+        assert!(covers_ymd("2026-09-01", "2026-09-05", "2026-09-02"));
+        assert!(!covers_ymd("2026-09-01", "2026-09-05", "2026-09-08"));
+        assert!(!covers_ymd("", "2026-09-05", "2026-09-02"));
+        let rows = [
+            (
+                "v0.2".into(),
+                "2026-09-01".into(),
+                "2026-09-05".into(),
+                "2026-09-01T10:00:00Z".into(),
+            ),
+            (
+                "v0.3".into(),
+                "2026-09-01".into(),
+                "2026-09-05".into(),
+                "2026-09-01T12:00:00Z".into(),
+            ),
+        ];
+        assert_eq!(
+            current_from_milestones(&rows, "2026-09-02").as_deref(),
+            Some("v0.3")
+        );
+        let with_week = [
+            (
+                "2026-W36".into(),
+                "2026-08-31".into(),
+                "2026-09-04".into(),
+                "2026-09-03T18:00:00Z".into(),
+            ),
+            (
+                "v0.3".into(),
+                "2026-09-01".into(),
+                "2026-09-05".into(),
+                "2026-09-01T12:00:00Z".into(),
+            ),
+        ];
+        assert_eq!(
+            current_from_milestones(&with_week, "2026-09-03").as_deref(),
+            Some("2026-W36")
+        );
+        assert!(covering_on(&with_week, "2026-09-03").contains(&"2026-W36"));
+        assert!(is_plan_name("v0.3"));
+        assert!(is_plan_name("MVP收尾"));
+        assert!(is_plan_name("2026-W36"));
+        assert!(!is_plan_name(""));
+        assert!(current_from_milestones(&rows, "2026-09-08").is_none());
+        assert!(week_has_covering(&rows, "2026-W36"));
+        assert!(!week_has_covering(&rows, "2026-W37"));
+        assert!(week_has_covering(&with_week[..1], "2026-W36"));
     }
 
     #[test]
