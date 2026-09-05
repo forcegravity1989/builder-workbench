@@ -15,6 +15,19 @@ if [ ! -f "$DB" ]; then
   exit 0
 fi
 
+# 合并 main 时,main 那份 CI 发布的快照必然出现在暂存区 —— 那不是「feature
+# 提交塞了一份本地重建的 db」,撤销它反而会把 main 的快照回退掉。所以合并
+# 进行中、且暂存的正是被合那一侧的原样快照时放行;只要有一个字节不一样,
+# 说明是本地改过的,照样报错。
+if [ -f .git/MERGE_HEAD ] || git rev-parse -q --verify MERGE_HEAD >/dev/null 2>&1; then
+  staged="$(git rev-parse -q --verify ":$DB" || true)"
+  incoming="$(git rev-parse -q --verify "MERGE_HEAD:$DB" || true)"
+  if [ -n "$staged" ] && [ "$staged" = "$incoming" ]; then
+    echo "✓ $DB 是合并带进来的原样快照,放行。"
+    exit 0
+  fi
+fi
+
 if git diff --cached --name-only -- "$DB" | grep -q .; then
   echo "✗ $DB 被暂存进了 feature 提交。"
   echo "  codegraph.db 不进 feature commit —— CI 是唯一发布者(只在 main 上 publish)。"
