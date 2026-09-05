@@ -9,7 +9,8 @@
 # - 「写完要不要跟着更新别的账」是数据流约束,按模块归属判断对它天生是绿的;
 # - agent 按剧本写 `.bw/` 不经过 Rust,静态检查看不见;
 # - 第二遍是窗口启发式(命中行前 15 后 3 行里提到 `.bw` 才算),路径在更远处
-#   拼好再传进来的写会漏;
+#   拼好再传进来的写会漏;`.bw` 要求后面跟 `/` `\` `"` 反引号或行尾,免得
+#   `.bw-assets` / `.bw-worktrees` 这些别的东西混进来;
 # - 删除类原语(`remove_file` / `remove_dir_all`)不在覆盖内 —— 仓里这类几乎
 #   全是临时目录清理,收进来只会把真信号淹掉。
 set -euo pipefail
@@ -84,7 +85,7 @@ scan_bare_writes() {
           if (L[i] !~ /(fs::write|fs::copy|File::create|OpenOptions::new)[ \t]*\(/) continue
           lo = (i - 15 > 1 ? i - 15 : 1); hi = (i + 3 < NR ? i + 3 : NR)
           for (j = lo; j <= hi; j++)
-            if (L[j] ~ /\.bw/) { printf "%s:%d:%s\n", F, i, L[i]; break }
+            if (L[j] ~ /\.bw([\/\\"`]|$)/) { printf "%s:%d:%s\n", F, i, L[i]; break }
         }
       }' "$f"
   done
