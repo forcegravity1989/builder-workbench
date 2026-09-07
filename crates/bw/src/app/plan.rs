@@ -274,12 +274,9 @@ impl App {
         Ok(vec![Event::WorkspacePulled { moved, note }])
     }
 
-    /// 发版本:远端还没有同名 Release 就先建(打 tag + notes),再给选中的活打
-    /// `bw:released:*` 标签。已经发过的号再点 = 补发:不建第二个 Release,
-    /// 给这次勾上的活补标签,群消息再发一条。标签幂等——同一张活同一号不换。
-    ///
-    /// 头一次发仍是先建 Release、后打标签。Release 没建成就整条失败,
-    /// 标签一个没打,可以重试。
+    /// 发版本:只有在研且还没有同名 tag 的号能发。工作区先快进到远端,
+    /// 脏或本机比远端新就拒。然后建 Release(打 tag),再给勾上的活打
+    /// `bw:released:*`(可以一张不打)。已发过的号拒,要再发先开下一号。
     pub(super) async fn cut_release(
         &mut self,
         project_id: ProjectId,
@@ -292,14 +289,31 @@ impl App {
             return Err(AppError::Refused("版本名不能空".into()));
         }
         let project = self.project_of(project_id).await?;
+        let issues = self.issues(project_id).await.unwrap_or_default();
         let (plans, released) = self.collect_version_names(&project).await?;
         if !plans.iter().any(|s| s == &version) {
             return Err(AppError::Refused(format!("先有计划版本 {version} 再发")));
         }
         let already = released.iter().any(|s| s == &version);
+        let current = super::current_week_version(&issues, &released);
+        if !crate::version::can_cut_release(&version, &current, already) {
+            if already {
+                return Err(AppError::Refused(format!(
+                    "{version} 已经发过,要再发就先开下一号"
+                )));
+            }
+            if current.is_empty() {
+                return Err(AppError::Refused("还没有在研版本,不能发".into()));
+            }
+            return Err(AppError::Refused(format!(
+                "只有在研版本能发,现在在研是 {current}"
+            )));
+        }
 
-        // 头一次:先在远端建 Release。已经有同名 Release 就跳过,不建第二个。
-        if project.has_remote() && !already {
+        let ws = self.workspace_of(project_id).await?;
+        align_workspace_to_remote(&ws).await?;
+
+        if project.has_remote() {
             let remote = self.remote_for(&project)?;
             remote
                 .create_release(&version, &version, &note)
@@ -313,7 +327,7 @@ impl App {
 
         let mut events = vec![Event::ReleaseCut {
             version: version.clone(),
-            rows_written: !already,
+            rows_written: true,
         }];
         let release_ev = crate::chat::NotifyEvent::Release;
         let note = note.trim();
@@ -424,6 +438,26 @@ impl App {
         }
         Ok((plan_names, released_names))
     }
+}
+
+/// 发版本 / 在研出包共用:读数脏先挪开,再快进。源码脏或本机比远端新就拒。
+pub(super) async fn align_workspace_to_remote(ws: &std::path::Path) -> Result<()> {
+    let _ = salvage_readings_dirt(ws).await;
+    if crate::git::is_dirty(ws).await.unwrap_or(true) {
+        return Err(AppError::Refused(
+            "工作区有未提交的改动,先自己处理再发版本 / 出包".into(),
+        ));
+    }
+    crate::git::pull_ff(ws)
+        .await
+        .map_err(|e| AppError::Exec(format!("没拉到远端最新:{e}")))?;
+    let ahead = crate::git::commits_ahead_of_fetch(ws).await.unwrap_or(0);
+    if ahead > 0 {
+        return Err(AppError::Refused(
+            "本机比远端新,先推上去或自己处理,避免包和 tag 不是同一份提交".into(),
+        ));
+    }
+    Ok(())
 }
 
 /// 拉主干之前:主检出若只脏了读数流水,挪进账本再拉。不碰名片、不碰人的源码。
