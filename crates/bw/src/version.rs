@@ -98,8 +98,41 @@ pub fn is_ops1_title(title: &str) -> bool {
         .is_some_and(|s| !s.is_empty())
 }
 
+/// 带号运作活①标题里的版本名。光杆 → `None`。
+pub fn ops1_version_from_title(title: &str) -> Option<String> {
+    title
+        .trim()
+        .strip_prefix(OPS1_TITLE)?
+        .strip_prefix(' ')
+        .map(str::trim)
+        .filter(|s| !s.is_empty())
+        .map(str::to_string)
+}
+
 pub fn ops1_title_for(version: &str) -> String {
     format!("{OPS1_TITLE} {version}")
+}
+
+/// 在研现算用的一行运作活①。`version` 必须来自 `bw:plan:`。
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Ops1VersionRow {
+    pub version: String,
+    pub created_at: i64,
+    pub number: u32,
+    pub open: bool,
+    pub released: bool,
+}
+
+/// 本周在研:开着的带号①取最后创建;都关了则取未发版的已关①里最后创建。
+/// 标题还是光杆、或没打 `bw:plan:` 的不算。
+pub fn current_from_ops1(rows: &[Ops1VersionRow]) -> Option<String> {
+    let pick = |open: bool, released_ok: bool| {
+        rows.iter()
+            .filter(|r| !r.version.is_empty() && r.open == open && (released_ok || !r.released))
+            .max_by_key(|r| (r.created_at, r.number))
+            .map(|r| r.version.clone())
+    };
+    pick(true, true).or_else(|| pick(false, false))
 }
 
 /// 有未完成的运作活①,或本 ISO 周已有打了版本标签的运作活①(含已完成)。
@@ -276,5 +309,55 @@ mod tests {
         assert!(!ops1_already_started(false, false));
         assert!(ops1_already_started(true, false));
         assert!(ops1_already_started(false, true));
+    }
+
+    fn row(
+        version: &str,
+        created_at: i64,
+        number: u32,
+        open: bool,
+        released: bool,
+    ) -> Ops1VersionRow {
+        Ops1VersionRow {
+            version: version.into(),
+            created_at,
+            number,
+            open,
+            released,
+        }
+    }
+
+    #[test]
+    fn ops1_title_yields_version() {
+        assert_eq!(ops1_version_from_title(OPS1_TITLE), None);
+        assert_eq!(
+            ops1_version_from_title("更新指标 + 制定版本计划 v0.3").as_deref(),
+            Some("v0.3")
+        );
+        assert_eq!(
+            ops1_version_from_title("更新指标 + 制定版本计划 MVP收尾").as_deref(),
+            Some("MVP收尾")
+        );
+    }
+
+    #[test]
+    fn current_ops1_prefers_last_created_open() {
+        let rows = [
+            row("v0.2", 10, 1, true, false),
+            row("v0.3", 20, 2, true, false),
+            row("v0.1", 30, 3, false, true),
+        ];
+        assert_eq!(current_from_ops1(&rows).as_deref(), Some("v0.3"));
+    }
+
+    #[test]
+    fn current_ops1_falls_back_to_closed_unreleased() {
+        let rows = [
+            row("v0.2", 10, 1, false, true),
+            row("v0.3", 20, 2, false, false),
+        ];
+        assert_eq!(current_from_ops1(&rows).as_deref(), Some("v0.3"));
+        let all_tagged = [row("v0.2", 10, 1, false, true)];
+        assert!(current_from_ops1(&all_tagged).is_none());
     }
 }
