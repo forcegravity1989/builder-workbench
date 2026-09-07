@@ -327,6 +327,15 @@ fn Toolbar(
                         option { value: "{val}", selected: val.as_str() == cur_view.as_str(), "{label}" }
                     }
                 }
+                button {
+                    class: "btn btn-secondary",
+                    title: "先快进主检出再重读",
+                    onclick: {
+                        let b = bridge.clone();
+                        move |_| b.send(Req::Refresh)
+                    },
+                    "刷新"
+                }
                 if p.view_all {
                     button {
                         class: "btn btn-secondary",

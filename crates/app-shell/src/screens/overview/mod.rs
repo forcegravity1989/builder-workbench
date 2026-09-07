@@ -20,6 +20,23 @@ pub fn View(p: ProjectVm, bridge: Bridge) -> Element {
 
     rsx! {
         section { class: "ov-stack", "data-screen": "overview",
+            div { class: "page-head",
+                div {
+                    h1 { "总览" }
+                    p { class: "page-desc", "项目健康看板:名片、北极星、版本进展、指标。没数据是灰,不是绿。" }
+                }
+                div { class: "page-actions",
+                    button {
+                        class: "btn btn-secondary",
+                        title: "先快进主检出再重读",
+                        onclick: {
+                            let b = bridge.clone();
+                            move |_| b.send(Req::Refresh)
+                        },
+                        "刷新"
+                    }
+                }
+            }
             if let Some(pending) = p.bootstrap_pending.clone() {
                 {bootstrap_banner(pending, &bridge, nav)}
             }

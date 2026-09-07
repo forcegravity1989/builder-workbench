@@ -33,6 +33,15 @@ pub fn View(vm: Vm, bridge: Bridge, go_top: EventHandler<TopView>) -> Element {
                 }
                 div { class: "page-actions",
                     button {
+                        class: "btn btn-secondary",
+                        title: "重读本机数据,顺带把每个工具再探一遍",
+                        onclick: {
+                            let b = bridge.clone();
+                            move |_| b.send(Req::Refresh)
+                        },
+                        "刷新"
+                    }
+                    button {
                         class: "btn btn-primary",
                         onclick: move |_| go_top(TopView::Onboard),
                         "+ 接入项目"
@@ -40,7 +49,7 @@ pub fn View(vm: Vm, bridge: Bridge, go_top: EventHandler<TopView>) -> Element {
                 }
             }
 
-            {env_bar(&vm.env, bridge, guide)}
+            {env_bar(&vm.env, guide)}
 
             div { class: "card healthbar",
                 span { class: "bar-label", "健康概览" }
@@ -96,21 +105,14 @@ fn health_group(s: Option<HealthSignal>, label: &str, n: usize) -> Element {
     }
 }
 
-fn env_bar(env: &[ToolProbeVm], bridge: &Bridge, guide: GuideNav) -> Element {
-    let b = bridge.clone();
+/// 探活跟着整份 ViewModel 一起重算,所以页头那颗「刷新」就是再探一遍 ——
+/// 这条不再单独放按钮。
+fn env_bar(env: &[ToolProbeVm], guide: GuideNav) -> Element {
     rsx! {
         div { class: "card envbar",
             span { class: "bar-label", "本机环境" }
             for t in env.iter() {
                 {env_item(t, guide)}
-            }
-            span { class: "spacer" }
-            button {
-                class: "btn btn-secondary",
-                // 探活跟着整份 ViewModel 一起重算,所以「测一下」就是让内核再拼
-                // 一份 —— 不另开一条只探环境的路。
-                onclick: move |_| b.send(Req::Refresh),
-                "测一下"
             }
         }
     }

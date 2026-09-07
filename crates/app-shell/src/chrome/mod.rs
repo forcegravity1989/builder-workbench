@@ -1,16 +1,16 @@
-//! 外壳骨架:图标轨 / 项目轨 / 顶栏 / 指南抽屉 / 上报问题 / toast。
+//! 外壳骨架:一条紧凑侧栏 / 指南抽屉 / 上报问题 / toast。
 //!
-//! 结构走设计系统(`docs/04-design-system/spec.md`):项目轨是 `.sidebar`,
-//! 顶栏是 `.nav`,弹窗是 `.dialog`,回执是 `.toast`;图标轨是壳自己的骨架,
-//! 样式在 `assets/shell.css`。**不写行内样式**。
+//! 结构走设计系统(`docs/04-design-system/spec.md`):侧栏是 `.sidebar`,弹窗是
+//! `.dialog`,回执是 `.toast`。**没有顶栏**:屏名在侧栏当前项上、页标题在各屏
+//! 自己的 `.page-head` 里,再画一条顶栏就是同一个词写两遍;「刷新」进各屏页头。
+//! 数据目录在设置屏看。**不写行内样式**。
 //!
-//! 顶栏右边写「数据来自哪个目录」+ 一颗「刷新」(真的重算一遍 ViewModel),
-//! 没有账号也就没有头像。toast 放的是命令回执(建活成功、铺底失败的原话),
-//! 不自动消失 —— 自动消失等于把失败信息藏起来,点「关闭」才关。
+//! toast 放的是命令回执(建活成功、铺底失败的原话),不自动消失 —— 自动消失
+//! 等于把失败信息藏起来,点「关闭」才关。
 
 pub mod sparkline;
 
-use crate::bridge::{Bridge, ChromeBusy, Panel, Req, TopView, REPORTING, REPORTING_LOG};
+use crate::bridge::{Bridge, ChromeBusy, Panel, TopView, REPORTING, REPORTING_LOG};
 use crate::theme;
 use bw::model::Signal;
 use dioxus::prelude::*;
@@ -113,110 +113,81 @@ fn panel_icon(p: Panel) -> &'static str {
     }
 }
 
+/// 侧栏头部要显示的项目信息。
+#[derive(Clone, PartialEq)]
+pub struct SidebarProject {
+    pub name: String,
+    pub version: String,
+    pub signal: Option<Signal>,
+    /// 评审中的活有几张,和项目墙卡片上的 ⚑ 是同一个数(见 `NotifyVm::unread`)。
+    pub unread: u32,
+}
+
+/// 唯一一条侧栏:品牌 → (项目内)返回 / 项目头 / 五入口,或(顶层)项目墙 → 底部设置。
+/// 图标轨和顶栏都并进来了:文字只有两三个字,一条紧凑的栏就够。
 #[component]
-pub fn IconRail(
+pub fn Sidebar(
     in_project: bool,
     top_view: Option<TopView>,
+    project: Option<SidebarProject>,
+    cur: Panel,
     on_wall: EventHandler<()>,
     on_settings: EventHandler<()>,
+    on_nav: EventHandler<Panel>,
 ) -> Element {
     let settings_active = top_view == Some(TopView::Settings);
     let wall_active = !in_project && top_view.is_none();
     rsx! {
-        div { class: "iconrail",
-            div { class: "rail-logo", "B" }
-            if in_project {
-                button {
-                    class: "rail-btn",
-                    title: "项目墙",
-                    onclick: move |_| on_wall.call(()),
+        aside { class: "sidebar app-sidebar",
+            div { class: "sb-brand",
+                div { class: "rail-logo", "B" }
+                span { "Workbench" }
+            }
+            if let (true, Some(p)) = (in_project, project.as_ref()) {
+                div { class: "pr-back", onclick: move |_| on_wall.call(()),
                     {icon("back")}
+                    span { "项目墙" }
+                }
+                div { class: "pr-head",
+                    div { class: "pr-head-name", title: "{p.name}", "{p.name}" }
+                    div { class: "pr-head-meta",
+                        span { "{p.version}" }
+                        {light_dot(p.signal, false)}
+                        if p.unread > 0 {
+                            span { class: "pr-badge", title: "评审中的活有几张", "{p.unread}" }
+                        }
+                    }
+                }
+                nav { class: "pr-nav",
+                    for pn in Panel::ALL {
+                        div {
+                            key: "{pn:?}",
+                            class: "sidebar-item",
+                            aria_current: if pn == cur { "page" },
+                            onclick: move |_| on_nav.call(pn),
+                            {icon(panel_icon(pn))}
+                            span { "{pn.label()}" }
+                        }
+                    }
                 }
             } else {
-                button {
-                    class: "rail-btn",
-                    aria_current: if wall_active { "page" },
-                    title: "项目墙",
-                    onclick: move |_| on_wall.call(()),
-                    {icon("wall")}
+                nav { class: "pr-nav",
+                    div {
+                        class: "sidebar-item",
+                        aria_current: if wall_active { "page" },
+                        onclick: move |_| on_wall.call(()),
+                        {icon("wall")}
+                        span { "项目墙" }
+                    }
                 }
             }
             div { class: "spacer" }
-            button {
-                class: "rail-btn",
+            div {
+                class: "sidebar-item",
                 aria_current: if settings_active { "page" },
-                title: "设置",
                 onclick: move |_| on_settings.call(()),
                 {icon("settings")}
-            }
-        }
-    }
-}
-
-#[component]
-pub fn ProjectRail(
-    name: String,
-    version: String,
-    signal: Option<Signal>,
-    unread: u32,
-    cur: Panel,
-    on_wall: EventHandler<()>,
-    on_nav: EventHandler<Panel>,
-) -> Element {
-    rsx! {
-        aside { class: "sidebar",
-            div { class: "pr-back", onclick: move |_| on_wall.call(()),
-                {icon("back")}
-                span { "项目墙" }
-            }
-            div { class: "pr-head",
-                div { class: "pr-head-name", title: "{name}", "{name}" }
-                div { class: "pr-head-meta",
-                    span { "{version}" }
-                    {light_dot(signal, false)}
-                    // 未读徽章:评审中的活有几张。原挂在已删的通知页签上
-                    // (ADR-0003),挪到项目轨头部——它是项目级属性,不该绑在
-                    // 某个页签上。个人弹窗落地后再看它的角色。
-                    if unread > 0 {
-                        span { class: "pr-badge", title: "评审中的活有几张", "{unread}" }
-                    }
-                }
-            }
-            nav { class: "pr-nav",
-                for p in Panel::ALL {
-                    div {
-                        key: "{p:?}",
-                        class: "sidebar-item",
-                        aria_current: if p == cur { "page" },
-                        onclick: move |_| on_nav.call(p),
-                        {icon(panel_icon(p))}
-                        span { "{p.label()}" }
-                    }
-                }
-            }
-        }
-    }
-}
-
-/// 顶栏。`source` 是「这一屏的数字从哪来」的实话 —— 原型那格写的是
-/// 「演示数据 ✱」,真壳写数据目录名(asset_root 下 registry/设置/会话;数字用 codehub-cli/gh/cat 当场对、不靠库)。
-#[component]
-pub fn TopBar(title: String, project: Option<String>, source: String, bridge: Bridge) -> Element {
-    let b = bridge.clone();
-    rsx! {
-        div { class: "nav",
-            div { class: "nav-brand",
-                "{title}"
-                if let Some(p) = project.as_ref() {
-                    " · {p}"
-                }
-            }
-            span { class: "tag tag-outline mono", title: "数据目录(registry/设置/会话);界面数字用 codehub-cli/gh/cat 当场对,不靠库", "{source}" }
-            button {
-                class: "btn btn-ghost",
-                onclick: move |_| b.send(Req::Refresh),
-                title: "打开着的项目会先快进主检出再重读;项目墙只重读本机",
-                "刷新"
+                span { "设置" }
             }
         }
     }

@@ -59,15 +59,12 @@ select.input { cursor: pointer; padding-top: 0; padding-bottom: 0; }
 .app-root.is-centered { align-items: center; justify-content: center; padding: var(--space-8); color: color-mix(in srgb, var(--color-text) 55%, transparent); }
 .fatal { max-width: 560px; color: var(--color-danger-deep); font-size: 14px; line-height: 1.9; }
 
-.iconrail { width: 56px; flex: 0 0 56px; display: flex; flex-direction: column; align-items: center; gap: var(--space-1); padding: var(--space-3) 0; background: var(--color-surface); border-right: 1px solid color-mix(in srgb, var(--color-text) 8%, transparent); }
-.rail-logo { width: 28px; height: 28px; flex: none; display: flex; align-items: center; justify-content: center; margin-bottom: var(--space-2); border-radius: var(--radius-sm); background: var(--color-accent); color: #fff; font-family: var(--font-heading); font-weight: var(--font-heading-weight); font-size: 14px; }
-.rail-btn { width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; border: 0; border-radius: var(--radius-sm); background: transparent; color: color-mix(in srgb, var(--color-text) 60%, transparent); cursor: pointer; }
-.rail-btn svg { width: 18px; height: 18px; }
-.rail-btn:hover { background: color-mix(in srgb, var(--color-text) 6%, transparent); color: var(--color-text); }
-.rail-btn[aria-current='page'] { background: color-mix(in srgb, var(--color-text) 8%, transparent); color: var(--color-text); }
-
-.sidebar { overflow-y: auto; }
-.sidebar-item { flex: none; }
+/* 唯一一条侧栏,紧凑:文字只有两三个字,172px 够放项目名。 */
+.app-sidebar { width: 172px; overflow-y: auto; padding: var(--space-3) var(--space-2) var(--space-2); }
+.app-sidebar .sidebar-item { flex: none; }
+.app-sidebar .sidebar-item svg { width: 15px; height: 15px; }
+.sb-brand { display: flex; align-items: center; gap: var(--space-2); height: 28px; padding: 0 var(--space-2); margin-bottom: var(--space-3); font-family: var(--font-heading); font-weight: var(--font-heading-weight); font-size: 13px; }
+.rail-logo { width: 22px; height: 22px; flex: none; display: flex; align-items: center; justify-content: center; border-radius: var(--radius-sm); background: var(--color-accent); color: #fff; font-family: var(--font-heading); font-weight: var(--font-heading-weight); font-size: 12px; }
 .pr-back { display: flex; align-items: center; gap: 6px; height: 28px; padding: 0 var(--space-2); border-radius: var(--radius-sm); font-size: 12px; color: color-mix(in srgb, var(--color-text) 60%, transparent); cursor: pointer; }
 .pr-back svg { width: 13px; height: 13px; }
 .pr-back:hover { background: color-mix(in srgb, var(--color-text) 6%, transparent); color: var(--color-text); }
@@ -76,11 +73,8 @@ select.input { cursor: pointer; padding-top: 0; padding-bottom: 0; }
 .pr-head-meta { display: flex; align-items: center; gap: var(--space-2); font-family: var(--font-mono); font-size: 11px; color: color-mix(in srgb, var(--color-text) 50%, transparent); }
 .pr-badge { margin-left: auto; min-width: 16px; padding: 0 5px; border-radius: 999px; background: var(--color-accent-2); color: #fff; font-family: var(--font-mono); font-size: 10px; line-height: 16px; text-align: center; }
 .pr-nav { display: flex; flex-direction: column; gap: 2px; }
-.pr-nav .sidebar-item svg { width: 15px; height: 15px; }
 
 .main { flex: 1; display: flex; flex-direction: column; min-width: 0; min-height: 0; }
-.nav { flex: 0 0 44px; }
-.nav-brand { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .content { flex: 1; overflow-y: auto; padding: var(--space-6) var(--space-6) var(--space-8); min-width: 0; min-height: 0; }
 /* 每屏一列,列限宽、整体居中(Codex 那种);会话屏例外,它是全屏嵌页。 */
 [data-screen] { margin-left: auto; margin-right: auto; }
@@ -265,7 +259,7 @@ select.input { cursor: pointer; padding-top: 0; padding-bottom: 0; }
 .trend-label { font-size: 10.5px; color: color-mix(in srgb, var(--color-text) 50%, transparent); }
 
 /* ---------- plan ---------- */
-[data-screen="plan"] { height: calc(100vh - 92px); max-width: 1560px; }
+[data-screen="plan"] { height: calc(100vh - 56px); max-width: 1560px; }
 .plan-grid { display: block; height: 100%; min-height: 0; }
 .plan-mid { display: flex; flex-direction: column; min-width: 0; height: 100%; }
 .plan-toolbar { flex: none; display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; margin-bottom: var(--space-2); }

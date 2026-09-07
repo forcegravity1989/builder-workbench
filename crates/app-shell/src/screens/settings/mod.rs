@@ -13,7 +13,7 @@
 //! **数据目录是只读的**:进程起来之后落点已经定了,改它得重启,所以这里只如实
 //! 显示,不给一个按不动的按钮。
 
-use crate::bridge::Bridge;
+use crate::bridge::{Bridge, Req};
 use crate::vm::{ToolProbeVm, Vm};
 use bw::command::Command;
 use dioxus::prelude::*;
@@ -33,6 +33,15 @@ pub fn View(vm: Vm, bridge: Bridge, close: EventHandler<MouseEvent>) -> Element 
                     }
                 }
                 div { class: "page-actions",
+                    button {
+                        class: "btn btn-secondary",
+                        title: "把每个工具再探一遍",
+                        onclick: {
+                            let b = bridge.clone();
+                            move |_| b.send(Req::Refresh)
+                        },
+                        "重新探活"
+                    }
                     button { class: "btn btn-secondary", onclick: close, "← 项目墙" }
                 }
             }
