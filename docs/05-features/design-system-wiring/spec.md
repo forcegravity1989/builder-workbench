@@ -15,7 +15,7 @@
 ## 设计拍板
 
 1. **两层一张表**:`styles.css`(设计系统,正本在 `docs/04-design-system/`)在前,`shell.css`(壳层)在后,`theme::GLOBAL_CSS` 编译期 `concat!` 拼成一张挂到 `document::Style`。壳不复制设计系统文件。
-2. **配色 Claude 板**:根节点 `data-theme="claude"`;`lang="zh"` 启用中文排版层。Apple 板留在表里,不做切换入口。
+2. **配色 Claude 板**:根节点 `data-theme="claude"`;`lang="zh"` 启用中文排版层。Apple 板第一轮没给入口,第二轮在设置屏加了「配色」(见下)。
 3. **壳层只写设计系统没有的东西**:图标轨、项目轨头部、内容区、各屏的网格 / 列宽 / 高度、进度条、折线图、指南抽屉、忙碌遮罩、一步一句回执。取值一律 token,不写色号 / 字体名。
 4. **屏里只写 class**:允许的行内 style 只有数据驱动的值(`width:{pct}%`、`--status-c:{color}`、`--swatch:{color}`、提示框定位、`z-index`)。
 5. **不造平行类**:设计系统有的(按钮、标签、表单、卡片、侧栏、页签、分段、列表、表格、看板、弹窗、toast、状态点、头像)一律用它的;壳层类只做版式修饰(如 `.kcard` 只管拖拽态与内边距,长相来自 `.card`)。
@@ -59,10 +59,20 @@
 - 分支:分段控件从「按钮 + active 类」改成「label + 隐藏 radio」,选中态由 `checked` 驱动,`onchange` 调原来的点击逻辑;页签用 `aria-selected`;侧栏当前项用 `aria-current`。
 - 出错:样式不参与错误处理;失败原话仍走 toast(不自动消失)与就地 `text-danger`。
 
+## 第二轮:对齐 Codex 的设置文法(2026-09-07)
+
+发起人看过 Codex 桌面版后要求按它对齐。实开 Codex 逐页截了 22 张设置页 + 主界面,拆出它的设置文法:页标题(28px + 一句说明 + 页级动作靠右)→ 小节(标题 + 一句说明,右侧可挂控件)→ 每节一张卡 → 每行「标题 + 一句说明 + 行尾控件」,控件落在同一条竖线上;开关 / 下拉 / 分段自己生效,只有自由输入配「保存」;危险动作红字淡底;外观页有主题三选预览卡。
+
+**采用**(进设计系统,示例页 `components/settings.html`):`.page-head` / `.page-desc` / `.page-actions`;`.section` / `.section-title` / `.section-desc` / `.section-tools`;`.set-group` / `.set-row` / `.set-text` / `.set-title` / `.set-desc` / `.set-ctl`;`.toggle` + `.knob`(原生 checkbox);`.choice` + `.choice-pv` / `.choice-label`(原生 radio,预览卡各自挂 `data-theme`);`.path`(中间省略在代码里做)。
+
+**落到屏**:设置屏四节(目录 / Orca / 配色 / 工具探活);配置屏两块从表格改成设置行;接入、项目墙换页标题。**新增本机设置「配色」**:`settings.toml` 的 `theme`,`Command::SetTheme` → `Event::ThemeChanged`,壳重读后根节点 `data-theme` 跟着切;不认识的值回默认 `claude`。
+
+**不采用**:黑主按钮 + 蓝状态色分离、15px 字 / 64px 行 / 770px 居中列、药丸页签、侧栏搜索(设置项不到一屏)。行高取 52px 折中。
+
 ## 硬核挑战 / FAQ
 
 - **WebView 支持?** `color-mix()` 与 `:has()` 在 macOS WebKit(Safari 16.2+)与 WebView2(Chromium)都可用;旧 `hifi.css` 已在用 `:has()`。
 - **中文字体?** 设计系统栈只点名拉丁面,汉字落到各平台系统默认(苹方 / 微软雅黑),`lang="zh"` 的 `:lang(zh)` 层收字距与行距,零上传。
 - **代价?** 一次性改 13 个屏文件的标记;之后改 token 一处生效。
 - **成功指标?** 壳里零旧 token(`grep 'var(--clay\|--ink' crates/app-shell` 为空)、零带色号 / 字号的行内 style、`cargo check -p app-shell` 与八条门禁全过、深链八屏截图肉眼对照设计系统示例页。
-- **不做**:Apple 板切换入口;Lucide 图标替换;命令面板(`cmdk`)——壳里没有这个交互。
+- **不做**:Lucide 图标替换;命令面板(`cmdk`)——壳里没有这个交互。

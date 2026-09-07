@@ -8,6 +8,8 @@
 
 壳接上 Builder 设计系统(`docs/04-design-system/`):全局样式改成编译期拼入设计系统的 `styles.css` + 壳层 `assets/shell.css`(只写壳骨架与各屏版式,取值一律 token),旧 `assets/hifi.css` 与旧 token(`--clay` / `--ink-*` / `--paper`……)整体删掉,不留兼容层。根节点挂 Claude 配色与中文排版层。八屏标记全换设计系统组件类:按钮四种(每视图一颗实底主按钮,取消 / 关闭安静)、标签 `tag-*`、状态点一色一态、表单 `field` / `input`、卡片发丝线无阴影且不套卡片、项目轨是标准侧栏、顶栏 44px、页签 `tabs` / 分段 `seg`(隐藏 radio 驱动)、列表 `list-row`、看板 `board`(列不再按状态铺底色)、弹窗 `dialog`、回执 toast 改深色底角条(仍点「关闭」才走)。屏里带色号 / 字号的行内 style 清零,只留数据驱动的值。衬线标题改系统字体。高保真 `docs/hifi/` 降为版式与旅程原型,顶部加历史横幅。记录在 `docs/05-features/design-system-wiring/`。
 
+同日第二轮,对齐 Codex 桌面版的设置文法(实开 Codex 逐页看过 22 张设置页):设计系统新增页标题(`page-head`)、小节(`section`)、设置分组与行(`set-group` / `set-row`:左边标题 + 一句说明,右边行尾一个控件)、开关(`toggle`)、预览选卡(`choice`)、路径(`path`),示例页 `components/settings.html`,spec 双语加「设置文法」一节。设置屏按它重排成目录 / Orca / 配色 / 工具探活四节;配置屏两块从表格改成设置行(开工工具下拉 + 保存在行尾,技能列表标题 + 一句话 + 来源标签 + 用过几次);接入、项目墙换成页标题 + 一句说明。新增本机设置「配色」:`settings.toml` 的 `theme`(`claude` 默认 / `apple`),命令 `SetTheme`、事件 `ThemeChanged`,根节点 `data-theme` 跟着切;两张预览卡各自挂 `data-theme`,所以每张显示自己那套 token。没采 Codex 的黑主按钮、15px 字、64px 行、药丸页签——与规范「密而精确」和「一个强调色给主动作」相冲。
+
 ## 最近 · 2026-09-04
 
 运作节律迁到 Orca。纳入 / 打开项目时在现有 `ensure_repo` 成功后注入三条自动化(默认关,已有不覆盖):定版本计划周一 09:00(常驻树 `bw/week-plan`,每周新会话)、资产盘点周五 15:00(`bw/ops-audit`,每周新会话)、B 类日采每天 20:00(`bw/ledger`,复用会话)。仓已经在 Orca 里也要补打,不能只凭 `repo.show` 成功就跳过。纳入后直接进项目也会再试;没打上写明退回项目墙再点进来。删掉 Workbench 60 秒 tick、日采闹钟、「开始本版本」横幅。打开 / 立即采集 / 手填仍走 `collect.rs`。自动化钉本机主机(`destination=self`),Web 里 Orca Server 那份不能跑本地树。配置屏去掉探活 / 定时 / 规范件三块(探活仍在项目墙和设置)。

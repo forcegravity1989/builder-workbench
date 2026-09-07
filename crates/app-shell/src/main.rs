@@ -180,6 +180,12 @@ fn Root() -> Element {
 
     let cur = *panel.read();
     let tv = *top_view.read();
+    // 配色是本机设置;空 = 设计系统默认给壳的 Claude 板。
+    let theme = if v.settings.theme.is_empty() {
+        "claude".to_string()
+    } else {
+        v.settings.theme.clone()
+    };
     let project = v.open.clone();
     let in_project = project.is_some() && tv.is_none();
     let source = data_dir_label(&v.settings.data_dir);
@@ -201,7 +207,7 @@ fn Root() -> Element {
     rsx! {
         GlobalChrome {}
         // 设计系统的 Claude 配色 + 中文排版层都挂在根上(见 theme 模块头注)。
-        div { class: "app-root", lang: "zh", "data-theme": "claude",
+        div { class: "app-root", lang: "zh", "data-theme": "{theme}",
             chrome::IconRail {
                 in_project,
                 top_view: tv,

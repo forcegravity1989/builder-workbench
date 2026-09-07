@@ -97,6 +97,8 @@ pub struct RepoPrefillVm {
 #[derive(Clone, Debug, Default, PartialEq)]
 pub struct SettingsVm {
     pub workspaces_root: String,
+    /// 界面配色:`claude` / `apple`。空 = 默认(claude)。
+    pub theme: String,
     /// Orca 网页配对 URL(带 token,只在本地)。设置屏可改;会话屏 iframe 打开它。
     pub orca_web_url: String,
     /// Workbench 本机数据目录(注册表 / 设置 / 会话都在这下面)。刀6 起不再有 SQLite

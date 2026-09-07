@@ -1,5 +1,8 @@
 //! 项目内 · 配置。只留两块:开工工具映射、技能与 workflow。
 //! 探活在项目墙 / 设置屏;节律在 Orca;对账没有人点。
+//!
+//! 版式走设计系统的「设置文法」:小节 + 一张分组,每行「标题 + 一句说明 +
+//! 行尾控件」,不再画表格。
 
 use crate::bridge::Bridge;
 use crate::vm::{MappingVm, ProjectVm};
@@ -22,32 +25,22 @@ pub fn View(p: ProjectVm, bridge: Bridge) -> Element {
 
 fn mapping_block(p: &ProjectVm, bridge: &Bridge) -> Element {
     rsx! {
-        div { class: "card cfg-section",
-            div { class: "cfg-section-head", h3 { "开工工具映射" } }
-            div { class: "tbl-wrap",
-                table { class: "table",
-                    thead {
-                        tr {
-                            th { "类别" }
-                            th { "开工工具(本机)" }
-                            th { "workflow(产品默认)" }
-                            th { "" }
-                        }
-                    }
-                    tbody {
-                        for m in p.config.mappings.iter() {
-                            MappingRow {
-                                key: "{m.category_key}",
-                                m: m.clone(),
-                                pid: p.id,
-                                bridge: bridge.clone(),
-                            }
-                        }
-                    }
+        div { class: "section",
+            div {
+                h3 { class: "section-title", "开工工具映射" }
+                p { class: "section-desc",
+                    "开工照这里记的工具走,配了起不来的会当场报错、不会悄悄换成 Claude CLI;跟人走这台机器,不进仓。"
                 }
             }
-            div { class: "hint",
-                "开工工具跟人走这台机器,写本机 settings,不进仓。workflow 是产品默认,不能改。"
+        }
+        div { class: "set-group",
+            for m in p.config.mappings.iter() {
+                MappingRow {
+                    key: "{m.category_key}",
+                    m: m.clone(),
+                    pid: p.id,
+                    bridge: bridge.clone(),
+                }
             }
         }
     }
@@ -74,9 +67,12 @@ fn MappingRow(m: MappingVm, pid: bw::model::ProjectId, bridge: Bridge) -> Elemen
         });
     };
     rsx! {
-        tr {
-            td { "{m.category_label}" }
-            td {
+        div { class: "set-row",
+            div { class: "set-text",
+                div { class: "set-title", "{m.category_label}" }
+                div { class: "set-desc", "workflow(产品默认):{workflow}" }
+            }
+            div { class: "set-ctl",
                 select {
                     class: "input input-sm",
                     value: "{tool}",
@@ -85,20 +81,11 @@ fn MappingRow(m: MappingVm, pid: bw::model::ProjectId, bridge: Bridge) -> Elemen
                     // Cursor 底座已通(打 cursor-agent);选了探不到就如实报错、
                     // 不退回 Claude —— 和 Claude CLI 同口径,不再灰。
                     option { value: "Cursor", "Cursor" }
-                    option {
-                        value: "Open Design",
-                        "Open Design(本机网页内嵌,开工开会话屏 OD 标签)"
-                    }
+                    option { value: "Open Design", "Open Design(本机网页内嵌)" }
                     option { value: "—", "—(未定)" }
                 }
-                div { class: "hint",
-                    "开工会照这一列记的工具走,"
-                    strong { "不会悄悄拿 Claude CLI 顶上" }
-                    " —— 配了起不来的工具,▶开工 会当场如实报错。"
-                }
+                button { class: "btn btn-secondary", onclick: save, "保存" }
             }
-            td { "{workflow}" }
-            td { button { class: "btn btn-secondary", onclick: save, "保存" } }
         }
     }
 }
@@ -116,60 +103,52 @@ fn normalize_tool(label: &str) -> String {
 
 fn skill_block(p: &ProjectVm) -> Element {
     rsx! {
-        div { class: "card cfg-section",
-            div { class: "cfg-section-head",
-                h3 { "技能与 workflow" }
-                span { class: "hint",
-                    "Workbench 自带 + 本仓 .claude/skills/,共 {p.config.skills.len()} 个"
+        div { class: "section",
+            div {
+                h3 { class: "section-title", "技能与 workflow" }
+                p { class: "section-desc",
+                    "Workbench 自带 + 本仓 .claude/skills/,共 {p.config.skills.len()} 个;「用过几次」现算,扫活的 workflow 列聚合。"
                 }
             }
-            if p.config.skills.is_empty() {
+        }
+        if p.config.skills.is_empty() {
+            div { class: "set-group",
                 div { class: "empty", "一个都没有 —— Workbench 自带的那份没读出来,这不正常。" }
-            } else {
-                div { class: "tbl-wrap",
-                    table { class: "table",
-                        thead {
-                            tr {
-                                th { "名称" }
-                                th { "来源" }
-                                th { "一句话" }
-                                th { "用过几次" }
-                            }
-                        }
-                        tbody {
-                            for s in p.config.skills.iter() {
-                                tr {
-                                    key: "{s.slug}",
-                                    class: if p.config.focus_skill == s.slug { "sel" } else { "" },
-                                    td {
-                                        "{s.title}"
-                                        if s.title != s.slug {
-                                            div { class: "hint", "{s.slug}" }
-                                        }
-                                    }
-                                    td {
-                                        span {
-                                            class: if s.origin == "蒸馏" { "tag tag-success" } else { "tag tag-neutral" },
-                                            "{s.origin}"
-                                        }
-                                    }
-                                    td { class: "text-muted", {desc_or_dash(&s.desc)} }
-                                    td { class: "mono",
-                                        if s.uses == 0 { "—(还没被任何活用过)" } else { "{s.uses}" }
-                                    }
+            }
+        } else {
+            div { class: "set-group",
+                for s in p.config.skills.iter() {
+                    div {
+                        key: "{s.slug}",
+                        class: if p.config.focus_skill == s.slug { "set-row sel" } else { "set-row" },
+                        div { class: "set-text",
+                            div { class: "set-title",
+                                "{s.title}"
+                                if s.title != s.slug {
+                                    " "
+                                    span { class: "mono hint", "{s.slug}" }
                                 }
+                            }
+                            div { class: "set-desc", {desc_or_dash(&s.desc)} }
+                        }
+                        div { class: "set-ctl",
+                            span {
+                                class: if s.origin == "蒸馏" { "tag tag-success" } else { "tag tag-neutral" },
+                                "{s.origin}"
+                            }
+                            span { class: "uses",
+                                if s.uses == 0 { "还没用过" } else { "用过 {s.uses} 次" }
                             }
                         }
                     }
                 }
             }
-            div { class: "hint",
-                "workflow 的入口是一份 SKILL.md,写的是一整套做事流程,自己调度该用哪个 agent \
-                 —— 所以 V4 里 workflow 和技能是同一样东西,不分两张表。「用过几次」现算:\
-                 扫活的 workflow 列聚合,没有战绩表。导入按钮还没接:用户自己的技能放进\
-                 这个仓的 `.claude/skills/<目录名>/SKILL.md`,这里会扫成「项目自有」。\
-                 不要拷进 Workbench 资产目录(那是自带剧本摊出来的)。启用/停用也还没接。"
-            }
+        }
+        div { class: "hint",
+            "workflow 的入口是一份 SKILL.md,写的是一整套做事流程,自己调度该用哪个 agent \
+             —— 所以 workflow 和技能是同一样东西,不分两张表。导入按钮还没接:用户自己的技能放进\
+             这个仓的 `.claude/skills/<目录名>/SKILL.md`,这里会扫成「项目自有」;\
+             不要拷进 Workbench 资产目录。启用 / 停用也还没接。"
         }
     }
 }

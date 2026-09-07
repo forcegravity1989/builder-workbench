@@ -73,7 +73,17 @@ Idle rows are transparent; hover is an ink tint (`color-mix` of `--color-text` a
 | `.toast` (+ `-title/-body/-action`) | Inverse dark notice, bottom corner | components/dialog.html |
 | `.cmdk` + `.cmdk-input/-list/-section/-item` (+ `.keys`) | The ⌘K command palette | components/command.html |
 | `.frame` | Crisp image frame — hairline edge, small radius | foundations/image.html |
+| `.page-head` + `.page-desc/-actions` | Page title (24px) with a one-line description; page-level actions right | components/settings.html |
+| `.section` + `.section-title/-desc/-tools` | A settings section: title, one line, optional controls at the right | components/settings.html |
+| `.set-group` + `.set-row` + `.set-text/-title/-desc/-ctl` | Settings rows in a bordered group — title + one sentence left, the control at the row end | components/settings.html |
+| `.toggle` + `.knob` | On/off switch (native checkbox) | components/settings.html |
+| `.choice` + `.choice-pv/-label` | Pick one look from a few preview cards (native radio) | components/settings.html |
+| `.path` | A file path — mono, muted, never wraps (ellipsize the middle in code) | components/settings.html |
 | `.hr` | Hairline rule | — |
+
+## Settings grammar
+
+Every settings page is one skeleton: `.page-head` (title, one line, page actions at the right), then `.section`s, each with one `.set-group`. A `.set-row` is a title and **one** sentence on the left and the control at the row end — toggle, `.seg`, `select.input`, `.input`, `.path` + a secondary button, or a `.status`. Controls sit on one vertical line so the eye can scan what is changeable; details go behind a link, not into a second sentence. A control that commits itself (toggle, select, seg) needs no Save; a free-text input that must not be applied half-typed keeps a quiet Save beside it. See components/settings.html.
 
 ## Do
 
@@ -95,5 +105,5 @@ Idle rows are transparent; hover is an ink tint (`color-mix` of `--color-text` a
 - `spec.md` — this guide (in the source design project: `readme.md`). `theme.json` — the machine-readable record.
 - `README.md` — repo-side map: provenance, what was left behind in the design project, and how to sync either way.
 - `foundations/` — color.html (both palettes + ramps), type.html, cjk.html (中文排版), layout.html, icons.html, image.html.
-- `components/` — buttons, forms, cards, navigation, table, dialog (+ toast), command (⌘K), status (+ avatars).
+- `components/` — buttons, forms, cards, navigation, table, dialog (+ toast), command (⌘K), status (+ avatars), settings (page head, sections, rows, toggle, choice cards).
 - `assets/photo.jpg` — the reference photograph used by foundations/image.html.

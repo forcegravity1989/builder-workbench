@@ -157,9 +157,14 @@ pub fn View(vm: Vm, bridge: Bridge, close: EventHandler<MouseEvent>) -> Element 
     rsx! {
         section {
             "data-screen": "onboard",
-            div { class: "ob-head",
-                h1 { "接入项目" }
-                button { class: "btn btn-secondary", onclick: close, "← 项目墙" }
+            div { class: "page-head",
+                div {
+                    h1 { "接入项目" }
+                    p { class: "page-desc", "选一个仓、填四个字段。仓里还没有名片时会建一张「项目约定」的活等你合入。" }
+                }
+                div { class: "page-actions",
+                    button { class: "btn btn-secondary", onclick: close, "← 项目墙" }
+                }
             }
 
             div { class: "ob-steps",

@@ -27,7 +27,6 @@ strong, b { font-weight: 600; }
 .text-warning { color: var(--color-warning-deep); }
 .empty { font-size: 12.5px; color: color-mix(in srgb, var(--color-text) 50%, transparent); padding: var(--space-4) var(--space-1); }
 .empty-center { text-align: center; padding: var(--space-8) var(--space-2); }
-.section-title { font-size: 10px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: color-mix(in srgb, var(--color-text) 45%, transparent); }
 .prose { white-space: pre-wrap; line-height: 1.7; }
 
 .status-dot-lg { width: 12px; height: 12px; }
@@ -53,7 +52,7 @@ select.input { cursor: pointer; padding-top: 0; padding-bottom: 0; }
 .card > .seg, .field > .seg { align-self: flex-start; }
 
 /* 中文排版层的壳侧补充:壳自己的标题类同样去掉拉丁负字距。 */
-:is(.pr-head-name, .pcard-name, .charter-name, .plan-modal-title, .plan-toolbar .left, .ob-head h1, .wall-topline h1):lang(zh) { letter-spacing: 0; }
+:is(.pr-head-name, .pcard-name, .charter-name, .plan-modal-title, .plan-toolbar .left):lang(zh) { letter-spacing: 0; }
 
 /* ---------- shell ---------- */
 .app-root { position: fixed; inset: 0; display: flex; overflow: hidden; background: var(--color-bg); color: var(--color-text); }
@@ -114,8 +113,6 @@ select.input { cursor: pointer; padding-top: 0; padding-bottom: 0; }
 
 /* ---------- wall ---------- */
 [data-screen="wall"] { max-width: 1300px; }
-.wall-topline { display: flex; align-items: center; justify-content: space-between; margin-bottom: var(--space-3); }
-.wall-topline h1 { font-size: 22px; margin: 0; }
 .card.envbar, .card.healthbar { flex-direction: row; align-items: center; flex-wrap: wrap; gap: var(--space-4); padding: var(--space-2) var(--space-4); margin-bottom: var(--space-3); }
 .bar-label { font-size: 10px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: color-mix(in srgb, var(--color-text) 45%, transparent); flex: none; }
 .env-item, .health-group { display: flex; align-items: center; gap: 6px; font-size: 12px; color: color-mix(in srgb, var(--color-text) 75%, transparent); }
@@ -138,8 +135,6 @@ select.input { cursor: pointer; padding-top: 0; padding-bottom: 0; }
 
 /* ---------- onboard ---------- */
 [data-screen="onboard"] { max-width: 880px; }
-.ob-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: var(--space-4); }
-.ob-head h1 { font-size: 22px; margin: 0; }
 .ob-cards { display: flex; flex-direction: column; gap: var(--space-3); }
 .ob-card { gap: var(--space-3); }
 .ob-card h3 { font-size: 15px; margin: 0; }
@@ -169,14 +164,14 @@ select.input { cursor: pointer; padding-top: 0; padding-bottom: 0; }
 .repo-refresh.spinning { animation: spin 0.9s linear infinite; }
 
 /* ---------- settings ---------- */
-[data-screen="settings"] { max-width: 640px; }
-.settings-list { display: flex; flex-direction: column; overflow: hidden; background: var(--color-card); border: 1px solid var(--color-divider); border-radius: var(--radius-md); }
-.settings-row { display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); padding: var(--space-3) var(--space-4); border-bottom: 1px solid color-mix(in srgb, var(--color-text) 6%, transparent); }
-.settings-row:last-child { border-bottom: 0; }
-.settings-row .k { font-size: 13px; font-weight: 600; }
-.settings-row .v { font-size: 12px; color: color-mix(in srgb, var(--color-text) 55%, transparent); word-break: break-all; }
-.settings-row .grow .row { margin-top: var(--space-1); }
-.settings-foot { margin-top: var(--space-4); }
+[data-screen="settings"] { max-width: 760px; }
+.set-row.sel { background: var(--color-accent-100); }
+.theme-pv { display: grid; grid-template-columns: 28px 1fr; height: 100%; background: var(--color-bg); }
+.theme-pv > span:first-child { background: var(--color-surface); }
+.theme-pv-lines { padding: 10px 10px 0; }
+.theme-pv-lines i { display: block; height: 5px; border-radius: 3px; margin-bottom: 7px; background: var(--color-neutral-200); }
+.theme-pv-lines i:first-child { width: 40%; background: var(--color-accent); }
+.theme-pv-lines i.w-70 { width: 70%; }
 
 /* ---------- overview ---------- */
 [data-screen="overview"] { max-width: 1120px; }
@@ -395,24 +390,9 @@ select.input { cursor: pointer; padding-top: 0; padding-bottom: 0; }
 .sess-empty { flex: 1; display: flex; flex-direction: column; gap: var(--space-3); align-items: center; justify-content: center; text-align: center; padding: var(--space-8); font-size: 13px; line-height: 1.8; white-space: pre-wrap; color: color-mix(in srgb, var(--color-text) 55%, transparent); }
 
 /* ---------- config ---------- */
-[data-screen="config"] { max-width: 1120px; }
-.cfg-section { gap: var(--space-3); margin-bottom: var(--space-4); }
-.cfg-section-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
-.cfg-section-head h3 { font-size: 15px; margin: 0; }
-.cfg-pair { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-3); }
-.cfg-pair .cfg-section { margin-bottom: 0; }
-@media (max-width: 760px) { .cfg-pair { grid-template-columns: 1fr; } }
-.cfg-topbtn { display: flex; justify-content: flex-end; margin-bottom: var(--space-3); }
-.tbl-wrap { overflow-x: auto; border: 1px solid var(--color-divider); border-radius: var(--radius-md); background: var(--color-card); }
-.card .tbl-wrap { border: 0; border-radius: 0; background: transparent; }
-.tbl-wrap .table { min-width: 520px; }
-.tbl-wrap .table th { white-space: nowrap; }
-.tbl-wrap .table tr:last-child td { border-bottom: 0; }
-.table tr.sel td { background: var(--color-accent-100); }
-.tglswitch { position: relative; display: inline-block; flex: none; width: 32px; height: 18px; border-radius: 9px; background: var(--color-neutral-300); }
-.tglswitch.on { background: var(--color-accent); }
-.tglswitch .knob { position: absolute; top: 2px; left: 2px; width: 14px; height: 14px; border-radius: 50%; background: var(--color-card); transition: left 0.15s; }
-.tglswitch.on .knob { left: 16px; }
+[data-screen="config"] { max-width: 880px; }
+[data-screen="config"] .set-ctl .input-sm { max-width: 260px; }
+.set-ctl .uses { font-family: var(--font-mono); font-size: 11.5px; min-width: 96px; text-align: right; color: color-mix(in srgb, var(--color-text) 55%, transparent); }
 
 /* ---------- kb ---------- */
 [data-screen="kb"] { max-width: 1120px; }

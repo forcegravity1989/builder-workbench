@@ -306,6 +306,46 @@ textarea.input { min-height: 72px; resize: vertical; }
 /* — imagery: crisp frame, hairline edge — */
 .frame { border-radius: var(--radius-md); border: 1px solid var(--color-divider); overflow: hidden; }
 
+/* — page head — */
+.page-head { display: flex; align-items: flex-start; gap: var(--space-4); margin-bottom: var(--space-4); }
+.page-head h1 { font-size: 24px; letter-spacing: -0.018em; margin: 0; }
+.page-desc { margin: 2px 0 0; font-size: 13px; max-width: 68ch; color: color-mix(in srgb, var(--color-text) 60%, transparent); }
+.page-actions { margin-left: auto; flex: none; display: flex; align-items: center; gap: var(--space-2); }
+
+/* — settings: section + group + row — */
+.section { display: flex; align-items: flex-end; gap: var(--space-3); margin: var(--space-6) 0 var(--space-2); }
+.section:first-of-type { margin-top: 0; }
+.section-title { font-size: 14px; font-weight: 600; margin: 0; }
+.section-desc { margin: 2px 0 0; font-size: 12.5px; color: color-mix(in srgb, var(--color-text) 55%, transparent); }
+.section-tools { margin-left: auto; flex: none; display: flex; align-items: center; gap: var(--space-2); }
+.set-group { display: flex; flex-direction: column; border-radius: var(--radius-md); background: var(--color-card); border: 1px solid var(--color-divider); }
+.set-row { display: flex; align-items: center; gap: var(--space-4); min-height: 52px; padding: 10px var(--space-4); border-bottom: 1px solid color-mix(in srgb, var(--color-text) 6%, transparent); }
+.set-row:last-child { border-bottom: 0; }
+.set-text { flex: 1; min-width: 0; }
+.set-title { font-weight: 500; }
+.set-desc { margin-top: 1px; font-size: 12px; color: color-mix(in srgb, var(--color-text) 55%, transparent); }
+.set-ctl { flex: none; display: flex; align-items: center; gap: var(--space-2); max-width: 56%; }
+.set-ctl .input { width: 260px; }
+.set-ctl .input-sm { width: auto; }
+.path { font-family: var(--font-mono); font-size: 11.5px; white-space: nowrap; color: color-mix(in srgb, var(--color-text) 55%, transparent); }
+
+/* — toggle — */
+.toggle { position: relative; display: inline-flex; width: 34px; height: 20px; flex: none; cursor: pointer; }
+.toggle input { position: absolute; opacity: 0; width: 0; height: 0; pointer-events: none; }
+.toggle .knob { position: absolute; inset: 0; border-radius: 999px; background: var(--color-neutral-300); transition: background 0.15s; }
+.toggle .knob::after { content: ""; position: absolute; top: 2px; left: 2px; width: 16px; height: 16px; border-radius: 50%; background: var(--color-card); box-shadow: var(--shadow-sm); transition: left 0.15s; }
+.toggle input:checked + .knob { background: var(--color-accent); }
+.toggle input:checked + .knob::after { left: 16px; }
+.toggle input:focus-visible + .knob { outline: 2px solid var(--color-accent); outline-offset: 2px; }
+
+/* — choice cards (pick one of a few looks) — */
+.choice { display: inline-flex; flex-direction: column; align-items: center; gap: 6px; font-size: 12px; cursor: pointer; color: color-mix(in srgb, var(--color-text) 70%, transparent); }
+.choice input { position: absolute; opacity: 0; width: 0; height: 0; pointer-events: none; }
+.choice-pv { width: 112px; height: 68px; border-radius: var(--radius-md); border: 1px solid var(--color-divider); overflow: hidden; background: var(--color-card); }
+.choice input:checked ~ .choice-pv { outline: 2px solid var(--color-accent); outline-offset: 2px; }
+.choice input:checked ~ .choice-label { color: var(--color-text); font-weight: 500; }
+.choice input:focus-visible ~ .choice-pv { outline: 2px solid var(--color-accent); outline-offset: 2px; }
+
 /* ── CJK (中文) layer ────────────────────────────────────────────────────
    Mixed script works untouched: the stacks set Latin faces first, han falls
    through to PingFang / YaHei; digits, IDs, code and shortcuts stay Latin
@@ -315,7 +355,7 @@ textarea.input { min-height: 72px; resize: vertical; }
    (han has no italics), and the smallest labels step up to 11px. */
 :lang(zh) { text-autospace: normal; text-spacing-trim: normal; }
 p:lang(zh), li:lang(zh), dd:lang(zh), .card-body:lang(zh), .dialog-body:lang(zh) { line-height: 1.7; letter-spacing: 0.02em; }
-:is(h1, h2, h3, h4, h5, .card-title, .dialog-title, .row-title, .nav-brand, .toast-title):lang(zh) { letter-spacing: 0; }
+:is(h1, h2, h3, h4, h5, .card-title, .dialog-title, .row-title, .nav-brand, .toast-title, .section-title, .set-title):lang(zh) { letter-spacing: 0; }
 h1:lang(zh), h2:lang(zh) { line-height: 1.35; }
 em:lang(zh), i:lang(zh), cite:lang(zh) { font-style: normal; font-weight: 600; }
 :is(h6, .card-kicker, .sidebar-section, .cmdk-section):lang(zh) { font-size: 11px; letter-spacing: 0.1em; }

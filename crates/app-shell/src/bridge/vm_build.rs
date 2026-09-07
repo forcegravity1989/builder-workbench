@@ -161,6 +161,8 @@ pub struct UiState {
     pub workspaces_root: String,
     /// Orca 网页配对 URL(本机设置读出来,带 token)。会话屏 iframe 打开它。
     pub orca_web_url: String,
+    /// 界面配色(本机设置)。空 = 默认。
+    pub theme: String,
     /// 接入屏那份仓列表的状态。**不进库** —— 它是「现在去平台问了一次」的结果,
     /// 关掉接入屏就该忘掉。
     pub repos: crate::vm::RepoPickerVm,
@@ -382,6 +384,10 @@ fn primary_note(events: &[Event]) -> Option<String> {
         }
         // 不带 URL 原文(配对 URL 带 token)。进会话屏即打开。
         Event::OrcaWebUrlChanged => "Orca 网页地址已保存,进会话屏即可".into(),
+        Event::ThemeChanged { theme } => match theme.as_str() {
+            "apple" => "配色已切成 Apple 板".into(),
+            _ => "配色已切成 Claude 板".into(),
+        },
         Event::IssueSubmitted {
             branch,
             commits,
@@ -970,6 +976,7 @@ pub async fn assemble(app: &App, ui: &mut UiState, g: &Gathered) -> Vm {
         settings: SettingsVm {
             workspaces_root: ui.workspaces_root.clone(),
             orca_web_url: ui.orca_web_url.clone(),
+            theme: ui.theme.clone(),
             data_dir: ui.data_dir.clone(),
             claude_binary: g.claude_binary.clone(),
         },

@@ -26,12 +26,17 @@ pub fn View(vm: Vm, bridge: Bridge, go_top: EventHandler<TopView>) -> Element {
     rsx! {
         section {
             "data-screen": "wall",
-            div { class: "wall-topline",
-                h1 { "项目墙" }
-                button {
-                    class: "btn btn-primary",
-                    onclick: move |_| go_top(TopView::Onboard),
-                    "+ 接入项目"
+            div { class: "page-head",
+                div {
+                    h1 { "项目墙" }
+                    p { class: "page-desc", "接进来的项目都在这;灯是健康,灰是还没数据。" }
+                }
+                div { class: "page-actions",
+                    button {
+                        class: "btn btn-primary",
+                        onclick: move |_| go_top(TopView::Onboard),
+                        "+ 接入项目"
+                    }
                 }
             }
 

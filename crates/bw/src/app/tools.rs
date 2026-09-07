@@ -71,6 +71,13 @@ impl App {
         Ok(vec![Event::OrcaWebUrlChanged])
     }
 
+    /// 改界面配色。只存本机设置;不认识的值当默认。
+    pub(super) async fn set_theme(&mut self, theme: String) -> Result<Vec<Event>> {
+        let theme = theme.trim().to_string();
+        self.set_theme_setting(&theme).await?;
+        Ok(vec![Event::ThemeChanged { theme }])
+    }
+
     pub(super) async fn probe_tool(&mut self, name: String) -> Result<Vec<Event>> {
         let result = probe(&name).await;
         Ok(vec![Event::ToolProbed { name, result }])
