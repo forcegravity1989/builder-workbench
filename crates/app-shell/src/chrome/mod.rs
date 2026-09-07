@@ -1,17 +1,12 @@
 //! 外壳骨架:图标轨 / 项目轨 / 顶栏 / 指南抽屉 / 上报问题 / toast。
 //!
-//! 结构照 `docs/hifi/index.html` 的 `iconRailHTML` /
-//! `projectRailHTML` / `topbarHTML` / `guideMarkupHTML` 搬,类名同名同义,
-//! **不写行内样式**。
+//! 结构走设计系统(`docs/04-design-system/spec.md`):项目轨是 `.sidebar`,
+//! 顶栏是 `.nav`,弹窗是 `.dialog`,回执是 `.toast`;图标轨是壳自己的骨架,
+//! 样式在 `assets/shell.css`。**不写行内样式**。
 //!
-//! 与原型的两处不同,都是「原型是演示、真壳没有这东西」造成的,如实改掉而不
-//! 是照抄一个假的:
-//!
-//! - 原型顶栏右边是「演示数据 ✱ / 重置 / 头像」。真壳的数据来自本机库和项目
-//!   仓,没有可重置的演示数据,也没有账号 —— 改成「数据来自哪个库文件」+
-//!   一颗「刷新」(真的重算一遍 ViewModel)。头像先不放,放了就是装饰。
-//! - 原型的 toast 2.6 秒自动消失。真壳这条位置放的是命令回执(建活成功、
-//!   铺底失败的原话),自动消失等于把失败信息藏起来 —— 改成点 ✕ 才关。
+//! 顶栏右边写「数据来自哪个目录」+ 一颗「刷新」(真的重算一遍 ViewModel),
+//! 没有账号也就没有头像。toast 放的是命令回执(建活成功、铺底失败的原话),
+//! 不自动消失 —— 自动消失等于把失败信息藏起来,点「关闭」才关。
 
 pub mod sparkline;
 
@@ -98,9 +93,13 @@ pub fn progress_log(lines: &[bw::app::ProgressLine]) -> Element {
 }
 
 pub fn light_dot(signal: Option<Signal>, big: bool) -> Element {
-    let cls = if big { "dot dot-lg" } else { "dot" };
+    let cls = if big {
+        "status-dot status-dot-lg"
+    } else {
+        "status-dot"
+    };
     let color = theme::signal_color(signal);
-    rsx! { span { class: "{cls}", style: "background:{color}" } }
+    rsx! { span { class: "{cls}", style: "--status-c:{color}" } }
 }
 
 /// 五个入口各自的图标名。原型里知识库那一格用的是 `space`(内部沿用旧命名)。
@@ -135,7 +134,8 @@ pub fn IconRail(
                 }
             } else {
                 button {
-                    class: if wall_active { "rail-btn active" } else { "rail-btn" },
+                    class: "rail-btn",
+                    aria_current: if wall_active { "page" },
                     title: "项目墙",
                     onclick: move |_| on_wall.call(()),
                     {icon("wall")}
@@ -143,7 +143,8 @@ pub fn IconRail(
             }
             div { class: "spacer" }
             button {
-                class: if settings_active { "rail-btn active" } else { "rail-btn" },
+                class: "rail-btn",
+                aria_current: if settings_active { "page" },
                 title: "设置",
                 onclick: move |_| on_settings.call(()),
                 {icon("settings")}
@@ -163,7 +164,7 @@ pub fn ProjectRail(
     on_nav: EventHandler<Panel>,
 ) -> Element {
     rsx! {
-        div { class: "projectrail",
+        aside { class: "sidebar",
             div { class: "pr-back", onclick: move |_| on_wall.call(()),
                 {icon("back")}
                 span { "项目墙" }
@@ -185,9 +186,10 @@ pub fn ProjectRail(
                 for p in Panel::ALL {
                     div {
                         key: "{p:?}",
-                        class: if p == cur { "pr-link active" } else { "pr-link" },
+                        class: "sidebar-item",
+                        aria_current: if p == cur { "page" },
                         onclick: move |_| on_nav.call(p),
-                        span { style: "width:15px;height:15px;display:flex;", {icon(panel_icon(p))} }
+                        {icon(panel_icon(p))}
                         span { "{p.label()}" }
                     }
                 }
@@ -202,17 +204,16 @@ pub fn ProjectRail(
 pub fn TopBar(title: String, project: Option<String>, source: String, bridge: Bridge) -> Element {
     let b = bridge.clone();
     rsx! {
-        div { class: "topbar",
-            div { class: "topbar-title",
+        div { class: "nav",
+            div { class: "nav-brand",
                 "{title}"
                 if let Some(p) = project.as_ref() {
                     " · {p}"
                 }
             }
-            div { class: "spacer" }
-            span { class: "demo-tag", title: "数据目录(registry/设置/会话);界面数字用 codehub-cli/gh/cat 当场对,不靠库", "{source}" }
+            span { class: "tag tag-outline mono", title: "数据目录(registry/设置/会话);界面数字用 codehub-cli/gh/cat 当场对,不靠库", "{source}" }
             button {
-                class: "btn btn-sm btn-ghost",
+                class: "btn btn-ghost",
                 onclick: move |_| b.send(Req::Refresh),
                 title: "打开着的项目会先快进主检出再重读;项目墙只重读本机",
                 "刷新"
@@ -250,20 +251,20 @@ pub fn GuideDrawer(bridge: Bridge) -> Element {
             }
         }
         if guide.0.read().is_some() {
-            div { class: "guide-panel guide-panel-wide",
+            div { class: "guide-panel",
                 div { class: "guide-panel-head",
-                    h3 { style: "font-size:15px;margin:0;", "产品指南" }
-                    button { class: "drawer-close", onclick: move |_| guide.close(), "✕" }
+                    h4 { "产品指南" }
+                    button { class: "btn btn-ghost btn-quiet btn-icon", title: "关闭", onclick: move |_| guide.close(), "✕" }
                 }
                 iframe { class: "guide-frame", srcdoc: GUIDE_HTML }
             }
         }
         if *report_open.read() {
-            div { class: "modal-backdrop", onclick: move |_| report_open.set(false),
-                div { class: "modal", onclick: move |e| e.stop_propagation(),
-                    h3 { "上报问题" }
-                    p { class: "modal-lead", "把问题和本机对照日志报到 Workbench 仓。默认会附上对照日志。" }
-                    div { class: "modal-banner",
+            div { class: "dialog-backdrop", onclick: move |_| report_open.set(false),
+                div { class: "dialog", role: "dialog", onclick: move |e| e.stop_propagation(),
+                    div { class: "dialog-title", "上报问题" }
+                    div { class: "dialog-body", "把问题和本机对照日志报到 Workbench 仓。默认会附上对照日志。" }
+                    div { class: "dialog-note",
                         if log_ready {
                             "本机有对照日志。勾选后会随 issue 附上。"
                         } else {
@@ -289,7 +290,7 @@ pub fn GuideDrawer(bridge: Bridge) -> Element {
                             span { class: "report-attach-hint", "随 issue 发送本机对照日志（bw.log）。有文件才附上。" }
                         }
                     }
-                    div { class: "modal-actions",
+                    div { class: "dialog-actions",
                         button { class: "btn btn-secondary", onclick: move |_| report_open.set(false), "取消" }
                         button {
                             class: "btn btn-primary",
@@ -331,13 +332,12 @@ pub fn Toast(note: Option<String>, seq: u64) -> Element {
         return rsx! {};
     }
     rsx! {
-        div { class: "toast show",
-            "{text}"
-            span {
-                class: "toast-x",
-                style: "margin-left:auto;",
+        div { class: "toast", role: "status",
+            div { class: "toast-body", "{text}" }
+            button {
+                class: "toast-action",
                 onclick: move |_| dismissed.set(seq),
-                "✕"
+                "关闭"
             }
         }
     }

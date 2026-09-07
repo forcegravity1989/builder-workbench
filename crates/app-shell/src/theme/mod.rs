@@ -1,28 +1,27 @@
-//! 设计系统:高保真原型那张样式表 + 两个 Rust 侧要用到的取值函数。
+//! 设计系统:Builder 设计系统的样式表 + 壳层样式 + 两个 Rust 侧要用到的取值函数。
 //!
-//! **正本是 `docs/hifi/index.html` 的 `<style>` 块**,整体搬进了
-//! `assets/hifi.css`(搬法与两处改动见那个文件的头注)。屏里一律写 `class`,
-//! 不写行内样式。
-//!
-//! 这个文件曾经还有 13 个色号常量和 6 个拼行内样式的函数,是上一版的做法 ——
-//! 它让壳和高保真越走越远。九个屏逐个改成用样式表的类名之后,最后一个调用者
-//! 也消失了,那一整段跟着删掉,不留两套并行的写法。要颜色就写
-//! `var(--clay)` / `var(--ink-3)`,取值在样式表的 `:root` 里;要字体就写
-//! `var(--serif)` / `var(--mono)`。
+//! **正本是 `docs/04-design-system/styles.css`**(token + 组件类,规范在同目录
+//! `spec.md`),编译期原样拼进来,不复制一份;壳骨架与各屏版式在
+//! `assets/shell.css`,只写设计系统没有的东西,取值一律 `var(--*)`。
+//! 屏里一律写 `class`,不写带色号 / 字号的行内样式。
 //!
 //! 剩下这两件是 Rust 必须做的:把信号枚举翻成颜色变量名和中文标签。
 //! **没数据是灰,不是绿** —— 这条在配色上也守住。
 
 /// 整张样式表。挂在 `document::Style` 上,全局生效。
-pub const GLOBAL_CSS: &str = include_str!("../../assets/hifi.css");
+pub const GLOBAL_CSS: &str = concat!(
+    include_str!("../../../../docs/04-design-system/styles.css"),
+    "\n",
+    include_str!("../../assets/shell.css"),
+);
 
-/// 三态信号 + Unknown 灰,取样式表 `:root` 里的变量,不另写一套色号。
+/// 三态信号 + Unknown 灰,取设计系统的语义 token,不另写一套色号。
 pub fn signal_color(s: Option<bw::Signal>) -> &'static str {
     match s {
-        Some(bw::Signal::Green) => "var(--green)",
-        Some(bw::Signal::Amber) => "var(--amber)",
-        Some(bw::Signal::Red) => "var(--red)",
-        Some(bw::Signal::Unknown) | None => "var(--gray)",
+        Some(bw::Signal::Green) => "var(--color-success)",
+        Some(bw::Signal::Amber) => "var(--color-warning)",
+        Some(bw::Signal::Red) => "var(--color-danger)",
+        Some(bw::Signal::Unknown) | None => "var(--color-neutral-400)",
     }
 }
 

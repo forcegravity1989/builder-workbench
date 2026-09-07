@@ -156,9 +156,10 @@ pub fn View(vm: Vm, bridge: Bridge, close: EventHandler<MouseEvent>) -> Element 
 
     rsx! {
         section {
+            "data-screen": "onboard",
             div { class: "ob-head",
-                h1 { style: "font-size:20px;margin:0;", "接入项目" }
-                button { class: "btn btn-ghost btn-sm", onclick: close, "← 项目墙" }
+                h1 { "接入项目" }
+                button { class: "btn btn-secondary", onclick: close, "← 项目墙" }
             }
 
             div { class: "ob-steps",
@@ -167,34 +168,42 @@ pub fn View(vm: Vm, bridge: Bridge, close: EventHandler<MouseEvent>) -> Element 
                 span { class: if at_addr { "ob-step" } else { "ob-step active" }, "② 基础信息" }
             }
 
-            div { class: "ob-wrap",
+            div { class: "ob-cards",
                 if at_addr {
                     div { class: "card ob-card",
                         h3 { "项目地址" }
-                        div { class: "tabrow",
-                            button {
-                                class: if !*existing_tab.read() { "btn btn-sm active" } else { "btn btn-sm" },
-                                onclick: move |_| existing_tab.set(false),
+                        div { class: "seg",
+                            label { class: "seg-opt",
+                                input {
+                                    r#type: "radio",
+                                    name: "ob-repo-kind",
+                                    checked: !*existing_tab.read(),
+                                    onchange: move |_| existing_tab.set(false),
+                                }
                                 "新建"
                             }
-                            button {
-                                class: if *existing_tab.read() { "btn btn-sm active" } else { "btn btn-sm" },
-                                onclick: move |_| existing_tab.set(true),
+                            label { class: "seg-opt",
+                                input {
+                                    r#type: "radio",
+                                    name: "ob-repo-kind",
+                                    checked: *existing_tab.read(),
+                                    onchange: move |_| existing_tab.set(true),
+                                }
                                 "已有"
                             }
                         }
                         {platform_pills(*github.read(), github, &zone, bridge)}
 
                         if !*github.read() {
-                            div { class: "formrow",
-                                label { class: "label", "哪个区" }
+                            div { class: "field",
+                                label { "哪个区" }
                                 {zone_pills(&zone, host, bridge)}
                             }
                         }
 
                         if *existing_tab.read() {
-                            div { class: "formrow",
-                                label { class: "label", "远端仓(打字即检索,也可以直接填 命名空间/仓名)" }
+                            div { class: "field",
+                                label { "远端仓(打字即检索,也可以直接填 命名空间/仓名)" }
                                 RepoField {
                                     vm: vm.clone(),
                                     bridge: bridge.clone(),
@@ -205,8 +214,8 @@ pub fn View(vm: Vm, bridge: Bridge, close: EventHandler<MouseEvent>) -> Element 
                                     workspace,
                                 }
                             }
-                            div { class: "formrow",
-                                label { class: "label", "本机仓路径" }
+                            div { class: "field",
+                                label { "本机仓路径" }
                                 input {
                                     class: "input mono", value: "{workspace}",
                                     placeholder: "/Users/you/projects/workbench",
@@ -220,17 +229,17 @@ pub fn View(vm: Vm, bridge: Bridge, close: EventHandler<MouseEvent>) -> Element 
                                 "你填的名片字段只补空着的,一个字都不覆盖。"
                             }
                         } else {
-                            div { class: "formgrid2",
-                                div { class: "formrow",
-                                    label { class: "label", "目录名(留空按名称自动生成)" }
+                            div { class: "field-2",
+                                div { class: "field",
+                                    label { "目录名(留空按名称自动生成)" }
                                     input {
                                         class: "input mono", value: "{slug}",
                                         placeholder: "workflowhub",
                                         oninput: move |e| slug.set(e.value()),
                                     }
                                 }
-                                div { class: "formrow",
-                                    label { class: "label", "本机仓路径(留空用工作区根目录)" }
+                                div { class: "field",
+                                    label { "本机仓路径(留空用工作区根目录)" }
                                     input {
                                         class: "input mono", value: "{workspace}",
                                         placeholder: "留空即 {root}/<目录名>",
@@ -238,8 +247,8 @@ pub fn View(vm: Vm, bridge: Bridge, close: EventHandler<MouseEvent>) -> Element 
                                     }
                                 }
                             }
-                            div { class: "formrow",
-                                label { class: "label", "远端仓(命名空间/仓名,可留空)" }
+                            div { class: "field",
+                                label { "远端仓(命名空间/仓名,可留空)" }
                                 input {
                                     class: "input mono", value: "{remote}",
                                     placeholder: "forcegravity1989/builder-workbench",
@@ -296,17 +305,17 @@ pub fn View(vm: Vm, bridge: Bridge, close: EventHandler<MouseEvent>) -> Element 
                             }
                         }
                         {adopted_note(&vm.repos.probe)}
-                        div { class: "formgrid2",
-                            div { class: "formrow",
-                                label { class: "label", "项目名称" }
+                        div { class: "field-2",
+                            div { class: "field",
+                                label { "项目名称" }
                                 input {
                                     class: "input", value: "{shown(&name.read(), &pf.name)}",
                                     placeholder: "例如 WorkflowHub",
                                     oninput: move |e| name.set(e.value()),
                                 }
                             }
-                            div { class: "formrow",
-                                label { class: "label", "最像的对标" }
+                            div { class: "field",
+                                label { "最像的对标" }
                                 input {
                                     class: "input", value: "{shown(&benchmark.read(), &pf.benchmark)}",
                                     placeholder: "Linear",
@@ -314,18 +323,18 @@ pub fn View(vm: Vm, bridge: Bridge, close: EventHandler<MouseEvent>) -> Element 
                                 }
                             }
                         }
-                        div { class: "formrow",
-                            label { class: "label", "你想做什么" }
+                        div { class: "field",
+                            label { "你想做什么" }
                             textarea {
-                                class: "textarea", value: "{shown(&brief.read(), &pf.brief)}",
+                                class: "input", value: "{shown(&brief.read(), &pf.brief)}",
                                 placeholder: "把 agent 会话里长出的工作流沉淀成可复用资产",
                                 oninput: move |e| brief.set(e.value()),
                             }
                         }
-                        div { class: "formrow",
-                            label { class: "label", "三个月长成什么样(北极星)" }
+                        div { class: "field",
+                            label { "三个月长成什么样(北极星)" }
                             textarea {
-                                class: "textarea", value: "{shown(&north_star.read(), &pf.north_star)}",
+                                class: "input", value: "{shown(&north_star.read(), &pf.north_star)}",
                                 placeholder: "每月被标准工作流带完成的活数",
                                 oninput: move |e| north_star.set(e.value()),
                             }
@@ -340,7 +349,7 @@ pub fn View(vm: Vm, bridge: Bridge, close: EventHandler<MouseEvent>) -> Element 
 
                     div { class: "ob-actions",
                         button {
-                            class: "btn btn-ghost",
+                            class: "btn btn-secondary",
                             disabled: busy,
                             onclick: move |_| step.set(1),
                             "← 上一步"
@@ -404,7 +413,9 @@ fn RepoField(
     // 还没问过、也不在问的路上 —— 光标一进这格就替人去问一次,不用先点什么。
     let need_first_fetch = !r.asked && !r.loading;
     rsx! {
-        div { style: "position:relative;",
+        // 外层是下拉的锚点(`.repo-pop` 按它定位),里层那个只管输入框
+        // 和贴着右边的 ⟳。
+        div { class: "repo-combo",
             div { class: "repo-field",
                 input {
                     class: "input mono",
@@ -460,7 +471,7 @@ fn RepoField(
             if *open.read() && !r.rows.is_empty() {
                 div { class: "repo-pop",
                     if shown_rows.is_empty() {
-                        div { class: "ob-note", style: "padding:10px 12px;margin:0;",
+                        div { class: "empty",
                             "拉到了 {r.rows.len()} 个仓,没有匹配「{query}」的。"
                         }
                     } else {
@@ -523,11 +534,11 @@ fn repo_option(
                     git_ref: git_ref.clone(),
                 });
             },
-            div { style: "display:flex;align-items:center;gap:7px;min-width:0;",
+            div { class: "row",
                 span { class: "mono", "{row.path}" }
-                if row.private { span { class: "chip chip-outline", "私有" } }
+                if row.private { span { class: "tag tag-outline", "私有" } }
                 if !row.default_branch.is_empty() {
-                    span { class: "chip chip-outline mono", "{row.default_branch}" }
+                    span { class: "tag tag-outline mono", "{row.default_branch}" }
                 }
             }
             if !row.description.is_empty() {
@@ -620,19 +631,24 @@ fn platform_pills(gh: bool, mut github: Signal<bool>, zone: &str, bridge: &Bridg
         .map(|(want_gh, label)| {
             let (b, z) = (bridge.clone(), zone.to_string());
             rsx! {
-                span {
+                label {
                     key: "{label}",
-                    class: if gh == want_gh { "pill active" } else { "pill" },
-                    onclick: move |_| {
-                        github.set(want_gh);
-                        b.send(Req::ListRepos { github: want_gh, host: z.clone() });
-                    },
+                    class: "seg-opt",
+                    input {
+                        r#type: "radio",
+                        name: "ob-platform",
+                        checked: gh == want_gh,
+                        onchange: move |_| {
+                            github.set(want_gh);
+                            b.send(Req::ListRepos { github: want_gh, host: z.clone() });
+                        },
+                    }
                     "{label}"
                 }
             }
         })
         .collect();
-    rsx! { div { class: "pillrow", {pills.into_iter()} } }
+    rsx! { div { class: "seg", {pills.into_iter()} } }
 }
 
 /// codehub 三个区的选择器。**和平台那排 pill 长一样** —— 换区就当场重列一次仓,
@@ -644,20 +660,25 @@ fn zone_pills(zone: &str, mut host: Signal<String>, bridge: &Bridge) -> Element 
         .map(|(key, label)| {
             let b = bridge.clone();
             rsx! {
-                span {
+                label {
                     key: "{key}",
-                    class: if zone == key { "pill active" } else { "pill" },
-                    onclick: move |_| {
-                        host.set(key.to_string());
-                        // 换了区,上一个区列出来的仓就不作数了,当场重问一次。
-                        b.send(Req::ListRepos { github: false, host: key.to_string() });
-                    },
+                    class: "seg-opt",
+                    input {
+                        r#type: "radio",
+                        name: "ob-zone",
+                        checked: zone == key,
+                        onchange: move |_| {
+                            host.set(key.to_string());
+                            // 换了区,上一个区列出来的仓就不作数了,当场重问一次。
+                            b.send(Req::ListRepos { github: false, host: key.to_string() });
+                        },
+                    }
                     "{label}"
                 }
             }
         })
         .collect();
-    rsx! { div { class: "pillrow", {pills.into_iter()} } }
+    rsx! { div { class: "seg", {pills.into_iter()} } }
 }
 
 fn probe_row(env: &[ToolProbeVm], github: bool) -> Element {
@@ -672,7 +693,7 @@ fn probe_row(env: &[ToolProbeVm], github: bool) -> Element {
             for t in items {
                 span {
                     key: "{t.name}",
-                    style: "display:flex;align-items:center;gap:6px;",
+                    class: "row",
                     title: "{t.detail}",
                     {light_dot(match t.ok {
                         Some(true) => Some(HealthSignal::Green),
@@ -682,7 +703,7 @@ fn probe_row(env: &[ToolProbeVm], github: bool) -> Element {
                     "{t.label}"
                 }
             }
-            span { style: "margin-left:auto;" }
+            span { class: "spacer" }
             span { title: "这三项跟着整份界面数据一起重算,回项目墙点「测一下」即可",
                 "探活在项目墙那条环境条上重测" }
         }

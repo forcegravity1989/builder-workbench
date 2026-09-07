@@ -160,8 +160,8 @@ fn Root() -> Element {
     if let Some(fatal) = &v.fatal {
         return rsx! {
             GlobalChrome {}
-            div { class: "app-root", style: "align-items:center;justify-content:center;padding:40px;",
-                div { class: "card", style: "padding:28px;max-width:560px;color:var(--alert-deep);font-size:14px;line-height:1.9;",
+            div { class: "app-root is-centered", lang: "zh", "data-theme": "claude",
+                div { class: "card fatal",
                     h3 { "起不来" }
                     "{fatal}"
                 }
@@ -172,7 +172,7 @@ fn Root() -> Element {
     if !v.ready {
         return rsx! {
             GlobalChrome {}
-            div { class: "app-root", style: "align-items:center;justify-content:center;color:var(--ink-3);",
+            div { class: "app-root is-centered", lang: "zh", "data-theme": "claude",
                 "正在读本机数据……"
             }
         };
@@ -200,7 +200,8 @@ fn Root() -> Element {
 
     rsx! {
         GlobalChrome {}
-        div { class: "app-root",
+        // 设计系统的 Claude 配色 + 中文排版层都挂在根上(见 theme 模块头注)。
+        div { class: "app-root", lang: "zh", "data-theme": "claude",
             chrome::IconRail {
                 in_project,
                 top_view: tv,

@@ -21,7 +21,9 @@
 
 ## 与现行壳的关系
 
-**未接线**。桌面壳 `crates/app-shell` 现行样式仍以 [docs/hifi/](../hifi/) 九屏高保真为准;本目录是设计系统资产,供后续界面演进采用。谁接线、何时接线,按特性起手路径走 `05-features/`。
+**已接线(2026-09-07)**。桌面壳 `crates/app-shell` 编译期把本目录的 `styles.css` 原样拼进全局样式(`crates/app-shell/src/theme/mod.rs` 里 `include_str!`),不复制一份;壳骨架与各屏版式在 `crates/app-shell/assets/shell.css`,只写设计系统没有的东西、取值一律 `var(--*)`。壳用 **Claude 配色**(根节点 `data-theme="claude"`)+ 中文排版层(`lang="zh"`)。八屏的版式与旅程仍看 [docs/hifi/](../hifi/);视觉语言以本目录为准。接线记录在 [`../05-features/design-system-wiring/`](../05-features/design-system-wiring/STATUS.md)。
+
+改 token / 组件类 → 改本目录 `styles.css`(三处同步见下),壳下一次编译自动跟上;改壳骨架 / 某屏版式 → 改 `shell.css`,不回推设计项目。
 
 ## 来源与剥离清单
 

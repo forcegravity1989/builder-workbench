@@ -11,7 +11,7 @@ use dioxus::prelude::*;
 pub fn View(p: ProjectVm, bridge: Bridge) -> Element {
     let (p, bridge) = (&p, &bridge);
     rsx! {
-        section {
+        section { "data-screen": "config",
             {mapping_block(p, bridge)}
             {skill_block(p)}
         }
@@ -22,10 +22,10 @@ pub fn View(p: ProjectVm, bridge: Bridge) -> Element {
 
 fn mapping_block(p: &ProjectVm, bridge: &Bridge) -> Element {
     rsx! {
-        div { class: "cfg-section",
+        div { class: "card cfg-section",
             div { class: "cfg-section-head", h3 { "开工工具映射" } }
             div { class: "tbl-wrap",
-                table { class: "tbl",
+                table { class: "table",
                     thead {
                         tr {
                             th { "类别" }
@@ -46,7 +46,7 @@ fn mapping_block(p: &ProjectVm, bridge: &Bridge) -> Element {
                     }
                 }
             }
-            div { class: "cfg-readonly-note",
+            div { class: "hint",
                 "开工工具跟人走这台机器,写本机 settings,不进仓。workflow 是产品默认,不能改。"
             }
         }
@@ -78,7 +78,7 @@ fn MappingRow(m: MappingVm, pid: bw::model::ProjectId, bridge: Bridge) -> Elemen
             td { "{m.category_label}" }
             td {
                 select {
-                    class: "select-sm",
+                    class: "input input-sm",
                     value: "{tool}",
                     onchange: move |e| tool.set(e.value()),
                     option { value: "Claude CLI", "Claude CLI" }
@@ -91,14 +91,14 @@ fn MappingRow(m: MappingVm, pid: bw::model::ProjectId, bridge: Bridge) -> Elemen
                     }
                     option { value: "—", "—(未定)" }
                 }
-                div { class: "cfg-readonly-note",
+                div { class: "hint",
                     "开工会照这一列记的工具走,"
                     strong { "不会悄悄拿 Claude CLI 顶上" }
                     " —— 配了起不来的工具,▶开工 会当场如实报错。"
                 }
             }
             td { "{workflow}" }
-            td { button { class: "btn btn-sm btn-primary", onclick: save, "保存" } }
+            td { button { class: "btn btn-secondary", onclick: save, "保存" } }
         }
     }
 }
@@ -116,18 +116,18 @@ fn normalize_tool(label: &str) -> String {
 
 fn skill_block(p: &ProjectVm) -> Element {
     rsx! {
-        div { class: "cfg-section",
+        div { class: "card cfg-section",
             div { class: "cfg-section-head",
                 h3 { "技能与 workflow" }
-                span { style: "font-size:11.5px;color:var(--ink-3);",
+                span { class: "hint",
                     "Workbench 自带 + 本仓 .claude/skills/,共 {p.config.skills.len()} 个"
                 }
             }
             if p.config.skills.is_empty() {
-                div { class: "detail-empty", "一个都没有 —— Workbench 自带的那份没读出来,这不正常。" }
+                div { class: "empty", "一个都没有 —— Workbench 自带的那份没读出来,这不正常。" }
             } else {
                 div { class: "tbl-wrap",
-                    table { class: "tbl",
+                    table { class: "table",
                         thead {
                             tr {
                                 th { "名称" }
@@ -144,16 +144,16 @@ fn skill_block(p: &ProjectVm) -> Element {
                                     td {
                                         "{s.title}"
                                         if s.title != s.slug {
-                                            div { style: "font-size:11px;color:var(--ink-3);", "{s.slug}" }
+                                            div { class: "hint", "{s.slug}" }
                                         }
                                     }
                                     td {
                                         span {
-                                            class: if s.origin == "蒸馏" { "chip chip-green" } else { "chip chip-gray" },
+                                            class: if s.origin == "蒸馏" { "tag tag-success" } else { "tag tag-neutral" },
                                             "{s.origin}"
                                         }
                                     }
-                                    td { style: "color:var(--ink-2);", {desc_or_dash(&s.desc)} }
+                                    td { class: "text-muted", {desc_or_dash(&s.desc)} }
                                     td { class: "mono",
                                         if s.uses == 0 { "—(还没被任何活用过)" } else { "{s.uses}" }
                                     }
@@ -163,7 +163,7 @@ fn skill_block(p: &ProjectVm) -> Element {
                     }
                 }
             }
-            div { class: "cfg-readonly-note",
+            div { class: "hint",
                 "workflow 的入口是一份 SKILL.md,写的是一整套做事流程,自己调度该用哪个 agent \
                  —— 所以 V4 里 workflow 和技能是同一样东西,不分两张表。「用过几次」现算:\
                  扫活的 workflow 列聚合,没有战绩表。导入按钮还没接:用户自己的技能放进\

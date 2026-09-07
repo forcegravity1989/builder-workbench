@@ -75,9 +75,9 @@ impl ListFilter {
         if !self.stage.is_empty() && format!("{:?}", c.status) != self.stage {
             return false;
         }
-        if !self.q.is_empty()
-            && !(c.title.to_lowercase().contains(&self.q.to_lowercase())
-                || c.assignee.to_lowercase().contains(&self.q.to_lowercase()))
+        if !(self.q.is_empty()
+            || c.title.to_lowercase().contains(&self.q.to_lowercase())
+            || c.assignee.to_lowercase().contains(&self.q.to_lowercase()))
         {
             return false;
         }
@@ -146,8 +146,8 @@ pub fn View(p: ProjectVm, bridge: Bridge) -> Element {
     rsx! {
         section {
             class: "plan-grid",
-            style: "height:calc(100vh - 112px);",
-            div { class: "plan-col plan-mid",
+            "data-screen": "plan",
+            div { class: "plan-mid",
                 Toolbar { p: p.clone(), bridge: bridge.clone(), view_mode, dialog, pack_job }
                 if !p.view_all {
                     WeekHead { p: p.clone() }
@@ -265,8 +265,7 @@ fn Toolbar(
                 if *editing.read() && can_rename {
                     span { class: "ver-wrap",
                         input {
-                            class: "input",
-                            style: "width:88px;padding:2px 6px;font:inherit;",
+                            class: "input input-sm",
                             value: "{draft}",
                             oninput: move |e| draft.set(e.value()),
                             onkeydown: move |e| {
@@ -315,7 +314,7 @@ fn Toolbar(
             }
             div { class: "right",
                 select {
-                    class: "il-dd-btn",
+                    class: "input input-sm",
                     onchange: move |e| {
                         let v = e.value();
                         if v == "all" {
@@ -330,19 +329,19 @@ fn Toolbar(
                 }
                 if p.view_all {
                     button {
-                        class: "btn btn-sm btn-secondary",
+                        class: "btn btn-secondary",
                         onclick: move |_| dialog.set(Some(DialogKind::CreateVersion)),
                         "创建版本"
                     }
                     button {
-                        class: "btn btn-sm btn-secondary",
+                        class: "btn btn-secondary",
                         disabled: !p.plan_versions.iter().any(|v| !v.released),
                         onclick: move |_| dialog.set(Some(DialogKind::DeleteVersion)),
                         "删除版本"
                     }
                 } else if !p.viewing_plan.is_empty() && !released {
                     button {
-                        class: "btn btn-sm",
+                        class: "btn btn-secondary",
                         onclick: move |_| {
                             let job = pack_job.read().clone();
                             if job.packing || (job.finished && !job.version.is_empty()) {
@@ -360,7 +359,7 @@ fn Toolbar(
                         {if pack_job.read().packing { "出包..." } else { "出包" }}
                     }
                     button {
-                        class: "btn btn-sm",
+                        class: "btn btn-secondary",
                         disabled: done_ids.is_empty(),
                         onclick: move |_| dialog.set(Some(DialogKind::Release(ReleaseDraft {
                             project_id: pid,
@@ -372,13 +371,12 @@ fn Toolbar(
                     }
                 }
                 button {
-                    class: "btn btn-sm btn-primary",
+                    class: "btn btn-primary",
                     onclick: move |_| dialog.set(Some(DialogKind::NewIssue(NewIssueDraft::default()))),
                     "新建issue"
                 }
                 button {
-                    class: "btn btn-sm btn-secondary",
-                    style: "margin-left:auto;",
+                    class: "btn btn-secondary ml-auto",
                     onclick: move |_| view_mode.set(if *view_mode.read() == ViewMode::Board { ViewMode::List } else { ViewMode::Board }),
                     {if *view_mode.read() == ViewMode::Board { "☰" } else { "▦" }}
                 }
@@ -422,16 +420,16 @@ fn WeekHead(p: ProjectVm) -> Element {
             }
         }
         div { class: "week-progress",
-            div { style: "width:{c.pct(c.done)}%;background:var(--green);" }
-            div { style: "width:{c.pct(c.review)}%;background:var(--amber);" }
-            div { style: "width:{c.pct(c.doing)}%;background:var(--clay);" }
-            div { style: "width:{c.pct(c.blocked)}%;background:var(--red);" }
-            div { style: "width:{c.pct(c.todo)}%;background:#E4DDC8;" }
+            div { style: "width:{c.pct(c.done)}%;background:var(--color-success);" }
+            div { style: "width:{c.pct(c.review)}%;background:var(--color-accent-2);" }
+            div { style: "width:{c.pct(c.doing)}%;background:var(--color-warning);" }
+            div { style: "width:{c.pct(c.blocked)}%;background:var(--color-danger);" }
+            div { style: "width:{c.pct(c.todo)}%;background:var(--color-neutral-300);" }
         }
         if !p.board_ops.is_empty() {
-            div { class: "ops-chip-row",
+            div { class: "row-wrap",
                 for o in p.board_ops.iter() {
-                    span { key: "{o.title}", class: "chip chip-outline", title: "{o.note}",
+                    span { key: "{o.title}", class: "tag tag-outline", title: "{o.note}",
                         "{o.title} · {o.status}"
                     }
                 }
@@ -451,16 +449,16 @@ fn draft_confirm(p: &ProjectVm, bridge: &Bridge) -> Element {
     let week = p.viewing_week.clone();
     let titles = p.pending_drafts.clone();
     rsx! {
-        div { class: "card", style: "padding:14px 16px;margin-bottom:10px;flex:none;",
-            div { style: "font-size:12.5px;color:var(--ink-2);margin-bottom:8px;line-height:1.8;",
+        div { class: "card flex-none",
+            div { class: "text-muted",
                 "{week} 的运作活①已开工,下面是草稿活标。确认之前一张活都还没建。"
             }
             for t in titles.iter() {
-                div { key: "{t}", style: "font-size:12.5px;padding:3px 0;", "· {t}" }
+                div { key: "{t}", "· {t}" }
             }
-            div { style: "display:flex;gap:8px;margin-top:10px;",
+            div { class: "row",
                 button {
-                    class: "btn btn-sm btn-primary",
+                    class: "btn btn-primary",
                     onclick: move |_| b_ok.cmd(Command::ConfirmWeekDraft {
                         project_id: pid,
                         week: week.clone(),
@@ -469,7 +467,7 @@ fn draft_confirm(p: &ProjectVm, bridge: &Bridge) -> Element {
                     "确认,按这些建活"
                 }
                 button {
-                    class: "btn btn-sm",
+                    class: "btn btn-secondary",
                     onclick: move |_| b_no.send(Req::DropDrafts),
                     "先不建"
                 }

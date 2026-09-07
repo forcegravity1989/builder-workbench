@@ -6,7 +6,7 @@
 
 - **设计正本(三 crate 架构 + 工作流模型 + 16 模块核心设计)** → [`docs/architecture.md`](docs/architecture.md):一篇讲清 Workbench 是什么(设计)、三个 crate 怎么互锁、工作流模型(三来源两路径/系统提示词/默认 workflow/数据流/四铁律)、16 个模块各自解决什么问题。人和 AI 都能在这份里快速检索到任一模块的核心设计。
 - **架构决策(难回头一条一篇)** → [`docs/02-adr/`](docs/02-adr/)。
-- **视觉正本**(高保真原型,单文件浏览器可点)→ [`docs/hifi/index.html`](docs/hifi/index.html) + 逐屏简报 [`docs/hifi/README.md`](docs/hifi/README.md);桌面壳样式表从它整体搬过去。
+- **视觉正本**(Builder 设计系统:token + 组件类 + 双语规范 + 示例页)→ [`docs/04-design-system/`](docs/04-design-system/README.md);桌面壳编译期原样拼入它的 `styles.css`,壳骨架与各屏版式在 `crates/app-shell/assets/shell.css`。八屏的版式与旅程原型(单文件浏览器可点)→ [`docs/hifi/index.html`](docs/hifi/index.html) + 逐屏简报 [`docs/hifi/README.md`](docs/hifi/README.md)。
 - **产品指南**(怎么用 Workbench,给用户/同事)→ [`docs/03-guide/`](docs/03-guide/)。
 
 ## workflow 自带文档去哪找

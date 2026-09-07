@@ -43,11 +43,11 @@ pub struct PendingReject {
 /// 状态 → 状态点 css 类 + 标签。照 opt 的 `STATUS_META`。
 fn status_dot_class(s: IssueStatus) -> &'static str {
     match s {
-        IssueStatus::Backlog | IssueStatus::Todo | IssueStatus::Cancelled => "dot-gray",
-        IssueStatus::InProgress => "dot-amber dot-run",
-        IssueStatus::InReview => "dot-amber",
-        IssueStatus::Done => "dot-green",
-        IssueStatus::Blocked => "dot-red",
+        IssueStatus::Backlog | IssueStatus::Todo | IssueStatus::Cancelled => "status-todo",
+        IssueStatus::InProgress => "status-progress is-live",
+        IssueStatus::InReview => "status-review",
+        IssueStatus::Done => "status-done",
+        IssueStatus::Blocked => "status-blocked",
     }
 }
 
@@ -107,7 +107,7 @@ pub fn board(
     let f = if p.view_all { filters } else { None };
     let view_all = p.view_all;
     rsx! {
-        div { class: "kanban",
+        div { class: "board",
             for col in p.board.columns.iter() {
                 {column(col, f.clone(), &plan_filter, view_all, bridge, dragging, schedule, selected, start, pending, reject, col_seg, nav)}
             }
@@ -176,24 +176,18 @@ fn column(
     let total = all.len() as u32;
     let mut col_seg_w = col_seg;
     let col_status = col.status;
-    let col_tint = match col.status {
-        IssueStatus::Todo => "col-todo",
-        IssueStatus::InProgress => "col-doing",
-        IssueStatus::InReview => "col-pending",
-        IssueStatus::Done => "col-done",
-        _ => "col-todo",
-    };
     let _ = view_all;
     let drop_seg = active_seg.0.clone();
+    let seg_group = format!("board-seg-{col_key}");
     rsx! {
-        div { class: "kanban-col {col_tint}",
-            div { class: "kanban-col-head",
+        div { class: "board-col",
+            div { class: "board-col-head",
                 span { class: "status-dot {status_dot_class(col.status)}" }
                 "{col.title}"
                 span { class: "count", "{total}" }
             }
             if segs_owned.len() > 1 {
-                div { class: "kanban-segtabs",
+                div { class: "seg board-seg",
                     for (i, s) in segs_owned.iter().enumerate() {
                         {
                             let key = s.0.clone();
@@ -201,9 +195,13 @@ fn column(
                             let ck = col_key.clone();
                             let cnt = s.2.len() as u32;
                             rsx! {
-                                button {
-                                    class: if i == active_idx { "seg-tab active" } else { "seg-tab" },
-                                    onclick: move |_| { col_seg_w.write().insert(ck.clone(), key.clone()); },
+                                label { class: "seg-opt",
+                                    input {
+                                        r#type: "radio",
+                                        name: "{seg_group}",
+                                        checked: i == active_idx,
+                                        onchange: move |_| { col_seg_w.write().insert(ck.clone(), key.clone()); },
+                                    }
                                     "{label}"
                                     span { class: "seg-count", "{cnt}" }
                                 }
@@ -213,7 +211,7 @@ fn column(
                 }
             }
             div {
-                class: "kanban-seg-box",
+                class: "board-seg-box",
                 ondragover: move |e| e.prevent_default(),
                 ondrop: move |_| {
                     if let Some(card) = dragging.read().clone() {
@@ -225,7 +223,7 @@ fn column(
                     {card_view(c, dragging, selected, view_all, bridge, nav)}
                 }
                 if active_cards.is_empty() {
-                    div { class: "kanban-empty", "无 issue" }
+                    div { class: "board-empty", "无 issue" }
                 }
             }
         }
@@ -255,13 +253,13 @@ fn card_view(
         .collect::<String>();
     let updated = ago(c.updated_at);
     let remote_badge = if c.remote_number > 0 {
-        rsx! { span { class: "kcard-src", "CodeHub" } }
+        rsx! { span { class: "tag tag-accent-2", "CodeHub" } }
     } else {
         rsx! {}
     };
     rsx! {
         div {
-            class: "kcard",
+            class: "card kcard",
             draggable: true,
             ondragstart: move |_| dragging.set(Some(c1.clone())),
             ondragend: move |_| dragging.set(None),
@@ -269,14 +267,14 @@ fn card_view(
             div { class: "kcard-top",
                 span { class: "mono", "#{c.number}" }
                 {remote_badge}
-                span { class: "status-dot {status_dot_class(c.status)}", style: "margin-left:auto;", title: "{seg_def(c.status)}" }
+                span { class: "status-dot {status_dot_class(c.status)} ml-auto", title: "{seg_def(c.status)}" }
             }
             div { class: "kcard-title", "{c.title}" }
             if !c.body.trim().is_empty() {
                 div { class: "kcard-desc", "{c.body.chars().take(64).collect::<String>()}" }
             }
             if view_all {
-                div { class: "kcard-place",
+                div { class: "tag tag-neutral kcard-place",
                     span { class: "kcard-folder", "▸" }
                     "{place_of(c)}"
                 }

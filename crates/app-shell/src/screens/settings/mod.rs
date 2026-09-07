@@ -26,9 +26,10 @@ pub fn View(vm: Vm, bridge: Bridge, close: EventHandler<MouseEvent>) -> Element 
     let s = &vm.settings;
     rsx! {
         section {
+            "data-screen": "settings",
             div { class: "ob-head",
-                h1 { style: "font-size:20px;margin:0;", "设置" }
-                button { class: "btn btn-ghost btn-sm", onclick: close, "← 项目墙" }
+                h1 { "设置" }
+                button { class: "btn btn-secondary", onclick: close, "← 项目墙" }
             }
             div { class: "settings-list",
                 root_row { value: s.workspaces_root.clone(), bridge: bridge.clone() }
@@ -42,7 +43,7 @@ pub fn View(vm: Vm, bridge: Bridge, close: EventHandler<MouseEvent>) -> Element 
                     {probe_row(t)}
                 }
             }
-            div { style: "margin-top:14px;color:var(--ink-3);font-size:11.5px;line-height:1.9;",
+            div { class: "settings-foot hint",
                 "这里没有登录 —— Workbench 不管账号。远端凭证在系统钥匙串里,项目群的登录态由你自己在本机登好。"
                 br {}
                 "灰灯是「这项探活还没接」,不是「有问题」;红灯才是「本机路径里真的没找到」。"
@@ -61,23 +62,22 @@ fn root_row(value: String, bridge: Bridge) -> Element {
     let b = bridge.clone();
     rsx! {
         div { class: "settings-row",
-            div { style: "flex:1;min-width:0;",
+            div { class: "grow",
                 div { class: "k", "工作区根目录" }
-                div { style: "display:flex;gap:8px;align-items:center;margin-top:4px;",
+                div { class: "row",
                     input {
-                        class: "input mono",
-                        style: "flex:1;min-width:0;",
+                        class: "input mono grow",
                         value: "{draft}",
                         placeholder: "Windows 填 D:\\Workbench\\workspaces,macOS 填 /Users/你/projects",
                         oninput: move |e| draft.set(e.value()),
                     }
                     button {
-                        class: "btn btn-sm btn-primary",
+                        class: "btn btn-secondary",
                         onclick: move |_| b.cmd(Command::SetWorkspacesRoot { path: draft.read().clone() }),
                         "保存"
                     }
                 }
-                div { style: "font-size:11px;color:var(--ink-4);margin-top:4px;",
+                div { class: "hint",
                     "新接入的项目默认落在这个目录下,填全路径。"
                     br {}
                     "改它"
@@ -100,23 +100,22 @@ fn orca_row(value: String, bridge: Bridge) -> Element {
     let b = bridge.clone();
     rsx! {
         div { class: "settings-row",
-            div { style: "flex:1;min-width:0;",
+            div { class: "grow",
                 div { class: "k", "Orca 网页地址" }
-                div { style: "display:flex;gap:8px;align-items:center;margin-top:4px;",
+                div { class: "row",
                     input {
-                        class: "input mono",
-                        style: "flex:1;min-width:0;",
+                        class: "input mono grow",
                         value: "{draft}",
                         placeholder: "http://127.0.0.1:6768/web-index.html#pairing=…(源码桌面换 6769)",
                         oninput: move |e| draft.set(e.value()),
                     }
                     button {
-                        class: "btn btn-sm btn-primary",
+                        class: "btn btn-secondary",
                         onclick: move |_| b.cmd(Command::SetOrcaWebUrl { url: draft.read().clone() }),
                         "保存"
                     }
                 }
-                div { style: "font-size:11px;color:var(--ink-4);margin-top:4px;",
+                div { class: "hint",
                     "从 Orca「给 web 配对 / Share this Orca server」复制「Open in browser」那条(http://127.0.0.1:…#pairing=)。"
                     br {}
                     "官方包端口 6768,源码桌面 6769。不要用 orca:// 那条。只认 loopback;"
@@ -124,7 +123,7 @@ fn orca_row(value: String, bridge: Bridge) -> Element {
                     "。保存后进会话屏即可,不用重启。"
                     br {}
                     "现在的值:"
-                    span { class: "mono", style: if shown.is_empty() { "color:var(--ink-4);" } else { "" },
+                    span { class: if shown.is_empty() { "mono hint" } else { "mono" },
                         if shown.is_empty() { "—(没配,会话屏空着)" } else { "{shown}" }
                     }
                 }
@@ -141,10 +140,10 @@ fn path_row(label: &str, value: &str, hint: &str) -> Element {
     };
     rsx! {
         div { class: "settings-row",
-            div { style: "flex:1;min-width:0;",
+            div { class: "grow",
                 div { class: "k", "{label}" }
-                div { class: "v mono", style: "word-break:break-all;", "{shown}" }
-                div { style: "font-size:11px;color:var(--ink-4);margin-top:3px;", "{hint}" }
+                div { class: "v mono", "{shown}" }
+                div { class: "hint", "{hint}" }
             }
         }
     }
@@ -158,12 +157,12 @@ fn probe_row(t: &ToolProbeVm) -> Element {
     };
     rsx! {
         div { key: "{t.name}", class: "settings-row",
-            div { style: "flex:1;min-width:0;",
+            div { class: "grow",
                 div { class: "k", "{t.label}" }
-                div { class: "v mono", style: "word-break:break-all;", "{t.detail}" }
+                div { class: "v mono", "{t.detail}" }
             }
-            div { style: "display:flex;align-items:center;gap:8px;flex:none;",
-                span { style: "font-size:11.5px;color:var(--ink-3);", "{state}" }
+            div { class: "row",
+                span { class: "hint", "{state}" }
                 {light_dot(signal, true)}
             }
         }
