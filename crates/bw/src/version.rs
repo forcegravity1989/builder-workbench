@@ -135,6 +135,32 @@ pub fn current_from_ops1(rows: &[Ops1VersionRow]) -> Option<String> {
     pick(true, true).or_else(|| pick(false, false))
 }
 
+/// 出包用哪份代码。有同名 tag 就从 tag 出;在研且还没 tag 才用工作区。
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum PackSource {
+    Tag,
+    Workspace,
+}
+
+/// `viewing` 空 = 全部 issue,不出包。
+pub fn pack_source(viewing: &str, current: &str, has_tag: bool) -> Option<PackSource> {
+    if viewing.trim().is_empty() {
+        return None;
+    }
+    if has_tag {
+        Some(PackSource::Tag)
+    } else if viewing == current && !current.is_empty() {
+        Some(PackSource::Workspace)
+    } else {
+        None
+    }
+}
+
+/// 发版本只给在研且还没有同名 tag 的号。没有已完成的活也能发。
+pub fn can_cut_release(viewing: &str, current: &str, has_tag: bool) -> bool {
+    !viewing.trim().is_empty() && viewing == current && !current.is_empty() && !has_tag
+}
+
 /// 有未完成的运作活①,或本 ISO 周已有打了版本标签的运作活①(含已完成)。
 pub fn ops1_already_started(open_ops1: bool, tagged_ops1_created_this_week: bool) -> bool {
     open_ops1 || tagged_ops1_created_this_week
@@ -220,6 +246,22 @@ mod tests {
         assert!(!is_v0x("v"));
         assert!(!is_v0x("v0."));
         assert!(!is_v0x("0.1"));
+    }
+
+    #[test]
+    fn pack_source_and_cut_release_gates() {
+        assert_eq!(pack_source("", "v0.3", false), None);
+        assert_eq!(pack_source("v0.2", "v0.3", true), Some(PackSource::Tag));
+        assert_eq!(pack_source("v0.3", "v0.3", true), Some(PackSource::Tag));
+        assert_eq!(
+            pack_source("v0.3", "v0.3", false),
+            Some(PackSource::Workspace)
+        );
+        assert_eq!(pack_source("v0.4", "v0.3", false), None);
+        assert!(can_cut_release("v0.3", "v0.3", false));
+        assert!(!can_cut_release("v0.3", "v0.3", true));
+        assert!(!can_cut_release("v0.2", "v0.3", false));
+        assert!(!can_cut_release("v0.3", "", false));
     }
 
     #[test]

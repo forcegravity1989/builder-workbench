@@ -560,6 +560,9 @@ pub fn DeleteVersionDialog(
                             }
                         }
                     }
+                    if versions.is_empty() {
+                        div { class: "cfg-readonly-note", "没有未发的版本可删。" }
+                    }
                     div { class: "cfg-readonly-note", "确认后摘掉 issue 上的 bw:plan 标签。同名里程碑能删就删,删不成不影响标签。" }
                 }
                 div { class: "plan-modal-foot",
@@ -624,7 +627,7 @@ pub fn PackDialog(
                     {ship_status_row("验包", "出包过了再验", e2e.clone(), true, Some(asking_detail))}
                 }
                 div { class: "cfg-readonly-note",
-                    "确认后先出包、再对包装好的安装包做验收。不建远端 Release,也不打发版标签。关闭只收窗,出包还在后台跑。"
+                    "已打 tag 的号从独立 worktree 检出 tag 再出,主检出不动。在研且还没 tag 的号先把工作区拉到远端最新再出。不建远端 Release。"
                 }
                 div { class: "modal-actions",
                     button {
@@ -814,7 +817,6 @@ pub fn ReleaseDialog(
         let t = version.read().trim().to_string();
         !t.is_empty() && !t.contains('(')
     };
-    let included_empty = included.is_empty();
     let included = std::rc::Rc::new(included);
     rsx! {
         div { class: "modal-backdrop", onclick: move |_| dialog.set(None),
@@ -828,12 +830,12 @@ pub fn ReleaseDialog(
                     label { class: "label", "说明" }
                     textarea { class: "textarea", value: "{note}", oninput: move |e| note.set(e.value()) }
                 }
-                div { class: "cfg-readonly-note", "确认后在代码平台建 Release,再给本版本已完成的活打发版标签。不出包。" }
+                div { class: "cfg-readonly-note", "只有在研且还没打 tag 的号能发。确认后给这份代码打远端 tag。没有已完成的活也能发;勾上的才打发版标签。不出包。" }
                 div { class: "modal-actions",
                     button { class: "btn btn-secondary", onclick: move |_| dialog.set(None), "取消" }
                     button {
                         class: "btn btn-primary",
-                        disabled: !version_ok || included_empty,
+                        disabled: !version_ok,
                         onclick: move |_| {
                             let v = version.read().trim().to_string();
                             if v.is_empty() || v.contains('(') { return; }

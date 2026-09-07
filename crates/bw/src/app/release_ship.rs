@@ -49,13 +49,46 @@ impl App {
                 format!("{} 还没有配工作区,出包需要一个真实的仓", project.slug),
             );
         }
-        let pack_cmd = workspace.join(PACK_REL);
-        let e2e_cmd = workspace.join(E2E_REL);
+        let issues = self.issues(project_id).await.unwrap_or_default();
+        let (_plans, released) = match self.collect_version_names(&project).await {
+            Ok(v) => v,
+            Err(e) => return self.ship_refuse(STEP_PACK, e.to_string()),
+        };
+        let current = super::current_week_version(&issues, &released);
+        let has_tag = released.iter().any(|s| s == &version);
+        let source = crate::version::pack_source(&version, &current, has_tag);
+        let workdir = match source {
+            Some(crate::version::PackSource::Tag) => {
+                match bw_engine::workspace::provision_pack_worktree(&workspace, &version).await {
+                    Ok(p) => p,
+                    Err(e) => {
+                        return self.ship_refuse(
+                            STEP_PACK,
+                            format!("没检出 tag {version} 的树:{e}。主检出没动。"),
+                        );
+                    }
+                }
+            }
+            Some(crate::version::PackSource::Workspace) => {
+                if let Err(e) = super::plan::align_workspace_to_remote(&workspace).await {
+                    return self.ship_refuse(STEP_PACK, e.to_string());
+                }
+                workspace.clone()
+            }
+            None => {
+                return self.ship_refuse(
+                    STEP_PACK,
+                    format!("{version} 还没打 tag,也不是在研,不能出包"),
+                );
+            }
+        };
+        let pack_cmd = workdir.join(PACK_REL);
+        let e2e_cmd = workdir.join(E2E_REL);
         if !pack_cmd.is_file() {
             return self.ship_refuse(
                 STEP_PACK,
                 format!(
-                    "仓里没有出包入口 {}。按 ADR-0005 放到被管仓根下。",
+                    "这份代码里没有出包入口 {}。有 tag 的版本用 tag 当时的脚本,没有就如实停。",
                     pack_cmd.display()
                 ),
             );
@@ -70,9 +103,9 @@ impl App {
             );
         }
 
-        self.pack_ctl.begin(workspace.clone(), version.clone());
+        self.pack_ctl.begin(workdir.clone(), version.clone());
         let out = self
-            .pack_release_run(&pack_cmd, &e2e_cmd, &version, &workspace)
+            .pack_release_run(&pack_cmd, &e2e_cmd, &version, &workdir)
             .await;
         self.pack_ctl.finish();
         out

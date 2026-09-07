@@ -259,6 +259,10 @@ fn Toolbar(
     let from = viewing_plan.clone();
     let pack_ver = p.viewing_plan.clone();
     let rel_ver = p.viewing_plan.clone();
+    let pack_ok =
+        bw::version::pack_source(&viewing_plan, &p.confirmed_version, released).is_some();
+    let release_ok =
+        bw::version::can_cut_release(&viewing_plan, &p.confirmed_version, released);
     rsx! {
         div { class: "plan-toolbar",
             div { class: "left",
@@ -336,14 +340,17 @@ fn Toolbar(
                     }
                     button {
                         class: "btn btn-sm btn-secondary",
-                        disabled: !p.plan_versions.iter().any(|v| !v.released),
                         onclick: move |_| dialog.set(Some(DialogKind::DeleteVersion)),
                         "删除版本"
                     }
-                } else if !p.viewing_plan.is_empty() && !released {
+                } else if !p.viewing_plan.is_empty() {
                     button {
                         class: "btn btn-sm",
+                        disabled: !pack_ok,
                         onclick: move |_| {
+                            if !pack_ok {
+                                return;
+                            }
                             let job = pack_job.read().clone();
                             if job.packing || (job.finished && !job.version.is_empty()) {
                                 dialog.set(Some(DialogKind::Pack(PackDraft {
@@ -361,13 +368,18 @@ fn Toolbar(
                     }
                     button {
                         class: "btn btn-sm",
-                        disabled: done_ids.is_empty(),
-                        onclick: move |_| dialog.set(Some(DialogKind::Release(ReleaseDraft {
-                            project_id: pid,
-                            version: rel_ver.clone(),
-                            note: format!("版本 {} 完成的活", rel_ver),
-                            included: done_ids.clone(),
-                        }))),
+                        disabled: !release_ok,
+                        onclick: move |_| {
+                            if !release_ok {
+                                return;
+                            }
+                            dialog.set(Some(DialogKind::Release(ReleaseDraft {
+                                project_id: pid,
+                                version: rel_ver.clone(),
+                                note: format!("版本 {} 完成的活", rel_ver),
+                                included: done_ids.clone(),
+                            })));
+                        },
                         "发版本"
                     }
                 }
