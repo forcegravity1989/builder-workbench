@@ -1,5 +1,5 @@
-//! 项目内 · 知识库。**结构照 `hifi/index.html` 的 `renderSpace` 排**:顶上一条
-//! 规范条,下面三个页签(知识 / 代码图 / 资产)。
+//! 项目内 · 知识库。页标题 + 三个页签(知识 / 代码图 / 资产),版式走设计
+//! 系统的「设置文法」:小节 + 分组,每行标题 + 一句说明 + 行尾控件。
 //!
 //! 四条如实:
 //!
@@ -7,7 +7,7 @@
 //!    现走 git、现解析仓文件得来的。
 //! 2. **代码图装了才亮**。没装 codegraph 就整块灰,并且说清下一步该跑什么;
 //!    不猜、不给一个空榜冒充「这个仓没有大文件」。
-//! 3. **顶上那条规范条只报数,不对账**。对账是配置屏那颗按钮的事 ——
+//! 3. **页标题只报数,不对账**。对账是配置屏那颗按钮的事 ——
 //!    对账要读一遍全部核心件并逐份比对指纹,不能每次打开知识库都跑一次。
 //! 4. **只读**。改文档一律走活 + MR,这一屏不提供编辑框。
 
@@ -21,13 +21,19 @@ pub fn View(p: ProjectVm, bridge: Bridge) -> Element {
     let (p, bridge) = (&p, &bridge);
     rsx! {
         section { "data-screen": "kb",
-            div { class: "card sp-topinfo",
-                span { "仓里有 {p.kb.managed_count} 份 .bw 规范件" }
-                span { class: "spacer" }
-                button {
-                    class: "btn btn-secondary",
-                    onclick: move |_| nav.go(Panel::Config),
-                    "去配置屏对账 →"
+            div { class: "page-head",
+                div {
+                    h1 { "知识库" }
+                    p { class: "page-desc",
+                        "仓里有 {p.kb.managed_count} 份 .bw 规范件。这里的数字都是打开时现扫仓、现走 git 得来的,没有索引表;只读,改文档走活 + MR。"
+                    }
+                }
+                div { class: "page-actions",
+                    button {
+                        class: "btn btn-secondary",
+                        onclick: move |_| nav.go(Panel::Config),
+                        "去配置屏对账 →"
+                    }
                 }
             }
             div { class: "tabs", role: "tablist",
@@ -63,17 +69,24 @@ fn tab_button(t: KbTab, active: bool, bridge: &Bridge) -> Element {
 fn docs_tab(p: &ProjectVm, bridge: &Bridge) -> Element {
     rsx! {
         div { class: "sp-layout",
-            div { class: "card sp-tree",
+            div { class: "sp-tree",
                 if p.kb.groups.is_empty() {
-                    div { class: "empty",
-                        "这个仓还没有管理体系。第一次纳入时那张规范铺底合进默认分支之后才会有。"
+                    div { class: "set-group",
+                        div { class: "empty",
+                            "这个仓还没有管理体系。第一次纳入时那张规范铺底合进默认分支之后才会有。"
+                        }
                     }
                 }
                 for g in p.kb.groups.iter() {
                     div { key: "{g.title}",
-                        div { class: "sidebar-section sp-tree-group", "{g.title} · {g.files.len()}" }
-                        for f in g.files.iter() {
-                            {doc_row(f, p.kb.open_doc.as_ref().map(|(k, _)| k.as_str()), bridge)}
+                        div { class: "section",
+                            div { h3 { class: "section-title", "{g.title}" } }
+                            div { class: "section-tools", span { class: "hint mono", "{g.files.len()}" } }
+                        }
+                        div { class: "set-group",
+                            for f in g.files.iter() {
+                                {doc_row(f, p.kb.open_doc.as_ref().map(|(k, _)| k.as_str()), bridge)}
+                            }
                         }
                     }
                 }
@@ -106,13 +119,16 @@ fn doc_row(f: &KbFileVm, open: Option<&str>, bridge: &Bridge) -> Element {
     rsx! {
         div {
             key: "{f.rel}",
-            class: "sp-tree-item",
+            class: "set-row sp-doc",
             aria_current: if active { "page" },
             title: "{f.rel}",
             onclick: move |_| b.send(Req::OpenDoc(Some(rel.clone()))),
-            "{f.label}"
-            if !f.badge.is_empty() {
-                span { class: "tag tag-neutral ml-auto", "{f.badge}" }
+            div { class: "set-text", div { class: "set-title", "{f.label}" } }
+            div { class: "set-ctl",
+                if !f.badge.is_empty() {
+                    span { class: "tag tag-neutral", "{f.badge}" }
+                }
+                span { class: "chev", "›" }
             }
         }
     }
@@ -124,7 +140,7 @@ fn codegraph_tab(cg: Option<&CodeGraphVm>, bridge: &Bridge) -> Element {
     let b = bridge.clone();
     let Some(cg) = cg else {
         return rsx! {
-            div { class: "card",
+            div { class: "set-group",
                 div { class: "empty",
                     "点一下上面的「代码图」页签就现跑一次。"
                     br {}
@@ -134,56 +150,55 @@ fn codegraph_tab(cg: Option<&CodeGraphVm>, bridge: &Bridge) -> Element {
         };
     };
     rsx! {
-        div { class: "graph-lower",
-            div { class: "card",
-                div { class: "row",
-                    div { class: "card-title grow", "大文件榜" }
-                    button {
-                        class: "btn btn-secondary",
-                        disabled: cg.state == "running",
-                        onclick: move |_| b.send(Req::KbTab(KbTab::CodeGraph)),
-                        if cg.state == "running" { "正在跑…" } else { "重新跑一次" }
-                    }
-                }
-                if cg.state != "ready" {
-                    div { class: "empty prose", "{cg.hint}" }
-                }
-                if !cg.error.is_empty() {
-                    div { class: "mono text-danger prose", "{cg.error}" }
-                }
-                if cg.state == "ready" && cg.error.is_empty() && cg.rows.is_empty() {
-                    div { class: "empty", "—" }
-                }
-                for r in cg.rows.iter() {
-                    div { key: "{r.path}", class: "leaderboard-row",
-                        span { class: "grow", "{r.path}" }
-                        span { class: "hint",
-                            "{r.language} · {r.nodes} 个符号 · {r.size} B"
-                        }
-                    }
-                }
-                div { class: "graph-foot",
-                    "codegraph files -j,按体积排序取前 20 · 状态 {cg.state}"
+        div { class: "section",
+            div {
+                h3 { class: "section-title", "大文件榜" }
+                p { class: "section-desc", "codegraph files -j,按体积排序取前 20 · 状态 {cg.state}" }
+            }
+            div { class: "section-tools",
+                button {
+                    class: "btn btn-secondary",
+                    disabled: cg.state == "running",
+                    onclick: move |_| b.send(Req::KbTab(KbTab::CodeGraph)),
+                    if cg.state == "running" { "正在跑…" } else { "重新跑一次" }
                 }
             }
-            div { class: "card",
-                div { class: "card-title", "符号 → 调用者 / 影响面" }
-                input {
-                    class: "input",
-                    disabled: true,
-                    placeholder: "还没接:要走 codegraph 的符号查询",
+        }
+        div { class: "set-group",
+            if cg.state != "ready" {
+                div { class: "empty prose", "{cg.hint}" }
+            }
+            if !cg.error.is_empty() {
+                div { class: "empty mono text-danger prose", "{cg.error}" }
+            }
+            if cg.state == "ready" && cg.error.is_empty() && cg.rows.is_empty() {
+                div { class: "empty", "—" }
+            }
+            for r in cg.rows.iter() {
+                div { key: "{r.path}", class: "leaderboard-row",
+                    span { class: "grow", "{r.path}" }
+                    span { class: "hint",
+                        "{r.language} · {r.nodes} 个符号 · {r.size} B"
+                    }
                 }
-                div { class: "hint",
-                    "高保真这一格能按符号名查它被谁调用。真接起来要走 codegraph 的符号索引,\
-                     还没做 —— 灰在这里,不放一个查了没结果的输入框。"
+            }
+        }
+        div { class: "section",
+            div {
+                h3 { class: "section-title", "符号 → 调用者 / 影响面" }
+                p { class: "section-desc", "还没接:要走 codegraph 的符号索引。灰在这里,不放一个查了没结果的输入框。" }
+            }
+        }
+        div { class: "set-group",
+            div { class: "set-row",
+                div { class: "set-text",
+                    div { class: "set-title", "按符号名查它被谁调用" }
+                    div { class: "set-desc",
+                        "只摆原始数字,不下结论:零调用者不等于死代码 —— 这个仓大量用 dyn Trait 动态派发,调用关系本来就查不全。"
+                    }
                 }
-                div { class: "card-title", "怎么读这一屏" }
-                div { class: "hint",
-                    "只摆原始数字,不下结论。特别是:零调用者不等于死代码 —— 这个仓大量用 \
-                     dyn Trait 动态派发,调用关系本来就查不全。"
-                    br {}
-                    "高保真顶上那张 crate 依赖图是照 Workbench 自己的仓画死的,换个项目就不对了;\
-                     真画它要有一份真实的依赖来源,还没接,所以这里没有那张图。"
+                div { class: "set-ctl",
+                    input { class: "input", disabled: true, placeholder: "还没接" }
                 }
             }
         }
@@ -196,7 +211,7 @@ fn assets_tab(a: Option<&AssetsVm>, bridge: &Bridge) -> Element {
     let b = bridge.clone();
     let Some(a) = a else {
         return rsx! {
-            div { class: "card",
+            div { class: "set-group",
                 div { class: "empty",
                     "点一下上面的「资产」页签就现扫一次。"
                     br {}
@@ -212,52 +227,57 @@ fn assets_tab(a: Option<&AssetsVm>, bridge: &Bridge) -> Element {
         String::new()
     };
     rsx! {
-        div { class: "row",
-            button {
-                class: "btn btn-secondary ml-auto",
-                onclick: move |_| b.send(Req::KbTab(KbTab::Assets)),
-                "重新扫一次"
+        div { class: "section",
+            div {
+                h3 { class: "section-title", "技能与 workflow" }
+                p { class: "section-desc",
+                    "Workbench 自带的(摊在 Workbench 自己的资产目录,不进你的仓)+ 本仓 .claude/skills/ 自有的;「用过几次」按活挂的 workflow 现算,没有胜率。"
+                }
+            }
+            div { class: "section-tools",
+                button {
+                    class: "btn btn-secondary",
+                    onclick: move |_| b.send(Req::KbTab(KbTab::Assets)),
+                    "重新扫一次"
+                }
             }
         }
-
-        div { class: "asset-sect-title", "技能与 workflow" }
-        div { class: "hint",
-            "Workbench 自带的四份(摊在 Workbench 自己的资产目录,不进你的仓)+ 本仓 \
-             .claude/skills/ 里自有的。「用过几次」按活挂的 workflow 现算,\
-             没有胜率 —— V4 不留战绩账本。"
-        }
-        if a.skills.is_empty() {
-            div { class: "empty", "暂无" }
-        }
-        div { class: "asset-grid",
+        div { class: "set-group",
+            if a.skills.is_empty() {
+                div { class: "empty", "暂无" }
+            }
             for s in a.skills.iter() {
-                {skill_card(s)}
+                {skill_row(s)}
             }
         }
 
-        div { class: "asset-sect-title", "蒸馏出来的技能" }
-        div { class: "hint",
-            "把做完的活蒸馏成技能这颗按钮 V4 还没建,\
-             所以这里现在恒为空 —— 不放占位数据。"
+        div { class: "section",
+            div {
+                h3 { class: "section-title", "蒸馏出来的技能" }
+                p { class: "section-desc", "把做完的活蒸馏成技能这颗按钮还没建,所以这里现在恒为空 —— 不放占位数据。" }
+            }
         }
-        if a.distilled.is_empty() {
-            div { class: "empty", "暂无" }
-        }
-        div { class: "asset-grid",
+        div { class: "set-group",
+            if a.distilled.is_empty() {
+                div { class: "empty", "暂无" }
+            }
             for s in a.distilled.iter() {
-                {skill_card(s)}
+                {skill_row(s)}
             }
         }
 
-        div { class: "asset-sect-title", "产物登记" }
-        div { class: "hint",
-            "没有登记表 —— git log --name-only 就是登记表。扫最近 200 个提交,\
-             每个文件记最近碰它的那一次,一共 {a.artifacts.len()} 个文件{more}。"
+        div { class: "section",
+            div {
+                h3 { class: "section-title", "产物登记" }
+                p { class: "section-desc",
+                    "没有登记表 —— git log --name-only 就是登记表。扫最近 200 个提交,每个文件记最近碰它的那一次,一共 {a.artifacts.len()} 个文件{more}。"
+                }
+            }
         }
-        if a.artifacts.is_empty() {
-            div { class: "empty", "暂无登记产物" }
-        }
-        div { class: "card",
+        div { class: "set-group",
+            if a.artifacts.is_empty() {
+                div { class: "empty", "暂无登记产物" }
+            }
             for f in a.artifacts.iter().take(ARTIFACT_ROWS) {
                 div { key: "{f.path}", class: "leaderboard-row",
                     span { class: "row-id", "{f.commit}" }
@@ -269,14 +289,16 @@ fn assets_tab(a: Option<&AssetsVm>, bridge: &Bridge) -> Element {
             }
         }
 
-        div { class: "asset-sect-title", "发版记录" }
-        div { class: "hint",
-            "发版记录扫 git 标签 + 远端 Release,库里没有版本表。"
+        div { class: "section",
+            div {
+                h3 { class: "section-title", "发版记录" }
+                p { class: "section-desc", "扫 git 标签 + 远端 Release,库里没有版本表。" }
+            }
         }
-        if a.releases.is_empty() {
-            div { class: "empty", "暂无发版记录" }
-        }
-        div { class: "card",
+        div { class: "set-group",
+            if a.releases.is_empty() {
+                div { class: "empty", "暂无发版记录" }
+            }
             for r in a.releases.iter() {
                 div { key: "{r.version}", class: "leaderboard-row",
                     span { class: "lb-ver mono", "{r.version}" }
@@ -290,15 +312,19 @@ fn assets_tab(a: Option<&AssetsVm>, bridge: &Bridge) -> Element {
             }
         }
 
-        div { class: "asset-sect-title", "仓统计" }
-        if !a.error.is_empty() {
-            div { class: "mono text-danger", "{a.error}" }
+        div { class: "section",
+            div { h3 { class: "section-title", "仓统计" } }
         }
-        div { class: "repo-metric-grid",
-            for (k, v) in a.repo_stats.iter() {
-                div { key: "{k}", class: "repo-metric-item",
-                    div { class: "v mono", "{v}" }
-                    div { class: "k", "{k}" }
+        div { class: "set-group",
+            if !a.error.is_empty() {
+                div { class: "empty mono text-danger", "{a.error}" }
+            }
+            div { class: "repo-metric-grid",
+                for (k, v) in a.repo_stats.iter() {
+                    div { key: "{k}", class: "repo-metric-item",
+                        div { class: "v mono", "{v}" }
+                        div { class: "k", "{k}" }
+                    }
                 }
             }
         }
@@ -309,18 +335,20 @@ fn assets_tab(a: Option<&AssetsVm>, bridge: &Bridge) -> Element {
 /// **列不下的要说出来** —— 说明里带总数和这个上限。
 const ARTIFACT_ROWS: usize = 60;
 
-fn skill_card(s: &SkillVm) -> Element {
+fn skill_row(s: &SkillVm) -> Element {
     rsx! {
-        div { key: "{s.slug}", class: "card asset-card",
-            div { class: "name", "{s.title}" }
-            div { class: "meta row",
-                span { class: "tag tag-neutral", "{s.origin}" }
-                span {
-                    if s.uses == 0 { "还没被任何活用过" } else { "用过 {s.uses} 次" }
+        div { key: "{s.slug}", class: "set-row",
+            div { class: "set-text",
+                div { class: "set-title", "{s.title}" }
+                if !s.desc.is_empty() {
+                    div { class: "set-desc", "{s.desc}" }
                 }
             }
-            if !s.desc.is_empty() {
-                div { class: "meta", "{s.desc}" }
+            div { class: "set-ctl",
+                span { class: "tag tag-neutral", "{s.origin}" }
+                span { class: "uses",
+                    if s.uses == 0 { "还没用过" } else { "用过 {s.uses} 次" }
+                }
             }
         }
     }

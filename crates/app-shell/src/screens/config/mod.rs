@@ -15,6 +15,12 @@ pub fn View(p: ProjectVm, bridge: Bridge) -> Element {
     let (p, bridge) = (&p, &bridge);
     rsx! {
         section { "data-screen": "config",
+            div { class: "page-head",
+                div {
+                    h1 { "配置" }
+                    p { class: "page-desc", "这个项目的两件事:开工用什么工具、有哪些技能与 workflow。探活在项目墙 / 设置,节律在 Orca。" }
+                }
+            }
             {mapping_block(p, bridge)}
             {skill_block(p)}
         }
