@@ -94,8 +94,8 @@ pub enum Command {
     },
     /// 排进计划版本(`bw:plan:<name>`)。一张活只属于一个版本。
     ScheduleToPlan { id: IssueId, plan: String },
-    /// 建一个版本:建 codehub milestone,给 `included` 打 `bw:plan:<name>`。
-    /// 与发版号 `CutRelease` 不同。
+    /// 建一个版本:落运作活①并打 `bw:plan:<name>`,纳入的活也打标。
+    /// 同名里程碑只补充。与发版号 `CutRelease` 不同。
     CreatePlanVersion {
         project_id: ProjectId,
         name: String,
@@ -104,10 +104,10 @@ pub enum Command {
         note: String,
         included: Vec<IssueId>,
     },
-    /// 删一个未发版本:给挂着 `bw:plan:<name>` 的活摘掉该标签,再删同名
+    /// 删一个未发版本:给挂着 `bw:plan:<name>` 的活摘掉该标签,再尽力删同名
     /// 里程碑。已发的号拒收。
     DeletePlanVersion { project_id: ProjectId, name: String },
-    /// 未发版本改名:同步里程碑标题、标签定义、已打在 issue 上的 `bw:plan:`。
+    /// 未发版本改名:先改标签定义和 issue 上的 `bw:plan:`,里程碑标题只补充。
     RenamePlanVersion {
         project_id: ProjectId,
         from: String,

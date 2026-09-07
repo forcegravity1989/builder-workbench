@@ -217,6 +217,7 @@ pub fn CreateVersionDialog(
     let name_ok = !name.read().trim().is_empty();
     let start_v = start.read().clone();
     let due_v = due.read().clone();
+    let dates_partial = start_v.is_empty() != due_v.is_empty();
     let dates_ok = !start_v.is_empty() && !due_v.is_empty();
     let range_bad = dates_ok && start_v > due_v;
     let name_v = name.read().trim().to_string();
@@ -224,7 +225,7 @@ pub fn CreateVersionDialog(
         || p.last_released == name_v
         || p.unreleased.iter().any(|s| s == &name_v);
     let shape_ok = !name_v.is_empty();
-    let can_create = name_ok && dates_ok && !range_bad && shape_ok && !taken;
+    let can_create = name_ok && !dates_partial && !range_bad && shape_ok && !taken;
     rsx! {
         div { class: "modal-backdrop", onclick: move |_| dialog.set(None),
             div { class: "modal plan-modal", onclick: move |e| e.stop_propagation(),
@@ -248,7 +249,7 @@ pub fn CreateVersionDialog(
                         label { class: "label", "时间" }
                         div { class: "cv-field-2",
                             div {
-                                span { class: "sub", "开始 " span { class: "asterisk", "*" } }
+                                span { class: "sub", "开始" }
                                 input {
                                     class: if range_bad { "input invalid" } else { "input" },
                                     r#type: "date",
@@ -257,7 +258,7 @@ pub fn CreateVersionDialog(
                                 }
                             }
                             div {
-                                span { class: "sub", "结束 " span { class: "asterisk", "*" } }
+                                span { class: "sub", "结束" }
                                 input {
                                     class: if range_bad { "input invalid" } else { "input" },
                                     r#type: "date",
@@ -266,13 +267,15 @@ pub fn CreateVersionDialog(
                                 }
                             }
                         }
-                        if range_bad {
+                        if dates_partial {
+                            div { class: "field-err", "开始和结束要一起填,也可以都空着" }
+                        } else if range_bad {
                             div { class: "field-err", "开始不能晚于结束" }
                         }
                     }
                     div { class: "formrow",
                         label { class: "label", "说明" }
-                        textarea { class: "textarea", value: "{note}", placeholder: "这个版本要收口什么",
+                        textarea { class: "textarea", value: "{note}", placeholder: "这个版本要收口什么（写成运作活①的版本目标）",
                             oninput: move |e| note.set(e.value()) }
                     }
                     div { class: "formrow",
@@ -290,7 +293,7 @@ pub fn CreateVersionDialog(
                         {
                             let last = if p.last_released.is_empty() { "没有" } else { p.last_released.as_str() };
                             let unrel = if p.unreleased.is_empty() { "没有".to_string() } else { p.unreleased.join("、") };
-                            format!("上一发 · {last}　未发 · {unrel}　推荐 · {}", p.suggested_next)
+                            format!("会建一张「更新指标 + 制定版本计划 {name_v}」。上一发 · {last}　未发 · {unrel}　推荐 · {}", p.suggested_next)
                         }
                     }
                 }
@@ -305,9 +308,8 @@ pub fn CreateVersionDialog(
                                 let start_v = start.read().clone();
                                 let due_v = due.read().clone();
                                 if name.read().trim().is_empty()
-                                    || start_v.is_empty()
-                                    || due_v.is_empty()
-                                    || start_v > due_v
+                                    || start_v.is_empty() != due_v.is_empty()
+                                    || (!start_v.is_empty() && start_v > due_v)
                                 {
                                     return;
                                 }
@@ -558,7 +560,7 @@ pub fn DeleteVersionDialog(
                             }
                         }
                     }
-                    div { class: "cfg-readonly-note", "确认后删掉 codehub 里程碑,issue 上的 bw:plan 标签也会摘掉。" }
+                    div { class: "cfg-readonly-note", "确认后摘掉 issue 上的 bw:plan 标签。同名里程碑能删就删,删不成不影响标签。" }
                 }
                 div { class: "plan-modal-foot",
                     span {}

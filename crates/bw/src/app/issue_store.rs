@@ -191,7 +191,7 @@ pub async fn set_category(
     Ok(())
 }
 
-async fn project_plan_best_effort(remote: &Remote, path: &str, iid: u32, plan: &str) {
+pub(crate) async fn project_plan_best_effort(remote: &Remote, path: &str, iid: u32, plan: &str) {
     if let Err(e) = remote.project_plan(iid, path, plan).await {
         bw_engine::dlog!(
             err,
@@ -284,30 +284,48 @@ pub async fn clear_plan(app: &App, project: &Project, iid: u32) -> Result<()> {
     Ok(())
 }
 
-/// 按标题删版本里程碑。找不到当成功。周格式标题远端也不删。
-pub async fn delete_plan_version(app: &App, project: &Project, name: &str) -> Result<()> {
-    let remote = app.remote_for(project)?;
-    remote
+/// 按标题删版本里程碑。找不到当成功。失败只记日志,不挡标签正本。
+pub async fn try_delete_plan_milestone(app: &App, project: &Project, name: &str) {
+    let Ok(remote) = app.remote_for(project) else {
+        return;
+    };
+    if let Err(e) = remote
         .delete_plan_milestone(&project.remote_path, name)
         .await
-        .map_err(|e| map_remote_err("远端删版本里程碑没成", e))?;
-    Ok(())
+    {
+        bw_engine::dlog!(
+            err,
+            "milestone",
+            "[BW_MILESTONE] 删版本里程碑 {name} 没成:{e}"
+        );
+    }
 }
 
-/// 建一个版本里程碑(title=name,start,due),返回 mid。不碰 issue ——
-/// `assign_to_plan` 才把 issue 挂上去。0 = provider 不投(github/mock)。
-pub async fn create_plan_version(
+/// 建/复用同名里程碑。失败返 0,不挡 `bw:plan:` 正本。
+pub async fn try_ensure_plan_milestone(
     app: &App,
     project: &Project,
     name: &str,
     start: &str,
     due: &str,
-) -> Result<u64> {
-    let remote = app.remote_for(project)?;
-    remote
+) -> u64 {
+    let Ok(remote) = app.remote_for(project) else {
+        return 0;
+    };
+    match remote
         .ensure_plan_milestone(&project.remote_path, name, start, due)
         .await
-        .map_err(|e| map_remote_err("远端建版本里程碑没成", e))
+    {
+        Ok(id) => id,
+        Err(e) => {
+            bw_engine::dlog!(
+                err,
+                "milestone",
+                "[BW_MILESTONE] 建版本里程碑 {name} 没成:{e}"
+            );
+            0
+        }
+    }
 }
 
 /// 在远端**开着的** issue 里找一张标题精确匹配的。B 类轻量活在途复用用
