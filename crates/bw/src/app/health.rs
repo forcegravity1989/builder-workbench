@@ -145,7 +145,7 @@ impl App {
         let notes = self.week_goals_from_ops1(&project, &issues).await;
         let version = match self.remote_for(&project) {
             Ok(remote) => remote
-                .list_milestones(&project.remote_path)
+                .list_milestones()
                 .await
                 .ok()
                 .and_then(|rows| {

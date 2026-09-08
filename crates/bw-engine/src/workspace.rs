@@ -96,7 +96,7 @@ pub async fn provision_issue_worktree(
     main_workspace: &Path,
     issue_number: u32,
 ) -> Result<PathBuf, ProvisionError> {
-    let branch = crate::github::issue_branch(issue_number);
+    let branch = issue_branch(issue_number);
     // 先找:新目录或旧平级兄弟里已经有一棵活树就原样接着用,不迁、不建第二棵。
     if let Some(existing) = resolve_issue_worktree(main_workspace, issue_number, None) {
         return Ok(existing);
@@ -281,4 +281,106 @@ pub struct FileChange {
     pub path: String,
     pub added: u32,
     pub deleted: u32,
+}
+
+// ─────────────── 分支命名与 git 远端地址(provider 中立) ───────────────
+//
+// 这三件跟「远端是 GitHub 还是 codehub」没关系:分支名是 Workbench 自己的约定,
+// 两个远端地址函数问的是本机 git。放在 remote/ 里的任何一臂都会让另一臂(和
+// 半个仓)为了拿一个分支名而 `use ...::github`,那正是两条线缠在一起的起点。
+
+/// The work branch a run's changes live on for a given GitHub issue —
+/// `bw/issue-<github_number>`. One deterministic branch per Issue so a retry
+/// re-uses the same branch (and the same PR), never fans out.
+pub fn issue_branch(github_number: u32) -> String {
+    format!("bw/issue-{github_number}")
+}
+
+/// 读一个工作区的 `origin` 远端 URL。`Ok(None)` = 没配 `origin`(绑定本地
+/// 目录建的项目的常态——`git remote get-url origin` 以非零退出,这不是
+/// bug);其余 git 失败照实报错,这是一次真读,不吞错误。
+pub async fn origin_remote_url(workspace: &Path) -> Result<Option<String>, ProvisionError> {
+    let output = crate::win_cmd::tokio_cmd("git")
+        .current_dir(workspace)
+        .args(["remote", "get-url", "origin"])
+        .stdin(Stdio::null())
+        .stdout(Stdio::piped())
+        .stderr(Stdio::piped())
+        .output()
+        .await
+        .map_err(|e| ProvisionError::Git(e.to_string()))?;
+    if !output.status.success() {
+        // "fatal: No such remote 'origin'" — 没配远端,不是错误。
+        return Ok(None);
+    }
+    let url = String::from_utf8_lossy(&output.stdout).trim().to_string();
+    Ok(if url.is_empty() { None } else { Some(url) })
+}
+
+/// 从 `git remote` URL 拆出 host 和 `owner/repo`。认 https / ssh / `git@host:path`。
+///
+/// 认不出返回 `None`,不猜。`.git` 后缀和末尾 `/` 会剥掉。
+pub fn parse_git_remote_url(url: &str) -> Option<(String, String)> {
+    let url = url.trim();
+    if url.is_empty() {
+        return None;
+    }
+    if let Some(rest) = url.strip_prefix("git@") {
+        let (host, path) = rest.split_once(':')?;
+        let host = host.trim();
+        if host.is_empty() {
+            return None;
+        }
+        return Some((host.to_string(), strip_git_suffix(path)));
+    }
+    let rest = url
+        .strip_prefix("https://")
+        .or_else(|| url.strip_prefix("http://"))
+        .or_else(|| url.strip_prefix("ssh://git@"))
+        .or_else(|| url.strip_prefix("ssh://"))?;
+    let rest = rest.strip_prefix("git@").unwrap_or(rest);
+    let (hostport, path) = rest.split_once('/')?;
+    let host = hostport.split(':').next()?.trim();
+    if host.is_empty() || path.trim().is_empty() {
+        return None;
+    }
+    Some((host.to_string(), strip_git_suffix(path)))
+}
+
+fn strip_git_suffix(path: &str) -> String {
+    path.trim()
+        .trim_end_matches('/')
+        .trim_end_matches(".git")
+        .to_string()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::parse_git_remote_url;
+
+    #[test]
+    fn parse_https_codehub_origin() {
+        let (host, path) =
+            parse_git_remote_url("https://codehub-dg-g.huawei.com/z30026659/workbench.git")
+                .expect("https origin");
+        assert_eq!(host, "codehub-dg-g.huawei.com");
+        assert_eq!(path, "z30026659/workbench");
+    }
+
+    #[test]
+    fn parse_ssh_and_git_at() {
+        let a =
+            parse_git_remote_url("git@codehub-dg-g.huawei.com:z30026659/workbench.git").unwrap();
+        let b =
+            parse_git_remote_url("ssh://git@codehub-dg-g.huawei.com:2222/z30026659/workbench.git")
+                .unwrap();
+        assert_eq!(
+            a,
+            (
+                "codehub-dg-g.huawei.com".into(),
+                "z30026659/workbench".into()
+            )
+        );
+        assert_eq!(b, a);
+    }
 }

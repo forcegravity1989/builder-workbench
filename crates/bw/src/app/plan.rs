@@ -273,11 +273,7 @@ impl App {
         }
         let remote = self.remote_for(&project)?;
         remote
-            .rename_plan_label(
-                &project.remote_path,
-                &format!("bw:plan:{from}"),
-                &format!("bw:plan:{to}"),
-            )
+            .rename_plan_label(&format!("bw:plan:{from}"), &format!("bw:plan:{to}"))
             .await
             .map_err(|e| AppError::Exec(format!("改标签名没成:{e}")))?;
         let issues = self.issues(project_id).await?;
@@ -289,7 +285,7 @@ impl App {
             }
         }
         remote
-            .rename_plan_milestone(&project.remote_path, &from, &to)
+            .rename_plan_milestone(&from, &to)
             .await
             .map_err(|e| AppError::Exec(format!("改里程碑标题没成:{e}")))?;
         Ok(vec![Event::PlanVersionRenamed {
@@ -316,7 +312,7 @@ impl App {
             .map(|i| i.version.clone())
             .collect();
         if let Ok(remote) = self.remote_for(project) {
-            if let Ok(rows) = remote.list_milestones(&project.remote_path).await {
+            if let Ok(rows) = remote.list_milestones().await {
                 for (title, _, _, _) in rows {
                     if crate::version::is_plan_name(&title) {
                         plan_names.push(title);

@@ -6,6 +6,17 @@
 
 ## 最近 · 2026-09-08
 
+GitHub 和 codehub 两条远端线拆干净:**一个基类,两个派生**。基类 `RemoteProvider` 描述「一个远端仓能干什么」,接口里一个平台名都没有;`GithubRemote`(走 `gh`)、`CodehubRemote`(走 `codehub-cli`)、`MockRemote`(替身)是三个各自独立的实现。调用方经门面 `Remote` 拿到基类对象,只调方法,不知道背后是哪一个。
+
+拆之前两条线是缠着的:`codehub.rs` 反过来引用 `github::PrOpened`;分支名 `bw/issue-<n>`、`git remote get-url origin` 这些跟平台没关系的东西住在 `github.rs` 里,于是半个仓为了拿一个分支名要 `use bw_engine::github`;走势、接入流、clone 三处调用方自己写 `if github { … } else { … }`,同一段按周分桶的数学抄了两遍。这就是上一条那个字段名 bug 能活下来的土壤——改一边没人拦,两边的差异也没人守。
+
+现在的隔离前两道是编译器管的,不靠自觉:两臂改成 `remote` 的**私有子模块**(`bw_engine::github::…` 这条路径不再存在,外面绕不过基类);基类的 `RemoteError` 不再内嵌两个平台各自的错误类型,两臂各自把自家错误翻成中立形状。第三道是新门禁 `scripts/guard-remote-isolation.sh`:`github.rs` 里不许出现 codehub,反之亦然(注释里提对方允许——解释「为什么这里跟对面不一样」正是该写的注释)。
+
+顺带收掉的重复:走势时序改成两臂各自回 `Capped<T>`(原文时刻 + 这趟有没有顶到那条 CLI 的上限),分桶数学在 `bw::trend` 里只剩一份;`gh` 会截到 1000 条、`codehub-cli -l 0` 不截,这个差异由各臂自报,不再由调用方猜(以前 codehub 那条路径压根没有截断检查)。接入流的列仓/探仓/读名片、clone 都改走基类,`RepoSummary` 归一化在各臂里做完。里程碑投影只有 codehub 真投,「不投」成了基类的默认实现,别的臂不写空壳。里程碑那几个方法丢掉了多余的 `path` 参数(调用方传的一直就是自己那个仓)。平台无关的件搬进 `workspace.rs`(分支名、origin 地址读数与 URL 解析)和基类(`PrOpened`、名片路径)。
+
+**没做**:远端 `state` 原文仍不归一化(GitHub 回大写、codehub 回小写),上层还是靠忽略大小写比对 closed 来判;把它收进基类会动上层判读,另议。codehub 那臂这次只有编译期验证——本机没有 `codehub-cli`,读回实跑只在 GitHub 侧做了(issue 列表 58 条、单查带正文、走势两条时序、接入流列仓与读名片,全通)。
+
+
 修好 GitHub 侧读 issue 的字段名:`gh` 的 issue 只有复数 `assignees`(一个数组),我们一直按单数 `assignee` 去要,gh 直接拒("Unknown JSON field"),所以接 GitHub 的项目一读 issue 列表就整屏失败。改成要 `assignees` 并取数组第一个人当责任人(产品仍是单责任人)。同一处顺带修好写:改责任人原先只 `--add-assignee`,不摘旧人,一个活会挂两个人而读回看的是第一个,表现成「改了没生效」;取消指派原先传 `--remove-assignee **`,gh 把它当成一个不存在的用户名、什么都不做也不报错——静默失效。现在先读回当前指派,再一条命令摘旧人 / 加新人。codehub 那条线不受影响(它是 GitLab 形状,本来就叫 `assignee`)。
 
 ## 最近 · 2026-09-07

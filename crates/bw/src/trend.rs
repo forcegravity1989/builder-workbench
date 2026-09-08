@@ -46,8 +46,8 @@ pub struct Trend {
 /// 算最近 `weeks` 周(含本周),旧的在前。
 ///
 /// 三条线都遵守同一条:**采不到就是 `None`,失败原话带回,绝不变成 0**。
-/// git 那两条一趟遍历出齐;远端那两条按 provider 分派(GitHub 走 gh、
-/// codehub 走 codehub-cli),各周并发。
+/// git 那两条一趟遍历出齐;远端那两条问基类要(哪个平台是底座的事,这儿不问),
+/// 两条并发。
 pub async fn recent_weeks(ws: &Path, project: &Project, weeks: u32) -> Trend {
     let remote = bw_engine::remote::Remote::for_project(
         &project.provider,
@@ -101,39 +101,26 @@ async fn recent_inner(
         }
     };
 
-    // 远端那两条:**provider 判断走底座那一份**([`bw_engine::remote::Remote::for_project`]),
-    // 不在这儿手写字符串比较。GitHub 走 gh、codehub 走 codehub-cli,各按周分桶。
+    // 远端那两条:**认哪个平台是底座的事**([`bw_engine::remote::Remote::for_project`]),
+    // 这儿不写字符串比较。造不出远端 = provider 不认识,如实说。
     if remote.is_none() && has_remote {
         trend.remote_note =
             "这个项目的远端 provider Workbench 不认识,合入的 PR 与未处理 issue 走势没查 —— 只画提交那一条".into();
     }
 
-    // 一趟拉全、本地按周分桶。**不按周去查** —— 见 `bw_engine::github` 里那两个
-    // 读数函数上面的说明。codehub 同构(`-l 0` 全量,不截断)。
+    // 一趟拉全、本地按周分桶。**不按周去查** —— 逐窗查会把全史遍历次数乘上窗数。
+    // 这里不认识 GitHub 也不认识 codehub:基类回的是同一种原文时刻,分桶的数学
+    // 下面只有一份。以前这儿按 provider 分了三支,同一段数学抄了两遍,改一边忘
+    // 另一边就是两条线对不上账。
     let (merged, open_issues) = match &remote {
         None => (None, None),
-        Some(bw_engine::remote::Remote::Github(owner_repo)) => {
-            let (a, b) = tokio::join!(
-                merged_prs_by_week(owner_repo, &list),
-                open_issues_by_week(owner_repo, &list),
-            );
+        Some(r) => {
+            let (a, b) = tokio::join!(merged_mrs_by_week(r, &list), open_issues_by_week(r, &list));
             (
                 note_or(&mut trend.remote_note, a),
                 note_or(&mut trend.remote_note, b),
             )
         }
-        Some(bw_engine::remote::Remote::Codehub { host, path }) => {
-            let (a, b) = tokio::join!(
-                merged_mrs_by_week(host, path, &list),
-                open_issues_by_week_ch(host, path, &list),
-            );
-            (
-                note_or(&mut trend.remote_note, a),
-                note_or(&mut trend.remote_note, b),
-            )
-        }
-        // Mock 远端没有真数据,两条线都空(走势图说「尚无观测」,不假装)。
-        Some(bw_engine::remote::Remote::Mock(_)) => (None, None),
     };
 
     for (i, week) in list.iter().enumerate() {
@@ -162,59 +149,6 @@ fn note_or<T>(note: &mut String, r: Result<T, String>) -> Option<T> {
     }
 }
 
-/// 每周合入的 PR 数,和 `weeks` 一一对应。
-async fn merged_prs_by_week(owner_repo: &str, weeks: &[String]) -> Result<Vec<u32>, String> {
-    let rows = bw_engine::github::merged_pr_times(owner_repo)
-        .await
-        .map_err(|e| format!("远端合入的 PR 没查成:{e}"))?;
-    // 拉回来的条数正好顶到上限 = 可能被截断了。**这时候宁可整条线不画**,
-    // 也不端一个少算的数出去(采不到就是采不到,不写 0)。
-    if rows.len() as u32 >= bw_engine::github::LIST_CAP {
-        return Err(format!(
-            "这个仓的已合并 PR 超过 {} 条,一趟拉不全 —— 这条线不画,免得给你一个少算的数",
-            bw_engine::github::LIST_CAP
-        ));
-    }
-    let stamps: Vec<i64> = rows.iter().filter_map(|s| epoch_of(s)).collect();
-    let mut out = Vec::with_capacity(weeks.len());
-    for w in weeks {
-        let (s, u) = window_of(w)?;
-        out.push(stamps.iter().filter(|t| (s..u).contains(t)).count() as u32);
-    }
-    Ok(out)
-}
-
-/// 每周**周末那一刻**还开着的 issue 数,和 `weeks` 一一对应。
-///
-/// 算法就是定义本身:到那一刻为止建过的,减去到那一刻为止关掉的。所以它天然
-/// 可回溯 —— 拿同一份流水换个时刻,过去任意一周的值都算得出来,不需要谁提前
-/// 把它存下来。复算:见 `bw_engine::github::issue_times` 的文档。
-async fn open_issues_by_week(owner_repo: &str, weeks: &[String]) -> Result<Vec<u32>, String> {
-    let rows = bw_engine::github::issue_times(owner_repo)
-        .await
-        .map_err(|e| format!("远端未处理 issue 数没查成:{e}"))?;
-    if rows.len() as u32 >= bw_engine::github::LIST_CAP {
-        return Err(format!(
-            "这个仓的 issue 超过 {} 条,一趟拉不全 —— 这条线不画,免得给你一个少算的数",
-            bw_engine::github::LIST_CAP
-        ));
-    }
-    let born: Vec<i64> = rows.iter().filter_map(|(c, _)| epoch_of(c)).collect();
-    let closed: Vec<i64> = rows
-        .iter()
-        .filter_map(|(_, k)| epoch_of(k.as_deref()?))
-        .collect();
-    let mut out = Vec::with_capacity(weeks.len());
-    for w in weeks {
-        // 周末那一刻 = 下周一 00:00 的前一瞬,用左闭右开的右边界即可。
-        let (_, end) = window_of(w)?;
-        let opened = born.iter().filter(|t| **t < end).count();
-        let shut = closed.iter().filter(|t| **t < end).count();
-        out.push(opened.saturating_sub(shut) as u32);
-    }
-    Ok(out)
-}
-
 /// 一个横坐标标签对应的 `[起, 止)`,unix 秒,**按本机时区切**。
 ///
 /// 认 ISO 周或 `YYYY-MM-DD`。和 git 那条线用同一把刀 —— 曾经远端按 UTC 切、
@@ -227,13 +161,21 @@ fn window_of(label: &str) -> Result<(i64, i64), String> {
     }
 }
 
-/// codehub 版的「每周合入 MR 数」,对仗 [`merged_prs_by_week`]。codehub-cli
-/// `-l 0` 全量、不截断,故无 LIST_CAP 检查(gh 那边有,因为 gh 会截到 1000)。
-async fn merged_mrs_by_week(host: &str, path: &str, weeks: &[String]) -> Result<Vec<u32>, String> {
-    let rows = bw_engine::codehub::merged_mr_times(host, path)
+/// 每周合入的 PR/MR 数,和 `weeks` 一一对应。
+async fn merged_mrs_by_week(
+    remote: &bw_engine::remote::Remote,
+    weeks: &[String],
+) -> Result<Vec<u32>, String> {
+    let got = remote
+        .merged_mr_times()
         .await
-        .map_err(|e| format!("远端合入的 MR 没查成:{e}"))?;
-    let stamps: Vec<i64> = rows.iter().filter_map(|s| epoch_of(s)).collect();
+        .map_err(|e| format!("远端合入的 PR 没查成:{e}"))?;
+    // 拉回来的条数正好顶到那条 CLI 的上限 = 可能被截断了。**这时候宁可整条线不
+    // 画**,也不端一个少算的数出去(采不到就是采不到,不写 0)。
+    if got.truncated {
+        return Err("这个仓的已合并 PR 一趟拉不全 —— 这条线不画,免得给你一个少算的数".into());
+    }
+    let stamps: Vec<i64> = got.rows.iter().filter_map(|s| epoch_of(s)).collect();
     let mut out = Vec::with_capacity(weeks.len());
     for w in weeks {
         let (s, u) = window_of(w)?;
@@ -242,22 +184,31 @@ async fn merged_mrs_by_week(host: &str, path: &str, weeks: &[String]) -> Result<
     Ok(out)
 }
 
-/// codehub 版的「未处理 issue 周末存量」,对仗 [`open_issues_by_week`]。
-async fn open_issues_by_week_ch(
-    host: &str,
-    path: &str,
+/// 每周**周末那一刻**还开着的 issue 数,和 `weeks` 一一对应。
+///
+/// 算法就是定义本身:到那一刻为止建过的,减去到那一刻为止关掉的。所以它天然
+/// 可回溯 —— 拿同一份流水换个时刻,过去任意一周的值都算得出来,不需要谁提前
+/// 把它存下来。
+async fn open_issues_by_week(
+    remote: &bw_engine::remote::Remote,
     weeks: &[String],
 ) -> Result<Vec<u32>, String> {
-    let rows = bw_engine::codehub::issue_times(host, path)
+    let got = remote
+        .issue_times()
         .await
         .map_err(|e| format!("远端未处理 issue 数没查成:{e}"))?;
-    let born: Vec<i64> = rows.iter().filter_map(|(c, _)| epoch_of(c)).collect();
-    let closed: Vec<i64> = rows
+    if got.truncated {
+        return Err("这个仓的 issue 一趟拉不全 —— 这条线不画,免得给你一个少算的数".into());
+    }
+    let born: Vec<i64> = got.rows.iter().filter_map(|(c, _)| epoch_of(c)).collect();
+    let closed: Vec<i64> = got
+        .rows
         .iter()
         .filter_map(|(_, k)| epoch_of(k.as_deref()?))
         .collect();
     let mut out = Vec::with_capacity(weeks.len());
     for w in weeks {
+        // 周末那一刻 = 下周一 00:00 的前一瞬,用左闭右开的右边界即可。
         let (_, end) = window_of(w)?;
         let opened = born.iter().filter(|t| **t < end).count();
         let shut = closed.iter().filter(|t| **t < end).count();

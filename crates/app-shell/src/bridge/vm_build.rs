@@ -923,7 +923,7 @@ async fn wall_extra(
             let Ok(remote) = app.remote_for(&job.p) else {
                 return String::new();
             };
-            let Ok(rows) = remote.list_milestones(&job.p.remote_path).await else {
+            let Ok(rows) = remote.list_milestones().await else {
                 return String::new();
             };
             bw::version::current_from_milestones(&rows, &bw::isoweek::today_ymd())
@@ -1133,7 +1133,7 @@ async fn lookup_pr_one(
     let branch = if item.charter {
         bw_engine::workspace::PROJECT_BRANCH.to_string()
     } else {
-        bw_engine::github::issue_branch(item.number)
+        bw_engine::workspace::issue_branch(item.number)
     };
     if item.done {
         return match remote.mr_for_branch(&branch).await {
@@ -1470,7 +1470,7 @@ async fn build_plan_versions(app: &App, p: &Project, issues: &[bw::Issue]) -> Ve
     let mut meta: std::collections::HashMap<String, (String, String, String)> =
         std::collections::HashMap::new();
     if let Ok(remote) = app.remote_for(p) {
-        if let Ok(rows) = remote.list_milestones(&p.remote_path).await {
+        if let Ok(rows) = remote.list_milestones().await {
             for (title, start, due, created) in rows {
                 if !order.contains(&title) {
                     order.push(title.clone());

@@ -309,54 +309,42 @@ fn refresh_note(vm: &Vm) -> String {
     }
 }
 
-/// 去平台列「我账号下的仓」。**两个平台各自的 CLI 都已经有这个能力**
-/// (`github::list_repos` / `codehub::list_repos`,V3 就在用),这里只是把它接到
-/// 界面上。列不出来就把 CLI 的原话端回去 —— 多半是没装、没登录、或者 codehub
-/// 域名填错,这三件事人一看原话就知道该干嘛。
+/// 接入屏那个单选:选的是 GitHub 还是 codehub。**这是界面上人做的选择**,也是
+/// 整个壳里最后一处「哪个平台」—— 到这儿就翻译成 provider 串交给底座,再往下
+/// 谁也不许按平台分支。
+fn provider_of(github: bool) -> &'static str {
+    if github {
+        "github"
+    } else {
+        "codehub"
+    }
+}
+
+/// 去平台列「我账号下的仓」。列不出来就把 CLI 的原话端回去 —— 多半是没装、没登
+/// 录、或者 codehub 区没选,这三件事人一看原话就知道该干嘛。
 async fn list_repos(github: bool, host: &str) -> (Vec<crate::vm::RepoRowVm>, Option<String>) {
     // 拉满用户的仓:搜索是客户端过滤已拉到的列表(走缓存,不重新拉),
     // 所以 fetch 要一次拿全——codehub-cli 无硬上限(实测 limit 9999 拉全 158 个)、
     // gh repo list 跨页拉到 limit。下拉框另有 DROPDOWN_CAP=30 封顶,不会铺满 999。
     const LIMIT: u32 = 999;
-    if github {
-        match bw_engine::github::list_repos(LIMIT).await {
-            Ok(rows) => (
-                rows.into_iter()
-                    .map(|r| crate::vm::RepoRowVm {
-                        path: format!("{}/{}", r.owner, r.repo),
-                        private: r.private,
-                        description: r.description,
-                        default_branch: r.default_branch,
-                        pushed_at: r.pushed_at,
-                    })
-                    .collect(),
-                None,
-            ),
-            Err(e) => (Vec::new(), Some(format!("{e}"))),
-        }
-    } else if host.trim().is_empty() {
-        (
-            Vec::new(),
-            Some("没选区 —— codehub 要 -H green/open/yellow 之一".into()),
-        )
-    } else {
-        match bw_engine::codehub::list_repos(host.trim(), LIMIT).await {
-            Ok(rows) => (
-                rows.into_iter()
-                    .map(|r| crate::vm::RepoRowVm {
-                        path: r.path,
-                        // codehub 给的是 `visibility` 字符串,不是布尔;
-                        // 只有明写 private 才算私有,拿不准就不画那个锁。
-                        private: r.visibility.eq_ignore_ascii_case("private"),
-                        description: r.description,
-                        default_branch: r.default_branch,
-                        pushed_at: r.pushed_at,
-                    })
-                    .collect(),
-                None,
-            ),
-            Err(e) => (Vec::new(), Some(format!("{e}"))),
-        }
+    let remote = match bw_engine::remote::Remote::for_host(provider_of(github), host.trim()) {
+        Ok(r) => r,
+        Err(e) => return (Vec::new(), Some(format!("{e}"))),
+    };
+    match remote.list_repos(LIMIT).await {
+        Ok(rows) => (
+            rows.into_iter()
+                .map(|r| crate::vm::RepoRowVm {
+                    path: r.path,
+                    private: r.private,
+                    description: r.description,
+                    default_branch: r.default_branch,
+                    pushed_at: r.pushed_at,
+                })
+                .collect(),
+            None,
+        ),
+        Err(e) => (Vec::new(), Some(format!("{e}"))),
     }
 }
 
@@ -370,20 +358,14 @@ async fn fetch_prefill(
     git_ref: &str,
 ) -> (Option<crate::vm::RepoPrefillVm>, crate::vm::RepoProbe) {
     use crate::vm::RepoProbe;
-    let got = if github {
-        match path.split_once('/') {
-            Some((owner, repo)) => bw_engine::github::fetch_project_toml(owner, repo, git_ref)
-                .await
-                .map_err(|e| e.to_string()),
-            None => Err(format!("「{path}」不是 owner/repo 的样子,没法查")),
-        }
-    } else if host.trim().is_empty() {
-        Err("codehub 域名还没填,查不了".into())
-    } else {
-        bw_engine::codehub::fetch_project_toml(host.trim(), path, git_ref)
-            .await
-            .map_err(|e| e.to_string())
+    let remote = match bw_engine::remote::Remote::for_host(provider_of(github), host.trim()) {
+        Ok(r) => r,
+        Err(e) => return (None, RepoProbe::NoRepo(e.to_string())),
     };
+    let got = remote
+        .fetch_project_toml(path, git_ref)
+        .await
+        .map_err(|e| e.to_string());
     match got {
         // 平台说「没有这份文件」。但**仓根本不存在也是同一个 404** —— 地址
         // 敲错一个字母就会得到「还没接管过,请填」,人填完才发现接的是个
@@ -391,15 +373,7 @@ async fn fetch_prefill(
         // 不在,才是真的没接管过。走到这支的只有没接管过的仓,多一次调用
         // 不落在常路上。
         Ok(None) => {
-            let exists = if github {
-                bw_engine::github::probe_repo(path)
-                    .await
-                    .map_err(|e| e.to_string())
-            } else {
-                bw_engine::codehub::probe(host.trim(), path)
-                    .await
-                    .map_err(|e| e.to_string())
-            };
+            let exists = remote.probe_repo(path).await.map_err(|e| e.to_string());
             match exists {
                 Ok(_) => (None, RepoProbe::Absent),
                 Err(e) => (None, RepoProbe::NoRepo(e)),

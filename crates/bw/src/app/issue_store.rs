@@ -83,7 +83,7 @@ pub async fn create(
         .await
         .map_err(|e| map_remote_err("远端建活没成", e))?;
     if let Some(name) = &plan {
-        project_plan_best_effort(&remote, &project.remote_path, iid, name).await;
+        project_plan_best_effort(&remote, iid, name).await;
     }
     Ok(issue_from_create(
         project,
@@ -191,8 +191,8 @@ pub async fn set_category(
     Ok(())
 }
 
-async fn project_plan_best_effort(remote: &Remote, path: &str, iid: u32, plan: &str) {
-    if let Err(e) = remote.project_plan(iid, path, plan).await {
+async fn project_plan_best_effort(remote: &Remote, iid: u32, plan: &str) {
+    if let Err(e) = remote.project_plan(iid, plan).await {
         bw_engine::dlog!(
             err,
             "milestone",
@@ -254,7 +254,7 @@ pub async fn assign_to_plan(app: &App, project: &Project, iid: u32, plan: &str) 
         .await
         .map_err(|e| map_remote_err("远端打 bw:plan 标签没成", e))?;
     // 里程碑是 codehub 侧镜像,失败只打 stderr,不挡正本(标签)。
-    if let Err(e) = remote.project_plan(iid, &project.remote_path, plan).await {
+    if let Err(e) = remote.project_plan(iid, plan).await {
         bw_engine::dlog!(
             err,
             "milestone",
@@ -288,7 +288,7 @@ pub async fn clear_plan(app: &App, project: &Project, iid: u32) -> Result<()> {
 pub async fn delete_plan_version(app: &App, project: &Project, name: &str) -> Result<()> {
     let remote = app.remote_for(project)?;
     remote
-        .delete_plan_milestone(&project.remote_path, name)
+        .delete_plan_milestone(name)
         .await
         .map_err(|e| map_remote_err("远端删版本里程碑没成", e))?;
     Ok(())
@@ -305,7 +305,7 @@ pub async fn create_plan_version(
 ) -> Result<u64> {
     let remote = app.remote_for(project)?;
     remote
-        .ensure_plan_milestone(&project.remote_path, name, start, due)
+        .ensure_plan_milestone(name, start, due)
         .await
         .map_err(|e| map_remote_err("远端建版本里程碑没成", e))
 }
@@ -515,7 +515,7 @@ pub fn work_branch(issue: &Issue) -> String {
     } else if issue.workflow == super::OPS2_WORKFLOW || issue.title.starts_with(OPS2_TITLE_PREFIX) {
         bw_engine::workspace::OPS_AUDIT_BRANCH.to_string()
     } else {
-        bw_engine::github::issue_branch(issue.number)
+        bw_engine::workspace::issue_branch(issue.number)
     }
 }
 
