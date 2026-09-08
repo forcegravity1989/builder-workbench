@@ -18,14 +18,6 @@ pub enum GithubError {
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub struct GithubRepoRef {
-    pub owner: String,
-    pub repo: String,
-    pub html_url: String,
-    pub private: bool,
-}
-
-#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct GithubRepoSummary {
     pub owner: String,
     pub repo: String,
@@ -87,12 +79,13 @@ pub async fn probe_repo(owner_repo: &str) -> Result<String, GithubError> {
 // 本地 `origin` 这一侧的真实读写;探活(`probe_repo`)、写 `remote_path`、
 // 补 connector 都是 app-shell 的编排职责,不下沉到这层。
 
-/// Clone an already-existing GitHub repo the user picked into `dest`.
-pub async fn clone_repo(
-    owner: &str,
-    repo: &str,
-    dest: &Path,
-) -> Result<GithubRepoRef, GithubError> {
+/// 把 GitHub 上一个已存在的仓 clone 到 `dest`。
+///
+/// **只 clone,不回读仓信息**。以前 clone 完还要再打一趟 `gh repo view --json
+/// isPrivate`,拼一个 `GithubRepoRef` 回去 —— 而唯一的调用方拿到就丢。等于每次
+/// 接入都白花一趟网络往返,去填一个没人读的字段。codehub 那一臂本来就只回
+/// `()`,现在两边对称了。
+pub async fn clone_repo(owner: &str, repo: &str, dest: &Path) -> Result<(), GithubError> {
     let owner_repo = format!("{owner}/{repo}");
     let output = crate::win_cmd::tokio_cmd("gh")
         .args(["repo", "clone", &owner_repo, &dest.to_string_lossy()])
@@ -105,28 +98,7 @@ pub async fn clone_repo(
     if !output.status.success() {
         return Err(GithubError::Command(stderr_text(&output)));
     }
-    let view = crate::win_cmd::tokio_cmd("gh")
-        .args(["repo", "view", &owner_repo, "--json", "isPrivate"])
-        .stdin(Stdio::null())
-        .stdout(Stdio::piped())
-        .stderr(Stdio::piped())
-        .output()
-        .await
-        .map_err(spawn_err)?;
-    let private = if view.status.success() {
-        serde_json::from_slice::<serde_json::Value>(&view.stdout)
-            .ok()
-            .and_then(|v| v.get("isPrivate").and_then(|b| b.as_bool()))
-            .unwrap_or(false)
-    } else {
-        false
-    };
-    Ok(GithubRepoRef {
-        owner: owner.to_string(),
-        repo: repo.to_string(),
-        html_url: format!("https://github.com/{owner_repo}"),
-        private,
-    })
+    Ok(())
 }
 
 // ─────────────────────── C5 · PR 验收环 ───────────────────────
