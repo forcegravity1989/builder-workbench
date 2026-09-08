@@ -137,6 +137,60 @@ pub async fn provision_issue_worktree(
     Ok(tree_path)
 }
 
+/// 已发出包用的树:`<仓根>/.bw/worktrees/pack-<版本名>`。主检出不动。
+pub fn pack_worktree_path(main_workspace: &Path, version: &str) -> PathBuf {
+    main_workspace
+        .join(".bw")
+        .join("worktrees")
+        .join(format!("pack-{version}"))
+}
+
+/// 检出同名 tag 到独立 worktree。已有这棵树就拨回 tag;拨不回去就拆掉再建。
+/// **不写主检出**。`version` 调用方已拒过路径分隔符。
+pub async fn provision_pack_worktree(
+    main_workspace: &Path,
+    version: &str,
+) -> Result<PathBuf, ProvisionError> {
+    let _ = git_in(main_workspace, &["fetch", "origin", "--tags"]).await;
+    let tag_ref = format!("refs/tags/{version}");
+    git_in(main_workspace, &["rev-parse", "--verify", &tag_ref])
+        .await
+        .map_err(|_| ProvisionError::Git(format!("本地没有 tag {version},先 fetch 或先发版本")))?;
+    let tree_path = pack_worktree_path(main_workspace, version);
+    let tree_str = tree_path.to_str().ok_or_else(|| {
+        ProvisionError::CreateDir(format!("worktree 路径非 UTF-8:{}", tree_path.display()))
+    })?;
+    let parent = tree_path.parent().unwrap_or(Path::new(""));
+    std::fs::create_dir_all(parent)
+        .map_err(|e| ProvisionError::CreateDir(format!("建 .bw/worktrees 目录没成:{e}")))?;
+    let _ = crate::win_cmd::tokio_cmd("git")
+        .current_dir(main_workspace)
+        .args(["worktree", "prune"])
+        .stdin(Stdio::null())
+        .stdout(Stdio::piped())
+        .stderr(Stdio::piped())
+        .output()
+        .await;
+    if tree_path.join(".git").exists() {
+        if git_in(&tree_path, &["checkout", "--detach", version])
+            .await
+            .is_ok()
+        {
+            return Ok(tree_path);
+        }
+        let _ = git_in(main_workspace, &["worktree", "remove", "--force", tree_str]).await;
+        let _ = std::fs::remove_dir_all(&tree_path);
+    } else if tree_path.exists() {
+        let _ = std::fs::remove_dir_all(&tree_path);
+    }
+    git_in(
+        main_workspace,
+        &["worktree", "add", "--detach", tree_str, version],
+    )
+    .await?;
+    Ok(tree_path)
+}
+
 /// 账本分支。B/C 读数写这里,不写人的主检出。
 pub const LEDGER_BRANCH: &str = "bw/ledger";
 /// 项目约定常驻分支。名片走这一条,合入后分支留着。

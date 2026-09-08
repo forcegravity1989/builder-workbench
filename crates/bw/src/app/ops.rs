@@ -33,6 +33,40 @@ pub fn is_ops1_issue(i: &Issue) -> bool {
         && (i.workflow == OPS1_WORKFLOW || crate::version::is_ops1_title(&i.title))
 }
 
+fn is_open_status(status: IssueStatus) -> bool {
+    !matches!(status, IssueStatus::Done | IssueStatus::Cancelled)
+}
+
+/// 开着的光杆运作活①(还没确认版本)。创建版本时复用这一张。
+pub fn find_open_bare_ops1(issues: &[Issue]) -> Option<&Issue> {
+    issues.iter().find(|i| {
+        is_ops1_issue(i)
+            && is_open_status(i.status)
+            && crate::version::ops1_version_from_title(&i.title).is_none()
+    })
+}
+
+/// 本周在研版本名。开着的带号①取最后创建;都关了则取未发版的已关①。
+/// 必须标题带号且身上有 `bw:plan:`。没有就空串。
+pub fn current_week_version(issues: &[Issue], released_names: &[String]) -> String {
+    let rows: Vec<crate::version::Ops1VersionRow> = issues
+        .iter()
+        .filter(|i| {
+            is_ops1_issue(i)
+                && crate::version::ops1_version_from_title(&i.title).is_some()
+                && crate::version::is_plan_name(&i.plan_version)
+        })
+        .map(|i| crate::version::Ops1VersionRow {
+            version: i.plan_version.clone(),
+            created_at: i.created_at,
+            number: i.number,
+            open: is_open_status(i.status),
+            released: released_names.iter().any(|r| r == &i.plan_version),
+        })
+        .collect();
+    crate::version::current_from_ops1(&rows).unwrap_or_default()
+}
+
 /// 这一 ISO 周要不要再开一张运作活①:有未完成的,或本周已有打了版本标签的
 /// (含已完成)。
 pub fn week_started(issues: &[Issue], current_week: &str) -> bool {

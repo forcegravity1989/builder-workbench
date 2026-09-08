@@ -224,6 +224,7 @@ pub fn CreateVersionDialog(
     let name_ok = !name.read().trim().is_empty();
     let start_v = start.read().clone();
     let due_v = due.read().clone();
+    let dates_partial = start_v.is_empty() != due_v.is_empty();
     let dates_ok = !start_v.is_empty() && !due_v.is_empty();
     let range_bad = dates_ok && start_v > due_v;
     let name_v = name.read().trim().to_string();
@@ -231,7 +232,7 @@ pub fn CreateVersionDialog(
         || p.last_released == name_v
         || p.unreleased.iter().any(|s| s == &name_v);
     let shape_ok = !name_v.is_empty();
-    let can_create = name_ok && dates_ok && !range_bad && shape_ok && !taken;
+    let can_create = name_ok && !dates_partial && !range_bad && shape_ok && !taken;
     rsx! {
         div { class: "dialog-backdrop", onclick: move |_| dialog.set(None),
             div {
@@ -280,13 +281,15 @@ pub fn CreateVersionDialog(
                                 }
                             }
                         }
-                        if range_bad {
+                        if dates_partial {
+                            div { class: "field-err", "开始和结束要一起填,也可以都空着" }
+                        } else if range_bad {
                             div { class: "field-err", "开始不能晚于结束" }
                         }
                     }
                     div { class: "field",
                         label { "说明" }
-                        textarea { class: "input", value: "{note}", placeholder: "这个版本要收口什么",
+                        textarea { class: "input", value: "{note}", placeholder: "这个版本要收口什么（写成运作活①的版本目标）",
                             oninput: move |e| note.set(e.value()) }
                     }
                     div { class: "field",
@@ -304,7 +307,7 @@ pub fn CreateVersionDialog(
                         {
                             let last = if p.last_released.is_empty() { "没有" } else { p.last_released.as_str() };
                             let unrel = if p.unreleased.is_empty() { "没有".to_string() } else { p.unreleased.join("、") };
-                            format!("上一发 · {last}　未发 · {unrel}　推荐 · {}", p.suggested_next)
+                            format!("会建一张「更新指标 + 制定版本计划 {name_v}」。上一发 · {last}　未发 · {unrel}　推荐 · {}", p.suggested_next)
                         }
                     }
                 }
@@ -319,9 +322,8 @@ pub fn CreateVersionDialog(
                                 let start_v = start.read().clone();
                                 let due_v = due.read().clone();
                                 if name.read().trim().is_empty()
-                                    || start_v.is_empty()
-                                    || due_v.is_empty()
-                                    || start_v > due_v
+                                    || start_v.is_empty() != due_v.is_empty()
+                                    || (!start_v.is_empty() && start_v > due_v)
                                 {
                                     return;
                                 }
@@ -579,7 +581,10 @@ pub fn DeleteVersionDialog(
                             }
                         }
                     }
-                    div { class: "hint", "确认后删掉 codehub 里程碑,issue 上的 bw:plan 标签也会摘掉。" }
+                    if versions.is_empty() {
+                        div { class: "hint", "没有未发的版本可删。" }
+                    }
+                    div { class: "hint", "确认后摘掉 issue 上的 bw:plan 标签。同名里程碑能删就删,删不成不影响标签。" }
                 }
                 div { class: "plan-modal-foot",
                     span {}
@@ -643,7 +648,7 @@ pub fn PackDialog(
                     {ship_status_row("验包", "出包过了再验", e2e.clone(), true, Some(asking_detail))}
                 }
                 div { class: "hint",
-                    "确认后先出包、再对包装好的安装包做验收。不建远端 Release,也不打发版标签。关闭只收窗,出包还在后台跑。"
+                    "已打 tag 的号从独立 worktree 检出 tag 再出,主检出不动。在研且还没 tag 的号先把工作区拉到远端最新再出。不建远端 Release。"
                 }
                 div { class: "dialog-actions",
                     button {
@@ -831,7 +836,6 @@ pub fn ReleaseDialog(
         let t = version.read().trim().to_string();
         !t.is_empty() && !t.contains('(')
     };
-    let included_empty = included.is_empty();
     let included = std::rc::Rc::new(included);
     rsx! {
         div { class: "dialog-backdrop", onclick: move |_| dialog.set(None),
@@ -845,12 +849,12 @@ pub fn ReleaseDialog(
                     label { "说明" }
                     textarea { class: "input", value: "{note}", oninput: move |e| note.set(e.value()) }
                 }
-                div { class: "hint", "确认后在代码平台建 Release,再给本版本已完成的活打发版标签。不出包。" }
+                div { class: "hint", "只有在研且还没打 tag 的号能发。确认后给这份代码打远端 tag。没有已完成的活也能发;勾上的才打发版标签。不出包。" }
                 div { class: "dialog-actions",
                     button { class: "btn btn-secondary", onclick: move |_| dialog.set(None), "取消" }
                     button {
                         class: "btn btn-primary",
-                        disabled: !version_ok || included_empty,
+                        disabled: !version_ok,
                         onclick: move |_| {
                             let v = version.read().trim().to_string();
                             if v.is_empty() || v.contains('(') { return; }

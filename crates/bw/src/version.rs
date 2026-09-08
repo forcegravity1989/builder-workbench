@@ -98,8 +98,67 @@ pub fn is_ops1_title(title: &str) -> bool {
         .is_some_and(|s| !s.is_empty())
 }
 
+/// 带号运作活①标题里的版本名。光杆 → `None`。
+pub fn ops1_version_from_title(title: &str) -> Option<String> {
+    title
+        .trim()
+        .strip_prefix(OPS1_TITLE)?
+        .strip_prefix(' ')
+        .map(str::trim)
+        .filter(|s| !s.is_empty())
+        .map(str::to_string)
+}
+
 pub fn ops1_title_for(version: &str) -> String {
     format!("{OPS1_TITLE} {version}")
+}
+
+/// 在研现算用的一行运作活①。`version` 必须来自 `bw:plan:`。
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Ops1VersionRow {
+    pub version: String,
+    pub created_at: i64,
+    pub number: u32,
+    pub open: bool,
+    pub released: bool,
+}
+
+/// 本周在研:开着的带号①取最后创建;都关了则取未发版的已关①里最后创建。
+/// 标题还是光杆、或没打 `bw:plan:` 的不算。
+pub fn current_from_ops1(rows: &[Ops1VersionRow]) -> Option<String> {
+    let pick = |open: bool, released_ok: bool| {
+        rows.iter()
+            .filter(|r| !r.version.is_empty() && r.open == open && (released_ok || !r.released))
+            .max_by_key(|r| (r.created_at, r.number))
+            .map(|r| r.version.clone())
+    };
+    pick(true, true).or_else(|| pick(false, false))
+}
+
+/// 出包用哪份代码。有同名 tag 就从 tag 出;在研且还没 tag 才用工作区。
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum PackSource {
+    Tag,
+    Workspace,
+}
+
+/// `viewing` 空 = 全部 issue,不出包。
+pub fn pack_source(viewing: &str, current: &str, has_tag: bool) -> Option<PackSource> {
+    if viewing.trim().is_empty() {
+        return None;
+    }
+    if has_tag {
+        Some(PackSource::Tag)
+    } else if viewing == current && !current.is_empty() {
+        Some(PackSource::Workspace)
+    } else {
+        None
+    }
+}
+
+/// 发版本只给在研且还没有同名 tag 的号。没有已完成的活也能发。
+pub fn can_cut_release(viewing: &str, current: &str, has_tag: bool) -> bool {
+    !viewing.trim().is_empty() && viewing == current && !current.is_empty() && !has_tag
 }
 
 /// 有未完成的运作活①,或本 ISO 周已有打了版本标签的运作活①(含已完成)。
@@ -190,6 +249,22 @@ mod tests {
     }
 
     #[test]
+    fn pack_source_and_cut_release_gates() {
+        assert_eq!(pack_source("", "v0.3", false), None);
+        assert_eq!(pack_source("v0.2", "v0.3", true), Some(PackSource::Tag));
+        assert_eq!(pack_source("v0.3", "v0.3", true), Some(PackSource::Tag));
+        assert_eq!(
+            pack_source("v0.3", "v0.3", false),
+            Some(PackSource::Workspace)
+        );
+        assert_eq!(pack_source("v0.4", "v0.3", false), None);
+        assert!(can_cut_release("v0.3", "v0.3", false));
+        assert!(!can_cut_release("v0.3", "v0.3", true));
+        assert!(!can_cut_release("v0.2", "v0.3", false));
+        assert!(!can_cut_release("v0.3", "", false));
+    }
+
+    #[test]
     fn inventory_recommends_after_last_and_unreleased() {
         let inv = inventory(&["v0.2".into()], &["v0.1".into()]);
         assert_eq!(inv.last_released.as_deref(), Some("v0.1"));
@@ -276,5 +351,55 @@ mod tests {
         assert!(!ops1_already_started(false, false));
         assert!(ops1_already_started(true, false));
         assert!(ops1_already_started(false, true));
+    }
+
+    fn row(
+        version: &str,
+        created_at: i64,
+        number: u32,
+        open: bool,
+        released: bool,
+    ) -> Ops1VersionRow {
+        Ops1VersionRow {
+            version: version.into(),
+            created_at,
+            number,
+            open,
+            released,
+        }
+    }
+
+    #[test]
+    fn ops1_title_yields_version() {
+        assert_eq!(ops1_version_from_title(OPS1_TITLE), None);
+        assert_eq!(
+            ops1_version_from_title("更新指标 + 制定版本计划 v0.3").as_deref(),
+            Some("v0.3")
+        );
+        assert_eq!(
+            ops1_version_from_title("更新指标 + 制定版本计划 MVP收尾").as_deref(),
+            Some("MVP收尾")
+        );
+    }
+
+    #[test]
+    fn current_ops1_prefers_last_created_open() {
+        let rows = [
+            row("v0.2", 10, 1, true, false),
+            row("v0.3", 20, 2, true, false),
+            row("v0.1", 30, 3, false, true),
+        ];
+        assert_eq!(current_from_ops1(&rows).as_deref(), Some("v0.3"));
+    }
+
+    #[test]
+    fn current_ops1_falls_back_to_closed_unreleased() {
+        let rows = [
+            row("v0.2", 10, 1, false, true),
+            row("v0.3", 20, 2, false, false),
+        ];
+        assert_eq!(current_from_ops1(&rows).as_deref(), Some("v0.3"));
+        let all_tagged = [row("v0.2", 10, 1, false, true)];
+        assert!(current_from_ops1(&all_tagged).is_none());
     }
 }
