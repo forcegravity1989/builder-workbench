@@ -134,6 +134,8 @@ scripts/   门禁脚本(guard-*)+ codegraph 联调
 
 每件独立 commit、在分支上、**不 push**(用户要 push 时另开 bundle)。标题让人不查文档也看懂做了什么(可带代号前缀,但须人话描述)。信息如实描述取舍,不吹;偏差如实记进 commit message 与 `CHANGELOG.md`。
 
+开 PR 必带**验收截图**,进 PR 正文或评审留言 —— 那就是验收报告,别人不用自己起壳就能验;界面 / 行为改动一律要。仓是私有的,正文里引 `raw.githubusercontent` 会渲染成裂图(GitHub 的图片代理拿不到私有仓,实测 404),能内嵌的只有网页端拖拽上传:所以图推一条永不合入的 `shots/<分支名>` 分支、正文给可点链接,要内嵌由人拖。大改动的改前 / 改后对照仍照旧进 `docs/05-features/<id>/shots/`。
+
 ## CodeGraph 导航(可选用)
 
 仓共享 codegraph 在 `.codegraph/codegraph.db`。`codegraph` CLI 可用时,先于广 grep 用:
