@@ -11,8 +11,8 @@ mod vm_kb;
 mod vm_panels;
 
 pub use nav::{
-    ChromeBusy, GuideNav, Panel, PanelNav, TopView, REPORTING, REPORTING_LOG, STARTING_SESSION,
-    SWITCHING_STATUS,
+    ChromeBusy, GuideNav, HelpNav, HelpTab, Panel, PanelNav, TopView, REPORTING, REPORTING_LOG,
+    STARTING_SESSION, SWITCHING_STATUS,
 };
 
 use crate::vm::Vm;
@@ -40,6 +40,8 @@ pub struct DeepLink {
     pub open: Option<String>,
     pub panel: Panel,
     pub view: Option<TopView>,
+    /// 帮助面板开在哪一页。八屏各有深链,这一条给它。
+    pub help: Option<HelpTab>,
 }
 
 pub fn read_deep_link() -> DeepLink {
@@ -65,6 +67,15 @@ pub fn read_deep_link() -> DeepLink {
                 dl.view = Some(view);
             }
             None => bw_engine::dlog!(warn, "bridge", "[BW_OPEN] 未知 BW_VIEW={v:?},忽略"),
+        }
+    }
+    if let Ok(h) = std::env::var("BW_HELP") {
+        match HelpTab::parse(&h) {
+            Some(tab) => {
+                bw_engine::dlog!(ok, "bridge", "[BW_HELP] {h}");
+                dl.help = Some(tab);
+            }
+            None => bw_engine::dlog!(warn, "bridge", "[BW_OPEN] 未知 BW_HELP={h:?},忽略"),
         }
     }
     dl

@@ -56,12 +56,12 @@ select.input-sm { padding-right: 22px; background-position: right 6px center; ba
 :is(.pr-head-name, .pcard-name, .charter-name, .plan-modal-title, .plan-toolbar .left):lang(zh) { letter-spacing: 0; }
 
 /* ---------- shell ---------- */
-.app-root { position: fixed; inset: 0; display: flex; overflow: hidden; background: var(--color-bg); color: var(--color-text); }
+.app-root { --sidebar-w: 172px; position: fixed; inset: 0; display: flex; overflow: hidden; background: var(--color-bg); color: var(--color-text); }
 .app-root.is-centered { align-items: center; justify-content: center; padding: var(--space-8); color: color-mix(in srgb, var(--color-text) 55%, transparent); }
 .fatal { max-width: 560px; color: var(--color-danger-deep); font-size: 14px; line-height: 1.9; }
 
 /* 唯一一条侧栏,紧凑:文字只有两三个字,172px 够放项目名。 */
-.app-sidebar { width: 172px; overflow-y: auto; padding: var(--space-3) var(--space-2) var(--space-2); }
+.app-sidebar { width: var(--sidebar-w); overflow-y: auto; padding: var(--space-3) var(--space-2) var(--space-2); }
 .app-sidebar .sidebar-item { flex: none; }
 .app-sidebar .sidebar-item svg { width: 15px; height: 15px; }
 .sb-brand { display: flex; align-items: center; gap: var(--space-2); height: 28px; padding: 0 var(--space-2); margin-bottom: var(--space-3); font-family: var(--font-heading); font-weight: var(--font-heading-weight); font-size: 13px; }
@@ -101,9 +101,54 @@ select.input-sm { padding-right: 22px; background-position: right 6px center; ba
 .prog-log-mark.fail { color: var(--color-danger); }
 .prog-log-mark.spinning { color: var(--color-accent); display: inline-block; animation: spin 0.9s linear infinite; }
 
-.side-tabs { position: fixed; top: 130px; right: 0; z-index: 57; display: flex; flex-direction: column; gap: 6px; }
-.guide-tab, .issue-tab { padding: var(--space-3) 7px; writing-mode: vertical-rl; letter-spacing: 0.05em; font-size: 12px; color: color-mix(in srgb, var(--color-text) 65%, transparent); background: var(--color-card); border: 1px solid var(--color-divider); border-right: 0; border-radius: var(--radius-md) 0 0 var(--radius-md); box-shadow: var(--shadow-sm); cursor: pointer; }
-.guide-tab:hover, .issue-tab:hover { color: var(--color-text); background: var(--color-neutral-100); }
+/* ---------- help ---------- */
+/* 帮助面板:侧栏底部那颗「帮助」弹出来的独立小窗,贴右下角 —— 帮助窗都在那儿。
+ * 深色头兼把手,按住能把它拖到任何地方(位移写在行内 transform 上,那是数据不是样式)。 */
+.help-panel { position: fixed; right: var(--space-4); bottom: var(--space-4); z-index: 60; width: 380px; max-height: min(660px, calc(100vh - var(--space-6))); display: flex; flex-direction: column; overflow: hidden; border-radius: var(--radius-lg); background: var(--color-surface); border: 1px solid var(--color-divider); box-shadow: var(--shadow-lg); }
+.help-hero { cursor: move; user-select: none; padding: var(--space-4) var(--space-4) calc(var(--space-4) + 18px); background: var(--color-neutral-900); color: var(--color-neutral-100); }
+.help-hero-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: var(--space-4); }
+.help-hero h4 { margin: 0; font-family: var(--font-heading); font-weight: var(--font-heading-weight); font-size: 19px; line-height: 1.35; }
+.help-hero p { margin: 6px 0 0; font-size: 12.5px; line-height: 1.6; opacity: 0.6; }
+.help-x { cursor: default; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; border: 0; border-radius: var(--radius-sm); background: none; color: inherit; opacity: 0.6; font-size: 13px; cursor: pointer; }
+.help-x:hover { opacity: 1; background: color-mix(in srgb, var(--color-neutral-100) 14%, transparent); }
+/* 深色头和卡片区在**同一个**滚动容器里 —— 卡要压在头上,负边距就不能跨过
+ * 滚动容器的边界,那样只会被裁掉顶上一截。 */
+.help-scroll { flex: 1; min-height: 0; overflow-y: auto; }
+.help-body { display: flex; flex-direction: column; gap: var(--space-3); padding: 0 var(--space-3) var(--space-3); }
+.help-card { background: var(--color-card); border: 1px solid var(--color-divider); border-radius: var(--radius-md); box-shadow: var(--shadow-sm); overflow: hidden; }
+/* 状态卡压在深色头下缘上 —— 这一层叠压是这套面板的辨识度所在。 */
+.help-card-lift { margin-top: -18px; }
+.help-card-head { padding: 10px var(--space-3) 4px; font-size: 10px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: color-mix(in srgb, var(--color-text) 45%, transparent); }
+.help-status { display: flex; align-items: flex-start; gap: 10px; padding: var(--space-3); }
+.help-status .status-dot { margin-top: 3px; }
+.help-status-title { font-size: 13px; font-weight: 600; }
+.help-status-sub { margin-top: 3px; font-size: 11.5px; line-height: 1.55; color: color-mix(in srgb, var(--color-text) 55%, transparent); }
+/* 每条都是「图标 + 标题(+ 副标题) + 右侧箭头」的可点行。 */
+.help-row { display: flex; align-items: center; gap: 10px; width: 100%; padding: 11px var(--space-3); font: inherit; font-size: 13px; text-align: left; color: var(--color-text); background: none; border: 0; cursor: pointer; }
+.help-row + .help-row { border-top: 1px solid var(--color-divider); }
+.help-row:hover { background: var(--color-neutral-100); }
+.help-row svg { width: 15px; height: 15px; flex: none; }
+.help-row-copy { flex: 1; min-width: 0; }
+.help-row-sub { display: block; margin-top: 2px; font-size: 11.5px; line-height: 1.5; color: color-mix(in srgb, var(--color-text) 50%, transparent); }
+.help-row-go { flex: none; display: flex; color: color-mix(in srgb, var(--color-text) 35%, transparent); }
+.help-row-go svg { width: 13px; height: 13px; }
+.help-row-more { color: var(--color-accent); }
+.help-search { display: flex; align-items: center; gap: 8px; padding: var(--space-2) var(--space-3); border-bottom: 1px solid var(--color-divider); color: color-mix(in srgb, var(--color-text) 40%, transparent); }
+.help-search svg { width: 14px; height: 14px; flex: none; }
+.help-search-input { border: 0; background: none; padding: 0; min-height: 24px; }
+.help-search-input:hover, .help-search-input:focus-visible { border: 0; box-shadow: none; }
+.help-form { display: flex; flex-direction: column; gap: var(--space-3); padding: var(--space-3); }
+.help-lead { font-size: 12.5px; line-height: 1.6; color: color-mix(in srgb, var(--color-text) 65%, transparent); }
+.help-check { display: flex; align-items: flex-start; gap: 9px; font-size: 12.5px; cursor: pointer; }
+.help-check input { margin-top: 2px; flex: none; accent-color: var(--color-accent); }
+.help-drag-capture { position: fixed; inset: 0; z-index: 61; cursor: move; }
+.help-tabs { flex: none; display: flex; background: var(--color-card); border-top: 1px solid var(--color-divider); }
+.help-tab { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 8px 0 9px; font: inherit; font-size: 11px; color: color-mix(in srgb, var(--color-text) 45%, transparent); background: none; border: 0; cursor: pointer; }
+.help-tab svg { width: 17px; height: 17px; }
+.help-tab:hover { color: var(--color-text); }
+.help-tab[aria-current="page"] { color: var(--color-accent); }
+
+/* 指南抽屉:面板负责找,这条宽抽屉负责读。 */
 .guide-panel { position: fixed; top: 0; right: 0; bottom: 0; z-index: 56; width: min(760px, 92vw); display: flex; flex-direction: column; background: var(--color-card); border-left: 1px solid var(--color-divider); box-shadow: var(--shadow-lg); }
 .guide-panel-head { flex: none; display: flex; align-items: center; justify-content: space-between; padding: var(--space-3) var(--space-4); border-bottom: 1px solid var(--color-divider); }
 .guide-frame { flex: 1; width: 100%; min-height: 0; border: 0; background: var(--color-bg); }
@@ -356,12 +401,6 @@ select.input-sm { padding-right: 22px; background-position: right 6px center; ba
 .check-row:has(input:checked) { background: var(--color-accent-100); }
 .check-row:has(input:checked) span { color: var(--color-accent-700); font-weight: 500; }
 .check-row input { margin: 0; accent-color: var(--color-accent); }
-.dialog-note { padding: 10px var(--space-3); border-radius: var(--radius-md); background: var(--color-surface); font-size: 12.5px; line-height: 1.55; color: color-mix(in srgb, var(--color-text) 75%, transparent); }
-.report-attach { display: flex; align-items: flex-start; gap: 10px; padding: 10px var(--space-3); border: 1px solid var(--color-divider); border-radius: var(--radius-md); cursor: pointer; }
-.report-attach input { margin: 2px 0 0; accent-color: var(--color-accent); }
-.report-attach-copy { display: flex; flex-direction: column; gap: 2px; }
-.report-attach-title { font-size: 12.5px; font-weight: 600; }
-.report-attach-hint { font-size: 12px; line-height: 1.5; color: color-mix(in srgb, var(--color-text) 55%, transparent); }
 .ship-rows { display: flex; flex-direction: column; gap: var(--space-2); }
 .ship-row { display: flex; align-items: center; gap: 10px; padding: 10px var(--space-3); border-radius: var(--radius-md); background: var(--color-surface); font-size: 13px; }
 .ship-row-label { flex: none; font-weight: 600; min-width: 2.5em; }
