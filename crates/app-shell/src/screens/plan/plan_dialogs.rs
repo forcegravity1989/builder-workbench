@@ -1,5 +1,5 @@
 //! 计划屏的弹窗:新建issue / 创建版本 / 排期 / 作废确认 / 出包 / 发版本。
-//! 全部屏幕居中(modal-backdrop + plan-modal)。
+//! 全部屏幕居中(dialog-backdrop + dialog)。
 //!
 //! 出包进度活在 [`PackJob`] 上,关弹窗不打断后台。
 
@@ -119,43 +119,50 @@ pub fn NewIssueDialog(
         "新建的 issue 进待办池·未排期。".to_string()
     };
     rsx! {
-        div { class: "modal-backdrop", onclick: move |_| dialog.set(None),
-            div { class: "modal plan-modal", onclick: move |e| e.stop_propagation(),
+        div { class: "dialog-backdrop", onclick: move |_| dialog.set(None),
+            div {
+                class: "dialog dialog-wide plan-modal",
+                role: "dialog",
+                onclick: move |e| e.stop_propagation(),
                 div { class: "plan-modal-head",
                     div { class: "plan-modal-tag", "新建" }
                     div { class: "plan-modal-title", "新建 issue" }
-                    button { class: "plan-modal-x", onclick: move |_| dialog.set(None), "✕" }
+                    button {
+                        class: "btn btn-ghost btn-quiet btn-icon plan-modal-x",
+                        onclick: move |_| dialog.set(None),
+                        "✕"
+                    }
                 }
                 div { class: "plan-modal-body",
-                    div { class: "formrow",
-                        label { class: "label", "标题 *" }
+                    div { class: "field",
+                        label { "标题 *" }
                         input { class: "input", value: "{title}", placeholder: "这张活要干什么",
                             oninput: move |e| title.set(e.value()) }
                     }
-                    div { class: "formrow",
-                        label { class: "label", "正文" }
-                        textarea { class: "textarea", value: "{body}", placeholder: "要做成什么、边界。可空",
+                    div { class: "field",
+                        label { "正文" }
+                        textarea { class: "input", value: "{body}", placeholder: "要做成什么、边界。可空",
                             oninput: move |e| body.set(e.value()) }
                     }
-                    div { class: "formrow",
-                        label { class: "label", "类别" }
-                        select { class: "select",
+                    div { class: "field",
+                        label { "类别" }
+                        select { class: "input",
                             onchange: move |e| { if let Some(c) = category_from_key(&e.value()) { category.set(c); } },
                             for c in StageKind::ALL {
                                 option { key: "{category_key(c)}", value: "{category_key(c)}", selected: *category.read() == c, "{c.label()}" }
                             }
                         }
                     }
-                    div { class: "formrow",
-                        label { class: "label", "负责人" }
+                    div { class: "field",
+                        label { "负责人" }
                         input { class: "input", value: "{assignee}", placeholder: "指派谁(可空)",
                             oninput: move |e| assignee.set(e.value()) }
                     }
-                    div { class: "cfg-readonly-note", "{where_note}" }
+                    div { class: "hint", "{where_note}" }
                 }
                 div { class: "plan-modal-foot",
                     span {}
-                    div { style: "display:flex;gap:8px;",
+                    div { class: "row",
                         button { class: "btn btn-secondary", onclick: move |_| dialog.set(None), "取消" }
                         button {
                             class: "btn btn-primary",
@@ -227,16 +234,23 @@ pub fn CreateVersionDialog(
     let shape_ok = !name_v.is_empty();
     let can_create = name_ok && !dates_partial && !range_bad && shape_ok && !taken;
     rsx! {
-        div { class: "modal-backdrop", onclick: move |_| dialog.set(None),
-            div { class: "modal plan-modal", onclick: move |e| e.stop_propagation(),
+        div { class: "dialog-backdrop", onclick: move |_| dialog.set(None),
+            div {
+                class: "dialog dialog-wide plan-modal",
+                role: "dialog",
+                onclick: move |e| e.stop_propagation(),
                 div { class: "plan-modal-head",
                     div { class: "plan-modal-tag", "版本" }
                     div { class: "plan-modal-title", "创建版本" }
-                    button { class: "plan-modal-x", onclick: move |_| dialog.set(None), "✕" }
+                    button {
+                        class: "btn btn-ghost btn-quiet btn-icon plan-modal-x",
+                        onclick: move |_| dialog.set(None),
+                        "✕"
+                    }
                 }
                 div { class: "plan-modal-body",
-                    div { class: "formrow",
-                        label { class: "label", "版本名 *" }
+                    div { class: "field",
+                        label { "版本名 *" }
                         input { class: "input", value: "{name}", placeholder: "例如 v0.3",
                             oninput: move |e| name.set(e.value()) }
                         if !name_v.is_empty() && !shape_ok {
@@ -245,11 +259,11 @@ pub fn CreateVersionDialog(
                             div { class: "field-err", "{name_v} 已经有了" }
                         }
                     }
-                    div { class: "formrow",
-                        label { class: "label", "时间" }
-                        div { class: "cv-field-2",
-                            div {
-                                span { class: "sub", "开始" }
+                    div { class: "field",
+                        label { "时间" }
+                        div { class: "field-2",
+                            div { class: "field",
+                                label { "开始 " span { class: "asterisk", "*" } }
                                 input {
                                     class: if range_bad { "input invalid" } else { "input" },
                                     r#type: "date",
@@ -257,8 +271,8 @@ pub fn CreateVersionDialog(
                                     oninput: move |e| start.set(e.value()),
                                 }
                             }
-                            div {
-                                span { class: "sub", "结束" }
+                            div { class: "field",
+                                label { "结束 " span { class: "asterisk", "*" } }
                                 input {
                                     class: if range_bad { "input invalid" } else { "input" },
                                     r#type: "date",
@@ -273,23 +287,23 @@ pub fn CreateVersionDialog(
                             div { class: "field-err", "开始不能晚于结束" }
                         }
                     }
-                    div { class: "formrow",
-                        label { class: "label", "说明" }
-                        textarea { class: "textarea", value: "{note}", placeholder: "这个版本要收口什么（写成运作活①的版本目标）",
+                    div { class: "field",
+                        label { "说明" }
+                        textarea { class: "input", value: "{note}", placeholder: "这个版本要收口什么（写成运作活①的版本目标）",
                             oninput: move |e| note.set(e.value()) }
                     }
-                    div { class: "formrow",
-                        label { class: "label", "划归的 issue" }
+                    div { class: "field",
+                        label { "划归的 issue" }
                         div { class: "check-list",
                             if unassigned.is_empty() {
-                                div { class: "cfg-readonly-note", "当前没有未排期的活可划归。" }
+                                div { class: "hint", "当前没有未排期的活可划归。" }
                             }
                             for c in unassigned.iter() {
                                 {check_row(c, picked)}
                             }
                         }
                     }
-                    div { class: "cfg-readonly-note",
+                    div { class: "hint",
                         {
                             let last = if p.last_released.is_empty() { "没有" } else { p.last_released.as_str() };
                             let unrel = if p.unreleased.is_empty() { "没有".to_string() } else { p.unreleased.join("、") };
@@ -299,7 +313,7 @@ pub fn CreateVersionDialog(
                 }
                 div { class: "plan-modal-foot",
                     span {}
-                    div { style: "display:flex;gap:8px;",
+                    div { class: "row",
                         button { class: "btn btn-secondary", onclick: move |_| dialog.set(None), "取消" }
                         button {
                             class: "btn btn-primary",
@@ -369,26 +383,26 @@ pub fn ScheduleDialog(
         .unwrap_or_default();
     let mut sel = use_signal(move || default_sel.clone());
     rsx! {
-        div { class: "modal-backdrop", onclick: move |_| schedule.set(None),
-            div { class: "modal", onclick: move |e| e.stop_propagation(),
-                h3 { "排期" }
-                div { style: "font-size:13px;line-height:1.7;color:var(--ink-2);",
+        div { class: "dialog-backdrop", onclick: move |_| schedule.set(None),
+            div { class: "dialog", role: "dialog", onclick: move |e| e.stop_propagation(),
+                div { class: "dialog-title", "排期" }
+                div { class: "dialog-body",
                     "把「{ps.title}」排进一个版本。一张活只属于一个槽。"
                 }
-                div { class: "formrow",
-                    label { class: "label", "排进" }
+                div { class: "field",
+                    label { "排进" }
                     select {
-                        class: "select",
+                        class: "input",
                         onchange: move |e| sel.set(e.value()),
                         for v in p.plan_versions.iter() {
                             {let val = format!("version:{}", v.name); rsx! { option { value: "{val}", "{v.name}" } }}
                         }
                     }
                 }
-                div { class: "cfg-readonly-note",
+                div { class: "hint",
                     "打 bw:plan:。旧周标签只读回显示,排期不再新写。"
                 }
-                div { class: "modal-actions",
+                div { class: "dialog-actions",
                     button { class: "btn btn-secondary", onclick: move |_| schedule.set(None), "取消" }
                     button {
                         class: "btn btn-primary",
@@ -432,42 +446,42 @@ pub fn ConfirmMoveDialog(
         "作废必须写原因,会写进 issue 评论"
     };
     rsx! {
-        div { class: "modal-backdrop", onclick: move |_| pending.set(None),
-            div { class: "modal", onclick: move |e| e.stop_propagation(),
-                h3 { "确认一下" }
-                div { style: "font-size:13px;line-height:1.85;color:var(--ink-2);margin-bottom:8px;",
+        div { class: "dialog-backdrop", onclick: move |_| pending.set(None),
+            div { class: "dialog", role: "dialog", onclick: move |e| e.stop_propagation(),
+                div { class: "dialog-title", "确认一下" }
+                div { class: "dialog-body",
                     "把「{pm.title}」从「{from_label}」移到「{to_label}」。"
                 }
                 if pm.to == IssueStatus::Done && pm.has_open_mr {
-                    div { style: "font-size:13px;line-height:1.85;color:var(--ink-2);margin-bottom:8px;",
+                    div { class: "dialog-body",
                         "有开着的 MR。确认后会合入再完成。"
                     }
                 }
                 if pm.to == IssueStatus::Done && !pm.has_open_mr {
-                    div { style: "font-size:13px;line-height:1.85;color:var(--ink-2);margin-bottom:8px;",
+                    div { class: "dialog-body",
                         "没有开着的 MR。可能已经在网页合过了。确认后只关这张 issue,不会再去合。"
                     }
                 }
                 if pm.to == IssueStatus::InReview && pm.pr_number == 0 {
-                    div { style: "font-size:13px;line-height:1.85;color:var(--ink-2);margin-bottom:8px;",
+                    div { class: "dialog-body",
                         "这张活没有绑定的 MR。确认后仍移到待评审,合入时只会关 issue。"
                     }
                 }
                 if need_reason {
-                    div { class: "formrow",
-                        label { class: "label", "{reason_label}" }
+                    div { class: "field",
+                        label { "{reason_label}" }
                         textarea {
-                            class: "textarea",
+                            class: "input",
                             rows: "3",
                             placeholder: "{reason_hint}",
                             oninput: move |e| reason.set(e.value()),
                         }
                     }
                 }
-                div { class: "modal-actions",
+                div { class: "dialog-actions",
                     button { class: "btn btn-secondary", onclick: move |_| pending.set(None), "算了" }
                     button {
-                        class: "btn btn-primary",
+                        class: if pm.to == IssueStatus::Cancelled { "btn btn-danger" } else { "btn btn-primary" },
                         disabled: need_reason && reason.read().trim().is_empty(),
                         onclick: move |_| {
                             if pm2.to == IssueStatus::Done && pm2.has_open_mr {
@@ -508,16 +522,16 @@ pub fn RejectMoveDialog(pr: PendingReject, mut reject: Signal<Option<PendingReje
     let from = plan_status_label(pr.from);
     let to = plan_status_label(pr.to);
     rsx! {
-        div { class: "modal-backdrop", onclick: move |_| reject.set(None),
-            div { class: "modal", onclick: move |e| e.stop_propagation(),
-                h3 { "不能这样拖" }
-                div { style: "font-size:13px;line-height:1.85;color:var(--ink-2);margin-bottom:8px;",
+        div { class: "dialog-backdrop", onclick: move |_| reject.set(None),
+            div { class: "dialog", role: "dialog", onclick: move |e| e.stop_propagation(),
+                div { class: "dialog-title", "不能这样拖" }
+                div { class: "dialog-body",
                     "不能从「{from}」拖到「{to}」。"
                 }
-                div { style: "font-size:13px;line-height:1.85;color:var(--ink-2);margin-bottom:8px;",
+                div { class: "dialog-body",
                     "{pr.reason}"
                 }
-                div { class: "modal-actions",
+                div { class: "dialog-actions",
                     button { class: "btn btn-primary", onclick: move |_| reject.set(None), "知道了" }
                 }
             }
@@ -543,17 +557,24 @@ pub fn DeleteVersionDialog(
     let default_sel = versions.first().cloned().unwrap_or_default();
     let mut sel = use_signal(move || default_sel.clone());
     rsx! {
-        div { class: "modal-backdrop", onclick: move |_| dialog.set(None),
-            div { class: "modal plan-modal", onclick: move |e| e.stop_propagation(),
+        div { class: "dialog-backdrop", onclick: move |_| dialog.set(None),
+            div {
+                class: "dialog dialog-wide plan-modal",
+                role: "dialog",
+                onclick: move |e| e.stop_propagation(),
                 div { class: "plan-modal-head",
                     div { class: "plan-modal-tag", "删除版本" }
-                    button { class: "plan-modal-x", onclick: move |_| dialog.set(None), "✕" }
+                    button {
+                        class: "btn btn-ghost btn-quiet btn-icon plan-modal-x",
+                        onclick: move |_| dialog.set(None),
+                        "✕"
+                    }
                 }
                 div { class: "plan-modal-body",
-                    div { class: "formrow",
-                        label { class: "label", "选版本" }
+                    div { class: "field",
+                        label { "选版本" }
                         select {
-                            class: "select",
+                            class: "input",
                             onchange: move |e| sel.set(e.value()),
                             for v in versions.iter() {
                                 option { value: "{v}", "{v}" }
@@ -561,13 +582,13 @@ pub fn DeleteVersionDialog(
                         }
                     }
                     if versions.is_empty() {
-                        div { class: "cfg-readonly-note", "没有未发的版本可删。" }
+                        div { class: "hint", "没有未发的版本可删。" }
                     }
-                    div { class: "cfg-readonly-note", "确认后摘掉 issue 上的 bw:plan 标签。同名里程碑能删就删,删不成不影响标签。" }
+                    div { class: "hint", "确认后摘掉 issue 上的 bw:plan 标签。同名里程碑能删就删,删不成不影响标签。" }
                 }
                 div { class: "plan-modal-foot",
                     span {}
-                    div { style: "display:flex;gap:8px;",
+                    div { class: "row",
                         button { class: "btn btn-secondary", onclick: move |_| dialog.set(None), "取消" }
                         button {
                             class: "btn btn-danger",
@@ -614,22 +635,22 @@ pub fn PackDialog(
     };
     rsx! {
         div {
-            class: "modal-backdrop",
+            class: "dialog-backdrop",
             onclick: move |_| dialog.set(None),
-            div { class: "modal", onclick: move |e| e.stop_propagation(),
-                h3 { "出包" }
-                div { class: "formrow",
-                    label { class: "label", "版本号" }
+            div { class: "dialog", role: "dialog", onclick: move |e| e.stop_propagation(),
+                div { class: "dialog-title", "出包" }
+                div { class: "field",
+                    label { "版本号" }
                     input { class: "input", value: "{version_show}", readonly: true }
                 }
                 div { class: "ship-rows",
                     {ship_status_row("出包", "还没开始", pack.clone(), false, None)}
                     {ship_status_row("验包", "出包过了再验", e2e.clone(), true, Some(asking_detail))}
                 }
-                div { class: "cfg-readonly-note",
+                div { class: "hint",
                     "已打 tag 的号从独立 worktree 检出 tag 再出,主检出不动。在研且还没 tag 的号先把工作区拉到远端最新再出。不建远端 Release。"
                 }
-                div { class: "modal-actions",
+                div { class: "dialog-actions",
                     button {
                         class: "btn btn-secondary",
                         onclick: move |_| dialog.set(None),
@@ -694,13 +715,12 @@ fn PackE2eDetail(
 ) -> Element {
     rsx! {
         div {
-            class: "modal-backdrop",
-            style: "z-index: 80;",
+            class: "dialog-backdrop dialog-backdrop-2",
             onclick: move |_| asking_detail.set(false),
-            div { class: "modal", onclick: move |e| e.stop_propagation(),
-                h3 { "验包详情" }
+            div { class: "dialog", role: "dialog", onclick: move |e| e.stop_propagation(),
+                div { class: "dialog-title", "验包详情" }
                 if cases.is_empty() {
-                    div { class: "cfg-readonly-note",
+                    div { class: "hint",
                         if fallback.is_empty() { "这次验包没打出用例明细。" } else { "{fallback}" }
                     }
                 } else {
@@ -710,7 +730,7 @@ fn PackE2eDetail(
                         }
                     }
                 }
-                div { class: "modal-actions",
+                div { class: "dialog-actions",
                     button {
                         class: "btn btn-secondary",
                         onclick: move |_| asking_detail.set(false),
@@ -771,15 +791,14 @@ fn PackStopConfirm(
 ) -> Element {
     rsx! {
         div {
-            class: "modal-backdrop",
-            style: "z-index: 80;",
+            class: "dialog-backdrop dialog-backdrop-2",
             onclick: move |_| asking_stop.set(false),
-            div { class: "modal", onclick: move |e| e.stop_propagation(),
-                h3 { "停止这次出包？" }
-                div { class: "cfg-readonly-note",
+            div { class: "dialog", role: "dialog", onclick: move |e| e.stop_propagation(),
+                div { class: "dialog-title", "停止这次出包？" }
+                div { class: "hint",
                     "确认后会停掉正在跑的出包 / 验包,并清掉这次的中间生成件。已经落到产物目录里的半成品也会删掉。"
                 }
-                div { class: "modal-actions",
+                div { class: "dialog-actions",
                     button {
                         class: "btn btn-secondary",
                         onclick: move |_| asking_stop.set(false),
@@ -819,19 +838,19 @@ pub fn ReleaseDialog(
     };
     let included = std::rc::Rc::new(included);
     rsx! {
-        div { class: "modal-backdrop", onclick: move |_| dialog.set(None),
-            div { class: "modal", onclick: move |e| e.stop_propagation(),
-                h3 { "发版本" }
-                div { class: "formrow",
-                    label { class: "label", "版本号" }
+        div { class: "dialog-backdrop", onclick: move |_| dialog.set(None),
+            div { class: "dialog", role: "dialog", onclick: move |e| e.stop_propagation(),
+                div { class: "dialog-title", "发版本" }
+                div { class: "field",
+                    label { "版本号" }
                     input { class: "input", value: "{version}", readonly: true }
                 }
-                div { class: "formrow",
-                    label { class: "label", "说明" }
-                    textarea { class: "textarea", value: "{note}", oninput: move |e| note.set(e.value()) }
+                div { class: "field",
+                    label { "说明" }
+                    textarea { class: "input", value: "{note}", oninput: move |e| note.set(e.value()) }
                 }
-                div { class: "cfg-readonly-note", "只有在研且还没打 tag 的号能发。确认后给这份代码打远端 tag。没有已完成的活也能发;勾上的才打发版标签。不出包。" }
-                div { class: "modal-actions",
+                div { class: "hint", "只有在研且还没打 tag 的号能发。确认后给这份代码打远端 tag。没有已完成的活也能发;勾上的才打发版标签。不出包。" }
+                div { class: "dialog-actions",
                     button { class: "btn btn-secondary", onclick: move |_| dialog.set(None), "取消" }
                     button {
                         class: "btn btn-primary",
@@ -891,14 +910,14 @@ fn ship_status_row(
             span { class: "ship-row-text", "{text}" }
             if let Some(dir) = open_dir_path {
                 button {
-                    class: "btn btn-sm",
+                    class: "btn btn-secondary",
                     onclick: move |_| open_artifact_dir(&dir),
                     "打开目录"
                 }
             }
             if let Some(mut open) = detail {
                 button {
-                    class: "btn btn-sm",
+                    class: "btn btn-secondary",
                     onclick: move |_| open.set(true),
                     "详情"
                 }

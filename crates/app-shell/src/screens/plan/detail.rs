@@ -58,8 +58,11 @@ pub fn DetailModal(
     let b_sched = bridge.clone();
 
     rsx! {
-        div { class: "modal-backdrop", onclick: close,
-            div { class: "modal plan-modal", onclick: move |e| e.stop_propagation(),
+        div { class: "dialog-backdrop", onclick: close,
+            div {
+                class: "dialog dialog-wide plan-modal",
+                role: "dialog",
+                onclick: move |e| e.stop_propagation(),
                 div { class: "plan-modal-head",
                     div { class: "plan-modal-tag", "详情 · #{c.number}" }
                     input {
@@ -67,49 +70,48 @@ pub fn DetailModal(
                         value: "{title_val}",
                         oninput: move |e| title_val.set(e.value()),
                     }
-                    button { class: "plan-modal-x", onclick: close, "✕" }
+                    button { class: "btn btn-ghost btn-quiet btn-icon plan-modal-x", onclick: close, "✕" }
                 }
                 div { class: "plan-modal-body",
                     textarea {
-                        class: "textarea detail-body-text",
+                        class: "input detail-body-text",
                         value: "{body_val}",
                         oninput: move |e| body_val.set(e.value()),
                         placeholder: "正文",
                     }
                     div { class: "plan-meta-grid",
-                        div { class: "detail-row", style: "grid-column:1/-1;",
+                        div { class: "detail-row span-all",
                             div { class: "k", "链接" }
                             if c.pr_number > 0 {
                                 if let Some(u) = mr_url.clone() {
-                                    span { class: "detail-link", onclick: move |_| crate::chrome::open_in_browser(&u), "MR #{c.pr_number} ↗" }
+                                    span { class: "link", onclick: move |_| crate::chrome::open_in_browser(&u), "MR #{c.pr_number} ↗" }
                                 } else {
                                     span { "MR #{c.pr_number}" }
                                 }
                             } else {
-                                span { style: "color:var(--ink-3);" }
+                                span { class: "hint" }
                             }
                             " · "
                             if c.remote_number > 0 {
                                 if let Some(u) = issue_url.clone() {
-                                    span { class: "detail-link", onclick: move |_| crate::chrome::open_in_browser(&u), "issue #{c.remote_number} ↗" }
+                                    span { class: "link", onclick: move |_| crate::chrome::open_in_browser(&u), "issue #{c.remote_number} ↗" }
                                 } else {
                                     span { "issue #{c.remote_number}" }
                                 }
                             } else {
-                                span { style: "color:var(--ink-3);", "— 只在本机" }
+                                span { class: "hint", "— 只在本机" }
                             }
                         }
                         if c.kind == "运作活" {
-                            div { class: "detail-row", style: "grid-column:1/-1;",
+                            div { class: "detail-row span-all",
                                 div { class: "k", "类别" }
                                 "运作"
                             }
                         } else {
-                            div { class: "detail-row", style: "grid-column:1/-1;",
+                            div { class: "detail-row span-all",
                                 div { class: "k", "类别" }
                                 select {
-                                    class: "select",
-                                    style: "width:100%;",
+                                    class: "input",
                                     onchange: move |e| {
                                         if let Some(cat) = category_from_key(&e.value()) {
                                             b_cat.cmd(Command::SetIssueCategory { id, category: cat });
@@ -130,8 +132,7 @@ pub fn DetailModal(
                                 if targets.is_empty() {
                                     rsx! {
                                         select {
-                                            class: "select",
-                                            style: "width:100%;",
+                                            class: "input",
                                             disabled: true,
                                             option { selected: true, "{plan_status_label(c.status)}" }
                                         }
@@ -139,8 +140,7 @@ pub fn DetailModal(
                                 } else {
                                     rsx! {
                                         select {
-                                            class: "select",
-                                            style: "width:100%;",
+                                            class: "input",
                                             onchange: move |e| {
                                                 let Some(to) = status_from_key(&e.value()) else { return; };
                                                 if to == card.status {
@@ -161,8 +161,7 @@ pub fn DetailModal(
                         div { class: "detail-row",
                             div { class: "k", "计划" }
                             select {
-                                class: "select",
-                                style: "width:100%;",
+                                class: "input",
                                 onchange: move |e| {
                                     let v = e.value();
                                     if v == "unscheduled" {
@@ -181,7 +180,6 @@ pub fn DetailModal(
                             div { class: "k", "负责人" }
                             input {
                                 class: "input",
-                                style: "width:100%;",
                                 value: "{assignee_val}",
                                 placeholder: "指派谁",
                                 oninput: move |e| assignee_val.set(e.value()),
@@ -200,24 +198,24 @@ pub fn DetailModal(
                     }
                 }
                 div { class: "plan-modal-foot",
-                    div { style: "display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end;",
+                    div { class: "row-wrap",
                         {match c.status {
                             IssueStatus::Backlog => rsx! {
-                                button { class: "btn btn-sm btn-secondary", onclick: move |_| {
+                                button { class: "btn btn-secondary", onclick: move |_| {
                                     selected.set(None);
                                     schedule.set(Some(PendingSchedule { id, title: String::new() }));
                                 }, "schedule" }
                                 {complete_btn(&c, pending, selected)}
                             },
                             IssueStatus::Todo => rsx! {
-                                button { class: "btn btn-sm btn-primary", onclick: move |_| {
+                                button { class: "btn btn-secondary", onclick: move |_| {
                                     selected.set(None);
                                     start.set(Some(id));
                                 }, "Start" }
                                 {complete_btn(&c, pending, selected)}
                             },
                             IssueStatus::InProgress => rsx! {
-                                button { class: "btn btn-sm btn-secondary", onclick: move |_| {
+                                button { class: "btn btn-secondary", onclick: move |_| {
                                     selected.set(None);
                                     b_sess.send(Req::SelectSession(Some(id)));
                                     nav.go(Panel::Session);
@@ -225,7 +223,7 @@ pub fn DetailModal(
                                 {complete_btn(&c, pending, selected)}
                             },
                             IssueStatus::InReview => rsx! {
-                                button { class: "btn btn-sm btn-secondary", onclick: move |_| {
+                                button { class: "btn btn-secondary", onclick: move |_| {
                                     selected.set(None);
                                     b_sess.send(Req::SelectSession(Some(id)));
                                     nav.go(Panel::Session);
@@ -233,14 +231,14 @@ pub fn DetailModal(
                                 {complete_btn(&c, pending, selected)}
                             },
                             IssueStatus::Done | IssueStatus::Cancelled => rsx! {
-                                button { class: "btn btn-sm btn-secondary", onclick: move |_| {
+                                button { class: "btn btn-secondary", onclick: move |_| {
                                     selected.set(None);
                                     b_sess.send(Req::SelectSession(Some(id)));
                                     nav.go(Panel::Session);
                                 }, "Open" }
                             },
                             IssueStatus::Blocked => rsx! {
-                                button { class: "btn btn-sm btn-secondary", onclick: move |_| {
+                                button { class: "btn btn-secondary", onclick: move |_| {
                                     selected.set(None);
                                     b_sess.send(Req::SelectSession(Some(id)));
                                     nav.go(Panel::Session);
@@ -249,9 +247,9 @@ pub fn DetailModal(
                             },
                         }}
                     }
-                    div { style: "display:flex;gap:8px;justify-content:flex-end;",
+                    div { class: "row",
                         button {
-                            class: "btn btn-sm btn-primary",
+                            class: "btn btn-primary",
                             onclick: move |_| {
                                 let t = title_val.read().trim().to_string();
                                 let b = body_val.read().clone();
@@ -303,12 +301,19 @@ pub fn StartModal(
     let b_cat = bridge.clone();
     let id = c.id;
     rsx! {
-        div { class: "modal-backdrop", onclick: move |_| start.set(None),
-            div { class: "modal plan-modal", onclick: move |e| e.stop_propagation(),
+        div { class: "dialog-backdrop", onclick: move |_| start.set(None),
+            div {
+                class: "dialog dialog-wide plan-modal",
+                role: "dialog",
+                onclick: move |e| e.stop_propagation(),
                 div { class: "plan-modal-head",
                     div { class: "plan-modal-tag", "worktree" }
                     div { class: "plan-modal-title", "Start · #{c.number}" }
-                    button { class: "plan-modal-x", onclick: move |_| start.set(None), "✕" }
+                    button {
+                        class: "btn btn-ghost btn-quiet btn-icon plan-modal-x",
+                        onclick: move |_| start.set(None),
+                        "✕"
+                    }
                 }
                 div { class: "plan-modal-body",
                     div { class: "detail-row", div { class: "k", "worktree 名" }, "{name}" }
@@ -316,10 +321,10 @@ pub fn StartModal(
                     if is_ops {
                         {row("类别", "运作")}
                     } else {
-                        div { class: "formrow",
-                            label { class: "label", "类别" }
+                        div { class: "field",
+                            label { "类别" }
                             select {
-                                class: "select",
+                                class: "input",
                                 onchange: move |e| cat_sel.set(category_from_key(&e.value())),
                                 option { value: "", selected: cat_sel.read().is_none(), "还没选" }
                                 for cat in StageKind::ALL {
@@ -333,11 +338,11 @@ pub fn StartModal(
                             }
                         }
                     }
-                    div { class: "cfg-readonly-note", "确认后建 worktree,issue 切到进行中,并打开会话。没类别的业务活先选一类,开工工具按映射走。" }
+                    div { class: "hint", "确认后建 worktree,issue 切到进行中,并打开会话。没类别的业务活先选一类,开工工具按映射走。" }
                 }
                 div { class: "plan-modal-foot",
                     span {}
-                    div { style: "display:flex;gap:8px;",
+                    div { class: "row",
                         button { class: "btn btn-secondary", onclick: move |_| start.set(None), "取消" }
                         button {
                             class: "btn btn-primary",
@@ -374,7 +379,7 @@ fn complete_btn(
     let open = c.has_open_mr;
     rsx! {
         button {
-            class: "btn btn-sm btn-primary",
+            class: "btn btn-secondary",
             onclick: move |_| {
                 pending.set(Some(PendingMove {
                     id,

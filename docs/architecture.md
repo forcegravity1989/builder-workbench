@@ -1,6 +1,6 @@
 # architecture.md — Workbench MVP 设计正本
 
-> **30 秒导读**:这是什么——Workbench MVP 的**唯一设计正本**,一篇讲清三个 crate 怎么互锁、Workbench 怎么给被管项目赋能、16 个模块各自解决什么问题。**给谁看**——理解 Workbench 设计的人和 AI:要判断"某条为什么这么定"、要接手某个模块、要往规范里加东西。**现在还作数吗**——作数,这是当下唯一作数的设计总览(V3 史实已随 V3 删除,见 `v3` 分支)。**怎么和别处衔接**——开发规矩(怎么建/跑/测/加特性)在 `AGENTS.md`,不在本篇;每个模块的核心设计在本篇 §3;还没干的活在各模块「没建什么」段;界面长什么样看 `docs/hifi/index.html`(演示数据仍是旧方案,现行见该目录 README)。`DESIGN.md` 指向本篇。看不懂的词查 `CONTEXT.md`。接入 / 名片 / 开工工具 / 周五盘点的**方案正本是 §3 模块 3「项目约定」**,别处现在时表述必须跟它一致。
+> **30 秒导读**:这是什么——Workbench MVP 的**唯一设计正本**,一篇讲清三个 crate 怎么互锁、Workbench 怎么给被管项目赋能、16 个模块各自解决什么问题。**给谁看**——理解 Workbench 设计的人和 AI:要判断"某条为什么这么定"、要接手某个模块、要往规范里加东西。**现在还作数吗**——作数,这是当下唯一作数的设计总览(V3 史实已随 V3 删除,见 `v3` 分支)。**怎么和别处衔接**——开发规矩(怎么建/跑/测/加特性)在 `AGENTS.md`,不在本篇;每个模块的核心设计在本篇 §3;还没干的活在各模块「没建什么」段;界面的视觉语言看 `docs/04-design-system/`(壳直接拼入它的样式表),八屏版式与旅程看 `docs/hifi/index.html`(演示数据仍是旧方案,现行见该目录 README)。`DESIGN.md` 指向本篇。看不懂的词查 `CONTEXT.md`。接入 / 名片 / 开工工具 / 周五盘点的**方案正本是 §3 模块 3「项目约定」**,别处现在时表述必须跟它一致。
 
 **写作约定**:正文说人话,实现名字(命令名、函数名、表名)只在必要时作为"代码锚点"出现、不逐文件:行罗列;代号在当篇第一次出现带一句人话说明。
 
@@ -274,7 +274,7 @@ references(`standard/system-prompt/references/*.md`)是「干某类活需要额�
 | 主提示词 / reference / skill 各装什么、改流程同步哪份 | 本篇 §3 模块 4 对照表(`AGENTS.md`「三层模型」指到这里) |
 | Workbench 给被管项目推的规范模型 | 本篇 §2 |
 | 产品命题 | [`README.md`](../README.md) + 本篇 §1 |
-| 界面长什么样 | [`docs/hifi/index.html`](hifi/index.html) + [`docs/hifi/README.md`](hifi/README.md) |
+| 界面长什么样 | 视觉语言 [`docs/04-design-system/`](04-design-system/README.md);八屏版式与旅程 [`docs/hifi/index.html`](hifi/index.html) + [`docs/hifi/README.md`](hifi/README.md) |
 | 版本变更 | [`CHANGELOG.md`](../CHANGELOG.md) |
 | 领域词 | [`CONTEXT.md`](../CONTEXT.md) |
 | 架构决策 | [`docs/02-adr/`](02-adr/) |

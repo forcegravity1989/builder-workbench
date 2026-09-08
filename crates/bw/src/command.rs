@@ -187,6 +187,9 @@ pub enum Command {
     /// **只存本机 `settings.toml`,不进仓** —— 是这台机器看 Orca web 的事。
     /// `BW_ORCA_WEB_URL` 仍可覆盖(开发期)。空串 = 清掉。
     SetOrcaWebUrl { url: String },
+    /// 改界面配色(`claude` / `apple`,设计系统的两套 token)。只存本机
+    /// `settings.toml`,不进仓。不认识的值 = 回默认。
+    SetTheme { theme: String },
 
     /// 通知屏的「合入并完成」。先真的合 MR,再把活推「完成」——顺序反了,
     /// 合入失败就会留下一张已完成、改动却还挂在分支上的活。
@@ -332,6 +335,10 @@ pub enum Event {
     /// Orca 网页地址改了。**不带 URL 原文**(配对 URL 带 token,不进 Event);
     /// 壳收到后自己重读本机 `settings.toml` 刷新显示。
     OrcaWebUrlChanged,
+    /// 界面配色改了。壳重读本机设置,根节点换 `data-theme`。
+    ThemeChanged {
+        theme: String,
+    },
     IssueTransitioned {
         id: IssueId,
         to: IssueStatus,

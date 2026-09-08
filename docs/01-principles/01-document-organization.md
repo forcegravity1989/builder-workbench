@@ -24,10 +24,10 @@ docs/（所有知识目录都在这，编号定序；architecture 不编号＝do
 ├── architecture.md    设计正本（三 crate 架构 + 模块设计；docs 内不编号）
 ├── 02-adr/            架构决策（难回头一条一篇）
 ├── 03-guide/          产品指南（怎么用，给人看）
-├── 04-design-system/  设计系统资产（样式表 + token + 规范）
+├── 04-design-system/  视觉正本：设计系统资产（样式表 + token + 规范；壳直接拼入）
 ├── 05-features/       特性级变更制品链——intent + 带原型的 spec 为人 gate；plan 仅大风险；小修不进
 ├── 10-reference/      外部参考的提炼版
-├── hifi/              视觉正本
+├── hifi/              八屏版式与旅程原型
 ├── metrics.md         指标口径
 └── draft/             本地草稿/穿刺工作件（不进仓）
 

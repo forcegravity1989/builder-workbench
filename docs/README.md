@@ -27,10 +27,10 @@
 | [`architecture.md`](architecture.md) | **设计正本**:三 crate 架构 + 工作流模型(三来源两路径/系统提示词/默认 workflow/数据流/四铁律)+ 16 模块核心设计。人和 AI 都能在这检索到任一模块的设计。`DESIGN.md` 指向它;docs 内不编号 |
 | [`02-adr/`](02-adr/) | 架构决策(难回头一条一篇) |
 | [`03-guide/`](03-guide/) | 产品指南(怎么用 Workbench,给用户/同事)+ 填写规范 |
-| [`04-design-system/`](04-design-system/) | Builder 设计系统资产(唯一样式表 + 机读 token + 双语规范 + 14 张示例页),镜像自 Claude Design 项目「builder」;未接线到壳,供界面演进采用 |
+| [`04-design-system/`](04-design-system/) | **视觉正本**:Builder 设计系统资产(唯一样式表 + 机读 token + 双语规范 + 15 张示例页),镜像自 Claude Design 项目「builder」;桌面壳编译期原样拼入 `styles.css`(2026-09-07 起) |
 | [`05-features/`](05-features/) | **特性级变更制品链**——intent + 带原型的 spec 为人 gate;plan 仅大风险升 gate;小修不进。粒度与制品链见 [01 §4](01-principles/01-document-organization.md) |
 | [`10-reference/`](10-reference/) | 外部参考的**提炼版**(转述非原文,原文只存链接)。现有一篇:[AI-native SDLC playbook](10-reference/ai-native-sdlc-playbook.md)——做法与治理哲学,每段带 BW 落点或不采纳理由 |
-| [`hifi/`](hifi/) | 视觉正本(`index.html` 单文件高保真 + 逐屏简报),桌面壳样式表从它搬过去 |
+| [`hifi/`](hifi/) | 八屏版式与旅程原型(`index.html` 单文件高保真 + 逐屏简报);视觉语言以 `04-design-system/` 为准 |
 
 ## 找东西
 

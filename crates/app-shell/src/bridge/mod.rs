@@ -467,6 +467,7 @@ pub fn spawn(deep_link: DeepLink) -> Bridge {
                 // Orca 网页配对 URL 也是本机设置(带 token,只在本地)。读一次进
                 // ui,会话屏 iframe 打开它;设置屏改了走 OrcaWebUrlChanged 刷新。
                 let orca_web_url = Settings::get_orca_web_url(&assets).unwrap_or_default();
+                let theme = Settings::get_theme(&assets).unwrap_or_default();
                 // 桌面壳里 ▶跑 打 Orca 本地 pipe,过程看会话屏 iframe。指挥器
                 // 那条路仍然走自我标注的替身 —— 它没有界面渲染字节流。
                 let mut app = App::new(
@@ -499,6 +500,7 @@ pub fn spawn(deep_link: DeepLink) -> Bridge {
                     data_dir: assets.display().to_string(),
                     workspaces_root: root.display().to_string(),
                     orca_web_url,
+                    theme,
                     repos: crate::vm::RepoPickerVm::default(),
                     mr_cache: std::collections::HashMap::new(),
                     od_src: String::new(),
@@ -864,6 +866,13 @@ pub fn spawn(deep_link: DeepLink) -> Bridge {
                                             ui.orca_web_url =
                                                 Settings::get_orca_web_url(&assets)
                                                     .unwrap_or_default();
+                                        }
+                                        if matches!(
+                                            e,
+                                            bw::command::Event::ThemeChanged { .. }
+                                        ) {
+                                            ui.theme = Settings::get_theme(&assets)
+                                                .unwrap_or_default();
                                         }
                                     }
                                 }

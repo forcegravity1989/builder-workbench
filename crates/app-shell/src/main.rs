@@ -87,11 +87,6 @@ fn GlobalChrome() -> Element {
     }
 }
 
-/// 顶栏那格「数据来自哪」写的就是本机数据目录名(刀6 起不再是 SQLite 库文件)。
-fn data_dir_label(path: &str) -> String {
-    path.rsplit(['/', '\\']).next().unwrap_or(path).to_string()
-}
-
 #[component]
 fn Root() -> Element {
     let deep_link = use_hook(|| {
@@ -160,8 +155,8 @@ fn Root() -> Element {
     if let Some(fatal) = &v.fatal {
         return rsx! {
             GlobalChrome {}
-            div { class: "app-root", style: "align-items:center;justify-content:center;padding:40px;",
-                div { class: "card", style: "padding:28px;max-width:560px;color:var(--alert-deep);font-size:14px;line-height:1.9;",
+            div { class: "app-root is-centered", lang: "zh", "data-theme": "claude",
+                div { class: "card fatal",
                     h3 { "起不来" }
                     "{fatal}"
                 }
@@ -172,7 +167,7 @@ fn Root() -> Element {
     if !v.ready {
         return rsx! {
             GlobalChrome {}
-            div { class: "app-root", style: "align-items:center;justify-content:center;color:var(--ink-3);",
+            div { class: "app-root is-centered", lang: "zh", "data-theme": "claude",
                 "正在读本机数据……"
             }
         };
@@ -180,59 +175,43 @@ fn Root() -> Element {
 
     let cur = *panel.read();
     let tv = *top_view.read();
+    // 配色是本机设置;空 = 设计系统默认给壳的 Claude 板。
+    let theme = if v.settings.theme.is_empty() {
+        "claude".to_string()
+    } else {
+        v.settings.theme.clone()
+    };
     let project = v.open.clone();
     let in_project = project.is_some() && tv.is_none();
-    let source = data_dir_label(&v.settings.data_dir);
-
-    // 顶栏标题:项目内是五入口的名字,顶层是那一屏的名字。
-    let title = match (tv, in_project) {
-        (Some(TopView::Onboard), _) => "接入项目".to_string(),
-        (Some(TopView::Settings), _) => "设置".to_string(),
-        (None, true) => cur.label().to_string(),
-        (None, false) => "项目墙".to_string(),
-    };
-
     let b_rail = bridge.clone();
-    // 项目轨头部徽章和项目墙卡片上的 ⚑ 是同一个数(见 `NotifyVm::unread`)
-    // —— 评审中的活张数,现算。通知页签已删(ADR-0003),个人弹窗落地前
-    // 它撑着「有几张等你合入」。
-    let unread = project.as_ref().map(|p| p.notify.unread).unwrap_or(0);
+    let sidebar_project = project.as_ref().map(|p| chrome::SidebarProject {
+        name: p.name.clone(),
+        version: if p.card.current_version.is_empty() {
+            "—".to_string()
+        } else {
+            p.card.current_version.clone()
+        },
+        signal: p.health.signal,
+        unread: p.notify.unread,
+    });
 
     rsx! {
         GlobalChrome {}
-        div { class: "app-root",
-            chrome::IconRail {
+        // 设计系统的配色 + 中文排版层都挂在根上(见 theme 模块头注)。
+        div { class: "app-root", lang: "zh", "data-theme": "{theme}",
+            chrome::Sidebar {
                 in_project,
                 top_view: tv,
+                project: sidebar_project,
+                cur,
                 on_wall: move |_| {
                     top_view.set(None);
                     b_rail.send(Req::Open(None));
                 },
                 on_settings: move |_| top_view.set(Some(TopView::Settings)),
-            }
-            if in_project {
-                if let Some(p) = project.as_ref() {
-                    chrome::ProjectRail {
-                        name: p.name.clone(),
-                        version: if p.card.current_version.is_empty() { "—".to_string() } else { p.card.current_version.clone() },
-                        signal: p.health.signal,
-                        unread,
-                        cur,
-                        on_wall: {
-                            let b = bridge.clone();
-                            move |_| { top_view.set(None); b.send(Req::Open(None)); }
-                        },
-                        on_nav: move |p: bridge::Panel| panel.set(p),
-                    }
-                }
+                on_nav: move |p: bridge::Panel| panel.set(p),
             }
             div { class: "main",
-                chrome::TopBar {
-                    title,
-                    project: if in_project { project.as_ref().map(|p| p.name.clone()) } else { None },
-                    source,
-                    bridge: bridge.clone(),
-                }
                 // 仓文件读不动的实话。**不退回默认值假装文件不存在**。
                 // key 按索引,不按警告文本:同一条警告被两处推过(如 issues() 在
                 // build_project 与 build_vm 各失败一次)时,文本相同、按文本

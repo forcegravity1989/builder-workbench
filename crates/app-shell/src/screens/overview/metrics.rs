@@ -16,12 +16,12 @@ enum Grain {
 }
 
 const TAB_MAIN: &str = "主要";
-const LAG_COLOR: &str = "var(--clay)";
+const LAG_COLOR: &str = "var(--color-accent)";
 const LEAD_COLORS: [&str; 4] = [
-    "var(--green)",
-    "var(--amber)",
-    "var(--agent)",
-    "var(--ink-2)",
+    "var(--color-accent-2)",
+    "var(--color-success)",
+    "var(--color-warning)",
+    "var(--color-neutral-600)",
 ];
 
 #[component]
@@ -39,37 +39,36 @@ pub fn BizMetrics(p: ProjectVm, bridge: Bridge) -> Element {
 
     rsx! {
         div { class: "card ov-block",
-            div { class: "ov-card-head",
-                div { class: "ov-head-row",
-                    div { class: "ov-block-title", "滞后性指标和引领性指标" }
-                    {grain_seg(grain, "biz-grain")}
-                    button {
-                        class: "btn btn-sm btn-primary",
-                        onclick: move |_| b.send(crate::bridge::Req::CollectMetrics),
-                        "立即采集"
-                    }
+            div { class: "ov-head-row",
+                div { class: "ov-block-title", "滞后性指标和引领性指标" }
+                {grain_seg(grain, "biz-grain")}
+                button {
+                    class: "btn btn-secondary",
+                    onclick: move |_| b.send(crate::bridge::Req::CollectMetrics),
+                    "立即采集"
                 }
-                div { class: "ov-tabs", role: "tablist",
-                    for t in tabs.iter() {
-                        button {
-                            key: "{t}",
-                            class: if t == &chosen { "ov-tab on" } else { "ov-tab" },
-                            role: "tab",
-                            onclick: {
-                                let t = t.clone();
-                                move |_| tab.set(t.clone())
-                            },
-                            "{tab_label(t)}"
-                        }
+            }
+            div { class: "tabs ov-tabs", role: "tablist",
+                for t in tabs.iter() {
+                    button {
+                        key: "{t}",
+                        class: "tab",
+                        role: "tab",
+                        aria_selected: if t == &chosen { "true" },
+                        onclick: {
+                            let t = t.clone();
+                            move |_| tab.set(t.clone())
+                        },
+                        "{tab_label(t)}"
                     }
                 }
             }
             if let Some(e) = p.metrics.error.as_ref() {
-                div { class: "detail-empty", style: "color:var(--alert-deep);", "指标文件读不了:{e}" }
+                div { class: "empty text-danger", "指标文件读不了:{e}" }
             } else if let Some(n) = p.metrics.note.as_ref() {
-                div { class: "detail-empty", "{n}" }
+                div { class: "empty", "{n}" }
             } else if plots.is_empty() {
-                div { class: "detail-empty", "这一档还没有指标。" }
+                div { class: "empty", "这一档还没有指标。" }
             } else {
                 div { class: if multi { "ov-plots is-multi" } else { "ov-plots" },
                     for (i, (lag, leads)) in plots.iter().enumerate() {
@@ -160,7 +159,7 @@ fn series_row(
             span { class: "ov-series-val", "{shown}" }
             span { class: "ov-series-tgt", "{target}" }
             if !m.collect_error.is_empty() {
-                span { class: "detail-empty", style: "flex-basis:100%;color:var(--alert-deep);", "{m.collect_error}" }
+                span { class: "ov-series-err hint text-danger", "{m.collect_error}" }
             }
             if !right && m.manual {
                 ManualFill {
@@ -188,7 +187,7 @@ pub fn ManualFill(pid: ProjectId, name: String, current: String, bridge: Bridge)
                 oninput: move |e| draft.set(e.value()),
             }
             button {
-                class: "btn btn-sm",
+                class: "btn btn-secondary",
                 disabled: draft.read().trim().is_empty(),
                 onclick: move |_| {
                     let v = draft.read().trim().to_string();
@@ -219,7 +218,7 @@ pub fn SdlcMetrics(p: ProjectVm, bridge: Bridge) -> Element {
                 div { class: "ov-head-tools",
                     {grain_seg(grain, "sdlc-grain")}
                     button {
-                        class: "btn btn-sm btn-primary",
+                        class: "btn btn-secondary",
                         onclick: move |_| b.send(crate::bridge::Req::CollectRepoStats),
                         "立即采集"
                     }
@@ -227,18 +226,18 @@ pub fn SdlcMetrics(p: ProjectVm, bridge: Bridge) -> Element {
             }
             match p.repo_stats.as_ref() {
                 None => rsx! {
-                    div { class: "detail-empty", "还没采过。打开项目会自动采一轮,也可以点上面那颗按钮。" }
+                    div { class: "empty", "还没采过。打开项目会自动采一轮,也可以点上面那颗按钮。" }
                 },
                 Some(s) if !s.error.is_empty() => rsx! {
-                    div { class: "detail-empty", style: "color:var(--alert-deep);", "{s.error}" }
+                    div { class: "empty text-danger", "{s.error}" }
                 },
                 Some(s) => rsx! {
                     {sdlc_grid(s, day)}
                     if !s.git_note.is_empty() {
-                        div { class: "cfg-readonly-note", "{s.git_note}" }
+                        div { class: "hint", "{s.git_note}" }
                     }
                     if !s.trend_note.is_empty() {
-                        div { class: "cfg-readonly-note", "{s.trend_note}" }
+                        div { class: "hint", "{s.trend_note}" }
                     }
                 },
             }
@@ -250,16 +249,20 @@ fn sdlc_grid(s: &RepoStatsVm, day: bool) -> Element {
     let pts = if day { &s.day_trend } else { &s.trend };
     type Pick = fn(&TrendPointVm) -> Option<f64>;
     const LINES: [(&str, Pick, &str); 3] = [
-        ("每周提交", |p| p.commits.map(|n| n as f64), "var(--clay)"),
+        (
+            "每周提交",
+            |p| p.commits.map(|n| n as f64),
+            "var(--color-accent)",
+        ),
         (
             "每周合入的 PR",
             |p| p.merged_prs.map(|n| n as f64),
-            "var(--green)",
+            "var(--color-accent-2)",
         ),
         (
             "未处理 issue",
             |p| p.open_issues.map(|n| n as f64),
-            "var(--amber)",
+            "var(--color-warning)",
         ),
     ];
     rsx! {
@@ -295,18 +298,26 @@ fn last_known(pts: &[TrendPointVm], pick: fn(&TrendPointVm) -> Option<f64>) -> S
         .unwrap_or_else(|| "—".into())
 }
 
-fn grain_seg(mut grain: Signal<Grain>, _name: &str) -> Element {
+fn grain_seg(mut grain: Signal<Grain>, name: &str) -> Element {
     let cur = grain();
     rsx! {
-        div { class: "ov-seg",
-            button {
-                class: if cur == Grain::Week { "ov-seg-btn on" } else { "ov-seg-btn" },
-                onclick: move |_| grain.set(Grain::Week),
+        div { class: "seg",
+            label { class: "seg-opt",
+                input {
+                    r#type: "radio",
+                    name: "{name}",
+                    checked: cur == Grain::Week,
+                    onchange: move |_| grain.set(Grain::Week),
+                }
                 "周"
             }
-            button {
-                class: if cur == Grain::Day { "ov-seg-btn on" } else { "ov-seg-btn" },
-                onclick: move |_| grain.set(Grain::Day),
+            label { class: "seg-opt",
+                input {
+                    r#type: "radio",
+                    name: "{name}",
+                    checked: cur == Grain::Day,
+                    onchange: move |_| grain.set(Grain::Day),
+                }
                 "天"
             }
         }

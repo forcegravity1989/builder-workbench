@@ -46,46 +46,45 @@ pub fn VersionPlan(p: ProjectVm, bridge: Bridge) -> Element {
 
     rsx! {
         div { class: "card ov-block",
-            div { class: "ov-card-head",
-                div { class: "ov-head-row",
-                    div { class: "ov-block-title", "版本计划与进展" }
-                    if !tag.is_empty() {
-                        span { class: if released { "chip chip-gray" } else { "chip chip-clay" }, "{tag}" }
-                    }
+            div { class: "ov-head-row",
+                div { class: "ov-block-title", "版本计划与进展" }
+                if !tag.is_empty() {
+                    span { class: if released { "tag tag-neutral" } else { "tag tag-accent" }, "{tag}" }
                 }
-                if !tabs.is_empty() {
-                    div { class: "ov-tabs", role: "tablist",
-                        for (key, label) in tabs.iter() {
-                            button {
-                                key: "{key}",
-                                class: if *key == chosen { "ov-tab on" } else { "ov-tab" },
-                                role: "tab",
-                                onclick: {
-                                    let key = key.clone();
-                                    let covering = covering.clone();
-                                    let b = b.clone();
-                                    move |_| {
-                                        sel.set(key.clone());
-                                        if covering.iter().any(|n| n == &key) {
-                                            b.send(Req::SelectOverviewVersion(key.clone()));
-                                        }
+            }
+            if !tabs.is_empty() {
+                div { class: "tabs ov-tabs", role: "tablist",
+                    for (key, label) in tabs.iter() {
+                        button {
+                            key: "{key}",
+                            class: "tab",
+                            role: "tab",
+                            aria_selected: if *key == chosen { "true" },
+                            onclick: {
+                                let key = key.clone();
+                                let covering = covering.clone();
+                                let b = b.clone();
+                                move |_| {
+                                    sel.set(key.clone());
+                                    if covering.iter().any(|n| n == &key) {
+                                        b.send(Req::SelectOverviewVersion(key.clone()));
                                     }
-                                },
-                                "{label}"
-                            }
+                                }
+                            },
+                            "{label}"
                         }
                     }
                 }
             }
             if chosen.is_empty() {
-                div { class: "detail-empty", "还没有版本。" }
+                div { class: "empty", "还没有版本。" }
             } else {
                 div { class: "ov-goal-week",
                     div {
                         div { class: "ov-kicker", "版本目标" }
                         div { class: "ov-text-box",
                             if goal.trim().is_empty() {
-                                span { class: "detail-empty", "还没有版本目标" }
+                                span { class: "empty", "还没有版本目标" }
                             } else {
                                 "{goal}"
                             }
@@ -95,7 +94,7 @@ pub fn VersionPlan(p: ProjectVm, bridge: Bridge) -> Element {
                         div { class: "ov-kicker", "每周进展" }
                         div { class: "ov-text-box",
                             if week_progress.trim().is_empty() {
-                                span { class: "detail-empty", "还没有周进展。在该版本运作活①上追加一条 ## 每周进展。" }
+                                span { class: "empty", "还没有周进展。在该版本运作活①上追加一条 ## 每周进展。" }
                             } else {
                                 "{week_progress}"
                             }
@@ -141,18 +140,18 @@ fn progress_bar(c: &WeekCountsVm) -> Element {
     if c.total() == 0 {
         return rsx! {
             div { class: "week-counts",
-                span { class: "detail-empty", "这一版还没有挂活" }
+                span { class: "empty", "这一版还没有挂活" }
             }
         };
     }
     rsx! {
         div {
             div { class: "week-progress",
-                div { style: "width:{c.pct(c.done)}%;background:var(--green);" }
-                div { style: "width:{c.pct(c.review)}%;background:var(--amber);" }
-                div { style: "width:{c.pct(c.doing)}%;background:var(--clay);" }
-                div { style: "width:{c.pct(c.blocked)}%;background:var(--red);" }
-                div { style: "width:{c.pct(c.todo)}%;background:#E4DDC8;" }
+                div { style: "width:{c.pct(c.done)}%;background:var(--color-success);" }
+                div { style: "width:{c.pct(c.review)}%;background:var(--color-accent-2);" }
+                div { style: "width:{c.pct(c.doing)}%;background:var(--color-warning);" }
+                div { style: "width:{c.pct(c.blocked)}%;background:var(--color-danger);" }
+                div { style: "width:{c.pct(c.todo)}%;background:var(--color-neutral-300);" }
             }
             div { class: "week-counts",
                 span { "待办 " b { "{c.todo}" } }
@@ -160,7 +159,7 @@ fn progress_bar(c: &WeekCountsVm) -> Element {
                 span { "评审中 " b { "{c.review}" } }
                 span { "完成 " b { "{c.done}" } }
                 if c.blocked > 0 {
-                    span { style: "color:var(--alert-deep);", "阻塞 " b { "{c.blocked}" } }
+                    span { class: "text-danger", "阻塞 " b { "{c.blocked}" } }
                 }
             }
         }

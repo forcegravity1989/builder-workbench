@@ -25,16 +25,31 @@ pub fn View(vm: Vm, bridge: Bridge, go_top: EventHandler<TopView>) -> Element {
     let asking = use_signal(|| None::<bw::model::ProjectId>);
     rsx! {
         section {
-            div { class: "wall-topline",
-                h1 { "项目墙" }
-                button {
-                    class: "btn btn-primary",
-                    onclick: move |_| go_top(TopView::Onboard),
-                    "+ 接入项目"
+            "data-screen": "wall",
+            div { class: "page-head",
+                div {
+                    h1 { "项目墙" }
+                    p { class: "page-desc", "接进来的项目都在这;灯是健康,灰是还没数据。" }
+                }
+                div { class: "page-actions",
+                    button {
+                        class: "btn btn-secondary",
+                        title: "重读本机数据,顺带把每个工具再探一遍",
+                        onclick: {
+                            let b = bridge.clone();
+                            move |_| b.send(Req::Refresh)
+                        },
+                        "刷新"
+                    }
+                    button {
+                        class: "btn btn-primary",
+                        onclick: move |_| go_top(TopView::Onboard),
+                        "+ 接入项目"
+                    }
                 }
             }
 
-            {env_bar(&vm.env, bridge, guide)}
+            {env_bar(&vm.env, guide)}
 
             div { class: "card healthbar",
                 span { class: "bar-label", "健康概览" }
@@ -42,15 +57,11 @@ pub fn View(vm: Vm, bridge: Bridge, go_top: EventHandler<TopView>) -> Element {
                 {health_group(Some(HealthSignal::Amber), "需要关注", counts.amber)}
                 {health_group(Some(HealthSignal::Red), "阻塞", counts.red)}
                 {health_group(None, "无数据", counts.unknown)}
-                span { style: "margin-left:auto;font-size:12px;color:var(--ink-3);",
-                    "共 {vm.projects.len()} 个项目"
-                }
+                span { class: "ml-auto hint", "共 {vm.projects.len()} 个项目" }
             }
 
             if vm.projects.is_empty() {
-                div { class: "card",
-                    style: "padding:40px;text-align:center;color:var(--ink-3);\
-                            font-size:14px;line-height:2;",
+                div { class: "card empty empty-center",
                     "还没有接入任何项目。"
                     br {}
                     "点右上角「接入项目」,填四个字段,Workbench 会把管理体系铺进这个仓。"
@@ -94,21 +105,14 @@ fn health_group(s: Option<HealthSignal>, label: &str, n: usize) -> Element {
     }
 }
 
-fn env_bar(env: &[ToolProbeVm], bridge: &Bridge, guide: GuideNav) -> Element {
-    let b = bridge.clone();
+/// 探活跟着整份 ViewModel 一起重算,所以页头那颗「刷新」就是再探一遍 ——
+/// 这条不再单独放按钮。
+fn env_bar(env: &[ToolProbeVm], guide: GuideNav) -> Element {
     rsx! {
         div { class: "card envbar",
             span { class: "bar-label", "本机环境" }
             for t in env.iter() {
                 {env_item(t, guide)}
-            }
-            span { style: "margin-left:auto;" }
-            button {
-                class: "btn btn-sm",
-                // 探活跟着整份 ViewModel 一起重算,所以「测一下」就是让内核再拼
-                // 一份 —— 不另开一条只探环境的路。
-                onclick: move |_| b.send(Req::Refresh),
-                "测一下"
             }
         }
     }
@@ -180,19 +184,19 @@ fn project_card(
     rsx! {
         div {
             key: "{p.slug}",
-            class: "pcard",
+            class: "card pcard",
             onclick: move |_| b.send(Req::Open(Some(id))),
             div { class: "pcard-top",
                 if p.version.trim().is_empty() {
-                    span { class: "chip chip-outline mono", title: "仓里的 .bw/project.toml 没写在研版本", "版本未定" }
+                    span { class: "tag tag-outline mono", title: "仓里的 .bw/project.toml 没写在研版本", "版本未定" }
                 } else {
-                    span { class: "chip chip-outline mono", "{p.version}" }
+                    span { class: "tag tag-outline mono", "{p.version}" }
                 }
-                span { class: "chip", "{p.week}" }
+                span { class: "tag tag-neutral", "{p.week}" }
                 if p.unread > 0 {
-                    span { class: "chip chip-clay", title: "评审中的活有几张等你合入", "⚑ {p.unread}" }
+                    span { class: "tag tag-accent", title: "评审中的活有几张等你合入", "⚑ {p.unread}" }
                 }
-                span { style: "margin-left:auto;" }
+                span { class: "spacer" }
                 {light_dot(p.signal, true)}
                 span {
                     class: "pcard-x",
@@ -217,16 +221,16 @@ fn project_card(
                 div {
                     class: "pcard-confirm",
                     onclick: move |e: MouseEvent| e.stop_propagation(),
-                    div { style: "margin-bottom:6px;",
+                    div {
                         "把「" strong { "{p.name}" } "」从工作台移走?"
                         br {}
                         "库里这个项目和它所有活的账会一起没,"
                         strong { "仓不动" }
                         " —— 硬盘上的代码一个字节都不碰。"
                     }
-                    div { style: "display:flex;gap:8px;",
+                    div { class: "row",
                         button {
-                            class: "btn btn-sm",
+                            class: "btn btn-secondary",
                             onclick: move |e: MouseEvent| {
                                 e.stop_propagation();
                                 asking.set(None);
@@ -234,7 +238,7 @@ fn project_card(
                             "取消"
                         }
                         button {
-                            class: "btn btn-sm btn-danger",
+                            class: "btn btn-danger",
                             onclick: move |e: MouseEvent| {
                                 e.stop_propagation();
                                 asking.set(None);
@@ -248,7 +252,7 @@ fn project_card(
             div { class: "pcard-bar",
                 div { class: "pcard-bar-fill", style: "width:{pct}%" }
             }
-            div { style: "margin-top:7px;font-size:11px;color:var(--ink-3);",
+            div { class: "hint",
                 if p.week_total == 0 {
                     "本周还没排活"
                 } else {

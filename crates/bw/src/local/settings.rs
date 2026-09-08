@@ -27,7 +27,14 @@ pub struct Settings {
     /// **跟人走这台机器**,不进被管仓。空 = 还没选过,读侧回退残留映射或产品默认。
     #[serde(default, skip_serializing_if = "BTreeMap::is_empty")]
     pub tools: BTreeMap<String, String>,
+    /// 界面配色:`claude`(默认)或 `apple`,对应设计系统的两套 token。
+    /// **本机设置,不进仓**。空 / 不认识的值按默认。
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub theme: Option<String>,
 }
+
+/// 设计系统里有的配色名。壳只认这两个,别的一律当默认。
+pub const THEMES: [&str; 2] = ["claude", "apple"];
 
 impl Settings {
     /// 读设置。文件不存在 = 全部默认值(不是错误)。
@@ -102,6 +109,23 @@ impl Settings {
         } else {
             Some(url.to_string())
         };
+        Self::save(asset_root, &s)
+    }
+
+    /// 读 `theme`。不在 [`THEMES`] 里的值当没设。
+    pub fn get_theme(asset_root: &Path) -> Option<String> {
+        Self::load(asset_root)
+            .ok()
+            .and_then(|s| s.theme)
+            .map(|t| t.trim().to_string())
+            .filter(|t| THEMES.contains(&t.as_str()))
+    }
+
+    /// 写 `theme`。不在 [`THEMES`] 里的值 = 清掉(回默认)。
+    pub fn set_theme(asset_root: &Path, theme: &str) -> Result<(), RepoFileError> {
+        let mut s = Self::load(asset_root).unwrap_or_default();
+        let theme = theme.trim();
+        s.theme = THEMES.contains(&theme).then(|| theme.to_string());
         Self::save(asset_root, &s)
     }
 

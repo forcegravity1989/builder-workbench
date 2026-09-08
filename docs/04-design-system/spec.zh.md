@@ -72,6 +72,17 @@ Lucide(https://lucide.dev),默认描边 2,默认 16px(密集行 14px、元信息
 | `.toast` 系列 | 反色深底通知,底角 | components/dialog.html |
 | `.cmdk` 系列 | ⌘K 命令面板 | components/command.html |
 | `.frame` | 清晰图像框 — 发丝线、小圆角 | foundations/image.html |
+| `.page-head` + `.page-desc/-actions` | 页标题(24px)+ 一句说明;页级动作靠右 | components/settings.html |
+| `.section` + `.section-title/-desc/-tools` | 设置小节:标题、一句说明、右侧可挂控件 | components/settings.html |
+| `.set-group` + `.set-row` + `.set-text/-title/-desc/-ctl` | 描边分组里的设置行 — 左边标题 + 一句说明,控件在行尾 | components/settings.html |
+| `.toggle` + `.knob` | 开关(原生 checkbox) | components/settings.html |
+| `.choice` + `.choice-pv/-label` | 从几张预览卡里选一种(原生 radio) | components/settings.html |
+| `.path` | 文件路径 — 等宽、弱化、不换行(中间省略在代码里做) | components/settings.html |
+
+
+## 设置文法
+
+设置页只有一种骨架:`.page-head`(标题、一句说明、页级动作靠右),下面若干 `.section`,每节一张 `.set-group`。一行 `.set-row` = 左边标题 + **一句**说明,右边行尾一个控件——开关、`.seg`、`select.input`、`.input`、`.path` + 次按钮、或 `.status`。控件都落在同一条竖线上,一眼扫得出哪行能改;细节放进链接,不写第二句。自己就能生效的控件(开关、下拉、分段)不要保存键;打一半不能生效的自由输入,旁边留一颗安静的「保存」。见 components/settings.html。
 
 ## 要
 
