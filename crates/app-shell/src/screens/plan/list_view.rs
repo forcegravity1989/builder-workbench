@@ -16,14 +16,14 @@ use super::ListFilter;
 fn stage_pill(c: &CardItemVm) -> (&'static str, String) {
     let scheduled = !c.plan_version.is_empty();
     match c.status {
-        IssueStatus::Backlog => ("il-pill status-todo", "未排期".into()),
-        IssueStatus::Todo if !scheduled => ("il-pill status-todo", "未排期".into()),
-        IssueStatus::Todo => ("il-pill status-todo", "已排期".into()),
-        IssueStatus::InProgress => ("il-pill status-progress", "进行中".into()),
-        IssueStatus::InReview => ("il-pill status-review", "待评审".into()),
-        IssueStatus::Done => ("il-pill status-done", "完成".into()),
-        IssueStatus::Blocked => ("il-pill status-blocked", "阻塞".into()),
-        IssueStatus::Cancelled => ("il-pill status-cancelled", "已取消".into()),
+        IssueStatus::Backlog => ("tag tag-neutral", "未排期".into()),
+        IssueStatus::Todo if !scheduled => ("tag tag-neutral", "未排期".into()),
+        IssueStatus::Todo => ("tag tag-neutral", "已排期".into()),
+        IssueStatus::InProgress => ("tag tag-warning", "进行中".into()),
+        IssueStatus::InReview => ("tag tag-accent-2", "待评审".into()),
+        IssueStatus::Done => ("tag tag-success", "完成".into()),
+        IssueStatus::Blocked => ("tag tag-danger", "阻塞".into()),
+        IssueStatus::Cancelled => ("tag tag-outline", "已取消".into()),
     }
 }
 
@@ -86,9 +86,11 @@ pub fn list_view(
         div { class: "il-wrap",
             div { class: "il-bar",
                 div { class: "il-presets",
-                    {preset_btn("open", "开放", &f.preset, list_filter)}
-                    {preset_btn("assigned", "分配我的", &f.preset, list_filter)}
-                    {preset_btn("mine", "我的", &f.preset, list_filter)}
+                    div { class: "seg",
+                        {preset_btn("open", "开放", &f.preset, list_filter)}
+                        {preset_btn("assigned", "分配我的", &f.preset, list_filter)}
+                        {preset_btn("mine", "我的", &f.preset, list_filter)}
+                    }
                 }
                 div { class: "il-tools",
                     // 计划下拉只在「全部 issue」显示;周/版本视图已经在看特定计划,不需要再筛
@@ -98,7 +100,7 @@ pub fn list_view(
                     {dropdown(&f.stage, stage_options, list_filter, "stage")}
                     div { class: "il-search-wrap",
                         input {
-                            class: "il-search",
+                            class: "input input-sm",
                             placeholder: "Search issues...",
                             value: "{f.q}",
                             oninput: move |e| list_filter.write().q = e.value(),
@@ -106,8 +108,8 @@ pub fn list_view(
                     }
                 }
             }
-            div { class: "issue-list",
-                div { class: "il-row il-head",
+            div { class: "list issue-list",
+                div { class: "list-row il-head",
                     span { class: "il-num", "ID" }
                     span { class: "il-title", "标题" }
                     span { class: "il-owner", "负责人" }
@@ -119,7 +121,7 @@ pub fn list_view(
                     {list_row(c, selected, schedule, start, bridge, nav)}
                 }
                 if filtered.is_empty() {
-                    div { class: "il-empty", "没有符合的 issue" }
+                    div { class: "empty empty-center", "没有符合的 issue" }
                 }
             }
         }
@@ -142,9 +144,13 @@ fn preset_btn(id: &str, label: &str, preset: &str, mut lf: Signal<ListFilter>) -
     let on = preset == id;
     let id = id.to_string();
     rsx! {
-        button {
-            class: if on { "il-preset on" } else { "il-preset" },
-            onclick: move |_| lf.write().preset = id.clone(),
+        label { class: "seg-opt",
+            input {
+                r#type: "radio",
+                name: "list-preset",
+                checked: on,
+                onchange: move |_| lf.write().preset = id.clone(),
+            }
             "{label}"
         }
     }
@@ -179,17 +185,15 @@ fn dropdown(
     let key_plan = key == "plan";
     let key_stage = key == "stage";
     rsx! {
-        div { class: "il-dd",
-            select {
-                class: "il-dd-btn",
-                onchange: move |e| {
-                    let val = e.value();
-                    if key_plan { list_filter.write().plan = val; }
-                    else if key_stage { list_filter.write().stage = val; }
-                },
-                for (val, label) in options.iter() {
-                    option { value: "{val}", selected: *val == cur, "{label}" }
-                }
+        select {
+            class: "input input-sm",
+            onchange: move |e| {
+                let val = e.value();
+                if key_plan { list_filter.write().plan = val; }
+                else if key_stage { list_filter.write().stage = val; }
+            },
+            for (val, label) in options.iter() {
+                option { value: "{val}", selected: *val == cur, "{label}" }
             }
         }
     }
@@ -233,7 +237,7 @@ fn list_row(
     let b_sess = bridge.clone();
     rsx! {
         div {
-            class: "il-row",
+            class: "list-row",
             onclick: move |_| selected.set(Some(cid)),
             span { class: "il-num", span { class: "il-idmark" }, "#{c.number}" }
             span { class: "il-title",
@@ -249,21 +253,21 @@ fn list_row(
             span { class: "il-act",
                 {match act {
                     "schedule" => rsx! {
-                        button { class: "il-btn", onclick: move |e| {
+                        button { class: "btn btn-secondary", onclick: move |e| {
                             e.stop_propagation();
                             selected.set(None);
                             schedule.set(Some(super::kanban::PendingSchedule { id: cid, title: ctitle.clone() }));
                         }, "schedule" }
                     },
                     "start" => rsx! {
-                        button { class: "il-btn", onclick: move |e| {
+                        button { class: "btn btn-secondary", onclick: move |e| {
                             e.stop_propagation();
                             selected.set(None);
                             start.set(Some(cid));
                         }, "Start →" }
                     },
                     "open" => rsx! {
-                        button { class: "il-btn primary", onclick: move |e| {
+                        button { class: "btn btn-ghost", onclick: move |e| {
                             e.stop_propagation();
                             selected.set(None);
                             b_sess.send(Req::SelectSession(Some(cid)));

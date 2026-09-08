@@ -365,6 +365,10 @@ impl App {
         Ok(Settings::set_orca_web_url(&self.asset_root, url)?)
     }
 
+    pub(crate) async fn set_theme_setting(&self, theme: &str) -> Result<()> {
+        Ok(Settings::set_theme(&self.asset_root, theme)?)
+    }
+
     // ── 会话(替代 store.conversation_*)────────────────────────────────
 
     pub async fn conversation_for_issue(
@@ -500,6 +504,7 @@ impl App {
             Command::SubmitIssueWork { id } => self.submit_issue_work(id).await,
             Command::SetWorkspacesRoot { path } => self.set_workspaces_root(path).await,
             Command::SetOrcaWebUrl { url } => self.set_orca_web_url(url).await,
+            Command::SetTheme { theme } => self.set_theme(theme).await,
             Command::TransitionIssue { id, to } => self.transition_issue(id, to).await,
             Command::SetIssueCategory { id, category } => {
                 self.set_issue_category(id, category).await
@@ -635,6 +640,7 @@ fn cmd_log_label(cmd: &Command) -> String {
         Command::SubmitIssueWork { id } => format!("SubmitIssueWork #{}", id.iid()),
         Command::SetWorkspacesRoot { .. } => "SetWorkspacesRoot".into(),
         Command::SetOrcaWebUrl { .. } => "SetOrcaWebUrl".into(),
+        Command::SetTheme { theme } => format!("SetTheme {theme}"),
         Command::TransitionIssue { id, to } => {
             format!("TransitionIssue #{} to={}", id.iid(), to.label())
         }

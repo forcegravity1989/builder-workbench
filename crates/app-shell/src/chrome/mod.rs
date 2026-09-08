@@ -1,21 +1,16 @@
-//! 外壳骨架:图标轨 / 项目轨 / 顶栏 / 指南抽屉 / 上报问题 / toast。
+//! 外壳骨架:一条紧凑侧栏 / 指南抽屉 / 上报问题 / toast。
 //!
-//! 结构照 `docs/hifi/index.html` 的 `iconRailHTML` /
-//! `projectRailHTML` / `topbarHTML` / `guideMarkupHTML` 搬,类名同名同义,
-//! **不写行内样式**。
+//! 结构走设计系统(`docs/04-design-system/spec.md`):侧栏是 `.sidebar`,弹窗是
+//! `.dialog`,回执是 `.toast`。**没有顶栏**:屏名在侧栏当前项上、页标题在各屏
+//! 自己的 `.page-head` 里,再画一条顶栏就是同一个词写两遍;「刷新」进各屏页头。
+//! 数据目录在设置屏看。**不写行内样式**。
 //!
-//! 与原型的两处不同,都是「原型是演示、真壳没有这东西」造成的,如实改掉而不
-//! 是照抄一个假的:
-//!
-//! - 原型顶栏右边是「演示数据 ✱ / 重置 / 头像」。真壳的数据来自本机库和项目
-//!   仓,没有可重置的演示数据,也没有账号 —— 改成「数据来自哪个库文件」+
-//!   一颗「刷新」(真的重算一遍 ViewModel)。头像先不放,放了就是装饰。
-//! - 原型的 toast 2.6 秒自动消失。真壳这条位置放的是命令回执(建活成功、
-//!   铺底失败的原话),自动消失等于把失败信息藏起来 —— 改成点 ✕ 才关。
+//! toast 放的是命令回执(建活成功、铺底失败的原话),不自动消失 —— 自动消失
+//! 等于把失败信息藏起来,点「关闭」才关。
 
 pub mod sparkline;
 
-use crate::bridge::{Bridge, ChromeBusy, Panel, Req, TopView, REPORTING, REPORTING_LOG};
+use crate::bridge::{Bridge, ChromeBusy, Panel, TopView, REPORTING, REPORTING_LOG};
 use crate::theme;
 use bw::model::Signal;
 use dioxus::prelude::*;
@@ -98,9 +93,13 @@ pub fn progress_log(lines: &[bw::app::ProgressLine]) -> Element {
 }
 
 pub fn light_dot(signal: Option<Signal>, big: bool) -> Element {
-    let cls = if big { "dot dot-lg" } else { "dot" };
+    let cls = if big {
+        "status-dot status-dot-lg"
+    } else {
+        "status-dot"
+    };
     let color = theme::signal_color(signal);
-    rsx! { span { class: "{cls}", style: "background:{color}" } }
+    rsx! { span { class: "{cls}", style: "--status-c:{color}" } }
 }
 
 /// 五个入口各自的图标名。原型里知识库那一格用的是 `space`(内部沿用旧命名)。
@@ -114,108 +113,81 @@ fn panel_icon(p: Panel) -> &'static str {
     }
 }
 
+/// 侧栏头部要显示的项目信息。
+#[derive(Clone, PartialEq)]
+pub struct SidebarProject {
+    pub name: String,
+    pub version: String,
+    pub signal: Option<Signal>,
+    /// 评审中的活有几张,和项目墙卡片上的 ⚑ 是同一个数(见 `NotifyVm::unread`)。
+    pub unread: u32,
+}
+
+/// 唯一一条侧栏:品牌 → (项目内)返回 / 项目头 / 五入口,或(顶层)项目墙 → 底部设置。
+/// 图标轨和顶栏都并进来了:文字只有两三个字,一条紧凑的栏就够。
 #[component]
-pub fn IconRail(
+pub fn Sidebar(
     in_project: bool,
     top_view: Option<TopView>,
+    project: Option<SidebarProject>,
+    cur: Panel,
     on_wall: EventHandler<()>,
     on_settings: EventHandler<()>,
+    on_nav: EventHandler<Panel>,
 ) -> Element {
     let settings_active = top_view == Some(TopView::Settings);
     let wall_active = !in_project && top_view.is_none();
     rsx! {
-        div { class: "iconrail",
-            div { class: "rail-logo", "B" }
-            if in_project {
-                button {
-                    class: "rail-btn",
-                    title: "项目墙",
-                    onclick: move |_| on_wall.call(()),
+        aside { class: "sidebar app-sidebar",
+            div { class: "sb-brand",
+                div { class: "rail-logo", "B" }
+                span { "Workbench" }
+            }
+            if let (true, Some(p)) = (in_project, project.as_ref()) {
+                div { class: "pr-back", onclick: move |_| on_wall.call(()),
                     {icon("back")}
+                    span { "项目墙" }
+                }
+                div { class: "pr-head",
+                    div { class: "pr-head-name", title: "{p.name}", "{p.name}" }
+                    div { class: "pr-head-meta",
+                        span { "{p.version}" }
+                        {light_dot(p.signal, false)}
+                        if p.unread > 0 {
+                            span { class: "pr-badge", title: "评审中的活有几张", "{p.unread}" }
+                        }
+                    }
+                }
+                nav { class: "pr-nav",
+                    for pn in Panel::ALL {
+                        div {
+                            key: "{pn:?}",
+                            class: "sidebar-item",
+                            aria_current: if pn == cur { "page" },
+                            onclick: move |_| on_nav.call(pn),
+                            {icon(panel_icon(pn))}
+                            span { "{pn.label()}" }
+                        }
+                    }
                 }
             } else {
-                button {
-                    class: if wall_active { "rail-btn active" } else { "rail-btn" },
-                    title: "项目墙",
-                    onclick: move |_| on_wall.call(()),
-                    {icon("wall")}
+                nav { class: "pr-nav",
+                    div {
+                        class: "sidebar-item",
+                        aria_current: if wall_active { "page" },
+                        onclick: move |_| on_wall.call(()),
+                        {icon("wall")}
+                        span { "项目墙" }
+                    }
                 }
             }
             div { class: "spacer" }
-            button {
-                class: if settings_active { "rail-btn active" } else { "rail-btn" },
-                title: "设置",
+            div {
+                class: "sidebar-item",
+                aria_current: if settings_active { "page" },
                 onclick: move |_| on_settings.call(()),
                 {icon("settings")}
-            }
-        }
-    }
-}
-
-#[component]
-pub fn ProjectRail(
-    name: String,
-    version: String,
-    signal: Option<Signal>,
-    unread: u32,
-    cur: Panel,
-    on_wall: EventHandler<()>,
-    on_nav: EventHandler<Panel>,
-) -> Element {
-    rsx! {
-        div { class: "projectrail",
-            div { class: "pr-back", onclick: move |_| on_wall.call(()),
-                {icon("back")}
-                span { "项目墙" }
-            }
-            div { class: "pr-head",
-                div { class: "pr-head-name", title: "{name}", "{name}" }
-                div { class: "pr-head-meta",
-                    span { "{version}" }
-                    {light_dot(signal, false)}
-                    // 未读徽章:评审中的活有几张。原挂在已删的通知页签上
-                    // (ADR-0003),挪到项目轨头部——它是项目级属性,不该绑在
-                    // 某个页签上。个人弹窗落地后再看它的角色。
-                    if unread > 0 {
-                        span { class: "pr-badge", title: "评审中的活有几张", "{unread}" }
-                    }
-                }
-            }
-            nav { class: "pr-nav",
-                for p in Panel::ALL {
-                    div {
-                        key: "{p:?}",
-                        class: if p == cur { "pr-link active" } else { "pr-link" },
-                        onclick: move |_| on_nav.call(p),
-                        span { style: "width:15px;height:15px;display:flex;", {icon(panel_icon(p))} }
-                        span { "{p.label()}" }
-                    }
-                }
-            }
-        }
-    }
-}
-
-/// 顶栏。`source` 是「这一屏的数字从哪来」的实话 —— 原型那格写的是
-/// 「演示数据 ✱」,真壳写数据目录名(asset_root 下 registry/设置/会话;数字用 codehub-cli/gh/cat 当场对、不靠库)。
-#[component]
-pub fn TopBar(title: String, project: Option<String>, source: String, bridge: Bridge) -> Element {
-    let b = bridge.clone();
-    rsx! {
-        div { class: "topbar",
-            div { class: "topbar-title",
-                "{title}"
-                if let Some(p) = project.as_ref() {
-                    " · {p}"
-                }
-            }
-            div { class: "spacer" }
-            span { class: "demo-tag", title: "数据目录(registry/设置/会话);界面数字用 codehub-cli/gh/cat 当场对,不靠库", "{source}" }
-            button {
-                class: "btn btn-sm btn-ghost",
-                onclick: move |_| b.send(Req::Refresh),
-                title: "打开着的项目会先快进主检出再重读;项目墙只重读本机",
-                "刷新"
+                span { "设置" }
             }
         }
     }
@@ -250,20 +222,20 @@ pub fn GuideDrawer(bridge: Bridge) -> Element {
             }
         }
         if guide.0.read().is_some() {
-            div { class: "guide-panel guide-panel-wide",
+            div { class: "guide-panel",
                 div { class: "guide-panel-head",
-                    h3 { style: "font-size:15px;margin:0;", "产品指南" }
-                    button { class: "drawer-close", onclick: move |_| guide.close(), "✕" }
+                    h4 { "产品指南" }
+                    button { class: "btn btn-ghost btn-quiet btn-icon", title: "关闭", onclick: move |_| guide.close(), "✕" }
                 }
                 iframe { class: "guide-frame", srcdoc: GUIDE_HTML }
             }
         }
         if *report_open.read() {
-            div { class: "modal-backdrop", onclick: move |_| report_open.set(false),
-                div { class: "modal", onclick: move |e| e.stop_propagation(),
-                    h3 { "上报问题" }
-                    p { class: "modal-lead", "把问题和本机对照日志报到 Workbench 仓。默认会附上对照日志。" }
-                    div { class: "modal-banner",
+            div { class: "dialog-backdrop", onclick: move |_| report_open.set(false),
+                div { class: "dialog", role: "dialog", onclick: move |e| e.stop_propagation(),
+                    div { class: "dialog-title", "上报问题" }
+                    div { class: "dialog-body", "把问题和本机对照日志报到 Workbench 仓。默认会附上对照日志。" }
+                    div { class: "dialog-note",
                         if log_ready {
                             "本机有对照日志。勾选后会随 issue 附上。"
                         } else {
@@ -289,7 +261,7 @@ pub fn GuideDrawer(bridge: Bridge) -> Element {
                             span { class: "report-attach-hint", "随 issue 发送本机对照日志（bw.log）。有文件才附上。" }
                         }
                     }
-                    div { class: "modal-actions",
+                    div { class: "dialog-actions",
                         button { class: "btn btn-secondary", onclick: move |_| report_open.set(false), "取消" }
                         button {
                             class: "btn btn-primary",
@@ -331,13 +303,12 @@ pub fn Toast(note: Option<String>, seq: u64) -> Element {
         return rsx! {};
     }
     rsx! {
-        div { class: "toast show",
-            "{text}"
-            span {
-                class: "toast-x",
-                style: "margin-left:auto;",
+        div { class: "toast", role: "status",
+            div { class: "toast-body", "{text}" }
+            button {
+                class: "toast-action",
                 onclick: move |_| dismissed.set(seq),
-                "✕"
+                "关闭"
             }
         }
     }

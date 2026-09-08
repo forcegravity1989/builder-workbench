@@ -178,11 +178,7 @@ pub async fn provision_pack_worktree(
         {
             return Ok(tree_path);
         }
-        let _ = git_in(
-            main_workspace,
-            &["worktree", "remove", "--force", tree_str],
-        )
-        .await;
+        let _ = git_in(main_workspace, &["worktree", "remove", "--force", tree_str]).await;
         let _ = std::fs::remove_dir_all(&tree_path);
     } else if tree_path.exists() {
         let _ = std::fs::remove_dir_all(&tree_path);
