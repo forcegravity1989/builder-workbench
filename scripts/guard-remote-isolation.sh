@@ -12,14 +12,17 @@ cd "$(dirname "$0")/.."
 GH_ARM=crates/bw-engine/src/remote/github.rs
 CH_ARM=crates/bw-engine/src/remote/codehub.rs
 
-# 只查真代码:行注释(`//` / `///` / `//!`)里提一句对方是允许的 —— 解释「为什么
-# 这里跟对面不一样」正是该写的注释,把它也禁掉只会让人删注释而不是删耦合。
-strip_comments() { grep -vE '^[[:space:]]*//' "$1"; }
-
 fail=0
 check() { # <文件> <禁词正则> <人话>
   local file="$1" pattern="$2" what="$3" hits
-  hits=$(strip_comments "$file" | grep -nEi "$pattern" || true)
+  # 只查真代码:行注释(`//` / `///` / `//!`)里提一句对方是允许的 —— 解释「为什么
+  # 这里跟对面不一样」正是该写的注释,把它也禁掉只会让人删注释而不是删耦合。
+  #
+  # **先编号再滤注释**,顺序不能反:反过来 `grep -n` 数的是「第几条非注释行」,
+  # 打给人的定位就偏了(两臂开头都是 `//!` 块、通篇大量 `//`,实测偏 200 多行,
+  # 人照着号码跳过去看到的是另一段代码)。守没守住不受影响,但定位信息正是这
+  # 条门禁唯一的产出。
+  hits=$(grep -nEi "$pattern" "$file" | grep -vE '^[0-9]+:[[:space:]]*//' || true)
   if [ -n "$hits" ]; then
     echo "✗ $file 里出现了$what:"
     echo "$hits" | sed 's/^/    /'
