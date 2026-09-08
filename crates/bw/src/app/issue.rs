@@ -772,11 +772,11 @@ impl App {
             return Err(AppError::Refused("问题标题不能空".into()));
         }
         let repo = workbench_git_dir();
-        let origin = bw_engine::github::origin_remote_url(&repo)
+        let origin = bw_engine::workspace::origin_remote_url(&repo)
             .await
             .map_err(|e| AppError::Exec(format!("读 workbench origin 没成:{e}")))?
             .ok_or_else(|| AppError::Refused(format!("{} 没有 origin,上报不了", repo.display())))?;
-        let (host, path) = bw_engine::github::parse_git_remote_url(&origin)
+        let (host, path) = bw_engine::workspace::parse_git_remote_url(&origin)
             .ok_or_else(|| AppError::Refused(format!("认不出 origin:{origin}")))?;
         bw_engine::dlog!(
             ok,

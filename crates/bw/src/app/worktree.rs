@@ -129,7 +129,7 @@ pub(super) async fn provision(main: &Path, number: u32) -> Result<IssueTree> {
         .map_err(|e| AppError::Exec(format!("给第 {number} 号活开 worktree 没成:{e}")))?;
     Ok(IssueTree {
         path,
-        branch: bw_engine::github::issue_branch(number),
+        branch: bw_engine::workspace::issue_branch(number),
         isolated: true,
     })
 }

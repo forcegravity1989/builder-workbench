@@ -61,6 +61,7 @@ cargo fmt --all --check
 cargo clippy --workspace -- -D warnings
 cargo check -p app-shell          # Workbench MVP 壳编译过
 ./scripts/guard-kernel-ui-free.sh
+./scripts/guard-remote-isolation.sh         # 远端两臂(github / codehub)互不相识
 ./scripts/guard-no-cross-screen-import.sh   # 屏与屏不互相引用
 ./scripts/guard-screen-hooks.sh             # 用 hook 的函数必须是组件
 ./scripts/guard-file-lines.sh               # 单文件 2000 行硬上限(只查 Workbench MVP 三 crate)

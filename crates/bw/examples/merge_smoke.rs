@@ -91,7 +91,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     // ── ①合得成的那一条 ────────────────────────────────────
     let (id, number) = new_issue(&mut app, pid, "合得成的活").await?;
-    let branch = bw_engine::github::issue_branch(number);
+    let branch = bw_engine::workspace::issue_branch(number);
     app.dispatch(Command::RunIssue { id }).await?;
     let tree = bw_engine::workspace::issue_worktree_path(&ws, number).expect("算不出 worktree");
     std::fs::write(
@@ -159,7 +159,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     // ── ②合不成的那一条:整条不算数 ────────────────────────
     let (id2, number2) = new_issue(&mut app, pid, "合不成的活").await?;
-    let branch2 = bw_engine::github::issue_branch(number2);
+    let branch2 = bw_engine::workspace::issue_branch(number2);
     app.dispatch(Command::RunIssue { id: id2 }).await?;
     let tree2 = bw_engine::workspace::issue_worktree_path(&ws, number2).expect("算不出 worktree");
     std::fs::write(tree2.join("NOT_MERGED.md"), "这份不该进主干\n")?;
@@ -205,7 +205,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // 回执里,不许写成「已拉到最新」。
     std::fs::remove_file(root.join("fail_merge"))?;
     let (id3, number3) = new_issue(&mut app, pid, "拉不动的活").await?;
-    let branch3 = bw_engine::github::issue_branch(number3);
+    let branch3 = bw_engine::workspace::issue_branch(number3);
     app.dispatch(Command::RunIssue { id: id3 }).await?;
     let tree3 = bw_engine::workspace::issue_worktree_path(&ws, number3).expect("算不出 worktree");
     std::fs::write(tree3.join("THIRD.md"), "第三张\n")?;

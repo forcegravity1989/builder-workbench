@@ -37,6 +37,9 @@ jobs:
       - name: Kernel stays UI-free
         run: ./scripts/guard-kernel-ui-free.sh
 
+      - name: Remote's two arms stay strangers
+        run: ./scripts/guard-remote-isolation.sh
+
       # Shell layout rules. Pure grep — no compilation, so they run here even
       # though app-shell itself is not built on this runner.
       - name: Shell stays laid out the way it says it is

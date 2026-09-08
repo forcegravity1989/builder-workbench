@@ -2,9 +2,10 @@
 //! subprocess pattern `workspace.rs` uses for local git. Relies entirely on
 //! the user's own `gh auth login` on this machine; no token handling here.
 
-/// 项目名片在仓里的相对路径。底座只拿它拼远端 API 的 URL,**不解析这份文件**
-/// —— 解析是上层的事(`bw` 有自己的一份)。
-pub const PROJECT_FILE_REL_PATH: &str = ".bw/project.toml";
+use super::{
+    Capped, IssueFilter, IssueState, IssueStateEvent, PrOpened, RemoteError, RemoteIssue,
+    RemoteProvider, RepoSummary, PROJECT_FILE_REL_PATH,
+};
 use crate::win_cmd::stderr_text;
 use std::{path::Path, process::Stdio};
 
@@ -14,14 +15,6 @@ pub enum GithubError {
     NotInstalled,
     #[error("gh 命令失败:{0}")]
     Command(String),
-}
-
-#[derive(Clone, Debug, PartialEq, Eq)]
-pub struct GithubRepoRef {
-    pub owner: String,
-    pub repo: String,
-    pub html_url: String,
-    pub private: bool,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -86,70 +79,13 @@ pub async fn probe_repo(owner_repo: &str) -> Result<String, GithubError> {
 // 本地 `origin` 这一侧的真实读写;探活(`probe_repo`)、写 `remote_path`、
 // 补 connector 都是 app-shell 的编排职责,不下沉到这层。
 
-/// 读一个工作区的 `origin` 远端 URL。`Ok(None)` = 没配 `origin`(绑定本地
-/// 目录建的项目的常态——`git remote get-url origin` 以非零退出,这不是
-/// bug);其余 git 失败照实报错,这是一次真读,不吞错误。
-pub async fn origin_remote_url(workspace: &Path) -> Result<Option<String>, GithubError> {
-    let output = crate::win_cmd::tokio_cmd("git")
-        .current_dir(workspace)
-        .args(["remote", "get-url", "origin"])
-        .stdin(Stdio::null())
-        .stdout(Stdio::piped())
-        .stderr(Stdio::piped())
-        .output()
-        .await
-        .map_err(spawn_err)?;
-    if !output.status.success() {
-        // "fatal: No such remote 'origin'" — 没配远端,不是错误。
-        return Ok(None);
-    }
-    let url = String::from_utf8_lossy(&output.stdout).trim().to_string();
-    Ok(if url.is_empty() { None } else { Some(url) })
-}
-
-/// 从 `git remote` URL 拆出 host 和 `owner/repo`。认 https / ssh / `git@host:path`。
+/// 把 GitHub 上一个已存在的仓 clone 到 `dest`。
 ///
-/// 认不出返回 `None`,不猜。`.git` 后缀和末尾 `/` 会剥掉。
-pub fn parse_git_remote_url(url: &str) -> Option<(String, String)> {
-    let url = url.trim();
-    if url.is_empty() {
-        return None;
-    }
-    if let Some(rest) = url.strip_prefix("git@") {
-        let (host, path) = rest.split_once(':')?;
-        let host = host.trim();
-        if host.is_empty() {
-            return None;
-        }
-        return Some((host.to_string(), strip_git_suffix(path)));
-    }
-    let rest = url
-        .strip_prefix("https://")
-        .or_else(|| url.strip_prefix("http://"))
-        .or_else(|| url.strip_prefix("ssh://git@"))
-        .or_else(|| url.strip_prefix("ssh://"))?;
-    let rest = rest.strip_prefix("git@").unwrap_or(rest);
-    let (hostport, path) = rest.split_once('/')?;
-    let host = hostport.split(':').next()?.trim();
-    if host.is_empty() || path.trim().is_empty() {
-        return None;
-    }
-    Some((host.to_string(), strip_git_suffix(path)))
-}
-
-fn strip_git_suffix(path: &str) -> String {
-    path.trim()
-        .trim_end_matches('/')
-        .trim_end_matches(".git")
-        .to_string()
-}
-
-/// Clone an already-existing GitHub repo the user picked into `dest`.
-pub async fn clone_repo(
-    owner: &str,
-    repo: &str,
-    dest: &Path,
-) -> Result<GithubRepoRef, GithubError> {
+/// **只 clone,不回读仓信息**。以前 clone 完还要再打一趟 `gh repo view --json
+/// isPrivate`,拼一个 `GithubRepoRef` 回去 —— 而唯一的调用方拿到就丢。等于每次
+/// 接入都白花一趟网络往返,去填一个没人读的字段。codehub 那一臂本来就只回
+/// `()`,现在两边对称了。
+pub async fn clone_repo(owner: &str, repo: &str, dest: &Path) -> Result<(), GithubError> {
     let owner_repo = format!("{owner}/{repo}");
     let output = crate::win_cmd::tokio_cmd("gh")
         .args(["repo", "clone", &owner_repo, &dest.to_string_lossy()])
@@ -162,28 +98,7 @@ pub async fn clone_repo(
     if !output.status.success() {
         return Err(GithubError::Command(stderr_text(&output)));
     }
-    let view = crate::win_cmd::tokio_cmd("gh")
-        .args(["repo", "view", &owner_repo, "--json", "isPrivate"])
-        .stdin(Stdio::null())
-        .stdout(Stdio::piped())
-        .stderr(Stdio::piped())
-        .output()
-        .await
-        .map_err(spawn_err)?;
-    let private = if view.status.success() {
-        serde_json::from_slice::<serde_json::Value>(&view.stdout)
-            .ok()
-            .and_then(|v| v.get("isPrivate").and_then(|b| b.as_bool()))
-            .unwrap_or(false)
-    } else {
-        false
-    };
-    Ok(GithubRepoRef {
-        owner: owner.to_string(),
-        repo: repo.to_string(),
-        html_url: format!("https://github.com/{owner_repo}"),
-        private,
-    })
+    Ok(())
 }
 
 // ─────────────────────── C5 · PR 验收环 ───────────────────────
@@ -194,36 +109,6 @@ pub async fn clone_repo(
 // 验收=人 merge;issue 关闭是 merge 的后果(PR body 的 `Closes #<n>` 关键字让
 // GitHub 自动关单,`merge_pr` 后再幂等核对补关)。BW 绝不反向改写 GitHub:检测
 // 到的漂移(PR 已被网页 merge 等)只反映、不 reopen、不改写远端。
-
-/// The work branch a run's changes live on for a given GitHub issue —
-/// `bw/issue-<github_number>`. One deterministic branch per Issue so a retry
-/// re-uses the same branch (and the same PR), never fans out.
-pub fn issue_branch(github_number: u32) -> String {
-    format!("bw/issue-{github_number}")
-}
-
-/// P7-7A: distinguishes a brand-new PR from one `open_pr` merely *adopted*
-/// because the executor already opened it itself (executors are allowed
-/// `gh pr create` — only `gh pr merge` is disallowed,`claude_cli.rs`'s
-/// `--disallowedTools`). Both carry a **real, read-back** PR number — the
-/// `Adopted` case is never guessed or constructed, it comes from a fresh
-/// `gh pr view` on the branch. Callers that don't care about the distinction
-/// can match `Created(n) | Adopted(n) => n`; `run_issue_now` uses it to emit
-/// an honest toast ("已提 PR" vs "已认领队友提的 PR") instead of blurring the
-/// two into one message.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum PrOpened {
-    Created(u32),
-    Adopted(u32),
-}
-
-impl PrOpened {
-    pub fn number(self) -> u32 {
-        match self {
-            PrOpened::Created(n) | PrOpened::Adopted(n) => n,
-        }
-    }
-}
 
 /// 在**已经推上去的分支**上开一个 PR —— `gh pr create` 就这一处实现。
 ///
@@ -822,7 +707,8 @@ pub async fn update_issue(
 /// `state=None` = `all`(两态都要)。`labels` 取交集。gh 的 `state` 回大写
 /// (`"OPEN"`/`"CLOSED"`),**不归一化**——归一化是上层的事。github 无 `iid`,
 /// 故 `RemoteIssue.iid = number`。`labels` 在 gh payload 里是 `{name}` 对象
-/// 数组,这里拍平成 `Vec<String>`。
+/// 数组,这里拍平成 `Vec<String>`;责任人字段名是复数 `assignees`(数组),
+/// 取第一个 login 当单责任人。
 pub async fn list_issues(
     owner_repo: &str,
     state: Option<&str>,
@@ -872,11 +758,7 @@ pub async fn list_issues(
             body: String::new(),
             created_at: r.created_at,
             closed_at: r.closed_at,
-            assignee: r
-                .assignees
-                .into_iter()
-                .map(|p| p.login)
-                .find(|s| !s.is_empty()),
+            assignee: first_login(&r.assignees),
             author: r.author.map(|p| p.login).filter(|s| !s.is_empty()),
         })
         .collect())
@@ -919,28 +801,39 @@ pub async fn view_issue(
         body: r.body.unwrap_or_default(),
         created_at: r.created_at,
         closed_at: r.closed_at,
-        assignee: r
-            .assignees
-            .into_iter()
-            .map(|p| p.login)
-            .find(|s| !s.is_empty()),
+        assignee: first_login(&r.assignees),
         author: r.author.map(|p| p.login).filter(|s| !s.is_empty()),
     })
 }
 
-/// `gh issue edit <n> --repo <r> --add-assignee <name>` / `--remove-assignee`。
-/// 空串 = `--remove-assignee **`(取消全部指派)。
+/// 改责任人:先 `gh issue view <n> --json assignees` 读当前指派,再一条
+/// `gh issue edit <n> --repo <r> [--remove-assignee 旧…] [--add-assignee 新]`。
+/// 空串 = 摘掉全部指派。
+///
+/// gh 没有「替换指派」的开关,`--add-assignee` 只叠加;不先摘旧的,产品这边
+/// 的单责任人会变成两个人,而读回取数组第一个,看起来就是「改了没生效」。
+/// `--remove-assignee` 只认真实 login(只有 `@me`/`@copilot` 是特殊值),
+/// 所以摘人必须先读回当前 login 列表,不能拿通配符糊弄。
 pub async fn set_issue_assignee(
     owner_repo: &str,
     number: u32,
     assignee: &str,
 ) -> Result<(), GithubError> {
+    let current = list_issue_assignees(owner_repo, number).await?;
+    let keep = |a: &String| assignee.eq_ignore_ascii_case(a);
+    let to_remove: Vec<&String> = current.iter().filter(|a| !keep(a)).collect();
+    let need_add = !assignee.is_empty() && !current.iter().any(keep);
+    if to_remove.is_empty() && !need_add {
+        return Ok(());
+    }
+
     let num_s = number.to_string();
-    let mut args = vec!["issue", "edit", &num_s, "--repo", owner_repo];
-    if assignee.is_empty() {
+    let mut args: Vec<&str> = vec!["issue", "edit", &num_s, "--repo", owner_repo];
+    for old in &to_remove {
         args.push("--remove-assignee");
-        args.push("**");
-    } else {
+        args.push(old.as_str());
+    }
+    if need_add {
         args.push("--add-assignee");
         args.push(assignee);
     }
@@ -956,6 +849,42 @@ pub async fn set_issue_assignee(
         return Err(GithubError::Command(stderr_text(&output)));
     }
     Ok(())
+}
+
+/// `gh issue view <n> --repo <r> --json assignees` → 当前指派的 login 列表。
+async fn list_issue_assignees(owner_repo: &str, number: u32) -> Result<Vec<String>, GithubError> {
+    let num_s = number.to_string();
+    let output = crate::win_cmd::tokio_cmd("gh")
+        .args([
+            "issue",
+            "view",
+            &num_s,
+            "--repo",
+            owner_repo,
+            "--json",
+            "assignees",
+        ])
+        .stdin(Stdio::null())
+        .stdout(Stdio::piped())
+        .stderr(Stdio::piped())
+        .output()
+        .await
+        .map_err(spawn_err)?;
+    if !output.status.success() {
+        return Err(GithubError::Command(stderr_text(&output)));
+    }
+    #[derive(serde::Deserialize)]
+    struct Assignees {
+        #[serde(default)]
+        assignees: Vec<GhPersonJson>,
+    }
+    let r: Assignees = serde_json::from_slice(&output.stdout)
+        .map_err(|e| GithubError::Command(format!("无法解析 gh issue view JSON:{e}")))?;
+    Ok(r.assignees
+        .into_iter()
+        .map(|p| p.login)
+        .filter(|s| !s.is_empty())
+        .collect())
 }
 
 /// `gh api user --jq .login` → 当前登录用户。认不出返错。
@@ -1043,6 +972,15 @@ struct GhIssueFullJson {
 struct GhPersonJson {
     #[serde(default)]
     login: String,
+}
+
+/// gh 的 issue 只有复数 `assignees`(数组),没有单数 `assignee` 字段——写单数
+/// 会被 gh 直接拒掉。产品模型是单责任人,故取数组第一个 login。
+fn first_login(people: &[GhPersonJson]) -> Option<String> {
+    people
+        .iter()
+        .map(|p| p.login.clone())
+        .find(|s| !s.is_empty())
 }
 
 #[derive(serde::Deserialize)]
@@ -1147,33 +1085,191 @@ struct GhReleaseJson {
     tag_name: String,
 }
 
-#[cfg(test)]
-mod tests {
-    use super::parse_git_remote_url;
+// ─────────────── 派生一:GitHub ───────────────
 
-    #[test]
-    fn parse_https_codehub_origin() {
-        let (host, path) =
-            parse_git_remote_url("https://codehub-dg-g.huawei.com/z30026659/workbench.git")
-                .expect("https origin");
-        assert_eq!(host, "codehub-dg-g.huawei.com");
-        assert_eq!(path, "z30026659/workbench");
+impl From<GithubError> for RemoteError {
+    fn from(e: GithubError) -> Self {
+        match e {
+            GithubError::NotInstalled => RemoteError::NotInstalled { cli: "gh" },
+            GithubError::Command(m) => RemoteError::Cli(m),
+        }
+    }
+}
+
+/// 绑一个 GitHub 仓的远端实现。
+///
+/// `owner_repo` 是 `"owner/repo"`。**`github.com` 是隐含的** —— `gh` 是
+/// github.com 全局的,从不收 host 参数,所以项目里存的 `remote_host="github.com"`
+/// 只为对称/将来的 Enterprise 留着,这一臂每个调用都用不到它。
+///
+/// 接入流(还没选定仓)拿到的是一个 `owner_repo` 为空的实例:主机级那几个方法
+/// 把仓路径当参数收,不看这个字段。
+#[derive(Debug)]
+pub(super) struct GithubRemote {
+    owner_repo: String,
+}
+
+impl GithubRemote {
+    pub(super) fn new(owner_repo: &str) -> Self {
+        Self {
+            owner_repo: owner_repo.to_string(),
+        }
     }
 
-    #[test]
-    fn parse_ssh_and_git_at() {
-        let a =
-            parse_git_remote_url("git@codehub-dg-g.huawei.com:z30026659/workbench.git").unwrap();
-        let b =
-            parse_git_remote_url("ssh://git@codehub-dg-g.huawei.com:2222/z30026659/workbench.git")
-                .unwrap();
-        assert_eq!(
-            a,
-            (
-                "codehub-dg-g.huawei.com".into(),
-                "z30026659/workbench".into()
-            )
-        );
-        assert_eq!(b, a);
+    /// 把 `"owner/repo"` 拆开 —— GitHub 的几个接口收的是拆开的两段。拆不开就
+    /// **如实说这个地址不对**,不猜一个 owner。
+    fn split(path: &str) -> Result<(&str, &str), RemoteError> {
+        path.split_once('/')
+            .filter(|(o, r)| !o.trim().is_empty() && !r.trim().is_empty())
+            .ok_or_else(|| RemoteError::Cli(format!("「{path}」不是 owner/repo 的样子")))
+    }
+}
+
+#[async_trait::async_trait]
+impl RemoteProvider for GithubRemote {
+    fn kind(&self) -> &'static str {
+        "github"
+    }
+
+    async fn create_mr_on_branch(
+        &self,
+        workspace: &Path,
+        branch: &str,
+        title: &str,
+        body: &str,
+    ) -> Result<PrOpened, RemoteError> {
+        Ok(create_pr_on_branch(workspace, branch, title, body).await?)
+    }
+
+    async fn merge_mr(&self, mr_number: u32) -> Result<(), RemoteError> {
+        Ok(merge_pr(&self.owner_repo, mr_number).await?)
+    }
+
+    async fn open_mr_for_branch(&self, branch: &str) -> Result<Option<u32>, RemoteError> {
+        Ok(open_pr_for_branch(&self.owner_repo, branch).await?)
+    }
+
+    async fn mr_for_branch(&self, branch: &str) -> Result<Option<u32>, RemoteError> {
+        Ok(pr_for_branch(&self.owner_repo, branch).await?)
+    }
+
+    async fn create_issue(
+        &self,
+        title: &str,
+        body: &str,
+        labels: &[&str],
+    ) -> Result<u32, RemoteError> {
+        Ok(create_issue(&self.owner_repo, title, body, labels).await?)
+    }
+
+    /// `gh` 没有对等的附件旗标 —— **附件忽略**,正文里应写清文件在哪。
+    async fn create_issue_with_attachment(
+        &self,
+        title: &str,
+        body: &str,
+        labels: &[&str],
+        _attachment: Option<&Path>,
+    ) -> Result<u32, RemoteError> {
+        self.create_issue(title, body, labels).await
+    }
+
+    async fn update_issue(
+        &self,
+        iid: u32,
+        labels: Option<&[&str]>,
+        state_event: Option<IssueStateEvent>,
+    ) -> Result<(), RemoteError> {
+        Ok(update_issue(&self.owner_repo, iid, labels, state_event).await?)
+    }
+
+    async fn list_issues(&self, filter: &IssueFilter) -> Result<Vec<RemoteIssue>, RemoteError> {
+        let state = filter.state.map(|s| match s {
+            IssueState::Open => "open",
+            IssueState::Closed => "closed",
+        });
+        Ok(list_issues(&self.owner_repo, state, &filter.labels).await?)
+    }
+
+    async fn view_issue(&self, iid: u32) -> Result<RemoteIssue, RemoteError> {
+        Ok(view_issue(&self.owner_repo, iid).await?)
+    }
+
+    async fn comment_issue(&self, iid: u32, body: &str) -> Result<(), RemoteError> {
+        Ok(comment_issue(&self.owner_repo, iid, body).await?)
+    }
+
+    async fn list_issue_comments(&self, iid: u32) -> Result<Vec<String>, RemoteError> {
+        Ok(list_issue_comments(&self.owner_repo, iid).await?)
+    }
+
+    async fn set_issue_assignee(&self, iid: u32, assignee: &str) -> Result<(), RemoteError> {
+        Ok(set_issue_assignee(&self.owner_repo, iid, assignee).await?)
+    }
+
+    async fn edit_issue(&self, iid: u32, title: &str, body: &str) -> Result<(), RemoteError> {
+        Ok(edit_issue(&self.owner_repo, iid, title, body).await?)
+    }
+
+    async fn create_release(&self, tag: &str, title: &str, body: &str) -> Result<(), RemoteError> {
+        Ok(create_release(&self.owner_repo, tag, title, body).await?)
+    }
+
+    async fn list_releases(&self) -> Result<Vec<String>, RemoteError> {
+        Ok(list_releases(&self.owner_repo).await?)
+    }
+
+    async fn current_user(&self) -> Option<String> {
+        current_user(&self.owner_repo).await.ok()
+    }
+
+    // 里程碑:GitHub 这一臂**不投**(基类默认实现就是不投,不用在这儿写空壳)。
+
+    async fn merged_mr_times(&self) -> Result<Capped<String>, RemoteError> {
+        let rows = merged_pr_times(&self.owner_repo).await?;
+        Ok(Capped {
+            truncated: rows.len() as u32 >= LIST_CAP,
+            rows,
+        })
+    }
+
+    async fn issue_times(&self) -> Result<Capped<(String, Option<String>)>, RemoteError> {
+        let rows = issue_times(&self.owner_repo).await?;
+        Ok(Capped {
+            truncated: rows.len() as u32 >= LIST_CAP,
+            rows,
+        })
+    }
+
+    async fn list_repos(&self, limit: u32) -> Result<Vec<RepoSummary>, RemoteError> {
+        Ok(list_repos(limit)
+            .await?
+            .into_iter()
+            .map(|r| RepoSummary {
+                path: format!("{}/{}", r.owner, r.repo),
+                private: r.private,
+                description: r.description,
+                default_branch: r.default_branch,
+                pushed_at: r.pushed_at,
+            })
+            .collect())
+    }
+
+    async fn probe_repo(&self, path: &str) -> Result<String, RemoteError> {
+        Ok(probe_repo(path).await?)
+    }
+
+    async fn fetch_project_toml(
+        &self,
+        path: &str,
+        git_ref: &str,
+    ) -> Result<Option<String>, RemoteError> {
+        let (owner, repo) = Self::split(path)?;
+        Ok(fetch_project_toml(owner, repo, git_ref).await?)
+    }
+
+    async fn clone_repo(&self, path: &str, dest: &Path) -> Result<(), RemoteError> {
+        let (owner, repo) = Self::split(path)?;
+        clone_repo(owner, repo, dest).await?;
+        Ok(())
     }
 }
