@@ -210,14 +210,20 @@ pub fn CreateVersionDialog(
     let week = p.current_week.clone();
     let mut start = use_signal(|| bw::isoweek::week_monday_ymd(&week).unwrap_or_default());
     let mut due = use_signal(|| bw::isoweek::week_friday_ymd(&week).unwrap_or_default());
-    let mut note = use_signal(String::new);
     let picked = use_signal(Vec::<IssueId>::new);
-    let unassigned: Vec<&CardItemVm> = p
+    // 选择器默认收着,点 ＋ 才展开 —— 一般建版当场不挑活。
+    let mut picking = use_signal(|| false);
+    let mut query = use_signal(String::new);
+    // 可划归的候选:还没收口的活都算,不限于未排期的。已在别的版本里的挑进来
+    // 就是换槽(运作活①评论会记「自 v0.x 顺延」)。运作活①自己不进候选 —— 建版
+    // 时会给这个版本另起一张。
+    let candidates: Vec<&CardItemVm> = p
         .board
         .columns
         .iter()
         .flat_map(|c| c.cards.iter())
-        .filter(|c| c.status == IssueStatus::Backlog)
+        .filter(|c| !matches!(c.status, IssueStatus::Done | IssueStatus::Cancelled))
+        .filter(|c| !bw::version::is_ops1_title(&c.title))
         .collect();
     let b = bridge.clone();
     let pid = p.id;
@@ -233,6 +239,23 @@ pub fn CreateVersionDialog(
         || p.unreleased.iter().any(|s| s == &name_v);
     let shape_ok = !name_v.is_empty();
     let can_create = name_ok && !dates_partial && !range_bad && shape_ok && !taken;
+    let open = *picking.read();
+    let picked_ids = picked.read().clone();
+    let chosen: Vec<&CardItemVm> = candidates
+        .iter()
+        .filter(|c| picked_ids.contains(&c.id))
+        .copied()
+        .collect();
+    // 搜号(带不带 # 都认)或标题。空搜索给全量候选。
+    let q = query.read().trim().to_lowercase();
+    let q = q.strip_prefix('#').unwrap_or(&q).to_string();
+    let hits: Vec<&CardItemVm> = candidates
+        .iter()
+        .filter(|c| {
+            q.is_empty() || c.number.to_string().contains(&q) || c.title.to_lowercase().contains(&q)
+        })
+        .copied()
+        .collect();
     rsx! {
         div { class: "dialog-backdrop", onclick: move |_| dialog.set(None),
             div {
@@ -288,26 +311,37 @@ pub fn CreateVersionDialog(
                         }
                     }
                     div { class: "field",
-                        label { "说明" }
-                        textarea { class: "input", value: "{note}", placeholder: "这个版本要收口什么（写成运作活①的版本目标）",
-                            oninput: move |e| note.set(e.value()) }
-                    }
-                    div { class: "field",
-                        label { "划归的 issue" }
-                        div { class: "check-list",
-                            if unassigned.is_empty() {
-                                div { class: "hint", "当前没有未排期的活可划归。" }
-                            }
-                            for c in unassigned.iter() {
-                                {check_row(c, picked)}
+                        div { class: "field-head",
+                            label { "划归的 issue" }
+                            button {
+                                class: "btn btn-ghost btn-quiet btn-icon",
+                                title: if open { "收起" } else { "挑活划归到这个版本" },
+                                onclick: move |_| { let now = *picking.read(); picking.set(!now); },
+                                {if open { "－" } else { "＋" }}
                             }
                         }
-                    }
-                    div { class: "hint",
-                        {
-                            let last = if p.last_released.is_empty() { "没有" } else { p.last_released.as_str() };
-                            let unrel = if p.unreleased.is_empty() { "没有".to_string() } else { p.unreleased.join("、") };
-                            format!("会建一张「更新指标 + 制定版本计划 {name_v}」。上一发 · {last}　未发 · {unrel}　推荐 · {}", p.suggested_next)
+                        if !chosen.is_empty() {
+                            div { class: "picked-tags",
+                                for c in chosen.iter() {
+                                    {picked_tag(c, picked)}
+                                }
+                            }
+                        }
+                        if open {
+                            input {
+                                class: "input input-sm",
+                                value: "{query}",
+                                placeholder: "搜号或标题",
+                                oninput: move |e| query.set(e.value()),
+                            }
+                            div { class: "check-list",
+                                if hits.is_empty() {
+                                    div { class: "hint", "没有可划归的活" }
+                                }
+                                for c in hits.iter() {
+                                    {check_row(c, picked)}
+                                }
+                            }
                         }
                     }
                 }
@@ -333,7 +367,6 @@ pub fn CreateVersionDialog(
                                     name: name.read().trim().to_string(),
                                     start: start.read().clone(),
                                     due: due.read().clone(),
-                                    note: note.read().trim().to_string(),
                                     included,
                                 });
                                 dialog.set(None);
@@ -350,6 +383,7 @@ pub fn CreateVersionDialog(
 fn check_row(c: &CardItemVm, mut picked: Signal<Vec<IssueId>>) -> Element {
     let id = c.id;
     let checked = picked.read().contains(&id);
+    let from = c.plan_version.clone();
     rsx! {
         label { class: "check-row",
             input {
@@ -362,6 +396,25 @@ fn check_row(c: &CardItemVm, mut picked: Signal<Vec<IssueId>>) -> Element {
                 },
             }
             span { "#{c.number} {c.title}" }
+            if !from.is_empty() {
+                span { class: "check-row-from", "{from}" }
+            }
+        }
+    }
+}
+
+/// 已选的一张活。点 ✕ 摘掉,不用回选择器里取消勾。
+fn picked_tag(c: &CardItemVm, mut picked: Signal<Vec<IssueId>>) -> Element {
+    let id = c.id;
+    rsx! {
+        span { class: "tag tag-accent",
+            "#{c.number}"
+            button {
+                class: "tag-x",
+                title: "摘掉",
+                onclick: move |_| picked.write().retain(|x| *x != id),
+                "✕"
+            }
         }
     }
 }

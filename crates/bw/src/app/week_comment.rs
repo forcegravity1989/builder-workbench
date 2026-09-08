@@ -64,13 +64,11 @@ pub fn parse_comments(bodies: &[String]) -> WeekComment {
 
 /// 创建版本落到运作活①上的周初三标题评论。
 /// `included` 是 `(iid, 换槽前的旧 bw:plan)`。空纳入写「本周暂无纳入」。
-pub fn render_week_plan_comment(goal: &str, included: &[(u32, String)]) -> String {
-    let goal = goal.trim();
-    let goal = if goal.is_empty() {
-        "（未填写）"
-    } else {
-        goal
-    };
+///
+/// 版本目标建版时一律留「（未填写）」——建版弹窗不再收这一段,由运作活①上的
+/// agent 后补。`validate_comment` 要求这一段非空,所以占位串不能省。
+pub fn render_week_plan_comment(included: &[(u32, String)]) -> String {
+    let goal = "（未填写）";
     let mut scope = String::new();
     if included.is_empty() {
         scope.push_str("本周暂无纳入");
@@ -360,14 +358,13 @@ mod tests {
 
     #[test]
     fn render_create_version_comment() {
-        let empty = render_week_plan_comment("", &[]);
+        let empty = render_week_plan_comment(&[]);
         assert!(validate_comment(&empty).is_ok());
         assert_eq!(parse_comments(&[empty]).goal.as_deref(), Some("（未填写）"));
-        let body =
-            render_week_plan_comment("收口演示", &[(12, "v0.2".into()), (15, String::new())]);
+        let body = render_week_plan_comment(&[(12, "v0.2".into()), (15, String::new())]);
         assert!(validate_comment(&body).is_ok());
         assert!(body.contains("- #12（自 v0.2 顺延）"));
         assert!(body.contains("- #15"));
-        assert_eq!(parse_comments(&[body]).goal.as_deref(), Some("收口演示"));
+        assert_eq!(parse_comments(&[body]).goal.as_deref(), Some("（未填写）"));
     }
 }
