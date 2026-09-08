@@ -844,7 +844,7 @@ pub async fn list_issues(
     args.push("--limit".into());
     args.push("200".into());
     args.push("--json".into());
-    args.push("number,title,state,labels,createdAt,closedAt,assignee,author".into());
+    args.push("number,title,state,labels,createdAt,closedAt,assignees,author".into());
     // tokio_cmd 要 &[&str]/Vec<String> 转 OsString;这里先把 Vec<String> 拼成
     // Vec<&str> 不行(生命周期),故用 args(&[String]) 的重载。
     let arg_refs: Vec<&str> = args.iter().map(|s| s.as_str()).collect();
@@ -872,7 +872,11 @@ pub async fn list_issues(
             body: String::new(),
             created_at: r.created_at,
             closed_at: r.closed_at,
-            assignee: r.assignee.map(|p| p.login).filter(|s| !s.is_empty()),
+            assignee: r
+                .assignees
+                .into_iter()
+                .map(|p| p.login)
+                .find(|s| !s.is_empty()),
             author: r.author.map(|p| p.login).filter(|s| !s.is_empty()),
         })
         .collect())
@@ -893,7 +897,7 @@ pub async fn view_issue(
             "--repo",
             owner_repo,
             "--json",
-            "number,title,state,labels,body,createdAt,closedAt,assignee,author",
+            "number,title,state,labels,body,createdAt,closedAt,assignees,author",
         ])
         .stdin(Stdio::null())
         .stdout(Stdio::piped())
@@ -915,7 +919,11 @@ pub async fn view_issue(
         body: r.body.unwrap_or_default(),
         created_at: r.created_at,
         closed_at: r.closed_at,
-        assignee: r.assignee.map(|p| p.login).filter(|s| !s.is_empty()),
+        assignee: r
+            .assignees
+            .into_iter()
+            .map(|p| p.login)
+            .find(|s| !s.is_empty()),
         author: r.author.map(|p| p.login).filter(|s| !s.is_empty()),
     })
 }
@@ -1005,8 +1013,10 @@ struct GhIssueViewJson {
     created_at: Option<String>,
     #[serde(default)]
     closed_at: Option<String>,
+    /// gh 只给 `assignees` 数组(2.98 起没有单数 `assignee` 了)。BW 的活是单人
+    /// 负责制,取第一个。
     #[serde(default)]
-    assignee: Option<GhPersonJson>,
+    assignees: Vec<GhPersonJson>,
     #[serde(default)]
     author: Option<GhPersonJson>,
 }
@@ -1024,7 +1034,7 @@ struct GhIssueFullJson {
     #[serde(default)]
     closed_at: Option<String>,
     #[serde(default)]
-    assignee: Option<GhPersonJson>,
+    assignees: Vec<GhPersonJson>,
     #[serde(default)]
     author: Option<GhPersonJson>,
 }

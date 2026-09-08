@@ -344,7 +344,13 @@ select.input-sm { padding-right: 22px; background-position: right 6px center; ba
 .edithint { font-size: 10.5px; margin: var(--space-1) 0 var(--space-2); color: color-mix(in srgb, var(--color-text) 45%, transparent); }
 .plan-meta-grid { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-2) var(--space-6); }
 .plan-review-hint { font-size: 11px; line-height: 1.7; margin-top: var(--space-3); padding-top: 10px; border-top: 1px dashed var(--color-divider); color: color-mix(in srgb, var(--color-text) 45%, transparent); }
+.field-head { display: flex; align-items: center; justify-content: space-between; gap: var(--space-2); }
+.field-head label { margin: 0; }
+.picked-tags { display: flex; flex-wrap: wrap; gap: 6px; margin: 6px 0; }
+.tag-x { padding: 0; border: 0; background: transparent; font-size: 10px; line-height: 1; color: inherit; opacity: 0.6; cursor: pointer; }
+.tag-x:hover { opacity: 1; }
 .check-list { display: flex; flex-direction: column; max-height: 180px; overflow-y: auto; border-top: 1px solid var(--color-divider); }
+.check-row-from { flex: none; margin-left: auto; font-family: var(--font-mono); font-size: 10.5px; color: color-mix(in srgb, var(--color-text) 45%, transparent); }
 .check-row { display: flex; align-items: center; gap: var(--space-2); font-size: 12px; padding: 6px 2px; border-bottom: 1px solid color-mix(in srgb, var(--color-text) 6%, transparent); cursor: pointer; }
 .check-row:hover { background: color-mix(in srgb, var(--color-text) 3.5%, transparent); }
 .check-row:has(input:checked) { background: var(--color-accent-100); }
