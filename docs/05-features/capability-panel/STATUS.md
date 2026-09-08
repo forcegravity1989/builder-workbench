@@ -12,7 +12,7 @@
 |---|---|
 | [`intent.md`](intent.md) | 新闻稿式意图:六条痛点、三组解决方案、飞轮检验、五大拷问、三个开放问题 |
 | [`spec.md`](spec.md) | 版式、三个页签的操作逻辑、着色口径表、客户会问、硬核挑战 |
-| [`prototype.html`](prototype.html) | 可点原型:三页签可切,红行的「怎么修」可展开,技能行点开看正文 |
+| [`prototype.html`](prototype.html) | 可点原型:三页签可切,红行的「怎么修」可展开,技能行点开看正文。**装在真壳里**——直接 `<link>` 引 `docs/04-design-system/styles.css` + `crates/app-shell/assets/shell.css`,侧栏、内容列限宽、右侧竖页签都是壳自己的那套,原型只额外画了个窗框 |
 
 ## 起因
 
