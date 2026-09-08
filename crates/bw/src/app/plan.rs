@@ -94,7 +94,6 @@ impl App {
         name: String,
         start: String,
         due: String,
-        note: String,
         included: Vec<IssueId>,
     ) -> Result<Vec<Event>> {
         let name = name.trim().to_string();
@@ -129,7 +128,7 @@ impl App {
             prior.push((id.iid(), old));
         }
         let ops1_id = self.ensure_ops1_for_version(project_id, &name).await?;
-        let comment = super::week_comment::render_week_plan_comment(&note, &prior);
+        let comment = super::week_comment::render_week_plan_comment(&prior);
         issue_store::comment(self, &project, ops1_id.iid(), &comment).await?;
         for id in &included {
             issue_store::assign_to_plan(self, &project, id.iid(), &name).await?;

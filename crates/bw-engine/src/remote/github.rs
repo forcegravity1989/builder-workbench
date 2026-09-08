@@ -970,6 +970,8 @@ struct GhIssueViewJson {
     created_at: Option<String>,
     #[serde(default)]
     closed_at: Option<String>,
+    /// gh 只给 `assignees` 数组(2.98 起没有单数 `assignee` 了)。BW 的活是单人
+    /// 负责制,取第一个。
     #[serde(default)]
     assignees: Vec<GhPersonJson>,
     #[serde(default)]
