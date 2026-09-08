@@ -96,7 +96,7 @@ pub struct ReleaseDraft {
     pub included: Vec<IssueId>,
 }
 
-/// 新建 issue 弹窗。含负责人字段;创建后同步到 codehub(走 CreateIssue +
+/// 新建 issue 弹窗。含负责人字段;创建后同步到项目挂的那个远端(走 CreateIssue +
 /// 可选 SetIssueAssignee)。
 #[component]
 pub fn NewIssueDialog(
@@ -112,7 +112,12 @@ pub fn NewIssueDialog(
     let pid = p.id;
     let title_ok = !title.read().trim().is_empty();
     let where_note = if p.view_all {
-        "新建的 issue 进待办池·未排期;创建后同步到 codehub。".to_string()
+        // 同步到**这个项目真正挂的那个平台**,不是写死的某一个;认不出就只说
+        // 「同步到远端」,别替人认一个平台。
+        match p.remote_brand.as_str() {
+            "" => "新建的 issue 进待办池·未排期;创建后同步到远端。".to_string(),
+            brand => format!("新建的 issue 进待办池·未排期;创建后同步到 {brand}。"),
+        }
     } else if !p.viewing_plan.is_empty() {
         format!("新建的 issue 排进版本「{}」。", p.viewing_plan)
     } else {

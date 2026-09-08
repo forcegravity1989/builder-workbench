@@ -202,6 +202,9 @@ pub struct ProjectVm {
     pub mr_url_prefix: String,
     /// 远端 issue 网页地址的前缀,规矩同 [`Self::mr_url_prefix`]。
     pub issue_url_prefix: String,
+    /// 这个项目的远端在界面上叫什么(`GitHub` / `CodeHub`)。空 = 没挂远端或
+    /// provider 认不出,这时候卡片上不画那枚徽 —— **不拿另一个平台的名字顶**。
+    pub remote_brand: String,
     pub workbench: WorkbenchVm,
     pub notify: NotifyVm,
     pub config: ConfigVm,
