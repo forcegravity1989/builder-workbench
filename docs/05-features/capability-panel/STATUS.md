@@ -1,7 +1,9 @@
 # STATUS · 配置屏收成「能力面板」
 
 - **状态**:待意图 gate(2026-09-08 提出,制品已备齐)
-- **人 gate**:intent + 带原型的 spec。原型 = [`prototype.html`](prototype.html)(浏览器直开,走设计系统 `styles.css`)
+- **人 gate**:intent + 带原型的 spec。原型两份同源:
+  - 在线可点(推荐,直接在浏览器里点):<https://claude.ai/code/artifact/3755f5a7-dc72-4019-969f-083d635fbd35>
+  - 仓内 [`prototype.html`](prototype.html)(浏览器直开,相对引仓里的 `styles.css` + `shell.css`,样式表改了它跟着变)
 - **issue**:无(会话直达)
 - **代码**:未动。gate 之前不写码
 - **分支**:`claude/codex-plugin-page-management-09c680`
