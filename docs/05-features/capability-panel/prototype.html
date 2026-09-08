@@ -30,7 +30,9 @@
              display: flex; flex-direction: column; gap: 2px; }
   .cap-nav-title { font-family: var(--font-heading); font-weight: var(--font-heading-weight);
                    font-size: 15px; padding: 0 var(--space-2) var(--space-3); }
-  .cap-nav .sidebar-item { cursor: pointer; }
+  .cap-nav .sidebar-item { cursor: pointer; white-space: nowrap; }
+  /* shell.css 那条 svg 尺寸只作用于 .app-sidebar,这一列得自己写,否则齿轮撑满整行 */
+  .cap-nav .sidebar-item svg { width: 15px; height: 15px; flex: none; }
   .cap-nav-foot { margin-top: var(--space-3); padding-top: var(--space-3); border-top: 1px solid var(--color-divider); }
   .cap-pane { flex: 1; min-width: 0; }
 
@@ -80,6 +82,20 @@
                border-radius: var(--radius-md); font-size: 12px; line-height: 1.8;
                color: color-mix(in srgb, var(--color-text) 60%, transparent); }
   .protonote b { color: var(--color-text); font-weight: 600; }
+  @media (max-width: 960px) {
+    .app-sidebar, .side-tabs { display: none; }
+    .win { height: auto; }
+    .app-root { display: block; }
+    .content { max-height: 74vh; }
+    [data-screen="config"] { flex-direction: column; }
+    .cap-nav { width: 100%; flex-direction: row; flex-wrap: wrap; align-self: auto; position: static; }
+    .cap-nav-title { width: 100%; padding-bottom: var(--space-2); }
+    .cap-nav-foot { margin: 0; padding: 0; border-top: 0; }
+    .cards { grid-template-columns: 1fr; }
+    .pane-head { flex-wrap: wrap; }
+    .pane-head .search { margin-left: 0; max-width: none; }
+  }
+  @media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
   [hidden] { display: none !important; }
 </style>
 </head>
