@@ -104,7 +104,7 @@ fn docs_tab(p: &ProjectVm, bridge: &Bridge) -> Element {
                     },
                     Some((path, body)) => rsx! {
                         div { class: "path", "{path}" }
-                        {render_markdown(body)}
+                        {render_doc(path, body)}
                     },
                 }
             }
@@ -351,6 +351,24 @@ fn skill_row(s: &SkillVm) -> Element {
                 }
             }
         }
+    }
+}
+
+/// 按文件类型分渲染。
+///
+/// 这棵树上挂着两种文件:仓里的 Markdown,和 `.bw/*.toml` 规范件。规范件不是
+/// Markdown —— 拿 CommonMark 去解析它,开头那几行 `# 说明` 会变成一级标题、
+/// 值里的下划线会变成斜体,人看到的是一份被重排过的假文件。所以只有 `.md`
+/// 走渲染,其余原样摆出来。
+fn render_doc(path: &str, body: &str) -> Element {
+    let is_md = std::path::Path::new(path)
+        .extension()
+        .is_some_and(|e| e.eq_ignore_ascii_case("md"));
+    if is_md {
+        return render_markdown(body);
+    }
+    rsx! {
+        pre { "{body}" }
     }
 }
 

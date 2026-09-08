@@ -8,6 +8,11 @@
 
 下拉框不再是系统自带那身外观。配置屏的开工工具、计划屏的版本筛选、issue 列表的两个筛选、总览与各弹窗里的下拉,原先都直接露出 macOS 那颗上下箭头方块(Windows 上是另一种方块),和旁边发丝线描边的输入框、按钮排在一起像块没擦掉的东西。设计系统的 `.input` 加了 `select` 分支:`appearance: none` 去掉平台外观,换成本系统那支折线箭头(新 token `--select-caret`,两套配色各给一份,因为 SVG data URI 读不到 CSS 变量)。顺带补 `.input:disabled`——去掉平台外观也会一起去掉它自带的置灰。示例页 `components/forms.html` 补两个下拉(常态 + 停用),spec 双语的组件对照表跟着改。
 
+知识库预览按文件类型分渲染。`.bw/*.toml` 三份规范件先前和 Markdown 走同一条
+CommonMark 渲染:开头那几行 `# 说明` 被当成一级标题放成 28px 大字、值里的下划线
+变成斜体、空行被并成段落 —— 人看到的是一份被重排过的假文件。现在只有 `.md`
+走渲染,其余原样进等宽块。
+
 ## 最近 · 2026-09-07
 
 壳接上 Builder 设计系统(`docs/04-design-system/`):全局样式改成编译期拼入设计系统的 `styles.css` + 壳层 `assets/shell.css`(只写壳骨架与各屏版式,取值一律 token),旧 `assets/hifi.css` 与旧 token(`--clay` / `--ink-*` / `--paper`……)整体删掉,不留兼容层。根节点挂 Claude 配色与中文排版层。八屏标记全换设计系统组件类:按钮四种(每视图一颗实底主按钮,取消 / 关闭安静)、标签 `tag-*`、状态点一色一态、表单 `field` / `input`、卡片发丝线无阴影且不套卡片、项目轨是标准侧栏、顶栏 44px、页签 `tabs` / 分段 `seg`(隐藏 radio 驱动)、列表 `list-row`、看板 `board`(列不再按状态铺底色)、弹窗 `dialog`、回执 toast 改深色底角条(仍点「关闭」才走)。屏里带色号 / 字号的行内 style 清零,只留数据驱动的值。衬线标题改系统字体。高保真 `docs/hifi/` 降为版式与旅程原型,顶部加历史横幅。记录在 `docs/05-features/design-system-wiring/`。
