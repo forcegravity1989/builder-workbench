@@ -59,7 +59,7 @@ Idle rows are transparent; hover is an ink tint (`color-mix` of `--color-text` a
 | `.btn` + `.btn-primary/-secondary/-ghost/-danger/-icon/-block` | Actions — one solid accent primary per view; danger for irreversible confirms | components/buttons.html |
 | `.tag` + `.tag-accent/-accent-2/-neutral/-outline/-success/-warning/-danger` | Pill labels and status badges | components/buttons.html |
 | `.kbd` | Keyboard key chips (mono, 18px cap) | components/buttons.html |
-| `.field` + `label`, `.input`, `.radio` + `.dot`, `.seg` + `.seg-opt` | Form fields; iOS-style segmented control | components/forms.html |
+| `.field` + `label`, `.input` (incl. `select.input`, `textarea.input`), `.radio` + `.dot`, `.seg` + `.seg-opt` | Form fields; iOS-style segmented control. A select drops the platform's own chrome and gets the house chevron | components/forms.html |
 | `.card` + `.card-kicker/-title/-body/-meta`; `.elev-sm/md/lg` | Bordered content cards; elevation utilities | components/cards.html |
 | `.status` + `.status-dot`, variants `.status-todo/-progress/-review/-done/-blocked` | State dots + labels | components/status.html |
 | `.avatar` + `.avatar-sm/-lg/-agent`, `.avatar-group` | People are circles, agents are squircles | components/status.html |
