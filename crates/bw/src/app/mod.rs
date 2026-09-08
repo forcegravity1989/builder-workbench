@@ -476,10 +476,9 @@ impl App {
                 name,
                 start,
                 due,
-                note,
                 included,
             } => {
-                self.create_plan_version(project_id, name, start, due, note, included)
+                self.create_plan_version(project_id, name, start, due, included)
                     .await
             }
             Command::DeletePlanVersion { project_id, name } => {
