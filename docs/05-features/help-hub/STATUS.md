@@ -1,10 +1,11 @@
 # STATUS · 帮助收成一张浮层面板
 
 - **状态**:已落地,待合入(2026-09-08)
-- **人 gate**:发起人拿 Claude 桌面版 Get help 的截图直接下达「怎么修改优化」,视为意图 gate 已过
+- **人 gate**:发起人拿 Claude 桌面版 Get help 的截图直接下达「怎么修改优化」,视为意图 gate 已过。规格走 02 的**小特性豁免**——spec + 原型 + 实现一并送评审,见 [`spec.md`](spec.md)(原型 = `shots/after/` 三张真壳图 + 深链 `BW_HELP`)
 - **issue**:无(会话直达)
 - **落点**:`crates/app-shell/src/chrome/help.rs`(新,小窗 + 拖动 + 指南抽屉)、`chrome/mod.rs`(侧栏底部加「帮助」,删 `GuideDrawer`)、`bridge/nav.rs`(加 `HelpNav` / `HelpTab`)、`assets/shell.css`(删 `.side-tabs` / `.guide-tab` / `.issue-tab` / `.dialog-note` / `.report-attach`,加 `.help-*`)
-- **不做**:面板内读正文、全文检索、消息列表
+- **不做**:小窗内读正文、指南全文检索、消息列表、贴边吸附、拖动位置落盘
+- **评审跟进(2026-09-08)**:按评审意见补 `spec.md`(操作逻辑:主路径 / 分支 / 出错)。写的时候顺手改掉一处不实文案——本机没有 `bw.log` 时仍按「勾了就是要附」挑遮罩文案,人会看到「日志上传中」而其实什么都没传;现在按「勾了**且**文件在」决定
 
 ## 对着参照改了什么
 

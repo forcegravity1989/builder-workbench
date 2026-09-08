@@ -263,7 +263,10 @@ pub fn HelpHub(bridge: Bridge, env: Vec<ToolProbeVm>) -> Element {
                                             if t.is_empty() {
                                                 return;
                                             }
-                                            let attach = *attach_log.read();
+                                            // 本机没有 bw.log 就别说要附:底座本来就「有文件才附上」,
+                                            // 可遮罩文案是按这个布尔挑的 —— 照原样传下去,人会看到
+                                            // 一句「日志上传中」而其实什么都没传。
+                                            let attach = *attach_log.read() && log_ready;
                                             help.close();
                                             title.set(String::new());
                                             title_focus.set(false);
