@@ -86,15 +86,15 @@ impl App {
         Ok(vec![Event::IssueScheduledToPlan { id, plan }])
     }
 
-    /// 建一个版本:建 codehub milestone(title=name,start,due),
-    /// 并给 `included` 每张打 `bw:plan:<name>` 标签、挂到这个里程碑。
+    /// 建一个版本:先落一张运作活①并打 `bw:plan:<name>`,纳入的活也打标。
+    /// 同名里程碑只补充,失败不回滚标签。
     pub(super) async fn create_plan_version(
         &mut self,
         project_id: ProjectId,
         name: String,
         start: String,
         due: String,
-        _note: String,
+        note: String,
         included: Vec<IssueId>,
     ) -> Result<Vec<Event>> {
         let name = name.trim().to_string();
@@ -103,16 +103,13 @@ impl App {
         }
         let start = start.trim().to_string();
         let due = due.trim().to_string();
-        if start.is_empty() || due.is_empty() {
-            return Err(AppError::Refused("开始和结束都要填".into()));
-        }
-        if !looks_like_ymd(&start) {
+        if !start.is_empty() && !looks_like_ymd(&start) {
             return Err(AppError::Refused("开始日期认不出,请用日期框选".into()));
         }
-        if !looks_like_ymd(&due) {
+        if !due.is_empty() && !looks_like_ymd(&due) {
             return Err(AppError::Refused("结束日期认不出,请用日期框选".into()));
         }
-        if start > due {
+        if !start.is_empty() && !due.is_empty() && start > due {
             return Err(AppError::Refused("开始不能晚于结束".into()));
         }
         let project = self.project_of(project_id).await?;
@@ -120,9 +117,43 @@ impl App {
         if plans.iter().any(|s| s == &name) || released.iter().any(|s| s == &name) {
             return Err(AppError::Refused(format!("{name} 已经有了")));
         }
-        let mid = issue_store::create_plan_version(self, &project, &name, &start, &due).await?;
+        let issues = self.issues(project_id).await.unwrap_or_default();
+        let mut prior: Vec<(u32, String)> = Vec::new();
+        for id in &included {
+            let old = issues
+                .iter()
+                .find(|i| i.id == *id)
+                .map(|i| i.plan_version.clone())
+                .unwrap_or_default();
+            let old = if old == name { String::new() } else { old };
+            prior.push((id.iid(), old));
+        }
+        let ops1_id = self.ensure_ops1_for_version(project_id, &name).await?;
+        let comment = super::week_comment::render_week_plan_comment(&note, &prior);
+        issue_store::comment(self, &project, ops1_id.iid(), &comment).await?;
         for id in &included {
             issue_store::assign_to_plan(self, &project, id.iid(), &name).await?;
+        }
+        let mid = issue_store::try_ensure_plan_milestone(self, &project, &name, &start, &due).await;
+        if mid > 0 {
+            if let Ok(remote) = self.remote_for(&project) {
+                issue_store::project_plan_best_effort(
+                    &remote,
+                    &project.remote_path,
+                    ops1_id.iid(),
+                    &name,
+                )
+                .await;
+                for id in &included {
+                    issue_store::project_plan_best_effort(
+                        &remote,
+                        &project.remote_path,
+                        id.iid(),
+                        &name,
+                    )
+                    .await;
+                }
+            }
         }
         Ok(vec![Event::PlanVersionCreated {
             project_id,
@@ -131,7 +162,49 @@ impl App {
         }])
     }
 
-    /// 删未发的 `v0.x` 版本:给挂着 `bw:plan:<name>` 的活摘标签,再删同名里程碑。
+    /// 有开着的光杆①就改标题/打标复用;有同标题开着的就复用;否则新建。
+    async fn ensure_ops1_for_version(
+        &mut self,
+        project_id: ProjectId,
+        name: &str,
+    ) -> Result<IssueId> {
+        let project = self.project_of(project_id).await?;
+        let title = crate::version::ops1_title_for(name);
+        let issues = self.issues(project_id).await.unwrap_or_default();
+        if let Some(bare) = super::find_open_bare_ops1(&issues) {
+            let id = bare.id;
+            let iid = bare.number;
+            let body = bare.body.clone();
+            issue_store::edit_issue(self, &project, iid, &title, &body).await?;
+            issue_store::assign_to_plan(self, &project, iid, name).await?;
+            return Ok(id);
+        }
+        if let Some(existing) = issue_store::find_open_by_title(self, &project, &title).await? {
+            issue_store::assign_to_plan(self, &project, existing.number, name).await?;
+            return Ok(existing.id);
+        }
+        let created = self
+            .create_issue(
+                project_id,
+                title,
+                String::new(),
+                None,
+                IssueKind::Ops,
+                IssueOrigin::Human,
+                String::new(),
+                name.to_string(),
+            )
+            .await?;
+        created
+            .iter()
+            .find_map(|e| match e {
+                Event::IssueCreated { id, .. } => Some(*id),
+                _ => None,
+            })
+            .ok_or_else(|| AppError::Refused("运作活①没建出来".into()))
+    }
+
+    /// 删未发版本:给挂着 `bw:plan:<name>` 的活摘标签,再尽力删同名里程碑。
     pub(super) async fn delete_plan_version(
         &mut self,
         project_id: ProjectId,
@@ -151,10 +224,22 @@ impl App {
         for issue in issues {
             if issue.plan_version == name {
                 issue_store::clear_plan(self, &project, issue.number).await?;
+                if crate::version::ops1_version_from_title(&issue.title).as_deref()
+                    == Some(name.as_str())
+                {
+                    let _ = issue_store::edit_issue(
+                        self,
+                        &project,
+                        issue.number,
+                        crate::version::OPS1_TITLE,
+                        &issue.body,
+                    )
+                    .await;
+                }
                 issues_cleared += 1;
             }
         }
-        issue_store::delete_plan_version(self, &project, &name).await?;
+        issue_store::try_delete_plan_milestone(self, &project, &name).await;
         Ok(vec![Event::PlanVersionDeleted {
             project_id,
             name,
@@ -189,12 +274,9 @@ impl App {
         Ok(vec![Event::WorkspacePulled { moved, note }])
     }
 
-    /// 发版本:在远端建 Release(打 tag + notes),成功后再给选中的活打
-    /// `bw:released:*` 标签。按 version 标签幂等——同一版本不重复打。
-    ///
-    /// 高优7:先建 Release、后打标签。反过来若 Release 建失败,标签已打、
-    /// 远端没 Release → 不一致;现在顺序反了,Release 没建成就整条失败,
-    /// 标签一个没打,活还停在原地可以重试。
+    /// 发版本:只有在研且还没有同名 tag 的号能发。工作区先快进到远端,
+    /// 脏或本机比远端新就拒。然后建 Release(打 tag),再给勾上的活打
+    /// `bw:released:*`(可以一张不打)。已发过的号拒,要再发先开下一号。
     pub(super) async fn cut_release(
         &mut self,
         project_id: ProjectId,
@@ -207,15 +289,30 @@ impl App {
             return Err(AppError::Refused("版本名不能空".into()));
         }
         let project = self.project_of(project_id).await?;
+        let issues = self.issues(project_id).await.unwrap_or_default();
         let (plans, released) = self.collect_version_names(&project).await?;
-        if released.iter().any(|s| s == &version) {
-            return Err(AppError::Refused(format!("{version} 已经发过")));
-        }
         if !plans.iter().any(|s| s == &version) {
             return Err(AppError::Refused(format!("先有计划版本 {version} 再发")));
         }
+        let already = released.iter().any(|s| s == &version);
+        let current = super::current_week_version(&issues, &released);
+        if !crate::version::can_cut_release(&version, &current, already) {
+            if already {
+                return Err(AppError::Refused(format!(
+                    "{version} 已经发过,要再发就先开下一号"
+                )));
+            }
+            if current.is_empty() {
+                return Err(AppError::Refused("还没有在研版本,不能发".into()));
+            }
+            return Err(AppError::Refused(format!(
+                "只有在研版本能发,现在在研是 {current}"
+            )));
+        }
 
-        // 1. 先在远端建 Release(tag + title + notes)—— 成功才往下。
+        let ws = self.workspace_of(project_id).await?;
+        align_workspace_to_remote(&ws).await?;
+
         if project.has_remote() {
             let remote = self.remote_for(&project)?;
             remote
@@ -224,24 +321,21 @@ impl App {
                 .map_err(|e| AppError::Exec(format!("远端建 Release 没成:{e}")))?;
         }
 
-        // 2. Release 建成了,再给选中的活打 released 标签。
         for id in &included {
             issue_store::set_released(self, &project, id.iid(), &version).await?;
         }
 
-        let rows_written = true;
         let mut events = vec![Event::ReleaseCut {
             version: version.clone(),
-            rows_written,
+            rows_written: true,
         }];
         let release_ev = crate::chat::NotifyEvent::Release;
-        let mut text =
-            crate::chat::notify_text(release_ev.key(), 0, &format!("发版 {version}"), "", "");
         let note = note.trim();
-        if !note.is_empty() {
-            text.push('\n');
-            text.push_str(note);
-        }
+        let text = if note.is_empty() {
+            format!("【发版 {version}】")
+        } else {
+            format!("【发版 {version}】{note}")
+        };
         if let Some(e) = self.chat_send(project_id, release_ev.key(), 0, text).await {
             events.push(e);
         }
@@ -285,13 +379,31 @@ impl App {
         for issue in issues {
             if issue.plan_version == from {
                 issue_store::assign_to_plan(self, &project, issue.number, &to).await?;
+                if crate::version::ops1_version_from_title(&issue.title).as_deref()
+                    == Some(from.as_str())
+                {
+                    let _ = issue_store::edit_issue(
+                        self,
+                        &project,
+                        issue.number,
+                        &crate::version::ops1_title_for(&to),
+                        &issue.body,
+                    )
+                    .await;
+                }
                 issues_moved += 1;
             }
         }
-        remote
+        if let Err(e) = remote
             .rename_plan_milestone(&project.remote_path, &from, &to)
             .await
-            .map_err(|e| AppError::Exec(format!("改里程碑标题没成:{e}")))?;
+        {
+            bw_engine::dlog!(
+                err,
+                "milestone",
+                "[BW_MILESTONE] 改里程碑标题 {from}→{to} 没成:{e}"
+            );
+        }
         Ok(vec![Event::PlanVersionRenamed {
             project_id,
             from,
@@ -305,7 +417,7 @@ impl App {
         project: &crate::model::Project,
     ) -> Result<(Vec<String>, Vec<String>)> {
         let issues = self.issues(project.id).await.unwrap_or_default();
-        let mut plan_names: Vec<String> = issues
+        let plan_names: Vec<String> = issues
             .iter()
             .filter(|i| crate::version::is_plan_name(&i.plan_version))
             .map(|i| i.plan_version.clone())
@@ -316,13 +428,6 @@ impl App {
             .map(|i| i.version.clone())
             .collect();
         if let Ok(remote) = self.remote_for(project) {
-            if let Ok(rows) = remote.list_milestones(&project.remote_path).await {
-                for (title, _, _, _) in rows {
-                    if crate::version::is_plan_name(&title) {
-                        plan_names.push(title);
-                    }
-                }
-            }
             if let Ok(tags) = remote.list_releases().await {
                 for t in tags {
                     if !t.is_empty() {
@@ -333,6 +438,26 @@ impl App {
         }
         Ok((plan_names, released_names))
     }
+}
+
+/// 发版本 / 在研出包共用:读数脏先挪开,再快进。源码脏或本机比远端新就拒。
+pub(super) async fn align_workspace_to_remote(ws: &std::path::Path) -> Result<()> {
+    let _ = salvage_readings_dirt(ws).await;
+    if crate::git::is_dirty(ws).await.unwrap_or(true) {
+        return Err(AppError::Refused(
+            "工作区有未提交的改动,先自己处理再发版本 / 出包".into(),
+        ));
+    }
+    crate::git::pull_ff(ws)
+        .await
+        .map_err(|e| AppError::Exec(format!("没拉到远端最新:{e}")))?;
+    let ahead = crate::git::commits_ahead_of_fetch(ws).await.unwrap_or(0);
+    if ahead > 0 {
+        return Err(AppError::Refused(
+            "本机比远端新,先推上去或自己处理,避免包和 tag 不是同一份提交".into(),
+        ));
+    }
+    Ok(())
 }
 
 /// 拉主干之前:主检出若只脏了读数流水,挪进账本再拉。不碰名片、不碰人的源码。

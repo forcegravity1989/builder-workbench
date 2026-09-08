@@ -49,13 +49,14 @@ pub use issue_store::{
     LIGHT_TITLE,
 };
 pub use ops::{
-    is_ops1_issue, ops1_title, ops2_title, skill_slug, week_started, workflow_label, OPS1_WORKFLOW,
-    OPS2_WORKFLOW, OPS3_WORKFLOW,
+    current_week_version, find_open_bare_ops1, is_ops1_issue, ops1_title, ops2_title, skill_slug,
+    week_started, workflow_label, OPS1_WORKFLOW, OPS2_WORKFLOW, OPS3_WORKFLOW,
 };
 pub use pack_ctl::{cleanup_pack_intermediates, PackCtl};
 pub use progress::{ProgressCase, ProgressLine, StepState};
 pub use week_comment::{
-    parse_comments, validate_comment, WeekComment, HEADING_GOAL, HEADING_READINGS, HEADING_SCOPE,
+    parse_comments, render_week_plan_comment, validate_comment, WeekComment, HEADING_GOAL,
+    HEADING_READINGS, HEADING_SCOPE,
 };
 
 use crate::{

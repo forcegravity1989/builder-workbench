@@ -34,7 +34,8 @@ strong, b { font-weight: 600; }
 .status-dot.is-live { animation: pulse 1.2s ease-in-out infinite; }
 
 .input-sm { min-height: 26px; padding: 3px 7px; font-size: 12px; }
-select.input { cursor: pointer; padding-top: 0; padding-bottom: 0; }
+/* 尺寸小一号,箭头跟着收 —— select 本身的外观在设计系统 styles.css 里。 */
+select.input-sm { padding-right: 22px; background-position: right 6px center; background-size: 11px 11px; }
 .input.invalid { border-color: var(--color-danger); }
 .field { margin-bottom: var(--space-3); }
 .field-err { font-size: 12px; color: var(--color-danger-deep); margin-top: 6px; }
@@ -445,7 +446,7 @@ select.input { cursor: pointer; padding-top: 0; padding-bottom: 0; }
 .sp-preview .field { margin-bottom: var(--space-1); font-size: 12.5px; }
 .sp-preview .field .k { font-size: 10.5px; color: color-mix(in srgb, var(--color-text) 50%, transparent); }
 .sp-preview .doc { font-size: 13.5px; line-height: 1.85; }
-.sp-preview pre { white-space: pre-wrap; font-family: var(--font-mono); font-size: 12px; line-height: 1.7; padding: 10px var(--space-3); border-radius: var(--radius-md); background: var(--color-surface); }
+.sp-preview pre { white-space: pre-wrap; overflow-wrap: anywhere; margin: 0; font-family: var(--font-mono); font-size: 12px; line-height: 1.7; padding: 10px var(--space-3); border-radius: var(--radius-md); background: var(--color-surface); }
 .graph-svgbox { padding: var(--space-3); margin-bottom: var(--space-3); border: 1px solid var(--color-divider); border-radius: var(--radius-md); background: var(--color-card); }
 .graph-lower { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-3); }
 .leaderboard-row { display: flex; gap: var(--space-2); justify-content: space-between; min-width: 0; word-break: break-all; font-family: var(--font-mono); font-size: 11.5px; padding: 5px 2px; border-bottom: 1px solid color-mix(in srgb, var(--color-text) 6%, transparent); }
