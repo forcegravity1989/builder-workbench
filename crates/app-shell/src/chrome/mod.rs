@@ -1,16 +1,21 @@
-//! 外壳骨架:一条紧凑侧栏 / 指南抽屉 / 上报问题 / toast。
+//! 外壳骨架:一条紧凑侧栏 / 帮助面板 / toast。
 //!
 //! 结构走设计系统(`docs/04-design-system/spec.md`):侧栏是 `.sidebar`,弹窗是
 //! `.dialog`,回执是 `.toast`。**没有顶栏**:屏名在侧栏当前项上、页标题在各屏
 //! 自己的 `.page-head` 里,再画一条顶栏就是同一个词写两遍;「刷新」进各屏页头。
 //! 数据目录在设置屏看。**不写行内样式**。
 //!
+//! 帮助只有一个入口:侧栏底部那颗「帮助」,和「设置」并排。面板与指南抽屉在
+//! `chrome::help`。**不在屏幕边缘贴竖排文字标签** —— 那是网页客服贴片的做法,
+//! 两个并列还逼人先决定「我要指南还是要上报」。
+//!
 //! toast 放的是命令回执(建活成功、铺底失败的原话),不自动消失 —— 自动消失
 //! 等于把失败信息藏起来,点「关闭」才关。
 
+pub mod help;
 pub mod sparkline;
 
-use crate::bridge::{Bridge, ChromeBusy, Panel, TopView, REPORTING, REPORTING_LOG};
+use crate::bridge::{Panel, TopView};
 use crate::theme;
 use bw::model::Signal;
 use dioxus::prelude::*;
@@ -36,6 +41,16 @@ fn icon_path(name: &str) -> &'static str {
             r#"<path d="M4 6a2 2 0 012-2h6l2 2h6a2 2 0 012 2v9a2 2 0 01-2 2H6a2 2 0 01-2-2V6z"/><path d="M4 9h16"/>"#
         }
         "back" => r#"<path d="M15 5l-7 7 7 7"/>"#,
+        "help" => {
+            r#"<circle cx="12" cy="12" r="9"/><path d="M9.5 9.2a2.6 2.6 0 015 .9c0 1.7-2.5 2.1-2.5 3.9"/><path d="M12 17.2v.1"/>"#
+        }
+        "book" => {
+            r#"<path d="M5 4h13v16H5.5A1.5 1.5 0 014 18.5v-13A1.5 1.5 0 015.5 4z"/><path d="M4 17.2h14"/>"#
+        }
+        "send" => r#"<path d="M21 3L3 10.4l7.2 3.4L21 3z"/><path d="M21 3l-7.4 18-3.4-7.2"/>"#,
+        "chev" => r#"<path d="M9.5 5.5l6.5 6.5-6.5 6.5"/>"#,
+        "search" => r#"<circle cx="11" cy="11" r="6.4"/><path d="M15.8 15.8L20.5 20.5"/>"#,
+        "home" => r#"<path d="M4 10.6L12 4l8 6.6V20H4z"/><path d="M9.6 20v-5.4h4.8V20"/>"#,
         "notify" => {
             r#"<path d="M6 8a6 6 0 0112 0c0 4 1.6 5.4 1.6 5.4H4.4S6 12 6 8z"/><path d="M9.5 17a2.5 2.5 0 005 0"/>"#
         }
@@ -133,6 +148,7 @@ pub fn Sidebar(
     cur: Panel,
     on_wall: EventHandler<()>,
     on_settings: EventHandler<()>,
+    on_help: EventHandler<()>,
     on_nav: EventHandler<Panel>,
 ) -> Element {
     let settings_active = top_view == Some(TopView::Settings);
@@ -182,108 +198,16 @@ pub fn Sidebar(
                 }
             }
             div { class: "spacer" }
+            div { class: "sidebar-item", onclick: move |_| on_help.call(()),
+                {icon("help")}
+                span { "帮助" }
+            }
             div {
                 class: "sidebar-item",
                 aria_current: if settings_active { "page" },
                 onclick: move |_| on_settings.call(()),
                 {icon("settings")}
                 span { "设置" }
-            }
-        }
-    }
-}
-
-/// 侧栏指南就是仓里那份产品指南,编进二进制,不另写一套。
-const GUIDE_HTML: &str = include_str!("../../../../docs/03-guide/v4-产品指南.html");
-
-#[component]
-pub fn GuideDrawer(bridge: Bridge) -> Element {
-    let guide = use_context::<crate::bridge::GuideNav>();
-    let mut report_open = use_signal(|| false);
-    let mut title = use_signal(String::new);
-    let mut title_focus = use_signal(|| false);
-    let mut attach_log = use_signal(|| true);
-    let chrome_busy = use_context::<ChromeBusy>();
-    let b = bridge.clone();
-    let title_ok = !title.read().trim().is_empty();
-    let log_ready = bw_engine::dlog::log_path().is_file();
-    rsx! {
-        div { class: "side-tabs",
-            if guide.0.read().is_none() {
-                div { class: "guide-tab", onclick: move |_| guide.open("u0"), "指南" }
-            }
-            div {
-                class: "issue-tab",
-                onclick: move |_| {
-                    attach_log.set(true);
-                    report_open.set(true);
-                },
-                "上报问题"
-            }
-        }
-        if guide.0.read().is_some() {
-            div { class: "guide-panel",
-                div { class: "guide-panel-head",
-                    h4 { "产品指南" }
-                    button { class: "btn btn-ghost btn-quiet btn-icon", title: "关闭", onclick: move |_| guide.close(), "✕" }
-                }
-                iframe { class: "guide-frame", srcdoc: GUIDE_HTML }
-            }
-        }
-        if *report_open.read() {
-            div { class: "dialog-backdrop", onclick: move |_| report_open.set(false),
-                div { class: "dialog", role: "dialog", onclick: move |e| e.stop_propagation(),
-                    div { class: "dialog-title", "上报问题" }
-                    div { class: "dialog-body", "把问题和本机对照日志报到 Workbench 仓。默认会附上对照日志。" }
-                    div { class: "dialog-note",
-                        if log_ready {
-                            "本机有对照日志。勾选后会随 issue 附上。"
-                        } else {
-                            "本机还没有对照日志。你仍然可以上报，有文件时才会附上。"
-                        }
-                    }
-                    input {
-                        class: "input",
-                        value: "{title}",
-                        placeholder: if *title_focus.read() { "" } else { "问题标题" },
-                        onfocus: move |_| title_focus.set(true),
-                        onblur: move |_| title_focus.set(false),
-                        oninput: move |e| title.set(e.value()),
-                    }
-                    label { class: "report-attach",
-                        input {
-                            r#type: "checkbox",
-                            checked: *attach_log.read(),
-                            onchange: move |e| attach_log.set(e.checked()),
-                        }
-                        span { class: "report-attach-copy",
-                            span { class: "report-attach-title", "附加对照日志" }
-                            span { class: "report-attach-hint", "随 issue 发送本机对照日志（bw.log）。有文件才附上。" }
-                        }
-                    }
-                    div { class: "dialog-actions",
-                        button { class: "btn btn-secondary", onclick: move |_| report_open.set(false), "取消" }
-                        button {
-                            class: "btn btn-primary",
-                            disabled: !title_ok,
-                            onclick: move |_| {
-                                let t = title.read().trim().to_string();
-                                if t.is_empty() { return; }
-                                let attach = *attach_log.read();
-                                report_open.set(false);
-                                title.set(String::new());
-                                title_focus.set(false);
-                                attach_log.set(true);
-                                chrome_busy.set(if attach { REPORTING_LOG } else { REPORTING });
-                                b.cmd(bw::command::Command::ReportWorkbenchIssue {
-                                    title: t,
-                                    attach_log: attach,
-                                });
-                            },
-                            "发送报告"
-                        }
-                    }
-                }
             }
         }
     }

@@ -43,6 +43,7 @@ cargo run -p app-shell                      # 启 Workbench MVP 桌面壳(bin �
 BW_OPEN=<项目名> BW_PANEL=overview|plan|session|config|kb ./target/debug/bw-dev
                                             # 深链直达屏;stderr [BW_OPEN]=真的渲染到了
 BW_VIEW=onboard|settings ./target/debug/bw-dev   # 顶层屏深链
+BW_HELP=home|guide|report ./target/debug/bw-dev   # 帮助小窗深链
 cargo run -p bw-engine --example pty_smoke [-- --teardown|-- --abort]  # PTY 地基烟测(不碰 claude/网关)
 cargo test --workspace                                # 本地含壳;CI 同命令加 --exclude app-shell(ubuntu 无 WebKit/GTK)
 # 出包 / 验包(Windows,非门禁/非 CI):入口只认 .cmd,协议见 docs/adr/0005
