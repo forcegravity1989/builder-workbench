@@ -15,13 +15,17 @@
 | [spec.md](spec.md) / [spec.zh.md](spec.zh.md) | 规范正文(方向 · 色彩 · 字体 · CJK · 层级 · 交互态 · 组件对照 · 要/不要) |
 | [styles.css](styles.css) | 唯一样式表:两套配色 token + 全部组件类 + `:lang(zh)` 中文层 |
 | [theme.json](theme.json) | 机读主题记录(两套调色板、字体策略、圆角/密度/图标约定) |
-| [components/](components/) | 8 张组件示例页:buttons · forms · cards · navigation · table · dialog(+toast)· command(⌘K)· status(+头像) |
+| [components/](components/) | 9 张组件示例页:buttons · forms · cards · navigation · table · dialog(+toast)· command(⌘K)· status(+头像)· settings(页标题 / 小节 / 设置行 / 开关 / 预览卡) |
 | [foundations/](foundations/) | 6 张基础示例页:color · type · cjk(中文排版)· layout · icons · image |
 | [assets/photo.jpg](assets/photo.jpg) | image.html 用的参考照片 |
 
 ## 与现行壳的关系
 
-**未接线**。桌面壳 `crates/app-shell` 现行样式仍以 [docs/hifi/](../hifi/) 九屏高保真为准;本目录是设计系统资产,供后续界面演进采用。谁接线、何时接线,按特性起手路径走 `05-features/`。
+**已接线(2026-09-07)**。桌面壳 `crates/app-shell` 编译期把本目录的 `styles.css` 原样拼进全局样式(`crates/app-shell/src/theme/mod.rs` 里 `include_str!`),不复制一份;壳骨架与各屏版式在 `crates/app-shell/assets/shell.css`,只写设计系统没有的东西、取值一律 `var(--*)`。壳默认 **Claude 配色**(根节点 `data-theme`),设置屏「配色」可切 Apple,存本机 `settings.toml`;中文排版层 `lang="zh"`。壳骨架是一条 172px 侧栏(`.sidebar`)+ 内容区,没有顶栏(`.nav` 留在设计系统里给独立页面用)。八屏的版式与旅程仍看 [docs/hifi/](../hifi/);视觉语言以本目录为准。接线记录在 [`../05-features/design-system-wiring/`](../05-features/design-system-wiring/STATUS.md)。
+
+改 token / 组件类 → 改本目录 `styles.css`(三处同步见下),壳下一次编译自动跟上;改壳骨架 / 某屏版式 → 改 `shell.css`,不回推设计项目。
+
+2026-09-07 仓侧新增了设置文法一组类(`.page-head` / `.section` / `.set-group` / `.set-row` / `.toggle` / `.choice` / `.path`,示例页 `components/settings.html`),参照 Codex 桌面版的设置页;**还没回推到设计项目**,下次走 `design-system-import` 回推。
 
 ## 来源与剥离清单
 

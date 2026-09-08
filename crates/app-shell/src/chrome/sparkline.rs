@@ -9,7 +9,7 @@ pub struct Series {
     pub label: String,
     /// `(x 轴标签, 值)`,旧的在前。`None` = 那一格没采到,画的时候断开。
     pub points: Vec<(String, Option<f64>)>,
-    /// CSS 变量名,如 `var(--clay)`。
+    /// CSS 变量名,如 `var(--color-accent)`。
     pub color: &'static str,
 }
 
@@ -74,7 +74,7 @@ fn TrendChart(series: Vec<MultiSeries>) -> Element {
     if left_known.is_empty() && right_known.is_empty() {
         return rsx! {
             div { class: "ov-chart",
-                div { class: "detail-empty", style: "padding:18px 0;font-size:12px;", "尚无观测" }
+                div { class: "empty", "尚无观测" }
             }
         };
     }
@@ -134,18 +134,18 @@ fn TrendChart(series: Vec<MultiSeries>) -> Element {
                             g { key: "g{g}",
                                 line {
                                     x1: "{PAD_L}", y1: "{gy:.1}", x2: "{VW - pad_r}", y2: "{gy:.1}",
-                                    stroke: "var(--border)", stroke_width: "1",
+                                    stroke: "var(--color-divider)", stroke_width: "1",
                                 }
                                 if g == 0 || g == 3 {
                                     text {
                                         x: "{PAD_L - 6.0}", y: "{gy + 3.0:.1}", text_anchor: "end",
-                                        style: "font-family:var(--mono);font-size:10px;fill:var(--ink-3);",
+                                        class: "chart-tick",
                                         "{fmt_tick(y_max_l * frac)}"
                                     }
                                     if has_right {
                                         text {
                                             x: "{VW - pad_r + 6.0}", y: "{gy + 3.0:.1}", text_anchor: "start",
-                                            style: "font-family:var(--mono);font-size:10px;fill:var(--ink-3);",
+                                            class: "chart-tick",
                                             "{fmt_tick(y_max_r * frac)}"
                                         }
                                     }
@@ -170,7 +170,7 @@ fn TrendChart(series: Vec<MultiSeries>) -> Element {
                             circle {
                                 key: "c{i}",
                                 cx: "{x:.1}", cy: "{y:.1}", r: "3.5",
-                                fill: "var(--card)", stroke: "{line.color}", stroke_width: "2",
+                                fill: "var(--color-card)", stroke: "{line.color}", stroke_width: "2",
                             }
                         }
                     }
@@ -182,7 +182,7 @@ fn TrendChart(series: Vec<MultiSeries>) -> Element {
                             x: "{x_at(i):.1}",
                             y: "{plot_bottom + 14.0:.1}",
                             text_anchor: "middle",
-                            style: "font-family:var(--mono);font-size:10px;fill:var(--ink-3);",
+                            class: "chart-tick",
                             "{label}"
                         }
                     }
@@ -192,7 +192,7 @@ fn TrendChart(series: Vec<MultiSeries>) -> Element {
                         key: "h{hi}",
                         cx: "{x:.1}", cy: "{y:.1}", r: "10",
                         fill: "transparent",
-                        style: "cursor:pointer;",
+                        class: "chart-hit",
                         onmouseenter: {
                             let i = *i;
                             move |_| hover.set(Some(i))

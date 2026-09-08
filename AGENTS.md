@@ -93,7 +93,7 @@ scripts/   门禁脚本(guard-*)+ codegraph 联调
 | 可见物 | 在哪 | 用来干什么 |
 |---|---|---|
 | 用户旅程 / 产品指南 | [`docs/03-guide/`](docs/03-guide/) | 点什么、背后发生什么、手上多了什么;按站把活交给人或 AI |
-| 高保真 | [`docs/hifi/`](docs/hifi/) | 界面长什么样 |
+| 设计系统 / 高保真 | [`docs/04-design-system/`](docs/04-design-system/README.md) / [`docs/hifi/`](docs/hifi/) | 界面长什么样:视觉语言(token、组件类、中文排版层)在设计系统,壳编译期拼入它的样式表;八屏版式与旅程在高保真 |
 | 架构与特性关键设计 | [`docs/architecture.md`](docs/architecture.md) | 模块为什么这样、数据归哪、没建什么;按模块交活。**主提示词 / reference / skill 对照表在 §3 模块 4** |
 | 产品主张 / 飞轮 | [`docs/01-principles/03`](docs/01-principles/03-press-release-faq-flywheel.md) | 目标体验与选型约束；特性 intent 必须对齐 |
 | 开发规矩 + 词表 | 本文件 + [`CONTEXT.md`](CONTEXT.md) | 怎么建/跑/测、用哪个词 |

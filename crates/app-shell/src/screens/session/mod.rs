@@ -9,23 +9,18 @@ use crate::bridge::{Bridge, ChromeBusy, Req};
 use crate::vm::{ProjectVm, SessionTab};
 use dioxus::prelude::*;
 
-const FILL: &str = "display:flex;flex-direction:column;flex:1;height:100%;min-height:0;";
-
 #[component]
 pub fn View(p: ProjectVm, bridge: Bridge) -> Element {
     let cur = p.workbench.tab;
     rsx! {
-        div {
-            class: "session-screen",
-            "data-screen": "session",
-            style: "{FILL}",
-            div { class: "sess-col sess-midhead", style: "flex:none;",
-                div { class: "sess-tabs",
+        div { class: "session-screen", "data-screen": "session",
+            div { class: "card sess-col",
+                div { class: "tabs", role: "tablist",
                     TabBtn { label: "Orca".to_string(), tab: SessionTab::Orca, cur, bridge: bridge.clone() }
                     TabBtn { label: "Open Design".to_string(), tab: SessionTab::OpenDesign, cur, bridge: bridge.clone() }
                 }
+                {mid_body(&p, bridge.clone())}
             }
-            {mid_body(&p, bridge.clone())}
         }
     }
 }
@@ -34,10 +29,12 @@ pub fn View(p: ProjectVm, bridge: Bridge) -> Element {
 fn TabBtn(label: String, tab: SessionTab, cur: SessionTab, bridge: Bridge) -> Element {
     let b = bridge.clone();
     rsx! {
-        div {
-            class: if tab == cur { "sess-tab active" } else { "sess-tab" },
+        button {
+            class: "tab",
+            role: "tab",
+            aria_selected: if tab == cur { "true" },
             onclick: move |_| b.send(Req::SessionTab(tab)),
-            span { "{label}" }
+            "{label}"
         }
     }
 }
@@ -59,21 +56,20 @@ fn mid_body(p: &ProjectVm, bridge: Bridge) -> Element {
 fn OrcaView(orca_url: String, bridge: Bridge) -> Element {
     let starting = use_context::<ChromeBusy>().get().is_some();
     let url = bw_engine::orca::web_embed_url(Some(&orca_url));
-    let body_style = "flex:1;min-height:0;display:flex;flex-direction:column;height:100%;";
     if starting {
         return rsx! {
-            div { class: "sess-col sess-midbody", style: "{body_style}" }
+            div { class: "sess-midbody" }
         };
     }
     if let Some(u) = url {
         let iframe_src = iframe_src(&u);
         let ready = bridge.clone();
         return rsx! {
-            div { class: "sess-col sess-midbody", style: "{body_style}",
+            div { class: "sess-midbody",
                 iframe {
                     key: "{iframe_src}",
                     src: "{iframe_src}",
-                    style: "flex:1;width:100%;height:100%;min-height:0;border:0;display:block;background:#fff;",
+                    class: "sess-frame",
                     allow: "clipboard-read; clipboard-write; fullscreen",
                     onload: move |_| ready.send(Req::OrcaEmbedReady)
                 }
@@ -81,10 +77,8 @@ fn OrcaView(orca_url: String, bridge: Bridge) -> Element {
         };
     }
     rsx! {
-        div { class: "sess-col sess-midbody", style: "{body_style}",
-            div {
-                style: "margin:auto;padding:24px;max-width:520px;text-align:center;\
-                        color:var(--ink-3);font-size:13px;line-height:1.8;",
+        div { class: "sess-midbody",
+            div { class: "sess-empty",
                 "还没接到 Orca 网页。到顶层设置贴「给 web 配对」的完整 URL。"
             }
         }
@@ -107,15 +101,14 @@ fn OpenDesignView(src: String, gen: u64) -> Element {
     } else {
         Some(src.clone())
     };
-    let body_style = "flex:1;min-height:0;display:flex;flex-direction:column;height:100%;";
     if let Some(u) = u {
         let iframe_src = iframe_src(&u);
         return rsx! {
-            div { class: "sess-col sess-midbody", style: "{body_style}",
+            div { class: "sess-midbody",
                 iframe {
                     key: "{gen}-{iframe_src}",
                     src: "{iframe_src}",
-                    style: "flex:1;width:100%;height:100%;min-height:0;border:0;display:block;background:#fff;",
+                    class: "sess-frame",
                     allow: "clipboard-read; clipboard-write; fullscreen"
                 }
             }
@@ -127,21 +120,22 @@ fn OpenDesignView(src: String, gen: u64) -> Element {
         "还没接到 Open Design。先打开它,再点「重新发现」。".to_string()
     };
     rsx! {
-        div { class: "sess-col sess-midbody", style: "{body_style}",
-            div {
-                style: "margin:auto;padding:24px;max-width:520px;text-align:center;\
-                        color:var(--ink-3);font-size:13px;line-height:1.8;white-space:pre-wrap;",
-                "{msg}"
-                button {
-                    class: "btn btn-sm btn-primary",
-                    style: "margin-top:10px;",
-                    disabled: probing_now,
-                    onclick: move |_| {
-                        probing.set(true);
-                        url.set(None);
-                        fut.restart();
-                    },
-                    "重新发现"
+        div { class: "sess-midbody",
+            div { class: "sess-empty",
+                div {
+                    "{msg}"
+                    div {
+                        button {
+                            class: "btn btn-primary",
+                            disabled: probing_now,
+                            onclick: move |_| {
+                                probing.set(true);
+                                url.set(None);
+                                fut.restart();
+                            },
+                            "重新发现"
+                        }
+                    }
                 }
             }
         }

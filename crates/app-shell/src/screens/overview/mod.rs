@@ -19,7 +19,24 @@ pub fn View(p: ProjectVm, bridge: Bridge) -> Element {
     let draft = use_signal(CardDraft::default);
 
     rsx! {
-        section { class: "ov-stack",
+        section { class: "ov-stack", "data-screen": "overview",
+            div { class: "page-head",
+                div {
+                    h1 { "总览" }
+                    p { class: "page-desc", "项目健康看板:名片、北极星、版本进展、指标。没数据是灰,不是绿。" }
+                }
+                div { class: "page-actions",
+                    button {
+                        class: "btn btn-secondary",
+                        title: "先快进主检出再重读",
+                        onclick: {
+                            let b = bridge.clone();
+                            move |_| b.send(Req::Refresh)
+                        },
+                        "刷新"
+                    }
+                }
+            }
             if let Some(pending) = p.bootstrap_pending.clone() {
                 {bootstrap_banner(pending, &bridge, nav)}
             }
@@ -51,7 +68,7 @@ fn bootstrap_banner(mr: crate::vm::CardMrVm, bridge: &Bridge, nav: PanelNav) -> 
                 if let Some(id) = id {
                     if mr.has_open_mr {
                         button {
-                            class: "btn btn-primary btn-sm",
+                            class: "btn btn-primary",
                             onclick: move |_| b.cmd(Command::MergeAndSettle { id }),
                             "合入并完成"
                         }
@@ -59,7 +76,7 @@ fn bootstrap_banner(mr: crate::vm::CardMrVm, bridge: &Bridge, nav: PanelNav) -> 
                 }
             }
             button {
-                class: "btn btn-sm",
+                class: "btn btn-secondary",
                 onclick: move |_| nav.go(Panel::Plan),
                 "去计划屏"
             }
@@ -147,50 +164,50 @@ fn card_block(
                     {light_dot(p.health.signal, false)}
                     span { class: "ov-health-word", "{crate::theme::signal_label(p.health.signal)}" }
                     if !selected_ver.is_empty() {
-                        span { class: "chip chip-outline mono", "{selected_ver} · 本周" }
+                        span { class: "tag tag-outline mono", "{selected_ver} · 本周" }
                     }
                 }
                 if !is_editing {
-                    span { style: "display:flex;gap:6px;",
+                    span { class: "row",
                         button {
-                            class: "btn btn-sm",
+                            class: "btn btn-secondary",
                             title: "把工作区的主检出快进到远端最新(git pull --ff-only)",
                             onclick: move |_| b_pull.cmd(Command::PullWorkspace { project_id: pid }),
                             "↻ 拉到最新"
                         }
-                        button { class: "btn btn-sm", onclick: start_edit, "编辑" }
+                        button { class: "btn btn-secondary", onclick: start_edit, "编辑" }
                     }
                 }
             }
             if is_editing {
-                div { class: "formrow",
-                    label { class: "label", "想做什么" }
+                div { class: "field",
+                    label { "想做什么" }
                     textarea {
-                        class: "textarea",
+                        class: "input",
                         value: "{draft.read().brief}",
                         oninput: move |e| draft.write().brief = e.value(),
                     }
                 }
-                div { class: "formrow",
-                    label { class: "label", "最像的对标" }
+                div { class: "field",
+                    label { "最像的对标" }
                     input {
                         class: "input",
                         value: "{draft.read().benchmark}",
                         oninput: move |e| draft.write().benchmark = e.value(),
                     }
                 }
-                div { class: "formrow",
-                    label { class: "label", "三个月长成什么样(北极星)" }
+                div { class: "field",
+                    label { "三个月长成什么样(北极星)" }
                     textarea {
-                        class: "textarea",
+                        class: "input",
                         value: "{draft.read().north}",
                         oninput: move |e| draft.write().north = e.value(),
                     }
                 }
-                div { class: "formrow",
-                    label { class: "label", "在研版本" }
+                div { class: "field",
+                    label { "在研版本" }
                     select {
-                        class: "select mono",
+                        class: "input mono",
                         value: "{selected_ver}",
                         onchange: move |e| b_ver.send(Req::SelectOverviewVersion(e.value())),
                         if covering.is_empty() {
@@ -205,10 +222,10 @@ fn card_block(
                         }
                     }
                 }
-                div { class: "formrow",
-                    label { class: "label", "项目群" }
+                div { class: "field",
+                    label { "项目群" }
                     select {
-                        class: "select",
+                        class: "input",
                         value: "{draft.read().chat_provider}",
                         onchange: move |e| draft.write().chat_provider = e.value(),
                         option { value: "", "不配" }
@@ -216,17 +233,17 @@ fn card_block(
                     }
                 }
                 if !draft.read().chat_provider.is_empty() {
-                    div { class: "formrow",
-                        label { class: "label", "群号" }
+                    div { class: "field",
+                        label { "群号" }
                         input {
                             class: "input mono",
                             value: "{draft.read().chat_group}",
                             oninput: move |e| draft.write().chat_group = e.value(),
                         }
                     }
-                    div { class: "formrow",
-                        label { class: "label", "同步哪些通知" }
-                        div { style: "display:flex;gap:14px;flex-wrap:wrap;font-size:12px;",
+                    div { class: "field",
+                        label { "同步哪些通知" }
+                        div { class: "row-wrap",
                             for (i, ev) in bw::chat::NotifyEvent::ALL.iter().enumerate() {
                                 label {
                                     input {
@@ -244,14 +261,14 @@ fn card_block(
                         }
                     }
                 }
-                div { style: "display:flex;gap:8px;justify-content:flex-end;",
+                div { class: "row",
                     button {
-                        class: "btn btn-sm",
+                        class: "btn btn-secondary ml-auto",
                         onclick: move |_| editing.set(false),
                         "取消"
                     }
                     button {
-                        class: "btn btn-sm btn-primary",
+                        class: "btn btn-primary",
                         onclick: move |_| {
                             let d = draft.read().clone();
                             let chat_notify = d.notify_keys();
@@ -299,7 +316,7 @@ fn north_star_block(p: &ProjectVm, bridge: &Bridge) -> Element {
         div { class: "card ov-block",
             div { class: "ov-kicker", "北极星" }
             if let Some(e) = p.metrics.error.as_ref() {
-                div { class: "detail-empty", style: "color:var(--alert-deep);", "指标文件读不了:{e}" }
+                div { class: "empty text-danger", "指标文件读不了:{e}" }
             } else {
                 match p.metrics.north_star.as_ref() {
                     Some(m) => {
@@ -312,17 +329,17 @@ fn north_star_block(p: &ProjectVm, bridge: &Bridge) -> Element {
                         rsx! {
                             div { class: "ov-north-name", title: "{m.def}", "{m.name}" }
                             div { class: "ov-north-row",
-                                span { class: "ov-north-val",
-                                    style: if shown.is_none() { "color:var(--ink-4);" } else { "" },
+                                span {
+                                    class: if shown.is_none() { "ov-north-val text-muted" } else { "ov-north-val" },
                                     {shown.map(|s| s.as_str()).unwrap_or("—")}
                                 }
-                                span { class: "mcard-target", "{target}" }
+                                span { class: "ov-north-tgt", "{target}" }
                                 if shown.is_none() {
-                                    span { class: "chip chip-gray", "Unknown" }
+                                    span { class: "tag tag-neutral", "Unknown" }
                                 }
                             }
                             if !m.collect_error.is_empty() {
-                                div { class: "mcard-sub", style: "color:var(--alert-deep);", "{m.collect_error}" }
+                                div { class: "hint text-danger", "{m.collect_error}" }
                             }
                             if m.manual {
                                 metrics::ManualFill {
@@ -334,7 +351,7 @@ fn north_star_block(p: &ProjectVm, bridge: &Bridge) -> Element {
                             }
                         }
                     }
-                    None => rsx! { div { class: "detail-empty", "还没定北极星。" } },
+                    None => rsx! { div { class: "empty", "还没定北极星。" } },
                 }
             }
         }
