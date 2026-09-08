@@ -4,7 +4,7 @@
 
 ## 设计在哪
 
-- **设计正本(三 crate 架构 + 工作流模型 + 16 模块核心设计)** → [`docs/architecture.md`](docs/architecture.md):一篇讲清 Workbench 是什么(设计)、三个 crate 怎么互锁、工作流模型(三来源两路径/系统提示词/默认 workflow/数据流/四铁律)、16 个模块各自解决什么问题。人和 AI 都能在这份里快速检索到任一模块的核心设计。
+- **设计正本(三 crate 架构 + 工作流模型 + 6 个能力模块)** → [`docs/architecture.md`](docs/architecture.md):一篇讲清 Workbench 是什么(设计),正文按「§1 用例 → §2 特性(设计层) → §3 实现(代码层)」三段排:三个 crate 怎么互锁、工作流模型(三来源两路径/系统提示词/默认 workflow/数据流/四铁律)、6 个能力模块各自解决什么问题(老版本史实与挪移地图在附录)。人和 AI 都能在这份里快速检索到任一模块的核心设计。
 - **架构决策(难回头一条一篇)** → [`docs/02-adr/`](docs/02-adr/)。
 - **视觉正本**(Builder 设计系统:token + 组件类 + 双语规范 + 示例页)→ [`docs/04-design-system/`](docs/04-design-system/README.md);桌面壳编译期原样拼入它的 `styles.css`,壳骨架与各屏版式在 `crates/app-shell/assets/shell.css`。八屏的版式与旅程原型(单文件浏览器可点)→ [`docs/hifi/index.html`](docs/hifi/index.html) + 逐屏简报 [`docs/hifi/README.md`](docs/hifi/README.md)。
 - **产品指南**(怎么用 Workbench,给用户/同事)→ [`docs/03-guide/`](docs/03-guide/)。
@@ -15,5 +15,5 @@
 
 ## 没建什么(如实)
 
-- `mattpocock-skills` 已打包、开机即用；`proto-design` 源还没 vendor 进来——见 `docs/architecture.md`「系统提示词与渐进加载」模块「没建什么」。
+- `mattpocock-skills` 已打包、开机即用；`proto-design` 源还没 vendor 进来——见 `docs/architecture.md` §2/§3「系统提示词与渐进加载」(特性层见 §2,代码/没建见 §3)。
 - Open Design 适配模块(壳侧)、产物入仓约定、蒸馏——见各模块「没建什么」,不在这里汇总第二份清单。B/C 读数写入端已接(账本 worktree `bw/ledger`)。

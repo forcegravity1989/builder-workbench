@@ -4,7 +4,7 @@
 
 > **30 秒导读**:这是 Workbench MVP 的领域词表——代码、文档、界面、对话共用的选词与定义。MVP 本地零数据库,issue 正本在 codehub/GitHub 的 issue+标签,项目级配置留仓文件、走 MR,健康与指标读数全部现算。词表稳定优先,宁少不乱。
 > 定义原则:每个词只说它**是什么**(1–2 句),不写实现;`_Avoid_` 列出被它取代的说法。
-> 这是词表,不是规格——**设计正本是 [`docs/architecture.md`](docs/architecture.md)([`DESIGN.md`](DESIGN.md) 指路)**,16 模块核心设计在它的 §3;设计缺口分散在各模块的「没建什么」段,不另开台账。
+> 这是词表,不是规格——**设计正本是 [`docs/architecture.md`](docs/architecture.md)([`DESIGN.md`](DESIGN.md) 指路)**,6 个能力模块在它的 §2 特性层(代码/数据/依赖/没建在 §3 实现层);设计缺口分散在各模块的「没建什么」段,不另开台账。
 > 命名冲突的收敛与改名计划见 [`docs/02-adr/`](docs/02-adr/);字母数字任务代号(P2、W6、R1……)不属于领域语言,用前先确认旧系列没撞(代号登记处随用随建进 adr 或本表)。
 > 词表分两部分:前半是**产品语义词**(产品概念本身),文末「工程操作词」一节是**仓库工作方式的行话**(读回、门禁、记账……)。
 
@@ -151,7 +151,7 @@ MVP 两条执行轨,都在这张活自己的 git worktree 里干:构建类走会
 _Avoid_: 把交互式活的空运行史当「没跑过」;把后台轨的自动兜底照搬到交互轨;嵌入终端(指 UI 载体时可用,指这条执行轨时统一说「交互式运行」)。详见 [会话与执行 模块](docs/architecture.md)。
 
 **系统提示词 / System prompt**:
-Workbench 给每张开工的活渲染的一份常驻提示,主提示词是外置的 `standard/system-prompt/SYSTEM.md.tmpl`(哪张活、读被管仓 `AGENTS.md`、按任务加载哪份 reference、和 BW 状态机怎么配合)。`{{...}}` 占位运行时填路径。references 写 `.bw/` / 评论 / 标签等界面认什么;skill 写这场怎么带人。三层各写什么见 [`standard/README.md`](standard/README.md);哪类活读哪份见 [系统提示词与渐进加载 模块](docs/architecture.md) §3 模块 4。不硬编码在 Rust `format!` 里。
+Workbench 给每张开工的活渲染的一份常驻提示,主提示词是外置的 `standard/system-prompt/SYSTEM.md.tmpl`(哪张活、读被管仓 `AGENTS.md`、按任务加载哪份 reference、和 BW 状态机怎么配合)。`{{...}}` 占位运行时填路径。references 写 `.bw/` / 评论 / 标签等界面认什么;skill 写这场怎么带人。三层各写什么见 [`standard/README.md`](standard/README.md);哪类活读哪份见 [系统提示词与渐进加载 模块](docs/architecture.md) §2 ④。不硬编码在 Rust `format!` 里。
 _Avoid_: 把契约写进技能正文(换技能就丢);把系统提示词当成技能的一部分;把四段 gate / 代填正本写进 SYSTEM。详见 [系统提示词与渐进加载 模块](docs/architecture.md)。
 
 **Agent Loop**(产品命题层):
@@ -162,7 +162,7 @@ _Avoid_: 把它当某个具体代码结构;与"交互式运行"混用。
 
 **读数 / Reading(原「观测」)**:
 一个真实数据点。MVP 分三类:**可回溯**的一个字都不存、每次现算(git 提交数、合入的 PR 数、star 数……);**不可回溯**与**手填**进同一份读数流水 `.bw/metrics/readings.jsonl`(键是日历日,绝不插值,一个读数=一个点,同一天同一指标只留一行,当天再采覆盖;展示按周取那一周最后一天)。采和手填写在固定账本 worktree,不写主检出。判据是一句话:「今天能采到这个数,那么上周三那天的值现在还能算出来吗」。
-_Avoid_: 记录、log(读数是结构化数据点,不是日志文本)、埋点数据;观测(V3 旧名,正文统一用「读数」)。详见 [健康推导 模块](docs/architecture.md) 与 [仓文件解析 模块](docs/architecture.md)。
+_Avoid_: 记录、log(读数是结构化数据点,不是日志文本)、埋点数据;观测(V3 旧名,正文统一用「读数」)。详见 [关键信息维护 模块](docs/architecture.md)(含健康推导二级特性)。
 
 **指标 / Metric**:
 由读数派生出的、可与目标比较的度量(带目标值、比较符、黄区带)。定义本身(名字、目标值、采集方案)也有正本,见"指标正本"。
