@@ -4,6 +4,10 @@
 
 本文件按**六站 + 底座**收口,不再按每次窗口一条流水往下堆。最近一次改动永远写在最上面。
 
+## 最近 · 2026-09-08
+
+修好 GitHub 侧读 issue 的字段名:`gh` 的 issue 只有复数 `assignees`(一个数组),我们一直按单数 `assignee` 去要,gh 直接拒("Unknown JSON field"),所以接 GitHub 的项目一读 issue 列表就整屏失败。改成要 `assignees` 并取数组第一个人当责任人(产品仍是单责任人)。同一处顺带修好写:改责任人原先只 `--add-assignee`,不摘旧人,一个活会挂两个人而读回看的是第一个,表现成「改了没生效」;取消指派原先传 `--remove-assignee **`,gh 把它当成一个不存在的用户名、什么都不做也不报错——静默失效。现在先读回当前指派,再一条命令摘旧人 / 加新人。codehub 那条线不受影响(它是 GitLab 形状,本来就叫 `assignee`)。
+
 ## 最近 · 2026-09-07
 
 壳接上 Builder 设计系统(`docs/04-design-system/`):全局样式改成编译期拼入设计系统的 `styles.css` + 壳层 `assets/shell.css`(只写壳骨架与各屏版式,取值一律 token),旧 `assets/hifi.css` 与旧 token(`--clay` / `--ink-*` / `--paper`……)整体删掉,不留兼容层。根节点挂 Claude 配色与中文排版层。八屏标记全换设计系统组件类:按钮四种(每视图一颗实底主按钮,取消 / 关闭安静)、标签 `tag-*`、状态点一色一态、表单 `field` / `input`、卡片发丝线无阴影且不套卡片、项目轨是标准侧栏、顶栏 44px、页签 `tabs` / 分段 `seg`(隐藏 radio 驱动)、列表 `list-row`、看板 `board`(列不再按状态铺底色)、弹窗 `dialog`、回执 toast 改深色底角条(仍点「关闭」才走)。屏里带色号 / 字号的行内 style 清零,只留数据驱动的值。衬线标题改系统字体。高保真 `docs/hifi/` 降为版式与旅程原型,顶部加历史横幅。记录在 `docs/05-features/design-system-wiring/`。

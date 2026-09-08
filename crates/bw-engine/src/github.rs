@@ -822,7 +822,8 @@ pub async fn update_issue(
 /// `state=None` = `all`(两态都要)。`labels` 取交集。gh 的 `state` 回大写
 /// (`"OPEN"`/`"CLOSED"`),**不归一化**——归一化是上层的事。github 无 `iid`,
 /// 故 `RemoteIssue.iid = number`。`labels` 在 gh payload 里是 `{name}` 对象
-/// 数组,这里拍平成 `Vec<String>`。
+/// 数组,这里拍平成 `Vec<String>`;责任人字段名是复数 `assignees`(数组),
+/// 取第一个 login 当单责任人。
 pub async fn list_issues(
     owner_repo: &str,
     state: Option<&str>,
@@ -844,7 +845,7 @@ pub async fn list_issues(
     args.push("--limit".into());
     args.push("200".into());
     args.push("--json".into());
-    args.push("number,title,state,labels,createdAt,closedAt,assignee,author".into());
+    args.push("number,title,state,labels,createdAt,closedAt,assignees,author".into());
     // tokio_cmd 要 &[&str]/Vec<String> 转 OsString;这里先把 Vec<String> 拼成
     // Vec<&str> 不行(生命周期),故用 args(&[String]) 的重载。
     let arg_refs: Vec<&str> = args.iter().map(|s| s.as_str()).collect();
@@ -872,7 +873,7 @@ pub async fn list_issues(
             body: String::new(),
             created_at: r.created_at,
             closed_at: r.closed_at,
-            assignee: r.assignee.map(|p| p.login).filter(|s| !s.is_empty()),
+            assignee: first_login(&r.assignees),
             author: r.author.map(|p| p.login).filter(|s| !s.is_empty()),
         })
         .collect())
@@ -893,7 +894,7 @@ pub async fn view_issue(
             "--repo",
             owner_repo,
             "--json",
-            "number,title,state,labels,body,createdAt,closedAt,assignee,author",
+            "number,title,state,labels,body,createdAt,closedAt,assignees,author",
         ])
         .stdin(Stdio::null())
         .stdout(Stdio::piped())
@@ -915,24 +916,39 @@ pub async fn view_issue(
         body: r.body.unwrap_or_default(),
         created_at: r.created_at,
         closed_at: r.closed_at,
-        assignee: r.assignee.map(|p| p.login).filter(|s| !s.is_empty()),
+        assignee: first_login(&r.assignees),
         author: r.author.map(|p| p.login).filter(|s| !s.is_empty()),
     })
 }
 
-/// `gh issue edit <n> --repo <r> --add-assignee <name>` / `--remove-assignee`。
-/// 空串 = `--remove-assignee **`(取消全部指派)。
+/// 改责任人:先 `gh issue view <n> --json assignees` 读当前指派,再一条
+/// `gh issue edit <n> --repo <r> [--remove-assignee 旧…] [--add-assignee 新]`。
+/// 空串 = 摘掉全部指派。
+///
+/// gh 没有「替换指派」的开关,`--add-assignee` 只叠加;不先摘旧的,产品这边
+/// 的单责任人会变成两个人,而读回取数组第一个,看起来就是「改了没生效」。
+/// `--remove-assignee` 只认真实 login(只有 `@me`/`@copilot` 是特殊值),
+/// 所以摘人必须先读回当前 login 列表,不能拿通配符糊弄。
 pub async fn set_issue_assignee(
     owner_repo: &str,
     number: u32,
     assignee: &str,
 ) -> Result<(), GithubError> {
+    let current = list_issue_assignees(owner_repo, number).await?;
+    let keep = |a: &String| assignee.eq_ignore_ascii_case(a);
+    let to_remove: Vec<&String> = current.iter().filter(|a| !keep(a)).collect();
+    let need_add = !assignee.is_empty() && !current.iter().any(keep);
+    if to_remove.is_empty() && !need_add {
+        return Ok(());
+    }
+
     let num_s = number.to_string();
-    let mut args = vec!["issue", "edit", &num_s, "--repo", owner_repo];
-    if assignee.is_empty() {
+    let mut args: Vec<&str> = vec!["issue", "edit", &num_s, "--repo", owner_repo];
+    for old in &to_remove {
         args.push("--remove-assignee");
-        args.push("**");
-    } else {
+        args.push(old.as_str());
+    }
+    if need_add {
         args.push("--add-assignee");
         args.push(assignee);
     }
@@ -948,6 +964,42 @@ pub async fn set_issue_assignee(
         return Err(GithubError::Command(stderr_text(&output)));
     }
     Ok(())
+}
+
+/// `gh issue view <n> --repo <r> --json assignees` → 当前指派的 login 列表。
+async fn list_issue_assignees(owner_repo: &str, number: u32) -> Result<Vec<String>, GithubError> {
+    let num_s = number.to_string();
+    let output = crate::win_cmd::tokio_cmd("gh")
+        .args([
+            "issue",
+            "view",
+            &num_s,
+            "--repo",
+            owner_repo,
+            "--json",
+            "assignees",
+        ])
+        .stdin(Stdio::null())
+        .stdout(Stdio::piped())
+        .stderr(Stdio::piped())
+        .output()
+        .await
+        .map_err(spawn_err)?;
+    if !output.status.success() {
+        return Err(GithubError::Command(stderr_text(&output)));
+    }
+    #[derive(serde::Deserialize)]
+    struct Assignees {
+        #[serde(default)]
+        assignees: Vec<GhPersonJson>,
+    }
+    let r: Assignees = serde_json::from_slice(&output.stdout)
+        .map_err(|e| GithubError::Command(format!("无法解析 gh issue view JSON:{e}")))?;
+    Ok(r.assignees
+        .into_iter()
+        .map(|p| p.login)
+        .filter(|s| !s.is_empty())
+        .collect())
 }
 
 /// `gh api user --jq .login` → 当前登录用户。认不出返错。
@@ -1006,7 +1058,7 @@ struct GhIssueViewJson {
     #[serde(default)]
     closed_at: Option<String>,
     #[serde(default)]
-    assignee: Option<GhPersonJson>,
+    assignees: Vec<GhPersonJson>,
     #[serde(default)]
     author: Option<GhPersonJson>,
 }
@@ -1024,7 +1076,7 @@ struct GhIssueFullJson {
     #[serde(default)]
     closed_at: Option<String>,
     #[serde(default)]
-    assignee: Option<GhPersonJson>,
+    assignees: Vec<GhPersonJson>,
     #[serde(default)]
     author: Option<GhPersonJson>,
 }
@@ -1033,6 +1085,15 @@ struct GhIssueFullJson {
 struct GhPersonJson {
     #[serde(default)]
     login: String,
+}
+
+/// gh 的 issue 只有复数 `assignees`(数组),没有单数 `assignee` 字段——写单数
+/// 会被 gh 直接拒掉。产品模型是单责任人,故取数组第一个 login。
+fn first_login(people: &[GhPersonJson]) -> Option<String> {
+    people
+        .iter()
+        .map(|p| p.login.clone())
+        .find(|s| !s.is_empty())
 }
 
 #[derive(serde::Deserialize)]
