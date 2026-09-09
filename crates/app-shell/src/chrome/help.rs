@@ -6,7 +6,9 @@
 //! 章节目录是从指南 HTML 自己的侧栏扫出来的,**不在 Rust 里再抄一份**:目录写
 //! 两遍,改了指南就会飘。
 
-use crate::bridge::{Bridge, ChromeBusy, GuideNav, HelpNav, HelpTab, REPORTING, REPORTING_LOG};
+use crate::bridge::{
+    Bridge, ChromeBusy, GuideNav, HelpNav, HelpTab, Panel, PanelNav, REPORTING, REPORTING_LOG,
+};
 use crate::chrome::{icon, light_dot};
 use crate::vm::ToolProbeVm;
 use bw::model::Signal;
@@ -15,7 +17,7 @@ use dioxus::prelude::*;
 /// 指南正文编进二进制,不另写一套。
 const GUIDE_HTML: &str = include_str!("../../../../docs/03-guide/v4-产品指南.html");
 
-/// 从指南侧栏扫出目录:`<div class="nav-item" data-screen="u1"><svg…</svg>第 0 站 · 接入项目</div>`。
+/// 从指南侧栏扫出目录:`<div class="nav-item" data-screen="u-import"><svg…</svg>添加项目</div>`。
 fn guide_toc() -> Vec<(&'static str, &'static str)> {
     let mut out = Vec::new();
     for seg in GUIDE_HTML.split("data-screen=\"").skip(1) {
@@ -96,6 +98,35 @@ pub fn HelpHub(bridge: Bridge, env: Vec<ToolProbeVm>) -> Element {
     let mut drag = use_signal(|| None::<(f64, f64)>);
 
     let b = bridge.clone();
+    let nav = use_context::<PanelNav>();
+    // 指南抽屉是 srcdoc iframe,点「去计划屏 / 去会话」往父页 postMessage;
+    // 这里收了就关抽屉、切我们自己的屏。不高亮 Orca 里的控件。
+    use_future(move || {
+        let nav = nav;
+        let guide = guide;
+        async move {
+            let mut eval = document::eval(
+                r#"
+                if (!window.__bwGoPanelBound) {
+                  window.__bwGoPanelBound = true;
+                  window.addEventListener('message', function (e) {
+                    var d = e.data;
+                    if (d && d.bw === 'go-panel' && typeof d.panel === 'string') {
+                      dioxus.send(d.panel);
+                    }
+                  });
+                }
+                await new Promise(function () {});
+                "#,
+            );
+            while let Ok(name) = eval.recv::<String>().await {
+                if let Some(p) = Panel::parse(&name) {
+                    guide.close();
+                    nav.go(p);
+                }
+            }
+        }
+    });
     let toc = guide_toc();
     let tab = *help.0.read();
     let chapter = *guide.0.read();
