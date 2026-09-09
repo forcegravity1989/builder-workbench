@@ -662,6 +662,17 @@ impl App {
         Ok(vec![Event::IssueEdited { id }])
     }
 
+    /// 单查一张 issue 的正文(`view_issue` 带 `description`)。issue 列表设计上
+    /// 不带正文,计划详情弹窗打开时发这条补正文。拉回的正文原样进 Event,bridge
+    /// 补丁进 last_gather,不重拉整个 list(issue #72)。拉空如实 = 没写过正文。
+    pub(super) async fn fetch_issue_body(&self, id: IssueId) -> Result<Vec<Event>> {
+        let issue = self.issue_or_err(id).await?;
+        Ok(vec![Event::IssueBodyFetched {
+            id,
+            body: issue.body,
+        }])
+    }
+
     /// 作废:原因进评论,打取消标签并关掉远端 issue。不是完成。
     pub(super) async fn cancel_issue(&mut self, id: IssueId, reason: String) -> Result<Vec<Event>> {
         let why = reason.trim().to_string();

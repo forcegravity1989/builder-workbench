@@ -740,7 +740,17 @@ pub async fn view_issue(
     if !out.status.success() {
         return Err(CodehubError::Command(stderr_text(&out)));
     }
-    let r: CodehubIssueViewJson = serde_json::from_slice(&out.stdout)
+    parse_issue_view_json(&out.stdout)
+}
+
+/// 解析 `codehub-cli issue view --format json` 的 GitLab v4 payload 成
+/// [`crate::remote::RemoteIssue`]。正文在 `description` 键(见
+/// [`CodehubIssueViewJson::body`] 的 rename)。抽成纯函数给测试一个接缝 ——
+/// `view_issue` 本身要打 codehub-cli,没法在单测里喂 payload。
+pub(crate) fn parse_issue_view_json(
+    stdout: &[u8],
+) -> Result<crate::remote::RemoteIssue, CodehubError> {
+    let r: CodehubIssueViewJson = serde_json::from_slice(stdout)
         .map_err(|e| CodehubError::Parse(format!("无法解析 codehub issue view JSON:{e}")))?;
     Ok(crate::remote::RemoteIssue {
         iid: r.iid,
@@ -793,7 +803,12 @@ struct CodehubIssueViewJson {
     /// codehub 返对象数组 `[{name,color}]`,用 Value 收、`label_name` 抽名字。
     #[serde(default)]
     labels: Vec<serde_json::Value>,
-    #[serde(default)]
+    /// codehub issue view 的 GitLab v4 payload 正文在 `description` 键(GitLab
+    /// 叫法),结构体字段名 `body` 对齐 [`crate::remote::RemoteIssue::body`],
+    /// 用 `rename` 衔接。codehub-cli 不回 `body` 键,不 rename 就读成空 ——
+    /// issue #72 的坑:正文同步上了 codehub,但单查拉回空串,plan 页签和
+    /// 注入 prompt 都拿不到正文。
+    #[serde(default, rename = "description")]
     body: Option<String>,
     #[serde(default)]
     created_at: Option<String>,
@@ -1482,7 +1497,7 @@ mod parse_issue_list_json_tests {
 
 #[cfg(test)]
 mod api_body_tests {
-    use super::{milestone_create_fields, milestone_rows, unwrap_api_body};
+    use super::{milestone_create_fields, milestone_rows, parse_issue_view_json, unwrap_api_body};
 
     #[test]
     fn omits_empty_milestone_dates() {
@@ -1517,6 +1532,43 @@ mod api_body_tests {
         let rows = milestone_rows(&body);
         assert_eq!(rows.len(), 1);
         assert_eq!(rows[0]["title"], "2026-W35");
+    }
+
+    /// issue #72:codehub-cli `issue view --format json` 回 GitLab v4 payload,
+    /// 正文字段是 `description`,不是 `body`。不 rename 就读成空 —— 正文同步
+    /// 上了 codehub,plan 页签和注入 prompt 却拿不到。这条用 #72 真实回包
+    /// 钉死:description 必须映射进 `RemoteIssue.body`。
+    #[test]
+    fn issue_view_description_maps_to_body() {
+        let r = parse_issue_view_json(
+            r##"{"iid":72,"id":4011099,"title":"#72 正文同步codehub但计划页签不显示","state":"opened","description":"计划页签中各issue点开能看到真实的正文，并支持编辑","labels":[{"name":"bw:status:inprogress"},{"name":"bw:category:build"}],"created_at":"2026-09-09T16:17:20.366+08:00","closed_at":null,"assignee":null,"author":{"username":"a30030291"}}"##
+                .as_bytes(),
+        )
+        .unwrap();
+        assert_eq!(r.iid, 72);
+        assert_eq!(
+            r.body.as_str(),
+            "计划页签中各issue点开能看到真实的正文，并支持编辑"
+        );
+        assert_eq!(r.title, "#72 正文同步codehub但计划页签不显示");
+        assert_eq!(r.state, "opened");
+        assert_eq!(
+            r.labels,
+            vec![
+                "bw:status:inprogress".to_string(),
+                "bw:category:build".to_string()
+            ]
+        );
+        assert!(r.assignee.is_none());
+        assert_eq!(r.author.as_deref(), Some("a30030291"));
+    }
+
+    /// 没有 `description` 键 = 这张活本来就没写正文,如实空串,不是解析失败。
+    #[test]
+    fn issue_view_missing_description_is_empty_body() {
+        let r = parse_issue_view_json(br#"{"iid":1,"title":"x","state":"opened","labels":[]}"#)
+            .unwrap();
+        assert!(r.body.is_empty());
     }
 }
 

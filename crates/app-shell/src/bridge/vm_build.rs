@@ -279,6 +279,18 @@ impl Gathered {
             card.unread = unread;
         }
     }
+
+    /// `FetchIssue` 单查拉回的正文补进内存里这一张,不重拉 issue 列表(issue #72:
+    /// list 不带正文,重拉会又把 body 冲成空)。正文是纯展示字段,没有派生计数
+    /// 跟着它走,所以只补 body 本身。找不到这张活就不动(可能换项目了)。
+    pub fn apply_issue_body(&mut self, id: IssueId, body: String) {
+        let Some(pg) = self.open.as_mut() else {
+            return;
+        };
+        if let Some(i) = pg.issues.iter_mut().find(|i| i.id == id) {
+            i.body = body;
+        }
+    }
 }
 
 fn patch_issue_status(
@@ -334,7 +346,7 @@ pub fn note_of(events: &[Event]) -> Option<String> {
 }
 
 fn primary_note(events: &[Event]) -> Option<String> {
-    events.first().map(|e| match e {
+    Some(match events.first()? {
         Event::ProjectCreated { slug, adopted, .. } => {
             if *adopted {
                 format!("接手了已有项目 {slug} —— 仓里原有的 .bw/project.toml 一个字没动")
@@ -523,6 +535,9 @@ fn primary_note(events: &[Event]) -> Option<String> {
             }
         }
         Event::IssueEdited { .. } => "issue 标题/正文已改 · 已同步到 codehub".into(),
+        // 后台单查正文补丁(详情弹窗打开时触发),不是人点的动作。不弹 note ——
+        // 否则每开一次详情都闪一条,还会盖掉上一条真正要给人看的 note。
+        Event::IssueBodyFetched { .. } => return None,
         Event::WorkbenchIssueReported { .. } => "问题已上报".into(),
     })
 }

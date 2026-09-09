@@ -6,6 +6,15 @@
 
 ## 最近 · 2026-09-09
 
+## 最近 · 2026-09-09
+
+issue #72:新建 issue 填的正文同步上了 codehub,但计划页签点开看不到正文、注入开工 prompt 也没带正文。两处断点:
+
+- codehub 单查读错字段名。`codehub-cli issue view --format json` 回 GitLab v4 payload,正文在 `description` 键,但 `CodehubIssueViewJson` 把它读自 `body` 键(没 rename)→ 找不到 → 空串。写侧(create `--description`、edit `("description", body)`)一直走 `description`,唯独读侧写成了 `body`。GitHub 那条线用 `gh issue view --json ...,body` 显式要 `body`,读写一致,没中招——只有 codehub 项目拉回空正文,进而 `run_issue` 注入 prompt 时 `issue.body` 是空的。改法:结构体字段加 `#[serde(rename = "description")]`,抽出 `parse_issue_view_json` 纯函数(镜像 `parse_issue_list_json`),用 #72 真实回包钉死。
+- 计划详情弹窗只读看板卡片 `c.body`,看板由 `list_issues` 拼,**列表设计上不带正文**;弹窗打开时没单查补正文。加 `Command::FetchIssue`(走 `issue_store::fetch` 单查)→ bridge 收 `IssueBodyFetched` 回执后补丁进 `last_gather`、跳过 full gather(重拉 list 会又把 body 冲成空),复用「状态标签补丁 last_gather」那条快路径。弹窗 `use_future` 打开即发一次 fetch;body 走 dirty 跟踪——pristine 时直接读 VM 的 `body_orig`(fetch 回来 VM 重切接得住,`body_val` 信号不会自己更新),人一编辑就 dirty 只认 `body_val` 不被覆盖。`primary_note` 给 `IssueBodyFetched` 早返 None(后台补正文不该弹 note,否则每开一次详情闪一条还盖掉上一条真 note)。
+
+## 最近 · 2026-09-09
+
 计划屏弹窗里从右往左拖选文本想复制时,鼠标拖到弹窗外暗区松手,弹窗就关了 —— 原来那层暗区(`dialog-backdrop`)挂的是 `onclick: 关闭`,内层只拦了 `onclick` 冒泡,没拦 `mousedown`。拖选的 `mousedown` 落在弹窗内、`mouseup` 落在暗区,浏览器在暗区上凑出一次 `click`,拦不住,于是把窗关了。抽了一个共享壳 `Overlay`(住 `plan_dialogs.rs`):暗区按下才置真、内层按下/松手置假并拦冒泡,`click` 只在按下也落在暗区时才关。12 个弹窗(新建/创建版本/排期/确认移动/拒绝移动/删除版本/出包/验包详情/停止确认/发版本 + 详情/Start)统一改用它。真点暗区仍照常关,拖选不再误关。
 
 使用指南按驾驶地图重写：首页是周环（添加项目 → 版本规划 → builder → 出包验证 → 版本发布 → 周复盘），点站进该站正文。看总览不再单独成站。工作台抽屉里「去计划屏 / 去会话」会关上指南并跳到那一屏，不高亮 Orca 里的控件。自动化默认关。宁可丢掉旧站细文，也不留和地图对不上的站名与步骤。
