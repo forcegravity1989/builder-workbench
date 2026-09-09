@@ -6,6 +6,8 @@
 
 ## 最近 · 2026-09-08
 
+加 [`docs/10-reference/domain-models.html`](docs/10-reference/domain-models.html):从 03 新闻稿 + architecture + CONTEXT 抽出五张领域模型(上下文 / 用例 / 逻辑 / 数据 / 领域)+ 现行 vs 主张速查。单文件 HTML,对齐 hifi/home.html 风格,参考性提炼(非决策记录);▲ 标 03 §C「尚未交付」项。
+
 V3 史实 + 旧 16 模块挪移地图从 ADR-0006 移到 [`docs/10-reference/v3-and-module-migration.md`](docs/10-reference/v3-and-module-migration.md)(那是参考材料 / 挪移对照,不是决策记录);ADR-0006 删除。导读、DESIGN、AGENTS V3 注记的指针从 ADR-0006 改指 10-reference。
 
 architecture.md 附录整段挪出去:V3 史实 + 旧 16 模块挪移地图搬到新 [`ADR-0006`](docs/02-adr/0006-能力模块收为五个与V3史实.md)(决策 / 为什么 / 挪移地图);附录导航表删(导读已覆盖),architecture.md 止于 §3 留白。导读、DESIGN、AGENTS V3 注记改指 ADR-0006 + `docs/02-adr/`。
