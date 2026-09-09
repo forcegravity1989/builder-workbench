@@ -58,7 +58,7 @@ Lucide(https://lucide.dev),默认描边 2,默认 16px(密集行 14px、元信息
 | `.btn` + `-primary/-secondary/-ghost/-danger/-icon/-block` | 操作 — 每视图一个实底主操作;danger 只给不可逆确认 | components/buttons.html |
 | `.tag` + 各变体 | 胶囊标签与状态徽章 | components/buttons.html |
 | `.kbd` | 键盘按键芯片 | components/buttons.html |
-| `.field` / `.input` / `.radio` / `.seg` | 表单;iOS 式分段控件 | components/forms.html |
+| `.field` / `.input`(含 `select.input`、`textarea.input`)/ `.radio` / `.seg` | 表单;iOS 式分段控件。下拉框不用系统自带那身外观,换成本系统的折线箭头 | components/forms.html |
 | `.card` 系列;`.elev-sm/md/lg` | 有界内容卡片;层级工具类 | components/cards.html |
 | `.status` + `.status-dot` 及五态 | 状态点 + 文字 | components/status.html |
 | `.avatar` 系列、`.avatar-group` | 人是圆形,Agent 是方圆角 | components/status.html |

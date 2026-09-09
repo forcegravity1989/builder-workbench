@@ -65,7 +65,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         Arc::new(bw_engine::MockInteractiveExecutor::new()),
     )
     .with_asset_root(&asset_dir)
-    .with_remote_factory(Box::new(move |_| Ok(Remote::Mock(mock_state.clone()))));
+    .with_remote_factory(Box::new(move |_| Ok(Remote::mock(mock_state.clone()))));
 
     let week = isoweek::current_week();
     let mut log = Vec::new();

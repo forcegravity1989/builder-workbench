@@ -46,6 +46,10 @@
   --color-warning: #ff9500; --color-warning-soft: #ffead9; --color-warning-deep: #7c4602;
   --color-danger: #ff3b30; --color-danger-soft: #fee7e3; --color-danger-deep: #97261e;
 
+  /* The select caret. A data URI can't read a CSS var, so the stroke is
+     spelled out once per palette — it is neutral-600 in both. */
+  --select-caret: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%236f7274' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+
   /* ── Shared (both themes) ────────────────────────────────────────────── */
   --color-divider: color-mix(in srgb, var(--color-text) 12%, transparent);
 
@@ -121,6 +125,8 @@
   --color-success: #579766; --color-success-soft: #dcf7e1; --color-success-deep: #286037;
   --color-warning: #ce9042; --color-warning-soft: #feecce; --color-warning-deep: #774a03;
   --color-danger: #c15f4d; --color-danger-soft: #ffe4df; --color-danger-deep: #883324;
+
+  --select-caret: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2375716a' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
 }
 
 /* ══════════════════════════════════════════════════════════════════════════
@@ -192,6 +198,14 @@ code { font-family: var(--font-mono); font-size: 0.92em; }
 .input:hover { border-color: color-mix(in srgb, var(--color-text) 28%, transparent); }
 .input:focus-visible { outline: none; border-color: var(--color-accent); box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-accent) 18%, transparent); }
 textarea.input { min-height: 72px; resize: vertical; }
+/* Selects drop the platform's own chrome — a macOS stepper or a Windows box
+   sitting next to hairline-bordered fields reads as a leftover, not as a
+   control. What replaces it is the lucide chevron the rest of the UI uses. */
+select.input { appearance: none; -webkit-appearance: none; cursor: pointer; padding-right: 26px; background-image: var(--select-caret); background-repeat: no-repeat; background-position: right 8px center; background-size: 12px 12px; }
+/* appearance:none also drops the platform's greying-out of a disabled
+   control, so the disabled state has to be drawn here. */
+.input:disabled { opacity: 0.5; cursor: not-allowed; }
+select.input:disabled { background-image: none; }
 .radio { display: inline-flex; align-items: center; gap: 7px; cursor: pointer; font-size: 13px; }
 .radio input, .seg-opt input { position: absolute; opacity: 0; width: 0; height: 0; pointer-events: none; }
 .radio .dot { width: 14px; height: 14px; flex: none; border-radius: 50%; border: 1.5px solid color-mix(in srgb, var(--color-text) 30%, transparent); background: var(--color-card); }

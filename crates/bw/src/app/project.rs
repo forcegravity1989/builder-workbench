@@ -136,7 +136,7 @@ impl App {
     async fn fetch_repo(&self, ws: &std::path::Path, remote: &RemoteRef) -> Result<()> {
         let shown = ws.display().to_string();
         if ws.join(".git").exists() {
-            let origin = bw_engine::github::origin_remote_url(ws)
+            let origin = bw_engine::workspace::origin_remote_url(ws)
                 .await
                 .ok()
                 .flatten()
@@ -183,21 +183,15 @@ impl App {
             })?;
         }
         let _ = std::fs::remove_dir(ws); // 空目录才删得掉,正合适
-        let got = if remote.provider == "codehub" {
-            bw_engine::codehub::clone_repo(&remote.host, &remote.path, ws)
+                                         // 认哪个平台、地址长什么样,都是底座那一层的事 —— 这儿只说「把这个仓
+                                         // 弄下来」。以前这儿按 provider 分了两支,顺带把 github 的地址校验也抄
+                                         // 在了这里。
+        let got = match bw_engine::remote::Remote::for_host(&remote.provider, &remote.host) {
+            Ok(r) => r
+                .clone_repo(&remote.path, ws)
                 .await
-                .map_err(|e| e.to_string())
-        } else {
-            match remote.path.split_once('/') {
-                Some((owner, repo)) => bw_engine::github::clone_repo(owner, repo, ws)
-                    .await
-                    .map(|_| ())
-                    .map_err(|e| e.to_string()),
-                None => Err(format!(
-                    "「{}」不是 owner/repo 的样子,clone 不了",
-                    remote.path
-                )),
-            }
+                .map_err(|e| e.to_string()),
+            Err(e) => Err(e.to_string()),
         };
         match got {
             Ok(()) => {

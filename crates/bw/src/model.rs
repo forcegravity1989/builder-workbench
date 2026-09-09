@@ -340,6 +340,24 @@ impl Project {
         }
     }
 
+    /// 这个项目的远端**在界面上叫什么**(`GitHub` / `CodeHub`)。没挂远端、或者
+    /// provider 认不出 → 空串,调用方就别画那个徽 —— 不认识的平台不许拿另一个
+    /// 平台的名字顶上(卡片上那枚徽曾经写死成 `CodeHub`,接 GitHub 的项目 58 张
+    /// 活全被标成 CodeHub)。
+    ///
+    /// 和 [`Self::browse_base`] 同一族:provider → 显示口径的映射只在这一处。
+    pub fn remote_brand(&self) -> &'static str {
+        if !self.has_remote() {
+            return "";
+        }
+        match self.provider.trim() {
+            // 空 provider = 存量行,底座也当 github(`Remote::for_project`)。
+            "github" | "" => "GitHub",
+            "codehub" => "CodeHub",
+            _ => "",
+        }
+    }
+
     /// 远端 issue 网页地址的前缀,后面直接拼号码。没挂远端 → 空串。
     pub fn issue_url_prefix(&self) -> String {
         match self.browse_base() {

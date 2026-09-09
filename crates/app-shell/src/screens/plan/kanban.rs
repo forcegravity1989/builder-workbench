@@ -1,5 +1,5 @@
 //! 四列看板本体(合并后:待办/进行中/待处理/已完成)。列内分段,两段列默认
-//! 只显示第一段、点子标题切到第二段。卡面按 opt 重做:编号 + CodeHub 徽 +
+//! 只显示第一段、点子标题切到第二段。卡面按 opt 重做:编号 + 平台徽 +
 //! 标题 + 正文一行预览 + 计划位置 + 责任人 + 更新时间,**无开工按钮**(开工
 //! 入口在详情弹窗)。
 
@@ -109,7 +109,7 @@ pub fn board(
     rsx! {
         div { class: "board",
             for col in p.board.columns.iter() {
-                {column(col, f.clone(), &plan_filter, view_all, bridge, dragging, schedule, selected, start, pending, reject, col_seg, nav)}
+                {column(col, f.clone(), &plan_filter, view_all, &p.remote_brand, bridge, dragging, schedule, selected, start, pending, reject, col_seg, nav)}
             }
         }
     }
@@ -121,6 +121,8 @@ fn column(
     filters: Option<Filters>,
     plan_filter: &str,
     view_all: bool,
+    // 这个项目的远端叫什么(GitHub / CodeHub)。空 = 不画那枚徽。
+    brand: &str,
     bridge: &Bridge,
     mut dragging: Signal<Option<CardItemVm>>,
     schedule: Signal<Option<PendingSchedule>>,
@@ -220,7 +222,7 @@ fn column(
                     dragging.set(None);
                 },
                 for c in active_cards.iter() {
-                    {card_view(c, dragging, selected, view_all, bridge, nav)}
+                    {card_view(c, dragging, selected, view_all, brand, bridge, nav)}
                 }
                 if active_cards.is_empty() {
                     div { class: "board-empty", "无 issue" }
@@ -235,6 +237,7 @@ fn card_view(
     mut dragging: Signal<Option<CardItemVm>>,
     mut selected: Signal<Option<IssueId>>,
     view_all: bool,
+    brand: &str,
     _bridge: &Bridge,
     _nav: PanelNav,
 ) -> Element {
@@ -252,8 +255,11 @@ fn card_view(
         .to_uppercase()
         .collect::<String>();
     let updated = ago(c.updated_at);
-    let remote_badge = if c.remote_number > 0 {
-        rsx! { span { class: "tag tag-accent-2", "CodeHub" } }
+    // 这枚徽说的是「这张活在远端有对应 issue」,徽面写的是**这个项目真正挂的那个
+    // 平台**。以前写死成 `CodeHub`,于是接 GitHub 的项目每张卡都被标成 CodeHub。
+    // 认不出平台就不画 —— 空着是实话,顶一个别人的名字不是。
+    let remote_badge = if c.remote_number > 0 && !brand.is_empty() {
+        rsx! { span { class: "tag tag-accent-2", "{brand}" } }
     } else {
         rsx! {}
     };

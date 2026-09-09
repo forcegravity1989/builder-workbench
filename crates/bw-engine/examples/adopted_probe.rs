@@ -24,10 +24,10 @@ fn main() {
         std::process::exit(2);
     };
     let git_ref = args.next().unwrap_or_default();
-    let Some((owner, repo)) = slug.split_once('/') else {
+    if slug.split_once('/').is_none() {
         eprintln!("项目地址要写成 owner/repo,收到的是「{slug}」");
         std::process::exit(2);
-    };
+    }
     let rt = tokio::runtime::Builder::new_current_thread()
         .enable_all()
         .build()
@@ -35,8 +35,12 @@ fn main() {
     // 和接入屏点「下一步」时走的是同一套判断:先读文件,读不到再问一次
     // 「这个仓在不在」—— 仓不在也是 404,不复查就会被说成「还没接管过」。
     let answer = rt.block_on(async {
-        match bw_engine::github::fetch_project_toml(owner, repo, &git_ref).await {
-            Ok(None) => match bw_engine::github::probe_repo(&slug).await {
+        let remote = match bw_engine::remote::Remote::for_host("github", "") {
+            Ok(r) => r,
+            Err(e) => return Err(e.to_string()),
+        };
+        match remote.fetch_project_toml(&slug, &git_ref).await {
+            Ok(None) => match remote.probe_repo(&slug).await {
                 Ok(_) => Ok(None),
                 Err(e) => Err(format!("找不到这个仓:{e}")),
             },

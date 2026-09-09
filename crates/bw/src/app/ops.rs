@@ -336,7 +336,7 @@ impl App {
             .map(|c| std::path::PathBuf::from(&c.workspace_path));
         let tree =
             bw_engine::workspace::resolve_issue_worktree(&ws, issue.number, recorded.as_deref())?;
-        let branch = bw_engine::github::issue_branch(issue.number);
+        let branch = bw_engine::workspace::issue_branch(issue.number);
         match crate::git::is_dirty(&tree).await {
             Ok(false) => {}
             Ok(true) => {

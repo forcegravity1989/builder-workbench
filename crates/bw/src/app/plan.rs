@@ -94,7 +94,6 @@ impl App {
         name: String,
         start: String,
         due: String,
-        note: String,
         included: Vec<IssueId>,
     ) -> Result<Vec<Event>> {
         let name = name.trim().to_string();
@@ -129,7 +128,7 @@ impl App {
             prior.push((id.iid(), old));
         }
         let ops1_id = self.ensure_ops1_for_version(project_id, &name).await?;
-        let comment = super::week_comment::render_week_plan_comment(&note, &prior);
+        let comment = super::week_comment::render_week_plan_comment(&prior);
         issue_store::comment(self, &project, ops1_id.iid(), &comment).await?;
         for id in &included {
             issue_store::assign_to_plan(self, &project, id.iid(), &name).await?;
@@ -137,21 +136,9 @@ impl App {
         let mid = issue_store::try_ensure_plan_milestone(self, &project, &name, &start, &due).await;
         if mid > 0 {
             if let Ok(remote) = self.remote_for(&project) {
-                issue_store::project_plan_best_effort(
-                    &remote,
-                    &project.remote_path,
-                    ops1_id.iid(),
-                    &name,
-                )
-                .await;
+                issue_store::project_plan_best_effort(&remote, ops1_id.iid(), &name).await;
                 for id in &included {
-                    issue_store::project_plan_best_effort(
-                        &remote,
-                        &project.remote_path,
-                        id.iid(),
-                        &name,
-                    )
-                    .await;
+                    issue_store::project_plan_best_effort(&remote, id.iid(), &name).await;
                 }
             }
         }
@@ -367,11 +354,7 @@ impl App {
         }
         let remote = self.remote_for(&project)?;
         remote
-            .rename_plan_label(
-                &project.remote_path,
-                &format!("bw:plan:{from}"),
-                &format!("bw:plan:{to}"),
-            )
+            .rename_plan_label(&format!("bw:plan:{from}"), &format!("bw:plan:{to}"))
             .await
             .map_err(|e| AppError::Exec(format!("改标签名没成:{e}")))?;
         let issues = self.issues(project_id).await?;
@@ -394,10 +377,7 @@ impl App {
                 issues_moved += 1;
             }
         }
-        if let Err(e) = remote
-            .rename_plan_milestone(&project.remote_path, &from, &to)
-            .await
-        {
+        if let Err(e) = remote.rename_plan_milestone(&from, &to).await {
             bw_engine::dlog!(
                 err,
                 "milestone",
