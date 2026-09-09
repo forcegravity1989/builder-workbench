@@ -674,6 +674,9 @@ pub fn spawn(deep_link: DeepLink) -> Bridge {
                         &req,
                         Req::Cmd(Command::ReportWorkbenchIssue { .. })
                     );
+                    // FetchIssue = 详情弹窗打开时单查正文。list 不带正文,重拉整个
+                    // list 会又把 body 冲成空,所以走补丁路、跳过 full gather。
+                    let fetching_body = matches!(&req, Req::Cmd(Command::FetchIssue { .. }));
                     let needs_gather = matches!(
                         &req,
                         Req::Cmd(_)
@@ -681,7 +684,8 @@ pub fn spawn(deep_link: DeepLink) -> Bridge {
                             | Req::Refresh
                             | Req::FlushOrcaReveal { .. }
                     ) && !status_patch
-                        && !reporting;
+                        && !reporting
+                        && !fetching_body;
                     match req {
                         Req::Cmd(c) => {
                             let confirming = matches!(c, Command::ConfirmWeekDraft { .. });
@@ -725,6 +729,13 @@ pub fn spawn(deep_link: DeepLink) -> Bridge {
                                         if let Some((id, to, settled)) = status_patch_of(&events)
                                         {
                                             last_gather.apply_issue_status(id, to, settled);
+                                        }
+                                    }
+                                    // FetchIssue 单查回的正文补丁进 last_gather,
+                                    // 下面的 assemble 会用它重切 VM。
+                                    if fetching_body {
+                                        if let Some((id, body)) = body_fetched_of(&events) {
+                                            last_gather.apply_issue_body(id, body);
                                         }
                                     }
                                     // 「开始本周」产出的草稿活标先接住,等人在计划屏
@@ -1485,6 +1496,14 @@ fn status_patch_of(events: &[Event]) -> Option<(IssueId, IssueStatus, bool)> {
         Event::IssueTransitioned { id, to, settled } => Some((*id, *to, *settled)),
         Event::IssueBlocked { id } => Some((*id, IssueStatus::Blocked, false)),
         Event::IssueCancelled { id } => Some((*id, IssueStatus::Cancelled, false)),
+        _ => None,
+    })
+}
+
+/// `FetchIssue` 回执里捞正文。bridge 用它补丁 last_gather(issue #72)。
+fn body_fetched_of(events: &[Event]) -> Option<(IssueId, String)> {
+    events.iter().find_map(|e| match e {
+        Event::IssueBodyFetched { id, body } => Some((*id, body.clone())),
         _ => None,
     })
 }

@@ -512,6 +512,7 @@ impl App {
                 self.set_issue_assignee(id, assignee).await
             }
             Command::EditIssue { id, title, body } => self.edit_issue(id, title, body).await,
+            Command::FetchIssue { id } => self.fetch_issue_body(id).await,
             Command::CancelIssue { id, reason } => self.cancel_issue(id, reason).await,
             Command::DeleteSession { id } => self.delete_session(id).await,
             Command::BlockIssue { id, reason } => self.block_issue(id, reason).await,
@@ -652,6 +653,7 @@ fn cmd_log_label(cmd: &Command) -> String {
         Command::EditIssue { id, title, .. } => {
             format!("EditIssue #{} title={title:?}", id.iid())
         }
+        Command::FetchIssue { id } => format!("FetchIssue #{}", id.iid()),
         Command::CancelIssue { id, .. } => format!("CancelIssue #{}", id.iid()),
         Command::DeleteSession { id } => format!("DeleteSession #{}", id.iid()),
         Command::BlockIssue { id, .. } => format!("BlockIssue #{}", id.iid()),

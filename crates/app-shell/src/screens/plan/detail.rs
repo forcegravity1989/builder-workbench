@@ -37,8 +37,27 @@ pub fn DetailModal(
     let body_orig = c.body.clone();
     let assignee_orig = c.assignee.clone();
     let mut title_val = use_signal(move || title_orig.clone());
-    let mut body_val = use_signal(move || body_orig.clone());
+    // body_val 只在 dirty 后持有人的编辑;pristine 时正文直接读 body_orig。
+    // 用空串初始化,不 move 掉 body_orig(后面 body_show 和保存还要用)。
+    let mut body_val = use_signal(String::new);
     let mut assignee_val = use_signal(move || assignee_orig.clone());
+    // list 不带正文,弹窗一打开就单查补一次(issue #72)。body 走 dirty 跟踪:
+    // pristine 时正文直接读 body_orig(每次重渲从 VM 取最新值,这样 fetch 回来
+    // VM 重切后接得住——body_val 信号不会自己更新);人一编辑就 dirty,之后只认
+    // body_val,不被后续 VM 重切覆盖掉手里改的字。
+    let mut body_dirty = use_signal(|| false);
+    let body_show = if *body_dirty.read() {
+        body_val.read().clone()
+    } else {
+        body_orig.clone()
+    };
+    let b_fetch = bridge.clone();
+    use_future(move || {
+        let b = b_fetch.clone();
+        async move {
+            b.cmd(Command::FetchIssue { id });
+        }
+    });
     let close = move |_| selected.set(None);
 
     let mr_url = (!p.mr_url_prefix.is_empty() && c.pr_number > 0)
@@ -75,8 +94,11 @@ pub fn DetailModal(
                 div { class: "plan-modal-body",
                     textarea {
                         class: "input detail-body-text",
-                        value: "{body_val}",
-                        oninput: move |e| body_val.set(e.value()),
+                        value: "{body_show}",
+                        oninput: move |e| {
+                            body_val.set(e.value());
+                            body_dirty.set(true);
+                        },
                         placeholder: "正文",
                     }
                     div { class: "plan-meta-grid",
@@ -252,7 +274,11 @@ pub fn DetailModal(
                             class: "btn btn-primary",
                             onclick: move |_| {
                                 let t = title_val.read().trim().to_string();
-                                let b = body_val.read().clone();
+                                let b = if *body_dirty.read() {
+                                    body_val.read().clone()
+                                } else {
+                                    body_orig.clone()
+                                };
                                 b_edit.cmd(Command::EditIssue { id, title: t, body: b });
                                 let a = assignee_val.read().trim().to_string();
                                 if a != c.assignee {

@@ -6,6 +6,13 @@
 
 ## 最近 · 2026-09-09
 
+issue #72:新建 issue 填的正文同步上了 codehub,但计划页签点开看不到正文、注入开工 prompt 也没带正文。两处断点:
+
+- codehub 单查读错字段名。`codehub-cli issue view --format json` 回 GitLab v4 payload,正文在 `description` 键,但 `CodehubIssueViewJson` 把它读自 `body` 键(没 rename)→ 找不到 → 空串。写侧(create `--description`、edit `("description", body)`)一直走 `description`,唯独读侧写成了 `body`。GitHub 那条线用 `gh issue view --json ...,body` 显式要 `body`,读写一致,没中招——只有 codehub 项目拉回空正文,进而 `run_issue` 注入 prompt 时 `issue.body` 是空的。改法:结构体字段加 `#[serde(rename = "description")]`,抽出 `parse_issue_view_json` 纯函数(镜像 `parse_issue_list_json`),用 #72 真实回包钉死。
+- 计划详情弹窗只读看板卡片 `c.body`,看板由 `list_issues` 拼,**列表设计上不带正文**;弹窗打开时没单查补正文。加 `Command::FetchIssue`(走 `issue_store::fetch` 单查)→ bridge 收 `IssueBodyFetched` 回执后补丁进 `last_gather`、跳过 full gather(重拉 list 会又把 body 冲成空),复用「状态标签补丁 last_gather」那条快路径。弹窗 `use_future` 打开即发一次 fetch;body 走 dirty 跟踪——pristine 时直接读 VM 的 `body_orig`(fetch 回来 VM 重切接得住,`body_val` 信号不会自己更新),人一编辑就 dirty 只认 `body_val` 不被覆盖。`primary_note` 给 `IssueBodyFetched` 早返 None(后台补正文不该弹 note,否则每开一次详情闪一条还盖掉上一条真 note)。
+
+## 最近 · 2026-09-09
+
 验包 `cu_settings` 还在找旧高保真的 `.settings-row`，设计系统接线后设置行已经是 `.set-row`，点「保存」会空等到超时。驱动改跟现行设置文法对齐。
 
 右侧「上报问题」不再从本机 git origin 推目标仓。装机目录和其他项目开发者本机都没有 workbench 源码，读 origin 会报 `D:\BuildersWorkbench 没有 origin` 这类错。现在固定走 `codehub-cli` 报到绿区 `z30026659/workbench`（git 地址 `https://codehub-dg-g.huawei.com/z30026659/workbench.git`）。本机仍需已登录的 `codehub-cli`。

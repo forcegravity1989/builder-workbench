@@ -158,6 +158,10 @@ pub enum Command {
         title: String,
         body: String,
     },
+    /// 单查一张 issue 的正文。issue 列表(list)设计上不带正文,详情弹窗打开时
+    /// 发这条补正文 —— 走 `view_issue` 单查拿回 `description`。bridge 收到回执后
+    /// 补丁进 last_gather,不重拉整个 list(issue #72)。
+    FetchIssue { id: IssueId },
     /// 卡住了。如实停在原地,可以重试,不假装前进。
     BlockIssue { id: IssueId, reason: String },
     /// 作废:写取消原因进评论、打 `bw:status:cancelled`、关掉远端 issue。
@@ -305,6 +309,12 @@ pub enum Event {
     },
     IssueEdited {
         id: IssueId,
+    },
+    /// `FetchIssue` 的回执:单查拉回的正文。bridge 用它补丁 last_gather,
+    /// 不重拉整个 issue 列表。空串如实 = 这张活本来就没写正文。
+    IssueBodyFetched {
+        id: IssueId,
+        body: String,
     },
     /// 一次 ▶跑 结束。`summary` 原样来自执行器(mock 的自带【mock】字样)。
     /// `tool` 是这张活读回的开工工具,壳用来决定会话屏落在哪一页。
