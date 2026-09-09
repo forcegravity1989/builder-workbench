@@ -8,7 +8,7 @@
 
 | 篇 | 管什么 |
 |---|---|
-| [`docs/01-principles/01-document-organization.md`](docs/01-principles/01-document-organization.md) | 整仓知识/文档怎么分层；`docs/05-features/` 少 gate |
+| [`docs/01-principles/01-document-organization.md`](docs/01-principles/01-document-organization.md) | 整仓知识/文档怎么分层；三层边界——architecture(整体旅程+逻辑模块) / 06-module(模块实现心智) / 05-features(用户价值特性)；`docs/05-features/` 少 gate |
 | [`docs/01-principles/02-working-backwards.md`](docs/01-principles/02-working-backwards.md) | 逆向工作法：特性怎么写 intent / 带原型的 spec |
 | [`docs/01-principles/03-press-release-faq-flywheel.md`](docs/01-principles/03-press-release-faq-flywheel.md) | **整个产品**的新闻稿、外/内 FAQ、飞轮（主张正本） |
 
@@ -81,7 +81,7 @@ crates/   bw(MVP 内核:本地零库+仓文件解析+现算推导+Command/Event)
           app-shell(MVP 壳:八屏+主题+内核桥+适配模块,bin bw-dev)
 standard/  Workbench 规范正本(include_str! 进 bw)。分层怎么写见该目录 README;模板 `templates/` + 系统提示词 `system-prompt/` + 运作剧本 `skills/` + 业界 workflow `vendor/`
 docs/01-principles/ 慢变原则正本(01 分层/changes · 02 逆向工作法 · 03 新闻稿/FAQ/飞轮)
-docs/      architecture(设计正本)+ guide(产品指南)+ adr + hifi + README(地图)
+docs/      architecture(整体旅程+逻辑模块)+ 06-module(模块实现心智)+ guide(产品指南)+ adr + hifi + README(地图)
 scripts/   门禁脚本(guard-*)+ codegraph 联调
 .bw/       被管项目资产(project.toml / metrics.toml) + 出包/验包样例(.bw/release/pack、.bw/release/e2e；产物 out/ 不进仓)
 ```
@@ -96,7 +96,9 @@ scripts/   门禁脚本(guard-*)+ codegraph 联调
 |---|---|---|
 | 用户旅程 / 产品指南 | [`docs/03-guide/`](docs/03-guide/) | 点什么、背后发生什么、手上多了什么;按站把活交给人或 AI |
 | 设计系统 / 高保真 | [`docs/04-design-system/`](docs/04-design-system/README.md) / [`docs/hifi/`](docs/hifi/) | 界面长什么样:视觉语言(token、组件类、中文排版层)在设计系统,壳编译期拼入它的样式表;八屏版式与旅程在高保真 |
-| 架构与特性关键设计 | [`docs/architecture.md`](docs/architecture.md) | 模块为什么这样、数据归哪、没建什么;按模块交活。**主提示词 / reference / skill 对照表在 §3 模块 4** |
+| 整体架构 / 逻辑模块 | [`docs/architecture.md`](docs/architecture.md) | **整体**用户旅程(用例)+ 逻辑模块划分;不进模块实现细节。**主提示词 / reference / skill 对照表在 §3 模块 4** |
+| 模块实现心智 | [`docs/06-module/`](docs/06-module/) | 单个模块怎么实现的**心智模型**:设计面对的主要矛盾 / 取舍;不纠结实现细节 |
+| 用户价值特性 | [`docs/05-features/`](docs/05-features/) | 对用户产生价值的特性描述(intent + 带原型 spec;特性级变更制品链) |
 | 产品主张 / 飞轮 | [`docs/01-principles/03`](docs/01-principles/03-press-release-faq-flywheel.md) | 目标体验与选型约束；特性 intent 必须对齐 |
 | 开发规矩 + 词表 | 本文件 + [`CONTEXT.md`](CONTEXT.md) | 怎么建/跑/测、用哪个词 |
 

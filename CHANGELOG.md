@@ -6,6 +6,8 @@
 
 ## 最近 · 2026-09-08
 
+加 `docs/06-module/` 层(单个模块实现的心智模型:设计面对的主要矛盾/取舍,不纠结实现细节),三层边界写进 AGENTS「人怎么驾驭」可见物表与 `01-document-organization`:architecture.md = 整体用户旅程+逻辑模块(不进模块实现细节) / docs/06-module = 模块实现心智 / docs/05-features = 用户价值特性。architecture.md §3 的实现细节后续搬进 06-module(单独一趟)。
+
 计划屏卡片右上那枚平台徽本来写死成 `CodeHub`,于是接 GitHub 的项目打开计划屏,58 张卡全被标成 CodeHub —— 界面在说一件不是事实的事。新建 issue 弹窗那句「创建后同步到 codehub」同病。改法跟 `browse_base` / `mr_url_prefix` / `issue_url_prefix` 同一族:provider → 显示口径的映射只放一处(新增 `Project::remote_brand()`),认不出平台就不画那枚徽、弹窗也只说「同步到远端」—— 空着是实话,顶一个别人的名字不是。
 
 GitHub 和 codehub 两条远端线拆干净:**一个基类,两个派生**。基类 `RemoteProvider` 描述「一个远端仓能干什么」,接口里一个平台名都没有;`GithubRemote`(走 `gh`)、`CodehubRemote`(走 `codehub-cli`)、`MockRemote`(替身)是三个各自独立的实现。调用方经门面 `Remote` 拿到基类对象,只调方法,不知道背后是哪一个。
