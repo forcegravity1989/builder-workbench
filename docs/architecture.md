@@ -1,6 +1,6 @@
 # architecture.md — Workbench MVP 设计正本
 
-> **30 秒导读**:Workbench MVP 的**唯一设计正本**。三段:**§1 用例与旅程怎么编排 → §2 特性(每个能力是什么、关键取舍)→ §3 实现架构(三 crate 切分 + 运行时数据流)**。给要判断"某条为什么这么定"、接手模块、往规范里加东西的人和 AI 看。不在本篇的:开发规矩(怎么建/跑/测)在 [`AGENTS.md`](../AGENTS.md);界面视觉语言在 `docs/04-design-system/`,八屏版式与旅程在 `docs/hifi/`,五站驾驶地图在 `docs/hifi/home.html`;词表 `CONTEXT.md`;版本变更 `CHANGELOG.md`;老版本史实(V3、旧 16 模块挪移)见本篇附录。`DESIGN.md` 指路本篇。
+> **30 秒导读**:Workbench MVP 的**唯一设计正本**。三段:**§1 用例与旅程怎么编排 → §2 特性(每个能力是什么)→ §3 实现架构(三 crate 切分 + 运行时数据流)**。给要判断"某条为什么这么定"、接手模块、往规范里加东西的人和 AI 看。不在本篇的:开发规矩(怎么建/跑/测)在 [`AGENTS.md`](../AGENTS.md);模块实现心智 + 关键取舍在 [`docs/06-module/`](06-module/);界面视觉语言在 `docs/04-design-system/`,八屏版式与旅程在 `docs/hifi/`,五站驾驶地图在 `docs/hifi/home.html`;词表 `CONTEXT.md`;版本变更 `CHANGELOG.md`;老版本史实(V3、旧 16 模块挪移)见本篇附录。`DESIGN.md` 指路本篇。
 >
 > **四层口径**(§2 按此归位):**层 A 事实**——主张性文档(人对项目基础信息/里程碑的定义)+ 仓里已有事实(代码/issue/已有文档/读数);**层 B 执行**——主体是 Orca 会话、worktree、工具探活;dispatch 单入口与守卫是内核工作方式、不单列为能力模块(见 §3 运行机制);**层 C standard 积累**——系统提示词 + 技能 + 蒸馏(渐进加载);**层 D 壳**——八屏,人怎么交互、人看什么。
 
@@ -10,7 +10,7 @@
 
 ## §1 · 用例与旅程
 
-> §1 写**用例与旅程怎么编排**——每个用例编排哪些能力(§2)、落哪个站哪个屏、什么节律、没建什么。§2 写**特性**(每个能力的设计层:是什么 + 关键取舍),§3 写**实现架构**(三 crate 切分 + 运行时数据流;每模块代码落点看代码、矛盾 / 取舍看 [`06-module/`](06-module/))。用例不是另一层东西——它天生横切,是它编排哪些能力。
+> §1 写**用例与旅程怎么编排**——每个用例编排哪些能力(§2)、落哪个站哪个屏、什么节律、没建什么。§2 写**特性**(每个能力的设计层:是什么),模块实现心智 + 关键取舍在 [`06-module/`](06-module/);§3 写**实现架构**(三 crate 切分 + 运行时数据流;每模块代码落点看代码)。用例不是另一层东西——它天生横切,是它编排哪些能力。
 
 ### 顶层旅程 · 五站
 
@@ -62,72 +62,37 @@
 
 ### ① 关键信息维护(层 A 事实)
 
-**是什么**:正本分两类——**活态数据正本**落两处:**codehub/GitHub 的 issue+标签**是唯一 issue 正本(状态/排期/发版号/类别全以标签表达,两台 Workbench 接同一个 codehub 仓读出来是同一份活态);**仓文件 `.bw/`** 是项目约定与指标定义的正本(人、agent、第二台机器要看的都住仓里走 MR,本地不存第二份)。这一层是读写正本的唯一入口,别处不许自己拼路径读 `.bw/*.toml`。活的状态正本 = 远端 issue 标签(七态 + 状态机转移规则 + settle-once 守「完成永远由人点」铁律);本机运行时资产目录纯运行时、零正本,删掉重接就回来;`NotifyEvent` 注册表管项目群事件(加新事件 = 加 variant + 动作点统一 dispatch,ADR-0003)。**另一类是人持文档正本**——项目自己的设计正本 / 开发规矩 / 词表 / 变更记录 / 原则 / 架构决策 / 指南 / 设计系统 / 特性制品等需与实现保持一致的文档;Workbench 代码不读写它们(读写口仍只 issue 标签 + `.bw/`),维护纪律靠人 + asset-audit(运作活②)盘:对齐实现、清过时、互相一致。盘点清单随项目;Workbench 自己(被管项目)的正本见 §1 asset-audit 要点。dispatch 单入口与回执语义是内核工作方式(见 §3 运行机制),不在这层。
+**是什么**:正本分两类——**活态数据正本**落两处:**codehub/GitHub 的 issue+标签**是唯一 issue 正本(状态/排期/发版号/类别全以标签表达,两台 Workbench 接同一个 codehub 仓读出来是同一份活态);**仓文件 `.bw/`** 是项目约定与指标定义的正本(人、agent、第二台机器要看的都住仓里走 MR,本地不存第二份)。这一层是读写正本的唯一入口,别处不许自己拼路径读 `.bw/*.toml`。活的状态正本 = 远端 issue 标签(七态 + 状态机转移规则 + settle-once 守「完成永远由人点」铁律);本机运行时资产目录纯运行时、零正本;`NotifyEvent` 注册表管项目群事件(加新事件 = 加 variant + 动作点统一 dispatch,ADR-0003)。**另一类是人持文档正本**——项目自己的设计 / 规矩 / 词表等需与实现保持一致的文档;Workbench 代码不读写它们,维护纪律靠人 + asset-audit(运作活②)盘:对齐实现、清过时、互相一致。
 
-**关键取舍**:放弃本地读缓存、读全走 CLI(MVP 卡点认了)。排期只有一个槽 `bw:plan:<版本名>`、里程碑标题同字(名字不设限,`vX.X` 只推荐),旧 `bw:week:` 不认。仓文件不做 `deny_unknown_fields`(人手写多一个字段就整份崩代价太大);metrics 只认 `schema_version=2`,读到旧格式整份拒收、不在打开项目时改仓;写回手写渲染而非自动序列化,把注释留给人看。远端按 provider 统一路由(调用方只见方法不见 provider 分支);MR 合入复跑读回 state 真 `merged` 才算成功(退出码靠不住绝不假 Done);Cursor 探活失败就拒绝开工,不悄悄退回 Claude CLI。现行 `.bw` 契约在 `references/bw-assets.md`。
+**二级特性 · 健康推导**:把 ① 维护的信息派生成一盏健康灯,现算纯函数;密封类型守「没数据不装绿」铁律。
 
-**二级特性 · 健康推导**:把 ① 维护的信息(提交/读数/上周交付)派生成一盏健康灯,现算纯函数;密封类型 `DerivedHealth`(构造点限仓内、仓内无 `set_signal`)守「没数据不装绿」铁律,灯只能从数据推导不手设,没数据是诚实的灰不是绿,连两周没动是真停了的红。模块实现心智见 [`06-module/关键信息维护`](06-module/关键信息维护.md)。
+模块实现心智 + 关键取舍见 [`06-module/关键信息维护`](06-module/关键信息维护.md);现行 `.bw` 契约在 [`references/bw-assets.md`](../standard/system-prompt/references/bw-assets.md)。
 
 ### ② 会话与执行(层 B 执行)
 
 **是什么**:会话屏只剩两个组件——**Orca**、**Open Design**。开工入口在计划屏(拖进「进行中」或详情 ▶开工),同一条 `run_issue`:开/复用 worktree,没会话才打 Orca 会话,有会话只切树。铁律挂启动参数(Cursor 拼进用户话)。完成仍由人点(计划屏拖进已完成 / 合入)。
 
-**关键取舍**:
-- 旧三栏 / 动作条 / 灌词条不要——停止 / 开 MR / 推评审 / 删会话在 Orca 里做或拖列;Workbench 不知道人在 Orca 点了哪条会话,灌词条对着「当前会话」会骗人。
-- 两条通道别混:本地 pipe 是 Workbench 对 Orca 下命令(开工/接回),同机读 token、不需配对;嵌网页是把本机已开的 Orca web 给人看、要配对码(人从 Orca 桌面「给 web 配对」拿完整 URL 贴进本机设置)。没贴 URL 则嵌页如实空着、不影响开工。跟随网页是 Orca 内核的刀、不是 Workbench 第二条 RPC,带这刀的 Orca 推配对网页,没这刀的官方包开工和桌面切换仍成立。
-- Open Design 是「本机网页内嵌类」开工工具:不起 CLI、不 spawn agent,开工 = 在内嵌标签里用本机已开的 OD 干;探不到返 None 不 panic;够不上一个适配模块体量,不单开 adapter 目录。
-- 工具跟人走本机设置,探不通如实回灰;Cursor 探活失败拒绝开工,不悄悄退回 Claude CLI(与 ① 同一条铁律)。运作活开工工具跟构建,不写死 Claude。
-- worktree 目录忽略提交;旧平级兄弟不迁不删,接回按「会话记的路径 → 新目录 → 旧兄弟」顺序找。账本 worktree 这版不动。模块实现心智见 [`06-module/会话与执行`](06-module/会话与执行.md)。
+模块实现心智 + 关键取舍见 [`06-module/会话与执行`](06-module/会话与执行.md)。
 
 ### ③ 系统提示词与渐进加载(层 C standard)
 
-**是什么**:每张活开工渲染一份系统提示词,主提示词是**外置模板** `standard/system-prompt/SYSTEM.md.tmpl`(哪张活、读被管仓 `AGENTS.md`、按任务加载哪份 reference、和 BW 状态机怎么配合)。references 是「干某类活需要额外知道的 Workbench 规范」(指标格式、周计划评论、改仓规则、`.bw` 现行契约),按活的 category/workflow 匹配;技能同理。写作分层(SYSTEM / reference / skill 各写什么)正本在 [`standard/README.md`](../standard/README.md),本模块只写怎么注入。
+**是什么**:每张活开工渲染一份系统提示词,主提示词是**外置模板** `standard/system-prompt/SYSTEM.md.tmpl`(哪张活、读被管仓 `AGENTS.md`、按任务加载哪份 reference、和 BW 状态机怎么配合)。references 是「干某类活需要额外知道的 Workbench 规范」(指标格式、周计划评论、改仓规则、`.bw` 现行契约),按活的 category/workflow 匹配;技能同理。写作分层(SYSTEM / reference / skill 各写什么)正本在 [`standard/README.md`](../standard/README.md)。
 
-**关键取舍**:
-- **正文一律不塞进提示词**——只给「一句话 + 完整路径」,references/技能文件不在硬盘就如实少一段不编路径,主提示词不硬编码在代码里(改身份/纪律 = 改 md)。这就是渐进加载:提示词放索引、正文让 agent 按需读。
-- **不论哪个 workflow 都被这层兜住 Workbench 统一要求**——要加"所有项目都该守的统一要求",改这份 md,不加进 workflow 本身。
-- **归一**:技能注入只有一个模型 `skill_pointer`(workflow→slug→`SkillPack`→入口 SKILL.md 路径)。类别→默认 workflow 是产品编译默认(构建/优化/运维默认 `mattpocock-skills`、原型/运营推广空着),默认 workflow 由 Workbench 打包统一管理、不写进被管仓。运作剧本入口 body 自足;业界 workflow 入口 body 是 SOP 链 + 指向 `vendor/` 库子技能路径。两类同机制,不另开第二条注入路径。
+评审会话另有一份外置主提示词 `REVIEW.md.tmpl`(独立评审身份 + 只评不改/意见落 MR 评论),渲染同机制;评审剧本 `mr-review` **尚未编进二进制、未派发**(见 ④)。
 
-三层各装什么、改了哪条流程要同步哪份——对照表就在下面。`AGENTS.md`「三层模型」指到这里。改 `standard/` 之前先对表。本周项目侧变化(`git log`、开着的 MR、账本)每次现算,不写进上述任何一层。
-
-**分工**(改提示词 / 加 reference / 改 skill 之前先对):
-
-| 层                          | 装什么                                                                            | 不装什么               | 改它何时        |
-| -------------------------- | ------------------------------------------------------------------------------ | ------------------ | ----------- |
-| **主提示词** `SYSTEM.md.tmpl`  | 哪张活、读仓根 `AGENTS.md`、按任务加载哪份 reference、和 BW 状态机怎么配合、references/技能的**名字+一句话+路径** | 文件清单、格式版本、某类活的步骤   | 所有活都该守的契约变了 |
-| **阶段规范** `references/*.md` | 干**这一类**活必须对照的现行契约                                                             | 怎么一步步干;本周这个项目发生了什么 | 这类活的协议变了    |
-| **技能** `skills/*/SKILL.md` | SOP:先干什么、产出落哪、人点什么                                                             | 现行文件枚举当正本(会漂);铁律副本 | 这类活的步骤变了    |
-
-本周项目侧变化(`git log`、开着的 MR、账本)每次现算,不写进上述任何一层。
-
-**维护**(产品流程变了,同步哪份;目录变了就改 `standard/README` 那张表):
-
-| 变了什么                                                     | 同步哪份                                                                                      | 谁在开工时读到                        |
-| -------------------------------------------------------- | ----------------------------------------------------------------------------------------- | ------------------------------ |
-| 所有活都守的纪律(最远评审中 / 提完 MR 改 inreview 标签 / 只提 MR / 提交优先用户技能) | `SYSTEM.md.tmpl`                                                                          | 每张活                            |
-| 指标协议(可回溯、窗口、不许写 0、schema)                                | `references/metrics.md` + `templates/metrics.toml.tmpl`                                   | 运作活①;② 升格式时 skill 会再指过去        |
-| 运作活①评论三标题 + 周五每周进展                                       | `references/week-plan-comment.md` + `week-planning` / `asset-audit` skill / 校验脚本(只查周初三标题) | 运作活①;运作活②(只写进展)                |
-| 改仓:分支 / 提 MR / 合并是人 / 提完 MR 改 `bw:status:inreview`       | `references/build.md`                                                                     | 构建/优化/运维业务活;运作活②(改 `.bw` 也是改仓) |
-| `.bw` 该有、整份可删、现行格式、和①的分工                                 | `references/bw-assets.md`                                                                 | 运作活②                           |
-| 独立评审只评不改                                                 | `references/review.md` + `REVIEW.md.tmpl` + `mr-review`(尚未派发)                             | 评审会话                           |
-| 某张运作活怎么干                                                 | 对应 `skills/<slug>/SKILL.md`                                                               | 挂了那个 workflow 的活               |
-| 哪类活注入哪份 reference                                        | `app/bootstrap.rs` 的 `want_ref`                                                           | 开工渲染                           |
-
-漏同步的结果就是周五盘点还在找已经不存在的登记表——协议变了只改内核、不改 reference,现场 agent 对不上。
-
-**评审会话另有一份外置主提示词** `standard/system-prompt/REVIEW.md.tmpl`(独立评审身份 + 只评不改/绝不合并/意见落 MR 评论),渲染与摊开同机制;阶段规范 `review`、评审剧本 `mr-review` **设计走同一条注入链,但尚未编进二进制、未派发**(见 §2 ④)。模块实现心智见 [`06-module/系统提示词与渐进加载`](06-module/系统提示词与渐进加载.md)。
+三层各装什么、改了哪条流程要同步哪份——对照表在 [`06-module/系统提示词与渐进加载`](06-module/系统提示词与渐进加载.md)。`AGENTS.md`「三层模型」指到那里。改 `standard/` 之前先对表。
 
 ### ④ 技能与蒸馏(层 C standard)
 
-**是什么**:Workbench 自带**四份运作剧本**(week-planning / asset-audit / metrics-refresh / project-handbook),编译期编进二进制,提示词只给"名字 + 一句话 + 完整路径",正文让 agent 按需读(渐进加载)。`asset-audit` 是运作活②的剧本,对应 §1 用例。仓里另有一份评审剧本 `mr-review` 和评审提示词:规范已入库,尚未编进二进制、也未派发。
+**是什么**:Workbench 自带**四份运作剧本**(week-planning / asset-audit / metrics-refresh / project-handbook),编译期编进二进制,提示词只给"名字 + 一句话 + 完整路径",正文让 agent 按需读(渐进加载)。`asset-audit` 是运作活②的剧本,对应 §1 用例。仓里另有一份评审剧本 `mr-review`:规范已入库,尚未编进二进制、也未派发。
 
-**关键取舍**:
-- **不预建方法论技能**——原六份「阶段方法论」默认 workflow 没打包、一份没被真正派发过,删光:阶段方法论该由业界 workflow(mattpocock / proto-design,见 `standard/vendor`)提供,Workbench 每个环节挑一个最好的默认,要从实践里长出 Workbench 自己的方法论再建。阶段规范约束(references,如指标铁律、改仓规则)归 ④,不和技能混。
-- **蒸馏是活的附属动作**——把一件做完的活提炼成带做法的技能,永远记着来自哪件活。技能正本编进二进制零 IO、全局一份不随项目复制(不进用户仓);"用过几次"每次现查 issue 列表聚合不落表不缓存、不显示胜率(无结算记录)。蒸馏今天没接:会话屏顶部按钮灰着、命令未接。模块实现心智见 [`06-module/技能与蒸馏`](06-module/技能与蒸馏.md)。
+模块实现心智 + 关键取舍见 [`06-module/技能与蒸馏`](06-module/技能与蒸馏.md)。
 
 ### ⑤ 桌面壳(层 D 壳)
 
-**是什么**:Workbench MVP 的桌面应用壳(Dioxus / wry WebView,macOS+Windows)。壳只渲染和转发意图——健康什么颜色、活能不能转到那一列、指标有没有读数,全部由内核算好塞进 ViewModel;壳里没有一行业务判断,命令失败就把原话放进 toast 不假装做成了。**关键取舍**:终端挂在屏的外面(切面板不卸载,否则字节真丢);PTY 字节流和长命令进度走 broadcast 不走 ViewModel(一次性流,进 ViewModel 每次重渲染会被重写一遍拖垮界面);屏与屏之间只经共用 ViewModel 模块流转、守卫拦着不能互相引用。模块实现心智见 [`06-module/桌面壳`](06-module/桌面壳.md)。
+**是什么**:Workbench MVP 的桌面应用壳(Dioxus / wry WebView,macOS+Windows)。壳只渲染和转发意图——健康什么颜色、活能不能转到那一列、指标有没有读数,全部由内核算好塞进 ViewModel;壳里没有一行业务判断,命令失败就把原话放进 toast 不假装做成了。
+
+模块实现心智 + 关键取舍见 [`06-module/桌面壳`](06-module/桌面壳.md)。
 
 ---
 
@@ -175,7 +140,7 @@ Workbench MVP 由三个 Rust crate 组成,各管一件事、互锁而不互相�
 | 三 crate 架构 + 运行时数据流               | 本篇 §3                                                                                                                                                                                                  |
 | 留白什么(03 主张、未建)                           | 本篇 §3 末尾                                                                                                                                                                                               |
 | 怎么给 Workbench 开发(怎么建 / 跑 / 测 / 加特性)   | [`AGENTS.md`](../AGENTS.md)                                                                                                                                                                            |
-| 主提示词 / reference / skill 各装什么、改流程同步哪份 | 本篇 §2 ④ 对照表(`AGENTS.md`「三层模型」指到这里)                                                                                                                                                                     |
+| 主提示词 / reference / skill 各装什么、改流程同步哪份 | 对照表见 [`docs/06-module/系统提示词与渐进加载`](06-module/系统提示词与渐进加载.md)(`AGENTS.md`「三层模型」指到那里)(`AGENTS.md`「三层模型」指到那里)                                                                                                                                                                     |
 | 产品命题                                  | [`README.md`](../README.md) + 本篇篇首导读                                                                                                                                                                   |
 | 界面长什么样                                | 视觉语言 [`docs/04-design-system/`](04-design-system/README.md);八屏版式与旅程 [`docs/hifi/index.html`](hifi/index.html) + [`docs/hifi/README.md`](hifi/README.md);五站驾驶地图 [`docs/hifi/home.html`](hifi/home.html) |
 | 版本变更                                  | [`CHANGELOG.md`](../CHANGELOG.md)                                                                                                                                                                      |
@@ -186,7 +151,7 @@ Workbench MVP 由三个 Rust crate 组成,各管一件事、互锁而不互相�
 
 ### V3 史实
 
-V3 的六个 crate(bw-core / bw-engine / bw-store / bw-app / ui / app-desktop)已于 2026-08-24 删除(见 `v3` 分支)。当前实现不是从 V3 迁移来的:底座是拷过来接管后做了三件减法(断掉对 V3 内核的依赖、删只有 V3 用的出口、删两条零调用死链),内核是全新的库与全新的 Command/Event——旧库的二十张表与架在表上的用例整片接不上,改它等于拆了重装还会连累当时还在跑的 V3。名字里的版本号(`bw`、bin 名 `bw-dev`)是共存期的权宜,删旧壳那次一并改回不带版本号的名字。两个能力模块(① 关键信息维护、⑤ 桌面壳)都对已删的 V3 crate 零依赖。
+V3 的六个 crate(bw-core / bw-engine / bw-store / bw-app / ui / app-desktop)已于 2026-08-24 删除,全量在 `v3` 分支。当前实现非迁移而来:底座是拷来接管后做了三件减法(断 V3 内核依赖、删 V3 专用出口、删零调用死链),内核是全新库与全新 Command/Event。两个能力模块(① 关键信息维护、⑤ 桌面壳)对已删 V3 crate 零依赖。
 
 ### 旧 16 模块 → 新位置挪移地图
 

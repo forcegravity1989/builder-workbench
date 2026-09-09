@@ -6,6 +6,8 @@
 
 ## 最近 · 2026-09-08
 
+architecture.md §2 清瘦:每模块删「关键取舍」段(①-⑤)与 ③ 的分工 / 维护两张对照表,§2 各模块只留「是什么」+ 06-module 指针;关键取舍 + 三层分工 / 维护对照表搬到 `docs/06-module/`(③ 系统提示词与渐进加载页承接对照表,①② 补 §2-only 取舍:排期单槽 / metrics schema_version=2 / 远端 provider 统一路由 / 两条通道边界 / 账本 worktree 不动)。附录 V3 史实压成两行、对照表行改指 06-module。AGENTS / standard-README 的「对照表在 §2 ④」「§3 模块 4」指针改指 `docs/06-module/系统提示词与渐进加载`。导读与 §1 引子同步:§2 现在只写「是什么」,关键取舍在 06-module。
+
 开 `docs/06-module/` 五页(关键信息维护 / 会话与执行 / 系统提示词与渐进加载 / 技能与蒸馏 / 桌面壳):每页一模块的实现心智模型 + 主要矛盾 / 取舍,指向 §2 设计层、代码用 `codegraph` 探索。architecture.md §2 各模块末尾加 06-module 指针、附录加一行。
 
 清瘦 `docs/architecture.md` §3:删每模块「代码 / 数据 / 依赖 / 没建」实现细节块(①-⑤ + 二级特性健康推导)与「该删」清单;§3 收为「实现架构」——三 crate 切分 + 运行时数据流 + 留白。§2 各模块「代码/数据/没建见 §3 X」指针、导读、附录指针表、V3 史实依赖行、挪移地图、AGENTS / CONTEXT / DESIGN / 03-guide 填写规范 交叉引用同步(实现细节落点改指 `codegraph` 探索 + `docs/06-module/`)。CONTEXT / DESIGN 顺手把「6 个能力模块」订正为 5。
