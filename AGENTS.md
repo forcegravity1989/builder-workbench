@@ -27,7 +27,7 @@
 
 单人构建者的 Rust 原生桌面工作台(Dioxus 0.7 / wry WebView,macOS + Windows)。产品命题见 [`README.md`](README.md);设计正本见 [`docs/architecture.md`](docs/architecture.md)([`DESIGN.md`](DESIGN.md) 指路);领域词表见 [`CONTEXT.md`](CONTEXT.md)。产品叫 **Builders' Workbench / Workbench / BW**;工程标识用 **bw**(crate / `.bw/` / `bw:*` / `BW_*`)。已废弃 buddy、loop-buddy。
 
-> **V3 已删**:本仓产品线是 Workbench MVP(内核 `crates/bw` + 底座 `crates/bw-engine` + 壳 `crates/app-shell`)。V3 的六 crate 与 V3 编译资产已于 2026-08-24 删除——全量在 `v3` 分支找回。别再提 V3 概念,设计看 [`docs/architecture.md`](docs/architecture.md)。
+> **V3 已删**:本仓产品线是 Workbench MVP(内核 `crates/bw` + 底座 `crates/bw-engine` + 壳 `crates/app-shell`)。V3 的六 crate 与 V3 编译资产已于 2026-08-24 删除——全量在 `v3` 分支找回;史实 + 旧 16 模块挪移地图见 [`ADR-0006`](docs/02-adr/0006-能力模块收为五个与V3史实.md)。别再提 V3 概念,设计看 [`docs/architecture.md`](docs/architecture.md)。
 
 ## 语言和构建
 
