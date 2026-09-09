@@ -4,6 +4,12 @@
 
 本文件按**六站 + 底座**收口,不再按每次窗口一条流水往下堆。最近一次改动永远写在最上面。
 
+## 最近 · 2026-09-09
+
+05-features 收紧口径:只装**产生用户价值的新能力/新信息**(01 §4.1)。命名收口/基建接线/重构重排不产生新价值的直修留痕(commit 说明 + 必要时改 architecture 实况段),不开 intent gate、不过五大拷问。02 §1 适用范围、§6 小特性豁免同步。
+
+按新口径降级 4 个非特性目录(代码实现不动,只删 05-features 文档目录):overview-health-36 并入 process-metrics(总览展示规格,价值锚点来自 process-metrics 产的数据,非独立新价值;STATUS 补并入记录)、version-as-v0x 命名收口(决策已在 architecture §1 周循环段)、design-system-wiring 基建接线(设计系统接进壳,未合入 main 非实况)、help-hub UI 重排。superpowers 两篇 version-as-v0x 孤儿草稿(正本已删、无外部引用)一并清。05-features 现留 reviewer-agent + process-metrics 两个特性。
+
 ## 最近 · 2026-09-08
 
 architecture.md 导读加一条指向 [`docs/10-reference/domain-models.html`](docs/10-reference/domain-models.html) 的链接(五张领域模型)。
