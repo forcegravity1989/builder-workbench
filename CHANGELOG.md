@@ -6,6 +6,8 @@
 
 ## 最近 · 2026-09-08
 
+清瘦 `docs/architecture.md` §3:删每模块「代码 / 数据 / 依赖 / 没建」实现细节块(①-⑤ + 二级特性健康推导)与「该删」清单;§3 收为「实现架构」——三 crate 切分 + 运行时数据流 + 留白。§2 各模块「代码/数据/没建见 §3 X」指针、导读、附录指针表、V3 史实依赖行、挪移地图、AGENTS / CONTEXT / DESIGN / 03-guide 填写规范 交叉引用同步(实现细节落点改指 `codegraph` 探索 + `docs/06-module/`)。CONTEXT / DESIGN 顺手把「6 个能力模块」订正为 5。
+
 `docs/architecture.md` 正本重构(本趟 cherry-pick 落地):正文重排为 **§1 用例与旅程 → §2 特性(设计层) → §3 实现(代码层)**;能力模块六个收为五个——①「正本读写」改名「关键信息维护」并扩范围(正本分两类:活态数据正本 issue 标签+`.bw/` / 人持文档正本,后者 Workbench 代码不读写、靠 asset-audit 盘),②「健康推导」降为 ① 下二级特性(密封 `DerivedHealth` 守「没数据不装绿」铁律不变,代码不删只降结构层级),原 ③-⑥ 顺位前移为 ②-⑤;§2 特性层去实现化(只留是什么+关键取舍);§1 用例表分一级(独立节律触发)/二级(子步或派生读视图)并按一级重排。asset-audit 剧本 5→6 步(插「盘全仓人持文档正本」);`bw-assets.md` 顶部加边界指针。同步 AGENTS / CONTEXT / DESIGN / hifi / 03-guide 交叉引用(§号+模块名)。
 
 加 `docs/06-module/` 层(单个模块实现的心智模型:设计面对的主要矛盾/取舍,不纠结实现细节),三层边界写进 AGENTS「人怎么驾驭」可见物表与 `01-document-organization`:architecture.md = 整体用户旅程+逻辑模块(不进模块实现细节) / docs/06-module = 模块实现心智 / docs/05-features = 用户价值特性。architecture.md §3 的实现细节后续搬进 06-module(单独一趟)。

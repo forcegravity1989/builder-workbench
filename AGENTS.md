@@ -119,7 +119,7 @@ scripts/   门禁脚本(guard-*)+ codegraph 联调
 - **规范 · 系统提示词 + 渐进加载**(主提示词 `standard/system-prompt/SYSTEM.md.tmpl` + `references/`):补被管仓看不见的 Workbench 信息。三层各写什么见 [`standard/README.md`](standard/README.md);对照表在 [`docs/architecture.md`](docs/architecture.md) §2 ④。改 `standard/` 之前先对表。
 - **方法论 · skill / workflow**(运作剧本在 `standard/skills/`,业界 workflow 在 `standard/vendor/`,build 默认 `mattpocock-skills`):这场怎么带人。怎么写 skill 见 [`standard/skills/SKILL-MD-SPEC.md`](standard/skills/SKILL-MD-SPEC.md)。
 
-改一个特性前,先对齐 [`docs/01-principles/03`](docs/01-principles/03-press-release-faq-flywheel.md) 飞轮检验,再按「特性起手路径」写 `docs/05-features/`(见上);工程落点在 [`docs/architecture.md`](docs/architecture.md) 定位:用例哪一站(§1)→ 特性设计在哪层(§2)→ 代码/数据/依赖落哪(§3)→ 三层里改哪层 → 数据归哪。找不到先补文档、再动代码——不清晰不写代码。
+改一个特性前,先对齐 [`docs/01-principles/03`](docs/01-principles/03-press-release-faq-flywheel.md) 飞轮检验,再按「特性起手路径」写 `docs/05-features/`(见上);工程落点在 [`docs/architecture.md`](docs/architecture.md) 定位:用例哪一站(§1)→ 特性设计在哪层(§2)→ 三 crate 架构与数据流(§3)→ 三层里改哪层 → 数据归哪。找不到先补文档、再动代码——不清晰不写代码。
 
 ### codehub issue 标签词表
 
