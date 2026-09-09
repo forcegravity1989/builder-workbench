@@ -485,9 +485,9 @@
         <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/></svg>
         <div class="body"><strong>总览不是下一站。</strong>打开项目后侧栏「总览」看灯、指标、改名片。旧铺底文件（<code>PROJECT.md</code> 等）接入时不碰，周复盘会删。</div>
       </div>
-      <p class="linker">机制：<a href="#" onclick="return false">docs/architecture.md</a> 模块 3 · 项目约定 / 模块 14 · 接入。</p>
+      <p class="linker">机制：<a href="#" onclick="return false">docs/architecture.md</a> §2 ① 关键信息维护（项目约定）/ §1「接入」用例。</p>
       <p class="next">下一站：<a href="#" onclick="go('u-plan');return false">版本规划</a></p>
-      <div class="foot">事实源 <code>docs/architecture.md</code> 模块 3 / 14。</div>
+      <div class="foot">事实源 <code>docs/architecture.md</code> §2 ① 关键信息维护 / §1 接入用例。</div>
     </section>
 
     <!-- ============ 版本规划 ============ -->
@@ -528,9 +528,9 @@
         <svg viewBox="0 0 24 24"><path d="M12 3l9 16H3z"/><path d="M12 9v5M12 17h.01"/></svg>
         <div class="body"><strong>计划屏「新建 issue」建业务活。</strong>类别选「原型」再 Start，才走 Open Design。</div>
       </div>
-      <p class="linker">机制：<a href="#" onclick="return false">docs/architecture.md</a> 模块 13 · 周循环与计划。</p>
+      <p class="linker">机制：<a href="#" onclick="return false">docs/architecture.md</a> §1「周循环与计划」用例。</p>
       <p class="next">下一站：<a href="#" onclick="go('u-land');return false">builder</a></p>
-      <div class="foot">事实源 <code>docs/architecture.md</code> 模块 13。</div>
+      <div class="foot">事实源 <code>docs/architecture.md</code> §1 周循环与计划用例。</div>
     </section>
 
     <!-- ============ builder ============ -->
@@ -567,9 +567,9 @@
           <li><span class="b"></span><div>完成仍你点：有开着的 MR 就合入，没有则只关 issue。</div></li>
         </ul>
       </div>
-      <p class="linker">机制：<a href="#" onclick="return false">docs/architecture.md</a> 模块 4 · 提示词 / 模块 5 · 状态机 / 模块 7 · 会话。</p>
+      <p class="linker">机制：<a href="#" onclick="return false">docs/architecture.md</a> §2 ③ 系统提示词与渐进加载 / §2 ① 关键信息维护（状态机）/ §2 ② 会话与执行。</p>
       <p class="next">下一站：<a href="#" onclick="go('u-pack');return false">出包验证</a></p>
-      <div class="foot">事实源 <code>docs/architecture.md</code> 模块 4 / 5 / 7 / 13。</div>
+      <div class="foot">事实源 <code>docs/architecture.md</code> §2 ③ 系统提示词 / ① 关键信息维护（状态机）/ ② 会话与执行 / §1 周循环与计划。</div>
     </section>
 
     <!-- ============ 出包验证 ============ -->
@@ -602,9 +602,9 @@
           <li><span class="b"></span><div>本机一份这个版本的安装包。弹窗第一行可以打开目录。</div></li>
         </ul>
       </div>
-      <p class="linker">机制：<a href="#" onclick="return false">docs/architecture.md</a> 模块 13 · 出包（<code>PackRelease</code>）。</p>
+      <p class="linker">机制：<a href="#" onclick="return false">docs/architecture.md</a> §1↳出包/验包用例 / §2 ① 关键信息维护（<code>PackRelease</code>）。</p>
       <p class="next">下一站：<a href="#" onclick="go('u-release');return false">版本发布</a></p>
-      <div class="foot">事实源 <code>docs/architecture.md</code> 模块 13；协议 <code>docs/02-adr/0005-发版出包与E2E协议.md</code>。</div>
+      <div class="foot">事实源 <code>docs/architecture.md</code> §1 出包用例 / §2 ① 关键信息维护；协议 <code>docs/02-adr/0005-发版出包与E2E协议.md</code>。</div>
     </section>
 
     <!-- ============ 版本发布 ============ -->
@@ -638,9 +638,9 @@
           <li><span class="b"></span><div>平台上一个 Release <code>&lt;名&gt;</code>、一个 tag <code>&lt;名&gt;</code>；勾上的活带着 <code>bw:released:&lt;名&gt;</code>。</div></li>
         </ul>
       </div>
-      <p class="linker">机制：<a href="#" onclick="return false">docs/architecture.md</a> 模块 13 · 发版本（<code>CutRelease</code>）。</p>
+      <p class="linker">机制：<a href="#" onclick="return false">docs/architecture.md</a> §1↳发版用例 / §2 ① 关键信息维护（<code>CutRelease</code>）。</p>
       <p class="next">下一站：<a href="#" onclick="go('u-stock');return false">周复盘</a></p>
-      <div class="foot">事实源 <code>docs/architecture.md</code> 模块 8 / 13。</div>
+      <div class="foot">事实源 <code>docs/architecture.md</code> §2 ① 关键信息维护 / §1 发版用例。</div>
     </section>
 
     <!-- ============ 周复盘 ============ -->
@@ -677,9 +677,9 @@
           <li><span class="b"></span><div>打开 Orca「每日指标采集」后，每天 20:00 采 B 类。总览「立即采集」能立刻再采今天。</div></li>
         </ul>
       </div>
-      <p class="linker">机制：<a href="#" onclick="return false">docs/architecture.md</a> 模块 14 · 资产盘点。</p>
+      <p class="linker">机制：<a href="#" onclick="return false">docs/architecture.md</a> §1「asset-audit（运作活②）」用例 / §2 ④ 技能与蒸馏。</p>
       <p class="next">下周一回到<a href="#" onclick="go('u-plan');return false">版本规划</a>。</p>
-      <div class="foot">事实源 <code>docs/architecture.md</code> 模块 14 / 15。</div>
+      <div class="foot">事实源 <code>docs/architecture.md</code> §1 asset-audit 用例 / §2 ④ 技能与蒸馏。</div>
     </section>
 
     <!-- ============ 规矩 ============ -->
@@ -699,11 +699,11 @@
 
       <div class="callout note">
         <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/></svg>
-        <div class="body"><strong>还没做的先说清楚。</strong>Orca 自动出包、每日集成未建。仓根 <code>AGENTS.md</code> 不会在接入或周五盘点时自动写出来。别的没建项看 <code>docs/architecture.md</code> 各模块「没建什么」。</div>
+        <div class="body"><strong>还没做的先说清楚。</strong>Orca 自动出包、每日集成未建。仓根 <code>AGENTS.md</code> 不会在接入或周五盘点时自动写出来。别的没建项看 <code>docs/architecture.md</code> §3 留白 与 §1 各用例的「没建什么」列。</div>
       </div>
-      <p class="linker">机制：<a href="#" onclick="return false">docs/architecture.md</a> 模块 5 · 状态机 / 模块 6 · 健康推导。</p>
+      <p class="linker">机制：<a href="#" onclick="return false">docs/architecture.md</a> §2 ① 关键信息维护（状态机）/ §2 ① 关键信息维护·健康推导（二级）。</p>
       <p class="next">回到<a href="#" onclick="go('u0');return false">驾驶地图</a>。</p>
-      <div class="foot">事实源 <code>docs/architecture.md</code> 模块 5 / 6。</div>
+      <div class="foot">事实源 <code>docs/architecture.md</code> §2 ① 关键信息维护（状态机/健康推导）。</div>
     </section>
 
 

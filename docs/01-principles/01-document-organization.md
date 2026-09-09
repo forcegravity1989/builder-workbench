@@ -26,6 +26,7 @@ docs/（所有知识目录都在这，编号定序；architecture 不编号＝do
 ├── 03-guide/          产品指南（怎么用，给人看）
 ├── 04-design-system/  视觉正本：设计系统资产（样式表 + token + 规范；壳直接拼入）
 ├── 05-features/       特性级变更制品链——intent + 带原型的 spec 为人 gate；plan 仅大风险；小修不进
+├── 06-module/         单个模块的实现心智模型——设计面对的主要矛盾 / 取舍;不纠结实现细节
 ├── 10-reference/      外部参考的提炼版
 ├── hifi/              八屏版式与旅程原型
 ├── metrics.md         指标口径
@@ -45,6 +46,7 @@ decision-ui/ 等       gate 投影（只读渲染 docs/05-features/*；不当第
 |---|---|---|---|
 | **docs/01-principles/** | 我们永远怎么组织知识、信什么铁律（拍板才改） | 慢 | 单次需求、当周实验、某站施工日记 |
 | **docs/05-features/\<id\>/** | **特性级**要什么、规格（含原型）；大风险才有必批 plan；读回可写在 STATUS / PRACTICE 段或 commit | 每个大特性/大改动一条 | 小 bug、文案错、一次性琐修；产品总设计、词表；第二份欠账总表 |
+| **docs/06-module/** | 单个模块怎么实现的心智模型——设计面对的主要矛盾 / 取舍 | 模块新增或大改时补一篇 | 整体旅程与逻辑模块（在 architecture）；用户价值特性（在 05-features）；代码路径 / 数据字段 / 没建清单等实现细节 |
 | **docs/03-guide** | 人怎么用 / 怎么讲（只写已实践） | 站验证后补 | 未上线功能、实现黑话堆砌 |
 | **docs/\*-prototype/design** | 当前迭代设计实况（一篇正本） | 站走完改实况 | 单次 MR 的 intent；修订流水账当正文 |
 | **AGENTS / CLAUDE** | agent 每会话必读的地板（AGENTS 是开发规矩正本） | 错两次写入 | 单次变更正本（进 docs/05-features/）；产品主张（进 docs/01-principles/03） |
@@ -195,3 +197,4 @@ docs/05-features/<change-id>/
 | 2026-09-01 | docs/ 加数字前缀：architecture→01-architecture、adr→02-adr、guide→03-guide、design-system→04-design-system、reference→10-reference；6.1 拆「入口件 + 惯例置根件」两类例外，resolve 表内矛盾与 §1 REVIEW.md 归属 |
 | 2026-09-01 | 根目录知识目录加编号：principles→01-principles、changes→05-features（特性级制品链）；§3 标题与关系线同步改 01-principles · 05-features |
 | 2026-09-01 | principles 与 features 迁入 `docs/`：`docs/01-principles/`、`docs/05-features/`；`docs/01-architecture.md` 去编号为 `docs/architecture.md`（docs 内设计正本，同根 README/CHANGELOG 之不编号例外）；6.1 入口件不再含 principles（principles 转为 docs 内编号知识目录），§1/§2/§3/§7 路径同步；仓根只剩 README/AGENTS/CLAUDE/CONTEXT + DESIGN/CHANGELOG |
+| 2026-09-08 | 加 `docs/06-module/` 层:单个模块实现的心智模型(主要矛盾/取舍);architecture.md 收为整体旅程+逻辑模块、不进模块实现细节;三层边界 architecture / 06-module / 05-features 写进 AGENTS「人怎么驾驭」可见物表与本文 §1/§2 |
