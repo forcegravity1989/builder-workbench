@@ -18,6 +18,36 @@ use dioxus::prelude::*;
 
 use super::kanban::{plan_status_label, PendingMove, PendingReject, PendingSchedule};
 
+/// 屏幕居中的弹窗壳:backdrop + dialog。只有「按下也落在 backdrop 上」才算点
+/// 外面要关 —— 在 dialog 里拖选文本(尤其从右往左拖)拖到 backdrop 上松手凑
+/// 出来的那下 click 不算,它的 mousedown 在 dialog 内。一根信号记按下落点:
+/// backdrop 的 mousedown 置真,dialog 的 mousedown/mouseup 置假并拦冒泡,松
+/// 手那下 click 只在信号为真时才关。
+#[component]
+pub fn Overlay(
+    outer: &'static str,
+    inner: &'static str,
+    on_close: EventHandler<()>,
+    children: Element,
+) -> Element {
+    let mut on_backdrop = use_signal(|| false);
+    rsx! {
+        div {
+            class: "{outer}",
+            onmousedown: move |_| on_backdrop.set(true),
+            onclick: move |_| { if *on_backdrop.read() { on_close.call(()); } },
+            div {
+                class: "{inner}",
+                role: "dialog",
+                onmousedown: move |e| { on_backdrop.set(false); e.stop_propagation(); },
+                onmouseup: move |_| on_backdrop.set(false),
+                onclick: move |e| e.stop_propagation(),
+                {children}
+            }
+        }
+    }
+}
+
 /// 当前打开哪个弹窗。`None` = 没有。
 #[derive(Clone, PartialEq)]
 pub enum DialogKind {
@@ -124,11 +154,10 @@ pub fn NewIssueDialog(
         "新建的 issue 进待办池·未排期。".to_string()
     };
     rsx! {
-        div { class: "dialog-backdrop", onclick: move |_| dialog.set(None),
-            div {
-                class: "dialog dialog-wide plan-modal",
-                role: "dialog",
-                onclick: move |e| e.stop_propagation(),
+        Overlay {
+            outer: "dialog-backdrop",
+            inner: "dialog dialog-wide plan-modal",
+            on_close: move |_| dialog.set(None),
                 div { class: "plan-modal-head",
                     div { class: "plan-modal-tag", "新建" }
                     div { class: "plan-modal-title", "新建 issue" }
@@ -198,7 +227,6 @@ pub fn NewIssueDialog(
                         }
                     }
                 }
-            }
         }
     }
 }
@@ -262,11 +290,10 @@ pub fn CreateVersionDialog(
         .copied()
         .collect();
     rsx! {
-        div { class: "dialog-backdrop", onclick: move |_| dialog.set(None),
-            div {
-                class: "dialog dialog-wide plan-modal",
-                role: "dialog",
-                onclick: move |e| e.stop_propagation(),
+        Overlay {
+            outer: "dialog-backdrop",
+            inner: "dialog dialog-wide plan-modal",
+            on_close: move |_| dialog.set(None),
                 div { class: "plan-modal-head",
                     div { class: "plan-modal-tag", "版本" }
                     div { class: "plan-modal-title", "创建版本" }
@@ -380,7 +407,6 @@ pub fn CreateVersionDialog(
                         }
                     }
                 }
-            }
         }
     }
 }
@@ -441,8 +467,10 @@ pub fn ScheduleDialog(
         .unwrap_or_default();
     let mut sel = use_signal(move || default_sel.clone());
     rsx! {
-        div { class: "dialog-backdrop", onclick: move |_| schedule.set(None),
-            div { class: "dialog", role: "dialog", onclick: move |e| e.stop_propagation(),
+        Overlay {
+            outer: "dialog-backdrop",
+            inner: "dialog",
+            on_close: move |_| schedule.set(None),
                 div { class: "dialog-title", "排期" }
                 div { class: "dialog-body",
                     "把「{ps.title}」排进一个版本。一张活只属于一个槽。"
@@ -475,7 +503,6 @@ pub fn ScheduleDialog(
                         "确认 · 排期"
                     }
                 }
-            }
         }
     }
 }
@@ -504,8 +531,10 @@ pub fn ConfirmMoveDialog(
         "作废必须写原因,会写进 issue 评论"
     };
     rsx! {
-        div { class: "dialog-backdrop", onclick: move |_| pending.set(None),
-            div { class: "dialog", role: "dialog", onclick: move |e| e.stop_propagation(),
+        Overlay {
+            outer: "dialog-backdrop",
+            inner: "dialog",
+            on_close: move |_| pending.set(None),
                 div { class: "dialog-title", "确认一下" }
                 div { class: "dialog-body",
                     "把「{pm.title}」从「{from_label}」移到「{to_label}」。"
@@ -569,7 +598,6 @@ pub fn ConfirmMoveDialog(
                         "确认"
                     }
                 }
-            }
         }
     }
 }
@@ -580,8 +608,10 @@ pub fn RejectMoveDialog(pr: PendingReject, mut reject: Signal<Option<PendingReje
     let from = plan_status_label(pr.from);
     let to = plan_status_label(pr.to);
     rsx! {
-        div { class: "dialog-backdrop", onclick: move |_| reject.set(None),
-            div { class: "dialog", role: "dialog", onclick: move |e| e.stop_propagation(),
+        Overlay {
+            outer: "dialog-backdrop",
+            inner: "dialog",
+            on_close: move |_| reject.set(None),
                 div { class: "dialog-title", "不能这样拖" }
                 div { class: "dialog-body",
                     "不能从「{from}」拖到「{to}」。"
@@ -592,7 +622,6 @@ pub fn RejectMoveDialog(pr: PendingReject, mut reject: Signal<Option<PendingReje
                 div { class: "dialog-actions",
                     button { class: "btn btn-primary", onclick: move |_| reject.set(None), "知道了" }
                 }
-            }
         }
     }
 }
@@ -615,11 +644,10 @@ pub fn DeleteVersionDialog(
     let default_sel = versions.first().cloned().unwrap_or_default();
     let mut sel = use_signal(move || default_sel.clone());
     rsx! {
-        div { class: "dialog-backdrop", onclick: move |_| dialog.set(None),
-            div {
-                class: "dialog dialog-wide plan-modal",
-                role: "dialog",
-                onclick: move |e| e.stop_propagation(),
+        Overlay {
+            outer: "dialog-backdrop",
+            inner: "dialog dialog-wide plan-modal",
+            on_close: move |_| dialog.set(None),
                 div { class: "plan-modal-head",
                     div { class: "plan-modal-tag", "删除版本" }
                     button {
@@ -663,7 +691,6 @@ pub fn DeleteVersionDialog(
                         }
                     }
                 }
-            }
         }
     }
 }
@@ -692,10 +719,10 @@ pub fn PackDialog(
         !t.is_empty() && !t.contains('(')
     };
     rsx! {
-        div {
-            class: "dialog-backdrop",
-            onclick: move |_| dialog.set(None),
-            div { class: "dialog", role: "dialog", onclick: move |e| e.stop_propagation(),
+        Overlay {
+            outer: "dialog-backdrop",
+            inner: "dialog",
+            on_close: move |_| dialog.set(None),
                 div { class: "dialog-title", "出包" }
                 div { class: "field",
                     label { "版本号" }
@@ -745,7 +772,6 @@ pub fn PackDialog(
                         }
                     }
                 }
-            }
         }
         if *asking_stop.read() {
             PackStopConfirm {
@@ -772,10 +798,10 @@ fn PackE2eDetail(
     mut asking_detail: Signal<bool>,
 ) -> Element {
     rsx! {
-        div {
-            class: "dialog-backdrop dialog-backdrop-2",
-            onclick: move |_| asking_detail.set(false),
-            div { class: "dialog", role: "dialog", onclick: move |e| e.stop_propagation(),
+        Overlay {
+            outer: "dialog-backdrop dialog-backdrop-2",
+            inner: "dialog",
+            on_close: move |_| asking_detail.set(false),
                 div { class: "dialog-title", "验包详情" }
                 if cases.is_empty() {
                     div { class: "hint",
@@ -795,7 +821,6 @@ fn PackE2eDetail(
                         "关闭"
                     }
                 }
-            }
         }
     }
 }
@@ -848,10 +873,10 @@ fn PackStopConfirm(
     bridge: Bridge,
 ) -> Element {
     rsx! {
-        div {
-            class: "dialog-backdrop dialog-backdrop-2",
-            onclick: move |_| asking_stop.set(false),
-            div { class: "dialog", role: "dialog", onclick: move |e| e.stop_propagation(),
+        Overlay {
+            outer: "dialog-backdrop dialog-backdrop-2",
+            inner: "dialog",
+            on_close: move |_| asking_stop.set(false),
                 div { class: "dialog-title", "停止这次出包？" }
                 div { class: "hint",
                     "确认后会停掉正在跑的出包 / 验包,并清掉这次的中间生成件。已经落到产物目录里的半成品也会删掉。"
@@ -873,7 +898,6 @@ fn PackStopConfirm(
                         "确认"
                     }
                 }
-            }
         }
     }
 }
@@ -896,8 +920,10 @@ pub fn ReleaseDialog(
     };
     let included = std::rc::Rc::new(included);
     rsx! {
-        div { class: "dialog-backdrop", onclick: move |_| dialog.set(None),
-            div { class: "dialog", role: "dialog", onclick: move |e| e.stop_propagation(),
+        Overlay {
+            outer: "dialog-backdrop",
+            inner: "dialog",
+            on_close: move |_| dialog.set(None),
                 div { class: "dialog-title", "发版本" }
                 div { class: "field",
                     label { "版本号" }
@@ -927,7 +953,6 @@ pub fn ReleaseDialog(
                         "确认 · 发版"
                     }
                 }
-            }
         }
     }
 }
