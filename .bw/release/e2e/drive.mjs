@@ -22,7 +22,7 @@ try {
     await page.getByRole('heading', { name: '设置' }).waitFor({ timeout: 15000 });
     await page.getByText('工作区根目录', { exact: true }).waitFor();
     await page
-      .locator('.settings-row')
+      .locator('.set-row')
       .filter({ hasText: '工作区根目录' })
       .getByRole('button', { name: '保存' })
       .click();

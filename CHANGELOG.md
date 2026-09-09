@@ -6,6 +6,8 @@
 
 ## 最近 · 2026-09-09
 
+验包 `cu_settings` 还在找旧高保真的 `.settings-row`，设计系统接线后设置行已经是 `.set-row`，点「保存」会空等到超时。驱动改跟现行设置文法对齐。
+
 右侧「上报问题」不再从本机 git origin 推目标仓。装机目录和其他项目开发者本机都没有 workbench 源码，读 origin 会报 `D:\BuildersWorkbench 没有 origin` 这类错。现在固定走 `codehub-cli` 报到绿区 `z30026659/workbench`（git 地址 `https://codehub-dg-g.huawei.com/z30026659/workbench.git`）。本机仍需已登录的 `codehub-cli`。
 
 ## 最近 · 2026-09-08
