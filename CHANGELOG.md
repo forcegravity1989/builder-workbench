@@ -8,13 +8,15 @@
 
 计划屏弹窗里从右往左拖选文本想复制时,鼠标拖到弹窗外暗区松手,弹窗就关了 —— 原来那层暗区(`dialog-backdrop`)挂的是 `onclick: 关闭`,内层只拦了 `onclick` 冒泡,没拦 `mousedown`。拖选的 `mousedown` 落在弹窗内、`mouseup` 落在暗区,浏览器在暗区上凑出一次 `click`,拦不住,于是把窗关了。抽了一个共享壳 `Overlay`(住 `plan_dialogs.rs`):暗区按下才置真、内层按下/松手置假并拦冒泡,`click` 只在按下也落在暗区时才关。12 个弹窗(新建/创建版本/排期/确认移动/拒绝移动/删除版本/出包/验包详情/停止确认/发版本 + 详情/Start)统一改用它。真点暗区仍照常关,拖选不再误关。
 
-## 最近 · 2026-09-09
+使用指南按驾驶地图重写：首页是周环（添加项目 → 版本规划 → builder → 出包验证 → 版本发布 → 周复盘），点站进该站正文。看总览不再单独成站。工作台抽屉里「去计划屏 / 去会话」会关上指南并跳到那一屏，不高亮 Orca 里的控件。自动化默认关。宁可丢掉旧站细文，也不留和地图对不上的站名与步骤。
+
+驾驶地图贴合原型稿 `prototype-ops-anim/驾驶地图.html` 重做：补 SDLC 六阶段环、harness 三层窗口、SVG 图标、看板进度条；修一批走样子规则（slice 透明、milestone 光晕、entry 三栏、steps 两列、kanban 四等分）。删掉和地图重复的「找·从问题跳到那一站」表——它一点就白屏：`show()` 改 URL/hash 在 srcdoc iframe 里触发整帧重载，去掉这步只留 localStorage 持久化（规范要求）+ classList 切换。各站正文砍冗余铁律与过程话，修出包站 ADR 路径错（`docs/adr/0005` → `docs/02-adr/0005-…`），规矩站补 `.linker`。
 
 验包 `cu_settings` 还在找旧高保真的 `.settings-row`，设计系统接线后设置行已经是 `.set-row`，点「保存」会空等到超时。驱动改跟现行设置文法对齐。
 
 右侧「上报问题」不再从本机 git origin 推目标仓。装机目录和其他项目开发者本机都没有 workbench 源码，读 origin 会报 `D:\BuildersWorkbench 没有 origin` 这类错。现在固定走 `codehub-cli` 报到绿区 `z30026659/workbench`（git 地址 `https://codehub-dg-g.huawei.com/z30026659/workbench.git`）。本机仍需已登录的 `codehub-cli`。
 
-## 最近 · 2026-09-08
+## 2026-09-08
 
 计划屏卡片右上那枚平台徽本来写死成 `CodeHub`,于是接 GitHub 的项目打开计划屏,58 张卡全被标成 CodeHub —— 界面在说一件不是事实的事。新建 issue 弹窗那句「创建后同步到 codehub」同病。改法跟 `browse_base` / `mr_url_prefix` / `issue_url_prefix` 同一族:provider → 显示口径的映射只放一处(新增 `Project::remote_brand()`),认不出平台就不画那枚徽、弹窗也只说「同步到远端」—— 空着是实话,顶一个别人的名字不是。
 
