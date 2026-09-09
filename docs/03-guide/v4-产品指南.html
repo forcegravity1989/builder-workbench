@@ -173,53 +173,96 @@
     font-size:13px;font-weight:500;cursor:pointer;
   }
   .go-screen:hover{background:var(--accent-soft)}
-  .got{list-style:none;margin:8px 0 0;padding:0}
-  .got li{display:flex;gap:8px;padding:4px 0;font-size:13.5px}
-  .got code{font-size:12.5px}
 
+  /* —— 驾驶地图：贴合 prototype-ops-anim/驾驶地图.html 的结构化语言 —— */
   .drive{margin:8px 0 18px}
   .drive .path{display:flex;align-items:center;justify-content:center;flex-wrap:wrap;gap:10px;margin:0 0 12px;font-size:13px;color:var(--muted-2);font-weight:500}
-  .drive .path>button{background:none;border:0;color:inherit;font:inherit;cursor:pointer;padding:4px 2px}
+  .drive .path>button{background:none;border:0;color:inherit;font:inherit;cursor:pointer;padding:4px 2px;transition:color .2s ease}
   .drive .path>button:hover,.drive .path>button.is-on{color:var(--fg)}
-  .drive .slice{flex:1 1 auto;max-width:720px;background:var(--fg);color:#fff;border-radius:16px;padding:10px 14px 11px}
+  .drive .path>button.loop.is-on{color:var(--accent-ink)}
+  .drive .slice{flex:1 1 auto;max-width:720px;background:var(--fg);color:#fff;border-radius:16px;padding:10px 14px 11px;opacity:.72;transition:opacity .2s ease}
+  .drive .slice.is-live{opacity:1}
   .drive .slice-head{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap}
   .drive .slice-head strong{font-size:13px}
   .drive .slice-head span{font-size:11px;color:rgba(255,255,255,.62)}
   .drive .slice-track{margin-top:8px;display:flex;align-items:center;gap:6px}
-  .drive .milestone{font-size:11px;font-weight:500;white-space:nowrap;padding:4px 10px;border:0;border-radius:980px;background:rgba(255,255,255,.12);color:rgba(255,255,255,.82);cursor:pointer}
-  .drive .milestone.is-now{background:var(--accent);color:#fff}
+  .drive .milestone{font-size:11px;font-weight:500;white-space:nowrap;padding:4px 10px;border:0;border-radius:980px;background:rgba(255,255,255,.12);color:rgba(255,255,255,.82);cursor:pointer;transition:background .2s ease,color .2s ease}
+  .drive .milestone:hover{color:#fff}
+  .drive .milestone.is-now{background:var(--accent);color:#fff;box-shadow:0 0 0 3px var(--accent-soft)}
   .drive .slice-rail{flex:1;height:1px;background:rgba(255,255,255,.22);min-width:6px}
   .drive .entry,.drive .cell{width:100%;text-align:left;border:0;background:var(--surface);cursor:pointer;color:inherit;font:inherit}
-  .drive .entry{border-radius:14px;padding:12px 14px;margin-bottom:10px;border:1px solid var(--border);display:flex;flex-wrap:wrap;gap:8px 16px;align-items:baseline}
-  .drive .entry:hover,.drive .cell:hover{background:#f7f3ea}
+  .drive .entry{border-radius:20px;padding:10px 16px;margin-bottom:10px;box-shadow:var(--shadow);display:grid;grid-template-columns:auto 1fr auto;gap:14px;align-items:center;transition:background .2s ease}
+  .drive .entry:hover{background:#f7f3ea}
+  .drive .entry .who{display:flex;align-items:baseline;gap:10px}
   .drive .entry h2,.drive .cell h2{font-size:16px;font-weight:600;margin:0}
   .drive .idx{font-size:11px;color:var(--muted-2);letter-spacing:.06em}
-  .drive .board{display:grid;grid-template-columns:1fr 1.3fr 1fr;background:var(--surface);border:1px solid var(--border);border-radius:16px;overflow:hidden}
+  .drive .board{display:grid;grid-template-columns:1fr 1.45fr 1fr;background:var(--surface);border-radius:20px;box-shadow:var(--shadow);overflow:hidden}
   .drive .col{display:flex;flex-direction:column;min-width:0}
   .drive .col.side{border-right:1px solid var(--border)}
-  .drive .cell{padding:12px 14px;display:flex;flex-direction:column;gap:6px}
+  .drive .cell{padding:12px 14px;display:flex;flex-direction:column;gap:7px;transition:background .2s ease}
   .drive .cell+.cell{border-top:1px solid var(--border)}
-  .drive .mark{display:inline-flex;align-items:center;gap:4px;font-size:11px;background:var(--surface-2);border-radius:980px;padding:2px 8px}
-  .drive .mark.dim{opacity:.55}
+  .drive .cell:hover{background:#f7f3ea}
+  .drive .marks{display:flex;flex-wrap:wrap;gap:5px}
+  .drive .mark{display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:500;color:var(--fg);background:var(--surface-2);border-radius:980px;padding:2px 8px 2px 4px}
+  .drive .mark svg{width:15px;height:15px;flex:0 0 15px}
+  .drive .mark.dim{color:var(--muted-2)}
+  .drive .steps{display:grid;grid-template-columns:1fr 1fr;gap:5px}
+  .drive .steps.one{grid-template-columns:1fr}
+  .drive .step{display:flex;align-items:center;gap:6px;background:#f7f4ec;border:1px solid var(--border);border-radius:9px;padding:6px 7px;font-size:12px;font-weight:500;color:var(--muted)}
+  .drive .step .n{font-family:var(--font-mono);font-size:10px;color:#fff;background:var(--accent);width:15px;height:15px;border-radius:50%;display:grid;place-items:center;flex:0 0 15px}
+  .drive .step.dim{color:var(--muted-2);border-style:dashed}
+  .drive .step.dim .n{background:var(--muted-3)}
   .drive .hint{font-size:12px;color:var(--muted-2)}
   .drive .flow{display:flex;flex-wrap:wrap;align-items:center;gap:5px;font-size:12px;color:var(--muted)}
-  .drive .flow b{font-weight:500;background:var(--surface-2);border-radius:8px;padding:3px 7px}
-  .drive .flow i{font-style:normal;color:var(--muted-2)}
-  .drive .marks{display:flex;flex-wrap:wrap;gap:6px}
-  .drive .steps{display:flex;flex-wrap:wrap;gap:6px;font-size:12px;color:var(--muted)}
-  .drive .step{display:inline-flex;align-items:center;gap:5px}
-  .drive .step .n{font-family:var(--font-mono);font-size:10px;background:var(--accent-soft);color:var(--accent-ink);width:16px;height:16px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center}
-  .drive .kanban{display:flex;flex-wrap:wrap;gap:6px;font-size:11px;color:var(--muted-2)}
-  .drive .kanban i{font-style:normal;background:var(--surface-2);border-radius:6px;padding:3px 7px}
-  .drive .got{margin-top:4px}
-  .drive .got li{font-size:12px;color:var(--muted)}
-  .drive .got .p{font-family:var(--font-mono);font-size:11.5px}
+  .drive .flow b{font-weight:500;font-size:12px;background:var(--surface-2);border-radius:8px;padding:3px 7px}
+  .drive .flow i{font-style:normal;color:var(--muted-2);font-size:11px}
+  .drive .kanban{display:grid;grid-template-columns:repeat(4,1fr);gap:4px}
+  .drive .kanban i{font-style:normal;background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:5px 3px 6px;text-align:center;font-size:10.5px;font-weight:500;color:var(--muted)}
+  .drive .kanban i b{display:block;width:70%;height:3px;margin:5px auto 0;background:var(--border-deep);border-radius:2px}
+  .drive .blk{background:#f7f4ec;border:1px solid var(--border);border-radius:12px;padding:7px 9px 8px}
+  .drive .blk .k{font-size:10px;font-weight:500;color:var(--muted-2);letter-spacing:.06em;margin-bottom:6px}
+  .drive .blk .act{margin-top:6px;font-size:11px;font-weight:500;color:var(--fg)}
+  .drive .window{background:var(--surface);border:1px solid var(--border);border-radius:14px;overflow:hidden}
+  .drive .titlebar{display:flex;align-items:center;gap:5px;padding:8px 10px 6px}
+  .drive .titlebar .dot{width:7px;height:7px;border-radius:50%;background:#d2cbb8}
+  .drive .titlebar em{font-style:normal;font-size:11px;color:var(--muted-2);margin-left:4px;letter-spacing:.04em}
+  .drive .layers{display:grid;grid-template-columns:1fr 1fr 1fr;gap:5px;padding:0 8px 8px}
+  .drive .layer{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:6px;text-align:center}
+  .drive .layer strong{display:block;font-size:11px;font-weight:600}
+  .drive .layer em{display:block;margin-top:2px;font-style:normal;font-size:10.5px;color:var(--muted)}
+  .drive .layer small{display:block;margin-top:2px;font-family:var(--font-mono);font-size:9.5px;color:var(--muted-2)}
+  .drive .sdlc-ring{position:relative;height:168px;margin:0 8px 8px}
+  .drive .ring-line{position:absolute;left:50%;top:50%;width:118px;height:118px;transform:translate(-50%,-50%);border:1px dashed var(--border-deep);border-radius:50%}
+  .drive .ring-core{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);font-size:11px;color:var(--muted-2);text-align:center;line-height:1.35}
+  .drive .ring-core b{display:block;font-size:13px;font-weight:600;color:var(--fg)}
+  .drive .sdlc-step{position:absolute;transform:translate(-50%,-50%);display:flex;flex-direction:column;align-items:center;gap:4px;font-size:11px;color:var(--muted-2);min-width:32px}
+  .drive .sdlc-step i{width:6px;height:6px;border-radius:50%;background:#d2cbb8;display:block}
+  .drive .sdlc-ring .sdlc-step:nth-of-type(1){left:50%;top:calc(50% - 62px)}
+  .drive .sdlc-ring .sdlc-step:nth-of-type(2){left:calc(50% + 54px);top:calc(50% - 31px)}
+  .drive .sdlc-ring .sdlc-step:nth-of-type(3){left:calc(50% + 54px);top:calc(50% + 31px)}
+  .drive .sdlc-ring .sdlc-step:nth-of-type(4){left:50%;top:calc(50% + 62px)}
+  .drive .sdlc-ring .sdlc-step:nth-of-type(5){left:calc(50% - 54px);top:calc(50% + 31px)}
+  .drive .sdlc-ring .sdlc-step:nth-of-type(6){left:calc(50% - 54px);top:calc(50% - 31px)}
+  .drive .got{list-style:none;margin:0;padding-top:6px;border-top:1px solid var(--border);display:flex;flex-direction:column;gap:4px}
+  .drive .got li{display:flex;align-items:flex-start;gap:6px;font-size:11.5px;line-height:1.4;color:var(--fg);text-align:left}
+  .drive .got svg{width:14px;height:14px;flex:0 0 14px;margin-top:1px}
+  .drive .got .p{font-family:var(--font-mono);font-size:11px}
+  .drive .got .ver{color:var(--accent-ink);font-weight:600}
+  .drive .entry .got{border-top:0;padding-top:0}
   .go-row{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 16px}
   .hint{font-size:13px;color:var(--muted-2);margin:0 0 16px;max-width:68ch}
-  @media(max-width:800px){.drive .board{grid-template-columns:1fr}.drive .col.side{border-right:0}.drive .col+.col{border-top:1px solid var(--border)}}
+  @media(max-width:800px){.drive .board{grid-template-columns:1fr}.drive .col.side{border-right:0}.drive .col+.col{border-top:1px solid var(--border)}.drive .entry{grid-template-columns:1fr}.drive .layers{grid-template-columns:1fr}}
 </style>
 </head>
 <body>
+
+<svg xmlns="http://www.w3.org/2000/svg" style="display:none">
+  <symbol id="i-orca" viewBox="0 0 16 16"><rect x="1" y="1" width="14" height="14" rx="4" fill="#23211C"/><path d="M4 9c1.2-2.4 3-3.6 5.2-3.2 1.6.3 2.8 1.4 3.3 2.8" fill="none" stroke="#FBFAF6" stroke-width="1.3" stroke-linecap="round"/><circle cx="6.2" cy="6.2" r="0.8" fill="#FBFAF6"/></symbol>
+  <symbol id="i-skill" viewBox="0 0 16 16"><path d="M4 2.5h6.5L13 5v8.5H4z" fill="none" stroke="#23211C" stroke-width="1.3"/><path d="M10.5 2.5V5H13" fill="none" stroke="#23211C" stroke-width="1.3"/><path d="M6 8h4M6 10.5h3" stroke="#23211C" stroke-width="1.2" stroke-linecap="round"/></symbol>
+  <symbol id="i-repo" viewBox="0 0 16 16"><rect x="2.5" y="1.5" width="11" height="13" rx="2" fill="none" stroke="#23211C" stroke-width="1.3"/><path d="M5 5h6M5 8h6M5 11h3.5" stroke="#23211C" stroke-width="1.2" stroke-linecap="round"/></symbol>
+  <symbol id="i-issue" viewBox="0 0 16 16"><rect x="2.5" y="2.5" width="11" height="11" rx="2.5" fill="none" stroke="#23211C" stroke-width="1.3"/><circle cx="8" cy="8" r="1.6" fill="#23211C"/></symbol>
+  <symbol id="i-tag" viewBox="0 0 16 16"><path d="M2.5 8.8V3.8A1.3 1.3 0 0 1 3.8 2.5h5l4.7 4.7a1.3 1.3 0 0 1 0 1.8L9 13.5a1.3 1.3 0 0 1-1.8 0z" fill="none" stroke="#23211C" stroke-width="1.3" stroke-linejoin="round"/><circle cx="6.1" cy="6.1" r="0.9" fill="#23211C"/></symbol>
+</svg>
 
 <aside class="sidebar">
   <div class="brand"><div class="mark">Workbench<span class="dot">.</span></div><div class="sub">MVP · 使用指南</div></div>
@@ -255,18 +298,10 @@
       <h1 class="disp">一周一圈，版本贯穿</h1>
       <p class="lede">添加项目只做一次。之后每周：<strong>版本规划 → builder → 出包验证 → 版本发布 → 周复盘</strong>。同一串名从 <code>bw:plan:&lt;名&gt;</code> 走到出包目录、Release / tag、<code>bw:released:&lt;名&gt;</code>。点一站进正文。</p>
 
-      <div class="banner">
-        你说清楚要什么，在路口点头；查资料、写代码、开 MR 交给 agent。正本在仓文件和代码平台上，不在 Workbench 本地库。
-        <ul class="rules-mini">
-          <li>「完成」永远你点。agent 最远到「评审中」。定时任务只会<strong>建</strong>活，绝不<strong>完成</strong>活。</li>
-          <li>没数据就是灰，不是绿。自动化（Orca）<strong>默认关</strong>，打开或 Run now 才到点。</li>
-        </ul>
-      </div>
-
       <div class="drive" aria-label="驾驶地图">
         <nav class="path">
           <button type="button" onclick="go('u-import')">添加项目</button>
-          <div class="slice" id="spine">
+          <div class="slice is-live" id="spine">
             <div class="slice-head">
               <strong>本版 · &lt;名&gt;</strong>
               <span>同一串名，从规划发到出版</span>
@@ -281,11 +316,11 @@
               <button type="button" class="milestone" onclick="go('u-release')">版本发布</button>
             </div>
           </div>
-          <button type="button" onclick="go('u-stock')">周复盘 ↺</button>
+          <button type="button" class="loop" onclick="go('u-stock')">周复盘 ↺</button>
         </nav>
 
         <button type="button" class="entry" onclick="go('u-import')">
-          <div>
+          <div class="who">
             <div class="idx">只做一次</div>
             <h2>添加项目</h2>
           </div>
@@ -296,8 +331,8 @@
             <b>你合「项目约定」</b>
           </div>
           <ul class="got">
-            <li>仓文件 · <span class="p">.bw/project.toml</span></li>
-            <li>仓文件 · <span class="p">.bw/.gitignore</span>（只忽略 <span class="p">worktrees/</span>）</li>
+            <li><svg viewBox="0 0 16 16" aria-hidden="true"><use href="#i-repo"/></svg><span class="p">.bw/project.toml</span></li>
+            <li><svg viewBox="0 0 16 16" aria-hidden="true"><use href="#i-repo"/></svg><span class="p">.bw/.gitignore</span>（只忽略 <span class="p">worktrees/</span>）</li>
           </ul>
         </button>
 
@@ -307,8 +342,8 @@
               <div class="idx">01 · 周一 09:00</div>
               <h2>版本规划</h2>
               <div class="marks">
-                <span class="mark">Orca · 定版本计划（Workbench）</span>
-                <span class="mark">Skill · 更新指标与版本计划</span>
+                <span class="mark"><svg viewBox="0 0 16 16"><use href="#i-orca"/></svg>定版本计划（Workbench）</span>
+                <span class="mark"><svg viewBox="0 0 16 16"><use href="#i-skill"/></svg>更新指标与版本计划</span>
               </div>
               <div class="steps">
                 <div class="step"><span class="n">1</span>复盘</div>
@@ -317,17 +352,17 @@
                 <div class="step"><span class="n">4</span>你确认后落盘</div>
               </div>
               <ul class="got">
-                <li>仓文件 · <span class="p">.bw/metrics.toml</span> · <span class="p">.bw/scripts/</span></li>
-                <li>评论 · <span class="p">## 版本目标 / 本周纳入 / 本周指标读数</span></li>
-                <li>标签 · <span class="p">bw:plan:&lt;名&gt;</span></li>
+                <li><svg viewBox="0 0 16 16" aria-hidden="true"><use href="#i-repo"/></svg><span class="p">.bw/metrics.toml</span> · <span class="p">.bw/scripts/</span></li>
+                <li><svg viewBox="0 0 16 16" aria-hidden="true"><use href="#i-issue"/></svg><span class="p">## 版本目标 / 本周纳入 / 本周指标读数</span></li>
+                <li><svg viewBox="0 0 16 16" aria-hidden="true"><use href="#i-issue"/></svg><span class="p">bw:plan:<span class="ver">&lt;名&gt;</span></span></li>
               </ul>
             </button>
             <button type="button" class="cell" onclick="go('u-stock')">
               <div class="idx">05 · 周五 15:00</div>
               <h2>周复盘</h2>
               <div class="marks">
-                <span class="mark">Orca · 资产盘点（Workbench）</span>
-                <span class="mark">Skill · 资产盘点</span>
+                <span class="mark"><svg viewBox="0 0 16 16"><use href="#i-orca"/></svg>资产盘点（Workbench）</span>
+                <span class="mark"><svg viewBox="0 0 16 16"><use href="#i-skill"/></svg>资产盘点</span>
               </div>
               <div class="steps">
                 <div class="step"><span class="n">1</span>盘 .bw/</div>
@@ -336,9 +371,9 @@
                 <div class="step"><span class="n">4</span>有改才开 MR</div>
               </div>
               <ul class="got">
-                <li>仓文件 · <span class="p">.bw/</span>（有改才动）</li>
-                <li>评论 · <span class="p">## Workbench 资产 / 闭环 / 项目审查</span></li>
-                <li>评论 · <span class="p">## 每周进展</span>（挂在运作活①）</li>
+                <li><svg viewBox="0 0 16 16" aria-hidden="true"><use href="#i-repo"/></svg><span class="p">.bw/</span>（有改才动）</li>
+                <li><svg viewBox="0 0 16 16" aria-hidden="true"><use href="#i-issue"/></svg><span class="p">## Workbench 资产 / 闭环 / 项目审查</span></li>
+                <li><svg viewBox="0 0 16 16" aria-hidden="true"><use href="#i-issue"/></svg><span class="p">## 每周进展</span>（挂在运作活①）</li>
               </ul>
             </button>
           </div>
@@ -346,12 +381,32 @@
             <button type="button" class="cell" onclick="go('u-land')">
               <div class="idx">02</div>
               <h2>builder</h2>
-              <p class="hint">计划屏四列：待办 / 进行中 / 待处理 / 已完成。拖进进行中 · ▶开工。</p>
-              <div class="kanban" aria-hidden="true"><i>待办</i><i>进行中</i><i>待处理</i><i>已完成</i></div>
-              <p class="hint">harness · 各类任务运行时。SYSTEM / references / skill；六阶段环，环心是人守判断。</p>
+              <div class="blk">
+                <div class="k">看计划屏</div>
+                <div class="kanban" aria-hidden="true"><i>待办<b></b></i><i>进行中<b></b></i><i>待处理<b></b></i><i>已完成<b></b></i></div>
+                <div class="act">拖进进行中 · ▶开工</div>
+              </div>
+              <div class="window">
+                <div class="titlebar"><span class="dot"></span><span class="dot"></span><span class="dot"></span><em>harness · 各类任务运行时</em></div>
+                <div class="layers">
+                  <div class="layer"><strong>SYSTEM</strong><em>哪张活</em><small>SYSTEM.md.tmpl</small></div>
+                  <div class="layer"><strong>references</strong><em>改仓怎么落</em><small>build.md</small></div>
+                  <div class="layer"><strong>skill</strong><em>这场怎么带人</em><small>mattpocock-skills</small></div>
+                </div>
+                <div class="sdlc-ring">
+                  <i class="ring-line"></i>
+                  <div class="ring-core"><b>环</b>人守判断</div>
+                  <span class="sdlc-step"><i></i>计划</span>
+                  <span class="sdlc-step"><i></i>设计</span>
+                  <span class="sdlc-step"><i></i>构建</span>
+                  <span class="sdlc-step"><i></i>测试</span>
+                  <span class="sdlc-step"><i></i>发布</span>
+                  <span class="sdlc-step"><i></i>运维</span>
+                </div>
+              </div>
               <ul class="got">
-                <li>仓 · MR</li>
-                <li>标签 · <span class="p">bw:status:inreview</span></li>
+                <li><svg viewBox="0 0 16 16" aria-hidden="true"><use href="#i-repo"/></svg>MR</li>
+                <li><svg viewBox="0 0 16 16" aria-hidden="true"><use href="#i-issue"/></svg><span class="p">bw:status:inreview</span></li>
               </ul>
             </button>
           </div>
@@ -360,53 +415,37 @@
               <div class="idx">03 · 发版前</div>
               <h2>出包验证</h2>
               <div class="marks">
-                <span class="mark">计划屏 · 出包</span>
-                <span class="mark dim">Orca 自动 · 未建</span>
+                <span class="mark"><svg viewBox="0 0 16 16"><use href="#i-skill"/></svg>计划屏 · 出包</span>
+                <span class="mark dim"><svg viewBox="0 0 16 16"><use href="#i-orca"/></svg>自动 · 未建</span>
               </div>
-              <div class="steps">
+              <div class="steps one">
                 <div class="step"><span class="n">1</span>出包</div>
                 <div class="step"><span class="n">2</span>验包</div>
-                <div class="step"><span class="n">—</span>每日集成 · 未建</div>
+                <div class="step dim"><span class="n">—</span>每日集成 · 未建</div>
               </div>
               <ul class="got">
-                <li>本机 · <span class="p">.bw/release/out/&lt;名&gt;/</span>（不合入、不上 issue）</li>
+                <li><svg viewBox="0 0 16 16" aria-hidden="true"><use href="#i-repo"/></svg><span class="p">.bw/release/out/<span class="ver">&lt;名&gt;</span>/</span>（不合入、不上 issue）</li>
               </ul>
             </button>
             <button type="button" class="cell" onclick="go('u-release')">
               <div class="idx">04</div>
               <h2>版本发布</h2>
-              <div class="marks"><span class="mark">计划屏 · 发版本</span></div>
-              <div class="steps">
+              <div class="marks"><span class="mark"><svg viewBox="0 0 16 16"><use href="#i-skill"/></svg>计划屏 · 发版本</span></div>
+              <div class="steps one">
                 <div class="step"><span class="n">1</span>你点发版本</div>
                 <div class="step"><span class="n">2</span>建 Release</div>
                 <div class="step"><span class="n">3</span>打 bw:released</div>
               </div>
               <ul class="got">
-                <li>平台 · Release <span class="p">&lt;名&gt;</span> · tag <span class="p">&lt;名&gt;</span></li>
-                <li>标签 · <span class="p">bw:released:&lt;名&gt;</span></li>
+                <li><svg viewBox="0 0 16 16" aria-hidden="true"><use href="#i-tag"/></svg>Release <span class="p ver">&lt;名&gt;</span></li>
+                <li><svg viewBox="0 0 16 16" aria-hidden="true"><use href="#i-tag"/></svg><span class="p">tag &lt;名&gt;</span></li>
+                <li><svg viewBox="0 0 16 16" aria-hidden="true"><use href="#i-issue"/></svg><span class="p">bw:released:<span class="ver">&lt;名&gt;</span></span></li>
               </ul>
             </button>
           </div>
         </div>
       </div>
-
-      <h2 class="sec"><span class="n">找</span>从问题跳到那一站</h2>
-      <div class="ktable-wrap find">
-        <table class="ktable">
-          <thead><tr><th>我想…</th><th>去哪</th></tr></thead>
-          <tbody>
-            <tr><td>接一个仓、合「项目约定」</td><td><a href="#" onclick="go('u-import');return false">添加项目</a></td></tr>
-            <tr><td>定版本、写目标、纳入活</td><td><a href="#" onclick="go('u-plan');return false">版本规划</a></td></tr>
-            <tr><td>开工、开 MR、去会话</td><td><a href="#" onclick="go('u-land');return false">builder</a></td></tr>
-            <tr><td>出安装包、验包</td><td><a href="#" onclick="go('u-pack');return false">出包验证</a></td></tr>
-            <tr><td>建 Release、打发版标签</td><td><a href="#" onclick="go('u-release');return false">版本发布</a></td></tr>
-            <tr><td>周五盘点、收口每周进展</td><td><a href="#" onclick="go('u-stock');return false">周复盘</a></td></tr>
-            <tr><td>完成必须人点、灯为什么是灰</td><td><a href="#" onclick="go('u-rules');return false">规矩</a></td></tr>
-            <tr><td>上报对照日志</td><td>侧栏底部「帮助」→ 上报</td></tr>
-          </tbody>
-        </table>
-      </div>
-      <p class="note-line">总览上的灯、指标、改名片不是单独一站，打开项目后侧栏「总览」就能看。怎么建 / 跑 / 测看仓根 <code>AGENTS.md</code>。</p>
+      <p class="hint">总览上的灯、指标、改名片不是单独一站，打开项目后侧栏「总览」就能看。怎么建 / 跑 / 测看仓根 <code>AGENTS.md</code>；规矩见末页。</p>
       <div class="foot">使用指南正本 <code>docs/03-guide/v4-产品指南.html</code>。</div>
     </section>
 
@@ -414,23 +453,23 @@
     <section class="screen" id="u-import" data-title="添加项目" data-sec-name="怎么用">
       <div class="eyebrow">怎么用 · 添加项目</div>
       <h1 class="disp">把一个仓接进来</h1>
-      <p class="lede">只做一次。选仓、填名片四字段。仓里还没有项目信息时，自动开「项目约定」MR；已有名片不再铺。仓根一个字不动。合入由你点。</p>
-      <p class="hint">去哪：项目墙 · 「+ 接入项目」。工作台抽屉里没有项目墙这条跳转，先关指南回到项目墙再点。</p>
+      <p class="lede">只做一次。选仓、填名片四字段。仓里没名片时开「项目约定」MR；已有不再铺。仓根一个字不动。</p>
+      <p class="hint">去哪：项目墙 · 「+ 接入项目」。工作台抽屉里没有项目墙这条跳转，先关指南回项目墙再点。</p>
 
       <h2 class="sec"><span class="n">操作</span></h2>
       <div class="ops">
-        <div class="li"><div class="n">1</div><div class="t">项目墙点「+ 接入项目」。本机要有 <code>gh</code>（GitHub）或 <code>codehub-cli</code>（内部）并已登录。项目墙上环境条红了只挡这一条路。工作区根目录在「设置」里，默认 <code>.builders-workbench/workspaces</code>；已接入的项目不会跟着搬家。</div></div>
-        <div class="li"><div class="n">2</div><div class="t">第一步只问仓在哪。点进「项目地址」，会列出你账号下的仓；打字检索，或直接填 <code>owner/repo</code>。列不出来时摆命令原话，<strong>不摆假列表</strong>。</div></div>
-        <div class="li"><div class="n">3</div><div class="t">第二步填名片四格：项目名称、你想做什么、最像的对标、三个月长成什么样。顶上会说这个仓被接管过没有——判据是远端有没有 <code>.bw/project.toml</code>。「没查成」不等于「没被接管过」，别把仓里真正的名片盖掉。</div></div>
-        <div class="li"><div class="n">4</div><div class="t">点「完成接入」，等十几秒，别猛点。然后去计划屏，把「项目约定」拖到「已完成」（有开着的 MR 会先合）。项目墙 ⚑ 只提醒，不在那儿合。</div></div>
+        <div class="li"><div class="n">1</div><div class="t">项目墙点「+ 接入项目」。本机要有 <code>gh</code>（GitHub）或 <code>codehub-cli</code>（内部）并已登录。工作区根目录在「设置」里，默认 <code>.builders-workbench/workspaces</code>。</div></div>
+        <div class="li"><div class="n">2</div><div class="t">第一步只问仓在哪。点进「项目地址」列出你账号下的仓，打字检索或直接填 <code>owner/repo</code>。列不出来时摆命令原话。</div></div>
+        <div class="li"><div class="n">3</div><div class="t">第二步填名片四格：名称、想做什么、最像的对标、三个月长成什么样。顶上说这个仓被接管过没——判据是远端有没有 <code>.bw/project.toml</code>。</div></div>
+        <div class="li"><div class="n">4</div><div class="t">点「完成接入」，等十几秒。然后去计划屏把「项目约定」拖到「已完成」（有开着的 MR 会先合）。项目墙 ⚑ 只提醒，不在那儿合。</div></div>
       </div>
 
       <h2 class="sec"><span class="n">背后</span></h2>
       <div class="res">
         <ul>
-          <li><span class="b"></span><div><strong>对远端</strong>：仓里没有名片才建「项目约定」，开分支 <code>bw/project</code>，提 MR，停在评审中。已有名片或已开着这张活，整段跳过。不会自动合、不会自动完成。</div></li>
-          <li><span class="b"></span><div><strong>对你的机器</strong>：用 <code>gh</code> / <code>codehub-cli</code> clone 到工作区；目录里已是 git 仓就直接用；有东西又不是 git 仓就弹回。</div></li>
-          <li><span class="b"></span><div><strong>对 <code>.bw/</code></strong>：写 <code>.bw/project.toml</code>（已有不覆盖）；<code>.bw/.gitignore</code> 只一条 <code>worktrees/</code>。指标和脚本不在这一站预铺。Orca 开着时登记这个仓，并写入三条<strong>默认关掉</strong>的自动化。</div></li>
+          <li><span class="b"></span><div><strong>对远端</strong>：仓里没名片才建「项目约定」，开分支 <code>bw/project</code> 提 MR，停在评审中。已有名片或已开着这张活，整段跳过。</div></li>
+          <li><span class="b"></span><div><strong>对你的机器</strong>：用 <code>gh</code> / <code>codehub-cli</code> clone 到工作区；已是 git 仓直接用；有东西又不是 git 仓就弹回。</div></li>
+          <li><span class="b"></span><div><strong>对 <code>.bw/</code></strong>：写 <code>.bw/project.toml</code>（已有不覆盖）；<code>.bw/.gitignore</code> 只一条 <code>worktrees/</code>。Orca 登记这个仓，写三条<strong>默认关</strong>的自动化。</div></li>
         </ul>
       </div>
 
@@ -438,13 +477,13 @@
       <div class="res">
         <ul>
           <li><span class="b"></span><div>本机一个真实的仓；工作台上一个项目。</div></li>
-          <li><span class="b"></span><div>合入之后，默认分支上有 <code>.bw/project.toml</code> 和 <code>.bw/.gitignore</code>。在研版本不写进名片。</div></li>
-          <li><span class="b"></span><div>接错了：项目卡右上角 ✕ 只从工作台移走，仓一个字节不动。</div></li>
+          <li><span class="b"></span><div>合入后默认分支上有 <code>.bw/project.toml</code> 和 <code>.bw/.gitignore</code>。在研版本不写进名片。</div></li>
+          <li><span class="b"></span><div>接错了：项目卡右上角 ✕ 只移走，仓一个字节不动。</div></li>
         </ul>
       </div>
       <div class="callout note">
         <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/></svg>
-        <div class="body"><strong>总览不是下一站。</strong>打开项目后侧栏「总览」看灯、指标、改名片。灯没数据就是灰。旧铺底文件（<code>PROJECT.md</code> 等）接入时不碰，周复盘会删。</div>
+        <div class="body"><strong>总览不是下一站。</strong>打开项目后侧栏「总览」看灯、指标、改名片。旧铺底文件（<code>PROJECT.md</code> 等）接入时不碰，周复盘会删。</div>
       </div>
       <p class="linker">机制：<a href="#" onclick="return false">docs/architecture.md</a> 模块 3 · 项目约定 / 模块 14 · 接入。</p>
       <p class="next">下一站：<a href="#" onclick="go('u-plan');return false">版本规划</a></p>
@@ -463,10 +502,10 @@
 
       <h2 class="sec"><span class="n">操作</span></h2>
       <div class="ops">
-        <div class="li"><div class="n">1</div><div class="t">先打开这个项目。侧栏点「计划」。要开会话：侧栏点「会话」。Orca 里「定版本计划（Workbench）」<strong>默认关</strong>——要跑先打开，或点 Run now。关着不会到点。工作台<strong>不高亮</strong> Orca 里的开关，你自己在嵌页里找。</div></div>
-        <div class="li"><div class="n">2</div><div class="t">会话在常驻树 <code>bw/week-plan</code>。Skill 是「更新指标与版本计划」：复盘、采指标、先确认本周版本（推荐 <code>v0.x</code>，别的名字也行），再起草版本目标与纳入清单。你在 Orca 里看着、随时能停。</div></div>
-        <div class="li"><div class="n">3</div><div class="t">你确认之后才落盘：纳入的活打 <code>bw:plan:&lt;名&gt;</code>；运作活①写下三条评论，标题必须是 <code>## 版本目标</code> / <code>## 本周纳入</code> / <code>## 本周指标读数</code>。</div></div>
-        <div class="li"><div class="n">4</div><div class="t">回计划屏。点某个版本只看打了那个 <code>bw:plan:&lt;名&gt;</code> 的活。没打版本标签的，右上角下拉「全部 issue」。</div></div>
+        <div class="li"><div class="n">1</div><div class="t">打开项目，侧栏点「计划」；要开会话点「会话」。Orca 里「定版本计划（Workbench）」<strong>默认关</strong>，要跑先打开或点 Run now。</div></div>
+        <div class="li"><div class="n">2</div><div class="t">会话在常驻树 <code>bw/week-plan</code>。Skill「更新指标与版本计划」：复盘、采指标、先确认本周版本（推荐 <code>v0.x</code>），再起草版本目标与纳入清单。</div></div>
+        <div class="li"><div class="n">3</div><div class="t">你确认后才落盘：纳入的活打 <code>bw:plan:&lt;名&gt;</code>；运作活①写下三条评论 <code>## 版本目标</code> / <code>## 本周纳入</code> / <code>## 本周指标读数</code>。</div></div>
+        <div class="li"><div class="n">4</div><div class="t">回计划屏。点某个版本只看打了 <code>bw:plan:&lt;名&gt;</code> 的活；没打标签的看右上角「全部 issue」。</div></div>
       </div>
 
       <h2 class="sec"><span class="n">背后</span></h2>
@@ -474,7 +513,7 @@
         <ul>
           <li><span class="b"></span><div><strong>对远端</strong>：有光杆未打版本标签的运作活①就复用，没有再新建。纳入的活是真的远端 issue。</div></li>
           <li><span class="b"></span><div><strong>对你的机器</strong>：改动落在 <code>bw/week-plan</code>，不写主检出。</div></li>
-          <li><span class="b"></span><div><strong>对 <code>.bw/</code></strong>：缺的 <code>metrics.toml</code> 和 <code>.bw/scripts/</code> 会在这场铺上（已有不覆盖），经这张活的 MR 合进默认分支。版本目标不另写一份计划文件。在研版本不进 <code>project.toml</code>。</div></li>
+          <li><span class="b"></span><div><strong>对 <code>.bw/</code></strong>：缺的 <code>metrics.toml</code> 和 <code>.bw/scripts/</code> 会铺上（已有不覆盖），经这张活的 MR 合进默认分支。版本目标不另写计划文件。在研版本不进 <code>project.toml</code>。</div></li>
         </ul>
       </div>
 
@@ -498,7 +537,7 @@
     <section class="screen" id="u-land" data-title="builder" data-sec-name="怎么用">
       <div class="eyebrow">怎么用 · builder</div>
       <h1 class="disp">把一张活开起来干</h1>
-      <p class="lede">看计划屏，拖进进行中或点开工。agent 在 harness 里跑（各类任务运行时）：SYSTEM 说哪张活，references 说改仓怎么落，skill 说这场怎么带人。环心是人守判断。本地 worktree 不是正本。</p>
+      <p class="lede">看计划屏，拖进进行中或点开工。agent 在 harness 里跑，环心是人守判断。本地 worktree 不是正本。</p>
       <div class="go-row">
         <button type="button" class="go-screen" onclick="goScreen('plan')">去计划屏</button>
         <button type="button" class="go-screen" onclick="goScreen('session')">去会话</button>
@@ -509,15 +548,15 @@
         <div class="li"><div class="n">1</div><div class="t">打开项目后侧栏点「计划」。四列：待办 / 进行中 / 待处理 / 已完成。</div></div>
         <div class="li"><div class="n">2</div><div class="t">把卡拖进「进行中」，或详情里 Start。确认后跳会话屏。没类别的业务活要先选一类，否则不开工。</div></div>
         <div class="li"><div class="n">3</div><div class="t">构建类停在会话屏的 Orca 页；原型类停在 Open Design，<strong>不会自动开跑</strong>，你打一句发出去它才动。</div></div>
-        <div class="li"><div class="n">4</div><div class="t">卡住了拖到待处理的「阻塞」；不想干了拖到已完成列的「拒绝」（要写原因）。这不是完成。停止、开 MR、评审在 Orca 里做。合入、点完成见<a href="#" onclick="go('u-release');return false">版本发布</a>前的验收，在计划屏拖到「已完成」。</div></div>
+        <div class="li"><div class="n">4</div><div class="t">卡住了拖到待处理的「阻塞」；不想干了拖到已完成列的「拒绝」（要写原因）。停止、开 MR、评审在 Orca 里做。合入、点完成见<a href="#" onclick="go('u-release');return false">版本发布</a>前的验收。</div></div>
       </div>
 
       <h2 class="sec"><span class="n">背后</span></h2>
       <div class="res">
         <ul>
           <li><span class="b"></span><div><strong>对远端</strong>：开工改到进行中。提完 MR 后活到评审中（<code>bw:status:inreview</code>）。作废打取消标签并关掉 issue。</div></li>
-          <li><span class="b"></span><div><strong>对你的机器</strong>：每张活一棵工作目录，新树在 <code>&lt;仓&gt;/.bw/worktrees/</code>。灌 <code>SYSTEM.md.tmpl</code> / <code>build.md</code> / <code>mattpocock-skills</code>。去会话只切树，不改活的状态。</div></li>
-          <li><span class="b"></span><div><strong>对 <code>.bw/</code></strong>：这一站不写指标、不改名片。正本是 MR 和 issue 标签，不是本地树。</div></li>
+          <li><span class="b"></span><div><strong>对你的机器</strong>：每张活一棵工作目录，在 <code>&lt;仓&gt;/.bw/worktrees/</code>。去会话只切树，不改活的状态。</div></li>
+          <li><span class="b"></span><div><strong>对 <code>.bw/</code></strong>：这一站不写指标、不改名片。正本是 MR 和 issue 标签。</div></li>
         </ul>
       </div>
 
@@ -525,7 +564,7 @@
       <div class="res">
         <ul>
           <li><span class="b"></span><div>一张 MR；活在评审中等你看。</div></li>
-          <li><span class="b"></span><div>完成仍然你点：有开着的 MR 就合入，没有则只关 issue。</div></li>
+          <li><span class="b"></span><div>完成仍你点：有开着的 MR 就合入，没有则只关 issue。</div></li>
         </ul>
       </div>
       <p class="linker">机制：<a href="#" onclick="return false">docs/architecture.md</a> 模块 4 · 提示词 / 模块 5 · 状态机 / 模块 7 · 会话。</p>
@@ -537,7 +576,7 @@
     <section class="screen" id="u-pack" data-title="出包验证" data-sec-name="怎么用">
       <div class="eyebrow">怎么用 · 出包验证</div>
       <h1 class="disp">先出包，再验包</h1>
-      <p class="lede">发版前在计划屏点「出包」。产物落在本机，<strong>不合入、不上 issue</strong>。Orca 自动出包、每日集成<strong>未建</strong>。</p>
+      <p class="lede">发版前在计划屏点「出包」。产物落本机，<strong>不合入、不上 issue</strong>。Orca 自动出包、每日集成<strong>未建</strong>，出包是你点的。</p>
       <div class="go-row">
         <button type="button" class="go-screen" onclick="goScreen('plan')">去计划屏</button>
       </div>
@@ -545,8 +584,7 @@
       <h2 class="sec"><span class="n">操作</span></h2>
       <div class="ops">
         <div class="li"><div class="n">1</div><div class="t">打开项目，侧栏点「计划」，切到这个版本（「全部 issue」里没有「出包」）。</div></div>
-        <div class="li"><div class="n">2</div><div class="t">点「出包」：已发过的号从那次 tag 另开一棵树出，主工作区不动；在研还没打 tag 就先把工作区拉到最新再出。先出包，再验包。验包不过点「详情」。弹窗可关掉继续跑；要停就点「停止」。</div></div>
-        <div class="li"><div class="n">3</div><div class="t">Orca 不会替你出包。每日集成未建。</div></div>
+        <div class="li"><div class="n">2</div><div class="t">点「出包」：已发过的号从那次 tag 另开一棵树出，主工作区不动；在研还没打 tag 就先把工作区拉到最新再出。先出包，再验包。验包不过点「详情」列出每条用例和报错。弹窗可关掉继续跑；要停就点「停止」。</div></div>
       </div>
 
       <h2 class="sec"><span class="n">背后</span></h2>
@@ -566,21 +604,21 @@
       </div>
       <p class="linker">机制：<a href="#" onclick="return false">docs/architecture.md</a> 模块 13 · 出包（<code>PackRelease</code>）。</p>
       <p class="next">下一站：<a href="#" onclick="go('u-release');return false">版本发布</a></p>
-      <div class="foot">事实源 <code>docs/architecture.md</code> 模块 13；协议 <code>docs/adr/0005</code>。</div>
+      <div class="foot">事实源 <code>docs/architecture.md</code> 模块 13；协议 <code>docs/02-adr/0005-发版出包与E2E协议.md</code>。</div>
     </section>
 
     <!-- ============ 版本发布 ============ -->
     <section class="screen" id="u-release" data-title="版本发布" data-sec-name="怎么用">
       <div class="eyebrow">怎么用 · 版本发布</div>
       <h1 class="disp">你点「发版本」</h1>
-      <p class="lede">不会自动发。先建远端 Release 和 tag，再给勾上的活打 <code>bw:released:&lt;名&gt;</code>。不写仓文件。验收（合 MR、点完成）也在计划屏，同一屏拖到「已完成」。</p>
+      <p class="lede">先建远端 Release 和 tag，再给勾上的活打 <code>bw:released:&lt;名&gt;</code>。不写仓文件。验收（合 MR、点完成）也在计划屏。</p>
       <div class="go-row">
         <button type="button" class="go-screen" onclick="goScreen('plan')">去计划屏</button>
       </div>
 
       <h2 class="sec"><span class="n">操作</span></h2>
       <div class="ops">
-        <div class="li"><div class="n">1</div><div class="t">打开项目，侧栏点「计划」。要把活收口：拖到「已完成」（先确认切的是「完成」不是「拒绝」）。有开着的 MR 就先合；没有则只关 issue。完成永远你点。</div></div>
+        <div class="li"><div class="n">1</div><div class="t">打开项目，侧栏点「计划」。把活收口：拖到「已完成」（先确认切的是「完成」不是「拒绝」）。有开着的 MR 就先合；没有则只关 issue。</div></div>
         <div class="li"><div class="n">2</div><div class="t">切到在研那个版本（「全部 issue」里没有「发版本」）。点「发版本」：只有在研且还没打过 tag 的号能点，发过就灰着。没有已完成的活也能发。号锁死当前版本。</div></div>
         <div class="li"><div class="n">3</div><div class="t">去代码平台核对真有这个 Release，或跑 <code>gh release list</code> / <code>codehub-cli release list</code>。</div></div>
       </div>
@@ -588,7 +626,7 @@
       <h2 class="sec"><span class="n">背后</span></h2>
       <div class="res">
         <ul>
-          <li><span class="b"></span><div><strong>对远端</strong>：先建 Release（顺带打 tag），成功后再给勾过的活打 <code>bw:released:&lt;名&gt;</code>。顺序不能反。可以一张不打。</div></li>
+          <li><span class="b"></span><div><strong>对远端</strong>：先建 Release（顺带打 tag），再给勾过的活打 <code>bw:released:&lt;名&gt;</code>。顺序不能反。可以一张不打。</div></li>
           <li><span class="b"></span><div><strong>对你的机器</strong>：发版尽量把工作区对齐远端。不出安装包——安装包是上一站。</div></li>
           <li><span class="b"></span><div><strong>对 <code>.bw/</code></strong>：不改名片，不写仓文件。在研号仍看运作活①，不进 <code>project.toml</code>。</div></li>
         </ul>
@@ -600,10 +638,6 @@
           <li><span class="b"></span><div>平台上一个 Release <code>&lt;名&gt;</code>、一个 tag <code>&lt;名&gt;</code>；勾上的活带着 <code>bw:released:&lt;名&gt;</code>。</div></li>
         </ul>
       </div>
-      <div class="callout note">
-        <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/></svg>
-        <div class="body"><strong>发版不是只打 issue 标签。</strong>第一步是远端 Release，标签是第二步。</div>
-      </div>
       <p class="linker">机制：<a href="#" onclick="return false">docs/architecture.md</a> 模块 13 · 发版本（<code>CutRelease</code>）。</p>
       <p class="next">下一站：<a href="#" onclick="go('u-stock');return false">周复盘</a></p>
       <div class="foot">事实源 <code>docs/architecture.md</code> 模块 8 / 13。</div>
@@ -613,7 +647,7 @@
     <section class="screen" id="u-stock" data-title="周复盘" data-sec-name="怎么用">
       <div class="eyebrow">怎么用 · 周复盘</div>
       <h1 class="disp">周五盘点，停在评审中</h1>
-      <p class="lede">Orca「资产盘点（Workbench）」周五 15:00，<strong>默认关</strong>。Skill 资产盘点：盘 <code>.bw/</code> → 盘项目 → 收口每周进展。有改才开 MR。完成仍要你点。</p>
+      <p class="lede">Orca「资产盘点（Workbench）」周五 15:00，<strong>默认关</strong>。Skill 资产盘点：盘 <code>.bw/</code> → 盘项目 → 收口每周进展。有改才开 MR。</p>
       <div class="go-row">
         <button type="button" class="go-screen" onclick="goScreen('plan')">去计划屏</button>
         <button type="button" class="go-screen" onclick="goScreen('session')">去会话</button>
@@ -621,7 +655,7 @@
 
       <h2 class="sec"><span class="n">操作</span></h2>
       <div class="ops">
-        <div class="li"><div class="n">1</div><div class="t">打开项目。要跑：到会话屏的 Orca 嵌页，打开「资产盘点（Workbench）」或点 Run now。工作台<strong>不高亮</strong> Orca 里的开关。错过了同样去 Orca 补跑。Workbench 开着也不会自己守钟。</div></div>
+        <div class="li"><div class="n">1</div><div class="t">打开项目。要跑：到会话屏 Orca 嵌页，打开「资产盘点（Workbench）」或点 Run now。错过了同样去 Orca 补跑。</div></div>
         <div class="li"><div class="n">2</div><div class="t">会话在常驻树 <code>bw/ops-audit</code>。类别锁成「运作」。最远到评审中。</div></div>
         <div class="li"><div class="n">3</div><div class="t">改了 <code>.bw/</code> 才有 MR。合入、点完成仍是你来。下周一回到版本规划，同一串名再转一圈。</div></div>
       </div>
@@ -631,7 +665,7 @@
         <ul>
           <li><span class="b"></span><div><strong>对远端</strong>：本周还没有就建一张运作活②（标题含 ISO 周，如 <code>资产盘点 2026-W36</code>），有在研版本就挂 <code>bw:plan:&lt;名&gt;</code>。</div></li>
           <li><span class="b"></span><div><strong>对你的机器</strong>：钟在 Orca。Orca 没开就下次打开项目再补打自动化。</div></li>
-          <li><span class="b"></span><div><strong>对 <code>.bw/</code></strong>：对照现行契约清残留、升格式。不重写名片，不重定北极星。仓根 <code>AGENTS.md</code> 不代写。项目审查只出建议，不改业务代码。</div></li>
+          <li><span class="b"></span><div><strong>对 <code>.bw/</code></strong>：对照现行契约清残留、升格式。仓根 <code>AGENTS.md</code> 不代写。项目审查只出建议，不改业务代码。</div></li>
         </ul>
       </div>
 
@@ -640,7 +674,7 @@
         <ul>
           <li><span class="b"></span><div>这张活的评论：<code>## Workbench 资产</code> / <code>## 闭环</code> / <code>## 项目审查</code>。</div></li>
           <li><span class="b"></span><div>该版本运作活①上追加 <code>## 每周进展</code>。总览右栏按新到旧列出。</div></li>
-          <li><span class="b"></span><div>打开 Orca 里「每日指标采集」后，每天 20:00 采 B 类（也是默认关）。总览「立即采集」能立刻再采今天。</div></li>
+          <li><span class="b"></span><div>打开 Orca「每日指标采集」后，每天 20:00 采 B 类。总览「立即采集」能立刻再采今天。</div></li>
         </ul>
       </div>
       <p class="linker">机制：<a href="#" onclick="return false">docs/architecture.md</a> 模块 14 · 资产盘点。</p>
@@ -655,7 +689,7 @@
       <p class="lede">具体操作回各站。这里只留不会变的形状。</p>
 
       <h2 class="sec"><span class="n">1</span>完成永远你点</h2>
-      <p>agent、定时任务、自动化最远到「评审中」。计划屏拖到「已完成」或详情「点完成」才算。有开着的 MR 就合入，没有则只关 issue。不要只在代码平台网页关 issue——那不会合 MR。</p>
+      <p>agent、定时任务、自动化最远到「评审中」。计划屏拖到「已完成」或详情「点完成」才算。有开着的 MR 就合入，没有则只关 issue。</p>
 
       <h2 class="sec"><span class="n">2</span>没数据就是灰</h2>
       <p>灯在总览名字旁，只从数据推，不能手点。没读数、没目标、没合入记录，停在灰，不是绿。界面上的数字都能用 <code>codehub-cli</code> / <code>gh</code> / <code>git</code> / 打开仓文件独立核对。</p>
@@ -667,8 +701,9 @@
         <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/></svg>
         <div class="body"><strong>还没做的先说清楚。</strong>Orca 自动出包、每日集成未建。仓根 <code>AGENTS.md</code> 不会在接入或周五盘点时自动写出来。别的没建项看 <code>docs/architecture.md</code> 各模块「没建什么」。</div>
       </div>
+      <p class="linker">机制：<a href="#" onclick="return false">docs/architecture.md</a> 模块 5 · 状态机 / 模块 6 · 健康推导。</p>
       <p class="next">回到<a href="#" onclick="go('u0');return false">驾驶地图</a>。</p>
-      <div class="foot">健康灯见 <code>docs/architecture.md</code> 模块 6。</div>
+      <div class="foot">事实源 <code>docs/architecture.md</code> 模块 5 / 6。</div>
     </section>
 
 
@@ -700,9 +735,9 @@
     var isMaint = id.charAt(0) === 'm';
     badge.textContent = isMaint ? 'Maintenance' : 'Usage';
     badge.className = 'badge ' + (isMaint ? 'maint' : 'use');
+    // 持久化只用 localStorage；不碰 history/location.hash——
+    // 指南在 srcdoc iframe(about:srcdoc)里跑，改 URL/hash 会让整帧重载成空白。
     try{ localStorage.setItem(KEY, id); }catch(e){}
-    if(history.replaceState){ history.replaceState(null, '', '#' + id); }
-    else { location.hash = id; }
     content.scrollTop = 0;
   }
   items.forEach(function(n){ n.addEventListener('click', function(){ show(n.dataset.screen); }); });
@@ -713,10 +748,8 @@
     if(e.key === 'ArrowRight' && idx < screens.length - 1){ show(screens[idx+1].id); }
     else if(e.key === 'ArrowLeft' && idx > 0){ show(screens[idx-1].id); }
   });
-  var fromHash = (location.hash || '').replace(/^#/, '');
   var saved = null; try{ saved = localStorage.getItem(KEY); }catch(e){}
-  if(fromHash && document.getElementById(fromHash)){ show(fromHash); }
-  else if(saved && document.getElementById(saved)){ show(saved); }
+  if(saved && document.getElementById(saved)){ show(saved); }
   else { show('u0'); }
 })();
 </script>

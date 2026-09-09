@@ -8,6 +8,8 @@
 
 使用指南按驾驶地图重写：首页是周环（添加项目 → 版本规划 → builder → 出包验证 → 版本发布 → 周复盘），点站进该站正文。看总览不再单独成站。工作台抽屉里「去计划屏 / 去会话」会关上指南并跳到那一屏，不高亮 Orca 里的控件。自动化默认关。宁可丢掉旧站细文，也不留和地图对不上的站名与步骤。
 
+驾驶地图贴合原型稿 `prototype-ops-anim/驾驶地图.html` 重做：补 SDLC 六阶段环、harness 三层窗口、SVG 图标、看板进度条；修一批走样子规则（slice 透明、milestone 光晕、entry 三栏、steps 两列、kanban 四等分）。删掉和地图重复的「找·从问题跳到那一站」表——它一点就白屏：`show()` 改 URL/hash 在 srcdoc iframe 里触发整帧重载，去掉这步只留 localStorage 持久化（规范要求）+ classList 切换。各站正文砍冗余铁律与过程话，修出包站 ADR 路径错（`docs/adr/0005` → `docs/02-adr/0005-…`），规矩站补 `.linker`。
+
 ## 2026-09-08
 
 计划屏卡片右上那枚平台徽本来写死成 `CodeHub`,于是接 GitHub 的项目打开计划屏,58 张卡全被标成 CodeHub —— 界面在说一件不是事实的事。新建 issue 弹窗那句「创建后同步到 codehub」同病。改法跟 `browse_base` / `mr_url_prefix` / `issue_url_prefix` 同一族:provider → 显示口径的映射只放一处(新增 `Project::remote_brand()`),认不出平台就不画那枚徽、弹窗也只说「同步到远端」—— 空着是实话,顶一个别人的名字不是。
