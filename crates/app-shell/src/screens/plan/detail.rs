@@ -17,6 +17,7 @@ use super::kanban::{
     allowed_plan_targets, apply_status_move, plan_status_label, status_from_key, status_key,
     PendingMove, PendingSchedule,
 };
+use super::plan_dialogs::Overlay;
 
 #[component]
 pub fn DetailModal(
@@ -58,11 +59,10 @@ pub fn DetailModal(
     let b_sched = bridge.clone();
 
     rsx! {
-        div { class: "dialog-backdrop", onclick: close,
-            div {
-                class: "dialog dialog-wide plan-modal",
-                role: "dialog",
-                onclick: move |e| e.stop_propagation(),
+        Overlay {
+            outer: "dialog-backdrop",
+            inner: "dialog dialog-wide plan-modal",
+            on_close: move |_| selected.set(None),
                 div { class: "plan-modal-head",
                     div { class: "plan-modal-tag", "详情 · #{c.number}" }
                     input {
@@ -264,7 +264,6 @@ pub fn DetailModal(
                         }
                     }
                 }
-            }
         }
     }
 }
@@ -301,11 +300,10 @@ pub fn StartModal(
     let b_cat = bridge.clone();
     let id = c.id;
     rsx! {
-        div { class: "dialog-backdrop", onclick: move |_| start.set(None),
-            div {
-                class: "dialog dialog-wide plan-modal",
-                role: "dialog",
-                onclick: move |e| e.stop_propagation(),
+        Overlay {
+            outer: "dialog-backdrop",
+            inner: "dialog dialog-wide plan-modal",
+            on_close: move |_| start.set(None),
                 div { class: "plan-modal-head",
                     div { class: "plan-modal-tag", "worktree" }
                     div { class: "plan-modal-title", "Start · #{c.number}" }
@@ -362,7 +360,6 @@ pub fn StartModal(
                         }
                     }
                 }
-            }
         }
     }
 }

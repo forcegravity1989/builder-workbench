@@ -6,6 +6,10 @@
 
 ## 最近 · 2026-09-09
 
+计划屏弹窗里从右往左拖选文本想复制时,鼠标拖到弹窗外暗区松手,弹窗就关了 —— 原来那层暗区(`dialog-backdrop`)挂的是 `onclick: 关闭`,内层只拦了 `onclick` 冒泡,没拦 `mousedown`。拖选的 `mousedown` 落在弹窗内、`mouseup` 落在暗区,浏览器在暗区上凑出一次 `click`,拦不住,于是把窗关了。抽了一个共享壳 `Overlay`(住 `plan_dialogs.rs`):暗区按下才置真、内层按下/松手置假并拦冒泡,`click` 只在按下也落在暗区时才关。12 个弹窗(新建/创建版本/排期/确认移动/拒绝移动/删除版本/出包/验包详情/停止确认/发版本 + 详情/Start)统一改用它。真点暗区仍照常关,拖选不再误关。
+
+## 最近 · 2026-09-09
+
 验包 `cu_settings` 还在找旧高保真的 `.settings-row`，设计系统接线后设置行已经是 `.set-row`，点「保存」会空等到超时。驱动改跟现行设置文法对齐。
 
 右侧「上报问题」不再从本机 git origin 推目标仓。装机目录和其他项目开发者本机都没有 workbench 源码，读 origin 会报 `D:\BuildersWorkbench 没有 origin` 这类错。现在固定走 `codehub-cli` 报到绿区 `z30026659/workbench`（git 地址 `https://codehub-dg-g.huawei.com/z30026659/workbench.git`）。本机仍需已登录的 `codehub-cli`。
