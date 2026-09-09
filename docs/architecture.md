@@ -74,7 +74,7 @@ references(`standard/system-prompt/references/*.md`)是「干某类活需要额�
 
 **代码**:bw 的 `app/issue_store.rs`(互转主逻辑)、`model.rs`(`Issue`/`IssueId`)、`app/issue.rs`(读写入口)。
 **数据**:issue 正本在 codehub/GitHub 的 issue+标签;本地零库,不留读缓存。
-**依赖**:上游 `bw-engine/remote.rs`(`Remote` 三变体分发,调 codehub-cli / gh);下游命令层(模块5)经它落盘,壳查询经 `App::issues` 读回。
+**依赖**:上游 `bw-engine/remote/`(基类 `RemoteProvider` + 两个派生,调 codehub-cli / gh);下游命令层(模块5)经它落盘,壳查询经 `App::issues` 读回。
 **没建**:本地读缓存(MVP 不要)。"MR 检查失败"今天还判不出。已合入待点完成:详情会查出已合入的 MR 号;待评审→完成时若没有开着的 MR,确认后只关 issue(人可能已经在网页合过)。
 
 ### 2 · 仓文件解析
@@ -135,7 +135,7 @@ references(`standard/system-prompt/references/*.md`)是「干某类活需要额�
 
 ### 5 · command-event-与状态机
 
-**是什么**:Workbench MVP 自己的 Command/Event 枚举(界面只发命令、只收事件,内核是唯一执行点)+ 活的生命周期状态机与合法转移表。"完成"永远由人显式点(待办 / 进行中 / 待评审 / 阻塞 / 未排期都能进 Done);自动化、agent、定时不得推到 Done;回执带"真发生了什么"而不是"命令收到了"。转移表是产品铁律的代码正本,加人完成入边要先改铁律再改表。Event 不做事件溯源、fire-and-forget 给 UI。右侧「上报问题」走 `ReportWorkbenchIssue`:host/path 从当前目录 git 的 origin 现读,人勾了附加且对照日志有文件才附上,回执 toast 写「问题已上报」,不写打开着的被管项目。
+**是什么**:Workbench MVP 自己的 Command/Event 枚举(界面只发命令、只收事件,内核是唯一执行点)+ 活的生命周期状态机与合法转移表。"完成"永远由人显式点(待办 / 进行中 / 待评审 / 阻塞 / 未排期都能进 Done);自动化、agent、定时不得推到 Done;回执带"真发生了什么"而不是"命令收到了"。转移表是产品铁律的代码正本,加人完成入边要先改铁律再改表。Event 不做事件溯源、fire-and-forget 给 UI。帮助面板「上报」页走 `ReportWorkbenchIssue`:host/path 从当前目录 git 的 origin 现读,人勾了附加且对照日志有文件才附上,回执 toast 写「问题已上报」,不写打开着的被管项目。
 
 **代码**:bw 的 `command.rs`(Command/Event 枚举)+ `model.rs`(`IssueStatus` 七态、`can_transition_to` 唯一事实源)+ `app/mod.rs`(dispatch)+ `app/issue.rs`(run_issue / transition_issue / report_workbench_issue)。
 **数据**:本模块不落库;状态机是内存态求值,转移成立后把新状态交给 issue_store(模块1)写远端正本;Event 只活在当次运行里不持久化。
@@ -182,12 +182,12 @@ references(`standard/system-prompt/references/*.md`)是「干某类活需要额�
 
 ### 8 · 远端与工具探活
 
-**是什么**:两件互锁的事。一是远端分发层:`Remote` enum 按 provider 把 issue 正本读写、MR 开合、Release、走势时序统一路由到 `gh` 或 `codehub-cli`,调用方只见方法不见 provider 分支。二是开工工具与探活:工具跟人走本机 `settings.toml`,探活分三种机制(候选路径 / 版本命令 / 套接字握手),探不通如实回灰。关键取舍是 MR 合入后复跑 `mr view` 读回 state 真变 `merged` 才算成功(退出码靠不住绝不假 Done);选了 Cursor 探活失败就拒绝开工,不悄悄退回 Claude CLI。运作活开工工具跟构建,不写死 Claude。codehub `issue list --state opened` 在零开着的活时返 null,jq 用 `(. // [])` 收成空列表——不兜的话铺底查幂等键先炸,建不出新活也开不出 MR。绿区建 Release 强制 `--ref`,取 `project view` 的默认分支(空则 `master`,跟开 MR 同口径);`gh` 自己从默认分支打,不传。打/改 `bw:plan:<名>` 之后,codehub 臂用 `codehub-cli api`(`/api/v4/.../milestones`)尽力投影一个同名里程碑并挂上这张 issue——不当正本,失败不回滚标签。建 / 删 / 改版本同样:标签先成,`POST` / `DELETE` / 改标题只补充。排期只挂**已存在**的同名里程碑,找不到不建。GitHub 臂不投。旧 `bw:week:` 不认、不再投影周里程碑。
+**是什么**:两件互锁的事。一是远端分发层:**一个基类、两个派生**。基类 `RemoteProvider` 描述「一个远端仓能干什么」(issue 正本读写、MR 开合、Release、走势时序、接入流列仓/探仓/读名片/clone),接口里一个平台名都没有;`GithubRemote`(`gh`)与 `CodehubRemote`(`codehub-cli`)是两个派生实现,`MockRemote` 是第三个(headless 指挥器/测试的替身)。调用方经门面 `Remote` 拿到基类对象,只调方法,**永远不知道背后是哪一个**,也没有变体可以 `match`。二是开工工具与探活:工具跟人走本机 `settings.toml`,探活分三种机制(候选路径 / 版本命令 / 套接字握手),探不通如实回灰。关键取舍是 MR 合入后复跑 `mr view` 读回 state 真变 `merged` 才算成功(退出码靠不住绝不假 Done);选了 Cursor 探活失败就拒绝开工,不悄悄退回 Claude CLI。运作活开工工具跟构建,不写死 Claude。codehub `issue list --state opened` 在零开着的活时返 null,jq 用 `(. // [])` 收成空列表——不兜的话铺底查幂等键先炸,建不出新活也开不出 MR。绿区建 Release 强制 `--ref`,取 `project view` 的默认分支(空则 `master`,跟开 MR 同口径);`gh` 自己从默认分支打,不传。打/改 `bw:plan:<名>` 之后,codehub 臂用 `codehub-cli api`(`/api/v4/.../milestones`)尽力投影一个同名里程碑并挂上这张 issue——不当正本,失败不回滚标签。建 / 删 / 改版本同样:标签先成,`POST` / `DELETE` / 改标题只补充。排期只挂**已存在**的同名里程碑,找不到不建。GitHub 臂不投——「不投」是基类的**默认实现**,派生类不写空壳、也不会因为忘了写而报错。隔离靠三件事,前两件编译器管:两臂是 `remote` 的**私有子模块**(`bw_engine::github::…` 这条路径不存在,外面绕不过基类);基类的 `RemoteError` 不内嵌两个平台各自的错误类型,两臂各自把自家错误翻成 provider 中立的形状;两臂互不相识(`github.rs` 里不许出现 codehub,反之亦然),这条由 `scripts/guard-remote-isolation.sh` 守。跟平台无关的东西一律不放两臂:分支名 `bw/issue-<n>`、`git remote get-url origin` 与远端 URL 解析都在 `workspace.rs`,共用的 `PrOpened` 与名片路径在基类。走势时序回的是 `Capped<T>`(原文时刻 + 这趟有没有顶到 CLI 上限),分桶数学在 `bw::trend` 里只有一份——`gh` 会截到 1000 条,`codehub-cli -l 0` 不截,差异由各臂自报,不由调用方猜。旧 `bw:week:` 不认、不再投影周里程碑。
 
-**代码**:bw-engine 的 `remote.rs`(`Remote` enum 工厂 + issue 存取六法 + MR 三件套)+ `codehub.rs` / `github.rs`(两臂)+ `claude_bin.rs`(候选路径)+ `open_design.rs`(套接字握手);bw 的 `app/tools.rs`(工具注册探活)。
+**代码**:bw-engine 的 `remote/mod.rs`(基类 `RemoteProvider` + 中立 DTO + 门面 `Remote` 工厂)+ `remote/github.rs` / `remote/codehub.rs` / `remote/mock.rs`(三个派生,均为私有子模块)+ `workspace.rs`(平台无关的分支名与 git 远端地址)+ `claude_bin.rs`(候选路径)+ `open_design.rs`(套接字握手);bw 的 `app/tools.rs`(工具注册探活)。
 **数据**:issue 正本在 codehub/GitHub;开工工具在本机 `settings.toml`;本地零库——远端读全走 CLI 不留缓存,探活结果只在内存走一圈不落盘。
-**依赖**:bw-engine 的 tokio_cmd、OS keyring(codehub-cli token)、本机 `gh` / `codehub-cli` / `agent` / Open Design 进程;自身 `Remote` 依赖两臂。
-**没建**:本地读缓存(MVP 不要)。"MR 检查失败"今天还判不出。已合入的 MR 号详情能查(`state=all`);开着没仍走 `open_mr_for_branch`。Cursor 能力清单(空数组);新增 provider 仍需填一条臂;GitHub 里程碑投影。
+**依赖**:bw-engine 的 tokio_cmd、OS keyring(codehub-cli token)、本机 `gh` / `codehub-cli` / `agent` / Open Design 进程;门面 `Remote` 依赖三个派生,派生之间**零依赖**。
+**没建**:本地读缓存(MVP 不要)。"MR 检查失败"今天还判不出。已合入的 MR 号详情能查(`state=all`);开着没仍走 `open_mr_for_branch`。Cursor 能力清单(空数组);新增 provider 仍需写一个派生实现(但**只写它自己**:基类和调用方一行不动);GitHub 里程碑投影。远端 `state` 原文仍不归一化(GitHub 回大写、codehub 回小写),上层靠忽略大小写比对 closed 来判——把它归一化进基类是下一步,今天没做。
 
 ### 9 · open-design
 
@@ -214,8 +214,7 @@ references(`standard/system-prompt/references/*.md`)是「干某类活需要额�
 **代码**:app-shell 的 `main.rs`(Root)+ `bridge/`(独立线程持有 App + nav + vm_build/vm_derive/vm_kb/vm_panels 四分文件拼 VM)+ `vm.rs`(全体 ViewModel)+ `theme/` + `chrome/` + `screens/`(八屏各一目录)+ `adapters/`(一能力一目录)。Windows exe 图标走 `app.ico` + `build.rs`(`winres`),编不过只告警。换项目时内核桥只采打开的那个仓(issue 名单 / 周目标 / 发版 / 健康 / 版本列表 / 当前用户)就推 ViewModel 切页,不顺手刷墙上其他仓;每张活的 MR 号后台回填,不挡第一屏。还在项目墙才拉全墙。拖拽改状态写成功只补丁这一张,不重拉名单(ADR 0002)。
 **数据**:本地零数据库——本机数据是 TOML/JSONL 落 `data_dir()` 下;codehub/GitHub issue+标签是唯一 issue 正本;壳自己不存任何业务数据,每个数字都是拼 ViewModel 那一刻从内核现算塞进来的。对照日志全仓一份 `bw.log`:`cargo run` 写到启动目录,直接跑 exe 写到项目目录(仓根或安装目录);`BW_LOG` 可改路径。一行是 `[时间] [模块] [文件] [行] [ok|err|warn] 正文`。E2E 标签(`[BW_OPEN]` 等)留在正文里。toast / 命令进出 / Orca RPC 都进这份文件。不写 token / pairing / 提示词正文。
 **依赖**:bw(内核 App / Command / Model)、bw_engine(执行器 / 远端)、dioxus 0.7 hard-pin + wry、tokio;对 V3 任何 crate 零依赖;xterm.js 前端资产 `include_str!` 编进二进制不联网拉。
-**没建**:Cursor 适配模块;蒸馏按钮、MR 检查列、"等你输入"那种 agent 细粒度状态(要靠 hook 回传还没接);已结束的会话切走再回来回放仍空;Windows 安装包正源在 `.bw/release/pack/`（入口 `pack.cmd` / `e2e/e2e.cmd`，协议 ADR-0005）;删旧壳判据一条都不满足。计划屏「出包」走 `PackRelease`:只在某个版本视图(全部 issue 没有这颗)。有同名 tag 就新建 `.bw/worktrees/pack-<号>` 检出 tag 再出,主检出不动;在研且还没 tag 就先快进工作区再出。两行弹窗吃出包 / 验包进度,不打标签;关弹窗后台继续,按钮三个点再点回来;停止再确认,杀进程树并清产物与临时装目录。验包不过时「详情」列出 JSONL `cases`。「发版本」只走 `CutRelease`,只在版本视图:只有在研且还没 tag 可点,发过就灰;没有已完成的活也能发。`BW_CDP_PORT` 有值才开 WebView2 调试口;设置 / 接入深链打 `[BW_VIEW]`。会话左右栏可收,中栏终端跟着撑开。右侧「指南」全局都在,打开是仓里那份产品指南,不是另写的四章。指南下面是「上报问题」:弹窗写明会附对照日志,默认勾选;填标题后报到当前目录 git 的 workbench 仓,勾了附加就转圈「日志上传中」,成功走底栏 toast「问题已上报」。
-
+**没建**:Cursor 适配模块;蒸馏按钮、MR 检查列、"等你输入"那种 agent 细粒度状态(要靠 hook 回传还没接);已结束的会话切走再回来回放仍空;Windows 安装包正源在 `.bw/release/pack/`（入口 `pack.cmd` / `e2e/e2e.cmd`，协议 ADR-0005）;删旧壳判据一条都不满足。计划屏「出包」走 `PackRelease`:只在某个版本视图(全部 issue 没有这颗)。有同名 tag 就新建 `.bw/worktrees/pack-<号>` 检出 tag 再出,主检出不动;在研且还没 tag 就先快进工作区再出。两行弹窗吃出包 / 验包进度,不打标签;关弹窗后台继续,按钮三个点再点回来;停止再确认,杀进程树并清产物与临时装目录。验包不过时「详情」列出 JSONL `cases`。「发版本」只走 `CutRelease`,只在版本视图:只有在研且还没 tag 可点,发过就灰;没有已完成的活也能发。`BW_CDP_PORT` 有值才开 WebView2 调试口;设置 / 接入深链打 `[BW_VIEW]`。会话左右栏可收,中栏终端跟着撑开。帮助全局都在,入口是侧栏底部那颗「帮助」(不再在屏幕右缘贴竖排标签):右下角一个能拖的独立小窗,三页——主页(本机环境卡 + 上报入口 + 指南前四章)、指南(搜索 + 全部章节,目录从产品指南 HTML 自己的侧栏扫出来)、上报(标题 + 附加对照日志,默认勾选;报到当前目录 git 的 workbench 仓,勾了附加就转圈「日志上传中」,成功走底栏 toast「问题已上报」)。点某一章,右侧宽抽屉打开并翻到那一章 —— 正文是仓里那份产品指南,不是另写的四章。深链 `BW_HELP=home|guide|report` 直达小窗某一页。
 ### 12 · 指标采集与读数
 
 **是什么**:把 `.bw/metrics.toml` 里定义的指标真采一遍、读出来。一条判据贯穿全设计:"今天能采到这个数,上周三那天的值现在还能算出来吗"——能就是可回溯(A 类),一个字都不存每次现算;不能就落进只追加的读数流水(B 类)。采集方式只有脚本和手填两种。关键取舍是 `MetricClass` 枚举是整个设计分水岭,脚本窗口由 Workbench 给不是脚本自己决定,失败一律如实绝不写 0(None = 这周没采到,不是 0)。
@@ -231,7 +230,7 @@ references(`standard/system-prompt/references/*.md`)是「干某类活需要额�
 
 **代码**:bw 的 `app/plan.rs`(用例)+ `app/release_ship.rs`(`PackRelease` 出包→验包)+ `app/ops.rs`(运作活①②标题幂等)+ `app/orca_inject.rs`(纳入/打开后注入 Orca 自动化)+ `isoweek.rs` + `trend.rs`(近 N 周走势全现算);app-shell 的 `screens/plan/`(mod / kanban / detail / plan_dialogs)。
 **数据**:零本地库——codehub/GitHub issue+标签是唯一正本;排期只有一个槽(Workbench 直接改标签):`bw:plan:<版本名>`,一张活只挂一个。下拉 / 筛卡 / 发版查重只认这张标签。codehub 上顺带投影同名里程碑,失败不回滚。旧 `bw:week:` 忽略,不迁旧标。删除未发布的版本 = 摘 `bw:plan:<名>`,再尽力删同名里程碑;已发的不能删、不能改名。出包 = 仓里 `.bw/release/pack/pack.cmd` 与 `e2e/e2e.cmd`;有 tag 时 `--workdir` 是 `.bw/worktrees/pack-<号>`,没有则是工作区仓根。产物在该 workdir 下 `.bw/release/out/{version}/`。发版 = 工作区对齐远端后建 Release(打 tag)+ 给勾上的活打 `bw:released:<名>`,可以一张不打;已发拒、非在研拒。在研看带号运作活①,不进仓文件;项目群跟名片四字段同一张轻量活「项目约定」,总览编辑,不写主检出。总览/知识库发版次数优先读远端 Release,读不到再退本机 git 标签。进计划屏默认就是全部 issue。点某个版本只看挂了那个版本的活;没挂版本的只在全部 issue。项目墙「本周 x/y 完成」跟总览五段同一口径,作废不进分母。
-**依赖**:issue_store、repo::project_file、git(`pull_ff`)、isoweek、trend、bw_engine::remote(建 Release / 查 MR)、bw_engine::github(`issue_branch` 确定性);节律在 Orca:周一 09:00 定计划、周五 15:00 盘点、每天 20:00 采 B 类。
+**依赖**:issue_store、repo::project_file、git(`pull_ff`)、isoweek、trend、bw_engine::remote(建 Release / 查 MR)、bw_engine::workspace(`issue_branch` 确定性);节律在 Orca:周一 09:00 定计划、周五 15:00 盘点、每天 20:00 采 B 类。
 **没建**:"预览·未合入"做成灰态(从活 worktree 读未合入的 metrics.toml 与 ops① 评论重渲染周头未接);"蒸馏"灰态(见模块15);给活挂指标的命令没接(建活时"推的指标"列恒空);macOS 页面内拖放还没真机验证过一次。版本目标在总览「版本计划与进展」、计划屏版本头显示 `## 版本目标` **整段**(一句或一段都行,旧的一句话评论不用迁);计划屏默认收成两行,右下角展开框打开整段,再点收起。每周进展同样从该版本运作活①评论现算(`## 每周进展`,周五②收口追加,只追加不改周初那条);没有就空着。总览不另开「发版记录」(历史版本在版本页签)。项目墙卡片仍截短。正本是 ops① 评论,多条从新到旧。纳入清单和读数快照留在评论里,人点开运作活看。范围内的活认 `bw:plan:<版本名>`。剧本要求人先确认本周版本(推荐 `vX.X`),再当场建卡并打 `bw:plan:<名>` + `bw:category:*`,里程碑能挂再挂(起止默认本周周一到周五,挂不上不回滚);计划屏创建版本走同一套。替身路径仍走 `ConfirmWeekDraft`。不再写 `bw:week:*`。挂评前用 `week-planning/check-week-comment.py` 校验标题。计划屏「新建活」可选业务活或运作活①②,都能填正文。业务活打 `bw:category:*`;运作活不打五阶段类别,标题按本周幂等。业务活工具和 workflow 读回时按类别查本机 settings,没有就用产品默认(原型默认 Open Design,workflow 空着等 proto-design 打包);运作活开工工具跟构建,workflow 仍按标题。总览不再放「去计划」(侧栏下一格就是计划)。
 
 ### 14 · 资产盘点与项目接入
@@ -240,7 +239,7 @@ references(`standard/system-prompt/references/*.md`)是「干某类活需要额�
 
 **代码**:bw 的 `app/project.rs`(接入 / 名片 / 群)+ `git.rs`(`first_commit_date` / `tags_with_dates` / `week_counts_many` 现算);standard/skills 的 `asset-audit`。`project-handbook` 在仓里,盘点不派发。
 **数据**:零本地库;名片四字段只落 `.bw/project.toml`;`project` 表只有定位与显示缓存;历史呈现不写仓文件。
-**依赖**:crate::git / isoweek / repo::project_file / standard、worktree、issue_store;外部 bw_engine::github / codehub(clone、list/create Release)。
+**依赖**:crate::git / isoweek / repo::project_file / standard、worktree、issue_store;外部 bw_engine::remote(clone、list/create Release)。
 
 **没建**:`mode: first`(给老 issue 打 `bw:plan:<名>`、补记、问人写 AGENTS.md);`BackfillHistory` 已删。五条历史探测判据只实现前三条(提交数 / 标签 / CHANGELOG),远端已关闭 issue、已合并 MR 两条没对应查询。钟在 Orca:纳入 / 打开项目 `ensure_repo` 成功后注入三条自动化(默认关,已有同名+同仓不覆盖)。① 钉 `bw/week-plan` 每周一 09:00 新会话;② 钉 `bw/ops-audit` 每周五 15:00 新会话;B 类钉 `bw/ledger` 每天 20:00 复用会话。错过了到 Orca 点 Run now。Workbench 不再 tick、不再「开始本版本」。运作活没有五阶段类别,详情锁死显示「运作」,内核拒改。旧铺底残留由盘点对照 `bw-assets.md` 在盘点常驻树里删,走 MR,不在主检出动手。
 

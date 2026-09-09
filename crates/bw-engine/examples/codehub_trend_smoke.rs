@@ -14,22 +14,31 @@ async fn main() {
             std::process::exit(2);
         }
     };
-    let mrs = bw_engine::codehub::merged_mr_times(&host, &path)
+    let remote =
+        bw_engine::remote::Remote::for_project("codehub", &host, &path).unwrap_or_else(|e| {
+            eprintln!("认不出远端:{e}");
+            std::process::exit(2);
+        });
+    let mrs = remote
+        .merged_mr_times()
         .await
         .unwrap_or_else(|e| {
             eprintln!("merged_mr_times 失败:{e}");
-            Vec::new()
-        });
+            Default::default()
+        })
+        .rows;
     println!("合入 MR 时刻:{} 条", mrs.len());
     for t in mrs.iter().take(5) {
         println!("  {t}");
     }
-    let issues = bw_engine::codehub::issue_times(&host, &path)
+    let issues = remote
+        .issue_times()
         .await
         .unwrap_or_else(|e| {
             eprintln!("issue_times 失败:{e}");
-            Vec::new()
-        });
+            Default::default()
+        })
+        .rows;
     println!("issue 时序:{} 条", issues.len());
     for (c, cl) in issues.iter().take(5) {
         println!("  建 {c} · 关 {}", cl.as_deref().unwrap_or("(未关)"));

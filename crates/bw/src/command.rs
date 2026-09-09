@@ -101,7 +101,6 @@ pub enum Command {
         name: String,
         start: String,
         due: String,
-        note: String,
         included: Vec<IssueId>,
     },
     /// 删一个未发版本:给挂着 `bw:plan:<name>` 的活摘掉该标签,再尽力删同名

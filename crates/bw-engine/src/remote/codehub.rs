@@ -1,5 +1,5 @@
 //! CodeHub remote — shell-out `codehub-cli`(Go CLI,GitLab v4 同构封装,默认
-//! JSON 输出,token 存 OS keyring)。与 [`crate::github`] 对称:无状态自由
+//! JSON 输出,token 存 OS keyring)。与 GitHub 那一臂对称:无状态自由
 //! 函数 + `tokio::process` shell-out,**零 HTTP 依赖**。token 不管(keyring
 //! 里 `auth login` 存好),`host`/`path` 按 project 的 `(remote_host,
 //! remote_path)` 显式带 `-H`/`-p`——绿/黄/内源三 host 同名 path 也不会混,
@@ -9,6 +9,10 @@
 //! 不进 `Executor` 体系——`codehub-cli` 是 VCS 远端 API 客户端(对标 `gh`),
 //! 不是 agent 执行器(对标 `claude`)。两种 shell-out 模式别混。
 
+use super::{
+    Capped, IssueFilter, IssueState, IssueStateEvent, Milestone, PrOpened, RemoteError,
+    RemoteIssue, RemoteProvider, RepoSummary, PROJECT_FILE_REL_PATH,
+};
 use crate::win_cmd::stderr_text;
 use std::{
     ffi::{OsStr, OsString},
@@ -151,7 +155,7 @@ pub async fn create_mr_on_branch(
     branch: &str,
     title: &str,
     body: &str,
-) -> Result<crate::github::PrOpened, CodehubError> {
+) -> Result<PrOpened, CodehubError> {
     let tgt = crate::win_cmd::tokio_cmd("git")
         .current_dir(workspace)
         .args(["symbolic-ref", "refs/remotes/origin/HEAD"])
@@ -172,7 +176,7 @@ pub async fn create_mr_on_branch(
     // iid back (never guessed, same honesty as github's `adopt_existing_pr`).
     // 读回失败(网络/权限)就落到下面的 `mr create`,由它如实报错。
     if let Ok(Some(iid)) = open_mr_for_branch(host, path, branch).await {
-        return Ok(crate::github::PrOpened::Adopted(iid));
+        return Ok(PrOpened::Adopted(iid));
     }
     let mut args: Vec<&str> = vec![
         "mr",
@@ -200,7 +204,7 @@ pub async fn create_mr_on_branch(
     let iid = text
         .parse::<u32>()
         .map_err(|_| CodehubError::Parse(format!("无法解析 codehub MR iid:{text:?}")))?;
-    Ok(crate::github::PrOpened::Created(iid))
+    Ok(PrOpened::Created(iid))
 }
 
 /// `codehub-cli mr list --source-branch <branch> --state opened --jq .[0].iid`
@@ -433,7 +437,7 @@ pub async fn fetch_project_toml(
         "-p",
         path,
         "--file-path",
-        crate::github::PROJECT_FILE_REL_PATH,
+        PROJECT_FILE_REL_PATH,
         "--ref",
         git_ref,
         "--no-cache",
@@ -1513,5 +1517,235 @@ mod api_body_tests {
         let rows = milestone_rows(&body);
         assert_eq!(rows.len(), 1);
         assert_eq!(rows[0]["title"], "2026-W35");
+    }
+}
+
+// ─────────────── 派生二:codehub ───────────────
+
+impl From<CodehubError> for RemoteError {
+    fn from(e: CodehubError) -> Self {
+        match e {
+            CodehubError::NotInstalled => RemoteError::NotInstalled { cli: "codehub-cli" },
+            other => RemoteError::Cli(other.to_string()),
+        }
+    }
+}
+
+/// 绑一个 codehub 仓的远端实现。
+///
+/// `host` 是区的**别名**(`green` / `open`(内源) / `yellow`),就是
+/// `codehub-cli -H` 收的那个值,**不是域名** —— 拿它直接拼网页地址会得到一个打
+/// 不开的链接,要先过 `bw::model::codehub_alias_to_domain` 那张表。`path` 是
+/// `"org/repo"`。
+///
+/// 无状态:每个方法都把 `host`/`path` 再传给对应的 shell-out。将来若要省掉每次
+/// 那趟 `project view`(解析 project_id),在这里加一层缓存即可,接口不用动。
+#[derive(Debug)]
+pub(super) struct CodehubRemote {
+    host: String,
+    path: String,
+}
+
+impl CodehubRemote {
+    pub(super) fn new(host: &str, path: &str) -> Self {
+        Self {
+            host: host.to_string(),
+            path: path.to_string(),
+        }
+    }
+
+    /// 接入流那几条方法要先有区。没填就**如实说**,不拿一个空 host 去撞 CLI。
+    fn need_host(&self) -> Result<&str, RemoteError> {
+        let h = self.host.trim();
+        if h.is_empty() {
+            return Err(RemoteError::Cli(
+                "没选区 —— codehub 要 -H green/open/yellow 之一".into(),
+            ));
+        }
+        Ok(h)
+    }
+}
+
+#[async_trait::async_trait]
+impl RemoteProvider for CodehubRemote {
+    fn kind(&self) -> &'static str {
+        "codehub"
+    }
+
+    async fn create_mr_on_branch(
+        &self,
+        workspace: &Path,
+        branch: &str,
+        title: &str,
+        body: &str,
+    ) -> Result<PrOpened, RemoteError> {
+        Ok(create_mr_on_branch(&self.host, &self.path, workspace, branch, title, body).await?)
+    }
+
+    async fn merge_mr(&self, mr_number: u32) -> Result<(), RemoteError> {
+        Ok(merge_mr(&self.host, &self.path, mr_number).await?)
+    }
+
+    async fn open_mr_for_branch(&self, branch: &str) -> Result<Option<u32>, RemoteError> {
+        Ok(open_mr_for_branch(&self.host, &self.path, branch).await?)
+    }
+
+    async fn mr_for_branch(&self, branch: &str) -> Result<Option<u32>, RemoteError> {
+        Ok(mr_for_branch(&self.host, &self.path, branch).await?)
+    }
+
+    async fn create_issue(
+        &self,
+        title: &str,
+        body: &str,
+        labels: &[&str],
+    ) -> Result<u32, RemoteError> {
+        Ok(create_issue(&self.host, &self.path, title, body, labels, None).await?)
+    }
+
+    async fn create_issue_with_attachment(
+        &self,
+        title: &str,
+        body: &str,
+        labels: &[&str],
+        attachment: Option<&Path>,
+    ) -> Result<u32, RemoteError> {
+        Ok(create_issue(&self.host, &self.path, title, body, labels, attachment).await?)
+    }
+
+    async fn update_issue(
+        &self,
+        iid: u32,
+        labels: Option<&[&str]>,
+        state_event: Option<IssueStateEvent>,
+    ) -> Result<(), RemoteError> {
+        let ev = state_event.map(|e| match e {
+            IssueStateEvent::Close => "close",
+            IssueStateEvent::Reopen => "reopen",
+        });
+        Ok(update_issue(&self.host, &self.path, iid, labels, ev).await?)
+    }
+
+    async fn list_issues(&self, filter: &IssueFilter) -> Result<Vec<RemoteIssue>, RemoteError> {
+        let state = filter.state.map(|s| match s {
+            IssueState::Open => "opened",
+            IssueState::Closed => "closed",
+        });
+        Ok(list_issues(&self.host, &self.path, state, &filter.labels).await?)
+    }
+
+    async fn view_issue(&self, iid: u32) -> Result<RemoteIssue, RemoteError> {
+        Ok(view_issue(&self.host, &self.path, iid).await?)
+    }
+
+    async fn comment_issue(&self, iid: u32, body: &str) -> Result<(), RemoteError> {
+        Ok(comment_issue(&self.host, &self.path, iid, body).await?)
+    }
+
+    async fn list_issue_comments(&self, iid: u32) -> Result<Vec<String>, RemoteError> {
+        Ok(list_issue_comments(&self.host, &self.path, iid).await?)
+    }
+
+    async fn set_issue_assignee(&self, iid: u32, assignee: &str) -> Result<(), RemoteError> {
+        Ok(set_issue_assignee(&self.host, &self.path, iid, assignee).await?)
+    }
+
+    async fn edit_issue(&self, iid: u32, title: &str, body: &str) -> Result<(), RemoteError> {
+        Ok(edit_issue(&self.host, &self.path, iid, title, body).await?)
+    }
+
+    async fn create_release(&self, tag: &str, title: &str, body: &str) -> Result<(), RemoteError> {
+        Ok(create_release(&self.host, &self.path, tag, title, body).await?)
+    }
+
+    async fn list_releases(&self) -> Result<Vec<String>, RemoteError> {
+        Ok(list_releases(&self.host, &self.path).await?)
+    }
+
+    async fn current_user(&self) -> Option<String> {
+        current_user(&self.host).await
+    }
+
+    // ── 里程碑:只有这一臂真投(best-effort 镜像,不当正本)──
+
+    async fn list_milestones(&self) -> Result<Vec<Milestone>, RemoteError> {
+        Ok(list_milestones(&self.host, &self.path).await?)
+    }
+
+    async fn ensure_plan_milestone(
+        &self,
+        name: &str,
+        start: &str,
+        due: &str,
+    ) -> Result<u64, RemoteError> {
+        Ok(ensure_plan_milestone(&self.host, &self.path, name, start, due).await?)
+    }
+
+    async fn project_plan(&self, iid: u32, name: &str) -> Result<(), RemoteError> {
+        Ok(project_plan(&self.host, &self.path, iid, name).await?)
+    }
+
+    async fn clear_issue_milestone(&self, iid: u32) -> Result<(), RemoteError> {
+        Ok(clear_issue_milestone(&self.host, &self.path, iid).await?)
+    }
+
+    async fn delete_plan_milestone(&self, name: &str) -> Result<(), RemoteError> {
+        Ok(delete_plan_milestone(&self.host, &self.path, name).await?)
+    }
+
+    async fn rename_plan_milestone(&self, from: &str, to: &str) -> Result<(), RemoteError> {
+        Ok(rename_plan_milestone(&self.host, &self.path, from, to).await?)
+    }
+
+    async fn rename_plan_label(&self, from_label: &str, to_label: &str) -> Result<(), RemoteError> {
+        Ok(rename_plan_label(&self.host, &self.path, from_label, to_label).await?)
+    }
+
+    // ── 走势:`codehub-cli -l 0` 全量拉,不截断,所以 `truncated` 恒 false ──
+
+    async fn merged_mr_times(&self) -> Result<Capped<String>, RemoteError> {
+        Ok(Capped {
+            rows: merged_mr_times(&self.host, &self.path).await?,
+            truncated: false,
+        })
+    }
+
+    async fn issue_times(&self) -> Result<Capped<(String, Option<String>)>, RemoteError> {
+        Ok(Capped {
+            rows: issue_times(&self.host, &self.path).await?,
+            truncated: false,
+        })
+    }
+
+    async fn list_repos(&self, limit: u32) -> Result<Vec<RepoSummary>, RemoteError> {
+        Ok(list_repos(self.need_host()?, limit)
+            .await?
+            .into_iter()
+            .map(|r| RepoSummary {
+                path: r.path,
+                // codehub 给的是 `visibility` 字符串,不是布尔;只有明写 private
+                // 才算私有,拿不准就不画那个锁。
+                private: r.visibility.eq_ignore_ascii_case("private"),
+                description: r.description,
+                default_branch: r.default_branch,
+                pushed_at: r.pushed_at,
+            })
+            .collect())
+    }
+
+    async fn probe_repo(&self, path: &str) -> Result<String, RemoteError> {
+        Ok(probe(self.need_host()?, path).await?)
+    }
+
+    async fn fetch_project_toml(
+        &self,
+        path: &str,
+        git_ref: &str,
+    ) -> Result<Option<String>, RemoteError> {
+        Ok(fetch_project_toml(self.need_host()?, path, git_ref).await?)
+    }
+
+    async fn clone_repo(&self, path: &str, dest: &Path) -> Result<(), RemoteError> {
+        Ok(clone_repo(self.need_host()?, path, dest).await?)
     }
 }

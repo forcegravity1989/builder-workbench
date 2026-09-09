@@ -108,6 +108,43 @@ impl GuideNav {
     }
 }
 
+/// 帮助面板开在哪一页。`None` = 收着。和 [`GuideNav`] 一样是纯本机导航,侧栏
+/// 底部那颗「帮助」和面板自己共用它。
+///
+/// 面板只管**找**(本机环境、指南目录、上报一条问题);指南正文归 [`GuideNav`]
+/// 那条宽抽屉**读** —— 一份完整文档塞不进面板那点宽度。
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum HelpTab {
+    Home,
+    Guide,
+    Report,
+}
+
+impl HelpTab {
+    pub fn parse(s: &str) -> Option<HelpTab> {
+        Some(match s {
+            "home" => HelpTab::Home,
+            "guide" => HelpTab::Guide,
+            "report" => HelpTab::Report,
+            _ => return None,
+        })
+    }
+}
+
+#[derive(Clone, Copy)]
+pub struct HelpNav(pub dioxus::prelude::Signal<Option<HelpTab>>);
+
+impl HelpNav {
+    pub fn open(mut self, tab: HelpTab) {
+        use dioxus::prelude::WritableExt;
+        self.0.set(Some(tab));
+    }
+    pub fn close(mut self) {
+        use dioxus::prelude::WritableExt;
+        self.0.set(None);
+    }
+}
+
 /// 顶层三屏里不依赖「打开某个项目」的那两个。
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum TopView {

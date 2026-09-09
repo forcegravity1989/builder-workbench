@@ -25,10 +25,8 @@
 #![forbid(unsafe_code)]
 
 pub mod claude_bin;
-pub mod codehub;
 pub mod dlog;
 pub mod evidence;
-pub mod github;
 pub mod legacy_pty;
 pub mod open_design;
 pub mod orca;
@@ -37,7 +35,7 @@ pub mod win_cmd;
 pub mod workspace;
 
 // 根上只 re-export **真的被 `use bw_engine::{…}` 引到**的名字。其余类型仍然
-// 可达(模块本身是 pub 的,如 `bw_engine::github::GithubError`),但不在根上再
+// 可达(模块本身是 pub 的,如 `bw_engine::remote::RemoteError`),但不在根上再
 // 列一遍 —— 这份清单是「底座对外承诺了什么」的说明书,混进一半死名字之后,
 // 想改 `evidence` 的返回形状得先把十来个名字挨个 grep 一遍才敢下手,正是这次
 // 拷贝想省掉的那笔账(评审抓的)。

@@ -97,6 +97,7 @@ pub(super) struct ProjectGathered {
     current_week: String,
     mr_url_prefix: String,
     issue_url_prefix: String,
+    remote_brand: String,
     /// 版本列表 + 当前登录用户。gather 采一次,assemble 只克隆 —— 切周 / 改
     /// 一张卡状态时不再打 `project view` / milestones / `/user`。
     plan_versions: Vec<PlanVersionVm>,
@@ -1150,7 +1151,7 @@ async fn lookup_pr_one(
     let branch = if item.charter {
         bw_engine::workspace::PROJECT_BRANCH.to_string()
     } else {
-        bw_engine::github::issue_branch(item.number)
+        bw_engine::workspace::issue_branch(item.number)
     };
     if item.done {
         return match remote.mr_for_branch(&branch).await {
@@ -1203,6 +1204,7 @@ async fn gather_project(
     }
     let mr_url_prefix = p.mr_url_prefix();
     let issue_url_prefix = p.issue_url_prefix();
+    let remote_brand = p.remote_brand().to_string();
 
     let (sessions, ops1_notes, releases, ops3_landed, last_delivery, plan_versions, current_user) = tokio::join!(
         log_elapsed("sessions", build_sessions(app, id, &issues)),
@@ -1278,6 +1280,7 @@ async fn gather_project(
 
         mr_url_prefix,
         issue_url_prefix,
+        remote_brand,
         plan_versions,
         current_user,
     })
@@ -1439,6 +1442,7 @@ async fn assemble_project(
         session_open: ui.session_open,
         mr_url_prefix: pg.mr_url_prefix.clone(),
         issue_url_prefix: pg.issue_url_prefix.clone(),
+        remote_brand: pg.remote_brand.clone(),
         workbench,
         notify: NotifyVm {
             // 评审中的活张数,现算。项目墙 ⚾ 与项目轨头部徽章读它。通知页签已删
@@ -1503,7 +1507,7 @@ async fn build_plan_versions(app: &App, p: &Project, issues: &[bw::Issue]) -> Ve
         }
     }
     if let Ok(remote) = app.remote_for(p) {
-        if let Ok(rows) = remote.list_milestones(&p.remote_path).await {
+        if let Ok(rows) = remote.list_milestones().await {
             for (title, start, due, created) in rows {
                 if order.contains(&title) {
                     meta.insert(title, (start, due, created));

@@ -183,14 +183,48 @@
     font-size: 13px; font-weight: 500;
   }
   .paper span { display: block; font-size: 11px; font-weight: 400; color: var(--faint); margin-top: 2px; }
-  .chips { margin-top: 14px; display: flex; flex-wrap: wrap; gap: 6px; }
-  .chip {
-    font-size: 11px; color: var(--muted);
-    background: #f5f5f7;
-    border-radius: 980px;
-    padding: 4px 10px;
+  /* 版本切片：把诉求切成可发布的版本片，每片内含 feature/bug/chaos——重点环节，独立成块 */
+  .slice {
+    margin-top: 18px;
+    background: var(--ink);
+    color: #fff;
+    border-radius: 16px;
+    padding: 16px 18px 15px;
   }
-  .chip.accent { background: var(--ink); color: #fff; }
+  .slice-head { display: flex; align-items: baseline; gap: 9px; flex-wrap: wrap; }
+  .slice-head strong {
+    font-size: 16px; font-weight: 600; letter-spacing: -0.02em;
+  }
+  .slice-head span {
+    font-size: 11.5px; font-weight: 400; line-height: 1.4;
+    color: rgba(255, 255, 255, 0.62);
+  }
+  .slice-track {
+    margin-top: 15px;
+    display: flex; align-items: center; gap: 7px;
+  }
+  .milestone {
+    font-size: 11px; font-weight: 500; white-space: nowrap;
+    padding: 5px 11px; border-radius: 980px;
+    background: rgba(255, 255, 255, 0.12);
+    color: rgba(255, 255, 255, 0.82);
+  }
+  .milestone.is-now {
+    background: var(--blue); color: #fff;
+    box-shadow: 0 0 0 3px rgba(0, 113, 227, 0.28);
+  }
+  .slice-rail { flex: 1; height: 1px; background: rgba(255, 255, 255, 0.22); min-width: 6px; }
+  .slice-contains {
+    margin-top: 14px; padding-top: 12px;
+    border-top: 1px solid rgba(255, 255, 255, 0.14);
+    display: flex; align-items: center; gap: 6px; flex-wrap: wrap;
+  }
+  .contains-label { font-size: 11px; color: rgba(255, 255, 255, 0.55); margin-right: 2px; }
+  .kind {
+    font-size: 11px; font-weight: 500;
+    padding: 4px 10px; border-radius: 980px;
+    background: rgba(255, 255, 255, 0.14); color: #fff;
+  }
 
   .window {
     margin-top: 24px;
@@ -222,10 +256,33 @@
   .layer strong { display: block; font-size: 13px; font-weight: 600; letter-spacing: -0.02em; }
   .layer small { display: block; margin-top: 3px; font-size: 11px; color: var(--faint); }
 
-  .sdlc {
-    display: flex; align-items: center; justify-content: space-between;
-    gap: 4px; padding: 0 16px 16px;
+  /* SDLC 环：六阶段闭环(计划→设计→构建→测试→发布→运维→回计划)，对齐 docs/10-reference playbook */
+  .sdlc-ring {
+    position: relative;
+    height: 186px;
+    margin: 2px 16px 12px;
   }
+  .ring-line {
+    position: absolute; left: 50%; top: 50%;
+    width: 132px; height: 132px;
+    transform: translate(-50%, -50%);
+    border: 1px dashed var(--line-strong);
+    border-radius: 50%;
+  }
+  .ring-core {
+    position: absolute; left: 50%; top: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 11px; color: var(--faint);
+    text-align: center; line-height: 1.4;
+  }
+  .ring-core b { display: block; font-size: 14px; font-weight: 600; color: var(--ink); }
+  .sdlc-ring .sdlc-step { position: absolute; transform: translate(-50%, -50%); }
+  .sdlc-ring .sdlc-step:nth-of-type(1) { left: 50%; top: calc(50% - 70px); }
+  .sdlc-ring .sdlc-step:nth-of-type(2) { left: calc(50% + 62px); top: calc(50% - 35px); }
+  .sdlc-ring .sdlc-step:nth-of-type(3) { left: calc(50% + 62px); top: calc(50% + 35px); }
+  .sdlc-ring .sdlc-step:nth-of-type(4) { left: 50%; top: calc(50% + 70px); }
+  .sdlc-ring .sdlc-step:nth-of-type(5) { left: calc(50% - 62px); top: calc(50% + 35px); }
+  .sdlc-ring .sdlc-step:nth-of-type(6) { left: calc(50% - 62px); top: calc(50% - 35px); }
   .sdlc-step {
     display: flex; flex-direction: column; align-items: center; gap: 6px;
     font-size: 11px; color: var(--faint); min-width: 36px;
@@ -236,7 +293,6 @@
   }
   .sdlc-step.is-now { color: var(--ink); font-weight: 500; }
   .sdlc-step.is-now i { background: var(--blue); box-shadow: 0 0 0 3px var(--blue-soft); }
-  .sdlc-rail { flex: 1; height: 1px; background: #e8e8ed; min-width: 8px; }
 
   .ship {
     border-top: 1px solid var(--line);
@@ -380,11 +436,24 @@
         <div class="paper">知识文档<span>里程碑与共同语境</span></div>
         <div class="paper">需求列表<span>issue 积压，统一入口</span></div>
       </div>
-      <div class="chips">
-        <span class="chip">feature</span>
-        <span class="chip">task</span>
-        <span class="chip">bug</span>
-        <span class="chip accent">V1 切片</span>
+      <div class="slice">
+        <div class="slice-head">
+          <strong>版本切片</strong>
+          <span>把诉求切成一个个可发布的版本</span>
+        </div>
+        <div class="slice-track">
+          <span class="milestone is-now">V0.1</span>
+          <i class="slice-rail"></i>
+          <span class="milestone">V0.2</span>
+          <i class="slice-rail"></i>
+          <span class="milestone">V0.3</span>
+        </div>
+        <div class="slice-contains">
+          <span class="contains-label">V0.1 内含</span>
+          <span class="kind">feature</span>
+          <span class="kind">bug</span>
+          <span class="kind">chaos</span>
+        </div>
       </div>
     </button>
 
@@ -399,19 +468,18 @@
         </div>
         <div class="layers">
           <div class="layer"><strong>IDE</strong><small>人机交互面</small></div>
-          <div class="layer"><strong>harness</strong><small>受控运行时</small></div>
+          <div class="layer"><strong>harness</strong><small>各类任务运行时</small></div>
           <div class="layer"><strong>skill</strong><small>标准化能力</small></div>
         </div>
-        <div class="sdlc">
-          <span class="sdlc-step"><i></i>plan</span>
-          <span class="sdlc-rail"></span>
-          <span class="sdlc-step is-now"><i></i>Design</span>
-          <span class="sdlc-rail"></span>
-          <span class="sdlc-step"><i></i>build</span>
-          <span class="sdlc-rail"></span>
-          <span class="sdlc-step"><i></i>test</span>
-          <span class="sdlc-rail"></span>
-          <span class="sdlc-step"><i></i>···</span>
+        <div class="sdlc-ring">
+          <i class="ring-line"></i>
+          <div class="ring-core"><b>环</b>人守判断</div>
+          <span class="sdlc-step"><i></i>计划</span>
+          <span class="sdlc-step is-now"><i></i>设计</span>
+          <span class="sdlc-step"><i></i>构建</span>
+          <span class="sdlc-step"><i></i>测试</span>
+          <span class="sdlc-step"><i></i>发布</span>
+          <span class="sdlc-step"><i></i>运维</span>
         </div>
         <div class="ship">
           <b>发布</b>

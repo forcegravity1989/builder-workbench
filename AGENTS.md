@@ -43,6 +43,7 @@ cargo run -p app-shell                      # 启 Workbench MVP 桌面壳(bin �
 BW_OPEN=<项目名> BW_PANEL=overview|plan|session|config|kb ./target/debug/bw-dev
                                             # 深链直达屏;stderr [BW_OPEN]=真的渲染到了
 BW_VIEW=onboard|settings ./target/debug/bw-dev   # 顶层屏深链
+BW_HELP=home|guide|report ./target/debug/bw-dev   # 帮助小窗深链
 cargo run -p bw-engine --example pty_smoke [-- --teardown|-- --abort]  # PTY 地基烟测(不碰 claude/网关)
 cargo test --workspace                                # 本地含壳;CI 同命令加 --exclude app-shell(ubuntu 无 WebKit/GTK)
 # 出包 / 验包(Windows,非门禁/非 CI):入口只认 .cmd,协议见 docs/adr/0005
@@ -60,6 +61,7 @@ cargo fmt --all --check
 cargo clippy --workspace -- -D warnings
 cargo check -p app-shell          # Workbench MVP 壳编译过
 ./scripts/guard-kernel-ui-free.sh
+./scripts/guard-remote-isolation.sh         # 远端两臂(github / codehub)互不相识
 ./scripts/guard-no-cross-screen-import.sh   # 屏与屏不互相引用
 ./scripts/guard-screen-hooks.sh             # 用 hook 的函数必须是组件
 ./scripts/guard-file-lines.sh               # 单文件 2000 行硬上限(只查 Workbench MVP 三 crate)
@@ -133,6 +135,8 @@ scripts/   门禁脚本(guard-*)+ codegraph 联调
 ### commit 约定
 
 每件独立 commit、在分支上、**不 push**(用户要 push 时另开 bundle)。标题让人不查文档也看懂做了什么(可带代号前缀,但须人话描述)。信息如实描述取舍,不吹;偏差如实记进 commit message 与 `CHANGELOG.md`。
+
+开 PR 另发一条 **review 当验证报告** —— 界面 / 行为改动一律要,别人不用自己起壳就能验收。写五样:验的什么 / 怎么验的(命令 + 深链)/ 每条判据**直接内嵌**一张真壳截图 / 门禁结果 / **没验的留白如实列**;别让人点链接跳出去。图推一条永不合入的 `shots/<分支名>` 分支,内嵌写 `![](https://github.com/<owner>/<repo>/raw/<commit SHA>/x.jpg)` —— 这条同源地址不会被 GitHub 图片代理改写,私有仓照样显示;**别写 `raw.githubusercontent`**(代理取不到私有仓,只会裂图),**也别用分支名**(带斜杠会有歧义,钉 SHA 还不会漂)。大改动的改前 / 改后对照仍照旧进 `docs/05-features/<id>/shots/`。
 
 ## CodeGraph 导航(可选用)
 
