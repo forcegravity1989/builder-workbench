@@ -66,7 +66,7 @@
 
 **关键取舍**:放弃本地读缓存、读全走 CLI(MVP 卡点认了)。排期只有一个槽 `bw:plan:<版本名>`、里程碑标题同字(名字不设限,`vX.X` 只推荐),旧 `bw:week:` 不认。仓文件不做 `deny_unknown_fields`(人手写多一个字段就整份崩代价太大);metrics 只认 `schema_version=2`,读到旧格式整份拒收、不在打开项目时改仓;写回手写渲染而非自动序列化,把注释留给人看。远端按 provider 统一路由(调用方只见方法不见 provider 分支);MR 合入复跑读回 state 真 `merged` 才算成功(退出码靠不住绝不假 Done);Cursor 探活失败就拒绝开工,不悄悄退回 Claude CLI。现行 `.bw` 契约在 `references/bw-assets.md`。
 
-**二级特性 · 健康推导**:把 ① 维护的信息(提交/读数/上周交付)派生成一盏健康灯,现算纯函数;密封类型 `DerivedHealth`(构造点限仓内、仓内无 `set_signal`)守「没数据不装绿」铁律,灯只能从数据推导不手设,没数据是诚实的灰不是绿,连两周没动是真停了的红。
+**二级特性 · 健康推导**:把 ① 维护的信息(提交/读数/上周交付)派生成一盏健康灯,现算纯函数;密封类型 `DerivedHealth`(构造点限仓内、仓内无 `set_signal`)守「没数据不装绿」铁律,灯只能从数据推导不手设,没数据是诚实的灰不是绿,连两周没动是真停了的红。模块实现心智见 [`06-module/关键信息维护`](06-module/关键信息维护.md)。
 
 ### ② 会话与执行(层 B 执行)
 
@@ -77,7 +77,7 @@
 - 两条通道别混:本地 pipe 是 Workbench 对 Orca 下命令(开工/接回),同机读 token、不需配对;嵌网页是把本机已开的 Orca web 给人看、要配对码(人从 Orca 桌面「给 web 配对」拿完整 URL 贴进本机设置)。没贴 URL 则嵌页如实空着、不影响开工。跟随网页是 Orca 内核的刀、不是 Workbench 第二条 RPC,带这刀的 Orca 推配对网页,没这刀的官方包开工和桌面切换仍成立。
 - Open Design 是「本机网页内嵌类」开工工具:不起 CLI、不 spawn agent,开工 = 在内嵌标签里用本机已开的 OD 干;探不到返 None 不 panic;够不上一个适配模块体量,不单开 adapter 目录。
 - 工具跟人走本机设置,探不通如实回灰;Cursor 探活失败拒绝开工,不悄悄退回 Claude CLI(与 ① 同一条铁律)。运作活开工工具跟构建,不写死 Claude。
-- worktree 目录忽略提交;旧平级兄弟不迁不删,接回按「会话记的路径 → 新目录 → 旧兄弟」顺序找。账本 worktree 这版不动。
+- worktree 目录忽略提交;旧平级兄弟不迁不删,接回按「会话记的路径 → 新目录 → 旧兄弟」顺序找。账本 worktree 这版不动。模块实现心智见 [`06-module/会话与执行`](06-module/会话与执行.md)。
 
 ### ③ 系统提示词与渐进加载(层 C standard)
 
@@ -115,7 +115,7 @@
 
 漏同步的结果就是周五盘点还在找已经不存在的登记表——协议变了只改内核、不改 reference,现场 agent 对不上。
 
-**评审会话另有一份外置主提示词** `standard/system-prompt/REVIEW.md.tmpl`(独立评审身份 + 只评不改/绝不合并/意见落 MR 评论),渲染与摊开同机制;阶段规范 `review`、评审剧本 `mr-review` **设计走同一条注入链,但尚未编进二进制、未派发**(见 §2 ④)。
+**评审会话另有一份外置主提示词** `standard/system-prompt/REVIEW.md.tmpl`(独立评审身份 + 只评不改/绝不合并/意见落 MR 评论),渲染与摊开同机制;阶段规范 `review`、评审剧本 `mr-review` **设计走同一条注入链,但尚未编进二进制、未派发**(见 §2 ④)。模块实现心智见 [`06-module/系统提示词与渐进加载`](06-module/系统提示词与渐进加载.md)。
 
 ### ④ 技能与蒸馏(层 C standard)
 
@@ -123,11 +123,11 @@
 
 **关键取舍**:
 - **不预建方法论技能**——原六份「阶段方法论」默认 workflow 没打包、一份没被真正派发过,删光:阶段方法论该由业界 workflow(mattpocock / proto-design,见 `standard/vendor`)提供,Workbench 每个环节挑一个最好的默认,要从实践里长出 Workbench 自己的方法论再建。阶段规范约束(references,如指标铁律、改仓规则)归 ④,不和技能混。
-- **蒸馏是活的附属动作**——把一件做完的活提炼成带做法的技能,永远记着来自哪件活。技能正本编进二进制零 IO、全局一份不随项目复制(不进用户仓);"用过几次"每次现查 issue 列表聚合不落表不缓存、不显示胜率(无结算记录)。蒸馏今天没接:会话屏顶部按钮灰着、命令未接。
+- **蒸馏是活的附属动作**——把一件做完的活提炼成带做法的技能,永远记着来自哪件活。技能正本编进二进制零 IO、全局一份不随项目复制(不进用户仓);"用过几次"每次现查 issue 列表聚合不落表不缓存、不显示胜率(无结算记录)。蒸馏今天没接:会话屏顶部按钮灰着、命令未接。模块实现心智见 [`06-module/技能与蒸馏`](06-module/技能与蒸馏.md)。
 
 ### ⑤ 桌面壳(层 D 壳)
 
-**是什么**:Workbench MVP 的桌面应用壳(Dioxus / wry WebView,macOS+Windows)。壳只渲染和转发意图——健康什么颜色、活能不能转到那一列、指标有没有读数,全部由内核算好塞进 ViewModel;壳里没有一行业务判断,命令失败就把原话放进 toast 不假装做成了。**关键取舍**:终端挂在屏的外面(切面板不卸载,否则字节真丢);PTY 字节流和长命令进度走 broadcast 不走 ViewModel(一次性流,进 ViewModel 每次重渲染会被重写一遍拖垮界面);屏与屏之间只经共用 ViewModel 模块流转、守卫拦着不能互相引用。
+**是什么**:Workbench MVP 的桌面应用壳(Dioxus / wry WebView,macOS+Windows)。壳只渲染和转发意图——健康什么颜色、活能不能转到那一列、指标有没有读数,全部由内核算好塞进 ViewModel;壳里没有一行业务判断,命令失败就把原话放进 toast 不假装做成了。**关键取舍**:终端挂在屏的外面(切面板不卸载,否则字节真丢);PTY 字节流和长命令进度走 broadcast 不走 ViewModel(一次性流,进 ViewModel 每次重渲染会被重写一遍拖垮界面);屏与屏之间只经共用 ViewModel 模块流转、守卫拦着不能互相引用。模块实现心智见 [`06-module/桌面壳`](06-module/桌面壳.md)。
 
 ---
 
@@ -180,6 +180,7 @@ Workbench MVP 由三个 Rust crate 组成,各管一件事、互锁而不互相�
 | 界面长什么样                                | 视觉语言 [`docs/04-design-system/`](04-design-system/README.md);八屏版式与旅程 [`docs/hifi/index.html`](hifi/index.html) + [`docs/hifi/README.md`](hifi/README.md);五站驾驶地图 [`docs/hifi/home.html`](hifi/home.html) |
 | 版本变更                                  | [`CHANGELOG.md`](../CHANGELOG.md)                                                                                                                                                                      |
 | 领域词                                   | [`CONTEXT.md`](../CONTEXT.md)                                                                                                                                                                          |
+| 模块实现心智(矛盾 / 取舍)                      | [`docs/06-module/`](06-module/)                                                                                                                                                                         |
 | 架构决策                                  | [`docs/02-adr/`](02-adr/)                                                                                                                                                                              |
 | 老版本史实(V3 删除、旧 16 模块挪移地图)              | 本附录下两节                                                                                                                                                                                                 |
 
