@@ -10,6 +10,10 @@
 
 驾驶地图贴合原型稿 `prototype-ops-anim/驾驶地图.html` 重做：补 SDLC 六阶段环、harness 三层窗口、SVG 图标、看板进度条；修一批走样子规则（slice 透明、milestone 光晕、entry 三栏、steps 两列、kanban 四等分）。删掉和地图重复的「找·从问题跳到那一站」表——它一点就白屏：`show()` 改 URL/hash 在 srcdoc iframe 里触发整帧重载，去掉这步只留 localStorage 持久化（规范要求）+ classList 切换。各站正文砍冗余铁律与过程话，修出包站 ADR 路径错（`docs/adr/0005` → `docs/02-adr/0005-…`），规矩站补 `.linker`。
 
+验包 `cu_settings` 还在找旧高保真的 `.settings-row`，设计系统接线后设置行已经是 `.set-row`，点「保存」会空等到超时。驱动改跟现行设置文法对齐。
+
+右侧「上报问题」不再从本机 git origin 推目标仓。装机目录和其他项目开发者本机都没有 workbench 源码，读 origin 会报 `D:\BuildersWorkbench 没有 origin` 这类错。现在固定走 `codehub-cli` 报到绿区 `z30026659/workbench`（git 地址 `https://codehub-dg-g.huawei.com/z30026659/workbench.git`）。本机仍需已登录的 `codehub-cli`。
+
 ## 2026-09-08
 
 计划屏卡片右上那枚平台徽本来写死成 `CodeHub`,于是接 GitHub 的项目打开计划屏,58 张卡全被标成 CodeHub —— 界面在说一件不是事实的事。新建 issue 弹窗那句「创建后同步到 codehub」同病。改法跟 `browse_base` / `mr_url_prefix` / `issue_url_prefix` 同一族:provider → 显示口径的映射只放一处(新增 `Project::remote_brand()`),认不出平台就不画那枚徽、弹窗也只说「同步到远端」—— 空着是实话,顶一个别人的名字不是。
