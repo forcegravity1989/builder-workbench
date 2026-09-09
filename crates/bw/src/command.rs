@@ -212,8 +212,8 @@ pub enum Command {
         value: String,
     },
 
-    /// 把问题报到 **workbench 自己的仓**(当前目录 git 的 origin),
-    /// 不是打开着的被管项目。标题人填;`attach_log` 为真且 `bw.log` 有文件才附上。
+    /// 把问题报到 **workbench 自己的仓**(绿区 `z30026659/workbench`，走 codehub-cli),
+    /// 不是打开着的被管项目,也不读本机 git origin。标题人填;`attach_log` 为真且 `bw.log` 有文件才附上。
     ReportWorkbenchIssue { title: String, attach_log: bool },
 }
 
