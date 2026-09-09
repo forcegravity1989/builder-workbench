@@ -27,6 +27,24 @@ issue #72:新建 issue 填的正文同步上了 codehub,但计划页签点开看
 
 ## 2026-09-08
 
+architecture.md 导读加一条指向 [`docs/10-reference/domain-models.html`](docs/10-reference/domain-models.html) 的链接(五张领域模型)。
+
+加 [`docs/10-reference/domain-models.html`](docs/10-reference/domain-models.html):从 03 新闻稿 + architecture + CONTEXT 抽出五张领域模型(上下文 / 用例 / 逻辑 / 数据 / 领域)+ 现行 vs 主张速查。单文件 HTML,对齐 hifi/home.html 风格,参考性提炼(非决策记录);▲ 标 03 §C「尚未交付」项。
+
+V3 史实 + 旧 16 模块挪移地图从 ADR-0006 移到 [`docs/10-reference/v3-and-module-migration.md`](docs/10-reference/v3-and-module-migration.md)(那是参考材料 / 挪移对照,不是决策记录);ADR-0006 删除。导读、DESIGN、AGENTS V3 注记的指针从 ADR-0006 改指 10-reference。
+
+architecture.md 附录整段挪出去:V3 史实 + 旧 16 模块挪移地图搬到新 [`ADR-0006`](docs/02-adr/0006-能力模块收为五个与V3史实.md)(决策 / 为什么 / 挪移地图);附录导航表删(导读已覆盖),architecture.md 止于 §3 留白。导读、DESIGN、AGENTS V3 注记改指 ADR-0006 + `docs/02-adr/`。
+
+architecture.md §2 清瘦:每模块删「关键取舍」段(①-⑤)与 ③ 的分工 / 维护两张对照表,§2 各模块只留「是什么」+ 06-module 指针;关键取舍 + 三层分工 / 维护对照表搬到 `docs/06-module/`(③ 系统提示词与渐进加载页承接对照表,①② 补 §2-only 取舍:排期单槽 / metrics schema_version=2 / 远端 provider 统一路由 / 两条通道边界 / 账本 worktree 不动)。附录 V3 史实压成两行、对照表行改指 06-module。AGENTS / standard-README 的「对照表在 §2 ④」「§3 模块 4」指针改指 `docs/06-module/系统提示词与渐进加载`。导读与 §1 引子同步:§2 现在只写「是什么」,关键取舍在 06-module。
+
+开 `docs/06-module/` 五页(关键信息维护 / 会话与执行 / 系统提示词与渐进加载 / 技能与蒸馏 / 桌面壳):每页一模块的实现心智模型 + 主要矛盾 / 取舍,指向 §2 设计层、代码用 `codegraph` 探索。architecture.md §2 各模块末尾加 06-module 指针、附录加一行。
+
+清瘦 `docs/architecture.md` §3:删每模块「代码 / 数据 / 依赖 / 没建」实现细节块(①-⑤ + 二级特性健康推导)与「该删」清单;§3 收为「实现架构」——三 crate 切分 + 运行时数据流 + 留白。§2 各模块「代码/数据/没建见 §3 X」指针、导读、附录指针表、V3 史实依赖行、挪移地图、AGENTS / CONTEXT / DESIGN / 03-guide 填写规范 交叉引用同步(实现细节落点改指 `codegraph` 探索 + `docs/06-module/`)。CONTEXT / DESIGN 顺手把「6 个能力模块」订正为 5。
+
+`docs/architecture.md` 正本重构(本趟 cherry-pick 落地):正文重排为 **§1 用例与旅程 → §2 特性(设计层) → §3 实现(代码层)**;能力模块六个收为五个——①「正本读写」改名「关键信息维护」并扩范围(正本分两类:活态数据正本 issue 标签+`.bw/` / 人持文档正本,后者 Workbench 代码不读写、靠 asset-audit 盘),②「健康推导」降为 ① 下二级特性(密封 `DerivedHealth` 守「没数据不装绿」铁律不变,代码不删只降结构层级),原 ③-⑥ 顺位前移为 ②-⑤;§2 特性层去实现化(只留是什么+关键取舍);§1 用例表分一级(独立节律触发)/二级(子步或派生读视图)并按一级重排。asset-audit 剧本 5→6 步(插「盘全仓人持文档正本」);`bw-assets.md` 顶部加边界指针。同步 AGENTS / CONTEXT / DESIGN / hifi / 03-guide 交叉引用(§号+模块名)。
+
+加 `docs/06-module/` 层(单个模块实现的心智模型:设计面对的主要矛盾/取舍,不纠结实现细节),三层边界写进 AGENTS「人怎么驾驭」可见物表与 `01-document-organization`:architecture.md = 整体用户旅程+逻辑模块(不进模块实现细节) / docs/06-module = 模块实现心智 / docs/05-features = 用户价值特性。architecture.md §3 的实现细节后续搬进 06-module(单独一趟)。
+
 计划屏卡片右上那枚平台徽本来写死成 `CodeHub`,于是接 GitHub 的项目打开计划屏,58 张卡全被标成 CodeHub —— 界面在说一件不是事实的事。新建 issue 弹窗那句「创建后同步到 codehub」同病。改法跟 `browse_base` / `mr_url_prefix` / `issue_url_prefix` 同一族:provider → 显示口径的映射只放一处(新增 `Project::remote_brand()`),认不出平台就不画那枚徽、弹窗也只说「同步到远端」—— 空着是实话,顶一个别人的名字不是。
 
 GitHub 和 codehub 两条远端线拆干净:**一个基类,两个派生**。基类 `RemoteProvider` 描述「一个远端仓能干什么」,接口里一个平台名都没有;`GithubRemote`(走 `gh`)、`CodehubRemote`(走 `codehub-cli`)、`MockRemote`(替身)是三个各自独立的实现。调用方经门面 `Remote` 拿到基类对象,只调方法,不知道背后是哪一个。

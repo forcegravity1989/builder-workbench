@@ -8,7 +8,7 @@
 
 | 篇 | 管什么 |
 |---|---|
-| [`docs/01-principles/01-document-organization.md`](docs/01-principles/01-document-organization.md) | 整仓知识/文档怎么分层；`docs/05-features/` 少 gate |
+| [`docs/01-principles/01-document-organization.md`](docs/01-principles/01-document-organization.md) | 整仓知识/文档怎么分层；三层边界——architecture(整体旅程+逻辑模块) / 06-module(模块实现心智) / 05-features(用户价值特性)；`docs/05-features/` 少 gate |
 | [`docs/01-principles/02-working-backwards.md`](docs/01-principles/02-working-backwards.md) | 逆向工作法：特性怎么写 intent / 带原型的 spec |
 | [`docs/01-principles/03-press-release-faq-flywheel.md`](docs/01-principles/03-press-release-faq-flywheel.md) | **整个产品**的新闻稿、外/内 FAQ、飞轮（主张正本） |
 
@@ -27,7 +27,7 @@
 
 单人构建者的 Rust 原生桌面工作台(Dioxus 0.7 / wry WebView,macOS + Windows)。产品命题见 [`README.md`](README.md);设计正本见 [`docs/architecture.md`](docs/architecture.md)([`DESIGN.md`](DESIGN.md) 指路);领域词表见 [`CONTEXT.md`](CONTEXT.md)。产品叫 **Builders' Workbench / Workbench / BW**;工程标识用 **bw**(crate / `.bw/` / `bw:*` / `BW_*`)。已废弃 buddy、loop-buddy。
 
-> **V3 已删**:本仓产品线是 Workbench MVP(内核 `crates/bw` + 底座 `crates/bw-engine` + 壳 `crates/app-shell`)。V3 的六 crate 与 V3 编译资产已于 2026-08-24 删除——全量在 `v3` 分支找回。别再提 V3 概念,设计看 [`docs/architecture.md`](docs/architecture.md)。
+> **V3 已删**:本仓产品线是 Workbench MVP(内核 `crates/bw` + 底座 `crates/bw-engine` + 壳 `crates/app-shell`)。V3 的六 crate 与 V3 编译资产已于 2026-08-24 删除——全量在 `v3` 分支找回;史实 + 旧 16 模块挪移地图见 [`V3 删除与旧 16 模块挪移`](docs/10-reference/v3-and-module-migration.md)。别再提 V3 概念,设计看 [`docs/architecture.md`](docs/architecture.md)。
 
 ## 语言和构建
 
@@ -81,7 +81,7 @@ crates/   bw(MVP 内核:本地零库+仓文件解析+现算推导+Command/Event)
           app-shell(MVP 壳:八屏+主题+内核桥+适配模块,bin bw-dev)
 standard/  Workbench 规范正本(include_str! 进 bw)。分层怎么写见该目录 README;模板 `templates/` + 系统提示词 `system-prompt/` + 运作剧本 `skills/` + 业界 workflow `vendor/`
 docs/01-principles/ 慢变原则正本(01 分层/changes · 02 逆向工作法 · 03 新闻稿/FAQ/飞轮)
-docs/      architecture(设计正本)+ guide(产品指南)+ adr + hifi + README(地图)
+docs/      architecture(整体旅程+逻辑模块)+ 06-module(模块实现心智)+ guide(产品指南)+ adr + hifi + README(地图)
 scripts/   门禁脚本(guard-*)+ codegraph 联调
 .bw/       被管项目资产(project.toml / metrics.toml) + 出包/验包样例(.bw/release/pack、.bw/release/e2e；产物 out/ 不进仓)
 ```
@@ -96,11 +96,13 @@ scripts/   门禁脚本(guard-*)+ codegraph 联调
 |---|---|---|
 | 用户旅程 / 产品指南 | [`docs/03-guide/`](docs/03-guide/) | 点什么、背后发生什么、手上多了什么;按站把活交给人或 AI |
 | 设计系统 / 高保真 | [`docs/04-design-system/`](docs/04-design-system/README.md) / [`docs/hifi/`](docs/hifi/) | 界面长什么样:视觉语言(token、组件类、中文排版层)在设计系统,壳编译期拼入它的样式表;八屏版式与旅程在高保真 |
-| 架构与特性关键设计 | [`docs/architecture.md`](docs/architecture.md) | 模块为什么这样、数据归哪、没建什么;按模块交活。**主提示词 / reference / skill 对照表在 §3 模块 4** |
+| 整体架构 / 逻辑模块 | [`docs/architecture.md`](docs/architecture.md) | **整体**用户旅程(用例)+ 逻辑模块划分;不进模块实现细节。**主提示词 / reference / skill 对照表在 [`docs/06-module/系统提示词与渐进加载`](docs/06-module/系统提示词与渐进加载.md)** |
+| 模块实现心智 | [`docs/06-module/`](docs/06-module/) | 单个模块怎么实现的**心智模型**:设计面对的主要矛盾 / 取舍;不纠结实现细节 |
+| 用户价值特性 | [`docs/05-features/`](docs/05-features/) | 对用户产生价值的特性描述(intent + 带原型 spec;特性级变更制品链) |
 | 产品主张 / 飞轮 | [`docs/01-principles/03`](docs/01-principles/03-press-release-faq-flywheel.md) | 目标体验与选型约束；特性 intent 必须对齐 |
 | 开发规矩 + 词表 | 本文件 + [`CONTEXT.md`](CONTEXT.md) | 怎么建/跑/测、用哪个词 |
 
-自己作为被管项目跟被管仓同一套落点:`.bw/` 走项目约定(名片)与指标(ops① / `bw/ledger`);`AGENTS.md` 是项目自己的,盘点不代写;`CONTEXT` / adr / spec 走 `mattpocock-skills`;旅程 / 高保真 / 架构是产品自己的可见物,业界 workflow 不会代写。资产盘点先盘 Workbench 给项目的 `.bw/` 是否跟上现行契约,再审查本周项目改动,再收口当周进展;它本身不产规范。方案正本在 [`docs/architecture.md`](docs/architecture.md) §3 模块 3 / 14。
+自己作为被管项目跟被管仓同一套落点:`.bw/` 走项目约定(名片)与指标(ops① / `bw/ledger`);`AGENTS.md` 是项目自己的,盘点不代写;`CONTEXT` / adr / spec 走 `mattpocock-skills`;旅程 / 高保真 / 架构是产品自己的可见物,业界 workflow 不会代写。资产盘点先盘 Workbench 给项目的 `.bw/` 是否跟上现行契约,再审查本周项目改动,再收口当周进展;它本身不产规范。方案正本在 [`docs/architecture.md`](docs/architecture.md) §1 用例「接入(项目约定)」+ §2 特性「关键信息维护」。
 
 ### 四铁律(产品行为不可违反约束)
 
@@ -114,10 +116,10 @@ scripts/   门禁脚本(guard-*)+ codegraph 联调
 ### 三层模型(怎么给 Workbench 做一个特性)
 
 - **承载 · codehub issue**:issue+标签=唯一正本,本地零数据库;状态走标签、工作产物走 MR。
-- **规范 · 系统提示词 + 渐进加载**(主提示词 `standard/system-prompt/SYSTEM.md.tmpl` + `references/`):补被管仓看不见的 Workbench 信息。三层各写什么见 [`standard/README.md`](standard/README.md);对照表在 [`docs/architecture.md`](docs/architecture.md) §3 模块 4。改 `standard/` 之前先对表。
+- **规范 · 系统提示词 + 渐进加载**(主提示词 `standard/system-prompt/SYSTEM.md.tmpl` + `references/`):补被管仓看不见的 Workbench 信息。三层各写什么见 [`standard/README.md`](standard/README.md);对照表在 [`docs/06-module/系统提示词与渐进加载`](docs/06-module/系统提示词与渐进加载.md)。改 `standard/` 之前先对表。
 - **方法论 · skill / workflow**(运作剧本在 `standard/skills/`,业界 workflow 在 `standard/vendor/`,build 默认 `mattpocock-skills`):这场怎么带人。怎么写 skill 见 [`standard/skills/SKILL-MD-SPEC.md`](standard/skills/SKILL-MD-SPEC.md)。
 
-改一个特性前,先对齐 [`docs/01-principles/03`](docs/01-principles/03-press-release-faq-flywheel.md) 飞轮检验,再按「特性起手路径」写 `docs/05-features/`(见上);工程落点在 [`docs/architecture.md`](docs/architecture.md) 的模块设计上定位:旅程哪一站 → 三层里改哪层 → 数据归哪 → 模块落点。找不到先补文档、再动代码——不清晰不写代码。
+改一个特性前,先对齐 [`docs/01-principles/03`](docs/01-principles/03-press-release-faq-flywheel.md) 飞轮检验,再按「特性起手路径」写 `docs/05-features/`(见上);工程落点在 [`docs/architecture.md`](docs/architecture.md) 定位:用例哪一站(§1)→ 特性设计在哪层(§2)→ 三 crate 架构与数据流(§3)→ 三层里改哪层 → 数据归哪。找不到先补文档、再动代码——不清晰不写代码。
 
 ### codehub issue 标签词表
 
