@@ -4,6 +4,8 @@
 
 Workbench 只认下面这些。没有的不补空壳(缺名片只记报告,补写走项目约定)。
 
+本份只列 Workbench **读**的 `.bw/` 格式;全仓人持文档正本(architecture / 开发规矩 / 词表 / 变更记录 / 原则 / 架构决策 / 指南 / 设计系统 / 特性制品)的盘点在 asset-audit 剧本第 2 步,不在这份。
+
 ## `.bw/project.toml`
 
 ```toml
