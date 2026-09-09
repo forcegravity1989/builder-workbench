@@ -1,6 +1,6 @@
 # architecture.md — Workbench MVP 设计正本
 
-> **30 秒导读**:Workbench MVP 的**唯一设计正本**。三段:**§1 用例与旅程怎么编排 → §2 特性(每个能力是什么)→ §3 实现架构(三 crate 切分 + 运行时数据流)**。给要判断"某条为什么这么定"、接手模块、往规范里加东西的人和 AI 看。不在本篇的:开发规矩(怎么建/跑/测)在 [`AGENTS.md`](../AGENTS.md);模块实现心智 + 关键取舍在 [`docs/06-module/`](06-module/);界面视觉语言在 `docs/04-design-system/`,八屏版式与旅程在 `docs/hifi/`,五站驾驶地图在 `docs/hifi/home.html`;词表 `CONTEXT.md`;版本变更 `CHANGELOG.md`;架构决策在 [`docs/02-adr/`](02-adr/),老版本史实(V3、旧 16 模块挪移)见 [`ADR-0006`](02-adr/0006-能力模块收为五个与V3史实.md)。`DESIGN.md` 指路本篇。
+> **30 秒导读**:Workbench MVP 的**唯一设计正本**。三段:**§1 用例与旅程怎么编排 → §2 特性(每个能力是什么)→ §3 实现架构(三 crate 切分 + 运行时数据流)**。给要判断"某条为什么这么定"、接手模块、往规范里加东西的人和 AI 看。不在本篇的:开发规矩(怎么建/跑/测)在 [`AGENTS.md`](../AGENTS.md);模块实现心智 + 关键取舍在 [`docs/06-module/`](06-module/);界面视觉语言在 `docs/04-design-system/`,八屏版式与旅程在 `docs/hifi/`,五站驾驶地图在 `docs/hifi/home.html`;词表 `CONTEXT.md`;版本变更 `CHANGELOG.md`;架构决策在 [`docs/02-adr/`](02-adr/),老版本史实(V3、旧 16 模块挪移)见 [`V3 删除与旧 16 模块挪移`](10-reference/v3-and-module-migration.md)。`DESIGN.md` 指路本篇。
 >
 > **四层口径**(§2 按此归位):**层 A 事实**——主张性文档(人对项目基础信息/里程碑的定义)+ 仓里已有事实(代码/issue/已有文档/读数);**层 B 执行**——主体是 Orca 会话、worktree、工具探活;dispatch 单入口与守卫是内核工作方式、不单列为能力模块(见 §3 运行机制);**层 C standard 积累**——系统提示词 + 技能 + 蒸馏(渐进加载);**层 D 壳**——八屏,人怎么交互、人看什么。
 
