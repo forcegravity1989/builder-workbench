@@ -163,11 +163,10 @@
 
             <div class="st-sec">本机</div>
             <a class="sidebar-item" data-nav="dirs">目录</a>
-            <a class="sidebar-item" data-nav="orca">Orca</a>
             <a class="sidebar-item" data-nav="theme">外观</a>
 
             <div class="st-sec">能力</div>
-            <a class="sidebar-item" data-nav="tools" aria-current="page">工具<span class="count">6</span></a>
+            <a class="sidebar-item" data-nav="tools" aria-current="page">Connector<span class="count">7</span></a>
             <a class="sidebar-item" data-nav="skills">技能<span class="count">7</span></a>
             <a class="sidebar-item" data-nav="refs">规范<span class="count">5</span></a>
           </div>
@@ -178,13 +177,13 @@
               <!-- ══ 工具 ══ -->
               <div data-page="tools">
                 <div class="pane-head">
-                  <h2>工具</h2>
-                  <input class="input search" type="search" placeholder="搜工具" data-search="tools" aria-label="搜工具" />
+                  <h2>Connector</h2>
+                  <input class="input search" type="search" placeholder="搜 connector" data-search="tools" aria-label="搜 connector" />
                   <button class="btn btn-secondary">重新探活</button>
                 </div>
-                <p class="pane-desc">开工要用的外部程序。它们装在你的系统里,不装在 Workbench 里 —— 这里只如实说它在不在、谁会用到、不在怎么修。<b>跟这台机器走,不进任何仓,也不分项目。</b></p>
+                <p class="pane-desc">Workbench 连出去用的外部东西:开工执行器、远端臂、群通知、会话宿主 Orca。它们装在你的机器上、跑在你的机器上,不在 Workbench 里 —— 这里只如实说它在不在、谁会用到、不在怎么修。<b>跟这台机器走,不进任何仓,也不分项目。</b></p>
 
-                <div class="sublabel">开工工具 · 哪类活用哪个</div>
+                <div class="sublabel">开工工具 · 哪类活用哪个 connector 跑</div>
                 <div class="set-group">
                   <div class="set-row">
                     <div class="set-text"><div class="set-title">原型</div><div class="set-desc">workflow(产品默认):—(产品默认无)</div></div>
@@ -230,16 +229,17 @@
 
                 <div class="filterbar">
                   <div class="seg" data-filter="tools">
-                    <label class="seg-opt"><input type="radio" name="ft" value="all" checked hidden />全部 6</label>
+                    <label class="seg-opt"><input type="radio" name="ft" value="all" checked hidden />全部 7</label>
                     <label class="seg-opt"><input type="radio" name="ft" value="blocked" hidden />开不了工 1</label>
                     <label class="seg-opt"><input type="radio" name="ft" value="done" hidden />已找到 2</label>
+                    <label class="seg-opt"><input type="radio" name="ft" value="unset" hidden />还没配 1</label>
                     <label class="seg-opt"><input type="radio" name="ft" value="idle" hidden />还没用上 3</label>
                   </div>
                 </div>
 
                 <div class="tbl-wrap">
                   <table class="table" data-list="tools">
-                    <thead><tr><th style="width:30%">本机工具</th><th style="width:16%">类型</th><th style="width:28%">谁用到</th><th style="width:22%">状态</th><th style="width:4%"></th></tr></thead>
+                    <thead><tr><th style="width:30%">Connector</th><th style="width:16%">类型</th><th style="width:28%">谁用到</th><th style="width:22%">状态</th><th style="width:4%"></th></tr></thead>
                     <tbody>
                       <tr data-state="done" class="rowbtn" data-detail="dt-claude" tabindex="0" role="button">
                         <td class="t-name">claude<div class="t-sub path">/Users/gravity/.local/bin/claude</div></td>
@@ -253,6 +253,13 @@
                         <td><span class="tag tag-outline">本机服务</span></td>
                         <td class="t-sub">原型</td>
                         <td><span class="status status-blocked"><span class="status-dot"></span>开不了工</span></td>
+                        <td class="go">›</td>
+                      </tr>
+                      <tr data-state="unset" class="rowbtn" data-detail="dt-orca" tabindex="0" role="button">
+                        <td class="t-name">Orca<div class="t-sub">网页配对地址还没配</div></td>
+                        <td><span class="tag tag-outline">会话宿主</span></td>
+                        <td class="t-sub">构建 · 优化 · 运维 的会话在它里面跑</td>
+                        <td><span class="status status-todo"><span class="status-dot"></span>还没配</span></td>
                         <td class="go">›</td>
                       </tr>
                       <tr data-state="done" class="rowbtn" data-detail="dt-gh" tabindex="0" role="button">
@@ -288,15 +295,15 @@
                 </div>
 
                 <p class="protonote">
-                  <b>红只有一个意思:</b>有活会用到它、它不在,现在就挡着开工。今天设置屏那张表六行红四行;按这个口径同一台机器只剩一行红。
-                  <b>另外:</b>「开工工具」这块今天摆在项目内的配置屏里,但它存的是本机全局设置(settings.toml 的 tools 表,没有项目维度)——
-                  在项目 A 改了,项目 B 也变。挪到这里才是它本来的位置。
+                  <b>红只有一个意思:</b>有活会用到它、它不在,现在就挡着开工。今天设置屏那张表六行红四行;按这个口径同一台机器只剩一行红。<br />
+                  <b>Orca 是新进这张表的:</b>它今天只是「本机」里一个填 URL 的输入框,填了就当好了 —— 而词表里「探活」那条明写着不许把「填了配置」当成「连上了」。放进 connector 才对得上判读。<br />
+                  <b>开工工具那块</b>今天摆在项目内的配置屏里,但它存的是本机全局设置(settings.toml 的 tools 表,没有项目维度)—— 在项目 A 改了,项目 B 也变。挪到这里才是它本来的位置。
                 </p>
               </div>
 
               <!-- ══ 工具详情(抄 Claude connector 详情页) ══ -->
               <div data-page="dt-claude" hidden>
-                <div class="backlink" data-back="tools"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M10 3 5 8l5 5"/></svg>工具</div>
+                <div class="backlink" data-back="tools"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M10 3 5 8l5 5"/></svg>Connector</div>
                 <div class="dt-head">
                   <div class="dt-icon"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="1.8" y="3" width="12.4" height="10" rx="1.6"/><path d="M4.4 6.6 6.4 8.4 4.4 10.2M8.2 10.4h3.4"/></svg></div>
                   <div>
@@ -322,7 +329,7 @@
               </div>
 
               <div data-page="dt-od" hidden>
-                <div class="backlink" data-back="tools"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M10 3 5 8l5 5"/></svg>工具</div>
+                <div class="backlink" data-back="tools"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M10 3 5 8l5 5"/></svg>Connector</div>
                 <div class="dt-head">
                   <div class="dt-icon"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="1.8" y="2.6" width="12.4" height="10.8" rx="1.6"/><path d="M1.8 5.6h12.4"/></svg></div>
                   <div>
@@ -347,7 +354,7 @@
               </div>
 
               <div data-page="dt-gh" hidden>
-                <div class="backlink" data-back="tools"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M10 3 5 8l5 5"/></svg>工具</div>
+                <div class="backlink" data-back="tools"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M10 3 5 8l5 5"/></svg>Connector</div>
                 <div class="dt-head">
                   <div class="dt-icon"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="8" r="6"/><path d="M6 13.4v-2.2c0-.7.3-1.1.6-1.3-2-.2-3.3-1-3.3-3.2 0-.7.2-1.3.6-1.7-.1-.2-.3-.9.1-1.8 0 0 .5-.2 1.7.6a5.7 5.7 0 0 1 3 0c1.2-.8 1.7-.6 1.7-.6.4.9.2 1.6.1 1.8.4.4.6 1 .6 1.7 0 2.2-1.3 3-3.3 3.2.3.3.6.8.6 1.5v2"/></svg></div>
                   <div>
@@ -372,7 +379,7 @@
               </div>
 
               <div data-page="dt-cursor" hidden>
-                <div class="backlink" data-back="tools"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M10 3 5 8l5 5"/></svg>工具</div>
+                <div class="backlink" data-back="tools"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M10 3 5 8l5 5"/></svg>Connector</div>
                 <div class="dt-head">
                   <div class="dt-icon"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 2.2 12.6 8 8.4 9.2 6.6 13z"/></svg></div>
                   <div>
@@ -392,7 +399,7 @@
               </div>
 
               <div data-page="dt-codehub" hidden>
-                <div class="backlink" data-back="tools"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M10 3 5 8l5 5"/></svg>工具</div>
+                <div class="backlink" data-back="tools"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M10 3 5 8l5 5"/></svg>Connector</div>
                 <div class="dt-head">
                   <div class="dt-icon"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="4.4" cy="4" r="1.8"/><circle cx="4.4" cy="12" r="1.8"/><circle cx="11.6" cy="8" r="1.8"/><path d="M4.4 5.8v4.4M6.1 4.6c3 0 3.7 1.4 3.8 2.6M6.1 11.4c3 0 3.7-1.4 3.8-2.6"/></svg></div>
                   <div>
@@ -412,7 +419,7 @@
               </div>
 
               <div data-page="dt-welink" hidden>
-                <div class="backlink" data-back="tools"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M10 3 5 8l5 5"/></svg>工具</div>
+                <div class="backlink" data-back="tools"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M10 3 5 8l5 5"/></svg>Connector</div>
                 <div class="dt-head">
                   <div class="dt-icon"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2.4 4.2a1.6 1.6 0 0 1 1.6-1.6h8a1.6 1.6 0 0 1 1.6 1.6v5a1.6 1.6 0 0 1-1.6 1.6H6.6L3.4 13.4V10.8h.6a1.6 1.6 0 0 1-1.6-1.6z"/></svg></div>
                   <div>
@@ -689,15 +696,33 @@ description: Use when 运作活①开工(标题以「更新指标 + 制定版本
                 </div>
               </div>
 
-              <div data-page="orca" hidden>
-                <div class="pane-head"><h2>Orca</h2></div>
-                <p class="pane-desc">开工会话在 Orca 里跑;这里只记它的网页配对地址,只认 loopback,不进仓。</p>
+              <div data-page="dt-orca" hidden>
+                <div class="backlink" data-back="tools"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M10 3 5 8l5 5"/></svg>Connector</div>
+                <div class="dt-head">
+                  <div class="dt-icon"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="8" r="3"/><path d="M8 1.4v2.2M8 12.4v2.2M1.4 8h2.2M12.4 8h2.2"/></svg></div>
+                  <div>
+                    <div class="dt-name">Orca</div>
+                    <div class="dt-from">会话宿主 · 跑在你自己机器上</div>
+                  </div>
+                  <div class="dt-act"><span class="status status-todo"><span class="status-dot"></span>还没配</span></div>
+                </div>
+                <p class="dt-lead">开工会话真正跑的地方。构建 / 优化 / 运维的活按下「▶跑」,会话就起在 Orca 里;运作节律的三条定时也钉在它上面。</p>
+                <ul class="dt-list">
+                  <li><b>开工</b> —— 走本机管道,不经这条网页地址。所以地址没配<b>不挡开工</b>,只是会话屏那一页空着。</li>
+                  <li><b>节律</b> —— 定版本计划周一 09:00、资产盘点周五 15:00、B 类日采每天 20:00,钟在 Orca 不在 Workbench。</li>
+                  <li><b>只认 loopback</b> —— 配对地址带 token,只存本机,<b>绝不进仓 / 事件原文 / 日志</b>;非 loopback 的地址会被如实滤成空。</li>
+                </ul>
+                <div class="sublabel">网页配对地址</div>
                 <div class="set-group">
                   <div class="set-row">
-                    <div class="set-text"><div class="set-title">Orca 网页地址</div><div class="set-desc">还没配,会话屏空着。从「给 web 配对 / Share this Orca server」复制 Open in browser 那条。</div></div>
+                    <div class="set-text"><div class="set-title">从 Orca 复制过来</div><div class="set-desc">在 Orca 的「给 web 配对 / Share this Orca server」里复制 Open in browser 那条。</div></div>
                     <div class="set-ctl"><input class="input" style="font-family: var(--font-mono); font-size: 12px" placeholder="http://127.0.0.1:6768/web-index" aria-label="Orca 网页地址" /><button class="btn btn-secondary">保存</button></div>
                   </div>
                 </div>
+                <p class="protonote">
+                  <b>这一行的状态只有「配了 / 没配」,没有「通不通」</b> —— 本机 Orca 服务今天没有探活实现(探活那张表里只有 claude / cursor / Open Design / welink)。
+                  要不要给它加一次真探活,是本特性的开放问题之一;<b>在加之前,界面不许拿「配了」冒充「通了」</b>。
+                </p>
               </div>
 
               <div data-page="theme" hidden>
@@ -727,7 +752,7 @@ description: Use when 运作活①开工(标题以「更新指标 + 制定版本
 (function () {
   var $ = function (s, r) { return (r || document).querySelector(s); };
   var $$ = function (s, r) { return Array.prototype.slice.call((r || document).querySelectorAll(s)); };
-  var LIST = ['dirs', 'orca', 'theme', 'tools', 'skills', 'refs'];
+  var LIST = ['dirs', 'theme', 'tools', 'skills', 'refs'];
 
   function show(page, navKey) {
     $$('[data-page]').forEach(function (p) { p.hidden = p.dataset.page !== page; });
