@@ -70,6 +70,8 @@
 
   .tbl-wrap { border: 1px solid var(--color-divider); border-radius: var(--radius-md);
               background: var(--color-card); overflow-x: auto; }
+  /* 窄了要横向滚,不是把列挤成竖排 */
+  .tbl-wrap .table { min-width: 560px; }
   .table tbody tr:last-child td { border-bottom: 0; }
   .table td.t-name { font-weight: 500; }
   .table td.t-sub { font-size: 11.5px; color: color-mix(in srgb, var(--color-text) 50%, transparent); }
@@ -317,11 +319,11 @@
                   <div class="dt-act"><span class="status status-done"><span class="status-dot"></span>已找到</span><button class="btn btn-secondary">重新探这一个</button></div>
                 </div>
                 <ul class="dt-list">
-                  <li><b>开工</b> —— 起交互式会话,一次性系统提示词注入,不落盘。</li>
+                  <li><b>开工</b> —— 起交互式会话,提示词一次性注入,不落盘。</li>
                   <li><b>预算</b> —— <span class="path">BW_CLAUDE_MAX_BUDGET_USD</span>。</li>
                   <li><b>换位置</b> —— <span class="path">BW_CLAUDE_BIN</span>。</li>
                 </ul>
-                <dl class="kv"><dt>谁用到</dt><dd>构建 · 优化 · 运营推广 · 运维</dd><dt>探活方式</dt><dd>候选路径</dd></dl>
+                <dl class="kv"><dt>谁用到</dt><dd>构建 · 优化 · 运营推广 · 运维</dd><dt>探活</dt><dd>候选路径</dd></dl>
               </div>
 
               <div data-page="c-od" hidden>
@@ -332,10 +334,10 @@
                   <div class="dt-act"><span class="status status-blocked"><span class="status-dot"></span>开不了工</span><button class="btn btn-secondary">重新探这一个</button></div>
                 </div>
                 <ul class="dt-list">
-                  <li><b>开工</b> —— 往它的 <span class="path">/api/runs</span> 灌一次身份与铁律,不深链、不自动开跑。</li>
-                  <li><b>怎么修</b> —— 起起来再点「重新探这一个」。Workbench 不代起它。</li>
+                  <li><b>开工</b> —— 往 <span class="path">/api/runs</span> 灌一次身份与铁律,不深链、不自动开跑。</li>
+                  <li><b>怎么修</b> —— 起起来,再点「重新探这一个」。</li>
                 </ul>
-                <dl class="kv"><dt>谁用到</dt><dd>原型</dd><dt>探活方式</dt><dd>管道握手拿 loopback 首页,超时 400ms</dd><dt>现在</dt><dd>拿不到</dd></dl>
+                <dl class="kv"><dt>谁用到</dt><dd>原型</dd><dt>探活</dt><dd>管道握手拿 loopback 首页 · 400ms · 现在拿不到</dd></dl>
               </div>
 
               <div data-page="c-orca" hidden>
@@ -346,7 +348,7 @@
                   <div class="dt-act"><span class="status status-progress"><span class="status-dot"></span>还没配</span></div>
                 </div>
                 <ul class="dt-list">
-                  <li><b>开工</b> —— 走本机管道,<b>不经网页地址</b>,所以没配不挡开工,只是会话屏那页空着。</li>
+                  <li><b>开工</b> —— 走本机管道,<b>不经网页地址</b>;没配不挡开工,只是会话屏那页空着。</li>
                   <li><b>节律</b> —— 周一 09:00 定计划 · 周五 15:00 盘点 · 每天 20:00 采 B 类,钟在 Orca。</li>
                   <li><b>只认 loopback</b> —— 带 token,只存本机,不进仓 / 事件原文 / 日志。</li>
                 </ul>
@@ -356,7 +358,7 @@
                     <div class="set-ctl"><input class="input" style="font-family: var(--font-mono); font-size: 12px" placeholder="http://127.0.0.1:6768/web-index" aria-label="Orca 网页地址" /><button class="btn btn-secondary">保存</button></div>
                   </div>
                 </div>
-                <dl class="kv"><dt>探活方式</dt><dd>没有 —— 本机 Orca 服务没接探活,所以只有「配了 / 没配」</dd></dl>
+                <dl class="kv"><dt>探活</dt><dd>没接</dd></dl>
               </div>
 
               <div data-page="c-gh" hidden>
@@ -371,7 +373,7 @@
                   <li><b>开 MR</b> —— 建 PR;队友自己开的按分支反查。</li>
                   <li><b>合入</b> —— 读回 PR 状态,只信真变 MERGED,不信退出码。</li>
                 </ul>
-                <dl class="kv"><dt>谁用到</dt><dd>远端是 GitHub 的项目</dd><dt>探活方式</dt><dd>候选路径 —— <b>登录态没探</b>,自己跑 <span class="path">gh auth status</span></dd></dl>
+                <dl class="kv"><dt>谁用到</dt><dd>远端是 GitHub 的项目</dd><dt>探活</dt><dd>候选路径 · <b>登录态没探</b></dd></dl>
               </div>
 
               <div data-page="c-cursor" hidden>
@@ -383,9 +385,9 @@
                 </div>
                 <ul class="dt-list">
                   <li><b>选了就当真</b> —— 探不到当场报错,不悄悄退回 Claude CLI。</li>
-                  <li><b>要用它</b> —— 装 Cursor CLI 让 <span class="path">cursor-agent</span> 进 PATH,再回上一页改某一类。</li>
+                  <li><b>要用它</b> —— 让 <span class="path">cursor-agent</span> 进 PATH,再回上一页改某一类。</li>
                 </ul>
-                <dl class="kv"><dt>谁用到</dt><dd>没有类别用到</dd><dt>探活方式</dt><dd>版本命令</dd></dl>
+                <dl class="kv"><dt>谁用到</dt><dd>没有类别用到</dd><dt>探活</dt><dd>版本命令</dd></dl>
               </div>
 
               <div data-page="c-codehub" hidden>
@@ -395,8 +397,8 @@
                   <div><div class="dt-name">codehub-cli</div><div class="dt-from">远端臂 · 本机路径里找不到</div></div>
                   <div class="dt-act"><span class="status status-todo"><span class="status-dot"></span>还没用上</span><button class="btn btn-secondary">重新探这一个</button></div>
                 </div>
-                <ul class="dt-list"><li>和 GitHub CLI 同形的两条路:项目远端配哪家就走哪条。接了 codehub 的项目出现时,这行会自己变红。</li></ul>
-                <dl class="kv"><dt>谁用到</dt><dd>没有项目用 codehub</dd><dt>探活方式</dt><dd>候选路径</dd></dl>
+                <ul class="dt-list"><li>和 GitHub CLI 同形的两条路。接了 codehub 的项目出现时,这行会自己变红。</li></ul>
+                <dl class="kv"><dt>谁用到</dt><dd>没有项目用 codehub</dd><dt>探活</dt><dd>候选路径</dd></dl>
               </div>
 
               <div data-page="c-welink" hidden>
@@ -406,8 +408,8 @@
                   <div><div class="dt-name">welink-cli</div><div class="dt-from">群通知 · 本机路径里找不到</div></div>
                   <div class="dt-act"><span class="status status-todo"><span class="status-dot"></span>还没用上</span><button class="btn btn-secondary">重新探这一个</button></div>
                 </div>
-                <ul class="dt-list"><li>只在开 MR 时发,不做全事件广播。群配在项目名片的 chat 段,仓是正本。</li></ul>
-                <dl class="kv"><dt>谁用到</dt><dd>没有项目配群</dd><dt>探活方式</dt><dd>候选路径</dd></dl>
+                <ul class="dt-list"><li>只在开 MR 时发。群配在项目名片的 chat 段。</li></ul>
+                <dl class="kv"><dt>谁用到</dt><dd>没有项目配群</dd><dt>探活</dt><dd>候选路径</dd></dl>
               </div>
 
               <!-- ══ Skills ══ -->
@@ -487,11 +489,9 @@
                 </div>
                 <div data-tabpanel="ov" style="margin-top: var(--space-4)">
                   <dl class="kv">
-                    <dt>什么时候注入</dt><dd>活挂的 workflow 是「更新指标与版本计划」时</dd>
-                    <dt>怎么注入</dt><dd>提示词只给名字 + 一句话 + 路径,正文 agent 按需读</dd>
-                    <dt>会再指</dt><dd>metrics-refresh(第 2 步)· week-plan-comment(评论格式)</dd>
-                    <dt>摊在</dt><dd><span class="path">~/…/BuildersWorkbench/assets/skills/week-planning/</span></dd>
-                    <dt>进你的仓吗</dt><dd>不进 —— 全局一份</dd>
+                    <dt>注入时机</dt><dd>活挂的 workflow = 更新指标与版本计划</dd>
+                    <dt>会再指</dt><dd>metrics-refresh · week-plan-comment</dd>
+                    <dt>路径</dt><dd><span class="path">~/…/assets/skills/week-planning/</span> · 全局一份,不进你的仓</dd>
                   </dl>
                 </div>
                 <div data-tabpanel="fl" hidden style="margin-top: var(--space-4)">
@@ -521,7 +521,7 @@ description: Use when 运作活①开工……别处不用。
 # 更新指标与版本计划
 
 1. 先读 `.bw/metrics.toml`,按 references/metrics.md 的格式核对……</pre></div>
-                      <div class="files-text" id="f2-render" hidden><p>校验脚本(sidecar):跟剧本同住、会一起摊到资产目录,但提示词的技能指针不认它。查运作活①的评论有没有那三个标题。</p></div>
+                      <div class="files-text" id="f2-render" hidden><p>sidecar:跟剧本同住、一起摊到资产目录,技能指针不认它。查运作活①评论的三标题。</p></div>
                       <div class="files-text" id="f2-src" hidden><pre>#!/usr/bin/env python3
 """运作活①评论格式校验:只查周初三标题在不在。"""
 ...</pre></div>
@@ -552,7 +552,7 @@ description: Use when 运作活①开工……别处不用。
                   <div><div class="dt-name">资产盘点</div><div class="dt-from">Workbench 自带 · 编在二进制里 · 4 次</div></div>
                   <div class="dt-act"><button class="btn btn-secondary">复制路径</button></div>
                 </div>
-                <dl class="kv"><dt>什么时候注入</dt><dd>运作活②开工(Orca 周五 15:00,或计划屏 Start)</dd><dt>干什么</dt><dd>先对 .bw 契约,再审本周仓改动,再收口进展</dd><dt>不干什么</dt><dd>不产规范</dd></dl>
+                <dl class="kv"><dt>注入时机</dt><dd>运作活②开工 · Orca 周五 15:00 或计划屏 Start</dd><dt>三步</dt><dd>对 .bw 契约 → 审本周仓改动 → 收口进展</dd></dl>
               </div>
 
               <div data-page="sk-start" hidden>
@@ -562,7 +562,7 @@ description: Use when 运作活①开工……别处不用。
                   <div><div class="dt-name">workbench-start</div><div class="dt-from">项目自有 · workbench 仓 · 0 次</div></div>
                   <div class="dt-act"><button class="btn btn-secondary">复制路径</button></div>
                 </div>
-                <dl class="kv"><dt>在哪</dt><dd><span class="path">&lt;workbench&gt;/.claude/skills/workbench-start/SKILL.md</span></dd><dt>拷贝吗</dt><dd>不拷 —— 跟着仓走,仓里那份才是正本</dd></dl>
+                <dl class="kv"><dt>路径</dt><dd><span class="path">&lt;workbench&gt;/.claude/skills/workbench-start/SKILL.md</span> · 不拷进资产目录</dd></dl>
               </div>
 
               <div data-page="sk-dsi" hidden>
@@ -572,7 +572,7 @@ description: Use when 运作活①开工……别处不用。
                   <div><div class="dt-name">design-system-import</div><div class="dt-from">项目自有 · workbench 仓 · 0 次</div></div>
                   <div class="dt-act"><button class="btn btn-secondary">复制路径</button></div>
                 </div>
-                <dl class="kv"><dt>在哪</dt><dd><span class="path">.claude/skills/design-system-import/SKILL.md</span></dd></dl>
+                <dl class="kv"><dt>路径</dt><dd><span class="path">.claude/skills/design-system-import/SKILL.md</span></dd></dl>
               </div>
 
               <div data-page="sk-metrics" hidden>
@@ -582,7 +582,7 @@ description: Use when 运作活①开工……别处不用。
                   <div><div class="dt-name">metrics-refresh</div><div class="dt-from">Workbench 自带 · 编在二进制里 · 0 次</div></div>
                   <div class="dt-act"><button class="btn btn-secondary">复制路径</button></div>
                 </div>
-                <dl class="kv"><dt>什么时候注入</dt><dd>被 week-planning 第 2 步点名</dd></dl>
+                <dl class="kv"><dt>注入时机</dt><dd>被 week-planning 第 2 步点名</dd></dl>
               </div>
 
               <div data-page="sk-handbook" hidden>
@@ -592,7 +592,7 @@ description: Use when 运作活①开工……别处不用。
                   <div><div class="dt-name">project-handbook</div><div class="dt-from">Workbench 自带 · 在仓里,盘点不派发 · 0 次</div></div>
                   <div class="dt-act"><button class="btn btn-secondary">复制路径</button></div>
                 </div>
-                <dl class="kv"><dt>什么时候用</dt><dd>人明确要写仓根 AGENTS.md;人不要则停</dd></dl>
+                <dl class="kv"><dt>注入时机</dt><dd>人明确要写仓根 AGENTS.md;人不要则停</dd></dl>
               </div>
 
               <!-- ══ Workflow ══ -->
@@ -633,10 +633,6 @@ description: Use when 运作活①开工……别处不用。
                     </tbody>
                   </table>
                 </div>
-                <dl class="kv" style="margin-top: var(--space-4)">
-                  <dt>谁定</dt><dd>产品默认,不进被管仓;活上挂的 workflow 名跟着活走</dd>
-                  <dt>和 Connector</dt><dd>正交:connector 是<b>用什么跑</b>,workflow 是<b>按什么方法跑</b></dd>
-                </dl>
               </div>
 
               <div data-page="wf-matt" hidden>
@@ -649,9 +645,8 @@ description: Use when 运作活①开工……别处不用。
                 <dl class="kv">
                   <dt>SOP</dt><dd>grill-with-docs → implement → code-review</dd>
                   <dt>挂在</dt><dd>构建 · 优化 · 运维</dd>
-                  <dt>入口</dt><dd>Workbench 自己写的一份 SKILL.md,body 指向插件的子技能路径</dd>
-                  <dt>子技能</dt><dd>41 件在 <span class="path">assets/vendor/mattpocock-skills/</span></dd>
-                  <dt>分发态</dt><dd><b>子技能读不到</b> —— vendor 摊是开发期从源码树复制</dd>
+                  <dt>子技能</dt><dd>41 件 · <span class="path">assets/vendor/mattpocock-skills/</span></dd>
+                  <dt>分发态</dt><dd><b>子技能读不到</b>(vendor 摊只在开发期)</dd>
                 </dl>
               </div>
 
@@ -663,9 +658,8 @@ description: Use when 运作活①开工……别处不用。
                   <div class="dt-act"><span class="status status-todo"><span class="status-dot"></span>空着</span></div>
                 </div>
                 <dl class="kv">
-                  <dt>本该是</dt><dd>proto-design</dd>
-                  <dt>为什么空</dt><dd>源还没 vendor 进来,也没打包</dd>
-                  <dt>现在会怎样</dt><dd>开工照常,提示词里少这一段 —— <b>不编一个假路径</b></dd>
+                  <dt>本该是</dt><dd>proto-design · 源还没 vendor</dd>
+                  <dt>现在</dt><dd>开工照常,提示词里少这一段</dd>
                 </dl>
               </div>
 
@@ -676,7 +670,7 @@ description: Use when 运作活①开工……别处不用。
                   <div><div class="dt-name">运营推广</div><div class="dt-from">这个阶段还没有 workflow</div></div>
                   <div class="dt-act"><span class="status status-todo"><span class="status-dot"></span>空着</span></div>
                 </div>
-                <dl class="kv"><dt>为什么空</dt><dd>没挑到业界默认,留白</dd><dt>现在会怎样</dt><dd>开工照常,提示词里少这一段</dd></dl>
+                <dl class="kv"><dt>本该是</dt><dd>没挑到业界默认</dd><dt>现在</dt><dd>开工照常,提示词里少这一段</dd></dl>
               </div>
 
               <!-- ══ 插件 ══ -->
@@ -708,11 +702,6 @@ description: Use when 运作活①开工……别处不用。
                     </tbody>
                   </table>
                 </div>
-                <dl class="kv" style="margin-top: var(--space-4)">
-                  <dt>怎么来的</dt><dd>vendor 进仓的原样副本,不是 fork,技能正文一字未改</dd>
-                  <dt>为什么 vendor</dt><dd>默认 workflow 不能指向某台机器的插件缓存 —— 别人 clone 跑不起来</dd>
-                  <dt>局限</dt><dd>是某一刻的快照,不自动跟上游</dd>
-                </dl>
               </div>
 
               <div data-page="pl-matt" hidden>
@@ -724,10 +713,10 @@ description: Use when 运作活①开工……别处不用。
                 </div>
                 <dl class="kv">
                   <dt>上游</dt><dd><span class="path">github.com/mattpocock/skills</span></dd>
-                  <dt>带进来</dt><dd>41 个 skill,分 engineering / productivity / personal / misc 等</dd>
-                  <dt>作为</dt><dd>一条 workflow 挂在构建 · 优化 · 运维</dd>
-                  <dt>在哪</dt><dd><span class="path">standard/vendor/mattpocock-skills/</span> → 摊到 <span class="path">assets/vendor/</span></dd>
-                  <dt>没建</dt><dd>打包机制未实现 —— 分发态子技能读不到</dd>
+                  <dt>带进来</dt><dd>41 个 skill · engineering / productivity / personal / misc</dd>
+                  <dt>出的 workflow</dt><dd>mattpocock-skills → 构建 · 优化 · 运维</dd>
+                  <dt>路径</dt><dd><span class="path">standard/vendor/mattpocock-skills/</span> → <span class="path">assets/vendor/</span></dd>
+                  <dt>没建</dt><dd>打包机制未实现</dd>
                 </dl>
               </div>
 
@@ -740,9 +729,8 @@ description: Use when 运作活①开工……别处不用。
                 </div>
                 <dl class="kv">
                   <dt>上游</dt><dd><span class="path">github.com/mohitagw15856/pm-claude-skills</span></dd>
-                  <dt>带进来</dt><dd>2 个:metrics-framework · metric-tree-builder</dd>
-                  <dt>部分 vendor</dt><dd>上游是数百件通用 PM 技能,只挑了指标这两件</dd>
-                  <dt>现状</dt><dd><b>没有任何 workflow 引用它</b> —— vendor 了,但没接上</dd>
+                  <dt>带进来</dt><dd>2 个 · metrics-framework · metric-tree-builder(上游数百件,只挑了指标)</dd>
+                  <dt>出的 workflow</dt><dd><b>没有</b> —— vendor 了,没接上</dd>
                 </dl>
               </div>
 
@@ -769,11 +757,6 @@ description: Use when 运作活①开工……别处不用。
                     </tbody>
                   </table>
                 </div>
-                <dl class="kv" style="margin-top: var(--space-4)">
-                  <dt>怎么给</dt><dd>提示词只给一句话 + 路径,正文 agent 按需读</dd>
-                  <dt>改在哪</dt><dd><span class="path">standard/system-prompt/references/</span> —— 这里只读</dd>
-                  <dt>文件不在</dt><dd>如实少一行,不编路径</dd>
-                </dl>
               </div>
 
               <!-- ══ 本机 ══ -->
