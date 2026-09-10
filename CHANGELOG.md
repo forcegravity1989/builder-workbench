@@ -14,6 +14,14 @@
 
 顺带把 **Orca 从「本机」挪进 Connector 表**:它今天在界面上只是一个填 URL 的格子,填了就当好了,而词表「探活」条的 `_Avoid_` 明写着不许把「配置填好」当成「连上」。挪进来后如实标成「还没配」而不是绿色——并写明**本机 Orca 服务根本没有探活实现**(`probe()` 只认 claude / cursor / open_design / welink,`env` 那六行也没有它),所以这一行只有「配了 / 没配」,没有「通不通」。要不要给它加一次真探活,列成待裁决。
 
+**发起人两条结构性意见(9-10)**,查证后都成立,其中一条带出真 bug。
+
+**一、用户自己的 workflow 接不进来。** 发起人的原话是:每个项目会基于自己的资产和开发 loop 构建自己的一整套 loop 能力,那才是用户要的,而不是我们预置在 stage 上的通用 workflow;用户怎么接入自己的,是个比较严重的 gap。查 `skill_pointer`(`crates/bw/src/app/bootstrap.rs`)证实是**硬 gap,三道门**:`skill_slug` 是硬编码 `match` 只认三个名字、其余 `_ => None`;过了第一道也只在编进二进制的 5 份里找;路径只拼 Workbench 自己的资产目录,**根本不看被管仓的 `.claude/skills/`**。
+
+**连带查出一个真 bug**:`skill_list` 的用量匹配第一条是 `w == slug`,活上挂的名字和仓里目录名对上就计数。于是**界面显示项目自有技能「用过 N 次」,而开工时 `skill_pointer` 返回 `None`、那段提示词根本不存在**——界面说注入过,实际一次都没注入。原型里先停血:项目自有的卡标「注入不了」。真正的接入通道要改注入模型(按名解析先查被管仓再回落自带、`default_workflow` 从产品常量改成可被项目覆盖),**属内核改动,建议另开一件**,本特性只负责如实把缺口显示出来。
+
+**二、AI Assets 和知识管理分层脱节。** 开工提示词实际给三层(`standard/system-prompt/SYSTEM.md.tmpl`):被管仓自己的 `AGENTS.md`(只写一句「动手前读」)、Workbench 按类别注入的 references、活挂的剧本。我只把中间那层做成了 AI Assets,所以这一节答不了「这个 agent 到底会读到什么」。更远的是,知识分层正本 `docs/01-principles/01-document-organization.md` 里写着 `.teamai/`「团队 harness 分发(skills / rules / hooks / MCP)」——AI 资产的成文落点,面板里完全没有。改法:AI Assets 改成「开工时 agent 会读到什么」的视图,第一行就是项目自己的 `AGENTS.md`(标「项目」),可按来源筛;表下如实写缺口——项目自己的只有这一条而且只是被指了一下,`CONTEXT.md` / `docs/` / `.teamai/` 都不在。
+
 **同事评审(9-10)**:两条缺口 + 三条界面收敛,全部照改。
 
 缺口一,**AI Coding 资产观测**:外部希望看清这些资产在各被管项目里的分布——Workbench 带给项目的 vs 项目自己的,connector / skill / agent / workflow。查下来 **agent 这一类 BW 全仓零实现**(没有任何代码扫 `.claude/agents/`),不能在原型里补,连同「哪个项目在用」这个维度一起列成待裁决。缺口二,**`standard/` 下的技能催熟不了**(都是拍脑子的初稿、后续没优化过):面板只报「用过几次」时,「用了 12 次一次没改」看不见。所以 Skills 页色条改成催熟视角(用过但没改过 / 改过 / 还没用过),卡片写「用过几次 · 改于哪天」,排序加「按最久没改」。数据实测拿得到(`git log -1` 查 `standard/skills/*/SKILL.md`:week-planning 09-04、project-handbook 09-03),但**分发态没源码树**,真做要编译期烤进二进制。
