@@ -48,7 +48,7 @@ pub struct RepoPickerVm {
     pub rows: Vec<RepoRowVm>,
     /// 现在盯着哪个仓(点中的那一行,或者人手打进去的地址)。
     pub picked: Option<String>,
-    /// 从那个仓的远端 `.bw/project.toml` 读回来的名片。
+    /// 从所选本地仓或远端仓的 `.bw/project.toml` 读回来的名片。
     pub prefill: Option<RepoPrefillVm>,
     /// 那一读的结局。**「没读到」和「没读成」必须分开** —— 网络断了、没登录、
     /// 默认分支不叫 main,这些都会读不到,但它们**不等于**「这个仓没被接管过」。
@@ -62,7 +62,7 @@ pub enum RepoProbe {
     #[default]
     NotAsked,
     Loading,
-    /// 读到了 `.bw/project.toml` —— 这个仓被 Workbench 接管过。
+    /// 读到了 `.bw/project.toml` —— 这个仓已经由 Workbench 管理过。
     Adopted,
     /// 平台明确回「没有这个文件」,而且**这个仓确实在**(另问了一次)——
     /// 这个仓没被接管过。

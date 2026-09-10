@@ -7,7 +7,7 @@
 use super::worktree;
 use super::{issue_store, App, AppError, ProgressLine, Result};
 use crate::command::{Event, ProjectIntent, RemoteRef};
-use crate::model::{IssueStatus, Project, ProjectId};
+use crate::model::{codehub_alias_for_host, IssueStatus, Project, ProjectId};
 use crate::repo::project_file::{self, ChatConfig};
 
 impl App {
@@ -56,7 +56,10 @@ impl App {
         let ws = dunce::canonicalize(&requested).map_err(|e| {
             AppError::Refused(format!("本机仓路径读不出来:{} ({e})", requested.display()))
         })?;
-        let remote = resolve_remote_for_local_repo(&ws, remote).await?;
+        let (remote, origin_warning) = resolve_remote_for_local_repo(&ws, remote).await?;
+        if let Some(warning) = origin_warning {
+            self.step(ProgressLine::fail(2, warning));
+        }
 
         // 仓的真实路径才是本机身份。同一仓不能换个名字再纳入一次,否则两边会抢
         // `bw/issue-N` 与同一组 worktree。
@@ -376,7 +379,7 @@ fn normalize_existing_path(path: &std::path::Path) -> Option<std::path::PathBuf>
 async fn resolve_remote_for_local_repo(
     ws: &std::path::Path,
     selected: RemoteRef,
-) -> Result<RemoteRef> {
+) -> Result<(RemoteRef, Option<String>)> {
     let origin = bw_engine::workspace::origin_remote_url(ws)
         .await
         .map_err(|e| AppError::Exec(format!("读本地仓 origin 失败:{e}")))?;
@@ -385,9 +388,24 @@ async fn resolve_remote_for_local_repo(
         .and_then(bw_engine::workspace::parse_git_remote_url);
 
     if selected.path.trim().is_empty() {
-        return Ok(parsed
-            .and_then(|(host, path)| inferred_remote(&host, &path))
-            .unwrap_or_default());
+        return Ok(match (origin.as_deref(), parsed) {
+            (None, _) => (RemoteRef::default(), None),
+            (Some(_), Some((host, path))) => match inferred_remote(&host, &path) {
+                Some(remote) => (remote, None),
+                None => (
+                    RemoteRef::default(),
+                    Some(format!(
+                        "本地仓 origin 是 {host}/{path},但 Workbench 认不出这是 GitHub 还是 CodeHub;按纯本地项目接入,不会把 issue 发到远端"
+                    )),
+                ),
+            },
+            (Some(raw), None) => (
+                RemoteRef::default(),
+                Some(format!(
+                    "本地仓 origin 解析不了:{raw};按纯本地项目接入,不会把 issue 发到远端"
+                )),
+            ),
+        });
     }
 
     let Some((actual_host, actual_path)) = parsed else {
@@ -412,7 +430,7 @@ async fn resolve_remote_for_local_repo(
             selected.host, selected.path
         )));
     }
-    Ok(selected)
+    Ok((selected, None))
 }
 
 fn inferred_remote(host: &str, path: &str) -> Option<RemoteRef> {
@@ -423,7 +441,7 @@ fn inferred_remote(host: &str, path: &str) -> Option<RemoteRef> {
             path: path.to_string(),
         });
     }
-    let alias = codehub_zone_for_host(host)?;
+    let alias = codehub_alias_for_host(host)?;
     Some(RemoteRef {
         provider: "codehub".into(),
         host: alias.into(),
@@ -432,29 +450,9 @@ fn inferred_remote(host: &str, path: &str) -> Option<RemoteRef> {
 }
 
 fn codehub_host_matches(alias: &str, actual: &str) -> bool {
-    match codehub_zone_for_host(actual) {
+    match codehub_alias_for_host(actual) {
         Some(zone) => zone == alias.trim(),
         None => actual.eq_ignore_ascii_case(alias.trim()),
-    }
-}
-
-fn codehub_zone_for_host(host: &str) -> Option<&'static str> {
-    let host = host.to_ascii_lowercase();
-    if !host.contains("codehub") || !host.ends_with(".huawei.com") {
-        return None;
-    }
-    if host == "codehub-g.huawei.com" || host.contains("-g.codehub.") || host.contains("-g.huawei.")
-    {
-        Some("green")
-    } else if host == "open.codehub.huawei.com" || host.contains("-open.codehub.") {
-        Some("open")
-    } else if host == "codehub-y.huawei.com"
-        || host.contains("-y.codehub.")
-        || host.contains("-y.huawei.")
-    {
-        Some("yellow")
-    } else {
-        None
     }
 }
 
@@ -468,6 +466,7 @@ fn fill_if_blank(slot: &mut String, value: &str) {
 #[cfg(test)]
 mod tests {
     use super::{codehub_host_matches, inferred_remote};
+    use crate::model::{codehub_alias_for_host, codehub_alias_to_domain, codehub_aliases};
 
     #[test]
     fn infers_github_and_codehub_from_real_clone_hosts() {
@@ -494,5 +493,20 @@ mod tests {
             "yellow",
             "szv-open.codehub.huawei.com"
         ));
+    }
+
+    #[test]
+    fn every_codehub_alias_round_trips_through_the_single_domain_table() {
+        for alias in codehub_aliases() {
+            assert_eq!(
+                codehub_alias_for_host(codehub_alias_to_domain(alias)),
+                Some(alias)
+            );
+        }
+        assert_eq!(
+            codehub_alias_for_host("codehub-dg-g.huawei.com"),
+            Some("green")
+        );
+        assert_eq!(codehub_alias_for_host("gitlab.example.com"), None);
     }
 }
