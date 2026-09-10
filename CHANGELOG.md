@@ -6,6 +6,10 @@
 
 ## 最近 · 2026-09-09
 
+05-features 收紧口径:只装**产生用户价值的新能力/新信息**(01 §4.1)。命名收口/基建接线/重构重排不产生新价值的直修留痕(commit 说明 + 必要时改 architecture 实况段),不开 intent gate、不过五大拷问。02 §1 适用范围、§6 小特性豁免同步。
+
+按新口径降级 4 个非特性目录(代码实现不动,只删 05-features 文档目录):overview-health-36 并入 process-metrics(总览展示规格,价值锚点来自 process-metrics 产的数据,非独立新价值;STATUS 补并入记录)、version-as-v0x 命名收口(决策已在 architecture §1 周循环段)、design-system-wiring 基建接线(设计系统接进壳,未合入 main 非实况)、help-hub UI 重排。superpowers 两篇 version-as-v0x 孤儿草稿(正本已删、无外部引用)一并清。05-features 现留 reviewer-agent + process-metrics 两个特性。
+
 同步 github 文档整改：architecture 精简为 §1 用例 + §2 五能力模块 + §3 三 crate 与留白（16 模块详解当实现细节删，心智模型搬 `docs/06-module/`，领域模型进 `docs/10-reference/`）。使用指南 14 处 `.linker`/`.foot` 原指旧「模块 N」编号（随精简已删，指空）改为指 §1 用例 / §2 ①–⑤ 能力模块 / §3 留白；规矩站「各模块没建什么」措辞改为 §3 留白 + §1 用例「没建什么」列。截图缺口（填写规范要求每步配图、指南一张没有）为旧指南遗留，本轮未补、留白。
 
 issue #72:新建 issue 填的正文同步上了 codehub,但计划页签点开看不到正文、注入开工 prompt 也没带正文。两处断点:
