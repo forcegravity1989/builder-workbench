@@ -783,11 +783,13 @@ h6 { margin: 0; }
 /* ══ 本稿新增（#36 / #23 之外的块）═══════════════════════════════════════
    壳外预览：宿主 body 不带 data-theme，所以底色直接写 Claude 板的 surface。 */
 body { background: #f0eee6; }
+/* .content 是 flex，会盖掉 hidden —— 直接开文件时两屏会一起露出来。 */
+[hidden] { display: none !important; }
 .stage { min-height: 100%; align-items: flex-start; }
 .fitwrap { overflow: hidden; }
 .fit { width: 1440px; height: 900px; transform-origin: top left; }
 .desktop { box-shadow: var(--shadow-lg); }
-.content { gap: var(--space-3); }
+.content { gap: 10px; padding-bottom: var(--space-4); }
 
 .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr) 118px; gap: var(--space-3); }
 .grid-58 { display: grid; grid-template-columns: 1.42fr 1fr; gap: var(--space-3); }
@@ -795,7 +797,7 @@ body { background: #f0eee6; }
 .row-2 { align-items: stretch; }
 
 /* — 最重要目标（限量 3 槽） — */
-.wig { gap: 9px; padding: var(--space-3) var(--space-4); }
+.wig { gap: 7px; padding: 10px var(--space-4); }
 .wig .card-title { font-size: 13.5px; }
 .wig-num { font-size: 10px; font-weight: 600; letter-spacing: 0.08em; color: var(--color-accent); }
 .wig-bar { height: 5px; border-radius: 999px; background: var(--color-neutral-200); overflow: hidden; }
@@ -827,7 +829,7 @@ body { background: #f0eee6; }
   width: 5px; border-bottom-left-radius: 4px;
 }
 .cell {
-  display: block; height: 24px; line-height: 24px; text-align: center; border-radius: 4px;
+  display: block; height: 22px; line-height: 22px; text-align: center; border-radius: 4px;
   font-family: var(--font-mono); font-size: 11px; font-variant-numeric: tabular-nums;
 }
 .cell-ok { background: var(--color-success-soft); color: var(--color-success-deep); }
@@ -968,8 +970,6 @@ body { background: #f0eee6; }
                 <div class="detail-grid">
                   <div class="detail-k">想做什么</div>
                   <div class="detail-v">一张工作台打通所有系统，加速并规范项目运作</div>
-                  <div class="detail-k">项目群</div>
-                  <div class="detail-v">WeLink · 通知 merged + release</div>
                   <div class="detail-k">远端</div>
                   <div class="detail-v mono">codehub · z30026659/workbench</div>
                 </div>
@@ -1043,7 +1043,7 @@ body { background: #f0eee6; }
                     </div>
                   </div>
                 </div>
-                <svg class="chart" id="road" viewBox="0 0 660 196" role="img" aria-label="纳入管理的项目数：实际 3，低于同期路面 4"></svg>
+                <svg class="chart" id="road" viewBox="0 0 660 176" role="img" aria-label="纳入管理的项目数：实际 3，低于同期路面 4"></svg>
               </section>
 
               <section class="card">
@@ -1320,7 +1320,8 @@ body { background: #f0eee6; }
     act.forEach(function (v, i) { d += (i ? ' L' : 'M') + X(i) + ',' + Y(v); });
     g.appendChild(el('path', { d: d, style: 'fill:none;stroke:var(--color-accent-600);stroke-width:2;stroke-linejoin:round;stroke-linecap:round' }));
     act.forEach(function (v, i) {
-      var c = el('circle', { cx: X(i), cy: Y(v), r: i === act.length - 1 ? 4.5 : 2.6, style: 'fill:var(--color-accent-600);stroke:var(--color-card);stroke-width:2' });
+      var last = i === act.length - 1;
+      var c = el('circle', { cx: X(i), cy: Y(v), r: last ? 4.5 : 2.4, style: 'fill:var(--color-accent-600)' + (last ? ';stroke:var(--color-card);stroke-width:2' : '') });
       c.setAttribute('data-tip', '2026-W' + (25 + i) + '<br><b>' + v + ' 个项目</b> · 路面 ' + (1 + 7 * i / 28).toFixed(2).replace(/\.?0+$/, '') + ' 个');
       g.appendChild(c);
     });
@@ -1330,9 +1331,8 @@ body { background: #f0eee6; }
     g.appendChild(el('line', { x1: xn, y1: Y(3), x2: xn, y2: Y(4), style: 'stroke:var(--color-warning);stroke-width:3;stroke-linecap:round' }));
     T(g, 'fill:var(--color-warning-deep);font-size:10px', xn + 8, Y(3.5) + 3.5, '差 1 个', 'start', 1);
     [0, 4, 8, 12, 16, 20, 24, 28].forEach(function (i) {
-      T(g, INK50, X(i), yB + 16, 'W' + (25 + i), i === 28 ? 'end' : (i === 0 ? 'start' : 'middle'));
+      T(g, INK50, X(i), yB + 14, 'W' + (25 + i), i === 28 ? 'end' : (i === 0 ? 'start' : 'middle'));
     });
-    T(g, INK50, x0, yB + 32, '目标定在 12-31 · 路面按周匀速铺，落在路面下就是这周欠了', 'start');
   })();
 
   /* ── 完工预测：一万次模拟的落点分布 ──────────────────────────── */
@@ -1371,7 +1371,6 @@ body { background: #f0eee6; }
       g.appendChild(el('line', { x1: x0, y1: Y(v), x2: x1, y2: Y(v), style: GRID }));
       T(g, INK50, x0 - 7, Y(v) + 3.5, String(v), 'end');
     });
-    T(g, INK50, x0 - 7, Y(36) + 3.5, '天', 'end');
     [[4, '50% 4天'], [11, '85% 11天'], [19, '95% 19天']].forEach(function (q) {
       g.appendChild(el('line', { x1: x0, y1: Y(q[0]), x2: x1, y2: Y(q[0]), style: 'stroke:var(--color-accent-700);stroke-width:1.2;stroke-dasharray:4 4' }));
       T(g, 'fill:var(--color-accent-700);font-size:9.5px', x1 + 4, Y(q[0]) + 3.5, q[1], 'start');
