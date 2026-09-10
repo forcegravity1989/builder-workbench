@@ -609,39 +609,44 @@ description: Use when 运作活①开工……别处不用。
                         <td><span class="status-dot c-blocked" title="开不了工"></span></td>
                         <td class="t-name">原型</td>
                         <td><span class="set-ctl" style="max-width:none"><select class="input input-sm" aria-label="原型执行器"><option selected>Open Design</option><option>Claude CLI</option><option>Cursor</option><option>—</option></select><button class="btn btn-secondary">保存</button></span></td>
-                        <td class="t-sub">—</td>
+                        <td><span class="set-ctl" style="max-width:none"><select class="input input-sm" aria-label="workflow"><option>mattpocock-skills</option><option>workbench-start ⚠</option><option>design-system-import ⚠</option><option selected>—</option></select></span></td>
                         <td class="go rowbtn" data-detail="st-proto" tabindex="0" role="button">›</td>
                       </tr>
                       <tr data-state="done">
                         <td><span class="status-dot c-done" title="能开工"></span></td>
                         <td class="t-name">构建</td>
                         <td><span class="set-ctl" style="max-width:none"><select class="input input-sm" aria-label="构建执行器"><option selected>Claude CLI</option><option>Cursor</option><option>Open Design</option><option>—</option></select><button class="btn btn-secondary">保存</button></span></td>
-                        <td class="t-sub">mattpocock-skills</td>
+                        <td><span class="set-ctl" style="max-width:none"><select class="input input-sm" aria-label="workflow"><option selected>mattpocock-skills</option><option>workbench-start ⚠</option><option>design-system-import ⚠</option><option>—</option></select></span></td>
                         <td class="go rowbtn" data-detail="st-build" tabindex="0" role="button">›</td>
                       </tr>
                       <tr data-state="done">
                         <td><span class="status-dot c-done" title="能开工"></span></td>
                         <td class="t-name">优化</td>
                         <td><span class="set-ctl" style="max-width:none"><select class="input input-sm" aria-label="优化执行器"><option selected>Claude CLI</option><option>Cursor</option><option>Open Design</option><option>—</option></select><button class="btn btn-secondary">保存</button></span></td>
-                        <td class="t-sub">mattpocock-skills</td>
+                        <td><span class="set-ctl" style="max-width:none"><select class="input input-sm" aria-label="workflow"><option selected>mattpocock-skills</option><option>workbench-start ⚠</option><option>design-system-import ⚠</option><option>—</option></select></span></td>
                         <td class="go rowbtn" data-detail="st-opt" tabindex="0" role="button">›</td>
                       </tr>
                       <tr data-state="done">
                         <td><span class="status-dot c-done" title="能开工"></span></td>
                         <td class="t-name">运营推广</td>
                         <td><span class="set-ctl" style="max-width:none"><select class="input input-sm" aria-label="运营推广执行器"><option selected>Claude CLI</option><option>Cursor</option><option>Open Design</option><option>—</option></select><button class="btn btn-secondary">保存</button></span></td>
-                        <td class="t-sub">—</td>
+                        <td><span class="set-ctl" style="max-width:none"><select class="input input-sm" aria-label="workflow"><option>mattpocock-skills</option><option>workbench-start ⚠</option><option>design-system-import ⚠</option><option selected>—</option></select></span></td>
                         <td class="go rowbtn" data-detail="st-growth" tabindex="0" role="button">›</td>
                       </tr>
                       <tr data-state="done">
                         <td><span class="status-dot c-done" title="能开工"></span></td>
                         <td class="t-name">运维</td>
                         <td><span class="set-ctl" style="max-width:none"><select class="input input-sm" aria-label="运维执行器"><option selected>Claude CLI</option><option>Cursor</option><option>Open Design</option><option>—</option></select><button class="btn btn-secondary">保存</button></span></td>
-                        <td class="t-sub">mattpocock-skills</td>
+                        <td><span class="set-ctl" style="max-width:none"><select class="input input-sm" aria-label="workflow"><option selected>mattpocock-skills</option><option>workbench-start ⚠</option><option>design-system-import ⚠</option><option>—</option></select></span></td>
                         <td class="go rowbtn" data-detail="st-ops" tabindex="0" role="button">›</td>
                       </tr>
                     </tbody>
                   </table>
+                </div>
+                <div class="sublabel">接自己的 workflow</div>
+                <div class="todo-note">
+                  下拉里带 ⚠ 的是这个仓 <span class="path">.claude/skills/</span> 下自己写的 —— <b>今天选了也接不上</b>:
+                  开工解析只认三个写死的名字,项目自有的一律落空。<b>这就是那个通道缺口的位置。</b>
                 </div>
               </div>
 
@@ -785,73 +790,74 @@ description: Use when 运作活①开工……别处不用。
                   <h2>AI Assets</h2>
                   <input class="input search" type="search" placeholder="Search AI assets" data-search="assets" aria-label="Search AI assets" />
                 </div>
-                <div class="bar"><i class="c-idle" style="width:16.7%"></i><i class="c-done" style="width:66.6%"></i><i class="c-unset" style="width:16.7%"></i></div>
+                <div class="bar"><i class="c-done" style="width:50%"></i><i class="c-blocked" style="width:50%"></i></div>
                 <div class="bar-key">
-                  <span><i class="dot c-idle"></i>项目自己的 <b>1</b></span>
-                  <span><i class="dot c-done"></i>Workbench 已派发 <b>4</b></span>
-                  <span><i class="dot c-unset"></i>未编进二进制 <b>1</b></span>
+                  <span><i class="dot c-done"></i>拿到规范的活 <b>5</b></span>
+                  <span><i class="dot c-blocked"></i>一份都拿不到 <b>5</b></span>
+                  <span>开着的活共 <b>10</b></span>
                 </div>
                 <div class="filterbar">
                   <div class="seg" data-filter="assets">
                     <label class="seg-opt"><input type="radio" name="fa" value="all" checked hidden />全部</label>
-                    <label class="seg-opt"><input type="radio" name="fa" value="proj" hidden />项目自己的 1</label>
-                    <label class="seg-opt"><input type="radio" name="fa" value="wb" hidden />Workbench 的 5</label>
+                    <label class="seg-opt"><input type="radio" name="fa" value="live" hidden />有活在用 2</label>
+                    <label class="seg-opt"><input type="radio" name="fa" value="dead" hidden />没活在用 4</label>
                   </div>
                 </div>
                 <div class="tbl-wrap">
                   <table class="table" data-list="assets">
-                    <thead><tr><th style="width:6%"></th><th style="width:24%">Asset</th><th style="width:34%">写的是什么</th><th style="width:24%">哪张活会读到</th><th style="width:12%">来自</th></tr></thead>
+                    <thead><tr><th style="width:6%"></th><th style="width:26%">Asset</th><th style="width:50%">现在哪几张活在用</th><th style="width:18%">来自</th></tr></thead>
                     <tbody>
-                      <tr data-state="proj">
-                        <td><span class="status-dot c-idle" title="项目自己的"></span></td>
+                      <tr data-state="live">
+                        <td><span class="status-dot c-done" title="有活在用"></span></td>
                         <td class="t-name">AGENTS.md<div class="t-sub path">&lt;被管仓&gt;/AGENTS.md</div></td>
-                        <td class="t-sub">这个项目怎么干的入口 —— 提示词只写「动手前读」,不塞正文</td>
-                        <td class="t-sub">每张活</td>
+                        <td class="t-sub">全部 10 张</td>
                         <td class="t-sub">项目</td>
                       </tr>
-                      <tr data-state="wb">
-                        <td><span class="status-dot c-done" title="已派发"></span></td>
-                        <td class="t-name">metrics</td>
-                        <td class="t-sub">.bw/metrics.toml 怎么写、脚本怎么吐数</td>
-                        <td class="t-sub">运作活①</td>
-                        <td class="t-sub">Workbench</td>
-                      </tr>
-                      <tr data-state="wb">
-                        <td><span class="status-dot c-done" title="已派发"></span></td>
-                        <td class="t-name">week-plan-comment</td>
-                        <td class="t-sub">评论三标题、标签、里程碑、每周进展</td>
-                        <td class="t-sub">运作活① · ②</td>
-                        <td class="t-sub">Workbench</td>
-                      </tr>
-                      <tr data-state="wb">
-                        <td><span class="status-dot c-done" title="已派发"></span></td>
+                      <tr data-state="live">
+                        <td><span class="status-dot c-done" title="有活在用"></span></td>
                         <td class="t-name">build</td>
-                        <td class="t-sub">活的树在哪;评论和标签不是改仓</td>
-                        <td class="t-sub">构建 · 优化 · 运维 · 运作活②</td>
+                        <td class="t-sub">#155 · #154 · #133 · #157 · #137</td>
                         <td class="t-sub">Workbench</td>
                       </tr>
-                      <tr data-state="wb">
-                        <td><span class="status-dot c-done" title="已派发"></span></td>
+                      <tr data-state="dead">
+                        <td><span class="status-dot c-idle" title="没活在用"></span></td>
+                        <td class="t-name">metrics</td>
+                        <td class="t-sub">0 —— 没有运作活①开着</td>
+                        <td class="t-sub">Workbench</td>
+                      </tr>
+                      <tr data-state="dead">
+                        <td><span class="status-dot c-idle" title="没活在用"></span></td>
+                        <td class="t-name">week-plan-comment</td>
+                        <td class="t-sub">0 —— 没有运作活①②开着</td>
+                        <td class="t-sub">Workbench</td>
+                      </tr>
+                      <tr data-state="dead">
+                        <td><span class="status-dot c-idle" title="没活在用"></span></td>
                         <td class="t-name">bw-assets</td>
-                        <td class="t-sub">.bw 现行契约</td>
-                        <td class="t-sub">运作活②</td>
+                        <td class="t-sub">0 —— 没有运作活②开着</td>
                         <td class="t-sub">Workbench</td>
                       </tr>
-                      <tr data-state="wb">
+                      <tr data-state="dead">
                         <td><span class="status-dot c-unset" title="未编进二进制"></span></td>
                         <td class="t-name">review</td>
-                        <td class="t-sub">评审会话要读的那份</td>
-                        <td class="t-sub">评审</td>
+                        <td class="t-sub">未编进二进制</td>
                         <td class="t-sub">Workbench</td>
                       </tr>
                     </tbody>
                   </table>
                 </div>
-                <div class="sublabel">缺口</div>
-                <div class="todo-note">
-                  项目自己的资产只有 <span class="path">AGENTS.md</span> 一条,而且只是被<b>指了一下</b>。
-                  项目的 <span class="path">CONTEXT.md</span> / <span class="path">docs/</span> / <span class="path">.teamai/</span>(知识分层正本里写着装 skills / rules / hooks / MCP)
-                  今天都不在这张表里 —— Workbench 既不观测它们,也没有让它们接进注入链路的通道。
+                <div class="sublabel">拿不到规范的那 5 张</div>
+                <div class="tbl-wrap">
+                  <table class="table">
+                    <thead><tr><th style="width:14%">活</th><th style="width:52%">标题</th><th style="width:34%">为什么拿不到</th></tr></thead>
+                    <tbody>
+                      <tr><td class="t-name">#159</td><td class="t-sub">立项:会议管理工作台(代号「初音」)</td><td class="t-sub">原型类不加载 reference</td></tr>
+                      <tr><td class="t-name">#158</td><td class="t-sub">按执行四原则重做总览与计划两屏</td><td class="t-sub">原型类不加载 reference</td></tr>
+                      <tr><td class="t-name">#152</td><td class="t-sub">接入已有 GitHub 仓时漏列有权限仓库</td><td class="t-sub">没打类别标签</td></tr>
+                      <tr><td class="t-name">#143</td><td class="t-sub">增加特性,项目引导</td><td class="t-sub">没打类别标签</td></tr>
+                      <tr><td class="t-name">#142</td><td class="t-sub">整理项目文档</td><td class="t-sub">没打类别标签</td></tr>
+                    </tbody>
+                  </table>
                 </div>
               </div>
 
