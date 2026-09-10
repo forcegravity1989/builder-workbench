@@ -78,6 +78,8 @@
   .table td.t-name { font-weight: 500; }
   .table td.t-sub { font-size: 11.5px; color: color-mix(in srgb, var(--color-text) 50%, transparent); }
   .table tbody tr.rowbtn { cursor: pointer; }
+  .table tbody tr.rowbtn:hover td { background: color-mix(in srgb, var(--color-text) 4%, transparent); }
+  .table tbody tr.rowbtn:focus-visible { outline: 2px solid var(--color-accent); outline-offset: -2px; }
   /* 阶段表:下拉进了表格单元格,给它自己的尺寸,别用 Connector 那套宽度 */
   [data-list="stage"] { min-width: 680px; }
   [data-list="stage"] .set-ctl { max-width: none; gap: 6px; }
@@ -234,7 +236,7 @@
                     <tbody>
                       <tr data-state="exec" class="rowbtn" data-detail="c-claude" tabindex="0" role="button">
                         <td><span class="status-dot c-done" title="已找到"></span></td>
-                        <td class="t-name">claude<div class="t-sub path">/Users/gravity/.local/bin/claude</div></td>
+                        <td class="t-name">claude</td>
                         <td><span class="tag tag-outline">执行器</span></td>
                         <td class="t-sub">构建 · 优化 · 运营推广 · 运维</td>
                         <td class="go">›</td>
@@ -255,7 +257,7 @@
                       </tr>
                       <tr data-state="remote" class="rowbtn" data-detail="c-gh" tabindex="0" role="button">
                         <td><span class="status-dot c-done" title="已找到"></span></td>
-                        <td class="t-name">GitHub CLI<div class="t-sub path">/opt/homebrew/bin/gh</div></td>
+                        <td class="t-name">GitHub CLI</td>
                         <td><span class="tag tag-outline">远端臂</span></td>
                         <td class="t-sub">远端是 GitHub 的项目</td>
                         <td class="go">›</td>
