@@ -76,6 +76,15 @@
   .table td.t-name { font-weight: 500; }
   .table td.t-sub { font-size: 11.5px; color: color-mix(in srgb, var(--color-text) 50%, transparent); }
   .table tbody tr.rowbtn { cursor: pointer; }
+  /* 阶段表:下拉进了表格单元格,给它自己的尺寸,别用 Connector 那套宽度 */
+  [data-list="stage"] { min-width: 680px; }
+  [data-list="stage"] .set-ctl { max-width: none; gap: 6px; }
+  [data-list="stage"] select.input-sm { width: 100%; min-width: 130px; }
+  [data-list="stage"] .btn { white-space: nowrap; flex: none; }
+  /* 阶段行里有下拉,整行不能点 —— 只让行尾那颗 › 进详情 */
+  .table td.rowbtn { cursor: pointer; }
+  .table td.rowbtn:hover { color: var(--color-text); }
+  .table td.rowbtn:focus-visible { outline: 2px solid var(--color-accent); outline-offset: -2px; }
   .table .go { color: color-mix(in srgb, var(--color-text) 32%, transparent); text-align: right; }
   .table .num { font-variant-numeric: tabular-nums; }
 
@@ -102,7 +111,8 @@
   .kv { display: grid; grid-template-columns: 84px 1fr; gap: 4px var(--space-3); font-size: 12.5px;
         margin-bottom: var(--space-4); }
   .kv dt { color: color-mix(in srgb, var(--color-text) 45%, transparent); }
-  .kv dd { margin: 0; }
+  .kv dd { margin: 0; min-width: 0; overflow-wrap: anywhere; }
+  .kv dd .path { white-space: normal; }
 
   .files { display: flex; border: 1px solid var(--color-divider); border-radius: var(--radius-md);
            background: var(--color-card); overflow: hidden; }
@@ -172,7 +182,7 @@
             <div class="st-sec">能力</div>
             <a class="sidebar-item" data-nav="conn" aria-current="page">Connector<span class="count">7</span></a>
             <a class="sidebar-item" data-nav="skills">Skills<span class="count">7</span></a>
-            <a class="sidebar-item" data-nav="flow">Workflow<span class="count">5</span></a>
+            <a class="sidebar-item" data-nav="stage">Stage<span class="count">5</span></a>
             <a class="sidebar-item" data-nav="plugins">Plugins<span class="count">2</span></a>
             <a class="sidebar-item" data-nav="assets">AI Assets<span class="count">5</span></a>
           </div>
@@ -263,50 +273,6 @@
                       </tr>
                     </tbody>
                   </table>
-                </div>
-
-                <div class="sublabel">哪类活用哪个执行器</div>
-                <div class="set-group">
-                  <div class="set-row">
-                    <div class="set-text"><div class="set-title">原型</div></div>
-                    <div class="set-ctl">
-                      <select class="input input-sm" aria-label="原型"><option selected>Open Design</option><option>Claude CLI</option><option>Cursor</option><option>—</option></select>
-                      <button class="btn btn-secondary">保存</button>
-                      <span class="status status-blocked"><span class="status-dot"></span>开不了工</span>
-                    </div>
-                  </div>
-                  <div class="set-row">
-                    <div class="set-text"><div class="set-title">构建</div></div>
-                    <div class="set-ctl">
-                      <select class="input input-sm" aria-label="构建"><option selected>Claude CLI</option><option>Cursor</option><option>Open Design</option><option>—</option></select>
-                      <button class="btn btn-secondary">保存</button>
-                      <span class="status status-done"><span class="status-dot"></span>已找到</span>
-                    </div>
-                  </div>
-                  <div class="set-row">
-                    <div class="set-text"><div class="set-title">优化</div></div>
-                    <div class="set-ctl">
-                      <select class="input input-sm" aria-label="优化"><option selected>Claude CLI</option><option>Cursor</option><option>Open Design</option><option>—</option></select>
-                      <button class="btn btn-secondary">保存</button>
-                      <span class="status status-done"><span class="status-dot"></span>已找到</span>
-                    </div>
-                  </div>
-                  <div class="set-row">
-                    <div class="set-text"><div class="set-title">运营推广</div></div>
-                    <div class="set-ctl">
-                      <select class="input input-sm" aria-label="运营推广"><option selected>Claude CLI</option><option>Cursor</option><option>Open Design</option><option>—</option></select>
-                      <button class="btn btn-secondary">保存</button>
-                      <span class="status status-done"><span class="status-dot"></span>已找到</span>
-                    </div>
-                  </div>
-                  <div class="set-row">
-                    <div class="set-text"><div class="set-title">运维</div></div>
-                    <div class="set-ctl">
-                      <select class="input input-sm" aria-label="运维"><option selected>Claude CLI</option><option>Cursor</option><option>Open Design</option><option>—</option></select>
-                      <button class="btn btn-secondary">保存</button>
-                      <span class="status status-done"><span class="status-dot"></span>已找到</span>
-                    </div>
-                  </div>
                 </div>
               </div>
 
@@ -539,7 +505,7 @@ description: Use when 运作活①开工……别处不用。
                 </div>
                 <dl class="kv">
                   <dt>是什么</dt><dd>一条 SOP 入口:grill → implement → review,自己调度用哪个子技能</dd>
-                  <dt>挂在</dt><dd>构建 · 优化 · 运维(见 Workflow)</dd>
+                  <dt>挂在</dt><dd>构建 · 优化 · 运维(见 Stage)</dd>
                   <dt>子技能</dt><dd>41 件,在插件的 vendor 库里,按需读</dd>
                   <dt>分发态</dt><dd><b>子技能读不到</b> —— vendor 是开发期从源码树复制,打包时没有源码树</dd>
                 </dl>
@@ -595,82 +561,132 @@ description: Use when 运作活①开工……别处不用。
                 <dl class="kv"><dt>注入时机</dt><dd>人明确要写仓根 AGENTS.md;人不要则停</dd></dl>
               </div>
 
-              <!-- ══ Workflow ══ -->
-              <div data-page="flow" hidden>
+              <!-- ══ Stage ══ -->
+              <div data-page="stage" hidden>
                 <div class="pane-head">
-                  <h2>Workflow</h2>
-                  <input class="input search" type="search" placeholder="搜阶段" data-search="flow" aria-label="搜阶段" />
+                  <h2>Stage</h2>
+                  <input class="input search" type="search" placeholder="Search stages" data-search="stage" aria-label="Search stages" />
                 </div>
-                <div class="bar"><i class="c-done" style="width:60%"></i><i class="c-idle" style="width:40%"></i></div>
+                <div class="bar"><i class="c-done" style="width:80%"></i><i class="c-blocked" style="width:20%"></i></div>
                 <div class="bar-key">
-                  <span><i class="dot c-done"></i>挂了 <b>3</b></span>
-                  <span><i class="dot c-idle"></i>空着 <b>2</b></span>
+                  <span><i class="dot c-done"></i>能开工 <b>4</b></span>
+                  <span><i class="dot c-blocked"></i>开不了工 <b>1</b></span>
                 </div>
                 <div class="tbl-wrap">
-                  <table class="table" data-list="flow">
-                    <thead><tr><th style="width:20%">阶段</th><th style="width:30%">workflow</th><th style="width:26%">来自</th><th style="width:20%">状态</th><th style="width:4%"></th></tr></thead>
+                  <table class="table" data-list="stage">
+                    <thead><tr><th style="width:16%">阶段</th><th style="width:32%">执行器</th><th style="width:26%">Workflow</th><th style="width:22%">状态</th><th style="width:4%"></th></tr></thead>
                     <tbody>
-                      <tr class="rowbtn" data-detail="wf-proto" tabindex="0" role="button">
-                        <td class="t-name">原型</td><td class="t-sub">—</td><td class="t-sub">proto-design 还没 vendor</td>
-                        <td><span class="status status-todo"><span class="status-dot"></span>空着</span></td><td class="go">›</td>
+                      <tr data-state="blocked">
+                        <td class="t-name">原型</td>
+                        <td><span class="set-ctl" style="max-width:none"><select class="input input-sm" aria-label="原型执行器"><option selected>Open Design</option><option>Claude CLI</option><option>Cursor</option><option>—</option></select><button class="btn btn-secondary">保存</button></span></td>
+                        <td class="t-sub">—</td>
+                        <td><span class="status status-blocked"><span class="status-dot"></span>开不了工</span></td>
+                        <td class="go rowbtn" data-detail="st-proto" tabindex="0" role="button">›</td>
                       </tr>
-                      <tr class="rowbtn" data-detail="wf-matt" tabindex="0" role="button">
-                        <td class="t-name">构建</td><td class="t-sub">mattpocock-skills</td><td class="t-sub">插件 mattpocock-skills</td>
-                        <td><span class="status status-done"><span class="status-dot"></span>挂了</span></td><td class="go">›</td>
+                      <tr data-state="done">
+                        <td class="t-name">构建</td>
+                        <td><span class="set-ctl" style="max-width:none"><select class="input input-sm" aria-label="构建执行器"><option selected>Claude CLI</option><option>Cursor</option><option>Open Design</option><option>—</option></select><button class="btn btn-secondary">保存</button></span></td>
+                        <td class="t-sub">mattpocock-skills</td>
+                        <td><span class="status status-done"><span class="status-dot"></span>能开工</span></td>
+                        <td class="go rowbtn" data-detail="st-build" tabindex="0" role="button">›</td>
                       </tr>
-                      <tr class="rowbtn" data-detail="wf-matt" tabindex="0" role="button">
-                        <td class="t-name">优化</td><td class="t-sub">mattpocock-skills</td><td class="t-sub">插件 mattpocock-skills</td>
-                        <td><span class="status status-done"><span class="status-dot"></span>挂了</span></td><td class="go">›</td>
+                      <tr data-state="done">
+                        <td class="t-name">优化</td>
+                        <td><span class="set-ctl" style="max-width:none"><select class="input input-sm" aria-label="优化执行器"><option selected>Claude CLI</option><option>Cursor</option><option>Open Design</option><option>—</option></select><button class="btn btn-secondary">保存</button></span></td>
+                        <td class="t-sub">mattpocock-skills</td>
+                        <td><span class="status status-done"><span class="status-dot"></span>能开工</span></td>
+                        <td class="go rowbtn" data-detail="st-opt" tabindex="0" role="button">›</td>
                       </tr>
-                      <tr class="rowbtn" data-detail="wf-growth" tabindex="0" role="button">
-                        <td class="t-name">运营推广</td><td class="t-sub">—</td><td class="t-sub">没有业界默认</td>
-                        <td><span class="status status-todo"><span class="status-dot"></span>空着</span></td><td class="go">›</td>
+                      <tr data-state="done">
+                        <td class="t-name">运营推广</td>
+                        <td><span class="set-ctl" style="max-width:none"><select class="input input-sm" aria-label="运营推广执行器"><option selected>Claude CLI</option><option>Cursor</option><option>Open Design</option><option>—</option></select><button class="btn btn-secondary">保存</button></span></td>
+                        <td class="t-sub">—</td>
+                        <td><span class="status status-done"><span class="status-dot"></span>能开工</span></td>
+                        <td class="go rowbtn" data-detail="st-growth" tabindex="0" role="button">›</td>
                       </tr>
-                      <tr class="rowbtn" data-detail="wf-matt" tabindex="0" role="button">
-                        <td class="t-name">运维</td><td class="t-sub">mattpocock-skills</td><td class="t-sub">插件 mattpocock-skills</td>
-                        <td><span class="status status-done"><span class="status-dot"></span>挂了</span></td><td class="go">›</td>
+                      <tr data-state="done">
+                        <td class="t-name">运维</td>
+                        <td><span class="set-ctl" style="max-width:none"><select class="input input-sm" aria-label="运维执行器"><option selected>Claude CLI</option><option>Cursor</option><option>Open Design</option><option>—</option></select><button class="btn btn-secondary">保存</button></span></td>
+                        <td class="t-sub">mattpocock-skills</td>
+                        <td><span class="status status-done"><span class="status-dot"></span>能开工</span></td>
+                        <td class="go rowbtn" data-detail="st-ops" tabindex="0" role="button">›</td>
                       </tr>
                     </tbody>
                   </table>
                 </div>
               </div>
 
-              <div data-page="wf-matt" hidden>
-                <div class="backlink" data-back="flow"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M10 3 5 8l5 5"/></svg>Workflow</div>
+              <div data-page="st-proto" hidden>
+                <div class="backlink" data-back="stage"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M10 3 5 8l5 5"/></svg>Stage</div>
                 <div class="dt-head">
                   <div class="dt-icon"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2.6 4.4h4.2M9.2 4.4h4.2M2.6 11.6h4.2M9.2 11.6h4.2M8 4.4v7.2"/><circle cx="8" cy="8" r="1.4"/></svg></div>
-                  <div><div class="dt-name">mattpocock-skills</div><div class="dt-from">业界 workflow · 来自插件 mattpocock-skills</div></div>
-                  <div class="dt-act"><button class="btn btn-secondary">看入口 SKILL.md</button></div>
+                  <div><div class="dt-name">原型</div><div class="dt-from">这类活开工时会拿到什么</div></div>
+                  <div class="dt-act"><span class="status status-blocked"><span class="status-dot"></span>开不了工</span></div>
                 </div>
                 <dl class="kv">
-                  <dt>SOP</dt><dd>grill-with-docs → implement → code-review</dd>
-                  <dt>挂在</dt><dd>构建 · 优化 · 运维</dd>
-                  <dt>子技能</dt><dd>41 件 · <span class="path">assets/vendor/mattpocock-skills/</span></dd>
-                  <dt>分发态</dt><dd><b>子技能读不到</b>(vendor 摊只在开发期)</dd>
+                  <dt>执行器</dt><dd>Open Design · <span class="status status-blocked" style="font-size:inherit"><span class="status-dot"></span>没起来</span></dd>
+                  <dt>Workflow</dt><dd>— · proto-design 源还没 vendor</dd>
+                  <dt>AI Assets</dt><dd>—</dd>
                 </dl>
               </div>
 
-              <div data-page="wf-proto" hidden>
-                <div class="backlink" data-back="flow"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M10 3 5 8l5 5"/></svg>Workflow</div>
+              <div data-page="st-build" hidden>
+                <div class="backlink" data-back="stage"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M10 3 5 8l5 5"/></svg>Stage</div>
                 <div class="dt-head">
                   <div class="dt-icon"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2.6 4.4h4.2M9.2 4.4h4.2M2.6 11.6h4.2M9.2 11.6h4.2M8 4.4v7.2"/><circle cx="8" cy="8" r="1.4"/></svg></div>
-                  <div><div class="dt-name">原型</div><div class="dt-from">这个阶段还没有 workflow</div></div>
-                  <div class="dt-act"><span class="status status-todo"><span class="status-dot"></span>空着</span></div>
+                  <div><div class="dt-name">构建</div><div class="dt-from">这类活开工时会拿到什么</div></div>
+                  <div class="dt-act"><span class="status status-done"><span class="status-dot"></span>能开工</span></div>
                 </div>
                 <dl class="kv">
-                  <dt>本该是</dt><dd>proto-design · 源还没 vendor</dd>
-                  <dt>现在</dt><dd>开工照常,提示词里少这一段</dd>
+                  <dt>执行器</dt><dd>Claude CLI · <span class="path">/Users/gravity/.local/bin/claude</span></dd>
+                  <dt>Workflow</dt><dd>mattpocock-skills · grill → implement → review</dd>
+                  <dt>来自插件</dt><dd>mattpocock-skills 1.2.0 · 41 件子技能</dd>
+                  <dt>AI Assets</dt><dd>build</dd>
                 </dl>
               </div>
 
-              <div data-page="wf-growth" hidden>
-                <div class="backlink" data-back="flow"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M10 3 5 8l5 5"/></svg>Workflow</div>
+              <div data-page="st-opt" hidden>
+                <div class="backlink" data-back="stage"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M10 3 5 8l5 5"/></svg>Stage</div>
                 <div class="dt-head">
                   <div class="dt-icon"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2.6 4.4h4.2M9.2 4.4h4.2M2.6 11.6h4.2M9.2 11.6h4.2M8 4.4v7.2"/><circle cx="8" cy="8" r="1.4"/></svg></div>
-                  <div><div class="dt-name">运营推广</div><div class="dt-from">这个阶段还没有 workflow</div></div>
-                  <div class="dt-act"><span class="status status-todo"><span class="status-dot"></span>空着</span></div>
+                  <div><div class="dt-name">优化</div><div class="dt-from">这类活开工时会拿到什么</div></div>
+                  <div class="dt-act"><span class="status status-done"><span class="status-dot"></span>能开工</span></div>
                 </div>
-                <dl class="kv"><dt>本该是</dt><dd>没挑到业界默认</dd><dt>现在</dt><dd>开工照常,提示词里少这一段</dd></dl>
+                <dl class="kv">
+                  <dt>执行器</dt><dd>Claude CLI · <span class="path">/Users/gravity/.local/bin/claude</span></dd>
+                  <dt>Workflow</dt><dd>mattpocock-skills · grill → implement → review</dd>
+                  <dt>来自插件</dt><dd>mattpocock-skills 1.2.0 · 41 件子技能</dd>
+                  <dt>AI Assets</dt><dd>build</dd>
+                </dl>
+              </div>
+
+              <div data-page="st-growth" hidden>
+                <div class="backlink" data-back="stage"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M10 3 5 8l5 5"/></svg>Stage</div>
+                <div class="dt-head">
+                  <div class="dt-icon"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2.6 4.4h4.2M9.2 4.4h4.2M2.6 11.6h4.2M9.2 11.6h4.2M8 4.4v7.2"/><circle cx="8" cy="8" r="1.4"/></svg></div>
+                  <div><div class="dt-name">运营推广</div><div class="dt-from">这类活开工时会拿到什么</div></div>
+                  <div class="dt-act"><span class="status status-done"><span class="status-dot"></span>能开工</span></div>
+                </div>
+                <dl class="kv">
+                  <dt>执行器</dt><dd>Claude CLI · <span class="path">/Users/gravity/.local/bin/claude</span></dd>
+                  <dt>Workflow</dt><dd>— · 没挑到业界默认</dd>
+                  <dt>AI Assets</dt><dd>—</dd>
+                </dl>
+              </div>
+
+              <div data-page="st-ops" hidden>
+                <div class="backlink" data-back="stage"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M10 3 5 8l5 5"/></svg>Stage</div>
+                <div class="dt-head">
+                  <div class="dt-icon"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2.6 4.4h4.2M9.2 4.4h4.2M2.6 11.6h4.2M9.2 11.6h4.2M8 4.4v7.2"/><circle cx="8" cy="8" r="1.4"/></svg></div>
+                  <div><div class="dt-name">运维</div><div class="dt-from">这类活开工时会拿到什么</div></div>
+                  <div class="dt-act"><span class="status status-done"><span class="status-dot"></span>能开工</span></div>
+                </div>
+                <dl class="kv">
+                  <dt>执行器</dt><dd>Claude CLI · <span class="path">/Users/gravity/.local/bin/claude</span></dd>
+                  <dt>Workflow</dt><dd>mattpocock-skills · grill → implement → review</dd>
+                  <dt>来自插件</dt><dd>mattpocock-skills 1.2.0 · 41 件子技能</dd>
+                  <dt>AI Assets</dt><dd>build</dd>
+                </dl>
               </div>
 
               <!-- ══ 插件 ══ -->
@@ -844,7 +860,7 @@ description: Use when 运作活①开工……别处不用。
     if (seg) { $$('input', seg).forEach(function (i) { i.addEventListener('change', apply); }); }
   }
   tableFilter('conn', true);
-  tableFilter('flow', false);
+  tableFilter('stage', true);
   tableFilter('plugins', false);
   tableFilter('assets', false);
 
