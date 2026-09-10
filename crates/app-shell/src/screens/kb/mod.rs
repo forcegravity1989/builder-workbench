@@ -11,13 +11,14 @@
 //!    对账要读一遍全部核心件并逐份比对指纹,不能每次打开知识库都跑一次。
 //! 4. **只读**。改文档一律走活 + MR,这一屏不提供编辑框。
 
-use crate::bridge::{Bridge, Panel, PanelNav, Req};
+use crate::bridge::{Bridge, Panel, PanelNav, Req, TopView};
 use crate::vm::{AssetsVm, CodeGraphVm, KbFileVm, KbTab, ProjectVm, SkillVm};
 use dioxus::prelude::*;
 
 #[component]
 pub fn View(p: ProjectVm, bridge: Bridge) -> Element {
     let nav = use_context::<PanelNav>();
+    let mut top_view = use_context::<Signal<Option<TopView>>>();
     let (p, bridge) = (&p, &bridge);
     rsx! {
         section { "data-screen": "kb",
@@ -44,7 +45,10 @@ pub fn View(p: ProjectVm, bridge: Bridge) -> Element {
             match p.kb.tab {
                 KbTab::Docs => docs_tab(p, bridge),
                 KbTab::CodeGraph => codegraph_tab(p.kb.codegraph.as_ref(), bridge),
-                KbTab::Assets => assets_tab(p.kb.assets.as_ref(), bridge),
+                KbTab::Assets => assets_tab(
+                    p.kb.assets.as_ref(),
+                    move |_| top_view.set(Some(TopView::Settings)),
+                ),
             }
         }
     }
@@ -207,16 +211,14 @@ fn codegraph_tab(cg: Option<&CodeGraphVm>, bridge: &Bridge) -> Element {
 
 // ── 资产页签 ─────────────────────────────────────────────
 
-fn assets_tab(a: Option<&AssetsVm>, bridge: &Bridge) -> Element {
-    let b = bridge.clone();
+fn assets_tab(a: Option<&AssetsVm>, open_settings: impl FnMut(MouseEvent) + 'static) -> Element {
     let Some(a) = a else {
         return rsx! {
             div { class: "set-group",
                 div { class: "empty",
                     "点一下上面的「资产」页签就现扫一次。"
                     br {}
-                    "五个区块全部现算:列 Workbench 自带的技能 + 扫本仓 .claude/skills/、\
-                     走 git log、发版记录扫 git 标签 + 远端 Release。没有登记表可查。"
+                    "四个区块全部现算:扫本仓 .claude/skills/、走 git log、发版记录扫 git 标签 + 远端 Release。没有登记表可查。"
                 }
             }
         };
@@ -230,24 +232,18 @@ fn assets_tab(a: Option<&AssetsVm>, bridge: &Bridge) -> Element {
         div { class: "section",
             div {
                 h3 { class: "section-title", "技能与 workflow" }
-                p { class: "section-desc",
-                    "Workbench 自带的(摊在 Workbench 自己的资产目录,不进你的仓)+ 本仓 .claude/skills/ 自有的;「用过几次」按活挂的 workflow 现算,没有胜率。"
-                }
-            }
-            div { class: "section-tools",
-                button {
-                    class: "btn btn-secondary",
-                    onclick: move |_| b.send(Req::KbTab(KbTab::Assets)),
-                    "重新扫一次"
-                }
+                p { class: "section-desc", "这份清单搬去设置屏了 —— 它本来就是全局的,不该按项目各扫一份。" }
             }
         }
         div { class: "set-group",
-            if a.skills.is_empty() {
-                div { class: "empty", "暂无" }
-            }
-            for s in a.skills.iter() {
-                {skill_row(s)}
+            div { class: "set-row",
+                div { class: "set-text",
+                    div { class: "set-title", "Workbench 自带 + 所有接入项目的 .claude/skills/" }
+                    div { class: "set-desc", "「用过几次」「注入不了」这些判据都在那边,这里不再重复一份。" }
+                }
+                div { class: "set-ctl",
+                    button { class: "btn btn-secondary", onclick: open_settings, "去设置 · Skills →" }
+                }
             }
         }
 

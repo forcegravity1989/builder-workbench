@@ -1,11 +1,12 @@
 # STATUS · 设置屏收成全局面板
 
-- **状态**:待意图 gate(2026-09-08 立项,2026-09-09 按 Claude 现行设置面板重定方向)
-- **人 gate**:intent + 带原型的 spec。原型两份同源:
+- **状态**:**已实现**(2026-09-08 立项,2026-09-09 按 Claude 现行设置面板重定方向,2026-09-10 十三轮收敛后发起人当场确认设计完成、批准转入实现,同日代码落地)
+- **人 gate**:intent + 带原型的 spec,发起人 2026-09-10 会话内口头批准(未走 artifact 裁决评论)。原型两份同源:
   - 在线可点(推荐):<https://claude.ai/code/artifact/3755f5a7-dc72-4019-969f-083d635fbd35>
   - 仓内 [`prototype.html`](prototype.html)(浏览器直开,相对引仓里的 `styles.css` + `shell.css`,样式表改了它跟着变)
 - **issue**:无(会话直达)
-- **代码**:未动。gate 之前不写码
+- **代码**:已实现。`screens/settings/{connector,skills,stage,plugins,assets}.rs` + `bridge/vm_settings.rs`(五张表的 VM 拼装,`gather()` 里算一次、`assemble()` 只克隆)+ `vm.rs` 新增的 Connector/Skills/Stage/Plugins/AI Assets 系列类型;配置屏瘦身、知识库资产页签删重复块。真机验证见下方「验证」。范围以 [`spec.md`](spec.md) 为准;「待裁决」里标注「建议另开一件」的条目(1/3/4/7/8)不在本特性范围内,条目 2 按已定的最小修法(`injectable` 字段,标「注入不了」)落地,条目 5/6 按原型已做的「两节都建、AI Assets 进本轮」执行
+- **验证**:`cargo fmt/clippy/check -p app-shell` + 四个 guard 脚本 + `cargo test --workspace` 全绿;`BW_VIEW=settings` 真机跑起来截图确认(见下),左栏五个「能力」计数对得上真实机器状态(Connector 7 / Skills 7 / Stage 5 / Plugins 2 / AI Assets 5)。子页面(Connector/Skills/Stage/Plugins 详情)受当前环境「screencapture 能截图、System Events 点击不生效」限制(与既往 BW computer-use 记录一致),没有逐页点击截图核验,只做了代码审查 + 编译期检查
 - **分支**:`claude/codex-plugin-page-management-09c680`
 - **目录名**:沿用 `capability-panel`(立项时叫「能力面板」);内容已从「配置屏的一块」长成「整个设置屏」,名字不改以免链接漂
 

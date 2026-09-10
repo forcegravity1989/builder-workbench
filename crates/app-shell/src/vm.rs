@@ -105,6 +105,17 @@ pub struct SettingsVm {
     /// 库文件,这格显示的是 asset_root 目录名,不是 DB 路径。
     pub data_dir: String,
     pub claude_binary: Option<String>,
+    /// 「能力」一节的五张表,见 `docs/05-features/capability-panel/spec.md`。
+    pub connectors: Vec<ConnectorVm>,
+    pub skills: Vec<SkillVm>,
+    pub stage: Vec<StageRowVm>,
+    pub plugins: Vec<PluginVm>,
+    pub assets: Vec<AssetRowVm>,
+    /// `assets` 的「现在哪几张活在用」是扫哪个项目算出来的。空 = 当时没打开
+    /// 任何项目,那一列全空**不代表**「没有活在用」,是没数据可扫。
+    pub assets_open_project: String,
+    /// 从活详情点 workflow 跳过来时,Skills 列表要亮哪一行(slug)。空 = 没指定。
+    pub focus_skill: String,
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -117,6 +128,14 @@ pub struct ProjectCardVm {
     pub signal: Option<Signal>,
     pub workspace_path: String,
     pub remote: String,
+    /// `remote` 的机读版:`"github"` / `"codehub"` / `""`(没挂远端)。
+    /// 设置屏 Connector 页靠它统计「谁用到 gh / codehub」,不解析 `remote`
+    /// 那句人话。
+    pub remote_provider: String,
+    /// 项目群提供方机读键(`"welink"` / `""`)。**只在项目墙整墙采集时读得到**
+    /// (`.bw/project.toml` 现读一次);打开了某个项目时其余卡片沿用上次结果,
+    /// 这一格就留空 —— 空不等于「没配群」,是「这一轮没重读」。
+    pub chat_provider: String,
     /// 本周排了几张活、完成了几张。
     pub week_total: u32,
     pub week_done: u32,
@@ -505,13 +524,11 @@ pub struct NotifyVm {
     pub unread: u32,
 }
 
+/// 项目内配置屏。**能力**(开工工具映射 / 技能与 workflow)已经搬去设置屏
+/// (它们本来就是全局的,`Settings.tools` 没有项目维度)。这里只留真正跟
+/// 项目走的三样:远端、项目群、节律。
 #[derive(Clone, Debug, Default, PartialEq)]
 pub struct ConfigVm {
-    /// 「类别→工具→workflow」三列映射。
-    pub mappings: Vec<MappingVm>,
-    /// 项目仓 `.claude/skills/` 里扫出来的技能包 + 现算的「用过几次」。
-    pub skills: Vec<SkillVm>,
-    pub tools: Vec<ToolProbeVm>,
     pub remote: String,
     /// 定时节律:残留 issue-policy 或产品默认。
     pub cadence: String,
@@ -524,19 +541,9 @@ pub struct ConfigVm {
     /// `.bw/project.toml` 的 `[chat]` 段:项目群。**仓是正本**,这里只显示;
     /// 改它走总览「项目约定」那张轻量活 + MR。
     pub chat: String,
-    /// 从活详情点 workflow 跳过来时要亮的那一行(slug)。空 = 没指定。
-    pub focus_skill: String,
 }
 
-#[derive(Clone, Debug, PartialEq)]
-pub struct MappingVm {
-    pub category_key: String,
-    pub category_label: String,
-    pub tool: String,
-    pub workflow: String,
-}
-
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, Default, PartialEq)]
 pub struct SkillVm {
     pub slug: String,
     pub title: String,
@@ -545,6 +552,19 @@ pub struct SkillVm {
     pub origin: String,
     /// SKILL.md 头里的 `description:`。读不到就空着,不替它写一句。
     pub desc: String,
+    /// Claude 那样的归属行:`by Builders' Workbench` / `by Matt Pocock`(业界
+    /// 引入)/ `Created by you`(项目自己仓里写的)。空 = 不知道挂谁的名。
+    pub byline: String,
+    /// 项目自有技能来自哪个项目(项目名)。内置 / vendor 的是空。
+    pub project: String,
+    /// **能不能真被注入**——`skill_pointer` 三道门(硬编码 `skill_slug` 匹配、
+    /// 只找编进二进制的 5 份、路径只拼 Workbench 自己的资产目录)今天只放行
+    /// 三个名字。`uses` 是按名字匹配现算的,和这个字段**不是一回事**——
+    /// `uses > 0` 不代表注入过,`injectable` 才是「今天开工真会读到它」的
+    /// 实话。见 `docs/05-features/capability-panel/intent.md` ⑪。
+    pub injectable: bool,
+    /// 文件个数(入口 SKILL.md + sidecar)。给「文件 · N」页签用。
+    pub file_count: usize,
 }
 
 /// 定时那张表的一行。**没有定时表** —— 判据是「本周有没有这张活」,
@@ -558,6 +578,151 @@ pub struct CronVm {
     pub schedule: String,
     /// 到底看什么才算「该跑了」。
     pub rule: String,
+}
+
+// ── 设置屏 · Connector / Skills / Stage / Plugins / AI Assets ──────────
+//
+// 见 `docs/05-features/capability-panel/spec.md`。都是全局的(不挂哪个
+// 项目),壳的 VM 层现拼,不进内核 —— 「谁用到」这类判据是纯展示口径。
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum ConnectorKind {
+    /// 开工执行器:claude / cursor-agent / Open Design。
+    Executor,
+    /// 远端臂:gh / codehub-cli。
+    Remote,
+    /// 群通知:welink-cli。
+    Chat,
+    /// 会话宿主:Orca。
+    Host,
+}
+
+impl ConnectorKind {
+    pub fn label(self) -> &'static str {
+        match self {
+            ConnectorKind::Executor => "执行器",
+            ConnectorKind::Remote => "远端臂",
+            ConnectorKind::Chat => "群通知",
+            ConnectorKind::Host => "会话宿主",
+        }
+    }
+
+    pub const ALL: [ConnectorKind; 4] = [
+        ConnectorKind::Executor,
+        ConnectorKind::Remote,
+        ConnectorKind::Chat,
+        ConnectorKind::Host,
+    ];
+}
+
+/// 着色口径见 spec.md §2.2:只有「有活会用到、却不在」才是红色。
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum ConnectorStatus {
+    Found,
+    /// 有活会用到它,却探不到 —— 现在就会挡住开工。
+    Blocked,
+    /// 没人用到它,也没探到。
+    Idle,
+    /// 要填配置才能用,还没填(今天只有 Orca)。
+    Unconfigured,
+    /// 填了配置,但没有探活实现,不能说「通了」(今天只有 Orca)。
+    ConfiguredNoProbe,
+    /// 这项探活还没接实现。
+    NotProbed,
+}
+
+impl ConnectorStatus {
+    pub fn label(self) -> &'static str {
+        match self {
+            ConnectorStatus::Found => "已找到",
+            ConnectorStatus::Blocked => "开不了工",
+            ConnectorStatus::Idle => "还没用上",
+            ConnectorStatus::Unconfigured => "还没配",
+            ConnectorStatus::ConfiguredNoProbe => "配了",
+            ConnectorStatus::NotProbed => "这项探活还没接",
+        }
+    }
+
+    /// 汇总条 + 图例用的色点类(`c-done`/`c-blocked`/`c-unset`/`c-idle`)。
+    pub fn dot_class(self) -> &'static str {
+        match self {
+            ConnectorStatus::Found => "c-done",
+            ConnectorStatus::Blocked => "c-blocked",
+            ConnectorStatus::Unconfigured | ConnectorStatus::ConfiguredNoProbe => "c-unset",
+            ConnectorStatus::Idle | ConnectorStatus::NotProbed => "c-idle",
+        }
+    }
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub struct ConnectorVm {
+    /// 机读键,和探活 / 工具映射的 key 同名(`claude_cli` / `orca` 等)。
+    pub key: String,
+    pub name: String,
+    pub kind: ConnectorKind,
+    pub status: ConnectorStatus,
+    /// 找到就是路径,没找到就是原话(和 `ToolProbeVm.detail` 同一份)。
+    pub detail: String,
+    /// 哪几类活 / 哪些项目用到它。空 = 没人用到。
+    pub used_by: Vec<String>,
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub struct StageWorkflowOption {
+    pub value: String,
+    pub label: String,
+    /// `false` = 选了也接不上(`skill_pointer` 认不出这个名字)。
+    pub wired: bool,
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub struct StageRowVm {
+    pub category_key: String,
+    pub category_label: String,
+    pub executor_tool: String,
+    pub executor_label: String,
+    pub executor_ok: Option<bool>,
+    pub workflow: String,
+    pub workflow_options: Vec<StageWorkflowOption>,
+    /// 这个阶段现在能不能开工 —— 取决于它的执行器探到没探到。
+    pub can_work: bool,
+    /// 会注入哪几份 AI Assets(reference 名字)。
+    pub injects: Vec<String>,
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub struct PluginSkillGroup {
+    pub name: String,
+    pub skills: Vec<String>,
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub struct PluginVm {
+    pub slug: String,
+    pub name: String,
+    pub upstream: String,
+    pub version: String,
+    pub license: String,
+    pub skill_count: usize,
+    /// 哪几个阶段的默认 workflow 来自它。空 = 没有 workflow 用它
+    /// (`mohit-pm-claude-skills` 今天就是这样:vendor 了但没接上)。
+    pub used_by: Vec<String>,
+    pub groups: Vec<PluginSkillGroup>,
+}
+
+/// AI Assets 页只读一张表,三列:名字 / 现在哪几张活在用 / 来自。**不放色条 /
+/// 状态过滤 / 「它是什么」的描述**——那是教育用户,发起人当场否过(见
+/// spec.md §5、STATUS 十一轮)。
+#[derive(Clone, Debug, PartialEq)]
+pub struct AssetRowVm {
+    pub slug: String,
+    pub name: String,
+    /// 「Workbench」/「项目」。
+    pub source: String,
+    /// 当前打开的项目里,哪几张活现在会读到它(`#123` 这样的活号)。**没有
+    /// 打开项目 = 空**,不是「没有活在用」—— 两件事分开,靠 `open_project`
+    /// 那句判据文字说清楚,不编一个假的空列表当答案。
+    pub used_by_issues: Vec<String>,
 }
 
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
@@ -632,8 +797,6 @@ pub struct CodeFileVm {
 
 #[derive(Clone, Debug, Default, PartialEq)]
 pub struct AssetsVm {
-    /// 项目自己的技能包(扫 `.claude/skills/**/SKILL.md` 得到)。
-    pub skills: Vec<SkillVm>,
     /// 蒸馏产出的技能。V4 还没有蒸馏这颗按钮,所以今天恒为空 —— 不放假数据。
     pub distilled: Vec<SkillVm>,
     /// 产物登记 = `git log --name-only`,没有登记表。

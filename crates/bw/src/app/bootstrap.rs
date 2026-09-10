@@ -279,16 +279,27 @@ pub fn references_for(issue: &Issue, refs_dir: &std::path::Path) -> Vec<Referenc
 
 /// 这份 reference 要不要给这张活。
 fn want_ref(issue: &Issue, slug: &str) -> bool {
-    let ops2 = issue.workflow == super::ops::OPS2_WORKFLOW;
+    ref_wanted_for(issue.category, &issue.workflow, slug)
+}
+
+/// [`want_ref`] 的判据本体,拆出 `Issue` 之外好让设置屏「AI Assets」页复用同
+/// 一套口径去答「这份 reference 适用于哪些类别 / 哪条 workflow」,不必凭空
+/// 造一张 `Issue` 也不必在设置屏另抄一份判据(那会两处各改一次、迟早改漏)。
+pub fn ref_wanted_for(
+    category: Option<crate::model::StageKind>,
+    workflow: &str,
+    slug: &str,
+) -> bool {
+    let ops2 = workflow == super::ops::OPS2_WORKFLOW;
     match slug {
         // 指标活:更新指标与版本计划。② 升格式时 skill 会再指过去,这里不预注入。
-        "metrics" => issue.workflow == super::ops::OPS1_WORKFLOW,
+        "metrics" => workflow == super::ops::OPS1_WORKFLOW,
         // 周初三标题给①;周五每周进展给②。同一份 reference。
-        "week-plan-comment" => issue.workflow == super::ops::OPS1_WORKFLOW || ops2,
+        "week-plan-comment" => workflow == super::ops::OPS1_WORKFLOW || ops2,
         // 改仓类活:构建 / 优化 / 运维;运作活②改 `.bw` 也是改仓。
         "build" => {
             ops2 || matches!(
-                issue.category,
+                category,
                 Some(
                     crate::model::StageKind::Build
                         | crate::model::StageKind::Optimize

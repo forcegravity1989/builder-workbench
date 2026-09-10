@@ -11,7 +11,7 @@ use bw::{
 };
 use std::path::Path;
 
-use super::vm_build::{card_item, remote_label, tool_label};
+use super::vm_build::{card_item, remote_label};
 
 /// 四列看板(合并后)。列内分段;段按原始状态算。
 ///
@@ -413,50 +413,17 @@ pub(super) fn build_workbench(
     }
 }
 
-/// 配置屏。`tools`(环境条)从外部传:它在 `gather` 里探一次,不再每次重切
-/// 都重探(OD 管道 400ms + PATH 扫)——原来这条是 `probe_env` 第二遍的来源。
+/// 配置屏。开工工具映射 / 技能与 workflow 已经搬去设置屏 Stage / Skills 两页
+/// (它们本来就是全局的),这里只剩真正跟项目走的三样。
 pub(super) fn build_config(
     ws: &Path,
-    settings: Option<&bw::local::Settings>,
     project: &Project,
     // 名片文件由上层读一次(而且是走 `read_or_warn`,文件坏了会说话)。这里
     // **不再自己读一遍** —— 自己读的那条路 `.ok()` 会把解析错误吞掉,表现成
     // 「项目群未配」,而真相是文件里有一行写错了。
     file: &project_file::ProjectFile,
-    issues: &[bw::Issue],
-    env: &[ToolProbeVm],
 ) -> ConfigVm {
-    let usage = bw::app::workflow_usage(issues);
-    let mappings = bw::model::StageKind::ALL
-        .iter()
-        .map(|cat| {
-            let key = bw::model::category_key(*cat);
-            let tool = settings
-                .and_then(|s| s.tools.get(key))
-                .cloned()
-                .filter(|t| !t.trim().is_empty())
-                .unwrap_or_else(|| bw::defaults::default_tool(*cat).to_string());
-            let workflow = bw::defaults::default_workflow(*cat).to_string();
-            MappingVm {
-                category_key: key.to_string(),
-                category_label: cat.label().to_string(),
-                tool: tool_label(&tool).into(),
-                workflow: if workflow.is_empty() {
-                    "—(产品默认无)".into()
-                } else {
-                    workflow
-                },
-            }
-        })
-        .collect();
-
-    let skills = skill_list(ws, &usage);
-
     ConfigVm {
-        mappings,
-        skills,
-        focus_skill: String::new(),
-        tools: env.to_vec(),
         remote: remote_label(project),
         cadence: "Orca · 周一 09:00 定计划 · 周五 15:00 盘点 · 每天 20:00 采 B 类（默认关）".into(),
         crons: vec![],
@@ -478,7 +445,14 @@ pub(super) fn build_config(
 ///   `.gitignore` 怎么写不该由 Workbench 决定(见 `bw::standard::skills`)。
 /// - **项目自有**:这个仓自己的 `.claude/skills/`,扫目录得到。
 /// - **不在册**:活上挂了这个名字,两处都找不到包。用量是真的,包确实没有。
-pub(super) fn skill_list(ws: &Path, usage: &[(String, u32)]) -> Vec<SkillVm> {
+///
+/// `ws = None`(没打开任何项目)只给 Workbench 自带的 —— 不拿一个假路径去扫
+/// 「项目自有」,那会扫到进程当前目录,答非所问。
+pub(super) fn skill_list(
+    ws: Option<&Path>,
+    project_name: &str,
+    usage: &[(String, u32)],
+) -> Vec<SkillVm> {
     let used = |slug: &str| -> u32 {
         usage
             .iter()
@@ -486,6 +460,7 @@ pub(super) fn skill_list(ws: &Path, usage: &[(String, u32)]) -> Vec<SkillVm> {
             .map(|(_, n)| *n)
             .sum()
     };
+    let sidecars = bw::standard::skills::sidecars();
 
     let mut skills: Vec<SkillVm> = bw::standard::skills::all()
         .into_iter()
@@ -496,11 +471,20 @@ pub(super) fn skill_list(ws: &Path, usage: &[(String, u32)]) -> Vec<SkillVm> {
                 .to_string(),
             origin: "Workbench 自带".into(),
             desc: p.desc.to_string(),
+            byline: "by Builders' Workbench".into(),
+            project: String::new(),
+            // `workflow_label` 和 `skill_slug` 是同一张三条表的正反面 ——
+            // 今天只认 week-planning / asset-audit / mattpocock-skills。
+            // metrics-refresh / project-handbook 编进了二进制,却没有任何
+            // workflow 名字指向它们,今天真的一次都不会被注入。
+            injectable: bw::app::workflow_label(p.slug).is_some(),
+            file_count: 1 + sidecars.iter().filter(|s| s.slug == p.slug).count(),
             slug: p.slug.to_string(),
         })
         .collect();
 
     // 项目自己的技能包。同名的以项目那份为准 —— 仓里那份才是这个仓真正会用的。
+    let Some(ws) = ws else { return skills };
     if let Ok(dir) = std::fs::read_dir(ws.join(".claude/skills")) {
         for e in dir
             .flatten()
@@ -513,6 +497,13 @@ pub(super) fn skill_list(ws: &Path, usage: &[(String, u32)]) -> Vec<SkillVm> {
                 title: slug.clone(),
                 origin: "项目自有".into(),
                 desc: skill_desc(&e.path().join("SKILL.md")),
+                byline: "Created by you".into(),
+                project: project_name.to_string(),
+                // `skill_pointer` 的第三道门只拼 Workbench 自己的资产目录,
+                // 项目自有的今天无论挂什么名字都够不到 —— 恒为 false,直到
+                // 注入模型改成先查被管仓（intent ⑪，另开一件）。
+                injectable: false,
+                file_count: 1,
                 slug,
             });
         }
@@ -530,6 +521,10 @@ pub(super) fn skill_list(ws: &Path, usage: &[(String, u32)]) -> Vec<SkillVm> {
                 uses: *n,
                 origin: "不在册".into(),
                 desc: String::new(),
+                byline: String::new(),
+                project: String::new(),
+                injectable: false,
+                file_count: 0,
             });
         }
     }
@@ -549,7 +544,7 @@ pub(super) fn skill_desc(path: &Path) -> String {
         .unwrap_or_default()
 }
 
-fn chat_provider(chat: Option<&project_file::ChatConfig>) -> String {
+pub(super) fn chat_provider(chat: Option<&project_file::ChatConfig>) -> String {
     chat.map(|c| c.provider.clone())
         .unwrap_or_else(|| "未配".into())
 }

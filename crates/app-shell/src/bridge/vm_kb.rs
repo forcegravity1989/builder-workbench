@@ -213,13 +213,7 @@ pub(super) async fn build_codegraph(ws: &Path) -> CodeGraphVm {
 /// 资产页签:五个区块**全部现算**——扫仓目录、走 git、解析仓文件。
 /// 没有登记表可查(V4 库里只有四张表)。发版列表由调用方现算后传入
 /// (优先远端 Release,与总览同一份)。
-pub(super) async fn build_assets(
-    usage: &[(String, u32)],
-    ws: &Path,
-    releases: Vec<ReleaseVm>,
-) -> AssetsVm {
-    let skills = super::vm_panels::skill_list(ws, usage);
-
+pub(super) async fn build_assets(ws: &Path, releases: Vec<ReleaseVm>) -> AssetsVm {
     let artifacts = bw::git::artifacts(ws, 200)
         .await
         .unwrap_or_default()
@@ -246,7 +240,6 @@ pub(super) async fn build_assets(
     };
 
     AssetsVm {
-        skills,
         // V4 还没有蒸馏这颗按钮,所以这里恒空。
         // 不放占位数据。
         distilled: Vec::new(),
