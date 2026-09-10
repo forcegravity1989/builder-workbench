@@ -58,6 +58,8 @@
   .c-blocked { background: var(--color-danger); }
   .c-unset { background: var(--color-warning); }
   .c-idle { background: var(--color-neutral-300); }
+  /* 表里状态只留一颗点,顶上的图例就是解释,不再逐行写字 */
+  .table .status-dot { display: block; margin: 0 auto; }
   .c-a { background: var(--color-accent); }
   .c-b { background: var(--color-accent-2); }
 
@@ -112,6 +114,14 @@
         margin-bottom: var(--space-4); }
   .kv dt { color: color-mix(in srgb, var(--color-text) 45%, transparent); }
   .kv dd { margin: 0; min-width: 0; overflow-wrap: anywhere; }
+  .install { display: flex; align-items: center; gap: var(--space-2); margin-bottom: var(--space-2);
+             padding: 8px 10px; border-radius: var(--radius-sm); background: var(--color-surface);
+             border: 1px solid var(--color-divider); }
+  .install code { flex: 1; min-width: 0; font-family: var(--font-mono); font-size: 11.5px;
+                  overflow-x: auto; white-space: pre; }
+  .install .btn { flex: none; }
+  .todo-note { padding: 8px 10px; border-radius: var(--radius-sm); font-size: 12.5px; line-height: 1.7;
+               background: var(--color-warning-soft); color: var(--color-warning-deep); }
   .kv dd .path { white-space: normal; }
 
   .files { display: flex; border: 1px solid var(--color-divider); border-radius: var(--radius-md);
@@ -211,64 +221,64 @@
                 <div class="filterbar">
                   <div class="seg" data-filter="conn">
                     <label class="seg-opt"><input type="radio" name="fc" value="all" checked hidden />全部</label>
-                    <label class="seg-opt"><input type="radio" name="fc" value="blocked" hidden />开不了工</label>
-                    <label class="seg-opt"><input type="radio" name="fc" value="done" hidden />已找到</label>
-                    <label class="seg-opt"><input type="radio" name="fc" value="unset" hidden />还没配</label>
-                    <label class="seg-opt"><input type="radio" name="fc" value="idle" hidden />还没用上</label>
+                    <label class="seg-opt"><input type="radio" name="fc" value="exec" hidden />执行器 3</label>
+                    <label class="seg-opt"><input type="radio" name="fc" value="remote" hidden />远端臂 2</label>
+                    <label class="seg-opt"><input type="radio" name="fc" value="chat" hidden />群通知 1</label>
+                    <label class="seg-opt"><input type="radio" name="fc" value="host" hidden />会话宿主 1</label>
                   </div>
                 </div>
 
                 <div class="tbl-wrap">
                   <table class="table" data-list="conn">
-                    <thead><tr><th style="width:30%">Connector</th><th style="width:15%">类型</th><th style="width:29%">谁用到</th><th style="width:22%">状态</th><th style="width:4%"></th></tr></thead>
+                    <thead><tr><th style="width:6%"></th><th style="width:30%">Connector</th><th style="width:16%">类型</th><th style="width:44%">谁用到</th><th style="width:4%"></th></tr></thead>
                     <tbody>
-                      <tr data-state="done" class="rowbtn" data-detail="c-claude" tabindex="0" role="button">
+                      <tr data-state="exec" class="rowbtn" data-detail="c-claude" tabindex="0" role="button">
+                        <td><span class="status-dot c-done" title="已找到"></span></td>
                         <td class="t-name">claude<div class="t-sub path">/Users/gravity/.local/bin/claude</div></td>
                         <td><span class="tag tag-outline">执行器</span></td>
                         <td class="t-sub">构建 · 优化 · 运营推广 · 运维</td>
-                        <td><span class="status status-done"><span class="status-dot"></span>已找到</span></td>
                         <td class="go">›</td>
                       </tr>
-                      <tr data-state="blocked" class="rowbtn" data-detail="c-od" tabindex="0" role="button">
+                      <tr data-state="exec" class="rowbtn" data-detail="c-od" tabindex="0" role="button">
+                        <td><span class="status-dot c-blocked" title="开不了工"></span></td>
                         <td class="t-name">Open Design<div class="t-sub">管道握手没拿到 loopback URL</div></td>
                         <td><span class="tag tag-outline">执行器</span></td>
                         <td class="t-sub">原型</td>
-                        <td><span class="status status-blocked"><span class="status-dot"></span>开不了工</span></td>
                         <td class="go">›</td>
                       </tr>
-                      <tr data-state="unset" class="rowbtn" data-detail="c-orca" tabindex="0" role="button">
+                      <tr data-state="host" class="rowbtn" data-detail="c-orca" tabindex="0" role="button">
+                        <td><span class="status-dot c-unset" title="还没配"></span></td>
                         <td class="t-name">Orca<div class="t-sub">网页配对地址还没配</div></td>
                         <td><span class="tag tag-outline">会话宿主</span></td>
                         <td class="t-sub">构建 · 优化 · 运维 的会话</td>
-                        <td><span class="status status-progress"><span class="status-dot"></span>还没配</span></td>
                         <td class="go">›</td>
                       </tr>
-                      <tr data-state="done" class="rowbtn" data-detail="c-gh" tabindex="0" role="button">
+                      <tr data-state="remote" class="rowbtn" data-detail="c-gh" tabindex="0" role="button">
+                        <td><span class="status-dot c-done" title="已找到"></span></td>
                         <td class="t-name">GitHub CLI<div class="t-sub path">/opt/homebrew/bin/gh</div></td>
                         <td><span class="tag tag-outline">远端臂</span></td>
                         <td class="t-sub">远端是 GitHub 的项目</td>
-                        <td><span class="status status-done"><span class="status-dot"></span>已找到</span></td>
                         <td class="go">›</td>
                       </tr>
-                      <tr data-state="idle" class="rowbtn" data-detail="c-cursor" tabindex="0" role="button">
+                      <tr data-state="exec" class="rowbtn" data-detail="c-cursor" tabindex="0" role="button">
+                        <td><span class="status-dot c-idle" title="还没用上"></span></td>
                         <td class="t-name">cursor-agent<div class="t-sub">本机路径里找不到</div></td>
                         <td><span class="tag tag-outline">执行器</span></td>
                         <td class="t-sub">没有类别用到</td>
-                        <td><span class="status status-todo"><span class="status-dot"></span>还没用上</span></td>
                         <td class="go">›</td>
                       </tr>
-                      <tr data-state="idle" class="rowbtn" data-detail="c-codehub" tabindex="0" role="button">
+                      <tr data-state="remote" class="rowbtn" data-detail="c-codehub" tabindex="0" role="button">
+                        <td><span class="status-dot c-idle" title="还没用上"></span></td>
                         <td class="t-name">codehub-cli<div class="t-sub">本机路径里找不到</div></td>
                         <td><span class="tag tag-outline">远端臂</span></td>
                         <td class="t-sub">没有项目用 codehub</td>
-                        <td><span class="status status-todo"><span class="status-dot"></span>还没用上</span></td>
                         <td class="go">›</td>
                       </tr>
-                      <tr data-state="idle" class="rowbtn" data-detail="c-welink" tabindex="0" role="button">
+                      <tr data-state="chat" class="rowbtn" data-detail="c-welink" tabindex="0" role="button">
+                        <td><span class="status-dot c-idle" title="还没用上"></span></td>
                         <td class="t-name">welink-cli<div class="t-sub">本机路径里找不到</div></td>
                         <td><span class="tag tag-outline">群通知</span></td>
                         <td class="t-sub">没有项目配群</td>
-                        <td><span class="status status-todo"><span class="status-dot"></span>还没用上</span></td>
                         <td class="go">›</td>
                       </tr>
                     </tbody>
@@ -289,6 +299,12 @@
                   <li><b>预算</b> —— <span class="path">BW_CLAUDE_MAX_BUDGET_USD</span>。</li>
                   <li><b>换位置</b> —— <span class="path">BW_CLAUDE_BIN</span>。</li>
                 </ul>
+                <div class="sublabel">要用它得有</div>
+                <dl class="kv">
+                  <dt>1</dt><dd>本机已装 claude</dd>
+                  <dt>2</dt><dd>一个真实的工作区路径</dd>
+                  <dt>3</dt><dd>能连上模型网关</dd>
+                </dl>
                 <dl class="kv"><dt>谁用到</dt><dd>构建 · 优化 · 运营推广 · 运维</dd><dt>探活</dt><dd>候选路径</dd></dl>
               </div>
 
@@ -301,8 +317,9 @@
                 </div>
                 <ul class="dt-list">
                   <li><b>开工</b> —— 往 <span class="path">/api/runs</span> 灌一次身份与铁律,不深链、不自动开跑。</li>
-                  <li><b>怎么修</b> —— 起起来,再点「重新探这一个」。</li>
                 </ul>
+                <div class="sublabel">起它</div>
+                <div class="todo-note">它是你机器上的服务,不是装出来的 —— 起法与端口由你定。起完点右上角「重新探这一个」。</div>
                 <dl class="kv"><dt>谁用到</dt><dd>原型</dd><dt>探活</dt><dd>管道握手拿 loopback 首页 · 400ms · 现在拿不到</dd></dl>
               </div>
 
@@ -351,9 +368,10 @@
                 </div>
                 <ul class="dt-list">
                   <li><b>选了就当真</b> —— 探不到当场报错,不悄悄退回 Claude CLI。</li>
-                  <li><b>要用它</b> —— 让 <span class="path">cursor-agent</span> 进 PATH,再回上一页改某一类。</li>
                 </ul>
-                <dl class="kv"><dt>谁用到</dt><dd>没有类别用到</dd><dt>探活</dt><dd>版本命令</dd></dl>
+                <div class="sublabel">安装</div>
+                <div class="todo-note">装法仓里没记。Workbench 只认一件事:PATH 上有 <span class="path">cursor-agent</span>,<span class="path">cursor-agent --version</span> 能出结果。</div>
+                <dl class="kv" style="margin-top: var(--space-3)"><dt>谁用到</dt><dd>没有类别用到</dd><dt>探活</dt><dd>版本命令</dd></dl>
               </div>
 
               <div data-page="c-codehub" hidden>
@@ -364,7 +382,9 @@
                   <div class="dt-act"><span class="status status-todo"><span class="status-dot"></span>还没用上</span><button class="btn btn-secondary">重新探这一个</button></div>
                 </div>
                 <ul class="dt-list"><li>和 GitHub CLI 同形的两条路。接了 codehub 的项目出现时,这行会自己变红。</li></ul>
-                <dl class="kv"><dt>谁用到</dt><dd>没有项目用 codehub</dd><dt>探活</dt><dd>候选路径</dd></dl>
+                <div class="sublabel">安装</div>
+                <div class="todo-note">装法仓里没记 —— 内部工具,问同事要。Workbench 只认 PATH 上有 <span class="path">codehub-cli</span>。</div>
+                <dl class="kv" style="margin-top: var(--space-3)"><dt>谁用到</dt><dd>没有项目用 codehub</dd><dt>探活</dt><dd>候选路径</dd></dl>
               </div>
 
               <div data-page="c-welink" hidden>
@@ -375,7 +395,10 @@
                   <div class="dt-act"><span class="status status-todo"><span class="status-dot"></span>还没用上</span><button class="btn btn-secondary">重新探这一个</button></div>
                 </div>
                 <ul class="dt-list"><li>只在开 MR 时发。群配在项目名片的 chat 段。</li></ul>
-                <dl class="kv"><dt>谁用到</dt><dd>没有项目配群</dd><dt>探活</dt><dd>候选路径</dd></dl>
+                <div class="sublabel">安装</div>
+                <div class="install"><code>npm i -g welink-cli</code><button class="btn btn-secondary">复制</button></div>
+                <div class="install"><code>welink-cli auth login</code><button class="btn btn-secondary">复制</button></div>
+                <dl class="kv" style="margin-top: var(--space-3)"><dt>凭证</dt><dd>你自己登,Workbench 不碰</dd><dt>谁用到</dt><dd>没有项目配群</dd><dt>探活</dt><dd>候选路径</dd></dl>
               </div>
 
               <!-- ══ Skills ══ -->
@@ -384,11 +407,11 @@
                   <h2>Skills</h2>
                   <input class="input search" type="search" placeholder="搜 skill" data-search="skills" aria-label="搜 skill" />
                 </div>
-                <div class="bar"><i class="c-a" style="width:71.4%"></i><i class="c-b" style="width:28.6%"></i></div>
+                <div class="bar"><i class="c-blocked" style="width:28.6%"></i><i class="c-unset" style="width:14.3%"></i><i class="c-idle" style="width:57.1%"></i></div>
                 <div class="bar-key">
-                  <span><i class="dot c-a"></i>Workbench 自带 <b>5</b></span>
-                  <span><i class="dot c-b"></i>项目自有 <b>2</b></span>
-                  <span>用过 <b>25</b> 次</span>
+                  <span><i class="dot c-blocked"></i>用过但没改过 <b>2</b></span>
+                  <span><i class="dot c-unset"></i>改过 <b>1</b></span>
+                  <span><i class="dot c-idle"></i>还没用过 <b>4</b></span>
                 </div>
                 <div class="filterbar">
                   <div class="seg" data-filter="skills">
@@ -398,45 +421,45 @@
                   </div>
                   <div class="right">
                     <select class="input" data-sort="skills" aria-label="排序">
-                      <option value="uses">按用过几次</option><option value="name">按名字</option><option value="origin">按来源</option>
+                      <option value="uses">按用过几次</option><option value="stale">按最久没改</option><option value="name">按名字</option><option value="origin">按来源</option>
                     </select>
                   </div>
                 </div>
                 <div class="cards" data-list="skills">
-                  <div class="card skill-card" data-origin="builtin" data-uses="12" data-name="week-planning" data-detail="sk-week" tabindex="0" role="button">
+                  <div class="card skill-card" data-origin="builtin" data-uses="12" data-name="week-planning" data-edited="2026-09-04" data-detail="sk-week" tabindex="0" role="button">
                     <div class="card-title">更新指标与版本计划 <span class="path">week-planning</span></div>
                     <p class="card-body">运作活①开工时用。别处不用。</p>
-                    <div class="card-meta"><span class="tag tag-neutral">自带</span><span class="uses">12 次</span></div>
+                    <div class="card-meta"><span class="tag tag-neutral">自带</span><span class="uses">12 次 · 改于 09-04</span></div>
                   </div>
-                  <div class="card skill-card" data-origin="builtin" data-uses="9" data-name="mattpocock-skills" data-detail="sk-matt" tabindex="0" role="button">
+                  <div class="card skill-card" data-origin="builtin" data-uses="9" data-name="mattpocock-skills" data-edited="" data-detail="sk-matt" tabindex="0" role="button">
                     <div class="card-title">mattpocock-skills</div>
                     <p class="card-body">grill → implement → review 的 SOP 入口,指向 vendor 库子技能。</p>
-                    <div class="card-meta"><span class="tag tag-neutral">自带</span><span class="uses">9 次</span></div>
+                    <div class="card-meta"><span class="tag tag-neutral">自带</span><span class="uses">9 次 · 上游版本</span></div>
                   </div>
-                  <div class="card skill-card" data-origin="builtin" data-uses="4" data-name="asset-audit" data-detail="sk-audit" tabindex="0" role="button">
+                  <div class="card skill-card" data-origin="builtin" data-uses="4" data-name="asset-audit" data-edited="2026-09-04" data-detail="sk-audit" tabindex="0" role="button">
                     <div class="card-title">资产盘点 <span class="path">asset-audit</span></div>
                     <p class="card-body">运作活②开工时用。别处不用。</p>
-                    <div class="card-meta"><span class="tag tag-neutral">自带</span><span class="uses">4 次</span></div>
+                    <div class="card-meta"><span class="tag tag-neutral">自带</span><span class="uses">4 次 · 改于 09-04</span></div>
                   </div>
-                  <div class="card skill-card" data-origin="own" data-uses="0" data-name="workbench-start" data-detail="sk-start" tabindex="0" role="button">
+                  <div class="card skill-card" data-origin="own" data-uses="0" data-name="workbench-start" data-edited="2026-09-08" data-detail="sk-start" tabindex="0" role="button">
                     <div class="card-title">workbench-start</div>
                     <p class="card-body">仓外 IDE 开新会话的起手闸门。</p>
-                    <div class="card-meta"><span class="tag tag-accent">workbench 仓</span><span class="uses">0 次</span></div>
+                    <div class="card-meta"><span class="tag tag-accent">workbench 仓</span><span class="uses">0 次 · 改于 09-08</span></div>
                   </div>
-                  <div class="card skill-card" data-origin="own" data-uses="0" data-name="design-system-import" data-detail="sk-dsi" tabindex="0" role="button">
+                  <div class="card skill-card" data-origin="own" data-uses="0" data-name="design-system-import" data-edited="2026-09-07" data-detail="sk-dsi" tabindex="0" role="button">
                     <div class="card-title">design-system-import</div>
                     <p class="card-body">Claude Design 项目与仓的双向镜像。</p>
-                    <div class="card-meta"><span class="tag tag-accent">workbench 仓</span><span class="uses">0 次</span></div>
+                    <div class="card-meta"><span class="tag tag-accent">workbench 仓</span><span class="uses">0 次 · 改于 09-07</span></div>
                   </div>
-                  <div class="card skill-card" data-origin="builtin" data-uses="0" data-name="metrics-refresh" data-detail="sk-metrics" tabindex="0" role="button">
+                  <div class="card skill-card" data-origin="builtin" data-uses="0" data-name="metrics-refresh" data-edited="2026-09-04" data-detail="sk-metrics" tabindex="0" role="button">
                     <div class="card-title">metrics-refresh</div>
                     <p class="card-body">运作活①走到「更新指标」时被点名。</p>
-                    <div class="card-meta"><span class="tag tag-neutral">自带</span><span class="uses">0 次</span></div>
+                    <div class="card-meta"><span class="tag tag-neutral">自带</span><span class="uses">0 次 · 改于 09-04</span></div>
                   </div>
-                  <div class="card skill-card" data-origin="builtin" data-uses="0" data-name="project-handbook" data-detail="sk-handbook" tabindex="0" role="button">
+                  <div class="card skill-card" data-origin="builtin" data-uses="0" data-name="project-handbook" data-edited="2026-09-03" data-detail="sk-handbook" tabindex="0" role="button">
                     <div class="card-title">project-handbook</div>
                     <p class="card-body">人明确要写仓根 AGENTS.md 时才用。</p>
-                    <div class="card-meta"><span class="tag tag-neutral">自带</span><span class="uses">0 次</span></div>
+                    <div class="card-meta"><span class="tag tag-neutral">自带</span><span class="uses">0 次 · 改于 09-03</span></div>
                   </div>
                 </div>
               </div>
@@ -574,41 +597,41 @@ description: Use when 运作活①开工……别处不用。
                 </div>
                 <div class="tbl-wrap">
                   <table class="table" data-list="stage">
-                    <thead><tr><th style="width:16%">阶段</th><th style="width:32%">执行器</th><th style="width:26%">Workflow</th><th style="width:22%">状态</th><th style="width:4%"></th></tr></thead>
+                    <thead><tr><th style="width:6%"></th><th style="width:16%">阶段</th><th style="width:36%">执行器</th><th style="width:38%">Workflow</th><th style="width:4%"></th></tr></thead>
                     <tbody>
                       <tr data-state="blocked">
+                        <td><span class="status-dot c-blocked" title="开不了工"></span></td>
                         <td class="t-name">原型</td>
                         <td><span class="set-ctl" style="max-width:none"><select class="input input-sm" aria-label="原型执行器"><option selected>Open Design</option><option>Claude CLI</option><option>Cursor</option><option>—</option></select><button class="btn btn-secondary">保存</button></span></td>
                         <td class="t-sub">—</td>
-                        <td><span class="status status-blocked"><span class="status-dot"></span>开不了工</span></td>
                         <td class="go rowbtn" data-detail="st-proto" tabindex="0" role="button">›</td>
                       </tr>
                       <tr data-state="done">
+                        <td><span class="status-dot c-done" title="能开工"></span></td>
                         <td class="t-name">构建</td>
                         <td><span class="set-ctl" style="max-width:none"><select class="input input-sm" aria-label="构建执行器"><option selected>Claude CLI</option><option>Cursor</option><option>Open Design</option><option>—</option></select><button class="btn btn-secondary">保存</button></span></td>
                         <td class="t-sub">mattpocock-skills</td>
-                        <td><span class="status status-done"><span class="status-dot"></span>能开工</span></td>
                         <td class="go rowbtn" data-detail="st-build" tabindex="0" role="button">›</td>
                       </tr>
                       <tr data-state="done">
+                        <td><span class="status-dot c-done" title="能开工"></span></td>
                         <td class="t-name">优化</td>
                         <td><span class="set-ctl" style="max-width:none"><select class="input input-sm" aria-label="优化执行器"><option selected>Claude CLI</option><option>Cursor</option><option>Open Design</option><option>—</option></select><button class="btn btn-secondary">保存</button></span></td>
                         <td class="t-sub">mattpocock-skills</td>
-                        <td><span class="status status-done"><span class="status-dot"></span>能开工</span></td>
                         <td class="go rowbtn" data-detail="st-opt" tabindex="0" role="button">›</td>
                       </tr>
                       <tr data-state="done">
+                        <td><span class="status-dot c-done" title="能开工"></span></td>
                         <td class="t-name">运营推广</td>
                         <td><span class="set-ctl" style="max-width:none"><select class="input input-sm" aria-label="运营推广执行器"><option selected>Claude CLI</option><option>Cursor</option><option>Open Design</option><option>—</option></select><button class="btn btn-secondary">保存</button></span></td>
                         <td class="t-sub">—</td>
-                        <td><span class="status status-done"><span class="status-dot"></span>能开工</span></td>
                         <td class="go rowbtn" data-detail="st-growth" tabindex="0" role="button">›</td>
                       </tr>
                       <tr data-state="done">
+                        <td><span class="status-dot c-done" title="能开工"></span></td>
                         <td class="t-name">运维</td>
                         <td><span class="set-ctl" style="max-width:none"><select class="input input-sm" aria-label="运维执行器"><option selected>Claude CLI</option><option>Cursor</option><option>Open Design</option><option>—</option></select><button class="btn btn-secondary">保存</button></span></td>
                         <td class="t-sub">mattpocock-skills</td>
-                        <td><span class="status status-done"><span class="status-dot"></span>能开工</span></td>
                         <td class="go rowbtn" data-detail="st-ops" tabindex="0" role="button">›</td>
                       </tr>
                     </tbody>
@@ -874,6 +897,7 @@ description: Use when 运作活①开工……别处不用。
     });
     var by = $('[data-sort="skills"]').value;
     cards.slice().sort(function (a, b) {
+      if (by === 'stale') { return (a.dataset.edited || '0').localeCompare(b.dataset.edited || '0'); }
       if (by === 'name') { return a.dataset.name.localeCompare(b.dataset.name); }
       if (by === 'origin') { return a.dataset.origin.localeCompare(b.dataset.origin) || (+b.dataset.uses - +a.dataset.uses); }
       return (+b.dataset.uses - +a.dataset.uses) || a.dataset.name.localeCompare(b.dataset.name);
