@@ -1,4 +1,4 @@
-//! 项目内 · 计划。结构照 `docs/hifi/plan-23-opt.html` 的 `midBar`/`kanban`/
+//! 项目内 · 计划。结构照 `docs/hifi/plan.html` 的 `midBar`/`kanban`/
 //! `detail`/`listView`/弹窗排:右上角下拉(全部 issue / 各 `v0.x`)+ 中栏
 //! (工具条 + 版本目标/进度条/运作活,或列表视图)+ 四列看板。
 //! 详情与弹窗都是屏幕居中浮层。
@@ -65,10 +65,10 @@ impl ListFilter {
         // open 预设不过滤(显示全部);assigned/mine 已过滤
         if !self.plan.is_empty() {
             if self.plan == "unscheduled" {
-                if !c.plan_version.is_empty() {
+                if !c.plan_versions.is_empty() {
                     return false;
                 }
-            } else if c.plan_version != self.plan {
+            } else if !c.plan_versions.contains(&self.plan) {
                 return false;
             }
         }
@@ -125,6 +125,11 @@ pub fn View(p: ProjectVm, bridge: Bridge) -> Element {
     let list_filter = use_signal(ListFilter::default);
     let col_seg = use_signal(std::collections::HashMap::<String, String>::new);
     let nav = use_context::<PanelNav>();
+    let viewing_released = p
+        .plan_versions
+        .iter()
+        .find(|v| v.name == p.viewing_plan)
+        .is_some_and(|v| v.released);
 
     let prog = bridge.progress.clone();
     use_future(move || {
@@ -154,14 +159,14 @@ pub fn View(p: ProjectVm, bridge: Bridge) -> Element {
                 }
                 {draft_confirm(p, bridge)}
                 if *view_mode.read() == ViewMode::List {
-                    {list_view::list_view(p, rows, list_filter, selected, schedule, start, bridge, nav)}
+                    {list_view::list_view(p, rows, list_filter, selected, schedule, start, bridge, nav, viewing_released)}
                 } else {
-                    {board(p, Some(Filters::default()), list_filter.read().plan.clone(), bridge, dragging, pending, schedule, selected, start, reject, col_seg, nav)}
+                    {board(p, Some(Filters::default()), list_filter.read().plan.clone(), bridge, dragging, pending, schedule, selected, start, reject, col_seg, nav, viewing_released)}
                 }
             }
         }
         if selected.read().is_some() {
-            DetailModal { p: p.clone(), selected, schedule, start, pending, bridge: bridge.clone() }
+            DetailModal { p: p.clone(), selected, schedule, start, pending, bridge: bridge.clone(), viewing_released }
         }
         if let Some(sid) = *start.read() {
             StartModal { p: p.clone(), sid, start, bridge: bridge.clone() }

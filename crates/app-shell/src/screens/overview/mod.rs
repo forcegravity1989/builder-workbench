@@ -1,4 +1,4 @@
-//! 项目内 · 总览。结构照 `docs/hifi/overview-36.html`:横幅、名片|北极星、
+//! 项目内 · 总览。结构照 `docs/hifi/overview.html`:横幅、名片|北极星、
 //! 版本计划与进展、滞后+引领合图、项目指标 · SDLC。
 
 mod metrics;

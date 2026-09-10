@@ -63,23 +63,18 @@ pub fn parse_comments(bodies: &[String]) -> WeekComment {
 }
 
 /// 创建版本落到运作活①上的周初三标题评论。
-/// `included` 是 `(iid, 换槽前的旧 bw:plan)`。空纳入写「本周暂无纳入」。
+/// `included` 是纳入的 issue iid。版本归属只读标签，评论不重复保存关系。
 ///
 /// 版本目标建版时一律留「（未填写）」——建版弹窗不再收这一段,由运作活①上的
 /// agent 后补。`validate_comment` 要求这一段非空,所以占位串不能省。
-pub fn render_week_plan_comment(included: &[(u32, String)]) -> String {
+pub fn render_week_plan_comment(included: &[u32]) -> String {
     let goal = "（未填写）";
     let mut scope = String::new();
     if included.is_empty() {
         scope.push_str("本周暂无纳入");
     } else {
-        for (iid, old) in included {
-            let old = old.trim();
-            if old.is_empty() {
-                scope.push_str(&format!("- #{iid}\n"));
-            } else {
-                scope.push_str(&format!("- #{iid}（自 {old} 顺延）\n"));
-            }
+        for iid in included {
+            scope.push_str(&format!("- #{iid}\n"));
         }
         if scope.ends_with('\n') {
             scope.pop();
@@ -170,7 +165,10 @@ impl super::App {
             .map(|i| {
                 let week =
                     crate::isoweek::week_of_unix(i.created_at).unwrap_or_else(|| current.clone());
-                (week, i.plan_version.clone(), i.id.iid())
+                let plan = crate::version::ops1_version_from_title(&i.title)
+                    .filter(|name| i.plan_versions.contains(name))
+                    .unwrap_or_default();
+                (week, plan, i.id.iid())
             })
             .collect();
         let mut out = Ops1Notes::default();
@@ -361,9 +359,9 @@ mod tests {
         let empty = render_week_plan_comment(&[]);
         assert!(validate_comment(&empty).is_ok());
         assert_eq!(parse_comments(&[empty]).goal.as_deref(), Some("（未填写）"));
-        let body = render_week_plan_comment(&[(12, "v0.2".into()), (15, String::new())]);
+        let body = render_week_plan_comment(&[12, 15]);
         assert!(validate_comment(&body).is_ok());
-        assert!(body.contains("- #12（自 v0.2 顺延）"));
+        assert!(body.contains("- #12"));
         assert!(body.contains("- #15"));
         assert_eq!(parse_comments(&[body]).goal.as_deref(), Some("（未填写）"));
     }

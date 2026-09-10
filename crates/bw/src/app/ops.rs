@@ -51,17 +51,16 @@ pub fn find_open_bare_ops1(issues: &[Issue]) -> Option<&Issue> {
 pub fn current_week_version(issues: &[Issue], released_names: &[String]) -> String {
     let rows: Vec<crate::version::Ops1VersionRow> = issues
         .iter()
-        .filter(|i| {
-            is_ops1_issue(i)
-                && crate::version::ops1_version_from_title(&i.title).is_some()
-                && crate::version::is_plan_name(&i.plan_version)
+        .filter_map(|i| {
+            let version = crate::version::ops1_version_from_title(&i.title)?;
+            (is_ops1_issue(i) && i.plan_versions.contains(&version)).then_some((i, version))
         })
-        .map(|i| crate::version::Ops1VersionRow {
-            version: i.plan_version.clone(),
+        .map(|(i, version)| crate::version::Ops1VersionRow {
+            released: released_names.contains(&version),
+            version,
             created_at: i.created_at,
             number: i.number,
             open: is_open_status(i.status),
-            released: released_names.iter().any(|r| r == &i.plan_version),
         })
         .collect();
     crate::version::current_from_ops1(&rows).unwrap_or_default()
@@ -79,7 +78,7 @@ pub fn week_started(issues: &[Issue], current_week: &str) -> bool {
         if i.status != IssueStatus::Done && i.status != IssueStatus::Cancelled {
             open = true;
         }
-        if !i.plan_version.is_empty() && crate::isoweek::unix_in_week(i.created_at, current_week) {
+        if !i.plan_versions.is_empty() && crate::isoweek::unix_in_week(i.created_at, current_week) {
             tagged_this_week = true;
         }
     }

@@ -21,6 +21,8 @@ pub struct ReferencePack {
 
 pub const SYSTEM_PROMPT_TMPL: &str =
     include_str!("../../../../standard/system-prompt/SYSTEM.md.tmpl");
+pub const REF_ISSUE_STATE: &str =
+    include_str!("../../../../standard/system-prompt/references/issue-state.md");
 pub const REF_METRICS: &str =
     include_str!("../../../../standard/system-prompt/references/metrics.md");
 pub const REF_BUILD: &str = include_str!("../../../../standard/system-prompt/references/build.md");
@@ -29,12 +31,17 @@ pub const REF_WEEK_PLAN_COMMENT: &str =
 pub const REF_BW_ASSETS: &str =
     include_str!("../../../../standard/system-prompt/references/bw-assets.md");
 
-/// Workbench 自带的阶段规范 md —— 已派发四份(指标铁律、运作活①评论格式、
-/// 改仓规则、`.bw` 现行契约),其余按实践长。哪类活注入哪份见
+/// Workbench 自带的阶段规范 md —— issue 状态与标签给所有活，其余按任务派发。
+/// 哪类活注入哪份见
 /// `app/bootstrap.rs` 的 `want_ref`;分工对照表在 architecture 模块 4。
 pub fn references() -> Vec<ReferencePack> {
     // (slug, 一句话, 正文)
-    const REFS: [(&str, &str, &str); 4] = [
+    const REFS: [(&str, &str, &str); 5] = [
+        (
+            "issue-state",
+            "issue 状态机、版本标签、程序与模型各能改到哪",
+            REF_ISSUE_STATE,
+        ),
         (
             "metrics",
             "怎么写 .bw/metrics.toml、脚本怎么吐数",

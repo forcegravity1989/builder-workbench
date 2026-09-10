@@ -27,6 +27,7 @@ pub fn DetailModal(
     mut start: Signal<Option<IssueId>>,
     mut pending: Signal<Option<PendingMove>>,
     bridge: Bridge,
+    viewing_released: bool,
 ) -> Element {
     let nav = use_context::<PanelNav>();
     let picked = selected.read().and_then(|id| pick_card(&p, id));
@@ -65,8 +66,8 @@ pub fn DetailModal(
         .then(|| format!("{}{}", p.mr_url_prefix, c.pr_number));
     let issue_url = (!p.issue_url_prefix.is_empty() && c.remote_number > 0)
         .then(|| format!("{}{}", p.issue_url_prefix, c.remote_number));
-    let _place = if !c.plan_version.is_empty() {
-        format!("版本·{}", c.plan_version)
+    let _place = if !c.plan_versions.is_empty() {
+        format!("版本·{}", c.plan_versions.join("、"))
     } else {
         "未排期".into()
     };
@@ -84,6 +85,9 @@ pub fn DetailModal(
             on_close: move |_| selected.set(None),
                 div { class: "plan-modal-head",
                     div { class: "plan-modal-tag", "详情 · #{c.number}" }
+                    if let Some(label) = super::kanban::carryover_label(&c, &p.viewing_plan, viewing_released) {
+                        span { class: "tag tag-warning", "{label}" }
+                    }
                     input {
                         class: "input plan-modal-title-input",
                         value: "{title_val}",
@@ -192,9 +196,9 @@ pub fn DetailModal(
                                         b_sched.cmd(Command::ScheduleToPlan { id, plan: pl.to_string() });
                                     }
                                 },
-                                option { value: "unscheduled", selected: c.plan_version.is_empty(), "未排期" }
+                                option { value: "unscheduled", selected: c.plan_versions.is_empty(), "未排期" }
                                 for v in p.plan_versions.iter() {
-                                    {let val = format!("version:{}", v.name); let sel = c.plan_version == v.name; rsx! { option { value: "{val}", selected: sel, "{v.name}" } }}
+                                    {let val = format!("version:{}", v.name); let sel = c.plan_versions.contains(&v.name); rsx! { option { value: "{val}", selected: sel, "{v.name}" } }}
                                 }
                             }
                         }
