@@ -390,8 +390,9 @@ fn comparable_path_text(path: &std::path::Path) -> String {
 
 async fn resolve_remote_for_local_repo(
     ws: &std::path::Path,
-    selected: RemoteRef,
+    mut selected: RemoteRef,
 ) -> Result<(RemoteRef, Option<String>)> {
+    selected.path = normalized_remote_path(&selected.path);
     let origin = bw_engine::workspace::origin_remote_url(ws)
         .await
         .map_err(|e| AppError::Exec(format!("读本地仓 origin 失败:{e}")))?;
@@ -399,7 +400,7 @@ async fn resolve_remote_for_local_repo(
         .as_deref()
         .and_then(bw_engine::workspace::parse_git_remote_url);
 
-    if selected.path.trim().is_empty() {
+    if selected.path.is_empty() {
         return Ok(match (origin.as_deref(), parsed) {
             (None, _) => (RemoteRef::default(), None),
             (Some(_), Some((host, path))) => match inferred_remote(&host, &path) {
@@ -432,9 +433,9 @@ async fn resolve_remote_for_local_repo(
         codehub_host_matches(&selected.host, &actual_host)
     };
     let same_path = if selected.provider == "github" {
-        actual_path.eq_ignore_ascii_case(selected.path.trim())
+        actual_path.eq_ignore_ascii_case(&selected.path)
     } else {
-        actual_path == selected.path.trim()
+        actual_path == selected.path
     };
     if !same_host || !same_path {
         return Err(AppError::Refused(format!(
@@ -443,6 +444,15 @@ async fn resolve_remote_for_local_repo(
         )));
     }
     Ok((selected, None))
+}
+
+fn normalized_remote_path(path: &str) -> String {
+    let path = path.trim().trim_end_matches('/');
+    if path.to_ascii_lowercase().ends_with(".git") {
+        path[..path.len() - 4].to_string()
+    } else {
+        path.to_string()
+    }
 }
 
 fn inferred_remote(host: &str, path: &str) -> Option<RemoteRef> {
@@ -477,7 +487,9 @@ fn fill_if_blank(slot: &mut String, value: &str) {
 
 #[cfg(test)]
 mod tests {
-    use super::{codehub_host_matches, inferred_remote, same_workspace_path};
+    use super::{
+        codehub_host_matches, inferred_remote, normalized_remote_path, same_workspace_path,
+    };
     use crate::model::{codehub_alias_for_host, codehub_alias_to_domain, codehub_aliases};
 
     #[test]
@@ -522,6 +534,15 @@ mod tests {
         assert_eq!(codehub_alias_for_host("gitlab.example.com"), None);
         assert_eq!(codehub_alias_for_host("rnd-gitlab-ca-g.huawei.com"), None);
         assert_eq!(codehub_alias_for_host("anything-config.huawei.com"), None);
+    }
+
+    #[test]
+    fn selected_remote_path_drops_git_suffix_before_compare_and_storage() {
+        assert_eq!(
+            normalized_remote_path(" forcegravity1989/builder-workbench.git/ "),
+            "forcegravity1989/builder-workbench"
+        );
+        assert_eq!(normalized_remote_path("team/repo.GIT"), "team/repo");
     }
 
     #[test]
