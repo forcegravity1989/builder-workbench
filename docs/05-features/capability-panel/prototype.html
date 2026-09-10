@@ -96,6 +96,7 @@
   .skill-card { cursor: pointer; gap: 6px; }
   .skill-card:hover { border-color: color-mix(in srgb, var(--color-text) 26%, transparent); box-shadow: var(--shadow-sm); }
   .skill-card .card-title { display: flex; align-items: baseline; gap: 6px; flex-wrap: wrap; }
+  .skill-card .card-byline { margin-top: -4px; font-size: 11.5px; color: color-mix(in srgb, var(--color-text) 50%, transparent); }
   .skill-card .card-body { font-size: 12px; line-height: 1.6; }
   .skill-card .card-meta { margin-top: auto; padding-top: var(--space-2); }
   .skill-card .card-meta .uses { margin-left: auto; }
@@ -243,14 +244,14 @@
                       </tr>
                       <tr data-state="exec" class="rowbtn" data-detail="c-od" tabindex="0" role="button">
                         <td><span class="status-dot c-blocked" title="开不了工"></span></td>
-                        <td class="t-name">Open Design<div class="t-sub">管道握手没拿到 loopback URL</div></td>
+                        <td class="t-name">Open Design</td>
                         <td><span class="tag tag-outline">执行器</span></td>
                         <td class="t-sub">原型</td>
                         <td class="go">›</td>
                       </tr>
                       <tr data-state="host" class="rowbtn" data-detail="c-orca" tabindex="0" role="button">
                         <td><span class="status-dot c-unset" title="还没配"></span></td>
-                        <td class="t-name">Orca<div class="t-sub">网页配对地址还没配</div></td>
+                        <td class="t-name">Orca</td>
                         <td><span class="tag tag-outline">会话宿主</span></td>
                         <td class="t-sub">构建 · 优化 · 运维 的会话</td>
                         <td class="go">›</td>
@@ -264,21 +265,21 @@
                       </tr>
                       <tr data-state="exec" class="rowbtn" data-detail="c-cursor" tabindex="0" role="button">
                         <td><span class="status-dot c-idle" title="还没用上"></span></td>
-                        <td class="t-name">cursor-agent<div class="t-sub">本机路径里找不到</div></td>
+                        <td class="t-name">cursor-agent</td>
                         <td><span class="tag tag-outline">执行器</span></td>
                         <td class="t-sub">没有类别用到</td>
                         <td class="go">›</td>
                       </tr>
                       <tr data-state="remote" class="rowbtn" data-detail="c-codehub" tabindex="0" role="button">
                         <td><span class="status-dot c-idle" title="还没用上"></span></td>
-                        <td class="t-name">codehub-cli<div class="t-sub">本机路径里找不到</div></td>
+                        <td class="t-name">codehub-cli</td>
                         <td><span class="tag tag-outline">远端臂</span></td>
                         <td class="t-sub">没有项目用 codehub</td>
                         <td class="go">›</td>
                       </tr>
                       <tr data-state="chat" class="rowbtn" data-detail="c-welink" tabindex="0" role="button">
                         <td><span class="status-dot c-idle" title="还没用上"></span></td>
-                        <td class="t-name">welink-cli<div class="t-sub">本机路径里找不到</div></td>
+                        <td class="t-name">welink-cli</td>
                         <td><span class="tag tag-outline">群通知</span></td>
                         <td class="t-sub">没有项目配群</td>
                         <td class="go">›</td>
@@ -413,7 +414,7 @@
                 <div class="bar-key">
                   <span><i class="dot c-blocked"></i>用过但没改过 <b>2</b></span>
                   <span><i class="dot c-idle"></i>还没用过 <b>3</b></span>
-                  <span><i class="dot c-unset"></i>项目自有 · 注入不了 <b>2</b></span>
+                  <span><i class="dot c-unset"></i>项目自有 <b>2</b></span>
                 </div>
                 <div class="filterbar">
                   <div class="seg" data-filter="skills">
@@ -430,38 +431,45 @@
                 <div class="cards" data-list="skills">
                   <div class="card skill-card" data-origin="builtin" data-uses="12" data-name="week-planning" data-edited="2026-09-04" data-detail="sk-week" tabindex="0" role="button">
                     <div class="card-title">更新指标与版本计划 <span class="path">week-planning</span></div>
+                    <div class="card-byline">by Builders' Workbench</div>
                     <p class="card-body">「更新指标与版本计划」这张活开工时用。别处不用。</p>
-                    <div class="card-meta"><span class="tag tag-neutral">自带</span><span class="uses">12 次 · 改于 09-04</span></div>
+                    <div class="card-meta"><span class="uses">12 次 · 改于 09-04</span></div>
                   </div>
                   <div class="card skill-card" data-origin="builtin" data-uses="9" data-name="mattpocock-skills" data-edited="" data-detail="sk-matt" tabindex="0" role="button">
                     <div class="card-title">mattpocock-skills</div>
+                    <div class="card-byline">by Matt Pocock</div>
                     <p class="card-body">grill → implement → review 的 SOP 入口,指向 vendor 库子技能。</p>
-                    <div class="card-meta"><span class="tag tag-neutral">自带</span><span class="uses">9 次 · 上游版本</span></div>
+                    <div class="card-meta"><span class="uses">9 次 · 上游版本</span></div>
                   </div>
                   <div class="card skill-card" data-origin="builtin" data-uses="4" data-name="asset-audit" data-edited="2026-09-04" data-detail="sk-audit" tabindex="0" role="button">
                     <div class="card-title">资产盘点 <span class="path">asset-audit</span></div>
+                    <div class="card-byline">by Builders' Workbench</div>
                     <p class="card-body">「资产盘点」这张活开工时用。别处不用。</p>
-                    <div class="card-meta"><span class="tag tag-neutral">自带</span><span class="uses">4 次 · 改于 09-04</span></div>
+                    <div class="card-meta"><span class="uses">4 次 · 改于 09-04</span></div>
                   </div>
                   <div class="card skill-card" data-origin="own" data-uses="0" data-name="workbench-start" data-edited="2026-09-08" data-detail="sk-start" tabindex="0" role="button">
                     <div class="card-title">workbench-start</div>
+                    <div class="card-byline">Created by you</div>
                     <p class="card-body">仓外 IDE 开新会话的起手闸门。</p>
-                    <div class="card-meta"><span class="tag tag-accent">workbench 仓</span><span class="tag tag-danger">注入不了</span><span class="uses">改于 09-08</span></div>
+                    <div class="card-meta"><span class="tag tag-accent">workbench 仓</span><span class="uses">改于 09-08</span></div>
                   </div>
                   <div class="card skill-card" data-origin="own" data-uses="0" data-name="design-system-import" data-edited="2026-09-07" data-detail="sk-dsi" tabindex="0" role="button">
                     <div class="card-title">design-system-import</div>
+                    <div class="card-byline">Created by you</div>
                     <p class="card-body">Claude Design 项目与仓的双向镜像。</p>
-                    <div class="card-meta"><span class="tag tag-accent">workbench 仓</span><span class="tag tag-danger">注入不了</span><span class="uses">改于 09-07</span></div>
+                    <div class="card-meta"><span class="tag tag-accent">workbench 仓</span><span class="uses">改于 09-07</span></div>
                   </div>
                   <div class="card skill-card" data-origin="builtin" data-uses="0" data-name="metrics-refresh" data-edited="2026-09-04" data-detail="sk-metrics" tabindex="0" role="button">
                     <div class="card-title">metrics-refresh</div>
+                    <div class="card-byline">by Builders' Workbench</div>
                     <p class="card-body">「更新指标与版本计划」走到更新指标那步时被点名。</p>
-                    <div class="card-meta"><span class="tag tag-neutral">自带</span><span class="uses">0 次 · 改于 09-04</span></div>
+                    <div class="card-meta"><span class="uses">0 次 · 改于 09-04</span></div>
                   </div>
                   <div class="card skill-card" data-origin="builtin" data-uses="0" data-name="project-handbook" data-edited="2026-09-03" data-detail="sk-handbook" tabindex="0" role="button">
                     <div class="card-title">project-handbook</div>
+                    <div class="card-byline">by Builders' Workbench</div>
                     <p class="card-body">人明确要写仓根 AGENTS.md 时才用。</p>
-                    <div class="card-meta"><span class="tag tag-neutral">自带</span><span class="uses">0 次 · 改于 09-03</span></div>
+                    <div class="card-meta"><span class="uses">0 次 · 改于 09-03</span></div>
                   </div>
                 </div>
               </div>
@@ -502,20 +510,31 @@
                       <div class="files-text" id="f1-render">
                         <h4>更新指标与版本计划</h4>
                         <p>Use when 这张活挂的 workflow 是「更新指标与版本计划」(或标题以「更新指标 + 制定版本计划」开头)。别处不用。</p>
-                        <p>1. 先读 <span class="path">.bw/metrics.toml</span>,按 references/metrics.md 的格式核对……</p>
+                        <p>带人走完一场:复盘 → 更新指标 → 确认版本与纳入 → 人点头后落盘。产出是 <span class="path">.bw/metrics.toml</span>(若有改)、采集脚本、这张活的一条评论、纳入标签。不替人定口径、版本目标和纳入清单。</p>
+                        <p><b>第 1 步 · 复盘(只读)</b> → <b>第 2 步 · 更新指标</b> → <b>第 3 步 · 确认版本、纳入、版本目标</b> → <b>第 4 步 · 人确认后才落</b></p>
                       </div>
                       <div class="files-text" id="f1-src" hidden><pre>---
 name: week-planning
-description: Use when workflow=更新指标与版本计划……别处不用。
+description: Use when 这张活挂的 workflow 是「更新指标与版本计划」。别处不用。
 ---
 
-# 更新指标与版本计划
+# week-planning:更新指标 + 制定版本计划
 
-1. 先读 `.bw/metrics.toml`,按 references/metrics.md 的格式核对……</pre></div>
+## 1. 核心目标
+
+带人走完一场:复盘 → 更新指标 → 确认版本与纳入 → 人点头后落盘。产出是 `.bw/metrics.toml`(若有改)、采集脚本、这张活的一条评论、纳入标签。不替人定口径、版本目标和纳入清单。</pre></div>
                       <div class="files-text" id="f2-render" hidden><p>sidecar:跟剧本同住、一起摊到资产目录,技能指针不认它。查「更新指标与版本计划」那张活的评论有没有三个标题。</p></div>
                       <div class="files-text" id="f2-src" hidden><pre>#!/usr/bin/env python3
-"""评论格式校验:只查周初三个标题在不在。"""
-...</pre></div>
+"""校验「更新指标与版本计划」评论是不是 Workbench 能解析的周计划格式。
+
+读标准输入或第一个文件参数。退出码 0 = 过;非 0 把缺什么打到 stderr。
+挂评论之前跑一遍,过了再贴。
+"""
+import sys
+
+HEAD_GOAL = "版本目标"
+HEAD_SCOPE = "本周纳入"
+HEAD_READINGS = "本周指标读数"</pre></div>
                     </div>
                   </div>
                 </div>
@@ -644,11 +663,6 @@ description: Use when workflow=更新指标与版本计划……别处不用。
                       </tr>
                     </tbody>
                   </table>
-                </div>
-                <div class="sublabel">接自己的 workflow</div>
-                <div class="todo-note">
-                  下拉里带 ⚠ 的是这个仓 <span class="path">.claude/skills/</span> 下自己写的 —— <b>今天选了也接不上</b>:
-                  开工解析只认三个写死的名字,项目自有的一律落空。<b>这就是那个通道缺口的位置。</b>
                 </div>
               </div>
 
@@ -792,55 +806,36 @@ description: Use when workflow=更新指标与版本计划……别处不用。
                   <h2>AI Assets</h2>
                   <input class="input search" type="search" placeholder="Search AI assets" data-search="assets" aria-label="Search AI assets" />
                 </div>
-                <div class="bar"><i class="c-done" style="width:33.3%"></i><i class="c-idle" style="width:50%"></i><i class="c-unset" style="width:16.7%"></i></div>
-                <div class="bar-key">
-                  <span><i class="dot c-done"></i>有活在用 <b>2</b></span>
-                  <span><i class="dot c-idle"></i>没活在用 <b>3</b></span>
-                  <span><i class="dot c-unset"></i>未派发 <b>1</b></span>
-                </div>
-                <div class="filterbar">
-                  <div class="seg" data-filter="assets">
-                    <label class="seg-opt"><input type="radio" name="fa" value="all" checked hidden />全部</label>
-                    <label class="seg-opt"><input type="radio" name="fa" value="live" hidden />有活在用 2</label>
-                    <label class="seg-opt"><input type="radio" name="fa" value="dead" hidden />没活在用 4</label>
-                  </div>
-                </div>
                 <div class="tbl-wrap">
                   <table class="table" data-list="assets">
-                    <thead><tr><th style="width:6%"></th><th style="width:26%">Asset</th><th style="width:50%">现在哪几张活在用</th><th style="width:18%">来自</th></tr></thead>
+                    <thead><tr><th style="width:30%">Asset</th><th style="width:52%">现在哪几张活在用</th><th style="width:18%">来自</th></tr></thead>
                     <tbody>
-                      <tr data-state="live">
-                        <td><span class="status-dot c-done" title="有活在用"></span></td>
+                      <tr>
                         <td class="t-name">AGENTS.md<div class="t-sub path">&lt;被管仓&gt;/AGENTS.md</div></td>
                         <td class="t-sub">全部 10 张</td>
                         <td class="t-sub">项目</td>
                       </tr>
-                      <tr data-state="live">
-                        <td><span class="status-dot c-done" title="有活在用"></span></td>
+                      <tr>
                         <td class="t-name">build</td>
                         <td class="t-sub">#155 · #154 · #133 · #157 · #137</td>
                         <td class="t-sub">Workbench</td>
                       </tr>
-                      <tr data-state="dead">
-                        <td><span class="status-dot c-idle" title="没活在用"></span></td>
+                      <tr>
                         <td class="t-name">metrics</td>
-                        <td class="t-sub">0 —— 没有「更新指标与版本计划」的活开着</td>
+                        <td class="t-sub">没有「更新指标与版本计划」的活开着</td>
                         <td class="t-sub">Workbench</td>
                       </tr>
-                      <tr data-state="dead">
-                        <td><span class="status-dot c-idle" title="没活在用"></span></td>
+                      <tr>
                         <td class="t-name">week-plan-comment</td>
-                        <td class="t-sub">0 —— 没有「更新指标与版本计划」「资产盘点」的活开着</td>
+                        <td class="t-sub">没有「更新指标与版本计划」「资产盘点」的活开着</td>
                         <td class="t-sub">Workbench</td>
                       </tr>
-                      <tr data-state="dead">
-                        <td><span class="status-dot c-idle" title="没活在用"></span></td>
+                      <tr>
                         <td class="t-name">bw-assets</td>
-                        <td class="t-sub">0 —— 没有「资产盘点」的活开着</td>
+                        <td class="t-sub">没有「资产盘点」的活开着</td>
                         <td class="t-sub">Workbench</td>
                       </tr>
-                      <tr data-state="dead">
-                        <td><span class="status-dot c-unset" title="未编进二进制"></span></td>
+                      <tr>
                         <td class="t-name">review</td>
                         <td class="t-sub">未编进二进制</td>
                         <td class="t-sub">Workbench</td>
@@ -937,7 +932,7 @@ description: Use when workflow=更新指标与版本计划……别处不用。
   tableFilter('conn', true);
   tableFilter('stage', true);
   tableFilter('plugins', false);
-  tableFilter('assets', true);
+  tableFilter('assets', false);
 
   var grid = $('[data-list="skills"]');
   var cards = $$('.skill-card', grid);
