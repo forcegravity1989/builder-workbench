@@ -18,7 +18,7 @@
 
 ### 项目墙 / 接入
 
-接入只问仓和名片四字段。仓里还没有名片时才建「项目约定」:**路径 A,不起 agent**,只写 `.bw/project.toml` 到常驻树 `bw/project`,开 MR 等人合。已有名片不再开。没合入时总览常驻横幅。不铺 `issue-policy.toml` / `PROJECT.md` / `standard.toml` / `managed.toml`。仓根 `AGENTS.md` 不写。开工工具跟人走本机。
+接入第一步直说「打开本地仓 / 克隆远端仓」,不再用「新建 / 已有」,也不建空目录冒充代码仓;第二步问名片四字段。仓里还没有名片时才建「项目约定」:**路径 A,不起 agent**,只写 `.bw/project.toml` 到常驻树 `bw/project`,工作目录落 `<仓>/.bw/worktrees/project`,开 MR 等人合。已有名片不再开。没合入时总览常驻横幅。不铺 `issue-policy.toml` / `PROJECT.md` / `standard.toml` / `managed.toml`。仓根 `AGENTS.md` 不写。开工工具跟人走本机。
 
 ### 总览
 

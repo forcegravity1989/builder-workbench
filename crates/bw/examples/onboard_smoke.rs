@@ -9,7 +9,7 @@
 //!
 //! 五档,每档都是「接入」会遇到的一种真实局面:
 //!
-//! 1. 目录不在 + 没填远端 → 建个空目录当仓,**并说明它是空的**
+//! 1. 人自己 clone 在工作区之外的本地仓 → 直接使用,路径原样登记
 //! 2. 目录里已经是个 git 仓 → 直接用,顺带把 origin 报出来
 //! 3. 目录里有东西、又不是 git 仓 → **弹回**,而且库里不许留下半个项目
 //! 4. 同一个 slug 再接一次 → 幂等,不建第二行
@@ -78,18 +78,27 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         }
     };
 
-    // ── 1 · 没填远端 ────────────────────────────────────────
+    // ── 1 · 工作区之外的本地仓 ──────────────────────────────
+    let external = root.join("people-cloned-it-here");
+    std::fs::create_dir_all(&external)?;
+    git(&external, &["init", "-q"]).await;
     app.dispatch(Command::CreateProject {
         slug: "no-remote".into(),
         intent: intent("没远端的项目"),
         remote: RemoteRef::default(),
-        workspace_path: String::new(),
+        workspace_path: external.display().to_string(),
     })
     .await?;
     drain("档1", &mut prog_rx);
     say(
-        "档 1 · 空目录建出来了吗",
-        &format!("{}", workspaces.join("no-remote").is_dir()),
+        "档 1 · 是否直接使用自选目录",
+        &format!(
+            "{}",
+            app.project_by_slug("no-remote")
+                .await?
+                .map(|p| p.workspace_path == external.display().to_string())
+                .unwrap_or(false)
+        ),
     );
 
     // ── 2 · 目录里已经是个 git 仓 ────────────────────────────
@@ -153,7 +162,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         slug: "no-remote".into(),
         intent: intent("再接一次"),
         remote: RemoteRef::default(),
-        workspace_path: String::new(),
+        workspace_path: external.display().to_string(),
     })
     .await?;
     drain("档4", &mut prog_rx);

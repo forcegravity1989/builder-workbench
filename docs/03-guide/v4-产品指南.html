@@ -325,7 +325,7 @@
             <h2>添加项目</h2>
           </div>
           <div class="flow">
-            <b>gh / codehub-cli clone</b><i>→</i>
+            <b>打开本地仓 / clone 远端仓</b><i>→</i>
             <b>填名片四字段</b><i>→</i>
             <b>开 MR</b><i>→</i>
             <b>你合「项目约定」</b>
@@ -458,8 +458,8 @@
 
       <h2 class="sec"><span class="n">操作</span></h2>
       <div class="ops">
-        <div class="li"><div class="n">1</div><div class="t">项目墙点「+ 接入项目」。本机要有 <code>gh</code>（GitHub）或 <code>codehub-cli</code>（内部）并已登录。工作区根目录在「设置」里，默认 <code>.builders-workbench/workspaces</code>。</div></div>
-        <div class="li"><div class="n">2</div><div class="t">第一步只问仓在哪。点进「项目地址」列出你账号下的仓，打字检索或直接填 <code>owner/repo</code>。列不出来时摆命令原话。</div></div>
+        <div class="li"><div class="n">1</div><div class="t">项目墙点「+ 接入项目」。本机已经 clone 好就选「打开本地仓」并浏览文件夹，直接使用原目录；还没 clone 才选「克隆远端仓」。</div></div>
+        <div class="li"><div class="n">2</div><div class="t">克隆远端仓时，用 <code>gh</code>（GitHub）或 <code>codehub-cli</code>（内部）列出账号下的仓，也可以直接填 <code>owner/repo</code>。工作区根目录只是默认 clone 父目录，也可以另选父文件夹。</div></div>
         <div class="li"><div class="n">3</div><div class="t">第二步填名片四格：名称、想做什么、最像的对标、三个月长成什么样。顶上说这个仓被接管过没——判据是远端有没有 <code>.bw/project.toml</code>。</div></div>
         <div class="li"><div class="n">4</div><div class="t">点「完成接入」，等十几秒。然后去计划屏把「项目约定」拖到「已完成」（有开着的 MR 会先合）。项目墙 ⚑ 只提醒，不在那儿合。</div></div>
       </div>
@@ -468,8 +468,8 @@
       <div class="res">
         <ul>
           <li><span class="b"></span><div><strong>对远端</strong>：仓里没名片才建「项目约定」，开分支 <code>bw/project</code> 提 MR，停在评审中。已有名片或已开着这张活，整段跳过。</div></li>
-          <li><span class="b"></span><div><strong>对你的机器</strong>：用 <code>gh</code> / <code>codehub-cli</code> clone 到工作区；已是 git 仓直接用；有东西又不是 git 仓就弹回。</div></li>
-          <li><span class="b"></span><div><strong>对 <code>.bw/</code></strong>：写 <code>.bw/project.toml</code>（已有不覆盖）；<code>.bw/.gitignore</code> 只一条 <code>worktrees/</code>。Orca 登记这个仓，写三条<strong>默认关</strong>的自动化。</div></li>
+          <li><span class="b"></span><div><strong>对你的机器</strong>：本地仓保存规范化绝对路径，不复制；远端仓才 clone。路径不是 git 仓、远端与 origin 对不上、或同一目录重复接入都会弹回。</div></li>
+          <li><span class="b"></span><div><strong>对 <code>.bw/</code></strong>：写 <code>.bw/project.toml</code>（已有不覆盖）；<code>.bw/.gitignore</code> 只一条 <code>worktrees/</code>。Orca 登记这个仓，写三条<strong>默认关</strong>的自动化；自动化与项目约定的常驻树都放在 <code>&lt;仓&gt;/.bw/worktrees/</code>。旧仓外同级树只提示人先收尾，不迁、不删。</div></li>
         </ul>
       </div>
 

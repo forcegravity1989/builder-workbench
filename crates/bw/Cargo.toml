@@ -21,6 +21,8 @@ time = { workspace = true, features = ["std", "formatting", "parsing", "macros",
 uuid = { workspace = true, features = ["v4"] }
 # `.bw/managed.toml` 的指纹(03 篇 §3.1:sha256:<hex>)。已在 lock 里,不新增下载。
 sha2 = "0.10"
+# Windows 路径规范化去掉 `\\?\` 前缀;接入项目按真实仓根判重。
+dunce = "1.0.5"
 
 [dev-dependencies]
 tokio = { workspace = true }
