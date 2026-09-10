@@ -37,6 +37,7 @@
 
 10. **9-10 十轮**:①上一轮加的诊断表(「哪 5 张活拿不到规范」)被否 —— 那是计划屏 / 总览的事,设置面板不答「你的活哪里没配好」,删表、色条收回资产自身;②`运作活①②` 是黑话,全仓原型 + intent 换成正名(`更新指标与版本计划` / `资产盘点`)。
 11. **9-10 十一轮**:发起人截图 Claude Connectors 详情卡 + Skills 列表页(`by Anthropic` 归属行),六条一次改完:①Connector 列表里 `claude` / `GitHub CLI` 两行名字挤着本机路径,挪进详情页(列表只留名字),整行早就能点、补上 hover/focus 反馈让它读起来真像能点的;②AI Assets 的「有活在用/没活在用/未派发」色条 + 状态过滤被否 —— 这些指标对「展示」这个用途没意义,删掉色条、过滤、状态点,只留 Asset / 现在哪几张活在用 / 来自三列;③Connector 列表里 Open Design / Orca / cursor-agent / codehub-cli / welink-cli 五行的「没拿到」原因文字重复了色点已经说的话,删掉,原因留在详情页;④Skills 卡片上的「注入不了」红标删掉(判定还在详情页里,列表不用再喊一遍);⑤Skills 参照 Claude 抄了归属行:Workbench 自建的显示 `by Builders' Workbench`,业界引入的显示原作者(如 `by Matt Pocock`),项目自己仓里写的显示 `Created by you`;⑥sk-week 详情的文件渲染 / 源码预览原来以「……」收尾像是没截全,换成从真实 `week-planning/SKILL.md` 摘的完整段落(核心目标 + 四步标题),不再看着像半成品。
+12. **9-10 十二轮**:发起人截图 Claude 插件详情的 Overview / Skills 页签(能直接跳到某个 skill),四条改完:①`design-system-import` 详情里「注入 —— 同上」被指出没意义,改成和 `workbench-start` 一样把真实原因(开工解析只认三个写死的名字)再写一遍,详情页不该靠指别处;②Plugins 列表里 `mohit-pm-claude-skills` 行的「部分 vendor:只挑了指标框架两件」删掉,和 Connector 那轮一个道理;③mattpocock-skills / mohit-pm-claude-skills 两张插件详情比照 Claude 加了 Overview / Skills 页签——Skills 页签是从 vendor 目录真实读出来的名字(**41 个按 engineering 17 / productivity 5 / personal 2 / misc 4 / deprecated 4 / in-progress 9 分组**,此前「带进来」那行只提四类、漏了 deprecated 和 in-progress,这轮顺带改准;mohit 的 2 个也列了真名),但**没做成能点跳转**——不像 Claude 那样点了真能用,BW 这边打包机制没建,41 个眼下一个都注入不了,做成假可点是骗人,Overview 页签的「没建」一句话说清楚这点,不在两处重复。
 
 ## 待裁决
 

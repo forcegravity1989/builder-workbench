@@ -126,6 +126,12 @@
   .todo-note { padding: 8px 10px; border-radius: var(--radius-sm); font-size: 12.5px; line-height: 1.7;
                background: var(--color-warning-soft); color: var(--color-warning-deep); }
   .kv dd .path { white-space: normal; }
+  /* 插件详情的 Skills 页签:只列名字,不做成可点行——打包机制没建,点了也去不了哪 */
+  .skillgroup + .skillgroup { margin-top: var(--space-3); }
+  .skillchips { display: flex; flex-wrap: wrap; gap: 6px; }
+  .skillchip { font-family: var(--font-mono); font-size: 11px; padding: 3px 9px; border-radius: 999px;
+               background: var(--color-surface); border: 1px solid var(--color-divider);
+               color: color-mix(in srgb, var(--color-text) 72%, transparent); }
 
   .files { display: flex; border: 1px solid var(--color-divider); border-radius: var(--radius-md);
            background: var(--color-card); overflow: hidden; }
@@ -587,7 +593,7 @@ HEAD_READINGS = "本周指标读数"</pre></div>
                 </div>
                 <dl class="kv">
                   <dt>路径</dt><dd><span class="path">.claude/skills/design-system-import/SKILL.md</span></dd>
-                  <dt>注入</dt><dd><b>接不进去</b> —— 同上</dd>
+                  <dt>注入</dt><dd><b>接不进去</b> —— 开工解析只认三个写死的名字,项目自有的一律落空</dd>
                 </dl>
               </div>
 
@@ -761,7 +767,7 @@ HEAD_READINGS = "本周指标读数"</pre></div>
                         <td class="t-sub">构建 · 优化 · 运维</td><td class="t-sub">MIT</td><td class="go">›</td>
                       </tr>
                       <tr class="rowbtn" data-detail="pl-mohit" tabindex="0" role="button">
-                        <td class="t-name">mohit-pm-claude-skills<div class="t-sub">部分 vendor:只挑了指标框架两件</div></td>
+                        <td class="t-name">mohit-pm-claude-skills</td>
                         <td class="t-sub">main@f508142</td><td class="t-sub num">2</td>
                         <td class="t-sub">没有 workflow 用它</td><td class="t-sub">MIT</td><td class="go">›</td>
                       </tr>
@@ -777,13 +783,38 @@ HEAD_READINGS = "本周指标读数"</pre></div>
                   <div><div class="dt-name">mattpocock-skills</div><div class="dt-from">1.2.0 · MIT · Copyright (c) 2026 Matt Pocock</div></div>
                   <div class="dt-act"><span class="status status-done"><span class="status-dot"></span>3 个阶段在用</span></div>
                 </div>
-                <dl class="kv">
-                  <dt>上游</dt><dd><span class="path">github.com/mattpocock/skills</span></dd>
-                  <dt>带进来</dt><dd>41 个 skill · engineering / productivity / personal / misc</dd>
-                  <dt>出的 workflow</dt><dd>mattpocock-skills → 构建 · 优化 · 运维</dd>
-                  <dt>路径</dt><dd><span class="path">standard/vendor/mattpocock-skills/</span> → <span class="path">assets/vendor/</span></dd>
-                  <dt>没建</dt><dd>打包机制未实现</dd>
-                </dl>
+                <div class="tabs" role="tablist" data-tabs="2">
+                  <button class="tab" role="tab" aria-selected="true" data-tab="ov">概览</button>
+                  <button class="tab" role="tab" aria-selected="false" data-tab="sk">Skills · 41</button>
+                </div>
+                <div data-tabpanel="ov" style="margin-top: var(--space-4)">
+                  <dl class="kv">
+                    <dt>上游</dt><dd><span class="path">github.com/mattpocock/skills</span></dd>
+                    <dt>出的 workflow</dt><dd>mattpocock-skills → 构建 · 优化 · 运维</dd>
+                    <dt>路径</dt><dd><span class="path">standard/vendor/mattpocock-skills/</span> → <span class="path">assets/vendor/</span></dd>
+                    <dt>没建</dt><dd>打包机制未实现 —— Skills 页签列的 41 个眼下一个都注入不了,不像 Claude 的插件详情能直接跳过去用</dd>
+                  </dl>
+                </div>
+                <div data-tabpanel="sk" hidden style="margin-top: var(--space-4)">
+                  <div class="skillgroup"><div class="sublabel">engineering · 17</div><div class="skillchips">
+                    <span class="skillchip">ask-matt</span><span class="skillchip">code-review</span><span class="skillchip">codebase-design</span><span class="skillchip">diagnosing-bugs</span><span class="skillchip">domain-modeling</span><span class="skillchip">grill-with-docs</span><span class="skillchip">implement</span><span class="skillchip">improve-codebase-architecture</span><span class="skillchip">prototype</span><span class="skillchip">research</span><span class="skillchip">resolving-merge-conflicts</span><span class="skillchip">setup-matt-pocock-skills</span><span class="skillchip">tdd</span><span class="skillchip">to-spec</span><span class="skillchip">to-tickets</span><span class="skillchip">triage</span><span class="skillchip">wayfinder</span>
+                  </div></div>
+                  <div class="skillgroup"><div class="sublabel">productivity · 5</div><div class="skillchips">
+                    <span class="skillchip">grill-me</span><span class="skillchip">grilling</span><span class="skillchip">handoff</span><span class="skillchip">teach</span><span class="skillchip">writing-great-skills</span>
+                  </div></div>
+                  <div class="skillgroup"><div class="sublabel">personal · 2</div><div class="skillchips">
+                    <span class="skillchip">edit-article</span><span class="skillchip">obsidian-vault</span>
+                  </div></div>
+                  <div class="skillgroup"><div class="sublabel">misc · 4</div><div class="skillchips">
+                    <span class="skillchip">git-guardrails-claude-code</span><span class="skillchip">migrate-to-shoehorn</span><span class="skillchip">scaffold-exercises</span><span class="skillchip">setup-pre-commit</span>
+                  </div></div>
+                  <div class="skillgroup"><div class="sublabel">deprecated · 4</div><div class="skillchips">
+                    <span class="skillchip">design-an-interface</span><span class="skillchip">qa</span><span class="skillchip">request-refactor-plan</span><span class="skillchip">ubiquitous-language</span>
+                  </div></div>
+                  <div class="skillgroup"><div class="sublabel">in-progress · 9</div><div class="skillchips">
+                    <span class="skillchip">batch-grill-me</span><span class="skillchip">claude-handoff</span><span class="skillchip">loop-me</span><span class="skillchip">setup-ts-deep-modules</span><span class="skillchip">to-questionnaire</span><span class="skillchip">wizard</span><span class="skillchip">writing-beats</span><span class="skillchip">writing-fragments</span><span class="skillchip">writing-shape</span>
+                  </div></div>
+                </div>
               </div>
 
               <div data-page="pl-mohit" hidden>
@@ -793,11 +824,21 @@ HEAD_READINGS = "本周指标读数"</pre></div>
                   <div><div class="dt-name">mohit-pm-claude-skills</div><div class="dt-from">main@f508142 · MIT · Copyright (c) 2026 Mohit Aggarwal</div></div>
                   <div class="dt-act"><span class="status status-todo"><span class="status-dot"></span>没人用</span></div>
                 </div>
-                <dl class="kv">
-                  <dt>上游</dt><dd><span class="path">github.com/mohitagw15856/pm-claude-skills</span></dd>
-                  <dt>带进来</dt><dd>2 个 · metrics-framework · metric-tree-builder(上游数百件,只挑了指标)</dd>
-                  <dt>出的 workflow</dt><dd><b>没有</b> —— vendor 了,没接上</dd>
-                </dl>
+                <div class="tabs" role="tablist" data-tabs="2">
+                  <button class="tab" role="tab" aria-selected="true" data-tab="ov">概览</button>
+                  <button class="tab" role="tab" aria-selected="false" data-tab="sk">Skills · 2</button>
+                </div>
+                <div data-tabpanel="ov" style="margin-top: var(--space-4)">
+                  <dl class="kv">
+                    <dt>上游</dt><dd><span class="path">github.com/mohitagw15856/pm-claude-skills</span>(上游数百件,只挑了指标相关两件)</dd>
+                    <dt>出的 workflow</dt><dd><b>没有</b> —— vendor 了,没接上</dd>
+                  </dl>
+                </div>
+                <div data-tabpanel="sk" hidden style="margin-top: var(--space-4)">
+                  <div class="skillchips">
+                    <span class="skillchip">metrics-framework</span><span class="skillchip">metric-tree-builder</span>
+                  </div>
+                </div>
               </div>
 
               <!-- ══ AI Assets ══ -->
