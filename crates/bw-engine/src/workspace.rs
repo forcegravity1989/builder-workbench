@@ -107,13 +107,25 @@ pub async fn provision_issue_worktree(
     let tree_str = tree_path.to_str().ok_or_else(|| {
         ProvisionError::CreateDir(format!("worktree 路径非 UTF-8:{}", tree_path.display()))
     })?;
-    // 新树落 <仓根>/.bw/worktrees/。先建好这个目录。
+    // 新树落 <仓根>/.bw/worktrees/。先让 Git 在本机忽略这个运行时目录,
+    // 即使项目约定还没合入默认分支也不会把 worktree 当普通未跟踪文件。
+    ensure_local_worktree_exclude(main_workspace).await?;
     let parent = tree_path.parent().unwrap_or(Path::new(""));
     std::fs::create_dir_all(parent)
         .map_err(|e| ProvisionError::CreateDir(format!("建 .bw/worktrees 目录没成:{e}")))?;
-    // 上一次崩在 guard 的 Drop 前留下的空壳目录(没 .git)清掉,免得 add 顶回来。
+    // 上一次崩在建树前留下的**空壳**可以清;里面有任何文件都停下保护。
     if tree_path.exists() && !tree_path.join(".git").exists() {
-        let _ = std::fs::remove_dir_all(&tree_path);
+        let empty = std::fs::read_dir(&tree_path)
+            .map(|mut rows| rows.next().is_none())
+            .unwrap_or(false);
+        if !empty {
+            return Err(ProvisionError::CreateDir(format!(
+                "worktree 目录已经存在且不是 Git worktree,为保护文件不会覆盖或删除:{}",
+                tree_path.display()
+            )));
+        }
+        std::fs::remove_dir(&tree_path)
+            .map_err(|e| ProvisionError::CreateDir(format!("清理空 worktree 目录失败:{e}")))?;
     }
     let _ = crate::win_cmd::tokio_cmd("git")
         .current_dir(main_workspace)
@@ -208,48 +220,153 @@ pub fn is_standing_branch(branch: &str) -> bool {
     )
 }
 
-fn sibling_worktree_path(main_workspace: &Path, suffix: &str) -> Option<PathBuf> {
+fn standing_worktree_path(main_workspace: &Path, name: &str) -> Option<PathBuf> {
+    Some(main_workspace.join(".bw").join("worktrees").join(name))
+}
+
+fn legacy_sibling_worktree_path(main_workspace: &Path, suffix: &str) -> Option<PathBuf> {
     let parent = main_workspace.parent()?;
     let stem = main_workspace.file_name().and_then(|n| n.to_str())?;
     Some(parent.join(format!("{stem}-{suffix}")))
 }
 
-/// 读数账本:`<主仓名>-bw-ledger`。
+/// 读数账本:`<仓>/.bw/worktrees/ledger`。
 pub fn ledger_worktree_path(main_workspace: &Path) -> Option<PathBuf> {
-    sibling_worktree_path(main_workspace, "bw-ledger")
+    standing_worktree_path(main_workspace, "ledger")
 }
 
-/// 项目约定:`<主仓名>-bw-project`。
+/// 项目约定:`<仓>/.bw/worktrees/project`。
 pub fn project_worktree_path(main_workspace: &Path) -> Option<PathBuf> {
-    sibling_worktree_path(main_workspace, "bw-project")
+    standing_worktree_path(main_workspace, "project")
 }
 
-/// 定版本计划:`<主仓名>-bw-week-plan`。
+/// 定版本计划:`<仓>/.bw/worktrees/week-plan`。
 pub fn week_plan_worktree_path(main_workspace: &Path) -> Option<PathBuf> {
-    sibling_worktree_path(main_workspace, "bw-week-plan")
+    standing_worktree_path(main_workspace, "week-plan")
 }
 
-/// 资产盘点:`<主仓名>-bw-ops-audit`。
+/// 资产盘点:`<仓>/.bw/worktrees/ops-audit`。
 pub fn ops_audit_worktree_path(main_workspace: &Path) -> Option<PathBuf> {
-    sibling_worktree_path(main_workspace, "bw-ops-audit")
+    standing_worktree_path(main_workspace, "ops-audit")
 }
 
-async fn provision_sibling_worktree(
+async fn git_text(dir: &Path, args: &[&str]) -> Result<String, ProvisionError> {
+    let output = crate::win_cmd::tokio_cmd("git")
+        .current_dir(dir)
+        .args(args)
+        .stdin(Stdio::null())
+        .stdout(Stdio::piped())
+        .stderr(Stdio::piped())
+        .output()
+        .await
+        .map_err(|e| ProvisionError::Git(e.to_string()))?;
+    if !output.status.success() {
+        return Err(ProvisionError::Git(format!(
+            "git {} → {}",
+            args.join(" "),
+            String::from_utf8_lossy(&output.stderr).trim()
+        )));
+    }
+    Ok(String::from_utf8_lossy(&output.stdout).trim().to_string())
+}
+
+async fn ensure_local_worktree_exclude(main_workspace: &Path) -> Result<(), ProvisionError> {
+    let raw = git_text(main_workspace, &["rev-parse", "--git-path", "info/exclude"]).await?;
+    let path = {
+        let p = PathBuf::from(raw);
+        if p.is_absolute() {
+            p
+        } else {
+            main_workspace.join(p)
+        }
+    };
+    let mut body = std::fs::read_to_string(&path).unwrap_or_default();
+    if body.lines().any(|line| line.trim() == "/.bw/worktrees/") {
+        return Ok(());
+    }
+    if !body.is_empty() && !body.ends_with('\n') {
+        body.push('\n');
+    }
+    body.push_str("/.bw/worktrees/\n");
+    if let Some(parent) = path.parent() {
+        std::fs::create_dir_all(parent)
+            .map_err(|e| ProvisionError::Write(format!("建 git info 目录失败:{e}")))?;
+    }
+    std::fs::write(&path, body)
+        .map_err(|e| ProvisionError::Write(format!("写本机 worktree ignore 失败:{e}")))
+}
+
+async fn registered_worktree_branch(
     main_workspace: &Path,
-    sibling: PathBuf,
+    target: &Path,
+) -> Result<Option<String>, ProvisionError> {
+    let target = std::fs::canonicalize(target)
+        .map_err(|e| ProvisionError::Git(format!("读 worktree 真路径失败:{e}")))?;
+    let raw = git_text(main_workspace, &["worktree", "list", "--porcelain"]).await?;
+    let mut path: Option<PathBuf> = None;
+    for line in raw.lines().chain(std::iter::once("")) {
+        if let Some(v) = line.strip_prefix("worktree ") {
+            path = std::fs::canonicalize(v).ok();
+        } else if let Some(v) = line.strip_prefix("branch refs/heads/") {
+            if path.as_deref() == Some(target.as_path()) {
+                return Ok(Some(v.to_string()));
+            }
+        } else if line.is_empty() && path.as_deref() == Some(target.as_path()) {
+            return Ok(None);
+        }
+    }
+    Ok(None)
+}
+
+async fn provision_standing_worktree(
+    main_workspace: &Path,
+    target: PathBuf,
+    legacy: Option<PathBuf>,
     branch: &str,
     what: &str,
 ) -> Result<PathBuf, ProvisionError> {
-    if sibling.join(".git").exists() {
-        return Ok(sibling);
+    if let Some(old) = legacy.filter(|p| p.exists()) {
+        return Err(ProvisionError::CreateDir(format!(
+            "发现旧的{what} worktree:{}。Workbench 不迁、不删现有劳动成果;请先在 Git 中收尾并移除旧 worktree,再重试",
+            old.display()
+        )));
     }
-    let sibling_str = sibling
+    if target.join(".git").exists() {
+        return match registered_worktree_branch(main_workspace, &target).await? {
+            Some(found) if found == branch => Ok(target),
+            Some(found) => Err(ProvisionError::Git(format!(
+                "{what}目录已经是分支 {found} 的 worktree,预期是 {branch}:{}",
+                target.display()
+            ))),
+            None => Err(ProvisionError::Git(format!(
+                "{what}目录里有 Git 仓,但不是当前项目登记的 {branch} worktree:{}",
+                target.display()
+            ))),
+        };
+    }
+    if target.exists() {
+        let empty = std::fs::read_dir(&target)
+            .map(|mut rows| rows.next().is_none())
+            .unwrap_or(false);
+        if !empty {
+            return Err(ProvisionError::CreateDir(format!(
+                "{what}目录已经存在且不是 worktree,为保护文件不会覆盖或删除:{}",
+                target.display()
+            )));
+        }
+        std::fs::remove_dir(&target)
+            .map_err(|e| ProvisionError::CreateDir(format!("清理空的{what}目录失败:{e}")))?;
+    }
+    ensure_local_worktree_exclude(main_workspace).await?;
+    let parent = target.parent().ok_or_else(|| {
+        ProvisionError::CreateDir(format!("算不出{what}目录的上级:{}", target.display()))
+    })?;
+    std::fs::create_dir_all(parent)
+        .map_err(|e| ProvisionError::CreateDir(format!("建 .bw/worktrees 目录没成:{e}")))?;
+    let target_str = target
         .to_str()
         .ok_or_else(|| {
-            ProvisionError::CreateDir(format!(
-                "{what} worktree 路径非 UTF-8:{}",
-                sibling.display()
-            ))
+            ProvisionError::CreateDir(format!("{what} worktree 路径非 UTF-8:{}", target.display()))
         })?
         .to_string();
     let _ = crate::win_cmd::tokio_cmd("git")
@@ -260,19 +377,16 @@ async fn provision_sibling_worktree(
         .stderr(Stdio::piped())
         .output()
         .await;
-    if sibling.exists() && !sibling.join(".git").exists() {
-        let _ = std::fs::remove_dir_all(&sibling);
-    }
     if git_in(
         main_workspace,
-        &["worktree", "add", "-b", branch, &sibling_str],
+        &["worktree", "add", "-b", branch, &target_str],
     )
     .await
     .is_err()
     {
-        git_in(main_workspace, &["worktree", "add", &sibling_str, branch]).await?;
+        git_in(main_workspace, &["worktree", "add", &target_str, branch]).await?;
     }
-    Ok(sibling)
+    Ok(target)
 }
 
 fn sibling_or_err(
@@ -290,42 +404,70 @@ fn sibling_or_err(
 
 /// 给这个项目开(或接着用)项目约定 worktree。已经在就原样返回,不开第二次。
 pub async fn provision_project_worktree(main_workspace: &Path) -> Result<PathBuf, ProvisionError> {
-    let sibling = sibling_or_err(
+    let target = sibling_or_err(
         main_workspace,
         project_worktree_path(main_workspace),
         "项目约定",
     )?;
-    provision_sibling_worktree(main_workspace, sibling, PROJECT_BRANCH, "项目约定").await
+    provision_standing_worktree(
+        main_workspace,
+        target,
+        legacy_sibling_worktree_path(main_workspace, "bw-project"),
+        PROJECT_BRANCH,
+        "项目约定",
+    )
+    .await
 }
 
 /// 给这个项目开(或接着用)读数账本 worktree。已经在就原样返回,不开第二次。
 pub async fn provision_ledger_worktree(main_workspace: &Path) -> Result<PathBuf, ProvisionError> {
-    let sibling = sibling_or_err(main_workspace, ledger_worktree_path(main_workspace), "账本")?;
-    provision_sibling_worktree(main_workspace, sibling, LEDGER_BRANCH, "账本").await
+    let target = sibling_or_err(main_workspace, ledger_worktree_path(main_workspace), "账本")?;
+    provision_standing_worktree(
+        main_workspace,
+        target,
+        legacy_sibling_worktree_path(main_workspace, "bw-ledger"),
+        LEDGER_BRANCH,
+        "账本",
+    )
+    .await
 }
 
 /// 运作活①常驻树。已经在就原样返回。
 pub async fn provision_week_plan_worktree(
     main_workspace: &Path,
 ) -> Result<PathBuf, ProvisionError> {
-    let sibling = sibling_or_err(
+    let target = sibling_or_err(
         main_workspace,
         week_plan_worktree_path(main_workspace),
         "定版本计划",
     )?;
-    provision_sibling_worktree(main_workspace, sibling, WEEK_PLAN_BRANCH, "定版本计划").await
+    provision_standing_worktree(
+        main_workspace,
+        target,
+        legacy_sibling_worktree_path(main_workspace, "bw-week-plan"),
+        WEEK_PLAN_BRANCH,
+        "定版本计划",
+    )
+    .await
 }
 
 /// 运作活②常驻树。已经在就原样返回。
 pub async fn provision_ops_audit_worktree(
     main_workspace: &Path,
 ) -> Result<PathBuf, ProvisionError> {
-    let sibling = sibling_or_err(
+    let target = sibling_or_err(
         main_workspace,
         ops_audit_worktree_path(main_workspace),
         "资产盘点",
     )?;
-    provision_sibling_worktree(main_workspace, sibling, OPS_AUDIT_BRANCH, "资产盘点").await
+    provision_standing_worktree(
+        main_workspace,
+        target,
+        legacy_sibling_worktree_path(main_workspace, "bw-ops-audit"),
+        OPS_AUDIT_BRANCH,
+        "资产盘点",
+    )
+    .await
 }
 
 /// One file's real change stat between two commits (`git diff --numstat`).
@@ -410,7 +552,80 @@ fn strip_git_suffix(path: &str) -> String {
 
 #[cfg(test)]
 mod tests {
-    use super::parse_git_remote_url;
+    use super::{
+        ledger_worktree_path, ops_audit_worktree_path, parse_git_remote_url, project_worktree_path,
+        provision_project_worktree, provision_week_plan_worktree, week_plan_worktree_path,
+    };
+    use std::path::Path;
+
+    #[test]
+    fn standing_worktrees_stay_under_the_project() {
+        let repo = Path::new("D:/code/project-a");
+        assert_eq!(
+            project_worktree_path(repo).unwrap(),
+            repo.join(".bw/worktrees/project")
+        );
+        assert_eq!(
+            ledger_worktree_path(repo).unwrap(),
+            repo.join(".bw/worktrees/ledger")
+        );
+        assert_eq!(
+            week_plan_worktree_path(repo).unwrap(),
+            repo.join(".bw/worktrees/week-plan")
+        );
+        assert_eq!(
+            ops_audit_worktree_path(repo).unwrap(),
+            repo.join(".bw/worktrees/ops-audit")
+        );
+    }
+
+    #[tokio::test]
+    async fn provisions_inside_repo_and_preserves_legacy_collision() {
+        let root = std::env::temp_dir().join(format!("bw-standing-{}", uuid::Uuid::new_v4()));
+        let repo = root.join("repo");
+        std::fs::create_dir_all(&repo).unwrap();
+        let git = |dir: &Path, args: &[&str]| {
+            std::process::Command::new("git")
+                .current_dir(dir)
+                .args(args)
+                .output()
+                .unwrap()
+        };
+        assert!(git(&repo, &["init", "-q"]).status.success());
+        std::fs::write(repo.join("README.md"), "seed\n").unwrap();
+        assert!(git(&repo, &["add", "README.md"]).status.success());
+        assert!(git(
+            &repo,
+            &[
+                "-c",
+                "user.name=Workbench Test",
+                "-c",
+                "user.email=workbench@example.invalid",
+                "commit",
+                "-q",
+                "-m",
+                "seed",
+            ],
+        )
+        .status
+        .success());
+
+        let project_tree = provision_project_worktree(&repo).await.unwrap();
+        assert_eq!(project_tree, repo.join(".bw/worktrees/project"));
+        assert!(project_tree.join(".git").is_file());
+
+        let legacy = root.join("repo-bw-week-plan");
+        std::fs::create_dir_all(&legacy).unwrap();
+        let sentinel = legacy.join("人的改动.txt");
+        std::fs::write(&sentinel, "keep me").unwrap();
+        let refused = provision_week_plan_worktree(&repo).await.unwrap_err();
+        assert!(refused.to_string().contains("不迁、不删"));
+        assert_eq!(std::fs::read_to_string(&sentinel).unwrap(), "keep me");
+
+        let tree_arg = project_tree.display().to_string();
+        let _ = git(&repo, &["worktree", "remove", "--force", &tree_arg]);
+        std::fs::remove_dir_all(&root).unwrap();
+    }
 
     #[test]
     fn parse_https_codehub_origin() {
