@@ -374,16 +374,41 @@ impl Project {
 /// `green` / `open` / `yellow`),**不是域名** —— 直接拿它拼网址会得到一个打不
 /// 开的地址。已经是完整域名的值原样返回。
 ///
-/// **V4 自带一份**,不 `use bw_core::codehub_alias_to_domain`:同一张表,但 V4
-/// 对 V3 那六个 crate 零依赖是硬规矩,所以照抄一份。表变了
-/// 两处都要改 —— 这是零依赖那条规矩明码标价的代价。
+/// 正反向识别共用这一张表，增加区时只改这里。
+const CODEHUB_DOMAINS: &[(&str, &str)] = &[
+    ("green", "codehub-g.huawei.com"),
+    ("open", "open.codehub.huawei.com"),
+    ("yellow", "codehub-y.huawei.com"),
+];
+
 pub fn codehub_alias_to_domain(alias: &str) -> &str {
-    match alias.trim() {
-        "green" => "codehub-g.huawei.com",
-        "open" => "open.codehub.huawei.com",
-        "yellow" => "codehub-y.huawei.com",
-        other => other,
-    }
+    let alias = alias.trim();
+    CODEHUB_DOMAINS
+        .iter()
+        .find_map(|(known, domain)| (*known == alias).then_some(*domain))
+        .unwrap_or(alias)
+}
+
+pub fn codehub_aliases() -> impl Iterator<Item = &'static str> {
+    CODEHUB_DOMAINS.iter().map(|(alias, _)| *alias)
+}
+
+/// CodeHub API / SSH 主机名 → `codehub-cli -H` 收的区别名。
+///
+/// 反查从 [`codehub_alias_to_domain`] 的正表推导；SSH 主机可能在网页域名前加
+/// 机房前缀(`szv-open…`)或在短区标前加机房段(`codehub-dg-g…`)。
+pub fn codehub_alias_for_host(host: &str) -> Option<&'static str> {
+    let host = host.trim().to_ascii_lowercase();
+    CODEHUB_DOMAINS.iter().find_map(|(alias, domain)| {
+        let domain = *domain;
+        if host == domain || host.ends_with(domain) {
+            return Some(*alias);
+        }
+        let matched = domain
+            .strip_prefix("codehub-")
+            .is_some_and(|tail| host.ends_with(tail) && host.contains("codehub"));
+        matched.then_some(*alias)
+    })
 }
 
 /// 活:远端 issue 的本机缓存 + 九个扩展列(正本在周计划文件)。

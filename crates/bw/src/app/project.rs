@@ -7,7 +7,7 @@
 use super::worktree;
 use super::{issue_store, App, AppError, ProgressLine, Result};
 use crate::command::{Event, ProjectIntent, RemoteRef};
-use crate::model::{IssueStatus, Project, ProjectId};
+use crate::model::{codehub_alias_for_host, IssueStatus, Project, ProjectId};
 use crate::repo::project_file::{self, ChatConfig};
 
 impl App {
@@ -18,8 +18,26 @@ impl App {
         remote: RemoteRef,
         workspace_path: String,
     ) -> Result<Vec<Event>> {
-        // 幂等:同名项目已存在就原样返回,不建第二行。
+        let requested = self.workspace_at(&slug, &workspace_path);
+        if !requested.is_absolute() {
+            return Err(AppError::Refused(format!(
+                "本机仓路径必须是绝对路径:{}",
+                requested.display()
+            )));
+        }
+
+        // 同名只在仍指向同一处时幂等;不能拿 A 的名字静默吞掉 B 的路径。
         if let Some(existing) = self.project_by_slug(&slug).await? {
+            if !workspace_path.trim().is_empty() {
+                let old = self.workspace_at(&existing.slug, &existing.workspace_path);
+                if !same_workspace_path(&old, &requested) {
+                    return Err(AppError::Refused(format!(
+                        "项目名 {slug} 已经指向 {},不能再指到 {}",
+                        old.display(),
+                        requested.display()
+                    )));
+                }
+            }
             self.step(ProgressLine::ok(
                 1,
                 format!("库里已经有 {slug} 这个项目了,没重复建"),
@@ -34,15 +52,34 @@ impl App {
         // **先把仓弄到手,再建项目行。** 反过来的话,clone 失败会在库里留下
         // 一个指向空目录的项目 —— 而 V4 没有「删项目」这条命令,那一行就永远
         // 赖在项目墙上了。
-        let ws = self.workspace_at(&slug, &workspace_path);
-        self.fetch_repo(&ws, &remote).await?;
+        self.fetch_repo(&requested, &remote).await?;
+        let ws = dunce::canonicalize(&requested).map_err(|e| {
+            AppError::Refused(format!("本机仓路径读不出来:{} ({e})", requested.display()))
+        })?;
+        let (remote, origin_warning) = resolve_remote_for_local_repo(&ws, remote).await?;
+        if let Some(warning) = origin_warning {
+            self.step(ProgressLine::fail(2, warning));
+        }
+
+        // 仓的真实路径才是本机身份。同一仓不能换个名字再纳入一次,否则两边会抢
+        // `bw/issue-N` 与同一组 worktree。
+        for existing in self.projects().await? {
+            let old = self.workspace_at(&existing.slug, &existing.workspace_path);
+            if same_workspace_path(&old, &ws) {
+                return Err(AppError::Refused(format!(
+                    "这个本地仓已经作为「{}」接入了:{}",
+                    existing.name,
+                    ws.display()
+                )));
+            }
+        }
 
         let id = ProjectId::new();
         let row = Project {
             id,
             slug: slug.clone(),
             name: intent.name.clone(),
-            workspace_path: workspace_path.clone(),
+            workspace_path: ws.display().to_string(),
             provider: remote.provider.clone(),
             remote_host: remote.host.clone(),
             remote_path: remote.path.clone(),
@@ -126,11 +163,11 @@ impl App {
 
     /// 把仓弄到本机。接入这一步真正花时间的就是它。
     ///
-    /// 四种局面,每种都如实说清楚,**一种都不许静悄悄地当成成功**:
+    /// 三种局面,每种都如实说清楚,**一种都不许静悄悄地当成成功**:
     ///
     /// - 目录里已经是个 git 仓 → 直接用,顺带把它的 origin 报出来给人核对
     /// - 目录不在或是空的 + 填了远端 → `gh repo clone` / codehub clone
-    /// - 目录不在或是空的 + 没填远端 → 建个空目录,并说明这是个空仓
+    /// - 目录不在或是空的 + 没填远端 → 拒绝;接入只认真实 Git 仓
     /// - 目录里有东西、又不是 git 仓 → **弹回**,既不敢往里 clone,也不敢
     ///   把别人的目录当成这个项目的仓
     async fn fetch_repo(&self, ws: &std::path::Path, remote: &RemoteRef) -> Result<()> {
@@ -160,15 +197,11 @@ impl App {
         }
 
         if remote.path.trim().is_empty() {
-            std::fs::create_dir_all(ws).map_err(|e| crate::repo::RepoFileError::Io {
-                path: shown.clone(),
-                source: e,
-            })?;
-            self.step(ProgressLine::ok(
-                2,
-                format!("没填远端地址,先建了个空目录当仓:{shown}"),
-            ));
-            return Ok(());
+            let why = format!(
+                "{shown} 不是 Git 仓。Workbench 不再用「新建项目」制造空目录;请选择已有 Git 仓,或从远端克隆。"
+            );
+            self.step(ProgressLine::fail(2, why.clone()));
+            return Err(AppError::Refused(why));
         }
 
         self.step(ProgressLine::doing(
@@ -339,9 +372,162 @@ impl App {
     }
 }
 
+fn same_workspace_path(left: &std::path::Path, right: &std::path::Path) -> bool {
+    match (dunce::canonicalize(left), dunce::canonicalize(right)) {
+        (Ok(left), Ok(right)) => left == right,
+        _ => comparable_path_text(left) == comparable_path_text(right),
+    }
+}
+
+fn comparable_path_text(path: &std::path::Path) -> String {
+    let text = path.to_string_lossy().replace('/', "\\");
+    if cfg!(windows) {
+        text.trim_end_matches('\\').to_ascii_lowercase()
+    } else {
+        text.trim_end_matches('\\').to_string()
+    }
+}
+
+async fn resolve_remote_for_local_repo(
+    ws: &std::path::Path,
+    selected: RemoteRef,
+) -> Result<(RemoteRef, Option<String>)> {
+    let origin = bw_engine::workspace::origin_remote_url(ws)
+        .await
+        .map_err(|e| AppError::Exec(format!("读本地仓 origin 失败:{e}")))?;
+    let parsed = origin
+        .as_deref()
+        .and_then(bw_engine::workspace::parse_git_remote_url);
+
+    if selected.path.trim().is_empty() {
+        return Ok(match (origin.as_deref(), parsed) {
+            (None, _) => (RemoteRef::default(), None),
+            (Some(_), Some((host, path))) => match inferred_remote(&host, &path) {
+                Some(remote) => (remote, None),
+                None => (
+                    RemoteRef::default(),
+                    Some(format!(
+                        "本地仓 origin 是 {host}/{path},但 Workbench 认不出这是 GitHub 还是 CodeHub;按纯本地项目接入,不会把 issue 发到远端"
+                    )),
+                ),
+            },
+            (Some(raw), None) => (
+                RemoteRef::default(),
+                Some(format!(
+                    "本地仓 origin 解析不了:{raw};按纯本地项目接入,不会把 issue 发到远端"
+                )),
+            ),
+        });
+    }
+
+    let Some((actual_host, actual_path)) = parsed else {
+        return Err(AppError::Refused(format!(
+            "选择了远端 {}/{},但本地仓没有可识别的 origin;为避免改错仓,没有继续",
+            selected.host, selected.path
+        )));
+    };
+    let same_host = if selected.provider == "github" {
+        actual_host.eq_ignore_ascii_case("github.com")
+    } else {
+        codehub_host_matches(&selected.host, &actual_host)
+    };
+    let same_path = if selected.provider == "github" {
+        actual_path.eq_ignore_ascii_case(selected.path.trim())
+    } else {
+        actual_path == selected.path.trim()
+    };
+    if !same_host || !same_path {
+        return Err(AppError::Refused(format!(
+            "所选远端是 {}/{},但本地仓 origin 是 {actual_host}/{actual_path};为避免 issue 与代码落到两个仓,没有继续",
+            selected.host, selected.path
+        )));
+    }
+    Ok((selected, None))
+}
+
+fn inferred_remote(host: &str, path: &str) -> Option<RemoteRef> {
+    if host.eq_ignore_ascii_case("github.com") {
+        return Some(RemoteRef {
+            provider: "github".into(),
+            host: "github.com".into(),
+            path: path.to_string(),
+        });
+    }
+    let alias = codehub_alias_for_host(host)?;
+    Some(RemoteRef {
+        provider: "codehub".into(),
+        host: alias.into(),
+        path: path.to_string(),
+    })
+}
+
+fn codehub_host_matches(alias: &str, actual: &str) -> bool {
+    match codehub_alias_for_host(actual) {
+        Some(zone) => zone == alias.trim(),
+        None => actual.eq_ignore_ascii_case(alias.trim()),
+    }
+}
+
 /// 只在原来是空的时候填 —— 人手写过的一个字都不动。
 fn fill_if_blank(slot: &mut String, value: &str) {
     if slot.trim().is_empty() {
         *slot = value.to_string();
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{codehub_host_matches, inferred_remote, same_workspace_path};
+    use crate::model::{codehub_alias_for_host, codehub_alias_to_domain, codehub_aliases};
+
+    #[test]
+    fn infers_github_and_codehub_from_real_clone_hosts() {
+        let github = inferred_remote("github.com", "openai/codex").unwrap();
+        assert_eq!(github.provider, "github");
+        assert_eq!(github.host, "github.com");
+        assert_eq!(github.path, "openai/codex");
+
+        let open = inferred_remote("szv-open.codehub.huawei.com", "team/repo").unwrap();
+        assert_eq!(open.provider, "codehub");
+        assert_eq!(open.host, "open");
+        assert_eq!(open.path, "team/repo");
+
+        let green = inferred_remote("codehub-dg-g.huawei.com", "team/repo").unwrap();
+        assert_eq!(green.host, "green");
+    }
+
+    #[test]
+    fn selected_codehub_zone_matches_its_api_and_ssh_hosts() {
+        assert!(codehub_host_matches("open", "open.codehub.huawei.com"));
+        assert!(codehub_host_matches("open", "szv-open.codehub.huawei.com"));
+        assert!(codehub_host_matches("green", "codehub-g.huawei.com"));
+        assert!(!codehub_host_matches(
+            "yellow",
+            "szv-open.codehub.huawei.com"
+        ));
+    }
+
+    #[test]
+    fn every_codehub_alias_round_trips_through_the_single_domain_table() {
+        for alias in codehub_aliases() {
+            assert_eq!(
+                codehub_alias_for_host(codehub_alias_to_domain(alias)),
+                Some(alias)
+            );
+        }
+        assert_eq!(
+            codehub_alias_for_host("codehub-dg-g.huawei.com"),
+            Some("green")
+        );
+        assert_eq!(codehub_alias_for_host("gitlab.example.com"), None);
+        assert_eq!(codehub_alias_for_host("rnd-gitlab-ca-g.huawei.com"), None);
+        assert_eq!(codehub_alias_for_host("anything-config.huawei.com"), None);
+    }
+
+    #[test]
+    fn two_missing_workspace_paths_are_equal_only_when_the_paths_match() {
+        let root = std::env::temp_dir().join(format!("bw-missing-paths-{}", uuid::Uuid::new_v4()));
+        assert!(same_workspace_path(&root.join("same"), &root.join("same")));
+        assert!(!same_workspace_path(&root.join("old"), &root.join("new")));
     }
 }

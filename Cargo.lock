@@ -49,6 +49,7 @@ dependencies = [
  "bw-engine",
  "dioxus",
  "pulldown-cmark",
+ "rfd",
  "serde_json",
  "time",
  "tokio",
@@ -249,6 +250,7 @@ version = "0.0.0"
 dependencies = [
  "async-trait",
  "bw-engine",
+ "dunce",
  "serde",
  "serde_json",
  "sha2",

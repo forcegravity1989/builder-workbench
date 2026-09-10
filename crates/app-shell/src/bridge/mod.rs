@@ -164,6 +164,11 @@ pub enum Req {
         /// 仓很常见。
         git_ref: String,
     },
+    /// 接入屏选择本地仓 —— 直接读工作目录里的 `.bw/project.toml`。
+    /// 本地与远端最后都回 [`Req::RepoPicked`],基础信息卡只认一份回显状态。
+    PickLocalRepo {
+        path: String,
+    },
     /// 上面那一读的结果。`prefill = None` = 那个仓还没被接管过,四个字段要人填。
     RepoPicked {
         path: String,
@@ -408,6 +413,34 @@ async fn fetch_prefill(
         // 没登录、网断了、分支名不对、文件写坏了 —— 都是「没查成」,
         // **不能**说成「没被接管过」。
         Err(e) => (None, RepoProbe::Failed(e)),
+    }
+}
+
+/// 读本地仓的 `.bw/project.toml`。文件存在就是这个仓已经由 Workbench 管理过；
+/// 没有名片、不是 Git 仓和文件损坏是三种不同结局，不能混成空表单。
+async fn fetch_local_prefill(
+    path: &str,
+) -> (Option<crate::vm::RepoPrefillVm>, crate::vm::RepoProbe) {
+    use crate::vm::RepoProbe;
+    let workspace = PathBuf::from(path.trim());
+    if !workspace.is_absolute() || !workspace.is_dir() || !bw::git::is_repo(&workspace).await {
+        return (
+            None,
+            RepoProbe::NoRepo(format!("{} 不是可用的本地 Git 仓", workspace.display())),
+        );
+    }
+    match bw::repo::project_file::read(&workspace) {
+        Ok(Some(file)) => (
+            Some(crate::vm::RepoPrefillVm {
+                name: file.name,
+                brief: file.brief,
+                benchmark: file.benchmark,
+                north_star: file.opportunity,
+            }),
+            RepoProbe::Adopted,
+        ),
+        Ok(None) => (None, RepoProbe::Absent),
+        Err(e) => (None, RepoProbe::Failed(e.to_string())),
     }
 }
 
@@ -1285,6 +1318,20 @@ pub fn spawn(deep_link: DeepLink) -> Bridge {
                                 });
                             });
                         }
+                        Req::PickLocalRepo { path } => {
+                            ui.repos.picked = Some(path.clone());
+                            ui.repos.prefill = None;
+                            ui.repos.probe = crate::vm::RepoProbe::Loading;
+                            let back = tx_back.clone();
+                            tokio::spawn(async move {
+                                let (prefill, probe) = fetch_local_prefill(&path).await;
+                                let _ = back.send(Req::RepoPicked {
+                                    path,
+                                    prefill,
+                                    probe,
+                                });
+                            });
+                        }
                         Req::RepoPicked {
                             path,
                             prefill,
@@ -1571,4 +1618,42 @@ async fn kick_project_collect(app: &App, pid: ProjectId, tx_back: &mpsc::Unbound
             stats: vm_derive::collect_repo_stats(&ws, proj.as_ref()).await,
         });
     });
+}
+
+#[cfg(test)]
+mod onboard_tests {
+    use super::fetch_local_prefill;
+    use crate::vm::RepoProbe;
+    use bw::repo::project_file::{self, ProjectFile};
+
+    #[tokio::test]
+    async fn local_repo_prefill_reads_the_same_project_card_as_remote_pick() {
+        let root = std::env::temp_dir().join(format!("bw-local-prefill-{}", uuid::Uuid::new_v4()));
+        std::fs::create_dir_all(&root).unwrap();
+        let status = std::process::Command::new("git")
+            .args(["init", "-q"])
+            .current_dir(&root)
+            .status()
+            .unwrap();
+        assert!(status.success());
+        project_file::write(
+            &root,
+            &ProjectFile {
+                name: "Workbench".into(),
+                brief: "一张工作台".into(),
+                benchmark: "Orca".into(),
+                opportunity: "更多项目纳入".into(),
+                ..Default::default()
+            },
+        )
+        .unwrap();
+
+        let (prefill, probe) = fetch_local_prefill(root.to_str().unwrap()).await;
+        assert!(matches!(probe, RepoProbe::Adopted));
+        let prefill = prefill.unwrap();
+        assert_eq!(prefill.name, "Workbench");
+        assert_eq!(prefill.north_star, "更多项目纳入");
+
+        std::fs::remove_dir_all(&root).unwrap();
+    }
 }

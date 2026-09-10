@@ -9,7 +9,7 @@
 //!
 //! 五档,每档都是「接入」会遇到的一种真实局面:
 //!
-//! 1. 目录不在 + 没填远端 → 建个空目录当仓,**并说明它是空的**
+//! 1. 人自己 clone 在工作区之外的本地仓 → 直接使用,路径原样登记
 //! 2. 目录里已经是个 git 仓 → 直接用,顺带把 origin 报出来
 //! 3. 目录里有东西、又不是 git 仓 → **弹回**,而且库里不许留下半个项目
 //! 4. 同一个 slug 再接一次 → 幂等,不建第二行
@@ -78,18 +78,32 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         }
     };
 
-    // ── 1 · 没填远端 ────────────────────────────────────────
+    // ── 1 · 工作区之外的本地仓 ──────────────────────────────
+    let external = root.join("people-cloned-it-here");
+    std::fs::create_dir_all(&external)?;
+    git(&external, &["init", "-q"]).await;
     app.dispatch(Command::CreateProject {
         slug: "no-remote".into(),
         intent: intent("没远端的项目"),
         remote: RemoteRef::default(),
-        workspace_path: String::new(),
+        workspace_path: external.display().to_string(),
     })
     .await?;
     drain("档1", &mut prog_rx);
     say(
-        "档 1 · 空目录建出来了吗",
-        &format!("{}", workspaces.join("no-remote").is_dir()),
+        "档 1 · 是否直接使用自选目录",
+        &format!(
+            "{}",
+            app.project_by_slug("no-remote").await?.is_some_and(|p| {
+                match (
+                    dunce::canonicalize(&p.workspace_path),
+                    dunce::canonicalize(&external),
+                ) {
+                    (Ok(actual), Ok(expected)) => actual == expected,
+                    _ => false,
+                }
+            })
+        ),
     );
 
     // ── 2 · 目录里已经是个 git 仓 ────────────────────────────
@@ -153,7 +167,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         slug: "no-remote".into(),
         intent: intent("再接一次"),
         remote: RemoteRef::default(),
-        workspace_path: String::new(),
+        workspace_path: external.display().to_string(),
     })
     .await?;
     drain("档4", &mut prog_rx);
@@ -279,10 +293,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // `AGENTS.md` / `CLAUDE.md` 是这个项目自己的文件 —— 要不要写开发手册是
     // 项目自己的事,接项目和一个字都不写仓根。
     // 接项目的时候 Workbench 才刚 clone 完,既没读过这个仓,也没人问过人家愿不愿意。
-    for (label, ws) in [
-        ("成熟仓", mature.clone()),
-        ("空仓", workspaces.join("no-remote")),
-    ] {
+    for (label, ws) in [("成熟仓", mature.clone()), ("本地仓", external.clone())] {
         // 分支上写了什么最能说明问题 —— 主检出可能本来就有人写的那几份。
         // 活的 worktree 落在仓根下 `.bw/worktrees/issue-1`(新路径);旧平级兄弟
         // 不再建。这里照底座的路径函数找那棵树,找不到就回退看主检出。

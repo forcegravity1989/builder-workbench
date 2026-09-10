@@ -23,6 +23,9 @@ uuid = { workspace = true }
 serde_json = { workspace = true }
 # 知识库屏渲染仓内 Markdown。只进这个 crate,内核零新增依赖。
 pulldown-cmark = { version = "0.13.4", default-features = false, features = ["html"] }
+# 接入页「打开本地仓」的原生目录选择器。Dioxus desktop 已间接依赖同版本,
+# 这里显式声明,不靠传递依赖。
+rfd = { version = "0.17.2", default-features = false, features = ["xdg-portal"] }
 
 # 嵌 Windows 图标资源(仅 Windows 目标,GNU 走 windres / MSVC 走 rc)。
 [target.'cfg(windows)'.build-dependencies]
