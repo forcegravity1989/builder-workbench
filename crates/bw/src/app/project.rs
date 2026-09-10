@@ -30,7 +30,7 @@ impl App {
         if let Some(existing) = self.project_by_slug(&slug).await? {
             if !workspace_path.trim().is_empty() {
                 let old = self.workspace_at(&existing.slug, &existing.workspace_path);
-                if normalize_existing_path(&old) != normalize_existing_path(&requested) {
+                if !same_workspace_path(&old, &requested) {
                     return Err(AppError::Refused(format!(
                         "项目名 {slug} 已经指向 {},不能再指到 {}",
                         old.display(),
@@ -65,7 +65,7 @@ impl App {
         // `bw/issue-N` 与同一组 worktree。
         for existing in self.projects().await? {
             let old = self.workspace_at(&existing.slug, &existing.workspace_path);
-            if normalize_existing_path(&old) == Some(ws.clone()) {
+            if same_workspace_path(&old, &ws) {
                 return Err(AppError::Refused(format!(
                     "这个本地仓已经作为「{}」接入了:{}",
                     existing.name,
@@ -372,8 +372,20 @@ impl App {
     }
 }
 
-fn normalize_existing_path(path: &std::path::Path) -> Option<std::path::PathBuf> {
-    dunce::canonicalize(path).ok()
+fn same_workspace_path(left: &std::path::Path, right: &std::path::Path) -> bool {
+    match (dunce::canonicalize(left), dunce::canonicalize(right)) {
+        (Ok(left), Ok(right)) => left == right,
+        _ => comparable_path_text(left) == comparable_path_text(right),
+    }
+}
+
+fn comparable_path_text(path: &std::path::Path) -> String {
+    let text = path.to_string_lossy().replace('/', "\\");
+    if cfg!(windows) {
+        text.trim_end_matches('\\').to_ascii_lowercase()
+    } else {
+        text.trim_end_matches('\\').to_string()
+    }
 }
 
 async fn resolve_remote_for_local_repo(
@@ -465,7 +477,7 @@ fn fill_if_blank(slot: &mut String, value: &str) {
 
 #[cfg(test)]
 mod tests {
-    use super::{codehub_host_matches, inferred_remote};
+    use super::{codehub_host_matches, inferred_remote, same_workspace_path};
     use crate::model::{codehub_alias_for_host, codehub_alias_to_domain, codehub_aliases};
 
     #[test]
@@ -508,5 +520,12 @@ mod tests {
             Some("green")
         );
         assert_eq!(codehub_alias_for_host("gitlab.example.com"), None);
+    }
+
+    #[test]
+    fn two_missing_workspace_paths_are_equal_only_when_the_paths_match() {
+        let root = std::env::temp_dir().join(format!("bw-missing-paths-{}", uuid::Uuid::new_v4()));
+        assert!(same_workspace_path(&root.join("same"), &root.join("same")));
+        assert!(!same_workspace_path(&root.join("old"), &root.join("new")));
     }
 }

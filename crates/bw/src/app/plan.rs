@@ -460,13 +460,7 @@ pub(super) async fn salvage_readings_dirt(ws: &std::path::Path) -> String {
 async fn salvage_readings_into_ledger(ws: &std::path::Path) -> bool {
     let ledger = match bw_engine::workspace::provision_ledger_worktree(ws).await {
         Ok(p) => p,
-        Err(_) => {
-            let Some(dir) = bw_engine::workspace::ledger_worktree_path(ws) else {
-                return false;
-            };
-            let _ = std::fs::create_dir_all(&dir);
-            dir
-        }
+        Err(_) => return false,
     };
     if readings_file::absorb_main_readings(&ledger, ws).is_err() {
         return false;

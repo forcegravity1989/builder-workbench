@@ -127,10 +127,10 @@ pub fn absorb_main_readings(ledger: &Path, main: &Path) -> Result<bool> {
     Ok(true)
 }
 
-/// 账本目录(兄弟 worktree)如果已经在盘上就返回,否则 `None`。
+/// 正规账本 worktree 如果已经在盘上就返回,同路径普通目录不冒充账本。
 pub fn ledger_dir_if_present(main: &Path) -> Option<PathBuf> {
     let dir = bw_engine::workspace::ledger_worktree_path(main)?;
-    dir.is_dir().then_some(dir)
+    dir.join(".git").exists().then_some(dir)
 }
 
 fn read_merged(main: &Path) -> Vec<MetricReading> {
@@ -255,5 +255,14 @@ mod tests {
         assert_eq!(raw.lines().filter(|l| !l.trim().is_empty()).count(), 1);
         assert!(raw.contains("\"value\":\"9\""));
         let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn plain_directory_at_ledger_path_is_not_read_as_a_worktree() {
+        let main = std::env::temp_dir().join(format!("bw-plain-ledger-{}", uuid::Uuid::new_v4()));
+        let ledger = bw_engine::workspace::ledger_worktree_path(&main).unwrap();
+        std::fs::create_dir_all(&ledger).unwrap();
+        assert_eq!(ledger_dir_if_present(&main), None);
+        std::fs::remove_dir_all(&main).unwrap();
     }
 }
