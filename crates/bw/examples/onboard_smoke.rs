@@ -94,10 +94,15 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         "档 1 · 是否直接使用自选目录",
         &format!(
             "{}",
-            app.project_by_slug("no-remote")
-                .await?
-                .map(|p| p.workspace_path == external.display().to_string())
-                .unwrap_or(false)
+            app.project_by_slug("no-remote").await?.is_some_and(|p| {
+                match (
+                    dunce::canonicalize(&p.workspace_path),
+                    dunce::canonicalize(&external),
+                ) {
+                    (Ok(actual), Ok(expected)) => actual == expected,
+                    _ => false,
+                }
+            })
         ),
     );
 
@@ -288,10 +293,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // `AGENTS.md` / `CLAUDE.md` 是这个项目自己的文件 —— 要不要写开发手册是
     // 项目自己的事,接项目和一个字都不写仓根。
     // 接项目的时候 Workbench 才刚 clone 完,既没读过这个仓,也没人问过人家愿不愿意。
-    for (label, ws) in [
-        ("成熟仓", mature.clone()),
-        ("空仓", workspaces.join("no-remote")),
-    ] {
+    for (label, ws) in [("成熟仓", mature.clone()), ("本地仓", external.clone())] {
         // 分支上写了什么最能说明问题 —— 主检出可能本来就有人写的那几份。
         // 活的 worktree 落在仓根下 `.bw/worktrees/issue-1`(新路径);旧平级兄弟
         // 不再建。这里照底座的路径函数找那棵树,找不到就回退看主检出。

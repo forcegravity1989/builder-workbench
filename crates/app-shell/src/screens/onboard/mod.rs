@@ -695,7 +695,11 @@ mod tests {
 
     #[test]
     fn clone_target_appends_repo_name_to_configured_parent() {
-        let got = clone_target(r"E:\code", "forcegravity1989/builder-workbench.git");
-        assert_eq!(got, r"E:\code\builder-workbench");
+        let parent = std::env::temp_dir();
+        let got = clone_target(
+            &parent.display().to_string(),
+            "forcegravity1989/builder-workbench.git",
+        );
+        assert_eq!(got, parent.join("builder-workbench").display().to_string());
     }
 }

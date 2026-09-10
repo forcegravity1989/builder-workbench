@@ -520,6 +520,8 @@ mod tests {
             Some("green")
         );
         assert_eq!(codehub_alias_for_host("gitlab.example.com"), None);
+        assert_eq!(codehub_alias_for_host("rnd-gitlab-ca-g.huawei.com"), None);
+        assert_eq!(codehub_alias_for_host("anything-config.huawei.com"), None);
     }
 
     #[test]

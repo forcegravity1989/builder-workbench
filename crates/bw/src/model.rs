@@ -406,7 +406,7 @@ pub fn codehub_alias_for_host(host: &str) -> Option<&'static str> {
         }
         let matched = domain
             .strip_prefix("codehub-")
-            .is_some_and(|tail| host.ends_with(tail));
+            .is_some_and(|tail| host.ends_with(tail) && host.contains("codehub"));
         matched.then_some(*alias)
     })
 }
