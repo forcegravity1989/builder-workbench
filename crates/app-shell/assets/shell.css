@@ -188,6 +188,8 @@ select.input-sm { padding-right: 22px; background-position: right 6px center; ba
 .ob-step-line { flex: none; width: 28px; height: 1px; background: var(--color-neutral-300); }
 .ob-note { font-size: 11.5px; line-height: 1.8; color: color-mix(in srgb, var(--color-text) 55%, transparent); }
 .ob-actions { display: flex; justify-content: flex-end; gap: var(--space-2); }
+.ob-path-row .input { flex: 1; min-width: 0; }
+.ob-path-row .btn { flex: none; white-space: nowrap; }
 .probe3 { display: flex; gap: var(--space-4); align-items: center; flex-wrap: wrap; padding-top: var(--space-3); border-top: 1px solid var(--color-divider); font-size: 11.5px; color: color-mix(in srgb, var(--color-text) 55%, transparent); }
 .repolist { display: flex; flex-direction: column; gap: var(--space-1); max-height: 180px; overflow-y: auto; }
 .repo-row { display: flex; align-items: center; justify-content: space-between; padding: var(--space-2) 10px; border: 1px solid var(--color-divider); border-radius: var(--radius-sm); font-size: 12.5px; cursor: pointer; }

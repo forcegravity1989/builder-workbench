@@ -207,7 +207,7 @@ pub fn View(vm: Vm, bridge: Bridge, close: EventHandler<MouseEvent>) -> Element 
                         if *local_repo.read() {
                             div { class: "field",
                                 label { "本地 Git 仓" }
-                                div { class: "row",
+                                div { class: "row ob-path-row",
                                     input {
                                         class: "input mono", value: "{workspace}",
                                         placeholder: "/Users/you/projects/workbench",
@@ -254,7 +254,7 @@ pub fn View(vm: Vm, bridge: Bridge, close: EventHandler<MouseEvent>) -> Element 
                             }
                             div { class: "field",
                                 label { "克隆到(留空用工作区根目录)" }
-                                div { class: "row",
+                                div { class: "row ob-path-row",
                                     input {
                                         class: "input mono", value: "{workspace}",
                                         placeholder: "留空即 {root}/<仓名>",
