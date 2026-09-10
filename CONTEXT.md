@@ -31,11 +31,11 @@ Workbench 连出去用的**外部东西**的统称——不在 Workbench 里,装
 _Avoid_: 拿它指 V3 的 `.bw/connectors.toml`(V3 已删,那是另一回事,见 `v3` 分支);和「开工工具」画等号——开工工具只是 connector 里负责跑活的那一类;把「填了配置」当成「连上了」。
 
 **插件**:
-一次 vendor 进仓的一整包外部技能库,是 skill 与 workflow 的**来源**。今天两个:`mattpocock-skills`(41 件,MIT,构建 / 优化 / 运维默认 workflow 的出处)、`mohit-pm-claude-skills`(部分 vendor 两件指标技能,**目前没有任何 workflow 引用它**)。原样副本、不是 fork,技能正文一字未改;是某一刻的快照,不自动跟上游。
+界面标签用 **Plugins**(设置屏「能力」一节)。一次 vendor 进仓的一整包外部技能库,是 skill 与 workflow 的**来源**。今天两个:`mattpocock-skills`(41 件,MIT,构建 / 优化 / 运维默认 workflow 的出处)、`mohit-pm-claude-skills`(部分 vendor 两件指标技能,**目前没有任何 workflow 引用它**)。原样副本、不是 fork,技能正文一字未改;是某一刻的快照,不自动跟上游。
 _Avoid_: 和 workflow 画等号——今天 `mattpocock-skills` 既是插件名又是 workflow 名,那是**巧合不是同义**(一个插件可以出多条 workflow,一条 workflow 也可以不来自任何插件);把它理解成用户可以在界面里「安装」的东西(vendor 进仓,不装)。
 
 **资产**:
-Workbench 摊到本机资产目录、开工时按类别指给 agent 读的**规范文件**(`standard/system-prompt/references/*.md`:指标铁律、改仓规则、`.bw` 现行契约、评论格式)。界面上是设置屏「能力」一节的一项,只读——改要改仓里的正本。
+界面标签用 **AI Assets**(设置屏「能力」一节)——特意不叫「资产」,免得和知识库屏那个中文「资产」页签撞名。Workbench 摊到本机资产目录、开工时按类别指给 agent 读的**规范文件**(`standard/system-prompt/references/*.md`:指标铁律、改仓规则、`.bw` 现行契约、评论格式),只读,改要改仓里的正本。
 _Avoid_: 和知识库屏的「资产」页签混为一谈——那一页盘的是**项目自己的**资产(技能、产物、发版、仓统计),这里是 **Workbench 给 agent 的**规范;把技能也算进这一节(技能在 Skills 那一节)。
 
 **开工工具 / Agent CLI**:

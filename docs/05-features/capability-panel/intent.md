@@ -33,7 +33,7 @@
 ```
 搜索设置
   本机 ── 目录 / 外观
-  能力 ── Connector 7 / Skills 7 / Workflow 5 / 插件 2 / 资产 5
+  能力 ── Connector 7 / Skills 7 / Workflow 5 / Plugins 2 / AI Assets 5
 ```
 
 **列表点进去是整页详情,左上角「← 工具」返回**——不是弹窗、不是抽屉。这是抄得最实的一刀:BW 的工具和技能都有话要说,一行副文说不完。

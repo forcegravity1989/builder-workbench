@@ -11,9 +11,9 @@
 | 节 | 条目 | 今天在哪 |
 |---|---|---|
 | **本机** | 目录 / 外观 | 设置屏两节,原样拆开(Orca 挪进 Connector) |
-| **能力** | Connector 7 / Skills 7 / Workflow 5 / 插件 2 / 资产 5 | 设置屏「工具探活」与「Orca」+ 配置屏 §①②(搬过来)+ 三节界面上不存在(Workflow / 插件 / 资产) |
+| **能力** | Connector 7 / Skills 7 / Workflow 5 / Plugins 2 / AI Assets 5 | 设置屏「工具探活」与「Orca」+ 配置屏 §①②(搬过来)+ 三节界面上不存在(Workflow / Plugins / AI Assets) |
 
-**用词**(均已进 [`CONTEXT.md`](../../../CONTEXT.md)):**Connector** 是外部东西的上位词;**Skills** 是技能的界面标签;**Workflow** 是挂在阶段上的那条 SOP;**插件**是 vendor 进仓的整包技能库,即 skill 与 workflow 的来源;**资产**是开工注入的规范文件(和知识库屏那个「资产」页签不是一回事,词表已消歧)。
+**用词**(均已进 [`CONTEXT.md`](../../../CONTEXT.md),界面标签一律英文):**Connector** 是外部东西的上位词;**Skills** 是技能;**Workflow** 是挂在阶段上的那条 SOP;**Plugins**(词表词条「插件」)是 vendor 进仓的整包技能库,即 skill 与 workflow 的来源;**AI Assets**(词表词条「资产」)是开工注入的规范文件——特意不叫「资产」,免得和知识库屏那个中文「资产」页签撞名。
 
 **文字口径**(硬约束):
 
