@@ -428,7 +428,7 @@
                 <div class="cards" data-list="skills">
                   <div class="card skill-card" data-origin="builtin" data-uses="12" data-name="week-planning" data-edited="2026-09-04" data-detail="sk-week" tabindex="0" role="button">
                     <div class="card-title">更新指标与版本计划 <span class="path">week-planning</span></div>
-                    <p class="card-body">运作活①开工时用。别处不用。</p>
+                    <p class="card-body">「更新指标与版本计划」这张活开工时用。别处不用。</p>
                     <div class="card-meta"><span class="tag tag-neutral">自带</span><span class="uses">12 次 · 改于 09-04</span></div>
                   </div>
                   <div class="card skill-card" data-origin="builtin" data-uses="9" data-name="mattpocock-skills" data-edited="" data-detail="sk-matt" tabindex="0" role="button">
@@ -438,7 +438,7 @@
                   </div>
                   <div class="card skill-card" data-origin="builtin" data-uses="4" data-name="asset-audit" data-edited="2026-09-04" data-detail="sk-audit" tabindex="0" role="button">
                     <div class="card-title">资产盘点 <span class="path">asset-audit</span></div>
-                    <p class="card-body">运作活②开工时用。别处不用。</p>
+                    <p class="card-body">「资产盘点」这张活开工时用。别处不用。</p>
                     <div class="card-meta"><span class="tag tag-neutral">自带</span><span class="uses">4 次 · 改于 09-04</span></div>
                   </div>
                   <div class="card skill-card" data-origin="own" data-uses="0" data-name="workbench-start" data-edited="2026-09-08" data-detail="sk-start" tabindex="0" role="button">
@@ -453,7 +453,7 @@
                   </div>
                   <div class="card skill-card" data-origin="builtin" data-uses="0" data-name="metrics-refresh" data-edited="2026-09-04" data-detail="sk-metrics" tabindex="0" role="button">
                     <div class="card-title">metrics-refresh</div>
-                    <p class="card-body">运作活①走到「更新指标」时被点名。</p>
+                    <p class="card-body">「更新指标与版本计划」走到更新指标那步时被点名。</p>
                     <div class="card-meta"><span class="tag tag-neutral">自带</span><span class="uses">0 次 · 改于 09-04</span></div>
                   </div>
                   <div class="card skill-card" data-origin="builtin" data-uses="0" data-name="project-handbook" data-edited="2026-09-03" data-detail="sk-handbook" tabindex="0" role="button">
@@ -499,20 +499,20 @@
                       </div>
                       <div class="files-text" id="f1-render">
                         <h4>更新指标与版本计划</h4>
-                        <p>Use when 运作活①开工(标题以「更新指标 + 制定版本计划」开头,或 workflow=更新指标与版本计划)。别处不用。</p>
+                        <p>Use when 这张活挂的 workflow 是「更新指标与版本计划」(或标题以「更新指标 + 制定版本计划」开头)。别处不用。</p>
                         <p>1. 先读 <span class="path">.bw/metrics.toml</span>,按 references/metrics.md 的格式核对……</p>
                       </div>
                       <div class="files-text" id="f1-src" hidden><pre>---
 name: week-planning
-description: Use when 运作活①开工……别处不用。
+description: Use when workflow=更新指标与版本计划……别处不用。
 ---
 
 # 更新指标与版本计划
 
 1. 先读 `.bw/metrics.toml`,按 references/metrics.md 的格式核对……</pre></div>
-                      <div class="files-text" id="f2-render" hidden><p>sidecar:跟剧本同住、一起摊到资产目录,技能指针不认它。查运作活①评论的三标题。</p></div>
+                      <div class="files-text" id="f2-render" hidden><p>sidecar:跟剧本同住、一起摊到资产目录,技能指针不认它。查「更新指标与版本计划」那张活的评论有没有三个标题。</p></div>
                       <div class="files-text" id="f2-src" hidden><pre>#!/usr/bin/env python3
-"""运作活①评论格式校验:只查周初三标题在不在。"""
+"""评论格式校验:只查周初三个标题在不在。"""
 ...</pre></div>
                     </div>
                   </div>
@@ -541,7 +541,7 @@ description: Use when 运作活①开工……别处不用。
                   <div><div class="dt-name">资产盘点</div><div class="dt-from">Workbench 自带 · 编在二进制里 · 4 次</div></div>
                   <div class="dt-act"><button class="btn btn-secondary">复制路径</button></div>
                 </div>
-                <dl class="kv"><dt>注入时机</dt><dd>运作活②开工 · Orca 周五 15:00 或计划屏 Start</dd><dt>三步</dt><dd>对 .bw 契约 → 审本周仓改动 → 收口进展</dd></dl>
+                <dl class="kv"><dt>注入时机</dt><dd>「资产盘点」开工 · Orca 周五 15:00 或计划屏 Start</dd><dt>三步</dt><dd>对 .bw 契约 → 审本周仓改动 → 收口进展</dd></dl>
               </div>
 
               <div data-page="sk-start" hidden>
@@ -790,11 +790,11 @@ description: Use when 运作活①开工……别处不用。
                   <h2>AI Assets</h2>
                   <input class="input search" type="search" placeholder="Search AI assets" data-search="assets" aria-label="Search AI assets" />
                 </div>
-                <div class="bar"><i class="c-done" style="width:50%"></i><i class="c-blocked" style="width:50%"></i></div>
+                <div class="bar"><i class="c-done" style="width:33.3%"></i><i class="c-idle" style="width:50%"></i><i class="c-unset" style="width:16.7%"></i></div>
                 <div class="bar-key">
-                  <span><i class="dot c-done"></i>拿到规范的活 <b>5</b></span>
-                  <span><i class="dot c-blocked"></i>一份都拿不到 <b>5</b></span>
-                  <span>开着的活共 <b>10</b></span>
+                  <span><i class="dot c-done"></i>有活在用 <b>2</b></span>
+                  <span><i class="dot c-idle"></i>没活在用 <b>3</b></span>
+                  <span><i class="dot c-unset"></i>未派发 <b>1</b></span>
                 </div>
                 <div class="filterbar">
                   <div class="seg" data-filter="assets">
@@ -822,19 +822,19 @@ description: Use when 运作活①开工……别处不用。
                       <tr data-state="dead">
                         <td><span class="status-dot c-idle" title="没活在用"></span></td>
                         <td class="t-name">metrics</td>
-                        <td class="t-sub">0 —— 没有运作活①开着</td>
+                        <td class="t-sub">0 —— 没有「更新指标与版本计划」的活开着</td>
                         <td class="t-sub">Workbench</td>
                       </tr>
                       <tr data-state="dead">
                         <td><span class="status-dot c-idle" title="没活在用"></span></td>
                         <td class="t-name">week-plan-comment</td>
-                        <td class="t-sub">0 —— 没有运作活①②开着</td>
+                        <td class="t-sub">0 —— 没有「更新指标与版本计划」「资产盘点」的活开着</td>
                         <td class="t-sub">Workbench</td>
                       </tr>
                       <tr data-state="dead">
                         <td><span class="status-dot c-idle" title="没活在用"></span></td>
                         <td class="t-name">bw-assets</td>
-                        <td class="t-sub">0 —— 没有运作活②开着</td>
+                        <td class="t-sub">0 —— 没有「资产盘点」的活开着</td>
                         <td class="t-sub">Workbench</td>
                       </tr>
                       <tr data-state="dead">
@@ -843,19 +843,6 @@ description: Use when 运作活①开工……别处不用。
                         <td class="t-sub">未编进二进制</td>
                         <td class="t-sub">Workbench</td>
                       </tr>
-                    </tbody>
-                  </table>
-                </div>
-                <div class="sublabel">拿不到规范的那 5 张</div>
-                <div class="tbl-wrap">
-                  <table class="table">
-                    <thead><tr><th style="width:14%">活</th><th style="width:52%">标题</th><th style="width:34%">为什么拿不到</th></tr></thead>
-                    <tbody>
-                      <tr><td class="t-name">#159</td><td class="t-sub">立项:会议管理工作台(代号「初音」)</td><td class="t-sub">原型类不加载 reference</td></tr>
-                      <tr><td class="t-name">#158</td><td class="t-sub">按执行四原则重做总览与计划两屏</td><td class="t-sub">原型类不加载 reference</td></tr>
-                      <tr><td class="t-name">#152</td><td class="t-sub">接入已有 GitHub 仓时漏列有权限仓库</td><td class="t-sub">没打类别标签</td></tr>
-                      <tr><td class="t-name">#143</td><td class="t-sub">增加特性,项目引导</td><td class="t-sub">没打类别标签</td></tr>
-                      <tr><td class="t-name">#142</td><td class="t-sub">整理项目文档</td><td class="t-sub">没打类别标签</td></tr>
                     </tbody>
                   </table>
                 </div>
