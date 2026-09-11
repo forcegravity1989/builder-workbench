@@ -4,7 +4,7 @@
 //! **本机**:目录、外观。**没有登录**——远端凭证在系统钥匙串、群登录态由用户
 //! 自己在本机登好,Workbench 只探活。
 //!
-//! **能力**:Connector(装没装上,含 Orca)、Skills(全局一张表)、Stage(阶段
+//! **能力**:Connector(装没装上,含 Orca)、Skills(全局一张表)、Category(工作类别
 //! 用什么执行器 / 按什么 workflow / 会注入哪几份规范)、Plugins(vendor 进仓
 //! 的两个业界技能库)、AI Assets(开工会给 agent 的规范)。这几张表本来长在
 //! 项目内的配置屏 + 设置屏「工具探活」里,`Settings.tools` 没有项目维度、
@@ -57,7 +57,7 @@ pub fn View(vm: Vm, bridge: Bridge, close: EventHandler<MouseEvent>) -> Element 
             Some(s.connectors.len()),
         ),
         (Page::Skills, "能力", "Skills", Some(s.skills.len())),
-        (Page::Stage, "能力", "Stage", Some(s.stage.len())),
+        (Page::Stage, "能力", "Category", Some(s.stage.len())),
         (Page::Plugins, "能力", "Plugins", Some(s.plugins.len())),
         (Page::Assets, "能力", "AI Assets", Some(s.assets.len())),
     ];

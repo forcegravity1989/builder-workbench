@@ -1,4 +1,4 @@
-//! Stage 表:五个方法论阶段各挂哪个执行器 / 哪条 workflow / 会注入哪几份
+//! Category 表:五个工作类别各挂哪个执行器 / 哪条 workflow / 会注入哪几份
 //! AI Assets。执行器映射原来埋在 Connector 页底下、workflow 映射自成一节,
 //! 同样五行同样形状 —— 合成一张表。见 spec.md §4。
 
@@ -21,13 +21,13 @@ pub fn StagePage(rows: Vec<StageRowVm>, bridge: Bridge) -> Element {
     }
 
     rsx! {
-        div { class: "pane-head", h2 { "Stage" } }
+        div { class: "pane-head", h2 { "Category" } }
         div { class: "tbl-wrap",
             table { class: "table", "data-list": "stage",
                 thead {
                     tr {
                         th { style: "width:6%" }
-                        th { style: "width:18%", "阶段" }
+                        th { style: "width:18%", "工作类别" }
                         th { style: "width:26%", "执行器" }
                         th { style: "width:46%", "Workflow" }
                         th { style: "width:4%" }
@@ -51,7 +51,7 @@ pub fn StagePage(rows: Vec<StageRowVm>, bridge: Bridge) -> Element {
     }
 }
 
-/// 一行阶段映射。**必须是组件**:它有自己的 `use_signal`,而它是在 `for`
+/// 一行类别映射。**必须是组件**:它有自己的 `use_signal`,而它是在 `for`
 /// 循环里渲染的 —— 做成普通函数,行与行的下拉状态会串位。
 #[component]
 fn StageRow(row: StageRowVm, bridge: Bridge, open_detail: EventHandler<MouseEvent>) -> Element {
@@ -119,7 +119,7 @@ fn detail(row: &StageRowVm, back: impl FnMut(MouseEvent) + 'static) -> Element {
             svg { view_box: "0 0 16 16", fill: "none", stroke: "currentColor", "stroke-width": "1.7",
                 path { d: "M10 3 5 8l5 5" }
             }
-            "Stage"
+            "Category"
         }
         div { class: "dt-head",
             div { class: "dt-icon", "◧" }

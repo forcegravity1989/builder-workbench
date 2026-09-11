@@ -487,7 +487,7 @@ pub fn spawn(deep_link: DeepLink) -> Bridge {
                     bw_engine::dlog!(
                         ok,
                         "bridge",
-                        "[BW_VM] project={} 活={} 会话={} 周={} 技能(全局)={}",
+                        "[BW_VM] project={} Issue={} 会话={} 周={} 技能(全局)={}",
                         o.slug,
                         o.board.columns.iter().map(|c| c.cards.len()).sum::<usize>(),
                         o.sessions.len(),
@@ -498,7 +498,7 @@ pub fn spawn(deep_link: DeepLink) -> Bridge {
                     bw_engine::dlog!(
                         ok,
                         "bridge",
-                        "[BW_VM] 本周{} 待办={} 进行中={} 评审中={} 完成={} 阻塞={}",
+                        "[BW_VM] 本周{} 待办={} 进行中={} 待评审={} 完成={} 阻塞={}",
                         o.current_week,
                         c.todo,
                         c.doing,
@@ -509,7 +509,7 @@ pub fn spawn(deep_link: DeepLink) -> Bridge {
                     bw_engine::dlog!(
                         ok,
                         "bridge",
-                        "[BW_VM] 阶段(全局)={} 定时={} 群={} 指标={} 未读={}",
+                        "[BW_VM] 工作类别(全局)={} 定时={} 群={} 指标={} 未读={}",
                         vm.settings.stage.len(),
                         o.config.crons.len(),
                         o.config.chat_provider,

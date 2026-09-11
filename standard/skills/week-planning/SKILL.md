@@ -1,33 +1,33 @@
 ---
 name: week-planning
-description: Use when 运作活①开工(标题以「更新指标 + 制定版本计划」开头,或 workflow=更新指标与版本计划)。别处不用。
+description: Use when 更新指标与版本计划 Issue 开工(标题以「更新指标 + 制定版本计划」开头,或 workflow=更新指标与版本计划)。别处不用。
 ---
 
 # week-planning：更新指标 + 制定版本计划
 
 ## 1. 核心目标
 
-带人走完一场:复盘 → 更新指标 → 确认版本与纳入 → 人点头后落盘。产出是 `.bw/metrics.toml`(若有改)、采集脚本、这张活的一条评论、纳入标签。不替人定口径、版本目标和纳入清单。
+带人走完一场:复盘 → 更新指标 → 确认版本与纳入 → 人点头后落盘。产出是 `.bw/metrics.toml`(若有改)、采集脚本、这个 Issue 的一条评论、纳入标签。不替人定口径、版本目标和纳入清单。
 
 ## 2. When to Use / When NOT to Use
 
 - 用:Orca 自动化「定版本计划」到点,或人在计划屏 Start / Orca 里点 Run now。工作目录是常驻树 `bw/week-plan`。
-- 不用:业务活、资产盘点、项目约定。本篇不是指标格式说明书。
+- 不用:业务 Issue、资产盘点、项目约定。本篇不是指标格式说明书。
 
-不要另建第二张运作活①。这张已经开着就接着做。本周版本已经定过 → 说明现状,等人说要不要重做,不自作主张推倒。
+不要另建第二个更新指标与版本计划 Issue。当前 Issue 已经开着就接着做。本周版本已经定过 → 说明现状,等人说要不要重做,不自作主张推倒。
 
 ## 3. 前置依赖检查
 
 - 仓根 `AGENTS.md`:没有就说没有,不编。
 - 名片 `.bw/project.toml`(`brief` / `benchmark` / `opportunity`):空着就问人,不当指标正本。
 - 文末版本块:没有就只问人要哪个版本名,不猜。名字怎么写听 `week-plan-comment.md`。
-- 子技能:刚读的本 `SKILL.md` 所在目录的同级 `../metrics-refresh/SKILL.md`(Workbench 资产目录,不是这张活的工作区)
+- 子技能:刚读的本 `SKILL.md` 所在目录的同级 `../metrics-refresh/SKILL.md`(Workbench 资产目录,不是这个 Issue 的工作区)
 - 挂评脚本:本文件所在目录的 `check-week-comment.py`(不是工作区根,也不是 reference 目录)
 
 ## 4. 标准执行流程
 
 **第 1 步 · 复盘(只读)**  
-走到复盘。读上一张运作活①评论(版本目标,以及周五收口的每周进展)和 codehub Release。没有就说「首次,无历史」。不要用 git log 编上周计划,也不要在这一步写每周进展。对人讲完再进第 2 步。
+走到复盘。读上一个更新指标与版本计划 Issue 的评论(版本目标,以及周五收口的每周进展)和 codehub Release。没有就说「首次,无历史」。不要用 git log 编上周计划,也不要在这一步写每周进展。对人讲完再进第 2 步。
 
 **第 2 步 · 更新指标**  
 走到指标。打开并执行本文件所在目录的同级 `../metrics-refresh/SKILL.md`(资产目录,不是工作区)。人没点头指标口径之前,不进第 3 步,不写仓。
@@ -44,7 +44,7 @@ description: Use when 运作活①开工(标题以「更新指标 + 制定版本
 走到落盘。
 
 - 仓文件:第 2 步改过的 `.bw/metrics.toml` 和 `.bw/scripts/`。只在本树(`bw/week-plan`)改。`git diff` 只许这些路径。
-- 写入前读回纳入活身上全部 `bw:plan:`，增加本版 plan、保留旧版 plan。评论、标签、标题、里程碑照已注入的 `week-plan-comment.md` 和 `issue-state.md`。脚本用本文件同级的 `check-week-comment.py`,非零不贴。
+- 写入前读回纳入 Issue 上全部 `bw:plan:`，增加本版 plan、保留旧版 plan。评论、标签、标题、里程碑照已注入的 `week-plan-comment.md` 和 `issue-state.md`。脚本用本文件同级的 `check-week-comment.py`,非零不贴。
 - 提交 + 开 MR,地址打屏。没仓文件改动就不要空提交。
 
 ## 5. 参考资源
@@ -58,7 +58,7 @@ description: Use when 运作活①开工(标题以「更新指标 + 制定版本
 
 | 现象 | 处理 |
 |---|---|
-| 没有上一张运作活① | 第 1 步如实说首次,继续 |
+| 没有上一个更新指标与版本计划 Issue | 第 1 步如实说首次,继续 |
 | 指标文件旧格式 / 解析失败 | 按 metrics-refresh 第 4 节分叉,不猜字段 |
 | `check-week-comment.py` 非零 | 按 stderr 改评论,过了再贴 |
 | 找不到校验脚本或 metrics-refresh | 都在本 SKILL.md 所在资产目录,不要在工作区根找 |
@@ -75,4 +75,4 @@ Orca 周一 09:00 开这场。文末推荐 `v0.3`。第 1 步无历史。第 2 �
 |---|---|
 | 必须 | 每步报走到哪;一次问一件;已有清单含上版遗留;人确认才落 |
 | 禁止 | 代写版本目标;人先说主题就按主题新拆;跳过已有 issue 清单;新写 `bw:week` |
-| 你不做的事 | 定北极星该量什么;合入 MR;把这张活标成完成 |
+| 你不做的事 | 定北极星该量什么;合入 MR;把这个 Issue 标成完成 |

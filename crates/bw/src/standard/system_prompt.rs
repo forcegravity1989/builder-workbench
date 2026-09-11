@@ -34,7 +34,11 @@ pub fn references() -> Vec<ReferencePack> {
             "版本计划评论格式、标签、里程碑与每周进展",
             REF_WEEK_PLAN_COMMENT,
         ),
-        ("build", "活的树在哪;评论和标签不是改仓", REF_BUILD),
+        (
+            "build",
+            "Issue 工作区的位置；评论、标签与仓文件的写入边界",
+            REF_BUILD,
+        ),
         (
             "bw-assets",
             "资产盘点使用的 .bw 文件规范、格式及与版本计划的分工",

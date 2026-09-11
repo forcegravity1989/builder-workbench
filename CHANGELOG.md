@@ -6,7 +6,7 @@
 
 ## 最近 · 2026-09-11
 
-整合同事已合入的配置与设置重构：保留全局能力面板、项目配置的远端/项目群/定时任务、知识库跳转设置及新增引用判据与可注入状态；词表补入 Connector、Plugins、AI Assets 的边界。修正外部评审指出的“待办池”“评审中”遗漏。设置页 Stage 与工作类别的名称冲突等待用户裁决，尚未改动该页名称。
+整合同事已合入的配置与设置重构：保留全局能力面板、项目配置的远端/项目群/定时任务、知识库跳转设置及新增引用判据与可注入状态；词表补入 Connector、Plugins、AI Assets 的边界。修正外部评审指出的“待办池”“评审中”遗漏。经用户与同事确认，设置页 Stage 改为 Category，中文称工作类别；保留五行、布局、映射和工程类型。Skills 保留原 description 展示与 Use when 格式，仅修改自有技能中的旧称，规范文件只同步一条示例；不改 name、章节、SOP 顺序或 vendor 正文。技能引用计数的显示口径等待用户决定。
 
 **特性原型网页不再进仓**:可点原型发成 artifact 或推一条独立分支,`docs/05-features/<id>/spec.md` 与 `STATUS.md` 里只留链接,`prototype.html` 不再是交付件。规矩写进 [`docs/01-principles/01`](docs/01-principles/01-document-organization.md) 的制品链与规格 gate 条、[`02` §3.2](docs/01-principles/02-working-backwards.md),`AGENTS.md` 的「特性起手路径」与「commit 约定」各加一句,`.gitignore` 拦住新写的那一份。同批删掉 `docs/05-features/capability-panel/prototype.html`,该特性的三份文档改指 artifact(比对过:artifact 上的标记与仓内那份逐行一致,另多四张设计理由卡,删仓内这份不丢东西)。
 

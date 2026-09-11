@@ -1,6 +1,6 @@
 ---
 name: metrics-refresh
-description: Use when 运作活①走到「更新指标」、被 week-planning 第 2 步点名。别处不用。
+description: Use when 更新指标与版本计划 Issue 走到「更新指标」、被 week-planning 第 2 步点名。别处不用。
 ---
 
 # metrics-refresh：更新指标

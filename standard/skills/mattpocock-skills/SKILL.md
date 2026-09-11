@@ -1,6 +1,6 @@
 ---
 name: mattpocock-skills
-description: Use when 构建/优化/运维活开工且 workflow=mattpocock-skills。
+description: Use when 构建/优化/运维类 Issue 开工且 workflow=mattpocock-skills。
 ---
 
 # mattpocock-skills：build 默认 workflow 入口
@@ -11,8 +11,8 @@ description: Use when 构建/优化/运维活开工且 workflow=mattpocock-skill
 
 ## 2. When to Use / When NOT to Use
 
-- 用:活上挂了 `mattpocock-skills`(产品给构建/优化/运维的默认)。
-- 不用:运作活、原型、运营推广、空 workflow。
+- 用:Issue 上挂了 `mattpocock-skills`(产品给构建/优化/运维的默认)。
+- 不用:周期工作、原型、运营推广、空 workflow。
 
 `/xxx` 在这里 = 读本入口写明的那份文件,不是去技能库猜名字。
 
@@ -51,7 +51,7 @@ description: Use when 构建/优化/运维活开工且 workflow=mattpocock-skill
 
 ## 7. 示例
 
-构建活挂 `mattpocock-skills`。先读 grill-with-docs 把目标和 ADR 问清,再 implement,最后 code-review,开 MR。
+构建类 Issue 挂 `mattpocock-skills`。先读 grill-with-docs 把目标和 ADR 问清,再 implement,最后 code-review,开 MR。
 
 ## 8. 纪律表
 
