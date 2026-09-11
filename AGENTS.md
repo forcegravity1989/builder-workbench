@@ -18,7 +18,7 @@
 
 | 场景 | 怎么走 |
 |---|---|
-| **特性级变更** | 对齐 03 → 按 **02** 开 / 改 `docs/05-features/<id>/intent.md` + 带原型的 `spec.md`（人 gate）；`plan.md` 仅大风险升 gate；小修直修（见 01） |
+| **特性级变更** | 对齐 03 → 按 **02** 开 / 改 `docs/05-features/<id>/intent.md` + 带原型的 `spec.md`（人 gate；**原型只留链接，文件不进仓**）；`plan.md` 仅大风险升 gate；小修直修（见 01） |
 | **Superpowers / grill-me** | **可用**：发散、质询、写计划草稿。产出必须落回 `docs/05-features/<id>/`。不得把聊天或旁路 specs 当成已过 gate 的正本 |
 | **小 bug / 琐修** | 直接改 + 门禁 / 验证；不开 `docs/05-features/` |
 
@@ -139,6 +139,8 @@ scripts/   门禁脚本(guard-*)+ codegraph 联调
 每件独立 commit、在分支上、**不 push**(用户要 push 时另开 bundle)。标题让人不查文档也看懂做了什么(可带代号前缀,但须人话描述)。信息如实描述取舍,不吹;偏差如实记进 commit message 与 `CHANGELOG.md`。
 
 开 PR 另发一条 **review 当验证报告** —— 界面 / 行为改动一律要,别人不用自己起壳就能验收。写五样:验的什么 / 怎么验的(命令 + 深链)/ 每条判据**直接内嵌**一张真壳截图 / 门禁结果 / **没验的留白如实列**;别让人点链接跳出去。图推一条永不合入的 `shots/<分支名>` 分支,内嵌写 `![](https://github.com/<owner>/<repo>/raw/<commit SHA>/x.jpg)` —— 这条同源地址不会被 GitHub 图片代理改写,私有仓照样显示;**别写 `raw.githubusercontent`**(代理取不到私有仓,只会裂图),**也别用分支名**(带斜杠会有歧义,钉 SHA 还不会漂)。大改动的改前 / 改后对照仍照旧进 `docs/05-features/<id>/shots/`。
+
+**原型网页同样不进仓**:可点原型发成 artifact(点开就能用,私有仓不受影响)或推一条永不合入的分支,`spec.md` / `STATUS.md` 里只留链接。原型会随实现过期,仓里不养第二份「事实」——规矩正本在 [`docs/01-principles/02`](docs/01-principles/02-working-backwards.md) §3.2。
 
 ## CodeGraph 导航(可选用)
 

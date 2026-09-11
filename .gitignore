@@ -58,3 +58,7 @@ evidence-v4-*.json
 
 # 非本 workspace 的本地实验工程(desktop/web 脚手架),不进 Workbench MVP
 /apps/
+
+# 特性原型网页不进仓:可点原型发 artifact 或推一条独立分支,spec / STATUS 里只留链接
+# (规矩在 docs/01-principles/02 §3.2)。存量已 tracked 的那两份不受影响。
+docs/05-features/**/prototype.html

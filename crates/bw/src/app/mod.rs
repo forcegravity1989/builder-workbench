@@ -40,7 +40,8 @@ mod week_comment;
 mod worktree;
 
 pub use bootstrap::{
-    agent_system_prompt, references_for, skill_pointer, ReferencePointer, SkillPointer,
+    agent_system_prompt, ref_wanted_for, references_for, skill_pointer, ReferencePointer,
+    SkillPointer,
 };
 pub use health::{collect_health_inputs, read_metric_readings, MetricReading};
 pub use issue::{count_unseen, issues_in_week, workflow_usage};

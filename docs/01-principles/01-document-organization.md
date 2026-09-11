@@ -103,7 +103,7 @@ docs/01-principles/  ──约束──►  docs/05-features/<id>/intent.md | sp
 ```text
 docs/05-features/<change-id>/
   intent.md    # 要什么 / 为何 / 约束 / 开放问题（意图 gate）
-  spec.md      # 需求+设计；必须含可点原型与操作逻辑（规格 gate）
+  spec.md      # 需求+设计；必须含可点原型的链接与操作逻辑（规格 gate；原型文件不进仓）
   plan.md      # 改哪些文件、顺序、风险、如何证明——默认自动跑用；仅大风险升 gate
   STATUS.md    # draft | accepted | building | in_review | shipped | rejected
 ```
@@ -111,7 +111,7 @@ docs/05-features/<change-id>/
 **人 gate（必须过）：**
 
 1. **意图 gate** —— 批 `intent.md`（做不做、是否落在周目标/03 飞轮里）。  
-2. **规格 gate** —— 批 `spec.md`：**缺可点原型或操作逻辑 → 直接退回**，不许「先做着」。**非 UI 变更**（纯脚本/规范包）豁免「可点原型」：仍须有操作逻辑（脚本协议 / 输入输出契约 / 样例输出当原型替代），但不必是可点的界面原型。
+2. **规格 gate** —— 批 `spec.md`：**缺可点原型或操作逻辑 → 直接退回**，不许「先做着」。**非 UI 变更**（纯脚本/规范包）豁免「可点原型」：仍须有操作逻辑（脚本协议 / 输入输出契约 / 样例输出当原型替代），但不必是可点的界面原型。**原型文件不进仓**：`spec.md` 里写的是链接（artifact 或一条永不合入的分支），仓里不留 `prototype.html`——落点规矩见 [02 §3.2](02-working-backwards.md)。
 
 **默认不进 gate：**
 
@@ -198,5 +198,6 @@ docs/05-features/<change-id>/
 | 2026-09-01 | docs/ 加数字前缀：architecture→01-architecture、adr→02-adr、guide→03-guide、design-system→04-design-system、reference→10-reference；6.1 拆「入口件 + 惯例置根件」两类例外，resolve 表内矛盾与 §1 REVIEW.md 归属 |
 | 2026-09-01 | 根目录知识目录加编号：principles→01-principles、changes→05-features（特性级制品链）；§3 标题与关系线同步改 01-principles · 05-features |
 | 2026-09-01 | principles 与 features 迁入 `docs/`：`docs/01-principles/`、`docs/05-features/`；`docs/01-architecture.md` 去编号为 `docs/architecture.md`（docs 内设计正本，同根 README/CHANGELOG 之不编号例外）；6.1 入口件不再含 principles（principles 转为 docs 内编号知识目录），§1/§2/§3/§7 路径同步；仓根只剩 README/AGENTS/CLAUDE/CONTEXT + DESIGN/CHANGELOG |
+| 2026-09-11 | 原型文件不进仓：规格 gate 仍要可点原型，但 `spec.md` 只写链接（artifact 或独立分支），`docs/05-features/<id>/prototype.html` 不再是交付件 |
 | 2026-09-08 | 加 `docs/06-module/` 层:单个模块实现的心智模型(主要矛盾/取舍);architecture.md 收为整体旅程+逻辑模块、不进模块实现细节;三层边界 architecture / 06-module / 05-features 写进 AGENTS「人怎么驾驭」可见物表与本文 §1/§2 |
 | 2026-09-09 | §4.1 收紧口径:`docs/05-features/` 只装产生用户价值的新能力/新信息;命名收口/基建接线/重构重排不产生新价值的直修留痕(commit 说明 + 必要时改 architecture 实况段),不开 intent gate;02 §1 适用范围、§6 小特性豁免同步 |

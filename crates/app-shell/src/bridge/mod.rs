@@ -9,6 +9,7 @@ mod vm_build;
 mod vm_derive;
 mod vm_kb;
 mod vm_panels;
+mod vm_settings;
 
 pub use nav::{
     ChromeBusy, GuideNav, HelpNav, HelpTab, Panel, PanelNav, TopView, REPORTING, REPORTING_LOG,
@@ -588,12 +589,12 @@ pub fn spawn(deep_link: DeepLink) -> Bridge {
                     bw_engine::dlog!(
                         ok,
                         "bridge",
-                        "[BW_VM] project={} 活={} 会话={} 周={} 技能={}",
+                        "[BW_VM] project={} 活={} 会话={} 周={} 技能(全局)={}",
                         o.slug,
                         o.board.columns.iter().map(|c| c.cards.len()).sum::<usize>(),
                         o.sessions.len(),
                         o.weeks.len(),
-                        o.config.skills.len(),
+                        vm.settings.skills.len(),
                     );
                     // 总览「版本计划与进展」的五段。**只认在研版本**,与计划屏
                     // 左栏看的是哪一周无关 —— 这一行就是那条纪律的读回。
@@ -612,8 +613,8 @@ pub fn spawn(deep_link: DeepLink) -> Bridge {
                     bw_engine::dlog!(
                         ok,
                         "bridge",
-                        "[BW_VM] 映射={} 定时={} 群={} 指标={} 未读={}",
-                        o.config.mappings.len(),
+                        "[BW_VM] 阶段(全局)={} 定时={} 群={} 指标={} 未读={}",
+                        vm.settings.stage.len(),
                         o.config.crons.len(),
                         o.config.chat_provider,
                         o.metrics.lagging.len()
@@ -654,18 +655,15 @@ pub fn spawn(deep_link: DeepLink) -> Bridge {
                                 cg.rows.first().map(|r| r.size).unwrap_or(0),
                                 cg.error
                             );
-                            let issues = app.issues(pid).await.unwrap_or_default();
-                            let usage = bw::app::workflow_usage(&issues);
                             let releases = match app.project(pid).await {
                                 Ok(Some(p)) => vm_build::load_releases(&app, &p, &ws).await,
                                 _ => vec![],
                             };
-                            let a = vm_kb::build_assets(&usage, &ws, releases).await;
+                            let a = vm_kb::build_assets(&ws, releases).await;
                             bw_engine::dlog!(
                                 ok,
                                 "bridge",
-                                "[BW_KB] 资产:技能 {} · 蒸馏 {} · 产物 {} · 发版 {} · 仓统计 {:?}",
-                                a.skills.len(),
+                                "[BW_KB] 资产:蒸馏 {} · 产物 {} · 发版 {} · 仓统计 {:?}",
                                 a.distilled.len(),
                                 a.artifacts.len(),
                                 a.releases.len(),
@@ -1143,8 +1141,6 @@ pub fn spawn(deep_link: DeepLink) -> Bridge {
                                             });
                                         }
                                         let back = tx_back.clone();
-                                        let issues = app.issues(pid).await.unwrap_or_default();
-                                        let usage = bw::app::workflow_usage(&issues);
                                         let releases = match app.project(pid).await {
                                             Ok(Some(p)) => {
                                                 vm_build::load_releases(&app, &p, &ws).await
@@ -1158,12 +1154,7 @@ pub fn spawn(deep_link: DeepLink) -> Bridge {
                                                 } else {
                                                     (
                                                         None,
-                                                        Some(
-                                                            vm_kb::build_assets(
-                                                                &usage, &ws, releases,
-                                                            )
-                                                            .await,
-                                                        ),
+                                                        Some(vm_kb::build_assets(&ws, releases).await),
                                                     )
                                                 };
                                             let _ = back.send(Req::KbComputed {

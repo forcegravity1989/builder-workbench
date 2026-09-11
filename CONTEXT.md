@@ -26,8 +26,20 @@ _Avoid_: user、owner、开发者。
 
 > **MVP 不再有「队友」概念**——活上挂的是 workflow/技能(见 [系统提示词与渐进加载 模块](docs/architecture.md)),开工时按活记的工具起 agent(见 [远端与工具探活 模块](docs/architecture.md))。「干没干成」看远端 MR 合没合入,不记战绩。别处见到 teammate 一律按此消歧,不是指某个具名 AI 人格。
 
+**Connector**:
+Workbench 连出去用的**外部东西**的统称——不在 Workbench 里,装在你的机器上或跑在你的机器上,可能不在、可能没配。今天七件:开工执行器(claude / cursor-agent / Open Design)、远端臂(gh / codehub-cli)、群通知(welink-cli)、会话宿主(Orca)。它们共用一套判读:**能真连的才叫连上**(见「探活」),连不上就如实说,不假装可用。界面上是设置屏「能力」一节的第一项,和「技能」「规范」并列。
+_Avoid_: 拿它指 V3 的 `.bw/connectors.toml`(V3 已删,那是另一回事,见 `v3` 分支);和「开工工具」画等号——开工工具只是 connector 里负责跑活的那一类;把「填了配置」当成「连上了」。
+
+**插件**:
+界面标签用 **Plugins**(设置屏「能力」一节)。一次 vendor 进仓的一整包外部技能库,是 skill 与 workflow 的**来源**。今天两个:`mattpocock-skills`(41 件,MIT,构建 / 优化 / 运维默认 workflow 的出处)、`mohit-pm-claude-skills`(部分 vendor 两件指标技能,**目前没有任何 workflow 引用它**)。原样副本、不是 fork,技能正文一字未改;是某一刻的快照,不自动跟上游。
+_Avoid_: 和 workflow 画等号——今天 `mattpocock-skills` 既是插件名又是 workflow 名,那是**巧合不是同义**(一个插件可以出多条 workflow,一条 workflow 也可以不来自任何插件);把它理解成用户可以在界面里「安装」的东西(vendor 进仓,不装)。
+
+**资产**:
+界面标签用 **AI Assets**(设置屏「能力」一节)——特意不叫「资产」,免得和知识库屏那个中文「资产」页签撞名。Workbench 摊到本机资产目录、开工时按类别指给 agent 读的**规范文件**(`standard/system-prompt/references/*.md`:指标铁律、改仓规则、`.bw` 现行契约、评论格式),只读,改要改仓里的正本。
+_Avoid_: 和知识库屏的「资产」页签混为一谈——那一页盘的是**项目自己的**资产(技能、产物、发版、仓统计),这里是 **Workbench 给 agent 的**规范;把技能也算进这一节(技能在 Skills 那一节)。
+
 **开工工具 / Agent CLI**:
-一件活开工时真实调起的智能体 CLI 或内嵌工具(Claude Code / Cursor / Open Design 内嵌等)。跟人走这台机器,正本是本机 `settings.toml`,没有就用产品默认。探活分三种机制(候选路径 / 版本命令 / 套接字握手);选了 Cursor 但探活失败就拒绝开工,绝不悄悄退回 Claude Code。未接的工具如实回灰、不假装可用。
+一件活开工时真实调起的智能体 CLI 或内嵌工具(Claude Code / Cursor / Open Design 内嵌等)。**是 connector 里负责跑活的那一类**,不是 connector 的全部。跟人走这台机器,正本是本机 `settings.toml`,没有就用产品默认。探活分三种机制(候选路径 / 版本命令 / 套接字握手);选了 Cursor 但探活失败就拒绝开工,绝不悄悄退回 Claude Code。未接的工具如实回灰、不假装可用。
 _Avoid_: 和"模型"混为一谈(model 是模型标签,开工工具是执行引擎);开工走 Orca(Claude / Cursor)或会话屏内嵌页(Open Design),探不通就拒绝开工、不悄悄换工具;把它写进被管仓——那是人的习惯,不是仓的正本;按残留 `issue-policy` 回退。详见 [远端与工具探活 模块](docs/architecture.md)。
 
 **发言方 / Author**:
@@ -37,7 +49,7 @@ _Avoid_: 用 "Role" 单指这个(代码里对应类型为 `Author`,见 ADR)。
 ### 项目生命周期
 
 **阶段 / Stage**:
-项目的五个方法论阶段:**原型 → 构建 → 优化 → 运营推广 → 运维**,运维复盘回流到原型(**闭环回流**,所以是环不是流水线)。每阶段自带该问什么、什么节奏、DoD、常见坑。这是通用方法论,不随项目现编。
+界面标签用 **Stage**(设置屏「能力」一节:一张表,一行一个阶段,答这类活**用哪个执行器跑**、**按哪条 workflow 干**、**会注入哪几份 AI Assets**)。项目的五个方法论阶段:**原型 → 构建 → 优化 → 运营推广 → 运维**,运维复盘回流到原型(**闭环回流**,所以是环不是流水线)。每阶段自带该问什么、什么节奏、DoD、常见坑。这是通用方法论,不随项目现编。
 _Avoid_: 用裸词 "环 / Loop / operating loop" 指五阶段——五阶段的成环性叫"**闭环回流**"这个属性,不当名词用;"Agent Loop"专指产品命题的运作模式,别混;step/step-N/七步向导(已演进为五阶段)。
 
 **交棒 / Handoff**:
@@ -273,7 +285,7 @@ _Avoid_: 和群通知混(群通知发团队、个人提醒弹你);以为有应�
 _Avoid_: 总结、归档、沉淀(沉淀指整个复利过程,别专指这一步)。
 
 **技能 / Skill**:
-一篇可复用的做法说明,真实形态是一个**文件夹**(SKILL.md 正文 + 任意数量的支撑文件)。Workbench 自带的技能正本 `include_str!` 编进二进制,开工时摊到本地资产目录供 agent 按需读;下次干同类活时按活挂的 workflow 注入对应剧本。怎么写见 [`standard/skills/SKILL-MD-SPEC.md`](standard/skills/SKILL-MD-SPEC.md)。
+界面标签用 **Skills**(设置屏「能力」一节)。一篇可复用的做法说明,真实形态是一个**文件夹**(SKILL.md 正文 + 任意数量的支撑文件)。Workbench 自带的技能正本 `include_str!` 编进二进制,开工时摊到本地资产目录供 agent 按需读;下次干同类活时按活挂的 workflow 注入对应剧本。怎么写见 [`standard/skills/SKILL-MD-SPEC.md`](standard/skills/SKILL-MD-SPEC.md)。
 _Avoid_: 文档、知识;把整个技能叫 SOP;把技能等同于它的 SKILL.md 正文(支撑文件也是它的一部分)。详见 [系统提示词与渐进加载 模块](docs/architecture.md)。
 
 **SOP / 标准执行流程**:
@@ -295,7 +307,7 @@ _Avoid_: 积累、飞轮;专指这条链时用"复利"。
 _Avoid_: 全库按名匹配(谁先入库谁被注入,是修掉的旧病);隐式合并两层;解析落空时错记到共享行(如实跳过,绝不污账)。
 
 **探活 / Probe**:
-对一个外部工具或远端真连一次、看通不通;探不通就一个字节都不写、如实回灰。「能真连的才叫连接」这条判据的具体动作。三种机制:候选路径 / 版本命令 / 套接字握手。
+对一个 connector 真连一次、看通不通;探不通就一个字节都不写、如实回灰。「能真连的才叫连接」这条判据的具体动作。三种机制:候选路径 / 版本命令 / 套接字握手。**不是每个 connector 都探得到**:Orca 今天只存配对地址、没有探活,gh 只看文件在不在、登录态没探——如实标出来,不拿「配了」冒充「通了」。
 _Avoid_: 把配置填好了当成连接通了;健康检查(探活是一次性动作,不是持续监控)。详见 [远端与工具探活 模块](docs/architecture.md)。
 
 **产物 / Artifact**:

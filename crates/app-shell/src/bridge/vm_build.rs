@@ -70,6 +70,9 @@ pub struct Gathered {
     pub claude_binary: Option<String>,
     /// 打开项目的那一份贵数据。`None` = 还在项目墙。
     pub open: Option<ProjectGathered>,
+    /// 设置屏「能力」一节的五张表。在 `gather` 里算一次(和 `env` 同一个
+    /// 取舍:导航请求只调 `assemble`,不重扫磁盘 / 不重探活)。
+    pub(super) capabilities: super::vm_settings::Capabilities,
 }
 
 /// 打开项目的、与「在看哪一周 / 选中哪张活 / 展开哪个目录」无关的贵数据。
@@ -667,13 +670,23 @@ async fn gather_open(
             cards.push(card_stub(p, &current_week));
         }
     }
-    finish_gather(gen, cards, env, warnings, claude_binary, open_g, t0)
+    finish_gather(
+        app,
+        &ui.orca_web_url,
+        gen,
+        cards,
+        env,
+        warnings,
+        claude_binary,
+        open_g,
+        t0,
+    )
 }
 
 /// 人在项目墙:每个仓的名单 + extras。打开项目不走这里。
 async fn gather_wall(
     app: &App,
-    _ui: &mut UiState,
+    ui: &mut UiState,
     projects: Vec<Project>,
     mut warnings: Vec<String>,
     current_week: String,
@@ -738,6 +751,7 @@ async fn gather_wall(
 
     let mut cards = Vec::with_capacity(projects.len());
     for (job, (goals, last_delivery, version)) in wall_jobs.into_iter().zip(wall_extras) {
+        let chat_provider = super::vm_panels::chat_provider(job.file.chat.as_ref());
         cards.push(card_from_wall(
             &job.p,
             &job.issues,
@@ -747,9 +761,20 @@ async fn gather_wall(
             last_delivery,
             version,
             &current_week,
+            &chat_provider,
         ));
     }
-    finish_gather(gen, cards, env, warnings, claude_binary, None, t0)
+    finish_gather(
+        app,
+        &ui.orca_web_url,
+        gen,
+        cards,
+        env,
+        warnings,
+        claude_binary,
+        None,
+        t0,
+    )
 }
 
 fn card_from_open(p: &Project, g: Option<&ProjectGathered>, current_week: &str) -> ProjectCardVm {
@@ -772,6 +797,9 @@ fn card_from_open(p: &Project, g: Option<&ProjectGathered>, current_week: &str) 
     let issues = g.map(|g| g.issues.as_slice()).unwrap_or(&[]);
     let goals = g.map(|g| &g.week_goals);
     let brief = g.map(|g| g.file.brief.clone()).unwrap_or_default();
+    let chat_provider = g
+        .map(|g| super::vm_panels::chat_provider(g.file.chat.as_ref()))
+        .unwrap_or_default();
     let last_delivery = g.map(|g| g.last_delivery.clone()).unwrap_or_default();
     let ws_path = g
         .map(|g| g.ws.display().to_string())
@@ -785,6 +813,7 @@ fn card_from_open(p: &Project, g: Option<&ProjectGathered>, current_week: &str) 
         last_delivery,
         version,
         current_week,
+        &chat_provider,
     )
 }
 
@@ -798,6 +827,7 @@ fn card_from_wall(
     last_delivery: String,
     version: String,
     current_week: &str,
+    chat_provider: &str,
 ) -> ProjectCardVm {
     card_from_parts(
         p,
@@ -808,6 +838,7 @@ fn card_from_wall(
         last_delivery,
         version,
         current_week,
+        chat_provider,
     )
 }
 
@@ -820,6 +851,10 @@ fn card_stub(p: &Project, current_week: &str) -> ProjectCardVm {
         signal: p.signal,
         workspace_path: p.workspace_path.clone(),
         remote: remote_label(p),
+        remote_provider: p.provider.clone(),
+        // 打开了别的项目时,这张卡不重刷 —— 项目群要读一次 `.bw/project.toml`,
+        // 划不来为一张没在看的卡去读。空 = 「这一轮没重读」,不是「没配群」。
+        chat_provider: String::new(),
         week_total: 0,
         week_done: 0,
         version: String::new(),
@@ -840,6 +875,7 @@ fn card_from_parts(
     last_delivery: String,
     version: String,
     current_week: &str,
+    chat_provider: &str,
 ) -> ProjectCardVm {
     let week_counts = if version.is_empty() {
         WeekCountsVm::default()
@@ -866,6 +902,8 @@ fn card_from_parts(
         signal: p.signal,
         workspace_path: ws_path.to_string(),
         remote: remote_label(p),
+        remote_provider: p.provider.clone(),
+        chat_provider: chat_provider.to_string(),
         week_total,
         week_done: week_counts.done as u32,
         version,
@@ -876,7 +914,10 @@ fn card_from_parts(
     }
 }
 
+#[allow(clippy::too_many_arguments)]
 fn finish_gather(
+    app: &App,
+    orca_web_url: &str,
     gen: u64,
     cards: Vec<ProjectCardVm>,
     env: Vec<ToolProbeVm>,
@@ -890,6 +931,12 @@ fn finish_gather(
     for w in &warnings {
         bw_engine::dlog!(warn, "gather", "[BW_WARN] {w}");
     }
+    let settings = bw::local::Settings::load(app.asset_root()).ok();
+    let cap_open = open
+        .as_ref()
+        .map(|pg| (pg.ws.as_path(), pg.issues.as_slice(), pg.name.as_str()));
+    let capabilities =
+        super::vm_settings::build(app, settings.as_ref(), &env, &cards, orca_web_url, cap_open);
     bw_engine::dlog!(
         ok,
         "gather",
@@ -903,6 +950,7 @@ fn finish_gather(
         warnings,
         claude_binary,
         open,
+        capabilities,
     }
 }
 
@@ -996,7 +1044,7 @@ async fn wall_extras_many(
 /// 导航请求只调它。设计见 ADR 0002。
 pub async fn assemble(app: &App, ui: &mut UiState, g: &Gathered) -> Vm {
     let open = match (&g.open, ui.open) {
-        (Some(pg), Some(_)) => Some(assemble_project(app, ui, pg, g.gen, &g.env).await),
+        (Some(pg), Some(_)) => Some(assemble_project(app, ui, pg, g.gen).await),
         _ => None,
     };
     Vm {
@@ -1012,6 +1060,13 @@ pub async fn assemble(app: &App, ui: &mut UiState, g: &Gathered) -> Vm {
             theme: ui.theme.clone(),
             data_dir: ui.data_dir.clone(),
             claude_binary: g.claude_binary.clone(),
+            connectors: g.capabilities.connectors.clone(),
+            skills: g.capabilities.skills.clone(),
+            stage: g.capabilities.stage.clone(),
+            plugins: g.capabilities.plugins.clone(),
+            assets: g.capabilities.assets.clone(),
+            assets_open_project: g.capabilities.assets_open_project.clone(),
+            focus_skill: ui.focus_skill.clone(),
         },
         note: ui.note.clone(),
         note_seq: ui.note_seq,
@@ -1309,7 +1364,6 @@ async fn assemble_project(
     ui: &mut UiState,
     pg: &ProjectGathered,
     gen: u64,
-    env: &[ToolProbeVm],
 ) -> ProjectVm {
     let current_week = pg.current_week.clone();
     let viewing_week = if ui.viewing_week.is_empty() {
@@ -1464,19 +1518,7 @@ async fn assemble_project(
             // (ADR-0003),事件流/等你合入列表不再进 ViewModel。
             unread: bw::app::count_unseen(&pg.issues),
         },
-        config: {
-            let settings = bw::local::Settings::load(std::path::Path::new(&ui.data_dir)).ok();
-            let mut c = build_config(
-                &pg.ws,
-                settings.as_ref(),
-                &pg.project,
-                &pg.file,
-                &pg.issues,
-                env,
-            );
-            c.focus_skill = ui.focus_skill.clone();
-            c
-        },
+        config: build_config(&pg.ws, &pg.project, &pg.file),
         kb: KbVm {
             codegraph: ui.kb_codegraph.clone(),
             assets: ui.kb_assets.clone(),

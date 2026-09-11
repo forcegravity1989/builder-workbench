@@ -107,6 +107,9 @@ fn Root() -> Element {
     let chrome_busy = use_context_provider(|| ChromeBusy(Signal::new(None)));
     let mut panel = nav.0;
     let mut top_view = use_signal(move || initial_view);
+    // 项目内的屏偶尔要跳去顶层设置(比如知识库资产页签指去 Skills)。设置屏
+    // 不是 `Panel`,`PanelNav` 帮不上忙,所以另外经 context 把这颗信号递下去。
+    use_context_provider(|| top_view);
 
     // 订阅内核推过来的 ViewModel。
     use_future({
