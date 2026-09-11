@@ -713,18 +713,17 @@ pub struct PluginVm {
     pub groups: Vec<PluginSkillGroup>,
 }
 
-/// AI Assets 页只读一张表,三列:名字 / 现在哪几张活在用 / 来自。**不放色条 /
-/// 状态过滤 / 「它是什么」的描述**——那是教育用户,发起人当场否过(见
-/// spec.md §5、STATUS 十一轮)。
 #[derive(Clone, Debug, PartialEq)]
 pub struct AssetRowVm {
     pub slug: String,
+    /// 文件名(`AGENTS.md` / `build.md`)。
     pub name: String,
+    /// frontmatter 那句 description,单独一列。
+    pub desc: String,
     /// 「Workbench」/「项目」。
     pub source: String,
     /// 当前打开的项目里,哪几张活现在会读到它(`#123` 这样的活号)。**没有
-    /// 打开项目 = 空**,不是「没有活在用」—— 两件事分开,靠 `open_project`
-    /// 那句判据文字说清楚,不编一个假的空列表当答案。
+    /// 打开项目 = 空**,不是「没有活在用」—— 两件事分开,不编一个假的空列表当答案。
     pub used_by_issues: Vec<String>,
 }
 

@@ -17,9 +17,6 @@ pub fn View(p: ProjectVm) -> Element {
             div { class: "page-head",
                 div {
                     h1 { "配置" }
-                    p { class: "page-desc",
-                        "这个项目真正跟走的三样:远端、项目群、节律。开工工具与技能是全局的,在设置 · Connector / Skills / Stage。"
-                    }
                 }
             }
 
@@ -30,7 +27,6 @@ pub fn View(p: ProjectVm) -> Element {
                 div { class: "set-row",
                     div { class: "set-text",
                         div { class: "set-title", "仓地址" }
-                        div { class: "set-desc", "接入时定的,改不了 —— 换仓等于换项目。" }
                     }
                     div { class: "set-ctl",
                         span { class: "mono", "{c.remote}" }
@@ -41,14 +37,12 @@ pub fn View(p: ProjectVm) -> Element {
             div { class: "section",
                 div {
                     h3 { class: "section-title", "项目群" }
-                    p { class: "section-desc", "仓是正本(.bw/project.toml 的 [chat] 段),这里只显示;改它走总览「项目约定」那张轻量活 + MR。" }
                 }
             }
             div { class: "set-group",
                 div { class: "set-row",
                     div { class: "set-text",
                         div { class: "set-title", "提供方 · 群号" }
-                        div { class: "set-desc", "{c.chat}" }
                     }
                     div { class: "set-ctl",
                         span { class: "tag tag-neutral", "{c.chat_provider}" }
@@ -75,19 +69,15 @@ pub fn View(p: ProjectVm) -> Element {
             div { class: "section",
                 div {
                     h3 { class: "section-title", "节律" }
-                    p { class: "section-desc", "定时任务真实到点触发,钟在 Orca;没有定时表,判据是「本周有没有这张活」。" }
                 }
             }
             div { class: "set-group",
                 div { class: "set-row",
                     div { class: "set-text",
-                        div { class: "set-title", "当前节律" }
-                        div { class: "set-desc", "{c.cadence}" }
+                        div { class: "set-title", "{c.cadence}" }
                     }
                 }
-                if c.crons.is_empty() {
-                    div { class: "empty", "没有拆成表格行的判据 —— 上面那句已经是全部。" }
-                } else {
+                if !c.crons.is_empty() {
                     for row in c.crons.iter() {
                         div { class: "set-row", key: "{row.name}",
                             div { class: "set-text",

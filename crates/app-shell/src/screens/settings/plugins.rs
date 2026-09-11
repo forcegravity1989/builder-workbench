@@ -109,21 +109,15 @@ fn PluginDetail(p: PluginVm, on_back: EventHandler<MouseEvent>) -> Element {
         match *tab.read() {
             Tab::Overview => rsx! {
                 dl { class: "kv",
-                    dt { "上游" }
-                    dd { "{p.upstream}" }
-                    dt { "版本" }
-                    dd { "{p.version}" }
                     dt { "许可" }
                     dd { "{p.license}" }
-                    dt { "技能数" }
-                    dd { "{p.skill_count}" }
                     dt { "谁用到" }
                     dd {
                         if p.used_by.is_empty() { "没有 workflow 用它" } else { {p.used_by.join(" · ")} }
                     }
                 }
                 div { class: "todo-note",
-                    "打包机制未实现 —— Skills 页签列的 {p.skill_count} 个眼下一个都注入不了,不像 Claude 的插件详情能直接跳过去用。"
+                    "打包机制未实现 —— Skills 页签列的 {p.skill_count} 个眼下一个都注入不了。"
                 }
             },
             Tab::Skills => rsx! {

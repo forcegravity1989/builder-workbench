@@ -27,10 +27,9 @@ pub fn StagePage(rows: Vec<StageRowVm>, bridge: Bridge) -> Element {
                 thead {
                     tr {
                         th { style: "width:6%" }
-                        th { style: "width:16%", "阶段" }
-                        th { style: "width:22%", "执行器" }
-                        th { style: "width:38%", "Workflow" }
-                        th { style: "width:14%", "状态" }
+                        th { style: "width:18%", "阶段" }
+                        th { style: "width:26%", "执行器" }
+                        th { style: "width:46%", "Workflow" }
                         th { style: "width:4%" }
                     }
                 }
@@ -73,14 +72,15 @@ fn StageRow(row: StageRowVm, bridge: Bridge, open_detail: EventHandler<MouseEven
             });
         }
     };
-    let status_cls = match row.can_work {
-        true => "status status-done",
-        false => "status status-blocked",
-    };
     let dot_cls = if row.can_work { "c-done" } else { "c-blocked" };
+    let dot_title = if row.can_work {
+        "执行器探到了"
+    } else {
+        "执行器探不到"
+    };
     rsx! {
         tr { key: "{row.category_key}",
-            td { span { class: "dot {dot_cls}" } }
+            td { span { class: "dot {dot_cls}", title: "{dot_title}" } }
             td { class: "t-name", "{row.category_label}" }
             td {
                 div { class: "row",
@@ -108,7 +108,6 @@ fn StageRow(row: StageRowVm, bridge: Bridge, open_detail: EventHandler<MouseEven
                     }
                 }
             }
-            td { span { class: "{status_cls}", span { class: "status-dot" } if row.can_work { "能开工" } else { "开不了工" } } }
             td { class: "rowbtn go", onclick: open_detail, "›" }
         }
     }
@@ -126,7 +125,6 @@ fn detail(row: &StageRowVm, back: impl FnMut(MouseEvent) + 'static) -> Element {
             div { class: "dt-icon", "◧" }
             div { class: "grow",
                 div { class: "dt-name", "{row.category_label}" }
-                div { class: "dt-from", if row.can_work { "能开工" } else { "开不了工 —— 执行器探不到" } }
             }
         }
         h3 { class: "section-title", "开工时会拿到什么" }
@@ -136,7 +134,7 @@ fn detail(row: &StageRowVm, back: impl FnMut(MouseEvent) + 'static) -> Element {
                 "{row.executor_label}"
                 if let Some(ok) = row.executor_ok {
                     " · "
-                    if ok { "已找到" } else { "开不了工" }
+                    if ok { "已找到" } else { "没找到" }
                 }
             }
             dt { "Workflow" }
@@ -157,9 +155,6 @@ fn detail(row: &StageRowVm, back: impl FnMut(MouseEvent) + 'static) -> Element {
                     {row.injects.join(" · ")}
                 }
             }
-        }
-        p { class: "hint",
-            "Workflow 下拉里带 ⚠ 的选项是这个仓 .claude/skills/ 下自己写的 —— 选了也接不上:开工解析只认三个写死的名字。这是「用户怎么接入自己的 workflow」这个缺口的位置,真正的接入通道是内核改动,不在本特性范围。"
         }
     }
 }

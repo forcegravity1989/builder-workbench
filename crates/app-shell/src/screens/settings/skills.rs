@@ -44,9 +44,6 @@ pub fn SkillsPage(items: Vec<SkillVm>, focus: String) -> Element {
         }
     }
 
-    let matured = items.iter().filter(|s| s.uses > 0).count();
-    let untouched = items.iter().filter(|s| s.uses == 0).count();
-
     rsx! {
         div { class: "pane-head",
             h2 { "Skills" }
@@ -57,11 +54,6 @@ pub fn SkillsPage(items: Vec<SkillVm>, focus: String) -> Element {
                 value: "{query}",
                 oninput: move |e| query.set(e.value()),
             }
-        }
-
-        div { class: "bar-key",
-            span { i { class: "dot c-done" } "用过 " b { "{matured}" } }
-            span { i { class: "dot c-idle" } "还没用过 " b { "{untouched}" } }
         }
 
         div { class: "filterbar",
@@ -131,12 +123,7 @@ pub fn SkillsPage(items: Vec<SkillVm>, focus: String) -> Element {
                             class: if s.origin == "Workbench 自带" { "tag tag-success" } else { "tag tag-neutral" },
                             "{origin_label(s)}"
                         }
-                        if !s.injectable && s.origin == "项目自有" {
-                            span { class: "tag tag-warning", "注入不了" }
-                        }
-                        span { class: "uses",
-                            if s.uses == 0 { "还没用过" } else { "用过 {s.uses} 次" }
-                        }
+                        span { class: "uses mono", "{s.uses}" }
                     }
                 }
             }
@@ -167,8 +154,7 @@ fn detail(s: &SkillVm, back: impl FnMut(MouseEvent) + 'static) -> Element {
                 div { class: "dt-from",
                     "{origin_label(s)}"
                     if !s.byline.is_empty() { " · {s.byline}" }
-                    " · "
-                    if s.uses == 0 { "还没用过" } else { "用过 {s.uses} 次" }
+                    " · 用过 {s.uses} 次"
                 }
             }
         }
@@ -178,28 +164,21 @@ fn detail(s: &SkillVm, back: impl FnMut(MouseEvent) + 'static) -> Element {
             button { class: "tab", "aria-selected": "false", "文件 · {s.file_count}" }
         }
 
-        h3 { class: "section-title", "概览" }
         dl { class: "kv",
-            dt { "能不能注入" }
+            dt { "开工注入" }
             dd {
                 if s.injectable {
                     span { class: "tag tag-success", "会注入" }
                 } else {
                     span { class: "tag tag-warning", "注入不了" }
+                    // 判定留在详情页(列表上不再喊一遍),但只说结论不讲机制。
+                    if s.origin == "项目自有" {
+                        " 项目自己写的技能还接不进开工"
+                    } else {
+                        " 没有 workflow 指向它"
+                    }
                 }
             }
-            dt { "为什么" }
-            dd {
-                if s.injectable {
-                    "workflow 名字命中了 skill_slug 的硬编码表,开工会指到这份文件。"
-                } else if s.origin == "项目自有" {
-                    "skill_pointer 的路径只拼 Workbench 自己的资产目录,项目自有的今天无论挂什么名字都够不到 —— 见 intent.md ⑪,接入通道待另开一件。"
-                } else {
-                    "skill_slug 今天只认三个名字(week-planning / asset-audit / mattpocock-skills),这份编进了二进制却没有 workflow 名字指向它。"
-                }
-            }
-            dt { "正文" }
-            dd { "提示词里只给名字 + 一句话 + 完整路径,正文按需读,不塞进提示词正文。" }
         }
 
         h3 { class: "section-title", "文件 · {s.file_count}" }
@@ -213,9 +192,7 @@ fn file_browser(
 ) -> Element {
     let Some(entry) = entry_raw else {
         return rsx! {
-            div { class: "todo-note",
-                "这是项目自有的技能,正文在这个仓的 .claude/skills/<slug>/SKILL.md —— 设置屏不重复渲染被管仓的文件,打开那个仓自己看。"
-            }
+            div { class: "empty", "正文在这个仓的 .claude/skills/<名字>/SKILL.md" }
         };
     };
     rsx! {
@@ -238,13 +215,14 @@ fn file_browser(
     }
 }
 
-/// 「项目自有」标出来自哪个仓 —— 这是全局一张表,光写「项目自有」答不了
-/// 「哪个项目」。
+/// 来源只写名字:Workbench 自带的就是 `Workbench`,项目自有的就是那个项目名。
 fn origin_label(s: &SkillVm) -> String {
-    if s.project.is_empty() {
-        s.origin.clone()
-    } else {
-        format!("{} · {}", s.origin, s.project)
+    if !s.project.is_empty() {
+        return s.project.clone();
+    }
+    match s.origin.as_str() {
+        "Workbench 自带" => "Workbench".into(),
+        other => other.to_string(),
     }
 }
 

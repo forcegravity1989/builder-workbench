@@ -68,9 +68,6 @@ pub fn View(vm: Vm, bridge: Bridge, close: EventHandler<MouseEvent>) -> Element 
             div { class: "page-head",
                 div {
                     h1 { "设置" }
-                    p { class: "page-desc",
-                        "只管这台机器与这台机器能干什么。没有登录 —— 远端凭证在系统钥匙串里,项目群的登录态由你自己在本机登好。"
-                    }
                 }
                 div { class: "page-actions",
                     button { class: "btn btn-secondary", onclick: close, "← 项目墙" }
@@ -149,11 +146,7 @@ fn dirs_page(s: &crate::vm::SettingsVm, bridge: &Bridge) -> Element {
         div { class: "pane-head", h2 { "目录" } }
         div { class: "set-group",
             RootRow { value: s.workspaces_root.clone(), bridge: bridge.clone() }
-            {path_row(
-                "数据目录",
-                "注册表 / 设置 / 会话都在这下面,不是 SQLite 库;删掉能从仓和远端重建。",
-                &s.data_dir,
-            )}
+            {path_row("数据目录", &s.data_dir)}
         }
     }
 }
@@ -178,7 +171,6 @@ fn RootRow(value: String, bridge: Bridge) -> Element {
         div { class: "set-row",
             div { class: "set-text",
                 div { class: "set-title", "工作区根目录" }
-                div { class: "set-desc", "新接入的项目默认落在这里;已接入的各自记着仓路径,不会跟着搬。" }
             }
             div { class: "set-ctl",
                 input {
@@ -207,10 +199,6 @@ fn ThemeRow(value: String, bridge: Bridge) -> Element {
     };
     rsx! {
         div { class: "set-row",
-            div { class: "set-text",
-                div { class: "set-title", "配色" }
-                div { class: "set-desc", "Claude:象牙白底、赤陶强调;Apple:纯白底、系统蓝。" }
-            }
             div { class: "set-ctl",
                 for (key, label) in [("claude", "Claude"), ("apple", "Apple")] {
                     {theme_choice(key, label, current == key, bridge.clone())}
@@ -240,7 +228,7 @@ fn theme_choice(key: &'static str, label: &'static str, checked: bool, bridge: B
     }
 }
 
-fn path_row(label: &str, desc: &str, value: &str) -> Element {
+fn path_row(label: &str, value: &str) -> Element {
     let full = value.trim();
     let shown = if full.is_empty() {
         "—".to_string()
@@ -251,7 +239,6 @@ fn path_row(label: &str, desc: &str, value: &str) -> Element {
         div { class: "set-row",
             div { class: "set-text",
                 div { class: "set-title", "{label}" }
-                div { class: "set-desc", "{desc}" }
             }
             div { class: "set-ctl",
                 span { class: "path", title: "{full}", "{shown}" }

@@ -188,9 +188,7 @@ fn detail(
             for s in &info.supplies { li { "{s}" } }
         }
 
-        if c.used_by.is_empty() {
-            p { class: "hint", "没有类别 / 项目用到它 —— 还没用上不是错,只是这台机器今天没派上。" }
-        } else {
+        if !c.used_by.is_empty() {
             dl { class: "kv",
                 dt { "谁用到" }
                 dd { {c.used_by.join(" · ")} }
@@ -200,7 +198,7 @@ fn detail(
         if c.key == "orca" {
             h3 { class: "section-title", "网页配对地址" }
             OrcaUrlRow { value: orca_web_url.clone(), bridge: bridge.clone() }
-        } else if c.status == ConnectorStatus::Blocked || c.status == ConnectorStatus::Idle {
+        } else {
             h3 { class: "section-title", "怎么装" }
             {install_block(&info)}
         }
@@ -215,11 +213,6 @@ fn OrcaUrlRow(value: String, bridge: Bridge) -> Element {
     rsx! {
         div { class: "set-group",
             div { class: "set-row",
-                div { class: "set-text",
-                    div { class: "set-desc",
-                        "从「给 web 配对 / Share this Orca server」复制 Open in browser 那条;官方包 6768、源码桌面 6769。"
-                    }
-                }
                 div { class: "set-ctl",
                     input {
                         class: "input mono",
@@ -252,19 +245,18 @@ struct ConnectorInfo {
 }
 
 enum Install {
-    Commands(Vec<&'static str>, &'static str),
+    Commands(Vec<&'static str>),
+    /// 仓里没记、我也没有可靠出处的,如实说没记 + 判据,**不编一条猜的包名**。
     Undocumented(&'static str),
     RunIt(&'static str),
-    None,
 }
 
 fn install_block(info: &ConnectorInfo) -> Element {
     match &info.install {
-        Install::Commands(cmds, note) => rsx! {
+        Install::Commands(cmds) => rsx! {
             for cmd in cmds {
                 div { class: "install", code { "{cmd}" } }
             }
-            p { class: "hint", "{note}" }
         },
         Install::Undocumented(criterion) => rsx! {
             div { class: "todo-note", "装法仓里没记。判据:{criterion}" }
@@ -272,7 +264,6 @@ fn install_block(info: &ConnectorInfo) -> Element {
         Install::RunIt(how) => rsx! {
             div { class: "todo-note", "{how}" }
         },
-        Install::None => rsx! {},
     }
 }
 
@@ -285,14 +276,14 @@ fn connector_info(key: &str) -> ConnectorInfo {
                 "BW_CLAUDE_MAX_BUDGET_USD 控预算",
                 "BW_CLAUDE_BIN 换位置",
             ],
-            install: Install::Commands(
-                vec!["按 Claude Code 官方文档装本机 CLI"],
-                "要用它得有:本机已装 claude、一个真实的工作区路径、能连上模型网关。",
-            ),
+            install: Install::Commands(vec![
+                "npm install -g @anthropic-ai/claude-code",
+                "curl -fsSL https://claude.ai/install.sh | bash",
+            ]),
         },
         "cursor" => ConnectorInfo {
             supplies: vec!["开工起交互式会话(选了就当真,探不到当场报错,不悄悄退回 Claude CLI)"],
-            install: Install::Undocumented("PATH 上有 cursor-agent 这个名字"),
+            install: Install::Commands(vec!["curl https://cursor.com/install -fsS | bash"]),
         },
         "open_design" => ConnectorInfo {
             supplies: vec![
@@ -300,7 +291,7 @@ fn connector_info(key: &str) -> ConnectorInfo {
                 "探活是管道握手拿 loopback 首页,超时 400ms",
                 "不解析会话地址、不自动开跑",
             ],
-            install: Install::RunIt("它是本机服务,不是装出来的 —— 起它,起完点「重新探活」。"),
+            install: Install::RunIt("本机服务,不装 —— 起它,再点「重新探活」。"),
         },
         "gh" => ConnectorInfo {
             supplies: vec![
@@ -308,10 +299,11 @@ fn connector_info(key: &str) -> ConnectorInfo {
                 "开 PR 与按分支反查",
                 "合入后读回状态(只信真变 MERGED)",
             ],
-            install: Install::Commands(
-                vec!["按 GitHub CLI 官方文档装 gh"],
-                "登录态没探 —— 那要起子进程跑 gh auth status,没接,别拿「装了」冒充「登录了」。",
-            ),
+            install: Install::Commands(vec![
+                "brew install gh",
+                "winget install --id GitHub.cli",
+                "gh auth login",
+            ]),
         },
         "codehub" => ConnectorInfo {
             supplies: vec!["远端另一家,和 gh 同形两条路(读活、开 MR、读回状态)"],
@@ -319,10 +311,7 @@ fn connector_info(key: &str) -> ConnectorInfo {
         },
         "welink_cli" => ConnectorInfo {
             supplies: vec!["项目群通知,配在名片的 chat 段,只在开 MR 时发"],
-            install: Install::Commands(
-                vec!["npm i -g welink-cli", "welink-cli auth login"],
-                "凭证你自己登,Workbench 不碰。",
-            ),
+            install: Install::Commands(vec!["npm i -g welink-cli", "welink-cli auth login"]),
         },
         "orca" => ConnectorInfo {
             supplies: vec![
@@ -330,11 +319,11 @@ fn connector_info(key: &str) -> ConnectorInfo {
                 "三条运作节律的钟",
                 "网页配对地址只认 loopback、带 token,绝不进仓与日志",
             ],
-            install: Install::None,
+            install: Install::RunIt("装 Orca 本体,再在下面填一条网页配对地址。"),
         },
         _ => ConnectorInfo {
             supplies: vec![],
-            install: Install::None,
+            install: Install::Undocumented("PATH 上有这个名字"),
         },
     }
 }

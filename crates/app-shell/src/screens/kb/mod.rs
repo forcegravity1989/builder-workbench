@@ -232,14 +232,12 @@ fn assets_tab(a: Option<&AssetsVm>, open_settings: impl FnMut(MouseEvent) + 'sta
         div { class: "section",
             div {
                 h3 { class: "section-title", "技能与 workflow" }
-                p { class: "section-desc", "这份清单搬去设置屏了 —— 它本来就是全局的,不该按项目各扫一份。" }
             }
         }
         div { class: "set-group",
             div { class: "set-row",
                 div { class: "set-text",
                     div { class: "set-title", "Workbench 自带 + 所有接入项目的 .claude/skills/" }
-                    div { class: "set-desc", "「用过几次」「注入不了」这些判据都在那边,这里不再重复一份。" }
                 }
                 div { class: "set-ctl",
                     button { class: "btn btn-secondary", onclick: open_settings, "去设置 · Skills →" }

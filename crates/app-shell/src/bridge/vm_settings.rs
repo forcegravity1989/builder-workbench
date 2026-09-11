@@ -391,6 +391,7 @@ fn build_assets(app: &App, open: Option<(&Path, &[bw::Issue], &str)>) -> Vec<Ass
     let mut out = vec![AssetRowVm {
         slug: "agents-md".into(),
         name: "AGENTS.md".into(),
+        desc: "这个仓自己的开发与维护规矩,提示词写一句「动手前读」".into(),
         source: "项目".into(),
         used_by_issues: open
             .map(|(_, issues, _)| issues.iter().map(|i| format!("#{}", i.number)).collect())
@@ -413,7 +414,8 @@ fn build_assets(app: &App, open: Option<(&Path, &[bw::Issue], &str)>) -> Vec<Ass
             .unwrap_or_default();
         out.push(AssetRowVm {
             slug: pack.slug.to_string(),
-            name: pack.desc.to_string(),
+            name: pack.rel.clone(),
+            desc: pack.desc.to_string(),
             source: "Workbench".into(),
             used_by_issues,
         });
