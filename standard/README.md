@@ -44,6 +44,7 @@ Workbench 规范正本。编译期 `include_str!` 进二进制——改这里就
 |---|---|---|
 | `SYSTEM.md.tmpl` | 每张活的主提示词:身份 + 读 `AGENTS.md` + 按任务加载 reference + 三条纪律 | 所有活都守的契约只改这一份 |
 | `REVIEW.md.tmpl` | 评审会话主提示词 | 已入库,尚未派发 |
+| `references/issue-state.md` | issue 状态机、版本标签语义、程序/模型写入边界 | 所有活 |
 | `references/metrics.md` | 指标协议 | 运作活① |
 | `references/week-plan-comment.md` | 运作活①评论三标题 + 周五每周进展 | ① 挂评前过校验脚本;② 收口只追加进展 |
 | `references/build.md` | 改仓:分支 / MR / 合并是人 / 0 提交不装前进 | 构建类 + 运作活② |

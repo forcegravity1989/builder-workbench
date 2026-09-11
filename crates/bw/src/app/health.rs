@@ -35,7 +35,7 @@ pub async fn collect_health_inputs(
         crate::app::is_ops1_issue(i)
             && i.status != crate::model::IssueStatus::Done
             && i.status != crate::model::IssueStatus::Cancelled
-            && (crate::isoweek::unix_in_week(i.created_at, week) || i.plan_version.is_empty())
+            && (crate::isoweek::unix_in_week(i.created_at, week) || i.plan_versions.is_empty())
     });
     let has_week_goal = week_goal.is_some_and(|s| !s.trim().is_empty());
 

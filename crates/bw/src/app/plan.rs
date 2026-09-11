@@ -50,7 +50,9 @@ impl App {
             return Err(AppError::Refused("排期请用版本,不再写周标签".into()));
         }
         let project = self.project_of(issue.project_id).await?;
-        issue_store::clear_plan(self, &project, id.iid()).await?;
+        for plan in &issue.plan_versions {
+            issue_store::clear_plan(self, &project, id.iid(), plan).await?;
+        }
 
         // 排进某一周 = 进「待办」;移回待办池 = 回 Backlog。只在状态机允许时动,
         // 不合法就只改排期不动状态。
@@ -69,7 +71,7 @@ impl App {
         }])
     }
 
-    /// 排进版本(`bw:plan:<name>`)。一张活只挂一个 plan,换号就是换这张标签。
+    /// 排进版本(`bw:plan:<name>`)。已有计划标签保留，支持版本回看。
     /// 顺手摘旧 `bw:week:`。状态进「待办」(已排期)。
     pub(super) async fn schedule_to_plan(
         &mut self,
@@ -79,8 +81,9 @@ impl App {
         let issue = self.issue_or_err(id).await?;
         let project = self.project_of(issue.project_id).await?;
         issue_store::assign_to_plan(self, &project, id.iid(), &plan).await?;
-        // 排进版本 = 进「待办」(已排期),状态机允许才动。
-        if issue.status != IssueStatus::Todo && issue.status.can_transition_to(IssueStatus::Todo) {
+        // 只有未排期池里的活首次纳入版本时进入待办；跨版本保留实际执行状态。
+        if issue.status == IssueStatus::Backlog && issue.status.can_transition_to(IssueStatus::Todo)
+        {
             issue_store::set_status(self, &project, id.iid(), IssueStatus::Todo).await?;
         }
         Ok(vec![Event::IssueScheduledToPlan { id, plan }])
@@ -116,19 +119,9 @@ impl App {
         if plans.iter().any(|s| s == &name) || released.iter().any(|s| s == &name) {
             return Err(AppError::Refused(format!("{name} 已经有了")));
         }
-        let issues = self.issues(project_id).await.unwrap_or_default();
-        let mut prior: Vec<(u32, String)> = Vec::new();
-        for id in &included {
-            let old = issues
-                .iter()
-                .find(|i| i.id == *id)
-                .map(|i| i.plan_version.clone())
-                .unwrap_or_default();
-            let old = if old == name { String::new() } else { old };
-            prior.push((id.iid(), old));
-        }
+        let included_iids: Vec<u32> = included.iter().map(|id| id.iid()).collect();
         let ops1_id = self.ensure_ops1_for_version(project_id, &name).await?;
-        let comment = super::week_comment::render_week_plan_comment(&prior);
+        let comment = super::week_comment::render_week_plan_comment(&included_iids);
         issue_store::comment(self, &project, ops1_id.iid(), &comment).await?;
         for id in &included {
             issue_store::assign_to_plan(self, &project, id.iid(), &name).await?;
@@ -209,8 +202,8 @@ impl App {
         let issues = self.issues(project_id).await?;
         let mut issues_cleared = 0u32;
         for issue in issues {
-            if issue.plan_version == name {
-                issue_store::clear_plan(self, &project, issue.number).await?;
+            if issue.plan_versions.contains(&name) {
+                issue_store::clear_plan(self, &project, issue.number, &name).await?;
                 if crate::version::ops1_version_from_title(&issue.title).as_deref()
                     == Some(name.as_str())
                 {
@@ -360,7 +353,8 @@ impl App {
         let issues = self.issues(project_id).await?;
         let mut issues_moved = 0u32;
         for issue in issues {
-            if issue.plan_version == from {
+            if issue.plan_versions.contains(&from) {
+                issue_store::clear_plan(self, &project, issue.number, &from).await?;
                 issue_store::assign_to_plan(self, &project, issue.number, &to).await?;
                 if crate::version::ops1_version_from_title(&issue.title).as_deref()
                     == Some(from.as_str())
@@ -399,8 +393,9 @@ impl App {
         let issues = self.issues(project.id).await.unwrap_or_default();
         let plan_names: Vec<String> = issues
             .iter()
-            .filter(|i| crate::version::is_plan_name(&i.plan_version))
-            .map(|i| i.plan_version.clone())
+            .flat_map(|i| i.plan_versions.iter())
+            .filter(|name| crate::version::is_plan_name(name))
+            .cloned()
             .collect();
         let mut released_names: Vec<String> = issues
             .iter()

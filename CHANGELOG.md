@@ -14,6 +14,8 @@
 
 **明确没做、如实记的偏差**:技能「改于哪天」(要编译期烤 git 时间戳,本轮跳过,卡片不显示这一项);跨项目的技能用量统计(`uses` 只对当前打开的项目现算,没打开的项目本地技能一律显示「还没用过」,不是真的没用过);AI Assets 的「现在哪几张活在用」同样只对当前打开的项目现算,没打开项目时如实显示空 + 一句说明,不编数据;Orca 仍然没有真探活,只有「配了 / 没配」两态;用户自己的 workflow 接入通道(`skill_slug` 硬编码三个名字、路径只认 Workbench 自己的资产目录)没有动,Stage 页的 workflow 下拉如实标出「选了也接不上」,把缺口摆在界面上而不是修掉它;agent 这一类资产(`.claude/agents/`)仍未纳入面板,全仓本来就没有扫它的代码。这几条都在 STATUS 的「待裁决」里注明是建议另开一件,不在本特性范围。
 
+修复 issue 遗留到下一版本后从旧版本消失：`bw:plan:<版本>` 改为可多值纳入关系，增加新版本不再覆盖旧标签；已发布版本在现有计划屏卡片上按实时标签显示「遗留」或「遗留 B」，不改四列与布局。状态机和程序/模型写入边界集中到 `issue-state.md`。计划屏高保真另按当前真壳校准；稳定稿按屏命名为 `plan.html` / `overview.html`，删除旧编号文件。
+
 开 `docs/05-features/scoreboard-and-forecast/`:把执行四原则(4DX)落进总览与计划两屏——记分牌(指标 × 周,引领按 `leads` 缩进挂在滞后下)、目标路面、蒙特卡洛完工预测、周期时间分位与累计流。**产品预置的是文法不是视图**:`metrics.toml` 里已有的 `collect.retro` / `leads` / `target` 三个字段决定一条指标长什么样,`target` 解析不出形状就退化成记分牌一行,不报错不阻塞。计划屏三张图吃的是所有项目同构的 issue/MR 史实,可以预置;总览的图只能跟着项目长出来。**intent 与 spec 都未认**,本批只有文档与原型,一行 Rust 没动。
 
 接入路径收口(存量 bug,不开 feature):接入页去掉含义不清且只会建空目录的「新建 / 已有」二分,改成「打开本地仓 / 克隆远端仓」;本地仓走目录选择、直接复用,远端仓才选择平台、仓与克隆位置。项目约定 + 三条 Orca 自动化的常驻 worktree 从仓外同级目录统一收回 `<仓>/.bw/worktrees/{project,week-plan,ops-audit,ledger}`;旧同级树只检测并报错,不迁、不删,同时删掉撞名普通目录会被递归删除的危险路径。
@@ -174,7 +176,7 @@ CommonMark 渲染:开头那几行 `# 说明` 被当成一级标题放成 28px �
 
 ## 最近 · 2026-09-03
 
-总览改成项目健康看板(#36):名片旁一颗健康灯、北极星并排;版本计划与进展带页签(目标 / 周进展各 6 行);滞后与引领按 `feature` 分页签、按 `leads` 叠到同一张图(空则挂该页签第一条滞后),图例可勾选,周/天可切;项目指标 · SDLC 只画现行三条真数。定义字段进 `.bw/metrics.toml`。原型 `docs/hifi/overview-36.html`,规格 `docs/05-features/overview-health-36/`。周五资产盘点多一步:在该版本运作活①上追加 `## 每周进展`;总览右栏从同一条评论现算。② 开工也注入 `week-plan-comment.md`。总览折线业务/SDLC 同一套(从 0 起的纵轴、悬停读数、固定高度);页签默认「主要」;A 类引领按天也能出点。采集模板脚本认 `--granularity week|day`,跟 `metrics.md` 对齐。运作活②建出来的说明跟上收口每周进展。
+总览改成项目健康看板(#36):名片旁一颗健康灯、北极星并排;版本计划与进展带页签(目标 / 周进展各 6 行);滞后与引领按 `feature` 分页签、按 `leads` 叠到同一张图(空则挂该页签第一条滞后),图例可勾选,周/天可切;项目指标 · SDLC 只画现行三条真数。定义字段进 `.bw/metrics.toml`。原型 `docs/hifi/overview.html`(原文件后续按屏名收口),规格 `docs/05-features/overview-health-36/`。周五资产盘点多一步:在该版本运作活①上追加 `## 每周进展`;总览右栏从同一条评论现算。② 开工也注入 `week-plan-comment.md`。总览折线业务/SDLC 同一套(从 0 起的纵轴、悬停读数、固定高度);页签默认「主要」;A 类引领按天也能出点。采集模板脚本认 `--granularity week|day`,跟 `metrics.md` 对齐。运作活②建出来的说明跟上收口每周进展。
 
 计划屏:进行中 ↔ 待评审可以人拖(打回只改标签、不开工;无绑定 MR 进待评审要确认)。人可以从待办 / 进行中 / 待评审 / 阻塞 / 未排期拖到完成——有开着的 MR 确认后合入,没有则确认只关 issue;「完成永远由人点」仍守,自动化不得推到 Done。非法松手弹窗说明不给拖,不再静默弹回。Orca 干完靠提示词自己把标签改成 `bw:status:inreview`,不因有 MR 自动推态。
 
@@ -268,13 +270,13 @@ Open / 去会话只 `worktree.activate`,不再 `ensureAgentSession`(那条是 `-
 
 ## 最近 · 2026-08-28(#23 源码同步)
 
-**新增/优化** · 按 `docs/hifi/plan-23.html`(定稿高保真)把计划页整改落到源码,跨 bw + bw-engine + app-shell 三 crate。看板七列合并为四列(待办/进行中/待处理/已完成),两段列加子标题 tab(默认显示第一段,点切第二段);卡面重做(编号 + CodeHub 徽 + 标题 + 正文预览 + 计划位置 + 责任人头像 + 更新时间),删卡面开工按钮(入口移详情弹窗);详情从右侧抽屉改屏幕居中弹窗,字段精简(留标题/正文/链接/类别/计划/负责人,删 状态/工具/workflow/种类/来源/版本/指标/结清/分支/蒸馏);新增列表视图(预设 开放/分配我的/我的 + 计划/阶段下拉 + 搜索 + 行操作 schedule/Start/Open/Complete/Cancel);弹窗:新建issue(含负责人)、创建版本、排期(拖未排期→已排期)、Start(只读确认即 RunIssue)。左栏删除,改为右上角下拉视图切换(全部issue/各周/各版本)。
+**新增/优化** · 按 `docs/hifi/plan.html`(定稿高保真;原文件后续按屏名收口)把计划页整改落到源码,跨 bw + bw-engine + app-shell 三 crate。看板七列合并为四列(待办/进行中/待处理/已完成),两段列加子标题 tab(默认显示第一段,点切第二段);卡面重做(编号 + CodeHub 徽 + 标题 + 正文预览 + 计划位置 + 责任人头像 + 更新时间),删卡面开工按钮(入口移详情弹窗);详情从右侧抽屉改屏幕居中弹窗,字段精简(留标题/正文/链接/类别/计划/负责人,删 状态/工具/workflow/种类/来源/版本/指标/结清/分支/蒸馏);新增列表视图(预设 开放/分配我的/我的 + 计划/阶段下拉 + 搜索 + 行操作 schedule/Start/Open/Complete/Cancel);弹窗:新建issue(含负责人)、创建版本、排期(拖未排期→已排期)、Start(只读确认即 RunIssue)。左栏删除,改为右上角下拉视图切换(全部issue/各周/各版本)。
 
 **新概念落内核**:`Issue` 加 `assignee`/`author`/`plan_version` 字段;`RemoteIssue` 透传 assignee/author;新命令 `SetIssueAssignee`/`CreatePlanVersion`/`ScheduleToPlan`/`EditIssue`;`build_board` 七列改四合并列;`CardItemVm` 加 assignee/author/plan_version/updated_at,`ProjectVm` 加 `plan_versions`/`current_user`/`viewing_plan`。
 
 ## 最近 · 2026-08-28
 
-**优化** · 计划页独立高保真(`docs/hifi/plan-23.html`)视觉规范对齐 Builder design system(Claude 板)与 ADE 资源视觉调性。配色 token 全量切到 Builder Claude ramp(ivory `#faf9f5` 底 + 赭土 `#d97757` accent + slate `#4c73a5` 次声 + 暖色 status 三元组),衬线标题改系统无衬线栈(weight 600)、`--font-mono` 留给编号/计数。按设计原则整改结构:卡片重阴影改 hairline、看板列走 surface 底且不再嵌套卡片、卡片左色条装饰改 `.status-dot` 语义(todo/progress/review/done/blocked)、方角 chip 改 999px pill(`.tag` + 语义变体)、列表行对齐 `.list-row`(mono 编号左 + meta 右)、弹窗对齐 `.dialog` floating elevation、`:focus-visible` accent 描边、hover 走 ink tint。unicode 字符导航(✓▢⚑☰⚙)换 Lucide SVG(stroke 2,16px),加 `icon()` 帮助器与静态 `data-icon` 注水。JS 数据/状态机/事件逻辑原样保留,仅重写模板与样式块。涉及文件:`docs/hifi/plan-23.html`。
+**优化** · 计划页独立高保真(`docs/hifi/plan.html`;原文件后续按屏名收口)视觉规范对齐 Builder design system(Claude 板)与 ADE 资源视觉调性。配色 token 全量切到 Builder Claude ramp(ivory `#faf9f5` 底 + 赭土 `#d97757` accent + slate `#4c73a5` 次声 + 暖色 status 三元组),衬线标题改系统无衬线栈(weight 600)、`--font-mono` 留给编号/计数。按设计原则整改结构:卡片重阴影改 hairline、看板列走 surface 底且不再嵌套卡片、卡片左色条装饰改 `.status-dot` 语义(todo/progress/review/done/blocked)、方角 chip 改 999px pill(`.tag` + 语义变体)、列表行对齐 `.list-row`(mono 编号左 + meta 右)、弹窗对齐 `.dialog` floating elevation、`:focus-visible` accent 描边、hover 走 ink tint。unicode 字符导航(✓▢⚑☰⚙)换 Lucide SVG(stroke 2,16px),加 `icon()` 帮助器与静态 `data-icon` 注水。JS 数据/状态机/事件逻辑原样保留,仅重写模板与样式块。涉及文件:`docs/hifi/plan.html`。
 
 ## 最近 · 2026-08-27
 

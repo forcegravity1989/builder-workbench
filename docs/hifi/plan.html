@@ -1,0 +1,222 @@
+<!doctype html>
+<html lang="zh" data-theme="claude">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>BW · 计划屏高保真</title>
+  <link rel="stylesheet" href="../04-design-system/styles.css">
+  <link rel="stylesheet" href="../../crates/app-shell/assets/shell.css">
+  <style>
+    /* 页面只补原型演示状态；壳与计划屏版式直接复用产品样式。 */
+    .prototype-note .toast-action { cursor: pointer; }
+    .kcard { cursor: pointer; }
+    .goal-box { cursor: pointer; }
+    .modal-hidden { display: none; }
+  </style>
+</head>
+<body>
+  <div class="app-root">
+    <aside class="sidebar app-sidebar">
+      <div class="sb-brand"><div class="rail-logo">B</div><span>Workbench</span></div>
+      <div class="pr-back" onclick="notice('原型停留在计划屏')">
+        <span data-icon="back"></span>
+        <span>项目墙</span>
+      </div>
+      <div class="pr-head">
+        <div class="pr-head-name">builder-workbench</div>
+        <div class="pr-head-meta"><span>v0.4</span><span class="status-dot status-done"></span><span class="pr-badge">2</span></div>
+      </div>
+      <nav class="pr-nav">
+        <div class="sidebar-item" onclick="notice('原型只实现计划屏')"><span data-icon="overview"></span><span>总览</span></div>
+        <div class="sidebar-item" aria-current="page"><span data-icon="plan"></span><span>计划</span></div>
+        <div class="sidebar-item" onclick="notice('原型只实现计划屏')"><span data-icon="session"></span><span>会话</span></div>
+        <div class="sidebar-item" onclick="notice('原型只实现计划屏')"><span data-icon="config"></span><span>配置</span></div>
+        <div class="sidebar-item" onclick="notice('原型只实现计划屏')"><span data-icon="space"></span><span>知识库</span></div>
+      </nav>
+      <div class="spacer"></div>
+      <div class="sidebar-item" onclick="notice('帮助面板未在本页展开')"><span data-icon="help"></span><span>帮助</span></div>
+      <div class="sidebar-item" onclick="notice('原型只实现计划屏')"><span data-icon="settings"></span><span>设置</span></div>
+    </aside>
+
+    <main class="main">
+      <div class="content">
+        <section class="plan-grid" data-screen="plan">
+          <div class="plan-mid">
+            <div class="plan-toolbar">
+              <div class="left"><span id="title-wrap" class="ver-wrap"><span id="view-title">v0.4 · 本周</span><button id="rename-btn" class="icon-btn" title="改名" onclick="renameVersion()">✎</button></span></div>
+              <div class="right">
+                <select id="version-select" class="input input-sm" onchange="switchVersion(this.value)">
+                  <option value="all">全部 issue</option>
+                  <option value="v0.4" selected>v0.4 · 本周</option>
+                  <option value="v0.3">v0.3</option>
+                </select>
+                <button class="btn btn-secondary" onclick="notice('已重新读取仓与远端数据')">刷新</button>
+                <button id="delete-version" class="btn btn-secondary modal-hidden" onclick="openModal('delete')">删除版本</button>
+                <button id="create-version" class="btn btn-secondary modal-hidden" onclick="openModal('create')">创建版本</button>
+                <button id="pack-btn" class="btn btn-secondary" onclick="openModal('pack')">出包</button>
+                <button id="release-btn" class="btn btn-secondary" onclick="openModal('release')">发版本</button>
+                <button class="btn btn-primary" onclick="openModal('new')">新建issue</button>
+                <button id="mode-btn" class="btn btn-secondary btn-icon" title="切换列表视图" onclick="toggleMode()">☰</button>
+              </div>
+            </div>
+
+            <div id="version-head">
+              <div class="goal-box" onclick="this.classList.toggle('is-open')">
+                <div class="goal-box-text">让版本计划、开工与发版形成一条清楚的工作路径；人在计划屏掌握每张活的真实状态。</div>
+                <button class="goal-box-toggle" title="展开" onclick="event.stopPropagation();this.parentElement.classList.toggle('is-open')">▾</button>
+              </div>
+              <div class="week-progress" title="完成 3 · 待评审 1 · 进行中 2 · 阻塞 1 · 待办 3">
+                <div style="width:30%;background:var(--color-success)"></div>
+                <div style="width:10%;background:var(--color-accent-2)"></div>
+                <div style="width:20%;background:var(--color-warning)"></div>
+                <div style="width:10%;background:var(--color-danger)"></div>
+                <div style="width:30%;background:var(--color-neutral-300)"></div>
+              </div>
+              <div class="row-wrap" style="margin:var(--space-2) 0">
+                <span class="tag tag-outline">本周计划复盘 · 进行中</span>
+              </div>
+            </div>
+
+            <div id="board-view" class="board"></div>
+            <div id="list-view" class="il-wrap modal-hidden"></div>
+          </div>
+        </section>
+      </div>
+    </main>
+  </div>
+
+  <div id="modal-root"></div>
+  <div id="toast" class="toast prototype-note modal-hidden" role="status">
+    <div id="toast-body" class="toast-body"></div>
+    <button class="toast-action" onclick="hideToast()">关闭</button>
+  </div>
+
+  <script>
+    const cards = [
+      {id:71, col:'todo', seg:'unscheduled', title:'补充首次接入的失败提示', body:'仓信息读不到时，把原话交给人。', plan:'', who:'未指派', ago:'2小时前', brand:'CodeHub'},
+      {id:68, col:'todo', seg:'scheduled', title:'计划屏版本下拉与远端里程碑对齐', body:'切版本后重新读取对应的 issue。', plan:'v0.4', who:'xiaoduo', ago:'1天前', brand:'CodeHub'},
+      {id:74, col:'progress', seg:'progress', title:'校准计划屏高保真', body:'按当前真壳更新版式和交互。', plans:['v0.3','v0.4'], released:'', who:'claude', ago:'刚刚', brand:'CodeHub'},
+      {id:70, col:'progress', seg:'progress', title:'完善出包进度回执', body:'关闭弹窗不打断后台任务。', plan:'v0.4', who:'claude', ago:'3小时前', brand:'CodeHub'},
+      {id:66, col:'pending', seg:'review', title:'设置屏工具探活收口', body:'MR 已开，等人验收。', plan:'v0.4', who:'xiaoduo', ago:'5小时前', brand:'CodeHub'},
+      {id:63, col:'pending', seg:'blocked', title:'CodeHub 远端授权联调', body:'等待测试账号权限。', plan:'v0.4', who:'xiaoduo', ago:'2天前', brand:'CodeHub'},
+      {id:60, col:'done', seg:'done', title:'移除过时通知入口', body:'个人提醒回到系统通知。', plan:'v0.4', who:'claude', ago:'3天前', brand:'CodeHub'},
+      {id:58, col:'done', seg:'done', title:'接入 Builder 设计系统', body:'壳编译期使用统一样式正本。', plan:'v0.4', who:'claude', ago:'4天前', brand:'CodeHub'},
+      {id:55, col:'done', seg:'cancelled', title:'保留旧版周列表兼容层', body:'产品不再保留旧路径。', plan:'v0.4', who:'xiaoduo', ago:'5天前', brand:'CodeHub'},
+      {id:49, col:'done', seg:'done', title:'单侧栏壳骨架接线', body:'项目入口收进一条紧凑侧栏。', plan:'v0.3', who:'claude', ago:'9天前', brand:'CodeHub'},
+      {id:47, col:'done', seg:'cancelled', title:'独立通知页面', body:'群通知与个人提醒不再占一个产品页面。', plan:'v0.3', who:'xiaoduo', ago:'10天前', brand:'CodeHub'}
+    ];
+
+    const columns = [
+      {key:'todo', title:'待办', dot:'status-todo', segments:[['unscheduled','未排期'],['scheduled','已排期']]},
+      {key:'progress', title:'进行中', dot:'status-progress is-live', segments:[['progress','进行中']]},
+      {key:'pending', title:'待处理', dot:'status-review', segments:[['review','待评审'],['blocked','阻塞']]},
+      {key:'done', title:'已完成', dot:'status-done', segments:[['done','完成'],['cancelled','拒绝']]}
+    ];
+
+    const state = {mode:'board', version:'v0.4', segments:{todo:'unscheduled', pending:'review', done:'done'}, preset:'open', plan:'', stage:'', q:''};
+
+    const icons = {
+      back:'<path d="M15 5l-7 7 7 7"/>', overview:'<circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="2.6"/>',
+      plan:'<path d="M5 6h14M5 12h14M5 18h9"/>', session:'<rect x="3" y="4" width="18" height="16" rx="2"/><path d="M7 9l3 3-3 3M13 15h4"/>',
+      config:'<path d="M4 7h9M17 7h3M4 12h3M9 12h11M4 17h13M19 17h1"/><circle cx="15" cy="7" r="2"/><circle cx="6" cy="12" r="2"/><circle cx="17" cy="17" r="2"/>',
+      space:'<path d="M4 6a2 2 0 012-2h6l2 2h6a2 2 0 012 2v9a2 2 0 01-2 2H6a2 2 0 01-2-2V6z"/><path d="M4 9h16"/>',
+      help:'<circle cx="12" cy="12" r="9"/><path d="M9.5 9.2a2.6 2.6 0 015 .9c0 1.7-2.5 2.1-2.5 3.9M12 17.2v.1"/>',
+      settings:'<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 11-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33A1.65 1.65 0 0014 20.83V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 11-2.83-2.83l.06-.06a1.65 1.65 0 00.33-1.82A1.65 1.65 0 003.17 14H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 112.83-2.83l.06.06A1.65 1.65 0 009 4.6h.09A1.65 1.65 0 0010 3.17V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 112.83 2.83l-.06.06A1.65 1.65 0 0019.4 9v.09A1.65 1.65 0 0020.83 10H21a2 2 0 010 4h-.09A1.65 1.65 0 0019.4 15z"/>'
+    };
+    document.querySelectorAll('[data-icon]').forEach(el=>{el.innerHTML=`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">${icons[el.dataset.icon]}</svg>`;});
+
+    function esc(s){return String(s).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+    function plansOf(c){return c.plans||[c.plan].filter(Boolean);}
+    function placeOf(c){const plans=plansOf(c);return plans.length?plans.map(v=>'版本·'+v).join(' · '):'未排期';}
+    function carryoverLabel(c){return state.version==='v0.3'&&plansOf(c).includes('v0.3')&&plansOf(c).includes('v0.4')&&c.released!=='v0.3'?'遗留 v0.4':'';}
+    function visibleCards(){
+      return cards.filter(c => state.version === 'all' || plansOf(c).includes(state.version));
+    }
+    function cardHtml(c){
+      const initial = c.who === '未指派' ? '?' : c.who.slice(0,1).toUpperCase();
+      const place = placeOf(c); const carryover=carryoverLabel(c);
+      return `<div class="card kcard" draggable="true" onclick="openDetail(${c.id})">
+        <div class="kcard-top"><span class="mono">#${c.id}</span><span class="tag tag-accent-2">${esc(c.brand)}</span><span class="status-dot ${statusClass(c)} ml-auto"></span></div>
+        <div class="kcard-title">${esc(c.title)}</div><div class="kcard-desc">${esc(c.body)}</div>
+        ${state.version==='all' ? `<div class="tag tag-neutral kcard-place"><span class="kcard-folder">▸</span>${esc(place)}</div>` : ''}
+        ${carryover ? `<div class="tag tag-warning kcard-place">${carryover}</div>` : ''}
+        <div class="kcard-foot"><span class="kcard-who"><span class="avatar avatar-sm">${esc(initial)}</span>${esc(c.who)}</span><span class="kcard-ago">${esc(c.ago)}</span></div>
+      </div>`;
+    }
+    function statusClass(c){return c.seg==='blocked'?'status-blocked':c.col==='progress'?'status-progress is-live':c.seg==='review'?'status-review':c.col==='done'?'status-done':'status-todo';}
+    function renderBoard(){
+      const pool=visibleCards();
+      document.getElementById('board-view').innerHTML=columns.map(col=>{
+        const inCol=pool.filter(c=>c.col===col.key);
+        const active=col.segments.length===1?col.segments[0][0]:(state.segments[col.key]||col.segments[0][0]);
+        const seg=col.segments.length>1?`<div class="seg board-seg">${col.segments.map(([key,label])=>`<label class="seg-opt"><input type="radio" name="seg-${col.key}" ${active===key?'checked':''} onchange="chooseSegment('${col.key}','${key}')">${label}<span class="seg-count">${inCol.filter(c=>c.seg===key).length}</span></label>`).join('')}</div>`:'';
+        const shown=inCol.filter(c=>c.seg===active);
+        return `<div class="board-col"><div class="board-col-head"><span class="status-dot ${col.dot}"></span>${col.title}<span class="count">${inCol.length}</span></div>${seg}<div class="board-seg-box">${shown.map(cardHtml).join('')||'<div class="board-empty">无 issue</div>'}</div></div>`;
+      }).join('');
+    }
+    function chooseSegment(col,seg){state.segments[col]=seg;renderBoard();}
+
+    function stageLabel(c){return ({unscheduled:'未排期',scheduled:'已排期',progress:'进行中',review:'待评审',blocked:'阻塞',done:'完成',cancelled:'已取消'})[c.seg];}
+    function pill(c){return c.seg==='progress'?'tag-warning':c.seg==='review'?'tag-accent-2':c.seg==='blocked'?'tag-danger':c.seg==='done'?'tag-success':c.seg==='cancelled'?'tag-outline':'tag-neutral';}
+    function renderList(){
+      let rows=visibleCards().filter(c=>!state.plan||(state.plan==='unscheduled'?plansOf(c).length===0:plansOf(c).includes(state.plan))).filter(c=>!state.stage||c.seg===state.stage).filter(c=>!state.q||(`${c.title} ${c.who}`).toLowerCase().includes(state.q.toLowerCase()));
+      const opts=['<option value="">全部</option>','<option value="unscheduled">未排期</option>','<option value="v0.4">v0.4</option>','<option value="v0.3">v0.3</option>'].join('');
+      document.getElementById('list-view').innerHTML=`<div class="il-bar"><div class="il-presets"><div class="seg"><label class="seg-opt"><input type="radio" checked>开放</label><label class="seg-opt"><input type="radio">分配我的</label><label class="seg-opt"><input type="radio">我的</label></div></div><div class="il-tools">${state.version==='all'?`<select class="input input-sm" onchange="state.plan=this.value;renderList()">${opts}</select>`:''}<select class="input input-sm" onchange="state.stage=this.value;renderList()"><option value="">全部阶段</option><option value="scheduled">已排期</option><option value="progress">进行中</option><option value="review">待评审</option><option value="blocked">阻塞</option><option value="done">完成</option><option value="cancelled">已取消</option></select><div class="il-search-wrap"><input class="input input-sm" placeholder="Search issues..." oninput="state.q=this.value;renderList()"></div></div></div>
+        <div class="list issue-list"><div class="list-row il-head"><span class="il-num">ID</span><span class="il-title">标题</span><span class="il-owner">负责人</span><span class="il-status">状态</span><span class="il-updated">已更新</span><span class="il-act"></span></div>${rows.map(c=>`<div class="list-row" onclick="openDetail(${c.id})"><span class="il-num"><span class="il-idmark"></span>#${c.id}</span><span class="il-title"><span class="il-t1">${esc(c.title)}</span><span class="il-t2">by ${esc(c.who)} · ${esc(placeOf(c))}${carryoverLabel(c)?` · <span class="tag tag-warning">${carryoverLabel(c)}</span>`:''}</span></span><span class="il-owner"><span class="avatar avatar-sm">${esc(c.who.slice(0,1))}</span>${esc(c.who)}</span><span class="il-status"><span class="tag ${pill(c)}">${stageLabel(c)}</span></span><span class="il-updated">${esc(c.ago)}</span><span class="il-act"><button class="btn btn-ghost" onclick="event.stopPropagation();notice('会话入口在真壳中打开会话屏')">${c.seg==='unscheduled'?'schedule':c.seg==='scheduled'?'Start →':'Open →'}</button></span></div>`).join('')}</div>`;
+    }
+
+    function toggleMode(){
+      state.mode=state.mode==='board'?'list':'board';
+      document.getElementById('board-view').classList.toggle('modal-hidden',state.mode!=='board');
+      document.getElementById('list-view').classList.toggle('modal-hidden',state.mode!=='list');
+      document.getElementById('mode-btn').textContent=state.mode==='board'?'☰':'▦';
+      document.getElementById('mode-btn').title=state.mode==='board'?'切换列表视图':'切换看板视图';
+      if(state.mode==='list')renderList();
+    }
+    function switchVersion(version){
+      state.version=version; state.plan=''; state.stage=''; state.q='';
+      const all=version==='all';
+      document.getElementById('view-title').textContent=all?'全部 issue':version+(version==='v0.4'?' · 本周':'');
+      document.getElementById('rename-btn').classList.toggle('modal-hidden',all||version==='v0.3');
+      document.getElementById('version-head').classList.toggle('modal-hidden',all);
+      document.getElementById('create-version').classList.toggle('modal-hidden',!all);
+      document.getElementById('delete-version').classList.toggle('modal-hidden',!all);
+      document.getElementById('pack-btn').classList.toggle('modal-hidden',all);
+      document.getElementById('release-btn').classList.toggle('modal-hidden',all);
+      document.getElementById('release-btn').disabled=version==='v0.3';
+      renderBoard(); if(state.mode==='list')renderList();
+    }
+
+    function modalShell(kicker,title,body,actions){return `<div class="dialog-backdrop" onclick="if(event.target===this)closeModal()"><div class="dialog dialog-wide plan-modal"><div class="plan-modal-head"><div class="plan-modal-tag">${kicker}</div><div class="plan-modal-title">${title}</div><button class="btn btn-ghost btn-quiet btn-icon plan-modal-x" onclick="closeModal()">✕</button></div><div class="plan-modal-body">${body}</div><div class="plan-modal-foot"><span></span><div class="row">${actions}</div></div></div></div>`;}
+    function openDetail(id){
+      const c=cards.find(x=>x.id===id); if(!c)return;
+      const carryover=carryoverLabel(c);
+      const body=`<textarea class="input detail-body-text">${esc(c.body)}</textarea><div class="plan-meta-grid"><div class="detail-row span-all"><div class="k">链接</div>issue #${c.id} ↗</div><div class="detail-row span-all"><div class="k">类别</div><select class="input"><option>构建</option><option>优化</option><option>原型</option></select></div><div class="detail-row"><div class="k">状态</div><select class="input"><option>${stageLabel(c)}</option><option>完成</option></select></div><div class="detail-row"><div class="k">计划</div><div class="row-wrap"><select class="input"><option>${state.version==='all'?placeOf(c):state.version}</option><option>未排期</option></select>${carryover?`<span class="tag tag-warning">${carryover}</span>`:''}</div></div><div class="detail-row"><div class="k">负责人</div><input class="input" value="${esc(c.who==='未指派'?'':c.who)}" placeholder="指派谁"></div></div><div class="plan-review-hint">Complete 由人确认。agent 跑完只到待评审。</div>`;
+      document.getElementById('modal-root').innerHTML=modalShell(`详情 · #${c.id}`,`<input class="input plan-modal-title-input" value="${esc(c.title)}">`,body,`<button class="btn btn-secondary" onclick="notice('真壳会按当前状态执行对应动作')">${c.seg==='unscheduled'?'schedule':c.seg==='scheduled'?'Start':'Open'}</button><button class="btn btn-secondary" onclick="notice('完成需要人确认')">Complete</button><button class="btn btn-primary" onclick="closeModal();notice('已保存原型中的编辑')">保存</button>`);
+    }
+    function openModal(kind){
+      const map={
+        new:['新建','新建 issue','<div class="field"><label>标题 *</label><input class="input" placeholder="这张活要干什么"></div><div class="field"><label>正文</label><textarea class="input" placeholder="要做成什么、边界。可空"></textarea></div><div class="field"><label>类别</label><select class="input"><option>原型</option><option>构建</option><option>优化</option></select></div><div class="field"><label>负责人</label><input class="input" placeholder="指派谁(可空)"></div><div class="hint">新建的 issue 排进当前版本。</div>','创建'],
+        create:['版本','创建版本','<div class="field"><label>版本名 *</label><input class="input" value="v0.5" placeholder="例如 v0.5"></div><div class="field-2"><div class="field"><label>开始</label><input class="input" type="date" value="2026-09-07"></div><div class="field"><label>结束</label><input class="input" type="date" value="2026-09-11"></div></div><div class="field"><div class="field-head"><label>划归的 issue</label><button class="btn btn-ghost" onclick="event.preventDefault();document.getElementById(\'issue-picker\').classList.toggle(\'modal-hidden\')">＋ 选 issue</button></div><div id="issue-picker" class="check-list modal-hidden"><label class="check-row"><input type="checkbox"><span>#71 补充首次接入的失败提示</span></label><label class="check-row"><input type="checkbox"><span>#74 校准计划屏高保真</span><span class="check-row-from">v0.4</span></label></div></div><div class="hint">创建版本时会同时建立这个版本的运作活①。</div>','创建'],
+        delete:['删除版本','删除版本','<div class="field"><label>选版本</label><select class="input"><option>v0.4</option></select></div><div class="hint">确认后摘掉 issue 上的 bw:plan 标签。</div>','删除'],
+        pack:['出包','出包','<div class="field"><label>版本号</label><input class="input" value="v0.4" readonly></div><div class="ship-rows"><div class="ship-row ship-row--idle"><span class="ship-dot"></span><span class="ship-row-label">出包</span><span class="ship-row-text">还没开始</span></div><div class="ship-row ship-row--idle"><span class="ship-dot"></span><span class="ship-row-label">验包</span><span class="ship-row-text">出包过了再验</span></div></div>','确认 · 出包'],
+        release:['发版本','发版本','<div class="field"><label>版本号</label><input class="input" value="v0.4" readonly></div><div class="field"><label>说明</label><textarea class="input">版本 v0.4 完成的活</textarea></div><div class="hint">确认后给这份代码打远端 tag；勾上的已完成 issue 才打发版标签。</div>','确认 · 发版']
+      };
+      const x=map[kind]; const danger=kind==='delete'?'btn-danger':'btn-primary';
+      document.getElementById('modal-root').innerHTML=modalShell(x[0],x[1],x[2],`<button class="btn btn-secondary" onclick="closeModal()">取消</button><button class="btn ${danger}" onclick="closeModal();notice('${x[3]}：原型不写远端')">${x[3]}</button>`);
+    }
+    function closeModal(){document.getElementById('modal-root').innerHTML='';}
+    function renameVersion(){
+      const title=document.getElementById('view-title');
+      const next=prompt('版本名',state.version);
+      if(!next||!next.trim())return;
+      title.textContent=next.trim()+' · 本周';
+      notice('原型只演示改名；真壳会同步到远端里程碑与标签');
+    }
+    function notice(message){document.getElementById('toast-body').textContent=message;document.getElementById('toast').classList.remove('modal-hidden');}
+    function hideToast(){document.getElementById('toast').classList.add('modal-hidden');}
+
+    renderBoard();
+  </script>
+</body>
+</html>

@@ -447,14 +447,14 @@ pub struct Issue {
     pub assignee: String,
     /// 提出人(codehub issue author)。空 = 认不出。正本在远端,本地只透传。
     pub author: String,
-    /// 排进哪个版本(`bw:plan:<里程碑名>`)。空 = 未排期。旧 `bw:week:` 不认。
-    pub plan_version: String,
+    /// 排进哪些版本(`bw:plan:<里程碑名>`)。旧版本回看依赖保留历史计划标签。
+    pub plan_versions: Vec<String>,
 }
 
 impl Issue {
     /// 排进某个版本了没有。只认 `bw:plan:`。
     pub fn is_scheduled(&self) -> bool {
-        !self.plan_version.is_empty()
+        !self.plan_versions.is_empty()
     }
 }
 

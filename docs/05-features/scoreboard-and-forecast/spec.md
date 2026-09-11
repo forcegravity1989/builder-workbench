@@ -4,7 +4,7 @@
 
 ## 1. 可点原型
 
-[`prototype.html`](prototype.html) —— 单文件、浏览器直接打开,左栏点「总览 / 计划」切两屏。1440×900,壳与 token 继承 [`docs/hifi/overview-36.html`](../../hifi/overview-36.html) 与 [`docs/04-design-system/styles.css`](../../04-design-system/styles.css),**没有另起一套视觉**。页内数字是演示数据(顶栏 ✱ 标),取的是本仓真实活号与量级。
+[`prototype.html`](prototype.html) —— 单文件、浏览器直接打开,左栏点「总览 / 计划」切两屏。1440×900,壳与 token 继承 [`docs/hifi/overview.html`](../../hifi/overview.html) 与 [`docs/04-design-system/styles.css`](../../04-design-system/styles.css),**没有另起一套视觉**。页内数字是演示数据(顶栏 ✱ 标),取的是本仓真实活号与量级。
 
 原型画的是**成熟态**(跑了 12 周、指标定齐)。接入第一天、只有一条指标、数据不满 8 周的样子**没画**——见 §7 留白。
 

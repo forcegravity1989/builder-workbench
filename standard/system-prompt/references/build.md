@@ -11,7 +11,7 @@
 
 ## 干完推到「评审中」
 
-提完 MR 后改本活的状态标签,不要关 issue、不要 merge。
+提完 MR 后按 `issue-state.md` 改本活的状态标签,不要关 issue、不要 merge。
 
 - codehub:`codehub-cli issue update <iid> -p <path> -H <host> --labels bw:status:inreview`(只换 `bw:status:*` 槽)
 - GitHub:`gh issue edit <n> --remove-label bw:status:inprogress --add-label bw:status:inreview`

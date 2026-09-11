@@ -1535,7 +1535,7 @@ pub(super) fn or_blank(s: &str) -> String {
     }
 }
 
-/// 自定义版本(计划包)列表:扫 issues 的 `plan_version` 字段去重,带计数。
+/// 自定义版本(计划包)列表:扫 issues 的 `plan_versions` 字段去重,带计数。
 /// 起止时间暂留空(要读 codehub milestone 列表才有,VM 构建时不起远端调用)。
 /// 当前登录用户名(给列表「我的」筛选用)。读不到返空。
 async fn current_user(app: &App, p: &Project) -> String {
@@ -1549,18 +1549,19 @@ async fn current_user(app: &App, p: &Project) -> String {
 async fn build_plan_versions(app: &App, p: &Project, issues: &[bw::Issue]) -> Vec<PlanVersionVm> {
     let mut counts: std::collections::HashMap<String, u32> = std::collections::HashMap::new();
     for i in issues {
-        if i.plan_version.is_empty() {
-            continue;
+        for name in &i.plan_versions {
+            *counts.entry(name.clone()).or_default() += 1;
         }
-        *counts.entry(i.plan_version.clone()).or_default() += 1;
     }
     // 版本身份只认 `bw:plan:`。里程碑列表只给同名补起止,不单独贡献空版本。
     let mut order: Vec<String> = Vec::new();
     let mut meta: std::collections::HashMap<String, (String, String, String)> =
         std::collections::HashMap::new();
     for i in issues {
-        if !i.plan_version.is_empty() && !order.contains(&i.plan_version) {
-            order.push(i.plan_version.clone());
+        for name in &i.plan_versions {
+            if !order.contains(name) {
+                order.push(name.clone());
+            }
         }
     }
     if let Ok(remote) = app.remote_for(p) {
@@ -1630,7 +1631,8 @@ pub(super) fn card_item(i: &bw::Issue) -> CardItemVm {
         body: i.body.clone(),
         assignee: i.assignee.clone(),
         author: i.author.clone(),
-        plan_version: i.plan_version.clone(),
+        plan_versions: i.plan_versions.clone(),
+        released_version: i.version.clone(),
         updated_at: if i.updated_at > 0 {
             i.updated_at
         } else {
@@ -1705,7 +1707,7 @@ mod tests {
             settled_at: None,
             assignee: String::new(),
             author: String::new(),
-            plan_version: String::new(),
+            plan_versions: Vec::new(),
         }
     }
 
