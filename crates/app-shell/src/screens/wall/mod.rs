@@ -1,12 +1,3 @@
-//! 顶层 · 项目墙。不打开任何项目时看到的那一屏。
-//!
-//! 版式照 `docs/hifi/index.html` 的 `renderWall`:本机环境条 →
-//! 健康概览条 → 两列项目卡。
-//!
-//! 卡片上的灯来自库里的显示缓存(项目墙要在不打开项目时列出 N 个项目,不能每
-//! 次启动扫 N 个仓)。**没数据的灯是灰的,不是绿的**;健康概览条里那个「无数据」
-//! 计数就是专门为了让人看见有多少项目的灯还没被真实数据点亮。
-
 use crate::bridge::{Bridge, GuideNav, Req, TopView};
 use crate::chrome::light_dot;
 use crate::vm::{ProjectCardVm, ToolProbeVm, Vm};
@@ -17,11 +8,8 @@ use dioxus::prelude::*;
 pub fn View(vm: Vm, bridge: Bridge, go_top: EventHandler<TopView>) -> Element {
     let (vm, bridge) = (&vm, &bridge);
     let counts = Counts::of(&vm.projects);
-    // 抽屉导航在这里取一次往下传。**不能在 env_item 里取** —— 那个函数在
-    // `for` 循环里被调用,hook 进了循环就不再是每轮渲染同样的调用序列。
+    // hook 放在组件中，不能在逐卡渲染的循环里调用。
     let guide = use_context::<GuideNav>();
-    // 哪张卡正在问「真移走?」。**放在这里而不是每张卡里** —— 卡片是在 `for`
-    // 循环里画的,hook 进了循环就不再是每轮渲染同样的调用序列。
     let asking = use_signal(|| None::<bw::model::ProjectId>);
     rsx! {
         section {
@@ -29,12 +17,11 @@ pub fn View(vm: Vm, bridge: Bridge, go_top: EventHandler<TopView>) -> Element {
             div { class: "page-head",
                 div {
                     h1 { "项目墙" }
-                    p { class: "page-desc", "接进来的项目都在这;灯是健康,灰是还没数据。" }
                 }
                 div { class: "page-actions",
                     button {
                         class: "btn btn-secondary",
-                        title: "重读本机数据,顺带把每个工具再探一遍",
+                        title: "刷新项目数据",
                         onclick: {
                             let b = bridge.clone();
                             move |_| b.send(Req::Refresh)
@@ -55,7 +42,7 @@ pub fn View(vm: Vm, bridge: Bridge, go_top: EventHandler<TopView>) -> Element {
                 span { class: "bar-label", "健康概览" }
                 {health_group(Some(HealthSignal::Green), "平稳", counts.green)}
                 {health_group(Some(HealthSignal::Amber), "需要关注", counts.amber)}
-                {health_group(Some(HealthSignal::Red), "阻塞", counts.red)}
+                {health_group(Some(HealthSignal::Red), "异常", counts.red)}
                 {health_group(None, "无数据", counts.unknown)}
                 span { class: "ml-auto hint", "共 {vm.projects.len()} 个项目" }
             }
@@ -64,7 +51,7 @@ pub fn View(vm: Vm, bridge: Bridge, go_top: EventHandler<TopView>) -> Element {
                 div { class: "card empty empty-center",
                     "还没有接入任何项目。"
                     br {}
-                    "点右上角「接入项目」,填四个字段,Workbench 会把管理体系铺进这个仓。"
+                    "点击「接入项目」打开本地仓库或克隆远端仓库。"
                 }
             } else {
                 div { class: "wall-grid",
@@ -77,8 +64,6 @@ pub fn View(vm: Vm, bridge: Bridge, go_top: EventHandler<TopView>) -> Element {
     }
 }
 
-/// 四个灯各有多少个项目。**灰的单独数一格** —— 「无数据」不是「一切正常」,
-/// 混进绿里就把没接上数据的项目藏起来了。
 struct Counts {
     green: usize,
     amber: usize,
@@ -93,7 +78,6 @@ impl Counts {
             green: n(Some(HealthSignal::Green)),
             amber: n(Some(HealthSignal::Amber)),
             red: n(Some(HealthSignal::Red)),
-            // 库里存的是 `Unknown`,还没算过的是 `None` —— 两种都是「没数据」。
             unknown: n(Some(HealthSignal::Unknown)) + n(None),
         }
     }
@@ -105,8 +89,6 @@ fn health_group(s: Option<HealthSignal>, label: &str, n: usize) -> Element {
     }
 }
 
-/// 探活跟着整份 ViewModel 一起重算,所以页头那颗「刷新」就是再探一遍 ——
-/// 这条不再单独放按钮。
 fn env_bar(env: &[ToolProbeVm], guide: GuideNav) -> Element {
     rsx! {
         div { class: "card envbar",
@@ -121,8 +103,8 @@ fn env_bar(env: &[ToolProbeVm], guide: GuideNav) -> Element {
 fn env_item(t: &ToolProbeVm, guide: GuideNav) -> Element {
     let (text, fail) = match t.ok {
         Some(true) => ("可用", false),
-        Some(false) => ("没装", true),
-        None => ("还没接", false),
+        Some(false) => ("不可用", true),
+        None => ("未检测", false),
     };
     rsx! {
         span {
@@ -142,8 +124,6 @@ fn env_item(t: &ToolProbeVm, guide: GuideNav) -> Element {
     }
 }
 
-/// 探活三态借用健康三色:探到=绿、没装=红、**还没接实现=灰**。灰这一档不能
-/// 画成红 —— 「我们还没写这个探活」和「你本机没装」是两件事。
 fn dot_of(ok: Option<bool>) -> Option<HealthSignal> {
     match ok {
         Some(true) => Some(HealthSignal::Green),
@@ -152,10 +132,6 @@ fn dot_of(ok: Option<bool>) -> Option<HealthSignal> {
     }
 }
 
-/// 一张项目卡。右上角那个 × 是**从工作台移走**,不是删仓 —— 点一下先问一句,
-/// 再点「移走」才真发命令。高保真上那个 × 当初没做,理由是「内核没有删除项目
-/// 这条命令」;试点第一天用户当场问它去哪了,而且中途失败留下的半成品项目正是
-/// 靠它才收得掉。命令补上了,× 也就回来了。
 fn project_card(
     p: &ProjectCardVm,
     bridge: &Bridge,
@@ -188,13 +164,13 @@ fn project_card(
             onclick: move |_| b.send(Req::Open(Some(id))),
             div { class: "pcard-top",
                 if p.version.trim().is_empty() {
-                    span { class: "tag tag-outline mono", title: "仓里的 .bw/project.toml 没写在研版本", "版本未定" }
+                    span { class: "tag tag-outline mono", title: "当前没有在研版本", "版本未定" }
                 } else {
                     span { class: "tag tag-outline mono", "{p.version}" }
                 }
                 span { class: "tag tag-neutral", "{p.week}" }
                 if p.unread > 0 {
-                    span { class: "tag tag-accent", title: "评审中的活有几张等你合入", "⚑ {p.unread}" }
+                    span { class: "tag tag-accent", title: "待评审工作数量", "⚑ {p.unread}" }
                 }
                 span { class: "spacer" }
                 {light_dot(p.signal, true)}
@@ -202,7 +178,6 @@ fn project_card(
                     class: "pcard-x",
                     title: "从工作台移走(不删仓)",
                     onclick: move |e: MouseEvent| {
-                        // 卡片整张是「打开这个项目」,× 不能顺带把项目开了。
                         e.stop_propagation();
                         asking.set(if confirming { None } else { Some(id) });
                     },
@@ -224,9 +199,9 @@ fn project_card(
                     div {
                         "把「" strong { "{p.name}" } "」从工作台移走?"
                         br {}
-                        "库里这个项目和它所有活的账会一起没,"
-                        strong { "仓不动" }
-                        " —— 硬盘上的代码一个字节都不碰。"
+                        "将移除本机项目和会话记录，"
+                        strong { "保留仓库与远端 Issue" }
+                        "。"
                     }
                     div { class: "row",
                         button {
@@ -254,7 +229,7 @@ fn project_card(
             }
             div { class: "hint",
                 if p.week_total == 0 {
-                    "本周还没排活"
+                    "本周暂无排期"
                 } else {
                     "本周 {p.week_done}/{p.week_total} 完成 · {p.remote}"
                 }

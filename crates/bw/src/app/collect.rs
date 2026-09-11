@@ -1,18 +1,3 @@
-//! 指标采集 —— 起脚本、传时间窗、读标准输出的 JSON。
-//!
-//! 这个模块只做那三件事,**一件业务判断都不做**:
-//!
-//! 1. **采集方式只有两种** —— 脚本、手填。没有第三种,尤其**没有「Workbench 内建的
-//!    git 算子」**:那等于把算法藏进二进制,项目看不见、改不了、也说不清这个数
-//!    怎么来的。git 类统计一样走脚本,只不过脚本由 Workbench 铺一份现成的。
-//! 2. **窗口由 Workbench 给,不是脚本自己决定**。面板要四周就传四周,要八周就传
-//!    八周 —— 采多少和画多少永远一致。V3 把这个决定权留在脚本里(自带脚本硬编码
-//!    30 天)而面板按 8 周画,于是前三四周永远是空的,长期对不上还没人发现。
-//! 3. **只认标准输出的一个 JSON 对象**,不是 JSON 就算这次采集失败。V3 只读脚本
-//!    写出的文件、不看标准输出,结果**每次采集都报「成功」而指标永远没数**。
-//!
-//! **失败一律如实,绝不写 0。** 0 是一个真实的数值,「没采到」不是。
-
 use super::App;
 use crate::command::Event;
 use crate::isoweek;
@@ -24,25 +9,17 @@ use std::path::{Path, PathBuf};
 use std::process::Stdio;
 use std::time::Duration;
 
-/// 单个脚本最多跑多久。超时按「没采到」算,不是按 0 算。
 const TIMEOUT: Duration = Duration::from_secs(900);
 
-/// 一周一个点。`value` **原样保留脚本给的东西** —— 数也好、`"87%"` 这种给人看的
-/// 字符串也好,要画走势时才解析,解析不出来的点跳过、不画、不猜。
-///
-/// **`None` = 这一周没采到,不是 0**。脚本少给几周时那几格留 `None`,走势图上
-/// 断开;**绝不把这几格从序列里删掉** —— 删掉会让图把剩下的点均匀铺开,看起来
-/// 像是连续的四周,读的人根本发现不了中间断过。
+/// None 表示缺数据，不能补零。
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct MetricPoint {
     pub week: String,
     pub value: Option<String>,
 }
 
-/// 一条指标采完之后的样子。
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct MetricReadout {
-    /// 指标名 —— `.bw/metrics.toml` 里没有单独的 id,名字就是键。
     pub name: String,
     pub class: MetricClass,
     /// 近 N 周,旧的在前,**每一周都有一格**(没采到的那格是 `None`)。
@@ -50,18 +27,13 @@ pub struct MetricReadout {
     pub points: Vec<MetricPoint>,
     /// 近 14 个日历日。A 类按天再跑一趟脚本;跑不动就空着,不挡周走势。
     pub day_points: Vec<MetricPoint>,
-    /// 现值 = **最后那一周**的值。最后一周没采到就是 `None` —— 绝不拿上一周的
-    /// 数顶上当现值,那会把一个过期的数字标成「现在是多少」。
+    /// 仅使用最后一周的值；该周缺数时不能用前一周替代。
     pub current: Option<String>,
     /// 这次为什么没采到。空 = 采到了,或者压根不该采(手填)。**不吞错误。**
     pub error: String,
 }
 
-/// 采一遍这个项目的全部指标。
-///
-/// 三类各走各的路:可回溯的现算(传窗口跑脚本);不可回溯的跑脚本拿当下值,
-/// 记进账本 worktree 的 `.bw/metrics/readings.jsonl`(当天一行,再采覆盖),
-/// 走势从流水里铺;手填不跑脚本,走势从流水铺,数由 [`App::record_manual_metric`] 写入。
+/// 可回溯指标按时间窗运行脚本；其他指标从读数文件生成历史。
 pub async fn collect_all(ws: &Path, weeks: u32) -> Result<Vec<MetricReadout>, String> {
     let file = metrics_file::read(ws)
         .map_err(|e| e.to_string())?
@@ -75,7 +47,6 @@ pub async fn collect_all(ws: &Path, weeks: u32) -> Result<Vec<MetricReadout>, St
     Ok(out)
 }
 
-/// 只采 B 类(不可回溯、当下值进流水)。记账键是日历日,自动采每天一轮,展示按周。
 pub async fn collect_b_class(ws: &Path, weeks: u32) -> Result<Vec<MetricReadout>, String> {
     let file = metrics_file::read(ws)
         .map_err(|e| e.to_string())?
@@ -139,14 +110,11 @@ async fn collect_one(
             r.points = points;
         }
         Ok(ScriptOutcome::Snapshot(value)) => {
-            // 一个值也画:落在窗口最后一周,前面几周断开。不编前几周的数,
-            // 也不把整张卡打成失败 —— 规范仍要求 A 类吐按周 points。
             r.points = snapshot_as_last_week(labels, &value);
             r.current = Some(value);
         }
         Err(e) => r.error = e,
     }
-    // 天粒度另跑一趟。脚本还不认 day / 对不上号就记下原因,周走势照旧。
     let days = isoweek::recent_days(14);
     match run_script(ws, &def.collect.run, &days).await {
         Ok(ScriptOutcome::Series(pts)) => r.day_points = pts,
@@ -164,7 +132,7 @@ async fn collect_one(
     r
 }
 
-/// B 类:跑脚本拿当下一个值,覆盖进账本当天那一行,走势从流水铺。失败不写 0,旧行仍画。
+/// 当前值采集失败时不写零，历史仍使用已保存的读数。
 async fn collect_point_in_time(
     ws: &Path,
     ledger: Option<&Path>,
@@ -226,7 +194,7 @@ fn upsert_current(ledger: &Path, name: &str, value: &str) -> Result<(), String> 
     .map_err(|e| e.to_string())
 }
 
-/// 读数账本:固定 worktree,写不进主检出。开不出树就如实不写，绝不占用正规树路径。
+/// 读数只写入专用工作树；无法创建时不改写主检出，也不占用预定路径。
 async fn write_ledger(main: &Path) -> Option<PathBuf> {
     match bw_engine::workspace::provision_ledger_worktree(main).await {
         Ok(p) => {
@@ -263,7 +231,6 @@ fn fill_from_readings(ws: &Path, name: &str, labels: &[String], r: &mut MetricRe
 }
 
 impl App {
-    /// 人在总览手填卡记下今天这个数。只收 C 类,覆盖进账本当天那一行。
     pub(super) async fn record_manual_metric(
         &mut self,
         project_id: ProjectId,
@@ -317,15 +284,11 @@ impl App {
     }
 }
 
-/// 脚本跑完的两种诚实结果。
 enum ScriptOutcome {
-    /// 按周对齐过的序列,每一周都有一格。
     Series(Vec<MetricPoint>),
-    /// 只给了当下一个值。采集层会把它落在窗口最后一周,前几周断开。
     Snapshot(String),
 }
 
-/// 单点快照对齐到近 N 周:只有最后一格有值。
 fn snapshot_as_last_week(labels: &[String], value: &str) -> Vec<MetricPoint> {
     labels
         .iter()
@@ -337,7 +300,6 @@ fn snapshot_as_last_week(labels: &[String], value: &str) -> Vec<MetricPoint> {
         .collect()
 }
 
-/// 脚本吐回来的 JSON。可回溯的给序列;不可回溯的给一个当下的值,Workbench 记进流水。
 #[derive(Deserialize)]
 struct ScriptOut {
     #[serde(default)]
@@ -363,7 +325,6 @@ fn point_key(p: &ScriptPoint) -> &str {
     }
 }
 
-/// 把 JSON 值变成给人看的字符串。**数不带小数点尾巴,字符串原样。**
 fn as_text(v: &serde_json::Value) -> Option<String> {
     match v {
         serde_json::Value::Number(n) => Some(n.to_string()),
@@ -405,16 +366,12 @@ async fn run_script(ws: &Path, run: &[String], labels: &[String]) -> Result<Scri
     }
     let text = String::from_utf8_lossy(&out.stdout);
     let parsed: ScriptOut = serde_json::from_str(text.trim()).map_err(|e| {
-        // 把原始输出的头一段带出来 —— 「不是 JSON」这句话本身帮不上人,
-        // 看见它到底打了什么才帮得上。
         let head: String = text.trim().chars().take(120).collect();
         format!("采集脚本的输出不是 JSON({e});它打的是:{head}")
     })?;
     align_script_out(parsed, labels)
 }
 
-/// 把脚本吐的 JSON 对齐到 Workbench 要的周。抽出来是为了单测「只给 value」和
-/// 「周号对不上」这两条,不靠起真脚本。
 fn align_script_out(parsed: ScriptOut, labels: &[String]) -> Result<ScriptOutcome, String> {
     if parsed.points.is_empty() {
         if let Some(v) = parsed.value.as_ref().and_then(as_text) {
@@ -422,9 +379,7 @@ fn align_script_out(parsed: ScriptOut, labels: &[String]) -> Result<ScriptOutcom
         }
         return Err("采集脚本没给出任何数据点".into());
     }
-    // 按 Workbench 要的周对齐:脚本多给的周丢掉,少给的周留 `None`(断开,不补前值)。
-    // **每一周都占一格** —— 缺的周如果直接不放进序列,走势图会把剩下的点均匀
-    // 铺开,四周看起来还是连续的四周,读的人发现不了中间断过。
+    // 缺少的时间点保留为 None，避免图表掩盖时间断档。
     let mut points = Vec::with_capacity(labels.len());
     for w in labels {
         let value = parsed
@@ -445,7 +400,6 @@ fn align_script_out(parsed: ScriptOut, labels: &[String]) -> Result<ScriptOutcom
     Ok(ScriptOutcome::Series(points))
 }
 
-/// 近 `weeks` 周的 ISO 周号,**旧的在前**。
 fn week_labels(weeks: u32) -> Vec<String> {
     let mut out = Vec::new();
     let mut w = isoweek::current_week();

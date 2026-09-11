@@ -1,22 +1,13 @@
-//! `asset_root/sessions/<slug>/<iid>.jsonl` —— append-only 会话记录。
-//!
-//! 替代旧的 `claude_conversation` 表。每行一条 JSON 记录,按 `<slug>/<iid>.jsonl`
-//! 路由。读按 iid 读文件、取最后一条(最新的状态);写追加一行。
-//!
-//! **append-only**:每次状态变化(建会话、拿到 `--resume` id)都追加一行,
-//! 不改旧行。这样进程死了也能从文件里接回最后一次状态。同一张活的所有记录
-//! 在同一个文件里,扫一遍就能看到完整历史。
+//! 会话按项目与 issue 保存为 JSONL，追加新状态，读取最后一条记录。
 
 use crate::model::{Conversation, ConversationId, IssueId, ProjectId};
 use crate::repo::RepoFileError;
 use std::path::{Path, PathBuf};
 
-/// 一条会话记录(文件里的一行)。
 #[derive(Clone, Debug, serde::Serialize, serde::Deserialize)]
 struct Record {
     id: ConversationId,
     project_id: ProjectId,
-    /// 远端 issue 号(数字)。存成 u32,不是字符串。
     iid: u32,
     claude_session_id: String,
     workspace_path: String,
@@ -53,11 +44,9 @@ impl Record {
     }
 }
 
-/// 会话文件的读写。无状态。
 pub struct SessionStore;
 
 impl SessionStore {
-    /// 会话文件路径:`<asset_root>/sessions/<slug>/<iid>.jsonl`。
     fn path(asset_root: &Path, slug: &str, iid: u32) -> PathBuf {
         asset_root
             .join("sessions")
@@ -65,7 +54,7 @@ impl SessionStore {
             .join(format!("{iid}.jsonl"))
     }
 
-    /// 读一张活的会话(取文件里最后一条记录 = 最新状态)。
+    /// 读一个 Issue的会话(取文件里最后一条记录 = 最新状态)。
     /// 文件不存在 = 没有会话(`Ok(None)`)。
     pub fn read(
         asset_root: &Path,
@@ -83,7 +72,6 @@ impl SessionStore {
                 });
             }
         };
-        // 最后一条非空行 = 最新状态。
         let last = raw.lines().rfind(|l| !l.trim().is_empty());
         match last {
             None => Ok(None),
@@ -97,7 +85,6 @@ impl SessionStore {
         }
     }
 
-    /// 追加一条会话记录。父目录不存在就建。
     pub fn append(asset_root: &Path, slug: &str, c: &Conversation) -> Result<(), RepoFileError> {
         let path = Self::path(asset_root, slug, c.issue_id.iid());
         if let Some(parent) = path.parent() {
@@ -111,7 +98,6 @@ impl SessionStore {
             path: path.display().to_string(),
             why: format!("会话记录序列化失败:{e}"),
         })?;
-        // append:追加一行,不覆盖旧行。
         let mut content = line;
         content.push('\n');
         use std::io::Write;
@@ -163,13 +149,11 @@ impl SessionStore {
         Ok(convs)
     }
 
-    /// 删一个项目的全部会话文件(删项目时调)。
     pub fn remove_project(asset_root: &Path, slug: &str) {
         let dir = asset_root.join("sessions").join(slug);
         let _ = std::fs::remove_dir_all(&dir);
     }
 
-    /// 人点「删除会话」:整份 jsonl 拿掉。这张活下次开工会再建一行。
     pub fn remove_issue(asset_root: &Path, slug: &str, iid: u32) -> Result<(), RepoFileError> {
         let path = Self::path(asset_root, slug, iid);
         match std::fs::remove_file(&path) {

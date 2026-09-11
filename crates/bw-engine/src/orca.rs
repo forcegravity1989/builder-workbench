@@ -1,35 +1,11 @@
-//! 本机 Orca 的本地 pipe 客户端(会话开工)。对标 [`crate::open_design`]:
-//! 本机资源发现 + 薄 RPC 客户端,不进 [`crate::legacy_pty`] 的 Executor 体系,
-//! 不新 crate。token 只活在 [`OrcaRuntime`] 内存 —— 不落盘、不进 Event、不进
-//! jsonl、不进对照日志原文(日志只打 method / runtimeId / pid / worktree)。
-//!
-//! 协议(与 `.scratch/orca-rpc-smoke.cjs` 同语义,照抄不发明):本地
-//! named-pipe(Windows)/ unix socket(macOS·Linux)发一行 JSON
-//! `{id, authToken, method, params}`,`\n` 分隔;跳过 `{_keepalive:true}`;
-//! 按 id 匹配回包;看 `ok`。Windows 管道 open / read 可能阻塞,走 `spawn_blocking`
-//! 加超时(学 [`crate::open_design`]);`#![forbid(unsafe_code)]` 仍守,Windows 命名
-//! 管道用 `OpenOptions` 加 `share_mode`,不走 unsafe。
-//!
-//! 接口一次定住,不跟着穿刺脚本改形状。create 不回 Claude session id
-//! (Orca 只回自己的 `terminal.handle`),所以 Workbench 不编 id —— 没 id 才
-//! create;去会话和再开工接回都只切树,不 `ensure`(Orca 的 ensure 是
-//! `--resume` 再开一扇,树上已有的窗切过去就能看见)。
-//! web 配对码 Workbench 自己拿不到(Orca 只在桌面 IPC / `orca serve` 里发,
-//! 没开本地 pipe 的 RPC),由人从 Orca 桌面「给 web 配对」拿到 URL 贴进
-//! 设置屏或 `BW_ORCA_WEB_URL`;本机 pipe 的开工不靠 pairing,靠
-//! runtime.json 的 authToken。
-
 use std::io::{Read, Write};
 use std::path::{Path, PathBuf};
 use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
 
 use serde_json::{json, Value};
 
-/// 创建的超时(create 本身要起一个 agent,穿刺 20–45s)。
 const RPC_TIMEOUT: Duration = Duration::from_secs(45);
-/// 切树不该等 agent 拉起。官方包偶发慢回,12s 内没切过去就报,别空等 45s。
 const ACTIVATE_TIMEOUT: Duration = Duration::from_secs(12);
-/// 句柄超时后先停几秒再收 id / 切树,给渲染进程把 Claude 拉完。
 pub const HANDLE_TIMEOUT_SETTLE: Duration = Duration::from_secs(5);
 
 #[derive(Debug, thiserror::Error)]
@@ -50,7 +26,6 @@ pub enum OrcaError {
     BadFrame(String),
 }
 
-/// `createAgentSession` 的结果。句柄超时窗已经在,调用方要先 settle 再切树。
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum CreateSessionOutcome {
     Ready,
@@ -58,8 +33,7 @@ pub enum CreateSessionOutcome {
 }
 
 impl OrcaError {
-    /// Orca 渲染进程已经建了 tab / 拉起 agent,主进程 10 秒没把句柄交回。
-    /// 回包是失败,活已经起来了 —— 当 HandleTimeout,调用方先 settle 再切树。
+    /// 渲染进程可能已启动 agent，但主进程尚未返回句柄；调用方需等待后再切树。
     pub fn is_terminal_handle_timeout(&self) -> bool {
         matches!(
             self,
@@ -68,8 +42,7 @@ impl OrcaError {
     }
 }
 
-/// 本机 Orca 运行时:本地 pipe 端点 + 一次性 token(只活在内存)。clone 只在
-/// 内存流转;token 不落盘、不进 Event/jsonl/对照日志。
+/// 运行时 token 仅留内存，不能写入事件、会话文件或日志。
 #[derive(Clone, Debug)]
 pub struct OrcaRuntime {
     endpoint: String,
@@ -78,7 +51,6 @@ pub struct OrcaRuntime {
     pid: Option<i64>,
 }
 
-/// 对照日志落哪。全仓一份,见 [`crate::dlog`]。
 pub fn diag_log_path() -> PathBuf {
     crate::dlog::log_path()
 }
@@ -100,7 +72,6 @@ fn preview(s: &str, n: usize) -> String {
 }
 
 impl OrcaRuntime {
-    /// 给日志打的一行人话(只含 runtimeId / pid / endpoint,绝不带 token)。
     pub fn log_tag(&self) -> String {
         format!(
             "runtimeId={} pid={} {}",
@@ -111,9 +82,7 @@ impl OrcaRuntime {
     }
 }
 
-/// 读本机 `orca-runtime.json`,取本地 pipe 端点 + authToken。没有文件 / 没有
-/// 本地 pipe / 没有 token → 人话错误(Orca 没开),不 panic。`ORCA_USER_DATA_PATH`
-/// 可覆盖用户数据目录(测试用)。
+/// 读取本机运行时文件；缺端点或 token 时返回错误。
 pub fn connect() -> Result<OrcaRuntime, OrcaError> {
     let dir = user_data_dir();
     let meta_path = dir.join("orca-runtime.json");
@@ -166,14 +135,10 @@ pub fn agent_supports_ensure(agent: &str) -> bool {
     matches!(agent, "claude")
 }
 
-/// 去会话 / 再开工接回:只切树。Orca 自己记着树上有哪些窗,切过去主窗口
-/// 就是那些 TUI。不打 `ensureAgentSession` —— 那条是 `--resume` 再开一扇。
 pub async fn reveal_tree(rt: &OrcaRuntime, worktree: &Path) -> Result<(), OrcaError> {
     activate_worktree(rt, worktree).await
 }
 
-/// Orca 是否已经认这份仓。问 `repo.show`,不落盘。问不成把错交出去,
-/// 调用方自己决定挡不挡进项目。
 pub async fn repo_present(rt: &OrcaRuntime, repo: &Path) -> Result<bool, OrcaError> {
     let shown = call(
         rt,
@@ -185,9 +150,6 @@ pub async fn repo_present(rt: &OrcaRuntime, repo: &Path) -> Result<bool, OrcaErr
     Ok(require_ok(&shown, "repo.show").is_ok())
 }
 
-/// 让 Orca 认得这份被管仓。人纳入 Workbench 时不该再去 Orca 里手加
-/// `workspaces/xx`。先 `repo.show`,已有则原样返回;没有才 `repo.add`,
-/// 再把外部 worktree 设成可见,`.bw/worktrees/issue-N` 才能被 `path:` 选到。
 pub async fn ensure_repo(rt: &OrcaRuntime, repo: &Path) -> Result<(), OrcaError> {
     match repo_present(rt, repo).await {
         Ok(true) => {
@@ -222,16 +184,12 @@ pub async fn ensure_repo(rt: &OrcaRuntime, repo: &Path) -> Result<(), OrcaError>
     )
     .await?;
     require_ok(&added, "repo.add")?;
-    // 仓已经在了,visibility 改不成也不挡接入。不改 worktreeBasePath ——
-    // 写成 `.bw/worktrees` 会被 Orca 当成自己的工作区根,新树一出现就开空窗。
+    // 已登记的仓库不因可见性更新失败而中断；不要改变 Orca 的工作区根目录。
     let _ = publish_visibility(rt, repo).await;
     Ok(())
 }
 
-/// 刚 `git worktree add` 完,Orca 的扫描缓存(30s)还是打开项目时那份,
-/// `path:<新树>` 会 `selector_not_found`。再写一次 `worktreeBasePath` 会刷掉
-/// 扫描(Orca 只在这个字段再写时 invalidate)。**不是 `repo.add`**。
-/// 只回写 Orca 已有的值(我们误写成 `.bw/worktrees` 的清掉),不把扫描根改成 Workbench 目录。
+/// 新工作树尚未进入 Orca 扫描缓存时，需先刷新再按路径选择。
 pub async fn refresh_worktrees(rt: &OrcaRuntime, repo: &Path) -> Result<(), OrcaError> {
     let shown = call(
         rt,
@@ -245,7 +203,7 @@ pub async fn refresh_worktrees(rt: &OrcaRuntime, repo: &Path) -> Result<(), Orca
         .pointer("/result/repo/worktreeBasePath")
         .and_then(|v| v.as_str())
         .unwrap_or("");
-    // 上一刀误把扫描根写成 Workbench 目录;空串经 Orca OptionalString 变 undefined,清掉误写。
+    // 空串按 Orca OptionalString 解析为 undefined，用于清除错误的扫描根。
     let base = if current == ".bw/worktrees" {
         ""
     } else {
@@ -267,14 +225,12 @@ pub async fn refresh_worktrees(rt: &OrcaRuntime, repo: &Path) -> Result<(), Orca
     require_ok(&updated, "repo.update")
 }
 
-/// `automation.list` 里一条,只带匹配注入需要的字段。
 #[derive(Clone, Debug)]
 pub struct AutomationRow {
     pub name: String,
     pub project_id: String,
 }
 
-/// 往 Orca 打一条自动化。业务名 / 提示词 / 节律由上层定;这里只发 RPC。
 pub struct AutomationCreate<'a> {
     pub name: &'a str,
     pub prompt: &'a str,
@@ -286,7 +242,6 @@ pub struct AutomationCreate<'a> {
     pub enabled: bool,
 }
 
-/// 这份仓在 Orca 里的 repo id。注入匹配「同名 + 同仓」用。
 pub async fn repo_id(rt: &OrcaRuntime, repo: &Path) -> Result<String, OrcaError> {
     let shown = call(
         rt,
@@ -376,8 +331,6 @@ async fn publish_visibility(rt: &OrcaRuntime, repo: &Path) -> Result<(), OrcaErr
     require_ok(&updated, "repo.update")
 }
 
-/// 把配对网页 / 桌面切到这棵 worktree。不 resume agent。去会话、create
-/// 成功后跟网页、再开工接回都走这条。
 pub async fn activate_worktree(rt: &OrcaRuntime, worktree: &Path) -> Result<(), OrcaError> {
     let params = json!({
         "worktree": path_prefixed(worktree),
@@ -387,24 +340,7 @@ pub async fn activate_worktree(rt: &OrcaRuntime, worktree: &Path) -> Result<(), 
     require_ok(&frame, "worktree.activate")
 }
 
-/// 在 Orca 里给这张活开一场新会话。`prompt` 是用户话(活标题+正文),
-/// `system` 是 Workbench 渲染的系统提示词。**调用方不要自己拼 flag** —— 内部按
-/// agent 分流:
-/// - Claude:系统提示词压成单行进 `agentArgs` 的 `--append-system-prompt`
-///   (必须加引号,否则 Orca 拆 token 后只剩 You);标题+正文也挂在同一条启动
-///   命令上当位置参数;后面跟上 `--dangerously-skip-permissions` 和
-///   `--disallowedTools 'Bash(gh pr merge)'`(和 PTY `LaunchPlan` 同一套,
-///   不另起通道)。不走句柄回来之后的 `auto-submit` —— Windows 上 Orca
-///   把多行 `agentArgs` 打进 shell,每个换行是 Enter,启动变慢并撞 10 秒句柄
-///   超时,窗在词不在。
-/// - Cursor(`cursor` 预设,二进制才是 cursor-agent):没有 `--append-system-prompt`。
-///   `agentArgs` 和 Claude 同一套拼法:一条单行,值用 `shell_quote_single`
-///   (`--force --trust '<压成单行的系统提示词>'`)。Orca 的 cwd 已是这棵树,
-///   不再另塞 `--workspace`。标题+正文走 Orca `prompt` + `auto-submit`。
-///   create 前仍写 cursor-agent 认的 `.workspace-trusted`(Orca 预写的 slug
-///   对不上 `.bw` 路径)。
-///
-/// web 端会把 focused 改成 background,这是 Orca 行为,Workbench 仍传 focused。
+/// 由本层按执行工具拼装参数，调用方只提供用户提示词和系统提示词。
 pub async fn create_session(
     rt: &OrcaRuntime,
     worktree: &Path,
@@ -485,7 +421,6 @@ pub async fn create_session(
             );
             Ok(CreateSessionOutcome::Ready)
         }
-        // 渲染进程已经建了 tab,句柄没交回。不立刻切树,调用方先 settle。
         Err(e) if e.is_terminal_handle_timeout() => {
             crate::dlog!(
                 warn,
@@ -505,12 +440,7 @@ pub async fn create_session(
     }
 }
 
-/// 给会话屏 iframe 的 loopback。**不依赖 `connect()`** —— 人把安装版
-/// 「给 web 配对」的完整 URL 贴进设置屏(存本机 `settings.toml`),或开发期
-/// 塞 `BW_ORCA_WEB_URL` 覆盖;启动 Workbench 后原样打开。**先 env 后 `fallback`**
-/// (fallback 是壳从本机设置读出来喂进来的),都只过 `looks_loopback_http`,
-/// 不拼会话深链、不 postMessage。没设 / 不是 loopback → `None`。pipe 开工
-/// 不读这个。**只认一份**(env 或设置),不在壳和这里各开一条嵌页。
+/// 嵌入页地址独立于 RPC 连接；环境变量覆盖本机设置，仅允许 loopback。
 pub fn web_embed_url(fallback: Option<&str>) -> Option<String> {
     let env = std::env::var("BW_ORCA_WEB_URL").ok();
     let raw = env.as_deref().or(fallback)?;
@@ -521,8 +451,7 @@ pub fn web_embed_url(fallback: Option<&str>) -> Option<String> {
     Some(pairing_as_query(trimmed))
 }
 
-/// WebView2 部分导航会丢 `#fragment`。配对码只在 hash 里就签不上。
-/// Orca 认 `?pairing=`(和 `#pairing=` 同一套读法),只搬家不改 code。
+/// WebView2 可能丢失 fragment，将配对参数同时放入 query。
 fn pairing_as_query(url: &str) -> String {
     let Some((base, frag)) = url.split_once('#') else {
         return url.to_string();
@@ -540,9 +469,7 @@ fn pairing_as_query(url: &str) -> String {
     }
 }
 
-/// 读本机 Claude jsonl,找这棵 worktree 上**最新**一条 session id。不编 id。
-/// 路径编码和 Claude Code 一样:非字母数字改成 `-`
-/// (`D:\foo\bar` → `~/.claude/projects/D--foo-bar/<uuid>.jsonl`)。
+/// 按 Claude 的路径编码查找最新会话 ID；找不到返回 None。
 pub fn session_id_for_worktree(worktree: &Path) -> Option<String> {
     let dir = claude_project_dir(worktree)?;
     let mut newest: Option<(std::time::SystemTime, String)> = None;
@@ -565,7 +492,6 @@ pub fn session_id_for_worktree(worktree: &Path) -> Option<String> {
     newest.map(|(_, id)| id)
 }
 
-/// 开工刚 create 完,jsonl 可能还没落到盘。短等几次,有就返回,没有就 `None`(不编)。
 pub async fn wait_session_id_for_worktree(worktree: &Path) -> Option<String> {
     if let Some(id) = session_id_for_worktree(worktree) {
         return Some(id);
@@ -578,8 +504,6 @@ pub async fn wait_session_id_for_worktree(worktree: &Path) -> Option<String> {
     }
     None
 }
-
-// ── 内部 ───────────────────────────────────────────────────────────────
 
 fn user_data_dir() -> std::path::PathBuf {
     if let Ok(p) = std::env::var("ORCA_USER_DATA_PATH") {
@@ -612,7 +536,6 @@ fn user_data_dir() -> std::path::PathBuf {
     }
 }
 
-/// JSON-RPC 帧的 `id`(按回包匹配)。Orca 不解析这个形状。
 fn request_id() -> String {
     let now = std::time::SystemTime::now()
         .duration_since(std::time::UNIX_EPOCH)
@@ -622,11 +545,7 @@ fn request_id() -> String {
     format!("bw-{now:016x}-{rand:016x}")
 }
 
-/// `createAgentSession` 的 `clientOperationId`。Orca 源码要求
-/// `/^(\d{13})-[0-9a-f]{32}$/`(毫秒时间戳 + 32 hex),对不上直接
-/// `agent_session_operation_invalid`,工作树已经开了、Claude 会话不会建。
-/// 穿刺烟测 `.scratch/orca-rpc-smoke.cjs` 的 `operationId()` 就是这个形状;
-/// 以前误把 RPC `id` 的 `bw-hex-hex` 填进来了。
+/// Orca 要求 clientOperationId 为 13 位毫秒时间戳加 32 位十六进制串。
 fn client_operation_id() -> String {
     let now = std::time::SystemTime::now()
         .duration_since(std::time::UNIX_EPOCH)
@@ -639,7 +558,6 @@ fn client_operation_id() -> String {
     format!("{ts:013}-{nonce:032x}")
 }
 
-/// `path: <worktree 绝对路径>`。Orca 用这个前缀认 worktree(穿刺已人眼过)。
 fn path_prefixed(worktree: &Path) -> String {
     format!("path:{}", worktree.display())
 }
@@ -678,7 +596,6 @@ fn looks_session_id(stem: &str) -> bool {
     (32..80).contains(&s.len()) && s.chars().all(|c| c.is_ascii_hexdigit() || c == '-')
 }
 
-/// 按 agent 分流:返回 (Orca `prompt` 字段, `agentArgs` 字符串)。
 fn split_prompt_and_args(
     agent: &str,
     prompt: &str,
@@ -686,10 +603,7 @@ fn split_prompt_and_args(
     _worktree: &Path,
 ) -> (String, String) {
     if agent == "cursor" {
-        // 和 Claude 同一条路:一条单行交给 Orca,值用 shell_quote_single。
-        // Orca 拆 token 再重引号(穿刺过)。旗标是 --force --trust;
-        // 系统提示词是位置参数。cwd 已是 worktree,不另传 --workspace。
-        // 标题+正文留在 Orca prompt,走 auto-submit。
+        // Cursor 参数同样经过 shell 引号处理。
         let system = flatten_for_argv(system);
         let mut parts = vec!["--force".into(), "--trust".into()];
         if !system.is_empty() {
@@ -697,10 +611,7 @@ fn split_prompt_and_args(
         }
         (prompt.to_string(), parts.join(" "))
     } else {
-        // Claude:启动命令一条单行。系统提示词 `--append-system-prompt`,
-        // 标题+正文当位置参数。必须 shell 加引号,否则 Orca 拆 token 后只剩 You。
-        // 裸换行压成空格:Orca 在 Windows 上把 agentArgs 打进 shell,换行=Enter。
-        // 权限旗标和 PTY `build_startup_plan` 同一套,不另拼 LaunchPlan。
+        // 提示词作为完整参数加引号，防止 Orca 分词截断。
         let system = flatten_for_argv(system);
         let prompt = flatten_for_argv(prompt);
         let mut parts = Vec::new();
@@ -729,11 +640,10 @@ fn flatten_for_argv(s: &str) -> String {
 
 /// 把一个值用单引号包起来给 Orca 的 shell 拆 token 用。Windows 用 PowerShell
 /// 风格(内部 `'` 写成 `''`);Unix 用 POSIX sh 风格(内部 `'` 写成 `'\''`)。
-/// 两种都把整段变成一个 token,Orca 拆完再重引号传给 claude(穿刺已人眼过)。
+/// 两种形式均保持为一个参数，供 Orca 解析后重新加引号传给 Claude。
 fn shell_quote_single(value: &str) -> String {
     #[cfg(windows)]
     {
-        // PowerShell:单引号串,内部单引号加倍。
         let mut out = String::with_capacity(value.len() + 2);
         out.push('\'');
         for c in value.chars() {
@@ -748,7 +658,6 @@ fn shell_quote_single(value: &str) -> String {
     }
     #[cfg(not(windows))]
     {
-        // POSIX sh:单引号串,内部单引号写成 '\''。
         let mut out = String::with_capacity(value.len() + 2);
         out.push('\'');
         for c in value.chars() {
@@ -763,9 +672,7 @@ fn shell_quote_single(value: &str) -> String {
     }
 }
 
-/// cursor-agent 认的项目目录名:非字母数字一段收成一个 `-`。
-/// `D:\...\bridge\.bw\worktrees\issue-46` →
-/// `D-builders-workbench-workspaces-bridge-bw-worktrees-issue-46`
+/// cursor-agent 的路径编码：连续非字母数字字符替换为一个短横线。
 fn cursor_agent_project_slug(abs: &str) -> String {
     let mut out = String::new();
     let mut dash = false;
@@ -781,8 +688,7 @@ fn cursor_agent_project_slug(abs: &str) -> String {
     out.trim_matches('-').to_string()
 }
 
-/// Orca `markCursorWorkspaceTrusted` 用的目录名:只把 `\ / : * ? " < > |` 收成
-/// `-`,`.` 留下 → `...-bridge-.bw-worktrees-...`。cursor-agent 不认这份。
+/// Orca 信任标记只替换文件名非法字符，保留点号，与 cursor-agent 编码不同。
 fn orca_cursor_project_slug(abs: &str) -> String {
     let mut out = String::new();
     let mut dash = false;
@@ -808,8 +714,7 @@ fn cursor_home() -> Option<PathBuf> {
         .map(|h| PathBuf::from(h).join(".cursor"))
 }
 
-/// 开工前写 cursor-agent 会查的 `.workspace-trusted`。Orca 自己也会预写,但
-/// slug 对不上;人点 Trust 之后盘上会出现两份同路径、不同目录名的标记。
+/// 按 cursor-agent 自身的路径编码写信任标记，避免与 Orca 的编码混用。
 fn ensure_cursor_workspace_trusted(worktree: &Path) -> String {
     let abs = cursor_workspace_arg(worktree);
     let Some(home) = cursor_home() else {
@@ -870,8 +775,7 @@ fn cursor_workspace_arg(worktree: &Path) -> String {
     }
 }
 
-/// 对照日志用:旗标和 `--workspace` 路径原样留下,最后一段引号里的系统提示词
-/// 只报字数,不写正文。
+/// 日志保留参数名和工作区路径，提示词只记录长度。
 fn redact_agent_cmd(args: &str) -> String {
     if args.is_empty() {
         return "-".into();
@@ -889,8 +793,7 @@ fn redact_agent_cmd(args: &str) -> String {
     args.to_string()
 }
 
-/// 一次本地 pipe RPC。`spawn_blocking` 跑阻塞的 open+读写,外面套 `timeout`
-/// (学 `open_design`)。阻塞任务自带 deadline,超时自退,不靠外层 cancel。
+/// 阻塞 RPC 自带 deadline；外层 timeout 无法终止已经运行的阻塞任务。
 async fn call(
     rt: &OrcaRuntime,
     method: &str,
@@ -910,7 +813,6 @@ async fn call(
     let started = Instant::now();
     let handle =
         tokio::task::spawn_blocking(move || send_recv(&endpoint, &frame, &id_for_recv, timeout));
-    // 三层 peel:Elapsed(外层 timeout)→ JoinError(spawn_blocking)→ OrcaError(任务内)。
     let result: Result<Value, OrcaError> = match tokio::time::timeout(timeout, handle).await {
         Err(_) => Err(OrcaError::Timeout {
             method: method_for_err,
@@ -942,8 +844,7 @@ async fn call(
     result
 }
 
-/// 同步:开 pipe → 发一行 JSON → 增量读、按行解析,跳过 keepalive,取 id 匹配的
-/// 回包(拿到就 drop stream 关连接,不等 pipe close)。带 deadline,超时自退。
+/// 按行读取并匹配请求 ID，跳过 keepalive，不等待连接关闭。
 fn send_recv(
     endpoint: &str,
     frame: &Value,
@@ -966,10 +867,7 @@ fn send_recv(
         .write_all(line.as_bytes())
         .map_err(|e| OrcaError::Connect(format!("写 pipe 没成:{e}")))?;
     let _ = stream.flush();
-    // 按字节 b'\n' 切行、再整行 from_slice 解析 —— 不在每次读上做 from_utf8_lossy:
-    // 多字节 UTF-8 被一次 8K 读的边界劈开时,lossy 会把残缺字节换成 U+FFFD 永久进
-    // 缓冲,整行 JSON 坏掉、命中的回包被跳过 → BadFrame/Timeout。b'\n'(0x0A) 在
-    // UTF-8 里绝不会作为续接字节出现,按字节切行不会劈开多字节字符。
+    // 收到完整行后再解析 UTF-8，避免分块读取截断多字节字符。
     let mut buf: Vec<u8> = Vec::new();
     let mut chunk = [0u8; 8192];
     loop {
@@ -983,7 +881,6 @@ fn send_recv(
             break; // pipe 关了
         }
         buf.extend_from_slice(&chunk[..n]);
-        // 把已经完整的行逐条取出来解析。
         while let Some(pos) = buf.iter().position(|&b| b == b'\n') {
             let line: Vec<u8> = buf.drain(..pos).collect(); // 行字节(不含 \n)
             buf.drain(..1); // 丢掉那个 \n
@@ -1000,7 +897,6 @@ fn send_recv(
             if v.get("id").and_then(|x| x.as_str()) == Some(id) {
                 return Ok(v);
             }
-            // 别人的 id / 无 id 帧:跳过。
         }
     }
     Err(OrcaError::BadFrame(format!(
@@ -1008,9 +904,6 @@ fn send_recv(
     )))
 }
 
-/// 看回包 `ok` 是不是 true。失败把 Orca 的 **code** + 一行 message 带出来
-/// (`agent_session_operation_invalid` / `legacy_required` / 别的),给
-/// `IssueRan.summary` 和 stderr 露给人 —— 连上了但被拒也走这条,不只是连不上。
 fn require_ok(frame: &Value, method: &str) -> Result<(), OrcaError> {
     if frame.get("ok").and_then(|o| o.as_bool()) == Some(true) {
         return Ok(());
@@ -1018,8 +911,6 @@ fn require_ok(frame: &Value, method: &str) -> Result<(), OrcaError> {
     Err(OrcaError::Rpc(error_brief(frame, method)))
 }
 
-/// 从失败回包拆 `method · code=<code> · <一行 message>`。code 可能在顶层、
-/// 可能在 `error` 对象里;找不到就不写那一段(不编)。**不带 token / pairing**。
 fn error_brief(frame: &Value, method: &str) -> String {
     let err = frame.get("error");
     let code = frame
@@ -1045,12 +936,7 @@ fn error_brief(frame: &Value, method: &str) -> String {
     brief
 }
 
-// ── 平台管道接缝(抄 open_design,forbid unsafe) ─────────────────────────
-//
-// Windows:`std::fs::File` 没有 read 超时,无数据时 `read` 会阻塞 —— 上面的
-// deadline 在那次阻塞里没法醒来;真碰上 Orca 挂住不回,外层 `tokio::timeout`
-// 照样返 Timeout,阻塞任务会留到 pipe 关了才退(罕见,与 `open_design` 同口径)。
-// 正常路径 RPC 回包到了 `read` 就返,deadline 立刻过。
+// Windows 使用命名管道，Unix 使用本地 socket。
 
 #[cfg(windows)]
 fn open_duplex(path: &str) -> Option<std::fs::File> {

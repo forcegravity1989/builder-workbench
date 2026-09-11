@@ -1,8 +1,3 @@
-//! 四列看板本体(合并后:待办/进行中/待处理/已完成)。列内分段,两段列默认
-//! 只显示第一段、点子标题切到第二段。卡面按 opt 重做:编号 + 平台徽 +
-//! 标题 + 正文一行预览 + 计划位置 + 责任人 + 更新时间,**无开工按钮**(开工
-//! 入口在详情弹窗)。
-
 use super::Filters;
 use crate::{
     bridge::{Bridge, PanelNav},
@@ -12,27 +7,23 @@ use bw::model::{IssueId, IssueStatus};
 use dioxus::prelude::*;
 use std::collections::HashMap;
 
-/// 松手之后等人确认的那一下(拖进完成 / 拒绝 / 待办等状态动作)。
 #[derive(Clone, PartialEq)]
 pub struct PendingMove {
     pub id: IssueId,
     pub title: String,
     pub from: IssueStatus,
     pub to: IssueStatus,
-    /// 这张活的 MR 号,`0` = 没有(开着的或已合入的都算)。详情展示用。
+    /// 此 Issue的 MR 号,`0` = 没有(开着的或已合入的都算)。详情展示用。
     pub pr_number: u32,
-    /// 现在有没有开着的 MR。待评审→完成时据此决定合入还是只关 issue。
     pub has_open_mr: bool,
 }
 
-/// 拖一张未排期的卡到「已排期」段时,等人选排进哪个周/版本的那一下。
 #[derive(Clone, PartialEq)]
 pub struct PendingSchedule {
     pub id: IssueId,
     pub title: String,
 }
 
-/// 看板松手落在不开的边上:弹窗说明,不是没拖准。
 #[derive(Clone, PartialEq)]
 pub struct PendingReject {
     pub from: IssueStatus,
@@ -40,7 +31,6 @@ pub struct PendingReject {
     pub reason: String,
 }
 
-/// 状态 → 状态点 css 类 + 标签。照 opt 的 `STATUS_META`。
 fn status_dot_class(s: IssueStatus) -> &'static str {
     match s {
         IssueStatus::Backlog | IssueStatus::Todo | IssueStatus::Cancelled => "status-todo",
@@ -48,19 +38,6 @@ fn status_dot_class(s: IssueStatus) -> &'static str {
         IssueStatus::InReview => "status-review",
         IssueStatus::Done => "status-done",
         IssueStatus::Blocked => "status-blocked",
-    }
-}
-
-/// 一句「什么样的活会在这一列/这一段」。照 opt 的 `COL_DEF`。
-fn seg_def(s: IssueStatus) -> &'static str {
-    match s {
-        IssueStatus::Backlog => "未排进任何一周",
-        IssueStatus::Todo => "已排进这一周,等 Start",
-        IssueStatus::InProgress => "agent 在做",
-        IssueStatus::InReview => "MR 开着,等人审",
-        IssueStatus::Done => "人点过完成",
-        IssueStatus::Blocked => "填了原因",
-        IssueStatus::Cancelled => "已取消",
     }
 }
 
@@ -80,7 +57,6 @@ fn ago(unix: i64) -> String {
     }
 }
 
-/// 一张活「排在哪」:只认 `bw:plan:`。
 fn place_of(c: &CardItemVm) -> String {
     if !c.plan_versions.is_empty() {
         format!("版本·{}", c.plan_versions.join("、"))
@@ -156,7 +132,6 @@ fn column(
     filters: Option<Filters>,
     plan_filter: &str,
     view_all: bool,
-    // 这个项目的远端叫什么(GitHub / CodeHub)。空 = 不画那枚徽。
     brand: &str,
     _bridge: &Bridge,
     mut dragging: Signal<Option<CardItemVm>>,
@@ -170,7 +145,6 @@ fn column(
     viewing_plan: &str,
     viewing_released: bool,
 ) -> Element {
-    // 段卡过滤:按 filters(旧) + plan_filter(计划下拉)双重过滤。
     let plan_ok = |c: &CardItemVm| -> bool {
         if plan_filter.is_empty() {
             return true;
@@ -181,9 +155,7 @@ fn column(
             c.plan_versions.iter().any(|v| v == plan_filter)
         }
     };
-    // 预拷贝成 owned 数据,rsx 闭包不借用 col。段自带 cards(build_board 已按
-    // 排期/状态分好),屏直接用,不再靠 statuses 二次过滤(否则未排期段会漏掉
-    // 那些状态是 Todo 但没排期的新建 issue)。
+    // 分段已按排期分类；不能再用状态过滤，否则会漏掉未排期的 Todo。
     let col_key = col.status_label_key();
     let segs_owned: Vec<(String, String, Vec<CardItemVm>)> = col
         .segments
@@ -293,9 +265,6 @@ fn card_view(
         .collect::<String>();
     let updated = ago(c.updated_at);
     let carryover = carryover_label(c, viewing_plan, viewing_released);
-    // 这枚徽说的是「这张活在远端有对应 issue」,徽面写的是**这个项目真正挂的那个
-    // 平台**。以前写死成 `CodeHub`,于是接 GitHub 的项目每张卡都被标成 CodeHub。
-    // 认不出平台就不画 —— 空着是实话,顶一个别人的名字不是。
     let remote_badge = if c.remote_number > 0 && !brand.is_empty() {
         rsx! { span { class: "tag tag-accent-2", "{brand}" } }
     } else {
@@ -311,7 +280,7 @@ fn card_view(
             div { class: "kcard-top",
                 span { class: "mono", "#{c.number}" }
                 {remote_badge}
-                span { class: "status-dot {status_dot_class(c.status)} ml-auto", title: "{seg_def(c.status)}" }
+                span { class: "status-dot {status_dot_class(c.status)} ml-auto", title: "{plan_status_label(c.status)}" }
             }
             div { class: "kcard-title", "{c.title}" }
             if let Some(label) = carryover {
@@ -339,7 +308,6 @@ fn card_view(
     }
 }
 
-/// 计划屏开口。详情下拉和看板拖拽共用;不开的边松手走拒绝弹窗。
 pub fn allowed_plan_targets(from: IssueStatus) -> &'static [IssueStatus] {
     match from {
         IssueStatus::Backlog => &[IssueStatus::Done, IssueStatus::Cancelled],
@@ -370,7 +338,6 @@ pub fn allowed_plan_targets(from: IssueStatus) -> &'static [IssueStatus] {
     }
 }
 
-/// 非法松手的人话。同一状态不走这里。
 pub fn reject_move_reason(from: IssueStatus, to: IssueStatus) -> String {
     use IssueStatus::*;
     match (from, to) {
@@ -379,8 +346,8 @@ pub fn reject_move_reason(from: IssueStatus, to: IssueStatus) -> String {
         }
         (InReview, Todo | Backlog) => "打回请拖到进行中。".into(),
         (InReview, Blocked) => "卡住请先拖回进行中，再拖到阻塞。".into(),
-        (Blocked, Todo | Backlog) => "解除阻塞请拖到进行中，或不干了拖到拒绝。".into(),
-        (Done | Cancelled, _) => "已经结束的活不能再改状态。".into(),
+        (Blocked, Todo | Backlog) => "解除阻塞请拖到进行中；不再继续时可取消 Issue。".into(),
+        (Done | Cancelled, _) => "已结束的 Issue 不能再修改状态。".into(),
         _ => format!(
             "不能从「{}」拖到「{}」。",
             plan_status_label(from),
@@ -389,7 +356,6 @@ pub fn reject_move_reason(from: IssueStatus, to: IssueStatus) -> String {
     }
 }
 
-/// 看板/详情用的人话:待评审/完成/拒绝,不是内核的「评审中/已完成/已取消」。
 pub fn plan_status_label(s: IssueStatus) -> &'static str {
     match s {
         IssueStatus::Backlog => "未排期",
@@ -398,7 +364,7 @@ pub fn plan_status_label(s: IssueStatus) -> &'static str {
         IssueStatus::InReview => "待评审",
         IssueStatus::Done => "完成",
         IssueStatus::Blocked => "阻塞",
-        IssueStatus::Cancelled => "拒绝",
+        IssueStatus::Cancelled => "取消",
     }
 }
 
@@ -427,7 +393,6 @@ pub fn status_from_key(k: &str) -> Option<IssueStatus> {
     })
 }
 
-/// 详情下拉和拖拽同一条路:待办→进行中开工,待评审→完成合入,拒绝/阻塞写原因。
 pub fn apply_status_move(
     card: &CardItemVm,
     target: IssueStatus,
@@ -444,7 +409,7 @@ pub fn apply_status_move(
     pending.set(Some(move_to(card, target)));
 }
 
-/// 当前段决定落点状态:已完成列切到「拒绝」= Cancelled,不是列头那个 Done。
+/// 落点状态以当前分组为准；已完成列也容纳取消的 Issue。
 fn drop_target_status(col: IssueStatus, seg: &str) -> IssueStatus {
     match seg {
         "cancelled" => IssueStatus::Cancelled,
@@ -467,7 +432,6 @@ fn apply_drop(
     mut schedule: Signal<Option<PendingSchedule>>,
     mut reject: Signal<Option<PendingReject>>,
 ) {
-    // 未排期拖到已排期 → 排期弹窗(改标签,不改状态)
     if drop_seg == "assigned"
         && card.plan_versions.is_empty()
         && matches!(card.status, IssueStatus::Backlog | IssueStatus::Todo)
@@ -505,7 +469,6 @@ fn move_to(card: &CardItemVm, to: IssueStatus) -> PendingMove {
     }
 }
 
-/// 给 `ColumnVm` 一个稳定的 key(用于 col_seg 状态)。
 trait ColKey {
     fn status_label_key(&self) -> String;
 }

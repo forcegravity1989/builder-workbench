@@ -1,23 +1,16 @@
-//! `asset_root/projects.toml` —— Workbench 纳管的项目清单。
-//!
-//! 替代旧的 `project` 表(显示缓存 + 定位字段)+ `app_meta` 的 `notify_seen:*` 键。
-//! 仓是正本,这里只是本机缓存:项目行的 name/provider/remote 在打开项目时从
-//! `.bw/project.toml` 刷新。
+//! projects.toml 保存本机项目定位和健康显示缓存。
 
 use crate::derive::DerivedHealth;
 use crate::model::{Project, ProjectId, Signal};
 use crate::repo::RepoFileError;
 use std::path::{Path, PathBuf};
 
-/// 当前 UTC 秒。本地持久化文件里所有时间戳都是这一个刻度。
 fn now_ts() -> i64 {
     time::OffsetDateTime::now_utc().unix_timestamp()
 }
 
-/// 注册表文件名。
 const FILENAME: &str = "projects.toml";
 
-/// 一条项目注册项。
 #[derive(Clone, Debug, serde::Serialize, serde::Deserialize)]
 pub struct ProjectEntry {
     pub id: ProjectId,
@@ -63,7 +56,6 @@ impl From<&Project> for ProjectEntry {
 }
 
 impl ProjectEntry {
-    /// 转回 [`Project`](领域模型)(丢掉本机扩展字段)。
     pub fn to_project(&self) -> Project {
         Project {
             id: self.id,
@@ -83,15 +75,12 @@ impl ProjectEntry {
     }
 }
 
-/// 整份注册表文件。
 #[derive(Default, serde::Serialize, serde::Deserialize)]
 struct RegistryFile {
     #[serde(default)]
     projects: Vec<ProjectEntry>,
 }
 
-/// 项目注册表的读写。无状态:每次调用都读/写整个文件。文件小(几十条项目),
-/// 全量读写比建索引便宜。
 pub struct ProjectRegistry;
 
 impl ProjectRegistry {
@@ -99,7 +88,6 @@ impl ProjectRegistry {
         asset_root.join(FILENAME)
     }
 
-    /// 读整份注册表。文件不存在 = 空表(不是错误)。
     pub fn load(asset_root: &Path) -> Result<Vec<ProjectEntry>, RepoFileError> {
         let path = Self::path(asset_root);
         match std::fs::read_to_string(&path) {
@@ -119,7 +107,6 @@ impl ProjectRegistry {
         }
     }
 
-    /// 写整份注册表。父目录不存在就建。
     pub fn save(asset_root: &Path, entries: &[ProjectEntry]) -> Result<(), RepoFileError> {
         let file = RegistryFile {
             projects: entries.to_vec(),
@@ -142,7 +129,6 @@ impl ProjectRegistry {
         Ok(())
     }
 
-    /// 按 slug 找。
     pub fn find_by_slug(
         asset_root: &Path,
         slug: &str,
@@ -150,7 +136,6 @@ impl ProjectRegistry {
         Ok(Self::load(asset_root)?.into_iter().find(|e| e.slug == slug))
     }
 
-    /// 按 id 找。
     pub fn find_by_id(
         asset_root: &Path,
         id: ProjectId,
@@ -158,7 +143,6 @@ impl ProjectRegistry {
         Ok(Self::load(asset_root)?.into_iter().find(|e| e.id == id))
     }
 
-    /// 按 slug 建项目;已存在同 slug 就原样返回既有行(幂等)。
     pub fn upsert(asset_root: &Path, p: &Project) -> Result<Project, RepoFileError> {
         let mut entries = Self::load(asset_root)?;
         if let Some(existing) = entries.iter().find(|e| e.slug == p.slug) {
@@ -179,8 +163,7 @@ impl ProjectRegistry {
         Ok(out)
     }
 
-    /// 删一个项目。返回删掉的会话条数(旧 store 返回 conversations 数,
-    /// 这里返回 0——会话在 sessions 目录里,删项目时单独清)。
+    /// 只删除注册表条目；会话由调用方清理，返回计数当前固定为 0。
     pub fn remove(asset_root: &Path, id: ProjectId) -> Result<u64, RepoFileError> {
         let mut entries = Self::load(asset_root)?;
         let before = entries.len();
@@ -190,7 +173,6 @@ impl ProjectRegistry {
         Ok(removed as u64)
     }
 
-    /// 改项目的定位字段(接入两卡、设置工作区)。
     pub fn update_location(
         asset_root: &Path,
         id: ProjectId,
@@ -216,7 +198,6 @@ impl ProjectRegistry {
         Self::save(asset_root, &entries)
     }
 
-    /// 钉死某个项目的仓路径。
     pub fn set_workspace_path(
         asset_root: &Path,
         id: ProjectId,
@@ -234,7 +215,6 @@ impl ProjectRegistry {
         Self::save(asset_root, &entries)
     }
 
-    /// 把现算出来的健康灯写进显示缓存。
     pub fn cache_health(
         asset_root: &Path,
         id: ProjectId,

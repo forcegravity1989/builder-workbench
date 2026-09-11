@@ -1,53 +1,28 @@
-//! 近 N 周的走势 —— **全部现算,一个数都不存**。
-//!
-//! 这是「指标采集与读数」
-//! 里「A 类 · 可回溯」那一类的第一个真实落点:能采到今天的数,就能采到过去任意
-//! 一周的数,所以根本不需要谁提前把历史存下来。要看四周就算四个窗口,要看八周
-//! 就算八个 —— **面板要多少就采多少**,不存在「存了 30 天却要画 8 周」那种错配。
-//!
-//! 每个数都能自己复算,命令写在各字段的注释里。
-
 use crate::isoweek;
 use crate::model::Project;
 use std::path::Path;
 
-/// 一周一个点。**采不到的项一律 `None`,绝不填 0** —— 0 是一个真实的数值,
-/// 「没采到」不是。三条线都守这一条:git 读不动(不是仓、没装 git)时
-/// `commits` 是 `None`,远端查不成时另外两条是 `None`,画的时候断开,不画一条
-/// 「这几周都是 0」的假实线(第一版把 git 失败 `unwrap_or_default` 成 0,评审抓的)。
+/// None 表示缺数据，图表不得补零。
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
 pub struct WeekPoint {
-    /// ISO 周,如 `2026-W34`。
-    /// 横坐标标签:ISO 周(`2026-W34`)或日历日(`2026-09-03`)。
+    /// ISO 周或日历日标签。
     pub week: String,
-    /// 本机提交数。复算命令见 `git::week_counts_many` 的文档。
     pub commits: Option<u32>,
-    /// 远端**合入**的 PR 数。`None` = 没挂远端 / 远端不是 GitHub / 这次没查成。
+    /// 远端已合入 PR/MR 数，无法查询时为 None。
     pub merged_prs: Option<u32>,
-    /// 这一周**周末那一刻**还没关闭的 issue 数。
-    ///
-    /// 和上面两条不是一类东西:那两条是**流量**(这一周发生了多少),这条是
-    /// **存量**(到这一刻还欠着多少)。放在同一排看的理由是它俩正好互补 ——
-    /// 提交和合入告诉你推了多少,未处理 issue 告诉你欠的有没有被推下去。
+    /// 时间窗结束时仍开放的 issue 存量，不是该窗口内新增数量。
     pub open_issues: Option<u32>,
 }
 
-/// 走势 + 两句「那条线为什么是空的」。
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
 pub struct Trend {
     /// 旧的在前,最后一个是本周。
     pub points: Vec<WeekPoint>,
-    /// git 那两条没采到时的原话。空 = 采到了。**不吞错误**。
     pub git_note: String,
-    /// 远端那条没采到时的原话。空 = 采到了,或者压根没挂远端。**不吞错误**。
     pub remote_note: String,
 }
 
-/// 算最近 `weeks` 周(含本周),旧的在前。
-///
-/// 三条线都遵守同一条:**采不到就是 `None`,失败原话带回,绝不变成 0**。
-/// git 那两条一趟遍历出齐;远端那两条问基类要(哪个平台是底座的事,这儿不问),
-/// 两条并发。
+/// 按时间窗返回历史统计；失败保留原因，对应读数为 None。
 pub async fn recent_weeks(ws: &Path, project: &Project, weeks: u32) -> Trend {
     let remote = bw_engine::remote::Remote::for_project(
         &project.provider,
@@ -60,7 +35,6 @@ pub async fn recent_weeks(ws: &Path, project: &Project, weeks: u32) -> Trend {
     recent_inner(ws, remote, project.has_remote(), list).await
 }
 
-/// 近 `days` 个日历日(含今天),旧的在前。窗口切法和周那条同一把刀。
 pub async fn recent_days(ws: &Path, project: &Project, days: u32) -> Trend {
     let remote = bw_engine::remote::Remote::for_project(
         &project.provider,
@@ -71,8 +45,6 @@ pub async fn recent_days(ws: &Path, project: &Project, days: u32) -> Trend {
     recent_inner(ws, remote, project.has_remote(), isoweek::recent_days(days)).await
 }
 
-/// 只算 git 那两条,不问远端。项目行读不出来时用它 —— **不伪造一个空项目**
-/// 去问远端,那等于拿一个假地址去查。
 pub async fn recent_weeks_git_only(ws: &Path, weeks: u32) -> Trend {
     let mut list = week_labels(weeks);
     list.reverse();
@@ -89,9 +61,6 @@ async fn recent_inner(
     has_remote: bool,
     list: Vec<String>,
 ) -> Trend {
-    // git 那条:**一趟遍历出齐所有窗**,不按窗循环(逐窗查会把全史遍历次数
-    // 乘上窗数 —— 第一版就是这么让回填冻屏一分钟的)。读不动就整体留空 +
-    // 一句原话,绝不 0 充数。
     let mut trend = Trend::default();
     let counts = match crate::git::stamp_counts_many(ws, &list).await {
         Ok(m) => Some(m),
@@ -101,17 +70,11 @@ async fn recent_inner(
         }
     };
 
-    // 远端那两条:**认哪个平台是底座的事**([`bw_engine::remote::Remote::for_project`]),
-    // 这儿不写字符串比较。造不出远端 = provider 不认识,如实说。
     if remote.is_none() && has_remote {
         trend.remote_note =
             "这个项目的远端 provider Workbench 不认识,合入的 PR 与未处理 issue 走势没查 —— 只画提交那一条".into();
     }
 
-    // 一趟拉全、本地按周分桶。**不按周去查** —— 逐窗查会把全史遍历次数乘上窗数。
-    // 这里不认识 GitHub 也不认识 codehub:基类回的是同一种原文时刻,分桶的数学
-    // 下面只有一份。以前这儿按 provider 分了三支,同一段数学抄了两遍,改一边忘
-    // 另一边就是两条线对不上账。
     let (merged, open_issues) = match &remote {
         None => (None, None),
         Some(r) => {
@@ -135,8 +98,6 @@ async fn recent_inner(
     trend
 }
 
-/// 成功就把值拿出来,失败就把原话记进 `note`(**第一条错误就够了**,两条线
-/// 一起失败不必把同一句话刷两遍)并返回 `None`。**绝不吞错误、绝不用 0 顶上**。
 fn note_or<T>(note: &mut String, r: Result<T, String>) -> Option<T> {
     match r {
         Ok(v) => Some(v),
@@ -149,10 +110,7 @@ fn note_or<T>(note: &mut String, r: Result<T, String>) -> Option<T> {
     }
 }
 
-/// 一个横坐标标签对应的 `[起, 止)`,unix 秒,**按本机时区切**。
-///
-/// 认 ISO 周或 `YYYY-MM-DD`。和 git 那条线用同一把刀 —— 曾经远端按 UTC 切、
-/// git 按本机切,UTC+8 下周一早上的动静掉进上一周(评审抓的)。
+/// 时间窗按本机时区计算，左闭右开，与 Git 计数一致。
 fn window_of(label: &str) -> Result<(i64, i64), String> {
     if isoweek::is_week(label) {
         crate::git::week_window(label).map_err(|e| e.to_string())
@@ -161,7 +119,6 @@ fn window_of(label: &str) -> Result<(i64, i64), String> {
     }
 }
 
-/// 每周合入的 PR/MR 数,和 `weeks` 一一对应。
 async fn merged_mrs_by_week(
     remote: &bw_engine::remote::Remote,
     weeks: &[String],
@@ -170,8 +127,7 @@ async fn merged_mrs_by_week(
         .merged_mr_times()
         .await
         .map_err(|e| format!("远端合入的 PR 没查成:{e}"))?;
-    // 拉回来的条数正好顶到那条 CLI 的上限 = 可能被截断了。**这时候宁可整条线不
-    // 画**,也不端一个少算的数出去(采不到就是采不到,不写 0)。
+    // 达到 CLI 数量上限时可能截断，不能将不完整计数作为真实结果。
     if got.truncated {
         return Err("这个仓的已合并 PR 一趟拉不全 —— 这条线不画,免得给你一个少算的数".into());
     }
@@ -184,11 +140,7 @@ async fn merged_mrs_by_week(
     Ok(out)
 }
 
-/// 每周**周末那一刻**还开着的 issue 数,和 `weeks` 一一对应。
-///
-/// 算法就是定义本身:到那一刻为止建过的,减去到那一刻为止关掉的。所以它天然
-/// 可回溯 —— 拿同一份流水换个时刻,过去任意一周的值都算得出来,不需要谁提前
-/// 把它存下来。
+/// 窗口结束前已创建且尚未关闭的 issue 数量。
 async fn open_issues_by_week(
     remote: &bw_engine::remote::Remote,
     weeks: &[String],
@@ -217,15 +169,12 @@ async fn open_issues_by_week(
     Ok(out)
 }
 
-/// RFC3339 → unix 秒。**解析不出来的点直接跳过,不猜、不补** —— 少一个点画出来
-/// 是断开,而猜一个点画出来是假数据。
 fn epoch_of(s: &str) -> Option<i64> {
     time::OffsetDateTime::parse(s, &time::format_description::well_known::Rfc3339)
         .ok()
         .map(|t| t.unix_timestamp())
 }
 
-/// 从本周往回数 `weeks` 个 ISO 周(含本周),新的在前。
 fn week_labels(weeks: u32) -> Vec<String> {
     let mut out = Vec::new();
     let mut w = isoweek::current_week();

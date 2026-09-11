@@ -1,7 +1,3 @@
-//! 计划屏 · 列表视图(对齐 opt:listView)。预设(开放/分配我的/我的)+ 计划/
-//! 阶段下拉 + 搜索 + 表格行(ID/标题双行/负责人/状态胶囊/已更新/行操作)。
-//! 行操作:未排期→schedule、已排期→Start、进行中/待评审/阻塞/完成/取消→Open。
-
 use crate::{
     bridge::{Bridge, Panel, PanelNav, Req},
     vm::{CardItemVm, ProjectVm},
@@ -11,8 +7,7 @@ use dioxus::prelude::*;
 
 use super::ListFilter;
 
-/// 状态 → 胶囊 css + 中文。按 scheduled 判断未排期/已排期(而非纯 status),
-/// 因为历史 issue 可能 status=Todo 但 week_of 空(旧默认 Todo),那样该显示"未排期"。
+/// 排期由版本标签决定，Todo 状态本身不代表已排期。
 fn stage_pill(c: &CardItemVm) -> (&'static str, String) {
     let scheduled = !c.plan_versions.is_empty();
     match c.status {
@@ -27,7 +22,6 @@ fn stage_pill(c: &CardItemVm) -> (&'static str, String) {
     }
 }
 
-/// 行操作类型。按 scheduled 判断:未排期→schedule,已排期 Todo→start。
 fn action_kind(c: &CardItemVm) -> &'static str {
     let scheduled = !c.plan_versions.is_empty();
     match c.status {
@@ -61,7 +55,6 @@ pub fn list_view(
         .into_iter()
         .filter(|c| f.keep(c, current_user))
         .collect();
-    // 按生命周期顺序排
     let order = [
         IssueStatus::Backlog,
         IssueStatus::Todo,
@@ -75,8 +68,6 @@ pub fn list_view(
 
     let plans: Vec<String> = p.plan_versions.iter().map(|v| v.name.clone()).collect();
 
-    // 阶段下拉联动:选了"未排期"后,未排期的 issue 状态都是 Backlog/Todo,
-    // 阶段下拉只剩"全部"(bug 5b)。
     let stage_options = if f.plan == "unscheduled" {
         vec![(String::new(), "全部".into())]
     } else {
@@ -94,7 +85,6 @@ pub fn list_view(
                     }
                 }
                 div { class: "il-tools",
-                    // 计划下拉只在「全部 issue」显示;周/版本视图已经在看特定计划,不需要再筛
                     if p.view_all {
                         {dropdown(&f.plan, plan_opts(&plans), list_filter, "plan")}
                     }
@@ -212,7 +202,6 @@ fn list_row(
     let (viewing_plan, viewing_released) = viewing;
     let (pill_cls, stage) = stage_pill(c);
     let act = action_kind(c);
-    // 负责人(assignee)给负责人列;提出人(author)给 by 行。
     let assignee_name = if c.assignee.is_empty() {
         "—".into()
     } else {

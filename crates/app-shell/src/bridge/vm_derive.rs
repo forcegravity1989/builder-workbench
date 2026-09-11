@@ -1,18 +1,8 @@
-//! 总览与通知那几块的现算派生 —— 周进度、运作活、名片改动、仓统计、事件流。
-//!
-//! 从 `vm_panels.rs` 拆出来的:那个文件已经过 600 行的软目标了
-//! (`scripts/guard-file-lines.sh` 会提醒)。这里放的都是「库和仓里没有这张
-//! 表,每次现算出来」的东西。
-
 use crate::vm::*;
 use bw::model::IssueStatus;
 use std::path::Path;
 
-/// 某个版本的五段计数。`week` 传 `None` = 不按版本过滤(计划屏的「全部活」)。
-/// 传版本名则只数挂了 `bw:plan:<名>` 的活。
-///
-/// **直接数活,不数看板列**:看板跟着计划屏下拉走,总览进度条跟在研版本。
-/// 待办池不算进去;**阻塞单独一段**。
+/// 按版本直接统计 issue；总览选择和计划看板筛选相互独立。
 pub(super) fn build_week_counts(issues: &[bw::Issue], week: Option<&str>) -> WeekCountsVm {
     let in_scope = |i: &&bw::Issue| match week {
         None => true,
@@ -34,12 +24,6 @@ pub(super) fn build_week_counts(issues: &[bw::Issue], week: Option<&str>) -> Wee
     }
 }
 
-/// 运作活①②③三个状态点。开着的优先;本周已关的①②写「已完成」。
-/// ③关过但默认分支没有 `.bw/project.toml` 仍算未建(旧铺底关掉、MR 没合
-/// 不能冒充铺过)。
-///
-/// `ops3_landed` 从外部传:它只跟仓走、不跟周走,在 `gather` 里采一次,
-/// 不再每重切都跑一遍 `git::path_in_head`(原来一次重拼跑两遍)。
 pub(super) fn build_ops(
     issues: &[bw::Issue],
     current_week: &str,
@@ -77,12 +61,12 @@ pub(super) fn build_ops(
     };
     vec![
         chip(
-            "运作活① 更新指标与版本计划",
+            "更新指标与版本计划",
             OPS1_WORKFLOW,
             "Orca 周一 09:00（默认关；错过点 Run now）",
         ),
         chip(
-            "运作活② 资产盘点",
+            "资产盘点",
             OPS2_WORKFLOW,
             "Orca 周五 15:00（默认关；错过点 Run now）",
         ),
@@ -111,7 +95,6 @@ pub(super) fn build_ops(
     ]
 }
 
-/// 开着的活 → 它的状态;本周已关的①② → 已完成;③看件在不在 HEAD;再否则未建。
 fn ops_chip_display(
     open: Option<&bw::Issue>,
     done: Option<&bw::Issue>,
@@ -134,9 +117,6 @@ fn ops_chip_display(
     ("未建".into(), idle_note.to_string())
 }
 
-/// 名片改动那张在途的轻量活。名片是仓文件,改它走分支 + MR,所以总览要能
-/// 看见「改了、还没合」。只认最新的一张。
-/// 铺底没合进默认分支:开着的运作活③。合入之后配置才作数,别人再纳入也才看得见。
 pub(super) fn build_bootstrap_pending(issues: &[bw::Issue], ops3_landed: bool) -> Option<CardMrVm> {
     let i = issues
         .iter()
@@ -156,11 +136,6 @@ pub(super) fn build_bootstrap_pending(issues: &[bw::Issue], ops3_landed: bool) -
     })
 }
 
-/// 代码仓级指标。**每一项都注明从哪采的**;采不到就整块给出原话,不填 0。
-///
-/// 高保真那张网格上还有几项是远端来的(合入的 PR、远端 issue、开放 PR),
-/// 那要走 GitHub / codehub 的接口,今天还没接 —— 与其编几个数,不如只列采得
-/// 到的,并在界面上说清楚少了哪几项。
 pub(super) async fn collect_repo_stats(
     ws: &Path,
     project: Option<&bw::model::Project>,

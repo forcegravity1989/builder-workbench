@@ -1,27 +1,3 @@
-//! 顶层 · 接入项目。**两步**:先打开本地仓或克隆远端仓,再说清「这是个什么项目」。
-//!
-//! 为什么是两步而不是并排两张卡:第二步的四个字段**取决于第一步选了哪个仓** ——
-//! 本地或远端已有 `.bw/project.toml` 时,名片会回显,人一个字都不用填。并排摆着
-//! 就等于让人对着一堆空格子先填一遍、选完仓再看见它被覆盖。
-//!
-//! 选仓用的是**一个输入框**:点「刷新」把你账号下的仓拉进来,然后在框里打字即
-//! 检索、点一行即选中;也可以完全不理列表,直接把 `owner/repo` 打进去。这跟 V3
-//! 的接入流是同一个交互(`RepoCombobox`),
-//! 别再发明第二种。
-//!
-//! 列表是**真的** —— `gh repo list` / `codehub-cli` 现问(两个平台的 `list_repos`
-//! 在 `bw-engine` 里本来就有,V3 期就在用,见 v3 分支)。问不出来就把 CLI 的原话摆出来,绝不
-//! 拿假数据顶上;高保真里那份 `REPO_LIST` 是工厂造的,不抄。
-//!
-//! 四个基础字段全部落仓文件(`.bw/project.toml`),库里只记路径
-//! 与显示用的名字 —— 名片的正本在仓里,换台机器拉下来就有。
-//!
-//! **「完成接入」按下去会发生什么**:把仓弄到本机(该 clone
-//! 就 clone)→ 库里落一行项目 → 读/写仓里的名片。仓里还没有名片才建运作活③
-//! 「规范铺底」(写骨架、开分支、提 MR,停在评审中等人合);已有名片不再铺。
-//! 铺底没合入时总览会一直提示。每一步都往那条 broadcast 通道报一行,界面上原地
-//! 覆盖 —— 这一下要十几秒,不报进度人会以为没点上、然后猛点。
-
 use crate::bridge::{Bridge, Req};
 use crate::chrome::progress_log;
 use crate::vm::{RepoProbe, RepoRowVm, Vm};
@@ -32,16 +8,13 @@ use dioxus::prelude::*;
 /// 下拉里最多画几行。检索是在**已经拉下来的那批**里过滤,不是再去问平台。
 const DROPDOWN_CAP: usize = 30;
 
-/// codehub 的三个区。`codehub-cli -H <这个 key>` —— 收的是别名,不是域名。
-/// V3 用了大半年就是这三个,别再让人填一个 Workbench 自己也不知道的域名。
+/// codehub-cli -H 接受区别名，而非网页域名。
 const CODEHUB_ZONES: &[(&str, &str)] = &[("green", "绿区"), ("open", "内源"), ("yellow", "黄区")];
 
 #[component]
 pub fn View(vm: Vm, bridge: Bridge, close: EventHandler<MouseEvent>) -> Element {
     let (vm, bridge) = (&vm, &bridge);
-    // 第 1 步 = 项目地址,第 2 步 = 基础信息。
     let mut step = use_signal(|| 1u8);
-    // 本地仓与远端 clone 是两件事,界面直说动作,不再用「新建 / 已有」让人猜。
     let mut local_repo = use_signal(|| true);
     let github = use_signal(|| true);
 
@@ -56,19 +29,11 @@ pub fn View(vm: Vm, bridge: Bridge, close: EventHandler<MouseEvent>) -> Element 
     let initial_parent = root.clone();
     // 克隆默认就落设置里的工作区根目录。界面展示的是父文件夹,提交时才补仓名。
     let mut clone_parent = use_signal(move || initial_parent);
-    // codehub 的 `-H` 收的是**区的别名**,不是域名 —— V3 用了大半年的就是这三个
-    // (`codehub-cli -H green|open|yellow`)。默认内源区,和 V3 的默认值一致。
-    // 原来这里是个空的「内部域名,得你填」输入框:人一点 codehub 就先撞一句
-    // 「要先填域名」,而 GitHub 那边一点就把仓列出来了 —— 两边不一样的根子在
-    // 这儿,不是 codehub-cli 少了什么能力。
     let host = use_signal(|| "open".to_string());
 
-    // ── 「完成接入」按下之后,一步一句地把后台在干什么摆出来 ──────────
-    // 内核那条队列此刻正卡在 clone 上,ViewModel 一动不动,所以这些行是从
-    // 旁边那条 broadcast 直接来的(和内嵌终端同一个路子)。
+    // 接入期间 dispatch 被占用，通过独立广播显示进度。
     let mut log = use_signal(Vec::<ProgressLine>::new);
-    // 按下那一刻的回执序号。命令做完(不管成没成)序号会变 —— 用它判断
-    // 「还在做吗」,不用再造一套状态。做成了这屏会被自动关掉,看不到。
+    // 回执序号变化表示本次命令已返回，包括失败。
     let mut submitted_at = use_signal(|| None::<u64>);
     let busy = *submitted_at.read() == Some(vm.note_seq);
 
@@ -77,8 +42,6 @@ pub fn View(vm: Vm, bridge: Bridge, close: EventHandler<MouseEvent>) -> Element 
         let mut rx = prog.subscribe();
         async move {
             while let Ok(line) = rx.recv().await {
-                // 按步号原地覆盖:「正在 clone…」被「clone 好了」换掉,
-                // 而不是堆成两行。
                 let mut rows = log.write();
                 match rows.iter().position(|r: &ProgressLine| r.step == line.step) {
                     Some(i) => rows[i] = line,
@@ -104,7 +67,6 @@ pub fn View(vm: Vm, bridge: Bridge, close: EventHandler<MouseEvent>) -> Element 
     let submit = move |_| {
         log.write().clear();
         submitted_at.set(Some(vm_seq));
-        // 人填的优先,没填就用从远端仓回显的那份。
         let eff_name = pick(&name.read(), &pf_name);
         let s = if slug.read().trim().is_empty() {
             slugify(&eff_name)
@@ -151,7 +113,6 @@ pub fn View(vm: Vm, bridge: Bridge, close: EventHandler<MouseEvent>) -> Element 
         });
     };
 
-    // 打开本地仓必须给路径;clone 必须给远端,落点可留空走工作区根目录。
     let can_next = if *local_repo.read() {
         !workspace.read().trim().is_empty()
     } else {
@@ -164,8 +125,6 @@ pub fn View(vm: Vm, bridge: Bridge, close: EventHandler<MouseEvent>) -> Element 
         clone_target(&clone_parent.read(), &remote.read())
     };
     let probing = matches!(vm.repos.probe, RepoProbe::Loading);
-    // 渲染那一刻选中的是哪个区。`host.read()` 直接写进 rsx 会留下一个活不过
-    // 这条语句的临时借用,先取一份快照。
     let zone = host.read().clone();
 
     rsx! {
@@ -283,9 +242,6 @@ pub fn View(vm: Vm, bridge: Bridge, close: EventHandler<MouseEvent>) -> Element 
                             disabled: !can_next,
                             title: if can_next { "" } else if *local_repo.read() { "先选择本地 Git 仓" } else { "先选择远端仓" },
                             onclick: move |_| {
-                                // 人可能压根没点列表、直接把地址打进去了 —— 那样
-                                // 「这个仓接管过没有」根本没查过。走到第二步之前
-                                // 补一次:盯着的地址和已经查过的那个不一样就查。
                                 if *local_repo.read() {
                                     b_next.send(Req::PickLocalRepo {
                                         path: workspace.read().trim().to_string(),
@@ -342,10 +298,10 @@ pub fn View(vm: Vm, bridge: Bridge, close: EventHandler<MouseEvent>) -> Element 
                             }
                         }
                         div { class: "field",
-                            label { "三个月长成什么样(北极星)" }
+                            label { "目标方向" }
                             textarea {
                                 class: "input", value: "{shown(&north_star.read(), &pf.north_star)}",
-                                placeholder: "每月被标准工作流带完成的活数",
+                                placeholder: "每月通过工作流完成的 Issue 数",
                                 oninput: move |e| north_star.set(e.value()),
                             }
                         }
@@ -373,12 +329,6 @@ pub fn View(vm: Vm, bridge: Bridge, close: EventHandler<MouseEvent>) -> Element 
     }
 }
 
-/// 选仓的那一格:**一个输入框**。光标点进去就自动去列你账号下的仓,打字即在拉下来
-/// 的那批里检索,点一行即选中;不想理列表就直接把地址打进去,一样算数。想重新拉一次,
-/// 点框里右边那个 ⟳。
-///
-/// 交互照 V3 的 `RepoCombobox` —— 原生
-/// `<select>` 做不了「打字过滤」,而「搜索框 + 下拉框」两个控件是把一件事拆成两下。
 #[component]
 fn RepoField(
     vm: Vm,
@@ -408,11 +358,8 @@ fn RepoField(
     let b_focus = bridge.clone();
     let (gh_l, host_l) = (github, host.clone());
     let (gh_f, host_f) = (github, host.clone());
-    // 还没问过、也不在问的路上 —— 光标一进这格就替人去问一次,不用先点什么。
     let need_first_fetch = !r.asked && !r.loading;
     rsx! {
-        // 外层是下拉的锚点(`.repo-pop` 按它定位),里层那个只管输入框
-        // 和贴着右边的 ⟳。
         div { class: "repo-combo",
             div { class: "repo-field",
                 input {
@@ -426,8 +373,6 @@ fn RepoField(
                         }
                     },
                     oninput: move |e| {
-                        // 打的字既是检索词,也是最终的地址 —— 不想用列表的人
-                        // 直接打完就走,不用先点开什么。
                         remote.set(e.value());
                         query.set(e.value());
                         open.set(true);
@@ -438,8 +383,7 @@ fn RepoField(
                     class: if r.loading { "repo-refresh spinning" } else { "repo-refresh" },
                     disabled: r.loading,
                     title: if github { "重新问一次 gh repo list" } else { "重新问一次 codehub-cli" },
-                    // 按下去不能让上面那格失焦 —— 一失焦下拉就收了,人会以为
-                    // 刷新反而把列表刷没了。
+                    // 阻止失焦，避免刷新按钮关闭下拉列表。
                     onmousedown: move |e| {
                         e.prevent_default();
                         open.set(true);
@@ -478,8 +422,7 @@ fn RepoField(
     }
 }
 
-/// 下拉里的一行。用 `onmousedown` 而不是 `onclick`:`onblur` 会先一步把下拉关掉,
-/// 用 `onclick` 的话这一下永远点不中。
+/// 使用 mousedown；blur 会在 click 前关闭列表。
 #[allow(clippy::too_many_arguments)]
 fn repo_option(
     row: &RepoRowVm,
@@ -492,8 +435,6 @@ fn repo_option(
 ) -> Element {
     let b = bridge.clone();
     let (path, host2) = (row.path.clone(), host.to_string());
-    // 列表这一行知道它的默认分支,带上 —— 默认分支不叫 main 的仓不带就查不到,
-    // 结果会把一个接管过的仓报成「没接管过」。
     let git_ref = row.default_branch.clone();
     rsx! {
         div {
@@ -502,9 +443,7 @@ fn repo_option(
             onmousedown: move |e| {
                 e.prevent_default();
                 remote.set(path.clone());
-                // 选完就收起来。这里按的是 mousedown 且拦了默认行为(不拦的话
-                // 上面那格会先失焦、这一下就点空了),所以「失焦收起」那条走不到,
-                // 必须自己收 —— 少这一句,选完下拉就关不上。
+                // 已阻止默认失焦行为，选择后需显式关闭列表。
                 open.set(false);
                 // 检索词清掉:下次光标再进那格,看到的是整张列表,而不是被
                 // 上一次选中的仓名筛得只剩一行。
@@ -530,18 +469,6 @@ fn repo_option(
     }
 }
 
-/// 「这个仓被 Workbench 接管过没有」的几种结局,一句都不能混。
-///
-/// 判据是**去远端读 `.bw/project.toml` 读不读得到**(GitHub 走
-/// `gh api .../contents/.bw/project.toml`,codehub 走 codehub-cli)。读到 = 接管过。
-/// 麻烦在于**读不到有三种,平台回的都是 404**,得一层层剥开:
-///
-/// - 仓不在(地址敲错、私有仓没权限)→ 再问一次 `gh repo view` 就露馅 → 「找不到这个仓」
-/// - 分支不在(默认分支不叫 main)→ 平台正文里那句「No commit found for the ref」→ 「没查成」
-/// - 仓在、分支在、就是没这份文件 → 才是「没接管过」
-///
-/// 其余(没登录、网断了、文件写坏了)一律「没查成」。把任何一种说成「没接管过」,
-/// 人就会照着空格子填一遍,接进去反而盖掉仓里真正的名片。
 fn adopted_note(probe: &RepoProbe) -> Element {
     rsx! {
         div { class: "ob-note",
@@ -588,8 +515,7 @@ fn clone_target(parent: &str, remote: &str) -> String {
     }
 }
 
-/// 人填了就用人填的,没填就用回显那份。**空白 = 没填**,不是「人特意清空了」——
-/// 接入屏这四格本来就没有「特意留空」的用法。
+/// 空白输入使用回显值；接入字段不支持显式清空。
 fn pick(typed: &str, fallback: &str) -> String {
     let t = typed.trim();
     if t.is_empty() {
@@ -599,7 +525,7 @@ fn pick(typed: &str, fallback: &str) -> String {
     }
 }
 
-/// 输入框里该显示什么:同上,但保留人正在打的原样(不 trim,不然打空格就被吃掉)。
+/// 保留输入中的空格，避免输入时光标和内容跳动。
 fn shown(typed: &str, fallback: &str) -> String {
     if typed.is_empty() {
         fallback.to_string()
@@ -608,10 +534,6 @@ fn shown(typed: &str, fallback: &str) -> String {
     }
 }
 
-/// 卡一底下那行探活。项目墙的环境条是同一份数据,这里只挑与接入直接相关的
-/// 三项:平台 CLI、claude、Open Design。**探不出来的照实说探不出来。**
-/// 平台那排 pill。**换平台当场重列一次仓** —— 不然切过去看到的还是上一个平台
-/// 列出来的那批,人还得自己去点刷新才知道两边其实是一样的。
 fn platform_pills(gh: bool, mut github: Signal<bool>, zone: &str, bridge: &Bridge) -> Element {
     let pills: Vec<Element> = [(false, "codehub"), (true, "GitHub")]
         .into_iter()
@@ -638,8 +560,6 @@ fn platform_pills(gh: bool, mut github: Signal<bool>, zone: &str, bridge: &Bridg
     rsx! { div { class: "seg", {pills.into_iter()} } }
 }
 
-/// codehub 三个区的选择器。**和平台那排 pill 长一样** —— 换区就当场重列一次仓,
-/// 人不需要知道「换完还得点一下刷新」。
 fn zone_pills(zone: &str, mut host: Signal<String>, bridge: &Bridge) -> Element {
     let pills: Vec<Element> = CODEHUB_ZONES
         .iter()
@@ -656,7 +576,6 @@ fn zone_pills(zone: &str, mut host: Signal<String>, bridge: &Bridge) -> Element 
                         checked: zone == key,
                         onchange: move |_| {
                             host.set(key.to_string());
-                            // 换了区,上一个区列出来的仓就不作数了,当场重问一次。
                             b.send(Req::ListRepos { github: false, host: key.to_string() });
                         },
                     }
@@ -668,7 +587,6 @@ fn zone_pills(zone: &str, mut host: Signal<String>, bridge: &Bridge) -> Element 
     rsx! { div { class: "seg", {pills.into_iter()} } }
 }
 
-/// 名称 → 目录名。中文与空格换成短横,认不出的字符丢掉。
 fn slugify(name: &str) -> String {
     let s: String = name
         .trim()

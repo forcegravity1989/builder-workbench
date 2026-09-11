@@ -55,12 +55,11 @@ fn a_red_metric_beats_three_green_judgements() {
     assert_eq!(
         health.signal(),
         Signal::Red,
-        "指标越线不能被「三条判据都齐了」吞掉"
+        "指标未达目标时，其他判据通过也不能显示绿色"
     );
-    // 红的理由必须第一眼说清是哪条指标越线,不给一个孤零零的颜色。
     let first = &health.reasons()[0];
     assert!(!first.ok);
-    assert!(first.text.contains("指标越线"), "理由是:{}", first.text);
+    assert!(first.text.contains("指标未达目标"), "理由是:{}", first.text);
     assert!(first.text.contains("每周合入的 PR 数"));
 }
 
@@ -80,7 +79,7 @@ fn ops1_open_without_goal_text_is_not_on_track() {
     let h = derive_project_health(&inputs);
     assert!(!h.reasons()[0].ok);
     assert!(
-        h.reasons()[0].text.contains("还没写进"),
+        h.reasons()[0].text.contains("尚未填写"),
         "got {}",
         h.reasons()[0].text
     );

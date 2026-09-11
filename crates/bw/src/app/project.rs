@@ -1,9 +1,3 @@
-//! 接入项目、改项目信息(名片 + 在研版本 + 项目群)。
-//!
-//! 正本是 `.bw/project.toml`,**不落库**——`project`
-//! 表只有定位与显示缓存。改这些就是改仓文件,得走一张轻量活与一次 MR,
-//! 不是直接 UPDATE 一行。
-
 use super::worktree;
 use super::{issue_store, App, AppError, ProgressLine, Result};
 use crate::command::{Event, ProjectIntent, RemoteRef};
@@ -26,7 +20,7 @@ impl App {
             )));
         }
 
-        // 同名只在仍指向同一处时幂等;不能拿 A 的名字静默吞掉 B 的路径。
+        // 同名但不同路径的仓库不能视为同一项目。
         if let Some(existing) = self.project_by_slug(&slug).await? {
             if !workspace_path.trim().is_empty() {
                 let old = self.workspace_at(&existing.slug, &existing.workspace_path);
@@ -49,9 +43,6 @@ impl App {
             }]);
         }
 
-        // **先把仓弄到手,再建项目行。** 反过来的话,clone 失败会在库里留下
-        // 一个指向空目录的项目 —— 而 V4 没有「删项目」这条命令,那一行就永远
-        // 赖在项目墙上了。
         self.fetch_repo(&requested, &remote).await?;
         let ws = dunce::canonicalize(&requested).map_err(|e| {
             AppError::Refused(format!("本机仓路径读不出来:{} ({e})", requested.display()))
@@ -61,8 +52,7 @@ impl App {
             self.step(ProgressLine::fail(2, warning));
         }
 
-        // 仓的真实路径才是本机身份。同一仓不能换个名字再纳入一次,否则两边会抢
-        // `bw/issue-N` 与同一组 worktree。
+        // 以实际仓库路径去重，避免多个项目争用同一组 worktree。
         for existing in self.projects().await? {
             let old = self.workspace_at(&existing.slug, &existing.workspace_path);
             if same_workspace_path(&old, &ws) {
@@ -93,8 +83,6 @@ impl App {
         let row = self.upsert_project(&row).await?;
         self.step(ProgressLine::ok(3, format!("项目 {slug} 已落库")));
 
-        // 磁盘上的名片只用来补空字段(seed),不拿来判断「已经接入」。
-        // 跳过建车只认:默认分支 HEAD 已有名片,或已经开着项目约定/残留旧标题。
         self.step(ProgressLine::doing(4, "读仓里的名片(.bw/project.toml)…"));
         let existing = project_file::read(&ws)?;
         let in_head = crate::git::path_in_head(&ws, project_file::REL_PATH).await;
@@ -105,7 +93,6 @@ impl App {
         fill_if_blank(&mut file.brief, &intent.brief);
         fill_if_blank(&mut file.benchmark, &intent.benchmark);
         fill_if_blank(&mut file.opportunity, &intent.north_star);
-        // **不写主检出**。第一次接入的名片只落在「项目约定」那棵树上。
         self.step(ProgressLine::ok(
             4,
             if adopted {
@@ -115,7 +102,6 @@ impl App {
             },
         ));
 
-        // 仓里已经有名片,或已经开着项目约定 / 残留铺底 / 残留改名片,不再建第二张。
         let mut events = vec![Event::ProjectCreated {
             id: row.id,
             slug,
@@ -132,8 +118,6 @@ impl App {
                 )),
             }
         }
-        // 纳入时替人把仓登记进 Orca。Orca 没开不推翻接入;
-        // 接入后会进项目,那一次不是 Open,所以没打上要人退回项目墙再点进来。
         if self.pty_enabled {
             match bw_engine::orca::connect() {
                 Ok(rt) => match bw_engine::orca::ensure_repo(&rt, &ws).await {
@@ -161,15 +145,6 @@ impl App {
         Ok(events)
     }
 
-    /// 把仓弄到本机。接入这一步真正花时间的就是它。
-    ///
-    /// 三种局面,每种都如实说清楚,**一种都不许静悄悄地当成成功**:
-    ///
-    /// - 目录里已经是个 git 仓 → 直接用,顺带把它的 origin 报出来给人核对
-    /// - 目录不在或是空的 + 填了远端 → `gh repo clone` / codehub clone
-    /// - 目录不在或是空的 + 没填远端 → 拒绝;接入只认真实 Git 仓
-    /// - 目录里有东西、又不是 git 仓 → **弹回**,既不敢往里 clone,也不敢
-    ///   把别人的目录当成这个项目的仓
     async fn fetch_repo(&self, ws: &std::path::Path, remote: &RemoteRef) -> Result<()> {
         let shown = ws.display().to_string();
         if ws.join(".git").exists() {
@@ -208,7 +183,6 @@ impl App {
             2,
             format!("把 {} clone 到 {shown}…", remote.path),
         ));
-        // clone 自己会建目录。先建出来的话 gh 会因为「目标目录已存在」拒绝。
         if let Some(parent) = ws.parent() {
             std::fs::create_dir_all(parent).map_err(|e| crate::repo::RepoFileError::Io {
                 path: parent.display().to_string(),
@@ -216,9 +190,6 @@ impl App {
             })?;
         }
         let _ = std::fs::remove_dir(ws); // 空目录才删得掉,正合适
-                                         // 认哪个平台、地址长什么样,都是底座那一层的事 —— 这儿只说「把这个仓
-                                         // 弄下来」。以前这儿按 provider 分了两支,顺带把 github 的地址校验也抄
-                                         // 在了这里。
         let got = match bw_engine::remote::Remote::for_host(&remote.provider, &remote.host) {
             Ok(r) => r
                 .clone_repo(&remote.path, ws)
@@ -250,11 +221,7 @@ impl App {
         }
     }
 
-    /// 把一个项目从工作台上移走。
-    ///
-    /// **只动库,不动仓**:仓里是真实的劳动成果,活自己的 worktree 也是 ——
-    /// 「我不想在工作台上看见它了」不构成删掉它们的授权。回执里如实报出仓
-    /// 还在哪儿,人真要删自己去删。
+    /// 移除本机项目记录，保留仓库和 worktree。
     pub(super) async fn remove_project(&mut self, project_id: ProjectId) -> Result<Vec<Event>> {
         let project = self
             .project(project_id)
@@ -280,8 +247,6 @@ impl App {
             .await?
             .ok_or_else(|| AppError::NoSuchProject(project_id.uuid().to_string()))?;
 
-        // 项目约定常驻车:开着的「项目约定」/ 残留「编辑项目名片」/ 残留铺底
-        // 接着写;没有就建一张「项目约定」。主检出不动。
         let issue = match issue_store::find_open_charter(self, &project).await? {
             Some(existing) => existing,
             None => {
@@ -316,7 +281,6 @@ impl App {
         };
         project_file::write(&tree.path, &file)?;
 
-        // 库里的名字是项目墙的显示缓存,跟着改一次。
         self.update_project_location(
             project_id,
             &intent.name,
@@ -347,8 +311,6 @@ impl App {
         .await;
 
         let mut events = vec![Event::ProjectCardEditPending { issue_id: issue.id }];
-        // 新建轻量活是待办池。状态机不许待办池直接进评审中,要先到进行中
-        // (规范铺底同一条跳法)。只在 MR 真开着时推——没交出评审就不假装在审。
         if mr.number > 0 && issue.status != IssueStatus::InReview {
             if issue.status.can_transition_to(IssueStatus::InProgress) {
                 events.extend(
@@ -478,7 +440,6 @@ fn codehub_host_matches(alias: &str, actual: &str) -> bool {
     }
 }
 
-/// 只在原来是空的时候填 —— 人手写过的一个字都不动。
 fn fill_if_blank(slot: &mut String, value: &str) {
     if slot.trim().is_empty() {
         *slot = value.to_string();

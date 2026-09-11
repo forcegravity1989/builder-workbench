@@ -162,7 +162,7 @@ pub(super) fn build_board(issues: &[bw::Issue], plan: Option<&str>) -> BoardVm {
                 },
                 ColumnSegVm {
                     key: "cancelled".into(),
-                    label: "拒绝".into(),
+                    label: "取消".into(),
                     statuses: vec![IssueStatus::Cancelled],
                     count: cancelled_cards.len() as u32,
                     cards: cancelled_cards.clone(),
@@ -172,8 +172,8 @@ pub(super) fn build_board(issues: &[bw::Issue], plan: Option<&str>) -> BoardVm {
     ];
     BoardVm {
         columns,
-        pool_label: "待办池 · 未排进任何一周".into(),
-        todo_label: "待办 · 已排进本周,等开工".into(),
+        pool_label: "未排期".into(),
+        todo_label: "待办".into(),
     }
 }
 
@@ -425,7 +425,7 @@ pub(super) fn build_config(
 ) -> ConfigVm {
     ConfigVm {
         remote: remote_label(project),
-        cadence: "Orca · 周一 09:00 定计划 · 周五 15:00 盘点 · 每天 20:00 采 B 类（默认关）".into(),
+        cadence: "Orca · 周一 09:00 更新指标与版本计划 · 周五 15:00 资产盘点 · 每天 20:00 采集不可回溯指标（默认关闭）".into(),
         crons: vec![],
         chat_provider: chat_provider(file.chat.as_ref()),
         chat_group: chat_group(file.chat.as_ref()),

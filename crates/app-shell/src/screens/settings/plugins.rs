@@ -86,7 +86,7 @@ fn PluginDetail(p: PluginVm, on_back: EventHandler<MouseEvent>) -> Element {
             }
             if !p.used_by.is_empty() {
                 div { class: "dt-act",
-                    span { class: "status status-done", span { class: "status-dot" } "{p.used_by.len()} 个阶段在用" }
+                    span { class: "status status-done", span { class: "status-dot" } "{p.used_by.len()} 个工作类别引用" }
                 }
             }
         }

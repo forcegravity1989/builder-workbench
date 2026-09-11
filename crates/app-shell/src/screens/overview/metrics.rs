@@ -1,5 +1,3 @@
-//! 总览业务图(滞后+引领)与项目指标 · SDLC。
-
 use crate::{
     bridge::Bridge,
     chrome::sparkline::{self, MultiSeries, Series},
@@ -40,7 +38,7 @@ pub fn BizMetrics(p: ProjectVm, bridge: Bridge) -> Element {
     rsx! {
         div { class: "card ov-block",
             div { class: "ov-head-row",
-                div { class: "ov-block-title", "滞后性指标和引领性指标" }
+                div { class: "ov-block-title", "滞后指标与引领指标" }
                 {grain_seg(grain, "biz-grain")}
                 button {
                     class: "btn btn-secondary",
@@ -68,7 +66,7 @@ pub fn BizMetrics(p: ProjectVm, bridge: Bridge) -> Element {
             } else if let Some(n) = p.metrics.note.as_ref() {
                 div { class: "empty", "{n}" }
             } else if plots.is_empty() {
-                div { class: "empty", "这一档还没有指标。" }
+                div { class: "empty", "暂无指标。" }
             } else {
                 div { class: if multi { "ov-plots is-multi" } else { "ov-plots" },
                     for (i, (lag, leads)) in plots.iter().enumerate() {
@@ -182,7 +180,7 @@ pub fn ManualFill(pid: ProjectId, name: String, current: String, bridge: Bridge)
             input {
                 class: "input",
                 value: "{draft}",
-                placeholder: "今天这个数",
+                placeholder: "今日读数",
                 aria_label: "{name}",
                 oninput: move |e| draft.set(e.value()),
             }
@@ -200,7 +198,7 @@ pub fn ManualFill(pid: ProjectId, name: String, current: String, bridge: Bridge)
                         value: v,
                     });
                 },
-                "记下"
+                "保存"
             }
         }
     }
@@ -214,7 +212,7 @@ pub fn SdlcMetrics(p: ProjectVm, bridge: Bridge) -> Element {
     rsx! {
         div { class: "card ov-block",
             div { class: "ov-head-row",
-                div { class: "ov-block-title", "项目指标 · SDLC" }
+                div { class: "ov-block-title", "项目指标" }
                 div { class: "ov-head-tools",
                     {grain_seg(grain, "sdlc-grain")}
                     button {
@@ -226,7 +224,7 @@ pub fn SdlcMetrics(p: ProjectVm, bridge: Bridge) -> Element {
             }
             match p.repo_stats.as_ref() {
                 None => rsx! {
-                    div { class: "empty", "还没采过。打开项目会自动采一轮,也可以点上面那颗按钮。" }
+                    div { class: "empty", "暂无采集结果，可点击「立即采集」。" }
                 },
                 Some(s) if !s.error.is_empty() => rsx! {
                     div { class: "empty text-danger", "{s.error}" }

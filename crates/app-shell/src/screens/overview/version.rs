@@ -1,5 +1,3 @@
-//! 总览「版本计划与进展」。页签 = 当天在研 + 已发历史;框高 6 行。
-
 use crate::{
     bridge::{Bridge, Req},
     vm::{ProjectVm, WeekCountsVm},
@@ -94,7 +92,7 @@ pub fn VersionPlan(p: ProjectVm, bridge: Bridge) -> Element {
                         div { class: "ov-kicker", "每周进展" }
                         div { class: "ov-text-box",
                             if week_progress.trim().is_empty() {
-                                span { class: "empty", "还没有周进展。在该版本运作活①上追加一条 ## 每周进展。" }
+                                span { class: "empty", "暂无每周进展。" }
                             } else {
                                 "{week_progress}"
                             }
@@ -140,7 +138,7 @@ fn progress_bar(c: &WeekCountsVm) -> Element {
     if c.total() == 0 {
         return rsx! {
             div { class: "week-counts",
-                span { class: "empty", "这一版还没有挂活" }
+                span { class: "empty", "此版本暂无 Issue" }
             }
         };
     }
@@ -156,7 +154,7 @@ fn progress_bar(c: &WeekCountsVm) -> Element {
             div { class: "week-counts",
                 span { "待办 " b { "{c.todo}" } }
                 span { "进行中 " b { "{c.doing}" } }
-                span { "评审中 " b { "{c.review}" } }
+                span { "待评审 " b { "{c.review}" } }
                 span { "完成 " b { "{c.done}" } }
                 if c.blocked > 0 {
                     span { class: "text-danger", "阻塞 " b { "{c.blocked}" } }

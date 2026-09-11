@@ -1,8 +1,3 @@
-//! ISO 周:`2026-W34` 这种字符串与日期之间的换算。
-//!
-//! 周是 V4 的时间单位——周计划文件按周一份、活按周排、健康三条判据按周窗口
-//! 算。这里只有换算,没有任何业务判断。
-
 use std::sync::OnceLock;
 use time::{Date, Duration, OffsetDateTime, UtcOffset, Weekday};
 
@@ -36,28 +31,24 @@ fn now_local() -> OffsetDateTime {
     OffsetDateTime::now_utc().to_offset(local_offset())
 }
 
-/// 某一天属于哪个 ISO 周,形如 `2026-W34`。
 pub fn iso_week_of(date: Date) -> String {
     let (year, week, _) = date.to_iso_week_date();
     format!("{year}-W{week:02}")
 }
 
-/// 今天是几月几号,按本机时区算 —— 发版日这类「人眼里的今天」用它。
+/// 使用本机时区的日历日期。
 pub fn today_local() -> Date {
     now_local().date()
 }
 
-/// 某一天的 `YYYY-MM-DD`。
 pub fn format_ymd(d: Date) -> String {
     format!("{:04}-{:02}-{:02}", d.year(), u8::from(d.month()), d.day())
 }
 
-/// 本机今天的 `YYYY-MM-DD`,给「今日采过没有」这种戳用。
 pub fn today_ymd() -> String {
     format_ymd(today_local())
 }
 
-/// 近 `n` 个日历日(含今天),旧的在前。总览按天画走势用。
 pub fn recent_days(n: u32) -> Vec<String> {
     let today = today_local();
     let n = n.max(1) as i64;
@@ -67,22 +58,18 @@ pub fn recent_days(n: u32) -> Vec<String> {
         .collect()
 }
 
-/// 这一 ISO 周的周一。认不出返回 `None`。
 pub fn week_monday_ymd(week: &str) -> Option<String> {
     week_start(week).map(format_ymd)
 }
 
-/// 这一 ISO 周的周五。建版本里程碑默认结束日。
 pub fn week_friday_ymd(week: &str) -> Option<String> {
     week_start(week).map(|d| format_ymd(d + Duration::days(4)))
 }
 
-/// 这一 ISO 周的周日。给「覆盖到这周」做重叠判断。
 pub fn week_sunday_ymd(week: &str) -> Option<String> {
     week_start(week).map(|d| format_ymd(d + Duration::days(6)))
 }
 
-/// `"2026-08-25"` → 那一天。认不出返回 `None`。
 pub fn parse_ymd(s: &str) -> Option<Date> {
     let mut it = s.split('-');
     let y: i32 = it.next()?.parse().ok()?;
@@ -95,28 +82,23 @@ pub fn parse_ymd(s: &str) -> Option<Date> {
     Date::from_calendar_date(y, month, d).ok()
 }
 
-/// 这一天落在哪个 ISO 周。认不出返回 `None`。
 pub fn week_of_ymd(s: &str) -> Option<String> {
     parse_ymd(s).map(iso_week_of)
 }
 
-/// 本机现在是不是已经到了几点几分(当天)。认不出时区时按 UTC,与周号同一条偏移。
 pub fn local_hm_reached(hour: u8, minute: u8) -> bool {
     let now = now_local();
     (now.hour(), now.minute()) >= (hour, minute)
 }
 
-/// 现在是哪个 ISO 周,按**本机时区**算(见 [`init_local_offset`])。
 pub fn current_week() -> String {
     iso_week_of(now_local().date())
 }
 
-/// 是不是 `2026-W34` 这种 ISO 周号。计划屏用来把周版本和人起名的版本分开。
 pub fn is_week(s: &str) -> bool {
     week_start(s).is_some()
 }
 
-/// `2026-W34` → 那一周的周一。认不出格式返回 `None`,不猜。
 pub fn week_start(week: &str) -> Option<Date> {
     let (year, rest) = week.split_once("-W")?;
     let year: i32 = year.parse().ok()?;
@@ -138,32 +120,23 @@ pub fn week_bounds(week: &str) -> Option<(Date, Date)> {
     Some((start, start + Duration::weeks(1)))
 }
 
-/// 上一周。认不出返回 `None`。
 pub fn previous_week(week: &str) -> Option<String> {
     week_start(week).map(|d| iso_week_of(d - Duration::weeks(1)))
 }
 
-/// 下一周。认不出返回 `None`。
 pub fn next_week(week: &str) -> Option<String> {
     week_start(week).map(|d| iso_week_of(d + Duration::weeks(1)))
 }
 
-/// 一周里的周一是不是真的周一 —— 给读回用的自检。
 pub fn starts_on_monday(week: &str) -> bool {
     week_start(week).is_some_and(|d| d.weekday() == Weekday::Monday)
 }
 
-/// `"fri 20:00"` → 星期几(周一 = 1)+ 时 + 分。认不出返回 `None`,不猜。
-///
-/// 只认这一种写法。cron 表达式不支持——一周一次的节律不值得请一整套 cron
-/// 语法进来。产品默认 `fri 09:00`。
+/// 只接受“星期缩写 时:分”，例如 fri 20:00；不支持 cron 表达式。
 pub fn parse_schedule(spec: &str) -> Option<(u8, u8, u8)> {
     let spec = spec.trim().to_ascii_lowercase();
     let (day, time) = spec.split_once(char::is_whitespace)?;
-    // **按字符取前三个,不是按字节**。`&day[..3]` 在 "mié 20:00"(第 4 个字节
-    // 落在 é 中间)这种输入上直接 panic,而这条解析跑在内核线程里 —— 一次
-    // panic 整条线程静默死掉,界面停在最后一帧,点什么都没反应。
-    // 人手乱写什么都可能进来,按字符取前三个,别按字节切片。
+    // 按字符取值，避免非 ASCII 输入在字节切片处 panic。
     let head: String = day.chars().take(3).collect();
     let dow = match head.as_str() {
         "mon" => 1,
@@ -184,13 +157,6 @@ pub fn parse_schedule(spec: &str) -> Option<(u8, u8, u8)> {
     Some((dow, h, m))
 }
 
-/// 本周的这个时刻过了没有。
-///
-/// 判据只看「星期几 + 几点几分」在本周之内的先后,不算具体时间戳——因为幂等
-/// 靠的是「本周有没有建过这张活」那条查询,这里只要回答「这一周里该触发的那
-/// 一刻是不是已经过去了」。错过一次(比如那会儿 Workbench 没开着)下次照样成立,
-/// 自动补建,不需要另记一张「上次触发时间」的表。
-/// 这个 Unix 秒落在不在给定 ISO 周。`ts <= 0` 或解析不出 → false。
 pub fn unix_in_week(ts: i64, week: &str) -> bool {
     week_of_unix(ts).as_deref() == Some(week)
 }

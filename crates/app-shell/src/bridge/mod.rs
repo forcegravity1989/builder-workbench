@@ -1,9 +1,3 @@
-//! 内核桥:一条独立 tokio 线程拿着 `bw::App`,壳这边只发命令、收 ViewModel。
-//!
-//! 壳里没有一行业务判断。界面点一下 → 发一条 `Command` 过桥 → 内核执行 → 重建
-//! 一份 [`Vm`] → 经 watch 通道推回来 → 界面重画。**壳自己绝不伪造成功事件**:
-//! 命令失败就把失败的原话放进 `Vm::note`,不假装做成了。
-
 mod nav;
 mod vm_build;
 mod vm_derive;
@@ -35,13 +29,11 @@ const ORCA_PAIRING_SETTLE: Duration = Duration::from_millis(400);
 /// 嵌页一直不 onload(没 URL / WebView 吞了事件)也要切树 —— 桌面还能跟。
 const ORCA_EMBED_FALLBACK: Duration = Duration::from_secs(3);
 
-/// 启动时从环境变量读到的深链意图。
 #[derive(Clone, Debug, Default)]
 pub struct DeepLink {
     pub open: Option<String>,
     pub panel: Panel,
     pub view: Option<TopView>,
-    /// 帮助面板开在哪一页。八屏各有深链,这一条给它。
     pub help: Option<HelpTab>,
 }
 
@@ -53,7 +45,6 @@ pub fn read_deep_link() -> DeepLink {
     if let Ok(p) = std::env::var("BW_PANEL") {
         match Panel::parse(&p) {
             Some(panel) => dl.panel = panel,
-            // 认不出的值如实打出来,不静默 fallback 到某个默认屏。
             None => bw_engine::dlog!(warn, "bridge", "[BW_OPEN] 未知 BW_PANEL={p:?},忽略"),
         }
     }
@@ -82,107 +73,69 @@ pub fn read_deep_link() -> DeepLink {
     dl
 }
 
-/// 壳发给内核的一条请求。
 pub enum Req {
-    /// 一条真命令。
     Cmd(Command),
-    /// 打开某个项目(纯本机导航,不改任何数据)。
     Open(Option<ProjectId>),
-    /// 计划屏切到看某个计划版本。
     ViewPlan(String),
-    /// 总览在研下拉选中某个覆盖当天的版本。
     SelectOverviewVersion(String),
-    /// 计划屏回到全部 issue。
     ViewAll(bool),
-    /// 壳侧预判失败(改名撞名等),走同一条 toast。
     Note(String),
-    /// 知识库屏打开某份文档。
     OpenDoc(Option<String>),
-    /// 「先不建」——把还没确认的草稿丢掉。草稿本来就没进库,丢掉不留痕。
     DropDrafts,
-    /// 会话屏:选中哪个会话 / 切页签。全是纯导航,一律不进库。
-    /// 有会话行时**先**记下要切的树,等嵌页 `OrcaEmbedReady` 再 `worktree.activate`;
-    /// 先切树再挂 iframe,配对网页听不见跟随。
+    /// 先挂载 iframe，收到 OrcaEmbedReady 后再切换 worktree，避免嵌页漏收通知。
     SelectSession(Option<bw::model::IssueId>),
-    /// 会话屏 Orca iframe 已经 load。配对 WS 可能还要一拍,见
-    /// [`FlushOrcaReveal`]。
     OrcaEmbedReady,
-    /// 嵌页已挂(或兜底超时):把挂着的那张活 `worktree.activate`。
-    /// `seq` 对不上就丢掉 —— 人又点了另一张。
+    /// 忽略过期的 seq，避免快速切换时激活上一次选择的 worktree。
     FlushOrcaReveal {
         seq: u64,
     },
     SessionTab(crate::vm::SessionTab),
-    /// 知识库屏切页签。代码图与资产两个页签**切过去那一刻现跑一次**
-    /// (起 codegraph 子进程、走 `git log`、采仓统计),结果留到下次再点。
     KbTab(crate::vm::KbTab),
-    /// 上面那一跑的结果回来了。**不是界面发的** —— 是内核自己派出去的那个任务
-    /// 算完之后发回来的,见 `Req::KbTab` 的处理。
     KbComputed {
         tab: crate::vm::KbTab,
         codegraph: Option<crate::vm::CodeGraphVm>,
         assets: Option<crate::vm::AssetsVm>,
     },
-    /// 总览那块「项目指标 · 代码仓级」:现采一次。
     CollectRepoStats,
-    /// 总览:点「采一次指标」。把 `.bw/metrics.toml` 里可回溯的那几条真的跑
-    /// 一遍(起脚本、传时间窗、读标准输出的 JSON)。**不在打开总览时自动跑**
-    /// —— 一次要起好几个子进程,不该在每次进项目、每次重绘时发生。
     CollectMetrics,
-    /// 上面那一采的结果。**不是界面发的**,是派出去的任务算完发回来的。
     MetricsCollected {
         project: ProjectId,
         readouts: Vec<bw::app::collect::MetricReadout>,
         error: Option<String>,
     },
-    /// 上面那一采的结果。**不是界面发的**,是派出去的那个任务算完发回来的。
-    /// 带着「这是给哪个项目采的」——采一次要几百毫秒,人完全来得及在这期间
-    /// 切走,不认项目就会把上一个项目的提交数摆在新项目的总览上。
+    /// 携带采集时的项目 ID，避免异步结果显示在其他项目中。
     RepoStatsComputed {
         project: ProjectId,
         stats: crate::vm::RepoStatsVm,
     },
-    /// 接入屏:去平台列一遍「我账号下的仓」。真调 `gh repo list` /
-    /// `codehub-cli`,列不出来就把原话摆出来,绝不造一份假列表。
     ListRepos {
         github: bool,
         host: String,
     },
-    /// 上面那一问的结果。**不是界面发的**,是派出去的任务问完发回来的。
     ReposListed {
         rows: Vec<crate::vm::RepoRowVm>,
         error: Option<String>,
     },
-    /// 接入屏:点了某一行仓 —— 去读那个仓远端的 `.bw/project.toml`,
-    /// 读得到就说明这个项目已经被 Workbench 接管过,名片直接回显。
     PickRepo {
         github: bool,
         host: String,
         path: String,
-        /// 去哪个分支上找 `.bw/project.toml`。列表里那一行给的默认分支;人手打
-        /// 地址时是空的,那就交给引擎兜底(它会用 `main`)。**这一格要是错了,
-        /// 表现就是把一个接管过的仓报成「没接管过」** —— 默认分支不叫 main 的
-        /// 仓很常见。
+        /// 列表携带远端默认分支；手输地址时留空，由引擎查询，不能假定为 main。
         git_ref: String,
     },
-    /// 接入屏选择本地仓 —— 直接读工作目录里的 `.bw/project.toml`。
-    /// 本地与远端最后都回 [`Req::RepoPicked`],基础信息卡只认一份回显状态。
     PickLocalRepo {
         path: String,
     },
-    /// 上面那一读的结果。`prefill = None` = 那个仓还没被接管过,四个字段要人填。
     RepoPicked {
         path: String,
         prefill: Option<crate::vm::RepoPrefillVm>,
         probe: crate::vm::RepoProbe,
     },
-    /// 重新算一遍并推一份新的 ViewModel。
     Refresh,
-    /// 配置屏亮某一行技能(从活上的 workflow 跳过来)。
+    /// 配置屏亮某一行技能(从Issue 上的 workflow 跳过来)。
     #[allow(dead_code)]
     FocusSkill(String),
-    /// 后台查完打开项目的 MR 号。**不是界面发的**。`gen` 对不上或已经换项目
-    /// 就丢掉,不把上一屏的号写到这一屏。
+    /// 结果的项目和 gen 必须与当前视图一致。
     PrNumbersFilled {
         project: ProjectId,
         gen: u64,
@@ -190,17 +143,12 @@ pub enum Req {
     },
 }
 
-/// 桥是整个进程共用的**一个**句柄,clone 出来的都指向同一个内核线程,
-/// 因此永远相等 —— 这样它才能当 Dioxus 组件的 props(props 要求 `PartialEq`,
-/// Dioxus 用它判断要不要重渲染;桥本身不携带会变的状态,变的是它推过来的
-/// ViewModel)。
+/// Bridge 的副本共用内核通道；PartialEq 比较通道身份，不承载业务状态。
 #[derive(Clone)]
 pub struct Bridge {
     tx: mpsc::UnboundedSender<Req>,
     pub vm: watch::Receiver<Vm>,
-    /// 长命令的「一步一句」回执(接入项目就是靠它才不像死了)。**走 broadcast、
-    /// 不走 ViewModel**:命令还没做完,ViewModel 根本没重拼的机会 —— 内核那条
-    /// 队列此刻正卡在 `dispatch` 里,进度得从旁边这条道出来。
+    /// dispatch 尚未返回时也要显示进度，因此使用独立的广播通道。
     pub progress: broadcast::Sender<bw::app::ProgressLine>,
     /// 出包中途停。不走命令队列（队列正被 PackRelease 占着）。
     pub pack_ctl: Arc<bw::app::PackCtl>,
@@ -226,21 +174,13 @@ impl Bridge {
     }
 }
 
-/// Workbench 本机数据(注册表、设置、会话)落在哪个目录。和旧壳同一个位置,
-/// 但不再有 `.db` 文件 —— 全是 TOML/JSONL。`BW_DB` 仍可覆盖目录(取 parent)。
-///
-/// **Windows 默认落 `D:\builders-workbench\data`**(D 盘在时;与
-/// [`workspaces_root`] 同根、两份平级:`data` + `workspaces`)。D 盘不在的
-/// 机器退回 `%APPDATA%\BuildersWorkbench`。数据目录是进程地基,**不在设置屏
-/// 热改**——要换用 `BW_DB` env(启动前设),理由见 settings 屏那条只读行。
+/// 本机数据目录。BW_DB 仅取父目录；Windows 优先 D 盘，否则使用 APPDATA。
 pub fn data_dir() -> PathBuf {
     let base = if cfg!(target_os = "macos") {
         std::env::var("HOME")
             .map(|h| format!("{h}/Library/Application Support/BuildersWorkbench"))
             .ok()
     } else if cfg!(target_os = "windows") {
-        // D 盘在:一个根两份(data 与 workspaces 平级,见 workspaces_root);
-        // D 盘不在的机器退回 APPDATA,不硬撑一个用不了的盘符。
         if PathBuf::from("D:\\").exists() {
             Some("D:\\builders-workbench\\data".into())
         } else {
@@ -258,7 +198,6 @@ pub fn data_dir() -> PathBuf {
         None => dirs_home().join(".builders-workbench"),
     };
     let _ = std::fs::create_dir_all(&dir);
-    // BW_DB 仍可覆盖(取它的 parent 当目录,向后兼容)。
     if let Ok(p) = std::env::var("BW_DB") {
         let path = PathBuf::from(&p);
         if let Some(parent) = path.parent() {
@@ -275,7 +214,6 @@ pub fn workspaces_root() -> PathBuf {
     std::env::var("BW_WORKSPACES")
         .map(PathBuf::from)
         .unwrap_or_else(|_| {
-            // Windows + D 盘在:与 data_dir 同根,`D:\builders-workbench\workspaces`。
             if cfg!(target_os = "windows") && PathBuf::from("D:\\").exists() {
                 PathBuf::from("D:\\builders-workbench\\workspaces")
             } else {
@@ -284,9 +222,7 @@ pub fn workspaces_root() -> PathBuf {
         })
 }
 
-/// Workbench 自己的资产放哪(技能库摊在 `<这里>/skills/`,注册表/设置/会话也在
-/// 这儿)。**跟着本机数据目录走,不跟工作区走** —— 它是 Workbench 自带的东西,
-/// 和用户把仓放在哪没关系;工作区根目录是可以随时改的,资产不该跟着搬家。
+/// 应用数据和技能不随用户的工作区根目录迁移。
 pub fn asset_root() -> PathBuf {
     data_dir().join("assets")
 }
@@ -298,15 +234,13 @@ fn dirs_home() -> PathBuf {
         .unwrap_or_else(|_| PathBuf::from("."))
 }
 
-/// 刷新的回执。**报刚读出来的数**,不报「读过了」—— 这样人一眼能看出刷没刷到
-/// 东西:数变了就是仓里真有新东西,数没变就是确实没变化,而不是按钮坏了。
 fn refresh_note(vm: &Vm) -> String {
     let tools = vm.env.iter().filter(|t| t.ok == Some(true)).count();
     match &vm.open {
         Some(p) => {
             let w = &p.week_counts;
             format!(
-                "刷新完:{} · 本周 待办{} 进行中{} 评审中{} 完成{} 阻塞{} · 本机工具 {}/{} 可用",
+                "刷新完:{} · 本周 待办{} 进行中{} 待评审{} 完成{} 阻塞{} · 本机工具 {}/{} 可用",
                 p.name,
                 w.todo,
                 w.doing,
@@ -326,9 +260,6 @@ fn refresh_note(vm: &Vm) -> String {
     }
 }
 
-/// 接入屏那个单选:选的是 GitHub 还是 codehub。**这是界面上人做的选择**,也是
-/// 整个壳里最后一处「哪个平台」—— 到这儿就翻译成 provider 串交给底座,再往下
-/// 谁也不许按平台分支。
 fn provider_of(github: bool) -> &'static str {
     if github {
         "github"
@@ -337,12 +268,8 @@ fn provider_of(github: bool) -> &'static str {
     }
 }
 
-/// 去平台列「我账号下的仓」。列不出来就把 CLI 的原话端回去 —— 多半是没装、没登
-/// 录、或者 codehub 区没选,这三件事人一看原话就知道该干嘛。
 async fn list_repos(github: bool, host: &str) -> (Vec<crate::vm::RepoRowVm>, Option<String>) {
-    // 拉满用户的仓:搜索是客户端过滤已拉到的列表(走缓存,不重新拉),
-    // 所以 fetch 要一次拿全——codehub-cli 无硬上限(实测 limit 9999 拉全 158 个)、
-    // gh repo list 跨页拉到 limit。下拉框另有 DROPDOWN_CAP=30 封顶,不会铺满 999。
+    // 本地搜索需要完整候选集；CLI 列表上限与 UI 显示行数分别控制。
     const LIMIT: u32 = 999;
     let remote = match bw_engine::remote::Remote::for_host(provider_of(github), host.trim()) {
         Ok(r) => r,
@@ -365,9 +292,6 @@ async fn list_repos(github: bool, host: &str) -> (Vec<crate::vm::RepoRowVm>, Opt
     }
 }
 
-/// 读某个仓远端的 `.bw/project.toml`。读得到 = 这个项目已经被 Workbench 接管过
-/// (你自己接过、或者同事先接的),名片四个字段直接回显,人不用再填一遍。
-/// 读不到就是 `None` —— **不猜、不拿仓描述冒充名片**。
 async fn fetch_prefill(
     github: bool,
     host: &str,
@@ -384,11 +308,7 @@ async fn fetch_prefill(
         .await
         .map_err(|e| e.to_string());
     match got {
-        // 平台说「没有这份文件」。但**仓根本不存在也是同一个 404** —— 地址
-        // 敲错一个字母就会得到「还没接管过,请填」,人填完才发现接的是个
-        // 不存在的仓。所以这一支要再问一次「这个仓在不在」,只有仓在、文件
-        // 不在,才是真的没接管过。走到这支的只有没接管过的仓,多一次调用
-        // 不落在常路上。
+        // 仓库和文件不存在都可能返回 404；确认仓库存在后才能展示空表单。
         Ok(None) => {
             let exists = remote.probe_repo(path).await.map_err(|e| e.to_string());
             match exists {
@@ -396,9 +316,6 @@ async fn fetch_prefill(
                 Err(e) => (None, RepoProbe::NoRepo(e)),
             }
         }
-        // 底座只负责把远端那份文件的**原文**取回来,解析是这一层的事 ——
-        // 它不认识业务文件格式。解析不了说明那份文件坏了或不是名片,
-        // 那是「没查成」,**不是**「没被接管过」。
         Ok(Some(raw)) => match bw::repo::project_file::parse(&raw) {
             Ok(file) => (
                 Some(crate::vm::RepoPrefillVm {
@@ -411,14 +328,11 @@ async fn fetch_prefill(
             ),
             Err(e) => (None, RepoProbe::Failed(e.to_string())),
         },
-        // 没登录、网断了、分支名不对、文件写坏了 —— 都是「没查成」,
-        // **不能**说成「没被接管过」。
         Err(e) => (None, RepoProbe::Failed(e)),
     }
 }
 
-/// 读本地仓的 `.bw/project.toml`。文件存在就是这个仓已经由 Workbench 管理过；
-/// 没有名片、不是 Git 仓和文件损坏是三种不同结局，不能混成空表单。
+/// 区分文件不存在、目录不是 Git 仓和解析失败，避免错误触发空表单。
 async fn fetch_local_prefill(
     path: &str,
 ) -> (Option<crate::vm::RepoPrefillVm>, crate::vm::RepoProbe) {
@@ -445,26 +359,20 @@ async fn fetch_local_prefill(
     }
 }
 
-/// 起内核线程。返回的桥可以被界面各处 clone。
 pub fn spawn(deep_link: DeepLink) -> Bridge {
     let (tx, mut rx) = mpsc::unbounded_channel::<Req>();
     let (vm_tx, vm_rx) = watch::channel(Vm::default());
-    // 一条长命令十来行顶天了,64 够用;没人订的时候 send 直接丢,不阻塞。
     let (prog_tx, _) = broadcast::channel(64);
 
     let prog_tx_handle = prog_tx.clone();
     let pack_ctl = Arc::new(bw::app::PackCtl::new());
     let pack_ctl_app = pack_ctl.clone();
-    // 内核往自己这条队列里回发用的口子(知识库那两个页签算完之后发回来)。
     let tx_back = tx.clone();
 
     std::thread::Builder::new()
         .name("bw-kernel".into())
         .spawn(move || {
-            // 内核这条线程一处 panic 就整条死掉,而界面那头只会停在最后一份
-            // ViewModel 上 —— 之后发出去的命令石沉大海,**没有任何提示**。
-            // 人以为 Workbench 还在正常跑,其实早就没人接活了。裹一层,把死因送进
-            // 「起不来」那块红字:**宁可显眼地坏掉,也不要安静地坏掉。**
+            // 捕获后台线程 panic 并通知界面，否则界面会永久停在最后一份数据。
             let vm_tx_panic = vm_tx.clone();
             let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(move || {
             let rt = tokio::runtime::Builder::new_current_thread()
@@ -487,8 +395,6 @@ pub fn spawn(deep_link: DeepLink) -> Bridge {
                 // ui,会话屏 iframe 打开它;设置屏改了走 OrcaWebUrlChanged 刷新。
                 let orca_web_url = Settings::get_orca_web_url(&assets).unwrap_or_default();
                 let theme = Settings::get_theme(&assets).unwrap_or_default();
-                // 桌面壳里 ▶跑 打 Orca 本地 pipe,过程看会话屏 iframe。指挥器
-                // 那条路仍然走自我标注的替身 —— 它没有界面渲染字节流。
                 let mut app = App::new(
                     root.clone(),
                     Arc::new(bw_engine::InteractiveCliExecutor::new()),
@@ -530,13 +436,11 @@ pub fn spawn(deep_link: DeepLink) -> Bridge {
                     orca_repos_ready: std::collections::HashSet::new(),
                 };
 
-                // 「刷新」按下了没有。回执要等 ViewModel 拼完才写得出来。
                 let mut refresh_receipt = false;
                 // 去会话要等嵌页在才切树。seq 对不上的 Flush 丢掉。
                 let mut pending_orca_reveal: Option<bw::model::IssueId> = None;
                 let mut orca_reveal_seq: u64 = 0;
 
-                // 深链:BW_OPEN=<slug 或项目名> 打开某个项目。
                 if let Some(want) = &deep_link.open {
                     match vm_build::find_project(&app, want).await {
                         Some(p) => {
@@ -564,9 +468,6 @@ pub fn spawn(deep_link: DeepLink) -> Bridge {
                     vm.projects.len(),
                     assets.display()
                 );
-                // 环境条的探活结果也打出来 —— 它说「找不到 claude」的时候,人
-                // 得能在终端里拿 `which claude` 当场对。2026-08-20 就栽在这上面:
-                // 探活在 macOS 上恒返回「找不到」,而界面上没有任何办法核。
                 for t in &vm.env {
                     let state = match t.ok {
                         Some(true) => "有",
@@ -582,27 +483,22 @@ pub fn spawn(deep_link: DeepLink) -> Bridge {
                         t.detail
                     );
                 }
-                // 打开了项目就把这一份 ViewModel 的关键计数打出来 —— 这些数
-                // 都能用 codehub-cli/gh/git/cat 当场对(活 = codehub issue、
-                // 会话 = session.jsonl、周 = issue 的 bw:week 标签),比截图硬。
                 if let Some(o) = &vm.open {
                     bw_engine::dlog!(
                         ok,
                         "bridge",
-                        "[BW_VM] project={} 活={} 会话={} 周={} 技能(全局)={}",
+                        "[BW_VM] project={} Issue={} 会话={} 周={} 技能(全局)={}",
                         o.slug,
                         o.board.columns.iter().map(|c| c.cards.len()).sum::<usize>(),
                         o.sessions.len(),
                         o.weeks.len(),
                         vm.settings.skills.len(),
                     );
-                    // 总览「版本计划与进展」的五段。**只认在研版本**,与计划屏
-                    // 左栏看的是哪一周无关 —— 这一行就是那条纪律的读回。
                     let c = &o.week_counts;
                     bw_engine::dlog!(
                         ok,
                         "bridge",
-                        "[BW_VM] 本周{} 待办={} 进行中={} 评审中={} 完成={} 阻塞={}",
+                        "[BW_VM] 本周{} 待办={} 进行中={} 待评审={} 完成={} 阻塞={}",
                         o.current_week,
                         c.todo,
                         c.doing,
@@ -613,7 +509,7 @@ pub fn spawn(deep_link: DeepLink) -> Bridge {
                     bw_engine::dlog!(
                         ok,
                         "bridge",
-                        "[BW_VM] 阶段(全局)={} 定时={} 群={} 指标={} 未读={}",
+                        "[BW_VM] 工作类别(全局)={} 定时={} 群={} 指标={} 未读={}",
                         vm.settings.stage.len(),
                         o.config.crons.len(),
                         o.config.chat_provider,
@@ -628,9 +524,6 @@ pub fn spawn(deep_link: DeepLink) -> Bridge {
                     ui.set_note(Some("正在采本项目指标与仓统计…".into()));
                 }
                 kick_pr_fill(&last_gather, &ui, &tx_back);
-                // BW_KB_DUMP=1:把知识库三个页签的数字打进 stderr,好让人拿
-                // `git ls-files` / `codegraph files -j` / `cat .bw/releases.md`
-                // 当场对。截图对不了数,这个能。
                 if std::env::var("BW_KB_DUMP").is_ok_and(|v| v != "0") {
                     if let Some(pid) = ui.open {
                         if let Ok(ws) = app.workspace_of(pid).await {
@@ -672,20 +565,13 @@ pub fn spawn(deep_link: DeepLink) -> Bridge {
                         }
                     }
                 }
-                // gather 已经把 warnings 打进对照日志,这里不再打第二遍。
                 let _ = vm_tx.send(vm.clone());
 
                 loop {
                     let Some(req) = rx.recv().await else {
                         break;
                     };
-                    // 纯导航(切周 / 点总览 / 选卡片看详情 / 切页签 / 展开
-                    // 目录 / 后台采回发 / MR 回填)不重跑 gather —— 复用上次
-                    // 采的那份,只重切依赖视图字段的片段。真命令、换项目、刷新、
-                    // FlushOrcaReveal 可能改了底层数据,才重 gather。
-                    // 只改一张活状态标签(拖拽 / 详情下拉)写成功后补丁
-                    // last_gather,不重拉 issue list。SelectSession 只记账等
-                    // 嵌页,走快路径。设计见 ADR 0002。
+                    // 导航复用已采集数据；状态写入成功后只更新对应条目，避免重复远端查询。
                     let status_patch = matches!(
                         &req,
                         Req::Cmd(
@@ -705,8 +591,7 @@ pub fn spawn(deep_link: DeepLink) -> Bridge {
                         &req,
                         Req::Cmd(Command::ReportWorkbenchIssue { .. })
                     );
-                    // FetchIssue = 详情弹窗打开时单查正文。list 不带正文,重拉整个
-                    // list 会又把 body 冲成空,所以走补丁路、跳过 full gather。
+                    // 列表不带正文，完整重拉会覆盖单查结果，因此只更新对应正文。
                     let fetching_body = matches!(&req, Req::Cmd(Command::FetchIssue { .. }));
                     let needs_gather = matches!(
                         &req,
@@ -720,8 +605,6 @@ pub fn spawn(deep_link: DeepLink) -> Bridge {
                     match req {
                         Req::Cmd(c) => {
                             let confirming = matches!(c, Command::ConfirmWeekDraft { .. });
-                            // 计划屏 Start 和总览「开始本周」都会 create 会话,
-                            // 同一块遮罩挡住嵌页。
                             let running_issue = matches!(c, Command::RunIssue { .. });
                             // 遮罩撤了再切:开工里那次 activate 嵌页听不见。
                             let mut reveal_after_busy: Option<bw::model::IssueId> = None;
@@ -762,15 +645,11 @@ pub fn spawn(deep_link: DeepLink) -> Bridge {
                                             last_gather.apply_issue_status(id, to, settled);
                                         }
                                     }
-                                    // FetchIssue 单查回的正文补丁进 last_gather,
-                                    // 下面的 assemble 会用它重切 VM。
                                     if fetching_body {
                                         if let Some((id, body)) = body_fetched_of(&events) {
                                             last_gather.apply_issue_body(id, body);
                                         }
                                     }
-                                    // 「开始本周」产出的草稿活标先接住,等人在计划屏
-                                    // 点确认才真的建活。
                                     if let Some((issue_id, tool)) = events.iter().find_map(|e| match e {
                                         bw::command::Event::IssueRan { id, tool, .. } => {
                                             Some((*id, tool.clone()))
@@ -778,9 +657,6 @@ pub fn spawn(deep_link: DeepLink) -> Bridge {
                                         _ => None,
                                     }) {
                                         ui.session_open = Some(issue_id);
-                                        // 原型活停 Open Design,构建类停 Orca(终端
-                                        // 页签随 PTY 封存删了)。两个 iframe 都自己探
-                                        // 本机,这里不灌 src。
                                         ui.session_tab = if tool == "open_design" {
                                             crate::vm::SessionTab::OpenDesign
                                         } else {
@@ -822,8 +698,7 @@ pub fn spawn(deep_link: DeepLink) -> Bridge {
                                     if confirming {
                                         ui.pending_drafts = None;
                                     }
-                                    // 拉完主检出必须重采:同事合进去的 metrics.toml
-                                    // 不重读,界面会继续显示「旧格式」那句拒收。
+                                    // 主检出更新后重新读取指标定义。
                                     if events.iter().any(|e| {
                                         matches!(e, bw::command::Event::WorkspacePulled { .. })
                                     }) {
@@ -832,9 +707,6 @@ pub fn spawn(deep_link: DeepLink) -> Bridge {
                                             kick_project_collect(&app, pid, &tx_back).await;
                                         }
                                     }
-                                    // 接完一个项目就把它打开 —— 人点「完成接入」
-                                    // 要的是进这个项目,不是停在接入屏上自己再点
-                                    // 一遍项目墙。
                                     if let Some(bw::command::Event::ProjectCreated {
                                         id,
                                         ..
@@ -849,8 +721,7 @@ pub fn spawn(deep_link: DeepLink) -> Bridge {
                                         ui.kb_codegraph = None;
                                         ui.kb_assets = None;
                                         ui.repo_stats = None;
-                                        // 指标按名字对上去,两个项目撞名就会
-                                        // 把上一个项目的数摆在这个项目的卡片上。
+                                        // 指标按名称匹配，切换项目必须清空，避免同名指标串数据。
                                         ui.metrics = Vec::new();
                                         ui.repos = crate::vm::RepoPickerVm::default();
                                         kick_project_collect(&app, *id, &tx_back).await;
@@ -859,8 +730,6 @@ pub fn spawn(deep_link: DeepLink) -> Bridge {
                                         // 纳入时 Orca 没开或注入失败,这里再试一次。
                                         register_orca_repo(&app, &mut ui, *id).await;
                                     }
-                                    // 项目被移走了:它要是正开着,得回项目墙 ——
-                                    // 留在一个已经不存在的项目上,整屏都是空的。
                                     if events.iter().any(|e| {
                                         matches!(e, bw::command::Event::ProjectRemoved { .. })
                                     }) {
@@ -869,9 +738,7 @@ pub fn spawn(deep_link: DeepLink) -> Bridge {
                                         ui.kb_codegraph = None;
                                         ui.kb_assets = None;
                                         ui.repo_stats = None;
-                                        // 指标读数同理:留着就是把上一个项目的数
-                                        // 摆在这个项目的卡片上——而且指标是**按名字**
-                                        // 对上去的,两个项目撞名就真会显示错的那个数。
+                                        // 清空上一项目的指标，避免同名匹配到旧读数。
                                         ui.metrics = Vec::new();
                                     }
                                     // 改了工作区根目录:设置屏那一行要立刻显示
@@ -903,7 +770,6 @@ pub fn spawn(deep_link: DeepLink) -> Bridge {
                                         }
                                     }
                                 }
-                                // 失败就把失败的原话摆出来。壳不替内核圆场。
                                 Err(e) => ui.set_note(Some(format!("没做成:{e}"))),
                             }
                             if status_patch {
@@ -913,10 +779,6 @@ pub fn spawn(deep_link: DeepLink) -> Bridge {
                                 ui.busy = None;
                             }
                             if running_issue {
-                                // create / run_issue 已经回来。先撤遮罩把嵌页挂上,
-                                // 别等后面 gather(issue list / mr list)再撤 ——
-                                // 「开始本周」那一刀比计划屏 Start 多建一张活,
-                                // gather 又更慢,遮罩会和 Start 差一截。
                                 ui.busy = None;
                                 if let Some(iid) = reveal_after_busy {
                                     orca_reveal_seq = orca_reveal_seq.wrapping_add(1);
@@ -966,8 +828,7 @@ pub fn spawn(deep_link: DeepLink) -> Bridge {
                                 } else {
                                     let t_peek = Instant::now();
                                     match peek_orca_repo(&app, pid).await {
-                                        // 仓已在 Orca 也要走注入:只认「这个进程已经打过」,
-                                        // 不能把 repo.show 成功当成自动化已在。
+                                        // repo.show 只能证明仓库已登记，不能证明自动化已创建。
                                         peek @ (OrcaPeek::Present | OrcaPeek::Missing) => {
                                             bw_engine::dlog!(
                                                 ok,
@@ -1018,15 +879,9 @@ pub fn spawn(deep_link: DeepLink) -> Bridge {
                             ui.viewing_plan = String::new();
                             ui.overview_version = String::new();
                             ui.view_all = true;
-                            // 知识库那两个页签的结果是**上一个项目**的:它的技能
-                            // 清单、它的 git 产物、它的发版记录、它的仓统计。留着
-                            // 的话换个项目点进去,一屏数字没有一个是这个项目的,
-                            // 而且什么提示都没有。一律清空,让它显示「点一下就现扫」。
                             ui.kb_tab = crate::vm::KbTab::default();
                             ui.kb_codegraph = None;
                             ui.kb_assets = None;
-                            // 仓统计同理:留着就是把上一个项目的提交数摆在这个
-                            // 项目的总览上。
                             ui.repo_stats = None;
                             ui.metrics = Vec::new();
                             if let Some(pid) = id {
@@ -1115,15 +970,9 @@ pub fn spawn(deep_link: DeepLink) -> Bridge {
                         Req::SessionTab(t) => ui.session_tab = t,
                         Req::KbTab(t) => {
                             ui.kb_tab = t;
-                            // 每次点页签就是一次全新的现跑 —— 不缓存,和「对账
-                            // 是纯读操作不需要缓存」同一个取舍。
                             ui.kb_codegraph = None;
                             ui.kb_assets = None;
-                            // **派出去算,不在这条循环里等**。这两样各要起好几个
-                            // 子进程(codegraph、git log、仓统计),在这里 await
-                            // 就等于把内核这条单线程连同 60ms 的终端节拍一起按住
-                            // —— 人正看着 agent 刷屏时点一下「代码图」,终端就卡住
-                            // 了。算完经 KbComputed 发回来。
+                            // 子进程放到后台运行，避免阻塞内核命令循环。
                             let want = matches!(
                                 t,
                                 crate::vm::KbTab::CodeGraph | crate::vm::KbTab::Assets
@@ -1131,8 +980,6 @@ pub fn spawn(deep_link: DeepLink) -> Bridge {
                             if let (true, Some(pid)) = (want, ui.open) {
                                 match app.workspace_of(pid).await {
                                     Ok(ws) => {
-                                        // 先摆「正在跑」,不然点「重新跑一次」会先闪
-                                        // 成「点一下页签就现跑」,算得快时整页像没动。
                                         if t == crate::vm::KbTab::CodeGraph {
                                             ui.kb_codegraph = Some(crate::vm::CodeGraphVm {
                                                 state: "running".into(),
@@ -1165,8 +1012,6 @@ pub fn spawn(deep_link: DeepLink) -> Bridge {
                                         });
                                     }
                                     Err(e) => {
-                                        // 工作区找不到**不能静默什么都不做** —— 人
-                                        // 点了按钮却毫无反应,只会以为按钮坏了。
                                         let msg = format!("找不到这个项目的工作区:{e}");
                                         ui.set_note(Some(msg.clone()));
                                         if t == crate::vm::KbTab::CodeGraph {
@@ -1185,25 +1030,14 @@ pub fn spawn(deep_link: DeepLink) -> Bridge {
                             codegraph,
                             assets,
                         } => {
-                            // 算的时候人可能已经切走了。结果就丢掉 —— 把上一个
-                            // 页签的数字贴到当前页签上比不显示更糟。
                             if ui.kb_tab == tab {
                                 ui.kb_codegraph = codegraph;
                                 ui.kb_assets = assets;
                             }
                         }
                         Req::CollectRepoStats => {
-                            // 和知识库那两个页签同一个做法:派出去算,不在这条
-                            // 循环里 await —— 它要起好几个 git 子进程,在这里等
-                            // 就把内核这条单线程连同终端的 60ms 节拍一起按住。
+                            // 在后台采集，避免子进程阻塞内核命令循环。
                             if let Some(pid) = ui.open {
-                                // 走势那条要问远端「这一周合入了几个 PR」,所以
-                                // 得把项目一起带上(远端地址在它身上)。取不到
-                                // 项目就只能不采 —— 不拿一个空壳项目去问远端。
-                                // 项目行读不出来**不能静默什么都不做** —— 人点了
-                                // 按钮却毫无反应,只会以为按钮坏了(评审抓的)。
-                                // git 那几项本来就不需要项目行,照采;只有远端那条
-                                // 线缺了地址,如实说一句。
                                 let proj = app.project(pid).await.ok().flatten();
                                 match app.workspace_of(pid).await {
                                     Ok(ws) => {
@@ -1227,12 +1061,8 @@ pub fn spawn(deep_link: DeepLink) -> Bridge {
                             }
                         }
                         Req::CollectMetrics => {
-                            // 和上面那一采同一个做法:派出去跑,不在这条循环里
-                            // await —— 它要起好几个采集脚本(每个还可能连远端),
-                            // 在这里等就把内核这条单线程连同终端的节拍一起按住。
+                            // 在后台执行采集脚本，避免阻塞内核命令循环。
                             if let Some(pid) = ui.open {
-                                // 没有工作区就采不了 —— **如实说一句,别让人以为
-                                // 按钮坏了**(和上面那一采同一条教训)。
                                 match app.workspace_of(pid).await {
                                     Ok(ws) => {
                                         let back = tx_back.clone();
@@ -1276,8 +1106,6 @@ pub fn spawn(deep_link: DeepLink) -> Bridge {
                                 asked: true,
                                 ..Default::default()
                             };
-                            // 起子进程要几百毫秒到几秒,不能占着内核这条单线程
-                            // ——派出去,回来再发一条 Req。
                             let back = tx_back.clone();
                             tokio::spawn(async move {
                                 let (rows, error) = list_repos(github, &host).await;
@@ -1350,9 +1178,6 @@ pub fn spawn(deep_link: DeepLink) -> Bridge {
                             }
                         }
                         Req::Refresh => {
-                            // 顶栏「刷新」以前只重拼 ViewModel、不拉仓。同事把
-                            // v2 指标合进远端之后,本机仍停在旧提交,点刷新还是
-                            // 「旧格式拒收」。打开着的项目先快进主检出,再重采。
                             if let Some(pid) = ui.open {
                                 match app
                                     .dispatch(Command::PullWorkspace { project_id: pid })
@@ -1371,9 +1196,6 @@ pub fn spawn(deep_link: DeepLink) -> Bridge {
                             refresh_receipt = true;
                         }
                     }
-                    // 纯导航 / 状态标签补丁复用上次 gather,不重跑;换项目 /
-                    // 刷新 / 开工合入建活 / FlushOrcaReveal 在 match 前判过
-                    // needs_gather,这里重 gather。
                     if needs_gather {
                         let keep = last_gather.projects.clone();
                         last_gather = vm_build::gather(&app, &mut ui, &keep).await;
@@ -1388,7 +1210,6 @@ pub fn spawn(deep_link: DeepLink) -> Bridge {
                             t_asm.elapsed().as_millis()
                         );
                     }
-                    // 刷新的回执在这里补:此刻的 vm 才是「刚读出来的那一份」。
                     if refresh_receipt {
                         refresh_receipt = false;
                         ui.set_note(Some(refresh_note(&vm)));
@@ -1412,8 +1233,6 @@ pub fn spawn(deep_link: DeepLink) -> Bridge {
             });
             }));
             if let Err(e) = result {
-                // panic 的负载通常是 &str 或 String,取不出来就如实说取不出来,
-                // 不编一个原因。
                 let why = e
                     .downcast_ref::<&str>()
                     .map(|s| (*s).to_string())
@@ -1446,7 +1265,6 @@ fn schedule_orca_flush(tx: &mpsc::UnboundedSender<Req>, seq: u64, delay: Duratio
     });
 }
 
-/// 打开项目先问 Orca 这仓在不在。正本是 `repo.show`,内存表只加速连点。
 #[derive(Debug)]
 enum OrcaPeek {
     Present,
@@ -1474,9 +1292,7 @@ async fn peek_orca_repo(app: &App, pid: ProjectId) -> OrcaPeek {
     }
 }
 
-/// 打开项目时把被管仓登记进 Orca,并补打运作自动化。
-/// 先 `repo.show`,没有才 `repo.add`;仓已在也要走注入。
-/// 注入成功才记进本进程 `orca_repos_ready`。Orca 没开不挡进项目。
+/// 仅在仓库登记和自动化创建都成功后缓存；失败时下次打开仍可重试。
 async fn register_orca_repo(app: &App, ui: &mut vm_build::UiState, pid: ProjectId) {
     if ui.orca_repos_ready.contains(&pid) {
         return;
@@ -1510,7 +1326,7 @@ async fn register_orca_repo(app: &App, ui: &mut vm_build::UiState, pid: ProjectI
                     ws.display()
                 );
                 ui.set_note(Some(format!(
-                    "Orca 定时没打上:{e} —— 退回项目墙再点进来会再打"
+                    "Orca 定时任务创建失败：{e}。返回项目墙后重新打开项目可重试"
                 )));
             }
         },
@@ -1528,7 +1344,6 @@ async fn register_orca_repo(app: &App, ui: &mut vm_build::UiState, pid: ProjectI
     }
 }
 
-/// 写远端成功后,从回执里取出「哪张活到了哪一态」。没有这类回执 = 不是状态补丁。
 fn status_patch_of(events: &[Event]) -> Option<(IssueId, IssueStatus, bool)> {
     events.iter().find_map(|e| match e {
         Event::IssueTransitioned { id, to, settled } => Some((*id, *to, *settled)),
@@ -1538,7 +1353,6 @@ fn status_patch_of(events: &[Event]) -> Option<(IssueId, IssueStatus, bool)> {
     })
 }
 
-/// `FetchIssue` 回执里捞正文。bridge 用它补丁 last_gather(issue #72)。
 fn body_fetched_of(events: &[Event]) -> Option<(IssueId, String)> {
     events.iter().find_map(|e| match e {
         Event::IssueBodyFetched { id, body } => Some((*id, body.clone())),

@@ -1,5 +1,4 @@
-//! 出包中途停：不走命令队列（队列正被 `PackRelease` 占着）。
-//! 壳点「确认停止」直接 [`PackCtl::abort`]：杀进程树、清这次的中间件。
+// 打包占用命令队列，停止操作通过共享控制器直接中断。
 
 use std::{
     path::{Path, PathBuf},
@@ -9,7 +8,6 @@ use std::{
     },
 };
 
-/// 出包这一趟的杀口。内核和壳各握一份 `Arc`。
 pub struct PackCtl {
     cancel: AtomicBool,
     running: AtomicBool,
@@ -68,7 +66,6 @@ impl PackCtl {
         lock(&self.version).clone()
     }
 
-    /// 壳在命令队列外面调。杀树 + 清中间件。
     pub fn abort(&self) {
         self.cancel.store(true, Ordering::SeqCst);
         if let Some(pid) = lock(&self.child_pid).take() {

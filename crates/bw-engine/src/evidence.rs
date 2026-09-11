@@ -1,31 +1,13 @@
-//! Workspace evidence collector — turns a project workspace's *real* state
-//! (git history, tracked files, dirty status) into numbers the metric derive
-//! chain can eat. Read-only subprocesses, real output, no fabrication — the
-//! same honesty rule as the rest of the derive chain.
-//!
-//! The collector never *interprets* — it reports counts and lists; deciding
-//! which metric an item feeds (and recording the reading) is the caller's
-//! job, so the append-only reading trail stays the single source of truth.
-
 use std::process::Stdio;
 
-/// A real, point-in-time reading of a workspace. Every field comes from a
-/// command that actually ran; nothing is estimated.
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
 pub struct WorkspaceEvidence {
     /// `git rev-list --count HEAD` — total commits. `0` on a repo with no
     /// commits yet (git errors there; treated as honest zero).
     pub commit_count: u32,
-    /// `git ls-files` line count — tracked files.
     pub tracked_files: u32,
-    /// `git status --porcelain` line count — uncommitted paths (an honesty
-    /// signal: a "committed" stage claim with a dirty tree is suspect).
     pub dirty_paths: u32,
-    /// Subjects of the newest commits (up to the collector's cap), newest
-    /// first — real provenance quotes for reports.
     pub recent_subjects: Vec<String>,
-    /// Tracked markdown docs under `docs/` — the playbook phases write their
-    /// evidence there, so this counts real playbook artifacts.
     pub docs_files: u32,
 }
 
@@ -48,8 +30,6 @@ async fn git_stdout(workspace: &str, args: &[&str]) -> Result<Option<String>, Ev
         .await
         .map_err(|e| EvidenceError::Spawn(e.to_string()))?;
     if !output.status.success() {
-        // A failed subcommand (e.g. `rev-list` on a commitless repo) is a
-        // real "nothing there yet", not a collector crash.
         return Ok(None);
     }
     Ok(Some(String::from_utf8_lossy(&output.stdout).into_owned()))
@@ -59,7 +39,6 @@ fn count_lines(s: &str) -> u32 {
     s.lines().filter(|l| !l.trim().is_empty()).count() as u32
 }
 
-/// Collect real evidence from `workspace`. Read-only; never mutates the repo.
 pub async fn collect(workspace: &str) -> Result<WorkspaceEvidence, EvidenceError> {
     if workspace.trim().is_empty() {
         return Err(EvidenceError::NotConfigured);

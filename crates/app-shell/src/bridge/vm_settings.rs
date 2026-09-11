@@ -1,8 +1,8 @@
-//! 设置屏「能力」一节的五张表:Connector / Skills / Stage / Plugins /
+//! 设置屏「能力」一节的五张表:Connector / Skills / Category / Plugins /
 //! AI Assets。全部全局(不挂哪个项目),见
 //! `docs/05-features/capability-panel/spec.md`。
 //!
-//! 「谁用到」「哪个阶段读哪份 reference」这类判据都是纯展示口径,拼在这一层,
+//! 「谁用到」「哪个工作类别读哪份 reference」这类判据都是纯展示口径,拼在这一层,
 //! 不下沉进 `bw` —— `bw::app::ref_wanted_for` 是唯一例外:它是真正决定注入
 //! 什么的判据,这里复用它而不是另抄一份,免得两处各改一次、迟早改漏。
 
@@ -23,9 +23,8 @@ pub(super) struct Capabilities {
     pub assets_open_project: String,
 }
 
-/// `open` = 当前打开的项目(工作区路径 + 那个项目的活列表 + 项目名),
-/// `None` = 还在项目墙。多数计算不需要它;只有 Skills 的用量、Stage 的
-/// 「这个仓自己写的 workflow」选项、AI Assets 的「现在哪几张活在用」要它。
+/// `open` 提供当前项目的路径、Issue 和名称；无项目时不统计引用关系。
+/// Skills 引用计数、Category 的项目 workflow 选项和 AI Assets 引用列表依赖它。
 #[allow(clippy::too_many_arguments)]
 pub(super) fn build(
     app: &App,
@@ -140,11 +139,11 @@ fn build_connectors(
             ConnectorStatus::Unconfigured
         },
         detail: if configured {
-            "网页配对地址已填,但本机 Orca 服务没有探活实现,答不了「通不通」".into()
+            "已配置网页配对地址；Orca 尚不支持连接检测。".into()
         } else {
             "还没填网页配对地址(设置 · Connector · Orca)".into()
         },
-        used_by: vec!["开工会话与三条运作节律的钟".into()],
+        used_by: vec!["执行会话与定时任务".into()],
     });
 
     out
@@ -212,7 +211,7 @@ fn scan_project_skills(ws: &Path, project_name: &str) -> Vec<SkillVm> {
         .collect()
 }
 
-// ── Stage ──────────────────────────────────────────────────────────────
+// ── Category ───────────────────────────────────────────────────────────
 
 fn build_stage(
     env: &[ToolProbeVm],

@@ -1,29 +1,17 @@
-//! `codegraph` 子进程封装。**装了就现跑,没装就如实灰**——不缓存、不入库、
-//! 不入仓,每次打开页签就是一次全新的子进程调用。
-//!
-//! 只做「摆出原始数字」这一件事。**不做死代码判定**:BW 大量用 `dyn Trait`
-//! 动态派发,`callers` 会漏边(预研实测),「零调用者」不能当死代码结论。
-
 use std::path::Path;
 use std::time::Duration;
 use tokio::process::Command;
 
-/// `files -j` 最多等这么久。大仓上是几十毫秒级(预研实测),真跑到 15 秒说明
-/// 它卡住了(等索引、等输入),这时候如实说超时,比让人对着一个永远转不完的
-/// 页签强。
 const FILES_TIMEOUT: Duration = Duration::from_secs(15);
 
-/// `init` 要建整仓索引,比 `files` 慢一档。穿刺仓这种技能仓大约几秒;真卡到
-/// 两分钟就掐,不让页签永远转。
 const INIT_TIMEOUT: Duration = Duration::from_secs(120);
 
-/// 起一个子进程,超时就杀掉。**不吞错误**:超时、起不来、非 0 退出各说各的。
 async fn run(mut cmd: Command, timeout: Duration) -> Result<Vec<u8>, String> {
     cmd.kill_on_drop(true);
     let out = match tokio::time::timeout(timeout, cmd.output()).await {
         Err(_) => {
             return Err(format!(
-                "codegraph 超过 {} 秒还没返回,已经掐掉",
+                "codegraph 超时（{} 秒），已停止",
                 timeout.as_secs()
             ))
         }
@@ -41,51 +29,38 @@ async fn run(mut cmd: Command, timeout: Duration) -> Result<Vec<u8>, String> {
     Ok(out.stdout)
 }
 
-/// 三态。灰的两种各有各的下一步,不混成一句「不可用」。
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum Availability {
-    /// 命令不在 PATH 里。
     NotInstalled,
-    /// 装了,但这个仓没跑过 `codegraph init`(没有 `.codegraph/`)。
     NotIndexed,
     Ready,
 }
 
 impl Availability {
-    /// 灰态文案。装法里的版本号跟着 `scripts/codegraph-version` 走。
     pub fn hint(&self) -> String {
         match self {
             Availability::NotInstalled => format!(
                 "本机没装 codegraph。装:npm install --global @colbymchenry/codegraph@{}\n\
-                 装完再点「重新跑一次」。",
+                 安装后点击「刷新」。",
                 version()
             ),
-            Availability::NotIndexed => {
-                "装了 codegraph,但这个仓还没建索引。点「重新跑一次」会在这个仓里跑 codegraph init。"
-                    .into()
-            }
+            Availability::NotIndexed => "代码索引尚未建立，点击「刷新」创建索引。".into(),
             Availability::Ready => String::new(),
         }
     }
 }
 
-/// CI 钉住的版本(`scripts/codegraph-version`)。文案里给的装法要跟它一致,
-/// 不然人装出来的版本和仓里 CI 跑的不是一个。
 pub const VERSION_RAW: &str = include_str!("../../../../../scripts/codegraph-version");
 
-/// 文件末尾那个换行不能跟着进文案 —— 拼出来会在装法那句后面多一个空行。
 pub fn version() -> &'static str {
     VERSION_RAW.trim()
 }
 
-/// 在 PATH 里找 `codegraph`。Windows 上是 `codegraph.cmd`(npm 全局 shim),
-/// 必须走 [`bw_engine::which_on_path`](认 PATHEXT)——`sh -c 'command -v'`
-/// 在没装 Git Bash 的机器上永远失败,会把「装了」说成「没装」。
+/// Windows 的 npm 安装生成 .cmd，查找时需要识别 PATHEXT。
 fn program() -> Result<String, String> {
     bw_engine::which_on_path("codegraph").ok_or_else(|| "本机路径里找不到 codegraph".to_string())
 }
 
-/// 起 codegraph 用底座那条口:Windows 上 `.cmd` 走 `cmd.exe /c`,并且不闪控制台。
 fn cmd() -> Result<Command, String> {
     Ok(bw_engine::tokio_cmd(program()?))
 }
@@ -100,8 +75,6 @@ pub fn detect(workspace: &Path) -> Availability {
     Availability::Ready
 }
 
-/// 在这个仓里跑 `codegraph init`。点「代码图」或「重新跑一次」时,没索引就走这
-/// 条 —— 不再把「去终端里自己跑 init」甩给人,人点了按钮却毫无变化。
 pub async fn init_index(workspace: &Path) -> Result<(), String> {
     let mut c = cmd()?;
     c.args(["init"]).current_dir(workspace);
@@ -112,7 +85,6 @@ pub async fn init_index(workspace: &Path) -> Result<(), String> {
     Ok(())
 }
 
-/// 大文件榜的一行。字段就是 `codegraph files -j` 吐出来的原始字段,不加工。
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
 pub struct FileRow {
     pub path: String,
@@ -121,10 +93,6 @@ pub struct FileRow {
     pub size: u64,
 }
 
-/// 现跑 `codegraph files -j`,按体积排序取前 `top` 行。
-///
-/// 非 0 退出把 stderr 原文带回去,**不吞错误**;JSON 解析不了也如实说,不
-/// 悄悄返回一个空榜(空榜和「跑失败了」在界面上是两件事)。
 pub async fn big_files(workspace: &Path, top: usize) -> Result<Vec<FileRow>, String> {
     let mut c = cmd()?;
     c.args(["files", "-j"]).current_dir(workspace);

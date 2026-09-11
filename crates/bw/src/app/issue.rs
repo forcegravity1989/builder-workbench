@@ -1,16 +1,3 @@
-//! 建活、▶跑、状态转移。
-//!
-//! 两条铁律的落点都在这个文件里:
-//!
-//! - **▶跑最远只到「评审中」**。执行器返回成功也只推到 InReview,不会自己
-//!   推到「已完成」。
-//! - **「完成」永远由人点**。`TransitionIssue { to: Done }` / `MergeAndSettle`
-//!   是人点的入口;自动化不得发。人可以从未排期 / 待办 / 进行中 / 评审中 /
-//!   阻塞进 Done。
-//!
-//! 刀3 起,issue 的正本在远端 codehub/GitHub issue + 标签,本地不建 issue 表。
-//! 所有 issue 读写经 [`super::issue_store`] 走远端。
-
 use super::{issue_store, worktree, App, AppError, Result};
 use crate::{
     command::Event,
@@ -21,9 +8,7 @@ use crate::{
 };
 use bw_engine::{build_startup_plan, remote::Remote, InteractiveExecutor, RunCtx, TuiAgentConfig};
 
-/// 上报目标写死：绿区 workbench 仓。装机目录没有这份源码，不能从本机 git origin 推。
-/// git 地址是 `https://codehub-dg-g.huawei.com/z30026659/workbench.git`；
-/// `codehub-cli -H` 跟接入屏一样走别名 `green`（token 也记在这个 host 下）。
+/// 安装目录没有源码仓；问题上报使用固定目标仓库。
 const WORKBENCH_REPORT_HOST: &str = "green";
 const WORKBENCH_REPORT_PATH: &str = "z30026659/workbench";
 
@@ -41,19 +26,16 @@ impl App {
         plan: String,
     ) -> Result<Vec<Event>> {
         let project = self.project_of(project_id).await?;
-        // 幂等:同一个项目里标题一样的、开着的活不建第二张(指挥器重跑靠它)。
         if let Some(existing) = issue_store::find_open_by_title(self, &project, &title).await? {
             return Ok(vec![Event::IssueCreated {
                 id: existing.id,
                 number: existing.number,
             }]);
         }
-        // 业务活打五阶段类别;运作活不打。
         let mut extra: Vec<String> = match (kind, category) {
             (IssueKind::Ops, _) | (_, None) => Vec::new(),
             (_, Some(c)) => vec![format!("bw:category:{}", crate::model::category_key(c))],
         };
-        // 新建时可直接纳入一个版本；后续可继续增加 bw:plan 标签。
         let (week_of, plan) = if !plan.is_empty() {
             (String::new(), plan)
         } else {
@@ -69,7 +51,6 @@ impl App {
             id: issue.id,
             number: issue.number,
         }];
-        // 新建活并临时纳入本周 → 发群通知。运作活不发。
         if !week_of.is_empty() && kind != IssueKind::Ops {
             let ev = crate::chat::NotifyEvent::IssueCreated;
             let text = crate::chat::notify_text(
@@ -89,10 +70,6 @@ impl App {
         Ok(events)
     }
 
-    /// 唯一的干活入口。
-    ///
-    /// 干成了推「评审中」;干砸了如实停在原地(状态不动),可以重试,不假装
-    /// 前进。**任何情况下都不会走到「已完成」**。
     pub(super) async fn run_issue(&mut self, id: IssueId) -> Result<Vec<Event>> {
         let issue = self.issue_or_err(id).await?;
         if !matches!(
@@ -100,18 +77,17 @@ impl App {
             IssueStatus::Backlog | IssueStatus::Todo | IssueStatus::InProgress
         ) {
             return Err(AppError::Refused(format!(
-                "这张活现在是「{}」,不是能开工的状态",
+                "此 Issue 当前为「{}」，不能开工",
                 issue.status.label()
             )));
         }
 
         // Open Design = 本机网页内嵌类工具,**不起 CLI**:开工 = 在会话屏的
         // 「Open Design」标签里用内嵌的本机 Open Design 干。
-        // 仍给这张活开一棵 worktree + 一条会话(原型产物从 OD 导出后落这棵
+        // 仍给此 Issue开一棵 worktree + 一条会话(原型产物从 OD 导出后落这棵
         // 树、走「提交并开 MR」),但不 spawn agent、不起 PTY。最远还是
         // 评审中 / 人点完成——和别的工具同一条状态机,没特殊待遇。
         if issue.tool == "open_design" {
-            // 已有会话就别建第二条(幂等:重按 ▶开工 不复制会话行)。
             let already = self.conversation_for_issue(id).await?.is_some();
             if !already {
                 let ws = self.workspace_of(issue.project_id).await?;
@@ -133,10 +109,7 @@ impl App {
                 let project = self.project_of(issue.project_id).await?;
                 issue_store::set_status(self, &project, id.iid(), IssueStatus::InProgress).await?;
             }
-            // 灌系统提示词:让 OD 内部 spawn 的 AI 知道在 Workbench 管理下(身份+铁律+
-            // 本活挂的技能/references 指针)。OD 独立——它有自己的 skill 体系(skillId),
-            // 灌不进 Workbench 技能文件,只灌 systemPrompt(技能指针在文本里,OD 的 AI
-            // best-effort 读)。探不到 OD / POST 失败不阻断(OD 仍内嵌),如实降级。
+            // Open Design 不加载 Workbench 的技能目录；仅传系统提示词和文件引用。
             let prompt = format!("#{} {}\n\n{}", issue.number, issue.title, issue.body);
             let skills_dir = self.ensure_skill_assets();
             self.ensure_vendor_assets();
@@ -167,7 +140,7 @@ impl App {
                     "Open Design 已内嵌——到会话屏「Open Design」标签里干;原型导出落这棵\
                      工作树,再「提交并开 MR」{}",
                     if injected {
-                        "(已灌系统提示词,OD 内 AI 知道在 Workbench 管理下)"
+                        "（已加载项目上下文）"
                     } else {
                         ""
                     }
@@ -178,14 +151,10 @@ impl App {
         }
 
         let ws = self.workspace_of(issue.project_id).await?;
-        // 桌面壳里 ▶跑 走 Orca 本地 pipe(PTY 已封存)。有真实工作区才打;没有
-        // 工作区不硬打 Orca —— 退到下面的阻塞替身路(headless 同款,自我标注)。
-        // 桌面有工作区但 Orca 没开:人话报错,不静默 mock 成功(见 `run_issue_orca`)。
+        // 桌面通过 Orca 执行；无工作区的演示路径使用明确标注的 mock。
         if self.pty_enabled && ws.is_dir() {
             return self.run_issue_orca(id, &issue, &ws).await;
         }
-        // 有真实工作区就在**这张活自己的 worktree** 里干,和 Orca 那条路一样;
-        // 没有工作区就没什么可隔离的,下面走自我标注的替身。
         let tree = if ws.is_dir() {
             Some(worktree::provision_for(&ws, &issue).await?)
         } else {
@@ -195,19 +164,14 @@ impl App {
             .as_ref()
             .map(|t| t.path.clone())
             .unwrap_or_else(|| ws.clone());
-        // 先推进行中 —— 界面上立刻看得出它开工了。
         if issue.status != IssueStatus::InProgress {
             let project = self.project_of(issue.project_id).await?;
             issue_store::set_status(self, &project, id.iid(), IssueStatus::InProgress).await?;
         }
 
-        // 照活上记的工具走 —— 不许悄悄换(见 `tools::agent_for`)。
         let agent: &TuiAgentConfig = super::tools::agent_for(&issue.tool)?;
         let prompt = format!("#{} {}\n\n{}", issue.number, issue.title, issue.body);
-        // 剧本在 Workbench 自己的技能目录里,不在用户的仓里(见
-        // `standard::skills`)。提示词只带路径,正文按需读。
         let skills_dir = self.ensure_skill_assets();
-        // 摊 vendor 业界 workflow 库(workflow 入口 body 指向这,如 mattpocock-skills)。
         self.ensure_vendor_assets();
         let skill = skills_dir
             .as_deref()
@@ -225,15 +189,12 @@ impl App {
         );
         let mut plan = build_startup_plan(agent, &prompt, &system_prompt, &run_dir)
             .map_err(|e| AppError::Exec(e.to_string()))?;
-        // 挂整个 asset_root 给 agent 读:技能 + references + vendor 库都在下面。
         super::bootstrap::allow_skills_dir(&mut plan, &self.asset_root);
         let ctx = RunCtx {
             project: issue.project_id.uuid(),
             workflow: uuid::Uuid::nil(),
         };
 
-        // 没有真实工作区的项目走自我标注的替身:产出带【mock】字样,不冒充
-        // 真的干过活。有工作区但没开 PTY(指挥器、headless)时也走这条。
         let out = if tree.is_some() {
             self.executor.run_skill(&plan, &ctx).await
         } else {
@@ -243,7 +204,6 @@ impl App {
         };
         match out {
             Ok(o) if o.completed => {
-                // 最远到「评审中」。这一步不是人点的,所以到此为止。
                 let project = self.project_of(issue.project_id).await?;
                 issue_store::set_status(self, &project, id.iid(), IssueStatus::InReview).await?;
                 let events = vec![Event::IssueRan {
@@ -272,24 +232,14 @@ impl App {
         }
     }
 
-    /// 桌面 ▶跑 的 Orca 分支。开/复用 worktree(走 resolve,旧平级兄弟接着用)→
-    /// upsert 会话行(workspace_path 写实际用的路径)→ 推进行中 → connect Orca →
-    /// 刷扫描(刚 add 的树才能被 `path:` 选到,不 `repo.add`)→ 没 id 才 create;
-    /// 有 id / create 完了只切树,不 ensure。
-    /// 成功回执「已在 Orca 里开工」。**Orca 没开 / 连不上:人话报错,不静默 mock
-    /// 成功**;桌面有工作区才进这条。
-    /// 系统提示词仍走 `bootstrap::agent_system_prompt`(身份+铁律+技能指针),不新模板。
-    /// Orca 不吃 LaunchPlan,不 attach_session_hook(那是给 PTY 收割 `--resume` id 的,
-    /// Orca 自己认 Claude session id)—— 技能靠提示词里的绝对路径让 agent 自己读。
+    /// 先创建 worktree 和会话记录；已有会话只激活，不重复创建。
     async fn run_issue_orca(
         &mut self,
         id: IssueId,
         issue: &Issue,
         ws: &std::path::Path,
     ) -> Result<Vec<Event>> {
-        // 开/复用 worktree:resolve 会接住旧平级兄弟,不建第二棵新树。
         let tree = worktree::provision_for(ws, issue).await?;
-        // upsert 会话行:workspace_path 写实际用的路径(可能是旧兄弟)。幂等:已有就返回既有行。
         let conv = self
             .upsert_conversation(&crate::model::Conversation {
                 id: crate::model::ConversationId::new(),
@@ -302,12 +252,10 @@ impl App {
                 last_opened_at: 0,
             })
             .await?;
-        // 先推进行中 —— 界面上立刻看得出它开工了。
         if issue.status != IssueStatus::InProgress {
             let project = self.project_of(issue.project_id).await?;
             issue_store::set_status(self, &project, id.iid(), IssueStatus::InProgress).await?;
         }
-        // 系统提示词:身份+任务对照+纪律+技能/references 指针(和 OD 分支、阻塞路同一个函数)。
         let prompt = format!("#{} {}\n\n{}", issue.number, issue.title, issue.body);
         let skills_dir = self.ensure_skill_assets();
         self.ensure_vendor_assets();
@@ -412,8 +360,7 @@ impl App {
                                     "create ready, next=wait_session_id/reveal"
                                 );
                             }
-                            // Claude 的 jsonl 可能晚几拍落到盘,短等再收 id。
-                            // Cursor 不写这份文件,空等满 8 秒才回「开工成功」。
+                            // Claude 的会话文件可能延迟写入；Cursor 不写此文件，不等待。
                             if bw_engine::orca::agent_supports_ensure(agent) {
                                 if let Some(found) =
                                     bw_engine::orca::wait_session_id_for_worktree(&tree.path).await
@@ -441,12 +388,10 @@ impl App {
                     bw_engine::dlog!(
                         ok,
                         "issue",
-                        "skip create sid_source={sid_source} (只切树,不灌词)"
+                        "skip create sid_source={sid_source} (activate existing worktree)"
                     );
                     Ok(())
                 };
-                // 开成了(含句柄超时 settle 后再走)或树上已有会话:切树,网页才跟得上。
-                // 切树失败只打日志,不把已经起来的窗打成开工失败。
                 if r.is_ok() {
                     if let Err(e) = bw_engine::orca::reveal_tree(&rt, &tree.path).await {
                         bw_engine::dlog!(
@@ -493,13 +438,6 @@ impl App {
         }])
     }
 
-    /// 「提交并开 MR」——第 4 站到第 5 站之间那一下。
-    ///
-    /// agent 在这张活的 worktree 里把文件改完了,这一下把它变成**可评审的东西**:
-    /// 提交(agent 自己已经提交过的就跳过)→ 推分支 → 开 MR → 活进「评审中」。
-    ///
-    /// **由人点,而且最远只到「评审中」**。agent 什么时候算干完只有人知道;
-    /// 「完成」还是得评审完之后再点一次。
     pub(super) async fn submit_issue_work(&mut self, id: IssueId) -> Result<Vec<Event>> {
         let issue = self.issue_or_err(id).await?;
         if !matches!(
@@ -507,13 +445,12 @@ impl App {
             IssueStatus::InProgress | IssueStatus::InReview | IssueStatus::Blocked
         ) {
             return Err(AppError::Refused(format!(
-                "这张活现在是「{}」,还没开过工,没有可提交的改动",
+                "此 Issue 当前为「{}」，尚未开工，没有可提交的改动",
                 issue.status.label()
             )));
         }
         let project = self.project_of(issue.project_id).await?;
         let ws = self.workspace_of(issue.project_id).await?;
-        // 幂等:这张活开过工就已经有一棵树,这里拿到的是同一棵。
         let tree = worktree::provision_for(&ws, &issue).await?;
         if !tree.isolated {
             return Err(AppError::Refused(
@@ -521,9 +458,7 @@ impl App {
             ));
         }
 
-        // 基线取主检出**当下**的 HEAD。
         let base = crate::git::head_sha(&ws).await.unwrap_or_default();
-        // agent 常常自己就提交了;没提交的这一下替它提交掉。
         crate::git::commit_all(&tree.path, &format!("#{} {}", issue.number, issue.title)).await?;
         let commits = if base.is_empty() {
             0
@@ -534,17 +469,17 @@ impl App {
         };
         if commits == 0 {
             return Err(AppError::Refused(format!(
-                "`{}` 这棵树上没有比主检出多出来的提交 —— 这张活还没干出东西,没有可评审的改动",
+                "工作树 `{}` 没有相对主检出的新增提交，无可评审的改动",
                 tree.path.display()
             )));
         }
 
         let mut body = format!(
-            "Workbench 管理的第 {} 号活「{}」干出来的改动,等人评审。\n\n",
+            "Issue #{}「{}」的改动，等待评审。\n\n",
             issue.number, issue.title
         );
         body.push_str(&format!(
-            "这条分支上有 {commits} 个提交。合入之后回 Workbench 点「合入并完成」结清这张活。"
+            "此分支包含 {commits} 个提交。请在 Workbench 点击「合入并完成」确认完成。"
         ));
         let mr = worktree::push_and_open_mr(
             &project,
@@ -562,7 +497,7 @@ impl App {
             pr_number: mr.number,
             note: mr.note,
         }];
-        // 推「评审中」。阻塞态要先回「进行中」——状态机不许从阻塞直接进评审。
+        // 阻塞状态不能直接进入待评审，需先恢复为进行中。
         if issue.status != IssueStatus::InReview {
             if issue.status.can_transition_to(IssueStatus::InProgress) {
                 events.extend(self.transition_issue(id, IssueStatus::InProgress).await?);
@@ -572,7 +507,6 @@ impl App {
         Ok(events)
     }
 
-    /// 状态转移。合法性由 `crate::model::IssueStatus::can_transition_to` 那张转移表守。
     pub(super) async fn transition_issue(
         &mut self,
         id: IssueId,
@@ -594,9 +528,7 @@ impl App {
         }
         let project = self.project_of(issue.project_id).await?;
         issue_store::set_status(self, &project, id.iid(), to).await?;
-        // Done = 远端 issue closed。settled 只在走进 Done 时才算。
         let settled = to == IssueStatus::Done;
-        // 结清了就把这张活那棵 worktree 收掉。
         if settled {
             self.cleanup_issue_worktree(&issue).await;
         }
@@ -614,7 +546,6 @@ impl App {
         }
         let project = self.project_of(issue.project_id).await?;
         issue_store::set_status(self, &project, id.iid(), IssueStatus::Blocked).await?;
-        // 阻塞原因写进 issue 评论 —— 不动正文,结构化产出挂评论。
         issue_store::comment(self, &project, id.iid(), &format!("阻塞原因:{reason}")).await?;
         Ok(vec![Event::IssueBlocked { id }])
     }
@@ -626,7 +557,7 @@ impl App {
     ) -> Result<Vec<Event>> {
         let issue = self.issue_or_err(id).await?;
         if issue.kind == IssueKind::Ops {
-            return Err(AppError::Refused("运作活没有五阶段类别".into()));
+            return Err(AppError::Refused("周期工作不使用开发类别".into()));
         }
         let project = self.project_of(issue.project_id).await?;
         issue_store::set_category(self, &project, id.iid(), category).await?;
@@ -636,8 +567,6 @@ impl App {
         }])
     }
 
-    /// 改责任人(codehub assignee)。空串 = 取消指派。走 codehub API,
-    /// 不在本地另存一套 —— 重启读回一致(四铁律一)。
     pub(super) async fn set_issue_assignee(
         &mut self,
         id: IssueId,
@@ -649,7 +578,6 @@ impl App {
         Ok(vec![Event::IssueAssigneeSet { id, assignee }])
     }
 
-    /// 改 issue 标题与正文(codehub issue update)。详情弹窗双击编辑后发这条。
     pub(super) async fn edit_issue(
         &mut self,
         id: IssueId,
@@ -662,9 +590,6 @@ impl App {
         Ok(vec![Event::IssueEdited { id }])
     }
 
-    /// 单查一张 issue 的正文(`view_issue` 带 `description`)。issue 列表设计上
-    /// 不带正文,计划详情弹窗打开时发这条补正文。拉回的正文原样进 Event,bridge
-    /// 补丁进 last_gather,不重拉整个 list(issue #72)。拉空如实 = 没写过正文。
     pub(super) async fn fetch_issue_body(&self, id: IssueId) -> Result<Vec<Event>> {
         let issue = self.issue_or_err(id).await?;
         Ok(vec![Event::IssueBodyFetched {
@@ -673,11 +598,10 @@ impl App {
         }])
     }
 
-    /// 作废:原因进评论,打取消标签并关掉远端 issue。不是完成。
     pub(super) async fn cancel_issue(&mut self, id: IssueId, reason: String) -> Result<Vec<Event>> {
         let why = reason.trim().to_string();
         if why.is_empty() {
-            return Err(AppError::Refused("作废必须写原因".into()));
+            return Err(AppError::Refused("取消 Issue 必须填写原因".into()));
         }
         let issue = self.issue_or_err(id).await?;
         if issue.status == IssueStatus::Cancelled {
@@ -695,14 +619,7 @@ impl App {
         Ok(vec![Event::IssueCancelled { id }])
     }
 
-    /// 收掉这张活的 worktree(+ 分支)。结清(Done)后**无条件**调 —— 只要
-    /// worktree 干净就删分支;脏的(有未提交的劳动成果)原样留着。刀3-fix:
-    /// `merge_and_settle` 和 `transition_issue` 两条结清路都走这同一个收尾,
-    /// 不再各自判 `merged&&main_has_it`(那条靠 lossy 的 `issue.branch`,恒空)。
-    ///
-    /// 不能只看新路径 `.bw/worktrees/issue-<n>`:旧活记的是平级兄弟,结清时要
-    /// 能收掉那棵。先看会话行记下的路径,再看新目录,再看旧兄弟(走底座的
-    /// `resolve_issue_worktree`)。
+    /// 跳过常驻分支；工作树不干净时保留。调用方负责确认是否允许清理。
     pub(super) async fn cleanup_issue_worktree(&self, issue: &Issue) {
         let branch = issue_store::work_branch(issue);
         if bw_engine::workspace::is_standing_branch(&branch) {
@@ -723,11 +640,7 @@ impl App {
         else {
             return;
         };
-        // worktree 干净才收(脏的有未提交的劳动成果,不删)。
         if worktree::remove_if_clean(&ws, &tree).await {
-            // worktree 收掉了,顺手删分支(只删 merged 的;未合的 `git -d` 会
-            // 拒绝,不强删 —— 留着也不影响)。分支名从 issue.number 现算,
-            // 不靠 lossy 的 `issue.branch`。
             let branch = issue_store::work_branch(issue);
             if crate::git::branch_exists(&ws, &branch).await {
                 let _ = crate::git::delete_merged_branch(&ws, &branch).await;
@@ -753,11 +666,7 @@ impl App {
         issue_store::fetch(self, &project, id.iid()).await
     }
 
-    // ── App 暴露给 app-shell 的查询方法(替代旧的 store.issue* 系列)──────
-
-    /// 列出项目的全部活(从远端现读)。没挂远端 → 空。**失败不吞**(刀3-fix:
-    /// 以前 `unwrap_or_default()` 把 codehub 抖一下整屏蒸发成空、健康灯被写灰);
-    /// 现在返 `Err`,调用方挂到 warnings 让 UI 显式横幅,并保留上一份已知好的 VM。
+    /// 远端查询失败返回错误，不能将失败转为空列表。
     pub async fn issues(&self, project_id: ProjectId) -> Result<Vec<Issue>> {
         let Some(project) = self.project(project_id).await? else {
             return Ok(Vec::new());
@@ -822,18 +731,11 @@ impl App {
     }
 }
 
-// ── 纯内存过滤:调用方先 `App::issues(project_id).await` 拿一次,再借进来 ──────
-// 这三个函数不再各自起 codehub-cli 子进程——以前每屏重建 N 项目会 spawn
-// 2N+ 次,UI 卡 2-6 秒。现在只 spawn 一次(取 issues 列表),过滤在内存里做。
-// 不引入持久缓存(MVP 不要):单次 build 内去重 spawn。
-
-/// 某一版本的活。`week` 现已不用(排期只认 `bw:plan:`);留下以免调用方大拆。
 pub fn issues_in_week<'a>(issues: &'a [Issue], week: &str) -> Vec<&'a Issue> {
     issues.iter().filter(|i| i.week_of == week).collect()
 }
 
-/// 该人看一眼、且还没看的活有几张:评审中(MVP 不再按 MR/seen_at 过滤,
-/// 因为 pr_number/updated_at 是 lossy)。
+/// 统计待评审 issue，不记录已读状态。
 pub fn count_unseen(issues: &[Issue]) -> u32 {
     issues
         .iter()

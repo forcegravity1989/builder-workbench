@@ -1,44 +1,14 @@
-//! 每张活一棵自己的 git worktree。
-//!
-//! **为什么必须有**:两张活可能同时在跑。一张的 agent 正在改文件,另一张的
-//! agent 也在改同一个目录,谁都不知道自己看到的是不是对方写到一半的东西;人
-//! 自己手上那份没写完的改动还会被一起卷进某次提交。worktree 把每张活隔在自己
-//! 的目录和自己的分支上,主检出永远不动。
-//!
-//! 供给这一步走**底座的
-//! [`provision_issue_worktree`](bw_engine::workspace::provision_issue_worktree)**
-//! ——`bw-engine` 是 2026-08-21 从 `bw-engine` 拷来接管的一份(不是复用):
-//! 新树落在仓根下 `<仓根>/.bw/worktrees/issue-<号>`,分支 `bw/issue-<号>`,
-//! 已经存在就原样接着用(重跑幂等)。**旧平级兄弟 `<主仓名>-issue-<号>` 不迁、
-//! 不删** —— 接回时 [`bw_engine::workspace::resolve_issue_worktree`] 先看会话记下
-//! 的路径、再看新目录、最后看旧兄弟,旧活就地接着用。
-//!
-//! **不给 RAII guard,不跑完就删**。V3 是跑完 `Drop` 里把 worktree 删掉;V4
-//! 不能那样:会话屏的文件树和 diff 读的就是这棵 worktree,跑完立刻删,人点开
-//! 会话只看到一片空白,agent 还没提交的改动也一起没了。V4 的 worktree 活到这
-//! 张活**结清**那一刻,而且只在它干净(没有未提交改动)时才收,见
-//! [`remove_if_clean`]。
-//!
-//! **两个根的分工**(别混):进得了版本控制的件写进 worktree,走分支和 MR;
-//! 仓自己的 `.gitignore` 拒收的件不属于任何分支。技能包摊在 Workbench
-//! 自己的资产目录,不复制进用户仓,所以不再往主检出镜像。
-
 use super::{AppError, Result};
 use crate::model::{Issue, Project};
 use std::path::{Path, PathBuf};
 
-/// 一张活干活的地方。
 pub(super) struct IssueTree {
-    /// agent 真正在里面干活的目录。
     pub path: PathBuf,
-    /// 这棵树在哪个分支上。
     pub branch: String,
-    /// 真的隔出来了没有。`false` = 这个工作区不是 git 仓,开不了 worktree,
-    /// 只能就地干 —— 如实标出来,不假装隔离过。
+    /// false 表示未创建独立分支；非 Git 目录和空仓均可能如此。
     pub isolated: bool,
 }
 
-/// 按这张活该走的车开(或接着用)树。常驻车复用那一棵,不另开 `bw/issue-N`。
 pub(super) async fn provision_for(main: &Path, issue: &Issue) -> Result<IssueTree> {
     let branch = super::issue_store::work_branch(issue);
     if branch == bw_engine::workspace::PROJECT_BRANCH {
@@ -95,10 +65,10 @@ async fn provision_ops_audit(main: &Path) -> Result<IssueTree> {
     })
 }
 
-/// 给这张活开(或接着用)一棵 worktree。
+/// 给此 Issue开(或接着用)一棵 worktree。
 ///
 /// 不是 git 仓就退回主工作区,`isolated=false`;是 git 仓但开不出来就**如实
-/// 报错**,不悄悄退回主工作区 —— 那等于把「两张活撞车」的风险藏起来。
+/// 报错**,不悄悄退回主工作区 —— 那等于把「两个 Issue撞车」的风险藏起来。
 pub(super) async fn provision(main: &Path, number: u32) -> Result<IssueTree> {
     if !crate::git::is_repo(main).await {
         let branch = crate::git::current_branch(main)
@@ -126,7 +96,7 @@ pub(super) async fn provision(main: &Path, number: u32) -> Result<IssueTree> {
     }
     let path = bw_engine::workspace::provision_issue_worktree(main, number)
         .await
-        .map_err(|e| AppError::Exec(format!("给第 {number} 号活开 worktree 没成:{e}")))?;
+        .map_err(|e| AppError::Exec(format!("Issue #{number} 的工作树创建失败：{e}")))?;
     Ok(IssueTree {
         path,
         branch: bw_engine::workspace::issue_branch(number),
@@ -158,10 +128,7 @@ pub(super) async fn provision_project(main: &Path) -> Result<IssueTree> {
     })
 }
 
-/// 结清时收掉这棵树 —— **只在它干净的时候**。
-///
-/// 树里还有没提交的改动就原样留着(返回 `false`):那是真实存在的劳动成果,
-/// 「这张活我点完成了」不构成删掉它的授权。返回 `true` = 真的收掉了。
+/// 工作树有未提交改动时保留并返回 false；成功删除返回 true。
 pub(super) async fn remove_if_clean(main: &Path, tree: &Path) -> bool {
     if tree == main || !tree.is_dir() {
         return false;
@@ -194,13 +161,7 @@ impl MrOutcome {
     }
 }
 
-/// 把这张活的分支推上去,再开一个 MR。**每一条不做的理由都说出来**。
-///
-/// 两处在用:项目约定(Workbench 自己写的名片)和「提交并开 MR」(agent 干完的
-/// 活)。两边准备分支的方式不同,推分支和开 MR 这一步是同一件事,只留一份。
-///
-/// `has_work` = 这条分支上到底有没有可评审的东西。调用方各自判断:项目约定看这次
-/// 有没有提交出文件,提交并开 MR 看这棵树比基线多几个提交。
+/// has_work 由调用方判断，表示分支是否存在可评审的改动。
 pub(super) async fn push_and_open_mr(
     project: &Project,
     tree: &IssueTree,
@@ -212,11 +173,8 @@ pub(super) async fn push_and_open_mr(
         return MrOutcome::none("这条分支上没有可评审的改动,没开");
     }
     if !tree.isolated {
-        // 没隔出树有两种:压根不是 git 仓,或者是个还没有第一条提交的空仓。
-        // 两种都是就地写、就地提交,没有单独的分支可以拿去开 MR。**别把第二种
-        // 说成「不是 git 仓」** —— 它是,而且刚刚真的提交进去了。
         return MrOutcome::none(
-            "没有单独的分支可开 MR:这个工作区没隔出活自己的树(不是 git 仓,或者是个还没有第一条提交的空仓),改动是就地提交的",
+            "未创建独立分支，无法提交 MR（工作区不是 Git 仓库，或创建工作树时仓库尚无提交）；改动已保存在原工作区",
         );
     }
     if !project.has_remote() {

@@ -1,14 +1,6 @@
-//! 运作活①评论里的版本计划段落。界面取「版本目标」和「每周进展」;
-//! 纳入清单和读数快照留在 issue 评论里给人点开看。
-//!
-//! 多条评论从新到旧扫,同一段以最新一条为准。认不出标题就当没有,
-//! 不猜正文。
-
-/// 机器认的周初三个二级标题。agent 必须写这两个字,括号说明可以跟在后面。
 pub const HEADING_GOAL: &str = "版本目标";
 pub const HEADING_SCOPE: &str = "本周纳入";
 pub const HEADING_READINGS: &str = "本周指标读数";
-/// 周五收口。周初三标题评论不要带这一段;`validate_comment` 也不查它。
 pub const HEADING_PROGRESS: &str = "每周进展";
 
 /// 旧评论用过的标题,只在读的时候认,新写的不许再用。
@@ -22,7 +14,6 @@ pub struct WeekComment {
     pub progress: Option<String>,
 }
 
-/// 运作活①评论现算出的版本目标 / 每周进展。键是 ISO 周**和** `bw:plan:` 版本名。
 #[derive(Debug, Clone, Default)]
 pub struct Ops1Notes {
     pub goals: std::collections::HashMap<String, String>,
@@ -62,11 +53,6 @@ pub fn parse_comments(bodies: &[String]) -> WeekComment {
     WeekComment { goal, progress }
 }
 
-/// 创建版本落到运作活①上的周初三标题评论。
-/// `included` 是纳入的 issue iid。版本归属只读标签，评论不重复保存关系。
-///
-/// 版本目标建版时一律留「（未填写）」——建版弹窗不再收这一段,由运作活①上的
-/// agent 后补。`validate_comment` 要求这一段非空,所以占位串不能省。
 pub fn render_week_plan_comment(included: &[u32]) -> String {
     let goal = "（未填写）";
     let mut scope = String::new();
@@ -83,7 +69,6 @@ pub fn render_week_plan_comment(included: &[u32]) -> String {
     format!("## {HEADING_GOAL}\n{goal}\n\n## {HEADING_SCOPE}\n{scope}\n\n## {HEADING_READINGS}\n")
 }
 
-/// 挂评论之前的格式检查。只认规范标题,不认别名。
 pub fn validate_comment(body: &str) -> Result<(), Vec<String>> {
     let mut errs = Vec::new();
     if !has_heading(body, HEADING_GOAL) {
@@ -120,7 +105,6 @@ fn heading_matches(line: &str, name: &str) -> bool {
         || rest.starts_with(&format!("{name} "))
 }
 
-/// `## 版本目标` 到下一个 `##` 的整段,保留换行。前后空行去掉。
 fn section_text(body: &str, names: &[&str]) -> Option<String> {
     let mut lines = body.lines();
     loop {
@@ -150,9 +134,6 @@ fn section_text(body: &str, names: &[&str]) -> Option<String> {
 }
 
 impl super::App {
-    /// 运作活①评论里解析出的版本目标与每周进展。键是 ISO 周**和** `bw:plan:`
-    /// 版本名(有就各写一份)。取目标优先版本名,没有再回退本周。读失败就空着,
-    /// 不挡整屏。活与活互不依赖,评论两两并行拉。
     pub async fn week_goals_from_ops1(
         &self,
         project: &crate::model::Project,

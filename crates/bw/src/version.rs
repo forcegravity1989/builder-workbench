@@ -1,9 +1,3 @@
-//! 版本名、运作活①标题、里程碑覆盖时间。
-//!
-//! 号就是里程碑标题,标签 `bw:plan:<名>`。`vX.X` 只推荐,不设限。
-//! 这里只做纯函数,不碰远端。
-
-/// 运作活①刚建、还没确认版本时的标题。确认后在后面加空格和 `v0.x`。
 pub const OPS1_TITLE: &str = "更新指标 + 制定版本计划";
 
 /// `v` + 一段数字 + `.` + 一段数字。不认 `v0.1.0`、`W35`、`2026-W35`。
@@ -98,7 +92,6 @@ pub fn is_ops1_title(title: &str) -> bool {
         .is_some_and(|s| !s.is_empty())
 }
 
-/// 带号运作活①标题里的版本名。光杆 → `None`。
 pub fn ops1_version_from_title(title: &str) -> Option<String> {
     title
         .trim()
@@ -113,7 +106,6 @@ pub fn ops1_title_for(version: &str) -> String {
     format!("{OPS1_TITLE} {version}")
 }
 
-/// 在研现算用的一行运作活①。`version` 必须来自 `bw:plan:`。
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Ops1VersionRow {
     pub version: String,
@@ -123,8 +115,7 @@ pub struct Ops1VersionRow {
     pub released: bool,
 }
 
-/// 本周在研:开着的带号①取最后创建;都关了则取未发版的已关①里最后创建。
-/// 标题还是光杆、或没打 `bw:plan:` 的不算。
+/// 优先取最新未关闭的版本计划，其次取尚未发布的已关闭版本计划。
 pub fn current_from_ops1(rows: &[Ops1VersionRow]) -> Option<String> {
     let pick = |open: bool, released_ok: bool| {
         rows.iter()
@@ -142,7 +133,6 @@ pub enum PackSource {
     Workspace,
 }
 
-/// `viewing` 空 = 全部 issue,不出包。
 pub fn pack_source(viewing: &str, current: &str, has_tag: bool) -> Option<PackSource> {
     if viewing.trim().is_empty() {
         return None;
@@ -156,17 +146,14 @@ pub fn pack_source(viewing: &str, current: &str, has_tag: bool) -> Option<PackSo
     }
 }
 
-/// 发版本只给在研且还没有同名 tag 的号。没有已完成的活也能发。
 pub fn can_cut_release(viewing: &str, current: &str, has_tag: bool) -> bool {
     !viewing.trim().is_empty() && viewing == current && !current.is_empty() && !has_tag
 }
 
-/// 有未完成的运作活①,或本 ISO 周已有打了版本标签的运作活①(含已完成)。
 pub fn ops1_already_started(open_ops1: bool, tagged_ops1_created_this_week: bool) -> bool {
     open_ops1 || tagged_ops1_created_this_week
 }
 
-/// 灌进运作活①系统提示词的三行。空集合写「没有」。
 pub fn context_block(inv: &VersionInventory) -> String {
     let last = inv.last_released.as_deref().unwrap_or("没有");
     let unreleased = if inv.unreleased.is_empty() {

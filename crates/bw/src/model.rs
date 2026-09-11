@@ -1,11 +1,3 @@
-//! V4 的领域类型。**2026-08-21 起不再从 `bw-core` 借任何东西** —— 身份、
-//! 信号、活的状态机、五类别,全部住在这里。逐字拷自 V3 内核里仍然作数的
-//! 定义(和 `bw-engine` 同一个「拷贝接管」逻辑:V3 那一整个目录最终要删,
-//! V4 不能有依赖指向那边),serde 形状一字未动,所以库里已有的行照读。
-//!
-//! 「完成」永远由人点,自动化不得推到 Done。人可以从未排期 / 待办 / 进行中 /
-//! 评审中 / 阻塞进 Done,锁在 [`IssueStatus::can_transition_to`]。拒绝不是完成。
-
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
@@ -17,12 +9,10 @@ macro_rules! id_newtype {
         pub struct $name(pub Uuid);
 
         impl $name {
-            /// 包住一个已有的 UUID(比如从库里读回来的)。
             pub const fn from_uuid(u: Uuid) -> Self {
                 Self(u)
             }
 
-            /// 全零占位 id,测试与「不属于任何一个」的场合用。
             pub const fn nil() -> Self {
                 Self(Uuid::nil())
             }
@@ -44,21 +34,10 @@ macro_rules! id_newtype {
     };
 }
 
-id_newtype!(
-    /// 项目的稳定身份。
-    ProjectId
-);
-id_newtype!(
-    /// 一场 agent 会话的稳定身份(`claude_conversation` 表的主键)。
-    ConversationId
-);
+id_newtype!(ProjectId);
+id_newtype!(ConversationId);
 
-/// 活的稳定身份。内部是 `(project_id, iid)`——iid 来自远端 issue 的项目内号,
-/// 不再是随机 UUID。`from_remote` 是唯一生产构造方式;`nil()` 是测试占位。
-///
-/// **`from_uuid` 和 `new` 已删**——issue 身份现在由远端 issue 号定义,不再是
-/// 随机 UUID。`claude_conversation` 表的 `issue_id` 列因此存的是 iid(文本),
-/// 连同 `project_id` 列一起定位这张活。
+/// 项目 ID 与远端项目内 issue 号共同组成身份。
 #[derive(Clone, Copy, PartialEq, Eq, Hash, Debug, Serialize, Deserialize)]
 pub struct IssueId {
     project_id: ProjectId,
@@ -66,12 +45,10 @@ pub struct IssueId {
 }
 
 impl IssueId {
-    /// 从远端 issue 的项目内号构造——唯一的生产构造方式。
     pub const fn from_remote(project_id: ProjectId, iid: u32) -> Self {
         Self { project_id, iid }
     }
 
-    /// 全零占位 id,测试与「不属于任何一个」的场合用。
     pub const fn nil() -> Self {
         Self {
             project_id: ProjectId::nil(),
@@ -79,23 +56,20 @@ impl IssueId {
         }
     }
 
-    /// 项目内号(远端 issue iid)。
     pub const fn iid(self) -> u32 {
         self.iid
     }
 
-    /// 项目身份。
     pub const fn project_id(self) -> ProjectId {
         self.project_id
     }
 
-    /// 保留:返回项目 uuid。给 `ConversationMeta` 等需要裸 UUID 的场合用。
+    /// 返回项目 UUID，不是 issue 的独立 UUID。
     pub const fn uuid(self) -> Uuid {
         self.project_id.uuid()
     }
 }
 
-/// 健康信号。`Unknown` 是诚实的第四态 —— **没数据绝不默认成绿**。
 #[derive(Clone, Copy, PartialEq, Eq, Debug, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]
 pub enum Signal {
@@ -105,25 +79,13 @@ pub enum Signal {
     Unknown,
 }
 
-/// 活的类别 —— V3 的五阶段在 V4 降级成的标签。类别决定默认开工工具与默认
-/// workflow(本机 settings → 产品编译默认)。
-/// V4 只用到标签和全集;V3 那套阶段方法论元数据(角色、下一棒、DoD)不拷。
 #[derive(Clone, Copy, PartialEq, Eq, Hash, Debug, Serialize, Deserialize)]
-// 拷贝时漏过一次(评审抓的)。少了它,serde 名字从 `build` 变成 `Build`,
-// 而本文件下方 `category_key` 的注释正说「文件里写 build 就是 Build」——
-// 今天手写的那对转换兜住了,但只要有人照注释改走 serde 就会写出大写值,
-// 和库里已有的小写行混在同一列。
 #[serde(rename_all = "snake_case")]
 pub enum StageKind {
-    /// 原型
     Prototype,
-    /// 构建
     Build,
-    /// 优化
     Optimize,
-    /// 运营推广
     Growth,
-    /// 运维
     Ops,
 }
 
@@ -147,7 +109,6 @@ impl StageKind {
     }
 }
 
-/// 活的状态。生命周期顺序;`Blocked` 是可恢复的旁路态,不是终点。
 #[derive(Clone, Copy, PartialEq, Eq, Debug, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum IssueStatus {
@@ -163,19 +124,17 @@ pub enum IssueStatus {
 impl IssueStatus {
     pub fn label(self) -> &'static str {
         match self {
-            IssueStatus::Backlog => "待办池",
+            IssueStatus::Backlog => "未排期",
             IssueStatus::Todo => "待办",
             IssueStatus::InProgress => "进行中",
-            IssueStatus::InReview => "评审中",
+            IssueStatus::InReview => "待评审",
             IssueStatus::Done => "已完成",
             IssueStatus::Blocked => "阻塞",
             IssueStatus::Cancelled => "已取消",
         }
     }
 
-    /// 状态机的**唯一**事实源 —— 每一处转移守卫都问这张表,谁都不许自己发明边。
-    /// 「完成」永远由人点;未排期 / 待办 / 进行中 / 评审中 / 阻塞都可以进 Done。
-    /// 自动化、agent、定时仍不得发这条。拒绝(`Cancelled`)不是完成。
+    /// 所有状态转移共用此规则；完成操作仍须由用户显式发起。
     pub fn can_transition_to(self, to: IssueStatus) -> bool {
         use IssueStatus::*;
         matches!(
@@ -208,8 +167,6 @@ impl IssueStatus {
     }
 }
 
-/// 活的三个种类。`Light`(轻量活)= 没有 agent 会话、只有 Workbench 自己写仓 +
-/// 开 MR 的活,名片编辑与发版本用它。
 #[derive(Clone, Copy, PartialEq, Eq, Debug, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum IssueKind {
@@ -218,18 +175,6 @@ pub enum IssueKind {
     Light,
 }
 
-impl IssueKind {
-    pub fn label(self) -> &'static str {
-        match self {
-            IssueKind::Business => "业务活",
-            IssueKind::Ops => "运作活",
-            IssueKind::Light => "轻量活",
-        }
-    }
-}
-
-/// 这张活是谁建的。`Backfill` = 历史回填出来的,照远端状态,**不影响任何
-/// 计数或排序特权**,也不参与健康灯的三条判据(回填不点灯)。
 #[derive(Clone, Copy, PartialEq, Eq, Debug, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum IssueOrigin {
@@ -250,13 +195,8 @@ impl IssueOrigin {
     }
 }
 
-/// 活的类别标签 —— 五阶段在 V4 降级成的东西。类别决定默认开工工具与默认
-/// workflow(本机 settings → 残留映射 → 产品编译默认)。
-/// 用 `bw_core::StageKind` 的五个变体,不另造一套枚举。
 pub type Category = StageKind;
 
-/// 类别键。与 `StageKind` 的 serde 名字(snake_case)一致,文件里写 `build`
-/// 就是 `StageKind::Build`。残留 `.bw/issue-policy.toml` 也用这套键。
 pub fn category_from_key(key: &str) -> Option<Category> {
     match key {
         "prototype" => Some(StageKind::Prototype),
@@ -278,7 +218,6 @@ pub fn category_key(c: Category) -> &'static str {
     }
 }
 
-/// 项目行:定位 + 项目墙显示缓存。名片/群/版本不在这里(正本 `.bw/project.toml`,打开项目时现读)。
 #[derive(Clone, Debug, PartialEq)]
 pub struct Project {
     pub id: ProjectId,
@@ -298,20 +237,11 @@ pub struct Project {
 }
 
 impl Project {
-    /// 有没有挂远端。空 `remote_path` = 没挂,如实留白,绝不编造地址。
     pub fn has_remote(&self) -> bool {
         !self.remote_path.is_empty()
     }
 
-    /// 这个仓在浏览器里的根地址,比如 `https://github.com/owner/repo`。
-    ///
-    /// **按 provider 拼,不从 `origin` 推**。codehub 是局域网平台,Workbench clone
-    /// 走 SSH(`bw_engine::codehub::clone_repo`:HTTPS 经代理被拦),于是
-    /// `origin` 长这样:`ssh://git@szv-open.codehub.huawei.com:2222/组/仓.git`
-    /// —— 主机是 SSH 主机、后面还挂着 SSH 端口,拿它当网址必然点不开。真正的
-    /// 网页地址只能由「区别名 → 域名」这张表加上 `remote_path` 拼出来。
-    ///
-    /// 认不出的 provider 返回空串:调用方不给链接,不编一个。
+    /// 网页域名由平台配置解析；SSH origin 的主机和端口不能直接用作网页地址。
     pub fn browse_base(&self) -> String {
         if !self.has_remote() {
             return String::new();
@@ -328,10 +258,6 @@ impl Project {
         }
     }
 
-    /// MR / PR 网页地址的前缀,后面直接拼号码。没挂远端 → 空串。
-    ///
-    /// codehub 是 GitLab 那一系,MR 与 issue 都在 `/-/` 底下;GitHub 的 PR
-    /// 在 `/pull/`。
     pub fn mr_url_prefix(&self) -> String {
         match self.browse_base() {
             b if b.is_empty() => b,
@@ -340,12 +266,6 @@ impl Project {
         }
     }
 
-    /// 这个项目的远端**在界面上叫什么**(`GitHub` / `CodeHub`)。没挂远端、或者
-    /// provider 认不出 → 空串,调用方就别画那个徽 —— 不认识的平台不许拿另一个
-    /// 平台的名字顶上(卡片上那枚徽曾经写死成 `CodeHub`,接 GitHub 的项目 58 张
-    /// 活全被标成 CodeHub)。
-    ///
-    /// 和 [`Self::browse_base`] 同一族:provider → 显示口径的映射只在这一处。
     pub fn remote_brand(&self) -> &'static str {
         if !self.has_remote() {
             return "";
@@ -358,7 +278,6 @@ impl Project {
         }
     }
 
-    /// 远端 issue 网页地址的前缀,后面直接拼号码。没挂远端 → 空串。
     pub fn issue_url_prefix(&self) -> String {
         match self.browse_base() {
             b if b.is_empty() => b,
@@ -368,13 +287,7 @@ impl Project {
     }
 }
 
-/// codehub 的**区别名** → 网页域名。
-///
-/// 库里 `remote_host` 存的是 `codehub-cli -H` 收的那个别名(接入屏那三个区:
-/// `green` / `open` / `yellow`),**不是域名** —— 直接拿它拼网址会得到一个打不
-/// 开的地址。已经是完整域名的值原样返回。
-///
-/// 正反向识别共用这一张表，增加区时只改这里。
+/// CodeHub 区别名与网页域名的双向映射。
 const CODEHUB_DOMAINS: &[(&str, &str)] = &[
     ("green", "codehub-g.huawei.com"),
     ("open", "open.codehub.huawei.com"),
@@ -411,13 +324,11 @@ pub fn codehub_alias_for_host(host: &str) -> Option<&'static str> {
     })
 }
 
-/// 活:远端 issue 的本机缓存 + 九个扩展列(正本在周计划文件)。
 #[derive(Clone, Debug, PartialEq)]
 pub struct Issue {
     pub id: IssueId,
     pub project_id: ProjectId,
-    /// 本机连续号,项目内唯一。周计划文件与发版记录引用的就是它(挂了远端
-    /// 的活另有 `remote_number`)。
+    /// 远端仓库内的 issue 编号。
     pub number: u32,
     /// 远端 issue 号;`0` = 未映射,绝不编造。
     pub remote_number: u32,
@@ -427,8 +338,6 @@ pub struct Issue {
     pub branch: String,
     /// MR 号;`0` = 没有 MR。壳现查填上,开着的或已合入的都算,给详情展示。
     pub pr_number: u32,
-    /// 这张活的 `bw/issue-<号>` 分支上现在有没有**开着的** MR。合入走
-    /// `MergeAndSettle`;没有开着的(人可能已经在网页合过)走确认后只关 issue。
     pub has_open_mr: bool,
     pub week_of: String,
     pub version: String,
@@ -441,24 +350,20 @@ pub struct Issue {
     pub metric_key: String,
     pub created_at: i64,
     pub updated_at: i64,
-    /// 人显式点「完成」的那一刻;`None` = 还没结清。
+    /// 远端 issue 的 closed_at，未关闭时为 None。
     pub settled_at: Option<i64>,
-    /// 责任人(codehub issue assignee)。空 = 未指派。正本在远端,本地只透传。
     pub assignee: String,
-    /// 提出人(codehub issue author)。空 = 认不出。正本在远端,本地只透传。
     pub author: String,
     /// 排进哪些版本(`bw:plan:<里程碑名>`)。旧版本回看依赖保留历史计划标签。
     pub plan_versions: Vec<String>,
 }
 
 impl Issue {
-    /// 排进某个版本了没有。只认 `bw:plan:`。
     pub fn is_scheduled(&self) -> bool {
         !self.plan_versions.is_empty()
     }
 }
 
-/// 活 ↔ claude 会话 ↔ worktree ↔ 分支。
 #[derive(Clone, Debug, PartialEq)]
 pub struct Conversation {
     pub id: ConversationId,

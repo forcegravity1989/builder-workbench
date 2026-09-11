@@ -1,15 +1,10 @@
-//! 详情弹窗(屏幕居中)。点卡片打开,三段式:头/体/底。字段精简。状态下拉只列
-//! 开口里从当前状态能走到的;选了走和看板拖拽同一条命令。底栏 Start /
-//! Open / Complete。Complete 在未排期/待办/进行中/待评审/阻塞都有。
-//! Start 确认框建 worktree,业务活可改/补类别后再 RunIssue。
-
 use crate::{
     bridge::{Bridge, ChromeBusy, Panel, PanelNav, Req, STARTING_SESSION},
     vm::{CardItemVm, ProjectVm},
 };
 use bw::{
     command::Command,
-    model::{category_from_key, category_key, IssueId, IssueStatus, StageKind},
+    model::{category_from_key, category_key, IssueId, IssueKind, IssueStatus, StageKind},
 };
 use dioxus::prelude::*;
 
@@ -39,14 +34,9 @@ pub fn DetailModal(
     let body_orig = c.body.clone();
     let assignee_orig = c.assignee.clone();
     let mut title_val = use_signal(move || title_orig.clone());
-    // body_val 只在 dirty 后持有人的编辑;pristine 时正文直接读 body_orig。
-    // 用空串初始化,不 move 掉 body_orig(后面 body_show 和保存还要用)。
     let mut body_val = use_signal(String::new);
     let mut assignee_val = use_signal(move || assignee_orig.clone());
-    // list 不带正文,弹窗一打开就单查补一次(issue #72)。body 走 dirty 跟踪:
-    // pristine 时正文直接读 body_orig(每次重渲从 VM 取最新值,这样 fetch 回来
-    // VM 重切后接得住——body_val 信号不会自己更新);人一编辑就 dirty,之后只认
-    // body_val,不被后续 VM 重切覆盖掉手里改的字。
+    // 列表不带正文，打开时单查；用户开始编辑后，不再用异步结果覆盖输入。
     let mut body_dirty = use_signal(|| false);
     let body_show = if *body_dirty.read() {
         body_val.read().clone()
@@ -128,10 +118,10 @@ pub fn DetailModal(
                                 span { class: "hint", "— 只在本机" }
                             }
                         }
-                        if c.kind == "运作活" {
+                        if c.kind == IssueKind::Ops {
                             div { class: "detail-row span-all",
                                 div { class: "k", "类别" }
-                                "运作"
+                                "周期工作"
                             }
                         } else {
                             div { class: "detail-row span-all",
@@ -323,7 +313,7 @@ pub fn StartModal(
     } else {
         c.branch.clone()
     };
-    let is_ops = c.kind == "运作活";
+    let is_ops = c.kind == IssueKind::Ops;
     let can_start = is_ops || cat_sel.read().is_some();
     let current_cat = c.category.clone();
     let b_run = bridge.clone();
@@ -347,7 +337,7 @@ pub fn StartModal(
                     div { class: "detail-row", div { class: "k", "worktree 名" }, "{name}" }
                     div { class: "detail-row", div { class: "k", "基于" }, "main" }
                     if is_ops {
-                        {row("类别", "运作")}
+                        {row("类别", "周期工作")}
                     } else {
                         div { class: "field",
                             label { "类别" }
@@ -366,7 +356,7 @@ pub fn StartModal(
                             }
                         }
                     }
-                    div { class: "hint", "确认后建 worktree,issue 切到进行中,并打开会话。没类别的业务活先选一类,开工工具按映射走。" }
+                    div { class: "hint", "确认后创建工作树，将 Issue 设为进行中并打开会话。" }
                 }
                 div { class: "plan-modal-foot",
                     span {}

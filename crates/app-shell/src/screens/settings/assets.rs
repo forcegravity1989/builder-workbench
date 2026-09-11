@@ -14,7 +14,7 @@ pub(super) fn view(s: &SettingsVm) -> Element {
                     tr {
                         th { style: "width:18%", "Asset" }
                         th { style: "width:42%", "说明" }
-                        th { style: "width:28%", "现在哪几张活在用" }
+                        th { style: "width:28%", "引用此规范的 Issue" }
                         th { style: "width:12%", "来自" }
                     }
                 }
@@ -42,7 +42,7 @@ pub(super) fn view(s: &SettingsVm) -> Element {
             }
         }
         if !opened {
-            p { class: "hint", "「现在哪几张活在用」要打开一个项目才扫得出来。" }
+            p { class: "hint", "打开项目后显示引用此规范的 Issue。" }
         }
     }
 }
