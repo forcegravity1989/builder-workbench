@@ -4,7 +4,7 @@
 - **人 gate**:intent + 带原型的 spec,发起人 2026-09-10 会话内口头批准(未走 artifact 裁决评论)。[可点原型](https://claude.ai/code/artifact/3755f5a7-dc72-4019-969f-083d635fbd35)。**原型不进仓**(2026-09-11 起,见 [`01-principles/02`](../../01-principles/02-working-backwards.md) §3.2):仓内那份已删,它定稿在 `f2914d8`,比最终界面少了后来「删小字」那批改动——界面以真壳为准
 - **issue**:无(会话直达)
 - **代码**:已实现。`screens/settings/{connector,skills,stage,plugins,assets}.rs` + `bridge/vm_settings.rs`(五张表的 VM 拼装,`gather()` 里算一次、`assemble()` 只克隆)+ `vm.rs` 新增的 Connector/Skills/Stage/Plugins/AI Assets 系列类型;配置屏瘦身、知识库资产页签删重复块。真机验证见下方「验证」。范围以 [`spec.md`](spec.md) 为准;「待裁决」里标注「建议另开一件」的条目(1/3/4/7/8)不在本特性范围内,条目 2 按已定的最小修法(`injectable` 字段,标「注入不了」)落地,条目 5/6 按原型已做的「两节都建、AI Assets 进本轮」执行
-- **验证**:`cargo fmt/clippy/check -p app-shell` + 五个 guard 脚本 + `cargo test --workspace` 全绿;`BW_VIEW=settings` 真机跑起来截图确认(见下),左栏五个「能力」计数对得上真实机器状态(Connector 7 / Skills 7 / Stage 5 / Plugins 2 / AI Assets 5;合入 main 带来的 `issue-state` 后 AI Assets 是 6)。子页面逐页点进去截了图(九张,在 PR #165 的验证报告 review 里)——早先记的「System Events 点击不生效」是错的,那次是把设备像素当点喂给了 osascript,换算对了就能点
+- **验证**:`cargo fmt/clippy/check -p app-shell` + 六个 guard 脚本 + `cargo test --workspace` 全绿;`BW_VIEW=settings` 真机跑起来截图确认(见下),左栏五个「能力」计数对得上真实机器状态(Connector 7 / Skills 7 / Stage 5 / Plugins 2 / AI Assets 5;合入 main 带来的 `issue-state` 后 AI Assets 是 6)。子页面逐页点进去截了图(九张,在 PR #165 的验证报告 review 里)——早先记的「System Events 点击不生效」是错的,那次是把设备像素当点喂给了 osascript,换算对了就能点
 - **分支**:`claude/codex-plugin-page-management-09c680`
 - **目录名**:沿用 `capability-panel`(立项时叫「能力面板」);内容已从「配置屏的一块」长成「整个设置屏」,名字不改以免链接漂
 
