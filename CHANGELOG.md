@@ -4,6 +4,12 @@
 
 本文件按**六站 + 底座**收口,不再按每次窗口一条流水往下堆。最近一次改动永远写在最上面。
 
+## 最近 · 2026-09-11
+
+**特性原型网页不再进仓**:可点原型发成 artifact 或推一条独立分支,`docs/05-features/<id>/spec.md` 与 `STATUS.md` 里只留链接,`prototype.html` 不再是交付件。规矩写进 [`docs/01-principles/01`](docs/01-principles/01-document-organization.md) 的制品链与规格 gate 条、[`02` §3.2](docs/01-principles/02-working-backwards.md),`AGENTS.md` 的「特性起手路径」与「commit 约定」各加一句,`.gitignore` 拦住新写的那一份。同批删掉 `docs/05-features/capability-panel/prototype.html`,该特性的三份文档改指 artifact(比对过:artifact 上的标记与仓内那份逐行一致,另多四张设计理由卡,删仓内这份不丢东西)。
+
+理由是这一轮实测出来的:那份原型定稿在 `f2914d8`,而后来发起人要求的「删小字」那批改动只落进了壳、没回写原型——留在仓里就是第二份会过期的「事实」。存量另两份原型(`reviewer-agent` / `scoreboard-and-forecast`)仍在仓里,这一批没动它们。
+
 ## 最近 · 2026-09-10
 
 「设置屏收成全局面板」十三轮收敛后发起人当场确认设计完成、批准转入实现——**人 gate 已过,代码已落地**(下面 9-09 那条「待意图 gate,未动代码」作废)。设置屏左栏加「能力」一节:**Connector**(7 行,claude/cursor-agent/Open Design/GitHub CLI/codehub-cli/welink-cli + Orca,着色只对「有活会用到、却不在」的判红)、**Skills**(全局一张表,Workbench 自带 5 份 + 所有接入项目各自的 `.claude/skills/`,卡片标「注入不了」而不是假装「用过 N 次」就是被注入过)、**Stage**(五个阶段一张表,执行器 + workflow 下拉都在行里,workflow 选项里把这个仓自己写的也列出来但标 ⚠「接不上」)、**Plugins**(现扫 `standard/vendor/` 两个库,mattpocock-skills 41 个技能按六类分组、mohit-pm-claude-skills 2 个)、**AI Assets**(项目 `AGENTS.md` + Workbench 四份 reference,「现在哪几张活在用」扫当前打开项目的真实 issue 列表)。
