@@ -1,5 +1,7 @@
 # 0001 · codehub/GitHub issue + 标签 = 唯一 issue 正本,本地零数据库
 
+> **历史决策说明（2026-09-11）**：本地零数据库与远端 Issue 正本的决定仍有效；下文保留 2026-08 的标签、状态和读数描述。现行排期使用 `bw:plan:*`，取消与完成分开，指标读数允许同日更新；当前口径见 [CONTEXT.md](../../CONTEXT.md) 与 [architecture.md](../architecture.md)。
+
 - 状态:已接受(2026-08-22 重定调,2026-08-24 仓整改落地)
 - 相关:[`CONTEXT.md`](../../CONTEXT.md)(Issue/活、仓、读数)、[`docs/architecture.md`](../architecture.md)(§2 工作流模型、§3 codehub-issue-正本 + app编排与运行时)
 

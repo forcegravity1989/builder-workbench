@@ -11,9 +11,9 @@
 
 ## workflow 自带文档去哪找
 
-被管项目按本机 settings / 产品默认给活挂的 workflow(build 默认 `mattpocock-skills`、原型默认 Open Design 等 proto-design 打包),其自带文档由该 workflow 自己承载——Workbench 不重抄,只在 `docs/architecture.md` 的「系统提示词与渐进加载」模块指明怎么注入。接入与名片方案见同篇 §1 用例「接入」+ §2 ① 关键信息维护。若该 workflow 有自己的设计/约定文档,以它为准;`DESIGN.md` 只做指向,不替它写。
+Issue 使用的 workflow，其自带文档由该 workflow 自己承载——Workbench 不重抄,只在 `docs/architecture.md` 的「系统提示词与渐进加载」模块指明怎么注入。工作类别的默认 workflow 由产品提供，开工工具由本机 settings / 产品默认选择；两者不混用。接入与名片方案见同篇 §1 用例「接入」+ §2 ① 关键信息维护。若该 workflow 有自己的设计/约定文档,以它为准;`DESIGN.md` 只做指向,不替它写。
 
 ## 没建什么(如实)
 
 - `mattpocock-skills` 已打包、开机即用；`proto-design` 源还没 vendor 进来——见 `docs/architecture.md` §2「系统提示词与渐进加载」(特性层;模块实现矛盾 / 取舍见 `docs/06-module/`)。
-- Open Design 适配模块(壳侧)、产物入仓约定、蒸馏——见各模块「没建什么」,不在这里汇总第二份清单。B/C 读数写入端已接(账本 worktree `bw/ledger`)。
+- 技能提炼等能力的实现情况见架构与各模块「没建什么」，不在指向文件维护第二份清单。当前值采集与手填读数的写入端已接，读数保存在指标记录工作树 `bw/ledger`。

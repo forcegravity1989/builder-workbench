@@ -13,7 +13,7 @@
 | **新 skill / 按规范重写** | 按本文件全章节建(frontmatter + 8 节 + 纪律表) |
 | **存量小修**(断链、description 措辞、 sidecar) | 只补那一处。不重排章节、不顺手改叙事 |
 
-本轮运作剧本是按规范删掉重写,走第一行。`mr-review` 尚未编进注入链,不改。`vendor/` 里业界正文不改;本仓只写入口 `mattpocock-skills`。
+本轮周期工作技能是按规范删掉重写,走第一行。`mr-review` 尚未编进注入链,不改。`vendor/` 里业界正文不改;本仓只写入口 `mattpocock-skills`。
 
 不在 skill 下另开 `references/` 去复述 `standard/system-prompt/references/`。格式正本已经在那里,开工时按任务注入。
 
@@ -29,7 +29,7 @@ description: Use when [具体触发条件]
 - `name`:只用字母、数字、连字符。等于目录名,也是 `skill_slug` 认的名字。
 - `description`:**只写何时用,不总结步骤。** agent 看得到 description、正文要自己打开;写成流程摘要就会只跟着 description 走(SDO 反模式)。
 - 总字符数 ≤ 1024;`description` 建议 < 500 字符。
-- 可选:`disable-model-invocation`、`allowed-tools`、`metadata`。本仓运作剧本按活的 `workflow` 派发,不靠模型自触发,前两项一般不写。
+- 可选:`disable-model-invocation`、`allowed-tools`、`metadata`。本仓周期工作技能按 Issue 的 `workflow` 派发,不靠模型自触发,前两项一般不写。
 - 不要用 `category:` 当触发条件(旧字段,新写不必)。
 
 ### description 质量
@@ -91,7 +91,7 @@ description: Use when [具体触发条件]
 - ❌ flowchart 节点里写代码
 - ❌ 步骤名叫 step1 / helper2
 - ❌ `description` 总结流程
-- ❌ 复述 SYSTEM 纪律(评审中 / 只开 MR / 用用户的提交技能)
+- ❌ 复述 SYSTEM 纪律(待评审 / 只开 MR / 用用户的提交技能)
 - ❌ 复述 reference 字段表、评论三标题字面
 - ❌ 替人定北极星、版本目标、纳入清单
 - ❌ `PROJECT.md`、新写 `bw:week`、连接器、V3 对照长文
@@ -110,8 +110,8 @@ description: Use when [具体触发条件]
 |---|---|
 | 本文件 | 以后怎么写 skill |
 | `SKILL.md` | 这场怎么跑(第 4 节 = SOP) |
-| `standard/system-prompt/SYSTEM.md.tmpl` | 哪张活、读 `AGENTS.md`、加载哪份 reference、全场纪律 |
-| `standard/system-prompt/references/*.md` | `.bw/` / 评论 / 标签 / 灯,界面认什么 |
+| `standard/system-prompt/SYSTEM.md.tmpl` | 哪个 Issue、读 `AGENTS.md`、加载哪份 reference、全场纪律 |
+| `standard/system-prompt/references/*.md` | `.bw/` / 评论 / 标签 / 健康信号,界面认什么 |
 | 被管仓 `AGENTS.md` | 那个项目怎么干 |
 | 本仓 `AGENTS.md` | Workbench 开发规矩 |
 | `docs/architecture.md` 模块 4 | 怎么注入,不写写作分层 |
@@ -135,4 +135,4 @@ description: Use when [具体触发条件]
 
 ## 八、本仓不适用(对照来源 §九)
 
-来源里的编排器补遗(派发 `agent.md`、状态机脚本、S1–S7)是另一条产品线的做法。Workbench 运作剧本**不派发独立 agent 文件**:子技能用相对路径点名,步骤写在被点名的那份 `SKILL.md` 第 4 节。不绑模型层级。
+来源里的编排器补遗(派发 `agent.md`、状态机脚本、S1–S7)是另一条产品线的做法。Workbench 周期工作技能**不派发独立 agent 文件**:子技能用相对路径点名,步骤写在被点名的那份 `SKILL.md` 第 4 节。不绑模型层级。

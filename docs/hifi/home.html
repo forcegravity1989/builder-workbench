@@ -409,13 +409,13 @@
 <header class="hero">
   <div class="eyebrow">For Super-builders</div>
   <h1>驾驶地图</h1>
-  <p>用一条路径，看清用 Workbench 开发一个产品的全流程。</p>
+  <p>产品旅程目标态原型：项目版本、构建交付、治理、反馈、进化；不代表所有能力已交付。</p>
 </header>
 
 <div class="path" role="tablist" aria-label="流程路径">
-  <button type="button" data-go="pm" class="is-on">立项</button>
+  <button type="button" data-go="pm" class="is-on">项目版本</button>
   <span class="sep"></span>
-  <button type="button" data-go="exec">构建 · 交付</button>
+  <button type="button" data-go="exec">构建交付</button>
   <span class="sep"></span>
   <button type="button" data-go="gov">治理</button>
   <span class="sep"></span>
@@ -429,7 +429,7 @@
 
     <button class="cell pm is-on" type="button" data-id="pm" aria-pressed="true">
       <div class="idx">01</div>
-      <h2>项目管理</h2>
+      <h2>项目版本</h2>
       <p class="lede">先把事情放对地方。</p>
       <div class="papers">
         <div class="paper">项目背景<span>为什么做，边界在哪</span></div>
@@ -459,7 +459,7 @@
 
     <button class="cell exec" type="button" data-id="exec" aria-pressed="false">
       <div class="idx">02</div>
-      <h2>开发 / 发布</h2>
+      <h2>构建交付</h2>
       <p class="lede">人在 IDE 里驾驶，Agent 在受控轨道上跑完这条链。</p>
       <div class="window">
         <div class="titlebar">
@@ -490,7 +490,7 @@
 
     <button class="cell gov" type="button" data-id="gov" aria-pressed="false">
       <div class="idx">03</div>
-      <h2>维护代码仓</h2>
+      <h2>治理</h2>
       <p class="lede">结构一直在线，不靠事后补课。</p>
       <div class="gov-list">
         <div class="row">代码结构<em>目录与边界</em></div>
@@ -501,7 +501,7 @@
 
     <button class="cell fb" type="button" data-id="fb" aria-pressed="false">
       <div class="idx">04</div>
-      <h2>收集反馈</h2>
+      <h2>反馈</h2>
       <p class="lede">评估每一个环节，而不是只看结果。</p>
       <div class="fb-list">
         <div class="row">立项效率<em>切片是否过载</em></div>
@@ -512,7 +512,7 @@
 
     <button class="cell loop" type="button" data-id="loop" aria-pressed="false">
       <div class="idx">05</div>
-      <h2>工作流进化</h2>
+      <h2>进化</h2>
       <p class="lede">改配置，而不是重写 Agent。</p>
       <div class="cycle">
         <div class="ring"><span>1–2 周<br>周期</span></div>
@@ -528,7 +528,7 @@
 
   <aside class="readout" aria-live="polite">
     <div>
-      <h3 id="ro-k">01 · 项目管理</h3>
+      <h3 id="ro-k">01 · 项目版本</h3>
       <p id="ro-t">从项目背景、知识文档和 issue 积压里，切出这一期真正要做的 V1。</p>
       <div class="meta" id="ro-m">feature / task / bug 都是同一种输入单位。选进 V1 的，才会进入执行核心。</div>
     </div>
@@ -544,27 +544,27 @@
 <script>
   const copy = {
     pm: {
-      k: "01 · 项目管理",
+      k: "01 · 项目版本",
       t: "从项目背景、知识文档和 issue 积压里，切出这一期真正要做的 V1。",
       m: "feature / task / bug 都是同一种输入单位。选进 V1 的，才会进入执行核心。"
     },
     exec: {
-      k: "02 · 开发 / 发布",
+      k: "02 · 构建交付",
       t: "在 IDE 里驾驶。harness 编排 plan → Design → build → test，再走到发布。",
       m: "每个阶段是一组 skill 调用。test 之后可按项目接 UAT、部署或上线。发布主轨：review → clean → CI → 发布 → 总结。"
     },
     gov: {
-      k: "03 · 维护代码仓",
+      k: "03 · 治理",
       t: "代码结构、文档结构、一致性扫描，横切在执行和交付之上。",
       m: "不是做完再治理。构建中扫一致性，交付前查结构，仓库始终可被人和 Agent 读懂。"
     },
     fb: {
-      k: "04 · 收集反馈",
+      k: "04 · 反馈",
       t: "评估每个环节的效率，反馈直接回到执行核心。",
       m: "看的是切片是否过载、阶段是否卡住、评审与发布成本——而不是只看有没有发出去。"
     },
     loop: {
-      k: "05 · 工作流进化",
+      k: "05 · 进化",
       t: "以 1–2 周为周期，改 skill 与 harness 的配置，让下一轮 Agent 更高效。",
       m: "优化不直接改正在跑的任务，而是写入配置，于次周期经执行核心生效。闭环由此合上。"
     }

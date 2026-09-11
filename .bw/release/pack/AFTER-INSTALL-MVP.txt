@@ -17,8 +17,8 @@ Builders' Workbench（MVP）已装到本机。装完请先做这几步，再新�
    安装器认 claude.exe 或 %APPDATA%\npm\claude.cmd，并写入 BW_CLAUDE_BIN。
 
 程序目录：你选的安装路径（默认 D:\BuildersWorkbench）
-对照日志：程序目录下的 bw.log（报错时连源码一起给模型看这一份）
-数据与资产：D:\builders-workbench\data\（注册表/设置/会话/技能摊）
+诊断日志：程序目录下的 bw.log（报错时连源码一起给模型看这一份）
+数据与资产：D:\builders-workbench\data\（注册表/设置/会话/技能文件）
 工作区：D:\builders-workbench\workspaces\（项目 clone 与 worktree）
 （D 盘不在的机器退回 %APPDATA%\BuildersWorkbench\）
 codehub-cli：%USERPROFILE%\bin\codehub-cli.exe（卸载 Workbench 时不会删它）

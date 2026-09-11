@@ -272,7 +272,7 @@
       <div class="nav-item active" data-screen="u0"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>驾驶地图</div>
       <div class="nav-item" data-screen="u-import"><svg viewBox="0 0 24 24"><path d="M5 6h11l4 4v8H5z"/></svg>添加项目</div>
       <div class="nav-item" data-screen="u-plan"><svg viewBox="0 0 24 24"><path d="M4 7h16M4 12h10M4 17h7"/></svg>版本规划</div>
-      <div class="nav-item" data-screen="u-land"><svg viewBox="0 0 24 24"><path d="M4 19V5M4 19h16M8 16l3-5 3 3 4-6"/></svg>builder</div>
+      <div class="nav-item" data-screen="u-land"><svg viewBox="0 0 24 24"><path d="M4 19V5M4 19h16M8 16l3-5 3 3 4-6"/></svg>构建交付</div>
       <div class="nav-item" data-screen="u-pack"><svg viewBox="0 0 24 24"><path d="M12 3l8 4v5c0 5-3.5 8-8 9-4.5-1-8-4-8-9V7z"/></svg>出包验证</div>
       <div class="nav-item" data-screen="u-release"><svg viewBox="0 0 24 24"><path d="M12 3l8 4v5c0 5-3.5 8-8 9-4.5-1-8-4-8-9V7z"/></svg>版本发布</div>
       <div class="nav-item" data-screen="u-stock"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>周复盘</div>
@@ -295,8 +295,8 @@
     <!-- ============ U0 驾驶地图 ============ -->
     <section class="screen active" id="u0" data-title="驾驶地图" data-sec-name="怎么用">
       <div class="eyebrow">Workbench MVP · 使用指南</div>
-      <h1 class="disp">一周一圈，版本贯穿</h1>
-      <p class="lede">添加项目只做一次。之后每周：<strong>版本规划 → builder → 出包验证 → 版本发布 → 周复盘</strong>。同一串名从 <code>bw:plan:&lt;名&gt;</code> 走到出包目录、Release / tag、<code>bw:released:&lt;名&gt;</code>。点一站进正文。</p>
+      <h1 class="disp">按周迭代，版本贯穿</h1>
+      <p class="lede">添加项目只做一次。之后每周：<strong>版本规划 → 构建交付 → 出包验证 → 版本发布 → 周复盘</strong>。同一串名从 <code>bw:plan:&lt;名&gt;</code> 走到出包目录、Release / tag、<code>bw:released:&lt;名&gt;</code>。点一站进正文。</p>
 
       <div class="drive" aria-label="驾驶地图">
         <nav class="path">
@@ -309,7 +309,7 @@
             <div class="slice-track">
               <button type="button" class="milestone" onclick="go('u-plan')">版本规划</button>
               <i class="slice-rail"></i>
-              <button type="button" class="milestone" onclick="go('u-land')">builder</button>
+              <button type="button" class="milestone" onclick="go('u-land')">构建交付</button>
               <i class="slice-rail"></i>
               <button type="button" class="milestone" onclick="go('u-pack')">出包验证</button>
               <i class="slice-rail"></i>
@@ -349,7 +349,7 @@
                 <div class="step"><span class="n">1</span>复盘</div>
                 <div class="step"><span class="n">2</span>更新指标</div>
                 <div class="step"><span class="n">3</span>确认版本与纳入</div>
-                <div class="step"><span class="n">4</span>你确认后落盘</div>
+                <div class="step"><span class="n">4</span>你确认后保存</div>
               </div>
               <ul class="got">
                 <li><svg viewBox="0 0 16 16" aria-hidden="true"><use href="#i-repo"/></svg><span class="p">.bw/metrics.toml</span> · <span class="p">.bw/scripts/</span></li>
@@ -372,15 +372,15 @@
               </div>
               <ul class="got">
                 <li><svg viewBox="0 0 16 16" aria-hidden="true"><use href="#i-repo"/></svg><span class="p">.bw/</span>（有改才动）</li>
-                <li><svg viewBox="0 0 16 16" aria-hidden="true"><use href="#i-issue"/></svg><span class="p">## Workbench 资产 / 闭环 / 项目审查</span></li>
-                <li><svg viewBox="0 0 16 16" aria-hidden="true"><use href="#i-issue"/></svg><span class="p">## 每周进展</span>（挂在运作活①）</li>
+                <li><svg viewBox="0 0 16 16" aria-hidden="true"><use href="#i-issue"/></svg><span class="p">## Workbench 资产 / 文档正本 / 闭环 / 项目审查</span></li>
+                <li><svg viewBox="0 0 16 16" aria-hidden="true"><use href="#i-issue"/></svg><span class="p">## 每周进展</span>（挂在更新指标与版本计划 Issue）</li>
               </ul>
             </button>
           </div>
           <div class="col side">
             <button type="button" class="cell" onclick="go('u-land')">
               <div class="idx">02</div>
-              <h2>builder</h2>
+              <h2>构建交付</h2>
               <div class="blk">
                 <div class="k">看计划屏</div>
                 <div class="kanban" aria-hidden="true"><i>待办<b></b></i><i>进行中<b></b></i><i>待处理<b></b></i><i>已完成<b></b></i></div>
@@ -389,7 +389,7 @@
               <div class="window">
                 <div class="titlebar"><span class="dot"></span><span class="dot"></span><span class="dot"></span><em>harness · 各类任务运行时</em></div>
                 <div class="layers">
-                  <div class="layer"><strong>SYSTEM</strong><em>哪张活</em><small>SYSTEM.md.tmpl</small></div>
+                  <div class="layer"><strong>SYSTEM</strong><em>哪个 Issue</em><small>SYSTEM.md.tmpl</small></div>
                   <div class="layer"><strong>references</strong><em>改仓怎么落</em><small>build.md</small></div>
                   <div class="layer"><strong>skill</strong><em>这场怎么带人</em><small>mattpocock-skills</small></div>
                 </div>
@@ -467,9 +467,9 @@
       <h2 class="sec"><span class="n">背后</span></h2>
       <div class="res">
         <ul>
-          <li><span class="b"></span><div><strong>对远端</strong>：仓里没名片才建「项目约定」，开分支 <code>bw/project</code> 提 MR，停在评审中。已有名片或已开着这张活，整段跳过。</div></li>
+          <li><span class="b"></span><div><strong>对远端</strong>：仓里没名片才建「项目约定」，开分支 <code>bw/project</code> 提 MR，停在待评审。已有名片或已开着这个 Issue，整段跳过。</div></li>
           <li><span class="b"></span><div><strong>对你的机器</strong>：本地仓保存规范化绝对路径，不复制；远端仓才 clone。路径不是 git 仓、远端与 origin 对不上、或同一目录重复接入都会弹回。</div></li>
-          <li><span class="b"></span><div><strong>对 <code>.bw/</code></strong>：写 <code>.bw/project.toml</code>（已有不覆盖）；<code>.bw/.gitignore</code> 只一条 <code>worktrees/</code>。Orca 登记这个仓，写三条<strong>默认关</strong>的自动化；自动化与项目约定的常驻树都放在 <code>&lt;仓&gt;/.bw/worktrees/</code>。旧仓外同级树只提示人先收尾，不迁、不删。</div></li>
+          <li><span class="b"></span><div><strong>对 <code>.bw/</code></strong>：写 <code>.bw/project.toml</code>（已有不覆盖）；<code>.bw/.gitignore</code> 只一条 <code>worktrees/</code>。Orca 登记这个仓，写三条<strong>默认关</strong>的自动化；自动化与项目约定的常驻工作树都放在 <code>&lt;仓&gt;/.bw/worktrees/</code>。旧仓外同级树只提示人先收尾，不迁、不删。</div></li>
         </ul>
       </div>
 
@@ -483,7 +483,7 @@
       </div>
       <div class="callout note">
         <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/></svg>
-        <div class="body"><strong>总览不是下一站。</strong>打开项目后侧栏「总览」看灯、指标、改名片。旧铺底文件（<code>PROJECT.md</code> 等）接入时不碰，周复盘会删。</div>
+        <div class="body"><strong>总览不是下一站。</strong>打开项目后侧栏「总览」查看健康信号、指标、修改名片。历史配置文件（如 <code>.bw/PROJECT.md</code>）接入时不处理；资产盘点按现行清单清理，文件改动经 MR 由你确认合入。</div>
       </div>
       <p class="linker">机制：<a href="#" onclick="return false">docs/architecture.md</a> §2 ① 关键信息维护（项目约定）/ §1「接入」用例。</p>
       <p class="next">下一站：<a href="#" onclick="go('u-plan');return false">版本规划</a></p>
@@ -494,7 +494,7 @@
     <section class="screen" id="u-plan" data-title="版本规划" data-sec-name="怎么用">
       <div class="eyebrow">怎么用 · 版本规划</div>
       <h1 class="disp">确认这个版本干什么</h1>
-      <p class="lede">一次会话走完：复盘 → 更新指标 → 确认版本与纳入 → 你确认后落盘。计划正本挂在运作活①的评论上。节律在 Orca，周一 09:00，<strong>默认关</strong>。</p>
+      <p class="lede">一次会话走完：复盘 → 更新指标 → 确认版本与纳入 → 你确认后保存。计划正本挂在更新指标与版本计划 Issue 的评论上。定时任务在 Orca，默认时间为周一 09:00（北京时间），<strong>默认关</strong>。</p>
       <div class="go-row">
         <button type="button" class="go-screen" onclick="goScreen('plan')">去计划屏</button>
         <button type="button" class="go-screen" onclick="goScreen('session')">去会话</button>
@@ -503,17 +503,17 @@
       <h2 class="sec"><span class="n">操作</span></h2>
       <div class="ops">
         <div class="li"><div class="n">1</div><div class="t">打开项目，侧栏点「计划」；要开会话点「会话」。Orca 里「定版本计划（Workbench）」<strong>默认关</strong>，要跑先打开或点 Run now。</div></div>
-        <div class="li"><div class="n">2</div><div class="t">会话在常驻树 <code>bw/week-plan</code>。Skill「更新指标与版本计划」：复盘、采指标、先确认本周版本（推荐 <code>v0.x</code>），再起草版本目标与纳入清单。</div></div>
-        <div class="li"><div class="n">3</div><div class="t">你确认后才落盘：纳入的活打 <code>bw:plan:&lt;名&gt;</code>；运作活①写下三条评论 <code>## 版本目标</code> / <code>## 本周纳入</code> / <code>## 本周指标读数</code>。</div></div>
-        <div class="li"><div class="n">4</div><div class="t">回计划屏。点某个版本只看打了 <code>bw:plan:&lt;名&gt;</code> 的活；没打标签的看右上角「全部 issue」。</div></div>
+        <div class="li"><div class="n">2</div><div class="t">会话使用 <code>bw/week-plan</code> 常驻分支对应的工作树。Skill「更新指标与版本计划」：复盘、采指标、先确认本周版本（推荐 <code>v0.x</code>），再起草版本目标与纳入清单。</div></div>
+        <div class="li"><div class="n">3</div><div class="t">你确认后才保存：纳入的 Issue 打 <code>bw:plan:&lt;名&gt;</code>；更新指标与版本计划 Issue 写下一条包含以下三个标题的评论 <code>## 版本目标</code> / <code>## 本周纳入</code> / <code>## 本周指标读数</code>。</div></div>
+        <div class="li"><div class="n">4</div><div class="t">回计划屏。点某个版本只看打了 <code>bw:plan:&lt;名&gt;</code> 的 Issue；没打标签的看右上角「全部 issue」。</div></div>
       </div>
 
       <h2 class="sec"><span class="n">背后</span></h2>
       <div class="res">
         <ul>
-          <li><span class="b"></span><div><strong>对远端</strong>：有光杆未打版本标签的运作活①就复用，没有再新建。纳入的活是真的远端 issue。</div></li>
+          <li><span class="b"></span><div><strong>对远端</strong>：已有未打版本标签的更新指标与版本计划 Issue 就复用，没有再新建。纳入的 Issue 是真的远端 issue。</div></li>
           <li><span class="b"></span><div><strong>对你的机器</strong>：改动落在 <code>bw/week-plan</code>，不写主检出。</div></li>
-          <li><span class="b"></span><div><strong>对 <code>.bw/</code></strong>：缺的 <code>metrics.toml</code> 和 <code>.bw/scripts/</code> 会铺上（已有不覆盖），经这张活的 MR 合进默认分支。版本目标不另写计划文件。在研版本不进 <code>project.toml</code>。</div></li>
+          <li><span class="b"></span><div><strong>对 <code>.bw/</code></strong>：缺的 <code>metrics.toml</code> 和 <code>.bw/scripts/</code> 会铺上（已有不覆盖），经这个 Issue 的 MR 合进默认分支。版本目标不另写计划文件。在研版本不进 <code>project.toml</code>。</div></li>
         </ul>
       </div>
 
@@ -521,23 +521,23 @@
       <div class="res">
         <ul>
           <li><span class="b"></span><div>仓里：<code>.bw/metrics.toml</code>、<code>.bw/scripts/</code>（经 MR）。</div></li>
-          <li><span class="b"></span><div>运作活①评论：版本目标 / 本周纳入 / 本周指标读数。纳入的活带着 <code>bw:plan:&lt;名&gt;</code>。</div></li>
+          <li><span class="b"></span><div>更新指标与版本计划 Issue 评论：版本目标 / 本周纳入 / 本周指标读数。纳入的 Issue 带着 <code>bw:plan:&lt;名&gt;</code>。</div></li>
         </ul>
       </div>
       <div class="callout warn">
         <svg viewBox="0 0 24 24"><path d="M12 3l9 16H3z"/><path d="M12 9v5M12 17h.01"/></svg>
-        <div class="body"><strong>计划屏「新建 issue」建业务活。</strong>类别选「原型」再 Start，才走 Open Design。</div>
+        <div class="body"><strong>计划屏「新建 issue」建 Issue。</strong>类别选「原型」再 Start，才走 Open Design。</div>
       </div>
       <p class="linker">机制：<a href="#" onclick="return false">docs/architecture.md</a> §1「周循环与计划」用例。</p>
-      <p class="next">下一站：<a href="#" onclick="go('u-land');return false">builder</a></p>
+      <p class="next">下一站：<a href="#" onclick="go('u-land');return false">构建交付</a></p>
       <div class="foot">事实源 <code>docs/architecture.md</code> §1 周循环与计划用例。</div>
     </section>
 
     <!-- ============ builder ============ -->
-    <section class="screen" id="u-land" data-title="builder" data-sec-name="怎么用">
-      <div class="eyebrow">怎么用 · builder</div>
-      <h1 class="disp">把一张活开起来干</h1>
-      <p class="lede">看计划屏，拖进进行中或点开工。agent 在 harness 里跑，环心是人守判断。本地 worktree 不是正本。</p>
+    <section class="screen" id="u-land" data-title="构建交付" data-sec-name="怎么用">
+      <div class="eyebrow">怎么用 · 构建交付</div>
+      <h1 class="disp">开始执行一个 Issue</h1>
+      <p class="lede">看计划屏，拖进进行中或点开工。agent 在 harness 里执行，由用户判断方向和结果。本地 worktree 不是正本。</p>
       <div class="go-row">
         <button type="button" class="go-screen" onclick="goScreen('plan')">去计划屏</button>
         <button type="button" class="go-screen" onclick="goScreen('session')">去会话</button>
@@ -546,16 +546,16 @@
       <h2 class="sec"><span class="n">操作</span></h2>
       <div class="ops">
         <div class="li"><div class="n">1</div><div class="t">打开项目后侧栏点「计划」。四列：待办 / 进行中 / 待处理 / 已完成。</div></div>
-        <div class="li"><div class="n">2</div><div class="t">把卡拖进「进行中」，或详情里 Start。确认后跳会话屏。没类别的业务活要先选一类，否则不开工。</div></div>
+        <div class="li"><div class="n">2</div><div class="t">把卡拖进「进行中」，或详情里 Start。确认后跳会话屏。没类别的 Issue 要先选一类，否则不开工。</div></div>
         <div class="li"><div class="n">3</div><div class="t">构建类停在会话屏的 Orca 页；原型类停在 Open Design，<strong>不会自动开跑</strong>，你打一句发出去它才动。</div></div>
-        <div class="li"><div class="n">4</div><div class="t">卡住了拖到待处理的「阻塞」；不想干了拖到已完成列的「拒绝」（要写原因）。停止、开 MR、评审在 Orca 里做。合入、点完成见<a href="#" onclick="go('u-release');return false">版本发布</a>前的验收。</div></div>
+        <div class="li"><div class="n">4</div><div class="t">卡住了拖到待处理的「阻塞」；不想干了拖到已完成列的「取消」（要写原因）。停止、开 MR、评审在 Orca 里做。合入、点完成见<a href="#" onclick="go('u-release');return false">版本发布</a>前的验收。</div></div>
       </div>
 
       <h2 class="sec"><span class="n">背后</span></h2>
       <div class="res">
         <ul>
-          <li><span class="b"></span><div><strong>对远端</strong>：开工改到进行中。提完 MR 后活到评审中（<code>bw:status:inreview</code>）。作废打取消标签并关掉 issue。</div></li>
-          <li><span class="b"></span><div><strong>对你的机器</strong>：每张活一棵工作目录，在 <code>&lt;仓&gt;/.bw/worktrees/</code>。去会话只切树，不改活的状态。</div></li>
+          <li><span class="b"></span><div><strong>对远端</strong>：开工改到进行中。提完 MR 后 Issue 到待评审（<code>bw:status:inreview</code>）。取消 Issue 时打取消标签并关闭 Issue。</div></li>
+          <li><span class="b"></span><div><strong>对你的机器</strong>：每个 Issue 一个工作目录，在 <code>&lt;仓&gt;/.bw/worktrees/</code>。去会话只切换工作树，不改 Issue 的状态。</div></li>
           <li><span class="b"></span><div><strong>对 <code>.bw/</code></strong>：这一站不写指标、不改名片。正本是 MR 和 issue 标签。</div></li>
         </ul>
       </div>
@@ -563,7 +563,7 @@
       <h2 class="sec"><span class="n">得到什么</span></h2>
       <div class="res">
         <ul>
-          <li><span class="b"></span><div>一张 MR；活在评审中等你看。</div></li>
+          <li><span class="b"></span><div>一张 MR；Issue 在待评审等你看。</div></li>
           <li><span class="b"></span><div>完成仍你点：有开着的 MR 就合入，没有则只关 issue。</div></li>
         </ul>
       </div>
@@ -611,31 +611,31 @@
     <section class="screen" id="u-release" data-title="版本发布" data-sec-name="怎么用">
       <div class="eyebrow">怎么用 · 版本发布</div>
       <h1 class="disp">你点「发版本」</h1>
-      <p class="lede">先建远端 Release 和 tag，再给勾上的活打 <code>bw:released:&lt;名&gt;</code>。不写仓文件。验收（合 MR、点完成）也在计划屏。</p>
+      <p class="lede">先建远端 Release 和 tag，再给勾上的 Issue 打 <code>bw:released:&lt;名&gt;</code>。不写仓文件。验收（合 MR、点完成）也在计划屏。</p>
       <div class="go-row">
         <button type="button" class="go-screen" onclick="goScreen('plan')">去计划屏</button>
       </div>
 
       <h2 class="sec"><span class="n">操作</span></h2>
       <div class="ops">
-        <div class="li"><div class="n">1</div><div class="t">打开项目，侧栏点「计划」。把活收口：拖到「已完成」（先确认切的是「完成」不是「拒绝」）。有开着的 MR 就先合；没有则只关 issue。</div></div>
-        <div class="li"><div class="n">2</div><div class="t">切到在研那个版本（「全部 issue」里没有「发版本」）。点「发版本」：只有在研且还没打过 tag 的号能点，发过就灰着。没有已完成的活也能发。号锁死当前版本。</div></div>
+        <div class="li"><div class="n">1</div><div class="t">打开项目，侧栏点「计划」。完成工作：拖到「已完成」（先确认切的是「完成」不是「取消」）。有开着的 MR 就先合；没有则只关 issue。</div></div>
+        <div class="li"><div class="n">2</div><div class="t">切到在研那个版本（「全部 issue」里没有「发版本」）。点「发版本」：只有在研且还没打过 tag 的号能点，发过就灰着。没有已完成的 Issue 也能发。号锁死当前版本。</div></div>
         <div class="li"><div class="n">3</div><div class="t">去代码平台核对真有这个 Release，或跑 <code>gh release list</code> / <code>codehub-cli release list</code>。</div></div>
       </div>
 
       <h2 class="sec"><span class="n">背后</span></h2>
       <div class="res">
         <ul>
-          <li><span class="b"></span><div><strong>对远端</strong>：先建 Release（顺带打 tag），再给勾过的活打 <code>bw:released:&lt;名&gt;</code>。顺序不能反。可以一张不打。</div></li>
+          <li><span class="b"></span><div><strong>对远端</strong>：先建 Release（顺带打 tag），再给勾过的 Issue 打 <code>bw:released:&lt;名&gt;</code>。顺序不能反。可以一张不打。</div></li>
           <li><span class="b"></span><div><strong>对你的机器</strong>：发版尽量把工作区对齐远端。不出安装包——安装包是上一站。</div></li>
-          <li><span class="b"></span><div><strong>对 <code>.bw/</code></strong>：不改名片，不写仓文件。在研号仍看运作活①，不进 <code>project.toml</code>。</div></li>
+          <li><span class="b"></span><div><strong>对 <code>.bw/</code></strong>：不改名片，不写仓文件。在研号仍看更新指标与版本计划 Issue，不进 <code>project.toml</code>。</div></li>
         </ul>
       </div>
 
       <h2 class="sec"><span class="n">得到什么</span></h2>
       <div class="res">
         <ul>
-          <li><span class="b"></span><div>平台上一个 Release <code>&lt;名&gt;</code>、一个 tag <code>&lt;名&gt;</code>；勾上的活带着 <code>bw:released:&lt;名&gt;</code>。</div></li>
+          <li><span class="b"></span><div>平台上一个 Release <code>&lt;名&gt;</code>、一个 tag <code>&lt;名&gt;</code>；勾上的 Issue 带着 <code>bw:released:&lt;名&gt;</code>。</div></li>
         </ul>
       </div>
       <p class="linker">机制：<a href="#" onclick="return false">docs/architecture.md</a> §1↳发版用例 / §2 ① 关键信息维护（<code>CutRelease</code>）。</p>
@@ -646,8 +646,8 @@
     <!-- ============ 周复盘 ============ -->
     <section class="screen" id="u-stock" data-title="周复盘" data-sec-name="怎么用">
       <div class="eyebrow">怎么用 · 周复盘</div>
-      <h1 class="disp">周五盘点，停在评审中</h1>
-      <p class="lede">Orca「资产盘点（Workbench）」周五 15:00，<strong>默认关</strong>。Skill 资产盘点：盘 <code>.bw/</code> → 盘项目 → 收口每周进展。有改才开 MR。</p>
+      <h1 class="disp">周五盘点，停在待评审</h1>
+      <p class="lede">Orca「资产盘点（Workbench）」默认时间为周五 15:00（北京时间），<strong>默认关</strong>。Skill 资产盘点：盘 <code>.bw/</code> → 检查文档 → 审查项目 → 总结每周进展。有文件改动才开 MR。</p>
       <div class="go-row">
         <button type="button" class="go-screen" onclick="goScreen('plan')">去计划屏</button>
         <button type="button" class="go-screen" onclick="goScreen('session')">去会话</button>
@@ -656,30 +656,30 @@
       <h2 class="sec"><span class="n">操作</span></h2>
       <div class="ops">
         <div class="li"><div class="n">1</div><div class="t">打开项目。要跑：到会话屏 Orca 嵌页，打开「资产盘点（Workbench）」或点 Run now。错过了同样去 Orca 补跑。</div></div>
-        <div class="li"><div class="n">2</div><div class="t">会话在常驻树 <code>bw/ops-audit</code>。类别锁成「运作」。最远到评审中。</div></div>
-        <div class="li"><div class="n">3</div><div class="t">改了 <code>.bw/</code> 才有 MR。合入、点完成仍是你来。下周一回到版本规划，同一串名再转一圈。</div></div>
+        <div class="li"><div class="n">2</div><div class="t">会话使用 <code>bw/ops-audit</code> 常驻分支对应的工作树。类别锁成「运维」。最远到待评审。</div></div>
+        <div class="li"><div class="n">3</div><div class="t">改了 <code>.bw/</code> 才有 MR。合入、点完成仍是你来。下周一回到版本规划，同一版本名贯穿工作流程。</div></div>
       </div>
 
       <h2 class="sec"><span class="n">背后</span></h2>
       <div class="res">
         <ul>
-          <li><span class="b"></span><div><strong>对远端</strong>：本周还没有就建一张运作活②（标题含 ISO 周，如 <code>资产盘点 2026-W36</code>），有在研版本就挂 <code>bw:plan:&lt;名&gt;</code>。</div></li>
+          <li><span class="b"></span><div><strong>对远端</strong>：本周还没有就建一个资产盘点 Issue（标题含 ISO 周，如 <code>资产盘点 2026-W36</code>），有在研版本就挂 <code>bw:plan:&lt;名&gt;</code>。</div></li>
           <li><span class="b"></span><div><strong>对你的机器</strong>：钟在 Orca。Orca 没开就下次打开项目再补打自动化。</div></li>
-          <li><span class="b"></span><div><strong>对 <code>.bw/</code></strong>：对照现行契约清残留、升格式。仓根 <code>AGENTS.md</code> 不代写。项目审查只出建议，不改业务代码。</div></li>
+          <li><span class="b"></span><div><strong>对 <code>.bw/</code></strong>：对照现行契约清残留、升格式。仓根 <code>AGENTS.md</code> 不代写，首次盘点也不触发手册编写。文档检查与项目审查只在报告中指出问题，不替项目改文档或业务代码。</div></li>
         </ul>
       </div>
 
       <h2 class="sec"><span class="n">得到什么</span></h2>
       <div class="res">
         <ul>
-          <li><span class="b"></span><div>这张活的评论：<code>## Workbench 资产</code> / <code>## 闭环</code> / <code>## 项目审查</code>。</div></li>
-          <li><span class="b"></span><div>该版本运作活①上追加 <code>## 每周进展</code>。总览右栏按新到旧列出。</div></li>
-          <li><span class="b"></span><div>打开 Orca「每日指标采集」后，每天 20:00 采 B 类。总览「立即采集」能立刻再采今天。</div></li>
+          <li><span class="b"></span><div>这个 Issue 的评论：<code>## Workbench 资产</code> / ## 文档正本 / <code>## 闭环</code> / <code>## 项目审查</code>。</div></li>
+          <li><span class="b"></span><div>该版本更新指标与版本计划 Issue 上追加 <code>## 每周进展</code>。总览右栏按新到旧列出。</div></li>
+          <li><span class="b"></span><div>Orca「每日指标采集（Workbench）」默认关闭。启用后默认每天 20:00（北京时间）采集不可回溯指标的当前值；总览「立即采集」可手动触发。</div></li>
         </ul>
       </div>
-      <p class="linker">机制：<a href="#" onclick="return false">docs/architecture.md</a> §1「asset-audit（运作活②）」用例 / §2 ④ 技能与蒸馏。</p>
+      <p class="linker">机制：<a href="#" onclick="return false">docs/architecture.md</a> §1「asset-audit（资产盘点 Issue）」用例 / §2 ④ 技能与提炼。</p>
       <p class="next">下周一回到<a href="#" onclick="go('u-plan');return false">版本规划</a>。</p>
-      <div class="foot">事实源 <code>docs/architecture.md</code> §1 asset-audit 用例 / §2 ④ 技能与蒸馏。</div>
+      <div class="foot">事实源 <code>docs/architecture.md</code> §1 asset-audit 用例 / §2 ④ 技能与提炼；standard/skills/asset-audit/SKILL.md；定时默认值见 crates/bw/src/app/orca_inject.rs。</div>
     </section>
 
     <!-- ============ 规矩 ============ -->
@@ -689,7 +689,7 @@
       <p class="lede">具体操作回各站。这里只留不会变的形状。</p>
 
       <h2 class="sec"><span class="n">1</span>完成永远你点</h2>
-      <p>agent、定时任务、自动化最远到「评审中」。计划屏拖到「已完成」或详情「点完成」才算。有开着的 MR 就合入，没有则只关 issue。</p>
+      <p>agent、定时任务、自动化最远到「待评审」。计划屏拖到「已完成」或详情「点完成」才算。有开着的 MR 就合入，没有则只关 issue。</p>
 
       <h2 class="sec"><span class="n">2</span>没数据就是灰</h2>
       <p>灯在总览名字旁，只从数据推，不能手点。没读数、没目标、没合入记录，停在灰，不是绿。界面上的数字都能用 <code>codehub-cli</code> / <code>gh</code> / <code>git</code> / 打开仓文件独立核对。</p>

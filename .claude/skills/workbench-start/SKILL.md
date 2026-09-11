@@ -36,13 +36,13 @@ Workbench MVP 还不能在工作台里维护自己。这份 skill 按住仓外�
 | 设计对,产品没守 | 代码 | 先改文档把 bug 写成特性 |
 | 走过了,指南空或错 | 产品指南(操作 → 背后 → 得到什么) | 写进 architecture |
 | 稿和壳不一致 | 人先定谁对,再改那一份 | 发明第三套样子 |
-| 本来就标了没建 | 记下,等人说做再做 | 顺手做蒸馏 / Cursor / B 类读数 |
+| 本来就标了没建 | 记下,等人说做再做 | 顺手做技能提炼 / Cursor / B 类读数 |
 
 ## 先读再动手
 
 1. `AGENTS.md` → 2. `docs/architecture.md` → 3. `CONTEXT.md` → 4. 动到哪站再读指南与高保真。
 
-定位:旅程哪一站 → 三层哪一层 → 数据归哪 → architecture §3 哪个模块。找不到先补文档。未锁定决策走 grill / domain-modeling。构建类活走仓内 `mattpocock-skills`,不要自造流程。改 `standard/`(主提示词 / reference / skill)先对 `AGENTS.md`「三层模型」指向的 architecture 模块 4 对照表,不要只改内核或只改 skill。
+定位:旅程哪一站 → 三层哪一层 → 数据归哪 → architecture §3 哪个模块。找不到先补文档。未锁定决策走 grill / domain-modeling。构建类 Issue 走仓内 `mattpocock-skills`,不要自造流程。改 `standard/`(主提示词 / reference / skill)先对 `AGENTS.md`「三层模型」指向的 architecture 模块 4 对照表,不要只改内核或只改 skill。
 
 先审已有实现和提示词,不对再改那一份;不新增平行方案。正本见 `AGENTS.md`「不要做的」。
 
@@ -56,4 +56,4 @@ Workbench MVP 还不能在工作台里维护自己。这份 skill 按住仓外�
 | 人没点完成我也先 merge | 合入永远是人 |
 | 人没走完一站我就六站一起改 | 一站一结 |
 
-工作台内嵌终端已经灌了系统提示词,不要在那里再跑这份 skill。
+工作台内嵌终端已经加载了系统提示词,不要在那里再跑这份 skill。

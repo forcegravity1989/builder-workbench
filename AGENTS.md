@@ -33,7 +33,7 @@
 
 Rust 1.82+,cargo workspace。桌面壳另需 Dioxus 0.7 的系统依赖(macOS 自带 WebKit,Windows 用 WebView2)。`#![forbid(unsafe_code)]` 是 `bw-engine` 的规矩。跨会话只认本仓的 `docs/01-principles/` + `AGENTS.md` + `CONTEXT.md` + `docs/` + `CHANGELOG.md` + `DESIGN.md`,不凭上一会话口头结论改代码。
 
-仓外 IDE(Claude Code / Cursor / Codex)开新会话,先读 [`.claude/skills/workbench-start/SKILL.md`](.claude/skills/workbench-start/SKILL.md)——只是闸门,正本仍是本文件。工作台内嵌终端里不要用它(那边已经灌了系统提示词)。Workbench MVP 还不能在工作台里维护自己,所以仓外起手暂时靠这份 skill,不是再做一套伴飞/需求/修 bug 流程。
+仓外 IDE(Claude Code / Cursor / Codex)开新会话,先读 [`.claude/skills/workbench-start/SKILL.md`](.claude/skills/workbench-start/SKILL.md)——只是闸门,正本仍是本文件。工作台内嵌终端里不要用它(那边已经加载了系统提示词)。Workbench MVP 还不能在工作台里维护自己,所以仓外起手暂时靠这份 skill,不是再做一套伴飞/需求/修 bug 流程。
 
 ## 怎么建 / 怎么跑 / 怎么测
 
@@ -52,7 +52,7 @@ cargo test --workspace                                # 本地含壳;CI 同命�
 # 正源 .bw/release/pack/*.iss；产物 .bw/release/out/<号>/(gitignore)
 ```
 
-▶跑(干一张活)走交互式 `claude` 在内嵌终端里;需本机 `claude` CLI(`BW_CLAUDE_BIN` 可指定路径)。真跑受 claude 信任对话框与网关状态影响,不作为门禁。`BW_CLAUDE_MAX_BUDGET_USD` 控预算。
+▶跑(执行一条 Issue)走交互式 `claude` 在内嵌终端里;需本机 `claude` CLI(`BW_CLAUDE_BIN` 可指定路径)。真跑受 claude 信任对话框与网关状态影响,不作为门禁。`BW_CLAUDE_MAX_BUDGET_USD` 控预算。
 
 ## 门禁(每个 commit 前全过,与 CI 一致)
 
@@ -79,7 +79,7 @@ cargo test --workspace
 crates/   bw(MVP 内核:本地零库+仓文件解析+现算推导+Command/Event)
           bw-engine(MVP 底座:交互式 claude+PTY+worktree+git+codehub/github 远端)
           app-shell(MVP 壳:八屏+主题+内核桥+适配模块,bin bw-dev)
-standard/  Workbench 规范正本(include_str! 进 bw)。分层怎么写见该目录 README;模板 `templates/` + 系统提示词 `system-prompt/` + 运作剧本 `skills/` + 业界 workflow `vendor/`
+standard/  Workbench 规范正本(include_str! 进 bw)。分层怎么写见该目录 README;模板 `templates/` + 系统提示词 `system-prompt/` + Workbench 技能 `skills/` + 业界 workflow `vendor/`
 docs/01-principles/ 慢变原则正本(01 分层/changes · 02 逆向工作法 · 03 新闻稿/FAQ/飞轮)
 docs/      architecture(整体旅程+逻辑模块)+ 06-module(模块实现心智)+ guide(产品指南)+ adr + hifi + README(地图)
 scripts/   门禁脚本(guard-*)+ codegraph 联调
@@ -94,7 +94,7 @@ scripts/   门禁脚本(guard-*)+ codegraph 联调
 
 | 可见物 | 在哪 | 用来干什么 |
 |---|---|---|
-| 用户旅程 / 产品指南 | [`docs/03-guide/`](docs/03-guide/) | 点什么、背后发生什么、手上多了什么;按站把活交给人或 AI |
+| 用户旅程 / 产品指南 | [`docs/03-guide/`](docs/03-guide/) | 点什么、背后发生什么、手上多了什么;按站把工作交给人或 AI |
 | 设计系统 / 高保真 | [`docs/04-design-system/`](docs/04-design-system/README.md) / [`docs/hifi/`](docs/hifi/) | 界面长什么样:视觉语言(token、组件类、中文排版层)在设计系统,壳编译期拼入它的样式表;八屏版式与旅程在高保真 |
 | 整体架构 / 逻辑模块 | [`docs/architecture.md`](docs/architecture.md) | **整体**用户旅程(用例)+ 逻辑模块划分;不进模块实现细节。**主提示词 / reference / skill 对照表在 [`docs/06-module/系统提示词与渐进加载`](docs/06-module/系统提示词与渐进加载.md)** |
 | 模块实现心智 | [`docs/06-module/`](docs/06-module/) | 单个模块怎么实现的**心智模型**:设计面对的主要矛盾 / 取舍;不纠结实现细节 |
@@ -102,22 +102,22 @@ scripts/   门禁脚本(guard-*)+ codegraph 联调
 | 产品主张 / 飞轮 | [`docs/01-principles/03`](docs/01-principles/03-press-release-faq-flywheel.md) | 目标体验与选型约束；特性 intent 必须对齐 |
 | 开发规矩 + 词表 | 本文件 + [`CONTEXT.md`](CONTEXT.md) | 怎么建/跑/测、用哪个词 |
 
-自己作为被管项目跟被管仓同一套落点:`.bw/` 走项目约定(名片)与指标(ops① / `bw/ledger`);`AGENTS.md` 是项目自己的,盘点不代写;`CONTEXT` / adr / spec 走 `mattpocock-skills`;旅程 / 高保真 / 架构是产品自己的可见物,业界 workflow 不会代写。资产盘点先盘 Workbench 给项目的 `.bw/` 是否跟上现行契约,再审查本周项目改动,再收口当周进展;它本身不产规范。方案正本在 [`docs/architecture.md`](docs/architecture.md) §1 用例「接入(项目约定)」+ §2 特性「关键信息维护」。
+自己作为被管项目跟被管仓同一套落点:`.bw/` 走项目约定(名片)与指标(由更新指标与版本计划 Issue 维护定义，读数记录在 `bw/ledger`);`AGENTS.md` 是项目自己的,盘点不代写;`CONTEXT` / adr / spec 走 `mattpocock-skills`;旅程 / 高保真 / 架构是产品自己的可见物,业界 workflow 不会代写。资产盘点先盘 Workbench 给项目的 `.bw/` 是否跟上现行契约,再审查本周项目改动,再总结当周进展;它本身不产规范。方案正本在 [`docs/architecture.md`](docs/architecture.md) §1 用例「接入(项目约定)」+ §2 特性「关键信息维护」。
 
 ### 四铁律(产品行为不可违反约束)
 
 | 铁律(人话) | 怎么守 |
 |---|---|
-| 杀进程重开,所有数字能重算出来、前后一致 | 现算推导;E2E 重启后读回一致 |
+| 杀进程重开,所有数字能重新计算、前后一致 | 现算推导;E2E 重启后读回一致 |
 | 信号只能从数据推导;没数据就是 Unknown,不是绿 | `Derived<Signal>` 密封、store 无 `set_signal`;现算唯一写入者 |
-| 「完成」永远由人点;同一件活绝不重复记账 | 状态机 `can_transition_to` 守卫;人可从待办/进行中/待评审/阻塞/未排期拖到完成(有开着 MR 就合入,没有则只关 issue);自动化/agent/定时不得推到 Done;`settled_at` settle-once |
-| 定时任务真实到点触发;自动建的活绝不被自动推进到完成 | 钟在 Orca;到点开会话,不得推到 Done |
+| 「完成」永远由人点;同一件工作绝不重复记录完成结果 | 状态机 `can_transition_to` 守卫;人可从待办/进行中/待评审/阻塞/未排期拖到完成(有开着 MR 就合入,没有则只关 issue);自动化/agent/定时不得推到 Done;`settled_at` settle-once |
+| 定时任务真实到点触发;自动创建的 Issue 绝不被自动推进到完成 | 钟在 Orca;到点开会话,不得推到 Done |
 
 ### 三层模型(怎么给 Workbench 做一个特性)
 
 - **承载 · codehub issue**:issue+标签=唯一正本,本地零数据库;状态走标签、工作产物走 MR。
 - **规范 · 系统提示词 + 渐进加载**(主提示词 `standard/system-prompt/SYSTEM.md.tmpl` + `references/`):补被管仓看不见的 Workbench 信息。三层各写什么见 [`standard/README.md`](standard/README.md);对照表在 [`docs/06-module/系统提示词与渐进加载`](docs/06-module/系统提示词与渐进加载.md)。改 `standard/` 之前先对表。
-- **方法论 · skill / workflow**(运作剧本在 `standard/skills/`,业界 workflow 在 `standard/vendor/`,build 默认 `mattpocock-skills`):这场怎么带人。怎么写 skill 见 [`standard/skills/SKILL-MD-SPEC.md`](standard/skills/SKILL-MD-SPEC.md)。
+- **方法论 · skill / workflow**(Workbench 技能在 `standard/skills/`,业界 workflow 在 `standard/vendor/`,build 默认 `mattpocock-skills`):这场怎么带人。怎么写 skill 见 [`standard/skills/SKILL-MD-SPEC.md`](standard/skills/SKILL-MD-SPEC.md)。
 
 改一个特性前,先对齐 [`docs/01-principles/03`](docs/01-principles/03-press-release-faq-flywheel.md) 飞轮检验,再按「特性起手路径」写 `docs/05-features/`(见上);工程落点在 [`docs/architecture.md`](docs/architecture.md) 定位:用例哪一站(§1)→ 特性设计在哪层(§2)→ 三 crate 架构与数据流(§3)→ 三层里改哪层 → 数据归哪。找不到先补文档、再动代码——不清晰不写代码。
 

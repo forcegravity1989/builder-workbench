@@ -11,7 +11,7 @@
 
 ## 本批范围(能落成脚本的 10 条 + 连带件)
 
-十份脚本进 `standard/templates/scripts/`,协议与既有三份完全一致(`--since --until --granularity week`、标准输出一个 JSON、失败如实、绝不写 0、顶到拉取上限整条不给数):评审等待 / 首过率 / 返工轮数 / 首审等待 / 意图成文时长 / 变更前置时间 / 同时开着的 MR 数 / 活存活率 / 手册修正频次 / 距上次发版天数。每条的完整口径以**脚本头部 docstring 为正本**(含复算命令)。
+十份脚本进 `standard/templates/scripts/`,协议与既有三份完全一致(`--since --until --granularity week`、标准输出一个 JSON、失败如实、绝不写 0、顶到拉取上限整条不给数):评审等待 / 首过率 / 返工轮数 / 首审等待 / 意图成文时长 / 变更前置时间 / 同时开着的 MR 数 / Issue 存活率 / 手册修正频次 / 距上次发版天数。每条的完整口径以**脚本头部 docstring 为正本**(含复算命令)。
 
 连带:`metrics.toml.tmpl` 补过程指标注释示例段(晋升即用);`metrics-refresh` 剧本加荐入节;`standard/README.md` 的模板清单更新;`standard/VERSION` 5.8 → 5.9。**不做 Rust 铺底登记**(合并 main 后的取舍,见 plan.md 风险 4——铺底有意不预铺脚本,落项目机制与既有三份共用同一缺口)。
 

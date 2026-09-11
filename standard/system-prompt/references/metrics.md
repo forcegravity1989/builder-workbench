@@ -25,7 +25,7 @@ Workbench 起脚本时:工作目录是仓根,追加
 只认 **stdout 的一个 JSON 对象**。往文件里写不算数。
 
 - `retro = true`(A):周粒度吐 `{"points":[{"week":"2026-W35","value":8},…]}`;天粒度吐 `{"points":[{"day":"2026-09-01","value":2},…]}`。点号要对上窗口;少给的断开,不补前值。只吐 `{"value":8}` 会落成最后一周一个点。
-- `retro = false`(B):吐 `{"value":12}`。Workbench 记进账本 `.bw/metrics/readings.jsonl`(键是日历日,同一天同一指标一行)。不要自己往主检出写流水。
+- `retro = false`(B):吐 `{"value":12}`。Workbench 记进指标记录 `.bw/metrics/readings.jsonl`(键是日历日,同一天同一指标一行)。不要自己往主检出写流水。
 - `kind = "manual"`:不跑脚本,人在总览手填。
 
 `value` 可以是数或给人看的字符串。失败(非零退出、超时、不是 JSON、没数据)记「没采到」,**不要写 0**。

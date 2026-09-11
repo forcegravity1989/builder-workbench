@@ -1,6 +1,6 @@
 # Intent · 过程指标接入(playbook 引领/滞后指标)
 
-> **30 秒导读**:这是什么——本次变更的**意图件**:用发起人自己的话说清「要解决什么问题、盼到什么结果」。给谁看——审这批改动的人、以及接手后续批次的会话。现在作数吗——**已接受**(2026-08-25 拍板,活已建:[#118](https://github.com/forcegravity1989/builder-workbench/issues/118)~#124)。**这是 playbook 产物链(intent → spec → plan)在 Workbench 自己开发流程上的首次实例**;这一层的仓库位置已由 [`01-principles/01-document-organization.md`](../../01-principles/01-document-organization.md) 固化为`docs/05-features/<id>/`(本目录 2026-08-25 随合并从 `docs/05-features/` 迁入,补 `STATUS.md`)。
+> **30 秒导读**:这是什么——本次变更的**意图件**:用发起人自己的话说清「要解决什么问题、盼到什么结果」。给谁看——审这批改动的人、以及接手后续批次的会话。现在作数吗——**已接受**(2026-08-25 拍板,Issue 已建:[#118](https://github.com/forcegravity1989/builder-workbench/issues/118)~#124)。**这是 playbook 产物链(intent → spec → plan)在 Workbench 自己开发流程上的首次实例**;这一层的仓库位置已由 [`01-principles/01-document-organization.md`](../../01-principles/01-document-organization.md) 固化为`docs/05-features/<id>/`(本目录 2026-08-25 随合并从 `docs/05-features/` 迁入,补 `STATUS.md`)。
 
 **发起人**:Gravity(2026-08-25 会话拍板,本文由会话转述,拍板原话见引文)。**状态**:已接受。
 

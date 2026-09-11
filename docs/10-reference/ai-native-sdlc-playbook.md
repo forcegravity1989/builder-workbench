@@ -1,5 +1,7 @@
 # AI-Native SDLC Playbook · 提炼版
 
+> **参考资料范围（2026-09-11）**：下文保留 2026-08-25 的外部资料转述及当时的 BW 对照；其中原目录、旧称和交付状态仅作历史参考，不覆盖当前 [原则](../01-principles/README.md)、[架构](../architecture.md) 与 [词表](../../CONTEXT.md)。SDLC 开发阶段与工作类别 Category 是不同概念。
+
 > **30 秒导读**:这是什么——Anthropic《The AI-Native SDLC Playbook》的**转述提炼,不是原文**(原文有版权,仓里只存链接:<https://claude.com/blog/the-ai-native-sdlc-playbook>,2026-08-25 取读)。按「它主张什么 → BW 怎么用 / 为什么不用」组织,每段都落到我们自己的实现或活号。给谁看——做过程指标后续施工与相关设计的会话。现在作数吗——**作数**(2026-08-25 用户拍板「playbook 是重要信息来源之一,提炼后入仓」,活 #127)。**指标那一半不在这里**:26 条引领/滞后指标已逐条翻成 BW 统计方式,正本是过程指标总账(随 PR #125 落在 `standard/templates/process-catalog.md`,铺进被管项目为 `.bw/process-catalog.md`),本篇只留指针、不写第二份。
 
 ## 一句话主张

@@ -1,5 +1,7 @@
 # STATUS
 
+> **历史状态记录（2026-09-11）**：下文按原日期保留交付、迁移与评审记录；GitHub CI 和工作台内入口是两条路径，不能互相代替交付证明。当前术语见 [CONTEXT.md](../../../CONTEXT.md)。
+
 **in_review**（2026-08-27，分支 claude/workbench-reviewer-agent-e17c68，四件 commit 未 push）
 
 - 2026-08-27 · 发起人 /goal 拍板「构建 workbench 的 reviewer agent」→ 产物链（intent / spec / prototype）→ 本分支施工 → 门禁全过（fmt / clippy / 五守卫 / 53 测试）+ 原型浏览器真点三步 → 进评审。
