@@ -1,8 +1,3 @@
-//! 纳入 / 打开项目时,在现有 `ensure_repo` 成功之后补打三条 Orca 自动化。
-//!
-//! 不是新触发时机。Orca 没开或打不上,下次打开再试。已有同名+同仓不覆盖。
-//! 默认关;人要跑去 Orca 里打开或点 Run now。
-
 use super::{bootstrap, App};
 use std::path::Path;
 
@@ -55,12 +50,12 @@ impl App {
                 reuse_session: false,
                 workspace: week_plan,
                 prompt: ops_prompt(
-                    "运作活①「更新指标 + 制定版本计划」",
+                    "更新指标与版本计划",
                     bw_engine::workspace::WEEK_PLAN_BRANCH,
                     super::OPS1_WORKFLOW,
                     &skills,
                     refs.as_deref(),
-                    "若已有开着的运作活①,或本周版本已经定过,停手说明并退出。人没点头之前不落仓文件。",
+                    "若已有未关闭的版本计划 Issue，或本周版本已经确定,停手说明并退出。人没点头之前不落仓文件。",
                 )?,
             },
             Spec {
@@ -69,7 +64,7 @@ impl App {
                 reuse_session: false,
                 workspace: ops_audit,
                 prompt: ops_prompt(
-                    "运作活②「资产盘点」",
+                    "资产盘点",
                     bw_engine::workspace::OPS_AUDIT_BRANCH,
                     super::OPS2_WORKFLOW,
                     &skills,
@@ -136,7 +131,7 @@ fn ops_prompt(
         .unwrap_or_default();
     let mut s = format!(
         "你是 Workbench 的{role}。工作目录已经是常驻树,分支 `{branch}`。\
-         仓文件只改这里,有真改动再开 MR。不要写主检出。不要把这张活标成完成。\n\n{extra}\n\n\
+         仓文件只改这里,有真改动再开 MR。不要写主检出。不要把此 Issue 标为完成。\n\n{extra}\n\n\
          剧本是 `{}`:{}\n开工前读:`{}`。它自己会说要不要再读别的。\n",
         skill.name, skill.desc, skill.path
     );

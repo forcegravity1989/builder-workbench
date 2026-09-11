@@ -1,11 +1,6 @@
-//! 总览折线 —— 内联 SVG,不引图表库。业务图和 SDLC 走同一套:
-//! 从 0 起的纵轴、悬停读数、点断开不补 0。几何对齐 `docs/hifi/overview.html`。
-
 use dioxus::prelude::*;
 
-/// 一条走势线。
 pub struct Series {
-    /// 悬停提示里的名字。
     pub label: String,
     /// `(x 轴标签, 值)`,旧的在前。`None` = 那一格没采到,画的时候断开。
     pub points: Vec<(String, Option<f64>)>,
@@ -13,7 +8,6 @@ pub struct Series {
     pub color: &'static str,
 }
 
-/// 总览合图上的一条线。左轴滞后、右轴引领。`on = false` 不画。
 #[derive(Clone, PartialEq)]
 pub struct MultiSeries {
     pub name: String,
@@ -45,7 +39,6 @@ pub fn trend_chart(s: &Series) -> Element {
     }
 }
 
-/// 多系列双轴。没勾上或没数的线不画;一个已知点都没有就写「尚无观测」。
 pub fn trend_chart_multi(series: &[MultiSeries]) -> Element {
     rsx! { TrendChart { series: series.to_vec() } }
 }

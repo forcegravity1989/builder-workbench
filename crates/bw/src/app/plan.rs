@@ -1,9 +1,3 @@
-//! 排期、发版本、改未发版本名。
-//!
-//! 刀3 起,issue 的正本在远端 codehub/GitHub issue + 标签,本地不建 issue 表。
-//! 排期 = 给 issue 打 `bw:plan:<版本名>`;发版 = 给活打 `bw:released:<版本名>` +
-//! 在远端建同名 Release。不再写 `bw:week:*`。
-
 use super::{issue_store, App, AppError, Result};
 use crate::{
     command::Event,
@@ -13,7 +7,6 @@ use crate::{
 };
 
 impl App {
-    /// 人确认草稿之后真的建活。
     pub(super) async fn confirm_week_draft(
         &mut self,
         project_id: ProjectId,
@@ -54,8 +47,6 @@ impl App {
             issue_store::clear_plan(self, &project, id.iid(), plan).await?;
         }
 
-        // 排进某一周 = 进「待办」;移回待办池 = 回 Backlog。只在状态机允许时动,
-        // 不合法就只改排期不动状态。
         let want = if target.is_empty() {
             IssueStatus::Backlog
         } else {
@@ -71,8 +62,6 @@ impl App {
         }])
     }
 
-    /// 排进版本(`bw:plan:<name>`)。已有计划标签保留，支持版本回看。
-    /// 顺手摘旧 `bw:week:`。状态进「待办」(已排期)。
     pub(super) async fn schedule_to_plan(
         &mut self,
         id: IssueId,
@@ -81,7 +70,7 @@ impl App {
         let issue = self.issue_or_err(id).await?;
         let project = self.project_of(issue.project_id).await?;
         issue_store::assign_to_plan(self, &project, id.iid(), &plan).await?;
-        // 只有未排期池里的活首次纳入版本时进入待办；跨版本保留实际执行状态。
+        // 跨版本纳入保留实际执行状态；仅首次排期从 Backlog 进入 Todo。
         if issue.status == IssueStatus::Backlog && issue.status.can_transition_to(IssueStatus::Todo)
         {
             issue_store::set_status(self, &project, id.iid(), IssueStatus::Todo).await?;
@@ -89,8 +78,6 @@ impl App {
         Ok(vec![Event::IssueScheduledToPlan { id, plan }])
     }
 
-    /// 建一个版本:先落一张运作活①并打 `bw:plan:<name>`,纳入的活也打标。
-    /// 同名里程碑只补充,失败不回滚标签。
     pub(super) async fn create_plan_version(
         &mut self,
         project_id: ProjectId,
@@ -142,7 +129,6 @@ impl App {
         }])
     }
 
-    /// 有开着的光杆①就改标题/打标复用;有同标题开着的就复用;否则新建。
     async fn ensure_ops1_for_version(
         &mut self,
         project_id: ProjectId,
@@ -181,10 +167,9 @@ impl App {
                 Event::IssueCreated { id, .. } => Some(*id),
                 _ => None,
             })
-            .ok_or_else(|| AppError::Refused("运作活①没建出来".into()))
+            .ok_or_else(|| AppError::Refused("未能创建版本计划 Issue".into()))
     }
 
-    /// 删未发版本:给挂着 `bw:plan:<name>` 的活摘标签,再尽力删同名里程碑。
     pub(super) async fn delete_plan_version(
         &mut self,
         project_id: ProjectId,
@@ -227,10 +212,6 @@ impl App {
         }])
     }
 
-    /// 「↻ 拉到最新」:把主检出快进到远端。
-    ///
-    /// 主检出若只被读数流水弄脏,先把那份挪进账本再拉——否则 `--ff-only`
-    /// 会停住,人点刷新也看不到同事已经合进去的 `metrics.toml`。
     pub(super) async fn pull_workspace(&mut self, project_id: ProjectId) -> Result<Vec<Event>> {
         let ws = self.workspace_of(project_id).await?;
         if !ws.is_dir() {
@@ -255,7 +236,7 @@ impl App {
     }
 
     /// 发版本:只有在研且还没有同名 tag 的号能发。工作区先快进到远端,
-    /// 脏或本机比远端新就拒。然后建 Release(打 tag),再给勾上的活打
+    /// 脏或本机比远端新就拒。然后建 Release(打 tag),再给选中的 Issue打
     /// `bw:released:*`(可以一张不打)。已发过的号拒,要再发先开下一号。
     pub(super) async fn cut_release(
         &mut self,
@@ -322,7 +303,6 @@ impl App {
         Ok(events)
     }
 
-    /// 未发版本改名:标签定义 → issue 上的标 → 里程碑标题。已发拒改,新名撞名拒。
     pub(super) async fn rename_plan_version(
         &mut self,
         project_id: ProjectId,
@@ -415,7 +395,7 @@ impl App {
     }
 }
 
-/// 发版本 / 在研出包共用:读数脏先挪开,再快进。源码脏或本机比远端新就拒。
+/// 对齐远端前只处理读数文件；源码未提交或本地领先时拒绝操作。
 pub(super) async fn align_workspace_to_remote(ws: &std::path::Path) -> Result<()> {
     let _ = salvage_readings_dirt(ws).await;
     if crate::git::is_dirty(ws).await.unwrap_or(true) {
@@ -435,7 +415,7 @@ pub(super) async fn align_workspace_to_remote(ws: &std::path::Path) -> Result<()
     Ok(())
 }
 
-/// 拉主干之前:主检出若只脏了读数流水,挪进账本再拉。不碰名片、不碰人的源码。
+/// 更新主检出前，将其中未提交的读数移至指标记录工作树；不处理其他文件。
 pub(super) async fn salvage_readings_dirt(ws: &std::path::Path) -> String {
     let Ok(paths) = crate::git::dirty_paths(ws).await else {
         return String::new();
@@ -451,7 +431,6 @@ pub(super) async fn salvage_readings_dirt(ws: &std::path::Path) -> String {
     }
 }
 
-/// 主检出若脏了读数流水,把内容并进账本,再把主检出那份恢复成 HEAD。
 async fn salvage_readings_into_ledger(ws: &std::path::Path) -> bool {
     let ledger = match bw_engine::workspace::provision_ledger_worktree(ws).await {
         Ok(p) => p,

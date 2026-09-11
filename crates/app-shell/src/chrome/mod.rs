@@ -1,17 +1,3 @@
-//! 外壳骨架:一条紧凑侧栏 / 帮助面板 / toast。
-//!
-//! 结构走设计系统(`docs/04-design-system/spec.md`):侧栏是 `.sidebar`,弹窗是
-//! `.dialog`,回执是 `.toast`。**没有顶栏**:屏名在侧栏当前项上、页标题在各屏
-//! 自己的 `.page-head` 里,再画一条顶栏就是同一个词写两遍;「刷新」进各屏页头。
-//! 数据目录在设置屏看。**不写行内样式**。
-//!
-//! 帮助只有一个入口:侧栏底部那颗「帮助」,和「设置」并排。面板与指南抽屉在
-//! `chrome::help`。**不在屏幕边缘贴竖排文字标签** —— 那是网页客服贴片的做法,
-//! 两个并列还逼人先决定「我要指南还是要上报」。
-//!
-//! toast 放的是命令回执(建活成功、铺底失败的原话),不自动消失 —— 自动消失
-//! 等于把失败信息藏起来,点「关闭」才关。
-
 pub mod help;
 pub mod sparkline;
 
@@ -20,7 +6,6 @@ use crate::theme;
 use bw::model::Signal;
 use dioxus::prelude::*;
 
-/// 原型那套线性图标。内容是写死的常量,没有任何外部输入拼进去。
 fn icon_path(name: &str) -> &'static str {
     match name {
         "wall" => {
@@ -72,11 +57,6 @@ pub fn icon(name: &str) -> Element {
     }
 }
 
-/// 长命令的「一步一句」回执,画出来。
-///
-/// **行由调用方自己收**(各屏一个信号,点按钮时清空),这里只管画 —— 谁在跑
-/// 长命令、什么时候该清屏,是那一屏自己的事;放到这里来猜只会猜错。行按步号
-/// 原地覆盖的规矩在收的那一侧,见 `bw::app::ProgressLine::step`。
 pub fn progress_log(lines: &[bw::app::ProgressLine]) -> Element {
     use bw::app::StepState;
     if lines.is_empty() {
@@ -117,7 +97,6 @@ pub fn light_dot(signal: Option<Signal>, big: bool) -> Element {
     rsx! { span { class: "{cls}", style: "--status-c:{color}" } }
 }
 
-/// 五个入口各自的图标名。原型里知识库那一格用的是 `space`(内部沿用旧命名)。
 fn panel_icon(p: Panel) -> &'static str {
     match p {
         Panel::Overview => "overview",
@@ -128,18 +107,14 @@ fn panel_icon(p: Panel) -> &'static str {
     }
 }
 
-/// 侧栏头部要显示的项目信息。
 #[derive(Clone, PartialEq)]
 pub struct SidebarProject {
     pub name: String,
     pub version: String,
     pub signal: Option<Signal>,
-    /// 评审中的活有几张,和项目墙卡片上的 ⚑ 是同一个数(见 `NotifyVm::unread`)。
     pub unread: u32,
 }
 
-/// 唯一一条侧栏:品牌 → (项目内)返回 / 项目头 / 五入口,或(顶层)项目墙 → 底部设置。
-/// 图标轨和顶栏都并进来了:文字只有两三个字,一条紧凑的栏就够。
 #[component]
 pub fn Sidebar(
     in_project: bool,
@@ -170,7 +145,7 @@ pub fn Sidebar(
                         span { "{p.version}" }
                         {light_dot(p.signal, false)}
                         if p.unread > 0 {
-                            span { class: "pr-badge", title: "评审中的活有几张", "{p.unread}" }
+                            span { class: "pr-badge", title: "待评审 Issue 数量", "{p.unread}" }
                         }
                     }
                 }
@@ -213,12 +188,9 @@ pub fn Sidebar(
     }
 }
 
-/// 命令回执。**不自动消失** —— 这里放的是「铺底失败,原话是……」这种话。
 #[component]
 pub fn Toast(note: Option<String>, seq: u64) -> Element {
-    // **按第几条记,不按正文记**。按正文记的话,同一句失败第二次出现会被当成
-    // 「已经关过的那条」直接不显示 —— 改完再点一次、又是同样的错,界面上什么
-    // 都不弹,看起来像是成功了。
+    // 按通知序号关闭，避免相同错误再次发生时被隐藏。
     let mut dismissed = use_signal(|| 0u64);
     let Some(text) = note else {
         return rsx! {};
@@ -238,20 +210,14 @@ pub fn Toast(note: Option<String>, seq: u64) -> Element {
     }
 }
 
-/// 在系统默认浏览器里打开一个地址。
-///
-/// **只收 `https://` 开头的**:这个函数的入参最终来自仓里的 `origin`,那是文件
-/// 内容,不该被当成命令。挡在这里,`open` 就不会被喂进一个 `-a`、`file://` 或者
-/// 别的什么东西。打不开就静静算了 —— 为一个链接弹一句错不值。
+/// 仅允许 HTTPS，避免仓库中的地址被解释为命令参数或本地文件。
 pub fn open_in_browser(url: &str) {
     if !url.starts_with("https://") {
         return;
     }
     #[cfg(target_os = "macos")]
     let _ = std::process::Command::new("open").arg(url).spawn();
-    // Windows 上开浏览器要经 `cmd /C start`,而这个壳是 GUI 进程 —— 直接
-    // `Command::new("cmd")` 会闪一下黑窗。走底座那层就带上 `CREATE_NO_WINDOW`,
-    // 和 git / codehub-cli 那些子进程同一个规矩。
+    // 统一使用隐藏窗口的命令启动器，避免 Windows 弹出控制台。
     #[cfg(target_os = "windows")]
     let _ = bw_engine::win_cmd::std_cmd("cmd")
         .args(["/C", "start", "", url])

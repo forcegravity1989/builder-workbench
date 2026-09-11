@@ -1,10 +1,4 @@
-//! 全仓一份对照日志。一行:
-//! `[时间] [模块] [文件] [行] [ok|err|warn] 正文`
-//!
-//! 落点:`BW_LOG` 覆盖整条路径;否则 `cargo run` 写到启动目录 `bw.log`,
-//! 直接跑 exe 写到项目目录(能摸到 `Cargo.toml` 的仓根,安装包则是 exe 所在目录)。
-//! 同时打 stderr,E2E 标签(`[BW_OPEN]` 等)留在正文里。不写 token / pairing /
-//! 提示词正文。
+//! 诊断日志格式：[时间] [模块] [文件] [行] [级别] 正文。不能记录凭证或提示词。
 
 use std::fs::OpenOptions;
 use std::io::Write;
@@ -19,7 +13,6 @@ struct LogState {
     offset: UtcOffset,
 }
 
-/// 对照日志文件路径。未显式 [`init`] 过也会在第一次写时现算。
 pub fn log_path() -> PathBuf {
     ensure_state()
         .lock()
@@ -27,7 +20,6 @@ pub fn log_path() -> PathBuf {
         .unwrap_or_else(|_| resolve_path())
 }
 
-/// 启动时调一次(起线程之前)。再调只打一行「已经开过」。
 pub fn init() {
     let path = {
         let state = ensure_state();
@@ -105,8 +97,6 @@ fn cwd() -> PathBuf {
     std::env::current_dir().unwrap_or_else(|_| PathBuf::from("."))
 }
 
-/// exe:能沿路径摸到 `Cargo.toml` 就用仓根(从 `target/debug` 跑也算项目目录);
-/// 安装包摸不到,用 exe 所在目录。
 fn exe_project_dir() -> PathBuf {
     let Ok(exe) = std::env::current_exe() else {
         return cwd();
@@ -146,7 +136,6 @@ fn timestamp(offset: UtcOffset) -> String {
     )
 }
 
-/// `[时间] [模块] [文件] [行] [ok|err|warn] 正文`
 #[macro_export]
 macro_rules! dlog {
     (ok, $module:expr, $($arg:tt)*) => {

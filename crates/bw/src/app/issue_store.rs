@@ -1,61 +1,21 @@
-//! codehub/GitHub issue 持久化映射层(数据层迁移刀2/刀3)。
-//!
-//! 把 bw 的 `Issue` 领域对象 ↔ codehub/GitHub issue 互转。issue 的状态、
-//! 排期、版本、类别以远端 issue + 标签为正本(`bw:status:*` /
-//! `bw:plan:*` / `bw:released:*` / `bw:category:*`)。旧 `bw:week:` 不认。
-//! 每个里程碑都是一个版本；issue 可保留多个计划版本标签。
-//!
-//! 字段映射的取舍:每一条都不自作主张加标签。**lossy**:远端 issue 的 `body` 经
-//! `view_issue` 单查带回(列表查询不带正文);`branch`/`pr_number`、
-//! `sort_order`/`metric_key`、`settled_at` 这些读回时一律给默认值。
-
 use crate::model::{Issue, IssueId, IssueKind, IssueOrigin, IssueStatus, Project};
 use bw_engine::remote::{IssueFilter, IssueState, Remote, RemoteIssue};
 
 use super::{App, AppError, Result};
 
-// ─────────────── 标题枚举(幂等键,也是 kind/workflow 的推断源)───────────────
-//
-// kind 不占标签,从标题前缀推断。三张运作活与「编辑项目名片」这张轻量活的标
-// 题都是固定前缀 + 变量(周号 / 版本 / 项目名),所以这里认前缀,不是精确
-// 匹配。前缀与 `app/ops.rs` / `app/project.rs` / `standard/bootstrap.rs` 里建
-// 活时拼标题用的那几个串一字不差,改那边要同步改这里。
-
-/// 运作活①的标题前缀。光杆或后面跟 ` v0.x` 都认。
 const OPS1_TITLE_PREFIX: &str = "更新指标 + 制定版本计划";
-/// 运作活②的标题前缀。完整标题 = 这个前缀 + 周号(`"资产盘点 {week}"`)。
 const OPS2_TITLE_PREFIX: &str = "资产盘点 ";
-/// 运作活③的标题前缀。完整标题 = 这个前缀 + 版本号(`"规范铺底 v{version}"`)。
-/// **不再新建**;读回旧活仍认,给在途 MR / 横幅 / 跳过接入用。
+/// 历史标题，仅用于识别尚未结束的项目约定。
 const OPS3_TITLE_PREFIX: &str = "规范铺底 v";
-/// 项目信息常驻车的固定标题。接入第一次写名片、之后改名片 / 在研版本 / 项目群
-/// 都复用这一张(开着就接着写,合入后人点完成,下次再开一张同名)。
 pub const CHARTER_TITLE: &str = "项目约定";
-/// 轻量活「编辑项目名片」的旧标题。**不再新建**;读回旧活仍认。
 pub const LIGHT_TITLE: &str = "编辑项目名片";
-/// 轻量活「配置项目群」的固定标题(B 类在途复用的幂等键)。高优3:改群配置
-/// 也走 worktree + MR,不再直写主检出。
 pub const LIGHT_CHAT_TITLE: &str = "配置项目群";
-/// 旧标题「切换在研版本」。新改动跟「编辑项目名片」走;读回旧活仍认轻量。
 pub const LIGHT_VERSION_TITLE: &str = "切换在研版本";
 
-// ─────────────── 远端拿取 ───────────────
-
-/// `RemoteError` → `AppError::Exec` 的统一包装,前缀一句人话说明这步在干嘛。
 fn map_remote_err<E: std::fmt::Display>(ctx: &str, e: E) -> AppError {
     AppError::Exec(format!("{ctx}:{e}"))
 }
 
-// ─────────────── 公开 API ───────────────
-
-/// 在远端仓里真开一个 issue,返回填好 `number`/`remote_number` 的 `Issue`。
-///
-/// labels = `bw:status:todo`(新活默认待办)+ 版本关系(`bw:plan:v0.x`,
-/// 见 [`schedules`])+ `extra_labels`(调用方自塞,如类别)。不再写 `bw:week:`。
-/// kind 由参数显式给(不推断),决定回填 `tool`/`workflow`/`origin`。
-///
-/// issue 读写唯一入口:app 层各用例(issue / plan / ops / bootstrap / project /
-/// session)都经这里的 `create` / `set_status` / `find_open_by_title` / `fetch` 落远端。
 pub async fn create(
     app: &App,
     project: &Project,
@@ -67,7 +27,6 @@ pub async fn create(
 ) -> Result<Issue> {
     let remote = app.remote_for(project)?;
     let (week, plans) = schedules(week_of, extra_labels);
-    // 未排期的 issue 状态是 Backlog(待办池),排进一个版本的才是 Todo。
     let status_label = if week.is_none() && plans.is_empty() {
         "bw:status:backlog"
     } else {
@@ -81,7 +40,7 @@ pub async fn create(
     let iid = remote
         .create_issue(title, body, &label_refs)
         .await
-        .map_err(|e| map_remote_err("远端建活没成", e))?;
+        .map_err(|e| map_remote_err("远端 Issue 创建失败", e))?;
     if let Some(name) = plans.last() {
         project_plan_best_effort(&remote, iid, name).await;
     }
@@ -97,7 +56,6 @@ pub async fn create(
     ))
 }
 
-/// 读回单张 issue(带正文)。走 `view_issue` 单查,正文在回程的 `body` 字段。
 pub async fn fetch(app: &App, project: &Project, iid: u32) -> Result<Issue> {
     let remote = app.remote_for(project)?;
     let r = remote
@@ -107,7 +65,6 @@ pub async fn fetch(app: &App, project: &Project, iid: u32) -> Result<Issue> {
     Ok(issue_from_remote(project, &app.asset_root, &r))
 }
 
-/// 按过滤条件读回 issue 列表,逐条映射回 `Issue`。
 pub async fn list(app: &App, project: &Project, filter: IssueFilter) -> Result<Vec<Issue>> {
     let remote = app.remote_for(project)?;
     let list = remote
@@ -120,9 +77,7 @@ pub async fn list(app: &App, project: &Project, filter: IssueFilter) -> Result<V
         .collect())
 }
 
-/// 改 issue 的状态标签(`bw:status:*`,namespace-replace 会换掉旧 status)。
-/// `Done` 不打标签——走 `close_issue`(issue closed = Done)。`Backlog` 没有
-/// 对应标签,如实弹回。`Cancelled` 先打 `bw:status:cancelled` 再关 issue。
+/// Done 关闭 issue；Cancelled 先写取消标签再关闭，读取时优先识别取消。
 pub async fn set_status(app: &App, project: &Project, iid: u32, status: IssueStatus) -> Result<()> {
     let remote = app.remote_for(project)?;
     if status == IssueStatus::Done {
@@ -149,12 +104,11 @@ pub async fn set_status(app: &App, project: &Project, iid: u32, status: IssueSta
         remote
             .close_issue(iid)
             .await
-            .map_err(|e| map_remote_err("远端关作废 issue 没成", e))?;
+            .map_err(|e| map_remote_err("关闭已取消的远端 Issue 失败", e))?;
     }
     Ok(())
 }
 
-/// 在 issue 上写一条评论(结构化产出挂评论,不动正文)。
 pub async fn comment(app: &App, project: &Project, iid: u32, body: &str) -> Result<()> {
     let remote = app.remote_for(project)?;
     remote
@@ -173,7 +127,6 @@ pub async fn list_comments(app: &App, project: &Project, iid: u32) -> Result<Vec
         .map_err(|e| map_remote_err("远端读 issue 评论没成", e))
 }
 
-/// 改 issue 的类别标签(`bw:category:*`,namespace-replace 会换掉旧类别)。
 pub async fn set_category(
     app: &App,
     project: &Project,
@@ -201,7 +154,6 @@ pub(crate) async fn project_plan_best_effort(remote: &Remote, iid: u32, plan: &s
     }
 }
 
-/// 改 issue 的发版标签(`bw:released:*`,namespace-replace 会换掉旧 released)。
 pub async fn set_released(app: &App, project: &Project, iid: u32, version: &str) -> Result<()> {
     let remote = app.remote_for(project)?;
     let label = format!("bw:released:{version}");
@@ -214,7 +166,6 @@ pub async fn set_released(app: &App, project: &Project, iid: u32, version: &str)
     Ok(())
 }
 
-/// 改 issue 的责任人(codehub assignee)。空串 = 取消指派。正本在远端。
 pub async fn set_assignee(app: &App, project: &Project, iid: u32, assignee: &str) -> Result<()> {
     let remote = app.remote_for(project)?;
     remote
@@ -224,7 +175,6 @@ pub async fn set_assignee(app: &App, project: &Project, iid: u32, assignee: &str
     Ok(())
 }
 
-/// 改 issue 的标题与正文(codehub issue update)。
 pub async fn edit_issue(
     app: &App,
     project: &Project,
@@ -240,9 +190,6 @@ pub async fn edit_issue(
     Ok(())
 }
 
-/// 把 issue 纳入人起名的版本：保留既有 `bw:plan:*` 并追加目标标签，随后挂到
-/// 同名里程碑(best-effort 镜像)。同时摘
-/// `bw:week:`(排进这个版本就不该还挂着周版本)。
 pub async fn assign_to_plan(app: &App, project: &Project, iid: u32, plan: &str) -> Result<()> {
     let remote = app.remote_for(project)?;
     let current = remote
@@ -256,7 +203,7 @@ pub async fn assign_to_plan(app: &App, project: &Project, iid: u32, plan: &str) 
         .update_issue(iid, Some(&label_refs), None)
         .await
         .map_err(|e| map_remote_err("远端打 bw:plan 标签没成", e))?;
-    // 里程碑是 codehub 侧镜像,失败只打 stderr,不挡正本(标签)。
+    // 里程碑同步失败不回滚已经写入的版本标签。
     if let Err(e) = remote.project_plan(iid, plan).await {
         bw_engine::dlog!(
             err,
@@ -359,8 +306,6 @@ pub async fn try_ensure_plan_milestone(
     }
 }
 
-/// 在远端**开着的** issue 里找一张标题精确匹配的。B 类轻量活在途复用用
-/// (固定枚举标题,同一张卡不建第二张)。找不到返回 `None`,不报错。
 pub async fn find_open_by_title(
     app: &App,
     project: &Project,
@@ -380,7 +325,6 @@ pub async fn find_open_by_title(
         .map(|r| issue_from_remote(project, &app.asset_root, &r)))
 }
 
-/// 开着的项目约定类活:「项目约定」或残留的「编辑项目名片」/「规范铺底 v*」。
 pub async fn find_open_charter(app: &App, project: &Project) -> Result<Option<Issue>> {
     let list = list(
         app,
@@ -394,10 +338,6 @@ pub async fn find_open_charter(app: &App, project: &Project) -> Result<Option<Is
     Ok(list.into_iter().find(is_open_charter))
 }
 
-// ─────────────── Issue 构造(两条路:create 直接拼 / 从 RemoteIssue 映射)────
-
-/// 一张活可属于多个版本。有任一 `bw:plan:<name>` 就排期；`week_of` 即使非空
-/// 也不再生成周排期(不再写 `bw:week:`)。
 fn schedules(_week_of: &str, extra_labels: &[&str]) -> (Option<String>, Vec<String>) {
     let mut plans: Vec<String> = extra_labels
         .iter()
@@ -410,8 +350,6 @@ fn schedules(_week_of: &str, extra_labels: &[&str]) -> (Option<String>, Vec<Stri
     (None, plans)
 }
 
-/// `create` 成功后拼 `Issue`——这会儿没有 `RemoteIssue` 快照,但 title/body/
-/// kind/week 都是调用方给的,其余 lossy 字段给默认值。
 #[allow(clippy::too_many_arguments)]
 fn issue_from_create(
     project: &Project,
@@ -460,16 +398,11 @@ fn issue_from_create(
     }
 }
 
-/// 把一条远端 issue 快照映射回 `Issue`。body 在 list 不带(填空串),view
-/// 带;branch/pr_number/sort_order/metric_key 仍按设计篇给默认值。
-/// `created_at`/`settled_at` 从远端 RFC3339 串解析(刀3-fix:以前写死 0/None,
-/// 事件流恒空)。`settled_at`:关闭的 issue 取 `closed_at`;`closed_at` 缺失
-/// 但确实关了,退回 `created_at` 当近似(事件流至少能进「结清」那条)。
 fn issue_from_remote(project: &Project, asset_root: &std::path::Path, r: &RemoteIssue) -> Issue {
     let closed = r.state.eq_ignore_ascii_case("closed");
     let cancelled = has_cancelled_label(&r.labels);
     let kind = kind_from_title(&r.title);
-    // 作废会关 issue。先认取消标签,否则 closed 会被读成已完成。
+    // 取消也会关闭 issue，必须先识别取消标签。
     let status = if cancelled {
         IssueStatus::Cancelled
     } else if closed {
@@ -491,7 +424,6 @@ fn issue_from_remote(project: &Project, asset_root: &std::path::Path, r: &Remote
         number: r.iid,
         remote_number: r.iid,
         title: r.title.clone(),
-        // view_issue 单查带正文;list_issues 不带(填空串)。
         body: r.body.clone(),
         status,
         branch: String::new(),
@@ -526,8 +458,6 @@ fn parse_iso_to_unix(s: Option<&str>) -> i64 {
     t.unix_timestamp()
 }
 
-// ─────────────── 辅助:kind/workflow/tool/origin 推断 ───────────────
-
 fn is_ops_title(title: &str) -> bool {
     title.starts_with(OPS1_TITLE_PREFIX)
         || title.starts_with(OPS2_TITLE_PREFIX)
@@ -548,17 +478,14 @@ fn kind_from_title(title: &str) -> IssueKind {
     }
 }
 
-/// 项目约定类标题:现行「项目约定」+ 残留的名片轻量活 / 规范铺底。
 pub fn is_charter_title(title: &str) -> bool {
     title == CHARTER_TITLE || title == LIGHT_TITLE || title.starts_with(OPS3_TITLE_PREFIX)
 }
 
-/// 开着的项目约定类活(没完成、没作废)。
 pub fn is_open_charter(i: &Issue) -> bool {
     is_charter_title(&i.title) && !matches!(i.status, IssueStatus::Done | IssueStatus::Cancelled)
 }
 
-/// 这张活干活的分支。常驻车走固定名;其余 `bw/issue-<号>`。
 pub fn work_branch(issue: &Issue) -> String {
     if issue.title == CHARTER_TITLE {
         bw_engine::workspace::PROJECT_BRANCH.to_string()
@@ -586,9 +513,6 @@ pub fn overlay_project_file(
     crate::repo::project_file::read(&tree).ok().flatten()
 }
 
-/// 运作活的 workflow 从标题推断:①→`更新指标与版本计划`,②→`资产盘点`,
-/// ③→`规范铺底`(③没有 agent 步骤,skill_slug 回 None,但 workflow 字段
-/// 仍需有值给配置屏「用过几次」与演示读回用)。
 fn ops_workflow_from_title(title: &str) -> String {
     if title.starts_with(OPS1_TITLE_PREFIX) {
         super::OPS1_WORKFLOW.into()
@@ -604,7 +528,6 @@ fn ops_workflow_from_title(title: &str) -> String {
 fn workflow_for(kind: IssueKind, title: &str) -> String {
     match kind {
         IssueKind::Ops => ops_workflow_from_title(title),
-        // light→无;business 的 workflow 走产品默认,不在这里。
         _ => String::new(),
     }
 }
@@ -625,7 +548,7 @@ fn resolve_tool_workflow(
     category: Option<crate::model::Category>,
 ) -> (String, String) {
     if kind == IssueKind::Ops {
-        // 运作活①② 跟构建的本机开工工具,不走配置屏「运维」。
+        // 版本计划与资产盘点 跟构建的本机开工工具,不走配置屏「运维」。
         return (
             resolve_tool(asset_root, crate::model::Category::Build),
             workflow_for(kind, title),
@@ -658,16 +581,12 @@ fn origin_for(kind: IssueKind) -> IssueOrigin {
     }
 }
 
-// ─────────────── 辅助:标签 ↔ 字段 ───────────────
-
 fn has_cancelled_label(labels: &[String]) -> bool {
     labels
         .iter()
         .any(|l| l.strip_prefix("bw:status:") == Some("cancelled"))
 }
 
-/// 状态标签后缀。Done 走 close;Backlog 仍无对应标签。Cancelled 打
-/// `bw:status:cancelled` 再关 issue——codehub 不能删卡,作废不等于完成。
 fn status_label(status: IssueStatus) -> &'static str {
     match status {
         IssueStatus::Todo => "todo",
@@ -679,7 +598,6 @@ fn status_label(status: IssueStatus) -> &'static str {
     }
 }
 
-/// 从标签里找 `bw:status:*`,映射回 `IssueStatus`。无 → Todo(默认)。
 fn parse_status_from_labels(labels: &[String]) -> IssueStatus {
     for l in labels {
         if let Some(suffix) = l.strip_prefix("bw:status:") {
@@ -696,7 +614,6 @@ fn parse_status_from_labels(labels: &[String]) -> IssueStatus {
     IssueStatus::Todo
 }
 
-/// 旧 `bw:week:` 产品不再认。字段留下以免大拆,解析一律空。
 fn parse_week(_labels: &[String]) -> String {
     String::new()
 }
@@ -708,7 +625,6 @@ fn parse_released(labels: &[String]) -> String {
         .unwrap_or_default()
 }
 
-/// 从 `bw:plan:<name>` 标签取这张活排进的版本。空后缀当没排。
 fn parse_plans(labels: &[String]) -> Vec<String> {
     let mut plans: Vec<String> = labels
         .iter()

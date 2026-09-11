@@ -1,10 +1,3 @@
-//! 现算:从 git 里当场取数,一个中间值都不存。
-//!
-//! 「这周有没有真实提交」「上周合入了几次」「有哪些标签」——V3 是把这些写进
-//! `observation`/`workflow_run` 表再读回来,V4 直接问 git。代价是打开项目要
-//! 现算(Workbench 自己的仓几百个提交是几十毫秒级),换来的是**造不了假**:界面上
-//! 每个数字都能用同一条 git 命令在终端里复算出来。
-
 use crate::isoweek;
 use std::path::Path;
 use std::process::Stdio;
@@ -21,12 +14,7 @@ pub enum GitError {
     BadWeek(String),
 }
 
-/// 一周的轻量计数:提交数、合入数。健康判据和走势图只要这两个数。
-///
-/// **复算命令写在 [`week_counts_many`] 的文档里**。注意复算**不要**用
-/// `git log --since/--until`:那正是 2026-08-21 修掉的错误窗口(多算一天、
-/// 还会漏算)。这里跑的是当前分支,**不带 `--all`** —— 带上会把
-/// remote-tracking 分支和别的 worktree 的提交都算进「本周有没有真实提交」。
+/// 仅统计当前分支可达的提交，不包含 --all。
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
 pub struct WeekCounts {
     pub commits: u32,
@@ -53,23 +41,17 @@ async fn git(workspace: &Path, args: &[&str]) -> Result<String, GitError> {
     Ok(String::from_utf8_lossy(&out.stdout).to_string())
 }
 
-/// 这个目录是不是一个 git 仓。不是就返回 false,不报错——很多判据在没有仓的
-/// 项目上本来就该是「没数据」。
 pub async fn is_repo(workspace: &Path) -> bool {
     git(workspace, &["rev-parse", "--git-dir"]).await.is_ok()
 }
 
-/// 这个仓有没有第一条提交。**刚 `git init` 或者刚建出来的空仓没有 HEAD**,
-/// 从它身上开分支会被 git 顶回来(`invalid reference`),所以要先问这一句。
 pub async fn has_head(workspace: &Path) -> bool {
     git(workspace, &["rev-parse", "--verify", "HEAD"])
         .await
         .is_ok()
 }
 
-/// HEAD 里有没有这个相对路径。工作区未提交的同名文件不算。
-///
-/// 规范铺底「已完成」看这个:默认分支有 `.bw/project.toml` 才算落地,关过的铺底 issue 不算。
+/// 只检查 HEAD 中的文件，未提交的同名文件不算。
 pub async fn path_in_head(workspace: &Path, rel: &str) -> bool {
     match git(
         workspace,
@@ -106,30 +88,7 @@ pub fn day_window(day: &str) -> Result<(i64, i64), GitError> {
     Ok((at(start), at(start + time::Duration::days(1))))
 }
 
-/// 多个周的提交/合入计数,**一趟遍历全部出齐**。
-///
-/// **不用 `git log --since/--until` 截窗口**,而是把提交时间全取回来自己按
-/// 时间戳过滤。两个理由都是 2026-08-21 实测撞出来的,不是洁癖:
-///
-/// 1. **`--until=<下周一>` 会把下周一那一整天算进来。** git 用 approxidate 解析
-///    这类不带时刻的日期,实测 `--until=2026-08-03` 连当天 11:26 的提交都收 ——
-///    于是每一周都多算了下一周第一天,健康判据「本周有没有提交」和走势图一起偏。
-/// 2. **`--since` 会提前停止遍历。** 提交时间不严格单调(rebase、cherry-pick、
-///    机器时钟)时 git 会漏掉一批,同一条命令换个起点、隔几分钟跑,结果能从
-///    78 变成 83。走势图上的数**必须**是每次算都一样的。
-///
-/// 全量遍历一次的代价:这个仓 751 条提交,`--pretty=format:'%ct %P'` 实测约
-/// 25 毫秒 —— **要几周都是这一趟**,健康判两周、走势看八周,
-/// 都不再把遍历次数乘上去(第一版就是这么乘出 2 秒卡顿和 75 秒冻屏的,评审
-/// 抓的)。
-///
-/// 复算(`<since>`/`<until>` 用 [`week_window`] 的 unix 秒;合入 = 父提交 ≥ 2,
-/// 即行内字段 ≥ 3 个):
-///
-/// ```bash
-/// git -C <仓> log --pretty=format:'%ct %P' | awk -v s=<since> -v u=<until> '$1>=s && $1<u' | wc -l
-/// git -C <仓> log --pretty=format:'%ct %P' | awk -v s=<since> -v u=<until> '$1>=s && $1<u && NF>=3' | wc -l
-/// ```
+/// 遍历全部提交后按时间戳过滤；Git 日期过滤的边界和遍历剪枝会漏计。
 pub async fn week_counts_many(
     workspace: &Path,
     weeks: &[String],
@@ -137,7 +96,6 @@ pub async fn week_counts_many(
     stamp_counts_many(workspace, weeks).await
 }
 
-/// 多个时间窗的提交/合入计数。标签是 ISO 周或 `YYYY-MM-DD`,一趟遍历出齐。
 pub async fn stamp_counts_many(
     workspace: &Path,
     labels: &[String],
@@ -177,13 +135,11 @@ pub async fn stamp_counts_many(
     Ok(map)
 }
 
-/// 仓里一共多少条提交。铺底探测「这是不是个有历史的仓」用它。
 pub async fn commit_count(workspace: &Path) -> Result<u32, GitError> {
     let out = git(workspace, &["rev-list", "--all", "--count"]).await?;
     Ok(out.trim().parse().unwrap_or(0))
 }
 
-/// 仓里的标签(按建立时间)。没有就是空,不编。
 pub async fn tags(workspace: &Path) -> Result<Vec<String>, GitError> {
     let out = git(workspace, &["tag", "-l", "--sort=creatordate"]).await?;
     Ok(out
@@ -194,11 +150,8 @@ pub async fn tags(workspace: &Path) -> Result<Vec<String>, GitError> {
         .collect())
 }
 
-/// 当前分支名。
 pub async fn current_branch(workspace: &Path) -> Result<String, GitError> {
-    // 一条提交都没有的仓,`rev-parse HEAD` 会失败 —— 但分支名是有的
-    // (`git init` 就定好了,main 还是 master),`symbolic-ref` 读得出来。
-    // 读不出名字就报「没有分支」,不要在这种时候编一个。
+    // 空仓没有 HEAD，但仍可通过 symbolic-ref 获取分支名。
     match git(workspace, &["rev-parse", "--abbrev-ref", "HEAD"]).await {
         Ok(s) => Ok(s.trim().to_string()),
         Err(e) => match git(workspace, &["symbolic-ref", "--short", "HEAD"]).await {
@@ -208,27 +161,16 @@ pub async fn current_branch(workspace: &Path) -> Result<String, GitError> {
     }
 }
 
-/// 把分支推到 `origin` 并建立跟踪(`git push -u origin <branch>`)。
-///
-/// 推不上去就如实报错。**不吞**:推失败而后面照样去开 MR,开出来的会是一个
-/// 指向不存在分支的 MR,或者干脆报一句和真正原因无关的错。
 pub async fn push_branch(workspace: &Path, branch: &str) -> Result<(), GitError> {
     git(workspace, &["push", "-u", "origin", branch]).await?;
     Ok(())
 }
 
-/// 把这个检出快进到远端最新(`git fetch origin <当前分支>` +
-/// `git merge --ff-only FETCH_HEAD`),返回 HEAD 有没有真的往前挪。
-///
-/// **只快进,绝不制造 merge 提交**。这里改的是人自己的检出,岔开了就该停下来
-/// 报错让人自己处理,不能替他合。工作区脏、没挂远端、没网、本机主干和远端岔
-/// 开——每一种都如实报错,由调用方原话端到界面上,不吞。
+/// 只快进，不产生合并提交；分支分叉或更新失败时返回错误。
 pub async fn pull_ff(workspace: &Path) -> Result<bool, GitError> {
     let before = head_sha(workspace).await?;
     let branch = current_branch(workspace).await?;
-    // `git fetch origin <branch>` 一定会写 `FETCH_HEAD`;`origin/<branch>` 这个
-    // 远端跟踪引用要不要跟着更新,取决于这个仓的 refspec 配置。所以下一步认
-    // `FETCH_HEAD`,不认 `origin/<branch>` —— 后者在个别配置下会是个旧值。
+    // 显式 fetch 必定更新 FETCH_HEAD，远端跟踪引用则取决于 refspec。
     git(workspace, &["fetch", "origin", &branch]).await?;
     git(workspace, &["merge", "--ff-only", "FETCH_HEAD"]).await?;
     let after = head_sha(workspace).await?;
@@ -241,7 +183,6 @@ pub async fn commits_ahead_of_fetch(workspace: &Path) -> Result<u32, GitError> {
     Ok(out.trim().parse().unwrap_or(0))
 }
 
-/// 本机有没有这条分支。
 pub async fn branch_exists(workspace: &Path, branch: &str) -> bool {
     git(
         workspace,
@@ -251,16 +192,7 @@ pub async fn branch_exists(workspace: &Path, branch: &str) -> bool {
     .is_ok()
 }
 
-/// 收掉一条**已经合过**的本机分支。
-///
-/// 先试 `git branch -d`,让 git 自己确认它真的合过。远端按 squash 合的时候这
-/// 一步会被拒:squash 把一串提交压成主干上的一条新提交,原来那几条并不是主干
-/// 的祖先,git 看不出「合过」——而 Workbench 这两个远端(GitHub / codehub)合 MR
-/// 走的都是 squash。所以这里会退到 `-D`。
-///
-/// **只准在读回确认远端真的合了之后调用**:那时候改动已经在远端主干上、分支
-/// 本身也推上去过,`-D` 删掉的是本机的一个指针,不是劳动成果。没合成的分支
-/// 绝不能拿它删。
+/// 调用方必须先确认远端已合入；squash 合并无法通过祖先关系判断，因此允许强制删除本地分支。
 pub async fn delete_merged_branch(workspace: &Path, branch: &str) -> Result<(), GitError> {
     if git(workspace, &["branch", "-d", branch]).await.is_ok() {
         return Ok(());
@@ -269,25 +201,20 @@ pub async fn delete_merged_branch(workspace: &Path, branch: &str) -> Result<(), 
     Ok(())
 }
 
-/// 收掉一棵 worktree(`git worktree remove` + `prune`)。
-///
-/// **不带 `--force`**:带上它会连未提交的改动一起删。调用方
-/// ([`crate::app`] 的结清收尾)已经先确认过这棵树是干净的,真在这一步失败就
-/// 说明情况和刚才读到的不一样了 —— 那就该失败,不该硬删。
+/// 不使用 --force，防止检查后新出现的未提交改动被删除。
 pub async fn worktree_remove(main_workspace: &Path, tree: &str) -> Result<(), GitError> {
     git(main_workspace, &["worktree", "remove", tree]).await?;
     let _ = git(main_workspace, &["worktree", "prune"]).await;
     Ok(())
 }
 
-/// 人点「删除会话」才走这条:连未提交的改动一起收。结清收尾不许调。
+/// 仅用于用户明确删除会话：会删除未提交的改动，完成后的自动清理不能调用。
 pub async fn worktree_remove_force(main_workspace: &Path, tree: &str) -> Result<(), GitError> {
     git(main_workspace, &["worktree", "remove", "--force", tree]).await?;
     let _ = git(main_workspace, &["worktree", "prune"]).await;
     Ok(())
 }
 
-/// 有没有未提交的改动。
 pub async fn is_dirty(workspace: &Path) -> Result<bool, GitError> {
     Ok(!git(workspace, &["status", "--porcelain"])
         .await?
@@ -295,7 +222,6 @@ pub async fn is_dirty(workspace: &Path) -> Result<bool, GitError> {
         .is_empty())
 }
 
-/// 工作区未提交路径(相对仓根)。空 = 干净。
 pub async fn dirty_paths(workspace: &Path) -> Result<Vec<String>, GitError> {
     let raw = git(workspace, &["status", "--porcelain"]).await?;
     Ok(raw
@@ -312,7 +238,6 @@ pub async fn dirty_paths(workspace: &Path) -> Result<Vec<String>, GitError> {
         .collect())
 }
 
-/// 脏的是不是只有读数流水(Workbench 自己写进主检出的那份)。别的脏文件不动。
 pub fn is_readings_dirt(paths: &[String]) -> bool {
     !paths.is_empty() && paths.iter().all(|p| is_readings_path(p))
 }
@@ -327,12 +252,7 @@ pub async fn restore_path(workspace: &Path, rel: &str) -> Result<(), GitError> {
     Ok(())
 }
 
-/// 提交**这次 Workbench 自己写过的那几个文件**(铺底第 1 步、发版本这类动作)。
-/// 没有改动就返回 `Ok(false)`,不造一个空提交。
-///
-/// 只 add 点名的路径,不用 `add -A`:用户点「规范铺底」的时候工作区多半是
-/// 脏的,`add -A` 会把他手上没写完的改动一起打包提交,commit message 还写
-/// 着「规范铺底」—— 那是在替他做他没同意的事。
+/// 只暂存指定路径；没有暂存改动时 committed 为 false。
 pub async fn commit_paths(
     workspace: &Path,
     paths: &[String],
@@ -343,14 +263,12 @@ pub async fn commit_paths(
         return Ok(out);
     }
     for p in paths {
-        // **单个路径 add 失败不能拖垮整次提交。** 最常见的原因是项目把这个路径
-        // 写进了 `.gitignore`(Workbench 自己的仓就忽略 `.claude/`)—— 那是项目的
-        // 决定,不该用 `-f` 顶回去,如实记一笔就好。
+        // 遵守项目的忽略规则，不强制添加被拒绝的文件。
         if git(workspace, &["add", "--", p]).await.is_err() {
             out.refused.push(p.clone());
         }
     }
-    // 只看**暂存区**有没有东西:工作区别的地方脏不脏与这次提交无关。
+    // 只检查暂存区，工作区中其他改动不属于本次提交。
     let staged = git(workspace, &["diff", "--cached", "--name-only"]).await?;
     if staged.trim().is_empty() {
         return Ok(out);
@@ -360,20 +278,14 @@ pub async fn commit_paths(
     Ok(out)
 }
 
-/// 把这棵树里的**全部**改动提交掉,返回有没有真的产生一个提交。
-///
-/// **只准对「一张活自己的 worktree」用**。那棵树整棵都属于这一张活,里面每一个
-/// 改动都是这次干活的产物,所以 `git add -A` 是对的。规范铺底那边不能用它 ——
-/// 那边写的是**人的主检出**,`add -A` 会把人手上没写完的改动一起打包进去。
+/// 提交全部改动，仅用于属于当前工作的独立 worktree。
 pub async fn commit_all(workspace: &Path, message: &str) -> Result<bool, GitError> {
     git(workspace, &["add", "-A"]).await?;
     let staged = git(workspace, &["diff", "--cached", "--name-only"]).await?;
     if staged.trim().is_empty() {
         return Ok(false);
     }
-    // `--cleanup=whitespace` 不能省:提交信息第一行是 `#<活号> <标题>`,而人要是
-    // 把 `commit.cleanup` 设成了 `strip`/`scissors`,`#` 开头的行会被当注释整行
-    // 删掉 —— 信息被删空,commit 直接失败。显式定死就跟本机配置无关了。
+    // 保留以 # 开头的提交标题，不受用户的 commit.cleanup 配置影响。
     git(
         workspace,
         &["commit", "--cleanup=whitespace", "-m", message],
@@ -382,7 +294,6 @@ pub async fn commit_all(workspace: &Path, message: &str) -> Result<bool, GitErro
     Ok(true)
 }
 
-/// 当前 HEAD 的完整 sha。
 pub async fn head_sha(workspace: &Path) -> Result<String, GitError> {
     Ok(git(workspace, &["rev-parse", "HEAD"])
         .await?
@@ -390,11 +301,7 @@ pub async fn head_sha(workspace: &Path) -> Result<String, GitError> {
         .to_string())
 }
 
-/// 这棵树上有几个提交是 `base` 上没有的 —— 「这张活到底干出东西没有」的判据。
-///
-/// `base` 传 sha 而不是分支名:分支名要在**这棵树里**解析,而活的 worktree 上
-/// `main` 指向哪里取决于它是什么时候开出来的;调用方手里已经有主检出当下的
-/// sha,直接传过来,这个数就没有歧义。
+/// base 传确定的提交 SHA，避免在不同 worktree 中解析分支名产生歧义。
 pub async fn commits_ahead_of(workspace: &Path, base: &str) -> Result<u32, GitError> {
     let out = git(
         workspace,
@@ -404,15 +311,13 @@ pub async fn commits_ahead_of(workspace: &Path, base: &str) -> Result<u32, GitEr
     Ok(out.trim().parse().unwrap_or(0))
 }
 
-/// 一次提交的结果。`refused` 是仓自己(多半经 `.gitignore`)拒收的路径 ——
-/// 文件写下去了,但没进版本控制,这件事必须说出来,不能让人以为进仓了。
+/// refused 为未能暂存的路径，调用方须展示。
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub struct CommitOutcome {
     pub committed: bool,
     pub refused: Vec<String>,
 }
 
-/// 根提交的作者 —— 判「这个仓是不是 Workbench 自己建的空仓」。
 pub async fn root_commit_author(workspace: &Path) -> Result<String, GitError> {
     let roots = git(workspace, &["rev-list", "--max-parents=0", "HEAD"]).await?;
     let Some(first) = roots.lines().last().map(str::trim) else {
@@ -424,7 +329,6 @@ pub async fn root_commit_author(workspace: &Path) -> Result<String, GitError> {
         .to_string())
 }
 
-/// 一个改动文件:`git status --porcelain` 的一行。
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ChangedFile {
     /// 两个字母的状态码,如 `" M"`、`"??"`、`"A "`。
@@ -433,7 +337,6 @@ pub struct ChangedFile {
 }
 
 impl ChangedFile {
-    /// 给人看的一句话。**认不出的状态码原样回显**,不猜成「已修改」。
     pub fn label(&self) -> String {
         match self.code.trim() {
             "M" => "改过".into(),
@@ -446,15 +349,8 @@ impl ChangedFile {
     }
 }
 
-/// 工作区里相对上次提交的改动(提没提交都算)。
-///
-/// 这不是 `diff_numstat` 能回答的问题——那个比较的是两个已经落库的提交,而这
-/// 里要的正是「还没提交的东西长什么样」。
 pub async fn changed_files(workspace: &Path) -> Result<Vec<ChangedFile>, GitError> {
-    // **必须用 `-z`**。不带它的时候,git 会把带空格或非 ASCII 的路径用引号包起
-    // 来、还把中文转成八进制转义(`"\344\270\255…"`)。那串东西直接拿去当
-    // pathspec 查 diff 是查不到的 —— 界面会对一个明明改过的文件说「它还没进版
-    // 本控制」,然后给人看一片空白。`-z` 用 NUL 分隔,一个字节都不转义。
+    // -z 保留空格和非 ASCII 路径，避免 Git 引号转义影响后续 pathspec。
     let out = git(workspace, &["status", "--porcelain", "-z"]).await?;
     let mut fields = out.split('\0').filter(|f| !f.is_empty());
     let mut rows = Vec::new();
@@ -464,8 +360,7 @@ pub async fn changed_files(workspace: &Path) -> Result<Vec<ChangedFile>, GitErro
         }
         let code = entry[..2].to_string();
         let path = entry[3..].to_string();
-        // 改名/复制的记录后面**紧跟一个额外字段**装原路径。不把它读掉,下一轮
-        // 就会把原路径当成一条独立的改动行。人关心的是新名字,原路径丢掉。
+        // 重命名和复制记录多一个原路径字段，需消费后再读取下一条。
         if code.starts_with('R') || code.starts_with('C') {
             let _ = fields.next();
         }
@@ -517,13 +412,8 @@ pub async fn ahead_behind(workspace: &Path, base: &str) -> Option<(u32, u32)> {
     Some((ahead, behind))
 }
 
-/// 一层目录的内容。懒加载:点开哪个目录才读哪一层,不一次扫整棵树。
-///
-/// 三个目录永远不进结果:`.git`(不是项目内容)、`target` 与 `node_modules`
-/// (构建产物,量大且没人在文件树里点它们)。
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct TreeEntry {
-    /// 相对仓根的路径。
     pub rel: String,
     pub name: String,
     pub is_dir: bool,
@@ -555,12 +445,10 @@ pub fn list_dir(workspace: &Path, rel: &str) -> Vec<TreeEntry> {
             Some(TreeEntry { rel, name, is_dir })
         })
         .collect();
-    // 目录在前,同类按名字。文件树里最烦的是每次展开顺序都不一样。
     out.sort_by(|a, b| (!a.is_dir, &a.name).cmp(&(!b.is_dir, &b.name)));
     out
 }
 
-/// 仓里最早那条提交的日期(`YYYY-MM-DD`)。空仓返回 `None`。
 pub async fn first_commit_date(workspace: &Path) -> Option<String> {
     let out = git(
         workspace,
@@ -571,8 +459,6 @@ pub async fn first_commit_date(workspace: &Path) -> Option<String> {
     out.lines().next().map(|s| s.trim().to_string())
 }
 
-/// 标签 + 它指向那条提交的日期。**取的是提交日期,不是打标签的日期**:标签
-/// 可以事后补打,提交日期才是那个版本真正发生的时刻。
 pub async fn tags_with_dates(workspace: &Path) -> Vec<(String, String)> {
     let Ok(out) = git(
         workspace,
@@ -595,23 +481,16 @@ pub async fn tags_with_dates(workspace: &Path) -> Vec<(String, String)> {
         .collect()
 }
 
-/// 一条产物登记。**没有登记表**——`git log --name-only` 就是登记表。
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub struct Artifact {
     pub path: String,
-    /// 最近一次碰它的提交(短 hash)。
     pub commit: String,
     pub subject: String,
-    /// 提交消息里解析得到的活号。解析不到就是 `None` —— **不强凑**。
     pub issue_number: Option<u32>,
 }
 
-/// 现扫产物登记:按提交从新到旧走 `--name-only`,每个文件只记最近碰它的那一次。
-///
-/// `max_commits` 是往回看多少个提交;老仓全量扫一遍既慢又没意义(几年前动过
-/// 的文件不是「本项目的产物」这个问题的答案)。
+/// 最多读取 max_commits 个提交，每个文件保留最近一次变更。
 pub async fn artifacts(workspace: &Path, max_commits: usize) -> Result<Vec<Artifact>, GitError> {
-    // 记录分隔用 \x1e(记录分隔符),文件名里不可能出现它;比按空行切稳。
     let out = git(
         workspace,
         &[

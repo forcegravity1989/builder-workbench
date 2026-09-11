@@ -1,11 +1,3 @@
-//! 第一次接入:建「项目约定」,只写 `.bw/project.toml`(外加 `.bw/.gitignore`
-//! 忽略 `worktrees/`),落在常驻分支 `bw/project` 上,开 MR 等人合。
-//!
-//! **不铺 issue-policy,不写主检出。** 开工工具跟人走本机 settings;周五盘点
-//! 是产品默认。仓根一个字不写。探测到了什么如实写进这张活的正文。
-//!
-//! 不是 git 仓 / 还没有 HEAD:就地写(空仓首提交那条例外)。
-
 use super::worktree;
 use super::{issue_store, App, AppError, ProgressLine, Result};
 use crate::command::Event;
@@ -15,7 +7,6 @@ use crate::standard;
 use crate::standard::bootstrap::{self as boot};
 
 impl App {
-    /// 只在第一次纳入时跑。默认分支已有名片、或已经开着项目约定类活,整段跳过。
     pub(super) async fn run_standard_bootstrap(
         &mut self,
         project_id: ProjectId,
@@ -159,7 +150,7 @@ impl App {
         Ok(events)
     }
 
-    /// 纯读的对账:该有的件在不在。不建活、不写仓。
+    /// 纯读的对账:该有的件在不在。不创建 Issue、不写仓。
     pub(super) async fn reconcile_standard(&mut self, project_id: ProjectId) -> Result<Vec<Event>> {
         let ws = self.workspace_of(project_id).await?;
         let mut missing = Vec::new();
@@ -175,7 +166,6 @@ impl App {
     }
 }
 
-/// 常驻树上补 `.bw/.gitignore` 里的 `worktrees/`,不写主检出。已有这一行就不动。
 fn ensure_bw_gitignore(tree: &std::path::Path) -> bool {
     let path = tree.join(".bw").join(".gitignore");
     let line = "worktrees/";
@@ -210,15 +200,6 @@ fn pending_steps(probe: &boot::BootstrapProbe) -> String {
     }
 }
 
-/// ▶开工 时注入给 agent 的系统提示词。**渐进式加载**:提示词里只放索引,
-/// 正文让 agent 自己按需读。
-///
-/// 主提示词是外置的 `standard/system-prompt/SYSTEM.md.tmpl`(身份 + 读仓根
-/// `AGENTS.md` + 按任务加载哪份 reference + 三条纪律),`{{...}}` 占位在这里渲染。
-/// **正文一律不塞进提示词** —— references 和技能都只给「一句话 + 完整路径」。
-///
-/// 不硬编码在 `format!` 里:改身份/纪律 = 改那份 md(以前塞在 `base_prompt`
-/// 的 `format!` 里,改=改代码,人审得读 Rust)。
 pub fn agent_system_prompt(
     issue: &Issue,
     skill: Option<&SkillPointer>,
@@ -248,19 +229,12 @@ pub fn agent_system_prompt(
     )
 }
 
-/// 指给 agent 的一份阶段规范:名字、一句话、**完整路径**。正文不在这里。
 pub struct ReferencePointer {
     pub name: String,
     pub desc: String,
     pub path: String,
 }
 
-/// 这张活要读哪几份阶段规范 references。按活的类别/workflow 匹配,只返**硬盘
-/// 上真存在**的那几份(文件不在就如实不指,不编路径)。
-///
-/// 已派发:`issue-state`(所有活)、`metrics`(运作活①)、`week-plan-comment`
-/// (运作活① + ② 收口进展)、`build`(改仓类 + 运作活②)、`bw-assets`(运作活②)。
-/// 其余按实践长。对照表在 architecture 模块 4。
 pub fn references_for(issue: &Issue, refs_dir: &std::path::Path) -> Vec<ReferencePointer> {
     let mut out = vec![];
     for pack in standard::system_prompt::references() {
@@ -278,7 +252,6 @@ pub fn references_for(issue: &Issue, refs_dir: &std::path::Path) -> Vec<Referenc
     out
 }
 
-/// 这份 reference 要不要给这张活。
 fn want_ref(issue: &Issue, slug: &str) -> bool {
     ref_wanted_for(issue.category, &issue.workflow, slug)
 }
@@ -294,11 +267,8 @@ pub fn ref_wanted_for(
     let ops2 = workflow == super::ops::OPS2_WORKFLOW;
     match slug {
         "issue-state" => true,
-        // 指标活:更新指标与版本计划。② 升格式时 skill 会再指过去,这里不预注入。
         "metrics" => workflow == super::ops::OPS1_WORKFLOW,
-        // 周初三标题给①;周五每周进展给②。同一份 reference。
         "week-plan-comment" => workflow == super::ops::OPS1_WORKFLOW || ops2,
-        // 改仓类活:构建 / 优化 / 运维;运作活②改 `.bw` 也是改仓。
         "build" => {
             ops2 || matches!(
                 category,
@@ -338,17 +308,12 @@ fn skill_block(skill: Option<&SkillPointer>) -> String {
     }
 }
 
-/// 指给 agent 的一份技能:名字、一句话、**完整路径**。正文不在这里。
 pub struct SkillPointer {
     pub name: String,
     pub desc: String,
     pub path: String,
 }
 
-/// 这张活挂的那一份技能在哪。文件不在硬盘上就返回 `None`,调用方如实少一段。
-///
-/// 找的是 **Workbench 自己的技能目录**(`App::skills_dir`),不是用户的仓 ——
-/// 用户仓里从来就不该有 Workbench 的技能副本。
 pub fn skill_pointer(skills_dir: &std::path::Path, workflow: &str) -> Option<SkillPointer> {
     let slug = super::ops::skill_slug(workflow)?;
     let pack = standard::skills::all()
@@ -365,10 +330,6 @@ pub fn skill_pointer(skills_dir: &std::path::Path, workflow: &str) -> Option<Ski
     })
 }
 
-/// 把 Workbench 的技能目录加进 CLI 的可读目录 —— 它在 agent 的工作目录外面。
-///
-/// 提示词里给的是绝对路径,不加这一句,CLI 那边读不读得到取决于它当天的权限
-/// 策略;显式声明一句,别赌。
 pub(crate) fn allow_skills_dir(plan: &mut bw_engine::LaunchPlan, dir: &std::path::Path) {
     plan.args.push("--add-dir".to_string());
     plan.args.push(dir.display().to_string());

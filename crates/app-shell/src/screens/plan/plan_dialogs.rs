@@ -1,8 +1,3 @@
-//! 计划屏的弹窗:新建issue / 创建版本 / 排期 / 作废确认 / 出包 / 发版本。
-//! 全部屏幕居中(dialog-backdrop + dialog)。
-//!
-//! 出包进度活在 [`PackJob`] 上,关弹窗不打断后台。
-
 use crate::{
     bridge::Bridge,
     vm::{CardItemVm, ProjectVm},
@@ -18,11 +13,7 @@ use dioxus::prelude::*;
 
 use super::kanban::{plan_status_label, PendingMove, PendingReject, PendingSchedule};
 
-/// 屏幕居中的弹窗壳:backdrop + dialog。只有「按下也落在 backdrop 上」才算点
-/// 外面要关 —— 在 dialog 里拖选文本(尤其从右往左拖)拖到 backdrop 上松手凑
-/// 出来的那下 click 不算,它的 mousedown 在 dialog 内。一根信号记按下落点:
-/// backdrop 的 mousedown 置真,dialog 的 mousedown/mouseup 置假并拦冒泡,松
-/// 手那下 click 只在信号为真时才关。
+/// 仅在背景上按下并点击时关闭；从弹窗内拖选到外部松手不应关闭。
 #[component]
 pub fn Overlay(
     outer: &'static str,
@@ -48,7 +39,6 @@ pub fn Overlay(
     }
 }
 
-/// 当前打开哪个弹窗。`None` = 没有。
 #[derive(Clone, PartialEq)]
 pub enum DialogKind {
     NewIssue(NewIssueDraft),
@@ -64,7 +54,7 @@ pub struct PackDraft {
     pub version: String,
 }
 
-/// 出包这一趟的界面账。关弹窗也留着,按钮三个点再点回来。
+/// 关闭弹窗后仍保留打包进度。
 #[derive(Clone, PartialEq, Default)]
 pub struct PackJob {
     pub project_id: Option<bw::model::ProjectId>,
@@ -126,8 +116,6 @@ pub struct ReleaseDraft {
     pub included: Vec<IssueId>,
 }
 
-/// 新建 issue 弹窗。含负责人字段;创建后同步到项目挂的那个远端(走 CreateIssue +
-/// 可选 SetIssueAssignee)。
 #[component]
 pub fn NewIssueDialog(
     p: ProjectVm,
@@ -142,16 +130,14 @@ pub fn NewIssueDialog(
     let pid = p.id;
     let title_ok = !title.read().trim().is_empty();
     let where_note = if p.view_all {
-        // 同步到**这个项目真正挂的那个平台**,不是写死的某一个;认不出就只说
-        // 「同步到远端」,别替人认一个平台。
         match p.remote_brand.as_str() {
-            "" => "新建的 issue 进待办池·未排期;创建后同步到远端。".to_string(),
-            brand => format!("新建的 issue 进待办池·未排期;创建后同步到 {brand}。"),
+            "" => "新建的 Issue 进入未排期；创建后同步到远端。".to_string(),
+            brand => format!("新建的 Issue 进入未排期；创建后同步到 {brand}。"),
         }
     } else if !p.viewing_plan.is_empty() {
-        format!("新建的 issue 排进版本「{}」。", p.viewing_plan)
+        format!("新建的 Issue 排进版本「{}」。", p.viewing_plan)
     } else {
-        "新建的 issue 进待办池·未排期。".to_string()
+        "新建的 Issue 进入未排期。".to_string()
     };
     rsx! {
         Overlay {
@@ -170,7 +156,7 @@ pub fn NewIssueDialog(
                 div { class: "plan-modal-body",
                     div { class: "field",
                         label { "标题 *" }
-                        input { class: "input", value: "{title}", placeholder: "这张活要干什么",
+                        input { class: "input", value: "{title}", placeholder: "Issue 标题",
                             oninput: move |e| title.set(e.value()) }
                     }
                     div { class: "field",
@@ -204,8 +190,6 @@ pub fn NewIssueDialog(
                             onclick: move |_| {
                                 let t = title.read().trim().to_string();
                                 if t.is_empty() { return; }
-                                // 看某个计划版本只带 plan;看周或全部进待办池。
-                                // 不再给新建活打 bw:week。
                                 let viewing_custom = !p.viewing_plan.is_empty();
                                 b.cmd(Command::CreateIssue {
                                     project_id: pid,
@@ -231,25 +215,20 @@ pub fn NewIssueDialog(
     }
 }
 
-/// 创建版本弹窗。默认起止是本周周一到周五。
 #[component]
 pub fn CreateVersionDialog(
     p: ProjectVm,
     mut dialog: Signal<Option<DialogKind>>,
     bridge: Bridge,
 ) -> Element {
-    // 草稿存组件局部 state(use_signal),弹窗关了就丢。
     let mut name = use_signal(|| p.suggested_next.clone());
     let week = p.current_week.clone();
     let mut start = use_signal(|| bw::isoweek::week_monday_ymd(&week).unwrap_or_default());
     let mut due = use_signal(|| bw::isoweek::week_friday_ymd(&week).unwrap_or_default());
     let picked = use_signal(Vec::<IssueId>::new);
-    // 选择器默认收着,点 ＋ 才展开 —— 一般建版当场不挑活。
     let mut picking = use_signal(|| false);
     let mut query = use_signal(String::new);
-    // 可划归的候选:还没收口的活都算,不限于未排期的。已在别的版本里的挑进来
-    // 是给既有 issue 增加版本关系。运作活①自己不进候选 —— 建版
-    // 时会给这个版本另起一张。
+    // 排除版本计划 issue；创建版本时会单独创建或复用它。
     let candidates: Vec<&CardItemVm> = p
         .board
         .columns
@@ -279,7 +258,6 @@ pub fn CreateVersionDialog(
         .filter(|c| picked_ids.contains(&c.id))
         .copied()
         .collect();
-    // 搜号(带不带 # 都认)或标题。空搜索给全量候选。
     let q = query.read().trim().to_lowercase();
     let q = q.strip_prefix('#').unwrap_or(&q).to_string();
     let hits: Vec<&CardItemVm> = candidates
@@ -347,7 +325,7 @@ pub fn CreateVersionDialog(
                             label { "划归的 issue" }
                             button {
                                 class: "btn btn-ghost btn-quiet btn-icon",
-                                title: if open { "收起" } else { "挑活划归到这个版本" },
+                                title: if open { "收起" } else { "选择此版本的 Issue" },
                                 onclick: move |_| { let now = *picking.read(); picking.set(!now); },
                                 {if open { "－" } else { "＋" }}
                             }
@@ -368,7 +346,7 @@ pub fn CreateVersionDialog(
                             }
                             div { class: "check-list",
                                 if hits.is_empty() {
-                                    div { class: "hint", "没有可划归的活" }
+                                    div { class: "hint", "暂无可加入此版本的 Issue" }
                                 }
                                 for c in hits.iter() {
                                     {check_row(c, picked)}
@@ -434,7 +412,6 @@ fn check_row(c: &CardItemVm, mut picked: Signal<Vec<IssueId>>) -> Element {
     }
 }
 
-/// 已选的一张活。点 ✕ 摘掉,不用回选择器里取消勾。
 fn picked_tag(c: &CardItemVm, mut picked: Signal<Vec<IssueId>>) -> Element {
     let id = c.id;
     rsx! {
@@ -450,7 +427,6 @@ fn picked_tag(c: &CardItemVm, mut picked: Signal<Vec<IssueId>>) -> Element {
     }
 }
 
-/// 排期弹窗(拖未排期卡到已排期段触发):只排进已有计划版本,不再写周标签。
 #[component]
 pub fn ScheduleDialog(
     p: ProjectVm,
@@ -485,9 +461,6 @@ pub fn ScheduleDialog(
                         }
                     }
                 }
-                div { class: "hint",
-                    "打 bw:plan:。旧周标签只读回显示,排期不再新写。"
-                }
                 div { class: "dialog-actions",
                     button { class: "btn btn-secondary", onclick: move |_| schedule.set(None), "取消" }
                     button {
@@ -507,7 +480,6 @@ pub fn ScheduleDialog(
     }
 }
 
-/// 拖卡片松手后的确认框。完成走合入;拒绝走作废(必须写原因);其余走状态转移。
 #[component]
 pub fn ConfirmMoveDialog(
     pm: PendingMove,
@@ -523,12 +495,12 @@ pub fn ConfirmMoveDialog(
     let reason_label = if pm.to == IssueStatus::Blocked {
         "阻塞原因"
     } else {
-        "作废原因"
+        "取消原因"
     };
     let reason_hint = if pm.to == IssueStatus::Blocked {
         "阻塞必须写原因,会写进 issue 评论"
     } else {
-        "作废必须写原因,会写进 issue 评论"
+        "取消必须写原因，会写入 Issue 评论"
     };
     rsx! {
         Overlay {
@@ -551,7 +523,7 @@ pub fn ConfirmMoveDialog(
                 }
                 if pm.to == IssueStatus::InReview && pm.pr_number == 0 {
                     div { class: "dialog-body",
-                        "这张活没有绑定的 MR。确认后仍移到待评审,合入时只会关 issue。"
+                        "此 Issue 没有关联 MR。确认后移到待评审；后续确认完成时仅关闭 Issue。"
                     }
                 }
                 if need_reason {
@@ -566,7 +538,7 @@ pub fn ConfirmMoveDialog(
                     }
                 }
                 div { class: "dialog-actions",
-                    button { class: "btn btn-secondary", onclick: move |_| pending.set(None), "算了" }
+                    button { class: "btn btn-secondary", onclick: move |_| pending.set(None), "返回" }
                     button {
                         class: if pm.to == IssueStatus::Cancelled { "btn btn-danger" } else { "btn btn-primary" },
                         disabled: need_reason && reason.read().trim().is_empty(),
@@ -595,14 +567,13 @@ pub fn ConfirmMoveDialog(
                             }
                             pending.set(None);
                         },
-                        "确认"
+                        if pm.to == IssueStatus::Cancelled { "取消 Issue" } else { "确认" }
                     }
                 }
         }
     }
 }
 
-/// 非法拖的说明。只有「知道了」。
 #[component]
 pub fn RejectMoveDialog(pr: PendingReject, mut reject: Signal<Option<PendingReject>>) -> Element {
     let from = plan_status_label(pr.from);
@@ -626,7 +597,6 @@ pub fn RejectMoveDialog(pr: PendingReject, mut reject: Signal<Option<PendingReje
     }
 }
 
-/// 删除版本弹窗:选一个版本删,确认后清掉 milestone + 摘掉 issues 上的 bw:plan 标签。
 #[component]
 pub fn DeleteVersionDialog(
     p: ProjectVm,
@@ -670,7 +640,7 @@ pub fn DeleteVersionDialog(
                     if versions.is_empty() {
                         div { class: "hint", "没有未发的版本可删。" }
                     }
-                    div { class: "hint", "确认后摘掉 issue 上的 bw:plan 标签。同名里程碑能删就删,删不成不影响标签。" }
+                    div { class: "hint", "Issue 将移出该版本，并尝试删除对应里程碑。Issue 本身保留。" }
                 }
                 div { class: "plan-modal-foot",
                     span {}
@@ -695,8 +665,6 @@ pub fn DeleteVersionDialog(
     }
 }
 
-/// 出包弹窗。号锁死当前版本视图。确认后出包再验包,不打标签。
-/// 关闭只收窗,后台继续;停止再问一句,确认后杀进程并清中间件。
 #[component]
 pub fn PackDialog(
     draft: PackDraft,
@@ -902,7 +870,6 @@ fn PackStopConfirm(
     }
 }
 
-/// 发版本弹窗。号锁死当前版本视图,不能改。
 #[component]
 pub fn ReleaseDialog(
     draft: ReleaseDraft,
@@ -933,7 +900,7 @@ pub fn ReleaseDialog(
                     label { "说明" }
                     textarea { class: "input", value: "{note}", oninput: move |e| note.set(e.value()) }
                 }
-                div { class: "hint", "只有在研且还没打 tag 的号能发。确认后给这份代码打远端 tag。没有已完成的活也能发;勾上的才打发版标签。不出包。" }
+                div { class: "hint", "发布当前在研版本，创建远端发布记录，并关联勾选的 Issue。此操作不生成安装包。" }
                 div { class: "dialog-actions",
                     button { class: "btn btn-secondary", onclick: move |_| dialog.set(None), "取消" }
                     button {

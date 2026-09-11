@@ -1,23 +1,15 @@
-//! 出包:pack → e2e,不打标签。
-//!
-//! 计划屏「出包」走这里。`CutRelease` / 「发版本」只建远端 Release,不拉脚本。
-//! 脚本入口与 JSONL 见 ADR-0005。这一层只拉起、读 stdout、报 [`ProgressLine`],
-//! 不在壳里 `CreateProcess`。
-
 use super::{App, AppError, ProgressCase, ProgressLine, Result};
 use crate::{command::Event, model::ProjectId};
 use serde::Deserialize;
 use std::{path::Path, process::Stdio, time::Duration};
 use tokio::io::{AsyncBufReadExt, AsyncReadExt, BufReader};
 
-/// 弹窗第一行。避开接入屏那几个 1/2/3,两边同时订广播也不会串行。
+/// 与接入进度使用不同步号，避免广播订阅混淆。
 const STEP_PACK: u8 = 21;
-/// 弹窗第二行。
 const STEP_E2E: u8 = 22;
 const PACK_REL: &str = ".bw/release/pack/pack.cmd";
 const E2E_REL: &str = ".bw/release/e2e/e2e.cmd";
 
-/// 出包含 release 编译 + ISCC + 静默装校验,验包装完还要点两屏。
 const STAGE_TIMEOUT: Duration = Duration::from_secs(45 * 60);
 
 impl App {
@@ -269,8 +261,7 @@ fn trim_line_ending(raw: &mut Vec<u8>) {
     }
 }
 
-/// 协议行是 UTF-8。Windows 上 cargo / ISCC / PowerShell 常往 stdout 漏 GBK 或 UTF-16,
-/// 那些行当噪声丢掉,不能整段读失败(ADR-0005:stdout 只认 JSONL)。
+/// 仅解析 UTF-8 JSONL 协议行；外部命令混入的其他编码行跳过。
 fn decode_ship_line(raw: &[u8]) -> Option<String> {
     if raw.is_empty() {
         return None;

@@ -1,10 +1,4 @@
-//! Windows GUI 父进程（`windows_subsystem = "windows"`）下，子控制台进程
-//! 默认会闪出一个 cmd 窗口。探测 / git / codehub-cli 都不需要那扇窗。
-//! ConPTY 路径不要走这里——伪控制台自己提供 TTY。
-//!
-//! `.cmd` / `.bat` 不是 PE。`CreateProcess` 直接打会 `ERROR_BAD_EXE_FORMAT`。
-//! 本模块的 tokio/std 入口在 Windows 上改走 `cmd.exe /c`。ConPTY 用
-//! [`is_windows_script`] 自己包一层，不要套 `CREATE_NO_WINDOW`。
+//! Windows GUI 应用启动控制台子进程时隐藏窗口；.cmd 通过 cmd.exe 执行。
 
 use std::ffi::OsStr;
 use std::path::Path;
@@ -12,7 +6,6 @@ use std::path::Path;
 #[cfg(windows)]
 const CREATE_NO_WINDOW: u32 = 0x0800_0000;
 
-/// True when `program` is a Windows batch script (not a PE image).
 pub fn is_windows_script(program: impl AsRef<OsStr>) -> bool {
     Path::new(program.as_ref())
         .extension()
@@ -61,8 +54,6 @@ pub fn std_cmd(program: impl AsRef<OsStr>) -> std::process::Command {
     }
 }
 
-/// 把子进程 stderr 转成去尾空白的人话字符串 —— codehub/github 两臂的 CLI
-/// 调用都靠它把报错原文带出来。两臂原本各抄一份(只差参数名),收这里共享。
 pub fn stderr_text(o: &std::process::Output) -> String {
     String::from_utf8_lossy(&o.stderr).trim().to_string()
 }

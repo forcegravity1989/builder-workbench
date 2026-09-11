@@ -1,12 +1,3 @@
-//! 项目内 · 计划。结构照 `docs/hifi/plan.html` 的 `midBar`/`kanban`/
-//! `detail`/`listView`/弹窗排:右上角下拉(全部 issue / 各 `v0.x`)+ 中栏
-//! (工具条 + 版本目标/进度条/运作活,或列表视图)+ 四列看板。
-//! 详情与弹窗都是屏幕居中浮层。
-//!
-//! 看板四列:待办(未排期/已排期)→ 进行中 → 待处理(待评审/阻塞)→ 已完成
-//! (完成/拒绝)。两段列默认显示第一段,点子标题切到第二段。卡面无开工按钮,
-//! 开工/排期/Complete 等入口在详情弹窗。
-
 mod detail;
 mod kanban;
 mod list_view;
@@ -27,14 +18,12 @@ use plan_dialogs::{
     ScheduleDialog,
 };
 
-/// 列表/看板视图模式。
 #[derive(Clone, Copy, PartialEq, Eq)]
 pub enum ViewMode {
     Board,
     List,
 }
 
-/// 列表筛选(对齐 opt:listFilter)。
 #[derive(Clone, PartialEq)]
 pub struct ListFilter {
     pub preset: String, // open | assigned | mine
@@ -62,7 +51,6 @@ impl ListFilter {
         if self.preset == "mine" && c.author != current_user {
             return false;
         }
-        // open 预设不过滤(显示全部);assigned/mine 已过滤
         if !self.plan.is_empty() {
             if self.plan == "unscheduled" {
                 if !c.plan_versions.is_empty() {
@@ -85,7 +73,6 @@ impl ListFilter {
     }
 }
 
-/// 「全部 issue」视图上的筛选(保留给 board 用,现 board 不再筛)。
 #[derive(Clone, Default, PartialEq)]
 struct Filters {
     category: String,
@@ -191,8 +178,6 @@ pub fn View(p: ProjectVm, bridge: Bridge) -> Element {
         }
     }
 }
-
-// ── 中栏顶部 ────────────────────────────────────────
 
 #[component]
 fn Toolbar(
@@ -388,7 +373,7 @@ fn Toolbar(
                             dialog.set(Some(DialogKind::Release(ReleaseDraft {
                                 project_id: pid,
                                 version: rel_ver.clone(),
-                                note: format!("版本 {} 完成的活", rel_ver),
+                                note: format!("版本 {} 已完成的 Issue", rel_ver),
                                 included: done_ids.clone(),
                             })));
                         },
@@ -463,7 +448,6 @@ fn WeekHead(p: ProjectVm) -> Element {
     }
 }
 
-/// 「开始本版本」产出的草稿活标,等人确认。
 fn draft_confirm(p: &ProjectVm, bridge: &Bridge) -> Element {
     if p.pending_drafts.is_empty() {
         return rsx! {};
@@ -476,7 +460,7 @@ fn draft_confirm(p: &ProjectVm, bridge: &Bridge) -> Element {
     rsx! {
         div { class: "card flex-none",
             div { class: "text-muted",
-                "{week} 的运作活①已开工,下面是草稿活标。确认之前一张活都还没建。"
+                "{week} 的工作草稿，确认后创建。"
             }
             for t in titles.iter() {
                 div { key: "{t}", "· {t}" }
@@ -489,7 +473,7 @@ fn draft_confirm(p: &ProjectVm, bridge: &Bridge) -> Element {
                         week: week.clone(),
                         titles: titles.clone(),
                     }),
-                    "确认,按这些建活"
+                    "确认创建 Issue"
                 }
                 button {
                     class: "btn btn-secondary",

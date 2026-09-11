@@ -1,6 +1,3 @@
-//! 项目内 · 总览。结构照 `docs/hifi/overview.html`:横幅、名片|北极星、
-//! 版本计划与进展、滞后+引领合图、项目指标 · SDLC。
-
 mod metrics;
 mod version;
 
@@ -23,12 +20,11 @@ pub fn View(p: ProjectVm, bridge: Bridge) -> Element {
             div { class: "page-head",
                 div {
                     h1 { "总览" }
-                    p { class: "page-desc", "项目健康看板:名片、北极星、版本进展、指标。没数据是灰,不是绿。" }
                 }
                 div { class: "page-actions",
                     button {
                         class: "btn btn-secondary",
-                        title: "先快进主检出再重读",
+                        title: "更新仓库并刷新数据",
                         onclick: {
                             let b = bridge.clone();
                             move |_| b.send(Req::Refresh)
@@ -62,7 +58,7 @@ fn bootstrap_banner(mr: crate::vm::CardMrVm, bridge: &Bridge, nav: PanelNav) -> 
     rsx! {
         div { class: "ov-banner",
             span {
-                "项目约定还没合进默认分支 · #{mr.number}「{mr.status}」· {pr}。不合入的话别人再纳入看不见这次改动。"
+                "项目约定待合入 · #{mr.number}「{mr.status}」· {pr}"
             }
             if mr.mergeable {
                 if let Some(id) = id {
@@ -171,7 +167,7 @@ fn card_block(
                     span { class: "row",
                         button {
                             class: "btn btn-secondary",
-                            title: "把工作区的主检出快进到远端最新(git pull --ff-only)",
+                            title: "更新本地仓库",
                             onclick: move |_| b_pull.cmd(Command::PullWorkspace { project_id: pid }),
                             "↻ 拉到最新"
                         }
@@ -197,7 +193,7 @@ fn card_block(
                     }
                 }
                 div { class: "field",
-                    label { "三个月长成什么样(北极星)" }
+                    label { "目标方向" }
                     textarea {
                         class: "input",
                         value: "{draft.read().north}",
@@ -286,13 +282,13 @@ fn card_block(
                             });
                             editing.set(false);
                         },
-                        "保存 · 建一张活提 MR"
+                        "提交修改供评审"
                     }
                 }
             } else {
                 {charter_line("想做什么", &c.brief)}
                 {charter_line("对标", &c.benchmark)}
-                {charter_line("名片北极星", &c.north_star)}
+                {charter_line("目标方向", &c.north_star)}
                 {charter_line("项目群", &c.chat)}
                 div { class: "charter-meta",
                     span { class: "mono", "{c.remote}" }
@@ -314,7 +310,7 @@ fn charter_line(k: &str, v: &str) -> Element {
 fn north_star_block(p: &ProjectVm, bridge: &Bridge) -> Element {
     rsx! {
         div { class: "card ov-block",
-            div { class: "ov-kicker", "北极星" }
+            div { class: "ov-kicker", "北极星指标" }
             if let Some(e) = p.metrics.error.as_ref() {
                 div { class: "empty text-danger", "指标文件读不了:{e}" }
             } else {
@@ -351,7 +347,7 @@ fn north_star_block(p: &ProjectVm, bridge: &Bridge) -> Element {
                             }
                         }
                     }
-                    None => rsx! { div { class: "empty", "还没定北极星。" } },
+                    None => rsx! { div { class: "empty", "尚未定义北极星指标。" } },
                 }
             }
         }

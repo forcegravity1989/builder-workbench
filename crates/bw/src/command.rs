@@ -1,30 +1,15 @@
-//! 命令与事件 —— 界面和内核之间唯一的通路。
-//!
-//! 界面只发 [`Command`]、只收 [`Event`],别的一概不做:不直接开库、不直接写
-//! 仓文件、不自己判断状态能不能转。所有用例与守卫都在 [`crate::app`]。
-//!
-//! 这里只列真接了实现的命令。**没接的不放进枚举** —— 一条能发出去但内核
-//! 悄悄什么都不做的命令,比没有这条命令更糟。
-
 use crate::model::{Category, IssueId, IssueStatus, ProjectId};
 
-/// 总览「编辑项目名片」一次填完的仓文件字段。
-///
-/// 正本是 `.bw/project.toml`。接入时只填前四项,
-/// 项目群落默认或仓里已有的;总览保存会把后几项一并写回。在研版本不进仓文件。
 #[derive(Clone, Debug, PartialEq, Eq, Default)]
 pub struct ProjectIntent {
     pub name: String,
-    /// 想做什么。
     pub brief: String,
-    /// 最像的对标。
     pub benchmark: String,
-    /// 三个月长成什么样(北极星一句话)。
     pub north_star: String,
     /// 项目群提供方。空或 `"none"` = 不配群。
     pub chat_provider: String,
     pub chat_group: String,
-    /// 同步哪些事件(`review` / `merged` / `release`)。空数组 = 静音。
+    /// 使用 NotifyEvent::key 的事件名；空数组表示关闭全部通知。
     pub chat_notify: Vec<String>,
 }
 
@@ -40,8 +25,6 @@ pub struct RemoteRef {
 
 #[derive(Clone, Debug, PartialEq)]
 pub enum Command {
-    // ── 接入 ──────────────────────────────────────────────
-    /// 接入项目:写项目行 + 备好工作区。名片字段落 `.bw/project.toml`,不落库。
     CreateProject {
         slug: String,
         intent: ProjectIntent,
@@ -49,33 +32,30 @@ pub enum Command {
         /// 空 = 用工作区根目录下的 `<slug>`。
         workspace_path: String,
     },
-    /// 总览「编辑→保存」:改 `.bw/project.toml`
-    /// (名片 + 项目群),走一张轻量活。
     EditProjectCard {
         project_id: ProjectId,
         intent: ProjectIntent,
     },
 
-    // ── 规范铺底(运作活③)只在第一次纳入时自动跑,没有二次铺底命令 ──
-    /// 把一个项目从工作台上移走。**只动库,不动仓** —— 仓是正本,里面是真实
-    /// 的劳动成果。界面上要人点两下才发得出这条(第一下问「真移走?」)。
-    RemoveProject { project_id: ProjectId },
-    /// 去会话:把 Orca 切到这张活的树。有 Claude session id 再尽量点回那条 tab。
-    ///
-    /// **不改活的状态、不发任何 prompt** —— 切树成功就算成功。和 ▶开工 的
-    /// 区别:▶开工 会把活推到「进行中」,这条不会。
-    ReopenSession { issue_id: IssueId },
-    /// 纯读:按「缺 / 过期 / 人改过 / 一致」四类对账,不建活不写仓。
-    ReconcileStandard { project_id: ProjectId },
+    // 只移除本机项目记录，保留仓库和 worktree。
+    RemoveProject {
+        project_id: ProjectId,
+    },
+    /// 只切换已有会话，不改变 issue 状态、不发送提示词。
+    ReopenSession {
+        issue_id: IssueId,
+    },
+    /// 纯读:按「缺 / 过期 / 人改过 / 一致」四类对账,不创建 Issue不写仓。
+    ReconcileStandard {
+        project_id: ProjectId,
+    },
 
-    // ── 计划 ──────────────────────────────────────────────
-    /// 人确认草稿后真的建活(`origin = agent_split`)。
     ConfirmWeekDraft {
         project_id: ProjectId,
         week: String,
         titles: Vec<String>,
     },
-    /// 建一张活。`category` 决定默认工具与 workflow(本机 settings → 残留映射 → 产品默认)。
+    /// 类别决定工具与 workflow；工具从本机设置读取，未设置时使用产品默认。
     CreateIssue {
         project_id: ProjectId,
         title: String,
@@ -87,15 +67,14 @@ pub enum Command {
         /// 排进版本(`bw:plan:<name>`)。空 = 未排期。`week_of` 不再写标签。
         plan: String,
     },
-    /// 摘排期:壳侧只传空 `week_of` 把活移回待办池。不再用这条新写周标签。
     ScheduleIssue {
         id: IssueId,
         week_of: Option<String>,
     },
-    /// 纳入计划版本(`bw:plan:<name>`)。已有版本关系保留。
-    ScheduleToPlan { id: IssueId, plan: String },
-    /// 建一个版本:落运作活①并打 `bw:plan:<name>`,纳入的活也打标。
-    /// 同名里程碑只补充。与发版号 `CutRelease` 不同。
+    ScheduleToPlan {
+        id: IssueId,
+        plan: String,
+    },
     CreatePlanVersion {
         project_id: ProjectId,
         name: String,
@@ -103,72 +82,71 @@ pub enum Command {
         due: String,
         included: Vec<IssueId>,
     },
-    /// 删一个未发版本:给挂着 `bw:plan:<name>` 的活摘掉该标签,再尽力删同名
-    /// 里程碑。已发的号拒收。
-    DeletePlanVersion { project_id: ProjectId, name: String },
-    /// 未发版本改名:先改标签定义和 issue 上的 `bw:plan:`,里程碑标题只补充。
+    DeletePlanVersion {
+        project_id: ProjectId,
+        name: String,
+    },
     RenamePlanVersion {
         project_id: ProjectId,
         from: String,
         to: String,
     },
-    /// 发版本:给选中的活写版本号 + 建远端 codehub/GitHub Release + 打 `bw:released:*` 标签。
-    /// 不做出包。出包走 [`Command::PackRelease`]。
+    /// 先创建远端 Release，再写发版标签；打包使用 PackRelease。
     CutRelease {
         project_id: ProjectId,
         version: String,
         note: String,
         included: Vec<IssueId>,
     },
-    /// 出包:拉仓里 `pack.cmd` 再拉 `e2e.cmd`,不打标签、不建 Release。协议见 ADR-0005。
     PackRelease {
         project_id: ProjectId,
         version: String,
     },
-    /// 把项目工作区的主检出快进到远端最新。
-    ///
-    /// **为什么需要人手点这一下**:Workbench 只在「合入并完成」某张活的时候自动拉
-    /// 一次。人在 GitHub / codehub 网页上直接合了 MR,Workbench 完全不知道 —— 工作
-    /// 区就一直停在旧提交,合进去的 `.bw/` 那些件在本机根本不存在,而界面还照
-    /// 常显示旧内容。以前没有任何入口能补这一下。
-    PullWorkspace { project_id: ProjectId },
+    PullWorkspace {
+        project_id: ProjectId,
+    },
 
-    // ── 干活 ──────────────────────────────────────────────
-    /// 唯一的干活入口。跑完最远只到「评审中」。
-    RunIssue { id: IssueId },
-    /// 「提交并开 MR」:把这张活 worktree 里 agent 干出来的改动提交、推分支、
-    /// 开 MR,然后把活推到「评审中」。
-    ///
-    /// **由人点**。agent 什么时候算干完只有人知道;而且这一下之后活就进了别人
-    /// 的视线,不该由程序替人决定。它**最远只到「评审中」** —— 「完成」还是得
-    /// 人在评审完之后再点一次。
-    SubmitIssueWork { id: IssueId },
-    /// 状态转移。合法性由 `can_transition_to` 守;「完成」只能是人显式发这条
-    /// (或 `MergeAndSettle`)。未排期 / 待办 / 进行中 / 评审中 / 阻塞都能进 Done。
-    /// 作废走 `Cancelled`,不是 Done。
-    TransitionIssue { id: IssueId, to: IssueStatus },
-    /// 给已有的活补/改类别标签。读回时用它查本机开工工具(再回退残留/产品默认)。
-    SetIssueCategory { id: IssueId, category: Category },
-    /// 改 issue 的责任人(codehub assignee)。空串 = 取消指派。走 codehub API,
-    /// 不在本地另存一套。
-    SetIssueAssignee { id: IssueId, assignee: String },
-    /// 改 issue 的标题与正文(codehub issue update)。详情弹窗双击编辑后发这条。
+    RunIssue {
+        id: IssueId,
+    },
+    SubmitIssueWork {
+        id: IssueId,
+    },
+    /// 完成必须由用户显式发起；合法转移由 can_transition_to 检查。
+    TransitionIssue {
+        id: IssueId,
+        to: IssueStatus,
+    },
+    SetIssueCategory {
+        id: IssueId,
+        category: Category,
+    },
+    SetIssueAssignee {
+        id: IssueId,
+        assignee: String,
+    },
     EditIssue {
         id: IssueId,
         title: String,
         body: String,
     },
-    /// 单查一张 issue 的正文。issue 列表(list)设计上不带正文,详情弹窗打开时
-    /// 发这条补正文 —— 走 `view_issue` 单查拿回 `description`。bridge 收到回执后
-    /// 补丁进 last_gather,不重拉整个 list(issue #72)。
-    FetchIssue { id: IssueId },
-    /// 卡住了。如实停在原地,可以重试,不假装前进。
-    BlockIssue { id: IssueId, reason: String },
-    /// 作废:写取消原因进评论、打 `bw:status:cancelled`、关掉远端 issue。
-    /// 不是完成。原因不能空。
-    CancelIssue { id: IssueId, reason: String },
-    /// 删掉这张活的本机会话行和它的 worktree。不动远端 issue。
-    DeleteSession { id: IssueId },
+    /// 列表不带正文，详情打开时单独查询。
+    FetchIssue {
+        id: IssueId,
+    },
+    BlockIssue {
+        id: IssueId,
+        reason: String,
+    },
+    /// 原因不能为空；写取消标签并关闭 issue，不能标为完成。
+    CancelIssue {
+        id: IssueId,
+        reason: String,
+    },
+    /// 删除本机会话和 worktree，保留远端 issue。
+    DeleteSession {
+        id: IssueId,
+    },
 
     // ── 配置 ──────────────────────────────────────────────
     /// 保存本机「我用什么工具」。只写 settings,不进仓。`workflow` 带着不存。
@@ -179,56 +157,60 @@ pub enum Command {
         workflow: String,
     },
     /// 手动探活一次。项目墙「测一下」与配置屏共用。
-    ProbeTool { name: String },
+    ProbeTool {
+        name: String,
+    },
     /// 改「工作区根目录」——新接入的项目默认落在哪。**只是本机设置**,存 `app_meta`,
     /// 不进任何仓文件:换台机器仓拉下来还在原处,这个值本来就该各人各配。
     ///
     /// 只影响**之后**接入的项目:已接入的项目行里各自记着自己的仓路径,不会被这
     /// 一改牵着走(不然改一下根目录,已有项目就集体找不到仓了)。
-    SetWorkspacesRoot { path: String },
+    SetWorkspacesRoot {
+        path: String,
+    },
     /// 改「Orca 网页地址」——会话屏 iframe 打开的那条配对 URL(带 token)。
     /// **只存本机 `settings.toml`,不进仓** —— 是这台机器看 Orca web 的事。
     /// `BW_ORCA_WEB_URL` 仍可覆盖(开发期)。空串 = 清掉。
-    SetOrcaWebUrl { url: String },
+    SetOrcaWebUrl {
+        url: String,
+    },
     /// 改界面配色(`claude` / `apple`,设计系统的两套 token)。只存本机
     /// `settings.toml`,不进仓。不认识的值 = 回默认。
-    SetTheme { theme: String },
+    SetTheme {
+        theme: String,
+    },
 
-    /// 通知屏的「合入并完成」。先真的合 MR,再把活推「完成」——顺序反了,
-    /// 合入失败就会留下一张已完成、改动却还挂在分支上的活。
-    MergeAndSettle { id: IssueId },
+    /// 先合入 MR，成功后才关闭 issue。
+    MergeAndSettle {
+        id: IssueId,
+    },
 
-    /// 把一件事同步进项目群。**调用即完成**:不写库、不去重、不排重试队列。
     SyncNotifyToChat {
         issue_id: IssueId,
-        /// `review` / `merged` / `release`。
+        /// NotifyEvent::key 返回的事件名。
         event_type: String,
     },
-    /// ■停止:停掉这件活的运行。**状态原地不动**——停下来既不是失败也
-    /// 不是完成,人随时能再点▶跑接回去。PTY 已封存,这条现在只停本机记账
-    /// (live=false),不真去关什么进程 —— 没真实进程信号就当空闲,不假 live。
-    CancelRun { id: IssueId },
-    /// 总览手填卡:把人填的今天这个数记进账本 `.bw/metrics/readings.jsonl`(当天覆盖)。
-    /// 只收 C 类(`collect.kind = "manual"`)。空值拒。
+    /// 当前未接入 Orca 进程停止接口，不改变 issue 状态。
+    CancelRun {
+        id: IssueId,
+    },
+    /// 同日同指标更新原值，保存到指标记录工作树。
     RecordManualMetric {
         project_id: ProjectId,
         name: String,
         value: String,
     },
 
-    /// 把问题报到 **workbench 自己的仓**(绿区 `z30026659/workbench`，走 codehub-cli),
-    /// 不是打开着的被管项目,也不读本机 git origin。标题人填;`attach_log` 为真且 `bw.log` 有文件才附上。
-    ReportWorkbenchIssue { title: String, attach_log: bool },
+    ReportWorkbenchIssue {
+        title: String,
+        attach_log: bool,
+    },
 }
 
-/// 一个工具探活的结果。探不到就是探不到,不猜。
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum ProbeResult {
-    /// 探到了,带上探到的路径或版本。
     Found(String),
-    /// 本机没装 / 没跑起来。
     Missing(String),
-    /// 还没接这个工具的探活实现 —— 如实说「不知道」,不报绿也不报红。
     Unknown(String),
 }
 
@@ -237,26 +219,21 @@ pub enum Event {
     ProjectCreated {
         id: ProjectId,
         slug: String,
-        /// 仓里本来就有 `.bw/project.toml` —— 这次是「接手已有项目」,
-        /// 人手填过的字段一个都没覆盖。
         adopted: bool,
     },
     ProjectCardEditPending {
         issue_id: IssueId,
     },
-    /// 项目从工作台上移走了。`issues` = 跟着一起删掉的活数,好让人知道
-    /// 自己刚才丢掉了多少账;仓和活自己的 worktree 都还在硬盘上。
+    /// 本机项目记录已移除；仓库和 worktree 仍保留。
     ProjectRemoved {
         slug: String,
         issues: u64,
         workspace: String,
     },
-    /// 上次那场会话接回来了。`live` = 之前就开着、这次什么都没做。
     SessionReopened {
         issue_id: IssueId,
         live: bool,
     },
-    /// 规范铺底第 1 步真的把文件写进仓并提交了。`files` 是实际落盘的路径。
     StandardBootstrapped {
         project_id: ProjectId,
         issue_id: IssueId,
@@ -311,13 +288,13 @@ pub enum Event {
         id: IssueId,
     },
     /// `FetchIssue` 的回执:单查拉回的正文。bridge 用它补丁 last_gather,
-    /// 不重拉整个 issue 列表。空串如实 = 这张活本来就没写正文。
+    /// 不重拉整个 issue 列表。空串如实 = 此 Issue本来就没写正文。
     IssueBodyFetched {
         id: IssueId,
         body: String,
     },
     /// 一次 ▶跑 结束。`summary` 原样来自执行器(mock 的自带【mock】字样)。
-    /// `tool` 是这张活读回的开工工具,壳用来决定会话屏落在哪一页。
+    /// `tool` 是此 Issue读回的开工工具,壳用来决定会话屏落在哪一页。
     /// `embed_url` 只给 Open Design:内嵌页该打开的 loopback 地址;空 = 不是 OD 或没灌上。
     IssueRan {
         id: IssueId,
@@ -335,8 +312,6 @@ pub enum Event {
         pr_number: u32,
         note: String,
     },
-    /// 工作区根目录改好了。`pinned` = 有几个原本没填仓路径的老项目,被就地钉死在
-    /// 了老位置(它们一个都没搬,只是从此不再跟着根目录走)。
     WorkspacesRootChanged {
         path: String,
         pinned: u32,
@@ -351,7 +326,6 @@ pub enum Event {
     IssueTransitioned {
         id: IssueId,
         to: IssueStatus,
-        /// 这次是不是真的结清了(人点「完成」那一下)。已经结过就是 `false`。
         settled: bool,
     },
     IssueBlocked {
@@ -364,19 +338,16 @@ pub enum Event {
         version: String,
         rows_written: bool,
     },
-    /// 出包 + 验包都过了。不表示已经发版。
     ReleasePacked {
         version: String,
         artifact_dir: String,
         passed: u32,
         total: u32,
     },
-    /// 人点停止：进程树已杀、这次中间件已清。
     ReleasePackStopped {
         version: String,
     },
-    /// 拉工作区的结果。`moved` = 主检出真的往前走了;`note` 是给人看的一句话,
-    /// 拉不动时装的是 git 的原话(压成一行),**不吞**。
+    /// moved 表示主检出是否更新；失败原因保留在 note 中。
     WorkspacePulled {
         moved: bool,
         note: String,
@@ -388,8 +359,6 @@ pub enum Event {
         name: String,
         result: ProbeResult,
     },
-    /// 往项目群发了(或没发成)一条。**不落库**——通知行上那句「已发到群 ✓」
-    /// 和事件流里那一条是同一个事件在两处的展示,只在当前这次运行里存在。
     ChatNotifySent {
         number: u32,
         event_type: String,
@@ -398,41 +367,36 @@ pub enum Event {
         note: String,
     },
 
-    /// 合入并完成走完了。`merged=false` = 这张活本来就没有 MR 可合(本地项目
-    /// 或者还没开 PR),只走了「完成」那一步。
+    /// 仅表示 MR 是否实际合入，不代表本地清理全部成功。
     IssueMerged {
         id: IssueId,
         pr_number: u32,
         merged: bool,
-        /// 合入之后在本机做的收尾:主检出有没有拉到最新、那条活分支有没有
-        /// 收掉。**拉不动就写拉不动、删不掉就写删不掉**,绝不假装做过了。
-        /// `merged=false` 时为空(没合过就没有收尾这回事)。
+        /// 主检出更新和工作树清理的结果，失败信息也须保留。
         local_note: String,
     },
-    /// ■停止按下去之后。`was_live=false` = 本来就没有活着的终端可停。
+    /// 当前未接入 Orca 停止接口，was_live 为 false。
     RunCancelled {
         id: IssueId,
         was_live: bool,
     },
-    /// 人确认后删掉了本机会话行。远端 issue 不动;`note` 写工作树收没收掉。
     SessionDeleted {
         id: IssueId,
         note: String,
     },
-    /// 人记下了一条 C 类读数。同一天再记覆盖读回(只追加,最后一行算)。
+    /// 同日同指标再次保存时更新原值。
     MetricRecorded {
         project_id: ProjectId,
         name: String,
         day: String,
         value: String,
     },
-    /// 项目健康算完了一次。灯与理由都是现算出来的,库里那两列只是显示缓存。
+    /// 健康计算结果，注册表仅保留显示缓存。
     HealthDerived {
         project_id: ProjectId,
         signal: crate::model::Signal,
         reasons: Vec<String>,
     },
-    /// 对照日志已报到 workbench 仓。`url` 给人点开核对,toast 只说成功。
     WorkbenchIssueReported {
         iid: u32,
         url: String,

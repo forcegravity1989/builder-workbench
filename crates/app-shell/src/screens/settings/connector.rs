@@ -63,7 +63,7 @@ pub fn ConnectorPage(items: Vec<ConnectorVm>, orca_web_url: String, bridge: Brid
                     let b = bridge.clone();
                     move |_| b.send(Req::Refresh)
                 },
-                "重新探活"
+                "重新检测"
             }
         }
 
@@ -177,7 +177,7 @@ fn detail(
                             let b = bridge.clone();
                             move |_| b.send(Req::Refresh)
                         },
-                        "重新探活"
+                        "重新检测"
                     }
                 }
             }
@@ -287,11 +287,11 @@ fn connector_info(key: &str) -> ConnectorInfo {
         },
         "open_design" => ConnectorInfo {
             supplies: vec![
-                "原型类活的内嵌网页",
-                "探活是管道握手拿 loopback 首页,超时 400ms",
+                "原型类 Issue 的内嵌网页",
+                "检测本机服务是否响应，超时 400ms",
                 "不解析会话地址、不自动开跑",
             ],
-            install: Install::RunIt("本机服务,不装 —— 起它,再点「重新探活」。"),
+            install: Install::RunIt("启动本机 Open Design 服务，再点「重新检测」。"),
         },
         "gh" => ConnectorInfo {
             supplies: vec![
@@ -306,7 +306,7 @@ fn connector_info(key: &str) -> ConnectorInfo {
             ]),
         },
         "codehub" => ConnectorInfo {
-            supplies: vec!["远端另一家,和 gh 同形两条路(读活、开 MR、读回状态)"],
+            supplies: vec!["读取 CodeHub Issue、创建 MR、查询状态"],
             install: Install::Undocumented("PATH 上有 codehub-cli 这个名字"),
         },
         "welink_cli" => ConnectorInfo {
@@ -316,7 +316,7 @@ fn connector_info(key: &str) -> ConnectorInfo {
         "orca" => ConnectorInfo {
             supplies: vec![
                 "开工会话真正跑的地方(走本机管道,不经网页地址,所以地址没配不挡开工)",
-                "三条运作节律的钟",
+                "定时任务调度",
                 "网页配对地址只认 loopback、带 token,绝不进仓与日志",
             ],
             install: Install::RunIt("装 Orca 本体,再在下面填一条网页配对地址。"),

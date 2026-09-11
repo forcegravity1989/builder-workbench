@@ -1,31 +1,8 @@
-//! 编排:所有用例与守卫都在这一层。
-//!
-//! 界面发一条 [`Command`],这里执行它,回一串 [`Event`]。守卫也在这里——
-//! 状态能不能转、活能不能结第二次、周计划文件在不在,都在动库/动仓之前问清楚。
-//!
-//! 一屏一屏地看,这层的分工是:
-//!
-//! - [`project`] —— 接入、改名片、配项目群
-//! - [`plan`] —— 排期、发版本、改名、缓存对账
-//! - [`release_ship`] —— 人点「出包」:出包 → 验包,不打标签
-//! - [`issue`] —— 建活、▶跑、状态转移
-//! - [`bootstrap`] —— 规范铺底与对账
-//! - [`chat_notify`] —— 三件事同步进项目群(发出去就算完,不记账)
-//! - [`week_comment`] —— 运作活①评论里的版本目标
-//! - [`ops`] —— 三张运作活:版本计划、资产盘点、规范铺底
-//! - [`session`] —— 内嵌终端的 PTY 生命周期
-//! - [`tools`] —— 开工工具映射与探活
-//! - [`worktree`] —— 每张活一棵自己的 worktree 与分支
-//! - [`health`] —— 三条判据的现算
-
 mod bootstrap;
 mod chat_notify;
-/// 指标采集:起脚本、传时间窗、读标准输出的 JSON。壳那边「立即采集」直接调它。
 pub mod collect;
 mod health;
 mod issue;
-/// codehub issue 持久化映射层(数据层迁移刀2)。纯加性,未接线 app 层调用方,
-/// 等刀3 切远端正本时再用——在那之前靠模块级 `#[allow(dead_code)]` 压住警告。
 mod issue_store;
 mod ops;
 mod orca_inject;
@@ -72,11 +49,7 @@ use bw_engine::{
 };
 use std::{path::PathBuf, sync::Arc};
 
-/// 远端工厂:从项目行造一个 `Remote`。默认走 `Remote::for_project`(真
-/// codehub/gh);`real_demo_v4` / 测试注入一份返回**共享的** `Remote::Mock`
-/// (同一个 `Arc<Mutex<MockState>>`),让「建活 → 列活 → 改状态 → 关」一整圈
-/// 共享同一份内存状态,和真远端一次会话连续操作的行为一致。桌面壳不调这个
-/// 口子,走默认的真 codehub/gh。
+/// 测试注入的工厂须共享 MockState，使多次远端调用看到同一份数据。
 pub(crate) type RemoteFactory =
     Box<dyn Fn(&crate::model::Project) -> std::result::Result<Remote, RemoteError> + Send + Sync>;
 
@@ -90,11 +63,10 @@ pub enum AppError {
     Exec(String),
     #[error("找不到项目 {0}")]
     NoSuchProject(String),
-    #[error("找不到这张活")]
+    #[error("找不到此 Issue")]
     NoSuchIssue,
     #[error("{0} 还没有配工作区,这一步需要一个真实的仓")]
     NoWorkspace(String),
-    /// 状态机不许这么转。如实弹回,不悄悄改成一个合法的转移。
     #[error("不能从「{from}」转到「{to}」")]
     IllegalTransition { from: String, to: String },
     #[error("{0}")]
@@ -103,19 +75,11 @@ pub enum AppError {
 
 pub type Result<T> = std::result::Result<T, AppError>;
 
-/// V4 的编排大脑。
 pub struct App {
-    /// 工作区根目录。项目没单独配路径时,仓就在 `<root>/<slug>`。
     pub(crate) workspaces_root: PathBuf,
-    /// 干活入口的后端。没配真实工作区的项目用自我标注的替身
-    /// ([`bw_engine::MockInteractiveExecutor`]),产出带【mock】字样。
     pub(crate) executor: Arc<dyn InteractiveExecutor>,
-    /// 桌面壳开、headless 不开。见 [`App::with_pty`]。**PTY 已封存** —— 这条门闩
-    /// 现在管的是「桌面 ▶跑 走 Orca 本地 pipe」,不是起 PTY;headless 仍走
-    /// 阻塞 `run_skill`。
+    /// 桌面启用 Orca 执行；关闭时使用无界面执行器。
     pub(crate) pty_enabled: bool,
-    /// 长命令边做边报的口子。桌面壳接上,headless 不接。见
-    /// [`progress`](crate::app::progress) —— 只为让人看得见,不承担账目。
     pub(crate) progress: Option<tokio::sync::broadcast::Sender<ProgressLine>>,
     /// 出包中途停。壳不走命令队列,直接 [`PackCtl::abort`]。
     pub pack_ctl: Arc<PackCtl>,
@@ -126,8 +90,6 @@ pub struct App {
     /// **不在任何一个用户项目的仓里**:用户的 `.gitignore` 怎么写不该由 Workbench
     /// 决定,而 Workbench 自带的剧本每个项目都一样,没有复制 N 份的道理。
     pub(crate) asset_root: PathBuf,
-    /// 远端工厂。issue_store 等内部模块经 [`App::remote_for`] 拿远端,统一经
-    /// 这里派发 —— 这也是 mock 注入的唯一口子。
     pub(crate) remote_factory: RemoteFactory,
 }
 
@@ -138,17 +100,13 @@ impl App {
     ) -> Self {
         let workspaces_root = workspaces_root.into();
         Self {
-            // 默认落在工作区根目录旁边的 `.bw-assets/`。桌面壳会用
-            // [`App::with_asset_root`] 换成库文件旁边那份;headless 例子就用
-            // 这个默认值,跑完随临时目录一起没。
+            // 无界面调用默认使用工作区根目录下的 .bw-assets；桌面单独指定数据目录。
             asset_root: workspaces_root.join(".bw-assets"),
             workspaces_root,
             executor,
             pty_enabled: false,
             progress: None,
             pack_ctl: Arc::new(PackCtl::new()),
-            // 默认远端工厂 = 真 `Remote::for_project`(codehub/gh)。`real_demo_v4`
-            // 与测试用 [`App::with_remote_factory`] 注入共享的 `Remote::Mock`。
             remote_factory: Box::new(|p| {
                 Remote::for_project(&p.provider, &p.remote_host, &p.remote_path)
             }),
@@ -162,26 +120,22 @@ impl App {
         self
     }
 
-    /// Workbench 本机数据目录(注册表/设置/会话/技能都在这下面)。
     pub fn asset_root(&self) -> &std::path::Path {
         &self.asset_root
     }
 
     /// 注入远端工厂。**测试/指挥器专用** —— 注一份返回共享 `Arc<Mutex<MockState>>`
-    /// 的工厂,让一次完整生命周期(建活 → 列活 → 改状态 → 发版本 → 关)全在
+    /// 的工厂,让一次完整生命周期(创建 Issue → 列出 Issue → 改状态 → 发版本 → 关)全在
     /// 同一份内存状态上跑。桌面壳不调,走默认的真 `Remote::for_project`。
     pub fn with_remote_factory(mut self, f: RemoteFactory) -> Self {
         self.remote_factory = f;
         self
     }
 
-    /// 给 issue_store 和桌面壳拿远端用的统一口子:经 `remote_factory` 派发。
-    /// `RemoteError`(配置错)→ `AppError::Exec`。
     pub fn remote_for(&self, project: &crate::model::Project) -> Result<Remote> {
         (self.remote_factory)(project).map_err(|e| AppError::Exec(format!("认不出远端类型:{e}")))
     }
 
-    /// Workbench 技能库摊在哪。开工前 [`App::ensure_skill_assets`] 保证它是齐的。
     pub fn skills_dir(&self) -> PathBuf {
         self.asset_root.join("skills")
     }
@@ -208,7 +162,6 @@ impl App {
         Some(dir)
     }
 
-    /// 阶段规范 references 摊在哪(`<asset_root>/system-prompt/references/`)。
     pub fn prompt_dir(&self) -> PathBuf {
         self.asset_root.join("system-prompt").join("references")
     }
@@ -231,7 +184,6 @@ impl App {
         Some(dir)
     }
 
-    /// vendor 业界 workflow 库摊在哪(`<asset_root>/vendor/`)。
     pub fn vendor_dir(&self) -> PathBuf {
         self.asset_root.join("vendor")
     }
@@ -251,7 +203,6 @@ impl App {
         Some(dst)
     }
 
-    /// 把「一步一句」的回执接出去。不接的话长命令照跑,只是没人看得见中间过程。
     pub fn with_progress(mut self, tx: tokio::sync::broadcast::Sender<ProgressLine>) -> Self {
         self.progress = Some(tx);
         self
@@ -273,25 +224,19 @@ impl App {
         &self.workspaces_root
     }
 
-    // ── 项目注册表(替代 store.project_*)─────────────────────────────
-
-    /// 读一个项目的完整行。`None` = 注册表里没有。
     pub async fn project(&self, id: ProjectId) -> Result<Option<crate::model::Project>> {
         Ok(ProjectRegistry::find_by_id(&self.asset_root, id)?.map(|e| e.to_project()))
     }
 
-    /// 按 slug 找项目。
     pub async fn project_by_slug(&self, slug: &str) -> Result<Option<crate::model::Project>> {
         Ok(ProjectRegistry::find_by_slug(&self.asset_root, slug)?.map(|e| e.to_project()))
     }
 
-    /// 项目墙的整屏 —— 按注册表顺序。
     pub async fn projects(&self) -> Result<Vec<crate::model::Project>> {
         let entries = ProjectRegistry::load(&self.asset_root)?;
         Ok(entries.iter().map(|e| e.to_project()).collect())
     }
 
-    /// 取一个项目的完整行。内部辅助,给 issue_store 调用方用的。
     pub(crate) async fn project_of(&self, project_id: ProjectId) -> Result<crate::model::Project> {
         self.project(project_id)
             .await?
@@ -308,7 +253,6 @@ impl App {
     pub(crate) async fn remove_project_entry(&self, id: ProjectId) -> Result<u64> {
         let slug = self.project(id).await?.map(|p| p.slug).unwrap_or_default();
         let n = ProjectRegistry::remove(&self.asset_root, id)?;
-        // 会话文件跟着清。
         if !slug.is_empty() {
             SessionStore::remove_project(&self.asset_root, &slug);
         }
@@ -370,8 +314,6 @@ impl App {
         Ok(Settings::set_theme(&self.asset_root, theme)?)
     }
 
-    // ── 会话(替代 store.conversation_*)────────────────────────────────
-
     pub async fn conversation_for_issue(
         &self,
         id: crate::model::IssueId,
@@ -392,7 +334,6 @@ impl App {
     }
 
     pub(crate) async fn upsert_conversation(&self, c: &Conversation) -> Result<Conversation> {
-        // 已经有会话就返回既有行(幂等)。
         if let Some(existing) = self.conversation_for_issue(c.issue_id).await? {
             return Ok(existing);
         }
@@ -401,7 +342,6 @@ impl App {
         Ok(c.clone())
     }
 
-    /// 某个项目的仓在哪。项目行里配了路径就用它,没配就是 `<工作区根目录>/<slug>`。
     pub async fn workspace_of(&self, id: ProjectId) -> Result<PathBuf> {
         let p = self
             .project(id)
@@ -410,7 +350,6 @@ impl App {
         Ok(self.workspace_at(&p.slug, &p.workspace_path))
     }
 
-    /// 按 project id 查 slug。内部辅助。
     async fn slug_of(&self, id: ProjectId) -> Result<String> {
         self.project(id)
             .await?
@@ -429,7 +368,6 @@ impl App {
         }
     }
 
-    /// 唯一的入口。
     pub async fn dispatch(&mut self, cmd: Command) -> Result<Vec<Event>> {
         let label = cmd_log_label(&cmd);
         let started = std::time::Instant::now();
@@ -561,7 +499,7 @@ impl App {
     }
 }
 
-/// 对照日志用:命令名 + id / slug,不写 pairing URL、提示词、token。
+/// 日志只记录命令名和对象标识，不能写配对 URL、提示词或 token。
 fn cmd_log_label(cmd: &Command) -> String {
     match cmd {
         Command::CreateProject { slug, .. } => format!("CreateProject slug={slug}"),
@@ -690,8 +628,6 @@ fn cmd_log_label(cmd: &Command) -> String {
     }
 }
 
-/// 递归复制 `src` 树到 `dst`,文件一致就跳过(幂等)。给 `ensure_vendor_assets`
-/// 用——vendor 库太大不能 `include_str!` 逐份编进二进制,运行时从源码树整树摊。
 fn copy_tree(src: &std::path::Path, dst: &std::path::Path) -> std::io::Result<()> {
     if !src.is_dir() {
         return Err(std::io::Error::new(

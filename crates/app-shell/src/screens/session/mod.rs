@@ -1,10 +1,3 @@
-//! 项目内 · 会话。只剩两个组件:**Orca**、**Open Design**。
-//! 动作条 / 灌词条不要 —— 开工在计划屏(拖进进行中);停止、MR、评审在 Orca
-//! 或计划屏拖列。Workbench 不知道人在 Orca 里点了哪条会话,灌词条会对着错的活。
-//!
-//! 两个页签常驻:原型活默认停 Open Design,构建类默认停 Orca。
-//! 没接到就如实说,不假装嵌进去。Orca / Open Design 都走 iframe。
-
 use crate::bridge::{Bridge, ChromeBusy, Req};
 use crate::vm::{ProjectVm, SessionTab};
 use dioxus::prelude::*;
@@ -85,7 +78,6 @@ fn OrcaView(orca_url: String, bridge: Bridge) -> Element {
     }
 }
 
-/// 本机 Open Design 的 loopback 首页。探活走 `discover_web_url`。
 #[component]
 fn OpenDesignView(src: String, gen: u64) -> Element {
     let mut url = use_signal(|| None::<String>);

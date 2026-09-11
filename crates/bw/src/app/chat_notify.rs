@@ -1,13 +1,3 @@
-//! 把三件事同步进项目群:活进评审、活合入、发了版。
-//!
-//! **发出去就算完**:不写库、不记「发过没发过」、不做去重、没有失败重试队列。
-//! 极小概率下同一件事会被重推一条进群(比如进程恰好在发送前后重启),这是
-//! 已经接受的代价——重发一条能忍,为它建一张表不值。
-//!
-//! **失败不回滚主干**:合入、结清、发版的账在这条链路之前就记完了,发群只是
-//! 末尾一个锦上添花的旁支。发不出去就在当次界面上如实说一句,不假装有一套
-//! 可靠的恢复机制,也不会在下一次 tick 时偷偷重发。
-
 use super::{App, Result};
 use crate::chat::{self, ChatError, ChatMessage};
 use crate::command::Event;
@@ -57,7 +47,6 @@ impl App {
                 ok: true,
                 note: String::new(),
             },
-            // 没配群这一条走不到这里(上面已经短路),真走到就当没配处理。
             Err(ChatError::NotConfigured) => return None,
             Err(e) => Event::ChatNotifySent {
                 number,
@@ -68,11 +57,7 @@ impl App {
         })
     }
 
-    /// 一张活的三类事件走这条:文案按模板拼,`who` 与 MR 状态能拿到就带上。
-    ///
-    /// `known_mr` = 调用方已经知道的 MR 号(>0 就直接用,不再查远端)。合入路径
-    /// 传合完的那个号——合完 MR 已关,现查「开着的 MR」查不到,必须靠调用方传。
-    /// 评审 / 手动同步路径传 0,这里现查分支上开着的 MR(评审时 MR 还开着,查得到)。
+    /// 合入后无法再按开放状态查 MR，调用方须传入已知号码。
     pub(super) async fn chat_notify_issue(
         &self,
         id: IssueId,
@@ -95,7 +80,7 @@ impl App {
             .await
     }
 
-    /// 现查这张活分支上开着的 MR 号(正本在远端,现查)。没挂远端 / 没开着 /
+    /// 现查此 Issue分支上开着的 MR 号(正本在远端,现查)。没挂远端 / 没开着 /
     /// 查失败 → 0。不靠 `issue.pr_number`(那是 `issue_from_remote` 的 lossy 字段,恒 0)。
     async fn mr_number_for(&self, issue: &Issue) -> u32 {
         let Ok(project) = self.project_of(issue.project_id).await else {
@@ -114,8 +99,6 @@ impl App {
         }
     }
 
-    /// 界面显式触发的那条命令。项目没配群 / 这件事没勾选时如实回一条「跳过了」,
-    /// 不静默——人是主动点的,得到的回音不能是沉默。
     pub(super) async fn sync_notify_to_chat(
         &mut self,
         issue_id: IssueId,

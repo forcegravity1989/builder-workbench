@@ -1,13 +1,4 @@
-//! `.bw/metrics/readings.jsonl` —— 不可回溯(B)与手填(C)的读数流水。
-//!
-//! 一行一个 JSON 对象。记账键是**日历日**(`YYYY-MM-DD`),和 V3 `observation.ts`
-//! 对齐,迁过去一行对一天。同一天同一指标只留一行:再采或再手填覆盖这一行,
-//! 不叠第二行。跨天的历史行不改。展示按 ISO 周收:那一周里日期最大的一天。
-//!
-//! **写不进主检出。** 采和手填写固定账本 worktree(`<仓>/.bw/worktrees/ledger`,
-//! 分支 `bw/ledger`);读的时候主检出(已合入的历史)和账本叠在一起,同一天
-//! 以账本为准。文件不存在 / 某行坏掉 / 没有 `day` = 那一行当没看见,不把
-//! 整份打成失败。
+//! 按日和指标名保存读数；同键更新，历史查询取时间窗内最后一个值。
 
 use super::{RepoFileError, Result};
 use crate::isoweek;
@@ -83,8 +74,7 @@ pub fn latest_values_for_days(
         .collect()
 }
 
-/// 记下或覆盖当天这一行。写到 `workspace`(调用方应传入账本目录,不是主检出)。
-/// 同一天同一指标值没变就不动文件。
+/// 同日同指标更新原值；workspace 必须是指标记录工作树，不能传主检出。
 pub fn upsert_metric_reading(workspace: &Path, row: &MetricReading) -> Result<()> {
     if row.day.is_empty() || row.name.is_empty() {
         return Err(RepoFileError::Shape {
@@ -110,8 +100,7 @@ pub fn upsert_metric_reading(workspace: &Path, row: &MetricReading) -> Result<()
     write_all(workspace, &rows)
 }
 
-/// 把主检出上的读数流水并进账本(覆盖同日同名),然后删掉主检出那份未提交的文件。
-/// 给「拉到最新」清脏用。主检出没有这份文件就什么都不做。
+/// 合并主检出的读数后删除其未提交文件，同日同指标以传入值覆盖。
 pub fn absorb_main_readings(ledger: &Path, main: &Path) -> Result<bool> {
     let main_path = main.join(REL);
     if !main_path.is_file() {
@@ -127,7 +116,7 @@ pub fn absorb_main_readings(ledger: &Path, main: &Path) -> Result<bool> {
     Ok(true)
 }
 
-/// 正规账本 worktree 如果已经在盘上就返回,同路径普通目录不冒充账本。
+/// 同路径的普通目录不视为指标记录工作树。
 pub fn ledger_dir_if_present(main: &Path) -> Option<PathBuf> {
     let dir = bw_engine::workspace::ledger_worktree_path(main)?;
     dir.join(".git").exists().then_some(dir)

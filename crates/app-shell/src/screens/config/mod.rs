@@ -26,7 +26,7 @@ pub fn View(p: ProjectVm) -> Element {
             div { class: "set-group",
                 div { class: "set-row",
                     div { class: "set-text",
-                        div { class: "set-title", "仓地址" }
+                        div { class: "set-title", "仓库地址" }
                     }
                     div { class: "set-ctl",
                         span { class: "mono", "{c.remote}" }
@@ -68,7 +68,7 @@ pub fn View(p: ProjectVm) -> Element {
 
             div { class: "section",
                 div {
-                    h3 { class: "section-title", "节律" }
+                    h3 { class: "section-title", "定时任务" }
                 }
             }
             div { class: "set-group",

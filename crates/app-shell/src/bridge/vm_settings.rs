@@ -140,11 +140,11 @@ fn build_connectors(
             ConnectorStatus::Unconfigured
         },
         detail: if configured {
-            "网页配对地址已填,但本机 Orca 服务没有探活实现,答不了「通不通」".into()
+            "已配置网页配对地址；Orca 尚不支持连接检测。".into()
         } else {
             "还没填网页配对地址(设置 · Connector · Orca)".into()
         },
-        used_by: vec!["开工会话与三条运作节律的钟".into()],
+        used_by: vec!["执行会话与定时任务".into()],
     });
 
     out

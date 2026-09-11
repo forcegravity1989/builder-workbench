@@ -1,13 +1,3 @@
-//! 八屏 —— 顶层三屏(项目墙 / 接入 / 设置)+ 项目内五入口。
-//!
-//! 这是**唯一知道「有哪些屏」的地方**。每个屏目录只对外暴露一个 `view` 函数,
-//! 屏与屏之间不许互相引用(`scripts/guard-no-cross-screen-import.sh` 守着);
-//! 要共享数据就经 `crate::vm` 的 ViewModel,或者经命令/事件绕一圈。
-//!
-//! 通知页签已删(ADR-0003):群通知走事件注册表发项目群,个人提醒改走 OS
-//! 弹窗(后建)。评审中活张数仍由 `NotifyVm::unread` 撑着项目墙 ⚑ 与项目轨
-//! 头部徽章,不再有专属页签。
-
 pub mod config;
 pub mod kb;
 pub mod onboard;
@@ -21,12 +11,7 @@ use crate::bridge::{Bridge, Panel};
 use crate::vm::ProjectVm;
 use dioxus::prelude::*;
 
-/// 五入口的分发。顶层三屏不在这里 —— 它们不依赖「打开了某个项目」。
-///
-/// **每个屏必须是组件(`#[component]`),不能是普通函数**:普通函数的
-/// `use_signal` 会落在**调用方**的 hook 表上,按序号取。切一次屏,序号还在、
-/// 类型换了,Dioxus 取 hook 时 downcast 失败直接 panic(接入 → 计划 → 配置
-/// 这条路必炸)。做成组件,每屏有自己的作用域,序号各算各的。
+/// 各屏必须以组件挂载，确保 hook 状态属于各自作用域。
 pub fn route(panel: Panel, project: &ProjectVm, bridge: &Bridge) -> Element {
     let p = project.clone();
     let b = bridge.clone();

@@ -1,14 +1,3 @@
-//! CodeHub remote — shell-out `codehub-cli`(Go CLI,GitLab v4 同构封装,默认
-//! JSON 输出,token 存 OS keyring)。与 GitHub 那一臂对称:无状态自由
-//! 函数 + `tokio::process` shell-out,**零 HTTP 依赖**。token 不管(keyring
-//! 里 `auth login` 存好),`host`/`path` 按 project 的 `(remote_host,
-//! remote_path)` 显式带 `-H`/`-p`——绿/黄/内源三 host 同名 path 也不会混,
-//! 因为每次调用都带显式 host,不存在「猜 host」的歧义分支,也没有对应的
-//! 错误类型(`CodehubError` 只认 NotInstalled/Command/Parse)。
-//!
-//! 不进 `Executor` 体系——`codehub-cli` 是 VCS 远端 API 客户端(对标 `gh`),
-//! 不是 agent 执行器(对标 `claude`)。两种 shell-out 模式别混。
-
 use super::{
     Capped, IssueFilter, IssueState, IssueStateEvent, Milestone, PrOpened, RemoteError,
     RemoteIssue, RemoteProvider, RepoSummary, PROJECT_FILE_REL_PATH,
@@ -31,11 +20,6 @@ pub enum CodehubError {
     Parse(String),
 }
 
-/// One row of `codehub-cli project list --mine` — the parity of
-/// [`crate::github::GithubRepoSummary`] for the「接入已有仓」picker. `path`
-/// = `path_with_namespace`; `pushed_at` is populated from codehub's
-/// `last_activity_at` field (codehub has no `pushedAt`; same semantic —
-/// the repo's last real activity timestamp).
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct CodehubRepoSummary {
     pub path: String,
@@ -53,7 +37,7 @@ fn spawn_err(e: std::io::Error) -> CodehubError {
     }
 }
 
-/// 每一枪 `codehub-cli` 打一行耗时。`--jq` / `--body` / `--description` 不进正文。
+/// 命令日志不能包含正文、描述或 jq 参数中的内容。
 async fn run_cli(
     args: impl IntoIterator<Item = impl AsRef<OsStr>>,
 ) -> Result<std::process::Output, CodehubError> {
@@ -102,8 +86,6 @@ fn cli_label(args: &[OsString]) -> String {
     out.join(" ")
 }
 
-/// `codehub-cli project view -p <path> -H <host>` → 一行人话详情
-/// (`path · 可见性[ · 已归档] · 最近活跃`)。Read-only,零仓副作用。
 pub async fn probe(host: &str, path: &str) -> Result<String, CodehubError> {
     let out = run_cli(["project", "view", "-p", path, "-H", host]).await?;
     if !out.status.success() {
@@ -119,9 +101,7 @@ pub async fn probe(host: &str, path: &str) -> Result<String, CodehubError> {
     Ok(format!("{pns} · {vis}{arch} · 最近活跃 {last}"))
 }
 
-/// `codehub-cli project view` 的默认分支。绿区建 Release 强制要 `--ref`,
-/// 不传就 HTTP 422 `CH.00404131`。空则 `master`(内部仓常见,跟
-/// [`create_mr_on_branch`] 同口径)。
+/// 创建 Release 必须提供默认分支，否则 CodeHub 可能返回 422。
 async fn project_default_branch(host: &str, path: &str) -> Result<String, CodehubError> {
     let out = run_cli(["project", "view", "-p", path, "-H", host]).await?;
     if !out.status.success() {
@@ -137,17 +117,6 @@ async fn project_default_branch(host: &str, path: &str) -> Result<String, Codehu
     }
 }
 
-/// 在**已经推上去的分支**上开一个 MR —— `codehub-cli mr create` 就这一处实现。
-///
-/// 唯一调用方是规范铺底:它在自己的 worktree 里只提交点名的那几个文件、推
-/// 分支,再调这里开 MR。`body` 由调用方给:带不带 `Closes` 是调用方的决定 ——
-/// 不能默认带,Workbench 的活是本机号,和远端 issue 号没有对应关系,自作主张
-/// 挂上去会把那个仓里毫不相干的一号活关掉。
-///
-/// target-branch = 项目默认分支,运行时从 `origin/HEAD` 解析(maas 是
-/// `master`,别的项目可能是 `main`/`develop`)。`symbolic-ref` 在没设
-/// `origin/HEAD` 的克隆上会非零退出且 stdout 为空,这时退回 `master` —— 基线
-/// 猜错会由 codehub-cli 的「branch not found」如实报出来,不会假装成功。
 pub async fn create_mr_on_branch(
     host: &str,
     path: &str,
@@ -170,11 +139,6 @@ pub async fn create_mr_on_branch(
         .strip_prefix("refs/remotes/origin/")
         .unwrap_or("master")
         .to_string();
-    // P7-7A parity: adopt an already-open MR for this branch if one exists.
-    // A prior run (or a manual smoke) may have opened an MR that BW didn't
-    // record — `mr create` would then fail "already exists". Read the real
-    // iid back (never guessed, same honesty as github's `adopt_existing_pr`).
-    // 读回失败(网络/权限)就落到下面的 `mr create`,由它如实报错。
     if let Ok(Some(iid)) = open_mr_for_branch(host, path, branch).await {
         return Ok(PrOpened::Adopted(iid));
     }
@@ -207,17 +171,6 @@ pub async fn create_mr_on_branch(
     Ok(PrOpened::Created(iid))
 }
 
-/// `codehub-cli mr list --source-branch <branch> --state opened --jq .[0].iid`
-/// → the iid of the first open MR sourced from `branch`, or `None` if no
-/// such MR exists. Read-only, zero repo side effects. Used by the InReview
-/// detection poller (V1 Issue2 Phase2a) to detect an MR the agent opened
-/// in-session — Workbench doesn't create it (the agent does), Workbench just reads
-/// it back (读回为证, not agent self-report).
-///
-/// Mirrors the existing `create_mr` adoption path's `mr list` call exactly
-/// (same flags, same `--jq .[0].iid` extraction). `Ok(None)` = no open MR
-/// for that branch — the honest "nothing to review yet" answer, not an
-/// error.
 pub async fn open_mr_for_branch(
     host: &str,
     path: &str,
@@ -250,8 +203,6 @@ pub async fn open_mr_for_branch(
         .map_err(|_| CodehubError::Parse(format!("无法解析 codehub MR iid:{text:?}")))
 }
 
-/// 同 `open_mr_for_branch` 但 `--state all`(找开着或已合入的 MR)。
-/// 给 Done 的 issue 用 —— 它的 MR 已合入,`open_mr_for_branch` 查不到。
 pub async fn mr_for_branch(
     host: &str,
     path: &str,
@@ -283,13 +234,6 @@ pub async fn mr_for_branch(
         .map(Some)
         .map_err(|_| CodehubError::Parse(format!("无法解析 codehub MR iid:{text:?}")))
 }
-/// [`crate::github::merge_pr`]: the human验收 action that integrates the
-/// source branch into the target. Squash-merges (matches github's `--squash`).
-/// The caller ([`crate::Remote::merge_mr`] ← `MergeIssuePr`) settles the
-/// Issue `Done` on `Ok` via the existing `TransitionIssue` InReview→Done path;
-/// on `Err` the Issue stays `InReview` retryable — never reverse-settled,
-/// never fabricated. **Only ever called from `MergeIssuePr` (a human click),
-/// never from any run/executor path**.
 pub async fn merge_mr(host: &str, path: &str, mr_iid: u32) -> Result<(), CodehubError> {
     let out = run_cli([
         "mr",
@@ -307,11 +251,7 @@ pub async fn merge_mr(host: &str, path: &str, mr_iid: u32) -> Result<(), Codehub
     if !out.status.success() {
         return Err(CodehubError::Command(merge_stderr));
     }
-    // 读回为证: codehub-cli mr merge 的退出码靠不住——2026-07-31 实测 403
-    // (protected-branch / 无 merge 权限)时,首次调用可退出 0(error 只打到
-    // stderr)、MR 实际没合(state 仍 "opened")。只信「MR state 真变 merged」
-    // 才算成功,绝不假 Done。复跑 mr view 拿 state(`--jq .merged` 对未合 MR
-    // 返 null,故用 `.state`)。
+    // CLI 可能在合入失败时返回成功退出码，需再查询 MR 状态确认。
     let verify = run_cli([
         "mr",
         "view",
@@ -343,21 +283,8 @@ pub async fn merge_mr(host: &str, path: &str, mr_iid: u32) -> Result<(), Codehub
     }
 }
 
-/// Clone a codehub repo into `dest` over **SSH**. codehub 是局域网平台,HTTPS
-/// `git clone` 经代理隧道被拦(实测 504);SSH 走 SSH key、不经代理、不要
-/// token——开发者手敲 `git clone ssh://git@szv-open...:2222/.../maas.git` 就是
-/// 这条路,常规、不特立独行。
-///
-/// SSH host(`szv-open.codehub.huawei.com:2222`)≠ API host
-/// (`open.codehub.huawei.com`),不能从 (host,path) 手拼——从 `project view`
-/// 的 `ssh_url_to_repo` 字段取准确地址(`--template` 出裸串;`--jq` 带引号且
-/// 无 `-r`)。拿到后 raw `git clone`(codehub-cli 的 `repo clone` 对 SSH 输入
-/// 是纯透传,无增益,故绕过)。
-///
-/// `GIT_SSH_COMMAND` 带 `accept-new`(首次 host key 自动接受写 known_hosts,
-/// 免非交互卡死)+ `BatchMode=yes`(只走 key、不弹密码,密码会挂死非交互进程)。
+/// CodeHub 使用 SSH 克隆，沿用本机 SSH 认证。
 pub async fn clone_repo(host: &str, path: &str, dest: &Path) -> Result<(), CodehubError> {
-    // 1. 取 ssh_url(--template 出裸串,无引号)
     let out = run_cli([
         "project",
         "view",
@@ -383,7 +310,6 @@ pub async fn clone_repo(host: &str, path: &str, dest: &Path) -> Result<(), Codeh
             "codehub 仓无 SSH clone 地址(ssh_url_to_repo 为空或老仓?):{ssh_url:?}"
         )));
     }
-    // 2. raw git clone(SSH key 认证,不经代理)
     let out = crate::win_cmd::tokio_cmd("git")
         .args(["clone", &ssh_url, &dest.to_string_lossy()])
         .env(
@@ -402,22 +328,6 @@ pub async fn clone_repo(host: &str, path: &str, dest: &Path) -> Result<(), Codeh
     Ok(())
 }
 
-// ─────────────────────────────── 列仓 ───────────────────────────────
-//
-// `codehub-cli project list --mine` —— 接入屏「接入已有仓」那张列表的数据源,
-// 对仗 `github::list_repos`(`gh repo list`)。无状态 shell-out,和本模块其余
-// 函数一样;token 走 keyring(`auth login`),不从这里传。
-//
-// **「新建仓」两个平台都没有**:V4 的接入只有「接入已有仓」这一条路,建仓在
-// 平台网页上做。原来这里写着一段 `project create --namespace-id …` 的说明,
-// 而那个函数从来没被拷过来 —— 已删,不留一段指着空气的注释。
-
-/// V2-② Intent UX: fetch `.bw/project.toml` from the remote without
-/// cloning. Used by the creation flow after the user picks「接入已有仓」so
-/// Intent can readonly-prefill later-comers. `Ok(None)` = file absent (404)
-/// → first-comer; `Err` = network/auth/parse failure → UI stays editable and
-/// does **not** pretend later-comer. Final trio/write gate still uses the
-/// local file after clone.
 pub async fn fetch_project_toml(
     host: &str,
     path: &str,
@@ -446,10 +356,7 @@ pub async fn fetch_project_toml(
     if !out.status.success() {
         let err = stderr_text(&out);
         let lower = err.to_lowercase();
-        // **分支找不到**和**这个仓里没有这份文件**是两件事,但两边都是 404。
-        // 前者是「没查成」(内部仓的默认分支常是 master,见 `create_mr_on_branch`
-        // 的注释),后者才是「这个仓还没被接管过」。混成一个 `Ok(None)`,人就会
-        // 看到「首来者,请填」然后一路盖掉仓里已有的名片。
+        // 分支和文件不存在都可能返回 404，需区分查询失败和文件缺失。
         if lower.contains("branch not found") || lower.contains("ref not found") {
             return Err(CodehubError::Command(err));
         }
@@ -464,10 +371,6 @@ pub async fn fetch_project_toml(
     ))
 }
 
-/// `codehub-cli -H <host> project list --mine --limit N --json` → 仓列表
-/// (对仗 `gh repo list`)。Read-only,无副作用。解析
-/// `path_with_namespace`/`visibility`/`default_branch`/`last_activity_at`/
-/// `description` 成 [`CodehubRepoSummary`]。
 pub async fn list_repos(host: &str, limit: u32) -> Result<Vec<CodehubRepoSummary>, CodehubError> {
     let out = run_cli([
         "-H",
@@ -498,8 +401,6 @@ pub async fn list_repos(host: &str, limit: u32) -> Result<Vec<CodehubRepoSummary
         .collect())
 }
 
-// ─────────────── JSON deserialization helpers ───────────────
-
 #[derive(serde::Deserialize)]
 struct CodehubRepoJson {
     path_with_namespace: String,
@@ -512,21 +413,6 @@ struct CodehubRepoJson {
     description: Option<String>,
 }
 
-// ───────────────────────── issue + release ─────────────────────────
-//
-// V4 数据层:issue 的状态/排期/版本正本搬到 codehub issue + 标签。下面五个
-// 函数都是 `codehub-cli issue/release` 子命令的无状态 shell-out,和本模块
-// 其余函数同形(`-p <path> -H <host>` + `--jq` 选字段)。不碰 SQLite,不碰
-// 调用方(加性)。
-//
-// body 旗标用 `--description`(V3 试用期实测;codehub-cli 的
-// issue create 文档虽写 `--body/--body-file`,但 `--description` 是稳的那条)。
-// labels 逗号拼成一条串;空切片不打 `--labels`(codehub 对空 label 会报错)。
-
-/// `codehub-cli issue create -p <path> -H <host> --title <t> --description <body>
-/// [--labels a,b,c] [--attachment <file>] --jq .iid` → 新 issue 的 `iid`(项目内号,对标 github
-/// issue number)。调它真开 issue,只在创建流调,绝不自动。`attachment` 指向本机文件,
-/// 没有或不存在就不打 `--attachment`。
 pub async fn create_issue(
     host: &str,
     path: &str,
@@ -570,18 +456,6 @@ pub async fn create_issue(
         .map_err(|_| CodehubError::Parse(format!("无法解析 codehub issue iid:{text:?}")))
 }
 
-/// `codehub-cli issue update <iid> -p <path> -H <host> [--labels a,b,c]
-/// [--state-event close|reopen]`。`labels` 是 **namespace-replace** 语义:
-/// 对每个入参 label 算前缀([`crate::remote::label_prefix`]),把 issue 现有
-/// labels 里前缀命中的摘掉,再把入参全加上(裸 label 无前缀,只加不摘)。
-/// 这样调 `update_issue(iid, Some(&["bw:status:inprogress"]), None)` 只换
-/// `bw:status:*`,`bw:plan:*`/`bw:released:*` 不动。
-///
-/// GitLab 的 issue update API 对 `labels` 是**全量替换**(传啥整张盖掉旧
-/// 标签)——为了凑出 namespace-replace,得多 list 一次现有 labels,算出
-/// 「(现有 - 前缀命中的)∪ 入参」的最终全量,再当 `--labels` 传进去。
-/// `labels=None` 不动标签,`state_event=None` 不动状态。幂等: 对已关的
-/// issue 再 close 是 no-op。
 pub async fn update_issue(
     host: &str,
     path: &str,
@@ -590,14 +464,10 @@ pub async fn update_issue(
     state_event: Option<&str>,
 ) -> Result<(), CodehubError> {
     let iid_s = iid.to_string();
-    // 1. 算最终全量 labels(GitLab 是全量替换,得现读再算 namespace-replace)
     let labels_csv: Option<String> = if let Some(lbls) = labels {
         if lbls.is_empty() {
             None
         } else {
-            // 1a. list 现有 labels(codehub 的 labels 是对象数组 `[{name,color}]`,
-            // 不是字符串数组——直接 `[.labels[]]` 会回对象、按 Vec<String> 解析炸,
-            // 这里抽 .name;裸字符串 label 也兼容(`.name? // .`)。
             let view = run_cli([
                 "issue",
                 "view",
@@ -621,7 +491,6 @@ pub async fn update_issue(
                     CodehubError::Parse(format!("无法解析 codehub issue view labels JSON:{e}"))
                 })?
             };
-            // 1b. 最终全量 = (现有 - 前缀命中的) ∪ 入参
             let input_prefixes: std::collections::HashSet<&str> = lbls
                 .iter()
                 .filter_map(|&l| crate::remote::label_prefix(l))
@@ -644,7 +513,6 @@ pub async fn update_issue(
     } else {
         None
     };
-    // 1c. 发 update(空 csv 不打 --labels,codehub 对空 label 报错)
     let mut args: Vec<&str> = vec!["issue", "update", &iid_s, "-p", path, "-H", host];
     if let Some(csv) = labels_csv.as_deref() {
         if !csv.is_empty() {
@@ -663,11 +531,6 @@ pub async fn update_issue(
     Ok(())
 }
 
-/// `codehub-cli issue list -p <path> -H <host> [--state opened|closed]
-/// [--labels a,b,c] -l 0 --jq '[.[] | {iid, number, title, state, labels}]'`
-/// → 只读 issue 列表。`-l 0` = 全量(同 V3 `list_open_issues` 的做法)。
-/// `state=None` 两态都要。`labels` 取交集(必须带齐每一条)。`number` 取
-/// GitLab 的全局 `id`,缺失时退回 `iid`(够用,不假装有另一个号)。
 pub async fn list_issues(
     host: &str,
     path: &str,
@@ -687,13 +550,6 @@ pub async fn list_issues(
     args.push("-l");
     args.push("0");
     args.push("--jq");
-    // jq 投影成对象数组,字段名对齐 GitLab v4 issue payload:`iid`/`id`/
-    // `title`/`state`/`labels`。`id` 缺失(GitLab 必有,但 codehub-cli 边缘
-    // 情况下可能不回)时退回 `iid`,免得解析整张列表炸掉。
-    //
-    // `(. // [])` 兜 null:开着的 issue 为零时 codehub-cli 返 null,
-    // 裸 `.[]` 会 jq 运行期失败(实测 2026-08-24:接入后铺底先查同标题开着的
-    // 活,这里一炸就建不出新活、开不出 MR)。走势那对查询已经兜过,这里漏了。
     args.push(r#"(. // []) | [.[] | {iid: .iid, number: (.id // .iid), title: (.title // ""), state: (.state // ""), labels: ((.labels // []) | map(.name? // .)), created_at: (.created_at // null), closed_at: (.closed_at // null), assignee: .assignee, author: .author}]"#);
     let out = run_cli(&args).await?;
     if !out.status.success() {
@@ -723,10 +579,6 @@ pub async fn list_issues(
         .collect())
 }
 
-/// `codehub-cli issue view <iid> -p <path> -H <host> --format json`
-/// → 单条 issue 带正文。list_issues 不带正文,要正文走这条。
-/// codehub-cli 的 `issue view --format json` 回 GitLab v4 issue payload,
-/// 字段含 `iid`/`id`/`title`/`state`/`labels`/`description`(正文)。
 pub async fn view_issue(
     host: &str,
     path: &str,
@@ -743,10 +595,6 @@ pub async fn view_issue(
     parse_issue_view_json(&out.stdout)
 }
 
-/// 解析 `codehub-cli issue view --format json` 的 GitLab v4 payload 成
-/// [`crate::remote::RemoteIssue`]。正文在 `description` 键(见
-/// [`CodehubIssueViewJson::body`] 的 rename)。抽成纯函数给测试一个接缝 ——
-/// `view_issue` 本身要打 codehub-cli,没法在单测里喂 payload。
 pub(crate) fn parse_issue_view_json(
     stdout: &[u8],
 ) -> Result<crate::remote::RemoteIssue, CodehubError> {
@@ -757,8 +605,6 @@ pub(crate) fn parse_issue_view_json(
         number: r.number,
         title: r.title,
         state: r.state,
-        // codehub 的 labels 是对象数组 `[{name,color,...}]`(不是字符串数组),
-        // 抽 `.name`;万一将来变字符串,也兼容。
         labels: r.labels.iter().map(label_name).collect(),
         body: r.body.unwrap_or_default(),
         created_at: r.created_at,
@@ -768,8 +614,6 @@ pub(crate) fn parse_issue_view_json(
     })
 }
 
-/// codehub 的 label 既可能是对象 `{name: "..."}`(list/view 都返这种),也可能
-/// 是裸字符串。抽名字;都取不到返空串(绝不 panic)。
 fn label_name(v: &serde_json::Value) -> String {
     v.get("name")
         .and_then(|n| n.as_str())
@@ -778,8 +622,6 @@ fn label_name(v: &serde_json::Value) -> String {
         .unwrap_or_default()
 }
 
-/// 从 codehub/GitLab 的 `assignee`/`author` 对象里取人名。codehub 用 `user_name`,
-/// GitLab 用 `username`;两个都试,认不出返空串。`null`(未指派)= None。
 fn person_name(v: Option<&serde_json::Value>) -> Option<String> {
     let v = v?;
     if v.is_null() {
@@ -800,14 +642,9 @@ struct CodehubIssueViewJson {
     title: String,
     #[serde(default)]
     state: String,
-    /// codehub 返对象数组 `[{name,color}]`,用 Value 收、`label_name` 抽名字。
     #[serde(default)]
     labels: Vec<serde_json::Value>,
-    /// codehub issue view 的 GitLab v4 payload 正文在 `description` 键(GitLab
-    /// 叫法),结构体字段名 `body` 对齐 [`crate::remote::RemoteIssue::body`],
-    /// 用 `rename` 衔接。codehub-cli 不回 `body` 键,不 rename 就读成空 ——
-    /// issue #72 的坑:正文同步上了 codehub,但单查拉回空串,plan 页签和
-    /// 注入 prompt 都拿不到正文。
+    /// GitLab 正文字段为 description，映射到统一的 body 字段。
     #[serde(default, rename = "description")]
     body: Option<String>,
     #[serde(default)]
@@ -820,7 +657,6 @@ struct CodehubIssueViewJson {
     author: Option<serde_json::Value>,
 }
 
-/// 把 `issue list --jq` 的 stdout 收成行。空串 / `null` = 一张都没有,不是解析失败。
 fn parse_issue_list_json(stdout: &[u8]) -> Result<Vec<CodehubIssueJson>, CodehubError> {
     let text = String::from_utf8_lossy(stdout).trim().to_string();
     if text.is_empty() || text == "null" {
@@ -851,12 +687,6 @@ struct CodehubIssueJson {
     author: Option<serde_json::Value>,
 }
 
-/// `codehub-cli issue comment create <iid> -p <path> -H <host> --body <text>`
-/// → 在 issue 上写一条评论(GitLab 的 issue note)。结构化产出挂评论,不动正文。
-///
-/// 子命令是 `issue comment create`(不是 `issue note create`——codehub-cli 没有
-/// `note` 子命令,以前写成 `note` 会被当未知命令、`-p` 报「unknown shorthand
-/// flag」,评论写不进去,bootstrap 在这步炸、后面的推 inreview 也走不到)。
 pub async fn comment_issue(
     host: &str,
     path: &str,
@@ -874,8 +704,6 @@ pub async fn comment_issue(
     Ok(())
 }
 
-/// `codehub-cli issue comment list <iid> -p <path> -H <host> -l 0 --sort asc`
-/// → 旧的在前,系统备注丢掉。
 pub async fn list_issue_comments(
     host: &str,
     path: &str,
@@ -911,11 +739,6 @@ pub async fn list_issue_comments(
         .map_err(|e| CodehubError::Parse(format!("无法解析 issue 评论列表 JSON:{e}")))
 }
 
-/// `codehub-cli release create -p <path> -H <host> --tag-name <tag> --name <t>
-/// --description <body> --ref <default_branch>` → 打 tag + 发版本。只在发版流调,
-/// 绝不自动。tag 已存在时 codehub-cli 如实报错,不假装成功。
-/// 旗标跟现行 CLI:`--title` / `--notes` / 位置参数 tag 都会被拒。
-/// 绿区实例强制 `--ref`(分支/提交/tag),不传就 422 `CH.00404131`。
 pub async fn create_release(
     host: &str,
     path: &str,
@@ -947,9 +770,6 @@ pub async fn create_release(
     Ok(())
 }
 
-/// `codehub-cli release list -p <path> -H <host> --jq '[.[] | .tag_name]'`
-/// → 所有版本的 tag 串(只回 tag,正文/资源数留给上层另查)。`tag_name` 是
-/// GitLab release payload 的字段名;codehub-cli 同构封装,沿用。
 pub async fn list_releases(host: &str, path: &str) -> Result<Vec<String>, CodehubError> {
     let out = run_cli([
         "release",
@@ -959,7 +779,6 @@ pub async fn list_releases(host: &str, path: &str) -> Result<Vec<String>, Codehu
         "-H",
         host,
         "--jq",
-        // 与 list_issues 同形:空仓返 null,裸 `.[]` 会炸。
         "(. // []) | [.[] | .tag_name]",
     ])
     .await?;
@@ -974,18 +793,6 @@ pub async fn list_releases(host: &str, path: &str) -> Result<Vec<String>, Codehu
         .map_err(|e| CodehubError::Parse(format!("无法解析 codehub release list JSON:{e}")))
 }
 
-// ─────────────────────── 走势图用:合入 MR / issue 时序 ───────────────────────
-//
-// 对仗 `crate::github` 的 `merged_pr_times` / `issue_times`:走势图要
-// 按周分桶「每周合入的 PR」+「未处理 issue 周末存量」。codehub 那条以前只
-// 走 GitHub,codehub 项目这两条线一直空(「尚无观测」)—— 补上。
-//
-// 与 github 那对同形:回 RFC3339 原文,**不在底座解析时间**,按周分桶是上层
-// (`bw::trend`)的事。`-l 0` = 全量(同 `list_issues` 的做法,不截断)。
-
-/// 已合并 MR 的合并时刻(RFC3339 原文),对仗 [`crate::github::merged_pr_times`]。
-///
-/// 复算:`codehub-cli -H <host> mr list -p <path> --state merged -l 0 --jq '[.[] | .merged_at]'`
 pub async fn merged_mr_times(host: &str, path: &str) -> Result<Vec<String>, CodehubError> {
     let out = run_cli([
         "mr",
@@ -999,8 +806,7 @@ pub async fn merged_mr_times(host: &str, path: &str) -> Result<Vec<String>, Code
         "-l",
         "0",
         "--jq",
-        // `(. // [])` 兜 null:仓里没有已合并 MR 时 codehub-cli 返 null,不兜的话
-        // `.[]` 迭代 null 会报错(实测)。
+        // 空仓可能返回 null，先转为空数组再执行 jq 迭代。
         "(. // []) | [.[] | .merged_at]",
     ])
     .await?;
@@ -1011,16 +817,11 @@ pub async fn merged_mr_times(host: &str, path: &str) -> Result<Vec<String>, Code
     if text.is_empty() || text == "null" {
         return Ok(Vec::new());
     }
-    // merged_at 可能是 null(未合并的不会进 --state merged,但稳一手),flatten 掉。
     let v: Vec<Option<String>> = serde_json::from_str(&text)
         .map_err(|e| CodehubError::Parse(format!("无法解析 codehub mr merged_at JSON:{e}")))?;
     Ok(v.into_iter().flatten().collect())
 }
 
-/// 每张 issue 的建立时刻与关闭时刻(没关就是 None),对仗 [`crate::github::issue_times`]。
-/// **不含 MR** —— codehub 的 issue list 本就把 MR 排除在外(同 GitLab)。
-///
-/// 复算:`codehub-cli -H <host> issue list -p <path> --state all -l 0 --jq '[.[] | {created_at: .created_at, closed_at: .closed_at}]'`
 pub async fn issue_times(
     host: &str,
     path: &str,
@@ -1054,11 +855,6 @@ pub async fn issue_times(
         .collect())
 }
 
-// ── 版本 → 里程碑 ──
-// codehub milestone(title=版本名)+ `bw:plan:<name>` 标签。正本是标签,
-// 里程碑是 codehub 侧镜像。每个标题都是一个版本。与发版号(bw:released:*)不同。
-
-/// 建/复用一个版本里程碑,返回 mid。同名复用(不更新日期);找不到才建。
 pub async fn ensure_plan_milestone(
     host: &str,
     path: &str,
@@ -1098,8 +894,7 @@ pub async fn ensure_plan_milestone(
         .ok_or_else(|| CodehubError::Parse(format!("新建版本里程碑没有 id:{created}")))
 }
 
-/// 把一张 issue 挂到**已存在**的版本里程碑（按标题找，不建、不更新日期）。
-/// 找不到就如实空过 —— 正本是 `bw:plan:` 标签，里程碑只是 codehub 侧的镜像。
+/// 只关联已存在的同名里程碑，不创建或修改日期。
 pub async fn project_plan(
     host: &str,
     path: &str,
@@ -1126,7 +921,6 @@ pub async fn project_plan(
     Ok(())
 }
 
-/// 列出所有里程碑 (title, start, due, created_at)。每个标题都是一个版本。
 pub async fn list_milestones(
     host: &str,
     path: &str,
@@ -1156,7 +950,6 @@ pub async fn list_milestones(
         .collect())
 }
 
-/// 按标题删一个版本里程碑。找不到当成功(已经没了)。
 pub async fn delete_plan_milestone(host: &str, path: &str, name: &str) -> Result<(), CodehubError> {
     if name.trim().is_empty() {
         return Ok(());
@@ -1192,7 +985,6 @@ pub async fn delete_plan_milestone(host: &str, path: &str, name: &str) -> Result
     Ok(())
 }
 
-/// 按标题改版本里程碑名。找不到当失败。
 pub async fn rename_plan_milestone(
     host: &str,
     path: &str,
@@ -1236,7 +1028,6 @@ pub async fn rename_plan_milestone(
     Ok(())
 }
 
-/// 改 `bw:plan:` 标签定义名。GitLab `PUT /labels` 的 `name` + `new_name`。
 pub async fn rename_plan_label(
     host: &str,
     path: &str,
@@ -1260,13 +1051,11 @@ pub async fn rename_plan_label(
     Ok(())
 }
 
-/// 把 issue 从里程碑摘下(镜像,失败不挡标签正本)。
 pub async fn clear_issue_milestone(host: &str, path: &str, iid: u32) -> Result<(), CodehubError> {
     let project_id = project_numeric_id(host, path).await?;
     set_issue_milestone(host, &project_id.to_string(), iid, 0).await
 }
 
-/// 改 issue 责任人。空 = 取消指派。先 username→userid,再 PUT `assignee_id`。
 pub async fn set_issue_assignee(
     host: &str,
     path: &str,
@@ -1278,8 +1067,6 @@ pub async fn set_issue_assignee(
     let iid_s = iid.to_string();
     let endpoint = format!("/api/v4/projects/:id/issues/{iid_s}");
     if assignee.is_empty() {
-        // 取消指派:assignee_id 传空串让 GitLab 清空(部分版本接受;不行就走
-        // assignee_ids=[] raw JSON,先按这版)。
         api_json(
             host,
             "PUT",
@@ -1291,8 +1078,7 @@ pub async fn set_issue_assignee(
         return Ok(());
     }
     let uid = user_id_by_username(host, assignee).await?.to_string();
-    // GitLab v4 单指派用 assignee_id(单数,接受 int 字符串);assignee_ids 要数组,
-    // codehub-cli --field 传成字符串会被忽略,故用单数。
+    // 单人指派使用 assignee_id；assignee_ids 需要数组而非字符串。
     api_json(
         host,
         "PUT",
@@ -1304,8 +1090,6 @@ pub async fn set_issue_assignee(
     Ok(())
 }
 
-/// `GET /api/v4/users?username=<name>` → 第一个匹配的数字 id。认不出报错。
-/// `GET /api/v4/user` → 当前登录用户名(给「我的」筛选用)。认不出返 None。
 pub async fn current_user(host: &str) -> Option<String> {
     let v = api_json(host, "GET", "/api/v4/user", &[], &[]).await.ok()?;
     person_name(Some(&v)).or_else(|| {
@@ -1331,7 +1115,6 @@ async fn user_id_by_username(host: &str, username: &str) -> Result<u64, CodehubE
     )))
 }
 
-/// 改一张 issue 的标题与正文（GitLab v4 `title`/`description`）。
 pub async fn edit_issue(
     host: &str,
     path: &str,
@@ -1418,7 +1201,6 @@ async fn api_json(
     unwrap_api_body(&out.stdout)
 }
 
-/// `codehub-cli api -f json` 包一层 `{body,status,statusCode}`；也兼容裸 JSON。
 fn unwrap_api_body(stdout: &[u8]) -> Result<serde_json::Value, CodehubError> {
     let v: serde_json::Value =
         serde_json::from_slice(stdout).map_err(|e| CodehubError::Parse(format!("api JSON:{e}")))?;
@@ -1435,8 +1217,7 @@ fn unwrap_api_body(stdout: &[u8]) -> Result<serde_json::Value, CodehubError> {
     Ok(v)
 }
 
-/// 建里程碑的 `--field`。日期可空:空串传给 codehub 会回
-/// `Failed to create milestone`,有值才带 `start_date` / `due_date`。
+/// 未填写的日期参数应省略，CodeHub 不接受空日期字符串。
 fn milestone_create_fields<'a>(
     id: &'a str,
     title: &'a str,
@@ -1534,10 +1315,6 @@ mod api_body_tests {
         assert_eq!(rows[0]["title"], "2026-W35");
     }
 
-    /// issue #72:codehub-cli `issue view --format json` 回 GitLab v4 payload,
-    /// 正文字段是 `description`,不是 `body`。不 rename 就读成空 —— 正文同步
-    /// 上了 codehub,plan 页签和注入 prompt 却拿不到。这条用 #72 真实回包
-    /// 钉死:description 必须映射进 `RemoteIssue.body`。
     #[test]
     fn issue_view_description_maps_to_body() {
         let r = parse_issue_view_json(
@@ -1563,7 +1340,6 @@ mod api_body_tests {
         assert_eq!(r.author.as_deref(), Some("a30030291"));
     }
 
-    /// 没有 `description` 键 = 这张活本来就没写正文,如实空串,不是解析失败。
     #[test]
     fn issue_view_missing_description_is_empty_body() {
         let r = parse_issue_view_json(br#"{"iid":1,"title":"x","state":"opened","labels":[]}"#)
@@ -1571,8 +1347,6 @@ mod api_body_tests {
         assert!(r.body.is_empty());
     }
 }
-
-// ─────────────── 派生二:codehub ───────────────
 
 impl From<CodehubError> for RemoteError {
     fn from(e: CodehubError) -> Self {
@@ -1583,15 +1357,6 @@ impl From<CodehubError> for RemoteError {
     }
 }
 
-/// 绑一个 codehub 仓的远端实现。
-///
-/// `host` 是区的**别名**(`green` / `open`(内源) / `yellow`),就是
-/// `codehub-cli -H` 收的那个值,**不是域名** —— 拿它直接拼网页地址会得到一个打
-/// 不开的链接,要先过 `bw::model::codehub_alias_to_domain` 那张表。`path` 是
-/// `"org/repo"`。
-///
-/// 无状态:每个方法都把 `host`/`path` 再传给对应的 shell-out。将来若要省掉每次
-/// 那趟 `project view`(解析 project_id),在这里加一层缓存即可,接口不用动。
 #[derive(Debug)]
 pub(super) struct CodehubRemote {
     host: String,
@@ -1606,7 +1371,6 @@ impl CodehubRemote {
         }
     }
 
-    /// 接入流那几条方法要先有区。没填就**如实说**,不拿一个空 host 去撞 CLI。
     fn need_host(&self) -> Result<&str, RemoteError> {
         let h = self.host.trim();
         if h.is_empty() {
@@ -1718,8 +1482,6 @@ impl RemoteProvider for CodehubRemote {
         current_user(&self.host).await
     }
 
-    // ── 里程碑:只有这一臂真投(best-effort 镜像,不当正本)──
-
     async fn list_milestones(&self) -> Result<Vec<Milestone>, RemoteError> {
         Ok(list_milestones(&self.host, &self.path).await?)
     }
@@ -1753,8 +1515,6 @@ impl RemoteProvider for CodehubRemote {
         Ok(rename_plan_label(&self.host, &self.path, from_label, to_label).await?)
     }
 
-    // ── 走势:`codehub-cli -l 0` 全量拉,不截断,所以 `truncated` 恒 false ──
-
     async fn merged_mr_times(&self) -> Result<Capped<String>, RemoteError> {
         Ok(Capped {
             rows: merged_mr_times(&self.host, &self.path).await?,
@@ -1775,8 +1535,6 @@ impl RemoteProvider for CodehubRemote {
             .into_iter()
             .map(|r| RepoSummary {
                 path: r.path,
-                // codehub 给的是 `visibility` 字符串,不是布尔;只有明写 private
-                // 才算私有,拿不准就不画那个锁。
                 private: r.visibility.eq_ignore_ascii_case("private"),
                 description: r.description,
                 default_branch: r.default_branch,

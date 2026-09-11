@@ -1,10 +1,3 @@
-//! Workspace provisioner — the all-in-one-codebase default's mechanical arm:
-//! every project gets exactly one real git repo, and this module mints it
-//! (directory + `git init` + one real first commit). The only *writing*
-//! subprocess module in the engine; everything it creates is immediately
-//! verifiable on disk (`.git/`, `README.md`, `git log`), nothing is staged
-//! for later or simulated.
-
 use std::path::{Path, PathBuf};
 use std::process::Stdio;
 
@@ -38,14 +31,6 @@ pub(crate) async fn git_in(dir: &Path, args: &[&str]) -> Result<(), ProvisionErr
     Ok(())
 }
 
-/// 一张活的 worktree 落哪。**唯一书写处**:新树落 `<仓根>/.bw/worktrees/issue-<n>`
-/// (仓根 = `main_workspace` 被管仓检出,不是它的 parent)。分支仍 `bw/issue-<n>`
-/// (见 [`crate::github::issue_branch`])。目录忽略提交靠项目约定树上的
-/// `.bw/.gitignore`(写 `worktrees/`),不补主检出 `.gitignore`。
-///
-/// **旧平级兄弟不迁、不删**:V4 早期把树落在 `<parent>/<stem>-issue-<n>`,那些
-/// 老树还在磁盘上、会话行里记的也是那条路径。接回/收尾时不能只看新路径 ——
-/// 走 [`resolve_issue_worktree`]:会话记下的路径 → 新目录 → 旧兄弟,依次找。
 pub fn issue_worktree_path(main_workspace: &Path, issue_number: u32) -> Option<PathBuf> {
     Some(
         main_workspace
@@ -55,20 +40,13 @@ pub fn issue_worktree_path(main_workspace: &Path, issue_number: u32) -> Option<P
     )
 }
 
-/// 旧平级兄弟路径 `<parent>/<stem>-issue-<n>`。**不写新树**,只供
-/// [`resolve_issue_worktree`] 查找已存在的旧树(新活不会落到这里)。`None` =
-/// 主工作区没有上级或名字不是 UTF-8。
 pub fn legacy_issue_worktree_path(main_workspace: &Path, issue_number: u32) -> Option<PathBuf> {
     let parent = main_workspace.parent()?;
     let stem = main_workspace.file_name().and_then(|n| n.to_str())?;
     Some(parent.join(format!("{stem}-issue-{issue_number}")))
 }
 
-/// 找这张活的 worktree —— 先看会话记下的路径,再看新目录,再看旧平级兄弟。
-/// **只查找,不新建**(新建走 [`provision_issue_worktree`])。三处都没有 → `None`。
-///
-/// `recorded` = 会话行里记的 `workspace_path`(旧活可能记的是平级兄弟)。判活树看
-/// 目录在且有 `.git`(worktree 的 `.git` 是个文件不是目录,`exists()` 两者都认)。
+/// 按会话记录、新目录、旧目录依次查找已有工作树，不创建目录。
 pub fn resolve_issue_worktree(
     main_workspace: &Path,
     issue_number: u32,
@@ -87,17 +65,12 @@ pub fn resolve_issue_worktree(
     legacy_issue_worktree_path(main_workspace, issue_number).filter(|p| p.join(".git").exists())
 }
 
-/// 给一张活开(或接着用)一棵 git worktree。新树落 `<仓根>/.bw/worktrees/issue-<n>`,
-/// 分支 `bw/issue-<n>`(已存在则 `worktree add <path> <branch>`)。**旧平级兄弟
-/// 不迁、不删**:先 [`resolve_issue_worktree`] 找已有活树(含旧兄弟),有就原样
-/// 返回,不建第二棵;没有才在新路径建。主工作区留在 master 上,只有活树带 issue 分支。
-/// **不写主检出** —— `.bw/worktrees/` 的忽略靠项目约定树上的 `.bw/.gitignore`。
+/// 创建独立 issue 工作树；已有分支或工作树时复用。
 pub async fn provision_issue_worktree(
     main_workspace: &Path,
     issue_number: u32,
 ) -> Result<PathBuf, ProvisionError> {
     let branch = issue_branch(issue_number);
-    // 先找:新目录或旧平级兄弟里已经有一棵活树就原样接着用,不迁、不建第二棵。
     if let Some(existing) = resolve_issue_worktree(main_workspace, issue_number, None) {
         return Ok(existing);
     }
@@ -107,13 +80,12 @@ pub async fn provision_issue_worktree(
     let tree_str = tree_path.to_str().ok_or_else(|| {
         ProvisionError::CreateDir(format!("worktree 路径非 UTF-8:{}", tree_path.display()))
     })?;
-    // 新树落 <仓根>/.bw/worktrees/。先让 Git 在本机忽略这个运行时目录,
-    // 即使项目约定还没合入默认分支也不会把 worktree 当普通未跟踪文件。
+    // 在项目约定合入前，也需通过本机 Git 忽略工作树目录。
     ensure_local_worktree_exclude(main_workspace).await?;
     let parent = tree_path.parent().unwrap_or(Path::new(""));
     std::fs::create_dir_all(parent)
         .map_err(|e| ProvisionError::CreateDir(format!("建 .bw/worktrees 目录没成:{e}")))?;
-    // 上一次崩在建树前留下的**空壳**可以清;里面有任何文件都停下保护。
+    // 只可清理空目录；存在文件时拒绝，避免删除未提交改动。
     if tree_path.exists() && !tree_path.join(".git").exists() {
         let empty = std::fs::read_dir(&tree_path)
             .map(|mut rows| rows.next().is_none())
@@ -135,8 +107,6 @@ pub async fn provision_issue_worktree(
         .stderr(Stdio::piped())
         .output()
         .await;
-    // 首次:worktree add -b <branch> <path>(从 main HEAD)。重试(分支已存在):
-    // worktree add <path> <branch>。
     if git_in(
         main_workspace,
         &["worktree", "add", "-b", &branch, tree_str],
@@ -149,7 +119,6 @@ pub async fn provision_issue_worktree(
     Ok(tree_path)
 }
 
-/// 已发出包用的树:`<仓根>/.bw/worktrees/pack-<版本名>`。主检出不动。
 pub fn pack_worktree_path(main_workspace: &Path, version: &str) -> PathBuf {
     main_workspace
         .join(".bw")
@@ -203,16 +172,12 @@ pub async fn provision_pack_worktree(
     Ok(tree_path)
 }
 
-/// 账本分支。B/C 读数写这里,不写人的主检出。
 pub const LEDGER_BRANCH: &str = "bw/ledger";
-/// 项目约定常驻分支。名片走这一条,合入后分支留着。
 pub const PROJECT_BRANCH: &str = "bw/project";
-/// 运作活①常驻分支。定版本计划的仓文件改动走这里。
 pub const WEEK_PLAN_BRANCH: &str = "bw/week-plan";
-/// 运作活②常驻分支。资产盘点的仓文件改动走这里。
 pub const OPS_AUDIT_BRANCH: &str = "bw/ops-audit";
 
-/// 常驻车:合入后树和分支都留着,结清活时不收。
+/// 常驻分支及其工作树在工作完成后保留。
 pub fn is_standing_branch(branch: &str) -> bool {
     matches!(
         branch,
@@ -230,22 +195,18 @@ fn legacy_sibling_worktree_path(main_workspace: &Path, suffix: &str) -> Option<P
     Some(parent.join(format!("{stem}-{suffix}")))
 }
 
-/// 读数账本:`<仓>/.bw/worktrees/ledger`。
 pub fn ledger_worktree_path(main_workspace: &Path) -> Option<PathBuf> {
     standing_worktree_path(main_workspace, "ledger")
 }
 
-/// 项目约定:`<仓>/.bw/worktrees/project`。
 pub fn project_worktree_path(main_workspace: &Path) -> Option<PathBuf> {
     standing_worktree_path(main_workspace, "project")
 }
 
-/// 定版本计划:`<仓>/.bw/worktrees/week-plan`。
 pub fn week_plan_worktree_path(main_workspace: &Path) -> Option<PathBuf> {
     standing_worktree_path(main_workspace, "week-plan")
 }
 
-/// 资产盘点:`<仓>/.bw/worktrees/ops-audit`。
 pub fn ops_audit_worktree_path(main_workspace: &Path) -> Option<PathBuf> {
     standing_worktree_path(main_workspace, "ops-audit")
 }
@@ -402,7 +363,6 @@ fn sibling_or_err(
     })
 }
 
-/// 给这个项目开(或接着用)项目约定 worktree。已经在就原样返回,不开第二次。
 pub async fn provision_project_worktree(main_workspace: &Path) -> Result<PathBuf, ProvisionError> {
     let target = sibling_or_err(
         main_workspace,
@@ -419,7 +379,6 @@ pub async fn provision_project_worktree(main_workspace: &Path) -> Result<PathBuf
     .await
 }
 
-/// 给这个项目开(或接着用)读数账本 worktree。已经在就原样返回,不开第二次。
 pub async fn provision_ledger_worktree(main_workspace: &Path) -> Result<PathBuf, ProvisionError> {
     let target = sibling_or_err(main_workspace, ledger_worktree_path(main_workspace), "账本")?;
     provision_standing_worktree(
@@ -432,7 +391,6 @@ pub async fn provision_ledger_worktree(main_workspace: &Path) -> Result<PathBuf,
     .await
 }
 
-/// 运作活①常驻树。已经在就原样返回。
 pub async fn provision_week_plan_worktree(
     main_workspace: &Path,
 ) -> Result<PathBuf, ProvisionError> {
@@ -451,7 +409,6 @@ pub async fn provision_week_plan_worktree(
     .await
 }
 
-/// 运作活②常驻树。已经在就原样返回。
 pub async fn provision_ops_audit_worktree(
     main_workspace: &Path,
 ) -> Result<PathBuf, ProvisionError> {
@@ -479,22 +436,12 @@ pub struct FileChange {
     pub deleted: u32,
 }
 
-// ─────────────── 分支命名与 git 远端地址(provider 中立) ───────────────
-//
-// 这三件跟「远端是 GitHub 还是 codehub」没关系:分支名是 Workbench 自己的约定,
-// 两个远端地址函数问的是本机 git。放在 remote/ 里的任何一臂都会让另一臂(和
-// 半个仓)为了拿一个分支名而 `use ...::github`,那正是两条线缠在一起的起点。
-
-/// The work branch a run's changes live on for a given GitHub issue —
-/// `bw/issue-<github_number>`. One deterministic branch per Issue so a retry
-/// re-uses the same branch (and the same PR), never fans out.
+/// 按远端项目内 issue 编号生成工作分支名。
 pub fn issue_branch(github_number: u32) -> String {
     format!("bw/issue-{github_number}")
 }
 
-/// 读一个工作区的 `origin` 远端 URL。`Ok(None)` = 没配 `origin`(绑定本地
-/// 目录建的项目的常态——`git remote get-url origin` 以非零退出,这不是
-/// bug);其余 git 失败照实报错,这是一次真读,不吞错误。
+/// 未配置 origin 时返回 None。
 pub async fn origin_remote_url(workspace: &Path) -> Result<Option<String>, ProvisionError> {
     let output = crate::win_cmd::tokio_cmd("git")
         .current_dir(workspace)
@@ -506,7 +453,6 @@ pub async fn origin_remote_url(workspace: &Path) -> Result<Option<String>, Provi
         .await
         .map_err(|e| ProvisionError::Git(e.to_string()))?;
     if !output.status.success() {
-        // "fatal: No such remote 'origin'" — 没配远端,不是错误。
         return Ok(None);
     }
     let url = String::from_utf8_lossy(&output.stdout).trim().to_string();
