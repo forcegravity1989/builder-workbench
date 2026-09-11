@@ -1,5 +1,5 @@
 //! 总览折线 —— 内联 SVG,不引图表库。业务图和 SDLC 走同一套:
-//! 从 0 起的纵轴、悬停读数、点断开不补 0。几何对齐 `docs/hifi/overview-36.html`。
+//! 从 0 起的纵轴、悬停读数、点断开不补 0。几何对齐 `docs/hifi/overview.html`。
 
 use dioxus::prelude::*;
 

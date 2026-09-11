@@ -3,7 +3,7 @@
 //! 把 bw 的 `Issue` 领域对象 ↔ codehub/GitHub issue 互转。issue 的状态、
 //! 排期、版本、类别以远端 issue + 标签为正本(`bw:status:*` /
 //! `bw:plan:*` / `bw:released:*` / `bw:category:*`)。旧 `bw:week:` 不认。
-//! 每个里程碑都是一个版本,一张活只挂一个。
+//! 每个里程碑都是一个版本；issue 可保留多个计划版本标签。
 //!
 //! 字段映射的取舍:每一条都不自作主张加标签。**lossy**:远端 issue 的 `body` 经
 //! `view_issue` 单查带回(列表查询不带正文);`branch`/`pr_number`、
@@ -50,8 +50,8 @@ fn map_remote_err<E: std::fmt::Display>(ctx: &str, e: E) -> AppError {
 
 /// 在远端仓里真开一个 issue,返回填好 `number`/`remote_number` 的 `Issue`。
 ///
-/// labels = `bw:status:todo`(新活默认待办)+ 一个版本槽(`bw:plan:v0.x`,
-/// 见 [`one_schedule`])+ `extra_labels`(调用方自塞,如类别)。不再写 `bw:week:`。
+/// labels = `bw:status:todo`(新活默认待办)+ 版本关系(`bw:plan:v0.x`,
+/// 见 [`schedules`])+ `extra_labels`(调用方自塞,如类别)。不再写 `bw:week:`。
 /// kind 由参数显式给(不推断),决定回填 `tool`/`workflow`/`origin`。
 ///
 /// issue 读写唯一入口:app 层各用例(issue / plan / ops / bootstrap / project /
@@ -66,9 +66,9 @@ pub async fn create(
     extra_labels: &[&str],
 ) -> Result<Issue> {
     let remote = app.remote_for(project)?;
-    let (week, plan) = one_schedule(week_of, extra_labels);
+    let (week, plans) = schedules(week_of, extra_labels);
     // 未排期的 issue 状态是 Backlog(待办池),排进一个版本的才是 Todo。
-    let status_label = if week.is_none() && plan.is_none() {
+    let status_label = if week.is_none() && plans.is_empty() {
         "bw:status:backlog"
     } else {
         "bw:status:todo"
@@ -82,7 +82,7 @@ pub async fn create(
         .create_issue(title, body, &label_refs)
         .await
         .map_err(|e| map_remote_err("远端建活没成", e))?;
-    if let Some(name) = &plan {
+    if let Some(name) = plans.last() {
         project_plan_best_effort(&remote, iid, name).await;
     }
     Ok(issue_from_create(
@@ -240,14 +240,17 @@ pub async fn edit_issue(
     Ok(())
 }
 
-/// 把 issue 排进人起名的版本:打 `bw:plan:<name>` 标签(namespace-replace 摘掉旧
-/// `bw:plan:`)+ 挂到同名里程碑(best-effort 镜像)。同一槽位 —— 同时摘
+/// 把 issue 纳入人起名的版本：保留既有 `bw:plan:*` 并追加目标标签，随后挂到
+/// 同名里程碑(best-effort 镜像)。同时摘
 /// `bw:week:`(排进这个版本就不该还挂着周版本)。
 pub async fn assign_to_plan(app: &App, project: &Project, iid: u32, plan: &str) -> Result<()> {
     let remote = app.remote_for(project)?;
-    // 打 bw:plan:<name>,同时摘 bw:week:(空后缀 = 摘掉整个周命名空间)。
-    // 一张活只属于一个版本。
-    let labels = [format!("bw:plan:{plan}"), "bw:week:".to_string()];
+    let current = remote
+        .view_issue(iid)
+        .await
+        .map_err(|e| map_remote_err("远端读 issue 标签没成", e))?;
+    let mut labels = plan_label_set(&current.labels, Some(plan), None);
+    labels.push("bw:week:".to_string());
     let label_refs: Vec<&str> = labels.iter().map(|s| s.as_str()).collect();
     remote
         .update_issue(iid, Some(&label_refs), None)
@@ -264,17 +267,33 @@ pub async fn assign_to_plan(app: &App, project: &Project, iid: u32, plan: &str) 
     Ok(())
 }
 
-/// 从版本拿下:摘 `bw:plan:`(空后缀),顺手摘旧 `bw:week:`。
-/// 里程碑镜像 best-effort 摘下。
-pub async fn clear_plan(app: &App, project: &Project, iid: u32) -> Result<()> {
+/// 从指定版本拿下：只摘精确的 `bw:plan:<plan>`，其余版本关系保留。
+pub async fn clear_plan(app: &App, project: &Project, iid: u32, plan: &str) -> Result<()> {
     let remote = app.remote_for(project)?;
-    let labels = ["bw:plan:".to_string(), "bw:week:".to_string()];
+    let current = remote
+        .view_issue(iid)
+        .await
+        .map_err(|e| map_remote_err("远端读 issue 标签没成", e))?;
+    let mut labels = plan_label_set(&current.labels, None, Some(plan));
+    let remaining_plan = labels
+        .iter()
+        .filter_map(|l| l.strip_prefix("bw:plan:"))
+        .next_back()
+        .map(str::to_string);
+    // 空后缀只负责清空 namespace，本身不会被持久化。
+    labels.push("bw:plan:".to_string());
+    labels.push("bw:week:".to_string());
     let label_refs: Vec<&str> = labels.iter().map(|s| s.as_str()).collect();
     remote
         .update_issue(iid, Some(&label_refs), None)
         .await
         .map_err(|e| map_remote_err("远端摘 bw:plan 标签没成", e))?;
-    if let Err(e) = remote.clear_issue_milestone(iid).await {
+    let projected = if let Some(name) = remaining_plan {
+        remote.project_plan(iid, &name).await
+    } else {
+        remote.clear_issue_milestone(iid).await
+    };
+    if let Err(e) = projected {
         bw_engine::dlog!(
             err,
             "milestone",
@@ -282,6 +301,24 @@ pub async fn clear_plan(app: &App, project: &Project, iid: u32) -> Result<()> {
         );
     }
     Ok(())
+}
+
+fn plan_label_set(labels: &[String], add: Option<&str>, remove: Option<&str>) -> Vec<String> {
+    let mut plans: Vec<String> = labels
+        .iter()
+        .filter_map(|l| l.strip_prefix("bw:plan:"))
+        .filter(|s| crate::version::is_plan_name(s) && remove != Some(*s))
+        .map(|s| format!("bw:plan:{s}"))
+        .collect();
+    if let Some(name) = add.filter(|s| crate::version::is_plan_name(s)) {
+        let target = format!("bw:plan:{name}");
+        if !plans.contains(&target) {
+            plans.push(target);
+        }
+    }
+    plans.sort();
+    plans.dedup();
+    plans
 }
 
 /// 按标题删版本里程碑。找不到当成功。失败只记日志,不挡标签正本。
@@ -359,15 +396,18 @@ pub async fn find_open_charter(app: &App, project: &Project) -> Result<Option<Is
 
 // ─────────────── Issue 构造(两条路:create 直接拼 / 从 RemoteIssue 映射)────
 
-/// 一张活只属于一个版本槽。有 `bw:plan:<name>` 就排期;`week_of` 即使非空
+/// 一张活可属于多个版本。有任一 `bw:plan:<name>` 就排期；`week_of` 即使非空
 /// 也不再生成周排期(不再写 `bw:week:`)。
-fn one_schedule(_week_of: &str, extra_labels: &[&str]) -> (Option<String>, Option<String>) {
-    let plan = extra_labels
+fn schedules(_week_of: &str, extra_labels: &[&str]) -> (Option<String>, Vec<String>) {
+    let mut plans: Vec<String> = extra_labels
         .iter()
-        .find_map(|l| l.strip_prefix("bw:plan:"))
+        .filter_map(|l| l.strip_prefix("bw:plan:"))
         .filter(|s| crate::version::is_plan_name(s))
-        .map(|s| s.to_string());
-    (None, plan)
+        .map(|s| s.to_string())
+        .collect();
+    plans.sort();
+    plans.dedup();
+    (None, plans)
 }
 
 /// `create` 成功后拼 `Issue`——这会儿没有 `RemoteIssue` 快照,但 title/body/
@@ -385,8 +425,8 @@ fn issue_from_create(
 ) -> Issue {
     let category = parse_category(extra_labels);
     let (tool, workflow) = resolve_tool_workflow(project, asset_root, kind, title, category);
-    let (week, plan) = one_schedule(week_of, extra_labels);
-    let scheduled = week.is_some() || plan.is_some();
+    let (week, plan_versions) = schedules(week_of, extra_labels);
+    let scheduled = week.is_some() || !plan_versions.is_empty();
     Issue {
         id: IssueId::from_remote(project.id, iid),
         project_id: project.id,
@@ -416,7 +456,7 @@ fn issue_from_create(
         settled_at: None,
         assignee: String::new(),
         author: String::new(),
-        plan_version: plan.unwrap_or_default(),
+        plan_versions,
     }
 }
 
@@ -471,7 +511,7 @@ fn issue_from_remote(project: &Project, asset_root: &std::path::Path, r: &Remote
         settled_at,
         assignee: r.assignee.clone().unwrap_or_default(),
         author: r.author.clone().unwrap_or_default(),
-        plan_version: parse_plan(&r.labels),
+        plan_versions: parse_plans(&r.labels),
     }
 }
 
@@ -669,10 +709,10 @@ fn parse_released(labels: &[String]) -> String {
 }
 
 /// 从 `bw:plan:<name>` 标签取这张活排进的版本。空后缀当没排。
-fn parse_plan(labels: &[String]) -> String {
-    labels
+fn parse_plans(labels: &[String]) -> Vec<String> {
+    let mut plans: Vec<String> = labels
         .iter()
-        .find_map(|l| {
+        .filter_map(|l| {
             let s = l.strip_prefix("bw:plan:")?;
             if crate::version::is_plan_name(s) {
                 Some(s.to_string())
@@ -680,7 +720,10 @@ fn parse_plan(labels: &[String]) -> String {
                 None
             }
         })
-        .unwrap_or_default()
+        .collect();
+    plans.sort();
+    plans.dedup();
+    plans
 }
 
 #[cfg(test)]
@@ -740,25 +783,44 @@ mod tests {
     }
 
     #[test]
-    fn one_schedule_keeps_only_v0x_plan() {
-        let (week, plan) = one_schedule("2026-W35", &["bw:plan:v0.3"]);
+    fn schedules_keeps_v0x_plan() {
+        let (week, plans) = schedules("2026-W35", &["bw:plan:v0.3"]);
         assert!(week.is_none());
-        assert_eq!(plan.as_deref(), Some("v0.3"));
+        assert_eq!(plans, vec!["v0.3".to_string()]);
     }
 
     #[test]
-    fn one_schedule_keeps_any_nonempty_plan() {
-        let (week, plan) = one_schedule("2026-W35", &["bw:plan:MVP收尾"]);
+    fn schedules_keeps_any_nonempty_plan() {
+        let (week, plans) = schedules("2026-W35", &["bw:plan:MVP收尾"]);
         assert!(week.is_none());
-        assert_eq!(plan.as_deref(), Some("MVP收尾"));
+        assert_eq!(plans, vec!["MVP收尾".to_string()]);
     }
 
     #[test]
-    fn parse_plan_keeps_old_and_v0x() {
-        assert_eq!(parse_plan(&["bw:plan:MVP收尾".into()]), "MVP收尾");
-        assert_eq!(parse_plan(&["bw:plan:v0.3".into()]), "v0.3");
-        assert_eq!(parse_plan(&["bw:plan:".into()]), "");
-        assert_eq!(parse_plan(&["bw:plan:2026-W36".into()]), "2026-W36");
+    fn parse_plans_keeps_all_distinct_versions() {
+        assert_eq!(
+            parse_plans(&[
+                "bw:plan:B".into(),
+                "bw:plan:A".into(),
+                "bw:plan:B".into(),
+                "bw:plan:".into(),
+            ]),
+            vec!["A".to_string(), "B".to_string()]
+        );
+    }
+
+    #[test]
+    fn plan_label_set_adds_without_replacing_and_removes_exactly() {
+        let current = vec!["bw:plan:A".into(), "bw:status:todo".into()];
+        assert_eq!(
+            plan_label_set(&current, Some("B"), None),
+            vec!["bw:plan:A".to_string(), "bw:plan:B".to_string()]
+        );
+        let carried = vec!["bw:plan:A".into(), "bw:plan:B".into()];
+        assert_eq!(
+            plan_label_set(&carried, None, Some("A")),
+            vec!["bw:plan:B".to_string()]
+        );
     }
 
     #[test]
@@ -780,7 +842,7 @@ mod tests {
             &["bw:plan:v0.3", "bw:category:build"],
         );
         assert_eq!(i.week_of, "");
-        assert_eq!(i.plan_version, "v0.3");
+        assert_eq!(i.plan_versions, vec!["v0.3".to_string()]);
         assert_eq!(i.status, IssueStatus::Todo);
     }
 

@@ -425,8 +425,10 @@ pub struct CardItemVm {
     pub assignee: String,
     /// 提出人(codehub author)。空 = 认不出。
     pub author: String,
-    /// 排进人起名的版本(`bw:plan:*`)。空 = 没挂这个写法;与 week_of 是同一槽位。
-    pub plan_version: String,
+    /// 排进人起名的版本(`bw:plan:*`)。可同时属于历史版本和当前版本。
+    pub plan_versions: Vec<String>,
+    /// 交付在哪个版本(`bw:released:*`)。空 = 尚未随版本交付。
+    pub released_version: String,
     /// 最近更新时间(unix 秒)。0 = 认不出。卡片「已更新」用它现算相对时间。
     pub updated_at: i64,
 }

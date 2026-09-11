@@ -19,9 +19,9 @@ use super::vm_build::{card_item, remote_label, tool_label};
 pub(super) fn build_board(issues: &[bw::Issue], plan: Option<&str>) -> BoardVm {
     let in_plan = |i: &bw::Issue| match plan {
         None => true,
-        Some(p) => i.plan_version == p,
+        Some(p) => i.plan_versions.iter().any(|v| v == p),
     };
-    let scheduled = |i: &bw::Issue| !i.plan_version.is_empty();
+    let scheduled = |i: &bw::Issue| !i.plan_versions.is_empty();
 
     // 待办列:未排期(Backlog 或 Todo 但没挂 bw:plan,仅全部)
     // + 已排期(Todo 且挂了版本)。

@@ -14,7 +14,7 @@ use super::ListFilter;
 /// 状态 → 胶囊 css + 中文。按 scheduled 判断未排期/已排期(而非纯 status),
 /// 因为历史 issue 可能 status=Todo 但 week_of 空(旧默认 Todo),那样该显示"未排期"。
 fn stage_pill(c: &CardItemVm) -> (&'static str, String) {
-    let scheduled = !c.plan_version.is_empty();
+    let scheduled = !c.plan_versions.is_empty();
     match c.status {
         IssueStatus::Backlog => ("tag tag-neutral", "未排期".into()),
         IssueStatus::Todo if !scheduled => ("tag tag-neutral", "未排期".into()),
@@ -29,7 +29,7 @@ fn stage_pill(c: &CardItemVm) -> (&'static str, String) {
 
 /// 行操作类型。按 scheduled 判断:未排期→schedule,已排期 Todo→start。
 fn action_kind(c: &CardItemVm) -> &'static str {
-    let scheduled = !c.plan_version.is_empty();
+    let scheduled = !c.plan_versions.is_empty();
     match c.status {
         IssueStatus::Backlog => "schedule",
         IssueStatus::Todo if !scheduled => "schedule",
@@ -52,6 +52,7 @@ pub fn list_view(
     start: Signal<Option<IssueId>>,
     bridge: &Bridge,
     nav: PanelNav,
+    viewing_released: bool,
 ) -> Element {
     let current_user = p.current_user.as_str();
 
@@ -118,7 +119,7 @@ pub fn list_view(
                     span { class: "il-act", "" }
                 }
                 for c in &filtered {
-                    {list_row(c, selected, schedule, start, bridge, nav)}
+                    {list_row(c, selected, schedule, start, bridge, nav, (&p.viewing_plan, viewing_released))}
                 }
                 if filtered.is_empty() {
                     div { class: "empty empty-center", "没有符合的 issue" }
@@ -206,7 +207,9 @@ fn list_row(
     mut start: Signal<Option<IssueId>>,
     bridge: &Bridge,
     nav: PanelNav,
+    viewing: (&str, bool),
 ) -> Element {
+    let (viewing_plan, viewing_released) = viewing;
     let (pill_cls, stage) = stage_pill(c);
     let act = action_kind(c);
     // 负责人(assignee)给负责人列;提出人(author)给 by 行。
@@ -226,8 +229,8 @@ fn list_row(
         .unwrap_or('—')
         .to_uppercase()
         .collect::<String>();
-    let plan_tag = if !c.plan_version.is_empty() {
-        format!("版本·{}", c.plan_version)
+    let plan_tag = if !c.plan_versions.is_empty() {
+        format!("版本·{}", c.plan_versions.join("、"))
     } else {
         "未排期".into()
     };
@@ -243,6 +246,9 @@ fn list_row(
             span { class: "il-title",
                 span { class: "il-t1", "{c.title}" }
                 span { class: "il-t2", "{sub}" }
+                if let Some(label) = super::kanban::carryover_label(c, viewing_plan, viewing_released) {
+                    span { class: "tag tag-warning", "{label}" }
+                }
             }
             span { class: "il-owner",
                 span { class: "avatar avatar-sm", "{initial}" }

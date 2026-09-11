@@ -82,11 +82,45 @@ fn ago(unix: i64) -> String {
 
 /// 一张活「排在哪」:只认 `bw:plan:`。
 fn place_of(c: &CardItemVm) -> String {
-    if !c.plan_version.is_empty() {
-        format!("版本·{}", c.plan_version)
+    if !c.plan_versions.is_empty() {
+        format!("版本·{}", c.plan_versions.join("、"))
     } else {
         "未排期".into()
     }
+}
+
+pub(super) fn carryover_label(
+    c: &CardItemVm,
+    viewing_plan: &str,
+    viewing_released: bool,
+) -> Option<String> {
+    carryover_text(
+        &c.plan_versions,
+        &c.released_version,
+        viewing_plan,
+        viewing_released,
+    )
+}
+
+fn carryover_text(
+    plan_versions: &[String],
+    released_version: &str,
+    viewing_plan: &str,
+    viewing_released: bool,
+) -> Option<String> {
+    if !viewing_released || viewing_plan.is_empty() || released_version == viewing_plan {
+        return None;
+    }
+    let others: Vec<&str> = plan_versions
+        .iter()
+        .map(String::as_str)
+        .filter(|name| *name != viewing_plan)
+        .collect();
+    Some(if others.len() == 1 {
+        format!("遗留 {}", others[0])
+    } else {
+        "遗留".into()
+    })
 }
 
 #[allow(clippy::too_many_arguments)]
@@ -103,13 +137,14 @@ pub fn board(
     reject: Signal<Option<PendingReject>>,
     col_seg: Signal<HashMap<String, String>>,
     nav: PanelNav,
+    viewing_released: bool,
 ) -> Element {
     let f = if p.view_all { filters } else { None };
     let view_all = p.view_all;
     rsx! {
         div { class: "board",
             for col in p.board.columns.iter() {
-                {column(col, f.clone(), &plan_filter, view_all, &p.remote_brand, bridge, dragging, schedule, selected, start, pending, reject, col_seg, nav)}
+                {column(col, f.clone(), &plan_filter, view_all, &p.remote_brand, bridge, dragging, schedule, selected, start, pending, reject, col_seg, nav, &p.viewing_plan, viewing_released)}
             }
         }
     }
@@ -123,7 +158,7 @@ fn column(
     view_all: bool,
     // 这个项目的远端叫什么(GitHub / CodeHub)。空 = 不画那枚徽。
     brand: &str,
-    bridge: &Bridge,
+    _bridge: &Bridge,
     mut dragging: Signal<Option<CardItemVm>>,
     schedule: Signal<Option<PendingSchedule>>,
     selected: Signal<Option<IssueId>>,
@@ -131,7 +166,9 @@ fn column(
     pending: Signal<Option<PendingMove>>,
     reject: Signal<Option<PendingReject>>,
     col_seg: Signal<HashMap<String, String>>,
-    nav: PanelNav,
+    _nav: PanelNav,
+    viewing_plan: &str,
+    viewing_released: bool,
 ) -> Element {
     // 段卡过滤:按 filters(旧) + plan_filter(计划下拉)双重过滤。
     let plan_ok = |c: &CardItemVm| -> bool {
@@ -139,9 +176,9 @@ fn column(
             return true;
         }
         if plan_filter == "unscheduled" {
-            c.plan_version.is_empty()
+            c.plan_versions.is_empty()
         } else {
-            c.plan_version == plan_filter
+            c.plan_versions.iter().any(|v| v == plan_filter)
         }
     };
     // 预拷贝成 owned 数据,rsx 闭包不借用 col。段自带 cards(build_board 已按
@@ -222,7 +259,7 @@ fn column(
                     dragging.set(None);
                 },
                 for c in active_cards.iter() {
-                    {card_view(c, dragging, selected, view_all, brand, bridge, nav)}
+                    {card_view(c, dragging, selected, view_all, brand, viewing_plan, viewing_released)}
                 }
                 if active_cards.is_empty() {
                     div { class: "board-empty", "无 issue" }
@@ -238,8 +275,8 @@ fn card_view(
     mut selected: Signal<Option<IssueId>>,
     view_all: bool,
     brand: &str,
-    _bridge: &Bridge,
-    _nav: PanelNav,
+    viewing_plan: &str,
+    viewing_released: bool,
 ) -> Element {
     let c1 = c.clone();
     let cid = c.id;
@@ -255,6 +292,7 @@ fn card_view(
         .to_uppercase()
         .collect::<String>();
     let updated = ago(c.updated_at);
+    let carryover = carryover_label(c, viewing_plan, viewing_released);
     // 这枚徽说的是「这张活在远端有对应 issue」,徽面写的是**这个项目真正挂的那个
     // 平台**。以前写死成 `CodeHub`,于是接 GitHub 的项目每张卡都被标成 CodeHub。
     // 认不出平台就不画 —— 空着是实话,顶一个别人的名字不是。
@@ -276,6 +314,9 @@ fn card_view(
                 span { class: "status-dot {status_dot_class(c.status)} ml-auto", title: "{seg_def(c.status)}" }
             }
             div { class: "kcard-title", "{c.title}" }
+            if let Some(label) = carryover {
+                span { class: "tag tag-warning", "{label}" }
+            }
             if !c.body.trim().is_empty() {
                 div { class: "kcard-desc", "{c.body.chars().take(64).collect::<String>()}" }
             }
@@ -428,7 +469,7 @@ fn apply_drop(
 ) {
     // 未排期拖到已排期 → 排期弹窗(改标签,不改状态)
     if drop_seg == "assigned"
-        && card.plan_version.is_empty()
+        && card.plan_versions.is_empty()
         && matches!(card.status, IssueStatus::Backlog | IssueStatus::Todo)
     {
         schedule.set(Some(PendingSchedule {
@@ -471,5 +512,30 @@ trait ColKey {
 impl ColKey for ColumnVm {
     fn status_label_key(&self) -> String {
         format!("{:?}", self.status)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::carryover_text;
+
+    #[test]
+    fn released_plan_derives_small_carryover_label() {
+        let plans = vec!["A".into(), "B".into()];
+        assert_eq!(
+            carryover_text(&plans, "", "A", true).as_deref(),
+            Some("遗留 B")
+        );
+        assert_eq!(carryover_text(&plans, "A", "A", true), None);
+        assert_eq!(carryover_text(&plans, "", "B", false), None);
+    }
+
+    #[test]
+    fn ambiguous_destination_stays_generic() {
+        let plans = vec!["A".into(), "B".into(), "C".into()];
+        assert_eq!(
+            carryover_text(&plans, "", "A", true).as_deref(),
+            Some("遗留")
+        );
     }
 }

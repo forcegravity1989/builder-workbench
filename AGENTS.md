@@ -123,7 +123,7 @@ scripts/   门禁脚本(guard-*)+ codegraph 联调
 
 ### codehub issue 标签词表
 
-`bw:status:{todo|inprogress|inreview|blocked}`(closed=Done,不打)、`bw:plan:<里程碑名>`(排进哪个版本,一张活只挂一个)、`bw:released:<名>`(发版号,另一件事)、`bw:category:{prototype|build|optimize|growth|ops}`。新建不写 `bw:week:*`(旧标产品不认)。**不打**:`kind`(从标题推断)、`tool`/`workflow`(开工工具跟人走本机 settings;workflow 是产品默认)。仓改动两类:issue 数据(状态/排期/版本/类别)→ codehub 标签 Workbench 直接改;仓文件产物(名片)→ 项目约定常驻树 `bw/project` + MR。
+`bw:status:{todo|inprogress|inreview|blocked|cancelled}`(closed 且非 cancelled=Done,不打)、`bw:plan:<里程碑名>`(纳入哪些版本,可多值；遗留到 B 时增加 B、保留 A)、`bw:released:<名>`(实际在哪版交付,单值)、`bw:category:{prototype|build|optimize|growth|ops}`。新建不写 `bw:week:*`(旧标产品不认)。**不打**:`kind`(从标题推断)、`tool`/`workflow`(开工工具跟人走本机 settings;workflow 是产品默认)。仓改动两类:issue 数据(状态/排期/版本/类别)→ codehub 标签 Workbench 直接改;仓文件产物(名片)→ 项目约定常驻树 `bw/project` + MR。状态机与各写入者边界正本见 `standard/system-prompt/references/issue-state.md`。
 
 ### 写作纪律(给人看的东西先让人看得懂)
 

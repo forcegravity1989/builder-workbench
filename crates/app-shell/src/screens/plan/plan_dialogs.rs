@@ -248,7 +248,7 @@ pub fn CreateVersionDialog(
     let mut picking = use_signal(|| false);
     let mut query = use_signal(String::new);
     // 可划归的候选:还没收口的活都算,不限于未排期的。已在别的版本里的挑进来
-    // 就是换槽(运作活①评论会记「自 v0.x 顺延」)。运作活①自己不进候选 —— 建版
+    // 是给既有 issue 增加版本关系。运作活①自己不进候选 —— 建版
     // 时会给这个版本另起一张。
     let candidates: Vec<&CardItemVm> = p
         .board
@@ -414,7 +414,7 @@ pub fn CreateVersionDialog(
 fn check_row(c: &CardItemVm, mut picked: Signal<Vec<IssueId>>) -> Element {
     let id = c.id;
     let checked = picked.read().contains(&id);
-    let from = c.plan_version.clone();
+    let from = c.plan_versions.join("、");
     rsx! {
         label { class: "check-row",
             input {
@@ -473,7 +473,7 @@ pub fn ScheduleDialog(
             on_close: move |_| schedule.set(None),
                 div { class: "dialog-title", "排期" }
                 div { class: "dialog-body",
-                    "把「{ps.title}」排进一个版本。一张活只属于一个槽。"
+                    "把「{ps.title}」纳入一个版本。已有版本记录会保留。"
                 }
                 div { class: "field",
                     label { "排进" }

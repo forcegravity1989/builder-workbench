@@ -53,7 +53,7 @@ impl App {
             (IssueKind::Ops, _) | (_, None) => Vec::new(),
             (_, Some(c)) => vec![format!("bw:category:{}", crate::model::category_key(c))],
         };
-        // 一张活只属于一个版本。只打 bw:plan:v0.x,不再写 bw:week。
+        // 新建时可直接纳入一个版本；后续可继续增加 bw:plan 标签。
         let (week_of, plan) = if !plan.is_empty() {
             (String::new(), plan)
         } else {

@@ -92,7 +92,7 @@ pub enum Command {
         id: IssueId,
         week_of: Option<String>,
     },
-    /// 排进计划版本(`bw:plan:<name>`)。一张活只属于一个版本。
+    /// 纳入计划版本(`bw:plan:<name>`)。已有版本关系保留。
     ScheduleToPlan { id: IssueId, plan: String },
     /// 建一个版本:落运作活①并打 `bw:plan:<name>`,纳入的活也打标。
     /// 同名里程碑只补充。与发版号 `CutRelease` 不同。

@@ -179,7 +179,7 @@ fn refs_for_workflow(workflow: &str, refs_dir: &Path) -> Vec<bootstrap::Referenc
         settled_at: None,
         assignee: String::new(),
         author: String::new(),
-        plan_version: String::new(),
+        plan_versions: Vec::new(),
     };
     bootstrap::references_for(&issue, refs_dir)
 }

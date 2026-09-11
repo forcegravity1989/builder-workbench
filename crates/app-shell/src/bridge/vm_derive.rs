@@ -16,7 +16,7 @@ use std::path::Path;
 pub(super) fn build_week_counts(issues: &[bw::Issue], week: Option<&str>) -> WeekCountsVm {
     let in_scope = |i: &&bw::Issue| match week {
         None => true,
-        Some(w) => i.plan_version == w,
+        Some(w) => i.plan_versions.iter().any(|v| v == w),
     };
     let n = |st: IssueStatus| {
         issues
@@ -308,7 +308,7 @@ mod ops_chip_display_tests {
             settled_at: None,
             assignee: String::new(),
             author: String::new(),
-            plan_version: String::new(),
+            plan_versions: Vec::new(),
         }
     }
 }
