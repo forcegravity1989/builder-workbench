@@ -1326,7 +1326,7 @@ async fn register_orca_repo(app: &App, ui: &mut vm_build::UiState, pid: ProjectI
                     ws.display()
                 );
                 ui.set_note(Some(format!(
-                    "Orca 定时任务创建失败：{e}。返回项目墙后重新打开项目可重试"
+                    "Orca 默认自动化未全部就绪：{e}。处理上述原因后重新打开项目可重试"
                 )));
             }
         },

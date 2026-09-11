@@ -288,8 +288,9 @@ async fn provision_standing_worktree(
 ) -> Result<PathBuf, ProvisionError> {
     if let Some(old) = legacy.filter(|p| p.exists()) {
         return Err(ProvisionError::CreateDir(format!(
-            "发现旧的{what} worktree:{}。Workbench 不迁、不删现有劳动成果;请先在 Git 中收尾并移除旧 worktree,再重试",
-            old.display()
+            "发现旧的{what}工作树:{}；标准目录:{}。请按组内 v0.4 升级指引完成一次性目录升级，并核对 Orca 任务绑定；仅重新打开项目不能解决",
+            old.display(),
+            target.display()
         )));
     }
     if target.join(".git").exists() {
@@ -565,7 +566,14 @@ mod tests {
         let sentinel = legacy.join("人的改动.txt");
         std::fs::write(&sentinel, "keep me").unwrap();
         let refused = provision_week_plan_worktree(&repo).await.unwrap_err();
-        assert!(refused.to_string().contains("不迁、不删"));
+        assert!(refused.to_string().contains("一次性目录升级"));
+        assert!(refused.to_string().contains(&legacy.display().to_string()));
+        assert!(refused.to_string().contains(
+            &week_plan_worktree_path(&repo)
+                .unwrap()
+                .display()
+                .to_string()
+        ));
         assert_eq!(std::fs::read_to_string(&sentinel).unwrap(), "keep me");
 
         let tree_arg = project_tree.display().to_string();

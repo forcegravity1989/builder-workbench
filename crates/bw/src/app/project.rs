@@ -128,7 +128,9 @@ impl App {
                         )),
                         Err(e) => self.step(ProgressLine::fail(
                             6,
-                            format!("Orca 定时没打上:{e} —— 退回项目墙再点进来会再打"),
+                            format!(
+                                "Orca 默认自动化未全部就绪：{e}。处理上述原因后重新打开项目可重试"
+                            ),
                         )),
                     },
                     Err(e) => self.step(ProgressLine::fail(

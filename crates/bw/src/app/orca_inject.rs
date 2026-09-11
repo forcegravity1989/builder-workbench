@@ -14,13 +14,13 @@ struct Spec {
     name: &'static str,
     rrule: &'static str,
     reuse_session: bool,
-    workspace: std::path::PathBuf,
-    prompt: String,
+    workspace: Result<std::path::PathBuf, String>,
+    prompt: Result<String, String>,
 }
 
 impl App {
-    /// `ensure_repo` 已经成功之后再叫。开不出树或 Orca 拒了,把原话交出去,
-    /// 调用方不标记「这个进程已经打过」,下次 Open 再试。
+    /// `ensure_repo` 成功后逐项补齐默认自动化；单项失败不阻断其他任务。
+    /// 汇总失败交给调用方，只有全部成功才缓存，处理原因后下次打开可重试。
     pub async fn ensure_orca_automations(
         &self,
         rt: &bw_engine::orca::OrcaRuntime,
@@ -28,13 +28,13 @@ impl App {
     ) -> Result<(), String> {
         let week_plan = bw_engine::workspace::provision_week_plan_worktree(ws)
             .await
-            .map_err(|e| format!("开不出定版本计划树:{e}"))?;
+            .map_err(|e| format!("开不出定版本计划树:{e}"));
         let ops_audit = bw_engine::workspace::provision_ops_audit_worktree(ws)
             .await
-            .map_err(|e| format!("开不出资产盘点树:{e}"))?;
+            .map_err(|e| format!("开不出资产盘点树:{e}"));
         let ledger = bw_engine::workspace::provision_ledger_worktree(ws)
             .await
-            .map_err(|e| format!("开不出账本树:{e}"))?;
+            .map_err(|e| format!("开不出账本树:{e}"));
         let _ = bw_engine::orca::refresh_worktrees(rt, ws).await;
 
         let skills = self
@@ -56,7 +56,7 @@ impl App {
                     &skills,
                     refs.as_deref(),
                     "若已有未关闭的版本计划 Issue，或本周版本已经确定,停手说明并退出。人没点头之前不落仓文件。",
-                )?,
+                ),
             },
             Spec {
                 name: AUTO_OPS_AUDIT,
@@ -70,14 +70,14 @@ impl App {
                     &skills,
                     refs.as_deref(),
                     "说明写 mode: weekly。有开着的「资产盘点」本周这张就接着做,不要另建一张。",
-                )?,
+                ),
             },
             Spec {
                 name: AUTO_COLLECT_B,
                 rrule: RRULE_COLLECT_B,
                 reuse_session: true,
                 workspace: ledger.clone(),
-                prompt: collect_prompt(ws, &ledger),
+                prompt: ledger.map(|path| collect_prompt(ws, &path)),
             },
         ];
 
@@ -88,20 +88,31 @@ impl App {
             .await
             .map_err(|e| e.to_string())?;
 
+        let mut failures = Vec::new();
         for spec in specs {
+            let prepared = spec
+                .workspace
+                .and_then(|workspace| spec.prompt.map(|prompt| (workspace, prompt)));
+            let (workspace, prompt) = match prepared {
+                Ok(prepared) => prepared,
+                Err(e) => {
+                    failures.push(format!("{}：{e}", spec.name));
+                    continue;
+                }
+            };
             if existing
                 .iter()
                 .any(|a| a.name == spec.name && a.project_id == repo_id)
             {
                 continue;
             }
-            bw_engine::orca::create_automation(
+            if let Err(e) = bw_engine::orca::create_automation(
                 rt,
                 &bw_engine::orca::AutomationCreate {
                     name: spec.name,
-                    prompt: &spec.prompt,
+                    prompt: &prompt,
                     repo: ws,
-                    workspace: &spec.workspace,
+                    workspace: &workspace,
                     reuse_session: spec.reuse_session,
                     rrule: spec.rrule,
                     timezone: TZ,
@@ -109,10 +120,17 @@ impl App {
                 },
             )
             .await
-            .map_err(|e| format!("打「{}」没成:{e}", spec.name))?;
+            {
+                failures.push(format!("{}：{e}", spec.name));
+                continue;
+            }
             bw_engine::dlog!(ok, "orca", "automation injected name={}", spec.name);
         }
-        Ok(())
+        if failures.is_empty() {
+            Ok(())
+        } else {
+            Err(failures.join("；"))
+        }
     }
 }
 
