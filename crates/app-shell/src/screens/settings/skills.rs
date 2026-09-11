@@ -15,7 +15,7 @@ enum Sort {
 pub fn SkillsPage(items: Vec<SkillVm>, focus: String) -> Element {
     let mut open = use_signal(|| (!focus.is_empty()).then_some(focus.clone()));
     let mut query = use_signal(String::new);
-    let mut origin = use_signal(|| None::<&'static str>);
+    let mut source = use_signal(|| None::<String>);
     let mut sort = use_signal(|| Sort::Uses);
 
     let open_slug = open.read().clone();
@@ -26,10 +26,21 @@ pub fn SkillsPage(items: Vec<SkillVm>, focus: String) -> Element {
         open.set(None);
     }
 
+    // 过滤项就是卡片上那个来源标签本身(Workbench / 项目名),按出现顺序去重 ——
+    // 不写「自带」「项目自有」这类分类词,列表和卡片说的是同一个名字。
+    let mut sources: Vec<String> = Vec::new();
+    for s in &items {
+        let label = origin_label(s);
+        if !sources.contains(&label) {
+            sources.push(label);
+        }
+    }
+    let picked = source.read().clone();
+
     let q = query.read().trim().to_lowercase();
     let mut filtered: Vec<&SkillVm> = items
         .iter()
-        .filter(|s| origin.read().is_none_or(|o| s.origin == o))
+        .filter(|s| picked.as_ref().is_none_or(|p| &origin_label(s) == p))
         .filter(|s| {
             q.is_empty()
                 || s.title.to_lowercase().contains(&q)
@@ -62,20 +73,23 @@ pub fn SkillsPage(items: Vec<SkillVm>, focus: String) -> Element {
                     input {
                         r#type: "radio",
                         name: "sk-origin",
-                        checked: origin.read().is_none(),
-                        onchange: move |_| origin.set(None),
+                        checked: picked.is_none(),
+                        onchange: move |_| source.set(None),
                     }
                     "全部"
                 }
-                for (key , label) in [("Workbench 自带", "Workbench 自带"), ("项目自有", "项目自有")] {
-                    label { class: "seg-opt", key: "{key}",
+                for name in sources.clone() {
+                    label { class: "seg-opt", key: "{name}",
                         input {
                             r#type: "radio",
                             name: "sk-origin",
-                            checked: *origin.read() == Some(key),
-                            onchange: move |_| origin.set(Some(key)),
+                            checked: picked.as_deref() == Some(name.as_str()),
+                            onchange: {
+                                let name = name.clone();
+                                move |_| source.set(Some(name.clone()))
+                            },
                         }
-                        "{label}"
+                        "{name}"
                     }
                 }
             }
@@ -89,9 +103,9 @@ pub fn SkillsPage(items: Vec<SkillVm>, focus: String) -> Element {
                             _ => Sort::Uses,
                         });
                     },
-                    option { value: "uses", "按用过几次" }
-                    option { value: "name", "按名字" }
-                    option { value: "origin", "按来源" }
+                    option { value: "uses", "使用次数" }
+                    option { value: "name", "名字" }
+                    option { value: "origin", "来源" }
                 }
             }
         }
