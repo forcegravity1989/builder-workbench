@@ -537,11 +537,23 @@ pub(super) fn skill_desc(path: &Path) -> String {
     let Ok(raw) = std::fs::read_to_string(path) else {
         return String::new();
     };
-    raw.lines()
-        .take(20)
-        .find_map(|l| l.strip_prefix("description:"))
-        .map(|v| v.trim().trim_matches('"').to_string())
-        .unwrap_or_default()
+    let lines: Vec<&str> = raw.lines().take(40).collect();
+    let Some(i) = lines.iter().position(|l| l.starts_with("description:")) else {
+        return String::new();
+    };
+    let head = lines[i]["description:".len()..].trim();
+    // YAML 的折叠 / 字面块(`>-`、`|` 这些):正文在后面几行缩进里,行首那个
+    // 记号**不是**描述本身 —— 只摘这一行的话,卡片上写的就是一个「>-」。
+    // 仓里项目自有的两份技能都是这么写的,自带那几份是单行,两种都得认。
+    if !matches!(head, ">" | ">-" | ">+" | "|" | "|-" | "|+" | "") {
+        return head.trim_matches('"').to_string();
+    }
+    lines[i + 1..]
+        .iter()
+        .take_while(|l| l.starts_with(' ') || l.starts_with('\t'))
+        .map(|l| l.trim())
+        .collect::<Vec<_>>()
+        .join(" ")
 }
 
 pub(super) fn chat_provider(chat: Option<&project_file::ChatConfig>) -> String {
