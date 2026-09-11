@@ -169,7 +169,11 @@ select.input { cursor: pointer; padding-top: 0; padding-bottom: 0; }
 .st-nav .search { margin-bottom: var(--space-3); }
 .st-sec { font-size: 10px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: color-mix(in srgb, var(--color-text) 45%, transparent); padding: var(--space-2) var(--space-2) var(--space-1); margin-top: var(--space-2); }
 .st-sec:first-child { margin-top: 0; }
-.st-nav .sidebar-item { cursor: pointer; white-space: nowrap; }
+/* 左栏这几行是真 <button>(点了换页,不是链接),所以要像设计系统的 .tab 一样
+ * 把浏览器默认的按钮皮扒掉 —— 不扒的话每一行都顶着 buttonface 那块灰底,
+ * 「现在在哪一页」的高亮就淹了。resting 态无背景是设计系统定的:只有
+ * hover / :active / [aria-current=page] 才上色。 */
+.st-nav .sidebar-item { appearance: none; background: none; border: 0; width: 100%; font-family: inherit; font-size: 13px; text-align: left; cursor: pointer; white-space: nowrap; }
 .st-body { flex: 1; min-width: 0; max-width: 900px; }
 
 .set-row.sel { background: var(--color-accent-100); }
@@ -187,7 +191,7 @@ select.input { cursor: pointer; padding-top: 0; padding-bottom: 0; }
 .pane-head .btn { flex: none; }
 
 /* — 详情页返回链接 — */
-.backlink { display: inline-flex; align-items: center; gap: 6px; margin-bottom: var(--space-3); font-size: 12.5px; color: color-mix(in srgb, var(--color-text) 60%, transparent); cursor: pointer; background: none; border: 0; padding: 0; font: inherit; }
+.backlink { display: inline-flex; align-items: center; gap: 6px; margin-bottom: var(--space-3); font-family: inherit; font-size: 12.5px; color: color-mix(in srgb, var(--color-text) 60%, transparent); cursor: pointer; appearance: none; background: none; border: 0; padding: 0; }
 .backlink:hover { color: var(--color-text); }
 .backlink svg { width: 13px; height: 13px; }
 
@@ -256,7 +260,7 @@ select.input { cursor: pointer; padding-top: 0; padding-bottom: 0; }
 /* — Skills 详情「文件 · N」:左文件列表、右正文,可切渲染 / 源码 — */
 .files { display: flex; border: 1px solid var(--color-divider); border-radius: var(--radius-md); background: var(--color-card); overflow: hidden; }
 .files-list { width: 190px; flex: none; padding: var(--space-2); border-right: 1px solid var(--color-divider); background: var(--color-surface); display: flex; flex-direction: column; gap: 2px; }
-.file-item { padding: 5px var(--space-2); border-radius: var(--radius-sm); font-family: var(--font-mono); font-size: 11.5px; cursor: pointer; color: color-mix(in srgb, var(--color-text) 75%, transparent); background: none; border: 0; text-align: left; font-weight: 400; }
+.file-item { padding: 5px var(--space-2); border-radius: var(--radius-sm); font-family: var(--font-mono); font-size: 11.5px; cursor: pointer; color: color-mix(in srgb, var(--color-text) 75%, transparent); appearance: none; background: none; border: 0; text-align: left; font-weight: 400; }
 .file-item:hover { background: color-mix(in srgb, var(--color-text) 6%, transparent); }
 .file-item[aria-current="true"] { background: var(--color-card); color: var(--color-text); font-weight: 500; box-shadow: var(--shadow-sm); }
 .files-body { flex: 1; min-width: 0; }
