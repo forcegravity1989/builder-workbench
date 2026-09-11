@@ -226,19 +226,14 @@ fn upsert_current(ledger: &Path, name: &str, value: &str) -> Result<(), String> 
     .map_err(|e| e.to_string())
 }
 
-/// 读数账本:固定 worktree,写不进主检出。开不出树就退到同路径普通目录。
+/// 读数账本:固定 worktree,写不进主检出。开不出树就如实不写，绝不占用正规树路径。
 async fn write_ledger(main: &Path) -> Option<PathBuf> {
     match bw_engine::workspace::provision_ledger_worktree(main).await {
         Ok(p) => {
             seed_ledger(main, &p);
             Some(p)
         }
-        Err(_) => {
-            let dir = bw_engine::workspace::ledger_worktree_path(main)?;
-            let _ = std::fs::create_dir_all(&dir);
-            seed_ledger(main, &dir);
-            Some(dir)
-        }
+        Err(_) => None,
     }
 }
 
@@ -580,5 +575,21 @@ mod tests {
                 ("2026-W34", Some("8")),
             ]
         );
+    }
+
+    #[tokio::test]
+    async fn ledger_failure_never_creates_a_plain_directory_at_the_worktree_path() {
+        let root =
+            std::env::temp_dir().join(format!("bw-ledger-fallback-{}", uuid::Uuid::new_v4()));
+        let main = root.join("repo");
+        let legacy = root.join("repo-bw-ledger");
+        std::fs::create_dir_all(&main).unwrap();
+        std::fs::create_dir_all(&legacy).unwrap();
+
+        assert_eq!(write_ledger(&main).await, None);
+        let target = bw_engine::workspace::ledger_worktree_path(&main).unwrap();
+        assert!(!target.exists());
+
+        std::fs::remove_dir_all(&root).unwrap();
     }
 }

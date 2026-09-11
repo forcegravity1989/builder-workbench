@@ -1,7 +1,7 @@
-//! 顶层 · 接入项目。**两步**:先指到一个真实的仓,再说清「这是个什么项目」。
+//! 顶层 · 接入项目。**两步**:先打开本地仓或克隆远端仓,再说清「这是个什么项目」。
 //!
 //! 为什么是两步而不是并排两张卡:第二步的四个字段**取决于第一步选了哪个仓** ——
-//! 那个仓要是已经被 Workbench 接管过,名片是回显出来的,人一个字都不用填。并排摆着
+//! 本地或远端已有 `.bw/project.toml` 时,名片会回显,人一个字都不用填。并排摆着
 //! 就等于让人对着一堆空格子先填一遍、选完仓再看见它被覆盖。
 //!
 //! 选仓用的是**一个输入框**:点「刷新」把你账号下的仓拉进来,然后在框里打字即
@@ -23,11 +23,10 @@
 //! 覆盖 —— 这一下要十几秒,不报进度人会以为没点上、然后猛点。
 
 use crate::bridge::{Bridge, Req};
-use crate::chrome::{light_dot, progress_log};
-use crate::vm::{RepoProbe, RepoRowVm, ToolProbeVm, Vm};
+use crate::chrome::progress_log;
+use crate::vm::{RepoProbe, RepoRowVm, Vm};
 use bw::app::ProgressLine;
 use bw::command::{Command, ProjectIntent, RemoteRef};
-use bw::Signal as HealthSignal;
 use dioxus::prelude::*;
 
 /// 下拉里最多画几行。检索是在**已经拉下来的那批**里过滤,不是再去问平台。
@@ -42,17 +41,21 @@ pub fn View(vm: Vm, bridge: Bridge, close: EventHandler<MouseEvent>) -> Element 
     let (vm, bridge) = (&vm, &bridge);
     // 第 1 步 = 项目地址,第 2 步 = 基础信息。
     let mut step = use_signal(|| 1u8);
-    // 「新建」= Workbench 只在本机把目录建出来;「已有」= 指到一个已经存在的仓。
-    let mut existing_tab = use_signal(|| false);
+    // 本地仓与远端 clone 是两件事,界面直说动作,不再用「新建 / 已有」让人猜。
+    let mut local_repo = use_signal(|| true);
     let github = use_signal(|| true);
 
     let mut name = use_signal(String::new);
     let mut brief = use_signal(String::new);
     let mut benchmark = use_signal(String::new);
     let mut north_star = use_signal(String::new);
-    let mut slug = use_signal(String::new);
+    let slug = use_signal(String::new);
     let mut workspace = use_signal(String::new);
     let mut remote = use_signal(String::new);
+    let root = vm.settings.workspaces_root.clone();
+    let initial_parent = root.clone();
+    // 克隆默认就落设置里的工作区根目录。界面展示的是父文件夹,提交时才补仓名。
+    let mut clone_parent = use_signal(move || initial_parent);
     // codehub 的 `-H` 收的是**区的别名**,不是域名 —— V3 用了大半年的就是这三个
     // (`codehub-cli -H green|open|yellow`)。默认内源区,和 V3 的默认值一致。
     // 原来这里是个空的「内部域名,得你填」输入框:人一点 codehub 就先撞一句
@@ -89,8 +92,7 @@ pub fn View(vm: Vm, bridge: Bridge, close: EventHandler<MouseEvent>) -> Element 
     let b_next = bridge.clone();
     let vm_seq = vm.note_seq;
     let vm_probed = vm.repos.picked.clone();
-    let root = vm.settings.workspaces_root.clone();
-    // 从远端仓读回来的名片。**人没动过的格子才用它** —— 见 `shown` / `pick`。
+    // 从本地或远端仓读回来的名片。**人没动过的格子才用它** —— 见 `shown` / `pick`。
     let pf = vm.repos.prefill.clone().unwrap_or_default();
     let (pf_name, pf_brief, pf_bench, pf_star) = (
         pf.name.clone(),
@@ -114,6 +116,11 @@ pub fn View(vm: Vm, bridge: Bridge, close: EventHandler<MouseEvent>) -> Element 
         }
         let r = remote.read().trim().to_string();
         let gh = *github.read();
+        let target = if *local_repo.read() {
+            workspace.read().trim().to_string()
+        } else {
+            clone_target(&clone_parent.read(), &r)
+        };
         b.cmd(Command::CreateProject {
             slug: s,
             intent: ProjectIntent {
@@ -123,7 +130,7 @@ pub fn View(vm: Vm, bridge: Bridge, close: EventHandler<MouseEvent>) -> Element 
                 north_star: pick(&north_star.read(), &pf_star),
                 ..Default::default()
             },
-            remote: if r.is_empty() {
+            remote: if *local_repo.read() || r.is_empty() {
                 RemoteRef::default()
             } else {
                 RemoteRef {
@@ -140,16 +147,23 @@ pub fn View(vm: Vm, bridge: Bridge, close: EventHandler<MouseEvent>) -> Element 
                     path: r,
                 }
             },
-            workspace_path: workspace.read().trim().to_string(),
+            workspace_path: target,
         });
     };
 
-    // 第一步至少要指到一个仓:「已有」得有本机路径或远端地址,「新建」随时可走
-    // (目录名留空会按项目名生成,而项目名是第二步的事)。
-    let can_next = !*existing_tab.read()
-        || !workspace.read().trim().is_empty()
-        || !remote.read().trim().is_empty();
+    // 打开本地仓必须给路径;clone 必须给远端,落点可留空走工作区根目录。
+    let can_next = if *local_repo.read() {
+        !workspace.read().trim().is_empty()
+    } else {
+        !remote.read().trim().is_empty()
+    };
     let at_addr = *step.read() == 1;
+    let target_path = if *local_repo.read() {
+        workspace.read().trim().to_string()
+    } else {
+        clone_target(&clone_parent.read(), &remote.read())
+    };
+    let probing = matches!(vm.repos.probe, RepoProbe::Loading);
     // 渲染那一刻选中的是哪个区。`host.read()` 直接写进 rsx 会留下一个活不过
     // 这条语句的临时借用,先取一份快照。
     let zone = host.read().clone();
@@ -160,7 +174,7 @@ pub fn View(vm: Vm, bridge: Bridge, close: EventHandler<MouseEvent>) -> Element 
             div { class: "page-head",
                 div {
                     h1 { "接入项目" }
-                    p { class: "page-desc", "选一个仓、填四个字段。仓里还没有名片时会建一张「项目约定」的活等你合入。" }
+                    p { class: "page-desc", "选择仓库，再确认项目基础信息。" }
                 }
                 div { class: "page-actions",
                     button { class: "btn btn-secondary", onclick: close, "← 项目墙" }
@@ -182,107 +196,104 @@ pub fn View(vm: Vm, bridge: Bridge, close: EventHandler<MouseEvent>) -> Element 
                                 input {
                                     r#type: "radio",
                                     name: "ob-repo-kind",
-                                    checked: !*existing_tab.read(),
-                                    onchange: move |_| existing_tab.set(false),
+                                    checked: *local_repo.read(),
+                                    onchange: move |_| {
+                                        local_repo.set(true);
+                                        remote.set(String::new());
+                                    },
                                 }
-                                "新建"
+                                "打开本地仓"
                             }
                             label { class: "seg-opt",
                                 input {
                                     r#type: "radio",
                                     name: "ob-repo-kind",
-                                    checked: *existing_tab.read(),
-                                    onchange: move |_| existing_tab.set(true),
+                                    checked: !*local_repo.read(),
+                                    onchange: move |_| {
+                                        local_repo.set(false);
+                                        workspace.set(String::new());
+                                    },
                                 }
-                                "已有"
+                                "克隆远端仓"
                             }
                         }
-                        {platform_pills(*github.read(), github, &zone, bridge)}
-
-                        if !*github.read() {
+                        if *local_repo.read() {
                             div { class: "field",
-                                label { "哪个区" }
-                                {zone_pills(&zone, host, bridge)}
+                                label { "本地 Git 仓" }
+                                div { class: "row ob-path-row",
+                                    input {
+                                        class: "input mono", value: "{workspace}",
+                                        placeholder: "/Users/you/projects/workbench",
+                                        oninput: move |e| workspace.set(e.value()),
+                                    }
+                                    button {
+                                        class: "btn btn-secondary",
+                                        onclick: move |_| {
+                                            if let Some(path) = rfd::FileDialog::new().pick_folder() {
+                                                workspace.set(path.display().to_string());
+                                            }
+                                        },
+                                        "浏览文件夹"
+                                    }
+                                }
                             }
-                        }
-
-                        if *existing_tab.read() {
+                        } else {
+                            {platform_pills(*github.read(), github, &zone, bridge)}
+                            if !*github.read() {
+                                div { class: "field",
+                                    label { "哪个区" }
+                                    {zone_pills(&zone, host, bridge)}
+                                }
+                            }
                             div { class: "field",
-                                label { "远端仓(打字即检索,也可以直接填 命名空间/仓名)" }
+                                label { "远端仓" }
                                 RepoField {
                                     vm: vm.clone(),
                                     bridge: bridge.clone(),
                                     github: *github.read(),
                                     host: host.read().clone(),
-                                    root: root.clone(),
                                     remote,
-                                    workspace,
                                 }
                             }
                             div { class: "field",
-                                label { "本机仓路径" }
-                                input {
-                                    class: "input mono", value: "{workspace}",
-                                    placeholder: "/Users/you/projects/workbench",
-                                    oninput: move |e| workspace.set(e.value()),
-                                }
-                            }
-                            div { class: "ob-note",
-                                "选中一个仓会顺手猜一个本机路径,不对就改。"
-                                br {}
-                                "仓里已经有 .bw/project.toml 就以它为准 —— 同事先接过这个项目的话,"
-                                "你填的名片字段只补空着的,一个字都不覆盖。"
-                            }
-                        } else {
-                            div { class: "field-2",
-                                div { class: "field",
-                                    label { "目录名(留空按名称自动生成)" }
+                                label { "父文件夹" }
+                                div { class: "row ob-path-row",
                                     input {
-                                        class: "input mono", value: "{slug}",
-                                        placeholder: "workflowhub",
-                                        oninput: move |e| slug.set(e.value()),
+                                        class: "input mono", value: "{clone_parent}",
+                                        placeholder: "{root}",
+                                        oninput: move |e| clone_parent.set(e.value()),
+                                    }
+                                    button {
+                                        class: "btn btn-secondary",
+                                        onclick: move |_| {
+                                            if let Some(parent) = rfd::FileDialog::new().pick_folder() {
+                                                clone_parent.set(parent.display().to_string());
+                                            }
+                                        },
+                                        "浏览文件夹"
                                     }
                                 }
-                                div { class: "field",
-                                    label { "本机仓路径(留空用工作区根目录)" }
-                                    input {
-                                        class: "input mono", value: "{workspace}",
-                                        placeholder: "留空即 {root}/<目录名>",
-                                        oninput: move |e| workspace.set(e.value()),
-                                    }
-                                }
-                            }
-                            div { class: "field",
-                                label { "远端仓(命名空间/仓名,可留空)" }
-                                input {
-                                    class: "input mono", value: "{remote}",
-                                    placeholder: "forcegravity1989/builder-workbench",
-                                    oninput: move |e| remote.set(e.value()),
-                                }
-                            }
-                            div { class: "ob-note",
-                                "「新建」只在本机把目录建出来并写进名片。远端仓要你自己先建好 —— "
-                                "Workbench 还不会替你在平台上开仓,也就没有公开/私有可选。"
-                                br {}
-                                "远端留空也能用 —— 没挂远端的项目一样能建活、能干活,只是没有 MR 可评审。"
                             }
                         }
-
-                        {probe_row(&vm.env, *github.read())}
                     }
 
                     div { class: "ob-actions",
                         button {
                             class: "btn btn-primary",
                             disabled: !can_next,
-                            title: if can_next { "" } else { "先选一个仓,或者把本机仓路径填上" },
+                            title: if can_next { "" } else if *local_repo.read() { "先选择本地 Git 仓" } else { "先选择远端仓" },
                             onclick: move |_| {
                                 // 人可能压根没点列表、直接把地址打进去了 —— 那样
                                 // 「这个仓接管过没有」根本没查过。走到第二步之前
                                 // 补一次:盯着的地址和已经查过的那个不一样就查。
-                                let addr = remote.read().trim().to_string();
-                                let asked = vm_probed.clone();
-                                if !addr.is_empty() && asked.as_deref() != Some(addr.as_str()) {
+                                if *local_repo.read() {
+                                    b_next.send(Req::PickLocalRepo {
+                                        path: workspace.read().trim().to_string(),
+                                    });
+                                } else {
+                                    let addr = remote.read().trim().to_string();
+                                    let asked = vm_probed.clone();
+                                    if !addr.is_empty() && asked.as_deref() != Some(addr.as_str()) {
                                     b_next.send(Req::PickRepo {
                                         github: *github.read(),
                                         host: host.read().trim().to_string(),
@@ -290,6 +301,7 @@ pub fn View(vm: Vm, bridge: Bridge, close: EventHandler<MouseEvent>) -> Element 
                                         // 手打的地址不知道默认分支,交给引擎兜底。
                                         git_ref: String::new(),
                                     });
+                                    }
                                 }
                                 step.set(2);
                             },
@@ -300,14 +312,7 @@ pub fn View(vm: Vm, bridge: Bridge, close: EventHandler<MouseEvent>) -> Element 
                     div { class: "card ob-card",
                         h3 { "基础信息" }
                         div { class: "ob-note",
-                            "要接的仓:"
-                            span { class: "mono",
-                                if remote.read().trim().is_empty() { "(没挂远端)" } else { "{remote}" }
-                            }
-                            " · 本机 "
-                            span { class: "mono",
-                                if workspace.read().trim().is_empty() { "(按工作区根目录放)" } else { "{workspace}" }
-                            }
+                            span { class: "mono", "{target_path}" }
                         }
                         {adopted_note(&vm.repos.probe)}
                         div { class: "field-2",
@@ -344,10 +349,6 @@ pub fn View(vm: Vm, bridge: Bridge, close: EventHandler<MouseEvent>) -> Element 
                                 oninput: move |e| north_star.set(e.value()),
                             }
                         }
-                        div { class: "ob-note",
-                            "这四个字段会写进仓里的 .bw/project.toml —— 换台机器拉下来就有,"
-                            "不是只存在你这台电脑上。"
-                        }
                     }
 
                     {progress_log(&log.read())}
@@ -361,16 +362,10 @@ pub fn View(vm: Vm, bridge: Bridge, close: EventHandler<MouseEvent>) -> Element 
                         }
                         button {
                             class: "btn btn-primary",
-                            disabled: busy,
+                            disabled: busy || probing,
                             onclick: submit,
-                            if busy { "接入中…" } else { "完成接入" }
+                            if busy { "接入中…" } else if probing { "正在读取…" } else { "完成接入" }
                         }
-                    }
-                }
-
-                if !vm.projects.is_empty() {
-                    div { class: "ob-note",
-                        "已接入 {vm.projects.len()} 个项目。仓里还没有名片时,会建一张「规范铺底」的活、开分支、提 MR,停在评审中等你合。已有名片不再铺。没合入时总览会一直提示。"
                     }
                 }
             }
@@ -390,9 +385,7 @@ fn RepoField(
     bridge: Bridge,
     github: bool,
     host: String,
-    root: String,
     remote: Signal<String>,
-    workspace: Signal<String>,
 ) -> Element {
     let mut query = use_signal(String::new);
     let mut open = use_signal(|| false);
@@ -458,19 +451,14 @@ fn RepoField(
 
             if let Some(e) = &r.error {
                 div { class: "ob-note",
-                    "列不出来:{e}"
-                    br {}
-                    if github { "多半是没装 gh 或者没登录(gh auth login)。地址直接打进上面那格也一样能用。" }
-                    else { "多半是没装 codehub-cli、没登录,或者域名填错了。地址直接打进上面那格也一样能用。" }
+                    "列不出来：{e}"
                 }
             } else if r.loading {
                 div { class: "ob-note",
                     if github { "正在问 gh repo list…" } else { "正在问 codehub-cli…" }
                 }
             } else if r.asked && r.rows.is_empty() {
-                div { class: "ob-note", "这个账号下一个仓都没列到。地址直接打进上面那格也一样能用。" }
-            } else if !r.asked {
-                div { class: "ob-note", "光标点进上面那格,就去列你账号下的仓;也可以直接把地址打进去。" }
+                div { class: "ob-note", "没有列到仓，也可以直接输入地址。" }
             }
 
             if *open.read() && !r.rows.is_empty() {
@@ -481,7 +469,7 @@ fn RepoField(
                         }
                     } else {
                         for row in shown_rows.iter() {
-                            {repo_option(row, &bridge, github, &host, &root, remote, workspace, query, open)}
+                            {repo_option(row, &bridge, github, &host, remote, query, open)}
                         }
                     }
                 }
@@ -498,9 +486,7 @@ fn repo_option(
     bridge: &Bridge,
     github: bool,
     host: &str,
-    root: &str,
     mut remote: Signal<String>,
-    mut workspace: Signal<String>,
     mut query: Signal<String>,
     mut open: Signal<bool>,
 ) -> Element {
@@ -509,12 +495,6 @@ fn repo_option(
     // 列表这一行知道它的默认分支,带上 —— 默认分支不叫 main 的仓不带就查不到,
     // 结果会把一个接管过的仓报成「没接管过」。
     let git_ref = row.default_branch.clone();
-    // 本机路径只是**猜**一个:工作区根目录 + 仓名。人可以改。
-    let guess = format!(
-        "{}/{}",
-        root.trim_end_matches('/'),
-        row.path.rsplit('/').next().unwrap_or("")
-    );
     rsx! {
         div {
             key: "{row.path}",
@@ -529,9 +509,6 @@ fn repo_option(
                 // 检索词清掉:下次光标再进那格,看到的是整张列表,而不是被
                 // 上一次选中的仓名筛得只剩一行。
                 query.set(String::new());
-                if workspace.read().trim().is_empty() {
-                    workspace.set(guess.clone());
-                }
                 b.send(Req::PickRepo {
                     github,
                     host: host2.clone(),
@@ -570,39 +547,44 @@ fn adopted_note(probe: &RepoProbe) -> Element {
         div { class: "ob-note",
             match probe {
                 RepoProbe::NotAsked => rsx! {
-                    "没查这个仓被 Workbench 接管过没有 —— 上一步没选/没填远端地址。四格要你自己填。"
+                    "尚未读取项目名片。"
                 },
-                RepoProbe::Loading => rsx! { "正在读这个仓的 .bw/project.toml…" },
+                RepoProbe::Loading => rsx! { "正在读取项目名片…" },
                 RepoProbe::Adopted => rsx! {
-                    "这个仓"
-                    strong { "已经被 Workbench 接管过" }
-                    ",下面四格是从它远端的 .bw/project.toml 回显的。"
-                    br {}
-                    "直接改就行 —— 你改过的格子以你为准,接进来时也不会覆盖仓里已有的字。"
+                    strong { "已发现 .bw/project.toml" }
+                    "，基础信息已带入。"
                 },
                 RepoProbe::Absent => rsx! {
-                    "这个仓"
-                    strong { "还没被 Workbench 接管过" }
-                    "(平台明确回「没有 .bw/project.toml」),四格要你自己填。"
+                    "未发现项目名片，请补全基础信息。"
                 },
                 RepoProbe::NoRepo(e) => rsx! {
-                    strong { "这个地址上找不到仓" }
-                    " —— 原话:{e}"
-                    br {}
-                    "常见原因:地址敲错了、这是个私有仓而当前账号看不见、gh/codehub-cli 没登录。"
-                    br {}
-                    "先把地址改对再往下走 —— 接一个不存在的仓,后面每一步都会失败。"
+                    strong { "找不到可用的 Git 仓：" }
+                    "{e}"
                 },
                 RepoProbe::Failed(e) => rsx! {
-                    strong { "没查成,所以不知道这个仓接管过没有" }
-                    " —— 原话:{e}"
-                    br {}
-                    "常见原因:没登录、网不通、这个仓的默认分支不叫 main。"
-                    br {}
-                    "照样能接:仓里真有 .bw/project.toml 的话,接入时以仓里的为准,你填的只补空着的字段,一个字都不会被覆盖。"
+                    strong { "项目名片读取失败：" }
+                    "{e}"
                 },
             }
         }
+    }
+}
+
+fn clone_target(parent: &str, remote: &str) -> String {
+    let name = remote
+        .trim()
+        .trim_end_matches('/')
+        .rsplit('/')
+        .next()
+        .unwrap_or("")
+        .trim_end_matches(".git");
+    if parent.trim().is_empty() || name.is_empty() {
+        String::new()
+    } else {
+        std::path::Path::new(parent.trim())
+            .join(name)
+            .display()
+            .to_string()
     }
 }
 
@@ -686,35 +668,6 @@ fn zone_pills(zone: &str, mut host: Signal<String>, bridge: &Bridge) -> Element 
     rsx! { div { class: "seg", {pills.into_iter()} } }
 }
 
-fn probe_row(env: &[ToolProbeVm], github: bool) -> Element {
-    let pick = |name: &str| env.iter().find(|t| t.name == name);
-    let platform = if github { "gh" } else { "codehub" };
-    let items: Vec<&ToolProbeVm> = [platform, "claude_cli", "open_design"]
-        .iter()
-        .filter_map(|n| pick(n))
-        .collect();
-    rsx! {
-        div { class: "probe3",
-            for t in items {
-                span {
-                    key: "{t.name}",
-                    class: "row",
-                    title: "{t.detail}",
-                    {light_dot(match t.ok {
-                        Some(true) => Some(HealthSignal::Green),
-                        Some(false) => Some(HealthSignal::Red),
-                        None => None,
-                    }, false)}
-                    "{t.label}"
-                }
-            }
-            span { class: "spacer" }
-            span { title: "这三项跟着整份界面数据一起重算,回项目墙点「测一下」即可",
-                "探活在项目墙那条环境条上重测" }
-        }
-    }
-}
-
 /// 名称 → 目录名。中文与空格换成短横,认不出的字符丢掉。
 fn slugify(name: &str) -> String {
     let s: String = name
@@ -733,5 +686,20 @@ fn slugify(name: &str) -> String {
         String::new()
     } else {
         s
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::clone_target;
+
+    #[test]
+    fn clone_target_appends_repo_name_to_configured_parent() {
+        let parent = std::env::temp_dir();
+        let got = clone_target(
+            &parent.display().to_string(),
+            "forcegravity1989/builder-workbench.git",
+        );
+        assert_eq!(got, parent.join("builder-workbench").display().to_string());
     }
 }

@@ -12,8 +12,8 @@ mod vm_panels;
 mod vm_settings;
 
 pub use nav::{
-    ChromeBusy, GuideNav, Panel, PanelNav, TopView, REPORTING, REPORTING_LOG, STARTING_SESSION,
-    SWITCHING_STATUS,
+    ChromeBusy, GuideNav, HelpNav, HelpTab, Panel, PanelNav, TopView, REPORTING, REPORTING_LOG,
+    STARTING_SESSION, SWITCHING_STATUS,
 };
 
 use crate::vm::Vm;
@@ -41,6 +41,8 @@ pub struct DeepLink {
     pub open: Option<String>,
     pub panel: Panel,
     pub view: Option<TopView>,
+    /// 帮助面板开在哪一页。八屏各有深链,这一条给它。
+    pub help: Option<HelpTab>,
 }
 
 pub fn read_deep_link() -> DeepLink {
@@ -66,6 +68,15 @@ pub fn read_deep_link() -> DeepLink {
                 dl.view = Some(view);
             }
             None => bw_engine::dlog!(warn, "bridge", "[BW_OPEN] 未知 BW_VIEW={v:?},忽略"),
+        }
+    }
+    if let Ok(h) = std::env::var("BW_HELP") {
+        match HelpTab::parse(&h) {
+            Some(tab) => {
+                bw_engine::dlog!(ok, "bridge", "[BW_HELP] {h}");
+                dl.help = Some(tab);
+            }
+            None => bw_engine::dlog!(warn, "bridge", "[BW_OPEN] 未知 BW_HELP={h:?},忽略"),
         }
     }
     dl
@@ -153,6 +164,11 @@ pub enum Req {
         /// 表现就是把一个接管过的仓报成「没接管过」** —— 默认分支不叫 main 的
         /// 仓很常见。
         git_ref: String,
+    },
+    /// 接入屏选择本地仓 —— 直接读工作目录里的 `.bw/project.toml`。
+    /// 本地与远端最后都回 [`Req::RepoPicked`],基础信息卡只认一份回显状态。
+    PickLocalRepo {
+        path: String,
     },
     /// 上面那一读的结果。`prefill = None` = 那个仓还没被接管过,四个字段要人填。
     RepoPicked {
@@ -310,54 +326,42 @@ fn refresh_note(vm: &Vm) -> String {
     }
 }
 
-/// 去平台列「我账号下的仓」。**两个平台各自的 CLI 都已经有这个能力**
-/// (`github::list_repos` / `codehub::list_repos`,V3 就在用),这里只是把它接到
-/// 界面上。列不出来就把 CLI 的原话端回去 —— 多半是没装、没登录、或者 codehub
-/// 域名填错,这三件事人一看原话就知道该干嘛。
+/// 接入屏那个单选:选的是 GitHub 还是 codehub。**这是界面上人做的选择**,也是
+/// 整个壳里最后一处「哪个平台」—— 到这儿就翻译成 provider 串交给底座,再往下
+/// 谁也不许按平台分支。
+fn provider_of(github: bool) -> &'static str {
+    if github {
+        "github"
+    } else {
+        "codehub"
+    }
+}
+
+/// 去平台列「我账号下的仓」。列不出来就把 CLI 的原话端回去 —— 多半是没装、没登
+/// 录、或者 codehub 区没选,这三件事人一看原话就知道该干嘛。
 async fn list_repos(github: bool, host: &str) -> (Vec<crate::vm::RepoRowVm>, Option<String>) {
     // 拉满用户的仓:搜索是客户端过滤已拉到的列表(走缓存,不重新拉),
     // 所以 fetch 要一次拿全——codehub-cli 无硬上限(实测 limit 9999 拉全 158 个)、
     // gh repo list 跨页拉到 limit。下拉框另有 DROPDOWN_CAP=30 封顶,不会铺满 999。
     const LIMIT: u32 = 999;
-    if github {
-        match bw_engine::github::list_repos(LIMIT).await {
-            Ok(rows) => (
-                rows.into_iter()
-                    .map(|r| crate::vm::RepoRowVm {
-                        path: format!("{}/{}", r.owner, r.repo),
-                        private: r.private,
-                        description: r.description,
-                        default_branch: r.default_branch,
-                        pushed_at: r.pushed_at,
-                    })
-                    .collect(),
-                None,
-            ),
-            Err(e) => (Vec::new(), Some(format!("{e}"))),
-        }
-    } else if host.trim().is_empty() {
-        (
-            Vec::new(),
-            Some("没选区 —— codehub 要 -H green/open/yellow 之一".into()),
-        )
-    } else {
-        match bw_engine::codehub::list_repos(host.trim(), LIMIT).await {
-            Ok(rows) => (
-                rows.into_iter()
-                    .map(|r| crate::vm::RepoRowVm {
-                        path: r.path,
-                        // codehub 给的是 `visibility` 字符串,不是布尔;
-                        // 只有明写 private 才算私有,拿不准就不画那个锁。
-                        private: r.visibility.eq_ignore_ascii_case("private"),
-                        description: r.description,
-                        default_branch: r.default_branch,
-                        pushed_at: r.pushed_at,
-                    })
-                    .collect(),
-                None,
-            ),
-            Err(e) => (Vec::new(), Some(format!("{e}"))),
-        }
+    let remote = match bw_engine::remote::Remote::for_host(provider_of(github), host.trim()) {
+        Ok(r) => r,
+        Err(e) => return (Vec::new(), Some(format!("{e}"))),
+    };
+    match remote.list_repos(LIMIT).await {
+        Ok(rows) => (
+            rows.into_iter()
+                .map(|r| crate::vm::RepoRowVm {
+                    path: r.path,
+                    private: r.private,
+                    description: r.description,
+                    default_branch: r.default_branch,
+                    pushed_at: r.pushed_at,
+                })
+                .collect(),
+            None,
+        ),
+        Err(e) => (Vec::new(), Some(format!("{e}"))),
     }
 }
 
@@ -371,20 +375,14 @@ async fn fetch_prefill(
     git_ref: &str,
 ) -> (Option<crate::vm::RepoPrefillVm>, crate::vm::RepoProbe) {
     use crate::vm::RepoProbe;
-    let got = if github {
-        match path.split_once('/') {
-            Some((owner, repo)) => bw_engine::github::fetch_project_toml(owner, repo, git_ref)
-                .await
-                .map_err(|e| e.to_string()),
-            None => Err(format!("「{path}」不是 owner/repo 的样子,没法查")),
-        }
-    } else if host.trim().is_empty() {
-        Err("codehub 域名还没填,查不了".into())
-    } else {
-        bw_engine::codehub::fetch_project_toml(host.trim(), path, git_ref)
-            .await
-            .map_err(|e| e.to_string())
+    let remote = match bw_engine::remote::Remote::for_host(provider_of(github), host.trim()) {
+        Ok(r) => r,
+        Err(e) => return (None, RepoProbe::NoRepo(e.to_string())),
     };
+    let got = remote
+        .fetch_project_toml(path, git_ref)
+        .await
+        .map_err(|e| e.to_string());
     match got {
         // 平台说「没有这份文件」。但**仓根本不存在也是同一个 404** —— 地址
         // 敲错一个字母就会得到「还没接管过,请填」,人填完才发现接的是个
@@ -392,15 +390,7 @@ async fn fetch_prefill(
         // 不在,才是真的没接管过。走到这支的只有没接管过的仓,多一次调用
         // 不落在常路上。
         Ok(None) => {
-            let exists = if github {
-                bw_engine::github::probe_repo(path)
-                    .await
-                    .map_err(|e| e.to_string())
-            } else {
-                bw_engine::codehub::probe(host.trim(), path)
-                    .await
-                    .map_err(|e| e.to_string())
-            };
+            let exists = remote.probe_repo(path).await.map_err(|e| e.to_string());
             match exists {
                 Ok(_) => (None, RepoProbe::Absent),
                 Err(e) => (None, RepoProbe::NoRepo(e)),
@@ -424,6 +414,34 @@ async fn fetch_prefill(
         // 没登录、网断了、分支名不对、文件写坏了 —— 都是「没查成」,
         // **不能**说成「没被接管过」。
         Err(e) => (None, RepoProbe::Failed(e)),
+    }
+}
+
+/// 读本地仓的 `.bw/project.toml`。文件存在就是这个仓已经由 Workbench 管理过；
+/// 没有名片、不是 Git 仓和文件损坏是三种不同结局，不能混成空表单。
+async fn fetch_local_prefill(
+    path: &str,
+) -> (Option<crate::vm::RepoPrefillVm>, crate::vm::RepoProbe) {
+    use crate::vm::RepoProbe;
+    let workspace = PathBuf::from(path.trim());
+    if !workspace.is_absolute() || !workspace.is_dir() || !bw::git::is_repo(&workspace).await {
+        return (
+            None,
+            RepoProbe::NoRepo(format!("{} 不是可用的本地 Git 仓", workspace.display())),
+        );
+    }
+    match bw::repo::project_file::read(&workspace) {
+        Ok(Some(file)) => (
+            Some(crate::vm::RepoPrefillVm {
+                name: file.name,
+                brief: file.brief,
+                benchmark: file.benchmark,
+                north_star: file.opportunity,
+            }),
+            RepoProbe::Adopted,
+        ),
+        Ok(None) => (None, RepoProbe::Absent),
+        Err(e) => (None, RepoProbe::Failed(e.to_string())),
     }
 }
 
@@ -687,6 +705,9 @@ pub fn spawn(deep_link: DeepLink) -> Bridge {
                         &req,
                         Req::Cmd(Command::ReportWorkbenchIssue { .. })
                     );
+                    // FetchIssue = 详情弹窗打开时单查正文。list 不带正文,重拉整个
+                    // list 会又把 body 冲成空,所以走补丁路、跳过 full gather。
+                    let fetching_body = matches!(&req, Req::Cmd(Command::FetchIssue { .. }));
                     let needs_gather = matches!(
                         &req,
                         Req::Cmd(_)
@@ -694,7 +715,8 @@ pub fn spawn(deep_link: DeepLink) -> Bridge {
                             | Req::Refresh
                             | Req::FlushOrcaReveal { .. }
                     ) && !status_patch
-                        && !reporting;
+                        && !reporting
+                        && !fetching_body;
                     match req {
                         Req::Cmd(c) => {
                             let confirming = matches!(c, Command::ConfirmWeekDraft { .. });
@@ -738,6 +760,13 @@ pub fn spawn(deep_link: DeepLink) -> Bridge {
                                         if let Some((id, to, settled)) = status_patch_of(&events)
                                         {
                                             last_gather.apply_issue_status(id, to, settled);
+                                        }
+                                    }
+                                    // FetchIssue 单查回的正文补丁进 last_gather,
+                                    // 下面的 assemble 会用它重切 VM。
+                                    if fetching_body {
+                                        if let Some((id, body)) = body_fetched_of(&events) {
+                                            last_gather.apply_issue_body(id, body);
                                         }
                                     }
                                     // 「开始本周」产出的草稿活标先接住,等人在计划屏
@@ -1280,6 +1309,20 @@ pub fn spawn(deep_link: DeepLink) -> Bridge {
                                 });
                             });
                         }
+                        Req::PickLocalRepo { path } => {
+                            ui.repos.picked = Some(path.clone());
+                            ui.repos.prefill = None;
+                            ui.repos.probe = crate::vm::RepoProbe::Loading;
+                            let back = tx_back.clone();
+                            tokio::spawn(async move {
+                                let (prefill, probe) = fetch_local_prefill(&path).await;
+                                let _ = back.send(Req::RepoPicked {
+                                    path,
+                                    prefill,
+                                    probe,
+                                });
+                            });
+                        }
                         Req::RepoPicked {
                             path,
                             prefill,
@@ -1495,6 +1538,14 @@ fn status_patch_of(events: &[Event]) -> Option<(IssueId, IssueStatus, bool)> {
     })
 }
 
+/// `FetchIssue` 回执里捞正文。bridge 用它补丁 last_gather(issue #72)。
+fn body_fetched_of(events: &[Event]) -> Option<(IssueId, String)> {
+    events.iter().find_map(|e| match e {
+        Event::IssueBodyFetched { id, body } => Some((*id, body.clone())),
+        _ => None,
+    })
+}
+
 /// 第一屏推完再查 MR。不 await —— 占着内核线程又把切页堵回去。
 fn kick_pr_fill(
     g: &vm_build::Gathered,
@@ -1558,4 +1609,42 @@ async fn kick_project_collect(app: &App, pid: ProjectId, tx_back: &mpsc::Unbound
             stats: vm_derive::collect_repo_stats(&ws, proj.as_ref()).await,
         });
     });
+}
+
+#[cfg(test)]
+mod onboard_tests {
+    use super::fetch_local_prefill;
+    use crate::vm::RepoProbe;
+    use bw::repo::project_file::{self, ProjectFile};
+
+    #[tokio::test]
+    async fn local_repo_prefill_reads_the_same_project_card_as_remote_pick() {
+        let root = std::env::temp_dir().join(format!("bw-local-prefill-{}", uuid::Uuid::new_v4()));
+        std::fs::create_dir_all(&root).unwrap();
+        let status = std::process::Command::new("git")
+            .args(["init", "-q"])
+            .current_dir(&root)
+            .status()
+            .unwrap();
+        assert!(status.success());
+        project_file::write(
+            &root,
+            &ProjectFile {
+                name: "Workbench".into(),
+                brief: "一张工作台".into(),
+                benchmark: "Orca".into(),
+                opportunity: "更多项目纳入".into(),
+                ..Default::default()
+            },
+        )
+        .unwrap();
+
+        let (prefill, probe) = fetch_local_prefill(root.to_str().unwrap()).await;
+        assert!(matches!(probe, RepoProbe::Adopted));
+        let prefill = prefill.unwrap();
+        assert_eq!(prefill.name, "Workbench");
+        assert_eq!(prefill.north_star, "更多项目纳入");
+
+        std::fs::remove_dir_all(&root).unwrap();
+    }
 }

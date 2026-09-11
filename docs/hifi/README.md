@@ -2,7 +2,7 @@
 
 > **历史横幅(2026-09-07)**:壳的视觉语言(配色、字体、间距、圆角、组件类)已改以 [`docs/04-design-system/`](../04-design-system/README.md) 为正本,壳编译期直接拼入它的 `styles.css`,本目录 `index.html` 里的 `<style>` 块不再是壳样式表的来源(旧 `assets/hifi.css` 已删)。本目录仍是**八屏版式与旅程**的原型:块顺序、有哪些控件、点什么发生什么,以这里为准;颜色和组件长相以设计系统为准,两边不一致时不改这里的旧样式,只在设计系统与 `shell.css` 上改。
 
-> **30 秒导读**:[index.html](index.html) 是单文件、浏览器直接打开的可点击原型。**给谁看**:要改 Workbench 界面的人。**现在还作数吗**:排版和八屏布局仍是视觉目标态;页内演示数据还是旧「规范铺底 / issue-policy」,现行方案看本页接入段和 [`docs/architecture.md`](../architecture.md) §3「项目约定」。三条总原则:①目标态,不是演示走场;②成熟组件原样沿用;③信息密度优先。
+> **30 秒导读**:[index.html](index.html) 是单文件、浏览器直接打开的可点击原型。**给谁看**:要改 Workbench 界面的人。**现在还作数吗**:排版和八屏布局仍是视觉目标态;页内演示数据还是旧「规范铺底 / issue-policy」,现行方案看本页接入段和 [`docs/architecture.md`](../architecture.md) §1「项目约定」。三条总原则:①目标态,不是演示走场;②成熟组件原样沿用;③信息密度优先。
 
 2026-08-25 按现行壳收过一轮:去掉连接器表、下次触发、聊天登录、V3 六个 crate、`docs/plan/` / `docs/releases.md`、规范铺底当 agent workflow、发版本那张活。本地状态前缀 `bw-v4-hifi7-state`(旧 `hifi6` 不串味)。
 
@@ -18,7 +18,7 @@
 
 ### 项目墙 / 接入
 
-接入只问仓和名片四字段。仓里还没有名片时才建「项目约定」:**路径 A,不起 agent**,只写 `.bw/project.toml` 到常驻树 `bw/project`,开 MR 等人合。已有名片不再开。没合入时总览常驻横幅。不铺 `issue-policy.toml` / `PROJECT.md` / `standard.toml` / `managed.toml`。仓根 `AGENTS.md` 不写。开工工具跟人走本机。
+接入第一步直说「打开本地仓 / 克隆远端仓」,不再用「新建 / 已有」,也不建空目录冒充代码仓;克隆父文件夹默认显示设置中的工作区根目录,允许改。第二步共用一张基础信息卡,本地或远端已有 `.bw/project.toml` 就带入四字段。仓里还没有名片时才建「项目约定」:**路径 A,不起 agent**,只写 `.bw/project.toml` 到常驻树 `bw/project`,工作目录落 `<仓>/.bw/worktrees/project`,开 MR 等人合。已有名片不再开。没合入时总览常驻横幅。不铺 `issue-policy.toml` / `PROJECT.md` / `standard.toml` / `managed.toml`。仓根 `AGENTS.md` 不写。开工工具跟人走本机。
 
 ### 总览
 

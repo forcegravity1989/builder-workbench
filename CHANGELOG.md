@@ -14,6 +14,12 @@
 
 **明确没做、如实记的偏差**:技能「改于哪天」(要编译期烤 git 时间戳,本轮跳过,卡片不显示这一项);跨项目的技能用量统计(`uses` 只对当前打开的项目现算,没打开的项目本地技能一律显示「还没用过」,不是真的没用过);AI Assets 的「现在哪几张活在用」同样只对当前打开的项目现算,没打开项目时如实显示空 + 一句说明,不编数据;Orca 仍然没有真探活,只有「配了 / 没配」两态;用户自己的 workflow 接入通道(`skill_slug` 硬编码三个名字、路径只认 Workbench 自己的资产目录)没有动,Stage 页的 workflow 下拉如实标出「选了也接不上」,把缺口摆在界面上而不是修掉它;agent 这一类资产(`.claude/agents/`)仍未纳入面板,全仓本来就没有扫它的代码。这几条都在 STATUS 的「待裁决」里注明是建议另开一件,不在本特性范围。
 
+开 `docs/05-features/scoreboard-and-forecast/`:把执行四原则(4DX)落进总览与计划两屏——记分牌(指标 × 周,引领按 `leads` 缩进挂在滞后下)、目标路面、蒙特卡洛完工预测、周期时间分位与累计流。**产品预置的是文法不是视图**:`metrics.toml` 里已有的 `collect.retro` / `leads` / `target` 三个字段决定一条指标长什么样,`target` 解析不出形状就退化成记分牌一行,不报错不阻塞。计划屏三张图吃的是所有项目同构的 issue/MR 史实,可以预置;总览的图只能跟着项目长出来。**intent 与 spec 都未认**,本批只有文档与原型,一行 Rust 没动。
+
+接入路径收口(存量 bug,不开 feature):接入页去掉含义不清且只会建空目录的「新建 / 已有」二分,改成「打开本地仓 / 克隆远端仓」;本地仓走目录选择、直接复用,远端仓才选择平台、仓与克隆位置。项目约定 + 三条 Orca 自动化的常驻 worktree 从仓外同级目录统一收回 `<仓>/.bw/worktrees/{project,week-plan,ops-audit,ledger}`;旧同级树只检测并报错,不迁、不删,同时删掉撞名普通目录会被递归删除的危险路径。
+
+接入路径验收修正:打开本地仓时也在进入基础信息前读取本地 `.bw/project.toml`,与远端接入共用同一张名片回显卡;克隆父文件夹默认直接显示本机设置的工作区根目录,仍可另选。删掉接入卡片中重复解释字段与情境的长注释,只保留读取状态和失败原话。CodeHub origin 反查改为复用模型层唯一的区别名/域名表,并要求宽松匹配的主机名仍带 `codehub`,未知平台不再静默当成无远端;所选远端路径在比对和保存前统一去掉尾部 `/` 与 `.git`,避免克隆成功却接入失败。读数账本注释同步现行 `.bw/worktrees/ledger` 路径。账本树开不出时不再用同路径普通目录降级,避免永久堵住正规 worktree;同名项目路径都不存在时按路径文本判定,不把两次解析失败当成同一目录。接入 smoke 改查实际自选目录并规范化符号链接,壳的克隆目标测试不再写死 Windows 分隔符。
+
 ## 最近 · 2026-09-09
 
 「设置屏收成全局面板」立项(`docs/05-features/capability-panel/`,**待意图 gate,未动代码**)。三轮方向变化如实记在 STATUS 里,最后落点是:顶层设置屏排成左栏面板(搜索 + 本机 / 能力两节),列表点进去是带「← 返回」的整页详情,排法照抄 Claude 桌面版设置面板。
@@ -60,7 +66,95 @@ Stage 的 **Workflow 列从只读文字改成下拉**,选项里除了自带的 `
 
 着色口径改了:红只留给「有活会用到它、它不在」,没人用到的写「还没用上」走中性色——按这个口径同一台机器上只剩一行红(原型类映射到 Open Design 而它没起来),今天那张表是六行红四行。没抄 Claude 的两样:Discover / 安装数、「添加」按钮——BW 没有目录、没有安装动作、拿不到别人的安装数,抄过来就是一页编出来的数字。制品:intent(七条痛点)+ spec(操作逻辑 + 口径表 + 客户会问)+ 可点原型(仓内一份相对引两张真样式表,在线一份内联)。
 
+05-features 收紧口径:只装**产生用户价值的新能力/新信息**(01 §4.1)。命名收口/基建接线/重构重排不产生新价值的直修留痕(commit 说明 + 必要时改 architecture 实况段),不开 intent gate、不过五大拷问。02 §1 适用范围、§6 小特性豁免同步。
+
+按新口径降级 4 个非特性目录(代码实现不动,只删 05-features 文档目录):overview-health-36 并入 process-metrics(总览展示规格,价值锚点来自 process-metrics 产的数据,非独立新价值;STATUS 补并入记录)、version-as-v0x 命名收口(决策已在 architecture §1 周循环段)、design-system-wiring 基建接线(设计系统接进壳,未合入 main 非实况)、help-hub UI 重排。superpowers 两篇 version-as-v0x 孤儿草稿(正本已删、无外部引用)一并清。05-features 现留 reviewer-agent + process-metrics 两个特性。
+
+同步 github 文档整改：architecture 精简为 §1 用例 + §2 五能力模块 + §3 三 crate 与留白（16 模块详解当实现细节删，心智模型搬 `docs/06-module/`，领域模型进 `docs/10-reference/`）。使用指南 14 处 `.linker`/`.foot` 原指旧「模块 N」编号（随精简已删，指空）改为指 §1 用例 / §2 ①–⑤ 能力模块 / §3 留白；规矩站「各模块没建什么」措辞改为 §3 留白 + §1 用例「没建什么」列。截图缺口（填写规范要求每步配图、指南一张没有）为旧指南遗留，本轮未补、留白。
+
+issue #72:新建 issue 填的正文同步上了 codehub,但计划页签点开看不到正文、注入开工 prompt 也没带正文。两处断点:
+
+- codehub 单查读错字段名。`codehub-cli issue view --format json` 回 GitLab v4 payload,正文在 `description` 键,但 `CodehubIssueViewJson` 把它读自 `body` 键(没 rename)→ 找不到 → 空串。写侧(create `--description`、edit `("description", body)`)一直走 `description`,唯独读侧写成了 `body`。GitHub 那条线用 `gh issue view --json ...,body` 显式要 `body`,读写一致,没中招——只有 codehub 项目拉回空正文,进而 `run_issue` 注入 prompt 时 `issue.body` 是空的。改法:结构体字段加 `#[serde(rename = "description")]`,抽出 `parse_issue_view_json` 纯函数(镜像 `parse_issue_list_json`),用 #72 真实回包钉死。
+- 计划详情弹窗只读看板卡片 `c.body`,看板由 `list_issues` 拼,**列表设计上不带正文**;弹窗打开时没单查补正文。加 `Command::FetchIssue`(走 `issue_store::fetch` 单查)→ bridge 收 `IssueBodyFetched` 回执后补丁进 `last_gather`、跳过 full gather(重拉 list 会又把 body 冲成空),复用「状态标签补丁 last_gather」那条快路径。弹窗 `use_future` 打开即发一次 fetch;body 走 dirty 跟踪——pristine 时直接读 VM 的 `body_orig`(fetch 回来 VM 重切接得住,`body_val` 信号不会自己更新),人一编辑就 dirty 只认 `body_val` 不被覆盖。`primary_note` 给 `IssueBodyFetched` 早返 None(后台补正文不该弹 note,否则每开一次详情闪一条还盖掉上一条真 note)。
+
+## 最近 · 2026-09-09
+
+计划屏弹窗里从右往左拖选文本想复制时,鼠标拖到弹窗外暗区松手,弹窗就关了 —— 原来那层暗区(`dialog-backdrop`)挂的是 `onclick: 关闭`,内层只拦了 `onclick` 冒泡,没拦 `mousedown`。拖选的 `mousedown` 落在弹窗内、`mouseup` 落在暗区,浏览器在暗区上凑出一次 `click`,拦不住,于是把窗关了。抽了一个共享壳 `Overlay`(住 `plan_dialogs.rs`):暗区按下才置真、内层按下/松手置假并拦冒泡,`click` 只在按下也落在暗区时才关。12 个弹窗(新建/创建版本/排期/确认移动/拒绝移动/删除版本/出包/验包详情/停止确认/发版本 + 详情/Start)统一改用它。真点暗区仍照常关,拖选不再误关。
+
+使用指南按驾驶地图重写：首页是周环（添加项目 → 版本规划 → builder → 出包验证 → 版本发布 → 周复盘），点站进该站正文。看总览不再单独成站。工作台抽屉里「去计划屏 / 去会话」会关上指南并跳到那一屏，不高亮 Orca 里的控件。自动化默认关。宁可丢掉旧站细文，也不留和地图对不上的站名与步骤。
+
+驾驶地图贴合原型稿 `prototype-ops-anim/驾驶地图.html` 重做：补 SDLC 六阶段环、harness 三层窗口、SVG 图标、看板进度条；修一批走样子规则（slice 透明、milestone 光晕、entry 三栏、steps 两列、kanban 四等分）。删掉和地图重复的「找·从问题跳到那一站」表——它一点就白屏：`show()` 改 URL/hash 在 srcdoc iframe 里触发整帧重载，去掉这步只留 localStorage 持久化（规范要求）+ classList 切换。各站正文砍冗余铁律与过程话，修出包站 ADR 路径错（`docs/adr/0005` → `docs/02-adr/0005-…`），规矩站补 `.linker`。
+
+验包 `cu_settings` 还在找旧高保真的 `.settings-row`，设计系统接线后设置行已经是 `.set-row`，点「保存」会空等到超时。驱动改跟现行设置文法对齐。
+
+右侧「上报问题」不再从本机 git origin 推目标仓。装机目录和其他项目开发者本机都没有 workbench 源码，读 origin 会报 `D:\BuildersWorkbench 没有 origin` 这类错。现在固定走 `codehub-cli` 报到绿区 `z30026659/workbench`（git 地址 `https://codehub-dg-g.huawei.com/z30026659/workbench.git`）。本机仍需已登录的 `codehub-cli`。
+
+## 2026-09-08
+
+architecture.md 导读加一条指向 [`docs/10-reference/domain-models.html`](docs/10-reference/domain-models.html) 的链接(五张领域模型)。
+
+加 [`docs/10-reference/domain-models.html`](docs/10-reference/domain-models.html):从 03 新闻稿 + architecture + CONTEXT 抽出五张领域模型(上下文 / 用例 / 逻辑 / 数据 / 领域)+ 现行 vs 主张速查。单文件 HTML,对齐 hifi/home.html 风格,参考性提炼(非决策记录);▲ 标 03 §C「尚未交付」项。
+
+V3 史实 + 旧 16 模块挪移地图从 ADR-0006 移到 [`docs/10-reference/v3-and-module-migration.md`](docs/10-reference/v3-and-module-migration.md)(那是参考材料 / 挪移对照,不是决策记录);ADR-0006 删除。导读、DESIGN、AGENTS V3 注记的指针从 ADR-0006 改指 10-reference。
+
+architecture.md 附录整段挪出去:V3 史实 + 旧 16 模块挪移地图搬到新 [`ADR-0006`](docs/02-adr/0006-能力模块收为五个与V3史实.md)(决策 / 为什么 / 挪移地图);附录导航表删(导读已覆盖),architecture.md 止于 §3 留白。导读、DESIGN、AGENTS V3 注记改指 ADR-0006 + `docs/02-adr/`。
+
+architecture.md §2 清瘦:每模块删「关键取舍」段(①-⑤)与 ③ 的分工 / 维护两张对照表,§2 各模块只留「是什么」+ 06-module 指针;关键取舍 + 三层分工 / 维护对照表搬到 `docs/06-module/`(③ 系统提示词与渐进加载页承接对照表,①② 补 §2-only 取舍:排期单槽 / metrics schema_version=2 / 远端 provider 统一路由 / 两条通道边界 / 账本 worktree 不动)。附录 V3 史实压成两行、对照表行改指 06-module。AGENTS / standard-README 的「对照表在 §2 ④」「§3 模块 4」指针改指 `docs/06-module/系统提示词与渐进加载`。导读与 §1 引子同步:§2 现在只写「是什么」,关键取舍在 06-module。
+
+开 `docs/06-module/` 五页(关键信息维护 / 会话与执行 / 系统提示词与渐进加载 / 技能与蒸馏 / 桌面壳):每页一模块的实现心智模型 + 主要矛盾 / 取舍,指向 §2 设计层、代码用 `codegraph` 探索。architecture.md §2 各模块末尾加 06-module 指针、附录加一行。
+
+清瘦 `docs/architecture.md` §3:删每模块「代码 / 数据 / 依赖 / 没建」实现细节块(①-⑤ + 二级特性健康推导)与「该删」清单;§3 收为「实现架构」——三 crate 切分 + 运行时数据流 + 留白。§2 各模块「代码/数据/没建见 §3 X」指针、导读、附录指针表、V3 史实依赖行、挪移地图、AGENTS / CONTEXT / DESIGN / 03-guide 填写规范 交叉引用同步(实现细节落点改指 `codegraph` 探索 + `docs/06-module/`)。CONTEXT / DESIGN 顺手把「6 个能力模块」订正为 5。
+
+`docs/architecture.md` 正本重构(本趟 cherry-pick 落地):正文重排为 **§1 用例与旅程 → §2 特性(设计层) → §3 实现(代码层)**;能力模块六个收为五个——①「正本读写」改名「关键信息维护」并扩范围(正本分两类:活态数据正本 issue 标签+`.bw/` / 人持文档正本,后者 Workbench 代码不读写、靠 asset-audit 盘),②「健康推导」降为 ① 下二级特性(密封 `DerivedHealth` 守「没数据不装绿」铁律不变,代码不删只降结构层级),原 ③-⑥ 顺位前移为 ②-⑤;§2 特性层去实现化(只留是什么+关键取舍);§1 用例表分一级(独立节律触发)/二级(子步或派生读视图)并按一级重排。asset-audit 剧本 5→6 步(插「盘全仓人持文档正本」);`bw-assets.md` 顶部加边界指针。同步 AGENTS / CONTEXT / DESIGN / hifi / 03-guide 交叉引用(§号+模块名)。
+
+加 `docs/06-module/` 层(单个模块实现的心智模型:设计面对的主要矛盾/取舍,不纠结实现细节),三层边界写进 AGENTS「人怎么驾驭」可见物表与 `01-document-organization`:architecture.md = 整体用户旅程+逻辑模块(不进模块实现细节) / docs/06-module = 模块实现心智 / docs/05-features = 用户价值特性。architecture.md §3 的实现细节后续搬进 06-module(单独一趟)。
+
+计划屏卡片右上那枚平台徽本来写死成 `CodeHub`,于是接 GitHub 的项目打开计划屏,58 张卡全被标成 CodeHub —— 界面在说一件不是事实的事。新建 issue 弹窗那句「创建后同步到 codehub」同病。改法跟 `browse_base` / `mr_url_prefix` / `issue_url_prefix` 同一族:provider → 显示口径的映射只放一处(新增 `Project::remote_brand()`),认不出平台就不画那枚徽、弹窗也只说「同步到远端」—— 空着是实话,顶一个别人的名字不是。
+
+GitHub 和 codehub 两条远端线拆干净:**一个基类,两个派生**。基类 `RemoteProvider` 描述「一个远端仓能干什么」,接口里一个平台名都没有;`GithubRemote`(走 `gh`)、`CodehubRemote`(走 `codehub-cli`)、`MockRemote`(替身)是三个各自独立的实现。调用方经门面 `Remote` 拿到基类对象,只调方法,不知道背后是哪一个。
+
+拆之前两条线是缠着的:`codehub.rs` 反过来引用 `github::PrOpened`;分支名 `bw/issue-<n>`、`git remote get-url origin` 这些跟平台没关系的东西住在 `github.rs` 里,于是半个仓为了拿一个分支名要 `use bw_engine::github`;走势、接入流、clone 三处调用方自己写 `if github { … } else { … }`,同一段按周分桶的数学抄了两遍。这就是上一条那个字段名 bug 能活下来的土壤——改一边没人拦,两边的差异也没人守。
+
+现在的隔离前两道是编译器管的,不靠自觉:两臂改成 `remote` 的**私有子模块**(`bw_engine::github::…` 这条路径不再存在,外面绕不过基类);基类的 `RemoteError` 不再内嵌两个平台各自的错误类型,两臂各自把自家错误翻成中立形状。第三道是新门禁 `scripts/guard-remote-isolation.sh`:`github.rs` 里不许出现 codehub,反之亦然(注释里提对方允许——解释「为什么这里跟对面不一样」正是该写的注释)。
+
+顺带收掉的重复:走势时序改成两臂各自回 `Capped<T>`(原文时刻 + 这趟有没有顶到那条 CLI 的上限),分桶数学在 `bw::trend` 里只剩一份;`gh` 会截到 1000 条、`codehub-cli -l 0` 不截,这个差异由各臂自报,不再由调用方猜(以前 codehub 那条路径压根没有截断检查)。接入流的列仓/探仓/读名片、clone 都改走基类,`RepoSummary` 归一化在各臂里做完。里程碑投影只有 codehub 真投,「不投」成了基类的默认实现,别的臂不写空壳。里程碑那几个方法丢掉了多余的 `path` 参数(调用方传的一直就是自己那个仓)。平台无关的件搬进 `workspace.rs`(分支名、origin 地址读数与 URL 解析)和基类(`PrOpened`、名片路径)。评审提的一条顺手收了:GitHub 那臂 clone 完还会再打一趟 `gh repo view --json isPrivate`,只为拼一个 `GithubRepoRef` 回去,而唯一的调用方拿到就丢 —— 每次接入白花一趟网络往返。那趟调用和那个类型一起删掉,`clone_repo` 改回 `()`,和 codehub 那臂对称。
+
+**没做**:远端 `state` 原文仍不归一化(GitHub 回大写、codehub 回小写),上层还是靠忽略大小写比对 closed 来判;把它收进基类会动上层判读,另议。codehub 那臂这次只有编译期验证——本机没有 `codehub-cli`,读回实跑只在 GitHub 侧做了(issue 列表 58 条、单查带正文、走势两条时序、接入流列仓与读名片,全通)。
+
+
+修好 GitHub 侧读 issue 的字段名:`gh` 2.98(2026-08-20)起,issue 的 `--json` 白名单里就只剩复数 `assignees`(一个数组)了,而我们一直按单数 `assignee` 去要,gh 直接拒("Unknown JSON field"),所以接 GitHub 的项目一读 issue 列表就整屏失败。改成要 `assignees` 并取数组第一个人当责任人(产品仍是单责任人)。同一处顺带修好写:改责任人原先只 `--add-assignee`,不摘旧人,一个活会挂两个人而读回看的是第一个,表现成「改了没生效」;取消指派原先传 `--remove-assignee **`,gh 把它当成一个不存在的用户名、什么都不做也不报错——静默失效。现在先读回当前指派,再一条命令摘旧人 / 加新人。codehub 那条线不受影响(它是 GitLab 形状,本来就叫 `assignee`)。
+
+创建版本弹窗收窄成一屏。「说明」整块删掉 —— 它是运作活①评论里 `## 版本目标`
+的入口,但建版当场基本没人写,一路空到底反而占掉半个弹窗;现在建版一律先落
+「（未填写）」,目标由运作活①上的 agent 后补,`CreatePlanVersion` 命令不再带
+`note`。底下那条「会建一张…上一发…未发…推荐…」也删了:推荐号本来就预填进版本名
+输入框,其余是重复信息。
+
+「划归的 issue」从常驻复选框列表改成一行:标题右边一个 ＋ 图标,点开才展开搜索
+框 + 候选列表,选中的以 `#号` 小标签留在那一行、点 ✕ 摘掉。候选范围顺势从「只有
+未排期的活」放宽到所有还没收口的活(已在别的版本里的挑进来就是换槽,评论仍记
+「自 v0.x 顺延」);这个版本自己的运作活①建版时另起,不进候选。
+
+帮助收成右下角一个能拖的小窗。屏幕右缘那两条竖排文字标签(「指南」「上报问题」)撤掉——竖排中文贴边是网页客服贴片的做法,两个并列还逼人先决定「我要指南还是要上报」,而人这时候只知道自己卡住了。入口收成一个:侧栏底部一颗「帮助」,和「设置」并排。点开在**右下角**浮起一个 380px 的独立小窗(帮助窗都在那儿),**按住深色头能拖到任何地方**:深色头 + 压在它下缘的**本机环境卡**(一颗灯 + 「本机环境就绪」或「n 项工具没找到」,底下把没找到的工具名字念出来,不用再去设置屏找一遍——数据就是项目墙那份工具探活)、一行「上报问题」、指南前四章,底部三个页签(主页 / 指南 / 上报)。指南页是搜索框 + 全部章节;上报页把原来居中弹窗那一套收进面板,并且**一件事只说一遍**(原先「会附上对照日志」在正文、提示条、勾选项说明里写了三遍),分「本机有 bw.log」和「本机还没有」两种实话。
+
+指南目录**从指南 HTML 自己的侧栏扫出来**,不在 Rust 里再抄一份会飘的表;点哪一章,右侧宽抽屉就翻到哪一章(`GuideNav::open(chapter)` 一直收着章节 id 却从来没用,抽屉永远从第一章渲染——注入的是指南自己的换屏函数,且只认目录里真有的 id)。小窗负责找、抽屉负责读:一份带自己侧栏的完整产品指南塞不进 380px。八屏各有深链,帮助也补上一条 `BW_HELP=home|guide|report`。上报时本机没有 `bw.log` 就不再声称要附:遮罩文案原先只看勾没勾,会转着「日志上传中」而其实什么都没传,现在按「勾了且文件在」决定。规格与操作逻辑在 `docs/05-features/help-hub/`。
+
+下拉框不再是系统自带那身外观。配置屏的开工工具、计划屏的版本筛选、issue 列表的两个筛选、总览与各弹窗里的下拉,原先都直接露出 macOS 那颗上下箭头方块(Windows 上是另一种方块),和旁边发丝线描边的输入框、按钮排在一起像块没擦掉的东西。设计系统的 `.input` 加了 `select` 分支:`appearance: none` 去掉平台外观,换成本系统那支折线箭头(新 token `--select-caret`,两套配色各给一份,因为 SVG data URI 读不到 CSS 变量)。顺带补 `.input:disabled`——去掉平台外观也会一起去掉它自带的置灰。示例页 `components/forms.html` 补两个下拉(常态 + 停用),spec 双语的组件对照表跟着改。
+
+知识库预览按文件类型分渲染。`.bw/*.toml` 三份规范件先前和 Markdown 走同一条
+CommonMark 渲染:开头那几行 `# 说明` 被当成一级标题放成 28px 大字、值里的下划线
+变成斜体、空行被并成段落 —— 人看到的是一份被重排过的假文件。现在只有 `.md`
+走渲染,其余原样进等宽块。
+
 ## 最近 · 2026-09-07
+
+计划屏按钮按视图常驻:全部 issue 只有创建 / 删除版本(删除不灰,没未发号时弹窗下拉是空的);某个版本只有出包 / 发版本,只灰不藏。出包看有没有 tag——有就新建 `.bw/worktrees/pack-<号>` 检出 tag 再出,主检出不动;在研且没 tag 就先快进工作区再出;既不是在研也没 tag 则灰。发版本只给在研且还没 tag 的号,发过就灰,没有已完成的活也能发。群消息收成一行 `【发版 <号>】说明`。
+
+版本身份只认 `bw:plan:`。创建 / 删除 / 改名先改标签,同名里程碑只补充,失败不回滚。计划屏「创建版本」会落一张运作活①「更新指标 + 制定版本计划 <名>」,说明写成 `## 版本目标`,划归写成 `## 本周纳入`;有开着的光杆①就复用。下拉 / 筛卡 / 发版查重只扫标签。在研不再看里程碑起止:开着的带号①取最后创建,都关了则取还没发版的已关①。
+
+## 最近 · 2026-09-07
+
+高保真驾驶地图(`docs/hifi/home.html`)三处设计修订:01 项目管理里「版本切片」从一行小 chips 升为独立深色面板——V0.1 / V0.2 / V0.3 版本轨道,当前片内含 feature / bug / chaos,把「切片包含种类」的层级画出来;02 执行核心 harness 副标改「各类任务运行时」;SDLC 直线阶段(plan→Design→build→test)改成六阶段闭环(计划→设计→构建→测试→发布→运维→回计划),环心点「人守判断」,与 [`docs/10-reference/ai-native-sdlc-playbook.md`](docs/10-reference/ai-native-sdlc-playbook.md) 的环一致。
 
 壳接上 Builder 设计系统(`docs/04-design-system/`):全局样式改成编译期拼入设计系统的 `styles.css` + 壳层 `assets/shell.css`(只写壳骨架与各屏版式,取值一律 token),旧 `assets/hifi.css` 与旧 token(`--clay` / `--ink-*` / `--paper`……)整体删掉,不留兼容层。根节点挂 Claude 配色与中文排版层。八屏标记全换设计系统组件类:按钮四种(每视图一颗实底主按钮,取消 / 关闭安静)、标签 `tag-*`、状态点一色一态、表单 `field` / `input`、卡片发丝线无阴影且不套卡片、项目轨是标准侧栏、顶栏 44px、页签 `tabs` / 分段 `seg`(隐藏 radio 驱动)、列表 `list-row`、看板 `board`(列不再按状态铺底色)、弹窗 `dialog`、回执 toast 改深色底角条(仍点「关闭」才走)。屏里带色号 / 字号的行内 style 清零,只留数据驱动的值。衬线标题改系统字体。高保真 `docs/hifi/` 降为版式与旅程原型,顶部加历史横幅。记录在 `docs/05-features/design-system-wiring/`。
 
@@ -77,6 +171,7 @@ Stage 的 **Workflow 列从只读文字改成下拉**,选项里除了自带的 `
 发版本弹窗里的说明除了写进远端 Release，也会接到 WeLink 群消息后面（`【发版】发版 <号>` 下一行）；空说明仍只发那一行。
 
 指标采集单个脚本超时从 90 秒改成 900 秒。条与条仍串行；超时仍按「没采到」算，不写 0。
+
 ## 最近 · 2026-09-03
 
 总览改成项目健康看板(#36):名片旁一颗健康灯、北极星并排;版本计划与进展带页签(目标 / 周进展各 6 行);滞后与引领按 `feature` 分页签、按 `leads` 叠到同一张图(空则挂该页签第一条滞后),图例可勾选,周/天可切;项目指标 · SDLC 只画现行三条真数。定义字段进 `.bw/metrics.toml`。原型 `docs/hifi/overview-36.html`,规格 `docs/05-features/overview-health-36/`。周五资产盘点多一步:在该版本运作活①上追加 `## 每周进展`;总览右栏从同一条评论现算。② 开工也注入 `week-plan-comment.md`。总览折线业务/SDLC 同一套(从 0 起的纵轴、悬停读数、固定高度);页签默认「主要」;A 类引领按天也能出点。采集模板脚本认 `--granularity week|day`,跟 `metrics.md` 对齐。运作活②建出来的说明跟上收口每周进展。
@@ -100,7 +195,6 @@ Stage 的 **Workflow 列从只读文字改成下拉**,选项里除了自带的 `
 验包缝：`BW_CDP_PORT` 是纯数字才把 WebView2 调试口拼进现有 browser args，没设与今天一样。设置 / 接入深链成功打对照日志 `[BW_VIEW] settings|onboard`。出包入口 `.bw/release/pack/pack.cmd`，验包入口 `.bw/release/e2e/e2e.cmd`（只认 `.cmd`）。E2E 只记项目功能（设置 / 接入等）；包在不在、静默装、卸载是出包校验和清理。
 
 规范 5.13:工作台不写被管仓主检出。方案正本在 [`docs/architecture.md`](docs/architecture.md) §3 模块 3「项目约定」;词表在 [`CONTEXT.md`](CONTEXT.md)。仓里只留两辆常驻车——项目约定(`.bw/project.toml`,分支 `bw/project`)和指标(定义走运作活①、读数走 `bw/ledger`)。开工工具跟人走本机 `settings.toml`;类别→workflow 和周五盘点只认产品默认,残留 `issue-policy` 不再驱动任何行为。不再铺、不再写、产品不再读 `.bw/issue-policy.toml`;周盘点整份删掉。规范铺底与「编辑项目名片」收成「项目约定」。接入跳过只认 HEAD 或开着的约定活,不把主检出脏文件当已接入。拉主干不再 restore/删主检出名片。叠着的「编辑项目名片」横幅删掉。`.bw/worktrees/` 的忽略写在约定树上的 `.bw/.gitignore`。
-
 
 ## 最近 · 2026-09-02
 

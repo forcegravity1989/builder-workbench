@@ -26,6 +26,7 @@ docs/（所有知识目录都在这，编号定序；architecture 不编号＝do
 ├── 03-guide/          产品指南（怎么用，给人看）
 ├── 04-design-system/  视觉正本：设计系统资产（样式表 + token + 规范；壳直接拼入）
 ├── 05-features/       特性级变更制品链——intent + 带原型的 spec 为人 gate；plan 仅大风险；小修不进
+├── 06-module/         单个模块的实现心智模型——设计面对的主要矛盾 / 取舍;不纠结实现细节
 ├── 10-reference/      外部参考的提炼版
 ├── hifi/              八屏版式与旅程原型
 ├── metrics.md         指标口径
@@ -45,6 +46,7 @@ decision-ui/ 等       gate 投影（只读渲染 docs/05-features/*；不当第
 |---|---|---|---|
 | **docs/01-principles/** | 我们永远怎么组织知识、信什么铁律（拍板才改） | 慢 | 单次需求、当周实验、某站施工日记 |
 | **docs/05-features/\<id\>/** | **特性级**要什么、规格（含原型）；大风险才有必批 plan；读回可写在 STATUS / PRACTICE 段或 commit | 每个大特性/大改动一条 | 小 bug、文案错、一次性琐修；产品总设计、词表；第二份欠账总表 |
+| **docs/06-module/** | 单个模块怎么实现的心智模型——设计面对的主要矛盾 / 取舍 | 模块新增或大改时补一篇 | 整体旅程与逻辑模块（在 architecture）；用户价值特性（在 05-features）；代码路径 / 数据字段 / 没建清单等实现细节 |
 | **docs/03-guide** | 人怎么用 / 怎么讲（只写已实践） | 站验证后补 | 未上线功能、实现黑话堆砌 |
 | **docs/\*-prototype/design** | 当前迭代设计实况（一篇正本） | 站走完改实况 | 单次 MR 的 intent；修订流水账当正文 |
 | **AGENTS / CLAUDE** | agent 每会话必读的地板（AGENTS 是开发规矩正本） | 错两次写入 | 单次变更正本（进 docs/05-features/）；产品主张（进 docs/01-principles/03） |
@@ -81,15 +83,16 @@ docs/01-principles/  ──约束──►  docs/05-features/<id>/intent.md | sp
 
 ### 4.1 粒度（硬规矩）
 
-`docs/05-features/` 只装**比较大的、特性级（或同级）变更**——需要对齐意图与规格的那一类。
+`docs/05-features/` 只装**产生用户价值的新能力或新信息**——给客户一个以前没有的价值（新能力 / 新数据维度 / 能做成以前做不成的事）。
 
-| 走 `docs/05-features/` | 不走 `docs/05-features/`（直接修） |
+| 走 `docs/05-features/` | 不走（直接修 + 留痕） |
 |---|---|
-| 新特性 / 大改行为或信息架构 | 小 bug、崩溃热修、明显笔误 |
-| 跨多模块、要产品拍板范围 | 测试补洞、文案/注释、依赖小版本钉死 |
-| 要对齐 03 飞轮、写 intent + 带原型的 spec | 改完能用现有测试/门禁一眼验完 |
+| 新能力：用户以前没有、现在能做新事 | 命名 / 口径收口（版本号归一、标签体系合并） |
+| 新信息维度：用户能看见以前看不见的 | 基建接线（已有设计系统接上、样式正本归一） |
+| 大改行为或信息架构**且**产生新价值 | 重构 / 重排不产生新价值（仅更顺 / 更好看） |
+| 跨多模块、要产品拍板范围 | 小 bug、文案、测试补洞、依赖钉死 |
 
-拿不准时：**偏大就开 change，偏小就直修**。直修仍走正常 PR/门禁；需要留痕可在对应 `docs/05-features/<id>/` 的 STATUS、或 commit 说明里一笔带过，**不要为修一个小 bug 建整套 intent/spec/plan**。
+判定关键：**用户感知到新价值**，不是「工程更顺」。拿不准时问：发布当天客户看见什么新东西？答不出「新价值」→ 直修留痕（commit 说明 + 必要时改 `architecture.md` 实况段），不开 intent gate、不过五大拷问、不建 05-features 目录。
 
 一条 `docs/05-features/<id>/` 可以对应多笔提交、多个 PR，只要仍是**同一个特性意图**；不要把「修一个按钮色」拆成独立 change。
 
@@ -195,3 +198,5 @@ docs/05-features/<change-id>/
 | 2026-09-01 | docs/ 加数字前缀：architecture→01-architecture、adr→02-adr、guide→03-guide、design-system→04-design-system、reference→10-reference；6.1 拆「入口件 + 惯例置根件」两类例外，resolve 表内矛盾与 §1 REVIEW.md 归属 |
 | 2026-09-01 | 根目录知识目录加编号：principles→01-principles、changes→05-features（特性级制品链）；§3 标题与关系线同步改 01-principles · 05-features |
 | 2026-09-01 | principles 与 features 迁入 `docs/`：`docs/01-principles/`、`docs/05-features/`；`docs/01-architecture.md` 去编号为 `docs/architecture.md`（docs 内设计正本，同根 README/CHANGELOG 之不编号例外）；6.1 入口件不再含 principles（principles 转为 docs 内编号知识目录），§1/§2/§3/§7 路径同步；仓根只剩 README/AGENTS/CLAUDE/CONTEXT + DESIGN/CHANGELOG |
+| 2026-09-08 | 加 `docs/06-module/` 层:单个模块实现的心智模型(主要矛盾/取舍);architecture.md 收为整体旅程+逻辑模块、不进模块实现细节;三层边界 architecture / 06-module / 05-features 写进 AGENTS「人怎么驾驭」可见物表与本文 §1/§2 |
+| 2026-09-09 | §4.1 收紧口径:`docs/05-features/` 只装产生用户价值的新能力/新信息;命名收口/基建接线/重构重排不产生新价值的直修留痕(commit 说明 + 必要时改 architecture 实况段),不开 intent gate;02 §1 适用范围、§6 小特性豁免同步 |

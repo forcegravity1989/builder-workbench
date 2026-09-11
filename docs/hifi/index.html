@@ -544,7 +544,7 @@ select.select-multi{padding:3px;font-size:11.5px;border:1px solid var(--border-d
 </style>
 </head>
 <body>
-<div role="note" style="position:sticky;top:0;z-index:9999;padding:8px 14px;background:#3d3428;color:#EFEBE2;font-size:12px;line-height:1.45;">历史演示：页内样例仍是旧「规范铺底 / issue-policy」。现行方案见 docs/hifi/README.md 与 architecture §3「项目约定」。</div>
+<div role="note" style="position:sticky;top:0;z-index:9999;padding:8px 14px;background:#3d3428;color:#EFEBE2;font-size:12px;line-height:1.45;">历史演示：页内样例仍是旧「规范铺底 / issue-policy」。现行方案见 docs/hifi/README.md 与 architecture §1「项目约定」。</div>
 <div id="app"></div>
 <div id="toast" class="toast"></div>
 <script>
@@ -915,7 +915,7 @@ function freshState(){
       {ok:false,text:'业务指标 5 个里 2 个无观测(灰)',jump:'lagging'},
       {ok:true,text:'上周有交付:PR #101 合入(08-17)、0.3.0-v3 重出包(08-17)',jump:'version'}
     ]}},
-    onboard:{tab:'existing',platform:'github',selectedRepo:'demo-new',search:'',visibility:'private',intentName:'',intentWhat:'',intentBenchmark:'',intentNorthstar:'',namespace:'',repoName:''},
+    onboard:{tab:'local',platform:'github',selectedRepo:'demo-new',search:'',localPath:'E:/code/demo-new',clonePath:'E:/code',intentName:'',intentWhat:'',intentBenchmark:'',intentNorthstar:''},
     ui:{
       terminalLines:{},playing:{},
       guideOpen:false, guideChapter:'u0', sessLeft:true, sessRight:true,
@@ -1066,7 +1066,7 @@ var ACTIONS = {
   completeOnboarding:function(){
     var ob=state.onboard;
     var repoLabel=REPO_LIST.filter(function(r){return r.id===ob.selectedRepo;})[0];
-    var repoName=ob.tab==='new' ? ((ob.namespace?ob.namespace+'/':'')+(ob.repoName||'new-repo')) : (ob.selectedRepo||'demo-new');
+    var repoName=ob.selectedRepo||'demo-new';
     var displayName=ob.intentName||repoName.split('/').pop();
     state.newProject={ id:'new',kind:'onboarded',light:'gray',name:displayName,shortName:displayName,
       oneLiner:'刚接入,规范铺底待合入',version:'v0.1',repo:repoLabel&&repoLabel.real?repoLabel.id:repoName,
@@ -1885,28 +1885,19 @@ function renderOnboard(){
     return '<div class="repo-row '+(ob.selectedRepo===r.id?'sel':'')+'" data-action="selectRepo" data-arg=\'"'+esc(r.id)+'"\'>'
       + '<span>'+esc(r.label)+'</span>' + (r.real?'<span class="chip chip-clay">已连接</span>':'') + '</div>';
   }).join('');
-  var repoBody = ob.tab==='existing'
-    ? ('<input class="input" style="margin-bottom:8px;" placeholder="搜索仓,或直接粘贴地址…" data-bind="onboard.search" value="'+esc(ob.search)+'">'
-      + '<div class="repolist">'+repoRows+'</div>')
-    : ('<div class="formgrid2">'
-      + (ob.platform==='codehub'?('<div class="formrow"><label class="label">命名空间</label><input class="input" data-bind="onboard.namespace" value="'+esc(ob.namespace)+'"></div>'):'<div></div>')
-      + '<div class="formrow"><label class="label">仓库名</label><input class="input" data-bind="onboard.repoName" value="'+esc(ob.repoName)+'"></div></div>'
-      + '<div class="pillrow"><span class="pill '+(ob.visibility==='private'?'active':'')+'" data-action="setOnboardVisibility" data-arg=\'"private"\'>Private</span><span class="pill '+(ob.visibility==='public'?'active':'')+'" data-action="setOnboardVisibility" data-arg=\'"public"\'>Public</span></div>');
-  var obEnvOk=state.ui.obEnvOk;
+  var repoBody = ob.tab==='local'
+    ? ('<div class="formrow"><label class="label">本地 Git 仓</label><div style="display:flex;gap:8px"><input class="input mono" style="flex:1" data-bind="onboard.localPath" value="'+esc(ob.localPath)+'"><button class="btn btn-sm">浏览文件夹</button></div></div>')
+    : ('<div class="pillrow"><span class="pill '+(ob.platform==='codehub'?'active':'')+'" data-action="setOnboardPlatform" data-arg=\'"codehub"\'>codehub</span><span class="pill '+(ob.platform==='github'?'active':'')+'" data-action="setOnboardPlatform" data-arg=\'"github"\'>GitHub</span></div>'
+      + '<input class="input" style="margin-bottom:8px;" placeholder="搜索仓,或直接粘贴地址…" data-bind="onboard.search" value="'+esc(ob.search)+'">'
+      + '<div class="repolist">'+repoRows+'</div>'
+      + '<div class="formrow" style="margin-top:10px"><label class="label">父文件夹</label><div style="display:flex;gap:8px"><input class="input mono" style="flex:1" data-bind="onboard.clonePath" value="'+esc(ob.clonePath)+'"><button class="btn btn-sm">浏览文件夹</button></div></div>');
   return '<section data-screen="onboard">'
     + '<div class="ob-head"><h1 style="font-size:20px;margin:0;">接入项目</h1><button class="btn btn-ghost btn-sm" data-action="goWall">← 项目墙</button></div>'
     + '<div class="ob-cards">'
     + '<div class="card ob-card"><h3>项目地址</h3>'
-    +   '<div class="tabrow"><button class="btn btn-sm '+(ob.tab==='new'?'active':'')+'" data-action="setOnboardTab" data-arg=\'"new"\'>新建</button><button class="btn btn-sm '+(ob.tab==='existing'?'active':'')+'" data-action="setOnboardTab" data-arg=\'"existing"\'>已有</button></div>'
-    +   '<div class="pillrow"><span class="pill '+(ob.platform==='codehub'?'active':'')+'" data-action="setOnboardPlatform" data-arg=\'"codehub"\'>codehub</span><span class="pill '+(ob.platform==='github'?'active':'')+'" data-action="setOnboardPlatform" data-arg=\'"github"\'>GitHub</span></div>'
+    +   '<div class="tabrow"><button class="btn btn-sm '+(ob.tab==='local'?'active':'')+'" data-action="setOnboardTab" data-arg=\'"local"\'>打开本地仓</button><button class="btn btn-sm '+(ob.tab==='remote'?'active':'')+'" data-action="setOnboardTab" data-arg=\'"remote"\'>克隆远端仓</button></div>'
     +   repoBody
-    +   '<div class="probe3">'
-    +     '<span>'+lightDot(obEnvOk?'green':'yellow')+' 登录态</span>'
-    +     '<span>'+lightDot(obEnvOk?'green':'yellow')+' claude</span>'
-    +     '<span>'+lightDot(obEnvOk?'green':'gray')+' Open Design</span>'
-    +     '<span style="margin-left:auto;"></span>'
-    +     '<button class="btn btn-sm" data-action="testOnboardEnv" '+(state.ui.envTesting?'disabled':'')+'>'+(state.ui.envTesting?'探测中…':'测一下')+'</button>'
-    +   '</div></div>'
+    + '</div>'
     + '<div class="card ob-card"><h3>基础信息</h3>'
     +   '<div class="formgrid2">'
     +     '<div class="formrow"><label class="label">项目名称</label><input class="input" data-bind="onboard.intentName" value="'+esc(ob.intentName)+'"></div>'

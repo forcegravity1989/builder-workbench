@@ -4,7 +4,7 @@
 //! 对齐,迁过去一行对一天。同一天同一指标只留一行:再采或再手填覆盖这一行,
 //! 不叠第二行。跨天的历史行不改。展示按 ISO 周收:那一周里日期最大的一天。
 //!
-//! **写不进主检出。** 采和手填写固定账本 worktree(`<仓名>-bw-ledger`,
+//! **写不进主检出。** 采和手填写固定账本 worktree(`<仓>/.bw/worktrees/ledger`,
 //! 分支 `bw/ledger`);读的时候主检出(已合入的历史)和账本叠在一起,同一天
 //! 以账本为准。文件不存在 / 某行坏掉 / 没有 `day` = 那一行当没看见,不把
 //! 整份打成失败。
@@ -127,10 +127,10 @@ pub fn absorb_main_readings(ledger: &Path, main: &Path) -> Result<bool> {
     Ok(true)
 }
 
-/// 账本目录(兄弟 worktree)如果已经在盘上就返回,否则 `None`。
+/// 正规账本 worktree 如果已经在盘上就返回,同路径普通目录不冒充账本。
 pub fn ledger_dir_if_present(main: &Path) -> Option<PathBuf> {
     let dir = bw_engine::workspace::ledger_worktree_path(main)?;
-    dir.is_dir().then_some(dir)
+    dir.join(".git").exists().then_some(dir)
 }
 
 fn read_merged(main: &Path) -> Vec<MetricReading> {
@@ -255,5 +255,14 @@ mod tests {
         assert_eq!(raw.lines().filter(|l| !l.trim().is_empty()).count(), 1);
         assert!(raw.contains("\"value\":\"9\""));
         let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn plain_directory_at_ledger_path_is_not_read_as_a_worktree() {
+        let main = std::env::temp_dir().join(format!("bw-plain-ledger-{}", uuid::Uuid::new_v4()));
+        let ledger = bw_engine::workspace::ledger_worktree_path(&main).unwrap();
+        std::fs::create_dir_all(&ledger).unwrap();
+        assert_eq!(ledger_dir_if_present(&main), None);
+        std::fs::remove_dir_all(&main).unwrap();
     }
 }

@@ -9,6 +9,7 @@
 //! ```bash
 //! BW_DB=<数据目录> BW_OPEN=<项目> BW_PANEL=overview|plan|session|config|kb ./bw-dev
 //! BW_VIEW=onboard|settings ./bw-dev
+//! BW_HELP=home|guide|report ./bw-dev   # 帮助面板开在哪一页
 //! ```
 
 #![forbid(unsafe_code)]
@@ -96,11 +97,13 @@ fn Root() -> Element {
     });
     let initial_panel = deep_link.panel;
     let initial_view = deep_link.view;
+    let initial_help = deep_link.help;
     let bridge = use_context_provider(move || bridge::spawn(deep_link));
 
     let mut vm = use_signal(vm::Vm::default);
     let nav = use_context_provider(move || bridge::PanelNav(Signal::new(initial_panel)));
     use_context_provider(|| bridge::GuideNav(Signal::new(None)));
+    let help = use_context_provider(move || bridge::HelpNav(Signal::new(initial_help)));
     let chrome_busy = use_context_provider(|| ChromeBusy(Signal::new(None)));
     let mut panel = nav.0;
     let mut top_view = use_signal(move || initial_view);
@@ -212,6 +215,7 @@ fn Root() -> Element {
                     b_rail.send(Req::Open(None));
                 },
                 on_settings: move |_| top_view.set(Some(TopView::Settings)),
+                on_help: move |_| help.open(bridge::HelpTab::Home),
                 on_nav: move |p: bridge::Panel| panel.set(p),
             }
             div { class: "main",
@@ -229,7 +233,7 @@ fn Root() -> Element {
                     {body(tv, cur, &v, &project, &bridge, top_view)}
                 }
             }
-            chrome::GuideDrawer { bridge: bridge.clone() }
+            chrome::help::HelpHub { bridge: bridge.clone(), env: v.env.clone() }
             if let Some(msg) = {
                 let chrome_msg = chrome_busy.get();
                 v.busy.clone().or(chrome_msg)

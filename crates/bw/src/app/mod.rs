@@ -50,13 +50,14 @@ pub use issue_store::{
     LIGHT_TITLE,
 };
 pub use ops::{
-    is_ops1_issue, ops1_title, ops2_title, skill_slug, week_started, workflow_label, OPS1_WORKFLOW,
-    OPS2_WORKFLOW, OPS3_WORKFLOW,
+    current_week_version, find_open_bare_ops1, is_ops1_issue, ops1_title, ops2_title, skill_slug,
+    week_started, workflow_label, OPS1_WORKFLOW, OPS2_WORKFLOW, OPS3_WORKFLOW,
 };
 pub use pack_ctl::{cleanup_pack_intermediates, PackCtl};
 pub use progress::{ProgressCase, ProgressLine, StepState};
 pub use week_comment::{
-    parse_comments, validate_comment, WeekComment, HEADING_GOAL, HEADING_READINGS, HEADING_SCOPE,
+    parse_comments, render_week_plan_comment, validate_comment, WeekComment, HEADING_GOAL,
+    HEADING_READINGS, HEADING_SCOPE,
 };
 
 use crate::{
@@ -476,10 +477,9 @@ impl App {
                 name,
                 start,
                 due,
-                note,
                 included,
             } => {
-                self.create_plan_version(project_id, name, start, due, note, included)
+                self.create_plan_version(project_id, name, start, due, included)
                     .await
             }
             Command::DeletePlanVersion { project_id, name } => {
@@ -513,6 +513,7 @@ impl App {
                 self.set_issue_assignee(id, assignee).await
             }
             Command::EditIssue { id, title, body } => self.edit_issue(id, title, body).await,
+            Command::FetchIssue { id } => self.fetch_issue_body(id).await,
             Command::CancelIssue { id, reason } => self.cancel_issue(id, reason).await,
             Command::DeleteSession { id } => self.delete_session(id).await,
             Command::BlockIssue { id, reason } => self.block_issue(id, reason).await,
@@ -653,6 +654,7 @@ fn cmd_log_label(cmd: &Command) -> String {
         Command::EditIssue { id, title, .. } => {
             format!("EditIssue #{} title={title:?}", id.iid())
         }
+        Command::FetchIssue { id } => format!("FetchIssue #{}", id.iid()),
         Command::CancelIssue { id, .. } => format!("CancelIssue #{}", id.iid()),
         Command::DeleteSession { id } => format!("DeleteSession #{}", id.iid()),
         Command::BlockIssue { id, .. } => format!("BlockIssue #{}", id.iid()),

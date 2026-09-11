@@ -94,20 +94,19 @@ pub enum Command {
     },
     /// 排进计划版本(`bw:plan:<name>`)。一张活只属于一个版本。
     ScheduleToPlan { id: IssueId, plan: String },
-    /// 建一个版本:建 codehub milestone,给 `included` 打 `bw:plan:<name>`。
-    /// 与发版号 `CutRelease` 不同。
+    /// 建一个版本:落运作活①并打 `bw:plan:<name>`,纳入的活也打标。
+    /// 同名里程碑只补充。与发版号 `CutRelease` 不同。
     CreatePlanVersion {
         project_id: ProjectId,
         name: String,
         start: String,
         due: String,
-        note: String,
         included: Vec<IssueId>,
     },
-    /// 删一个未发版本:给挂着 `bw:plan:<name>` 的活摘掉该标签,再删同名
+    /// 删一个未发版本:给挂着 `bw:plan:<name>` 的活摘掉该标签,再尽力删同名
     /// 里程碑。已发的号拒收。
     DeletePlanVersion { project_id: ProjectId, name: String },
-    /// 未发版本改名:同步里程碑标题、标签定义、已打在 issue 上的 `bw:plan:`。
+    /// 未发版本改名:先改标签定义和 issue 上的 `bw:plan:`,里程碑标题只补充。
     RenamePlanVersion {
         project_id: ProjectId,
         from: String,
@@ -159,6 +158,10 @@ pub enum Command {
         title: String,
         body: String,
     },
+    /// 单查一张 issue 的正文。issue 列表(list)设计上不带正文,详情弹窗打开时
+    /// 发这条补正文 —— 走 `view_issue` 单查拿回 `description`。bridge 收到回执后
+    /// 补丁进 last_gather,不重拉整个 list(issue #72)。
+    FetchIssue { id: IssueId },
     /// 卡住了。如实停在原地,可以重试,不假装前进。
     BlockIssue { id: IssueId, reason: String },
     /// 作废:写取消原因进评论、打 `bw:status:cancelled`、关掉远端 issue。
@@ -213,8 +216,8 @@ pub enum Command {
         value: String,
     },
 
-    /// 把问题报到 **workbench 自己的仓**(当前目录 git 的 origin),
-    /// 不是打开着的被管项目。标题人填;`attach_log` 为真且 `bw.log` 有文件才附上。
+    /// 把问题报到 **workbench 自己的仓**(绿区 `z30026659/workbench`，走 codehub-cli),
+    /// 不是打开着的被管项目,也不读本机 git origin。标题人填;`attach_log` 为真且 `bw.log` 有文件才附上。
     ReportWorkbenchIssue { title: String, attach_log: bool },
 }
 
@@ -306,6 +309,12 @@ pub enum Event {
     },
     IssueEdited {
         id: IssueId,
+    },
+    /// `FetchIssue` 的回执:单查拉回的正文。bridge 用它补丁 last_gather,
+    /// 不重拉整个 issue 列表。空串如实 = 这张活本来就没写正文。
+    IssueBodyFetched {
+        id: IssueId,
+        body: String,
     },
     /// 一次 ▶跑 结束。`summary` 原样来自执行器(mock 的自带【mock】字样)。
     /// `tool` 是这张活读回的开工工具,壳用来决定会话屏落在哪一页。

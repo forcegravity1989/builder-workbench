@@ -20,7 +20,12 @@ use crate::{
     },
 };
 use bw_engine::{build_startup_plan, remote::Remote, InteractiveExecutor, RunCtx, TuiAgentConfig};
-use std::path::{Path, PathBuf};
+
+/// 上报目标写死：绿区 workbench 仓。装机目录没有这份源码，不能从本机 git origin 推。
+/// git 地址是 `https://codehub-dg-g.huawei.com/z30026659/workbench.git`；
+/// `codehub-cli -H` 跟接入屏一样走别名 `green`（token 也记在这个 host 下）。
+const WORKBENCH_REPORT_HOST: &str = "green";
+const WORKBENCH_REPORT_PATH: &str = "z30026659/workbench";
 
 impl App {
     #[allow(clippy::too_many_arguments)]
@@ -657,6 +662,17 @@ impl App {
         Ok(vec![Event::IssueEdited { id }])
     }
 
+    /// 单查一张 issue 的正文(`view_issue` 带 `description`)。issue 列表设计上
+    /// 不带正文,计划详情弹窗打开时发这条补正文。拉回的正文原样进 Event,bridge
+    /// 补丁进 last_gather,不重拉整个 list(issue #72)。拉空如实 = 没写过正文。
+    pub(super) async fn fetch_issue_body(&self, id: IssueId) -> Result<Vec<Event>> {
+        let issue = self.issue_or_err(id).await?;
+        Ok(vec![Event::IssueBodyFetched {
+            id,
+            body: issue.body,
+        }])
+    }
+
     /// 作废:原因进评论,打取消标签并关掉远端 issue。不是完成。
     pub(super) async fn cancel_issue(&mut self, id: IssueId, reason: String) -> Result<Vec<Event>> {
         let why = reason.trim().to_string();
@@ -760,8 +776,8 @@ impl App {
         .await
     }
 
-    /// 报到 workbench 自己的仓:host/path 从当前目录 git 的 origin 现读,
-    /// 人勾了附加且对照日志有文件才 `--attachment` 附上。不碰打开着的被管项目。
+    /// 报到绿区 workbench 仓：`codehub-cli issue create -H green -p z30026659/workbench`。
+    /// 人勾了附加且对照日志有文件才 `--attachment` 附上。不碰打开着的被管项目，也不读本机 git origin。
     pub(super) async fn report_workbench_issue(
         &mut self,
         title: String,
@@ -771,18 +787,12 @@ impl App {
         if title.is_empty() {
             return Err(AppError::Refused("问题标题不能空".into()));
         }
-        let repo = workbench_git_dir();
-        let origin = bw_engine::github::origin_remote_url(&repo)
-            .await
-            .map_err(|e| AppError::Exec(format!("读 workbench origin 没成:{e}")))?
-            .ok_or_else(|| AppError::Refused(format!("{} 没有 origin,上报不了", repo.display())))?;
-        let (host, path) = bw_engine::github::parse_git_remote_url(&origin)
-            .ok_or_else(|| AppError::Refused(format!("认不出 origin:{origin}")))?;
+        let host = WORKBENCH_REPORT_HOST;
+        let path = WORKBENCH_REPORT_PATH;
         bw_engine::dlog!(
             ok,
             "report",
-            "workbench origin host={host} path={path} attach_log={attach_log} repo={}",
-            repo.display()
+            "workbench report host={host} path={path} attach_log={attach_log}"
         );
         let log = bw_engine::dlog::log_path();
         let attach = attach_log && log.is_file();
@@ -796,66 +806,20 @@ impl App {
         } else {
             "人未勾选附加对照日志,只建了 issue。".into()
         };
-        let provider = if host.eq_ignore_ascii_case("github.com") || host.ends_with(".github.com") {
-            "github"
-        } else {
-            "codehub"
-        };
-        let remote = Remote::for_project(provider, &host, &path)
+        let remote = Remote::for_project("codehub", host, path)
             .map_err(|e| AppError::Exec(e.to_string()))?;
         let attachment = if attach { Some(log.as_path()) } else { None };
         let iid = remote
             .create_issue_with_attachment(&title, &body, &[], attachment)
             .await
             .map_err(|e| AppError::Exec(format!("上报 issue 没成:{e}")))?;
-        let url = if provider == "github" {
-            format!("https://github.com/{path}/issues/{iid}")
-        } else {
-            format!(
-                "https://{}/{path}/-/issues/{iid}",
-                codehub_alias_to_domain(&host)
-            )
-        };
+        let url = format!(
+            "https://{}/{path}/-/issues/{iid}",
+            codehub_alias_to_domain(host)
+        );
         bw_engine::dlog!(ok, "report", "ok iid={iid} url={url} attached={attach}");
         Ok(vec![Event::WorkbenchIssueReported { iid, url }])
     }
-}
-
-/// 当前目录的 git 仓。cwd 不是就往上走,再从 exe 往上摸。安装包摸不到就回 cwd。
-fn workbench_git_dir() -> PathBuf {
-    if let Ok(cwd) = std::env::current_dir() {
-        if looks_git(&cwd) {
-            return cwd;
-        }
-        if let Some(d) = walk_git(&cwd) {
-            return d;
-        }
-    }
-    if let Ok(exe) = std::env::current_exe() {
-        if let Some(d) = walk_git(&exe) {
-            return d;
-        }
-    }
-    std::env::current_dir().unwrap_or_else(|_| PathBuf::from("."))
-}
-
-fn looks_git(dir: &Path) -> bool {
-    dir.join(".git").exists()
-}
-
-fn walk_git(start: &Path) -> Option<PathBuf> {
-    let mut dir = if start.is_file() {
-        start.parent()?.to_path_buf()
-    } else {
-        start.to_path_buf()
-    };
-    for _ in 0..12 {
-        if looks_git(&dir) {
-            return Some(dir);
-        }
-        dir = dir.parent()?.to_path_buf();
-    }
-    None
 }
 
 // ── 纯内存过滤:调用方先 `App::issues(project_id).await` 拿一次,再借进来 ──────

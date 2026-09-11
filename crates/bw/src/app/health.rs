@@ -143,17 +143,17 @@ impl App {
         let week = isoweek::current_week();
         let issues = self.issues(project_id).await?;
         let notes = self.week_goals_from_ops1(&project, &issues).await;
-        let version = match self.remote_for(&project) {
-            Ok(remote) => remote
-                .list_milestones(&project.remote_path)
-                .await
-                .ok()
-                .and_then(|rows| {
-                    crate::version::current_from_milestones(&rows, &isoweek::today_ymd())
-                })
-                .unwrap_or_default(),
-            Err(_) => String::new(),
-        };
+        let mut released = issues
+            .iter()
+            .filter(|i| !i.version.is_empty())
+            .map(|i| i.version.clone())
+            .collect::<Vec<_>>();
+        if let Ok(remote) = self.remote_for(&project) {
+            if let Ok(tags) = remote.list_releases().await {
+                released.extend(tags);
+            }
+        }
+        let version = crate::app::current_week_version(&issues, &released);
         let inputs = collect_health_inputs(
             &project,
             &ws,

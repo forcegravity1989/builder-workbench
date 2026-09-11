@@ -100,6 +100,7 @@ pub(super) struct ProjectGathered {
     current_week: String,
     mr_url_prefix: String,
     issue_url_prefix: String,
+    remote_brand: String,
     /// 版本列表 + 当前登录用户。gather 采一次,assemble 只克隆 —— 切周 / 改
     /// 一张卡状态时不再打 `project view` / milestones / `/user`。
     plan_versions: Vec<PlanVersionVm>,
@@ -262,9 +263,13 @@ impl Gathered {
             return;
         }
         let pid = pg.id;
-        let today = bw::isoweek::today_ymd();
-        let covering = covering_version_names(&pg.plan_versions, &today);
-        let confirmed = pick_overview_version(&covering, "");
+        let released: Vec<String> = pg
+            .issues
+            .iter()
+            .filter(|i| !i.version.is_empty())
+            .map(|i| i.version.clone())
+            .collect();
+        let confirmed = bw::app::current_week_version(&pg.issues, &released);
         let week_counts = if confirmed.is_empty() {
             WeekCountsVm::default()
         } else {
@@ -275,6 +280,18 @@ impl Gathered {
             card.week_total = week_counts.total() as u32;
             card.week_done = week_counts.done as u32;
             card.unread = unread;
+        }
+    }
+
+    /// `FetchIssue` 单查拉回的正文补进内存里这一张,不重拉 issue 列表(issue #72:
+    /// list 不带正文,重拉会又把 body 冲成空)。正文是纯展示字段,没有派生计数
+    /// 跟着它走,所以只补 body 本身。找不到这张活就不动(可能换项目了)。
+    pub fn apply_issue_body(&mut self, id: IssueId, body: String) {
+        let Some(pg) = self.open.as_mut() else {
+            return;
+        };
+        if let Some(i) = pg.issues.iter_mut().find(|i| i.id == id) {
+            i.body = body;
         }
     }
 }
@@ -332,7 +349,7 @@ pub fn note_of(events: &[Event]) -> Option<String> {
 }
 
 fn primary_note(events: &[Event]) -> Option<String> {
-    events.first().map(|e| match e {
+    Some(match events.first()? {
         Event::ProjectCreated { slug, adopted, .. } => {
             if *adopted {
                 format!("接手了已有项目 {slug} —— 仓里原有的 .bw/project.toml 一个字没动")
@@ -499,7 +516,9 @@ fn primary_note(events: &[Event]) -> Option<String> {
         Event::IssueScheduledToPlan { plan, .. } => {
             format!("已排进版本 {plan} —— 正本是 bw:plan 标签,codehub 里程碑同步中")
         }
-        Event::PlanVersionCreated { name, .. } => format!("版本 {name} 已建"),
+        Event::PlanVersionCreated { name, .. } => {
+            format!("版本 {name} 已建（运作活① + bw:plan 标签）")
+        }
         Event::PlanVersionDeleted {
             name,
             issues_cleared,
@@ -519,6 +538,9 @@ fn primary_note(events: &[Event]) -> Option<String> {
             }
         }
         Event::IssueEdited { .. } => "issue 标题/正文已改 · 已同步到 codehub".into(),
+        // 后台单查正文补丁(详情弹窗打开时触发),不是人点的动作。不弹 note ——
+        // 否则每开一次详情都闪一条,还会盖掉上一条真正要给人看的 note。
+        Event::IssueBodyFetched { .. } => return None,
         Event::WorkbenchIssueReported { .. } => "问题已上报".into(),
     })
 }
@@ -756,13 +778,20 @@ async fn gather_wall(
 }
 
 fn card_from_open(p: &Project, g: Option<&ProjectGathered>, current_week: &str) -> ProjectCardVm {
-    let today = bw::isoweek::today_ymd();
     let version = g
         .map(|g| {
-            covering_version_names(&g.plan_versions, &today)
-                .into_iter()
-                .next()
-                .unwrap_or_default()
+            let released: Vec<String> = g
+                .releases
+                .iter()
+                .map(|r| r.version.clone())
+                .chain(
+                    g.issues
+                        .iter()
+                        .filter(|i| !i.version.is_empty())
+                        .map(|i| i.version.clone()),
+                )
+                .collect();
+            bw::app::current_week_version(&g.issues, &released)
         })
         .unwrap_or_default();
     let issues = g.map(|g| g.issues.as_slice()).unwrap_or(&[]);
@@ -968,14 +997,18 @@ async fn wall_extra(
                 .unwrap_or_default()
         },
         async {
-            let Ok(remote) = app.remote_for(&job.p) else {
-                return String::new();
-            };
-            let Ok(rows) = remote.list_milestones(&job.p.remote_path).await else {
-                return String::new();
-            };
-            bw::version::current_from_milestones(&rows, &bw::isoweek::today_ymd())
-                .unwrap_or_default()
+            let mut released: Vec<String> = job
+                .issues
+                .iter()
+                .filter(|i| !i.version.is_empty())
+                .map(|i| i.version.clone())
+                .collect();
+            if let Ok(remote) = app.remote_for(&job.p) {
+                if let Ok(tags) = remote.list_releases().await {
+                    released.extend(tags);
+                }
+            }
+            bw::app::current_week_version(&job.issues, &released)
         },
     );
     (notes.goals, last_delivery, version)
@@ -1188,7 +1221,7 @@ async fn lookup_pr_one(
     let branch = if item.charter {
         bw_engine::workspace::PROJECT_BRANCH.to_string()
     } else {
-        bw_engine::github::issue_branch(item.number)
+        bw_engine::workspace::issue_branch(item.number)
     };
     if item.done {
         return match remote.mr_for_branch(&branch).await {
@@ -1241,6 +1274,7 @@ async fn gather_project(
     }
     let mr_url_prefix = p.mr_url_prefix();
     let issue_url_prefix = p.issue_url_prefix();
+    let remote_brand = p.remote_brand().to_string();
 
     let (sessions, ops1_notes, releases, ops3_landed, last_delivery, plan_versions, current_user) = tokio::join!(
         log_elapsed("sessions", build_sessions(app, id, &issues)),
@@ -1259,8 +1293,17 @@ async fn gather_project(
         log_elapsed("user", current_user(app, &p)),
     );
 
-    let covering_now = covering_version_names(&plan_versions, &bw::isoweek::today_ymd());
-    let goal_key = covering_now.first().cloned().unwrap_or_default();
+    let released_now: Vec<String> = releases
+        .iter()
+        .map(|r| r.version.clone())
+        .chain(
+            issues
+                .iter()
+                .filter(|i| !i.version.is_empty())
+                .map(|i| i.version.clone()),
+        )
+        .collect();
+    let goal_key = bw::app::current_week_version(&issues, &released_now);
     let t_health = std::time::Instant::now();
     let inputs = bw::app::collect_health_inputs(
         &p,
@@ -1307,6 +1350,7 @@ async fn gather_project(
 
         mr_url_prefix,
         issue_url_prefix,
+        remote_brand,
         plan_versions,
         current_user,
     })
@@ -1371,9 +1415,6 @@ async fn assemble_project(
         });
         vm
     };
-    let today = bw::isoweek::today_ymd();
-    let covering = covering_version_names(&pg.plan_versions, &today);
-    let confirmed = pick_overview_version(&covering, &ui.overview_version);
     let mut plan_versions = pg.plan_versions.clone();
     let released_names: Vec<String> = pg
         .releases
@@ -1386,6 +1427,13 @@ async fn assemble_project(
                 .map(|i| i.version.clone()),
         )
         .collect();
+    let auto = bw::app::current_week_version(&pg.issues, &released_names);
+    let covering = if auto.is_empty() {
+        Vec::new()
+    } else {
+        vec![auto.clone()]
+    };
+    let confirmed = pick_overview_version(&covering, &ui.overview_version);
     for v in &mut plan_versions {
         v.released = released_names.iter().any(|r| r == &v.name);
         if v.goal.is_empty() {
@@ -1463,6 +1511,7 @@ async fn assemble_project(
         session_open: ui.session_open,
         mr_url_prefix: pg.mr_url_prefix.clone(),
         issue_url_prefix: pg.issue_url_prefix.clone(),
+        remote_brand: pg.remote_brand.clone(),
         workbench,
         notify: NotifyVm {
             // 评审中的活张数,现算。项目墙 ⚾ 与项目轨头部徽章读它。通知页签已删
@@ -1496,8 +1545,7 @@ async fn current_user(app: &App, p: &Project) -> String {
     }
 }
 
-/// 版本列表:扫 issues 的 `plan_version` + 读全部里程碑补 start/end,
-/// 没挂活的空版本也能出现。每个里程碑标题都是一个版本。
+/// 版本列表:只扫 issues 的 `bw:plan:`。同名里程碑只补 start/end。
 async fn build_plan_versions(app: &App, p: &Project, issues: &[bw::Issue]) -> Vec<PlanVersionVm> {
     let mut counts: std::collections::HashMap<String, u32> = std::collections::HashMap::new();
     for i in issues {
@@ -1506,25 +1554,22 @@ async fn build_plan_versions(app: &App, p: &Project, issues: &[bw::Issue]) -> Ve
         }
         *counts.entry(i.plan_version.clone()).or_default() += 1;
     }
-    // 从 codehub milestone 列表读全部版本,补上 start/end,且让
-    // 没勾 issue 的空版本也能出现。读不到(没挂远端/cli 失败)就只靠 issues 标签。
+    // 版本身份只认 `bw:plan:`。里程碑列表只给同名补起止,不单独贡献空版本。
     let mut order: Vec<String> = Vec::new();
     let mut meta: std::collections::HashMap<String, (String, String, String)> =
         std::collections::HashMap::new();
-    if let Ok(remote) = app.remote_for(p) {
-        if let Ok(rows) = remote.list_milestones(&p.remote_path).await {
-            for (title, start, due, created) in rows {
-                if !order.contains(&title) {
-                    order.push(title.clone());
-                }
-                meta.insert(title, (start, due, created));
-            }
-        }
-    }
-    // issues 里带的版本名也补进 order(防止 milestone 列表读不到时漏掉)
     for i in issues {
         if !i.plan_version.is_empty() && !order.contains(&i.plan_version) {
             order.push(i.plan_version.clone());
+        }
+    }
+    if let Ok(remote) = app.remote_for(p) {
+        if let Ok(rows) = remote.list_milestones().await {
+            for (title, start, due, created) in rows {
+                if order.contains(&title) {
+                    meta.insert(title, (start, due, created));
+                }
+            }
         }
     }
     order
@@ -1544,24 +1589,6 @@ async fn build_plan_versions(app: &App, p: &Project, issues: &[bw::Issue]) -> Ve
                 counts: build_week_counts(issues, Some(name.as_str())),
             }
         })
-        .collect()
-}
-
-fn covering_version_names(versions: &[PlanVersionVm], day: &str) -> Vec<String> {
-    let rows: Vec<(String, String, String, String)> = versions
-        .iter()
-        .map(|v| {
-            (
-                v.name.clone(),
-                v.start.clone(),
-                v.end.clone(),
-                v.created_at.clone(),
-            )
-        })
-        .collect();
-    bw::version::covering_on(&rows, day)
-        .into_iter()
-        .map(str::to_string)
         .collect()
 }
 

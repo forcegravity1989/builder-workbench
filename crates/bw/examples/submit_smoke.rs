@@ -186,7 +186,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     );
 
     // ── 读回:远端 bare 仓上真有这条分支和这个提交吗 ──────────
-    let branch = bw_engine::github::issue_branch(number);
+    let branch = bw_engine::workspace::issue_branch(number);
     say(
         "步骤 5 · 远端读回",
         &out(&bare, &["log", "--oneline", "-1", &branch]).unwrap_or_else(|e| format!("读不到:{e}")),

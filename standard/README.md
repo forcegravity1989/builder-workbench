@@ -3,7 +3,7 @@
 Workbench 规范正本。编译期 `include_str!` 进二进制——改这里就是改产品行为。
 不进被管仓。接入只写名片 `.bw/project.toml`(项目约定常驻树),不摊本目录。
 
-从仓根 [`AGENTS.md`](../AGENTS.md)「三层模型」点过来。主提示词 / reference / skill 注入对照见 [`docs/architecture.md`](../docs/architecture.md) §3 模块 4。
+从仓根 [`AGENTS.md`](../AGENTS.md)「三层模型」点过来。主提示词 / reference / skill 注入对照见 [`docs/06-module/系统提示词与渐进加载`](../docs/06-module/系统提示词与渐进加载.md)。
 
 ## 系统提示词 / reference / skill 各写什么
 

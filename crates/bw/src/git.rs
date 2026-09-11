@@ -235,6 +235,12 @@ pub async fn pull_ff(workspace: &Path) -> Result<bool, GitError> {
     Ok(before != after)
 }
 
+/// `pull_ff` 之后:本机比刚 fetch 的尖多几份提交。大于 0 = 本机比远端新。
+pub async fn commits_ahead_of_fetch(workspace: &Path) -> Result<u32, GitError> {
+    let out = git(workspace, &["rev-list", "--count", "FETCH_HEAD..HEAD"]).await?;
+    Ok(out.trim().parse().unwrap_or(0))
+}
+
 /// 本机有没有这条分支。
 pub async fn branch_exists(workspace: &Path, branch: &str) -> bool {
     git(
