@@ -1,0 +1,289 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Builders' Workbench · 一体原型 V3（单一左栏）</title>
+
+    <!--
+      V3：Orca chrome 当底座，Workbench 导航折进唯一左栏。
+      左栏：项目头 → 四屏导航（总览 · 计划 · 自动化 · 知识库）→ Projects（始终展开）→ 帮助 / 设置。
+      没有「会话」页签——点 Projects 里的树，或计划 ▶开工，才露出中栏+右栏执行面。
+      中栏页签：Terminal / Claude Code / Open Design（在 prototype.js 里，不是壳层分段）。
+
+      没有「配置」页签：开工工具映射与技能 / workflow 归了设置（跟真壳一致——
+      真壳的这几张表本来就在设置的「能力」一节：Connector · Skills · Category · Plugins · AI Assets）。
+
+      项目墙与设置是**顶层覆盖层**，不是第五、第六屏：不用给左栏发明第二套模式，关掉就回原地。
+      项目墙给了两版长相，在墙自己的头上切（弹窗 / 全窗），方便当场比。
+
+      视觉：左栏 + 执行顶条 = 设计系统；中栏+右栏 = Orca 1:1；#bw-screen / #bw-top = bw-scoped.css。
+    -->
+
+    <script>
+      /* 起手就把两件事钉死，且必须早于 prototype.js 读 location.search：
+         1. 主题走设计系统浅色（Workbench 本体是浅色，Orca 深色不是这产品的脸）
+         2. embed=1 —— 会话面进「有宿主」模式：藏掉它自己那条演示条，并开启状态回报。
+            V3 的宿主就是本页，window.parent === window，协议照旧走 postMessage。 */
+      ;(function () {
+        try {
+          localStorage.setItem('orca-proto-theme', 'light')
+        } catch (e) {}
+        window.__ORCA_PROTO_THEME__ = 'light'
+        try {
+          var u = new URL(location.href)
+          u.searchParams.set('theme', 'light')
+          u.searchParams.set('embed', '1')
+          history.replaceState(null, '', u.pathname + '?' + u.searchParams.toString() + u.hash)
+        } catch (e) {}
+      })()
+    </script>
+
+    <script>
+      /* 本地静态服务 + 浏览器缓存下静态 <link> 会偶发刷出旧稿（prototype.html 上踩过），
+         所以样式表也带时间戳。顺序有讲究：Orca 全局在前，Workbench 作用域在后，V3 胶水最后。 */
+      ;(function () {
+        var v = '?v=' + Date.now()
+        ;['prototype.css', 'bw-scoped.css', 'hifi-overview.css', 'prototype-v3.css'].forEach(function (f) {
+          document.write('<link rel="stylesheet" href="' + f + v + '" />')
+        })
+      })()
+    </script>
+  </head>
+
+  <body>
+    <div class="orca-app" id="app">
+      <!-- ══ 唯一的左栏 ══════════════════════════════════════════ -->
+      <aside class="left-sidebar">
+        <!-- 项目头：我在哪个仓，健康信号与在研版本跟着名字。整块可点 = 开项目墙（换项目） -->
+        <button type="button" class="bw-proj" data-bw-act="openWall" title="项目墙 · 换项目">
+          <span class="bw-proj-back">‹</span>
+          <span class="bw-proj-logo" id="bw-proj-logo">L</span>
+          <span class="bw-proj-id">
+            <span class="bw-proj-name" id="bw-proj-name">loop-buddy</span>
+            <span class="bw-proj-meta">
+              <span class="bw-ver" id="bw-proj-ver">v0.4</span>
+              <span class="status-dot running" id="bw-proj-dot" title="有 agent 在跑"></span>
+              <span class="bw-proj-badge" id="bw-proj-badge">1</span>
+            </span>
+          </span>
+        </button>
+
+        <!-- 四屏导航：执行面不是第五屏；JS 渲染，在执行面时四格全灭 -->
+        <nav class="bw-nav" id="bw-nav" aria-label="项目内导航"></nav>
+
+        <!-- Projects：进执行面的常驻入口，始终展开 -->
+        <div class="bw-ws" id="bw-ws">
+          <div class="sidebar-header">
+            <span class="sidebar-header-title" id="sidebar-header-title">Projects</span>
+            <button
+              type="button"
+              class="icon-btn"
+              id="new-workspace-btn"
+              aria-label="New workspace"
+              title="New workspace"
+            ></button>
+          </div>
+          <div class="worktree-list scrollbar-sleek" id="worktree-list"></div>
+        </div>
+
+        <!-- Orca 自己那条 28px 底栏：prototype.js 每次渲染都清空它，V3 不占用，藏掉 -->
+        <div class="sidebar-footer" id="sidebar-footer"></div>
+
+        <div class="bw-foot">
+          <button type="button" class="bw-nav-item" data-bw-notice="帮助小窗是独立窗口，不在项目内容区里；V3 没做">
+            <span class="bw-nav-glyph" data-bw-icon="help"></span><span>帮助</span>
+          </button>
+          <button type="button" class="bw-nav-item" data-bw-act="openSettings">
+            <span class="bw-nav-glyph" data-bw-icon="settings"></span><span>设置</span>
+          </button>
+        </div>
+      </aside>
+
+      <!-- ══ 执行面：顶条（Issue 上下文 + 停止/接回）+ Orca 中栏/右栏 ══ -->
+      <div class="bw-sess" id="bw-sess" hidden>
+        <div class="bw-sess-top">
+          <div class="bw-sess-issue">
+            <span class="bw-issue-num mono" id="bw-issue-num">—</span>
+            <span class="bw-issue-title" id="bw-issue-title">还没开工</span>
+            <span class="bw-run">
+              <span class="status-dot idle" id="bw-run-dot"></span>
+              <span id="bw-run-text">空闲</span>
+            </span>
+          </div>
+          <div class="bw-sess-facts">
+            <span>工具 <b id="bw-tool">—</b></span>
+            <span>分支 <b class="mono" id="bw-branch">main</b></span>
+            <span>路径 <b class="mono" id="bw-path">~/projects/loop-buddy</b></span>
+            <span id="bw-changes">变更 —</span>
+          </div>
+          <div class="bw-sess-acts">
+            <button type="button" class="bw-btn" id="bw-stop" data-bw-act="stopRun" disabled>停止</button>
+            <button type="button" class="bw-btn" id="bw-attach" data-bw-act="attachRun" disabled>接回</button>
+          </div>
+        </div>
+
+        <div class="bw-sess-row" id="bw-sess-row">
+          <main class="center">
+            <div class="tabstrip" id="tabstrip"></div>
+            <div class="center-body" id="center-body"></div>
+            <div class="creation-panel hidden" id="creation-panel"></div>
+          </main>
+
+          <aside class="right-sidebar">
+            <div class="right-panel">
+              <div class="panel-header">
+                <span class="panel-header-title" id="panel-title">Explorer</span>
+                <div class="panel-header-actions" id="panel-header-actions"></div>
+              </div>
+              <div class="panel-body" id="panel-body"></div>
+            </div>
+            <nav class="activity-bar" id="activity-bar" aria-label="Right sidebar sections"></nav>
+          </aside>
+        </div>
+      </div>
+
+      <!-- ══ Workbench 屏：占满中栏 + 右栏 ══════════════════════════
+           样式全部来自 bw-scoped.css（设计系统 + shell.css 加了 #bw-screen 前缀）。
+           这层是两套 CSS 的分界线：里面归设计系统，外面归 Orca。 -->
+      <div id="bw-screen" hidden>
+        <!-- 总览：hifi/overview.html 定稿注入 #ov-mount -->
+        <section class="bw-view" id="screen-overview" hidden>
+          <div id="ov-mount"></div>
+          <div class="toast-host" id="toasts" aria-live="polite"></div>
+        </section>
+
+        <!-- 计划：hifi/plan.html 定稿版式；列表当默认视图（照 ../orca 的 tasks），看板退到 ▦；
+             ▶开工 直通执行面走建树序 -->
+        <section class="bw-view" id="screen-plan" hidden>
+          <div class="plan-grid">
+            <div class="plan-mid">
+              <div class="plan-toolbar">
+                <div class="left">
+                  <span id="title-wrap" class="ver-wrap">
+                    <span id="view-title">v0.4 · 本周</span>
+                    <button id="rename-btn" class="icon-btn" title="改名" data-act="renameVersion">✎</button>
+                  </span>
+                </div>
+                <div class="right">
+                  <select id="version-select" class="input input-sm" data-act-change="switchVersion">
+                    <option value="all">全部 issue</option>
+                    <option value="v0.4" selected>v0.4 · 本周</option>
+                    <option value="v0.3">v0.3</option>
+                  </select>
+                  <button class="btn btn-secondary" data-act="notice" data-arg="已重新读取仓与远端数据">刷新</button>
+                  <button id="delete-version" class="btn btn-secondary modal-hidden" data-act="openModal" data-arg="delete">删除版本</button>
+                  <button id="create-version" class="btn btn-secondary modal-hidden" data-act="openModal" data-arg="create">创建版本</button>
+                  <button id="pack-btn" class="btn btn-secondary" data-act="openModal" data-arg="pack">出包</button>
+                  <button id="release-btn" class="btn btn-secondary" data-act="openModal" data-arg="release">发版本</button>
+                  <button class="btn btn-primary" data-act="openModal" data-arg="new">新建issue</button>
+                  <button id="mode-btn" class="btn btn-secondary btn-icon" title="切换看板视图" data-act="toggleMode">▦</button>
+                </div>
+              </div>
+
+              <div id="version-head">
+                <!-- .goal-box 带 white-space:pre-wrap：正文必须写在一行里，
+                     否则换行和缩进会当成内容渲染出来（配合 2 行截断会顶掉真正的文案） -->
+                <div class="goal-box" data-act="toggleGoal">
+                  <div class="goal-box-text">让版本计划、开工与发版形成一条清楚的工作路径；人在计划屏掌握每个 Issue 的真实状态。</div>
+                  <button class="goal-box-toggle" title="展开" data-act="toggleGoal">▾</button>
+                </div>
+                <div class="week-progress" title="完成 3 · 待评审 1 · 进行中 2 · 阻塞 1 · 待办 3">
+                  <div style="width: 30%; background: var(--color-success)"></div>
+                  <div style="width: 10%; background: var(--color-accent-2)"></div>
+                  <div style="width: 20%; background: var(--color-warning)"></div>
+                  <div style="width: 10%; background: var(--color-danger)"></div>
+                  <div style="width: 30%; background: var(--color-neutral-300)"></div>
+                </div>
+                <div class="row-wrap" style="margin: var(--space-2) 0">
+                  <span class="tag tag-outline">演示数据 · ▶开工 会切到执行面走建树序</span>
+                </div>
+              </div>
+
+              <div id="board-view" class="board modal-hidden"></div>
+              <div id="list-view" class="il-wrap"></div>
+            </div>
+          </div>
+        </section>
+
+        <!-- 自动化：定时任务的钟收进 Workbench 自己（原来这句话是「钟在 Orca」）。
+             列与字段照 ../orca 的 Automations，表格用设计系统的 .table，不套 Orca 的 grid。
+             铁律：到点开会话，自动开出来的活最多推到待评审，完成永远由人点。 -->
+        <section class="bw-view" id="screen-auto" hidden>
+          <div class="auto-wrap" id="auto-wrap"></div>
+        </section>
+
+        <!-- 知识库：文档树（.bw/ 骨架 + architecture）+ 代码图（bw → bw-engine → app-shell） -->
+        <section class="bw-view" id="screen-kb" hidden>
+          <div class="kb-toolbar">
+            <div class="seg" id="kb-tabs">
+              <label class="seg-opt"
+                ><input type="radio" name="kb-tab" checked data-act-change="kbTab" data-arg="docs" />文档树</label
+              >
+              <label class="seg-opt"><input type="radio" name="kb-tab" data-act-change="kbTab" data-arg="graph" />代码图</label>
+            </div>
+            <button class="btn btn-secondary btn-sm" data-act="notice" data-arg="对一遍账：读回仓文件与远端，报差异；不给升级按钮装成能用">
+              对一遍账
+            </button>
+          </div>
+          <div class="kb-body" id="kb-body"></div>
+        </section>
+
+        <!-- 屏内弹窗（计划详情 / 出包 / 自动化编辑）必须待在 #bw-screen 里面，
+             不然设计系统样式够不到它（position:fixed 会跳出 overflow:hidden，显示不受影响） -->
+        <div id="bw-modal-root"></div>
+      </div>
+    </div>
+
+    <!-- Orca 会话面自己的弹窗 / 提示 / 演示条槽位。#demo-rail 在 embed=1 下由 prototype.js 藏起来，
+         但元素必须在：它每次 render() 都会往里写。 -->
+    <div id="modal-root"></div>
+    <div class="toast-root" id="toast-root"></div>
+    <div class="demo-rail" id="demo-rail"></div>
+
+    <!-- 顶层覆盖层的根（项目墙 / 设置）。为什么不塞进 #bw-screen：人在执行面时那一整块是 hidden 的，
+         塞进去就开不出来。bw-scoped.css 同时把设计系统挂在 #bw-screen 与 #bw-top 上，样式一模一样。 -->
+    <div id="bw-top"></div>
+
+    <!-- V3 的提示条要在执行面（#bw-screen 藏着时）也看得见，所以留在外面，用 Orca token 画 -->
+    <div id="bw-toast" class="bw-toast is-hidden" role="status">
+      <div id="bw-toast-body"></div>
+      <button type="button" class="bw-toast-x" data-bw-act="hideToast">关闭</button>
+    </div>
+
+    <div class="bw-rail" id="bw-rail">Loading…</div>
+
+    <!--
+      Fact-forcing (GateGuard)：
+      1. 调用方：本页是 V3 唯一入口，被 spec.md「原型」段与 docs/hifi/README.md 会话段以链接引用。
+      2. 同类文件：同目录 prototype.html 是纯 Orca 会话面（独立可开，仍是 1:1 参照），
+         prototype.js / prototype.css 由本页原样复用，没有第二份会话面实现。V2 已删。
+      3. 数据：全部固定演示数据在 JS 里，不读写任何数据文件。
+      4. 用户原话：「以 prototype.html 为基底，将已有功能融入进去，比如左侧 projects 下移，
+         把总览/计划 知识库等页签放在左侧，这样不会有两个左侧栏」
+         「1. 配置直接合入到设置 2. 参考 ../orca 的 tasks，把计划下面的泳道替换为列表
+          3. Automations 也要整合进来 4. 项目墙 也要整合进来」
+      动态 src 的原因同 prototype.html：本地静态服务 + 缓存下静态 <script src> 会偶发刷出旧稿。
+      顺序必须是 markup → prototype.js → prototype-v3.js：
+        · markup 先备好总览 HTML 字符串
+        · prototype.js 先注册它的 message 监听，V3 起手的握手才不会打空
+    -->
+    <script>
+      ;(function () {
+        var v = '?v=' + Date.now()
+        var files = ['hifi-overview.markup.js', 'prototype.js', 'prototype-v3.js']
+        files.forEach(function (f) {
+          var s = document.createElement('script')
+          s.src = f + v
+          s.charset = 'utf-8'
+          s.async = false
+          s.onerror = function () {
+            var rail = document.getElementById('bw-rail')
+            if (rail) rail.textContent = 'Failed to load ' + f
+          }
+          document.body.appendChild(s)
+        })
+      })()
+    </script>
+  </body>
+</html>

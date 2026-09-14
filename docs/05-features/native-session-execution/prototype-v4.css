@@ -1,0 +1,1007 @@
+/* V4 胶水层 + 皮肤桥
+ *
+ * V3 的毛病：一个窗口三套配色（左栏 Apple 冷色写死在 .left-sidebar、Workbench 屏被钉成 claude 暖色、
+ * 执行面走 Orca 自己的近黑冷灰）。根因是 token 各画各的，谁也不是正本。
+ *
+ * V4 的做法：**两套 token 名恒久共存，皮肤开关只决定谁翻译谁**。
+ *   · 设计系统名（--color-* / --space-* / --radius-*）：正本 bw-tokens.css，挂全局 :root
+ *   · Orca 名（--background / --foreground / --border / --sidebar* / --radius）：正本 prototype.css :root
+ *   · html[data-skin="ds"]   → 把 Orca 名翻译成设计系统名（执行面换皮，布局交互不动）
+ *   · html[data-skin="orca"] → 把设计系统名翻译成 Orca 名（Workbench 屏换皮，执行面一个像素不动）
+ * 于是本文件里的胶水规则可以只认一套名（--color-*），两个皮肤下都成立，不写两份。
+ *
+ * 字号（人拍的 chrome_only）：只统一外壳控件；终端与文件树保留 Orca 的 12px 高密度。
+ */
+
+/* ══ 皮肤 A · 设计系统赢（默认）══════════════════════════════
+   Orca 那半边换皮：布局、交互、DOM 一律不动，只把它读的 token 翻过去。
+   注意 --accent 在 Orca 里是「悬停底色」不是品牌色（原值 #f5f5f5），
+   必须翻成中性浅灰；翻成 --color-accent 会让整个执行面糊上一层陶土橙。 */
+html[data-skin='ds'] {
+  --background: var(--color-bg);
+  --foreground: var(--color-text);
+  --card: var(--color-card);
+  --card-foreground: var(--color-text);
+  --popover: var(--color-card);
+  --primary: var(--color-accent);
+  --primary-foreground: #fff;
+  --secondary: var(--color-surface);
+  --muted: var(--color-neutral-100);
+  --muted-foreground: var(--color-neutral-600);
+  --accent: var(--color-neutral-200);
+  --accent-foreground: var(--color-text);
+  --destructive: var(--color-danger);
+  --border: var(--color-divider);
+  --input: var(--color-divider);
+  --ring: var(--color-accent-400);
+
+  --sidebar: var(--color-surface);
+  --sidebar-foreground: var(--color-text);
+  --sidebar-accent: var(--color-neutral-200);
+  --sidebar-accent-foreground: var(--color-text);
+  --sidebar-border: var(--color-divider);
+  --sidebar-ring: var(--color-accent-400);
+
+  /* git 装饰是语义色，走设计系统的语义槽，别自带一套绿黄红 */
+  --git-decoration-added: var(--color-success-deep);
+  --git-decoration-modified: var(--color-warning-deep);
+  --git-decoration-deleted: var(--color-danger-deep);
+  --git-decoration-renamed: var(--color-accent-2-700);
+  --git-decoration-untracked: var(--color-success-deep);
+  --git-decoration-ignored: var(--color-neutral-500);
+
+  --term-accent: var(--color-accent-2);
+  --term-prompt: var(--color-accent-600);
+  --surface-shadow: var(--shadow-md);
+  --radius: var(--radius-md);
+  --font-sans: var(--font-body);
+}
+
+/* ══ 皮肤 B · Orca 赢 ════════════════════════════════════════
+   反方向：Workbench 屏与左栏改读 Orca 的冷灰 + 近黑，执行面一个字节不改。
+   Orca 是单色系（品牌色就是近黑），所以 accent 那一整条色阶也翻成中性阶——
+   翻成蓝或橙会凭空造出一个 Orca 没有的品牌色，那就不是「Orca 赢」了。
+   中性阶用的就是 Orca 自己那套（Tailwind neutral），不另发明。 */
+html[data-skin='orca'] {
+  --color-bg: var(--background);
+  --color-surface: var(--secondary);
+  --color-card: var(--card);
+  --color-text: var(--foreground);
+  --color-accent: var(--primary);
+  --color-accent-2: var(--git-decoration-renamed);
+  --color-divider: var(--border);
+
+  --color-neutral-100: #f5f5f5;
+  --color-neutral-200: #e5e5e5;
+  --color-neutral-300: #d4d4d4;
+  --color-neutral-400: #a1a1a1;
+  --color-neutral-500: #737373;
+  --color-neutral-600: #525252;
+  --color-neutral-700: #404040;
+  --color-neutral-800: #262626;
+  --color-neutral-900: #171717;
+
+  --color-accent-100: #f5f5f5;
+  --color-accent-200: #e5e5e5;
+  --color-accent-300: #d4d4d4;
+  --color-accent-400: #a1a1a1;
+  --color-accent-500: #737373;
+  --color-accent-600: #404040;
+  --color-accent-700: #262626;
+  --color-accent-800: #171717;
+  --color-accent-900: #0a0a0a;
+
+  --color-accent-2-100: #eef6fc;
+  --color-accent-2-200: #d6e9f8;
+  --color-accent-2-300: #aed3f0;
+  --color-accent-2-400: #6fb0e4;
+  --color-accent-2-500: #338ad2;
+  --color-accent-2-600: #007acc;
+  --color-accent-2-700: #005c99;
+  --color-accent-2-800: #003f6b;
+  --color-accent-2-900: #002641;
+
+  --color-success: var(--git-decoration-added);
+  --color-success-soft: color-mix(in srgb, var(--git-decoration-added) 14%, var(--background));
+  --color-success-deep: var(--git-decoration-added);
+  --color-warning: var(--git-decoration-modified);
+  --color-warning-soft: color-mix(in srgb, var(--git-decoration-modified) 14%, var(--background));
+  --color-warning-deep: var(--git-decoration-modified);
+  --color-danger: var(--destructive);
+  --color-danger-soft: color-mix(in srgb, var(--destructive) 12%, var(--background));
+  --color-danger-deep: var(--destructive);
+
+  --font-body: var(--font-sans);
+  --font-heading: var(--font-sans);
+  --radius-sm: calc(var(--radius) - 2px);
+  --radius-md: var(--radius);
+  --radius-lg: calc(var(--radius) + 4px);
+
+  /* 下拉箭头是 data URI，读不到变量，只能按皮肤换一张（stroke 用 Orca 的 muted-foreground） */
+  --select-caret: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23737373' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+}
+
+/* ══ 外壳字号（人拍的 chrome_only）════════════════════════════
+   只动「壳」——中栏页签条、执行顶条、左栏导航；**终端与文件树一律不碰**，
+   保留 Orca 的 12px 高密度（工具内部本该比阅读区更密，这不是「两个产品」的来源）。
+   谁赢就跟谁的密度：skin=ds 跟设计系统的 13px，skin=orca 跟 Orca 的 12px。 */
+html[data-skin='ds'] .tab,
+html[data-skin='ds'] .bw-sess-top {
+  font-size: 13px;
+}
+html[data-skin='orca'] .bw-nav-item,
+html[data-skin='orca'] .bw-proj-name {
+  font-size: 12px;
+}
+
+/* Orca 那颗「在跑」黄点是硬写的 #d4a300（prototype.css 里唯一一处硬色）。
+   语义色该跟着当前色板走，所以 skin=ds 下换成设计系统的 warning；
+   prototype.css 本身不改 —— 它同时是 prototype.html 的 1:1 参照，动了就有两份事实。 */
+html[data-skin='ds'] .status-dot.running {
+  background: var(--color-warning);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-warning) 18%, transparent);
+}
+
+/* ── 左栏：两个皮肤下都只认这一份规则（token 已经由上面的桥翻好了） ── */
+
+.left-sidebar {
+  background: var(--color-surface);
+  color: var(--color-text);
+  font-family: var(--font-body);
+  border-right: 1px solid var(--color-divider);
+}
+
+/* ── 左栏 · 项目头 ─────────────────────────────────────────── */
+
+/* 整块可点 = 开项目墙（换项目），所以它是个 button —— 把按钮皮扒掉 */
+.bw-proj {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  gap: 8px;
+  height: 44px;
+  min-height: 44px;
+  padding: 0 8px 0 4px;
+  border: 0;
+  border-bottom: 1px solid var(--color-divider);
+  background: none;
+  cursor: pointer;
+  font-family: inherit;
+  text-align: left;
+}
+.bw-proj:hover {
+  background: var(--color-neutral-100);
+}
+.bw-proj:hover .bw-proj-back {
+  background: var(--color-neutral-200);
+  color: var(--color-text);
+}
+.bw-proj-back {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 22px;
+  border-radius: var(--radius-sm);
+  font-size: 15px;
+  color: color-mix(in srgb, var(--color-text) 55%, transparent);
+}
+.bw-proj-logo {
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  border-radius: var(--radius-sm);
+  background: var(--color-accent);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 700;
+}
+.bw-proj-id {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 1px;
+}
+.bw-proj-name {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--color-text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.bw-proj-meta {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 10.5px;
+  color: color-mix(in srgb, var(--color-text) 55%, transparent);
+}
+.bw-ver {
+  font-family: var(--font-mono);
+}
+.bw-proj-badge {
+  padding: 0 4px;
+  border: 1px solid var(--color-divider);
+  border-radius: 999px;
+  font-family: var(--font-mono);
+  font-size: 9.5px;
+  line-height: 13px;
+}
+
+/* ── 左栏 · 四屏导航 ───────────────────────────────────────── */
+
+.bw-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 8px 6px 6px;
+}
+.bw-nav-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  height: 28px;
+  padding: 0 8px;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: none;
+  color: color-mix(in srgb, var(--color-text) 62%, transparent);
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 13px;
+  text-align: left;
+}
+.bw-nav-item:hover {
+  background: var(--color-neutral-200);
+  color: var(--color-text);
+}
+.bw-nav-item[aria-current='page'] {
+  background: var(--color-neutral-200);
+  color: var(--color-text);
+  font-weight: 600;
+}
+.bw-nav-glyph {
+  display: inline-flex;
+  width: 15px;
+  color: inherit;
+}
+.bw-nav-label {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ── 左栏 · Projects（始终展开；进执行面靠点树，不是靠「会话」页签） ── */
+
+.bw-ws {
+  display: flex;
+  min-height: 0;
+  flex: 1;
+  flex-direction: column;
+  border-top: 1px solid var(--color-divider);
+}
+.bw-ws .sidebar-header {
+  /* Orca 自己的 header 高度保留，字色跟设计系统 */
+  color: color-mix(in srgb, var(--color-text) 45%, transparent);
+}
+.bw-ws .sidebar-header-title {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+/* Orca 自己那条 28px 底栏：prototype.js 每次 render 都清空它，V3 不占用 */
+#sidebar-footer {
+  display: none;
+}
+
+/* ── 左栏 · 底部帮助 / 设置 ────────────────────────────────── */
+
+.bw-foot {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 6px;
+  border-top: 1px solid var(--color-divider);
+}
+
+/* ── 皮肤开关（V4 新增，原型对比专用 —— 产品里不会有这一块） ── */
+
+.bw-skin {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  margin-top: 6px;
+  padding-top: 6px;
+  border-top: 1px dashed var(--color-divider);
+}
+.bw-skin-row {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+}
+.bw-skin-label {
+  width: 26px;
+  flex: none;
+  color: color-mix(in srgb, var(--color-text) 45%, transparent);
+  font-size: 10px;
+}
+.bw-skin-opt {
+  flex: 1;
+  padding: 3px 0;
+  border: 1px solid var(--color-divider);
+  border-radius: var(--radius-sm);
+  background: none;
+  color: color-mix(in srgb, var(--color-text) 62%, transparent);
+  font-family: inherit;
+  font-size: 10.5px;
+  cursor: pointer;
+}
+.bw-skin-opt:hover:not(:disabled) {
+  background: var(--color-neutral-100);
+}
+.bw-skin-opt.is-on {
+  border-color: transparent;
+  background: var(--color-accent);
+  color: #fff;
+  font-weight: 600;
+}
+.bw-skin-opt:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/* ── 执行面 · 外框与顶条（Workbench 上下文条，不是 Orca chrome） ── */
+
+.bw-sess {
+  display: flex;
+  min-width: 0;
+  flex: 1;
+  flex-direction: column;
+}
+.bw-sess[hidden] {
+  display: none;
+}
+.bw-sess-row {
+  display: flex;
+  min-height: 0;
+  flex: 1;
+}
+
+/* 顶条不再自带色板（V3 在这儿硬写了 Apple 那套，这是三套配色的第二个来源） */
+.bw-sess-top {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  height: 38px;
+  min-height: 38px;
+  padding: 0 10px;
+  border-bottom: 1px solid var(--color-divider);
+  background: var(--color-surface);
+  color: var(--color-text);
+  font-family: var(--font-body);
+}
+.bw-sess-issue {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 7px;
+}
+.bw-issue-num {
+  padding: 1px 5px;
+  border-radius: 4px;
+  background: var(--color-neutral-200);
+  color: color-mix(in srgb, var(--color-text) 62%, transparent);
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+}
+.bw-issue-title {
+  max-width: 260px;
+  overflow: hidden;
+  color: var(--color-text);
+  font-size: 12px;
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.bw-run {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  color: color-mix(in srgb, var(--color-text) 55%, transparent);
+  font-size: 11px;
+}
+.bw-sess-facts {
+  display: flex;
+  min-width: 0;
+  flex: 1;
+  align-items: center;
+  gap: 12px;
+  overflow: hidden;
+  color: color-mix(in srgb, var(--color-text) 55%, transparent);
+  font-size: 11px;
+  white-space: nowrap;
+}
+.bw-sess-facts b {
+  color: var(--color-text);
+  font-weight: 500;
+}
+.bw-sess-acts {
+  display: flex;
+  gap: 6px;
+}
+.bw-btn {
+  padding: 0 9px;
+  border: 1px solid var(--color-divider);
+  border-radius: 5px;
+  background: var(--color-bg);
+  color: var(--color-text);
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 11px;
+  line-height: 20px;
+}
+.bw-btn:hover:not(:disabled) {
+  background: var(--color-neutral-100);
+}
+.bw-btn:disabled {
+  color: color-mix(in srgb, var(--color-text) 45%, transparent);
+  cursor: default;
+  opacity: 0.55;
+}
+
+/* ── Workbench 屏容器：两套 CSS 的分界线 ───────────────────── */
+
+#bw-screen {
+  display: flex;
+  min-width: 0;
+  height: auto;
+  flex: 1;
+  flex-direction: column;
+  overflow: hidden;
+  box-sizing: border-box;
+}
+#bw-screen[hidden] {
+  display: none;
+}
+#bw-screen .bw-view {
+  min-height: 0;
+  flex: 1;
+  overflow-y: auto;
+}
+#bw-screen .bw-view[hidden] {
+  display: none;
+}
+
+#bw-screen .modal-hidden {
+  display: none !important;
+}
+#bw-screen .btn-sm {
+  height: var(--space-6);
+  padding: 0 var(--space-2);
+}
+
+/* ── 顶层覆盖层容器（项目墙 / 设置） ─────────────────────────
+   bw-scoped-v4.css 把 body 的规则也映射到了 #bw-top，
+   底色和字号得在这里按回去，不然它会拿一整块白盖住整个窗口。 */
+
+#bw-top {
+  position: fixed;
+  inset: 0;
+  z-index: 70;
+  background: none;
+  /* 空着的时候不能吃点击；里面开出来的东西自己收回来 */
+  pointer-events: none;
+}
+#bw-top:empty {
+  display: none;
+}
+#bw-top > * {
+  pointer-events: auto;
+}
+
+/* Orca 的 prototype.css 也有一个 .dialog（`position:fixed` + `max-width:512px`
+   + backdrop-filter），它没作用域，会漏进 Workbench 的弹窗把宽度一律夹到 512px。
+   设计系统的弹窗是 .dialog-backdrop 用 grid 居中的普通块，所以这里把 Orca 那几条按回去。 */
+#bw-screen .dialog,
+#bw-top .dialog {
+  position: static;
+  max-width: none;
+  transform: none;
+  animation: none;
+  backdrop-filter: none;
+}
+
+/* 弹窗版（人选的默认）：同一份内容装进居中大弹窗 */
+#bw-screen .bw-dialog-xl,
+#bw-top .bw-dialog-xl {
+  width: min(1120px, 100%);
+  max-height: 88vh;
+  overflow-y: auto;
+}
+#bw-top .bw-top-head {
+  margin-bottom: var(--space-4);
+}
+#bw-top .bw-top-head .hint {
+  max-width: 340px;
+}
+#bw-top .wall-seg {
+  flex: none;
+}
+#bw-top .wall-q {
+  width: 220px;
+  flex: none;
+}
+
+/* 全窗版（原推荐那版）：盖住左栏才算真的顶层，只能 ✕ 或 Esc 退 */
+#bw-top .bw-sheet {
+  position: fixed;
+  inset: 0;
+  overflow-y: auto;
+  background: var(--color-bg);
+}
+#bw-top .bw-sheet-inner {
+  max-width: 1300px;
+  margin: 0 auto;
+  padding: var(--space-5) var(--space-6) var(--space-6);
+}
+
+/* 项目墙：当前项目那张卡描一道边，别让人在四张卡里找自己在哪 */
+#bw-top .pcard.is-current {
+  border-color: var(--color-accent);
+  box-shadow: 0 0 0 1px var(--color-accent);
+}
+#bw-top .envbar .status-dot,
+#bw-top .healthbar .status-dot {
+  flex: none;
+}
+
+/* 设置：左列分节 + 右边整页替换，跟真壳一个形状；弹窗里右边自己滚 */
+#bw-top .st-shell {
+  align-items: stretch;
+}
+#bw-top .st-body {
+  max-height: 62vh;
+  overflow-y: auto;
+}
+
+#bw-screen #screen-overview {
+  padding: 0;
+}
+#bw-screen #screen-plan,
+#bw-screen #screen-auto,
+#bw-screen #screen-kb {
+  padding: var(--space-4);
+}
+
+/* ── 屏头（.pane-head 是 flex 容器） ───────────────────────────
+   真壳的 .pane-head 里只有标题 + 一颗按钮，挤不着。这里还塞了说明和搜索框，
+   不给标题 flex:none 会被压成竖排一个字一行；不给 .input 收 width 会被拉满。 */
+
+#bw-screen .pane-head h2,
+#bw-top .pane-head h2 {
+  flex: none;
+}
+#bw-screen .pane-head .input,
+#bw-top .pane-head .input {
+  width: auto;
+}
+#bw-screen .pane-head .hint,
+#bw-top .pane-head .hint {
+  min-width: 0;
+  max-width: 340px;
+}
+
+/* ── 计划屏 · V4 减负：目标一行 + 状态筹码条 ─────────────────────
+   正本 shell.css 里的 .il-bar 是两行（预设条 / 筛选条）竖排。V4 把它压成一行：
+   左边一排状态筹码，右边预设 + 搜索。筹码把原来四件事合成一件 ——
+   五色进度条（看构成）、「全部阶段」下拉（筛状态）、「按状态分组」下拉、显示 N/M。 */
+
+/* 版本目标：从带边框的 .goal-box 降成标题下一行小字，一行截断，点开看全文 */
+#bw-screen .plan-goal {
+  margin: calc(-1 * var(--space-1)) 0 var(--space-2);
+  overflow: hidden;
+  color: color-mix(in srgb, var(--color-text) 55%, transparent);
+  cursor: pointer;
+  font-size: 12px;
+  line-height: 1.6;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+#bw-screen .plan-goal.is-open {
+  white-space: normal;
+}
+#bw-screen .plan-goal-demo {
+  margin-left: var(--space-2);
+  color: color-mix(in srgb, var(--color-text) 38%, transparent);
+  font-size: 11px;
+}
+
+#bw-screen .il-bar {
+  flex-direction: row;
+  align-items: center;
+  flex-wrap: wrap;
+  row-gap: var(--space-2);
+}
+#bw-screen .il-chips {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+/* 正本的 .il-tools 是 flex-wrap:wrap（独占一行时该换行）；跟筹码同排就得咬住一行，
+   不然预设和搜索框会自己叠成两层，白省的那一行又回来了 */
+#bw-screen .il-tools {
+  margin-left: auto;
+  flex-wrap: nowrap;
+}
+/* 搜索框在正本里是 flex:1（独占一行时该拉满）；挤到同一行就得收住，别把筹码挤下去 */
+#bw-screen .il-search-wrap {
+  flex: 0 1 190px;
+  min-width: 130px;
+}
+#bw-screen .il-shown {
+  flex: none;
+  color: color-mix(in srgb, var(--color-text) 45%, transparent);
+  font-size: 11px;
+  white-space: nowrap;
+}
+
+/* 状态筹码：既是这一版的构成（带计数），也是筛选开关（点亮 = 只看它） */
+#bw-screen .il-chip {
+  display: inline-flex;
+  align-items: center;
+  height: 24px;
+  gap: 5px;
+  padding: 0 8px;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  background: none;
+  color: color-mix(in srgb, var(--color-text) 72%, transparent);
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 12px;
+}
+#bw-screen .il-chip:hover {
+  background: color-mix(in srgb, var(--color-text) 7%, transparent);
+}
+#bw-screen .il-chip.is-on {
+  border-color: var(--color-divider);
+  background: var(--color-card);
+  color: var(--color-text);
+  font-weight: 500;
+}
+#bw-screen .il-chip .status-dot {
+  flex: none;
+}
+#bw-screen .il-chip-n {
+  color: color-mix(in srgb, var(--color-text) 45%, transparent);
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+}
+/* 范围那两颗（待完成 / 全部）跟按状态那几颗中间隔一道竖线：它们不是同一类筛选 */
+#bw-screen .il-chip-sep {
+  width: 1px;
+  height: 14px;
+  margin: 0 4px;
+  background: var(--color-divider);
+}
+#bw-screen .il-chip.is-on .il-chip-n {
+  color: color-mix(in srgb, var(--color-text) 62%, transparent);
+}
+
+/* ── ⋯ 下拉菜单：计划屏顶栏与自动化行尾共用一份 ───────────────── */
+
+#bw-screen .plan-more {
+  position: relative;
+  display: inline-flex;
+}
+#bw-screen .bw-menu {
+  position: absolute;
+  top: calc(100% + 4px);
+  right: 0;
+  z-index: 30;
+  display: flex;
+  min-width: 138px;
+  flex-direction: column;
+  padding: 4px;
+  border: 1px solid var(--color-divider);
+  border-radius: var(--radius-md);
+  background: var(--color-card);
+  box-shadow: var(--shadow-md);
+}
+#bw-screen .bw-menu-item {
+  padding: 6px 8px;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: none;
+  color: var(--color-text);
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 12.5px;
+  text-align: left;
+}
+#bw-screen .bw-menu-item:hover {
+  background: var(--color-surface);
+}
+#bw-screen .bw-menu-item:disabled {
+  color: color-mix(in srgb, var(--color-text) 35%, transparent);
+  cursor: default;
+}
+#bw-screen .bw-menu-item:disabled:hover {
+  background: none;
+}
+#bw-screen .bw-menu-item.is-danger {
+  color: var(--color-danger-deep);
+}
+
+/* ── 自动化屏 ──────────────────────────────────────────────── */
+
+#bw-screen .auto-wrap {
+  display: flex;
+  max-width: 1180px;
+  flex-direction: column;
+}
+#bw-screen .auto-search {
+  flex: 0 1 220px;
+  min-width: 150px;
+}
+/* .tbl-wrap 默认 overflow-x:auto —— 一个轴滚另一个轴就跟着变 auto，
+   行尾那颗 ⋯ 的菜单会被裁掉。这张表列宽是百分比，不需要横滚。 */
+#bw-screen .auto-tbl {
+  overflow: visible;
+}
+#bw-screen .auto-sched {
+  font-size: 11.5px;
+}
+#bw-screen .auto-last {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+#bw-screen .auto-last-note {
+  display: block;
+  margin-top: 2px;
+  color: color-mix(in srgb, var(--color-text) 45%, transparent);
+  font-size: 11px;
+}
+#bw-screen .auto-more {
+  position: relative;
+  text-align: right;
+}
+/* 菜单本体在上面的「⋯ 下拉菜单」一节，这里只把它按到 ⋯ 那一格的右下角 */
+#bw-screen .auto-more .bw-menu {
+  right: var(--space-2);
+}
+#bw-screen .auto-note {
+  margin: var(--space-3) 0 0;
+  max-width: 780px;
+  color: color-mix(in srgb, var(--color-text) 55%, transparent);
+  font-size: 11.5px;
+  line-height: 1.75;
+}
+
+/* ── 自动化编辑弹窗：左提示词 · 右设置栏 ─────────────────────── */
+
+#bw-screen .ae-grid {
+  display: grid;
+  gap: var(--space-4);
+  grid-template-columns: minmax(0, 1fr) 306px;
+}
+#bw-screen .ae-main {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+#bw-screen .ae-name {
+  font-size: 17px;
+  font-weight: 600;
+}
+#bw-screen .ae-prompt {
+  min-height: 176px;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  line-height: 1.65;
+  resize: vertical;
+}
+#bw-screen .ae-side {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: var(--space-3);
+  border: 1px solid var(--color-divider);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+}
+#bw-screen .ae-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+#bw-screen .ae-row .k {
+  width: 74px;
+  flex: none;
+  color: color-mix(in srgb, var(--color-text) 55%, transparent);
+  font-size: 11.5px;
+}
+#bw-screen .ae-row .input,
+#bw-screen .ae-row select {
+  min-width: 0;
+  flex: 1;
+}
+#bw-screen .ae-row .hint {
+  flex: none;
+}
+#bw-screen .ae-sep {
+  height: 1px;
+  margin: 4px 0;
+  background: var(--color-divider);
+}
+
+/* ── 知识库屏 ──────────────────────────────────────────────── */
+
+#bw-screen .kb-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--space-3);
+}
+#bw-screen .kb-split {
+  display: grid;
+  gap: var(--space-3);
+  grid-template-columns: 260px 1fr;
+  align-items: start;
+}
+#bw-screen .kb-tree {
+  padding: var(--space-2);
+}
+#bw-screen .kb-tree-group {
+  padding: var(--space-2) var(--space-2) var(--space-1);
+  color: color-mix(in srgb, var(--color-text) 62%, transparent);
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+#bw-screen .kb-tree-item {
+  display: block;
+  width: 100%;
+  padding: 5px var(--space-2);
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: none;
+  color: var(--color-text);
+  cursor: pointer;
+  font-family: var(--font-mono);
+  font-size: 11.5px;
+  text-align: left;
+}
+#bw-screen .kb-tree-item:hover {
+  background: var(--color-surface);
+}
+#bw-screen .kb-tree-item[aria-current='true'] {
+  background: var(--color-surface);
+  font-weight: 600;
+}
+#bw-screen .kb-doc {
+  padding: var(--space-4);
+}
+#bw-screen .kb-doc-path {
+  margin: 2px 0 var(--space-3);
+  color: color-mix(in srgb, var(--color-text) 62%, transparent);
+  font-family: var(--font-mono);
+  font-size: 11px;
+}
+#bw-screen .kb-doc pre {
+  margin: 0;
+  padding: var(--space-3);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface);
+  font-family: var(--font-mono);
+  font-size: 11.5px;
+  line-height: 1.7;
+  white-space: pre-wrap;
+}
+#bw-screen .kb-graph {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding: var(--space-4);
+}
+#bw-screen .kb-graph-foot {
+  color: color-mix(in srgb, var(--color-text) 62%, transparent);
+  font-family: var(--font-mono);
+  font-size: 11px;
+}
+
+/* ── 提示条 / 演示条：跟整窗同一套 token（第三处自带色板，V4 也摘了） ── */
+
+.bw-toast {
+  position: fixed;
+  bottom: 56px;
+  left: 50%;
+  z-index: 60;
+  display: flex;
+  max-width: 620px;
+  align-items: center;
+  gap: 12px;
+  padding: 9px 12px;
+  border: 1px solid var(--color-divider);
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--color-bg) 92%, transparent);
+  box-shadow: var(--shadow-md);
+  color: var(--color-text);
+  font-family: var(--font-body);
+  font-size: 12px;
+  backdrop-filter: blur(8px);
+  transform: translateX(-50%);
+}
+.bw-toast.is-hidden {
+  display: none;
+}
+.bw-toast-x {
+  border: 0;
+  background: none;
+  color: color-mix(in srgb, var(--color-text) 55%, transparent);
+  cursor: pointer;
+  font-size: 11px;
+}
+.bw-toast-x:hover {
+  color: var(--color-text);
+}
+
+.bw-rail {
+  position: fixed;
+  right: 12px;
+  bottom: 12px;
+  z-index: 55;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 5px 6px;
+  border: 1px solid var(--color-divider);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--color-card) 92%, transparent);
+  box-shadow: var(--shadow-md);
+  font-family: var(--font-body);
+  font-size: 11px;
+  backdrop-filter: blur(8px);
+}
+.bw-rail .rail-step {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 0 9px;
+  border: 0;
+  border-radius: 999px;
+  background: none;
+  color: color-mix(in srgb, #1d1d1f 55%, transparent);
+  cursor: pointer;
+  font-family: inherit;
+  line-height: 22px;
+}
+.bw-rail .rail-step:hover {
+  background: #f2f3f5;
+  color: #1d1d1f;
+}
+.bw-rail .rail-step.is-active {
+  background: #0071e3;
+  color: #fff;
+}
+.bw-rail .idx {
+  font-family: ui-monospace, Menlo, Consolas, monospace;
+  font-size: 9.5px;
+  opacity: 0.75;
+}
+.bw-rail .rail-tag {
+  padding-left: 4px;
+  color: color-mix(in srgb, #1d1d1f 45%, transparent);
+  font-family: ui-monospace, Menlo, Consolas, monospace;
+  font-size: 9.5px;
+}

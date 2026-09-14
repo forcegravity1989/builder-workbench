@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="zh-CN" class="dark">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>原生会话执行 · Orca 1:1 原型</title>
+    <script>
+      ;(function () {
+        var THEME_KEY = 'orca-proto-theme'
+        var q = new URLSearchParams(location.search).get('theme')
+        var saved = null
+        try { saved = localStorage.getItem(THEME_KEY) } catch (e) {}
+        var theme = q === 'light' || q === 'dark' ? q : saved === 'light' || saved === 'dark' ? saved : 'dark'
+        if (theme === 'light') document.documentElement.classList.remove('dark')
+        else document.documentElement.classList.add('dark')
+        try { localStorage.setItem(THEME_KEY, theme) } catch (e) {}
+        window.__ORCA_PROTO_THEME__ = theme
+      })()
+    </script>
+    <script>
+      document.write(
+        '<link rel="stylesheet" href="prototype.css?v=' + Date.now() + '" />'
+      )
+    </script>
+  </head>
+  <body>
+    <div class="orca-app" id="app">
+      <!-- ── Left: workspaces sidebar (280px) ── -->
+      <aside class="left-sidebar">
+        <div class="sidebar-header">
+          <span class="sidebar-header-title" id="sidebar-header-title">Projects</span>
+          <button
+            type="button"
+            class="icon-btn"
+            id="new-workspace-btn"
+            aria-label="New workspace"
+            title="New workspace"
+          ></button>
+        </div>
+        <div class="worktree-list scrollbar-sleek" id="worktree-list"></div>
+        <div class="sidebar-footer" id="sidebar-footer"></div>
+      </aside>
+
+      <!-- ── Center: tab strip + terminal / diff ── -->
+      <main class="center">
+        <div class="tabstrip" id="tabstrip"></div>
+        <div class="center-body" id="center-body"></div>
+        <div class="creation-panel hidden" id="creation-panel"></div>
+      </main>
+
+      <!-- ── Right: panel (flex-1) + activity bar (40px) ── -->
+      <aside class="right-sidebar">
+        <div class="right-panel">
+          <div class="panel-header">
+            <span class="panel-header-title" id="panel-title">Explorer</span>
+            <div class="panel-header-actions" id="panel-header-actions"></div>
+          </div>
+          <div class="panel-body" id="panel-body"></div>
+        </div>
+        <nav class="activity-bar" id="activity-bar" aria-label="Right sidebar sections"></nav>
+      </aside>
+    </div>
+
+    <div id="modal-root"></div>
+    <div class="toast-root" id="toast-root"></div>
+    <div class="demo-rail" id="demo-rail">Loading…</div>
+
+    <!--
+      Fact-forcing (GateGuard):
+      1. Callers: this page is opened directly; linked from
+         docs/05-features/native-session-execution/{intent,spec}.md and docs/hifi/README.md.
+         This inline loader is the only runtime entry that loads prototype.js.
+      2. No other loader exists in this feature dir (Glob: only prototype.html loads the JS).
+      3. No data-file I/O — fixtures are in-memory only.
+      4. User instruction: "1:1 复刻 orca 的功能，现在保真的功能和orca比差的有点远"
+      Why dynamic src: static <script src> was intermittently serving a stale/empty
+      paint (empty worktree list) under the local static server + browser cache.
+    -->
+    <script>
+      ;(function () {
+        var s = document.createElement('script')
+        s.src = 'prototype.js?v=' + Date.now()
+        s.charset = 'utf-8'
+        s.onerror = function () {
+          var rail = document.getElementById('demo-rail')
+          if (rail) rail.textContent = 'Failed to load prototype.js'
+        }
+        document.body.appendChild(s)
+      })()
+    </script>
+  </body>
+</html>

@@ -1,0 +1,798 @@
+/* V3 胶水层
+ *
+ * 视觉分工（grill 共识 Q1=折中）：
+ *   · 左栏（项目头 / 四屏导航 / Projects / 帮助设置）+ 执行面顶条
+ *     → Workbench 设计系统 token（在本文件把 Apple 调色板挂到 .left-sidebar /
+ *       .bw-sess-top，并把 Orca 侧栏用到的 --sidebar* / --foreground 等 remap 过去，
+ *       这样 worktree 行不用改 class 也能跟导航一家）
+ *   · 中栏 + 右栏执行面 → 仍走 prototype.css 的 Orca 1:1
+ *   · #bw-screen 里的总览 / 计划 / 自动化 / 知识库 → bw-scoped.css
+ *   · #bw-top 里的项目墙 / 设置（顶层覆盖层）→ 同一份 bw-scoped.css
+ */
+
+/* ── 左栏：设计系统调色板 + 把 Orca 侧栏 token remap 进来 ── */
+
+.left-sidebar {
+  /* Apple 默认（与 docs/04-design-system/styles.css :root 对齐） */
+  --color-bg: #ffffff;
+  --color-surface: #f5f5f7;
+  --color-card: #ffffff;
+  --color-text: #1d1d1f;
+  --color-accent: #0071e3;
+  --color-neutral-100: #f2f3f5;
+  --color-neutral-200: #e6e8ea;
+  --color-neutral-300: #d1d3d5;
+  --color-divider: color-mix(in srgb, var(--color-text) 12%, transparent);
+  --font-body: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, 'Helvetica Neue', Arial,
+    sans-serif;
+  --font-mono: ui-monospace, 'SF Mono', SFMono-Regular, Menlo, Consolas, 'Liberation Mono',
+    monospace;
+  --radius-sm: 6px;
+  --space-2: 8px;
+
+  /* Orca 侧栏组件读这些；remap 后 Projects 列表跟导航同脸 */
+  --sidebar: var(--color-surface);
+  --sidebar-foreground: var(--color-text);
+  --sidebar-border: var(--color-divider);
+  --sidebar-accent: var(--color-neutral-200);
+  --sidebar-accent-foreground: var(--color-text);
+  --foreground: var(--color-text);
+  --muted-foreground: color-mix(in srgb, var(--color-text) 55%, transparent);
+  --muted: var(--color-neutral-100);
+  --border: var(--color-divider);
+  --primary: var(--color-accent);
+  --primary-foreground: #fff;
+  --background: var(--color-bg);
+
+  background: var(--color-surface);
+  color: var(--color-text);
+  font-family: var(--font-body);
+  border-right: 1px solid var(--color-divider);
+}
+
+/* ── 左栏 · 项目头 ─────────────────────────────────────────── */
+
+/* 整块可点 = 开项目墙（换项目），所以它是个 button —— 把按钮皮扒掉 */
+.bw-proj {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  gap: 8px;
+  height: 44px;
+  min-height: 44px;
+  padding: 0 8px 0 4px;
+  border: 0;
+  border-bottom: 1px solid var(--color-divider);
+  background: none;
+  cursor: pointer;
+  font-family: inherit;
+  text-align: left;
+}
+.bw-proj:hover {
+  background: var(--color-neutral-100);
+}
+.bw-proj:hover .bw-proj-back {
+  background: var(--color-neutral-200);
+  color: var(--color-text);
+}
+.bw-proj-back {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 22px;
+  border-radius: var(--radius-sm);
+  font-size: 15px;
+  color: color-mix(in srgb, var(--color-text) 55%, transparent);
+}
+.bw-proj-logo {
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  border-radius: var(--radius-sm);
+  background: var(--color-accent);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 700;
+}
+.bw-proj-id {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 1px;
+}
+.bw-proj-name {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--color-text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.bw-proj-meta {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 10.5px;
+  color: color-mix(in srgb, var(--color-text) 55%, transparent);
+}
+.bw-ver {
+  font-family: var(--font-mono);
+}
+.bw-proj-badge {
+  padding: 0 4px;
+  border: 1px solid var(--color-divider);
+  border-radius: 999px;
+  font-family: var(--font-mono);
+  font-size: 9.5px;
+  line-height: 13px;
+}
+
+/* ── 左栏 · 四屏导航 ───────────────────────────────────────── */
+
+.bw-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 8px 6px 6px;
+}
+.bw-nav-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  height: 28px;
+  padding: 0 8px;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: none;
+  color: color-mix(in srgb, var(--color-text) 62%, transparent);
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 13px;
+  text-align: left;
+}
+.bw-nav-item:hover {
+  background: var(--color-neutral-200);
+  color: var(--color-text);
+}
+.bw-nav-item[aria-current='page'] {
+  background: var(--color-neutral-200);
+  color: var(--color-text);
+  font-weight: 600;
+}
+.bw-nav-glyph {
+  display: inline-flex;
+  width: 15px;
+  color: inherit;
+}
+.bw-nav-label {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ── 左栏 · Projects（始终展开；进执行面靠点树，不是靠「会话」页签） ── */
+
+.bw-ws {
+  display: flex;
+  min-height: 0;
+  flex: 1;
+  flex-direction: column;
+  border-top: 1px solid var(--color-divider);
+}
+.bw-ws .sidebar-header {
+  /* Orca 自己的 header 高度保留，字色跟设计系统 */
+  color: color-mix(in srgb, var(--color-text) 45%, transparent);
+}
+.bw-ws .sidebar-header-title {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+/* Orca 自己那条 28px 底栏：prototype.js 每次 render 都清空它，V3 不占用 */
+#sidebar-footer {
+  display: none;
+}
+
+/* ── 左栏 · 底部帮助 / 设置 ────────────────────────────────── */
+
+.bw-foot {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 6px;
+  border-top: 1px solid var(--color-divider);
+}
+
+/* ── 执行面 · 外框与顶条（Workbench 上下文条，不是 Orca chrome） ── */
+
+.bw-sess {
+  display: flex;
+  min-width: 0;
+  flex: 1;
+  flex-direction: column;
+}
+.bw-sess[hidden] {
+  display: none;
+}
+.bw-sess-row {
+  display: flex;
+  min-height: 0;
+  flex: 1;
+}
+
+.bw-sess-top {
+  --color-bg: #ffffff;
+  --color-surface: #f5f5f7;
+  --color-text: #1d1d1f;
+  --color-accent: #0071e3;
+  --color-neutral-100: #f2f3f5;
+  --color-neutral-200: #e6e8ea;
+  --color-divider: color-mix(in srgb, var(--color-text) 12%, transparent);
+  --font-mono: ui-monospace, 'SF Mono', SFMono-Regular, Menlo, Consolas, 'Liberation Mono',
+    monospace;
+
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  height: 38px;
+  min-height: 38px;
+  padding: 0 10px;
+  border-bottom: 1px solid var(--color-divider);
+  background: var(--color-surface);
+  color: var(--color-text);
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, 'Helvetica Neue', Arial,
+    sans-serif;
+}
+.bw-sess-issue {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 7px;
+}
+.bw-issue-num {
+  padding: 1px 5px;
+  border-radius: 4px;
+  background: var(--color-neutral-200);
+  color: color-mix(in srgb, var(--color-text) 62%, transparent);
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+}
+.bw-issue-title {
+  max-width: 260px;
+  overflow: hidden;
+  color: var(--color-text);
+  font-size: 12px;
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.bw-run {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  color: color-mix(in srgb, var(--color-text) 55%, transparent);
+  font-size: 11px;
+}
+.bw-sess-facts {
+  display: flex;
+  min-width: 0;
+  flex: 1;
+  align-items: center;
+  gap: 12px;
+  overflow: hidden;
+  color: color-mix(in srgb, var(--color-text) 55%, transparent);
+  font-size: 11px;
+  white-space: nowrap;
+}
+.bw-sess-facts b {
+  color: var(--color-text);
+  font-weight: 500;
+}
+.bw-sess-acts {
+  display: flex;
+  gap: 6px;
+}
+.bw-btn {
+  padding: 0 9px;
+  border: 1px solid var(--color-divider);
+  border-radius: 5px;
+  background: var(--color-bg);
+  color: var(--color-text);
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 11px;
+  line-height: 20px;
+}
+.bw-btn:hover:not(:disabled) {
+  background: var(--color-neutral-100);
+}
+.bw-btn:disabled {
+  color: color-mix(in srgb, var(--color-text) 45%, transparent);
+  cursor: default;
+  opacity: 0.55;
+}
+
+/* ── Workbench 屏容器：两套 CSS 的分界线 ───────────────────── */
+
+#bw-screen {
+  display: flex;
+  min-width: 0;
+  height: auto;
+  flex: 1;
+  flex-direction: column;
+  overflow: hidden;
+  box-sizing: border-box;
+}
+#bw-screen[hidden] {
+  display: none;
+}
+#bw-screen .bw-view {
+  min-height: 0;
+  flex: 1;
+  overflow-y: auto;
+}
+#bw-screen .bw-view[hidden] {
+  display: none;
+}
+
+#bw-screen .modal-hidden {
+  display: none !important;
+}
+#bw-screen .btn-sm {
+  height: var(--space-6);
+  padding: 0 var(--space-2);
+}
+
+/* ── 顶层覆盖层容器（项目墙 / 设置） ─────────────────────────
+   bw-scoped.css 把 body 的规则也映射到了 #bw-top（token 要挂在它身上），
+   底色和字号得在这里按回去，不然它会拿一整块白盖住整个窗口。 */
+
+#bw-top {
+  position: fixed;
+  inset: 0;
+  z-index: 70;
+  background: none;
+  /* 空着的时候不能吃点击；里面开出来的东西自己收回来 */
+  pointer-events: none;
+}
+#bw-top:empty {
+  display: none;
+}
+#bw-top > * {
+  pointer-events: auto;
+}
+
+/* Orca 的 prototype.css 也有一个 .dialog（`position:fixed` + `max-width:512px`
+   + backdrop-filter），它没作用域，会漏进 Workbench 的弹窗把宽度一律夹到 512px。
+   设计系统的弹窗是 .dialog-backdrop 用 grid 居中的普通块，所以这里把 Orca 那几条按回去。 */
+#bw-screen .dialog,
+#bw-top .dialog {
+  position: static;
+  max-width: none;
+  transform: none;
+  animation: none;
+  backdrop-filter: none;
+}
+
+/* 弹窗版（人选的默认）：同一份内容装进居中大弹窗 */
+#bw-screen .bw-dialog-xl,
+#bw-top .bw-dialog-xl {
+  width: min(1120px, 100%);
+  max-height: 88vh;
+  overflow-y: auto;
+}
+#bw-top .bw-top-head {
+  margin-bottom: var(--space-4);
+}
+#bw-top .bw-top-head .hint {
+  max-width: 340px;
+}
+#bw-top .wall-seg {
+  flex: none;
+}
+#bw-top .wall-q {
+  width: 220px;
+  flex: none;
+}
+
+/* 全窗版（原推荐那版）：盖住左栏才算真的顶层，只能 ✕ 或 Esc 退 */
+#bw-top .bw-sheet {
+  position: fixed;
+  inset: 0;
+  overflow-y: auto;
+  background: var(--color-bg);
+}
+#bw-top .bw-sheet-inner {
+  max-width: 1300px;
+  margin: 0 auto;
+  padding: var(--space-5) var(--space-6) var(--space-6);
+}
+
+/* 项目墙：当前项目那张卡描一道边，别让人在四张卡里找自己在哪 */
+#bw-top .pcard.is-current {
+  border-color: var(--color-accent);
+  box-shadow: 0 0 0 1px var(--color-accent);
+}
+#bw-top .envbar .status-dot,
+#bw-top .healthbar .status-dot {
+  flex: none;
+}
+
+/* 设置：左列分节 + 右边整页替换，跟真壳一个形状；弹窗里右边自己滚 */
+#bw-top .st-shell {
+  align-items: stretch;
+}
+#bw-top .st-body {
+  max-height: 62vh;
+  overflow-y: auto;
+}
+
+#bw-screen #screen-overview {
+  padding: 0;
+}
+#bw-screen #screen-plan,
+#bw-screen #screen-auto,
+#bw-screen #screen-kb {
+  padding: var(--space-4);
+}
+
+/* ── 屏头（.pane-head 是 flex 容器） ───────────────────────────
+   真壳的 .pane-head 里只有标题 + 一颗按钮，挤不着。这里还塞了说明和搜索框，
+   不给标题 flex:none 会被压成竖排一个字一行；不给 .input 收 width 会被拉满。 */
+
+#bw-screen .pane-head h2,
+#bw-top .pane-head h2 {
+  flex: none;
+}
+#bw-screen .pane-head .input,
+#bw-top .pane-head .input {
+  width: auto;
+}
+#bw-screen .pane-head .hint,
+#bw-top .pane-head .hint {
+  min-width: 0;
+  max-width: 340px;
+}
+
+/* ── 计划屏 · 列表视图的分组折叠头（照 ../orca 的 tasks） ─────── */
+
+#bw-screen .il-shown {
+  margin-left: auto;
+  color: color-mix(in srgb, var(--color-text) 45%, transparent);
+  font-size: 11px;
+}
+#bw-screen .il-group {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  height: 32px;
+  gap: 7px;
+  padding: 0 var(--space-3);
+  border: 0;
+  border-bottom: 1px solid color-mix(in srgb, var(--color-text) 6%, transparent);
+  background: var(--color-surface);
+  color: var(--color-text);
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 12.5px;
+  font-weight: 500;
+  text-align: left;
+}
+#bw-screen .il-group:hover {
+  background: color-mix(in srgb, var(--color-text) 7%, transparent);
+}
+#bw-screen .il-group-caret {
+  color: color-mix(in srgb, var(--color-text) 45%, transparent);
+  font-size: 10px;
+}
+#bw-screen .il-group.is-shut .il-group-caret {
+  display: inline-block;
+  transform: rotate(-90deg);
+}
+#bw-screen .il-group-count {
+  color: color-mix(in srgb, var(--color-text) 45%, transparent);
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+}
+
+/* ── 自动化屏 ──────────────────────────────────────────────── */
+
+#bw-screen .auto-wrap {
+  display: flex;
+  max-width: 1180px;
+  flex-direction: column;
+}
+#bw-screen .auto-search {
+  flex: 0 1 220px;
+  min-width: 150px;
+}
+/* .tbl-wrap 默认 overflow-x:auto —— 一个轴滚另一个轴就跟着变 auto，
+   行尾那颗 ⋯ 的菜单会被裁掉。这张表列宽是百分比，不需要横滚。 */
+#bw-screen .auto-tbl {
+  overflow: visible;
+}
+#bw-screen .auto-sched {
+  font-size: 11.5px;
+}
+#bw-screen .auto-last {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+#bw-screen .auto-last-note {
+  display: block;
+  margin-top: 2px;
+  color: color-mix(in srgb, var(--color-text) 45%, transparent);
+  font-size: 11px;
+}
+#bw-screen .auto-more {
+  position: relative;
+  text-align: right;
+}
+#bw-screen .auto-menu {
+  position: absolute;
+  top: 100%;
+  right: var(--space-2);
+  z-index: 30;
+  display: flex;
+  min-width: 138px;
+  flex-direction: column;
+  padding: 4px;
+  border: 1px solid var(--color-divider);
+  border-radius: var(--radius-md);
+  background: var(--color-card);
+  box-shadow: var(--shadow-md);
+}
+#bw-screen .auto-menu-item {
+  padding: 6px 8px;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: none;
+  color: var(--color-text);
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 12.5px;
+  text-align: left;
+}
+#bw-screen .auto-menu-item:hover {
+  background: var(--color-surface);
+}
+#bw-screen .auto-menu-item.is-danger {
+  color: var(--color-danger-deep);
+}
+#bw-screen .auto-note {
+  margin: var(--space-3) 0 0;
+  max-width: 780px;
+  color: color-mix(in srgb, var(--color-text) 55%, transparent);
+  font-size: 11.5px;
+  line-height: 1.75;
+}
+
+/* ── 自动化编辑弹窗：左提示词 · 右设置栏 ─────────────────────── */
+
+#bw-screen .ae-grid {
+  display: grid;
+  gap: var(--space-4);
+  grid-template-columns: minmax(0, 1fr) 306px;
+}
+#bw-screen .ae-main {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+#bw-screen .ae-name {
+  font-size: 17px;
+  font-weight: 600;
+}
+#bw-screen .ae-prompt {
+  min-height: 176px;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  line-height: 1.65;
+  resize: vertical;
+}
+#bw-screen .ae-side {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: var(--space-3);
+  border: 1px solid var(--color-divider);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+}
+#bw-screen .ae-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+#bw-screen .ae-row .k {
+  width: 74px;
+  flex: none;
+  color: color-mix(in srgb, var(--color-text) 55%, transparent);
+  font-size: 11.5px;
+}
+#bw-screen .ae-row .input,
+#bw-screen .ae-row select {
+  min-width: 0;
+  flex: 1;
+}
+#bw-screen .ae-row .hint {
+  flex: none;
+}
+#bw-screen .ae-sep {
+  height: 1px;
+  margin: 4px 0;
+  background: var(--color-divider);
+}
+
+/* ── 知识库屏 ──────────────────────────────────────────────── */
+
+#bw-screen .kb-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--space-3);
+}
+#bw-screen .kb-split {
+  display: grid;
+  gap: var(--space-3);
+  grid-template-columns: 260px 1fr;
+  align-items: start;
+}
+#bw-screen .kb-tree {
+  padding: var(--space-2);
+}
+#bw-screen .kb-tree-group {
+  padding: var(--space-2) var(--space-2) var(--space-1);
+  color: color-mix(in srgb, var(--color-text) 62%, transparent);
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+#bw-screen .kb-tree-item {
+  display: block;
+  width: 100%;
+  padding: 5px var(--space-2);
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: none;
+  color: var(--color-text);
+  cursor: pointer;
+  font-family: var(--font-mono);
+  font-size: 11.5px;
+  text-align: left;
+}
+#bw-screen .kb-tree-item:hover {
+  background: var(--color-surface);
+}
+#bw-screen .kb-tree-item[aria-current='true'] {
+  background: var(--color-surface);
+  font-weight: 600;
+}
+#bw-screen .kb-doc {
+  padding: var(--space-4);
+}
+#bw-screen .kb-doc-path {
+  margin: 2px 0 var(--space-3);
+  color: color-mix(in srgb, var(--color-text) 62%, transparent);
+  font-family: var(--font-mono);
+  font-size: 11px;
+}
+#bw-screen .kb-doc pre {
+  margin: 0;
+  padding: var(--space-3);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface);
+  font-family: var(--font-mono);
+  font-size: 11.5px;
+  line-height: 1.7;
+  white-space: pre-wrap;
+}
+#bw-screen .kb-graph {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding: var(--space-4);
+}
+#bw-screen .kb-graph-foot {
+  color: color-mix(in srgb, var(--color-text) 62%, transparent);
+  font-family: var(--font-mono);
+  font-size: 11px;
+}
+
+/* ── 提示条 / 演示条：跟左栏同一套设计系统浅色 ─────────────── */
+
+.bw-toast {
+  --color-bg: #ffffff;
+  --color-text: #1d1d1f;
+  --color-divider: color-mix(in srgb, #1d1d1f 12%, transparent);
+
+  position: fixed;
+  bottom: 56px;
+  left: 50%;
+  z-index: 60;
+  display: flex;
+  max-width: 620px;
+  align-items: center;
+  gap: 12px;
+  padding: 9px 12px;
+  border: 1px solid var(--color-divider);
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--color-bg) 92%, transparent);
+  box-shadow: 0 8px 24px rgb(0 0 0 / 0.1);
+  color: var(--color-text);
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+  font-size: 12px;
+  backdrop-filter: blur(8px);
+  transform: translateX(-50%);
+}
+.bw-toast.is-hidden {
+  display: none;
+}
+.bw-toast-x {
+  border: 0;
+  background: none;
+  color: color-mix(in srgb, var(--color-text) 55%, transparent);
+  cursor: pointer;
+  font-size: 11px;
+}
+.bw-toast-x:hover {
+  color: var(--color-text);
+}
+
+.bw-rail {
+  position: fixed;
+  right: 12px;
+  bottom: 12px;
+  z-index: 55;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 5px 6px;
+  border: 1px solid color-mix(in srgb, #1d1d1f 12%, transparent);
+  border-radius: 999px;
+  background: color-mix(in srgb, #fff 92%, transparent);
+  box-shadow: 0 8px 24px rgb(0 0 0 / 0.1);
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+  font-size: 11px;
+  backdrop-filter: blur(8px);
+}
+.bw-rail .rail-step {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 0 9px;
+  border: 0;
+  border-radius: 999px;
+  background: none;
+  color: color-mix(in srgb, #1d1d1f 55%, transparent);
+  cursor: pointer;
+  font-family: inherit;
+  line-height: 22px;
+}
+.bw-rail .rail-step:hover {
+  background: #f2f3f5;
+  color: #1d1d1f;
+}
+.bw-rail .rail-step.is-active {
+  background: #0071e3;
+  color: #fff;
+}
+.bw-rail .idx {
+  font-family: ui-monospace, Menlo, Consolas, monospace;
+  font-size: 9.5px;
+  opacity: 0.75;
+}
+.bw-rail .rail-tag {
+  padding-left: 4px;
+  color: color-mix(in srgb, #1d1d1f 45%, transparent);
+  font-family: ui-monospace, Menlo, Consolas, monospace;
+  font-size: 9.5px;
+}
