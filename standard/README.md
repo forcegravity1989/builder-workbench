@@ -1,6 +1,6 @@
 # standard/
 
-Workbench 规范正本。编译期 `include_str!` 进二进制——改这里就是改产品行为。
+Workbench 内置规范的源码。已注册的模板、系统提示词、reference 与自有 skill 通过 `include_str!` 编入二进制；vendor 的开发环境与安装包边界见 [`vendor/README.md`](vendor/README.md)。修改实际分发、渲染或读取的内容会改变产品行为，文件存在不等于已派发。
 不进被管仓。接入只写名片 `.bw/project.toml`(项目约定常驻工作树),不复制本目录。
 
 从仓根 [`AGENTS.md`](../AGENTS.md)「三层模型」点过来。主提示词 / reference / skill 注入对照见 [`docs/06-module/系统提示词与渐进加载`](../docs/06-module/系统提示词与渐进加载.md)。
@@ -26,7 +26,7 @@ Workbench 规范正本。编译期 `include_str!` 进二进制——改这里就
 | `skills/` | Workbench 技能 + 构建默认 workflow 入口 | 写入 Workbench 资产目录,不复制进用户仓 |
 | `vendor/` | 业界 workflow 原样副本 | 入口在 `skills/`;库复制到 `<asset>/vendor/` |
 
-仓根 `AGENTS.md` / `CLAUDE.md` 是项目自己的,不在这套里,盘点不代写。
+仓根 `AGENTS.md` / `CLAUDE.md` 是项目自己的,不在这套里,盘点不代写。项目知识文档的归属与落点沿该入口及其引用确定；BW 研发知识库的编号目录不作为被管项目的默认目录模板。
 
 ## templates/
 
@@ -42,7 +42,7 @@ Workbench 规范正本。编译期 `include_str!` 进二进制——改这里就
 
 | 文件 | 干什么 | 决策 |
 |---|---|---|
-| `SYSTEM.md.tmpl` | 每个 Issue 的主提示词:身份 + 读 `AGENTS.md` + 按任务加载 reference + 三条纪律 | 所有 Issue 都守的契约只改这一份 |
+| `SYSTEM.md.tmpl` | Issue 主提示词:身份 + 读 `AGENTS.md` + 按任务加载 reference + 三条纪律 | Orca 新会话递交，Open Design 每次开工重新生成并尝试传入；复用 Orca 会话与自动化的覆盖边界见模块说明 |
 | `REVIEW.md.tmpl` | 评审会话主提示词 | 已收录,尚未派发 |
 | `references/issue-state.md` | issue 状态机、版本标签语义、程序/模型写入边界 | 所有 Issue |
 | `references/metrics.md` | 指标协议 | 更新指标与版本计划 Issue |
@@ -59,7 +59,7 @@ Workbench 规范正本。编译期 `include_str!` 进二进制——改这里就
 
 | 库 | 状态 |
 |---|---|
-| `mattpocock-skills` | 已打包,构建/优化/运维产品默认 |
+| `mattpocock-skills` | 构建/优化/运维默认入口已注册；vendor 目前依赖开发环境源码复制，独立安装包分发未实现 |
 | `mohit-pm-claude-skills` | 已 vendor,未作产品默认 |
 | `proto-design` | 原型默认,源还没进来 |
 

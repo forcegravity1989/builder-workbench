@@ -114,7 +114,7 @@ description: Use when [具体触发条件]
 | `standard/system-prompt/references/*.md` | `.bw/` / 评论 / 标签 / 健康信号,界面认什么 |
 | 被管仓 `AGENTS.md` | 那个项目怎么干 |
 | 本仓 `AGENTS.md` | Workbench 开发规矩 |
-| `docs/architecture.md` 模块 4 | 怎么注入,不写写作分层 |
+| `docs/06-module/系统提示词与渐进加载.md` | 怎么注入与维护对照；写作分层正本仍在 `standard/README.md` |
 
 `SKILL.md` 不承载:项目级设计、跨仓开发规矩、版本演进、业界 vendor 正文。
 

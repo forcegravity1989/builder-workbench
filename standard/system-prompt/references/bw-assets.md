@@ -48,7 +48,7 @@ schema_version = 2
 name = "周活跃构建者"
 def = "本周至少提交一次的人数"
 target = ">= 3"
-collect = { kind = "script", run = ["python", ".bw/scripts/git-commits.py"], retro = true }
+collect = { kind = "manual" }
 
 [[lagging]]
 name = "已合入 MR"
@@ -62,6 +62,8 @@ def = "这周好不好用"
 target = ">= 7"
 collect = { kind = "manual" }
 ```
+
+示例中的人数指标使用手填的真实读数；`git-commits.py` 统计提交次数，不能替代按人去重的指标。是否采用自动采集由更新指标与版本计划 Issue 按项目口径确认，盘点不改指标定义。
 
 `collect` 只有 `script`(必须有 `run`)和 `manual`。A 类(`retro = true`)吐按周 `points`;B 类吐一个 `value`。窗口由 Workbench 给。失败不写 0。
 
@@ -89,7 +91,9 @@ B/C 类读数。写在指标记录分支 `bw/ledger`,不写主检出。键是日
 
 对照现行格式,这些整份可删(不要瘦一圈再写回去):
 
-`.bw/standard.toml` · `.bw/managed.toml` · `.bw/PROJECT.md` · `.bw/issue-policy.toml` · `.bw/connectors.toml` · `docs/Workbench/` · `.bw/plan/` · `docs/plan/` · 没人再跑的 V3 采集脚本
+`.bw/standard.toml` · `.bw/managed.toml` · `.bw/PROJECT.md` · `.bw/issue-policy.toml` · `.bw/connectors.toml` · `.bw/plan/` · `.bw/scripts/` 中已确认没人再跑的旧采集脚本
+
+项目中的 `docs/Workbench/`、`docs/plan/` 等知识文档目录只报告，不因目录名相同就删除。它们是否仍承担项目用途须另行确认；资产盘点的修改和提交范围仅为本场的 `.bw/` 改动。
 
 `issue-policy.toml` 里若 `[cadence]` 不是 `fri 09:00`,评论写一句「他们改过盘点钟点,删掉后改用产品默认」。
 

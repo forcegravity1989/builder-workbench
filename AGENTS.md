@@ -8,7 +8,7 @@
 
 | 篇 | 管什么 |
 |---|---|
-| [`docs/01-principles/01-document-organization.md`](docs/01-principles/01-document-organization.md) | 整仓知识/文档怎么分层；三层边界——architecture(整体旅程+逻辑模块) / 06-module(模块实现心智) / 05-features(用户价值特性)；`docs/05-features/` 少 gate |
+| [`docs/01-principles/01-document-organization.md`](docs/01-principles/01-document-organization.md) | 整仓知识/文档怎么分层；三层边界——architecture(整体旅程+逻辑模块) / 06-module(模块实现心智) / 05-features(用户价值特性)；变更时同步入口、引用与读取方；`docs/05-features/` 少 gate |
 | [`docs/01-principles/02-working-backwards.md`](docs/01-principles/02-working-backwards.md) | 逆向工作法：特性怎么写 intent / 带原型的 spec |
 | [`docs/01-principles/03-press-release-faq-flywheel.md`](docs/01-principles/03-press-release-faq-flywheel.md) | **整个产品**的新闻稿、外/内 FAQ、飞轮（主张正本） |
 
@@ -33,7 +33,7 @@
 
 Rust 1.82+,cargo workspace。桌面壳另需 Dioxus 0.7 的系统依赖(macOS 自带 WebKit,Windows 用 WebView2)。`#![forbid(unsafe_code)]` 是 `bw-engine` 的规矩。跨会话只认本仓的 `docs/01-principles/` + `AGENTS.md` + `CONTEXT.md` + `docs/` + `CHANGELOG.md` + `DESIGN.md`,不凭上一会话口头结论改代码。
 
-仓外 IDE(Claude Code / Cursor / Codex)开新会话,先读 [`.claude/skills/workbench-start/SKILL.md`](.claude/skills/workbench-start/SKILL.md)——只是闸门,正本仍是本文件。工作台内嵌终端里不要用它(那边已经加载了系统提示词)。Workbench MVP 还不能在工作台里维护自己,所以仓外起手暂时靠这份 skill,不是再做一套伴飞/需求/修 bug 流程。
+仓外 IDE(Claude Code / Cursor / Codex)开新会话,先读 [`.claude/skills/workbench-start/SKILL.md`](.claude/skills/workbench-start/SKILL.md)——只是闸门,正本仍是本文件。Workbench 发起的项目执行会话遵循产品传入的提示与被管项目的 `AGENTS.md`，不再走本仓起手 skill。Workbench MVP 还不能在工作台里维护自己,所以仓外起手暂时靠这份 skill,不是再做一套伴飞/需求/修 bug 流程。
 
 ## 怎么建 / 怎么跑 / 怎么测
 
@@ -52,7 +52,7 @@ cargo test --workspace                                # 本地含壳;CI 同命�
 # 正源 .bw/release/pack/*.iss；产物 .bw/release/out/<号>/(gitignore)
 ```
 
-▶跑(执行一条 Issue)走交互式 `claude` 在内嵌终端里;需本机 `claude` CLI(`BW_CLAUDE_BIN` 可指定路径)。真跑受 claude 信任对话框与网关状态影响,不作为门禁。`BW_CLAUDE_MAX_BUDGET_USD` 控预算。
+桌面开工走会话屏的 Orca / Open Design，开工工具按本机设置选择；现行执行路径、工具检测与失败处理见 [会话与执行](docs/06-module/会话与执行.md)。真跑依赖本机工具、会话宿主、信任对话框与网关状态，不作为门禁。上面的 PTY 命令只验证底座，不能证明桌面开工链已跑通。
 
 ## 门禁(每个 commit 前全过,与 CI 一致)
 

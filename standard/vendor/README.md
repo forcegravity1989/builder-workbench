@@ -1,6 +1,6 @@
 # standard/vendor/ — vendor 进仓的业界技能库
 
-Workbench 默认给被管项目带的 workflow(构建类 `mattpocock-skills`)的**原样副本**。vendor 进仓,而不是让用户自取——默认就该 Workbench 打包统一管理(见 `docs/architecture.md` 的「系统提示词与渐进加载」模块:打包未实现,这里先备好源)。
+Workbench 默认给被管项目带的 workflow(构建类 `mattpocock-skills`)的**原样副本**，由 Workbench 统一管理。入口与渐进加载机制见 [系统提示词与渐进加载](../../docs/06-module/系统提示词与渐进加载.md)；开发环境复制与安装包分发的边界见下文。
 
 ## 两个库(均为 MIT,原 LICENSE 原样保留)
 
@@ -19,7 +19,9 @@ Workbench 默认给被管项目带的 workflow(构建类 `mattpocock-skills`)的
 
 ## 现状(如实)
 
-**打包机制未实现**——Workbench 还没把这些 vendor 库摊进自己的资产目录、注入提示词。这里先备好源,full bundle 是后续 subagent 任务(见 `docs/architecture.md` 的「没建什么」)。proto-design(原型阶段默认 workflow)的源**还没 vendor 进来**——也是 gap。
+**开发环境已从源码目录复制**：`ensure_vendor_assets` 把 `standard/vendor/` 复制到 Workbench 资产目录的 `vendor/`；开工提示给自有 workflow 入口，入口再按路径读取 vendor 技能，整库正文不会一次性注入。
+
+**独立安装包分发尚未实现**：当前复制仍依赖编译时源码路径，没有把 vendor 整库内嵌进二进制。源码不可用或复制失败时不能据此声称技能已就绪。proto-design(原型默认 workflow)的源仍未录入。本段描述源码机制，不代表安装包实测通过。
 
 ## 诚实的局限
 
