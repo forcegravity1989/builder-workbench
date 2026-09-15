@@ -42,7 +42,7 @@ Workbench 内置规范的源码。已注册的模板、系统提示词、referen
 
 | 文件 | 干什么 | 决策 |
 |---|---|---|
-| `SYSTEM.md.tmpl` | 普通 Issue 新会话的主提示词:身份 + 读 `AGENTS.md` + 按任务加载 reference + 三条纪律 | 共同纪律的正本；已有会话与自动化覆盖边界见模块说明 |
+| `SYSTEM.md.tmpl` | Issue 主提示词:身份 + 读 `AGENTS.md` + 按任务加载 reference + 三条纪律 | Orca 新会话递交，Open Design 每次开工重新生成并尝试传入；复用 Orca 会话与自动化的覆盖边界见模块说明 |
 | `REVIEW.md.tmpl` | 评审会话主提示词 | 已收录,尚未派发 |
 | `references/issue-state.md` | issue 状态机、版本标签语义、程序/模型写入边界 | 所有 Issue |
 | `references/metrics.md` | 指标协议 | 更新指标与版本计划 Issue |
@@ -59,7 +59,7 @@ Workbench 内置规范的源码。已注册的模板、系统提示词、referen
 
 | 库 | 状态 |
 |---|---|
-| `mattpocock-skills` | 已打包,构建/优化/运维产品默认 |
+| `mattpocock-skills` | 构建/优化/运维默认入口已注册；vendor 目前依赖开发环境源码复制，独立安装包分发未实现 |
 | `mohit-pm-claude-skills` | 已 vendor,未作产品默认 |
 | `proto-design` | 原型默认,源还没进来 |
 
