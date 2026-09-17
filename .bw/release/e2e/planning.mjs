@@ -1,17 +1,21 @@
 import fs from 'node:fs';
 import path from 'node:path';
+import os from 'node:os';
 import { execFileSync } from 'node:child_process';
 import { chromium, expect } from 'playwright/test';
 const out=path.resolve(process.argv[process.argv.indexOf('--out')+1]);
+fs.mkdirSync(out,{recursive:true});
 const root=process.cwd(), py=process.env.BW_PLANNING_PYTHON||'python';
 const run=(exe,args)=>execFileSync(exe,args,{cwd:root,encoding:'utf8',windowsHide:true,timeout:180000,maxBuffer:4*1024*1024});
 const cases=[],ids=['planning-assets','planning-autosave','planning-model-readback','planning-version-isolation','planning-conflict'];
+const fixture=fs.mkdtempSync(path.join(os.tmpdir(),'bw-planning-e2e-'));
 let browser,pack,workspace;
 const json=file=>JSON.parse(fs.readFileSync(file,'utf8').replace(/^\uFEFF/,''));
 const record=(id,title,evidence)=>cases.push({id,title,status:'passed',evidence});
 try{
-  run('cargo',['run','--locked','-p','bw','--example','planning_smoke','--',out]);
-  const deployment=json(path.join(out,'deployment.json'));pack=path.join(deployment.skills,'week-planning');workspace=path.join(out,'browser-project');
+  run('cargo',['run','--locked','-p','bw','--example','planning_smoke','--',fixture]);
+  fs.copyFileSync(path.join(fixture,'deployment.json'),path.join(out,'deployment.json'));
+  const deployment=json(path.join(out,'deployment.json'));pack=path.join(deployment.skills,'week-planning');workspace=path.join(fixture,'browser-project');
   const cli=(version,...args)=>JSON.parse(run(py,['-B','-X','utf8',path.join(pack,'scripts/planning.py'),'--workspace',workspace,'--version',version,...args]));
   cli('v0.4','init');cli('v0.5','init');
   const file=version=>path.join(workspace,'.bw/planning',version,'data.json');
@@ -53,5 +57,11 @@ try{
 finally{
  if(browser)await browser.close();
  if(pack&&workspace)try{run(py,['-B','-X','utf8',path.join(pack,'scripts/planning.py'),'--workspace',workspace,'stop']);}catch(error){fs.writeFileSync(path.join(out,'cleanup-error.txt'),String(error));process.exitCode=1;}
+ try{
+   const resolved=fs.realpathSync(fixture),temp=fs.realpathSync(os.tmpdir());
+   if(path.dirname(resolved)!==temp||!path.basename(resolved).startsWith('bw-planning-e2e-'))throw new Error('Unexpected fixture cleanup path');
+   fs.rmSync(resolved,{recursive:true,force:true,maxRetries:3,retryDelay:100});
+   fs.writeFileSync(path.join(out,'cleanup.json'),JSON.stringify({fixtureRemoved:!fs.existsSync(fixture)}));
+ }catch(error){fs.writeFileSync(path.join(out,'cleanup-error.txt'),String(error));process.exitCode=1;}
  fs.writeFileSync(path.join(out,'result.json'),JSON.stringify({v:1,cases},null,2));
 }
