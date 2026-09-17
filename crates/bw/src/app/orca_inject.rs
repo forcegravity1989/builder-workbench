@@ -48,11 +48,15 @@ impl App {
                 name: AUTO_WEEK_PLAN,
                 rrule: RRULE_WEEK_PLAN,
                 reuse_session: false,
-                workspace: week_plan.clone(),
-                prompt: week_plan
-                    .as_ref()
-                    .map_err(Clone::clone)
-                    .and_then(|path| planning_prompt(ws, path, &skills, refs.as_deref())),
+                workspace: week_plan,
+                prompt: ops_prompt(
+                    "更新指标与版本计划",
+                    bw_engine::workspace::WEEK_PLAN_BRANCH,
+                    super::OPS1_WORKFLOW,
+                    &skills,
+                    refs.as_deref(),
+                    "若已有未关闭的版本计划 Issue，或本周版本已经确定,停手说明并退出。人没点头之前不落仓文件。",
+                ),
             },
             Spec {
                 name: AUTO_OPS_AUDIT,
@@ -96,22 +100,10 @@ impl App {
                     continue;
                 }
             };
-            if let Some(current) = existing
+            if existing
                 .iter()
-                .find(|a| a.name == spec.name && a.project_id == repo_id)
+                .any(|a| a.name == spec.name && a.project_id == repo_id)
             {
-                if spec.name == AUTO_WEEK_PLAN {
-                    if let Err(e) = bw_engine::orca::update_planning_automation(
-                        rt,
-                        &current.id,
-                        &prompt,
-                        &workspace,
-                    )
-                    .await
-                    {
-                        failures.push(format!("{}：{e}", spec.name));
-                    }
-                }
                 continue;
             }
             if let Err(e) = bw_engine::orca::create_automation(
@@ -140,24 +132,6 @@ impl App {
             Err(failures.join("；"))
         }
     }
-}
-
-fn planning_prompt(
-    main: &Path,
-    workspace: &Path,
-    skills: &Path,
-    refs: Option<&Path>,
-) -> Result<String, String> {
-    let mut prompt = ops_prompt("版本计划", bw_engine::workspace::WEEK_PLAN_BRANCH,
-        super::OPS1_WORKFLOW, skills, refs,
-        "使用周一屏核对结果、拟定目标、会议评审、拆任务并提交计划 PR。已有计划就恢复，不退出；允许持续保存草稿，保存不是人确认。目标和总结只写版本 JSON，不再双写目标评论。")?;
-    prompt.push_str(&format!(
-        "\n项目主工作目录：`{}`。本次规划工作目录：`{}`，预期分支 `bw/week-plan`。\n\
-         所有命令显式指向规划工作目录；宿主默认 cwd 不同也直接使用上述路径。先检查已有 `.bw/planning/*/data.json`；恢复未完成版本，版号不明确时问 Builder，无数据时初始化 default，不预填当前版目标。\n\
-         运行 Skill 的 `scripts/planning.py --workspace <上述规划目录> --version <恢复的版本> start`，在本会话浏览器打开它返回的完整 URL。服务由 Skill 管理，不要求浏览器授权文件。\n\
-         历史目标先读上版已确认 JSON 的 plan.goals，首次缺历史才查旧计划 Issue 评论。先核对第一项事实，逐屏和 Builder 共建。\n",
-        main.display(), workspace.display()));
-    Ok(prompt)
 }
 
 fn ops_prompt(

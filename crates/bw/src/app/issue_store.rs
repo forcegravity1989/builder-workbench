@@ -118,6 +118,15 @@ pub async fn comment(app: &App, project: &Project, iid: u32, body: &str) -> Resu
     Ok(())
 }
 
+/// 读 issue 评论正文,旧的在前。
+pub async fn list_comments(app: &App, project: &Project, iid: u32) -> Result<Vec<String>> {
+    let remote = app.remote_for(project)?;
+    remote
+        .list_issue_comments(iid)
+        .await
+        .map_err(|e| map_remote_err("远端读 issue 评论没成", e))
+}
+
 pub async fn set_category(
     app: &App,
     project: &Project,
