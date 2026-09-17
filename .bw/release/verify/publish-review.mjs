@@ -19,7 +19,7 @@ try {
   const result = json(path.join(out, 'result.json'));
   const manifest = json(path.join(out, 'manifest.json'));
   if (result.runId !== path.basename(out) || !/^[\w.-]+$/.test(result.runId)) throw new Error('执行编号与结果目录不一致');
-  if (result.v !== 1 || result.profile !== 'pr' || result.status !== 'passed' || result.source.dirty || !result.sourceUnchanged) throw new Error('只发布完整通过、源码未变且来自干净检出的 PR 验证；失败结果在 CI Summary 查看');
+  if (result.v !== 1 || !['pr', 'pr-onboarding'].includes(result.profile) || result.status !== 'passed' || result.source.dirty || !result.sourceUnchanged) throw new Error('只发布完整通过、源码未变且来自干净检出的 PR 验证；失败结果在 CI Summary 查看');
   const current = sourceSnapshot(root);
   if (current.dirty || current.fingerprint !== result.source.fingerprint || manifest.source.fingerprint !== current.fingerprint || manifest.runId !== result.runId) throw new Error('工作树已变化或证据清单与执行结果不一致，请重新验证');
   for (const item of manifest.artifacts) {
@@ -67,7 +67,7 @@ try {
     if (readPr().headRefOid !== current.commit) throw new Error('上传证据期间 PR 更新了；保留已上传证据，但不发过时 Review');
     const encodePath = file => file.split('/').map(encodeURIComponent).join('/');
     const pictureSections = result.steps.flatMap(step => step.cases.flatMap(item => item.evidence.filter(x => /\.png$/i.test(x)).map(file => `\n### ${step.title} · ${step.layer} · ${item.title}\n\n![${item.id}](https://github.com/${repo}/raw/${commit}/${encodePath(`${result.runId}/${step.id}/${file}`)})\n`))).join('');
-    const body = `${marker}\n${fs.readFileSync(path.join(out, 'review.md'), 'utf8')}\n\n执行命令：\n\n\`\`\`powershell\nnode .bw/release/verify/verify.mjs --profile pr\n\`\`\`\n\n逐项截图（按用例标明验证层：desktop 通过 CDP 附着本次构建的真实桌面壳，browser 使用真实浏览器验证对应页面；浏览器证据不代表 Orca 模型会话已运行）：\n${pictureSections}\n[完整证据目录](https://github.com/${repo}/tree/${commit}/${result.runId})\n`;
+    const body = `${marker}\n${fs.readFileSync(path.join(out, 'review.md'), 'utf8')}\n\n执行命令：\n\n\`\`\`powershell\nnode .bw/release/verify/verify.mjs --profile ${result.profile}\n\`\`\`\n\n逐项截图（按用例标明验证层：desktop 通过 CDP 附着本次构建的真实桌面壳，browser 使用真实浏览器验证对应页面，remote 会独立读回 GitHub、Git、Orca 与清理结果；浏览器证据不代表 Orca 模型会话已运行）：\n${pictureSections}\n[完整证据目录](https://github.com/${repo}/tree/${commit}/${result.runId})\n`;
     const request = path.join(out, 'github-review-request.json');
     fs.writeFileSync(request, JSON.stringify({ commit_id: current.commit, event: 'COMMENT', body }));
     const response = JSON.parse(gh('api', '--method', 'POST', `repos/${repo}/pulls/${number}/reviews`, '--input', request));
