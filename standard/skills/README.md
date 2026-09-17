@@ -8,7 +8,7 @@ Workbench 自带技能。一个目录一份 `SKILL.md`,全部平级。开工时�
 
 | workflow | 目录 | 谁触发 | 现行做什么 |
 |---|---|---|---|
-| `更新指标与版本计划` | `week-planning/` | Orca 周一 09:00(默认关)或计划屏 Start | 带人复盘、更新指标、确认版本与纳入;人点头后保存 |
+| `更新指标与版本计划` | `week-planning/` | Orca 周一 09:00(默认关)或计划屏 Start | 本分支改为固定 HTML + 版本 JSON 的三屏规划；资源位于本目录，生产附件分发和自动化对接仍待完成 |
 | `资产盘点` | `asset-audit/` | Orca 周五 15:00(默认关)或计划屏 Start | 盘 `.bw`(对照 `bw-assets.md`) + 盘项目本周改动 + 更新指标与版本计划 Issue 上追加每周进展 |
 | — | `metrics-refresh/` | `week-planning` 指名 | 采集 / 添加采集脚本 |
 | — | `project-handbook/` | 不派发 | 写仓根 `AGENTS.md` |

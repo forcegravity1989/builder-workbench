@@ -55,10 +55,38 @@ pub fn all() -> Vec<SkillPack> {
 
 /// 技能附件随包安装，但不单独出现在技能列表。
 pub fn sidecars() -> Vec<SkillPack> {
-    vec![SkillPack {
-        slug: "week-planning",
-        rel: "week-planning/check-week-comment.py".into(),
-        desc: "版本计划评论格式校验",
-        raw: WEEK_PLANNING_COMMENT_CHECK,
-    }]
+    let resources = [
+        ("check-week-comment.py", WEEK_PLANNING_COMMENT_CHECK),
+        (
+            "assets/version-plan.html",
+            include_str!("../../../../standard/skills/week-planning/assets/version-plan.html"),
+        ),
+        (
+            "assets/data-template.json",
+            include_str!("../../../../standard/skills/week-planning/assets/data-template.json"),
+        ),
+        (
+            "scripts/planning.py",
+            include_str!("../../../../standard/skills/week-planning/scripts/planning.py"),
+        ),
+        (
+            "references/data-and-runtime.md",
+            include_str!(
+                "../../../../standard/skills/week-planning/references/data-and-runtime.md"
+            ),
+        ),
+        (
+            "references/meeting.md",
+            include_str!("../../../../standard/skills/week-planning/references/meeting.md"),
+        ),
+    ];
+    resources
+        .into_iter()
+        .map(|(path, raw)| SkillPack {
+            slug: "week-planning",
+            rel: format!("week-planning/{path}"),
+            desc: "版本计划运行资源",
+            raw,
+        })
+        .collect()
 }

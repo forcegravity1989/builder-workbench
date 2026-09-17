@@ -227,6 +227,7 @@ pub async fn refresh_worktrees(rt: &OrcaRuntime, repo: &Path) -> Result<(), Orca
 
 #[derive(Clone, Debug)]
 pub struct AutomationRow {
+    pub id: String,
     pub name: String,
     pub project_id: String,
 }
@@ -285,7 +286,11 @@ pub async fn list_automations(rt: &OrcaRuntime) -> Result<Vec<AutomationRow>, Or
                 .and_then(|p| p.as_str())
                 .unwrap_or("")
                 .to_string();
-            Some(AutomationRow { name, project_id })
+            Some(AutomationRow {
+                id: v.get("id")?.as_str()?.to_string(),
+                name,
+                project_id,
+            })
         })
         .collect())
 }
@@ -315,6 +320,42 @@ pub async fn create_automation(
     });
     let frame = call(rt, "automation.create", params, ACTIVATE_TIMEOUT).await?;
     require_ok(&frame, "automation.create")
+}
+
+/// Update only BW's planning instruction and execution directory; preserve schedule and user settings.
+pub async fn update_planning_automation(
+    rt: &OrcaRuntime,
+    id: &str,
+    prompt: &str,
+    workspace: &Path,
+) -> Result<(), OrcaError> {
+    let shown = call(rt, "automation.show", json!({"id": id}), ACTIVATE_TIMEOUT).await?;
+    require_ok(&shown, "automation.show")?;
+    let mut params = json!({"id": id, "updates": {
+        "prompt": prompt, "workspace": path_prefixed(workspace),
+        "workspaceMode": "existing", "reuseSession": false
+    }});
+    if let Some(owner) = shown.pointer("/result/owner").filter(|v| !v.is_null()) {
+        params["expectedOwner"] = owner.clone();
+    }
+    let frame = call(rt, "automation.update", params, ACTIVATE_TIMEOUT).await?;
+    require_ok(&frame, "automation.update")?;
+    let readback = call(rt, "automation.show", json!({"id": id}), ACTIVATE_TIMEOUT).await?;
+    require_ok(&readback, "automation.show")?;
+    if readback
+        .pointer("/result/automation/prompt")
+        .and_then(Value::as_str)
+        != Some(prompt)
+    {
+        return Err(OrcaError::BadFrame("自动化更新后提示词读回不一致".into()));
+    }
+    for field in ["enabled", "rrule", "timezone", "agentId"] {
+        let pointer = format!("/result/automation/{field}");
+        if shown.pointer(&pointer) != readback.pointer(&pointer) {
+            return Err(OrcaError::BadFrame(format!("自动化更新意外改变 {field}")));
+        }
+    }
+    Ok(())
 }
 
 async fn publish_visibility(rt: &OrcaRuntime, repo: &Path) -> Result<(), OrcaError> {

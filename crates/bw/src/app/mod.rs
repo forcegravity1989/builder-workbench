@@ -8,6 +8,7 @@ mod ops;
 mod orca_inject;
 mod pack_ctl;
 mod plan;
+mod planning;
 mod progress;
 mod project;
 mod release_ship;
