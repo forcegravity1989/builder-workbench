@@ -1,0 +1,15 @@
+{
+  "body": "第一次接入:写 `.bw/project.toml`(项目名片)。探测结果:仓有 1 条提交、0 个标签、仓根已有 README / CLAUDE.md / AGENTS.md(这个仓自己有约定,铺底不碰)。\n\n还没跑的步骤如实列在这里,不假装做过:仓根已有 README / AGENTS.md / CLAUDE.md,接项目时一个字没动",
+  "labels": [
+    {
+      "id": "LA_kwDOUecMns8AAAAC2S2y8Q",
+      "name": "bw:status:inreview",
+      "description": "Workbench test fixture: in review",
+      "color": "5319E7"
+    }
+  ],
+  "number": 5,
+  "state": "OPEN",
+  "title": "项目约定",
+  "url": "https://github.com/yuzhup/bw-e2e-sandbox/issues/5"
+}

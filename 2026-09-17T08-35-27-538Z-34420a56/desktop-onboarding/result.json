@@ -1,0 +1,41 @@
+{
+    "v":  1,
+    "cases":  [
+                  {
+                      "id":  "onboarding-project",
+                      "title":  "从真实桌面接入 GitHub 沙箱项目",
+                      "status":  "passed",
+                      "evidence":  [
+                                       "onboarding-project.png"
+                                   ]
+                  },
+                  {
+                      "id":  "onboarding-readback",
+                      "title":  "从 GitHub、Git 和项目名片读回接入结果",
+                      "status":  "passed",
+                      "evidence":  [
+                                       "github-issue.json",
+                                       "github-pr.json",
+                                       "project-file.toml",
+                                       "git-worktrees.txt"
+                                   ]
+                  },
+                  {
+                      "id":  "onboarding-orca",
+                      "title":  "Orca 登记沙箱仓并保留三条关闭的自动化",
+                      "status":  "passed",
+                      "evidence":  [
+                                       "orca-automations.json"
+                                   ]
+                  },
+                  {
+                      "id":  "onboarding-cleanup",
+                      "title":  "只收掉本次远端对象和项目约定工作树",
+                      "status":  "passed",
+                      "evidence":  [
+                                       "remote-cleanup.json"
+                                   ]
+                  }
+              ],
+    "error":  null
+}

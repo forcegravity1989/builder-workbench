@@ -1,0 +1,34 @@
+[2026-09-17 04:39:28.531] [boot] [dlog.rs] [35] [ok] 对照日志 path=E:\zhuyu\code\builder-workbench\.bw\worktrees\ci-release-design\.bw\release\out\verify\2026-09-17T08-35-27-538Z-34420a56\desktop-core\initial-shell.log via=exe pid=23640
+[2026-09-17 04:39:28.532] [bridge] [mod.rs] [58] [ok] [BW_VIEW] settings
+[2026-09-17 04:39:28.533] [boot] [main.rs] [22] [ok] [BW_CDP] port=64477
+[2026-09-17 04:39:30.488] [gather] [vm_build.rs] [527] [ok] gather start gen=1 open=- wall=0
+[2026-09-17 04:39:30.701] [gather] [vm_build.rs] [631] [ok] gather issues elapsed_ms=212 n=0 wall=0
+[2026-09-17 04:39:30.732] [gather] [vm_build.rs] [673] [ok] gather wall extras elapsed_ms=0 n=0
+[2026-09-17 04:39:31.105] [gather] [vm_build.rs] [868] [ok] gather done elapsed_ms=617 gen=1
+[2026-09-17 04:39:31.106] [bridge] [mod.rs] [464] [ok] [BW_BOOT] projects=0 assets=C:\Users\xiaoduo\AppData\Local\Temp\bw-verify-f62ae742f8694ea3a7f60ce02b13c2fe\data\assets
+[2026-09-17 04:39:31.106] [bridge] [mod.rs] [477] [ok] [BW_ENV] claude = 有 · E:\zhuyu\software\npm\claude.CMD
+[2026-09-17 04:39:31.107] [bridge] [mod.rs] [477] [ok] [BW_ENV] cursor-agent = 没有 · 本机路径里找不到 cursor-agent
+[2026-09-17 04:39:31.107] [bridge] [mod.rs] [477] [ok] [BW_ENV] codehub-cli = 没有 · 本机路径里找不到 codehub-cli
+[2026-09-17 04:39:31.107] [bridge] [mod.rs] [477] [ok] [BW_ENV] GitHub CLI = 有 · E:\zhuyu\software\gh\bin\bin\gh.EXE(登录态没探,探它要起子进程)
+[2026-09-17 04:39:31.107] [bridge] [mod.rs] [477] [ok] [BW_ENV] Open Design = 没有 · 本机 Open Design 没起来(管道握手没拿到 loopback URL)
+[2026-09-17 04:39:31.108] [bridge] [mod.rs] [477] [ok] [BW_ENV] welink-cli = 没有 · 本机路径里找不到 welink-cli
+[2026-09-17 04:39:32.338] [dispatch] [mod.rs] [374] [ok] begin SetWorkspacesRoot
+[2026-09-17 04:39:32.341] [dispatch] [mod.rs] [486] [ok] ok SetWorkspacesRoot events=1 elapsed_ms=3
+[2026-09-17 04:39:32.341] [toast] [vm_build.rs] [485] [ok] 工作区根目录改成了 C:\Users\xiaoduo\AppData\Local\Temp\bw-verify-f62ae742f8694ea3a7f60ce02b13c2fe\workspaces-saved,已接入的项目都在原处
+[2026-09-17 04:39:32.342] [gather] [vm_build.rs] [527] [ok] gather start gen=2 open=- wall=0
+[2026-09-17 04:39:32.400] [gather] [vm_build.rs] [631] [ok] gather issues elapsed_ms=57 n=0 wall=0
+[2026-09-17 04:39:32.406] [gather] [vm_build.rs] [673] [ok] gather wall extras elapsed_ms=0 n=0
+[2026-09-17 04:39:33.226] [boot] [dlog.rs] [35] [ok] 对照日志 path=E:\zhuyu\code\builder-workbench\.bw\worktrees\ci-release-design\.bw\release\out\verify\2026-09-17T08-35-27-538Z-34420a56\desktop-core\restart-shell.log via=exe pid=19240
+[2026-09-17 04:39:33.227] [bridge] [mod.rs] [58] [ok] [BW_VIEW] settings
+[2026-09-17 04:39:33.227] [boot] [main.rs] [22] [ok] [BW_CDP] port=59614
+[2026-09-17 04:39:34.252] [gather] [vm_build.rs] [527] [ok] gather start gen=1 open=- wall=0
+[2026-09-17 04:39:34.379] [gather] [vm_build.rs] [631] [ok] gather issues elapsed_ms=126 n=0 wall=0
+[2026-09-17 04:39:34.389] [gather] [vm_build.rs] [673] [ok] gather wall extras elapsed_ms=0 n=0
+[2026-09-17 04:39:36.094] [gather] [vm_build.rs] [868] [ok] gather done elapsed_ms=1842 gen=1
+[2026-09-17 04:39:36.095] [bridge] [mod.rs] [464] [ok] [BW_BOOT] projects=0 assets=C:\Users\xiaoduo\AppData\Local\Temp\bw-verify-f62ae742f8694ea3a7f60ce02b13c2fe\data\assets
+[2026-09-17 04:39:36.095] [bridge] [mod.rs] [477] [ok] [BW_ENV] claude = 有 · E:\zhuyu\software\npm\claude.CMD
+[2026-09-17 04:39:36.096] [bridge] [mod.rs] [477] [ok] [BW_ENV] cursor-agent = 没有 · 本机路径里找不到 cursor-agent
+[2026-09-17 04:39:36.097] [bridge] [mod.rs] [477] [ok] [BW_ENV] codehub-cli = 没有 · 本机路径里找不到 codehub-cli
+[2026-09-17 04:39:36.097] [bridge] [mod.rs] [477] [ok] [BW_ENV] GitHub CLI = 有 · E:\zhuyu\software\gh\bin\bin\gh.EXE(登录态没探,探它要起子进程)
+[2026-09-17 04:39:36.097] [bridge] [mod.rs] [477] [ok] [BW_ENV] Open Design = 没有 · 本机 Open Design 没起来(管道握手没拿到 loopback URL)
+[2026-09-17 04:39:36.098] [bridge] [mod.rs] [477] [ok] [BW_ENV] welink-cli = 没有 · 本机路径里找不到 welink-cli

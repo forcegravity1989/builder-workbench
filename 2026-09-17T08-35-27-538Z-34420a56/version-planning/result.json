@@ -1,0 +1,58 @@
+{
+  "v": 1,
+  "cases": [
+    {
+      "id": "planning-assets",
+      "title": "BW 分发完整 Skill，JSON 消费者读取真实文件和已登记工作树",
+      "status": "passed",
+      "evidence": [
+        "deployment.json"
+      ]
+    },
+    {
+      "id": "planning-autosave",
+      "title": "真实浏览器输入自动写 JSON，版本报告保存且刷新可读回",
+      "status": "passed",
+      "evidence": [
+        "autosave.png",
+        "autosave.json"
+      ]
+    },
+    {
+      "id": "planning-model-readback",
+      "title": "会话写同一 JSON，页面自动读回",
+      "status": "passed",
+      "evidence": [
+        "model-readback.png",
+        "model-candidate.json"
+      ]
+    },
+    {
+      "id": "planning-version-isolation",
+      "title": "切换版本只读对应 JSON，不串版",
+      "status": "passed",
+      "evidence": [
+        "versions.json",
+        "versions.png"
+      ]
+    },
+    {
+      "id": "planning-bad-history",
+      "title": "坏历史版本明确标记，当前版本连续保存与修订号仍正常",
+      "status": "passed",
+      "evidence": [
+        "bad-history.png",
+        "bad-history.json"
+      ]
+    },
+    {
+      "id": "planning-conflict",
+      "title": "并发冲突拒绝覆盖，保留页面输入与磁盘新内容",
+      "status": "passed",
+      "evidence": [
+        "conflict.png",
+        "conflict.json"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,41 @@
+[fails] fails
+✔ write-capable onboarding stays out of the ordinary PR profile (59.7994ms)
+[fails] failed: 进程退出码：7
+报告：C:\Users\xiaoduo\AppData\Local\Temp\bw-verify-tests-cNYFqB\.bw\release\out\verify\2026-09-17T08-35-28-359Z-f46c2e15\report.html
+[missing] missing
+[missing] failed: spawn bw-nonexistent-test-command ENOENT
+报告：C:\Users\xiaoduo\AppData\Local\Temp\bw-verify-tests-dEx3Pb\.bw\release\out\verify\2026-09-17T08-35-29-017Z-da0dc39f\report.html
+[timeout] timeout
+✔ nonzero exit cannot be hidden by a success-looking log; later steps do not run (817.2196ms)
+[timeout] failed: 执行超时，已请求停止本步骤进程；清理结果另看回执
+报告：C:\Users\xiaoduo\AppData\Local\Temp\bw-verify-tests-dEx3Pb\.bw\release\out\verify\2026-09-17T08-35-29-284Z-d897270b\report.html
+[mutates] mutates
+✔ missing executable and timeout both produce a finished failure report (1168.4367ms)
+[mutates] passed: 执行通过
+报告：C:\Users\xiaoduo\AppData\Local\Temp\bw-verify-tests-6kB7yx\.bw\release\out\verify\2026-09-17T08-35-30-195Z-540ccda8\report.html
+[incomplete] incomplete
+✔ changed source invalidates an otherwise green run (613.8484ms)
+[incomplete] failed: 实际用例与 expectedCases 不一致，不能把少跑当通过
+报告：C:\Users\xiaoduo\AppData\Local\Temp\bw-verify-tests-f2PHNv\.bw\release\out\verify\2026-09-17T08-35-30-815Z-4879e68d\report.html
+[failed-case] failed-case
+✔ zero-exit E2E with missing expected case cannot pass (590.0554ms)
+[failed-case] failed: cleanup still locked；必跑用例存在失败、未跑或不适用
+报告：C:\Users\xiaoduo\AppData\Local\Temp\bw-verify-tests-4pzS79\.bw\release\out\verify\2026-09-17T08-35-31-379Z-1aff1562\report.html
+[pass] <script>bad()</script>
+✔ E2E failure retains setup/cleanup and individual case reasons in the PR summary (569.0104ms)
+✔ evidence needs known status, exact cases, nonempty owned files, and no path escape (242.9699ms)
+✔ evidence roundtrip preserves CRLF and binary bytes even with Git text conversion enabled (617.341ms)
+[pass] passed: 执行通过
+报告：C:\Users\xiaoduo\AppData\Local\Temp\bw-verify-tests-2kdrd3\.bw\release\out\verify\2026-09-17T08-35-32-859Z-93c36119\report.html
+[pass] <script>bad()</script>
+[pass] passed: 执行通过
+报告：C:\Users\xiaoduo\AppData\Local\Temp\bw-verify-tests-2kdrd3\.bw\release\out\verify\2026-09-17T08-35-33-204Z-bf3323bb\report.html
+✔ successful runs remain separate, escaped reports have verifiable artifact hashes (959.3934ms)
+ℹ tests 9
+ℹ suites 0
+ℹ pass 9
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 5781.7828

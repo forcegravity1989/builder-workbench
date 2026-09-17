@@ -1,0 +1,19 @@
+{
+  "automations": [
+    {
+      "enabled": false,
+      "name": "定版本计划（Workbench）"
+    },
+    {
+      "enabled": false,
+      "name": "每日指标采集（Workbench）"
+    },
+    {
+      "enabled": false,
+      "name": "资产盘点（Workbench）"
+    }
+  ],
+  "projectId": "79bff6fd-4af6-49f1-b49f-f3fffe046eca",
+  "repo": "E:\\zhuyu\\code\\builder-workbench\\.bw\\release\\out\\e2e-workspaces\\bw-e2e-sandbox",
+  "v": 1
+}
