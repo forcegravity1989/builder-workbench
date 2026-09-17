@@ -1,0 +1,17 @@
+{
+  "v": 1,
+  "cases": [
+    {
+      "id": "restart-persists",
+      "title": "杀进程重启后，界面与磁盘上的目录一致",
+      "path": "杀壳进程 → 重启真壳",
+      "expect": "设置界面与 settings.toml 均保留原目录",
+      "status": "passed",
+      "evidence": [
+        "restart-readback.toml",
+        "restart-shell.log",
+        "restart-persists.png"
+      ]
+    }
+  ]
+}

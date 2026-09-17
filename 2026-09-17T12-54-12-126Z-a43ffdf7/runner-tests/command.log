@@ -1,0 +1,47 @@
+[fails] fails
+✔ write-capable onboarding stays out of the ordinary PR profile (44.1347ms)
+[fails] failed: 进程退出码：7
+报告：C:\Users\xiaoduo\AppData\Local\Temp\bw-verify-tests-gN9bHi\.bw\release\out\verify\2026-09-17T12-54-12-778Z-97964b0f\report.html
+[missing] missing
+[missing] failed: spawn bw-nonexistent-test-command ENOENT
+报告：C:\Users\xiaoduo\AppData\Local\Temp\bw-verify-tests-jgtU5F\.bw\release\out\verify\2026-09-17T12-54-13-336Z-f5591dbd\report.html
+[timeout] timeout
+✔ nonzero exit cannot be hidden by a success-looking log; later steps do not run (639.8328ms)
+[timeout] failed: 执行超时，已请求停止本步骤进程；清理结果另看回执
+报告：C:\Users\xiaoduo\AppData\Local\Temp\bw-verify-tests-jgtU5F\.bw\release\out\verify\2026-09-17T12-54-13-634Z-8fc38703\report.html
+[mutates] mutates
+✔ missing executable and timeout both produce a finished failure report (1163.0741ms)
+[mutates] passed: 执行通过
+报告：C:\Users\xiaoduo\AppData\Local\Temp\bw-verify-tests-m5PT85\.bw\release\out\verify\2026-09-17T12-54-14-495Z-ea0bd1d5\report.html
+[incomplete] incomplete
+✔ changed source invalidates an otherwise green run (586.5568ms)
+[incomplete] failed: 实际用例与 expectedCases 不一致，不能把少跑当通过
+报告：C:\Users\xiaoduo\AppData\Local\Temp\bw-verify-tests-EHOgtE\.bw\release\out\verify\2026-09-17T12-54-15-067Z-ec604414\report.html
+[failed-case] failed-case
+✔ zero-exit E2E with missing expected case cannot pass (554.6643ms)
+[failed-case] failed: cleanup still locked；必跑用例存在失败、未跑或不适用
+报告：C:\Users\xiaoduo\AppData\Local\Temp\bw-verify-tests-5FcFB6\.bw\release\out\verify\2026-09-17T12-54-15-691Z-58b063f9\report.html
+[case-step] 示例旅程
+✔ E2E failure retains setup/cleanup and individual case reasons in the PR summary (624.0072ms)
+✔ evidence needs known status, exact cases, nonempty owned files, and no path escape (246.691ms)
+✔ case path and expect are optional but must be nonempty strings (433.4499ms)
+[case-step] passed: 执行通过
+报告：C:\Users\xiaoduo\AppData\Local\Temp\bw-verify-tests-LwUMcJ\.bw\release\out\verify\2026-09-17T12-54-17-013Z-c6226e33\report.html
+[pass] <script>bad()</script>
+✔ review.md groups results into four blocks and names the profile (652.248ms)
+✔ incremental suites come from journey paths and registry content, not profiles (3.7366ms)
+✔ evidence roundtrip preserves CRLF and binary bytes even with Git text conversion enabled (546.2751ms)
+[pass] passed: 执行通过
+报告：C:\Users\xiaoduo\AppData\Local\Temp\bw-verify-tests-XunVwb\.bw\release\out\verify\2026-09-17T12-54-18-271Z-6312fc55\report.html
+[pass] <script>bad()</script>
+[pass] passed: 执行通过
+报告：C:\Users\xiaoduo\AppData\Local\Temp\bw-verify-tests-XunVwb\.bw\release\out\verify\2026-09-17T12-54-18-969Z-f13b2799\report.html
+✔ successful runs remain separate, escaped reports have verifiable artifact hashes (1499.1842ms)
+ℹ tests 12
+ℹ suites 0
+ℹ pass 12
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 7099.7583

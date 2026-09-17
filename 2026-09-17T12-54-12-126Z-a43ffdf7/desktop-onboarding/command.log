@@ -1,0 +1,63 @@
+[2026-09-17 08:54:57.141] [boot] [dlog.rs] [35] [ok] 对照日志 path=E:\zhuyu\code\builder-workbench\.bw\worktrees\ci-release-design\.bw\release\out\verify\2026-09-17T12-54-12-126Z-a43ffdf7\desktop-onboarding\initial-shell.log via=exe pid=24724
+[2026-09-17 08:54:57.142] [bridge] [mod.rs] [58] [ok] [BW_VIEW] onboard
+[2026-09-17 08:54:57.143] [boot] [main.rs] [22] [ok] [BW_CDP] port=55700
+[2026-09-17 08:54:57.955] [gather] [vm_build.rs] [527] [ok] gather start gen=1 open=- wall=0
+[2026-09-17 08:54:58.062] [gather] [vm_build.rs] [631] [ok] gather issues elapsed_ms=106 n=0 wall=0
+[2026-09-17 08:54:58.074] [gather] [vm_build.rs] [673] [ok] gather wall extras elapsed_ms=0 n=0
+[2026-09-17 08:54:58.329] [gather] [vm_build.rs] [868] [ok] gather done elapsed_ms=373 gen=1
+[2026-09-17 08:54:58.330] [bridge] [mod.rs] [464] [ok] [BW_BOOT] projects=0 assets=C:\Users\xiaoduo\AppData\Local\Temp\bw-verify-2577245359f54453b442b0a4c92c9cad\data\assets
+[2026-09-17 08:54:58.330] [bridge] [mod.rs] [477] [ok] [BW_ENV] claude = 有 · E:\zhuyu\software\npm\claude.CMD
+[2026-09-17 08:54:58.330] [bridge] [mod.rs] [477] [ok] [BW_ENV] cursor-agent = 没有 · 本机路径里找不到 cursor-agent
+[2026-09-17 08:54:58.331] [bridge] [mod.rs] [477] [ok] [BW_ENV] codehub-cli = 没有 · 本机路径里找不到 codehub-cli
+[2026-09-17 08:54:58.331] [bridge] [mod.rs] [477] [ok] [BW_ENV] GitHub CLI = 有 · E:\zhuyu\software\gh\bin\bin\gh.EXE(登录态没探,探它要起子进程)
+[2026-09-17 08:54:58.331] [bridge] [mod.rs] [477] [ok] [BW_ENV] Open Design = 没有 · 本机 Open Design 没起来(管道握手没拿到 loopback URL)
+[2026-09-17 08:54:58.332] [bridge] [mod.rs] [477] [ok] [BW_ENV] welink-cli = 没有 · 本机路径里找不到 welink-cli
+From https://github.com/yuzhup/bw-e2e-sandbox
+ * branch            main       -> FETCH_HEAD
+[2026-09-17 08:55:09.990] [dispatch] [mod.rs] [374] [ok] begin CreateProject slug=bw-e2e-25772453
+[2026-09-17 08:55:36.038] [orca] [orca.rs] [125] [ok] connect ok · runtimeId=66029f44-75f5-4c47-891d-c2b0fabc2b9d pid=17524 \\.\pipe\orca-17524-6602
+[2026-09-17 08:55:36.040] [orca] [orca.rs] [876] [ok] rpc method=repo.show elapsed_ms=2 ok
+[2026-09-17 08:55:36.041] [orca] [orca.rs] [156] [ok] repo present worktree=path:E:\zhuyu\code\builder-workbench\.bw\release\out\e2e-workspaces\bw-e2e-sandbox
+[2026-09-17 08:55:36.516] [orca] [orca.rs] [876] [ok] rpc method=repo.show elapsed_ms=6 ok
+[2026-09-17 08:55:36.531] [orca] [orca.rs] [876] [ok] rpc method=repo.update elapsed_ms=12 ok
+[2026-09-17 08:55:37.252] [orca] [orca.rs] [876] [ok] rpc method=repo.show elapsed_ms=0 ok
+[2026-09-17 08:55:37.256] [orca] [orca.rs] [876] [ok] rpc method=automation.list elapsed_ms=2 ok
+[2026-09-17 08:55:37.258] [orca] [orca.rs] [876] [ok] rpc method=automation.show elapsed_ms=0 ok
+[2026-09-17 08:55:37.288] [orca] [orca.rs] [876] [ok] rpc method=automation.update elapsed_ms=29 ok
+[2026-09-17 08:55:37.290] [orca] [orca.rs] [876] [ok] rpc method=automation.show elapsed_ms=1 ok
+[2026-09-17 08:55:37.291] [dispatch] [mod.rs] [486] [ok] ok CreateProject slug=bw-e2e-25772453 events=5 elapsed_ms=27300
+[2026-09-17 08:55:37.292] [toast] [vm_build.rs] [485] [ok] 项目 bw-e2e-25772453 已接入
+[2026-09-17 08:55:37.295] [toast] [vm_build.rs] [485] [ok] 正在采本项目指标与仓统计…
+[2026-09-17 08:55:37.297] [orca] [orca.rs] [125] [ok] connect ok · runtimeId=66029f44-75f5-4c47-891d-c2b0fabc2b9d pid=17524 \\.\pipe\orca-17524-6602
+[2026-09-17 08:55:37.307] [orca] [orca.rs] [876] [ok] rpc method=repo.show elapsed_ms=9 ok
+[2026-09-17 08:55:37.308] [orca] [orca.rs] [156] [ok] repo present worktree=path:E:\zhuyu\code\builder-workbench\.bw\release\out\e2e-workspaces\bw-e2e-sandbox
+[2026-09-17 08:55:37.557] [orca] [orca.rs] [876] [ok] rpc method=repo.show elapsed_ms=1 ok
+[2026-09-17 08:55:37.560] [orca] [orca.rs] [876] [ok] rpc method=repo.update elapsed_ms=2 ok
+[2026-09-17 08:55:37.627] [orca] [orca.rs] [876] [ok] rpc method=repo.show elapsed_ms=0 ok
+[2026-09-17 08:55:37.630] [orca] [orca.rs] [876] [ok] rpc method=automation.list elapsed_ms=2 ok
+[2026-09-17 08:55:37.633] [orca] [orca.rs] [876] [ok] rpc method=automation.show elapsed_ms=1 ok
+[2026-09-17 08:55:37.746] [orca] [orca.rs] [876] [ok] rpc method=automation.update elapsed_ms=112 ok
+[2026-09-17 08:55:37.748] [orca] [orca.rs] [876] [ok] rpc method=automation.show elapsed_ms=1 ok
+[2026-09-17 08:55:37.749] [bridge] [mod.rs] [1314] [ok] register_orca_repo ok worktree=E:\zhuyu\code\builder-workbench\.bw\release\out\e2e-workspaces\bw-e2e-sandbox
+[2026-09-17 08:55:37.751] [gather] [vm_build.rs] [527] [ok] gather start gen=2 open=bw-e2e-25772453 wall=1
+[2026-09-17 08:55:38.796] [gather] [vm_build.rs] [573] [ok] gather issues elapsed_ms=1045 n=4 wall=1
+[2026-09-17 08:55:38.803] [gather] [vm_build.rs] [1150] [ok] gather extras sessions elapsed_ms=0
+[2026-09-17 08:55:38.824] [gather] [vm_build.rs] [1150] [ok] gather extras milestones elapsed_ms=0
+[2026-09-17 08:55:38.885] [gather] [vm_build.rs] [1150] [ok] gather extras comments elapsed_ms=81
+[2026-09-17 08:55:38.908] [gather] [vm_build.rs] [1150] [ok] gather extras ops3 elapsed_ms=93
+[2026-09-17 08:55:38.916] [gather] [vm_build.rs] [1150] [ok] gather extras git-tags elapsed_ms=99
+[2026-09-17 08:55:39.649] [gather] [vm_build.rs] [1150] [ok] gather extras user elapsed_ms=823
+[2026-09-17 08:55:39.887] [gather] [vm_build.rs] [1150] [ok] gather extras releases elapsed_ms=1078
+[2026-09-17 08:55:40.033] [gather] [vm_build.rs] [1216] [ok] gather extras health elapsed_ms=145
+[2026-09-17 08:55:40.035] [gather] [vm_build.rs] [585] [ok] gather open extras elapsed_ms=1234 slug=bw-e2e-25772453 issues=4
+[2026-09-17 08:55:40.077] [gather] [vm_build.rs] [868] [ok] gather done elapsed_ms=2327 gen=2
+[2026-09-17 08:55:40.080] [bridge] [mod.rs] [1206] [ok] assemble elapsed_ms=3
+[2026-09-17 08:55:40.081] [bridge] [mod.rs] [1373] [ok] pr fill start pending=4 gen=2
+[2026-09-17 08:55:40.081] [toast] [vm_build.rs] [485] [err] 采不了指标:这个项目还没有 .bw/metrics.toml
+[2026-09-17 08:55:41.643] [bridge] [mod.rs] [1385] [ok] pr fill done elapsed_ms=1559 n=4 pending=4 gen=2
+[2026-09-17 08:56:01.463] [orca] [orca.rs] [125] [ok] connect ok · runtimeId=66029f44-75f5-4c47-891d-c2b0fabc2b9d pid=17524 \\.\pipe\orca-17524-6602
+[2026-09-17 08:56:01.466] [orca] [orca.rs] [876] [ok] rpc method=repo.show elapsed_ms=2 ok
+[2026-09-17 08:56:01.470] [orca] [orca.rs] [876] [ok] rpc method=automation.list elapsed_ms=3 ok
+✓ Closed pull request yuzhup/bw-e2e-sandbox#8 (项目约定)
+✓ Deleted branch bw/project
+✓ Closed issue yuzhup/bw-e2e-sandbox#7 (项目约定)

@@ -1,0 +1,39 @@
+{
+  "v": 1,
+  "cases": [
+    {
+      "id": "shell-launches",
+      "title": "真实桌面壳启动并渲染设置屏",
+      "path": "以 BW_VIEW=settings 启动真壳",
+      "expect": "设置屏可见，日志含 [BW_VIEW] settings 与 [BW_BOOT]",
+      "status": "passed",
+      "evidence": [
+        "initial-shell.log",
+        "subject.json",
+        "initial-webview.json",
+        "shell-launches.png"
+      ]
+    },
+    {
+      "id": "settings-persist",
+      "title": "点击保存工作区目录，并从 settings.toml 读回",
+      "path": "设置 → 工作区根目录 → 保存",
+      "expect": "settings.toml 与磁盘目录读回一致",
+      "status": "passed",
+      "evidence": [
+        "settings-readback.toml",
+        "settings-persist.png"
+      ]
+    },
+    {
+      "id": "onboard-navigation",
+      "title": "通过真实按钮从设置进入项目墙和接入页",
+      "path": "设置 → ← 项目墙 → + 接入项目",
+      "expect": "项目墙与接入页标题先后可见",
+      "status": "passed",
+      "evidence": [
+        "onboard-navigation.png"
+      ]
+    }
+  ]
+}

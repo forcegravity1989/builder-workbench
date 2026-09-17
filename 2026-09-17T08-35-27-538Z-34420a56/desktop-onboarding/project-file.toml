@@ -1,8 +1,0 @@
-name = "BW E2E 6943c38c"
-kind = ""
-brief = "验证真实接入 6943c38c64874081b8ada0ebd3f0b1a9"
-benchmark = "Workbench E2E sandbox"
-opportunity = "接入结果可独立读回"
-
-# 项目群没配。配了就在这里加一段 [chat](提供方 / 群号 / 同步哪些
-# 事件),总览名片会显示群名与「通知同步中」。
