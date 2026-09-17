@@ -33,8 +33,9 @@ const savedWorkspace = () => {
   }
 };
 
-async function run(id, title, path, expect, action) {
-  const item = { id, title, path, expect, status: 'not_run', evidence: [] };
+// 形参不能叫 path/expect：会遮蔽 node:path 模块与 playwright 断言，函数体内的 path.join 会崩。
+async function run(id, title, pathText, expectText, action) {
+  const item = { id, title, path: pathText, expect: expectText, status: 'not_run', evidence: [] };
   cases.push(item);
   if (blocked) { item.message = '前一用例失败'; return; }
   try {

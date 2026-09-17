@@ -11,7 +11,7 @@ const cases=[],ids=['planning-assets','planning-autosave','planning-model-readba
 const fixture=fs.mkdtempSync(path.join(os.tmpdir(),'bw-planning-e2e-'));
 let browser,pack,workspace;
 const json=file=>JSON.parse(fs.readFileSync(file,'utf8').replace(/^\uFEFF/,''));
-const record=(id,title,path,expect,evidence)=>cases.push({id,title,path,expect,status:'passed',evidence});
+const record=(id,title,pathText,expectText,evidence)=>cases.push({id,title,path:pathText,expect:expectText,status:'passed',evidence});
 try{
   run('cargo',['run','--locked','-p','bw','--example','planning_smoke','--',fixture]);
   fs.copyFileSync(path.join(fixture,'deployment.json'),path.join(out,'deployment.json'));
