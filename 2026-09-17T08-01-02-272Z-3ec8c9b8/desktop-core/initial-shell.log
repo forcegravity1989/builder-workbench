@@ -1,0 +1,20 @@
+[2026-09-17 04:01:41.738] [boot] [dlog.rs] [35] [ok] 对照日志 path=E:\zhuyu\code\builder-workbench\.bw\worktrees\revert-pr-212\.bw\release\out\verify\2026-09-17T08-01-02-272Z-3ec8c9b8\desktop-core\initial-shell.log via=exe pid=2564
+[2026-09-17 04:01:41.739] [bridge] [mod.rs] [58] [ok] [BW_VIEW] settings
+[2026-09-17 04:01:41.739] [boot] [main.rs] [22] [ok] [BW_CDP] port=58119
+[2026-09-17 04:01:43.789] [gather] [vm_build.rs] [527] [ok] gather start gen=1 open=- wall=0
+[2026-09-17 04:01:43.931] [gather] [vm_build.rs] [631] [ok] gather issues elapsed_ms=140 n=0 wall=0
+[2026-09-17 04:01:43.946] [gather] [vm_build.rs] [673] [ok] gather wall extras elapsed_ms=0 n=0
+[2026-09-17 04:01:44.187] [gather] [vm_build.rs] [868] [ok] gather done elapsed_ms=399 gen=1
+[2026-09-17 04:01:44.188] [bridge] [mod.rs] [464] [ok] [BW_BOOT] projects=0 assets=C:\Users\xiaoduo\AppData\Local\Temp\bw-verify-4ec3d6bafdce43ee9287f791a6df57a0\data\assets
+[2026-09-17 04:01:44.189] [bridge] [mod.rs] [477] [ok] [BW_ENV] claude = 有 · E:\zhuyu\software\npm\claude.CMD
+[2026-09-17 04:01:44.189] [bridge] [mod.rs] [477] [ok] [BW_ENV] cursor-agent = 没有 · 本机路径里找不到 cursor-agent
+[2026-09-17 04:01:44.190] [bridge] [mod.rs] [477] [ok] [BW_ENV] codehub-cli = 没有 · 本机路径里找不到 codehub-cli
+[2026-09-17 04:01:44.190] [bridge] [mod.rs] [477] [ok] [BW_ENV] GitHub CLI = 有 · E:\zhuyu\software\gh\bin\bin\gh.EXE(登录态没探,探它要起子进程)
+[2026-09-17 04:01:44.190] [bridge] [mod.rs] [477] [ok] [BW_ENV] Open Design = 没有 · 本机 Open Design 没起来(管道握手没拿到 loopback URL)
+[2026-09-17 04:01:44.190] [bridge] [mod.rs] [477] [ok] [BW_ENV] welink-cli = 没有 · 本机路径里找不到 welink-cli
+[2026-09-17 04:01:45.830] [dispatch] [mod.rs] [374] [ok] begin SetWorkspacesRoot
+[2026-09-17 04:01:45.840] [dispatch] [mod.rs] [486] [ok] ok SetWorkspacesRoot events=1 elapsed_ms=9
+[2026-09-17 04:01:45.840] [toast] [vm_build.rs] [485] [ok] 工作区根目录改成了 C:\Users\xiaoduo\AppData\Local\Temp\bw-verify-4ec3d6bafdce43ee9287f791a6df57a0\workspaces-saved,已接入的项目都在原处
+[2026-09-17 04:01:45.841] [gather] [vm_build.rs] [527] [ok] gather start gen=2 open=- wall=0
+[2026-09-17 04:01:45.901] [gather] [vm_build.rs] [631] [ok] gather issues elapsed_ms=59 n=0 wall=0
+[2026-09-17 04:01:45.908] [gather] [vm_build.rs] [673] [ok] gather wall extras elapsed_ms=0 n=0

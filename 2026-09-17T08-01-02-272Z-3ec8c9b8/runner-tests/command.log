@@ -1,0 +1,36 @@
+[fails] fails
+[fails] failed: 进程退出码：7
+报告：C:\Users\xiaoduo\AppData\Local\Temp\bw-verify-tests-bF0gvG\.bw\release\out\verify\2026-09-17T08-01-02-805Z-d9418976\report.html
+[missing] missing
+[missing] failed: spawn bw-nonexistent-test-command ENOENT
+报告：C:\Users\xiaoduo\AppData\Local\Temp\bw-verify-tests-1fwNsX\.bw\release\out\verify\2026-09-17T08-01-03-245Z-7d21e8f7\report.html
+[timeout] timeout
+✔ nonzero exit cannot be hidden by a success-looking log; later steps do not run (527.7473ms)
+[timeout] failed: 执行超时，已请求停止本步骤进程；清理结果另看回执
+报告：C:\Users\xiaoduo\AppData\Local\Temp\bw-verify-tests-1fwNsX\.bw\release\out\verify\2026-09-17T08-01-03-458Z-a48e532f\report.html
+[mutates] mutates
+✔ missing executable and timeout both produce a finished failure report (948.4886ms)
+[mutates] passed: 执行通过
+报告：C:\Users\xiaoduo\AppData\Local\Temp\bw-verify-tests-rd6Ajv\.bw\release\out\verify\2026-09-17T08-01-04-195Z-c46c7042\report.html
+[incomplete] incomplete
+✔ changed source invalidates an otherwise green run (438.6ms)
+[incomplete] failed: 实际用例与 expectedCases 不一致，不能把少跑当通过
+报告：C:\Users\xiaoduo\AppData\Local\Temp\bw-verify-tests-oTNFMX\.bw\release\out\verify\2026-09-17T08-01-04-617Z-13c4f7ef\report.html
+[pass] <script>bad()</script>
+✔ zero-exit E2E with missing expected case cannot pass (412.7124ms)
+✔ evidence needs known status, exact cases, nonempty owned files, and no path escape (172.4324ms)
+✔ evidence roundtrip preserves CRLF and binary bytes even with Git text conversion enabled (435.3619ms)
+[pass] passed: 执行通过
+报告：C:\Users\xiaoduo\AppData\Local\Temp\bw-verify-tests-yvRQWH\.bw\release\out\verify\2026-09-17T08-01-05-667Z-c786e31f\report.html
+[pass] <script>bad()</script>
+[pass] passed: 执行通过
+报告：C:\Users\xiaoduo\AppData\Local\Temp\bw-verify-tests-yvRQWH\.bw\release\out\verify\2026-09-17T08-01-05-957Z-43301c0c\report.html
+✔ successful runs remain separate, escaped reports have verifiable artifact hashes (804.192ms)
+ℹ tests 7
+ℹ suites 0
+ℹ pass 7
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 3874.2479

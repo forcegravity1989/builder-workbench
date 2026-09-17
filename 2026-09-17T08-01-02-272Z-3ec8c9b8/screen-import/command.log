@@ -1,0 +1,9 @@
+✓ screens/config 无跨屏引用
+✓ screens/kb 无跨屏引用
+✓ screens/onboard 无跨屏引用
+✓ screens/overview 无跨屏引用
+✓ screens/plan 无跨屏引用
+✓ screens/session 无跨屏引用
+✓ screens/settings 无跨屏引用
+✓ screens/wall 无跨屏引用
+所有屏幕模块只经命令/事件与共享 ViewModel 通信。

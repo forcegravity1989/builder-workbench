@@ -1,0 +1,171 @@
+{
+  "v": 1,
+  "runId": "2026-09-17T08-01-02-272Z-3ec8c9b8",
+  "source": {
+    "commit": "cb440a3bbfcb19408e9ca44037196a04a289f5eb",
+    "dirty": false,
+    "fingerprint": "9d454ac2bbdf0b166aa1957029620272931734058cbe69b16339729758ba9357"
+  },
+  "artifacts": [
+    {
+      "path": "clippy/command.log",
+      "bytes": 72,
+      "sha256": "5c29a49c8a295e657ff837290e0f57256b6aa0856fd841410d32d4cf19736bb3"
+    },
+    {
+      "path": "codegraph/command.log",
+      "bytes": 64,
+      "sha256": "b0cb8ca34dc07202d8042799e30477ac262bb330a2d436d225e30c16f3caec41"
+    },
+    {
+      "path": "desktop-core/cleanup.json",
+      "bytes": 153,
+      "sha256": "92179633089d2521d2e7256d84bbc27110ed94b16e1016bd828f46f689d6b9dc"
+    },
+    {
+      "path": "desktop-core/command.log",
+      "bytes": 4160,
+      "sha256": "d663ff0a645cf14d2479876ce77a55fa91644bd64145228e0b3dd808fba362fb"
+    },
+    {
+      "path": "desktop-core/initial-shell.log",
+      "bytes": 2421,
+      "sha256": "2ba47c11bf6a6127de8871f0163b8577efa2ee8b758c74fdb0fe1d7d558031ec"
+    },
+    {
+      "path": "desktop-core/initial-webview.json",
+      "bytes": 68,
+      "sha256": "3a0f7dbd679ee3c30008a6fb2d118d057a1b36f871b2376079e459051f17e02d"
+    },
+    {
+      "path": "desktop-core/initial.json",
+      "bytes": 745,
+      "sha256": "d739ec322798597314e6a6252f5d41921d2f6adbdec75742922269393a56f160"
+    },
+    {
+      "path": "desktop-core/onboard-navigation.png",
+      "bytes": 35313,
+      "sha256": "1bdb131572786b7953eaecc16401be0cdfe3386d56b7dd3e3a22dbd470d98dd3"
+    },
+    {
+      "path": "desktop-core/restart-persists.png",
+      "bytes": 35272,
+      "sha256": "be676ac3f73160b833095b5d6886fb3f93aaf951916c26dc9df43c6b9a652d4c"
+    },
+    {
+      "path": "desktop-core/restart-readback.toml",
+      "bytes": 116,
+      "sha256": "e8d97b940fe106ff1797c66702970a4cd6bf60c1c3abdd4f5e169eec31243cf3"
+    },
+    {
+      "path": "desktop-core/restart-shell.log",
+      "bytes": 1739,
+      "sha256": "a74f9f70cf5588d7bd65f474e70bd0da2f721ae77858b6611dffc53d6acf0391"
+    },
+    {
+      "path": "desktop-core/restart-webview.json",
+      "bytes": 68,
+      "sha256": "3a0f7dbd679ee3c30008a6fb2d118d057a1b36f871b2376079e459051f17e02d"
+    },
+    {
+      "path": "desktop-core/restart.json",
+      "bytes": 294,
+      "sha256": "4b18309075096aa129afc5e34a23af476f0cdfe05252cbd9b51292b3db151c66"
+    },
+    {
+      "path": "desktop-core/result.json",
+      "bytes": 1901,
+      "sha256": "550b37212061f88f8a467fe867630b2d2aa8821253becc8d59ba5ae0e8e0cac3"
+    },
+    {
+      "path": "desktop-core/settings-persist.png",
+      "bytes": 35564,
+      "sha256": "3e1ef6be7bdfdc17bf6e5eadf3e32c2d8c55e39e2de4c41aad2d5831b1e9e838"
+    },
+    {
+      "path": "desktop-core/settings-readback.toml",
+      "bytes": 116,
+      "sha256": "e8d97b940fe106ff1797c66702970a4cd6bf60c1c3abdd4f5e169eec31243cf3"
+    },
+    {
+      "path": "desktop-core/shell-launches.png",
+      "bytes": 35272,
+      "sha256": "be676ac3f73160b833095b5d6886fb3f93aaf951916c26dc9df43c6b9a652d4c"
+    },
+    {
+      "path": "desktop-core/subject.json",
+      "bytes": 276,
+      "sha256": "a7cba57426e79a7188cec8d698d5118737e91ca6b9eafc012df802dcce9258bb"
+    },
+    {
+      "path": "e2e-deps/command.log",
+      "bytes": 73,
+      "sha256": "4b1a22cfd38085cde0b1038285f029494902f5f8d24602f23a0e67a9302742f9"
+    },
+    {
+      "path": "file-lines/command.log",
+      "bytes": 1514,
+      "sha256": "7b25701f8be71eb455b435166c67393cbcf1a47cdb4119976e87b975ace45553"
+    },
+    {
+      "path": "format/command.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "kernel-free/command.log",
+      "bytes": 74,
+      "sha256": "204d32f2e1f781e7683c74ba15cd354b2044d8d42bed8fa8bddf9106987f7c1b"
+    },
+    {
+      "path": "remote-isolation/command.log",
+      "bytes": 149,
+      "sha256": "6d15d78e090d9951399f2d1fc332dad6af7bfff2e305c4ef6baa9867fd0b131b"
+    },
+    {
+      "path": "report.html",
+      "bytes": 196362,
+      "sha256": "2309226604386f38542868ead06a65db9159a685d5c29e25751a1c41b06cfb21"
+    },
+    {
+      "path": "result.json",
+      "bytes": 7865,
+      "sha256": "8e59628928993ebd8d168bde43f88d2f3b02b6c903e53899977dc4621237e907"
+    },
+    {
+      "path": "review.md",
+      "bytes": 2776,
+      "sha256": "b39dafa06dbfacc5d501d3e2abdd20857108e9b8739debb22af1692c5c98ef96"
+    },
+    {
+      "path": "runner-tests/command.log",
+      "bytes": 2206,
+      "sha256": "68e8c2ed5186f10d881249e3ad176f4917be104eaaa8e60da5a6ab67b1b19612"
+    },
+    {
+      "path": "runtime/command.log",
+      "bytes": 156,
+      "sha256": "3c0b1dfd7ae8f6bc2462e2f80d24db2e53821b103bc35a7a40f2017dbc5c97b7"
+    },
+    {
+      "path": "screen-hooks/command.log",
+      "bytes": 53,
+      "sha256": "a9d1f592387d88ba8cf00dbf29b7416270a1e0043b1dd08f085242d98f55aebe"
+    },
+    {
+      "path": "screen-import/command.log",
+      "bytes": 345,
+      "sha256": "39f5b915c5d9ded3276262054c8e6087769353a9a5905941c2afa2b4826c317f"
+    },
+    {
+      "path": "shell/command.log",
+      "bytes": 72,
+      "sha256": "2017003a4ef779fa15ec3b1523e8f19b8e212384e1fbe7def6d6710fd663cbf2"
+    },
+    {
+      "path": "test/command.log",
+      "bytes": 11458,
+      "sha256": "0398a565794d40b7469e5de8b55e56a9b32cbf4a4909451e98224f45647aa49a"
+    }
+  ]
+}
