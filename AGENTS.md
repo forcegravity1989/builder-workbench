@@ -33,7 +33,7 @@
 
 Rust 1.82+,cargo workspace。桌面壳另需 Dioxus 0.7 的系统依赖(macOS 自带 WebKit,Windows 用 WebView2)。`#![forbid(unsafe_code)]` 是 `bw-engine` 的规矩。跨会话只认本仓的 `docs/01-principles/` + `AGENTS.md` + `CONTEXT.md` + `docs/` + `CHANGELOG.md` + `DESIGN.md`,不凭上一会话口头结论改代码。
 
-仓外 IDE(Claude Code / Cursor / Codex)开新会话,先读 [`.claude/skills/workbench-start/SKILL.md`](.claude/skills/workbench-start/SKILL.md)——只是闸门,正本仍是本文件。Workbench 发起的项目执行会话遵循产品传入的提示与被管项目的 `AGENTS.md`，不再走本仓起手 skill。Workbench MVP 还不能在工作台里维护自己,所以仓外起手暂时靠这份 skill,不是再做一套伴飞/需求/修 bug 流程。
+仓外 IDE(Claude Code / Cursor / Codex)开新会话，读 [workbench-start](.claude/skills/workbench-start/SKILL.md)，按意图与影响分流开发、验证和交付；文档盘点、瘦身、规范及模型指令整改转 [project-knowledge](.claude/skills/project-knowledge/SKILL.md)，其中包含文档契约、HTML 决策流程、只读全景扫描与逐轮反哺。两者是仓内试用方法，任何使用者均可采用；开发规矩正本仍是本文件。Workbench 发起的项目执行会话遵循产品提示与被管项目的 `AGENTS.md`，不自动叠加本仓起手。仓内采用不等于已分发到 standard。
 
 ## 怎么建 / 怎么跑 / 怎么测
 

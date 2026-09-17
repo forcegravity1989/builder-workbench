@@ -41,6 +41,8 @@
 | 「Workbench 是什么/设计」 | [`architecture.md`](architecture.md)([`DESIGN.md`](../DESIGN.md) 指路) |
 | 产品主张 / 飞轮 / 特性怎么立项 | [`01-principles/`](01-principles/README.md) |
 | 开发规矩(建/跑/测/门禁/目录/铁律/怎么加特性) | [`AGENTS.md`](../AGENTS.md) |
+| BW 自己的开发与交付方法 | [workbench-start](../.claude/skills/workbench-start/SKILL.md)；按任务分流，知识定义与治理 Skill 共用 |
+| 项目知识整改、全景与反哺 | [project-knowledge](../.claude/skills/project-knowledge/SKILL.md)；逐块清债，试用规范按需采纳 |
 | 领域词 | [`CONTEXT.md`](../CONTEXT.md) |
 | 产品指南(怎么用) | [`03-guide/`](03-guide/) |
 | headless 例子(PTY 烟测) | [`AGENTS.md`](../AGENTS.md)「怎么建/跑/测」;源码 `crates/bw-engine/examples/` |
