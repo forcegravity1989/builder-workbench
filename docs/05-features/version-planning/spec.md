@@ -7,8 +7,8 @@
 - [#176](https://github.com/forcegravity1989/builder-workbench/issues/176)：可复用 HTML、数据格式、注入 Skill 与归档流程。
 - [#207](https://github.com/forcegravity1989/builder-workbench/issues/207)：BW v0.4 首用结果，以及特性→指标→用例→证据。
 - [现行 v0.4 目标](https://github.com/forcegravity1989/builder-workbench/issues/180#issuecomment-5679561405)：只读参考，历史周编号不带入新 HTML。
-- 用户指定原件：[v7-1.html](D:/xwechat_files/wxid_06ent4l6h23s21_4ffe/msg/file/2026-09/v7-1.html)。SHA256：`FB5EB3763C0B00C8C21683E90BBAC14416CE6235C3991D012795FEDC3EDAF09B`。
-- 当前入口是[可执行实战 Skill](E:/zhuyu/code/builder-workbench/.bw/worktrees/version-planning/standard/skills/week-planning/SKILL.md)，不再交付场景演示。配套[固定模板](E:/zhuyu/code/builder-workbench/.bw/worktrees/version-planning/standard/skills/week-planning/assets/version-plan.html)、[数据模板](E:/zhuyu/code/builder-workbench/.bw/worktrees/version-planning/standard/skills/week-planning/assets/data-template.json)、[v0.3 重建数据](E:/zhuyu/code/builder-workbench/.bw/worktrees/week-plan/.bw/planning/v0.3/data.json)及[Orca 自动化提示词](E:/zhuyu/code/builder-workbench/.bw/worktrees/version-planning/docs/05-features/version-planning/orca-task-prompt.txt)。
+- 用户指定原件：v7-1.html（本机路径 `D:/xwechat_files/wxid_06ent4l6h23s21_4ffe/msg/file/2026-09/v7-1.html`）。SHA256：`FB5EB3763C0B00C8C21683E90BBAC14416CE6235C3991D012795FEDC3EDAF09B`。
+- 当前入口是[可执行实战 Skill](../../../standard/skills/week-planning/SKILL.md)，不再交付场景演示。配套[固定模板](../../../standard/skills/week-planning/assets/version-plan.html)、[数据模板](../../../standard/skills/week-planning/assets/data-template.json)、v0.3 重建数据（本机路径 `E:/zhuyu/code/builder-workbench/.bw/worktrees/week-plan/.bw/planning/v0.3/data.json`）及[Orca 自动化提示词](orca-task-prompt.txt)。
 - 开发树为 `E:/zhuyu/code/builder-workbench/.bw/worktrees/version-planning`，分支 `codex/version-planning`。真实规划树为主项目 `.bw/worktrees/week-plan`，分支 `bw/week-plan`。当前数据在规划树 `.bw/planning/v0.4/data.json`；Skill 启动或复用该树本地服务，浏览器打开返回的 URL 编辑；同树 .bw/planning/template/version-plan.html 用于离线只读。当前用户与本会话共同实战填写 v0.4，逐屏调整模板及 Skill；v0.3 暂不修改。
 - v0.3 从 #174 的原始目标与进展评论重建，明确没有历史周一屏正本和重新验收；v0.4 首用时只预置项目、版本和前序引用，业务结构为空。本次真实会话直接读取旧流程的 #174 目标评论回填第一屏，不以重建的 v0.3 JSON 作为原承诺正本，用户核对后共同写第二屏，会议评审与消化后才形成第三屏；#180 仅作讨论来源。恢复不会重置已有内容。Skill、固定 HTML 和数据格式是本特性交付源码，位于 standard/skills/week-planning；实际版本内容位于规划 worktree 的 .bw/planning。
 
@@ -42,7 +42,7 @@
 
 本轮固定首用树是对运行配置的隔离；Orca 使用既有 `bw/week-plan`，以同一部署参数同时设置任务 workspace 和提示中的目录/分支，业务流程不另写一套。打开项目会更新原 Orca 任务，整体替换旧“已有计划就退出/禁止确认前保存草稿”指令及对应 Skill/reference，不允许叠加冲突规则。Codex 首用能验证真实人机流程，不能证明 Orca 已触发、已在正确分支开会话或已注入附件。
 
-[实战说明](E:/zhuyu/code/builder-workbench/.bw/worktrees/version-planning/docs/05-features/version-planning/manual-review.md)列出真实数据和共用模板位置。本次 v0.3 原承诺来自 #174 目标评论，v0.4 的 `results` 是当前对其结果的回填；同一页面选择不同版本后加载各自 JSON，不另生成每版日常 HTML。此次实战只填写 v0.4；v0.3 是未确认的重建资料，本次评审进一步纠正：来源保留 #174 的整体目标原文，卡片忠实缩为一句，11 项具体工作进入任务区，previous_version 直接指向该评论与保存的来源；不能把此前归并后的三组标题冒充原文。正常规划不改已归档原承诺，结果写当前版。已确认的会议材料另可导出为快照。
+[实战说明](manual-review.md)列出真实数据和共用模板位置。本次 v0.3 原承诺来自 #174 目标评论，v0.4 的 `results` 是当前对其结果的回填；同一页面选择不同版本后加载各自 JSON，不另生成每版日常 HTML。此次实战只填写 v0.4；v0.3 是未确认的重建资料，本次评审进一步纠正：来源保留 #174 的整体目标原文，卡片忠实缩为一句，11 项具体工作进入任务区，previous_version 直接指向该评论与保存的来源；不能把此前归并后的三组标题冒充原文。正常规划不改已归档原承诺，结果写当前版。已确认的会议材料另可导出为快照。
 
 ## 2026-09-16 评审已确认的目标与任务关系
 
@@ -101,9 +101,9 @@
 
 固定 `bw/week-plan` 分支是当前草稿的编辑工作区，不是所有屏幕应读取的永久正式来源。前序承诺以默认分支已合入的确认数据为准，钉具体修订；当前草稿在固定工作树里持续保存。默认分支和 worktree 是同一批 Git 文件在不同修订上的检出，不等于两套独立维护的业务正本。
 
-已核对当前源码：`provision_standing_worktree` 遇到现有工作树只校验分支并返回，**没有保证它已跟随默认分支更新**；`week_goals_from_ops1` 仍读 Issue 评论，总览/计划 VM 使用该结果。本次已替换 BW 目标读取入口：主项目归档与登记的规划树草稿读取同份 JSON，组件保持原样。
+已核对当前源码：`provision_standing_worktree` 遇到现有工作树只校验分支并返回，**没有保证它已跟随默认分支更新**；旧 `week_goals_from_ops1` 曾读 Issue 评论。本次已替换 BW 目标读取入口：主项目归档与登记的规划树草稿读取同份 JSON，组件保持原样。
 
-已确定目标与总结以周一屏 JSON 为统一内容源，不双写目标评论。旧 Issue 评论仅供缺少旧 JSON 时首次导入；任务排期和实时执行状态仍来自 Issue。BW 总览/计划复用现有组件，后续在数据适配层替换旧目标/总结读取，不让 Skill 维护两份目标。当前读取函数已替换为 version_plan_notes，专项检查覆盖已登记规划树的覆盖读取及损坏材料返回未知。
+已确定目标与总结以周一屏 JSON 为统一内容源，不双写目标评论。旧 Issue 评论仅供缺少旧 JSON 时首次导入；任务排期和实时执行状态仍来自 Issue。BW 总览/计划复用现有组件，已在数据适配层替换旧目标/总结读取，不让 Skill 维护两份目标。当前读取函数已替换为 version_plan_notes，专项检查覆盖已登记规划树的覆盖读取及损坏材料返回未知。
 
 当前草稿在规划工作树编辑，归档材料经 PR 合入默认分支；正式读取需明确已确认修订与草稿边界。读取位置已明确写入模块契约，复用现有 VM；不另建屏幕或持久化数据库。
 
@@ -134,12 +134,12 @@
 
 ## 工程落点与限制
 
-- `crates/bw/src/app/orca_inject.rs`：现有自动化同名即跳过，须更新版本计划这一项的提示与工作目录；保留用户的时间、时区、启停设置及任务身份，不新建第二项。不改其他自动化。
+- `crates/bw/src/app/orca_inject.rs`：已有自动化仅对版本计划这一项更新提示与工作目录；保留用户的时间、时区、启停设置及任务身份，不新建第二项。不改其他自动化。
 - `crates/bw-engine/src/orca.rs`：沿用 list/create，新增定版本计划更新；按已安装 Orca 的真实 update 协议修改后 show 读回，保留 ID、定时、启用与 agent。
 - `crates/bw/src/standard/skills.rs`：HTML/数据/生成与采集工具作为附件随技能一起写出，验证路径实际存在且提示能指到。
-- 现行 `week-planning` 只允许改指标文件，且自动化提示要求已有版本就退出；均需在原件上调整。
-- 页面和归档按版本命名。当前实战包不写 Issue 评论，旧界面读取仍未改变。若最终采用评论投影，必须同时处理现行协议和来源追踪；不能只改标题或默认允许两边独立编辑。不改 BW 界面组件。
-- 当前已有三个常驻树仍位于旧平级路径。开发 worktree 与运行常驻树分开；不自动移动、删除已有工作目录。
+- `week-planning` 已替换旧指标单独更新流程，允许保存规划草稿，恢复已有版本而非退出。
+- 页面和归档按版本组织。目标、结果摘要和执行进展写同版 JSON，BW 计划/总览读取该数据，任务状态仍读 Issue；不双写目标评论，不改界面组件。
+- 本机三个常驻树经校验干净后已用 git worktree move 登记到主项目 .bw/worktrees；分支和提交保留。开发树与规划树分开；产品不自动移动或删除其他用户的旧工作目录。
 
 ## 特性衡量与验收
 
@@ -152,15 +152,15 @@
 | 承诺清晰 | 引领：冻结时具有责任人、验收说明和证据落点的承诺项 / 冻结承诺项 | 从冻结 data.json 采集；字段有内容不等于语义合格，另留人工核对 | 已设计，脚本未实现；基线/目标未知 |
 | 计划兑现 | 滞后：截止约定时间获人验收的原承诺项 / 冻结原承诺项 | 读取冻结数据及人验收证据；新增、取消单列，Issue closed 不替代人验收 | 已设计；观察时间未到，不报数 |
 | 准备与返工成本 | 会前准备耗时、会后意见处理次数及原因 | 首用手工记录起止与实际修改，不能从一例宣称改善 | 未观察 |
-| 自动化更新 | 更新旧任务，保留设置，无重复；失败可重试 | Orca 更新前后读回，实际触发并核对分支/会话 | 未执行 |
-| 注入链 | 模型实际读到 HTML、数据、Skill | 真 Orca 会话读取附件，记录路径与摘要 | 未执行 |
+| 自动化更新 | 更新旧任务，保留设置，无重复；失败可重试 | Orca 更新前后读回，实际触发并核对分支/会话 | 真实 BW 注册/重启更新通过；模型触发待用户首用 |
+| 注入链 | 模型实际读到 HTML、数据、Skill | 真 Orca 会话读取附件，记录路径与摘要 | 实际 BW 完整分发通过；模型会话读取待用户首用 |
 | 数据与展示 | 三页一致，未知明确，无原型示例数 | 浏览器逐项对比真实来源；缺数、零值、来源不可读场景 | 隔离浏览器用例通过；真实事实仍由用户核对 |
 | 前序版本承诺可追溯 | 读取前序版本已确认第三屏，再填真实结果，保留原承诺与引用 | 改变远端状态不改变原承诺；无历史首次使用；明确前序修订 | 未执行 |
 | 编辑与恢复 | 页面与会话保存同一数据，重开一致 | HTTP 读写、服务重启、重新打开；外部修改冲突 | 真实 HTTP 与文件往返检查通过；真实浏览器输入与重开已通过，实际填写体验继续由用户验收 |
 | 会议与定稿 | 缺纪要不得宣称评审完成；意见可追溯 | 缺记录、真实纪要、会后再修订三种场景 | 未执行 |
 | 会议两份输入 | 现场直接保存、链接取转写、子 agent 按规范整理 | 缺入口、输入变化、规范变化均可识别；真实纪要语义还需实际核对 | 测试夹具验证文件协议；真实内部脚本与规范待提供 |
 | 归档与握手 | 快照不覆盖，MR 可查，只有 Leader 审核算握手 | Git 文件摘要+远端 MR/review 读回；关闭再开材料 | 未执行 |
-| 界面同步 | 合入后按源修订同步目标及任务，重复运行不重复建 Issue，旧版标签保留 | 远端读回及现有总览/计划屏；部分写入失败后重试 | 未执行 |
+| 界面同步 | 合入后按源修订同步目标及任务，重复运行不重复建 Issue，旧版标签保留 | 远端读回及现有总览/计划屏；部分写入失败后重试 | JSON 读取与草稿覆盖已验证；业务 Issue 写入留给真实规划 |
 
 HTML 浏览器验证、真实 Orca 会话、Git/远端归档与价值结果四层分别报告。此次不改桌面组件，HTML 截图不能冒充 WebView2 或 Orca E2E。
 

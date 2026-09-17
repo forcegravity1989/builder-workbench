@@ -335,6 +335,7 @@ pub async fn update_planning_automation(
         "prompt": prompt, "workspace": path_prefixed(workspace),
         "workspaceMode": "existing", "reuseSession": false
     }});
+    // Orca show returns sibling fields: result.owner and result.automation.
     if let Some(owner) = shown.pointer("/result/owner").filter(|v| !v.is_null()) {
         params["expectedOwner"] = owner.clone();
     }
@@ -351,7 +352,13 @@ pub async fn update_planning_automation(
     }
     for field in ["enabled", "rrule", "timezone", "agentId"] {
         let pointer = format!("/result/automation/{field}");
-        if shown.pointer(&pointer) != readback.pointer(&pointer) {
+        let before = shown
+            .pointer(&pointer)
+            .ok_or_else(|| OrcaError::BadFrame(format!("自动化原配置缺少 {field}")))?;
+        let after = readback
+            .pointer(&pointer)
+            .ok_or_else(|| OrcaError::BadFrame(format!("自动化读回缺少 {field}")))?;
+        if before != after {
             return Err(OrcaError::BadFrame(format!("自动化更新意外改变 {field}")));
         }
     }

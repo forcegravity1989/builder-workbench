@@ -53,22 +53,6 @@ pub fn parse_comments(bodies: &[String]) -> WeekComment {
     WeekComment { goal, progress }
 }
 
-pub fn render_week_plan_comment(included: &[u32]) -> String {
-    let goal = "（未填写）";
-    let mut scope = String::new();
-    if included.is_empty() {
-        scope.push_str("本周暂无纳入");
-    } else {
-        for iid in included {
-            scope.push_str(&format!("- #{iid}\n"));
-        }
-        if scope.ends_with('\n') {
-            scope.pop();
-        }
-    }
-    format!("## {HEADING_GOAL}\n{goal}\n\n## {HEADING_SCOPE}\n{scope}\n\n## {HEADING_READINGS}\n")
-}
-
 pub fn validate_comment(body: &str) -> Result<(), Vec<String>> {
     let mut errs = Vec::new();
     if !has_heading(body, HEADING_GOAL) {
@@ -257,17 +241,5 @@ mod tests {
             parse_comments(&[body.into()]).goal.as_deref(),
             Some("本周清共性小问题,催熟通知。\n- 通知:#4\n- 会话:#1")
         );
-    }
-
-    #[test]
-    fn render_create_version_comment() {
-        let empty = render_week_plan_comment(&[]);
-        assert!(validate_comment(&empty).is_ok());
-        assert_eq!(parse_comments(&[empty]).goal.as_deref(), Some("（未填写）"));
-        let body = render_week_plan_comment(&[12, 15]);
-        assert!(validate_comment(&body).is_ok());
-        assert!(body.contains("- #12"));
-        assert!(body.contains("- #15"));
-        assert_eq!(parse_comments(&[body]).goal.as_deref(), Some("（未填写）"));
     }
 }

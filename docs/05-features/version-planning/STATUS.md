@@ -7,8 +7,8 @@
 - 开发树：E:/zhuyu/code/builder-workbench/.bw/worktrees/version-planning。
 - [Skill](../../../standard/skills/week-planning/SKILL.md)：修改原有 week-planning，未另建并行 Skill。
 - [出厂 HTML](../../../standard/skills/week-planning/assets/version-plan.html)、[空数据模板](../../../standard/skills/week-planning/assets/data-template.json)：随 Skill 开发的交付资产，不是一次性设计演示。
-- [项目 HTML 入口](E:/zhuyu/code/builder-workbench/.bw/worktrees/week-plan/.bw/planning/template/version-plan.html)：从出厂模板部署的一份共用页面。
-- [v0.3 内容](E:/zhuyu/code/builder-workbench/.bw/worktrees/week-plan/.bw/planning/v0.3/data.json)、[v0.4 内容](E:/zhuyu/code/builder-workbench/.bw/worktrees/week-plan/.bw/planning/v0.4/data.json)：从原实战树原样迁入，迁移前后 SHA256 一致；v0.4 已有回填，未重置。
+- 项目 HTML 入口（本机路径 `E:/zhuyu/code/builder-workbench/.bw/worktrees/week-plan/.bw/planning/template/version-plan.html`）：从出厂模板部署的一份共用页面。
+- v0.3 内容（本机路径 `E:/zhuyu/code/builder-workbench/.bw/worktrees/week-plan/.bw/planning/v0.3/data.json`）、v0.4 内容（本机路径 `E:/zhuyu/code/builder-workbench/.bw/worktrees/week-plan/.bw/planning/v0.4/data.json`）：从原实战树原样迁入，迁移前后 SHA256 一致；v0.4 已有回填，未重置。
 - [本次 Orca 提示词](orca-task-prompt.txt)、[填写说明](manual-review.md)位于本特性文档目录，不随 Skill 分发；验证报告由统一 PR 入口生成并发布至 PR Review。
 
 ## 交付包与开发文件
