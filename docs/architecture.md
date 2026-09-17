@@ -1,6 +1,8 @@
 # architecture.md — Workbench MVP 设计正本
 
-> **30 秒导读**:Workbench MVP 的**唯一设计正本**。三段:**§1 用例与旅程怎么编排 → §2 特性(每个能力是什么)→ §3 实现架构(三 crate 切分 + 运行时数据流)**。给要判断"某条为什么这么定"、接手模块、往规范里加东西的人和 AI 看。不在本篇的:开发规矩(怎么建/跑/测)在 [`AGENTS.md`](../AGENTS.md);模块实现心智 + 关键取舍在 [`docs/06-module/`](06-module/);界面视觉语言在 `docs/04-design-system/`,八屏版式与旅程在 `docs/hifi/`,五站驾驶地图在 `docs/hifi/home.html`;词表 `CONTEXT.md`;版本变更 `CHANGELOG.md`;架构决策在 [`docs/02-adr/`](02-adr/),老版本史实(V3、旧 16 模块挪移)见 [`V3 删除与旧 16 模块挪移`](10-reference/v3-and-module-migration.md),五张领域模型(上下文 / 用例 / 逻辑 / 数据 / 领域)见 [`domain-models.html`](10-reference/domain-models.html)。`DESIGN.md` 指路本篇。
+> **30 秒导读**:Workbench MVP 的**唯一设计正本**。三段:**§1 用例与旅程怎么编排 → §2 特性(每个能力是什么)→ §3 实现架构(三 crate 切分 + 运行时数据流)**。给要判断"某条为什么这么定"、接手模块、往规范里加东西的人和 AI 看。不在本篇的:开发规矩(怎么建/跑/测)在 [`AGENTS.md`](../AGENTS.md);模块实现心智 + 关键取舍在 [`docs/06-module/`](06-module/);界面视觉语言在 `docs/04-design-system/`,八屏版式与旅程在 `docs/hifi/`,五站驾驶地图在 `docs/hifi/home.html`;词表 `CONTEXT.md`;变更原因与验证证据查 commit/PR;架构决策在 [`docs/02-adr/`](02-adr/),老版本史实(V3、旧 16 模块挪移)见 [`V3 删除与旧 16 模块挪移`](10-reference/v3-and-module-migration.md),五张领域模型(上下文 / 用例 / 逻辑 / 数据 / 领域)见 [`domain-models.html`](10-reference/domain-models.html)。
+>
+> **维护约定**：本篇结构与职责以上述导读为准；整体旅程、逻辑模块或 crate/数据流边界变化时更新。不写开发流程与变更流水；头部边界变更先按 [AGENTS](../AGENTS.md) 与人确认。
 >
 > **四层口径**(§2 按此归位):**层 A 事实**——主张性文档(人对项目基础信息/里程碑的定义)+ 仓里已有事实(代码/issue/已有文档/读数);**层 B 执行**——主体是 Orca 会话、worktree、工具检测;dispatch 单入口与守卫是内核工作方式、不单列为能力模块(见 §3 运行机制);**层 C standard 积累**——系统提示词 + 技能 + 技能提炼(渐进加载);**层 D 壳**——八屏,人怎么交互、人看什么。
 
@@ -43,7 +45,7 @@
 - ↳ **发版**:远端建 Release + 打 `bw:released:<名>`,号锁死当前版本视图。
 - ↳ **开工**:入口在计划屏(拖进「进行中」或详情 ▶ Start),同一条 `run_issue`:开/复用 worktree,没会话才打 Orca `createAgentSession`,有会话只切树。详见 §2「会话与执行」。
 - ↳ **出包 / 验包**:入口 `.bw/release/pack/pack.cmd` + `e2e/e2e.cmd`,协议见 ADR-0005;产物 `.bw/release/out/<版本>/`(gitignore)。验包不过「详情」列出每条用例与报错。
-- **asset-audit(资产盘点 Issue)**:每周对照 `references/bw-assets.md` 盘 Workbench 给项目的 `.bw/`(清理残留、更新格式、列出未完成事项),再盘全仓人持文档正本(architecture / AGENTS / CONTEXT / CHANGELOG / 01-principles / 02-adr / 03-guide / 04-design-system / 05-features)对齐实现、清过时、互相一致,只写评论不替改,再盘项目本周提交与开着的 MR(建议只落这条 Issue的评论),再按 `week-plan-comment.md` 给本周在研版本那张更新指标与版本计划 Issue追加一条每周进展。开工工具跟构建。
+- **asset-audit(资产盘点 Issue)**:每周对照 `references/bw-assets.md` 盘 Workbench 给项目的 `.bw/`(清理残留、更新格式、列出未完成事项),再盘全仓人持文档正本(architecture / AGENTS / CONTEXT / 01-principles / 02-adr / 03-guide / 04-design-system / 05-features)对齐实现、清过时、互相一致,只写评论不替改,再盘项目本周提交与开着的 MR(建议只落这条 Issue的评论),再按 `week-plan-comment.md` 给本周在研版本那张更新指标与版本计划 Issue追加一条每周进展。开工工具跟构建。
 - **指标采集**:见 §2「关键信息维护」的指标记录。A 类(可回溯)一个字不存现算;B 类(不可回溯)与 C 类(手填)进同一份 `.bw/metrics/readings.jsonl`(键日历日,同天同指标只留一行)。B 类日采走 Orca 自动化(每天 20:00,钉指标记录工作树 `bw/ledger`,默认关)。
 - ↳ **健康展示**:调 §2「关键信息维护」的健康推导(二级特性),总览+项目墙现算,没数据是诚实的灰不是绿。
 - ↳ **项目群发送**:往群里发固定枚举事件(本周版本计划 / 新建 Issue纳入本周 / PR 合入 / 发版 / 周报),每件可在总览单项开关。事件挂在 `NotifyEvent` 注册表上(加新事件 = 加 variant + 动作点调一次统一 dispatch,见 ADR-0003)。发送结果不持久化(没有已发送记录/去重键/重试队列,发送即完成)。群号走仓文件、登录是机器的事(Workbench 不碰不存凭证)。
@@ -80,7 +82,7 @@
 
 评审会话另有一份外置主提示词 `REVIEW.md.tmpl`(独立评审身份 + 只评不改/意见落 MR 评论),渲染同机制;评审剧本 `mr-review` **尚未编进二进制、未派发**(见 ④)。
 
-三层各装什么、改了哪条流程要同步哪份——对照表在 [`06-module/系统提示词与渐进加载`](06-module/系统提示词与渐进加载.md)。`AGENTS.md`「三层模型」指到那里。改 `standard/` 之前先对表。
+三层各装什么、改了哪条流程要同步哪份——对照表在 [`06-module/系统提示词与渐进加载`](06-module/系统提示词与渐进加载.md)。`AGENTS.md`「按任务读取」指到那里。改 `standard/` 之前先对表。
 
 ### ④ 技能与提炼(层 C standard)
 

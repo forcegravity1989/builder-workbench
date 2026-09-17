@@ -17,7 +17,7 @@ Workbench MVP 还不能在工作台里维护自己。这份 skill 按住仓外�
 
 人是 Builder,也是核心开发——但开发不是人干的。人做三件事:走旅程、判断对错、点头或驳回。你改代码、补指南、改 architecture、改高保真。人说「做成了」之前,他自己用 `gh` / `codehub-cli` / `git` / `cat .bw/…` 读回,不信你自报。
 
-可见物各干什么,见 `AGENTS.md`「人怎么驾驭」。伴飞打开 `docs/03-guide/index.html`（指向现行指南 `v4-产品指南.html`）:
+可见物各干什么,见 `AGENTS.md`「按任务读取」与 `docs/README.md`。伴飞打开 `docs/03-guide/index.html`（指向现行指南 `v4-产品指南.html`）:
 
 | 人看 | 人用来 | 你用来 |
 |---|---|---|
@@ -44,9 +44,9 @@ Workbench MVP 还不能在工作台里维护自己。这份 skill 按住仓外�
 
 1. `AGENTS.md` → 2. `docs/architecture.md` → 3. `CONTEXT.md` → 4. 动到哪站再读指南与高保真。
 
-定位:旅程哪一站 → architecture §2 哪个能力 → 三层哪一层 → 数据归哪 → architecture §3 的 crate 与数据流；模块实现心智读 `docs/06-module/` 对应篇。找不到先补文档。未锁定决策走 grill / domain-modeling。构建类 Issue 走仓内 `mattpocock-skills`,不要自造流程。改 `standard/`(主提示词 / reference / skill)先读 `docs/06-module/系统提示词与渐进加载.md`「三层分工与维护对照」,不要只改内核或只改 skill。
+定位:旅程哪一站 → architecture §2 哪个能力 → 三层哪一层 → 数据归哪 → architecture §3 的 crate 与数据流；模块实现心智读 `docs/06-module/` 对应篇。找不到先澄清并补文档；新增或补回内容先读目标头部，范围外按 `AGENTS.md`「文档怎么读、怎么维护」与人确认边界。未锁定决策走 grill / domain-modeling。构建类 Issue 走仓内 `mattpocock-skills`,不要自造流程。改 `standard/`(主提示词 / reference / skill)先读 `docs/06-module/系统提示词与渐进加载.md`「三层分工与维护对照」,不要只改内核或只改 skill。
 
-先审已有实现和提示词,不对再改那一份;不新增平行方案。正本见 `AGENTS.md`「不要做的」。
+先审已有实现和提示词,不对再改那一份;不新增平行方案。正本见 `AGENTS.md`「项目硬约束」。
 
 ## 禁止
 
