@@ -18,7 +18,7 @@ node .bw/release/verify/verify.mjs --profile pr-onboarding
 
 它包含普通 PR 的全部内容，并额外操作固定沙箱仓、读回 Orca 后清理本次远端对象。GitHub PR workflow 仍使用 `pr`，不向待评审代码提供跨仓写凭据。
 
-`plan.json` 保存项目的命令、顺序和超时；`pr` 包括完整 Rust 门禁、构建真实壳和所有已注册 E2E。Linux 的 `--profile headless` 只验证内核、底座及结构门禁，不能代替桌面验证。macOS、CodeHub 调度和远端写入用例尚未接入；入口不依赖 `gh` 或 GitHub 环境变量。
+`plan.json` 保存项目的命令、顺序和超时；`pr` 包括完整 Rust 门禁、构建真实壳和该 profile 已注册的 E2E（写远端的添加项目旅程只在 `pr-onboarding` 运行）。Linux 的 `--profile headless` 只验证内核、底座及结构门禁，不能代替桌面验证。macOS 与 CodeHub 调度尚未接入；`headless` 与 `pr` 不依赖 `gh`，`pr-onboarding` 需要本机已登录的 `gh`。
 
 两个 profile 同时运行知识扫描器的确定性测试，核对路径边界、只读性、报告转义、比较口径及失败退出码。这里看护工具本身，不将历史知识库的结构提示设为 CI 门禁，也不证明 Skill 的模型行为有效。
 

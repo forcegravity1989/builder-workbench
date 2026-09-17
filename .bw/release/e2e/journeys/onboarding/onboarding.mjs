@@ -1,3 +1,12 @@
+// 用例六件事：
+// 1. 保护规则：从真实桌面接入远端项目后，GitHub、本地 Git 工作树与 Orca 处处可独立读回；
+//    测试只收走本次运行创建的对象，不动沙箱既有内容。
+// 2. 环境与数据：Windows、本机已登录 gh、Orca 桌面已打开、固定沙箱仓 yuzhup/bw-e2e-sandbox
+//    （repository id 由 desktop.ps1 传入并核验），Playwright 通过 CDP 附着真实壳。
+// 3. 真实动作：接入项目 → 克隆远端仓 → 填写基础信息 → 完成接入 → 项目墙。
+// 4. 独立读回：gh 读回 Issue/PR/分支内容，git 读回项目工作树，bw-engine 示例读回 Orca 自动化。
+// 5. 证据：每条用例的截图与 JSON 读回，全部写入本步骤输出目录。
+// 6. 清理：只关闭/删除带本次 run-id 标记的 Issue、PR、远端分支与项目工作树；身份不明即失败并保留。
 import { chromium, expect } from 'playwright/test';
 import { execFileSync, spawnSync } from 'node:child_process';
 import fs from 'node:fs';
@@ -32,7 +41,14 @@ const git = (args, cwd = clone) => run('git', args, { cwd });
 const worktreePaths = raw => raw.split(/\r?\n/).filter(line => line.startsWith('worktree ')).map(line => path.resolve(line.slice('worktree '.length)).toLowerCase());
 const remoteIssues = () => ghJson(['issue', 'list', '--repo', repo, '--state', 'all', '--limit', '100', '--json', 'number,title,state,url']);
 const remotePrs = () => ghJson(['pr', 'list', '--repo', repo, '--state', 'all', '--limit', '100', '--json', 'number,title,state,url,headRefName,headRefOid']);
-const refExists = () => spawnSync('gh', ['api', `repos/${repo}/git/ref/heads/bw%2Fproject`], { encoding: 'utf8', windowsHide: true }).status === 0;
+const refExists = () => {
+  const probe = spawnSync('gh', ['api', `repos/${repo}/git/ref/heads/bw%2Fproject`], { encoding: 'utf8', windowsHide: true });
+  if (probe.status === 0) return true;
+  const output = `${probe.stderr ?? ''}${probe.stdout ?? ''}`;
+  // gh 对网络、凭据等任何失败都返回非零；只有明确的 404 才代表分支不存在，其余失败必须暴露而不是当作已清理。
+  if (!/HTTP 404/.test(output)) throw new Error(`无法确认远端分支状态（gh 退出码 ${probe.status}）：${output.trim()}`);
+  return false;
+};
 const exactNew = (after, before, predicate, kind) => {
   const old = new Set(before.map(x => x.number));
   const rows = after.filter(x => !old.has(x.number) && predicate(x));
@@ -154,7 +170,9 @@ try {
 } catch (error) {
   fail(item('onboarding-project'), error);
 } finally {
-  if (browser) await browser.close();
+  try {
+    if (browser) await browser.close();
+  } catch { /* CDP 断开不得阻断远端清理与回执写出 */ }
   const cleanup = { v: 1, runId, issue: null, pr: null, remoteBranchDeleted: false, projectWorktreeRemoved: false, projectBranchRemoved: false, errors: [] };
   try {
     if (!createdIssue) {
