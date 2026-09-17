@@ -8,9 +8,8 @@ use bw::model::{Conversation, ConversationId, IssueId, Project, ProjectId};
 use std::path::PathBuf;
 
 fn tmp_asset_root(name: &str) -> PathBuf {
-    let path = std::env::temp_dir().join(format!("bw-test-{name}"));
-    let _ = std::fs::remove_dir_all(&path);
-    std::fs::create_dir_all(&path).unwrap();
+    let path = std::env::temp_dir().join(format!("bw-test-{name}-{}", uuid::Uuid::new_v4()));
+    std::fs::create_dir(&path).unwrap();
     path
 }
 

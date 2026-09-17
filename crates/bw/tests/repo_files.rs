@@ -137,9 +137,8 @@ fn project_file_chat_section_is_optional() {
 }
 
 fn tempdir(tag: &str) -> std::path::PathBuf {
-    let d = std::env::temp_dir().join(format!("bw-repo-test-{tag}"));
-    let _ = std::fs::remove_dir_all(&d);
-    std::fs::create_dir_all(&d).unwrap();
+    let d = std::env::temp_dir().join(format!("bw-repo-test-{tag}-{}", uuid::Uuid::new_v4()));
+    std::fs::create_dir(&d).unwrap();
     d
 }
 
@@ -163,4 +162,5 @@ fn a_multiline_brief_survives_a_write_read_round_trip() {
     assert_eq!(back.name, f.name);
     assert_eq!(back.brief, f.brief);
     assert_eq!(back.opportunity, f.opportunity);
+    std::fs::remove_dir_all(&dir).unwrap();
 }
