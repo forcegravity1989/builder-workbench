@@ -1,0 +1,24 @@
+{
+  "v": 1,
+  "profiles": {
+    "headless": ["runner-tests", "format", "clippy-headless", "test-headless", "kernel-free", "remote-isolation", "screen-import", "screen-hooks", "file-lines", "codegraph"],
+    "pr": ["runner-tests", "runtime", "format", "clippy", "shell", "test", "kernel-free", "remote-isolation", "screen-import", "screen-hooks", "file-lines", "codegraph", "e2e-deps"]
+  },
+  "steps": [
+    {"id":"runtime","title":"确认 WebView2 运行时及版本","command":["powershell.exe","-NoProfile","-ExecutionPolicy","Bypass","-File",".bw/release/e2e/runtime.ps1"],"timeoutSeconds":30},
+    {"id":"runner-tests","title":"验证交付入口的失败与证据判定","command":["{node}","--test",".bw/release/verify/verify.test.mjs"],"timeoutSeconds":120},
+    {"id":"format","title":"Rust 格式","command":["cargo","fmt","--all","--check"],"timeoutSeconds":120},
+    {"id":"clippy-headless","title":"内核与底座 Clippy","command":["cargo","clippy","--locked","--workspace","--exclude","app-shell","--","-D","warnings"],"timeoutSeconds":1800},
+    {"id":"clippy","title":"完整 Clippy（含桌面壳）","command":["cargo","clippy","--locked","--workspace","--","-D","warnings"],"timeoutSeconds":3600},
+    {"id":"shell","title":"构建本次源码的真实桌面壳","command":["cargo","build","--locked","-p","app-shell"],"timeoutSeconds":3600},
+    {"id":"test-headless","title":"内核与底座测试","command":["cargo","test","--locked","--workspace","--exclude","app-shell"],"timeoutSeconds":1800},
+    {"id":"test","title":"完整 workspace 测试","command":["cargo","test","--locked","--workspace"],"timeoutSeconds":1800},
+    {"id":"kernel-free","title":"内核不依赖 UI","command":["bash","scripts/guard-kernel-ui-free.sh"],"timeoutSeconds":120},
+    {"id":"remote-isolation","title":"GitHub / CodeHub 相互隔离","command":["bash","scripts/guard-remote-isolation.sh"],"timeoutSeconds":120},
+    {"id":"screen-import","title":"屏之间不交叉导入","command":["bash","scripts/guard-no-cross-screen-import.sh"],"timeoutSeconds":120},
+    {"id":"screen-hooks","title":"组件 Hook 规范","command":["bash","scripts/guard-screen-hooks.sh"],"timeoutSeconds":120},
+    {"id":"file-lines","title":"源码文件长度","command":["bash","scripts/guard-file-lines.sh"],"timeoutSeconds":120},
+    {"id":"codegraph","title":"CodeGraph 不进入特性提交","command":["bash","scripts/guard-codegraph-clean.sh"],"timeoutSeconds":120},
+    {"id":"e2e-deps","title":"按锁文件准备 Playwright","command":["powershell.exe","-NoProfile","-ExecutionPolicy","Bypass","-File",".bw/release/e2e/dependencies.ps1"],"timeoutSeconds":300}
+  ]
+}

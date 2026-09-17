@@ -2,7 +2,16 @@ name: CI
 
 on:
   push:
+    branches: [main]
   pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
 
 env:
   CARGO_TERM_COLOR: always
@@ -11,42 +20,65 @@ jobs:
   kernel:
     name: kernel + base (headless)
     runs-on: ubuntu-latest
+    timeout-minutes: 45
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
       - uses: dtolnay/rust-toolchain@stable
         with:
           components: clippy, rustfmt
       - uses: Swatinem/rust-cache@v2
+      - name: Verify using the project entry point
+        run: node .bw/release/verify/verify.mjs --profile headless
+      - name: Verification summary
+        if: always()
+        run: node .bw/release/verify/github-summary.mjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: verification-linux
+          path: .bw/release/out/verify/
+          include-hidden-files: true
+          if-no-files-found: error
+          retention-days: 14
 
-      - name: Format
-        run: cargo fmt --all --check
-
-      # app-shell pulls the Dioxus/wry tree, which needs system WebKit/GTK —
-      # glib-2.0 is not on the plain ubuntu runner, so linking dies in the
-      # build script before clippy sees any code. This job stays light and
-      # never compiles the shell; shell build/packaging is a separate matrix.
-      # The shell's clippy runs locally (macOS builds it without pkg-config);
-      # the three structural guards below are pure text checks, so they run
-      # here to enforce the shell's layout rules on every push.
-      - name: Clippy (headless crates)
-        run: cargo clippy --workspace --exclude app-shell -- -D warnings
-
-      - name: Test (kernel + base + compile-fail doctests)
-        run: cargo test --workspace --exclude app-shell
-
-      - name: Kernel stays UI-free
-        run: ./scripts/guard-kernel-ui-free.sh
-
-      - name: Remote's two arms stay strangers
-        run: ./scripts/guard-remote-isolation.sh
-
-      # Shell layout rules. Pure grep — no compilation, so they run here even
-      # though app-shell itself is not built on this runner.
-      - name: Shell stays laid out the way it says it is
-        run: |
-          ./scripts/guard-no-cross-screen-import.sh
-          ./scripts/guard-screen-hooks.sh
-          ./scripts/guard-file-lines.sh
-
-      - name: codegraph.db not staged in feature commits
-        run: ./scripts/guard-codegraph-clean.sh
+  desktop:
+    name: Windows desktop verification
+    runs-on: windows-2022
+    timeout-minutes: 60
+    env:
+      # This VM belongs to one job. Local runs still create an isolated desktop.
+      BW_E2E_DESKTOP: current
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+      - name: Prepare the Microsoft WebView2 runtime
+        timeout-minutes: 5
+        run: powershell.exe -NoProfile -ExecutionPolicy Bypass -File .bw/release/e2e/runtime.ps1 -InstallMissing
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy, rustfmt
+      - uses: Swatinem/rust-cache@v2
+        with:
+          cache-on-failure: true
+      - name: Verify using the project entry point
+        run: node .bw/release/verify/verify.mjs --profile pr
+      - name: Verification summary
+        if: always()
+        run: node .bw/release/verify/github-summary.mjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: verification-windows
+          path: .bw/release/out/verify/
+          include-hidden-files: true
+          if-no-files-found: error
+          retention-days: 14

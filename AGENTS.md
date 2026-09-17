@@ -56,6 +56,8 @@ cargo test --workspace                                # 本地含壳;CI 同命�
 
 ## 门禁(每个 commit 前全过,与 CI 一致)
 
+Windows 交付验证入口：`node .bw/release/verify/verify.mjs --profile pr`，执行下面的门禁（壳 `build` 包含 `check`）及已注册固定 E2E，产出 `.bw/release/out/verify/<run-id>/report.html`、`result.json`、`review.md` 与证据清单。命令、报告格式、专项用例接入及 CI 结果位置见 [交付验证入口](.bw/release/verify/README.md)。开发特性的会话负责补对应专项用例并发 PR；通用入口不代替特性验收、代码 Review 和人的合入决定。
+
 ```bash
 cargo fmt --all --check
 cargo clippy --workspace -- -D warnings
@@ -69,7 +71,7 @@ cargo check -p app-shell          # Workbench MVP 壳编译过
 cargo test --workspace
 ```
 
-本地与 CI：壳的编译 / Clippy 因 ubuntu runner 常缺 WebKit/GTK，**壳相关检查以本机为准**；CI 侧 `cargo test` 会 `--exclude app-shell`。差异以 `.github/workflows/ci.yml` 为准。
+本地与 CI：Ubuntu 的 headless 检查排除 app-shell；Windows CI 执行完整门禁、构建壳与固定桌面 E2E。两者复用 `.bw/release/verify/plan.json`，差异以 `.github/workflows/ci.yml` 为准。PR 检查的固定结果入口是 Checks 对应任务的 Summary，完整报告和证据在该次 Actions Artifacts；独立验证 Review 仍遵循下面的截图要求。
 
 行为正确性靠 E2E(深链启动 + `codehub-cli`/`gh`/`git`/`cat .bw/…` 读回 + computer-use)+ `/code-review`;单元测试不是交付物(现存的随 CI 跑、改到顺手维护、不建回归大坝)。**Workbench MVP 本地零数据库——读回用 `codehub-cli`/`gh`/`git`/`cat .bw/…`,不用 `sqlite3`**(那是 V3 的库)。
 
@@ -136,7 +138,7 @@ scripts/   门禁脚本(guard-*)+ codegraph 联调
 
 ### commit 约定
 
-每件独立 commit、在分支上、**不 push**(用户要 push 时另开 bundle)。标题让人不查文档也看懂做了什么(可带代号前缀,但须人话描述)。信息如实描述取舍,不吹;偏差如实记进 commit message 与 `CHANGELOG.md`。
+每件独立 commit、在分支和独立工作树上。**默认继续交付 PR**：完成门禁、对应 E2E 和自检后，提交、push、开 PR 并补验证 Review；人明确说「只本地」时才停止在本地。不自动合入 PR、关闭 Issue 或正式发版本，除非人已明确授权该动作。标题让人不查文档也看懂做了什么(可带代号前缀,但须人话描述)。信息如实描述取舍,不吹;偏差如实记进 commit message 与 `CHANGELOG.md`。
 
 开 PR 另发一条 **review 当验证报告** —— 界面 / 行为改动一律要,别人不用自己起壳就能验收。写五样:验的什么 / 怎么验的(命令 + 深链)/ 每条判据**直接内嵌**一张真壳截图 / 门禁结果 / **没验的留白如实列**;别让人点链接跳出去。图推一条永不合入的 `shots/<分支名>` 分支,内嵌写 `![](https://github.com/<owner>/<repo>/raw/<commit SHA>/x.jpg)` —— 这条同源地址不会被 GitHub 图片代理改写,私有仓照样显示;**别写 `raw.githubusercontent`**(代理取不到私有仓,只会裂图),**也别用分支名**(带斜杠会有歧义,钉 SHA 还不会漂)。大改动的改前 / 改后对照仍照旧进 `docs/05-features/<id>/shots/`。
 
