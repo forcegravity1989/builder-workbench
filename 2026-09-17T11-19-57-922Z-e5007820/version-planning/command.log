@@ -1,0 +1,16 @@
+[1m[93mwarning[0m: failed to save last-use data
+This may prevent cargo from accurately tracking what is being used in its global cache. This information is used for automatically removing unused data in the cache.
+
+disk I/O error
+
+Caused by:
+  Error code 1034: disk I/O error
+[1m[93mwarning[0m: failed to auto-clean cache data
+
+disk I/O error
+
+Caused by:
+  Error code 1034: disk I/O error
+[1m[92m   Compiling[0m bw v0.0.0 (E:\zhuyu\code\builder-workbench\.bw\worktrees\knowledge-methods\crates\bw)
+[1m[92m    Finished[0m ]8;;https://doc.rust-lang.org/cargo/reference/profiles.html#default-profiles\`dev` profile [unoptimized + debuginfo]]8;;\ target(s) in 7.81s
+[1m[92m     Running[0m `target\debug\examples\planning_smoke.exe C:\Users\xiaoduo\AppData\Local\Temp\bw-planning-e2e-k5J2d2`

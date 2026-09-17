@@ -1,0 +1,36 @@
+[fails] fails
+[fails] failed: 进程退出码：7
+报告：C:\Users\xiaoduo\AppData\Local\Temp\bw-verify-tests-M7mF8i\.bw\release\out\verify\2026-09-17T11-19-58-780Z-6d552b32\report.html
+[missing] missing
+[missing] failed: spawn bw-nonexistent-test-command ENOENT
+报告：C:\Users\xiaoduo\AppData\Local\Temp\bw-verify-tests-HGtYl6\.bw\release\out\verify\2026-09-17T11-20-07-000Z-3a485065\report.html
+[timeout] timeout
+✔ nonzero exit cannot be hidden by a success-looking log; later steps do not run (1029.7233ms)
+[timeout] failed: 执行超时，已请求停止本步骤进程；清理结果另看回执
+报告：C:\Users\xiaoduo\AppData\Local\Temp\bw-verify-tests-HGtYl6\.bw\release\out\verify\2026-09-17T11-20-07-596Z-ceab58cf\report.html
+[mutates] mutates
+✔ missing executable and timeout both produce a finished failure report (9072.2152ms)
+[mutates] passed: 执行通过
+报告：C:\Users\xiaoduo\AppData\Local\Temp\bw-verify-tests-WbgJNy\.bw\release\out\verify\2026-09-17T11-20-08-784Z-1a1f9ca4\report.html
+[incomplete] incomplete
+✔ changed source invalidates an otherwise green run (900.873ms)
+[incomplete] failed: 实际用例与 expectedCases 不一致，不能把少跑当通过
+报告：C:\Users\xiaoduo\AppData\Local\Temp\bw-verify-tests-mEZno4\.bw\release\out\verify\2026-09-17T11-20-09-703Z-052f0f8c\report.html
+[pass] <script>bad()</script>
+✔ zero-exit E2E with missing expected case cannot pass (838.07ms)
+✔ evidence needs known status, exact cases, nonempty owned files, and no path escape (359.5888ms)
+✔ evidence roundtrip preserves CRLF and binary bytes even with Git text conversion enabled (739.9696ms)
+[pass] passed: 执行通过
+报告：C:\Users\xiaoduo\AppData\Local\Temp\bw-verify-tests-ARYYz5\.bw\release\out\verify\2026-09-17T11-20-11-598Z-54d4a735\report.html
+[pass] <script>bad()</script>
+[pass] passed: 执行通过
+报告：C:\Users\xiaoduo\AppData\Local\Temp\bw-verify-tests-ARYYz5\.bw\release\out\verify\2026-09-17T11-20-12-030Z-d5d233e6\report.html
+✔ successful runs remain separate, escaped reports have verifiable artifact hashes (1281.2062ms)
+ℹ tests 7
+ℹ suites 0
+ℹ pass 7
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 14380.5764
