@@ -1,31 +1,32 @@
 ## 交付验证：通过
 
-检查 13/13 通过 · 用例 4/4 通过 · 40.9 秒
+检查 14/14 通过 · 用例 4/4 通过 · 31.1 秒
 
-- 源码：aca6d46ef0ee48a3d60c23a26c1006ec94003990 · 干净检出 · 验证期间源码未变
+- 源码：620ee890e44cda3d15e69c675fff9308f99ebb4e · 干净检出 · 验证期间源码未变
 - 执行范围：Windows 门禁 + 已注册 E2E
 - 环境：win32 / x64 / Node v24.12.0
-- 本次执行：2026-09-17T02-20-54-463Z-8c7e20d5
+- 本次执行：2026-09-17T02-38-04-721Z-a84e5c0a
 
 | 检查 | 结果 | 秒 |
 |---|---|---:|
-| 验证交付入口的失败与证据判定 | 通过 | 6 |
-| Rust 格式 | 通过 | 1.9 |
-| 完整 Clippy（含桌面壳） | 通过 | 1.5 |
-| 构建本次源码的真实桌面壳 | 通过 | 1.1 |
-| 完整 workspace 测试 | 通过 | 4.2 |
+| 验证交付入口的失败与证据判定 | 通过 | 4.4 |
+| 确认 WebView2 运行时及版本 | 通过 | 0.3 |
+| Rust 格式 | 通过 | 0.9 |
+| 完整 Clippy（含桌面壳） | 通过 | 0.9 |
+| 构建本次源码的真实桌面壳 | 通过 | 0.9 |
+| 完整 workspace 测试 | 通过 | 2.8 |
 | 内核不依赖 UI | 通过 | 0.7 |
-| GitHub / CodeHub 相互隔离 | 通过 | 0.3 |
-| 屏之间不交叉导入 | 通过 | 1.1 |
-| 组件 Hook 规范 | 通过 | 2.1 |
-| 源码文件长度 | 通过 | 10.1 |
-| CodeGraph 不进入特性提交 | 通过 | 0.3 |
-| 按锁文件准备 Playwright | 通过 | 3.8 |
-| 真实桌面核心 E2E（固定脚本） | 通过 | 7.7 |
+| GitHub / CodeHub 相互隔离 | 通过 | 0.2 |
+| 屏之间不交叉导入 | 通过 | 1 |
+| 组件 Hook 规范 | 通过 | 1.7 |
+| 源码文件长度 | 通过 | 7.4 |
+| CodeGraph 不进入特性提交 | 通过 | 0.2 |
+| 按锁文件准备 Playwright | 通过 | 2.6 |
+| 真实桌面核心 E2E（固定脚本） | 通过 | 6.9 |
 
 | 用例 | 证据层次 | 结果 | 证据文件 |
 |---|---|---|---|
-| 真实桌面壳启动并渲染设置屏 (shell-launches) | 真实桌面 | 通过 | desktop-core/initial-shell.log, desktop-core/subject.json, desktop-core/shell-launches.png |
+| 真实桌面壳启动并渲染设置屏 (shell-launches) | 真实桌面 | 通过 | desktop-core/initial-shell.log, desktop-core/subject.json, desktop-core/initial-webview.json, desktop-core/shell-launches.png |
 | 点击保存工作区目录，并从 settings.toml 读回 (settings-persist) | 真实桌面 | 通过 | desktop-core/settings-readback.toml, desktop-core/settings-persist.png |
 | 通过真实按钮从设置进入项目墙和接入页 (onboard-navigation) | 真实桌面 | 通过 | desktop-core/onboard-navigation.png |
 | 杀进程重启后，界面与磁盘上的目录一致 (restart-persists) | 真实桌面 | 通过 | desktop-core/restart-readback.toml, desktop-core/restart-shell.log, desktop-core/restart-persists.png |

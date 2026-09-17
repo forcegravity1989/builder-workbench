@@ -1,16 +1,16 @@
 {
   "v": 1,
-  "runId": "2026-09-17T02-20-54-463Z-8c7e20d5",
+  "runId": "2026-09-17T02-38-04-721Z-a84e5c0a",
   "source": {
-    "commit": "aca6d46ef0ee48a3d60c23a26c1006ec94003990",
+    "commit": "620ee890e44cda3d15e69c675fff9308f99ebb4e",
     "dirty": false,
-    "fingerprint": "177678076d9601964ebbc320adc28b5d19e414f065bf1f8f492888c0f6052c5e"
+    "fingerprint": "b73a0ddf603e39290838cea1de8dcc697eb0ac169ec34552ecf11b8be554095a"
   },
   "artifacts": [
     {
       "path": "clippy/command.log",
       "bytes": 72,
-      "sha256": "9e04632aaa1d5494f83f1ca9ed5fe9ecc34217ba84acfc1694d48b10f02df59c"
+      "sha256": "372ab3dffba995289430234e2ada6eea07e74abc6ea8dc5bd9b2212b33aade1e"
     },
     {
       "path": "codegraph/command.log",
@@ -20,22 +20,27 @@
     {
       "path": "desktop-core/cleanup.json",
       "bytes": 153,
-      "sha256": "61512e50b24dfa8d0dfbb6b13553e2bb5eb4cbef1ddf23503f2170b7b9e77a07"
+      "sha256": "683ee3c9a3549b03f158e796bc6de22b466bb568621b0a77fc488fa59cbea588"
     },
     {
       "path": "desktop-core/command.log",
-      "bytes": 4167,
-      "sha256": "427a56d860d0e14378616327ec197e7d5d54edd73111d681c33748963a48b2f8"
+      "bytes": 4168,
+      "sha256": "fcc0b0f629c352a16c8f013a2563d8e1ee702b44c5c92ef09d95296f170f72cd"
     },
     {
       "path": "desktop-core/initial-shell.log",
-      "bytes": 2425,
-      "sha256": "f57b479b849186ba1e9dd3c08c5500fdb9482dc6dbb78afb9f6d95b3db4a2e11"
+      "bytes": 2426,
+      "sha256": "fd7aeb4ad5746fec23eb0f1e7b66baf5f88678d869f67af0e1eaf021c3b83d62"
+    },
+    {
+      "path": "desktop-core/initial-webview.json",
+      "bytes": 68,
+      "sha256": "3a0f7dbd679ee3c30008a6fb2d118d057a1b36f871b2376079e459051f17e02d"
     },
     {
       "path": "desktop-core/initial.json",
-      "bytes": 713,
-      "sha256": "2fa98be7bb8e1cf201e3d9cb5614e0c7de486d34b8819d50adf29725e9b5df12"
+      "bytes": 745,
+      "sha256": "d739ec322798597314e6a6252f5d41921d2f6adbdec75742922269393a56f160"
     },
     {
       "path": "desktop-core/onboard-navigation.png",
@@ -44,18 +49,23 @@
     },
     {
       "path": "desktop-core/restart-persists.png",
-      "bytes": 35166,
-      "sha256": "53b7caf8cc9e8a4d9ff28a999991f0d37004587a9cfa301e906fcf3d4fe7c8f2"
+      "bytes": 35247,
+      "sha256": "212f9e3c3097818fd8ba81b2f84eaa54b30a0d475d19d8b2cde0b1b8483c5808"
     },
     {
       "path": "desktop-core/restart-readback.toml",
       "bytes": 116,
-      "sha256": "330d936dc32c9418ba8d59538076cd93f19bc703c796966fcf8350f836bc6cbc"
+      "sha256": "d8ec5c697f945ddb1a7c97052c4bd3e11612512c671a150597ae4918c8d690f6"
     },
     {
       "path": "desktop-core/restart-shell.log",
       "bytes": 1742,
-      "sha256": "6272744564fb6d9dd007cbca7efa4305eacf294941b0b420e04f2576bd40dda1"
+      "sha256": "8501aacd0b5de6892942713ee55b74592cef7cd0c9e0d934b09c09315e7bd73b"
+    },
+    {
+      "path": "desktop-core/restart-webview.json",
+      "bytes": 68,
+      "sha256": "3a0f7dbd679ee3c30008a6fb2d118d057a1b36f871b2376079e459051f17e02d"
     },
     {
       "path": "desktop-core/restart.json",
@@ -64,33 +74,33 @@
     },
     {
       "path": "desktop-core/result.json",
-      "bytes": 1837,
-      "sha256": "37f0fe4b7a37838bc7d6748d0e18b0251bcdd62437b1dbd6b1811cb46b1ca600"
+      "bytes": 1901,
+      "sha256": "550b37212061f88f8a467fe867630b2d2aa8821253becc8d59ba5ae0e8e0cac3"
     },
     {
       "path": "desktop-core/settings-persist.png",
-      "bytes": 35460,
-      "sha256": "ce56b2364ec863b6ec6a740b4810be1a76b56675078598408480f88134ff76c0"
+      "bytes": 35542,
+      "sha256": "7bea8f1c9b0495a4e3576da5d264c45d69a487e57f1d216225636305b50dd4ac"
     },
     {
       "path": "desktop-core/settings-readback.toml",
       "bytes": 116,
-      "sha256": "330d936dc32c9418ba8d59538076cd93f19bc703c796966fcf8350f836bc6cbc"
+      "sha256": "d8ec5c697f945ddb1a7c97052c4bd3e11612512c671a150597ae4918c8d690f6"
     },
     {
       "path": "desktop-core/shell-launches.png",
-      "bytes": 35166,
-      "sha256": "53b7caf8cc9e8a4d9ff28a999991f0d37004587a9cfa301e906fcf3d4fe7c8f2"
+      "bytes": 35247,
+      "sha256": "212f9e3c3097818fd8ba81b2f84eaa54b30a0d475d19d8b2cde0b1b8483c5808"
     },
     {
       "path": "desktop-core/subject.json",
       "bytes": 251,
-      "sha256": "4e0c8a2f810775581f776c5cba917c6ba34da172d58e326533f3c48a9c06151e"
+      "sha256": "75f471cbf91bfa55facc6be5d0d454a6202c7aab6953ec2c2f14eab34cbc403b"
     },
     {
       "path": "e2e-deps/command.log",
       "bytes": 73,
-      "sha256": "1371e03551a375dae488aef30cb1967e87023c6abf36fbcefbf11bc2b4931c62"
+      "sha256": "5ad7260ba01aa9157b0b67fd4050636e4f6b1ac5af37a2b360069408c4c680ec"
     },
     {
       "path": "file-lines/command.log",
@@ -114,23 +124,28 @@
     },
     {
       "path": "report.html",
-      "bytes": 195673,
-      "sha256": "6663f08199d8a9d6b8ba08f18a5bc3b37c0588e7b70e96b3f9f955ae9ff090b5"
+      "bytes": 196259,
+      "sha256": "bbc7ca0806a336d7a123d7cceac3d5b0e0b055c0e20c66b1dfdddeadfc87aebb"
     },
     {
       "path": "result.json",
-      "bytes": 7390,
-      "sha256": "7a1c09cab03be4ed9abe1f5883a0584353edfdb0625233a710e2054d37bf1c0b"
+      "bytes": 7870,
+      "sha256": "5f57b49e22c336378c2a855e9b2027c6f8716eb317cfe86704e719c2187b9ffd"
     },
     {
       "path": "review.md",
-      "bytes": 2685,
-      "sha256": "6f6bd889574e864468be1ac0ca17b3d076c5196c4704f60a17acef89a610ff4a"
+      "bytes": 2773,
+      "sha256": "daa0bb6eacaabaec58539c7498c1e988bff9cdd05a7557fcb40ec663a2bc6b1a"
     },
     {
       "path": "runner-tests/command.log",
-      "bytes": 2105,
-      "sha256": "ebca3d8a8a4a8b35dc4a25f6bb3cf45f2df137f92e6b84fea650a9b6a8878c71"
+      "bytes": 2211,
+      "sha256": "24d9212e52cec858f5de32c8f869575017cd7eec5be12e6a6a28985215ecc8f3"
+    },
+    {
+      "path": "runtime/command.log",
+      "bytes": 156,
+      "sha256": "3c0b1dfd7ae8f6bc2462e2f80d24db2e53821b103bc35a7a40f2017dbc5c97b7"
     },
     {
       "path": "screen-hooks/command.log",
@@ -145,12 +160,12 @@
     {
       "path": "shell/command.log",
       "bytes": 72,
-      "sha256": "3dbebdfe57c58e155ac8a657a434094c1504a64a2cee500df8a6e14e483660d2"
+      "sha256": "825325d1dba4a0b13e2a90e26a106bbc56856947737b406c2d6709af4e2e1e69"
     },
     {
       "path": "test/command.log",
       "bytes": 11458,
-      "sha256": "df60a7035ba3153f3fa56c901118798e5309e7e86cc626902519439ac1300339"
+      "sha256": "e60c3a113850ce3a3daea2f37eb25dfc69ae462604f3468796b521d8b135e466"
     }
   ]
 }

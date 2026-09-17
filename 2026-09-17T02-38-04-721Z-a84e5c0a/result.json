@@ -1,13 +1,13 @@
 {
   "v": 1,
-  "runId": "2026-09-17T02-20-54-463Z-8c7e20d5",
+  "runId": "2026-09-17T02-38-04-721Z-a84e5c0a",
   "profile": "pr",
   "source": {
-    "commit": "aca6d46ef0ee48a3d60c23a26c1006ec94003990",
+    "commit": "620ee890e44cda3d15e69c675fff9308f99ebb4e",
     "dirty": false,
-    "fingerprint": "177678076d9601964ebbc320adc28b5d19e414f065bf1f8f492888c0f6052c5e"
+    "fingerprint": "b73a0ddf603e39290838cea1de8dcc697eb0ac169ec34552ecf11b8be554095a"
   },
-  "startedAt": "2026-09-17T02:20:54.468Z",
+  "startedAt": "2026-09-17T02:38:04.723Z",
   "environment": {
     "platform": "win32",
     "release": "10.0.22631",
@@ -28,7 +28,26 @@
         ".bw/release/verify/verify.test.mjs"
       ],
       "log": "runner-tests/command.log",
-      "seconds": 6,
+      "seconds": 4.4,
+      "exitCode": 0,
+      "message": "执行通过"
+    },
+    {
+      "id": "runtime",
+      "title": "确认 WebView2 运行时及版本",
+      "layer": "gate",
+      "status": "passed",
+      "cases": [],
+      "command": [
+        "powershell.exe",
+        "-NoProfile",
+        "-ExecutionPolicy",
+        "Bypass",
+        "-File",
+        ".bw/release/e2e/runtime.ps1"
+      ],
+      "log": "runtime/command.log",
+      "seconds": 0.3,
       "exitCode": 0,
       "message": "执行通过"
     },
@@ -45,7 +64,7 @@
         "--check"
       ],
       "log": "format/command.log",
-      "seconds": 1.9,
+      "seconds": 0.9,
       "exitCode": 0,
       "message": "执行通过"
     },
@@ -65,7 +84,7 @@
         "warnings"
       ],
       "log": "clippy/command.log",
-      "seconds": 1.5,
+      "seconds": 0.9,
       "exitCode": 0,
       "message": "执行通过"
     },
@@ -83,7 +102,7 @@
         "app-shell"
       ],
       "log": "shell/command.log",
-      "seconds": 1.1,
+      "seconds": 0.9,
       "exitCode": 0,
       "message": "执行通过"
     },
@@ -100,7 +119,7 @@
         "--workspace"
       ],
       "log": "test/command.log",
-      "seconds": 4.2,
+      "seconds": 2.8,
       "exitCode": 0,
       "message": "执行通过"
     },
@@ -130,7 +149,7 @@
         "scripts/guard-remote-isolation.sh"
       ],
       "log": "remote-isolation/command.log",
-      "seconds": 0.3,
+      "seconds": 0.2,
       "exitCode": 0,
       "message": "执行通过"
     },
@@ -145,7 +164,7 @@
         "scripts/guard-no-cross-screen-import.sh"
       ],
       "log": "screen-import/command.log",
-      "seconds": 1.1,
+      "seconds": 1,
       "exitCode": 0,
       "message": "执行通过"
     },
@@ -160,7 +179,7 @@
         "scripts/guard-screen-hooks.sh"
       ],
       "log": "screen-hooks/command.log",
-      "seconds": 2.1,
+      "seconds": 1.7,
       "exitCode": 0,
       "message": "执行通过"
     },
@@ -175,7 +194,7 @@
         "scripts/guard-file-lines.sh"
       ],
       "log": "file-lines/command.log",
-      "seconds": 10.1,
+      "seconds": 7.4,
       "exitCode": 0,
       "message": "执行通过"
     },
@@ -190,7 +209,7 @@
         "scripts/guard-codegraph-clean.sh"
       ],
       "log": "codegraph/command.log",
-      "seconds": 0.3,
+      "seconds": 0.2,
       "exitCode": 0,
       "message": "执行通过"
     },
@@ -209,7 +228,7 @@
         ".bw/release/e2e/dependencies.ps1"
       ],
       "log": "e2e-deps/command.log",
-      "seconds": 3.8,
+      "seconds": 2.6,
       "exitCode": 0,
       "message": "执行通过"
     },
@@ -226,6 +245,7 @@
           "evidence": [
             "initial-shell.log",
             "subject.json",
+            "initial-webview.json",
             "shell-launches.png"
           ]
         },
@@ -267,10 +287,10 @@
         "-Exe",
         "E:/zhuyu/code/builder-workbench/.bw/worktrees/ci-release-design/target/debug/bw-dev.exe",
         "-OutDir",
-        "E:\\zhuyu\\code\\builder-workbench\\.bw\\worktrees\\ci-release-design\\.bw\\release\\out\\verify\\2026-09-17T02-20-54-463Z-8c7e20d5\\desktop-core"
+        "E:\\zhuyu\\code\\builder-workbench\\.bw\\worktrees\\ci-release-design\\.bw\\release\\out\\verify\\2026-09-17T02-38-04-721Z-a84e5c0a\\desktop-core"
       ],
       "log": "desktop-core/command.log",
-      "seconds": 7.7,
+      "seconds": 6.9,
       "exitCode": 0,
       "message": "执行通过"
     }
@@ -280,11 +300,11 @@
     "源码验证不能证明安装包或正式发布；远端写入与 Orca 会话仅以明确列出的专项用例为准。核心桌面用例由固定脚本执行，不调用模型。"
   ],
   "sourceAfter": {
-    "commit": "aca6d46ef0ee48a3d60c23a26c1006ec94003990",
+    "commit": "620ee890e44cda3d15e69c675fff9308f99ebb4e",
     "dirty": false,
-    "fingerprint": "177678076d9601964ebbc320adc28b5d19e414f065bf1f8f492888c0f6052c5e"
+    "fingerprint": "b73a0ddf603e39290838cea1de8dcc697eb0ac169ec34552ecf11b8be554095a"
   },
   "sourceUnchanged": true,
-  "finishedAt": "2026-09-17T02:21:35.354Z",
-  "seconds": 40.9
+  "finishedAt": "2026-09-17T02:38:35.841Z",
+  "seconds": 31.1
 }

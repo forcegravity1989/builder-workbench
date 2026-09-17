@@ -8,6 +8,7 @@
       "evidence": [
         "initial-shell.log",
         "subject.json",
+        "initial-webview.json",
         "shell-launches.png"
       ]
     },
