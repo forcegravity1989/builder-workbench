@@ -7,7 +7,7 @@ const out=path.resolve(process.argv[process.argv.indexOf('--out')+1]);
 fs.mkdirSync(out,{recursive:true});
 const root=process.cwd(), py=process.env.BW_PLANNING_PYTHON||'python';
 const run=(exe,args)=>execFileSync(exe,args,{cwd:root,encoding:'utf8',windowsHide:true,timeout:180000,maxBuffer:4*1024*1024});
-const cases=[],ids=['planning-assets','planning-autosave','planning-model-readback','planning-version-isolation','planning-conflict'];
+const cases=[],ids=['planning-assets','planning-autosave','planning-model-readback','planning-version-isolation','planning-conflict','planning-bad-history'];
 const fixture=fs.mkdtempSync(path.join(os.tmpdir(),'bw-planning-e2e-'));
 let browser,pack,workspace;
 const json=file=>JSON.parse(fs.readFileSync(file,'utf8').replace(/^\uFEFF/,''));
@@ -47,6 +47,17 @@ try{
   await page.locator('#version-select').selectOption('v0.4');await expect(goal).toHaveText('模型写回后的目标');
   fs.writeFileSync(path.join(out,'versions.json'),JSON.stringify({v04:json(file('v0.4')),v05:json(file('v0.5'))},null,2));
   await page.screenshot({path:path.join(out,'versions.png')});record(ids[3],'切换版本只读对应 JSON，不串版',['versions.json','versions.png']);
+  // An unrelated corrupt archive must not turn a committed save into an apparent failure.
+  const broken=path.join(workspace,'.bw/planning/v0.1/data.json');fs.mkdirSync(path.dirname(broken),{recursive:true});fs.writeFileSync(broken,'{broken');
+  await page.reload();await expect(goal).toHaveText('模型写回后的目标');
+  await expect(page.locator('#version-select option[value="v0.1"]')).toHaveJSProperty('disabled',true);
+  for(const title of ['坏历史存在时首次保存','坏历史存在时再次保存']){
+    await goal.fill(title);await page.locator('.pane-1 h2').first().click();
+    await expect.poll(()=>json(file('v0.4')).results.goals[0].title).toBe(title);
+    await expect(page.locator('#save-status')).not.toContainText('未保存');
+  }
+  await page.screenshot({path:path.join(out,'bad-history.png')});fs.copyFileSync(file('v0.4'),path.join(out,'bad-history.json'));
+  record(ids[5],'坏历史版本明确标记，当前版本连续保存与修订号仍正常',['bad-history.png','bad-history.json']);
   // Focus prevents background reload; another writer changes the same revision.
   await goal.focus();const latest=cli('v0.4','read');latest.data.results.goals[0].title='另一写入方的新内容';fs.writeFileSync(candidate,JSON.stringify(latest.data));cli('v0.4','update','--file',candidate,'--if-match',latest.etag);
   await goal.fill('过期页面的未保存修改');await expect(page.locator('#save-status')).toContainText('未保存',{timeout:10000});

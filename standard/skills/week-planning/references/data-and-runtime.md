@@ -117,3 +117,5 @@ results.sessions 先只显示 title；记录 id、tool、workspace、source 等�
 submit-confirmed 要求已有用户最终确认和真实任务 Issue；不会自己制造确认。现场记录和用户手填纪要可以归档，有链接但未消化的纪要或 stale 纪要不能提交。自动纪要仍校验来源修订。BW 使用 `.bw/release/verify/verify.mjs --profile pr`，其他项目由会话根据项目 AGENTS 把参数数组填入 .local/settings.json 的 validation_argv；缺配置明确报错。
 
 提交范围为当前版本目录、引用来源和空数据模板，不把其他版本草稿一起暂存。共用 HTML 是可重建展示缓存，会议/最终快照中的 HTML 才是本次归档的固定内容。创建计划后，系统入口 Issue 保持原识别标题并追加本版 bw:plan，任务 Issue 按规范打标签；目标正文不再双写评论。
+
+损坏或不匹配的其他版本在选择器标明“无法读取”，保留原文件并由会话修复，不影响当前有效版本。JSON 写入为保存结果，离线 HTML 仅为可重建缓存；缓存刷新失败返回已保存修订并给出警告，不能让下一次保存陷入旧修订冲突。

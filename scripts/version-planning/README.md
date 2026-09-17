@@ -12,4 +12,4 @@ python -B scripts/version-planning/verify.py
 python -B standard/skills/week-planning/scripts/planning.py --workspace <工作树> --version <已有版本> refresh
 ```
 
-验证需要 Python lxml 和 Node，包含最终 HTML 脚本完整性、语法和文件协议检查。报告写入 `docs/05-features/version-planning/verification-report.json`。服务使用原 planning.py 的 start/stop/status 管理；实际浏览器手填保存由用户验收；这些检查不替代浏览器实测。
+验证需要 Python lxml 和 Node，包含最终 HTML 脚本完整性、语法和文件协议检查。报告写入 `.bw/release/out/planning-checks/report.json`。服务使用原 planning.py 的 start/stop/status 管理；实际浏览器手填保存由用户验收；这些检查不替代浏览器实测。

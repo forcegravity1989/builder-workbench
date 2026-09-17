@@ -45,10 +45,11 @@ class PlanningFiles {
   }
   adopt(result) {
     const data=PlanningFiles.parse(JSON.stringify(result.data),this.version);
-    this.etag=result.etag;return data;
+    this.etag=result.etag;this.warning=result.warning||'';return data;
   }
   async open(record) {
     if(!this.service){this.version=record.version;return structuredClone(record.data);}
+    if(record.unavailable)throw new Error(record.error);
     const result=await this.request('/api/data?version='+encodeURIComponent(record.version));
     PlanningFiles.parse(JSON.stringify(result.data),record.version);
     this.version=record.version;return this.adopt(result);

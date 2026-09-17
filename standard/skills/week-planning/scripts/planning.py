@@ -129,7 +129,7 @@ class Store:
         self.root=self.ws/'.bw/planning';self.dir=self.root/version
         self.local=self.root/'.local'
         self.file=self.dir/'data.json';self.mutex=threading.RLock()
-        self.version=version
+        self.version=version;self.cache_warning=""
 
     @contextlib.contextmanager
     def lock(self):
@@ -158,6 +158,7 @@ class Store:
 
     def read(self):
         raw=self.file.read_bytes();data=json.loads(raw);validate(data)
+        if data["version"]!=self.version:raise ValueError("版本目录与数据不一致："+self.version)
         return data,digest(raw)
 
     def local_read(self,name,default=None):
@@ -175,9 +176,10 @@ class Store:
         validate(data)
         if data['version']!=self.version: raise ValueError('不能通过保存改写当前版本路径')
         data['updated_at']=now()
-        atomic(self.file,dump(data))
-        self.refresh()
-        return self.read()
+        raw=dump(data)
+        atomic(self.file,raw)
+        self.refresh_cache()
+        return data,digest(raw)
 
     def render(self,data=None,include_versions=False):
         if data is None: data=self.read()[0]
@@ -189,13 +191,22 @@ class Store:
         versions=[]
         if include_versions:
             for record in self.versions():
-                value=Store(self.ws,record['version']).read()[0]
+                if record.get('unavailable'):continue
+                try:value=Store(self.ws,record['version']).read()[0]
+                except (OSError,ValueError,KeyError,TypeError):continue
                 versions.append({'version':record['version'],'data':value})
         contents=json.dumps(versions,ensure_ascii=False).replace('<','\\u003c')
         output,count=re.subn(r'(<script id="plan-versions" type="application/json">)[\s\S]*?(</script>)',
             lambda m:m[1]+contents+m[2],output)
         if count!=1: raise ValueError('模板必须有唯一的版本展示槽')
         return output
+
+    def refresh_cache(self):
+        self.cache_warning=''
+        try:return self.refresh()
+        except (OSError,ValueError,KeyError,TypeError) as error:
+            self.cache_warning='JSON 已保存；离线 HTML 未刷新：'+str(error)
+            return None
 
     def refresh(self):
         target=self.root/'template/version-plan.html'
@@ -212,6 +223,7 @@ class Store:
             self.writable()
             if target.dir.exists(): raise ValueError('目标版本已存在，未覆盖')
             for record in self.versions():
+                if record.get('unavailable'):continue
                 previous=Store(self.ws,record['version']).read()[0].get('previous_version')
                 if previous and previous.get('version')=='default': raise ValueError('草稿已被其他版本引用，先核对引用')
             data,_=self.read();data['version']=name
@@ -223,7 +235,7 @@ class Store:
             except Exception:
                 target.dir.rename(self.dir)
                 raise
-            target.refresh()
+            target.refresh_cache()
         return target
 
     def versions(self):
@@ -231,10 +243,13 @@ class Store:
         for directory in sorted(self.root.iterdir()):
             file=directory/'data.json'
             if not file.is_file() or not re.fullmatch(r'[A-Za-z0-9][A-Za-z0-9._-]{0,63}',directory.name): continue
-            data=json.loads(file.read_text(encoding='utf-8'));validate(data)
-            if data['version']!=directory.name: raise ValueError('版本目录与数据不一致：'+directory.name)
-            records.append({'version':data['version'],'current':data['version']==self.version,
-                'kind':data.get('provenance',{}).get('kind','unknown')})
+            try:
+                data=Store(self.ws,directory.name).read()[0]
+                records.append({'version':data['version'],'current':data['version']==self.version,
+                    'kind':data.get('provenance',{}).get('kind','unknown')})
+            except (OSError,ValueError,KeyError,TypeError) as error:
+                records.append({'version':directory.name,'unavailable':True,
+                    'error':'.bw/planning/'+directory.name+'/data.json：'+str(error)})
         return records
 
     def patch(self,changes):
@@ -460,7 +475,7 @@ def init(workspace,version='default'):
     if not (store.local/'settings.json').exists():
         store.local_write('settings',{'transcript_argv':None,'minutes_spec':None})
     store.read()
-    store.refresh()
+    store.refresh_cache()
     return store
 
 
@@ -523,7 +538,7 @@ class PlanningHandler(BaseHTTPRequestHandler):
             kind={'.png':'image/png','.jpg':'image/jpeg','.jpeg':'image/jpeg','.webp':'image/webp','.pdf':'application/pdf','.md':'text/plain; charset=utf-8','.txt':'text/plain; charset=utf-8'}.get(target.suffix.lower(),'application/octet-stream')
             self.reply(200,target.read_bytes(),kind);return
         if parsed.path=='/api/data' and self.command=='GET':
-            data,etag=store.read();self.reply(200,{'data':data,'etag':etag});return
+            data,etag=store.read();self.reply(200,{'data':data,'etag':etag,'warning':store.cache_warning});return
         if self.command not in ['PUT','POST']:
             self.reply(405,{'error':'不支持此操作'});return
         if self.headers.get_content_type()!='application/json':
@@ -539,7 +554,7 @@ class PlanningHandler(BaseHTTPRequestHandler):
                 data,etag=store.confirm(body['stage'],body['etag'])
             else:
                 self.reply(405,{'error':'不支持此操作'});return
-        self.reply(200,{'data':data,'etag':etag})
+        self.reply(200,{'data':data,'etag':etag,'warning':store.cache_warning})
     def handle_request(self):
         try:self.route()
         except Conflict as error:self.reply(409,{'error':str(error)})
@@ -579,7 +594,7 @@ def serve(store):
             (store.local/'server.json').unlink(missing_ok=True)
 
 def start_server(store):
-    store.read();ensure_ignores(store);store.refresh()
+    store.read();ensure_ignores(store);store.refresh_cache()
     # Serialize launches in this workspace, without holding the data-file lock.
     launch_store=Store(store.ws,store.version);launch_store.local=store.local/'service-launch'
     with launch_store.lock():
@@ -674,6 +689,7 @@ def main():
     elif args.cmd=='fetch-meeting':store.meeting();result=store.fetch_meeting()
     elif args.cmd=='preflight':result=store.preflight()
     elif args.cmd=='submit-confirmed':store.prepare_submission();result=store.publish()
+    if store.cache_warning:result['warning']=store.cache_warning
     print(json.dumps(result,ensure_ascii=False,indent=2))
 
 if __name__=='__main__':

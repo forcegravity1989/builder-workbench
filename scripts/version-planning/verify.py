@@ -1,4 +1,5 @@
 """Filesystem and template checks. Native browser file access is not asserted."""
+from unittest.mock import patch
 import copy
 import json
 from pathlib import Path
@@ -229,6 +230,17 @@ const Client=require(modulePath);
         assert request('/api/data?version=v0.4')['data']['results']['goals'][0]['title']=='模型修改后页面读取'
         passed('Actual page HTTP client writes reach JSON; model edit is read back; stale save rejected; versions isolated; process reused, stopped and restarted without data loss; token and origin enforced')
     finally:planning.stop_server(store)
+
+with tempfile.TemporaryDirectory(prefix='bw-cache-save-') as directory:
+    cache_store=planning.init(directory,'v0.4')
+    current,etag=cache_store.read();current['summary']['risks']='缓存失败也应保存的数据'
+    with patch.object(planning.Store,'refresh',side_effect=OSError('cache unavailable')):
+        saved,next_etag=cache_store.replace(current,etag)
+        assert next_etag==cache_store.read()[1] and cache_store.cache_warning
+    saved['summary']['risks']='后续保存仍可继续'
+    cache_store.replace(saved,next_etag)
+    assert cache_store.read()[0]['summary']['risks']=='后续保存仍可继续'
+    passed('Offline cache failure does not turn a committed JSON save into an error; returned revision permits the next save')
 
 (ROOT/'.bw/release/out/planning-checks').mkdir(parents=True,exist_ok=True)
 (ROOT/'.bw/release/out/planning-checks/report.json').write_text(json.dumps(report,ensure_ascii=False,indent=2)+'\n',encoding='utf-8')

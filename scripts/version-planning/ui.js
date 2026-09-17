@@ -47,7 +47,7 @@ async function flush(){
  const savedRevision=revision,value=clone(data);
  saving=(async()=>{try{
    const persisted=await files.save(value);records.find(record=>record.version===value.version).data=clone(persisted);if(revision===savedRevision){data=persisted;dirty=false;}
-   $('download-data').hidden=true;message('');return true;
+   $('download-data').hidden=true;message(files.warning||'');return true;
  }catch(error){$('download-data').hidden=false;message('未保存：'+error.message,true);return false;}})();
  const ok=await saving;saving=null;storageControls();return ok&&dirty?flush():ok;
 }
@@ -211,7 +211,7 @@ async function boot(){
      data=await files.open(record);record.data=clone(data);
    }catch(error){readonly=true;render();message(error.message,true);return;}
  }
- $('version-select').replaceChildren(...records.map(record=>{const option=document.createElement('option');option.value=record.version;option.textContent=record.version;return option;}));
+ $('version-select').replaceChildren(...records.map(record=>{const option=document.createElement('option');option.value=record.version;option.textContent=record.version+(record.unavailable?" · 无法读取":"");option.disabled=!!record.unavailable;option.title=record.error||"";return option;}));
  $('version-select').value=data.version;
  render();go(snapshot?2:(data.plan.goals.length&&!data.results.goals.length&&!data.previous_version?3:1));
  message('');
@@ -221,7 +221,7 @@ async function boot(){
      const latest=await files.changed();
      if(dirty||saving||switching||editing())return;
      if(latest){data=files.adopt(latest);records.find(r=>r.version===files.version).data=clone(data);render();}
-     message('');
+     message(files.warning||'');
    }catch(error){message(error.message,true);}
  },2000);}
 }
