@@ -1,5 +1,7 @@
 param([Parameter(Mandatory=$true)][string]$Exe, [Parameter(Mandatory=$true)][string]$OutDir)
 $ErrorActionPreference = 'Stop'
+$DesktopMode = if ($env:BW_E2E_DESKTOP) { $env:BW_E2E_DESKTOP } else { 'isolated' }
+if ($DesktopMode -notin @('isolated','current')) { throw 'BW_E2E_DESKTOP must be isolated or current (dedicated machine only)' }
 $Utf8 = New-Object Text.UTF8Encoding($false)
 $Exe = [IO.Path]::GetFullPath($Exe)
 $OutDir = [IO.Path]::GetFullPath($OutDir)
@@ -75,7 +77,7 @@ function Start-Shell($Phase) {
     try {
         $Si = New-Object BwVerifyDesktop+STARTUPINFO
         $Si.cb = [Runtime.InteropServices.Marshal]::SizeOf($Si)
-        $Si.lpDesktop = "bw-verify-$RunId"
+        if ($DesktopMode -eq 'isolated') { $Si.lpDesktop = "bw-verify-$RunId" }
         $Pi = New-Object BwVerifyDesktop+PROCESS_INFORMATION
         $Ok = [BwVerifyDesktop]::CreateProcess($Exe, ('"' + $Exe + '"'), [IntPtr]::Zero, [IntPtr]::Zero, $false, 0x400, $EnvPtr, (Split-Path $Exe), [ref]$Si, [ref]$Pi)
         if (-not $Ok) { throw ('CreateProcess failed: ' + [Runtime.InteropServices.Marshal]::GetLastWin32Error()) }
@@ -109,9 +111,11 @@ try {
     $ExeStream = [IO.File]::OpenRead($Exe)
     try { $ExeHash = [BitConverter]::ToString($HashAlgorithm.ComputeHash($ExeStream)).Replace('-', '').ToLower() }
     finally { $ExeStream.Dispose(); $HashAlgorithm.Dispose() }
-    Save-Json 'subject.json' ([ordered]@{ exe = $Exe; sha256 = $ExeHash; runId = $RunId })
-    $DesktopHandle = [BwVerifyDesktop]::CreateDesktop("bw-verify-$RunId", [IntPtr]::Zero, [IntPtr]::Zero, 0, 0x10000000, [IntPtr]::Zero)
-    if ($DesktopHandle -eq [IntPtr]::Zero) { throw 'Could not create isolated Windows desktop' }
+    Save-Json 'subject.json' ([ordered]@{ exe = $Exe; sha256 = $ExeHash; runId = $RunId; desktop = $DesktopMode })
+    if ($DesktopMode -eq 'isolated') {
+        $DesktopHandle = [BwVerifyDesktop]::CreateDesktop("bw-verify-$RunId", [IntPtr]::Zero, [IntPtr]::Zero, 0, 0x10000000, [IntPtr]::Zero)
+        if ($DesktopHandle -eq [IntPtr]::Zero) { throw 'Could not create isolated Windows desktop' }
+    }
     foreach ($Phase in @('initial','restart')) {
         $Port = Start-Shell $Phase
         & node (Join-Path $PSScriptRoot 'core.mjs') --port "$Port" --out $OutDir --data $DataRoot --workspace $Workspace --phase $Phase
@@ -134,8 +138,16 @@ finally {
             $AllowedPrefix = $TempRoot.TrimEnd('\') + '\bw-verify-'
             if (-not $Resolved.StartsWith($AllowedPrefix, [StringComparison]::OrdinalIgnoreCase)) { throw 'Cleanup path outside owned temporary root' }
             if ([IO.File]::ReadAllText((Join-Path $Resolved '.owner')) -ne $RunId) { throw 'Cleanup ownership marker mismatch' }
-            Remove-Item -LiteralPath $Resolved -Recurse -Force
-            if (Test-Path -LiteralPath $Resolved) { throw 'Temporary directory still exists' }
+            $CleanupDeadline = (Get-Date).AddSeconds(15)
+            while (Test-Path -LiteralPath $Resolved) {
+                try { Remove-Item -LiteralPath $Resolved -Recurse -Force }
+                catch {
+                    # WebView child handles can outlive taskkill briefly. Retry the owned path only.
+                    if ((Get-Date) -ge $CleanupDeadline) { throw }
+                    Start-Sleep -Milliseconds 200
+                }
+                if ((Get-Date) -ge $CleanupDeadline -and (Test-Path -LiteralPath $Resolved)) { throw 'Temporary directory still exists after cleanup deadline' }
+            }
         }
         $Cleaned = $true
     } catch { $Failure = "$Failure Cleanup: $($_.Exception.Message)" }

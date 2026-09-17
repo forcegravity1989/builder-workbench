@@ -22,9 +22,15 @@ const row = () => page.locator('.set-row').filter({ hasText: '工作区根目录
 const readSettings = () => fs.readFileSync(settings, 'utf8');
 // Read the single path value written by Rust's TOML serializer (basic or literal string).
 const savedWorkspace = () => {
-  const value = readSettings().match(/^workspaces_root\s*=\s*(.+)$/m)?.[1].trim();
-  if (value?.startsWith("'") && value.endsWith("'")) return value.slice(1, -1);
-  return value ? JSON.parse(value) : undefined;
+  try {
+    const value = readSettings().match(/^workspaces_root\s*=\s*(.+)$/m)?.[1].trim();
+    if (value?.startsWith("'") && value.endsWith("'")) return value.slice(1, -1);
+    return value ? JSON.parse(value) : undefined;
+  } catch (error) {
+    // Polling must keep waiting while the first async write has not created/completed the file.
+    if (error.code === 'ENOENT' || error instanceof SyntaxError) return undefined;
+    throw error;
+  }
 };
 
 async function run(id, title, action) {
@@ -60,6 +66,7 @@ try {
     await run('shell-launches', '真实桌面壳启动并渲染设置屏', async item => {
       await expect(page.getByRole('heading', { name: '设置', exact: true })).toBeVisible();
       await expect.poll(() => fs.readFileSync(path.join(out, 'initial-shell.log'), 'utf8'), { timeout: 30000 }).toContain('[BW_VIEW] settings');
+      await expect.poll(() => fs.readFileSync(path.join(out, 'initial-shell.log'), 'utf8'), { timeout: 30000 }).toContain('[BW_BOOT]');
       item.evidence.push('initial-shell.log', 'subject.json', 'initial-webview.json');
     });
     await run('settings-persist', '点击保存工作区目录，并从 settings.toml 读回', async item => {

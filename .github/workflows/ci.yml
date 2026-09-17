@@ -50,6 +50,9 @@ jobs:
     name: Windows desktop verification
     runs-on: windows-2022
     timeout-minutes: 60
+    env:
+      # This VM belongs to one job. Local runs still create an isolated desktop.
+      BW_E2E_DESKTOP: current
     steps:
       - uses: actions/checkout@v4
         with:

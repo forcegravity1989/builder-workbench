@@ -174,6 +174,8 @@ export async function runVerification({ root, profile, steps = readPlan(root, pr
       step.message = outcome.error || (outcome.passed ? '执行通过' : `进程退出码：${outcome.exitCode}`);
       if (spec.expectedCases) {
         step.cases = readCases(dir, spec.expectedCases);
+        const detail = json(path.join(dir, 'result.json')).error;
+        if (!outcome.passed && typeof detail === 'string' && detail) step.message = detail;
         if (step.cases.some(x => x.status !== 'passed')) {
           step.status = 'failed';
           step.message = '必跑用例存在失败、未跑或不适用';

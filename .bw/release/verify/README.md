@@ -34,13 +34,13 @@ node .bw/release/verify/verify.mjs --profile pr
 
 状态只能是 `passed` / `failed` / `not_run` / `not_applicable`。本批注册的是必跑用例，后三种都阻止 PR 验证通过；减少用例、悄悄跳过和仅打印成功都无效。证据必须是本步骤目录内非空的真实文件，不接受越界路径和文件链接。测试代码负责判据真实性，执行器检查结果完整性；不得把模拟接口的证据标作真实桌面或远端。
 
-现有核心套件固定完成：真壳启动 → 修改工作区并读回文件 → 点击进入接入页 → 停止自己的壳、重启并核对界面及磁盘。Playwright 通过 CDP 连接真实 WebView2；每次新建隔离 Windows 桌面、数据/工作区/WebView 目录，只清理本次拥有的进程和目录。用条件读回等待，不用固定睡眠猜“写完了”。没有真实远端造数，不污染 WB 仓，也尚不能代表独立 E2E 仓的远端场景已建成。
+现有核心套件固定完成：真壳启动 → 修改工作区并读回文件 → 点击进入接入页 → 停止自己的壳、重启并核对界面及磁盘。Playwright 通过 CDP 连接真实 WebView2；每次隔离数据/工作区/WebView 目录，只清理本次拥有的进程和目录。本地默认额外创建独立 Windows 桌面，避免干扰使用者；独占的临时 CI 虚拟机显式设置 `BW_E2E_DESKTOP=current`，复用该机器已有桌面，绕开旧 WebView2 在自建桌面上的启动问题。两种环境跑同一套真实控件和读回判据，均不用系统键鼠。用条件读回等待，不用固定睡眠猜“写完了”。没有真实远端造数，不污染 WB 仓，也尚不能代表独立 E2E 仓的远端场景已建成。
 
 ## GitHub 上去哪看
 
 PR 创建和更新时运行 Linux、Windows 两项检查；合入 main 后及手动触发也运行。分支 push 不另跑同一套 CI。PR **Checks → 对应任务 → Summary** 始终是结果摘要入口；**Actions run → Artifacts → verification-windows/linux** 下载完整证据包（14 天）。这是固定脚本写入，不依赖模型评论。
 
-独立代码 Review 仍沿用仓库已有机制。默认交付 PR，用户说「只本地」时才停在本地；合入、关闭 Issue 和正式发布仍须已有明确授权。开发会话开好 PR 后，用下面的 GitHub 适配命令发布独立验证 Review（需要已登录的 `gh`、Git push 权限）：
+独立代码 Review 使用已有 Claude GitHub App，审当前 SHA，程序读回带该 SHA 标记的结论并保存回执；旧评论不代表新提交已审。检查通过只代表审查结论已交付，是否有待修问题仍须阅读结论。默认交付 PR，用户说「只本地」时才停在本地；合入、关闭 Issue 和正式发布仍须已有明确授权。开发会话开好 PR 后，用下面的 GitHub 适配命令发布独立验证 Review（需要已登录的 `gh`、Git push 权限）：
 
 ```powershell
 node .bw/release/verify/publish-review.mjs --pr <PR号> --run <本次结果目录>
@@ -57,4 +57,5 @@ node .bw/release/verify/publish-review.mjs --pr <PR号> --run <本次结果目�
 ## 关键技术来源
 
 - [GitHub 托管运行机](https://docs.github.com/en/actions/reference/runners/github-hosted-runners)：每个 Windows job 使用 GitHub 提供的新虚拟机；它不是连接开发者的电脑。环境差异与首次构建耗时以实际报告为准。
+- [微软 WebView2 分发说明](https://learn.microsoft.com/en-us/microsoft-edge/webview2/concepts/distribution)：检查 Evergreen 运行时注册信息；CI 缺失时安装官方运行时，本地验证只预检。实际 WebView2 版本随证据记录。
 - [Playwright WebView2 官方说明](https://github.com/microsoft/playwright/blob/main/docs/src/webview2.md)：用 CDP 附着 WebView2，已有用例运行不调用模型；新增判据和失败诊断才需要模型参与。
