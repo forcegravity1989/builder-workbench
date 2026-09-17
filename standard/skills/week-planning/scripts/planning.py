@@ -162,7 +162,8 @@ class Store:
 
     def local_read(self,name,default=None):
         path=self.local/(name+'.json')
-        return json.loads(path.read_text(encoding='utf-8')) if path.exists() else default
+        try:return json.loads(path.read_text(encoding='utf-8'))
+        except FileNotFoundError:return default
 
     def local_write(self,name,value): atomic(self.local/(name+'.json'),dump(value))
 
