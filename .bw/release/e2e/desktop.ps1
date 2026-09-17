@@ -91,7 +91,14 @@ function Start-Shell($Phase) {
             if ($Version.webSocketDebuggerUrl) { return $Port }
         } catch { Start-Sleep -Milliseconds 200 }
     }
-    throw 'CDP readiness deadline exceeded'
+    $AllProcesses = @(Get-CimInstance Win32_Process)
+    $TreeIds = @($script:OwnedPid)
+    do {
+        $Children = @($AllProcesses | Where-Object { $_.ParentProcessId -in $TreeIds -and $_.ProcessId -notin $TreeIds })
+        $TreeIds += @($Children | ForEach-Object { $_.ProcessId })
+    } while ($Children.Count -gt 0)
+    Save-Json 'startup-processes.json' @($AllProcesses | Where-Object { $_.ProcessId -in $TreeIds } | Select-Object ProcessId,ParentProcessId,Name,ExecutablePath,CommandLine)
+    throw 'CDP readiness deadline exceeded; inspect startup-processes.json and shell logs'
 }
 
 try {

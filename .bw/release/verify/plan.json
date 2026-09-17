@@ -2,9 +2,10 @@
   "v": 1,
   "profiles": {
     "headless": ["runner-tests", "format", "clippy-headless", "test-headless", "kernel-free", "remote-isolation", "screen-import", "screen-hooks", "file-lines", "codegraph"],
-    "pr": ["runner-tests", "format", "clippy", "shell", "test", "kernel-free", "remote-isolation", "screen-import", "screen-hooks", "file-lines", "codegraph", "e2e-deps"]
+    "pr": ["runner-tests", "runtime", "format", "clippy", "shell", "test", "kernel-free", "remote-isolation", "screen-import", "screen-hooks", "file-lines", "codegraph", "e2e-deps"]
   },
   "steps": [
+    {"id":"runtime","title":"确认 WebView2 运行时及版本","command":["powershell.exe","-NoProfile","-ExecutionPolicy","Bypass","-File",".bw/release/e2e/runtime.ps1"],"timeoutSeconds":30},
     {"id":"runner-tests","title":"验证交付入口的失败与证据判定","command":["{node}","--test",".bw/release/verify/verify.test.mjs"],"timeoutSeconds":120},
     {"id":"format","title":"Rust 格式","command":["cargo","fmt","--all","--check"],"timeoutSeconds":120},
     {"id":"clippy-headless","title":"内核与底座 Clippy","command":["cargo","clippy","--locked","--workspace","--exclude","app-shell","--","-D","warnings"],"timeoutSeconds":1800},

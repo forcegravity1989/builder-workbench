@@ -51,6 +51,7 @@ async function run(id, title, action) {
 
 try {
   browser = await chromium.connectOverCDP(`http://127.0.0.1:${arg('port')}`, { timeout: 30000 });
+  fs.writeFileSync(path.join(out, `${phase}-webview.json`), JSON.stringify({ browserVersion: browser.version(), nodeVersion: process.version }, null, 2));
   const context = browser.contexts()[0];
   if (!context) throw new Error('No real WebView2 context');
   page = context.pages()[0] || await context.waitForEvent('page', { timeout: 30000 });
@@ -59,7 +60,7 @@ try {
     await run('shell-launches', '真实桌面壳启动并渲染设置屏', async item => {
       await expect(page.getByRole('heading', { name: '设置', exact: true })).toBeVisible();
       await expect.poll(() => fs.readFileSync(path.join(out, 'initial-shell.log'), 'utf8'), { timeout: 30000 }).toContain('[BW_VIEW] settings');
-      item.evidence.push('initial-shell.log', 'subject.json');
+      item.evidence.push('initial-shell.log', 'subject.json', 'initial-webview.json');
     });
     await run('settings-persist', '点击保存工作区目录，并从 settings.toml 读回', async item => {
       await row().getByRole('textbox').fill(workspace);

@@ -54,6 +54,9 @@ jobs:
       - uses: actions/checkout@v4
         with:
           ref: ${{ github.event.pull_request.head.sha || github.sha }}
+      - name: Prepare the Microsoft WebView2 runtime
+        timeout-minutes: 5
+        run: powershell.exe -NoProfile -ExecutionPolicy Bypass -File .bw/release/e2e/runtime.ps1 -InstallMissing
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
@@ -61,6 +64,8 @@ jobs:
         with:
           components: clippy, rustfmt
       - uses: Swatinem/rust-cache@v2
+        with:
+          cache-on-failure: true
       - name: Verify using the project entry point
         run: node .bw/release/verify/verify.mjs --profile pr
       - name: Verification summary
