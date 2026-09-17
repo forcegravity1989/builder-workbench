@@ -14,6 +14,17 @@ const within = (root, target) => {
 };
 const blocked = new Set(['.git', 'node_modules', 'target', 'worktrees', '.worktrees']);
 
+// Windows may spell the same directory with an 8.3 alias. Resolve the existing
+// ancestor before comparing an output path whose final directories do not exist.
+async function canonicalDestination(destination) {
+  try { return await realpath(destination); }
+  catch (error) {
+    const parent = path.dirname(destination);
+    if (error.code !== 'ENOENT' || parent === destination) throw error;
+    return path.join(await canonicalDestination(parent), path.basename(destination));
+  }
+}
+
 // Includes cannot use a symbolic-link ancestor to escape the declared root.
 async function safeSource(root, relative) {
   const absolute = path.resolve(root, relative);
@@ -155,7 +166,7 @@ export async function scanKnowledge({ root: rootArg, profile: profilePath, basel
   }
   const links = files.flatMap(file => file.links.map(link => ({ file: file.file, ...link })));
   const result = {
-    schemaVersion: 1, scannerVersion: '0.2.0-pilot', root, generatedAt: new Date().toISOString(),
+    schemaVersion: 1, scannerVersion: '0.2.1-pilot', root, generatedAt: new Date().toISOString(),
     profile: { id: profile.id, version: profile.version, status: profile.status, sha256: hash(profileBytes), contractSource: profile.contractSource, scopeNote: profile.scopeNote, suggestedSessions: profile.suggestedSessions ?? [], include: profile.include, exclude: profile.exclude ?? [] },
     thresholds: { longParagraphChars: profile.longParagraphChars ?? 300, duplicateParagraphChars: profile.duplicateParagraphChars ?? 80 },
     summary: { files: files.length, markdown: files.filter(file => file.extension === '.md').length, references: links.length, linkErrors: links.filter(link => link.status === 'error').length, uncheckedReferences: links.filter(link => link.status === 'unchecked' || link.uncheckedPart).length, longParagraphs: files.reduce((sum, file) => sum + file.longParagraphs.length, 0), recognizedAcceptanceRows: files.reduce((sum, file) => sum + file.acceptanceRows.length, 0) },
@@ -194,6 +205,7 @@ export async function writeReport(result, outArg) {
     try { if ((await lstat(current)).isSymbolicLink()) throw new Error(`Symbolic-link output is not allowed: ${current}`); }
     catch (error) { if (error.code !== 'ENOENT') throw error; }
   }
+  if (within(result.root, await canonicalDestination(out))) throw new Error('Report output must be outside the scanned root.');
   for (const name of ['knowledge.json', 'knowledge.html']) {
     try { const info = await lstat(path.join(out, name)); if (!info.isFile() || info.isSymbolicLink()) throw new Error(`Unsafe report destination: ${name}`); }
     catch (error) { if (error.code !== 'ENOENT') throw error; }

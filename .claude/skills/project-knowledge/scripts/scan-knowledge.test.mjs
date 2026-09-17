@@ -42,7 +42,11 @@ test('counts content and links within declared scope without changing sources', 
   assert.equal(result.files.find(x => x.file === 'docs/page.html').contentInspected, false);
   assert.equal(result.files.find(x => x.file === 'CHANGELOG.md').changelog.groups, 1);
   assert.equal(result.files.find(x => x.file === 'CHANGELOG.md').longParagraphs.length, 1);
-  await assert.rejects(writeReport(result, path.join(f.root, 'report')), /outside/);
+  // Keep the caller's original spelling: Windows TEMP can contain an 8.3 alias,
+  // while scanKnowledge returns a canonical root. Neither spelling may write in it.
+  await assert.rejects(writeReport(result, path.join(f.root, 'report', 'nested')), /outside/);
+  await assert.rejects(readFile(path.join(f.root, 'report', 'nested', 'knowledge.json')), { code: 'ENOENT' });
+  await assert.rejects(writeReport(result, path.join(result.root, 'report')), /outside/);
   await writeReport(result, path.join(f.base, 'report'));
   assert.deepEqual(await readFile(path.join(f.root, 'AGENTS.md')), before);
   assert.ok((await readFile(path.join(f.base, 'report/knowledge.html'), 'utf8')).includes('STATIC SNAPSHOT'));
