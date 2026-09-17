@@ -66,8 +66,8 @@ try {
     }
     if (readPr().headRefOid !== current.commit) throw new Error('上传证据期间 PR 更新了；保留已上传证据，但不发过时 Review');
     const encodePath = file => file.split('/').map(encodeURIComponent).join('/');
-    const pictureSections = result.steps.flatMap(step => step.cases.flatMap(item => item.evidence.filter(x => /\.png$/i.test(x)).map(file => `\n### ${item.id}\n\n![${item.id}](https://github.com/${repo}/raw/${commit}/${encodePath(`${result.runId}/${step.id}/${file}`)})\n`))).join('');
-    const body = `${marker}\n${fs.readFileSync(path.join(out, 'review.md'), 'utf8')}\n\n执行命令：\n\n\`\`\`powershell\nnode .bw/release/verify/verify.mjs --profile pr\n\`\`\`\n\n真壳截图（固定脚本通过 CDP 附着本次构建的桌面壳，BW_VIEW=settings；含保存读回、跳转、重启）：\n${pictureSections}\n[完整证据目录](https://github.com/${repo}/tree/${commit}/${result.runId})\n`;
+    const pictureSections = result.steps.flatMap(step => step.cases.flatMap(item => item.evidence.filter(x => /\.png$/i.test(x)).map(file => `\n### ${step.title} · ${step.layer} · ${item.title}\n\n![${item.id}](https://github.com/${repo}/raw/${commit}/${encodePath(`${result.runId}/${step.id}/${file}`)})\n`))).join('');
+    const body = `${marker}\n${fs.readFileSync(path.join(out, 'review.md'), 'utf8')}\n\n执行命令：\n\n\`\`\`powershell\nnode .bw/release/verify/verify.mjs --profile pr\n\`\`\`\n\n逐项截图（按用例标明验证层：desktop 通过 CDP 附着本次构建的真实桌面壳，browser 使用真实浏览器验证对应页面；浏览器证据不代表 Orca 模型会话已运行）：\n${pictureSections}\n[完整证据目录](https://github.com/${repo}/tree/${commit}/${result.runId})\n`;
     const request = path.join(out, 'github-review-request.json');
     fs.writeFileSync(request, JSON.stringify({ commit_id: current.commit, event: 'COMMENT', body }));
     const response = JSON.parse(gh('api', '--method', 'POST', `repos/${repo}/pulls/${number}/reviews`, '--input', request));

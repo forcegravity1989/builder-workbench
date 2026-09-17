@@ -8,6 +8,7 @@ mod ops;
 mod orca_inject;
 mod pack_ctl;
 mod plan;
+mod planning;
 mod progress;
 mod project;
 mod release_ship;
@@ -33,8 +34,7 @@ pub use ops::{
 pub use pack_ctl::{cleanup_pack_intermediates, PackCtl};
 pub use progress::{ProgressCase, ProgressLine, StepState};
 pub use week_comment::{
-    parse_comments, render_week_plan_comment, validate_comment, WeekComment, HEADING_GOAL,
-    HEADING_READINGS, HEADING_SCOPE,
+    parse_comments, validate_comment, WeekComment, HEADING_GOAL, HEADING_READINGS, HEADING_SCOPE,
 };
 
 use crate::{
