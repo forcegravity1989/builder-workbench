@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdtemp, mkdir, writeFile, readFile, rm, symlink } from 'node:fs/promises';
+import { mkdtemp, mkdir, writeFile, readFile, rm, symlink, link } from 'node:fs/promises';
 import path from 'node:path';
 import os from 'node:os';
 import { spawnSync } from 'node:child_process';
@@ -68,6 +68,30 @@ test('baseline distinguishes content changes, removals, and incompatible rule ve
   assert.equal((await scanKnowledge({ ...f, baseline })).baseline.comparable, false);
 });
 
+test('resolves directory aliases, allows outside reports, and rejects aliases into sources', async t => {
+  const f = await fixture(t);
+  const alias = path.join(f.base, 'alias');
+  await symlink(path.resolve(f.base), alias, process.platform === 'win32' ? 'junction' : 'dir');
+  const result = await scanKnowledge({ root: path.join(alias, 'repo'), profile: f.profile });
+  await writeReport(result, path.join(alias, 'external', 'nested'));
+  assert.equal(JSON.parse(await readFile(path.join(f.base, 'external/nested/knowledge.json'), 'utf8')).root, result.root);
+  await assert.rejects(writeReport(result, path.join(alias, 'repo', 'report', 'nested')), /outside/);
+  await assert.rejects(readFile(path.join(f.root, 'report/nested/knowledge.json')), { code: 'ENOENT' });
+});
+
+test('refuses report files hard-linked to sources before writing either output', async t => {
+  const f = await fixture(t);
+  const result = await scanKnowledge(f);
+  const source = path.join(f.root, 'AGENTS.md');
+  const before = await readFile(source);
+  const out = path.join(f.base, 'hard-link-report');
+  await mkdir(out);
+  await link(source, path.join(out, 'knowledge.html'));
+  await assert.rejects(writeReport(result, out), /Unsafe report destination/);
+  assert.deepEqual(await readFile(source), before);
+  await assert.rejects(readFile(path.join(out, 'knowledge.json')), { code: 'ENOENT' });
+});
+
 test('refuses outside-root includes and does not follow directory links', async t => {
   const f = await fixture(t);
   await writeFile(f.profile, JSON.stringify({ ...f.config, include: ['../'] }));
@@ -81,7 +105,7 @@ test('refuses outside-root includes and does not follow directory links', async 
   assert.ok(!result.files.some(x => x.file.includes('alias')));
   assert.ok(result.skipped.some(x => x.file === 'alias' && x.reason === 'symbolic-link'));
   await symlink(f.root, path.join(f.base, 'out-alias'), 'junction');
-  await assert.rejects(writeReport(result, path.join(f.base, 'out-alias/report')), /Symbolic-link/);
+  await assert.rejects(writeReport(result, path.join(f.base, 'out-alias/report')), /outside/);
 });
 
 test('fenced examples are excluded and embedded hostile source cannot break script data', () => {

@@ -8,7 +8,7 @@ description: >-
   文档瘦身、特性指标验收梳理、知识老化和反哺. Ordinary coding only needs the
   relevant project knowledge; it does not trigger a full knowledge audit.
 metadata:
-  version: 0.3.1-pilot
+  version: 0.3.2-pilot
 ---
 
 # 项目知识库治理
@@ -81,4 +81,4 @@ node <本Skill路径>/scripts/check-links.mjs --root <目标仓绝对路径> --f
 
 采用新规范时同步整改它实际覆盖的存量。不要只新增 Skill、模板或历史横幅而留下两份现行说法。保留仍有价值的规则、授权边界与真实证据；不凭文本更短宣称质量更高。
 
-本包是 `0.3.1-pilot`，作为仓内试用方法交付；实际验证范围以对应 PR/运行记录为准。规则来源、BW 适配与本地组合见来源参考。使用后根据真实偏差更新，验证细节见固定 [评估案例](evals/cases.md)。安装、被引用、被读取、行为正确分别取证；只完成静态校验不能宣称模型行为改善。
+本包是 `0.3.2-pilot`，作为仓内试用方法交付；实际验证范围以对应 PR/运行记录为准。规则来源、BW 适配与本地组合见来源参考。使用后根据真实偏差更新，验证细节见固定 [评估案例](evals/cases.md)。安装、被引用、被读取、行为正确分别取证；只完成静态校验不能宣称模型行为改善。

@@ -3,7 +3,7 @@
 Workbench 内置规范的源码。已注册的模板、系统提示词、reference 与自有 skill 通过 `include_str!` 编入二进制；vendor 的开发环境与安装包边界见 [`vendor/README.md`](vendor/README.md)。修改实际分发、渲染或读取的内容会改变产品行为，文件存在不等于已派发。
 不进被管仓。接入只写名片 `.bw/project.toml`(项目约定常驻工作树),不复制本目录。
 
-从仓根 [`AGENTS.md`](../AGENTS.md)「三层模型」点过来。主提示词 / reference / skill 注入对照见 [`docs/06-module/系统提示词与渐进加载`](../docs/06-module/系统提示词与渐进加载.md)。
+从仓根 [`AGENTS.md`](../AGENTS.md)「按任务读取」点过来。主提示词 / reference / skill 注入对照见 [`docs/06-module/系统提示词与渐进加载`](../docs/06-module/系统提示词与渐进加载.md)。
 
 ## 系统提示词 / reference / skill 各写什么
 

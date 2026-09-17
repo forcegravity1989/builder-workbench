@@ -12,7 +12,7 @@
 node <Skill>/scripts/scan-knowledge.mjs --root <目标仓> --profile <Skill>/references/projects/bw-scan.json --out <仓外报告目录>
 ```
 
-输出固定为 `knowledge.json` 与 `knowledge.html`。输出目录必须在目标仓之外，避免扫描器覆写源文件或把生成物当新知识。只有本次指定输出会被更新，无远端写入。
+输出固定为 `knowledge.json` 与 `knowledge.html`。输出目录必须在目标仓之外，避免扫描器覆写源文件或把生成物当新知识。目录别名（如 macOS 临时目录、Windows junction 或短路径）按真实落点判断；报告文件本身不能是符号链接、硬链接或非普通文件。只有本次指定输出会被更新，无远端写入。
 
 整改前保存一次输出；整改后用新的输出目录，并传 `--baseline <前次 knowledge.json>`。同仓、同映射的指纹变化仅表示内容变动，不自动表示完成治理。规则映射变了会说明不可直接比较；不静默比较不同口径。
 

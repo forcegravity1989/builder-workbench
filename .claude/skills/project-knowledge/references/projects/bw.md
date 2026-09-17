@@ -6,7 +6,7 @@
 
 本包是仓内试用方法。采用它不代表全部文档已按候选规范整改、指标已有读数或桌面已经注入此方法。起手 Skill 负责开发任务路由；本 Skill 负责知识治理。
 
-每轮先读目标基线的 AGENTS、文档索引与 Git/PR 状态。顶层整改的历史来源可查 [PR #211](https://github.com/forcegravity1989/builder-workbench/pull/211)，其状态不能由此文预设。DESIGN/CHANGELOG 若仍存在则按实际职责处理；已删除则不因模板或扫描候选路径而恢复。交付命令从目标 AGENTS 和 `.bw/release/verify/README.md` 读取。
+每轮先读目标基线的 AGENTS、文档索引与 Git/PR 状态。顶层约定以 AGENTS「文档怎么读、怎么维护」、原则 01 和目标原文头部为准；本包类型契约只补候选写法，不另养一份 BW 格式正本。删除 DESIGN/CHANGELOG 的决定来源见 [PR #211](https://github.com/forcegravity1989/builder-workbench/pull/211)，现行扫描映射已移除它们；旧工作树按其实际基线辨认，不恢复退役文件。交付命令从目标 AGENTS 和 `.bw/release/verify/README.md` 读取。
 
 用户已明确：AGENTS 等顶层文档和 docs 均可逐篇整改，规范覆盖的存量需要同步清债；不因旧文件说“过时不删”而无限保留重复债务。按用户指定目标实际执行，保留代码/产品约束和未决产品选择的边界。
 

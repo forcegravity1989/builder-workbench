@@ -1,6 +1,8 @@
 # 01 · 文档组织结构
 
-- 状态：**现在作数**（2026-08-26）
+> **本篇维护约定**：给调整知识归属、文档边界的人与模型读取。只规定整仓分层、正本/投影关系、特性制品链及共用头部要素；不代写每篇的格式，不列开发命令或变更流水。结构按分层、职责、制品链、源与投影、落点与头部、读取路径组织；分层或共用规则经人确认变化时更新。日常维护操作见 [AGENTS](../../AGENTS.md)，各篇具体范围看其头部。
+
+- 状态：**现在作数**
 - 位置：`docs/01-principles/` 第一篇——本仓「知识与文档怎么分层」的正本
 - 相关：[`../README.md`](../README.md)（docs 地图）、[`../architecture.md`](../architecture.md)（设计正本）、[`../../CONTEXT.md`](../../CONTEXT.md)（词表）、[`../../AGENTS.md`](../../AGENTS.md)（开发规矩）、[`03-press-release-faq-flywheel.md`](03-press-release-faq-flywheel.md)（少 gate / 飞轮检验）
 
@@ -11,13 +13,11 @@
 ## 1. 分层总览
 
 ```text
-仓根（只留入口件 + 惯例置根件，见 §6.1）
+仓根（四份入口文档，见 §6.1）
 ├── README.md          产品介绍 + 快速开始（入口件）
 ├── AGENTS.md          开发规矩唯一正本（入口件）
 ├── CLAUDE.md          一行 @AGENTS.md 导入（入口件）
-├── CONTEXT.md         领域词表唯一正本（入口件）
-├── DESIGN.md          纯指路指针 → docs/architecture.md（惯例置根件）
-└── CHANGELOG.md       版本变更流水（惯例置根件）
+└── CONTEXT.md         领域词表唯一正本（入口件）
 
 docs/（所有知识目录都在这，编号定序；architecture 不编号＝docs 内设计正本）
 ├── 01-principles/     原则（慢变宪法）——本目录；第一篇就是本文
@@ -38,7 +38,7 @@ decision-ui/ 等       gate 投影（只读渲染 docs/05-features/*；不当第
 
 口诀：
 
-**`docs/01-principles/` 是原则，`docs/05-features/` 是这次变更，`docs/` 其余是产品怎么说清楚（设计 / 指南 / 欠账）。仓根只留入口件与惯例置根件。**
+**`docs/01-principles/` 是原则，`docs/05-features/` 是这次变更，`docs/` 其余是产品怎么说清楚（设计 / 指南 / 欠账）。仓根只留约定的入口文档。**
 
 ## 2. 各层职责
 
@@ -58,7 +58,7 @@ decision-ui/ 等       gate 投影（只读渲染 docs/05-features/*；不当第
 
 移动文档、调整职责或改变契约时，同步检查入口索引、链接和章节引用、相关示例，以及实际读取这些内容的代码与调用方。引用的路径和示例应能核查；存在文件、分发文件、给模型指针与实际读取正文分别说明。读取方尚未支持的部分如实记录，不能靠改文档宣称实现已跟上。
 
-日常新增与小修只检查本次改动及必要引用，不默认全仓审计或重复模型评测。改变执行行为时按受影响路径验证；没有验证的数据不写成收益。变更原因和未完成项留在已有特性记录或 commit，不另建平行规范。
+日常新增与小修只检查本次改动及必要引用，不默认全仓审计或重复模型评测。改变执行行为时按受影响路径验证；没有验证的数据不写成收益。变更原因、验证证据和未完成项留在对应 commit/PR 或已有特性记录；当前知识同步到正本，不另建提交流水或平行规范。
 
 Workbench 研发知识库的目录约定适用于本仓。`standard/` 给被管项目提供执行规范；项目文档归属与落点遵循该项目自己的 `AGENTS.md` 及引用，不照搬 BW 的目录树。术语边界见 [`CONTEXT.md`](../../CONTEXT.md)「知识与规范资产」。
 
@@ -153,35 +153,33 @@ docs/05-features/<change-id>/
 [`docs/README.md`](../README.md) 管 docs 树地图；设计正本是 [`docs/architecture.md`](../architecture.md)；产品指南在 [`docs/03-guide/`](../03-guide/)。  
 本文管**整仓知识分层**（原则 / 变更 / docs / agent 入口）。与 docs 落盘细则冲突时：**docs 目录内听 docs/README + architecture**；跨目录归属听本文。
 
-### 6.1 落点铁律：仓根只留「入口件」与「惯例置根件」，其余入 `docs/`
+### 6.1 仓根只留四份入口文档
 
-仓根只留两类：**入口件**（newcomer 起手读、建立初始心智的骨架）与**惯例置根件**（业界默认在仓根，挪走会破坏工具发现）。**所有知识目录（含原则、特性制品链）一律落 `docs/`、编号定序。**
-
-**入口件**（建立初始心智）：
-
-| 仓根留 | 是什么 | 为什么留仓根 |
+| 仓根文档 | 职责 | 谁先读 |
 |---|---|---|
-| `README.md` | 产品介绍 + 快速开始 | 第一眼落地 |
-| `AGENTS.md` | 开发规矩正本 | agent 每会话必读 |
-| `CLAUDE.md` | 一行导入 AGENTS | 仓外 IDE 入口 |
-| `CONTEXT.md` | 领域词表 | 跨工具一致用词 |
+| `README.md` | 产品介绍、当前能力边界、快速开始、继续阅读入口 | 浏览仓库的人 |
+| `AGENTS.md` | 任务读取路径、开发硬约束、文档维护与交付规则 | 在本仓工作的模型与开发者 |
+| `CLAUDE.md` | 只含一行 `@AGENTS.md`，不另立规则 | 对应工具通过它导入开发约定 |
+| `CONTEXT.md` | 领域术语、歧义边界与相关正本 | 需要理解或维护领域用词的人与模型 |
 
-**惯例置根件**（业界惯例，非初始心智）：
+整体设计直接指向 `docs/architecture.md`，不再维护仓根设计指针。变更原因与验证证据进 commit/PR，当前知识各归正本，历史用 Git 查询，不另维护仓根变更流水，也不复制为新归档。
 
-| 仓根留 | 是什么 | 为什么留仓根 |
-|---|---|---|
-| `DESIGN.md` | 纯指路指针 → `docs/architecture.md` | 路标惯例；正文必须在 docs/ |
-| `CHANGELOG.md` | 变更流水 | [Keep a Changelog](https://keepachangelog.com/) 等工具默认去仓根找 |
+其余知识文档进入 `docs/` 的已有职责层，目录编号定序，`architecture.md` 是不编号的整体设计正本。临时报告与原型作为仓外 artifact 或按既有约定留链接，不为了报告新建常驻知识层。工具配置、源码及结构化项目资产不属于本条的 Markdown 入口清单。
 
-其余文档与知识目录——原则（`docs/01-principles`）、特性制品链（`docs/05-features`）、设计正本（`docs/architecture.md`，docs 内**不编号**、同根 `README`/`CHANGELOG` 之特殊地位）、架构决策（`docs/02-adr`）、指南（`docs/03-guide`）、设计系统（`docs/04-design-system`）、参考（`docs/10-reference`）、高保真（`docs/hifi`）、指标（`docs/metrics`）、本地草稿（`docs/draft`）——**一律落 `docs/`**。仓根不堆散件：临时报告、演示文稿、sdlc 产物等归 `docs/draft/`，不进仓根。
+### 6.2 共用原则与每篇头部各管什么
 
-> `decision-ui/` 等 gate 投影是 HTML 渲染产物，不是 markdown 文档，不受本条约束；`REVIEW.md`（若建）属文档，按本条落 `docs/`。
+- **本文**规定分层、共用要素与例外；**AGENTS**规定模型如何读、维护、验证以及何时征得人确认；**每篇头部**是该篇职责与格式的正本。索引只导航，不复制全套规范。
+- 头部应让模型知道：**读者与读取时机、可以写什么/不写什么、正文结构、何时更新，以及依赖的正本**。用简短导读或维护块表达，不要求每篇套同样的章节数量。
+- 头部放在标题附近、正文之前。`README.md` 可用顶部 HTML 注释兼顾仓库门面，模型必须读取 Markdown 原文；`CLAUDE.md` 只作导入，不加头部。
+- Skill 保持 YAML frontmatter 和自身结构；上游镜像、生成文件遵循来源格式，由其入口说明维护方式，不给每个镜像文件强加头部。既有文档按实际改动补齐，不启动无差别全库格式改造。
+- 新增或恢复内容必须先检查目标范围；范围外优先找正确正本，确需扩责须**先提出头部边界变更并经人确认，再改头部与正文**。具体维护顺序只在 [AGENTS](../../AGENTS.md) 维护，头部不得覆盖上层原则。
 
 ## 7. 建议的读写顺序
 
 | 角色/场景 | 先读 |
 |---|---|
-| 新会话 / 新成员 | README → 本文 → CONTEXT → AGENTS/CLAUDE → docs/README |
+| 浏览仓库的人 | README → 按问题读指南、主张或 docs/README；参与开发再读 AGENTS |
+| 工作模型 / 开发者 | AGENTS（CLAUDE 仅导入）→ 按任务路由读原则、目标文档原文头部与相关正本 |
 | 要开一个**特性** | 对齐 [03](03-press-release-faq-flywheel.md) → 按 [02](02-working-backwards.md) 开 `docs/05-features/<id>/intent.md`；可用 Superpowers/grill-me 辅助，产出落回 `docs/05-features/` |
 | 要改客群/飞轮/对外主张 | 先议 → 改 [03](03-press-release-faq-flywheel.md)；特性 intent 不得偷偷改写 |
 | 小 bug / 琐修 | 直接改 + 验证 + PR；不开 `docs/05-features/` |
@@ -193,21 +191,3 @@ docs/05-features/<change-id>/
 - 立刻建齐 `docs/05-features/`、`REVIEW.md`、decision-ui（按 MVP 逐步加）  
 - Maintain 全自治闭环、harness continuous evals（门禁信息架构稳定后再上）  
 - 改 vendor skill 正文（Superpowers / grill-me 等）——过程兼容由本文与 `AGENTS.md` 约定，skill 包本身先不动
-
-## 修订
-
-| 日期 | 改什么 |
-|---|---|
-| 2026-08-25 | 首篇：定 `01-principles/` 与文档组织结构 |
-| 2026-08-25 | `05-features/` 定为特性级粒度；小 bug 直修不开链 |
-| 2026-08-25 | 特性立项指向 [02 逆向工作法](02-working-backwards.md) |
-| 2026-08-26 | 术语改 gate；制品链改为 intent+带原型 spec 为人 gate，plan 仅大风险；兼容 Superpowers/grill-me（过程工具，正本在 05-features/） |
-| 2026-08-26 | 撤销仓根 `iterations/` 层；读回归 changes / guide / architecture；与 lean 仓（AGENTS 正本、无 plan/archive）对齐 |
-| 2026-09-01 | 规格 gate 加「非 UI 变更豁免可点原型」：纯脚本/规范包仍须操作逻辑（协议/样例输出当原型），但不必可点界面 |
-| 2026-09-01 | 加 6.1 落点铁律：仓根只留建立初始心智的入口件（README/AGENTS/CLAUDE/CONTEXT/01-principles/DESIGN 指针/CHANGELOG），其余文档一律落 `docs/`；散件归 `docs/draft/` |
-| 2026-09-01 | docs/ 加数字前缀：architecture→01-architecture、adr→02-adr、guide→03-guide、design-system→04-design-system、reference→10-reference；6.1 拆「入口件 + 惯例置根件」两类例外，resolve 表内矛盾与 §1 REVIEW.md 归属 |
-| 2026-09-01 | 根目录知识目录加编号：principles→01-principles、changes→05-features（特性级制品链）；§3 标题与关系线同步改 01-principles · 05-features |
-| 2026-09-01 | principles 与 features 迁入 `docs/`：`docs/01-principles/`、`docs/05-features/`；`docs/01-architecture.md` 去编号为 `docs/architecture.md`（docs 内设计正本，同根 README/CHANGELOG 之不编号例外）；6.1 入口件不再含 principles（principles 转为 docs 内编号知识目录），§1/§2/§3/§7 路径同步；仓根只剩 README/AGENTS/CLAUDE/CONTEXT + DESIGN/CHANGELOG |
-| 2026-09-11 | 原型文件不进仓：规格 gate 仍要可点原型，但 `spec.md` 只写链接（artifact 或独立分支），`docs/05-features/<id>/prototype.html` 不再是交付件 |
-| 2026-09-08 | 加 `docs/06-module/` 层:单个模块实现的心智模型(主要矛盾/取舍);architecture.md 收为整体旅程+逻辑模块、不进模块实现细节;三层边界 architecture / 06-module / 05-features 写进 AGENTS「人怎么驾驭」可见物表与本文 §1/§2 |
-| 2026-09-09 | §4.1 收紧口径:`docs/05-features/` 只装产生用户价值的新能力/新信息;命名收口/基建接线/重构重排不产生新价值的直修留痕(commit 说明 + 必要时改 architecture 实况段),不开 intent gate;02 §1 适用范围、§6 小特性豁免同步 |

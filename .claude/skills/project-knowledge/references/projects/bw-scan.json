@@ -1,8 +1,8 @@
 {
   "id": "bw-knowledge-pilot",
-  "version": "0.3.0-pilot",
+  "version": "0.3.1-pilot",
   "status": "仓内试用映射；不作为全仓规范门禁",
-  "scopeNote": "按目标仓实际存在的文件生成全景。include 是候选路径，缺失路径列为跳过，不要求恢复已删除文档。项目知识与开发方法单列；standard 本次不扫描。",
+  "scopeNote": "按目标仓实际存在的文件生成全景。文档规范读取 AGENTS、原则 01 与目标原文头部；类型字段仍是候选提示。BW 已退役 DESIGN/CHANGELOG，不列入现行范围。项目知识与开发方法单列；standard 本次不扫描。",
   "suggestedSessions": [
     "读回已合入规则，用真实维护任务检验入口和职责。",
     "特性总表：核对候选、实际文档和架构映射。",
@@ -14,8 +14,6 @@
     "CLAUDE.md",
     "README.md",
     "CONTEXT.md",
-    "DESIGN.md",
-    "CHANGELOG.md",
     "docs",
     ".bw/project.toml",
     ".bw/metrics.toml",
@@ -59,14 +57,6 @@
     {
       "pattern": "^CONTEXT\\.md$",
       "type": "领域词表"
-    },
-    {
-      "pattern": "^DESIGN\\.md$",
-      "type": "设计入口"
-    },
-    {
-      "pattern": "^CHANGELOG\\.md$",
-      "type": "变更记录"
     },
     {
       "pattern": "^README\\.md$|/README\\.md$",

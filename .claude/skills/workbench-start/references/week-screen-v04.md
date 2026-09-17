@@ -17,10 +17,11 @@
 
 交互原型：[周一屏原型](https://claude.ai/code/artifact/5664c6f6-0bad-4897-98af-fcdae70e15c8)。用户已说明能在 Codex 内置浏览器打开；若普通网页抓取失败，换可用浏览器读取，不直接宣布资源不存在。它未被用户确认已合入代码库，也不能当真实 v0.4 结果数据。
 
-原定快速落地：复用自动化与 Orca 会话；使用周一屏 HTML 模板作为输入，经人和模型对话生成可视化结果 HTML。不要重做一个固定嵌入 BW 的高保真功能页面。模板工作在 week-plan 相关分支协作，确认后归档到项目 .bw；实际分支名、路径和当前约定先核对，不擅自搬常驻工作树。
+原定快速落地：复用自动化与 Orca 会话；使用周一屏 HTML 模板作为输入，经人和模型对话生成可视化结果 HTML。不要重做一个固定嵌入 BW 的高保真功能页面。方法与模板源码、被管项目的真实结果分开存放，具体位置读下节现行产物，不将早期分支讨论当成当前协议，不擅自搬常驻工作树。
 
 ## 2. 开工先找实际产物
 
+- 当前代码落点先读 [周一屏特性规格](../../../../docs/05-features/version-planning/spec.md) 与其 manual-review/STATUS，再按其引用找到 `standard/skills/week-planning/` 的方法资源和项目 `.bw/planning/` 的结果。实现来源可追溯 [PR #212](https://github.com/forcegravity1989/builder-workbench/pull/212)；是否存在于当前基线、人的首用与验收状态分别核验，不能因 PR 合入就代填完成。
 - 从项目远端核验已有跟踪：福东 [#176](https://github.com/forcegravity1989/builder-workbench/issues/176)、朱宇 [#207](https://github.com/forcegravity1989/builder-workbench/issues/207)、版本跟踪 [#180](https://github.com/forcegravity1989/builder-workbench/issues/180)。这些编号是定位线索，不预设最新正文和状态。
 - 找福东已给出的设计、PR/分支、模板和 schema；按现有产物推进，不再平行设计第二套模板或协议。
 - 尚未到位时，先整理真实 v0.4 数据、来源、验收案例与口径候选。只有实现依赖的具体接口需要澄清；不因等设计暂停全部工作。

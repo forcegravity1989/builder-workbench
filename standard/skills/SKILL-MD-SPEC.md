@@ -4,7 +4,7 @@
 > 结构来自 skill-md-spec(frontmatter + 8 节正文 + 纪律表),叠上本仓分层:SYSTEM / reference / skill 各写一层,现在只写到第一层(转得顺)。
 > 优先参考 superpowers `writing-skills`:能让另一个 agent 按步骤跑通,不靠经验补缺。
 
-索引:`AGENTS.md`「三层模型」→ [`../README.md`](../README.md)「各写什么」→ 本文件 → 各份 `SKILL.md` 第 4 节才是 SOP。
+索引:`AGENTS.md`「按任务读取」→ [`../README.md`](../README.md)「各写什么」→ 本文件 → 各份 `SKILL.md` 第 4 节才是 SOP。
 
 ## 〇、适用边界
 

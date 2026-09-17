@@ -53,22 +53,6 @@ pub fn parse_comments(bodies: &[String]) -> WeekComment {
     WeekComment { goal, progress }
 }
 
-pub fn render_week_plan_comment(included: &[u32]) -> String {
-    let goal = "（未填写）";
-    let mut scope = String::new();
-    if included.is_empty() {
-        scope.push_str("本周暂无纳入");
-    } else {
-        for iid in included {
-            scope.push_str(&format!("- #{iid}\n"));
-        }
-        if scope.ends_with('\n') {
-            scope.pop();
-        }
-    }
-    format!("## {HEADING_GOAL}\n{goal}\n\n## {HEADING_SCOPE}\n{scope}\n\n## {HEADING_READINGS}\n")
-}
-
 pub fn validate_comment(body: &str) -> Result<(), Vec<String>> {
     let mut errs = Vec::new();
     if !has_heading(body, HEADING_GOAL) {
@@ -133,63 +117,8 @@ fn section_text(body: &str, names: &[&str]) -> Option<String> {
     }
 }
 
-impl super::App {
-    pub async fn week_goals_from_ops1(
-        &self,
-        project: &crate::model::Project,
-        issues: &[crate::model::Issue],
-    ) -> Ops1Notes {
-        let current = crate::isoweek::current_week();
-        let jobs: Vec<(String, String, u32)> = issues
-            .iter()
-            .filter(|i| crate::version::is_ops1_title(&i.title))
-            .map(|i| {
-                let week =
-                    crate::isoweek::week_of_unix(i.created_at).unwrap_or_else(|| current.clone());
-                let plan = crate::version::ops1_version_from_title(&i.title)
-                    .filter(|name| i.plan_versions.contains(name))
-                    .unwrap_or_default();
-                (week, plan, i.id.iid())
-            })
-            .collect();
-        let mut out = Ops1Notes::default();
-        let mut i = 0;
-        while i < jobs.len() {
-            if i + 1 < jobs.len() {
-                let (a, b) = tokio::join!(
-                    super::issue_store::list_comments(self, project, jobs[i].2),
-                    super::issue_store::list_comments(self, project, jobs[i + 1].2),
-                );
-                insert_notes(&mut out, &jobs[i].0, &jobs[i].1, a);
-                insert_notes(&mut out, &jobs[i + 1].0, &jobs[i + 1].1, b);
-                i += 2;
-            } else {
-                let a = super::issue_store::list_comments(self, project, jobs[i].2).await;
-                insert_notes(&mut out, &jobs[i].0, &jobs[i].1, a);
-                i += 1;
-            }
-        }
-        out
-    }
-}
-
-fn insert_notes(out: &mut Ops1Notes, week: &str, plan: &str, bodies: super::Result<Vec<String>>) {
-    let Ok(bodies) = bodies else {
-        return;
-    };
-    let parsed = parse_comments(&bodies);
-    if let Some(goal) = parsed.goal {
-        out.goals.insert(week.to_string(), goal.clone());
-        if !plan.is_empty() && plan != week {
-            out.goals.insert(plan.to_string(), goal);
-        }
-    }
-    if let Some(text) = all_progress_text(&bodies) {
-        merge_note(&mut out.progress, week, plan, &text);
-    }
-}
-
 /// 该版本所有 `## 每周进展`,新的在前。多周 / 多次登记都留着。
+#[cfg(test)]
 fn all_progress_text(bodies: &[String]) -> Option<String> {
     let mut parts = Vec::new();
     for body in bodies.iter().rev() {
@@ -204,6 +133,7 @@ fn all_progress_text(bodies: &[String]) -> Option<String> {
     }
 }
 
+#[cfg(test)]
 fn progress_block(body: &str) -> Option<(String, String)> {
     let mut lines = body.lines();
     let label = loop {
@@ -239,28 +169,6 @@ fn progress_block(body: &str) -> Option<(String, String)> {
         return None;
     }
     Some((label, buf.join("\n")))
-}
-
-fn merge_note(
-    map: &mut std::collections::HashMap<String, String>,
-    week: &str,
-    plan: &str,
-    text: &str,
-) {
-    for key in [week, plan] {
-        if key.is_empty() {
-            continue;
-        }
-        match map.get(key) {
-            Some(old) if old != text => {
-                map.insert(key.to_string(), format!("{text}\n\n{old}"));
-            }
-            None => {
-                map.insert(key.to_string(), text.to_string());
-            }
-            _ => {}
-        }
-    }
 }
 
 #[cfg(test)]
@@ -333,17 +241,5 @@ mod tests {
             parse_comments(&[body.into()]).goal.as_deref(),
             Some("本周清共性小问题,催熟通知。\n- 通知:#4\n- 会话:#1")
         );
-    }
-
-    #[test]
-    fn render_create_version_comment() {
-        let empty = render_week_plan_comment(&[]);
-        assert!(validate_comment(&empty).is_ok());
-        assert_eq!(parse_comments(&[empty]).goal.as_deref(), Some("（未填写）"));
-        let body = render_week_plan_comment(&[12, 15]);
-        assert!(validate_comment(&body).is_ok());
-        assert!(body.contains("- #12"));
-        assert!(body.contains("- #15"));
-        assert_eq!(parse_comments(&[body]).goal.as_deref(), Some("（未填写）"));
     }
 }

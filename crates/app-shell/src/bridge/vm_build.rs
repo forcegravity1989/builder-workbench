@@ -915,7 +915,7 @@ async fn wall_extra(
     job: &WallJob,
 ) -> (std::collections::HashMap<String, String>, String, String) {
     let (notes, last_delivery, version) = tokio::join!(
-        app.week_goals_from_ops1(&job.p, &job.issues),
+        app.version_plan_notes(&job.p),
         async {
             bw::git::tags_with_dates(&job.ws)
                 .await
@@ -1178,7 +1178,7 @@ async fn gather_project(
 
     let (sessions, ops1_notes, releases, ops3_landed, last_delivery, plan_versions, current_user) = tokio::join!(
         log_elapsed("sessions", build_sessions(app, id, &issues)),
-        log_elapsed("comments", app.week_goals_from_ops1(&p, &issues)),
+        log_elapsed("comments", app.version_plan_notes(&p)),
         log_elapsed("releases", load_releases(app, &p, &ws)),
         log_elapsed("ops3", bw::git::path_in_head(&ws, ".bw/project.toml")),
         log_elapsed("git-tags", async {

@@ -112,7 +112,7 @@ impl App {
         let ws = self.workspace_of(project_id).await?;
         let week = isoweek::current_week();
         let issues = self.issues(project_id).await?;
-        let notes = self.week_goals_from_ops1(&project, &issues).await;
+        let notes = self.version_plan_notes(&project).await;
         let mut released = issues
             .iter()
             .filter(|i| !i.version.is_empty())

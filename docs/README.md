@@ -1,50 +1,41 @@
 # docs/ — 全仓文档地图
 
-> **30 秒导读**:这一页告诉你仓库里每一堆文档是干什么的。给新接手的人和 AI 会话看。仓库根 [`README.md`](../README.md) 是**产品介绍门面**;**主张与分层**听 [`01-principles/`](01-principles/README.md);开发规矩唯一正本 [`AGENTS.md`](../AGENTS.md);`CLAUDE.md` 只是一行导入它。本页随目录变动维护。
+> **本篇维护约定**：给寻找知识落点的人与模型看；开始查资料、迁移文档或调整入口时读取。只列现行入口、职责与读取时机，不复制正文规则、能力清单或开发命令。结构为仓根入口、知识分层、其他资产；路径或职责变化时更新。分层正本是 [原则 01](01-principles/01-document-organization.md)，维护流程是 [AGENTS](../AGENTS.md)，具体格式读目标原文头部。
 
-## 一张图
+## 仓根入口
 
-```
-仓库根
-├── README.md          产品介绍(GitHub 门面):是什么 · 主张摘要 · 快速开始 · 架构一眼
-├── AGENTS.md          唯一开发规矩正本(建/跑/测+门禁+目录+铁律+特性起手)
-├── CLAUDE.md          一行 @AGENTS.md 导入
-├── CONTEXT.md         领域词表(Issue/读数/技能提炼等统一名称)
-├── CHANGELOG.md       版本变更记录(本次合入了什么)
-├── DESIGN.md          设计指向(各模块设计 + workflow 文档指过去)
-├── crates/            bw(内核)· bw-engine(底座)· app-shell(壳,bin bw-dev)
-├── standard/          规范正本(include_str! 进 bw):模板 `templates/`(接入不摊)+ 系统提示词 + 工作流技能 + vendor
-├── scripts/           门禁脚本(guard-*)+ codegraph 联调
-├── docs/              ← 你在这
-└── .bw/               Workbench 自己作为被管项目的资产(project.toml / metrics.toml; issue-policy.toml 是残留)
-```
-
-## docs/ 里有什么
-
-| 路径 | 是什么 |
+| 入口 | 什么时候读 |
 |---|---|
-| [`01-principles/`](01-principles/README.md) | **原则正本**(慢变宪法):01 文档分层 / 02 逆向工作法 / 03 新闻稿·FAQ·飞轮。特性立项与产品主张的最高优先级约束 |
-| [`architecture.md`](architecture.md) | **设计正本**:整体用户旅程、逻辑模块、三 crate 架构与数据流。人和 AI 都能在这检索到任一模块的设计。`DESIGN.md` 指向它;docs 内不编号 |
-| [`02-adr/`](02-adr/) | 架构决策(难回头一条一篇) |
-| [`03-guide/`](03-guide/) | 产品指南(怎么用 Workbench,给用户/同事)+ 填写规范 |
-| [`04-design-system/`](04-design-system/) | **视觉正本**:Builder 设计系统资产(唯一样式表 + 机读 token + 双语规范 + 15 张示例页),镜像自 Claude Design 项目「builder」;桌面壳编译期原样拼入 `styles.css`(2026-09-07 起) |
-| [`05-features/`](05-features/) | **特性级变更制品链**——intent + 带原型的 spec 为人 gate;plan 仅大风险升 gate;小修不进。粒度与制品链见 [01 §4](01-principles/01-document-organization.md) |
-| [`06-module/`](06-module/README.md) | 单个模块的实现心智与主要取舍；整体旅程和逻辑模块仍在 architecture |
-| [`10-reference/`](10-reference/) | 外部参考的**提炼版**(转述非原文,原文只存链接)。外部资料如:[AI-native SDLC playbook](10-reference/ai-native-sdlc-playbook.md)——做法与治理哲学,每段带 BW 落点或不采纳理由 |
-| [`hifi/`](hifi/) | 八屏版式与旅程原型(`index.html` 单文件高保真 + 逐屏简报);视觉语言以 `04-design-system/` 为准 |
+| [README.md](../README.md) | 首次了解产品、当前能力与快速开始；这是给人看的仓库门面 |
+| [AGENTS.md](../AGENTS.md) | 模型或开发者开始任务、维护文档、提交与开 PR |
+| [CLAUDE.md](../CLAUDE.md) | 对应工具导入 AGENTS，无独立规则 |
+| [CONTEXT.md](../CONTEXT.md) | 解释领域词、区分容易混淆的概念，或维护命名 |
 
-## 找东西
+## 知识分层
 
-| 你在找 | 在哪 |
+| 路径 | 职责 | 什么时候读 |
+|---|---|---|
+| [01-principles/](01-principles/README.md) | 01 文档分层、02 逆向工作法、03 产品主张/FAQ/飞轮 | 调整知识归属、开特性、改产品主张 |
+| [architecture.md](architecture.md) | 整体旅程、逻辑模块、三 crate 与数据流 | 找现行设计、实现边界和工程落点 |
+| [02-adr/](02-adr/) | 难回头的架构决策及取舍 | 需要理解或改变相关决策 |
+| [03-guide/](03-guide/) | 给用户的操作、结果、下一步 | 使用产品或核对用户可见行为 |
+| [04-design-system/](04-design-system/README.md) | 视觉规范、样式与 token；来源和镜像方式见该入口 | 设计或修改界面视觉 |
+| [05-features/](05-features/) | 用户价值特性的 intent/spec/plan/状态 | 开特性、核对目标与验收；小修不进入 |
+| [06-module/](06-module/README.md) | 模块实现心智、主要矛盾与取舍 | 修改某一模块前 |
+| [10-reference/](10-reference/) | 外部资料提炼与历史参考，按篇区分现行/历史 | 追溯来源或理解旧概念，不作为当前实现证据 |
+| [hifi/](hifi/) | 屏幕版式与旅程原型 | 对照交互设计；原型不是已交付界面 |
+
+模型从 AGENTS 的任务路径到达这里，再读目标文件原文头部和正文；到达链接不等于读取，更不等于已遵守。产品目标与当前实现冲突时，分别回到 03 与 architecture 核对，不能把主张或原型改写成已经交付。
+
+## 其他资产
+
+| 路径 | 定位 |
 |---|---|
-| 仓库门面 / 一句话介绍 | [`../README.md`](../README.md) |
-| 「Workbench 是什么/设计」 | [`architecture.md`](architecture.md)([`DESIGN.md`](../DESIGN.md) 指路) |
-| 产品主张 / 飞轮 / 特性怎么立项 | [`01-principles/`](01-principles/README.md) |
-| 开发规矩(建/跑/测/门禁/目录/铁律/怎么加特性) | [`AGENTS.md`](../AGENTS.md) |
-| BW 自己的开发与交付方法 | [workbench-start](../.claude/skills/workbench-start/SKILL.md)；按任务分流，知识定义与治理 Skill 共用 |
-| 项目知识整改、全景与反哺 | [project-knowledge](../.claude/skills/project-knowledge/SKILL.md)；逐块清债，试用规范按需采纳 |
-| 领域词 | [`CONTEXT.md`](../CONTEXT.md) |
-| 产品指南(怎么用) | [`03-guide/`](03-guide/) |
-| headless 例子(PTY 烟测) | [`AGENTS.md`](../AGENTS.md)「怎么建/跑/测」;源码 `crates/bw-engine/examples/` |
-| 外部参考(playbook 等的提炼版) | [`10-reference/`](10-reference/) |
-| V3 在哪 | V3 已删(2026-08-24),全量在 `v3` 分支 |
+| [workbench-start](../.claude/skills/workbench-start/SKILL.md) | BW 自己的开发与交付方法；按任务分流，知识定义与治理 Skill 共用 |
+| [project-knowledge](../.claude/skills/project-knowledge/SKILL.md) | 项目知识整改、只读全景与反哺方法；当地已认可规范优先，逐块清理存量 |
+| [standard/](../standard/README.md) | Workbench 给被管项目提供的规范资产，不等于本仓研发知识库 |
+| `crates/` | `bw` 内核、`bw-engine` 底座、`app-shell` 桌面壳；工程验证读 AGENTS |
+| `scripts/` | 门禁与开发辅助脚本 |
+| `.bw/` | 本项目的项目约定、指标及出包/验包资产；不是全仓知识目录 |
+
+变更原因与验证证据查 commit/PR，历史查 Git；设计直接读 architecture，不另设仓根设计指针或变更流水。
