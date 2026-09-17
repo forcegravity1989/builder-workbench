@@ -2,7 +2,8 @@
   "v": 1,
   "profiles": {
     "headless": ["runner-tests", "knowledge-tests", "format", "clippy-headless", "test-headless", "kernel-free", "remote-isolation", "screen-import", "screen-hooks", "file-lines", "codegraph"],
-    "pr": ["runner-tests", "knowledge-tests", "runtime", "format", "clippy", "shell", "test", "kernel-free", "remote-isolation", "screen-import", "screen-hooks", "file-lines", "codegraph", "e2e-deps"]
+    "pr": ["runner-tests", "knowledge-tests", "runtime", "format", "clippy", "shell", "test", "kernel-free", "remote-isolation", "screen-import", "screen-hooks", "file-lines", "codegraph", "e2e-deps"],
+    "pr-onboarding": ["runner-tests", "knowledge-tests", "runtime", "format", "clippy", "shell", "test", "kernel-free", "remote-isolation", "screen-import", "screen-hooks", "file-lines", "codegraph", "e2e-deps"]
   },
   "steps": [
     {"id":"runtime","title":"确认 WebView2 运行时及版本","command":["powershell.exe","-NoProfile","-ExecutionPolicy","Bypass","-File",".bw/release/e2e/runtime.ps1"],"timeoutSeconds":30},

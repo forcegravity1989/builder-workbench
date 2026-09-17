@@ -4,7 +4,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import os from 'node:os';
 import { execFileSync } from 'node:child_process';
-import { inside, readCases, runVerification, sha256, storeEvidenceBlob } from './verify.mjs';
+import { inside, readCases, readPlan, runVerification, sha256, storeEvidenceBlob } from './verify.mjs';
 
 function fixture(t) {
   const parent = fs.realpathSync(os.tmpdir());
@@ -24,6 +24,17 @@ function fixture(t) {
 }
 const step = (id, code, extra = {}) => ({ id, title: id, command: [process.execPath, '-e', code], timeoutSeconds: 10, ...extra });
 const run = (root, steps) => runVerification({ root, profile: 'test', steps });
+
+test('write-capable onboarding stays out of the ordinary PR profile', () => {
+  const root = execFileSync('git', ['rev-parse', '--show-toplevel'], { encoding: 'utf8' }).trim();
+  const ordinary = readPlan(root, 'pr').map(x => x.id);
+  const onboarding = readPlan(root, 'pr-onboarding').map(x => x.id);
+  assert.ok(ordinary.includes('desktop-core'));
+  assert.ok(!ordinary.includes('desktop-onboarding'));
+  assert.ok(onboarding.includes('desktop-core'));
+  assert.ok(onboarding.includes('desktop-onboarding'));
+  for (const id of ordinary) assert.ok(onboarding.includes(id), `pr-onboarding must retain ordinary PR step ${id}`);
+});
 
 test('nonzero exit cannot be hidden by a success-looking log; later steps do not run', async t => {
   const root = fixture(t);
@@ -58,6 +69,18 @@ test('zero-exit E2E with missing expected case cannot pass', async t => {
   const { report } = await run(root, [spec]);
   assert.equal(report.status, 'failed');
   assert.equal(report.steps[0].cases[0].status, 'not_run');
+});
+
+test('E2E failure retains setup/cleanup and individual case reasons in the PR summary', async t => {
+  const root = fixture(t);
+  const spec = step('failed-case', 'require("node:fs").writeFileSync(process.argv[1]+"/result.json",JSON.stringify({v:1,error:"cleanup still locked",cases:[{id:"required",title:"Required journey",status:"failed",message:"remote readback timed out",evidence:[]}]}));process.exit(1)', { layer: 'desktop', expectedCases: ['required'] });
+  spec.command.push('{out}');
+  const { out, report } = await run(root, [spec]);
+  assert.equal(report.status, 'failed');
+  assert.match(report.steps[0].message, /cleanup still locked/);
+  const summary = fs.readFileSync(path.join(out, 'review.md'), 'utf8');
+  assert.match(summary, /cleanup still locked/);
+  assert.match(summary, /remote readback timed out/);
 });
 
 test('evidence needs known status, exact cases, nonempty owned files, and no path escape', t => {

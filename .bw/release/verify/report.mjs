@@ -15,13 +15,13 @@ export function writeReports(out, report) {
   const markdown = [
     `## 交付验证：${labels[report.status]}`, '', summary, '',
     `- 源码：${md(source)}`,
-    `- 执行范围：${report.profile === 'pr' ? 'Windows 门禁 + 已注册 E2E' : 'Linux 内核与底座检查（未跑桌面 E2E）'}`,
+    `- 执行范围：${report.profile.startsWith('pr') ? 'Windows 门禁 + 本 profile 已注册 E2E' : 'Linux 内核与底座检查（未跑桌面 E2E）'}`,
     `- 环境：${md(report.environment.platform)} / ${md(report.environment.arch)} / Node ${md(report.environment.node)}`,
     `- 本次执行：${report.runId}`, '',
-    '| 检查 | 结果 | 秒 |', '|---|---|---:|',
-    ...report.steps.map(x => `| ${md(x.title)} | ${labels[x.status]} | ${x.seconds ?? '—'} |`), '',
-    '| 用例 | 证据层次 | 结果 | 证据文件 |', '|---|---|---|---|',
-    ...cases.map(x => `| ${md(x.title)} (${x.id}) | ${layer[x.layer]} | ${labels[x.status]} | ${x.evidence.map(e => md(`${x.stepId}/${e}`)).join(', ') || '无'} |`), '',
+    '| 检查 | 结果 | 秒 | 说明 |', '|---|---|---:|---|',
+    ...report.steps.map(x => `| ${md(x.title)} | ${labels[x.status]} | ${x.seconds ?? '—'} | ${md(x.message)} |`), '',
+    '| 用例 | 证据层次 | 结果 | 说明 | 证据文件 |', '|---|---|---|---|---|',
+    ...cases.map(x => `| ${md(x.title)} (${x.id}) | ${layer[x.layer]} | ${labels[x.status]} | ${md(x.message)} | ${x.evidence.map(e => md(`${x.stepId}/${e}`)).join(', ') || '无'} |`), '',
     '证据包中的 report.html 可离线打开；result.json 是机器结果，manifest.json 列出文件 SHA-256。', '',
     '### 人审查什么', '',
     '- 此报告的源码是否就是 PR 最新提交；是否仍有未通过或未跑项。',
@@ -51,7 +51,7 @@ export function writeReports(out, report) {
 </style><main>
 <div class="eyebrow">BUILDERS' WORKBENCH · 实际执行结果</div>
 <h1>交付验证 ${badge(report.status)}</h1><p class="big">${html(summary)}</p>
-<div class="card"><b>${report.profile === 'pr' ? 'Windows 门禁 + 已注册 E2E' : 'Linux 内核与底座检查'}</b><p class="source">${html(source)}</p><p>环境 ${html(report.environment.platform)} / ${html(report.environment.arch)} · Node ${html(report.environment.node)}</p><p class="source">${html(report.startedAt)} → ${html(report.finishedAt)}<br>执行编号 ${html(report.runId)}</p><div class="links"><a href="result.json">机器结果</a><a href="manifest.json">文件清单与校验值</a><a href="review.md">PR 验证摘要</a></div></div>
+<div class="card"><b>${report.profile.startsWith('pr') ? 'Windows 门禁 + 本 profile 已注册 E2E' : 'Linux 内核与底座检查'}</b><p class="source">${html(source)}</p><p>环境 ${html(report.environment.platform)} / ${html(report.environment.arch)} · Node ${html(report.environment.node)}</p><p class="source">${html(report.startedAt)} → ${html(report.finishedAt)}<br>执行编号 ${html(report.runId)}</p><div class="links"><a href="result.json">机器结果</a><a href="manifest.json">文件清单与校验值</a><a href="review.md">PR 验证摘要</a></div></div>
 <div class="notice"><b>通过的是这些检查，不等于 PR 已获准合入。</b><p>人查看：最新提交是否一致 → 专项用例是否覆盖本次改动 → 代码 Review 与未验范围。</p></div>
 <h2>执行了什么</h2><div class="card scroll"><table><thead><tr><th>阶段</th><th>结果</th><th>秒</th><th>说明 / 日志</th></tr></thead><tbody>${report.steps.map(x => `<tr><td>${html(x.title)}</td><td>${badge(x.status)}</td><td>${x.seconds ?? '—'}</td><td>${html(x.message)}${x.log ? `<br><a href="${html(url(x.log))}">执行日志</a>` : ''}</td></tr>`).join('')}</tbody></table></div>
 <h2>哪些用例证明了什么</h2><p>展开查看真实截图与独立读回；“未跑”不会算作通过。</p>${cards || '<div class="card">该执行范围没有运行 E2E。</div>'}

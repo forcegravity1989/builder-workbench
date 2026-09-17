@@ -58,11 +58,15 @@ export function readPlan(root, profile) {
     if (!step) throw new Error(`缺少步骤：${id}`);
     return step;
   });
-  if (profile === 'pr') {
+  if (profile !== 'headless') {
     const dir = inside(root, '.bw/release/e2e/suites');
     for (const name of fs.readdirSync(dir).filter(x => x.endsWith('.json')).sort()) {
       const suite = json(inside(dir, name));
       if (!suite.expectedCases) throw new Error(`${name}: 专项需要列出 expectedCases`);
+      const profiles = suite.profiles || ['pr'];
+      if (!Array.isArray(profiles) || profiles.some(x => typeof x !== 'string')) throw new Error(`${name}: profiles 格式不对`);
+      const inheritedPrSuite = profile === 'pr-onboarding' && profiles.includes('pr');
+      if (!profiles.includes(profile) && !inheritedPrSuite) continue;
       steps.push(suite);
     }
   }
@@ -129,7 +133,7 @@ export async function execute(command, options) {
 }
 
 function expand(command, values) {
-  return command.map(arg => arg.replace(/\{(node|root|out)\}/g, (_, key) => values[key]));
+  return command.map(arg => arg.replace(/\{(node|root|shared|out)\}/g, (_, key) => values[key]));
 }
 
 function artifacts(dir, prefix = '') {
@@ -149,6 +153,8 @@ export async function runVerification({ root, profile, steps = readPlan(root, pr
   fs.mkdirSync(parent, { recursive: true });
   const out = path.join(parent, runId);
   fs.mkdirSync(out);
+  const commonGitDir = execFileSync('git', ['rev-parse', '--path-format=absolute', '--git-common-dir'], { cwd: root, encoding: 'utf8' }).trim();
+  const shared = path.dirname(path.resolve(root, commonGitDir));
   const report = {
     v: 1, runId, profile, source, startedAt: new Date().toISOString(),
     environment: { platform: process.platform, release: os.release(), arch: process.arch, node: process.version },
@@ -163,7 +169,7 @@ export async function runVerification({ root, profile, steps = readPlan(root, pr
     if (blocked) { step.message = '前置步骤失败，未执行'; continue; }
     const dir = path.join(out, step.id);
     fs.mkdirSync(dir);
-    step.command = expand(spec.command, { node: process.execPath, root, out: dir });
+    step.command = expand(spec.command, { node: process.execPath, root, shared, out: dir });
     step.log = `${step.id}/command.log`;
     console.log(`[${step.id}] ${step.title}`);
     try {
@@ -178,7 +184,7 @@ export async function runVerification({ root, profile, steps = readPlan(root, pr
         if (!outcome.passed && typeof detail === 'string' && detail) step.message = detail;
         if (step.cases.some(x => x.status !== 'passed')) {
           step.status = 'failed';
-          step.message = '必跑用例存在失败、未跑或不适用';
+          step.message = [outcome.error, detail, '必跑用例存在失败、未跑或不适用'].filter(Boolean).join('；');
         }
       }
     } catch (error) {
@@ -207,8 +213,8 @@ export async function runVerification({ root, profile, steps = readPlan(root, pr
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
   try {
     const args = process.argv.slice(2);
-    if (args.length !== 2 || args[0] !== '--profile' || !['headless', 'pr'].includes(args[1])) throw new Error('用法：在仓根运行 node .bw/release/verify/verify.mjs --profile headless|pr');
-    if (args[1] === 'pr' && process.platform !== 'win32') throw new Error('完整 PR 桌面验证当前需要 Windows；Linux 用 headless，macOS 尚未接入');
+    if (args.length !== 2 || args[0] !== '--profile' || !['headless', 'pr', 'pr-onboarding'].includes(args[1])) throw new Error('用法：在仓根运行 node .bw/release/verify/verify.mjs --profile headless|pr|pr-onboarding');
+    if (args[1] !== 'headless' && process.platform !== 'win32') throw new Error('完整 PR 桌面验证当前需要 Windows；Linux 用 headless，macOS 尚未接入');
     const root = execFileSync('git', ['rev-parse', '--show-toplevel'], { encoding: 'utf8' }).trim();
     const { report } = await runVerification({ root, profile: args[1] });
     process.exitCode = report.status === 'passed' ? 0 : 1;

@@ -230,6 +230,7 @@ pub struct AutomationRow {
     pub id: String,
     pub name: String,
     pub project_id: String,
+    pub enabled: Option<bool>,
 }
 
 pub struct AutomationCreate<'a> {
@@ -290,6 +291,7 @@ pub async fn list_automations(rt: &OrcaRuntime) -> Result<Vec<AutomationRow>, Or
                 id: v.get("id")?.as_str()?.to_string(),
                 name,
                 project_id,
+                enabled: v.get("enabled").and_then(|x| x.as_bool()),
             })
         })
         .collect())
