@@ -1,13 +1,13 @@
 {
   "v": 1,
-  "runId": "2026-09-17T07-23-23-844Z-c216b976",
+  "runId": "2026-09-17T07-33-55-423Z-d6c13f8e",
   "profile": "pr",
   "source": {
-    "commit": "680329a3966fb0f459c2b2f89ac4ce82ab5eef19",
+    "commit": "fd7d471acb70bee503fc9abeb3b15f51773df885",
     "dirty": false,
-    "fingerprint": "3530252b6377a6a09a6af98347a0cba649e9c9a6a561064c22243fde815c0578"
+    "fingerprint": "7a1963f16be5c90276251df6748ed154e78f40dc33d295dd3b28ca3062f4fabc"
   },
-  "startedAt": "2026-09-17T07:23:23.846Z",
+  "startedAt": "2026-09-17T07:33:55.425Z",
   "environment": {
     "platform": "win32",
     "release": "10.0.22631",
@@ -45,7 +45,7 @@
         ".claude/skills/project-knowledge/scripts/scan-knowledge.test.mjs"
       ],
       "log": "knowledge-tests/command.log",
-      "seconds": 0.7,
+      "seconds": 0.5,
       "exitCode": 0,
       "message": "执行通过"
     },
@@ -81,7 +81,7 @@
         "--check"
       ],
       "log": "format/command.log",
-      "seconds": 1,
+      "seconds": 1.2,
       "exitCode": 0,
       "message": "执行通过"
     },
@@ -101,7 +101,7 @@
         "warnings"
       ],
       "log": "clippy/command.log",
-      "seconds": 1.3,
+      "seconds": 1.5,
       "exitCode": 0,
       "message": "执行通过"
     },
@@ -119,7 +119,7 @@
         "app-shell"
       ],
       "log": "shell/command.log",
-      "seconds": 1.2,
+      "seconds": 0.9,
       "exitCode": 0,
       "message": "执行通过"
     },
@@ -136,7 +136,7 @@
         "--workspace"
       ],
       "log": "test/command.log",
-      "seconds": 2.4,
+      "seconds": 3.2,
       "exitCode": 0,
       "message": "执行通过"
     },
@@ -181,7 +181,7 @@
         "scripts/guard-no-cross-screen-import.sh"
       ],
       "log": "screen-import/command.log",
-      "seconds": 0.8,
+      "seconds": 1.1,
       "exitCode": 0,
       "message": "执行通过"
     },
@@ -196,7 +196,7 @@
         "scripts/guard-screen-hooks.sh"
       ],
       "log": "screen-hooks/command.log",
-      "seconds": 1.7,
+      "seconds": 1.9,
       "exitCode": 0,
       "message": "执行通过"
     },
@@ -211,7 +211,7 @@
         "scripts/guard-file-lines.sh"
       ],
       "log": "file-lines/command.log",
-      "seconds": 7.6,
+      "seconds": 8.1,
       "exitCode": 0,
       "message": "执行通过"
     },
@@ -226,7 +226,7 @@
         "scripts/guard-codegraph-clean.sh"
       ],
       "log": "codegraph/command.log",
-      "seconds": 0.1,
+      "seconds": 0.2,
       "exitCode": 0,
       "message": "执行通过"
     },
@@ -245,7 +245,7 @@
         ".bw/release/e2e/dependencies.ps1"
       ],
       "log": "e2e-deps/command.log",
-      "seconds": 2.5,
+      "seconds": 3.4,
       "exitCode": 0,
       "message": "执行通过"
     },
@@ -304,10 +304,10 @@
         "-Exe",
         "E:/zhuyu/code/builder-workbench/.bw/worktrees/knowledge-methods/target/debug/bw-dev.exe",
         "-OutDir",
-        "E:\\zhuyu\\code\\builder-workbench\\.bw\\worktrees\\knowledge-methods\\.bw\\release\\out\\verify\\2026-09-17T07-23-23-844Z-c216b976\\desktop-core"
+        "E:\\zhuyu\\code\\builder-workbench\\.bw\\worktrees\\knowledge-methods\\.bw\\release\\out\\verify\\2026-09-17T07-33-55-423Z-d6c13f8e\\desktop-core"
       ],
       "log": "desktop-core/command.log",
-      "seconds": 5.5,
+      "seconds": 8.9,
       "exitCode": 0,
       "message": "执行通过"
     }
@@ -317,11 +317,11 @@
     "源码验证不能证明安装包或正式发布；远端写入与 Orca 会话仅以明确列出的专项用例为准。核心桌面用例由固定脚本执行，不调用模型。"
   ],
   "sourceAfter": {
-    "commit": "680329a3966fb0f459c2b2f89ac4ce82ab5eef19",
+    "commit": "fd7d471acb70bee503fc9abeb3b15f51773df885",
     "dirty": false,
-    "fingerprint": "3530252b6377a6a09a6af98347a0cba649e9c9a6a561064c22243fde815c0578"
+    "fingerprint": "7a1963f16be5c90276251df6748ed154e78f40dc33d295dd3b28ca3062f4fabc"
   },
   "sourceUnchanged": true,
-  "finishedAt": "2026-09-17T07:23:53.831Z",
-  "seconds": 30
+  "finishedAt": "2026-09-17T07:34:31.599Z",
+  "seconds": 36.2
 }
