@@ -1,158 +1,123 @@
-# AGENTS.md — Workbench 开发手册
+# AGENTS.md — Workbench 开发约定
 
-> 这是 **Builders' Workbench（Workbench / BW）** 仓库的**唯一开发规矩正本**。`CLAUDE.md` 只是一行导入它。给所有驱动 AI(Claude Code / Cursor / Codex)和接手的人看。改这份 = 改开发规矩,过评审再合。
+> **本篇维护约定**
+> - **读者与时机**：在本仓工作的模型与开发者；开始任务、修改文档、提交和开 PR 前读取。
+> - **职责与边界**：只写任务读取路径、开发硬约束、建跑测命令、文档维护与交付规则；不承载产品介绍、模块设计正文或变更流水。
+> - **结构**：按任务读取 → 文档维护 → 项目硬约束 → 构建验证 → 修改交付 → CodeGraph。
+> - **更新触发**：开发约定、命令、权限边界或读取路径变化时更新。本篇是唯一开发规矩正本，`CLAUDE.md` 只导入它；整仓分层服从 [原则 01](docs/01-principles/01-document-organization.md)。修改本篇须评审。
 
-## 原则正本（最高优先级）
+## 按任务读取
 
-**`docs/01-principles/` 是本仓最重要、最慢变的原则。** 开特性、改产品主张、写给人看的文档之前必须对齐这里；不得用草稿实现或口头约定推翻。
+本仓开发 Builders' Workbench（Workbench / BW）：Rust 桌面工作台，内核 `crates/bw`、底座 `crates/bw-engine`、壳 `crates/app-shell`。给人介绍产品从 [README.md](README.md) 开始，完整文档地图在 [docs/README.md](docs/README.md)。
 
-| 篇 | 管什么 |
+**[docs/01-principles/](docs/01-principles/README.md) 是最慢变的原则正本**，不得用草稿实现或聊天结论推翻。按任务读取对应资料，不把所有正文堆进入口：
+
+| 任务 | 读取路径与动作 |
 |---|---|
-| [`docs/01-principles/01-document-organization.md`](docs/01-principles/01-document-organization.md) | 整仓知识/文档怎么分层；三层边界——architecture(整体旅程+逻辑模块) / 06-module(模块实现心智) / 05-features(用户价值特性)；变更时同步入口、引用与读取方；`docs/05-features/` 少 gate |
-| [`docs/01-principles/02-working-backwards.md`](docs/01-principles/02-working-backwards.md) | 逆向工作法：特性怎么写 intent / 带原型的 spec |
-| [`docs/01-principles/03-press-release-faq-flywheel.md`](docs/01-principles/03-press-release-faq-flywheel.md) | **整个产品**的新闻稿、外/内 FAQ、飞轮（主张正本） |
+| 仓外 IDE 新会话 | 本篇 → [workbench-start](.claude/skills/workbench-start/SKILL.md) → [architecture](docs/architecture.md) → [CONTEXT](CONTEXT.md)，再按改动读指南与高保真。Workbench 发起的项目执行会话读产品传入提示与被管项目的 AGENTS，不走本仓起手 Skill |
+| 特性级变更 | 对齐 [03 产品主张与飞轮](docs/01-principles/03-press-release-faq-flywheel.md) → 按 [02 逆向工作法](docs/01-principles/02-working-backwards.md) 开/改 `docs/05-features/<id>/intent.md` 与带原型链接的 `spec.md`；二者由人确认，`plan.md` 仅大风险升 gate |
+| 小 bug、文案、无新增用户价值的整理 | 读现有正本，直接修、验证、commit/PR 留痕；不开特性制品链，粒度听 [01](docs/01-principles/01-document-organization.md) |
+| 改客群、飞轮或对外主张 | 先议再改 03；特性 intent 不得偷偷改写产品主张，不把草稿界面说成已交付 |
+| 改代码或现行设计 | 在 [architecture](docs/architecture.md) 定位用例哪一站 → §2 能力 → §3 crate 与数据流；模块取舍读 [06-module](docs/06-module/README.md)。影响使用方式或界面时同步 [指南](docs/03-guide/) 与 [设计系统](docs/04-design-system/README.md)/[高保真](docs/hifi/) |
+| 改文档 | 先读下节维护流程 → 原则 01 → 目标文件原文头部约定与相关正本；用 [docs 地图](docs/README.md) 找去处 |
+| 改 `standard/` | 先读 [standard/README](standard/README.md) 与 [系统提示词与渐进加载](docs/06-module/系统提示词与渐进加载.md)的维护对照；写 Skill 再读 [SKILL-MD-SPEC](standard/skills/SKILL-MD-SPEC.md)。本仓知识库不等于给被管项目分发的规范 |
 
-索引见 [`docs/01-principles/README.md`](docs/01-principles/README.md)。改客群 / 飞轮 / 对外主张 → 先议再改 03；特性 intent 不得偷偷改写。现行实现对照听 [`docs/architecture.md`](docs/architecture.md)，**不得把草稿界面讲成 03 里已经交付的体验**。
+Superpowers / grill-me 可用于发散、质询和计划草稿，特性产出仍须落回 `docs/05-features/<id>/`。找不到设计落点先澄清并补正本，再写代码；未锁定决策先走 grill/domain-modeling。跨会话以仓内正本及可追溯的 commit/PR 为据，不凭上次聊天改代码。
 
-### 特性起手路径（硬约定）
+## 文档怎么读、怎么维护
 
-| 场景 | 怎么走 |
+1. **先读头部，再读正文与相关正本。** 头部说明本篇给谁看、什么时候读、可以写什么、不写什么、正文结构与更新触发。读 Markdown 原文，包括 README 顶部的维护注释；不要只看渲染页。`CLAUDE.md` 是一行导入的特例。
+2. **新增、迁入或补回内容，先判断是否在目标头部范围内。** 在范围内才改正文；不在范围内先找已有的合适正本。确需扩展这篇职责时，先向人说明“头部哪条要改、为什么、与其他文档的边界如何变化”，**经人确认后才能改头部并加入内容**。不得为了塞进内容偷偷放宽头部；已经明确批准的范围无需重复确认。
+3. **旧篇缺约定不等于无限制。** 先用原则、索引与原文导读确认其既有职责；边界明确时补头部，职责不明或要承担新职责时先问人。新篇先确认必要性与边界，不为安放一段内容就新建文档。头部不得推翻上层原则和产品硬约束。
+4. **无价值、重复、过时或讲不清且不再需要的内容可以直接删。** 不为保留而复制到归档。仍有价值但放错位置的内容迁到已有正本；迁入也执行第 2 条。必要迁移、原处删除、入口和读取方调整放在同一 PR，不把缺口留给“后续再补”。需要保留的历史必须标清历史身份，不能继续充当现行操作要求。
+5. **验证这次变动影响到的路径。** 查入链、章节引用、示例和实际读取方；确认模型从 AGENTS 的任务路径能找到相关规范并读到正文。文件存在、索引可达、实际加载与模型遵守是不同证据，不能把静态检查说成行为验证；日常修改不默认全库审计。
+6. **各归其位，便于人审。** 当前知识写入对应正本；改了什么、为什么、实际验证和未验证项写进 commit/PR。PR 明列头部边界变化及人的授权、内容保留/迁移/删除去向。历史从 Git 找回；即使找回旧内容，仍须先过第 2 条。
+
+共用分层与头部要素见 [原则 01](docs/01-principles/01-document-organization.md)；每篇具体范围与格式以其头部为准。本节管操作顺序，不再维护一份各篇规范副本。
+
+## 项目硬约束
+
+### 四铁律
+
+| 约束 | 如何守住 |
 |---|---|
-| **特性级变更** | 对齐 03 → 按 **02** 开 / 改 `docs/05-features/<id>/intent.md` + 带原型的 `spec.md`（人 gate；**原型只留链接，文件不进仓**）；`plan.md` 仅大风险升 gate；小修直修（见 01） |
-| **Superpowers / grill-me** | **可用**：发散、质询、写计划草稿。产出必须落回 `docs/05-features/<id>/`。不得把聊天或旁路 specs 当成已过 gate 的正本 |
-| **小 bug / 琐修** | 直接改 + 门禁 / 验证；不开 `docs/05-features/` |
+| 杀进程重开，所有数字能重新计算、前后一致 | 现算推导；用真实 E2E 重启后独立读回核对 |
+| 信号只能从数据推导；没数据就是 Unknown，不是绿 | `Derived<Signal>` 密封，store 无 `set_signal`；现算是唯一写入者 |
+| 完成永远由人确认，同一工作不重复记录完成结果 | `can_transition_to` 守卫；人可从待办/进行中/待评审/阻塞/未排期操作完成，有开放 MR 先合入，否则关闭 Issue；自动化、agent、定时不得推到 Done；`settled_at` 只记录一次 |
+| 定时任务真实到点触发；自动创建的 Issue 不自动完成 | 调度在 Orca，到点开会话，不能替人确认 Done |
 
+- Issue 与标签是工作状态的正本；仓文件产物通过分支和 PR/MR 评审。标签协议、状态机和各写入者边界读 [issue-state](standard/system-prompt/references/issue-state.md)，不要另造一套。不打 `kind` / `tool` / `workflow` 标签：种类从标题推导，工具跟随本机设置，工作流按类别或周期工作标题选择；不再新写 `bw:week:*`。
+- Workbench MVP 本地零业务数据库。用 `gh` / `codehub-cli` / `git` / 文件独立读回；不用 V3 的 `sqlite3` 路径。项目约定和指标资产的归属读 [architecture](docs/architecture.md)，不能将资产盘点变成代写项目开发规范。
+- 入口层不写业务和存储；`bw-engine` 遵守 `#![forbid(unsafe_code)]`。
+- 先审已有代码、提示词和方案，不对就改原件；不新增平行实现、平行规范或特殊通道。不为过时实现留兼容层、回退或双路径；不扩 scope，未建如实标未建。
+- V3 已删除，不能用 V3 crate 解释 MVP；历史在 `v3` 分支，必要时看 [旧模块挪移记录](docs/10-reference/v3-and-module-migration.md)。
 
-## 这是什么
+## 构建、运行与验证
 
-单人构建者的 Rust 原生桌面工作台(Dioxus 0.7 / wry WebView,macOS + Windows)。产品命题见 [`README.md`](README.md);设计正本见 [`docs/architecture.md`](docs/architecture.md)([`DESIGN.md`](DESIGN.md) 指路);领域词表见 [`CONTEXT.md`](CONTEXT.md)。产品叫 **Builders' Workbench / Workbench / BW**;工程标识用 **bw**(crate / `.bw/` / `bw:*` / `BW_*`)。已废弃 buddy、loop-buddy。
-
-> **V3 已删**:本仓产品线是 Workbench MVP(内核 `crates/bw` + 底座 `crates/bw-engine` + 壳 `crates/app-shell`)。V3 的六 crate 与 V3 编译资产已于 2026-08-24 删除——全量在 `v3` 分支找回;史实 + 旧 16 模块挪移地图见 [`V3 删除与旧 16 模块挪移`](docs/10-reference/v3-and-module-migration.md)。别再提 V3 概念,设计看 [`docs/architecture.md`](docs/architecture.md)。
-
-## 语言和构建
-
-Rust 1.82+,cargo workspace。桌面壳另需 Dioxus 0.7 的系统依赖(macOS 自带 WebKit,Windows 用 WebView2)。`#![forbid(unsafe_code)]` 是 `bw-engine` 的规矩。跨会话只认本仓的 `docs/01-principles/` + `AGENTS.md` + `CONTEXT.md` + `docs/` + `CHANGELOG.md` + `DESIGN.md`,不凭上一会话口头结论改代码。
-
-仓外 IDE(Claude Code / Cursor / Codex)开新会话,先读 [`.claude/skills/workbench-start/SKILL.md`](.claude/skills/workbench-start/SKILL.md)——只是闸门,正本仍是本文件。Workbench 发起的项目执行会话遵循产品传入的提示与被管项目的 `AGENTS.md`，不再走本仓起手 skill。Workbench MVP 还不能在工作台里维护自己,所以仓外起手暂时靠这份 skill,不是再做一套伴飞/需求/修 bug 流程。
-
-## 怎么建 / 怎么跑 / 怎么测
+Rust 1.82+，Cargo workspace；桌面壳使用 Dioxus 0.7 / wry，macOS 使用系统 WebKit，Windows 使用 WebView2。
 
 ```bash
-cargo check -p bw -p bw-engine            # 日常最快(内核+底座,不编 Dioxus)
-cargo run -p app-shell                      # 启 Workbench MVP 桌面壳(bin 名 bw-dev)
-BW_OPEN=<项目名> BW_PANEL=overview|plan|session|config|kb ./target/debug/bw-dev
-                                            # 深链直达屏;stderr [BW_OPEN]=真的渲染到了
-BW_VIEW=onboard|settings ./target/debug/bw-dev   # 顶层屏深链
-BW_HELP=home|guide|report ./target/debug/bw-dev   # 帮助小窗深链
-cargo run -p bw-engine --example pty_smoke [-- --teardown|-- --abort]  # PTY 地基烟测(不碰 claude/网关)
-cargo test --workspace                                # 本地含壳;CI 同命令加 --exclude app-shell(ubuntu 无 WebKit/GTK)
-# 出包 / 验包(Windows,非门禁/非 CI):入口只认 .cmd,协议见 docs/adr/0005
-#   .bw/release/pack/pack.cmd --version <号> --workdir <仓根绝对路径>
-#   .bw/release/e2e/e2e.cmd --version <号> --workdir <仓根绝对路径>
-# 正源 .bw/release/pack/*.iss；产物 .bw/release/out/<号>/(gitignore)
+cargo check -p bw -p bw-engine
+cargo run -p app-shell
+cargo run -p bw-engine --example pty_smoke
+# PTY 烟测也支持：-- --teardown 或 -- --abort
+cargo test --workspace
 ```
 
-桌面开工走会话屏的 Orca / Open Design，开工工具按本机设置选择；现行执行路径、工具检测与失败处理见 [会话与执行](docs/06-module/会话与执行.md)。真跑依赖本机工具、会话宿主、信任对话框与网关状态，不作为门禁。上面的 PTY 命令只验证底座，不能证明桌面开工链已跑通。
+壳二进制名 `bw-dev`。深链环境变量：`BW_OPEN=<项目名>` 搭配 `BW_PANEL=overview|plan|session|config|kb`；顶层屏用 `BW_VIEW=onboard|settings`，帮助小窗用 `BW_HELP=home|guide|report`。设置后启动壳，stderr 的 `[BW_OPEN]` 用于核对实际渲染。PowerShell 示例：
 
-## 门禁(每个 commit 前全过,与 CI 一致)
+```powershell
+$env:BW_OPEN = '<项目名>'
+$env:BW_PANEL = 'plan'
+.\target\debug\bw-dev.exe
+```
+
+Windows 出包/验包入口是 `.bw/release/pack/pack.cmd` 与 `.bw/release/e2e/e2e.cmd`，均传 `--version <号> --workdir <仓根绝对路径>`；协议见 [ADR 0005](docs/02-adr/0005-发版出包与E2E协议.md)。正源为 `.bw/release/pack/*.iss`，产物 `.bw/release/out/<号>/` 不进仓；出包不是日常门禁。
+
+桌面开工走会话屏 Orca / Open Design，工具按本机设置选择；路径与失败处理见 [会话与执行](docs/06-module/会话与执行.md)。真实执行依赖工具、会话宿主、信任对话框及网关；PTY 烟测只证明底座，不证明桌面开工成功。
+
+### 提交前门禁
+
+每个 commit 前全过；Windows 的 shell 守卫用 Git Bash 执行。
 
 Windows 交付验证入口：`node .bw/release/verify/verify.mjs --profile pr`，执行下面的门禁（壳 `build` 包含 `check`）及已注册固定 E2E，产出 `.bw/release/out/verify/<run-id>/report.html`、`result.json`、`review.md` 与证据清单。命令、报告格式、专项用例接入及 CI 结果位置见 [交付验证入口](.bw/release/verify/README.md)。开发特性的会话负责补对应专项用例并发 PR；通用入口不代替特性验收、代码 Review 和人的合入决定。
 
 ```bash
 cargo fmt --all --check
 cargo clippy --workspace -- -D warnings
-cargo check -p app-shell          # Workbench MVP 壳编译过
+cargo check -p app-shell
 ./scripts/guard-kernel-ui-free.sh
-./scripts/guard-remote-isolation.sh         # 远端两臂(github / codehub)互不相识
-./scripts/guard-no-cross-screen-import.sh   # 屏与屏不互相引用
-./scripts/guard-screen-hooks.sh             # 用 hook 的函数必须是组件
-./scripts/guard-file-lines.sh               # 单文件 2000 行硬上限(只查 Workbench MVP 三 crate)
-./scripts/guard-codegraph-clean.sh           # codegraph.db 不进 feature commit(CI 在 main 发布)
+./scripts/guard-remote-isolation.sh
+./scripts/guard-no-cross-screen-import.sh
+./scripts/guard-screen-hooks.sh
+./scripts/guard-file-lines.sh
+./scripts/guard-codegraph-clean.sh
 cargo test --workspace
 ```
 
-本地与 CI：Ubuntu 的 headless 检查排除 app-shell；Windows CI 执行完整门禁、构建壳与固定桌面 E2E。两者复用 `.bw/release/verify/plan.json`，差异以 `.github/workflows/ci.yml` 为准。PR 检查的固定结果入口是 Checks 对应任务的 Summary，完整报告和证据在该次 Actions Artifacts；独立验证 Review 仍遵循下面的截图要求。
+本地与 CI：Ubuntu 的 headless 检查排除 app-shell；Windows CI 执行完整门禁、构建壳与固定桌面 E2E。两者复用 `.bw/release/verify/plan.json`，差异以 [.github/workflows/ci.yml](.github/workflows/ci.yml) 为准。PR 检查的固定结果入口是 Checks 对应任务的 Summary，完整报告和证据在该次 Actions Artifacts；独立验证 Review 仍遵循下面的截图要求。
 
-行为正确性靠 E2E(深链启动 + `codehub-cli`/`gh`/`git`/`cat .bw/…` 读回 + computer-use)+ `/code-review`;单元测试不是交付物(现存的随 CI 跑、改到顺手维护、不建回归大坝)。**Workbench MVP 本地零数据库——读回用 `codehub-cli`/`gh`/`git`/`cat .bw/…`,不用 `sqlite3`**(那是 V3 的库)。
+行为正确性仍靠真实 E2E（深链、远端/Git/文件读回与界面核对）及 code review；已有单测随改维护，不把新增回归大坝当交付物。
 
-## 顶层目录导览
+## 修改与交付
 
-```
-crates/   bw(MVP 内核:本地零库+仓文件解析+现算推导+Command/Event)
-          bw-engine(MVP 底座:交互式 claude+PTY+worktree+git+codehub/github 远端)
-          app-shell(MVP 壳:八屏+主题+内核桥+适配模块,bin bw-dev)
-standard/  Workbench 规范正本(include_str! 进 bw)。分层怎么写见该目录 README;模板 `templates/` + 系统提示词 `system-prompt/` + Workbench 技能 `skills/` + 业界 workflow `vendor/`
-docs/01-principles/ 慢变原则正本(01 分层/changes · 02 逆向工作法 · 03 新闻稿/FAQ/飞轮)
-docs/      architecture(整体旅程+逻辑模块)+ 06-module(模块实现心智)+ guide(产品指南)+ adr + hifi + README(地图)
-scripts/   门禁脚本(guard-*)+ codegraph 联调
-.bw/       被管项目资产(project.toml / metrics.toml) + 出包/验包样例(.bw/release/pack、.bw/release/e2e；产物 out/ 不进仓)
-```
+### 写作
 
-## Workbench 特有规矩(只写仓里真还在用的)
+- 汇报说明做了什么、结果、下一步；代号首次出现附人话。UI 写对象、动作、结果，必要时补失败原因和下一步，不展示内部协议与实现历史。
+- 术语以 [CONTEXT](CONTEXT.md) 为准；新领域词先登记，代号先查重再登记到词表或 ADR。普通词按通常含义使用，不另造隐喻；文案调整不等于改协议值。
+- 注释只写代码无法表达的约束、原因、单位、协议及边界，不复述控制流或历史；实现术语留在代码与技术对照中。
+- 新文档用头部给出 30 秒导读与维护约定；工具导入、上游镜像或生成文件遵守对应格式，不机械塞入头部。具体例外听原则 01。
 
-### 人怎么驾驭(可见物,不是代码)
+### commit 与 PR
 
-人、同事、另一只 AI 接手靠四样能看见的东西,不靠读源码。不同人开不同模型,只许写出同一套风格——正本在这些文件里,聊天结论不进仓就不算数。代码和文档都在这些规范下演进。仓外会话里人只走站和验收,改代码与文档是窗口 AI 的事(开场契约见 `.claude/skills/workbench-start`)。
+每件独立提交、在分支和独立工作树上。**默认继续交付 PR**：完成门禁、对应 E2E 和自检后，提交、push、开 PR 并补验证 Review；人明确说「只本地」时才停止在本地。不自动合入 PR、关闭 Issue 或正式发版本，除非人已明确授权该动作。标题应让人不查文档也懂改了什么，正文如实说明原因、取舍与偏差；变化与证据写进 commit/PR，当前知识写回正本。
 
-| 可见物 | 在哪 | 用来干什么 |
-|---|---|---|
-| 用户旅程 / 产品指南 | [`docs/03-guide/`](docs/03-guide/) | 点什么、背后发生什么、手上多了什么;按站把工作交给人或 AI |
-| 设计系统 / 高保真 | [`docs/04-design-system/`](docs/04-design-system/README.md) / [`docs/hifi/`](docs/hifi/) | 界面长什么样:视觉语言(token、组件类、中文排版层)在设计系统,壳编译期拼入它的样式表;八屏版式与旅程在高保真 |
-| 整体架构 / 逻辑模块 | [`docs/architecture.md`](docs/architecture.md) | **整体**用户旅程(用例)+ 逻辑模块划分;不进模块实现细节。**主提示词 / reference / skill 对照表在 [`docs/06-module/系统提示词与渐进加载`](docs/06-module/系统提示词与渐进加载.md)** |
-| 模块实现心智 | [`docs/06-module/`](docs/06-module/) | 单个模块怎么实现的**心智模型**:设计面对的主要矛盾 / 取舍;不纠结实现细节 |
-| 用户价值特性 | [`docs/05-features/`](docs/05-features/) | 对用户产生价值的特性描述(intent + 带原型 spec;特性级变更制品链) |
-| 产品主张 / 飞轮 | [`docs/01-principles/03`](docs/01-principles/03-press-release-faq-flywheel.md) | 目标体验与选型约束；特性 intent 必须对齐 |
-| 开发规矩 + 词表 | 本文件 + [`CONTEXT.md`](CONTEXT.md) | 怎么建/跑/测、用哪个词 |
+PR 展示实际改动、知识去向、验证结果和未验证项；文档改动按上节给出内容去向与头部变化。稳定规则写回正本，不把提交流水重新养成一份常驻文档。
 
-自己作为被管项目跟被管仓同一套落点:`.bw/` 走项目约定(名片)与指标(由更新指标与版本计划 Issue 维护定义，读数记录在 `bw/ledger`);`AGENTS.md` 是项目自己的,盘点不代写;`CONTEXT` / adr / spec 走 `mattpocock-skills`;旅程 / 高保真 / 架构是产品自己的可见物,业界 workflow 不会代写。资产盘点先盘 Workbench 给项目的 `.bw/` 是否跟上现行契约,再审查本周项目改动,再总结当周进展;它本身不产规范。方案正本在 [`docs/architecture.md`](docs/architecture.md) §1 用例「接入(项目约定)」+ §2 特性「关键信息维护」。
+界面/行为改动开 PR 时另发 review 验证报告：验什么、命令与深链、每条判据直接内嵌真壳截图、门禁结果、未验留白。截图推永不合入的 `shots/<分支名>`，内嵌用 `https://github.com/<owner>/<repo>/raw/<commit SHA>/x.jpg`，钉 SHA；不使用 `raw.githubusercontent` 或带斜杠分支名的图片地址。大改的改前/改后对照仍按约定进 `docs/05-features/<id>/shots/`。纯文档改动报告文档检查，不伪造界面验证。
 
-### 四铁律(产品行为不可违反约束)
+原型网页不进仓，发布为 artifact 或永不合入的分支，spec / STATUS 只留链接，见 [02 §3.2](docs/01-principles/02-working-backwards.md)。
 
-| 铁律(人话) | 怎么守 |
-|---|---|
-| 杀进程重开,所有数字能重新计算、前后一致 | 现算推导;E2E 重启后读回一致 |
-| 信号只能从数据推导;没数据就是 Unknown,不是绿 | `Derived<Signal>` 密封、store 无 `set_signal`;现算唯一写入者 |
-| 「完成」永远由人点;同一件工作绝不重复记录完成结果 | 状态机 `can_transition_to` 守卫;人可从待办/进行中/待评审/阻塞/未排期拖到完成(有开着 MR 就合入,没有则只关 issue);自动化/agent/定时不得推到 Done;`settled_at` settle-once |
-| 定时任务真实到点触发;自动创建的 Issue 绝不被自动推进到完成 | 钟在 Orca;到点开会话,不得推到 Done |
+## CodeGraph 导航（可选）
 
-### 三层模型(怎么给 Workbench 做一个特性)
-
-- **承载 · codehub issue**:issue+标签=唯一正本,本地零数据库;状态走标签、工作产物走 MR。
-- **规范 · 系统提示词 + 渐进加载**(主提示词 `standard/system-prompt/SYSTEM.md.tmpl` + `references/`):补被管仓看不见的 Workbench 信息。三层各写什么见 [`standard/README.md`](standard/README.md);对照表在 [`docs/06-module/系统提示词与渐进加载`](docs/06-module/系统提示词与渐进加载.md)。改 `standard/` 之前先对表。
-- **方法论 · skill / workflow**(Workbench 技能在 `standard/skills/`,业界 workflow 在 `standard/vendor/`,build 默认 `mattpocock-skills`):这场怎么带人。怎么写 skill 见 [`standard/skills/SKILL-MD-SPEC.md`](standard/skills/SKILL-MD-SPEC.md)。
-
-改一个特性前,先对齐 [`docs/01-principles/03`](docs/01-principles/03-press-release-faq-flywheel.md) 飞轮检验,再按「特性起手路径」写 `docs/05-features/`(见上);工程落点在 [`docs/architecture.md`](docs/architecture.md) 定位:用例哪一站(§1)→ 特性设计在哪层(§2)→ 三 crate 架构与数据流(§3)→ 三层里改哪层 → 数据归哪。找不到先补文档、再动代码——不清晰不写代码。
-
-### codehub issue 标签词表
-
-`bw:status:{todo|inprogress|inreview|blocked|cancelled}`(closed 且非 cancelled=Done,不打)、`bw:plan:<里程碑名>`(纳入哪些版本,可多值；遗留到 B 时增加 B、保留 A)、`bw:released:<名>`(实际在哪版交付,单值)、`bw:category:{prototype|build|optimize|growth|ops}`。新建不写 `bw:week:*`(旧标产品不认)。**不打**:`kind`(从标题推断)、`tool`/`workflow`(开工工具跟人走本机 settings;workflow 是产品默认)。仓改动两类:issue 数据(状态/排期/版本/类别)→ codehub 标签 Workbench 直接改;仓文件产物(名片)→ 项目约定常驻树 `bw/project` + MR。状态机与各写入者边界正本见 `standard/system-prompt/references/issue-state.md`。
-
-### 写作纪律(给人看的东西先让人看得懂)
-
-1. 汇报用人话:做了什么、结果如何、下一步。代号第一次出现带一句人话。
-2. 实现术语留在代码(settle-once / derive-only 这类只进代码注释与对照表,写给人的正文说人话)。
-3. 用词以 [`CONTEXT.md`](CONTEXT.md) 词表为准;新造词先进词表。
-4. 代号先登记再用(开新代号系列前,先确认旧系列没撞;登记处随用随建进 `docs/02-adr/` 或 `CONTEXT.md`)。
-5. 每篇新文档开头给 30 秒导读;过时不删但顶部加历史横幅。
-6. **不为向后兼容留旧路径**:发现过时实现直接移除,不加兼容层/回退/迁移。
-
-### commit 约定
-
-每件独立 commit、在分支和独立工作树上。**默认继续交付 PR**：完成门禁、对应 E2E 和自检后，提交、push、开 PR 并补验证 Review；人明确说「只本地」时才停止在本地。不自动合入 PR、关闭 Issue 或正式发版本，除非人已明确授权该动作。标题让人不查文档也看懂做了什么(可带代号前缀,但须人话描述)。信息如实描述取舍,不吹;偏差如实记进 commit message 与 `CHANGELOG.md`。
-
-开 PR 另发一条 **review 当验证报告** —— 界面 / 行为改动一律要,别人不用自己起壳就能验收。写五样:验的什么 / 怎么验的(命令 + 深链)/ 每条判据**直接内嵌**一张真壳截图 / 门禁结果 / **没验的留白如实列**;别让人点链接跳出去。图推一条永不合入的 `shots/<分支名>` 分支,内嵌写 `![](https://github.com/<owner>/<repo>/raw/<commit SHA>/x.jpg)` —— 这条同源地址不会被 GitHub 图片代理改写,私有仓照样显示;**别写 `raw.githubusercontent`**(代理取不到私有仓,只会裂图),**也别用分支名**(带斜杠会有歧义,钉 SHA 还不会漂)。大改动的改前 / 改后对照仍照旧进 `docs/05-features/<id>/shots/`。
-
-**原型网页同样不进仓**:可点原型发成 artifact(点开就能用,私有仓不受影响)或推一条永不合入的分支,`spec.md` / `STATUS.md` 里只留链接。原型会随实现过期,仓里不养第二份「事实」——规矩正本在 [`docs/01-principles/02`](docs/01-principles/02-working-backwards.md) §3.2。
-
-## CodeGraph 导航(可选用)
-
-仓共享 codegraph 在 `.codegraph/codegraph.db`。`codegraph` CLI 可用时,先于广 grep 用:
-`codegraph explore "<问题或符号>"` 一次拿架构/流程/落点;`codegraph node/callers/callees/impact <symbol>` 跟进。改源码后跑 `codegraph sync`。`.codegraph/codegraph.db` 不进 feature commit(CI 是唯一发布者)。
-
-## 不要做的
-
-- V3 已删(见 `v3` 分支),别拿 V3 crate 当 MVP 事实源去 grep/读(会误导)。
-- 不为「兼容旧半修」留双路径;不扩 scope(留白如实标"未建")。
-- **先审已有代码、已有提示词、已有方案对不对;不对就改那一份。** 不要冲上来新增代码、新增提示词、新增方案或特殊通道——那些都会把产品胀大。
-- 不在入口层写业务和存储;命令与门禁以本文件与 CI 为准——根 `README.md` 是产品介绍与快速开始,不是开发命令正本。
-- 未锁定决策先走 grill/domain-modeling,不凭猜改设计;改动前 `CHANGELOG.md` 记一行。
+共享图在 `.codegraph/codegraph.db`。CLI 可用时，广搜前先 `codegraph explore "<问题或符号>"`，再用 `codegraph node/callers/callees/impact <symbol>` 跟进。改源码后跑 `codegraph sync`；数据库不进 feature commit，由 CI 在 main 发布。
