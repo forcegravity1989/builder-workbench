@@ -1,16 +1,16 @@
 {
   "v": 1,
-  "runId": "2026-09-17T02-38-04-721Z-a84e5c0a",
+  "runId": "2026-09-17T02-58-14-929Z-ce694906",
   "source": {
-    "commit": "620ee890e44cda3d15e69c675fff9308f99ebb4e",
+    "commit": "65e34d9f567dec6f25c49b8bbfee8ab6dd5069d2",
     "dirty": false,
-    "fingerprint": "b73a0ddf603e39290838cea1de8dcc697eb0ac169ec34552ecf11b8be554095a"
+    "fingerprint": "060e6fe3c9c0e53f53cc53c569b4ba20f36c756e3783d49611a77346cecd1fa5"
   },
   "artifacts": [
     {
       "path": "clippy/command.log",
       "bytes": 72,
-      "sha256": "372ab3dffba995289430234e2ada6eea07e74abc6ea8dc5bd9b2212b33aade1e"
+      "sha256": "f92dab9cbe3b243772444bd8f17f10a7dd3fc483a1a264eee42aef77e5bce6e3"
     },
     {
       "path": "codegraph/command.log",
@@ -20,17 +20,17 @@
     {
       "path": "desktop-core/cleanup.json",
       "bytes": 153,
-      "sha256": "683ee3c9a3549b03f158e796bc6de22b466bb568621b0a77fc488fa59cbea588"
+      "sha256": "74077b0581b1bccc70f841a183bf108bf1d7314d1954f165f406931b9bc2fa72"
     },
     {
       "path": "desktop-core/command.log",
       "bytes": 4168,
-      "sha256": "fcc0b0f629c352a16c8f013a2563d8e1ee702b44c5c92ef09d95296f170f72cd"
+      "sha256": "537f6eac6c0763be9d2ae89090e9a2dd4c815dd28f8eafbc8a02e3437324e011"
     },
     {
       "path": "desktop-core/initial-shell.log",
       "bytes": 2426,
-      "sha256": "fd7aeb4ad5746fec23eb0f1e7b66baf5f88678d869f67af0e1eaf021c3b83d62"
+      "sha256": "82ac4cf74d1008ce9d1dec75995730f04def817418a28c0d5b759d626671a272"
     },
     {
       "path": "desktop-core/initial-webview.json",
@@ -49,18 +49,18 @@
     },
     {
       "path": "desktop-core/restart-persists.png",
-      "bytes": 35247,
-      "sha256": "212f9e3c3097818fd8ba81b2f84eaa54b30a0d475d19d8b2cde0b1b8483c5808"
+      "bytes": 35446,
+      "sha256": "d81973c5c0bc5e1b7689023c193efcbd4083eb3c994acbc6d967ac7835e4b86c"
     },
     {
       "path": "desktop-core/restart-readback.toml",
       "bytes": 116,
-      "sha256": "d8ec5c697f945ddb1a7c97052c4bd3e11612512c671a150597ae4918c8d690f6"
+      "sha256": "a5635507661273f1346005b02f46b6e76757b8c3adb7663a6987489be8f48634"
     },
     {
       "path": "desktop-core/restart-shell.log",
       "bytes": 1742,
-      "sha256": "8501aacd0b5de6892942713ee55b74592cef7cd0c9e0d934b09c09315e7bd73b"
+      "sha256": "00725bbed968ecc6f18d7ed8570ee7e43949ed0f3d55299c45578b1752d3e55b"
     },
     {
       "path": "desktop-core/restart-webview.json",
@@ -79,23 +79,23 @@
     },
     {
       "path": "desktop-core/settings-persist.png",
-      "bytes": 35542,
-      "sha256": "7bea8f1c9b0495a4e3576da5d264c45d69a487e57f1d216225636305b50dd4ac"
+      "bytes": 35740,
+      "sha256": "2c33459f009d375bb9b24ec998b506888cc1a9ed06002b626a8e3ba2a8e5e865"
     },
     {
       "path": "desktop-core/settings-readback.toml",
       "bytes": 116,
-      "sha256": "d8ec5c697f945ddb1a7c97052c4bd3e11612512c671a150597ae4918c8d690f6"
+      "sha256": "a5635507661273f1346005b02f46b6e76757b8c3adb7663a6987489be8f48634"
     },
     {
       "path": "desktop-core/shell-launches.png",
-      "bytes": 35247,
-      "sha256": "212f9e3c3097818fd8ba81b2f84eaa54b30a0d475d19d8b2cde0b1b8483c5808"
+      "bytes": 35446,
+      "sha256": "d81973c5c0bc5e1b7689023c193efcbd4083eb3c994acbc6d967ac7835e4b86c"
     },
     {
       "path": "desktop-core/subject.json",
-      "bytes": 251,
-      "sha256": "75f471cbf91bfa55facc6be5d0d454a6202c7aab6953ec2c2f14eab34cbc403b"
+      "bytes": 280,
+      "sha256": "638024dbece42535cd8f425c84a0917688aad10ec0727ab63f98df15781319d3"
     },
     {
       "path": "e2e-deps/command.log",
@@ -124,23 +124,23 @@
     },
     {
       "path": "report.html",
-      "bytes": 196259,
-      "sha256": "bbc7ca0806a336d7a123d7cceac3d5b0e0b055c0e20c66b1dfdddeadfc87aebb"
+      "bytes": 197051,
+      "sha256": "23532380fa2420b0d24e9b439af8c51fa8f9964916898b742412e65bf9f37d51"
     },
     {
       "path": "result.json",
-      "bytes": 7870,
-      "sha256": "5f57b49e22c336378c2a855e9b2027c6f8716eb317cfe86704e719c2187b9ffd"
+      "bytes": 7862,
+      "sha256": "3a96da053059a6c2e4d3d8fe7e301b6a34f1ecc4e02008076bfaa4a0ad53fb3b"
     },
     {
       "path": "review.md",
-      "bytes": 2773,
-      "sha256": "daa0bb6eacaabaec58539c7498c1e988bff9cdd05a7557fcb40ec663a2bc6b1a"
+      "bytes": 2765,
+      "sha256": "f02876cf431ecb1e4040f87b86d5edfe4740ee441331cc03c63e0e9bf61bf88f"
     },
     {
       "path": "runner-tests/command.log",
-      "bytes": 2211,
-      "sha256": "24d9212e52cec858f5de32c8f869575017cd7eec5be12e6a6a28985215ecc8f3"
+      "bytes": 2209,
+      "sha256": "d3a2b85dbcd3567d417ec24707d8e77e89457a62deaf9cd763d52115d0ee1611"
     },
     {
       "path": "runtime/command.log",
@@ -160,12 +160,12 @@
     {
       "path": "shell/command.log",
       "bytes": 72,
-      "sha256": "825325d1dba4a0b13e2a90e26a106bbc56856947737b406c2d6709af4e2e1e69"
+      "sha256": "d9533554809e0846c6113df1671caf5d74f2a7b9763b0232786a0b652704164a"
     },
     {
       "path": "test/command.log",
       "bytes": 11458,
-      "sha256": "e60c3a113850ce3a3daea2f37eb25dfc69ae462604f3468796b521d8b135e466"
+      "sha256": "99631045244b9eeb0bccdd185b01f2fd84b49f4eb5a777f833237571a5a413e3"
     }
   ]
 }

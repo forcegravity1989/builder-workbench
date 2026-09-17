@@ -1,5 +1,6 @@
 {
     "exe":  "E:\\zhuyu\\code\\builder-workbench\\.bw\\worktrees\\ci-release-design\\target\\debug\\bw-dev.exe",
     "sha256":  "1d59922c6229c60146686cec67673e0b4b2c6e6c0c965403e95192206c2c5ee5",
-    "runId":  "311168e6000b465a8a4c19a42bbaa9d0"
+    "runId":  "8bbead45337f44ad99bb1680f84451d4",
+    "desktop":  "isolated"
 }
