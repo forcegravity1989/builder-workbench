@@ -1,3 +1,0 @@
-   Compiling bw v0.0.0 (E:\zhuyu\code\builder-workbench\.bw\worktrees\version-planning\crates\bw)
-    Finished `dev` profile [unoptimized + debuginfo] target(s) in 2.33s
-     Running `target\debug\examples\planning_smoke.exe C:\Users\xiaoduo\AppData\Local\Temp\bw-planning-e2e-X1H8n6`
