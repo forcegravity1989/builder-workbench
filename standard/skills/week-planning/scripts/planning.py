@@ -574,8 +574,8 @@ def server_request(record,path,method='GET'):
     with urlopen(request,timeout=2) as response:return json.load(response)
 
 def running_server(store):
-    record=store.local_read('server',{})
     try:
+        record=store.local_read('server',{})
         health=server_request(record,'/api/health')
         if Path(health['workspace']).resolve()!=store.ws:return None
         return {**record,'code_hash':health['code_hash']}
@@ -646,8 +646,11 @@ def stop_server(store):
     if not record:return {'stopped':True,'already_stopped':True}
     server_request(record,'/api/stop','POST')
     end=time.monotonic()+5
-    while running_server(store) and time.monotonic()<end:time.sleep(.1)
-    if running_server(store):raise RuntimeError('服务尚未停止，请稍后重试')
+    while time.monotonic()<end:
+        try:server_request(record,'/api/health')
+        except (OSError,ValueError,KeyError):break
+        time.sleep(.1)
+    else:raise RuntimeError('服务尚未停止，请稍后重试')
     wait_server_exit(record)
     return {'stopped':True}
 
