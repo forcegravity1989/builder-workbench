@@ -11,7 +11,7 @@ const cases=[],ids=['planning-assets','planning-autosave','planning-model-readba
 const fixture=fs.mkdtempSync(path.join(os.tmpdir(),'bw-planning-e2e-'));
 let browser,pack,workspace;
 const json=file=>JSON.parse(fs.readFileSync(file,'utf8').replace(/^\uFEFF/,''));
-const record=(id,title,evidence)=>cases.push({id,title,status:'passed',evidence});
+const record=(id,title,path,expect,evidence)=>cases.push({id,title,path,expect,status:'passed',evidence});
 try{
   run('cargo',['run','--locked','-p','bw','--example','planning_smoke','--',fixture]);
   fs.copyFileSync(path.join(fixture,'deployment.json'),path.join(out,'deployment.json'));
@@ -22,7 +22,7 @@ try{
   const data=json(file('v0.4'));data.project='专项验证项目';data.previous_version={version:'v0.3'};
   data.results.goals=[{id:'G1',label:'G1',title:'原始目标',metric:'验证项',target:'3',reading:'2',progress:null,status:{label:'未达',tone:'warning'}}];
   fs.writeFileSync(file('v0.4'),JSON.stringify(data,null,2));
-  record(ids[0],'BW 分发完整 Skill，JSON 消费者读取真实文件和已登记工作树',['deployment.json']);
+  record(ids[0],'BW 分发完整 Skill，JSON 消费者读取真实文件和已登记工作树','cargo 跑 planning_smoke 分发 → planning.py init 两个版本','deployment.json 指向真实分发的 week-planning Skill 与已登记工作树',['deployment.json']);
   const service=cli('v0.4','start');
   browser=await chromium.launch({channel:'msedge',headless:true});
   const page=await browser.newPage({viewport:{width:1440,height:1000}});
@@ -38,15 +38,15 @@ try{
   await expect.poll(()=>json(file('v0.4')).results.deliverables?.[0]?.url).toBe('https://example.invalid/release');
   await page.reload();await expect(goal).toHaveText('浏览器修改后的目标');
   await page.screenshot({path:path.join(out,'autosave.png'),fullPage:true});fs.copyFileSync(file('v0.4'),path.join(out,'autosave.json'));
-  record(ids[1],'真实浏览器输入自动写 JSON，版本报告保存且刷新可读回',['autosave.png','autosave.json']);
+  record(ids[1],'真实浏览器输入自动写 JSON，版本报告保存且刷新可读回','浏览器编辑目标与交付件 → 失焦保存 → 刷新页面','JSON 落盘与页面输入一致，刷新后读回相同内容',['autosave.png','autosave.json']);
   const edit=cli('v0.4','read');edit.data.results.goals[0].title='模型写回后的目标';const candidate=path.join(out,'model-candidate.json');fs.writeFileSync(candidate,JSON.stringify(edit.data));
   cli('v0.4','update','--file',candidate,'--if-match',edit.etag);
   await expect(goal).toHaveText('模型写回后的目标',{timeout:10000});await page.screenshot({path:path.join(out,'model-readback.png')});
-  record(ids[2],'会话写同一 JSON，页面自动读回',['model-readback.png','model-candidate.json']);
+  record(ids[2],'会话写同一 JSON，页面自动读回','planning.py update 写回同一版本 JSON','页面不用刷新即显示模型写回后的目标',['model-readback.png','model-candidate.json']);
   await page.locator('#version-select').selectOption('v0.5');await expect(page.locator('.pane-1 [data-list="results.goals"] .goal')).toHaveCount(0);
   await page.locator('#version-select').selectOption('v0.4');await expect(goal).toHaveText('模型写回后的目标');
   fs.writeFileSync(path.join(out,'versions.json'),JSON.stringify({v04:json(file('v0.4')),v05:json(file('v0.5'))},null,2));
-  await page.screenshot({path:path.join(out,'versions.png')});record(ids[3],'切换版本只读对应 JSON，不串版',['versions.json','versions.png']);
+  await page.screenshot({path:path.join(out,'versions.png')});record(ids[3],'切换版本只读对应 JSON，不串版','版本下拉在 v0.5 与 v0.4 间切换','每屏只读对应版本的 JSON，互不串改',['versions.json','versions.png']);
   // An unrelated corrupt archive must not turn a committed save into an apparent failure.
   const broken=path.join(workspace,'.bw/planning/v0.1/data.json');fs.mkdirSync(path.dirname(broken),{recursive:true});fs.writeFileSync(broken,'{broken');
   await page.reload();await expect(goal).toHaveText('模型写回后的目标');
@@ -57,12 +57,12 @@ try{
     await expect(page.locator('#save-status')).not.toContainText('未保存');
   }
   await page.screenshot({path:path.join(out,'bad-history.png')});fs.copyFileSync(file('v0.4'),path.join(out,'bad-history.json'));
-  record(ids[5],'坏历史版本明确标记，当前版本连续保存与修订号仍正常',['bad-history.png','bad-history.json']);
+  record(ids[5],'坏历史版本明确标记，当前版本连续保存与修订号仍正常','伪造 v0.1 坏 JSON → 重载 → 连续保存两次','坏版本在下拉中禁用；当前版本保存不失败、状态不显示未保存',['bad-history.png','bad-history.json']);
   // Focus prevents background reload; another writer changes the same revision.
   await goal.focus();const latest=cli('v0.4','read');latest.data.results.goals[0].title='另一写入方的新内容';fs.writeFileSync(candidate,JSON.stringify(latest.data));cli('v0.4','update','--file',candidate,'--if-match',latest.etag);
   await goal.fill('过期页面的未保存修改');await expect(page.locator('#save-status')).toContainText('未保存',{timeout:10000});
   expect(json(file('v0.4')).results.goals[0].title).toBe('另一写入方的新内容');await expect(goal).toHaveText('过期页面的未保存修改');
-  await page.screenshot({path:path.join(out,'conflict.png')});fs.copyFileSync(file('v0.4'),path.join(out,'conflict.json'));record(ids[4],'并发冲突拒绝覆盖，保留页面输入与磁盘新内容',['conflict.png','conflict.json']);
+  await page.screenshot({path:path.join(out,'conflict.png')});fs.copyFileSync(file('v0.4'),path.join(out,'conflict.json'));record(ids[4],'并发冲突拒绝覆盖，保留页面输入与磁盘新内容','另一写入方更新同一修订 → 过期页面继续编辑并保存','保存被拒并提示未保存；磁盘保留另一写入方内容，页面输入不丢失',['conflict.png','conflict.json']);
   expect(errors).toEqual([]);
 }catch(error){fs.writeFileSync(path.join(out,'failure.txt'),String(error.stack||error));for(const id of ids)if(!cases.some(x=>x.id===id))cases.push({id,title:id,status:'failed',evidence:['failure.txt']});process.exitCode=1;}
 finally{

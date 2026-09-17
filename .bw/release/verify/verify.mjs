@@ -82,6 +82,8 @@ export function readCases(dir, expected) {
   if (ids.length !== expected.length || new Set(ids).size !== ids.length || expected.some(x => !ids.includes(x))) throw new Error('实际用例与 expectedCases 不一致，不能把少跑当通过');
   for (const item of result.cases) {
     if (!statuses.has(item.status) || typeof item.title !== 'string') throw new Error(`用例格式不对：${item.id}`);
+    // path / expect 是发布验证 Review 用的可选描述字段；出现就必须是非空字符串。
+    for (const field of ['path', 'expect']) if (item[field] !== undefined && (typeof item[field] !== 'string' || !item[field].trim())) throw new Error(`用例格式不对：${item.id}`);
     if (!Array.isArray(item.evidence) || (item.status === 'passed' && !item.evidence.length)) throw new Error(`通过的用例必须有证据：${item.id}`);
     for (const evidence of item.evidence) {
       const file = inside(dir, evidence);

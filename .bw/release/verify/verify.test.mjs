@@ -5,6 +5,7 @@ import path from 'node:path';
 import os from 'node:os';
 import { execFileSync } from 'node:child_process';
 import { inside, readCases, readPlan, runVerification, sha256, storeEvidenceBlob } from './verify.mjs';
+import { incrementalSuiteIds } from './publish-review.mjs';
 
 function fixture(t) {
   const parent = fs.realpathSync(os.tmpdir());
@@ -101,6 +102,61 @@ test('evidence needs known status, exact cases, nonempty owned files, and no pat
   fs.writeFileSync(path.join(root, 'proof.txt'), '');
   save('passed', ['proof.txt']);
   assert.throws(() => readCases(root, ['one']), /为空/);
+});
+
+test('case path and expect are optional but must be nonempty strings', t => {
+  const root = fixture(t);
+  fs.writeFileSync(path.join(root, 'proof.txt'), 'readback');
+  const save = extra => fs.writeFileSync(path.join(root, 'result.json'), JSON.stringify({ v: 1, cases: [{ id: 'one', title: 'one', status: 'passed', evidence: ['proof.txt'], ...extra }] }));
+  save({ path: '设置 → 保存', expect: '目录读回一致' });
+  const cases = readCases(root, ['one']);
+  assert.equal(cases[0].path, '设置 → 保存');
+  assert.equal(cases[0].expect, '目录读回一致');
+  save({ path: '   ' });
+  assert.throws(() => readCases(root, ['one']), /格式/);
+  save({ expect: 7 });
+  assert.throws(() => readCases(root, ['one']), /格式/);
+});
+
+test('review.md groups results into four blocks and names the profile', async t => {
+  const root = fixture(t);
+  const code = 'require("node:fs").writeFileSync(process.argv[1]+"/proof.txt","ok");require("node:fs").writeFileSync(process.argv[1]+"/result.json",JSON.stringify({v:1,cases:[{id:"one",title:"旅程用例",path:"A → B",expect:"B 可读回",status:"passed",evidence:["proof.txt"]}]}));process.exit(0)';
+  const spec = step('case-step', code, { layer: 'browser', expectedCases: ['one'], title: '示例旅程' });
+  spec.command.push('{out}');
+  const { out } = await run(root, [spec]);
+  const summary = fs.readFileSync(path.join(out, 'review.md'), 'utf8');
+  assert.match(summary, /### 基础检查 · 检查 0\/0 通过/);
+  assert.match(summary, /### 单元测试 · 检查 0\/0 通过/);
+  assert.match(summary, /### 知识库检查 · 检查 0\/0 通过/);
+  assert.match(summary, /### E2E 用例（按旅程） · 用例 1\/1 通过/);
+  assert.match(summary, /执行范围：test ·/);
+  assert.match(summary, /示例旅程 · 1\/1 通过/);
+  const page = fs.readFileSync(path.join(out, 'report.html'), 'utf8');
+  assert.ok(page.includes('<h2>基础检查</h2>'));
+  assert.ok(page.includes('<h2>E2E 用例（按旅程）</h2>'));
+  assert.ok(page.includes('执行路径</b> A → B'));
+  assert.ok(page.includes('期望结果</b> B 可读回'));
+});
+
+test('incremental suites come from journey paths and registry content, not profiles', () => {
+  const steps = [
+    { id: 'desktop-core', cases: [{ id: 'a' }] },
+    { id: 'version-planning', cases: [{ id: 'b' }] },
+    { id: 'desktop-onboarding', cases: [{ id: 'c' }] },
+  ];
+  const coreBase = { id: 'desktop-core', title: 't', command: ['c'], expectedCases: ['x'] };
+  const withProfiles = { ...coreBase, profiles: ['pr', 'pr-onboarding'] };
+  assert.deepEqual(
+    incrementalSuiteIds(steps, ['.bw/release/e2e/journeys/onboarding/onboarding.mjs', '.bw/release/e2e/suites/core.json'], (file, atBase) => (atBase ? coreBase : withProfiles)),
+    new Set(['desktop-onboarding']),
+  );
+  const changedCases = { ...coreBase, expectedCases: ['x', 'y'] };
+  assert.deepEqual(
+    incrementalSuiteIds(steps, ['.bw/release/e2e/suites/core.json'], (file, atBase) => (atBase ? coreBase : changedCases)),
+    new Set(['desktop-core']),
+  );
+  assert.deepEqual(incrementalSuiteIds(steps, ['.bw/release/e2e/planning.mjs'], () => null), new Set(['version-planning']));
+  assert.equal(incrementalSuiteIds(steps, ['.bw/release/verify/report.mjs', 'crates/bw/src/lib.rs', '.bw/release/e2e/desktop.ps1'], () => null).size, 0);
 });
 
 test('evidence roundtrip preserves CRLF and binary bytes even with Git text conversion enabled', t => {

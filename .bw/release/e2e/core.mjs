@@ -33,8 +33,8 @@ const savedWorkspace = () => {
   }
 };
 
-async function run(id, title, action) {
-  const item = { id, title, status: 'not_run', evidence: [] };
+async function run(id, title, path, expect, action) {
+  const item = { id, title, path, expect, status: 'not_run', evidence: [] };
   cases.push(item);
   if (blocked) { item.message = '前一用例失败'; return; }
   try {
@@ -63,13 +63,13 @@ try {
   page = context.pages()[0] || await context.waitForEvent('page', { timeout: 30000 });
   page.setDefaultTimeout(30000);
   if (phase === 'initial') {
-    await run('shell-launches', '真实桌面壳启动并渲染设置屏', async item => {
+    await run('shell-launches', '真实桌面壳启动并渲染设置屏', '以 BW_VIEW=settings 启动真壳', '设置屏可见，日志含 [BW_VIEW] settings 与 [BW_BOOT]', async item => {
       await expect(page.getByRole('heading', { name: '设置', exact: true })).toBeVisible();
       await expect.poll(() => fs.readFileSync(path.join(out, 'initial-shell.log'), 'utf8'), { timeout: 30000 }).toContain('[BW_VIEW] settings');
       await expect.poll(() => fs.readFileSync(path.join(out, 'initial-shell.log'), 'utf8'), { timeout: 30000 }).toContain('[BW_BOOT]');
       item.evidence.push('initial-shell.log', 'subject.json', 'initial-webview.json');
     });
-    await run('settings-persist', '点击保存工作区目录，并从 settings.toml 读回', async item => {
+    await run('settings-persist', '点击保存工作区目录，并从 settings.toml 读回', '设置 → 工作区根目录 → 保存', 'settings.toml 与磁盘目录读回一致', async item => {
       await row().getByRole('textbox').fill(workspace);
       await row().getByRole('button', { name: '保存', exact: true }).click();
       await expect.poll(savedWorkspace, { timeout: 45000 }).toBe(workspace);
@@ -77,14 +77,14 @@ try {
       fs.copyFileSync(settings, path.join(out, 'settings-readback.toml'));
       item.evidence.push('settings-readback.toml');
     });
-    await run('onboard-navigation', '通过真实按钮从设置进入项目墙和接入页', async () => {
+    await run('onboard-navigation', '通过真实按钮从设置进入项目墙和接入页', '设置 → ← 项目墙 → + 接入项目', '项目墙与接入页标题先后可见', async () => {
       await page.getByRole('button', { name: '← 项目墙', exact: true }).click();
       await expect(page.getByRole('heading', { name: '项目墙', exact: true })).toBeVisible();
       await page.getByRole('button', { name: '+ 接入项目', exact: true }).click();
       await expect(page.getByRole('heading', { name: '接入项目', exact: true })).toBeVisible();
     });
   } else {
-    await run('restart-persists', '杀进程重启后，界面与磁盘上的目录一致', async item => {
+    await run('restart-persists', '杀进程重启后，界面与磁盘上的目录一致', '杀壳进程 → 重启真壳', '设置界面与 settings.toml 均保留原目录', async item => {
       await expect(page.getByRole('heading', { name: '设置', exact: true })).toBeVisible();
       await expect(row().getByRole('textbox')).toHaveValue(workspace);
       await expect.poll(savedWorkspace).toBe(workspace);

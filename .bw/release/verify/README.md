@@ -29,7 +29,7 @@ node .bw/release/verify/verify.mjs --profile pr-onboarding
 | `report.html` | 人读：结果、耗时、所验源码、逐项截图与留白；截图已内嵌，离线打开 |
 | `result.json` | 程序读：执行编号、源码指纹、环境、每步退出码、用例与证据；状态不能从评论推断 |
 | `manifest.json` | 本次所有交付文件的相对路径、大小和 SHA-256 |
-| `review.md` | 原开发会话发布 PR 验证 Review 的基础摘要，仍须补本次验收判据及截图远端地址 |
+| `review.md` | PR 验证 Review 的基础摘要：基础检查、单元测试、知识库检查、E2E 按旅程四块结论与失败明细；增量用例截图由 publish-review 自动内嵌 |
 | 每步目录 | 执行日志；E2E 的真壳截图、设置读回、被测二进制 SHA-256、清理回执 |
 
 ## 特性会话怎么增加专项用例
@@ -61,8 +61,10 @@ BW 注册表、运行日志和 WebView2 使用本次独立目录。沙箱 Git �
 命令在仓根执行，`{node}`、`{root}`、`{shared}`、`{out}` 分别替换为 Node 绝对路径、当前工作树仓根、所有工作树共用的主检出仓根和本步骤全新输出目录，**不经过 shell 拼接**。脚本只在 `{out}` 写证据和如下 `result.json`：
 
 ```json
-{"v":1,"cases":[{"id":"save-reopens","title":"保存后重新打开仍可读回","status":"passed","evidence":["screen.png","readback.json"]}]}
+{"v":1,"cases":[{"id":"save-reopens","title":"保存后重新打开仍可读回","path":"设置 → 保存 → 重启","expect":"重开后目录读回一致","status":"passed","evidence":["screen.png","readback.json"]}]}
 ```
+
+`path` 与 `expect` 是可选的人读字段：执行路径与期望结果，发布 Review 时与用例名、截图一起构成四件套。
 
 状态只能是 `passed` / `failed` / `not_run` / `not_applicable`。本批注册的是必跑用例，后三种都阻止 PR 验证通过；减少用例、悄悄跳过和仅打印成功都无效。证据必须是本步骤目录内非空的真实文件，不接受越界路径和文件链接。测试代码负责判据真实性，执行器检查结果完整性；不得把模拟接口的证据标作真实桌面或远端。
 
@@ -78,7 +80,7 @@ PR 创建和更新时运行 Linux、Windows 两项检查；合入 main 后及手
 node .bw/release/verify/publish-review.mjs --pr <PR号> --run <本次结果目录>
 ```
 
-命令校验干净工作树、最新 PR 提交和所有证据哈希，将证据推到永不合入的 `shots/<PR分支>`，以不可变 SHA 内嵌真壳截图，发布后再读回 Review，保存 `github-review.json` 回执。同一执行重复调用不重复发 Review；上传期间 PR 改变则拒发过时结果。它不动特性工作树或暂存区，不合并 PR、不关闭 Issue。测试判据和代码审查不能由这一机械摘要代替。
+命令校验干净工作树、最新 PR 提交和所有证据哈希，将证据推到永不合入的 `shots/<PR分支>`。它对比 PR 与 main 的差异自动判定本次改动涉及的旅程，只内嵌这些旅程的用例四件套（用例名、执行路径、期望结果、截图，钉不可变 SHA）；未变旅程与其余证据指向证据目录，不逐条铺进评论。发布后再读回 Review，保存 `github-review.json` 回执。同一执行重复调用不重复发 Review；上传期间 PR 改变则拒发过时结果。它不动特性工作树或暂存区，不合并 PR、不关闭 Issue。测试判据和代码审查不能由这一机械摘要代替。不动 E2E 用例的修复发布时同格式贴临时验证四件套。
 
 没有替人设置仓库的 required checks。强制合并闸口尚需另设，检查存在本身不等于已启用分支保护。
 
