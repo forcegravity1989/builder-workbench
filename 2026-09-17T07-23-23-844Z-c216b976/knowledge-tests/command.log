@@ -1,0 +1,18 @@
+✔ local links, imports and reference definitions resolve; examples are not treated as live links (21.7305ms)
+✔ missing paths and explicit undefined references are reported at source lines (9.2238ms)
+✔ unverified external, anchor, HTML and complex syntax stay visibly unverified (11.4973ms)
+✔ path escape and symlink escape cannot validate outside-repository files (10.595ms)
+✔ CLI exit codes distinguish findings, success and invalid invocation (370.8799ms)
+✔ counts content and links within declared scope without changing sources (66.5666ms)
+✔ baseline distinguishes content changes, removals, and incompatible rule versions (63.3363ms)
+✔ refuses outside-root includes and does not follow directory links (43.4598ms)
+✔ fenced examples are excluded and embedded hostile source cannot break script data (1.5375ms)
+✔ --check writes reviewable report and fails on mechanical errors; normal scan succeeds (272.5139ms)
+ℹ tests 10
+ℹ suites 0
+ℹ pass 10
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 581.7072
