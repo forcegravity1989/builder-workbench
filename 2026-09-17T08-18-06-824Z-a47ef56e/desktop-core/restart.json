@@ -1,0 +1,15 @@
+{
+  "v": 1,
+  "cases": [
+    {
+      "id": "restart-persists",
+      "title": "杀进程重启后，界面与磁盘上的目录一致",
+      "status": "passed",
+      "evidence": [
+        "restart-readback.toml",
+        "restart-shell.log",
+        "restart-persists.png"
+      ]
+    }
+  ]
+}
