@@ -1,0 +1,32 @@
+{
+  "v": 1,
+  "cases": [
+    {
+      "id": "shell-launches",
+      "title": "真实桌面壳启动并渲染设置屏",
+      "status": "passed",
+      "evidence": [
+        "initial-shell.log",
+        "subject.json",
+        "shell-launches.png"
+      ]
+    },
+    {
+      "id": "settings-persist",
+      "title": "点击保存工作区目录，并从 settings.toml 读回",
+      "status": "passed",
+      "evidence": [
+        "settings-readback.toml",
+        "settings-persist.png"
+      ]
+    },
+    {
+      "id": "onboard-navigation",
+      "title": "通过真实按钮从设置进入项目墙和接入页",
+      "status": "passed",
+      "evidence": [
+        "onboard-navigation.png"
+      ]
+    }
+  ]
+}
