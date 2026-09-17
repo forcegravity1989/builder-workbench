@@ -3,7 +3,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import crypto from 'node:crypto';
 import { execFileSync } from 'node:child_process';
-import { inside, sha256, sourceSnapshot } from './verify.mjs';
+import { inside, sha256, sourceSnapshot, storeEvidenceBlob } from './verify.mjs';
 
 const args = process.argv.slice(2);
 const command = (exe, argv, options = {}) => execFileSync(exe, argv, { encoding: 'utf8', maxBuffer: 32 * 1024 * 1024, timeout: 180000, ...options }).trim();
@@ -51,7 +51,10 @@ try {
     try {
       indexedGit('read-tree', '--empty');
       for (const name of [...manifest.artifacts.map(x => x.path), 'manifest.json']) {
-        const blob = git('hash-object', '-w', '--', inside(out, name));
+        const file = inside(out, name);
+        const blob = storeEvidenceBlob(root, file);
+        const stored = execFileSync('git', ['cat-file', 'blob', blob], { maxBuffer: 32 * 1024 * 1024 });
+        if (sha256(stored) !== sha256(fs.readFileSync(file))) throw new Error(`Git 归档改变了文件字节：${name}`);
         indexedGit('update-index', '--add', '--cacheinfo', `100644,${blob},${result.runId}/${name}`);
       }
       const tree = indexedGit('write-tree');

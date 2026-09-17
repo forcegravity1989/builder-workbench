@@ -4,7 +4,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import os from 'node:os';
 import { execFileSync } from 'node:child_process';
-import { inside, readCases, runVerification, sha256 } from './verify.mjs';
+import { inside, readCases, runVerification, sha256, storeEvidenceBlob } from './verify.mjs';
 
 function fixture(t) {
   const parent = fs.realpathSync(os.tmpdir());
@@ -78,6 +78,20 @@ test('evidence needs known status, exact cases, nonempty owned files, and no pat
   fs.writeFileSync(path.join(root, 'proof.txt'), '');
   save('passed', ['proof.txt']);
   assert.throws(() => readCases(root, ['one']), /为空/);
+});
+
+test('evidence roundtrip preserves CRLF and binary bytes even with Git text conversion enabled', t => {
+  const root = fixture(t);
+  execFileSync('git', ['config', 'core.autocrlf', 'true'], { cwd: root });
+  fs.writeFileSync(path.join(root, '.gitattributes'), '* text\n');
+  const before = execFileSync('git', ['write-tree'], { cwd: root });
+  for (const bytes of [Buffer.from('{\r\n  "v": 1\r\n}\r\n'), Buffer.from([0, 255, 13, 10, 128])]) {
+    const file = path.join(root, 'evidence.json');
+    fs.writeFileSync(file, bytes);
+    const blob = storeEvidenceBlob(root, file);
+    assert.deepEqual(execFileSync('git', ['cat-file', 'blob', blob], { cwd: root }), bytes);
+  }
+  assert.deepEqual(execFileSync('git', ['write-tree'], { cwd: root }), before);
 });
 
 test('successful runs remain separate, escaped reports have verifiable artifact hashes', async t => {

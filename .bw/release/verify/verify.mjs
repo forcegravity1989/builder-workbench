@@ -7,6 +7,7 @@ import { fileURLToPath } from 'node:url';
 import { writeReports } from './report.mjs';
 
 export const sha256 = bytes => crypto.createHash('sha256').update(bytes).digest('hex');
+export const storeEvidenceBlob = (root, file) => execFileSync('git', ['hash-object', '--no-filters', '-w', '--', file], { cwd: root, encoding: 'utf8' }).trim();
 const json = file => JSON.parse(fs.readFileSync(file, 'utf8').replace(/^\uFEFF/, ''));
 const safeId = value => typeof value === 'string' && /^[a-z][a-z0-9-]{0,63}$/.test(value);
 const statuses = new Set(['passed', 'failed', 'not_run', 'not_applicable']);
