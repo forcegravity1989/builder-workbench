@@ -106,10 +106,7 @@ impl App {
         if plans.iter().any(|s| s == &name) || released.iter().any(|s| s == &name) {
             return Err(AppError::Refused(format!("{name} 已经有了")));
         }
-        let included_iids: Vec<u32> = included.iter().map(|id| id.iid()).collect();
         let ops1_id = self.ensure_ops1_for_version(project_id, &name).await?;
-        let comment = super::week_comment::render_week_plan_comment(&included_iids);
-        issue_store::comment(self, &project, ops1_id.iid(), &comment).await?;
         for id in &included {
             issue_store::assign_to_plan(self, &project, id.iid(), &name).await?;
         }
