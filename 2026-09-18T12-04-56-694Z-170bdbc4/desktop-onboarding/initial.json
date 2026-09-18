@@ -1,0 +1,48 @@
+{
+  "v": 1,
+  "cases": [
+    {
+      "id": "onboarding-project",
+      "title": "从真实桌面接入 GitHub 沙箱项目",
+      "path": "接入项目 → 克隆远端仓 → 填写基础信息 → 完成接入 → 项目墙",
+      "expect": "项目墙出现本项目名片，横幅含本次接入打开的 MR 编号；远端读单次网络抖动失败时按真人行为点刷新重试",
+      "status": "passed",
+      "evidence": [
+        "onboarding-project.png"
+      ]
+    },
+    {
+      "id": "onboarding-readback",
+      "title": "从 GitHub、Git 和项目名片读回接入结果",
+      "path": "gh 读回 Issue/PR/分支内容；git 读回项目工作树",
+      "expect": "项目约定 Issue 打开且挂 bw:status:inreview；bw/project PR 打开；远端与本地 project.toml 一致且含本次 run-id",
+      "status": "passed",
+      "evidence": [
+        "github-issue.json",
+        "github-pr.json",
+        "project-file.toml",
+        "git-worktrees.txt"
+      ]
+    },
+    {
+      "id": "onboarding-orca",
+      "title": "Orca 登记沙箱仓并保留三条关闭的自动化",
+      "path": "bw-engine 示例独立读回 Orca 的项目与自动化列表",
+      "expect": "沙箱项目已登记，三条 Workbench 自动化各存在一条且均为关闭",
+      "status": "passed",
+      "evidence": [
+        "orca-automations.json"
+      ]
+    },
+    {
+      "id": "onboarding-cleanup",
+      "title": "只收掉本次远端对象和项目约定工作树",
+      "path": "关闭本次 PR/Issue → 删除远端 bw/project → 移除项目工作树与本地分支",
+      "expect": "清理回执全为真；沙箱主仓、其余工作树与三条自动化保留",
+      "status": "passed",
+      "evidence": [
+        "remote-cleanup.json"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,193 @@
+   Compiling bw v0.0.0 (E:\zhuyu\code\builder-workbench\.claude\worktrees\e2e-journey-refactor\crates\bw)
+   Compiling bw-engine v0.0.0 (E:\zhuyu\code\builder-workbench\.claude\worktrees\e2e-journey-refactor\crates\bw-engine)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 4.92s
+     Running unittests src\main.rs (target\debug\deps\bw_dev-92f7253002735e61.exe)
+
+running 20 tests
+test adapters::codegraph::tests::not_installed_hint_names_the_package ... ok
+test bridge::vm_build::tests::patch_cancel_clears_settled ... ok
+test bridge::vm_build::tests::patch_moves_status_and_settles_done ... ok
+test bridge::vm_derive::ops_chip_display_tests::charter_title_shows_until_merged ... ok
+test bridge::vm_derive::ops_chip_display_tests::bootstrap_pending_hides_when_landed_and_no_open_mr ... ok
+test bridge::vm_build::tests::patch_unknown_id_is_false ... ok
+test bridge::vm_derive::ops_chip_display_tests::closed_leftover_is_not_done ... ok
+test bridge::vm_derive::ops_chip_display_tests::ops1_closed_this_week_is_done ... ok
+test bridge::vm_derive::ops_chip_display_tests::ops3_landed_on_head ... ok
+test screens::onboard::tests::clone_target_appends_repo_name_to_configured_parent ... ok
+test screens::overview::metrics::tests::empty_feature_is_overall_tab ... ok
+test screens::overview::metrics::tests::missing_leads_attaches_to_first_lag ... ok
+test screens::overview::metrics::tests::tab_label_adds_特性 ... ok
+test screens::overview::metrics::tests::orphan_feature_lead_falls_to_overall ... ok
+test screens::overview::metrics::tests::named_leads_attaches_to_second_lag ... ok
+test screens::plan::kanban::tests::ambiguous_destination_stays_generic ... ok
+test screens::plan::kanban::tests::released_plan_derives_small_carryover_label ... ok
+test windows_args_tests::no_port_keeps_old_args ... ok
+test adapters::codegraph::tests::missing_dot_dir_is_not_indexed_when_cli_present ... ok
+test bridge::onboard_tests::local_repo_prefill_reads_the_same_project_card_as_remote_pick ... ok
+
+test result: ok. 20 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.20s
+
+     Running unittests src\lib.rs (target\debug\deps\bw-981c2d4aae490232.exe)
+
+running 65 tests
+test app::bootstrap::want_ref_tests::ops1_gets_metrics_not_bw_assets ... ok
+test app::bootstrap::want_ref_tests::build_category_gets_build_ref ... ok
+test app::collect::tests::snapshot_lands_on_last_week_only ... ok
+test app::collect::tests::value_only_is_snapshot_not_failure ... ok
+test app::bootstrap::want_ref_tests::ops2_gets_bw_assets_and_build ... ok
+test app::collect::tests::weekly_points_align_and_keep_gaps ... ok
+test app::collect::tests::daily_points_align_by_day_field ... ok
+test app::issue_store::tests::closed_with_cancelled_is_cancelled_not_done ... ok
+test app::issue_store::tests::closed_without_cancelled_is_done ... ok
+test app::issue_store::tests::issue_from_create_writes_plan_not_week ... ok
+test app::issue_store::tests::parse_plans_keeps_all_distinct_versions ... ok
+test app::issue_store::tests::parse_week_ignores_old_label ... ok
+test app::issue_store::tests::ops_tool_falls_back_to_product_default ... ok
+test app::issue_store::tests::plan_label_set_adds_without_replacing_and_removes_exactly ... ok
+test app::issue_store::tests::schedules_keeps_any_nonempty_plan ... ok
+test app::issue_store::tests::schedules_keeps_v0x_plan ... ok
+test app::project::tests::every_codehub_alias_round_trips_through_the_single_domain_table ... ok
+test app::pack_ctl::tests::abort_sets_cancelled_and_clears_running ... ok
+test app::project::tests::infers_github_and_codehub_from_real_clone_hosts ... ok
+test app::collect::tests::ledger_failure_never_creates_a_plain_directory_at_the_worktree_path ... ok
+test app::project::tests::selected_codehub_zone_matches_its_api_and_ssh_hosts ... ok
+test app::issue_store::tests::leftover_issue_policy_does_not_drive_tool ... ok
+test app::release_ship::tests::decode_skips_invalid_utf8 ... ok
+test app::release_ship::tests::decode_utf16_le_progress ... ok
+test app::pack_ctl::tests::cleanup_skips_unsafe_version ... ok
+test app::project::tests::selected_remote_path_drops_git_suffix_before_compare_and_storage ... ok
+test app::project::tests::two_missing_workspace_paths_are_equal_only_when_the_paths_match ... ok
+test app::release_ship::tests::ignore_noise ... ok
+test app::pack_ctl::tests::cleanup_removes_version_out_and_temp ... ok
+test app::release_ship::tests::parse_e2e_cases ... ok
+test app::release_ship::tests::parse_e2e_counts ... ok
+test app::release_ship::tests::parse_pack_ok ... ok
+test app::release_ship::tests::parse_progress ... ok
+test app::tools::tests::orca_preset_is_cursor_not_binary_name ... ok
+test app::week_comment::tests::monday_comment_has_no_progress ... ok
+test app::week_comment::tests::multiline_goal_keeps_the_whole_section ... ok
+test app::week_comment::tests::alias_本周目标_still_reads ... ok
+test app::week_comment::tests::validate_requires_three_headings ... ok
+test derive::target::tests::units_and_percent_are_leniently_parsed ... ok
+test app::week_comment::tests::empty_goal_section_is_none ... ok
+test isoweek::tests::unix_in_week_matches_iso_week_of_that_instant ... ok
+test isoweek::tests::unix_in_week_rejects_zero ... ok
+test app::week_comment::tests::newest_goal_wins ... ok
+test app::week_comment::tests::newest_progress_wins_independently ... ok
+test app::issue_store::tests::settings_tool_wins_over_product_default ... ok
+test derive::target::tests::unparseable_means_no_verdict_not_red ... ok
+test isoweek::tests::is_week_accepts_iso_and_rejects_plan_names ... ok
+test standard::bootstrap::bootstrap_list_tests::adopt_list_does_not_include_standard_toml ... ok
+test version::tests::current_ops1_falls_back_to_closed_unreleased ... ok
+test version::tests::already_started_or ... ok
+test version::tests::current_ops1_prefers_last_created_open ... ok
+test version::tests::covers_and_picks_last_created ... ok
+test version::tests::max_v0x_is_numeric ... ok
+test version::tests::ops1_title_shapes ... ok
+test repo::readings_file::tests::plain_directory_at_ledger_path_is_not_read_as_a_worktree ... ok
+test repo::readings_file::tests::last_day_in_week_wins_display ... ok
+test version::tests::inventory_empty_starts_at_v01 ... ok
+test version::tests::inventory_recommends_after_last_and_unreleased ... ok
+test version::tests::ops1_title_yields_version ... ok
+test version::tests::pack_source_and_cut_release_gates ... ok
+test version::tests::v0x_accepts_two_part ... ok
+test version::tests::v0x_rejects_other_shapes ... ok
+test repo::readings_file::tests::same_day_upserts_not_appends ... ok
+test app::release_ship::tests::skip_invalid_utf8_line_then_result ... ok
+test app::release_ship::tests::spawn_fake_pack_cmd ... ok
+
+test result: ok. 65 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.13s
+
+     Running tests\health_rules.rs (target\debug\deps\health_rules-24cd978101f0f4a0.exe)
+
+running 5 tests
+test no_data_at_all_is_grey_not_red ... ok
+test a_red_metric_beats_three_green_judgements ... ok
+test ops1_open_without_goal_text_is_not_on_track ... ok
+test three_judgements_all_true_is_green ... ok
+test two_silent_weeks_in_a_readable_repo_is_red ... ok
+
+test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests\repo_files.rs (target\debug\deps\repo_files-b1b79d78be164b1e.exe)
+
+running 7 tests
+test iso_week_math_round_trips ... ok
+test managed_reconcile_tells_the_four_cases_apart ... ok
+test unknown_key_fails_loudly ... ok
+test leftover_issue_policy_still_parses ... ok
+test slim_issue_policy_tmpl_parses_without_review_or_kanban ... ok
+test project_file_chat_section_is_optional ... ok
+test a_multiline_brief_survives_a_write_read_round_trip ... ok
+
+test result: ok. 7 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.02s
+
+     Running tests\schema_shape.rs (target\debug\deps\schema_shape-9ecf09b32f6e59eb.exe)
+
+running 5 tests
+test registry_starts_empty ... ok
+test no_sqlite_files_anywhere ... ok
+test registry_upsert_and_find ... ok
+test sessions_append_only ... ok
+test settings_roundtrip ... ok
+
+test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.03s
+
+     Running unittests src\lib.rs (target\debug\deps\bw_engine-c37e43da8269e9dc.exe)
+
+running 40 tests
+test dlog::tests::cargo_run_sets_cargo_env ... ok
+test dlog::tests::file_name_strips_crate_path ... ok
+test dlog::tests::cargo_root_walks_off_target_debug ... ok
+test legacy_pty::interactive_cli::tests::build_resume_plan_claude_with_session_id ... ok
+test legacy_pty::interactive_cli::tests::build_resume_plan_cursor_unsupported ... ok
+test legacy_pty::interactive_cli::tests::build_startup_plan_cursor_unsupported ... ok
+test legacy_pty::interactive_cli::tests::build_resume_plan_claude_fallback_continue ... ok
+test legacy_pty::interactive_cli::tests::build_resume_plan_claude_empty_session_id_falls_back ... ok
+test legacy_pty::interactive_cli::tests::build_startup_plan_claude_supported ... ok
+test legacy_pty::interactive_cli::tests::spawn_binary_override_wins ... ok
+test legacy_pty::interactive_cli::tests::mock_executor_returns_completed_and_writes_placeholder ... ok
+test legacy_pty::interactive_cli::tests::spawnable_env_key_rejects_windows_hidden_names ... ok
+test legacy_pty::interactive_cli::tests::mock_executor_never_writes_into_the_repo ... ok
+test open_design::tests::pairing_hash_is_still_loopback ... ok
+test orca::tests::claude_puts_system_and_body_on_one_line_startup ... ok
+test legacy_pty::terminal_manager::tests::snapshot_survives_drain ... ok
+test orca::tests::claude_slug_matches_known_workbench_tree ... ok
+test orca::tests::cursor_agent_cannot_ensure_claude_can ... ok
+test orca::tests::client_operation_id_matches_orca_pattern ... ok
+test orca::tests::cursor_force_trust_system_as_positional_body_stays_on_prompt ... ok
+test orca::tests::session_id_shape ... ok
+test orca::tests::text_stats_count_newlines_and_preview_strips_breaks ... ok
+test orca::tests::cursor_trust_slug_drops_dot_in_bw_orca_keeps_it ... ok
+test orca::tests::handle_timeout_rpc_counts_as_side_effect_ok ... ok
+test orca::tests::pairing_hash_moves_to_query ... ok
+test remote::codehub::api_body_tests::issue_view_description_maps_to_body ... ok
+test remote::codehub::api_body_tests::issue_view_missing_description_is_empty_body ... ok
+test remote::codehub::api_body_tests::omits_empty_milestone_dates ... ok
+test remote::codehub::api_body_tests::reads_wrapped_milestone_list ... ok
+test remote::codehub::api_body_tests::unwraps_status_wrapper ... ok
+test remote::codehub::parse_issue_list_json_tests::empty_and_null_are_no_issues ... ok
+test win_cmd::tests::script_ext_is_cmd_or_bat ... ok
+test remote::codehub::parse_issue_list_json_tests::one_row ... ok
+test workspace::tests::parse_https_codehub_origin ... ok
+test remote::tests::empty_week_label_is_empty_namespace ... ok
+test workspace::tests::parse_ssh_and_git_at ... ok
+test workspace::tests::standing_worktrees_stay_under_the_project ... ok
+test claude_bin::tests::candidates_skip_blank_explicit ... ok
+test claude_bin::tests::candidates_put_explicit_first ... ok
+test workspace::tests::provisions_inside_repo_and_preserves_legacy_collision ... ok
+
+test result: ok. 40 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 1.61s
+
+   Doc-tests bw
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+   Doc-tests bw_engine
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+

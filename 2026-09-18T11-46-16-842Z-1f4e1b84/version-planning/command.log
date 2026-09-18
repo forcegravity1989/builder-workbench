@@ -1,3 +1,0 @@
-   Compiling bw v0.0.0 (E:\zhuyu\code\builder-workbench\.claude\worktrees\e2e-journey-refactor\crates\bw)
-    Finished `dev` profile [unoptimized + debuginfo] target(s) in 3.59s
-     Running `target\debug\examples\planning_smoke.exe 'C:\Users\xiaoduo\AppData\Local\Temp\bw-planning-e2e-sWGQCo'`
