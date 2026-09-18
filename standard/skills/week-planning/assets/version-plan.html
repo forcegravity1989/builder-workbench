@@ -734,6 +734,8 @@ body{height:100vh;display:flex;flex-direction:column}
 
 #screen-plan .goal{position:relative;display:flex;flex-direction:column;align-self:stretch;height:100%;min-height:100%}
 #screen-plan .goal-title{flex:1 1 auto;font-weight:600;font-size:13px;line-height:1.35;padding-right:22px}
+/* Step 2 has no footer actions after chrome cleanup; hide the empty bar. */
+#screen-plan[data-step='2'] .foot-bar{display:none}
 #screen-plan .goal .bar{margin-top:auto;flex-shrink:0}
 #screen-plan .goal-meta{flex-shrink:0;align-items:center;min-height:22px}
 #screen-plan .goal-meta>span{display:inline-flex;align-items:center;line-height:1.2;min-height:22px}
@@ -925,7 +927,6 @@ body{height:100vh;display:flex;flex-direction:column}
                   <button class="btn btn-primary" type="button" data-goto="2" data-confirm-results="">确认结果，进入总结与评审</button>
                 </div>
               </div>
-              <div class="foot-by-step foot-s2"></div>
               <div class="foot-by-step foot-s3">
                 <div class="foot-actions foot-actions-end">
                   <button class="btn btn-primary" type="button" id="commit">确认计划</button>
@@ -945,13 +946,13 @@ body{height:100vh;display:flex;flex-direction:column}
  <span class="task-kind" data-task-kind></span>
  <div class="task-main"><span data-bind="title"></span></div>
  <span class="delta" data-bind="progress_note" contenteditable="true" data-placeholder="—"></span>
- <span class="tag tag-outline" data-bind="goal"></span>
+ <span class="tag tag-outline" data-bind="goal" data-hide-empty=""></span>
  </div></template>
 <template id="item-plan-tasks"><div class="task-row">
  <a class="id" data-issue-link></a>
  <span class="task-kind" data-task-kind></span>
  <div class="task-main"><span data-bind="title" contenteditable="true" data-placeholder="Issue 标题"></span></div>
- <span class="tag tag-outline" data-bind="goal"></span>
+ <span class="tag tag-outline" data-bind="goal" data-hide-empty=""></span>
  </div></template>
 <template id="item-results-deliverables"><div class="delivery-row">
  <span data-bind="label" contenteditable="true" data-placeholder="交付内容"></span>
