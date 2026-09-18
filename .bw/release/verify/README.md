@@ -48,7 +48,7 @@ Rust 测试在 `plan.json` 的 `test`（Windows）或 `test-headless`（Linux）
 
 已准备的专用仓是 **`yuzhup/bw-e2e-sandbox`（私有，GitHub repository id `1374096542`）**；它只承载测试数据。测试代码仍随 BW 源码评审和版本化，测试仓不维护第二份测试实现。CodeHub 后续使用自己的测试仓和适配，不通过 GitHub 转接。
 
-远端执行脚本须固定核验仓名和不可变 repository id，禁止模型临时换成 WB 主仓；每次运行先取得同一测试仓的独占资格，再造数。仅用 GitHub workflow concurrency 不能排斥本地同时运行。每次保存 run-id、基线、对象编号、分支 SHA 与清理回执；只清理能证明归属本次的对象，身份不明则失败并保留待处理。超时后不得无条件接管其他运行或批量删除仓库对象。
+远端执行脚本须固定核验仓名和不可变 repository id，禁止模型临时换成 WB 主仓。同一测试仓同一时刻只允许一个运行：独占资格当前靠人保证——脚本与 GitHub workflow concurrency 都没有实现跨本机的锁，concurrency 也排不掉本地同时运行；重叠运行靠 run-id 归属标记互相拒绝，每个对象只被创建它的运行清理。每次保存 run-id、基线、对象编号、分支 SHA 与清理回执；只清理能证明归属本次的对象，身份不明则失败并保留待处理。超时后不得无条件接管其他运行或批量删除仓库对象。
 
 BW 注册表、运行日志和 WebView2 使用本次独立目录。沙箱 Git 仓保留在 `.bw/release/out/e2e-workspaces/`，Orca 可长期登记它；三条自动化必须读回为关闭状态，测试不启用、不立即执行，也不触发模型。测试结束只移除“项目约定”工作树、关闭本次 Issue/PR 并删除远端 `bw/project`，保留沙箱主仓、三条运作工作树和自动化，确保 Orca 中的路径长期有效。
 

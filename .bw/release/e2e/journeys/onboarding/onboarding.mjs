@@ -67,6 +67,7 @@ let baselinePrs = [];
 let createdIssue;
 let createdPr;
 let branchOwned = false;
+let issueOwned = false;
 let failed = false;
 
 try {
@@ -141,6 +142,7 @@ try {
     const worktrees = git(['worktree', 'list', '--porcelain']);
     if (!worktreePaths(worktrees).includes(path.resolve(clone, '.bw', 'worktrees', 'project').toLowerCase())) throw new Error('Project worktree missing from git worktree list');
     run('gh', ['issue', 'comment', String(issue.number), '--repo', repo, '--body', `bw-e2e-run:${runId}`]);
+    issueOwned = true;
     run('gh', ['pr', 'comment', String(pr.number), '--repo', repo, '--body', `bw-e2e-run:${runId}`]);
     save('github-issue.json', issue);
     save('github-pr.json', pr);
@@ -194,7 +196,15 @@ try {
       run('gh', ['pr', 'close', String(createdPr.number), '--repo', repo, '--delete-branch']);
       cleanup.pr = createdPr.number;
     }
+    if (!issueOwned && createdIssue) {
+      try {
+        // 与分支同款的归属回补：读回本次运行打的评论标记；读不到就不动这个 Issue。
+        const comments = ghJson(['issue', 'view', String(createdIssue.number), '--repo', repo, '--json', 'comments']);
+        issueOwned = comments.some(x => String(x.body ?? '').includes(`bw-e2e-run:${runId}`));
+      } catch { /* retain unknown issue */ }
+    }
     if (createdIssue) {
+      if (!issueOwned) throw new Error('Refusing to close issue without this run marker');
       run('gh', ['issue', 'close', String(createdIssue.number), '--repo', repo]);
       cleanup.issue = createdIssue.number;
     }
@@ -214,6 +224,10 @@ try {
       const branch = spawnSync('git', ['show-ref', '--verify', '--quiet', 'refs/heads/bw/project'], { cwd: clone, windowsHide: true });
       if (branch.status === 0) git(['branch', '-D', 'bw/project']);
       cleanup.projectBranchRemoved = spawnSync('git', ['show-ref', '--verify', '--quiet', 'refs/heads/bw/project'], { cwd: clone, windowsHide: true }).status !== 0;
+    } else {
+      // 接入在克隆完成前失败时，本地没有需要清理的对象；「无需清理」不得记成清理失败，否则遮蔽首因。
+      cleanup.projectWorktreeRemoved = true;
+      cleanup.projectBranchRemoved = true;
     }
     if (!cleanup.remoteBranchDeleted || !cleanup.projectWorktreeRemoved || !cleanup.projectBranchRemoved) throw new Error('Cleanup postcondition failed');
     item('onboarding-cleanup').status = 'passed';
