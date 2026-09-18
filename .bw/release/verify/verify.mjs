@@ -215,7 +215,7 @@ export async function runVerification({ root, profile, steps = readPlan(root, pr
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
   try {
     const args = process.argv.slice(2);
-    if (args.length !== 2 || args[0] !== '--profile' || !['headless', 'pr', 'pr-onboarding'].includes(args[1])) throw new Error('用法：在仓根运行 node .bw/release/verify/verify.mjs --profile headless|pr|pr-onboarding');
+    if (args.length !== 2 || args[0] !== '--profile' || !['headless', 'pr', 'pr-onboarding', 'pack'].includes(args[1])) throw new Error('用法：在仓根运行 node .bw/release/verify/verify.mjs --profile headless|pr|pr-onboarding|pack');
     if (args[1] !== 'headless' && process.platform !== 'win32') throw new Error('完整 PR 桌面验证当前需要 Windows；Linux 用 headless，macOS 尚未接入');
     const root = execFileSync('git', ['rev-parse', '--show-toplevel'], { encoding: 'utf8' }).trim();
     const { report } = await runVerification({ root, profile: args[1] });

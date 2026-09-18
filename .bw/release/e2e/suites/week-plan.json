@@ -1,0 +1,27 @@
+{
+  "id": "week-plan-journey",
+  "title": "周一屏真实旅程（沙箱项目 → Orca 自动化 → 真实会话 → HTML 保存）",
+  "layer": "remote",
+  "profiles": ["pack"],
+  "command": [
+    "powershell.exe", "-NoProfile", "-ExecutionPolicy", "Bypass", "-File",
+    ".bw/release/e2e/desktop.ps1",
+    "-Exe", "{root}/target/debug/bw-dev.exe",
+    "-OutDir", "{out}",
+    "-Scenario", "onboarding",
+    "-WeekPlan",
+    "-SandboxRoot", "{shared}/.bw/release/out/e2e-workspaces",
+    "-SandboxRepo", "yuzhup/bw-e2e-sandbox",
+    "-SandboxRepoId", "1374096542"
+  ],
+  "timeoutSeconds": 1500,
+  "expectedCases": [
+    "onboarding-project",
+    "onboarding-readback",
+    "onboarding-orca",
+    "weekplan-automation",
+    "weekplan-session",
+    "weekplan-html",
+    "onboarding-cleanup"
+  ]
+}

@@ -2,11 +2,13 @@ param(
     [Parameter(Mandatory=$true)][string]$Exe,
     [Parameter(Mandatory=$true)][string]$OutDir,
     [ValidateSet('core','onboarding')][string]$Scenario = 'core',
+    [switch]$WeekPlan,
     [string]$SandboxRoot = '',
     [string]$SandboxRepo = '',
     [string]$SandboxRepoId = ''
 )
 $ErrorActionPreference = 'Stop'
+if ($WeekPlan -and $Scenario -ne 'onboarding') { throw '-WeekPlan extends the onboarding journey only' }
 $DesktopMode = if ($env:BW_E2E_DESKTOP) { $env:BW_E2E_DESKTOP } else { 'isolated' }
 if ($DesktopMode -notin @('isolated','current')) { throw 'BW_E2E_DESKTOP must be isolated or current (dedicated machine only)' }
 $Utf8 = New-Object Text.UTF8Encoding($false)
@@ -24,7 +26,9 @@ $OwnedPid = $null
 $DesktopHandle = [IntPtr]::Zero
 $Cases = New-Object 'System.Collections.Generic.List[object]'
 $Names = if ($Scenario -eq 'core') {
-    @('shell-launches', 'settings-persist', 'onboard-navigation', 'restart-persists')
+    @('settings-restart-roundtrip')
+} elseif ($WeekPlan) {
+    @('onboarding-project', 'onboarding-readback', 'onboarding-orca', 'weekplan-automation', 'weekplan-session', 'weekplan-html', 'onboarding-cleanup')
 } else {
     @('onboarding-project', 'onboarding-readback', 'onboarding-orca', 'onboarding-cleanup')
 }
@@ -138,7 +142,9 @@ try {
         if ($Scenario -eq 'core') {
             & node (Join-Path $PSScriptRoot 'core.mjs') --port "$Port" --out $OutDir --data $DataRoot --workspace $Workspace --phase $Phase
         } else {
-            & node (Join-Path $PSScriptRoot 'journeys/onboarding/onboarding.mjs') --port "$Port" --out $OutDir --sandbox-root $SandboxRoot --repo $SandboxRepo --repo-id $SandboxRepoId --run-id $RunId --root (Resolve-Path (Join-Path $PSScriptRoot '../../..')).Path
+            $JourneyArgs = @((Join-Path $PSScriptRoot 'journeys/onboarding/onboarding.mjs'), '--port', "$Port", '--out', $OutDir, '--sandbox-root', $SandboxRoot, '--repo', $SandboxRepo, '--repo-id', $SandboxRepoId, '--run-id', $RunId, '--root', (Resolve-Path (Join-Path $PSScriptRoot '../../..')).Path)
+            if ($WeekPlan) { $JourneyArgs += '--weekplan' }
+            & node @JourneyArgs
         }
         $DriveExit = $LASTEXITCODE
         $PhaseResult = Get-Content -LiteralPath (Join-Path $OutDir "$Phase.json") -Raw -Encoding UTF8 | ConvertFrom-Json
