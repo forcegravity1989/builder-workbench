@@ -61,4 +61,13 @@ evidence-v4-*.json
 
 # 特性原型网页不进仓:可点原型发 artifact 或推一条独立分支,spec / STATUS 里只留链接
 # (规矩在 docs/01-principles/02 §3.2)。存量已 tracked 的那两份不受影响。
+# 原型的样式 / 脚本 / 生成物 / 生成脚本跟网页同寿命,一起拦住,免得仓里养第二份「事实」。
 docs/05-features/**/prototype.html
+docs/05-features/**/prototype-*.html
+docs/05-features/**/prototype*.css
+docs/05-features/**/prototype*.js
+docs/05-features/**/hifi-overview.*
+docs/05-features/**/bw-scoped.css
+docs/05-features/**/bw-scoped-v4.css
+docs/05-features/**/bw-tokens.css
+docs/05-features/**/tools/
