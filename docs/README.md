@@ -22,7 +22,7 @@
 | [04-design-system/](04-design-system/README.md) | 视觉规范、样式与 token；来源和镜像方式见该入口 | 设计或修改界面视觉 |
 | [05-features/](05-features/) | 用户价值特性的 intent/spec/plan/状态 | 开特性、核对目标与验收；小修不进入 |
 | [06-module/](06-module/README.md) | 模块实现心智、主要矛盾与取舍 | 修改某一模块前 |
-| [10-reference/](10-reference/) | 外部资料提炼与历史参考，按篇区分现行/历史 | 追溯来源或理解旧概念，不作为当前实现证据 |
+| [10-reference/](10-reference/) | 外部资料提炼与历史参考，按篇区分现行/历史，如 [AI-native SDLC playbook 提炼](10-reference/ai-native-sdlc-playbook.md) | 追溯来源或理解旧概念，不作为当前实现证据 |
 | [hifi/](hifi/) | 屏幕版式与旅程原型 | 对照交互设计；原型不是已交付界面 |
 
 模型从 AGENTS 的任务路径到达这里，再读目标文件原文头部和正文；到达链接不等于读取，更不等于已遵守。产品目标与当前实现冲突时，分别回到 03 与 architecture 核对，不能把主张或原型改写成已经交付。
