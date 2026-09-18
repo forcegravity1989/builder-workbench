@@ -2,6 +2,7 @@
   "id": "version-planning",
   "title": "周一屏部署与浏览器文件共建",
   "layer": "browser",
+  "profiles": ["pr", "pack"],
   "command": [
     "{node}",
     ".bw/release/e2e/planning.mjs",
@@ -14,6 +15,8 @@
     "planning-autosave",
     "planning-model-readback",
     "planning-version-isolation",
+    "planning-unknown-honesty",
+    "planning-confirmation",
     "planning-conflict",
     "planning-bad-history"
   ]

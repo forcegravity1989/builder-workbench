@@ -21,7 +21,7 @@ Python 3 可用；工作目录含 `.bw/planning/`；本版计划 JSON、出包�
 
 1. **核对版本与材料**：确认版本名与工作目录；读本版 `.bw/planning/<版本>/data.json` 的 plan.goals 与 plan.tasks；记录出包产物目录、最近一次 verify runId、e2e 运行记录（JSONL）与证据目录。
 2. **前置出包编译**：产物目录没有本版安装包时，跑 `.bw/release/pack/pack.cmd --version <号> --workdir <仓根>`；已有产物直接复用。本版明确不出包则 build / pack 留空。
-3. **源码验收**：`node .bw/release/verify/verify.mjs --profile pr`，拿到 runId；已有同版结果可直接引用。
+3. **源码验收**：出包收尾跑 `node .bw/release/verify/verify.mjs --profile pack`（pr 全部门禁 + 添加项目与周一屏真实旅程；需 Orca 已打开、本机 `gh` 已登录、python 可用），拿到 runId；已有同版结果可直接引用，日常不出包的验证仍用 `--profile pr`。
 4. **验包**：需要实跑安装包时跑 `.bw/release/e2e/e2e.cmd`，收集 stdout JSONL 与证据目录。
 5. **建数据与采集**：`scripts/report.py --workspace <工作目录> --version <版本> init`；再 `collect --verify-run <runId> --e2e-log <JSONL> [--e2e-root <目录>] --shots-to .bw/planning/<版本>/shots`，脚本解析用例、复制截图并回填相对 url；需要产物清单或读数再加 `--artifact-dir` / `--readings`。
 6. **回填 report.json**：goals / tasks 引用本版计划，任务状态用 `gh` 读回；head 填版本对、源码修订、出包时间与真实 tag / Issue；health 填编译打包结论与两档用例计数；cases 用 collect 产出的 case_list，并对上本版目标的验收点标 `kind: acceptance`，其余冒烟与通用回归保持 `basic`。

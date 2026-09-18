@@ -297,6 +297,14 @@ pub async fn list_automations(rt: &OrcaRuntime) -> Result<Vec<AutomationRow>, Or
         .collect())
 }
 
+/// automation.show 的原始回包（含 result.owner 与 result.automation）。
+/// 更新守卫与独立读回示例都走这一个入口，不再各开一条 show 通道。
+pub async fn automation_show(rt: &OrcaRuntime, id: &str) -> Result<Value, OrcaError> {
+    let frame = call(rt, "automation.show", json!({ "id": id }), ACTIVATE_TIMEOUT).await?;
+    require_ok(&frame, "automation.show")?;
+    Ok(frame)
+}
+
 pub async fn create_automation(
     rt: &OrcaRuntime,
     spec: &AutomationCreate<'_>,
@@ -331,8 +339,7 @@ pub async fn update_planning_automation(
     prompt: &str,
     workspace: &Path,
 ) -> Result<(), OrcaError> {
-    let shown = call(rt, "automation.show", json!({"id": id}), ACTIVATE_TIMEOUT).await?;
-    require_ok(&shown, "automation.show")?;
+    let shown = automation_show(rt, id).await?;
     let mut params = json!({"id": id, "updates": {
         "prompt": prompt, "workspace": path_prefixed(workspace),
         "workspaceMode": "existing", "reuseSession": false
@@ -343,8 +350,7 @@ pub async fn update_planning_automation(
     }
     let frame = call(rt, "automation.update", params, ACTIVATE_TIMEOUT).await?;
     require_ok(&frame, "automation.update")?;
-    let readback = call(rt, "automation.show", json!({"id": id}), ACTIVATE_TIMEOUT).await?;
-    require_ok(&readback, "automation.show")?;
+    let readback = automation_show(rt, id).await?;
     if readback
         .pointer("/result/automation/prompt")
         .and_then(Value::as_str)
@@ -519,11 +525,16 @@ fn pairing_as_query(url: &str) -> String {
     }
 }
 
-/// 按 Claude 的路径编码查找最新会话 ID；找不到返回 None。
-pub fn session_id_for_worktree(worktree: &Path) -> Option<String> {
-    let dir = claude_project_dir(worktree)?;
-    let mut newest: Option<(std::time::SystemTime, String)> = None;
-    let entries = std::fs::read_dir(&dir).ok()?;
+/// 该工作树对应的 Claude 项目目录里全部会话 ID，按文件修改时间从旧到新。
+/// 单条元数据读失败只跳过该条，不让整个目录观察失效。
+pub fn session_ids_for_worktree(worktree: &Path) -> Vec<String> {
+    let Some(dir) = claude_project_dir(worktree) else {
+        return Vec::new();
+    };
+    let Ok(entries) = std::fs::read_dir(&dir) else {
+        return Vec::new();
+    };
+    let mut rows: Vec<(std::time::SystemTime, String)> = Vec::new();
     for entry in entries.flatten() {
         let path = entry.path();
         if path.extension().and_then(|e| e.to_str()) != Some("jsonl") {
@@ -533,13 +544,18 @@ pub fn session_id_for_worktree(worktree: &Path) -> Option<String> {
         if !looks_session_id(stem) {
             continue;
         }
-        let mtime = entry.metadata().ok().and_then(|m| m.modified().ok())?;
-        match &newest {
-            Some((t, _)) if *t >= mtime => {}
-            _ => newest = Some((mtime, stem.to_string())),
-        }
+        let Some(mtime) = entry.metadata().ok().and_then(|m| m.modified().ok()) else {
+            continue;
+        };
+        rows.push((mtime, stem.to_string()));
     }
-    newest.map(|(_, id)| id)
+    rows.sort_by_key(|(mtime, _)| *mtime);
+    rows.into_iter().map(|(_, id)| id).collect()
+}
+
+/// 按 Claude 的路径编码查找最新会话 ID；找不到返回 None。
+pub fn session_id_for_worktree(worktree: &Path) -> Option<String> {
+    session_ids_for_worktree(worktree).pop()
 }
 
 pub async fn wait_session_id_for_worktree(worktree: &Path) -> Option<String> {
@@ -633,7 +649,7 @@ fn claude_project_slug(worktree: &Path) -> String {
         .collect()
 }
 
-fn claude_project_dir(worktree: &Path) -> Option<std::path::PathBuf> {
+pub fn claude_project_dir(worktree: &Path) -> Option<std::path::PathBuf> {
     Some(
         claude_home()?
             .join("projects")

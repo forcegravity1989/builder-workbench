@@ -30,11 +30,18 @@ test('write-capable onboarding stays out of the ordinary PR profile', () => {
   const root = execFileSync('git', ['rev-parse', '--show-toplevel'], { encoding: 'utf8' }).trim();
   const ordinary = readPlan(root, 'pr').map(x => x.id);
   const onboarding = readPlan(root, 'pr-onboarding').map(x => x.id);
+  const pack = readPlan(root, 'pack').map(x => x.id);
   assert.ok(ordinary.includes('desktop-core'));
   assert.ok(!ordinary.includes('desktop-onboarding'));
   assert.ok(onboarding.includes('desktop-core'));
   assert.ok(onboarding.includes('desktop-onboarding'));
   for (const id of ordinary) assert.ok(onboarding.includes(id), `pr-onboarding must retain ordinary PR step ${id}`);
+  assert.ok(pack.includes('desktop-core'));
+  assert.ok(pack.includes('version-planning'));
+  assert.ok(pack.includes('week-plan-journey'));
+  // week-plan-journey 复用接入旅程脚本并已包含其全部用例，pack 不再重复跑一遍添加项目。
+  assert.ok(!pack.includes('desktop-onboarding'));
+  for (const id of ordinary) assert.ok(pack.includes(id), `pack must retain ordinary PR step ${id}`);
 });
 
 test('nonzero exit cannot be hidden by a success-looking log; later steps do not run', async t => {
