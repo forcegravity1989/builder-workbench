@@ -26,14 +26,12 @@
       "id": "v03-plan",
       "kind": "issue_comment",
       "url": "https://github.com/forcegravity1989/builder-workbench/issues/174#issuecomment-5673254290",
-      "file": ".bw/planning/sources/issue-174.json",
       "authored_date": "2026-08-31"
     },
     {
       "id": "v03-progress",
       "kind": "issue_comment",
       "url": "https://github.com/forcegravity1989/builder-workbench/issues/174#issuecomment-5673254559",
-      "file": ".bw/planning/sources/issue-174.json",
       "authored_date": "2026-09-04"
     }
   ],
@@ -45,7 +43,21 @@
     "session_label": "未取得",
     "session_kind": "原始记录",
     "session_meta": "不编造历史会话",
-    "sessions": []
+    "sessions": [],
+    "deliverables": [
+      {
+        "id": "D1",
+        "label": "Orca 自动化截图:定时器下线后默认注入三条运作动作",
+        "goal": "G1",
+        "url": ".bw/planning/v0.3/deliverables/v03-g1-orca-automations.png"
+      },
+      {
+        "id": "D2",
+        "label": "用户指南截图:全局驾驶地图",
+        "goal": "G2",
+        "url": ".bw/planning/v0.3/deliverables/v03-g2-guide-map.png"
+      }
+    ]
   },
   "summary": {
     "overview": "v0.3 原计划重建，供 v0.4 核对承诺与结果。",
@@ -59,8 +71,7 @@
       [
         "待核对"
       ]
-    ],
-    "preview": []
+    ]
   },
   "review": {
     "live_notes": "",
@@ -84,14 +95,13 @@
         "id": "G1",
         "label": "G1",
         "title": "总览重点改造，并统一版本计划模型",
-        "reading": "未重做验收",
+        "reading": "",
         "progress": null,
         "status": {
           "label": "待核对",
           "tone": "neutral"
         },
         "note": "总览按 system-design 重做；计划屏从周目标统一为版本目标。",
-        "detail": "总览按 system-design 重做；计划屏从周目标统一为版本目标。",
         "sources": [
           "v03-plan"
         ]
@@ -100,14 +110,13 @@
         "id": "G2",
         "label": "G2",
         "title": "打磨运行流程、规范和可采指标",
-        "reading": "未重做验收",
+        "reading": "",
         "progress": null,
         "status": {
           "label": "待核对",
           "tone": "neutral"
         },
         "note": "整理规范、简化 metrics-refresh；代码仓可采指标先呈现，system-design 持续实战。",
-        "detail": "整理规范、简化 metrics-refresh；代码仓可采指标先呈现，system-design 持续实战。",
         "sources": [
           "v03-plan"
         ]
@@ -116,14 +125,13 @@
         "id": "G3",
         "label": "G3",
         "title": "补齐日志、引导与递进发版流程",
-        "reading": "未重做验收",
+        "reading": "",
         "progress": null,
         "status": {
           "label": "待核对",
           "tone": "neutral"
         },
         "note": "日志整改、问题上传、补助手引导；发版前出包、E2E 与通知。",
-        "detail": "日志整改、问题上传、补助手引导；发版前出包、E2E 与通知。",
         "sources": [
           "v03-plan"
         ]
@@ -132,187 +140,88 @@
     "tasks": [
       {
         "id": "overview",
-        "number": "未关联",
         "title": "总览重点改造",
-        "delta": "原定 → 待核对",
         "goal": "G1",
-        "status": {
-          "label": "待核对",
-          "tone": "neutral"
-        },
-        "note": "来源：#174 目标评论；未推断独立 Issue。",
-        "detail": "来源：#174 目标评论；未推断独立 Issue。",
-        "included": true,
         "sources": [
           "v03-plan"
         ]
       },
       {
         "id": "version-model",
-        "number": "未关联",
         "title": "计划屏统一版本模型与术语",
-        "delta": "原定 → 待核对",
         "goal": "G1",
-        "status": {
-          "label": "待核对",
-          "tone": "neutral"
-        },
-        "note": "来源：#174 目标评论；未推断独立 Issue。",
-        "detail": "来源：#174 目标评论；未推断独立 Issue。",
-        "included": true,
         "sources": [
           "v03-plan"
         ]
       },
       {
         "id": "standards",
-        "number": "未关联",
         "title": "清理规范注释和无效文件",
-        "delta": "原定 → 待核对",
         "goal": "G2",
-        "status": {
-          "label": "待核对",
-          "tone": "neutral"
-        },
-        "note": "来源：#174 目标评论；未推断独立 Issue。",
-        "detail": "来源：#174 目标评论；未推断独立 Issue。",
-        "included": true,
         "sources": [
           "v03-plan"
         ]
       },
       {
         "id": "metrics-refresh",
-        "number": "未关联",
         "title": "简化指标更新 Skill",
-        "delta": "原定 → 待核对",
         "goal": "G2",
-        "status": {
-          "label": "待核对",
-          "tone": "neutral"
-        },
-        "note": "来源：#174 目标评论；未推断独立 Issue。",
-        "detail": "来源：#174 目标评论；未推断独立 Issue。",
-        "included": true,
         "sources": [
           "v03-plan"
         ]
       },
       {
         "id": "sdlc",
-        "number": "未关联",
         "title": "代码仓可采指标与 SDLC 标准",
-        "delta": "原定 → 待核对",
         "goal": "G2",
-        "status": {
-          "label": "待核对",
-          "tone": "neutral"
-        },
-        "note": "来源：#174 目标评论；未推断独立 Issue。",
-        "detail": "来源：#174 目标评论；未推断独立 Issue。",
-        "included": true,
         "sources": [
           "v03-plan"
         ]
       },
       {
         "id": "plan-bugs",
-        "number": "未关联",
         "title": "修复计划屏 Open 与切工作树问题",
-        "delta": "原定 → 待核对",
         "goal": "G1",
-        "status": {
-          "label": "待核对",
-          "tone": "neutral"
-        },
-        "note": "来源：#174 目标评论；未推断独立 Issue。",
-        "detail": "来源：#174 目标评论；未推断独立 Issue。",
-        "included": true,
         "sources": [
           "v03-plan"
         ]
       },
       {
         "id": "logs",
-        "number": "未关联",
         "title": "整改日志并支持一键上传",
-        "delta": "原定 → 待核对",
         "goal": "G3",
-        "status": {
-          "label": "待核对",
-          "tone": "neutral"
-        },
-        "note": "来源：#174 目标评论；未推断独立 Issue。",
-        "detail": "来源：#174 目标评论；未推断独立 Issue。",
-        "included": true,
         "sources": [
           "v03-plan"
         ]
       },
       {
         "id": "guide",
-        "number": "未关联",
         "title": "补助手引导",
-        "delta": "原定 → 待核对",
         "goal": "G3",
-        "status": {
-          "label": "待核对",
-          "tone": "neutral"
-        },
-        "note": "来源：#174 目标评论；未推断独立 Issue。",
-        "detail": "来源：#174 目标评论；未推断独立 Issue。",
-        "included": true,
         "sources": [
           "v03-plan"
         ]
       },
       {
         "id": "release",
-        "number": "未关联",
         "title": "发版 CI 递进、出包、E2E 与通知",
-        "delta": "原定 → 待核对",
         "goal": "G3",
-        "status": {
-          "label": "待核对",
-          "tone": "neutral"
-        },
-        "note": "来源：#174 目标评论；未推断独立 Issue。",
-        "detail": "来源：#174 目标评论；未推断独立 Issue。",
-        "included": true,
         "sources": [
           "v03-plan"
         ]
       },
       {
         "id": "system-design",
-        "number": "未关联",
         "title": "system-design 入仓持续实战",
-        "delta": "原定 → 待核对",
         "goal": "G2",
-        "status": {
-          "label": "待核对",
-          "tone": "neutral"
-        },
-        "note": "来源：#174 目标评论；未推断独立 Issue。",
-        "detail": "来源：#174 目标评论；未推断独立 Issue。",
-        "included": true,
         "sources": [
           "v03-plan"
         ]
       },
       {
         "id": "audit",
-        "number": "未关联",
         "title": "资产盘点收尾",
-        "delta": "原定 → 待核对",
         "goal": "G2",
-        "status": {
-          "label": "待核对",
-          "tone": "neutral"
-        },
-        "note": "来源：#174 目标评论；未推断独立 Issue。",
-        "detail": "来源：#174 目标评论；未推断独立 Issue。",
-        "included": true,
         "sources": [
           "v03-plan"
         ]
