@@ -112,8 +112,7 @@ function rowTools(row,key,index,item){
  if(key==='results.tasks'||key==='results.sessions')return;
  if(readonly)return;
  const box=document.createElement('div');box.className='row-tools';
- const remove=document.createElement('button');remove.className='btn btn-ghost btn-sm';remove.type='button';remove.textContent='删除';remove.setAttribute('aria-label','删除'+names[key]);
- if(key.endsWith('.goals')){remove.textContent='×';remove.title='删除目标';}
+ const remove=document.createElement('button');remove.className='btn btn-ghost btn-sm';remove.type='button';remove.textContent='×';remove.title='删除'+names[key];remove.setAttribute('aria-label','删除'+names[key]);
  remove.onclick=()=>{
    if(!key.endsWith('.goals')&&!confirm('删除这条'+names[key]+'？'))return;
    const list=clone(get(data,key)),[removed]=list.splice(index,1);
@@ -131,17 +130,13 @@ function render(){
    if(!items.length){const p=document.createElement('p');p.className='empty-list';p.textContent=key==='results.tasks'?'尚未采集到任务 Issue':key==='results.sessions'?'尚未取得会话记录':readonly?'尚未填写':'还没有'+names[key]+'，点击下方添加。';list.append(p);}
    items.forEach((item,i)=>{const row=$('item-'+key.replaceAll('.','-')).content.firstElementChild.cloneNode(true);const index=(get(data,key)||[]).indexOf(item);fill(row,item,key+'.'+index);rowTools(row,key,index,item);list.append(row);});
  });
- for(const [id,path] of Object.entries({'live-notes':'review.live_notes','meeting-url':'review.meeting_url','minutes-body':'review.minutes.markdown','transcript-body':'review.transcript.text'})){
+ for(const [id,path] of Object.entries({'live-notes':'review.live_notes','minutes-body':'review.minutes.markdown','transcript-body':'review.transcript.text'})){
    $(id).value=get(data,path)||'';editable($(id),path);
  }
  $('review-status').textContent=data.review.minutes.state==='stale'?'材料已更新 · 请核对纪要':data.review.minutes.markdown?'已有纪要 · 可继续修改':'待填写';
- $('publication-state').textContent=data.confirmation.plan?'计划已确认；可在会话中发起 PR。':'填写完成后确认；PR 由会话发起。';
  $('commit').textContent=data.confirmation.plan?'计划已确认':'确认计划';
- $('provenance').textContent=data.provenance?.notice||'';
- $('source-list').querySelectorAll('p').forEach(el=>el.remove());
- (data.sources||[]).forEach(source=>{const p=document.createElement('p'),a=document.createElement('a');a.textContent=source.id;a.target='_blank';a.rel='noopener';if(/^https?:\/\//.test(source.url||''))a.href=source.url;p.append(a,document.createTextNode(' · '+(source.authored_date||'')));$('source-list').append(p);});
  screen.querySelectorAll('[data-add]').forEach(b=>b.hidden=readonly);
- screen.querySelectorAll('[data-confirm-results],[data-export-review],#commit').forEach(b=>b.disabled=readonly);
+ screen.querySelectorAll('[data-confirm-results],#commit').forEach(b=>b.disabled=readonly);
  screen.querySelectorAll('[data-undo-goal]').forEach(b=>b.hidden=readonly||!removedGoal||removedGoal.version!==data.version||removedGoal.key!==b.dataset.undoGoal);
  storageControls();$('version-select').disabled=snapshot;
 }
@@ -185,15 +180,6 @@ $('download-data').onclick=()=>download(new Blob([JSON.stringify(data,null,2)+'\
 $('version-select').onchange=async()=>{if(switching)return;switching=true;try{await selectVersion(records.find(r=>r.version===$('version-select').value));}catch(error){message(error.message,true);}finally{$('version-select').value=files.version;switching=false;}};
 screen.querySelectorAll('[data-add]').forEach(b=>b.onclick=()=>{const key=b.dataset.add;change(key,[...(get(data,key)||[]),newItem(key)]);render();screen.querySelector('[data-list="'+key+'"] > :last-child [contenteditable=true]')?.focus();});
 screen.querySelectorAll('[data-goto]').forEach(b=>b.onclick=async()=>{if(b.hasAttribute('data-confirm-results')&&!await confirmStage('results'))return;go(Number(b.dataset.goto));});
-$('go-week').onclick=()=>go(3);
-screen.querySelector('[data-export-review]').onclick=async()=>{
- if(!await confirmStage('review_ready'))return;
- const root=document.documentElement.cloneNode(true);root.setAttribute('data-snapshot','true');
- root.querySelector('#plan-data').textContent=JSON.stringify(data).replace(/</g,'\\u003c');
- root.querySelector('#plan-versions').textContent='[]';
- download(new Blob(['<!doctype html>\n'+root.outerHTML],{type:'text/html'}),data.version+'-会议评审.html');
- message('已保存，并导出会议评审材料');
-};
 $('commit').onclick=async()=>{
  if(!data.plan.goals.some(g=>g.title.trim())||!data.plan.tasks.some(t=>t.title.trim())){message('请先填写版本目标和任务，再确认计划。',true);return;}
  if(confirm('确认当前版本计划？这会保存确认记录；发起 PR 请回到会话提出。')&&await confirmStage('plan'))render();

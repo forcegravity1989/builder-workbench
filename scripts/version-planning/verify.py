@@ -53,7 +53,7 @@ assert len(doc.xpath('//*[@data-add]'))==5
 assert len(doc.xpath('//*[@data-list="plan.goals"]'))==2
 assert not doc.xpath('//*[@data-bind="delta"]|//*[@data-list="summary.preview"]')
 first_goal=doc.getroot().get_element_by_id('item-results-goals')
-assert first_goal.xpath('.//*[@data-bind]/@data-bind') == ['title','reading','target']
+assert first_goal.xpath('.//*[@data-bind]/@data-bind') == ['label','title','reading','target']
 assert len(first_goal.xpath('.//*[@data-progress and @data-show-unknown]')) == 1
 assert not first_goal.xpath('.//*[@data-status]|.//label')
 assert first_goal.xpath('.//*[@data-goal-status]/option/text()') == ['达成','未达','遗留','无值']
@@ -61,10 +61,16 @@ assert not doc.xpath('//*[@id="reload-data"]')
 assert 'hidden' in doc.getroot().get_element_by_id('save-now').attrib
 assert '已打开 ' not in doc.getroot().get_element_by_id('plan-app').text
 fields=doc.getroot().get_element_by_id('item-plan-goals').xpath('.//*[@data-bind]/@data-bind')
-assert fields == ['title','target']
+assert fields == ['label','title']
+assert not doc.getroot().get_element_by_id('item-plan-goals').xpath('.//*[@data-progress]|.//*[@data-goal-status]')
+assert not doc.xpath('//*[@id="meeting-url"]|//*[@data-export-review]|//*[@id="go-week"]|//*[@id="publication-state"]|//details[contains(@class,"source-details")]')
+assert not doc.xpath('//*[@class="foot-by-step foot-s2"]|.//*[contains(concat(" ",normalize-space(@class)," ")," foot-s2 ")]')
 for identity in ['item-results-tasks','item-plan-tasks']:
-    assert not doc.getroot().get_element_by_id(identity).xpath('.//*[@data-deliverables]|.//*[@data-note]|.//*[@data-status]')
-passed('SE source CSS unchanged; first-screen goals show only sentence, progress bar and reading/target and four result tags; service save entry retained, no directory authorization or opened message; review/final goal cards simplified and version deliverables separated')
+    row=doc.getroot().get_element_by_id(identity)
+    assert not row.xpath('.//*[@data-deliverables]|.//*[@data-note]|.//*[@data-status]')
+    goal=row.xpath('.//*[@data-bind="goal"]')
+    assert goal and 'data-hide-empty' in goal[0].attrib
+passed('SE source CSS unchanged; results goals keep kicker+sentence+bar+reading/target+tags; plan goals are kicker+title only; removed meeting-url/export/nav chrome; empty goal tags hide; service save entry retained')
 fixture_issues=[
  {'number':1,'title':'【v0.4|W38|G1】Fix save','html_url':'https://example.invalid/issues/1','labels':[{'name':'bw:plan:v0.4'},{'name':'Bug'}]},
  {'number':2,'title':'No goal','url':'https://example.invalid/issues/2','labels':['bw:plan:v0.4'],'state':'closed'},
@@ -139,12 +145,13 @@ with tempfile.TemporaryDirectory(prefix='bw-plan-verify-') as folder:
     assert checked.returncode==0,checked.stderr
     passed('SMART definitions and Bug task deliverables survive save/read; changing the target clears stale percentage; browser file parser accepts the same data')
     store.confirm('results');store.confirm('review_ready')
-    snap=store.local_read('meeting_snapshot');snapfile=Path(folder)/snap['path']/'index.html';frozen=snapfile.read_bytes()
-    assert b'data-snapshot="true"' in frozen
+    assert store.read()[0]['confirmation']['review_ready']
+    assert not store.local_read('meeting_snapshot',{})
     store.patch([{'path':'review.live_notes','old':'','value':'测试输入，不是 BW 会议。保留待确认事项。'}])
-    assert snapfile.read_bytes()==frozen
-    passed('Meeting snapshot is immutable and marked read-only')
+    assert store.read()[0]['confirmation']['review_ready']  # live_notes alone does not clear review_ready
+    passed('Review confirmation records state only; no meeting HTML snapshot')
     store.patch([{'path':'review.meeting_url','old':'','value':'https://example.invalid/fixture-meeting'}])
+    store.local_write('settings',{})
     store.meeting();assert store.fetch_meeting()['state']=='needs_config'
     passed('Unconfigured internal script/standard reports missing setup instead of fabricated minutes')
     fixture=Path(folder)/'fixture.py';fixture.write_text('import pathlib,sys\npathlib.Path(sys.argv[1]).write_text("A: fixture-only transcript",encoding="utf-8")',encoding='utf-8')
@@ -166,8 +173,8 @@ with tempfile.TemporaryDirectory(prefix='bw-plan-verify-') as folder:
     passed('Embedded JSON cannot break out of script element')
     for page in Path(folder).rglob('*.html'):
         check_page(page, application_script())
-    assert set(path.name for path in (store.root/'template').iterdir()) == {'version-plan.html','data-template.json'}
-    passed('Initialized and refreshed pages and confirmed snapshots preserve the complete executable script; only two template assets are copied')
+    assert {path.name for path in (store.root/'template').iterdir()} == {'version-plan.html'}
+    passed('Initialized and refreshed pages preserve the complete executable script; project template cache is HTML-only')
 
 # A real loopback process exercises the same file protocol used by the page.
 from urllib.request import Request, urlopen

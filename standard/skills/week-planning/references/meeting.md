@@ -1,6 +1,6 @@
 # 会议接入
 
-现场核心记录直接编辑页面，写入 `review.live_notes`。会后填写会议链接，完整转写与整理纪要分别保留，不混成一段。
+现场核心记录直接编辑页面，写入 `review.live_notes`。页面不提供会议链接输入框；会后用户把链接交给会话，由会话写入 `review.meeting_url` 后再取转写。完整转写与整理纪要分别保留，不混成一段。
 
 ## 内置转写脚本与纪要模板
 
@@ -23,7 +23,7 @@ Skill 自带华为 eMeeting 转写脚本（`scripts/fetch-emeeting-transcript.mj
 - CDP proxy 运行中：先 `node check-deps.mjs --browser chrome` 启动（监听 localhost:3456）。
 - 会议已结束且已生成「语音转文字」。
 
-用户把会议链接保存后，在会话执行脚本并读取任务：
+会话把有效会议链接写入 `review.meeting_url` 并保存后，再执行脚本并读取任务：
 
 ```
 python <PACK>/scripts/planning.py --workspace <工作目录> --version v0.4 fetch-meeting

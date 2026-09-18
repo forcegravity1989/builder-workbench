@@ -295,7 +295,7 @@ class Store:
             if etag is not None and etag!=current: raise Conflict('材料已更新，请先核对再确认')
             if stage=='review_ready' and not data['confirmation']['results']: raise ValueError('请先核对第一屏结果')
             if stage=='plan' and (not data['confirmation']['review_ready'] or not data['plan']['goals'] or not data['plan']['tasks']):
-                raise ValueError('请先确认评审版，并填写最终目标和任务')
+                raise ValueError('请先由会话执行 confirm --stage review_ready，并填写最终目标和任务')
             if stage=='plan' and any(not str(task.get('number','')).lstrip('#').isdigit() or not re.match(r'^https?://',task.get('url','')) for task in data['plan']['tasks']):
                 raise ValueError('请先创建或关联任务 Issue，并读回编号和链接')
             data['confirmation'][stage]={'at':now(),'actor':'user'}
@@ -305,7 +305,7 @@ class Store:
     def meeting(self):
         with self.lock():
             self.writable();data,_=self.read();url=data['review']['meeting_url'].strip()
-            if urlsplit(url).scheme not in ['http','https']: raise ValueError('请输入有效会议链接')
+            if urlsplit(url).scheme not in ['http','https']: raise ValueError('请先由会话写入有效会议链接到 review.meeting_url')
             job=self.local_read('meeting',{})
             if job.get('state') in ['queued','fetching'] and job.get('url')==url:
                 return job
