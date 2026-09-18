@@ -1,4 +1,0 @@
-[1m[92m   Compiling[0m bw-engine v0.0.0 (E:\zhuyu\code\builder-workbench\.bw\worktrees\ci-release-design\crates\bw-engine)
-[1m[92m   Compiling[0m bw v0.0.0 (E:\zhuyu\code\builder-workbench\.bw\worktrees\ci-release-design\crates\bw)
-[1m[92m    Finished[0m ]8;;https://doc.rust-lang.org/cargo/reference/profiles.html#default-profiles\`dev` profile [unoptimized + debuginfo]]8;;\ target(s) in 13.50s
-[1m[92m     Running[0m `target\debug\examples\planning_smoke.exe C:\Users\xiaoduo\AppData\Local\Temp\bw-planning-e2e-HnRJll`

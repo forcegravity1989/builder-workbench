@@ -1,0 +1,20 @@
+worktree E:/zhuyu/code/builder-workbench/.bw/release/out/e2e-workspaces/bw-e2e-sandbox
+HEAD ae2d5f7f64e0b5d591cb44237f8e9c8c208a8aee
+branch refs/heads/main
+
+worktree E:/zhuyu/code/builder-workbench/.bw/release/out/e2e-workspaces/bw-e2e-sandbox/.bw/worktrees/ledger
+HEAD ae2d5f7f64e0b5d591cb44237f8e9c8c208a8aee
+branch refs/heads/bw/ledger
+
+worktree E:/zhuyu/code/builder-workbench/.bw/release/out/e2e-workspaces/bw-e2e-sandbox/.bw/worktrees/ops-audit
+HEAD ae2d5f7f64e0b5d591cb44237f8e9c8c208a8aee
+branch refs/heads/bw/ops-audit
+
+worktree E:/zhuyu/code/builder-workbench/.bw/release/out/e2e-workspaces/bw-e2e-sandbox/.bw/worktrees/project
+HEAD 06dbf2b132867a711f42c5bdd7ace9238bd5edab
+branch refs/heads/bw/project
+
+worktree E:/zhuyu/code/builder-workbench/.bw/release/out/e2e-workspaces/bw-e2e-sandbox/.bw/worktrees/week-plan
+HEAD ae2d5f7f64e0b5d591cb44237f8e9c8c208a8aee
+branch refs/heads/bw/week-plan
+
