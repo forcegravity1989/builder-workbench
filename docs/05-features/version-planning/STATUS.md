@@ -6,16 +6,16 @@
 
 - 开发树：E:/zhuyu/code/builder-workbench/.bw/worktrees/version-planning。
 - [Skill](../../../standard/skills/week-planning/SKILL.md)：修改原有 week-planning，未另建并行 Skill。
-- [出厂 HTML](../../../standard/skills/week-planning/assets/version-plan.html)、[空数据模板](../../../standard/skills/week-planning/assets/data-template.json)：随 Skill 开发的交付资产，不是一次性设计演示。
-- 项目 HTML 入口（本机路径 `E:/zhuyu/code/builder-workbench/.bw/worktrees/week-plan/.bw/planning/template/version-plan.html`）：从出厂模板部署的一份共用页面。
+- [出厂 HTML](../../../standard/skills/week-planning/assets/version-plan.html)、[空数据模板](../../../standard/skills/week-planning/assets/data-template.json)、[纪要模板](../../../standard/skills/week-planning/assets/minutes-template.md)：随 Skill 开发的交付资产，不是一次性设计演示。
+- 项目 HTML 入口（本机路径 `E:/zhuyu/code/builder-workbench/.bw/worktrees/week-plan/.bw/planning/template/version-plan.html`）：服务刷新生成的离线只读缓存，可由 JSON 随时重建，Git 忽略。
 - v0.3 内容（本机路径 `E:/zhuyu/code/builder-workbench/.bw/worktrees/week-plan/.bw/planning/v0.3/data.json`）、v0.4 内容（本机路径 `E:/zhuyu/code/builder-workbench/.bw/worktrees/week-plan/.bw/planning/v0.4/data.json`）：从原实战树原样迁入，迁移前后 SHA256 一致；v0.4 已有回填，未重置。
 - [本次 Orca 提示词](orca-task-prompt.txt)、[填写说明](manual-review.md)位于本特性文档目录，不随 Skill 分发；验证报告由统一 PR 入口生成并发布至 PR Review。
 
 ## 交付包与开发文件
 
-`standard/skills/week-planning` 仅保留 Skill、两份 assets、两份按需读取的 reference、一个运行脚本，以及现行产品仍在调用的评论格式校验脚本。构建用 JS/CSS、构建器和验证器在 [`scripts/version-planning`](../../../scripts/version-planning/README.md)；BW 的实际版本数据与来源只留在项目 `.bw/planning`，不放进出厂包。忽略规则不属于业务资源。
+`standard/skills/week-planning` 仅保留 Skill、三份 assets（固定 HTML、数据模板、三节纪要模板）、两个运行脚本（planning.py、eMeeting 转写脚本）、两份按需读取的 reference，以及现行产品仍在调用的评论格式校验脚本。构建用 JS/CSS、构建器和验证器在 [`scripts/version-planning`](../../../scripts/version-planning/README.md)；BW 的实际版本数据与来源只留在项目 `.bw/planning`，不放进出厂包。忽略规则不属于业务资源。
 
-项目首次部署只建立 `template/version-plan.html` 和 `template/data-template.json`，以后复用；每版另存 `<版本>/data.json`，会议与确认快照分别存同版 `reviews/`、`revisions/`。模板内的展示数据由 JSON 刷新，归档材料在项目分支提交；本机 `.local` 不入库。详见 [数据契约](../../../standard/skills/week-planning/references/data-and-runtime.md)。
+模板、数据样例与工具留在 Skill 安装目录，不拷入项目树；每版只存 `<版本>/data.json` 与 `deliverables/`、`reviews/`。项目树 `template/version-plan.html` 是服务刷新生成的离线缓存，可随时重建、Git 忽略。data.json 是唯一内容正本，确认只记录状态、不生成快照；归档只提交版本目录与共享忽略文件，本机 `.local` 不入库。详见 [数据契约](../../../standard/skills/week-planning/references/data-and-runtime.md)。
 
 本轮修复了脚本字符串中结束标签提前关闭 HTML script 元素的问题，并清除了此前构建遗留在脚本后的源码。验证直接解析最终 HTML，检查脚本完整性并让 Node 校验提取出来的脚本；不仅检查独立 JS。SE 样式和实际版本 JSON 未修改。
 
@@ -23,7 +23,7 @@
 
 模板内嵌 SE 样式，不依赖 BW 加载。Skill start 返回本地 URL，用于切版本和手工填写；直接打开 HTML 为离线只读。没有资料时由 Skill 建立 default，版号确定后保留内容并刷新同一页。页面通过服务停顿自动写入 JSON，无目录授权；失败或断线保留输入并提示。来源说明折叠。当前不改 v0.3。第一屏标题按用户要求改为“上周版本结果”；目标卡仅保留一句目标、进度条及实际值 / 目标值；移除字段名、状态说明、负责人和截止时间，缺数字显示 —。期限默认该版本，负责人默认 Builder，真实工作进展放任务区。
 
-原 8876 方案已废弃；经用户重新确认，现将最小 HTTP 服务集成进 Skill 原 planning.py，使用自动分配端口和工作树服务记录。页面确认只写本地确认记录；会议脚本和 PR 由后续会话执行。本次交付功能 PR，复用 BW UI 组件并更新原定版本计划自动化。
+原 8876 方案已废弃；经用户重新确认，现将最小 HTTP 服务集成进 Skill 原 planning.py，使用自动分配端口和工作树服务记录。页面确认只写本地确认记录；eMeeting 转写脚本与三节纪要模板已内置为默认配置，纪要整理与 PR 由后续会话执行。本次交付功能 PR，复用 BW UI 组件并更新原定版本计划自动化。
 
 浏览器工具已看到旧 HTTP 页的空数据/只读问题；本地文件 URL 被工具策略阻断，未绕过。目前 HTTP 往返、磁盘读回、模型更新、冲突拒绝、进程生命周期及真实浏览器输入保存检查通过；最终填写易用性由用户继续验收。代码/文件检查不等于用户手填可用性已通过。
 

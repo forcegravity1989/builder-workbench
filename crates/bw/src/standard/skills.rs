@@ -70,6 +70,16 @@ pub fn sidecars() -> Vec<SkillPack> {
             include_str!("../../../../standard/skills/week-planning/scripts/planning.py"),
         ),
         (
+            "scripts/fetch-emeeting-transcript.mjs",
+            include_str!(
+                "../../../../standard/skills/week-planning/scripts/fetch-emeeting-transcript.mjs"
+            ),
+        ),
+        (
+            "assets/minutes-template.md",
+            include_str!("../../../../standard/skills/week-planning/assets/minutes-template.md"),
+        ),
+        (
             "references/data-and-runtime.md",
             include_str!(
                 "../../../../standard/skills/week-planning/references/data-and-runtime.md"

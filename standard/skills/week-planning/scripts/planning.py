@@ -170,7 +170,7 @@ class Store:
 
     def writable(self):
         if self.local_read('publication',{}).get('state') in ['checking','publishing']:
-            raise Conflict('正在提交已确认的快照，请等待提交结果后再修改')
+            raise Conflict('正在提交已确认的材料，请等待提交结果后再修改')
 
     def save(self,data):
         validate(data)
@@ -299,20 +299,8 @@ class Store:
             if stage=='plan' and any(not str(task.get('number','')).lstrip('#').isdigit() or not re.match(r'^https?://',task.get('url','')) for task in data['plan']['tasks']):
                 raise ValueError('请先创建或关联任务 Issue，并读回编号和链接')
             data['confirmation'][stage]={'at':now(),'actor':'user'}
-            saved=self.save(data)
-            if stage=='review_ready':
-                snapshot=self.freeze(data,'meeting')
-                self.local_write('meeting_snapshot',{'path':snapshot})
-            if stage=='plan': self.freeze(data,'final')
-            return saved
-
-    def freeze(self,data,label):
-        revision=digest(dump(data))[:16]
-        target=self.dir/'revisions'/(label+'-'+revision)
-        if not target.exists():
-            target.mkdir(parents=True)
-            atomic(target/'data.json',dump(data));atomic(target/'index.html',self.render(data).replace('<html ','<html data-snapshot="true" ',1).encode('utf-8'))
-        return str(target.relative_to(self.ws)).replace('\\','/')
+            # data.json stays the single source of truth; confirmations record state only.
+            return self.save(data)
 
     def meeting(self):
         with self.lock():
@@ -334,7 +322,7 @@ class Store:
             if job.get('state')!='queued': return job
             argv=config.get('transcript_argv');spec=config.get('minutes_spec')
             if not isinstance(argv,list) or not argv or not spec or not Path(spec).is_file():
-                job.update(state='needs_config',error='请在会话中提供内部转写脚本及纪要规范，链接已保存')
+                job.update(state='needs_config',error='转写脚本或纪要模板不可用：请核对 week-planning skill 安装，或按 references/meeting.md 修正 .local/settings.json；会议链接已保存')
                 self.local_write('meeting',job);return job
             job['state']='fetching';self.local_write('meeting',job)
         try:
@@ -394,8 +382,7 @@ class Store:
             if not data['confirmation']['plan']: raise ValueError('请先由用户确认最终计划')
             if any(not str(task.get('number','')).lstrip('#').isdigit() or not re.match(r'^https?://',task.get('url','')) for task in data['plan']['tasks']):
                 raise ValueError('任务必须先关联真实 Issue 编号和链接')
-            snapshot=self.freeze(data,'final')
-            publication={'state':'checking','snapshot':snapshot,'data_hash':digest(self.file.read_bytes()),'started_at':now()}
+            publication={'state':'checking','data_hash':digest(self.file.read_bytes()),'started_at':now()}
             self.local_write('publication',publication)
             return publication
 
@@ -432,8 +419,8 @@ class Store:
                 if state['data_hash']!=digest(self.file.read_bytes()): raise Conflict('检查期间数据更改，请重新确认')
                 state['state']='publishing';self.local_write('publication',state)
             paths=[str(self.dir.relative_to(self.ws))]
-            # Add shared source materials and the empty template, never another version's draft.
-            for relative in ['.bw/planning/.gitignore','.bw/planning/sources','.bw/planning/template/data-template.json']:
+            # Only the version directory and the shared ignore file; templates and sources stay in the skill package.
+            for relative in ['.bw/planning/.gitignore']:
                 if (self.ws/relative).exists(): paths.append(relative)
             command(['git','add','--',*paths],self.ws)
             staged=command(['git','diff','--cached','--name-only'],self.ws).splitlines()
@@ -444,7 +431,7 @@ class Store:
             if existing: url=existing[0]['url']
             else:
                 body=self.local/'pr-body.md'
-                atomic(body,(f'归档 {self.version} 版本目标、任务和会议评审记录。\n\nBuilder 已在版本材料中确认提交，等待 Leader 审核。\n\n材料：`{self.dir.relative_to(self.ws).as_posix()}`\n确认快照：`{state["snapshot"]}`\n\n数据保存和提交检查通过；不表示 Leader 已验收。\n').encode('utf-8'))
+                atomic(body,(f'归档 {self.version} 版本目标、任务和会议评审记录。\n\nBuilder 已在版本材料中确认提交，等待 Leader 审核。\n\n材料：`{self.dir.relative_to(self.ws).as_posix()}`（data.json 为唯一正本）\n\n数据保存和提交检查通过；不表示 Leader 已验收。\n').encode('utf-8'))
                 url=command(['gh','pr','create','--base',pre['base'],'--head',pre['branch'],'--title',f'归档 {self.version} 版本计划','--body-file',str(body)],self.ws,timeout=180)
             actual=json.loads(command(['gh','pr','view',url,'--json','url,state,headRefName'],self.ws))
             if actual['headRefName']!=pre['branch']: raise ValueError('PR 读回分支不匹配')
@@ -463,9 +450,7 @@ def ensure_ignores(store):
 
 def init(workspace,version='default'):
     store=Store(workspace,version)
-    for target,source in [('template/data-template.json','assets/data-template.json')]:
-        out=store.root/target
-        if not out.exists(): atomic(out,(PACKAGE/source).read_bytes())
+    # Templates live in the skill package only; the project tree holds version data alone.
     if not store.file.exists():
         data=json.loads((PACKAGE/'assets/data-template.json').read_text(encoding='utf-8'))
         data['version']=version;data['project']=store.ws.name
@@ -473,10 +458,16 @@ def init(workspace,version='default'):
         atomic(store.file,dump(data))
     ensure_ignores(store)
     if not (store.local/'settings.json').exists():
-        store.local_write('settings',{'transcript_argv':None,'minutes_spec':None})
+        store.local_write('settings',default_settings())
     store.read()
     store.refresh_cache()
     return store
+
+
+def default_settings():
+    # Bundled transcript fetcher and minutes template; see references/meeting.md for overrides.
+    return {'transcript_argv':['node',str(PACKAGE/'scripts/fetch-emeeting-transcript.mjs'),'{url}','{output}'],
+        'minutes_spec':str(PACKAGE/'assets/minutes-template.md')}
 
 
 class PlanningServer(ThreadingHTTPServer):
