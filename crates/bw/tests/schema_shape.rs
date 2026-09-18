@@ -3,27 +3,21 @@
 //! 这不是「补测试当交付物」——它是 §2.4 第 3 组验收读回的可执行版本,跑在
 //! CI 里,免得哪次改悄悄把 SQLite 加回来。
 
+mod common;
+
 use bw::local::{ProjectRegistry, SessionStore, Settings};
 use bw::model::{Conversation, ConversationId, IssueId, Project, ProjectId};
-use std::path::PathBuf;
-
-fn tmp_asset_root(name: &str) -> PathBuf {
-    let path = std::env::temp_dir().join(format!("bw-test-{name}-{}", uuid::Uuid::new_v4()));
-    std::fs::create_dir(&path).unwrap();
-    path
-}
 
 #[tokio::test]
 async fn registry_starts_empty() {
-    let root = tmp_asset_root("empty-registry");
+    let root = common::tempdir("empty-registry");
     let entries = ProjectRegistry::load(&root).unwrap();
     assert!(entries.is_empty(), "新建的 asset 目录,注册表应该是空的");
-    let _ = std::fs::remove_dir_all(&root);
 }
 
 #[tokio::test]
 async fn registry_upsert_and_find() {
-    let root = tmp_asset_root("upsert");
+    let root = common::tempdir("upsert");
     let p = Project {
         id: ProjectId::new(),
         slug: "test-proj".into(),
@@ -53,13 +47,11 @@ async fn registry_upsert_and_find() {
     // 按 id 找得到。
     let found = ProjectRegistry::find_by_id(&root, created.id).unwrap();
     assert!(found.is_some());
-
-    let _ = std::fs::remove_dir_all(&root);
 }
 
 #[tokio::test]
 async fn settings_roundtrip() {
-    let root = tmp_asset_root("settings");
+    let root = common::tempdir("settings");
     assert!(Settings::get_workspaces_root(&root).is_none());
     Settings::set_workspaces_root(&root, "/tmp/work").unwrap();
     assert_eq!(
@@ -74,12 +66,11 @@ async fn settings_roundtrip() {
     );
     Settings::set_tool(&root, "build", "").unwrap();
     assert!(Settings::get_tool(&root, "build").is_none());
-    let _ = std::fs::remove_dir_all(&root);
 }
 
 #[tokio::test]
 async fn sessions_append_only() {
-    let root = tmp_asset_root("sessions");
+    let root = common::tempdir("sessions");
     let pid = ProjectId::new();
     let iid = 42u32;
     let issue_id = IssueId::from_remote(pid, iid);
@@ -123,13 +114,11 @@ async fn sessions_append_only() {
     let raw = std::fs::read_to_string(&path).unwrap();
     let lines: Vec<&str> = raw.lines().filter(|l| !l.is_empty()).collect();
     assert_eq!(lines.len(), 2, "append-only 应该有两行记录");
-
-    let _ = std::fs::remove_dir_all(&root);
 }
 
 #[tokio::test]
 async fn no_sqlite_files_anywhere() {
-    let root = tmp_asset_root("no-sqlite");
+    let root = common::tempdir("no-sqlite");
     // 跑一遍所有操作,确认不产生 .db 文件。
     let p = Project {
         id: ProjectId::new(),
@@ -178,6 +167,4 @@ async fn no_sqlite_files_anywhere() {
         false
     }
     assert!(!has_db(&root), "asset 目录里不该有任何 .db 文件");
-
-    let _ = std::fs::remove_dir_all(&root);
 }

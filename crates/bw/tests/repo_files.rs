@@ -4,6 +4,8 @@
 //! 刀5:week_plan_file 和 release_file 已从 bw 删掉(搬到 app-shell),
 //! 这两个解析器的测试也跟着搬走了。这里只剩还在 bw 里的仓文件解析器。
 
+mod common;
+
 use bw::{
     isoweek,
     model::StageKind,
@@ -136,18 +138,12 @@ fn project_file_chat_section_is_optional() {
     assert_eq!(again.chat, with.chat, "渲染出来的还认得回去");
 }
 
-fn tempdir(tag: &str) -> std::path::PathBuf {
-    let d = std::env::temp_dir().join(format!("bw-repo-test-{tag}-{}", uuid::Uuid::new_v4()));
-    std::fs::create_dir(&d).unwrap();
-    d
-}
-
 /// 接入页的「想做什么 / 北极星」是多行输入框。粘一段带换行、带引号的文字
 /// 进去,写出来的 TOML 必须还读得回来 —— 读不回来的表现是「这个项目什么都
 /// 没有」,而不是一句报错。
 #[test]
 fn a_multiline_brief_survives_a_write_read_round_trip() {
-    let dir = tempdir("toml-escape");
+    let dir = common::tempdir("toml-escape");
     let f = project_file::ProjectFile {
         name: "带\"引号\"的项目".into(),
         kind: String::new(),
@@ -162,5 +158,4 @@ fn a_multiline_brief_survives_a_write_read_round_trip() {
     assert_eq!(back.name, f.name);
     assert_eq!(back.brief, f.brief);
     assert_eq!(back.opportunity, f.opportunity);
-    std::fs::remove_dir_all(&dir).unwrap();
 }
