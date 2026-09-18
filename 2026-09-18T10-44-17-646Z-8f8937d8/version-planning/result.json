@@ -1,0 +1,70 @@
+{
+  "v": 1,
+  "cases": [
+    {
+      "id": "planning-assets",
+      "title": "BW 分发完整 Skill，JSON 消费者读取真实文件和已登记工作树",
+      "path": "cargo 跑 planning_smoke 分发 → planning.py init 两个版本",
+      "expect": "deployment.json 指向真实分发的 week-planning Skill 与已登记工作树",
+      "status": "passed",
+      "evidence": [
+        "deployment.json"
+      ]
+    },
+    {
+      "id": "planning-autosave",
+      "title": "真实浏览器输入自动写 JSON，版本报告保存且刷新可读回",
+      "path": "浏览器编辑目标与交付件 → 失焦保存 → 刷新页面",
+      "expect": "JSON 落盘与页面输入一致，刷新后读回相同内容",
+      "status": "passed",
+      "evidence": [
+        "autosave.png",
+        "autosave.json"
+      ]
+    },
+    {
+      "id": "planning-model-readback",
+      "title": "会话写同一 JSON，页面自动读回",
+      "path": "planning.py update 写回同一版本 JSON",
+      "expect": "页面不用刷新即显示模型写回后的目标",
+      "status": "passed",
+      "evidence": [
+        "model-readback.png",
+        "model-candidate.json"
+      ]
+    },
+    {
+      "id": "planning-version-isolation",
+      "title": "切换版本只读对应 JSON，不串版",
+      "path": "版本下拉在 v0.5 与 v0.4 间切换",
+      "expect": "每屏只读对应版本的 JSON，互不串改",
+      "status": "passed",
+      "evidence": [
+        "versions.json",
+        "versions.png"
+      ]
+    },
+    {
+      "id": "planning-bad-history",
+      "title": "坏历史版本明确标记，当前版本连续保存与修订号仍正常",
+      "path": "伪造 v0.1 坏 JSON → 重载 → 连续保存两次",
+      "expect": "坏版本在下拉中禁用；当前版本保存不失败、状态不显示未保存",
+      "status": "passed",
+      "evidence": [
+        "bad-history.png",
+        "bad-history.json"
+      ]
+    },
+    {
+      "id": "planning-conflict",
+      "title": "并发冲突拒绝覆盖，保留页面输入与磁盘新内容",
+      "path": "另一写入方更新同一修订 → 过期页面继续编辑并保存",
+      "expect": "保存被拒并提示未保存；磁盘保留另一写入方内容，页面输入不丢失",
+      "status": "passed",
+      "evidence": [
+        "conflict.png",
+        "conflict.json"
+      ]
+    }
+  ]
+}
