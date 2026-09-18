@@ -67,7 +67,7 @@ function publishFromCli() {
   const repo = origin.match(/^(?:https:\/\/github\.com\/|git@github\.com:)([\w.-]+\/[\w.-]+?)(?:\.git)?\/?$/)?.[1];
   if (!/^[\w.-]+\/[\w.-]+$/.test(repo)) throw new Error('无法识别 GitHub 仓库');
   const number = args[1];
-  const readPr = () => JSON.parse(gh('pr', 'view', number, '--repo', repo, '--json', 'headRefOid,headRefName,state,url'));
+  const readPr = () => JSON.parse(gh('pr', 'view', number, '--repo', repo, '--json', 'headRefOid,headRefName,state,url,baseRefOid'));
   const pr = readPr();
   if (pr.state !== 'OPEN' || pr.headRefOid !== current.commit) throw new Error('PR 必须打开且最新提交必须等于所验源码');
   const marker = `<!-- bw-verification:${result.runId} -->`;
@@ -102,8 +102,9 @@ function publishFromCli() {
       for (const file of [index, `${index}.lock`]) if (fs.existsSync(file)) fs.unlinkSync(file);
     }
     if (readPr().headRefOid !== current.commit) throw new Error('上传证据期间 PR 更新了；保留已上传证据，但不发过时 Review');
-    // 增量判定：对比 PR 与 main 的差异。merge-base 偏旧只会多列文件，不会漏掉真实改动。
-    const mergeBase = git('merge-base', current.commit, 'origin/main');
+    // 增量判定：对比 PR 与 main 的差异。baseRefOid 是远端 main 实时头，不依赖本地跟踪引用
+    // （单分支克隆没有 origin/main）；偏旧只会多列文件，不会漏掉真实改动。
+    const mergeBase = git('merge-base', current.commit, pr.baseRefOid);
     const changedFiles = git('diff', '--name-only', '-z', mergeBase, current.commit).split('\0').filter(Boolean);
     const readSuite = (file, atBase) => {
       try {

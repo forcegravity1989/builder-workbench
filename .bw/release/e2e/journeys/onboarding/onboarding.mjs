@@ -199,8 +199,9 @@ try {
     if (!issueOwned && createdIssue) {
       try {
         // 与分支同款的归属回补：读回本次运行打的评论标记；读不到就不动这个 Issue。
-        const comments = ghJson(['issue', 'view', String(createdIssue.number), '--repo', repo, '--json', 'comments']);
-        issueOwned = comments.some(x => String(x.body ?? '').includes(`bw-e2e-run:${runId}`));
+        // gh issue view --json 返回对象（{ comments: [...] }），不是 issue list 的数组形状。
+        const comments = ghJson(['issue', 'view', String(createdIssue.number), '--repo', repo, '--json', 'comments']).comments;
+        issueOwned = Array.isArray(comments) && comments.some(x => String(x.body ?? '').includes(`bw-e2e-run:${runId}`));
       } catch { /* retain unknown issue */ }
     }
     if (createdIssue) {
