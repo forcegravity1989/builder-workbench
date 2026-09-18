@@ -16,19 +16,20 @@
 ├── standard/          规范正本(include_str! 进 bw):模板 `templates/`(接入不摊)+ 系统提示词 + 工作流技能 + vendor
 ├── scripts/           门禁脚本(guard-*)+ codegraph 联调
 ├── docs/              ← 你在这
-└── .bw/               Workbench 自己作为被管项目的资产(project.toml / metrics.toml; issue-policy.toml 是残留)
+└── .bw/               Workbench 自己作为被管项目的资产(project.toml / metrics.toml / knowledge-map.toml)
 ```
 
 ## docs/ 里有什么
 
 | 路径 | 是什么 |
 |---|---|
-| [`01-principles/`](01-principles/README.md) | **原则正本**(慢变宪法):01 文档分层 / 02 逆向工作法 / 03 新闻稿·FAQ·飞轮。特性立项与产品主张的最高优先级约束 |
+| [`01-principles/`](01-principles/README.md) | **原则正本**(慢变宪法):01 文档分层 / 02 逆向工作法 / 03 新闻稿·FAQ·飞轮 / 04 文档角色与 Agent 加载协议 |
 | [`architecture.md`](architecture.md) | **设计正本**:整体用户旅程、逻辑模块、三 crate 架构与数据流。人和 AI 都能在这检索到任一模块的设计。`DESIGN.md` 指向它;docs 内不编号 |
 | [`02-adr/`](02-adr/) | 架构决策(难回头一条一篇) |
 | [`03-guide/`](03-guide/) | 产品指南(怎么用 Workbench,给用户/同事)+ 填写规范 |
 | [`04-design-system/`](04-design-system/) | **视觉正本**:Builder 设计系统资产(唯一样式表 + 机读 token + 双语规范 + 15 张示例页),镜像自 Claude Design 项目「builder」;桌面壳编译期原样拼入 `styles.css`(2026-09-07 起) |
-| [`05-features/`](05-features/) | **特性级变更制品链**——intent + 带原型的 spec 为人 gate;plan 仅大风险升 gate;小修不进。粒度与制品链见 [01 §4](01-principles/01-document-organization.md) |
+| [`05-features/`](05-features/) | **当前活跃特性**以 [`README.md`](05-features/README.md) 为准；制品链 intent + 带原型的 spec 为人 gate;plan 仅大风险升 gate;小修不进。粒度见 [01 §4](01-principles/01-document-organization.md)，角色见 [04](01-principles/04-ai-native-docs.md) |
+| [`06-module/`](06-module/) | 单个模块的实现心智模型（主要矛盾 / 取舍）；整体旅程仍在 architecture.md |
 | [`10-reference/`](10-reference/) | 外部参考的**提炼版**(转述非原文,原文只存链接)。外部资料如:[AI-native SDLC playbook](10-reference/ai-native-sdlc-playbook.md)——做法与治理哲学,每段带 BW 落点或不采纳理由 |
 | [`hifi/`](hifi/) | 八屏版式与旅程原型(`index.html` 单文件高保真 + 逐屏简报);视觉语言以 `04-design-system/` 为准 |
 
@@ -39,6 +40,7 @@
 | 仓库门面 / 一句话介绍 | [`../README.md`](../README.md) |
 | 「Workbench 是什么/设计」 | [`architecture.md`](architecture.md)([`DESIGN.md`](../DESIGN.md) 指路) |
 | 产品主张 / 飞轮 / 特性怎么立项 | [`01-principles/`](01-principles/README.md) |
+| Agent 按角色读文档（愿景 / 契约 / 活跃特性 / 工程参考） | [`01-principles/04`](01-principles/04-ai-native-docs.md) · 路径地图 [`.bw/knowledge-map.toml`](../.bw/knowledge-map.toml) · 活跃集 [`05-features/README.md`](05-features/README.md) |
 | 开发规矩(建/跑/测/门禁/目录/铁律/怎么加特性) | [`AGENTS.md`](../AGENTS.md) |
 | 领域词 | [`CONTEXT.md`](../CONTEXT.md) |
 | 产品指南(怎么用) | [`03-guide/`](03-guide/) |

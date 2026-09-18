@@ -4,7 +4,11 @@
 
 本文件按**六站 + 底座**收口,不再按每次窗口一条流水往下堆。最近一次改动永远写在最上面。
 
-## 最近 · 2026-09-15
+## 最近 · 2026-09-17
+
+本仓文档按 **文档角色** 给 Agent 加载：愿景 / 契约 / 当前活跃特性 / 工程参考。协议 [`docs/01-principles/04-ai-native-docs.md`](docs/01-principles/04-ai-native-docs.md)，路径地图 `.bw/knowledge-map.toml`，活跃集 [`docs/05-features/README.md`](docs/05-features/README.md)。`docs/05-features/` 整棵树不再等于正在推进的特性。
+
+## 更早 · 2026-09-15
 
 一体原型 **V7 计划屏**：去掉旅程条、「下一步」脚注、agent 教你点哪里。页签只留名词（上周结果 / 总结与评审 / 本周计划），底栏按钮只写目的地；未挂纪要时点「本周计划」会停在评审并点亮纪要区。分享稿 `prototype-v7.html` / `v7-1.html`。
 

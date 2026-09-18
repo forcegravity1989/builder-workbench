@@ -1,0 +1,68 @@
+version = 1
+status = "reviewed"
+
+# 本仓路径 → AI-native 文档角色。角色与维护策略见
+# docs/01-principles/04-ai-native-docs.md；路径因仓而异，只改这份地图。
+
+[[section]]
+role = "user-docs"
+paths = ["docs/03-guide/"]
+
+[[section]]
+role = "user-readme"
+paths = ["README.md"]
+
+[[section]]
+role = "eng-principles"
+paths = ["docs/01-principles/"]
+
+[[section]]
+role = "eng-contract"
+paths = [
+  "docs/architecture.md",
+  "docs/02-adr/",
+  "docs/04-design-system/",
+  "docs/06-module/",
+  "docs/hifi/",
+  "standard/README.md",
+]
+
+[[section]]
+role = "eng-features"
+paths = [
+  "docs/05-features/README.md",
+  "docs/05-features/native-session-execution/",
+  "docs/05-features/scoreboard-and-forecast/",
+  "docs/05-features/process-metrics/",
+  "docs/05-features/reviewer-agent/",
+]
+
+[[section]]
+role = "eng-reference"
+paths = [
+  "docs/10-reference/",
+  "docs/metrics.md",
+]
+
+[[section]]
+role = "eng-agents"
+paths = [
+  "AGENTS.md",
+  "CLAUDE.md",
+  "CONTEXT.md",
+]
+
+[[section]]
+role = "eng-bw"
+paths = [
+  ".bw/project.toml",
+  ".bw/knowledge-map.toml",
+  ".bw/metrics.toml",
+]
+
+[[exclude]]
+paths = [
+  "docs/draft/",
+  "docs/05-features/capability-panel/",
+  "docs/01-principles/04-ai-native-docs-shadow.md",
+]

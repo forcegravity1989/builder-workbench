@@ -1,10 +1,10 @@
 # 01 · 文档组织结构
 
-- 状态：**现在作数**（2026-08-26）
+- 状态：**现在作数**（2026-09-17）
 - 位置：`docs/01-principles/` 第一篇——本仓「知识与文档怎么分层」的正本
-- 相关：[`../README.md`](../README.md)（docs 地图）、[`../architecture.md`](../architecture.md)（设计正本）、[`../../CONTEXT.md`](../../CONTEXT.md)（词表）、[`../../AGENTS.md`](../../AGENTS.md)（开发规矩）、[`03-press-release-faq-flywheel.md`](03-press-release-faq-flywheel.md)（少 gate / 飞轮检验）
+- 相关：[`../README.md`](../README.md)（docs 地图）、[`../architecture.md`](../architecture.md)（设计正本）、[`../../CONTEXT.md`](../../CONTEXT.md)（词表）、[`../../AGENTS.md`](../../AGENTS.md)（开发规矩）、[`03-press-release-faq-flywheel.md`](03-press-release-faq-flywheel.md)（少 gate / 飞轮检验）、[`04-ai-native-docs.md`](04-ai-native-docs.md)（文档角色与 Agent 加载协议）
 
-> **30 秒导读**：原则慢变；**特性级**变更走 `docs/05-features/` 制品链——**人 gate 是 intent + 带原型的 spec**；`plan.md` 默认不审，仅大风险升 gate；**小 bug 直接修**，不开链。读回进 `docs/05-features/` 或 commit，欠账进对应 feature 的开放问题或架构文档；**不再设仓根 `iterations/` 层**。Superpowers / grill-me 可当过程工具，产出必须落进 `docs/05-features/`。产品主张听 03。Markdown 是唯一真相；gate 决策页只是投影。
+> **30 秒导读**：原则慢变；**特性级**变更走 `docs/05-features/` 制品链——**人 gate 是 intent + 带原型的 spec**；`plan.md` 默认不审，仅大风险升 gate；**小 bug 直接修**，不开链。Agent 按**文档角色**加载（愿景 / 契约 / 当前活跃特性 / 工程参考），路径映射在 `.bw/knowledge-map.toml`，协议见 [04](04-ai-native-docs.md)。读回进 `docs/05-features/` 或 commit，欠账进对应 feature 的开放问题或架构文档。Superpowers / grill-me 可当过程工具，产出必须落进 `docs/05-features/`。产品主张听 03。Markdown 是唯一真相；gate 决策页只是投影。
 
 > **用词**：**gate** = 必须由人拍板才能往下走的关卡（见 03 / `CONTEXT.md`）。本文一律用 gate，不再写「人闸」。与工程侧**门禁**（提交前检查组）不是一回事。
 
@@ -20,12 +20,12 @@
 └── CHANGELOG.md       版本变更流水（惯例置根件）
 
 docs/（所有知识目录都在这，编号定序；architecture 不编号＝docs 内设计正本）
-├── 01-principles/     原则（慢变宪法）——本目录；第一篇就是本文
+├── 01-principles/     原则（慢变宪法）——本目录；第一篇就是本文；04 是文档角色与 Agent 加载协议
 ├── architecture.md    设计正本（三 crate 架构 + 模块设计；docs 内不编号）
 ├── 02-adr/            架构决策（难回头一条一篇）
 ├── 03-guide/          产品指南（怎么用，给人看）
 ├── 04-design-system/  视觉正本：设计系统资产（样式表 + token + 规范；壳直接拼入）
-├── 05-features/       特性级变更制品链——intent + 带原型的 spec 为人 gate；plan 仅大风险；小修不进
+├── 05-features/       特性级变更制品链；**当前活跃集**以该目录 README 为准（不是整棵树）
 ├── 06-module/         单个模块的实现心智模型——设计面对的主要矛盾 / 取舍;不纠结实现细节
 ├── 10-reference/      外部参考的提炼版
 ├── hifi/              八屏版式与旅程原型
@@ -38,14 +38,14 @@ decision-ui/ 等       gate 投影（只读渲染 docs/05-features/*；不当第
 
 口诀：
 
-**`docs/01-principles/` 是原则，`docs/05-features/` 是这次变更，`docs/` 其余是产品怎么说清楚（设计 / 指南 / 欠账）。仓根只留入口件与惯例置根件。**
+**愿景管方向，契约管结构，当前活跃特性管这一次；工程参考只查阅。** 人 gate 仍是 intent + 带原型的 spec。仓根只留入口件与惯例置根件。路径 → 角色见 `.bw/knowledge-map.toml`。
 
 ## 2. 各层职责
 
 | 层 | 回答什么 | 变多快 | 不写什么 |
 |---|---|---|---|
-| **docs/01-principles/** | 我们永远怎么组织知识、信什么铁律（拍板才改） | 慢 | 单次需求、当周实验、某站施工日记 |
-| **docs/05-features/\<id\>/** | **特性级**要什么、规格（含原型）；大风险才有必批 plan；读回可写在 STATUS / PRACTICE 段或 commit | 每个大特性/大改动一条 | 小 bug、文案错、一次性琐修；产品总设计、词表；第二份欠账总表 |
+| **docs/01-principles/** | 我们永远怎么组织知识、信什么铁律（拍板才改）；04 管文档角色与 Agent 怎么加载 | 慢 | 单次需求、当周实验、某站施工日记 |
+| **docs/05-features/\<id\>/** | **特性级**要什么、规格（含原型）；大风险才有必批 plan；读回可写在 STATUS / PRACTICE 段或 commit。**当前活跃集**只含 README 列出的目录 | 每个大特性/大改动一条 | 小 bug、文案错、一次性琐修；已交付特性的施工日记（约束吸收进 architecture / 06-module）；产品总设计、词表；第二份欠账总表 |
 | **docs/06-module/** | 单个模块怎么实现的心智模型——设计面对的主要矛盾 / 取舍 | 模块新增或大改时补一篇 | 整体旅程与逻辑模块（在 architecture）；用户价值特性（在 05-features）；代码路径 / 数据字段 / 没建清单等实现细节 |
 | **docs/03-guide** | 人怎么用 / 怎么讲（只写已实践） | 站验证后补 | 未上线功能、实现黑话堆砌 |
 | **docs/\*-prototype/design** | 当前迭代设计实况（一篇正本） | 站走完改实况 | 单次 MR 的 intent；修订流水账当正文 |
@@ -74,6 +74,7 @@ docs/01-principles/  ──约束──►  docs/05-features/<id>/intent.md | sp
 | 写法 | 是什么 |
 |---|---|
 | **`docs/01-principles/`** | 本目录：仓库级慢变原则 |
+| **当前活跃特性** | `docs/05-features/README.md` 列出的目录；不是 `docs/05-features/` 整棵树。已交付的约束吸收进 `architecture.md` / `06-module/` |
 | **`docs/05-features/<id>/plan.md`** | 单次变更的**实现计划**；**默认不进 gate**，仅命中大风险清单才升 gate |
 | 已删的仓根 **`plan/`** | 旧产品规范集已随 lean 整改退场；工程设计听 `docs/architecture.md`，主张听 03 |
 | **`docs/superpowers/specs/`** | Superpowers 流程可能写出的设计稿落点；**可作过程草稿**，特性 gate 正本仍是 `docs/05-features/<id>/` |
@@ -172,7 +173,8 @@ docs/05-features/<change-id>/
 | 角色/场景 | 先读 |
 |---|---|
 | 新会话 / 新成员 | README → 本文 → CONTEXT → AGENTS/CLAUDE → docs/README |
-| 要开一个**特性** | 对齐 [03](03-press-release-faq-flywheel.md) → 按 [02](02-working-backwards.md) 开 `docs/05-features/<id>/intent.md`；可用 Superpowers/grill-me 辅助，产出落回 `docs/05-features/` |
+| **Agent 开设计或开发** | [04 文档角色](04-ai-native-docs.md) → 按分支加载愿景 / 契约 / 当前活跃特性 / 工程参考；对账只盯契约与活跃特性 |
+| 要开一个**特性** | 对齐 [03](03-press-release-faq-flywheel.md) → 先看 [`docs/05-features/README.md`](../05-features/README.md) 是否已有条目 → 按 [02](02-working-backwards.md) 开或改 `docs/05-features/<id>/intent.md`；可用 Superpowers/grill-me 辅助，产出落回 `docs/05-features/` |
 | 要改客群/飞轮/对外主张 | 先议 → 改 [03](03-press-release-faq-flywheel.md)；特性 intent 不得偷偷改写 |
 | 小 bug / 琐修 | 直接改 + 验证 + PR；不开 `docs/05-features/` |
 | 要改产品实况 | 站验证后改 `docs/architecture.md` / guide；读回写进对应 change / commit |
@@ -201,3 +203,4 @@ docs/05-features/<change-id>/
 | 2026-09-11 | 原型文件不进仓：规格 gate 仍要可点原型，但 `spec.md` 只写链接（artifact 或独立分支），`docs/05-features/<id>/prototype.html` 不再是交付件 |
 | 2026-09-08 | 加 `docs/06-module/` 层:单个模块实现的心智模型(主要矛盾/取舍);architecture.md 收为整体旅程+逻辑模块、不进模块实现细节;三层边界 architecture / 06-module / 05-features 写进 AGENTS「人怎么驾驭」可见物表与本文 §1/§2 |
 | 2026-09-09 | §4.1 收紧口径:`docs/05-features/` 只装产生用户价值的新能力/新信息;命名收口/基建接线/重构重排不产生新价值的直修留痕(commit 说明 + 必要时改 architecture 实况段),不开 intent gate;02 §1 适用范围、§6 小特性豁免同步 |
+| 2026-09-17 | 加文档角色视图：Agent 按愿景/契约/当前活跃特性/工程参考加载；协议在 [04](04-ai-native-docs.md)，路径映射在 `.bw/knowledge-map.toml`，活跃集在 `docs/05-features/README.md`；§1 口诀、§2、§7 同步 |

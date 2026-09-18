@@ -11,8 +11,21 @@
 | [`docs/01-principles/01-document-organization.md`](docs/01-principles/01-document-organization.md) | 整仓知识/文档怎么分层；三层边界——architecture(整体旅程+逻辑模块) / 06-module(模块实现心智) / 05-features(用户价值特性)；`docs/05-features/` 少 gate |
 | [`docs/01-principles/02-working-backwards.md`](docs/01-principles/02-working-backwards.md) | 逆向工作法：特性怎么写 intent / 带原型的 spec |
 | [`docs/01-principles/03-press-release-faq-flywheel.md`](docs/01-principles/03-press-release-faq-flywheel.md) | **整个产品**的新闻稿、外/内 FAQ、飞轮（主张正本） |
+| [`docs/01-principles/04-ai-native-docs.md`](docs/01-principles/04-ai-native-docs.md) | **文档角色**：Agent 按愿景 / 契约 / 当前活跃特性 / 工程参考加载；路径地图 `.bw/knowledge-map.toml` |
 
 索引见 [`docs/01-principles/README.md`](docs/01-principles/README.md)。改客群 / 飞轮 / 对外主张 → 先议再改 03；特性 intent 不得偷偷改写。现行实现对照听 [`docs/architecture.md`](docs/architecture.md)，**不得把草稿界面讲成 03 里已经交付的体验**。
+
+### 文档角色（开设计或开发时按分支加载）
+
+| 这次要 | 先读 | 对账 |
+|---|---|---|
+| 主张 / 飞轮 / 客群 | [`docs/01-principles/03`](docs/01-principles/03-press-release-faq-flywheel.md) | 弱 |
+| 某条为什么这么定 / 改模块切分 | [`docs/architecture.md`](docs/architecture.md) → [`docs/06-module/`](docs/06-module/) / [`docs/02-adr/`](docs/02-adr/) | **是** |
+| 开或改一个用户价值特性 | [`docs/05-features/README.md`](docs/05-features/README.md) → 该特性 intent/spec | **是** |
+| howto / 外部做法 / 指标口径 | [`docs/10-reference/`](docs/10-reference/) · [`docs/metrics.md`](docs/metrics.md) | 否 |
+| 建 / 跑 / 测 / 门禁 | 本文件 | 否 |
+
+路径因目录重组而变，只改 `.bw/knowledge-map.toml`。完整协议见 [04](docs/01-principles/04-ai-native-docs.md)。
 
 ### 特性起手路径（硬约定）
 

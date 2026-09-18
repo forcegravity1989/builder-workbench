@@ -9,6 +9,7 @@
 | 01 | [`01-document-organization.md`](01-document-organization.md) | 整仓知识/文档怎么分层；`05-features/` 少 gate（intent + 带原型的 spec；plan 仅大风险；小修直修）；兼容 Superpowers / grill-me |
 | 02 | [`02-working-backwards.md`](02-working-backwards.md) | 产品开发方法：逆向工作法；特性级 intent/spec；对齐 03 飞轮检验 |
 | 03 | [`03-press-release-faq-flywheel.md`](03-press-release-faq-flywheel.md) | **整个产品**的新闻稿、外/内 FAQ、飞轮（主张正本） |
+| 04 | [`04-ai-native-docs.md`](04-ai-native-docs.md) | 文档角色与 Agent 加载协议（愿景 / 契约 / 当前活跃特性 / 工程参考）；路径映射在 `.bw/knowledge-map.toml` |
 
 ## 特性怎么开
 
@@ -18,4 +19,4 @@
 
 细则入口表见 [`AGENTS.md`](../../AGENTS.md)「特性起手路径」。
 
-> 工程设计听 [`docs/architecture.md`](../architecture.md)；开发规矩听 [`AGENTS.md`](../../AGENTS.md)。**文档分层**听 01；**特性怎么立项**听 02；**产品对外主张与飞轮**听 03。
+> 工程设计听 [`docs/architecture.md`](../architecture.md)；开发规矩听 [`AGENTS.md`](../../AGENTS.md)。**文档分层**听 01；**特性怎么立项**听 02；**产品对外主张与飞轮**听 03；**Agent 按角色加载**听 04。
