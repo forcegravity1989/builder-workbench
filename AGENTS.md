@@ -82,7 +82,7 @@ Windows 出包/验包入口是 `.bw/release/pack/pack.cmd` 与 `.bw/release/e2e/
 
 每个 commit 前全过；Windows 的 shell 守卫用 Git Bash 执行。
 
-Windows 交付验证入口：`node .bw/release/verify/verify.mjs --profile pr`，执行下面的门禁（壳 `build` 包含 `check`）及已注册固定 E2E，产出 `.bw/release/out/verify/<run-id>/report.html`、`result.json`、`review.md` 与证据清单。命令、报告格式、专项用例接入及 CI 结果位置见 [交付验证入口](.bw/release/verify/README.md)。开发特性的会话负责补对应专项用例并发 PR；通用入口不代替特性验收、代码 Review 和人的合入决定。
+Windows 交付验证入口：`node .bw/release/verify/verify.mjs --profile pr`，执行下面的门禁（壳 `build` 包含 `check`）及已注册固定 E2E，产出 `.bw/release/out/verify/<run-id>/report.html`、`result.json`、`review.md` 与证据清单。改「添加项目」旅程时本机换跑 `--profile pr-onboarding`（含 `pr` 全部内容并操作沙箱仓）；云端 PR 仍用 `pr`，不接触跨仓写凭据。命令、报告格式、专项用例接入及 CI 结果位置见 [交付验证入口](.bw/release/verify/README.md)。开发特性的会话负责补对应专项用例并发 PR；通用入口不代替特性验收、代码 Review 和人的合入决定。
 
 ```bash
 cargo fmt --all --check
