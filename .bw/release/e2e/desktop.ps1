@@ -1,4 +1,11 @@
-param([Parameter(Mandatory=$true)][string]$Exe, [Parameter(Mandatory=$true)][string]$OutDir)
+param(
+    [Parameter(Mandatory=$true)][string]$Exe,
+    [Parameter(Mandatory=$true)][string]$OutDir,
+    [ValidateSet('core','onboarding')][string]$Scenario = 'core',
+    [string]$SandboxRoot = '',
+    [string]$SandboxRepo = '',
+    [string]$SandboxRepoId = ''
+)
 $ErrorActionPreference = 'Stop'
 $DesktopMode = if ($env:BW_E2E_DESKTOP) { $env:BW_E2E_DESKTOP } else { 'isolated' }
 if ($DesktopMode -notin @('isolated','current')) { throw 'BW_E2E_DESKTOP must be isolated or current (dedicated machine only)' }
@@ -16,7 +23,11 @@ $Workspace = Join-Path $RunRoot 'workspaces-saved'
 $OwnedPid = $null
 $DesktopHandle = [IntPtr]::Zero
 $Cases = New-Object 'System.Collections.Generic.List[object]'
-$Names = @('shell-launches', 'settings-persist', 'onboard-navigation', 'restart-persists')
+$Names = if ($Scenario -eq 'core') {
+    @('shell-launches', 'settings-persist', 'onboard-navigation', 'restart-persists')
+} else {
+    @('onboarding-project', 'onboarding-readback', 'onboarding-orca', 'onboarding-cleanup')
+}
 $Failure = $null
 $Code = @'
 using System;
@@ -65,7 +76,7 @@ function Start-Shell($Phase) {
     $Listener.Stop()
     # Clear inherited deep links, otherwise a developer's shell environment can select another screen.
     foreach ($Key in @('BW_OPEN','BW_PANEL','BW_HELP')) { Remove-Item "Env:$Key" -ErrorAction SilentlyContinue }
-    $env:BW_VIEW = 'settings'
+    $env:BW_VIEW = if ($Scenario -eq 'core') { 'settings' } else { 'onboard' }
     $env:BW_CDP_PORT = "$Port"
     $env:BW_DB = Join-Path $DataRoot 'placeholder'
     $env:BW_WORKSPACES = Join-Path $RunRoot 'workspaces-initial'
@@ -116,9 +127,19 @@ try {
         $DesktopHandle = [BwVerifyDesktop]::CreateDesktop("bw-verify-$RunId", [IntPtr]::Zero, [IntPtr]::Zero, 0, 0x10000000, [IntPtr]::Zero)
         if ($DesktopHandle -eq [IntPtr]::Zero) { throw 'Could not create isolated Windows desktop' }
     }
-    foreach ($Phase in @('initial','restart')) {
+    if ($Scenario -eq 'onboarding') {
+        if (-not $SandboxRoot -or -not $SandboxRepo -or -not $SandboxRepoId) { throw 'onboarding requires SandboxRoot, SandboxRepo and SandboxRepoId' }
+        $SandboxRoot = [IO.Path]::GetFullPath($SandboxRoot)
+        New-Item -ItemType Directory -Path $SandboxRoot -Force | Out-Null
+    }
+    $Phases = if ($Scenario -eq 'core') { @('initial','restart') } else { @('initial') }
+    foreach ($Phase in $Phases) {
         $Port = Start-Shell $Phase
-        & node (Join-Path $PSScriptRoot 'core.mjs') --port "$Port" --out $OutDir --data $DataRoot --workspace $Workspace --phase $Phase
+        if ($Scenario -eq 'core') {
+            & node (Join-Path $PSScriptRoot 'core.mjs') --port "$Port" --out $OutDir --data $DataRoot --workspace $Workspace --phase $Phase
+        } else {
+            & node (Join-Path $PSScriptRoot 'journeys/onboarding/onboarding.mjs') --port "$Port" --out $OutDir --sandbox-root $SandboxRoot --repo $SandboxRepo --repo-id $SandboxRepoId --run-id $RunId --root (Resolve-Path (Join-Path $PSScriptRoot '../../..')).Path
+        }
         $DriveExit = $LASTEXITCODE
         $PhaseResult = Get-Content -LiteralPath (Join-Path $OutDir "$Phase.json") -Raw -Encoding UTF8 | ConvertFrom-Json
         foreach ($Case in $PhaseResult.cases) { $Cases.Add($Case) }
@@ -144,9 +165,9 @@ finally {
                 catch {
                     # WebView child handles can outlive taskkill briefly. Retry the owned path only.
                     if ((Get-Date) -ge $CleanupDeadline) { throw }
-                    Start-Sleep -Milliseconds 200
                 }
                 if ((Get-Date) -ge $CleanupDeadline -and (Test-Path -LiteralPath $Resolved)) { throw 'Temporary directory still exists after cleanup deadline' }
+                if (Test-Path -LiteralPath $Resolved) { Start-Sleep -Milliseconds 200 }
             }
         }
         $Cleaned = $true

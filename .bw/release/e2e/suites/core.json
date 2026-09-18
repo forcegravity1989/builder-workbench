@@ -2,6 +2,7 @@
   "id": "desktop-core",
   "title": "真实桌面核心 E2E（固定脚本）",
   "layer": "desktop",
+  "profiles": ["pr", "pr-onboarding"],
   "command": ["powershell.exe", "-NoProfile", "-ExecutionPolicy", "Bypass", "-File", ".bw/release/e2e/desktop.ps1", "-Exe", "{root}/target/debug/bw-dev.exe", "-OutDir", "{out}"],
   "timeoutSeconds": 300,
   "expectedCases": ["shell-launches", "settings-persist", "onboard-navigation", "restart-persists"]

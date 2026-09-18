@@ -82,7 +82,7 @@ Windows 出包/验包入口是 `.bw/release/pack/pack.cmd` 与 `.bw/release/e2e/
 
 每个 commit 前全过；Windows 的 shell 守卫用 Git Bash 执行。
 
-Windows 交付验证入口：`node .bw/release/verify/verify.mjs --profile pr`，执行下面的门禁（壳 `build` 包含 `check`）及已注册固定 E2E，产出 `.bw/release/out/verify/<run-id>/report.html`、`result.json`、`review.md` 与证据清单。命令、报告格式、专项用例接入及 CI 结果位置见 [交付验证入口](.bw/release/verify/README.md)。开发特性的会话负责补对应专项用例并发 PR；通用入口不代替特性验收、代码 Review 和人的合入决定。
+Windows 交付验证入口：`node .bw/release/verify/verify.mjs --profile pr`，执行下面的门禁（壳 `build` 包含 `check`）及已注册固定 E2E，产出 `.bw/release/out/verify/<run-id>/report.html`、`result.json`、`review.md` 与证据清单。改「添加项目」旅程时本机换跑 `--profile pr-onboarding`（含 `pr` 全部内容并操作沙箱仓）；云端 PR 仍用 `pr`，不接触跨仓写凭据。命令、报告格式、专项用例接入及 CI 结果位置见 [交付验证入口](.bw/release/verify/README.md)。开发特性的会话负责补对应专项用例并发 PR；通用入口不代替特性验收、代码 Review 和人的合入决定。
 
 ```bash
 cargo fmt --all --check
@@ -116,7 +116,7 @@ cargo test --workspace
 
 PR 展示实际改动、知识去向、验证结果和未验证项；文档改动按上节给出内容去向与头部变化。稳定规则写回正本，不把提交流水重新养成一份常驻文档。
 
-界面/行为改动开 PR 时另发 review 验证报告：验什么、命令与深链、每条判据直接内嵌真壳截图、门禁结果、未验留白。截图推永不合入的 `shots/<分支名>`，内嵌用 `https://github.com/<owner>/<repo>/raw/<commit SHA>/x.jpg`，钉 SHA；不使用 `raw.githubusercontent` 或带斜杠分支名的图片地址。大改的改前/改后对照仍按约定进 `docs/05-features/<id>/shots/`。纯文档改动报告文档检查，不伪造界面验证。
+界面/行为改动开 PR 时另发 review 验证报告：验什么、命令与深链、门禁结果、未验留白；本次改动新增或修改的判据内嵌真壳截图四件套（用例名、执行路径、期望结果、截图），未变旅程的证据指向验证报告与证据目录，不逐条铺进 PR。不动 E2E 用例的修复以同格式贴临时验证。截图推永不合入的 `shots/<分支名>`，内嵌用 `https://github.com/<owner>/<repo>/raw/<commit SHA>/x.jpg`，钉 SHA；不使用 `raw.githubusercontent` 或带斜杠分支名的图片地址。大改的改前/改后对照仍按约定进 `docs/05-features/<id>/shots/`。纯文档改动报告文档检查，不伪造界面验证。
 
 原型网页不进仓，发布为 artifact 或永不合入的分支，spec / STATUS 只留链接，见 [02 §3.2](docs/01-principles/02-working-backwards.md)。
 

@@ -29,14 +29,6 @@ fn no_data_at_all_is_grey_not_red() {
 }
 
 #[test]
-fn no_data_at_all_is_not_green() {
-    assert_ne!(
-        derive_project_health(&HealthInputs::empty()).signal(),
-        Signal::Green
-    );
-}
-
-#[test]
 fn two_silent_weeks_in_a_readable_repo_is_red() {
     let inputs = HealthInputs {
         git_readable: true,
