@@ -1,0 +1,488 @@
+{
+  "v": 1,
+  "runId": "2026-09-18T11-46-16-842Z-1f4e1b84",
+  "profile": "pr-onboarding",
+  "source": {
+    "commit": "2d147675f138f020a73dfba5d13a9d77b15d2bc6",
+    "dirty": false,
+    "fingerprint": "d1b4460620b59bfa2198f8a304642f924b5a7f0399d9c7406b130dea0e146c36"
+  },
+  "startedAt": "2026-09-18T11:46:16.882Z",
+  "environment": {
+    "platform": "win32",
+    "release": "10.0.22631",
+    "arch": "x64",
+    "node": "v24.12.0"
+  },
+  "status": "passed",
+  "steps": [
+    {
+      "id": "runner-tests",
+      "title": "验证交付入口的失败与证据判定",
+      "layer": "gate",
+      "status": "passed",
+      "cases": [],
+      "command": [
+        "C:\\Program Files\\nodejs\\node.exe",
+        "--test",
+        ".bw/release/verify/verify.test.mjs"
+      ],
+      "log": "runner-tests/command.log",
+      "seconds": 5.7,
+      "exitCode": 0,
+      "message": "执行通过"
+    },
+    {
+      "id": "knowledge-tests",
+      "title": "知识扫描器的路径、证据与失败判定",
+      "layer": "gate",
+      "status": "passed",
+      "cases": [],
+      "command": [
+        "C:\\Program Files\\nodejs\\node.exe",
+        "--test",
+        ".claude/skills/project-knowledge/scripts/check-links.test.mjs",
+        ".claude/skills/project-knowledge/scripts/scan-knowledge.test.mjs"
+      ],
+      "log": "knowledge-tests/command.log",
+      "seconds": 1.1,
+      "exitCode": 0,
+      "message": "执行通过"
+    },
+    {
+      "id": "runtime",
+      "title": "确认 WebView2 运行时及版本",
+      "layer": "gate",
+      "status": "passed",
+      "cases": [],
+      "command": [
+        "powershell.exe",
+        "-NoProfile",
+        "-ExecutionPolicy",
+        "Bypass",
+        "-File",
+        ".bw/release/e2e/runtime.ps1"
+      ],
+      "log": "runtime/command.log",
+      "seconds": 0.7,
+      "exitCode": 0,
+      "message": "执行通过"
+    },
+    {
+      "id": "format",
+      "title": "Rust 格式",
+      "layer": "gate",
+      "status": "passed",
+      "cases": [],
+      "command": [
+        "cargo",
+        "fmt",
+        "--all",
+        "--check"
+      ],
+      "log": "format/command.log",
+      "seconds": 1.6,
+      "exitCode": 0,
+      "message": "执行通过"
+    },
+    {
+      "id": "clippy",
+      "title": "完整 Clippy（含桌面壳）",
+      "layer": "gate",
+      "status": "passed",
+      "cases": [],
+      "command": [
+        "cargo",
+        "clippy",
+        "--locked",
+        "--workspace",
+        "--",
+        "-D",
+        "warnings"
+      ],
+      "log": "clippy/command.log",
+      "seconds": 2.5,
+      "exitCode": 0,
+      "message": "执行通过"
+    },
+    {
+      "id": "shell",
+      "title": "构建本次源码的真实桌面壳",
+      "layer": "gate",
+      "status": "passed",
+      "cases": [],
+      "command": [
+        "cargo",
+        "build",
+        "--locked",
+        "-p",
+        "app-shell"
+      ],
+      "log": "shell/command.log",
+      "seconds": 1.1,
+      "exitCode": 0,
+      "message": "执行通过"
+    },
+    {
+      "id": "test",
+      "title": "完整 workspace 测试",
+      "layer": "gate",
+      "status": "passed",
+      "cases": [],
+      "command": [
+        "cargo",
+        "test",
+        "--locked",
+        "--workspace"
+      ],
+      "log": "test/command.log",
+      "seconds": 14.8,
+      "exitCode": 0,
+      "message": "执行通过"
+    },
+    {
+      "id": "kernel-free",
+      "title": "内核不依赖 UI",
+      "layer": "gate",
+      "status": "passed",
+      "cases": [],
+      "command": [
+        "bash",
+        "scripts/guard-kernel-ui-free.sh"
+      ],
+      "log": "kernel-free/command.log",
+      "seconds": 1.8,
+      "exitCode": 0,
+      "message": "执行通过"
+    },
+    {
+      "id": "remote-isolation",
+      "title": "GitHub / CodeHub 相互隔离",
+      "layer": "gate",
+      "status": "passed",
+      "cases": [],
+      "command": [
+        "bash",
+        "scripts/guard-remote-isolation.sh"
+      ],
+      "log": "remote-isolation/command.log",
+      "seconds": 0.5,
+      "exitCode": 0,
+      "message": "执行通过"
+    },
+    {
+      "id": "screen-import",
+      "title": "屏之间不交叉导入",
+      "layer": "gate",
+      "status": "passed",
+      "cases": [],
+      "command": [
+        "bash",
+        "scripts/guard-no-cross-screen-import.sh"
+      ],
+      "log": "screen-import/command.log",
+      "seconds": 1.5,
+      "exitCode": 0,
+      "message": "执行通过"
+    },
+    {
+      "id": "screen-hooks",
+      "title": "组件 Hook 规范",
+      "layer": "gate",
+      "status": "passed",
+      "cases": [],
+      "command": [
+        "bash",
+        "scripts/guard-screen-hooks.sh"
+      ],
+      "log": "screen-hooks/command.log",
+      "seconds": 1.9,
+      "exitCode": 0,
+      "message": "执行通过"
+    },
+    {
+      "id": "file-lines",
+      "title": "源码文件长度",
+      "layer": "gate",
+      "status": "passed",
+      "cases": [],
+      "command": [
+        "bash",
+        "scripts/guard-file-lines.sh"
+      ],
+      "log": "file-lines/command.log",
+      "seconds": 8.8,
+      "exitCode": 0,
+      "message": "执行通过"
+    },
+    {
+      "id": "codegraph",
+      "title": "CodeGraph 不进入特性提交",
+      "layer": "gate",
+      "status": "passed",
+      "cases": [],
+      "command": [
+        "bash",
+        "scripts/guard-codegraph-clean.sh"
+      ],
+      "log": "codegraph/command.log",
+      "seconds": 0.2,
+      "exitCode": 0,
+      "message": "执行通过"
+    },
+    {
+      "id": "e2e-deps",
+      "title": "按锁文件准备 Playwright",
+      "layer": "gate",
+      "status": "passed",
+      "cases": [],
+      "command": [
+        "powershell.exe",
+        "-NoProfile",
+        "-ExecutionPolicy",
+        "Bypass",
+        "-File",
+        ".bw/release/e2e/dependencies.ps1"
+      ],
+      "log": "e2e-deps/command.log",
+      "seconds": 5.5,
+      "exitCode": 0,
+      "message": "执行通过"
+    },
+    {
+      "id": "desktop-core",
+      "title": "真实桌面核心 E2E（固定脚本）",
+      "layer": "desktop",
+      "status": "passed",
+      "cases": [
+        {
+          "id": "settings-restart-roundtrip",
+          "title": "修改设置杀进程重启后，界面与磁盘读回一致",
+          "path": "启动真壳进设置屏 → 修改工作区根目录并保存 → 杀壳进程 → 重启真壳 → 分别读回界面与 settings.toml",
+          "expect": "重启后设置界面显示保存的目录；settings.toml 磁盘读回一致；重启前后证据齐全",
+          "status": "passed",
+          "evidence": [
+            "subject.json",
+            "initial-shell.log",
+            "initial-webview.json",
+            "settings-initial.png",
+            "settings-readback.toml",
+            "restart-shell.log",
+            "restart-webview.json",
+            "settings-restart.png",
+            "restart-readback.toml"
+          ]
+        }
+      ],
+      "command": [
+        "powershell.exe",
+        "-NoProfile",
+        "-ExecutionPolicy",
+        "Bypass",
+        "-File",
+        ".bw/release/e2e/desktop.ps1",
+        "-Exe",
+        "E:/zhuyu/code/builder-workbench/.claude/worktrees/e2e-journey-refactor/target/debug/bw-dev.exe",
+        "-OutDir",
+        "E:\\zhuyu\\code\\builder-workbench\\.claude\\worktrees\\e2e-journey-refactor\\.bw\\release\\out\\verify\\2026-09-18T11-46-16-842Z-1f4e1b84\\desktop-core"
+      ],
+      "log": "desktop-core/command.log",
+      "seconds": 9.2,
+      "exitCode": 0,
+      "message": "执行通过"
+    },
+    {
+      "id": "desktop-onboarding",
+      "title": "真实添加项目旅程（GitHub 沙箱 + Orca）",
+      "layer": "remote",
+      "status": "passed",
+      "cases": [
+        {
+          "id": "onboarding-project",
+          "title": "从真实桌面接入 GitHub 沙箱项目",
+          "path": "接入项目 → 克隆远端仓 → 填写基础信息 → 完成接入 → 项目墙",
+          "expect": "项目墙出现本项目名片，横幅含本次接入打开的 MR 编号",
+          "status": "passed",
+          "evidence": [
+            "onboarding-project.png"
+          ]
+        },
+        {
+          "id": "onboarding-readback",
+          "title": "从 GitHub、Git 和项目名片读回接入结果",
+          "path": "gh 读回 Issue/PR/分支内容；git 读回项目工作树",
+          "expect": "项目约定 Issue 打开且挂 bw:status:inreview；bw/project PR 打开；远端与本地 project.toml 一致且含本次 run-id",
+          "status": "passed",
+          "evidence": [
+            "github-issue.json",
+            "github-pr.json",
+            "project-file.toml",
+            "git-worktrees.txt"
+          ]
+        },
+        {
+          "id": "onboarding-orca",
+          "title": "Orca 登记沙箱仓并保留三条关闭的自动化",
+          "path": "bw-engine 示例独立读回 Orca 的项目与自动化列表",
+          "expect": "沙箱项目已登记，三条 Workbench 自动化各存在一条且均为关闭",
+          "status": "passed",
+          "evidence": [
+            "orca-automations.json"
+          ]
+        },
+        {
+          "id": "onboarding-cleanup",
+          "title": "只收掉本次远端对象和项目约定工作树",
+          "path": "关闭本次 PR/Issue → 删除远端 bw/project → 移除项目工作树与本地分支",
+          "expect": "清理回执全为真；沙箱主仓、其余工作树与三条自动化保留",
+          "status": "passed",
+          "evidence": [
+            "remote-cleanup.json"
+          ]
+        }
+      ],
+      "command": [
+        "powershell.exe",
+        "-NoProfile",
+        "-ExecutionPolicy",
+        "Bypass",
+        "-File",
+        ".bw/release/e2e/desktop.ps1",
+        "-Exe",
+        "E:/zhuyu/code/builder-workbench/.claude/worktrees/e2e-journey-refactor/target/debug/bw-dev.exe",
+        "-OutDir",
+        "E:\\zhuyu\\code\\builder-workbench\\.claude\\worktrees\\e2e-journey-refactor\\.bw\\release\\out\\verify\\2026-09-18T11-46-16-842Z-1f4e1b84\\desktop-onboarding",
+        "-Scenario",
+        "onboarding",
+        "-SandboxRoot",
+        "E:\\zhuyu\\code\\builder-workbench/.bw/release/out/e2e-workspaces",
+        "-SandboxRepo",
+        "yuzhup/bw-e2e-sandbox",
+        "-SandboxRepoId",
+        "1374096542"
+      ],
+      "log": "desktop-onboarding/command.log",
+      "seconds": 98.2,
+      "exitCode": 0,
+      "message": "执行通过"
+    },
+    {
+      "id": "version-planning",
+      "title": "周一屏部署与浏览器文件共建",
+      "layer": "browser",
+      "status": "passed",
+      "cases": [
+        {
+          "id": "planning-assets",
+          "title": "BW 分发完整 Skill，JSON 消费者读取真实文件和已登记工作树",
+          "path": "cargo 跑 planning_smoke 分发 → planning.py init 两个版本",
+          "expect": "deployment.json 指向真实分发的 week-planning Skill 与已登记工作树",
+          "status": "passed",
+          "evidence": [
+            "deployment.json"
+          ]
+        },
+        {
+          "id": "planning-autosave",
+          "title": "真实浏览器输入自动写 JSON，版本报告保存且刷新可读回",
+          "path": "浏览器编辑目标与交付件 → 失焦保存 → 刷新页面",
+          "expect": "JSON 落盘与页面输入一致，刷新后读回相同内容",
+          "status": "passed",
+          "evidence": [
+            "autosave.png",
+            "autosave.json"
+          ]
+        },
+        {
+          "id": "planning-model-readback",
+          "title": "会话写同一 JSON，页面自动读回",
+          "path": "planning.py update 写回同一版本 JSON",
+          "expect": "页面不用刷新即显示模型写回后的目标",
+          "status": "passed",
+          "evidence": [
+            "model-readback.png",
+            "model-candidate.json"
+          ]
+        },
+        {
+          "id": "planning-version-isolation",
+          "title": "切换版本只读对应 JSON，不串版",
+          "path": "版本下拉在 v0.5 与 v0.4 间切换",
+          "expect": "每屏只读对应版本的 JSON，互不串改",
+          "status": "passed",
+          "evidence": [
+            "versions.json",
+            "versions.png"
+          ]
+        },
+        {
+          "id": "planning-unknown-honesty",
+          "title": "缺数如实显示 Unknown，不显示假进度",
+          "path": "会话补 progress 后进度条显示真数；清空 reading 后页面自动读回",
+          "expect": "进度条回到 — 且无 aria-valuenow、宽度 0%；磁盘 JSON 同步变化",
+          "status": "passed",
+          "evidence": [
+            "unknown-honesty.png",
+            "unknown-honesty.json"
+          ]
+        },
+        {
+          "id": "planning-bad-history",
+          "title": "坏历史版本明确标记，当前版本连续保存与修订号仍正常",
+          "path": "伪造 v0.1 坏 JSON → 重载 → 连续保存两次",
+          "expect": "坏版本在下拉中禁用；当前版本保存不失败、状态不显示未保存",
+          "status": "passed",
+          "evidence": [
+            "bad-history.png",
+            "bad-history.json"
+          ]
+        },
+        {
+          "id": "planning-conflict",
+          "title": "并发冲突拒绝覆盖，保留页面输入与磁盘新内容",
+          "path": "另一写入方更新同一修订 → 过期页面继续编辑并保存",
+          "expect": "保存被拒并提示未保存；磁盘保留另一写入方内容，页面输入不丢失",
+          "status": "passed",
+          "evidence": [
+            "conflict.png",
+            "conflict.json"
+          ]
+        },
+        {
+          "id": "planning-confirmation",
+          "title": "确认只能由人给出，模型不能伪造",
+          "path": "UI 确认结果 → 模型带伪造确认改写 → 人重新确认 → 会话命令确认评审 → 页面对话框确认计划",
+          "expect": "每次确认后磁盘 actor:user；模型伪造值不落盘且确认全部重置；计划确认后三阶段齐全",
+          "status": "passed",
+          "evidence": [
+            "confirmation.png",
+            "confirmation.json",
+            "forged-candidate.json"
+          ]
+        }
+      ],
+      "command": [
+        "C:\\Program Files\\nodejs\\node.exe",
+        ".bw/release/e2e/planning.mjs",
+        "--out",
+        "E:\\zhuyu\\code\\builder-workbench\\.claude\\worktrees\\e2e-journey-refactor\\.bw\\release\\out\\verify\\2026-09-18T11-46-16-842Z-1f4e1b84\\version-planning"
+      ],
+      "log": "version-planning/command.log",
+      "seconds": 27,
+      "exitCode": 0,
+      "message": "执行通过"
+    }
+  ],
+  "limits": [
+    "仅证明表中实际执行的检查；专项覆盖是否充分及代码 Review 仍须审查。",
+    "源码验证不能证明安装包或正式发布；远端写入与 Orca 会话仅以明确列出的专项用例为准。核心桌面用例由固定脚本执行，不调用模型。"
+  ],
+  "sourceAfter": {
+    "commit": "2d147675f138f020a73dfba5d13a9d77b15d2bc6",
+    "dirty": false,
+    "fingerprint": "d1b4460620b59bfa2198f8a304642f924b5a7f0399d9c7406b130dea0e146c36"
+  },
+  "sourceUnchanged": true,
+  "finishedAt": "2026-09-18T11:49:19.123Z",
+  "seconds": 182.2
+}

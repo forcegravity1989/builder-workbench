@@ -1,0 +1,23 @@
+{
+  "v": 1,
+  "cases": [
+    {
+      "id": "settings-restart-roundtrip",
+      "title": "修改设置杀进程重启后，界面与磁盘读回一致",
+      "path": "启动真壳进设置屏 → 修改工作区根目录并保存 → 杀壳进程 → 重启真壳 → 分别读回界面与 settings.toml",
+      "expect": "重启后设置界面显示保存的目录；settings.toml 磁盘读回一致；重启前后证据齐全",
+      "status": "passed",
+      "evidence": [
+        "subject.json",
+        "initial-shell.log",
+        "initial-webview.json",
+        "settings-initial.png",
+        "settings-readback.toml",
+        "restart-shell.log",
+        "restart-webview.json",
+        "settings-restart.png",
+        "restart-readback.toml"
+      ]
+    }
+  ]
+}
