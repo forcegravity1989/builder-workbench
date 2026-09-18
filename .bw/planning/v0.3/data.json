@@ -75,18 +75,18 @@
   },
   "review": {
     "live_notes": "",
+    "minutes": {
+      "state": "missing",
+      "markdown": ""
+    },
+    "decisions": [],
     "meeting_url": "",
     "transcript": {
       "path": "",
       "sha256": "",
       "text": "",
       "source_url": ""
-    },
-    "minutes": {
-      "state": "missing",
-      "markdown": ""
-    },
-    "decisions": []
+    }
   },
   "plan": {
     "task_summary": "11 项原定工作重建 · 原记录未关联独立 Issue",
