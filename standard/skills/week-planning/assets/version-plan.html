@@ -896,7 +896,7 @@ body{height:100vh;display:flex;flex-direction:column}
                     <h2>会议评审记录</h2>
                     <span class="tag tag-outline" id="review-status">待填写</span>
                   </div>
-                  <div id="minutes-card-core" class="card minutes"><div class="minutes-filled"><div class="minutes-file-row"><div class="minutes-file-icon">记</div><div><strong>现场核心记录</strong><div class="muted">记录当场对齐的决定与待办</div></div></div><textarea id="live-notes" rows="6" placeholder="决定了什么、原因是什么、谁来做；还有哪些分歧需要确认？"></textarea></div></div><div id="minutes-card-transcript" class="card minutes"><div class="minutes-filled"><div class="minutes-file-row"><div class="minutes-file-icon">纪</div><div><strong>会后会议纪要</strong><div class="muted">可以直接填写，也可以在会话中请助手整理</div></div></div><label for="minutes-body">会议纪要</label><textarea id="minutes-body" rows="8" placeholder="填写或粘贴整理后的纪要"></textarea><details><summary>原始转写（完整发言）</summary><textarea id="transcript-body" rows="8" placeholder="粘贴原始转写，保留发言人和完整内容"></textarea></details></div></div></div>
+                  <div id="minutes-card-core" class="card minutes"><div class="minutes-filled"><div class="minutes-file-row"><div class="minutes-file-icon">记</div><div><strong>现场核心记录</strong><div class="muted">记录当场对齐的决定与待办</div></div></div><textarea id="live-notes" rows="6" placeholder="决定了什么、原因是什么、谁来做；还有哪些分歧需要确认？"></textarea></div></div><div id="minutes-card-transcript" class="card minutes"><div class="minutes-filled"><div class="minutes-file-row"><div class="minutes-file-icon">纪</div><div><strong>会后会议纪要</strong><div class="muted">可以直接填写，也可以在会话中请助手整理</div></div></div><label for="minutes-body">会议纪要</label><textarea id="minutes-body" rows="8" placeholder="填写或粘贴整理后的纪要"></textarea></div></div></div>
               </div>
 
               <div class="pane pane-3">
@@ -1162,7 +1162,7 @@ function render(){
    if(!items.length){const p=document.createElement('p');p.className='empty-list';p.textContent=key==='results.tasks'?'尚未采集到任务 Issue':key==='results.sessions'?'尚未取得会话记录':readonly?'尚未填写':'还没有'+names[key]+'，点击下方添加。';list.append(p);}
    items.forEach((item,i)=>{const row=$('item-'+key.replaceAll('.','-')).content.firstElementChild.cloneNode(true);const index=(get(data,key)||[]).indexOf(item);fill(row,item,key+'.'+index);rowTools(row,key,index,item);list.append(row);});
  });
- for(const [id,path] of Object.entries({'live-notes':'review.live_notes','minutes-body':'review.minutes.markdown','transcript-body':'review.transcript.text'})){
+ for(const [id,path] of Object.entries({'live-notes':'review.live_notes','minutes-body':'review.minutes.markdown'})){
    $(id).value=get(data,path)||'';editable($(id),path);
  }
  $('review-status').textContent=data.review.minutes.state==='stale'?'材料已更新 · 请核对纪要':data.review.minutes.markdown?'已有纪要 · 可继续修改':'待填写';
