@@ -721,82 +721,87 @@
   font-weight: 700;
 }
 
-</style><style id="standalone-style">/* Standalone file layout and editing controls. SE source styles are unchanged. */
+</style><style id="standalone-style">/* Standalone: keep V7 plan-pane density. Only overlay editing chrome. */
 html,body{margin:0;height:100%;background:var(--color-bg);color:var(--color-text);font-family:var(--font-body)}
 body{height:100vh;display:flex;flex-direction:column}
 *{box-sizing:border-box}[hidden]{display:none!important}
 #bw-screen{display:flex;min-width:0;flex:1;min-height:0;flex-direction:column}
+
+/* Spec: no live chat column. Content uses the V7 right-pane metrics. */
 #screen-plan .plan-body{grid-template-columns:minmax(0,1fr)}
-#screen-plan .right-scroll{padding:24px max(24px,calc((100% - 1120px)/2));gap:24px}
-#screen-plan .pane{gap:24px}
-#screen-plan .sec{gap:12px}
-#screen-plan .block-title h2{font-size:14px}
-#screen-plan .goal{padding:16px;gap:10px;min-height:180px}
-#screen-plan .goal-compact{position:relative;min-height:0;gap:12px}
-#screen-plan .goal-compact>strong{font-size:14px;line-height:1.7;font-weight:600;padding-right:28px}
-#screen-plan .goal-reading{display:flex;align-items:baseline;gap:5px;font:13px/1.5 var(--font-mono);color:var(--color-text)}
-#screen-plan .goal-compact>.row-tools{position:absolute;right:8px;top:10px;margin:0}
-#screen-plan .goal-compact>.row-tools button{width:28px;font-size:20px;padding:0}
-#screen-plan .goal-result{margin-left:8px;border:0;cursor:pointer;font-family:var(--font-body)}
-#screen-plan .task-row{grid-template-columns:90px minmax(190px,1.1fr) minmax(210px,1.2fr) 120px;font-size:13px;line-height:1.65;padding:12px}
-#screen-plan .task-row.head{font-family:var(--font-body);font-size:12px}
-#screen-plan .task-main,.session-line,.goal-detail{overflow-wrap:anywhere}
-#screen-plan [contenteditable=true]{white-space:pre-wrap;overflow-wrap:anywhere;min-width:1em;border-radius:4px;cursor:text}
-#screen-plan [contenteditable=true]:hover{background:var(--color-surface)}
-#screen-plan [contenteditable=true]:focus{outline:2px solid var(--color-accent-300);outline-offset:3px;background:var(--color-card)}
+#screen-plan .chat{display:none!important}
+#screen-plan .right-scroll{max-width:980px;padding:12px 14px 16px;gap:14px}
+
+#screen-plan .goal{position:relative;display:flex;flex-direction:column;align-self:stretch;height:100%;min-height:100%}
+#screen-plan .goal-title{flex:1 1 auto;font-weight:600;font-size:13px;line-height:1.35;padding-right:22px}
+#screen-plan .goal .bar{margin-top:auto;flex-shrink:0}
+#screen-plan .goal-meta{flex-shrink:0;align-items:center;min-height:22px}
+#screen-plan .goal-meta>span{display:inline-flex;align-items:center;line-height:1.2;min-height:22px}
+#screen-plan .goal-note{font-size:11.5px}
+#screen-plan .goal-result{appearance:none;-webkit-appearance:none;border:0;cursor:pointer;font:inherit;margin:0;height:22px;padding:0 8px;display:inline-flex;align-items:center;line-height:1}
+#screen-plan .goal>.row-tools{position:absolute;right:6px;top:6px;margin:0}
+#screen-plan .goal>.row-tools button{width:22px;height:22px;padding:0;font-size:16px;line-height:1;opacity:.45}
+
+#screen-plan [contenteditable=true]{white-space:pre-wrap;overflow-wrap:anywhere;min-width:1em;border-radius:3px;cursor:text}
+#screen-plan [contenteditable=true]:hover{background:color-mix(in srgb,var(--color-text) 4%,transparent)}
+#screen-plan [contenteditable=true]:focus{outline:2px solid var(--color-accent-300);outline-offset:2px;background:var(--color-card)}
 #screen-plan [contenteditable=true]:empty:before{content:attr(data-placeholder);color:var(--color-neutral-500)}
-#screen-plan .editable:empty{min-height:4em}
-#screen-plan .editable{line-height:1.8}
-#screen-plan .muted{color:var(--color-neutral-600)}
-#screen-plan .goal-meta{font-family:var(--font-body);flex-wrap:wrap;line-height:1.7}
-#screen-plan .goal-fields{display:grid;grid-template-columns:1fr 1fr;gap:10px 16px}
-#screen-plan .goal-field{display:flex;flex-direction:column;gap:3px;font-size:12px;line-height:1.6;min-width:0}
-#screen-plan .goal-field>.muted{font-size:11px}
-#screen-plan .task-identity,#screen-plan .task-progress,#screen-plan .deliverables{display:flex;flex-direction:column;align-items:flex-start;gap:8px;min-width:0;overflow-wrap:anywhere}
-#screen-plan .task-identity select{width:78px;border:1px solid var(--color-divider);border-radius:4px;padding:3px;background:var(--color-card);color:inherit;font:11px var(--font-body)}
-#screen-plan .delivery-item{width:100%;font-size:12px}
-#screen-plan .delivery-item a{color:var(--color-accent-600)}
-#screen-plan .delivery-item details{font-size:11px;color:var(--color-neutral-600)}
-#screen-plan .delivery-item input{display:block;width:100%;min-width:0;font:12px/1.6 var(--font-body);padding:5px;margin-top:5px;color:inherit;border:1px solid var(--color-divider);border-radius:4px;background:var(--color-card)}
-#screen-plan .minutes-filled{display:flex}
-#screen-plan .minutes-file-row{flex-wrap:wrap}
-#screen-plan textarea,#screen-plan input[type=url]{width:100%;border:1px solid var(--color-divider);border-radius:var(--radius-sm);background:var(--color-card);color:inherit;font:13px/1.8 var(--font-body);padding:10px 12px}
-#screen-plan textarea{resize:vertical}
-#screen-plan textarea:focus,#screen-plan input:focus{outline:2px solid var(--color-accent-300);outline-offset:2px}
-#screen-plan .session-line{grid-template-columns:70px 70px minmax(0,1fr) 42px}
-#screen-plan .session-line .txt{white-space:pre-wrap}
-#screen-plan .btn-sm{height:28px;padding:0 8px;font-size:12px}
-.version-picker{display:flex;gap:6px;align-items:center;font-size:13px}
-.version-picker select{font:inherit;color:inherit;border:1px solid var(--color-divider);background:var(--color-card);border-radius:6px;padding:5px 8px}
-#screen-plan .plan-head{flex-wrap:wrap;gap:10px}
-.local-toolbar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;min-width:0;font-size:12px}
+#screen-plan .editable:empty{min-height:3.2em}
+#screen-plan .editable{line-height:1.65}
+
+#screen-plan .task-kind{font-size:10px;color:color-mix(in srgb,var(--color-text) 50%,transparent);letter-spacing:.02em}
+#screen-plan .pane-1 .task-row{grid-template-columns:52px 48px minmax(0,1.2fr) minmax(0,.9fr) 72px}
+#screen-plan .task-identity{display:flex;flex-direction:column;gap:2px;min-width:0}
+#screen-plan .task-identity a{color:inherit}
+#screen-plan .delivery-link{min-width:0;overflow-wrap:anywhere}
+#screen-plan .delivery-link input{display:none;width:100%;min-width:0;margin-top:4px;font:11px/1.4 var(--font-mono);padding:3px 6px;border:1px solid var(--color-divider);border-radius:4px;background:var(--color-card);color:inherit}
+#screen-plan .delivery-row:hover .delivery-link input,#screen-plan .delivery-link input:focus,#screen-plan .delivery-link:not(:has(a[href])) input{display:block}
+#screen-plan .delivery-row{display:grid;grid-template-columns:1fr 72px 1.4fr 28px;gap:8px;padding:8px 10px;border-top:1px solid var(--color-divider);font-size:12.5px;align-items:start}
+#screen-plan .delivery-row.head{border-top:0;background:var(--color-surface);font-size:11px;font-family:var(--font-mono);color:color-mix(in srgb,var(--color-text) 55%,transparent);align-items:center}
+#screen-plan .pane-3 .task-row{grid-template-columns:52px 56px 1fr 72px 28px}
+
+.version-picker{display:flex;gap:6px;align-items:center;font-size:12px;color:color-mix(in srgb,var(--color-text) 62%,transparent)}
+.version-picker select{font:12px var(--font-mono);color:inherit;border:1px solid var(--color-divider);background:var(--color-card);border-radius:6px;padding:3px 22px 3px 8px}
+.local-toolbar{display:flex;flex-wrap:wrap;gap:6px;align-items:center;min-width:0;font-size:11px}
 #local-tools{display:flex;gap:6px;align-items:center;min-width:0}
 #save-now{flex-shrink:0}
-#save-path{font:11px/1.5 var(--font-mono);color:var(--color-neutral-600);max-width:240px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;user-select:text}
+#save-path{font:10.5px/1.4 var(--font-mono);color:var(--color-neutral-600);max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;user-select:text}
 #save-status:empty{display:none}
-#save-status{color:var(--color-neutral-600)}#save-status.is-error{color:var(--color-danger-deep)}
-.source-details{font-size:12px;line-height:1.8;color:var(--color-neutral-600);border-top:1px solid var(--color-divider);padding-top:16px}
-.source-details summary{cursor:pointer}.source-details a{color:var(--color-accent-600)}
-#screen-plan .empty-list{font-size:13px;line-height:1.8;color:var(--color-neutral-600);margin:0;padding:20px;background:var(--color-card);border:1px dashed var(--color-divider);border-radius:8px;grid-column:1/-1}
-#screen-plan .add-item{align-self:flex-start;color:var(--color-accent-600)}
-#screen-plan .row-tools{display:flex;align-items:center;justify-content:space-between;gap:8px}
-#screen-plan .row-tools input{width:62px;border:1px solid var(--color-divider);border-radius:4px;padding:4px;font:inherit;color:inherit;background:var(--color-card)}
-#screen-plan .row-tools label{font-size:11px}
+#save-status{color:var(--color-neutral-600)}
+#save-status.is-error{color:var(--color-danger-deep)}
+#screen-plan .plan-head{flex-wrap:nowrap}
+#screen-plan .plan-head .local-toolbar{order:5}
+
+#screen-plan textarea,#screen-plan input[type=url]{width:100%;border:1px solid var(--color-divider);border-radius:var(--radius-sm);background:var(--color-card);color:inherit;font:13px/1.65 var(--font-body);padding:8px 10px}
+#screen-plan textarea{resize:vertical}
+#screen-plan textarea:focus,#screen-plan input:focus{outline:2px solid var(--color-accent-300);outline-offset:2px}
+#screen-plan .minutes-filled{display:flex;flex-direction:column;gap:8px}
+#screen-plan .minutes-file-row{display:flex;gap:8px;align-items:center}
+
+#screen-plan .empty-list{font-size:12.5px;line-height:1.55;color:var(--color-neutral-600);margin:0;padding:10px;background:var(--color-card);border:1px dashed var(--color-divider);border-radius:var(--radius-md);grid-column:1/-1}
+#screen-plan .add-item{align-self:flex-start;color:var(--color-accent-600);height:24px;padding:0 6px;font-size:12px}
+#screen-plan .row-tools{display:flex;align-items:center;gap:4px}
 #screen-plan .row-tools button{opacity:.55}
 #screen-plan .row-tools button:hover,#screen-plan .row-tools button:focus{opacity:1}
-#screen-plan .goal>.row-tools{margin-top:auto}
-#publication-state{font-size:12px;margin-right:auto}
-@media(max-width:850px){#screen-plan .plan-head{flex-wrap:wrap;gap:12px}#screen-plan .plan-tabs{width:100%;margin-left:0;display:flex}#screen-plan .right-scroll{padding:20px}#screen-plan .goals{grid-template-columns:1fr}#screen-plan .task-table{overflow-x:auto}#screen-plan .task-row{min-width:800px}#screen-plan .foot-actions-end{flex-wrap:wrap}}
-@media print{body{height:auto}.local-toolbar,.foot-bar,.add-item,.row-tools{display:none!important}#bw-screen,#screen-plan,#screen-plan .right-scroll{display:block;height:auto;overflow:visible}#screen-plan .pane{display:flex!important;break-before:page}#screen-plan .pane-1{break-before:auto}#screen-plan .card,#screen-plan .task-row{break-inside:avoid}#screen-plan textarea{border:0}}
+#screen-plan .btn-sm{height:24px;padding:0 8px;font-size:12px}
 
-
-#screen-plan .pane-3 .task-row{grid-template-columns:90px minmax(220px,1fr) 140px 42px}
-#screen-plan .delivery-row{display:grid;grid-template-columns:minmax(180px,1fr) 120px minmax(220px,1.4fr) 42px;gap:16px;padding:12px;border-bottom:1px solid var(--color-divider);font-size:13px;line-height:1.65;align-items:start}
-#screen-plan .delivery-row.head{font-size:12px;color:var(--color-neutral-600)}
-#screen-plan .delivery-link{min-width:0;overflow-wrap:anywhere}
-#screen-plan .delivery-link input{font-size:12px;padding:4px}
-#screen-plan .session-line{grid-template-columns:1fr}
-#screen-plan .task-identity a,#screen-plan .delivery-link a{color:var(--color-accent-600)}
+@media(max-width:850px){
+  #screen-plan .plan-head{flex-wrap:wrap;gap:8px}
+  #screen-plan .plan-tabs{width:100%;margin-left:0;display:flex}
+  #screen-plan .goals{grid-template-columns:1fr}
+  #screen-plan .task-table{overflow-x:auto}
+  #screen-plan .task-row,#screen-plan .delivery-row{min-width:640px}
+  #screen-plan .foot-actions-end{flex-wrap:wrap}
+}
+@media print{
+  body{height:auto}
+  .local-toolbar,.foot-bar,.add-item,.row-tools{display:none!important}
+  #bw-screen,#screen-plan,#screen-plan .right-scroll{display:block;height:auto;overflow:visible}
+  #screen-plan .pane{display:flex!important;break-before:page}
+  #screen-plan .pane-1{break-before:auto}
+  #screen-plan .card,#screen-plan .task-row{break-inside:avoid}
+  #screen-plan textarea{border:0}
+}
 </style><meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src data:; connect-src 'self'; base-uri 'none'; form-action 'none'"></head><body><main id="bw-screen"><section id="screen-plan" data-step="1" hidden="">
           <div class="plan-v7">
 <header class="plan-head">
@@ -837,7 +842,7 @@ body{height:100vh;display:flex;flex-direction:column}
                   </div>
                   <div class="task-table">
                     <div class="task-row head">
-                      <span>Issue / 类型</span><span>任务</span><span>实际进展</span><span>所属目标</span>
+                      <span>编号</span><span>类型</span><span>上周要做的事</span><span>实际进展</span><span>挂目标</span>
                     </div>
                     <div data-list="results.tasks"></div></div>
                 </div>
@@ -889,7 +894,7 @@ body{height:100vh;display:flex;flex-direction:column}
                     <h2>会议评审记录</h2>
                     <span class="tag tag-outline" id="review-status">待填写</span>
                   </div>
-                  <div id="minutes-card-core" class="card minutes"><div class="minutes-filled"><div class="minutes-file-row"><div class="minutes-file-icon">记</div><div><strong>现场核心记录</strong><div class="muted">记录当场对齐的决定与待办</div></div></div><textarea id="live-notes" rows="6" placeholder="决定了什么、原因是什么、谁来做；还有哪些分歧需要确认？"></textarea></div></div><div id="minutes-card-transcript" class="card minutes"><div class="minutes-filled"><div class="minutes-file-row"><div class="minutes-file-icon">纪</div><div><strong>会后会议纪要</strong><div class="muted">可以直接填写，也可以在会话中请助手整理</div></div></div><label for="meeting-url">会议链接</label><input id="meeting-url" type="url" placeholder="粘贴会议记录链接"><label for="minutes-body">会议纪要</label><textarea id="minutes-body" rows="8" placeholder="填写或粘贴整理后的纪要"></textarea><details><summary>原始转写（完整发言）</summary><textarea id="transcript-body" rows="8" placeholder="粘贴原始转写，保留发言人和完整内容"></textarea></details></div></div></div>
+                  <div id="minutes-card-core" class="card minutes"><div class="minutes-filled"><div class="minutes-file-row"><div class="minutes-file-icon">记</div><div><strong>现场核心记录</strong><div class="muted">记录当场对齐的决定与待办</div></div></div><textarea id="live-notes" rows="6" placeholder="决定了什么、原因是什么、谁来做；还有哪些分歧需要确认？"></textarea></div></div><div id="minutes-card-transcript" class="card minutes"><div class="minutes-filled"><div class="minutes-file-row"><div class="minutes-file-icon">纪</div><div><strong>会后会议纪要</strong><div class="muted">可以直接填写，也可以在会话中请助手整理</div></div></div><label for="minutes-body">会议纪要</label><textarea id="minutes-body" rows="8" placeholder="填写或粘贴整理后的纪要"></textarea><details><summary>原始转写（完整发言）</summary><textarea id="transcript-body" rows="8" placeholder="粘贴原始转写，保留发言人和完整内容"></textarea></details></div></div></div>
               </div>
 
               <div class="pane pane-3">
@@ -908,11 +913,11 @@ body{height:100vh;display:flex;flex-direction:column}
                   </div>
                   <div class="task-table">
                     <div class="task-row head">
-                      <span>Issue / 类型</span><span>任务</span><span>所属目标</span><span></span></div>
+                      <span>编号</span><span>类型</span><span>任务</span><span>挂目标</span><span></span></div>
                     <div data-list="plan.tasks"></div></div>
                 <button type="button" class="btn btn-ghost btn-sm add-item" data-add="plan.tasks">＋ 添加任务</button></div>
               </div>
-            <details class="source-details"><summary>来源与填写说明</summary><div id="provenance"></div><details id="source-list"><summary>原始资料</summary></details><p>文字直接填写；目标、任务和记录可以增删。编辑通过本地服务保存到项目的版本文件。</p></details></div>
+</div>
 
             <div class="foot-bar">
               <div class="foot-by-step foot-s1">
@@ -920,15 +925,9 @@ body{height:100vh;display:flex;flex-direction:column}
                   <button class="btn btn-primary" type="button" data-goto="2" data-confirm-results="">确认结果，进入总结与评审</button>
                 </div>
               </div>
-              <div class="foot-by-step foot-s2">
-                <div class="foot-actions foot-actions-end">
-                  <button class="btn btn-ghost" type="button" data-goto="1">上周版本结果</button>
-                  <button type="button" class="btn btn-secondary" data-export-review="">保存并导出会议评审版</button><button class="btn btn-primary" type="button" id="go-week" title="可查看草案；录入文件不代表已经形成最终计划">当前版本计划</button>
-                </div>
-              </div>
+              <div class="foot-by-step foot-s2"></div>
               <div class="foot-by-step foot-s3">
                 <div class="foot-actions foot-actions-end">
-                  <span class="muted" id="publication-state"></span><button class="btn btn-ghost" type="button" data-goto="2">总结与评审</button>
                   <button class="btn btn-primary" type="button" id="commit">确认计划</button>
                 </div>
               </div>
@@ -939,18 +938,20 @@ body{height:100vh;display:flex;flex-direction:column}
         </div>
         </section>
 
-        </main><template id="item-results-goals"><div class="card goal goal-compact"><strong data-bind="title" contenteditable="true" data-placeholder="一句目标"></strong><span class="bar" data-progress="progress" data-show-unknown="" role="progressbar" aria-label="目标进度"><i style="width:0%"></i></span><div class="goal-reading"><span data-bind="reading" contenteditable="true" data-placeholder="—"></span><span aria-hidden="true">/</span><span data-bind="target" contenteditable="true" data-placeholder="—"></span><select data-goal-status="" class="tag tag-neutral goal-result" aria-label="目标结果"><option>达成</option><option>未达</option><option>遗留</option><option selected>无值</option></select></div></div></template>
-<template id="item-plan-goals"><div class="goal goal-compact"><strong data-bind="title" contenteditable="true" data-placeholder="一句话写清目标、衡量指标和目标值"></strong><div class="goal-reading"><span data-bind="target" contenteditable="true" data-placeholder="目标值"></span></div></div></template>
+        </main><template id="item-results-goals"><div class="card goal"><span class="card-kicker" data-bind="label"></span><span class="goal-title" data-bind="title" contenteditable="true" data-placeholder="一句目标"></span><span class="bar" data-progress="progress" data-show-unknown="" role="progressbar" aria-label="目标进度"><i style="width:0%"></i></span><span class="goal-meta"><span data-bind="reading" contenteditable="true" data-placeholder="—"></span><span aria-hidden="true">/</span><span data-bind="target" contenteditable="true" data-placeholder="—"></span><select data-goal-status="" class="tag tag-neutral goal-result" aria-label="目标结果"><option>达成</option><option>未达</option><option>遗留</option><option selected>无值</option></select></span></div></template>
+<template id="item-plan-goals"><div class="card goal"><span class="card-kicker" data-bind="label"></span><span class="goal-title" data-bind="title" contenteditable="true" data-placeholder="一句 SMART 目标"></span></div></template>
 <template id="item-results-tasks"><div class="task-row">
- <div class="task-identity"><a class="id" data-issue-link></a><span data-task-kind></span></div>
+ <a class="id" data-issue-link></a>
+ <span class="task-kind" data-task-kind></span>
  <div class="task-main"><span data-bind="title"></span></div>
- <div class="task-progress"><span data-bind="progress_note" contenteditable="true" data-placeholder="实际完成了什么、还有什么阻碍？"></span></div>
- <span data-bind="goal"></span>
+ <span class="delta" data-bind="progress_note" contenteditable="true" data-placeholder="—"></span>
+ <span class="tag tag-outline" data-bind="goal"></span>
  </div></template>
 <template id="item-plan-tasks"><div class="task-row">
- <div class="task-identity"><a class="id" data-issue-link></a><span data-task-kind></span></div>
+ <a class="id" data-issue-link></a>
+ <span class="task-kind" data-task-kind></span>
  <div class="task-main"><span data-bind="title" contenteditable="true" data-placeholder="Issue 标题"></span></div>
- <span data-bind="goal"></span>
+ <span class="tag tag-outline" data-bind="goal"></span>
  </div></template>
 <template id="item-results-deliverables"><div class="delivery-row">
  <span data-bind="label" contenteditable="true" data-placeholder="交付内容"></span>
@@ -1142,8 +1143,7 @@ function rowTools(row,key,index,item){
  if(key==='results.tasks'||key==='results.sessions')return;
  if(readonly)return;
  const box=document.createElement('div');box.className='row-tools';
- const remove=document.createElement('button');remove.className='btn btn-ghost btn-sm';remove.type='button';remove.textContent='删除';remove.setAttribute('aria-label','删除'+names[key]);
- if(key.endsWith('.goals')){remove.textContent='×';remove.title='删除目标';}
+ const remove=document.createElement('button');remove.className='btn btn-ghost btn-sm';remove.type='button';remove.textContent='×';remove.title='删除'+names[key];remove.setAttribute('aria-label','删除'+names[key]);
  remove.onclick=()=>{
    if(!key.endsWith('.goals')&&!confirm('删除这条'+names[key]+'？'))return;
    const list=clone(get(data,key)),[removed]=list.splice(index,1);
@@ -1161,17 +1161,13 @@ function render(){
    if(!items.length){const p=document.createElement('p');p.className='empty-list';p.textContent=key==='results.tasks'?'尚未采集到任务 Issue':key==='results.sessions'?'尚未取得会话记录':readonly?'尚未填写':'还没有'+names[key]+'，点击下方添加。';list.append(p);}
    items.forEach((item,i)=>{const row=$('item-'+key.replaceAll('.','-')).content.firstElementChild.cloneNode(true);const index=(get(data,key)||[]).indexOf(item);fill(row,item,key+'.'+index);rowTools(row,key,index,item);list.append(row);});
  });
- for(const [id,path] of Object.entries({'live-notes':'review.live_notes','meeting-url':'review.meeting_url','minutes-body':'review.minutes.markdown','transcript-body':'review.transcript.text'})){
+ for(const [id,path] of Object.entries({'live-notes':'review.live_notes','minutes-body':'review.minutes.markdown','transcript-body':'review.transcript.text'})){
    $(id).value=get(data,path)||'';editable($(id),path);
  }
  $('review-status').textContent=data.review.minutes.state==='stale'?'材料已更新 · 请核对纪要':data.review.minutes.markdown?'已有纪要 · 可继续修改':'待填写';
- $('publication-state').textContent=data.confirmation.plan?'计划已确认；可在会话中发起 PR。':'填写完成后确认；PR 由会话发起。';
  $('commit').textContent=data.confirmation.plan?'计划已确认':'确认计划';
- $('provenance').textContent=data.provenance?.notice||'';
- $('source-list').querySelectorAll('p').forEach(el=>el.remove());
- (data.sources||[]).forEach(source=>{const p=document.createElement('p'),a=document.createElement('a');a.textContent=source.id;a.target='_blank';a.rel='noopener';if(/^https?:\/\//.test(source.url||''))a.href=source.url;p.append(a,document.createTextNode(' · '+(source.authored_date||'')));$('source-list').append(p);});
  screen.querySelectorAll('[data-add]').forEach(b=>b.hidden=readonly);
- screen.querySelectorAll('[data-confirm-results],[data-export-review],#commit').forEach(b=>b.disabled=readonly);
+ screen.querySelectorAll('[data-confirm-results],#commit').forEach(b=>b.disabled=readonly);
  screen.querySelectorAll('[data-undo-goal]').forEach(b=>b.hidden=readonly||!removedGoal||removedGoal.version!==data.version||removedGoal.key!==b.dataset.undoGoal);
  storageControls();$('version-select').disabled=snapshot;
 }
@@ -1215,15 +1211,6 @@ $('download-data').onclick=()=>download(new Blob([JSON.stringify(data,null,2)+'\
 $('version-select').onchange=async()=>{if(switching)return;switching=true;try{await selectVersion(records.find(r=>r.version===$('version-select').value));}catch(error){message(error.message,true);}finally{$('version-select').value=files.version;switching=false;}};
 screen.querySelectorAll('[data-add]').forEach(b=>b.onclick=()=>{const key=b.dataset.add;change(key,[...(get(data,key)||[]),newItem(key)]);render();screen.querySelector('[data-list="'+key+'"] > :last-child [contenteditable=true]')?.focus();});
 screen.querySelectorAll('[data-goto]').forEach(b=>b.onclick=async()=>{if(b.hasAttribute('data-confirm-results')&&!await confirmStage('results'))return;go(Number(b.dataset.goto));});
-$('go-week').onclick=()=>go(3);
-screen.querySelector('[data-export-review]').onclick=async()=>{
- if(!await confirmStage('review_ready'))return;
- const root=document.documentElement.cloneNode(true);root.setAttribute('data-snapshot','true');
- root.querySelector('#plan-data').textContent=JSON.stringify(data).replace(/</g,'\\u003c');
- root.querySelector('#plan-versions').textContent='[]';
- download(new Blob(['<!doctype html>\n'+root.outerHTML],{type:'text/html'}),data.version+'-会议评审.html');
- message('已保存，并导出会议评审材料');
-};
 $('commit').onclick=async()=>{
  if(!data.plan.goals.some(g=>g.title.trim())||!data.plan.tasks.some(t=>t.title.trim())){message('请先填写版本目标和任务，再确认计划。',true);return;}
  if(confirm('确认当前版本计划？这会保存确认记录；发起 PR 请回到会话提出。')&&await confirmStage('plan'))render();
