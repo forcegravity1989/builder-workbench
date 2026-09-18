@@ -43,7 +43,7 @@ const planVersion = `vE2E-${shortId}`;
 const sessionMarker = `bw-e2e-session:${runId}`;
 const py = process.env.BW_PLANNING_PYTHON || 'python';
 const cases = [
-  { id: 'onboarding-project', title: '从真实桌面接入 GitHub 沙箱项目', path: '接入项目 → 克隆远端仓 → 填写基础信息 → 完成接入 → 项目墙', expect: '项目墙出现本项目名片，横幅含本次接入打开的 MR 编号', status: 'not_run', evidence: [] },
+  { id: 'onboarding-project', title: '从真实桌面接入 GitHub 沙箱项目', path: '接入项目 → 克隆远端仓 → 填写基础信息 → 完成接入 → 项目墙', expect: '项目墙出现本项目名片，横幅含本次接入打开的 MR 编号；远端读单次网络抖动失败时按真人行为点刷新重试', status: 'not_run', evidence: [] },
   { id: 'onboarding-readback', title: '从 GitHub、Git 和项目名片读回接入结果', path: 'gh 读回 Issue/PR/分支内容；git 读回项目工作树', expect: '项目约定 Issue 打开且挂 bw:status:inreview；bw/project PR 打开；远端与本地 project.toml 一致且含本次 run-id', status: 'not_run', evidence: [] },
   { id: 'onboarding-orca', title: 'Orca 登记沙箱仓并保留三条关闭的自动化', path: 'bw-engine 示例独立读回 Orca 的项目与自动化列表', expect: '沙箱项目已登记，三条 Workbench 自动化各存在一条且均为关闭', status: 'not_run', evidence: [] },
   { id: 'onboarding-cleanup', title: '只收掉本次远端对象和项目约定工作树', path: '关闭本次 PR/Issue → 删除远端 bw/project → 移除项目工作树与本地分支', expect: '清理回执全为真；沙箱主仓、其余工作树与三条自动化保留', status: 'not_run', evidence: [] },
@@ -151,7 +151,21 @@ try {
     await page.getByRole('button', { name: '完成接入', exact: true }).click();
     await page.locator('[data-screen="overview"]').waitFor({ timeout: 240000 });
     await expect(page.getByText(projectName, { exact: true }).first()).toBeVisible();
-    await expect(page.locator('.ov-banner')).toContainText(/MR !\d+/, { timeout: 120000 });
+    // 总览的远端读是一次性 gather：单次网络抖动（如 TLS 握手超时）失败后横幅不会自己出现，
+    // 真人的行为是看到顶部读失败横幅后点刷新。用例照这个行为重试，不空等一个不会出现的结果。
+    for (let attempt = 1; ; attempt += 1) {
+      try {
+        await expect(page.locator('.ov-banner')).toContainText(/MR !\d+/, { timeout: 40000 });
+        break;
+      } catch (error) {
+        if (attempt >= 3) throw error;
+        try {
+          await page.getByRole('button', { name: '刷新', exact: true }).click({ timeout: 5000 });
+        } catch {
+          throw error;
+        }
+      }
+    }
     await page.screenshot({ path: path.join(out, 'onboarding-project.png'), fullPage: true });
     item('onboarding-project').evidence.push('onboarding-project.png');
     item('onboarding-project').status = 'passed';
