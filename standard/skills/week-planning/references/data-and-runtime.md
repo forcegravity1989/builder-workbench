@@ -17,7 +17,7 @@
 
 归档只提交版本目录与 `.bw/planning/.gitignore`，排除 `.local` 与离线缓存；模板和工具留在 Skill 安装目录，不随项目归档。BW 通过内置 Skill sidecars 分发模板、空数据、脚本及参考资料；打开项目时创建或更新原定版本计划自动化，不改变已有定时、启用状态及 provider。
 
-Skill 先读取已有版本，执行 start 并在右侧打开返回的完整 URL。服务程序留在 Skill 安装目录，复用现有 Python 标准库脚本；不复制服务源码进项目，不依赖 BW 主程序启动。一个规划工作树共用一个本地服务；.local 保存端口、进程与连接凭据，归档不提交。没有历史才 init 创建 default 空版本，不先阻塞在版号上；确定名称后 set-version，内容保留并重新生成同一个页面的数据部分。模板 CSS 和骨架不会随内容重画。
+Skill 先读取已有版本，执行 start 并在右侧打开返回的完整 URL。在 Orca 托管会话内，经本地 RPC `browser.tabCreate`（url + 当前 worktree + activate）打开，页面归入该工作树会话右侧的浏览器面板，分屏由 Orca 界面自动完成，无需另调布局方法；`placement` 只选浏览器宿主（server/client），`ui.set` 的 rightSidebar 只管文件侧栏，都不用于摆页面位置。无 Orca RPC 的仓外会话把完整 URL 交给使用者或按其宿主方式打开。服务程序留在 Skill 安装目录，复用现有 Python 标准库脚本；不复制服务源码进项目，不依赖 BW 主程序启动。一个规划工作树共用一个本地服务；.local 保存端口、进程与连接凭据，归档不提交。没有历史才 init 创建 default 空版本，不先阻塞在版号上；确定名称后 set-version，内容保留并重新生成同一个页面的数据部分。模板 CSS 和骨架不会随内容重画。
 
 命令均以脚本所在 Skill 目录定位 planning.py，--workspace 必须显式指定任务工作树：
 
