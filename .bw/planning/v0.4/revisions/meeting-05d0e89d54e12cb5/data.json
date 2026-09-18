@@ -1,0 +1,470 @@
+{
+  "schema_version": 2,
+  "template_version": "se-v7-1-pilot-1",
+  "version": "v0.4",
+  "project": "Builders’ Workbench",
+  "header": {
+    "version_pair": "v0.3 → v0.4",
+    "context": "BW · 版本规划"
+  },
+  "provenance": {
+    "kind": "legacy_plan_import",
+    "notice": "旧版只有整体目标叙述和具体工作清单，缺少衡量口径与明确的任务父目标。保留整体目标原文；11 项工作列为任务，不再逐条冒充目标。"
+  },
+  "previous_version": {
+    "version": "v0.3",
+    "kind": "legacy_issue_comment",
+    "url": "https://github.com/forcegravity1989/builder-workbench/issues/174#issuecomment-5673254290",
+    "path": ".bw/planning/sources/issue-174.json",
+    "sha256": "4eb05d6d77d83eaedd051b99aabc4c9509e8906b1cf9ca2a9d1fbf1d11aee97e"
+  },
+  "sources": [
+    {
+      "id": "v03-plan",
+      "kind": "issue_comment",
+      "url": "https://github.com/forcegravity1989/builder-workbench/issues/174#issuecomment-5673254290",
+      "file": ".bw/planning/sources/issue-174.json",
+      "authored_date": "2026-08-31",
+      "verified_at": "2026-09-16T08:48:36Z"
+    },
+    {
+      "id": "v03-progress",
+      "kind": "issue_comment",
+      "url": "https://github.com/forcegravity1989/builder-workbench/issues/174#issuecomment-5673254559",
+      "file": ".bw/planning/sources/issue-174.json",
+      "authored_date": "2026-09-04",
+      "verified_at": "2026-09-16T08:48:36Z"
+    },
+    {
+      "id": "commit-2da1956",
+      "kind": "git_commit",
+      "url": "https://github.com/forcegravity1989/builder-workbench/commit/2da19565a3368bff7b5b34b1113ebcc4694c22db",
+      "file": ".bw/planning/sources/v03-result-commits.json",
+      "sha256": "ef27a41968b7e3f9520b7e04a2c8f9d4693633a6a87c7c448b058cc07632246a",
+      "commit": "2da19565a3368bff7b5b34b1113ebcc4694c22db",
+      "contained_in_commit": "f592fa75a495605a97f5182c10acf28a71d3a9a8"
+    },
+    {
+      "id": "commit-ea05ad0",
+      "kind": "git_commit",
+      "url": "https://github.com/forcegravity1989/builder-workbench/commit/ea05ad0821972ae00c3ce78f14c41dbe9f003997",
+      "file": ".bw/planning/sources/v03-result-commits.json",
+      "sha256": "ef27a41968b7e3f9520b7e04a2c8f9d4693633a6a87c7c448b058cc07632246a",
+      "commit": "ea05ad0821972ae00c3ce78f14c41dbe9f003997",
+      "contained_in_commit": "f592fa75a495605a97f5182c10acf28a71d3a9a8"
+    },
+    {
+      "id": "commit-1365c72",
+      "kind": "git_commit",
+      "url": "https://github.com/forcegravity1989/builder-workbench/commit/1365c7288582288291416495dd705488f4e2a586",
+      "commit": "1365c7288582288291416495dd705488f4e2a586",
+      "verified_at": "2026-09-18"
+    },
+    {
+      "id": "commit-b8111e0",
+      "kind": "git_commit",
+      "url": "https://github.com/forcegravity1989/builder-workbench/commit/b8111e013e138e91d2ee1c7ed4b2865c6e1f77ed",
+      "commit": "b8111e013e138e91d2ee1c7ed4b2865c6e1f77ed",
+      "verified_at": "2026-09-18"
+    }
+  ],
+  "results": {
+    "version_label": "v0.3",
+    "task_summary": "11 项历史工作；含 Bug，任务 Issue 与父目标尚未可靠核实",
+    "goals": [
+      {
+        "id": "G1",
+        "label": "G1",
+        "title": "删掉BW定时器，改用Orca自动化，完成3个自动化任务迁移。",
+        "metric": "默认注入的 Orca 自动化动作数（口径=已注入，默认关闭）",
+        "target": "3",
+        "baseline": "",
+        "reading": "3",
+        "progress": null,
+        "status": {
+          "label": "达成",
+          "tone": "success"
+        },
+        "sources": [
+          "v03-progress",
+          "commit-1365c72"
+        ],
+        "note": "代码证据 1365c72（09-04 迁移）+ 同日 a66b03d/ba8d54a；读数出处 #174 W36 进展评论。"
+      },
+      {
+        "id": "G2",
+        "label": "G2",
+        "title": "用户指南增加全局驾驶地图",
+        "metric": "",
+        "target": "",
+        "baseline": "",
+        "reading": "",
+        "deadline": "",
+        "owner": "",
+        "progress": null,
+        "status": {
+          "label": "已合入代码",
+          "tone": "neutral"
+        },
+        "note": "指南按驾驶地图重写 b8111e0（2026-09-09 合入 master）；晚于 09-04 进展评论，按 v0.3 至 09-14 边界计入本版。",
+        "sources": [
+          "commit-b8111e0"
+        ]
+      }
+    ],
+    "tasks": [
+      {
+        "id": "overview",
+        "number": "",
+        "title": "总览重点改造",
+        "goal": "",
+        "status": {
+          "label": "已合入代码",
+          "tone": "neutral"
+        },
+        "note": "已核对 2026-09-03 提交 2da1956 及其变更文件，且该提交在当前基线中；未据此判定整项目标达成。",
+        "included": true,
+        "sources": [
+          "v03-plan",
+          "v03-progress",
+          "commit-2da1956"
+        ],
+        "kind": "feature",
+        "progress_note": "总览已改为项目健康看板，加入名片、北极星、版本目标和指标趋势；原计划各项体验仍待核对。",
+        "acceptance": "",
+        "deliverables": [
+          {
+            "label": "代码变更 2da1956",
+            "url": "https://github.com/forcegravity1989/builder-workbench/commit/2da19565a3368bff7b5b34b1113ebcc4694c22db"
+          }
+        ]
+      },
+      {
+        "id": "version-model",
+        "number": "",
+        "title": "计划屏统一版本模型与术语",
+        "goal": "",
+        "status": {
+          "label": "已合入代码",
+          "tone": "neutral"
+        },
+        "note": "已核对 2026-09-03 提交 ea05ad0 及其变更文件，且该提交在当前基线中；未取得对应旧平台 MR 验收记录。",
+        "included": true,
+        "sources": [
+          "v03-plan",
+          "v03-progress",
+          "commit-ea05ad0"
+        ],
+        "kind": "feature",
+        "progress_note": "计划屏改为按版本组织，统一里程碑与版本模型；原目标的术语和操作体验仍待核对。",
+        "acceptance": "",
+        "deliverables": [
+          {
+            "label": "代码变更 ea05ad0",
+            "url": "https://github.com/forcegravity1989/builder-workbench/commit/ea05ad0821972ae00c3ce78f14c41dbe9f003997"
+          }
+        ]
+      },
+      {
+        "id": "standards",
+        "number": "",
+        "title": "清理规范注释和无效文件",
+        "goal": "",
+        "status": {
+          "label": "待核对",
+          "tone": "neutral"
+        },
+        "note": "#174 进展记录称将“规范铺底”改名为项目约定，并删除大量 .bw 目录无效存储；未逐项复核。",
+        "included": true,
+        "sources": [
+          "v03-plan",
+          "v03-progress"
+        ],
+        "kind": "unknown",
+        "progress_note": "历史总结记录：规范铺底改名为项目约定，并清理 .bw 中的无效存储；剩余范围未逐项核对。",
+        "acceptance": "",
+        "deliverables": [
+          {
+            "label": "",
+            "url": ""
+          }
+        ]
+      },
+      {
+        "id": "metrics-refresh",
+        "number": "",
+        "title": "简化指标更新 Skill",
+        "goal": "",
+        "status": {
+          "label": "未知",
+          "tone": "neutral"
+        },
+        "note": "原计划要求简化 metrics-refresh；进展记录只概述优化 harness 提示词与运作 Skill，未明确该 Skill 的实际改动。",
+        "included": true,
+        "sources": [
+          "v03-plan",
+          "v03-progress"
+        ],
+        "kind": "unknown",
+        "progress_note": "历史总结提到提示词与运作 Skill 优化，尚不能确认 metrics-refresh 这一项的完成范围。",
+        "acceptance": "",
+        "deliverables": []
+      },
+      {
+        "id": "sdlc",
+        "number": "",
+        "title": "代码仓可采指标与 SDLC 标准",
+        "goal": "",
+        "status": {
+          "label": "待核对",
+          "tone": "neutral"
+        },
+        "note": "#174 进展记录称新增 feature 和 leads 指标属性；未明确代码仓可采指标呈现或各阶段标准、版本节奏是否完成。",
+        "included": true,
+        "sources": [
+          "v03-plan",
+          "v03-progress"
+        ],
+        "kind": "unknown",
+        "progress_note": "历史总结记录新增 feature / leads 指标属性；可采指标呈现、各阶段标准和版本节奏尚未逐项核对。",
+        "acceptance": "",
+        "deliverables": []
+      },
+      {
+        "id": "plan-bugs",
+        "number": "",
+        "title": "修复计划屏 Open 与切工作树问题",
+        "goal": "",
+        "status": {
+          "label": "未知",
+          "tone": "neutral"
+        },
+        "note": "原计划列出该 bug；#174 进展记录没有逐项说明此问题是否已修复。",
+        "included": true,
+        "sources": [
+          "v03-plan",
+          "v03-progress"
+        ],
+        "kind": "bug",
+        "progress_note": "尚未找到 Open 嵌页不跟树、未登记仓切树失败的对应修复和回归记录。",
+        "acceptance": "",
+        "deliverables": []
+      },
+      {
+        "id": "logs",
+        "number": "",
+        "title": "整改日志并支持一键上传",
+        "goal": "",
+        "status": {
+          "label": "待核对",
+          "tone": "neutral"
+        },
+        "note": "#174 进展记录称侧边栏新增问题上报，可携带对照日志上报到 Workbench Issue。",
+        "included": true,
+        "sources": [
+          "v03-plan",
+          "v03-progress"
+        ],
+        "kind": "feature",
+        "progress_note": "历史总结记录已有携带日志的问题上报；一键上传及故障定位的完整范围待核对。",
+        "acceptance": "",
+        "deliverables": []
+      },
+      {
+        "id": "guide",
+        "number": "",
+        "title": "补助手引导",
+        "goal": "",
+        "status": {
+          "label": "未落地",
+          "tone": "warning"
+        },
+        "note": "#174 进展记录“没落地（留待办）”明确列出补助手引导。",
+        "included": true,
+        "sources": [
+          "v03-plan",
+          "v03-progress"
+        ],
+        "kind": "feature",
+        "progress_note": "历史总结明确列为未落地，保留待办。",
+        "acceptance": "",
+        "deliverables": []
+      },
+      {
+        "id": "release",
+        "number": "",
+        "title": "发版 CI 递进、出包、E2E 与通知",
+        "goal": "",
+        "status": {
+          "label": "待核对",
+          "tone": "neutral"
+        },
+        "note": "#174 进展记录称计划屏新增出包按钮，会打包并跑 E2E，用例需要项目适配。",
+        "included": true,
+        "sources": [
+          "v03-plan",
+          "v03-progress"
+        ],
+        "kind": "feature",
+        "progress_note": "历史总结记录新增出包与 E2E 入口；完整 CI 递进和通知链待核对。",
+        "acceptance": "",
+        "deliverables": []
+      },
+      {
+        "id": "system-design",
+        "number": "",
+        "title": "system-design 入仓持续实战",
+        "goal": "",
+        "status": {
+          "label": "未知",
+          "tone": "neutral"
+        },
+        "note": "原计划列出 system-design 入仓持续实战；进展记录只说明总览按该样式重构，未说明入仓与持续实战。",
+        "included": true,
+        "sources": [
+          "v03-plan",
+          "v03-progress"
+        ],
+        "kind": "unknown",
+        "progress_note": "已有总览按 system-design 改造的记录；入仓与持续实战的独立交付尚待核对。",
+        "acceptance": "",
+        "deliverables": []
+      },
+      {
+        "id": "audit",
+        "number": "",
+        "title": "资产盘点收尾",
+        "goal": "",
+        "status": {
+          "label": "未知",
+          "tone": "neutral"
+        },
+        "note": "原计划要求推至闭环；#174 的进展记录没有逐项说明资产盘点收尾结果。",
+        "included": true,
+        "sources": [
+          "v03-plan",
+          "v03-progress"
+        ],
+        "kind": "unknown",
+        "progress_note": "尚未取得资产盘点收尾闭环记录。",
+        "acceptance": "",
+        "deliverables": []
+      }
+    ],
+    "session_label": "未取得",
+    "session_kind": "原始记录",
+    "session_meta": "没有 v0.3 原始会话全文；不以评论摘要编造会话。",
+    "sessions": [],
+    "deliverables": [
+      {
+        "id": "D1",
+        "label": "Orca 自动化截图：定时器下线后默认注入三条运作动作",
+        "goal": "G1",
+        "url": ".bw/planning/v0.3/v03-g1-orca-automations.png"
+      },
+      {
+        "id": "D2",
+        "label": "用户指南截图：全局驾驶地图",
+        "goal": "G2",
+        "url": ".bw/planning/v0.3/v03-g2-guide-map.png"
+      },
+      {
+        "id": "D4",
+        "label": "v0.3 计划 Issue #174:任务与每周进展正本",
+        "goal": "",
+        "url": "https://github.com/forcegravity1989/builder-workbench/issues/174"
+      },
+      {
+        "id": "D3",
+        "label": "v0.3 版本报告",
+        "goal": "",
+        "url": ""
+      }
+    ]
+  },
+  "summary": {
+    "overview": "v0.4 版本目标评审",
+    "risks": "铺开做，实际用户基本没用那么多功能",
+    "progress": "v0.3 按两条目标核对:\n- G1 定时器下线改 Orca 自动化:默认注入 3 条运作动作,读数 3/3,达成。\n- G2 用户指南按全局驾驶地图重写:已合入 master(2026-09-09)。\n缺口:11 项历史工作因 v0.3 Issue 留在 codehub 未同步,不回填编号;本机会话记录缺失;无 tag/Release,版本报告链接待发布后回填。",
+    "badges": [
+      [
+        "待核对",
+        "待讨论"
+      ],
+      [
+        "待核对"
+      ]
+    ]
+  },
+  "review": {
+    "live_notes": "1、目标保持不变。\n2、方案上：复用原来版本计划自动化，不新增BW UI组件，采用skill流程 + html模板方式，构建轻量化资产完成 周一屏 特性开发。",
+    "meeting_url": "",
+    "transcript": {
+      "path": "",
+      "sha256": "",
+      "text": "",
+      "source_url": ""
+    },
+    "minutes": {
+      "state": "missing",
+      "markdown": ""
+    },
+    "decisions": [
+      "目标保持不变：G1 周一屏功能交付（验收项 4/4）、G2 本机项目 v0.4 交付归档（要件 5/5）。",
+      "方案：复用原版本计划自动化，不新增 BW UI 组件；采用 skill 流程 + HTML 模板构建轻量资产完成周一屏特性开发。"
+    ]
+  },
+  "plan": {
+    "task_summary": "会后按已对齐目标拆解任务，关联或创建 Issue",
+    "goals": [
+      {
+        "id": "item-mu6bxby8-vfz2a",
+        "label": "G1",
+        "title": "[周一屏]需求功能交付，支持周一上午builder完成上周信息总结、本周版本规划，下午PL和builder计划对齐握手，输出交付件和周任务（需要整理会议纪要）",
+        "metric": "约定验收项通过数（上午总结、本版规划成稿、下午 PL/builder 握手、纪要+交付件+任务 Issue 归档）",
+        "target": "4/4 通过",
+        "baseline": "0（尚未用产品跑通真实周一会；2026-09-18 本场为模拟首跑，不计入读数）",
+        "reading": "",
+        "deadline": "",
+        "owner": "",
+        "progress": null,
+        "status": {
+          "label": "草案",
+          "tone": "neutral"
+        },
+        "note": "耗时（周一会时长）先记录不判定：本场模拟记 baseline，W39/W40 各记一次，有三次读数再评估立目标。观测窗口=本版内跑通一次真实周一会。",
+        "sources": []
+      },
+      {
+        "id": "g2-monday-archive",
+        "label": "G2",
+        "title": "[周一屏]本机项目完成 v0.4 规划交付归档：计划数据与快照、会议纪要、交付件、任务 Issue 全部落仓可读回",
+        "metric": "归档要件齐套数（计划 JSON+会议版快照、纪要、交付件、任务 Issue、归档 PR 合入）",
+        "target": "5/5 齐套",
+        "baseline": "0（v0.4 首次用新流程归档）",
+        "status": {
+          "label": "草案",
+          "tone": "neutral"
+        },
+        "note": "原拟「被管理项目下周都用起来（各项目下有归档件）」，因新版本下周才发放、本版内无法验收，收窄为本机项目交付归档；外部项目采用留待下版评估。",
+        "deadline": "",
+        "owner": "",
+        "progress": null,
+        "sources": []
+      }
+    ],
+    "tasks": []
+  },
+  "confirmation": {
+    "results": {
+      "at": "2026-09-18T03:05:40Z",
+      "actor": "user"
+    },
+    "review_ready": {
+      "at": "2026-09-18T03:05:40Z",
+      "actor": "user"
+    },
+    "plan": null
+  },
+  "updated_at": "2026-09-18T03:05:40Z"
+}

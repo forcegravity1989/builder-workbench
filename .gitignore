@@ -33,6 +33,8 @@ demo-workspaces/
 
 # Workbench 每活一棵树:新树落 `.bw/worktrees/`,不进仓;旧平级兄弟不搬
 .bw/worktrees/
+# 版本规划本机运行记录(端口/进程/草稿),归档不提交;规划材料本身进仓
+.bw/planning/.local/
 
 # 本地草稿/穿刺工作目录,不进仓
 /.scratch/

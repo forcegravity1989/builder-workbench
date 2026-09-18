@@ -1,0 +1,1260 @@
+<!doctype html>
+<html data-snapshot="true" lang="zh-CN" data-theme="claude"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>版本计划</title><style id="se-source-style">:root {
+  /* ── Apple palette (default) ─────────────────────────────────────────── */
+  --color-bg: #ffffff;
+  --color-surface: #f5f5f7;
+  --color-card: #ffffff;
+  --color-text: #1d1d1f;
+  --color-accent: #0071e3;
+  --color-accent-2: #5856d6;
+
+  /* Tonal ramps — generated in OKLCH on one shared lightness scale, so the
+     same step of any role (in either theme) has the same visual weight. */
+  --color-neutral-100: #f2f3f5;
+  --color-neutral-200: #e6e8ea;
+  --color-neutral-300: #d1d3d5;
+  --color-neutral-400: #b2b4b7;
+  --color-neutral-500: #909295;
+  --color-neutral-600: #6f7274;
+  --color-neutral-700: #535558;
+  --color-neutral-800: #393b3d;
+  --color-neutral-900: #232426;
+
+  --color-accent-100: #edf4fe;
+  --color-accent-200: #dae9fe;
+  --color-accent-300: #b7d5fe;
+  --color-accent-400: #82b7ff;
+  --color-accent-500: #3b91fe;
+  --color-accent-600: #006ddc;
+  --color-accent-700: #0152a8;
+  --color-accent-800: #003877;
+  --color-accent-900: #00224e;
+
+  --color-accent-2-100: #f1f3ff;
+  --color-accent-2-200: #e2e6fe;
+  --color-accent-2-300: #c8cffe;
+  --color-accent-2-400: #a3acff;
+  --color-accent-2-500: #7d83f7;
+  --color-accent-2-600: #5e5eda;
+  --color-accent-2-700: #4544ab;
+  --color-accent-2-800: #2f2d7c;
+  --color-accent-2-900: #1c1c4e;
+
+  /* Semantic status — base fill, soft tint, deep (text on the tint). */
+  --color-success: #34c759; --color-success-soft: #d9f8dc; --color-success-deep: #1d622c;
+  --color-warning: #ff9500; --color-warning-soft: #ffead9; --color-warning-deep: #7c4602;
+  --color-danger: #ff3b30; --color-danger-soft: #fee7e3; --color-danger-deep: #97261e;
+
+  /* The select caret. A data URI can't read a CSS var, so the stroke is
+     spelled out once per palette — it is neutral-600 in both. */
+  --select-caret: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%236f7274' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+
+  /* ── Shared (both themes) ────────────────────────────────────────────── */
+  --color-divider: color-mix(in srgb, var(--color-text) 12%, transparent);
+
+  /* Han is deliberately unnamed: no listed family covers it, so every
+     platform falls to its per-script system default — PingFang SC on
+     macOS/iOS, Microsoft YaHei on Windows, Noto Sans CJK SC on Android and
+     Linux. Naming those system faces would register them as uploadable web
+     fonts; the unnamed fallback renders the same glyphs. */
+  --font-body: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, "Helvetica Neue", Arial, sans-serif;
+  --font-heading: var(--font-body);
+  --font-heading-weight: 600;
+  --font-mono: ui-monospace, "SF Mono", SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-6: 24px;
+  --space-8: 32px;
+
+  --radius-sm: 6px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+
+  /* Elevation — three levels only: hairline border (default), subtle lift
+     (sm), menu (md), floating (lg). Never invent a fourth. */
+  --shadow-sm: 0 1px 2px color-mix(in srgb, var(--color-neutral-900) 4%, transparent), 0 1px 1px color-mix(in srgb, var(--color-neutral-900) 3%, transparent);
+  --shadow-md: 0 8px 24px color-mix(in srgb, var(--color-neutral-900) 8%, transparent), 0 2px 6px color-mix(in srgb, var(--color-neutral-900) 5%, transparent);
+  --shadow-lg: 0 16px 40px color-mix(in srgb, var(--color-neutral-900) 14%, transparent), 0 3px 10px color-mix(in srgb, var(--color-neutral-900) 8%, transparent);
+}
+
+/* ── Claude palette ──────────────────────────────────────────────────────
+   Warm ivory ground, terracotta accent, slate second voice. Apply
+   data-theme="claude" on <html>, <body> or any subtree. */
+[data-theme="claude"] {
+  --color-bg: #faf9f5;
+  --color-surface: #f0eee6;
+  --color-card: #fefdfa;
+  --color-text: #1f1e1d;
+  --color-accent: #d97757;
+  --color-accent-2: #4c73a5;
+
+  --color-neutral-100: #f6f3ef;
+  --color-neutral-200: #ebe7e1;
+  --color-neutral-300: #d7d2ca;
+  --color-neutral-400: #b8b3ac;
+  --color-neutral-500: #96918a;
+  --color-neutral-600: #75716a;
+  --color-neutral-700: #58554f;
+  --color-neutral-800: #3d3a36;
+  --color-neutral-900: #262421;
+
+  --color-accent-100: #fef0eb;
+  --color-accent-200: #ffe0d7;
+  --color-accent-300: #fec3af;
+  --color-accent-400: #f19b80;
+  --color-accent-500: #d47354;
+  --color-accent-600: #af5233;
+  --color-accent-700: #893a1f;
+  --color-accent-800: #602613;
+  --color-accent-900: #3c180c;
+
+  --color-accent-2-100: #edf4fe;
+  --color-accent-2-200: #dbe9fc;
+  --color-accent-2-300: #bdd5f4;
+  --color-accent-2-400: #96b7e1;
+  --color-accent-2-500: #6c95c9;
+  --color-accent-2-600: #4c73a5;
+  --color-accent-2-700: #355781;
+  --color-accent-2-800: #243c59;
+  --color-accent-2-900: #142539;
+
+  --color-success: #579766; --color-success-soft: #dcf7e1; --color-success-deep: #286037;
+  --color-warning: #ce9042; --color-warning-soft: #feecce; --color-warning-deep: #774a03;
+  --color-danger: #c15f4d; --color-danger-soft: #ffe4df; --color-danger-deep: #883324;
+
+  --select-caret: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2375716a' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+}
+
+
+#bw-screen *, #bw-top *, #bw-screen *::before, #bw-top *::before, #bw-screen *::after, #bw-top *::after { box-sizing: border-box; }
+#bw-screen, #bw-top { margin: 0; background: var(--color-bg); color: var(--color-text); font-family: var(--font-body); font-size: 13px; line-height: 1.5; font-weight: 400; letter-spacing: 0.01em; -webkit-font-smoothing: antialiased; }
+#bw-screen h1, #bw-top h1, #bw-screen h2, #bw-top h2, #bw-screen h3, #bw-top h3, #bw-screen h4, #bw-top h4, #bw-screen h5, #bw-top h5, #bw-screen h6, #bw-top h6 { font-family: var(--font-heading); font-weight: var(--font-heading-weight); line-height: 1.25; letter-spacing: -0.014em; margin: 0 0 var(--space-2); }
+#bw-screen h1, #bw-top h1 { font-size: 28px; letter-spacing: -0.022em; }
+#bw-screen h2, #bw-top h2 { font-size: 22px; letter-spacing: -0.018em; }
+#bw-screen h3, #bw-top h3 { font-size: 17px; }
+#bw-screen h4, #bw-top h4 { font-size: 15px; }
+#bw-screen h5, #bw-top h5 { font-size: 13px; }
+#bw-screen h6, #bw-top h6 { font-size: 11px; letter-spacing: 0.06em; text-transform: uppercase; color: color-mix(in srgb, var(--color-text) 55%, transparent); }
+#bw-screen p, #bw-top p { margin: 0 0 var(--space-3); }
+#bw-screen a, #bw-top a { color: var(--color-accent); text-decoration: none; }
+#bw-screen a:hover, #bw-top a:hover { text-decoration: underline; text-underline-offset: 3px; }
+#bw-screen img, #bw-top img { display: block; max-width: 100%; }
+#bw-screen figure, #bw-top figure { margin: 0; }
+#bw-screen figcaption, #bw-top figcaption { font-size: 11px; margin-top: var(--space-1); color: color-mix(in srgb, var(--color-text) 55%, transparent); }
+#bw-screen code, #bw-top code { font-family: var(--font-mono); font-size: 0.92em; }
+#bw-screen .text-muted, #bw-top .text-muted { color: color-mix(in srgb, var(--color-text) 55%, transparent); }
+#bw-screen :focus, #bw-top :focus { outline: none; }
+#bw-screen :focus-visible, #bw-top :focus-visible { outline: 2px solid var(--color-accent); outline-offset: 2px; }
+#bw-screen ::selection, #bw-top ::selection { background: color-mix(in srgb, var(--color-accent) 22%, transparent); }
+/* — rules — */
+/* — buttons — */
+#bw-screen .btn, #bw-top .btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; cursor: pointer; text-decoration: none; font-family: var(--font-body); font-weight: 500; font-size: 13px; line-height: 1; color: var(--color-text); background: transparent; border: 1px solid transparent; height: 28px; padding: 0 var(--space-3); border-radius: var(--radius-sm); }
+#bw-screen .btn svg, #bw-top .btn svg { display: block; }
+#bw-screen .btn:disabled, #bw-top .btn:disabled { opacity: 0.45; cursor: not-allowed; }
+#bw-screen .btn-primary, #bw-top .btn-primary { background: var(--color-accent); border-color: var(--color-accent); color: #fff; }
+#bw-screen .btn-primary:hover, #bw-top .btn-primary:hover { background: var(--color-accent-600); border-color: var(--color-accent-600); }
+#bw-screen .btn-primary:active, #bw-top .btn-primary:active { background: var(--color-accent-700); border-color: var(--color-accent-700); }
+#bw-screen .btn-secondary, #bw-top .btn-secondary { background: var(--color-card); border-color: var(--color-divider); box-shadow: var(--shadow-sm); }
+#bw-screen .btn-secondary:hover, #bw-top .btn-secondary:hover { background: var(--color-neutral-100); }
+#bw-screen .btn-secondary:active, #bw-top .btn-secondary:active { background: var(--color-neutral-200); }
+#bw-screen .btn-ghost, #bw-top .btn-ghost { color: var(--color-accent); }
+#bw-screen .btn-ghost:hover, #bw-top .btn-ghost:hover { background: color-mix(in srgb, var(--color-accent) 9%, transparent); }
+#bw-screen .btn-ghost:active, #bw-top .btn-ghost:active { background: color-mix(in srgb, var(--color-accent) 16%, transparent); }
+#bw-screen .btn-danger, #bw-top .btn-danger { background: var(--color-danger); border-color: var(--color-danger); color: #fff; }
+#bw-screen .btn-danger:hover, #bw-top .btn-danger:hover { background: color-mix(in srgb, var(--color-danger) 84%, var(--color-neutral-900)); }
+#bw-screen .btn-danger:active, #bw-top .btn-danger:active { background: color-mix(in srgb, var(--color-danger) 70%, var(--color-neutral-900)); }
+#bw-screen .btn-icon, #bw-top .btn-icon { width: 28px; padding: 0; }
+#bw-screen .btn-block, #bw-top .btn-block { width: 100%; }
+/* — tags & status pills — */
+#bw-screen .tag, #bw-top .tag { display: inline-flex; align-items: center; gap: 5px; font-size: 11px; font-weight: 500; line-height: 1; letter-spacing: 0.01em; padding: 4px 8px; border-radius: 999px; }
+#bw-screen .tag-accent, #bw-top .tag-accent { background: var(--color-accent-100); color: var(--color-accent-700); }
+#bw-screen .tag-accent-2, #bw-top .tag-accent-2 { background: var(--color-accent-2-100); color: var(--color-accent-2-700); }
+#bw-screen .tag-neutral, #bw-top .tag-neutral { background: var(--color-neutral-100); color: var(--color-neutral-700); }
+#bw-screen .tag-outline, #bw-top .tag-outline { border: 1px solid var(--color-divider); color: color-mix(in srgb, var(--color-text) 70%, transparent); padding: 3px 8px; }
+#bw-screen .tag-success, #bw-top .tag-success { background: var(--color-success-soft); color: var(--color-success-deep); }
+#bw-screen .tag-warning, #bw-top .tag-warning { background: var(--color-warning-soft); color: var(--color-warning-deep); }
+#bw-screen .tag-danger, #bw-top .tag-danger { background: var(--color-danger-soft); color: var(--color-danger-deep); }
+/* — keyboard keys — */
+/* — forms — */
+#bw-screen .field > label, #bw-top .field > label { display: block; font-size: 11px; font-weight: 500; margin-bottom: 5px; color: color-mix(in srgb, var(--color-text) 65%, transparent); }
+#bw-screen .input, #bw-top .input { width: 100%; min-height: 30px; padding: 5px 9px; font: inherit; font-size: 13px; color: var(--color-text); caret-color: var(--color-accent); background: var(--color-card); border: 1px solid var(--color-divider); border-radius: var(--radius-sm); }
+#bw-screen .input::placeholder, #bw-top .input::placeholder { color: color-mix(in srgb, var(--color-text) 35%, transparent); }
+#bw-screen .input:hover, #bw-top .input:hover { border-color: color-mix(in srgb, var(--color-text) 28%, transparent); }
+#bw-screen .input:focus-visible, #bw-top .input:focus-visible { outline: none; border-color: var(--color-accent); box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-accent) 18%, transparent); }
+#bw-screen textarea.input, #bw-top textarea.input { min-height: 72px; resize: vertical; }
+/* Selects drop the platform's own chrome — a macOS stepper or a Windows box
+   sitting next to hairline-bordered fields reads as a leftover, not as a
+   control. What replaces it is the lucide chevron the rest of the UI uses. */
+#bw-screen select.input, #bw-top select.input { appearance: none; -webkit-appearance: none; cursor: pointer; padding-right: 26px; background-image: var(--select-caret); background-repeat: no-repeat; background-position: right 8px center; background-size: 12px 12px; }
+/* appearance:none also drops the platform's greying-out of a disabled
+   control, so the disabled state has to be drawn here. */
+#bw-screen .input:disabled, #bw-top .input:disabled { opacity: 0.5; cursor: not-allowed; }
+#bw-screen select.input:disabled, #bw-top select.input:disabled { background-image: none; }
+#bw-screen .seg, #bw-top .seg { display: inline-flex; gap: 2px; padding: 2px; background: var(--color-neutral-100); border: 1px solid color-mix(in srgb, var(--color-text) 6%, transparent); border-radius: var(--radius-md); }
+#bw-screen .seg-opt, #bw-top .seg-opt { display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; font-size: 12px; font-weight: 500; color: color-mix(in srgb, var(--color-text) 65%, transparent); border-radius: var(--radius-sm); cursor: pointer; }
+#bw-screen .seg-opt:has(input:checked), #bw-top .seg-opt:has(input:checked) { background: var(--color-card); color: var(--color-text); box-shadow: var(--shadow-sm); }
+#bw-screen .seg-opt:not(:has(input:checked)):hover, #bw-top .seg-opt:not(:has(input:checked)):hover { color: var(--color-text); }
+#bw-screen .seg-opt:has(input:focus-visible), #bw-top .seg-opt:has(input:focus-visible) { outline: 2px solid var(--color-accent); outline-offset: -2px; }
+/* — cards — */
+#bw-screen .card, #bw-top .card { display: flex; flex-direction: column; gap: var(--space-2); padding: var(--space-4); border-radius: var(--radius-md); background: var(--color-card); border: 1px solid var(--color-divider); }
+#bw-screen .card-kicker, #bw-top .card-kicker { font-size: 10px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--color-accent); }
+#bw-screen .card-title, #bw-top .card-title { font-family: var(--font-heading); font-weight: var(--font-heading-weight); font-size: 14px; line-height: 1.3; letter-spacing: -0.01em; }
+#bw-screen .card-body, #bw-top .card-body { margin: 0; font-size: 12.5px; color: color-mix(in srgb, var(--color-text) 70%, transparent); flex: 1; }
+#bw-screen .card-meta, #bw-top .card-meta { display: flex; align-items: center; gap: 6px; font-size: 11px; color: color-mix(in srgb, var(--color-text) 50%, transparent); }
+#bw-screen .elev-sm, #bw-top .elev-sm { box-shadow: var(--shadow-sm); }
+#bw-screen .elev-md, #bw-top .elev-md { box-shadow: var(--shadow-md); }
+#bw-screen .elev-lg, #bw-top .elev-lg { box-shadow: var(--shadow-lg); }
+/* — status — */
+/* — avatars — */
+/* — navigation (top bar) — */
+/* — sidebar — */
+/* — tabs — */
+#bw-screen .tabs, #bw-top .tabs { display: flex; gap: var(--space-4); border-bottom: 1px solid var(--color-divider); }
+#bw-screen .tab, #bw-top .tab { appearance: none; background: none; border: 0; font: inherit; font-size: 13px; font-weight: 500; color: color-mix(in srgb, var(--color-text) 55%, transparent); padding: var(--space-2) 2px 9px; margin-bottom: -1px; border-bottom: 2px solid transparent; cursor: pointer; }
+#bw-screen .tab:hover, #bw-top .tab:hover { color: var(--color-text); }
+#bw-screen .tab[aria-selected='true'], #bw-top .tab[aria-selected='true'] { color: var(--color-text); border-bottom-color: var(--color-accent); }/* V7 计划屏（自解释，去旅程教练） */
+#screen-plan { display:flex; flex-direction:column; min-height:0; height:100%; }
+#screen-plan[hidden] { display:none !important; }
+#screen-plan .plan-compat { display:none !important; }
+#screen-plan .plan-v7 { flex:1; min-height:0; display:flex; flex-direction:column; background: var(--color-bg, #faf9f5); position: relative; }
+
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+#screen-plan .plan-head {
+        flex: none;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 10px 14px;
+        border-bottom: 1px solid var(--color-divider);
+      }
+#screen-plan .plan-head h1 {
+        font-size: 15px;
+        margin: 0;
+        font-weight: 600;
+      }
+#screen-plan .plan-tabs {
+  flex: none;
+  margin: 0;
+}
+#screen-plan .plan-head .plan-tabs {
+  margin-left: auto;
+}
+#screen-plan .plan-tabs .seg-opt {
+  border: 0;
+  background: transparent;
+  padding: 6px 12px;
+  font: inherit;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: color-mix(in srgb, var(--color-text) 62%, transparent);
+  cursor: pointer;
+  border-radius: 6px;
+}
+#screen-plan .plan-tabs .seg-opt:hover {
+  color: var(--color-text);
+  background: color-mix(in srgb, var(--color-text) 5%, transparent);
+}
+#screen-plan .plan-tabs .seg-opt.is-on {
+  color: var(--color-text);
+  background: var(--color-card, #fff);
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--color-text) 12%, transparent);
+}
+#screen-plan .plan-tabs .seg-opt.is-locked {
+  opacity: 0.45;
+}
+#screen-plan .plan-body {
+        flex: 1;
+        min-height: 0;
+        display: grid;
+        grid-template-columns: minmax(280px, 0.3fr) 1fr;
+      }
+#screen-plan .right {
+        display: flex;
+        flex-direction: column;
+        min-width: 0;
+        min-height: 0;
+      }
+#screen-plan .right-scroll {
+        flex: 1;
+        overflow: auto;
+        padding: 12px 14px 16px;
+        display: flex;
+        flex-direction: column;
+        gap: 14px;
+      }
+#screen-plan .pane {
+        display: none;
+        flex-direction: column;
+        gap: 14px;
+      }
+      #screen-plan[data-step='1'] .pane-1,
+      #screen-plan[data-step='2'] .pane-2,
+      #screen-plan[data-step='3'] .pane-3 {
+        display: flex;
+      }
+#screen-plan .block-title {
+        display: flex;
+        align-items: baseline;
+        justify-content: space-between;
+        gap: 8px;
+        margin-bottom: 2px;
+      }
+#screen-plan .block-title h2 {
+        font-size: 12.5px;
+        margin: 0;
+        font-weight: 600;
+      }
+#screen-plan .sec {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+      }
+#screen-plan .muted {
+        color: color-mix(in srgb, var(--color-text) 55%, transparent);
+      }
+#screen-plan .mono {
+        font-family: var(--font-mono);
+      }
+#screen-plan .goals {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 10px;
+      }
+#screen-plan .goal {
+        padding: 10px 12px;
+        gap: 6px;
+      }
+#screen-plan .goal.is-noted {
+        border-color: var(--color-accent-300);
+        box-shadow: inset 0 0 0 1px var(--color-accent-200);
+      }
+#screen-plan .goal .bar {
+        height: 4px;
+        border-radius: 2px;
+        background: var(--color-neutral-200);
+        overflow: hidden;
+      }
+#screen-plan .goal .bar > i {
+        display: block;
+        height: 100%;
+        background: var(--color-accent);
+      }
+#screen-plan .goal .bar.warn > i {
+        background: var(--color-warning);
+      }
+#screen-plan .goal-meta {
+        display: flex;
+        gap: 8px;
+        align-items: center;
+        font-size: 11px;
+        font-family: var(--font-mono);
+        color: color-mix(in srgb, var(--color-text) 55%, transparent);
+      }
+#screen-plan .note-chip {
+        display: flex;
+        align-items: flex-start;
+        gap: 6px;
+        margin-top: 4px;
+        padding: 6px 8px;
+        border-radius: var(--radius-sm);
+        background: var(--color-accent-100);
+        border: 1px dashed var(--color-accent-300);
+        font-size: 11.5px;
+        line-height: 1.5;
+        color: var(--color-accent-800);
+      }
+#screen-plan .note-chip .lab {
+        flex: none;
+        font-weight: 600;
+        font-size: 10px;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+        color: var(--color-accent-700);
+      }
+#screen-plan .note-chip[contenteditable='true'] {
+        outline: none;
+        cursor: text;
+        border-style: solid;
+      }
+#screen-plan .task-table {
+        border: 1px solid var(--color-divider);
+        border-radius: var(--radius-md);
+        overflow: hidden;
+        background: var(--color-card);
+      }
+#screen-plan .task-row {
+        display: grid;
+        grid-template-columns: 52px 1fr 110px 72px 72px;
+        gap: 8px;
+        align-items: start;
+        padding: 8px 10px;
+        border-top: 1px solid var(--color-divider);
+        font-size: 12.5px;
+      }
+#screen-plan .task-row.head {
+        border-top: 0;
+        background: var(--color-surface);
+        font-size: 11px;
+        color: color-mix(in srgb, var(--color-text) 55%, transparent);
+        font-family: var(--font-mono);
+        align-items: center;
+      }
+#screen-plan .task-row .id {
+        font-family: var(--font-mono);
+        font-size: 11.5px;
+        color: color-mix(in srgb, var(--color-text) 55%, transparent);
+        padding-top: 2px;
+      }
+#screen-plan .task-row .delta {
+        font-family: var(--font-mono);
+        font-size: 11.5px;
+        padding-top: 2px;
+      }
+#screen-plan .task-main {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+        min-width: 0;
+      }
+#screen-plan .task-row.is-noted {
+        background: color-mix(in srgb, var(--color-accent-100) 55%, transparent);
+      }
+#screen-plan .task-row.done-row {
+        background: color-mix(in srgb, var(--color-success-soft) 40%, transparent);
+      }
+#screen-plan .summary-box {
+        border: 1px solid var(--color-accent-300);
+        background: var(--color-accent-100);
+        border-radius: var(--radius-sm);
+        padding: 8px 9px;
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+        font-size: 12px;
+        line-height: 1.65;
+      }
+#screen-plan .summary-box .k {
+        font-size: 11px;
+        color: var(--color-accent-700);
+        font-weight: 600;
+      }
+#screen-plan .agenda {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+      }
+#screen-plan .agenda-card {
+        padding: 11px 13px;
+        gap: 8px;
+      }
+#screen-plan .agenda-grid {
+        display: grid;
+        grid-template-columns: 1.25fr 1fr;
+        gap: 12px;
+        font-size: 12px;
+        line-height: 1.7;
+      }
+#screen-plan .agenda-grid .side {
+        border-left: 1px solid var(--color-divider);
+        padding-left: 12px;
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+      }
+#screen-plan .editable {
+        border-radius: var(--radius-sm);
+        padding: 4px 6px;
+        margin: -4px -6px;
+        min-height: 1.7em;
+      }
+#screen-plan .editable:hover {
+        background: var(--color-neutral-100);
+      }
+#screen-plan .editable:focus {
+        outline: 2px solid var(--color-accent-300);
+        background: var(--color-card);
+      }
+#screen-plan .minutes {
+        padding: 0;
+        gap: 0;
+        overflow: hidden;
+      }
+#screen-plan .minutes-drop {
+        padding: 18px 16px;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        align-items: flex-start;
+        border: 1px dashed var(--color-divider);
+        border-radius: var(--radius-md);
+        margin: 10px 12px;
+        background: var(--color-surface);
+      }
+#screen-plan .minutes-actions {
+        display: flex;
+        gap: 8px;
+        align-items: center;
+        margin-top: 4px;
+      }
+#screen-plan .minutes-filled {
+        flex-direction: column;
+        gap: 0;
+      }
+#screen-plan .minutes-filled:not([hidden]) {
+        display: flex;
+      }
+#screen-plan .minutes-empty[hidden],
+#screen-plan .minutes-filled[hidden] {
+        display: none !important;
+      }
+#screen-plan .minutes-file-row {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 12px 14px;
+        border-bottom: 1px solid var(--color-divider);
+      }
+#screen-plan .minutes-file-icon {
+        width: 32px;
+        height: 32px;
+        border-radius: 8px;
+        background: var(--color-accent-100);
+        color: var(--color-accent-800);
+        display: grid;
+        place-items: center;
+        font-size: 12px;
+        font-weight: 700;
+        flex: none;
+      }
+#screen-plan .minutes-excerpt {
+        padding: 10px 14px 12px;
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+      }
+#screen-plan .minutes-body {
+        font-size: 12.5px;
+        line-height: 1.7;
+      }
+#screen-plan .minutes.is-ready {
+        border-color: var(--color-success);
+        box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--color-success) 35%, transparent);
+      }
+#screen-plan .preview-list {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+        font-size: 12px;
+      }
+#screen-plan .preview-item {
+        display: flex;
+        gap: 9px;
+        align-items: center;
+      }
+#screen-plan .num {
+        width: 17px;
+        height: 17px;
+        flex: none;
+        border-radius: 4px;
+        background: var(--color-neutral-900);
+        color: #fff;
+        font-size: 10.5px;
+        font-family: var(--font-mono);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+#screen-plan .session-log {
+        padding: 10px 12px;
+        gap: 8px;
+      }
+#screen-plan .session-meta {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        flex-wrap: wrap;
+      }
+#screen-plan .session-lines {
+        display: flex;
+        flex-direction: column;
+        gap: 0;
+        border-top: 1px solid var(--color-divider);
+      }
+#screen-plan .session-line {
+        display: grid;
+        grid-template-columns: 42px 44px 1fr auto;
+        gap: 8px;
+        align-items: start;
+        padding: 7px 0;
+        border-top: 1px solid var(--color-divider);
+        font-size: 12px;
+        line-height: 1.55;
+      }
+#screen-plan .session-line:first-child {
+        border-top: 0;
+      }
+#screen-plan .session-line .t {
+        font-family: var(--font-mono);
+        font-size: 11px;
+        color: color-mix(in srgb, var(--color-text) 45%, transparent);
+        padding-top: 1px;
+      }
+#screen-plan .session-line .who {
+        font-size: 11px;
+        font-weight: 600;
+        color: color-mix(in srgb, var(--color-text) 65%, transparent);
+        padding-top: 1px;
+      }
+#screen-plan .session-line .txt {
+        min-width: 0;
+      }
+#screen-plan .session-line.key {
+        background: color-mix(in srgb, var(--color-accent-100) 55%, transparent);
+        margin: 0 -8px;
+        padding-left: 8px;
+        padding-right: 8px;
+        border-radius: var(--radius-sm);
+      }
+#screen-plan .session-line.muted-line {
+        color: color-mix(in srgb, var(--color-text) 55%, transparent);
+      }
+#screen-plan .foot-bar {
+        flex: none;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 10px;
+        padding: 10px 14px;
+        border-top: 1px solid var(--color-divider);
+        background: var(--color-surface);
+      }
+#screen-plan .foot-bar .left {
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+        font-size: 11.5px;
+      }
+#screen-plan .foot-actions {
+        display: flex;
+        gap: 8px;
+        align-items: center;
+      }
+#screen-plan .icon-note {
+        width: 28px;
+        height: 28px;
+        padding: 0;
+        font-size: 14px;
+        line-height: 1;
+      }
+#screen-plan .toast {
+        position: absolute;
+        right: 24px;
+        bottom: 64px;
+        min-width: 260px;
+        display: none;
+      }
+#screen-plan .toast.show {
+        display: flex;
+        flex-direction: column;
+        gap: 3px;
+      }
+#screen-plan .foot-by-step {
+        display: none;
+        width: 100%;
+        justify-content: space-between;
+        align-items: center;
+        gap: 10px;
+      }
+      #screen-plan[data-step='1'] .foot-s1,
+      #screen-plan[data-step='2'] .foot-s2,
+      #screen-plan[data-step='3'] .foot-s3 {
+        display: flex;
+      }
+    
+
+#screen-plan .plan-head { flex: none; }
+#screen-plan .plan-tabs { flex: none; }
+#screen-plan .plan-body { flex: 1; min-height: 0; }
+#screen-plan .toast { z-index: 20; }
+#bw-screen:has(#screen-plan:not([hidden])) { padding: 0; overflow: hidden; }
+#bw-screen #screen-plan:not([hidden]) { display: flex !important; }
+
+#screen-plan .minutes-filled[hidden],
+#screen-plan .minutes-empty[hidden] { display: none !important; }
+#screen-plan .minutes-filled:not([hidden]) { display: flex; }
+#screen-plan .minutes.is-need {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+  animation: plan-need 0.9s ease 2;
+}
+@keyframes plan-need {
+  0%, 100% { outline-color: var(--color-accent); }
+  50% { outline-color: color-mix(in srgb, var(--color-accent) 35%, transparent); }
+}
+
+
+/* V7：底栏只留动作按钮，不解说下一步 */
+#screen-plan .foot-bar .left { display: none !important; }
+#screen-plan .foot-actions-end {
+  margin-left: auto;
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  width: 100%;
+  justify-content: flex-end;
+}
+#screen-plan .plan-head h1 {
+  font-size: 16px;
+  font-weight: 700;
+}
+
+</style><style id="standalone-style">/* Standalone file layout and editing controls. SE source styles are unchanged. */
+html,body{margin:0;height:100%;background:var(--color-bg);color:var(--color-text);font-family:var(--font-body)}
+body{height:100vh;display:flex;flex-direction:column}
+*{box-sizing:border-box}[hidden]{display:none!important}
+#bw-screen{display:flex;min-width:0;flex:1;min-height:0;flex-direction:column}
+#screen-plan .plan-body{grid-template-columns:minmax(0,1fr)}
+#screen-plan .right-scroll{padding:24px max(24px,calc((100% - 1120px)/2));gap:24px}
+#screen-plan .pane{gap:24px}
+#screen-plan .sec{gap:12px}
+#screen-plan .block-title h2{font-size:14px}
+#screen-plan .goal{padding:16px;gap:10px;min-height:180px}
+#screen-plan .goal-compact{position:relative;min-height:0;gap:12px}
+#screen-plan .goal-compact>strong{font-size:14px;line-height:1.7;font-weight:600;padding-right:28px}
+#screen-plan .goal-reading{display:flex;align-items:baseline;gap:5px;font:13px/1.5 var(--font-mono);color:var(--color-text)}
+#screen-plan .goal-compact>.row-tools{position:absolute;right:8px;top:10px;margin:0}
+#screen-plan .goal-compact>.row-tools button{width:28px;font-size:20px;padding:0}
+#screen-plan .goal-result{margin-left:8px;border:0;cursor:pointer;font-family:var(--font-body)}
+#screen-plan .task-row{grid-template-columns:90px minmax(190px,1.1fr) minmax(210px,1.2fr) 120px;font-size:13px;line-height:1.65;padding:12px}
+#screen-plan .task-row.head{font-family:var(--font-body);font-size:12px}
+#screen-plan .task-main,.session-line,.goal-detail{overflow-wrap:anywhere}
+#screen-plan [contenteditable=true]{white-space:pre-wrap;overflow-wrap:anywhere;min-width:1em;border-radius:4px;cursor:text}
+#screen-plan [contenteditable=true]:hover{background:var(--color-surface)}
+#screen-plan [contenteditable=true]:focus{outline:2px solid var(--color-accent-300);outline-offset:3px;background:var(--color-card)}
+#screen-plan [contenteditable=true]:empty:before{content:attr(data-placeholder);color:var(--color-neutral-500)}
+#screen-plan .editable:empty{min-height:4em}
+#screen-plan .editable{line-height:1.8}
+#screen-plan .muted{color:var(--color-neutral-600)}
+#screen-plan .goal-meta{font-family:var(--font-body);flex-wrap:wrap;line-height:1.7}
+#screen-plan .goal-fields{display:grid;grid-template-columns:1fr 1fr;gap:10px 16px}
+#screen-plan .goal-field{display:flex;flex-direction:column;gap:3px;font-size:12px;line-height:1.6;min-width:0}
+#screen-plan .goal-field>.muted{font-size:11px}
+#screen-plan .task-identity,#screen-plan .task-progress,#screen-plan .deliverables{display:flex;flex-direction:column;align-items:flex-start;gap:8px;min-width:0;overflow-wrap:anywhere}
+#screen-plan .task-identity select{width:78px;border:1px solid var(--color-divider);border-radius:4px;padding:3px;background:var(--color-card);color:inherit;font:11px var(--font-body)}
+#screen-plan .delivery-item{width:100%;font-size:12px}
+#screen-plan .delivery-item a{color:var(--color-accent-600)}
+#screen-plan .delivery-item details{font-size:11px;color:var(--color-neutral-600)}
+#screen-plan .delivery-item input{display:block;width:100%;min-width:0;font:12px/1.6 var(--font-body);padding:5px;margin-top:5px;color:inherit;border:1px solid var(--color-divider);border-radius:4px;background:var(--color-card)}
+#screen-plan .minutes-filled{display:flex}
+#screen-plan .minutes-file-row{flex-wrap:wrap}
+#screen-plan textarea,#screen-plan input[type=url]{width:100%;border:1px solid var(--color-divider);border-radius:var(--radius-sm);background:var(--color-card);color:inherit;font:13px/1.8 var(--font-body);padding:10px 12px}
+#screen-plan textarea{resize:vertical}
+#screen-plan textarea:focus,#screen-plan input:focus{outline:2px solid var(--color-accent-300);outline-offset:2px}
+#screen-plan .session-line{grid-template-columns:70px 70px minmax(0,1fr) 42px}
+#screen-plan .session-line .txt{white-space:pre-wrap}
+#screen-plan .btn-sm{height:28px;padding:0 8px;font-size:12px}
+.version-picker{display:flex;gap:6px;align-items:center;font-size:13px}
+.version-picker select{font:inherit;color:inherit;border:1px solid var(--color-divider);background:var(--color-card);border-radius:6px;padding:5px 8px}
+#screen-plan .plan-head{flex-wrap:wrap;gap:10px}
+.local-toolbar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;min-width:0;font-size:12px}
+#local-tools{display:flex;gap:6px;align-items:center;min-width:0}
+#save-now{flex-shrink:0}
+#save-path{font:11px/1.5 var(--font-mono);color:var(--color-neutral-600);max-width:240px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;user-select:text}
+#save-status:empty{display:none}
+#save-status{color:var(--color-neutral-600)}#save-status.is-error{color:var(--color-danger-deep)}
+.source-details{font-size:12px;line-height:1.8;color:var(--color-neutral-600);border-top:1px solid var(--color-divider);padding-top:16px}
+.source-details summary{cursor:pointer}.source-details a{color:var(--color-accent-600)}
+#screen-plan .empty-list{font-size:13px;line-height:1.8;color:var(--color-neutral-600);margin:0;padding:20px;background:var(--color-card);border:1px dashed var(--color-divider);border-radius:8px;grid-column:1/-1}
+#screen-plan .add-item{align-self:flex-start;color:var(--color-accent-600)}
+#screen-plan .row-tools{display:flex;align-items:center;justify-content:space-between;gap:8px}
+#screen-plan .row-tools input{width:62px;border:1px solid var(--color-divider);border-radius:4px;padding:4px;font:inherit;color:inherit;background:var(--color-card)}
+#screen-plan .row-tools label{font-size:11px}
+#screen-plan .row-tools button{opacity:.55}
+#screen-plan .row-tools button:hover,#screen-plan .row-tools button:focus{opacity:1}
+#screen-plan .goal>.row-tools{margin-top:auto}
+#publication-state{font-size:12px;margin-right:auto}
+@media(max-width:850px){#screen-plan .plan-head{flex-wrap:wrap;gap:12px}#screen-plan .plan-tabs{width:100%;margin-left:0;display:flex}#screen-plan .right-scroll{padding:20px}#screen-plan .goals{grid-template-columns:1fr}#screen-plan .task-table{overflow-x:auto}#screen-plan .task-row{min-width:800px}#screen-plan .foot-actions-end{flex-wrap:wrap}}
+@media print{body{height:auto}.local-toolbar,.foot-bar,.add-item,.row-tools{display:none!important}#bw-screen,#screen-plan,#screen-plan .right-scroll{display:block;height:auto;overflow:visible}#screen-plan .pane{display:flex!important;break-before:page}#screen-plan .pane-1{break-before:auto}#screen-plan .card,#screen-plan .task-row{break-inside:avoid}#screen-plan textarea{border:0}}
+
+
+#screen-plan .pane-3 .task-row{grid-template-columns:90px minmax(220px,1fr) 140px 42px}
+#screen-plan .delivery-row{display:grid;grid-template-columns:minmax(180px,1fr) 120px minmax(220px,1.4fr) 42px;gap:16px;padding:12px;border-bottom:1px solid var(--color-divider);font-size:13px;line-height:1.65;align-items:start}
+#screen-plan .delivery-row.head{font-size:12px;color:var(--color-neutral-600)}
+#screen-plan .delivery-link{min-width:0;overflow-wrap:anywhere}
+#screen-plan .delivery-link input{font-size:12px;padding:4px}
+#screen-plan .session-line{grid-template-columns:1fr}
+#screen-plan .task-identity a,#screen-plan .delivery-link a{color:var(--color-accent-600)}
+</style><meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src data:; connect-src 'self'; base-uri 'none'; form-action 'none'"></head><body><main id="bw-screen"><section id="screen-plan" data-step="1" hidden="">
+          <div class="plan-v7">
+<header class="plan-head">
+          <h1>计划</h1>
+          <label class="version-picker">版本 <select id="version-select" aria-label="选择版本"></select></label><span class="tag tag-outline mono" id="draft-tag" data-bind="header.version_pair"></span>
+          <div class="local-toolbar" hidden><div id="local-tools"><button id="save-now" class="btn btn-secondary btn-sm" type="button" hidden>保存</button><span id="save-path"></span><button id="download-data" class="btn btn-ghost btn-sm" type="button" hidden>下载未保存内容</button></div><span id="save-status" role="status" aria-live="polite"></span><span id="snapshot-note" hidden>会议评审快照 · 只读</span></div>
+          <span class="muted mono" id="head-issue" style="font-size: 11px"></span>
+          <span style="flex: 1"></span>
+          <div class="seg plan-tabs" role="tablist" aria-label="计划页">
+            <button type="button" class="seg-opt is-on" role="tab" data-goto="1" aria-selected="true">上周版本结果</button>
+            <button type="button" class="seg-opt" role="tab" data-goto="2" aria-selected="false">总结与评审</button>
+            <button type="button" class="seg-opt" role="tab" data-goto="3" aria-selected="false" id="tab-week">当前版本计划</button>
+          </div>
+        </header>
+
+        <div class="plan-body">
+          <div class="right">
+            <div class="right-scroll">
+              <div class="pane pane-1">
+                <div class="sec">
+                  <div class="block-title">
+                    <h2>目标 · 完成情况</h2>
+                    <span class="tag tag-outline" data-bind="results.version_label"></span><button id="undo-goal" data-undo-goal="results.goals" class="btn btn-ghost btn-sm" type="button" hidden>撤销删除</button>
+                  </div>
+                  <div class="goals" data-list="results.goals"></div>
+                <button type="button" class="btn btn-ghost btn-sm add-item" data-add="results.goals">＋ 添加目标</button></div>
+
+                <div class="sec">
+                  <div class="block-title"><h2>版本交付件</h2></div>
+                  <div class="task-table"><div class="delivery-row head"><span>交付内容</span><span>所属目标</span><span>链接</span><span></span></div><div data-list="results.deliverables"></div></div>
+                  <button type="button" class="btn btn-ghost btn-sm add-item" data-add="results.deliverables">＋ 添加交付件</button>
+                </div>
+
+                <div class="sec">
+                  <div class="block-title">
+                    <h2>任务点进展与交付</h2>
+                    <span class="muted mono" style="font-size: 11px" data-bind="results.task_summary"></span>
+                  </div>
+                  <div class="task-table">
+                    <div class="task-row head">
+                      <span>Issue / 类型</span><span>任务</span><span>实际进展</span><span>所属目标</span>
+                    </div>
+                    <div data-list="results.tasks"></div></div>
+                </div>
+
+                <div class="sec">
+                  <div class="block-title">
+                    <h2>会话记录</h2>
+                    <span class="muted mono" style="font-size: 11px" data-bind="results.session_label"></span>
+                  </div>
+                  <div class="card session-log">
+                    <div class="session-lines" data-list="results.sessions"></div>
+</div>
+                </div>
+              </div>
+
+              <div class="pane pane-2">
+                <div class="sec">
+                  <div class="block-title">
+                    <h2>总结三段</h2>
+
+                  </div>
+                  <div class="agenda">
+                    <div class="card agenda-card">
+                      <div class="block-title">
+                        <h2 style="font-size: 13px">① 风险上报</h2>
+                        <span style="display: flex; gap: 6px"><span class="tag tag-outline" data-bind="summary.badges.0.0" hidden=""></span><span class="tag tag-outline" data-bind="summary.badges.0.1" hidden=""></span></span>
+                      </div>
+                      <div class="editable" contenteditable="true" spellcheck="false" data-bind="summary.risks" aria-label="summary.risks" data-placeholder="哪些风险需要 Leader 关注？影响什么目标、需要什么决策或支持？"></div>
+                    </div>
+                    <div class="card agenda-card">
+                      <div class="block-title">
+                        <h2 style="font-size: 13px">② 版本进展 · 上周总结</h2>
+                        <span class="tag tag-outline" data-bind="summary.badges.1.0" hidden=""></span>
+                      </div>
+                      <div class="editable" contenteditable="true" spellcheck="false" data-bind="summary.progress" aria-label="summary.progress" data-placeholder="汇总第一屏：目标结果、任务交付、Bug 处理和遗留事项，让评审无需来回切屏。"></div>
+                    </div>
+                    <div class="card agenda-card" style="border-color: var(--color-accent-300)">
+                      <div class="block-title">
+                        <h2 style="font-size: 13px">③ 当前版本目标</h2><button class="btn btn-ghost btn-sm" type="button" data-undo-goal="plan.goals" hidden>撤销删除</button>
+
+                      </div>
+                      <div class="goals" data-list="plan.goals"></div>
+                    <button type="button" class="btn btn-ghost btn-sm add-item" data-add="plan.goals">＋ 添加目标</button></div>
+                  </div>
+                </div>
+
+                <div class="sec">
+                  <div class="block-title">
+                    <h2>会议评审记录</h2>
+                    <span class="tag tag-outline" id="review-status">待填写</span>
+                  </div>
+                  <div id="minutes-card-core" class="card minutes"><div class="minutes-filled"><div class="minutes-file-row"><div class="minutes-file-icon">记</div><div><strong>现场核心记录</strong><div class="muted">记录当场对齐的决定与待办</div></div></div><textarea id="live-notes" rows="6" placeholder="决定了什么、原因是什么、谁来做；还有哪些分歧需要确认？"></textarea></div></div><div id="minutes-card-transcript" class="card minutes"><div class="minutes-filled"><div class="minutes-file-row"><div class="minutes-file-icon">纪</div><div><strong>会后会议纪要</strong><div class="muted">可以直接填写，也可以在会话中请助手整理</div></div></div><label for="meeting-url">会议链接</label><input id="meeting-url" type="url" placeholder="粘贴会议记录链接"><label for="minutes-body">会议纪要</label><textarea id="minutes-body" rows="8" placeholder="填写或粘贴整理后的纪要"></textarea><details><summary>原始转写（完整发言）</summary><textarea id="transcript-body" rows="8" placeholder="粘贴原始转写，保留发言人和完整内容"></textarea></details></div></div></div>
+              </div>
+
+              <div class="pane pane-3">
+                <div class="sec">
+                  <div class="block-title">
+                    <h2>当前版本目标</h2><button class="btn btn-ghost btn-sm" type="button" data-undo-goal="plan.goals" hidden>撤销删除</button>
+
+                  </div>
+                  <div class="goals" data-list="plan.goals"></div>
+                <button type="button" class="btn btn-ghost btn-sm add-item" data-add="plan.goals">＋ 添加目标</button></div>
+
+                <div class="sec">
+                  <div class="block-title">
+                    <h2>目标拆解 · 任务 Issue</h2>
+                    <span class="tag tag-neutral" data-bind="plan.task_summary"></span>
+                  </div>
+                  <div class="task-table">
+                    <div class="task-row head">
+                      <span>Issue / 类型</span><span>任务</span><span>所属目标</span><span></span></div>
+                    <div data-list="plan.tasks"></div></div>
+                <button type="button" class="btn btn-ghost btn-sm add-item" data-add="plan.tasks">＋ 添加任务</button></div>
+              </div>
+            <details class="source-details"><summary>来源与填写说明</summary><div id="provenance"></div><details id="source-list"><summary>原始资料</summary></details><p>文字直接填写；目标、任务和记录可以增删。编辑通过本地服务保存到项目的版本文件。</p></details></div>
+
+            <div class="foot-bar">
+              <div class="foot-by-step foot-s1">
+                <div class="foot-actions foot-actions-end">
+                  <button class="btn btn-primary" type="button" data-goto="2" data-confirm-results="">确认结果，进入总结与评审</button>
+                </div>
+              </div>
+              <div class="foot-by-step foot-s2">
+                <div class="foot-actions foot-actions-end">
+                  <button class="btn btn-ghost" type="button" data-goto="1">上周版本结果</button>
+                  <button type="button" class="btn btn-secondary" data-export-review="">保存并导出会议评审版</button><button class="btn btn-primary" type="button" id="go-week" title="可查看草案；录入文件不代表已经形成最终计划">当前版本计划</button>
+                </div>
+              </div>
+              <div class="foot-by-step foot-s3">
+                <div class="foot-actions foot-actions-end">
+                  <span class="muted" id="publication-state"></span><button class="btn btn-ghost" type="button" data-goto="2">总结与评审</button>
+                  <button class="btn btn-primary" type="button" id="commit">确认计划</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        </div>
+        </section>
+
+        </main><template id="item-results-goals"><div class="card goal goal-compact"><strong data-bind="title" contenteditable="true" data-placeholder="一句目标"></strong><span class="bar" data-progress="progress" data-show-unknown="" role="progressbar" aria-label="目标进度"><i style="width:0%"></i></span><div class="goal-reading"><span data-bind="reading" contenteditable="true" data-placeholder="—"></span><span aria-hidden="true">/</span><span data-bind="target" contenteditable="true" data-placeholder="—"></span><select data-goal-status="" class="tag tag-neutral goal-result" aria-label="目标结果"><option>达成</option><option>未达</option><option>遗留</option><option selected>无值</option></select></div></div></template>
+<template id="item-plan-goals"><div class="goal goal-compact"><strong data-bind="title" contenteditable="true" data-placeholder="一句话写清目标、衡量指标和目标值"></strong><div class="goal-reading"><span data-bind="target" contenteditable="true" data-placeholder="目标值"></span></div></div></template>
+<template id="item-results-tasks"><div class="task-row">
+ <div class="task-identity"><a class="id" data-issue-link></a><span data-task-kind></span></div>
+ <div class="task-main"><span data-bind="title"></span></div>
+ <div class="task-progress"><span data-bind="progress_note" contenteditable="true" data-placeholder="实际完成了什么、还有什么阻碍？"></span></div>
+ <span data-bind="goal"></span>
+ </div></template>
+<template id="item-plan-tasks"><div class="task-row">
+ <div class="task-identity"><a class="id" data-issue-link></a><span data-task-kind></span></div>
+ <div class="task-main"><span data-bind="title" contenteditable="true" data-placeholder="Issue 标题"></span></div>
+ <span data-bind="goal"></span>
+ </div></template>
+<template id="item-results-deliverables"><div class="delivery-row">
+ <span data-bind="label" contenteditable="true" data-placeholder="交付内容"></span>
+ <span data-bind="goal" contenteditable="true" data-placeholder="所属目标"></span>
+ <div class="delivery-link"><a data-delivery-link target="_blank" rel="noopener noreferrer"></a><input data-delivery-url type="url" placeholder="链接或仓库内路径" aria-label="交付件链接"></div>
+ </div></template>
+<template id="item-results-sessions"><div class="session-line"><span class="txt" data-bind="title"></span></div></template>
+<script id="plan-data" type="application/json">{"schema_version": 2, "template_version": "se-v7-1-pilot-1", "version": "v0.4", "project": "Builders’ Workbench", "header": {"version_pair": "v0.3 → v0.4", "context": "BW · 版本规划"}, "provenance": {"kind": "legacy_plan_import", "notice": "旧版只有整体目标叙述和具体工作清单，缺少衡量口径与明确的任务父目标。保留整体目标原文；11 项工作列为任务，不再逐条冒充目标。"}, "previous_version": {"version": "v0.3", "kind": "legacy_issue_comment", "url": "https://github.com/forcegravity1989/builder-workbench/issues/174#issuecomment-5673254290", "path": ".bw/planning/sources/issue-174.json", "sha256": "4eb05d6d77d83eaedd051b99aabc4c9509e8906b1cf9ca2a9d1fbf1d11aee97e"}, "sources": [{"id": "v03-plan", "kind": "issue_comment", "url": "https://github.com/forcegravity1989/builder-workbench/issues/174#issuecomment-5673254290", "file": ".bw/planning/sources/issue-174.json", "authored_date": "2026-08-31", "verified_at": "2026-09-16T08:48:36Z"}, {"id": "v03-progress", "kind": "issue_comment", "url": "https://github.com/forcegravity1989/builder-workbench/issues/174#issuecomment-5673254559", "file": ".bw/planning/sources/issue-174.json", "authored_date": "2026-09-04", "verified_at": "2026-09-16T08:48:36Z"}, {"id": "commit-2da1956", "kind": "git_commit", "url": "https://github.com/forcegravity1989/builder-workbench/commit/2da19565a3368bff7b5b34b1113ebcc4694c22db", "file": ".bw/planning/sources/v03-result-commits.json", "sha256": "ef27a41968b7e3f9520b7e04a2c8f9d4693633a6a87c7c448b058cc07632246a", "commit": "2da19565a3368bff7b5b34b1113ebcc4694c22db", "contained_in_commit": "f592fa75a495605a97f5182c10acf28a71d3a9a8"}, {"id": "commit-ea05ad0", "kind": "git_commit", "url": "https://github.com/forcegravity1989/builder-workbench/commit/ea05ad0821972ae00c3ce78f14c41dbe9f003997", "file": ".bw/planning/sources/v03-result-commits.json", "sha256": "ef27a41968b7e3f9520b7e04a2c8f9d4693633a6a87c7c448b058cc07632246a", "commit": "ea05ad0821972ae00c3ce78f14c41dbe9f003997", "contained_in_commit": "f592fa75a495605a97f5182c10acf28a71d3a9a8"}, {"id": "commit-1365c72", "kind": "git_commit", "url": "https://github.com/forcegravity1989/builder-workbench/commit/1365c7288582288291416495dd705488f4e2a586", "commit": "1365c7288582288291416495dd705488f4e2a586", "verified_at": "2026-09-18"}, {"id": "commit-b8111e0", "kind": "git_commit", "url": "https://github.com/forcegravity1989/builder-workbench/commit/b8111e013e138e91d2ee1c7ed4b2865c6e1f77ed", "commit": "b8111e013e138e91d2ee1c7ed4b2865c6e1f77ed", "verified_at": "2026-09-18"}], "results": {"version_label": "v0.3", "task_summary": "11 项历史工作；含 Bug，任务 Issue 与父目标尚未可靠核实", "goals": [{"id": "G1", "label": "G1", "title": "删掉BW定时器，改用Orca自动化，完成3个自动化任务迁移。", "metric": "默认注入的 Orca 自动化动作数（口径=已注入，默认关闭）", "target": "3", "baseline": "", "reading": "3", "progress": null, "status": {"label": "达成", "tone": "success"}, "sources": ["v03-progress", "commit-1365c72"], "note": "代码证据 1365c72（09-04 迁移）+ 同日 a66b03d/ba8d54a；读数出处 #174 W36 进展评论。"}, {"id": "G2", "label": "G2", "title": "用户指南增加全局驾驶地图", "metric": "", "target": "", "baseline": "", "reading": "", "deadline": "", "owner": "", "progress": null, "status": {"label": "已合入代码", "tone": "neutral"}, "note": "指南按驾驶地图重写 b8111e0（2026-09-09 合入 master）；晚于 09-04 进展评论，按 v0.3 至 09-14 边界计入本版。", "sources": ["commit-b8111e0"]}], "tasks": [{"id": "overview", "number": "", "title": "总览重点改造", "goal": "", "status": {"label": "已合入代码", "tone": "neutral"}, "note": "已核对 2026-09-03 提交 2da1956 及其变更文件，且该提交在当前基线中；未据此判定整项目标达成。", "included": true, "sources": ["v03-plan", "v03-progress", "commit-2da1956"], "kind": "feature", "progress_note": "总览已改为项目健康看板，加入名片、北极星、版本目标和指标趋势；原计划各项体验仍待核对。", "acceptance": "", "deliverables": [{"label": "代码变更 2da1956", "url": "https://github.com/forcegravity1989/builder-workbench/commit/2da19565a3368bff7b5b34b1113ebcc4694c22db"}]}, {"id": "version-model", "number": "", "title": "计划屏统一版本模型与术语", "goal": "", "status": {"label": "已合入代码", "tone": "neutral"}, "note": "已核对 2026-09-03 提交 ea05ad0 及其变更文件，且该提交在当前基线中；未取得对应旧平台 MR 验收记录。", "included": true, "sources": ["v03-plan", "v03-progress", "commit-ea05ad0"], "kind": "feature", "progress_note": "计划屏改为按版本组织，统一里程碑与版本模型；原目标的术语和操作体验仍待核对。", "acceptance": "", "deliverables": [{"label": "代码变更 ea05ad0", "url": "https://github.com/forcegravity1989/builder-workbench/commit/ea05ad0821972ae00c3ce78f14c41dbe9f003997"}]}, {"id": "standards", "number": "", "title": "清理规范注释和无效文件", "goal": "", "status": {"label": "待核对", "tone": "neutral"}, "note": "#174 进展记录称将“规范铺底”改名为项目约定，并删除大量 .bw 目录无效存储；未逐项复核。", "included": true, "sources": ["v03-plan", "v03-progress"], "kind": "unknown", "progress_note": "历史总结记录：规范铺底改名为项目约定，并清理 .bw 中的无效存储；剩余范围未逐项核对。", "acceptance": "", "deliverables": [{"label": "", "url": ""}]}, {"id": "metrics-refresh", "number": "", "title": "简化指标更新 Skill", "goal": "", "status": {"label": "未知", "tone": "neutral"}, "note": "原计划要求简化 metrics-refresh；进展记录只概述优化 harness 提示词与运作 Skill，未明确该 Skill 的实际改动。", "included": true, "sources": ["v03-plan", "v03-progress"], "kind": "unknown", "progress_note": "历史总结提到提示词与运作 Skill 优化，尚不能确认 metrics-refresh 这一项的完成范围。", "acceptance": "", "deliverables": []}, {"id": "sdlc", "number": "", "title": "代码仓可采指标与 SDLC 标准", "goal": "", "status": {"label": "待核对", "tone": "neutral"}, "note": "#174 进展记录称新增 feature 和 leads 指标属性；未明确代码仓可采指标呈现或各阶段标准、版本节奏是否完成。", "included": true, "sources": ["v03-plan", "v03-progress"], "kind": "unknown", "progress_note": "历史总结记录新增 feature / leads 指标属性；可采指标呈现、各阶段标准和版本节奏尚未逐项核对。", "acceptance": "", "deliverables": []}, {"id": "plan-bugs", "number": "", "title": "修复计划屏 Open 与切工作树问题", "goal": "", "status": {"label": "未知", "tone": "neutral"}, "note": "原计划列出该 bug；#174 进展记录没有逐项说明此问题是否已修复。", "included": true, "sources": ["v03-plan", "v03-progress"], "kind": "bug", "progress_note": "尚未找到 Open 嵌页不跟树、未登记仓切树失败的对应修复和回归记录。", "acceptance": "", "deliverables": []}, {"id": "logs", "number": "", "title": "整改日志并支持一键上传", "goal": "", "status": {"label": "待核对", "tone": "neutral"}, "note": "#174 进展记录称侧边栏新增问题上报，可携带对照日志上报到 Workbench Issue。", "included": true, "sources": ["v03-plan", "v03-progress"], "kind": "feature", "progress_note": "历史总结记录已有携带日志的问题上报；一键上传及故障定位的完整范围待核对。", "acceptance": "", "deliverables": []}, {"id": "guide", "number": "", "title": "补助手引导", "goal": "", "status": {"label": "未落地", "tone": "warning"}, "note": "#174 进展记录“没落地（留待办）”明确列出补助手引导。", "included": true, "sources": ["v03-plan", "v03-progress"], "kind": "feature", "progress_note": "历史总结明确列为未落地，保留待办。", "acceptance": "", "deliverables": []}, {"id": "release", "number": "", "title": "发版 CI 递进、出包、E2E 与通知", "goal": "", "status": {"label": "待核对", "tone": "neutral"}, "note": "#174 进展记录称计划屏新增出包按钮，会打包并跑 E2E，用例需要项目适配。", "included": true, "sources": ["v03-plan", "v03-progress"], "kind": "feature", "progress_note": "历史总结记录新增出包与 E2E 入口；完整 CI 递进和通知链待核对。", "acceptance": "", "deliverables": []}, {"id": "system-design", "number": "", "title": "system-design 入仓持续实战", "goal": "", "status": {"label": "未知", "tone": "neutral"}, "note": "原计划列出 system-design 入仓持续实战；进展记录只说明总览按该样式重构，未说明入仓与持续实战。", "included": true, "sources": ["v03-plan", "v03-progress"], "kind": "unknown", "progress_note": "已有总览按 system-design 改造的记录；入仓与持续实战的独立交付尚待核对。", "acceptance": "", "deliverables": []}, {"id": "audit", "number": "", "title": "资产盘点收尾", "goal": "", "status": {"label": "未知", "tone": "neutral"}, "note": "原计划要求推至闭环；#174 的进展记录没有逐项说明资产盘点收尾结果。", "included": true, "sources": ["v03-plan", "v03-progress"], "kind": "unknown", "progress_note": "尚未取得资产盘点收尾闭环记录。", "acceptance": "", "deliverables": []}], "session_label": "未取得", "session_kind": "原始记录", "session_meta": "没有 v0.3 原始会话全文；不以评论摘要编造会话。", "sessions": [], "deliverables": [{"id": "D1", "label": "Orca 自动化截图：定时器下线后默认注入三条运作动作", "goal": "G1", "url": ".bw/planning/v0.3/v03-g1-orca-automations.png"}, {"id": "D2", "label": "用户指南截图：全局驾驶地图", "goal": "G2", "url": ".bw/planning/v0.3/v03-g2-guide-map.png"}, {"id": "D4", "label": "v0.3 计划 Issue #174:任务与每周进展正本", "goal": "", "url": "https://github.com/forcegravity1989/builder-workbench/issues/174"}, {"id": "D3", "label": "v0.3 版本报告", "goal": "", "url": ""}]}, "summary": {"overview": "v0.4 版本目标评审", "risks": "铺开做，实际用户基本没用那么多功能", "progress": "v0.3 按两条目标核对:\n- G1 定时器下线改 Orca 自动化:默认注入 3 条运作动作,读数 3/3,达成。\n- G2 用户指南按全局驾驶地图重写:已合入 master(2026-09-09)。\n缺口:11 项历史工作因 v0.3 Issue 留在 codehub 未同步,不回填编号;本机会话记录缺失;无 tag/Release,版本报告链接待发布后回填。", "badges": [["待核对", "待讨论"], ["待核对"]]}, "review": {"live_notes": "1、目标保持不变。\n2、方案上：复用原来版本计划自动化，不新增BW UI组件，采用skill流程 + html模板方式，构建轻量化资产完成 周一屏 特性开发。", "meeting_url": "", "transcript": {"path": "", "sha256": "", "text": "", "source_url": ""}, "minutes": {"state": "missing", "markdown": ""}, "decisions": ["目标保持不变：G1 周一屏功能交付（验收项 4/4）、G2 本机项目 v0.4 交付归档（要件 5/5）。", "方案：复用原版本计划自动化，不新增 BW UI 组件；采用 skill 流程 + HTML 模板构建轻量资产完成周一屏特性开发。"]}, "plan": {"task_summary": "会后按已对齐目标拆解任务，关联或创建 Issue", "goals": [{"id": "item-mu6bxby8-vfz2a", "label": "G1", "title": "[周一屏]需求功能交付，支持周一上午builder完成上周信息总结、本周版本规划，下午PL和builder计划对齐握手，输出交付件和周任务（需要整理会议纪要）", "metric": "约定验收项通过数（上午总结、本版规划成稿、下午 PL/builder 握手、纪要+交付件+任务 Issue 归档）", "target": "4/4 通过", "baseline": "0（尚未用产品跑通真实周一会；2026-09-18 本场为模拟首跑，不计入读数）", "reading": "", "deadline": "", "owner": "", "progress": null, "status": {"label": "草案", "tone": "neutral"}, "note": "耗时（周一会时长）先记录不判定：本场模拟记 baseline，W39/W40 各记一次，有三次读数再评估立目标。观测窗口=本版内跑通一次真实周一会。", "sources": []}, {"id": "g2-monday-archive", "label": "G2", "title": "[周一屏]本机项目完成 v0.4 规划交付归档：计划数据与快照、会议纪要、交付件、任务 Issue 全部落仓可读回", "metric": "归档要件齐套数（计划 JSON+会议版快照、纪要、交付件、任务 Issue、归档 PR 合入）", "target": "5/5 齐套", "baseline": "0（v0.4 首次用新流程归档）", "status": {"label": "草案", "tone": "neutral"}, "note": "原拟「被管理项目下周都用起来（各项目下有归档件）」，因新版本下周才发放、本版内无法验收，收窄为本机项目交付归档；外部项目采用留待下版评估。", "deadline": "", "owner": "", "progress": null, "sources": []}], "tasks": []}, "confirmation": {"results": {"at": "2026-09-18T03:05:40Z", "actor": "user"}, "review_ready": {"at": "2026-09-18T03:05:40Z", "actor": "user"}, "plan": null}, "updated_at": "2026-09-18T03:05:40Z"}</script><script id="plan-versions" type="application/json">[]</script><script id="plan-app">/* The local service owns file access; offline pages are read-only. */
+class PlanningFiles {
+  constructor(service=false) {
+    this.service=service;this.version='';this.etag='';this.planningDir='';
+    this.token=service?new URLSearchParams(location.hash.slice(1)).get('token')||'':'';
+  }
+  static parse(raw, version) {
+    const data = JSON.parse(raw.replace(/^\uFEFF/, ''));
+    if (data.schema_version !== 2 || data.template_version !== 'se-v7-1-pilot-1') throw new Error('数据文件与模板不匹配');
+    if (version && data.version !== version) throw new Error('版本目录与文件内容不一致');
+    for (const [section, keys] of Object.entries({results:['goals','tasks','sessions'],plan:['goals','tasks']})) {
+      for (const key of keys) if (!Array.isArray(data[section]?.[key])) throw new Error('数据缺少 '+section+'.'+key);
+    }
+    const versionDeliveries=data.results.deliverables||[];
+    if(!Array.isArray(versionDeliveries)||versionDeliveries.length>50||versionDeliveries.some(item=>!item||typeof item!=='object'||!['label','goal','url'].every(field=>typeof(item[field]??'')==='string')))throw new Error('版本交付件需要交付内容、所属目标和链接');
+    if (!data.review || !data.confirmation) throw new Error('数据缺少评审或确认记录');
+    for(const section of ['results','plan']){
+      for(const goal of data[section].goals)for(const field of ['metric','target','baseline','reading','deadline','owner'])if(field in goal&&typeof goal[field]!=='string')throw new Error('目标字段必须是文字：'+field);
+      for(const task of data[section].tasks){
+        if(!['unknown','feature','bug','ops'].includes(task.kind||'unknown'))throw new Error('无效任务类型');
+        const deliveries=task.deliverables||[];
+        if(!Array.isArray(deliveries)||deliveries.length>50||deliveries.some(item=>!item||typeof item!=='object'||!['label','url'].every(field=>typeof(item[field]??'')==='string')))throw new Error('交付件需要名称和链接文字');
+      }
+    }
+    return data;
+  }
+
+  async request(path,method='GET',body=null) {
+    const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),8000);
+    try {
+      const response=await fetch(path,{method,signal:controller.signal,cache:'no-store',headers:{
+        Authorization:'Bearer '+this.token,...(body?{'Content-Type':'application/json'}:{})
+      },...(body?{body:JSON.stringify(body)}:{})});
+      const result=await response.json();
+      if(!response.ok)throw new Error(result.error||'保存服务返回错误');
+      return result;
+    } catch(error) {
+      if(error.name==='AbortError'||error instanceof TypeError)throw new Error('本地服务未连接，修改尚未保存；请让会话启动服务后重试。');
+      throw error;
+    } finally {clearTimeout(timer);}
+  }
+  async list() {
+    const result=await this.request('/api/versions');this.planningDir=result.planning_dir;this.defaultVersion=result.default_version;
+    return result.versions;
+  }
+  adopt(result) {
+    const data=PlanningFiles.parse(JSON.stringify(result.data),this.version);
+    this.etag=result.etag;this.warning=result.warning||'';return data;
+  }
+  async open(record) {
+    if(!this.service){this.version=record.version;return structuredClone(record.data);}
+    if(record.unavailable)throw new Error(record.error);
+    const result=await this.request('/api/data?version='+encodeURIComponent(record.version));
+    PlanningFiles.parse(JSON.stringify(result.data),record.version);
+    this.version=record.version;return this.adopt(result);
+  }
+  async save(data) {
+    const result=await this.request('/api/data?version='+encodeURIComponent(this.version),'PUT',{data,etag:this.etag});
+    return this.adopt(result);
+  }
+  async confirm(stage) {
+    return this.adopt(await this.request('/api/confirm?version='+encodeURIComponent(this.version),'POST',{stage,etag:this.etag}));
+  }
+  async changed() {
+    const result=await this.request('/api/data?version='+encodeURIComponent(this.version));
+    return result.etag===this.etag?null:result;
+  }
+}
+if (typeof module !== 'undefined') module.exports = PlanningFiles;
+
+(() => {
+'use strict';
+const $=id=>document.getElementById(id),screen=$('screen-plan');
+const serviceMode=document.documentElement.hasAttribute('data-planning-service')&&/^https?:$/.test(location.protocol);
+const files=new PlanningFiles(serviceMode);
+const snapshot=document.documentElement.hasAttribute('data-snapshot');
+let readonly=snapshot||!serviceMode;
+let data=JSON.parse($('plan-data').textContent);
+let records=JSON.parse($('plan-versions').textContent);
+if(!records.length)records=[{version:data.version,data:structuredClone(data)}];
+const requested=new URLSearchParams(location.search).get('version');
+if(requested&&records.some(record=>record.version===requested))data=structuredClone(records.find(record=>record.version===requested).data);
+files.version=data.version;
+let dirty=false,saving=null,revision=0,timer,switching=false,removedGoal=null;
+const get=(o,p)=>p.split('.').reduce((v,k)=>v?.[k],o);
+const set=(o,p,v)=>{const k=p.split('.'),last=k.pop();k.reduce((v,k)=>v[k],o)[last]=v;};
+const clone=v=>JSON.parse(JSON.stringify(v));
+const labels={label:'目标编号',title:'内容',metric:'衡量指标',target:'目标值',baseline:'基线',reading:'实际读数',deadline:'截止时间',owner:'负责人',detail:'说明',note:'批注',number:'Issue 编号',progress_note:'实际进展',acceptance:'交付与验收要求',goal:'所属目标',at:'时间',speaker:'发言人',text:'记录内容','status.label':'状态','summary.overview':'评审主题','summary.risks':'需要上报的风险','summary.progress':'上周版本进展摘要'};
+const names={'results.goals':'上周目标','results.tasks':'上周任务','results.sessions':'会话记录','results.deliverables':'版本交付件','plan.goals':'当前版本目标','plan.tasks':'版本任务'};
+function storageControls(){
+ const retry=$('save-status').classList.contains('is-error');
+ $('save-now').hidden=readonly||!retry||!dirty;$('save-now').disabled=!!saving;
+ $('save-now').textContent='重试保存';
+ $('local-tools').hidden=readonly;
+ $('save-path').textContent='.bw/planning/'+data.version+'/data.json';
+ $('save-path').title=files.planningDir?files.planningDir+'/'+data.version+'/data.json':$('save-path').textContent;
+ $('snapshot-note').hidden=!readonly;
+ $('snapshot-note').textContent=snapshot?'会议评审快照 · 只读':'离线只读 · 编辑请由会话启动规划服务';
+ document.querySelector('.local-toolbar').hidden=false;
+}
+const message=(text,error=false)=>{$('save-status').textContent=text;$('save-status').classList.toggle('is-error',error);storageControls();};
+const editing=()=>document.activeElement?.matches('[contenteditable=true],input,textarea,select');
+function change(path,value){
+ set(data,path,value);dirty=true;revision++;data.updated_at=new Date().toISOString();
+ if(/^(results|plan)\.goals\.\d+\.(metric|target|baseline|reading)$/.test(path))get(data,path.split('.').slice(0,3).join('.')).progress=null;
+ if(path.startsWith('results.')){data.confirmation.results=null;data.confirmation.review_ready=null;}
+ if(path.startsWith('summary.'))data.confirmation.review_ready=null;
+ if(path.startsWith('review.')&&!path.startsWith('review.minutes.'))data.review.minutes.state=data.review.minutes.markdown?'stale':'missing';
+ if(path==='review.minutes.markdown')data.review.minutes.state=value?'manual':'missing';
+ if(!path.startsWith('confirmation.'))data.confirmation.plan=null;
+ if($('save-status').classList.contains('is-error'))storageControls();else message('');
+ clearTimeout(timer);timer=setTimeout(()=>flush(),800);
+}
+async function flush(){
+ if(readonly||!data||!dirty)return true;
+ if(saving){const ok=await saving;return ok&&dirty?flush():ok;}
+ const savedRevision=revision,value=clone(data);
+ saving=(async()=>{try{
+   const persisted=await files.save(value);records.find(record=>record.version===value.version).data=clone(persisted);if(revision===savedRevision){data=persisted;dirty=false;}
+   $('download-data').hidden=true;message(files.warning||'');return true;
+ }catch(error){$('download-data').hidden=false;message('未保存：'+error.message,true);return false;}})();
+ const ok=await saving;saving=null;storageControls();return ok&&dirty?flush():ok;
+}
+function editable(el,path){
+ el.dataset.path=path;
+ el.setAttribute('aria-label',labels[path]||labels[path.split('.').slice(-2).join('.')]||labels[path.split('.').pop()]||'说明');
+ if(readonly){el.removeAttribute('contenteditable');if('readOnly'in el)el.readOnly=true;return;}
+ if(!el.matches('input,textarea,select')){el.contentEditable='true';el.spellcheck=false;el.dataset.placeholder=el.dataset.placeholder||el.getAttribute('aria-label')+'…';}
+ el.oninput=()=>{
+   change(path,el.matches('input,textarea,select')?el.value:el.innerText);
+   if(/^(results|plan)\.goals\.\d+\.(metric|target|baseline|reading)$/.test(path)){
+     const goal=get(data,path.split('.').slice(0,3).join('.'));
+     el.closest('.goal')?.querySelectorAll('[data-progress]').forEach(bar=>fillProgress(bar,goal));
+   }
+ };
+ if(el.hasAttribute('contenteditable'))el.onpaste=e=>{e.preventDefault();document.execCommand('insertText',false,e.clipboardData.getData('text/plain'));};
+}
+function fillProgress(bar,object){
+ const n=get(object,bar.dataset.progress),known=typeof n==='number'&&n>=0&&n<=100&&object.metric?.trim()&&object.target?.trim()&&object.reading?.trim();
+ bar.hidden=!known&&!bar.hasAttribute('data-show-unknown');bar.querySelector('i').style.width=(known?n:0)+'%';
+ bar.setAttribute('aria-valuetext',known?n+'%':'—');
+ if(known)bar.setAttribute('aria-valuenow',String(n));else bar.removeAttribute('aria-valuenow');
+}
+function fill(root,object,prefix=''){
+ root.querySelectorAll('[data-bind]').forEach(el=>{
+   const key=el.dataset.bind;el.textContent=get(object,key)??'';
+   if(el.hasAttribute('data-hide-empty'))el.hidden=!el.textContent.trim();
+   if(el.hasAttribute('contenteditable'))editable(el,prefix?prefix+'.'+key:key);
+ });
+ root.querySelectorAll('[data-status]').forEach(el=>{const s=get(object,el.dataset.status)||{};el.className='tag tag-'+(['success','warning','danger','neutral'].includes(s.tone)?s.tone:'outline');});
+ root.querySelectorAll('[data-progress]').forEach(bar=>fillProgress(bar,object));
+ root.querySelectorAll('[data-field]').forEach(el=>{const path=prefix+'.'+el.dataset.field;el.value=get(object,el.dataset.field)||'unknown';el.disabled=readonly;el.onchange=()=>change(path,el.value);});
+ root.querySelectorAll('[data-goal-status]').forEach(el=>{
+   const tones={'达成':'success','未达':'danger','遗留':'warning','无值':'neutral'};
+   el.value=Object.hasOwn(tones,object.status?.label)?object.status.label:'无值';
+   const paint=()=>{el.className='tag tag-'+tones[el.value]+' goal-result';};paint();el.disabled=readonly;
+   el.onchange=()=>{change(prefix+'.status',{label:el.value,tone:tones[el.value]});paint();};
+ });
+ root.querySelectorAll('[data-note]').forEach(el=>{el.hidden=!get(object,el.dataset.note);});
+ root.querySelectorAll('[data-note-button]').forEach(button=>{const note=root.querySelector('[data-note]');button.hidden=readonly||!note?.hidden;button.onclick=()=>{note.hidden=false;button.hidden=true;note.querySelector('[contenteditable]').focus();};});
+}
+function attachmentHref(value){
+ if(/^https?:\/\//i.test(value))return value;
+ if(value&&!/^(?:[a-z][a-z0-9+.-]*:|[\\/])/i.test(value)){
+   if(serviceMode)return '/api/attachment?version='+encodeURIComponent(data.version)+'&path='+encodeURIComponent(value)+'&token='+encodeURIComponent(files.token);
+   return new URL(value.replaceAll('\\','/'),new URL('../../../',location.href)).href;
+ }
+ return '';
+}
+function rowTools(row,key,index,item){
+ if(key.endsWith('.tasks')){
+   const link=row.querySelector('[data-issue-link]');link.textContent=item.number?'#'+String(item.number).replace(/^#/, ''):'';
+   if(/^https?:\/\//i.test(item.url||'')){link.href=item.url;link.target='_blank';link.rel='noopener noreferrer';}
+   row.querySelector('[data-task-kind]').textContent=item.kind==='bug'?'Bug':'Feature';
+ }
+ if(key==='results.deliverables'){
+   const link=row.querySelector('[data-delivery-link]'),input=row.querySelector('[data-delivery-url]');
+   const updateLink=()=>{const href=attachmentHref(input.value);link.textContent=input.value;if(href)link.href=href;else link.removeAttribute('href');};
+   input.value=item.url||'';input.hidden=readonly;updateLink();
+   input.oninput=()=>{change(key+'.'+index+'.url',input.value);updateLink();};
+ }
+ if(key==='results.tasks'||key==='results.sessions')return;
+ if(readonly)return;
+ const box=document.createElement('div');box.className='row-tools';
+ const remove=document.createElement('button');remove.className='btn btn-ghost btn-sm';remove.type='button';remove.textContent='删除';remove.setAttribute('aria-label','删除'+names[key]);
+ if(key.endsWith('.goals')){remove.textContent='×';remove.title='删除目标';}
+ remove.onclick=()=>{
+   if(!key.endsWith('.goals')&&!confirm('删除这条'+names[key]+'？'))return;
+   const list=clone(get(data,key)),[removed]=list.splice(index,1);
+   if(key.endsWith('.goals'))removedGoal={version:data.version,key,index,item:removed};
+   change(key,list);render();
+ };box.append(remove);row.append(box);
+}
+function render(){
+ screen.hidden=false;
+ document.title=data.project+' · '+data.version+' 版本计划';
+ screen.querySelectorAll('[data-list]').forEach(el=>el.replaceChildren());fill(screen,data);
+ $('head-issue').textContent=data.project;$('draft-tag').textContent=data.version;
+ screen.querySelectorAll('[data-list]').forEach(list=>{
+   const key=list.dataset.list,items=(get(data,key)||[]).filter(item=>key==='results.tasks'?!!item.number:key==='results.sessions'?Object.hasOwn(item,'title'):true);
+   if(!items.length){const p=document.createElement('p');p.className='empty-list';p.textContent=key==='results.tasks'?'尚未采集到任务 Issue':key==='results.sessions'?'尚未取得会话记录':readonly?'尚未填写':'还没有'+names[key]+'，点击下方添加。';list.append(p);}
+   items.forEach((item,i)=>{const row=$('item-'+key.replaceAll('.','-')).content.firstElementChild.cloneNode(true);const index=(get(data,key)||[]).indexOf(item);fill(row,item,key+'.'+index);rowTools(row,key,index,item);list.append(row);});
+ });
+ for(const [id,path] of Object.entries({'live-notes':'review.live_notes','meeting-url':'review.meeting_url','minutes-body':'review.minutes.markdown','transcript-body':'review.transcript.text'})){
+   $(id).value=get(data,path)||'';editable($(id),path);
+ }
+ $('review-status').textContent=data.review.minutes.state==='stale'?'材料已更新 · 请核对纪要':data.review.minutes.markdown?'已有纪要 · 可继续修改':'待填写';
+ $('publication-state').textContent=data.confirmation.plan?'计划已确认；可在会话中发起 PR。':'填写完成后确认；PR 由会话发起。';
+ $('commit').textContent=data.confirmation.plan?'计划已确认':'确认计划';
+ $('provenance').textContent=data.provenance?.notice||'';
+ $('source-list').querySelectorAll('p').forEach(el=>el.remove());
+ (data.sources||[]).forEach(source=>{const p=document.createElement('p'),a=document.createElement('a');a.textContent=source.id;a.target='_blank';a.rel='noopener';if(/^https?:\/\//.test(source.url||''))a.href=source.url;p.append(a,document.createTextNode(' · '+(source.authored_date||'')));$('source-list').append(p);});
+ screen.querySelectorAll('[data-add]').forEach(b=>b.hidden=readonly);
+ screen.querySelectorAll('[data-confirm-results],[data-export-review],#commit').forEach(b=>b.disabled=readonly);
+ screen.querySelectorAll('[data-undo-goal]').forEach(b=>b.hidden=readonly||!removedGoal||removedGoal.version!==data.version||removedGoal.key!==b.dataset.undoGoal);
+ storageControls();$('version-select').disabled=snapshot;
+}
+function go(n){
+ render();
+ screen.dataset.step=String(n);
+ screen.querySelectorAll('.plan-tabs [data-goto]').forEach(b=>{const on=Number(b.dataset.goto)===n;b.classList.toggle('is-on',on);b.setAttribute('aria-selected',String(on));});
+ screen.querySelector('.right-scroll').scrollTop=0;
+}
+function newItem(key){
+ const id='item-'+Date.now().toString(36)+'-'+Math.random().toString(36).slice(2,7);
+ if(key.endsWith('.goals')){const used=new Set(get(data,key).map(x=>x.label));let n=1;while(used.has('G'+n))n++;return{id,label:'G'+n,title:'',metric:'',target:'',baseline:'',reading:'',deadline:'',owner:'',progress:null,status:{label:'待填写',tone:'neutral'},note:'',sources:[]};}
+ if(key.endsWith('.tasks'))return{id,number:'',title:'',kind:'feature',progress_note:'',acceptance:'',deliverables:[],goal:'',status:{label:'待填写',tone:'neutral'},note:'',included:true,sources:[]};
+ if(key==='results.deliverables')return{id,label:'',goal:'',url:''};
+ throw new Error('未知内容类型：'+key);
+}
+async function selectVersion(record){
+ if(!await flush())return false;
+ data=await files.open(record);dirty=false;revision=0;removedGoal=null;
+ $('version-select').value=record.version;
+ if(serviceMode)history.replaceState(null,'','?version='+encodeURIComponent(data.version)+location.hash);
+ render();
+ go(data.plan.goals.length&&!data.results.goals.length&&!data.previous_version?3:1);
+ message('');return true;
+}
+async function saveToFile(){if(await flush())storageControls();}
+function download(blob,name){const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);}
+async function confirmStage(stage){
+ if(readonly||!await flush())return false;
+ const before=revision;
+ try{const confirmed=await files.confirm(stage);if(revision===before)data=confirmed;return true;}
+ catch(error){message(error.message,true);return false;}
+}
+$('save-now').onclick=saveToFile;
+screen.querySelectorAll('[data-undo-goal]').forEach(b=>b.onclick=()=>{
+ if(!removedGoal||removedGoal.version!==data.version||removedGoal.key!==b.dataset.undoGoal)return;
+ const key=removedGoal.key,list=clone(get(data,key));list.splice(Math.min(removedGoal.index,list.length),0,removedGoal.item);
+ removedGoal=null;change(key,list);render();
+});
+$('download-data').onclick=()=>download(new Blob([JSON.stringify(data,null,2)+'\n'],{type:'application/json'}),data.version+'-未合并内容.json');
+$('version-select').onchange=async()=>{if(switching)return;switching=true;try{await selectVersion(records.find(r=>r.version===$('version-select').value));}catch(error){message(error.message,true);}finally{$('version-select').value=files.version;switching=false;}};
+screen.querySelectorAll('[data-add]').forEach(b=>b.onclick=()=>{const key=b.dataset.add;change(key,[...(get(data,key)||[]),newItem(key)]);render();screen.querySelector('[data-list="'+key+'"] > :last-child [contenteditable=true]')?.focus();});
+screen.querySelectorAll('[data-goto]').forEach(b=>b.onclick=async()=>{if(b.hasAttribute('data-confirm-results')&&!await confirmStage('results'))return;go(Number(b.dataset.goto));});
+$('go-week').onclick=()=>go(3);
+screen.querySelector('[data-export-review]').onclick=async()=>{
+ if(!await confirmStage('review_ready'))return;
+ const root=document.documentElement.cloneNode(true);root.setAttribute('data-snapshot','true');
+ root.querySelector('#plan-data').textContent=JSON.stringify(data).replace(/</g,'\\u003c');
+ root.querySelector('#plan-versions').textContent='[]';
+ download(new Blob(['<!doctype html>\n'+root.outerHTML],{type:'text/html'}),data.version+'-会议评审.html');
+ message('已保存，并导出会议评审材料');
+};
+$('commit').onclick=async()=>{
+ if(!data.plan.goals.some(g=>g.title.trim())||!data.plan.tasks.some(t=>t.title.trim())){message('请先填写版本目标和任务，再确认计划。',true);return;}
+ if(confirm('确认当前版本计划？这会保存确认记录；发起 PR 请回到会话提出。')&&await confirmStage('plan'))render();
+};
+window.addEventListener('beforeunload',e=>{if(dirty){e.preventDefault();e.returnValue='';}});
+document.addEventListener('visibilitychange',()=>{if(document.hidden)flush();});
+document.addEventListener('keydown',e=>{if((e.ctrlKey||e.metaKey)&&e.key==='s'){e.preventDefault();saveToFile();}});
+async function boot(){
+ if(serviceMode&&!snapshot){
+   try{
+     records=await files.list();
+     const wanted=requested||files.defaultVersion;
+     const record=records.find(r=>r.version===wanted);
+     if(!record)throw new Error('版本不存在，请由会话核对后重新打开。');
+     data=await files.open(record);record.data=clone(data);
+   }catch(error){readonly=true;render();message(error.message,true);return;}
+ }
+ $('version-select').replaceChildren(...records.map(record=>{const option=document.createElement('option');option.value=record.version;option.textContent=record.version+(record.unavailable?" · 无法读取":"");option.disabled=!!record.unavailable;option.title=record.error||"";return option;}));
+ $('version-select').value=data.version;
+ render();go(snapshot?2:(data.plan.goals.length&&!data.results.goals.length&&!data.previous_version?3:1));
+ message('');
+ if(!readonly){setInterval(async()=>{
+   if(!data||dirty||saving||switching||editing())return;
+   try{
+     const latest=await files.changed();
+     if(dirty||saving||switching||editing())return;
+     if(latest){data=files.adopt(latest);records.find(r=>r.version===files.version).data=clone(data);render();}
+     message(files.warning||'');
+   }catch(error){message(error.message,true);}
+ },2000);}
+}
+boot();
+})();
+</script></body></html>
