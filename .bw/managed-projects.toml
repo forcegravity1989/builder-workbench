@@ -8,5 +8,5 @@
 name = "builder-workbench"                      # 显示名
 provider = "github"                             # github | codehub
 remote = "forcegravity1989/builder-workbench"   # github: owner/repo;codehub: -p 项目路径,远端读取时另需 host = 区别名(-H)
-local = "."                                     # 本地读盘路径(相对仓根或绝对);有值优先读盘,缺省走远端浅克隆
+local = "."                                     # 本地读盘路径(相对仓根或绝对);有值优先读盘,缺省走远端部分克隆(--filter=blob:none)
 since = "2026-08-05"                            # 纳入日 YYYY-MM-DD,人填;BW 取 git 里 .bw/ 首次提交日(9d1f30c)

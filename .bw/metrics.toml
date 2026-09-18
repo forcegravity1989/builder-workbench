@@ -24,7 +24,7 @@ collect = { kind = "script", run = ["python", ".bw/scripts/managed-projects.py",
 [[lagging]]
 name = "使用周一屏的被管理项目数"
 feature = "周一屏"
-def = "白名单内项目,其仓 .bw/planning/<版本>/data.json 的 updated_at/confirmation 时间戳落在这一周的去重计数;同项目同周只计一次;重建数据(时间戳全空)不计。"
+def = "白名单内项目,其仓 .bw/planning/<版本>/data.json 在 Git 历史(当前 HEAD)中出现过的 updated_at/confirmation 时间戳落在这一周的去重计数;历史不可变,读数不随后续编辑漂移;仅 progress_updates 的自动化更新不计;重建数据(时间戳全空)不计;未合入 HEAD 的草稿不计,归档为准。"
 target = "≥3"
 collect = { kind = "script", run = ["python", ".bw/scripts/managed-projects.py", "--metric", "monday-screen"], retro = true }
 
