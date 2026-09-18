@@ -13,6 +13,8 @@ node_modules/
 !.claude/skills/project-knowledge/**
 !.claude/skills/design-system-import/
 !.claude/skills/design-system-import/**
+!.claude/skills/version-report/
+!.claude/skills/version-report/**
 
 # Rust
 /target/
