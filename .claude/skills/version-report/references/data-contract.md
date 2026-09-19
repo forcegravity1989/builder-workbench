@@ -2,7 +2,7 @@
 
 > 每条事实写来源路径与取法；没有来源的字段留空（空串 / 空数组 / null）。脚本只做确定性解析与回填，不编事实；模型判断类工作（归纳、标注 kind）由会话按 SOP 完成。
 
-数据文件：`<工作目录>/.bw/planning/<版本>/report.json`，由 `scripts/report.py init` 从 `assets/report-template.json` 建立。所有写入走会话直接编辑该 JSON，再 `render` 出 HTML。出包与验收的执行状态不进本契约：交付验证报告与 PR 正文是其正本，报告引用其结论时附 runId。
+数据文件：`<工作目录>/.bw/planning/<版本>/report.json`，由 `scripts/report.py init` 从 `assets/report-template.json` 建立。所有写入走会话直接编辑该 JSON，再 `render` 出 HTML。出包与验收执行状态的正本在交付验证报告与 PR 正文；本契约的 `head.packaged_at` 与 `health.build/pack` 只回填读回的结论值，报告引用时附 runId。
 
 ## 报告版式（se-report-4）
 
