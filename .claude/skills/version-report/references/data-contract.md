@@ -6,7 +6,7 @@
 
 ## 报告版式（se-report-3）
 
-页面向下依次为：页眉（紧凑单行元信息）→ 流程条（模板静态：本版计划 → 开发与合入 → 出包 → E2E 验收 → 版本报告）→ 首屏总览（健康卡 + 目标状态行 + 任务计数）→ 01 目标 → 02 任务 → 03 目标验收·E2E 用例与截图 → 附录·基础用例 → 页脚。模板数据槽共 9 个：`version / head-meta / health / overview / goals / tasks / cases / appendix / foot`。
+页面向下依次为：页眉（紧凑单行元信息）→ 流程条（模板静态，报告生成六环节：计划与证据盘点 → 构建与打包 → 自动化验证 → 安装包验收测试 → 数据采集与回填 → 渲染、评审与归档）→ 首屏状态栏（目标状态 chip、任务 Issue 计数 chip、编译/打包与两档用例计数 chip 全部单行内联；备注在 chip 下方整行铺底，不做卡片）→ 01 目标 → 02 任务 → 03 目标验收·E2E 用例与截图 → 附录·基础用例 → 页脚。首屏不重复目标标题，目标正文只在 01 出现一次。模板数据槽共 9 个：`version / head-meta / overview / health / goals / tasks / cases / appendix / foot`；overview（目标与任务 chip）先于 health（构建与用例 chip、备注行）渲染，两槽同处状态栏容器。
 
 ## 顶层
 
@@ -35,12 +35,12 @@
 |---|---|---|
 | build / pack | 门禁与出包结论，取结果值（`ok / failed` 等） | 留空显示「未跑」 |
 | acceptance / basic | 用例计数 `{passed, total}`；须与 cases 里对应 kind 的实际条目一致 | null 显示「未跑」 |
-| artifact_dir | 安装包产物目录（工作目录内相对路径） | 留空则无该卡 |
-| note | 会话备注（如验证 Profile 与 runId） | 留空则无该卡 |
+| artifact_dir | 安装包产物目录（工作目录内相对路径） | 留空则无该 chip |
+| note | 状态栏备注。报告面向上级汇报，**默认留空**：过程异常与解释（dirty、未跑项原因、哈希等）在收尾会话里向人说，不写进报告 | 留空不渲染；有值时在状态栏 chip 下方整行铺开，不进 chip |
 
-## goals（01 目标卡片 + 总览行）
+## goals（01 目标卡片 + 首屏状态 chip）
 
-来自本版 `.bw/planning/<版本>/data.json` 的 `plan.goals`，报告不另写一份承诺。每条：`label`（如 G1）、`title`、`metric / target / baseline / reading`（指标定义与实际读数）、`state`、`note`。`state ∈ passed / passed_with_debt / failed / not_run / not_applicable`，渲染映射达成 / 部分达成 / 未达成 / 未验收 / 不适用。计划缺失时留空数组，渲染显示留空说明。
+来自本版 `.bw/planning/<版本>/data.json` 的 `plan.goals`，报告不另写一份承诺。每条：`label`（如 G1）、`title`、`metric / target / baseline / reading`（指标定义与实际读数）、`state`、`note`。`state ∈ passed / passed_with_debt / failed / not_run / not_applicable`，渲染映射达成 / 部分达成 / 未达成 / 未验收 / 不适用。首屏 chip 只渲染 label、状态与读数（reading 有值才显示，不重复 title）；指标、基线与 note 只在 01 卡片出现。卡片默认只放计划正本的目标内容与进度：`note` 留空不渲染，收尾解读（快照、过程说明）在会话里向人说，不堆进卡片。计划缺失时留空数组，渲染显示留空说明。
 
 ## tasks（02 任务表）
 
@@ -58,6 +58,8 @@
 | evidence | `[{file, url}]`；url 是图片则渲染截图网格，否则列文件名 | 空数组则无 |
 | note | 会话补充说明 | 留空则无 |
 | kind | 会话标注：对上本版目标的验收点为 `acceptance`，其余 `basic` | 缺省按 basic |
+| suite | collect 回填：verify 里用例所属 step id（用例在 result.json 中按 suite 分 step 存储） | e2e 线用例无此字段 |
+| suite_label | 会话标注的分组标题；同一 kind 内按此分组渲染小标题，组顺序 = 数据数组中首次出现顺序 | 缺省回退 suite 原值；两者皆空则平铺 |
 
 截图复制：collect `--shots-to <目录>` 把 evidence 图片复制到 `<版本>/shots/`，文件名 `<stepId>-<caseId>__<原名>`（非安全字符转 `_`），url 回填相对路径供 HTML 引用。
 

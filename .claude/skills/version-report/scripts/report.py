@@ -20,7 +20,7 @@ PACKAGE = Path(__file__).resolve().parents[1]
 TEMPLATE = PACKAGE / 'assets' / 'report-template.html'
 TEMPLATE_DATA = PACKAGE / 'assets' / 'report-template.json'
 SCHEMA_VERSION = 3
-TEMPLATE_VERSION = 'se-report-3'
+TEMPLATE_VERSION = 'se-report-4'
 KINDS = ('acceptance', 'basic')
 SAFE_NAME = re.compile(r'[A-Za-z0-9][A-Za-z0-9._-]{0,63}')
 SLOT = re.compile(r'<!--bw:slot:([a-z0-9-]+)-->')
@@ -122,48 +122,49 @@ def render_head(data):
     return sep.join(f'<span class="mi"><b>{esc(k)}</b>{inline(v)}</span>' for k, v in items)
 
 
-def counter_card(label, cases):
-    body = (f'<p class="card-value">{esc(cases.get("passed"))} / {esc(cases.get("total"))}</p>'
-            if cases and cases.get('total') is not None else tag('未跑', 'neutral'))
-    return f'<div class="card"><p class="card-head">{esc(label)}</p>{body}</div>'
+def chip(label, value):
+    return f'<span class="chip"><span class="k">{esc(label)}</span>{value}</span>'
 
 
 def render_health(data):
+    """状态栏右段：构建/打包/两档用例计数 chip + 整行备注。备注不做卡片，避免撑高首屏。"""
     health = data.get('health') or {}
-    cards = [
-        '<div class="card"><p class="card-head">编译</p>'
-        + (result_tag(health.get('build')) or tag('未跑', 'neutral')) + '</div>',
-        '<div class="card"><p class="card-head">打包</p>'
-        + (result_tag(health.get('pack')) or tag('未跑', 'neutral')) + '</div>',
-        counter_card('目标验收', health.get('acceptance')),
-        counter_card('基础用例', health.get('basic')),
+    chips = [
+        chip('编译', result_tag(health.get('build')) or tag('未跑', 'neutral')),
+        chip('打包', result_tag(health.get('pack')) or tag('未跑', 'neutral')),
     ]
+    for label, key in (('验收用例', 'acceptance'), ('基础用例', 'basic')):
+        cases = health.get(key)
+        if cases and cases.get('total') is not None:
+            value = f'<b class="mono">{esc(cases.get("passed"))} / {esc(cases.get("total"))}</b>'
+        else:
+            value = tag('未跑', 'neutral')
+        chips.append(chip(label, value))
     artifact = str(health.get('artifact_dir') or '')
     if artifact:
-        cards.append('<div class="card"><p class="card-head">安装包</p>'
-                     f'<p class="card-value mono">{esc(artifact)}</p></div>')
+        chips.append(chip('安装包', f'<b class="mono">{esc(artifact)}</b>'))
+    tail = ''
     if health.get('note'):
-        cards.append('<div class="card"><p class="card-head">备注</p>'
-                     f'<p class="card-value">{text(health["note"])}</p></div>')
-    return ''.join(cards)
+        tail = '<span class="statusnote"><b>备注</b>' + text(health['note']) + '</span>'
+    return ''.join(chips) + tail
 
 
 def render_overview(data):
-    out = []
+    """状态栏左段：目标状态 chip（只留状态与读数，标题不重复，正文在 01 节）+ 任务 Issue 计数 chip。"""
     goals = data.get('goals') or []
     tasks = data.get('tasks') or []
-    if goals:
-        rows = []
-        for goal in goals:
-            state = goal.get('state')
-            read = '读数 ' + str(goal.get('reading') or '—')
+    chips = []
+    for goal in goals:
+        state = goal.get('state')
+        inner = tag(STATE_LABEL.get(state, '未知'), RESULT_TONE.get(state, 'neutral'))
+        reading = str(goal.get('reading') or '')
+        if reading:
+            read = '读数 ' + reading
             if goal.get('target'):
                 read += '（目标 ' + str(goal['target']) + '）'
-            rows.append('<div class="ov-row"><span class="g">' + esc(goal.get('label') or '') + '</span>'
-                        + '<span class="ov-title">' + text(goal.get('title', '')) + '</span>'
-                        + tag(STATE_LABEL.get(state, '未知'), RESULT_TONE.get(state, 'neutral'))
-                        + '<span class="ov-read">' + text(read) + '</span></div>')
-        out.append('<div class="ov-goals">' + ''.join(rows) + '</div>')
+            inner += '<span class="k">' + text(read) + '</span>'
+        chips.append('<a class="chip" href="#sec-goals"><span class="k mono">'
+                     + esc(goal.get('label') or '') + '</span>' + inner + '</a>')
     if tasks:
         labels = []
         for task in tasks:
@@ -175,11 +176,11 @@ def render_overview(data):
             count = sum(1 for task in tasks
                         if ((task.get('status') or {}).get('label') or '未知') == label)
             counts.append(f'{esc(label)} {count}')
-        out.append('<p class="ov-tasks"><b>任务 ' + str(len(tasks)) + ' 个</b>'
-                   + ' · '.join(counts) + '</p>')
-    if not out:
+        chips.append('<a class="chip" href="#sec-tasks"><span class="k">任务 Issue 共 '
+                     + str(len(tasks)) + ' 个</span><b>' + ' · '.join(counts) + '</b></a>')
+    if not chips:
         return absent('本版总览为空：目标与任务都未登记。先补本版计划，不在报告里编事实。')
-    return ''.join(out)
+    return ''.join(chips)
 
 
 def render_goals(data):
@@ -268,7 +269,22 @@ def render_case_list(data, kind):
             return absent('本版没有验收用例记录。验收用例复用 verify / e2e 线的运行产物，'
                           '报告只读回，不自己跑用例。')
         return absent('本版没有基础用例记录。')
-    return ''.join(render_case(x) for x in cases)
+    # 按 suite 分组渲染：组名取 suite_label（收尾会话标注）或 suite（verify 步骤 id）；
+    # 组顺序 = 数据数组里首次出现顺序，排序由回填方决定，不在渲染器里硬编码。
+    groups, index = [], {}
+    for case in cases:
+        key = case.get('suite_label') or case.get('suite') or ''
+        if key not in index:
+            index[key] = len(groups)
+            groups.append((key, []))
+        groups[index[key]][1].append(case)
+    out = []
+    for label, items in groups:
+        if label:
+            out.append('<h3 class="suitehead">' + text(label)
+                       + '<span class="count">' + str(len(items)) + ' 例</span></h3>')
+        out.extend(render_case(x) for x in items)
+    return ''.join(out)
 
 
 def render_foot(data):
@@ -457,6 +473,7 @@ def collect_verify(ws, run, shots_to=None):
             cases.append({'id': item.get('id'), 'title': item.get('title'),
                           'path': item.get('path'), 'expect': item.get('expect'),
                           'status': item.get('status'), 'message': item.get('message'),
+                          'suite': step.get('id'),
                           'evidence': evidence})
     passed = sum(1 for x in cases if x['status'] == 'passed')
     return {

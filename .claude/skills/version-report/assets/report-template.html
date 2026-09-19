@@ -131,24 +131,21 @@ code { font-family: var(--font-mono); font-size: 0.9em; }
 .flow span { display: block; font-size: 11px; line-height: 1.4; color: color-mix(in srgb, var(--color-text) 55%, transparent); }
 .flow li.now { background: var(--color-accent-100); border-color: var(--color-accent-300); }
 .flow li.now b { color: var(--color-accent-700); }
+@media (max-width: 720px) {
+  .flow { flex-wrap: wrap; gap: var(--space-2); }
+  .flow li { flex: 1 1 44%; }
+  .flow li:not(:last-child)::after { display: none; }
+}
 
-/* — health strip — */
-.strip { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: var(--space-3); margin: var(--space-4) 0 0; }
-.card { background: var(--color-card); border: 1px solid var(--color-divider); border-radius: var(--radius-lg); box-shadow: var(--shadow-sm); padding: var(--space-2) var(--space-4); }
-.card-head { margin: 0 0 var(--space-1); font-size: 11px; font-weight: 500; letter-spacing: 0.06em; text-transform: uppercase; color: color-mix(in srgb, var(--color-text) 50%, transparent); }
-.card-value { margin: 0; font-size: 15px; font-weight: 600; }
-.card-value.mono { font-size: 12px; font-weight: 500; word-break: break-all; }
-
-/* — 总览：目标状态行 + 任务计数 — */
-.ov-goals { margin: var(--space-4) 0 0; border: 1px solid var(--color-divider); border-radius: var(--radius-lg); background: var(--color-card); box-shadow: var(--shadow-sm); overflow: hidden; }
-.ov-row { display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: var(--space-3); padding: var(--space-2) var(--space-4); }
-.ov-row + .ov-row { border-top: 1px solid color-mix(in srgb, var(--color-text) 7%, transparent); }
-.ov-row .g { font-family: var(--font-mono); font-size: 12px; font-weight: 600; color: var(--color-accent-700); }
-.ov-row .ov-title { font-size: 13px; font-weight: 500; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.ov-row .ov-read { grid-column: 2 / -1; font-size: 12px; color: color-mix(in srgb, var(--color-text) 60%, transparent); }
-.ov-row .tag { grid-row: 1; grid-column: 3; justify-self: end; }
-.ov-tasks { margin: var(--space-3) 0 0; font-size: 12.5px; color: color-mix(in srgb, var(--color-text) 65%, transparent); }
-.ov-tasks b { font-weight: 600; color: var(--color-text); }
+/* — 首屏状态栏：目标、任务、构建、用例全部收进单行 chip；备注整行铺底，不做卡片 — */
+.statusbar { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2); margin: var(--space-4) 0 0; }
+.chip { display: inline-flex; align-items: center; gap: 6px; border: 1px solid var(--color-divider); background: var(--color-card); border-radius: 999px; padding: 4px 12px; font-size: 12px; line-height: 1.4; color: var(--color-text); }
+a.chip:hover { text-decoration: none; border-color: var(--color-accent-400); }
+.chip .k { font-size: 11px; font-weight: 500; letter-spacing: 0.02em; color: color-mix(in srgb, var(--color-text) 50%, transparent); }
+.chip b { font-weight: 600; font-variant-numeric: tabular-nums; }
+.statusnote { flex: 0 0 100%; margin: var(--space-1) 0 0; font-size: 12px; color: color-mix(in srgb, var(--color-text) 60%, transparent); }
+.statusnote b { font-weight: 500; color: color-mix(in srgb, var(--color-text) 45%, transparent); margin-right: 6px; }
+.statusbar .absent { flex: 0 0 100%; }
 
 /* — tags — */
 .tag { display: inline-flex; align-items: center; gap: 5px; font-size: 11px; font-weight: 500; line-height: 1; letter-spacing: 0.01em; padding: 4px 8px; border-radius: 999px; white-space: nowrap; }
@@ -184,6 +181,9 @@ td.num { font-family: var(--font-mono); font-variant-numeric: tabular-nums; whit
 .tight td, .tight th { font-size: 12px; }
 
 /* — case cards — */
+.suitehead { display: flex; align-items: baseline; gap: var(--space-2); margin: var(--space-6) 0 var(--space-3); font-size: 13px; font-weight: var(--font-heading-weight); letter-spacing: 0.02em; color: color-mix(in srgb, var(--color-text) 85%, transparent); }
+.block h2 + .suitehead { margin-top: 0; }
+.suitehead .count { font-family: var(--font-mono); font-size: 11px; font-weight: 400; color: color-mix(in srgb, var(--color-text) 50%, transparent); }
 .case { border: 1px solid var(--color-divider); border-radius: var(--radius-lg); background: var(--color-card); box-shadow: var(--shadow-sm); padding: var(--space-3) var(--space-4); margin: 0 0 var(--space-4); }
 .case-head { display: flex; align-items: center; gap: var(--space-3); flex-wrap: wrap; }
 .case-head .id { font-family: var(--font-mono); font-size: 12px; font-weight: 500; color: var(--color-accent-700); }
@@ -215,31 +215,31 @@ td.num { font-family: var(--font-mono); font-variant-numeric: tabular-nums; whit
     <p class="meta-line"><!--bw:slot:head-meta--></p>
   </header>
 
-  <ol class="flow" aria-label="版本交付流程">
-    <li><b>本版计划</b><span>目标与任务拆解</span></li>
-    <li><b>开发与合入</b><span>Issue 为正本</span></li>
-    <li><b>出包</b><span>pack 产物</span></li>
-    <li><b>E2E 验收</b><span>verify / e2e</span></li>
-    <li class="now"><b>版本报告</b><span>本页</span></li>
+  <ol class="flow" aria-label="报告生成流程">
+    <li><b>计划与证据盘点</b><span>确认版本目标、任务与已有运行记录</span></li>
+    <li><b>构建与打包</b><span>编译安装产物（未出包则跳过）</span></li>
+    <li><b>自动化验证</b><span>代码门禁与桌面端到端测试</span></li>
+    <li><b>安装包验收测试</b><span>实跑安装包回归（未验包则跳过）</span></li>
+    <li><b>数据采集与回填</b><span>解析运行证据，实时读回任务状态</span></li>
+    <li class="now"><b>渲染、评审与归档</b><span>生成本页，完成由人确认</span></li>
   </ol>
 
   <section aria-label="本版总览">
-    <div class="strip"><!--bw:slot:health--></div>
-    <!--bw:slot:overview-->
+    <div class="statusbar"><!--bw:slot:overview--><!--bw:slot:health--></div>
   </section>
 
-  <section class="block">
-    <h2><span class="no">01</span>本版目标与结果<span class="hint">来自本版计划 plan.goals</span></h2>
+  <section class="block" id="sec-goals">
+    <h2><span class="no">01</span>本版目标与结果<span class="hint">引用本版计划；状态与说明由收尾会话按读回事实标注</span></h2>
     <!--bw:slot:goals-->
   </section>
 
-  <section class="block">
-    <h2><span class="no">02</span>任务拆解与状态<span class="hint">Issue 正本，状态读回</span></h2>
+  <section class="block" id="sec-tasks">
+    <h2><span class="no">02</span>任务拆解与状态<span class="hint">每项任务是一个 GitHub Issue；状态实时读回，不手工填</span></h2>
     <!--bw:slot:tasks-->
   </section>
 
   <section class="block">
-    <h2><span class="no">03</span>目标验收：E2E 用例与截图<span class="hint">复用 E2E 线产物</span></h2>
+    <h2><span class="no">03</span>目标验收：E2E 用例与截图<span class="hint">用例来自自动化验收运行；对上本版目标的验收点由收尾会话标注</span></h2>
     <!--bw:slot:cases-->
   </section>
 
