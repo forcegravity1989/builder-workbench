@@ -19,7 +19,7 @@
 
 Skill 先执行 start（只需版本目录名，不必先读全量 JSON），打开返回的完整本地 URL 恢复已有内容；JSON 之后按需 read/update 读取。在 Orca 托管会话内，经 CLI `orca tab create --url <start 返回的完整 URL> --worktree id:$ORCA_WORKTREE_ID --json` 打开，页面归入该工作树的浏览器面板；该调用经真实验证可用，旧稿写的 `browser.tabCreate`、`placement`、`ui.set rightSidebar` 在会话工具集中不存在，不得再使用。无 Orca 的仓外会话把完整 URL 交给使用者或按其宿主方式打开。服务程序留在 Skill 安装目录，复用现有 Python 标准库脚本；不复制服务源码进项目，不依赖 BW 主程序启动。一个规划工作树共用一个本地服务；.local 保存端口、进程与连接凭据，归档不提交。没有历史才 init 创建 default 空版本，不先阻塞在版号上；确定名称后 set-version，内容保留并重新生成同一个页面的数据部分。模板 CSS 和骨架不会随内容重画。仓内正本 `standard/skills/week-planning/` 是唯一真源：不直接改 installed 副本（含模板与脚本）修问题，修复走仓内 PR，合入后由产品侧重新分发。
 
-命令均以脚本所在 Skill 目录定位 planning.py，--workspace 必须显式指定任务工作树。Windows 控制台下脚本 stdout 已强制 UTF-8；会话内联 `python -c` 读字段时加 `-X utf8` 或环境变量 `PYTHONIOENCODING=utf-8`，否则中文按控制台代码页乱码：
+命令均以脚本所在 Skill 目录定位 planning.py，--workspace 必须显式指定任务工作树。Windows 控制台下脚本 stdout/stderr 已强制 UTF-8；会话内联 `python -c` 读字段时加 `-X utf8` 或环境变量 `PYTHONIOENCODING=utf-8`，否则中文按控制台代码页乱码：
 
 ```
 python <PACK>/scripts/planning.py --workspace <工作目录> --version <已有版本> start

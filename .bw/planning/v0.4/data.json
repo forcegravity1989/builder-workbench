@@ -229,35 +229,35 @@
         "title": "你是 Workbench 的版本计划。工作目录已经是常驻树,分支 `bw/week-plan`。仓文件只改这里,有真改动",
         "id": "35e19adf",
         "tool": "claude",
-        "workspace": "repo--bw-worktrees-week-plan",
+        "workspace": "wt:.bw/worktrees/week-plan",
         "source": "E--zhuyu-code-builder-workbench--bw-worktrees-week-plan/35e19adf-4fbd-4bf7-8a2f-c937327f21ac.jsonl"
       },
       {
         "title": "你是 Workbench 的版本计划。工作目录已经是常驻树,分支 `bw/week-plan`。仓文件只改这里,有真改动",
         "id": "8156fe9c",
         "tool": "claude",
-        "workspace": "repo--bw-worktrees-week-plan",
+        "workspace": "wt:.bw/worktrees/week-plan",
         "source": "E--zhuyu-code-builder-workbench--bw-worktrees-week-plan/8156fe9c-73fa-402d-9ecd-f06559124214.jsonl"
       },
       {
         "title": "更新一下最新代码",
         "id": "7d7141de",
         "tool": "claude",
-        "workspace": "repowt:e2e-journey-refactor",
+        "workspace": "wt:.claude/worktrees/e2e-journey-refactor",
         "source": "E--zhuyu-code-builder-workbench--claude-worktrees-e2e-journey-refactor/7d7141de-77e0-4244-9ee8-59dc3442e821.jsonl"
       },
       {
         "title": "完成 Issue #217【v0.4|W38|G1】新增采集脚本：统计使用周一屏的被管理项目数。 先读 Issue 正文",
         "id": "dd26814a",
         "tool": "claude",
-        "workspace": "repowt:metrics-managed-projects",
+        "workspace": "wt:.claude/worktrees/metrics-managed-projects",
         "source": "E--zhuyu-code-builder-workbench--claude-worktrees-metrics-managed-projects/dd26814a-c1e4-4b86-9279-420d57c13731.jsonl"
       },
       {
         "title": "更新下最新代码，应该有个出包的skill吧，看下会干什么？",
         "id": "56e036cb",
         "tool": "claude",
-        "workspace": "repowt:version-report-se4",
+        "workspace": "wt:.claude/worktrees/version-report-se4",
         "source": "E--zhuyu-code-builder-workbench--claude-worktrees-version-report-se4/56e036cb-5b94-4e9b-bfee-ec67b94d1220.jsonl"
       }
     ],
@@ -285,7 +285,7 @@
   "summary": {
     "overview": "v0.4 版本目标评审",
     "risks": "铺开做，实际用户基本没用那么多功能，需要逐项打磨与伴飞。",
-    "progress": "v0.3 按两条目标核对:\n- G1 定时器下线改 Orca 自动化:默认注入 3 条运作动作,读数 3/3,达成。\n- G2 用户指南按全局驾驶地图重写:已合入 master(2026-09-09)。\n缺口:11 项历史工作因 v0.3 Issue 留在 codehub 未同步,不回填编号;本机会话记录缺失;无 tag/Release,版本报告链接待发布后回填。",
+    "progress": "v0.3 按两条目标核对:\n- G1 定时器下线改 Orca 自动化:默认注入 3 条运作动作,读数 3/3,达成。\n- G2 用户指南按全局驾驶地图重写:已合入 master(2026-09-09)。\n缺口:11 项历史工作因 v0.3 Issue 留在 codehub 未同步,不回填编号;无 tag/Release,版本报告链接待发布后回填。",
     "badges": [
       [
         "待核对",
@@ -410,5 +410,5 @@
     "review_ready": null,
     "plan": null
   },
-  "updated_at": "2026-09-19T12:51:11Z"
+  "updated_at": "2026-09-19T13:09:18Z"
 }
