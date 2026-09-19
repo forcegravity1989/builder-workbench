@@ -207,10 +207,67 @@
         ]
       }
     ],
-    "session_label": "未取得",
+    "session_label": "已取得 7 条",
     "session_kind": "原始记录",
-    "session_meta": "没有 v0.3 原始会话全文；不以评论摘要编造会话。",
-    "sessions": [],
+    "session_meta": "取数窗 2026-09-12 至 09-19；正本为本机项目空间（含已核实工作树）Claude Code 会话 jsonl 首条用户消息，逐条附来源目录；工具烟测会话不列；E2E 探针会话落在 bw-e2e 沙箱目录、不属于项目空间，不列；Orca 无会话列表接口、Cursor 未解析，缺口如实记录。",
+    "sessions": [
+      {
+        "title": "● This isn't an actual test failure — it's the same 8GB mach",
+        "id": "46a288c0",
+        "tool": "claude",
+        "workspace": "repo",
+        "source": "E--zhuyu-code-builder-workbench/46a288c0-4868-43a6-a97b-a8cc5ed101ea.jsonl"
+      },
+      {
+        "title": "用Read工具读取 E:\\zhuyu\\code\\builder-workbench\\.bw\\worktrees\\rele",
+        "id": "eeedafd8",
+        "tool": "claude",
+        "workspace": "repo",
+        "source": "E--zhuyu-code-builder-workbench/eeedafd8-e1db-4810-858f-e8d00b171b41.jsonl"
+      },
+      {
+        "title": "你是 Workbench 的版本计划。工作目录已经是常驻树,分支 `bw/week-plan`。仓文件只改这里,有真改动",
+        "id": "35e19adf",
+        "tool": "claude",
+        "workspace": "repo--bw-worktrees-week-plan",
+        "source": "E--zhuyu-code-builder-workbench--bw-worktrees-week-plan/35e19adf-4fbd-4bf7-8a2f-c937327f21ac.jsonl"
+      },
+      {
+        "title": "你是 Workbench 的版本计划。工作目录已经是常驻树,分支 `bw/week-plan`。仓文件只改这里,有真改动",
+        "id": "8156fe9c",
+        "tool": "claude",
+        "workspace": "repo--bw-worktrees-week-plan",
+        "source": "E--zhuyu-code-builder-workbench--bw-worktrees-week-plan/8156fe9c-73fa-402d-9ecd-f06559124214.jsonl"
+      },
+      {
+        "title": "更新一下最新代码",
+        "id": "7d7141de",
+        "tool": "claude",
+        "workspace": "repowt:e2e-journey-refactor",
+        "source": "E--zhuyu-code-builder-workbench--claude-worktrees-e2e-journey-refactor/7d7141de-77e0-4244-9ee8-59dc3442e821.jsonl"
+      },
+      {
+        "title": "完成 Issue #217【v0.4|W38|G1】新增采集脚本：统计使用周一屏的被管理项目数。 先读 Issue 正文",
+        "id": "dd26814a",
+        "tool": "claude",
+        "workspace": "repowt:metrics-managed-projects",
+        "source": "E--zhuyu-code-builder-workbench--claude-worktrees-metrics-managed-projects/dd26814a-c1e4-4b86-9279-420d57c13731.jsonl"
+      },
+      {
+        "title": "更新下最新代码，应该有个出包的skill吧，看下会干什么？",
+        "id": "56e036cb",
+        "tool": "claude",
+        "workspace": "repowt:version-report-se4",
+        "source": "E--zhuyu-code-builder-workbench--claude-worktrees-version-report-se4/56e036cb-5b94-4e9b-bfee-ec67b94d1220.jsonl"
+      },
+      {
+        "title": "这是 Workbench E2E 探针会话。请只回复 ok；不要读写任何文件，不要执行任何命令，然后原地等待。",
+        "id": "0385d924",
+        "tool": "claude",
+        "workspace": "repo--bw-release-out-e2e-workspaces-bw-e2e-sandbox--bw-worktrees-week-plan",
+        "source": "E--zhuyu-code-builder-workbench--bw-release-out-e2e-workspaces-bw-e2e-sandbox--bw-worktrees-week-plan/0385d924-c880-4cc8-bbc1-a952f6d05eac.jsonl"
+      }
+    ],
     "deliverables": [
       {
         "id": "D1",
@@ -229,18 +286,12 @@
         "label": "v0.3 计划 Issue #174:任务与每周进展正本",
         "goal": "",
         "url": "https://github.com/forcegravity1989/builder-workbench/issues/174"
-      },
-      {
-        "id": "D3",
-        "label": "v0.3 版本报告",
-        "goal": "",
-        "url": ""
       }
     ]
   },
   "summary": {
     "overview": "v0.4 版本目标评审",
-    "risks": "铺开做，实际用户基本没用那么多功能",
+    "risks": "铺开做，实际用户基本没用那么多功能，需要逐项打磨与伴飞。",
     "progress": "v0.3 按两条目标核对:\n- G1 定时器下线改 Orca 自动化:默认注入 3 条运作动作,读数 3/3,达成。\n- G2 用户指南按全局驾驶地图重写:已合入 master(2026-09-09)。\n缺口:11 项历史工作因 v0.3 Issue 留在 codehub 未同步,不回填编号;本机会话记录缺失;无 tag/Release,版本报告链接待发布后回填。",
     "badges": [
       [
@@ -362,18 +413,9 @@
     ]
   },
   "confirmation": {
-    "results": {
-      "at": "2026-09-18T03:05:40Z",
-      "actor": "user"
-    },
-    "review_ready": {
-      "at": "2026-09-18T03:05:40Z",
-      "actor": "user"
-    },
-    "plan": {
-      "at": "2026-09-18T07:22:46Z",
-      "actor": "user"
-    }
+    "results": null,
+    "review_ready": null,
+    "plan": null
   },
-  "updated_at": "2026-09-18T07:22:46Z"
+  "updated_at": "2026-09-19T12:40:43Z"
 }
