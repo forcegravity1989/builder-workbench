@@ -96,6 +96,8 @@ Filename: "{cmd}"; Parameters: "/c set ""BW_CLAUDE_BIN={code:GetClaudeBin}"" && 
 [Code]
 var
   AfterMemo: TNewMemo;
+  ClaudeSearched: Boolean;
+  ClaudeFound: String;
 
 function ClaudeExePath: String;
 begin
@@ -107,19 +109,59 @@ begin
   Result := ExpandConstant('{userappdata}\{#ClaudeCmdRel}');
 end;
 
+{ npm 全局前缀可自定义（npm config get prefix），默认前缀两条路径只是快速通道；
+  找不到时用 where 搜 PATH 兜底（claude.exe 优先于 claude.cmd，与原偏好一致）。 }
+function FindClaudeOnPath: String;
+var
+  Tmp, Line: String;
+  Lines: TArrayOfString;
+  I, Rc: Integer;
+begin
+  Result := '';
+  Tmp := ExpandConstant('{tmp}\bw-where-claude.txt');
+  if not Exec(ExpandConstant('{sys}\cmd.exe'),
+      '/C where claude.exe claude.cmd > "' + Tmp + '" 2>nul',
+      '', SW_HIDE, ewWaitUntilTerminated, Rc) then
+    Exit;
+  if not LoadStringsFromFile(Tmp, Lines) then
+    Exit;
+  for I := 0 to GetArrayLength(Lines) - 1 do
+  begin
+    Line := Trim(Lines[I]);
+    if (Line <> '') and FileExists(Line) then
+    begin
+      Result := Line;
+      Break;
+    end;
+  end;
+end;
+
+{ 解析一次并缓存；返回空串表示本机确实没有 Claude。 }
+function ResolveClaudeBin: String;
+begin
+  if not ClaudeSearched then
+  begin
+    ClaudeSearched := True;
+    if FileExists(ClaudeExePath) then
+      ClaudeFound := ClaudeExePath
+    else if FileExists(ClaudeCmdPath) then
+      ClaudeFound := ClaudeCmdPath
+    else
+      ClaudeFound := FindClaudeOnPath;
+  end;
+  Result := ClaudeFound;
+end;
+
 function GetClaudeBin(Param: String): String;
 begin
-  if FileExists(ClaudeExePath) then
-    Result := ClaudeExePath
-  else if FileExists(ClaudeCmdPath) then
-    Result := ClaudeCmdPath
-  else
+  Result := ResolveClaudeBin;
+  if Result = '' then
     Result := ClaudeExePath;
 end;
 
 function ClaudeExists: Boolean;
 begin
-  Result := FileExists(ClaudeExePath) or FileExists(ClaudeCmdPath);
+  Result := ResolveClaudeBin <> '';
 end;
 
 function InitializeSetup: Boolean;
@@ -130,7 +172,8 @@ begin
       '请先 npm 全局安装 @anthropic-ai/claude-code，再运行本安装包。' #13#13
       '终端里 claude --version 能过即可。安装器认：' #13#13
       '1. ' + ClaudeExePath + #13
-      '2. ' + ClaudeCmdPath + #13#13
+      '2. ' + ClaudeCmdPath + #13
+      '3. PATH 里 where 能找到的 claude.exe / claude.cmd（npm 自定义前缀）' #13#13
       '有 cmd、没有 exe 也能装；Workbench 开工会走 cmd.exe /c。', mbError, MB_OK);
     Result := False;
   end
