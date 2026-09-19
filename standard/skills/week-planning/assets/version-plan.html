@@ -620,6 +620,7 @@
       }
 #screen-plan .session-line .txt {
         min-width: 0;
+        grid-column: 1 / -1;
       }
 #screen-plan .session-line.key {
         background: color-mix(in srgb, var(--color-accent-100) 55%, transparent);
@@ -840,7 +841,6 @@ body{height:100vh;display:flex;flex-direction:column}
                 <div class="sec">
                   <div class="block-title">
                     <h2>任务点进展与交付</h2>
-                    <span class="muted mono" style="font-size: 11px" data-bind="results.task_summary"></span>
                   </div>
                   <div class="task-table">
                     <div class="task-row head">
@@ -911,7 +911,6 @@ body{height:100vh;display:flex;flex-direction:column}
                 <div class="sec">
                   <div class="block-title">
                     <h2>目标拆解 · 任务 Issue</h2>
-                    <span class="tag tag-neutral" data-bind="plan.task_summary"></span>
                   </div>
                   <div class="task-table">
                     <div class="task-row head">

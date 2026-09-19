@@ -2,9 +2,9 @@
 
 > 每条事实写来源路径与取法；没有来源的字段留空（空串 / 空数组 / null）。脚本只做确定性解析与回填，不编事实；模型判断类工作（归纳、标注 kind）由会话按 SOP 完成。
 
-数据文件：`<工作目录>/.bw/planning/<版本>/report.json`，由 `scripts/report.py init` 从 `assets/report-template.json` 建立。所有写入走会话直接编辑该 JSON，再 `render` 出 HTML。
+数据文件：`<工作目录>/.bw/planning/<版本>/report.json`，由 `scripts/report.py init` 从 `assets/report-template.json` 建立。所有写入走会话直接编辑该 JSON，再 `render` 出 HTML。出包与验收执行状态的正本在交付验证报告与 PR 正文；本契约的 `head.packaged_at` 与 `health.build/pack` 只回填读回的结论值，报告引用时附 runId。
 
-## 报告版式（se-report-3）
+## 报告版式（se-report-4）
 
 页面向下依次为：页眉（紧凑单行元信息）→ 流程条（模板静态，报告生成六环节：计划与证据盘点 → 构建与打包 → 自动化验证 → 安装包验收测试 → 数据采集与回填 → 渲染、评审与归档）→ 首屏状态栏（目标状态 chip、任务 Issue 计数 chip、编译/打包与两档用例计数 chip 全部单行内联；备注在 chip 下方整行铺底，不做卡片）→ 01 目标 → 02 任务 → 03 目标验收·E2E 用例与截图 → 附录·基础用例 → 页脚。首屏不重复目标标题，目标正文只在 01 出现一次。模板数据槽共 9 个：`version / head-meta / overview / health / goals / tasks / cases / appendix / foot`；overview（目标与任务 chip）先于 health（构建与用例 chip、备注行）渲染，两槽同处状态栏容器。
 
@@ -12,7 +12,7 @@
 
 | 字段 | 来源 | 缺失 |
 |---|---|---|
-| schema_version / template_version | 固定 `3` / `se-report-3`（init 写入） | 渲染前校验，不符报错 |
+| schema_version / template_version | 固定 `3` / `se-report-4`（init 写入） | 渲染前校验，不符报错 |
 | version | 命令参数（init 写入） | 必填，须为安全目录名 |
 | project | 工作目录名（init 写入） | 可改 |
 | generated_at | 渲染前会话填当前时刻 | 留空则页脚用默认说明 |

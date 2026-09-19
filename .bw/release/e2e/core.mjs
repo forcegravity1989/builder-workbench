@@ -70,6 +70,9 @@ try {
   if (!context) throw new Error('No real WebView2 context');
   page = context.pages()[0] || await context.waitForEvent('page', { timeout: 30000 });
   page.setDefaultTimeout(30000);
+  // 两相截图可能逐字节相同：工作区目录的差异落在设置屏输入框截断范围之外。
+  // 判别证据是两次独立磁盘读回（settings-readback.toml / restart-readback.toml）、
+  // restart 相对新壳的 toHaveValue 断言，以及两相 shell 日志的不同 pid / CDP 端口。
   if (phase === 'initial') {
     await expect(page.getByRole('heading', { name: '设置', exact: true })).toBeVisible();
     await expect.poll(() => fs.readFileSync(path.join(out, 'initial-shell.log'), 'utf8'), { timeout: 30000 }).toContain('[BW_VIEW] settings');
