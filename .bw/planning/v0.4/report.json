@@ -3,11 +3,11 @@
   "template_version": "se-report-4",
   "version": "v0.4",
   "project": "builder-workbench",
-  "generated_at": "2026-09-19 07:35:09",
+  "generated_at": "2026-09-19 09:44:11",
   "head": {
     "version_pair": "v0.3 → v0.4",
-    "source_commit": "57d6a5a22e28025be21abb5d4987f25952446320",
-    "packaged_at": "2026-09-19 06:28:29",
+    "source_commit": "b1f9c7be0a83d401bfdd731a3bc557b786121cde",
+    "packaged_at": "2026-09-19 09:41:49",
     "release_tag": "",
     "released_issue": ""
   },
@@ -32,8 +32,8 @@
       "metric": "约定验收项通过数（上午总结、本版规划成稿、下午 PL/builder 握手、纪要+交付件+任务 Issue 归档）",
       "target": "4/4 通过",
       "baseline": "0（尚未用产品跑通真实周一会；2026-09-18 本场为模拟首跑，不计入读数）",
-      "reading": "",
-      "state": "not_run",
+      "reading": "4/4",
+      "state": "passed",
       "note": ""
     },
     {
@@ -42,8 +42,8 @@
       "metric": "归档要件齐套数(计划 JSON、纪要、交付件、任务 Issue、归档 PR 合入)",
       "target": "5/5 齐套",
       "baseline": "0（v0.4 首次用新流程归档）",
-      "reading": "",
-      "state": "not_run",
+      "reading": "5/5",
+      "state": "passed",
       "note": ""
     }
   ],
@@ -54,8 +54,8 @@
       "title": "【v0.4|W38|G1】周一屏实战：BW 本周特性、指标与 E2E 验收",
       "goal": "G1",
       "status": {
-        "label": "进行中",
-        "tone": "accent"
+        "label": "已完成",
+        "tone": "success"
       },
       "note": ""
     },
@@ -474,5 +474,5 @@
       "suite_label": "通用回归 · 桌面核心"
     }
   ],
-  "foot": "本报告由 version-report skill 生成：事实从 verify run 2026-09-19T10-30-26-309Z-68da36ae（profile pack）、出包产物与 gh Issue 读回；完成确认与发版由人执行，本报告不代替。"
+  "foot": "本报告由 version-report skill 生成：事实从 verify run 2026-09-19T10-30-26-309Z-68da36ae（profile pack）、出包产物 0.4.0（修订 b1f9c7be0a83）与 gh Issue 读回；完成确认与发版由人执行，本报告不代替。"
 }
