@@ -40,7 +40,7 @@
 
 ## goals（01 目标卡片 + 首屏状态 chip）
 
-来自本版 `.bw/planning/<版本>/data.json` 的 `plan.goals`，报告不另写一份承诺。每条：`label`（如 G1）、`title`、`metric / target / baseline / reading`（指标定义与实际读数）、`state`、`note`。`state ∈ passed / passed_with_debt / failed / not_run / not_applicable`，渲染映射达成 / 部分达成 / 未达成 / 未验收 / 不适用。首屏 chip 只渲染 label、状态与读数（reading 有值才显示，不重复 title）；指标、基线与 note 只在 01 卡片出现。卡片默认只放计划正本的目标内容与进度：`note` 留空不渲染，收尾解读（快照、过程说明）在会话里向人说，不堆进卡片。计划缺失时留空数组，渲染显示留空说明。
+来自本版 `.bw/planning/<版本>/data.json` 的 `plan.goals`，报告不另写一份承诺。每条：`label`（如 G1）、`title`、`metric / target`（指标定义与目标值）、`state`、`deliverable {label, url}`（该目标的本版交付条目：url 为仓内相对链接，空串渲染纯文本，如「本报告（本页）」）、`note`。`state ∈ passed / passed_with_debt / failed / not_run / not_applicable`，渲染映射达成 / 部分达成 / 未达成 / 未验收 / 不适用。首屏 chip 只渲染 label、状态与目标值（不重复 title）；指标、交付件与 note 只在 01 卡片出现。**不设 baseline / reading 字段**：目标值与状态已足够表达进度，读数依据写进 PR 正文与收尾会话，不进报告数据。卡片默认只放计划正本的目标内容与进度：`note` 留空不渲染，收尾解读（快照、过程说明）在会话里向人说，不堆进卡片。计划缺失时留空数组，渲染显示留空说明。
 
 ## tasks（02 任务表）
 

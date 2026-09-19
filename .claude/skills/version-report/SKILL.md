@@ -26,7 +26,7 @@ Python 3 可用；工作目录含 `.bw/planning/`；本版计划 JSON、出包�
 5. **建数据与采集**：`scripts/report.py --workspace <工作目录> --version <版本> init`；再 `collect --verify-run <runId> --e2e-log <JSONL> [--e2e-root <目录>] --shots-to .bw/planning/<版本>/shots`，脚本解析用例、复制截图并回填相对 url；需要产物清单或读数再加 `--artifact-dir` / `--readings`。
 6. **回填 report.json**：goals / tasks 引用本版计划，任务状态用 `gh` 读回；head 填版本对、源码修订、出包时间与真实 tag / Issue；health 填编译打包结论与两档用例计数，`note` 默认留空（过程异常与解释在会话里向人说，不写进报告）；cases 用 collect 产出的 case_list（含 verify 的 suite 归属），对上本版目标的验收点标 `kind: acceptance`，其余冒烟与通用回归保持 `basic`，并按 suite 排组序、给每组标 `suite_label` 中文标题（旅程级用例排最前）。
 7. **渲染与核对**：`render` 产出 `report.html`，浏览器打开通读一遍：首屏状态栏能看到目标状态、任务 Issue 计数、编译/打包与两档用例计数；用例区按组分节、截图加载正常、附录只含基础用例；无残留数据槽。
-8. **归档与回填**：`report.html` 与 `shots/` 留在 `.bw/planning/<版本>/`；把报告路径回填到当周计划 results.deliverables 中版本报告条目；随工作分支提 PR，完成由人确认。
+8. **归档与回填**：`report.html`、`shots/` 与本版交付件留在 `.bw/planning/<版本>/`；报告与交付件路径回填 `results.deliverables` 由**下一版规划会话**执行（周一屏第一屏 results 区是上一版的归档对照，不写进本版 data.json）；随工作分支提 PR，完成由人确认。
 
 ## 5. 参考资源
 

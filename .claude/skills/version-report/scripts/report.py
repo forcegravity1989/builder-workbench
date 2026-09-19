@@ -150,19 +150,15 @@ def render_health(data):
 
 
 def render_overview(data):
-    """状态栏左段：目标状态 chip（只留状态与读数，标题不重复，正文在 01 节）+ 任务 Issue 计数 chip。"""
+    """状态栏左段：目标状态 chip（只留状态与目标值，标题不重复，正文在 01 节）+ 任务 Issue 计数 chip。"""
     goals = data.get('goals') or []
     tasks = data.get('tasks') or []
     chips = []
     for goal in goals:
         state = goal.get('state')
         inner = tag(STATE_LABEL.get(state, '未知'), RESULT_TONE.get(state, 'neutral'))
-        reading = str(goal.get('reading') or '')
-        if reading:
-            read = '读数 ' + reading
-            if goal.get('target'):
-                read += '（目标 ' + str(goal['target']) + '）'
-            inner += '<span class="k">' + text(read) + '</span>'
+        if goal.get('target'):
+            inner += '<span class="k">' + text(str(goal['target'])) + '</span>'
         chips.append('<a class="chip" href="#sec-goals"><span class="k mono">'
                      + esc(goal.get('label') or '') + '</span>' + inner + '</a>')
     if tasks:
@@ -195,10 +191,15 @@ def render_goals(data):
         head.append(tag(STATE_LABEL.get(state, '未知'), RESULT_TONE.get(state, 'neutral')))
         head.append('</div>')
         cells = []
-        for key, label in (('metric', '指标'), ('target', '目标值'),
-                           ('baseline', '基线'), ('reading', '实际读数')):
+        for key, label in (('metric', '指标'), ('target', '目标值')):
             value = goal.get(key) or '—'
             cells.append(f'<div><dt>{label}</dt><dd>{text(value)}</dd></div>')
+        # 交付件：该目标的本版交付条目（url 为仓内相对链接或空；空则纯文本，如「本报告」）。
+        d = goal.get('deliverable') or {}
+        if d.get('label'):
+            val = ('<a href="' + esc(d.get('url') or '') + '">' + text(d['label']) + '</a>'
+                   if d.get('url') else text(d['label']))
+            cells.append(f'<div><dt>交付件</dt><dd>{val}</dd></div>')
         why = f'<p class="why">{text(goal.get("note", ""))}</p>' if goal.get('note') else ''
         out.append('<article class="goal">' + ''.join(head)
                    + '<h3>' + text(goal.get('title', '')) + '</h3>'
