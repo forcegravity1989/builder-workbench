@@ -259,13 +259,6 @@
         "tool": "claude",
         "workspace": "repowt:version-report-se4",
         "source": "E--zhuyu-code-builder-workbench--claude-worktrees-version-report-se4/56e036cb-5b94-4e9b-bfee-ec67b94d1220.jsonl"
-      },
-      {
-        "title": "这是 Workbench E2E 探针会话。请只回复 ok；不要读写任何文件，不要执行任何命令，然后原地等待。",
-        "id": "0385d924",
-        "tool": "claude",
-        "workspace": "repo--bw-release-out-e2e-workspaces-bw-e2e-sandbox--bw-worktrees-week-plan",
-        "source": "E--zhuyu-code-builder-workbench--bw-release-out-e2e-workspaces-bw-e2e-sandbox--bw-worktrees-week-plan/0385d924-c880-4cc8-bbc1-a952f6d05eac.jsonl"
       }
     ],
     "deliverables": [
@@ -417,5 +410,5 @@
     "review_ready": null,
     "plan": null
   },
-  "updated_at": "2026-09-19T12:40:43Z"
+  "updated_at": "2026-09-19T12:51:11Z"
 }
