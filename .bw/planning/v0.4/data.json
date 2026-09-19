@@ -279,6 +279,18 @@
         "label": "v0.3 计划 Issue #174:任务与每周进展正本",
         "goal": "",
         "url": "https://github.com/forcegravity1989/builder-workbench/issues/174"
+      },
+      {
+        "id": "D5",
+        "label": "周一屏截图：BW 自身 v0.4（W38）结果核对屏",
+        "goal": "G2",
+        "url": ".bw/planning/v0.4/deliverables/v04-g2-monday-screen.png"
+      },
+      {
+        "id": "D6",
+        "label": "版本验收报告：v0.4 目标任务与用例证据",
+        "goal": "",
+        "url": ".bw/planning/v0.4/report.html"
       }
     ]
   },
@@ -410,5 +422,5 @@
     "review_ready": null,
     "plan": null
   },
-  "updated_at": "2026-09-19T13:09:18Z"
+  "updated_at": "2026-09-19T13:39:54Z"
 }
