@@ -19,6 +19,9 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
 PACKAGE=Path(__file__).resolve().parents[1]
 
+# Windows 控制台默认代码页会把中文 JSON 输出成乱码；stdout 强制 UTF-8。
+if hasattr(sys.stdout,'reconfigure'): sys.stdout.reconfigure(encoding='utf-8')
+
 def now():
     return time.strftime('%Y-%m-%dT%H:%M:%SZ',time.gmtime())
 
