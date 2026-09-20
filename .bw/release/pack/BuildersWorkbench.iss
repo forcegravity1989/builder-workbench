@@ -1,11 +1,14 @@
 ; ──────────────────────────────────────────────────────────────────────────
-; Builders' Workbench · MVP 包（0.1.0-mvp，替 V3 0.3.0-v3）
+; Builders' Workbench · Windows 安装器正源（Inno Setup）
 ; ──────────────────────────────────────────────────────────────────────────
-; 正源：.bw/release/pack/BuildersWorkbench-MVP.iss
+; 正源：.bw/release/pack/BuildersWorkbench.iss
 ; 不要手跑 ISCC。用仓根：
-;   .bw\release\pack\pack.cmd --version 0.1.0-mvp --workdir <仓根绝对路径>
+;   .bw\release\pack\pack.cmd --version v0.5.0 --workdir <仓根绝对路径>
 ;
-; AppId 复用 V3 的 GUID —— 同 GUID + 同目录 = 装 MVP 自动卸 V3（升级替换）。
+; 产物名 = BuildersWorkbench-<version>-Setup.exe：由 --version 串派生，与 pack
+; 结果记录（artifact/sha256/revision）同串，出包后不得改名（ADR 0005 命名规则；
+; 正式版本号 = tag 串）。
+; AppId 复用 V3 的 GUID —— 同 GUID + 同目录 = 装新版自动卸旧版（升级替换）。
 ; 出包走 pack.cmd（预检 → cargo release → 拷 dll → ISCC → 静默装校验再卸）。
 ; Source 相对 .bw/release/pack/ 往上三级到仓根。产物落 .bw/release/out/<version>/。
 ; ──────────────────────────────────────────────────────────────────────────
@@ -40,7 +43,7 @@ DisableProgramGroupPage=yes
 DisableDirPage=no
 PrivilegesRequired=lowest
 OutputDir={#BwOutputDir}
-OutputBaseFilename=BuildersWorkbench-MVP-Setup
+OutputBaseFilename=BuildersWorkbench-{#MyAppVersion}-Setup
 Compression=lzma2
 SolidCompression=yes
 WizardStyle=modern

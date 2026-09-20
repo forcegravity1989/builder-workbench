@@ -11,8 +11,8 @@ function Write-BwLine([string]$Line) {
 
 function Test-BwVersion([string]$v) {
     if ([string]::IsNullOrWhiteSpace($v)) { return $false }
-    if ($v.Contains('(') -or $v.Contains('\') -or $v.Contains('/')) { return $false }
-    return $true
+    # 版本串直接进产物文件名与目录名（ADR-0005 命名规则），只收安全字符。
+    return $v -match '^[A-Za-z0-9][A-Za-z0-9._+-]*$'
 }
 
 function Write-BwProgress {
@@ -26,10 +26,20 @@ function Write-BwResult {
         [bool]$Ok,
         [string]$ArtifactDir,
         [string]$Code,
-        [string]$Message
+        [string]$Message,
+        [string]$Artifact,
+        [string]$Sha256,
+        [string]$Revision,
+        [Nullable[bool]]$Dirty,
+        [string]$PackedAt
     )
     $o = [ordered]@{ v = 1; type = 'result'; ok = $Ok }
     if ($ArtifactDir) { $o.artifact_dir = $ArtifactDir }
+    if ($Artifact) { $o.artifact = $Artifact }
+    if ($Sha256) { $o.sha256 = $Sha256 }
+    if ($Revision) { $o.revision = $Revision }
+    if ($null -ne $Dirty) { $o.dirty = [bool]$Dirty }
+    if ($PackedAt) { $o.packed_at = $PackedAt }
     if ($Code) { $o.code = $Code }
     if ($Message) { $o.message = $Message }
     Write-BwLine ($o | ConvertTo-Json -Compress)
@@ -48,7 +58,7 @@ function Parse-BwArgs {
         exit 2
     }
     if (-not (Test-BwVersion $version)) {
-        Write-BwResult -Ok:$false -Code bad_args -Message ("「{0}」不像版本号。不要空、不要带括号或路径分隔符。" -f $version)
+        Write-BwResult -Ok:$false -Code bad_args -Message ("「{0}」不像版本号。只用字母、数字和 . _ + -（版本串直接进产物文件名与目录名），不要空或其他符号。" -f $version)
         exit 2
     }
     $full = [IO.Path]::GetFullPath($workdir)
@@ -148,16 +158,20 @@ Copy-Item -Force $dllHits[0].FullName (Join-Path $root 'target\release\WebView2L
 
 Write-BwProgress -Phase iss -Message "ISCC -> $outDir"
 New-Item -ItemType Directory -Force -Path $outDir | Out-Null
-$iss = Join-Path $here 'BuildersWorkbench-MVP.iss'
+$iss = Join-Path $here 'BuildersWorkbench.iss'
 $issCode = Invoke-BwRedirected $iscc @("/DMyAppVersion=$version", "/DBwOutputDir=$outDir", $iss)
 if ($issCode -ne 0) { Fail pack_failed "ISCC 退出 $issCode" }
-$setup = Get-ChildItem -LiteralPath $outDir -Filter '*Setup*.exe' | Where-Object { $_.Length -gt 0 } | Select-Object -First 1
-if (-not $setup) { Fail pack_failed "ISCC 跑完了，$outDir 里没有 *Setup*.exe" }
+# 产物名由版本串派生（.iss OutputBaseFilename），按精确名取件：手工改名或混入旧名产物都不被本协议接受。
+$artifactName = "BuildersWorkbench-$version-Setup.exe"
+$setup = Join-Path $outDir $artifactName
+if (-not (Test-Path -LiteralPath $setup) -or (Get-Item -LiteralPath $setup).Length -le 0) {
+    Fail pack_failed "ISCC 跑完了，$outDir 里没有非空的 $artifactName"
+}
 
 Write-BwProgress -Phase verify -Message '静默安装校验后卸载'
 $verifyDir = Join-Path $env:TEMP "bw-pack-verify-$version"
 $issLog = Join-Path $env:TEMP ("bw-pack-verify-" + $version + "-setup.log")
-$exe = Invoke-SilentSetup $setup.FullName $verifyDir $issLog
+$exe = Invoke-SilentSetup $setup $verifyDir $issLog
 if (-not (Test-Path $exe)) {
     $hint = '静默安装之后没有 bw-dev.exe'
     if ((Test-Path $issLog) -and (Select-String -Path $issLog -Pattern 'Claude Code' -SimpleMatch -Quiet -ErrorAction SilentlyContinue)) {
@@ -173,5 +187,19 @@ if (Test-Path (Join-Path $verifyDir 'bw-dev.exe')) {
     Fail pack_failed '校验卸载之后 bw-dev.exe 还在'
 }
 
-Write-BwResult -Ok:$true -ArtifactDir $outDir
+# 产物身份记录（ADR-0005）：文件名 + SHA-256 + 构建修订 + dirty + 时间戳，发布绑定校验的来源。
+# 非 git 工作目录时 revision/dirty 缺省——缺失即 unknown，消费方不得当作干净。
+$sha = (Get-FileHash -LiteralPath $setup -Algorithm SHA256).Hash.ToLower()
+$revision = ''
+$dirty = $null
+try {
+    $head = (& git -C $root rev-parse HEAD 2>$null | Out-String).Trim()
+    if ($LASTEXITCODE -eq 0 -and $head -match '^[0-9a-f]{40}$') {
+        $revision = $head
+        $porcelain = (& git -C $root status --porcelain 2>$null | Out-String).Trim()
+        $dirty = ($porcelain.Length -gt 0)
+    }
+} catch { $revision = '' }
+$packedAt = (Get-Date).ToUniversalTime().ToString('yyyy-MM-ddTHH:mm:ssZ')
+Write-BwResult -Ok:$true -ArtifactDir $outDir -Artifact $artifactName -Sha256 $sha -Revision $revision -Dirty $dirty -PackedAt $packedAt
 exit 0
