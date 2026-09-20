@@ -105,11 +105,16 @@ if (-not (Test-Path $exe)) {
     $null = Invoke-BwSilentUninstall $verifyDir
     Fail pack_failed $hint
 }
-# 判据是卸载器自己清干净；强删只兜底，不算过（返回值必须捕获，防哈希表漏进协议流）。
+# 出包校验相判据（ADR-0005 步骤 5）：主执行体必须被卸载器清走、目录必须可清空；
+# 残留明细逐项记进度（Defender 锁新装文件时静默卸载会跳过），强删只兜底。
+# E2E 验包用例的判据更严：卸载器自己清干净才算过（e2e/installer.ps1）。
 $un = Invoke-BwSilentUninstall $verifyDir
-if (-not $un.uninstallerClean) {
-    $tail = if ($un.forcedCleanup) { '兜底强删已清' } else { '强删也失败' }
-    Fail pack_failed "校验卸载之后安装目录还有残留（卸载器没清干净；$tail）：$verifyDir"
+if ($un.residue) {
+    Write-BwProgress -Phase verify -Message ("卸载器残留（强删兜底" + $(if ($un.forcedCleanup) { '已清' } else { '也失败' }) + "）：" + ($un.residue -join '、'))
+}
+$bwDevGone = -not ($un.residue -contains '\bw-dev.exe')
+if (-not ($un.uninstallerClean -or ($un.forcedCleanup -and $bwDevGone))) {
+    Fail pack_failed "校验卸载没清干净：$verifyDir（残留：$(if ($un.residue) { $un.residue -join '、' } else { '目录删不掉' })）"
 }
 
 # 产物身份记录（ADR-0005）：文件名 + SHA-256 + 开工源码身份（revision/dirty）+ 结束时

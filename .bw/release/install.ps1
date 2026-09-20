@@ -17,18 +17,18 @@ function Invoke-BwSilentSetup([string]$setupExe, [string]$dir, [string]$log) {
 }
 
 # 运行静默卸载并区分两段结果：卸载器自己是否清干净（判据）、强删是否兜底成功
-# （仅清理用，不算判据——否则「能卸干净」的证明被强删掩盖）。
-# 返回 [ordered]@{ uninstallerClean; forcedCleanup }；调用方必须捕获返回值，
+# （仅清理用，不算判据——否则「能卸干净」的证明被强删掩盖）。residue 记录卸载器
+# 没清掉的明细：Defender 实时扫描会短暂锁住新装文件，Inno 静默卸载跳过且不重试。
+# 返回 [ordered]@{ uninstallerClean; forcedCleanup; residue }；调用方必须捕获返回值，
 # 否则哈希表会进 stdout 污染 JSONL 协议流。
 function Invoke-BwSilentUninstall([string]$dir) {
-    $r = [ordered]@{ uninstallerClean = $false; forcedCleanup = $false }
+    $r = [ordered]@{ uninstallerClean = $false; forcedCleanup = $false; residue = @() }
     if (-not (Test-Path -LiteralPath $dir)) { $r.uninstallerClean = $true; $r.forcedCleanup = $true; return $r }
     $unins = Get-ChildItem -LiteralPath $dir -Filter 'unins*.exe' -ErrorAction SilentlyContinue | Select-Object -First 1
     if ($unins) {
         cmd.exe /c ('start /wait "" "' + $unins.FullName + '" /VERYSILENT /NORESTART') | Out-Null
         # Inno 卸载器会复制到临时目录再自跑，start /wait 返回不等于卸完：条件读回等待。
-        # 上限 120s——Defender 实时扫描与低内存会显著拖慢自拷贝清理（真实出包曾在
-        # 30s 上限下把慢卸载误判成残留，复现证明卸载器 3s 内可清干净）。
+        # 上限 120s——Defender 实时扫描与低内存会显著拖慢自拷贝清理。
         $deadline = (Get-Date).AddSeconds(120)
         while ((Test-Path -LiteralPath $dir) -and (Get-Date) -lt $deadline) { Start-Sleep -Milliseconds 500 }
     }
@@ -36,6 +36,9 @@ function Invoke-BwSilentUninstall([string]$dir) {
     if ($r.uninstallerClean) {
         $r.forcedCleanup = $true
     } else {
+        $prefixLen = $dir.TrimEnd('\').Length
+        $r.residue = @(Get-ChildItem -LiteralPath $dir -Recurse -Force -ErrorAction SilentlyContinue |
+                ForEach-Object { $_.FullName.Substring([Math]::Min($prefixLen, $_.FullName.Length)) })
         Remove-Item -Recurse -Force $dir -ErrorAction SilentlyContinue
         $r.forcedCleanup = -not (Test-Path -LiteralPath $dir)
     }

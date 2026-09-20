@@ -84,6 +84,7 @@ try {
 } finally {
     $removed = $false
     $forced = $false
+    $residue = @()
     $uninstallError = $null
     if ($installed -or (Test-Path -LiteralPath $installDir)) {
         try {
@@ -91,9 +92,10 @@ try {
             $un = Invoke-BwSilentUninstall $installDir
             $removed = [bool]$un.uninstallerClean
             $forced = [bool]$un.forcedCleanup
+            $residue = @($un.residue)
             if (-not $removed) {
                 $tail = if ($forced) { '兜底强删已清' } else { '强删也失败' }
-                $uninstallError = "卸载器结束后安装目录仍有残留（$tail）：$installDir"
+                $uninstallError = "卸载器结束后安装目录仍有残留（$tail）：$(if ($residue) { $residue -join '、' } else { $installDir })"
             }
         } catch { $uninstallError = $_.Exception.Message }
         if ($installed) {
@@ -105,7 +107,7 @@ try {
                 })
         }
     }
-    Save-Json 'uninstall-readback.json' ([ordered]@{ installDir = $installDir; uninstallerClean = $removed; forcedCleanup = $forced; error = $uninstallError })
+    Save-Json 'uninstall-readback.json' ([ordered]@{ installDir = $installDir; uninstallerClean = $removed; forcedCleanup = $forced; residue = $residue; error = $uninstallError })
     foreach ($Name in $Names) {
         if (-not ($Cases | Where-Object { $_.id -eq $Name })) {
             $Cases.Add([ordered]@{ id = $Name; title = $Name; status = 'not_run'; message = $Failure; evidence = @() })
