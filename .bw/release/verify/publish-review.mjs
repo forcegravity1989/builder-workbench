@@ -5,6 +5,7 @@ import crypto from 'node:crypto';
 import { execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { inside, sha256, sourceSnapshot, storeEvidenceBlob } from './verify.mjs';
+import { externalReviewState, reviewStateLine } from './review-state.mjs';
 
 const JOURNEY_DIR = /^\.bw\/release\/e2e\/journeys\/([a-z0-9-]+)\//;
 const JOURNEY_SCRIPT = /^\.bw\/release\/e2e\/([a-z0-9-]+)\.mjs$/;
@@ -114,6 +115,8 @@ function publishFromCli() {
     };
     const incremental = incrementalSuiteIds(result.steps, changedFiles, readSuite);
     const journeys = result.steps.filter(step => incremental.has(step.id));
+    // 发布时点的外部评审机读状态：未召唤显灰，不失败、不缺省绿。
+    const reviewState = externalReviewState({ repo, prNumber: number, headSha: current.commit });
     const encodePath = file => file.split('/').map(encodeURIComponent).join('/');
     const pictureSections = journeys.map(step => {
       const rows = step.cases.map(item => {
@@ -126,7 +129,7 @@ function publishFromCli() {
       return `### ${step.title}\n\n${rows}`;
     }).join('\n');
     const journeyList = journeys.length ? journeys.map(x => x.title).join('、') : '无';
-    const body = `${marker}\n${fs.readFileSync(path.join(out, 'review.md'), 'utf8')}\n\n执行命令：\n\n\`\`\`powershell\nnode .bw/release/verify/verify.mjs --profile ${result.profile}\n\`\`\`\n\n本次改动涉及的旅程：${journeyList}。只内嵌这些旅程的用例截图（每条含用例名、执行路径、期望结果；desktop 通过 CDP 附着本次构建的真实桌面壳，browser 使用真实浏览器验证对应页面，remote 会独立读回 GitHub、Git、Orca 与清理结果；浏览器证据不代表 Orca 模型会话已运行）；其余用例截图与全部证据见证据目录。\n${pictureSections}\n[完整证据目录](https://github.com/${repo}/tree/${commit}/${result.runId})\n`;
+    const body = `${marker}\n${fs.readFileSync(path.join(out, 'review.md'), 'utf8')}\n\n${reviewStateLine(reviewState)}\n\n执行命令：\n\n\`\`\`powershell\nnode .bw/release/verify/verify.mjs --profile ${result.profile}\n\`\`\`\n\n本次改动涉及的旅程：${journeyList}。只内嵌这些旅程的用例截图（每条含用例名、执行路径、期望结果；desktop 通过 CDP 附着本次构建的真实桌面壳，browser 使用真实浏览器验证对应页面，remote 会独立读回 GitHub、Git、Orca 与清理结果；浏览器证据不代表 Orca 模型会话已运行）；其余用例截图与全部证据见证据目录。\n${pictureSections}\n[完整证据目录](https://github.com/${repo}/tree/${commit}/${result.runId})\n`;
     const request = path.join(out, 'github-review-request.json');
     fs.writeFileSync(request, JSON.stringify({ commit_id: current.commit, event: 'COMMENT', body }));
     const response = JSON.parse(gh('api', '--method', 'POST', `repos/${repo}/pulls/${number}/reviews`, '--input', request));

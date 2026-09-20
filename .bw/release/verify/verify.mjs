@@ -155,6 +155,8 @@ export async function runVerification({ root, profile, steps = readPlan(root, pr
   fs.mkdirSync(parent, { recursive: true });
   const out = path.join(parent, runId);
   fs.mkdirSync(out);
+  // 指针先落盘：即使本次运行中途失败，CI Summary 也能定位到这份不完整的 run 如实报错。
+  fs.writeFileSync(path.join(parent, 'last-run.txt'), runId);
   const commonGitDir = execFileSync('git', ['rev-parse', '--path-format=absolute', '--git-common-dir'], { cwd: root, encoding: 'utf8' }).trim();
   const shared = path.dirname(path.resolve(root, commonGitDir));
   const report = {

@@ -57,5 +57,6 @@ Issue 处于「待评审」、MR 开着时，一键**「请评审」**：Workben
 ## 开放问题（留给评审拍）
 
 1. ~~推到待评审时**自动触发**评审~~——**已谈定**（2026-08-27，发起人拍板）：自动触发**不进 Workbench 内核**，放在 CI 层——GitHub 仓用官方 `claude-code-action` 在 PR 事件上自动 review（认证走订阅 OAuth token，本仓 workflow 见 `.github/workflows/`）；codehub 仓没有这一层，仍走内建「请评审」。Workbench 不做 webhook/定时判断，「定时只建队列」不碰。
+   **修订（2026-09-20，发起人拍板）**：CI 层触发从 PR 事件全自动改为**按需召唤**——仓库成员在 PR 评论单独一行发 `/code-review` 才评审当前提交，draft 不触发；未召唤的 PR 在验证读回处（CI Summary 与验证 Review）机读标注「未外部评审（灰）」，不失败、不缺省绿。理由：全自动评审抢在工作会话自检之前跑，最强模型花在未自检代码上，落盘结论还易造成「已评审」错觉。详见 spec 拍板 7 与 `.github/workflows/claude-code-review.yml`。
 2. 评审结论要不要**结构化读回界面**（Issue 详情标「已评审 n 条意见」）——MVP 不解析评论，人去 MR 上看。
 3. 「当前项目代码开发的 reviewer」是否含未开 MR 的裸 worktree 审（WIP 审）——MVP 评审对象=MR/PR；WIP 审可在评审会话里人工指路，不做专门入口。
