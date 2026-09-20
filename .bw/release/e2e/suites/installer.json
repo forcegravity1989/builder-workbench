@@ -1,0 +1,14 @@
+{
+  "id": "installer",
+  "title": "安装包验包（静默装后真壳往返 + 卸载读回）",
+  "layer": "desktop",
+  "profiles": ["installer"],
+  "command": [
+    "powershell.exe", "-NoProfile", "-ExecutionPolicy", "Bypass", "-File",
+    ".bw/release/e2e/installer.ps1",
+    "-Version", "{version}",
+    "-OutDir", "{out}"
+  ],
+  "timeoutSeconds": 1500,
+  "expectedCases": ["settings-restart-roundtrip", "installer-uninstall-clean"]
+}

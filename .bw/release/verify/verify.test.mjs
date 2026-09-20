@@ -4,7 +4,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import os from 'node:os';
 import { execFileSync } from 'node:child_process';
-import { inside, readCases, readPlan, runVerification, sha256, storeEvidenceBlob } from './verify.mjs';
+import { inside, readCases, readPlan, runVerification, sha256, storeEvidenceBlob, expand } from './verify.mjs';
 import { incrementalSuiteIds } from './publish-review.mjs';
 import { externalReviewState, reviewStateLine } from './review-state.mjs';
 
@@ -144,6 +144,18 @@ test('review.md groups results into four blocks and names the profile', async t 
   assert.ok(page.includes('<h2>E2E 用例（按旅程）</h2>'));
   assert.ok(page.includes('执行路径</b> A → B'));
   assert.ok(page.includes('期望结果</b> B 可读回'));
+});
+
+test('installer profile registers the packaged-app suite and {version} expands with a guard', () => {
+  const root = execFileSync('git', ['rev-parse', '--show-toplevel'], { encoding: 'utf8' }).trim();
+  const ids = readPlan(root, 'installer').map(x => x.id);
+  assert.ok(ids.includes('installer'));
+  assert.ok(!ids.includes('desktop-core')); // 源码级套件不进验包 profile，两层各自证明各自的对象
+  assert.deepEqual(
+    expand(['powershell.exe', '-Version', '{version}', '-OutDir', '{out}'], { node: 'N', root: 'R', shared: 'S', out: 'O', version: 'v9.9.9' }),
+    ['powershell.exe', '-Version', 'v9.9.9', '-OutDir', 'O'],
+  );
+  assert.throws(() => expand(['{version}'], { node: 'N', root: 'R', shared: 'S', out: 'O' }), /占位符/);
 });
 
 test('incremental suites come from journey paths and registry content, not profiles', () => {

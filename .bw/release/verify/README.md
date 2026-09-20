@@ -28,6 +28,14 @@ node .bw/release/verify/verify.mjs --profile pack
 
 `plan.json` 保存项目的命令、顺序和超时；`pr` 包括完整 Rust 门禁、构建真实壳和该 profile 已注册的 E2E（写远端的添加项目旅程只在 `pr-onboarding` 运行，周一屏旅程只在 `pack` 运行）。Linux 的 `--profile headless` 只验证内核、底座及结构门禁，不能代替桌面验证。macOS 与 CodeHub 调度尚未接入；`headless` 与 `pr` 不依赖 `gh`，`pr-onboarding` 与 `pack` 需要本机已登录的 `gh`。
 
+出包之后验候选包本身（安装包级，不重跑源码门禁）：
+
+```powershell
+node .bw/release/verify/verify.mjs --profile installer --version <tag串>
+```
+
+`installer` 跑验包套件：静默装 `out/<tag串>/` 里的候选包 → 以装出的真壳跑设置重启读回往返（与源码级 desktop-core 同判据）→ 卸载读回。被测包现场算 SHA-256，与出包落盘的 `pack-result.json` 在场即比对。产品「验包」按钮（`e2e/e2e.cmd`）就是这一入口的 JSONL 适配层（ADR 0005），没有第二套验包实现。
+
 两个 profile 同时运行知识扫描器的确定性测试，核对路径边界、只读性、报告转义、比较口径及失败退出码。这里看护工具本身，不将历史知识库的结构提示设为 CI 门禁，也不证明 Skill 的模型行为有效。
 
 一次执行一个 `.bw/release/out/verify/<时间-随机号>/`，不会覆盖历史结果；目录下 `last-run.txt` 记录最近一次执行编号，CI Summary 以它定位本次报告，不对运行目录数量做假设。运行期间不要编辑源码。未提交改动可以本地验证，但报告明确标记；正式 PR 证据应在干净的最新提交上重跑。任何源码变化使本次结果失效。命令非零、超时、必跑用例失败/未跑、不完整结果或缺失证据均返回非零。修复后重新执行生成新记录。
@@ -44,7 +52,7 @@ node .bw/release/verify/verify.mjs --profile pack
 
 ### 维护原则：少量用例，各自证明一条重要规则
 
-- **按用户旅程分目录**：新的业务脚本放在 `e2e/journeys/<旅程>/`，同一旅程的小量用例放在一起，由 `e2e/suites/<旅程>.json` 注册。共享启动、运行时和依赖脚本留在 `e2e/`；不按页面或每个按钮建套件。当前 `core.mjs` 是桌面基础烟测，不代表“添加项目”业务已验过。
+- **按用户旅程与验证对象分目录**：源码级业务脚本放 `e2e/journeys/<旅程>/`，由 `e2e/suites/<旅程>.json` 注册；安装包级验包是 `e2e/installer.ps1` + `suites/installer.json`（仅 `installer` profile）；共享启动/运行时/依赖脚本在 `e2e/`（`desktop.ps1` 是唯一真壳启动器），跨出包/验包共享的 JSONL 协议与静默装卸 helper 在 `.bw/release/` 根（`protocol.ps1` / `install.ps1`，各只有一份）。不按页面或每个按钮建套件。`core.mjs` 是桌面基础烟测，不代表“添加项目”业务已验过。
 - **本轮业务范围只有添加项目和后续周一屏**。添加项目须读回真实测试仓的 Issue、PR、Git 工作树与项目名片；周一屏已接入：机制底线在 `version-planning` 套件（跟 PR 跑），真实旅程在 `week-plan-journey` 套件（`pack` 跑），验收点对应用例在该套件用例标题与 version-report 的 acceptance 标记里查看，不另存对应表。旧功能暂不批量补 E2E。涉及安装器的变更才追加验包，不能把源码构建叫作验包。
 - **每条用例写清六件事**：保护哪条用户规则、需要什么环境和数据、执行哪些真实动作、用什么独立读回断言、保存哪些证据、如何清理。可直接写在脚本开头；复杂旅程在同目录放短 README。用例必须有稳定 id；改规则时同步判据和证据，删行为时一起删失效用例。
 - **固定用例由脚本运行**：不让模型逐次猜控件、临时生成点击脚本或从“成功”日志推断通过。模型只维护规则与脚本、判断本次改动是否需要专项、诊断失败。真实模型会话需要单独列明模型环境、预算和已验范围，不混进普通 UI 用例。
@@ -92,9 +100,9 @@ node .bw/release/verify/publish-review.mjs --pr <PR号> --run <本次结果目�
 
 没有替人设置仓库的 required checks。强制合并闸口尚需另设，检查存在本身不等于已启用分支保护。
 
-## 与后续出包的边界
+## 与出包、验包、发布的边界
 
-第一批只落源码的交付验证。既有 `pack/pack.cmd`、`e2e/e2e.cmd` 仍是旧安装包入口，不得把本批源码 E2E 报告说成验包通过。后续候选包将接入同一结果和证据格式，再处理安装隔离、包与源码绑定及归档；正式发布需要明确授权。本周周一屏的用例、资产分发修复、功能 PR 仍由原开发会话提交。
+源码级验证与安装包级验证对象不同，不能互相冒充：`pr`/`pack` 证明源码构建，`installer` 证明「用户拿到的安装包」同一行为成立，源码 E2E 报告不得说成验包通过。验包已收敛进同一入口：`e2e.cmd` 是 `installer` profile 的 JSONL 适配层（产品按钮消费，协议见 ADR 0005），老驱动线（`e2e/lib.ps1` 三用例 + `drive.mjs`）已删除。出包结果落 `pack-result.json`（产物身份记录）；正式发布的绑定校验与拒发见 ADR 0005 发布节与 `.bw/release/publish/`；正式发布需要明确授权。
 
 ## 关键技术来源
 

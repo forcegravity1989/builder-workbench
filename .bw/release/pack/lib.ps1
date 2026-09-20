@@ -1,81 +1,8 @@
 ﻿# pack impl. Keep this first line ASCII.
 $ErrorActionPreference = 'Stop'
-# CREATE_NO_WINDOW + piped stdout: Write-Output follows the OEM code page (GBK on
-# Chinese Windows). Protocol lines must be raw UTF-8 bytes (ADR-0005).
-function Write-BwLine([string]$Line) {
-    $bytes = [Text.Encoding]::UTF8.GetBytes(($Line + "`n"))
-    $out = [Console]::OpenStandardOutput()
-    $out.Write($bytes, 0, $bytes.Length)
-    $out.Flush()
-}
-
-function Test-BwVersion([string]$v) {
-    if ([string]::IsNullOrWhiteSpace($v)) { return $false }
-    # 版本串直接进产物文件名与目录名（ADR-0005 命名规则），只收安全字符。
-    # 尾锚用 \z：.NET 的 $ 会放行结尾换行符，带换行的串会漏进路径拼接。
-    return $v -match '^[A-Za-z0-9][A-Za-z0-9._+-]*\z'
-}
-
-function Write-BwProgress {
-    param([string]$Phase, [string]$Message)
-    $o = [ordered]@{ v = 1; type = 'progress'; phase = $Phase; message = $Message }
-    Write-BwLine ($o | ConvertTo-Json -Compress)
-}
-
-function Write-BwResult {
-    param(
-        [bool]$Ok,
-        [string]$ArtifactDir,
-        [string]$Code,
-        [string]$Message,
-        [string]$Artifact,
-        [string]$Sha256,
-        [string]$Revision,
-        [Nullable[bool]]$Dirty,
-        [Nullable[bool]]$SourceUnchanged,
-        [string]$PackedAt
-    )
-    $o = [ordered]@{ v = 1; type = 'result'; ok = $Ok }
-    if ($ArtifactDir) { $o.artifact_dir = $ArtifactDir }
-    if ($Artifact) { $o.artifact = $Artifact }
-    if ($Sha256) { $o.sha256 = $Sha256 }
-    if ($Revision) { $o.revision = $Revision }
-    if ($null -ne $Dirty) { $o.dirty = [bool]$Dirty }
-    if ($null -ne $SourceUnchanged) { $o.source_unchanged = [bool]$SourceUnchanged }
-    if ($PackedAt) { $o.packed_at = $PackedAt }
-    if ($Code) { $o.code = $Code }
-    if ($Message) { $o.message = $Message }
-    Write-BwLine ($o | ConvertTo-Json -Compress)
-}
-
-function Parse-BwArgs {
-    param([string[]]$Argv)
-    $version = $null
-    $workdir = $null
-    for ($i = 0; $i -lt $Argv.Count; $i++) {
-        if ($Argv[$i] -eq '--version' -and $i + 1 -lt $Argv.Count) { $version = $Argv[++$i]; continue }
-        if ($Argv[$i] -eq '--workdir' -and $i + 1 -lt $Argv.Count) { $workdir = $Argv[++$i]; continue }
-    }
-    if (-not $version -or -not $workdir) {
-        Write-BwResult -Ok:$false -Code bad_args -Message '参数只要 --version 和 --workdir'
-        exit 2
-    }
-    if (-not (Test-BwVersion $version)) {
-        Write-BwResult -Ok:$false -Code bad_args -Message ("「{0}」不像版本号。首字符须是字母或数字，其余只用字母、数字和 . _ + -（版本串直接进产物文件名与目录名），不要空或其他符号。" -f $version)
-        exit 2
-    }
-    $full = [IO.Path]::GetFullPath($workdir)
-    if (-not (Test-Path -LiteralPath $full -PathType Container)) {
-        Write-BwResult -Ok:$false -Code bad_args -Message ("工作目录不在：{0}" -f $full)
-        exit 2
-    }
-    return @{ Version = $version; Workdir = $full }
-}
-
-function Fail($code, $msg) {
-    Write-BwResult -Ok:$false -Code $code -Message $msg
-    exit 1
-}
+# JSONL 协议（参数解析/版本串规则/协议行）与静默装卸 helper 与验包适配层共用同一份实现。
+. (Join-Path $PSScriptRoot '..\protocol.ps1')
+. (Join-Path $PSScriptRoot '..\install.ps1')
 
 function Invoke-BwRedirected([string]$Exe, [string[]]$Argv) {
     $outLog = [IO.Path]::GetTempFileName()
@@ -89,31 +16,6 @@ function Invoke-BwRedirected([string]$Exe, [string[]]$Argv) {
     } finally {
         Remove-Item -LiteralPath $outLog, $errLog -Force -ErrorAction SilentlyContinue
     }
-}
-
-function Invoke-SilentSetup([string]$setupExe, [string]$dir, [string]$log) {
-    if (Test-Path $dir) { Remove-Item -Recurse -Force $dir }
-    New-Item -ItemType Directory -Force -Path $dir | Out-Null
-    $setupCmd = 'start /wait "" "' + $setupExe + '" /VERYSILENT /NORESTART /SUPPRESSMSGBOXES /DIR="' + $dir + '" /LOG="' + $log + '"'
-    cmd.exe /c $setupCmd | Out-Null
-    $exe = Join-Path $dir 'bw-dev.exe'
-    if (-not (Test-Path $exe)) {
-        for ($w = 0; $w -lt 40; $w++) {
-            Start-Sleep -Milliseconds 250
-            if (Test-Path $exe) { break }
-        }
-    }
-    return $exe
-}
-
-function Invoke-SilentUninstall([string]$dir) {
-    if (-not (Test-Path -LiteralPath $dir)) { return }
-    $unins = Get-ChildItem -LiteralPath $dir -Filter 'unins*.exe' -ErrorAction SilentlyContinue | Select-Object -First 1
-    if ($unins) {
-        cmd.exe /c ('start /wait "" "' + $unins.FullName + '" /VERYSILENT /NORESTART') | Out-Null
-        Start-Sleep -Seconds 2
-    }
-    Remove-Item -Recurse -Force $dir -ErrorAction SilentlyContinue
 }
 
 $parsed = Parse-BwArgs $args
@@ -192,24 +94,25 @@ if (-not (Test-Path -LiteralPath $setup) -or (Get-Item -LiteralPath $setup).Leng
 Write-BwProgress -Phase verify -Message '静默安装校验后卸载'
 $verifyDir = Join-Path $env:TEMP "bw-pack-verify-$version"
 $issLog = Join-Path $env:TEMP ("bw-pack-verify-" + $version + "-setup.log")
-$exe = Invoke-SilentSetup $setup $verifyDir $issLog
+$exe = Invoke-BwSilentSetup $setup $verifyDir $issLog
 if (-not (Test-Path $exe)) {
     $hint = '静默安装之后没有 bw-dev.exe'
-    if ((Test-Path $issLog) -and (Select-String -Path $issLog -Pattern 'Claude Code' -SimpleMatch -Quiet -ErrorAction SilentlyContinue)) {
+    if (Test-BwClaudeHint $issLog) {
         $hint = '未找到 Claude Code。请先 npm 全局安装 @anthropic-ai/claude-code。'
-        Invoke-SilentUninstall $verifyDir
+        Invoke-BwSilentUninstall $verifyDir
         Fail missing_tool $hint
     }
-    Invoke-SilentUninstall $verifyDir
+    Invoke-BwSilentUninstall $verifyDir
     Fail pack_failed $hint
 }
-Invoke-SilentUninstall $verifyDir
+Invoke-BwSilentUninstall $verifyDir
 if (Test-Path (Join-Path $verifyDir 'bw-dev.exe')) {
     Fail pack_failed '校验卸载之后 bw-dev.exe 还在'
 }
 
 # 产物身份记录（ADR-0005）：文件名 + SHA-256 + 开工源码身份（revision/dirty）+ 结束时
-# 源码未变复核（source_unchanged）+ 时间戳，发布绑定校验的来源。
+# 源码未变复核（source_unchanged）+ 时间戳。同份记录落盘产物目录 pack-result.json，
+# 发布绑定校验读它，不依赖操作者手工重定向 stdout。
 $sha = (Get-FileHash -LiteralPath $setup -Algorithm SHA256).Hash.ToLower()
 $sourceUnchanged = $false
 if ($revision) {
@@ -220,5 +123,7 @@ if ($revision) {
     } catch { $sourceUnchanged = $false }
 }
 $packedAt = (Get-Date).ToUniversalTime().ToString('yyyy-MM-ddTHH:mm:ssZ')
-Write-BwResult -Ok:$true -ArtifactDir $outDir -Artifact $artifactName -Sha256 $sha -Revision $revision -Dirty $dirty -SourceUnchanged $sourceUnchanged -PackedAt $packedAt
+Write-BwResult -Ok:$true -ArtifactDir $outDir -Artifact $artifactName -Sha256 $sha `
+    -Revision $revision -Dirty $dirty -SourceUnchanged $sourceUnchanged -PackedAt $packedAt `
+    -PersistTo (Join-Path $outDir 'pack-result.json')
 exit 0
