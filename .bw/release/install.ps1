@@ -26,8 +26,10 @@ function Invoke-BwSilentUninstall([string]$dir) {
     $unins = Get-ChildItem -LiteralPath $dir -Filter 'unins*.exe' -ErrorAction SilentlyContinue | Select-Object -First 1
     if ($unins) {
         cmd.exe /c ('start /wait "" "' + $unins.FullName + '" /VERYSILENT /NORESTART') | Out-Null
-        # Inno 卸载器会复制到临时目录再自跑，start /wait 返回不等于卸完：条件读回等待，不用固定睡眠猜。
-        $deadline = (Get-Date).AddSeconds(30)
+        # Inno 卸载器会复制到临时目录再自跑，start /wait 返回不等于卸完：条件读回等待。
+        # 上限 120s——Defender 实时扫描与低内存会显著拖慢自拷贝清理（真实出包曾在
+        # 30s 上限下把慢卸载误判成残留，复现证明卸载器 3s 内可清干净）。
+        $deadline = (Get-Date).AddSeconds(120)
         while ((Test-Path -LiteralPath $dir) -and (Get-Date) -lt $deadline) { Start-Sleep -Milliseconds 500 }
     }
     $r.uninstallerClean = -not (Test-Path -LiteralPath $dir)
