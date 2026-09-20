@@ -1,0 +1,7 @@
+name = "orca"
+kind = ""
+brief = ""
+benchmark = "orca"
+opportunity = ""
+
+# 项目群没配。配了就在这里加一段 [chat]。

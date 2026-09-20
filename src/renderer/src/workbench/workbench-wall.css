@@ -1,0 +1,244 @@
+/* Project wall overlay — adapted from loop-buddy shell.css [data-screen=wall] */
+.wb-wall-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  display: flex;
+  flex-direction: column;
+  background: var(--color-bg, #faf9f5);
+  color: var(--color-text, #1f1e1d);
+}
+.wb-wall {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  padding: 16px 24px 32px;
+  max-width: 1300px;
+  width: 100%;
+  margin: 0 auto;
+  box-sizing: border-box;
+}
+.wb-wall .page-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+.wb-wall .page-head h1 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 600;
+}
+.wb-wall .page-actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+.wb-wall .envbar,
+.wb-wall .healthbar {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 16px;
+  padding: 8px 16px;
+  margin-bottom: 12px;
+  border-radius: var(--radius-md);
+  background: var(--color-card);
+  border: 1px solid var(--color-divider);
+}
+.wb-wall .bar-label {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: color-mix(in srgb, var(--color-text) 50%, transparent);
+}
+.wb-wall .health-group,
+.wb-wall .env-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12.5px;
+}
+.wb-wall .env-item.fail {
+  color: var(--color-danger-deep);
+}
+.wb-wall .dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex: none;
+  background: var(--color-neutral-400);
+}
+.wb-wall .dot-green {
+  background: var(--color-success);
+}
+.wb-wall .dot-amber {
+  background: var(--color-warning);
+}
+.wb-wall .dot-red {
+  background: var(--color-danger);
+}
+.wb-wall .wall-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+.wb-wall .pcard {
+  gap: 8px;
+  display: flex;
+  flex-direction: column;
+  padding: 12px;
+  border-radius: var(--radius-md);
+  background: var(--color-card);
+  border: 1px solid var(--color-divider);
+}
+.wb-wall .pcard:hover {
+  border-color: color-mix(in srgb, var(--color-text) 28%, transparent);
+}
+.wb-wall .pcard.is-active {
+  border-color: var(--color-accent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--color-accent) 35%, transparent);
+}
+.wb-wall .pcard-main {
+  cursor: pointer;
+  gap: 8px;
+  display: flex;
+  flex-direction: column;
+  padding: 4px;
+  margin: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  text-align: left;
+  font: inherit;
+}
+.wb-wall .pcard-main:disabled {
+  opacity: 0.7;
+  cursor: wait;
+}
+.wb-wall .pcard-top {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.wb-wall .pcard-name {
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+.wb-wall .pcard-oneliner {
+  font-size: 12.5px;
+  line-height: 1.5;
+  min-height: 19px;
+  color: color-mix(in srgb, var(--color-text) 70%, transparent);
+}
+.wb-wall .pcard-meta {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  font-size: 11px;
+  color: color-mix(in srgb, var(--color-text) 50%, transparent);
+}
+.wb-wall .pcard-bar {
+  height: 4px;
+  border-radius: 2px;
+  background: var(--color-neutral-200);
+  overflow: hidden;
+}
+.wb-wall .pcard-bar-fill {
+  height: 100%;
+  border-radius: 2px;
+  background: var(--color-accent);
+}
+.wb-wall .pcard-repos {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 8px 4px 4px;
+  border-top: 1px solid var(--color-divider);
+}
+.wb-wall .pcard-repos-head {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: color-mix(in srgb, var(--color-text) 50%, transparent);
+}
+.wb-wall .pcard-repo-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.wb-wall .pcard-repo-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.wb-wall .pcard-repo-link {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  padding: 4px 6px;
+  margin: 0;
+  border: 0;
+  border-radius: var(--radius-sm, 4px);
+  background: transparent;
+  color: inherit;
+  text-align: left;
+  font: inherit;
+  cursor: pointer;
+}
+.wb-wall .pcard-repo-link:hover {
+  background: color-mix(in srgb, var(--color-text) 6%, transparent);
+}
+.wb-wall .pcard-repo-name {
+  font-size: 12.5px;
+  font-weight: 500;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.wb-wall .pcard-repo-url {
+  font-size: 11px;
+  color: var(--color-accent);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.wb-wall .pcard-repo-remove {
+  flex: none;
+  font-size: 11px;
+  padding: 2px 6px;
+  min-height: 0;
+}
+.wb-wall .pcard-add-repo {
+  align-self: flex-start;
+  font-size: 12px;
+  padding: 4px 8px;
+  min-height: 0;
+}
+.wb-wall .empty-center {
+  text-align: center;
+  padding: 48px 24px;
+  line-height: 1.7;
+}
+.wb-wall .ml-auto {
+  margin-left: auto;
+}
+.wb-wall .hint {
+  font-size: 12px;
+  color: color-mix(in srgb, var(--color-text) 50%, transparent);
+}
+@media (max-width: 860px) {
+  .wb-wall .wall-grid {
+    grid-template-columns: 1fr;
+  }
+}

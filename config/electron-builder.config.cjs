@@ -64,7 +64,14 @@ const devChannelRepo = isHourlyChannel
     : isAdhocChannel
       ? 'orca-adhoc'
       : null
-const appId = 'com.stablyai.orca'
+const appId = process.env.ORCA_APP_ID || 'com.stablyai.orca'
+const productName = process.env.ORCA_PRODUCT_NAME || 'Orca'
+const macExecutableName = process.env.ORCA_PRODUCT_NAME || 'Orca'
+const linuxExecutableName = process.env.ORCA_PRODUCT_NAME
+  ? String(process.env.ORCA_PRODUCT_NAME).toLowerCase().replace(/\s+/g, '-')
+  : 'orca-ide'
+const protocolScheme =
+  process.env.ORCA_PRODUCT_NAME === 'Workbench' ? 'workbench' : 'orca'
 const featureWallResources = {
   from: 'resources/onboarding/feature-wall',
   to: 'onboarding/feature-wall'
@@ -161,14 +168,25 @@ const windowsRuntimeResources = existsSync(
 /** @type {import('electron-builder').Configuration} */
 module.exports = {
   appId,
-  productName: 'Orca',
-  protocols: [{ name: 'Orca', schemes: ['orca'] }],
+  productName,
+  protocols: [{ name: productName, schemes: [protocolScheme] }],
   toolsets: { appimage: '1.0.3' },
-  ...(devChannelBuildVersion
-    ? { extraMetadata: { version: devChannelBuildVersion } }
-    : localBuildVersion
-      ? { extraMetadata: { version: localBuildVersion } }
-      : {}),
+  // Why: Electron resolves default userData from package.json `name`. Workbench
+  // must not inherit "orca" or it shares the single-instance lock with Orca.app.
+  ...(devChannelBuildVersion || localBuildVersion || productName === 'Workbench'
+    ? {
+        extraMetadata: {
+          ...(devChannelBuildVersion
+            ? { version: devChannelBuildVersion }
+            : localBuildVersion
+              ? { version: localBuildVersion }
+              : {}),
+          ...(productName === 'Workbench'
+            ? { name: 'workbench', productName: 'Workbench' }
+            : {})
+        }
+      }
+    : {}),
   directories: {
     buildResources: 'resources/build'
   },
@@ -407,7 +425,7 @@ module.exports = {
     }
   },
   win: {
-    executableName: 'Orca',
+    executableName: macExecutableName,
     // Why: Windows installers are signed after electron-builder packaging by
     // SignPath, so the packager cannot infer the updater publisherName.
     //
@@ -547,11 +565,12 @@ module.exports = {
     target: [
       {
         target: 'dmg',
-        arch: ['x64', 'arm64']
+        // Why: Workbench trial packs are arm64-only (host natives); full Orca keeps both.
+        arch: process.env.ORCA_PRODUCT_NAME === 'Workbench' ? ['arm64'] : ['x64', 'arm64']
       },
       {
         target: 'zip',
-        arch: ['x64', 'arm64']
+        arch: process.env.ORCA_PRODUCT_NAME === 'Workbench' ? ['arm64'] : ['x64', 'arm64']
       }
     ]
   },
@@ -559,7 +578,10 @@ module.exports = {
   // silently downgrading to ad-hoc artifacts that look shippable in CI logs.
   forceCodeSigning: isMacRelease,
   dmg: {
-    artifactName: 'orca-macos-${arch}.${ext}'
+    artifactName:
+      process.env.ORCA_PRODUCT_NAME === 'Workbench'
+        ? 'Workbench-${version}-${arch}.${ext}'
+        : 'orca-macos-${arch}.${ext}'
   },
   linux: {
     // Why mimeTypes and not fileAssociations: shared-mime-info already maps *.md/*.markdown to
@@ -570,7 +592,7 @@ module.exports = {
     mimeTypes: ['text/markdown'],
     // Why: Ubuntu desktop ships GNOME Orca as the `orca` package and /usr/bin/orca.
     // The Linux installer should not claim those system package/file names.
-    executableName: 'orca-ide',
+    executableName: linuxExecutableName,
     // Why: the icns source lets electron-builder emit standard hicolor PNG
     // sizes; a single 1024px PNG is ignored by some Linux docks/launchers.
     icon: 'resources/build/icon.icns',

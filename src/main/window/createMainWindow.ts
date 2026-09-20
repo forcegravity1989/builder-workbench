@@ -31,6 +31,12 @@ import {
 import { installMainWindowWebviewSecurity } from './main-window-webview-security'
 import { rectHasVisibleAreaOnAnyDisplay } from './window-bounds-validation'
 import { installWindowsPathRegistryChangeListener } from '../pty/windows-path-registry-change'
+import {
+  clampWorkbenchDefaultWindowBounds,
+  isWorkbenchProduct,
+  WORKBENCH_DEFAULT_WINDOW_HEIGHT,
+  WORKBENCH_DEFAULT_WINDOW_WIDTH
+} from '../startup/workbench-product'
 
 export { WINDOW_QUIT_RENDERER_ACK_TIMEOUT_MS }
 
@@ -78,10 +84,15 @@ export function createMainWindow(
   // Why: on first launch fill the primary display work area so the window feels spacious without maximize(); saved bounds win later.
   const defaultBounds = (() => {
     try {
-      const { width, height } = screen.getPrimaryDisplay().workAreaSize
-      return { width, height }
+      const workAreaSize = screen.getPrimaryDisplay().workAreaSize
+      if (isWorkbenchProduct()) {
+        return clampWorkbenchDefaultWindowBounds(workAreaSize)
+      }
+      return workAreaSize
     } catch {
-      return { width: 1200, height: 800 }
+      return isWorkbenchProduct()
+        ? { width: WORKBENCH_DEFAULT_WINDOW_WIDTH, height: WORKBENCH_DEFAULT_WINDOW_HEIGHT }
+        : { width: 1200, height: 800 }
     }
   })()
 

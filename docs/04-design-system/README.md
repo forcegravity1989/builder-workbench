@@ -1,0 +1,45 @@
+# Builder 设计系统 · 仓内规范资产
+
+> **30 秒导读**:这里是 **Builder 设计系统**的仓内正本镜像——Workbench 界面的视觉语言(双配色 Apple/Claude、token 体系、组件类、中文排版层)。**给谁看**:要写界面、做页面、改样式的人和 AI。**从哪来**:镜像自 Claude Design 项目「builder」,只保留规范本体,画布机器件全部剥离。**规范正文**读 [spec.md](spec.md)(英文为准,[spec.zh.md](spec.zh.md) 中文对照);**唯一样式表**是 [styles.css](styles.css);**机读 token** 在 [theme.json](theme.json)。
+
+## 60 秒上手
+
+1. 页面只链一份样式表:`<link rel="stylesheet" href="styles.css">`,颜色/字体/间距/圆角/阴影一律取 `var(--*)`,不许硬编码 hex 和 px。
+2. 切配色:`<html data-theme="claude">`(默认 Apple);中文页面加 `lang="zh"` 即启用中文排版层——组件零改动。
+3. 要哪个组件,查 [spec.md](spec.md) 的组件对照表,打开对应示例页(纯 HTML 无脚本),浏览器直开、查源码抄标记。
+
+## 文件地图
+
+| 路径 | 是什么 |
+|---|---|
+| [spec.md](spec.md) / [spec.zh.md](spec.zh.md) | 规范正文(方向 · 色彩 · 字体 · CJK · 层级 · 交互态 · 组件对照 · 要/不要) |
+| [styles.css](styles.css) | 唯一样式表:两套配色 token + 全部组件类 + `:lang(zh)` 中文层 |
+| [theme.json](theme.json) | 机读主题记录(两套调色板、字体策略、圆角/密度/图标约定) |
+| [components/](components/) | 9 张组件示例页:buttons · forms · cards · navigation · table · dialog(+toast)· command(⌘K)· status(+头像)· settings(页标题 / 小节 / 设置行 / 开关 / 预览卡) |
+| [foundations/](foundations/) | 6 张基础示例页:color · type · cjk(中文排版)· layout · icons · image |
+| [assets/photo.jpg](assets/photo.jpg) | image.html 用的参考照片 |
+
+## 与现行壳的关系
+
+**已接线(2026-09-07)**。桌面壳 `crates/app-shell` 编译期把本目录的 `styles.css` 原样拼进全局样式(`crates/app-shell/src/theme/mod.rs` 里 `include_str!`),不复制一份;壳骨架与各屏版式在 `crates/app-shell/assets/shell.css`,只写设计系统没有的东西、取值一律 `var(--*)`。壳默认 **Claude 配色**(根节点 `data-theme`),设置屏「配色」可切 Apple,存本机 `settings.toml`;中文排版层 `lang="zh"`。壳骨架是一条 172px 侧栏(`.sidebar`)+ 内容区,没有顶栏(`.nav` 留在设计系统里给独立页面用)。八屏的版式与旅程仍看 [docs/hifi/](../hifi/);视觉语言以本目录为准。接线取舍见 git 历史(原 `05-features/design-system-wiring/`,2026-09-09 按特性口径降级删)。
+
+改 token / 组件类 → 改本目录 `styles.css`(三处同步见下),壳下一次编译自动跟上;改壳骨架 / 某屏版式 → 改 `shell.css`,不回推设计项目。
+
+2026-09-07 仓侧新增了设置文法一组类(`.page-head` / `.section` / `.set-group` / `.set-row` / `.toggle` / `.choice` / `.path`,示例页 `components/settings.html`),参照 Codex 桌面版的设置页;**还没回推到设计项目**,下次走 `design-system-import` 回推。
+
+## 来源与剥离清单
+
+- 来源:Claude Design 项目「builder」(`dd2af572-7839-44f2-9cb9-b9619144586d`),2026-08-31 落仓。设计系统上游参考:stablyai/orca 的 STYLEGUIDE + multica 的 token 表(来源记录原在项目内 `github.md`)。
+- 剥离(画布/预览机器,不影响规范本体):`_ds_bundle.js`、`support.js`、`Canvas.dc.html`、`theme.html`、`thumbnail.html`、`.thumbnail`、`_ds_manifest.json`、`_builtin.json`、`_adherence.oxlintrc.json`(React/oxlint 向的巡检配置,对本仓不适用;其「禁裸 hex/px」意图已是 spec 正文规则)。
+- 未镜像:`templates/`(landing/deck 起步模板,自带页面机器件)留在设计项目,需要时从那边复制。
+- 改名:`readme.md` → `spec.md`、`readme.zh.md` → `spec.zh.md`(macOS 文件系统大小写不敏感,避开本 README 撞名);`styles.css` 头注释的指向同步改为 spec.md。其余文件逐字一致,示例页首行 `@dsCard` 注释保留(设计画布靠它建卡片索引,别删)。
+
+## 怎么演进
+
+拉回(设计侧改了)与回推(仓侧改了)的完整步骤在 skill **`design-system-import`** 里,那是唯一正本——授权怎么拿、分拣怎么判、回推走哪条链,都在那份。本节只记本资产自己的约定:
+
+- token 先行:新颜色 / 间距先进 `styles.css` 的 `:root`(两套配色都要给值),再谈使用。
+- 三处同步:`styles.css` 是实现正本,token 或约定变了,`theme.json` 与 spec.md / spec.zh.md 一起改。
+- 新组件类先进 spec 的组件对照表、配示例页,再在产品里用。
+- 示例页保持纯 HTML + 一份样式表,无脚本、无构建——这是「查源码即抄」的前提。
+- 各页首行 `@dsCard` 注释保留:设计画布靠它建卡片索引,删了回推就断。

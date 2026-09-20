@@ -1,3 +1,4 @@
+import { isWorkbenchShell } from '../workbench/is-workbench-shell'
 import { useAppStore } from '../store'
 import { useActivityTerminalPortals } from './activity/activity-terminal-portal'
 import type { ActivityTerminalPortalTarget } from './activity/activity-terminal-portal'
@@ -64,7 +65,7 @@ export function useTerminalWorkspaceStoreBindings(controller: TerminalWorkspaceF
     ? tabBarOrderByWorktree[renderedActiveWorktreeId]
     : undefined
   const activityTerminalPortals: ActivityTerminalPortalTarget[] = useActivityTerminalPortals(
-    activeView === 'activity'
+    activeView === 'activity' || (isWorkbenchShell() && activeView === 'tasks')
   )
 
   return {

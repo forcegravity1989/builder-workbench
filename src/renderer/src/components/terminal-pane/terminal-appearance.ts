@@ -24,6 +24,8 @@ import { getFitOverrideForPty } from '@/lib/pane-manager/mobile-fit-overrides'
 import { setTerminalCursorBlinkOption } from '@/lib/pane-manager/pane-cursor-blink-suspension'
 import type { PtyTransport } from './pty-transport'
 import type { EffectiveMacOptionAsAlt } from '@/lib/keyboard-layout/detect-option-as-alt'
+import { isWorkbenchShell } from '@/workbench/is-workbench-shell'
+import { applyWorkbenchTerminalSurface } from '@/workbench/workbench-terminal-appearance'
 import { HEX_COLOR_RE } from '../../../../shared/color-validation'
 import type { TerminalViewAttributes } from '../../../../shared/terminal-view-attributes'
 import { publishTerminalViewAttributes } from './terminal-view-attributes-publisher'
@@ -72,6 +74,9 @@ export function composeActiveTerminalTheme(
   // Why: merge Ghostty color overrides atop the base theme so individual colors can be tweaked without losing the rest.
   if (settings.terminalColorOverrides) {
     theme = { ...theme, ...settings.terminalColorOverrides }
+  }
+  if (isWorkbenchShell()) {
+    theme = applyWorkbenchTerminalSurface(theme)
   }
   // Why: convert the hex background to rgba so xterm honors the opacity when allowTransparency is set.
   if (settings.terminalBackgroundOpacity !== undefined && theme.background) {

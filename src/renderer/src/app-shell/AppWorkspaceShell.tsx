@@ -11,6 +11,7 @@ import { TitlebarLeftControls } from './TitlebarLeftControls'
 import { RightSidebarToggle, TitlebarMainStrip } from './TitlebarMainStrip'
 import type { AppChromeLayout } from './use-app-chrome-layout'
 import type { FloatingWorkspacePanelState } from './use-floating-workspace-panel'
+import { isWorkbenchShell } from '../workbench/is-workbench-shell'
 
 const Landing = lazy(() => import('../components/Landing'))
 const WorktreeCreationPanel = lazy(
@@ -25,6 +26,15 @@ const ArtifactsPage = lazy(() => import('../components/artifacts/ArtifactsPage')
 const WorkspaceSpacePage = lazy(() => import('../components/workspace-space/WorkspaceSpacePage'))
 const MobilePage = lazy(() => import('../components/mobile/MobilePage'))
 const Terminal = lazy(() => import('../components/Terminal'))
+const OverviewPage = lazy(() =>
+  import('../workbench/OverviewPage').then((m) => ({ default: m.OverviewPage }))
+)
+const KnowledgePage = lazy(() =>
+  import('../workbench/KnowledgePage').then((m) => ({ default: m.KnowledgePage }))
+)
+const PlanJourneyShell = lazy(() =>
+  import('../workbench/PlanJourneyShell').then((m) => ({ default: m.PlanJourneyShell }))
+)
 
 type WorktreeSidebarScrollRefs = {
   scrollOffsetRef: React.MutableRefObject<number>
@@ -71,10 +81,30 @@ function ActivePage({ layout }: { layout: AppChromeLayout }): React.JSX.Element 
       {activeView === 'settings' ? <Settings /> : null}
       {activeView === 'skills' ? <SkillsPage /> : null}
       {activeView === 'artifacts' ? <ArtifactsPage /> : null}
-      {activeView === 'tasks' ? <TaskPage /> : null}
+      {activeView === 'tasks' ? (
+        isWorkbenchShell() ? (
+          <PlanJourneyShell>
+            <TaskPage />
+          </PlanJourneyShell>
+        ) : (
+          <TaskPage />
+        )
+      ) : null}
       {activeView === 'automations' ? <AutomationsPage /> : null}
-      {activeView === 'activity' ? <ActivityPrototypePage /> : null}
-      {activeView === 'space' ? <WorkspaceSpacePage /> : null}
+      {activeView === 'activity' ? (
+        isWorkbenchShell() ? (
+          <OverviewPage />
+        ) : (
+          <ActivityPrototypePage />
+        )
+      ) : null}
+      {activeView === 'space' ? (
+        isWorkbenchShell() ? (
+          <KnowledgePage />
+        ) : (
+          <WorkspaceSpacePage />
+        )
+      ) : null}
       {activeView === 'mobile' ? <MobilePage /> : null}
       {activeView === 'terminal' && creationLayoutActive && activePendingCreationId ? (
         <WorktreeCreationPanel

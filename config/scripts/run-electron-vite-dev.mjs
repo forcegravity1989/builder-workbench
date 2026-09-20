@@ -23,6 +23,7 @@ import {
   isDevBundleInUse,
   selectStaleDevBundleDirs
 } from './dev-electron-bundle-cache.mjs'
+import { createDevDockTitle, getDevUserDataPath, isWorkbenchDevEnv } from './dev-workbench-env.mjs'
 import { copyPrivateTree } from './space-sharing-copy.mjs'
 import {
   DEV_BUNDLE_ID,
@@ -76,7 +77,7 @@ function formatDevInstanceLabel(branch, worktreeName) {
 }
 
 function createDockTitle(branch, label) {
-  return `Orca: ${branch || label || 'dev'}`
+  return createDevDockTitle(branch, label)
 }
 
 function seedDevInstanceIdentityEnv() {
@@ -425,25 +426,6 @@ function restoreElectronFrameworkSymlinks(appPath) {
   }
 }
 
-function getDevUserDataPath() {
-  if (process.env.ORCA_DEV_USER_DATA_PATH) {
-    return process.env.ORCA_DEV_USER_DATA_PATH
-  }
-  if (process.platform === 'darwin') {
-    return path.join(process.env.HOME ?? '', 'Library', 'Application Support', 'orca-dev')
-  }
-  if (process.platform === 'win32') {
-    return path.join(
-      process.env.APPDATA ?? path.join(process.env.USERPROFILE ?? '', 'AppData', 'Roaming'),
-      'orca-dev'
-    )
-  }
-  return path.join(
-    process.env.XDG_CONFIG_HOME ?? path.join(process.env.HOME ?? '', '.config'),
-    'orca-dev'
-  )
-}
-
 function prepareDevCliWrapper() {
   const userDataPath = getDevUserDataPath()
   const { binDir } = prepareDevCliTerminalWrappers({
@@ -612,6 +594,11 @@ const userPassedPort = forwardedRaw.some(
 const isHelpOrVersion = forwardedRaw.some((a) => a === '--help' || a === '-h' || a === '--version')
 if (!isHelpOrVersion && process.env.ORCA_DEV_INSTANCE_LABEL) {
   console.error(`[orca-dev] Instance: ${process.env.ORCA_DEV_INSTANCE_LABEL}`)
+}
+if (!isHelpOrVersion && isWorkbenchDevEnv()) {
+  console.error(
+    '[orca-dev] Workbench shell ON — renderer HMR active; profile: workbench-dev (not orca-dev)'
+  )
 }
 // Why: automation launches this app while someone is working; announce that the
 // window will come up without taking the foreground so the mode is visible in logs.

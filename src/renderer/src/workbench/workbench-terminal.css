@@ -1,0 +1,33 @@
+/* Terminal / native-chat chrome inside the Workbench skin. */
+html[data-skin='ds'] {
+  --orca-pane-title-height: 28px;
+}
+
+html[data-skin='ds'] .pane-manager-root,
+html[data-skin='ds'] [data-native-file-drop-target='terminal'] {
+  background: var(--color-card);
+}
+
+html[data-skin='ds'] .pane-title-bar {
+  background: var(--color-card) !important;
+  color: var(--color-neutral-700);
+  border-bottom-color: var(--color-divider);
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 500;
+  padding: 0 10px;
+}
+
+html[data-skin='ds'] .pane-title-input {
+  font-family: inherit;
+  font-size: 12px;
+}
+
+html[data-skin='ds'] .wb-plan .chat-session-host {
+  --orca-pane-title-height: 0px;
+  background: var(--color-card);
+}
+
+html[data-skin='ds'] .wb-plan .chat-session-host .pane-title-overlay-layer {
+  display: none;
+}

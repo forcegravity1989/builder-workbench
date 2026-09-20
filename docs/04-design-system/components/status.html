@@ -1,0 +1,54 @@
+<!-- @dsCard group="Components" name="Status & identity · 状态与身份" subtitle="State dots, status tags, avatars — people are circles, agents are squircles" viewport="640x560" -->
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Builder — Status &amp; identity</title>
+<link rel="stylesheet" href="../styles.css" />
+<style>
+.demo { max-width: 620px; margin: 0 auto; padding: var(--space-6) var(--space-4) var(--space-8); }
+.demo-head { font-size: 10px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: color-mix(in srgb, var(--color-text) 45%, transparent); margin: var(--space-6) 0 var(--space-3); }
+.demo-head:first-child { margin-top: 0; }
+.row { display: flex; align-items: center; gap: var(--space-4); flex-wrap: wrap; }
+.note { font-size: 12px; color: color-mix(in srgb, var(--color-text) 60%, transparent); max-width: 60ch; }
+code { font-family: var(--font-mono); font-size: 0.92em; }
+.who { display: inline-flex; align-items: center; gap: 8px; font-size: 12.5px; }
+.who .sub { display: block; font-size: 10.5px; color: color-mix(in srgb, var(--color-text) 50%, transparent); }
+</style>
+</head>
+<body>
+<main class="demo">
+  <div class="demo-head">Workflow states — one hue per state, both themes · 工作流状态:一态一色,两主题一致</div>
+  <div class="row">
+    <span class="status status-todo"><span class="status-dot"></span>Todo</span>
+    <span class="status status-progress"><span class="status-dot"></span>In progress</span>
+    <span class="status status-review"><span class="status-dot"></span>In review</span>
+    <span class="status status-done"><span class="status-dot"></span>Done</span>
+    <span class="status status-blocked"><span class="status-dot"></span>Blocked</span>
+  </div>
+  <div class="demo-head">As tags · 标签形态</div>
+  <div class="row" style="gap: var(--space-2)">
+    <span class="tag tag-success">Passed</span>
+    <span class="tag tag-warning">Running</span>
+    <span class="tag tag-danger">Failed</span>
+    <span class="tag tag-neutral">Queued</span>
+  </div>
+  <div class="demo-head">Avatars · 头像</div>
+  <div class="row">
+    <span class="avatar avatar-sm">JW</span>
+    <span class="avatar">MK</span>
+    <span class="avatar avatar-lg" style="background: var(--color-accent-2)">RS</span>
+    <span class="avatar-group"><span class="avatar">JW</span><span class="avatar" style="background: var(--color-accent-2)">MK</span><span class="avatar" style="background: var(--color-neutral-700)">RS</span><span class="avatar" style="background: var(--color-neutral-300); color: var(--color-neutral-700)">+4</span></span>
+  </div>
+  <div class="demo-head">People are circles, agents are squircles · 人是圆形,Agent 是方圆角</div>
+  <div class="row">
+    <span class="who"><span class="avatar">MK</span><span>Mara Kell<span class="sub">assigned</span></span></span>
+    <span class="who"><span class="avatar avatar-agent">AG</span><span>build-agent<span class="sub">working · retry 1</span></span></span>
+    <span class="who"><span class="avatar avatar-agent" style="background: var(--color-accent)">RV</span><span>review-agent<span class="sub">waiting on checks</span></span></span>
+  </div>
+  <p class="note" style="margin-top: var(--space-6)">A status keeps its hue in both themes: todo neutral, progress <code>--color-warning</code>, review <code>--color-accent-2</code>, done <code>--color-success</code>, blocked <code>--color-danger</code>. Agents share the row grammar with people — the square radius is the only tell.</p>
+  <p class="note" lang="zh">状态在两套主题中保持同一色相:todo 中性、progress 警示色、review 第二强调色、done 成功色、blocked 危险色。Agent 与人共用同一行文法 — 方圆角是唯一区别。</p>
+</main>
+</body>
+</html>

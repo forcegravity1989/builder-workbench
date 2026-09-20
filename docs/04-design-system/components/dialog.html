@@ -1,0 +1,50 @@
+<!-- @dsCard group="Components" name="Dialog & toast · 对话框与 Toast" subtitle="Floating elevation; quiet Cancel; inverse toast" viewport="680x620" -->
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Builder — Dialog &amp; toast</title>
+<link rel="stylesheet" href="../styles.css" />
+<style>
+.demo { max-width: 640px; margin: 0 auto; padding: var(--space-6) var(--space-4) var(--space-8); }
+.demo-head { font-size: 10px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: color-mix(in srgb, var(--color-text) 45%, transparent); margin: var(--space-6) 0 var(--space-3); }
+.demo-head:first-child { margin-top: 0; }
+.note { font-size: 12px; color: color-mix(in srgb, var(--color-text) 60%, transparent); max-width: 60ch; }
+code { font-family: var(--font-mono); font-size: 0.92em; }
+.stagebox { position: relative; inset: auto; height: 300px; border-radius: var(--radius-md); }
+</style>
+</head>
+<body>
+<main class="demo">
+  <div class="demo-head">Dialog — a decision before you continue · 对话框:继续前的决定</div>
+  <div class="dialog-backdrop stagebox">
+    <div class="dialog" role="dialog" aria-labelledby="dlg-t">
+      <div class="dialog-title" id="dlg-t">Deploy to production?</div>
+      <div class="dialog-body">Build <code>#1284</code> from <code>main</code> passed all 14 checks. Production will roll over in about 40 seconds; the previous release stays one click away.</div>
+      <div class="dialog-actions">
+        <button type="button" class="btn btn-secondary">Cancel</button>
+        <button type="button" class="btn btn-primary">Deploy</button>
+      </div>
+    </div>
+  </div>
+  <div class="demo-head">Destructive — danger owns the confirm, never the Cancel · 危险操作:danger 只给确认键,绝不给取消键</div>
+  <div class="dialog" style="width: 100%" role="dialog" aria-labelledby="dlg-d">
+    <div class="dialog-title" id="dlg-d">Delete project “docs”?</div>
+    <div class="dialog-body">All builds, artifacts and preview URLs are removed. This can’t be undone.</div>
+    <div class="dialog-actions">
+      <button type="button" class="btn btn-ghost" style="color: var(--color-text)">Cancel</button>
+      <button type="button" class="btn btn-danger">Delete project</button>
+    </div>
+  </div>
+  <div class="demo-head">Toast — transient confirmation, bottom corner · Toast:底角短暂确认</div>
+  <div class="toast" role="status">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"></path></svg>
+    <div><span class="toast-title">Deployed #1284</span><span class="toast-body"> · production · 38s</span></div>
+    <button type="button" class="toast-action">View</button>
+  </div>
+  <p class="note" style="margin-top: var(--space-6)">Dialogs sit at floating elevation (<code>--shadow-lg</code>) over a 40% scrim; Enter lands on the primary, Esc backs out. Toasts confirm what actually happened — result verbs only — and persist errors inline instead.</p>
+  <p class="note" lang="zh">对话框位于浮层级(<code>--shadow-lg</code>),覆盖 40% 遮罩;Enter 落在主操作,Esc 退出。Toast 只确认已发生的结果 — 只用结果动词;错误改为就地持久提示。</p>
+</main>
+</body>
+</html>

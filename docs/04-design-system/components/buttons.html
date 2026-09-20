@@ -1,0 +1,67 @@
+<!-- @dsCard group="Components" name="Buttons, tags & keys · 按钮 / 标签 / 按键" subtitle="One accent primary per view; quiet neutral chrome; kbd chips" viewport="640x660" -->
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Builder — Buttons, tags &amp; keys</title>
+<link rel="stylesheet" href="../styles.css" />
+<style>
+.demo { max-width: 620px; margin: 0 auto; padding: var(--space-6) var(--space-4) var(--space-8); }
+.demo-head { font-size: 10px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: color-mix(in srgb, var(--color-text) 45%, transparent); margin: var(--space-6) 0 var(--space-3); }
+.demo-head:first-child { margin-top: 0; }
+.row { display: flex; align-items: center; gap: var(--space-2); flex-wrap: wrap; }
+.note { font-size: 12px; color: color-mix(in srgb, var(--color-text) 60%, transparent); max-width: 60ch; }
+code { font-family: var(--font-mono); font-size: 0.92em; }
+</style>
+</head>
+<body>
+<main class="demo">
+  <div class="demo-head">Buttons · 按钮</div>
+  <div class="row">
+    <button type="button" class="btn btn-primary">Deploy<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"></path><path d="m12 5 7 7-7 7"></path></svg></button>
+    <button type="button" class="btn btn-secondary">Preview</button>
+    <button type="button" class="btn btn-ghost">View logs</button>
+    <button type="button" class="btn btn-secondary" disabled>Disabled</button>
+  </div>
+  <div class="demo-head">Icon buttons — 28px, tooltip names them · 图标按钮:28px,以 tooltip 命名</div>
+  <div class="row">
+    <button type="button" class="btn btn-primary btn-icon" aria-label="New build"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"></path><path d="M12 5v14"></path></svg></button>
+    <button type="button" class="btn btn-secondary btn-icon" aria-label="Filters"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="21" x2="14" y1="4" y2="4"></line><line x1="10" x2="3" y1="4" y2="4"></line><line x1="21" x2="12" y1="12" y2="12"></line><line x1="8" x2="3" y1="12" y2="12"></line><line x1="21" x2="16" y1="20" y2="20"></line><line x1="12" x2="3" y1="20" y2="20"></line><line x1="14" x2="14" y1="2" y2="6"></line><line x1="8" x2="8" y1="10" y2="14"></line><line x1="16" x2="16" y1="18" y2="22"></line></svg></button>
+    <button type="button" class="btn btn-ghost btn-icon" aria-label="Notifications"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"></path><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"></path></svg></button>
+  </div>
+  <div class="demo-head">Full-width · 通栏按钮</div>
+  <button type="button" class="btn btn-primary btn-block">Create project</button>
+  <div class="demo-head">Tags · 标签</div>
+  <div class="row">
+    <span class="tag tag-accent">Accent</span>
+    <span class="tag tag-accent-2">Accent 2</span>
+    <span class="tag tag-neutral">Neutral</span>
+    <span class="tag tag-outline">Outline</span>
+  </div>
+  <div class="demo-head">Status tags — state only · 状态标签:仅表状态</div>
+  <div class="row">
+    <span class="tag tag-success">Passed</span>
+    <span class="tag tag-warning">Running</span>
+    <span class="tag tag-danger">Failed</span>
+  </div>
+  <div class="demo-head">Keyboard keys · 键盘按键</div>
+  <div class="row" style="font-size: 12.5px">
+    <span><span class="kbd">⌘</span> <span class="kbd">K</span> <span style="color: color-mix(in srgb, var(--color-text) 55%, transparent)">command palette</span></span>
+    <span><span class="kbd">⌘</span> <span class="kbd">⏎</span> <span style="color: color-mix(in srgb, var(--color-text) 55%, transparent)">deploy</span></span>
+    <span><span class="kbd">G</span> <span class="kbd">B</span> <span style="color: color-mix(in srgb, var(--color-text) 55%, transparent)">go to builds</span></span>
+  </div>
+  <div class="demo-head">Chinese labels · 中文示例</div>
+  <div class="row" lang="zh">
+    <button type="button" class="btn btn-primary">新建构建</button>
+    <button type="button" class="btn btn-secondary">预览</button>
+    <button type="button" class="btn btn-ghost">查看日志</button>
+    <span class="tag tag-success">已通过</span>
+    <span class="tag tag-warning">运行中</span>
+    <span class="tag tag-danger">失败</span>
+  </div>
+  <p class="note">One solid <code>.btn-primary</code> per view — it owns the accent. Cancel, Dismiss and Close stay <code>.btn-secondary</code> or <code>.btn-ghost</code>, never colored, never with a shortcut chip. Hover darkens one ramp step, pressed one more.</p>
+  <p class="note" lang="zh">每个视图只有一个实底 <code>.btn-primary</code>,由它独占强调色。Cancel / Dismiss / Close 用 <code>.btn-secondary</code> 或 <code>.btn-ghost</code>,不上色、不配快捷键芯片。悬停加深一档色阶,按压再加深一档。</p>
+</main>
+</body>
+</html>

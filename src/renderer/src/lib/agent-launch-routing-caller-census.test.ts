@@ -17,7 +17,8 @@ const LAUNCH_AGENT_IN_NEW_TAB_CALLERS = [
   'src/renderer/src/components/use-terminal-create-actions.ts',
   'src/renderer/src/lib/fix-checks-agent-launch.ts',
   'src/renderer/src/lib/launch-agent-session-continuation.ts',
-  'src/renderer/src/lib/run-quick-command-in-new-tab.ts'
+  'src/renderer/src/lib/run-quick-command-in-new-tab.ts',
+  'src/renderer/src/workbench/plan-week-plan-session.ts'
 ]
 
 // Why: the planner is the one production module that decides a route. A second resolver call

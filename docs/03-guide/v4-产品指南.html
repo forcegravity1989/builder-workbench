@@ -1,0 +1,756 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Workbench MVP · 使用指南</title>
+<style>
+  :root{
+    /* 配色取自 crates/app-shell/assets/hifi.css 的 :root（V4 高保真原型正本），非自造 */
+    --bg:#EFEBE2; --surface:#FBFAF6; --surface-2:#F4F0E7; --rail:#E9E3D7;
+    --fg:#23211C; --muted:#57534A; --muted-2:#8C867A; --muted-3:#A19B8D;
+    --border:#E2DCCF; --border-deep:#DBD4C5;
+    --accent:#C5654A; --accent-ink:#A8432B; --accent-soft:#EFD9CE;
+    --sig-green:#6B8E5A; --sig-amber:#D3A24A; --sig-red:#C0463A; --sig-gray:#9A9590;
+    --shadow:0 8px 26px rgba(35,33,28,.08);
+    --font-display:'Noto Serif SC','Songti SC','STSong','SimSun',serif;
+    --font-body:'Noto Sans SC','PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif;
+    --font-mono:'JetBrains Mono','SF Mono',Menlo,Consolas,monospace;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%}
+  body{background:var(--bg);color:var(--fg);font-family:var(--font-body);font-size:15px;line-height:1.6;-webkit-font-smoothing:antialiased;display:flex;overflow:hidden}
+  ::selection{background:var(--accent-soft)}
+  ::-webkit-scrollbar{width:10px;height:10px} ::-webkit-scrollbar-thumb{background:var(--border-deep);border-radius:6px}
+
+  aside.sidebar{width:272px;flex:0 0 272px;height:100vh;background:var(--rail);border-right:1px solid var(--border);display:flex;flex-direction:column;padding:22px 0 16px;overflow-y:auto}
+  .brand{padding:0 22px 20px;border-bottom:1px solid var(--border)}
+  .brand .mark{font-family:var(--font-display);font-weight:700;font-size:22px;letter-spacing:-0.01em}
+  .brand .mark .dot{color:var(--accent)}
+  .brand .sub{font-size:11px;letter-spacing:0.08em;text-transform:uppercase;color:var(--muted-2);margin-top:6px}
+  nav{padding:14px 0;flex:1}
+  .nav-group{margin-bottom:6px}
+  .nav-group-title{font-size:11px;letter-spacing:0.1em;text-transform:uppercase;color:var(--muted-2);padding:8px 22px 6px;font-weight:500}
+  .nav-item{display:flex;align-items:center;gap:10px;padding:8px 22px;cursor:pointer;font-size:14px;border-left:3px solid transparent;transition:background .12s,border-color .12s}
+  .nav-item:hover{background:rgba(197,101,74,.08)}
+  .nav-item.active{background:var(--accent-soft);border-left-color:var(--accent);color:var(--accent-ink);font-weight:500}
+  .nav-item svg{width:16px;height:16px;flex:0 0 16px;stroke:currentColor;stroke-width:1.6;fill:none}
+  .nav-foot{padding:12px 22px;border-top:1px solid var(--border);font-size:11px;color:var(--muted-2);line-height:1.5}
+  .nav-foot code{font-family:var(--font-mono);color:var(--accent-ink)}
+
+  main.main{flex:1;height:100vh;display:flex;flex-direction:column;overflow:hidden}
+  header.topbar{height:56px;flex:0 0 56px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:14px;padding:0 32px;background:var(--bg)}
+  .crumb{display:flex;align-items:center;gap:10px;font-size:13px}
+  .crumb .sec{color:var(--muted-2)} .crumb .sep{color:var(--border-deep)} .crumb .cur{color:var(--fg);font-weight:500}
+  .badge{margin-left:auto;font-size:11px;letter-spacing:0.06em;padding:4px 10px;border-radius:999px;border:1px solid var(--border);color:var(--muted-2);background:var(--surface);text-transform:uppercase}
+  .badge.use{color:#5f7d57;border-color:#c4d2bc} .badge.maint{color:var(--accent-ink);border-color:var(--accent-soft)}
+  .content{flex:1;overflow-y:auto;padding:34px 40px 90px}
+
+  .screen{display:none;max-width:900px}
+  .screen.active{display:block;animation:fade .18s ease}
+  @keyframes fade{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+  .eyebrow{font-size:11px;letter-spacing:0.12em;text-transform:uppercase;color:var(--accent-ink);font-weight:500;margin-bottom:10px}
+  h1.disp{font-family:var(--font-display);font-weight:700;font-size:32px;line-height:1.2;letter-spacing:-0.02em;margin-bottom:14px}
+  .lede{font-size:16px;color:var(--muted);line-height:1.65;max-width:66ch;margin-bottom:22px}
+  h2.sec{font-family:var(--font-display);font-weight:600;font-size:20px;letter-spacing:-0.01em;margin:30px 0 12px;display:flex;align-items:center;gap:9px}
+  h2.sec .n{font-family:var(--font-mono);font-size:12px;font-weight:500;color:var(--accent-ink);background:var(--accent-soft);padding:2px 7px;border-radius:5px}
+  h3.sub{font-size:15px;font-weight:600;margin:18px 0 8px}
+  p{margin-bottom:12px;max-width:68ch} .muted{color:var(--muted-2)}
+  strong{font-weight:600} code,.mono{font-family:var(--font-mono);font-size:.9em;background:var(--surface-2);padding:.05em .35em;border-radius:4px}
+  a{color:var(--accent-ink);text-decoration:none;border-bottom:1px solid var(--accent-soft)} a:hover{border-bottom-color:var(--accent-ink)}
+
+  .cards{display:grid;grid-template-columns:repeat(2,1fr);gap:14px;margin:8px 0 6px}
+  .card{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:16px 18px;box-shadow:var(--shadow)}
+  .card .t{font-weight:600;margin-bottom:5px;display:flex;align-items:center;gap:8px}
+  .card .d{font-size:13.5px;color:var(--muted);line-height:1.55}
+
+  .callout{display:flex;gap:12px;border-radius:10px;padding:14px 16px;margin:16px 0;border:1px solid var(--border)}
+  .callout svg{width:18px;height:18px;flex:0 0 18px;stroke-width:1.6;fill:none;margin-top:2px}
+  .callout.warn{background:#FBF1E2;border-color:#EAD0A6} .callout.warn svg{stroke:var(--sig-amber)}
+  .callout.note{background:var(--surface)} .callout.note svg{stroke:var(--accent)}
+  .callout.danger{background:#F6E3DE;border-color:#E3B7AD} .callout.danger svg{stroke:var(--sig-red)}
+  .callout .body{font-size:14px} .callout .body strong{display:block;margin-bottom:2px}
+
+  pre.code{background:var(--surface-2);border:1px solid var(--border);border-radius:8px;padding:14px 16px;overflow-x:auto;font-family:var(--font-mono);font-size:12.5px;line-height:1.6;color:#3a332b;margin:12px 0}
+  pre.code .c{color:var(--muted-2)}
+
+  .ops{margin:6px 0}
+  .ops .li{display:grid;grid-template-columns:28px 1fr;gap:12px;padding:9px 0;border-bottom:1px dashed var(--border)}
+  .ops .li:last-child{border-bottom:none}
+  .ops .li .n{font-family:var(--font-mono);font-size:12px;color:#fff;background:var(--accent);width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center}
+  .ops .li .t{font-size:14px;padding-top:1px}
+
+  .res{background:var(--surface-2);border:1px solid var(--border);border-radius:10px;padding:14px 16px;margin:12px 0}
+  .res .h{font-size:12px;text-transform:uppercase;letter-spacing:0.08em;color:var(--muted-2);margin-bottom:8px}
+  .res ul{list-style:none}
+  .res li{padding:5px 0;font-size:13.5px;display:grid;grid-template-columns:14px 1fr;gap:8px}
+  .res li .b{width:6px;height:6px;border-radius:50%;background:var(--accent);margin-top:8px}
+
+  .linker{font-size:13px;color:var(--muted-2);margin:14px 0 0}
+  .linker a{font-family:var(--font-mono);font-size:12.5px}
+
+  .checklist{display:flex;flex-direction:column;gap:0;margin:8px 0}
+  .chk{display:grid;grid-template-columns:22px 1fr;gap:12px;padding:13px 0;border-bottom:1px solid var(--border)}
+  .chk:last-child{border-bottom:none}
+  .chk .mk{width:20px;height:20px;border-radius:5px;border:1.5px solid var(--accent);display:flex;align-items:center;justify-content:center;color:var(--accent);margin-top:1px}
+  .chk .mk svg{width:13px;height:13px;stroke:var(--accent);stroke-width:2;fill:none}
+  .chk .t{font-size:14px;font-weight:600;margin-bottom:3px}
+  .chk .d{font-size:13px;color:var(--muted);line-height:1.55}
+
+  .rules{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:8px 0}
+  .rule{border:1px solid var(--border);border-left:3px solid var(--accent);border-radius:0 8px 8px 0;padding:13px 16px;background:var(--surface)}
+  .rule .n{font-family:var(--font-mono);font-size:11px;color:var(--accent-ink);margin-bottom:4px}
+  .rule .t{font-weight:600;margin-bottom:3px} .rule .d{font-size:13px;color:var(--muted);line-height:1.55}
+
+  .foot{margin-top:36px;padding-top:16px;border-top:1px solid var(--border);font-size:12px;color:var(--muted-2);max-width:76ch}
+  .foot code{color:var(--accent-ink)}
+
+  .diagram{border:1px solid var(--border);border-radius:12px;background:var(--surface);padding:18px 16px;margin:14px 0 10px}
+  .diagram .cap{font-size:11px;letter-spacing:0.08em;text-transform:uppercase;color:var(--muted-2);margin-bottom:12px}
+  .diagram .scroll{overflow-x:auto}
+  .diagram svg{display:block;min-width:460px}
+  .diagram .legend{display:flex;gap:18px;flex-wrap:wrap;margin-top:10px;font-size:11.5px;color:var(--muted-2)}
+  .diagram .legend .sw{display:inline-flex;align-items:center;gap:6px;margin-right:4px}
+  .diagram .legend .box{width:14px;height:10px;border-radius:2px;display:inline-block}
+
+  .pipe{display:flex;align-items:stretch;gap:0;flex-wrap:wrap;margin:4px 0}
+  .pipe .box{flex:1 1 110px;min-width:100px;border:1px solid var(--border);border-radius:8px;padding:10px 11px;background:var(--bg);text-align:center}
+  .pipe .box .t{font-family:var(--font-mono);font-size:12px;font-weight:600;color:var(--accent-ink);margin-bottom:4px}
+  .pipe .box .d{font-size:12px;color:var(--muted-2);line-height:1.45}
+  .pipe .box.lock{border-color:var(--accent);background:var(--accent-soft)}
+  .pipe .box.warn{border-color:#E3B7AD;background:#F6E3DE}
+  .pipe .arr{display:flex;align-items:center;padding:0 6px;color:var(--accent-ink);font-family:var(--font-mono);font-size:14px}
+
+  .split2{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:8px 0}
+  @media(max-width:900px){.split2{grid-template-columns:1fr}}
+  .pane{border:1px solid var(--border);border-radius:10px;padding:12px 14px;background:var(--bg)}
+  .pane .ph{font-family:var(--font-mono);font-size:12px;color:var(--accent-ink);margin-bottom:8px;font-weight:600}
+  .pane ul{margin:0;padding-left:1.1em;font-size:13px;color:var(--fg)}
+  .pane li{margin:4px 0}
+
+  .ktable-wrap{overflow-x:auto;margin:10px 0 6px}
+  .ktable{width:100%;border-collapse:collapse;font-size:13px;background:var(--surface);min-width:480px}
+  .ktable th,.ktable td{border:1px solid var(--border);padding:8px 10px;text-align:left;vertical-align:top;line-height:1.45}
+  .ktable th{background:var(--surface-2);font-weight:600;font-size:12px;color:var(--muted-2);letter-spacing:0.02em}
+  .ktable .k{font-family:var(--font-mono);font-size:12px;white-space:nowrap}
+
+  .ex{border:1px dashed var(--border-deep);border-radius:10px;padding:12px 14px;margin:12px 0;background:rgba(244,239,227,.55)}
+  .ex .eh{font-size:11px;letter-spacing:0.08em;text-transform:uppercase;color:var(--accent-ink);margin-bottom:6px}
+  .ex .ed{font-size:13.5px;line-height:1.55}
+  .where{font-size:13px;color:var(--fg);margin:8px 0 4px;line-height:1.55}
+  .bullets{margin:8px 0 4px;padding-left:1.15em;font-size:13.5px}
+  .bullets li{margin:5px 0}
+  .note-line{font-size:13px;color:var(--muted-2);margin:6px 0 12px;line-height:1.55}
+
+  .stages{display:flex;gap:6px;flex-wrap:wrap;margin:4px 0 14px}
+  .stages .sl{font-size:11px;color:var(--muted-2);align-self:center;margin-right:2px}
+  .stages .s{font-family:var(--font-mono);font-size:11px;padding:2px 8px;border-radius:5px;background:var(--accent-soft);color:var(--accent-ink);letter-spacing:0.02em}
+
+  .banner{border:1px solid var(--border);border-left:3px solid var(--accent);border-radius:0 10px 10px 0;background:var(--surface);padding:14px 18px;margin-bottom:22px;font-size:13.5px;line-height:1.7;color:var(--muted)}
+  .banner strong{color:var(--fg)}
+  .banner .rules-mini{margin-top:8px;padding-left:1.2em}
+  .banner .rules-mini li{margin:3px 0}
+
+  .roadmap{display:flex;flex-direction:column;gap:0;margin:10px 0}
+  .rstop{display:grid;grid-template-columns:70px 1fr;gap:14px;padding:14px 0;border-bottom:1px dashed var(--border)}
+  .rstop:last-child{border-bottom:none}
+  .rstop .tag{align-self:start;font-family:var(--font-mono);font-size:11px;padding:3px 8px;border-radius:5px;text-align:center;white-space:nowrap}
+  .rstop.done .tag{background:var(--accent);color:#fff}
+  .rstop.doing .tag{background:var(--accent-soft);color:var(--accent-ink);border:1px solid var(--accent)}
+  .rstop.todo .tag{background:var(--surface-2);color:var(--muted-2);border:1px dashed var(--border-deep)}
+  .rstop .body .t{font-weight:600;margin-bottom:3px}
+  .rstop .body .d{font-size:13.5px;color:var(--muted);line-height:1.55}
+
+  .find{margin:8px 0 4px}
+  .next{margin-top:22px}
+
+  .screen#u0{max-width:1100px}
+  .go-screen{
+    display:inline-flex;align-items:center;gap:6px;
+    margin:0 0 16px;padding:6px 12px;
+    border:1px solid var(--border);border-radius:980px;
+    background:var(--surface);color:var(--accent-ink);
+    font-size:13px;font-weight:500;cursor:pointer;
+  }
+  .go-screen:hover{background:var(--accent-soft)}
+
+  /* —— 驾驶地图：贴合 prototype-ops-anim/驾驶地图.html 的结构化语言 —— */
+  .drive{margin:8px 0 18px}
+  .drive .path{display:flex;align-items:center;justify-content:center;flex-wrap:wrap;gap:10px;margin:0 0 12px;font-size:13px;color:var(--muted-2);font-weight:500}
+  .drive .path>button{background:none;border:0;color:inherit;font:inherit;cursor:pointer;padding:4px 2px;transition:color .2s ease}
+  .drive .path>button:hover,.drive .path>button.is-on{color:var(--fg)}
+  .drive .path>button.loop.is-on{color:var(--accent-ink)}
+  .drive .slice{flex:1 1 auto;max-width:720px;background:var(--fg);color:#fff;border-radius:16px;padding:10px 14px 11px;opacity:.72;transition:opacity .2s ease}
+  .drive .slice.is-live{opacity:1}
+  .drive .slice-head{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap}
+  .drive .slice-head strong{font-size:13px}
+  .drive .slice-head span{font-size:11px;color:rgba(255,255,255,.62)}
+  .drive .slice-track{margin-top:8px;display:flex;align-items:center;gap:6px}
+  .drive .milestone{font-size:11px;font-weight:500;white-space:nowrap;padding:4px 10px;border:0;border-radius:980px;background:rgba(255,255,255,.12);color:rgba(255,255,255,.82);cursor:pointer;transition:background .2s ease,color .2s ease}
+  .drive .milestone:hover{color:#fff}
+  .drive .milestone.is-now{background:var(--accent);color:#fff;box-shadow:0 0 0 3px var(--accent-soft)}
+  .drive .slice-rail{flex:1;height:1px;background:rgba(255,255,255,.22);min-width:6px}
+  .drive .entry,.drive .cell{width:100%;text-align:left;border:0;background:var(--surface);cursor:pointer;color:inherit;font:inherit}
+  .drive .entry{border-radius:20px;padding:10px 16px;margin-bottom:10px;box-shadow:var(--shadow);display:grid;grid-template-columns:auto 1fr auto;gap:14px;align-items:center;transition:background .2s ease}
+  .drive .entry:hover{background:#f7f3ea}
+  .drive .entry .who{display:flex;align-items:baseline;gap:10px}
+  .drive .entry h2,.drive .cell h2{font-size:16px;font-weight:600;margin:0}
+  .drive .idx{font-size:11px;color:var(--muted-2);letter-spacing:.06em}
+  .drive .board{display:grid;grid-template-columns:1fr 1.45fr 1fr;background:var(--surface);border-radius:20px;box-shadow:var(--shadow);overflow:hidden}
+  .drive .col{display:flex;flex-direction:column;min-width:0}
+  .drive .col.side{border-right:1px solid var(--border)}
+  .drive .cell{padding:12px 14px;display:flex;flex-direction:column;gap:7px;transition:background .2s ease}
+  .drive .cell+.cell{border-top:1px solid var(--border)}
+  .drive .cell:hover{background:#f7f3ea}
+  .drive .marks{display:flex;flex-wrap:wrap;gap:5px}
+  .drive .mark{display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:500;color:var(--fg);background:var(--surface-2);border-radius:980px;padding:2px 8px 2px 4px}
+  .drive .mark svg{width:15px;height:15px;flex:0 0 15px}
+  .drive .mark.dim{color:var(--muted-2)}
+  .drive .steps{display:grid;grid-template-columns:1fr 1fr;gap:5px}
+  .drive .steps.one{grid-template-columns:1fr}
+  .drive .step{display:flex;align-items:center;gap:6px;background:#f7f4ec;border:1px solid var(--border);border-radius:9px;padding:6px 7px;font-size:12px;font-weight:500;color:var(--muted)}
+  .drive .step .n{font-family:var(--font-mono);font-size:10px;color:#fff;background:var(--accent);width:15px;height:15px;border-radius:50%;display:grid;place-items:center;flex:0 0 15px}
+  .drive .step.dim{color:var(--muted-2);border-style:dashed}
+  .drive .step.dim .n{background:var(--muted-3)}
+  .drive .hint{font-size:12px;color:var(--muted-2)}
+  .drive .flow{display:flex;flex-wrap:wrap;align-items:center;gap:5px;font-size:12px;color:var(--muted)}
+  .drive .flow b{font-weight:500;font-size:12px;background:var(--surface-2);border-radius:8px;padding:3px 7px}
+  .drive .flow i{font-style:normal;color:var(--muted-2);font-size:11px}
+  .drive .kanban{display:grid;grid-template-columns:repeat(4,1fr);gap:4px}
+  .drive .kanban i{font-style:normal;background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:5px 3px 6px;text-align:center;font-size:10.5px;font-weight:500;color:var(--muted)}
+  .drive .kanban i b{display:block;width:70%;height:3px;margin:5px auto 0;background:var(--border-deep);border-radius:2px}
+  .drive .blk{background:#f7f4ec;border:1px solid var(--border);border-radius:12px;padding:7px 9px 8px}
+  .drive .blk .k{font-size:10px;font-weight:500;color:var(--muted-2);letter-spacing:.06em;margin-bottom:6px}
+  .drive .blk .act{margin-top:6px;font-size:11px;font-weight:500;color:var(--fg)}
+  .drive .window{background:var(--surface);border:1px solid var(--border);border-radius:14px;overflow:hidden}
+  .drive .titlebar{display:flex;align-items:center;gap:5px;padding:8px 10px 6px}
+  .drive .titlebar .dot{width:7px;height:7px;border-radius:50%;background:#d2cbb8}
+  .drive .titlebar em{font-style:normal;font-size:11px;color:var(--muted-2);margin-left:4px;letter-spacing:.04em}
+  .drive .layers{display:grid;grid-template-columns:1fr 1fr 1fr;gap:5px;padding:0 8px 8px}
+  .drive .layer{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:6px;text-align:center}
+  .drive .layer strong{display:block;font-size:11px;font-weight:600}
+  .drive .layer em{display:block;margin-top:2px;font-style:normal;font-size:10.5px;color:var(--muted)}
+  .drive .layer small{display:block;margin-top:2px;font-family:var(--font-mono);font-size:9.5px;color:var(--muted-2)}
+  .drive .sdlc-ring{position:relative;height:168px;margin:0 8px 8px}
+  .drive .ring-line{position:absolute;left:50%;top:50%;width:118px;height:118px;transform:translate(-50%,-50%);border:1px dashed var(--border-deep);border-radius:50%}
+  .drive .ring-core{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);font-size:11px;color:var(--muted-2);text-align:center;line-height:1.35}
+  .drive .ring-core b{display:block;font-size:13px;font-weight:600;color:var(--fg)}
+  .drive .sdlc-step{position:absolute;transform:translate(-50%,-50%);display:flex;flex-direction:column;align-items:center;gap:4px;font-size:11px;color:var(--muted-2);min-width:32px}
+  .drive .sdlc-step i{width:6px;height:6px;border-radius:50%;background:#d2cbb8;display:block}
+  .drive .sdlc-ring .sdlc-step:nth-of-type(1){left:50%;top:calc(50% - 62px)}
+  .drive .sdlc-ring .sdlc-step:nth-of-type(2){left:calc(50% + 54px);top:calc(50% - 31px)}
+  .drive .sdlc-ring .sdlc-step:nth-of-type(3){left:calc(50% + 54px);top:calc(50% + 31px)}
+  .drive .sdlc-ring .sdlc-step:nth-of-type(4){left:50%;top:calc(50% + 62px)}
+  .drive .sdlc-ring .sdlc-step:nth-of-type(5){left:calc(50% - 54px);top:calc(50% + 31px)}
+  .drive .sdlc-ring .sdlc-step:nth-of-type(6){left:calc(50% - 54px);top:calc(50% - 31px)}
+  .drive .got{list-style:none;margin:0;padding-top:6px;border-top:1px solid var(--border);display:flex;flex-direction:column;gap:4px}
+  .drive .got li{display:flex;align-items:flex-start;gap:6px;font-size:11.5px;line-height:1.4;color:var(--fg);text-align:left}
+  .drive .got svg{width:14px;height:14px;flex:0 0 14px;margin-top:1px}
+  .drive .got .p{font-family:var(--font-mono);font-size:11px}
+  .drive .got .ver{color:var(--accent-ink);font-weight:600}
+  .drive .entry .got{border-top:0;padding-top:0}
+  .go-row{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 16px}
+  .hint{font-size:13px;color:var(--muted-2);margin:0 0 16px;max-width:68ch}
+  @media(max-width:800px){.drive .board{grid-template-columns:1fr}.drive .col.side{border-right:0}.drive .col+.col{border-top:1px solid var(--border)}.drive .entry{grid-template-columns:1fr}.drive .layers{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+
+<svg xmlns="http://www.w3.org/2000/svg" style="display:none">
+  <symbol id="i-orca" viewBox="0 0 16 16"><rect x="1" y="1" width="14" height="14" rx="4" fill="#23211C"/><path d="M4 9c1.2-2.4 3-3.6 5.2-3.2 1.6.3 2.8 1.4 3.3 2.8" fill="none" stroke="#FBFAF6" stroke-width="1.3" stroke-linecap="round"/><circle cx="6.2" cy="6.2" r="0.8" fill="#FBFAF6"/></symbol>
+  <symbol id="i-skill" viewBox="0 0 16 16"><path d="M4 2.5h6.5L13 5v8.5H4z" fill="none" stroke="#23211C" stroke-width="1.3"/><path d="M10.5 2.5V5H13" fill="none" stroke="#23211C" stroke-width="1.3"/><path d="M6 8h4M6 10.5h3" stroke="#23211C" stroke-width="1.2" stroke-linecap="round"/></symbol>
+  <symbol id="i-repo" viewBox="0 0 16 16"><rect x="2.5" y="1.5" width="11" height="13" rx="2" fill="none" stroke="#23211C" stroke-width="1.3"/><path d="M5 5h6M5 8h6M5 11h3.5" stroke="#23211C" stroke-width="1.2" stroke-linecap="round"/></symbol>
+  <symbol id="i-issue" viewBox="0 0 16 16"><rect x="2.5" y="2.5" width="11" height="11" rx="2.5" fill="none" stroke="#23211C" stroke-width="1.3"/><circle cx="8" cy="8" r="1.6" fill="#23211C"/></symbol>
+  <symbol id="i-tag" viewBox="0 0 16 16"><path d="M2.5 8.8V3.8A1.3 1.3 0 0 1 3.8 2.5h5l4.7 4.7a1.3 1.3 0 0 1 0 1.8L9 13.5a1.3 1.3 0 0 1-1.8 0z" fill="none" stroke="#23211C" stroke-width="1.3" stroke-linejoin="round"/><circle cx="6.1" cy="6.1" r="0.9" fill="#23211C"/></symbol>
+</svg>
+
+<aside class="sidebar">
+  <div class="brand"><div class="mark">Workbench<span class="dot">.</span></div><div class="sub">MVP · 使用指南</div></div>
+  <nav>
+    <div class="nav-group">
+      <div class="nav-group-title">怎么用</div>
+      <div class="nav-item active" data-screen="u0"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>驾驶地图</div>
+      <div class="nav-item" data-screen="u-import"><svg viewBox="0 0 24 24"><path d="M5 6h11l4 4v8H5z"/></svg>添加项目</div>
+      <div class="nav-item" data-screen="u-plan"><svg viewBox="0 0 24 24"><path d="M4 7h16M4 12h10M4 17h7"/></svg>版本规划</div>
+      <div class="nav-item" data-screen="u-land"><svg viewBox="0 0 24 24"><path d="M4 19V5M4 19h16M8 16l3-5 3 3 4-6"/></svg>构建交付</div>
+      <div class="nav-item" data-screen="u-pack"><svg viewBox="0 0 24 24"><path d="M12 3l8 4v5c0 5-3.5 8-8 9-4.5-1-8-4-8-9V7z"/></svg>出包验证</div>
+      <div class="nav-item" data-screen="u-release"><svg viewBox="0 0 24 24"><path d="M12 3l8 4v5c0 5-3.5 8-8 9-4.5-1-8-4-8-9V7z"/></svg>版本发布</div>
+      <div class="nav-item" data-screen="u-stock"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>周复盘</div>
+      <div class="nav-item" data-screen="u-rules"><svg viewBox="0 0 24 24"><path d="M4 7h16M4 12h10M4 17h7"/></svg>规矩</div>
+    </div>
+  </nav>
+  <div class="nav-foot">
+    按站查「点什么、得到什么」。<br>怎么建 / 跑 / 测看仓根 <code>AGENTS.md</code>。
+  </div>
+</aside>
+
+<main class="main">
+  <header class="topbar">
+    <div class="crumb"><span class="sec" id="crumb-sec">怎么用</span><span class="sep">/</span><span class="cur" id="crumb-cur">驾驶地图</span></div>
+    <span class="badge use" id="top-badge">Usage</span>
+  </header>
+
+  <div class="content" id="content">
+
+    <!-- ============ U0 驾驶地图 ============ -->
+    <section class="screen active" id="u0" data-title="驾驶地图" data-sec-name="怎么用">
+      <div class="eyebrow">Workbench MVP · 使用指南</div>
+      <h1 class="disp">按周迭代，版本贯穿</h1>
+      <p class="lede">添加项目只做一次。之后每周：<strong>版本规划 → 构建交付 → 出包验证 → 版本发布 → 周复盘</strong>。同一串名从 <code>bw:plan:&lt;名&gt;</code> 走到出包目录、Release / tag、<code>bw:released:&lt;名&gt;</code>。点一站进正文。</p>
+
+      <div class="drive" aria-label="驾驶地图">
+        <nav class="path">
+          <button type="button" onclick="go('u-import')">添加项目</button>
+          <div class="slice is-live" id="spine">
+            <div class="slice-head">
+              <strong>本版 · &lt;名&gt;</strong>
+              <span>同一串名，从规划发到出版</span>
+            </div>
+            <div class="slice-track">
+              <button type="button" class="milestone" onclick="go('u-plan')">版本规划</button>
+              <i class="slice-rail"></i>
+              <button type="button" class="milestone" onclick="go('u-land')">构建交付</button>
+              <i class="slice-rail"></i>
+              <button type="button" class="milestone" onclick="go('u-pack')">出包验证</button>
+              <i class="slice-rail"></i>
+              <button type="button" class="milestone" onclick="go('u-release')">版本发布</button>
+            </div>
+          </div>
+          <button type="button" class="loop" onclick="go('u-stock')">周复盘 ↺</button>
+        </nav>
+
+        <button type="button" class="entry" onclick="go('u-import')">
+          <div class="who">
+            <div class="idx">只做一次</div>
+            <h2>添加项目</h2>
+          </div>
+          <div class="flow">
+            <b>打开本地仓 / clone 远端仓</b><i>→</i>
+            <b>填名片四字段</b><i>→</i>
+            <b>开 MR</b><i>→</i>
+            <b>你合「项目约定」</b>
+          </div>
+          <ul class="got">
+            <li><svg viewBox="0 0 16 16" aria-hidden="true"><use href="#i-repo"/></svg><span class="p">.bw/project.toml</span></li>
+            <li><svg viewBox="0 0 16 16" aria-hidden="true"><use href="#i-repo"/></svg><span class="p">.bw/.gitignore</span>（只忽略 <span class="p">worktrees/</span>）</li>
+          </ul>
+        </button>
+
+        <div class="board">
+          <div class="col side">
+            <button type="button" class="cell" onclick="go('u-plan')">
+              <div class="idx">01 · 周一 09:00</div>
+              <h2>版本规划</h2>
+              <div class="marks">
+                <span class="mark"><svg viewBox="0 0 16 16"><use href="#i-orca"/></svg>定版本计划（Workbench）</span>
+                <span class="mark"><svg viewBox="0 0 16 16"><use href="#i-skill"/></svg>更新指标与版本计划</span>
+              </div>
+              <div class="steps">
+                <div class="step"><span class="n">1</span>复盘</div>
+                <div class="step"><span class="n">2</span>更新指标</div>
+                <div class="step"><span class="n">3</span>确认版本与纳入</div>
+                <div class="step"><span class="n">4</span>你确认后保存</div>
+              </div>
+              <ul class="got">
+                <li><svg viewBox="0 0 16 16" aria-hidden="true"><use href="#i-repo"/></svg><span class="p">.bw/metrics.toml</span> · <span class="p">.bw/scripts/</span></li>
+                <li><svg viewBox="0 0 16 16" aria-hidden="true"><use href="#i-issue"/></svg><span class="p">## 版本目标 / 本周纳入 / 本周指标读数</span></li>
+                <li><svg viewBox="0 0 16 16" aria-hidden="true"><use href="#i-issue"/></svg><span class="p">bw:plan:<span class="ver">&lt;名&gt;</span></span></li>
+              </ul>
+            </button>
+            <button type="button" class="cell" onclick="go('u-stock')">
+              <div class="idx">05 · 周五 15:00</div>
+              <h2>周复盘</h2>
+              <div class="marks">
+                <span class="mark"><svg viewBox="0 0 16 16"><use href="#i-orca"/></svg>资产盘点（Workbench）</span>
+                <span class="mark"><svg viewBox="0 0 16 16"><use href="#i-skill"/></svg>资产盘点</span>
+              </div>
+              <div class="steps">
+                <div class="step"><span class="n">1</span>盘 .bw/</div>
+                <div class="step"><span class="n">2</span>盘项目</div>
+                <div class="step"><span class="n">3</span>收口每周进展</div>
+                <div class="step"><span class="n">4</span>有改才开 MR</div>
+              </div>
+              <ul class="got">
+                <li><svg viewBox="0 0 16 16" aria-hidden="true"><use href="#i-repo"/></svg><span class="p">.bw/</span>（有改才动）</li>
+                <li><svg viewBox="0 0 16 16" aria-hidden="true"><use href="#i-issue"/></svg><span class="p">## Workbench 资产 / 文档正本 / 闭环 / 项目审查</span></li>
+                <li><svg viewBox="0 0 16 16" aria-hidden="true"><use href="#i-issue"/></svg><span class="p">## 每周进展</span>（挂在更新指标与版本计划 Issue）</li>
+              </ul>
+            </button>
+          </div>
+          <div class="col side">
+            <button type="button" class="cell" onclick="go('u-land')">
+              <div class="idx">02</div>
+              <h2>构建交付</h2>
+              <div class="blk">
+                <div class="k">看计划屏</div>
+                <div class="kanban" aria-hidden="true"><i>待办<b></b></i><i>进行中<b></b></i><i>待处理<b></b></i><i>已完成<b></b></i></div>
+                <div class="act">拖进进行中 · ▶开工</div>
+              </div>
+              <div class="window">
+                <div class="titlebar"><span class="dot"></span><span class="dot"></span><span class="dot"></span><em>harness · 各类任务运行时</em></div>
+                <div class="layers">
+                  <div class="layer"><strong>SYSTEM</strong><em>哪个 Issue</em><small>SYSTEM.md.tmpl</small></div>
+                  <div class="layer"><strong>references</strong><em>改仓怎么落</em><small>build.md</small></div>
+                  <div class="layer"><strong>skill</strong><em>这场怎么带人</em><small>mattpocock-skills</small></div>
+                </div>
+                <div class="sdlc-ring">
+                  <i class="ring-line"></i>
+                  <div class="ring-core"><b>环</b>人守判断</div>
+                  <span class="sdlc-step"><i></i>计划</span>
+                  <span class="sdlc-step"><i></i>设计</span>
+                  <span class="sdlc-step"><i></i>构建</span>
+                  <span class="sdlc-step"><i></i>测试</span>
+                  <span class="sdlc-step"><i></i>发布</span>
+                  <span class="sdlc-step"><i></i>运维</span>
+                </div>
+              </div>
+              <ul class="got">
+                <li><svg viewBox="0 0 16 16" aria-hidden="true"><use href="#i-repo"/></svg>MR</li>
+                <li><svg viewBox="0 0 16 16" aria-hidden="true"><use href="#i-issue"/></svg><span class="p">bw:status:inreview</span></li>
+              </ul>
+            </button>
+          </div>
+          <div class="col">
+            <button type="button" class="cell" onclick="go('u-pack')">
+              <div class="idx">03 · 发版前</div>
+              <h2>出包验证</h2>
+              <div class="marks">
+                <span class="mark"><svg viewBox="0 0 16 16"><use href="#i-skill"/></svg>计划屏 · 出包</span>
+                <span class="mark dim"><svg viewBox="0 0 16 16"><use href="#i-orca"/></svg>自动 · 未建</span>
+              </div>
+              <div class="steps one">
+                <div class="step"><span class="n">1</span>出包</div>
+                <div class="step"><span class="n">2</span>验包</div>
+                <div class="step dim"><span class="n">—</span>每日集成 · 未建</div>
+              </div>
+              <ul class="got">
+                <li><svg viewBox="0 0 16 16" aria-hidden="true"><use href="#i-repo"/></svg><span class="p">.bw/release/out/<span class="ver">&lt;名&gt;</span>/</span>（不合入、不上 issue）</li>
+              </ul>
+            </button>
+            <button type="button" class="cell" onclick="go('u-release')">
+              <div class="idx">04</div>
+              <h2>版本发布</h2>
+              <div class="marks"><span class="mark"><svg viewBox="0 0 16 16"><use href="#i-skill"/></svg>计划屏 · 发版本</span></div>
+              <div class="steps one">
+                <div class="step"><span class="n">1</span>你点发版本</div>
+                <div class="step"><span class="n">2</span>建 Release</div>
+                <div class="step"><span class="n">3</span>打 bw:released</div>
+              </div>
+              <ul class="got">
+                <li><svg viewBox="0 0 16 16" aria-hidden="true"><use href="#i-tag"/></svg>Release <span class="p ver">&lt;名&gt;</span></li>
+                <li><svg viewBox="0 0 16 16" aria-hidden="true"><use href="#i-tag"/></svg><span class="p">tag &lt;名&gt;</span></li>
+                <li><svg viewBox="0 0 16 16" aria-hidden="true"><use href="#i-issue"/></svg><span class="p">bw:released:<span class="ver">&lt;名&gt;</span></span></li>
+              </ul>
+            </button>
+          </div>
+        </div>
+      </div>
+      <p class="hint">总览上的灯、指标、改名片不是单独一站，打开项目后侧栏「总览」就能看。怎么建 / 跑 / 测看仓根 <code>AGENTS.md</code>；上报问题见侧栏底部「帮助」；规矩见末页。</p>
+      <div class="foot">使用指南正本 <code>docs/03-guide/v4-产品指南.html</code>。</div>
+    </section>
+
+    <!-- ============ 添加项目 ============ -->
+    <section class="screen" id="u-import" data-title="添加项目" data-sec-name="怎么用">
+      <div class="eyebrow">怎么用 · 添加项目</div>
+      <h1 class="disp">把一个仓接进来</h1>
+      <p class="lede">只做一次。选仓、填名片四字段。仓里没名片时开「项目约定」MR；已有不再铺。仓根一个字不动。</p>
+      <p class="hint">去哪：项目墙 · 「+ 接入项目」。工作台抽屉里没有项目墙这条跳转，先关指南回项目墙再点。</p>
+
+      <h2 class="sec"><span class="n">操作</span></h2>
+      <div class="ops">
+        <div class="li"><div class="n">1</div><div class="t">项目墙点「+ 接入项目」。本机已经 clone 好就选「打开本地仓」并浏览文件夹，直接使用原目录；还没 clone 才选「克隆远端仓」。</div></div>
+        <div class="li"><div class="n">2</div><div class="t">克隆远端仓时，用 <code>gh</code>（GitHub）或 <code>codehub-cli</code>（内部）列出账号下的仓，也可以直接填 <code>owner/repo</code>。工作区根目录只是默认 clone 父目录，也可以另选父文件夹。</div></div>
+        <div class="li"><div class="n">3</div><div class="t">第二步确认名片四格：名称、想做什么、最像的对标、三个月长成什么样。本地或远端已有 <code>.bw/project.toml</code> 时会直接带入。</div></div>
+        <div class="li"><div class="n">4</div><div class="t">点「完成接入」，等十几秒。然后去计划屏把「项目约定」拖到「已完成」（有开着的 MR 会先合）。项目墙 ⚑ 只提醒，不在那儿合。</div></div>
+      </div>
+
+      <h2 class="sec"><span class="n">背后</span></h2>
+      <div class="res">
+        <ul>
+          <li><span class="b"></span><div><strong>对远端</strong>：仓里没名片才建「项目约定」，开分支 <code>bw/project</code> 提 MR，停在待评审。已有名片或已开着这个 Issue，整段跳过。</div></li>
+          <li><span class="b"></span><div><strong>对你的机器</strong>：本地仓保存规范化绝对路径，不复制；远端仓才 clone。路径不是 git 仓、远端与 origin 对不上、或同一目录重复接入都会弹回。</div></li>
+          <li><span class="b"></span><div><strong>对 <code>.bw/</code></strong>：写 <code>.bw/project.toml</code>（已有不覆盖）；<code>.bw/.gitignore</code> 只一条 <code>worktrees/</code>。Orca 登记这个仓，写三条<strong>默认关</strong>的自动化；自动化与项目约定的常驻工作树都放在 <code>&lt;仓&gt;/.bw/worktrees/</code>。旧仓外同级树只提示人先收尾，不迁、不删。</div></li>
+        </ul>
+      </div>
+
+      <h2 class="sec"><span class="n">得到什么</span></h2>
+      <div class="res">
+        <ul>
+          <li><span class="b"></span><div>本机一个真实的仓；工作台上一个项目。</div></li>
+          <li><span class="b"></span><div>合入后默认分支上有 <code>.bw/project.toml</code> 和 <code>.bw/.gitignore</code>。在研版本不写进名片。</div></li>
+          <li><span class="b"></span><div>接错了：项目卡右上角 ✕ 只移走，仓一个字节不动。</div></li>
+        </ul>
+      </div>
+      <div class="callout note">
+        <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/></svg>
+        <div class="body"><strong>总览不是下一站。</strong>打开项目后侧栏「总览」查看健康信号、指标、修改名片。历史配置文件（如 <code>.bw/PROJECT.md</code>）接入时不处理；资产盘点按现行清单清理，文件改动经 MR 由你确认合入。</div>
+      </div>
+      <p class="linker">机制：<a href="#" onclick="return false">docs/architecture.md</a> §2 ① 关键信息维护（项目约定）/ §1「接入」用例。</p>
+      <p class="next">下一站：<a href="#" onclick="go('u-plan');return false">版本规划</a></p>
+      <div class="foot">事实源 <code>docs/architecture.md</code> §2 ① 关键信息维护 / §1 接入用例。</div>
+    </section>
+
+    <!-- ============ 版本规划 ============ -->
+    <section class="screen" id="u-plan" data-title="版本规划" data-sec-name="怎么用">
+      <div class="eyebrow">怎么用 · 版本规划</div>
+      <h1 class="disp">确认这个版本干什么</h1>
+      <p class="lede">一次会话走完：复盘 → 更新指标 → 确认版本与纳入 → 你确认后保存。计划正本挂在更新指标与版本计划 Issue 的评论上。定时任务在 Orca，默认时间为周一 09:00（北京时间），<strong>默认关</strong>。</p>
+      <div class="go-row">
+        <button type="button" class="go-screen" onclick="goScreen('plan')">去计划屏</button>
+        <button type="button" class="go-screen" onclick="goScreen('session')">去会话</button>
+      </div>
+
+      <h2 class="sec"><span class="n">操作</span></h2>
+      <div class="ops">
+        <div class="li"><div class="n">1</div><div class="t">打开项目，侧栏点「计划」；要开会话点「会话」。Orca 里「定版本计划（Workbench）」<strong>默认关</strong>，要跑先打开或点 Run now。</div></div>
+        <div class="li"><div class="n">2</div><div class="t">会话使用 <code>bw/week-plan</code> 常驻分支对应的工作树。Skill「更新指标与版本计划」：复盘、采指标、先确认本周版本（推荐 <code>v0.x</code>），再起草版本目标与纳入清单。</div></div>
+        <div class="li"><div class="n">3</div><div class="t">你确认后才保存：纳入的 Issue 打 <code>bw:plan:&lt;名&gt;</code>；更新指标与版本计划 Issue 写下一条包含以下三个标题的评论 <code>## 版本目标</code> / <code>## 本周纳入</code> / <code>## 本周指标读数</code>。</div></div>
+        <div class="li"><div class="n">4</div><div class="t">回计划屏。点某个版本只看打了 <code>bw:plan:&lt;名&gt;</code> 的 Issue；没打标签的看右上角「全部 issue」。</div></div>
+      </div>
+
+      <h2 class="sec"><span class="n">背后</span></h2>
+      <div class="res">
+        <ul>
+          <li><span class="b"></span><div><strong>对远端</strong>：已有未打版本标签的更新指标与版本计划 Issue 就复用，没有再新建。纳入的 Issue 是真的远端 issue。</div></li>
+          <li><span class="b"></span><div><strong>对你的机器</strong>：改动落在 <code>bw/week-plan</code>，不写主检出。</div></li>
+          <li><span class="b"></span><div><strong>对 <code>.bw/</code></strong>：缺的 <code>metrics.toml</code> 和 <code>.bw/scripts/</code> 会铺上（已有不覆盖），经这个 Issue 的 MR 合进默认分支。版本目标不另写计划文件。在研版本不进 <code>project.toml</code>。</div></li>
+        </ul>
+      </div>
+
+      <h2 class="sec"><span class="n">得到什么</span></h2>
+      <div class="res">
+        <ul>
+          <li><span class="b"></span><div>仓里：<code>.bw/metrics.toml</code>、<code>.bw/scripts/</code>（经 MR）。</div></li>
+          <li><span class="b"></span><div>更新指标与版本计划 Issue 评论：版本目标 / 本周纳入 / 本周指标读数。纳入的 Issue 带着 <code>bw:plan:&lt;名&gt;</code>。</div></li>
+        </ul>
+      </div>
+      <div class="callout warn">
+        <svg viewBox="0 0 24 24"><path d="M12 3l9 16H3z"/><path d="M12 9v5M12 17h.01"/></svg>
+        <div class="body"><strong>计划屏「新建 issue」建 Issue。</strong>类别选「原型」再 Start，才走 Open Design。</div>
+      </div>
+      <p class="linker">机制：<a href="#" onclick="return false">docs/architecture.md</a> §1「周循环与计划」用例。</p>
+      <p class="next">下一站：<a href="#" onclick="go('u-land');return false">构建交付</a></p>
+      <div class="foot">事实源 <code>docs/architecture.md</code> §1 周循环与计划用例。</div>
+    </section>
+
+    <!-- ============ builder ============ -->
+    <section class="screen" id="u-land" data-title="构建交付" data-sec-name="怎么用">
+      <div class="eyebrow">怎么用 · 构建交付</div>
+      <h1 class="disp">开始执行一个 Issue</h1>
+      <p class="lede">看计划屏，拖进进行中或点开工。agent 在 harness 里执行，由用户判断方向和结果。本地 worktree 不是正本。</p>
+      <div class="go-row">
+        <button type="button" class="go-screen" onclick="goScreen('plan')">去计划屏</button>
+        <button type="button" class="go-screen" onclick="goScreen('session')">去会话</button>
+      </div>
+
+      <h2 class="sec"><span class="n">操作</span></h2>
+      <div class="ops">
+        <div class="li"><div class="n">1</div><div class="t">打开项目后侧栏点「计划」。四列：待办 / 进行中 / 待处理 / 已完成。</div></div>
+        <div class="li"><div class="n">2</div><div class="t">把卡拖进「进行中」，或详情里 Start。确认后跳会话屏。没类别的 Issue 要先选一类，否则不开工。</div></div>
+        <div class="li"><div class="n">3</div><div class="t">构建类停在会话屏的 Orca 页；原型类停在 Open Design，<strong>不会自动开跑</strong>，你打一句发出去它才动。</div></div>
+        <div class="li"><div class="n">4</div><div class="t">卡住了拖到待处理的「阻塞」；不想干了拖到已完成列的「取消」（要写原因）。停止、开 MR、评审在 Orca 里做。合入、点完成见<a href="#" onclick="go('u-release');return false">版本发布</a>前的验收。</div></div>
+      </div>
+
+      <h2 class="sec"><span class="n">背后</span></h2>
+      <div class="res">
+        <ul>
+          <li><span class="b"></span><div><strong>对远端</strong>：开工改到进行中。提完 MR 后 Issue 到待评审（<code>bw:status:inreview</code>）。取消 Issue 时打取消标签并关闭 Issue。</div></li>
+          <li><span class="b"></span><div><strong>对你的机器</strong>：每个 Issue 一个工作目录，在 <code>&lt;仓&gt;/.bw/worktrees/</code>。去会话只切换工作树，不改 Issue 的状态。</div></li>
+          <li><span class="b"></span><div><strong>对 <code>.bw/</code></strong>：这一站不写指标、不改名片。正本是 MR 和 issue 标签。</div></li>
+        </ul>
+      </div>
+
+      <h2 class="sec"><span class="n">得到什么</span></h2>
+      <div class="res">
+        <ul>
+          <li><span class="b"></span><div>一张 MR；Issue 在待评审等你看。</div></li>
+          <li><span class="b"></span><div>完成仍你点：有开着的 MR 就合入，没有则只关 issue。</div></li>
+        </ul>
+      </div>
+      <p class="linker">机制：<a href="#" onclick="return false">docs/architecture.md</a> §2 ③ 系统提示词与渐进加载 / §2 ① 关键信息维护（状态机）/ §2 ② 会话与执行。</p>
+      <p class="next">下一站：<a href="#" onclick="go('u-pack');return false">出包验证</a></p>
+      <div class="foot">事实源 <code>docs/architecture.md</code> §2 ③ 系统提示词 / ① 关键信息维护（状态机）/ ② 会话与执行 / §1 周循环与计划。</div>
+    </section>
+
+    <!-- ============ 出包验证 ============ -->
+    <section class="screen" id="u-pack" data-title="出包验证" data-sec-name="怎么用">
+      <div class="eyebrow">怎么用 · 出包验证</div>
+      <h1 class="disp">先出包，再验包</h1>
+      <p class="lede">发版前在计划屏点「出包」。产物落本机，<strong>不合入、不上 issue</strong>。Orca 自动出包、每日集成<strong>未建</strong>，出包是你点的。</p>
+      <div class="go-row">
+        <button type="button" class="go-screen" onclick="goScreen('plan')">去计划屏</button>
+      </div>
+
+      <h2 class="sec"><span class="n">操作</span></h2>
+      <div class="ops">
+        <div class="li"><div class="n">1</div><div class="t">打开项目，侧栏点「计划」，切到这个版本（「全部 issue」里没有「出包」）。</div></div>
+        <div class="li"><div class="n">2</div><div class="t">点「出包」：已发过的号从那次 tag 另开一棵树出，主工作区不动；在研还没打 tag 就先把工作区拉到最新再出。先出包，再验包。验包不过点「详情」列出每条用例和报错。弹窗可关掉继续跑；要停就点「停止」。</div></div>
+      </div>
+
+      <h2 class="sec"><span class="n">背后</span></h2>
+      <div class="res">
+        <ul>
+          <li><span class="b"></span><div><strong>对远端</strong>：不建 Release，不打发版标签。</div></li>
+          <li><span class="b"></span><div><strong>对你的机器</strong>：跑仓里 <code>.bw/release/pack/pack.cmd</code> 和验包脚本。产物在 <code>.bw/release/out/&lt;名&gt;/</code>。</div></li>
+          <li><span class="b"></span><div><strong>对 <code>.bw/</code></strong>：安装包不进 git。号就是当前版本那串名。</div></li>
+        </ul>
+      </div>
+
+      <h2 class="sec"><span class="n">得到什么</span></h2>
+      <div class="res">
+        <ul>
+          <li><span class="b"></span><div>本机一份这个版本的安装包。弹窗第一行可以打开目录。</div></li>
+        </ul>
+      </div>
+      <p class="linker">机制：<a href="#" onclick="return false">docs/architecture.md</a> §1↳出包/验包用例 / §2 ① 关键信息维护（<code>PackRelease</code>）。</p>
+      <p class="next">下一站：<a href="#" onclick="go('u-release');return false">版本发布</a></p>
+      <div class="foot">事实源 <code>docs/architecture.md</code> §1 出包用例 / §2 ① 关键信息维护；协议 <code>docs/02-adr/0005-发版出包与E2E协议.md</code>。</div>
+    </section>
+
+    <!-- ============ 版本发布 ============ -->
+    <section class="screen" id="u-release" data-title="版本发布" data-sec-name="怎么用">
+      <div class="eyebrow">怎么用 · 版本发布</div>
+      <h1 class="disp">你点「发版本」</h1>
+      <p class="lede">先建远端 Release 和 tag，再给勾上的 Issue 打 <code>bw:released:&lt;名&gt;</code>。不写仓文件。验收（合 MR、点完成）也在计划屏。</p>
+      <div class="go-row">
+        <button type="button" class="go-screen" onclick="goScreen('plan')">去计划屏</button>
+      </div>
+
+      <h2 class="sec"><span class="n">操作</span></h2>
+      <div class="ops">
+        <div class="li"><div class="n">1</div><div class="t">打开项目，侧栏点「计划」。完成工作：拖到「已完成」（先确认切的是「完成」不是「取消」）。有开着的 MR 就先合；没有则只关 issue。</div></div>
+        <div class="li"><div class="n">2</div><div class="t">切到在研那个版本（「全部 issue」里没有「发版本」）。点「发版本」：只有在研且还没打过 tag 的号能点，发过就灰着。没有已完成的 Issue 也能发。号锁死当前版本。</div></div>
+        <div class="li"><div class="n">3</div><div class="t">去代码平台核对真有这个 Release，或跑 <code>gh release list</code> / <code>codehub-cli release list</code>。</div></div>
+      </div>
+
+      <h2 class="sec"><span class="n">背后</span></h2>
+      <div class="res">
+        <ul>
+          <li><span class="b"></span><div><strong>对远端</strong>：先建 Release（顺带打 tag），再给勾过的 Issue 打 <code>bw:released:&lt;名&gt;</code>。顺序不能反。可以一张不打。</div></li>
+          <li><span class="b"></span><div><strong>对你的机器</strong>：发版尽量把工作区对齐远端。不出安装包——安装包是上一站。</div></li>
+          <li><span class="b"></span><div><strong>对 <code>.bw/</code></strong>：不改名片，不写仓文件。在研号仍看更新指标与版本计划 Issue，不进 <code>project.toml</code>。</div></li>
+        </ul>
+      </div>
+
+      <h2 class="sec"><span class="n">得到什么</span></h2>
+      <div class="res">
+        <ul>
+          <li><span class="b"></span><div>平台上一个 Release <code>&lt;名&gt;</code>、一个 tag <code>&lt;名&gt;</code>；勾上的 Issue 带着 <code>bw:released:&lt;名&gt;</code>。</div></li>
+        </ul>
+      </div>
+      <p class="linker">机制：<a href="#" onclick="return false">docs/architecture.md</a> §1↳发版用例 / §2 ① 关键信息维护（<code>CutRelease</code>）。</p>
+      <p class="next">下一站：<a href="#" onclick="go('u-stock');return false">周复盘</a></p>
+      <div class="foot">事实源 <code>docs/architecture.md</code> §2 ① 关键信息维护 / §1 发版用例。</div>
+    </section>
+
+    <!-- ============ 周复盘 ============ -->
+    <section class="screen" id="u-stock" data-title="周复盘" data-sec-name="怎么用">
+      <div class="eyebrow">怎么用 · 周复盘</div>
+      <h1 class="disp">周五盘点，停在待评审</h1>
+      <p class="lede">Orca「资产盘点（Workbench）」默认时间为周五 15:00（北京时间），<strong>默认关</strong>。Skill 资产盘点：盘 <code>.bw/</code> → 检查文档 → 审查项目 → 总结每周进展。有文件改动才开 MR。</p>
+      <div class="go-row">
+        <button type="button" class="go-screen" onclick="goScreen('plan')">去计划屏</button>
+        <button type="button" class="go-screen" onclick="goScreen('session')">去会话</button>
+      </div>
+
+      <h2 class="sec"><span class="n">操作</span></h2>
+      <div class="ops">
+        <div class="li"><div class="n">1</div><div class="t">打开项目。要跑：到会话屏 Orca 嵌页，打开「资产盘点（Workbench）」或点 Run now。错过了同样去 Orca 补跑。</div></div>
+        <div class="li"><div class="n">2</div><div class="t">会话使用 <code>bw/ops-audit</code> 常驻分支对应的工作树。类别锁成「运维」。最远到待评审。</div></div>
+        <div class="li"><div class="n">3</div><div class="t">改了 <code>.bw/</code> 才有 MR。合入、点完成仍是你来。下周一回到版本规划，同一版本名贯穿工作流程。</div></div>
+      </div>
+
+      <h2 class="sec"><span class="n">背后</span></h2>
+      <div class="res">
+        <ul>
+          <li><span class="b"></span><div><strong>对远端</strong>：本周还没有就建一个资产盘点 Issue（标题含 ISO 周，如 <code>资产盘点 2026-W36</code>），有在研版本就挂 <code>bw:plan:&lt;名&gt;</code>。</div></li>
+          <li><span class="b"></span><div><strong>对你的机器</strong>：钟在 Orca。Orca 没开就下次打开项目再补打自动化。</div></li>
+          <li><span class="b"></span><div><strong>对 <code>.bw/</code></strong>：对照现行契约清残留、升格式。仓根 <code>AGENTS.md</code> 不代写，首次盘点也不触发手册编写。文档检查与项目审查只在报告中指出问题，不替项目改文档或业务代码。</div></li>
+        </ul>
+      </div>
+
+      <h2 class="sec"><span class="n">得到什么</span></h2>
+      <div class="res">
+        <ul>
+          <li><span class="b"></span><div>这个 Issue 的评论：<code>## Workbench 资产</code> / ## 文档正本 / <code>## 闭环</code> / <code>## 项目审查</code>。</div></li>
+          <li><span class="b"></span><div>该版本更新指标与版本计划 Issue 上追加 <code>## 每周进展</code>。总览右栏按新到旧列出。</div></li>
+          <li><span class="b"></span><div>Orca「每日指标采集（Workbench）」默认关闭。启用后默认每天 20:00（北京时间）采集不可回溯指标的当前值；总览「立即采集」可手动触发。</div></li>
+        </ul>
+      </div>
+      <p class="linker">机制：<a href="#" onclick="return false">docs/architecture.md</a> §1「asset-audit（资产盘点 Issue）」用例 / §2 ④ 技能与提炼。</p>
+      <p class="next">下周一回到<a href="#" onclick="go('u-plan');return false">版本规划</a>。</p>
+      <div class="foot">事实源 <code>docs/architecture.md</code> §1 asset-audit 用例 / §2 ④ 技能与提炼；standard/skills/asset-audit/SKILL.md；定时默认值见 crates/bw/src/app/orca_inject.rs。</div>
+    </section>
+
+    <!-- ============ 规矩 ============ -->
+    <section class="screen" id="u-rules" data-title="规矩" data-sec-name="怎么用">
+      <div class="eyebrow">怎么用 · 规矩</div>
+      <h1 class="disp">两条规矩</h1>
+      <p class="lede">具体操作回各站。这里只留不会变的形状。</p>
+
+      <h2 class="sec"><span class="n">1</span>完成永远你点</h2>
+      <p>agent、定时任务、自动化最远到「待评审」。计划屏拖到「已完成」或详情「点完成」才算。有开着的 MR 就合入，没有则只关 issue。</p>
+
+      <h2 class="sec"><span class="n">2</span>没数据就是灰</h2>
+      <p>灯在总览名字旁，只从数据推，不能手点。没读数、没目标、没合入记录，停在灰，不是绿。界面上的数字都能用 <code>codehub-cli</code> / <code>gh</code> / <code>git</code> / 打开仓文件独立核对。</p>
+
+      <h2 class="sec"><span class="n">版本贯穿</span></h2>
+      <p>同一串名：<code>bw:plan:&lt;名&gt;</code> → <code>.bw/release/out/&lt;名&gt;/</code> → Release / tag <code>&lt;名&gt;</code> → <code>bw:released:&lt;名&gt;</code>。在研版本不写进 <code>.bw/project.toml</code>。</p>
+
+      <div class="callout note">
+        <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/></svg>
+        <div class="body"><strong>还没做的先说清楚。</strong>Orca 自动出包、每日集成未建。仓根 <code>AGENTS.md</code> 不会在接入或周五盘点时自动写出来。别的没建项看 <code>docs/architecture.md</code> §3 留白 与 §1 各用例的「没建什么」列。</div>
+      </div>
+      <p class="linker">机制：<a href="#" onclick="return false">docs/architecture.md</a> §2 ① 关键信息维护（状态机）/ §2 ① 关键信息维护·健康推导（二级）。</p>
+      <p class="next">回到<a href="#" onclick="go('u0');return false">驾驶地图</a>。</p>
+      <div class="foot">事实源 <code>docs/architecture.md</code> §2 ① 关键信息维护（状态机/健康推导）。</div>
+    </section>
+
+
+  </div>
+</main>
+
+<script>
+(function(){
+  var items = Array.prototype.slice.call(document.querySelectorAll('.nav-item'));
+  var screens = Array.prototype.slice.call(document.querySelectorAll('.screen'));
+  var crumbSec = document.getElementById('crumb-sec');
+  var crumbCur = document.getElementById('crumb-cur');
+  var badge = document.getElementById('top-badge');
+  var content = document.getElementById('content');
+  var KEY = 'Workbench-v4-guide-screen';
+  window.go = show;
+  window.goScreen = function(panel){
+    try { window.parent.postMessage({ bw: 'go-panel', panel: panel }, '*'); }
+    catch (e) {}
+  };
+
+  function show(id){
+    var el = document.getElementById(id); if(!el) return;
+    screens.forEach(function(s){ s.classList.remove('active'); });
+    el.classList.add('active');
+    items.forEach(function(n){ n.classList.toggle('active', n.dataset.screen === id); });
+    crumbSec.textContent = el.dataset.secName || '';
+    crumbCur.textContent = el.dataset.title || '';
+    var isMaint = id.charAt(0) === 'm';
+    badge.textContent = isMaint ? 'Maintenance' : 'Usage';
+    badge.className = 'badge ' + (isMaint ? 'maint' : 'use');
+    // 持久化只用 localStorage；不碰 history/location.hash——
+    // 指南在 srcdoc iframe(about:srcdoc)里跑，改 URL/hash 会让整帧重载成空白。
+    try{ localStorage.setItem(KEY, id); }catch(e){}
+    content.scrollTop = 0;
+  }
+  items.forEach(function(n){ n.addEventListener('click', function(){ show(n.dataset.screen); }); });
+  document.addEventListener('keydown', function(e){
+    if(e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+    var cur = document.querySelector('.screen.active'); if(!cur) return;
+    var idx = screens.indexOf(cur);
+    if(e.key === 'ArrowRight' && idx < screens.length - 1){ show(screens[idx+1].id); }
+    else if(e.key === 'ArrowLeft' && idx > 0){ show(screens[idx-1].id); }
+  });
+  var saved = null; try{ saved = localStorage.getItem(KEY); }catch(e){}
+  if(saved && document.getElementById(saved)){ show(saved); }
+  else { show('u0'); }
+})();
+</script>
+</body></html>

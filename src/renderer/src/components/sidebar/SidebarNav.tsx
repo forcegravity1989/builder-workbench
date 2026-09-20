@@ -15,6 +15,8 @@ import { HideSidebarMenu } from './sidebar-nav-controls'
 import { translate } from '@/i18n/i18n'
 import { lazyWithRetry } from '@/lib/lazy-with-retry'
 import type { GlobalSettings } from '../../../../shared/global-settings-types'
+import { isWorkbenchShell } from '@/workbench/is-workbench-shell'
+import { WorkbenchSidebarNav } from '@/workbench/WorkbenchSidebarNav'
 
 export { getSetupGuideSidebarEntryReady, shouldShowSetupGuideEntry } from './SetupGuideSidebarEntry'
 
@@ -84,6 +86,10 @@ const SidebarNav = React.memo(function SidebarNav() {
   const hideSkillsButton = React.useCallback(() => {
     void updateSettings({ showSkillsButton: false })
   }, [updateSettings])
+
+  if (isWorkbenchShell()) {
+    return <WorkbenchSidebarNav />
+  }
 
   return (
     <div

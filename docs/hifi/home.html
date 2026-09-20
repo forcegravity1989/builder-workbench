@@ -1,0 +1,602 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Workbench — 驾驶地图</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;600&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --bg: #f5f5f7;
+    --bg-deep: #000000;
+    --surface: #ffffff;
+    --ink: #1d1d1f;
+    --muted: #6e6e73;
+    --faint: #86868b;
+    --line: rgba(0, 0, 0, 0.08);
+    --line-strong: rgba(0, 0, 0, 0.12);
+    --blue: #0071e3;
+    --blue-hover: #0077ed;
+    --blue-soft: rgba(0, 113, 227, 0.08);
+    --shadow: 0 4px 24px rgba(0, 0, 0, 0.04), 0 1px 2px rgba(0, 0, 0, 0.04);
+    --shadow-lift: 0 16px 48px rgba(0, 0, 0, 0.08), 0 2px 6px rgba(0, 0, 0, 0.04);
+    --radius: 28px;
+    --font: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text",
+      "PingFang SC", "Hiragino Sans GB", "Noto Sans SC", "Segoe UI", "Microsoft YaHei", sans-serif;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; }
+  body {
+    font-family: var(--font);
+    background: var(--bg);
+    color: var(--ink);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    min-height: 100vh;
+  }
+  button { font-family: inherit; cursor: pointer; }
+  a { color: var(--blue); text-decoration: none; }
+
+  /* ——— nav ——— */
+  .nav {
+    position: sticky; top: 0; z-index: 20;
+    height: 52px;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0 28px;
+    background: rgba(251, 251, 253, 0.78);
+    backdrop-filter: saturate(180%) blur(20px);
+    -webkit-backdrop-filter: saturate(180%) blur(20px);
+    border-bottom: 1px solid var(--line);
+  }
+  .nav-brand {
+    display: flex; align-items: center; gap: 10px;
+    font-size: 17px; font-weight: 600; letter-spacing: -0.02em;
+  }
+  .nav-mark {
+    width: 22px; height: 22px; border-radius: 7px;
+    background: var(--ink); color: #fff;
+    display: grid; place-items: center;
+    font-size: 12px; font-weight: 600;
+  }
+  .nav-cta {
+    height: 28px; padding: 0 14px; border: 0; border-radius: 980px;
+    background: var(--blue); color: #fff;
+    font-size: 12px; font-weight: 500;
+    transition: background 0.2s ease;
+  }
+  .nav-cta:hover { background: var(--blue-hover); }
+
+  /* ——— hero ——— */
+  .hero {
+    text-align: center;
+    padding: 72px 24px 36px;
+  }
+  .eyebrow {
+    font-size: 12px; font-weight: 500; letter-spacing: 0.18em;
+    text-transform: uppercase; color: var(--faint);
+  }
+  .hero h1 {
+    margin-top: 14px;
+    font-size: clamp(44px, 6vw, 72px);
+    font-weight: 600;
+    letter-spacing: -0.045em;
+    line-height: 1.05;
+  }
+  .hero p {
+    margin: 18px auto 0;
+    max-width: 520px;
+    font-size: 21px;
+    font-weight: 400;
+    line-height: 1.47;
+    color: var(--muted);
+    letter-spacing: -0.01em;
+  }
+
+  /* ——— path legend ——— */
+  .path {
+    display: flex; align-items: center; justify-content: center;
+    gap: 0; flex-wrap: wrap;
+    padding: 8px 24px 32px;
+    font-size: 13px; color: var(--faint); font-weight: 500;
+  }
+  .path button {
+    background: none; border: 0; color: inherit;
+    font-size: inherit; font-weight: 500;
+    padding: 6px 4px;
+    transition: color 0.2s ease;
+  }
+  .path button:hover,
+  .path button.is-on { color: var(--ink); }
+  .path .sep {
+    width: 28px; height: 1px; background: var(--line-strong);
+    margin: 0 6px;
+  }
+  .path .loop { letter-spacing: 0.02em; }
+
+  /* ——— map board ——— */
+  .stage { max-width: 1180px; margin: 0 auto; padding: 0 24px 28px; }
+
+  .board {
+    display: grid;
+    grid-template-columns: 1fr 1.55fr 1fr;
+    grid-template-rows: 1fr 1fr;
+    grid-template-areas:
+      "pm exec gov"
+      "fb exec loop";
+    background: var(--surface);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    overflow: hidden;
+    min-height: 560px;
+  }
+
+  .cell {
+    position: relative;
+    text-align: left;
+    background: transparent;
+    border: 0;
+    padding: 28px 28px 24px;
+    color: inherit;
+    transition: background 0.25s ease;
+  }
+  .cell:hover { background: #fafafa; }
+  .cell.is-on { background: var(--blue-soft); }
+  .cell:focus-visible {
+    outline: 2px solid var(--blue);
+    outline-offset: -2px;
+    z-index: 2;
+  }
+  .pm { grid-area: pm; border-right: 1px solid var(--line); border-bottom: 1px solid var(--line); }
+  .exec { grid-area: exec; border-right: 1px solid var(--line); }
+  .gov { grid-area: gov; border-bottom: 1px solid var(--line); }
+  .fb { grid-area: fb; border-right: 1px solid var(--line); }
+  .loop { grid-area: loop; }
+
+  .idx {
+    font-size: 12px; font-weight: 500; color: var(--faint);
+    letter-spacing: 0.08em;
+  }
+  .cell h2 {
+    margin-top: 6px;
+    font-size: 22px; font-weight: 600;
+    letter-spacing: -0.03em;
+  }
+  .exec h2 { font-size: 28px; }
+  .lede {
+    margin-top: 6px;
+    font-size: 14px; line-height: 1.5; color: var(--muted);
+  }
+
+  /* ——— station innards ——— */
+  .papers {
+    margin-top: 22px;
+    display: flex; flex-direction: column; gap: 8px;
+  }
+  .paper {
+    background: #fbfbfd;
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    padding: 11px 14px;
+    font-size: 13px; font-weight: 500;
+  }
+  .paper span { display: block; font-size: 11px; font-weight: 400; color: var(--faint); margin-top: 2px; }
+  /* 版本切片：把诉求切成可发布的版本片，每片内含 feature/bug/chaos——重点环节，独立成块 */
+  .slice {
+    margin-top: 18px;
+    background: var(--ink);
+    color: #fff;
+    border-radius: 16px;
+    padding: 16px 18px 15px;
+  }
+  .slice-head { display: flex; align-items: baseline; gap: 9px; flex-wrap: wrap; }
+  .slice-head strong {
+    font-size: 16px; font-weight: 600; letter-spacing: -0.02em;
+  }
+  .slice-head span {
+    font-size: 11.5px; font-weight: 400; line-height: 1.4;
+    color: rgba(255, 255, 255, 0.62);
+  }
+  .slice-track {
+    margin-top: 15px;
+    display: flex; align-items: center; gap: 7px;
+  }
+  .milestone {
+    font-size: 11px; font-weight: 500; white-space: nowrap;
+    padding: 5px 11px; border-radius: 980px;
+    background: rgba(255, 255, 255, 0.12);
+    color: rgba(255, 255, 255, 0.82);
+  }
+  .milestone.is-now {
+    background: var(--blue); color: #fff;
+    box-shadow: 0 0 0 3px rgba(0, 113, 227, 0.28);
+  }
+  .slice-rail { flex: 1; height: 1px; background: rgba(255, 255, 255, 0.22); min-width: 6px; }
+  .slice-contains {
+    margin-top: 14px; padding-top: 12px;
+    border-top: 1px solid rgba(255, 255, 255, 0.14);
+    display: flex; align-items: center; gap: 6px; flex-wrap: wrap;
+  }
+  .contains-label { font-size: 11px; color: rgba(255, 255, 255, 0.55); margin-right: 2px; }
+  .kind {
+    font-size: 11px; font-weight: 500;
+    padding: 4px 10px; border-radius: 980px;
+    background: rgba(255, 255, 255, 0.14); color: #fff;
+  }
+
+  .window {
+    margin-top: 24px;
+    background: #fbfbfd;
+    border: 1px solid var(--line);
+    border-radius: 18px;
+    overflow: hidden;
+  }
+  .titlebar {
+    display: flex; align-items: center; gap: 6px;
+    padding: 12px 14px 8px;
+  }
+  .dot { width: 8px; height: 8px; border-radius: 50%; background: #d2d2d7; }
+  .titlebar em {
+    font-style: normal; font-size: 11px; color: var(--faint);
+    margin-left: 6px; letter-spacing: 0.04em;
+  }
+  .layers {
+    display: grid; grid-template-columns: 1fr 1fr 1fr;
+    gap: 8px; padding: 4px 14px 14px;
+  }
+  .layer {
+    background: #fff;
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    padding: 14px 10px 12px;
+    text-align: center;
+  }
+  .layer strong { display: block; font-size: 13px; font-weight: 600; letter-spacing: -0.02em; }
+  .layer small { display: block; margin-top: 3px; font-size: 11px; color: var(--faint); }
+
+  /* SDLC 环：六阶段闭环(计划→设计→构建→测试→发布→运维→回计划)，对齐 docs/10-reference playbook */
+  .sdlc-ring {
+    position: relative;
+    height: 186px;
+    margin: 2px 16px 12px;
+  }
+  .ring-line {
+    position: absolute; left: 50%; top: 50%;
+    width: 132px; height: 132px;
+    transform: translate(-50%, -50%);
+    border: 1px dashed var(--line-strong);
+    border-radius: 50%;
+  }
+  .ring-core {
+    position: absolute; left: 50%; top: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 11px; color: var(--faint);
+    text-align: center; line-height: 1.4;
+  }
+  .ring-core b { display: block; font-size: 14px; font-weight: 600; color: var(--ink); }
+  .sdlc-ring .sdlc-step { position: absolute; transform: translate(-50%, -50%); }
+  .sdlc-ring .sdlc-step:nth-of-type(1) { left: 50%; top: calc(50% - 70px); }
+  .sdlc-ring .sdlc-step:nth-of-type(2) { left: calc(50% + 62px); top: calc(50% - 35px); }
+  .sdlc-ring .sdlc-step:nth-of-type(3) { left: calc(50% + 62px); top: calc(50% + 35px); }
+  .sdlc-ring .sdlc-step:nth-of-type(4) { left: 50%; top: calc(50% + 70px); }
+  .sdlc-ring .sdlc-step:nth-of-type(5) { left: calc(50% - 62px); top: calc(50% + 35px); }
+  .sdlc-ring .sdlc-step:nth-of-type(6) { left: calc(50% - 62px); top: calc(50% - 35px); }
+  .sdlc-step {
+    display: flex; flex-direction: column; align-items: center; gap: 6px;
+    font-size: 11px; color: var(--faint); min-width: 36px;
+  }
+  .sdlc-step i {
+    width: 7px; height: 7px; border-radius: 50%;
+    background: #d2d2d7; display: block;
+  }
+  .sdlc-step.is-now { color: var(--ink); font-weight: 500; }
+  .sdlc-step.is-now i { background: var(--blue); box-shadow: 0 0 0 3px var(--blue-soft); }
+
+  .ship {
+    border-top: 1px solid var(--line);
+    padding: 12px 16px 14px;
+    display: flex; align-items: center; gap: 8px;
+    font-size: 12px; color: var(--muted);
+  }
+  .ship b { font-weight: 500; color: var(--ink); }
+
+  .gov-list, .fb-list {
+    margin-top: 20px;
+    display: flex; flex-direction: column; gap: 10px;
+  }
+  .row {
+    display: flex; align-items: center; justify-content: space-between;
+    background: #fbfbfd;
+    border-radius: 12px;
+    padding: 12px 14px;
+    font-size: 13px; font-weight: 500;
+  }
+  .row em { font-style: normal; font-size: 11px; font-weight: 400; color: var(--faint); }
+
+  .cycle {
+    margin-top: 22px;
+    display: flex; align-items: center; gap: 16px;
+  }
+  .ring {
+    width: 88px; height: 88px; flex-shrink: 0;
+    border-radius: 50%;
+    background:
+      conic-gradient(from 210deg, var(--blue) 0 72%, #e8e8ed 0);
+    display: grid; place-items: center;
+  }
+  .ring span {
+    width: 64px; height: 64px; border-radius: 50%;
+    background: #fff;
+    display: grid; place-items: center;
+    font-size: 12px; font-weight: 600; letter-spacing: -0.02em;
+    text-align: center; line-height: 1.25;
+  }
+  .cycle ul { list-style: none; font-size: 13px; line-height: 1.7; color: var(--muted); }
+  .cycle li b { color: var(--ink); font-weight: 500; }
+
+  /* ——— readout ——— */
+  .readout {
+    margin-top: 18px;
+    background: var(--surface);
+    border-radius: 22px;
+    box-shadow: var(--shadow);
+    padding: 28px 32px;
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 24px;
+    align-items: start;
+    min-height: 128px;
+  }
+  .readout h3 {
+    font-size: 15px; font-weight: 500; color: var(--faint);
+    letter-spacing: 0.04em;
+  }
+  .readout p {
+    margin-top: 8px;
+    font-size: 22px; font-weight: 500;
+    letter-spacing: -0.03em; line-height: 1.35;
+    max-width: 720px;
+  }
+  .readout .meta {
+    margin-top: 10px;
+    font-size: 14px; color: var(--muted); line-height: 1.6;
+    max-width: 720px;
+  }
+  .hint {
+    font-size: 12px; color: var(--faint);
+    text-align: right; align-self: center;
+  }
+
+  /* ——— foot ——— */
+  .foot {
+    text-align: center;
+    padding: 48px 24px 64px;
+    color: var(--faint); font-size: 13px;
+  }
+  .foot strong { color: var(--muted); font-weight: 500; }
+
+  @media (max-width: 900px) {
+    .hero { padding-top: 48px; }
+    .hero p { font-size: 17px; }
+    .board {
+      grid-template-columns: 1fr;
+      grid-template-rows: none;
+      grid-template-areas: none;
+      min-height: 0;
+    }
+    .cell { border-right: 0 !important; border-bottom: 1px solid var(--line); }
+    .loop { border-bottom: 0; }
+    .pm, .exec, .gov, .fb, .loop { grid-area: auto; }
+    .readout { grid-template-columns: 1fr; }
+    .hint { text-align: left; }
+    .layers { grid-template-columns: 1fr; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    * { transition: none !important; }
+  }
+</style>
+</head>
+<body>
+
+<nav class="nav">
+  <div class="nav-brand"><span class="nav-mark">W</span> Workbench</div>
+  <button class="nav-cta" type="button">试驾</button>
+</nav>
+
+<header class="hero">
+  <div class="eyebrow">For Super-builders</div>
+  <h1>驾驶地图</h1>
+  <p>产品旅程目标态原型：项目版本、构建交付、治理、反馈、进化；不代表所有能力已交付。</p>
+</header>
+
+<div class="path" role="tablist" aria-label="流程路径">
+  <button type="button" data-go="pm" class="is-on">项目版本</button>
+  <span class="sep"></span>
+  <button type="button" data-go="exec">构建交付</button>
+  <span class="sep"></span>
+  <button type="button" data-go="gov">治理</button>
+  <span class="sep"></span>
+  <button type="button" data-go="fb">反馈</button>
+  <span class="sep"></span>
+  <button type="button" data-go="loop" class="loop">进化 ↺</button>
+</div>
+
+<main class="stage">
+  <div class="board" role="tabpanel">
+
+    <button class="cell pm is-on" type="button" data-id="pm" aria-pressed="true">
+      <div class="idx">01</div>
+      <h2>项目版本</h2>
+      <p class="lede">先把事情放对地方。</p>
+      <div class="papers">
+        <div class="paper">项目背景<span>为什么做，边界在哪</span></div>
+        <div class="paper">知识文档<span>里程碑与共同语境</span></div>
+        <div class="paper">需求列表<span>issue 积压，统一入口</span></div>
+      </div>
+      <div class="slice">
+        <div class="slice-head">
+          <strong>版本切片</strong>
+          <span>把诉求切成一个个可发布的版本</span>
+        </div>
+        <div class="slice-track">
+          <span class="milestone is-now">V0.1</span>
+          <i class="slice-rail"></i>
+          <span class="milestone">V0.2</span>
+          <i class="slice-rail"></i>
+          <span class="milestone">V0.3</span>
+        </div>
+        <div class="slice-contains">
+          <span class="contains-label">V0.1 内含</span>
+          <span class="kind">feature</span>
+          <span class="kind">bug</span>
+          <span class="kind">chaos</span>
+        </div>
+      </div>
+    </button>
+
+    <button class="cell exec" type="button" data-id="exec" aria-pressed="false">
+      <div class="idx">02</div>
+      <h2>构建交付</h2>
+      <p class="lede">人在 IDE 里驾驶，Agent 在受控轨道上跑完这条链。</p>
+      <div class="window">
+        <div class="titlebar">
+          <span class="dot"></span><span class="dot"></span><span class="dot"></span>
+          <em>执行核心</em>
+        </div>
+        <div class="layers">
+          <div class="layer"><strong>IDE</strong><small>人机交互面</small></div>
+          <div class="layer"><strong>harness</strong><small>各类任务运行时</small></div>
+          <div class="layer"><strong>skill</strong><small>标准化能力</small></div>
+        </div>
+        <div class="sdlc-ring">
+          <i class="ring-line"></i>
+          <div class="ring-core"><b>环</b>人守判断</div>
+          <span class="sdlc-step"><i></i>计划</span>
+          <span class="sdlc-step is-now"><i></i>设计</span>
+          <span class="sdlc-step"><i></i>构建</span>
+          <span class="sdlc-step"><i></i>测试</span>
+          <span class="sdlc-step"><i></i>发布</span>
+          <span class="sdlc-step"><i></i>运维</span>
+        </div>
+        <div class="ship">
+          <b>发布</b>
+          review → clean → CI → 发布 → 总结
+        </div>
+      </div>
+    </button>
+
+    <button class="cell gov" type="button" data-id="gov" aria-pressed="false">
+      <div class="idx">03</div>
+      <h2>治理</h2>
+      <p class="lede">结构一直在线，不靠事后补课。</p>
+      <div class="gov-list">
+        <div class="row">代码结构<em>目录与边界</em></div>
+        <div class="row">文档结构<em>知识可被找到</em></div>
+        <div class="row">一致性扫描<em>执行与交付横切</em></div>
+      </div>
+    </button>
+
+    <button class="cell fb" type="button" data-id="fb" aria-pressed="false">
+      <div class="idx">04</div>
+      <h2>反馈</h2>
+      <p class="lede">评估每一个环节，而不是只看结果。</p>
+      <div class="fb-list">
+        <div class="row">立项效率<em>切片是否过载</em></div>
+        <div class="row">构建效率<em>阶段是否卡住</em></div>
+        <div class="row">交付效率<em>评审与发布成本</em></div>
+      </div>
+    </button>
+
+    <button class="cell loop" type="button" data-id="loop" aria-pressed="false">
+      <div class="idx">05</div>
+      <h2>进化</h2>
+      <p class="lede">改配置，而不是重写 Agent。</p>
+      <div class="cycle">
+        <div class="ring"><span>1–2 周<br>周期</span></div>
+        <ul>
+          <li>优化 <b>skill</b></li>
+          <li>优化 <b>harness</b></li>
+          <li>次周期生效 ↺</li>
+        </ul>
+      </div>
+    </button>
+
+  </div>
+
+  <aside class="readout" aria-live="polite">
+    <div>
+      <h3 id="ro-k">01 · 项目版本</h3>
+      <p id="ro-t">从项目背景、知识文档和 issue 积压里，切出这一期真正要做的 V1。</p>
+      <div class="meta" id="ro-m">feature / task / bug 都是同一种输入单位。选进 V1 的，才会进入执行核心。</div>
+    </div>
+    <div class="hint">点击地图中的站点 · 或按 1–5</div>
+  </aside>
+</main>
+
+<footer class="foot">
+  AI Agent 在工作台之内运行，而不是悬在流程之外。<br />
+  <strong>skill</strong> 标准化能力 · <strong>harness</strong> 受控编排 · 定制下沉到 skill，下一周期生效。
+</footer>
+
+<script>
+  const copy = {
+    pm: {
+      k: "01 · 项目版本",
+      t: "从项目背景、知识文档和 issue 积压里，切出这一期真正要做的 V1。",
+      m: "feature / task / bug 都是同一种输入单位。选进 V1 的，才会进入执行核心。"
+    },
+    exec: {
+      k: "02 · 构建交付",
+      t: "在 IDE 里驾驶。harness 编排 plan → Design → build → test，再走到发布。",
+      m: "每个阶段是一组 skill 调用。test 之后可按项目接 UAT、部署或上线。发布主轨：review → clean → CI → 发布 → 总结。"
+    },
+    gov: {
+      k: "03 · 治理",
+      t: "代码结构、文档结构、一致性扫描，横切在执行和交付之上。",
+      m: "不是做完再治理。构建中扫一致性，交付前查结构，仓库始终可被人和 Agent 读懂。"
+    },
+    fb: {
+      k: "04 · 反馈",
+      t: "评估每个环节的效率，反馈直接回到执行核心。",
+      m: "看的是切片是否过载、阶段是否卡住、评审与发布成本——而不是只看有没有发出去。"
+    },
+    loop: {
+      k: "05 · 进化",
+      t: "以 1–2 周为周期，改 skill 与 harness 的配置，让下一轮 Agent 更高效。",
+      m: "优化不直接改正在跑的任务，而是写入配置，于次周期经执行核心生效。闭环由此合上。"
+    }
+  };
+
+  const cells = [...document.querySelectorAll(".cell")];
+  const pathBtns = [...document.querySelectorAll(".path button")];
+  const roK = document.getElementById("ro-k");
+  const roT = document.getElementById("ro-t");
+  const roM = document.getElementById("ro-m");
+
+  function select(id) {
+    cells.forEach((el) => {
+      const on = el.dataset.id === id;
+      el.classList.toggle("is-on", on);
+      el.setAttribute("aria-pressed", on ? "true" : "false");
+    });
+    pathBtns.forEach((el) => el.classList.toggle("is-on", el.dataset.go === id));
+    const c = copy[id];
+    roK.textContent = c.k;
+    roT.textContent = c.t;
+    roM.textContent = c.m;
+  }
+
+  cells.forEach((el) => el.addEventListener("click", () => select(el.dataset.id)));
+  pathBtns.forEach((el) => el.addEventListener("click", () => select(el.dataset.go)));
+
+  const keys = { "1": "pm", "2": "exec", "3": "gov", "4": "fb", "5": "loop" };
+  document.addEventListener("keydown", (e) => {
+    if (e.target.matches("input, textarea, [contenteditable]")) return;
+    if (keys[e.key]) select(keys[e.key]);
+  });
+</script>
+</body>
+</html>

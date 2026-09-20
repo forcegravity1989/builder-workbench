@@ -1,0 +1,471 @@
+/* Adapted from loop-buddy hifi-overview.css — scoped to .wb-ov */
+/* 由 tools/extract-overview.mjs 从 docs/hifi/overview.html 生成，别手改 */
+.wb-ov .content {
+  flex: 1;
+  overflow: auto;
+  padding: var(--space-4) var(--space-6) var(--space-6);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+.wb-ov .row-2 {
+  display: grid;
+  grid-template-columns: minmax(0, 1.2fr) minmax(0, 0.8fr);
+  gap: var(--space-3);
+}
+.wb-ov .row-between {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+.wb-ov .row-start {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-width: 0;
+  flex-wrap: wrap;
+}
+.wb-ov .stack {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+.wb-ov .mono {
+  font-family: var(--font-mono);
+}
+.wb-ov .metric-value {
+  font-family: var(--font-mono);
+  font-weight: 600;
+  line-height: 1.2;
+  margin: 0;
+}
+.wb-ov .metric-target {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: color-mix(in srgb, var(--color-text) 50%, transparent);
+}
+.wb-ov .btn-sm {
+  height: var(--space-6);
+  padding: 0 var(--space-2);
+}
+.wb-ov .detail-grid {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: var(--space-2) var(--space-4);
+  padding-top: var(--space-3);
+  border-top: 1px solid var(--color-divider);
+}
+.wb-ov .detail-k {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  color: color-mix(in srgb, var(--color-text) 50%, transparent);
+}
+.wb-ov .detail-v {
+  font-size: 13px;
+}
+.wb-ov .prog {
+  display: flex;
+  height: 6px;
+  border-radius: 999px;
+  overflow: hidden;
+  background: var(--color-neutral-100);
+}
+.wb-ov .prog > span {
+  display: block;
+  min-width: 0;
+}
+.wb-ov .prog-todo {
+  background: var(--color-neutral-300);
+}
+.wb-ov .prog-doing {
+  background: var(--color-warning);
+}
+.wb-ov .prog-review {
+  background: var(--color-accent-2);
+}
+.wb-ov .prog-done {
+  background: var(--color-success);
+}
+.wb-ov .counts {
+  display: flex;
+  gap: var(--space-4);
+  font-size: 12px;
+  color: color-mix(in srgb, var(--color-text) 70%, transparent);
+}
+.wb-ov .counts b {
+  font-family: var(--font-mono);
+  color: var(--color-text);
+}
+.wb-ov .empty {
+  color: color-mix(in srgb, var(--color-text) 50%, transparent);
+  font-size: 13px;
+}
+.wb-ov .text-box {
+  box-sizing: border-box;
+  min-height: calc(13px * 1.7 * 6);
+  max-height: calc(13px * 1.7 * 6);
+  overflow-y: auto;
+  font-size: 13px;
+  line-height: 1.7;
+}
+.wb-ov h6 {
+  margin: 0;
+}
+.wb-ov .card-head {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+.wb-ov .card-head .tabs {
+  margin: 0;
+}
+.wb-ov .card-head .tab {
+  padding-top: 4px;
+}
+.wb-ov .goal-week {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 0;
+}
+.wb-ov .goal-week > div {
+  min-width: 0;
+  padding-right: var(--space-4);
+}
+.wb-ov .goal-week > div + div {
+  padding-right: 0;
+  padding-left: var(--space-4);
+  border-left: 1px solid var(--color-divider);
+}
+.wb-ov .plots {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--space-4);
+}
+.wb-ov .plots.is-multi {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+.wb-ov .plot {
+  min-width: 0;
+}
+.wb-ov .plots.is-multi .plot + .plot {
+  padding-left: var(--space-4);
+  border-left: 1px solid var(--color-divider);
+}
+.wb-ov .series {
+  display: flex;
+  flex-direction: column;
+}
+.wb-ov .series-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-height: 36px;
+  width: 100%;
+  margin: 0;
+  padding: 0 var(--space-1);
+  color: var(--color-text);
+  border-radius: var(--radius-sm);
+}
+.wb-ov .series-toggle {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  flex: 1;
+  min-width: 0;
+  cursor: pointer;
+}
+.wb-ov .series-row:hover {
+  background: color-mix(in srgb, var(--color-text) 3.5%, transparent);
+}
+.wb-ov .series-toggle:focus-within {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+  border-radius: var(--radius-sm);
+}
+.wb-ov .series-row input {
+  appearance: none;
+  width: 12px;
+  height: 12px;
+  flex: none;
+  margin: 0;
+  border-radius: 2px;
+  border: 1px solid color-mix(in srgb, var(--color-text) 28%, transparent);
+  background: var(--color-card);
+  cursor: pointer;
+}
+.wb-ov .series-row input:checked {
+  background: var(--swatch, var(--color-accent));
+  border-color: var(--swatch, var(--color-accent));
+  box-shadow: inset 0 0 0 2px var(--color-card);
+}
+.wb-ov .series-row:not(:has(input:checked)) {
+  color: color-mix(in srgb, var(--color-text) 40%, transparent);
+}
+.wb-ov .series-row .swatch {
+  width: 14px;
+  height: 2px;
+  flex: none;
+  border-radius: 1px;
+  background: var(--swatch, var(--color-accent));
+}
+.wb-ov .series-row:not(:has(input:checked)) .swatch {
+  background: color-mix(in srgb, var(--color-text) 22%, transparent);
+}
+.wb-ov .series-row .name {
+  flex: 1;
+  min-width: 0;
+  font-size: 13px;
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.wb-ov .series-row .kind {
+  flex: none;
+  font-size: 11px;
+  color: color-mix(in srgb, var(--color-text) 45%, transparent);
+}
+.wb-ov .series-row .val {
+  flex: none;
+  font-family: var(--font-mono);
+  font-weight: 600;
+  font-size: 14px;
+}
+.wb-ov .series-row .tgt {
+  flex: none;
+  width: 48px;
+  text-align: right;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: color-mix(in srgb, var(--color-text) 50%, transparent);
+}
+.wb-ov .series-row .manual-slot {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  flex: none;
+}
+.wb-ov .series-row .manual-slot .input {
+  width: 72px;
+}
+.wb-ov .chart-wrap {
+  position: relative;
+  width: 100%;
+  height: calc(var(--space-8) * 4 + var(--space-4));
+}
+.wb-ov .chart-wrap svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+.wb-ov .chart-tip {
+  position: absolute;
+  z-index: 4;
+  pointer-events: none;
+  min-width: calc(var(--space-8) * 4);
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-md);
+  background: var(--color-neutral-900);
+  color: var(--color-neutral-100);
+  font-size: 12px;
+  line-height: 1.45;
+  box-shadow: var(--shadow-lg);
+  transform: translate(-50%, calc(-100% - var(--space-2)));
+}
+.wb-ov .chart-tip .wk {
+  font-family: var(--font-mono);
+  font-weight: 600;
+}
+.wb-ov .chart-tip .vl {
+  font-family: var(--font-mono);
+  opacity: 0.8;
+}
+.wb-ov .field-help {
+  font-size: 11px;
+  color: color-mix(in srgb, var(--color-text) 50%, transparent);
+  margin-top: 4px;
+}
+.wb-ov .field-help {
+  font-size: 11px;
+  color: color-mix(in srgb, var(--color-text) 50%, transparent);
+}
+.wb-ov .sdlc-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0;
+}
+.wb-ov .sdlc-cell {
+  min-width: 0;
+  padding-right: var(--space-4);
+}
+.wb-ov .sdlc-cell + .sdlc-cell {
+  padding-left: var(--space-4);
+  border-left: 1px solid var(--color-divider);
+}
+.wb-ov .sdlc-cell:last-child {
+  padding-right: 0;
+}
+.wb-ov .sdlc-head {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-2);
+  min-height: 28px;
+}
+.wb-ov .sdlc-head .name {
+  font-size: 13px;
+  font-weight: 500;
+}
+.wb-ov .sdlc-head .val {
+  margin-left: auto;
+  font-family: var(--font-mono);
+  font-weight: 600;
+  font-size: 15px;
+}
+.wb-ov .head-tools {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+.wb-ov .toast-host {
+  position: fixed;
+  right: var(--space-4);
+  bottom: var(--space-4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  z-index: 80;
+  align-items: flex-end;
+}
+.wb-ov .hidden {
+  display: none !important;
+}
+@media (max-width: 1100px) {
+  .wb-ov .row-2,
+  .wb-ov .goal-week,
+  .wb-ov .sdlc-grid,
+  .wb-ov .plots.is-multi {
+    grid-template-columns: 1fr;
+  }
+  .wb-ov .goal-week > div + div,
+  .wb-ov .sdlc-cell + .sdlc-cell,
+  .wb-ov .plots.is-multi .plot + .plot {
+    padding-left: 0;
+    border-left: 0;
+    padding-top: var(--space-3);
+    border-top: 1px solid var(--color-divider);
+  }
+}
+
+.wb-ov {
+  height: 100%;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  background: var(--color-bg);
+  color: var(--color-text);
+}
+.wb-ov .page-head {
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 24px;
+  border-bottom: 1px solid var(--color-divider);
+}
+.wb-ov .page-head h1 {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+}
+.wb-ov .content {
+  flex: 1;
+  overflow: auto;
+  padding: var(--space-4) var(--space-6) var(--space-6);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  max-width: 1120px;
+}
+.wb-ov .card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-4);
+  border-radius: var(--radius-md);
+  background: var(--color-card);
+  border: 1px solid var(--color-divider);
+}
+.wb-ov .card-title {
+  font-size: 15px;
+  font-weight: 600;
+}
+.wb-ov .card-kicker {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--color-accent);
+}
+.wb-ov .tabs {
+  display: flex;
+  gap: var(--space-4);
+  border-bottom: 1px solid var(--color-divider);
+}
+.wb-ov .tab {
+  appearance: none;
+  background: none;
+  border: 0;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 500;
+  color: color-mix(in srgb, var(--color-text) 55%, transparent);
+  padding: var(--space-2) 2px 9px;
+  margin-bottom: -1px;
+  border-bottom: 2px solid transparent;
+  cursor: pointer;
+}
+.wb-ov .tab[aria-selected='true'] {
+  color: var(--color-text);
+  border-bottom-color: var(--color-accent);
+}
+.wb-ov .status {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: color-mix(in srgb, var(--color-text) 55%, transparent);
+}
+.wb-ov .status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--color-neutral-400);
+}
+.wb-ov .goal-week {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+}
+.wb-ov .goal-week > div {
+  min-width: 0;
+  padding-right: var(--space-4);
+}
+.wb-ov .goal-week > div + div {
+  padding-right: 0;
+  padding-left: var(--space-4);
+  border-left: 1px solid var(--color-divider);
+}
+@media (max-width: 860px) {
+  .wb-ov .row-2,
+  .wb-ov .goal-week {
+    grid-template-columns: 1fr;
+  }
+  .wb-ov .goal-week > div + div {
+    padding-left: 0;
+    border-left: 0;
+    padding-top: var(--space-3);
+    border-top: 1px solid var(--color-divider);
+  }
+}

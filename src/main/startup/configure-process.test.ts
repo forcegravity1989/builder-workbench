@@ -352,14 +352,57 @@ describe('configureDevUserDataPath', () => {
     expect(app.setPath).toHaveBeenCalledWith('userData', join('/tmp/app-data', 'orca-dev'))
   })
 
+  it('moves Workbench shell dev runs onto workbench-dev userData', async () => {
+    const { app } = await import('electron')
+    const { configureDevUserDataPath } = await import('./configure-process')
+    const previousProductName = process.env.ORCA_PRODUCT_NAME
+    const previousWorkbenchShell = process.env.WORKBENCH_SHELL
+    delete process.env.ORCA_DEV_USER_DATA_PATH
+    process.env.ORCA_PRODUCT_NAME = 'Workbench'
+
+    try {
+      vi.mocked(app.setPath).mockClear()
+      configureDevUserDataPath(true)
+      expect(app.setPath).toHaveBeenCalledWith('userData', join('/tmp/app-data', 'workbench-dev'))
+    } finally {
+      restoreEnv('ORCA_PRODUCT_NAME', previousProductName)
+      restoreEnv('WORKBENCH_SHELL', previousWorkbenchShell)
+    }
+  })
+
   it('leaves packaged runs on the default userData path', async () => {
     const { app } = await import('electron')
     const { configureDevUserDataPath } = await import('./configure-process')
+    const previousProductName = process.env.ORCA_PRODUCT_NAME
+    const previousWorkbenchShell = process.env.WORKBENCH_SHELL
+    delete process.env.ORCA_PRODUCT_NAME
+    delete process.env.WORKBENCH_SHELL
 
-    vi.mocked(app.setPath).mockClear()
-    configureDevUserDataPath(false)
+    try {
+      vi.mocked(app.setPath).mockClear()
+      configureDevUserDataPath(false)
 
-    expect(app.setPath).not.toHaveBeenCalled()
+      expect(app.setPath).not.toHaveBeenCalled()
+    } finally {
+      restoreEnv('ORCA_PRODUCT_NAME', previousProductName)
+      restoreEnv('WORKBENCH_SHELL', previousWorkbenchShell)
+    }
+  })
+
+  it('pins packaged Workbench runs onto a separate userData path', async () => {
+    const { app } = await import('electron')
+    const { configureDevUserDataPath } = await import('./configure-process')
+    const previousProductName = process.env.ORCA_PRODUCT_NAME
+    process.env.ORCA_PRODUCT_NAME = 'Workbench'
+
+    try {
+      vi.mocked(app.setPath).mockClear()
+      configureDevUserDataPath(false)
+
+      expect(app.setPath).toHaveBeenCalledWith('userData', join('/tmp/app-data', 'workbench'))
+    } finally {
+      restoreEnv('ORCA_PRODUCT_NAME', previousProductName)
+    }
   })
 })
 

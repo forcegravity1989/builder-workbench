@@ -3,6 +3,7 @@ import { Suspense } from 'react'
 import { lazyWithRetry as lazy } from '@/lib/lazy-with-retry'
 import { translate } from '@/i18n/i18n'
 import { RecoverableRenderErrorBoundary } from '../components/error-boundaries/RecoverableRenderErrorBoundary'
+import { isWorkbenchShell } from '../workbench/is-workbench-shell'
 import NewWorkspaceComposerModal from '../components/NewWorkspaceComposerModal'
 import { CrashReportDialog } from '../components/crash-report/CrashReportDialog'
 import { MarkdownTemplatePicker } from '../components/editor/MarkdownTemplatePicker'
@@ -329,20 +330,22 @@ export function AppRootSurfaces(props: {
       <ModalBoundary boundaryId="modal.markdown-template-picker" resetKey={activeModal}>
         <MarkdownTemplatePicker />
       </ModalBoundary>
-      <RecoverableRenderErrorBoundary
-        boundaryId="modal.crash-report"
-        surface="modal"
-        reportAsCrash={false}
-        resetKey={activeModal}
-        compact
-        title={translate('auto.App.722d03aa62', 'The crash report dialog hit an error.')}
-        description={translate(
-          'auto.App.acd66311dc',
-          'Use the Help menu after retrying if you still need diagnostics.'
-        )}
-      >
-        <CrashReportDialog />
-      </RecoverableRenderErrorBoundary>
+      {isWorkbenchShell() ? null : (
+        <RecoverableRenderErrorBoundary
+          boundaryId="modal.crash-report"
+          surface="modal"
+          reportAsCrash={false}
+          resetKey={activeModal}
+          compact
+          title={translate('auto.App.722d03aa62', 'The crash report dialog hit an error.')}
+          description={translate(
+            'auto.App.acd66311dc',
+            'Use the Help menu after retrying if you still need diagnostics.'
+          )}
+        >
+          <CrashReportDialog />
+        </RecoverableRenderErrorBoundary>
+      )}
       {onboardingGate.onboarding && onboardingGate.shouldRender ? (
         <Suspense fallback={null}>
           <RecoverableRenderErrorBoundary

@@ -292,6 +292,7 @@ describe('renderer startup runtime routing', () => {
     expect(surfacesSource).toContain(
       "import { CrashReportDialog } from '../components/crash-report/CrashReportDialog'"
     )
+    expect(surfacesSource).toContain('isWorkbenchShell() ? null : (')
     expect(surfacesSource).not.toContain(
       "from '../components/crash-report/CrashReportDialogSurface'"
     )

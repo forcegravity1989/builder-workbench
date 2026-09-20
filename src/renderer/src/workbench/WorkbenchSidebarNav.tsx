@@ -1,0 +1,139 @@
+import React from 'react'
+import {
+  BookOpen,
+  CalendarClock,
+  HelpCircle,
+  LayoutDashboard,
+  ListTodo,
+  Settings
+} from 'lucide-react'
+import { toast } from 'sonner'
+import { useAppStore } from '@/store'
+import { cn } from '@/lib/utils'
+import { isWorkbenchShell } from './is-workbench-shell'
+import { openProjectWall } from './project-wall-state'
+
+type NavId = 'overview' | 'plan' | 'automations' | 'knowledge'
+
+const NAV: { id: NavId; label: string; icon: typeof LayoutDashboard }[] = [
+  { id: 'overview', label: '总览', icon: LayoutDashboard },
+  { id: 'plan', label: '计划', icon: ListTodo },
+  { id: 'automations', label: '自动化', icon: CalendarClock },
+  { id: 'knowledge', label: '知识库', icon: BookOpen }
+]
+
+function resolveActiveNav(activeView: string): NavId | null {
+  if (activeView === 'terminal') {
+    return null
+  }
+  // Why: reuse Orca top-level slots so we do not extend TopLevelView (sync-friendly).
+  if (activeView === 'activity') {
+    return 'overview'
+  }
+  if (activeView === 'tasks') {
+    return 'plan'
+  }
+  if (activeView === 'automations') {
+    return 'automations'
+  }
+  if (activeView === 'space') {
+    return 'knowledge'
+  }
+  return null
+}
+
+/** V6-style four-screen nav; execution dimms all four. Projects stay in Orca sidebar below. */
+export function WorkbenchSidebarNav(): React.JSX.Element | null {
+  const activeView = useAppStore((s) => s.activeView)
+  const openTaskPage = useAppStore((s) => s.openTaskPage)
+  const openAutomationsPage = useAppStore((s) => s.openAutomationsPage)
+  const openSettingsPage = useAppStore((s) => s.openSettingsPage)
+  const openActivityPage = useAppStore((s) => s.openActivityPage)
+  const openSpacePage = useAppStore((s) => s.openSpacePage)
+  const repos = useAppStore((s) => s.repos)
+  const activeRepoId = useAppStore((s) => s.activeRepoId ?? s.repos[0]?.id ?? null)
+  const activeRepo = repos.find((r) => r.id === activeRepoId) ?? repos[0]
+  const projectName = activeRepo?.displayName ?? 'Workbench'
+
+  if (!isWorkbenchShell()) {
+    return null
+  }
+
+  const activeNav = resolveActiveNav(activeView)
+
+  const go = (id: NavId) => {
+    if (id === 'overview') {
+      openActivityPage()
+    } else if (id === 'plan') {
+      openTaskPage()
+    } else if (id === 'automations') {
+      openAutomationsPage()
+    } else {
+      openSpacePage()
+    }
+  }
+
+  return (
+    <div className="wb-nav flex flex-col gap-1 px-2 pt-2 pb-1" data-workbench-nav>
+      <button
+        type="button"
+        className="wb-proj flex w-full items-center gap-2 rounded-md px-2 py-2 text-left hover:bg-worktree-sidebar-foreground/8"
+        onClick={() => openProjectWall()}
+        title="项目墙"
+        data-workbench-project-wall
+      >
+        <span className="flex size-7 shrink-0 items-center justify-center rounded-md bg-[var(--color-accent)] text-xs font-semibold text-white">
+          {projectName.slice(0, 1).toUpperCase()}
+        </span>
+        <span className="min-w-0 flex-1 truncate text-[13px] font-semibold tracking-tight text-worktree-sidebar-foreground">
+          {projectName}
+        </span>
+      </button>
+
+      <nav className="flex flex-col gap-0.5" aria-label="项目内导航">
+        {NAV.map(({ id, label, icon: Icon }) => {
+          const on = activeNav === id
+          return (
+            <button
+              key={id}
+              type="button"
+              onClick={() => go(id)}
+              aria-current={on ? 'page' : undefined}
+              className={cn(
+                'flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-[13px] font-medium tracking-tight transition-colors',
+                on
+                  ? 'bg-worktree-sidebar-accent text-worktree-sidebar-accent-foreground'
+                  : 'text-worktree-sidebar-foreground/60 hover:bg-worktree-sidebar-foreground/8'
+              )}
+            >
+              <Icon
+                className={cn('size-4 shrink-0', !on && 'text-worktree-sidebar-foreground/30')}
+                strokeWidth={on ? 2.25 : 1.75}
+              />
+              <span className="flex-1">{label}</span>
+            </button>
+          )
+        })}
+      </nav>
+
+      <div className="mt-1 flex flex-col gap-0.5 border-t border-worktree-sidebar-border/40 pt-1">
+        <button
+          type="button"
+          className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-[13px] text-worktree-sidebar-foreground/60 hover:bg-worktree-sidebar-foreground/8"
+          onClick={() => toast.message('帮助是独立窗口；本轮试用包未接')}
+        >
+          <HelpCircle className="size-4 shrink-0 text-worktree-sidebar-foreground/30" />
+          <span>帮助</span>
+        </button>
+        <button
+          type="button"
+          className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-[13px] text-worktree-sidebar-foreground/60 hover:bg-worktree-sidebar-foreground/8"
+          onClick={() => openSettingsPage()}
+        >
+          <Settings className="size-4 shrink-0 text-worktree-sidebar-foreground/30" />
+          <span>设置</span>
+        </button>
+      </div>
+    </div>
+  )
+}

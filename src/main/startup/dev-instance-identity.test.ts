@@ -13,6 +13,15 @@ describe('dev-instance-identity', () => {
     })
   })
 
+  it('uses a Workbench identity for packaged Workbench builds', () => {
+    expect(getDevInstanceIdentity(false, { ORCA_PRODUCT_NAME: 'Workbench' })).toMatchObject({
+      name: 'Workbench',
+      appName: 'Workbench',
+      isDev: false,
+      appUserModelId: 'com.stablyai.workbench.dev'
+    })
+  })
+
   it('pins a stable dev appName across branches so the safeStorage key does not churn', () => {
     const a = getDevInstanceIdentity(true, { ORCA_DEV_BRANCH: 'feature/a' })
     const b = getDevInstanceIdentity(true, { ORCA_DEV_BRANCH: 'feature/b' })

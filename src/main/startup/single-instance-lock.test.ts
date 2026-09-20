@@ -123,6 +123,23 @@ describe('shouldSkipSingleInstanceLock', () => {
     expect(shouldSkipSingleInstanceLock({ isDev: false, isServeMode: false, env: {} })).toBe(false)
   })
 
+  it('never skips for Workbench so two dev mains cannot clobber workbench-dev repos', () => {
+    expect(
+      shouldSkipSingleInstanceLock({
+        isDev: true,
+        isServeMode: false,
+        env: { ORCA_PRODUCT_NAME: 'Workbench' }
+      })
+    ).toBe(false)
+    expect(
+      shouldSkipSingleInstanceLock({
+        isDev: true,
+        isServeMode: false,
+        env: { WORKBENCH_SHELL: '1' }
+      })
+    ).toBe(false)
+  })
+
   it('lets isolated E2E exercise the production single-instance path', () => {
     expect(
       shouldSkipSingleInstanceLock({

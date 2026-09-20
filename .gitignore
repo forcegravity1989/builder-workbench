@@ -89,51 +89,9 @@ design-docs/
 # Machine-local agent hook endpoint files may contain auth tokens.
 /agent-hooks/
 
-# Local-only design/planning docs (not checked in), including most of docs/reference/.
-# Durable docs that should be tracked must live in one of the allow-listed
-# locations below (assets, readme, STYLEGUIDE, mobile terminal shortcut bar,
-# and the tracked reference docs linked from AGENTS.md / README.md).
-docs/**
-!docs/
-# The deployable docs app is source, not local engineering notes.
-!docs/site/
-!docs/site/**
-!docs/assets/
-!docs/assets/**
-!docs/readme/
-!docs/readme/**
-!docs/STYLEGUIDE.md
-!docs/agent-skill-sharing-implementation-checklist.md
-!docs/mobile-terminal-shortcut-bar.md
-!docs/reference/
-!docs/reference/agent-pty-transcript-capture.md
-!docs/reference/agent-session-search-query-tuning.md
-!docs/reference/agent-session-search-contract.md
-!docs/reference/agent-status-store.md
-!docs/reference/antigravity-readiness-evidence.md
-!docs/reference/git-compatibility.md
-!docs/reference/headless-linux-server.md
-!docs/reference/ime-regression-checklist.md
-!docs/reference/linux-glibc-compatibility.md
-!docs/reference/macos-press-and-hold.md
-!docs/reference/orcad-operations.md
-!docs/reference/pnpm-install-policy.md
-!docs/reference/relay-grace-time-reconfiguration.md
-!docs/reference/windows-cmd-shim-resolution.md
-!docs/reference/windows-daemon-host-relocation.md
-!docs/reference/windows-edr-posture.md
-!docs/reference/windows-process-enumeration.md
-!docs/reference/wsl-runner-verification.md
-!docs/reference/remote-wire-compatibility.md
-!docs/reference/renderer-agent-status-performance.md
-!docs/reference/ssh-execution-boundary.md
-!docs/reference/ssh-host-key-verification.md
-!docs/reference/ssh-reconnect-source-recovery.md
-!docs/reference/windows-setup-shell.md
-!docs/reference/worktree-scan-fingerprint.md
-!docs/reference/wsl-command-execution.md
-!docs/reference/wsl-probe-failure-semantics.md
-!docs/reference/xterm-patch-regeneration.md
+# bw-orca: product docs come from Workbench main (`docs/`, AGENTS.md, …).
+# Upstream Orca engineering notes that we still need for sync live under `ref/`.
+# See ref/upstream.md. Do not reinstate the old docs/** allow-list.
 
 # Stably CLI (only docs/ are tracked)
 .stably/*

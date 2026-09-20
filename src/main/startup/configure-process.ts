@@ -6,6 +6,11 @@ import { getVersionManagerBinPaths } from '../codex-cli/command'
 import { getMainE2EConfig } from '../e2e-config'
 import { DISABLED_CHROMIUM_FEATURES } from './disabled-chromium-features'
 import { readHttp1CompatibilityMarker } from './http1-compatibility-marker'
+import {
+  isWorkbenchProduct,
+  WORKBENCH_DEV_USER_DATA_DIR_NAME,
+  WORKBENCH_USER_DATA_DIR_NAME
+} from './workbench-product'
 
 const DEV_PARENT_SHUTDOWN_GRACE_MS = 3000
 const HTTP1_COMPATIBILITY_ENV_VAR = 'ORCA_DISABLE_HTTP2'
@@ -209,6 +214,12 @@ export function configureDevUserDataPath(isDev: boolean): void {
   }
 
   if (!isDev) {
+    // Why: Workbench.app still ships package.json name "orca"; without a pin,
+    // userData shares Application Support/orca and the single-instance lock
+    // activates the installed Orca instead of launching Workbench.
+    if (isWorkbenchProduct()) {
+      app.setPath('userData', join(app.getPath('appData'), WORKBENCH_USER_DATA_DIR_NAME))
+    }
     return
   }
   const overrideUserDataPath = process.env.ORCA_DEV_USER_DATA_PATH
@@ -218,7 +229,9 @@ export function configureDevUserDataPath(isDev: boolean): void {
     return
   }
   // Why: without a dev-only path, pnpm dev overwrites the packaged app's runtime pointer under userData and breaks the orca CLI.
-  app.setPath('userData', join(app.getPath('appData'), 'orca-dev'))
+  // Workbench shell reuses the same runner but must not share orca-dev (repos / onboarding state diverge).
+  const devDirName = isWorkbenchProduct() ? WORKBENCH_DEV_USER_DATA_DIR_NAME : 'orca-dev'
+  app.setPath('userData', join(app.getPath('appData'), devDirName))
 }
 
 function areSameE2EHomePath(left: string, right: string): boolean {

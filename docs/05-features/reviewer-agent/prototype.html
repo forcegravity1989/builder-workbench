@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>历史方案原型 · 独立评审（reviewer agent）</title>
+<style>
+:root{
+  --paper:#EFEBE2; --rail-bg:#E9E3D7; --clay:#C5654A; --clay-dim:#e2b2a4;
+  --card:#FBFAF6; --card-alt:#F4F0E7; --border:#E2DCCF; --border-deep:#DBD4C5;
+  --ink:#23211C; --ink-2:#57534A; --ink-3:#8C867A; --ink-4:#A19B8D;
+  --agent:#5A4E7A; --alert-deep:#A33D29;
+  --green:#6B8E5A; --amber:#D3A24A; --red:#C0463A; --gray:#9A9590;
+  --shadow:0 8px 26px rgba(35,33,28,.08);
+  --serif:'Noto Serif SC','Songti SC','STSong','SimSun',serif;
+  --sans:'Noto Sans SC','PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif;
+  --mono:'JetBrains Mono','SF Mono',Menlo,Consolas,monospace;
+}
+*{box-sizing:border-box;}
+body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--sans);font-size:13px;line-height:1.55;-webkit-font-smoothing:antialiased;}
+h1,h2,h3,h4{font-family:var(--serif);font-weight:700;margin:0 0 8px;}
+.mono{font-family:var(--mono);}
+.wrap{max-width:880px;margin:0 auto;padding:22px 18px 60px;}
+.protohead{display:flex;align-items:baseline;gap:10px;margin-bottom:14px;}
+.protohead h1{font-size:17px;margin:0;}
+.protohead .sub{font-size:11.5px;color:var(--ink-3);}
+.steps{display:flex;gap:6px;margin-bottom:16px;}
+.step{padding:6px 13px;border:1px solid var(--border);border-radius:8px;background:#fff;font-size:12.5px;cursor:pointer;color:var(--ink-2);}
+.step.active{background:var(--clay);border-color:var(--clay);color:#fff;}
+.card{background:var(--card);border:1px solid var(--border);border-radius:10px;box-shadow:var(--shadow);}
+.chip{display:inline-block;padding:2px 8px;border-radius:6px;font-size:11px;line-height:16px;white-space:nowrap;background:#EFE9DA;color:var(--ink-2);}
+.chip-green{background:#E7EDE2;color:#4A5E42;}
+.chip-red{background:#F3DFD8;color:var(--alert-deep);}
+.chip-gray{background:#EFEADF;color:var(--ink-3);}
+.chip-agent{background:#E8E4F0;color:var(--agent);}
+.btn{cursor:pointer;background:#fff;border:1px solid var(--border);color:var(--ink);border-radius:8px;padding:7px 14px;font-size:12.5px;white-space:nowrap;font-family:inherit;}
+.btn:hover{border-color:var(--clay);color:var(--clay);}
+.btn:disabled{opacity:.45;cursor:not-allowed;}
+.btn:disabled:hover{border-color:var(--border);color:var(--ink);}
+.btn-primary{background:var(--clay);border-color:var(--clay);color:#fff;font-weight:500;}
+.btn-primary:hover{background:#B1573F;color:#fff;}
+.dot{width:9px;height:9px;border-radius:50%;display:inline-block;flex:none;}
+@keyframes pulse{0%,100%{opacity:1;}50%{opacity:.32;}}
+.dot-run{animation:pulse 1.2s ease-in-out infinite;}
+.hidden{display:none!important;}
+.screen{padding:18px;}
+.detail-title{display:flex;align-items:center;gap:9px;margin-bottom:4px;}
+.detail-title h2{font-size:15.5px;margin:0;}
+.meta{font-size:11.5px;color:var(--ink-3);margin-bottom:12px;}
+.row{display:flex;align-items:center;gap:8px;margin:7px 0;font-size:12.5px;}
+.row .k{color:var(--ink-3);width:76px;flex:none;font-size:11.5px;}
+.mrline a{color:var(--clay);text-decoration:underline;cursor:pointer;}
+.actions{display:flex;gap:8px;margin-top:16px;padding-top:14px;border-top:1px solid var(--border);align-items:center;}
+.hint{font-size:11px;color:var(--ink-4);}
+.desc{background:var(--card-alt);border:1px solid var(--border);border-radius:8px;padding:10px 12px;font-size:12.5px;color:var(--ink-2);margin-top:10px;}
+.sesslist{display:flex;flex-direction:column;gap:8px;margin-bottom:12px;}
+.sessitem{display:flex;align-items:center;gap:9px;padding:9px 12px;border:1px solid var(--border);border-radius:8px;background:#fff;font-size:12.5px;cursor:default;}
+.sessitem.active{border-color:var(--clay);}
+.term{background:#211F1A;color:#D8D2C4;border-radius:10px;padding:14px 16px;font-family:var(--mono);font-size:11.8px;line-height:1.75;overflow-x:auto;}
+.term .p{color:#8C867A;}
+.term .ok{color:#9DB88B;}
+.term .warn{color:#D3A24A;}
+.comment{border:1px solid var(--border);border-radius:10px;background:#fff;overflow:hidden;}
+.comment-head{display:flex;align-items:center;gap:8px;padding:9px 14px;background:var(--card-alt);border-bottom:1px solid var(--border);font-size:12px;color:var(--ink-2);}
+.comment-body{padding:14px 18px;font-size:12.8px;}
+.comment-body h3{font-size:13.5px;margin:14px 0 6px;}
+.comment-body h3:first-child{margin-top:0;}
+.comment-body ul{margin:4px 0 8px;padding-left:20px;}
+.comment-body li{margin:3px 0;}
+.verdict{display:inline-block;padding:3px 10px;border-radius:6px;font-weight:600;font-size:12.5px;}
+.verdict.back{background:#F3DFD8;color:var(--alert-deep);}
+.risk{border:1px solid var(--alert-deep);background:#F9EFEB;border-radius:8px;padding:9px 12px;margin:10px 0;font-size:12.5px;}
+.risk b{color:var(--alert-deep);}
+.evi{font-family:var(--mono);font-size:11.3px;color:var(--ink-3);}
+.foot{margin-top:14px;font-size:11px;color:var(--ink-4);}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="protohead">
+    <h1>独立评审（reviewer agent）</h1>
+    <span class="sub">历史方案原型 · 工作台内评审未实现 · 样例数据：builder-workbench 2026-W35</span>
+  </div>
+
+  <div class="steps">
+    <div class="step active" data-s="1" onclick="go(1)">1 · 计划屏 · 活详情</div>
+    <div class="step" data-s="2" onclick="go(2)">2 · 会话屏 · 评审会话</div>
+    <div class="step" data-s="3" onclick="go(3)">3 · MR 上的评审意见</div>
+  </div>
+
+  <!-- 步 1 · 计划屏活详情抽屉(评审中 + MR 开着) -->
+  <div class="card screen" id="s1">
+    <div class="detail-title">
+      <span class="dot" style="background:var(--amber)"></span>
+      <h2>#131 通知屏一键跳到等合的 MR</h2>
+      <span class="chip">评审中</span>
+    </div>
+    <div class="meta">构建 · 2026-W35 · workflow：mattpocock-skills · 工具：Claude Code</div>
+    <div class="row"><span class="k">分支</span><span class="mono">bw/issue-131</span></div>
+    <div class="row mrline"><span class="k">MR</span><a>PR #132 · 开着</a><span class="chip chip-gray" id="rev-state">未评审</span></div>
+    <div class="desc">通知屏「有 MR 等你合」条目点开直接落到 MR 页,不再先经活详情。</div>
+    <div class="actions">
+      <button class="btn" disabled>▶ 开工</button>
+      <button class="btn btn-primary" onclick="startReview()">请评审</button>
+      <span class="hint">起独立评审会话,意见落在 PR #132 评论上;不合并、不改状态</span>
+    </div>
+    <div class="actions" style="border-top:none;padding-top:4px;">
+      <button class="btn" disabled>请评审</button>
+      <span class="hint">(无 MR 的活:按钮灰,没有可评之物)</span>
+    </div>
+  </div>
+
+  <!-- 步 2 · 会话屏(两条会话:写码 + 评审) -->
+  <div class="card screen hidden" id="s2">
+    <div class="detail-title"><h2>会话 · #131 通知屏一键跳到等合的 MR</h2></div>
+    <div class="sesslist">
+      <div class="sessitem"><span class="dot" style="background:var(--gray)"></span>写码会话 · claude · 已推到评审中<span class="chip chip-gray">空闲</span></div>
+      <div class="sessitem active"><span class="dot dot-run" style="background:var(--agent)"></span>评审会话 · claude<span class="chip chip-agent">评审 · 运行中</span></div>
+    </div>
+    <div class="term">
+<span class="p">$ claude(评审会话 · 只读仓 + 评论,禁 merge/禁改状态)</span><br>
+读活 #131 正文与验收口径 … <span class="ok">✔</span><br>
+gh pr diff 132 … <span class="ok">✔ 4 files, +86 −12</span><br>
+读 AGENTS.md / .bw/ 规范件,对照两轴:规矩轴 + 意图轴 … <span class="ok">✔</span><br>
+cargo check -p app-shell … <span class="ok">✔</span><br>
+<span class="warn">发现 2 条必须改:通知项没有 MR 时仍渲染跳转按钮(点了空跳);跳转 URL 未经 open 白名单</span><br>
+gh pr comment 132 --body-file review.md … <span class="ok">✔ 意见已落 PR #132</span><br>
+<span class="p">评审完成。合不合仍由你在 Workbench 里点。</span>
+    </div>
+    <div class="actions">
+      <button class="btn btn-primary" onclick="go(3)">去看 PR #132 的评审意见</button>
+      <span class="hint">会话可接着聊:「错误处理再看一遍」「把 #128 也看了」</span>
+    </div>
+  </div>
+
+  <!-- 步 3 · MR 评论(评审意见结构) -->
+  <div class="card screen hidden" id="s3">
+    <div class="detail-title"><h2>PR #132 · 评论</h2></div>
+    <div class="comment">
+      <div class="comment-head"><span class="chip chip-agent">Workbench 评审</span><span>bw:review · 2026-08-27 · 会话 rev-131-a</span></div>
+      <div class="comment-body">
+        <h3>结论</h3>
+        <span class="verdict back">建议打回 · 2 条必须改</span>
+        <div class="risk"><b>大风险 · 升 gate</b>:跳转 URL 直接进系统 open,未经白名单——命中「跨边界数据流出」清单项,合入前必须人看过这一条。</div>
+        <h3>必须改</h3>
+        <ul>
+          <li>通知项没有 MR 时仍渲染跳转按钮,点击空跳 —— <span class="evi">screens/notify/mod.rs:88</span></li>
+          <li>跳转 URL 未做白名单校验就交给系统 open —— <span class="evi">adapters/openurl.rs:31</span></li>
+        </ul>
+        <h3>建议</h3>
+        <ul><li>按钮文案「去看 MR」与通知屏其余动词对齐(现为「跳转」)</li></ul>
+        <h3>对照意图</h3>
+        <ul><li>活正文要求「不再先经活详情」—— diff 已做到;验收口径其余各条未见偏差</li></ul>
+        <h3>证据</h3>
+        <ul class="evi" style="list-style:none;padding-left:0;">
+          <li>gh pr diff 132 · 4 files +86 −12</li>
+          <li>cargo check -p app-shell ✔ · guard-no-cross-screen-import ✔</li>
+        </ul>
+      </div>
+    </div>
+    <div class="actions">
+      <button class="btn" onclick="go(1)">回活详情</button>
+      <span class="hint">合入 / 打回仍是你在 Workbench 里的显式动作;评审会话没有这两个按钮</span>
+    </div>
+  </div>
+
+  <div class="foot">本页保留当时的方案与旧称；方案边界以同目录 spec.md / STATUS.md 为准，当前术语以仓根 CONTEXT.md 为准。出错路径:评审会话起不来(CLI 探活失败)→ toast 原话报错,活与 MR 原地不动;评论没发出去 → 会话里如实说「意见没落上」,不显示「已评审」。</div>
+</div>
+
+<script>
+function go(n){
+  for(var i=1;i<=3;i++){
+    document.getElementById('s'+i).classList.toggle('hidden', i!==n);
+    document.querySelector('.step[data-s="'+i+'"]').classList.toggle('active', i===n);
+  }
+}
+function startReview(){
+  document.getElementById('rev-state').textContent='评审会话运行中';
+  go(2);
+}
+</script>
+</body>
+</html>

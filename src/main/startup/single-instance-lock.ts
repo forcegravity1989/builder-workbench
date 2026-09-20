@@ -70,6 +70,11 @@ export function shouldSkipSingleInstanceLock(options: {
   isServeMode: boolean
 }): boolean {
   const env = options.env ?? process.env
+  // Why: Workbench shares one workbench-dev profile; skipping the lock lets two
+  // electron-vite mains scheduleSave and clobber each other's repos (empty wall after add).
+  if (env.ORCA_PRODUCT_NAME === 'Workbench' || env.WORKBENCH_SHELL === '1') {
+    return false
+  }
   return options.isDev && !options.isServeMode && env[SINGLE_INSTANCE_LOCK_E2E_ENFORCE_ENV] !== '1'
 }
 
