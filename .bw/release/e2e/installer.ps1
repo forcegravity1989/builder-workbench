@@ -47,7 +47,8 @@ try {
     if (Test-Path -LiteralPath $packResultFile) {
         $packResult = Get-Content -LiteralPath $packResultFile -Raw -Encoding UTF8 | ConvertFrom-Json
         $identity.pack_result = $packResult
-        if ($packResult.sha256 -and $packResult.sha256 -ne $setupSha) {
+        if (-not $packResult.sha256) { throw '出包记录缺 sha256，无法核对被测包身份' }
+        if ($packResult.sha256 -ne $setupSha) {
             throw "候选包哈希与出包记录不一致：记录 $($packResult.sha256)，现场 $setupSha"
         }
     }
@@ -82,23 +83,29 @@ try {
     if (-not $Failure) { $Failure = $_.Exception.Message }
 } finally {
     $removed = $false
+    $forced = $false
     $uninstallError = $null
     if ($installed -or (Test-Path -LiteralPath $installDir)) {
         try {
-            Invoke-BwSilentUninstall $installDir
-            $removed = -not (Test-Path -LiteralPath $installDir)
-            if (-not $removed) { $uninstallError = "卸载之后安装目录还在：$installDir" }
+            # 判据=卸载器自己清干净；强删只兜底不算过（helper 返回值必须捕获）。
+            $un = Invoke-BwSilentUninstall $installDir
+            $removed = [bool]$un.uninstallerClean
+            $forced = [bool]$un.forcedCleanup
+            if (-not $removed) {
+                $tail = if ($forced) { '兜底强删已清' } else { '强删也失败' }
+                $uninstallError = "卸载器结束后安装目录仍有残留（$tail）：$installDir"
+            }
         } catch { $uninstallError = $_.Exception.Message }
         if ($installed) {
             $Cases.Add([ordered]@{
-                    id = 'installer-uninstall-clean'; title = '卸载读回：安装目录清干净'
-                    path = '静默卸载 → 目录读回'; expect = '卸载后安装目录不存在'
+                    id = 'installer-uninstall-clean'; title = '卸载读回：卸载器自己清干净安装目录'
+                    path = '静默卸载 → 条件读回等待 → 目录读回'; expect = '卸载器结束后安装目录不存在（兜底强删不算判据）'
                     status = $(if ($removed) { 'passed' } else { 'failed' })
                     message = "$(if ($uninstallError) { $uninstallError } else { '' })"; evidence = @('uninstall-readback.json')
                 })
         }
     }
-    Save-Json 'uninstall-readback.json' ([ordered]@{ installDir = $installDir; removed = $removed; error = $uninstallError })
+    Save-Json 'uninstall-readback.json' ([ordered]@{ installDir = $installDir; uninstallerClean = $removed; forcedCleanup = $forced; error = $uninstallError })
     foreach ($Name in $Names) {
         if (-not ($Cases | Where-Object { $_.id -eq $Name })) {
             $Cases.Add([ordered]@{ id = $Name; title = $Name; status = 'not_run'; message = $Failure; evidence = @() })

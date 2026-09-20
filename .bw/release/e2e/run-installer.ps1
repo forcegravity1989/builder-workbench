@@ -18,6 +18,7 @@ if (-not $node) { Fail missing_tool '本机 PATH 里没有 node.exe' }
 
 Write-BwProgress -Phase verify -Message ("installer 套件：{0}" -f $version)
 # verify 的 stdout 逐行转 progress；stderr 并入（EAP 临时放宽，避免 NativeCommandError 打断流）。
+$startedUtc = (Get-Date).ToUniversalTime()
 $prevEap = $ErrorActionPreference
 $ErrorActionPreference = 'Continue'
 Push-Location $root
@@ -41,6 +42,13 @@ if ($runId -notmatch '^[A-Za-z0-9.-]+\z') { Fail e2e_failed "运行编号不像�
 $resultFile = Join-Path $root ".bw\release\out\verify\$runId\result.json"
 if (-not (Test-Path -LiteralPath $resultFile)) { Fail e2e_failed "运行 $runId 缺 result.json" }
 $result = Get-Content -LiteralPath $resultFile -Raw -Encoding UTF8 | ConvertFrom-Json
+# 指针可能陈旧（verify 在落指针前就崩、或并发运行）：本次调用的记录必须晚于调用开始。
+try {
+    $runStarted = [DateTime]::Parse("$($result.startedAt)", [Globalization.CultureInfo]::InvariantCulture).ToUniversalTime()
+} catch { Fail e2e_failed "运行记录 $runId 读不出 startedAt，不能当作本次结果" }
+if ($runStarted -lt $startedUtc.AddSeconds(-30)) {
+    Fail e2e_failed "运行记录 $runId 早于本次调用（陈旧指针），verify 本次没有落新结果"
+}
 $step = @($result.steps | Where-Object { $_.id -eq 'installer' })[0]
 if (-not $step) { Fail e2e_failed "本次运行（$runId）没有执行 installer 套件，前置步骤可能失败" }
 

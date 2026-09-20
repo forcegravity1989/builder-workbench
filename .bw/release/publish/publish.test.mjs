@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { validateBindings } from './publish.mjs';
+import { validateBindings, validateRemoteState } from './publish.mjs';
 
 const revision = 'f'.repeat(40);
 const artifactSha = 'a'.repeat(64);
@@ -51,4 +51,19 @@ test('allow-dirty is an explicit human override, recorded not hidden', () => {
   assert.ok(validateBindings(input).length > 0);
   input.allowDirty = true;
   assert.deepEqual(validateBindings(input), []);
+});
+
+test('missing source in verification records is unknown, never treated as same-origin', () => {
+  const input = base();
+  delete input.packRun.source;
+  assert.match(validateBindings(input).join('；'), /缺省 ≠ 构建修订/);
+});
+
+test('remote-state gate refuses off-main revision, existing tag or release', () => {
+  const ok = { version: 'v9.9.9', revision: 'f'.repeat(40), isAncestorOfMain: true, remoteTagExists: false, localTagExists: false, releaseExists: false };
+  assert.deepEqual(validateRemoteState(ok), []);
+  assert.match(validateRemoteState({ ...ok, isAncestorOfMain: false }).join('；'), /origin\/main/);
+  assert.match(validateRemoteState({ ...ok, remoteTagExists: true }).join('；'), /远端已有 tag/);
+  assert.match(validateRemoteState({ ...ok, localTagExists: true }).join('；'), /本地已有 tag/);
+  assert.match(validateRemoteState({ ...ok, releaseExists: true }).join('；'), /已存在/);
 });

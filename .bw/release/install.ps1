@@ -16,14 +16,28 @@ function Invoke-BwSilentSetup([string]$setupExe, [string]$dir, [string]$log) {
     return $exe
 }
 
+# 运行静默卸载并区分两段结果：卸载器自己是否清干净（判据）、强删是否兜底成功
+# （仅清理用，不算判据——否则「能卸干净」的证明被强删掩盖）。
+# 返回 [ordered]@{ uninstallerClean; forcedCleanup }；调用方必须捕获返回值，
+# 否则哈希表会进 stdout 污染 JSONL 协议流。
 function Invoke-BwSilentUninstall([string]$dir) {
-    if (-not (Test-Path -LiteralPath $dir)) { return }
+    $r = [ordered]@{ uninstallerClean = $false; forcedCleanup = $false }
+    if (-not (Test-Path -LiteralPath $dir)) { $r.uninstallerClean = $true; $r.forcedCleanup = $true; return $r }
     $unins = Get-ChildItem -LiteralPath $dir -Filter 'unins*.exe' -ErrorAction SilentlyContinue | Select-Object -First 1
     if ($unins) {
         cmd.exe /c ('start /wait "" "' + $unins.FullName + '" /VERYSILENT /NORESTART') | Out-Null
-        Start-Sleep -Seconds 2
+        # Inno 卸载器会复制到临时目录再自跑，start /wait 返回不等于卸完：条件读回等待，不用固定睡眠猜。
+        $deadline = (Get-Date).AddSeconds(30)
+        while ((Test-Path -LiteralPath $dir) -and (Get-Date) -lt $deadline) { Start-Sleep -Milliseconds 500 }
     }
-    Remove-Item -Recurse -Force $dir -ErrorAction SilentlyContinue
+    $r.uninstallerClean = -not (Test-Path -LiteralPath $dir)
+    if ($r.uninstallerClean) {
+        $r.forcedCleanup = $true
+    } else {
+        Remove-Item -Recurse -Force $dir -ErrorAction SilentlyContinue
+        $r.forcedCleanup = -not (Test-Path -LiteralPath $dir)
+    }
+    return $r
 }
 
 # 安装器因缺 Claude Code 拒装时，安装日志里有对应文案；给人话提示用。

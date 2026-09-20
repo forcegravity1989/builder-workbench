@@ -40,15 +40,25 @@ export function validateBindings({ version, packResult, artifactSha256, packRun,
   } else if (installerRun.sourceUnchanged !== true) {
     refuse.push('验包 run 源码有变化，结果已失效');
   }
-  // 三记录同源：门禁验证、验包与出包必须在同一构建修订上。
+  // 三记录同源：门禁验证、验包与出包必须在同一构建修订上；source 缺省=unknown，同样拒。
   const revision = packResult?.revision;
   if (COMMIT.test(revision ?? '')) {
-    if (packRun?.source && packRun.source.commit !== revision) refuse.push(`门禁验证源码 ${packRun.source.commit} ≠ 构建修订 ${revision}`);
-    if (installerRun?.source && installerRun.source.commit !== revision) refuse.push(`验包源码 ${installerRun.source.commit} ≠ 构建修订 ${revision}`);
+    if (packRun && packRun.source?.commit !== revision) refuse.push(`门禁验证源码 ${packRun.source?.commit ?? '缺省'} ≠ 构建修订 ${revision}`);
+    if (installerRun && installerRun.source?.commit !== revision) refuse.push(`验包源码 ${installerRun.source?.commit ?? '缺省'} ≠ 构建修订 ${revision}`);
   }
   if (!installerSetupIdentity || installerSetupIdentity.sha256 !== packResult?.sha256) {
     refuse.push('验包所测安装包 SHA-256 与出包记录不一致或缺失（验的不是这个包）');
   }
+  return refuse;
+}
+
+// 纯函数：远端状态校验（拒发条件 4/5），由 main 流程用只读 git/gh 探测喂入。
+export function validateRemoteState({ version, revision, isAncestorOfMain, remoteTagExists, localTagExists, releaseExists }) {
+  const refuse = [];
+  if (!isAncestorOfMain) refuse.push(`构建修订 ${revision} 不在 origin/main 上（未合入或已被改写），不能发布`);
+  if (remoteTagExists) refuse.push(`远端已有 tag ${version}；同号不重发（人先删或开下一号）`);
+  if (localTagExists) refuse.push(`本地已有 tag ${version}；同号不重发（人先 git tag -d）`);
+  if (releaseExists) refuse.push(`Release ${version} 已存在；同号不重发`);
   return refuse;
 }
 
@@ -82,6 +92,8 @@ function publish() {
   const command = (exe, argv, options = {}) => execFileSync(exe, argv, { encoding: 'utf8', maxBuffer: 32 * 1024 * 1024, timeout: 300000, ...options }).trim();
   const git = (...argv) => command('git', argv);
   const gh = (...argv) => command('gh', argv);
+  // 资产上传/下载是大文件，慢网下 300s 会误报读回失败（且此时 Release 已发出）：单独放宽。
+  const ghLong = (...argv) => command('gh', argv, { timeout: 1800000 });
   const root = git('rev-parse', '--show-toplevel');
 
   const artifactDir = path.join(root, '.bw/release/out', opts.version);
@@ -98,15 +110,24 @@ function publish() {
   const installerSetupIdentity = fs.existsSync(identityFile) ? json(identityFile) : null;
 
   const refuse = validateBindings({ version: opts.version, packResult, artifactSha256, packRun, installerRun, installerSetupIdentity, allowDirty: opts.allowDirty });
-  // 构建修订必须在 origin/main 上：不从游离分支或已被超越的旧修订发布。
   const revision = packResult?.revision;
+  const repo = opts.repo || git('remote', 'get-url', 'origin').match(/^(?:https:\/\/github\.com\/|git@github\.com:)([\w.-]+\/[\w.-]+?)(?:\.git)?\/?$/)?.[1];
+  if (!/^[\w.-]+\/[\w.-]+$/.test(repo ?? '')) throw new Error('无法识别 GitHub 仓库（--repo 可显式指定）');
+
+  // 远端状态与 gh 活性全部是只读预检，任何失败都发生在第一次远端写入之前（零写入退出）。
   if (refuse.length === 0) {
+    try { gh('api', 'user', '--silent'); } catch (error) { throw new Error(`gh 不可用或未登录（零远端写入）：${String(error.message).split('\n')[0]}`); }
     git('fetch', '--quiet', 'origin', 'main');
-    try {
-      execFileSync('git', ['merge-base', '--is-ancestor', revision, 'origin/main'], { cwd: root, stdio: 'ignore' });
-    } catch {
-      refuse.push(`构建修订 ${revision} 不在 origin/main 上（未合入或已被改写），不能发布`);
+    const isAncestorOfMain = (() => { try { execFileSync('git', ['merge-base', '--is-ancestor', revision, 'origin/main'], { cwd: root, stdio: 'ignore' }); return true; } catch { return false; } })();
+    const remoteTagExists = git('ls-remote', '--tags', 'origin', `refs/tags/${opts.version}`) !== '';
+    const localTagExists = (() => { try { git('rev-parse', `refs/tags/${opts.version}`); return true; } catch { return false; } })();
+    let releaseExists;
+    try { gh('release', 'view', opts.version, '--repo', repo); releaseExists = true; } catch (error) {
+      const detail = `${error.stderr ?? ''} ${error.message ?? ''}`;
+      if (/not found/i.test(detail)) releaseExists = false;
+      else throw new Error(`Release 存在性检查失败，不是「不存在」（零远端写入）：${detail.split('\n')[0]}`);
     }
+    refuse.push(...validateRemoteState({ version: opts.version, revision, isAncestorOfMain, remoteTagExists, localTagExists, releaseExists }));
   }
   if (refuse.length) {
     console.error(`拒发 ${opts.version}：绑定不齐（${refuse.length} 条）`);
@@ -114,16 +135,6 @@ function publish() {
     process.exitCode = 1;
     return;
   }
-
-  const repo = opts.repo || git('remote', 'get-url', 'origin').match(/^(?:https:\/\/github\.com\/|git@github\.com:)([\w.-]+\/[\w.-]+?)(?:\.git)?\/?$/)?.[1];
-  if (!/^[\w.-]+\/[\w.-]+$/.test(repo ?? '')) throw new Error('无法识别 GitHub 仓库（--repo 可显式指定）');
-
-  // 同号只发一次：tag 或 Release 已存在都拒，重发须人先删或开下一号。
-  if (git('ls-remote', '--tags', 'origin', `refs/tags/${opts.version}`)) throw new Error(`远端已有 tag ${opts.version}；同号不重发`);
-  const localTagExists = (() => { try { git('rev-parse', `refs/tags/${opts.version}`); return true; } catch { return false; } })();
-  if (localTagExists) throw new Error(`本地已有 tag ${opts.version}；同号不重发`);
-  const releaseExists = (() => { try { gh('release', 'view', opts.version, '--repo', repo); return true; } catch { return false; } })();
-  if (releaseExists) throw new Error(`Release ${opts.version} 已存在；同号不重发`);
 
   const notes = fs.readFileSync(opts.notesFile, 'utf8');
   if (!notes.trim()) throw new Error('版本说明是空的；发布正文必须带版本说明（version-report 备稿）');
@@ -145,9 +156,13 @@ SHA-256: ${artifactSha256}
 发布存储: GitHub Releases (${repo})${opts.allowDirty && (packResult.dirty || packRun.source?.dirty) ? '\n注: 本次以 --allow-dirty 显式放行脏树记录' : ''}
 `;
   git('tag', '-a', opts.version, revision, '-F', '-', { input: tagMessage });
-  git('push', 'origin', `refs/tags/${opts.version}`);
+  try {
+    git('push', 'origin', `refs/tags/${opts.version}`);
+  } catch (error) {
+    throw new Error(`tag ${opts.version} 已在本地创建但推送失败：${String(error.message).split('\n')[0]}——远端没有写入；git tag -d ${opts.version} 后修复重跑`);
+  }
   const tagReadback = git('ls-remote', 'origin', `refs/tags/${opts.version}^{}`);
-  if (!tagReadback.startsWith(revision)) throw new Error(`tag 读回不指向构建修订：${tagReadback}（已推 tag，人工核对后处理）`);
+  if (!tagReadback.startsWith(revision)) throw new Error(`tag 读回不指向构建修订：${tagReadback}（tag 已推到远端，人工核对后 git push origin :refs/tags/${opts.version} 删除或继续发布）`);
 
   const body = `${notes.trim()}
 
@@ -158,11 +173,15 @@ SHA-256: ${artifactSha256}
 - 出包记录：\`out/${opts.version}/pack-result.json\`（packed_at ${packResult.packed_at}，dirty=${packResult.dirty}，source_unchanged=${packResult.source_unchanged}）
 - 门禁验证：verify run \`${packRun.runId}\`（profile=pack，status=passed）
 - 验包：verify run \`${installerRun.runId}\`（profile=installer，用例 ${caseCount.filter(x => x.status === 'passed').length}/${caseCount.length}，所测包 SHA 与出包记录一致）
-- 授权：${opts.authorizedBy}${opts.allowDirty ? '（--allow-dirty 显式放行）' : ''}
+- 授权：${opts.authorizedBy}${opts.allowDirty && (packResult.dirty || packRun.source?.dirty) ? '（--allow-dirty 显式放行：含脏树记录）' : ''}
 `;
   const bodyFile = path.join(receiptDir, 'release-body.md');
   fs.writeFileSync(bodyFile, body);
-  gh('release', 'create', opts.version, artifactPath, '--repo', repo, '--title', opts.version, '--notes-file', bodyFile);
+  try {
+    ghLong('release', 'create', opts.version, artifactPath, '--repo', repo, '--title', opts.version, '--notes-file', bodyFile);
+  } catch (error) {
+    throw new Error(`tag ${opts.version} 已推到远端，Release 创建失败：${String(error.message).split('\n')[0]}——中途态：人工核对后删远端 tag（git push origin :refs/tags/${opts.version}）或修复后重发（同号存在性检查会拒重复 Release）`);
+  }
 
   // 独立读回：Release 元数据 + 下载资产复算哈希。读回不一致是重大事故，如实炸，不回收 Release。
   const release = JSON.parse(gh('release', 'view', opts.version, '--repo', repo, '--json', 'tagName,url,assets'));
@@ -172,7 +191,7 @@ SHA-256: ${artifactSha256}
   if (asset.size !== artifactBytes.length) throw new Error(`Release 资产大小读回不一致：${asset.size} ≠ ${artifactBytes.length}`);
   const downloadDir = path.join(receiptDir, 'asset-readback');
   fs.mkdirSync(downloadDir, { recursive: true });
-  gh('release', 'download', opts.version, '--repo', repo, '--pattern', artifactName, '--dir', downloadDir, '--clobber');
+  ghLong('release', 'download', opts.version, '--repo', repo, '--pattern', artifactName, '--dir', downloadDir, '--clobber');
   const downloadedSha = sha256(fs.readFileSync(path.join(downloadDir, artifactName)));
   if (downloadedSha !== artifactSha256) throw new Error(`已发布资产下载复算 SHA-256 不一致：${downloadedSha} ≠ ${artifactSha256}（重大事故，Release 保留待人工处置）`);
 

@@ -99,15 +99,17 @@ if (-not (Test-Path $exe)) {
     $hint = '静默安装之后没有 bw-dev.exe'
     if (Test-BwClaudeHint $issLog) {
         $hint = '未找到 Claude Code。请先 npm 全局安装 @anthropic-ai/claude-code。'
-        Invoke-BwSilentUninstall $verifyDir
+        $null = Invoke-BwSilentUninstall $verifyDir
         Fail missing_tool $hint
     }
-    Invoke-BwSilentUninstall $verifyDir
+    $null = Invoke-BwSilentUninstall $verifyDir
     Fail pack_failed $hint
 }
-Invoke-BwSilentUninstall $verifyDir
-if (Test-Path (Join-Path $verifyDir 'bw-dev.exe')) {
-    Fail pack_failed '校验卸载之后 bw-dev.exe 还在'
+# 判据是卸载器自己清干净；强删只兜底，不算过（返回值必须捕获，防哈希表漏进协议流）。
+$un = Invoke-BwSilentUninstall $verifyDir
+if (-not $un.uninstallerClean) {
+    $tail = if ($un.forcedCleanup) { '兜底强删已清' } else { '强删也失败' }
+    Fail pack_failed "校验卸载之后安装目录还有残留（卸载器没清干净；$tail）：$verifyDir"
 }
 
 # 产物身份记录（ADR-0005）：文件名 + SHA-256 + 开工源码身份（revision/dirty）+ 结束时
