@@ -58,14 +58,15 @@ jobs:
             exit 0
           fi
           pr=$(gh pr view "$PR_INPUT" --repo "$GITHUB_REPOSITORY" \
-            --json number,isDraft,headRefOid,headRepository)
+            --json number,isDraft,headRefOid,isCrossRepository)
           if [ "$(jq -r '.isDraft' <<< "$pr")" = "true" ]; then
             skip "draft PR 不触发外部评审，跳过"
             exit 0
           fi
-          head_repo=$(jq -r '.headRepository.full_name // ""' <<< "$pr")
-          if [ "$head_repo" != "$GITHUB_REPOSITORY" ]; then
-            skip "PR 头仓是 ${head_repo:-未知}（fork 或无法确认），拿不到 secrets，跳过"
+          # fork 判定用 isCrossRepository：GraphQL 的 headRepository 对同仓 PR 恒为 null
+          # （仅跨仓 PR 才填充），按 full_name 判会把所有同仓召唤误当 fork 跳过（实测发现）。
+          if [ "$(jq -r '.isCrossRepository' <<< "$pr")" = "true" ]; then
+            skip "PR 头来自 fork 仓，拿不到 secrets，跳过"
             exit 0
           fi
           echo "number=$(jq -r '.number' <<< "$pr")" >> "$GITHUB_OUTPUT"
