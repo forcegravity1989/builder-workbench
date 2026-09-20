@@ -5,7 +5,7 @@
 - 相关：[`01-document-organization.md`](01-document-organization.md)（`docs/05-features/` 粒度与制品链）、[`03-press-release-faq-flywheel.md`](03-press-release-faq-flywheel.md)（**产品级**新闻稿/FAQ/飞轮正本）、[`../architecture.md`](../architecture.md)（现行工程设计正本）
 - 方法来源：亚马逊 Working Backwards / PR·FAQ / 叙事备忘录文化（外部实践；本仓取其机制，不照搬组织流程）
 
-> **30 秒导读**：特性级变更**先写清客户体验与证据，再写代码**。产品级 PR/FAQ/飞轮在 [03](03-press-release-faq-flywheel.md)；单次特性落在 `docs/05-features/<id>/`——**人 gate = intent + 带原型的 spec**；plan 仅大风险升 gate；小修直修。可用 Superpowers / grill-me 辅助发散与质询，结论必须落回 `docs/05-features/`。
+> **30 秒导读**：特性级变更**先写清客户体验与证据，再写代码**。产品级 PR/FAQ/飞轮在 [03](03-press-release-faq-flywheel.md)；单次特性落在 `docs/05-features/<id>/`——**人 gate = intent + 带原型的 spec**；plan 仅大风险升 gate；小修直修。特性交付全程走**六环链**（intent→spec→实现设计→TDD→验收点E2E→用户旅程E2E，§6.2）；新工作先过**带入三问**（§6.3）。可用 Superpowers / grill-me 辅助发散与质询，结论必须落回 `docs/05-features/`。
 
 > **用词**：一律 **gate**（不再写「人闸」）；与工程**门禁**区分见 01 / `CONTEXT.md`。
 
@@ -118,6 +118,45 @@
 
 禁止：只在 `docs/superpowers/specs/` 或聊天里「批过」就开干，而 `docs/05-features/` 无对应已接受制品。细则见 [01 §4.3](01-document-organization.md)。
 
+### 6.2 六环交付链（特性交付主链 · 2026-09-20 拍板落章）
+
+§6 的制品链到「实现」为止；一次完整交付按**六环链**延伸，横切站随每个 PR、收口站随每个版本：
+
+```text
+intent（原始意图对齐）→ spec（规格与验收点）→ 实现设计
+        → TDD → 验收点E2E → 用户旅程E2E
+横切站A 实现门禁（每 PR）   横切站B 验证 Review（每 PR）   收口站 人验收/发布归档（每版本）
+```
+
+与 **V-model** 同构：左翼分解（intent→spec→实现设计），右翼验证（TDD→验收点E2E→旅程E2E），两端对应——spec 验收点↔环5 用例、实现设计↔环4 单测。配比按**测试金字塔**（单测底座、验收居中、旅程少而真），追溯取 **RTM 的活文档形态**：链本身就是追溯矩阵，不另维护一张表。业界源：V-Modell；Cohn《Succeeding with Agile》(2009)、Fowler TestPyramid、《Software Engineering at Google》Ch.11；Martraire《Living Documentation》(2019)、Cucumber 可执行规格、Adzic《Specification by Example》(2011)；ISO/IEC/IEEE 29148:2018（RTM 定义）、DO-178C（双向追溯）。
+
+每环硬要求（应然态；某特性现状缺口以该特性 `docs/05-features/<id>/` 制品与 PR 记录为准）：
+
+| 环 | 硬要求 |
+|---|---|
+| 1 intent | §2 五大拷问 + §3.1 骨架；人 gate 后才进 spec。**自用工具不自动成为产品特性**——按用户身份分别立 intent（分层判据见 6.3） |
+| 2 spec | 行为要求 + **可判断的验收点**必须有；原型链接按 §3.2。**指标不强求**；要挂必须是价值指标：按[指标协议](../../standard/system-prompt/references/metrics.md)写清口径/窗口/来源/目标，引领经 `leads` 写明它盯的滞后指标，**最终能反馈到北极星指标得到收益**（北极星槽位在 `.bw/metrics.toml`，刻意占位，等外部项目效果数据可采再 formalize；占位期间候选指标一律按「不强求」处理） |
+| 3 实现设计 | 动代码前在 [architecture](../architecture.md) 定位（§1 用例哪一站 → §2 能力 → §3 crate 与数据流）；**实现落地后回写 [06-module](../06-module/README.md)**——设计与代码漂移即断环 |
+| 4 TDD | 随改义务：已有单测随改维护（AGENTS：不把新增回归大坝当交付物）；核心推导逻辑改动必须带测试——`Derived<Signal>` 密封、`can_transition_to` 状态机、现算重算、调度触发。测试的特性归属清单**暂缓**（2026-09-20 拍板：义务定义未清） |
+| 5 验收点E2E | spec 每条验收点 ↔ `.bw/release/e2e/suites/` 注册用例**双向可查**；suite 登记特性归属；[verify 入口](../../.bw/release/verify/README.md)少跑即 fail、过了必带证据。**覆盖率以双向映射为唯一口径——不得以「看见有用例」反推「有 E2E」** |
+| 6 用户旅程E2E | 每个**在用**特性 ≥1 条注册旅程：深链（BW_OPEN/BW_PANEL/BW_VIEW/BW_HELP）驱动**真实壳**，从头到尾完成一件完整的事，判据可判断，标 `kind: acceptance`；模拟不算数 |
+
+- **横切站 A（实现门禁）**：[AGENTS](../../AGENTS.md)「提交前门禁」全绿 + `verify --profile pr`；分支保护为轻保护口径（require PR + Windows CI 必过检查）。
+- **横切站 B（验证 Review）**：推 PR 前工作会话先跑 subagent 自检；界面/行为改动另发 review 验证报告（判据内嵌真壳截图四件套）；外部评审 = **召唤制**（PR 评论单独一行 `/code-review`，默认关、draft 不触发、fork 跳过）；未召唤 = 显式标「未外部评审（灰）」，不失败、不缺省绿。必须外部评审的情形：动四铁律机制、guard 脚本、发布链、跨屏导入——不召唤须在 PR 正文说明理由。
+- **收口站（人验收/发布归档）**：Done 由人确认（四铁律；`settled_at` 只记一次）。发布 = version-report 备稿（版本说明 + Release 草稿）→ **人明确授权** → GitHub Releases 正本（assets + SHA-256 + 验包记录绑定，**缺绑定程序拒发**）→ 独立读回核对 → 归档 `.bw/planning/<版本>/`。机制细节见 [ADR 0005](../02-adr/0005-发版出包与E2E协议.md) 与 verify README。
+
+**补链分两层**：**定义层**（intent 草案、spec 骨架、验收点清单、旅程定义）可先行补齐、入仓为草案待人确认——这是活文档/RTM 的落地；**实现层**（E2E 代码、TDD 归属）随特性带入重构时补，「不补存量用例」指实现层。只补**在用**特性的定义；基本不用的特性正常列出（设计文档与代码真实存在、耗费时间做出），链暂不补，**处理该特性 BUG 或重设计带入之日起**从第一个缺的环走链（2026-09-20 拍板）。
+
+### 6.3 特性边界与带入判定
+
+- **边界判据**：特性 = **持续提供给用户的一件完整的事**（用户目标导向；方法源：JTBD、Google HEART、knowledge-model 正本「特性=持续用户能力」）。目录数/页面数/crate 数/屏数 ≠ 特性数；组合形态（自动化+skill+屏，如周一屏）算**一个**特性；四铁律等横向约束是横切站/内核义务，**不是特性，不随单个特性低频而放松**。
+- **分层判据（看特性的用户身份）**：被管项目的 Builder ⇒ **产品特性**（`docs/05-features/`）；BW 开发团队自己 ⇒ **开发方法资产**（CI/门禁/发布工具链、`standard/`、`.claude/skills/`）；尚无真实用户 ⇒ **预研**（不开链、不计特性）。自用工具实现不自动算成对外特性。
+- **带入三问**（新工作开工前必答，决定「修改存量 vs 新增承载」）：
+  1. 这件事服务哪个**已有特性的用户目标**？⇒ **修改存量特性**：带入该特性的链、更新其 intent/spec，不新开目录；
+  2. 开的是**新用户目标**（说得出为谁、完成什么完整的事）？⇒ **新增特性**：立 intent 经人确认后再开发；
+  3. 答不出「谁在用、完成什么事」？⇒ **预研或不做**：不开链、不计特性。
+- **归属变更**：能力被外部重构接管时标「归属待定」，交接后移出产品特性。
+
 ## 7. 明确不做
 
 - 不为每个小修写新闻稿或 FAQ。  
@@ -136,3 +175,4 @@
 | 2026-09-01 | §6 加「小特性豁免」：体量小的特性可 spec+原型+实现一并送评审，不必规格 gate 先过再动代码；大特性仍按次序 |
 | 2026-09-09 | §1 适用范围收紧:仅产生用户价值的特性走本原则;§6 小特性豁免加限定(仍是产生价值的特性,不是收口/接线);命名收口/基建接线/重构重排直修留痕 |
 | 2026-09-11 | §3.2 定原型落点：仍要可点原型，但文件不进仓，`spec.md` 写 artifact 或独立分支的链接 |
+| 2026-09-20 | 新增 §6.2 六环交付链（V-model/金字塔/活文档/RTM 口径；指标不强求、要挂必须反馈北极星；横切站 A/B 与收口站；补链分两层）与 §6.3 特性边界与带入三问——旅程规范尺子 v0.3 经 user 拍板落点升章 |
