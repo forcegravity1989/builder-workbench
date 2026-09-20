@@ -12,7 +12,8 @@ function Write-BwLine([string]$Line) {
 function Test-BwVersion([string]$v) {
     if ([string]::IsNullOrWhiteSpace($v)) { return $false }
     # 版本串直接进产物文件名与目录名（ADR-0005 命名规则），只收安全字符。
-    return $v -match '^[A-Za-z0-9][A-Za-z0-9._+-]*$'
+    # 尾锚用 \z：.NET 的 $ 会放行结尾换行符，带换行的串会漏进路径拼接。
+    return $v -match '^[A-Za-z0-9][A-Za-z0-9._+-]*\z'
 }
 
 function Write-BwProgress {
@@ -31,6 +32,7 @@ function Write-BwResult {
         [string]$Sha256,
         [string]$Revision,
         [Nullable[bool]]$Dirty,
+        [Nullable[bool]]$SourceUnchanged,
         [string]$PackedAt
     )
     $o = [ordered]@{ v = 1; type = 'result'; ok = $Ok }
@@ -39,6 +41,7 @@ function Write-BwResult {
     if ($Sha256) { $o.sha256 = $Sha256 }
     if ($Revision) { $o.revision = $Revision }
     if ($null -ne $Dirty) { $o.dirty = [bool]$Dirty }
+    if ($null -ne $SourceUnchanged) { $o.source_unchanged = [bool]$SourceUnchanged }
     if ($PackedAt) { $o.packed_at = $PackedAt }
     if ($Code) { $o.code = $Code }
     if ($Message) { $o.message = $Message }
@@ -58,7 +61,7 @@ function Parse-BwArgs {
         exit 2
     }
     if (-not (Test-BwVersion $version)) {
-        Write-BwResult -Ok:$false -Code bad_args -Message ("「{0}」不像版本号。只用字母、数字和 . _ + -（版本串直接进产物文件名与目录名），不要空或其他符号。" -f $version)
+        Write-BwResult -Ok:$false -Code bad_args -Message ("「{0}」不像版本号。首字符须是字母或数字，其余只用字母、数字和 . _ + -（版本串直接进产物文件名与目录名），不要空或其他符号。" -f $version)
         exit 2
     }
     $full = [IO.Path]::GetFullPath($workdir)
@@ -118,6 +121,24 @@ $version = $parsed.Version
 $root = $parsed.Workdir
 $here = $PSScriptRoot
 $outDir = Join-Path $root ".bw\release\out\$version"
+
+# 源码身份在开工时记录：revision/dirty 描述 cargo 实际编译的树；结束时复核写入
+# source_unchanged。出包中途 HEAD 前进或工作树变化都会使身份失真，消费方必须拒。
+# 非 git 工作目录时 revision/dirty 缺省、source_unchanged=false——缺省即 unknown。
+$revision = ''
+$dirty = $null
+$startPorcelain = ''
+try {
+    $head = (& git -C $root rev-parse HEAD 2>$null | Out-String).Trim()
+    if ($LASTEXITCODE -eq 0 -and $head -match '^[0-9a-f]{40}\z') {
+        $startPorcelain = (& git -C $root status --porcelain 2>$null | Out-String).Trim()
+        # status 自身失败时不能把 unknown 报成「干净」：只有退出码 0 才落 dirty。
+        if ($LASTEXITCODE -eq 0) {
+            $revision = $head
+            $dirty = ($startPorcelain.Length -gt 0)
+        }
+    }
+} catch { $revision = ''; $dirty = $null; $startPorcelain = '' }
 
 Write-BwProgress -Phase probe -Message '在找 cargo / C 工具链 / ISCC.exe'
 if (-not (Get-Command cargo -ErrorAction SilentlyContinue)) {
@@ -187,19 +208,17 @@ if (Test-Path (Join-Path $verifyDir 'bw-dev.exe')) {
     Fail pack_failed '校验卸载之后 bw-dev.exe 还在'
 }
 
-# 产物身份记录（ADR-0005）：文件名 + SHA-256 + 构建修订 + dirty + 时间戳，发布绑定校验的来源。
-# 非 git 工作目录时 revision/dirty 缺省——缺失即 unknown，消费方不得当作干净。
+# 产物身份记录（ADR-0005）：文件名 + SHA-256 + 开工源码身份（revision/dirty）+ 结束时
+# 源码未变复核（source_unchanged）+ 时间戳，发布绑定校验的来源。
 $sha = (Get-FileHash -LiteralPath $setup -Algorithm SHA256).Hash.ToLower()
-$revision = ''
-$dirty = $null
-try {
-    $head = (& git -C $root rev-parse HEAD 2>$null | Out-String).Trim()
-    if ($LASTEXITCODE -eq 0 -and $head -match '^[0-9a-f]{40}$') {
-        $revision = $head
-        $porcelain = (& git -C $root status --porcelain 2>$null | Out-String).Trim()
-        $dirty = ($porcelain.Length -gt 0)
-    }
-} catch { $revision = '' }
+$sourceUnchanged = $false
+if ($revision) {
+    try {
+        $headNow = (& git -C $root rev-parse HEAD 2>$null | Out-String).Trim()
+        $porcelainNow = (& git -C $root status --porcelain 2>$null | Out-String).Trim()
+        $sourceUnchanged = ($LASTEXITCODE -eq 0 -and $headNow -eq $revision -and $porcelainNow -eq $startPorcelain)
+    } catch { $sourceUnchanged = $false }
+}
 $packedAt = (Get-Date).ToUniversalTime().ToString('yyyy-MM-ddTHH:mm:ssZ')
-Write-BwResult -Ok:$true -ArtifactDir $outDir -Artifact $artifactName -Sha256 $sha -Revision $revision -Dirty $dirty -PackedAt $packedAt
+Write-BwResult -Ok:$true -ArtifactDir $outDir -Artifact $artifactName -Sha256 $sha -Revision $revision -Dirty $dirty -SourceUnchanged $sourceUnchanged -PackedAt $packedAt
 exit 0
