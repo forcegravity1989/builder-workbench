@@ -336,8 +336,9 @@ fn pack_fail_text(o: &StageOutcome) -> String {
 fn valid_ship_version(v: &str) -> bool {
     let mut chars = v.chars();
     match chars.next() {
-        Some(c) if c.is_ascii_alphanumeric() => chars
-            .all(|c| c.is_ascii_alphanumeric() || matches!(c, '.' | '_' | '+' | '-')),
+        Some(c) if c.is_ascii_alphanumeric() => {
+            chars.all(|c| c.is_ascii_alphanumeric() || matches!(c, '.' | '_' | '+' | '-'))
+        }
         _ => false,
     }
 }
@@ -495,15 +496,14 @@ mod tests {
     #[test]
     fn parse_e2e_cases() {
         let p = parse_protocol_line(
-            r#"{"v":1,"type":"result","ok":false,"passed":1,"total":3,"cases":[{"name":"shell_launches","ok":true},{"name":"cu_settings","ok":false,"message":"timeout"},{"name":"cu_onboard","ok":false,"message":"未跑：上一条失败"}]}"#,
+            r#"{"v":1,"type":"result","ok":false,"passed":1,"total":2,"cases":[{"name":"settings-restart-roundtrip","ok":true},{"name":"installer-uninstall-clean","ok":false,"message":"未跑：上一条失败"}]}"#,
         );
         match p {
             Some(Parsed::Result(o)) => {
-                assert_eq!(o.cases.len(), 3);
+                assert_eq!(o.cases.len(), 2);
                 assert!(o.cases[0].ok);
                 assert!(!o.cases[1].ok);
-                assert_eq!(o.cases[1].message, "timeout");
-                assert!(o.cases[2].message.starts_with("未跑："));
+                assert!(o.cases[1].message.starts_with("未跑："));
             }
             other => panic!("{other:?}"),
         }
@@ -517,11 +517,26 @@ mod tests {
 
     #[test]
     fn version_guard_matches_pack_protocol_rule() {
-        for ok in ["v0.4", "0.1.0-mvp", "v0.5.0-rc.1+build_2", "V1", "v0.0.0-packtest"] {
+        for ok in [
+            "v0.4",
+            "0.1.0-mvp",
+            "v0.5.0-rc.1+build_2",
+            "V1",
+            "v0.0.0-packtest",
+        ] {
             assert!(valid_ship_version(ok), "{ok}");
         }
         for bad in [
-            "", " v0.4", "bad version", "-x", ".5", "+1", "v1.0(beta)", "a/b", "a\\b", "版本",
+            "",
+            " v0.4",
+            "bad version",
+            "-x",
+            ".5",
+            "+1",
+            "v1.0(beta)",
+            "a/b",
+            "a\\b",
+            "版本",
             "v1.0\n",
         ] {
             assert!(!valid_ship_version(bad), "{bad:?}");

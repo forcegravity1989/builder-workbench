@@ -825,10 +825,11 @@ fn PackE2eCaseRow(c: ProgressCase) -> Element {
 }
 
 fn e2e_case_label(name: &str) -> String {
+    // 用例注册在 .bw/release/e2e/suites/installer.json（ADR 0005 验包节）；
+    // 这里只给人话短名，未知 id 原样显示，不装认识。
     match name {
-        "shell_launches" => "壳能亮".into(),
-        "cu_settings" => "设置屏".into(),
-        "cu_onboard" => "接入屏".into(),
+        "settings-restart-roundtrip" => "设置重启往返".into(),
+        "installer-uninstall-clean" => "卸载读回干净".into(),
         other => other.to_string(),
     }
 }
