@@ -1,18 +1,40 @@
-# PR 自动评审。谈定见 05-features/reviewer-agent/;codehub 仓走 Workbench 内建「请评审」。
+# 外部代码评审（按需召唤）。谈定见 docs/05-features/reviewer-agent/；codehub 仓走 Workbench 内建「请评审」。
+# 触发模型（2026-09-20 拍板修订，此前为 PR 事件全自动）：仓库成员在 PR 评论单独一行发 /code-review
+# 才评审当前 head SHA；draft 不触发；fork PR 无 secrets 跳过。命令判定是行首匹配、整行独占，
+# 不解析 markdown——代码块或引用里单独成行的示范同样会触发（已知边界，后果只是多审一次当前提交）。
+# 未召唤=未评审（灰），读回见 .bw/release/verify/review-state.mjs（CI Summary 与验证 Review
+# 各带一行机读状态），不失败、不缺省绿。
+# workflow_dispatch 是同一职责的手动入口（等价召唤，也用于本 workflow 合入 main 前的真实验证——
+# issue_comment 触发的 workflow 只认默认分支上的定义）。
 # 前提(人做一次):给仓装 Claude GitHub App + 配 secret CLAUDE_CODE_OAUTH_TOKEN。
 name: Code Review
 concurrency:
-  group: code-review-${{ github.event.pull_request.number }}
-  cancel-in-progress: true
+  group: code-review-${{ github.event.issue.number || inputs.pr }}
+  # 只有「真召唤」才允许替换进行中的评审：任何新评论（含评审自己发的结论评论）都会创建
+  # issue_comment run 进入本并发组，无条件取消会让结论评论在回执步骤跑完前杀掉本次评审
+  # （claude-code-action 生态已知坑）。命令不在首行的召唤不取消只排队，随后照常执行。
+  cancel-in-progress: ${{ github.event_name == 'workflow_dispatch' || startsWith(github.event.comment.body, '/code-review') }}
 on:
-  pull_request:
-    types: [opened, synchronize, ready_for_review, reopened]
+  issue_comment:
+    types: [created]
+  workflow_dispatch:
+    inputs:
+      pr:
+        description: '要评审的 PR 号（等价于在该 PR 评论 /code-review）'
+        required: true
+        type: string
 jobs:
   review:
     runs-on: ubuntu-latest
     timeout-minutes: 15
-    # fork PR 拿不到 secrets,显式跳过,不留一场认证失败的红。
-    if: github.event.pull_request.head.repo.full_name == github.repository
+    # 召唤人限定仓库成员；命令行的精确判定（行首匹配、draft、fork）在 gate 步骤，
+    # 这里只做粗筛让无关评论直接 skipped。评论正文一律经 env 传入脚本，不内插进 shell。
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event_name == 'issue_comment' &&
+       github.event.issue.pull_request &&
+       contains(github.event.comment.body, '/code-review') &&
+       contains(fromJSON('["OWNER","MEMBER","COLLABORATOR"]'), github.event.comment.author_association))
     permissions:
       contents: read
       pull-requests: read
@@ -20,30 +42,60 @@ jobs:
       # 评论走 App 的 OIDC 令牌,不用 workflow 令牌,所以这里没有写权限。
       id-token: write
     steps:
+      - name: Resolve the summoned PR
+        id: pr
+        env:
+          GH_TOKEN: ${{ github.token }}
+          EVENT_NAME: ${{ github.event_name }}
+          PR_INPUT: ${{ github.event.issue.number || inputs.pr }}
+          COMMENT_BODY: ${{ github.event.comment.body }}
+        run: |
+          set -euo pipefail
+          skip() { echo "$1"; echo "skip=true" >> "$GITHUB_OUTPUT"; }
+          if [ "$EVENT_NAME" = "issue_comment" ] &&
+             ! printf '%s' "$COMMENT_BODY" | grep -Eq '^[[:space:]]*/code-review[[:space:]]*$'; then
+            skip "评论里没有行首 /code-review 命令（引用或讨论中提到不触发），跳过"
+            exit 0
+          fi
+          pr=$(gh pr view "$PR_INPUT" --repo "$GITHUB_REPOSITORY" \
+            --json number,isDraft,headRefOid,headRepository)
+          if [ "$(jq -r '.isDraft' <<< "$pr")" = "true" ]; then
+            skip "draft PR 不触发外部评审，跳过"
+            exit 0
+          fi
+          head_repo=$(jq -r '.headRepository.full_name // ""' <<< "$pr")
+          if [ "$head_repo" != "$GITHUB_REPOSITORY" ]; then
+            skip "PR 头仓是 ${head_repo:-未知}（fork 或无法确认），拿不到 secrets，跳过"
+            exit 0
+          fi
+          echo "number=$(jq -r '.number' <<< "$pr")" >> "$GITHUB_OUTPUT"
+          echo "head_sha=$(jq -r '.headRefOid' <<< "$pr")" >> "$GITHUB_OUTPUT"
       - uses: actions/checkout@v6
+        if: steps.pr.outputs.skip != 'true'
         with:
           fetch-depth: 0 # 评审要看 git 历史
-          ref: ${{ github.event.pull_request.head.sha }}
+          ref: ${{ steps.pr.outputs.head_sha }}
       - uses: anthropics/claude-code-action@v1
         id: claude
+        if: steps.pr.outputs.skip != 'true'
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
-          # 默认拒一切机器人 actor;claude[bot] 在这个仓真开过 PR,点名放行它一个。
-          allowed_bots: "claude[bot]"
+          # 显式 prompt 使 action 进入自动化 agent 模式，不依赖评论里的 @claude 提及；
+          # 机器人 actor 由 action 默认拒绝，召唤人已限定仓库成员，不再放行任何 bot。
           # gh pr view --comments 的查询里带 CI 检查数据,App 令牌默认读不到,
           # 整条命令会以 "Resource not accessible by integration" 失败。
           additional_permissions: |
             actions: read
           prompt: |
-            审查 PR #${{ github.event.pull_request.number }} 的当前提交 ${{ github.event.pull_request.head.sha }}。
+            审查 PR #${{ steps.pr.outputs.number }} 的当前提交 ${{ steps.pr.outputs.head_sha }}。
             这是代码审查，不修改实现、不合并、不关闭 Issue。
             先读 AGENTS.md 与变更涉及的现行规范，再用 gh pr view / gh pr diff 和源码检查真实 bug、失败处理、证据真实性与规范符合性。
             历史评论不代表当前提交已经审查；不得因为本 PR 以前有 Review 就跳过新提交。
             仅报告有证据的缺陷，给出文件、行号、触发条件与影响；不要用风格偏好或猜测阻止合入。
             完成后必须用 gh pr comment 发布当前提交的结论。第一行必须原样为：
-            <!-- bw-code-review:${{ github.event.pull_request.head.sha }} -->
+            <!-- bw-code-review:${{ steps.pr.outputs.head_sha }} -->
             正文写明所审 SHA、审查范围，以及“未发现需处理问题”或有优先级的具体问题。
-            将评论正文写到 ${{ runner.temp }}/pr-review-${{ github.event.pull_request.head.sha }}.md，用 --body-file 发布，随后用 gh pr view 读回确认。
+            将评论正文写到 ${{ runner.temp }}/pr-review-${{ steps.pr.outputs.head_sha }}.md，用 --body-file 发布，随后用 gh pr view 读回确认。
             即使没有问题也必须发布结论。最终聊天回复不代替 PR 产物。
           # 延续现有评审模型。编译和真实 E2E 由 CI 独立验证。
           # gh 用于读 PR 和发布结论；Write 只用于评论临时文件。
@@ -54,14 +106,14 @@ jobs:
             --disallowedTools "Agent,Task"
             --append-system-prompt "你运行在 GitHub Actions 的非交互环境里:没有下一轮,你这一轮结束运行就结束。所有检查与评审都必须自己在本轮内做完并把结果落到 PR 上,不要把工作交给别人再等回复。"
       - name: Require a published conclusion for this commit
-        if: always()
+        if: ${{ always() && steps.pr.outputs.skip != 'true' }}
         env:
           GH_TOKEN: ${{ github.token }}
-          PR_NUMBER: ${{ github.event.pull_request.number }}
-          PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          PR_NUMBER: ${{ steps.pr.outputs.number }}
+          PR_HEAD_SHA: ${{ steps.pr.outputs.head_sha }}
         run: node .github/scripts/check-pr-review.mjs
       - uses: actions/upload-artifact@v4
-        if: always()
+        if: ${{ always() && steps.pr.outputs.skip != 'true' }}
         with:
           name: code-review-receipt
           path: .bw/release/out/code-review/
@@ -69,7 +121,7 @@ jobs:
           if-no-files-found: error
       # 空跑时靠这份日志查哪一步被挡。不开 show_full_output——它会把工具结果
       # (可能含 secret)打进公开日志。
-      - if: always() && steps.claude.outputs.execution_file != ''
+      - if: ${{ always() && steps.pr.outputs.skip != 'true' && steps.claude.outputs.execution_file != '' }}
         uses: actions/upload-artifact@v4
         with:
           name: claude-execution
