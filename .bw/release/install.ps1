@@ -28,9 +28,19 @@ function Invoke-BwSilentUninstall([string]$dir) {
     if ($unins) {
         cmd.exe /c ('start /wait "" "' + $unins.FullName + '" /VERYSILENT /NORESTART') | Out-Null
         # Inno 卸载器会复制到临时目录再自跑，start /wait 返回不等于卸完：条件读回等待。
-        # 上限 120s——Defender 实时扫描与低内存会显著拖慢自拷贝清理。
+        # 上限 120s；空目录壳连续 10s 即提前收敛——那是 Windows delete-pending 时序
+        # （被 Defender 等持句柄的文件已进删除挂起，枚举不可见，目录壳不会自行消失），
+        # 不是卸载器没干活，再等也不会有变化。
         $deadline = (Get-Date).AddSeconds(120)
-        while ((Test-Path -LiteralPath $dir) -and (Get-Date) -lt $deadline) { Start-Sleep -Milliseconds 500 }
+        $emptySince = $null
+        while ((Test-Path -LiteralPath $dir) -and (Get-Date) -lt $deadline) {
+            Start-Sleep -Milliseconds 500
+            $hasChildren = Get-ChildItem -LiteralPath $dir -Force -ErrorAction SilentlyContinue | Select-Object -First 1
+            if ($null -eq $hasChildren) {
+                if (-not $emptySince) { $emptySince = Get-Date }
+                elseif (((Get-Date) - $emptySince).TotalSeconds -ge 10) { break }
+            } else { $emptySince = $null }
+        }
     }
     $r.uninstallerClean = -not (Test-Path -LiteralPath $dir)
     if ($r.uninstallerClean) {

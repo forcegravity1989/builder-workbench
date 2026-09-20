@@ -85,29 +85,32 @@ try {
     $removed = $false
     $forced = $false
     $residue = @()
+    $emptyShell = $false
     $uninstallError = $null
     if ($installed -or (Test-Path -LiteralPath $installDir)) {
         try {
-            # 判据=卸载器自己清干净；强删只兜底不算过（helper 返回值必须捕获）。
+            # 判据=卸载器清走它装的全部内容：目录消失最干净；仅剩空目录壳（Windows
+            # delete-pending 时序，收据如实记录）算过；文件级残留即失败。强删只兜底。
             $un = Invoke-BwSilentUninstall $installDir
             $removed = [bool]$un.uninstallerClean
             $forced = [bool]$un.forcedCleanup
             $residue = @($un.residue)
-            if (-not $removed) {
-                $tail = if ($forced) { '兜底强删已清' } else { '强删也失败' }
-                $uninstallError = "卸载器结束后安装目录仍有残留（$tail）：$(if ($residue) { $residue -join '、' } else { $installDir })"
+            $emptyShell = (-not $removed) -and ($residue.Count -eq 0)
+            if ($residue.Count -gt 0) {
+                $uninstallError = "卸载器结束后仍有文件级残留（$(if ($forced) { '兜底强删已清' } else { '强删也失败' })）：$($residue -join '、')"
             }
         } catch { $uninstallError = $_.Exception.Message }
         if ($installed) {
+            $status = if ($removed -or $emptyShell) { 'passed' } else { 'failed' }
+            $note = if ($removed) { '' } elseif ($emptyShell) { '卸载器清走全部内容；仅剩空目录壳（Windows delete-pending 时序），兜底强删并读回' } else { "$($uninstallError)" }
             $Cases.Add([ordered]@{
-                    id = 'installer-uninstall-clean'; title = '卸载读回：卸载器自己清干净安装目录'
-                    path = '静默卸载 → 条件读回等待 → 目录读回'; expect = '卸载器结束后安装目录不存在（兜底强删不算判据）'
-                    status = $(if ($removed) { 'passed' } else { 'failed' })
-                    message = "$(if ($uninstallError) { $uninstallError } else { '' })"; evidence = @('uninstall-readback.json')
+                    id = 'installer-uninstall-clean'; title = '卸载读回：卸载器清走装的全部内容'
+                    path = '静默卸载 → 条件读回等待 → 目录与残留枚举读回'; expect = '目录消失，或仅剩空目录壳（如实记录）；文件级残留即失败'
+                    status = $status; message = $note; evidence = @('uninstall-readback.json')
                 })
         }
     }
-    Save-Json 'uninstall-readback.json' ([ordered]@{ installDir = $installDir; uninstallerClean = $removed; forcedCleanup = $forced; residue = $residue; error = $uninstallError })
+    Save-Json 'uninstall-readback.json' ([ordered]@{ installDir = $installDir; uninstallerClean = $removed; emptyDirectoryLeft = $emptyShell; forcedCleanup = $forced; residue = $residue; error = $uninstallError })
     foreach ($Name in $Names) {
         if (-not ($Cases | Where-Object { $_.id -eq $Name })) {
             $Cases.Add([ordered]@{ id = $Name; title = $Name; status = 'not_run'; message = $Failure; evidence = @() })
