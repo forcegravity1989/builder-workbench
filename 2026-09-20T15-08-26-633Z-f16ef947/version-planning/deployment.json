@@ -1,0 +1,16 @@
+{
+  "deployed": [
+    "week-planning/check-week-comment.py",
+    "week-planning/assets/version-plan.html",
+    "week-planning/assets/data-template.json",
+    "week-planning/scripts/planning.py",
+    "week-planning/scripts/fetch-emeeting-transcript.mjs",
+    "week-planning/assets/minutes-template.md",
+    "week-planning/references/data-and-runtime.md",
+    "week-planning/references/meeting.md"
+  ],
+  "json_reader": "archive and registered draft; malformed draft is unknown",
+  "prior_progress_version": "v0.3",
+  "skills": "C:\\Users\\xiaoduo\\AppData\\Local\\Temp\\bw-planning-e2e-eboax2\\assets\\skills",
+  "workspace": "C:\\Users\\xiaoduo\\AppData\\Local\\Temp\\bw-planning-e2e-eboax2\\repo"
+}
