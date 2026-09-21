@@ -583,7 +583,7 @@ function shipRowsHtml(m){
   return '<div class="ship-rows">'+row('出包',m.pack,true)+row('验包',m.e2e,false)+'</div>';
 }
 function e2eCaseLabel(name){
-  return ({shell_launches:'壳能亮',cu_settings:'设置屏',cu_onboard:'接入屏'})[name]||name;
+  return ({'settings-restart-roundtrip':'设置重启往返','installer-uninstall-clean':'卸载读回'})[name]||name;
 }
 function icon(name){
   var p={
@@ -1252,15 +1252,14 @@ var ACTIONS = {
     setTimeout(function(){
       var cur=state.ui.modal && state.ui.modal.type==='pack' ? state.ui.modal : (state.ui.packJob || null);
       if(!cur) return;
-      cur.e2e={state:'fail',text:'1/3',cases:[
-        {name:'shell_launches',ok:true,message:''},
-        {name:'cu_settings',ok:false,message:'Timeout: waiting for getByText(\'工作区根目录\')'},
-        {name:'cu_onboard',ok:false,message:'未跑：上一条失败'}
+      cur.e2e={state:'fail',text:'1/2',cases:[
+        {name:'settings-restart-roundtrip',ok:true,message:''},
+        {name:'installer-uninstall-clean',ok:false,message:'文件级残留：安装目录未清空'}
       ]};
       cur.shipping=false; cur.finished=true;
       if(state.ui.packJob){ state.ui.packJob.e2e=cur.e2e; state.ui.packJob.shipping=false; state.ui.packJob.finished=true; }
       render();
-      toast(cur.version+' 出包好了,验包 1/3');
+      toast(cur.version+' 出包好了,验包 1/2');
     },1600);
   },
   openArtifactDir:function(){ toast('演示：会打开产物目录'); },

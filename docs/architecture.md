@@ -29,7 +29,7 @@
 | ↳ week-planning(更新指标与版本计划 Issue) | 系统提示词与渐进加载 + 技能与提炼 + 会话与执行 | 项目版本 / 会话屏 | 周一 09:00 新会话 | 版本目标/结果摘要读取 `.bw/planning/<版本>/data.json`，规划树草稿与主项目归档按版本合并；任务状态仍读 Issue 标签 |
 | ↳ 发版 | 关键信息维护(Release) | 构建交付 / 计划屏 | 人点 | 号锁死当前版本视图,不能另填 |
 | ↳ 开工 | 会话与执行 + 系统提示词与渐进加载 | 构建交付 / 计划屏 Start | 人拖进「进行中」或详情 ▶开工 | 评审三件套未派发;`DeleteSession` 内核在、壳无按钮 |
-| ↳ 出包 / 验包 | 关键信息维护(`PackRelease`) | 构建交付 / 计划屏出包 | 人点 | 仅 Windows、非门禁非 CI;产物在 `.bw/release/out/<版本>/` |
+| ↳ 出包 / 验包 | 关键信息维护(`PackRelease`) | 构建交付 / 计划屏出包 | 人点 | 仅 Windows、非门禁非 CI;产物在 `.bw/release/out/<版本>/`;验包已收敛进统一验证入口(installer 套件),按钮走 `e2e.cmd` 薄适配 |
 | **asset-audit(资产盘点 Issue)** | 技能与提炼 + 关键信息维护 + 会话与执行 | 治理 / 会话屏 | 周五 15:00 新会话 | 五条历史探测只实现前三条;`mode: first` 没做 |
 | **指标采集** | 关键信息维护(指标记录) + 会话与执行(B 类定时) | 反馈 / 总览屏采按钮 | 打开自动采一轮;B 类每天 20:00 | C 类定时建提醒 Issue没做;B 类脚本在项目仓,Workbench 只执行采集并保存读数 |
 | ↳ 健康展示 | 关键信息维护·健康推导(现算) | 反馈 / 总览 + 项目墙 | 打开现算 | 没读到不打勾;灯可因读数难看变红 |
@@ -44,7 +44,7 @@
 - ↳ **week-planning(更新指标与版本计划 Issue)**:人先确认本周版本(推荐 `vX.X`),当场创建 Issue打 `bw:plan:<名>` + `bw:category:*`,挂 codehub 同名里程碑(起止默认本周周一到周五)。备选路径走 `ConfirmWeekDraft`。不再写 `bw:week:*`。挂评前用 `week-planning/check-week-comment.py` 校验标题。
 - ↳ **发版**:远端建 Release + 打 `bw:released:<名>`,号锁死当前版本视图。
 - ↳ **开工**:入口在计划屏(拖进「进行中」或详情 ▶ Start),同一条 `run_issue`:开/复用 worktree,没会话才打 Orca `createAgentSession`,有会话只切树。详见 §2「会话与执行」。
-- ↳ **出包 / 验包**:入口 `.bw/release/pack/pack.cmd` + `e2e/e2e.cmd`,协议见 ADR-0005;产物 `.bw/release/out/<版本>/`(gitignore)。验包不过「详情」列出每条用例与报错。
+- ↳ **出包 / 验包**:入口 `.bw/release/pack/pack.cmd` + `e2e/e2e.cmd`,协议见 ADR-0005;产物 `.bw/release/out/<版本>/`(gitignore),出包结果带产物身份记录(`pack-result.json`:artifact/sha256/revision/dirty/source_unchanged/packed_at)。验包不过「详情」列出每条用例与报错。验包已收敛为统一验证入口的 installer 套件(`verify.mjs --profile installer --version <tag串>`,静默装后真壳往返+卸载读回),`e2e.cmd` 是产品按钮消费的 JSONL 薄适配层。BW 自身正式发布走 `publish.mjs` 绑定旅程(四记录缺一拒发、人明确授权后才跑、发布存储正本=GitHub Releases);产品「发版本」按钮(cut_release)未接绑定(债 #241)。交付链全程 SOP 见 `.bw/release/README.md`。
 - **asset-audit(资产盘点 Issue)**:每周对照 `references/bw-assets.md` 盘 Workbench 给项目的 `.bw/`(清理残留、更新格式、列出未完成事项),再盘全仓人持文档正本(architecture / AGENTS / CONTEXT / 01-principles / 02-adr / 03-guide / 04-design-system / 05-features)对齐实现、清过时、互相一致,只写评论不替改,再盘项目本周提交与开着的 MR(建议只落这条 Issue的评论),再按 `week-plan-comment.md` 给本周在研版本那张更新指标与版本计划 Issue追加一条每周进展。开工工具跟构建。
 - **指标采集**:见 §2「关键信息维护」的指标记录。A 类(可回溯)一个字不存现算;B 类(不可回溯)与 C 类(手填)进同一份 `.bw/metrics/readings.jsonl`(键日历日,同天同指标只留一行)。B 类日采走 Orca 自动化(每天 20:00,钉指标记录工作树 `bw/ledger`,默认关)。
 - ↳ **健康展示**:调 §2「关键信息维护」的健康推导(二级特性),总览+项目墙现算,没数据是诚实的灰不是绿。
