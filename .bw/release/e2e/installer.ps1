@@ -7,7 +7,8 @@
 # 3. 真实动作：静默装到本次专属临时目录 → desktop.ps1 以装出的 bw-dev.exe 跑 core 场景
 #    （设置保存 → 杀壳 → 重启）→ 静默卸载。
 # 4. 独立读回：被测 setup 文件现场算 SHA-256，与 pack-result.json 记录比对（有记录时）；
-#    往返断言由 core.mjs 读回 settings.toml 与重启界面；卸载后读回安装目录不存在。
+#    往返断言由 core.mjs 读回 settings.toml 与重启界面；卸载后递归枚举读回：目录消失
+#    或仅剩空目录壳（delete-pending 时序，如实记录）算清干净，内容级残留即失败。
 # 5. 证据：setup-identity.json（被测包身份）、install.log、desktop/ 子目录（core 场景
 #    全部证据）、uninstall-readback.json。
 # 6. 清理：只卸/只删本次安装目录（临时目录名含本次 GUID）；desktop.ps1 自清其进程与目录。
@@ -89,28 +90,34 @@ try {
     $uninstallError = $null
     if ($installed -or (Test-Path -LiteralPath $installDir)) {
         try {
-            # 判据=卸载器清走它装的全部内容：目录消失最干净；仅剩空目录壳（Windows
-            # delete-pending 时序，收据如实记录）算过；文件级残留即失败。强删只兜底。
+            # 判据（与出包校验相分层，语义在 helper 注释与 ADR 0005）：卸载器自己清走
+            # 全部内容=最干净；仅剩空目录壳（delete-pending）且兜底有界重试清空=算过并
+            # 如实记录；内容级残留、目录清不空、枚举不了残留=失败。
             $un = Invoke-BwSilentUninstall $installDir
             $removed = [bool]$un.uninstallerClean
             $forced = [bool]$un.forcedCleanup
             $residue = @($un.residue)
-            $emptyShell = (-not $removed) -and ($residue.Count -eq 0)
-            if ($residue.Count -gt 0) {
-                $uninstallError = "卸载器结束后仍有文件级残留（$(if ($forced) { '兜底强删已清' } else { '强删也失败' })）：$($residue -join '、')"
+            $emptyShell = [bool]$un.emptyDirectoryLeft
+            $residueUnknown = [bool]$un.residueUnknown
+            if ($residueUnknown) {
+                $uninstallError = '无法枚举安装目录残留，不能证明卸干净'
+            } elseif ($residue.Count -gt 0) {
+                $uninstallError = "卸载器结束后仍有内容残留（$(if ($forced) { '兜底强删已清' } else { '强删也失败' })）：$($residue -join '、')"
+            } elseif (-not $removed -and -not $forced) {
+                $uninstallError = "空目录壳在兜底有界重试内仍删不掉（delete-pending 超时）：$installDir"
             }
         } catch { $uninstallError = $_.Exception.Message }
         if ($installed) {
-            $status = if ($removed -or $emptyShell) { 'passed' } else { 'failed' }
-            $note = if ($removed) { '' } elseif ($emptyShell) { '卸载器清走全部内容；仅剩空目录壳（Windows delete-pending 时序），兜底强删并读回' } else { "$($uninstallError)" }
+            $status = if ($removed -or ($emptyShell -and $forced)) { 'passed' } else { 'failed' }
+            $note = if ($removed) { '' } elseif ($emptyShell -and $forced) { '卸载器清走全部内容；仅剩空目录壳（Windows delete-pending 时序），兜底有界重试清除并读回' } else { "$($uninstallError)" }
             $Cases.Add([ordered]@{
                     id = 'installer-uninstall-clean'; title = '卸载读回：卸载器清走装的全部内容'
-                    path = '静默卸载 → 条件读回等待 → 目录与残留枚举读回'; expect = '目录消失，或仅剩空目录壳（如实记录）；文件级残留即失败'
+                    path = '静默卸载 → 条件读回等待 → 目录与残留递归枚举读回'; expect = '目录消失，或仅剩空目录壳且兜底清空（如实记录）；内容级残留或目录清不空即失败'
                     status = $status; message = $note; evidence = @('uninstall-readback.json')
                 })
         }
     }
-    Save-Json 'uninstall-readback.json' ([ordered]@{ installDir = $installDir; uninstallerClean = $removed; emptyDirectoryLeft = $emptyShell; forcedCleanup = $forced; residue = $residue; error = $uninstallError })
+    Save-Json 'uninstall-readback.json' ([ordered]@{ installDir = $installDir; uninstallerClean = $removed; emptyDirectoryLeft = $emptyShell; forcedCleanup = $forced; residue = $residue; residueUnknown = $residueUnknown; error = $uninstallError })
     foreach ($Name in $Names) {
         if (-not ($Cases | Where-Object { $_.id -eq $Name })) {
             $Cases.Add([ordered]@{ id = $Name; title = $Name; status = 'not_run'; message = $Failure; evidence = @() })
