@@ -74,7 +74,7 @@ export function useAppChromeLayout() {
     activeView === 'terminal' && activeWorktreeId !== null && !creationLayoutActive
   const hasTabBar = tabCount >= 2
   // Activity/Space are full-page in stock Orca (sidebar hidden). Workbench reuses
-  // those slots for 总览/知识库 but still needs the left rail for four-screen nav.
+  // those slots for 总览/知识库 but still needs the left rail for Workbench nav.
   const showSidebar =
     activeView !== 'settings' &&
     (isWorkbenchShell() || (activeView !== 'activity' && activeView !== 'space'))

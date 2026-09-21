@@ -14,6 +14,7 @@ import { cn } from '@/lib/utils'
 import { useAppStore } from '@/store'
 import { useRepoMap } from '@/store/selectors'
 import { translate } from '@/i18n/i18n'
+import { isWorkbenchShell } from '@/workbench/is-workbench-shell'
 import { isGitRepoKind } from '../../../../shared/repo-kind'
 import { getTaskPresetQuery } from '../../../../shared/task-preset-query'
 import {
@@ -147,90 +148,82 @@ export function SidebarTaskNavButton(): React.JSX.Element | null {
     void updateSettings({ showTasksButton: false })
   }, [updateSettings])
 
-  if (!showTasksButton) {
+  if (!isWorkbenchShell() && !showTasksButton) {
     return null
   }
 
   const tasksActive = activeView === 'tasks'
 
+  const button = (
+    <div className="group relative">
+      <button
+        type="button"
+        onClick={() => openTaskPage()}
+        onPointerEnter={handlePrefetch}
+        onFocus={handlePrefetch}
+        aria-current={tasksActive ? 'page' : undefined}
+        data-contextual-tour-target="sidebar-tasks"
+        className={cn(
+          'flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-[13px] font-medium tracking-tight transition-colors',
+          tasksActive
+            ? 'bg-worktree-sidebar-accent text-worktree-sidebar-accent-foreground'
+            : 'text-worktree-sidebar-foreground/60 group-hover:bg-worktree-sidebar-foreground/8'
+        )}
+      >
+        <List
+          className={cn('size-4 shrink-0', !tasksActive && 'text-worktree-sidebar-foreground/30')}
+          strokeWidth={tasksActive ? 2.25 : 1.75}
+        />
+        <span className="flex-1">
+          {isWorkbenchShell()
+            ? '任务'
+            : translate('auto.components.sidebar.SidebarNav.fee535205b', 'Tasks')}
+        </span>
+      </button>
+      <span className="absolute right-2 top-1/2 flex -translate-y-1/2 items-center gap-1 can-hover:pointer-events-none can-hover:opacity-0 can-hover:group-hover:pointer-events-auto can-hover:group-hover:opacity-100 can-hover:group-focus-within:pointer-events-auto can-hover:group-focus-within:opacity-100">
+        {visibleTaskProviders.includes('github') ? (
+          <TaskProviderShortcut
+            label={translate('auto.components.sidebar.SidebarNav.0ccba862b8', 'Open GitHub tasks')}
+            onOpen={() => openTaskPage({ taskSource: 'github' })}
+          >
+            <Github className="size-3.5" aria-hidden />
+          </TaskProviderShortcut>
+        ) : null}
+        {visibleTaskProviders.includes('gitlab') ? (
+          <TaskProviderShortcut
+            label={translate('auto.components.sidebar.SidebarNav.196c1b5362', 'Open GitLab tasks')}
+            onOpen={() => openTaskPage({ taskSource: 'gitlab' })}
+          >
+            <Gitlab className="size-3.5" aria-hidden />
+          </TaskProviderShortcut>
+        ) : null}
+        {visibleTaskProviders.includes('linear') ? (
+          <TaskProviderShortcut
+            label={translate('auto.components.sidebar.SidebarNav.c39ab10000', 'Open Linear tasks')}
+            onOpen={() => openTaskPage({ taskSource: 'linear' })}
+          >
+            <LinearIcon className="size-3.5" />
+          </TaskProviderShortcut>
+        ) : null}
+        {visibleTaskProviders.includes('jira') ? (
+          <TaskProviderShortcut
+            label={translate('auto.components.sidebar.SidebarNav.e7ad3c540d', 'Open Jira tasks')}
+            onOpen={() => openTaskPage({ taskSource: 'jira' })}
+          >
+            <JiraIcon className="size-3.5" />
+          </TaskProviderShortcut>
+        ) : null}
+      </span>
+    </div>
+  )
+
+  if (isWorkbenchShell()) {
+    return button
+  }
+
   return (
     <ContextMenu>
-      <ContextMenuTrigger asChild>
-        {/* Why: shortcuts sit beside the Tasks button, not inside it, so each stays keyboard-reachable. */}
-        <div className="group relative">
-          <button
-            type="button"
-            onClick={() => openTaskPage()}
-            onPointerEnter={handlePrefetch}
-            onFocus={handlePrefetch}
-            aria-current={tasksActive ? 'page' : undefined}
-            data-contextual-tour-target="sidebar-tasks"
-            className={cn(
-              'flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-[13px] font-medium tracking-tight transition-colors',
-              tasksActive
-                ? 'bg-worktree-sidebar-accent text-worktree-sidebar-accent-foreground'
-                : 'text-worktree-sidebar-foreground/60 group-hover:bg-worktree-sidebar-foreground/8'
-            )}
-          >
-            <List
-              className={cn(
-                'size-4 shrink-0',
-                !tasksActive && 'text-worktree-sidebar-foreground/30'
-              )}
-              strokeWidth={tasksActive ? 2.25 : 1.75}
-            />
-            <span className="flex-1">
-              {translate('auto.components.sidebar.SidebarNav.fee535205b', 'Tasks')}
-            </span>
-          </button>
-          <span className="absolute right-2 top-1/2 flex -translate-y-1/2 items-center gap-1 can-hover:pointer-events-none can-hover:opacity-0 can-hover:group-hover:pointer-events-auto can-hover:group-hover:opacity-100 can-hover:group-focus-within:pointer-events-auto can-hover:group-focus-within:opacity-100">
-            {visibleTaskProviders.includes('github') ? (
-              <TaskProviderShortcut
-                label={translate(
-                  'auto.components.sidebar.SidebarNav.0ccba862b8',
-                  'Open GitHub tasks'
-                )}
-                onOpen={() => openTaskPage({ taskSource: 'github' })}
-              >
-                <Github className="size-3.5" aria-hidden />
-              </TaskProviderShortcut>
-            ) : null}
-            {visibleTaskProviders.includes('gitlab') ? (
-              <TaskProviderShortcut
-                label={translate(
-                  'auto.components.sidebar.SidebarNav.196c1b5362',
-                  'Open GitLab tasks'
-                )}
-                onOpen={() => openTaskPage({ taskSource: 'gitlab' })}
-              >
-                <Gitlab className="size-3.5" aria-hidden />
-              </TaskProviderShortcut>
-            ) : null}
-            {visibleTaskProviders.includes('linear') ? (
-              <TaskProviderShortcut
-                label={translate(
-                  'auto.components.sidebar.SidebarNav.c39ab10000',
-                  'Open Linear tasks'
-                )}
-                onOpen={() => openTaskPage({ taskSource: 'linear' })}
-              >
-                <LinearIcon className="size-3.5" />
-              </TaskProviderShortcut>
-            ) : null}
-            {visibleTaskProviders.includes('jira') ? (
-              <TaskProviderShortcut
-                label={translate(
-                  'auto.components.sidebar.SidebarNav.e7ad3c540d',
-                  'Open Jira tasks'
-                )}
-                onOpen={() => openTaskPage({ taskSource: 'jira' })}
-              >
-                <JiraIcon className="size-3.5" />
-              </TaskProviderShortcut>
-            ) : null}
-          </span>
-        </div>
-      </ContextMenuTrigger>
+      <ContextMenuTrigger asChild>{button}</ContextMenuTrigger>
       <HideTaskSidebarMenu onHide={hideTasksButton} />
     </ContextMenu>
   )

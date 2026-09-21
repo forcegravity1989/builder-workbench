@@ -2,50 +2,63 @@ import React from 'react'
 import {
   BookOpen,
   CalendarClock,
+  CalendarRange,
   HelpCircle,
   LayoutDashboard,
-  ListTodo,
   Settings
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { useAppStore } from '@/store'
 import { cn } from '@/lib/utils'
+import { SidebarTaskNavButton } from '@/components/sidebar/SidebarTaskNavButton'
 import { isWorkbenchShell } from './is-workbench-shell'
 import { openProjectWall } from './project-wall-state'
+import { resolveWorkbenchNav, type WorkbenchNavId } from './workbench-nav'
 
-type NavId = 'overview' | 'plan' | 'automations' | 'knowledge'
-
-const NAV: { id: NavId; label: string; icon: typeof LayoutDashboard }[] = [
+const NAV_BEFORE_TASKS: { id: WorkbenchNavId; label: string; icon: typeof LayoutDashboard }[] = [
   { id: 'overview', label: '总览', icon: LayoutDashboard },
-  { id: 'plan', label: '计划', icon: ListTodo },
+  { id: 'plan', label: '计划', icon: CalendarRange }
+]
+const NAV_AFTER_TASKS: { id: WorkbenchNavId; label: string; icon: typeof LayoutDashboard }[] = [
   { id: 'automations', label: '自动化', icon: CalendarClock },
   { id: 'knowledge', label: '知识库', icon: BookOpen }
 ]
 
-function resolveActiveNav(activeView: string): NavId | null {
-  if (activeView === 'terminal') {
-    return null
-  }
-  // Why: reuse Orca top-level slots so we do not extend TopLevelView (sync-friendly).
-  if (activeView === 'activity') {
-    return 'overview'
-  }
-  if (activeView === 'tasks') {
-    return 'plan'
-  }
-  if (activeView === 'automations') {
-    return 'automations'
-  }
-  if (activeView === 'space') {
-    return 'knowledge'
-  }
-  return null
+function WorkbenchNavItem({
+  item,
+  active,
+  onGo
+}: {
+  item: { id: WorkbenchNavId; label: string; icon: typeof LayoutDashboard }
+  active: boolean
+  onGo: (id: WorkbenchNavId) => void
+}): React.JSX.Element {
+  const Icon = item.icon
+  return (
+    <button
+      type="button"
+      onClick={() => onGo(item.id)}
+      aria-current={active ? 'page' : undefined}
+      className={cn(
+        'flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-[13px] font-medium tracking-tight transition-colors',
+        active
+          ? 'bg-worktree-sidebar-accent text-worktree-sidebar-accent-foreground'
+          : 'text-worktree-sidebar-foreground/60 hover:bg-worktree-sidebar-foreground/8'
+      )}
+    >
+      <Icon
+        className={cn('size-4 shrink-0', !active && 'text-worktree-sidebar-foreground/30')}
+        strokeWidth={active ? 2.25 : 1.75}
+      />
+      <span className="flex-1">{item.label}</span>
+    </button>
+  )
 }
 
-/** V6-style four-screen nav; execution dimms all four. Projects stay in Orca sidebar below. */
+/** V6-style nav; execution dimms all items. Projects stay in Orca sidebar below. */
 export function WorkbenchSidebarNav(): React.JSX.Element | null {
   const activeView = useAppStore((s) => s.activeView)
-  const openTaskPage = useAppStore((s) => s.openTaskPage)
+  const openArtifactsPage = useAppStore((s) => s.openArtifactsPage)
   const openAutomationsPage = useAppStore((s) => s.openAutomationsPage)
   const openSettingsPage = useAppStore((s) => s.openSettingsPage)
   const openActivityPage = useAppStore((s) => s.openActivityPage)
@@ -59,13 +72,13 @@ export function WorkbenchSidebarNav(): React.JSX.Element | null {
     return null
   }
 
-  const activeNav = resolveActiveNav(activeView)
+  const activeNav = resolveWorkbenchNav(activeView)
 
-  const go = (id: NavId) => {
+  const go = (id: WorkbenchNavId) => {
     if (id === 'overview') {
       openActivityPage()
     } else if (id === 'plan') {
-      openTaskPage()
+      openArtifactsPage()
     } else if (id === 'automations') {
       openAutomationsPage()
     } else {
@@ -91,29 +104,13 @@ export function WorkbenchSidebarNav(): React.JSX.Element | null {
       </button>
 
       <nav className="flex flex-col gap-0.5" aria-label="项目内导航">
-        {NAV.map(({ id, label, icon: Icon }) => {
-          const on = activeNav === id
-          return (
-            <button
-              key={id}
-              type="button"
-              onClick={() => go(id)}
-              aria-current={on ? 'page' : undefined}
-              className={cn(
-                'flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-[13px] font-medium tracking-tight transition-colors',
-                on
-                  ? 'bg-worktree-sidebar-accent text-worktree-sidebar-accent-foreground'
-                  : 'text-worktree-sidebar-foreground/60 hover:bg-worktree-sidebar-foreground/8'
-              )}
-            >
-              <Icon
-                className={cn('size-4 shrink-0', !on && 'text-worktree-sidebar-foreground/30')}
-                strokeWidth={on ? 2.25 : 1.75}
-              />
-              <span className="flex-1">{label}</span>
-            </button>
-          )
-        })}
+        {NAV_BEFORE_TASKS.map((item) => (
+          <WorkbenchNavItem key={item.id} item={item} active={activeNav === item.id} onGo={go} />
+        ))}
+        <SidebarTaskNavButton />
+        {NAV_AFTER_TASKS.map((item) => (
+          <WorkbenchNavItem key={item.id} item={item} active={activeNav === item.id} onGo={go} />
+        ))}
       </nav>
 
       <div className="mt-1 flex flex-col gap-0.5 border-t border-worktree-sidebar-border/40 pt-1">
