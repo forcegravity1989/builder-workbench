@@ -1,0 +1,68 @@
+✔ complete binding chain passes with zero refusals (2.1772ms)
+✔ every missing or mismatched record refuses with a human-readable reason (1.0132ms)
+✔ allow-dirty is an explicit human override, recorded not hidden (0.1601ms)
+✔ missing source in verification records is unknown, never treated as same-origin (0.1575ms)
+✔ remote-state gate refuses off-main revision, existing tag or release (0.2392ms)
+[fails] fails
+✔ write-capable onboarding stays out of the ordinary PR profile (33.6617ms)
+[fails] failed: 进程退出码：7
+报告：C:\Users\xiaoduo\AppData\Local\Temp\bw-verify-tests-fGtmXQ\.bw\release\out\verify\2026-09-21T05-09-30-172Z-23b7e008\report.html
+[missing] missing
+[missing] failed: spawn bw-nonexistent-test-command ENOENT
+报告：C:\Users\xiaoduo\AppData\Local\Temp\bw-verify-tests-cPKPSb\.bw\release\out\verify\2026-09-21T05-09-30-507Z-c14598d8\report.html
+[timeout] timeout
+✔ nonzero exit cannot be hidden by a success-looking log; later steps do not run (383.194ms)
+[timeout] failed: 执行超时，已请求停止本步骤进程；清理结果另看回执
+报告：C:\Users\xiaoduo\AppData\Local\Temp\bw-verify-tests-cPKPSb\.bw\release\out\verify\2026-09-21T05-09-30-642Z-b751f6c1\report.html
+[mutates] mutates
+✔ missing executable and timeout both produce a finished failure report (725.0897ms)
+[mutates] passed: 执行通过
+报告：C:\Users\xiaoduo\AppData\Local\Temp\bw-verify-tests-eG92RN\.bw\release\out\verify\2026-09-21T05-09-31-239Z-915d531c\report.html
+[incomplete] incomplete
+✔ changed source invalidates an otherwise green run (347.026ms)
+[incomplete] failed: 实际用例与 expectedCases 不一致，不能把少跑当通过
+报告：C:\Users\xiaoduo\AppData\Local\Temp\bw-verify-tests-ySgQGG\.bw\release\out\verify\2026-09-21T05-09-31-586Z-b49e90fb\report.html
+[failed-case] failed-case
+✔ zero-exit E2E with missing expected case cannot pass (330.5605ms)
+[failed-case] failed: cleanup still locked；必跑用例存在失败、未跑或不适用
+报告：C:\Users\xiaoduo\AppData\Local\Temp\bw-verify-tests-3W2Zki\.bw\release\out\verify\2026-09-21T05-09-31-900Z-1ed981a1\report.html
+[case-step] 示例旅程
+✔ E2E failure retains setup/cleanup and individual case reasons in the PR summary (323.1213ms)
+✔ evidence needs known status, exact cases, nonempty owned files, and no path escape (157.666ms)
+✔ case path and expect are optional but must be nonempty strings (135.7421ms)
+[case-step] passed: 执行通过
+报告：C:\Users\xiaoduo\AppData\Local\Temp\bw-verify-tests-oMUQYM\.bw\release\out\verify\2026-09-21T05-09-32-530Z-bb13766b\report.html
+[pass] <script>bad()</script>
+✔ review.md groups results into four blocks and names the profile (330.4351ms)
+✔ installer profile registers the packaged-app suite and {version} expands with a guard (20.0112ms)
+✔ incremental suites come from journey paths and registry content, not profiles (0.6008ms)
+✔ evidence roundtrip preserves CRLF and binary bytes even with Git text conversion enabled (287.0324ms)
+[pass] passed: 执行通过
+报告：C:\Users\xiaoduo\AppData\Local\Temp\bw-verify-tests-lHkRK5\.bw\release\out\verify\2026-09-21T05-09-33-168Z-893bc70a\report.html
+[pass] <script>bad()</script>
+[pass] passed: 执行通过
+报告：C:\Users\xiaoduo\AppData\Local\Temp\bw-verify-tests-lHkRK5\.bw\release\out\verify\2026-09-21T05-09-33-350Z-6db2c5ea\report.html
+[pass] pass
+✔ successful runs remain separate, escaped reports have verifiable artifact hashes (514.4228ms)
+✔ external review state honors only the current-commit marker; failures stay unknown, never green (0.7538ms)
+[pass] passed: 执行通过
+报告：C:\Users\xiaoduo\AppData\Local\Temp\bw-verify-tests-k9emX5\.bw\release\out\verify\2026-09-21T05-09-33-691Z-be9c2428\report.html
+[pass] pass
+[pass] passed: 执行通过
+报告：C:\Users\xiaoduo\AppData\Local\Temp\bw-verify-tests-k9emX5\.bw\release\out\verify\2026-09-21T05-09-33-866Z-fab8322a\report.html
+[case-step] 示例旅程
+✔ CI summary locates this run via the last-run pointer, not a directory-count assumption (625.9698ms)
+✔ every registered suite carries feature attribution across profiles (29.729ms)
+✔ suite without feature attribution is rejected at plan load (144.8647ms)
+✔ feature coverage groups registered cases per feature; unattributed stays visible (12.5622ms)
+[case-step] passed: 执行通过
+报告：C:\Users\xiaoduo\AppData\Local\Temp\bw-verify-tests-4R5OU1\.bw\release\out\verify\2026-09-21T05-09-34-496Z-1cd46aca\report.html
+✔ review.md and report.html carry the per-feature coverage list with the mapping caveat (331.8322ms)
+ℹ tests 24
+ℹ suites 0
+ℹ pass 24
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 4836.8521
