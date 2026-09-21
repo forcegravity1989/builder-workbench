@@ -15,7 +15,7 @@
    - 规范：`standard/system-prompt/references/review.md`（评审阶段规范）+ **评审主提示词外置** `standard/system-prompt/REVIEW.md.tmpl`（与 SYSTEM.md.tmpl 同机制：`{{...}}` 占位、编进二进制、改身份=改 md + 抬 `standard/VERSION`）。
    - 承载：新命令「请评审」；评审事件即 MR 评论（只追加，事后抹不掉）——不落本地库、不建评审台账。
 6. **MVP 不派生「已评审」信号**：界面不解析 MR 评论、不点评审灯——没读回的数据不装绿。人去 MR 上看意见（原型步 3 是评论在远端的样子）。
-7. **CI 层自动评审（2026-08-27 谈定补入）**：GitHub 仓的自动触发放在 CI 层——官方 `claude-code-action` 在 PR 打开/更新时自动 review（本仓落一份 workflow，认证走订阅 OAuth token，secret 由人配；配好前 workflow 如实不生效）。边界三条：只覆盖 GitHub 仓（codehub 仍靠内建「请评审」）；review 口径不另立第二份正本——action 每次自动读仓根 `CLAUDE.md`→`AGENTS.md`，与 `mr-review` 剧本同源于仓内规矩；CI 评论与评审会话评论共存，靠评审会话首行的机器可辨标记区分。
+7. **CI 层按需评审（2026-08-27 谈定补入时为 PR 事件全自动；2026-09-20 发起人拍板改召唤制）**：GitHub 仓的外部评审放在 CI 层——官方 `claude-code-action` 被召唤后才评审当前 head SHA（本仓落一份 workflow，认证走订阅 OAuth token，secret 由人配；配好前 workflow 如实不生效）。召唤方式：仓库成员（OWNER/MEMBER/COLLABORATOR）在 PR 评论单独一行发 `/code-review`；`workflow_dispatch` 是同一职责的手动入口（也用于本 workflow 合入前的真实验证）；draft PR 不触发；fork PR 无 secrets 跳过。回执不变：程序读回带 `<!-- bw-code-review:SHA -->` 标记的结论评论并落盘回执，读不到即本次失败——"模型跑过"不算结论。**未召唤=未外部评审**：CI Summary 与验证 Review 正文各带一行机读状态（灰），不失败、不缺省绿；状态查询唯一实现在 `.bw/release/verify/review-state.mjs`。边界三条不变：只覆盖 GitHub 仓（codehub 仍靠内建「请评审」）；review 口径不另立第二份正本——action 每次自动读仓根 `CLAUDE.md`→`AGENTS.md`，与 `mr-review` 剧本同源于仓内规矩；CI 评论与评审会话评论共存，靠评审会话首行的机器可辨标记区分。改召唤制的原因：全自动评审抢在工作会话自检之前跑，最强模型花在未自检代码上，且落盘结论易造成「已评审」错觉——评审是证据不是关卡，召唤与否由人按需要决定。
 
 ## 操作逻辑
 

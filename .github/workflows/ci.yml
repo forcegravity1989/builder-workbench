@@ -8,6 +8,9 @@ on:
 
 permissions:
   contents: read
+  # Summary 里的外部评审状态行要读 PR 评论（只读）。
+  pull-requests: read
+  issues: read
 
 concurrency:
   group: ci-${{ github.event.pull_request.number || github.ref }}
@@ -36,6 +39,8 @@ jobs:
         run: node .bw/release/verify/verify.mjs --profile headless
       - name: Verification summary
         if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: node .bw/release/verify/github-summary.mjs
       - uses: actions/upload-artifact@v4
         if: always()
@@ -73,6 +78,8 @@ jobs:
         run: node .bw/release/verify/verify.mjs --profile pr
       - name: Verification summary
         if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: node .bw/release/verify/github-summary.mjs
       - uses: actions/upload-artifact@v4
         if: always()

@@ -6,6 +6,7 @@ import os from 'node:os';
 import { execFileSync } from 'node:child_process';
 import { inside, readCases, readPlan, runVerification, sha256, storeEvidenceBlob } from './verify.mjs';
 import { incrementalSuiteIds } from './publish-review.mjs';
+import { externalReviewState, reviewStateLine } from './review-state.mjs';
 
 function fixture(t) {
   const parent = fs.realpathSync(os.tmpdir());
@@ -192,4 +193,47 @@ test('successful runs remain separate, escaped reports have verifiable artifact 
   assert.ok(!content.includes('<script>bad()'));
   const manifest = JSON.parse(fs.readFileSync(path.join(first.out, 'manifest.json'), 'utf8'));
   for (const artifact of manifest.artifacts) assert.equal(sha256(fs.readFileSync(path.join(first.out, artifact.path))), artifact.sha256);
+});
+
+test('external review state honors only the current-commit marker; failures stay unknown, never green', () => {
+  const pages = comments => () => JSON.stringify([comments]);
+  const head = '0123456789abcdef0123456789abcdef01234567';
+  const staleSha = 'ffffffffffffffffffffffffffffffffffffffff';
+  const reviewed = externalReviewState({ repo: 'o/r', prNumber: '7', headSha: head, runCommand: pages([{ user: { login: 'claude[bot]' }, body: `<!-- bw-code-review:${head} -->\n结论`, html_url: 'https://gh/7#ic-1' }]) });
+  assert.deepEqual(reviewed, { state: 'reviewed', url: 'https://gh/7#ic-1' });
+  assert.match(reviewStateLine(reviewed), /当前提交的评审结论/);
+  const stale = externalReviewState({
+    repo: 'o/r', prNumber: '7', headSha: head, runCommand: pages([
+      { user: { login: 'claude[bot]' }, body: `<!-- bw-code-review:${staleSha} -->\n旧结论` },
+      { user: { login: 'someone-else' }, body: `<!-- bw-code-review:${head} -->\n冒充` },
+    ]),
+  });
+  assert.equal(stale.state, 'none'); // 旧 SHA 的结论、非评审机器人的标记都不算数
+  assert.match(reviewStateLine(stale), /未召唤（灰）/);
+  const failed = externalReviewState({ repo: 'o/r', prNumber: '7', headSha: head, runCommand: () => { throw new Error('gh 不可用'); } });
+  assert.equal(failed.state, 'unknown');
+  assert.match(reviewStateLine(failed), /状态读取失败（灰）.*gh 不可用/);
+  assert.equal(externalReviewState({ repo: 'o/r', prNumber: '7', headSha: '' }).state, 'unknown');
+});
+
+test('CI summary locates this run via the last-run pointer, not a directory-count assumption', async t => {
+  const root = fixture(t);
+  const repoRoot = execFileSync('git', ['rev-parse', '--show-toplevel'], { encoding: 'utf8' }).trim();
+  const script = path.join(repoRoot, '.bw/release/verify/github-summary.mjs');
+  const spec = step('pass', 'console.log("verified")');
+  await run(root, [spec]);
+  const second = await run(root, [spec]); // 复跑留下两个 run 目录，数量假设会误报
+  const summaryFile = path.join(root, 'summary.md');
+  const env = { ...process.env, GITHUB_STEP_SUMMARY: summaryFile };
+  for (const key of ['GITHUB_REF', 'GITHUB_REPOSITORY', 'GITHUB_TOKEN', 'GH_TOKEN']) delete env[key];
+  const spawnSummary = () => execFileSync(process.execPath, [script], { cwd: root, env, stdio: 'pipe' });
+  assert.equal(fs.readFileSync(path.join(root, '.bw/release/out/verify/last-run.txt'), 'utf8'), path.basename(second.out));
+  spawnSummary();
+  assert.match(fs.readFileSync(summaryFile, 'utf8'), /执行范围：test/);
+  fs.rmSync(path.join(root, '.bw/release/out/verify/last-run.txt'));
+  try {
+    spawnSummary();
+    assert.fail('指针缺失时不能把 Summary 当成功');
+  } catch { /* 非零退出即预期 */ }
+  assert.match(fs.readFileSync(summaryFile, 'utf8'), /没有生成本次运行的完整报告/);
 });

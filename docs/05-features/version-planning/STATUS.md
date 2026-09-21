@@ -1,5 +1,18 @@
 # 版本计划 — 当前状态
 
+## 链状态（[02 §6.2](../../01-principles/02-working-backwards.md) 六环 · 2026-09-20 回填）
+
+| 环 | 状态 | 证据 / 已知债 |
+|---|:--:|---|
+| 1 intent | ● | [intent.md](intent.md) 人确认；v0.4 真实版本周期走完 |
+| 2 spec | ● | [spec.md](spec.md)「特性衡量与验收」表 + 「验收点↔注册用例映射」节；引领指标候选未挂载（02 §6.2 指标不强求，北极星占位） |
+| 3 实现设计 | ● | spec「工程落点与限制」节 + `standard/skills/week-planning/`（Skill SOP 七步）+ BW 侧 `app/{ops,week_comment,plan}.rs` |
+| 4 TDD | 待建 | workspace 单测覆盖（`week_comment.rs` 7 条等）；特性归属清单按口径暂缓 |
+| 5 验收点E2E | ● | version-planning 套件 8 用例（pr+pack profile）；映射见 spec，推定版待 suites feature 字段落地后校准 |
+| 6 旅程E2E | ● | week-plan-journey 套件 7 用例（pack，沙箱接入→Orca 自动化→真实会话→HTML 保存）；v0.4 实跑归档 |
+
+> 下方各节为本特性历史与现状叙事（原样保留）；链状态以本表为准，变化随 PR 更新。
+
 > 当前在开发 worktree codex/version-planning 内维护 Skill、固定 HTML 和数据文件。用户已认可页面可以开始试用，改为与本会话逐屏实战填写 v0.4；v0.3 保留为历史资料，BW/Orca 接线已纳入本次功能 PR。
 
 ## 当前文件
