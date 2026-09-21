@@ -55,14 +55,6 @@ vi.mock('@/hooks/useShortcutLabel', () => ({
   useShortcutKeyComboDetails: () => [{ keys: ['⌘', 'J'], doubleTap: false }]
 }))
 
-vi.mock('./mobile-sidebar-onboarding-badge', () => ({
-  useMobileSidebarOnboardingBadge: () => ({
-    visible: false,
-    hasPairedDevice: mocks.hasPairedMobileDevice,
-    dismiss: mocks.dismissMobileOnboardingBadge
-  })
-}))
-
 vi.mock('../setup-guide/use-setup-guide-progress', () => ({
   useSetupGuideProgress: () => ({
     ready: true,
@@ -265,9 +257,10 @@ describe('SidebarNav', () => {
     expect(idle?.querySelector('svg')).toBeNull()
   })
 
-  it('shows the Mobile entry by default for older settings', () => {
-    expect(shouldShowMobileButton(null)).toBe(true)
-    expect(shouldShowMobileButton({})).toBe(true)
+  it('does not show the Mobile entry', () => {
+    expect(shouldShowMobileButton(null)).toBe(false)
+    expect(shouldShowMobileButton({})).toBe(false)
+    expect(shouldShowMobileButton({ showMobileButton: true })).toBe(false)
   })
 
   it('hides the Artifacts entry by default for older settings', () => {
@@ -301,22 +294,18 @@ describe('SidebarNav', () => {
     expect(mocks.updateSettings).toHaveBeenCalledWith({ showArtifactsButton: false })
   })
 
-  it('hides the Mobile entry when the sidebar setting is off', () => {
-    expect(shouldShowMobileButton({ showMobileButton: false })).toBe(false)
-  })
-
   it('updates localized labels when the language changes after mount', async () => {
     const container = await renderSidebarNav()
 
     expect(queryButtonByText(container, 'Automations')).not.toBeNull()
-    expect(queryButtonByText(container, 'Orca Mobile')).not.toBeNull()
+    expect(queryButtonByText(container, 'Orca Mobile')).toBeNull()
 
     await act(async () => {
       await i18n.changeLanguage('zh')
     })
 
     expect(queryButtonByText(container, '自动化')).not.toBeNull()
-    expect(queryButtonByText(container, 'Orca 手机端')).not.toBeNull()
+    expect(queryButtonByText(container, 'Orca 手机端')).toBeNull()
   })
 
   it('updates labels when pseudo-localization is enabled after mount', async () => {
@@ -327,28 +316,7 @@ describe('SidebarNav', () => {
     })
 
     expect(queryButtonByText(container, '[Automations]')).not.toBeNull()
-    expect(queryButtonByText(container, '[Orca Mobile]')).not.toBeNull()
-  })
-
-  it('shows the inline hide control only once a device is paired', async () => {
-    const beforePairing = await renderSidebarNav()
-    expect(queryButtonByText(beforePairing, 'Orca Mobile')).not.toBeNull()
-    expect(beforePairing.querySelector('button[aria-label="Hide from sidebar"]')).toBeNull()
-
-    mocks.hasPairedMobileDevice = true
-    const container = await renderSidebarNav()
-    const hideButton = container.querySelector<HTMLButtonElement>(
-      'button[aria-label="Hide from sidebar"]'
-    )
-
-    expect(queryButtonByText(container, 'Orca Mobile')).not.toBeNull()
-    expect(hideButton).not.toBeNull()
-    expect(hideButton?.querySelector('svg')).not.toBeNull()
-
-    await clickButton(hideButton as HTMLButtonElement)
-
-    expect(mocks.updateSettings).toHaveBeenCalledWith({ showMobileButton: false })
-    expect(mocks.openMobilePage).not.toHaveBeenCalled()
+    expect(queryButtonByText(container, '[Orca Mobile]')).toBeNull()
   })
 
   it('shows the Automations entry by default for older settings', () => {
@@ -384,19 +352,6 @@ describe('SidebarNav', () => {
     await clickButton(getHideButton(automationsMenu as HTMLElement))
 
     expect(mocks.updateSettings).toHaveBeenCalledWith({ showAutomationsButton: false })
-  })
-
-  it('hides Mobile from its sidebar context menu', async () => {
-    const container = await renderSidebarNav()
-
-    const mobileMenu = getButtonByText(container, 'Orca Mobile').closest(
-      '[data-testid="context-menu"]'
-    )
-    expect(mobileMenu).not.toBeNull()
-
-    await clickButton(getHideButton(mobileMenu as HTMLElement))
-
-    expect(mocks.updateSettings).toHaveBeenCalledWith({ showMobileButton: false })
   })
 
   it('places the worktree palette search above the sidebar nav rows', async () => {

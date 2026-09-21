@@ -35,11 +35,13 @@
 - 独立「配置」屏（能力在 Settings）
 - 原型皮肤对比开关
 - Feature wall 营销向导（壳开启时尽量跳过）
-- 左栏 Mobile / Artifacts / Skills 并列入口（收进设置或隐藏）
+- 左栏 Artifacts / Skills 并列入口（收进设置或隐藏）
+- **Orca Mobile 产品已删**（`mobile/`、桌面 Mobile 页、手机设置页）；配对协议仍在执行核里，见 `ref/upstream.md`
 - `.omc/**` 不进产品提交
 
 ## 下一轮（未做）
 
+- **从 `main` 合入 `standard/`**（系统提示词 / skill / templates；见 `ref/upstream.md` 遗留）
 - 总览 / 知识库 / 项目墙接真采集与健康灯（名片已读 `.bw/project.toml`）
 - 项目约定完整路径：`bw/project` 常驻 worktree + MR（现 MVP 写工作区 `.bw/`）
 - 计划屏 week-plan 真会话与纪要落盘（现为示意 + 软门禁）

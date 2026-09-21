@@ -24,7 +24,6 @@ const Settings = lazy(() => import('../components/settings/Settings'))
 const SkillsPage = lazy(() => import('../components/skills/SkillsPage'))
 const ArtifactsPage = lazy(() => import('../components/artifacts/ArtifactsPage'))
 const WorkspaceSpacePage = lazy(() => import('../components/workspace-space/WorkspaceSpacePage'))
-const MobilePage = lazy(() => import('../components/mobile/MobilePage'))
 const Terminal = lazy(() => import('../components/Terminal'))
 const OverviewPage = lazy(() =>
   import('../workbench/OverviewPage').then((m) => ({ default: m.OverviewPage }))
@@ -105,7 +104,6 @@ function ActivePage({ layout }: { layout: AppChromeLayout }): React.JSX.Element 
           <WorkspaceSpacePage />
         )
       ) : null}
-      {activeView === 'mobile' ? <MobilePage /> : null}
       {activeView === 'terminal' && creationLayoutActive && activePendingCreationId ? (
         <WorktreeCreationPanel
           creationId={activePendingCreationId}

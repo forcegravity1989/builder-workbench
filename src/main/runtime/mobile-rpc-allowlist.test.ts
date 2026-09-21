@@ -1,4 +1,4 @@
-import { readdirSync, readFileSync, statSync } from 'node:fs'
+import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs'
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import { ALL_RPC_METHODS } from './rpc/methods'
@@ -58,6 +58,9 @@ const MOBILE_STREAMING_CLEANUP_RPC_METHODS = [
 ]
 
 function listSourceFiles(root: string): string[] {
+  if (!existsSync(root)) {
+    return []
+  }
   const entries = readdirSync(root)
   const files: string[] = []
   for (const entry of entries) {

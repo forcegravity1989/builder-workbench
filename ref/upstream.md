@@ -1,9 +1,9 @@
 # Upstream Orca — 同步说明
 
 > **本篇维护约定**
-> - **读者与时机**：在 `bw-orca` 分支上合并 / rebase upstream Orca、排查二次开发冲突时读取。
-> - **职责与边界**：只记 upstream 仓身份、本分支相对 upstream 的文档与产品面取舍、同步操作注意；不写 Workbench 产品正本（那在仓根与 `docs/`）。
-> - **更新触发**：换 upstream 基线、增删叠层钩子、或再删/迁文档时更新。
+> - **读者与时机**：在 `bw-orca` 分支上合并 / rebase upstream Orca、排查二次开发冲突时读取。仓外会话从 [AGENTS.md](../AGENTS.md) 的任务表进到这里。
+> - **职责与边界**：只记 upstream 仓身份、本分支相对 upstream 的删/藏/迁、从 Workbench `main` 合入了什么、以及明确的遗留；不写 Workbench 产品正本（那在仓根与 `docs/`）。
+> - **更新触发**：换 upstream 基线、增删叠层钩子、再删/迁文档或源码、或遗留项落地时更新。
 
 ## Upstream 仓
 
@@ -25,6 +25,19 @@ git merge origin/main
 冲突取舍见下文「同步注意事项」。
 
 ## 本分支相对 upstream 删 / 迁了什么
+
+### 源码：Orca Mobile 产品（已从本分支删除）
+
+相对基线仍保留桌面执行核；**手机 App 与桌面「Orca Mobile」产品页已从 git 删掉**，不是隐藏：
+
+| 处置 | 路径 | 说明 |
+|---|---|---|
+| **删除** | `mobile/` | Expo / iOS / Android 客户端整树 |
+| **删除** | `src/renderer/src/components/mobile/` | 桌面 Mobile 页（配对 Hero / QR / 安装） |
+| **删除** | `MobileSettingsPane`、侧栏「Orca Mobile」入口、mobile CI workflows | 设置里的手机安装页、导航、发版流水线 |
+| **未删（协议残留）** | `src/shared/mobile-relay-*`、`mobile-e2ee-*`、`DeviceScope`、session 镜像、emulator | 桌面远端配对 / 驱动 overlay / 模拟器仍走这些线；不是手机 App |
+
+合并 upstream 时：不要把 `mobile/` 或 Mobile 页重新合回来。协议文件若 upstream 改了，优先取 upstream，除非叠层已摘钩子。
 
 ### 文档（本轮 `bw-orca` 落仓）
 
@@ -52,7 +65,8 @@ git merge origin/main
 |---|---|
 | 独立「会话 / 配置」导航不建 | `src/renderer/src/workbench/` 四屏导航 |
 | Feature wall 营销向导尽量跳过 | 壳路由 / bootstrap |
-| 左栏 Mobile / Artifacts / Skills 并列入口收起 | `WorkbenchSidebarNav` 等 |
+| 左栏 Artifacts / Skills 并列入口收起 | `WorkbenchSidebarNav` 等 |
+| Orca Mobile 产品页 / Expo App | **已删除**，见上文「源码」；不是隐藏 |
 | 崩溃「发送诊断报告」弹窗关闭 | `RecoverableRenderErrorBoundary` + `AppRootSurfaces` |
 | 叠层 UI / 皮肤 / 计划·总览·知识库·项目墙 | `src/renderer/src/workbench/**` |
 | 品牌 / 独立 profile / 打包 | `workbench-product.ts`、`dev:workbench`、`build:mac:workbench` |
@@ -60,6 +74,16 @@ git merge origin/main
 细节清单见 `src/renderer/src/workbench/INVENTORY.md`、`SYNC.md`。
 
 **未删的 upstream 执行核**（合并时优先保 upstream，除非叠层钩子）：TaskPage、Automations、terminal/PTY、worktree、Explorer/SC/Diff、`src/main` runtime。
+
+## 从 Workbench `main` 增加了什么
+
+| 类别 | 落点 | 状态 |
+|---|---|---|
+| 产品文档正本 | 仓根 `AGENTS.md` / `CONTEXT.md` / `README.md` 与 `docs/` | 已换入 |
+| 壳叠层（Orca 上新写，非 Rust 直译） | `src/renderer/src/workbench/` | 已在本分支 |
+| **`standard/`（系统提示词 / skill / templates）** | 仓根 `standard/` | **遗留：尚未从 `main` 合入。** 文档与 AGENTS 已引用路径，文件不在本分支；会话注入（main 上 `crates/bw` 的 `ensure_*` / `agent_system_prompt`）也未在 Electron 复刻。需要时从 `origin/main:standard/` 检出，不要从 Orca 树里另造一份。 |
+
+叠层留在 `src/renderer/src/workbench/`，不要另开 npm / workspace 包。`standard/` 合入后仍是内容目录（提示词与技能），不是运行时包。
 
 ## 同步注意事项
 

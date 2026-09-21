@@ -265,7 +265,7 @@ const EXPECTED_REBIND_SITES: readonly (readonly [path: string, occurrences: numb
 
 describe('identity observation rebind audit', () => {
   it('pins every identity-sequencer rebind call site by file and count', async () => {
-    const files = await glob(['src/**/*.{ts,tsx}', 'mobile/src/**/*.{ts,tsx}'], {
+    const files = await glob(['src/**/*.{ts,tsx}'], {
       ignore: ['**/*.test.*', '**/*.spec.*']
     })
     const actual: [string, number][] = []

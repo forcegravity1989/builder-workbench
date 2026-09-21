@@ -149,7 +149,6 @@ const INVENTORY: readonly InventoryGroup[] = [
     helper: 'resolveExplicitTerminalTitleAgentType',
     classification: 'identity-consumer',
     paths: [
-      ['mobile/src/session/mobile-terminal-tab-agent.ts', 2],
       ['src/main/runtime/tui-idle-evidence.ts', 2],
       ['src/renderer/src/lib/open-tab-occupant-agent.ts', 2],
       ['src/renderer/src/lib/use-tab-agent.ts', 3]
@@ -426,27 +425,12 @@ const DIRECT_SINGLE_SOURCE_SURFACES: readonly {
     path: 'src/renderer/src/components/native-chat/native-chat-runtime-send.ts',
     classification: 'action-consumer',
     marker: 'sendNativeChatMessage'
-  },
-  {
-    path: 'mobile/src/session/mobile-native-chat-send.ts',
-    classification: 'action-consumer',
-    marker: 'sendMobileNativeChatMessageWithOutcome'
-  },
-  {
-    path: 'mobile/src/session/mobile-native-chat-image-send.ts',
-    classification: 'action-consumer',
-    marker: 'pasteMobileNativeChatImagePaths'
-  },
-  {
-    path: 'mobile/src/session/pr-ai-triage-launch.ts',
-    classification: 'action-consumer',
-    marker: 'createTerminalAndSendPrompt'
   }
 ]
 
 describe('pane agent identity inventory ratchet', () => {
-  it('classifies every legacy helper definition, import, and callsite in src and mobile/src', async () => {
-    const files = await glob(['src/**/*.{ts,tsx}', 'mobile/src/**/*.{ts,tsx}'], {
+  it('classifies every legacy helper definition, import, and callsite in src', async () => {
+    const files = await glob(['src/**/*.{ts,tsx}'], {
       ignore: ['**/*.test.*', '**/*.spec.*']
     })
     const actual: { helper: Helper; path: string; occurrences: number }[] = []

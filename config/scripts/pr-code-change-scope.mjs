@@ -278,12 +278,8 @@ export function shouldRunPrChecks(changedFiles) {
   return changedFiles.some((file) => !isDocsOnlyPath(file) && !isDesktopIrrelevantPath(file))
 }
 
-export function needsMobileDependencies(changedFiles) {
-  // Why: static analysis lints CHANGED files, mobile ones included, and its
-  // type-aware pass resolves types from mobile/node_modules. Mobile is a
-  // separate pnpm project, so without this the root-only install leaves every
-  // mobile type an `error` type and the gate reports phantom findings.
-  return changedFiles.length === 0 || changedFiles.some((file) => file.startsWith('mobile/'))
+export function needsMobileDependencies(_changedFiles) {
+  return false
 }
 
 export function classifyPrJobs(changedFiles) {

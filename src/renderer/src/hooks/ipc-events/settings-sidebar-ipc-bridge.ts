@@ -70,15 +70,14 @@ export function registerSettingsAndSidebarIpcBridge(unsubs: (() => void)[]): voi
           id: 'unpaired-device-auth-failure',
           description: translate(
             'auto.hooks.useIpcEvents.11992d0337',
-            'If this was your phone or another Orca client, re-pair it from Settings → Mobile.'
+            'If this was your phone or another Orca client, re-pair it from Settings.'
           ),
           // Why: main emits this recovery path once per session, so it must remain visible until acted on or dismissed.
           duration: Infinity,
           action: {
-            label: translate('auto.hooks.useIpcEvents.6573cfe955', 'Open Mobile Settings'),
+            label: translate('auto.hooks.useIpcEvents.6573cfe955', 'Open Settings'),
             onClick: () => {
               const store = useAppStore.getState()
-              store.openSettingsTarget({ pane: 'mobile', repoId: null })
               store.openSettingsPage()
             }
           }

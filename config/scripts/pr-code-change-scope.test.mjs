@@ -320,18 +320,12 @@ describe('per-job path classification', () => {
   // mobile is a separate pnpm project. Without its node_modules every mobile type
   // resolves to an `error` type and the changed-code gate fails on phantom
   // findings, which is exactly how a react-test-renderer union broke a PR.
-  it('installs mobile dependencies exactly when mobile files change', () => {
-    expect(classifyPrJobs([]).mobile_dependencies).toBe(true)
-    expect(classifyPrJobs(['README.md']).mobile_dependencies).toBe(false)
-    expect(classifyPrJobs(['src/main/index.ts']).mobile_dependencies).toBe(false)
+  it('never asks the desktop CI to install a deleted mobile workspace', () => {
+    expect(classifyPrJobs([]).mobile_dependencies).toBe(false)
     expect(
       classifyPrJobs(['src/main/index.ts', 'mobile/src/session/a.test.ts']).mobile_dependencies
-    ).toBe(true)
-    // Why false: a mobile-only diff skips every desktop job, so the install step's own
-    // job never runs and claiming the install is needed contradicts should_run.
-    expect(classifyPrJobs(['mobile/package.json']).mobile_dependencies).toBe(false)
+    ).toBe(false)
     expect(classifyPrJobs(['mobile/package.json']).should_run).toBe(false)
-    expect(classifyPrJobs(['README.md', 'mobile/src/a.ts']).mobile_dependencies).toBe(false)
   })
 
   it('keeps unit-test-only diffs out of packaging', () => {
@@ -420,18 +414,11 @@ describe('PR Checks skip wiring', () => {
     }
   })
 
-  it('gives static analysis the mobile types its type-aware pass resolves', () => {
-    expect(prWorkflow.jobs.code_paths.outputs.mobile_dependencies).toBe(
-      '${{ steps.filter.outputs.mobile_dependencies }}'
-    )
+  it('does not install a deleted mobile workspace in static analysis', () => {
+    expect(prWorkflow.jobs.code_paths.outputs.mobile_dependencies).toBeUndefined()
     const steps = prWorkflow.jobs.static_analysis.steps
-    const install = steps.findIndex((step) => step.name === 'Install mobile dependencies')
-    const gate = steps.findIndex((step) => step.name === 'Enforce changed-code quality')
-    expect(install).toBeGreaterThan(-1)
-    expect(install).toBeLessThan(gate)
-    expect(steps[install].if).toBe("needs.code_paths.outputs.mobile_dependencies == 'true'")
-    expect(steps[install]['working-directory']).toBe('mobile')
-    expect(steps[install].run).toContain('--frozen-lockfile')
+    expect(steps.some((step) => step.name === 'Install mobile dependencies')).toBe(false)
+    expect(steps.some((step) => step['working-directory'] === 'mobile')).toBe(false)
   })
 
   it('keeps the cheap root-directory guard on docs-only PRs', () => {
