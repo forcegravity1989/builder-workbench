@@ -2,6 +2,19 @@
 
 > **历史状态记录（2026-09-11）**：下文按原日期保留交付、迁移与评审记录；GitHub CI 和工作台内入口是两条路径，不能互相代替交付证明。当前术语见 [CONTEXT.md](../../../CONTEXT.md)。
 
+## 链状态（[02 §6.2](../../01-principles/02-working-backwards.md) 六环 · 2026-09-21 全局自检补格式）
+
+| 环 | 状态 | 证据 / 已知债 |
+|---|---|---|
+| 1 intent | ● | `intent.md`（2026-09-20 召唤制拍板修订已同步） |
+| 2 spec | ● | `spec.md` 拍板 7 = 召唤制机制细节正本；指标未挂（按「不强求」口径，方法资产不挂产品指标） |
+| 3 实现设计 | ● | `.github/workflows/claude-code-review.yml`（头注释即设计）+ `review-state.mjs` 唯一实现 |
+| 4 TDD | — | 不适用：无 Rust 面；行为由召唤矩阵四态实测看护（draft 跳过 / 闲聊不误杀 / 回执不假绿 / 防篡改拦截） |
+| 5 验收点E2E | ◐ | 四态实测 + #236 fork 判定修复闭环有真实证据（#232/#236/#235 记录）；**未注册为 suites 用例**——已知债 |
+| 6 旅程E2E | ◐ | #235 上 4 轮召唤评审真实闭环 = 真实旅程证据；未注册旅程套件 |
+
+> 原叙事各节保留其历史与现状记录身份，格式对齐不重写历史。
+
 **in_review**（2026-08-27，分支 claude/workbench-reviewer-agent-e17c68，四件 commit 未 push）
 
 - 2026-08-27 · 发起人 /goal 拍板「构建 workbench 的 reviewer agent」→ 产物链（intent / spec / prototype）→ 本分支施工 → 门禁全过（fmt / clippy / 五守卫 / 53 测试）+ 原型浏览器真点三步 → 进评审。
