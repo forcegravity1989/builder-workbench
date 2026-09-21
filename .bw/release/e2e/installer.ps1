@@ -8,7 +8,8 @@
 #    （设置保存 → 杀壳 → 重启）→ 静默卸载。
 # 4. 独立读回：被测 setup 文件现场算 SHA-256，与 pack-result.json 记录比对（有记录时）；
 #    往返断言由 core.mjs 读回 settings.toml 与重启界面；卸载后递归枚举读回：目录消失
-#    或仅剩空目录壳（delete-pending 时序，如实记录）算清干净，内容级残留即失败。
+#    最干净；仅剩目录壳（delete-pending 时序）须兜底有界重试真清掉才算过并如实记录；
+#    文件级残留、目录清不空、枚举不了残留都算失败。
 # 5. 证据：setup-identity.json（被测包身份）、install.log、desktop/ 子目录（core 场景
 #    全部证据）、uninstall-readback.json。
 # 6. 清理：只卸/只删本次安装目录（临时目录名含本次 GUID）；desktop.ps1 自清其进程与目录。
@@ -87,6 +88,7 @@ try {
     $forced = $false
     $residue = @()
     $emptyShell = $false
+    $residueUnknown = $false
     $uninstallError = $null
     if ($installed -or (Test-Path -LiteralPath $installDir)) {
         try {
@@ -106,7 +108,11 @@ try {
             } elseif (-not $removed -and -not $forced) {
                 $uninstallError = "空目录壳在兜底有界重试内仍删不掉（delete-pending 超时）：$installDir"
             }
-        } catch { $uninstallError = $_.Exception.Message }
+        } catch {
+            # helper 自身抛异常=卸不动/证不了：如实置 residueUnknown，收据不得呈现「确认无残留」。
+            $residueUnknown = $true
+            $uninstallError = $_.Exception.Message
+        }
         if ($installed) {
             $status = if ($removed -or ($emptyShell -and $forced)) { 'passed' } else { 'failed' }
             $note = if ($removed) { '' } elseif ($emptyShell -and $forced) { '卸载器清走全部内容；仅剩空目录壳（Windows delete-pending 时序），兜底有界重试清除并读回' } else { "$($uninstallError)" }
