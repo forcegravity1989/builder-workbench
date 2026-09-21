@@ -62,6 +62,27 @@ type SidebarFilterState = {
   [key: string]: unknown
 }
 
+/** Current wall project's repo ids, or null outside the Workbench shell / with no active repo. */
+export function useWorkbenchWallRepoIds(): readonly string[] | null {
+  const repos = useAppStore((s) => s.repos)
+  const projectGroups = useAppStore((s) => s.projectGroups ?? EMPTY_PROJECT_GROUPS)
+  const activeRepoId = useAppStore((s) => s.activeRepoId)
+  return useMemo(() => {
+    if (!isWorkbenchShell()) {
+      return null
+    }
+    return resolveWallProjectRepoIds(repos, projectGroups, activeRepoId)
+  }, [repos, projectGroups, activeRepoId])
+}
+
+/** TaskPage / other catalogs: keep only the active wall project's repos. */
+export function useWorkbenchScopedRepos<T extends { id: string }>(
+  repos: readonly T[]
+): readonly T[] {
+  const wallRepoIds = useWorkbenchWallRepoIds()
+  return useMemo(() => filterReposByWorkbenchScope(repos, wallRepoIds), [repos, wallRepoIds])
+}
+
 /**
  * Workbench: sidebar only shows the active wall project's repos + worktrees.
  * Returns null wall scope outside the shell (callers keep store filters).
@@ -77,16 +98,7 @@ export function useWorkbenchSidebarListScope<T extends SidebarFilterState>(
     scopedRepos: readonly Repo[]
   ) => readonly ProjectGroup[]
 } {
-  const repos = useAppStore((s) => s.repos)
-  const projectGroups = useAppStore((s) => s.projectGroups ?? EMPTY_PROJECT_GROUPS)
-  const activeRepoId = useAppStore((s) => s.activeRepoId)
-
-  const wallRepoIds = useMemo(() => {
-    if (!isWorkbenchShell()) {
-      return null
-    }
-    return resolveWallProjectRepoIds(repos, projectGroups, activeRepoId)
-  }, [repos, projectGroups, activeRepoId])
+  const wallRepoIds = useWorkbenchWallRepoIds()
 
   const scopedFilterState = useMemo(() => {
     if (!wallRepoIds) {

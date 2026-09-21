@@ -2,6 +2,10 @@ import { describe, expect, it } from 'vitest'
 import type { ProjectGroup } from '../../../shared/project-group-types'
 import type { Repo } from '../../../shared/repo-types'
 import {
+  getDefaultTaskRepoSelection,
+  getTaskEligibleRepos
+} from '@/components/task-page-default-repo-selection'
+import {
   filterProjectGroupsByWorkbenchScope,
   filterReposByWorkbenchScope,
   mergeWorkbenchFilterRepoIds,
@@ -81,6 +85,38 @@ describe('mergeWorkbenchFilterRepoIds', () => {
 
   it('intersects store filter with wall scope', () => {
     expect(mergeWorkbenchFilterRepoIds(['a', 'c'], ['a', 'b'])).toEqual(['a'])
+  })
+})
+
+describe('TaskPage wall scope', () => {
+  it('does not fan out GitHub sync to other wall projects', () => {
+    const orca = repo({
+      id: 'orca',
+      path: '/orca',
+      displayName: 'orca',
+      kind: 'git',
+      gitRemoteIdentity: {
+        canonicalKey: 'github.com/stablyai/orca',
+        remoteName: 'origin',
+        remoteUrl: 'https://github.com/stablyai/orca.git'
+      }
+    })
+    const workbench = repo({
+      id: 'workbench',
+      path: '/workbench',
+      displayName: 'workbench',
+      kind: 'git',
+      gitRemoteIdentity: {
+        canonicalKey: 'github.com/forcegravity1989/builder-workbench',
+        remoteName: 'origin',
+        remoteUrl: 'git@github.com:forcegravity1989/builder-workbench.git'
+      }
+    })
+    const wallRepoIds = resolveWallProjectRepoIds([orca, workbench], [], 'workbench')
+    const scoped = filterReposByWorkbenchScope([orca, workbench], wallRepoIds)
+    const eligible = getTaskEligibleRepos(scoped)
+    expect(eligible.map((item) => item.id)).toEqual(['workbench'])
+    expect([...getDefaultTaskRepoSelection(eligible)]).toEqual(['workbench'])
   })
 })
 

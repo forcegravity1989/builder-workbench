@@ -10,7 +10,7 @@
 | Projects / worktree 树 | `components/sidebar/` | 左栏 Projects |
 | 终端 / agent / 建树 | terminal + `worktree-creation-flow` | 执行面 |
 | Explorer / SC / Diff | right-sidebar | 执行面右栏 |
-| **Tasks** | `components/task-page/` | 计划屏任务与开工（复用） |
+| **Tasks** | `components/task-page/` | 计划屏任务与开工（复用）；叠层按当前墙项目收窄同步仓 |
 | Automations | `components/automations/` | 自动化屏 |
 | Settings | `components/settings/` | 设置（覆盖层形态后续收） |
 | main / shared runtime | `src/main`, `src/shared` | 业务语义 |
