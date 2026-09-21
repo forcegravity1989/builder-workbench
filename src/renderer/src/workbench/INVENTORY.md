@@ -20,7 +20,7 @@
 | 项 | 落点 | loop-buddy 参考 |
 |----|------|-----------------|
 | 五屏导航 | `workbench/WorkbenchSidebarNav.tsx` | 总览 / 计划 / **任务** / 自动化 / 知识库；任务入口复用 Orca `SidebarTaskNavButton` |
-| 计划屏 V7 | `PlanJourneyShell` + panes | 左栏 bw/week-plan 会话；右栏挂 `week-planning` HTML（planning.py 本地服务） |
+| 计划屏 | `PlanJourneyShell` + `PlanWeekBoard` | 左栏 bw/week-plan 会话（新开会话注入 SYSTEM.md.tmpl + week-planning 指针）；右栏原生三屏读写 `.bw/planning/<ver>/data.json` |
 | 总览保真 | `OverviewPage` + `overview-demo-data` | hifi-overview + `screens/overview`（mock） |
 | 知识库保真 | `KnowledgePage` + `knowledge-demo-data` | **V7** 三页签：文档 / 代码 / 对账（约束线 + 编辑器侧栏） |
 | 项目墙覆盖层 | `ProjectWallOverlay`；按 `ProjectGroup` 聚合多仓；卡片展示仓链接；`+ 代码仓` / 删除 | `screens/wall` |
@@ -28,7 +28,7 @@
 | 皮肤 token | `workbench-tokens.css` + plan/overview css | `bw-tokens` / prototype-v7 / hifi-overview |
 | 热加载调试 | `pnpm run dev:workbench`（electron-vite HMR；独立 `workbench-dev` profile） | — |
 | 品牌打包 | `ORCA_PRODUCT_NAME` / `build:mac:workbench` | — |
-| Workbench Skills | `.claude/skills/{workbench-start,project-knowledge,version-report,design-system-import}`；产品剧本 `standard/skills/`（week-planning 等）+ `scripts/version-planning` | 从 `origin/main` 迁入；计划页签已挂 HTML |
+| Workbench Skills | `.claude/skills/{workbench-start,project-knowledge,version-report,design-system-import}`；产品剧本 `standard/skills/`（week-planning 等）+ `scripts/version-planning` | 从 `origin/main` 迁入；计划页签新开会话注入 skill 指针，三屏读写 JSON |
 
 ## 隐藏 / 不建
 

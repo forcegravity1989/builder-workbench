@@ -1,6 +1,8 @@
 # 版本计划 — 三屏与会话协作规格
 
-> 30 秒导读：复用自动化 → 固定分支会话 → HTML 对话修订 → 会议评审 → 继续讨论 → MR 归档。本篇是 #176 / #207 的范围、操作和验收规格；所有未实现或待决项均明确列出。
+> 30 秒导读：进入计划页签 → 固定分支会话注入 SYSTEM + week-planning → 右侧原生三屏与会话写同一 JSON → 会议评审 → 拆 Issue → MR 归档。本篇是 #176 / #207 的范围、操作和验收规格；所有未实现或待决项均明确列出。
+>
+> **现行交付（本分支）**：计划页签右侧是 React 原生三屏，不再嵌入 HTML、不起 `planning.py start/serve`。离线 HTML 只读缓存。新开会话由 `src/renderer/src/workbench/plan-week-planning-prompt.ts` 注入。下文「本地 HTTP 服务 / 浏览器打开 URL」是已替换的历史方案，不能再当操作要求。
 
 ## 依据与原型
 
@@ -8,8 +10,8 @@
 - [#207](https://github.com/forcegravity1989/builder-workbench/issues/207)：BW v0.4 首用结果，以及特性→指标→用例→证据。
 - [现行 v0.4 目标](https://github.com/forcegravity1989/builder-workbench/issues/180#issuecomment-5679561405)：只读参考，历史周编号不带入新 HTML。
 - 用户指定原件：v7-1.html（本机路径 `D:/xwechat_files/wxid_06ent4l6h23s21_4ffe/msg/file/2026-09/v7-1.html`）。SHA256：`FB5EB3763C0B00C8C21683E90BBAC14416CE6235C3991D012795FEDC3EDAF09B`。
-- 当前入口是[可执行实战 Skill](../../../standard/skills/week-planning/SKILL.md)，不再交付场景演示。配套[固定模板](../../../standard/skills/week-planning/assets/version-plan.html)、[数据模板](../../../standard/skills/week-planning/assets/data-template.json)、内置 eMeeting 转写脚本与三节纪要模板、v0.3 重建数据（本机路径 `E:/zhuyu/code/builder-workbench/.bw/worktrees/week-plan/.bw/planning/v0.3/data.json`）及[Orca 自动化提示词](orca-task-prompt.txt)。
-- 开发树为 `E:/zhuyu/code/builder-workbench/.bw/worktrees/version-planning`，分支 `codex/version-planning`。真实规划树为主项目 `.bw/worktrees/week-plan`，分支 `bw/week-plan`。当前数据在规划树 `.bw/planning/v0.4/data.json`；Skill 启动或复用该树本地服务，浏览器打开返回的 URL 编辑；同树 .bw/planning/template/version-plan.html 用于离线只读。当前用户与本会话共同实战填写 v0.4，逐屏调整模板及 Skill；v0.3 暂不修改。
+- 当前入口是[可执行实战 Skill](../../../standard/skills/week-planning/SKILL.md)，不再交付场景演示。配套[离线 HTML 缓存](../../../standard/skills/week-planning/assets/version-plan.html)（不是编辑器）、[数据模板](../../../standard/skills/week-planning/assets/data-template.json)、内置 eMeeting 转写脚本与三节纪要模板，以及[计划页签注入说明](orca-task-prompt.txt)。
+- 开发与规划仍用 `bw/week-plan` 工作树。当前数据在规划树 `.bw/planning/<版本>/data.json`；计划页签原生三屏直接读写该 JSON。同树 `.bw/planning/template/version-plan.html` 若存在，仅为可重建的离线只读缓存。
 - v0.3 从 #174 的原始目标与进展评论重建，明确没有历史周一屏正本和重新验收；v0.4 首用时只预置项目、版本和前序引用，业务结构为空。本次真实会话直接读取旧流程的 #174 目标评论回填第一屏，不以重建的 v0.3 JSON 作为原承诺正本，用户核对后共同写第二屏，会议评审与消化后才形成第三屏；#180 仅作讨论来源。恢复不会重置已有内容。Skill、固定 HTML 和数据格式是本特性交付源码，位于 standard/skills/week-planning；实际版本内容位于规划 worktree 的 .bw/planning。
 
 原型中只参考 `.plan-v7` 的计划内容：目标卡、任务表、历史会话摘录、总结三段、评审记录、目标与任务批注。去掉实时对话区、BW 导航、开工按钮、虚构的“已写入”提示和其他重构屏幕。历史会话摘录为资料，不是嵌入对话组件。
@@ -50,11 +52,9 @@
 
 第二屏先由模型和 Builder 交流拟定目标，再带去和 Leader 评审：风险上报、前序进展摘要和当前版本目标集中呈现。第三屏在会后继续同份目标，Builder 核对现有 Issue 纳入、拆任务并挂 Issue，在正文明确验收条件，随后提 PR，由 Leader 审核。标题、正文、类型和父目标约定见 Skill 数据参考；本次不改 BW 界面组件或批量修改远端历史 Issue。
 
-## 2026-09-16 保存方案确认
+## 2026-09-16 保存方案确认（历史）
 
-用户已确认改用 Skill 管理的最小本地 Web 服务。服务扩展在原 planning.py，Python 标准库实现；不把服务源码复制进项目，不挂 BW 主程序启动。start/serve/stop/status 按工作树管理一个进程、一个自动分配端口，各版本共用。连接信息在 .local；仅本机监听，接口校验连接凭据、来源、版本范围和数据修订号。
-
-页面 GET 读取版本，PUT 自动保存，确认走独立接口；模型继续使用原 CLI 写同一 JSON。停顿保存与手动保存共用入口；断线或冲突保留输入并提示。移除 File System Access API 与目录复制/授权流程，离线 HTML 只读。交付件与评审流程的其他行为沿现有模板；真实 Orca 接入与浏览器操作由后续实战验收。
+当时确认过最小本地 Web 服务。**现行已改为计划页签原生三屏直写 JSON**，不再 start/serve，不再把 HTTP 当编辑入口。planning.py 只保留 CLI（read/update/confirm/采集）。离线 HTML 只读。
 
 ## 模板、数据与 Skill 的关系
 
@@ -112,8 +112,8 @@
 1. Orca 复用现有「定版本计划（Workbench）」任务，到点仍创建新会话，工作树为 `bw/week-plan`。已有计划时展示当前版本材料、允许继续修订，不再因“版本已经确定”直接退出。
 2. Skill 先读项目入口和前序版本已归档数据，再查询 Issue、交付和指标来源补充实际结果。没有版本名先用 default，讨论确定后定名；已有授权和目标不重复提问。缺失事实写未知，来源附查询时间或固定 Git 引用。
 3. 固定模板、数据样例、转写脚本与纪要模板随 Skill sidecar 分发并留在安装目录，不拷入项目树；项目树只保存各版本数据。本地 HTML 由服务刷新生成、可随时重建，Git 忽略。
-4. 数据为正文来源，HTML 为其可分享阅读件。页面停顿自动保存到同一 JSON，会话按文件 etag 修改；冲突时保留文字并提示，不覆盖另一方修改。Skill start 后提供本地服务 URL，页面读取当前 JSON；服务模式自动保存，无浏览器文件授权；离线打开为只读，保存失败保留输入并提示。
-5. Builder 确认用于会议的一版：页面确认结果后，会话执行 `confirm --stage review_ready`，再进入第三屏。需要分享件时由会话另做只读导出或打印；页面不再内置会议评审 HTML 下载，HTML 本身不向远端发送内容。
+4. 数据为正文来源。计划页签停顿自动保存到同一 JSON，会话按文件 etag 修改；冲突时保留文字并提示，不覆盖另一方修改。不要 `planning.py start/serve`，不要打开 HTML URL。
+5. Builder 确认用于会议的一版：页面确认结果后，会话执行 `confirm --stage review_ready`，再进入第三屏。需要分享件时由会话另做只读导出或打印。
 6. 录入真实会议日期、参与者、完整转写 MD 和核心会议记录；保留原件，消化后的结论关联到目标或任务批注。没有真实会议材料可继续讨论草案，但不得声明已经会议评审。
 7. Builder 回到会话，逐项处理意见，形成最终版本计划；保留被取消/延后项及其原因。修改继续写同一份 data.json，历史以 Git 修订与 MR 为准，不再生成快照修订。
 8. 用户确认具体版本目标、纳入差异和归档件后，沿当前平台提交 MR。Leader 在 MR 审核最终握手。保留审核对象与结果链接；模型不得代签、自动 merge、关闭 Issue。
@@ -134,12 +134,11 @@
 
 ## 工程落点与限制
 
-- `crates/bw/src/app/orca_inject.rs`：已有自动化仅对版本计划这一项更新提示与工作目录；保留用户的时间、时区、启停设置及任务身份，不新建第二项。不改其他自动化。
-- `crates/bw-engine/src/orca.rs`：沿用 list/create，新增定版本计划更新；按已安装 Orca 的真实 update 协议修改后 show 读回，保留 ID、定时、启用与 agent。
-- `crates/bw/src/standard/skills.rs`：HTML/数据/生成与采集工具作为附件随技能一起写出，验证路径实际存在且提示能指到。
-- `week-planning` 已替换旧指标单独更新流程，允许保存规划草稿，恢复已有版本而非退出。
-- 页面和归档按版本组织。目标、结果摘要和执行进展写同版 JSON，BW 计划/总览读取该数据，任务状态仍读 Issue；不双写目标评论，不改界面组件。
-- 本机三个常驻树经校验干净后已用 git worktree move 登记到主项目 .bw/worktrees；分支和提交保留。开发树与规划树分开；产品不自动移动或删除其他用户的旧工作目录。
+- `src/renderer/src/workbench/plan-week-planning-prompt.ts`：计划页签新开会话注入 SYSTEM.md.tmpl + week-planning 指针与 planning.py CLI；接回已有会话不重递交。
+- `src/renderer/src/workbench/PlanWeekBoard.tsx`：右侧原生三屏读写 `.bw/planning/<版本>/data.json`。
+- `standard/skills/week-planning/`：SOP、数据模板、CLI、离线 HTML 缓存；不把 HTML 当编辑器。
+- `week-planning` 允许保存规划草稿，恢复已有版本而非退出。
+- 页面和归档按版本组织。目标、结果摘要和执行进展写同版 JSON，任务状态仍读 Issue；不双写目标评论。
 
 ## 特性衡量与验收
 
@@ -154,10 +153,10 @@
 | 采纳 | 滞后：使用周一屏的被管理项目数（W38 拍板：耗时难采不采，改采采纳数，#217） | 脚本 `.bw/scripts/managed-projects.py --metric monday-screen`（retro 周粒度），正本为白名单 `.bw/managed-projects.toml`；周归属按各项目 `.bw/planning/<版本>/data.json` 在 Git 归档历史中出现过的 updated_at/confirmation 时间戳去重计数——历史不可变，读数不随后续编辑漂移；仅 progress_updates 的自动化更新不计 | 已实现并注册 `.bw/metrics.toml`（target ≥3）；codehub 远端读取分支待内部核实 |
 | 准备与返工成本 | 会前准备耗时、会后意见处理次数及原因 | 首用手工记录起止与实际修改，不能从一例宣称改善 | 未观察 |
 | 自动化更新 | 更新旧任务，保留设置，无重复；失败可重试 | Orca 更新前后读回，实际触发并核对分支/会话 | 真实 BW 注册/重启更新通过；模型触发待用户首用 |
-| 注入链 | 模型实际读到 HTML、数据、Skill | 真 Orca 会话读取附件，记录路径与摘要 | 实际 BW 完整分发通过；模型会话读取待用户首用 |
-| 数据与展示 | 三页一致，未知明确，无原型示例数 | 浏览器逐项对比真实来源；缺数、零值、来源不可读场景 | 隔离浏览器用例通过；真实事实仍由用户核对 |
+| 注入链 | 模型实际读到 SYSTEM、Skill、CLI 路径 | 真壳新开会话记录注入正文 | 注入生成有单测；真会话读取待用户关掉空会话后重开 |
+| 数据与展示 | 三页一致，未知明确，无原型示例数 | 计划页签逐项对比真实来源；缺数、零值、来源不可读场景 | 原生三屏读写 JSON；旧 HTTP 证据不代替本分支 |
 | 前序版本承诺可追溯 | 读取前序版本已确认第三屏，再填真实结果，保留原承诺与引用 | 改变远端状态不改变原承诺；无历史首次使用；明确前序修订 | 未执行 |
-| 编辑与恢复 | 页面与会话保存同一数据，重开一致 | HTTP 读写、服务重启、重新打开；外部修改冲突 | 真实 HTTP 与文件往返检查通过；真实浏览器输入与重开已通过，实际填写体验继续由用户验收 |
+| 编辑与恢复 | 页面与会话保存同一数据，重开一致 | 文件读写、会话 update --if-match、外部修改冲突 | 原生保存与磁盘轮询已接；真实填写体验继续由用户验收 |
 | 会议与定稿 | 缺纪要不得宣称评审完成；意见可追溯 | 缺记录、真实纪要、会后再修订三种场景 | 未执行 |
 | 会议两份输入 | 现场直接保存、链接取转写、子 agent 按三节模板整理 | 缺入口、输入变化、模板变化均可识别；真实纪要语义还需实际核对 | 内置脚本经真实会议抓取验证；纪要整理待首用 |
 | 归档与握手 | data.json 唯一正本，MR 可查，只有 Leader 审核算握手 | Git 文件摘要+远端 MR/review 读回；关闭再开材料 | 未执行 |

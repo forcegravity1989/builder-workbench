@@ -1,6 +1,6 @@
 # 数据与本地服务
 
-> JSON 是内容正本。Skill 按规划工作树启动本地服务，页面与模型共同读写 JSON；离线 HTML 用于只读查看。
+> JSON 是内容正本。计划页签右侧三屏与会话共同读写同一份 JSON；planning.py 提供 CLI（read/update/confirm/采集）。离线 HTML 只读，不是日常编辑器。
 
 ## 文件与打开
 
@@ -17,32 +17,29 @@
 
 归档只提交版本目录与 `.bw/planning/.gitignore`，排除 `.local` 与离线缓存；模板和工具留在 Skill 安装目录，不随项目归档。BW 通过内置 Skill sidecars 分发模板、空数据、脚本及参考资料；打开项目时创建或更新原定版本计划自动化，不改变已有定时、启用状态及 provider。
 
-Skill 先执行 start（只需版本目录名，不必先读全量 JSON），打开返回的完整本地 URL 恢复已有内容；JSON 之后按需 read/update 读取。在 Orca 托管会话内，经 CLI `orca tab create --url <start 返回的完整 URL> --worktree id:$ORCA_WORKTREE_ID --json` 打开，页面归入该工作树的浏览器面板；该调用经真实验证可用，旧稿写的 `browser.tabCreate`、`placement`、`ui.set rightSidebar` 在会话工具集中不存在，不得再使用。无 Orca 的仓外会话把完整 URL 交给使用者或按其宿主方式打开。服务程序留在 Skill 安装目录，复用现有 Python 标准库脚本；不复制服务源码进项目，不依赖 BW 主程序启动。一个规划工作树共用一个本地服务；.local 保存端口、进程与连接凭据，归档不提交。没有历史才 init 创建 default 空版本，不先阻塞在版号上；确定名称后 set-version，内容保留并重新生成同一个页面的数据部分。模板 CSS 和骨架不会随内容重画。仓内正本 `standard/skills/week-planning/` 是唯一真源：不直接改 installed 副本（含模板与脚本）修问题，修复走仓内 PR，合入后由产品侧重新分发。
+计划页签右侧已打开三屏，读写 `.bw/planning/<版本>/data.json`。会话不要 `start/serve`，不要打开 HTML URL，不要 `orca tab create --url`。JSON 按需用 planning.py 的 read/update。脚本留在 Skill 安装目录，复用 Python 标准库；不复制进项目。没有历史才 init 创建 default 空版本，不先阻塞在版号上；确定名称后 set-version。仓内正本 `standard/skills/week-planning/` 是唯一真源：不直接改 installed 副本修问题，修复走仓内 PR。
 
 命令均以脚本所在 Skill 目录定位 planning.py，--workspace 必须显式指定任务工作树。Windows 控制台下脚本 stdout/stderr 已强制 UTF-8；会话内联 `python -c` 读字段时加 `-X utf8` 或环境变量 `PYTHONIOENCODING=utf-8`，否则中文按控制台代码页乱码：
 
 ```
-python <PACK>/scripts/planning.py --workspace <工作目录> --version <已有版本> start
-python <PACK>/scripts/planning.py --workspace <工作目录> status
-python <PACK>/scripts/planning.py --workspace <工作目录> stop
-python <PACK>/scripts/planning.py --workspace <工作目录> --version <已有版本> refresh
-python <PACK>/scripts/planning.py --workspace <工作目录> init
-python <PACK>/scripts/planning.py --workspace <工作目录> --version default set-version --name <确定的版号>
 python <PACK>/scripts/planning.py --workspace <工作目录> --version <版本> read
 python <PACK>/scripts/planning.py --workspace <工作目录> --version <版本> update --file <候选> --if-match <etag>
+python <PACK>/scripts/planning.py --workspace <工作目录> --version <版本> confirm --stage results|review_ready|plan
+python <PACK>/scripts/planning.py --workspace <工作目录> collect-issues --plan-version <核对版本>
+python <PACK>/scripts/planning.py --workspace <工作目录> init
+python <PACK>/scripts/planning.py --workspace <工作目录> --version default set-version --name <确定的版号>
+python <PACK>/scripts/planning.py --workspace <工作目录> --version <版本> fetch-meeting
 ```
+
+计划页签会话不要 start/serve/stop。refresh 只用于重建离线 HTML 缓存，不是编辑入口。
 
 init 只补缺失文件，不覆盖已写内容。set-version 只给 default 草稿定名，不覆盖已有版本、不改历史归档。模板本身可直接展示空 default，但模型应先建立项目 JSON 再交给用户。
 
 ## 同一份内容
 
-服务页面通过同源接口读取当前 JSON。start 只监听 127.0.0.1，并把 URL 返回给 Skill；页面请求携带本次服务的连接凭据。模型保存 JSON 后，页面在没有未保存输入、没有正在编辑的字段时检查新修订并更新。
+计划页签右侧三屏直接读写当前 JSON。人手填停顿 800ms 后自动保存；保存失败时顶部提示。模型使用脚本的 read 与 update --if-match，不绕过文件锁直接覆盖；冲突时保留手填，重读后合并。页面在没有未保存输入时会跟进磁盘上的新修订。
 
-用户手填停顿 800ms 后自动保存，保存失败时顶部显示重试按钮；无需目录选择或文件授权。顶部显示当前版本 JSON 路径。保存使用文件修订号检查冲突，并复用 CLI 的文件锁与原子替换；服务收到旧修订时拒绝覆盖，页面保留输入并提示，可下载未保存内容供会话合并。模型也应使用脚本的 read 与 update --if-match，不绕过文件锁直接覆盖。
-
-服务停止时显示连接失败，未保存输入仍保留在当前页；不能当作已落盘。由 Skill 重新 start，连接失效时用返回的完整地址重新打开，先保留旧页输入。status 检查当前工作树服务；用户结束规划并要求关闭时 stop。服务启动不改变版本内容，不自动建 Issue 或提 PR。
-
-直接双击共用 HTML 时为只读，仍可查看已生成内容；会话保存 JSON 会刷新共用 HTML 的展示数据。日常 HTML 可重建，版本 JSON 才是归档事实。
+脚本读写不改变确认语义，不自动建 Issue 或提 PR。直接打开共用 HTML 时为只读；日常编辑以计划页签和 JSON 为准。
 
 ## 目标、任务与三屏
 

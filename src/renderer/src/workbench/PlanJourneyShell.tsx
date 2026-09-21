@@ -1,13 +1,10 @@
 import React from 'react'
 import { PlanWeekPlanChat } from './PlanWeekPlanChat'
-import { PlanWeekPlanHtml } from './PlanWeekPlanHtml'
+import { PlanWeekBoard } from './PlanWeekBoard'
 import { usePlanColumnResize } from './use-plan-column-resize'
 import './workbench-plan.css'
 
-/**
- * 计划页签：左侧 bw/week-plan 会话，右侧 week-planning 固定 HTML。
- * 三屏与保存由 planning.py 本地服务承担，不在壳里再做一套页面。
- */
+/** 计划页签：左侧 bw/week-plan 会话，右侧原生三屏读写 .bw/planning JSON。 */
 export function PlanJourneyShell(): React.JSX.Element {
   const { bodyRef, chatColRef, isResizing, onResizeStart } = usePlanColumnResize()
 
@@ -27,7 +24,7 @@ export function PlanJourneyShell(): React.JSX.Element {
             />
           </div>
           <div className="right">
-            <PlanWeekPlanHtml />
+            <PlanWeekBoard />
           </div>
         </div>
       </div>

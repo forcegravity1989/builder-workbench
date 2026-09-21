@@ -8,7 +8,7 @@
 
 ## 按任务读取
 
-本仓开发 Builders' Workbench（Workbench / BW）：Rust 桌面工作台，内核 `crates/bw`、底座 `crates/bw-engine`、壳 `crates/app-shell`。给人介绍产品从 [README.md](README.md) 开始，完整文档地图在 [docs/README.md](docs/README.md)。
+本仓开发 Builders' Workbench（Workbench / BW）：Electron 桌面工作台，叠在 Orca 执行核上；叠层 `src/renderer/src/workbench/`，规范 `standard/`。给人介绍产品从 [README.md](README.md) 开始，完整文档地图在 [docs/README.md](docs/README.md)。
 
 **[docs/01-principles/](docs/01-principles/README.md) 是最慢变的原则正本**，不得用草稿实现或聊天结论推翻。按任务读取对应资料，不把所有正文堆进入口：
 
@@ -18,7 +18,7 @@
 | 特性级变更 | 对齐 [03 产品主张与飞轮](docs/01-principles/03-press-release-faq-flywheel.md) → 按 [02 逆向工作法](docs/01-principles/02-working-backwards.md) 开/改 `docs/05-features/<id>/intent.md` 与带原型链接的 `spec.md`；二者由人确认，`plan.md` 仅大风险升 gate |
 | 小 bug、文案、无新增用户价值的整理 | 读现有正本，直接修、验证、commit/PR 留痕；不开特性制品链，粒度听 [01](docs/01-principles/01-document-organization.md) |
 | 改客群、飞轮或对外主张 | 先议再改 03；特性 intent 不得偷偷改写产品主张，不把草稿界面说成已交付 |
-| 改代码或现行设计 | 在 [architecture](docs/architecture.md) 定位用例哪一站 → §2 能力 → §3 crate 与数据流；模块取舍读 [06-module](docs/06-module/README.md)。影响使用方式或界面时同步 [指南](docs/03-guide/) 与 [设计系统](docs/04-design-system/README.md)/[高保真](docs/hifi/) |
+| 改代码或现行设计 | 在 [architecture](docs/architecture.md) 定位用例哪一站 → §2 能力 → §3 Electron 叠层与数据流；模块取舍读 [06-module](docs/06-module/README.md)。影响使用方式或界面时同步 [指南](docs/03-guide/) 与 [设计系统](docs/04-design-system/README.md)/[高保真](docs/hifi/) |
 | 改文档 | 先读下节维护流程 → 原则 01 → 目标文件原文头部约定与相关正本；用 [docs 地图](docs/README.md) 找去处。盘点、瘦身、职责/格式治理与模型指令整改使用 [project-knowledge](.claude/skills/project-knowledge/SKILL.md)，包含 HTML 决策、只读扫描和逐轮反哺；普通开发的必要文档同步不启动全库盘点 |
 | 改 `standard/` | 先读 [standard/README](standard/README.md) 与 [系统提示词与渐进加载](docs/06-module/系统提示词与渐进加载.md)的维护对照；写 Skill 再读 [SKILL-MD-SPEC](standard/skills/SKILL-MD-SPEC.md)。本仓知识库不等于给被管项目分发的规范 |
 
@@ -44,62 +44,42 @@ Superpowers / grill-me 可用于发散、质询和计划草稿，特性产出仍
 | 约束 | 如何守住 |
 |---|---|
 | 杀进程重开，所有数字能重新计算、前后一致 | 现算推导；用真实 E2E 重启后独立读回核对 |
-| 信号只能从数据推导；没数据就是 Unknown，不是绿 | `Derived<Signal>` 密封，store 无 `set_signal`；现算是唯一写入者 |
-| 完成永远由人确认，同一工作不重复记录完成结果 | `can_transition_to` 守卫；人可从待办/进行中/待评审/阻塞/未排期操作完成，有开放 MR 先合入，否则关闭 Issue；自动化、agent、定时不得推到 Done；`settled_at` 只记录一次 |
+| 信号只能从数据推导；没数据就是 Unknown，不是绿 | 健康信号只能从读数推导；store 不提供手设绿灯；没数据就显示未知 |
+| 完成永远由人确认，同一工作不重复记录完成结果 | 人可从待办/进行中/待评审/阻塞/未排期操作完成，有开放 MR 先合入，否则关闭 Issue；自动化、agent、定时不得推到 Done |
 | 定时任务真实到点触发；自动创建的 Issue 不自动完成 | 调度在 Orca，到点开会话，不能替人确认 Done |
 
 - Issue 与标签是工作状态的正本；仓文件产物通过分支和 PR/MR 评审。标签协议、状态机和各写入者边界读 [issue-state](standard/system-prompt/references/issue-state.md)，不要另造一套。不打 `kind` / `tool` / `workflow` 标签：种类从标题推导，工具跟随本机设置，工作流按类别或周期工作标题选择；不再新写 `bw:week:*`。
 - Workbench MVP 本地零业务数据库。用 `gh` / `codehub-cli` / `git` / 文件独立读回；不用 V3 的 `sqlite3` 路径。项目约定和指标资产的归属读 [architecture](docs/architecture.md)，不能将资产盘点变成代写项目开发规范。
-- 入口层不写业务和存储；`bw-engine` 遵守 `#![forbid(unsafe_code)]`。
+- 入口层不写业务正本；计划 JSON 与 Issue 标签是各自的事实源。
 - 先审已有代码、提示词和方案，不对就改原件；不新增平行实现、平行规范或特殊通道。不为过时实现留兼容层、回退或双路径；不扩 scope，未建如实标未建。
-- V3 已删除，不能用 V3 crate 解释 MVP；历史在 `v3` 分支，必要时看 [旧模块挪移记录](docs/10-reference/v3-and-module-migration.md)。
+- V3 与旧 Rust 三 crate 已不在本分支；不能用已删除的 `crates/` 解释现行 Electron 壳。历史在 `v3` 分支与旧 main，必要时看 [旧模块挪移记录](docs/10-reference/v3-and-module-migration.md)。
 
 ## 构建、运行与验证
 
-Rust 1.82+，Cargo workspace；桌面壳使用 Dioxus 0.7 / wry，macOS 使用系统 WebKit，Windows 使用 WebView2。
+Node.js + pnpm；桌面壳是 Electron（Orca 叠层），macOS / Windows。叠层热加载与真壳验证入口：
 
 ```bash
-cargo check -p bw -p bw-engine
-cargo run -p app-shell
-cargo run -p bw-engine --example pty_smoke
-# PTY 烟测也支持：-- --teardown 或 -- --abort
-cargo test --workspace
+pnpm run dev:workbench
+pnpm test
+pnpm run lint
+pnpm run typecheck
 ```
 
-壳二进制名 `bw-dev`。深链环境变量：`BW_OPEN=<项目名>` 搭配 `BW_PANEL=overview|plan|session|config|kb`；顶层屏用 `BW_VIEW=onboard|settings`，帮助小窗用 `BW_HELP=home|guide|report`。设置后启动壳，stderr 的 `[BW_OPEN]` 用于核对实际渲染。PowerShell 示例：
+`dev:workbench` 已设置 `WORKBENCH_SHELL=1`、`VITE_WORKBENCH_SHELL=1`、`ORCA_PRODUCT_NAME=Workbench`，使用独立 profile `workbench-dev`。Agent 自动化可加 `ORCA_BACKGROUND_LAUNCH=1` 与 `REMOTE_DEBUGGING_PORT=9337`。打试用包见 [`SYNC.md`](src/renderer/src/workbench/SYNC.md) 的 `pnpm run build:mac:workbench`。
 
-```powershell
-$env:BW_OPEN = '<项目名>'
-$env:BW_PANEL = 'plan'
-.\target\debug\bw-dev.exe
-```
+旧 Dioxus 壳的 `cargo run -p app-shell`、`bw-dev` 深链与 `.bw/release/pack` 出包协议针对已删除的三 crate，不能用来解释本分支。Windows 旧出包 ADR 见 [ADR 0005](docs/02-adr/0005-发版出包与E2E协议.md)，现行 Electron 出包以 SYNC 为准。
 
-Windows 出包/验包入口是 `.bw/release/pack/pack.cmd` 与 `.bw/release/e2e/e2e.cmd`，均传 `--version <号> --workdir <仓根绝对路径>`；协议见 [ADR 0005](docs/02-adr/0005-发版出包与E2E协议.md)。正源为 `.bw/release/pack/*.iss`，产物 `.bw/release/out/<号>/` 不进仓；出包不是日常门禁。
-
-桌面开工走会话屏 Orca / Open Design，工具按本机设置选择；路径与失败处理见 [会话与执行](docs/06-module/会话与执行.md)。真实执行依赖工具、会话宿主、信任对话框及网关；PTY 烟测只证明底座，不证明桌面开工成功。
+计划页签开工注入 SYSTEM + week-planning 指针；真实执行依赖 Claude Code、工作树及仓库权限。路径与失败处理见 [会话与执行](docs/06-module/会话与执行.md)。
 
 ### 提交前门禁
 
-每个 commit 前全过；Windows 的 shell 守卫用 Git Bash 执行。
-
-Windows 交付验证入口：`node .bw/release/verify/verify.mjs --profile pr`，执行下面的门禁（壳 `build` 包含 `check`）及已注册固定 E2E，产出 `.bw/release/out/verify/<run-id>/report.html`、`result.json`、`review.md` 与证据清单。改「添加项目」旅程时本机换跑 `--profile pr-onboarding`（含 `pr` 全部内容并操作沙箱仓）；云端 PR 仍用 `pr`，不接触跨仓写凭据。命令、报告格式、专项用例接入及 CI 结果位置见 [交付验证入口](.bw/release/verify/README.md)。开发特性的会话负责补对应专项用例并发 PR；通用入口不代替特性验收、代码 Review 和人的合入决定。
+每个 commit 前过 husky `lint-staged`（oxlint / oxfmt）。改叠层或注入逻辑时再跑受影响的 Vitest，例如：
 
 ```bash
-cargo fmt --all --check
-cargo clippy --workspace -- -D warnings
-cargo check -p app-shell
-./scripts/guard-kernel-ui-free.sh
-./scripts/guard-remote-isolation.sh
-./scripts/guard-no-cross-screen-import.sh
-./scripts/guard-screen-hooks.sh
-./scripts/guard-file-lines.sh
-./scripts/guard-codegraph-clean.sh
-cargo test --workspace
+pnpm exec vitest run --config config/vitest.config.ts src/renderer/src/workbench/plan-week-planning-prompt.test.ts
 ```
 
-本地与 CI：Ubuntu 的 headless 检查排除 app-shell；Windows CI 执行完整门禁、构建壳与固定桌面 E2E。两者复用 `.bw/release/verify/plan.json`，差异以 [.github/workflows/ci.yml](.github/workflows/ci.yml) 为准。PR 检查的固定结果入口是 Checks 对应任务的 Summary，完整报告和证据在该次 Actions Artifacts；独立验证 Review 仍遵循下面的截图要求。
-
-行为正确性仍靠真实 E2E（深链、远端/Git/文件读回与界面核对）及 code review；已有单测随改维护，不把新增回归大坝当交付物。
+PR 检查以 [`.github/workflows/pr.yml`](.github/workflows/pr.yml) 为准。行为正确性仍靠真壳（计划三屏、会话注入、远端/Git/文件读回）及 code review；已有单测随改维护，不把新增回归大坝当交付物。
 
 ## 修改与交付
 

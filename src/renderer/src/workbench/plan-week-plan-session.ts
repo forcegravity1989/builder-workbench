@@ -21,9 +21,13 @@ import {
   resolveWeekPlanHomeWorktreeId,
   seedWeekPlanLayoutIfNeeded,
   weekPlanProjectKey,
-  weekPlanProjectWorktreeIds,
-  type WeekPlanWorktreeRef
+  weekPlanProjectWorktreeIds
 } from './plan-week-plan-identity'
+import {
+  buildWeekPlanInjectPrompt,
+  resolveWeekPlanInjectInput,
+  WEEK_PLAN_PROMPT_DELIVERY
+} from './plan-week-planning-prompt'
 
 export {
   WEEK_PLAN_SESSION_LABEL,
@@ -112,7 +116,7 @@ async function launchWeekPlanSessionOnce(
   if (!isTuiAgentEnabled('claude', store.settings?.disabledTuiAgents)) {
     throw new Error('Claude Code 未启用')
   }
-  const worktrees = weekPlanWorktreeRefs(store.allWorktrees?.() ?? [])
+  const worktrees = store.allWorktrees?.() ?? []
   const projectWorktreeIds = weekPlanProjectWorktreeIds(worktreeId, worktrees)
   const projectKey = weekPlanProjectKey(store.getKnownWorktreeById(worktreeId), worktreeId)
   const anchor = readWeekPlanSessionAnchor(projectKey)
@@ -148,12 +152,25 @@ async function launchWeekPlanSessionOnce(
   if (resumed) {
     return resumed
   }
+  const homeWorktree = store.getKnownWorktreeById(homeWorktreeId)
+  const workspacePath = homeWorktree?.path?.trim()
+  if (!workspacePath) {
+    throw new Error('没有可用的工作区')
+  }
+  const prompt = buildWeekPlanInjectPrompt(
+    await resolveWeekPlanInjectInput({
+      workspacePath,
+      mainProjectPath: resolveMainProjectPath(homeWorktreeId, projectWorktreeIds, store)
+    })
+  )
   const launched = launchAgentInNewTab({
     agent: 'claude',
     worktreeId: homeWorktreeId,
     quickCommandLabel: WEEK_PLAN_SESSION_LABEL,
     launchSource: 'task_page',
-    activate: false
+    activate: false,
+    prompt,
+    promptDelivery: WEEK_PLAN_PROMPT_DELIVERY
   })
   if (launched?.tabId) {
     return bindTerminalWeekPlanTab(homeWorktreeId, launched.tabId)
@@ -168,22 +185,14 @@ async function launchWeekPlanSessionOnce(
   throw new Error('无法启动 Claude Code')
 }
 
-function weekPlanWorktreeRefs(
-  worktrees: readonly {
-    id: string
-    repoId: string
-    displayName: string
-    branch: string
-    isMainWorktree: boolean
-  }[]
-): WeekPlanWorktreeRef[] {
-  return worktrees.map((worktree) => ({
-    id: worktree.id,
-    repoId: worktree.repoId,
-    displayName: worktree.displayName,
-    branch: worktree.branch,
-    isMainWorktree: worktree.isMainWorktree
-  }))
+function resolveMainProjectPath(
+  homeWorktreeId: string,
+  projectWorktreeIds: readonly string[],
+  store: ReturnType<typeof useAppStore.getState>
+): string {
+  const allowed = new Set(projectWorktreeIds)
+  const main = (store.allWorktrees?.() ?? []).find((wt) => allowed.has(wt.id) && wt.isMainWorktree)
+  return main?.path?.trim() || store.getKnownWorktreeById(homeWorktreeId)?.path?.trim() || ''
 }
 
 function resumeWeekPlanSession(
