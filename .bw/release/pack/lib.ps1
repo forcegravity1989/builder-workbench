@@ -106,18 +106,20 @@ if (-not (Test-Path $exe)) {
     Fail pack_failed $hint
 }
 # 出包校验相判据（ADR-0005 步骤 5）：bw-dev.exe 必须被卸载器清走、安装目录最终必须
-# 可清空（目录壳由兜底有界重试清掉并记 progress）。E2E 验包用例判据不同：卸载器自己
-# 清走全部内容才算过、目录壳须兜底真清掉且如实记录（e2e/installer.ps1）——同一
-# helper，两层语义各自声明，不混。明细 progress 先于一切 Fail：失败时已见证据不丢。
+# 可清空（目录壳由兜底有界重试清掉并记 progress）；枚举不了残留即 pack_failed。
+# E2E 验包用例判据不同：卸载器自己清走目录才算过、目录壳须兜底真清掉且如实记录、
+# 文件级残留/目录清不空/枚举不了都算失败（e2e/installer.ps1）——同一 helper，两层
+# 语义各自声明，不混。明细 progress 先于一切 Fail：失败时已见证据不丢。
 $un = Invoke-BwSilentUninstall $verifyDir
-if ($un.residue) {
-    Write-BwProgress -Phase verify -Message ("卸载器文件级残留（强删兜底" + $(if ($un.forcedCleanup) { '已清' } else { '也失败' }) + "）：" + ($un.residue -join '、'))
+# 判定用最近一次枚举（residue），明细证据取两遍并集（residueSeen 不丢）。
+$seen = @($un.residue) + @($un.residueSeen) | Select-Object -Unique
+if ($seen) {
+    Write-BwProgress -Phase verify -Message ("卸载器文件级残留（强删兜底" + $(if ($un.forcedCleanup) { '已清' } else { '也失败' }) + "）：" + ($seen -join '、'))
 } elseif ($un.emptyDirectoryLeft) {
     Write-BwProgress -Phase verify -Message ("卸载器清走全部文件；目录壳兜底" + $(if ($un.forcedCleanup) { '已清' } else { '重试内删不掉' }))
 }
 if ($un.residueUnknown) {
-    $seen = if ($un.residue) { "；已见残留：" + ($un.residue -join '、') } else { '' }
-    Fail pack_failed "卸载校验无法完整枚举安装目录（$verifyDir），不能当作已清理$seen"
+    Fail pack_failed "卸载校验无法完整枚举安装目录（$verifyDir），不能当作已清理$(if ($seen) { "；已见残留：$($seen -join '、')" } else { '' })"
 }
 $bwDevGone = -not ($un.residue -contains '\bw-dev.exe')
 if (-not ($un.uninstallerClean -or ($bwDevGone -and $un.forcedCleanup))) {

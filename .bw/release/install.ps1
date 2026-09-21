@@ -22,13 +22,15 @@ function Invoke-BwSilentSetup([string]$setupExe, [string]$dir, [string]$log) {
 #                     delete-pending：Defender 等持句柄的文件删除后进入挂起态，
 #                     枚举不可见，目录壳要等句柄关闭才可删，Inno 不重试）
 #   residue           文件级残留明细（递归只数文件；目录壳归空壳档不算内容残留）；
-#                     枚举报错不丢已见明细，按是否出过错置 residueUnknown——
+#                     判定以最近一次枚举为准，此前枚举已见的明细留 residueSeen——
+#                     证据不因重枚而丢；枚举报错按是否出过错置 residueUnknown，
 #                     「枚举不了」不得当「空」
-#   forcedCleanup     兜底强删（含对目录壳的有界重试）后目录已消失
+#   forcedCleanup     兜底强删（含对目录壳的有界重试）后目录已消失；卸载器自己
+#                     清干净时不发生强删，如实记 false
 # 返回 [ordered] 哈希表；调用方必须捕获返回值，否则会进 stdout 污染 JSONL 协议流。
 function Invoke-BwSilentUninstall([string]$dir) {
-    $r = [ordered]@{ uninstallerClean = $false; emptyDirectoryLeft = $false; forcedCleanup = $false; residue = @(); residueUnknown = $false }
-    if (-not (Test-Path -LiteralPath $dir)) { $r.uninstallerClean = $true; $r.forcedCleanup = $true; return $r }
+    $r = [ordered]@{ uninstallerClean = $false; emptyDirectoryLeft = $false; forcedCleanup = $false; residue = @(); residueSeen = @(); residueUnknown = $false }
+    if (-not (Test-Path -LiteralPath $dir)) { $r.uninstallerClean = $true; return $r }
     $unins = Get-ChildItem -LiteralPath $dir -Filter 'unins*.exe' -ErrorAction SilentlyContinue | Select-Object -First 1
     if ($unins) {
         cmd.exe /c ('start /wait "" "' + $unins.FullName + '" /VERYSILENT /NORESTART') | Out-Null
@@ -47,7 +49,7 @@ function Invoke-BwSilentUninstall([string]$dir) {
         }
     }
     $r.uninstallerClean = -not (Test-Path -LiteralPath $dir)
-    if ($r.uninstallerClean) { $r.forcedCleanup = $true; return $r }
+    if ($r.uninstallerClean) { return $r }
     # 枚举与判定之间卸载器收尾可能刚把目录删掉：出错先复核存在性，
     # 目录已消失=最干净结局，不得误记成 unknown。
     $ev = $null
@@ -55,18 +57,20 @@ function Invoke-BwSilentUninstall([string]$dir) {
     $r.residue = @(Get-ChildItem -LiteralPath $dir -Recurse -Force -File -ErrorAction SilentlyContinue -ErrorVariable ev |
             ForEach-Object { $_.FullName.Substring([Math]::Min($prefixLen, $_.FullName.Length)) })
     if (-not (Test-Path -LiteralPath $dir)) {
-        $r.uninstallerClean = $true; $r.forcedCleanup = $true; $r.residue = @()
+        $r.uninstallerClean = $true; $r.residue = @()
         return $r
     }
     # 子项并发消失竞态：卸载器收尾可能与枚举并发删子项。出过错就重枚一次再判，
-    # 不把「第二次能证明」的状态记成「证不了」。
+    # 不把「第二次能证明」的状态记成「证不了」；第一遍已见明细留 residueSeen，
+    # 判定以第二遍（离判定时刻最近的观测）为准。
     if ($ev) {
+        $r.residueSeen = $r.residue
         Start-Sleep -Seconds 2
         $ev2 = $null
         $r.residue = @(Get-ChildItem -LiteralPath $dir -Recurse -Force -File -ErrorAction SilentlyContinue -ErrorVariable ev2 |
                 ForEach-Object { $_.FullName.Substring([Math]::Min($prefixLen, $_.FullName.Length)) })
         if (-not (Test-Path -LiteralPath $dir)) {
-            $r.uninstallerClean = $true; $r.forcedCleanup = $true; $r.residue = @()
+            $r.uninstallerClean = $true; $r.residue = @()
             return $r
         }
         $ev = $ev2

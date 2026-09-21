@@ -87,6 +87,7 @@ try {
     $removed = $false
     $forced = $false
     $residue = @()
+    $residueSeen = @()
     $emptyShell = $false
     $residueUnknown = $false
     $uninstallError = $null
@@ -99,6 +100,7 @@ try {
             $removed = [bool]$un.uninstallerClean
             $forced = [bool]$un.forcedCleanup
             $residue = @($un.residue)
+            $residueSeen = @($un.residueSeen)
             $emptyShell = [bool]$un.emptyDirectoryLeft
             $residueUnknown = [bool]$un.residueUnknown
             if ($residueUnknown) {
@@ -123,7 +125,7 @@ try {
                 })
         }
     }
-    Save-Json 'uninstall-readback.json' ([ordered]@{ installDir = $installDir; uninstallerClean = $removed; emptyDirectoryLeft = $emptyShell; forcedCleanup = $forced; residue = $residue; residueUnknown = $residueUnknown; error = $uninstallError })
+    Save-Json 'uninstall-readback.json' ([ordered]@{ installDir = $installDir; uninstallerClean = $removed; emptyDirectoryLeft = $emptyShell; forcedCleanup = $forced; residue = $residue; residueSeen = $residueSeen; residueUnknown = $residueUnknown; error = $uninstallError })
     foreach ($Name in $Names) {
         if (-not ($Cases | Where-Object { $_.id -eq $Name })) {
             $Cases.Add([ordered]@{ id = $Name; title = $Name; status = 'not_run'; message = $Failure; evidence = @() })
