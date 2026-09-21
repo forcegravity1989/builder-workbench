@@ -46,6 +46,11 @@
 | 在研版本 | 当前正在推进的计划版本，不由里程碑日期单独决定；选择规则只在架构及实现维护 | [整体架构][arch] |
 | 版本目标 / 每周进展 | 版本希望达成的结果，与某周实际进展分开；都不是指标的每周数值目标 | [版本评论格式][week] |
 | 发布版本 / Release | 已交付版本的发布记录，与计划排期分开；`bw:released:<名>` 记录实际交付版本 | [Issue 协议][issue] |
+| 候选包 / Candidate package | 已出包、尚未正式发布的可分发安装包；身份=构建修订+产物文件名+SHA-256，由出包落 `pack-result.json` 记录；构建成功不等于可分发 | [ADR 0005][adr5] |
+| 验包 / Package validation | 静默安装候选包后按注册用例验证装出的真实应用（读回级断言）；与源码级交付验证不同，源码构建不得叫验包 | [ADR 0005][adr5] |
+| 正式发布 / Release (publish) | 人明确授权后，把验包通过的候选包连同绑定记录发布到发布存储正本（GitHub Releases）并独立读回；打 tag、计划版本或群通知都不单独等于正式发布 | [ADR 0005][adr5]、[交付链规范][delivery] |
+| 验证 Review / Verification review | 工作方就 PR 提交的验收证据报告：步骤、逐条判据、真实截图与留白，程序读回；供人验收，不代替独立代码审查，也不是合入批准 | [交付验证入口][delivery-verify]、[AGENTS](AGENTS.md) |
+| 代码审查 / Code review | 独立审查方审当前提交并落带 SHA 标记的结论；本仓现为按需召唤（`/code-review`），未召唤=未外部评审（灰），不缺省绿；检查通过只代表结论已交付 | [独立评审规格][reviewer-spec] |
 | PR / MR | 对应平台的分支评审与合入请求；提交请求不代表完成验收 | [AGENTS](AGENTS.md) |
 | 运行 / 会话 | 运行是执行工作的过程，会话是持续交互；打开已有会话与重新开工不同 | [会话与执行][session] |
 | 中止运行 | 停执行不等于取消 Issue 或完成；本机会话记录改变不能冒充宿主进程已停止，接入边界以模块说明为准 | [会话与执行][session] |
@@ -117,3 +122,7 @@
 [week]: standard/system-prompt/references/week-plan-comment.md
 [plan-spec]: docs/05-features/version-planning/spec.md
 [skill-spec]: standard/skills/SKILL-MD-SPEC.md
+[adr5]: docs/02-adr/0005-发版出包与E2E协议.md
+[delivery]: .bw/release/README.md
+[delivery-verify]: .bw/release/verify/README.md
+[reviewer-spec]: docs/05-features/reviewer-agent/spec.md

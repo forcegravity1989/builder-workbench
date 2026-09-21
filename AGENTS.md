@@ -74,7 +74,7 @@ $env:BW_PANEL = 'plan'
 .\target\debug\bw-dev.exe
 ```
 
-Windows 出包/验包入口是 `.bw/release/pack/pack.cmd` 与 `.bw/release/e2e/e2e.cmd`，均传 `--version <号> --workdir <仓根绝对路径>`；协议见 [ADR 0005](docs/02-adr/0005-发版出包与E2E协议.md)。正源为 `.bw/release/pack/*.iss`，产物 `.bw/release/out/<号>/` 不进仓；出包不是日常门禁。
+Windows 出包/验包入口是 `.bw/release/pack/pack.cmd` 与 `.bw/release/e2e/e2e.cmd`，均传 `--version <tag串> --workdir <仓根绝对路径>`；验包即 `node .bw/release/verify/verify.mjs --profile installer --version <tag串>`，`e2e.cmd` 是它的 JSONL 适配层（产品按钮消费）；协议见 [ADR 0005](docs/02-adr/0005-发版出包与E2E协议.md)。正源为 `.bw/release/pack/*.iss`，产物 `.bw/release/out/<号>/` 不进仓；出包不是日常门禁。正式发布入口是 `.bw/release/publish/publish.mjs`，只在人明确授权后运行：出包记录、门禁验证、验包记录与 tag 指向四绑定缺一拒发，发布存储正本为 GitHub Releases；交付链全程 SOP 见 [.bw/release/README.md](.bw/release/README.md)。
 
 桌面开工走会话屏 Orca / Open Design，工具按本机设置选择；路径与失败处理见 [会话与执行](docs/06-module/会话与执行.md)。真实执行依赖工具、会话宿主、信任对话框及网关；PTY 烟测只证明底座，不证明桌面开工成功。
 

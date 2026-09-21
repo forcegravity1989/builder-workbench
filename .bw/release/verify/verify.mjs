@@ -134,8 +134,13 @@ export async function execute(command, options) {
   }
 }
 
-function expand(command, values) {
-  return command.map(arg => arg.replace(/\{(node|root|shared|out)\}/g, (_, key) => values[key]));
+export function expand(command, values) {
+  return command.map(arg => {
+    const expanded = arg.replace(/\{(node|root|shared|out|version)\}/g, (match, key) => (values[key] === undefined ? match : values[key]));
+    // 占位符没给值必须炸，不能静默留空串拼进命令。
+    if (/\{(node|root|shared|out|version)\}/.test(expanded)) throw new Error(`命令占位符没有给值：${expanded}`);
+    return expanded;
+  });
 }
 
 function artifacts(dir, prefix = '') {
@@ -147,7 +152,7 @@ function artifacts(dir, prefix = '') {
   });
 }
 
-export async function runVerification({ root, profile, steps = readPlan(root, profile) }) {
+export async function runVerification({ root, profile, steps = readPlan(root, profile), version }) {
   steps.forEach(validateStep);
   const source = sourceSnapshot(root);
   const runId = `${new Date().toISOString().replace(/[:.]/g, '-')}-${crypto.randomBytes(4).toString('hex')}`;
@@ -173,7 +178,7 @@ export async function runVerification({ root, profile, steps = readPlan(root, pr
     if (blocked) { step.message = '前置步骤失败，未执行'; continue; }
     const dir = path.join(out, step.id);
     fs.mkdirSync(dir);
-    step.command = expand(spec.command, { node: process.execPath, root, shared, out: dir });
+    step.command = expand(spec.command, { node: process.execPath, root, shared, out: dir, version });
     step.log = `${step.id}/command.log`;
     console.log(`[${step.id}] ${step.title}`);
     try {
@@ -217,10 +222,24 @@ export async function runVerification({ root, profile, steps = readPlan(root, pr
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
   try {
     const args = process.argv.slice(2);
-    if (args.length !== 2 || args[0] !== '--profile' || !['headless', 'pr', 'pr-onboarding', 'pack'].includes(args[1])) throw new Error('用法：在仓根运行 node .bw/release/verify/verify.mjs --profile headless|pr|pr-onboarding|pack');
-    if (args[1] !== 'headless' && process.platform !== 'win32') throw new Error('完整 PR 桌面验证当前需要 Windows；Linux 用 headless，macOS 尚未接入');
+    const usage = '用法：在仓根运行 node .bw/release/verify/verify.mjs --profile headless|pr|pr-onboarding|pack|installer [--version <tag串>]';
+    let profile = null;
+    let version;
+    for (let i = 0; i < args.length; i++) {
+      if (args[i] === '--profile' && i + 1 < args.length) { profile = args[++i]; continue; }
+      if (args[i] === '--version' && i + 1 < args.length) { version = args[++i]; continue; }
+      throw new Error(usage);
+    }
+    if (!['headless', 'pr', 'pr-onboarding', 'pack', 'installer'].includes(profile)) throw new Error(usage);
+    // installer 验的是 out/<版本>/ 里的候选包，必须知道验哪个版本；版本串规则同 ADR 0005。
+    if (profile === 'installer') {
+      if (typeof version !== 'string' || !/^[A-Za-z0-9][A-Za-z0-9._+-]*$/.test(version)) throw new Error('installer profile 需要 --version <tag串>：首字符须字母或数字，其余只用字母、数字和 . _ + -');
+    } else if (version !== undefined) {
+      throw new Error('--version 只配合 --profile installer 使用');
+    }
+    if (profile !== 'headless' && process.platform !== 'win32') throw new Error('完整 PR 桌面验证当前需要 Windows；Linux 用 headless，macOS 尚未接入');
     const root = execFileSync('git', ['rev-parse', '--show-toplevel'], { encoding: 'utf8' }).trim();
-    const { report } = await runVerification({ root, profile: args[1] });
+    const { report } = await runVerification({ root, profile, version });
     process.exitCode = report.status === 'passed' ? 0 : 1;
   } catch (error) { console.error(error.message); process.exitCode = 2; }
 }

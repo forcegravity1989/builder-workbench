@@ -4,11 +4,12 @@
     "headless": ["runner-tests", "knowledge-tests", "format", "clippy-headless", "test-headless", "kernel-free", "remote-isolation", "screen-import", "screen-hooks", "file-lines", "codegraph"],
     "pr": ["runner-tests", "knowledge-tests", "runtime", "format", "clippy", "shell", "test", "kernel-free", "remote-isolation", "screen-import", "screen-hooks", "file-lines", "codegraph", "e2e-deps"],
     "pr-onboarding": ["runner-tests", "knowledge-tests", "runtime", "format", "clippy", "shell", "test", "kernel-free", "remote-isolation", "screen-import", "screen-hooks", "file-lines", "codegraph", "e2e-deps"],
-    "pack": ["runner-tests", "knowledge-tests", "runtime", "format", "clippy", "shell", "test", "kernel-free", "remote-isolation", "screen-import", "screen-hooks", "file-lines", "codegraph", "e2e-deps"]
+    "pack": ["runner-tests", "knowledge-tests", "runtime", "format", "clippy", "shell", "test", "kernel-free", "remote-isolation", "screen-import", "screen-hooks", "file-lines", "codegraph", "e2e-deps"],
+    "installer": ["runner-tests", "runtime", "e2e-deps"]
   },
   "steps": [
     {"id":"runtime","title":"确认 WebView2 运行时及版本","command":["powershell.exe","-NoProfile","-ExecutionPolicy","Bypass","-File",".bw/release/e2e/runtime.ps1"],"timeoutSeconds":30},
-    {"id":"runner-tests","title":"验证交付入口的失败与证据判定","command":["{node}","--test",".bw/release/verify/verify.test.mjs"],"timeoutSeconds":120},
+    {"id":"runner-tests","title":"验证交付入口的失败与证据判定","command":["{node}","--test",".bw/release/verify/verify.test.mjs",".bw/release/publish/publish.test.mjs"],"timeoutSeconds":120},
     {"id":"knowledge-tests","title":"知识扫描器的路径、证据与失败判定","command":["{node}","--test",".claude/skills/project-knowledge/scripts/check-links.test.mjs",".claude/skills/project-knowledge/scripts/scan-knowledge.test.mjs"],"timeoutSeconds":120},
     {"id":"format","title":"Rust 格式","command":["cargo","fmt","--all","--check"],"timeoutSeconds":120},
     {"id":"clippy-headless","title":"内核与底座 Clippy","command":["cargo","clippy","--locked","--workspace","--exclude","app-shell","--","-D","warnings"],"timeoutSeconds":1800},

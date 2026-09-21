@@ -19,12 +19,11 @@ impl App {
         version: String,
     ) -> Result<Vec<Event>> {
         let version = version.trim().to_string();
-        if version.is_empty()
-            || version.contains('(')
-            || version.contains('\\')
-            || version.contains('/')
-        {
-            return self.ship_refuse(STEP_PACK, "版本号不要空、不要带括号或路径分隔符");
+        if !valid_ship_version(&version) {
+            return self.ship_refuse(
+                STEP_PACK,
+                "版本号首字符须是字母或数字,其余只用字母、数字和 . _ + -(版本串直接进产物文件名与目录名)",
+            );
         }
         let project = match self.project_of(project_id).await {
             Ok(p) => p,
@@ -331,6 +330,19 @@ fn pack_fail_text(o: &StageOutcome) -> String {
     }
 }
 
+/// 版本串直接进产物文件名与目录名，规则与出包脚本的 Test-BwVersion 同一条
+/// （`.bw/release/protocol.ps1`，ADR 0005）：首字符须 ASCII 字母或数字，其余只收
+/// ASCII 字母数字与 `._+-`。UI 侧预检与脚本侧拒绝同一口径，不放行脚本必拒的串。
+fn valid_ship_version(v: &str) -> bool {
+    let mut chars = v.chars();
+    match chars.next() {
+        Some(c) if c.is_ascii_alphanumeric() => {
+            chars.all(|c| c.is_ascii_alphanumeric() || matches!(c, '.' | '_' | '+' | '-'))
+        }
+        _ => false,
+    }
+}
+
 fn e2e_done_text(o: &StageOutcome) -> String {
     match (o.passed, o.total) {
         (Some(p), Some(t)) => format!("{p}/{t}"),
@@ -484,15 +496,14 @@ mod tests {
     #[test]
     fn parse_e2e_cases() {
         let p = parse_protocol_line(
-            r#"{"v":1,"type":"result","ok":false,"passed":1,"total":3,"cases":[{"name":"shell_launches","ok":true},{"name":"cu_settings","ok":false,"message":"timeout"},{"name":"cu_onboard","ok":false,"message":"未跑：上一条失败"}]}"#,
+            r#"{"v":1,"type":"result","ok":false,"passed":1,"total":2,"cases":[{"name":"settings-restart-roundtrip","ok":true},{"name":"installer-uninstall-clean","ok":false,"message":"未跑：上一条失败"}]}"#,
         );
         match p {
             Some(Parsed::Result(o)) => {
-                assert_eq!(o.cases.len(), 3);
+                assert_eq!(o.cases.len(), 2);
                 assert!(o.cases[0].ok);
                 assert!(!o.cases[1].ok);
-                assert_eq!(o.cases[1].message, "timeout");
-                assert!(o.cases[2].message.starts_with("未跑："));
+                assert!(o.cases[1].message.starts_with("未跑："));
             }
             other => panic!("{other:?}"),
         }
@@ -502,6 +513,34 @@ mod tests {
     fn ignore_noise() {
         assert_eq!(parse_protocol_line("Compiling app-shell"), None);
         assert_eq!(parse_protocol_line(""), None);
+    }
+
+    #[test]
+    fn version_guard_matches_pack_protocol_rule() {
+        for ok in [
+            "v0.4",
+            "0.1.0-mvp",
+            "v0.5.0-rc.1+build_2",
+            "V1",
+            "v0.0.0-packtest",
+        ] {
+            assert!(valid_ship_version(ok), "{ok}");
+        }
+        for bad in [
+            "",
+            " v0.4",
+            "bad version",
+            "-x",
+            ".5",
+            "+1",
+            "v1.0(beta)",
+            "a/b",
+            "a\\b",
+            "版本",
+            "v1.0\n",
+        ] {
+            assert!(!valid_ship_version(bad), "{bad:?}");
+        }
     }
 
     #[test]
