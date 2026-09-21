@@ -4,7 +4,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import os from 'node:os';
 import { execFileSync } from 'node:child_process';
-import { inside, readCases, readPlan, runVerification, sha256, storeEvidenceBlob, expand } from './verify.mjs';
+import { inside, readCases, readPlan, runVerification, sha256, storeEvidenceBlob, expand, featureCoverage } from './verify.mjs';
 import { incrementalSuiteIds } from './publish-review.mjs';
 import { externalReviewState, reviewStateLine } from './review-state.mjs';
 
@@ -248,4 +248,58 @@ test('CI summary locates this run via the last-run pointer, not a directory-coun
     assert.fail('指针缺失时不能把 Summary 当成功');
   } catch { /* 非零退出即预期 */ }
   assert.match(fs.readFileSync(summaryFile, 'utf8'), /没有生成本次运行的完整报告/);
+});
+
+test('every registered suite carries feature attribution across profiles', () => {
+  const root = execFileSync('git', ['rev-parse', '--show-toplevel'], { encoding: 'utf8' }).trim();
+  for (const profile of ['pr', 'pr-onboarding', 'pack', 'installer']) {
+    for (const step of readPlan(root, profile)) {
+      if (step.expectedCases) assert.ok(step.feature, `${profile}/${step.id} 缺 feature 归属`);
+    }
+  }
+});
+
+test('suite without feature attribution is rejected at plan load', t => {
+  const root = fixture(t);
+  fs.mkdirSync(path.join(root, '.bw/release/verify'), { recursive: true });
+  fs.mkdirSync(path.join(root, '.bw/release/e2e/suites'), { recursive: true });
+  fs.writeFileSync(path.join(root, '.bw/release/verify/plan.json'), JSON.stringify({ v: 1, profiles: { mini: ['g'] }, steps: [{ id: 'g', title: 'g', command: ['node', '-e', ''], timeoutSeconds: 5 }] }));
+  const suite = { id: 'x-suite', title: 'x', layer: 'local', profiles: ['mini'], command: ['node', '-e', ''], timeoutSeconds: 5, expectedCases: ['c'] };
+  fs.writeFileSync(path.join(root, '.bw/release/e2e/suites/x.json'), JSON.stringify(suite));
+  assert.throws(() => readPlan(root, 'mini'), /feature 归属/);
+  fs.writeFileSync(path.join(root, '.bw/release/e2e/suites/x.json'), JSON.stringify({ ...suite, feature: 'Demo_Feature' }));
+  assert.throws(() => readPlan(root, 'mini'), /feature 归属/); // 大写/下划线不是合法 id
+  fs.writeFileSync(path.join(root, '.bw/release/e2e/suites/x.json'), JSON.stringify({ ...suite, feature: 'demo-feature' }));
+  assert.equal(readPlan(root, 'mini').find(s => s.id === 'x-suite').feature, 'demo-feature');
+});
+
+test('feature coverage groups registered cases per feature; unattributed stays visible', () => {
+  const coverage = featureCoverage([
+    { id: 's1', feature: 'project-onboarding', cases: [{ id: 'a', status: 'passed' }, { id: 'b', status: 'failed' }] },
+    { id: 's2', feature: 'project-onboarding', cases: [{ id: 'c', status: 'passed' }] },
+    { id: 's3', feature: 'version-planning', cases: [{ id: 'd', status: 'passed' }] },
+    { id: 's4', cases: [{ id: 'e', status: 'passed' }] },
+    { id: 's5', feature: 'no-cases', cases: [] },
+  ]);
+  assert.deepEqual(coverage.map(x => [x.feature, x.passed, x.cases]), [['project-onboarding', 2, 3], ['version-planning', 1, 1], ['未归属', 1, 1]]);
+  assert.deepEqual(coverage[0].suites, ['s1', 's2']);
+  assert.deepEqual(coverage[0].caseList[1], { id: 'b', suite: 's1', status: 'failed' });
+  assert.deepEqual(featureCoverage([]), []);
+});
+
+test('review.md and report.html carry the per-feature coverage list with the mapping caveat', async t => {
+  const root = fixture(t);
+  const code = 'require("node:fs").writeFileSync(process.argv[1]+"/proof.txt","ok");require("node:fs").writeFileSync(process.argv[1]+"/result.json",JSON.stringify({v:1,cases:[{id:"one",title:"旅程用例",status:"passed",evidence:["proof.txt"]}]}));process.exit(0)';
+  const spec = step('case-step', code, { layer: 'browser', expectedCases: ['one'], title: '示例旅程', feature: 'demo-feature' });
+  spec.command.push('{out}');
+  const { out, report } = await run(root, [spec]);
+  assert.equal(report.featureCoverage[0].feature, 'demo-feature');
+  assert.equal(report.featureCoverage[0].passed, 1);
+  const summary = fs.readFileSync(path.join(out, 'review.md'), 'utf8');
+  assert.match(summary, /### 按特性覆盖清单（注册用例归属）/);
+  assert.match(summary, /demo-feature/);
+  assert.match(summary, /双向映射为唯一口径/);
+  const page = fs.readFileSync(path.join(out, 'report.html'), 'utf8');
+  assert.ok(page.includes('按特性覆盖清单'));
+  assert.ok(page.includes('demo-feature'));
 });

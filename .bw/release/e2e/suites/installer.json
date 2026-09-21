@@ -1,5 +1,6 @@
 {
   "id": "installer",
+  "feature": "release-toolchain",
   "title": "安装包验包（静默装后真壳往返 + 卸载读回）",
   "layer": "desktop",
   "profiles": ["installer"],

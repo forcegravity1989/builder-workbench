@@ -27,6 +27,8 @@ export function writeReports(out, report) {
   const blocks = { basic: [], unit: [], knowledge: [], e2e: [] };
   for (const step of report.steps) blocks[blockOf(step)].push(step);
   const cases = report.steps.flatMap(step => step.cases.map(item => ({ ...item, stepId: step.id, layer: step.layer })));
+  const coverage = report.featureCoverage ?? [];
+  const coverageNote = '覆盖清单=特性×注册用例的机器侧归属；验收点↔用例对应在各特性 spec.md 回记，覆盖率以双向映射为唯一口径（02 §6.2 环5），不得以本表单独反推验收点覆盖。';
   const summary = `检查 ${report.steps.filter(x => x.status === 'passed').length}/${report.steps.length} 通过 · 用例 ${cases.filter(x => x.status === 'passed').length}/${cases.length} 通过 · ${report.seconds} 秒`;
   const source = `${report.source.commit} · ${report.source.dirty ? '含未提交改动，不能冒充该 commit 的验证' : '干净检出'} · ${report.sourceUnchanged ? '验证期间源码未变' : '验证期间源码改变，结果无效'}`;
   const range = `${report.profile} · ${report.profile === 'headless' ? 'Linux 内核与底座检查（未跑桌面 E2E）' : 'Windows 门禁 + 本 profile 已注册 E2E'}`;
@@ -57,6 +59,17 @@ export function writeReports(out, report) {
     }
     return [...lines, ''];
   };
+  const renderCoverageBlock = () => {
+    const lines = ['### 按特性覆盖清单（注册用例归属）', ''];
+    if (!coverage.length) {
+      lines.push('本执行范围没有运行带用例的套件，无特性覆盖清单。', '');
+      return lines;
+    }
+    lines.push('| 特性 | 注册套件 | 用例（通过/共） |', '|---|---|---:|',
+      ...coverage.map(f => `| ${md(f.feature)} | ${f.suites.map(md).join('；')} | ${f.passed}/${f.cases} |`),
+      '', coverageNote, '');
+    return lines;
+  };
   const markdown = [
     `## 交付验证：${labels[report.status]}`, '', summary, '',
     `- 源码：${md(source)}`,
@@ -67,6 +80,7 @@ export function writeReports(out, report) {
     ...renderGateBlock('unit'),
     ...renderGateBlock('knowledge'),
     ...renderE2eBlock(),
+    ...renderCoverageBlock(),
     '证据包中的 report.html 可离线打开，每条用例含执行路径、期望结果与截图；result.json 是机器结果，manifest.json 列出文件 SHA-256。', '',
     '### 人审查什么', '',
     '- 此报告的源码是否就是 PR 最新提交；是否仍有未通过或未跑项。',
@@ -101,6 +115,9 @@ export function writeReports(out, report) {
   const e2eSection = blocks.e2e.length
     ? `<h2>${blockTitles.e2e}</h2><p>按旅程分组，展开查看执行路径、期望结果、真实截图与独立读回；“未跑”不会算作通过。</p>${blocks.e2e.map(step => `<h3>${html(step.title)} · ${step.cases.filter(x => x.status === 'passed').length}/${step.cases.length} 通过</h3>${caseCards(step)}`).join('')}`
     : `<h2>${blockTitles.e2e}</h2><div class="card">该执行范围没有运行 E2E。</div>`;
+  const coverageSection = `<h2>按特性覆盖清单（注册用例归属）</h2>` + (coverage.length
+    ? `<div class="card scroll"><table><thead><tr><th>特性</th><th>注册套件</th><th>用例（通过/共）</th><th>用例明细</th></tr></thead><tbody>${coverage.map(f => `<tr><td>${html(f.feature)}</td><td>${html(f.suites.join('；'))}</td><td>${f.passed}/${f.cases}</td><td>${html(f.caseList.map(c => (c.status === 'passed' ? c.id : `${c.id}（${labels[c.status]}）`)).join('、'))}</td></tr>`).join('')}</tbody></table></div><p class="source">${html(coverageNote)}</p>`
+    : `<div class="card">本执行范围没有运行带用例的套件，无特性覆盖清单。</div>`);
   fs.writeFileSync(path.join(out, 'report.html'), `<!doctype html>
 <html lang="zh-CN"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>交付验证 · ${html(report.runId)}</title>
@@ -115,6 +132,7 @@ ${gateSection('basic')}
 ${gateSection('unit')}
 ${gateSection('knowledge')}
 ${e2eSection}
+${coverageSection}
 <h2>尚未证明的范围</h2><div class="card">${report.limits.map(x => `<p>${html(x)}</p>`).join('')}</div>
 </main></html>`);
 }
