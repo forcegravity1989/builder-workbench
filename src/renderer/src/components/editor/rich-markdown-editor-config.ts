@@ -131,6 +131,7 @@ export function createRichMarkdownEditorConfig(params: EditorConfigParams): UseE
 
   return {
     immediatelyRender: false,
+    editable: true,
     content: encodeRawMarkdownHtmlForRichEditor(content, codec, { htmlSuperscriptLinks: true }),
     contentType: 'markdown' as const,
     editorProps: {

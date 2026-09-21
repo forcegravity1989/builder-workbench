@@ -1,4 +1,4 @@
-import React, { Suspense, useMemo, useState } from 'react'
+import React, { Suspense, useLayoutEffect, useMemo, useState } from 'react'
 import { MarkdownPreview, RichMarkdownEditor } from '@/components/editor/editor-lazy-views'
 import { RichMarkdownErrorBoundary } from '@/components/editor/RichMarkdownErrorBoundary'
 import { getCachedMarkdownRichModeEligibility } from '@/components/editor/markdown-rich-mode-eligibility-cache'
@@ -84,6 +84,19 @@ export function KnowledgeDocEditor(props: Props): React.JSX.Element | null {
     [paneMode, richEligibility.exceedsSizeLimit, richEligibility.unsupportedMessage]
   )
 
+  // Why: leaving the hidden terminal's xterm helper focused makes typing land in
+  // the PTY instead of this document. Blur before TipTap's mount autofocus so
+  // the rich editor can take the caret.
+  useLayoutEffect(() => {
+    if (paneMode !== 'rich') {
+      return
+    }
+    const active = document.activeElement
+    if (active instanceof HTMLElement && !active.closest('[data-screen="kb"]')) {
+      active.blur()
+    }
+  }, [docId, paneMode])
+
   if (!doc) {
     return null
   }
@@ -123,7 +136,7 @@ export function KnowledgeDocEditor(props: Props): React.JSX.Element | null {
     )
   } else if (renderMode === 'rich-editor') {
     paneBody = (
-      <div className="kb-ed-md min-h-0 flex-1">
+      <div className="kb-ed-md min-h-0 flex h-full flex-1 flex-col">
         <Suspense fallback={<KbEditorFallback />}>
           <RichMarkdownErrorBoundary fileId={fileId}>
             <RichMarkdownEditor

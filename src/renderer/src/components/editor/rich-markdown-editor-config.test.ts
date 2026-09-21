@@ -106,6 +106,12 @@ describe('createRichMarkdownEditorConfig', () => {
     expect(getSpellcheckAttribute(config)).toBe('true')
   })
 
+  it('keeps the rich editor explicitly editable', () => {
+    const config = createRichMarkdownEditorConfig(createConfigParams())
+
+    expect(config.editable).toBe(true)
+  })
+
   it('flushes pending serialization when the rich editor blurs', () => {
     const setMarkdownEditorFocused = vi.fn()
     vi.stubGlobal('window', {

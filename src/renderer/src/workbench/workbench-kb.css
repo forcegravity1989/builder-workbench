@@ -505,9 +505,14 @@
 .wb-kb .kb-ed-md .markdown-preview {
   padding: 20px 28px 24px;
 }
+.wb-kb .kb-ed-md .rich-markdown-editor-layout,
 .wb-kb .kb-ed-md .rich-markdown-editor-shell {
+  flex: 1;
   min-height: 0;
   height: 100%;
+}
+.wb-kb .kb-ed-md .rich-markdown-editor {
+  cursor: text;
 }
 .wb-kb .kb-ed-banner {
   flex: none;
