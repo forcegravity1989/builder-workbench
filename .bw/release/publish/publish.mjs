@@ -155,7 +155,8 @@ SHA-256: ${artifactSha256}
 授权: ${opts.authorizedBy}
 发布存储: GitHub Releases (${repo})${opts.allowDirty && (packResult.dirty || packRun.source?.dirty) ? '\n注: 本次以 --allow-dirty 显式放行脏树记录' : ''}
 `;
-  git('tag', '-a', opts.version, revision, '-F', '-', { input: tagMessage });
+  // 多行 tag message 走 stdin（execFileSync 的 input 选项）：git() 包装把全部实参并入 argv，options 对象会被串成 "[object Object]" 传给 git（too many arguments）——快乐路径实测抓住的缺陷，改回包装调用即复现。
+  command('git', ['tag', '-a', opts.version, revision, '-F', '-'], { input: tagMessage });
   try {
     git('push', 'origin', `refs/tags/${opts.version}`);
   } catch (error) {
