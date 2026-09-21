@@ -54,7 +54,7 @@
 - **自检必做**（PR 前，工作会话侧）：见下节。
 - **外部评审按需召唤**：仓库成员在 PR 评论单独一行 `/code-review`，审当前 head SHA；draft 不触发；`workflow_dispatch` 是手动等价入口。结论必须落带 `<!-- bw-code-review:SHA -->` 标记的评论，程序读回并保存回执；读不到即该次评审失败——「模型跑过」不算结论。
 - **未召唤=未外部评审（灰）**：CI Summary 与验证 Review 正文各带一行机读状态（唯一实现 `verify/review-state.mjs`），不失败、不缺省绿。
-- **建议召唤的情形**（推荐口径，正式清单随旅程规范尺子落定）：动四铁律机制、guard 脚本、发布链、跨屏导入的改动；不召唤宜在 PR 正文说明理由。
+- **建议召唤的情形**：正式清单已随尺子落定在 [02 §6.2 横切站 B](../../docs/01-principles/02-working-backwards.md)——动四铁律机制、guard 脚本、发布链、跨屏导入的改动；不召唤宜在 PR 正文说明理由。
 - 评审意见不自动否决：逐条处置，真实缺陷阻塞，争议留给人；评审不合并、不改 Issue 状态。
 
 ## PR 前自检
@@ -99,7 +99,7 @@ BW 专用件（**不照抄**）：Rust 门禁命令与 6 个 guard、WebView2/de
 
 ## 边界（本篇不管）
 
-- 特性旅程的规划尺子（intent/spec/旅程/E2E/TDD/验收）：原则层与 `docs/05-features/` 流程为正本（尺子文档落点由主会话定稿）。
+- 特性旅程的规划尺子：六环交付链与带入三问正本在 [02 逆向工作法 §6.2–6.3](../../docs/01-principles/02-working-backwards.md)；特性清单与链状态矩阵在 [docs/05-features/README.md](../../docs/05-features/README.md)。
 - 产品功能与模块设计：`docs/architecture.md` 与 `docs/06-module/`。
 - 版本报告 SOP 与报告字段契约：`.claude/skills/version-report/`。
 - 分支保护配置：人（admin）操作；当前口径=轻保护（require PR + Windows CI 必过检查，不设人审人数）。
