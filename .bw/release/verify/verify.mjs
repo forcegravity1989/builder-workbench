@@ -46,6 +46,7 @@ function validateStep(step) {
     if (!['desktop', 'browser', 'remote', 'local'].includes(step.layer)) throw new Error(`${step.id}: 用例需要声明验证层次`);
     if (!step.expectedCases.length || step.expectedCases.some(x => !safeId(x)) || new Set(step.expectedCases).size !== step.expectedCases.length) throw new Error(`${step.id}: 用例 id 为空或重复`);
   }
+  if (step.feature !== undefined && !safeId(step.feature)) throw new Error(`${step.id}: feature 归属须是小写 id（05 特性目录 id 或方法资产名）`);
 }
 
 export function readPlan(root, profile) {
@@ -63,6 +64,7 @@ export function readPlan(root, profile) {
     for (const name of fs.readdirSync(dir).filter(x => x.endsWith('.json')).sort()) {
       const suite = json(inside(dir, name));
       if (!suite.expectedCases) throw new Error(`${name}: 专项需要列出 expectedCases`);
+      if (!safeId(suite.feature)) throw new Error(`${name}: 套件必须登记 feature 归属（产品特性=05 目录 id；开发方法资产=资产名）——缺归属无法按特性出覆盖清单`);
       const profiles = suite.profiles || ['pr'];
       if (!Array.isArray(profiles) || profiles.some(x => typeof x !== 'string')) throw new Error(`${name}: profiles 格式不对`);
       const inheritedPrSuite = profile === 'pr-onboarding' && profiles.includes('pr');
@@ -143,6 +145,28 @@ export function expand(command, values) {
   });
 }
 
+// 按特性覆盖清单（02 §6.2 环5）：机器侧半张映射——特性 × 本次实际执行的注册用例，现算自 steps。
+// 验收点↔用例的对应在各特性 spec.md 回记；覆盖率以双向映射为唯一口径，本清单不得单独反推验收点覆盖。
+// 有用例而无归属的步骤如实列「未归属」，不静默丢弃（readPlan 已在加载时强制套件登记归属）。
+export function featureCoverage(steps) {
+  const groups = new Map();
+  for (const step of steps) {
+    if (!Array.isArray(step.cases) || !step.cases.length) continue;
+    const feature = step.feature || '未归属';
+    if (!groups.has(feature)) groups.set(feature, []);
+    groups.get(feature).push(step);
+  }
+  return [...groups.entries()]
+    .sort((a, b) => (a[0] === '未归属') - (b[0] === '未归属') || a[0].localeCompare(b[0]))
+    .map(([feature, suiteSteps]) => ({
+      feature,
+      suites: suiteSteps.map(x => x.id),
+      cases: suiteSteps.flatMap(x => x.cases).length,
+      passed: suiteSteps.flatMap(x => x.cases).filter(c => c.status === 'passed').length,
+      caseList: suiteSteps.flatMap(x => x.cases.map(c => ({ id: c.id, suite: x.id, status: c.status }))),
+    }));
+}
+
 function artifacts(dir, prefix = '') {
   return fs.readdirSync(dir, { withFileTypes: true }).flatMap(entry => {
     const rel = prefix + entry.name;
@@ -167,7 +191,7 @@ export async function runVerification({ root, profile, steps = readPlan(root, pr
   const report = {
     v: 1, runId, profile, source, startedAt: new Date().toISOString(),
     environment: { platform: process.platform, release: os.release(), arch: process.arch, node: process.version },
-    status: 'running', steps: steps.map(x => ({ id: x.id, title: x.title, layer: x.layer || 'gate', status: 'not_run', cases: (x.expectedCases || []).map(id => ({ id, title: id, status: 'not_run', evidence: [], message: '尚未执行' })) })),
+    status: 'running', steps: steps.map(x => ({ id: x.id, title: x.title, feature: x.feature, layer: x.layer || 'gate', status: 'not_run', cases: (x.expectedCases || []).map(id => ({ id, title: id, status: 'not_run', evidence: [], message: '尚未执行' })) })),
     limits: ['仅证明表中实际执行的检查；专项覆盖是否充分及代码 Review 仍须审查。', '源码验证不能证明安装包或正式发布；远端写入与 Orca 会话仅以明确列出的专项用例为准。核心桌面用例由固定脚本执行，不调用模型。'],
   };
   fs.writeFileSync(path.join(out, 'result.json'), JSON.stringify(report, null, 2));
@@ -212,6 +236,7 @@ export async function runVerification({ root, profile, steps = readPlan(root, pr
   report.status = !blocked && report.sourceUnchanged ? 'passed' : 'failed';
   report.finishedAt = new Date().toISOString();
   report.seconds = Math.round((Date.parse(report.finishedAt) - Date.parse(report.startedAt)) / 100) / 10;
+  report.featureCoverage = featureCoverage(report.steps);
   fs.writeFileSync(path.join(out, 'result.json'), JSON.stringify(report, null, 2));
   writeReports(out, report);
   fs.writeFileSync(path.join(out, 'manifest.json'), JSON.stringify({ v: 1, runId, source, artifacts: artifacts(out) }, null, 2));

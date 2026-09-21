@@ -18,7 +18,7 @@
 
 ## 验收点 ↔ 注册用例映射
 
-> 按 [02 §6.2](../../01-principles/02-working-backwards.md) 环5：覆盖率以双向映射为唯一口径。suites 的特性归属字段由 W1 会话落地；本表是 spec 侧回记。
+> 按 [02 §6.2](../../01-principles/02-working-backwards.md) 环5：覆盖率以双向映射为唯一口径。机器侧锚点已落地：`desktop-onboarding` 套件登记 `feature: project-onboarding`（verify 报告据此输出按特性覆盖清单）；本表是 spec 侧回记，2026-09-21 与套件 `expectedCases` 逐字核对为**核实版**（4 条已注册用例一致，不再按用例名推定）。
 
 | 验收点 | 注册用例 | 套件（profile） | 状态 |
 |---|---|---|---|

@@ -90,7 +90,7 @@
 ## 被管项目接入约定（通用五件）
 
 1. **一个交付验证入口**：profiles 声明各场景必跑步骤；少跑、未跑、不适用都判 fail。
-2. **用例注册与证据协议**：suites 注册（id/layer/profiles/command/expectedCases）+ `result.json` v1 用例协议；通过的用例必须带本步骤目录内非空证据文件。
+2. **用例注册与证据协议**：suites 注册（id/feature 归属/layer/profiles/command/expectedCases）+ `result.json` v1 用例协议；通过的用例必须带本步骤目录内非空证据文件；报告按 feature 归属输出按特性覆盖清单（双向映射的机器侧，验收点对应在特性 spec 回记）。
 3. **全量证据哈希与独立读回**：manifest 逐文件 SHA-256；发布类动作（Review/Release）发布后必须独立读回核对；不从日志推断成功。
 4. **评审口径**：自检必做；外部评审按需召唤、结论钉当前 SHA、未召唤显灰不缺省绿。
 5. **发布口径**：发布存储正本明确、产物身份绑定（修订+文件名+哈希）、缺记录拒发、授权只能来自人。

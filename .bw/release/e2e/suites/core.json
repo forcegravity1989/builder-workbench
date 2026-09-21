@@ -1,5 +1,6 @@
 {
   "id": "desktop-core",
+  "feature": "capability-panel",
   "title": "真实桌面核心 E2E（固定脚本）",
   "layer": "desktop",
   "profiles": ["pr", "pr-onboarding", "pack"],

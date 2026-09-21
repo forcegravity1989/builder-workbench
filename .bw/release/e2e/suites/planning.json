@@ -1,5 +1,6 @@
 {
   "id": "version-planning",
+  "feature": "version-planning",
   "title": "周一屏部署与浏览器文件共建",
   "layer": "browser",
   "profiles": ["pr", "pack"],

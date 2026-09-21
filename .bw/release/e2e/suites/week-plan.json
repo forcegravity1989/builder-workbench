@@ -1,5 +1,6 @@
 {
   "id": "week-plan-journey",
+  "feature": "version-planning",
   "title": "周一屏真实旅程（沙箱项目 → Orca 自动化 → 真实会话 → HTML 保存）",
   "layer": "remote",
   "profiles": ["pack"],

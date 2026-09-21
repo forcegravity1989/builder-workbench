@@ -1,5 +1,6 @@
 {
   "id": "desktop-onboarding",
+  "feature": "project-onboarding",
   "title": "真实添加项目旅程（GitHub 沙箱 + Orca）",
   "layer": "remote",
   "profiles": ["pr-onboarding"],

@@ -43,9 +43,9 @@ node .bw/release/verify/verify.mjs --profile installer --version <tag串>
 | 交付件 | 用途 |
 |---|---|
 | `report.html` | 人读：结果、耗时、所验源码、逐项截图与留白；截图已内嵌，离线打开 |
-| `result.json` | 程序读：执行编号、源码指纹、环境、每步退出码、用例与证据；状态不能从评论推断 |
+| `result.json` | 程序读：执行编号、源码指纹、环境、每步退出码、用例与证据、按特性覆盖清单（`featureCoverage`）；状态不能从评论推断 |
 | `manifest.json` | 本次所有交付文件的相对路径、大小和 SHA-256 |
-| `review.md` | PR 验证 Review 的基础摘要：基础检查、单元测试、知识库检查、E2E 按旅程四块结论与失败明细；增量用例截图由 publish-review 自动内嵌 |
+| `review.md` | PR 验证 Review 的基础摘要：基础检查、单元测试、知识库检查、E2E 按旅程、按特性覆盖清单五块结论与失败明细；增量用例截图由 publish-review 自动内嵌 |
 | 每步目录 | 执行日志；E2E 的真壳截图、设置读回、被测二进制 SHA-256、清理回执 |
 
 ## 特性会话怎么增加专项用例
@@ -53,7 +53,7 @@ node .bw/release/verify/verify.mjs --profile installer --version <tag串>
 ### 维护原则：少量用例，各自证明一条重要规则
 
 - **按用户旅程与验证对象分目录**：源码级业务脚本放 `e2e/journeys/<旅程>/`，由 `e2e/suites/<旅程>.json` 注册；安装包级验包是 `e2e/installer.ps1` + `suites/installer.json`（仅 `installer` profile）；共享启动/运行时/依赖脚本在 `e2e/`（`desktop.ps1` 是唯一真壳启动器），跨出包/验包共享的 JSONL 协议与静默装卸 helper 在 `.bw/release/` 根（`protocol.ps1` / `install.ps1`，各只有一份）。不按页面或每个按钮建套件。`core.mjs` 是桌面基础烟测，不代表“添加项目”业务已验过。
-- **本轮业务范围只有添加项目和后续周一屏**。添加项目须读回真实测试仓的 Issue、PR、Git 工作树与项目名片；周一屏已接入：机制底线在 `version-planning` 套件（跟 PR 跑），真实旅程在 `week-plan-journey` 套件（`pack` 跑），验收点对应用例在该套件用例标题与 version-report 的 acceptance 标记里查看，不另存对应表。旧功能暂不批量补 E2E。涉及安装器的变更才追加验包，不能把源码构建叫作验包。
+- **本轮业务范围只有添加项目和后续周一屏**。添加项目须读回真实测试仓的 Issue、PR、Git 工作树与项目名片；周一屏已接入：机制底线在 `version-planning` 套件（跟 PR 跑），真实旅程在 `week-plan-journey` 套件（`pack` 跑）。验收点↔用例的对应走**双向映射**：spec 的验收点表回记用例 ID（正本在各特性 `docs/05-features/<id>/spec.md`），套件登记 `feature` 归属；覆盖率以双向映射为唯一口径（02 §6.2 环5）。旧功能暂不批量补 E2E。涉及安装器的变更才追加验包，不能把源码构建叫作验包。
 - **每条用例写清六件事**：保护哪条用户规则、需要什么环境和数据、执行哪些真实动作、用什么独立读回断言、保存哪些证据、如何清理。可直接写在脚本开头；复杂旅程在同目录放短 README。用例必须有稳定 id；改规则时同步判据和证据，删行为时一起删失效用例。
 - **固定用例由脚本运行**：不让模型逐次猜控件、临时生成点击脚本或从“成功”日志推断通过。模型只维护规则与脚本、判断本次改动是否需要专项、诊断失败。真实模型会话需要单独列明模型环境、预算和已验范围，不混进普通 UI 用例。
 - **新增不是默认答案**：Bug 优先加强已有用例；新特性保留主旅程和最重要的失败边界即可，不以用例数、覆盖率或“每个函数一个测试”为目标。重复判据删较弱的一条，模拟测试不能充作真实远端或桌面证据。
@@ -72,7 +72,7 @@ BW 注册表、运行日志和 WebView2 使用本次独立目录。沙箱 Git �
 
 ### 注册与输出协议
 
-由开发该特性的会话在 `.bw/release/e2e/suites/` 增加一个 JSON 注册文件及确定性测试脚本；`profiles` 明确它在哪个入口运行。普通固定用例进入 `pr`，会写远端或有专项环境要求的旅程进入命名 profile；不得靠运行时静默跳过。参照 `core.json`，给出稳定 id、人能理解的标题、`layer`（desktop/browser/remote/local）、参数数组 `command`、超时和完整 `expectedCases`。代码变更不自动证明专项覆盖充分；PR 人审必须检查“需求判据 → 用例 → 证据”是否相符。
+由开发该特性的会话在 `.bw/release/e2e/suites/` 增加一个 JSON 注册文件及确定性测试脚本；`profiles` 明确它在哪个入口运行。普通固定用例进入 `pr`，会写远端或有专项环境要求的旅程进入命名 profile；不得靠运行时静默跳过。参照 `core.json`，给出稳定 id、`feature` 归属（产品特性=`docs/05-features/` 目录 id；开发方法资产=资产名，如 `release-toolchain`；旅程套件归旅程主体特性，复用其他特性的 setup 段用例随套件整体登记）、人能理解的标题、`layer`（desktop/browser/remote/local）、参数数组 `command`、超时和完整 `expectedCases`；**缺 feature 归属在加载时即拒绝**。报告按归属输出**按特性覆盖清单**（`review.md`/`report.html`/`result.json.featureCoverage`）——它是双向映射的机器侧半张，验收点对应见各特性 spec.md 回记，不得以清单单独反推验收点覆盖。代码变更不自动证明专项覆盖充分；PR 人审必须检查“需求判据 → 用例 → 证据”是否相符。
 
 命令在仓根执行，`{node}`、`{root}`、`{shared}`、`{out}` 分别替换为 Node 绝对路径、当前工作树仓根、所有工作树共用的主检出仓根和本步骤全新输出目录，**不经过 shell 拼接**。脚本只在 `{out}` 写证据和如下 `result.json`：
 
