@@ -106,21 +106,22 @@ if (-not (Test-Path $exe)) {
     Fail pack_failed $hint
 }
 # 出包校验相判据（ADR-0005 步骤 5）：bw-dev.exe 必须被卸载器清走、安装目录最终必须
-# 可清空（空目录壳是 Windows delete-pending 时序，由兜底有界重试清掉并记 progress）。
-# E2E 验包用例判据不同：卸载器自己清走全部内容才算过、空目录壳算过但如实记录
-# （e2e/installer.ps1）——同一 helper，两层语义各自声明，不混。
+# 可清空（目录壳由兜底有界重试清掉并记 progress）。E2E 验包用例判据不同：卸载器自己
+# 清走全部内容才算过、目录壳须兜底真清掉且如实记录（e2e/installer.ps1）——同一
+# helper，两层语义各自声明，不混。明细 progress 先于一切 Fail：失败时已见证据不丢。
 $un = Invoke-BwSilentUninstall $verifyDir
-if ($un.residueUnknown) {
-    Fail pack_failed "卸载校验无法枚举安装目录（$verifyDir），不能当作已清理"
-}
 if ($un.residue) {
-    Write-BwProgress -Phase verify -Message ("卸载器内容残留（强删兜底" + $(if ($un.forcedCleanup) { '已清' } else { '也失败' }) + "）：" + ($un.residue -join '、'))
+    Write-BwProgress -Phase verify -Message ("卸载器文件级残留（强删兜底" + $(if ($un.forcedCleanup) { '已清' } else { '也失败' }) + "）：" + ($un.residue -join '、'))
 } elseif ($un.emptyDirectoryLeft) {
-    Write-BwProgress -Phase verify -Message ("卸载器清走全部内容；空目录壳兜底" + $(if ($un.forcedCleanup) { '已清' } else { '重试内删不掉' }))
+    Write-BwProgress -Phase verify -Message ("卸载器清走全部文件；目录壳兜底" + $(if ($un.forcedCleanup) { '已清' } else { '重试内删不掉' }))
+}
+if ($un.residueUnknown) {
+    $seen = if ($un.residue) { "；已见残留：" + ($un.residue -join '、') } else { '' }
+    Fail pack_failed "卸载校验无法完整枚举安装目录（$verifyDir），不能当作已清理$seen"
 }
 $bwDevGone = -not ($un.residue -contains '\bw-dev.exe')
 if (-not ($un.uninstallerClean -or ($bwDevGone -and $un.forcedCleanup))) {
-    Fail pack_failed "校验卸载没清干净：$verifyDir（残留：$(if ($un.residue) { $un.residue -join '、' } else { '目录删不掉（delete-pending 超时）' })）"
+    Fail pack_failed "校验卸载没清干净：$verifyDir（残留：$(if ($un.residue) { $un.residue -join '、' } else { '目录删不掉（句柄未释放超时）' })）"
 }
 
 # 产物身份记录（ADR-0005）：文件名 + SHA-256 + 开工源码身份（revision/dirty）+ 结束时

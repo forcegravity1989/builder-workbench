@@ -93,8 +93,8 @@ try {
     if ($installed -or (Test-Path -LiteralPath $installDir)) {
         try {
             # 判据（与出包校验相分层，语义在 helper 注释与 ADR 0005）：卸载器自己清走
-            # 全部内容=最干净；仅剩空目录壳（delete-pending）且兜底有界重试清空=算过并
-            # 如实记录；内容级残留、目录清不空、枚举不了残留=失败。
+            # 目录=最干净；仅剩目录壳（无文件）且兜底有界重试真清掉=算过并如实记录；
+            # 文件级残留、目录清不空、枚举不了残留=失败。
             $un = Invoke-BwSilentUninstall $installDir
             $removed = [bool]$un.uninstallerClean
             $forced = [bool]$un.forcedCleanup
@@ -104,9 +104,9 @@ try {
             if ($residueUnknown) {
                 $uninstallError = '无法枚举安装目录残留，不能证明卸干净'
             } elseif ($residue.Count -gt 0) {
-                $uninstallError = "卸载器结束后仍有内容残留（$(if ($forced) { '兜底强删已清' } else { '强删也失败' })）：$($residue -join '、')"
+                $uninstallError = "卸载器结束后仍有文件级残留（$(if ($forced) { '兜底强删已清' } else { '强删也失败' })）：$($residue -join '、')"
             } elseif (-not $removed -and -not $forced) {
-                $uninstallError = "空目录壳在兜底有界重试内仍删不掉（delete-pending 超时）：$installDir"
+                $uninstallError = "目录壳在兜底有界重试内仍删不掉（句柄未释放超时）：$installDir"
             }
         } catch {
             # helper 自身抛异常=卸不动/证不了：如实置 residueUnknown，收据不得呈现「确认无残留」。
@@ -115,10 +115,10 @@ try {
         }
         if ($installed) {
             $status = if ($removed -or ($emptyShell -and $forced)) { 'passed' } else { 'failed' }
-            $note = if ($removed) { '' } elseif ($emptyShell -and $forced) { '卸载器清走全部内容；仅剩空目录壳（Windows delete-pending 时序），兜底有界重试清除并读回' } else { "$($uninstallError)" }
+            $note = if ($removed) { '' } elseif ($emptyShell -and $forced) { '卸载器清走全部文件、仅剩目录壳；兜底有界重试后目录消失并读回（可能成因见 install.ps1 注释与 ADR 0005）' } else { "$($uninstallError)" }
             $Cases.Add([ordered]@{
                     id = 'installer-uninstall-clean'; title = '卸载读回：卸载器清走装的全部内容'
-                    path = '静默卸载 → 条件读回等待 → 目录与残留递归枚举读回'; expect = '目录消失，或仅剩空目录壳且兜底清空（如实记录）；内容级残留或目录清不空即失败'
+                    path = '静默卸载 → 条件读回等待 → 目录与文件级残留递归枚举读回'; expect = '目录消失；或仅剩目录壳（无文件）且兜底有界重试真清掉（如实记录）；文件级残留、目录清不空或枚举不了残留即失败'
                     status = $status; message = $note; evidence = @('uninstall-readback.json')
                 })
         }

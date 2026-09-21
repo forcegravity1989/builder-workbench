@@ -55,8 +55,21 @@ function Invoke-BwSilentUninstall([string]$dir) {
     $r.residue = @(Get-ChildItem -LiteralPath $dir -Recurse -Force -File -ErrorAction SilentlyContinue -ErrorVariable ev |
             ForEach-Object { $_.FullName.Substring([Math]::Min($prefixLen, $_.FullName.Length)) })
     if (-not (Test-Path -LiteralPath $dir)) {
-        $r.uninstallerClean = $true; $r.forcedCleanup = $true; $r.residue = @(); $r.residueUnknown = $false
+        $r.uninstallerClean = $true; $r.forcedCleanup = $true; $r.residue = @()
         return $r
+    }
+    # 子项并发消失竞态：卸载器收尾可能与枚举并发删子项。出过错就重枚一次再判，
+    # 不把「第二次能证明」的状态记成「证不了」。
+    if ($ev) {
+        Start-Sleep -Seconds 2
+        $ev2 = $null
+        $r.residue = @(Get-ChildItem -LiteralPath $dir -Recurse -Force -File -ErrorAction SilentlyContinue -ErrorVariable ev2 |
+                ForEach-Object { $_.FullName.Substring([Math]::Min($prefixLen, $_.FullName.Length)) })
+        if (-not (Test-Path -LiteralPath $dir)) {
+            $r.uninstallerClean = $true; $r.forcedCleanup = $true; $r.residue = @()
+            return $r
+        }
+        $ev = $ev2
     }
     if ($ev) { $r.residueUnknown = $true }
     $r.emptyDirectoryLeft = (-not $r.residueUnknown) -and ($r.residue.Count -eq 0)
