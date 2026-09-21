@@ -1,0 +1,32 @@
+# 开工约定。配置屏改映射、保存，写的就是这份。
+# [[mapping]] 五类各一行：类别 → 用哪个工具 → 挂哪份 workflow（空=无默认）。
+# [cadence] 资产盘点到点；改周五几点改这一行。
+schema_version = 1
+
+[[mapping]]
+category = "prototype"
+tool     = "open_design"
+workflow = ""
+
+[[mapping]]
+category = "build"
+tool     = "claude_cli"
+workflow = "mattpocock-skills"
+
+[[mapping]]
+category = "optimize"
+tool     = "claude_cli"
+workflow = "mattpocock-skills"
+
+[[mapping]]
+category = "ops"
+tool     = "claude_cli"
+workflow = "mattpocock-skills"
+
+[[mapping]]
+category = "growth"
+tool     = "claude_cli"
+workflow = ""
+
+[cadence]
+ops2_schedule = "fri 09:00"

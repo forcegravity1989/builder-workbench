@@ -185,3 +185,19 @@ HTML 浏览器验证、真实 Orca 会话、Git/远端归档与价值结果四�
 专项套件 `.bw/release/e2e/suites/planning.json` 接入统一 PR profile：实际 BW 资源分发、JSON VM 读取、真实浏览器自动保存/重开、会话写回、版本隔离及冲突保护。浏览器证据是隔离项目的固定用例；不当成 Orca 已替 Builder 完成模型讨论或 Leader 已审核。
 
 本机三棵干净旧常驻树已经原样迁到仓内标准目录；bw/week-plan 快进最新 main，实际材料逐文件比对保持一致。功能代码不自动搬迁用户旧树；其他机器遇到旧目录仍按现行升级规则说明冲突。
+
+## 验收点 ↔ 注册用例映射（2026-09-20 补记 · 定义草案）
+
+> 按 [02 §6.2](../../01-principles/02-working-backwards.md) 环5 要求补记：覆盖率以双向映射为唯一口径，不得以「看见有用例」反推。suites 的特性归属字段由 W1 会话落地；以下映射按用例名与套件标题推定，待归属字段落地后对照 E2E 脚本校准。
+
+| 验收点/判据（对应上文「特性衡量与验收」表） | 注册用例 | 套件（profile） |
+|---|---|---|
+| 实际 BW 资源分发、HTML/数据资产可用 | planning-assets | version-planning（pr, pack） |
+| 编辑与恢复：浏览器自动保存/重开一致 | planning-autosave | version-planning（pr, pack） |
+| JSON VM 读取：BW 屏读版本数据 | planning-model-readback | version-planning（pr, pack） |
+| 版本隔离：不同版本各读各的数据 | planning-version-isolation | version-planning（pr, pack） |
+| 数据与展示：缺数显 Unknown、无原型示例数 | planning-unknown-honesty | version-planning（pr, pack） |
+| 确认只记录状态；损坏材料返回未知 | planning-confirmation、planning-bad-history | version-planning（pr, pack） |
+| 真实旅程：沙箱接入 → Orca 自动化 → 真实会话 → HTML 保存 | onboarding-project、onboarding-readback、onboarding-orca、weekplan-automation、weekplan-session、weekplan-html、onboarding-cleanup | week-plan-journey（pack） |
+
+待补/待核（已知债）：「归档后可重开定位」「模板生成不得顺手标人工完成」是否有独立判据，带入时校准；week-plan-journey 复用 onboarding 用例属跨特性借用（旅程首段），特性归属字段落地时按套件整体登记。
