@@ -15,7 +15,7 @@
 | 任务 | 读取路径与动作 |
 |---|---|
 | 仓外 IDE 新会话 | 本篇 → [workbench-start](.claude/skills/workbench-start/SKILL.md)，按意图与影响分流开发、验证和交付；相关设计读 [architecture](docs/architecture.md)、术语读 [CONTEXT](CONTEXT.md)。Workbench 发起的项目执行会话读产品传入提示与被管项目的 AGENTS，不自动叠加本仓起手 Skill |
-| 特性级变更 | 对齐 [03 产品主张与飞轮](docs/01-principles/03-press-release-faq-flywheel.md) → 按 [02 逆向工作法](docs/01-principles/02-working-backwards.md) 开/改 `docs/05-features/<id>/intent.md` 与带原型链接的 `spec.md`；二者由人确认，`plan.md` 仅大风险升 gate |
+| 特性级变更 | 对齐 [03 产品主张与飞轮](docs/01-principles/03-press-release-faq-flywheel.md) → 按 [02 逆向工作法](docs/01-principles/02-working-backwards.md) 开/改 `docs/05-features/<id>/intent.md` 与带原型链接的 `spec.md`；二者由人确认，`plan.md` 仅大风险升 gate。交付全程走六环链、新工作先过带入三问，见 02 §6.2–6.3；特性清单与链状态矩阵见 [docs/05-features/README.md](docs/05-features/README.md) |
 | 小 bug、文案、无新增用户价值的整理 | 读现有正本，直接修、验证、commit/PR 留痕；不开特性制品链，粒度听 [01](docs/01-principles/01-document-organization.md) |
 | 改客群、飞轮或对外主张 | 先议再改 03；特性 intent 不得偷偷改写产品主张，不把草稿界面说成已交付 |
 | 改代码或现行设计 | 在 [architecture](docs/architecture.md) 定位用例哪一站 → §2 能力 → §3 crate 与数据流；模块取舍读 [06-module](docs/06-module/README.md)。影响使用方式或界面时同步 [指南](docs/03-guide/) 与 [设计系统](docs/04-design-system/README.md)/[高保真](docs/hifi/) |

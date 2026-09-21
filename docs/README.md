@@ -20,7 +20,7 @@
 | [02-adr/](02-adr/) | 难回头的架构决策及取舍 | 需要理解或改变相关决策 |
 | [03-guide/](03-guide/) | 给用户的操作、结果、下一步 | 使用产品或核对用户可见行为 |
 | [04-design-system/](04-design-system/README.md) | 视觉规范、样式与 token；来源和镜像方式见该入口 | 设计或修改界面视觉 |
-| [05-features/](05-features/) | 用户价值特性的 intent/spec/plan/状态 | 开特性、核对目标与验收；小修不进入 |
+| [05-features/](05-features/) | 用户价值特性的 intent/spec/plan/状态；特性清单与链状态矩阵正本在 [05-features/README.md](05-features/README.md) | 开特性、核对目标与验收；小修不进入 |
 | [06-module/](06-module/README.md) | 模块实现心智、主要矛盾与取舍 | 修改某一模块前 |
 | [10-reference/](10-reference/) | 外部资料提炼与历史参考，按篇区分现行/历史 | 追溯来源或理解旧概念，不作为当前实现证据 |
 | [hifi/](hifi/) | 屏幕版式与旅程原型 | 对照交互设计；原型不是已交付界面 |
