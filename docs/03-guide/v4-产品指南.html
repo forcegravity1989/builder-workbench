@@ -591,7 +591,7 @@
       <div class="res">
         <ul>
           <li><span class="b"></span><div><strong>对远端</strong>：不建 Release，不打发版标签。</div></li>
-          <li><span class="b"></span><div><strong>对你的机器</strong>：跑仓里 <code>.bw/release/pack/pack.cmd</code> 和验包脚本。产物在 <code>.bw/release/out/&lt;名&gt;/</code>。</div></li>
+          <li><span class="b"></span><div><strong>对你的机器</strong>：跑仓里 <code>.bw/release/pack/pack.cmd</code> 出包；验包走统一验证入口的安装包套件（静默装后真壳往返、卸载读回）。产物在 <code>.bw/release/out/&lt;名&gt;/</code>。</div></li>
           <li><span class="b"></span><div><strong>对 <code>.bw/</code></strong>：安装包不进 git。号就是当前版本那串名。</div></li>
         </ul>
       </div>
