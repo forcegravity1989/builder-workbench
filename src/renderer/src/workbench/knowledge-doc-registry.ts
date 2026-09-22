@@ -57,6 +57,16 @@ export const KB_AUDIENCES: { key: KbAudience; name: string; hint: string }[] = [
 /** 工程侧约束线：原则 → 契约 → 活跃特性。 */
 export const KB_ENG_FLOW = [{ say: '约束契约' }, { say: '约束这次' }] as const
 
+/** 工程文档清单阅读顺序：项目约定在最上，工程参考在最后。 */
+export const KB_ENG_LIST_ORDER = [
+  'eng-bw',
+  'eng-agents',
+  'eng-principles',
+  'eng-contract',
+  'eng-features',
+  'eng-reference'
+] as const
+
 /** 稳定的 AI-native 文档角色（路径因仓而异，角色跨仓一致）。 */
 export const KB_ROLE_KEYS = [
   'user-docs',

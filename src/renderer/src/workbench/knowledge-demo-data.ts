@@ -18,6 +18,7 @@ export type {
 export {
   KB_AUDIENCES,
   KB_ENG_FLOW,
+  KB_ENG_LIST_ORDER,
   KB_GROUPS,
   KB_REGISTRY_DOCS,
   KB_TABS,

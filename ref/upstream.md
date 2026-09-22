@@ -66,6 +66,8 @@ git merge origin/main
 | 独立「会话 / 配置」导航不建 | `src/renderer/src/workbench/` 四屏导航 |
 | Feature wall 营销向导尽量跳过 | 壳路由 / bootstrap |
 | 左栏 Artifacts / Skills 并列入口收起 | `WorkbenchSidebarNav` 等 |
+| 项目导航不再重复设置 / 帮助 | `WorkbenchSidebarNav`。壳里只留侧栏底栏那一对；Orca 底栏菜单不改 |
+| 知识库文档清单各大类默认可收起 | `KnowledgeDocsGuide`。项目约定在最上，其次 Agent 入口；每个大类默认折叠，点标题展开。分类与地图顺序不改 |
 | Orca Mobile 产品页 / Expo App | **已删除**，见上文「源码」；不是隐藏 |
 | 崩溃「发送诊断报告」弹窗关闭 | `RecoverableRenderErrorBoundary` + `AppRootSurfaces` |
 | 叠层 UI / 皮肤 / 计划·总览·知识库·项目墙 | `src/renderer/src/workbench/**` |

@@ -324,6 +324,29 @@
   font-weight: 500;
   color: color-mix(in srgb, var(--color-text) 48%, transparent);
 }
+.wb-kb .kb-sec-toggle {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.wb-kb .kb-sec-chevron {
+  width: 14px;
+  height: 14px;
+  flex: none;
+  transition: transform 0.15s ease;
+}
+.wb-kb .kb-sec-chevron.is-open {
+  transform: rotate(90deg);
+}
 .wb-kb .kb-table code {
   font-family: var(--font-mono);
   font-size: 11.5px;

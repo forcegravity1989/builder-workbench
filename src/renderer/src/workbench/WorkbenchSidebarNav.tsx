@@ -1,13 +1,5 @@
 import React from 'react'
-import {
-  BookOpen,
-  CalendarClock,
-  CalendarRange,
-  HelpCircle,
-  LayoutDashboard,
-  Settings
-} from 'lucide-react'
-import { toast } from 'sonner'
+import { BookOpen, CalendarClock, CalendarRange, LayoutDashboard } from 'lucide-react'
 import { useAppStore } from '@/store'
 import { cn } from '@/lib/utils'
 import { SidebarTaskNavButton } from '@/components/sidebar/SidebarTaskNavButton'
@@ -60,7 +52,6 @@ export function WorkbenchSidebarNav(): React.JSX.Element | null {
   const activeView = useAppStore((s) => s.activeView)
   const openArtifactsPage = useAppStore((s) => s.openArtifactsPage)
   const openAutomationsPage = useAppStore((s) => s.openAutomationsPage)
-  const openSettingsPage = useAppStore((s) => s.openSettingsPage)
   const openActivityPage = useAppStore((s) => s.openActivityPage)
   const openSpacePage = useAppStore((s) => s.openSpacePage)
   const repos = useAppStore((s) => s.repos)
@@ -112,25 +103,6 @@ export function WorkbenchSidebarNav(): React.JSX.Element | null {
           <WorkbenchNavItem key={item.id} item={item} active={activeNav === item.id} onGo={go} />
         ))}
       </nav>
-
-      <div className="mt-1 flex flex-col gap-0.5 border-t border-worktree-sidebar-border/40 pt-1">
-        <button
-          type="button"
-          className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-[13px] text-worktree-sidebar-foreground/60 hover:bg-worktree-sidebar-foreground/8"
-          onClick={() => toast.message('帮助是独立窗口；本轮试用包未接')}
-        >
-          <HelpCircle className="size-4 shrink-0 text-worktree-sidebar-foreground/30" />
-          <span>帮助</span>
-        </button>
-        <button
-          type="button"
-          className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-[13px] text-worktree-sidebar-foreground/60 hover:bg-worktree-sidebar-foreground/8"
-          onClick={() => openSettingsPage()}
-        >
-          <Settings className="size-4 shrink-0 text-worktree-sidebar-foreground/30" />
-          <span>设置</span>
-        </button>
-      </div>
     </div>
   )
 }

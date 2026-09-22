@@ -1,7 +1,9 @@
-import React from 'react'
+import { ChevronRight } from 'lucide-react'
+import React, { useState } from 'react'
 import {
   KB_AUDIENCES,
   KB_ENG_FLOW,
+  KB_ENG_LIST_ORDER,
   KB_NOT_YOURS,
   type KbAudience,
   type KbDoc,
@@ -30,6 +32,14 @@ type Props = {
   onOpenDoc: (id: string) => void
 }
 
+const ENG_LIST_RANK = new Map<string, number>(KB_ENG_LIST_ORDER.map((key, index) => [key, index]))
+
+function byEngListOrder(groups: KbGroup[]): KbGroup[] {
+  return [...groups].sort(
+    (a, b) => (ENG_LIST_RANK.get(a.key) ?? 99) - (ENG_LIST_RANK.get(b.key) ?? 99)
+  )
+}
+
 /** 文档页：用户 / 工程受众切换 + 分组清单。 */
 export function KnowledgeDocsGuide(props: Props): React.JSX.Element {
   const {
@@ -49,6 +59,33 @@ export function KnowledgeDocsGuide(props: Props): React.JSX.Element {
     onPickGroup,
     onOpenDoc
   } = props
+  const [openGroups, setOpenGroups] = useState<ReadonlySet<string>>(() => new Set())
+  const tableGroups = audience === 'eng' ? byEngListOrder(audienceGroups) : audienceGroups
+  const sideGroups = audience === 'eng' ? byEngListOrder(sides) : sides
+
+  const toggleGroup = (key: string): void => {
+    setOpenGroups((prev) => {
+      const next = new Set(prev)
+      if (next.has(key)) {
+        next.delete(key)
+      } else {
+        next.add(key)
+      }
+      return next
+    })
+  }
+
+  const pickGroup = (key: string): void => {
+    setOpenGroups((prev) => {
+      if (prev.has(key)) {
+        return prev
+      }
+      const next = new Set(prev)
+      next.add(key)
+      return next
+    })
+    onPickGroup(key)
+  }
 
   const mapHint =
     mapStatus === 'reviewed'
@@ -88,7 +125,7 @@ export function KnowledgeDocsGuide(props: Props): React.JSX.Element {
                 <button
                   type="button"
                   className={`kb-node${groupKey === g.key ? ' is-on' : ''}`}
-                  onClick={() => onPickGroup(g.key)}
+                  onClick={() => pickGroup(g.key)}
                 >
                   <span className="kb-node-n">{i + 1}</span>
                   <strong>{g.name}</strong>
@@ -109,7 +146,7 @@ export function KnowledgeDocsGuide(props: Props): React.JSX.Element {
                 key={g.key}
                 type="button"
                 className={`kb-side${groupKey === g.key ? ' is-on' : ''}`}
-                onClick={() => onPickGroup(g.key)}
+                onClick={() => pickGroup(g.key)}
               >
                 <strong>{g.name}</strong>
                 <span>
@@ -127,12 +164,12 @@ export function KnowledgeDocsGuide(props: Props): React.JSX.Element {
                 : null}
             </p>
             <div className="kb-sides">
-              {sides.map((g) => (
+              {sideGroups.map((g) => (
                 <button
                   key={g.key}
                   type="button"
                   className={`kb-side${groupKey === g.key ? ' is-on' : ''}`}
-                  onClick={() => onPickGroup(g.key)}
+                  onClick={() => pickGroup(g.key)}
                 >
                   <strong>{g.name}</strong>
                   <span>
@@ -182,55 +219,77 @@ export function KnowledgeDocsGuide(props: Props): React.JSX.Element {
               </tr>
             </thead>
             <tbody>
-              {audienceGroups.map((g) => {
+              {tableGroups.map((g) => {
                 const groupDocs = docs.filter((d) => d.group === g.key)
                 if (groupDocs.length === 0) {
                   return null
                 }
+                const folded = !openGroups.has(g.key)
+                const heading = (
+                  <>
+                    {g.name} · <code>{g.path}</code>
+                    <span className="kb-sec-meta">
+                      {g.who} · {g.when}
+                    </span>
+                  </>
+                )
                 return (
                   <React.Fragment key={g.key}>
                     <tr className="kb-sec">
                       <td colSpan={3}>
-                        {g.name} · <code>{g.path}</code>
-                        <span className="kb-sec-meta">
-                          {g.who} · {g.when}
-                        </span>
+                        <button
+                          type="button"
+                          className="kb-sec-toggle"
+                          aria-expanded={!folded}
+                          onClick={() => toggleGroup(g.key)}
+                        >
+                          <ChevronRight
+                            className={`kb-sec-chevron${folded ? '' : ' is-open'}`}
+                            aria-hidden="true"
+                          />
+                          <span>{heading}</span>
+                        </button>
                       </td>
                     </tr>
-                    {groupDocs.map((d) => {
-                      const mark = gapMark(d.id, notes)
-                      return (
-                        <tr
-                          key={d.id}
-                          className={`rowbtn${docId === d.id ? ' is-on' : ''}${groupKey === g.key ? ' in-layer' : ''}`}
-                        >
-                          <td>
-                            <button
-                              type="button"
-                              className="kb-row-btn"
-                              onClick={() => onOpenDoc(d.id)}
+                    {folded
+                      ? null
+                      : groupDocs.map((d) => {
+                          const mark = gapMark(d.id, notes)
+                          return (
+                            <tr
+                              key={d.id}
+                              className={`rowbtn${docId === d.id ? ' is-on' : ''}${groupKey === g.key ? ' in-layer' : ''}`}
                             >
-                              <code>{d.name}</code>
-                            </button>
-                          </td>
-                          <td>{d.lede}</td>
-                          <td className="kb-gap-col">
-                            {audience !== 'eng' ? (
-                              <span className="wb-muted">浏览</span>
-                            ) : mark.openCount > 0 ? (
-                              <span className="wb-tag wb-tag-warning">{mark.openCount} 处</span>
-                            ) : mark.allOk ? (
-                              <span className="wb-tag wb-tag-success">一致</span>
-                            ) : (
-                              <span className="wb-muted">—</span>
-                            )}
-                            {audience === 'eng' && mark.noteCount > 0 ? (
-                              <span className="wb-tag wb-tag-outline"> {mark.noteCount} 意见</span>
-                            ) : null}
-                          </td>
-                        </tr>
-                      )
-                    })}
+                              <td>
+                                <button
+                                  type="button"
+                                  className="kb-row-btn"
+                                  onClick={() => onOpenDoc(d.id)}
+                                >
+                                  <code>{d.name}</code>
+                                </button>
+                              </td>
+                              <td>{d.lede}</td>
+                              <td className="kb-gap-col">
+                                {audience !== 'eng' ? (
+                                  <span className="wb-muted">浏览</span>
+                                ) : mark.openCount > 0 ? (
+                                  <span className="wb-tag wb-tag-warning">{mark.openCount} 处</span>
+                                ) : mark.allOk ? (
+                                  <span className="wb-tag wb-tag-success">一致</span>
+                                ) : (
+                                  <span className="wb-muted">—</span>
+                                )}
+                                {audience === 'eng' && mark.noteCount > 0 ? (
+                                  <span className="wb-tag wb-tag-outline">
+                                    {' '}
+                                    {mark.noteCount} 意见
+                                  </span>
+                                ) : null}
+                              </td>
+                            </tr>
+                          )
+                        })}
                   </React.Fragment>
                 )
               })}
