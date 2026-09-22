@@ -21,7 +21,7 @@
 
 docs/（所有知识目录都在这，编号定序；architecture 不编号＝docs 内设计正本）
 ├── 01-principles/     原则（慢变宪法）——本目录；第一篇就是本文
-├── architecture.md    设计正本（三 crate 架构 + 模块设计；docs 内不编号）
+├── architecture.md    设计正本（Electron 叠层 + 模块设计；docs 内不编号）
 ├── 02-adr/            架构决策（难回头一条一篇）
 ├── 03-guide/          产品指南（怎么用，给人看）
 ├── 04-design-system/  视觉正本：设计系统资产（样式表 + token + 规范；壳直接拼入）

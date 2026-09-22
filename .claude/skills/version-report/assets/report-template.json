@@ -1,0 +1,26 @@
+{
+  "schema_version": 3,
+  "template_version": "se-report-4",
+  "version": "",
+  "project": "",
+  "generated_at": "",
+  "head": {
+    "version_pair": "",
+    "source_commit": "",
+    "packaged_at": "",
+    "release_tag": "",
+    "released_issue": ""
+  },
+  "health": {
+    "build": "",
+    "pack": "",
+    "acceptance": null,
+    "basic": null,
+    "artifact_dir": "",
+    "note": ""
+  },
+  "goals": [],
+  "tasks": [],
+  "cases": [],
+  "foot": ""
+}

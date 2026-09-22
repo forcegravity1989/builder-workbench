@@ -81,7 +81,7 @@ git merge origin/main
 |---|---|---|
 | 产品文档正本 | 仓根 `AGENTS.md` / `CONTEXT.md` / `README.md` 与 `docs/` | 已换入 |
 | 壳叠层（Orca 上新写，非 Rust 直译） | `src/renderer/src/workbench/` | 已在本分支 |
-| **`standard/`（系统提示词 / skill / templates）** | 仓根 `standard/` | **遗留：尚未从 `main` 合入。** 文档与 AGENTS 已引用路径，文件不在本分支；会话注入（main 上 `crates/bw` 的 `ensure_*` / `agent_system_prompt`）也未在 Electron 复刻。需要时从 `origin/main:standard/` 检出，不要从 Orca 树里另造一份。 |
+| **`standard/`（系统提示词 / skill / templates）** | 仓根 `standard/` | 已从 `main` 合入。计划页新开会话注入 `SYSTEM.md.tmpl` 与 week-planning 指针；main 上 `crates/bw` 的 `ensure_*` / `agent_system_prompt` 全量注入仍未在 Electron 复刻。 |
 
 叠层留在 `src/renderer/src/workbench/`，不要另开 npm / workspace 包。`standard/` 合入后仍是内容目录（提示词与技能），不是运行时包。
 

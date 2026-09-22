@@ -1,8 +1,8 @@
 # architecture.md — Workbench MVP 设计正本
 
-> **30 秒导读**:Workbench MVP 的**唯一设计正本**。三段:**§1 用例与旅程怎么编排 → §2 特性(每个能力是什么)→ §3 实现架构(三 crate 切分 + 运行时数据流)**。给要判断"某条为什么这么定"、接手模块、往规范里加东西的人和 AI 看。不在本篇的:开发规矩(怎么建/跑/测)在 [`AGENTS.md`](../AGENTS.md);模块实现心智 + 关键取舍在 [`docs/06-module/`](06-module/);界面视觉语言在 `docs/04-design-system/`,八屏版式与旅程在 `docs/hifi/`,五站驾驶地图在 `docs/hifi/home.html`;词表 `CONTEXT.md`;变更原因与验证证据查 commit/PR;架构决策在 [`docs/02-adr/`](02-adr/),老版本史实(V3、旧 16 模块挪移)见 [`V3 删除与旧 16 模块挪移`](10-reference/v3-and-module-migration.md),五张领域模型(上下文 / 用例 / 逻辑 / 数据 / 领域)见 [`domain-models.html`](10-reference/domain-models.html)。
+> **30 秒导读**:Workbench MVP 的**唯一设计正本**。三段:**§1 用例与旅程怎么编排 → §2 特性(每个能力是什么)→ §3 实现架构(Electron 叠层 + 运行时数据流)**。给要判断"某条为什么这么定"、接手模块、往规范里加东西的人和 AI 看。不在本篇的:开发规矩(怎么建/跑/测)在 [`AGENTS.md`](../AGENTS.md);模块实现心智 + 关键取舍在 [`docs/06-module/`](06-module/);界面视觉语言在 `docs/04-design-system/`,八屏版式与旅程在 `docs/hifi/`,五站驾驶地图在 `docs/hifi/home.html`;词表 `CONTEXT.md`;变更原因与验证证据查 commit/PR;架构决策在 [`docs/02-adr/`](02-adr/),老版本史实(V3、旧 16 模块挪移)见 [`V3 删除与旧 16 模块挪移`](10-reference/v3-and-module-migration.md),五张领域模型(上下文 / 用例 / 逻辑 / 数据 / 领域)见 [`domain-models.html`](10-reference/domain-models.html)。
 >
-> **维护约定**：本篇结构与职责以上述导读为准；整体旅程、逻辑模块或 crate/数据流边界变化时更新。不写开发流程与变更流水；头部边界变更先按 [AGENTS](../AGENTS.md) 与人确认。
+> **维护约定**：本篇结构与职责以上述导读为准；整体旅程、逻辑模块或壳/数据流边界变化时更新。不写开发流程与变更流水；头部边界变更先按 [AGENTS](../AGENTS.md) 与人确认。
 >
 > **四层口径**(§2 按此归位):**层 A 事实**——主张性文档(人对项目基础信息/里程碑的定义)+ 仓里已有事实(代码/issue/已有文档/读数);**层 B 执行**——主体是 Orca 会话、worktree、工具检测;dispatch 单入口与守卫是内核工作方式、不单列为能力模块(见 §3 运行机制);**层 C standard 积累**——系统提示词 + 技能 + 技能提炼(渐进加载);**层 D 壳**——八屏,人怎么交互、人看什么。
 
@@ -12,7 +12,7 @@
 
 ## §1 · 用例与旅程
 
-> §1 写**用例与旅程怎么编排**——每个用例编排哪些能力(§2)、落哪个站哪个屏、何时触发、没建什么。§2 写**特性**(每个能力的设计层:是什么),模块实现心智 + 关键取舍在 [`06-module/`](06-module/);§3 写**实现架构**(三 crate 切分 + 运行时数据流;每模块代码落点看代码)。用例不是另一层东西——它天生横切,是它编排哪些能力。
+> §1 写**用例与旅程怎么编排**——每个用例编排哪些能力(§2)、落哪个站哪个屏、何时触发、没建什么。§2 写**特性**(每个能力的设计层:是什么),模块实现心智 + 关键取舍在 [`06-module/`](06-module/);§3 写**实现架构**(Electron 叠层 + 运行时数据流;每模块代码落点看代码)。用例不是另一层东西——它天生横切,是它编排哪些能力。
 
 ### 顶层旅程 · 五站
 
@@ -26,7 +26,7 @@
 | --- | --- | --- | --- | --- |
 | **接入(项目约定)** | 关键信息维护 | 项目版本 / 接入屏 | 第一次纳入自动建一张Issue | 定时任务目录 / 待办工作池未建;旧仓残留由盘点删 |
 | **周循环与计划** | 会话与执行 + 关键信息维护 + 系统提示词 | 构建交付 / 计划屏;会话屏 | 周一 09:00 定版本计划 | 预览·未合入灰态、技能提炼的未启用状态尚未接入;给 Issue 关联指标命令没接 |
-| ↳ week-planning(更新指标与版本计划 Issue) | 系统提示词与渐进加载 + 技能与提炼 + 会话与执行 | 项目版本 / 会话屏 | 周一 09:00 新会话 | 版本目标/结果摘要读取 `.bw/planning/<版本>/data.json`，规划树草稿与主项目归档按版本合并；任务状态仍读 Issue 标签 |
+| ↳ week-planning(更新指标与版本计划 Issue) | 系统提示词与渐进加载 + 技能与提炼 + 会话与执行 | 项目版本 / 计划屏 | 周一 09:00 新会话或进入计划页签 | 计划页签原生三屏读写 `.bw/planning/<版本>/data.json`；新开会话注入 SYSTEM + week-planning 指针；任务状态仍读 Issue 标签 |
 | ↳ 发版 | 关键信息维护(Release) | 构建交付 / 计划屏 | 人点 | 号锁死当前版本视图,不能另填 |
 | ↳ 开工 | 会话与执行 + 系统提示词与渐进加载 | 构建交付 / 计划屏 Start | 人拖进「进行中」或详情 ▶开工 | 评审三件套未派发;`DeleteSession` 内核在、壳无按钮 |
 | ↳ 出包 / 验包 | 关键信息维护(`PackRelease`) | 构建交付 / 计划屏出包 | 人点 | 仅 Windows、非门禁非 CI;产物在 `.bw/release/out/<版本>/` |
@@ -41,7 +41,7 @@
 
 - **接入(项目约定)**:入口直说「打开本地仓 / 克隆远端仓」:前者使用人选择的绝对路径、不复制,后者把全局工作区根目录直接带成默认 clone 父目录、仍可改;不再制造空目录冒充项目。选定任一来源后先读 `.bw/project.toml`,已有名片就在同一张基础信息卡回显。第一次纳入自动建「项目约定」Issue,只写 `.bw/project.toml`(外加 `.bw/.gitignore`),落常驻分支 `bw/project`,工作目录在 `<仓>/.bw/worktrees/project`,开 MR 等人合,全程不起 agent。默认分支 HEAD 已有名片、或开着项目约定 / 残留旧标题就不重开。没合进默认分支总览常驻横幅。改名片 / 项目群复用同一标题同一棵树。在研版本不进仓文件：按带版本号与计划标签的版本计划 Issue 选择，优先取最新未关闭项，其次取未发布的已关闭项；没有则为空。开工工具跟人走本机。**不写主检出、完成永远人点、常驻分支合入后不删**。仓根一个字不写。详见 §2「关键信息维护」。
 - **周循环与计划**:计划版本、自建版本、发版号是同一个里程碑名(`bw:plan:<名>` / 里程碑标题 / Release)。ISO 周只做定时触发周期，不当排期名。在研版本按版本计划 Issue 选择，不由里程碑日期决定，也不进 `.bw/project.toml`。版本列表、发版、看板计数全现算——没有周计划索引表、没有发版表。发版先建 codehub Release 成功再打 `bw:released:<名>`(顺序不能反)。出包是左侧另一颗按钮(ADR-0005),不和发版本绑。拖拽落定那一刻标签就是新的(排期是 issue 数据,不走 MR);写标签成功才挪卡,失败停原列。完成永远人点。定时调度在 Orca:周一 09:00 定计划、周五 15:00 盘点、每天 20:00 采 B 类。
-- ↳ **week-planning(更新指标与版本计划 Issue)**:人先确认本周版本(推荐 `vX.X`),当场创建 Issue打 `bw:plan:<名>` + `bw:category:*`,挂 codehub 同名里程碑(起止默认本周周一到周五)。备选路径走 `ConfirmWeekDraft`。不再写 `bw:week:*`。挂评前用 `week-planning/check-week-comment.py` 校验标题。
+- ↳ **week-planning(更新指标与版本计划 Issue)**:人先确认本周版本(推荐 `vX.X`),当场创建 Issue打 `bw:plan:<名>` + `bw:category:*`,挂 codehub 同名里程碑(起止默认本周周一到周五)。计划页签右侧原生三屏编辑 JSON；左侧新开会话注入 SYSTEM 与 skill 指针，用 planning.py CLI 读写同一文件。不要另开 HTML。不再写 `bw:week:*`。旧计划评论仅首次导入。
 - ↳ **发版**:远端建 Release + 打 `bw:released:<名>`,号锁死当前版本视图。
 - ↳ **开工**:入口在计划屏(拖进「进行中」或详情 ▶ Start),同一条 `run_issue`:开/复用 worktree,没会话才打 Orca `createAgentSession`,有会话只切树。详见 §2「会话与执行」。
 - ↳ **出包 / 验包**:入口 `.bw/release/pack/pack.cmd` + `e2e/e2e.cmd`,协议见 ADR-0005;产物 `.bw/release/out/<版本>/`(gitignore)。验包不过「详情」列出每条用例与报错。
@@ -72,27 +72,27 @@
 
 ### ② 会话与执行(层 B 执行)
 
-**是什么**:会话屏只剩两个组件——**Orca**、**Open Design**。开工入口在计划屏(拖进「进行中」或详情 ▶开工),同一条 `run_issue`:开/复用 worktree,没会话才打 Orca 会话,有会话只切树。铁律挂启动参数(Cursor 拼进用户话)。完成仍由人点(计划屏拖进已完成 / 合入)。
+**是什么**:执行面复用 Orca 终端、Tasks 与 worktree。计划页签左侧直接开 Claude 会话（新开会话注入 SYSTEM + week-planning，已有会话只接回）。完成仍由人点。
 
 模块实现心智 + 关键取舍见 [`06-module/会话与执行`](06-module/会话与执行.md)。
 
 ### ③ 系统提示词与渐进加载(层 C standard)
 
-**是什么**:每条 Issue开工渲染一份系统提示词,主提示词是**外置模板** `standard/system-prompt/SYSTEM.md.tmpl`(哪条 Issue、读被管仓 `AGENTS.md`、按任务加载哪份 reference、和 BW 状态机怎么配合)。references 是「干某类工作需要额外知道的 Workbench 规范」(指标格式、周计划评论、改仓规则、`.bw` 现行契约),按 Issue 的 category/workflow 匹配;技能同理。写作分层(SYSTEM / reference / skill 各写什么)正本在 [`standard/README.md`](../standard/README.md)。
+**是什么**:每条周期工作开工给一份系统提示词,主提示词是**外置模板** `standard/system-prompt/SYSTEM.md.tmpl`(哪条 Issue、读被管仓 `AGENTS.md`、按任务加载哪份 reference、和 BW 状态机怎么配合)。references 是「干某类工作需要额外知道的 Workbench 规范」(指标格式、周计划评论、改仓规则、`.bw` 现行契约),按 Issue 的 category/workflow 匹配;技能同理。现行壳从仓内文件解析真实路径后注入,不编进二进制。计划页签新开会话由 `plan-week-planning-prompt.ts` 注入 SYSTEM + week-planning 指针。写作分层(SYSTEM / reference / skill 各写什么)正本在 [`standard/README.md`](../standard/README.md)。
 
-评审会话另有一份外置主提示词 `REVIEW.md.tmpl`(独立评审身份 + 只评不改/意见落 MR 评论),渲染同机制;评审剧本 `mr-review` **尚未编进二进制、未派发**(见 ④)。
+评审会话另有一份外置主提示词 `REVIEW.md.tmpl`(独立评审身份 + 只评不改/意见落 MR 评论);评审剧本 `mr-review` **尚未派发**(见 ④)。
 
 三层各装什么、改了哪条流程要同步哪份——对照表在 [`06-module/系统提示词与渐进加载`](06-module/系统提示词与渐进加载.md)。`AGENTS.md`「按任务读取」指到那里。改 `standard/` 之前先对表。
 
 ### ④ 技能与提炼(层 C standard)
 
-**是什么**:Workbench 自带**四份 Workbench 技能**(week-planning / asset-audit / metrics-refresh / project-handbook),编译期编进二进制,提示词只给"名字 + 一句话 + 完整路径",正文让 agent 按需读(渐进加载)。`asset-audit` 是资产盘点 Issue的剧本,对应 §1 用例。仓里另有一份评审剧本 `mr-review`:规范已入库,尚未编进二进制、也未派发。
+**是什么**:Workbench 自带**四份 Workbench 技能**(week-planning / asset-audit / metrics-refresh / project-handbook),作为仓内 `standard/skills/` 文件存在,提示词只给"名字 + 一句话 + 完整路径",正文让 agent 按需读(渐进加载)。`asset-audit` 是资产盘点 Issue的剧本,对应 §1 用例。仓里另有一份评审剧本 `mr-review`:规范已入库,尚未派发。
 
 模块实现心智 + 关键取舍见 [技能与提炼](06-module/技能与蒸馏.md)。
 
 ### ⑤ 桌面壳(层 D 壳)
 
-**是什么**:Workbench MVP 的桌面应用壳(Dioxus / wry WebView,macOS+Windows)。壳只渲染和转发意图——健康什么颜色、Issue 能不能转到那一列、指标有没有读数,全部由内核算好塞进 ViewModel;壳里没有一行业务判断,命令失败就把原话放进 toast 不假装做成了。
+**是什么**:Workbench MVP 的桌面应用壳(Electron / Orca 产品叠层,macOS+Windows)。叠层只负责旅程导航、计划三屏、项目墙与接入；终端与 Tasks 复用 Orca 执行核。计划 JSON 经文件系统读写,Issue 状态读远端标签。命令失败把原话给人看,不假装做成了。
 
 模块实现心智 + 关键取舍见 [`06-module/桌面壳`](06-module/桌面壳.md)。
 
@@ -100,33 +100,32 @@
 
 ## §3 · 实现架构
 
-> 三 crate 怎么切、运行时数据怎么流。每个能力模块的**代码落点**看代码与 `codegraph` 探索,模块实现的**主要矛盾 / 取舍**在 [`docs/06-module/`](06-module/);本篇不逐文件罗列代码路径、数据字段、没建清单。dispatch 在 `app/mod.rs`,派发到 app/ 下各用例模块(issue / plan / ops / collect / health / bootstrap / chat_notify / session / tools / worktree,各自成篇见 §1)。
+> Electron 叠层怎么切、运行时数据怎么流。每个能力模块的**代码落点**看代码,模块实现的**主要矛盾 / 取舍**在 [`docs/06-module/`](06-module/);本篇不逐文件罗列代码路径、数据字段、没建清单。叠层清单见 [`src/renderer/src/workbench/INVENTORY.md`](../src/renderer/src/workbench/INVENTORY.md)。
 
-### 结构总览 · 三 crate 架构
+### 结构总览 · Orca 叠层
 
-Workbench MVP 由三个 Rust crate 组成,各管一件事、互锁而不互相渗透:
+Workbench 现行桌面壳是 Orca Electron 的产品叠层，仓内已无 `crates/`，不再用 Dioxus / wry 三 crate。
 
-**bw(内核)**:本地零数据库——codehub/GitHub 的 issue+标签是唯一 issue 正本;仓文件解析(读 `.bw/*`)、现算推导(健康/走势/用量)、自己的一对 Command/Event、项目约定、两类周期工作、项目群工厂全在这层。它是纯领域与编排,不直接碰终端、不直接碰远端协议。
+**Orca 执行核**（upstream，不大段改写）:终端 / agent / worktree / Tasks / Automations / Explorer。会话真正跑在这层。
 
-**bw-engine(能力底座)**:本机 Orca 的本地 pipe 客户端(会话开工)、封存的 PTY 旧实现、每条 Issue 对应的 git worktree、git 读数、codehub/GitHub 两个远端。它只接收通用 id,不持有业务语义——一个 id 背后是 Issue 还是会话由上层解释。
+**Workbench 叠层**（`src/renderer/src/workbench/`）:五屏导航（总览 / 计划 / 任务 / 自动化 / 知识库）、计划页签原生三屏、项目墙与接入覆盖层、皮肤 token。开关 `WORKBENCH_SHELL=1`。
 
-**app-shell(壳)**:八个屏(项目墙 / 接入 / 设置 三个顶层 + 总览 / 计划 / 会话 / 配置 / 知识库 五个项目内入口)+ 内核桥(独立线程)+ ViewModel + 主题 + 适配模块。壳只渲染和转发意图,没有一行业务判断。
+**主进程 / preload / 共享**（`src/main`、`src/preload`、`src/shared`）:窗口、文件系统、会话宿主。计划 JSON 经 `window.api.fs` 读写 `.bw/planning/<版本>/data.json`。
 
-**一屏一模块,三守卫钉死。** 单文件动辄上万行、改一处散弹一片是走不下去的。Workbench 立三条规矩,且靠机制而非自觉:
+**standard/**:系统提示词、reference 与技能是仓内文件。计划页签新开会话由 `plan-week-planning-prompt.ts` 注入 SYSTEM + skill 指针，不编进二进制。
 
-1. **每屏只有一个公开出口**——屏内随便拆文件,但除这一个函数外不再有第二个能被外部引用;
-2. **共享数据只经共用的 ViewModel 模块流转**——两屏都展示同一样东西时类型定义在共用模块里各自引用,**永远不允许一屏直接引用另一屏**;
-3. **每个适配模块的 README 固定三段**——借自哪个项目哪个文件、借了什么、没借什么。以后持续借鉴只在该模块内增量,不散弹。
-
-门禁里还有三条纯文本结构守卫(不编译,CI 照跑):屏与屏不互相引用、单文件 2000 行硬上限、用界面框架 hook 的函数必须是组件(后者是评审抓到真 bug 后补的——普通函数在渲染宏里被直接调用时 hook 落在调用方槽位,切屏类型一变整次渲染崩溃,编译期一点征兆都没有)。
+叠层改动落 `workbench/`，执行核只留 `isWorkbenchShell()` 钩子。计划页签不另开 HTML 服务。
 
 ### 运行机制 · 数据流
 
-界面只发 Command、只收 Event;`bw/app` 的 `dispatch` 是唯一执行入口,跑用例 → 写 codehub issue 正本/仓文件 → recompute 现算 → 事件流回 UI。终端字节流不走 ViewModel、也不走事件总线——桥上单开一条 broadcast 通道,内核线程定时往里推(终端一秒几百批字节,每批重拼整份 ViewModel 会把界面拖垮,而且字节是一次性的流,进 ViewModel 每次重渲染都会被重新写进终端一遍)。
+计划材料:右侧三屏与左侧会话写同一份 JSON；界面停顿自动保存，会话用 planning.py 的 read / update --if-match / confirm。Issue 状态仍读远端标签。杀进程重开后从文件和远端独立读回。
+
+终端与 agent 会话走 Orca 执行核，不经叠层重拼整份界面状态。
 
 ### 留白(03 主张、未建,保留)
 
 - 反馈站、进化站(五站后两站,03 主张)。
+- 总览 / 知识库真采集与健康灯尚未接上（现为演示数据）。
 - 架构全景 4+1、大风险标记、审结果对话、原型 / 操作逻辑守卫、中间段自动跑、C 类定时、proto-design 打包。
 - 评审派发(`mr-review` 等接按钮)——见 §2 ④。
 - 群双向机器人、个人 Windows 弹窗——见 §1「项目群发送」没建。

@@ -21,9 +21,9 @@
 
 ## 与现行壳的关系
 
-**已接线(2026-09-07)**。桌面壳 `crates/app-shell` 编译期把本目录的 `styles.css` 原样拼进全局样式(`crates/app-shell/src/theme/mod.rs` 里 `include_str!`),不复制一份;壳骨架与各屏版式在 `crates/app-shell/assets/shell.css`,只写设计系统没有的东西、取值一律 `var(--*)`。壳默认 **Claude 配色**(根节点 `data-theme`),设置屏「配色」可切 Apple,存本机 `settings.toml`;中文排版层 `lang="zh"`。壳骨架是一条 172px 侧栏(`.sidebar`)+ 内容区,没有顶栏(`.nav` 留在设计系统里给独立页面用)。八屏的版式与旅程仍看 [docs/hifi/](../hifi/);视觉语言以本目录为准。接线取舍见 git 历史(原 `05-features/design-system-wiring/`,2026-09-09 按特性口径降级删)。
+**已接线到 Electron 叠层。** 计划页签与旅程皮肤用 `src/renderer/src/workbench/workbench-tokens.css` 及各屏 CSS，取值尽量 `var(--*)`。本目录 `styles.css` 仍是设计系统正本；旧 Dioxus 壳 `crates/app-shell` 的编译期 `include_str!` 已不在本分支。八屏的版式与旅程仍看 [docs/hifi/](../hifi/)（历史原型）；视觉语言以本目录为准。
 
-改 token / 组件类 → 改本目录 `styles.css`(三处同步见下),壳下一次编译自动跟上;改壳骨架 / 某屏版式 → 改 `shell.css`,不回推设计项目。
+改 token / 组件类 → 改本目录 `styles.css` 与叠层 CSS；改旅程骨架 → 改 `src/renderer/src/workbench/`，不回推设计项目。
 
 2026-09-07 仓侧新增了设置文法一组类(`.page-head` / `.section` / `.set-group` / `.set-row` / `.toggle` / `.choice` / `.path`,示例页 `components/settings.html`),参照 Codex 桌面版的设置页;**还没回推到设计项目**,下次走 `design-system-import` 回推。
 

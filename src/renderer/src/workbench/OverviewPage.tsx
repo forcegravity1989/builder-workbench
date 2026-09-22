@@ -62,7 +62,7 @@ function charterRows(
 
 /** Scoreboard: charter from `.bw/project.toml` when present; versions still demo. */
 export function OverviewPage(): React.JSX.Element {
-  const openTaskPage = useAppStore((s) => s.openTaskPage)
+  const openArtifactsPage = useAppStore((s) => s.openArtifactsPage)
   const repos = useAppStore((s) => s.repos)
   const activeRepoId = useAppStore((s) => s.activeRepoId ?? s.repos[0]?.id ?? null)
   const activeRepo = repos.find((r) => r.id === activeRepoId) ?? repos[0]
@@ -127,7 +127,7 @@ export function OverviewPage(): React.JSX.Element {
           <button
             type="button"
             className="wb-btn wb-btn-primary wb-btn-sm"
-            onClick={() => openTaskPage()}
+            onClick={() => openArtifactsPage()}
           >
             去计划屏
           </button>

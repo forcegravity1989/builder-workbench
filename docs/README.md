@@ -16,7 +16,7 @@
 | 路径 | 职责 | 什么时候读 |
 |---|---|---|
 | [01-principles/](01-principles/README.md) | 01 文档分层、02 逆向工作法、03 产品主张/FAQ/飞轮 | 调整知识归属、开特性、改产品主张 |
-| [architecture.md](architecture.md) | 整体旅程、逻辑模块、三 crate 与数据流 | 找现行设计、实现边界和工程落点 |
+| [architecture.md](architecture.md) | 整体旅程、逻辑模块、Electron 叠层与数据流 | 找现行设计、实现边界和工程落点 |
 | [02-adr/](02-adr/) | 难回头的架构决策及取舍 | 需要理解或改变相关决策 |
 | [03-guide/](03-guide/) | 给用户的操作、结果、下一步 | 使用产品或核对用户可见行为 |
 | [04-design-system/](04-design-system/README.md) | 视觉规范、样式与 token；来源和镜像方式见该入口 | 设计或修改界面视觉 |
@@ -34,7 +34,7 @@
 | [workbench-start](../.claude/skills/workbench-start/SKILL.md) | BW 自己的开发与交付方法；按任务分流，知识定义与治理 Skill 共用 |
 | [project-knowledge](../.claude/skills/project-knowledge/SKILL.md) | 项目知识整改、只读全景与反哺方法；当地已认可规范优先，逐块清理存量 |
 | [standard/](../standard/README.md) | Workbench 给被管项目提供的规范资产，不等于本仓研发知识库 |
-| `crates/` | `bw` 内核、`bw-engine` 底座、`app-shell` 桌面壳；工程验证读 AGENTS |
+| `src/renderer/src/workbench/` | Workbench Electron 叠层（导航、计划三屏、项目墙）；工程验证读 AGENTS |
 | `scripts/` | 门禁与开发辅助脚本 |
 | `.bw/` | 本项目的项目约定、指标及出包/验包资产；不是全仓知识目录 |
 

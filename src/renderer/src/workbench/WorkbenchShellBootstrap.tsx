@@ -14,13 +14,13 @@ export function WorkbenchShellBootstrap(): null {
     document.documentElement.classList.add('light')
 
     const state = useAppStore.getState()
-    // Why: Workbench four-screen nav lives in the left sidebar; a collapsed rail
-    // leaves Overview/Plan/KB unreachable.
+    // Why: Workbench nav lives in the left sidebar; a collapsed rail
+    // leaves Overview/Plan/Tasks/KB unreachable.
     if (!state.sidebarOpen) {
       state.setSidebarOpen(true)
     }
     if (state.activeView === 'terminal' && !state.activeWorktreeId) {
-      state.openTaskPage()
+      state.openArtifactsPage()
     }
   }, [])
   return null

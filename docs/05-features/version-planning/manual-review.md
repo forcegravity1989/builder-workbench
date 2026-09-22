@@ -1,24 +1,21 @@
-# 从 PR 分支走 BW 自身的周一屏
+# 从计划页签走周一屏
 
-> 在功能分支启动 BW，打开已接入的 workbench 项目，从 Orca 原“定版本计划（Workbench）”任务起会话。版本材料保存在独立 bw/week-plan，功能 PR 与计划归档 PR 分开。
+> 在本分支启动 Workbench，打开已接入项目，进入计划页签。版本材料保存在独立 bw/week-plan；功能改动与计划归档 PR 分开。
 
 ## 本机启动
 
-开发目录：`E:/zhuyu/code/builder-workbench/.bw/worktrees/version-planning`，分支 `codex/version-planning`。
-
 ```powershell
-Set-Location E:/zhuyu/code/builder-workbench/.bw/worktrees/version-planning
-cargo run -p app-shell
+pnpm run dev:workbench
 ```
 
-保持 Orca 打开，在 BW 打开 workbench 项目。BW 会摊开完整 Skill，并创建或更新原“定版本计划（Workbench）”自动化；保留原定时、启用状态和 provider。新建任务默认未启用，首用点 Orca 的“立即运行”，需要长期定时再开启。无需把本文粘成第二份自动化提示词。
+保持窗口可见（不要设 `ORCA_BACKGROUND_LAUNCH=1`）。打开项目后进入计划页签：右侧原生三屏读写 JSON；若左侧 `bw/week-plan` 会话是空的或接回的旧会话，关掉后再进一次，让它新开 Claude 以注入 SYSTEM + week-planning。
 
-本机真实规划工作目录：`E:/zhuyu/code/builder-workbench/.bw/worktrees/week-plan`，分支 `bw/week-plan`；已有 v0.4 草稿会恢复，目标仍由这次会话讨论形成。此前填写的结果材料原样保留。若用户决定另开版本，Skill 初始化空 default 后再定版号，不重置旧稿。
+规划工作目录是项目 `.bw/worktrees/week-plan`，分支 `bw/week-plan`。已有草稿会恢复。不要运行 `planning.py start`。
 
-Skill 会运行已分发的 planning.py start 并在会话浏览器打开完整 URL。手动诊断也可以运行：
+手动诊断读写：
 
 ```powershell
-python E:/zhuyu/code/builder-workbench/.bw/worktrees/version-planning/standard/skills/week-planning/scripts/planning.py --workspace E:/zhuyu/code/builder-workbench/.bw/worktrees/week-plan --version v0.4 start
+python standard/skills/week-planning/scripts/planning.py --workspace <规划工作树绝对路径> --version <版本> read
 ```
 
 ## 实战顺序
@@ -31,4 +28,4 @@ python E:/zhuyu/code/builder-workbench/.bw/worktrees/version-planning/standard/s
 
 ## 仍需现场材料
 
-当前 Orca 公共 CLI 只有工作树/当前终端列表，未找到历史 Cursor/Claude 会话列表接口；会话标题缺失正常留空，不伪造。会议链接转写脚本和纪要规范使用项目实际配置，缺失时先保留现场记录/用户手填纪要。这两项不伪装成已经自动采集。
+当前会话列表接口仍可能缺标题；缺失正常留空，不伪造。会议链接转写脚本和纪要规范使用项目实际配置，缺失时先保留现场记录/用户手填纪要。

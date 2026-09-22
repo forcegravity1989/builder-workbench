@@ -16,24 +16,24 @@
 
 ## 当前可用范围
 
-Workbench 是 Rust / Dioxus 桌面应用，面向 macOS 与 Windows，目前仍在内测与持续建设中。
+Workbench 是 Electron 桌面应用（Orca 产品叠层），面向 macOS 与 Windows，目前仍在内测与持续建设中。
 
 - 接入本地或远端 GitHub / CodeHub 仓库，维护项目约定。
 - 围绕版本计划组织 Issue、查看进展与指标；没数据显示“未知”，不能把未知当健康。
-- 从会话屏进入 Orca / Open Design 等执行路径，按本机设置使用开工工具；安装、检测成功不等于已登录或执行成功。
+- 从计划页签进入版本计划：右侧原生三屏读写 JSON，左侧会话注入 week-planning；执行面复用 Orca 终端与 Tasks。安装、检测成功不等于已登录或执行成功。
 - 由人评审结果、确认完成；AI 和定时任务不能替人完成验收。
 
 产品的目标旅程是“项目版本 → 构建交付 → 治理 → 反馈 → 进化”，**这不是全部能力已交付的声明**。完整主张看 [新闻稿与 FAQ](docs/01-principles/03-press-release-faq-flywheel.md)，现行能力与未建边界看 [架构说明](docs/architecture.md) 和 [产品指南](docs/03-guide/)。技能提炼等目标能力不得仅因出现在主张或词表中就视为可用。
 
 ## 快速开始
 
-需要 Rust 1.82+ 与桌面运行依赖：Windows 使用 WebView2，macOS 使用系统 WebKit。
+需要 Node.js 与 pnpm。日常热加载：
 
 ```bash
-cargo run -p app-shell
+pnpm run dev:workbench
 ```
 
-构建完成后打开桌面窗口，二进制名为 `bw-dev`。打开或接入项目后，按 [产品指南](docs/03-guide/) 开始。
+构建完成后打开 Workbench 窗口。打开或接入项目后，按 [产品指南](docs/03-guide/) 开始。叠层说明见 [`SYNC.md`](src/renderer/src/workbench/SYNC.md)。
 
 **启动窗口与实际开工是两件事。** 执行 Issue 还需要所选工具、会话宿主以及对应仓库的访问权限；具体依赖与失败处理见 [会话与执行](docs/06-module/会话与执行.md)。完整开发、深链、测试与门禁命令只在 [AGENTS.md](AGENTS.md) 维护。
 

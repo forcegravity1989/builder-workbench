@@ -20,6 +20,7 @@
 .wb-plan .plan-head {
   flex: none;
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: 10px;
   padding: 10px 14px;
@@ -29,6 +30,7 @@
   font-size: 16px;
   margin: 0;
   font-weight: 700;
+  white-space: nowrap;
 }
 .wb-plan .plan-tabs {
   flex: none;
@@ -201,6 +203,28 @@
   min-width: 0;
   min-height: 0;
 }
+.wb-plan .plan-html-empty {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 24px;
+  text-align: center;
+}
+.wb-plan .plan-html-empty p {
+  margin: 0;
+  font-size: 13px;
+}
+.wb-plan .plan-board {
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  background: var(--color-card, #fff);
+}
 .wb-plan .right-scroll {
   flex: 1;
   overflow: auto;
@@ -214,9 +238,9 @@
   flex-direction: column;
   gap: 14px;
 }
-.wb-plan[data-step='1'] .plan-step-1,
-.wb-plan[data-step='2'] .plan-step-2,
-.wb-plan[data-step='3'] .plan-step-3 {
+.wb-plan .plan-board[data-step='1'] .plan-step-1,
+.wb-plan .plan-board[data-step='2'] .plan-step-2,
+.wb-plan .plan-board[data-step='3'] .plan-step-3 {
   display: flex;
 }
 .wb-plan .block-title {
@@ -311,12 +335,93 @@
 }
 .wb-plan .task-row {
   display: grid;
-  grid-template-columns: 52px 1fr 110px 72px 72px;
   gap: 8px;
   align-items: start;
   padding: 8px 10px;
   border-top: 1px solid var(--color-divider);
   font-size: 12.5px;
+}
+.wb-plan .task-row.results-task-row {
+  grid-template-columns: 52px 64px 1fr 140px 72px;
+}
+.wb-plan .task-row.plan-task-row {
+  grid-template-columns: 52px 64px 1fr 88px 28px;
+}
+.wb-plan .delivery-row {
+  display: grid;
+  grid-template-columns: 1fr 120px 1.2fr 28px;
+  gap: 8px;
+  align-items: center;
+  padding: 8px 10px;
+  border-top: 1px solid var(--color-divider);
+  font-size: 12.5px;
+}
+.wb-plan .delivery-row.head {
+  border-top: 0;
+  background: var(--color-surface);
+  font-size: 11px;
+  color: color-mix(in srgb, var(--color-text) 55%, transparent);
+  font-family: var(--font-mono);
+}
+.wb-plan .empty-list {
+  margin: 0;
+  padding: 10px;
+  font-size: 12.5px;
+  color: color-mix(in srgb, var(--color-text) 55%, transparent);
+}
+.wb-plan .goals > .empty-list {
+  grid-column: 1 / -1;
+}
+.wb-plan .plan-text {
+  width: 100%;
+  min-width: 0;
+  border: 0;
+  background: transparent;
+  font: inherit;
+  color: inherit;
+  padding: 2px 4px;
+  border-radius: 3px;
+}
+.wb-plan .plan-text:hover {
+  background: color-mix(in srgb, var(--color-text) 4%, transparent);
+}
+.wb-plan .plan-text:focus {
+  outline: 2px solid var(--color-accent-300);
+  outline-offset: 1px;
+  background: var(--color-card);
+}
+.wb-plan .plan-text-multi {
+  display: block;
+  min-height: 6.5em;
+  resize: vertical;
+  line-height: 1.65;
+  padding: 8px 12px;
+  margin: 0 12px 12px;
+}
+.wb-plan .version-picker {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+}
+.wb-plan .version-picker select {
+  height: 24px;
+  border: 1px solid var(--color-divider);
+  border-radius: 6px;
+  background: var(--color-card);
+  font: inherit;
+}
+.wb-plan .plan-save {
+  font-size: 11px;
+  font-family: var(--font-mono);
+  color: color-mix(in srgb, var(--color-text) 55%, transparent);
+}
+.wb-plan .plan-save.is-error {
+  color: var(--color-danger-deep);
+}
+.wb-plan .goal-result {
+  border: 0;
+  height: 22px;
 }
 .wb-plan .task-row.head {
   border-top: 0;
@@ -607,9 +712,9 @@
   align-items: center;
   gap: 10px;
 }
-.wb-plan[data-step='1'] .foot-s1,
-.wb-plan[data-step='2'] .foot-s2,
-.wb-plan[data-step='3'] .foot-s3 {
+.wb-plan .plan-board[data-step='1'] .foot-s1,
+.wb-plan .plan-board[data-step='2'] .foot-s2,
+.wb-plan .plan-board[data-step='3'] .foot-s3 {
   display: flex;
 }
 
@@ -669,16 +774,15 @@
   border: 1px solid var(--color-divider);
   border-radius: var(--radius-sm);
 }
-.wb-plan .orca-tasks-host {
-  min-height: 280px;
+.wb-plan .plan-tasks-jump {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 14px;
   border: 1px solid var(--color-divider);
   border-radius: var(--radius-md);
-  overflow: hidden;
   background: var(--color-card);
-}
-.wb-plan .orca-tasks-host > * {
-  height: 100%;
-  min-height: 280px;
 }
 .wb-plan .preview-list {
   display: flex;

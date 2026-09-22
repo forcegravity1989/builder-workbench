@@ -8,7 +8,9 @@
 
 优化时**两边对照**：壳与旅程信息架构借 loop-buddy；执行面（终端、建树、Tasks、Automations）复用本仓 Orca。
 
-总览 / 知识库挂在现有 `activity` / `space` 槽位（不扩 `TopLevelView`）。知识库已对齐 V7「文档 / 代码 / 对账」。
+总览 / 知识库挂在现有 `activity` / `space` 槽位；计划挂 `artifacts`；任务挂 `tasks`（均不扩 `TopLevelView`）。知识库已对齐 V7「文档 / 代码 / 对账」。
+
+Workbench 自有 Skill 保持 main 原路径（`.claude/skills/`、`standard/skills/`），不并入 Orca `skills/` 打包清单；不迁 `crates/` 与 `standard/vendor`。
 
 ## 原则
 

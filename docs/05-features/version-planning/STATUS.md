@@ -1,6 +1,19 @@
 # 版本计划 — 当前状态
 
-> 当前在开发 worktree codex/version-planning 内维护 Skill、固定 HTML 和数据文件。用户已认可页面可以开始试用，改为与本会话逐屏实战填写 v0.4；v0.3 保留为历史资料，BW/Orca 接线已纳入本次功能 PR。
+## 链状态（[02 §6.2](../../01-principles/02-working-backwards.md) 六环 · 2026-09-20 回填）
+
+| 环 | 状态 | 证据 / 已知债 |
+|---|:--:|---|
+| 1 intent | ● | [intent.md](intent.md) 人确认；v0.4 真实版本周期走完 |
+| 2 spec | ● | [spec.md](spec.md)「特性衡量与验收」表 + 「验收点↔注册用例映射」节；引领指标候选未挂载（02 §6.2 指标不强求，北极星占位） |
+| 3 实现设计 | ● | spec「工程落点与限制」节 + `standard/skills/week-planning/`（Skill SOP）+ 计划页签 `PlanWeekBoard` / `plan-week-planning-prompt.ts` |
+| 4 TDD | 待建 | workspace 单测覆盖（`week_comment.rs` 7 条等）；特性归属清单按口径暂缓 |
+| 5 验收点E2E | ● | version-planning 套件 8 用例（pr+pack profile）；映射见 spec，推定版待 suites feature 字段落地后校准 |
+| 6 旅程E2E | ● | 旧 week-plan-journey 含 HTML 保存，针对当时 Dioxus 壳；本分支现行是原生三屏 + 注入，须用真壳重验 |
+
+> 下方各节为本特性历史与现状叙事（原样保留）；链状态以本表为准，变化随 PR 更新。
+
+> 当前在 Electron 计划页签维护原生三屏与注入。用户已认可复刻功能、不再嵌入 HTML。v0.4 材料仍以规划树 JSON 为准。
 
 ## 当前文件
 
@@ -15,17 +28,13 @@
 
 `standard/skills/week-planning` 仅保留 Skill、三份 assets（固定 HTML、数据模板、三节纪要模板）、两个运行脚本（planning.py、eMeeting 转写脚本）、两份按需读取的 reference，以及现行产品仍在调用的评论格式校验脚本。构建用 JS/CSS、构建器和验证器在 [`scripts/version-planning`](../../../scripts/version-planning/README.md)；BW 的实际版本数据与来源只留在项目 `.bw/planning`，不放进出厂包。忽略规则不属于业务资源。
 
-模板、数据样例与工具留在 Skill 安装目录，不拷入项目树；每版只存 `<版本>/data.json` 与 `deliverables/`、`reviews/`。项目树 `template/version-plan.html` 是服务刷新生成的离线缓存，可随时重建、Git 忽略。data.json 是唯一内容正本，确认只记录状态、不生成快照；归档只提交版本目录与共享忽略文件，本机 `.local` 不入库。详见 [数据契约](../../../standard/skills/week-planning/references/data-and-runtime.md)。
+模板、数据样例与工具留在 Skill 目录，不拷入项目树；每版只存 `<版本>/data.json` 与 `deliverables/`、`reviews/`。离线 HTML 可重建、Git 忽略，不是编辑器。data.json 是唯一内容正本。详见 [数据契约](../../../standard/skills/week-planning/references/data-and-runtime.md)。
 
 本轮修复了脚本字符串中结束标签提前关闭 HTML script 元素的问题，并清除了此前构建遗留在脚本后的源码。验证直接解析最终 HTML，检查脚本完整性并让 Node 校验提取出来的脚本；不仅检查独立 JS。SE 样式和实际版本 JSON 未修改。
 
 ## 当前行为和边界
 
-模板内嵌 SE 样式，不依赖 BW 加载。Skill start 返回本地 URL，用于切版本和手工填写；直接打开 HTML 为离线只读。没有资料时由 Skill 建立 default，版号确定后保留内容并刷新同一页。页面通过服务停顿自动写入 JSON，无目录授权；失败或断线保留输入并提示。页面已无来源说明折叠与会议链接输入。当前不改 v0.3。第一屏标题为“上周版本结果”；结果目标卡保留编号、一句目标、进度条及实际值 / 目标值与结果标签；计划目标卡只保留编号与一句目标。期限默认该版本，负责人默认 Builder，真实工作进展放任务区。
-
-原 8876 方案已废弃；经用户重新确认，现将最小 HTTP 服务集成进 Skill 原 planning.py，使用自动分配端口和工作树服务记录。页面确认只写本地确认记录；eMeeting 转写脚本与三节纪要模板已内置为默认配置，纪要整理与 PR 由后续会话执行。本次交付功能 PR，复用 BW UI 组件并更新原定版本计划自动化。
-
-浏览器工具已看到旧 HTTP 页的空数据/只读问题；本地文件 URL 被工具策略阻断，未绕过。目前 HTTP 往返、磁盘读回、模型更新、冲突拒绝、进程生命周期及真实浏览器输入保存检查通过；最终填写易用性由用户继续验收。代码/文件检查不等于用户手填可用性已通过。
+计划页签右侧原生三屏读写 JSON；左侧新开会话注入 SYSTEM + week-planning。不要 `planning.py start/serve`。没有资料时由 Skill 建立 default，版号确定后保留内容。页面停顿自动写入 JSON；失败保留输入并提示。
 
 此前把交付资源长期放在 visualizations，并以后台文件检查代替视觉检查，是本轮返工原因。现在运行和构建都使用本 worktree 资源；不再维护 visualizations 版本。历史对话的旧链接不再作为入口。
 
