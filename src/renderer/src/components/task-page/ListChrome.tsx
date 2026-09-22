@@ -1,5 +1,7 @@
+import { useEffect } from 'react'
 import type { TaskPageComposerActionsModel } from '../use-task-page-composer-actions'
 import { cn } from '@/lib/utils'
+import { isWorkbenchShell } from '@/workbench/is-workbench-shell'
 import { TaskPageSourceBar } from './SourceBar'
 import { AlertCircle } from 'lucide-react'
 import { TaskPageGitHubModeControls } from './github/ModeControls'
@@ -9,12 +11,27 @@ export function TaskPageListChrome({
 }: {
   model: TaskPageComposerActionsModel
 }): React.JSX.Element | null {
-  const { taskSourceAvailabilityNotice, taskPageListChromeHidden } = model
+  const {
+    taskSourceAvailabilityNotice,
+    taskPageListChromeHidden,
+    githubMode,
+    setGithubMode,
+    setTaskResumeState
+  } = model
+  const workbench = isWorkbenchShell()
+  // Why: Projects is hidden in the shell, so a resumed project mode would show a view with no way back.
+  useEffect(() => {
+    if (!workbench || githubMode !== 'project') {
+      return
+    }
+    setGithubMode('items')
+    setTaskResumeState({ githubMode: 'items' })
+  }, [githubMode, setGithubMode, setTaskResumeState, workbench])
   return (
     <div className={cn('flex-none flex flex-col gap-2', taskPageListChromeHidden && 'hidden')}>
       <section className="flex flex-col gap-2">
         <div className="flex flex-col gap-2">
-          <TaskPageSourceBar model={model} />
+          {workbench ? null : <TaskPageSourceBar model={model} />}
 
           {taskSourceAvailabilityNotice ? (
             <div
@@ -27,7 +44,7 @@ export function TaskPageListChrome({
             </div>
           ) : null}
 
-          <TaskPageGitHubModeControls model={model} />
+          {workbench ? null : <TaskPageGitHubModeControls model={model} />}
 
           <TaskPageProviderFilters model={model} />
         </div>

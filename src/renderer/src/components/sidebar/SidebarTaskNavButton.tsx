@@ -180,40 +180,51 @@ export function SidebarTaskNavButton(): React.JSX.Element | null {
             : translate('auto.components.sidebar.SidebarNav.fee535205b', 'Tasks')}
         </span>
       </button>
-      <span className="absolute right-2 top-1/2 flex -translate-y-1/2 items-center gap-1 can-hover:pointer-events-none can-hover:opacity-0 can-hover:group-hover:pointer-events-auto can-hover:group-hover:opacity-100 can-hover:group-focus-within:pointer-events-auto can-hover:group-focus-within:opacity-100">
-        {visibleTaskProviders.includes('github') ? (
-          <TaskProviderShortcut
-            label={translate('auto.components.sidebar.SidebarNav.0ccba862b8', 'Open GitHub tasks')}
-            onOpen={() => openTaskPage({ taskSource: 'github' })}
-          >
-            <Github className="size-3.5" aria-hidden />
-          </TaskProviderShortcut>
-        ) : null}
-        {visibleTaskProviders.includes('gitlab') ? (
-          <TaskProviderShortcut
-            label={translate('auto.components.sidebar.SidebarNav.196c1b5362', 'Open GitLab tasks')}
-            onOpen={() => openTaskPage({ taskSource: 'gitlab' })}
-          >
-            <Gitlab className="size-3.5" aria-hidden />
-          </TaskProviderShortcut>
-        ) : null}
-        {visibleTaskProviders.includes('linear') ? (
-          <TaskProviderShortcut
-            label={translate('auto.components.sidebar.SidebarNav.c39ab10000', 'Open Linear tasks')}
-            onOpen={() => openTaskPage({ taskSource: 'linear' })}
-          >
-            <LinearIcon className="size-3.5" />
-          </TaskProviderShortcut>
-        ) : null}
-        {visibleTaskProviders.includes('jira') ? (
-          <TaskProviderShortcut
-            label={translate('auto.components.sidebar.SidebarNav.e7ad3c540d', 'Open Jira tasks')}
-            onOpen={() => openTaskPage({ taskSource: 'jira' })}
-          >
-            <JiraIcon className="size-3.5" />
-          </TaskProviderShortcut>
-        ) : null}
-      </span>
+      {isWorkbenchShell() ? null : (
+        <span className="absolute right-2 top-1/2 flex -translate-y-1/2 items-center gap-1 can-hover:pointer-events-none can-hover:opacity-0 can-hover:group-hover:pointer-events-auto can-hover:group-hover:opacity-100 can-hover:group-focus-within:pointer-events-auto can-hover:group-focus-within:opacity-100">
+          {visibleTaskProviders.includes('github') ? (
+            <TaskProviderShortcut
+              label={translate(
+                'auto.components.sidebar.SidebarNav.0ccba862b8',
+                'Open GitHub tasks'
+              )}
+              onOpen={() => openTaskPage({ taskSource: 'github' })}
+            >
+              <Github className="size-3.5" aria-hidden />
+            </TaskProviderShortcut>
+          ) : null}
+          {visibleTaskProviders.includes('gitlab') ? (
+            <TaskProviderShortcut
+              label={translate(
+                'auto.components.sidebar.SidebarNav.196c1b5362',
+                'Open GitLab tasks'
+              )}
+              onOpen={() => openTaskPage({ taskSource: 'gitlab' })}
+            >
+              <Gitlab className="size-3.5" aria-hidden />
+            </TaskProviderShortcut>
+          ) : null}
+          {visibleTaskProviders.includes('linear') ? (
+            <TaskProviderShortcut
+              label={translate(
+                'auto.components.sidebar.SidebarNav.c39ab10000',
+                'Open Linear tasks'
+              )}
+              onOpen={() => openTaskPage({ taskSource: 'linear' })}
+            >
+              <LinearIcon className="size-3.5" />
+            </TaskProviderShortcut>
+          ) : null}
+          {visibleTaskProviders.includes('jira') ? (
+            <TaskProviderShortcut
+              label={translate('auto.components.sidebar.SidebarNav.e7ad3c540d', 'Open Jira tasks')}
+              onOpen={() => openTaskPage({ taskSource: 'jira' })}
+            >
+              <JiraIcon className="size-3.5" />
+            </TaskProviderShortcut>
+          ) : null}
+        </span>
+      )}
     </div>
   )
 

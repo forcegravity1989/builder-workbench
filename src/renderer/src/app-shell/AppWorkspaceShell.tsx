@@ -162,12 +162,11 @@ export function AppWorkspaceShell(props: {
                         ? ' titlebar-left-floating absolute top-0 left-0 z-10 w-max border-r border-border'
                         : ''
                     }`}
-                    style={{
+                    style={
                       // Why: custom sidebar appearances are scoped to the sidebar root; mirror those vars onto the header in the same left-column panel.
-                      ...(layout.sidebarOpen ? layout.leftSidebarStyle : undefined),
-                      // Why: size from the wrapper's live width so the header tracks in-flight drag resizes (persisted to Zustand only on mouseup).
-                      width: layout.sidebarOpen ? '100%' : undefined
-                    }}
+                      // Width stays in CSS (width:0; min-width:100%) so this header tracks the sidebar during drag without stretching the column.
+                      layout.sidebarOpen ? layout.leftSidebarStyle : undefined
+                    }
                   >
                     {titlebarLeftControls}
                   </div>

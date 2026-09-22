@@ -845,6 +845,16 @@ html.native-shell .app-layout {
   user-select: none;
 }
 
+/* Why: width:100% is cyclic and the back/forward margin still inflates the
+   column past the sidebar, so the header's right edge misses the resize line.
+   width:0 + min-width:100% fills the column without contributing to its size;
+   the sidebar's explicit width remains the column width. Floating chrome sizes
+   itself, so this rule stays off there. */
+.titlebar-left:not(.titlebar-left-floating) {
+  width: 0;
+  min-width: 100%;
+}
+
 /* Why: when the sidebar is collapsed this header floats over the tab strip,
    so keep the standard titlebar surface instead of the sidebar tint. */
 .titlebar-left-floating {

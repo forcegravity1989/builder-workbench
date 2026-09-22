@@ -7,10 +7,14 @@ import { translate } from '@/i18n/i18n'
 import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip'
 import { Button } from '@/components/ui/button'
 import { ExternalLink } from 'lucide-react'
+import { isWorkbenchShell } from '@/workbench/is-workbench-shell'
 export function TaskPageGitHubModeControls({
-  model
+  model,
+  embedded = false
 }: {
   model: TaskPageComposerActionsModel
+  /** Workbench folds these controls into the filter row; children join that flex line. */
+  embedded?: boolean
 }): React.JSX.Element | null {
   const {
     setTaskResumeState,
@@ -30,11 +34,14 @@ export function TaskPageGitHubModeControls({
     selectedGitHubRepoExternalLink,
     handleSelectGithubTaskKind
   } = model
+  const modeButtons = isWorkbenchShell()
+    ? githubModeButtons.filter((mode) => mode.id !== 'project')
+    : githubModeButtons
   return taskSource === 'github' ? (
-    <div className="flex min-w-0 flex-wrap items-center gap-2">
-      {projectModeVisible ? (
+    <div className={cn('flex min-w-0 flex-wrap items-center gap-2', embedded && 'shrink-0')}>
+      {projectModeVisible && modeButtons.length > 0 ? (
         <div className="flex items-center gap-1 text-xs">
-          {githubModeButtons.map((mode) => {
+          {modeButtons.map((mode) => {
             const active =
               mode.id === 'project'
                 ? githubMode === 'project'

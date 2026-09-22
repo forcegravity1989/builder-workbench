@@ -2,6 +2,7 @@ import type { TaskPageComposerActionsModel } from '../use-task-page-composer-act
 import PullRequestPage from '@/components/PullRequestPage'
 import GitHubItemDialog from '@/components/GitHubItemDialog'
 import ProjectViewWrapper from '@/components/github-project/ProjectViewWrapper'
+import { isWorkbenchShell } from '@/workbench/is-workbench-shell'
 import { TaskPageGitHubList } from './github/List'
 import { TaskPageGitLabTodoList } from './gitlab/TodoList'
 import { TaskPageGitLabItemList } from './gitlab/ItemList'
@@ -58,9 +59,13 @@ export function TaskPageContent({
       />
     )
   ) : taskSource === 'github' && githubMode === 'project' ? (
-    <div className="mt-3 flex min-h-0 min-w-0 max-h-full flex-col overflow-hidden rounded-md border border-border/50 bg-muted/50 shadow-sm">
-      <ProjectViewWrapper selectedRepoIds={repoSelection} />
-    </div>
+    isWorkbenchShell() ? (
+      <TaskPageGitHubList model={model} />
+    ) : (
+      <div className="mt-3 flex min-h-0 min-w-0 max-h-full flex-col overflow-hidden rounded-md border border-border/50 bg-muted/50 shadow-sm">
+        <ProjectViewWrapper selectedRepoIds={repoSelection} />
+      </div>
+    )
   ) : taskSource === 'github' ? (
     // Why: bottom of the joined GitHub list card — flush under the filter
     // chrome (no gap, no top border/radius) so toolbar + table read as one.

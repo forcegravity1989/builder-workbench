@@ -33,7 +33,7 @@ git merge origin/main
 | 处置 | 路径 | 说明 |
 |---|---|---|
 | **删除** | `mobile/` | Expo / iOS / Android 客户端整树 |
-| **删除** | `src/renderer/src/components/mobile/` | 桌面 Mobile 页（配对 Hero / QR / 安装） |
+| **删除** | `src/renderer/src/components/mobile/` | 桌面 Mobile 页（配对 Hero / QR / 安装）。模拟器设置不再引用这里的品牌图标，否则设置页整页加载失败 |
 | **删除** | `MobileSettingsPane`、侧栏「Orca Mobile」入口、mobile CI workflows | 设置里的手机安装页、导航、发版流水线 |
 | **未删（协议残留）** | `src/shared/mobile-relay-*`、`mobile-e2ee-*`、`DeviceScope`、session 镜像、emulator | 桌面远端配对 / 驱动 overlay / 模拟器仍走这些线；不是手机 App |
 
@@ -69,6 +69,7 @@ git merge origin/main
 | Orca Mobile 产品页 / Expo App | **已删除**，见上文「源码」；不是隐藏 |
 | 崩溃「发送诊断报告」弹窗关闭 | `RecoverableRenderErrorBoundary` + `AppRootSurfaces` |
 | 叠层 UI / 皮肤 / 计划·总览·知识库·项目墙 | `src/renderer/src/workbench/**` |
+| 任务页工具条收成一行 | `task-page/ListChrome.tsx`、`github/ModeControls.tsx`、`github/Filters.tsx`、`ProviderFilters.tsx`、`Content.tsx`、`SidebarTaskNavButton.tsx`。壳开启时不渲染来源条和侧栏「任务」上的来源小图标，去掉 Projects。Issues / PRs、范围预设、Filters 仍在同一行，中间用分隔线隔开。Orca 原任务页不改 |
 | 品牌 / 独立 profile / 打包 | `workbench-product.ts`、`dev:workbench`、`build:mac:workbench` |
 
 细节清单见 `src/renderer/src/workbench/INVENTORY.md`、`SYNC.md`。

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { Loader2, RefreshCw } from 'lucide-react'
+import { Loader2, RefreshCw, Smartphone } from 'lucide-react'
 import type { GlobalSettings } from '../../../../shared/global-settings-types'
 import { cn } from '@/lib/utils'
 import { callRuntimeRpc } from '@/runtime/runtime-rpc-client'
@@ -7,7 +7,6 @@ import { Badge } from '../ui/badge'
 import { Button } from '../ui/button'
 import { Label } from '../ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select'
-import { AndroidLogo, IosBrandIcon } from '../mobile/MobileBrandIcons'
 import { MobileEmulatorAgentControlRow } from './MobileEmulatorAgentControlRow'
 import { MobileEmulatorAvailabilityDetails } from './MobileEmulatorAvailabilityDetails'
 import { SearchableSetting } from './SearchableSetting'
@@ -82,15 +81,10 @@ function deviceLabel(device: SimulatorDeviceRow): string {
   return `${name} (${state})`
 }
 
-function isAndroidDevice(device: SimulatorDeviceRow): boolean {
-  return device.runtime === 'Android'
-}
-
 function DeviceSelectItemLabel({ device }: { device: SimulatorDeviceRow }): React.JSX.Element {
-  const Icon = isAndroidDevice(device) ? AndroidLogo : IosBrandIcon
   return (
     <span className="flex min-w-0 items-center gap-2">
-      <Icon className="size-3.5 shrink-0 fill-current text-muted-foreground" />
+      <Smartphone className="size-3.5 shrink-0 text-muted-foreground" />
       <span className="truncate">{deviceLabel(device)}</span>
     </span>
   )
