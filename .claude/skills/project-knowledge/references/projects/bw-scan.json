@@ -1,12 +1,12 @@
 {
   "id": "bw-knowledge-pilot",
-  "version": "0.3.1-pilot",
+  "version": "0.4.0-pilot",
   "status": "仓内试用映射；不作为全仓规范门禁",
-  "scopeNote": "按目标仓实际存在的文件生成全景。文档规范读取 AGENTS、原则 01 与目标原文头部；类型字段仍是候选提示。BW 已退役 DESIGN/CHANGELOG，不列入现行范围。项目知识与开发方法单列；standard 本次不扫描。",
+  "scopeNote": "按目标 bw-orca 实际目录生成只读全景；BW 产品知识、按需 Orca 工程参考、本仓开发方法分列。standard 属于产品分发资产，本 profile 不扫描。退役目录不是必须恢复的清单；结构字段仅作候选提示。",
   "suggestedSessions": [
-    "读回已合入规则，用真实维护任务检验入口和职责。",
-    "特性总表：核对候选、实际文档和架构映射。",
-    "一个完整特性：指标、验收、用例与证据；复用正在进行的任务。"
+    "核对目标树与方法版本，用实际维护任务检查入口。",
+    "实际带入一个特性时按原则 02 补六环，不预填历史绿灯。",
+    "读回合入与验证结果，将真实偏差修回对应原件。"
   ],
   "contractSource": "../document-contracts.md",
   "include": [
@@ -15,9 +15,10 @@
     "README.md",
     "CONTEXT.md",
     "docs",
+    "ref",
     ".bw/project.toml",
-    ".bw/metrics.toml",
-    ".claude/skills"
+    ".claude/skills/project-knowledge",
+    ".claude/skills/workbench-start"
   ],
   "exclude": ["docs/draft"],
   "extensions": [".md", ".html", ".toml"],
@@ -26,6 +27,11 @@
   "featureDirectory": "docs/05-features",
   "acceptanceTableHeaders": ["验收点", "场景/用例入口", "运行证据"],
   "rules": [
+    {
+      "pattern": "^ref/",
+      "type": "Orca 工程参考",
+      "scope": "Orca 工程参考"
+    },
     {
       "pattern": "^AGENTS\\.md$",
       "type": "开发规则",
@@ -38,11 +44,13 @@
           "label": "提交与交付边界",
           "pattern": "提交|commit|PR|合入"
         }
-      ]
+      ],
+      "scope": "本仓开发方法"
     },
     {
       "pattern": "^CLAUDE\\.md$",
-      "type": "规则导入"
+      "type": "规则导入",
+      "scope": "本仓开发方法"
     },
     {
       "pattern": "^CONTEXT\\.md$",
@@ -55,20 +63,6 @@
     {
       "pattern": "^docs/01-principles/",
       "type": "产品与组织原则"
-    },
-    {
-      "pattern": "^docs/(02-adr|adr)/",
-      "type": "架构决策",
-      "fields": [
-        {
-          "label": "背景",
-          "pattern": "背景|问题|context"
-        },
-        {
-          "label": "决定与取舍",
-          "pattern": "决定|决策|取舍|decision"
-        }
-      ]
     },
     {
       "pattern": "^docs/05-features/.*/intent\\.md$",
@@ -111,16 +105,8 @@
       "type": "模块实现心智"
     },
     {
-      "pattern": "^docs/03-guide/",
-      "type": "用户指南"
-    },
-    {
       "pattern": "^docs/(04-design-system|hifi)/",
       "type": "视觉与交互"
-    },
-    {
-      "pattern": "^docs/metrics\\.md$",
-      "type": "历史指标快照"
     },
     {
       "pattern": "^docs/10-reference/",
@@ -132,17 +118,20 @@
     },
     {
       "pattern": "^\\.claude/skills/.*/SKILL\\.md$",
-      "type": "开发方法入口"
+      "type": "开发方法入口",
+      "scope": "本仓开发方法"
     },
     {
       "pattern": "^\\.claude/skills/",
-      "type": "开发方法支撑"
+      "type": "开发方法支撑",
+      "scope": "本仓开发方法"
     }
   ],
   "limits": [
-    "standard 是对外分发层，本次不扫描。",
+    "standard 是产品分发资产，本 profile 不扫描；不由文件存在声称已派发或加载。",
     "源码、测试脚本、CSS 等不在此文档清单；相关读取方须另行检查。",
     "HTML/TOML 只列资产，不解析正文；字段匹配只提示候选，不验证语义。",
     "现有特性目录是文档组，不是已经核定的产品特性全集。"
-  ]
+  ],
+  "defaultScope": "BW 产品知识"
 }

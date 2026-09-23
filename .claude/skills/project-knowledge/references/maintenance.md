@@ -42,7 +42,7 @@
 
 需要多会话前后全景时，按 [扫描说明](scanning.md) 使用 `scripts/scan-knowledge.mjs`。它复用下面的链接检查，额外生成显式范围内的文件/段落/引用图与静态 HTML；结构提示不能直接成为旧库门禁。
 
-`scripts/check-links.mjs` 需要 Node.js，仅检查明确传入的 `.md` 文件：
+`scripts/check-links.mjs` 使用 Node.js 24，仅检查明确传入的 `.md` 文件：
 
 - 识别普通 Markdown 行内链接、引用式链接及独立的 `@路径` 导入；跳过代码围栏和行内代码示例。
 - 核对本地文件/目录是否存在；解析路径必须留在目标仓根，拒绝符号链接绕出范围。
@@ -54,6 +54,7 @@
 
 ```text
 node --test <本Skill路径>/scripts/check-links.test.mjs
+node --test <本Skill路径>/scripts/scan-knowledge.test.mjs
 ```
 
 脚本校验通过不等于 Skill 行为通过，也不等于项目知识已治理。复杂语法输出“未检查”后应使用项目现有解析器或人工核对；不要为零告警改写正确文档。

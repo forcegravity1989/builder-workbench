@@ -14,7 +14,7 @@
 | [HEART 原论文页面](https://research.google/pubs/measuring-the-user-experience-on-a-large-scale-user-centered-metrics-for-web-applications/) | 从用户目标选择指标；对应特性价值与衡量关系 | 不强制套满所有维度；引领假设和 BW 指标不是论文直接给出的。验证来源可采、结果能帮助判断 |
 | [指标框架 Skill](https://github.com/mohitagw15856/pm-claude-skills/blob/main/skills/metrics-framework/SKILL.md) | 指标树、定义与衡量设计作为口径检查参考 | 社区 Skill 的自评分不构成效果证据；具体公式与阈值由项目验证 |
 | [Example Mapping](https://cucumber.io/docs/bdd/example-mapping/) | 规则、具体例子、未决问题的对应关系；对应验收场景 | 不要求每次组织讨论会；已明确的规则直接写可执行例子。验证例子能暴露误解 |
-| [TEA](https://bmad-code-org.github.io/bmad-method-test-architecture-enterprise/) | 风险导向测试与验收追踪作为验证设计参考 | 不假设支持 BW 的 WebView2/Orca；测试执行器复用项目已有设施。验证证据确实覆盖要求 |
+| [TEA](https://bmad-code-org.github.io/bmad-method-test-architecture-enterprise/) | 风险导向测试与验收追踪作为验证设计参考 | 不假设支持目标平台的 Electron/Orca；测试执行器复用项目已有设施。验证证据确实覆盖要求 |
 | [Harness engineering](https://openai.com/index/harness-engineering/) | 精简入口、可定位知识、机械检查与持续清理；对应维护和反哺 | 工程案例不是可安装完整规范；不采用其组织权限或自动合并政策。验证本项目实际效果 |
 
 ## 本次新增的专项参考
@@ -27,7 +27,9 @@
 
 下表说明机制怎样进入执行；来源列表本身不是效果证明。固定案例只是待运行输入，实际证据在原任务/验证记录。
 
-| 机制 | 执行落点 | 用什么观察是否有效 | 当前证据边界 |
+以下是早期试用来源的观察，不代表目标 bw-orca 分支已运行；本次采用/升级的验证以实际 PR 为准。
+
+| 机制 | 执行落点 | 用什么观察是否有效 | 历史观察边界 |
 |---|---|---|---|
 | BMAD 规划深度分流 | SKILL 自然语言起手与模式路由、review-workflow | 自然语言多文档任务和明确小修走不同路径 | 首轮暴露交付顺序缺口；候选待复验 |
 | OpenSpec 正本与变化同步 | document-contracts、maintenance | 历史/现行案例、整改后的旧副本与引用 | PR #211 已实施局部清理与入口联动，章节引用仍发现遗漏；未证明后续变化能自动同步 |
@@ -44,6 +46,8 @@
 - [Spec Kit](https://github.com/github/spec-kit)：此前报告用于对照规格与实施的一致性。本包不引入另一套目录/制品链；本轮没有重新核读其扩展实现。
 
 ## BW 继承与用户要求
+
+只读脚本与其确定性测试取自 BW 固定提交 `a2fbaf1d6359a3a13eea805c23ba963930e1796c` 的同名包（当时 main），仅复制本包四个 scripts 文件，未合并 Rust 产品实现。目标包按 bw-orca 适配范围分类与映射，保留无网络、源文件只读、仓外输出和未检查项协议；运行结果以当前 PR 为准，不继承来源分支的 CI 或模型效果结论。六环/带入三问读取目标分支原则 02，不在本包复制 main 的 Rust 验收设施。
 
 - BW 的工作树、真实证据、人确认完成、Unknown 等是项目约束；不是上述框架带来的新设计。
 - AGENTS/顶层与 docs 都可整改；规范、存量瘦身和配套维护同块交付；先把 BW 做成可实践样例。这些来自用户方向。
