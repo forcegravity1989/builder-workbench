@@ -17,28 +17,15 @@
 | [TEA](https://bmad-code-org.github.io/bmad-method-test-architecture-enterprise/) | 风险导向测试与验收追踪作为验证设计参考 | 不假设支持目标平台的 Electron/Orca；测试执行器复用项目已有设施。验证证据确实覆盖要求 |
 | [Harness engineering](https://openai.com/index/harness-engineering/) | 精简入口、可定位知识、机械检查与持续清理；对应维护和反哺 | 工程案例不是可安装完整规范；不采用其组织权限或自动合并政策。验证本项目实际效果 |
 
-## 本次新增的专项参考
+## 指令审查的固定来源
 
 [Anthropic Prompt Audit 固定版本](https://github.com/anthropics/skills/blob/41bbe19d1a1a7eaab5e7bb9050a417e5c6cffc8f/skills/claude-api/shared/prompt-audit.md)，本地核读日期 2026-09-16。来自现有 prompt-audit 试验包，其验证脚本声明上游 SHA 为该版本；本轮读取文件的 SHA-256 为 571b08c181a8f3f0906a99045ff0bca88ca728d5a2d01afabb620b270c8048a2。未在本轮重跑整包上游一致性验证。
 
 采用指令面/来源追查、必要内容保护、具体修订、依赖同步、行为复验；落点是 [指令专项审查](prompt-review.md)。不复制上游完整文本或软件包，不引入 Claude SDK/模型配置，模型特定结论须另查适用证据。原包许可证为 Apache-2.0；未来若复制上游材料需按固定版本处理许可。
 
-## “已借鉴”与“已验证”分开
+## 验证责任
 
-下表说明机制怎样进入执行；来源列表本身不是效果证明。固定案例只是待运行输入，实际证据在原任务/验证记录。
-
-以下是早期试用来源的观察，不代表目标 bw-orca 分支已运行；本次采用/升级的验证以实际 PR 为准。
-
-| 机制 | 执行落点 | 用什么观察是否有效 | 历史观察边界 |
-|---|---|---|---|
-| BMAD 规划深度分流 | SKILL 自然语言起手与模式路由、review-workflow | 自然语言多文档任务和明确小修走不同路径 | 首轮暴露交付顺序缺口；候选待复验 |
-| OpenSpec 正本与变化同步 | document-contracts、maintenance | 历史/现行案例、整改后的旧副本与引用 | PR #211 已实施局部清理与入口联动，章节引用仍发现遗漏；未证明后续变化能自动同步 |
-| Matt 渐进读取、概念与决策 | 文档契约、SKILL 引用与规范读取链 | 记录读取并检查结果是否采用，而非只检查文件存在 | 首轮读了契约仍未转成目标格式，证明只读取不够 |
-| Diátaxis 读者任务分类 | document-contracts 的使用文档部分 | 指南是否能支持对应任务、职责是否混写 | 本轮顶层入口不能代表所有指南验证 |
-| HEART / 指标框架 | feature-evidence | 口径、有效采集、价值判断分别验证 | 候选方法，尚无全特性指标有效性证明 |
-| Example Mapping / TEA | feature-evidence 的行为、场景和证据 | 验收点、用例、版本适用的真实执行记录 | 不把映射字段存在当运行通过 |
-| Harness 持续维护 | maintenance、scanning、session-workflow | 实际修订复验及后续同类任务、维护成本 | 检查已可运行；持续自动化尚未启用 |
-| Prompt Audit | prompt-review | 保留必要约束、来源有据、修订后行为比较 | 候选适配，尚未运行新的行为对照 |
+来源与机制已进入本包不代表效果已验证。代表输入见 [固定案例](../evals/cases.md)，静态检查、真实任务与修订复验结果分别留在对应 Git/PR/运行记录；不在本篇维护试用流水。反馈与复验程序见 [维护方法](maintenance.md)。
 
 ## 已研究但未选作主流程
 
