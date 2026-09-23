@@ -19,18 +19,20 @@
 ├── CLAUDE.md          一行 @AGENTS.md 导入（入口件）
 └── CONTEXT.md         领域词表唯一正本（入口件）
 
-docs/（所有知识目录都在这，编号定序；architecture 不编号＝docs 内设计正本）
+docs/（BW 产品知识；编号定序，architecture 是整体设计正本）
 ├── 01-principles/     原则（慢变宪法）——本目录；第一篇就是本文
 ├── architecture.md    设计正本（Electron 叠层 + 模块设计；docs 内不编号）
-├── 02-adr/            架构决策（难回头一条一篇）
-├── 03-guide/          产品指南（怎么用，给人看）
+├── 02-adr/            架构决策的预留位置；存量已清空，后续按实际决策新增
+├── 03-guide/          产品指南的预留位置；存量已清空，真实旅程验证后补
 ├── 04-design-system/  视觉正本：设计系统资产（样式表 + token + 规范；壳直接拼入）
 ├── 05-features/       特性级变更制品链——intent + 带原型的 spec 为人 gate；plan 仅大风险；小修不进
 ├── 06-module/         单个模块的实现心智模型——设计面对的主要矛盾 / 取舍;不纠结实现细节
 ├── 10-reference/      外部参考的提炼版
 ├── hifi/              八屏版式与旅程原型
-├── metrics.md         指标口径
 └── draft/             本地草稿/真实项目试用记录（不进仓）
+
+ref/                  按需引用的 Orca 工程参考，不替代 BW 产品知识
+.claude/skills/       BW 研发方法；standard/ 是给被管项目的执行规范
 
 .teamai/               团队 harness 分发（skills / rules / hooks / MCP）——有则用之
 decision-ui/ 等       gate 投影（只读渲染 docs/05-features/*；不当第二真相）
@@ -150,7 +152,7 @@ docs/05-features/<change-id>/
 
 ## 6. 与现有文档边界的关系
 
-[`docs/README.md`](../README.md) 管 docs 树地图；设计正本是 [`docs/architecture.md`](../architecture.md)；产品指南在 [`docs/03-guide/`](../03-guide/)。  
+[`docs/README.md`](../README.md) 管 docs 树地图；设计正本是 [`docs/architecture.md`](../architecture.md)；产品指南预留 `docs/03-guide/`，当前无存量正文；随真实旅程验证补回，不恢复旧 Rust 操作步骤。
 本文管**整仓知识分层**（原则 / 变更 / docs / agent 入口）。与 docs 落盘细则冲突时：**docs 目录内听 docs/README + architecture**；跨目录归属听本文。
 
 ### 6.1 仓根只留四份入口文档

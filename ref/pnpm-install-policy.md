@@ -26,9 +26,9 @@ another target does not itself cross-compile native addons.
 electron-builder only logs a warning for a missing `extraResources` source and
 continues, so without a check a foreign-architecture slice would ship silently
 broken. `beforePack` in
-[`config/electron-builder.config.cjs`](../../config/electron-builder.config.cjs)
+[`config/electron-builder.config.cjs`](../config/electron-builder.config.cjs)
 therefore calls `assertPackagedNativeVariantsInstalled` in
-[`config/packaged-runtime-node-modules.cjs`](../../config/packaged-runtime-node-modules.cjs),
+[`config/packaged-runtime-node-modules.cjs`](../config/packaged-runtime-node-modules.cjs),
 which fails the build when the target platform/architecture's native variants
 are not installed: `sherpa-onnx-*`, `@parcel/watcher-*`, and on Windows the
 node-gyp addon `@vscode/windows-process-tree`. The error names every missing

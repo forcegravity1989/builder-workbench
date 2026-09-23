@@ -1,7 +1,10 @@
 # standard/
 
-Workbench 内置规范的源码。现行壳从仓内文件读取系统提示词、reference 与自有 skill，开工只注入名字 + 一句话 + 绝对路径；vendor 的开发环境与安装包边界见 [`vendor/README.md`](vendor/README.md)。修改实际分发、渲染或读取的内容会改变产品行为，文件存在不等于已注入。
-不进被管仓。接入只写名片 `.bw/project.toml`(项目约定常驻工作树),不复制本目录。
+> **维护约定**：给修改 BW 产品执行规范的人和模型读取；只写各层职责、目录与当前加载边界，内容或分发入口变化时更新。实际用户旅程与执行覆盖见模块设计，不把文件存在写成已经派发。
+
+本目录是 Workbench 执行规范的源码，面向被管项目的业务会话，不是 BW 研发知识库或 Orca 工程参考。当前计划页签新开 Claude 会话仅在规划工作树和主项目中搜索 SYSTEM、week-planning 及部分 references，再注入存在的绝对路径；未找到时报告缺失。此入口不渲染模板占位符，也不证明整套资产已随安装包分发。
+
+`standard/vendor/` 未迁入本分支；旧开发环境的复制机制和默认 workflow 派发承诺不适用于这里。
 
 从仓根 [`AGENTS.md`](../AGENTS.md)「按任务读取」点过来。主提示词 / reference / skill 注入对照见 [`docs/06-module/系统提示词与渐进加载`](../docs/06-module/系统提示词与渐进加载.md)。
 
@@ -23,8 +26,8 @@ Workbench 内置规范的源码。现行壳从仓内文件读取系统提示词�
 |---|---|---|
 | `templates/` | `.bw` 格式样例 | 接入时不复制。指标定义由用户在更新指标与版本计划 Issue 中确认后创建 |
 | `system-prompt/` | 开工注入的主提示词 + 任务规范 | 不进项目仓;提示词只给路径,正文按需读 |
-| `skills/` | Workbench 技能 + 构建默认 workflow 入口 | 写入 Workbench 资产目录,不复制进用户仓 |
-| `vendor/` | 业界 workflow 原样副本 | 入口在 `skills/`;库复制到 `<asset>/vendor/` |
+| `skills/` | Workbench 技能与历史 workflow 入口内容 | 当前仅部分规划路径提供指针；不能视作整包派发 |
+| `vendor/`（未迁入） | 旧业界 workflow 依赖 | 不存在，相关入口不能按已安装使用 |
 
 仓根 `AGENTS.md` / `CLAUDE.md` 是项目自己的,不在这套里,盘点不代写。项目知识文档的归属与落点沿该入口及其引用确定；BW 研发知识库的编号目录不作为被管项目的默认目录模板。
 
@@ -53,14 +56,8 @@ Workbench 内置规范的源码。现行壳从仓内文件读取系统提示词�
 
 ## skills/
 
-清单与触发见 [`skills/README.md`](skills/README.md)。Workbench 技能 `week-planning` / `asset-audit` / `metrics-refresh` 与构建入口 `mattpocock-skills` 已派发;`project-handbook` 在仓里、盘点不派发;`mr-review` 未派发。不预置阶段方法论——那是 `vendor/` 的事。
+清单与适用任务见 [`skills/README.md`](skills/README.md)。文件的业务用途与运行时覆盖分别说明；当前可确认的解析入口是计划页签的 week-planning 指针，其他入口须逐项验证。`mr-review` 与 `REVIEW.md.tmpl` 的存在不代表独立评审已经接入。
 
-## vendor/
+## 外部 workflow 的边界
 
-| 库 | 状态 |
-|---|---|
-| `mattpocock-skills` | 构建/优化/运维默认入口已注册；vendor 目前依赖开发环境源码复制，独立安装包分发未实现 |
-| `mohit-pm-claude-skills` | 已 vendor,未作产品默认 |
-| `proto-design` | 原型默认,源还没进来 |
-
-分发态把 vendor 打进安装包还没做(dev 期从源码树复制)。
+本分支未迁 `standard/vendor/`。`mattpocock-skills` 仍有入口文件，但依赖正文缺失，不能宣称可执行或已打包；proto-design 也未作为 BW 默认交付。需要这些方法时，在特性迁移中决定来源与分发路径，不自动搬回 Rust 资产机制。
