@@ -2,11 +2,32 @@
 
 > 30 秒导读：扫描用于发现知识形态、结构提示与引用问题。源文件仍是正本；HTML/JSON 可重新生成。字段存在与链接存在均不证明语义正确或已验收。
 
-## 运行
+## 运行环境与链接检查
 
-需要 Node.js，无第三方运行依赖。BW 的映射放在 [bw-scan.json](projects/bw-scan.json)，包含范围、文档类型和候选结构提示；其他项目复制并调整映射，不能直接继承 BW 目录。
+运行环境为 Node.js 24，无第三方运行依赖。BW 的映射放在 [bw-scan.json](projects/bw-scan.json)，包含范围、文档类型和候选结构提示；其他项目复制并调整映射，不能直接继承 BW 目录。
 
-`include` 是可能存在的文件/目录清单，不是规范要求。不存在的候选路径会显示为 `selected-path-missing`；不恢复已退役文件，也不能据此判为本轮缺失交付。脚本自身的确定性测试已接入 BW 交付验证；全库扫描结果尚未作为 CI 门禁。
+没有相应环境时可用现有工具验证文档，明确本包脚本未运行。单次链接检查只读显式指定的 Markdown，不遍历全仓：
+
+```text
+node <Skill>/scripts/check-links.mjs --root <目标仓绝对路径> --file AGENTS.md --file CLAUDE.md
+```
+
+- 识别 Markdown 行内链接、引用式链接与独立的 `@路径` 导入，跳过代码围栏和行内代码；核对目标文件/目录存在，拒绝越仓根与符号链接绕出范围。
+- 输出 JSON 含来源行、文件指纹和未检查项；不读取引用目标业务正文，不写源文件，不发网络请求。
+- URL、标题锚点、HTML 和复杂 Markdown 不检查；退出码 0 仅表示支持范围内未发现文件路径错误，1 为缺文件/越界引用，2 为参数或读取失败。
+
+未检查项需独立核验，不能把跳过当通过。脚本校验不判断文档语义、真实加载或模型行为。
+
+脚本自身的确定性测试：
+
+```text
+node --test <Skill>/scripts/check-links.test.mjs
+node --test <Skill>/scripts/scan-knowledge.test.mjs
+```
+
+## 全景与前后扫描
+
+`include` 是可能存在的文件/目录清单，不是规范要求。不存在的候选路径会显示为 `selected-path-missing`；不恢复已退役文件，也不能据此判为本轮缺失交付。本包提供独立的 Node 测试入口；是否被当前 CI 执行须核验实际 workflow，不能沿用来源分支“已接入”声明。全库扫描结果不是 CI 门禁。
 
 ```text
 node <Skill>/scripts/scan-knowledge.mjs --root <目标仓> --profile <Skill>/references/projects/bw-scan.json --out <仓外报告目录>
@@ -27,6 +48,8 @@ node <Skill>/scripts/scan-knowledge.mjs --root <目标仓> --profile <Skill>/ref
 | 候选债务 | 缺文件引用、完全重复的长段落、待核对结构、扫描范围内无入链 | 人核对后决定处置；不自动删档/改规则 |
 
 映射 JSON 是可执行检查配置，`contractSource` 指回其人读规范。内容契约变动时一起修改和验证；它不是第二份项目业务正本。当前 BW 映射是试验候选，尚未在全仓采纳，结构提示仅供整改选择。
+
+`rules` 按顺序取首条匹配，`type` 标内容类型，`scope` 标职责归属；未给 scope 时使用 `defaultScope`，仍缺则为“未分类”。BW 映射将 ref 放在通用 README 规则之前，区分 Orca 工程参考、BW 产品知识和本仓开发方法；standard 为产品分发资产，默认不扫描。其他项目应自己映射，扫描器不硬编码 BW 目录语义。
 
 ## 用于看护
 
