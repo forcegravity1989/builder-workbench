@@ -78,12 +78,14 @@ impl ChromeBusy {
 }
 
 #[derive(Clone, Copy)]
-pub struct GuideNav(pub dioxus::prelude::Signal<Option<&'static str>>);
+// 章节 ID 用 String 而不是 &'static str：指南 HTML 可以热加载，目录是运行时
+// 从磁盘文件里扫出来的，借不到 'static。
+pub struct GuideNav(pub dioxus::prelude::Signal<Option<String>>);
 
 impl GuideNav {
-    pub fn open(mut self, chapter: &'static str) {
+    pub fn open(mut self, chapter: impl Into<String>) {
         use dioxus::prelude::WritableExt;
-        self.0.set(Some(chapter));
+        self.0.set(Some(chapter.into()));
     }
     pub fn close(mut self) {
         use dioxus::prelude::WritableExt;

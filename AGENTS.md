@@ -74,6 +74,8 @@ $env:BW_PANEL = 'plan'
 .\target\debug\bw-dev.exe
 ```
 
+前端资源（全局 CSS 与产品指南 HTML）支持热加载。壳启动时按 `BW_UI_DIR` → exe 同级 `ui/` 的顺序找资源目录；找到就运行时读盘、每 500ms 轮询，存盘即生效，不必重编 Rust；都找不到就退回编译期内嵌版本且不起监听线程。启动日志的 `[BW_UI] hot=on|off` 说明实际走了哪条。资源目录里认三个固定文件名：`styles.css`、`shell.css`、`guide.html`（缺哪个用哪个的内嵌版本）。开发时最省事是 `BW_UI_DIR=<仓根>/target/release/ui`——出包旅程会从仓内正本摊好这份；也可自建目录手放三个文件。安装包把这份摊在 `{app}\ui\`，装完直接改那里的文件即可。
+
 Windows 出包/验包入口是 `.bw/release/pack/pack.cmd` 与 `.bw/release/e2e/e2e.cmd`，均传 `--version <tag串> --workdir <仓根绝对路径>`；验包即 `node .bw/release/verify/verify.mjs --profile installer --version <tag串>`，`e2e.cmd` 是它的 JSONL 适配层（产品按钮消费）；协议见 [ADR 0005](docs/02-adr/0005-发版出包与E2E协议.md)。正源为 `.bw/release/pack/*.iss`，产物 `.bw/release/out/<号>/` 不进仓；出包不是日常门禁。正式发布入口是 `.bw/release/publish/publish.mjs`，只在人明确授权后运行：出包记录、门禁验证、验包记录与 tag 指向四绑定缺一拒发，发布存储正本为 GitHub Releases；交付链全程 SOP 见 [.bw/release/README.md](.bw/release/README.md)。
 
 桌面开工走会话屏 Orca / Open Design，工具按本机设置选择；路径与失败处理见 [会话与执行](docs/06-module/会话与执行.md)。真实执行依赖工具、会话宿主、信任对话框及网关；PTY 烟测只证明底座，不证明桌面开工成功。

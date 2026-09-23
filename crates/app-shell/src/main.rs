@@ -37,6 +37,7 @@ fn main() {
     // 起任何线程之前先把本机时区定住 —— 周是按本机时区算的。
     bw::isoweek::init_local_offset();
     bw_engine::dlog::init();
+    theme::log_ui_boot();
     let deep_link = bridge::read_deep_link();
     let builder = dioxus::desktop::WindowBuilder::new()
         .with_title("Builders' Workbench")
@@ -60,9 +61,24 @@ thread_local! {
 
 #[component]
 fn GlobalChrome() -> Element {
+    // 前端资源热加载：ui/ 目录里的 CSS 存盘后重算这一份，不必重编 Rust。
+    // 没有资源目录时 watch 返回 None，这里就退化成「读一次内嵌版本」。
+    let mut rev = use_signal(|| 0u64);
+    use_future(move || async move {
+        let Some(mut rx) = theme::watch_ui_assets() else {
+            return;
+        };
+        while rx.recv().await.is_some() {
+            rev += 1;
+        }
+    });
+    use_effect(move || {
+        // 读一下版本号：订阅它，文件变了这个 effect 才会重跑。
+        let _ = rev();
+        theme::apply_css();
+    });
     rsx! {
         document::Title { "Builders' Workbench" }
-        document::Style { {theme::GLOBAL_CSS} }
     }
 }
 

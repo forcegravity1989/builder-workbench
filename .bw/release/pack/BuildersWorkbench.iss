@@ -75,6 +75,10 @@ Source: "..\..\..\target\release\bw-dev.exe"; DestDir: "{app}"; Flags: ignorever
 ; （target\release\build\webview2-com-sys-*\out\x64\，hash 不稳定）。出包旅程里先
 ; 把它拷到 target\release\WebView2Loader.dll（稳定路径），这里从那取。
 Source: "..\..\..\target\release\WebView2Loader.dll"; DestDir: "{app}"; Flags: ignoreversion
+; 前端资源：壳运行时从 {app}\ui 读 CSS 与产品指南，改存盘即生效（热加载）。
+; 由 pack 旅程从仓内正本摊到 target\release\ui（pack\lib.ps1），这里只搬。
+; ignoreversion = 升级时覆盖：留着旧 ui 会盖住新版内嵌样式，比丢自定义更糟。
+Source: "..\..\..\target\release\ui\*"; DestDir: "{app}\ui"; Flags: ignoreversion
 ; codehub-cli：编译期判存在，有才带（来源见 #define CodehubCliSrc）。
 #if FileExists(CodehubCliSrc)
 Source: "{#CodehubCliSrc}"; DestDir: "{%USERPROFILE}\bin"; Flags: ignoreversion onlyifdoesntexist uninsneveruninstall

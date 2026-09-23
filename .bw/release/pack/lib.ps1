@@ -79,6 +79,26 @@ $dllHits = Get-ChildItem -Path (Join-Path $root 'target\release\build') -Recurse
 if (-not $dllHits) { Fail pack_failed '编完了但找不到 WebView2Loader.dll（webview2-com-sys 的 x64 产物）' }
 Copy-Item -Force $dllHits[0].FullName (Join-Path $root 'target\release\WebView2Loader.dll')
 
+# 前端资源摊到 target\release\ui\：装完之后壳就从这个目录读 CSS 与指南，
+# 改存盘即生效（不必重编）。文件名是壳认的固定名（theme/assets.rs），
+# 改名要两边一起改。缺源文件直接 Fail —— 静默少摊一份，装出来的包会
+# 悄悄退回内嵌版本，热加载看着「没坏」其实已经没了。
+Write-BwProgress -Phase payload -Message '摊前端资源到 target\release\ui'
+$uiDir = Join-Path $root 'target\release\ui'
+New-Item -ItemType Directory -Force -Path $uiDir | Out-Null
+$uiSources = [ordered]@{
+    'styles.css' = 'docs\04-design-system\styles.css'
+    'shell.css'  = 'crates\app-shell\assets\shell.css'
+    'guide.html' = 'docs\03-guide\v4-产品指南.html'
+}
+foreach ($name in $uiSources.Keys) {
+    $src = Join-Path $root $uiSources[$name]
+    if (-not (Test-Path -LiteralPath $src -PathType Leaf)) {
+        Fail pack_failed "前端资源缺失：$src（热加载要摊的 ui\$name）"
+    }
+    Copy-Item -Force $src (Join-Path $uiDir $name)
+}
+
 Write-BwProgress -Phase iss -Message "ISCC -> $outDir"
 New-Item -ItemType Directory -Force -Path $outDir | Out-Null
 $iss = Join-Path $here 'BuildersWorkbench.iss'

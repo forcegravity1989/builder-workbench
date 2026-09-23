@@ -2,15 +2,14 @@ use crate::bridge::{
     Bridge, ChromeBusy, GuideNav, HelpNav, HelpTab, Panel, PanelNav, REPORTING, REPORTING_LOG,
 };
 use crate::chrome::{icon, light_dot};
+use crate::theme;
 use crate::vm::ToolProbeVm;
 use bw::model::Signal;
 use dioxus::prelude::*;
 
-const GUIDE_HTML: &str = include_str!("../../../../docs/03-guide/v4-产品指南.html");
-
-fn guide_toc() -> Vec<(&'static str, &'static str)> {
+fn guide_toc(html: &str) -> Vec<(String, String)> {
     let mut out = Vec::new();
-    for seg in GUIDE_HTML.split("data-screen=\"").skip(1) {
+    for seg in html.split("data-screen=\"").skip(1) {
         let Some((id, rest)) = seg.split_once('"') else {
             continue;
         };
@@ -22,18 +21,18 @@ fn guide_toc() -> Vec<(&'static str, &'static str)> {
         };
         let label = label.trim();
         if !id.is_empty() && !label.is_empty() {
-            out.push((id, label));
+            out.push((id.to_string(), label.to_string()));
         }
     }
     out
 }
 
 /// 章节 ID 只接受指南目录中已有的值，避免向 srcdoc 拼入外部脚本。
-fn guide_doc(chapter: &str) -> String {
-    if guide_toc().iter().any(|(id, _)| *id == chapter) {
-        format!("{GUIDE_HTML}\n<script>window.go({chapter:?});</script>")
+fn guide_doc(html: &str, chapter: &str) -> String {
+    if guide_toc(html).iter().any(|(id, _)| id == chapter) {
+        format!("{html}\n<script>window.go({chapter:?});</script>")
     } else {
-        GUIDE_HTML.to_string()
+        html.to_string()
     }
 }
 
@@ -106,17 +105,20 @@ pub fn HelpHub(bridge: Bridge, env: Vec<ToolProbeVm>) -> Element {
             }
         }
     });
-    let toc = guide_toc();
+    // 每次渲染现读：指南 HTML 可热加载，存盘后下次交互（切页签、搜索、开章节）
+    // 就是新内容，不需要重开窗口。
+    let guide_html = theme::guide_html();
+    let toc = guide_toc(&guide_html);
     let tab = *help.0.read();
-    let chapter = *guide.0.read();
+    let chapter = guide.0.read().clone();
     let title_ok = !title.read().trim().is_empty();
     let log_ready = bw_engine::dlog::log_path().is_file();
     let (sig, head, sub) = env_status(&env);
     let q = query.read().trim().to_lowercase();
-    let hits: Vec<(&'static str, &'static str)> = toc
+    let hits: Vec<(String, String)> = toc
         .iter()
-        .copied()
         .filter(|(_, label)| q.is_empty() || label.to_lowercase().contains(&q))
+        .cloned()
         .collect();
 
     rsx! {
@@ -187,12 +189,12 @@ pub fn HelpHub(bridge: Bridge, env: Vec<ToolProbeVm>) -> Element {
                             }
                             div { class: "help-card",
                                 div { class: "help-card-head", "产品指南" }
-                                for (id , label) in toc.iter().copied().take(4) {
+                                for (id , label) in toc.iter().take(4).cloned() {
                                     button {
                                         key: "{id}",
                                         class: "help-row",
                                         onclick: move |_| {
-                                            guide.open(id);
+                                            guide.open(id.clone());
                                             help.close();
                                         },
                                         span { class: "help-row-copy", "{label}" }
@@ -221,12 +223,12 @@ pub fn HelpHub(bridge: Bridge, env: Vec<ToolProbeVm>) -> Element {
                                 if hits.is_empty() {
                                     div { class: "empty", "没有匹配的章节。" }
                                 }
-                                for (id , label) in hits.iter().copied() {
+                                for (id , label) in hits.iter().cloned() {
                                     button {
                                         key: "{id}",
                                         class: "help-row",
                                         onclick: move |_| {
-                                            guide.open(id);
+                                            guide.open(id.clone());
                                             help.close();
                                         },
                                         span { class: "help-row-copy", "{label}" }
@@ -321,7 +323,7 @@ pub fn HelpHub(bridge: Bridge, env: Vec<ToolProbeVm>) -> Element {
                         "✕"
                     }
                 }
-                iframe { class: "guide-frame", srcdoc: guide_doc(ch) }
+                iframe { class: "guide-frame", srcdoc: guide_doc(&guide_html, &ch) }
             }
         }
     }

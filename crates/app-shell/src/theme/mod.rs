@@ -1,8 +1,6 @@
-pub const GLOBAL_CSS: &str = concat!(
-    include_str!("../../../../docs/04-design-system/styles.css"),
-    "\n",
-    include_str!("../../assets/shell.css"),
-);
+mod assets;
+
+pub use assets::{apply_css, guide_html, log_boot as log_ui_boot, watch as watch_ui_assets};
 
 pub fn signal_color(s: Option<bw::Signal>) -> &'static str {
     match s {

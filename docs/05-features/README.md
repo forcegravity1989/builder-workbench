@@ -42,6 +42,7 @@
 | PR 评审召唤制 | `.github/workflows/claude-code-review.yml` + [reviewer-agent/](reviewer-agent/) | 已交付并实测闭环；reviewer-agent = 第一个「带入即走链」活例 |
 | 发布自用工具链 | `.bw/release/{pack,verify,publish,e2e}` + version-report skill | 发布绑定拒发（GitHub Releases 正本、缺绑定拒发）；version-report 修订归 S4 |
 | 本地 Skills | `.claude/skills/{workbench-start,project-knowledge,version-report,design-system-import}` | 四簇规则收敛归 S4 |
+| 前端资源热加载 | `crates/app-shell/src/theme/assets.rs`（读取与轮询）+ `.bw/release/pack/`（摊 `ui/` 进包）；用法见 AGENTS「构建、运行与验证」 | 改 CSS / 指南不必重编 Rust；user = BW 开发团队，非产品特性 |
 
 ## 预研（无真实用户，不开链；要做先立 intent）
 
