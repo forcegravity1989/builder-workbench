@@ -10,17 +10,21 @@
 | 项 | 值 |
 |---|---|
 | GitHub | https://github.com/stablyai/orca |
-| 默认远程名 | `origin` |
+| BW 仓远程 | `origin` = `https://github.com/forcegravity1989/builder-workbench.git`；`origin/main` 是 Rust 路线 |
+| Orca 远程建议名 | `orca-upstream`；需先核对 URL，不能把 `origin` 当作上游 Orca |
 | 本分支基线 commit | `caa465d1da886b2697c85c18bf36f79f2d3b9e68`（`fix(automations): stop tick latency counting against the missed-run grace (#20819)`，2026-09-15） |
 | 本仓分支 | `bw-orca`（由本地 `workbench` 二次开发叠层落成） |
 
-拉取更新：
+同步 Orca 前先检查 `git remote -v`；若 `orca-upstream` 尚未配置，添加为上表 Orca GitHub URL，已有同名远程则先核对身份。同步在从最新 `bw-orca` 创建的独立分支上完成并评审：
 
 ```bash
-git fetch origin
-git merge origin/main
-# 或：git rebase origin/main
+git fetch origin bw-orca
+git remote get-url orca-upstream
+git fetch orca-upstream main
+git merge orca-upstream/main
 ```
+
+这些是明确开展 Orca 升级时的步骤；`origin/main` 不能代替 `orca-upstream/main`。从 Rust main 带入特性或方法时做定向迁移和重新决策，不整支合并。
 
 冲突取舍见下文「同步注意事项」。
 
@@ -55,7 +59,7 @@ git merge origin/main
 | | `docs/agent-skill-sharing-implementation-checklist.md`、`docs/workbench-transformation-plans.html` | 清单与历史改造页 |
 | | 根目录原 Orca `AGENTS.md` / `README.md` | 已由 Workbench 同名正本替换 |
 
-`.gitignore` 中旧的 `docs/**` 白名单已去掉，改为跟踪整棵 Workbench `docs/` 与 `ref/`。
+`.gitignore` 中旧的 `docs/**` 白名单已去掉，改为跟踪整棵 Workbench `docs/` 与 `ref/`。v0.5 准备阶段清空旧 ADR、指南及 metrics.md，特性只留 reviewer-agent 与 version-planning；历史从 Git 查，不在后续同步时自动恢复。设计系统与 hifi 由对应同事维护。
 
 ### 产品面（Workbench 壳二次开发，非删源文件）
 
@@ -105,3 +109,9 @@ git merge origin/main
 pnpm run dev:workbench
 # 冒烟：总览 / 计划 / 知识库 / 项目墙；计划页 week-plan 会话仍钉在专用会话
 ```
+
+## 待迁移的工程边界
+
+- `.github/workflows/docs.yml` 仍指向已删的 `docs/site`；`config/scripts/check-readme-local-links.mjs` 仍要求已删的 `docs/readme`，在本分支基线上会报 ENOENT。二者交由 CI/CD 迁移处理，不能作为 BW 文档与检查链已就绪的证据。
+- BW 的 CI/CD、独立评审与正式出包链需按 Electron 验证；源码中保留旧入口不代表已经可交付。
+- `standard/` 的路径解析只覆盖部分入口，知识库分类、保存与工作树来源仍需在对应特性迁移时重新决策；当前行为边界见 [architecture](../docs/architecture.md)。

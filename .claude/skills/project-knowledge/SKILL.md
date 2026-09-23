@@ -8,7 +8,7 @@ description: >-
   文档瘦身、特性指标验收梳理、知识老化和反哺. Ordinary coding only needs the
   relevant project knowledge; it does not trigger a full knowledge audit.
 metadata:
-  version: 0.4.1-pilot
+  version: 0.4.2-pilot
 ---
 
 # 项目知识库治理
@@ -48,4 +48,4 @@ metadata:
 
 完成要求是认可职责、覆盖到的旧债、必要引用/加载与适用验证一起落实；未解决的迁移债不能标成完成。总字数只是成本观察，不能靠删掉必要约束提高“瘦身率”。详细验收、唯一交付表与反馈程序在维护方法，工具命令和覆盖限制在扫描说明。
 
-本包为仓内 0.4.1-pilot；来源与采用差异见来源参考，固定输入见 [评估案例](evals/cases.md)，实际结果留在对应 PR/运行记录。脚本测试、静态走读和真实模型任务分别报告，不从静态通过推断模型效果。
+本包为仓内 0.4.2-pilot；来源与采用差异见来源参考，固定输入见 [评估案例](evals/cases.md)，实际结果留在对应 PR/运行记录。脚本测试、静态走读和真实模型任务分别报告，不从静态通过推断模型效果。

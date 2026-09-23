@@ -17,7 +17,7 @@
 | 职责 | 目标仓中的入口 | 编辑与验证边界 |
 |---|---|---|
 | BW 产品知识 | README、CONTEXT、docs/README；docs/01-principles、architecture、06-module、实际在用的 05-features | 原则慢变；产品目标、规格、当前实现和验证各有来源，不能用旧代码推翻已认可意图 |
-| Orca 工程参考 | ref/upstream.md、ref/README.md 及按需主题 | 解释执行核工程边界；核对对应源码/协议与上游版本，不复制为第二套 BW 产品规格 |
+| Orca 工程参考 | ref/upstream.md 及按需主题 | 解释执行核工程边界；核对对应源码/协议与上游版本，不复制为第二套 BW 产品规格 |
 | 本仓开发方法 | AGENTS、CLAUDE 导入、.claude/skills/workbench-start 与 project-knowledge；当前构建/测试/CI | AGENTS 是开发规矩，Skill 是执行方法；本包不自动接入桌面或向外分发 |
 | 产品分发资产 | standard/README.md 与其实际系统提示词、references、skills | 供被管项目使用；文件存在、实际派发/加载、模型遵守分开验证。改开发方法不顺带改 standard |
 

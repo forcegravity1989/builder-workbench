@@ -1,12 +1,8 @@
 # Workbench 同步策略
 
-> 分支：`workbench`。产品叠层在本目录。  
-> 保真正本：
-> - 一体原型 `loop-buddy/docs/05-features/native-session-execution/prototype-v6.html`
-> - 真壳实现 `loop-buddy/crates/app-shell/src/screens/`（overview / plan / kb / settings / wall / session）
-> - 设计 token / chrome：`loop-buddy/docs/04-design-system/`、`crates/app-shell/assets/shell.css`
+> **维护约定**：给维护 Electron 叠层和同步 Orca 的开发者读；只管代码边界、同步与运行入口。产品目标见 [architecture](../../../../docs/architecture.md)，上游身份与删迁记录见 [ref/upstream.md](../../../../ref/upstream.md)；边界或命令变化时更新。
 
-优化时**两边对照**：壳与旅程信息架构借 loop-buddy；执行面（终端、建树、Tasks、Automations）复用本仓 Orca。
+目标分支是 `bw-orca`。交互迁移须按当前 BW 意图重新决策；旧 Rust main 与原型只能提供历史参考，不能视为现行实现正本。
 
 总览 / 知识库挂在现有 `activity` / `space` 槽位；计划挂 `artifacts`；任务挂 `tasks`（均不扩 `TopLevelView`）。知识库已对齐 V7「文档 / 代码 / 对账」。
 
@@ -17,16 +13,11 @@ Workbench 自有 Skill 保持 main 原路径（`.claude/skills/`、`standard/ski
 1. **upstream 核不动**：TaskPage、Automations、terminal/PTY、worktree、Explorer/SC/Diff、main runtime — 只挂载，不大段改写。
 2. **改动落叠层**：导航 / 旅程壳 / 占位屏 / 皮肤 / 品牌 只进 `src/renderer/src/workbench/`。
 3. **原文件只留一行钩子**：`isWorkbenchShell()` 条件分支。
-4. **参考源**：交互与信息架构对照 `loop-buddy`；执行面能力对照 Orca。
+4. **参考源**：产品意图与现行结构读 `docs/`；Orca 工程参考按需读 `ref/`；旧 Rust 旅程在迁移时重新决策。
 
-## 合 main 步骤
+## 同步上游
 
-```bash
-git fetch origin
-git checkout workbench
-git merge origin/main
-# 冲突：叠层外 → 取 upstream；workbench/** 与挂载钩子 → 取 ours / 手合
-```
+`origin` 是 BW 仓，`origin/main` 是在用的 Rust 版本；不是 Orca 上游。身份核对、独立分支与同步步骤统一见 [upstream 同步说明](../../../../ref/upstream.md#upstream-仓)。不得按旧 workbench 分支说明把 origin/main 整支合入。
 
 ## 日常调试（热加载）
 
@@ -70,4 +61,4 @@ ORCA_BACKGROUND_LAUNCH=1 REMOTE_DEBUGGING_PORT=9337 pnpm run dev:workbench
 ## 禁止
 
 - 大改 `TaskPage` / automations 核心 / main PTY
-- 把 loop-buddy Rust UI 整段搬进 Electron（只借交互与结构）
+- 把 Rust UI 整段搬进 Electron（迁移按用户目标与六环重新决定）

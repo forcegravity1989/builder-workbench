@@ -12,7 +12,7 @@
 
 每个阶段以「提交一份进版本控制的产物」收尾,下个阶段从读这份产物开始:**意图件 → 规格件 → 实施计划 → 带测试的改动 → 带评审结论的 PR → 事故记录**,事故记录又写成新的意图件,环闭合。每份产物有具名的验收人,接受与否用合入/关闭留痕。
 
-**BW 落点**:这就是「仓是正本」的企业版。`.bw/` 件是我们的产物层;**单变更的产物链已由 [`01-principles/01-document-organization.md`](../01-principles/01-document-organization.md) 固化**——特性级变更走仓根 `05-features/<id>/`(intent → spec → plan → STATUS,小 bug 直修不开链),本次过程指标变更的三件随 PR #125 迁入 `05-features/process-metrics/`。
+**BW 落点**:这就是「仓是正本」的企业版。`.bw/` 件是我们的产物层;**单变更的产物链已由 [`01-principles/01-document-organization.md`](../01-principles/01-document-organization.md) 固化**——当前特性按 [原则 02 六环](../01-principles/02-working-backwards.md#62-六环交付链)落在 `docs/05-features/<id>/`；小 bug 直修不开链。PR #125 的过程指标文档属于历史，已从本分支清理，不能作为必须恢复的目录。
 
 ## 六阶段逐段:主张、关键做法、BW 落点
 
