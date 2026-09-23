@@ -1,131 +1,77 @@
-# architecture.md — Workbench MVP 设计正本
+# architecture.md — Workbench 设计正本
 
-> **30 秒导读**:Workbench MVP 的**唯一设计正本**。三段:**§1 用例与旅程怎么编排 → §2 特性(每个能力是什么)→ §3 实现架构(Electron 叠层 + 运行时数据流)**。给要判断"某条为什么这么定"、接手模块、往规范里加东西的人和 AI 看。不在本篇的:开发规矩(怎么建/跑/测)在 [`AGENTS.md`](../AGENTS.md);模块实现心智 + 关键取舍在 [`docs/06-module/`](06-module/);界面视觉语言在 `docs/04-design-system/`,八屏版式与旅程在 `docs/hifi/`,五站驾驶地图在 `docs/hifi/home.html`;词表 `CONTEXT.md`;变更原因与验证证据查 commit/PR;架构决策在 [`docs/02-adr/`](02-adr/),老版本史实(V3、旧 16 模块挪移)见 [`V3 删除与旧 16 模块挪移`](10-reference/v3-and-module-migration.md),五张领域模型(上下文 / 用例 / 逻辑 / 数据 / 领域)见 [`domain-models.html`](10-reference/domain-models.html)。
->
-> **维护约定**：本篇结构与职责以上述导读为准；整体旅程、逻辑模块或壳/数据流边界变化时更新。不写开发流程与变更流水；头部边界变更先按 [AGENTS](../AGENTS.md) 与人确认。
->
-> **四层口径**(§2 按此归位):**层 A 事实**——主张性文档(人对项目基础信息/里程碑的定义)+ 仓里已有事实(代码/issue/已有文档/读数);**层 B 执行**——主体是 Orca 会话、worktree、工具检测;dispatch 单入口与守卫是内核工作方式、不单列为能力模块(见 §3 运行机制);**层 C standard 积累**——系统提示词 + 技能 + 技能提炼(渐进加载);**层 D 壳**——八屏,人怎么交互、人看什么。
+> **30 秒导读与维护约定**：给判断产品旅程、接手模块与维护知识的人和模型读取。只写 BW 整体用例、逻辑能力、Electron 叠层与数据流；结构为 §1 旅程 → §2 能力 → §3 实现与待迁移边界。整体旅程、能力或实现边界变化时更新。开发规则见 [AGENTS](../AGENTS.md)，模块取舍见 [06-module](06-module/README.md)，视觉与原型见 [设计系统](04-design-system/README.md) / [hifi](hifi/)，产品主张见 [原则 03](01-principles/03-press-release-faq-flywheel.md)。不写开发流水或把原型当已交付能力。
 
-**写作约定**:正文说人话,实现名字(命令名、函数名、表名)只在必要时作为"代码锚点"出现、不逐文件:行罗列;代号在当篇第一次出现带一句人话说明。
-
----
+本篇描述 `bw-orca` 的 Orca Electron 路线。`main` 的 Rust 版本仍服务用户，两者不是同一套实现；旧 main 可以提供用户意图和历史证据，不能直接证明这里已经交付。当前能力按源码边界描述，实际可用性仍需对应特性的真壳验收。
 
 ## §1 · 用例与旅程
 
-> §1 写**用例与旅程怎么编排**——每个用例编排哪些能力(§2)、落哪个站哪个屏、何时触发、没建什么。§2 写**特性**(每个能力的设计层:是什么),模块实现心智 + 关键取舍在 [`06-module/`](06-module/);§3 写**实现架构**(Electron 叠层 + 运行时数据流;每模块代码落点看代码)。用例不是另一层东西——它天生横切,是它编排哪些能力。
-
 ### 顶层旅程 · 五站
 
-五站是产品的顶层迭代旅程:**项目版本 → 构建交付 → 治理 → 反馈 → 进化 ↺**。主张正本(飞轮、外/内 FAQ)在 [`docs/01-principles/03-press-release-faq-flywheel.md`](01-principles/03-press-release-faq-flywheel.md),驾驶地图(五站格子、点什么发生什么)在 [`docs/hifi/home.html`](hifi/home.html)。本篇不重画五站,只把它下面的关键用例子旅程列清。
+**项目版本 → 构建交付 → 治理 → 反馈 → 进化**是产品目标，主张以原则 03 为准。五站不是五个已完成模块；导航也不是验收结果。当前导航为总览、计划、任务、自动化、知识库，另有项目墙、接入和设置入口。
 
-### 关键用例 / 子旅程
+### 当前入口与边界
 
-用例分**一级**(独立目标、有独立定时触发)与**二级**(某一级下的子步 / 派生读视图;↳ 标二级,跨切二级标「跨切」)。每行:编排哪些 §2 能力模块 / 落哪个站哪个屏 / 节律 / 没建什么。详细机制在 §2 对应能力模块。
+| 用户要做的事 | 当前承载 | 当前边界 |
+|---|---|---|
+| 打开或接入项目 | 项目墙、接入覆盖层与 Orca 仓库列表 | 接入可写工作区的 `.bw/project.toml`；尚未实现旧 Rust 的项目约定常驻 worktree + Issue + MR 完整旅程 |
+| 核对结果、拟目标、拆版本工作 | 计划页签右侧原生三屏，左侧规划会话 | 读写 `.bw/planning/<版本>/data.json`；新建 Claude 会话解析 SYSTEM 与 week-planning 指针，文件来源和覆盖边界见 §2 ③ |
+| 执行工作与管理任务 | Orca 终端、Tasks、worktree | 复用执行核；不能据规划会话可打开就认定所有 Issue 开工都已接 BW 纪律 |
+| 设置定时工作 | Orca Automations | 调度能力在执行核；旧 BW 的周一、周五、每日采集自动配置须在迁移中逐项验证 |
+| 查看项目概况 | 总览与项目墙 | 部分名片、计划材料来自仓文件；总览和健康展示仍含演示数据，不能当真实指标结论 |
+| 查看和编辑项目知识 | 知识库文档、代码、对账页签 | 文档树与正文已读真实仓库；代码页仍为占位，对账与建议仍有固定演示数据；保存和来源边界见 §3 |
+| 独立评审、出包与发布 | 保留的 reviewer-agent / version-planning 资料、现有 Orca 构建工具 | Electron 的 BW CI/CD、评审与正式交付链待对应任务迁移验证；旧 Rust Release/出包按钮与 ADR 不作为本分支操作说明 |
 
-| 用例 | 编排哪些能力模块(§2) | 站 / 屏 | 触发时机 | 没建什么 |
-| --- | --- | --- | --- | --- |
-| **接入(项目约定)** | 关键信息维护 | 项目版本 / 接入屏 | 第一次纳入自动建一张Issue | 定时任务目录 / 待办工作池未建;旧仓残留由盘点删 |
-| **周循环与计划** | 会话与执行 + 关键信息维护 + 系统提示词 | 构建交付 / 计划屏;会话屏 | 周一 09:00 定版本计划 | 预览·未合入灰态、技能提炼的未启用状态尚未接入;给 Issue 关联指标命令没接 |
-| ↳ week-planning(更新指标与版本计划 Issue) | 系统提示词与渐进加载 + 技能与提炼 + 会话与执行 | 项目版本 / 计划屏 | 周一 09:00 新会话或进入计划页签 | 计划页签原生三屏读写 `.bw/planning/<版本>/data.json`；新开会话注入 SYSTEM + week-planning 指针；任务状态仍读 Issue 标签 |
-| ↳ 发版 | 关键信息维护(Release) | 构建交付 / 计划屏 | 人点 | 号锁死当前版本视图,不能另填 |
-| ↳ 开工 | 会话与执行 + 系统提示词与渐进加载 | 构建交付 / 计划屏 Start | 人拖进「进行中」或详情 ▶开工 | 评审三件套未派发;`DeleteSession` 内核在、壳无按钮 |
-| ↳ 出包 / 验包 | 关键信息维护(`PackRelease`) | 构建交付 / 计划屏出包 | 人点 | 仅 Windows、非门禁非 CI;产物在 `.bw/release/out/<版本>/` |
-| **asset-audit(资产盘点 Issue)** | 技能与提炼 + 关键信息维护 + 会话与执行 | 治理 / 会话屏 | 周五 15:00 新会话 | 五条历史探测只实现前三条;`mode: first` 没做 |
-| **指标采集** | 关键信息维护(指标记录) + 会话与执行(B 类定时) | 反馈 / 总览屏采按钮 | 打开自动采一轮;B 类每天 20:00 | C 类定时建提醒 Issue没做;B 类脚本在项目仓,Workbench 只执行采集并保存读数 |
-| ↳ 健康展示 | 关键信息维护·健康推导(现算) | 反馈 / 总览 + 项目墙 | 打开现算 | 没读到不打勾;灯可因读数难看变红 |
-| ↳ 项目群发送(跨切) | 关键信息维护(NotifyEvent 注册表) | 项目版本 + 反馈 / 总览名片 | 事件触发(定计划/创建 Issue/合入/发版) | 群历史拉不了(welink-cli 只发不读);周报无触发、无生成逻辑 |
+迁移不是把旧八屏逐屏翻译。每个特性先确认在 Orca 上服务谁、完成什么事，再按 [原则 02 §6.2–6.3](01-principles/02-working-backwards.md#62-六环交付链)补齐旅程与证据。旧 ADR、指南和未保留的特性文档已清理；后续按真实决定补，不从 main 整体恢复。
 
-> **站 ≠ 屏。** 五站是顶层旅程(在 03 + home.html),八屏是壳导航(项目墙/接入/设置/总览/计划/会话/配置/知识库,见 §2 桌面壳)。一个用例落某个屏、属于某个站,是两个轴。
+## §2 · 能力与责任
 
-### 各用例要点
+以下是逻辑能力划分，不以模块数量计算产品特性。
 
-- **接入(项目约定)**:入口直说「打开本地仓 / 克隆远端仓」:前者使用人选择的绝对路径、不复制,后者把全局工作区根目录直接带成默认 clone 父目录、仍可改;不再制造空目录冒充项目。选定任一来源后先读 `.bw/project.toml`,已有名片就在同一张基础信息卡回显。第一次纳入自动建「项目约定」Issue,只写 `.bw/project.toml`(外加 `.bw/.gitignore`),落常驻分支 `bw/project`,工作目录在 `<仓>/.bw/worktrees/project`,开 MR 等人合,全程不起 agent。默认分支 HEAD 已有名片、或开着项目约定 / 残留旧标题就不重开。没合进默认分支总览常驻横幅。改名片 / 项目群复用同一标题同一棵树。在研版本不进仓文件：按带版本号与计划标签的版本计划 Issue 选择，优先取最新未关闭项，其次取未发布的已关闭项；没有则为空。开工工具跟人走本机。**不写主检出、完成永远人点、常驻分支合入后不删**。仓根一个字不写。详见 §2「关键信息维护」。
-- **周循环与计划**:计划版本、自建版本、发版号是同一个里程碑名(`bw:plan:<名>` / 里程碑标题 / Release)。ISO 周只做定时触发周期，不当排期名。在研版本按版本计划 Issue 选择，不由里程碑日期决定，也不进 `.bw/project.toml`。版本列表、发版、看板计数全现算——没有周计划索引表、没有发版表。发版先建 codehub Release 成功再打 `bw:released:<名>`(顺序不能反)。出包是左侧另一颗按钮(ADR-0005),不和发版本绑。拖拽落定那一刻标签就是新的(排期是 issue 数据,不走 MR);写标签成功才挪卡,失败停原列。完成永远人点。定时调度在 Orca:周一 09:00 定计划、周五 15:00 盘点、每天 20:00 采 B 类。
-- ↳ **week-planning(更新指标与版本计划 Issue)**:人先确认本周版本(推荐 `vX.X`),当场创建 Issue打 `bw:plan:<名>` + `bw:category:*`,挂 codehub 同名里程碑(起止默认本周周一到周五)。计划页签右侧原生三屏编辑 JSON；左侧新开会话注入 SYSTEM 与 skill 指针，用 planning.py CLI 读写同一文件。不要另开 HTML。不再写 `bw:week:*`。旧计划评论仅首次导入。
-- ↳ **发版**:远端建 Release + 打 `bw:released:<名>`,号锁死当前版本视图。
-- ↳ **开工**:入口在计划屏(拖进「进行中」或详情 ▶ Start),同一条 `run_issue`:开/复用 worktree,没会话才打 Orca `createAgentSession`,有会话只切树。详见 §2「会话与执行」。
-- ↳ **出包 / 验包**:入口 `.bw/release/pack/pack.cmd` + `e2e/e2e.cmd`,协议见 ADR-0005;产物 `.bw/release/out/<版本>/`(gitignore)。验包不过「详情」列出每条用例与报错。
-- **asset-audit(资产盘点 Issue)**:每周对照 `references/bw-assets.md` 盘 Workbench 给项目的 `.bw/`(清理残留、更新格式、列出未完成事项),再盘全仓人持文档正本(architecture / AGENTS / CONTEXT / 01-principles / 02-adr / 03-guide / 04-design-system / 05-features)对齐实现、清过时、互相一致,只写评论不替改,再盘项目本周提交与开着的 MR(建议只落这条 Issue的评论),再按 `week-plan-comment.md` 给本周在研版本那张更新指标与版本计划 Issue追加一条每周进展。开工工具跟构建。
-- **指标采集**:见 §2「关键信息维护」的指标记录。A 类(可回溯)一个字不存现算;B 类(不可回溯)与 C 类(手填)进同一份 `.bw/metrics/readings.jsonl`(键日历日,同天同指标只留一行)。B 类日采走 Orca 自动化(每天 20:00,钉指标记录工作树 `bw/ledger`,默认关)。
-- ↳ **健康展示**:调 §2「关键信息维护」的健康推导(二级特性),总览+项目墙现算,没数据是诚实的灰不是绿。
-- ↳ **项目群发送**:往群里发固定枚举事件(本周版本计划 / 新建 Issue纳入本周 / PR 合入 / 发版 / 周报),每件可在总览单项开关。事件挂在 `NotifyEvent` 注册表上(加新事件 = 加 variant + 动作点调一次统一 dispatch,见 ADR-0003)。发送结果不持久化(没有已发送记录/去重键/重试队列,发送即完成)。群号走仓文件、登录是机器的事(Workbench 不碰不存凭证)。
+### ① 关键信息维护（事实层）
 
----
+Issue 与标签是工作状态正本，版本计划内容由仓内 JSON 承载，项目约定由 `.bw/project.toml` 承载。完成由人确认、未知不装健康等要求以 AGENTS 四铁律为准。旧 Rust 的集中读写口、现算类型与指标采集实现不能直接描述当前 Electron；模块取舍见 [关键信息维护](06-module/关键信息维护.md)。
 
-## §2 · 特性(设计层)
+### ② 会话与执行（执行层）
 
-| 层          | 能力模块         | 是什么一句话                                                                                |
-| ---------- | ------------ | ------------------------------------------------------------------------------------- |
-| A 事实       | ① 关键信息维护      | 本地 `.bw` 仓文件 + 远端 issue/MR/Release 的唯一读写口;Issue 的状态正本=issue label(转移规则守铁律)+ 本机运行时资产目录(零正本);含健康推导二级特性(派生健康灯);含人持文档正本维护(asset-audit 盘点,代码不读写) |
-| B 执行       | ② 会话与执行      | Orca + worktree + Open Design + 工具检测                                                  |
-| C standard | ③ 系统提示词与渐进加载 | 开工渲染系统提示词,正文按需读不塞进提示词                                                                 |
-| C standard | ④ 技能与提炼       | 四份 Workbench 技能与技能提炼的产品主张                                                            |
-| D 壳        | ⑤ 桌面壳        | 八屏,只渲染和转发意图                                                                           |
+复用 Orca 的终端、agent、Tasks、Automations 与 worktree。计划页签左侧创建或接回规划会话；新开会话才递交 BW 提示，接回不重递交。能打开窗口、能找到工具和已经完成真实执行分别取证。详见 [会话与执行](06-module/会话与执行.md)。
 
-### ① 关键信息维护(层 A 事实)
+### ③ 系统提示词与渐进加载（执行规范）
 
-**是什么**:正本分两类——**业务数据正本**落两处:**codehub/GitHub 的 issue+标签**是唯一 issue 正本(状态/排期/发版号/类别全以标签表达,两台 Workbench 接同一个 codehub 仓读出来是同一份业务数据);其中 `bw:plan:<版本>` 是可多值的版本纳入关系,遗留到下一版时增加新标签、不覆盖旧版事实。**仓文件 `.bw/`** 是项目约定与指标定义的正本(人、agent、第二台机器要看的都住仓里走 MR,本地不存第二份)。这一层是读写正本的唯一入口,别处不许自己拼路径读 `.bw/*.toml`。Issue 的状态正本 = 远端 issue 标签(七态 + 状态机转移规则 + settle-once 守「完成永远由人点」铁律);本机运行时资产目录纯运行时、零正本;`NotifyEvent` 注册表管项目群事件(加新事件 = 加 variant + 动作点统一 dispatch,ADR-0003)。**另一类是人持文档正本**——项目自己的设计 / 规矩 / 词表等需与实现保持一致的文档;Workbench 代码不读写它们,维护纪律靠人 + asset-audit(资产盘点 Issue)盘:对齐实现、清过时、互相一致。
+`standard/` 保存 BW 的提示词、reference、技能与样例。当前 `plan-week-planning-prompt.ts` 只在规划工作树和主项目中查找文件，向新建 Claude 会话提供存在的绝对路径；被管项目没有这些文件时会缺指针。它没有把整套资产随安装包派发，也没有在此入口替换 `SYSTEM.md.tmpl` 的占位符。路径存在、递交指针、模型读取正文和遵守规范是四种证据。
 
-**二级特性 · 健康推导**:把 ① 维护的信息派生成一盏健康灯,现算纯函数;密封类型守「没数据不装绿」铁律。
+完整维护对照和缺口见 [系统提示词与渐进加载](06-module/系统提示词与渐进加载.md)；正文职责见 [standard/README](../standard/README.md)。修正文不等于修复运行时分发。
 
-模块实现心智 + 关键取舍见 [`06-module/关键信息维护`](06-module/关键信息维护.md);现行 `.bw` 契约在 [`references/bw-assets.md`](../standard/system-prompt/references/bw-assets.md)。
+### ④ 技能与提炼（规范与方法）
 
-### ② 会话与执行(层 B 执行)
+`standard/skills/` 是给被管项目的业务执行规范；`.claude/skills/` 是 BW 自己的开发方法；Orca 根级 `skills/`、`skill-guides/`、`skill-stubs/` 有各自的能力分发用途。它们不因都叫 Skill 就合成一个知识库或共享一套打包承诺。技能提炼目标尚不能以技能列表存在证明。详见 [技能与提炼](06-module/技能与蒸馏.md)。
 
-**是什么**:执行面复用 Orca 终端、Tasks 与 worktree。计划页签左侧直接开 Claude 会话（新开会话注入 SYSTEM + week-planning，已有会话只接回）。完成仍由人点。
+### ⑤ 桌面壳（交互层）
 
-模块实现心智 + 关键取舍见 [`06-module/会话与执行`](06-module/会话与执行.md)。
+`src/renderer/src/workbench/` 承载 BW 导航、计划三屏、项目墙、接入与知识库；Orca 执行面在原组件中复用。主进程 / preload 提供文件、窗口和会话能力。详见 [桌面壳](06-module/桌面壳.md)，逐项源码清单见 [INVENTORY](../src/renderer/src/workbench/INVENTORY.md)。
 
-### ③ 系统提示词与渐进加载(层 C standard)
+## §3 · 实现架构与数据流
 
-**是什么**:每条周期工作开工给一份系统提示词,主提示词是**外置模板** `standard/system-prompt/SYSTEM.md.tmpl`(哪条 Issue、读被管仓 `AGENTS.md`、按任务加载哪份 reference、和 BW 状态机怎么配合)。references 是「干某类工作需要额外知道的 Workbench 规范」(指标格式、周计划评论、改仓规则、`.bw` 现行契约),按 Issue 的 category/workflow 匹配;技能同理。现行壳从仓内文件解析真实路径后注入,不编进二进制。计划页签新开会话由 `plan-week-planning-prompt.ts` 注入 SYSTEM + week-planning 指针。写作分层(SYSTEM / reference / skill 各写什么)正本在 [`standard/README.md`](../standard/README.md)。
+### Orca 执行核与 BW 叠层
 
-评审会话另有一份外置主提示词 `REVIEW.md.tmpl`(独立评审身份 + 只评不改/意见落 MR 评论);评审剧本 `mr-review` **尚未派发**(见 ④)。
+Orca 执行核提供终端、会话、worktree、Tasks、Automations 和 Explorer。BW 叠层通过 `WORKBENCH_SHELL=1` / `VITE_WORKBENCH_SHELL=1` 启用。叠层外改动保持明确钩子边界；上游身份和同步纪律见 [ref/upstream](../ref/upstream.md)，不要将 BW 的 `origin/main` 合并当作 Orca 升级。
 
-三层各装什么、改了哪条流程要同步哪份——对照表在 [`06-module/系统提示词与渐进加载`](06-module/系统提示词与渐进加载.md)。`AGENTS.md`「按任务读取」指到那里。改 `standard/` 之前先对表。
+产品知识继续在 `docs/`，Orca 工程参考按需读 `ref/`。`ref/` 不覆盖产品原则；旧 `crates/` 不存在于现行分支。
 
-### ④ 技能与提炼(层 C standard)
+### 计划材料
 
-**是什么**:Workbench 自带**四份 Workbench 技能**(week-planning / asset-audit / metrics-refresh / project-handbook),作为仓内 `standard/skills/` 文件存在,提示词只给"名字 + 一句话 + 完整路径",正文让 agent 按需读(渐进加载)。`asset-audit` 是资产盘点 Issue的剧本,对应 §1 用例。仓里另有一份评审剧本 `mr-review`:规范已入库,尚未派发。
+右侧三屏通过文件接口读写规划工作树的 `.bw/planning/<版本>/data.json`，会话用 `planning.py` 的 read / update / confirm 处理同一份材料。归档读主项目，已登记的同版本规划草稿可覆盖显示；这不是另一份 Issue 状态正本。完成、合入与发布仍需人决定。
 
-模块实现心智 + 关键取舍见 [技能与提炼](06-module/技能与蒸馏.md)。
+### 知识库材料
 
-### ⑤ 桌面壳(层 D 壳)
+`knowledge-repo-loader.ts` 与 `use-knowledge-repo.ts` 从 `activeRepo.path` 扫描、分类和读写文档；当前编辑保存直接写该路径下的文件，没有自动创建评审工作树或 PR。选中的执行 worktree 不会自动改变该来源。若注册的是 main 检出目录，知识页仍读 main 文档，而非当前执行会话的 bw-orca。
 
-**是什么**:Workbench MVP 的桌面应用壳(Electron / Orca 产品叠层,macOS+Windows)。叠层只负责旅程导航、计划三屏、项目墙与接入；终端与 Tasks 复用 Orca 执行核。计划 JSON 经文件系统读写,Issue 状态读远端标签。命令失败把原话给人看,不假装做成了。
+分类可由项目 `.bw/knowledge-map.toml` 指定；没有映射时走默认规则，规则并不覆盖全部 `ref/` 工程参考。`skills/bw-knowledge-docs` 指导这类映射，不等同于仓内 project-knowledge 的治理方法。代码页、对账及建议中的演示项不是真实扫描结论。
 
-模块实现心智 + 关键取舍见 [`06-module/桌面壳`](06-module/桌面壳.md)。
+### 随特性迁移重新决策的边界
 
----
+- 知识库保存怎样遵守分支 / PR 评审、来源如何随项目与工作树变化、Orca 工程参考如何在现有分类下可见，以及对账如何获得真实证据。
+- BW 规范从产品资产到被管项目会话的可达路径、模板渲染与实际加载证据。
+- 健康信号与真实指标、反馈与进化、独立评审和正式交付链。
 
-## §3 · 实现架构
-
-> Electron 叠层怎么切、运行时数据怎么流。每个能力模块的**代码落点**看代码,模块实现的**主要矛盾 / 取舍**在 [`docs/06-module/`](06-module/);本篇不逐文件罗列代码路径、数据字段、没建清单。叠层清单见 [`src/renderer/src/workbench/INVENTORY.md`](../src/renderer/src/workbench/INVENTORY.md)。
-
-### 结构总览 · Orca 叠层
-
-Workbench 现行桌面壳是 Orca Electron 的产品叠层，仓内已无 `crates/`，不再用 Dioxus / wry 三 crate。
-
-**Orca 执行核**（upstream，不大段改写）:终端 / agent / worktree / Tasks / Automations / Explorer。会话真正跑在这层。
-
-**Workbench 叠层**（`src/renderer/src/workbench/`）:五屏导航（总览 / 计划 / 任务 / 自动化 / 知识库）、计划页签原生三屏、项目墙与接入覆盖层、皮肤 token。开关 `WORKBENCH_SHELL=1`。
-
-**主进程 / preload / 共享**（`src/main`、`src/preload`、`src/shared`）:窗口、文件系统、会话宿主。计划 JSON 经 `window.api.fs` 读写 `.bw/planning/<版本>/data.json`。
-
-**standard/**:系统提示词、reference 与技能是仓内文件。计划页签新开会话由 `plan-week-planning-prompt.ts` 注入 SYSTEM + skill 指针，不编进二进制。
-
-叠层改动落 `workbench/`，执行核只留 `isWorkbenchShell()` 钩子。计划页签不另开 HTML 服务。
-
-### 运行机制 · 数据流
-
-计划材料:右侧三屏与左侧会话写同一份 JSON；界面停顿自动保存，会话用 planning.py 的 read / update --if-match / confirm。Issue 状态仍读远端标签。杀进程重开后从文件和远端独立读回。
-
-终端与 agent 会话走 Orca 执行核，不经叠层重拼整份界面状态。
-
-### 留白(03 主张、未建,保留)
-
-- 反馈站、进化站(五站后两站,03 主张)。
-- 总览 / 知识库真采集与健康灯尚未接上（现为演示数据）。
-- 架构全景 4+1、大风险标记、审结果对话、原型 / 操作逻辑守卫、中间段自动跑、C 类定时、proto-design 打包。
-- 评审派发(`mr-review` 等接按钮)——见 §2 ④。
-- 群双向机器人、个人 Windows 弹窗——见 §1「项目群发送」没建。
+以上是待迁移边界，当前知识基线清理只校准说明与入口，不修改运行时。每项由对应特性任务按六环重新决策和验证，不能把本篇的说明修订当成实现已完成。

@@ -12,18 +12,18 @@
 
 给独立构建者的 AI 时代桌面工作台：一个人从想法负责到持续运营。你判断方向、审阅结果并确认完成；已被现有做法覆盖的工作交给 AI，其他工作由人与 AI 协作完成。
 
-![CI](https://github.com/forcegravity1989/builder-workbench/actions/workflows/ci.yml/badge.svg)
+![CI](https://github.com/forcegravity1989/builder-workbench/actions/workflows/pr.yml/badge.svg?branch=bw-orca)
 
 ## 当前可用范围
 
 Workbench 是 Electron 桌面应用（Orca 产品叠层），面向 macOS 与 Windows，目前仍在内测与持续建设中。
 
 - 接入本地或远端 GitHub / CodeHub 仓库，维护项目约定。
-- 围绕版本计划组织 Issue、查看进展与指标；没数据显示“未知”，不能把未知当健康。
+- 原生计划三屏读写版本 JSON；总览指标与知识库对账仍含演示数据，不作为真实项目健康或审计证据。
 - 从计划页签进入版本计划：右侧原生三屏读写 JSON，左侧会话注入 week-planning；执行面复用 Orca 终端与 Tasks。安装、检测成功不等于已登录或执行成功。
 - 由人评审结果、确认完成；AI 和定时任务不能替人完成验收。
 
-产品的目标旅程是“项目版本 → 构建交付 → 治理 → 反馈 → 进化”，**这不是全部能力已交付的声明**。完整主张看 [新闻稿与 FAQ](docs/01-principles/03-press-release-faq-flywheel.md)，现行能力与未建边界看 [架构说明](docs/architecture.md) 和 [产品指南](docs/03-guide/)。技能提炼等目标能力不得仅因出现在主张或词表中就视为可用。
+产品的目标旅程是“项目版本 → 构建交付 → 治理 → 反馈 → 进化”，**这不是全部能力已交付的声明**。完整主张看 [新闻稿与 FAQ](docs/01-principles/03-press-release-faq-flywheel.md)，现行能力与未建边界看 [架构说明](docs/architecture.md)。技能提炼等目标能力不得仅因出现在主张或词表中就视为可用。
 
 ## 快速开始
 
@@ -33,7 +33,7 @@ Workbench 是 Electron 桌面应用（Orca 产品叠层），面向 macOS 与 Wi
 pnpm run dev:workbench
 ```
 
-构建完成后打开 Workbench 窗口。打开或接入项目后，按 [产品指南](docs/03-guide/) 开始。叠层说明见 [`SYNC.md`](src/renderer/src/workbench/SYNC.md)。
+构建完成后打开 Workbench 窗口。打开或接入项目后进入计划、任务或知识库页签；新路线的完整用户指南随迁移验收补齐。叠层说明见 [`SYNC.md`](src/renderer/src/workbench/SYNC.md)。
 
 **启动窗口与实际开工是两件事。** 执行 Issue 还需要所选工具、会话宿主以及对应仓库的访问权限；具体依赖与失败处理见 [会话与执行](docs/06-module/会话与执行.md)。完整开发、深链、测试与门禁命令只在 [AGENTS.md](AGENTS.md) 维护。
 
@@ -41,7 +41,7 @@ pnpm run dev:workbench
 
 | 想了解什么 | 入口 |
 |---|---|
-| 怎么使用 Workbench | [产品指南](docs/03-guide/) |
+| 当前旅程与待迁移边界 | [架构说明 §1](docs/architecture.md#1--用例与旅程) |
 | 为谁做、要解决什么问题 | [产品主张 / FAQ / 飞轮](docs/01-principles/03-press-release-faq-flywheel.md) |
 | 当前整体设计与实现边界 | [架构说明](docs/architecture.md) |
 | 各类知识放在哪里 | [全仓文档地图](docs/README.md) |

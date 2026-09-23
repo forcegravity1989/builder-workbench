@@ -17,7 +17,7 @@
 - **逐行读 diff**：人被按回全职评审岗，违背「少 gate、认过即自动跑」的主张；
 - **盲合**：假完成直接进主干。
 
-两条旁证说明缺口是真的：本仓自己的开发规矩（`AGENTS.md`）规定质量靠 `/code-review`——那是人在仓外终端手动跑的，Workbench 产品里没有这个能力，被管项目更没有；过程指标目录（[`05-features/process-metrics`](../process-metrics/intent.md)）已经收了「评审等待 / 首过率 / 返工轮数」这些量评审的数——**量得到评审，产不出评审**。
+两条旁证说明缺口是真的：本仓自己的开发规矩（`AGENTS.md`）规定质量靠 `/code-review`——那是人在仓外终端手动跑的，Workbench 产品里没有这个能力，被管项目更没有；过程指标目录（[历史 process-metrics 意图](https://github.com/forcegravity1989/builder-workbench/blob/f0bc018fabddda853f986a78a49b6bbf16b0b6a6/docs/05-features/process-metrics/intent.md)）已经收了「评审等待 / 首过率 / 返工轮数」这些量评审的数——**量得到评审，产不出评审**。
 
 ## 解决方案（体验语言）
 
