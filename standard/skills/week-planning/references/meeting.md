@@ -2,15 +2,44 @@
 
 现场核心记录直接编辑计划页签，写入 `review.live_notes`。页面不提供会议链接输入框；会后用户把链接交给会话，由会话写入 `review.meeting_url` 后再取转写。完整转写与整理纪要分别保留，不混成一段。原始转写不在页面手填：由转写脚本或会话写入 `review.transcript.text`，页面只编辑现场记录与纪要。
 
-## 当前转写依赖边界
+## 内置转写脚本与纪要模板
 
-本分支有 `planning.py` 和 `assets/minutes-template.md`，但缺少旧 main 的 `scripts/fetch-emeeting-transcript.mjs`。planning.py 的默认配置仍指向这个缺失脚本，所以 init 并不代表可以直接抓取会议转写；旧 #219 的真实会议验证不能当作本分支验收。
+Skill 自带华为 eMeeting 转写脚本（`scripts/fetch-emeeting-transcript.mjs`，经 #219 真实会议验证）和最简纪要模板（`assets/minutes-template.md`：本周 Top3 目标、周五交付件、数字指标变化，只有这三节）。init 后默认配置即可用，无需会话另行提供：
 
-运行时依赖与默认配置由周一屏迁移任务处理。本轮不补转写脚本或改执行逻辑。会话在执行 fetch-meeting 前必须先确认实际配置的脚本存在、来源与权限可用；缺失就如实报告，不编造转写，不盲目重试。
+```json
+{
+  "transcript_argv": ["node", "<PACK>/scripts/fetch-emeeting-transcript.mjs", "{url}", "{output}"],
+  "minutes_spec": "<PACK>/assets/minutes-template.md"
+}
+```
 
-若用户已有可用的转写工具，可在工作树 `.bw/planning/.local/settings.json` 配置 `transcript_argv` 和 `minutes_spec`；该文件不提交个人路径或凭据。命令支持 `{url}`、`{output}`、`{workspace}`，不经 shell 拼接；脚本需在指定位置写 UTF-8 文本。只有依赖确认可用后，才按 planning.py 的 fetch-meeting / jobs 协议执行，并读回成功或具体错误。
+需要换脚本或规范时，只改工作树 `.bw/planning/.local/settings.json`（Git 忽略，不提交个人路径或凭据）。支持 `{url}`、`{output}`、`{workspace}` 替换；不经过 shell 拼接。脚本必须在指定输出位置生成 UTF-8 文本。
 
-缺脚本、登录态或有效转写时，可由用户提供文本或人工纪要；按 `manual` 记录，不冒充脚本产出。
+## 获取转写的前置条件
+
+转写经本机已登录 Chrome 抓取，会话环境连不到内网不影响用户本机执行：
+
+- Chrome 已登录华为域（脚本经 CDP proxy 新开 tab，天然携带登录态，不动已有标签页）。
+- CDP proxy 运行中：先 `node check-deps.mjs --browser chrome` 启动（监听 localhost:3456）。
+- 会议已结束且已生成「语音转文字」。
+
+会话把有效会议链接写入 `review.meeting_url` 并保存后，再执行脚本并读取任务：
+
+```
+python <PACK>/scripts/planning.py --workspace <工作目录> --version v0.4 fetch-meeting
+python <PACK>/scripts/planning.py --workspace <工作目录> --version v0.4 jobs --wait 30
+```
+
+任务落在 `failed.error` 时按原因处理，不重试盲跑：
+
+| 失败原因 | 处理 |
+|---|---|
+| CDP proxy 未启动 | 先启动 web-access 代理，再执行 fetch-meeting；链接与现场文字不丢失 |
+| 找不到「语音转文字」标签 | Chrome 未登录华为域或页面结构变化；请用户确认登录态，结构变化时报告缺口，不改用编造转写 |
+| 转写内容为空 | 会议未生成转写或未加载完成；确认后改走人工纪要，不伪造转写稿 |
+| 抓取超时或内网不可达 | 报告原因，请用户确认内网可达后重试；连续失败改走人工纪要 |
+
+人工退路：用户手写或粘贴纪要后按 `manual` 状态处理，不冒充脚本产出。
 
 ## 子 agent 整理纪要
 
