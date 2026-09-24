@@ -1,0 +1,58 @@
+name: Knowledge scan
+
+# 收一次 BW 知识库信号（热点、没人链接、漂移细节、缺取舍、断链），供 project-knowledge
+# 扫描会话出候选报告。只读：不改文件、不开 Issue 或 PR；只有断链、读取失败或脚本自测失败时变红。
+# GitHub 的 schedule 只在默认分支执行，bw-orca 不是默认分支，所以用推送触发加手动触发。
+on:
+  push:
+    branches: [bw-orca]
+    paths:
+      - '*.md'
+      - 'docs/**'
+      - 'ref/upstream.md'
+      - '.claude/skills/**'
+      - 'src/renderer/src/workbench/**/*.md'
+      - '.github/workflows/knowledge-scan.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: knowledge-scan-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  scan:
+    name: knowledge signals
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          # 热点来自 Git 历史；只取提交与目录树，不下载全部历史文件内容。
+          fetch-depth: 0
+          filter: blob:none
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '24'
+      - name: Scanner self-test
+        run: >-
+          node --test .claude/skills/project-knowledge/scripts/check-links.test.mjs
+          .claude/skills/project-knowledge/scripts/scan-knowledge.test.mjs
+      - name: Scan
+        run: >-
+          node .claude/skills/project-knowledge/scripts/scan-knowledge.mjs
+          --root . --profile .claude/skills/project-knowledge/references/projects/bw-scan.json
+          --out "$RUNNER_TEMP/knowledge-scan" --check
+      - name: Summary
+        if: always()
+        run: |
+          if [ -f "$RUNNER_TEMP/knowledge-scan/signals.md" ]; then cat "$RUNNER_TEMP/knowledge-scan/signals.md" >> "$GITHUB_STEP_SUMMARY"; fi
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: knowledge-signals
+          path: ${{ runner.temp }}/knowledge-scan/
+          if-no-files-found: warn
+          retention-days: 30

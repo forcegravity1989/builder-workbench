@@ -20,7 +20,7 @@
 | 小 bug、文案、无新增用户价值的整理 | 先确认所属特性与已有行为依据；依据齐备则直接修、验证、commit/PR 留痕，不为小修新立特性。所属独立特性的必要文档缺失时，按 [02 §6.3](docs/01-principles/02-working-backwards.md) 补齐本次定义并完成缺失决定的人确认，再改依赖这些决定的代码；粒度听 [01](docs/01-principles/01-document-organization.md) |
 | 改客群、飞轮或对外主张 | 先议再改 03；特性 intent 不得偷偷改写产品主张，不把草稿界面说成已交付 |
 | 改代码或现行设计 | 在 [architecture](docs/architecture.md) 定位用例哪一站 → §2 能力 → §3 Electron 叠层与数据流；模块取舍读 [06-module](docs/06-module/README.md)。影响使用方式或界面时同步相应特性资料；指南待旅程验证后补。视觉协同读 [设计系统](docs/04-design-system/README.md)/[高保真](docs/hifi/)，按文件归属与对应负责人协调 |
-| 改文档 | 先读下节维护流程 → 原则 01 → 目标文件原文头部约定与相关正本；用 [docs 地图](docs/README.md) 找去处。盘点、瘦身、职责/格式治理与模型指令整改使用 [project-knowledge](.claude/skills/project-knowledge/SKILL.md)，包含 HTML 决策、只读扫描和逐轮反哺；普通开发的必要文档同步不启动全库盘点 |
+| 改文档 | 先读下节维护流程 → [原则 01](docs/01-principles/01-document-organization.md) §0 知识管理三原则 → 目标文件原文头部约定与相关正本；用 [docs 地图](docs/README.md) 找去处。扫描知识库出候选优化项、挑一项整改、模型指令整改使用 [project-knowledge](.claude/skills/project-knowledge/SKILL.md)；普通开发的必要文档同步不启动扫描 |
 | 改 `standard/` | 先读 [standard/README](standard/README.md) 与 [系统提示词与渐进加载](docs/06-module/系统提示词与渐进加载.md)的维护对照；写 Skill 再读 [SKILL-MD-SPEC](standard/skills/SKILL-MD-SPEC.md)。本仓知识库不等于给被管项目分发的规范。合入记录见 [ref/upstream.md](ref/upstream.md) |
 
 Superpowers / grill-me 可用于发散、质询和计划草稿，特性产出仍须落回 `docs/05-features/<id>/`。找不到设计落点先澄清并补正本，再写代码；未锁定决策先走 grill/domain-modeling。跨会话以仓内正本及可追溯的 commit/PR 为据，不凭上次聊天改代码。
@@ -36,7 +36,7 @@ Superpowers / grill-me 可用于发散、质询和计划草稿，特性产出仍
 5. **验证这次变动影响到的路径。** 查入链、章节引用、示例和实际读取方；确认模型从 AGENTS 的任务路径能找到相关规范并读到正文。文件存在、索引可达、实际加载与模型遵守是不同证据，不能把静态检查说成行为验证；日常修改不默认全库审计。
 6. **各归其位，便于人审。** 当前知识写入对应正本；改了什么、为什么、实际验证和未验证项写进 commit/PR。PR 明列头部边界变化及人的授权、内容保留/迁移/删除去向。历史从 Git 找回；即使找回旧内容，仍须先过第 2 条。
 
-共用分层与头部要素见 [原则 01](docs/01-principles/01-document-organization.md)；每篇具体范围与格式以其头部为准。本节管操作顺序，不再维护一份各篇规范副本。
+取舍原则（少即是多、模糊的正确胜过精确的错误、定期扫描一次改好一项）与共用分层、头部要素见 [原则 01](docs/01-principles/01-document-organization.md)；每篇具体范围与格式以其头部为准。本节管操作顺序，不再维护一份各篇规范副本。
 
 ## 项目硬约束
 
@@ -99,7 +99,7 @@ PR 展示实际改动、知识去向、验证结果和未验证项；文档改�
 
 界面/行为改动开 PR 时另发 review 验证报告：验什么、命令与深链、门禁结果、未验留白；本次改动新增或修改的判据内嵌真壳截图四件套（用例名、执行路径、期望结果、截图），未变旅程的证据指向验证报告与证据目录，不逐条铺进 PR。不动 E2E 用例的修复以同格式贴临时验证。截图推永不合入的 `shots/<分支名>`，内嵌用 `https://github.com/<owner>/<repo>/raw/<commit SHA>/x.jpg`，钉 SHA；不使用 `raw.githubusercontent` 或带斜杠分支名的图片地址。大改的改前/改后对照仍按约定进 `docs/05-features/<id>/shots/`。纯文档改动报告文档检查，不伪造界面验证。
 
-原型网页不进仓，发布为 artifact 或永不合入的分支，spec / STATUS 只留链接，见 [02 §3.2](docs/01-principles/02-working-backwards.md)。
+原型网页归档在对应特性目录 `docs/05-features/<id>/`，spec 链到它；原型是设计参考，不是已交付界面，真界面以壳与真壳截图为准，见 [02 §3.2](docs/01-principles/02-working-backwards.md)。
 
 ## CodeGraph 导航（可选）
 

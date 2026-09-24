@@ -1,137 +1,39 @@
 {
-  "id": "bw-knowledge-pilot",
-  "version": "0.4.0-pilot",
-  "status": "仓内试用映射；不作为全仓规范门禁",
-  "scopeNote": "按目标 bw-orca 实际目录生成只读全景；BW 产品知识、按需 Orca 工程参考、本仓开发方法分列。standard 属于产品分发资产，本 profile 不扫描。退役目录不是必须恢复的清单；结构字段仅作候选提示。",
-  "suggestedSessions": [
-    "核对目标树与方法版本，用实际维护任务检查入口。",
-    "实际带入一个特性时按原则 02 补六环，不预填历史绿灯。",
-    "读回合入与验证结果，将真实偏差修回对应原件。"
-  ],
-  "contractSource": "../document-contracts.md",
+  "id": "bw-orca",
+  "version": "0.5.0",
   "include": [
     "AGENTS.md",
     "CLAUDE.md",
     "README.md",
     "CONTEXT.md",
     "docs",
-    "ref",
-    ".bw/project.toml",
-    ".claude/skills/project-knowledge",
-    ".claude/skills/workbench-start"
+    "ref/upstream.md",
+    ".claude/skills",
+    "src/renderer/src/workbench"
   ],
   "exclude": ["docs/draft"],
-  "extensions": [".md", ".html", ".toml"],
-  "longParagraphChars": 300,
+  "entryPoints": [
+    "^AGENTS\\.md$",
+    "^CLAUDE\\.md$",
+    "^README\\.md$",
+    "^\\.claude/skills/[^/]+/SKILL\\.md$"
+  ],
+  "codeRoots": ["src/renderer/src/workbench", "standard"],
+  "codeAreaDepth": 5,
+  "largeDocChars": 12000,
   "duplicateParagraphChars": 80,
-  "featureDirectory": "docs/05-features",
-  "acceptanceTableHeaders": ["验收点", "场景/用例入口", "运行证据"],
-  "rules": [
-    {
-      "pattern": "^ref/",
-      "type": "Orca 工程参考",
-      "scope": "Orca 工程参考"
-    },
-    {
-      "pattern": "^AGENTS\\.md$",
-      "type": "开发规则",
-      "fields": [
-        {
-          "label": "构建与验证入口",
-          "pattern": "构建|怎么建|验证|测试"
-        },
-        {
-          "label": "提交与交付边界",
-          "pattern": "提交|commit|PR|合入"
-        }
-      ],
-      "scope": "本仓开发方法"
-    },
-    {
-      "pattern": "^CLAUDE\\.md$",
-      "type": "规则导入",
-      "scope": "本仓开发方法"
-    },
-    {
-      "pattern": "^CONTEXT\\.md$",
-      "type": "领域词表"
-    },
-    {
-      "pattern": "^README\\.md$|/README\\.md$",
-      "type": "入口与地图"
-    },
-    {
-      "pattern": "^docs/01-principles/",
-      "type": "产品与组织原则"
-    },
-    {
-      "pattern": "^docs/05-features/.*/intent\\.md$",
-      "type": "特性意图",
-      "fields": [
-        {
-          "label": "用户与问题",
-          "pattern": "用户|构建者|使用者"
-        },
-        {
-          "label": "预期结果",
-          "pattern": "结果|价值|成功|收益"
-        }
-      ]
-    },
-    {
-      "pattern": "^docs/05-features/.*/spec\\.md$",
-      "type": "特性规格",
-      "fields": [
-        {
-          "label": "边界",
-          "pattern": "边界|范围|不做|非目标"
-        },
-        {
-          "label": "验收",
-          "pattern": "验收|判据|acceptance"
-        }
-      ]
-    },
-    {
-      "pattern": "^docs/05-features/",
-      "type": "特性变更材料"
-    },
-    {
-      "pattern": "^docs/architecture\\.md$",
-      "type": "整体架构"
-    },
-    {
-      "pattern": "^docs/06-module/",
-      "type": "模块实现心智"
-    },
-    {
-      "pattern": "^docs/(04-design-system|hifi)/",
-      "type": "视觉与交互"
-    },
-    {
-      "pattern": "^docs/10-reference/",
-      "type": "参考与历史"
-    },
-    {
-      "pattern": "^\\.bw/",
-      "type": "项目运行定义"
-    },
-    {
-      "pattern": "^\\.claude/skills/.*/SKILL\\.md$",
-      "type": "开发方法入口",
-      "scope": "本仓开发方法"
-    },
-    {
-      "pattern": "^\\.claude/skills/",
-      "type": "开发方法支撑",
-      "scope": "本仓开发方法"
-    }
-  ],
-  "limits": [
-    "standard 是产品分发资产，本 profile 不扫描；不由文件存在声称已派发或加载。",
-    "源码、测试脚本、CSS 等不在此文档清单；相关读取方须另行检查。",
-    "HTML/TOML 只列资产，不解析正文；字段匹配只提示候选，不验证语义。",
-    "现有特性目录是文档组，不是已经核定的产品特性全集。"
-  ],
-  "defaultScope": "BW 产品知识"
+  "tradeoff": {
+    "paths": [
+      "^docs/06-module/(?!README\\.md$).+\\.md$",
+      "^docs/02-adr/.+\\.md$",
+      "^docs/architecture\\.md$"
+    ],
+    "pattern": "取舍|权衡|为什么|为何|放弃|代价|备选|不选|否决|而不是|Considered Options|trade-?off"
+  },
+  "drift": [
+    { "label": "计数", "pattern": "(?<![≥≤<>\\w.#+-])\\d+\\s?(?:条|个|项|篇|处|件|组|份|轮|张)" },
+    { "label": "PR/Issue 号", "pattern": "(?<![\\w&/])#\\d{2,5}\\b" },
+    { "label": "日期", "pattern": "\\b20\\d{2}-\\d{2}-\\d{2}\\b" },
+    { "label": "文件行号", "pattern": "\\.(?:rs|mjs|js|ts|tsx|py|ps1|sh|toml|json|md):\\d+\\b" }
+  ]
 }

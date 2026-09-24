@@ -15,7 +15,7 @@
 
 | 路径 | 职责 | 什么时候读 |
 |---|---|---|
-| [01-principles/](01-principles/README.md) | 01 文档分层、02 逆向工作法、03 产品主张/FAQ/飞轮 | 调整知识归属、开特性、改产品主张 |
+| [01-principles/](01-principles/README.md) | 01 知识管理三原则与文档分层、02 逆向工作法、03 产品主张/FAQ/飞轮 | 写或清理文档、调整知识归属、开特性、改产品主张 |
 | [architecture.md](architecture.md) | 整体旅程、逻辑模块、Electron 叠层与数据流 | 找现行设计、实现边界和工程落点 |
 | `02-adr/`（预留，当前无文件） | 难回头的架构决策及取舍 | 后续迁移产生新决策时记录；历史查 Git |
 | `03-guide/`（预留，当前无文件） | 给用户的操作、结果、下一步 | 后续按已验证的 Orca 旅程补齐 |
@@ -32,7 +32,7 @@
 | 路径 | 定位 |
 |---|---|
 | [workbench-start](../.claude/skills/workbench-start/SKILL.md) | BW 自己的开发与交付方法；按任务分流，知识定义与治理 Skill 共用 |
-| [project-knowledge](../.claude/skills/project-knowledge/SKILL.md) | 项目知识整改、只读全景与反哺方法；当地已认可规范优先，逐块清理存量 |
+| [project-knowledge](../.claude/skills/project-knowledge/SKILL.md) | 知识库扫描与整改方法：热点信号 → 候选报告 → 挑一项整改 |
 | [ref/](../ref/upstream.md) | 按需读取的 Orca 工程参考；修改对应执行核、协议或同步上游时读，不覆盖 BW 产品正本 |
 | [standard/](../standard/README.md) | Workbench 给被管项目提供的规范资产，不等于本仓研发知识库 |
 | `src/renderer/src/workbench/` | Workbench Electron 叠层（导航、计划三屏、项目墙）；工程验证读 AGENTS |
