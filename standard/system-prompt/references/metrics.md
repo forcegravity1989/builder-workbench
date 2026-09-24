@@ -1,33 +1,36 @@
-# `.bw/metrics.toml` — 指标定义
+# .bw/metrics.toml — 指标定义与脚本采集
 
-Workbench 只认这份。没有文件不是错,界面显示「还没定出来」。
-名片正本是 `.bw/project.toml`,不是这份;空着就问人,不把名片字段抄进这里。
-`schema_version` 必须是 `2`,旧格式整份拒收、不迁移。字段骨架照仓里模板
-`standard/templates/metrics.toml.tmpl`(被管仓没有这份,按下面写即可)。
+> 给准备、调用和核对指标的会话读取。本文是定义、采集和读数语义的正本；SOP 在 metrics-refresh，版本证据引用见 [version-records](version-records.md)。协议变化同步模板、解析器及消费者。
+>
+> 状态：Electron 迁移的目标契约；不因本文已更新就假定产品服务已接入。旧 manual、日采与账本路径在切换时退役。
 
-北极星可以缺席。三层键:`[north_star]`、`[[lagging]]`、`[[leading]]`。
-每条:`name` / `def` / `target` / `collect`。不要写 `definition`。
-可选:`feature`(所属特性,空=总览「主要」页签;有值画出「XX特性」)、`leads`(只写在引领上,值是它盯的那条滞后的 `name`;空=挂到同页签第一条滞后)。总览按 `feature` 分页签、按 `leads` 把引领叠到对应滞后的一张图上,不另建特性表。
+## 定义
 
-## 采集
+正本为项目 .bw/metrics.toml，schema_version=2。没有文件表示未配置，解析失败表示错误。项目名片属于 project.toml，不复制过来。
 
-只有两种,没有第三种:
+北极星可缺席；结构为可选 [north_star]、[[lagging]]、[[leading]]。每条包含 name、def、target、collect。feature 空归“主要”，有值归对应特性；引领的 leads 指明关联滞后指标，缺省仅在同组无歧义时采用第一条，错误或歧义需修正。
 
-```
-collect = { kind = "script", run = ["python", ".bw/scripts/x.py"], retro = true }
-collect = { kind = "manual" }
-```
+只支持 collect.kind=script，run 是非空 argv，不经 shell 拼接。目标是用户约定，实际数字不能手填。模板默认不创建空北极星或无脚本指标。
 
-`run` 是 argv,不走 shell。`kind=script` 且 `run` 空 = 写了一半,采不起来。
+## 两种脚本能力
 
-Workbench 起脚本时:工作目录是仓根,追加
-`--since YYYY-MM-DD --until YYYY-MM-DD --granularity week|day`(左闭右开),超时 900 秒。
-只认 **stdout 的一个 JSON 对象**。往文件里写不算数。
+| 能力 | 配置与输出 | 呈现 |
+|---|---|---|
+| 可回溯，优先 | retro=true；按请求粒度输出 points，每点含 week 或 day 与 value | 展示真实窗口及缺口，不补前值 |
+| 仅当前 | retro=false；输出 value，可附实际 observed_at | 展示当前值、来源和时间；不反推历史或当区间累计 |
 
-- `retro = true`(A):周粒度吐 `{"points":[{"week":"2026-W35","value":8},…]}`;天粒度吐 `{"points":[{"day":"2026-09-01","value":2},…]}`。点号要对上窗口;少给的断开,不补前值。只吐 `{"value":8}` 会落成最后一周一个点。
-- `retro = false`(B):吐 `{"value":12}`。Workbench 记进指标记录 `.bw/metrics/readings.jsonl`(键是日历日,同一天同一指标一行)。不要自己往主检出写流水。
-- `kind = "manual"`:不跑脚本,人在总览手填。
+调用 cwd 是明确的项目源码工作区，追加 --since YYYY-MM-DD --until YYYY-MM-DD --granularity week|day，窗口左闭右开，时区由项目/宿主明确；默认超时 900 秒。stdout 只接受一个合法 JSON，stderr 为诊断。可回溯脚本只吐 value 不能算历史成功，必须说明能力/输出不符；当前值脚本不因接收窗口参数就变得能回溯。
 
-`value` 可以是数或给人看的字符串。失败(非零退出、超时、不是 JSON、没数据)记「没采到」,**不要写 0**。
+配置提交同时固定采集脚本及受其影响的项目依赖/锁文件。采集器必须解析并核对该修订的执行根；复用 Orca 现有隔离检出/进程能力，不从计划树、验收树或主工作区的旧文件/未提交改动悄悄替代。正确修订不可取得时报告不可采集。定义指纹和执行指纹分别保存；后者至少绑定配置提交、脚本内容及声明的相关依赖，缓存/去重键和可比较性同时考虑两者。数据目标（仓库、服务、窗口）与采集代码来源分别记录，不能把采集器自己的隔离工作树误当被统计分支。配置任务试采标草稿，与已采用目录隔离。
 
-总览已经在画的仓统计(提交、合入 MR、开放 issue)不要再写进业务指标。
+value 可为数或可读字符串。0 是有效读数；非零退出、超时、坏 JSON 或没有适用数据都是未采到，不能补 0。字符串不可伪算趋势/达成比例。
+
+## 使用与证据
+
+UI 正常刷新直接调用采集服务，无需模型会话。只有新建/修复定义和脚本才由 metrics-refresh 协助，实际跑通后才能标可用。定义指纹、采集时刻、窗口或 observedAt、源码/脚本来源随读数保留；定义变更先处理可比性。
+
+仅当前值不能用来验收一个历史周或区间目标。计划可约定某时刻的当前值目标；验收晚于约定时刻且没有当时采集证据时保持无法核对，不补采历史。计划/验收归档可保留当时脚本结果作为只读证据，这不是每日采集账本。
+
+不支持人工实际数，不登记每日指标自动化，不迁移 bw/ledger。历史 manual 定义与旧日记录只作为迁移诊断/历史材料，不能成为本期有效采集；缺脚本就待准备，不能将手填改名成脚本。日常刷新不往 readings.jsonl 追加日流水。
+
+项目提交、合入 PR、开放 Issue 等内建研发统计复用原生 Git/provider，独立于业务指标目录，不重复定义为业务指标。

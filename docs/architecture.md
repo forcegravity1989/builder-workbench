@@ -75,3 +75,7 @@ Orca 执行核提供终端、会话、worktree、Tasks、Automations 和 Explore
 - 健康信号与真实指标、反馈与进化、独立评审和正式交付链。
 
 以上是待迁移边界，当前知识基线清理只校准说明与入口，不修改运行时。每项由对应特性任务按六环重新决策和验证，不能把本篇的说明修订当成实现已完成。
+
+## 待实施的版本协作与指标边界
+
+用户已选择三个特性：[版本计划](05-features/version-planning/design.md)、[版本验收](05-features/version-acceptance/design.md)、[总览指标](05-features/overview-metrics/design.md)。三者的 intent/spec/design 待本轮完整确认，以上当前实现描述仍有效。BW 拥有版本材料、目标/验收业务与指标服务；Orca 保持会话、任务详情/编辑、工作树、调度和 provider 正本。通过薄适配复用，不能在各屏分别建任务编辑器、会话存储或采集器。实现落地后替换相应当前描述并同步模块，不能只靠本节宣称迁移完成。
