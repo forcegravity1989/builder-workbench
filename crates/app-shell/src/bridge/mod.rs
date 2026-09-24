@@ -434,6 +434,7 @@ pub fn spawn(deep_link: DeepLink) -> Bridge {
                     workbench_cache: None,
                     busy: None,
                     orca_repos_ready: std::collections::HashSet::new(),
+                    pet_last: None,
                 };
 
                 let mut refresh_receipt = false;
@@ -643,6 +644,7 @@ pub fn spawn(deep_link: DeepLink) -> Bridge {
                                         if let Some((id, to, settled)) = status_patch_of(&events)
                                         {
                                             last_gather.apply_issue_status(id, to, settled);
+                                            kick_pet(&mut ui, &last_gather);
                                         }
                                     }
                                     if fetching_body {
@@ -1199,6 +1201,7 @@ pub fn spawn(deep_link: DeepLink) -> Bridge {
                     if needs_gather {
                         let keep = last_gather.projects.clone();
                         last_gather = vm_build::gather(&app, &mut ui, &keep).await;
+                        kick_pet(&mut ui, &last_gather);
                     }
                     let t_asm = Instant::now();
                     vm = vm_build::assemble(&app, &mut ui, &last_gather).await;
@@ -1398,6 +1401,44 @@ fn kick_pr_fill(
 }
 
 /// 进项目时后台采一轮。不 await 脚本 —— 占着内核线程会卡住终端节拍。
+/// 桌面宠物:把这一刻的活状态推给本机 Clawd on Desk。现算在内核(`bw::app::pet`),
+/// 这里只做三件事:同样的报告不重发、起独立任务发、**绝不 await**——它没在跑、
+/// 没注册、超时,一律静默(对照日志一行),Workbench 自己的事一毫秒都不等它。
+fn kick_pet(ui: &mut vm_build::UiState, gathered: &vm_build::Gathered) {
+    let Some((pid, slug, ws, issues)) = gathered.pet_input() else {
+        return;
+    };
+    let report = bw::app::pet::derive(issues);
+    let same = ui
+        .pet_last
+        .as_ref()
+        .is_some_and(|(p, r)| *p == pid && *r == report);
+    if same {
+        return;
+    }
+    // 从没推过、这会儿也没活:没有卡可撤,记下就好,不为「没事」发一条。
+    let first_and_empty = ui.pet_last.is_none() && report.is_none();
+    ui.pet_last = Some((pid, report.clone()));
+    if first_and_empty || gathered.clawd.agent_id.is_empty() {
+        return;
+    }
+    let agent_id = gathered.clawd.agent_id.clone();
+    let slug = slug.to_string();
+    let body = match &report {
+        Some(r) => bw::app::pet::payload(&agent_id, &slug, ws, r),
+        None => bw::app::pet::end_payload(&agent_id, &slug),
+    };
+    let state = report.map(|r| r.state.wire().0).unwrap_or("SessionEnd");
+    tokio::spawn(async move {
+        match bw_engine::clawd::send(&body).await {
+            Ok(code) => {
+                bw_engine::dlog!(ok, "pet", "clawd /state {code} slug={slug} state={state}")
+            }
+            Err(e) => bw_engine::dlog!(warn, "pet", "clawd 没收到 state={state}:{e}(不重试)"),
+        }
+    });
+}
+
 async fn kick_project_collect(app: &App, pid: ProjectId, tx_back: &mpsc::UnboundedSender<Req>) {
     let Ok(ws) = app.workspace_of(pid).await else {
         return;

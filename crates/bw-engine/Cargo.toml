@@ -19,7 +19,9 @@ serde_json = { workspace = true }
 time = { workspace = true, features = ["formatting", "local-offset"] }
 # MockInteractiveExecutor 的模拟延时用 tokio::time;真执行器起 `claude` 子进程
 # 用 tokio::process。底座是原生运行时 crate,不进 wasm32 那组。
-tokio = { workspace = true, features = ["process", "fs"] }
+tokio = { workspace = true, features = ["process", "fs", "net", "io-util"] }
+# Clawd on Desk 的自定义 agent id = sha256(可执行文件路径) 前 12 位;与它同算法才不用人抄。
+sha2 = "0.10"
 
 # 内嵌终端的 PTY(`pty_backend.rs`)。Windows 用 conpty-oxide(portable-pty
 # 0.9.0 的 ConPTY 实现读不到子进程 stdout);macOS/Linux 用 portable-pty,配

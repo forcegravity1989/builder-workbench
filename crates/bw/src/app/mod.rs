@@ -7,6 +7,7 @@ mod issue_store;
 mod ops;
 mod orca_inject;
 mod pack_ctl;
+pub mod pet;
 mod plan;
 mod planning;
 mod progress;
@@ -465,6 +466,7 @@ impl App {
                     .await
             }
             Command::ProbeTool { name } => self.probe_tool(name).await,
+            Command::ExportCodexPets => self.export_codex_pets().await,
             Command::PullWorkspace { project_id } => self.pull_workspace(project_id).await,
             Command::MergeAndSettle { id } => self.merge_and_settle(id).await,
             Command::SyncNotifyToChat {
@@ -607,6 +609,7 @@ fn cmd_log_label(cmd: &Command) -> String {
             category.label()
         ),
         Command::ProbeTool { name } => format!("ProbeTool name={name}"),
+        Command::ExportCodexPets => "ExportCodexPets".into(),
         Command::PullWorkspace { project_id } => {
             format!("PullWorkspace project={}", project_id.uuid())
         }

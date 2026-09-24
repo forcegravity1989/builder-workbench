@@ -32,6 +32,7 @@ pub(super) fn build(
     env: &[ToolProbeVm],
     projects: &[ProjectCardVm],
     orca_web_url: &str,
+    clawd: &ClawdProbeVm,
     open: Option<(&Path, &[bw::Issue], &str)>,
 ) -> Capabilities {
     let tool_of = |cat: StageKind| -> String {
@@ -44,7 +45,7 @@ pub(super) fn build(
     };
 
     Capabilities {
-        connectors: build_connectors(env, &tool_of, projects, orca_web_url),
+        connectors: build_connectors(env, &tool_of, projects, orca_web_url, clawd),
         skills: build_skills(open, projects),
         stage: build_stage(env, &tool_of, open),
         plugins: build_plugins(app),
@@ -62,6 +63,7 @@ fn build_connectors(
     tool_of: &dyn Fn(StageKind) -> String,
     projects: &[ProjectCardVm],
     orca_web_url: &str,
+    clawd: &ClawdProbeVm,
 ) -> Vec<ConnectorVm> {
     // 类别 → 有效工具,反过来聚合成「工具 → 哪几类活用它」。
     let mut executor_users: std::collections::HashMap<String, Vec<String>> = Default::default();
@@ -146,7 +148,41 @@ fn build_connectors(
         used_by: vec!["执行会话与定时任务".into()],
     });
 
+    // Clawd on Desk:三样分开报(装 / 跑 / 注册),状态只取「现在推得出去吗」这一层。
+    let (status, detail) = clawd_row(clawd);
+    out.push(ConnectorVm {
+        key: "clawd".into(),
+        name: "Clawd on Desk".into(),
+        kind: ConnectorKind::Companion,
+        status,
+        detail,
+        used_by: vec!["活开跑 / 到待评审 / 阻塞时推一条状态".into()],
+    });
+
     out
+}
+
+/// 装没装 / 跑没跑 / 注册没注册 → 一行状态 + 一句人话。没装不是红:没人非用它不可。
+fn clawd_row(c: &ClawdProbeVm) -> (ConnectorStatus, String) {
+    let installed = match &c.installed {
+        Some(s) => format!("装在 {s}"),
+        None => "没认出装在哪".to_string(),
+    };
+    match (&c.running, c.registered) {
+        (Ok(port), Some(true)) => (
+            ConnectorStatus::Found,
+            format!("在跑(端口 {port})· 已注册 Workbench · {installed}"),
+        ),
+        (Ok(port), Some(false)) => (
+            ConnectorStatus::Unconfigured,
+            format!("在跑(端口 {port}),但它的「设置 → Agents」里还没注册 Workbench · {installed}"),
+        ),
+        (Ok(port), None) => (
+            ConnectorStatus::Unconfigured,
+            format!("在跑(端口 {port});读不到它的 prefs,注册状态不知道 · {installed}"),
+        ),
+        (Err(why), _) => (ConnectorStatus::Idle, format!("没在跑({why})· {installed}")),
+    }
 }
 
 // ── Skills ─────────────────────────────────────────────────────────────

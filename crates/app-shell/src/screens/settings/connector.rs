@@ -3,12 +3,17 @@
 //! `.bw/connectors.toml`。见 spec.md §2。
 
 use crate::bridge::{Bridge, Req};
-use crate::vm::{ConnectorKind, ConnectorStatus, ConnectorVm};
+use crate::vm::{ClawdProbeVm, ConnectorKind, ConnectorStatus, ConnectorVm};
 use bw::command::Command;
 use dioxus::prelude::*;
 
 #[component]
-pub fn ConnectorPage(items: Vec<ConnectorVm>, orca_web_url: String, bridge: Bridge) -> Element {
+pub fn ConnectorPage(
+    items: Vec<ConnectorVm>,
+    orca_web_url: String,
+    clawd: ClawdProbeVm,
+    bridge: Bridge,
+) -> Element {
     let mut open = use_signal(|| None::<String>);
     let mut query = use_signal(String::new);
     let mut kind = use_signal(|| None::<ConnectorKind>);
@@ -16,7 +21,9 @@ pub fn ConnectorPage(items: Vec<ConnectorVm>, orca_web_url: String, bridge: Brid
     let open_key = open.read().clone();
     if let Some(key) = open_key {
         if let Some(item) = items.iter().find(|c| c.key == key) {
-            return detail(item, orca_web_url, bridge.clone(), move |_| open.set(None));
+            return detail(item, orca_web_url, clawd, bridge.clone(), move |_| {
+                open.set(None)
+            });
         }
         open.set(None);
     }
@@ -28,7 +35,7 @@ pub fn ConnectorPage(items: Vec<ConnectorVm>, orca_web_url: String, bridge: Brid
         .filter(|c| q.is_empty() || c.name.to_lowercase().contains(&q))
         .collect();
 
-    let mut counts = [0usize; 4];
+    let mut counts = [0usize; ConnectorKind::ALL.len()];
     for c in &items {
         counts[ConnectorKind::ALL
             .iter()
@@ -148,6 +155,7 @@ pub fn ConnectorPage(items: Vec<ConnectorVm>, orca_web_url: String, bridge: Brid
 fn detail(
     c: &ConnectorVm,
     orca_web_url: String,
+    clawd: ClawdProbeVm,
     bridge: Bridge,
     back: impl FnMut(MouseEvent) + 'static,
 ) -> Element {
@@ -198,6 +206,8 @@ fn detail(
         if c.key == "orca" {
             h3 { class: "section-title", "网页配对地址" }
             OrcaUrlRow { value: orca_web_url.clone(), bridge: bridge.clone() }
+        } else if c.key == "clawd" {
+            {clawd_section(&clawd, bridge.clone())}
         } else {
             h3 { class: "section-title", "怎么装" }
             {install_block(&info)}
@@ -313,6 +323,17 @@ fn connector_info(key: &str) -> ConnectorInfo {
             supplies: vec!["项目群通知,配在名片的 chat 段,只在开 MR 时发"],
             install: Install::Commands(vec!["npm i -g welink-cli", "welink-cli auth login"]),
         },
+        "clawd" => ConnectorInfo {
+            supplies: vec![
+                "桌面宠物跟着活的状态变:进行中它在跑、待评审它举手、阻塞它出错、没活撤卡",
+                "Workbench 只推状态(它的自定义 agent 协议 v1),不管审批、不读它的会话",
+                "它没开就当离线:300ms 超时、失败静默、不重试,绝不挡住 Workbench 自己的事",
+            ],
+            install: Install::RunIt(
+                "装 Clawd on Desk 并开着;到它的「设置 → Agents」加一条发现路径指向下面这个\
+                 可执行文件所在的目录 → 扫描 → 对 Workbench 点 Register;回来点「重新检测」。",
+            ),
+        },
         "orca" => ConnectorInfo {
             supplies: vec![
                 "开工会话真正跑的地方(走本机管道,不经网页地址,所以地址没配不挡开工)",
@@ -325,5 +346,53 @@ fn connector_info(key: &str) -> ConnectorInfo {
             supplies: vec![],
             install: Install::Undocumented("PATH 上有这个名字"),
         },
+    }
+}
+
+/// Clawd on Desk 详情:三样分开摆(装 / 跑 / 注册),再给人注册要用的两串
+/// (可执行文件路径、自算的 Agent ID),最后一颗把本机 Codex 宠物包交给它的按钮。
+fn clawd_section(c: &ClawdProbeVm, bridge: Bridge) -> Element {
+    let installed = c
+        .installed
+        .clone()
+        .unwrap_or_else(|| "没认出装在哪(不等于没装;Linux 的 AppImage 认不出)".into());
+    let running = match &c.running {
+        Ok(port) => format!("在跑,端口 {port}(~/.clawd/runtime.json)"),
+        Err(why) => format!("没在跑:{why}"),
+    };
+    let registered = match c.registered {
+        Some(true) => "已注册:它的 prefs 里有这个 Agent ID".to_string(),
+        Some(false) => "还没注册:它的 prefs 里没有这个 Agent ID".to_string(),
+        None => format!("不知道:读不到 {}", c.prefs_path),
+    };
+    rsx! {
+        h3 { class: "section-title", "接上了没" }
+        dl { class: "kv",
+            dt { "装" }
+            dd { "{installed}" }
+            dt { "跑" }
+            dd { "{running}" }
+            dt { "注册" }
+            dd { "{registered}" }
+        }
+        h3 { class: "section-title", "注册用的两串" }
+        dl { class: "kv",
+            dt { "可执行文件" }
+            dd { span { class: "mono", "{c.exe}" } }
+            dt { "Agent ID" }
+            dd { span { class: "mono", "{c.agent_id}" } }
+        }
+        p { class: "hint",
+            "Agent ID 是照 Clawd 的算法从可执行文件路径算的;注册后它卡片上显示的那串应与此一致,不一致说明发现路径指错了文件。"
+        }
+        h3 { class: "section-title", "Codex 宠物包" }
+        p { class: "hint",
+            "把本机 Codex 已缓存的内置宠物(在 Codex 里选过的那几只)配上 manifest 复制到 ~/.codex/pets/,Clawd 下次启动或刷新主题就能选。本机复制,不下载、不分发;已有的包不动。"
+        }
+        button {
+            class: "btn btn-secondary",
+            onclick: move |_| bridge.cmd(Command::ExportCodexPets),
+            "把本机 Codex 宠物包交给 Clawd"
+        }
     }
 }

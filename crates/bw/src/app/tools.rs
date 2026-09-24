@@ -82,6 +82,20 @@ impl App {
         let result = probe(&name).await;
         Ok(vec![Event::ToolProbed { name, result }])
     }
+
+    /// 桌面宠物:Codex 内置宠物 → Clawd 宠物包。只碰 `~/.codex/pets/`,不碰 Clawd 的目录。
+    pub(super) async fn export_codex_pets(&mut self) -> Result<Vec<Event>> {
+        let out = tokio::task::spawn_blocking(bw_engine::clawd::export_codex_pets)
+            .await
+            .map_err(|e| AppError::Exec(format!("导出任务没跑完:{e}")))?
+            .map_err(AppError::Exec)?;
+        Ok(vec![Event::CodexPetsExported {
+            pets_dir: out.pets_dir.display().to_string(),
+            written: out.written,
+            skipped: out.skipped,
+            missing: out.missing,
+        }])
+    }
 }
 
 /// 活上记着的开工工具 → 真正要起的那个 CLI。

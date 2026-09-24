@@ -52,6 +52,8 @@ pub struct Gathered {
     /// 设置屏「能力」一节的五张表。在 `gather` 里算一次(和 `env` 同一个
     /// 取舍:导航请求只调 `assemble`,不重扫磁盘 / 不重探活)。
     pub(super) capabilities: super::vm_settings::Capabilities,
+    /// 桌面宠物探活,和 `env` 同一节律(gather 时读两个小文件)。
+    pub clawd: crate::vm::ClawdProbeVm,
 }
 
 pub(super) struct ProjectGathered {
@@ -139,6 +141,8 @@ pub struct UiState {
     pub busy: Option<String>,
     /// 仅在当前进程内缓存已完成仓库登记及自动化创建的项目。
     pub orca_repos_ready: std::collections::HashSet<bw::model::ProjectId>,
+    /// 桌面宠物上一次推出去的报告(按项目)。同样的不重发;`None` 报告 = 撤卡已发。
+    pub pet_last: Option<(ProjectId, Option<bw::app::pet::PetReport>)>,
 }
 
 /// 后台查 MR 要带的那点信息。第一屏不靠它;回填时按 `gen` 对世代,换项目就丢。
@@ -163,6 +167,17 @@ pub struct PrPending {
 }
 
 impl Gathered {
+    /// 桌面宠物要的四样:项目 id、slug、工作区、issue 列表。没打开项目就没有。
+    pub fn pet_input(&self) -> Option<(ProjectId, &str, &std::path::Path, &[bw::Issue])> {
+        let pg = self.open.as_ref()?;
+        Some((
+            pg.id,
+            pg.slug.as_str(),
+            pg.ws.as_path(),
+            pg.issues.as_slice(),
+        ))
+    }
+
     pub fn pr_fill_spec(
         &self,
         cache: &std::collections::HashMap<bw::model::IssueId, (u32, bool)>,
@@ -445,6 +460,17 @@ fn primary_note(events: &[Event]) -> Option<String> {
         } => format!("记下了 {name} = {value}({day})"),
         Event::ToolMappingSaved { category } => format!("「{}」的映射保存了", category.label()),
         Event::ToolProbed { name, result } => format!("{name} 检测结果：{result:?}"),
+        Event::CodexPetsExported {
+            pets_dir,
+            written,
+            skipped,
+            missing,
+        } => format!(
+            "Codex 宠物包:新写 {}、已有没动 {}、本机没缓存 {} → {pets_dir}(Clawd 重启或刷新主题后可选)",
+            written.len(),
+            skipped.len(),
+            missing.len()
+        ),
         Event::HealthDerived { signal, .. } => format!("健康现算完成:{signal:?}"),
         Event::IssueScheduledToPlan { plan, .. } => {
             format!("已排入版本 {plan}")
@@ -863,8 +889,16 @@ fn finish_gather(
     let cap_open = open
         .as_ref()
         .map(|pg| (pg.ws.as_path(), pg.issues.as_slice(), pg.name.as_str()));
-    let capabilities =
-        super::vm_settings::build(app, settings.as_ref(), &env, &cards, orca_web_url, cap_open);
+    let clawd = probe_clawd();
+    let capabilities = super::vm_settings::build(
+        app,
+        settings.as_ref(),
+        &env,
+        &cards,
+        orca_web_url,
+        &clawd,
+        cap_open,
+    );
     bw_engine::dlog!(
         ok,
         "gather",
@@ -879,6 +913,7 @@ fn finish_gather(
         claude_binary,
         open,
         capabilities,
+        clawd,
     }
 }
 
@@ -988,6 +1023,7 @@ pub async fn assemble(app: &App, ui: &mut UiState, g: &Gathered) -> Vm {
             assets: g.capabilities.assets.clone(),
             assets_open_project: g.capabilities.assets_open_project.clone(),
             focus_skill: ui.focus_skill.clone(),
+            clawd: g.clawd.clone(),
         },
         note: ui.note.clone(),
         note_seq: ui.note_seq,
@@ -1630,5 +1666,24 @@ mod tests {
             false
         ));
         assert_eq!(issues[0].status, IssueStatus::Todo);
+    }
+}
+
+/// 桌面宠物探活 → ViewModel。三样分开取;都是读本机小文件,gather 时顺手做。
+pub(super) fn probe_clawd() -> crate::vm::ClawdProbeVm {
+    let p = bw_engine::clawd::probe();
+    crate::vm::ClawdProbeVm {
+        exe: p.exe.display().to_string(),
+        agent_id: p.agent_id,
+        installed: p.installed.map(|i| match i.version {
+            Some(v) => format!("{} · {v}", i.path.display()),
+            None => format!("{}(版本号读不到)", i.path.display()),
+        }),
+        running: p.running.map(|r| r.port),
+        registered: p.registered,
+        prefs_path: p
+            .prefs_path
+            .map(|x| x.display().to_string())
+            .unwrap_or_else(|| "(没有 HOME)".into()),
     }
 }

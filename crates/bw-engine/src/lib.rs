@@ -3,6 +3,7 @@
 #![forbid(unsafe_code)]
 
 pub mod claude_bin;
+pub mod clawd;
 pub mod dlog;
 pub mod evidence;
 pub mod legacy_pty;

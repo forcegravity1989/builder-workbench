@@ -108,7 +108,7 @@ Workbench MVP 由三个 Rust crate 组成,各管一件事、互锁而不互相�
 
 **bw(内核)**:本地零数据库——codehub/GitHub 的 issue+标签是唯一 issue 正本;仓文件解析(读 `.bw/*`)、现算推导(健康/走势/用量)、自己的一对 Command/Event、项目约定、两类周期工作、项目群工厂全在这层。它是纯领域与编排,不直接碰终端、不直接碰远端协议。
 
-**bw-engine(能力底座)**:本机 Orca 的本地 pipe 客户端(会话开工)、封存的 PTY 旧实现、每条 Issue 对应的 git worktree、git 读数、codehub/GitHub 两个远端。它只接收通用 id,不持有业务语义——一个 id 背后是 Issue 还是会话由上层解释。
+**bw-engine(能力底座)**:本机 Orca 的本地 pipe 客户端(会话开工)、本机 Clawd on Desk 的状态客户端(桌面宠物,ADR 0006)、封存的 PTY 旧实现、每条 Issue 对应的 git worktree、git 读数、codehub/GitHub 两个远端。它只接收通用 id,不持有业务语义——一个 id 背后是 Issue 还是会话由上层解释。
 
 **app-shell(壳)**:八个屏(项目墙 / 接入 / 设置 三个顶层 + 总览 / 计划 / 会话 / 配置 / 知识库 五个项目内入口)+ 内核桥(独立线程)+ ViewModel + 主题 + 适配模块。壳只渲染和转发意图,没有一行业务判断。
 

@@ -15,7 +15,7 @@
 | 术语 | 含义与边界 | 相关正本 |
 |---|---|---|
 | Builder / 构建者 | 使用 Workbench、负责方向和验收的人；普通说明可称“用户” | [产品主张][claim] |
-| Connector / 连接器 | 外部工具与服务的统称，含开工工具、仓库平台 CLI、项目群工具及 Orca 会话宿主；配置/安装不等于连通或登录 | [桌面壳][shell] |
+| Connector / 连接器 | 外部工具与服务的统称，含开工工具、仓库平台 CLI、项目群工具、Orca 会话宿主及桌面宠物 Clawd on Desk；配置/安装不等于连通或登录 | [桌面壳][shell] |
 | 开工工具 / Agent CLI | 执行工作的工具，如 Claude Code、Cursor、Open Design；属于 Connector，不等于其调用的模型 | [会话与执行][session] |
 | 插件 / Plugin | 外部技能库的分发包，不等于单个技能或工作流；设置页列出不等于支持安装、更新或启停 | [技能与蒸馏][skills] |
 | 技能 / Skill | 可复用做法包，含 SKILL.md 及支撑文件；列出、被引用与实际注入是不同状态 | [技能与蒸馏][skills] |
@@ -82,7 +82,7 @@
 | 未知 / Unknown | 健康信号的一种，表示数据不足无法判断；界面显示灰色，不等于正常或失败 | [整体架构][arch] |
 | 指标记录 / Readings ledger | 保存无法回溯的历史读数；同日同指标再次写入会更新，不是永久只追加 | [指标协议][metrics] |
 | 只追加 / Append-only | 指新增而非覆盖记录；不能由会话追加存储推论会话不可删除，也不适用于同日指标更新 | [整体架构][arch] |
-| 宠物 / Pet | 侧栏里按现算事实换姿势的小动物，是健康信号与 Issue 状态的派生视图；姿势不能手动设置，不是通知，不存心情或历史 | [pet intent](docs/05-features/pet/intent.md) |
+| 桌面宠物 / Desktop pet | 本机 Clawd on Desk 里那只；Workbench 不自建，只把活的状态（进行中 / 待评审 / 阻塞 / 没活）推给它，不管审批、不存心情 | [desktop-pet intent](docs/05-features/desktop-pet/intent.md) |
 
 ## 自动化与经验复用
 

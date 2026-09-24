@@ -160,6 +160,8 @@ pub enum Command {
     ProbeTool {
         name: String,
     },
+    /// 桌面宠物:把本机 Codex 已缓存的内置宠物复制成 Clawd 认的宠物包(本机复制,不分发)。
+    ExportCodexPets,
     /// 改「工作区根目录」——新接入的项目默认落在哪。**只是本机设置**,存 `app_meta`,
     /// 不进任何仓文件:换台机器仓拉下来还在原处,这个值本来就该各人各配。
     ///
@@ -354,6 +356,14 @@ pub enum Event {
     },
     ToolMappingSaved {
         category: Category,
+    },
+    /// 把本机 Codex 已缓存的宠物图集配上 manifest 复制成 `~/.codex/pets/` 的包,
+    /// 给 Clawd on Desk 当主题。三个列表分开报:写了 / 目录已有没动 / 本机没缓存。
+    CodexPetsExported {
+        pets_dir: String,
+        written: Vec<String>,
+        skipped: Vec<String>,
+        missing: Vec<String>,
     },
     ToolProbed {
         name: String,

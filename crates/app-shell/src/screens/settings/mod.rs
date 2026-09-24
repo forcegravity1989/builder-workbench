@@ -121,6 +121,7 @@ pub fn View(vm: Vm, bridge: Bridge, close: EventHandler<MouseEvent>) -> Element 
                             connector::ConnectorPage {
                                 items: s.connectors.clone(),
                                 orca_web_url: s.orca_web_url.clone(),
+                                clawd: s.clawd.clone(),
                                 bridge: bridge.clone(),
                             }
                         },

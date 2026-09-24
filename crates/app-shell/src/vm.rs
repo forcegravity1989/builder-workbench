@@ -86,6 +86,8 @@ pub struct SettingsVm {
     pub assets_open_project: String,
     /// 从活详情点 workflow 跳过来时,Skills 列表要亮哪一行(slug)。空 = 没指定。
     pub focus_skill: String,
+    /// 桌面宠物探活(Connector 页「Clawd on Desk」详情用)。
+    pub clawd: ClawdProbeVm,
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -494,6 +496,8 @@ pub enum ConnectorKind {
     Chat,
     /// 会话宿主:Orca。
     Host,
+    /// 桌面宠物:Clawd on Desk(Workbench 只往它推状态)。
+    Companion,
 }
 
 impl ConnectorKind {
@@ -503,14 +507,16 @@ impl ConnectorKind {
             ConnectorKind::Remote => "仓库平台",
             ConnectorKind::Chat => "群通知",
             ConnectorKind::Host => "会话宿主",
+            ConnectorKind::Companion => "桌面宠物",
         }
     }
 
-    pub const ALL: [ConnectorKind; 4] = [
+    pub const ALL: [ConnectorKind; 5] = [
         ConnectorKind::Executor,
         ConnectorKind::Remote,
         ConnectorKind::Chat,
         ConnectorKind::Host,
+        ConnectorKind::Companion,
     ];
 }
 
@@ -549,6 +555,36 @@ impl ConnectorStatus {
             ConnectorStatus::Blocked => "c-blocked",
             ConnectorStatus::Unconfigured | ConnectorStatus::ConfiguredNoProbe => "c-unset",
             ConnectorStatus::Idle | ConnectorStatus::NotProbed => "c-idle",
+        }
+    }
+}
+
+/// 桌面宠物(Clawd on Desk)探活三样,分开取、分开显示,不合成一个「好坏」——
+/// 卡在哪一步一眼看得出。见 `docs/05-features/desktop-pet/spec.md`。
+#[derive(Clone, Debug, PartialEq)]
+pub struct ClawdProbeVm {
+    /// Workbench 自己这个可执行文件;人在 Clawd 里加发现路径要指向它所在目录。
+    pub exe: String,
+    /// Workbench 按 Clawd 同款算法自算的 id,注册后它卡片上显示的应与此一致。
+    pub agent_id: String,
+    /// `Some(路径 · 版本)` 认出装在哪;`None` = 没认出来(不等于没装)。
+    pub installed: Option<String>,
+    /// `Ok(端口)` 在跑;`Err(原话)` 没在跑或运行时文件不对。
+    pub running: Result<u16, String>,
+    /// `Some(true / false)` 它的 prefs 里有没有登记这个 id;`None` = prefs 读不到。
+    pub registered: Option<bool>,
+    pub prefs_path: String,
+}
+
+impl Default for ClawdProbeVm {
+    fn default() -> Self {
+        Self {
+            exe: String::new(),
+            agent_id: String::new(),
+            installed: None,
+            running: Err("还没探".into()),
+            registered: None,
+            prefs_path: String::new(),
         }
     }
 }
