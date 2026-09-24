@@ -13,10 +13,10 @@
 | 验收点 E2E | ○ 缺 | P01–P10 已定义，拟注册位置在仓外计划；尚未注册/运行 |
 | 用户旅程 E2E | ○ 缺 | PJ01/PJ02 已定义；真实 Electron、会话、文件和 provider 读回未运行 |
 
-[第七版高保真评审包](https://github.com/forcegravity1989/builder-workbench/archive/2df4b1ef0f3b8c335d31bd51573474aac33ae262.zip) 及包内浏览器检查只证明原型交互，未接远端写回/真实采集/自动化。下载评审包后解压打开 index.html，侧栏切换三屏；需具有同仓访问权限。执行步骤与并行分工位于本任务仓外 plans，不在仓内新增 plan.md。
+[第八版高保真评审包](https://github.com/forcegravity1989/builder-workbench/archive/f20f04ae57d510178c710c71216b9b734082c28e.zip) 及包内浏览器检查只证明原型交互，未接远端写回/真实采集/自动化。下载评审包后解压打开 index.html，侧栏切换三屏；需具有同仓访问权限。执行步骤与并行分工位于本任务仓外 plans，不在仓内新增 plan.md。
 
 当前三屏、单项目会话锚点、planning.py 旧确认以及硬编码开工提示仍未切换；标准 Skill 为配套设计稿，必须与新页面、数据服务和实际注入原子交付。
 
 没有产品 TDD、真壳 E2E、独立验证 Review 或使用效果证据时，保持缺口；不预填齐全、通过或改善比例。
 
-本轮设计/文档及仓外计划经过独立 subagent 初审与复审，发现项已修正；[任务评审记录](https://github.com/forcegravity1989/builder-workbench/blob/2df4b1ef0f3b8c335d31bd51573474aac33ae262/verification/design-review.md)。这是静态制品评审，不替代实施后的独立代码/行为 Review，也不代表用户已确认完整规格。
+本轮设计/文档及仓外计划经过独立 subagent 初审与复审，发现项已修正；[任务评审记录](https://github.com/forcegravity1989/builder-workbench/blob/f20f04ae57d510178c710c71216b9b734082c28e/verification/design-review.md)。这是静态制品评审，不替代实施后的独立代码/行为 Review，也不代表用户已确认完整规格。
