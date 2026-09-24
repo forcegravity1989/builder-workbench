@@ -1,59 +1,22 @@
-# 版本计划 — 当前状态
+# 版本计划 — 六环状态
 
-## 链状态（[02 §6.2](../../01-principles/02-working-backwards.md) 六环 · 2026-09-20 回填）
+> 给接手开发、评审和验收的人读取。只记录认可、实现和证据缺口；有真实认可或运行结果时更新。价值见 [intent](intent.md)，行为见 [spec](spec.md)，工程设计见 [design](design.md)。
 
-| 环 | 状态 | 证据 / 已知债 |
-|---|:--:|---|
-| 1 intent | ● | [intent.md](intent.md) 人确认；v0.4 真实版本周期走完 |
-| 2 spec | ● | [spec.md](spec.md)「特性衡量与验收」表 + 「验收点↔注册用例映射」节；引领指标候选未挂载（02 §6.2 指标不强求，北极星占位） |
-| 3 实现设计 | ● | spec「工程落点与限制」节 + `standard/skills/week-planning/`（Skill SOP）+ 计划页签 `PlanWeekBoard` / `plan-week-planning-prompt.ts` |
-| 4 TDD | 待建 | workspace 单测覆盖（`week_comment.rs` 7 条等）；特性归属清单按口径暂缓 |
-| 5 验收点E2E | ● | version-planning 套件 8 用例（pr+pack profile）；映射见 spec，推定版待 suites feature 字段落地后校准 |
-| 6 旅程E2E | ● | 旧 week-plan-journey 含 HTML 保存，针对当时 Dioxus 壳；本分支现行是原生三屏 + 注入，须用真壳重验 |
+目标平台为 bw-orca 的 Electron/Orca 叠层，调查基线 58199b8b7272b3fb3abfee3dec98957fb84cc0df。2026-09-24 用户要求把三特性定义、设计与仓外计划准备好，确认后再多窗口实施；不把此要求视为整篇制品已批准。
 
-> 下方各节为本特性历史与现状叙事（原样保留）；链状态以本表为准，变化随 PR 更新。
+| 环 | 状态 | 证据或已知债 |
+|---|---|---|
+| intent | ◐ 部分 | 用户目标和三特性边界已对齐；本轮完整文本待确认 |
+| spec | ◐ 部分 | 主体原型已认可，最新修正和 P01–P10 待整体验收设计确认 |
+| 实现设计 | ◐ 部分 | design 已给职责、数据、复用与异常边界；待本轮技术设计确认，未实现 |
+| TDD | ○ 缺 | 新契约和推导未实现；旧基线测试不算本轮通过 |
+| 验收点 E2E | ○ 缺 | P01–P10 已定义，拟注册位置在仓外计划；尚未注册/运行 |
+| 用户旅程 E2E | ○ 缺 | PJ01/PJ02 已定义；真实 Electron、会话、文件和 provider 读回未运行 |
 
-> 当前在 Electron 计划页签维护原生三屏与注入。用户已认可复刻功能、不再嵌入 HTML。v0.4 材料仍以规划树 JSON 为准。
+[第八版高保真评审包](https://github.com/forcegravity1989/builder-workbench/archive/f20f04ae57d510178c710c71216b9b734082c28e.zip) 及包内浏览器检查只证明原型交互，未接远端写回/真实采集/自动化。下载评审包后解压打开 index.html，侧栏切换三屏；需具有同仓访问权限。执行步骤与并行分工位于本任务仓外 plans，不在仓内新增 plan.md。
 
-## 当前文件
+当前三屏、单项目会话锚点、planning.py 旧确认以及硬编码开工提示仍未切换；标准 Skill 为配套设计稿，必须与新页面、数据服务和实际注入原子交付。
 
-- 开发树：E:/zhuyu/code/builder-workbench/.bw/worktrees/version-planning。
-- [Skill](../../../standard/skills/week-planning/SKILL.md)：修改原有 week-planning，未另建并行 Skill。
-- [出厂 HTML](../../../standard/skills/week-planning/assets/version-plan.html)、[空数据模板](../../../standard/skills/week-planning/assets/data-template.json)、[纪要模板](../../../standard/skills/week-planning/assets/minutes-template.md)：随 Skill 开发的交付资产，不是一次性设计演示。
-- 项目 HTML 入口（本机路径 `E:/zhuyu/code/builder-workbench/.bw/worktrees/week-plan/.bw/planning/template/version-plan.html`）：服务刷新生成的离线只读缓存，可由 JSON 随时重建，Git 忽略。
-- v0.3 内容（本机路径 `E:/zhuyu/code/builder-workbench/.bw/worktrees/week-plan/.bw/planning/v0.3/data.json`）、v0.4 内容（本机路径 `E:/zhuyu/code/builder-workbench/.bw/worktrees/week-plan/.bw/planning/v0.4/data.json`）：从原实战树原样迁入，迁移前后 SHA256 一致；v0.4 已有回填，未重置。
-- [本次 Orca 提示词](orca-task-prompt.txt)、[填写说明](manual-review.md)位于本特性文档目录，不随 Skill 分发；验证报告由统一 PR 入口生成并发布至 PR Review。
+没有产品 TDD、真壳 E2E、独立验证 Review 或使用效果证据时，保持缺口；不预填齐全、通过或改善比例。
 
-## 交付包与开发文件
-
-`standard/skills/week-planning` 仅保留 Skill、三份 assets（固定 HTML、数据模板、三节纪要模板）、两个运行脚本（planning.py、eMeeting 转写脚本）、两份按需读取的 reference，以及现行产品仍在调用的评论格式校验脚本。构建用 JS/CSS、构建器和验证器在 [`scripts/version-planning`](../../../scripts/version-planning/README.md)；BW 的实际版本数据与来源只留在项目 `.bw/planning`，不放进出厂包。忽略规则不属于业务资源。
-
-模板、数据样例与工具留在 Skill 目录，不拷入项目树；每版只存 `<版本>/data.json` 与 `deliverables/`、`reviews/`。离线 HTML 可重建、Git 忽略，不是编辑器。data.json 是唯一内容正本。详见 [数据契约](../../../standard/skills/week-planning/references/data-and-runtime.md)。
-
-本轮修复了脚本字符串中结束标签提前关闭 HTML script 元素的问题，并清除了此前构建遗留在脚本后的源码。验证直接解析最终 HTML，检查脚本完整性并让 Node 校验提取出来的脚本；不仅检查独立 JS。SE 样式和实际版本 JSON 未修改。
-
-## 当前行为和边界
-
-计划页签右侧原生三屏读写 JSON；左侧新开会话注入 SYSTEM + week-planning。不要 `planning.py start/serve`。没有资料时由 Skill 建立 default，版号确定后保留内容。页面停顿自动写入 JSON；失败保留输入并提示。
-
-此前把交付资源长期放在 visualizations，并以后台文件检查代替视觉检查，是本轮返工原因。现在运行和构建都使用本 worktree 资源；不再维护 visualizations 版本。历史对话的旧链接不再作为入口。
-
-## v0.4 第一屏实战
-
-用户明确 v0.3 属于旧流程，目标在 Issue，故本次 previous_version 指向 #174 的目标评论和来源快照，不引用重建的 v0.3 数据作为正本。此前将原评论 11 项工作直接当目标，评审指出仍然混淆了目标和任务。来源保留整体目标原文，卡片缩为一句（没有历史衡量口径，不编数），11 项进入任务区，无法证实的 G1–G11 父目标映射已清空。任务中的总览与版本模型分别核对提交 2da1956、ea05ad0 已包含在当前基线 f592fa7，未据此判断目标达成或用户验收。旧 CodeHub MR 元数据未取得，不用 GitHub PR 列表冒充完整历史。
-
-反馈：此前归并目标并用“有进展报告”填读数混淆了原承诺、任务进展和量化结果。已修订 Skill 和字段说明；SE 样式、v0.3 数据保持不变，第二、三屏不提前填写。
-
-## 当前三屏与采集状态
-
-第二、三屏共用简洁 plan.goals 卡片（编号 + 目标句，不显示目标值/进度）；第二屏先与 Builder 拟定，再带去 Leader 评审。第一屏另有实际读数与结果。版本交付件独立在任务前；任务不再显示交付件、批注、额外状态，第一屏只列有真实 Issue 编号的任务，第三屏允许待建草稿，最终确认要求真实编号和链接。会议版确认改由会话执行 `confirm --stage review_ready`；页面不再导出会议评审 HTML。
-
-类型按 Bug/Feature 标签，缺标签默认 Feature。目标按 `【v0.4|W38|G1】` 解析，排期按 bw:plan，遗留保留原标签与原目标身份。只读 collect-issues 提供 GitHub 分页采集和规范化 JSON 输入，不替用户提交或改远端。现有未排期、遗留、Bug 的纳入提醒已进 Skill。
-
-会话先只显示真实标题；当前尚无可复用 Orca 会话列表读取接口。总览/计划的目标与结果摘要已经改读同份 JSON；不双写目标评论。历史会话列表仍待可用读取接口；JSON 消费者已接入并有真实文件读回检查。
-
-功能实现不重写 v0.3/v0.4 真实数据，也不创建计划任务 Issue；功能 PR 与用户后续计划归档 PR 分开。原无编号历史工作项保留数据来源，不再作为真实 Issue 展示；已有用户填写仍在原 JSON。
-
-实际版本材料已原样迁到主项目的 .bw/worktrees/week-plan/.bw/planning，功能 PR 不含未确认版本内容。专项浏览器/部署检查已通过；完整 PR profile 和远端审查结果以验证 Review 为准。
-
-2026-09-17 本机真实 BW 打开 workbench 后完整分发 Skill，创建定版本计划任务；重启后沿 automation.update 更新，读回确认仅一条、同 ID、同调度/启用状态/agent，workspaceId 指向 bw/week-plan。没有触发模型运行，用户后续从原任务“立即运行”开始真实旅程。
+本轮设计/文档及仓外计划经过独立 subagent 初审与复审，发现项已修正；[任务评审记录](https://github.com/forcegravity1989/builder-workbench/blob/f20f04ae57d510178c710c71216b9b734082c28e/verification/design-review.md)。这是静态制品评审，不替代实施后的独立代码/行为 Review，也不代表用户已确认完整规格。

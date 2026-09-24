@@ -1,3 +1,0 @@
-真实提示词由计划页签 `src/renderer/src/workbench/plan-week-planning-prompt.ts` 在新开 bw/week-plan 会话时注入（SYSTEM.md.tmpl + 技能/规范绝对路径）。接回已有会话不重新递交。
-
-关键契约：固定 bw/week-plan；已有材料恢复，无数据先 default；允许保存草稿；右侧三屏与会话写同份 JSON；先核对结果，再拟定/评审目标，最后拆 Issue 和提计划 PR；不 start HTML、不双写目标评论、不自动合入或完成。
