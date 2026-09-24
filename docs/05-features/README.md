@@ -53,7 +53,7 @@
 | 项目助手（BW 助手） | 归并 F6 群通知 + F11 帮助反馈的方向：BW UI 入口 + WeLink 群回答用户问题 | 立 intent 后开链 |
 | 运维屏 | F7 发布能力的做大方向 | 同上 |
 | 台内评审入口 | #203（原 F12 产品侧移入） | 同上 |
-| 宠物（侧栏伙伴） | [pet-companion/](pet-companion/) intent + spec 草案已立（2026-09-24），待意图 gate | Orca 无宠物系统；Claude Code `/buddy` 已下线；采用 Codex 宠物包格式、资产不随包分发（待拍）。认 intent 后升产品特性表 |
+| 宠物 | [pet/](pet/) intent + spec 草案已立，待意图 gate | 资产是否随包分发待拍（spec 冲突 1）；认 intent 后升产品特性表 |
 
 ## 已知债登记（跨特性，不因低频豁免）
 

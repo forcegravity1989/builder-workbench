@@ -1,4 +1,4 @@
-# Spec · 宠物（pet-companion）
+# Spec · 宠物（pet）
 
 > **30 秒导读**：这是什么——本次变更的**规格件**：宠物长什么样、姿势怎么从数据推出来、皮肤从哪来、怎么操作、出错怎么办、怎么验收。给谁看——过规格 gate 的人、之后实现它的会话。现在作数吗——**draft**（2026-09-24 起草，待规格 gate；状态正本见 [STATUS.md](STATUS.md)）；上游意图见 [intent.md](intent.md)；可点原型见下节链接（按 02 §3.2 不进仓）。
 
@@ -13,25 +13,25 @@
 
    | # | 事实 | 姿势（沿用 Codex 轨道名） | 悬停说的话（人话，含数据） | 点它去哪 |
    |---|---|---|---|---|
-   | 0 | 没打开项目 | `idle` | 「项目墙：没有项目上下文」 | 不跳 |
+   | 0 | 没打开项目 | `idle` | 「没打开项目，它只是在发呆」 | 不跳 |
    | 1 | 健康 `Signal::Red` | `failed`（趴下） | 「健康灯红：<推导原因一句>」 | 总览 |
    | 2 | 待评审 n>0 | `review`（举牌，牌上写 n） | 「n 个 Issue 等你评审」 | 计划屏待评审列 |
    | 3 | 阻塞 n>0 | `waiting` | 「n 个 Issue 被阻塞」 | 计划屏 |
    | 4 | 进行中 >0 且任一会话文件 ≤ 3 分钟内写过 | `running`（跑） | 「AI 正在跑：#12 的会话 40 秒前还在写」 | 会话屏 |
    | 5 | 进行中 >0 且会话文件都 > 3 分钟没写 | `waiting` | 「#12 的会话 12 分钟没动静，可能在等你」 | 会话屏 |
-   | 6 | 其余（含进行中但读不到会话文件） | `idle` | 「进行中 k 件，读不到会话动静（不是 Claude 会话或目录不可读）」或「待评审 0、阻塞 0、进行中 0；健康<色>」 | 计划屏 |
+   | 6 | 其余（含进行中但读不到会话文件） | `idle` | 「进行中 k 件，读不到会话动静（不是 Claude 会话或目录不可读）」或「待评审 0、阻塞 0、进行中 0；健康<色>」 | 会话屏（进行中 >0）／计划屏（其余） |
 
-   - `idle` 之外的装饰动作（眨眼、挥手、跳一下）不携带含义、不受数据影响；`prefers-reduced-motion` 时全部静止在 idle 首帧（Codex 同样处理）。
+   - `idle` 之外的装饰动作（眨眼、挥手、跳一下）不携带含义、不受数据影响；`prefers-reduced-motion` 时全部静止在 idle 首帧（Codex 关动画时同样停在首帧）。
    - 阈值 3 分钟是内核常量，不是设置项；它只回答「文件最近写没写」，不解释 agent 在想什么。
    - 悬停文案永远陈述读到的数据；`idle` 不许写成「一切正常」。
 3. **皮肤 = Codex 宠物包格式，资产不随包分发**。本机设置 `settings.toml` 新键 `pet`：`"clawd"`（默认）｜`"off"`｜`"codex:<内置 id>"`｜`"custom:<id>"`。
    - **Clawd**：仓内自绘矢量（`crates/app-shell/assets/pet/clawd.svg`，编译期 `include_str!`），五种姿势用 CSS 动画驱动，不做 spritesheet；配色取设计系统 claude 色板的 `--color-accent`。
    - **Codex 内置八只**（codex / dewey / fireball / rocky / seedy / stacky / bsod / null-signal）：Codex 自己也不把它们放进仓，而是首次使用时从 `https://persistent.oaistatic.com/codex/pets/v1/<id>-spritesheet-v4.webp` 下载到 `$CODEX_HOME/cache/tui-pets/v1/assets/`；这些图不在 Apache-2.0 覆盖范围内、许可未明。**Workbench 只读本机这份缓存**：有就列出、没有就灰显「在 Codex 里选过一次才会出现」；不下载、不打进安装包。发起人原话是「打进去」——本条是 spec 对「打什么进去」的收窄：打进去的是格式与读取，不是资产；要改判见「标注的冲突 1」。
-   - **自定义**：`$CODEX_HOME/pets/<id>/pet.json`（`CODEX_HOME` 缺省 `~/.codex`）按 Codex 规则原样解析：`id` / `displayName` / `description` / `spritesheetPath`（只许目录内相对路径，`..` 与绝对路径拒绝）/ `frame`（缺省 192×208、8 列 × 9 行）/ `animations`（`frames` 索引、`fps` 缺省 8 上限 60、`loop` 缺省 true、`fallback` 缺省 `idle`）；图必须正好 1536×1872，帧数 ≤ 256；轨道缺省行号 0 idle、1 running-right、2 running-left、3 waving、4 jumping、5 failed、6 waiting、7 running、8 review。旧的 `avatars/<id>/avatar.json` 也认。坏包如实报「这只宠物读不出来：<原因>」并回到 Clawd，不猜。
+   - **自定义**：`$CODEX_HOME/pets/<id>/pet.json`（`CODEX_HOME` 缺省 `~/.codex`）按 Codex 规则原样解析：`id` / `displayName` / `description` / `spritesheetPath`（只许目录内相对路径，`..` 与绝对路径拒绝）/ `frame`（缺省 192×208、8 列 × 9 行）/ `animations`（`frames` 索引、`fps` 缺省 8 上限 60、`loop` 缺省 true、`fallback` 缺省 `idle`）；图必须正好 1536×1872，且帧宽×列、帧高×行须正好覆盖它，帧数 ≤ 256；轨道缺省行号 0 idle、1 running-right、2 running-left、3 waving、4 jumping、5 failed、6 waiting、7 running、8 review。旧的 `avatars/<id>/avatar.json` 也认。坏包如实报「这只宠物读不出来：<原因>」并回到 Clawd，不猜。
    - 渲染：spritesheet 以 data URI 进 `background-image`，每条轨道一段 `steps(n)` 的 `background-position` 动画，帧时长取轨道均值（Codex 末帧略长，视觉差可忽略）；不用 JS 定时器逐帧画。
 4. **交互只有两种**：悬停出人话（`title` + 自绘 tooltip），点它跳到对应屏（表列最后一栏）。不弹窗、不通知、不说话、没有气泡人格。
 5. **设置屏 · 外观**新增一行「宠物」：与「配色」同一文法（`.set-row` + `.choice` 预览卡），三组：默认（Clawd / 关闭）、Codex 内置（读缓存，缺的灰显）、自定义（读 `~/.codex/pets/`，坏包灰显并写原因）。选中即存本机设置、立刻生效。
-6. **不做**：桌面悬浮窗（Codex 桌面版形态）、稀有度 / 孵化 / 进化、通知提醒、多项目汇总、Orca 会话状态 RPC（Orca 没有暴露；有了再换数据源）。
+6. **不做**：独立形象窗（Codex App 那类，待核）、稀有度 / 孵化 / 进化、通知提醒、多项目汇总、Orca 会话状态 RPC（Orca 没有暴露；有了再换数据源）。
 
 ## 操作逻辑
 
@@ -43,7 +43,7 @@
 - 健康灯红 → 趴下，优先于其他一切；点它去总览。
 - 设置里关闭 → 侧栏不渲染、推导不跑；再打开立刻回来。
 - 换皮肤 → 立刻换，姿势不变（姿势来自数据，皮肤只是画法）。
-- 回到项目墙 → 装饰态，悬停说「没有项目上下文」。
+- 回到项目墙 → 装饰态，悬停说「没打开项目」。
 - 杀进程重开 → 同一份 Issue / 健康 / 文件时间 → 同一个姿势（不存上次姿势）。
 
 **出错怎么办**：
@@ -76,14 +76,14 @@
 - **R2 诚实**：读不到会话文件时不出现 `running` / 规则 5 的 `waiting`；`idle` 悬停文案必须含读到的计数或「读不到」字样；健康 Unknown 不触发 `failed`。
 - **R3 宠物包解析**：`pet.json` 好包 / 缺 `spritesheetPath` 走缺省 / 尺寸错 / 路径穿越四类单测；坏包错误原文透传到 toast；旧 `avatar.json` 可读。
 - **R4 不分发第三方资产**：安装包与仓内不含 `*-spritesheet-v4.webp`；Codex 皮肤只从 `$CODEX_HOME/cache/tui-pets/v1/assets/` 读（gate 改判则本条改写，并补许可说明）。
-- **R5 设置往返**：`pet` 键写 `settings.toml`；关闭后 DOM 无 `.pet-slot`；重启后皮肤与姿势与重启前一致（独立读回 settings.toml + 深链核对）。
+- **R5 设置往返**：`pet` 键写 `settings.toml`；关闭后 DOM 无 `.pet-slot`；重启后皮肤一致；姿势由同一份输入重新算出，不读上次姿势（独立读回 settings.toml + 深链核对）。
 - **R6 点击导航**：表列「点它去哪」四个目标各一条断言。
-- **R7 门禁**：fmt / clippy / app-shell 编译 / 三结构守卫 / 行数守卫 / cargo test 全过；`verify --profile pr` 带本特性 suite。
+- **R7 门禁**：AGENTS「提交前门禁」全过；`verify --profile pr` 带本特性 suite。
 - **R8 规格 gate 自查**：可点原型链接 + 操作逻辑（主路径 / 分支 / 出错）齐备，即本篇。
 
 ### 验收点 ↔ 用例（环 5 / 环 6 定义层，实现随带入补）
 
-| 验收点 | suite（`.bw/release/e2e/suites/pet.json`，`feature: pet-companion`） | 用例名 |
+| 验收点 | suite（`.bw/release/e2e/suites/pet.json`，`feature: pet`） | 用例名 |
 |---|---|---|
 | R2 | 深链 `BW_OPEN=<沙箱项目> BW_PANEL=overview`，项目无进行中 Issue → 宠物 `data-pose="idle"`，`aria-label` 含「进行中 0」 | `pet-idle-honest` |
 | R1/R6 | 沙箱仓打一条待评审标签 → 重开壳 → `data-pose="review"` 且牌数 = gh 读回的待评审数 → 点击 → `data-screen="plan"` | `pet-review-sign` |

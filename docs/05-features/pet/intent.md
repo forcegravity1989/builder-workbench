@@ -1,6 +1,6 @@
-# Intent · 宠物（pet-companion）
+# Intent · 宠物（pet）
 
-> **30 秒导读**：这是什么——本次变更的**意图件**：给 Workbench 加一只**宠物**——住在壳侧栏底部的小动物，默认是 Clawd，可换成 Codex 宠物包里的八只或人自己做的宠物；它的动作只反映 Workbench 已经算出来的事实（有几件事等你评审、AI 正在跑还是停了、健康灯什么颜色），没数据就安静待着。给谁看——过意图 gate 的人。现在作数吗——**draft**（2026-09-24 起草，待发起人确认；状态正本见同目录 [STATUS.md](STATUS.md)）。
+> **30 秒导读**：这是什么——本次变更的**意图件**：给 Workbench 加一只**宠物**——住在壳侧栏底部的小动物，默认是 Clawd（Claude Code 的橙色吉祥物），可换成本机 Codex 已缓存的内置宠物或人自己做的宠物；它的动作只反映 Workbench 已经算出来的事实（有几件事等你评审、AI 正在跑还是停了、健康灯是不是红了），没数据就安静待着。给谁看——过意图 gate 的人。现在作数吗——**draft**（2026-09-24 起草，待发起人确认；状态正本见同目录 [STATUS.md](STATUS.md)）。
 
 **发起人**：仓 owner（2026-09-24 会话拍板，原话见下）。**状态**：draft——做不做已由发起人口头拍板；intent / spec 待认，代码未动（02 §6：聊过 ≠ 过 gate）。
 
@@ -10,23 +10,27 @@
 
 ## 先回答那个问题：Orca 没有宠物系统
 
-- **Orca**（stablyai/orca，MIT，多 agent 开发环境）：Workbench 只通过本地 pipe 调它的 `terminal.createAgentSession` / `worktree.activate` / `automation.*`，再把它的配对网页嵌进会话屏。这条 RPC 面上没有任何宠物或伙伴对象；Orca 公开站点与文档里的「companion」指手机伴侣 App（看 agent 状态、切账号），不是宠物。本次会话没能打开 Orca 源码仓（接入被权限拒绝），以上以 Workbench 侧代码与公开资料为据。即便 Orca 日后自己加了宠物，也只会出现在 Orca 的窗口里，Workbench 侧栏仍然空着。
-- **Claude Code 的 `/buddy`**（Clawd 家族的终端宠物，v2.1.89 于 2026-04-01 上线，18 种族 5 稀有度）**已在 v2.1.97（2026-04-09）被移除**；本机 Claude Code 2.1.281 的包里只剩 Clawd 那个橙色 logo 字形，没有可读的宠物状态。所以「把 Clawd 集成进去」没有现成的东西可以接，Workbench 得自己养这只 Clawd。
-- **Codex Pets** 是 OpenAI 的正式功能（`codex-rs/tui/src/pets/`，Apache-2.0）：8 只内置宠物、按 agent 状态换动作；自定义包放 `${CODEX_HOME:-~/.codex}/pets/<名字>/`，两份文件——`pet.json`（id / displayName / description / spritesheetPath）+ `spritesheet.webp`（1536×1872，8 列 × 9 行，每格 192×208，透明底）。这是一个开放、已有社区画廊的宠物包格式，Workbench 直接采用它，不另造一种。
+- **Orca**（stablyai/orca，MIT，多 agent 开发环境）：Workbench 只通过本地 RPC 让 Orca 开会话、切工作树、跑自动化，再把它的配对网页嵌进会话屏。这条 RPC 面上没有任何宠物对象；Orca 公开站点与文档里的「companion」指手机伴侣 App（看 agent 状态、切账号），不是宠物。本次会话没能打开 Orca 源码仓（接入被权限拒绝），以上以 Workbench 侧代码与公开资料为据。即便 Orca 日后自己加了宠物，也只会出现在 Orca 的窗口里，Workbench 侧栏仍然空着。
+- **Claude Code 的 `/buddy`**（v2.1.89 上线的终端宠物）**已在 v2.1.97 被移除**（CHANGELOG 无移除条目，以 anthropics/claude-code#45596 为据）；本机 Claude Code 2.1.281 的包里已无 `/buddy` 命令，只剩 Clawd 那个橙色 logo 字形，没有可读的宠物状态。所以「把 Clawd 集成进去」没有现成的东西可以接，Workbench 得自己实现这只 Clawd 的形象与姿势。
+- **Codex Pets** 是 OpenAI 的正式功能（`codex-rs/tui/src/pets/`，Apache-2.0）：8 只内置宠物、按 agent 状态换动作；自定义包放 `~/.codex/pets/<名字>/`，两份文件（`pet.json` + 一张 spritesheet）。这是开放格式、已有社区画廊，Workbench 直接采用、不另造一种；格式细节见 [spec.md](spec.md)。
 
 ## 痛点
 
-Super builder 一边在 Workbench 定方向、审结果，一边把大段时间交给 AI 在 Orca 里跑。今天 Workbench 告诉你「有事等你」的方式只有侧栏一粒健康灯和一个待评审数字——都要你**主动看**。Codex 和 Claude Code 都用一只小动物解决了同一个问题：不用读数字，余光扫一眼它在干嘛就知道该不该回来（Codex 官方把 Pets 的立意写成「人在别的窗口时给一个轻量的状态信号」）。Workbench 把这两个工具的会话都收进来了，却没有它们那只动物；Claude Code 的宠物又已经被官方拿掉，用户手里那只 Clawd 无处安放。
+Super builder 一边在 Workbench 定方向、审结果，一边把大段时间交给 AI 在 Orca 里跑。今天 Workbench 告诉你「有事等你」的方式只有侧栏一粒健康灯和一个待评审数字——都要你**主动看**。Codex 和 Claude Code 都用一只小动物解决了同一个问题：不用读数字，余光扫一眼它在干嘛就知道该不该回来（Codex 把 Pets 定位为余光可见的终端宠物，官方文档说它的用处是人在别的窗口时给一个轻量的状态信号——本次会话未能直接打开该文档，转述自搜索摘要）。Workbench 把这两个工具的会话都收进来了，却没有它们那只动物；Claude Code 的宠物又已经被官方拿掉，用户手里那只 Clawd 无处安放。
 
 ## 解决方案（体验语言）
 
 侧栏底部、「帮助」上方，住着一只宠物。
 
-- 默认是 **Clawd**（Claude Code 那只橙色小家伙）。设置里可换成 Codex 宠物包里的八只之一，或你自己放进 `~/.codex/pets/` 的宠物——Workbench 认同一种包格式，做给 Codex 的宠物直接能用。
+- 默认是 **Clawd**（Claude Code 那只橙色小家伙）。设置里可换成本机 Codex 已经缓存过的内置宠物（在 Codex 里选过一次才会出现；是否随包分发见开放问题 4），或你自己放进 `~/.codex/pets/` 的宠物——Workbench 认同一种包格式，做给 Codex 的宠物直接能用。
 - 它只有四种动作**有含义**：**跑**（这个项目有进行中的 Issue，而且 AI 的会话最近还在写）、**等**（进行中却半天没动静，多半在等你答话；或有 Issue 被阻塞）、**举牌**（有 Issue 等你评审，牌上写几件）、**趴下**（健康灯红了）。其余时候它发呆、眨眼、偶尔挥手——那是装饰，不是信号。
 - 悬停或点它，它用人话说清自己为什么这样（「2 个 Issue 等你评审」「会话 12 分钟没动静」）；点一下跳到对应的屏（待评审 → 计划屏，红灯 → 总览）。
 - 没打开项目、或读不到数据，它就安静待着，不装忙也不装闲：**没数据不是绿，宠物也不是**。
 - 不想要就在设置里关掉；关掉后侧栏和今天一样。
+
+## 如何获得
+
+随桌面壳内置，打开项目即有；默认 Clawd、默认开启；设置 → 外观可换皮肤或关闭；不需要额外权限或网络；先内部试用。
 
 ## 飞轮检验（对齐 03）
 
@@ -40,7 +44,7 @@ Super builder 一边在 Workbench 定方向、审结果，一边把大段时间�
 - **零业务数据库**：皮肤选择存本机 `settings.toml`（和配色一样），不进被管仓；不存心情、经验值、稀有度等会长出第二份正本的东西。
 - **资产来源与授权可追溯**：Codex 八只内置宠物随 Workbench 出包分发前，须核实其在 openai/codex 仓内、随 Apache-2.0 授权并保留声明；若资产是运行时从 CDN 下载或另有许可，则只兼容格式、不打包资产，如实标「未建」。Clawd 形象属 Anthropic 品牌资产：MVP 只在本产品内使用自绘重绘，不对外宣传为官方联名。
 - **第三方宠物包按 Codex 格式原样读**：不另造 Workbench 专属格式；`pet.json` 缺字段或图不合尺寸就如实报「这只宠物读不出来」，不猜。
-- **不做**：桌面悬浮窗（Codex 桌面版那种）、说话气泡与人格生成、稀有度 / 孵化 / 进化系统、通知或提醒。
+- **不做**：独立形象窗（Codex App 那类，待核）、说话气泡与人格生成、稀有度 / 孵化 / 进化系统、通知或提醒。
 
 ## 影响的用户与系统
 
@@ -53,7 +57,7 @@ Super builder 一边在 Workbench 定方向、审结果，一边把大段时间�
 | 谁是客户？ | Super builder：一个人 own 项目、白天大半时间让 AI 在 Orca 里跑、自己在别的窗口的那个人（第一个用户是发起人自己）。 |
 | 痛点？ | 「有事等我了吗」今天只能靠主动看灯和数字；两大 CLI 都用宠物给了余光信号，Workbench 没有；Claude Code 的宠物又被官方拿掉了。 |
 | 核心利益？ | 余光扫一眼就知道该不该回来，顺便有只自己的动物陪着做项目。 |
-| 如何知道？ | 发起人拍板原话（「一直想把宠物加进去」）；Codex 官方把「人在别的窗口时的轻量状态信号」写成 Pets 的立意；Claude Code 移除 `/buddy` 后社区集体请愿「Bring Back Buddy」（anthropics/claude-code#45596），说明需求不是一次性玩笑。 |
+| 如何知道？ | 发起人拍板原话（「一直想把宠物加进去」）；Codex 官方文档把 Pets 的用处写成「人在别的窗口时的轻量状态信号」（转述自搜索摘要，出处待直接核）；Claude Code 移除 `/buddy` 后社区集体请愿「Bring Back Buddy」（anthropics/claude-code#45596），说明需求不是一次性玩笑。 |
 | 体验什么样？ | 侧栏底部一只 Clawd → AI 开工后它跑起来 → 有 Issue 待评审它举牌 → 点它跳到计划屏 → 设置里换成 Codex 的小狗。原型链接见 [spec.md](spec.md)。 |
 
 ## 开放问题（留给意图 gate 拍）
