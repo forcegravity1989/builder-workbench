@@ -50,7 +50,9 @@ ORCA_BACKGROUND_LAUNCH=1 REMOTE_DEBUGGING_PORT=9337 pnpm run dev:workbench
 | `ORCA_PRODUCT_NAME=Workbench` | 打包名；且默认打开壳 |
 | `ORCA_APP_ID=com.stablyai.workbench.dev` | 与正式 Orca 并行安装 |
 
-打包：`pnpm run build:mac:workbench`（见 package.json；本机仅 arm64，脚本 `config/scripts/build-mac-workbench.mjs`）。
+打包：`pnpm run build:mac:workbench`（本机仅 arm64，脚本 `config/scripts/build-mac-workbench.mjs`）。
+
+Windows Workbench：`pnpm run build:win:workbench`（脚本 `config/scripts/build-win-workbench.mjs`，沿用 `electron-builder` 的 Windows/NSIS 配置）。
 
 产物示例：
 
