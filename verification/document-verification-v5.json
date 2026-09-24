@@ -1,0 +1,33 @@
+{
+  "checkedFiles": 36,
+  "checkedLinks": 136,
+  "errors": [],
+  "warnings": [],
+  "oldReferences": "",
+  "sizes": [
+    {
+      "name": "standard/skills/week-planning/SKILL.md",
+      "beforeBytes": 9882,
+      "afterBytes": 2783,
+      "beforeLines": 62,
+      "afterLines": 29
+    },
+    {
+      "name": "standard/skills/metrics-refresh/SKILL.md",
+      "beforeBytes": 3216,
+      "afterBytes": 1988,
+      "beforeLines": 66,
+      "afterLines": 26
+    },
+    {
+      "name": "standard/skills/SKILL-MD-SPEC.md",
+      "beforeBytes": 6330,
+      "afterBytes": 2895,
+      "beforeLines": 139,
+      "afterLines": 35
+    }
+  ],
+  "skillValidator": "Real YAML parsing plus name/description/link checks. Bundled Python quick_validate unavailable: PyYAML not installed.",
+  "behaviorValidation": "Not performed; static checks do not demonstrate model behavior improvement.",
+  "passed": true
+}

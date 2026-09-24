@@ -1,0 +1,255 @@
+<!doctype html>
+<html lang="zh-CN" data-theme="claude">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>版本报告</title>
+<style id="se-source-style">:root {
+  --color-bg: #ffffff;
+  --color-surface: #f5f5f7;
+  --color-card: #ffffff;
+  --color-text: #1d1d1f;
+  --color-accent: #0071e3;
+  --color-accent-2: #5856d6;
+
+  --color-neutral-100: #f2f3f5;
+  --color-neutral-200: #e6e8ea;
+  --color-neutral-300: #d1d3d5;
+  --color-neutral-400: #b2b4b7;
+  --color-neutral-500: #909295;
+  --color-neutral-600: #6f7274;
+  --color-neutral-700: #535558;
+  --color-neutral-800: #393b3d;
+  --color-neutral-900: #232426;
+
+  --color-accent-100: #edf4fe;
+  --color-accent-200: #dae9fe;
+  --color-accent-300: #b7d5fe;
+  --color-accent-400: #82b7ff;
+  --color-accent-500: #3b91fe;
+  --color-accent-600: #006ddc;
+  --color-accent-700: #0152a8;
+
+  --color-accent-2-100: #f1f3ff;
+  --color-accent-2-700: #4544ab;
+
+  --color-success: #34c759; --color-success-soft: #d9f8dc; --color-success-deep: #1d622c;
+  --color-warning: #ff9500; --color-warning-soft: #ffead9; --color-warning-deep: #7c4602;
+  --color-danger: #ff3b30; --color-danger-soft: #fee7e3; --color-danger-deep: #97261e;
+
+  --color-divider: color-mix(in srgb, var(--color-text) 12%, transparent);
+
+  --font-body: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, "Helvetica Neue", Arial, sans-serif;
+  --font-heading: var(--font-body);
+  --font-heading-weight: 600;
+  --font-mono: ui-monospace, "SF Mono", SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+
+  --space-1: 4px; --space-2: 8px; --space-3: 12px; --space-4: 16px;
+  --space-6: 24px; --space-8: 32px;
+
+  --radius-sm: 6px; --radius-md: 8px; --radius-lg: 12px;
+
+  --shadow-sm: 0 1px 2px color-mix(in srgb, var(--color-neutral-900) 4%, transparent), 0 1px 1px color-mix(in srgb, var(--color-neutral-900) 3%, transparent);
+  --shadow-md: 0 8px 24px color-mix(in srgb, var(--color-neutral-900) 8%, transparent), 0 2px 6px color-mix(in srgb, var(--color-neutral-900) 5%, transparent);
+}
+
+/* Claude palette — warm ivory ground, terracotta accent, slate second voice. */
+[data-theme="claude"] {
+  --color-bg: #faf9f5;
+  --color-surface: #f0eee6;
+  --color-card: #fefdfa;
+  --color-text: #1f1e1d;
+  --color-accent: #d97757;
+  --color-accent-2: #4c73a5;
+
+  --color-neutral-100: #f6f3ef;
+  --color-neutral-200: #ebe7e1;
+  --color-neutral-300: #d7d2ca;
+  --color-neutral-400: #b8b3ac;
+  --color-neutral-500: #96918a;
+  --color-neutral-600: #75716a;
+  --color-neutral-700: #58554f;
+  --color-neutral-800: #3d3a36;
+  --color-neutral-900: #262421;
+
+  --color-accent-100: #fef0eb;
+  --color-accent-200: #ffe0d7;
+  --color-accent-300: #fec3af;
+  --color-accent-400: #f19b80;
+  --color-accent-500: #d47354;
+  --color-accent-600: #af5233;
+  --color-accent-700: #893a1f;
+
+  --color-accent-2-100: #edf4fe;
+  --color-accent-2-700: #355781;
+
+  --color-success: #579766; --color-success-soft: #dcf7e1; --color-success-deep: #286037;
+  --color-warning: #ce9042; --color-warning-soft: #feecce; --color-warning-deep: #774a03;
+  --color-danger: #c15f4d; --color-danger-soft: #ffe4df; --color-danger-deep: #883324;
+}
+
+* , *::before, *::after { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: var(--color-bg);
+  color: var(--color-text);
+  font-family: var(--font-body);
+  font-size: 14px;
+  line-height: 1.55;
+  letter-spacing: 0.01em;
+  -webkit-font-smoothing: antialiased;
+}
+
+.sheet { max-width: 940px; margin: 0 auto; padding: var(--space-6) var(--space-6) 96px; }
+
+h1, h2 { font-family: var(--font-heading); font-weight: var(--font-heading-weight); margin: 0; }
+h1 { font-size: 26px; letter-spacing: -0.022em; line-height: 1.15; }
+h2 { font-size: 17px; letter-spacing: -0.01em; display: flex; align-items: baseline; gap: var(--space-3); }
+h2 .no { font-family: var(--font-mono); font-size: 12px; font-weight: 500; color: var(--color-accent-600); letter-spacing: 0.04em; }
+h2 .hint { font-size: 12px; font-weight: 400; color: color-mix(in srgb, var(--color-text) 45%, transparent); }
+
+a { color: var(--color-accent-600); text-decoration: none; }
+a:hover { text-decoration: underline; text-underline-offset: 3px; }
+code { font-family: var(--font-mono); font-size: 0.9em; }
+.mono { font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
+.muted { color: color-mix(in srgb, var(--color-text) 55%, transparent); }
+
+/* — masthead（紧凑：标题 + 一行元信息） — */
+.mast { border-bottom: 1px solid var(--color-divider); padding-bottom: var(--space-3); }
+.eyebrow { margin: 0 0 var(--space-1); font-size: 11px; font-weight: 500; letter-spacing: 0.12em; text-transform: uppercase; color: color-mix(in srgb, var(--color-text) 50%, transparent); }
+.mast .v { font-family: var(--font-mono); letter-spacing: -0.01em; }
+.meta-line { display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--space-1) var(--space-2); margin: var(--space-2) 0 0; font-size: 12px; color: color-mix(in srgb, var(--color-text) 62%, transparent); }
+.meta-line .mi b { font-weight: 500; color: color-mix(in srgb, var(--color-text) 45%, transparent); margin-right: 3px; }
+.meta-line .sep { color: color-mix(in srgb, var(--color-text) 30%, transparent); }
+
+/* — 交付流程条 — */
+.flow { display: flex; gap: var(--space-3); list-style: none; margin: var(--space-4) 0 0; padding: 0; }
+.flow li { flex: 1 1 0; min-width: 0; position: relative; background: var(--color-card); border: 1px solid var(--color-divider); border-radius: var(--radius-md); padding: var(--space-2) var(--space-3); }
+.flow li:not(:last-child)::after { content: ''; position: absolute; right: -11px; top: 50%; translate: 0 -50%; width: 7px; height: 7px; border-top: 1.5px solid var(--color-neutral-400); border-right: 1.5px solid var(--color-neutral-400); rotate: 45deg; }
+.flow b { display: block; font-size: 12.5px; line-height: 1.4; }
+.flow span { display: block; font-size: 11px; line-height: 1.4; color: color-mix(in srgb, var(--color-text) 55%, transparent); }
+.flow li.now { background: var(--color-accent-100); border-color: var(--color-accent-300); }
+.flow li.now b { color: var(--color-accent-700); }
+@media (max-width: 720px) {
+  .flow { flex-wrap: wrap; gap: var(--space-2); }
+  .flow li { flex: 1 1 44%; }
+  .flow li:not(:last-child)::after { display: none; }
+}
+
+/* — 首屏状态栏：目标、任务、构建、用例全部收进单行 chip；备注整行铺底，不做卡片 — */
+.statusbar { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2); margin: var(--space-4) 0 0; }
+.chip { display: inline-flex; align-items: center; gap: 6px; border: 1px solid var(--color-divider); background: var(--color-card); border-radius: 999px; padding: 4px 12px; font-size: 12px; line-height: 1.4; color: var(--color-text); }
+a.chip:hover { text-decoration: none; border-color: var(--color-accent-400); }
+.chip .k { font-size: 11px; font-weight: 500; letter-spacing: 0.02em; color: color-mix(in srgb, var(--color-text) 50%, transparent); }
+.chip b { font-weight: 600; font-variant-numeric: tabular-nums; }
+.statusnote { flex: 0 0 100%; margin: var(--space-1) 0 0; font-size: 12px; color: color-mix(in srgb, var(--color-text) 60%, transparent); }
+.statusnote b { font-weight: 500; color: color-mix(in srgb, var(--color-text) 45%, transparent); margin-right: 6px; }
+.statusbar .absent { flex: 0 0 100%; }
+
+/* — tags — */
+.tag { display: inline-flex; align-items: center; gap: 5px; font-size: 11px; font-weight: 500; line-height: 1; letter-spacing: 0.01em; padding: 4px 8px; border-radius: 999px; white-space: nowrap; }
+.tag-accent { background: var(--color-accent-100); color: var(--color-accent-700); }
+.tag-success { background: var(--color-success-soft); color: var(--color-success-deep); }
+.tag-warning { background: var(--color-warning-soft); color: var(--color-warning-deep); }
+.tag-danger { background: var(--color-danger-soft); color: var(--color-danger-deep); }
+.tag-neutral { background: var(--color-neutral-100); color: var(--color-neutral-700); }
+.tag-outline { border: 1px solid var(--color-divider); color: color-mix(in srgb, var(--color-text) 70%, transparent); padding: 3px 8px; }
+
+/* — blocks — */
+.block { border-top: 1px solid var(--color-divider); margin-top: var(--space-8); padding-top: var(--space-6); }
+.block > h2 { margin-bottom: var(--space-4); }
+.block.appendix { background: color-mix(in srgb, var(--color-surface) 55%, var(--color-bg)); border: 1px solid var(--color-divider); border-radius: var(--radius-lg); padding: var(--space-4) var(--space-6); margin-top: var(--space-8); }
+
+/* — goal cards — */
+.goal { background: var(--color-card); border: 1px solid var(--color-divider); border-radius: var(--radius-lg); box-shadow: var(--shadow-sm); padding: var(--space-4) var(--space-6); margin: 0 0 var(--space-4); }
+.goal-head { display: flex; align-items: center; gap: var(--space-3); margin-bottom: var(--space-2); }
+.goal-head .g { font-family: var(--font-mono); font-size: 12px; font-weight: 600; color: var(--color-accent-700); }
+.goal h3 { margin: 0 0 var(--space-3); font-size: 15px; font-weight: var(--font-heading-weight); line-height: 1.45; }
+.kv { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: var(--space-2); }
+.kv > div { background: var(--color-surface); border-radius: var(--radius-md); padding: var(--space-2) var(--space-3); }
+.kv dt { font-size: 10px; font-weight: 500; letter-spacing: 0.06em; text-transform: uppercase; color: color-mix(in srgb, var(--color-text) 50%, transparent); margin: 0 0 2px; }
+.kv dd { margin: 0; font-size: 13px; word-break: break-word; }
+.goal .why { margin: var(--space-3) 0 0; font-size: 12px; color: color-mix(in srgb, var(--color-text) 60%, transparent); }
+
+/* — tables — */
+table { width: 100%; border-collapse: collapse; font-size: 13px; }
+th { text-align: left; font-size: 11px; font-weight: 500; letter-spacing: 0.06em; text-transform: uppercase; color: color-mix(in srgb, var(--color-text) 50%, transparent); padding: 0 var(--space-3) var(--space-2) 0; border-bottom: 1px solid var(--color-divider); }
+td { padding: var(--space-2) var(--space-3) var(--space-2) 0; border-bottom: 1px solid color-mix(in srgb, var(--color-text) 7%, transparent); vertical-align: top; }
+th:last-child, td:last-child { padding-right: 0; }
+td.num { font-family: var(--font-mono); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.tight td, .tight th { font-size: 12px; }
+
+/* — case cards — */
+.suitehead { display: flex; align-items: baseline; gap: var(--space-2); margin: var(--space-6) 0 var(--space-3); font-size: 13px; font-weight: var(--font-heading-weight); letter-spacing: 0.02em; color: color-mix(in srgb, var(--color-text) 85%, transparent); }
+.block h2 + .suitehead { margin-top: 0; }
+.suitehead .count { font-family: var(--font-mono); font-size: 11px; font-weight: 400; color: color-mix(in srgb, var(--color-text) 50%, transparent); }
+.case { border: 1px solid var(--color-divider); border-radius: var(--radius-lg); background: var(--color-card); box-shadow: var(--shadow-sm); padding: var(--space-3) var(--space-4); margin: 0 0 var(--space-4); }
+.case-head { display: flex; align-items: center; gap: var(--space-3); flex-wrap: wrap; }
+.case-head .id { font-family: var(--font-mono); font-size: 12px; font-weight: 500; color: var(--color-accent-700); }
+.case-head h3 { margin: 0; font-size: 14px; font-weight: var(--font-heading-weight); flex: 1 1 auto; }
+.case .flow { margin: var(--space-2) 0 0; font-size: 12px; color: color-mix(in srgb, var(--color-text) 65%, transparent); }
+.case .flow b { font-weight: 600; color: color-mix(in srgb, var(--color-text) 80%, transparent); }
+.case .msg { margin: var(--space-2) 0 0; font-size: 12px; color: var(--color-danger-deep); }
+.shots { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: var(--space-3); margin: var(--space-3) 0 0; }
+.shots figure { margin: 0; }
+.shots img { width: 100%; height: auto; border: 1px solid var(--color-divider); border-radius: var(--radius-sm); display: block; background: var(--color-surface); }
+.shots figcaption { margin: var(--space-1) 0 0; font-family: var(--font-mono); font-size: 10px; color: color-mix(in srgb, var(--color-text) 50%, transparent); word-break: break-all; }
+.files { margin: var(--space-2) 0 0; font-size: 11px; color: color-mix(in srgb, var(--color-text) 55%, transparent); word-break: break-all; }
+
+/* — empty / unknown — */
+.absent { background: var(--color-surface); border: 1px dashed var(--color-divider); border-radius: var(--radius-md); padding: var(--space-3) var(--space-4); font-size: 13px; }
+.absent p { margin: 0; }
+.absent .why { margin: var(--space-1) 0 0; font-size: 12px; color: color-mix(in srgb, var(--color-text) 60%, transparent); }
+
+.src { margin: var(--space-3) 0 0; font-size: 11px; color: color-mix(in srgb, var(--color-text) 45%, transparent); }
+.foot { margin-top: var(--space-8); border-top: 1px solid var(--color-divider); padding-top: var(--space-4); font-size: 11px; color: color-mix(in srgb, var(--color-text) 45%, transparent); }
+</style>
+</head>
+<body>
+<main class="sheet">
+
+  <header class="mast">
+    <p class="eyebrow">版本验收报告</p>
+    <h1><span class="v">v0.4</span></h1>
+    <p class="meta-line"><span class="mi"><b>项目</b>builder-workbench</span><span class="sep">·</span><span class="mi"><b>版本对</b>v0.3 → v0.4</span><span class="sep">·</span><span class="mi"><b>源码修订</b>9113867ae3b7</span><span class="sep">·</span><span class="mi"><b>出包时间</b>2026-09-19 09:41:49</span></p>
+  </header>
+
+  <ol class="flow" aria-label="报告生成流程">
+    <li><b>计划与证据盘点</b><span>确认版本目标、任务与已有运行记录</span></li>
+    <li><b>构建与打包</b><span>编译安装产物（未出包则跳过）</span></li>
+    <li><b>自动化验证</b><span>代码门禁与桌面端到端测试</span></li>
+    <li><b>安装包验收测试</b><span>实跑安装包回归（未验包则跳过）</span></li>
+    <li><b>数据采集与回填</b><span>解析运行证据，实时读回任务状态</span></li>
+    <li class="now"><b>渲染、评审与归档</b><span>生成本页，完成由人确认</span></li>
+  </ol>
+
+  <section aria-label="本版总览">
+    <div class="statusbar"><a class="chip" href="#sec-goals"><span class="k mono">G1</span><span class="tag tag-success">达成</span><span class="k">4/4 通过</span></a><a class="chip" href="#sec-goals"><span class="k mono">G2</span><span class="tag tag-success">达成</span><span class="k">5/5 齐套</span></a><a class="chip" href="#sec-tasks"><span class="k">任务 Issue 共 5 个</span><b>已完成 5</b></a><span class="chip"><span class="k">编译</span><span class="tag tag-success">成功</span></span><span class="chip"><span class="k">打包</span><span class="tag tag-success">成功</span></span><span class="chip"><span class="k">验收用例</span><b class="mono">11 / 11</b></span><span class="chip"><span class="k">基础用例</span><b class="mono">5 / 5</b></span><span class="chip"><span class="k">安装包</span><b class="mono">.bw/release/out/0.4.0</b></span></div>
+  </section>
+
+  <section class="block" id="sec-goals">
+    <h2><span class="no">01</span>本版目标与结果<span class="hint">引用本版计划；状态与说明由收尾会话按读回事实标注</span></h2>
+    <article class="goal"><div class="goal-head"><span class="g">G1</span><span class="tag tag-success">达成</span></div><h3>[周一屏]需求功能交付，支持周一上午builder完成上周信息总结、本周版本规划，下午PL和builder计划对齐握手，输出交付件和周任务（需要整理会议纪要）</h3><dl class="kv"><div><dt>指标</dt><dd>约定验收项通过数（上午总结、本版规划成稿、下午 PL/builder 握手、纪要+交付件+任务 Issue 归档）</dd></div><div><dt>目标值</dt><dd>4/4 通过</dd></div><div><dt>交付件</dt><dd>版本验收报告（本页）</dd></div></dl></article><article class="goal"><div class="goal-head"><span class="g">G2</span><span class="tag tag-success">达成</span></div><h3>[周一屏]本机项目完成 v0.4 规划交付归档:计划数据、会议纪要、交付件、任务 Issue 全部落仓可读回</h3><dl class="kv"><div><dt>指标</dt><dd>归档要件齐套数(计划 JSON、纪要、交付件、任务 Issue、归档 PR 合入)</dd></div><div><dt>目标值</dt><dd>5/5 齐套</dd></div><div><dt>交付件</dt><dd><a href="deliverables/v04-g2-monday-screen.png">周一屏快照截图 v04-g2-monday-screen.png</a></dd></div></dl></article>
+  </section>
+
+  <section class="block" id="sec-tasks">
+    <h2><span class="no">02</span>任务拆解与状态<span class="hint">每项任务是一个 GitHub Issue；状态实时读回，不手工填</span></h2>
+    <table class="tight"><thead><tr><th>编号</th><th>任务</th><th>目标</th><th>状态</th><th>备注</th></tr></thead><tbody><tr><td class="mono"><a href="https://github.com/forcegravity1989/builder-workbench/issues/207">#207</a></td><td>【v0.4|W38|G1】周一屏实战：BW 本周特性、指标与 E2E 验收</td><td class="mono">G1</td><td><span class="tag tag-success">已完成</span></td><td></td></tr><tr><td class="mono"><a href="https://github.com/forcegravity1989/builder-workbench/issues/176">#176</a></td><td>【v0.4|W38|G1】规范收为 harness 系统提示词与 skill</td><td class="mono">G1</td><td><span class="tag tag-success">已完成</span></td><td></td></tr><tr><td class="mono"><a href="https://github.com/forcegravity1989/builder-workbench/issues/217">#217</a></td><td>【v0.4|W38|G1】新增采集脚本：统计使用周一屏的被管理项目数</td><td class="mono">G1</td><td><span class="tag tag-success">已完成</span></td><td></td></tr><tr><td class="mono"><a href="https://github.com/forcegravity1989/builder-workbench/issues/219">#219</a></td><td>【v0.4|W38|G1】周一屏纪要：会议语音转文字并生成纪要</td><td class="mono">G1</td><td><span class="tag tag-success">已完成</span></td><td></td></tr><tr><td class="mono"><a href="https://github.com/forcegravity1989/builder-workbench/issues/218">#218</a></td><td>【v0.4|W38|G2】补跑 2026-W38 周一屏并入库归档</td><td class="mono">G2</td><td><span class="tag tag-success">已完成</span></td><td></td></tr></tbody></table>
+  </section>
+
+  <section class="block">
+    <h2><span class="no">03</span>目标验收：E2E 用例与截图<span class="hint">用例来自自动化验收运行；对上本版目标的验收点由收尾会话标注</span></h2>
+    <h3 class="suitehead">用户旅程 E2E · 周一屏（沙箱项目）<span class="count">3 例</span></h3><article class="case"><div class="case-head"><span class="id">weekplan-automation</span><span class="tag tag-success">通过</span><h3>打开项目后，定版本计划自动化指向 week-plan 常驻树</h3></div><p class="flow"><b>路径</b> BW 打开沙箱项目触发写入 → bw-engine 示例独立读回自动化明细</p><p class="flow"><b>期望</b> 定版本计划（Workbench）唯一且关闭，执行目录是本项目 week-plan 常驻树，提示词含 bw/week-plan、周一屏与 planning.py 指引，updatedAt 不早于本次旅程开始</p><p class="files">其他证据：weekplan-automation.json</p></article><article class="case"><div class="case-head"><span class="id">weekplan-session</span><span class="tag tag-success">通过</span><h3>week-plan 常驻树里真实出现一个会话</h3></div><p class="flow"><b>路径</b> 以 BW 开工同款 RPC 启动会话 → 等待新的 Claude 会话文件 → 读回内容 → 按归属标记清理进程</p><p class="flow"><b>期望</b> 出现不属于基线的新会话 jsonl 且非空；进程清理回执无残留</p><p class="files">其他证据：weekplan-session.json、weekplan-session-jsonl-head.txt、weekplan-session-kill.json</p></article><article class="case"><div class="case-head"><span class="id">weekplan-html</span><span class="tag tag-success">通过</span><h3>周一屏页面的修改真实保存到 week-plan 常驻树</h3></div><p class="flow"><b>路径</b> 部署真实 Skill → planning.py 在常驻树起服务 → 无头浏览器修改目标 → 读回磁盘 data.json 与 git status</p><p class="flow"><b>期望</b> 磁盘 JSON 与页面输入一致；清理后常驻树恢复干净</p><div class="shots"><figure><img src="shots/week-plan-journey-weekplan-html__weekplan-html.png" alt="week-plan-journey-weekplan-html__weekplan-html.png" loading="lazy"><figcaption>week-plan-journey-weekplan-html__weekplan-html.png</figcaption></figure></div><p class="files">其他证据：weekplan-data.json、weekplan-worktree-git-status.txt、weekplan-html-cleanup.json</p></article><h3 class="suitehead">功能用例 · 版本规划页面<span class="count">8 例</span></h3><article class="case"><div class="case-head"><span class="id">planning-assets</span><span class="tag tag-success">通过</span><h3>BW 分发完整 Skill，JSON 消费者读取真实文件和已登记工作树</h3></div><p class="flow"><b>路径</b> cargo 跑 planning_smoke 分发 → planning.py init 两个版本</p><p class="flow"><b>期望</b> deployment.json 指向真实分发的 week-planning Skill 与已登记工作树</p><p class="files">其他证据：deployment.json</p></article><article class="case"><div class="case-head"><span class="id">planning-autosave</span><span class="tag tag-success">通过</span><h3>真实浏览器输入自动写 JSON，版本报告保存且刷新可读回</h3></div><p class="flow"><b>路径</b> 浏览器编辑目标与交付件 → 失焦保存 → 刷新页面</p><p class="flow"><b>期望</b> JSON 落盘与页面输入一致，刷新后读回相同内容</p><div class="shots"><figure><img src="shots/version-planning-planning-autosave__autosave.png" alt="version-planning-planning-autosave__autosave.png" loading="lazy"><figcaption>version-planning-planning-autosave__autosave.png</figcaption></figure></div><p class="files">其他证据：autosave.json</p></article><article class="case"><div class="case-head"><span class="id">planning-model-readback</span><span class="tag tag-success">通过</span><h3>会话写同一 JSON，页面自动读回</h3></div><p class="flow"><b>路径</b> planning.py update 写回同一版本 JSON</p><p class="flow"><b>期望</b> 页面不用刷新即显示模型写回后的目标</p><div class="shots"><figure><img src="shots/version-planning-planning-model-readback__model-readback.png" alt="version-planning-planning-model-readback__model-readback.png" loading="lazy"><figcaption>version-planning-planning-model-readback__model-readback.png</figcaption></figure></div><p class="files">其他证据：model-candidate.json</p></article><article class="case"><div class="case-head"><span class="id">planning-version-isolation</span><span class="tag tag-success">通过</span><h3>切换版本只读对应 JSON，不串版</h3></div><p class="flow"><b>路径</b> 版本下拉在 v0.5 与 v0.4 间切换</p><p class="flow"><b>期望</b> 每屏只读对应版本的 JSON，互不串改</p><div class="shots"><figure><img src="shots/version-planning-planning-version-isolation__versions.png" alt="version-planning-planning-version-isolation__versions.png" loading="lazy"><figcaption>version-planning-planning-version-isolation__versions.png</figcaption></figure></div><p class="files">其他证据：versions.json</p></article><article class="case"><div class="case-head"><span class="id">planning-unknown-honesty</span><span class="tag tag-success">通过</span><h3>缺数如实显示 Unknown，不显示假进度</h3></div><p class="flow"><b>路径</b> 会话补 progress 后进度条显示真数；清空 reading 后页面自动读回</p><p class="flow"><b>期望</b> 进度条回到 — 且无 aria-valuenow、宽度 0%；磁盘 JSON 同步变化</p><div class="shots"><figure><img src="shots/version-planning-planning-unknown-honesty__unknown-honesty.png" alt="version-planning-planning-unknown-honesty__unknown-honesty.png" loading="lazy"><figcaption>version-planning-planning-unknown-honesty__unknown-honesty.png</figcaption></figure></div><p class="files">其他证据：unknown-honesty.json</p></article><article class="case"><div class="case-head"><span class="id">planning-bad-history</span><span class="tag tag-success">通过</span><h3>坏历史版本明确标记，当前版本连续保存与修订号仍正常</h3></div><p class="flow"><b>路径</b> 伪造 v0.1 坏 JSON → 重载 → 连续保存两次</p><p class="flow"><b>期望</b> 坏版本在下拉中禁用；当前版本保存不失败、状态不显示未保存</p><div class="shots"><figure><img src="shots/version-planning-planning-bad-history__bad-history.png" alt="version-planning-planning-bad-history__bad-history.png" loading="lazy"><figcaption>version-planning-planning-bad-history__bad-history.png</figcaption></figure></div><p class="files">其他证据：bad-history.json</p></article><article class="case"><div class="case-head"><span class="id">planning-conflict</span><span class="tag tag-success">通过</span><h3>并发冲突拒绝覆盖，保留页面输入与磁盘新内容</h3></div><p class="flow"><b>路径</b> 另一写入方更新同一修订 → 过期页面继续编辑并保存</p><p class="flow"><b>期望</b> 保存被拒并提示未保存；磁盘保留另一写入方内容，页面输入不丢失</p><div class="shots"><figure><img src="shots/version-planning-planning-conflict__conflict.png" alt="version-planning-planning-conflict__conflict.png" loading="lazy"><figcaption>version-planning-planning-conflict__conflict.png</figcaption></figure></div><p class="files">其他证据：conflict.json</p></article><article class="case"><div class="case-head"><span class="id">planning-confirmation</span><span class="tag tag-success">通过</span><h3>确认只能由人给出，模型不能伪造</h3></div><p class="flow"><b>路径</b> UI 确认结果 → 模型带伪造确认改写 → 人重新确认 → 会话命令确认评审 → 页面对话框确认计划</p><p class="flow"><b>期望</b> 每次确认后磁盘 actor:user；模型伪造值不落盘且确认全部重置；计划确认后三阶段齐全</p><div class="shots"><figure><img src="shots/version-planning-planning-confirmation__confirmation.png" alt="version-planning-planning-confirmation__confirmation.png" loading="lazy"><figcaption>version-planning-planning-confirmation__confirmation.png</figcaption></figure></div><p class="files">其他证据：confirmation.json、forged-candidate.json</p></article>
+  </section>
+
+  <section class="block appendix">
+    <h2><span class="no">附录</span>基础用例<span class="hint">冒烟与通用回归，非本版目标验收点</span></h2>
+    <h3 class="suitehead">旅程载体 · 添加项目（沙箱项目）<span class="count">4 例</span></h3><article class="case"><div class="case-head"><span class="id">onboarding-project</span><span class="tag tag-success">通过</span><h3>从真实桌面接入 GitHub 沙箱项目</h3></div><p class="flow"><b>路径</b> 接入项目 → 克隆远端仓 → 填写基础信息 → 完成接入 → 项目墙</p><p class="flow"><b>期望</b> 项目墙出现本项目名片，横幅含本次接入打开的 MR 编号；远端读单次网络抖动失败时按真人行为点刷新重试</p><div class="shots"><figure><img src="shots/week-plan-journey-onboarding-project__onboarding-project.png" alt="week-plan-journey-onboarding-project__onboarding-project.png" loading="lazy"><figcaption>week-plan-journey-onboarding-project__onboarding-project.png</figcaption></figure></div></article><article class="case"><div class="case-head"><span class="id">onboarding-readback</span><span class="tag tag-success">通过</span><h3>从 GitHub、Git 和项目名片读回接入结果</h3></div><p class="flow"><b>路径</b> gh 读回 Issue/PR/分支内容；git 读回项目工作树</p><p class="flow"><b>期望</b> 项目约定 Issue 打开且挂 bw:status:inreview；bw/project PR 打开；远端与本地 project.toml 一致且含本次 run-id</p><p class="files">其他证据：github-issue.json、github-pr.json、project-file.toml、git-worktrees.txt</p></article><article class="case"><div class="case-head"><span class="id">onboarding-orca</span><span class="tag tag-success">通过</span><h3>Orca 登记沙箱仓并保留三条关闭的自动化</h3></div><p class="flow"><b>路径</b> bw-engine 示例独立读回 Orca 的项目与自动化列表</p><p class="flow"><b>期望</b> 沙箱项目已登记，三条 Workbench 自动化各存在一条且均为关闭</p><p class="files">其他证据：orca-automations.json</p></article><article class="case"><div class="case-head"><span class="id">onboarding-cleanup</span><span class="tag tag-success">通过</span><h3>只收掉本次远端对象和项目约定工作树</h3></div><p class="flow"><b>路径</b> 关闭本次 PR/Issue → 删除远端 bw/project → 移除项目工作树与本地分支</p><p class="flow"><b>期望</b> 清理回执全为真；沙箱主仓、其余工作树与三条自动化保留</p><p class="files">其他证据：remote-cleanup.json</p></article><h3 class="suitehead">通用回归 · 桌面核心<span class="count">1 例</span></h3><article class="case"><div class="case-head"><span class="id">settings-restart-roundtrip</span><span class="tag tag-success">通过</span><h3>修改设置杀进程重启后，界面与磁盘读回一致</h3></div><p class="flow"><b>路径</b> 启动真壳进设置屏 → 修改工作区根目录并保存 → 杀壳进程 → 重启真壳 → 分别读回界面与 settings.toml</p><p class="flow"><b>期望</b> 重启后设置界面显示保存的目录；settings.toml 磁盘读回一致；重启前后证据齐全</p><div class="shots"><figure><img src="shots/desktop-core-settings-restart-roundtrip__settings-initial.png" alt="desktop-core-settings-restart-roundtrip__settings-initial.png" loading="lazy"><figcaption>desktop-core-settings-restart-roundtrip__settings-initial.png</figcaption></figure><figure><img src="shots/desktop-core-settings-restart-roundtrip__settings-restart.png" alt="desktop-core-settings-restart-roundtrip__settings-restart.png" loading="lazy"><figcaption>desktop-core-settings-restart-roundtrip__settings-restart.png</figcaption></figure></div><p class="files">其他证据：subject.json、initial-shell.log、initial-webview.json、settings-readback.toml、restart-shell.log、restart-webview.json、restart-readback.toml</p></article>
+  </section>
+
+  <p class="foot">生成于 2026-09-19 10:30:31 · 本报告由 version-report skill 生成：事实从 verify run 2026-09-19T10-30-26-309Z-68da36ae（profile pack）、出包产物 0.4.0（修订 9113867ae3b7）与 gh Issue 读回；完成确认与发版由人执行，本报告不代替。</p>
+
+</main>
+</body>
+</html>

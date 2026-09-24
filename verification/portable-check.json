@@ -1,0 +1,20 @@
+{
+  "passed": true,
+  "offline": true,
+  "relocatedDirectory": true,
+  "documents": 28,
+  "checks": [
+    "index and all three screen entries",
+    "independent acceptance branch",
+    "historical report local images",
+    "history JSON sources",
+    "metric configuration task",
+    "all embedded document navigation and local links remain within package"
+  ],
+  "errors": [],
+  "missing": [],
+  "limits": [
+    "No real product/server execution",
+    "External GitHub links intentionally not visited offline"
+  ]
+}

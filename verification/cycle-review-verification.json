@@ -1,0 +1,43 @@
+{
+  "passed": true,
+  "documents": 26,
+  "checked": [
+    "planning-intent",
+    "planning-spec",
+    "planning-design",
+    "planning-STATUS",
+    "acceptance-intent",
+    "acceptance-spec",
+    "acceptance-design",
+    "acceptance-STATUS",
+    "metrics-intent",
+    "metrics-spec",
+    "metrics-design",
+    "metrics-STATUS",
+    "00-overall",
+    "01-version-planning",
+    "02-version-acceptance",
+    "03-overview-metrics",
+    "user-journey",
+    "independent-review",
+    "planning-skill",
+    "acceptance-skill",
+    "metrics-skill",
+    "goal-guide",
+    "skill-structure",
+    "document-structure",
+    "start-skill",
+    "feedback"
+  ],
+  "errors": [],
+  "checks": [
+    "All manifest source documents render",
+    "native hash navigation",
+    "cross-document source links",
+    "plan and spec navigation",
+    "1365 and 1280 desktop horizontal overflow"
+  ],
+  "limits": [
+    "Static local review page, not Electron product verification"
+  ]
+}
