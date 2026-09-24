@@ -29,18 +29,20 @@ export const WORKBENCH_MATERIAL_COMMAND_SPECS: CommandSpec[] = [
   {
     path: ['bw', 'materials', 'save'],
     summary: 'Save a version material draft with conflict protection',
-    usage: `orca bw materials save ${scopeUsage} --version <version> --input <json-file> (--create | --expected-revision <revision>) [--json]`,
+    usage: `orca bw materials save ${scopeUsage} --version <version> (--input <json-file> | --input-stdin) (--create | --expected-revision <revision>) [--json]`,
     allowedFlags: [
       ...GLOBAL_FLAGS,
       ...scopeFlags,
       'version',
       'input',
+      'input-stdin',
       'create',
       'expected-revision'
     ],
     notes: [
       'The input file contains the schema 3 document. Read first and use its revision; --create only succeeds when no document exists.',
       'A conflict preserves the stored document and the input file. Reread and merge deliberately before retrying.',
+      'Use --input-stdin in SSH sessions; Orca forwards the payload through its native CLI bridge. --input reads a file on the CLI process host.',
       'Uses the running Orca runtime and native project/worktree IDs; it never writes material files directly.'
     ]
   }

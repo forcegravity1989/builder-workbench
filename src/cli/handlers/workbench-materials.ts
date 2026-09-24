@@ -1,5 +1,6 @@
 import { readFile } from 'node:fs/promises'
 import { resolve } from 'node:path'
+import { text } from 'node:stream/consumers'
 import { z } from 'zod'
 import {
   AcceptanceMaterialSchema,
@@ -73,8 +74,20 @@ export const WORKBENCH_MATERIAL_HANDLERS: Record<string, CommandHandler> = {
         'Use either --create or --expected-revision.'
       )
     }
-    const input = resolve(ctx.cwd, getRequiredStringFlag(ctx.flags, 'input'))
-    const document: unknown = JSON.parse(await readFile(input, 'utf8'))
+    const input = getOptionalStringFlag(ctx.flags, 'input')
+    const stdin = ctx.flags.get('input-stdin')
+    let raw: string
+    if (stdin === true && input === undefined) {
+      raw = await text(process.stdin)
+    } else if (stdin === undefined && input !== undefined) {
+      raw = await readFile(resolve(ctx.cwd, input), 'utf8')
+    } else {
+      throw new RuntimeClientError(
+        'invalid_argument',
+        'Use either --input <file> or --input-stdin.'
+      )
+    }
+    const document: unknown = JSON.parse(raw)
     await invoke(
       ctx,
       'save',
