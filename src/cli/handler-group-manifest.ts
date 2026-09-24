@@ -13,6 +13,12 @@ export type HandlerGroup = {
 // real exports by handler-group-manifest.test.ts, so drift fails CI, not dispatch.
 export const HANDLER_GROUPS: readonly HandlerGroup[] = [
   {
+    name: 'workbench-materials',
+    keys: ['bw materials schema', 'bw materials list', 'bw materials read', 'bw materials save'],
+    load: async () =>
+      (await import('./handlers/workbench-materials.js')).WORKBENCH_MATERIAL_HANDLERS
+  },
+  {
     name: 'core',
     keys: ['claude-teams', 'open', 'serve', 'status'],
     load: async () => (await import('./handlers/core.js')).CORE_HANDLERS

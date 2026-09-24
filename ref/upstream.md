@@ -80,6 +80,8 @@ git merge orca-upstream/main
 
 细节清单见 `src/renderer/src/workbench/INVENTORY.md`、`SYNC.md`。
 
+BW 业务契约与材料服务分别位于 `src/shared/workbench/`、`src/main/workbench/`，宿主侧事务复用入口位于 `src/relay/workbench/`。叠层外仅保留 RPC/CLI 注册和 relay 组合挂载；复用原生身份、配对路由与 SSH 通道，具体业务不进入 Orca 工作树类。
+
 **未删的 upstream 执行核**（合并时优先保 upstream，除非叠层钩子）：TaskPage、Automations、terminal/PTY、worktree、Explorer/SC/Diff、`src/main` runtime。
 
 ## 从 Workbench `main` 增加了什么
@@ -90,7 +92,7 @@ git merge orca-upstream/main
 | 壳叠层（Orca 上新写，非 Rust 直译） | `src/renderer/src/workbench/` | 已在本分支 |
 | **`standard/`（系统提示词 / skill / templates）** | 仓根 `standard/` | 已从 `main` 合入。计划页新开会话注入 `SYSTEM.md.tmpl` 与 week-planning 指针；main 上 `crates/bw` 的 `ensure_*` / `agent_system_prompt` 全量注入仍未在 Electron 复刻。 |
 
-叠层留在 `src/renderer/src/workbench/`，不要另开 npm / workspace 包。`standard/` 合入后仍是内容目录（提示词与技能），不是运行时包。
+BW 自有模块留在 renderer/main/shared/relay 各自的 `workbench/` 目录，不另开 npm / workspace 包。`standard/` 合入后仍是内容目录（提示词与技能），不是运行时包。
 
 ## 同步注意事项
 
@@ -98,7 +100,7 @@ git merge orca-upstream/main
 
 1. **文档冲突**：`docs/`、`AGENTS.md`、`CONTEXT.md`、`README.md`、`CLAUDE.md` → 以 Workbench 产品正本为准，不要用 upstream Orca 文档盖回来。upstream 工程说明只进 `ref/`。
 2. **`ref/`**：可随 upstream `docs/reference/**` / `STYLEGUIDE.md` 增量更新；新增篇目放 `ref/`，并在本文件补一行。不要把 `ref/` 拷回 `docs/`。
-3. **叠层外源码冲突**：`src/renderer/src/workbench/**` 以外 → 优先取 upstream；本分支只保留 `isWorkbenchShell()` 一类一行钩子。
+3. **叠层外源码冲突**：BW 自有 `workbench/` 模块以外 → 优先取 upstream；本分支只保留界面条件分支、RPC/CLI 注册及 relay 组合等薄挂载。
 4. **叠层内冲突**：`workbench/**` 与挂载钩子 → 取本分支 / 手合。
 5. **不要**把 `.omc/**`、本机 profile、`dist/` / `out/` 打进产品提交。
 6. 日常热加载：`REMOTE_DEBUGGING_PORT=9337 pnpm run dev:workbench`（见 `SYNC.md`）。Agent 自动化再加 `ORCA_BACKGROUND_LAUNCH=1`。

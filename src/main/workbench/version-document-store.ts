@@ -18,6 +18,8 @@ type StoreOptions<T extends VersionDocumentIdentity> = {
   workflow: VersionWorkflow
   /** Feature-owned validation; the transaction core only owns the common identity envelope. */
   decode: (value: unknown) => T
+  /** Recheck native workspace authority after acquiring the document lock. */
+  beforeCommit?: () => Promise<void>
 }
 
 export function createVersionDocumentStore<T extends VersionDocumentIdentity>(
@@ -126,6 +128,7 @@ export function createVersionDocumentStore<T extends VersionDocumentIdentity>(
             currentRevision
           )
         }
+        await options.beforeCommit?.()
         const committed = await writeFileDurableIfCurrent(
           durableWriteTempPath(file),
           file,

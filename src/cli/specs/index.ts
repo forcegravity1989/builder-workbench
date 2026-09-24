@@ -1,4 +1,5 @@
 import type { CommandSpec } from '../args'
+import { WORKBENCH_MATERIAL_COMMAND_SPECS } from './workbench-materials'
 import { ACCOUNT_COMMAND_SPECS } from './account'
 import { BROWSER_ADVANCED_COMMAND_SPECS } from './browser-advanced'
 import { BROWSER_BASIC_COMMAND_SPECS } from './browser-basic'
@@ -19,6 +20,7 @@ import { SKILL_COMMAND_SPECS } from './skills'
 import { ARTIFACT_COMMAND_SPECS } from './artifacts'
 
 export const COMMAND_SPECS: CommandSpec[] = [
+  ...WORKBENCH_MATERIAL_COMMAND_SPECS,
   ...CORE_COMMAND_SPECS,
   ...ARTIFACT_COMMAND_SPECS,
   ...ACCOUNT_COMMAND_SPECS,
