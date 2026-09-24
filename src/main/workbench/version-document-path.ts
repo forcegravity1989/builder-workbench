@@ -28,26 +28,24 @@ async function inspectPath(path: string, directory: boolean): Promise<boolean> {
   }
 }
 
-/** The runtime must authorize this root from the native project/host/worktree before calling. */
-export async function resolveVersionDocumentPath(
+/** No directories are created when listing or reading materials. */
+export async function resolveVersionPlanningRoot(
   trustedWorkspacePath: string,
-  workflow: VersionWorkflow,
-  version: string,
-  createDirectories = false
+  createDirectories = false,
+  version?: string
 ): Promise<string> {
-  validatePlanningVersion(version)
+  if (version !== undefined) {
+    validatePlanningVersion(version)
+  }
   if (!isAbsolute(trustedWorkspacePath)) {
     throw new VersionDocumentError(
       'unsafe-path',
       'The registered workspace must have an absolute path'
     )
   }
-  if (workflow !== 'plan' && workflow !== 'acceptance') {
-    throw new VersionDocumentError('unsafe-path', 'Unknown version workflow')
-  }
   let path = await realpath(trustedWorkspacePath)
   await inspectPath(path, true)
-  for (const segment of ['.bw', 'planning', version]) {
+  for (const segment of ['.bw', 'planning', ...(version === undefined ? [] : [version])]) {
     path = join(path, segment)
     if (!(await inspectPath(path, true)) && createDirectories) {
       try {
@@ -60,6 +58,21 @@ export async function resolveVersionDocumentPath(
       await inspectPath(path, true)
     }
   }
+  return path
+}
+
+/** The runtime must authorize this root from the native project/host/worktree before calling. */
+export async function resolveVersionDocumentPath(
+  trustedWorkspacePath: string,
+  workflow: VersionWorkflow,
+  version: string,
+  createDirectories = false
+): Promise<string> {
+  validatePlanningVersion(version)
+  if (workflow !== 'plan' && workflow !== 'acceptance') {
+    throw new VersionDocumentError('unsafe-path', 'Unknown version workflow')
+  }
+  const path = await resolveVersionPlanningRoot(trustedWorkspacePath, createDirectories, version)
   const file = join(path, workflow === 'plan' ? 'data.json' : 'acceptance.json')
   await inspectPath(file, false)
   // proper-lockfile uses a directory beside the document. Never follow a substituted lock path.

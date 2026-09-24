@@ -1,7 +1,9 @@
 import { readFile, stat } from 'node:fs/promises'
-import { isAbsolute, join, resolve } from 'node:path'
+import { join } from 'node:path'
 import type { GitRuntimeOptions } from './git-runtime-options'
 import { resolveGitDir } from './status'
+import { resolveGitCommonDir } from './source-control/resolve-git-common-dir'
+export { resolveGitCommonDir } from './source-control/resolve-git-common-dir'
 
 export async function detectSparseCheckout(
   worktreePath: string,
@@ -30,21 +32,6 @@ export async function detectSparseCheckout(
   } catch {
     return false
   }
-}
-
-// Resolve the shared common gitdir for a (possibly linked) worktree gitdir. A linked worktree's
-// gitdir holds a `commondir` file pointing at the repo's main `.git`; the main worktree's gitdir
-// is itself the common dir.
-export async function resolveGitCommonDir(gitDir: string): Promise<string> {
-  try {
-    const raw = (await readFile(join(gitDir, 'commondir'), 'utf-8')).trim()
-    if (raw.length > 0) {
-      return isAbsolute(raw) ? raw : resolve(gitDir, raw)
-    }
-  } catch {
-    // No `commondir` file: this gitdir is already the common dir.
-  }
-  return gitDir
 }
 
 // Whether core.sparseCheckout is actually enabled for this worktree. The value can live in the

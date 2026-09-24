@@ -6,6 +6,8 @@
 
 ## 迁入什么
 
+本轮仅接本机 Git 项目，SSH/远端运行时及尚未验证的 WSL 执行路径暂不开放。GitHub 等 provider 的远端事实读取仍可用于本机项目；不能把这一范围决定误解为只允许离线指标。
+
 参考 main 的 crates/app-shell/src/screens/overview/metrics.rs、crates/bw/src/repo/metrics_file.rs 与 .bw 指标资产：BizMetrics 的定义解析、feature/leads 页签及引领/滞后图表，SdlcMetrics 的提交/合入 PR/开放 Issue 图表，以及两者的日/周、刷新、历史与错误语义。保留协议、测试向量和有效业务资产，重写 Electron 适配；不迁 Rust crate 或旧 bridge。
 
 BW 自用的 managed-projects.py、其名单和远端读取依赖要逐项核对；monday-screen 口径目前依赖旧 data.json/confirmation 历史，必须在新版本材料落地时更新采集解析并保持历史定义可解释。不能复制脚本后宣称新周一屏已有使用指标。旧 codehub-closed-issues.py 也须核对实际 provider，不能因文件名就假定适用 GitHub。

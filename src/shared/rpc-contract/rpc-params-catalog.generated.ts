@@ -538,6 +538,11 @@ import {
   SkillUploadChunkRequestSchema,
   SkillUploadCommitRequestSchema
 } from '../skill-upload-session-contract'
+import {
+  VersionMaterialReadSchema,
+  VersionMaterialSaveSchema,
+  VersionMaterialScopeSchema
+} from '../workbench/version-material-request'
 
 // Why: the host parses params with these schemas, so a client that matches this map
 // matches the dispatcher. Clients must import it for types only — parsing a params
@@ -1136,6 +1141,9 @@ export const RPC_PARAMS_BY_METHOD = {
   'updater.download': null,
   'updater.getStatus': null,
   'updater.install': null,
+  'workbench.materials.list': VersionMaterialScopeSchema,
+  'workbench.materials.read': VersionMaterialReadSchema,
+  'workbench.materials.save': VersionMaterialSaveSchema,
   'workspacePorts.kill': WorkspacePortKillParams,
   'workspacePorts.scan': WorkspacePortScanParams,
   'worktree.activate': WorktreeActivate,

@@ -1,0 +1,92 @@
+import { readFile } from 'node:fs/promises'
+import { resolve } from 'node:path'
+import { z } from 'zod'
+import {
+  AcceptanceMaterialSchema,
+  PlanningMaterialSchema
+} from '../../shared/workbench/version-material'
+import type { CommandHandler, HandlerContext } from '../dispatch'
+import { getOptionalStringFlag, getRequiredStringFlag } from '../flags'
+import { printResult } from '../format'
+import { RuntimeClientError } from '../runtime/types'
+import {
+  VersionMaterialReadSchema,
+  VersionMaterialSaveSchema,
+  VersionMaterialScopeSchema,
+  type VersionMaterialResult
+} from '../../shared/workbench/version-material-request'
+
+function scope(ctx: HandlerContext) {
+  if (ctx.client.isRemote) {
+    throw new RuntimeClientError('unsupported-host', '版本材料目前仅支持本机 Git 项目')
+  }
+  return {
+    repoId: getRequiredStringFlag(ctx.flags, 'repo-id'),
+    worktreeId: getRequiredStringFlag(ctx.flags, 'worktree-id'),
+    hostId: getOptionalStringFlag(ctx.flags, 'host-id') ?? 'local',
+    workflow: getRequiredStringFlag(ctx.flags, 'workflow')
+  }
+}
+
+async function invoke(ctx: HandlerContext, operation: string, params: unknown): Promise<void> {
+  const response = await ctx.client.call<VersionMaterialResult<unknown>>(
+    `workbench.materials.${operation}`,
+    params
+  )
+  if (!response.result.ok) {
+    const error = response.result.error
+    throw new RuntimeClientError(error.code, error.message, {
+      currentRevision: error.currentRevision
+    })
+  }
+  printResult({ ...response, result: response.result.value }, ctx.json, (value) =>
+    JSON.stringify(value, null, 2)
+  )
+}
+
+export const WORKBENCH_MATERIAL_HANDLERS: Record<string, CommandHandler> = {
+  'bw materials schema': async (ctx) => {
+    const workflow = z
+      .enum(['plan', 'acceptance'])
+      .parse(getRequiredStringFlag(ctx.flags, 'workflow'))
+    const schema = workflow === 'plan' ? PlanningMaterialSchema : AcceptanceMaterialSchema
+    console.log(JSON.stringify(z.toJSONSchema(schema), null, 2))
+  },
+  'bw materials list': async (ctx) =>
+    invoke(ctx, 'list', VersionMaterialScopeSchema.parse(scope(ctx))),
+  'bw materials read': async (ctx) =>
+    invoke(
+      ctx,
+      'read',
+      VersionMaterialReadSchema.parse({
+        ...scope(ctx),
+        version: getRequiredStringFlag(ctx.flags, 'version')
+      })
+    ),
+  'bw materials save': async (ctx) => {
+    const target = scope(ctx)
+    const create = ctx.flags.get('create')
+    const revision = getOptionalStringFlag(ctx.flags, 'expected-revision')
+    if (
+      (create !== undefined && create !== true) ||
+      (create === true) === (revision !== undefined)
+    ) {
+      throw new RuntimeClientError(
+        'invalid_argument',
+        'Use either --create or --expected-revision.'
+      )
+    }
+    const input = resolve(ctx.cwd, getRequiredStringFlag(ctx.flags, 'input'))
+    const document: unknown = JSON.parse(await readFile(input, 'utf8'))
+    await invoke(
+      ctx,
+      'save',
+      VersionMaterialSaveSchema.parse({
+        ...target,
+        version: getRequiredStringFlag(ctx.flags, 'version'),
+        expectedRevision: revision ?? null,
+        document
+      })
+    )
+  }
+}

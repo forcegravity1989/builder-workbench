@@ -2,7 +2,7 @@
 
 > 给维护版本材料的会话与实现者按需读取。本文定义对象、来源和写入边界，不复述讨论 SOP；SOP 在 week-planning / version-acceptance。契约变化时更新。
 >
-> 状态：目标 schema3 契约，材料事务核心已实现，尚未接 UI/模型运行入口。当前 schema2/旧 CLI 不具备以下全部能力；材料读写时必须已有明确版本，由宿主提供受信任根与可调用工具；启动会话不要求先有版本。
+> 状态：schema3 材料核心、本机 runtime RPC 和 CLI 已实现，旧页面/会话提示尚未切换。当前 schema2/旧 CLI 不具备以下全部能力；材料读写时必须已有明确版本，由宿主提供原生身份及可调用工具；启动会话不要求先有版本。
 
 ## 对象与工作区
 
@@ -20,15 +20,23 @@
 
 ## 来源与历史
 
-planRef 含项目/版本/材料路径/revision/hash/sourceCommit 和草稿身份；正式验收固定项目指定基线已合入的计划，草案预验收明确标示。指标引用含配置提交/定义指纹、单位、源能力、窗口或时点；readingEvidence 保存当时采用的真实 value/source/collectedAt 与可比较性，不另建每日台账。
+planRef 的共同字段为 kind/version/cycleId/revision。kind=committed 时另有 sourceCommit；kind=draft 时另有 sourceWorktreeId/sourceHostId。项目身份由请求的原生项目上下文约束，材料路径从 version 推导为 .bw/planning/<version>/data.json，revision 本身是 sha256 字节摘要，不再重复写 project/path/hash。正式验收须固定项目指定基线已合入的计划，草案预验收明确标示；来源解析与核验由验收接线实现，保存 schema 本身不能证明来源。
 
-candidateRef 是明确源仓库、完整提交 SHA、版本及可定位执行根。准备材料记录 kind/location/candidateRef、执行入口/时间、结果；包适用时记录校验值。验收树只承载材料，出包从指定源码候选的执行工作区进行。候选变化使不匹配证据待核，不自动沿用成功。
+指标 ref 保存 name/definitionHash/configurationCommit；readingEvidence 保存 ref/value/unit/source/collectedAt/collectorRevision，observation 区分 instant 的 observedAt 与 window 的 start/end/granularity/timezone。不另建每日台账，采集真实性和可比较性由指标服务及消费方核验。
+
+candidateRef 仅保存 repository/version/commit，commit 是完整 SHA。preparedArtifacts 含 artifactId/kind/location/candidateRef/generatedAt，可选 command/executionRoot/checksum；执行根记录在该材料上，不加到 candidateRef。验收树只承载材料，出包从指定源码候选的执行工作区进行。候选变化使不匹配证据待核，不自动沿用成功。
 
 每次归档生成带 cycleId 和修订的记录，记录固定计划/验收来源、派生摘要、PR 及证据来源。总览 VersionHistoryPort 从项目基线 Git 历史读取该元数据和材料：列表身份为项目+流程+版本+cycleId+归档提交，文件路径相同也不把多周合成一个最新值。同周补证形成新修订；列表可聚合同一周期最新修订，但保留旧修订入口。未合入草稿单列，缺失/含糊历史标待核，不能凭目录和今天的状态推造周次或认可。
 
 archiveCommit 只能在实际合入后由 provider/Git 解析，不能把尚未知的提交写进自身。提交内容保存 cycleId、sourceRevision 等元数据，PR 关联及合入提交由真实来源补全。新归档记录的发现与提交定位由共享层统一实现，两个特性提供纯派生摘要，不各做一套 Git 扫描。
 
 ## 写入与人的决定
+
+本轮仅支持本机 Git 项目；SSH/远端运行时和未验证的 WSL 路径明确不支持，不把远端路径交给本机文件服务。宿主提供 repoId/worktreeId/hostId，分别绑定 bw/week-plan、bw/week-acceptance；不能由模型传文件根来替代原生身份。
+
+实际工具为 `orca bw materials list/read/save`，共用 `--repo-id <id> --worktree-id <id> --workflow plan|acceptance`，本机 host-id 默认 local。list 不需要版本，只有列举作用；read 需要 `--version <已确认版本>`，返回 document/revision 或 null。save 再传 `--input <schema3 JSON 草稿文件>`，更新必须使用刚读到的 `--expected-revision <revision>`；明确新建用 `--create`，二者互斥。普通项目通过 `orca bw materials schema --workflow plan|acceptance --json` 读取随 CLI 打包的结构，无需 BW 源码或运行中的应用；跨字段约束仍由 save 校验。维护正本为 src/shared/workbench/version-material.ts，不能把 schema2 文件直接提交；`--json` 用于机器读取。
+
+冲突命令以非零状态返回 revision-conflict 及 currentRevision，原材料和输入草稿保留；重读并合并后重试，不循环覆盖。页面走同一 runtime RPC。文件保存不自行采集指标或验证人的身份，存入 reading/decision 字段不能据此点绿灯，业务消费方必须核对真实来源。
 
 先读 revision，再走同一材料服务 save(expectedRevision)；校验受信任工作树和流程白名单、路径、跨进程互斥、原子替换。不同分支不是一个写入路径。冲突保留双方输入并重读合并；不直接覆盖文件绕过服务。
 

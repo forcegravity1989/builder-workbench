@@ -1,5 +1,6 @@
 // @ts-nocheck -- mechanically split from OrcaRuntimeService; behavior is covered by AST equivalence and characterization tests.
 import { OrcaRuntimeWithRestoreStructuredAgentSessionTabsOnce } from './orca-runtime-restore-structured-agent-session-tabs-once'
+import { createVersionMaterialService } from '../workbench/version-material-service'
 import { DEFAULT_WORKTREE_LIST_LIMIT } from './orca-runtime-postlude'
 import type { RuntimeWorktreeListResult } from '../../shared/runtime-types'
 import type { DetectedWorktreeListResult, Worktree } from '../../shared/worktree/types'
@@ -21,6 +22,13 @@ import {
 } from '../ports/workspace-port-ownership'
 
 export class OrcaRuntimeWithListManagedWorktrees extends OrcaRuntimeWithRestoreStructuredAgentSessionTabsOnce {
+  versionMaterials() {
+    return createVersionMaterialService({
+      listRepos: () => this.listRepos(),
+      listWorktrees: () => this.listResolvedWorktrees()
+    })
+  }
+
   listManagedWorktrees(
     repoSelector?: string,
     limit = DEFAULT_WORKTREE_LIST_LIMIT,
