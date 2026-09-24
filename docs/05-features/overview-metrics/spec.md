@@ -2,7 +2,7 @@
 
 > 给设计、实现和验收者读取；本文管可观察行为。价值见 [intent](intent.md)，接口见 [design](design.md)，证据见 [STATUS](STATUS.md)。行为变化时更新。
 >
-> 状态：待本轮确认。[第八版高保真评审包](https://github.com/forcegravity1989/builder-workbench/archive/f20f04ae57d510178c710c71216b9b734082c28e.zip) 使用 BW 定义和已读取快照；配置、刷新与历史入口是交互演示，不证明服务已接通。
+> 状态：已合入并作为实施输入；新增或不确定行为须人工确认，实施证据见 STATUS。[第八版高保真评审包](https://github.com/forcegravity1989/builder-workbench/archive/f20f04ae57d510178c710c71216b9b734082c28e.zip) 使用 BW 定义和已读取快照；配置、刷新与历史入口是交互演示，不证明服务已接通。
 
 评审包固定提交；下载解压后打开 index.html，侧栏进入总览。原型分支永不合入产品分支。
 

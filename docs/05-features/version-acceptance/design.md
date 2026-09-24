@@ -2,7 +2,7 @@
 
 > 给实现与技术评审者动代码前读；本文管对象、候选来源、复用和异常设计。行为见 [spec](spec.md)，共享层见 [计划设计](../version-planning/design.md#共享边界)。设计变化时更新，落地后同步 06-module。
 >
-> 状态：拟实施，待确认；定位 architecture §1 项目版本/交付核对，§2 事实、执行与壳。以下接口名称为拟冻结的契约，不表示已有运行能力。
+> 状态：已授权实施；详细设计未逐项细审，未决项须人工确认。定位 architecture §1 项目版本/交付核对，§2 事实、执行与壳。共享核心的实现范围见计划设计及 STATUS，其余接口不表示已有运行能力。
 
 ## 页面与复用
 
@@ -16,7 +16,7 @@ AcceptancePage 是 BW 业务页，复用原生项目/工作树/会话、Tasks �
 
 验收树从项目指定基线创建，BW 自用基线是 bw-orca；每次新运行刷新远端并检查树的干净状态、前次归档与基线差异。已有脏改动/未归档提交不 reset、不搬树、不强推，恢复该次工作或呈现冲突。基线同步通过正常 Git 合并/项目流程，已有同分支其他路径提示真实路径，不擅自删除重建。
 
-运行键包含 projectId、hostId、workflow=acceptance、version、cycleId、Orca runId；恢复使用真实关联 ID，不用标题匹配。新周期 existing 工作区、reuseSession=false；上午/下午共用该运行，计划会话不能被验收恢复选中。
+运行身份包含 projectId、hostId、workflow=acceptance 与 Orca runId；cycleId 为周期上下文，version 为另行核对的材料关联，不作为运行去重前提。恢复使用真实关联 ID，不用标题匹配。新周期 existing 工作区、reuseSession=false；上午/下午共用该运行，计划会话不能被验收恢复选中。
 
 ## 候选与材料
 

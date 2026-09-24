@@ -2,7 +2,7 @@
 
 > 给实现与技术评审者读取；本文管指标数据流、采集与边界，不写分步排期。行为见 [spec](spec.md)，共享消费方见 [计划设计](../version-planning/design.md#共享边界)。取舍变化时更新，落地后同步关键信息维护模块。
 >
-> 状态：拟实施。架构定位：architecture §1 项目概况与版本判断，§2 ①事实、⑤壳；当前 OverviewPage 的 OVERVIEW_DEMO 不是指标数据源。
+> 状态：已授权实施；详细设计未逐项细审，未决项须人工确认，实施证据见 STATUS。架构定位：architecture §1 项目概况与版本判断，§2 ①事实、⑤壳；当前 OverviewPage 的 OVERVIEW_DEMO 不是指标数据源。
 
 ## 迁入什么
 

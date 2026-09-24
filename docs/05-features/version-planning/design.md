@@ -2,7 +2,7 @@
 
 > 给实现与技术评审者在动代码、拆并行边界前读取；本文管本次设计与共享契约，不写执行步骤。行为见 [spec](spec.md)，当前实现以源码及 [architecture](../../architecture.md) 为准。实现取舍变化时更新，落地后把稳定模块心智回写 06-module。
 >
-> 状态：拟实施，待本轮设计与计划确认；本篇不证明接口已存在。架构定位：§1 项目版本，§2 ①事实、②执行、③规范、⑤壳，§3 Orca 执行核与 BW 叠层。
+> 状态：已授权实施；详细设计未逐项细审，未决项须人工确认。已实现范围及证据见 STATUS，本篇其余接口仍为设计。架构定位：§1 项目版本，§2 ①事实、②执行、③规范、⑤壳，§3 Orca 执行核与 BW 叠层。
 
 ## 现状与复用
 
@@ -31,11 +31,13 @@ BW 业务放在 renderer/workbench 下的 version-cycle、version-planning、ver
 
 ## 版本材料与写入
 
-保留 .bw/planning/<version>/data.json，目标 schema_version=3；原结构里的 plan.goals 演进为稳定 goalId 对应的结果承诺、可选交付说明/验收说明、可选 metricRef 与版本目标。风险和进展保持 summary 语义，进展标明所述版本，不把上版结果冒称本版成绩。版本周期不由自然周推断。
+保留 .bw/planning/<version>/data.json，目标 schema_version=3；原结构里的 plan.goals 演进为稳定 goalId 对应的结果承诺、可选交付说明/验收说明、可选 metricRef 与版本目标。风险和进展保持 summary 语义，进展标明所述版本，不把上版结果冒称本版成绩。版本周期不由自然周推断。计划入口初态为待选择版本，列举候选不写盘；用户在 UI 或会话明确选择后才加载可编辑材料，明确新建后才创建。禁用 mtime 推断当前版本与自动 init default；加载失败不能新建替代物。
 
 任务只保存 provider/repo/number 与 goalId 的引用，展示状态从 Orca provider 读回；缓存有读取时间，离线不是空任务。三段纪要从目标纯函数生成，不再存 live_notes、transcript、独立可编辑 minutes。协议细节的唯一模型参考是 [version-records](../../../standard/system-prompt/references/version-records.md)。
 
-UI 与模型共用主进程侧的版本材料写入核心；模型入口是由宿主下发的、实际存在的 CLI/工具薄入口。写入含受信任项目根、版本路径校验、expectedRevision、跨进程互斥和原子替换；重读修订后再提交，锁范围只含本文件事务，不锁住模型对话。CLI 与 UI 不各自实现一次校验。现有 planning.py / 旧模板在消费方切换的同一交付内退役，不能让旧 confirm 或 submit-confirmed 继续控制新流程；本轮仅做设计，不提前删除正在被源码调用的脚本。
+UI 与模型共用主进程侧的版本材料写入核心；模型入口是由宿主下发的、实际存在的 CLI/工具薄入口。写入含受信任项目根、版本路径校验、expectedRevision、跨进程互斥和原子替换；重读修订后再提交，锁范围只含本文件事务，不锁住模型对话。CLI 与 UI 不各自实现一次校验。现有 planning.py / 旧模板在消费方切换的同一交付内退役，不能让旧 confirm 或 submit-confirmed 继续控制新流程；接线前不提前删除正在被源码调用的脚本。
+
+材料事务核心位于 src/main/workbench/version-document-store.ts，共同身份与 read/save 类型位于 src/shared/workbench/version-document.ts。它只接受明确版本，读取不存在材料无副作用，修订按原始字节计算；复用 proper-lockfile 和 Orca durable-file-write。具体计划/验收结构由各域 decoder 验证，共同层验证 schema/version/cycleId。宿主接线必须先核对原生项目、宿主、工作树和流程分支，再把可信根传入；这个本地核心不自行证明根的项目归属，也未开放 renderer/模型入口。schema2 只报告需显式迁移；不做自动升级。
 
 schema2 通过一次显式迁移转为新计划；原文件/提交保留来源，旧 results 导入验收草稿并记录其实际归属版本，旧 confirmation 只作历史证据，不生成新认可。所有消费者与写入者一起切换；不做永久双写或遇错静默退回旧界面。迁移失败保留原件并报告。
 
@@ -43,7 +45,7 @@ schema2 通过一次显式迁移转为新计划；原文件/提交保留来源�
 
 ## 会话、任务导航与自动化
 
-计划固定 bw/week-plan，验收固定 bw/week-acceptance，分别使用 .bw/worktrees/week-plan 与 week-acceptance 原生登记工作树，沿用 Orca 项目、宿主、工作区身份；不按路径字符串或标题猜项目归属。运行键含项目、流程（plan / acceptance）、版本、周期与 Orca runId；自动触发以原生 runId 去重，手动继续引用已有运行。每次新的周期运行用 existing 工作区且 reuseSession=false，同次重试遵循原生运行身份，不换新树、不重开一条无人可找的会话。
+计划固定 bw/week-plan，验收固定 bw/week-acceptance，分别使用 .bw/worktrees/week-plan 与 week-acceptance 原生登记工作树，沿用 Orca 项目、宿主、工作区身份；不按路径字符串或标题猜项目归属。运行身份由项目、宿主、流程（plan / acceptance）与 Orca runId 定位，周期作为上下文；版本是选定后附加的材料关联，不是启动或去重的前提。自动触发可以先创建未关联版本的会话，Skill 列候选并与人确认；选版本不再开会话，恢复已确认的同次运行沿用真实关联。手动继续引用已有原生运行或会话。每次新的周期运行用 existing 工作区且 reuseSession=false，同次重试遵循原生运行身份，不换新树、不重开一条无人可找的会话。
 
 原生历史列表是会话正本，BW 仅保存业务关联；关联缺失时仍可选择真实会话，不伪造标题。计划与验收各登记一条 Orca 自动化，以 creationKey 防重复，首次设置复用原生配置界面，保留用户的启停和时间；技能正文与 SYSTEM 指针从实际产品资产解析，覆盖没有 standard/ 的普通项目，不能只在 BW 自己仓里成功。
 
