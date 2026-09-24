@@ -309,3 +309,69 @@ export function GitLabIntegrationCard(): React.JSX.Element {
     </IntegrationCardShell>
   )
 }
+
+export function CodeHubIntegrationCard(): React.JSX.Element {
+  const { statuses, unavailable, refresh } = usePreflightCardStatuses('codehub')
+  const status = unavailable ? 'unavailable' : statuses.codehubStatus
+  const available = status === 'available'
+
+  return (
+    <IntegrationCardShell
+      icon={<Terminal className="size-5" />}
+      name="CodeHub"
+      description={
+        <>
+          {translate(
+            'auto.components.settings.cli.source.control.integration.cards.codehubDescription',
+            'Issues and merge requests via the'
+          )}{' '}
+          <span className="font-mono text-[11px]">codehub-cli</span>{' '}
+          {translate(
+            'auto.components.settings.cli.source.control.integration.cards.a47f71e357',
+            'CLI.'
+          )}
+        </>
+      }
+      checking={status === 'checking'}
+      statusTone={available ? 'connected' : 'attention'}
+      statusLabel={
+        status === 'available'
+          ? translate(
+              'auto.components.settings.cli.source.control.integration.cards.codehubAvailable',
+              'Available'
+            )
+          : status === 'unavailable'
+            ? integrationStatusLabel('unavailable')
+            : status === 'checking'
+              ? ''
+              : integrationStatusLabel('not-installed')
+      }
+    >
+      {status === 'checking' ? null : (
+        <IntegrationCardDetails>
+          {available ? null : status === 'unavailable' ? (
+            <p className="text-xs text-muted-foreground">
+              {translate(
+                'auto.components.settings.cli.source.control.integration.cards.codehubUnavailable',
+                'codehub-cli status is not available in this runtime yet.'
+              )}
+            </p>
+          ) : (
+            <p className="text-xs text-muted-foreground">
+              {translate(
+                'auto.components.settings.cli.source.control.integration.cards.codehubMissing',
+                'codehub-cli is not on PATH.'
+              )}
+            </p>
+          )}
+          <Button variant="ghost" size="sm" onClick={refresh}>
+            {translate(
+              'auto.components.settings.cli.source.control.integration.cards.d5b3be8ecd',
+              'Re-check'
+            )}
+          </Button>
+        </IntegrationCardDetails>
+      )}
+    </IntegrationCardShell>
+  )
+}

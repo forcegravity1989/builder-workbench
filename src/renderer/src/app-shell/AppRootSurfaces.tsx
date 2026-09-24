@@ -293,14 +293,18 @@ export function AppRootSurfaces(props: {
             <UnexpectedSignoutCard />
           </OverlayBoundary>
         </Suspense>
-        <OverlayBoundary boundaryId="overlay.star-nag" resetKey={activeView}>
-          <StarNagCard />
-        </OverlayBoundary>
+        {isWorkbenchShell() ? null : (
+          <OverlayBoundary boundaryId="overlay.star-nag" resetKey={activeView}>
+            <StarNagCard />
+          </OverlayBoundary>
+        )}
       </NotificationCardStack>
-      <OverlayBoundary boundaryId="overlay.star-nag-toast" resetKey={activeView}>
-        <StarNagToastHost />
-      </OverlayBoundary>
-      <StarNagAgentValueMomentObserver />
+      {isWorkbenchShell() ? null : (
+        <OverlayBoundary boundaryId="overlay.star-nag-toast" resetKey={activeView}>
+          <StarNagToastHost />
+        </OverlayBoundary>
+      )}
+      {isWorkbenchShell() ? null : <StarNagAgentValueMomentObserver />}
       {/* Why: mount at App root to render once per session; internal cohort gate limits it to pre-telemetry users — see telemetry-plan.md §First-launch experience. */}
       <OverlayBoundary boundaryId="overlay.telemetry-first-launch" resetKey={telemetryOptedIn}>
         <TelemetryFirstLaunchSurface />

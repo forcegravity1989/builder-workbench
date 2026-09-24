@@ -2,6 +2,8 @@ import { useCallback } from 'react'
 import { toast } from 'sonner'
 import { translate } from '@/i18n/i18n'
 import { normalizeHostedReviewHeadRef } from '../../../../../../shared/hosted-review-refs'
+import { hostedReviewProviderSupportsDraft } from '../../../../../../shared/hosted-review'
+import { isCodeHubGitRemote } from '../../../../../../shared/codehub'
 import { resolveBlockedCreateReviewNoticeMessage } from '../../source-control-create-review-blocked-action'
 import type { SourceControlAi } from '../ai/use-ai'
 import { stripBaseRef } from '../../create-pull-request-base-ref-normalization'
@@ -120,7 +122,10 @@ export function useSourceControlHostedReviewCreation({
           head: normalizeHostedReviewHeadRef(branchName),
           title,
           body: prBody,
-          draft: prDraft,
+          draft:
+            prDraft &&
+            hostedReviewProviderSupportsDraft(hostedReviewCreateProvider) &&
+            !isCodeHubGitRemote(activeRepo.gitRemoteIdentity),
           worktreePath,
           useTemplate: resolvedPrCreationDefaults.useTemplate
         }

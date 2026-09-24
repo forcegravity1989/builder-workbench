@@ -7,7 +7,8 @@ export type GlabStatus = GhStatus
 export type BitbucketStatus = 'checking' | 'connected' | 'not-configured' | 'not-authenticated'
 export type AzureDevOpsStatus = 'checking' | 'configured' | 'not-configured' | 'not-authenticated'
 export type GiteaStatus = 'checking' | 'configured' | 'not-configured' | 'not-authenticated'
-export type PreflightRefreshProvider = 'gh' | 'glab' | 'bitbucket' | 'azureDevOps' | 'gitea'
+export type CodeHubCliStatus = 'checking' | 'available' | 'not-installed'
+export type PreflightRefreshProvider = 'gh' | 'glab' | 'codehub' | 'bitbucket' | 'azureDevOps' | 'gitea'
 
 export type PreflightIntegrationStatuses = {
   ghStatus: GhStatus
@@ -20,6 +21,7 @@ export type PreflightIntegrationStatuses = {
   giteaStatus: GiteaStatus
   giteaAccount: string | null
   giteaBaseUrl: string | null
+  codehubStatus: CodeHubCliStatus
 }
 
 type TokenApiPreflightStatus = {
@@ -70,6 +72,10 @@ function ghStatusFromPreflight(status: PreflightStatus['gh']): GhStatus {
   return status.authenticated ? 'connected' : 'not-authenticated'
 }
 
+function codehubStatusFromPreflight(status: PreflightStatus['codehub']): CodeHubCliStatus {
+  return status?.installed ? 'available' : 'not-installed'
+}
+
 function glabStatusFromPreflight(status: PreflightStatus['glab']): GlabStatus {
   if (!status?.installed) {
     return 'not-installed'
@@ -107,7 +113,8 @@ export function getPreflightIntegrationStatuses(
       azureDevOpsBaseUrl: null,
       giteaStatus: 'checking',
       giteaAccount: null,
-      giteaBaseUrl: null
+      giteaBaseUrl: null,
+      codehubStatus: 'checking'
     }
   }
 
@@ -136,6 +143,11 @@ export function getPreflightIntegrationStatuses(
     azureDevOpsBaseUrl: azureDevOps?.baseUrl ?? null,
     giteaStatus: maybeChecking('gitea', refreshingProviders, giteaStatusFromPreflight(gitea)),
     giteaAccount: gitea?.account ?? null,
-    giteaBaseUrl: gitea?.baseUrl ?? null
+    giteaBaseUrl: gitea?.baseUrl ?? null,
+    codehubStatus: maybeChecking(
+      'codehub',
+      refreshingProviders,
+      codehubStatusFromPreflight(preflightStatus.codehub)
+    )
   }
 }

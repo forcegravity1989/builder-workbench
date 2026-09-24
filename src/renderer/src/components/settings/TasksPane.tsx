@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Github, Gitlab } from 'lucide-react'
+import { Github, Gitlab, Hexagon } from 'lucide-react'
 import type { GlobalSettings } from '../../../../shared/global-settings-types'
 import type { TaskProvider } from '../../../../shared/task-providers'
 import {
@@ -65,6 +65,18 @@ const PROVIDER_META: Record<
       )
     },
     Icon: ({ className }) => <Gitlab className={className} />
+  },
+  codehub: {
+    get label() {
+      return translate('auto.components.settings.TasksPane.codehubLabel', 'CodeHub')
+    },
+    get description() {
+      return translate(
+        'auto.components.settings.TasksPane.codehubDescription',
+        'Browse CodeHub issues and merge requests when codehub-cli is on PATH.'
+      )
+    },
+    Icon: ({ className }) => <Hexagon className={className} />
   },
   linear: {
     get label() {

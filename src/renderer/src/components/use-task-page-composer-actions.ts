@@ -235,7 +235,8 @@ export function useTaskPageComposerActions(model: TaskPageJiraListEffectsModel) 
     hasJiraDetail: Boolean(selectedJiraIssue),
     hasLinearIssueDetail: Boolean(selectedLinearIssue),
     hasLinearProjectContext: Boolean(selectedLinearProject),
-    hasLinearViewContext: Boolean(selectedLinearCustomView)
+    hasLinearViewContext: Boolean(selectedLinearCustomView),
+    hasCodeHubDetail: Boolean(model.codehubDetailItem)
   })
   const nextModel = model as typeof model & {
     openComposerForLinearItem: typeof openComposerForLinearItem

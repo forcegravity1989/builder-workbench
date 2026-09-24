@@ -7,6 +7,7 @@ import type { GitHubWorkItem } from '../../../../../shared/github/work-item-type
 import type { TaskSourceContext } from '../../../../../shared/task-source-context'
 import type { PullRequestPageProjectOrigin } from '../page-types'
 import { patchCachedPRFileViewedState } from '../cache/work-item-details'
+import { isCodeHubUrl } from '../../../../../shared/codehub'
 
 export async function syncPullRequestFileViewed(args: {
   canUseDetailsRepoContext: boolean
@@ -21,6 +22,10 @@ export async function syncPullRequestFileViewed(args: {
   projectOrigin: PullRequestPageProjectOrigin | undefined
   setPendingViewedPaths: (updater: (prev: Set<string>) => Set<string>) => void
 }): Promise<boolean> {
+  // CodeHub has no file-viewed API. Leave the checkbox unchanged and send nothing.
+  if (isCodeHubUrl(args.workItem?.url)) {
+    return false
+  }
   if (
     !args.canUseDetailsRepoContext ||
     !args.pullRequestId ||

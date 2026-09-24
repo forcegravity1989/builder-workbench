@@ -2,7 +2,10 @@ import type { GlobalSettings } from '../../../shared/global-settings-types'
 import type { PersistedState } from '../../../shared/persisted-state-types'
 import type { ProjectGroup } from '../../../shared/project-group-types'
 import { deriveGlobalWindowsRuntimeDefaultFromLegacySettings } from '../../../shared/project-execution-runtime'
-import { normalizeTaskProviderSettings } from '../../../shared/task-providers'
+import {
+  ensureDefaultedTaskProvider,
+  normalizeTaskProviderSettings
+} from '../../../shared/task-providers'
 import { normalizeAutoRenameBranchFromWorkDefaultOn } from '../../../shared/auto-rename-branch-from-work-settings'
 import {
   addMobilePairingCustomAddress,
@@ -104,8 +107,13 @@ export function prepareLoadedProfileSettings(
     : rawTaskProviderSettings.visibleTaskProviders.includes('jira')
       ? rawTaskProviderSettings.visibleTaskProviders
       : [...rawTaskProviderSettings.visibleTaskProviders, 'jira' as const]
+  const visibleTaskProvidersDefaultedForCodehub =
+    parsed.settings?.visibleTaskProvidersDefaultedForCodehub === true
+  const migratedVisibleTaskProvidersWithCodehub = visibleTaskProvidersDefaultedForCodehub
+    ? migratedVisibleTaskProviders
+    : ensureDefaultedTaskProvider(migratedVisibleTaskProviders, 'codehub', 'gitlab')
   const taskProviderSettings = normalizeTaskProviderSettings({
-    visibleTaskProviders: migratedVisibleTaskProviders,
+    visibleTaskProviders: migratedVisibleTaskProvidersWithCodehub,
     defaultTaskSource: rawTaskProviderSettings.defaultTaskSource
   })
   const primarySelectionDefaultedForLinux =
@@ -124,7 +132,7 @@ export function prepareLoadedProfileSettings(
   if (migratePrimarySelectionPlatformDefault || stampPrimarySelectionTerminalDefaults) {
     markNeedsSave()
   }
-  if (!visibleTaskProvidersDefaultedForJira) {
+  if (!visibleTaskProvidersDefaultedForJira || !visibleTaskProvidersDefaultedForCodehub) {
     markNeedsSave()
   }
   const claudeAgentTeamsDefaultDisabledMigrated =

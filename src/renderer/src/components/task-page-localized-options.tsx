@@ -1,5 +1,5 @@
 import React from 'react'
-import { Github, Gitlab, LayoutGrid, List } from 'lucide-react'
+import { Github, Gitlab, Hexagon, LayoutGrid, List } from 'lucide-react'
 
 import { JiraIcon } from '@/components/icons/JiraIcon'
 import { createLocalizedCatalog } from '@/i18n/localized-catalog'
@@ -121,6 +121,11 @@ export const getSourceOptions = createLocalizedCatalog((): SourceOption[] => [
     id: 'gitlab',
     label: translate('auto.components.TaskPage.11a828abf8', 'GitLab'),
     Icon: ({ className }) => <Gitlab className={className} />
+  },
+  {
+    id: 'codehub',
+    label: translate('auto.components.TaskPage.codehubSource', 'CodeHub'),
+    Icon: ({ className }) => <Hexagon className={className} />
   },
   {
     id: 'linear',

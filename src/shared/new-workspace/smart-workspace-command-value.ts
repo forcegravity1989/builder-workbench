@@ -13,7 +13,7 @@ export type SmartWorkspaceCommandRow = {
   value: string
 }
 
-export type SmartWorkspaceSourceIntent = 'github' | 'gitlab' | 'linear' | 'jira' | null
+export type SmartWorkspaceSourceIntent = 'github' | 'gitlab' | 'codehub' | 'linear' | 'jira' | null
 
 export function resolveSmartWorkspaceCommandValue({
   currentValue,

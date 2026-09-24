@@ -52,6 +52,30 @@ export const getIntegrationsPaneSearchEntries = createLocalizedCatalog(() => [
   },
   {
     title: translate(
+      'auto.components.settings.integrations.search.codehubTitle',
+      'CodeHub Integration'
+    ),
+    description: translate(
+      'auto.components.settings.integrations.search.codehubDescription',
+      'Detect whether codehub-cli is on PATH.'
+    ),
+    keywords: [
+      ...translateSearchKeyword(
+        'auto.components.settings.integrations.search.codehubKeyword',
+        'codehub'
+      ),
+      ...translateSearchKeyword(
+        'auto.components.settings.integrations.search.codehubCliKeyword',
+        'codehub-cli'
+      ),
+      ...translateSearchKeyword(
+        'auto.components.settings.integrations.search.c450244ad7',
+        'integration'
+      )
+    ]
+  },
+  {
+    title: translate(
       'auto.components.settings.integrations.search.67a2a0e868',
       'Bitbucket Integration'
     ),

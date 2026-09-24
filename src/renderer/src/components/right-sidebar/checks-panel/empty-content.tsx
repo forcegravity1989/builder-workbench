@@ -81,6 +81,7 @@ export function ChecksPanelEmptyContent({
     prGenerating,
     prNumber,
     prRepoDefaultBaseRef,
+    repo,
     prStackedCreationSupported,
     prTitle,
     prRefreshState,
@@ -272,6 +273,7 @@ export function ChecksPanelEmptyContent({
               setBody={setPrBody}
               draft={prDraft}
               setDraft={setPrDraft}
+              remoteIdentity={repo?.gitRemoteIdentity}
               stackedCreationSupported={prStackedCreationSupported}
               stackParentReview={stackParentReview}
               baseQuery={prBaseQuery}

@@ -34,6 +34,7 @@ export type ChecksPanelEmptyContentModel = Pick<
     | 'isRemoteOperationActive'
     | 'isSyncingBranch'
     | 'panelContextKey'
+    | 'repo'
     | 'setEmptyRefreshing'
   > &
   Pick<

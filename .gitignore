@@ -119,6 +119,8 @@ playwright-report/
 !/.claude/skills/design-system-import/**
 !/.claude/skills/version-report/
 !/.claude/skills/version-report/**
+!/.claude/skills/workbench-release/
+!/.claude/skills/workbench-release/**
 /.agents/skills/
 /skills-lock.json
 

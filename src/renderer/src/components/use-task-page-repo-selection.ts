@@ -9,6 +9,7 @@ import {
 import { areStringSetsEqual } from '@/components/task-page-string-set-equality'
 import { buildSelectedReposKey } from '@/components/task-page-work-item-pagination'
 import {
+  ensureDefaultedTaskProvider,
   normalizeVisibleTaskProviders,
   restoreAvailableDefaultTaskProvider,
   resolveVisibleTaskProvider
@@ -129,10 +130,15 @@ export function useTaskPageRepoSelection(model: TaskPageStoreBindingsModel) {
     selectedJiraSiteId && selectedJiraSiteId !== 'all'
       ? (jiraSites.find((site) => site.id === selectedJiraSiteId) ?? null)
       : null
-  const preferredVisibleTaskProviders = useMemo(
-    () => normalizeVisibleTaskProviders(settings?.visibleTaskProviders),
-    [settings?.visibleTaskProviders]
-  )
+  const preferredVisibleTaskProviders = useMemo(() => {
+    const normalized = normalizeVisibleTaskProviders(settings?.visibleTaskProviders)
+    // Older profiles saved the provider list before CodeHub existed. Show it once;
+    // a later opt-out sets visibleTaskProvidersDefaultedForCodehub and is kept.
+    if (settings?.visibleTaskProvidersDefaultedForCodehub === true) {
+      return normalized
+    }
+    return ensureDefaultedTaskProvider(normalized, 'codehub', 'gitlab')
+  }, [settings?.visibleTaskProviders, settings?.visibleTaskProvidersDefaultedForCodehub])
   const defaultTaskSource = settings?.defaultTaskSource ?? 'github'
   const visibleTaskProviders = useMemo(
     () =>
@@ -140,6 +146,7 @@ export function useTaskPageRepoSelection(model: TaskPageStoreBindingsModel) {
         preferredVisibleTaskProviders,
         {
           gitlabInstalled: preflightStatusCurrent && preflightStatus?.glab?.installed === true,
+          codehubInstalled: preflightStatusCurrent && preflightStatus?.codehub?.installed === true,
           linearConnected: linearConnected === true
         },
         defaultTaskSource
@@ -149,7 +156,8 @@ export function useTaskPageRepoSelection(model: TaskPageStoreBindingsModel) {
       linearConnected,
       preferredVisibleTaskProviders,
       preflightStatusCurrent,
-      preflightStatus?.glab?.installed
+      preflightStatus?.glab?.installed,
+      preflightStatus?.codehub?.installed
     ]
   )
   const sourceOptions = getSourceOptions()

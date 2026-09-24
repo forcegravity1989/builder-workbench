@@ -35,6 +35,7 @@ export function DraftReviewActions({
   readying,
   stateUpdating,
   actionError,
+  allowMarkReady = true,
   onMarkReadyForReview,
   onCloseReview
 }: {
@@ -44,10 +45,35 @@ export function DraftReviewActions({
   readying: boolean
   stateUpdating: 'open' | 'closed' | null
   actionError: string | null
+  allowMarkReady?: boolean
   onMarkReadyForReview: () => void
   onCloseReview: () => void
 }): React.JSX.Element {
   const disabled = readying || stateUpdating !== null
+  if (!allowMarkReady) {
+    return (
+      <div className="space-y-1.5">
+        <Button
+          type="button"
+          size="xs"
+          className="min-w-0 px-3 text-[11px] disabled:cursor-not-allowed"
+          onClick={onCloseReview}
+          disabled={disabled}
+        >
+          {stateUpdating === 'closed' ? (
+            <LoaderCircle className="size-3.5 animate-spin" />
+          ) : (
+            <GitPullRequestClosed className="size-3.5" />
+          )}
+          <span className={RIGHT_SIDEBAR_PRIMARY_BUTTON_LABEL_CLASS}>
+            {translate('auto.components.right.sidebar.HostedReviewActions.closeDraft', 'Close')}{' '}
+            {shortLabel}
+          </span>
+        </Button>
+        <HostedReviewActionError message={actionError} />
+      </div>
+    )
+  }
   const ReadyIcon = isGitLab ? GitMerge : GitPullRequestArrow
   return (
     <div className="space-y-1.5">

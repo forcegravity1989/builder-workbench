@@ -14,6 +14,8 @@ import {
 import { classifyProjectError, rateLimitedError } from './project-error-classification'
 import type { GitHubProjectMutationResult } from '../../../shared/github/project-result-types'
 import type { UpdateIssueBySlugArgs } from '../../../shared/github/project-request-types'
+import { isCodeHubHost } from '../../../shared/codehub'
+import { applyCodeHubIssueState } from '../../codehub/issue-state'
 
 export async function updateIssueBySlug(
   args: UpdateIssueBySlugArgs
@@ -32,6 +34,9 @@ export async function updateIssueBySlug(
   const duplicateError = validateDuplicateUpdate(args)
   if (duplicateError) {
     return duplicateError
+  }
+  if (isCodeHubHost(args.host) && args.updates.state !== undefined) {
+    return updateCodeHubIssueState(args)
   }
   const authError = await projectHostAuthenticationError(args.host)
   if (authError) {
@@ -95,6 +100,62 @@ function validateDuplicateUpdate(args: UpdateIssueBySlugArgs): GitHubProjectMuta
     }
   }
   return null
+}
+
+function hasNonStateIssueUpdates(args: UpdateIssueBySlugArgs): boolean {
+  const {
+    title,
+    body,
+    addLabels = [],
+    removeLabels = [],
+    addAssignees = [],
+    removeAssignees = []
+  } = args.updates
+  return (
+    title !== undefined ||
+    body !== undefined ||
+    addLabels.length > 0 ||
+    removeLabels.length > 0 ||
+    addAssignees.length > 0 ||
+    removeAssignees.length > 0
+  )
+}
+
+async function updateCodeHubIssueState(
+  args: UpdateIssueBySlugArgs
+): Promise<GitHubProjectMutationResult> {
+  const host = args.host?.trim()
+  if (!host || args.updates.state === undefined) {
+    return { ok: false, error: { type: 'validation_error', message: 'CodeHub host is required.' } }
+  }
+  try {
+    await applyCodeHubIssueState({
+      host,
+      project: `${args.owner}/${args.repo}`,
+      issueNumber: args.number,
+      state: args.updates.state,
+      stateReason: args.updates.stateReason,
+      duplicateOf: args.updates.duplicateOf
+    })
+  } catch (error) {
+    return {
+      ok: false,
+      error: {
+        type: 'unknown',
+        message: error instanceof Error ? error.message : String(error)
+      }
+    }
+  }
+  if (hasNonStateIssueUpdates(args)) {
+    return {
+      ok: false,
+      error: {
+        type: 'unknown',
+        message: 'Issue state was updated on CodeHub. Other fields stay on GitHub.'
+      }
+    }
+  }
+  return { ok: true }
 }
 
 async function updateIssueState(args: UpdateIssueBySlugArgs): Promise<GitHubProjectMutationResult> {
