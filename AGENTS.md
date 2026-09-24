@@ -52,7 +52,8 @@ Superpowers / grill-me 可用于发散、质询和计划草稿，特性产出仍
 - Issue 与标签是工作状态的正本；仓文件产物通过分支和 PR/MR 评审。标签协议、状态机和各写入者边界读 [issue-state](standard/system-prompt/references/issue-state.md)，不要另造一套。不打 `kind` / `tool` / `workflow` 标签：种类从标题推导，工具跟随本机设置，工作流按类别或周期工作标题选择；不再新写 `bw:week:*`。
 - Workbench MVP 本地零业务数据库。用 `gh` / `codehub-cli` / `git` / 文件独立读回；不用 V3 的 `sqlite3` 路径。项目约定和指标资产的归属读 [architecture](docs/architecture.md)，不能将资产盘点变成代写项目开发规范。
 - 入口层不写业务正本；计划 JSON 与 Issue 标签是各自的事实源。
-- 先审已有代码、提示词和方案，不对就改原件；不新增平行实现、平行规范或特殊通道。不为过时实现留兼容层、回退或双路径；不扩 scope，未建如实标未建。
+- 先查清 Orca 已有代码、提示词和真实调用链，核对能力归属、宿主路由、权限及扩展点，再比较复用与最小适配；不把尚未摸清能力当成产品限制，不另造平行实现、平行规范或特殊通道。具体边界读 [architecture](docs/architecture.md) 与 [upstream](ref/upstream.md)。
+- 方案纠正或重做时，同一交付内清除被替代的尝试代码、错误文档、配置及入口引用，必要的测试随正确行为更新；不为错误方案留兼容层、回退或双路径。现行正本只写有效方案，历史由 Git 追溯，不另建错误尝试台账；不扩 scope，未建如实标未建。
 - V3 与旧 Rust 三 crate 已不在本分支；不能用已删除的 `crates/` 解释现行 Electron 壳。历史在 `v3` 分支与旧 main，必要时看 [旧模块挪移记录](docs/10-reference/v3-and-module-migration.md)。
 
 ## 构建、运行与验证
