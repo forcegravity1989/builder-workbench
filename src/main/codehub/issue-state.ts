@@ -1,15 +1,15 @@
 import type { GitHubIssueCloseReason } from '../../shared/issue-mutation-types'
 import { codeHubIssueCloseComment } from '../../shared/codehub'
-import { runCodeHubCli } from './cli'
+import { runCodeHubCli, type CodeHubExecOptions } from './cli'
 
 function isAlreadyStateError(error: unknown): boolean {
   const message = error instanceof Error ? error.message : String(error)
   return message.toLowerCase().includes('already')
 }
 
-async function runStateCommand(args: string[]): Promise<void> {
+async function runStateCommand(args: string[], options?: CodeHubExecOptions): Promise<void> {
   try {
-    await runCodeHubCli(args)
+    await runCodeHubCli(args, options)
   } catch (error) {
     if (isAlreadyStateError(error)) {
       return
@@ -19,6 +19,7 @@ async function runStateCommand(args: string[]): Promise<void> {
 }
 
 export async function applyCodeHubIssueState(input: {
+  execOptions?: CodeHubExecOptions
   host: string
   project: string
   issueNumber: number
@@ -29,17 +30,20 @@ export async function applyCodeHubIssueState(input: {
   const iid = String(input.issueNumber)
   const scope = ['-p', input.project, '-H', input.host]
   if (input.state === 'open') {
-    await runStateCommand(['issue', 'reopen', iid, ...scope])
+    await runStateCommand(['issue', 'reopen', iid, ...scope], input.execOptions)
     return
   }
-  await runCodeHubCli([
-    'issue',
-    'comment',
-    'create',
-    iid,
-    ...scope,
-    '--body',
-    codeHubIssueCloseComment(input.stateReason, input.duplicateOf)
-  ])
-  await runStateCommand(['issue', 'close', iid, ...scope])
+  await runCodeHubCli(
+    [
+      'issue',
+      'comment',
+      'create',
+      iid,
+      ...scope,
+      '--body',
+      codeHubIssueCloseComment(input.stateReason, input.duplicateOf)
+    ],
+    input.execOptions
+  )
+  await runStateCommand(['issue', 'close', iid, ...scope], input.execOptions)
 }

@@ -1,3 +1,4 @@
+import { codehubApi } from '@/lib/codehub-api'
 import { useEffect, useState } from 'react'
 import { toast } from 'sonner'
 import { translate } from '@/i18n/i18n'
@@ -33,7 +34,7 @@ export function TaskPageCodeHubActions({
       return
     }
     let stale = false
-    void window.api.codehub
+    void codehubApi
       .listPipelines({ ...args, iid: item.iid })
       .then((rows) => {
         if (!stale) {
@@ -78,7 +79,7 @@ export function TaskPageCodeHubActions({
               return
             }
             void run(
-              () => window.api.codehub.assignIssue({ ...args, iid: item.iid, assignee: name }),
+              () => codehubApi.assignIssue({ ...args, iid: item.iid, assignee: name }),
               translate('auto.components.TaskPage.codehubAssigned', 'Assignee updated')
             )
           }}
@@ -108,7 +109,7 @@ export function TaskPageCodeHubActions({
                 return
               }
               void run(
-                () => window.api.codehub.setReviewers({ ...args, iid: item.iid, reviewers: names }),
+                () => codehubApi.setReviewers({ ...args, iid: item.iid, reviewers: names }),
                 translate('auto.components.TaskPage.codehubReviewersSet', 'Reviewers updated')
               )
             }}
@@ -136,7 +137,7 @@ export function TaskPageCodeHubActions({
                   return
                 }
                 void run(
-                  () => window.api.codehub.mergeMr({ ...args, iid: item.iid }),
+                  () => codehubApi.mergeMr({ ...args, iid: item.iid }),
                   translate('auto.components.TaskPage.codehubMerged', 'Merge requested')
                 )
               }}
@@ -153,7 +154,7 @@ export function TaskPageCodeHubActions({
                   return
                 }
                 void run(
-                  () => window.api.codehub.closeMr({ ...args, iid: item.iid }),
+                  () => codehubApi.closeMr({ ...args, iid: item.iid }),
                   translate('auto.components.TaskPage.codehubMrClosed', 'Merge request closed')
                 )
               }}
@@ -170,7 +171,7 @@ export function TaskPageCodeHubActions({
                   return
                 }
                 void run(
-                  () => window.api.codehub.mergeMr({ ...args, iid: item.iid, auto: true }),
+                  () => codehubApi.mergeMr({ ...args, iid: item.iid, auto: true }),
                   translate(
                     'auto.components.TaskPage.codehubAutoMerge',
                     'Merge when the pipeline succeeds'

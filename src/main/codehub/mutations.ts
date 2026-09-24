@@ -1,12 +1,12 @@
 import type { CodeHubRemote } from '../../shared/codehub'
-import type { CodeHubComment, CodeHubPipeline, CodeHubTaskDetail } from '../../shared/codehub-tasks'
-import { runCodeHubCli } from './cli'
+import type { CodeHubPipeline, CodeHubTaskDetail } from '../../shared/codehub-tasks'
+import { runCodeHubCli, type CodeHubExecOptions } from './cli'
 
-function projectArgs(remote: CodeHubRemote): string[] {
+export function projectArgs(remote: CodeHubRemote): string[] {
   return ['-p', remote.project, '-H', remote.host.replace(/:\d+$/, '')]
 }
 
-function parseJson(stdout: string): unknown {
+export function parseJson(stdout: string): unknown {
   const text = stdout.trim()
   if (!text) {
     return null
@@ -16,12 +16,20 @@ function parseJson(stdout: string): unknown {
 
 export async function createCodeHubIssue(args: {
   remote: CodeHubRemote
-  repoPath: string
+  execOptions?: CodeHubExecOptions
   title: string
   description?: string
   assignee?: string
 }): Promise<{ iid: number | null; url: string | null; title: string }> {
-  const flags = ['issue', 'create', '--title', args.title, ...projectArgs(args.remote), '-f', 'json']
+  const flags = [
+    'issue',
+    'create',
+    '--title',
+    args.title,
+    ...projectArgs(args.remote),
+    '-f',
+    'json'
+  ]
   const description = args.description?.trim()
   if (description) {
     flags.push('--description', description)
@@ -30,7 +38,7 @@ export async function createCodeHubIssue(args: {
   if (assignee) {
     flags.push('--assignee', assignee)
   }
-  const parsed = parseJson(await runCodeHubCli(flags, { cwd: args.repoPath }))
+  const parsed = parseJson(await runCodeHubCli(flags, args.execOptions))
   const record = parsed && typeof parsed === 'object' ? (parsed as Record<string, unknown>) : {}
   const iid = Number(record.iid ?? record.number)
   const url = record.web_url ?? record.html_url ?? record.url
@@ -43,19 +51,19 @@ export async function createCodeHubIssue(args: {
 
 export async function assignCodeHubIssue(args: {
   remote: CodeHubRemote
-  repoPath: string
+  execOptions?: CodeHubExecOptions
   iid: number
   assignee: string
 }): Promise<void> {
   await runCodeHubCli(
     ['issue', 'update', String(args.iid), '--assignee', args.assignee, ...projectArgs(args.remote)],
-    { cwd: args.repoPath }
+    args.execOptions
   )
 }
 
 export async function updateCodeHubIssueTitle(args: {
   remote: CodeHubRemote
-  repoPath: string
+  execOptions?: CodeHubExecOptions
   iid: number
   title: string
 }): Promise<void> {
@@ -65,24 +73,24 @@ export async function updateCodeHubIssueTitle(args: {
   }
   await runCodeHubCli(
     ['issue', 'update', String(args.iid), '--title', title, ...projectArgs(args.remote)],
-    { cwd: args.repoPath }
+    args.execOptions
   )
 }
 
 export async function closeCodeHubMr(args: {
   remote: CodeHubRemote
-  repoPath: string
+  execOptions?: CodeHubExecOptions
   iid: number
 }): Promise<void> {
   await runCodeHubCli(
     ['mr', 'close', String(args.iid), ...projectArgs(args.remote)],
-    { cwd: args.repoPath }
+    args.execOptions
   )
 }
 
 export async function mergeCodeHubMr(args: {
   remote: CodeHubRemote
-  repoPath: string
+  execOptions?: CodeHubExecOptions
   iid: number
   auto?: boolean
 }): Promise<void> {
@@ -90,12 +98,12 @@ export async function mergeCodeHubMr(args: {
   if (args.auto) {
     flags.push('--auto')
   }
-  await runCodeHubCli(flags, { cwd: args.repoPath })
+  await runCodeHubCli(flags, args.execOptions)
 }
 
 export async function setCodeHubReviewers(args: {
   remote: CodeHubRemote
-  repoPath: string
+  execOptions?: CodeHubExecOptions
   iid: number
   reviewers: string[]
 }): Promise<void> {
@@ -112,7 +120,7 @@ export async function setCodeHubReviewers(args: {
       reviewers.join(','),
       ...projectArgs(args.remote)
     ],
-    { cwd: args.repoPath }
+    args.execOptions
   )
 }
 
@@ -127,7 +135,7 @@ function namesOf(value: unknown): string[] {
   })
 }
 
-function loginOfDetail(value: unknown): string | null {
+export function loginOfDetail(value: unknown): string | null {
   if (typeof value === 'string' && value.trim()) {
     return value.trim()
   }
@@ -146,14 +154,14 @@ function loginOfDetail(value: unknown): string | null {
 
 export async function viewCodeHubTask(args: {
   remote: CodeHubRemote
-  repoPath: string
+  execOptions?: CodeHubExecOptions
   kind: 'issue' | 'mr'
   iid: number
 }): Promise<CodeHubTaskDetail> {
   const parsed = parseJson(
     await runCodeHubCli(
       [args.kind, 'view', String(args.iid), ...projectArgs(args.remote), '-f', 'json'],
-      { cwd: args.repoPath }
+      args.execOptions
     )
   )
   const record = parsed && typeof parsed === 'object' ? (parsed as Record<string, unknown>) : {}
@@ -170,78 +178,15 @@ export async function viewCodeHubTask(args: {
   }
 }
 
-function mapComment(value: unknown): CodeHubComment | null {
-  if (!value || typeof value !== 'object') {
-    return null
-  }
-  const record = value as Record<string, unknown>
-  const id = record.id ?? record.note_id ?? record.noteId
-  if (id === undefined || id === null) {
-    return null
-  }
-  return {
-    id: String(id),
-    body: String(record.body ?? record.note ?? record.description ?? ''),
-    author: loginOfDetail(record.author ?? record.user),
-    createdAt: String(record.created_at ?? record.createdAt ?? '')
-  }
-}
-
-export async function listCodeHubComments(args: {
-  remote: CodeHubRemote
-  repoPath: string
-  kind: 'issue' | 'mr'
-  iid: number
-}): Promise<CodeHubComment[]> {
-  const command =
-    args.kind === 'issue'
-      ? ['issue', 'comment', 'list', String(args.iid), ...projectArgs(args.remote), '-f', 'json', '--limit', '50']
-      : ['mr', 'review', 'list', String(args.iid), ...projectArgs(args.remote), '-f', 'json', '--limit', '50']
-  const parsed = parseJson(await runCodeHubCli(command, { cwd: args.repoPath }))
-  const rows = Array.isArray(parsed) ? parsed : []
-  return rows.flatMap((row) => {
-    const comment = mapComment(row)
-    return comment ? [comment] : []
-  })
-}
-
-export async function createCodeHubComment(args: {
-  remote: CodeHubRemote
-  repoPath: string
-  kind: 'issue' | 'mr'
-  iid: number
-  body: string
-}): Promise<void> {
-  const command =
-    args.kind === 'issue'
-      ? ['issue', 'comment', 'create', String(args.iid), '--body', args.body, ...projectArgs(args.remote)]
-      : ['mr', 'review', 'create', String(args.iid), '--body', args.body, ...projectArgs(args.remote)]
-  await runCodeHubCli(command, { cwd: args.repoPath })
-}
-
-export async function deleteCodeHubComment(args: {
-  remote: CodeHubRemote
-  repoPath: string
-  kind: 'issue' | 'mr'
-  iid: number
-  commentId: string
-}): Promise<void> {
-  const command =
-    args.kind === 'issue'
-      ? ['issue', 'comment', 'delete', String(args.iid), args.commentId, ...projectArgs(args.remote), '--yes']
-      : ['mr', 'review', 'delete', String(args.iid), '--note-id', args.commentId, ...projectArgs(args.remote), '--yes']
-  await runCodeHubCli(command, { cwd: args.repoPath })
-}
-
 export async function listCodeHubPipelines(args: {
   remote: CodeHubRemote
-  repoPath: string
+  execOptions?: CodeHubExecOptions
   iid: number
 }): Promise<CodeHubPipeline[]> {
   const parsed = parseJson(
     await runCodeHubCli(
       ['mr', 'pipeline', String(args.iid), ...projectArgs(args.remote), '-f', 'json'],
-      { cwd: args.repoPath }
+      args.execOptions
     )
   )
   const rows = Array.isArray(parsed) ? parsed : parsed ? [parsed] : []

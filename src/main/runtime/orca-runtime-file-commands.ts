@@ -9,6 +9,7 @@ import type { RuntimeTerminalAgentStatus } from '../../shared/runtime-types'
 import { RuntimeHostedReviewCommands } from './runtime-hosted-review-commands'
 import { RuntimeGitHubRepositoryQueryCommands } from './runtime-github-repository-query-commands'
 import { RuntimeGitLabQueryCommands } from './runtime-gitlab-query-commands'
+import { createCodeHubService } from '../codehub/service'
 import { recordGitLabProjectRecent } from '../gitlab/gitlab-project-recents'
 import { RuntimeGitLabMutationCommands } from './runtime-gitlab-mutation-commands'
 import { RuntimeGitHubReviewQueryCommands } from './runtime-github-review-query-commands'
@@ -152,6 +153,12 @@ export class OrcaRuntimeWithFileCommands extends OrcaRuntimeWithPreservedBranchC
   protected readonly gitHubRepositoryQueries = new RuntimeGitHubRepositoryQueryCommands({
     resolveRepo: (selector) => this.resolveRepoSelector(selector),
     getLocalGitArgs: (repo) => this.getLocalGitExecutionOptionArgs(repo)
+  })
+
+  readonly codehub = createCodeHubService({
+    resolveRepo: (args) =>
+      this.resolveRepoSelector(args.repoId ? `id:${args.repoId}` : args.repoPath),
+    localGitOptions: (repo) => this.getLocalGitExecutionOptionArgs(repo)[0] ?? {}
   })
 
   protected readonly gitLabQueryCommands = new RuntimeGitLabQueryCommands({

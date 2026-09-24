@@ -33,7 +33,7 @@ describe('listCodeHubTasks', () => {
 
     const items = await listCodeHubTasks({
       remote,
-      repoPath: '/repo',
+      execOptions: { cwd: '/repo' },
       kind: 'issue',
       state: 'opened'
     })
@@ -48,14 +48,14 @@ describe('listCodeHubTasks', () => {
         'codehub-g.huawei.com',
         '-f',
         'json',
-        '--state',
-        'opened',
         '--order-by',
         'updated_at',
         '--sort',
         'desc',
         '--limit',
-        '30'
+        '30',
+        '--state',
+        'opened'
       ],
       { cwd: '/repo' }
     )

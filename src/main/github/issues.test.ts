@@ -29,10 +29,6 @@ vi.mock('./gh-utils', async () => {
   }
 })
 
-vi.mock('../codehub/remote', () => ({
-  readCodeHubRemoteForRepo: vi.fn(async () => null)
-}))
-
 vi.mock('./github-enterprise-repository', async (importOriginal) => ({
   ...(await importOriginal<typeof GithubEnterpriseRepositoryModule>()),
   isGitHubHostAuthenticated: vi.fn().mockResolvedValue(true)

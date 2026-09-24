@@ -1,5 +1,7 @@
 # codehub-cli 用法
 
+> 给使用或维护 CodeHub 接入的人读取；本篇说明 CLI 调用、任务列表范围与已接能力，不承载开发规则。命令或用户操作变化时同步；参数以安装版本的 `--help` 为准。
+
 命令行调用 CodeHub。可执行文件名是 `codehub-cli`，需要在 PATH 里。某个子命令的参数用 `codehub-cli <command> --help` 查看。
 
 ## 登录
@@ -83,6 +85,12 @@ codehub-cli issue view 12 -p Org/Group/repo -H green --json iid,title,state
 ```
 
 `-f` 可选 `text`、`json`、`yaml`、`tsv`、`quiet`。
+
+## Workbench 任务列表
+
+任务绑定 Orca 登记的 CodeHub 仓库身份。桌面、Web/配对使用同一服务，操作按仓库所属 runtime 路由；SSH 仓库路径不作本机工作目录，WSL 使用项目运行环境中的命令。
+
+列表先显示每仓最新 30 条；有更多内容时可点「Load more」。搜索与作者/负责人筛选只作用于已加载内容，界面会显示这个范围；找不到旧 Issue 时继续加载。部分仓库请求失败会显示错误，不能把当前列表当作完整项目任务或指标数据源。
 
 ## 这次对接里没有对应命令的能力
 

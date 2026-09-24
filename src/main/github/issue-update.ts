@@ -1,24 +1,7 @@
 import type { GitHubIssueUpdate } from '../../shared/issue-mutation-types'
-import { applyCodeHubIssueState } from '../codehub/issue-state'
-import { readCodeHubRemoteForRepo } from '../codehub/remote'
 import type { LocalGitExecOptions } from './gh-utils'
 import { getIssueGitHubApiRepository, resolveGitHubRepoExecution } from './github-api-repository'
 import { acquire, classifyGhError, ghExecFileAsync, release } from './gh-utils'
-
-function hasNonStateIssueUpdates(updates: GitHubIssueUpdate): boolean {
-  return (
-    updates.title !== undefined ||
-    updates.body !== undefined ||
-    (updates.addLabels?.length ?? 0) > 0 ||
-    (updates.removeLabels?.length ?? 0) > 0 ||
-    (updates.addAssignees?.length ?? 0) > 0 ||
-    (updates.removeAssignees?.length ?? 0) > 0
-  )
-}
-
-function errorMessage(error: unknown): string {
-  return error instanceof Error ? error.message : String(error)
-}
 
 /**
  * Update an existing GitHub issue. Fans out to separate gh commands for
@@ -40,30 +23,6 @@ export async function updateIssue(
   connectionId?: string | null,
   localGitOptions: LocalGitExecOptions = {}
 ): Promise<{ ok: true } | { ok: false; error: string }> {
-  const errors: string[] = []
-  let skipGitHubState = false
-  if (updates.state) {
-    const codeHubRemote = await readCodeHubRemoteForRepo(repoPath, connectionId, localGitOptions)
-    if (codeHubRemote) {
-      skipGitHubState = true
-      try {
-        await applyCodeHubIssueState({
-          host: codeHubRemote.host,
-          project: codeHubRemote.project,
-          issueNumber,
-          state: updates.state,
-          stateReason: updates.stateReason,
-          duplicateOf: updates.duplicateOf
-        })
-      } catch (error) {
-        errors.push(errorMessage(error))
-      }
-      if (!hasNonStateIssueUpdates(updates)) {
-        return errors.length > 0 ? { ok: false, error: errors.join('; ') } : { ok: true }
-      }
-    }
-  }
-
   const { ownerRepo, ghOptions } = await resolveGitHubRepoExecution(
     repoPath,
     () => getIssueGitHubApiRepository(repoPath, connectionId, localGitOptions),
@@ -71,14 +30,14 @@ export async function updateIssue(
     localGitOptions
   )
   if (!ownerRepo) {
-    const message = 'Could not resolve GitHub owner/repo for this repository'
-    return { ok: false, error: errors.length > 0 ? `${errors.join('; ')}; ${message}` : message }
+    return { ok: false, error: 'Could not resolve GitHub owner/repo for this repository' }
   }
 
   const repo = `${ownerRepo.owner}/${ownerRepo.repo}`
+  const errors: string[] = []
 
-  // State change requires a separate command. CodeHub already handled state above.
-  if (updates.state && !skipGitHubState) {
+  // State change requires a separate command
+  if (updates.state) {
     await acquire()
     try {
       if (updates.state === 'closed') {

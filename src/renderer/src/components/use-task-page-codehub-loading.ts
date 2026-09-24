@@ -1,5 +1,6 @@
+import { codehubApi } from '@/lib/codehub-api'
 import type { TaskPageGitLabLoadingModel } from './use-task-page-gitlab-loading'
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { isCodeHubGitRemote } from '../../../shared/codehub'
 import type { CodeHubTaskItem } from '../../../shared/codehub-tasks'
 
@@ -18,6 +19,19 @@ export function useTaskPageCodeHubLoading(model: TaskPageGitLabLoadingModel) {
     setCodehubLoading,
     setCodehubError
   } = model
+  const scopeKey = JSON.stringify([
+    selectedRepos.map((repo) => [repo.id, repo.path, repo.executionHostId, repo.gitRemoteIdentity]),
+    codehubView,
+    codehubState,
+    codehubPreset,
+    codehubQuery,
+    codehubAuthor,
+    codehubAssignee
+  ])
+  const [page, setPage] = useState({ scopeKey, limit: 30 })
+  const limit = page.scopeKey === scopeKey ? page.limit : 30
+  const loadKey = `${scopeKey}:${limit}`
+  const [more, setMore] = useState({ loadKey: '', hasMore: false })
   useEffect(() => {
     if (taskSource !== 'codehub') {
       return
@@ -44,24 +58,27 @@ export function useTaskPageCodeHubLoading(model: TaskPageGitLabLoadingModel) {
             : codehubPreset === 'review' && kind === 'mr'
               ? 'need_my_review'
               : undefined
-        const listed = await window.api.codehub.listTasks({
+        const listed = await codehubApi.listTasks({
           repoPath: repo.path,
           repoId: repo.id,
           kind,
           state,
-          limit: 30,
+          limit,
           scope,
           search: kind === 'mr' ? codehubQuery : undefined,
           author: kind === 'mr' ? codehubAuthor : undefined,
           assignee: kind === 'mr' ? codehubAssignee : undefined
         })
-        return listed.items.map((item) => ({
-          ...item,
-          repoId: repo.id,
-          repoPath: repo.path,
-          host: listed.remote.host,
-          project: listed.remote.project
-        }))
+        return {
+          hasMore: listed.hasMore,
+          items: listed.items.map((item) => ({
+            ...item,
+            repoId: repo.id,
+            repoPath: repo.path,
+            host: listed.remote.host,
+            project: listed.remote.project
+          }))
+        }
       })
     )
       .then((results) => {
@@ -70,6 +87,7 @@ export function useTaskPageCodeHubLoading(model: TaskPageGitLabLoadingModel) {
         }
         const items: CodeHubTaskItem[] = []
         const errors: string[] = []
+        let hasMore = false
         for (const result of results) {
           if (result.status !== 'fulfilled') {
             errors.push(
@@ -77,10 +95,12 @@ export function useTaskPageCodeHubLoading(model: TaskPageGitLabLoadingModel) {
             )
             continue
           }
-          items.push(...result.value)
+          items.push(...result.value.items)
+          hasMore ||= result.value.hasMore
         }
         setCodehubItems(items)
         setCodehubError(errors[0] ?? null)
+        setMore({ loadKey, hasMore })
       })
       .finally(() => {
         if (!stale) {
@@ -91,6 +111,8 @@ export function useTaskPageCodeHubLoading(model: TaskPageGitLabLoadingModel) {
       stale = true
     }
   }, [
+    limit,
+    loadKey,
     codehubAssignee,
     codehubAuthor,
     codehubPreset,
@@ -104,7 +126,11 @@ export function useTaskPageCodeHubLoading(model: TaskPageGitLabLoadingModel) {
     setCodehubLoading,
     taskSource
   ])
-  return model
+  return {
+    ...model,
+    codehubHasMore: more.loadKey === loadKey && more.hasMore,
+    loadMoreCodehub: () => setPage({ scopeKey, limit: limit + 30 })
+  }
 }
 
 export type TaskPageCodeHubLoadingModel = ReturnType<typeof useTaskPageCodeHubLoading>

@@ -1,6 +1,6 @@
 import type { CodeHubRemote } from '../../shared/codehub'
 import type { CodeHubTaskItem } from '../../shared/codehub-tasks'
-import { runCodeHubCli } from './cli'
+import { runCodeHubCli, type CodeHubExecOptions } from './cli'
 
 export type { CodeHubTaskItem }
 
@@ -52,7 +52,11 @@ function itemUrl(
   return `https://${remote.host}/${project}/-/${kind}/${iid}`
 }
 
-function mapRow(remote: CodeHubRemote, value: unknown, type: 'issue' | 'mr'): CodeHubTaskItem | null {
+function mapRow(
+  remote: CodeHubRemote,
+  value: unknown,
+  type: 'issue' | 'mr'
+): CodeHubTaskItem | null {
   if (!value || typeof value !== 'object') {
     return null
   }
@@ -90,7 +94,7 @@ function parseJsonList(stdout: string): unknown[] {
 
 export async function listCodeHubTasks(args: {
   remote: CodeHubRemote
-  repoPath: string
+  execOptions?: CodeHubExecOptions
   kind: 'issue' | 'mr'
   state: 'opened' | 'closed' | 'merged' | 'all'
   limit?: number
@@ -131,7 +135,7 @@ export async function listCodeHubTasks(args: {
   if (args.kind === 'mr' && args.assignee?.trim()) {
     flags.push('--assignee', args.assignee.trim())
   }
-  const stdout = await runCodeHubCli(flags, { cwd: args.repoPath })
+  const stdout = await runCodeHubCli(flags, args.execOptions)
   return parseJsonList(stdout)
     .map((row) => mapRow(args.remote, row, args.kind))
     .filter((item): item is CodeHubTaskItem => item !== null)

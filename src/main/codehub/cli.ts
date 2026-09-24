@@ -1,17 +1,15 @@
-import { execFile } from 'node:child_process'
-import { promisify } from 'node:util'
+import { commandExecFileAsync } from '../git/command-runner/command-exec-file'
 import { extractExecError, isMissingCommandBinaryError } from '../git/exec-error'
 
-const execFileAsync = promisify(execFile)
+export type CodeHubExecOptions = { cwd?: string; wslDistro?: string }
 
 export async function runCodeHubCli(
   args: readonly string[],
-  options?: { cwd?: string }
+  options?: CodeHubExecOptions
 ): Promise<string> {
   try {
-    const { stdout } = await execFileAsync('codehub-cli', [...args], {
-      cwd: options?.cwd,
-      windowsHide: true,
+    const { stdout } = await commandExecFileAsync('codehub-cli', [...args], {
+      ...options,
       encoding: 'utf8',
       timeout: 60_000,
       maxBuffer: 10 * 1024 * 1024

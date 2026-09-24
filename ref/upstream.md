@@ -95,9 +95,9 @@ CodeHub 不是 `HostedReviewProvider`，也不走 `gh` / `glab`。调用 PATH �
 | 处置 | 路径 | 说明 |
 |---|---|---|
 | **新增** | `src/shared/codehub.ts` | `isCodeHubHost` / `isCodeHubUrl` / `isCodeHubGitRemote` / `parseCodeHubRemote`。嵌套项目路径保留，去掉 `.git`，拒绝 github |
-| **新增** | `src/main/codehub/cli.ts`、`remote.ts`、`issue-state.ts` | `execFile('codehub-cli', …)`。远端先读 `origin`，再读 `upstream`。关闭：先 `issue comment create`，正文是 `关闭原因: completed`、`关闭原因: not planned` 或 `关闭原因: duplicate of #<n>`，再 `issue close`。评论失败不关闭。重开只 `issue reopen`，不写评论。`already` 只在 close/reopen 上当成空操作。不写 `bw:status:*`，不用 `gh issue close --reason` / `--duplicate-of` |
-| **改调用** | `src/main/github/issue-update.ts`、`project-view/mutations.ts` | 有 `state` 且远端是 CodeHub 时先走上面的关闭/重开，再决定要不要继续 `gh`。项目路径只有两段 `owner/repo`；更深层的页面 URL 走仓库远端，不走这条 |
-| **新增** | `src/main/codehub/work-items.ts`、`src/main/ipc/codehub.ts`、`src/preload/codehub.ts` | `listCodeHubTasks`。IPC `codehub:listTasks` 与 preload `codehub.listTasks` 和 `gl` 并列，不进 `gh:*` |
+| **新增** | `src/main/codehub/cli.ts`、`service.ts`、`issue-state.ts` | 使用 Orca 已登记的 `gitRemoteIdentity`，通过原生命令执行器调用 `codehub-cli`。与 gh/glab 一样，SSH 仓库的托管平台 API 在所属 runtime 调用，不使用远端路径作本机 cwd；WSL 沿用项目运行环境。关闭先评论原因再 close，评论失败不关闭；重开不写评论。不写 `bw:status:*` |
+| **原生边界** | `src/main/github/issue-update.ts`、`project-view/mutations.ts` | 保持 upstream 的 GitHub 更新路径，不因另一个 remote 是 CodeHub 而切换平台。CodeHub 写入由自己的 service 承接 |
+| **新增** | `src/shared/codehub-api.ts`、`src/main/ipc/codehub.ts`、`src/main/runtime/rpc/methods/codehub.ts`、`src/preload/codehub.ts`、renderer `lib/codehub-api.ts` | IPC 与 `codehub.*` RPC 使用同一参数校验和 service。桌面、Web/配对按原生 repo owner 路由，不进 `gh:*`；未知仓库、路径不符或非 CodeHub 身份在执行前拒绝 |
 | **改调用** | `task-providers.ts`、任务页 `Content` / `ProviderFilters`、`use-task-page-codehub-loading.ts`、`use-task-page-provider-state.ts`、设置加载 | 来源 `'codehub'`。列表是 Issues / MRs。选中仓库全是 CodeHub 时自动切来源。旧配置的可见来源没有 `codehub` 时补一次，之后用户关掉就不再加回。手动改来源后不再盖回去 |
 | **改调用** | `viewed-sync.ts` | CodeHub 的 PR 已读在发请求、toast、乐观更新之前直接返回 |
 | **改调用** | `checks-panel/active-content.tsx` | CodeHub 不传 `onEditComment`、`onSetReaction`。评论仍可 list / create / delete |
@@ -106,11 +106,11 @@ CodeHub 不是 `HostedReviewProvider`，也不走 `gh` / `glab`。调用 PATH �
 | **改调用** | `preflight-api.ts`、`agent-detection.ts`、设置「集成 / 评审供应商」 | `PreflightStatus.codehub` 只有 `{ installed }`。探测顺序是 `git --version`、`gh --version`、`glab --version`、`codehub-cli --version`，然后才是 `gh` / `glab` 的 `auth status`。不探测 CodeHub 登录。卡片状态是 checking / available / not-installed，有 Re-check。功能墙的连接列表不加这张卡 |
 | **新增** | `docs/03-guide/codehub-cli.md` | `codehub-cli` 用法短文。命令形状以本机 `--help` 为准 |
 
-测试随上述文件：`codehub.test.ts`、`issue-state.test.ts`、`issue-update.codehub.test.ts`、`issues.test.ts`（mock 掉真实 `git remote`）、预检与设置卡片测试。`en.json` 只补了卡片和搜索文案。
+定向测试覆盖 GitHub 混合 remote 更新隔离、CodeHub 注册仓库与执行环境、RPC/客户端路由、列表加载范围；平台请求使用模拟边界，不能代替内部 CodeHub 实机验收。
 
-任务页 CodeHub 的工具条跟 GitHub 同一行：Issues / MRs、项目、开放 / 我的（议题是分配给我，MR 还有待评审）、筛选条件、搜索、加号、刷新。开放对应 `--state opened`；我的对应 `issue list --scope assigned_to_me` 或 `mr list --scope created_by_me`；待评审对应 `mr list --scope need_my_review`。MR 搜索走 `--search`。点一行打开详情，版式对齐 GitHub 议题页头和 PR 页头（返回、标题、状态、开始工作区、会话、检查）。详情用 `codehub-cli issue|mr view` 和评论 list/create/delete，不挂 `GitHubItemDialog` 或 `PullRequestPage`。Issue 可改标题、按完成 / 不计划 / 重复关闭或重新打开；MR 可关闭。已读、表情、草稿、改正文和翻页仍没有对应命令。
+任务页 CodeHub 的工具条跟 GitHub 同一行：Issues / MRs、项目、开放 / 我的（议题是分配给我，MR 还有待评审）、筛选条件、搜索、加号、刷新。开放对应 `--state opened`；我的对应 `issue list --scope assigned_to_me` 或 `mr list --scope created_by_me`；待评审对应 `mr list --scope need_my_review`。MR 搜索走 `--search`。列表按每仓 30 条开始，用已有 `--limit` 逐次加载更多，并多取一条判断截断；有未加载内容时明确标出搜索范围，不把已加载范围的空结果说成项目没有 Issue。点一行打开 CodeHub 详情，读取 view 与评论 list/create/delete。Issue 可改标题、按完成 / 不计划 / 重复关闭或重新打开；MR 可关闭。已读、表情、草稿和改正文仍未接入。
 
-合并时：上面这些文件冲突，保留 CodeHub 分支，不要并回纯 `gh`。改预检探测顺序时，同步 `preflight-host-cli-status.test.ts` 的 `execFile` mock 次序。
+合并时保留独立 CodeHub provider 与薄挂载，GitHub 更新路径沿用 upstream。改预检探测顺序时，同步 `preflight-host-cli-status.test.ts` 的命令 mock 次序。
 
 ## 从 Workbench `main` 增加了什么
 

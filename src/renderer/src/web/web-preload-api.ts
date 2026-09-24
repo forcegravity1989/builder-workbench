@@ -85,47 +85,7 @@ function createWebPreloadApi(): Partial<PreloadApi> {
     emulator: createEmulatorApi(),
     gh: createGitHubApi(),
     gl: createGitLabApi(),
-    codehub: {
-      listTasks: async () => {
-        throw new Error('CodeHub tasks require the desktop app')
-      },
-      createIssue: async () => {
-        throw new Error('CodeHub tasks require the desktop app')
-      },
-      updateIssueTitle: async () => {
-        throw new Error('CodeHub tasks require the desktop app')
-      },
-      setIssueState: async () => {
-        throw new Error('CodeHub tasks require the desktop app')
-      },
-      closeMr: async () => {
-        throw new Error('CodeHub tasks require the desktop app')
-      },
-      assignIssue: async () => {
-        throw new Error('CodeHub tasks require the desktop app')
-      },
-      mergeMr: async () => {
-        throw new Error('CodeHub tasks require the desktop app')
-      },
-      setReviewers: async () => {
-        throw new Error('CodeHub tasks require the desktop app')
-      },
-      listPipelines: async () => {
-        throw new Error('CodeHub tasks require the desktop app')
-      },
-      viewTask: async () => {
-        throw new Error('CodeHub tasks require the desktop app')
-      },
-      listComments: async () => {
-        throw new Error('CodeHub tasks require the desktop app')
-      },
-      createComment: async () => {
-        throw new Error('CodeHub tasks require the desktop app')
-      },
-      deleteComment: async () => {
-        throw new Error('CodeHub tasks require the desktop app')
-      }
-    },
+    codehub: createRuntimeNamespaceApi('codehub'),
     hostedReview: createRuntimeNamespaceApi('hostedReview'),
     linear: createRuntimeNamespaceApi('linear'),
     hooks: createHooksApi(),

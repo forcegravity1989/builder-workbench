@@ -18,6 +18,21 @@ import {
 } from '../browser-client-host-protocol'
 import { BrowserClientPageMetadataParams } from '../browser-client-page-metadata-protocol'
 import {
+  CodeHubAssignIssue,
+  CodeHubCloseMr,
+  CodeHubCreateComment,
+  CodeHubCreateIssue,
+  CodeHubDeleteComment,
+  CodeHubListComments,
+  CodeHubListPipelines,
+  CodeHubListTasks,
+  CodeHubMergeMr,
+  CodeHubSetIssueState,
+  CodeHubSetReviewers,
+  CodeHubUpdateIssueTitle,
+  CodeHubViewTask
+} from '../codehub-api'
+import {
   PairingGetEndpointsParamsSchema,
   PairingProvisionRelayParamsSchema
 } from '../mobile-relay-credential-contract'
@@ -697,6 +712,19 @@ export const RPC_PARAMS_BY_METHOD = {
   'clipboard.commitImageUpload': CommitImageUpload,
   'clipboard.saveImageAsTempFile': SaveImageAsTempFile,
   'clipboard.startImageUpload': StartImageUpload,
+  'codehub.assignIssue': CodeHubAssignIssue,
+  'codehub.closeMr': CodeHubCloseMr,
+  'codehub.createComment': CodeHubCreateComment,
+  'codehub.createIssue': CodeHubCreateIssue,
+  'codehub.deleteComment': CodeHubDeleteComment,
+  'codehub.listComments': CodeHubListComments,
+  'codehub.listPipelines': CodeHubListPipelines,
+  'codehub.listTasks': CodeHubListTasks,
+  'codehub.mergeMr': CodeHubMergeMr,
+  'codehub.setIssueState': CodeHubSetIssueState,
+  'codehub.setReviewers': CodeHubSetReviewers,
+  'codehub.updateIssueTitle': CodeHubUpdateIssueTitle,
+  'codehub.viewTask': CodeHubViewTask,
   'computer.capabilities': ComputerCapabilitiesParams,
   'computer.click': Click,
   'computer.drag': DragOfComputerSchemasParams,

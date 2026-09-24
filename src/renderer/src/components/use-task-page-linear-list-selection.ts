@@ -1,4 +1,4 @@
-import type { TaskPageGitLabLoadingModel } from './use-task-page-gitlab-loading'
+import type { TaskPageCodeHubLoadingModel } from './use-task-page-codehub-loading'
 import { useState, useMemo, useEffect } from 'react'
 import { LINEAR_ISSUE_LIST_MAX } from '../../../shared/linear/issue-read-limits'
 import { findTaskPageLinearIssue } from '@/components/task-page-cache-selectors'
@@ -12,7 +12,7 @@ import { useTaskPageLinearFilterSelection } from './use-task-page-linear-filter-
 export type TaskPageLinearListSelectionPreludeModel = ReturnType<
   typeof useTaskPageLinearListSelectionPrelude
 >
-export function useTaskPageLinearListSelectionPrelude(model: TaskPageGitLabLoadingModel) {
+export function useTaskPageLinearListSelectionPrelude(model: TaskPageCodeHubLoadingModel) {
   const {
     settings,
     linearStatus,
@@ -232,7 +232,7 @@ export function useTaskPageLinearListSelectionPrelude(model: TaskPageGitLabLoadi
   nextModel.linearTeamOptions = linearTeamOptions
   return nextModel
 }
-export function useTaskPageLinearListSelection(model: TaskPageGitLabLoadingModel) {
+export function useTaskPageLinearListSelection(model: TaskPageCodeHubLoadingModel) {
   const preludeModel = useTaskPageLinearListSelectionPrelude(model)
   return useTaskPageLinearFilterSelection(preludeModel)
 }

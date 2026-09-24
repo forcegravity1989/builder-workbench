@@ -42,6 +42,8 @@ export function TaskPageCodeHubItemList({
     codehubQuery,
     codehubAuthor,
     codehubAssignee,
+    codehubHasMore,
+    loadMoreCodehub,
     selectedRepos,
     setCodehubDetailItem,
     handleUseCodeHubItem
@@ -58,10 +60,7 @@ export function TaskPageCodeHubItemList({
     if (authorFilter && (item.author ?? '').toLowerCase() !== authorFilter) {
       return false
     }
-    if (
-      assigneeFilter &&
-      !item.assignees.some((name) => name.toLowerCase() === assigneeFilter)
-    ) {
+    if (assigneeFilter && !item.assignees.some((name) => name.toLowerCase() === assigneeFilter)) {
       return false
     }
     return true
@@ -106,7 +105,9 @@ export function TaskPageCodeHubItemList({
           <span />
         </div>
         {codehubError ? (
-          <div className="border-b border-border px-4 py-4 text-sm text-destructive">{codehubError}</div>
+          <div className="border-b border-border px-4 py-4 text-sm text-destructive">
+            {codehubError}
+          </div>
         ) : null}
         {codehubLoading && visibleItems.length === 0 ? (
           <div>
@@ -125,9 +126,17 @@ export function TaskPageCodeHubItemList({
         {!codehubLoading && visibleItems.length === 0 && !codehubError ? (
           <div className="px-4 py-12 text-center">
             <p className="text-base font-medium text-foreground">
-              {mrView
-                ? translate('auto.components.TaskPage.codehubEmptyMrs', 'No CodeHub merge requests')
-                : translate('auto.components.TaskPage.codehubEmptyIssues', 'No CodeHub issues')}
+              {codehubHasMore
+                ? translate(
+                    'auto.components.TaskPage.codehubNoLoadedMatches',
+                    'No matches in loaded tasks'
+                  )
+                : mrView
+                  ? translate(
+                      'auto.components.TaskPage.codehubEmptyMrs',
+                      'No CodeHub merge requests'
+                    )
+                  : translate('auto.components.TaskPage.codehubEmptyIssues', 'No CodeHub issues')}
             </p>
           </div>
         ) : null}
@@ -164,7 +173,8 @@ export function TaskPageCodeHubItemList({
               <div className={GITHUB_TASK_STICKY_TITLE_CELL_CLASS}>
                 <h3 className="truncate text-[13px] font-medium text-foreground">{item.title}</h3>
                 <div className="mt-0.5 truncate text-[12px] text-muted-foreground">
-                  {item.author ?? translate('auto.components.TaskPage.6430594b18', 'unknown author')}
+                  {item.author ??
+                    translate('auto.components.TaskPage.6430594b18', 'unknown author')}
                   {repo ? ` · ${repo.displayName}` : ''}
                 </div>
               </div>
@@ -223,7 +233,10 @@ export function TaskPageCodeHubItemList({
                           size="icon-xs"
                           onClick={(event) => event.stopPropagation()}
                           className="bg-background/80"
-                          aria-label={translate('auto.components.TaskPage.7deb9e59a5', 'More PR actions')}
+                          aria-label={translate(
+                            'auto.components.TaskPage.7deb9e59a5',
+                            'More PR actions'
+                          )}
                         >
                           <ChevronDown className="size-3" />
                         </Button>
@@ -258,7 +271,10 @@ export function TaskPageCodeHubItemList({
                           type="button"
                           onClick={(event) => event.stopPropagation()}
                           className="rounded-lg p-1.5 text-muted-foreground transition hover:bg-muted/60 hover:text-foreground"
-                          aria-label={translate('auto.components.TaskPage.66ae7330f6', 'More actions')}
+                          aria-label={translate(
+                            'auto.components.TaskPage.66ae7330f6',
+                            'More actions'
+                          )}
                         >
                           <EllipsisVertical className="size-4" />
                         </button>
@@ -277,6 +293,19 @@ export function TaskPageCodeHubItemList({
           )
         })}
       </div>
+      {codehubHasMore ? (
+        <div className="flex items-center justify-between gap-3 border-t border-border px-3 py-2 text-xs text-muted-foreground">
+          <span>
+            {translate(
+              'auto.components.TaskPage.codehubLoadedScope',
+              'Search and filters apply to loaded tasks'
+            )}
+          </span>
+          <Button variant="outline" size="sm" disabled={codehubLoading} onClick={loadMoreCodehub}>
+            {translate('auto.components.TaskPage.codehubLoadMore', 'Load more')}
+          </Button>
+        </div>
+      ) : null}
     </div>
   )
 }

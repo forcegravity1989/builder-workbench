@@ -1,4 +1,7 @@
+import { CODEHUB_RPC_METHOD_NAMES } from '../../../shared/codehub-api'
+
 export const MOBILE_RPC_METHOD_ALLOWLIST = new Set([
+  ...CODEHUB_RPC_METHOD_NAMES,
   'accounts.list',
   'accounts.consumeCodexResetCredit',
   'accounts.selectClaude',

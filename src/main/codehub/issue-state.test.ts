@@ -25,27 +25,27 @@ describe('applyCodeHubIssueState', () => {
       stateReason: 'not_planned'
     })
 
-    expect(runCodeHubCliMock).toHaveBeenNthCalledWith(1, [
-      'issue',
-      'comment',
-      'create',
-      '12',
-      '-p',
-      'Org/Group/repo',
-      '-H',
-      'codehub-g.huawei.com',
-      '--body',
-      '关闭原因: not planned'
-    ])
-    expect(runCodeHubCliMock).toHaveBeenNthCalledWith(2, [
-      'issue',
-      'close',
-      '12',
-      '-p',
-      'Org/Group/repo',
-      '-H',
-      'codehub-g.huawei.com'
-    ])
+    expect(runCodeHubCliMock).toHaveBeenNthCalledWith(
+      1,
+      [
+        'issue',
+        'comment',
+        'create',
+        '12',
+        '-p',
+        'Org/Group/repo',
+        '-H',
+        'codehub-g.huawei.com',
+        '--body',
+        '关闭原因: not planned'
+      ],
+      undefined
+    )
+    expect(runCodeHubCliMock).toHaveBeenNthCalledWith(
+      2,
+      ['issue', 'close', '12', '-p', 'Org/Group/repo', '-H', 'codehub-g.huawei.com'],
+      undefined
+    )
   })
 
   it('does not close when the comment fails', async () => {
@@ -73,14 +73,9 @@ describe('applyCodeHubIssueState', () => {
     })
 
     expect(runCodeHubCliMock).toHaveBeenCalledTimes(1)
-    expect(runCodeHubCliMock).toHaveBeenCalledWith([
-      'issue',
-      'reopen',
-      '4',
-      '-p',
-      'Org/repo',
-      '-H',
-      'open.codehub.huawei.com'
-    ])
+    expect(runCodeHubCliMock).toHaveBeenCalledWith(
+      ['issue', 'reopen', '4', '-p', 'Org/repo', '-H', 'open.codehub.huawei.com'],
+      undefined
+    )
   })
 })

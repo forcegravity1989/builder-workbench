@@ -28,10 +28,12 @@ describe('codehub mutations', () => {
   })
 
   it('creates an issue with codehub-cli, including an optional assignee', async () => {
-    runCodeHubCliMock.mockResolvedValue(JSON.stringify({ iid: 4, title: 'Login', web_url: 'https://example/4' }))
+    runCodeHubCliMock.mockResolvedValue(
+      JSON.stringify({ iid: 4, title: 'Login', web_url: 'https://example/4' })
+    )
     const created = await createCodeHubIssue({
       remote,
-      repoPath: '/repo',
+      execOptions: { cwd: '/repo' },
       title: 'Login',
       description: 'SSO',
       assignee: 'ada'
@@ -59,8 +61,13 @@ describe('codehub mutations', () => {
   })
 
   it('updates an issue title and closes a merge request', async () => {
-    await updateCodeHubIssueTitle({ remote, repoPath: '/repo', iid: 4, title: 'Login again' })
-    await closeCodeHubMr({ remote, repoPath: '/repo', iid: 8 })
+    await updateCodeHubIssueTitle({
+      remote,
+      execOptions: { cwd: '/repo' },
+      iid: 4,
+      title: 'Login again'
+    })
+    await closeCodeHubMr({ remote, execOptions: { cwd: '/repo' }, iid: 8 })
     expect(runCodeHubCliMock.mock.calls[0][0]).toEqual([
       'issue',
       'update',
@@ -84,9 +91,14 @@ describe('codehub mutations', () => {
   })
 
   it('assigns, sets reviewers, and merges without gh', async () => {
-    await assignCodeHubIssue({ remote, repoPath: '/repo', iid: 4, assignee: 'ada' })
-    await setCodeHubReviewers({ remote, repoPath: '/repo', iid: 8, reviewers: ['ada', 'bob'] })
-    await mergeCodeHubMr({ remote, repoPath: '/repo', iid: 8, auto: true })
+    await assignCodeHubIssue({ remote, execOptions: { cwd: '/repo' }, iid: 4, assignee: 'ada' })
+    await setCodeHubReviewers({
+      remote,
+      execOptions: { cwd: '/repo' },
+      iid: 8,
+      reviewers: ['ada', 'bob']
+    })
+    await mergeCodeHubMr({ remote, execOptions: { cwd: '/repo' }, iid: 8, auto: true })
     expect(runCodeHubCliMock.mock.calls.map((call) => call[0][0])).toEqual(['issue', 'mr', 'mr'])
     expect(runCodeHubCliMock.mock.calls[1][0]).toContain('--reviewers')
     expect(runCodeHubCliMock.mock.calls[2][0]).toEqual(
@@ -105,7 +117,12 @@ describe('codehub mutations', () => {
         assignees: [{ username: 'bob' }]
       })
     )
-    const detail = await viewCodeHubTask({ remote, repoPath: '/repo', kind: 'issue', iid: 4 })
+    const detail = await viewCodeHubTask({
+      remote,
+      execOptions: { cwd: '/repo' },
+      kind: 'issue',
+      iid: 4
+    })
     expect(runCodeHubCliMock).toHaveBeenCalledWith(
       ['issue', 'view', '4', '-p', 'Org/Group/repo', '-H', 'codehub-g.huawei.com', '-f', 'json'],
       { cwd: '/repo' }
@@ -124,7 +141,7 @@ describe('codehub mutations', () => {
 
   it('lists merge request pipelines', async () => {
     runCodeHubCliMock.mockResolvedValue(JSON.stringify([{ id: 9, status: 'success', sha: 'abc' }]))
-    const pipelines = await listCodeHubPipelines({ remote, repoPath: '/repo', iid: 8 })
+    const pipelines = await listCodeHubPipelines({ remote, execOptions: { cwd: '/repo' }, iid: 8 })
     expect(runCodeHubCliMock).toHaveBeenCalledWith(
       ['mr', 'pipeline', '8', '-p', 'Org/Group/repo', '-H', 'codehub-g.huawei.com', '-f', 'json'],
       { cwd: '/repo' }
