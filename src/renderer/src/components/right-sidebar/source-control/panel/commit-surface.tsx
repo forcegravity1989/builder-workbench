@@ -100,6 +100,7 @@ export function SourceControlCommitSurface({
         setBody={setPrBody}
         draft={prDraft}
         setDraft={setPrDraft}
+        remoteIdentity={activeRepo.gitRemoteIdentity}
         stackedCreationSupported={prStackedCreationSupported}
         stackParentReview={stackParentReview}
         baseQuery={prBaseQuery}

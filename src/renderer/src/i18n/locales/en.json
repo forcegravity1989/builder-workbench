@@ -9784,7 +9784,11 @@
             "7166b9090c": "GitHub authentication via the gh CLI.",
             "f16e41cc72": "GitHub Integration",
             "760e2446e0": "Bitbucket Cloud authentication with a saved API token or environment variables.",
-            "af5ae87847": "access token"
+            "af5ae87847": "access token",
+            "codehubTitle": "CodeHub Integration",
+            "codehubDescription": "Detect whether codehub-cli is on PATH.",
+            "codehubKeyword": "codehub",
+            "codehubCliKeyword": "codehub-cli"
           }
         },
         "jira": {
@@ -10665,7 +10669,11 @@
                   "statusConnected": "Connected",
                   "statusUnavailable": "Unavailable",
                   "statusNotInstalled": "Not installed",
-                  "statusNotAuthenticated": "Not authenticated"
+                  "statusNotAuthenticated": "Not authenticated",
+                  "codehubDescription": "Issues and merge requests via the",
+                  "codehubAvailable": "Available",
+                  "codehubUnavailable": "codehub-cli status is not available in this runtime yet.",
+                  "codehubMissing": "codehub-cli is not on PATH."
                 }
               }
             }

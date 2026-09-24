@@ -72,4 +72,26 @@ describe('HostedReviewActions draft state', () => {
       expect(renderDraft(provider)).toBe('')
     }
   )
+
+  it('hides Mark ready when the review URL is CodeHub', () => {
+    const markup = renderToStaticMarkup(
+      <HostedReviewActions
+        review={{
+          provider: 'github',
+          number: 42,
+          state: 'draft',
+          status: 'success',
+          mergeable: 'UNKNOWN',
+          url: 'https://codehub-g.huawei.com/Org/Group/repo/-/merge_requests/42'
+        }}
+        repo={repo}
+        worktree={worktree}
+        onRefreshReview={vi.fn().mockResolvedValue(undefined)}
+      />
+    )
+
+    expect(markup).not.toContain('Mark ready for review')
+    expect(markup).toContain('Close PR')
+    expect(markup).not.toContain('Merge')
+  })
 })

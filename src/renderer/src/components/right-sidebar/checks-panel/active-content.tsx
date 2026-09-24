@@ -20,6 +20,7 @@ import { translate } from '@/i18n/i18n'
 import type { ChecksPanelReview } from '../checks-panel-review'
 import type { ChecksPanelHostedReviewModifierDestination } from '../checks-panel-hosted-review-click-routing'
 import type { ChecksPanelActiveContentModel } from './active-content-props'
+import { isCodeHubGitRemote, isCodeHubUrl } from '../../../../../shared/codehub'
 type ReviewHeaderComponentProps = {
   review: ChecksPanelReview
   isRefreshing: boolean
@@ -107,6 +108,8 @@ export function ChecksPanelActiveContent({
   if (!activeReview) {
     return null
   }
+  const codeHubReview =
+    isCodeHubUrl(activeReview.url) || isCodeHubGitRemote(repo?.gitRemoteIdentity)
   const reviewShortLabel = activeReview.provider === 'gitlab' ? 'MR' : 'PR'
   const shouldShowReviewTriageStrip =
     activeConflictReview !== null || getBrokenChecks(checks).length > 0
@@ -264,9 +267,9 @@ export function ChecksPanelActiveContent({
         }
         onReply={pr ? handleReplyToComment : undefined}
         onResolve={pr || activeGitLabReview ? handleResolve : undefined}
-        onEditComment={pr ? handleEditComment : undefined}
+        onEditComment={pr && !codeHubReview ? handleEditComment : undefined}
         onDeleteComment={pr ? handleDeleteComment : undefined}
-        onSetReaction={canTargetPRComments ? handleSetReaction : undefined}
+        onSetReaction={canTargetPRComments && !codeHubReview ? handleSetReaction : undefined}
       />
       <SourceControlAgentActionDialog
         open={sourceControlAiActionsVisible && agentComposerState !== null}

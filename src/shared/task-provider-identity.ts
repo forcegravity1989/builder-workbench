@@ -14,6 +14,12 @@ export type GitLabTaskProviderIdentity = {
   webUrl?: string | null
 }
 
+export type CodeHubTaskProviderIdentity = {
+  provider: 'codehub'
+  host?: string | null
+  project?: string | null
+}
+
 export type LinearTaskProviderIdentity = {
   provider: 'linear'
   workspaceId?: string | null
@@ -32,6 +38,7 @@ export type JiraTaskProviderIdentity = {
 export type TaskProviderIdentity =
   | GitHubTaskProviderIdentity
   | GitLabTaskProviderIdentity
+  | CodeHubTaskProviderIdentity
   | LinearTaskProviderIdentity
   | JiraTaskProviderIdentity
 
@@ -79,6 +86,12 @@ export function normalizeTaskProviderIdentity(
         siteUrl: normalizeNonEmptyString(raw.siteUrl),
         projectKey: normalizeNonEmptyString(raw.projectKey)
       }
+    case 'codehub':
+      return {
+        provider,
+        host: normalizeNonEmptyString(raw.host),
+        project: normalizeNonEmptyString(raw.project)
+      }
   }
 }
 
@@ -112,12 +125,15 @@ export function isStoredTaskProviderIdentity(provider: TaskProvider, identity: u
       )
     case 'jira':
       return ['siteId', 'siteUrl', 'projectKey'].every((key) => isNullableOptionalString(raw[key]))
+    case 'codehub':
+      return ['host', 'project'].every((key) => isNullableOptionalString(raw[key]))
   }
 }
 
 const TASK_PROVIDER_IDENTITY_FIELDS: Record<TaskProvider, readonly string[]> = {
   github: ['owner', 'repo', 'host'],
   gitlab: ['projectId', 'namespace', 'project', 'webUrl'],
+  codehub: ['host', 'project'],
   linear: ['workspaceId', 'workspaceName', 'teamId', 'teamKey'],
   jira: ['siteId', 'siteUrl', 'projectKey']
 }
@@ -157,6 +173,8 @@ export function taskProviderIdentityCachePart(
       return [identity.workspaceId, identity.teamId ?? identity.teamKey].filter(Boolean).join('/')
     case 'jira':
       return [identity.siteId ?? identity.siteUrl, identity.projectKey].filter(Boolean).join('/')
+    case 'codehub':
+      return [identity.host, identity.project].filter(Boolean).join('/')
   }
 }
 

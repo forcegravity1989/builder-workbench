@@ -14,6 +14,7 @@ import { useTaskPageJiraListState } from '../use-task-page-jira-list-state'
 import { useTaskPageResumeRestoration } from '../use-task-page-resume-restoration'
 import { useTaskPageProviderMetadata } from '../use-task-page-provider-metadata'
 import { useTaskPageGitLabLoading } from '../use-task-page-gitlab-loading'
+import { useTaskPageCodeHubLoading } from '../use-task-page-codehub-loading'
 import { useTaskPageLinearListSelection } from '../use-task-page-linear-list-selection'
 import { useTaskPageLinearListProjection } from '../use-task-page-linear-list-projection'
 import { useTaskPageLinearBoard } from '../use-task-page-linear-board'
@@ -56,7 +57,8 @@ export default function TaskPage(): React.JSX.Element {
   const stage13 = useTaskPageResumeRestoration(stage12)
   const stage14 = useTaskPageProviderMetadata(stage13)
   const stage15 = useTaskPageGitLabLoading(stage14)
-  const stage16 = useTaskPageLinearListSelection(stage15)
+  const stage15b = useTaskPageCodeHubLoading(stage15)
+  const stage16 = useTaskPageLinearListSelection(stage15b)
   const stage17 = useTaskPageLinearListProjection(stage16)
   const stage18 = useTaskPageLinearBoard(stage17)
   const stage19 = useTaskPageJiraListProjection(stage18)

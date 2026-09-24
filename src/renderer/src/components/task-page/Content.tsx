@@ -6,6 +6,8 @@ import { isWorkbenchShell } from '@/workbench/is-workbench-shell'
 import { TaskPageGitHubList } from './github/List'
 import { TaskPageGitLabTodoList } from './gitlab/TodoList'
 import { TaskPageGitLabItemList } from './gitlab/ItemList'
+import { TaskPageCodeHubItemList } from './codehub/ItemList'
+import { TaskPageCodeHubDetail } from './codehub/Detail'
 import { TaskPageJiraContent } from './jira/Content'
 export function TaskPageContent({
   model
@@ -24,7 +26,8 @@ export function TaskPageContent({
     setDialogWorkItem,
     handleDialogReviewRequestsChange,
     closeTaskDetailPage,
-    handleUseWorkItem
+    handleUseWorkItem,
+    codehubDetailItem
   } = model
   return taskSource === 'github' && dialogWorkItem ? (
     dialogWorkItem.type === 'pr' ? (
@@ -74,6 +77,10 @@ export function TaskPageContent({
     <TaskPageGitLabTodoList model={model} />
   ) : taskSource === 'gitlab' ? (
     <TaskPageGitLabItemList model={model} />
+  ) : taskSource === 'codehub' && codehubDetailItem ? (
+    <TaskPageCodeHubDetail model={model} />
+  ) : taskSource === 'codehub' ? (
+    <TaskPageCodeHubItemList model={model} />
   ) : (
     <TaskPageJiraContent model={model} />
   )

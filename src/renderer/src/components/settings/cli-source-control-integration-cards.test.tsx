@@ -5,6 +5,7 @@ import { createRoot, type Root } from 'react-dom/client'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { getExecutionHostLabel } from '../../../../shared/execution-host'
 import {
+  CodeHubIntegrationCard,
   GitHubIntegrationCard,
   GitLabIntegrationCard
 } from './cli-source-control-integration-cards'
@@ -26,6 +27,7 @@ const mocks = vi.hoisted(() => ({
       bitbucketStatus: 'not-configured',
       azureDevOpsStatus: 'not-configured',
       giteaStatus: 'not-configured',
+      codehubStatus: 'available',
       bitbucketAccount: null,
       azureDevOpsAccount: null,
       giteaAccount: null
@@ -74,6 +76,7 @@ describe('CLI source-control integration card account scope', () => {
     mocks.store.current = null
     mocks.preflight.statuses.ghStatus = 'connected'
     mocks.preflight.statuses.glabStatus = 'connected'
+    mocks.preflight.statuses.codehubStatus = 'available'
     mocks.preflight.unavailable = false
     mocks.preflight.refresh.mockClear()
   })
@@ -125,5 +128,41 @@ describe('CLI source-control integration card account scope', () => {
       'Credentials and account checks for this provider are owned by this remote server. Use Settings > Remote Orca Servers > Advanced to edit another default runtime scope.'
     )
     expect(rendered.textContent).toContain('glab auth login')
+  })
+
+  it('shows codehub-cli as available without an auth action', async () => {
+    mocks.store.current = {
+      settings: { activeRuntimeEnvironmentId: null },
+      openSettingsPage: vi.fn(),
+      openSettingsTarget: vi.fn()
+    }
+
+    const rendered = await renderCard(<CodeHubIntegrationCard />)
+
+    expect(rendered.textContent).toContain('CodeHub')
+    expect(rendered.textContent).toContain('Available')
+    expect(rendered.textContent).toContain('codehub-cli')
+    expect(rendered.textContent).not.toContain('auth login')
+    expect(rendered.textContent).not.toContain('Account scope')
+  })
+
+  it('shows codehub-cli as missing from PATH and re-checks on demand', async () => {
+    mocks.store.current = {
+      settings: { activeRuntimeEnvironmentId: null },
+      openSettingsPage: vi.fn(),
+      openSettingsTarget: vi.fn()
+    }
+    mocks.preflight.statuses.codehubStatus = 'not-installed'
+
+    const rendered = await renderCard(<CodeHubIntegrationCard />)
+
+    expect(rendered.textContent).toContain('Not installed')
+    expect(rendered.textContent).toContain('codehub-cli is not on PATH.')
+    await act(async () => {
+      Array.from(rendered.querySelectorAll('button'))
+        .find((button) => button.textContent === 'Re-check')
+        ?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+    })
+    expect(mocks.preflight.refresh).toHaveBeenCalledTimes(1)
   })
 })

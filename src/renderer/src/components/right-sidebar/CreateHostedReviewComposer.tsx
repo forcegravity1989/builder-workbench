@@ -26,6 +26,8 @@ import {
   hostedReviewProviderSupportsDraft,
   type HostedReviewProvider
 } from '../../../../shared/hosted-review'
+import { isCodeHubGitRemote } from '../../../../shared/codehub'
+import type { GitRemoteIdentity } from '../../../../shared/git-remote-identity'
 import { stripBaseRef } from './create-pull-request-base-ref-normalization'
 import type { HostedReviewStackParent } from './useHostedReviewStackParent'
 import type { DropdownActionKind, DropdownEntry } from './source-control-dropdown-item-types'
@@ -57,6 +59,7 @@ export type CreateHostedReviewComposerProps = {
   setBody: (value: string) => void
   draft: boolean
   setDraft: (value: boolean) => void
+  remoteIdentity?: Pick<GitRemoteIdentity, 'remoteUrl' | 'canonicalKey'> | null
   stackedCreationSupported: boolean
   stackParentReview: HostedReviewStackParent | null
   baseQuery: string
@@ -94,6 +97,7 @@ export function CreateHostedReviewComposer({
   setBody,
   draft,
   setDraft,
+  remoteIdentity,
   stackedCreationSupported,
   stackParentReview,
   baseQuery,
@@ -119,7 +123,9 @@ export function CreateHostedReviewComposer({
 }: CreateHostedReviewComposerProps): React.JSX.Element {
   const copy = localizedHostedReviewCopy(resolveSupportedHostedReviewCopyProvider(provider))
   // Providers without draft reviews must not carry a stale draft flag into submit.
-  const supportsDraft = hostedReviewProviderSupportsDraft(provider)
+  // CodeHub has no draft flag; a checked box must not create a draft MR.
+  const supportsDraft =
+    hostedReviewProviderSupportsDraft(provider) && !isCodeHubGitRemote(remoteIdentity)
   const effectiveDraft = supportsDraft && draft
   const ReviewIcon = provider === 'gitlab' ? GitMerge : GitPullRequestArrow
   const stackedModeAvailable = provider === 'github' && stackedCreationSupported

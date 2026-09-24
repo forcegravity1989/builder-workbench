@@ -37,6 +37,7 @@ import {
   getGitHubPRStackMergeScope,
   isGitHubPRStackMergeQueueRequired
 } from './github-pr-stack-merge'
+import { isCodeHubGitRemote, isCodeHubUrl } from '../../../../shared/codehub'
 
 export default function HostedReviewActions({
   review,
@@ -45,7 +46,7 @@ export default function HostedReviewActions({
   worktree,
   onRefreshReview
 }: {
-  review: HostedReviewActionInfo
+  review: HostedReviewActionInfo & { url?: string }
   githubPR?: PRInfo | null
   repo: Repo
   worktree: Worktree
@@ -159,6 +160,10 @@ export default function HostedReviewActions({
   }, [worktree.hostId, worktree.id])
 
   if (review.state === 'draft' && (review.provider === 'github' || review.provider === 'gitlab')) {
+    const codeHubReview =
+      isCodeHubUrl(review.url) ||
+      isCodeHubUrl(githubPR?.url) ||
+      isCodeHubGitRemote(repo.gitRemoteIdentity)
     return (
       <DraftReviewActions
         shortLabel={shortLabel}
@@ -167,6 +172,7 @@ export default function HostedReviewActions({
         readying={readying}
         stateUpdating={stateUpdating}
         actionError={actionError}
+        allowMarkReady={!codeHubReview}
         onMarkReadyForReview={() => void handleMarkReadyForReview()}
         onCloseReview={() => void handleCloseReview()}
       />

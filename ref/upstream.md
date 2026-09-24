@@ -76,11 +76,39 @@ git merge orca-upstream/main
 | 崩溃「发送诊断报告」弹窗关闭 | `RecoverableRenderErrorBoundary` + `AppRootSurfaces` |
 | 叠层 UI / 皮肤 / 计划·总览·知识库·项目墙 | `src/renderer/src/workbench/**` |
 | 任务页工具条收成一行 | `task-page/ListChrome.tsx`、`github/ModeControls.tsx`、`github/Filters.tsx`、`ProviderFilters.tsx`、`Content.tsx`、`SidebarTaskNavButton.tsx`。壳开启时不渲染来源条和侧栏「任务」上的来源小图标，去掉 Projects。Issues / PRs、范围预设、Filters 仍在同一行，中间用分隔线隔开。Orca 原任务页不改 |
+| CodeHub 评审 | 见下文「CodeHub」。不把 CodeHub 当成 GitHub Enterprise 或 GitLab |
+| 壳内不加星弹窗 | `AppRootSurfaces`。`isWorkbenchShell()` 时不挂 `StarNagCard` / `StarNagToastHost` / `StarNagAgentValueMomentObserver`。设置里的 Star 与 GitHub API Budget 不动 |
 | 品牌 / 独立 profile / 打包 | `workbench-product.ts`、`dev:workbench`、`build:mac:workbench` |
 
 细节清单见 `src/renderer/src/workbench/INVENTORY.md`、`SYNC.md`。
 
 **未删的 upstream 执行核**（合并时优先保 upstream，除非叠层钩子）：TaskPage、Automations、terminal/PTY、worktree、Explorer/SC/Diff、`src/main` runtime。
+
+### CodeHub（`codehub-cli`，任务来源与 GitHub / GitLab 并列）
+
+CodeHub 是独立的 `TaskProvider`（`'codehub'`），和 GitHub、GitLab 同级。任务列表走 `codehub:listTasks`，调用 `codehub-cli issue list` / `mr list`。不挂在 `listWorkItems` 后面，也不等 GitHub 来源解析失败再降级。选中的仓库远程全是 CodeHub，且 `codehub-cli` 已装好时，任务页自动切到 CodeHub。壳里没有来源条，所以这一步必须发生在进 GitHub 列表之前。
+
+CodeHub 不是 `HostedReviewProvider`，也不走 `gh` / `glab`。调用 PATH 上的 `codehub-cli`，不写死安装路径。缺命令时错误是 `codehub-cli is not installed or not on PATH`。主机按 `codehub`、`codehub.*`、`codehub-*`、`*.codehub.*` 识别（例如 `codehub-g.huawei.com`），不用裸的 `includes('codehub')`。GitHub.com 行为不改。
+
+| 处置 | 路径 | 说明 |
+|---|---|---|
+| **新增** | `src/shared/codehub.ts` | `isCodeHubHost` / `isCodeHubUrl` / `isCodeHubGitRemote` / `parseCodeHubRemote`。嵌套项目路径保留，去掉 `.git`，拒绝 github |
+| **新增** | `src/main/codehub/cli.ts`、`remote.ts`、`issue-state.ts` | `execFile('codehub-cli', …)`。远端先读 `origin`，再读 `upstream`。关闭：先 `issue comment create`，正文是 `关闭原因: completed`、`关闭原因: not planned` 或 `关闭原因: duplicate of #<n>`，再 `issue close`。评论失败不关闭。重开只 `issue reopen`，不写评论。`already` 只在 close/reopen 上当成空操作。不写 `bw:status:*`，不用 `gh issue close --reason` / `--duplicate-of` |
+| **改调用** | `src/main/github/issue-update.ts`、`project-view/mutations.ts` | 有 `state` 且远端是 CodeHub 时先走上面的关闭/重开，再决定要不要继续 `gh`。项目路径只有两段 `owner/repo`；更深层的页面 URL 走仓库远端，不走这条 |
+| **新增** | `src/main/codehub/work-items.ts`、`src/main/ipc/codehub.ts`、`src/preload/codehub.ts` | `listCodeHubTasks`。IPC `codehub:listTasks` 与 preload `codehub.listTasks` 和 `gl` 并列，不进 `gh:*` |
+| **改调用** | `task-providers.ts`、任务页 `Content` / `ProviderFilters`、`use-task-page-codehub-loading.ts`、`use-task-page-provider-state.ts`、设置加载 | 来源 `'codehub'`。列表是 Issues / MRs。选中仓库全是 CodeHub 时自动切来源。旧配置的可见来源没有 `codehub` 时补一次，之后用户关掉就不再加回。手动改来源后不再盖回去 |
+| **改调用** | `viewed-sync.ts` | CodeHub 的 PR 已读在发请求、toast、乐观更新之前直接返回 |
+| **改调用** | `checks-panel/active-content.tsx` | CodeHub 不传 `onEditComment`、`onSetReaction`。评论仍可 list / create / delete |
+| **改调用** | `HostedReviewActions.tsx`、`HostedReviewStateActions.tsx`、`CreateHostedReviewComposer.tsx`、创建评审的两处 hook、`empty-content*`、`commit-surface.tsx` | CodeHub 不提供草稿和 Mark ready。创建时草稿强制为 false。已是草稿的远端 MR 没有合并按钮；新建 MR 不会是草稿。关闭仍在 |
+| **改调用** | `AppRootSurfaces.tsx` | 壳开启时不挂加星弹窗。崩溃「发送诊断报告」那一处原有的壳判断不动 |
+| **改调用** | `preflight-api.ts`、`agent-detection.ts`、设置「集成 / 评审供应商」 | `PreflightStatus.codehub` 只有 `{ installed }`。探测顺序是 `git --version`、`gh --version`、`glab --version`、`codehub-cli --version`，然后才是 `gh` / `glab` 的 `auth status`。不探测 CodeHub 登录。卡片状态是 checking / available / not-installed，有 Re-check。功能墙的连接列表不加这张卡 |
+| **新增** | `docs/03-guide/codehub-cli.md` | `codehub-cli` 用法短文。命令形状以本机 `--help` 为准 |
+
+测试随上述文件：`codehub.test.ts`、`issue-state.test.ts`、`issue-update.codehub.test.ts`、`issues.test.ts`（mock 掉真实 `git remote`）、预检与设置卡片测试。`en.json` 只补了卡片和搜索文案。
+
+任务页 CodeHub 的工具条跟 GitHub 同一行：Issues / MRs、项目、开放 / 我的（议题是分配给我，MR 还有待评审）、筛选条件、搜索、加号、刷新。开放对应 `--state opened`；我的对应 `issue list --scope assigned_to_me` 或 `mr list --scope created_by_me`；待评审对应 `mr list --scope need_my_review`。MR 搜索走 `--search`。点一行打开详情，版式对齐 GitHub 议题页头和 PR 页头（返回、标题、状态、开始工作区、会话、检查）。详情用 `codehub-cli issue|mr view` 和评论 list/create/delete，不挂 `GitHubItemDialog` 或 `PullRequestPage`。Issue 可改标题、按完成 / 不计划 / 重复关闭或重新打开；MR 可关闭。已读、表情、草稿、改正文和翻页仍没有对应命令。
+
+合并时：上面这些文件冲突，保留 CodeHub 分支，不要并回纯 `gh`。改预检探测顺序时，同步 `preflight-host-cli-status.test.ts` 的 `execFile` mock 次序。
 
 ## 从 Workbench `main` 增加了什么
 
@@ -102,6 +130,7 @@ git merge orca-upstream/main
 4. **叠层内冲突**：`workbench/**` 与挂载钩子 → 取本分支 / 手合。
 5. **不要**把 `.omc/**`、本机 profile、`dist/` / `out/` 打进产品提交。
 6. 日常热加载：`REMOTE_DEBUGGING_PORT=9337 pnpm run dev:workbench`（见 `SYNC.md`）。Agent 自动化再加 `ORCA_BACKGROUND_LAUNCH=1`。
+7. **CodeHub**：任务来源、`codehub:*` IPC、预检和设置集成卡片冲突时，保留上文「CodeHub」里的分支。不要把列表塞回 `listWorkItems`。GitHub.com 仍按 upstream。不要把 CodeHub 收成 GitHub Enterprise 或 GitLab。
 
 合并后建议：
 

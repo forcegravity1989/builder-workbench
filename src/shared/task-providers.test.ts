@@ -16,7 +16,13 @@ describe('task providers', () => {
   })
 
   it('falls back to all providers when none are visible', () => {
-    expect(normalizeVisibleTaskProviders([])).toEqual(['github', 'gitlab', 'linear', 'jira'])
+    expect(normalizeVisibleTaskProviders([])).toEqual([
+      'github',
+      'gitlab',
+      'codehub',
+      'linear',
+      'jira'
+    ])
   })
 
   it('restores a valid saved default when provider settings drifted', () => {
@@ -51,6 +57,7 @@ describe('task providers', () => {
     expect(
       filterAvailableTaskProviders(['github', 'gitlab', 'linear'], {
         gitlabInstalled: false,
+        codehubInstalled: false,
         linearConnected: true
       })
     ).toEqual(['github', 'linear'])
@@ -62,6 +69,7 @@ describe('task providers', () => {
         ['linear'],
         {
           gitlabInstalled: false,
+          codehubInstalled: false,
           linearConnected: true
         },
         'github'
@@ -75,6 +83,7 @@ describe('task providers', () => {
         ['linear'],
         {
           gitlabInstalled: false,
+          codehubInstalled: false,
           linearConnected: true
         },
         'linear'
@@ -88,6 +97,7 @@ describe('task providers', () => {
         ['linear'],
         {
           gitlabInstalled: false,
+          codehubInstalled: false,
           linearConnected: true
         },
         'gitlab'
@@ -101,6 +111,7 @@ describe('task providers', () => {
         ['gitlab'],
         {
           gitlabInstalled: false,
+          codehubInstalled: false,
           linearConnected: true
         },
         'bitbucket'
@@ -112,6 +123,7 @@ describe('task providers', () => {
     expect(
       filterAvailableTaskProviders(['gitlab', 'linear'], {
         gitlabInstalled: false,
+        codehubInstalled: false,
         linearConnected: false
       })
     ).toEqual(['github'])

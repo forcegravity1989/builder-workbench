@@ -86,6 +86,24 @@ describe('getPreflightIntegrationStatuses', () => {
     })
   })
 
+  it('reports codehub-cli as available only when the binary is on PATH', () => {
+    expect(getPreflightIntegrationStatuses(connectedPreflight, new Set()).codehubStatus).toBe(
+      'not-installed'
+    )
+    expect(
+      getPreflightIntegrationStatuses(
+        { ...connectedPreflight, codehub: { installed: true } },
+        new Set()
+      ).codehubStatus
+    ).toBe('available')
+    expect(
+      getPreflightIntegrationStatuses(
+        { ...connectedPreflight, codehub: { installed: true } },
+        new Set(['codehub'])
+      ).codehubStatus
+    ).toBe('checking')
+  })
+
   it('keeps a manually refreshed provider in checking state until its request settles', () => {
     expect(
       getPreflightIntegrationStatuses(connectedPreflight, new Set(['glab', 'gitea']))

@@ -13,6 +13,10 @@ import {
   getGitLabWorkItemWorkspaceSeed,
   getTaskPageRepoSourceContext
 } from './task-page-source-context'
+import type { CodeHubTaskItem } from '../../../shared/codehub-tasks'
+import { getLinkedWorkItemSuggestedName } from '../../../shared/workspace-name'
+import { normalizeTaskSourceContext } from '../../../shared/task-source-context'
+import { getRepoExecutionHostId } from '../../../shared/execution-host'
 export function useTaskPageWorkspaceActions(model: TaskPageSearchActionsModel) {
   const { repoMap, openModal } = model
   const openComposerForItem = useCallback(
@@ -114,18 +118,62 @@ export function useTaskPageWorkspaceActions(model: TaskPageSearchActionsModel) {
     },
     [openComposerForGitLabItem]
   )
+  const openComposerForCodeHubItem = useCallback(
+    (item: CodeHubTaskItem): void => {
+      if (!item.repoId) {
+        return
+      }
+      const repo = repoMap.get(item.repoId)
+      const linkedWorkItem: LinkedWorkItemSummary = {
+        provider: 'codehub',
+        type: item.type === 'mr' ? 'mr' : 'issue',
+        number: item.iid,
+        title: item.title,
+        url: item.url,
+        repoId: item.repoId
+      }
+      openModal('new-workspace-composer', {
+        linkedWorkItem,
+        taskSourceContext: normalizeTaskSourceContext({
+          provider: 'codehub',
+          projectId: repo?.id ?? item.repoId,
+          hostId: repo ? getRepoExecutionHostId(repo) : 'local',
+          repoId: item.repoId,
+          providerIdentity: {
+            provider: 'codehub',
+            host: item.host ?? null,
+            project: item.project ?? null
+          }
+        }),
+        prefilledName: getLinkedWorkItemSuggestedName({ title: item.title }),
+        initialRepoId: item.repoId,
+        telemetrySource: 'sidebar'
+      })
+    },
+    [openModal, repoMap]
+  )
+  const handleUseCodeHubItem = useCallback(
+    (item: CodeHubTaskItem): void => {
+      openComposerForCodeHubItem(item)
+    },
+    [openComposerForCodeHubItem]
+  )
   const nextModel = model as typeof model & {
     openComposerForItem: typeof openComposerForItem
     handleUseWorkItem: typeof handleUseWorkItem
     handleOpenOrUseGitHubWorkItem: typeof handleOpenOrUseGitHubWorkItem
     openComposerForGitLabItem: typeof openComposerForGitLabItem
     handleUseGitLabItem: typeof handleUseGitLabItem
+    openComposerForCodeHubItem: typeof openComposerForCodeHubItem
+    handleUseCodeHubItem: typeof handleUseCodeHubItem
   }
   nextModel.openComposerForItem = openComposerForItem
   nextModel.handleUseWorkItem = handleUseWorkItem
   nextModel.handleOpenOrUseGitHubWorkItem = handleOpenOrUseGitHubWorkItem
   nextModel.openComposerForGitLabItem = openComposerForGitLabItem
   nextModel.handleUseGitLabItem = handleUseGitLabItem
+  nextModel.openComposerForCodeHubItem = openComposerForCodeHubItem
+  nextModel.handleUseCodeHubItem = handleUseCodeHubItem
   return nextModel
 }
 export type TaskPageWorkspaceActionsModel = ReturnType<typeof useTaskPageWorkspaceActions>

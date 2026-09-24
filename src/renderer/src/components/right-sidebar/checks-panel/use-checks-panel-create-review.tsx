@@ -10,6 +10,7 @@ import {
   hostedReviewProviderSupportsDraft,
   type HostedReviewProvider
 } from '../../../../../shared/hosted-review'
+import { isCodeHubGitRemote } from '../../../../../shared/codehub'
 import type { ChecksPanelReviewState } from './use-checks-panel-review-state'
 import type { ChecksPanelControllerState } from './use-checks-panel-controller-state'
 import type { ChecksPanelContextState } from './use-checks-panel-context-state'
@@ -240,7 +241,10 @@ export function useChecksPanelCreateReview(model: ChecksPanelCreateReviewInput) 
           head: normalizeHostedReviewHeadRef(branch),
           title,
           body: prBody,
-          draft: prDraft && hostedReviewProviderSupportsDraft(hostedReviewCreateProvider),
+          draft:
+            prDraft &&
+            hostedReviewProviderSupportsDraft(hostedReviewCreateProvider) &&
+            !isCodeHubGitRemote(repo?.gitRemoteIdentity),
           worktreePath,
           useTemplate: prCreationDefaults.useTemplate
         }

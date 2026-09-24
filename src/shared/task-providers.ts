@@ -1,6 +1,12 @@
-export type TaskProvider = 'github' | 'gitlab' | 'linear' | 'jira'
+export type TaskProvider = 'github' | 'gitlab' | 'codehub' | 'linear' | 'jira'
 
-export const TASK_PROVIDERS: readonly TaskProvider[] = ['github', 'gitlab', 'linear', 'jira']
+export const TASK_PROVIDERS: readonly TaskProvider[] = [
+  'github',
+  'gitlab',
+  'codehub',
+  'linear',
+  'jira'
+]
 
 const TASK_PROVIDER_SET = new Set<TaskProvider>(TASK_PROVIDERS)
 
@@ -52,8 +58,24 @@ export function normalizeVisibleTaskProviders(value: unknown): TaskProvider[] {
   return normalized.length > 0 ? normalized : [...TASK_PROVIDERS]
 }
 
+/** Insert a provider once, immediately after `after` when that provider is present. */
+export function ensureDefaultedTaskProvider(
+  providers: readonly TaskProvider[],
+  provider: TaskProvider,
+  after: TaskProvider
+): TaskProvider[] {
+  if (providers.includes(provider)) {
+    return [...providers]
+  }
+  const next = [...providers]
+  const afterIndex = next.indexOf(after)
+  next.splice(afterIndex >= 0 ? afterIndex + 1 : next.length, 0, provider)
+  return next
+}
+
 export type TaskProviderAvailability = {
   gitlabInstalled: boolean
+  codehubInstalled: boolean
   linearConnected: boolean
 }
 
@@ -99,6 +121,9 @@ function isTaskProviderAvailable(
   }
   if (provider === 'gitlab') {
     return availability.gitlabInstalled
+  }
+  if (provider === 'codehub') {
+    return availability.codehubInstalled
   }
   // Why: Jira can be connected from the Tasks surface itself, so hiding it
   // when disconnected would remove the entry point for first-time setup.
