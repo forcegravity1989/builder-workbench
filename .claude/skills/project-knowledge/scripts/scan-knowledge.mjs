@@ -1,11 +1,15 @@
 #!/usr/bin/env node
-// Read-only source scan. Only explicit outside-repository report outputs are written.
+// Read-only knowledge scan. Collects evidence for the three knowledge principles
+// (deletion test, drift-prone detail, missing trade-offs) plus Git hot spots.
+// It proposes nothing: a person or model turns signals into candidates.
+// Only signals.json / signals.md in an explicit outside-repository directory are written.
 import { readFile, readdir, lstat, realpath, mkdir, writeFile } from 'node:fs/promises'
+import { execFileSync } from 'node:child_process'
 import path from 'node:path'
 import { createHash } from 'node:crypto'
-import { pathToFileURL } from 'node:url'
 import { checkFiles } from './check-links.mjs'
 
+const VERSION = '0.4.0'
 const normalized = (value) => value.split(path.sep).join('/')
 const hash = (value) => createHash('sha256').update(value).digest('hex')
 const within = (root, target) => {
@@ -53,6 +57,8 @@ async function safeSource(root, relative) {
   return { absolute }
 }
 
+// Fenced blocks are examples, not claims; inline code usually holds commands or
+// protocol values, which are contracts rather than drift.
 export function markdownShape(text) {
   let fence
   const lines = text.split(/\r?\n/).map((line) => {
@@ -83,17 +89,12 @@ export function markdownShape(text) {
     paragraphs.push({ line: start, chars: [...content].length, text: content })
     buffer = []
   }
-  let listItems = 0
   lines.forEach((line, index) => {
     const heading = line.match(/^(#{1,6})\s+(.+?)\s*#*$/)
-    const list = /^\s*(?:[-*+] |\d+[.)] )/.test(line)
     if (heading) {
       headings.push({ level: heading[1].length, title: heading[2], line: index + 1 })
     }
-    if (list) {
-      listItems++
-    }
-    if (!line.trim() || heading || list || /^\s*(?:\||>|---+$|===+$)/.test(line)) {
+    if (!line.trim() || heading || /^\s*(?:[-*+] |\d+[.)] |\||>|---+$|===+$)/.test(line)) {
       flush()
     } else {
       if (!buffer.length) {
@@ -103,45 +104,44 @@ export function markdownShape(text) {
     }
   })
   flush()
-  return { lines, headings, paragraphs, listItems }
+  return { lines, prose: lines.map((line) => line.replace(/(`+).*?\1/g, '')), headings, paragraphs }
 }
 
-function acceptanceRows(lines, wanted) {
-  if (!wanted?.length) {
-    return []
-  }
-  const cells = (line) =>
-    line
-      .trim()
-      .replace(/^\||\|$/g, '')
-      .split('|')
-      .map((s) => s.trim())
-  const rows = []
-  for (let i = 0; i < lines.length - 1; i++) {
-    if (!lines[i].trim().startsWith('|') || !/^\s*\|?\s*:?-{3,}/.test(lines[i + 1])) {
-      continue
-    }
-    const header = cells(lines[i])
-    if (!wanted.every((label) => header.includes(label))) {
-      continue
-    }
-    for (let j = i + 2; j < lines.length && lines[j].trim().startsWith('|'); j++) {
-      const values = cells(lines[j])
-      rows.push({
-        line: j + 1,
-        values: Object.fromEntries(
-          wanted.map((label) => [label, values[header.indexOf(label)] ?? ''])
-        )
+function gitHistory(root) {
+  const git = (args) =>
+    execFileSync('git', ['-c', 'core.quotepath=false', '-C', root, ...args], {
+      encoding: 'utf8',
+      maxBuffer: 64 * 1024 * 1024,
+      stdio: ['ignore', 'pipe', 'ignore']
+    })
+  try {
+    const shallow = git(['rev-parse', '--is-shallow-repository']).trim() === 'true'
+    // Git reports paths from the repository top; the scan root may be a subdirectory.
+    const prefix = git(['rev-parse', '--show-prefix']).trim()
+    const commits = git(['log', '--no-merges', '--name-only', '--format=%x00%cI'])
+      .split('\0')
+      .slice(1)
+      .map((block) => {
+        const [date, ...files] = block
+          .split('\n')
+          .map((s) => s.trim())
+          .filter(Boolean)
+        return {
+          date,
+          files: files.filter((f) => f.startsWith(prefix)).map((f) => f.slice(prefix.length))
+        }
       })
-    }
+    return { shallow, commits }
+  } catch {
+    return null
   }
-  return rows
 }
 
 export async function scanKnowledge({
   root: rootArg,
   profile: profilePath,
-  baseline: baselinePath
+  days = 90,
+  now = new Date()
 }) {
   const root = await realpath(path.resolve(rootArg))
   if (!(await lstat(root)).isDirectory()) {
@@ -149,29 +149,23 @@ export async function scanKnowledge({
   }
   const profileBytes = await readFile(profilePath)
   const profile = JSON.parse(profileBytes.toString('utf8'))
-  if (
-    !Array.isArray(profile.include) ||
-    !Array.isArray(profile.extensions) ||
-    !Array.isArray(profile.rules)
-  ) {
-    throw new Error('Profile requires include, extensions and rules arrays.')
+  if (!Array.isArray(profile.include) || !profile.include.length) {
+    throw new Error('Profile requires a non-empty include array.')
   }
-  if (!profile.include.length) {
-    throw new Error('Empty scan scope is not allowed.')
-  }
-  const rules = profile.rules.map((rule) => ({
-    ...rule,
-    matcher: new RegExp(rule.pattern, 'i'),
-    fields: (rule.fields ?? []).map((field) => ({
-      ...field,
-      matcher: new RegExp(field.pattern, 'i')
-    }))
+  const regex = (pattern, flags = 'i') => new RegExp(pattern, flags)
+  const entryPoints = (profile.entryPoints ?? []).map((p) => regex(p))
+  const tradeoffPaths = (profile.tradeoff?.paths ?? []).map((p) => regex(p))
+  const tradeoffWords = regex(profile.tradeoff?.pattern ?? '取舍|trade-?off')
+  const drift = (profile.drift ?? []).map((item) => ({
+    label: item.label,
+    matcher: regex(item.pattern, 'giu')
   }))
+  const excludes = (profile.exclude ?? []).map((x) => x.replace(/\\/g, '/').replace(/\/$/, ''))
   const files = [],
     skipped = [],
     errors = [],
     seen = new Set()
-  const excludes = (profile.exclude ?? []).map((x) => x.replace(/\\/g, '/').replace(/\/$/, ''))
+
   async function walk(absolute) {
     const relative = normalized(path.relative(root, absolute))
     if (seen.has(relative)) {
@@ -196,49 +190,44 @@ export async function scanKnowledge({
       }
       return
     }
-    const extension = path.extname(relative).toLowerCase()
-    if (!info.isFile() || !profile.extensions.includes(extension)) {
+    if (!info.isFile() || path.extname(relative).toLowerCase() !== '.md') {
       return
     }
     const bytes = await readFile(absolute)
-    const content = bytes.toString('utf8')
-    const rule = rules.find((item) => item.matcher.test(relative))
-    const shape = extension === '.md' ? markdownShape(content) : null
-    const missingFields = shape
-      ? (rule?.fields ?? [])
-          .filter((field) => !field.matcher.test(shape.lines.join('\n')))
-          .map((field) => field.label)
-      : []
-    const file = {
+    const text = bytes.toString('utf8')
+    const shape = markdownShape(text)
+    const driftHits = drift
+      .map(({ label, matcher }) => {
+        const samples = []
+        let count = 0
+        shape.prose.forEach((line, index) => {
+          const found = line.match(matcher)?.length ?? 0
+          count += found
+          if (found && samples.length < 3) {
+            samples.push({ line: index + 1, text: line.trim().slice(0, 140) })
+          }
+        })
+        return { label, count, samples }
+      })
+      .filter((item) => item.count)
+    const tradeoffRequired = tradeoffPaths.some((p) => p.test(relative))
+    files.push({
       file: relative,
-      url: pathToFileURL(absolute).href,
-      type: rule?.type ?? '未分类',
-      scope: rule?.scope ?? profile.defaultScope ?? '未分类',
-      extension,
-      bytes: bytes.length,
-      lines: content.split(/\r?\n/).length,
       sha256: hash(bytes),
-      title: shape?.headings[0]?.title ?? path.basename(relative),
-      headings: shape?.headings ?? [],
-      paragraphs: shape?.paragraphs ?? [],
-      listItems: shape?.listItems ?? null,
-      missingFields,
-      longParagraphs:
-        shape?.paragraphs.filter((item) => item.chars > (profile.longParagraphChars ?? 300)) ?? [],
-      acceptanceRows: shape ? acceptanceRows(shape.lines, profile.acceptanceTableHeaders) : [],
+      chars: [...text].length,
+      lines: shape.lines.length,
+      title: shape.headings[0]?.title ?? path.basename(relative),
+      paragraphs: shape.paragraphs,
+      entryPoint: entryPoints.some((p) => p.test(relative)),
+      drift: driftHits,
+      tradeoff: tradeoffRequired
+        ? { required: true, found: tradeoffWords.test(shape.prose.join('\n')) }
+        : null,
       links: [],
       inbound: [],
-      contentInspected: Boolean(shape)
-    }
-    if (shape && file.type === '变更记录') {
-      file.changelog = {
-        groups: shape.headings.filter((h) => h.level === 2).length,
-        listItems: shape.listItems,
-        paragraphs: shape.paragraphs.length,
-        longestParagraph: Math.max(0, ...shape.paragraphs.map((p) => p.chars))
-      }
-    }
-    files.push(file)
+      viaDirectory: [],
+      churn: null
+    })
   }
   for (const relative of profile.include) {
     const source = await safeSource(root, relative)
@@ -257,7 +246,10 @@ export async function scanKnowledge({
   }
   files.sort((a, b) => a.file.localeCompare(b.file, 'en'))
   const byPath = new Map(files.map((file) => [file.file, file]))
-  for (const file of files.filter((file) => file.extension === '.md')) {
+
+  // A link to a directory reaches its README; without one, every Markdown file
+  // directly inside is discoverable from that listing (weaker than a direct link).
+  for (const file of files) {
     try {
       const checked = await checkFiles(root, [file.file])
       if (checked.files[0].sha256 !== file.sha256) {
@@ -268,128 +260,253 @@ export async function scanKnowledge({
       }
       file.links = checked.files[0].links
       for (const link of file.links) {
-        if (link.status === 'exists' && byPath.has(link.resolved)) {
-          byPath.get(link.resolved).inbound.push({ file: file.file, line: link.line })
+        if (link.status !== 'exists' || link.resolved === file.file) {
+          continue
+        }
+        const from = { file: file.file, line: link.line }
+        if (byPath.has(link.resolved)) {
+          byPath.get(link.resolved).inbound.push(from)
+          continue
+        }
+        const readme = byPath.get(`${link.resolved}/README.md`)
+        if (readme) {
+          readme.inbound.push(from)
+          continue
+        }
+        for (const child of files) {
+          if (path.posix.dirname(child.file) === link.resolved) {
+            child.viaDirectory.push(from)
+          }
         }
       }
     } catch (error) {
       errors.push({ file: file.file, message: error.message })
     }
   }
+
   const paragraphIndex = new Map()
   for (const file of files) {
     for (const paragraph of file.paragraphs) {
       if (paragraph.chars < (profile.duplicateParagraphChars ?? 80)) {
         continue
       }
-      const key = hash(paragraph.text)
-      const occurrences = paragraphIndex.get(key) ?? {
-        text: paragraph.text,
+      const group = paragraphIndex.get(hash(paragraph.text)) ?? {
+        text: paragraph.text.slice(0, 140),
         chars: paragraph.chars,
         occurrences: []
       }
-      occurrences.occurrences.push({ file: file.file, line: paragraph.line })
-      paragraphIndex.set(key, occurrences)
+      group.occurrences.push({ file: file.file, line: paragraph.line })
+      paragraphIndex.set(hash(paragraph.text), group)
     }
   }
-  const featureGroups = {}
-  if (profile.featureDirectory) {
+
+  const history = gitHistory(root)
+  let git = null
+  if (history) {
+    const since = now.getTime() - days * 86400000
+    const recent = history.commits.filter((c) => Date.parse(c.date) >= since)
+    const scanned = new Set(files.map((f) => f.file))
     for (const file of files) {
-      const prefix = `${profile.featureDirectory}/`
-      if (!file.file.startsWith(prefix)) {
-        continue
+      file.churn = {
+        commits: recent.filter((c) => c.files.includes(file.file)).length,
+        lastChanged: history.commits.find((c) => c.files.includes(file.file))?.date ?? null
       }
-      const tail = file.file.slice(prefix.length).split('/')
-      if (tail.length < 2) {
-        continue
+    }
+    const depth = profile.codeAreaDepth ?? 4
+    const areas = new Map()
+    for (const commit of recent) {
+      const touchedDocs = commit.files.some((f) => scanned.has(f))
+      const touchedAreas = new Set(
+        commit.files
+          .filter(
+            (f) =>
+              (profile.codeRoots ?? []).some((r) => f === r || f.startsWith(`${r}/`)) &&
+              !f.endsWith('.md')
+          )
+          .map((f) => path.posix.dirname(f).split('/').slice(0, depth).join('/'))
+      )
+      for (const area of touchedAreas) {
+        const entry = areas.get(area) ?? { area, commits: 0, withDocs: 0 }
+        entry.commits++
+        if (touchedDocs) {
+          entry.withDocs++
+        }
+        areas.set(area, entry)
       }
-      ;(featureGroups[tail[0]] ??= []).push(file.file)
+    }
+    git = {
+      shallow: history.shallow,
+      days,
+      commits: recent.length,
+      codeAreas: [...areas.values()].sort(
+        (a, b) => b.commits - a.commits || a.area.localeCompare(b.area, 'en')
+      )
     }
   }
+
   const links = files.flatMap((file) => file.links.map((link) => ({ file: file.file, ...link })))
-  const result = {
-    schemaVersion: 1,
-    scannerVersion: '0.3.0-pilot',
+  const largeDocChars = profile.largeDocChars ?? 12000
+  const signals = {
+    orphans: files
+      .filter((f) => !f.entryPoint && !f.inbound.length && !f.viaDirectory.length)
+      .map((f) => f.file),
+    duplicates: [...paragraphIndex.values()].filter((group) => group.occurrences.length > 1),
+    large: files
+      .filter((f) => f.chars > largeDocChars)
+      .sort((a, b) => b.chars - a.chars)
+      .map((f) => ({ file: f.file, chars: f.chars })),
+    drift: files
+      .filter((f) => f.drift.length)
+      .map((f) => ({
+        file: f.file,
+        total: f.drift.reduce((s, d) => s + d.count, 0),
+        hits: f.drift
+      }))
+      .sort((a, b) => b.total - a.total),
+    missingTradeoffs: files.filter((f) => f.tradeoff && !f.tradeoff.found).map((f) => f.file),
+    linkErrors: links
+      .filter((link) => link.status === 'error')
+      .map(({ file, line, target, reason }) => ({ file, line, target, reason }))
+  }
+  for (const file of files) {
+    delete file.paragraphs
+  }
+  return {
+    schemaVersion: 2,
+    scannerVersion: VERSION,
     root,
-    generatedAt: new Date().toISOString(),
+    generatedAt: now.toISOString(),
     profile: {
       id: profile.id,
       version: profile.version,
-      status: profile.status,
       sha256: hash(profileBytes),
-      contractSource: profile.contractSource,
-      scopeNote: profile.scopeNote,
-      suggestedSessions: profile.suggestedSessions ?? [],
       include: profile.include,
       exclude: profile.exclude ?? []
     },
-    thresholds: {
-      longParagraphChars: profile.longParagraphChars ?? 300,
-      duplicateParagraphChars: profile.duplicateParagraphChars ?? 80
-    },
+    thresholds: { largeDocChars, duplicateParagraphChars: profile.duplicateParagraphChars ?? 80 },
     summary: {
-      files: files.length,
-      markdown: files.filter((file) => file.extension === '.md').length,
+      markdown: files.length,
       references: links.length,
-      linkErrors: links.filter((link) => link.status === 'error').length,
-      uncheckedReferences: links.filter((link) => link.status === 'unchecked' || link.uncheckedPart)
-        .length,
-      longParagraphs: files.reduce((sum, file) => sum + file.longParagraphs.length, 0),
-      recognizedAcceptanceRows: files.reduce((sum, file) => sum + file.acceptanceRows.length, 0)
+      linkErrors: signals.linkErrors.length,
+      orphans: signals.orphans.length,
+      duplicates: signals.duplicates.length,
+      large: signals.large.length,
+      driftFiles: signals.drift.length,
+      missingTradeoffs: signals.missingTradeoffs.length,
+      commits: git?.commits ?? null
     },
+    git,
+    signals,
     files,
     errors,
     skipped,
-    featureGroups,
-    duplicates: [...paragraphIndex.values()].filter((group) => group.occurrences.length > 1),
-    baseline: null,
     limits: [
-      '文件/链接存在不证明语义正确、实际加载或运行通过。',
-      '验收表行数只统计指定表头；不能推算全部验收覆盖率。',
-      '无入链仅指扫描范围的 Markdown 链接，不证明未使用。',
-      '未提供治理验收、合入或反哺记录；无法判断整改完成。',
-      ...(profile.limits ?? [])
+      '信号不是结论：候选、强弱与处置由人或模型按 project-knowledge 的扫描流程判断。',
+      '只读 Markdown；HTML 指南、原型与源码注释不做内容检查。',
+      '入链只算扫描范围内的 Markdown 链接；工具加载、HTML 链接与口头引用不在图中。',
+      ...(git
+        ? git.shallow
+          ? ['Git 历史是浅克隆，热点与最后改动时间不完整。']
+          : []
+        : ['未读到 Git 历史，热点与改动时间缺失。'])
     ]
   }
-  if (baselinePath) {
-    const baseline = JSON.parse(await readFile(baselinePath, 'utf8'))
-    if (
-      baseline.schemaVersion !== result.schemaVersion ||
-      baseline.scannerVersion !== result.scannerVersion ||
-      baseline.root !== root ||
-      baseline.profile?.sha256 !== result.profile.sha256
-    ) {
-      result.baseline = { comparable: false, reason: '仓根、扫描器版本或映射不同，不能直接比较。' }
-    } else {
-      const previous = new Map(baseline.files.map((file) => [file.file, file.sha256]))
-      result.baseline = {
-        comparable: true,
-        generatedAt: baseline.generatedAt,
-        added: files.filter((file) => !previous.has(file.file)).map((file) => file.file),
-        changed: files
-          .filter((file) => previous.has(file.file) && previous.get(file.file) !== file.sha256)
-          .map((file) => file.file),
-        removed: baseline.files.filter((file) => !byPath.has(file.file)).map((file) => file.file)
-      }
+}
+
+const cell = (value) =>
+  String(value ?? '')
+    .replace(/[<>&]/g, (c) => ({ '<': '&lt;', '>': '&gt;', '&': '&amp;' })[c])
+    .replace(/\|/g, '\\|')
+    .replace(/\s+/g, ' ')
+
+export function renderMarkdown(result, top = 10) {
+  const { signals, git, files } = result
+  const byPath = new Map(files.map((f) => [f.file, f]))
+  const out = [
+    `# 知识库扫描信号 · ${result.generatedAt.slice(0, 10)}`,
+    '',
+    `范围：${result.summary.markdown} 篇 Markdown，映射 \`${cell(result.profile.id)}@${cell(result.profile.version)}\`；Git：${git ? `近 ${git.days} 天 ${git.commits} 次提交${git.shallow ? '（浅克隆，不完整）' : ''}` : '未读到'}。`,
+    '',
+    '> 信号不是结论。按 project-knowledge 的扫描流程读原文、判断候选强弱，再交人挑一项整改。',
+    ''
+  ]
+  const table = (title, head, rows, empty = '无。') => {
+    out.push(`## ${title}`, '')
+    if (!rows.length) {
+      out.push(empty, '')
+      return
     }
+    out.push(
+      `| ${head.join(' | ')} |`,
+      `|${head.map(() => '---').join('|')}|`,
+      ...rows.slice(0, top).map((r) => `| ${r.map(cell).join(' | ')} |`)
+    )
+    if (rows.length > top) {
+      out.push('', `另有 ${rows.length - top} 项见 signals.json。`)
+    }
+    out.push('')
   }
-  return result
-}
-
-export function renderReport(template, data) {
-  const marker = '/*__KNOWLEDGE_DATA__*/null'
-  if (!template.includes(marker)) {
-    throw new Error('Report template marker missing.')
-  }
-  return template.replace(marker, () =>
-    JSON.stringify(data)
-      .replace(/</g, '\\u003c')
-      .replace(/\u2028/g, '\\u2028')
-      .replace(/\u2029/g, '\\u2029')
+  const hotDocs = files
+    .filter((f) => f.churn?.commits)
+    .sort((a, b) => b.churn.commits - a.churn.commits || b.chars - a.chars)
+  table(
+    '文档改动热点',
+    ['文档', '窗口内提交', '字符', '入链'],
+    hotDocs.map((f) => [f.file, f.churn.commits, f.chars, f.inbound.length])
   )
+  table(
+    '代码改动热点与文档同步',
+    ['代码区域', '窗口内提交', '同提交改了文档'],
+    (git?.codeAreas ?? []).map((a) => [a.area, a.commits, a.withDocs])
+  )
+  table(
+    '删除测试 · 没人链接',
+    ['文档', '字符', '最后改动'],
+    signals.orphans.map((f) => [
+      f,
+      byPath.get(f).chars,
+      byPath.get(f).churn?.lastChanged?.slice(0, 10) ?? ''
+    ])
+  )
+  table(
+    '删除测试 · 超长文档',
+    ['文档', '字符'],
+    signals.large.map((f) => [f.file, f.chars])
+  )
+  table(
+    '删除测试 · 重复段落',
+    ['出现位置', '段落开头'],
+    signals.duplicates.map((d) => [
+      d.occurrences.map((o) => `${o.file}:${o.line}`).join(' / '),
+      d.text.slice(0, 60)
+    ])
+  )
+  table(
+    '漂移细节（精确但易过期）',
+    ['文档', '命中', '示例'],
+    signals.drift.map((d) => [
+      d.file,
+      d.hits.map((h) => `${h.label} ${h.count}`).join('，'),
+      d.hits[0].samples[0]
+        ? `L${d.hits[0].samples[0].line} ${d.hits[0].samples[0].text.slice(0, 70)}`
+        : ''
+    ])
+  )
+  table(
+    '缺取舍',
+    ['文档'],
+    signals.missingTradeoffs.map((f) => [f])
+  )
+  table(
+    '机械错误 · 断链',
+    ['位置', '目标', '原因'],
+    signals.linkErrors.map((l) => [`${l.file}:${l.line}`, l.target, l.reason])
+  )
+  out.push('## 限制', '', ...result.limits.map((l) => `- ${l}`), '')
+  return out.join('\n')
 }
 
-export async function writeReport(result, outArg) {
+export async function writeSignals(result, outArg) {
   const requested = path.resolve(outArg)
   if (within(result.root, requested)) {
     throw new Error('Report output must be outside the scanned root.')
@@ -400,7 +517,7 @@ export async function writeReport(result, outArg) {
   if (within(result.root, out)) {
     throw new Error('Report output must be outside the scanned root.')
   }
-  for (const name of ['knowledge.json', 'knowledge.html']) {
+  for (const name of ['signals.json', 'signals.md']) {
     try {
       const info = await lstat(path.join(out, name))
       if (!info.isFile() || info.isSymbolicLink() || info.nlink > 1) {
@@ -412,13 +529,9 @@ export async function writeReport(result, outArg) {
       }
     }
   }
-  const template = await readFile(
-    new URL('../assets/knowledge-report.html', import.meta.url),
-    'utf8'
-  )
   await mkdir(out, { recursive: true })
-  await writeFile(path.join(out, 'knowledge.json'), `${JSON.stringify(result, null, 2)}\n`)
-  await writeFile(path.join(out, 'knowledge.html'), renderReport(template, result))
+  await writeFile(path.join(out, 'signals.json'), `${JSON.stringify(result, null, 2)}\n`)
+  await writeFile(path.join(out, 'signals.md'), renderMarkdown(result))
 }
 
 async function main(args) {
@@ -429,12 +542,12 @@ async function main(args) {
       continue
     }
     if (
-      !['--root', '--profile', '--out', '--baseline'].includes(args[i]) ||
+      !['--root', '--profile', '--out', '--days'].includes(args[i]) ||
       !args[i + 1] ||
       args[i + 1].startsWith('--')
     ) {
       throw new Error(
-        'Usage: scan-knowledge.mjs --root ROOT --profile JSON --out OUTSIDE_ROOT [--baseline JSON] [--check]'
+        'Usage: scan-knowledge.mjs --root ROOT --profile JSON --out OUTSIDE_ROOT [--days N] [--check]'
       )
     }
     const key = args[i++].slice(2)
@@ -446,8 +559,11 @@ async function main(args) {
   if (!options.root || !options.profile || !options.out) {
     throw new Error('--root, --profile and --out are required.')
   }
-  const result = await scanKnowledge(options)
-  await writeReport(result, options.out)
+  if (options.days !== undefined && !(Number(options.days) > 0)) {
+    throw new Error('--days must be a positive number.')
+  }
+  const result = await scanKnowledge({ ...options, days: Number(options.days ?? 90) })
+  await writeSignals(result, options.out)
   console.log(
     JSON.stringify(
       {

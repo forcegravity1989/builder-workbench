@@ -6,11 +6,9 @@
 
 | 问题 | 参考 | 用法 |
 |---|---|---|
-| 文档承载什么、怎么写 | [文档契约](../../project-knowledge/references/document-contracts.md) | 只读受影响类型；目标项目已认可规则优先，候选需明确采用 |
-| 特性、指标、验收、用例怎么关联 | [特性与证据](../../project-knowledge/references/feature-evidence.md) | 新价值展开指标；已有行为修复复用已有衡量 |
-| 清旧债和反哺 | [维护方法](../../project-knowledge/references/maintenance.md) | 在原任务/PR 记录真实反馈，修正确归属 |
-| 交给新任务 | [会话运作](../../project-knowledge/references/session-workflow.md) | 交接版本、证据、已认可决定及下一动作 |
-| 业界借鉴及边界 | [来源](../../project-knowledge/references/sources.md) | 解释方法来由，不要求联网通读上游才开发 |
+| 文档承载什么、怎么写；指标、验收点、用例、证据的最少字段 | [文档契约](../../project-knowledge/references/document-contracts.md) | 只读受影响类型；目标项目已认可规则优先，候选需明确采用 |
+| BW 路线、资料职责与迁移时的证据边界 | [BW 适配](../../project-knowledge/references/projects/bw.md) | 目标、实现、验证与历史分列；旧平台验收不复制成当前通过 |
+| 清旧债、记取舍、反哺方法 | [project-knowledge](../../project-knowledge/SKILL.md) 的三条检验与「整改一块」 | 在原任务/PR 记录真实反馈，修正确归属 |
 
 ## 一个任务的最小关系
 

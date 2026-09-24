@@ -1,0 +1,89 @@
+<title>{{仓名}} 知识扫描</title>
+<!--
+  候选报告骨架：复制到目标仓之外再填写；写法见 references/scan.md §4。
+  自包含、无外部脚本。发布为 artifact 时去掉本注释。
+  每个候选复制一张 <article class="card">；强度用 strong / explore / guess，检验标签用 t-del / t-drift / t-why / t-mech。
+-->
+<style>
+:root {
+  --bg: #ffffff; --surface: #f5f5f7; --card: #ffffff; --text: #1d1d1f; --muted: #6e6e73;
+  --line: color-mix(in srgb, var(--text) 12%, transparent); --accent: #0071e3;
+  --strong-bg: #d9f8dc; --strong-fg: #1d622c; --explore-bg: #ffead9; --explore-fg: #7c4602;
+  --guess-bg: #ececef; --guess-fg: #48484d; --gone: #b3261e; --kept: #1d622c; --callout: #fff6e5;
+  --font: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, "PingFang SC", "Microsoft YaHei", "Noto Sans CJK SC", sans-serif;
+  --mono: ui-monospace, "SF Mono", SFMono-Regular, Menlo, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark; --bg: #111214; --surface: #1b1c1f; --card: #16171a; --text: #ececef; --muted: #a1a1a8;
+    --accent: #4aa0ff; --strong-bg: #173a22; --strong-fg: #8fe0a4; --explore-bg: #3d2a12; --explore-fg: #f5c07a;
+    --guess-bg: #2a2b30; --guess-fg: #c7c7cc; --gone: #ff8a80; --kept: #8fe0a4; --callout: #2e2616;
+  }
+}
+:root[data-theme="dark"] {
+  color-scheme: dark; --bg: #111214; --surface: #1b1c1f; --card: #16171a; --text: #ececef; --muted: #a1a1a8;
+  --accent: #4aa0ff; --strong-bg: #173a22; --strong-fg: #8fe0a4; --explore-bg: #3d2a12; --explore-fg: #f5c07a;
+  --guess-bg: #2a2b30; --guess-fg: #c7c7cc; --gone: #ff8a80; --kept: #8fe0a4; --callout: #2e2616;
+}
+body { background: var(--bg); color: var(--text); font: 14px/1.6 var(--font); padding-inline: 16px; padding-block: 32px 64px; }
+main { max-width: 920px; margin: 0 auto; display: grid; gap: 28px; }
+h1 { font-size: 24px; margin: 0; text-wrap: balance; letter-spacing: -0.01em; }
+h2 { font-size: 17px; margin: 0 0 12px; }
+h3 { font-size: 15px; margin: 0; text-wrap: balance; }
+.meta { color: var(--muted); margin: 6px 0 0; }
+.stats { display: flex; flex-wrap: wrap; gap: 8px 20px; margin: 14px 0 0; padding: 0; list-style: none; font-variant-numeric: tabular-nums; }
+.stats b { font-size: 16px; }
+.legend { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+.badge, .tag { display: inline-flex; align-items: center; height: 22px; padding: 0 8px; border-radius: 6px; font-size: 12px; font-weight: 600; white-space: nowrap; }
+.strong { background: var(--strong-bg); color: var(--strong-fg); }
+.explore { background: var(--explore-bg); color: var(--explore-fg); }
+.guess { background: var(--guess-bg); color: var(--guess-fg); }
+.tag { background: transparent; border: 1px solid var(--line); color: var(--muted); font-weight: 500; }
+.cards { display: grid; gap: 16px; }
+.card { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 18px 20px; display: grid; gap: 10px; }
+.card header { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.card header h3 { flex: 1 1 320px; }
+.files { font: 12.5px/1.5 var(--mono); color: var(--muted); margin: 0; overflow-wrap: anywhere; }
+.card p { margin: 0; max-width: 72ch; }
+.label { color: var(--muted); font-size: 12px; font-weight: 600; letter-spacing: 0.04em; margin-right: 6px; }
+.wins { display: flex; flex-wrap: wrap; gap: 6px; margin: 0; padding: 0; list-style: none; }
+.wins li { background: var(--surface); border-radius: 6px; padding: 2px 8px; font-size: 13px; }
+.ba { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 10px; }
+.ba > div { background: var(--surface); border-radius: 8px; padding: 10px 12px; }
+.ba h4 { margin: 0 0 6px; font-size: 12px; color: var(--muted); letter-spacing: 0.04em; }
+.ba ul { margin: 0; padding-left: 18px; }
+.ba .gone { color: var(--gone); text-decoration: line-through; }
+.ba .moved { color: var(--accent); }
+.ba .kept { color: var(--kept); }
+.callout { background: var(--callout); border-radius: 8px; padding: 8px 12px; font-size: 13px; }
+.panel { background: var(--surface); border-radius: 12px; padding: 18px 20px; }
+.panel ul { margin: 0; padding-left: 18px; }
+a { color: var(--accent); }
+code { font: 12.5px var(--mono); background: var(--surface); border-radius: 4px; padding: 0 4px; }
+</style>
+<main>
+  <header>
+    <h1>{{仓名}} 知识扫描</h1>
+    <p class="meta">{{日期}} · 基于 {{commit}} · 范围 {{范围}}</p>
+    <ul class="stats"><li><b>{{n}}</b> 篇 Markdown</li><li><b>{{n}}</b> 次提交（近 {{d}} 天）</li><li><b>{{n}}</b> 个候选</li></ul>
+    <div class="legend"><span class="badge strong">强</span><span class="badge explore">值得探索</span><span class="badge guess">推测</span><span class="tag">删除测试</span><span class="tag">漂移</span><span class="tag">取舍</span><span class="tag">机械</span></div>
+  </header>
+
+  <section class="cards" aria-label="候选">
+    <article class="card">
+      <header><h3>{{动词开头的处置}}</h3><span class="badge strong">强</span><span class="tag">漂移</span></header>
+      <p class="files">{{涉及文件}}</p>
+      <p><span class="label">问题</span>{{一句}}</p>
+      <p><span class="label">处置</span>{{一句}}</p>
+      <ul class="wins"><li>{{收益短语}}</li></ul>
+      <div class="ba">
+        <div><h4>改前</h4><ul><li class="kept">{{保留的段}}</li><li class="gone">{{删掉的段}}</li></ul></div>
+        <div><h4>改后</h4><ul><li>{{新结构}}</li><li class="moved">{{迁去哪里}}</li></ul></div>
+      </div>
+      <p class="callout">{{需拍板或风险，没有就删掉本行}}</p>
+    </article>
+  </section>
+
+  <section class="panel"><h2>首选推荐</h2><p>{{先做哪项、为什么}}</p></section>
+  <section class="panel"><h2>看过但没列入</h2><ul><li>{{信号及原因}}</li></ul></section>
+</main>
