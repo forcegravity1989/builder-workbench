@@ -26,11 +26,11 @@
    | 3 | 进行中 n>0 | `working` / `PreToolUse` | 敲键盘 | `#号 标题 · 在跑` |
    | 4 | 都没有 | `idle` / `SessionEnd` | **撤掉这张会话卡** | — |
 
-   - 同档多张:代表 = 最近 `updated_at` 的那张,数量进括号。标题截 48 字(Clawd 截 80)。
+   - 同档多张:代表 = 最近 `updated_at` 的那张,数量进括号。标题截 48 字(Clawd 截 80)。拖卡后的局部更新不改 `updated_at`,下一次 gather 可能换一张代表、标题跟着变——只是标题,状态不变,接受。
    - `session_id = bw:<slug>`,一个项目一条;Clawd 自己加 `agent_id:` 前缀,不与别的应用撞。
    - 报文只带生命周期元数据:四个必填 + `session_title` + `cwd`(工作区路径)。不带正文、不带提示词、不带 token。
    - 不看会话文件、不猜 agent 在想什么——那是 Clawd 自己 hook 的本职。
-3. **不重发、不阻塞、不重试**:桥上记「上次推过的报告」,同项目同报告跳过;从没推过且这会儿没活,不为「没事」发 `SessionEnd`。发送在独立 tokio 任务里,成功 / 失败各写一行对照日志(`bw.log`,模块 `pet`),不进 toast、不进 ViewModel。
+3. **不重发、不阻塞、不重试**:「发不发」是内核函数 `pet::should_send`(可测):同项目同报告跳过;换项目或报告变了就发;**重启后第一次观察到没活也发一次 `SessionEnd`**,让上一个进程留给 Clawd 的卡撤掉(杀进程重开要收敛到同一个样子)。发送在独立 tokio 任务里,成功 / 失败各写一行对照日志(`bw.log`,模块 `pet`),不进 toast、不进 ViewModel。
 4. **Agent ID 自己算**:`custom-<slug>-<sha256(可执行文件路径)前 12 位>`,slug 由文件名去扩展名、`-`/`_` 换空格、小写、非字母数字换 `-`、截 32 得到;Windows 路径先小写。单测用上游 Node 实现算出的两组向量钉死。注册这一下必须人做(Clawd 的 prefs 只读)。
 5. **探活三样分开显示**(Connector 页,类型「桌面宠物」):
    - 装:macOS 读 `/Applications` 或 `~/Applications` 的 `Clawd on Desk.app` 及其 Info.plist 版本;Windows 看 `%LOCALAPPDATA%\Programs\Clawd on Desk\Clawd on Desk.exe` 等常见位置(版本读不到就写读不到);Linux 认不出 → 「没认出装在哪(不等于没装)」。
@@ -84,7 +84,7 @@
 - **R2 报文形状**:四个必填字段 + `session_title` + `cwd`,无正文 / 提示词;`SessionEnd` 报文 `state: idle`(单测)。
 - **R3 id 对齐**:`agent_id_for` 与上游算法在 posix / win32 两组向量上逐字节相同(单测);详情页显示的 id 与 Clawd 注册后卡片一致(人核)。
 - **R4 零阻塞**:`kick_pet` 起独立任务、不 await;连不上的端口在 2 秒内返回 `Err`(单测);日志有 `pet` 行,toast 没有。
-- **R5 不重发**:同项目同报告不发第二遍;从未推过且无活不发 `SessionEnd`(桥上判据,E2E 读日志核)。
+- **R5 发送判据**:同项目同报告不发第二遍;首次观察(含没活)必发一次;`should_send` 单测覆盖,E2E 读日志核。
 - **R6 探活三样分开**:Connector 页详情三行各自陈述事实;没在跑 = 还没用上(不红);读不到 prefs = 不知道。
 - **R7 Codex 包**:只复制已缓存的、不覆盖已有、`pet.json` 形状符合 Clawd 校验(单测);toast 三个数。
 - **R8 门禁**:AGENTS「提交前门禁」全过;`verify --profile pr` 带本特性 suite(定义见下,实现随带入补)。

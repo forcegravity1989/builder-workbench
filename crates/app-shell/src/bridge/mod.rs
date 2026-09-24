@@ -1409,17 +1409,11 @@ fn kick_pet(ui: &mut vm_build::UiState, gathered: &vm_build::Gathered) {
         return;
     };
     let report = bw::app::pet::derive(issues);
-    let same = ui
-        .pet_last
-        .as_ref()
-        .is_some_and(|(p, r)| *p == pid && *r == report);
-    if same {
+    if !bw::app::pet::should_send(ui.pet_last.as_ref(), pid, &report) {
         return;
     }
-    // 从没推过、这会儿也没活:没有卡可撤,记下就好,不为「没事」发一条。
-    let first_and_empty = ui.pet_last.is_none() && report.is_none();
     ui.pet_last = Some((pid, report.clone()));
-    if first_and_empty || gathered.clawd.agent_id.is_empty() {
+    if gathered.clawd.agent_id.is_empty() {
         return;
     }
     let agent_id = gathered.clawd.agent_id.clone();
@@ -1431,9 +1425,12 @@ fn kick_pet(ui: &mut vm_build::UiState, gathered: &vm_build::Gathered) {
     let state = report.map(|r| r.state.wire().0).unwrap_or("SessionEnd");
     tokio::spawn(async move {
         match bw_engine::clawd::send(&body).await {
-            Ok(code) => {
-                bw_engine::dlog!(ok, "pet", "clawd /state {code} slug={slug} state={state}")
-            }
+            Ok(200) => bw_engine::dlog!(ok, "pet", "clawd /state 200 slug={slug} state={state}"),
+            Ok(code) => bw_engine::dlog!(
+                warn,
+                "pet",
+                "clawd /state {code} slug={slug} state={state}(204=没注册或被关,4xx=报文不对)"
+            ),
             Err(e) => bw_engine::dlog!(warn, "pet", "clawd 没收到 state={state}:{e}(不重试)"),
         }
     });

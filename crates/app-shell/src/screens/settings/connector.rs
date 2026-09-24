@@ -326,8 +326,8 @@ fn connector_info(key: &str) -> ConnectorInfo {
         "clawd" => ConnectorInfo {
             supplies: vec![
                 "桌面宠物跟着活的状态变:进行中它在跑、待评审它举手、阻塞它出错、没活撤卡",
-                "Workbench 只推状态(它的自定义 agent 协议 v1),不管审批、不读它的会话",
-                "它没开就当离线:300ms 超时、失败静默、不重试,绝不挡住 Workbench 自己的事",
+                "Workbench 只推状态,不管审批、不读它的会话",
+                "它没开就当离线:不重试、不弹窗,不影响 Workbench 自己的事",
             ],
             install: Install::RunIt(
                 "装 Clawd on Desk 并开着;到它的「设置 → Agents」加一条发现路径指向下面这个\
@@ -357,13 +357,18 @@ fn clawd_section(c: &ClawdProbeVm, bridge: Bridge) -> Element {
         .clone()
         .unwrap_or_else(|| "没认出装在哪(不等于没装;Linux 的 AppImage 认不出)".into());
     let running = match &c.running {
-        Ok(port) => format!("在跑,端口 {port}(~/.clawd/runtime.json)"),
+        Ok(port) => format!("在跑,端口 {port}"),
         Err(why) => format!("没在跑:{why}"),
     };
     let registered = match c.registered {
-        Some(true) => "已注册:它的 prefs 里有这个 Agent ID".to_string(),
-        Some(false) => "还没注册:它的 prefs 里没有这个 Agent ID".to_string(),
-        None => format!("不知道:读不到 {}", c.prefs_path),
+        Some(true) => "已注册:它的设置里登记了这个 Agent ID".to_string(),
+        Some(false) => "还没注册:它的设置里没有这个 Agent ID".to_string(),
+        None => format!("不知道:读不到它的设置文件 {}", c.prefs_path),
+    };
+    let agent_id = if c.agent_id.is_empty() {
+        "读不到 Workbench 自己的路径,算不出 Agent ID".to_string()
+    } else {
+        c.agent_id.clone()
     };
     rsx! {
         h3 { class: "section-title", "接上了没" }
@@ -380,14 +385,14 @@ fn clawd_section(c: &ClawdProbeVm, bridge: Bridge) -> Element {
             dt { "可执行文件" }
             dd { span { class: "mono", "{c.exe}" } }
             dt { "Agent ID" }
-            dd { span { class: "mono", "{c.agent_id}" } }
+            dd { span { class: "mono", "{agent_id}" } }
         }
         p { class: "hint",
             "Agent ID 是照 Clawd 的算法从可执行文件路径算的;注册后它卡片上显示的那串应与此一致,不一致说明发现路径指错了文件。"
         }
         h3 { class: "section-title", "Codex 宠物包" }
         p { class: "hint",
-            "把本机 Codex 已缓存的内置宠物(在 Codex 里选过的那几只)配上 manifest 复制到 ~/.codex/pets/,Clawd 下次启动或刷新主题就能选。本机复制,不下载、不分发;已有的包不动。"
+            "把本机 Codex 已缓存的内置宠物(在 Codex 里选过的那几只)配上说明文件复制到 ~/.codex/pets/,Clawd 下次启动或刷新主题就能选。本机复制,不下载、不分发;已有的包不动。"
         }
         button {
             class: "btn btn-secondary",

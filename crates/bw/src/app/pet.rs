@@ -4,7 +4,7 @@
 //! 这是派生视图,不改任何状态;报文发不出去由上层静默。协议字面量(state / event)
 //! 来自 Clawd 自定义 agent 协议,它的主题必须有这个 state,没有的话它回 400。
 
-use crate::model::{Issue, IssueStatus};
+use crate::model::{Issue, IssueStatus, ProjectId};
 use std::path::Path;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -73,6 +73,17 @@ pub fn derive(issues: &[Issue]) -> Option<PetReport> {
 }
 
 /// 一个项目一条 Clawd 会话;Clawd 自己会再加上 agent_id 前缀,不会和别的应用撞。
+/// 桥上要不要发:同项目同报告不发第二遍;换了项目或报告变了就发。第一次观察到
+/// 「没活」也发一次 `SessionEnd`——上一个进程可能给 Clawd 留了张卡,重启后必须撤掉
+/// (杀进程重开要收敛到同一个样子)。
+pub fn should_send(
+    prev: Option<&(ProjectId, Option<PetReport>)>,
+    pid: ProjectId,
+    next: &Option<PetReport>,
+) -> bool {
+    !matches!(prev, Some((p, r)) if *p == pid && r == next)
+}
+
 pub fn session_id(slug: &str) -> String {
     format!("bw:{slug}")
 }
@@ -201,6 +212,25 @@ mod tests {
         let a = derive(&[issue(1, IssueStatus::InReview, 5)]).unwrap();
         let b = derive(&[issue(1, IssueStatus::InReview, 5)]).unwrap();
         assert_eq!(a, b);
+    }
+
+    #[test]
+    fn send_policy_dedupes_per_project_but_always_speaks_on_first_observation() {
+        let pid = IssueId::nil().project_id();
+        let working = derive(&[issue(1, IssueStatus::InProgress, 1)]);
+        // 第一次观察:有活要发,没活也要发(撤上个进程留下的卡)。
+        assert!(should_send(None, pid, &working));
+        assert!(should_send(None, pid, &None));
+        // 同项目同报告不发;报告变了发;没活了发一次撤卡,再没活不再发。
+        let prev = (pid, working.clone());
+        assert!(!should_send(Some(&prev), pid, &working));
+        assert!(should_send(
+            Some(&prev),
+            pid,
+            &derive(&[issue(1, IssueStatus::InReview, 1)])
+        ));
+        assert!(should_send(Some(&prev), pid, &None));
+        assert!(!should_send(Some(&(pid, None)), pid, &None));
     }
 
     #[test]

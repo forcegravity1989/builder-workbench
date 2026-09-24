@@ -29,7 +29,7 @@ Super builder 一边在 Workbench 定方向、审结果,一边把大段时间交
 
 ## 如何获得
 
-随桌面壳内置;要 Clawd on Desk ≥ 1.0(`brew install --cask clawd-on-desk` / `winget install rullerzhou-afk.clawd-on-desk` / 安装包)并开着;在它那边注册一次 Workbench(人做)。设置 → Connector 里能看到接没接上、卡在哪一步。先内部试用。
+随桌面壳内置;要 Clawd on Desk ≥ 1.0(macOS 可 `brew install --cask clawd-on-desk`,其余平台从它的发布页装安装包)并开着;在它那边注册一次 Workbench(人做)。设置 → Connector 里能看到接没接上、卡在哪一步。先内部试用。
 
 ## 飞轮检验(对齐 03)
 

@@ -528,7 +528,7 @@ pub enum ConnectorStatus {
     Blocked,
     /// 没人用到它,也没探到。
     Idle,
-    /// 要填配置才能用,还没填(今天只有 Orca)。
+    /// 要填配置才能用,还没填(Orca 的网页地址、Clawd on Desk 的注册)。
     Unconfigured,
     /// 填了配置,但没有探活实现,不能说「通了」(今天只有 Orca)。
     ConfiguredNoProbe,

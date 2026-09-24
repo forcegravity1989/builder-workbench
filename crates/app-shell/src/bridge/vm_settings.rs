@@ -179,7 +179,7 @@ fn clawd_row(c: &ClawdProbeVm) -> (ConnectorStatus, String) {
         ),
         (Ok(port), None) => (
             ConnectorStatus::Unconfigured,
-            format!("在跑(端口 {port});读不到它的 prefs,注册状态不知道 · {installed}"),
+            format!("在跑(端口 {port});读不到它的设置文件,注册状态不知道 · {installed}"),
         ),
         (Err(why), _) => (ConnectorStatus::Idle, format!("没在跑({why})· {installed}")),
     }

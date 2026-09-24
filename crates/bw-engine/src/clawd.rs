@@ -97,10 +97,6 @@ pub fn parse_runtime(raw: &str) -> Result<Runtime, ClawdError> {
 
 /// 上游 `custom-applications.js` 的 `applicationName`:文件名去扩展名,`-` / `_` /
 /// 空白连串换成一个空格,去首尾;空了就叫 "Custom application"。
-pub fn application_name(exe: &Path) -> String {
-    application_name_str(&exe.to_string_lossy(), cfg!(windows))
-}
-
 /// Node 的 `path.basename`:win32 认 `/` 和 `\`,posix 只认 `/`。
 fn basename(exe: &str, windows: bool) -> &str {
     let cut = if windows {
@@ -257,25 +253,24 @@ pub fn installed() -> Option<Installed> {
         return None;
     }
     if cfg!(windows) {
-        let mut bases = Vec::new();
-        for var in ["LOCALAPPDATA", "PROGRAMFILES"] {
-            if let Ok(v) = std::env::var(var) {
-                bases.push(PathBuf::from(v));
+        // electron-builder 的 NSIS 默认按用户装到 %LOCALAPPDATA%\Programs\<产品名>;
+        // 全机安装才落 %PROGRAMFILES%。人改过目录就认不出——如实「没认出」,不是「没装」。
+        let mut candidates = Vec::new();
+        if let Ok(v) = std::env::var("LOCALAPPDATA") {
+            for dir in ["Clawd on Desk", "clawd-on-desk"] {
+                candidates.push(PathBuf::from(&v).join("Programs").join(dir));
             }
         }
-        for base in bases {
-            for dir in [
-                "Programs\\Clawd on Desk",
-                "Programs\\clawd-on-desk",
-                "Clawd on Desk",
-            ] {
-                let exe = base.join(dir).join("Clawd on Desk.exe");
-                if exe.is_file() {
-                    return Some(Installed {
-                        path: exe,
-                        version: None,
-                    });
-                }
+        if let Ok(v) = std::env::var("PROGRAMFILES") {
+            candidates.push(PathBuf::from(v).join("Clawd on Desk"));
+        }
+        for dir in candidates {
+            let exe = dir.join("Clawd on Desk.exe");
+            if exe.is_file() {
+                return Some(Installed {
+                    path: exe,
+                    version: None,
+                });
             }
         }
     }
@@ -306,7 +301,12 @@ pub struct Probe {
 
 pub fn probe() -> Probe {
     let exe = std::env::current_exe().unwrap_or_default();
-    let agent_id = agent_id_for(&exe);
+    // 读不到自己的路径就没有 id 可算——空串,上层据此不发、不让人去注册一串假的。
+    let agent_id = if exe.as_os_str().is_empty() {
+        String::new()
+    } else {
+        agent_id_for(&exe)
+    };
     Probe {
         installed: installed(),
         running: read_runtime().map_err(|e| e.to_string()),
@@ -406,19 +406,13 @@ pub fn codex_home() -> Option<PathBuf> {
 }
 
 /// Codex 缓存内置图集的位置(`asset_pack.rs`:`cache/tui-pets/v1/assets/<id>-spritesheet-v4.webp`)。
-pub fn codex_builtin_cache_dir() -> Option<PathBuf> {
-    Some(
-        codex_home()?
-            .join("cache")
-            .join("tui-pets")
-            .join("v1")
-            .join("assets"),
-    )
-}
-
-/// Clawd 与 Codex 都认的自定义宠物包目录:`$CODEX_HOME/pets/<目录>/pet.json + 图`。
-pub fn codex_pets_dir() -> Option<PathBuf> {
-    Some(codex_home()?.join("pets"))
+/// Clawd 与 Codex 都认的自定义宠物包目录是 `$CODEX_HOME/pets/<目录>/pet.json + 图`。
+fn codex_builtin_cache_dir_in(codex_home: &Path) -> PathBuf {
+    codex_home
+        .join("cache")
+        .join("tui-pets")
+        .join("v1")
+        .join("assets")
 }
 
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
@@ -436,8 +430,14 @@ pub struct CodexPetsExport {
 /// 的宠物包 —— Clawd 启动 / 刷新主题时会自己把这个目录里的包转成主题。
 /// **本机复制,不分发**:没缓存的一律 `missing`,不去 CDN 下。已有的包不覆盖。
 pub fn export_codex_pets() -> Result<CodexPetsExport, String> {
-    let cache = codex_builtin_cache_dir().ok_or("没有 HOME,定位不到 Codex 目录")?;
-    let pets_dir = codex_pets_dir().ok_or("没有 HOME,定位不到 Codex 目录")?;
+    let home = codex_home().ok_or("没有 HOME,定位不到 Codex 目录")?;
+    export_codex_pets_in(&home)
+}
+
+/// 同上,`codex_home` 由调用方给(测试用临时目录,不碰进程环境变量)。
+pub fn export_codex_pets_in(codex_home: &Path) -> Result<CodexPetsExport, String> {
+    let cache = codex_builtin_cache_dir_in(codex_home);
+    let pets_dir = codex_home.join("pets");
     let mut out = CodexPetsExport {
         pets_dir: pets_dir.clone(),
         ..Default::default()
@@ -610,9 +610,7 @@ mod tests {
         std::fs::create_dir_all(pets.join("codex-seedy")).unwrap();
         std::fs::write(pets.join("codex-seedy").join("pet.json"), "{}").unwrap();
         std::fs::write(cache.join("seedy-spritesheet-v4.webp"), b"RIFF....WEBP").unwrap();
-        std::env::set_var("CODEX_HOME", &tmp);
-        let out = export_codex_pets().unwrap();
-        std::env::remove_var("CODEX_HOME");
+        let out = export_codex_pets_in(&tmp).unwrap();
         assert_eq!(out.written, vec!["codex-dewey".to_string()]);
         assert_eq!(out.skipped, vec!["codex-seedy".to_string()]);
         assert_eq!(out.missing.len(), 6);
