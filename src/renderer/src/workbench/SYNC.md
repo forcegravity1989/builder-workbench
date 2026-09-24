@@ -11,8 +11,8 @@ Workbench 自有 Skill 保持 main 原路径（`.claude/skills/`、`standard/ski
 ## 原则
 
 1. **upstream 核不动**：TaskPage、Automations、terminal/PTY、worktree、Explorer/SC/Diff、main runtime — 只挂载，不大段改写。
-2. **改动落叠层**：导航 / 旅程壳 / 占位屏 / 皮肤 / 品牌 只进 `src/renderer/src/workbench/`。
-3. **原文件只留一行钩子**：`isWorkbenchShell()` 条件分支。
+2. **改动落叠层**：界面进入 `src/renderer/src/workbench/`；BW 契约、材料事务及宿主适配进入 `src/shared/workbench/`、`src/main/workbench/`；SSH 宿主侧挂载进入 `src/relay/workbench/`。
+3. **原文件只留薄挂载**：界面用 `isWorkbenchShell()` 条件分支；RPC/CLI 注册与 relay 组合只登记 BW 入口，不向 Orca 工作树、连接、调度类塞入业务。Web/配对、SSH/WSL 沿用原生路由，BW 不重建连接层。
 4. **参考源**：产品意图与现行结构读 `docs/`；Orca 工程参考按需读 `ref/`；旧 Rust 旅程在迁移时重新决策。
 
 ## 同步上游

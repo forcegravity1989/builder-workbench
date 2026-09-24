@@ -2,14 +2,23 @@ import { execFileSync } from 'node:child_process'
 import { mkdtemp, mkdir, readFile, readdir, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { afterEach, beforeEach, describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import {
-  createVersionMaterialService,
+  createVersionMaterialService as createService,
   materialResult,
   type VersionMaterialHost
 } from './version-material-service'
 import type { PlanningMaterial, AcceptanceMaterial } from '../../shared/workbench/version-material'
 import { createVersionMaterialPort } from '../../shared/workbench/version-material-client'
+
+import { executeVersionMaterial } from './version-material-runtime'
+import { registerVersionMaterialRelay } from '../../relay/workbench/version-material-handler'
+import { setSshActiveMultiplexerResolver } from '../ssh/ssh-target-registry'
+import type { SshChannelMultiplexer } from '../ssh/ssh-channel-multiplexer'
+import type { MethodHandler } from '../../relay/dispatcher'
+import { createVersionMaterialWorkspace } from './version-material-workspace'
+const createVersionMaterialService = (host: VersionMaterialHost) =>
+  createService(host, createVersionMaterialWorkspace)
 
 const plan: PlanningMaterial = {
   schema_version: 3,
@@ -60,6 +69,7 @@ describe('native version material service', () => {
   })
 
   afterEach(async () => {
+    setSshActiveMultiplexerResolver(null)
     // This test owns the freshly created temporary root, including both linked worktrees.
     await rm(directory, { recursive: true, force: true })
   })
@@ -123,7 +133,7 @@ describe('native version material service', () => {
     )
   })
 
-  it('rejects remote, ambiguous, foreign and stale branch identities before writing', async () => {
+  it('rejects unknown hosts, ambiguous, foreign and stale branch identities before writing', async () => {
     const save = (service = createVersionMaterialService(host), overrides = {}) =>
       service.save({
         ...scope,
@@ -133,13 +143,13 @@ describe('native version material service', () => {
         ...overrides
       })
     await expect(save(undefined, { hostId: 'ssh:other' })).rejects.toMatchObject({
-      code: 'unsupported-host'
+      code: 'invalid-scope'
     })
     await expect(save(undefined, { worktreeId: 'acceptance' })).rejects.toMatchObject({
       code: 'wrong-branch'
     })
     const repos = host.listRepos()
-    const trees = await host.listWorktrees()
+    const trees = await host.listWorktrees(scope)
     await expect(
       save(createVersionMaterialService({ ...host, listRepos: () => [...repos, ...repos] }))
     ).rejects.toMatchObject({ code: 'invalid-scope' })
@@ -177,7 +187,7 @@ describe('native version material service', () => {
           ? service.save(params as Parameters<typeof service.save>[0])
           : service.read(params as Parameters<typeof service.read>[0])
       )
-      return { id: 'test', ok: true, result, _meta: { runtimeId: 'test' } }
+      return result
     })
     const saved = await port.save({ version: 'v0.5', expectedRevision: null, document: plan })
     const changed = { ...plan, summary: { progress: '模型新修改', risks: '' } }
@@ -197,10 +207,10 @@ describe('native version material service', () => {
     const guarded = createVersionMaterialService({
       ...host,
       listWorktrees: async () => {
-        if (++checks === 2) {
+        if (++checks === 3) {
           git(planning, 'checkout', '--detach')
         }
-        return host.listWorktrees()
+        return host.listWorktrees(scope)
       }
     })
     await expect(
@@ -215,5 +225,63 @@ describe('native version material service', () => {
       JSON.parse(await readFile(join(planning, '.bw/planning/v0.5/data.json'), 'utf8'))
     ).toEqual(changed)
     expect(await readdir(join(planning, '.bw/planning/v0.5'))).toEqual(['data.json'])
+  })
+  it('uses the native SSH channel and the same host transaction, preserving conflicts and offline state', async () => {
+    const handlers = new Map<string, MethodHandler>()
+    registerVersionMaterialRelay({
+      onRequest: (method, handler) => {
+        handlers.set(method, handler)
+      }
+    })
+    const request = vi.fn(async (method: string, params: Record<string, unknown>) =>
+      handlers.get(method)!(params, {} as never)
+    )
+    const resolve = vi.fn((connectionId: string) =>
+      connectionId === 'server' ? ({ request } as unknown as SshChannelMultiplexer) : undefined
+    )
+    setSshActiveMultiplexerResolver(resolve)
+    const remoteScope = { ...scope, hostId: 'ssh:server' }
+    const trees = await host.listWorktrees(scope)
+    const remote = createService(
+      {
+        listRepos: () => [{ id: 'repo', path: repo, kind: 'git', executionHostId: 'ssh:server' }],
+        listWorktrees: async () => trees.map((tree) => ({ ...tree, hostId: 'ssh:server' }))
+      },
+      executeVersionMaterial
+    )
+    const saved = await remote.save({
+      ...remoteScope,
+      version: 'v0.5',
+      expectedRevision: null,
+      document: plan
+    })
+    expect(resolve).toHaveBeenCalledWith('server')
+    expect(request).toHaveBeenCalledWith(
+      'workbench.materials.execute',
+      expect.objectContaining({
+        target: { repoPath: repo, worktreePath: planning },
+        operation: 'save'
+      })
+    )
+    expect(await remote.read({ ...remoteScope, version: 'v0.5' })).toEqual(saved)
+    await expect(
+      remote.save({ ...remoteScope, version: 'v0.5', expectedRevision: null, document: plan })
+    ).rejects.toMatchObject({ code: 'revision-conflict', currentRevision: saved.revision })
+    git(planning, 'checkout', '--detach')
+    await expect(
+      remote.save({
+        ...remoteScope,
+        version: 'v0.5',
+        expectedRevision: saved.revision,
+        document: plan
+      })
+    ).rejects.toMatchObject({ code: 'wrong-branch' })
+    setSshActiveMultiplexerResolver(() => undefined)
+    await expect(remote.read({ ...remoteScope, version: 'v0.5' })).rejects.toMatchObject({
+      code: 'host-unavailable'
+    })
+    expect(
+      JSON.parse(await readFile(join(planning, '.bw/planning/v0.5/data.json'), 'utf8'))
+    ).toEqual(plan)
   })
 })

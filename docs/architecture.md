@@ -56,6 +56,8 @@ Issue 与标签是工作状态正本，版本计划内容由仓内 JSON 承载�
 
 Orca 执行核提供终端、会话、worktree、Tasks、Automations 和 Explorer。BW 叠层通过 `WORKBENCH_SHELL=1` / `VITE_WORKBENCH_SHELL=1` 启用。叠层外改动保持明确钩子边界；上游身份和同步纪律见 [ref/upstream](../ref/upstream.md)，不要将 BW 的 `origin/main` 合并当作 Orca 升级。
 
+BW 的业务契约在 `src/shared/workbench/`，材料事务及宿主适配在 `src/main/workbench/`，界面在 `src/renderer/src/workbench/`；`src/relay/workbench/` 只在原生 SSH relay 上调用同一材料事务。Orca RPC/CLI 注册处及 relay 组合入口保持薄挂载，工作树、连接、调度和会话内核不承载 BW 业务。Web/配对是访问方式，SSH/WSL 是执行位置，均复用原生身份与路由；不另加本机专属开关。
+
 产品知识继续在 `docs/`，Orca 工程参考按需读 `ref/`。`ref/` 不覆盖产品原则；旧 `crates/` 不存在于现行分支。
 
 ### 计划材料
@@ -78,4 +80,4 @@ Orca 执行核提供终端、会话、worktree、Tasks、Automations 和 Explore
 
 ## 待实施的版本协作与指标边界
 
-用户已选择三个特性：[版本计划](05-features/version-planning/design.md)、[版本验收](05-features/version-acceptance/design.md)、[总览指标](05-features/overview-metrics/design.md)。三者的 intent/spec/design 待本轮完整确认，以上当前实现描述仍有效。BW 拥有版本材料、目标/验收业务与指标服务；Orca 保持会话、任务详情/编辑、工作树、调度和 provider 正本。通过薄适配复用，不能在各屏分别建任务编辑器、会话存储或采集器。实现落地后替换相应当前描述并同步模块，不能只靠本节宣称迁移完成。
+用户已选择三个特性：[版本计划](05-features/version-planning/design.md)、[版本验收](05-features/version-acceptance/design.md)、[总览指标](05-features/overview-metrics/design.md)。三者的 intent/spec 已认可并授权实施；详细设计未决项仍须人工确认，旧页面当前实现描述仍有效。BW 拥有版本材料、目标/验收业务与指标服务；Orca 保持会话、任务详情/编辑、工作树、调度和 provider 正本。通过薄适配复用，不能在各屏分别建任务编辑器、会话存储或采集器。实现落地后替换相应当前描述并同步模块，不能只靠本节宣称迁移完成。

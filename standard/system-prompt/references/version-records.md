@@ -2,7 +2,7 @@
 
 > 给维护版本材料的会话与实现者按需读取。本文定义对象、来源和写入边界，不复述讨论 SOP；SOP 在 week-planning / version-acceptance。契约变化时更新。
 >
-> 状态：schema3 材料核心、本机 runtime RPC 和 CLI 已实现，旧页面/会话提示尚未切换。当前 schema2/旧 CLI 不具备以下全部能力；材料读写时必须已有明确版本，由宿主提供原生身份及可调用工具；启动会话不要求先有版本。
+> 状态：schema3 材料核心、runtime RPC 和 CLI 已实现，旧页面/会话提示尚未切换。当前 schema2/旧 CLI 不具备以下全部能力；材料读写时必须已有明确版本，由宿主提供原生身份及可调用工具；启动会话不要求先有版本。
 
 ## 对象与工作区
 
@@ -32,9 +32,9 @@ archiveCommit 只能在实际合入后由 provider/Git 解析，不能把尚未�
 
 ## 写入与人的决定
 
-本轮仅支持本机 Git 项目；SSH/远端运行时和未验证的 WSL 路径明确不支持，不把远端路径交给本机文件服务。宿主提供 repoId/worktreeId/hostId，分别绑定 bw/week-plan、bw/week-acceptance；不能由模型传文件根来替代原生身份。
+连接和执行沿用 Orca；宿主提供 repoId/worktreeId/hostId，分别绑定 bw/week-plan、bw/week-acceptance，页面还使用原生 runtimeOwnerEnvironmentId 选择配对宿主。不能由模型传文件根替代原生身份，也不把 SSH 路径交给客户端本机文件 API。
 
-实际工具为 `orca bw materials list/read/save`，共用 `--repo-id <id> --worktree-id <id> --workflow plan|acceptance`，本机 host-id 默认 local。list 不需要版本，只有列举作用；read 需要 `--version <已确认版本>`，返回 document/revision 或 null。save 再传 `--input <schema3 JSON 草稿文件>`，更新必须使用刚读到的 `--expected-revision <revision>`；明确新建用 `--create`，二者互斥。普通项目通过 `orca bw materials schema --workflow plan|acceptance --json` 读取随 CLI 打包的结构，无需 BW 源码或运行中的应用；跨字段约束仍由 save 校验。维护正本为 src/shared/workbench/version-material.ts，不能把 schema2 文件直接提交；`--json` 用于机器读取。
+实际工具为 `orca bw materials list/read/save`，共用 `--repo-id <id> --worktree-id <id> --workflow plan|acceptance`，host-id 在所选 runtime 内解释，默认 local；SSH 工作树使用宿主提供的 ssh: 身份。list 不需要版本，只有列举作用；read 需要 `--version <已确认版本>`，返回 document/revision 或 null。save 再传 `--input <schema3 JSON 草稿文件>`，更新必须使用刚读到的 `--expected-revision <revision>`；明确新建用 `--create`，二者互斥。普通项目通过 `orca bw materials schema --workflow plan|acceptance --json` 读取随 CLI 打包的结构，无需 BW 源码或运行中的应用；跨字段约束仍由 save 校验。维护正本为 src/shared/workbench/version-material.ts，不能把 schema2 文件直接提交；`--json` 用于机器读取。
 
 冲突命令以非零状态返回 revision-conflict 及 currentRevision，原材料和输入草稿保留；重读并合并后重试，不循环覆盖。页面走同一 runtime RPC。文件保存不自行采集指标或验证人的身份，存入 reading/decision 字段不能据此点绿灯，业务消费方必须核对真实来源。
 

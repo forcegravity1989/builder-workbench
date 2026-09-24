@@ -9,6 +9,7 @@ import type { RelayDispatcher } from './dispatcher'
 import { RelayContext, expandTilde } from './context'
 import { PtyHandler } from './pty-handler'
 import { FsHandler } from './fs-handler'
+import { registerVersionMaterialRelay } from './workbench/version-material-handler'
 import { GitHandler } from './git-handler'
 import { GitResponseStreamRegistry } from './git-response-stream'
 import { PreflightHandler } from './preflight-handler'
@@ -42,6 +43,7 @@ export class RelayRuntimeServices {
     launchVersion: string
   ) {
     const context = new RelayContext()
+    registerVersionMaterialRelay(dispatcher)
     this.registerSessionHandlers(context)
     this.ptyHandler = new PtyHandler(dispatcher, graceTimeMs)
     this.ptyConsumerSessionAdapter = new SshPtyConsumerSessionAdapter(

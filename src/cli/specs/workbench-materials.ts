@@ -2,7 +2,7 @@ import type { CommandSpec } from '../args'
 import { GLOBAL_FLAGS } from '../args'
 
 const scopeFlags = ['repo-id', 'worktree-id', 'host-id', 'workflow']
-const scopeUsage = '--repo-id <id> --worktree-id <id> --workflow plan|acceptance'
+const scopeUsage = '--repo-id <id> --worktree-id <id> --workflow plan|acceptance [--host-id <id>]'
 export const WORKBENCH_MATERIAL_COMMAND_SPECS: CommandSpec[] = [
   {
     path: ['bw', 'materials', 'schema'],
@@ -15,8 +15,8 @@ export const WORKBENCH_MATERIAL_COMMAND_SPECS: CommandSpec[] = [
   },
   {
     path: ['bw', 'materials', 'list'],
-    summary: 'List version materials in a registered local workflow worktree',
-    usage: `orca bw materials list ${scopeUsage} [--host-id local] [--json]`,
+    summary: 'List version materials in a registered workflow worktree',
+    usage: `orca bw materials list ${scopeUsage} [--json]`,
     allowedFlags: [...GLOBAL_FLAGS, ...scopeFlags],
     notes: ['Lists candidates without selecting a version or creating files.']
   },

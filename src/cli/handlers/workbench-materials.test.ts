@@ -6,7 +6,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 const call = vi.hoisted(() => vi.fn())
 vi.mock('../runtime-client', () => ({
   RuntimeClient: class {
-    isRemote = false
+    isRemote = true
     call = call
   }
 }))
@@ -36,7 +36,7 @@ describe('version material CLI entry', () => {
     await rm(directory, { recursive: true, force: true })
   })
 
-  it('routes list and explicit create through native RPC, with no implicit version', async () => {
+  it('allows paired clients and routes explicit create through native RPC, with no implicit version', async () => {
     call.mockResolvedValue({
       id: 'test',
       ok: true,

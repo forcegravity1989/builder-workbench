@@ -17,9 +17,6 @@ import {
 } from '../../shared/workbench/version-material-request'
 
 function scope(ctx: HandlerContext) {
-  if (ctx.client.isRemote) {
-    throw new RuntimeClientError('unsupported-host', '版本材料目前仅支持本机 Git 项目')
-  }
   return {
     repoId: getRequiredStringFlag(ctx.flags, 'repo-id'),
     worktreeId: getRequiredStringFlag(ctx.flags, 'worktree-id'),

@@ -35,11 +35,11 @@ BW 业务放在 renderer/workbench 下的 version-cycle、version-planning、ver
 
 任务只保存 provider/repo/number 与 goalId 的引用，展示状态从 Orca provider 读回；缓存有读取时间，离线不是空任务。三段纪要从目标纯函数生成，不再存 live_notes、transcript、独立可编辑 minutes。协议细节的唯一模型参考是 [version-records](../../../standard/system-prompt/references/version-records.md)。
 
-UI 与模型共用主进程侧的版本材料写入核心；模型入口是由宿主下发的、实际存在的 CLI/工具薄入口。写入含受信任项目根、版本路径校验、expectedRevision、跨进程互斥和原子替换；重读修订后再提交，锁范围只含本文件事务，不锁住模型对话。CLI 与 UI 不各自实现一次校验。现有 planning.py / 旧模板在消费方切换的同一交付内退役，不能让旧 confirm 或 submit-confirmed 继续控制新流程；接线前不提前删除正在被源码调用的脚本。
+UI 与模型共用在文件所属宿主执行的版本材料写入核心；模型入口是由宿主下发的、实际存在的 CLI/工具薄入口。写入含受信任项目根、版本路径校验、expectedRevision、跨进程互斥和原子替换；重读修订后再提交，锁范围只含本文件事务，不锁住模型对话。CLI 与 UI 不各自实现一次校验。现有 planning.py / 旧模板在消费方切换的同一交付内退役，不能让旧 confirm 或 submit-confirmed 继续控制新流程；接线前不提前删除正在被源码调用的脚本。
 
 材料事务核心位于 src/main/workbench/version-document-store.ts，共同身份与 read/save 类型位于 src/shared/workbench/version-document.ts。它只接受明确版本，读取不存在材料无副作用，修订按原始字节计算；复用 proper-lockfile 和 Orca durable-file-write。计划/验收结构由 shared/workbench/version-material.ts 校验，共同层验证 schema/version/cycleId。schema2 只报告需显式迁移；不做自动升级。
 
-本机 Git 项目经 main/workbench/version-material-service 接入原生 runtime:call，提供 workbench.materials.list/read/save；模型命令为 orca bw materials list/read/save，页面适配为 nativeVersionMaterialPort。服务从原生登记解析 repoId/worktreeId/hostId，不接受请求传入文件根；核对 Git common directory 和实际 HEAD 对应的固定分支，取得文档锁后再次核对。远端与 WSL 路径不降级成本机读写。list 只返回有效、需迁移或损坏的候选，不默认选中，不创建目录；历史归档列表仍由后续 VersionHistoryPort 负责。
+材料服务通过 BW 的 main/workbench/version-material-runtime 组合适配，使用 Orca 原生 runtime RPC、项目/工作树解析及 SSH relay。页面 nativeVersionMaterialPort 按原生 worktree 的 hostId 和 runtimeOwnerEnvironmentId 路由，配对客户端与执行宿主分开处理；CLI 沿用选中的 runtime，不因 isRemote 禁用。workbench.materials.list/read/save 与 orca bw materials 共用校验；请求只传身份，文件根由原生登记解析。文件所属宿主运行同一材料事务，核对 Git common directory 与实际固定分支，并在文档锁内重查。WSL 元数据路径复用原生转换。list 无写入副作用，不默认选版本；VersionHistoryPort 仍由特性实施。
 
 这些入口已提供给新消费方接线；旧 Plan 页面和开工提示尚未调用它们。材料校验只证明结构及写入一致性，不能证明引用的脚本读数真实、计划已合入或记录中的人已认可；对应特性必须从真实来源读回后推导状态。外部 Git 操作不受材料锁控制，提交前的分支复核不等同于锁住所有 Git checkout。
 
