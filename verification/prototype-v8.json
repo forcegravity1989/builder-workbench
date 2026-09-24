@@ -1,0 +1,74 @@
+{
+  "layer": "Local HTML prototype only; no Electron/Orca/provider writes",
+  "checks": [
+    "Version/week tabs directly render source-backed plan/acceptance summaries; full minutes expand inline; missing acceptance never replaced by progress or commits",
+    "Dedicated metric task prompt, same configuration resumes and explicit new task has own input; no planning chat reuse",
+    "Plan/acceptance branch, history and input scopes separate; same Friday run resumes; preparation prompt binds candidate and project commands",
+    "Native task interaction simulated with edit/return; status-only Friday tasks, metric actual read-only, unmet red and archive only unsent request",
+    "Overview restores metric filters, reflects same acceptance draft/report, and historical acceptance opens matching version and session week"
+  ],
+  "layouts": [
+    {
+      "view": "overview",
+      "width": 1365,
+      "height": 768,
+      "overflow": false,
+      "railScroll": false,
+      "coreBottom": 756.3125,
+      "contentBottom": 768,
+      "coreVisible": true
+    },
+    {
+      "view": "overview",
+      "width": 1280,
+      "height": 720,
+      "overflow": false,
+      "railScroll": false,
+      "coreBottom": 709.8125,
+      "contentBottom": 720,
+      "coreVisible": true
+    },
+    {
+      "view": "monday",
+      "width": 1365,
+      "height": 768,
+      "overflow": false,
+      "railScroll": false,
+      "coreBottom": 601,
+      "contentBottom": 730,
+      "coreVisible": true
+    },
+    {
+      "view": "monday",
+      "width": 1280,
+      "height": 720,
+      "overflow": false,
+      "railScroll": false,
+      "coreBottom": 601,
+      "contentBottom": 682,
+      "coreVisible": true
+    },
+    {
+      "view": "friday",
+      "width": 1365,
+      "height": 768,
+      "overflow": false,
+      "railScroll": false,
+      "coreBottom": 693.9375,
+      "contentBottom": 730,
+      "coreVisible": true
+    },
+    {
+      "view": "friday",
+      "width": 1280,
+      "height": 720,
+      "overflow": false,
+      "railScroll": false,
+      "coreBottom": 675.9375,
+      "contentBottom": 682,
+      "coreVisible": true
+    }
+  ],
+  "errors": [],
+  "passed": true
+}

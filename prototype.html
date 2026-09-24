@@ -1,4 +1,4 @@
-<!doctype html><html lang="zh" data-theme="claude"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>BW · 计划与验收 · 第七版 · 版本运作</title><style>/* Builder — design-system tokens and component classes. Two color systems ship in this one file: Apple (default, on :root) and Claude (on [data-theme="claude"]). Set <html data-theme="claude"> to switch; see spec.md. */
+<!doctype html><html lang="zh" data-theme="claude"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>BW · 计划与验收 · 第八版 · 版本运作</title><style>/* Builder — design-system tokens and component classes. Two color systems ship in this one file: Apple (default, on :root) and Claude (on [data-theme="claude"]). Set <html data-theme="claude"> to switch; see spec.md. */
 
 :root {
   /* ── Apple palette (default) ─────────────────────────────────────────── */
@@ -1293,6 +1293,14 @@ html,body,#root{height:100%;margin:0}body{overflow:hidden}button,input,textarea,
 .session-head>strong{font-size:11px;min-width:0;overflow:hidden;text-overflow:ellipsis}.preparation-strip{border:1px solid var(--color-divider);border-radius:var(--radius-md);padding:10px 12px;margin-bottom:12px;background:var(--color-card)}.preparation-title{display:flex;align-items:center;justify-content:space-between;font-size:12px}.preparation-title strong,.preparation-title .btn{display:flex;align-items:center;gap:6px}.preparation-title svg{width:15px;height:15px}.preparation-title .btn{font-size:11px;padding:2px 6px}.preparation-items{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-top:8px}.preparation-items>div{display:flex;gap:6px;flex-direction:column}.preparation-items span{font-size:10px;color:var(--color-neutral-500)}.preparation-items b{font-size:12px;font-weight:500;color:var(--color-neutral-600)}.journey button strong{font-size:10px}.metric-setup-page{padding:28px;overflow:auto}.setup-heading{display:flex;align-items:center;gap:14px;margin:24px 0}.setup-heading>svg{width:30px;height:30px;color:var(--color-accent)}.setup-heading h2{font-size:20px}.setup-heading p{font-size:12px;color:var(--color-neutral-500);margin-top:10px}.setup-metrics{display:flex;flex-direction:column;gap:12px}.setup-metrics article{border:1px solid var(--color-divider);background:var(--color-card);border-radius:var(--radius-md);padding:16px}.setup-metrics article>div{display:flex;align-items:center;justify-content:space-between;font-size:13px}.setup-metrics article span,.setup-metrics article p{font-size:11px;color:var(--color-neutral-500);line-height:1.8}.setup-metrics article p{margin:12px 0}.setup-metrics code{font-size:11px;color:var(--color-neutral-600);overflow-wrap:anywhere}.setup-actions{display:flex;justify-content:space-between;align-items:center;margin-top:20px;font-size:11px;color:var(--color-neutral-500)}.setup-actions .btn{font-size:11px;gap:5px}.setup-actions svg{width:14px;height:14px}.history-filter{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;font-size:12px;color:var(--color-neutral-500)}.history-filter select{width:100px}.history-row{display:flex;width:100%;align-items:center;gap:18px;background:transparent;border:0;border-top:1px solid var(--color-divider);padding:16px 0;color:var(--color-text);text-align:left}.history-row>span:first-child{width:46px;flex:none;font-size:13px}.history-row small{display:block;font-size:11px;color:var(--color-neutral-500);margin-top:6px}.history-row>div{flex:1}.history-row strong{font-size:13px}.history-row p{font-size:11px;line-height:1.6;color:var(--color-neutral-500);margin-top:6px}.history-row>svg{width:14px;height:14px;flex:none}.history-browser h3{font-size:16px;margin:18px 0 12px}.history-browser pre{font:12px/1.9 var(--font-sans);white-space:pre-wrap;margin:16px 0}.history-source{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--color-accent)}.history-source svg{width:14px;height:14px}@media(max-height:760px){.preparation-strip{padding:8px 10px;margin-bottom:8px}.preparation-items{margin-top:5px;gap:8px}.aligned-goals .acceptance-row{padding:8px 10px}.result-delivery{margin-top:6px}.ov6-version{gap:12px}.ov6-version-actions .btn{font-size:11px}}
 
 .preparation-strip{padding:8px 12px;margin-bottom:8px}.preparation-items>div{flex-direction:row;align-items:center;gap:8px}.preparation-items{margin-top:8px}.aligned-goals .acceptance-row{padding:9px 12px}.aligned-goals .agreed-delivery{margin:2px 0 4px}.aligned-goals .followup{margin-top:6px;padding-top:4px}.aligned-goals .followup:not(.next-step) textarea{height:24px;min-height:24px;field-sizing:content}.aligned-goals .result-delivery{margin-top:6px}.aligned-goals .acceptance-heading{margin-bottom:4px}.aligned-goals .acceptance-metric{margin-bottom:4px;padding-top:4px}@media(max-height:760px){.aligned-goals .acceptance-row{padding:6px 10px}}
+
+/* Version summaries stay in the overview; full minutes expand in the same page. */
+.ov8-version{border:1px solid var(--color-divider);border-radius:var(--radius-md);background:var(--color-card);flex:none}.ov8-version>header{display:flex;align-items:center;gap:16px;padding:0 14px;border-bottom:1px solid var(--color-divider);min-height:38px}.ov8-version h2{font-size:13px;font-weight:600}.ov8-version .tabs{margin:0;border:0;align-self:stretch}.ov8-version .tab{font-size:12px;padding:8px 12px}.ov8-version .btn{font-size:11px;padding:3px 6px;gap:4px}.ov8-version svg{width:13px;height:13px}.ov8-version>header>.btn{margin-left:auto}.ov8-weeks{display:flex;gap:5px;font:11px var(--font-mono);color:var(--color-neutral-500)}.ov8-weeks button{border:0;padding:4px 6px;border-radius:4px;background:transparent;color:inherit}.ov8-weeks button[aria-pressed=true]{color:var(--color-text);background:var(--color-bg)}.ov8-summaries,.ov8-full-records{display:grid;grid-template-columns:1fr 1fr}.ov8-summaries>article{padding:9px 14px 12px;min-width:0}.ov8-summaries>article+article,.ov8-full-records>article+article{border-left:1px solid var(--color-divider)}.ov8-summary-heading{display:flex;align-items:center;gap:6px;margin-bottom:7px;color:var(--color-neutral-600);height:20px}.ov8-summary-heading h3{font-size:12px;font-weight:600;color:var(--color-text)}.ov8-summary-heading>span{font-size:10px}.ov8-summary-heading .btn{margin-left:auto}.ov8-summaries ol{padding:0 0 0 18px;margin:0;font-size:12px;line-height:1.85}.ov8-summaries li{padding-left:2px}.ov8-summary-text{font-size:12px;line-height:1.85;max-width:480px}.ov8-empty{font-size:12px;color:var(--color-neutral-400);padding:5px 0}.ov8-extra{margin-top:8px;font-size:11px;line-height:1.8;color:var(--color-neutral-500)}.ov8-extra a{margin-left:8px;display:inline-flex;align-items:center;gap:3px;color:var(--color-accent)}.ov8-full-records{border-top:1px solid var(--color-divider)}.ov8-full-records>article{padding:16px;min-width:0}.ov8-full-records h3{font-size:12px;margin-bottom:8px}.ov8-full-records pre{white-space:pre-wrap;overflow-wrap:anywhere;font:12px/1.85 var(--font-body)}.ov8-full-records a{display:inline-flex;align-items:center;gap:4px;font-size:11px;color:var(--color-accent)}.ov8-full-records p{font-size:12px;color:var(--color-neutral-500)}
+.native-project-session{display:flex;flex-direction:column;flex:1;min-height:0;background:var(--color-card)}.native-session-toolbar{display:flex;gap:16px;align-items:center;padding:10px 20px;border-bottom:1px solid var(--color-divider);font-size:12px;color:var(--color-neutral-500)}.native-session-toolbar .btn{font-size:12px;gap:5px}.native-session-toolbar>.btn:last-child{margin-left:auto}.native-session-body{max-width:860px;width:100%;margin:0 auto;flex:1;display:flex;flex-direction:column;min-height:0;padding:20px}.native-session-body .composer{margin:0;padding:14px;background:var(--color-bg)}.native-session-body textarea{font-size:13px;max-height:280px}.native-session-body .session-empty{font-size:13px}.native-session-status{font-size:11px;color:var(--color-neutral-500);min-height:22px;padding:8px 0;text-align:center}
+.ov6{gap:10px;padding-top:12px;padding-bottom:12px}.ov6-project-grid{min-height:0}.ov6-project{padding:0}.ov6-project>p{margin:5px 0}.ov6-project-meta{font-size:11px}.ov6-north{padding-top:0;padding-bottom:0}.ov6-trend{height:70px}.ov6-trend.compact{height:60px}.ov6-block>header{padding-top:7px;padding-bottom:7px}.ov6-stat-value>strong{font-size:1.65em}
+@media(max-height:760px){.ov6{gap:8px;padding-top:8px;padding-bottom:8px}.ov6-trend{height:54px}.ov6-trend.compact{height:47px}.ov6-project-meta{display:none}.ov8-summaries>article{padding-top:7px;padding-bottom:8px}.ov8-summaries ol{line-height:1.75}}
+.ov6>*{flex-shrink:0}.ov6-project-grid{min-height:auto}.ov6-project{padding:6px 12px}.ov6-north{padding-top:6px;padding-bottom:6px}.ov6-trend{height:56px}.ov6-trend.compact{height:52px}@media(max-height:760px){.ov6-trend{height:42px}.ov6-trend.compact{height:42px}}
+.ov6-trend.compact{height:80px}
 </style></head><body><div id="root"></div><script>(() => {
   var __create = Object.create;
   var __defProp = Object.defineProperty;
@@ -42465,8 +42473,11 @@ html,body,#root{height:100%;margin:0}body{overflow:hidden}button,input,textarea,
   function Grain({ name: name2, value, onChange }) {
     return /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("div", { className: "seg ov6-grain", role: "group", "aria-label": name2, children: [["week", "\u5468"], ["day", "\u5929"]].map(([v, label]) => /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("button", { "aria-pressed": value === v, className: value === v ? "chosen" : "", onClick: () => onChange(v), children: label }, v)) });
   }
-  function OverviewV7({ metrics: metrics2, goals, tasks, onPlan, onAcceptance, onPrepare, onHistory }) {
-    const [feature, setFeature] = (0, import_react4.useState)(""), [grain, setGrain] = (0, import_react4.useState)("week"), [repoGrain, setRepoGrain] = (0, import_react4.useState)("week"), [hidden, setHidden] = (0, import_react4.useState)([]), [detail, setDetail] = (0, import_react4.useState)(null), [notice, setNotice] = (0, import_react4.useState)("");
+  function OverviewV8({ metrics: metrics2, goals, tasks, onPlan, onAcceptance, onPrepare, planMinutes, acceptanceDrafts, selection, setSelection, overviewUI, setOverviewUI }) {
+    const { feature, grain, repoGrain, hidden } = overviewUI;
+    const setUI = (key, value) => setOverviewUI((x) => ({ ...x, [key]: typeof value === "function" ? value(x[key]) : value }));
+    const setFeature = (v) => setUI("feature", v), setGrain = (v) => setUI("grain", v), setRepoGrain = (v) => setUI("repoGrain", v), setHidden = (v) => setUI("hidden", v);
+    const [detail, setDetail] = (0, import_react4.useState)(null), [notice, setNotice] = (0, import_react4.useState)("");
     const features = ["", ...new Set(metrics2.filter((m) => m.type !== "north_star" && m.feature).map((m) => m.feature))], bins = windows(grain), repoBins = windows(repoGrain), selected = metrics2.filter((m) => m.kind === "script" && m.type !== "north_star" && m.feature === feature);
     const lags = selected.filter((m) => m.type === "lagging"), groups = lags.map((lag) => [lag, ...selected.filter((m) => m.type === "leading" && (m.leads === lag.name || !m.leads && lag === lags[0]))]);
     const readingValues = (m) => bins.map((b) => {
@@ -42522,36 +42533,7 @@ html,body,#root{height:100%;margin:0}body{overflow:hidden}button,input,textarea,
           ] })
         ] })
       ] }),
-      /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("section", { className: "ov6-version", children: [
-        /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("span", { className: "tag tag-outline", children: "v0.5" }),
-        /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("strong", { children: "\u7248\u672C\u8BB0\u5F55" }),
-        /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("span", { children: [
-          goals.length,
-          " \u9879\u76EE\u6807"
-        ] }),
-        /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("span", { children: [
-          "Issue \u5B8C\u6210 ",
-          /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("b", { children: [
-            tasks.filter((t) => t.state === "CLOSED").length,
-            " / ",
-            tasks.length
-          ] })
-        ] }),
-        /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { className: "ov6-version-actions", children: [
-          /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("button", { className: "btn btn-ghost", onClick: onHistory, children: [
-            /* @__PURE__ */ (0, import_jsx_runtime2.jsx)(History, {}),
-            "\u591A\u5468\u7EAA\u8981"
-          ] }),
-          /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("button", { className: "btn btn-ghost", onClick: onPlan, children: [
-            "\u7248\u672C\u8BA1\u5212",
-            /* @__PURE__ */ (0, import_jsx_runtime2.jsx)(ChevronRight, {})
-          ] }),
-          /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("button", { className: "btn btn-ghost", onClick: onAcceptance, children: [
-            "\u7248\u672C\u9A8C\u6536",
-            /* @__PURE__ */ (0, import_jsx_runtime2.jsx)(ChevronRight, {})
-          ] })
-        ] })
-      ] }),
+      /* @__PURE__ */ (0, import_jsx_runtime2.jsx)(VersionSummary, { planMinutes, acceptanceDrafts, selection, setSelection, onPlan, onAcceptance }),
       /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("section", { className: "ov6-block", "aria-label": "\u4E1A\u52A1\u6307\u6807", children: [
         /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("header", { children: [
           /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { children: [
@@ -42721,50 +42703,76 @@ html,body,#root{height:100%;margin:0}body{overflow:hidden}button,input,textarea,
       ] }) })
     ] });
   }
-  function VersionHistory() {
-    const [version, setVersion] = (0, import_react4.useState)("\u5168\u90E8"), [selected, setSelected] = (0, import_react4.useState)(null);
-    const rows = historyData.filter((r) => version === "\u5168\u90E8" || r.version === version);
-    return /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { className: "history-browser", children: [
-      /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { className: "history-filter", children: [
-        /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("span", { children: "\u7248\u672C\u4F18\u5148 \xB7 \u5468\u8BB0\u5F55" }),
-        /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("select", { className: "input", "aria-label": "\u8BB0\u5F55\u7248\u672C", value: version, onChange: (e) => {
-          setVersion(e.target.value);
-          setSelected(null);
-        }, children: [
-          /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("option", { children: "\u5168\u90E8" }),
-          [...new Set(historyData.map((r) => r.version))].map((v) => /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("option", { children: v }, v))
+  function VersionSummary({ planMinutes, acceptanceDrafts, selection, setSelection, onPlan, onAcceptance }) {
+    const [expanded, setExpanded] = (0, import_react4.useState)(false), { version, week } = selection;
+    const versions = [...new Set(historyData.map((r) => r.version))], records = historyData.filter((r) => r.version === version), weeks = [...new Set(records.map((r) => r.week))];
+    const rows = records.filter((r) => r.week === week), plan = rows.find((r) => r.kind === "\u8BA1\u5212\u7EAA\u8981"), archivedAcceptance = rows.find((r) => r.kind === "\u9A8C\u6536\u603B\u7ED3"), acceptance = acceptanceDrafts[version]?.week === week ? acceptanceDrafts[version] : archivedAcceptance, extras = rows.filter((r) => !["\u8BA1\u5212\u7EAA\u8981", "\u9A8C\u6536\u603B\u7ED3"].includes(r.kind));
+    const planText = version === "v0.5" ? planMinutes : plan?.text || "", titles = planText.split("\n").filter((line) => /^\d+\. /.test(line));
+    function select(version2, week2) {
+      setSelection({ version: version2, week: week2 || historyData.find((r) => r.version === version2).week });
+      setExpanded(false);
+    }
+    return /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("section", { className: "ov8-version", "aria-label": "\u7248\u672C\u8BA1\u5212\u4E0E\u9A8C\u6536", children: [
+      /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("header", { children: [
+        /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("h2", { children: "\u7248\u672C\u8BA1\u5212\u4E0E\u9A8C\u6536" }),
+        /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("nav", { className: "tabs", role: "tablist", "aria-label": "\u603B\u89C8\u7248\u672C", children: versions.map((v) => /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("button", { className: "tab", role: "tab", "aria-selected": v === version, onClick: () => select(v), children: v }, v)) }),
+        /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("div", { className: "ov8-weeks", children: weeks.map((w) => weeks.length > 1 ? /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("button", { "aria-pressed": w === week, onClick: () => select(version, w), children: w }, w) : /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("span", { children: w }, w)) }),
+        /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("button", { className: "btn btn-ghost", "aria-expanded": expanded, onClick: () => setExpanded(!expanded), children: [
+          expanded ? "\u6536\u8D77\u5168\u6587" : "\u7EAA\u8981\u5168\u6587",
+          /* @__PURE__ */ (0, import_jsx_runtime2.jsx)(ChevronDown, {})
         ] })
       ] }),
-      selected ? /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)(import_jsx_runtime2.Fragment, { children: [
-        /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("button", { className: "btn btn-ghost", onClick: () => setSelected(null), children: [
-          /* @__PURE__ */ (0, import_jsx_runtime2.jsx)(ArrowLeft, {}),
-          "\u8FD4\u56DE\u8BB0\u5F55\u5217\u8868"
+      /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { className: "ov8-summaries", children: [
+        /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("article", { "aria-label": "\u8BA1\u5212\u6458\u8981", children: [
+          /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { className: "ov8-summary-heading", children: [
+            /* @__PURE__ */ (0, import_jsx_runtime2.jsx)(CalendarRange, {}),
+            /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("h3", { children: "\u8BA1\u5212" }),
+            /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("span", { children: plan?.status || "\u6682\u65E0\u8BB0\u5F55" }),
+            version === "v0.5" && /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("button", { className: "btn btn-ghost", onClick: onPlan, children: [
+              "\u8FDB\u5165\u8BA1\u5212",
+              /* @__PURE__ */ (0, import_jsx_runtime2.jsx)(ChevronRight, {})
+            ] })
+          ] }),
+          plan ? /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("ol", { children: titles.map((t, i) => /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("li", { children: t.replace(/^\d+\. /, "") }, i)) }) : /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("p", { className: "ov8-empty", children: "\u672C\u5468\u5C1A\u65E0\u8BA1\u5212\u7EAA\u8981" })
         ] }),
-        /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("h3", { children: [
-          selected.version,
-          " \xB7 ",
-          selected.week,
-          " \xB7 ",
-          selected.kind
-        ] }),
-        /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("span", { className: "tag tag-outline", children: selected.status }),
-        /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("pre", { children: selected.text }),
-        selected.source && /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("a", { className: "history-source", href: selected.source, target: "_blank", rel: "noreferrer", children: [
-          "\u6253\u5F00\u6765\u6E90",
-          /* @__PURE__ */ (0, import_jsx_runtime2.jsx)(ExternalLink, {})
+        /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("article", { "aria-label": "\u9A8C\u6536\u6458\u8981", children: [
+          /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { className: "ov8-summary-heading", children: [
+            /* @__PURE__ */ (0, import_jsx_runtime2.jsx)(ClipboardCheck, {}),
+            /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("h3", { children: "\u9A8C\u6536" }),
+            /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("span", { children: acceptance?.status || "\u6682\u65E0\u8BB0\u5F55" }),
+            ["v0.4", "v0.5"].includes(version) && /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("button", { className: "btn btn-ghost", onClick: () => onAcceptance(version, week), children: [
+              "\u8FDB\u5165\u9A8C\u6536",
+              /* @__PURE__ */ (0, import_jsx_runtime2.jsx)(ChevronRight, {})
+            ] })
+          ] }),
+          acceptance ? /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("p", { className: "ov8-summary-text", children: acceptance.summary }) : /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("p", { className: "ov8-empty", children: "\u672C\u5468\u5C1A\u65E0\u9A8C\u6536\u7EAA\u8981" }),
+          acceptance !== archivedAcceptance && archivedAcceptance?.source && /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("a", { className: "history-source", href: archivedAcceptance.source, target: "_blank", rel: "noreferrer", children: [
+            "\u5386\u53F2\u539F\u6587",
+            /* @__PURE__ */ (0, import_jsx_runtime2.jsx)(ExternalLink, {})
+          ] }),
+          extras.map((r) => /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("p", { className: "ov8-extra", children: [
+            /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("span", { children: [
+              r.kind,
+              " \xB7 "
+            ] }),
+            r.summary,
+            /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("a", { href: r.source, target: "_blank", rel: "noreferrer", children: [
+              "\u6765\u6E90",
+              /* @__PURE__ */ (0, import_jsx_runtime2.jsx)(ExternalLink, {})
+            ] })
+          ] }, r.id))
         ] })
-      ] }) : rows.map((r) => /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("button", { className: "history-row", onClick: () => setSelected(r), children: [
-        /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("span", { children: [
-          /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("b", { children: r.version }),
-          /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("small", { children: r.week })
-        ] }),
-        /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { children: [
-          /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("strong", { children: r.kind }),
-          /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("p", { children: r.summary })
-        ] }),
-        /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("span", { className: "tag tag-outline", children: r.status }),
-        /* @__PURE__ */ (0, import_jsx_runtime2.jsx)(ChevronRight, {})
-      ] }, r.id))
+      ] }),
+      expanded && /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("div", { className: "ov8-full-records", children: [[plan, "\u8BA1\u5212\u7EAA\u8981", planText], [acceptance, "\u9A8C\u6536\u7EAA\u8981", acceptance?.text]].map(([record, label, text7]) => /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("article", { children: [
+        /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("h3", { children: label }),
+        record ? /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)(import_jsx_runtime2.Fragment, { children: [
+          /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("pre", { children: text7 }),
+          record.source && /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("a", { href: record.source, target: "_blank", rel: "noreferrer", children: [
+            "\u539F\u59CB\u6750\u6599",
+            /* @__PURE__ */ (0, import_jsx_runtime2.jsx)(ExternalLink, {})
+          ] })
+        ] }) : /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("p", { children: "\u6682\u65E0\u8BB0\u5F55" })
+      ] }, label)) })
     ] });
   }
   var original = { "schema_version": 2, "template_version": "se-v7-1-pilot-1", "version": "v0.5", "project": "Builders\u2019 Workbench", "header": { "version_pair": "v0.4 \u2192 v0.5", "context": "BW \xB7 \u7248\u672C\u89C4\u5212" }, "provenance": { "kind": "session_draft", "notice": "\u7B2C\u4E00\u5C4F\u8349\u7A3F\u7531\u4F1A\u8BDD\u4ECE v0.4 \u5DF2\u786E\u8BA4 JSON\uFF08origin/main \u5F52\u6863\uFF09plan.goals + v0.4 \u6536\u5C3E\u62A5\u544A import\uFF1B\u7ED3\u679C\u6807\u7B7E\u4E3A\u5019\u9009\uFF0C\u5F85 Builder \u786E\u8BA4" }, "previous_version": { "version": "v0.4", "kind": "archived_plan_json", "url": "https://github.com/forcegravity1989/builder-workbench/issues/180" }, "sources": [{ "id": "v04-plan-issue", "kind": "issue", "url": "https://github.com/forcegravity1989/builder-workbench/issues/180", "verified_at": "2026-09-20" }, { "id": "v04-report", "kind": "archived_report", "url": "https://github.com/forcegravity1989/builder-workbench/blob/6d0aaf27/.bw/planning/v0.4/report.html", "verified_at": "2026-09-20" }, { "id": "v04-g2-snapshot", "kind": "deliverable", "url": "https://github.com/forcegravity1989/builder-workbench/blob/af924a9d/.bw/planning/v0.4/deliverables/v04-g2-monday-screen.png", "verified_at": "2026-09-20" }], "results": { "version_label": "v0.4", "task_summary": "5 \u6761\u4EFB\u52A1 Issue \u5168\u90E8\u5173\u95ED\uFF0C\u9A8C\u6536 11/11 \u901A\u8FC7\u3001\u7528\u4F8B 16/16 \u901A\u8FC7\uFF1BG1/G2 \u5019\u9009\u8FBE\u6210\u5F85\u786E\u8BA4\u3002", "goals": [{ "id": "G1", "label": "G1", "title": "[\u5468\u4E00\u5C4F]\u9700\u6C42\u529F\u80FD\u4EA4\u4ED8\uFF1A\u652F\u6301\u5468\u4E00\u4E0A\u5348 builder \u5B8C\u6210\u4E0A\u5468\u4FE1\u606F\u603B\u7ED3\u3001\u672C\u5468\u7248\u672C\u89C4\u5212\uFF0C\u4E0B\u5348 PL/builder \u8BA1\u5212\u5BF9\u9F50\u63E1\u624B\uFF0C\u8F93\u51FA\u4EA4\u4ED8\u4EF6\u548C\u5468\u4EFB\u52A1\uFF08\u9700\u8981\u6574\u7406\u4F1A\u8BAE\u7EAA\u8981\uFF09", "metric": "\u7EA6\u5B9A\u9A8C\u6536\u9879\u901A\u8FC7\u6570\uFF08\u4E0A\u5348\u603B\u7ED3\u3001\u672C\u7248\u89C4\u5212\u6210\u7A3F\u3001\u4E0B\u5348 PL/builder \u63E1\u624B\u3001\u7EAA\u8981+\u4EA4\u4ED8\u4EF6+\u4EFB\u52A1 Issue \u5F52\u6863\uFF09", "target": "4", "baseline": "0", "reading": "4", "progress": null, "deadline": "", "owner": "", "status": { "label": "\u8FBE\u6210", "tone": "success" }, "note": "\u4F1A\u8BDD\u5019\u9009\uFF1Av0.4 \u6536\u5C3E\u62A5\u544A\u9A8C\u6536 11/11\u3001\u7528\u4F8B 16/16 \u5168\u8FC7\uFF0C5 \u6761\u4EFB\u52A1 Issue \u5168\u5173\uFF0C\u5468\u4E00\u5C4F\u529F\u80FD\u4EA4\u4ED8\u5B8C\u6210\uFF1B\u56DB\u9879\u9A8C\u6536\u9879\u672A\u89C1\u9010\u9879\u7559\u75D5\uFF0C\u6309\u6574\u4F53\u9A8C\u6536\u6807\u6CE8\uFF0C\u5F85\u786E\u8BA4\u3002", "sources": ["v04-report", "v04-plan-issue"] }, { "id": "G2", "label": "G2", "title": "[\u5468\u4E00\u5C4F]\u672C\u673A\u9879\u76EE\u5B8C\u6210 v0.4 \u89C4\u5212\u4EA4\u4ED8\u5F52\u6863\uFF1A\u8BA1\u5212\u6570\u636E\u3001\u4F1A\u8BAE\u7EAA\u8981\u3001\u4EA4\u4ED8\u4EF6\u3001\u4EFB\u52A1 Issue \u5168\u90E8\u843D\u4ED3\u53EF\u8BFB\u56DE", "metric": "\u5F52\u6863\u8981\u4EF6\u9F50\u5957\u6570\uFF08\u8BA1\u5212 JSON\u3001\u7EAA\u8981\u3001\u4EA4\u4ED8\u4EF6\u3001\u4EFB\u52A1 Issue\u3001\u5F52\u6863 PR \u5408\u5165\uFF09", "target": "5", "baseline": "0", "reading": "5", "progress": null, "deadline": "", "owner": "", "status": { "label": "\u8FBE\u6210", "tone": "success" }, "note": "\u4F1A\u8BDD\u5019\u9009\uFF1A\u8BA1\u5212 JSON\u3001\u7EAA\u8981\u3001\u4EA4\u4ED8\u4EF6\uFF08report.html/report.json/\u5FEB\u7167\uFF09\u3001\u4EFB\u52A1 Issue\u3001\u5F52\u6863 PR\uFF08#220/#228/#231\uFF09\u9F50\u5957\u4E14 origin/main \u8BFB\u56DE\u3002", "sources": ["v04-report", "v04-g2-snapshot", "v04-plan-issue"] }], "tasks": [{ "id": "issue-207", "number": 207, "url": "https://github.com/forcegravity1989/builder-workbench/issues/207", "title": "\u3010v0.4|W38|G1\u3011\u5468\u4E00\u5C4F\u5B9E\u6218\uFF1ABW \u672C\u5468\u7279\u6027\u3001\u6307\u6807\u4E0E E2E \u9A8C\u6536", "kind": "feature", "goal": "v0.4/G1", "progress_note": "\u5DF2\u5173\u95ED\uFF0809-19\uFF09\uFF1ABW \u672C\u5468\u7279\u6027/\u6307\u6807/E2E \u9A8C\u6536\u968F #227/#229 \u843D\u5730\uFF0C\u9A8C\u6536 16 \u7528\u4F8B\u5168\u8FC7\u3002", "sources": [] }, { "id": "issue-176", "number": 176, "url": "https://github.com/forcegravity1989/builder-workbench/issues/176", "title": "\u3010v0.4|W38|G1\u3011\u89C4\u8303\u6536\u4E3A harness \u7CFB\u7EDF\u63D0\u793A\u8BCD\u4E0E skill", "kind": "feature", "goal": "v0.4/G1", "progress_note": "\u5DF2\u5173\u95ED\uFF0809-18\uFF09\uFF1A\u89C4\u8303\u6536\u8FDB harness\uFF08#213/#215 \u76F8\u5173 PR\uFF09\uFF0Cissue-state/metrics \u6CE8\u5165\u751F\u6548\u3002", "sources": [] }, { "id": "issue-217", "number": 217, "url": "https://github.com/forcegravity1989/builder-workbench/issues/217", "title": "\u3010v0.4|W38|G1\u3011\u65B0\u589E\u91C7\u96C6\u811A\u672C\uFF1A\u7EDF\u8BA1\u4F7F\u7528\u5468\u4E00\u5C4F\u7684\u88AB\u7BA1\u7406\u9879\u76EE\u6570", "kind": "feature", "goal": "v0.4/G1", "progress_note": "\u5DF2\u5173\u95ED\uFF0809-18\uFF09\uFF1A\u767D\u540D\u5355\u88AB\u7BA1\u9879\u76EE\u6307\u6807\u91C7\u96C6\u4E0A\u7EBF\uFF08#225\uFF09\uFF0C\u7EB3\u5165\u6570\u4E0E\u5468\u4E00\u5C4F\u4F7F\u7528\u6570\u811A\u672C\u5316\u3002", "sources": [] }, { "id": "issue-219", "number": 219, "url": "https://github.com/forcegravity1989/builder-workbench/issues/219", "title": "\u3010v0.4|W38|G1\u3011\u5468\u4E00\u5C4F\u7EAA\u8981\uFF1A\u4F1A\u8BAE\u8BED\u97F3\u8F6C\u6587\u5B57\u5E76\u751F\u6210\u7EAA\u8981", "kind": "feature", "goal": "v0.4/G1", "progress_note": "\u5DF2\u5173\u95ED\uFF0809-18\uFF09\uFF1A\u5185\u7F6E eMeeting \u8F6C\u5199\u811A\u672C\u4E0E\u4E09\u8282\u7EAA\u8981\u6A21\u677F\uFF08#221\uFF09\u3002", "sources": [] }, { "id": "issue-218", "number": 218, "url": "https://github.com/forcegravity1989/builder-workbench/issues/218", "title": "\u3010v0.4|W38|G2\u3011\u8865\u8DD1 2026-W38 \u5468\u4E00\u5C4F\u5E76\u5165\u5E93\u5F52\u6863", "kind": "feature", "goal": "v0.4/G2", "progress_note": "\u5DF2\u5173\u95ED\uFF0809-19\uFF09\uFF1Av0.4 \u89C4\u5212\u6570\u636E\u3001\u7EAA\u8981\u3001\u4EA4\u4ED8\u4EF6\u3001\u62A5\u544A\u5168\u90E8\u843D\u4ED3\uFF08#220/#228/#231\uFF09\u3002", "sources": [] }], "session_label": "\u672A\u53D6\u5F97", "session_kind": "\u539F\u59CB\u8BB0\u5F55", "session_meta": "\u672C\u4ED3 Orca \u9002\u914D\u5C1A\u65E0\u53EF\u7528\u4F1A\u8BDD\u5217\u8868\u8BFB\u53D6\u63A5\u53E3\uFF0C\u4E0D\u4EE5\u804A\u5929\u6458\u5F55\u4EE3\u66FF\u5217\u8868\u3002", "sessions": [], "deliverables": [{ "id": "D1", "label": "v0.4 \u6700\u7EC8\u7248\u672C\u62A5\u544A\uFF08report.html\uFF09", "goal": "G1", "url": ".bw/planning/v0.4/report.html" }, { "id": "D2", "label": "v0.4 \u5468\u4E00\u5C4F\u7B2C\u4E00\u5C4F\u5FEB\u7167\u4EA4\u4ED8\u4EF6", "goal": "G2", "url": ".bw/planning/v0.4/deliverables/v04-g2-monday-screen.png" }] }, "summary": { "overview": "v0.5 \u7248\u672C\u76EE\u6807\u8BC4\u5BA1\uFF1Aorca-bw \u7248\u672C\u4EA4\u4ED8 + BW \u81EA\u52A8\u5316\u6D41\u7A0B\u5BF9\u9F50\uFF08\u8881\u5065\u52FE\u52FE\u8868\uFF09+ \u5468\u4E00\u5C4F\u7279\u6027\u4F18\u5316\u4E0E\u770B\u62A4\u6307\u6807", "risks": "", "progress": "v0.4 \u5DF2\u53D1\u5E03\uFF08tag v0.4.0\uFF09\u3002G1 \u5468\u4E00\u5C4F\u529F\u80FD\u4EA4\u4ED8\uFF1A\u9A8C\u6536 11/11\u3001\u7528\u4F8B 16/16 \u5168\u8FC7\uFF0C5 \u6761\u4EFB\u52A1 Issue \u5168\u5173\uFF0C\u8FBE\u6210\uFF1BG2 \u672C\u673A v0.4 \u4EA4\u4ED8\u5F52\u6863\uFF1A\u8BA1\u5212 JSON/\u7EAA\u8981/\u4EA4\u4ED8\u4EF6/\u4EFB\u52A1 Issue/\u5F52\u6863 PR \u9F50\u5957\uFF0C\u8FBE\u6210\u3002", "badges": [["\u5F85\u6838\u5BF9", "\u5F85\u8BA8\u8BBA"], ["\u5F85\u6838\u5BF9"]] }, "review": { "live_notes": "## \u672C\u5468 Top3 \u76EE\u6807\n1\u3001orca-bw\u91CD\u6784\u7248\u4E0A\u7EBF, \u8865\u9F50XX\u9AD8\u4F18\u5148\u7EA7\u7279\u6027\u516D\u73AF(intent\\spec\\design\\TDD\\\u9A8C\u6536E2E\\\u65C5\u7A0BE2E)\u3002\n2\u3001\u5BF9\u9F50\u8881\u5065\u52FE\u52FE\u8868\uFF0C\u9010\u6B65\u8865\u9F50BW PR|\u4E0A\u7EBF\u7684\u81EA\u52A8\u5316\u6D41\u7A0B\u7F3A\u5931\u90E8\u5206\u3002\n3\u3001\u4F18\u5316\u4E0A\u7248\u672C\u5468\u4E00\u5C4F\u7279\u6027\uFF0C\u6E05\u7406 \u5468\u4E00\u5C4F \u7279\u6027 Issue\u3002\u6784\u5EFA\u7279\u6027\u770B\u62A4\u6307\u6807\uFF1AXX\u9879\u76EE\u4F7F\u7528XX\u6B21\u76D1\u6D4B\n## \u5468\u4E94\u4EA4\u4ED8\u4EF6\n1\u3001v0.5\u7248\u672C\u9A8C\u6536\u62A5\u544A\uFF08\u5305\u542B\u516D\u73AF\u7279\u6027\u77E9\u9635\u81EA\u52A8\u5316\u9A8C\u8BC1\u62A5\u544A\uFF09\uFF0CXX\u9A8C\u6536\u70B9E2E\u7528\u4F8B\u3001XX\u5192\u70DF\u7528\u6237\u65C5\u7A0B\u7528\u4F8B\u3002\n2\u3001BW CI\\CD \u5728\u52FE\u52FE\u8868\u73B0\u72B6\uFF0C\u5E76\u5F80\u524D\u63A8\u8FDB1+\u9879\u3002\n3\u3001\u5468\u4E00\u5C4F \u7279\u6027issue\u5168\u90E8\u95ED\u73AF\uFF1B\n## \u6570\u5B57\u6307\u6807\u53D8\u5316\n{\u5468\u4E00\u5C4F} \u9879\u76EE\u6570 1 -> 6\n", "meeting_url": "", "transcript": { "path": "", "sha256": "", "text": "", "source_url": "" }, "minutes": { "state": "manual", "markdown": "## \u672C\u5468 Top3 \u76EE\u6807\n1\u3001orca-bw\u91CD\u6784\u7248\u4E0A\u7EBF, \u8865\u9F50XX\u9AD8\u4F18\u5148\u7EA7\u7279\u6027\u516D\u73AF(intent\\spec\\design\\TDD\\\u9A8C\u6536E2E\\\u65C5\u7A0BE2E)\u3002\n2\u3001\u5BF9\u9F50\u8881\u5065\u52FE\u52FE\u8868\uFF0C\u9010\u6B65\u8865\u9F50BW PR|\u4E0A\u7EBF\u7684\u81EA\u52A8\u5316\u6D41\u7A0B\u7F3A\u5931\u90E8\u5206\u3002\n3\u3001\u4F18\u5316\u4E0A\u7248\u672C\u5468\u4E00\u5C4F\u7279\u6027\uFF0C\u6E05\u7406 \u5468\u4E00\u5C4F \u7279\u6027 Issue\u3002\u6784\u5EFA\u7279\u6027\u770B\u62A4\u6307\u6807\uFF1AXX\u9879\u76EE\u4F7F\u7528XX\u6B21\u76D1\u6D4B\n## \u5468\u4E94\u4EA4\u4ED8\u4EF6\n1\u3001v0.5\u7248\u672C\u9A8C\u6536\u62A5\u544A\uFF08\u5305\u542B\u516D\u73AF\u7279\u6027\u77E9\u9635\u81EA\u52A8\u5316\u9A8C\u8BC1\u62A5\u544A\uFF09\uFF0CXX\u9A8C\u6536\u70B9E2E\u7528\u4F8B\u3001XX\u5192\u70DF\u7528\u6237\u65C5\u7A0B\u7528\u4F8B\u3002\n2\u3001BW CI\\CD \u5728\u52FE\u52FE\u8868\u73B0\u72B6\uFF0C\u5E76\u5F80\u524D\u63A8\u8FDB1+\u9879\u3002\n3\u3001\u5468\u4E00\u5C4F \u7279\u6027issue\u5168\u90E8\u95ED\u73AF\uFF1B\n## \u6570\u5B57\u6307\u6807\u53D8\u5316\n{\u5468\u4E00\u5C4F} \u9879\u76EE\u6570 1 -> 6\n" }, "decisions": ["\u76EE\u6807\u5B9A\u4E3A\u6700\u65B0\u4E09\u6761\uFF1AG1 orca-bw \u91CD\u6784\u7248\u4E0A\u7EBF\u5E76\u8865\u9F50\u516D\u73AF\u3001G2 \u5BF9\u9F50\u8881\u5065\u52FE\u52FE\u8868\u9010\u6B65\u8865\u9F50 BW PR/\u4E0A\u7EBF\u81EA\u52A8\u5316\u6D41\u7A0B\u3001G3 \u4F18\u5316\u5468\u4E00\u5C4F\u7279\u6027\u5E76\u6784\u5EFA\u770B\u62A4\u6307\u6807\u3002", "\u9879\u76EE\u52A9\u624B\uFF08#199\uFF09\u4E0D\u7EB3\u5165\u672C\u7248\u4E09\u6761\u76EE\u6807\u3002", "G3 \u770B\u62A4\u6307\u6807\u786E\u8BA4\u4E3A\u4F7F\u7528\u8BE5\u7279\u6027\u9879\u76EE\u6570\uFF0C1\u21926\uFF081=BW \u81EA\u8EAB\uFF0C6=\u7EC4\u5185\u5F53\u524D\u9879\u76EE\u603B\u6570\uFF09\u3002", "G1/G2 \u6307\u6807\u4E0E\u76EE\u6807\u503C\u6682\u4EE5 XX \u5360\u4F4D\uFF0C\u5F85\u4E0E\u76F8\u5173\u65B9\u5BF9\u9F50\u540E\u518D\u6572\u5B9A\u3002", "\u98CE\u9669\u4E0D\u5199\u5165 JSON\uFF0C\u7531\u7528\u6237\u5355\u72EC\u8BB0\u5F55\u3002"] }, "plan": { "task_summary": "\u4E09\u6761\u76EE\u6807 9 \u6761\u4EFB\u52A1 Issue \u62C6\u89E3\u5B8C\u6210\uFF1AG1 orca-bw \u91CD\u6784\u7248\u4E0A\u7EBF\xB7\u516D\u73AF\u8865\u9F50\uFF08umbrella+F1\u2013F5\uFF0C6 \u6761\uFF09\uFF1BG2 \u5DE5\u5177\u94FE\u8FC1\u79FB\u4E0E\u52FE\u52FE\u8868\u76D8\u70B9\uFF082 \u6761\uFF09\uFF1BG3 \u5468\u4E00\u5C4F\u770B\u62A4\u6307\u6807\uFF081 \u6761\uFF09\u3002\u7CFB\u7EDF\u5165\u53E3 #246 \u6302 bw:plan:v0.5\u3002", "goals": [{ "id": "G1", "label": "G1", "title": "orca-bw\u91CD\u6784\u7248\u4E0A\u7EBF, \u8865\u9F50XX\u9AD8\u4F18\u5148\u7EA7\u7279\u6027\u516D\u73AF(intent\\spec\\design\\TDD\\\u9A8C\u6536E2E\\\u65C5\u7A0BE2E)\u3002", "metric": "", "target": "", "baseline": "bw-orca 77530a2fe fork \u672A\u5408\u5165\uFF1B\u73B0\u77E9\u9635 F4 \u5F52\u5C5E\u5F85\u5B9A", "reading": "", "deadline": "", "owner": "", "progress": null, "status": { "label": "\u8349\u6848", "tone": "neutral" }, "note": "\u6307\u6807/\u76EE\u6807\u503C\u6682\u4EE5 XX \u5360\u4F4D\uFF1A\u8865\u9F50\u7684\u9AD8\u4F18\u5148\u7EA7\u7279\u6027\u6570\u3001\u516D\u73AF \u25CF \u8986\u76D6\u3001\u7BA1\u9053 E2E \u901A\u8FC7\uFF1B\u5F85\u4E0E Orca \u7EC4\u5BF9\u9F50\u540E\u518D\u6572\u5B9A\u3002", "sources": [] }, { "id": "G2", "label": "G2", "title": "\u5BF9\u9F50\u8881\u5065\u52FE\u52FE\u8868\uFF0C\u9010\u6B65\u8865\u9F50BW PR|\u4E0A\u7EBF\u7684\u81EA\u52A8\u5316\u6D41\u7A0B\u7F3A\u5931\u90E8\u5206\u3002", "metric": "", "target": "", "baseline": "\u8881\u5065\u52FE\u52FE\u8868\u73B0\u72B6\u5F85\u76D8\u70B9\uFF08BW PR/\u4E0A\u7EBF\u81EA\u52A8\u5316\u6D41\u7A0B\u7F3A\u5931\u9879\uFF09", "reading": "", "deadline": "", "owner": "", "progress": null, "status": { "label": "\u8349\u6848", "tone": "neutral" }, "note": "\u6307\u6807/\u76EE\u6807\u503C\u6682\u4EE5 XX \u5360\u4F4D\uFF0C\u5F85\u4E0E\u8881\u5065\u5BF9\u9F50\u540E\u518D\u6572\u5B9A\uFF1B\u672C\u7248\u4E0D\u8986\u76D6 #199 \u9879\u76EE\u52A9\u624B\u3002", "sources": [] }, { "id": "G3", "label": "G3", "title": "\u4F18\u5316\u4E0A\u7248\u672C\u5468\u4E00\u5C4F\u7279\u6027\uFF0C\u6E05\u7406 \u5468\u4E00\u5C4F \u7279\u6027 Issue\u3002\u6784\u5EFA\u770B\u62A4\u6307\u6807\uFF1A\u4F7F\u7528\u8BE5\u7279\u6027\u9879\u76EE\u6570", "metric": "\u4F7F\u7528\u8BE5\u7279\u6027\uFF08\u5468\u4E00\u5C4F\uFF09\u7684\u9879\u76EE\u6570", "target": "6", "baseline": "1\uFF08\u4EC5 BW \u81EA\u8EAB\u5F53\u524D\u4F7F\u7528\uFF09", "reading": "", "deadline": "", "owner": "", "progress": null, "status": { "label": "\u8349\u6848", "tone": "neutral" }, "note": "\u770B\u62A4\u6307\u6807\u7531 Builder \u786E\u8BA4\uFF082026-09-21\uFF09\uFF1A\u4F7F\u7528\u8BE5\u7279\u6027\u9879\u76EE\u6570 1\u21926\uFF081=BW \u81EA\u8EAB\uFF0C6=\u7EC4\u5185\u5F53\u524D\u9879\u76EE\u603B\u6570\uFF09\u3002", "sources": [] }], "tasks": [{ "id": "issue-247", "number": 247, "url": "https://github.com/forcegravity1989/builder-workbench/issues/247", "title": "\u3010v0.5|W39|G1\u3011orca-bw \u91CD\u6784\u7248\u4E0A\u7EBF\uFF1AF1\u2013F5 \u7279\u6027\u516D\u73AF\u8865\u9F50\u4E0E\u7248\u672C\u4EA4\u4ED8\u6574\u4F53\u8DDF\u8E2A", "kind": "feature", "goal": "v0.5/G1", "sources": [] }, { "id": "issue-248", "number": 248, "url": "https://github.com/forcegravity1989/builder-workbench/issues/248", "title": "\u3010v0.5|W39|G1\u3011orca-bw \u516D\u73AF\u8865\u9F50 \xB7 F1 \u9879\u76EE\u63A5\u5165\u4E0E\u9879\u76EE\u7EA6\u5B9A", "kind": "feature", "goal": "v0.5/G1", "sources": [] }, { "id": "issue-249", "number": 249, "url": "https://github.com/forcegravity1989/builder-workbench/issues/249", "title": "\u3010v0.5|W39|G1\u3011orca-bw \u516D\u73AF\u8865\u9F50 \xB7 F2 \u7248\u672C\u76EE\u6807\u4E0E\u8BA1\u5212\uFF08\u5468\u4E00\u5C4F\xB7\u53C2\u8003\u5B9E\u73B0\uFF09", "kind": "feature", "goal": "v0.5/G1", "sources": [] }, { "id": "issue-250", "number": 250, "url": "https://github.com/forcegravity1989/builder-workbench/issues/250", "title": "\u3010v0.5|W39|G1\u3011orca-bw \u516D\u73AF\u8865\u9F50 \xB7 F3 Issue \u8FDB\u5EA6\u4E0E\u4EBA\u5DE5\u5B8C\u6210", "kind": "feature", "goal": "v0.5/G1", "sources": [] }, { "id": "issue-251", "number": 251, "url": "https://github.com/forcegravity1989/builder-workbench/issues/251", "title": "\u3010v0.5|W39|G1\u3011orca-bw \u516D\u73AF\u8865\u9F50 \xB7 F4 AI \u4EFB\u52A1\u5F00\u5DE5\u4E0E\u4F1A\u8BDD\u7EED\u63A5", "kind": "feature", "goal": "v0.5/G1", "sources": [] }, { "id": "issue-252", "number": 252, "url": "https://github.com/forcegravity1989/builder-workbench/issues/252", "title": "\u3010v0.5|W39|G1\u3011orca-bw \u516D\u73AF\u8865\u9F50 \xB7 F5 \u5B9A\u65F6\u5DE5\u4F5C\u6267\u884C", "kind": "feature", "goal": "v0.5/G1", "sources": [] }, { "id": "issue-253", "number": 253, "url": "https://github.com/forcegravity1989/builder-workbench/issues/253", "title": "\u3010v0.5|W39|G2\u3011BW \u5F00\u53D1\u65B9\u6CD5\u8D44\u4EA7\u8FC1\u79FB\u81F3 orca-bw\uFF1ACI/\u95E8\u7981/verify \u5165\u53E3\u3001PR \u8BC4\u5BA1\u53EC\u5524\u5236\u3001\u53D1\u5E03\u81EA\u7528\u5DE5\u5177\u94FE", "kind": "feature", "goal": "v0.5/G2", "sources": [] }, { "id": "issue-254", "number": 254, "url": "https://github.com/forcegravity1989/builder-workbench/issues/254", "title": "\u3010v0.5|W39|G2\u3011\u6309\u8FD0\u7EF4\u5168\u666F\u52FE\u52FE\u8868\u76D8\u70B9 BW \u81EA\u8EAB\u73B0\u72B6\u5E76\u65B0\u589E 1+ \u9879\u843D\u5730", "kind": "feature", "goal": "v0.5/G2", "sources": [] }, { "id": "issue-255", "number": 255, "url": "https://github.com/forcegravity1989/builder-workbench/issues/255", "title": "\u3010v0.5|W39|G3\u3011\u6784\u5EFA\u5468\u4E00\u5C4F\u770B\u62A4\u6307\u6807\uFF1A\u4F7F\u7528\u8BE5\u7279\u6027\u9879\u76EE\u6570\u767D\u540D\u5355\u91C7\u96C6\uFF081\u21926\uFF09", "kind": "feature", "goal": "v0.5/G3", "sources": [] }] }, "confirmation": { "results": { "at": "2026-09-21T06:23:50Z", "actor": "user" }, "review_ready": { "at": "2026-09-21T12:24:48Z", "actor": "user" }, "plan": { "at": "2026-09-22T11:48:31Z", "actor": "user" } }, "updated_at": "2026-09-22T11:48:31Z", "progress_updates": [] };
@@ -42802,8 +42810,9 @@ html,body,#root{height:100%;margin:0}body{overflow:hidden}button,input,textarea,
     const [risk, setRisk] = (0, import_react4.useState)(original.summary.risks), [progress, setProgress] = (0, import_react4.useState)(original.summary.progress), [modal, setModal] = (0, import_react4.useState)(null), [active, setActive] = (0, import_react4.useState)(0);
     const [sessions, setSessions] = (0, import_react4.useState)({ \u8BA1\u5212: "W39", \u9A8C\u6536: "W39" }), [sessionFlow, setSessionFlow] = (0, import_react4.useState)(location.hash === "#friday" ? "\u9A8C\u6536" : "\u8BA1\u5212"), [drafts, setDrafts] = (0, import_react4.useState)({}), [configId, setConfigId] = (0, import_react4.useState)(1), [notice, setNotice] = (0, import_react4.useState)("");
     const [issues, setIssues] = (0, import_react4.useState)(remote.issues), [expanded, setExpanded] = (0, import_react4.useState)(false), [taskFilter, setTaskFilter] = (0, import_react4.useState)(""), [selectedIssue, setSelectedIssue] = (0, import_react4.useState)(null), [issueDraft, setIssueDraft] = (0, import_react4.useState)(""), [editingIssue, setEditingIssue] = (0, import_react4.useState)(false), [returnTo, setReturnTo] = (0, import_react4.useState)("tasks"), [reviewOpened, setReviewOpened] = (0, import_react4.useState)(false), [copied, setCopied] = (0, import_react4.useState)(false);
+    const [overviewSelection, setOverviewSelection] = (0, import_react4.useState)({ version: "v0.5", week: "W39" }), [overviewUI, setOverviewUI] = (0, import_react4.useState)({ feature: "", grain: "week", repoGrain: "week", hidden: [] });
     const taskSection = (0, import_react4.useRef)(null), composer = (0, import_react4.useRef)(null), savedScroll = (0, import_react4.useRef)(0);
-    const weekly = view === "monday" || view === "friday", chatVisible = weekly || view === "metricsetup", branch = sessionFlow === "\u9A8C\u6536" ? "bw/week-acceptance" : "bw/week-plan", session = sessions[sessionFlow], setSession = (v) => setSessions((x) => ({ ...x, [sessionFlow]: v })), draftKey = view === "metricsetup" ? "\u914D\u7F6E-" + configId : sessionFlow + "-" + session, draft = drafts[draftKey] || "", setDraft = (v) => setDrafts((x) => ({ ...x, [draftKey]: v })), current = version === "v0.5" ? goals : historical;
+    const weekly = view === "monday" || view === "friday", chatVisible = weekly, branch = sessionFlow === "\u9A8C\u6536" ? "bw/week-acceptance" : "bw/week-plan", session = sessions[sessionFlow], setSession = (v) => setSessions((x) => ({ ...x, [sessionFlow]: v })), draftKey = view === "metricsetup" ? "\u914D\u7F6E-" + configId : sessionFlow + "-" + session, draft = drafts[draftKey] || "", setDraft = (v) => setDrafts((x) => ({ ...x, [draftKey]: v })), current = version === "v0.5" ? goals : historical;
     const taskRows = (v) => (v === "v0.5" ? original.plan.tasks : original.results.tasks).map((t) => ({ ...t, ...issues.find((x) => x.number === t.number), goal: t.goal.split("/").at(-1) }));
     const tasks = taskRows(version), goalIssues = (g) => tasks.filter((t) => t.goal === g.label), shownTasks = taskFilter ? tasks.filter((t) => t.goal === taskFilter) : tasks;
     const issue = issues.find((t) => t.number === selectedIssue), hasGap = (g) => g.decision === "\u672A\u8FBE";
@@ -42840,10 +42849,11 @@ ${goals.filter((g) => g.metricId).map((g) => {
         return `- ${g.label} ${m.name}\uFF1A\u5F53\u524D ${m.current ?? "\u672A\u91C7\u96C6"} \u2192 \u672C\u7248\u76EE\u6807 ${g.target || "\u5F85\u660E\u786E"}${m.current === null ? "\uFF08\u5F85\u91C7\u96C6\u540E\u6838\u5BF9\u6570\u503C\u627F\u8BFA\uFF09" : ""}`;
       }).join("\n") || "- \u672C\u7248\u672A\u627F\u8BFA\u6307\u6807"}`;
     }
-    function report() {
-      return "# " + version + " \u7248\u672C\u9A8C\u6536\n\n\u5019\u9009\u63D0\u4EA4\uFF1A\u5F85\u56FA\u5B9A\n\u51C6\u5907\u6750\u6599\uFF1A\u5F85\u5173\u8054\u5230\u5019\u9009\n\nIssue \u5B8C\u6210 " + done(tasks) + "/" + tasks.length + "\n" + current.map((g) => {
+    function report(forVersion = version) {
+      const reportGoals = forVersion === "v0.5" ? goals : historical, reportTasks = taskRows(forVersion), reportGoalIssues = (g) => reportTasks.filter((t) => t.goal === g.label);
+      return "# " + forVersion + " \u7248\u672C\u9A8C\u6536\n\n\u5019\u9009\u63D0\u4EA4\uFF1A\u5F85\u56FA\u5B9A\n\u51C6\u5907\u6750\u6599\uFF1A\u5F85\u5173\u8054\u5230\u5019\u9009\n\nIssue \u5B8C\u6210 " + done(reportTasks) + "/" + reportTasks.length + "\n" + reportGoals.map((g) => {
         const m = metrics.find((x) => x.id === g.metricId);
-        return "\n## " + g.label + " " + g.title + "\n- \u7EA6\u5B9A\uFF1A" + (g.delivery || g.metric || "\u672A\u586B\u5199") + "\n- \u5B9E\u9645\u4EA4\u4ED8\uFF1A" + (g.actualDelivery || g.note || "\u672A\u63D0\u4F9B") + (m ? "\n- \u6307\u6807\uFF1A" + m.name + "\uFF1B\u672C\u7248\u76EE\u6807 " + (g.target || "\u672A\u7EA6\u5B9A") + "\uFF1B\u5B9E\u6D4B " + (m.current ?? "\u672A\u91C7\u96C6") + "\uFF1B\u6765\u6E90 " + (m.script || "\u672A\u914D\u7F6E") + "\uFF1B\u91C7\u96C6\u65F6\u95F4\u672A\u53D6\u5F97" : version === "v0.4" ? "\n- \u5386\u53F2\u539F\u8BB0\u5F55\uFF1A" + (g.reading || "\u672A\u53D6\u5F97") + "\uFF08\u975E\u672C\u671F\u811A\u672C\u5B9E\u6D4B\uFF09" : "\n- \u672C\u76EE\u6807\u672A\u7EA6\u5B9A\u6307\u6807") + "\n- \u9A8C\u6536\u7ED3\u8BBA\uFF1A" + g.decision + "\n- \u4F9D\u636E" + (hasGap(g) ? " / \u672A\u8FBE\u9879" : "") + "\uFF1A" + (g.reason || "\u672A\u586B\u5199") + (hasGap(g) ? "\n- \u4E0B\u4E00\u6B65\uFF1A" + (g.next || "\u5F85\u5B89\u6392") : "") + "\n- Issue \u5B8C\u6210\uFF1A" + done(goalIssues(g)) + "/" + goalIssues(g).length;
+        return "\n## " + g.label + " " + g.title + "\n- \u7EA6\u5B9A\uFF1A" + (g.delivery || g.metric || "\u672A\u586B\u5199") + "\n- \u5B9E\u9645\u4EA4\u4ED8\uFF1A" + (g.actualDelivery || g.note || "\u672A\u63D0\u4F9B") + (m ? "\n- \u6307\u6807\uFF1A" + m.name + "\uFF1B\u672C\u7248\u76EE\u6807 " + (g.target || "\u672A\u7EA6\u5B9A") + "\uFF1B\u5B9E\u6D4B " + (m.current ?? "\u672A\u91C7\u96C6") + "\uFF1B\u6765\u6E90 " + (m.script || "\u672A\u914D\u7F6E") + "\uFF1B\u91C7\u96C6\u65F6\u95F4\u672A\u53D6\u5F97" : forVersion === "v0.4" ? "\n- \u5386\u53F2\u539F\u8BB0\u5F55\uFF1A" + (g.reading || "\u672A\u53D6\u5F97") + "\uFF08\u975E\u672C\u671F\u811A\u672C\u5B9E\u6D4B\uFF09" : "\n- \u672C\u76EE\u6807\u672A\u7EA6\u5B9A\u6307\u6807") + "\n- \u9A8C\u6536\u7ED3\u8BBA\uFF1A" + g.decision + "\n- \u4F9D\u636E" + (hasGap(g) ? " / \u672A\u8FBE\u9879" : "") + "\uFF1A" + (g.reason || "\u672A\u586B\u5199") + (hasGap(g) ? "\n- \u4E0B\u4E00\u6B65\uFF1A" + (g.next || "\u5F85\u5B89\u6392") : "") + "\n- Issue \u5B8C\u6210\uFF1A" + done(reportGoalIssues(g)) + "/" + reportGoalIssues(g).length;
       }).join("\n");
     }
     function review() {
@@ -43046,7 +43056,7 @@ ${goals.filter((g) => g.metricId).map((g) => {
       ] }),
       /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("main", { className: "main-pane " + (!chatVisible ? "wide-page" : ""), children: [
         /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("header", { className: "page-header", children: [
-          /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("h1", { children: { monday: "\u7248\u672C\u8BA1\u5212", friday: "\u7248\u672C\u9A8C\u6536", overview: "\u603B\u89C8", tasks: "\u4EFB\u52A1", metricsetup: "\u914D\u7F6E\u6307\u6807" }[view] }),
+          /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("h1", { children: { monday: "\u7248\u672C\u8BA1\u5212", friday: "\u7248\u672C\u9A8C\u6536", overview: "\u603B\u89C8", tasks: "\u4EFB\u52A1", metricsetup: "Claude Code" }[view] }),
           view === "monday" ? /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("span", { className: "tag tag-outline", children: "v0.5" }) : view === "friday" ? /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("select", { className: "input version-select", "aria-label": "\u9A8C\u6536\u7248\u672C", value: version, onChange: (e) => {
             setVersion(e.target.value);
             setNotice("");
@@ -43271,44 +43281,42 @@ ${goals.filter((g) => g.metricId).map((g) => {
             ] }),
             /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("span", { className: "notice", role: "status", children: notice })
           ] })
-        ] }) : view === "overview" ? /* @__PURE__ */ (0, import_jsx_runtime2.jsx)(OverviewV7, { metrics, goals, tasks: taskRows("v0.5"), onPlan: () => go("monday"), onAcceptance: () => go("friday"), onPrepare: metricPrep, onHistory: () => setModal({ type: "history", title: "\u7248\u672C\u8BB0\u5F55 \xB7 \u591A\u5468\u7EAA\u8981" }) }) : view === "metricsetup" ? /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("section", { className: "metric-setup-page", children: [
-          /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("button", { className: "btn btn-ghost", onClick: () => go("overview"), children: [
-            /* @__PURE__ */ (0, import_jsx_runtime2.jsx)(ArrowLeft, {}),
-            "\u8FD4\u56DE\u603B\u89C8"
-          ] }),
-          /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { className: "setup-heading", children: [
-            /* @__PURE__ */ (0, import_jsx_runtime2.jsx)(ChartNoAxesCombined, {}),
-            /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { children: [
-              /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("h2", { children: "\u8BA9\u6307\u6807\u6709\u771F\u5B9E\u6765\u6E90" }),
-              /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("p", { children: "\u5B9A\u4E49\u53E3\u5F84 \u2192 \u91C7\u96C6\u811A\u672C \u2192 \u8BD5\u91C7 \u2192 \u8BC4\u5BA1\u91C7\u7528" })
-            ] })
-          ] }),
-          /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("div", { className: "setup-metrics", children: metrics.filter((m) => m.kind === "script").map((m) => /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("article", { children: [
-            /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { children: [
-              /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("strong", { children: m.name }),
-              /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("span", { children: [
-                m.feature || "\u4E3B\u8981",
-                " \xB7 ",
-                m.type === "leading" ? "\u5F15\u9886" : "\u6EDE\u540E"
-              ] })
+        ] }) : view === "overview" ? /* @__PURE__ */ (0, import_jsx_runtime2.jsx)(OverviewV8, { metrics, goals, tasks: taskRows("v0.5"), planMinutes: minutes(), acceptanceDrafts: Object.fromEntries([["v0.5", "W39", goals], ["v0.4", "W38", historical]].filter(([v, w, gs]) => gs.some((g) => g.actualDelivery?.trim() || g.reason?.trim() || g.next?.trim() || g.decision !== "\u5F85\u6838\u5BF9")).map(([v, w, gs]) => [v, { week: w, status: "\u672A\u5F52\u6863\u8349\u7A3F", summary: gs.filter((g) => g.actualDelivery?.trim() || g.reason?.trim() || g.next?.trim() || g.decision !== "\u5F85\u6838\u5BF9").map((g) => g.label + " " + g.decision + "\uFF1B\u5B9E\u9645\u4EA4\u4ED8\uFF1A" + (g.actualDelivery || "\u5F85\u63D0\u4F9B") + (g.reason ? "\uFF1B" + g.reason : "")).join("\u3002"), text: report(v) }])), overviewUI, setOverviewUI, selection: overviewSelection, setSelection: setOverviewSelection, onPlan: () => go("monday"), onAcceptance: (v, w) => {
+          setVersion(v);
+          setSessions((x) => ({ ...x, \u9A8C\u6536: w }));
+          go("friday");
+        }, onPrepare: metricPrep }) : view === "metricsetup" ? /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("section", { className: "native-project-session", "aria-label": "\u539F\u751F\u9879\u76EE\u4F1A\u8BDD", children: [
+          /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { className: "native-session-toolbar", children: [
+            /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("button", { className: "btn btn-ghost", onClick: () => go("overview"), children: [
+              /* @__PURE__ */ (0, import_jsx_runtime2.jsx)(ArrowLeft, {}),
+              "\u8FD4\u56DE\u603B\u89C8"
             ] }),
-            /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("p", { children: m.definition }),
-            /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("code", { children: m.script })
-          ] }, m.id)) }),
-          /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { className: "setup-actions", children: [
             /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("span", { children: [
-              "\u914D\u7F6E\u4EFB\u52A1 ",
-              configId,
-              " \xB7 \u5C1A\u672A\u8FDE\u63A5 Orca"
+              "\u914D\u7F6E\u6307\u6807 \xB7 \u4EFB\u52A1 ",
+              configId
             ] }),
-            /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("button", { className: "btn btn-secondary", onClick: () => {
+            /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("button", { className: "btn btn-ghost", onClick: () => {
               const id = configId + 1;
               setConfigId(id);
-              setDrafts((x) => ({ ...x, ["\u914D\u7F6E-" + id]: "\u8BF7\u52A0\u8F7D\u9879\u76EE\u7EA6\u5B9A\u4E0E metrics-refresh\uFF0C\u4E0E\u6211\u660E\u786E\u8FD9\u6B21\u65B0\u6307\u6807\u7684\u53E3\u5F84\u53CA\u771F\u5B9E\u6765\u6E90\uFF0C\u6309\u6D41\u7A0B\u914D\u7F6E\u5E76\u8BD5\u91C7\u3002" }));
+              setDrafts((x) => ({ ...x, ["\u914D\u7F6E-" + id]: "\u8BF7\u52A0\u8F7D\u9879\u76EE\u7EA6\u5B9A\u3001\u901A\u7528 SYSTEM \u4E0E metrics-refresh\uFF0C\u4E0E\u6211\u660E\u786E\u8FD9\u6B21\u65B0\u6307\u6807\u7684\u53E3\u5F84\u53CA\u771F\u5B9E\u6765\u6E90\uFF0C\u6309\u5B9A\u4E49\u3001\u811A\u672C\u3001\u8BD5\u91C7\u3001\u8BC4\u5BA1\u91C7\u7528\u7684\u6D41\u7A0B\u914D\u7F6E\u3002" }));
             }, children: [
-              "\u65B0\u5EFA\u914D\u7F6E\u4EFB\u52A1",
-              /* @__PURE__ */ (0, import_jsx_runtime2.jsx)(Plus, {})
+              /* @__PURE__ */ (0, import_jsx_runtime2.jsx)(Plus, {}),
+              "\u65B0\u5EFA\u914D\u7F6E\u4EFB\u52A1"
             ] })
+          ] }),
+          /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { className: "native-session-body", children: [
+            /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { className: "session-empty", children: [
+              /* @__PURE__ */ (0, import_jsx_runtime2.jsx)(MessageSquare, {}),
+              /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("span", { children: "\u4F1A\u8BDD\u8BB0\u5F55\u5F85\u63A5\u5165" })
+            ] }),
+            /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { className: "composer", ref: composer, children: [
+              /* @__PURE__ */ (0, import_jsx_runtime2.jsx)(Field, { label: "\u4F1A\u8BDD\u8F93\u5165", value: draft, onChange: setDraft, rows: 5, placeholder: "\u4E0E\u4F1A\u8BDD\u8BA8\u8BBA\u6307\u6807\u53E3\u5F84\u548C\u91C7\u96C6\u811A\u672C\u2026" }),
+              /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { children: [
+                /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("span", { children: "Claude Code" }),
+                /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("button", { className: "btn btn-icon btn-ghost", "aria-label": "\u53D1\u9001\uFF08\u539F\u578B\u672A\u63A5\u5165\uFF09", onClick: () => setNotice("\u4F1A\u8BDD\u5C1A\u672A\u8FDE\u63A5\uFF1B\u8F93\u5165\u5DF2\u4FDD\u7559\uFF0C\u672A\u53D1\u9001"), children: /* @__PURE__ */ (0, import_jsx_runtime2.jsx)(ArrowUp, {}) })
+              ] })
+            ] }),
+            /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("p", { className: "native-session-status", role: "status", children: notice || "\u539F\u578B \xB7 \u5C1A\u672A\u8FDE\u63A5 Orca" })
           ] })
         ] }) : /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("div", { className: "native-tasks-page", children: issue ? /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)(import_jsx_runtime2.Fragment, { children: [
           /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { className: "task-detail-top", children: [
@@ -43383,7 +43391,6 @@ ${goals.filter((g) => g.metricId).map((g) => {
           /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("button", { className: "btn btn-icon btn-ghost", "aria-label": "\u5173\u95ED", onClick: () => setModal(null), children: /* @__PURE__ */ (0, import_jsx_runtime2.jsx)(X, {}) })
         ] }),
         /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { className: "dialog-content", children: [
-          modal.type === "history" && /* @__PURE__ */ (0, import_jsx_runtime2.jsx)(VersionHistory, {}),
           modal.type === "text" && /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("pre", { children: modal.text }),
           modal.type === "goal" && (() => {
             const g = goals.find((x) => x.id === modal.id);
