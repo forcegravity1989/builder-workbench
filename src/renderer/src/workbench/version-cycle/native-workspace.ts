@@ -1,7 +1,11 @@
 import { useAppStore } from '@/store'
 import { callRuntimeRpc } from '@/runtime/runtime-rpc-client'
 import { resolveExactWorktreeRoute, routeForOwner } from '@/lib/worktree-owner-route'
-import { getRepoExecutionHostId, parseExecutionHostId } from '../../../../shared/execution-host'
+import {
+  getRepoExecutionHostId,
+  parseExecutionHostId,
+  toRuntimeExecutionHostId
+} from '../../../../shared/execution-host'
 import type { CreateWorktreeResult } from '../../../../shared/worktree/create-types'
 import type { Worktree } from '../../../../shared/worktree/types'
 import type { CycleScope } from './ports'
@@ -97,7 +101,12 @@ export async function ensureNamedWorktree(
     if (result.worktree.branch !== branch) {
       throw new Error('原生创建未返回约定分支，请检查工作树')
     }
-    await useAppStore.getState().fetchWorktrees(scope.repoId, { executionHostId: scope.hostId })
+    // A paired runtime owns its nested SSH registration; do not redirect refresh to client SSH.
+    await useAppStore.getState().fetchWorktrees(scope.repoId, {
+      executionHostId: scope.runtimeOwnerEnvironmentId
+        ? toRuntimeExecutionHostId(scope.runtimeOwnerEnvironmentId)
+        : scope.hostId
+    })
     const registered = findNamedWorktree(scope, branch)
     if (!registered || registered.id !== result.worktree.id) {
       throw new Error('工作树已创建，等待所属宿主的原生登记刷新后重试')
