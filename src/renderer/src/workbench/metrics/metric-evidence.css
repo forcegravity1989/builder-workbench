@@ -1,0 +1,60 @@
+.wb-metric-evidence {
+  display: grid;
+  gap: var(--space-2);
+  min-width: 0;
+}
+
+.wb-metric-evidence p {
+  margin: 0;
+}
+
+.wb-metric-message {
+  color: var(--color-neutral-600);
+  font-size: 0.92em;
+}
+
+.wb-metric-observation {
+  display: grid;
+  gap: var(--space-1);
+  min-width: 0;
+}
+
+.wb-metric-value {
+  display: flex;
+  gap: var(--space-1);
+  align-items: baseline;
+  font-family: var(--font-mono);
+}
+
+.wb-metric-evidence summary {
+  cursor: pointer;
+  color: var(--color-neutral-600);
+  overflow-wrap: anywhere;
+}
+
+.wb-metric-evidence dl {
+  display: grid;
+  grid-template-columns: max-content minmax(0, 1fr);
+  gap: var(--space-1) var(--space-3);
+  margin: var(--space-2) 0;
+}
+
+.wb-metric-evidence dt {
+  color: var(--color-neutral-600);
+}
+
+.wb-metric-evidence dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.wb-metric-selector {
+  min-width: 0;
+  max-width: 100%;
+  border: 1px solid var(--color-divider);
+  border-radius: var(--radius-sm);
+  padding: var(--space-1) var(--space-2);
+  background: var(--color-bg);
+  color: var(--color-text);
+  font: inherit;
+}
