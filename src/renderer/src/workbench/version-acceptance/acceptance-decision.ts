@@ -32,8 +32,11 @@ export function goalEvidenceText(
   const { decision: _decision, ...result } =
     document.results.find((item) => item.goalId === goalId) ?? emptyGoalResult(goalId)
   const locations = new Set(result.deliveries.map((item) => item.location).filter(Boolean))
+  const candidatePackages = document.preparedArtifacts
+    .filter((item) => item.kind === 'package')
+    .sort((a, b) => (a.artifactId < b.artifactId ? -1 : a.artifactId > b.artifactId ? 1 : 0))
   const artifacts = document.preparedArtifacts
-    .filter((item) => locations.has(item.location))
+    .filter((item) => item.kind !== 'package' && locations.has(item.location))
     .sort((a, b) => (a.artifactId < b.artifactId ? -1 : a.artifactId > b.artifactId ? 1 : 0))
   const tasks = goalTaskEvidence(document, plan, goalId).map((item) => ({
     ...item,
@@ -49,6 +52,7 @@ export function goalEvidenceText(
       cycleId: document.cycleId,
       planRef: document.planRef,
       candidateRef: document.candidateRef ?? null,
+      candidatePackages,
       goal,
       result,
       artifacts,

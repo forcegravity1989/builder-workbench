@@ -7,7 +7,10 @@ import type {
   PlanningMaterial
 } from '../../../../shared/workbench/version-material'
 import type { VersionCycleContext } from '../version-cycle/VersionCycleShell'
-import type { VersionHistoryPort } from '../../../../shared/workbench/version-history'
+import type {
+  VersionHistoryPort,
+  VersionHistoryPlan
+} from '../../../../shared/workbench/version-history'
 import type { VersionDocumentSnapshot } from '../../../../shared/workbench/version-document'
 import { useAcceptanceBoard } from './use-acceptance-board'
 
@@ -33,6 +36,7 @@ function material(version = 'v0.5'): AcceptanceMaterial {
       sourceCommit: '1'.repeat(40)
     },
     preparedArtifacts: [],
+    candidateRef: { repository: 'github.com/team/repo', version, commit: '2'.repeat(40) },
     results: [{ goalId: 'g1', deliveries: [], readings: [], note: '', nextStep: '' }]
   }
 }
@@ -52,7 +56,10 @@ afterEach(() => {
   vi.useRealTimers()
   vi.unstubAllGlobals()
 })
-async function renderBoard(pending: Promise<VersionDocumentSnapshot<AcceptanceMaterial> | null>) {
+async function renderBoard(
+  pending: Promise<VersionDocumentSnapshot<AcceptanceMaterial> | null>,
+  readPlan?: VersionHistoryPort['readPlan']
+) {
   const scope = {
     projectId: 'project',
     repoId: 'repo',
@@ -100,28 +107,72 @@ async function renderBoard(pending: Promise<VersionDocumentSnapshot<AcceptanceMa
   const history: VersionHistoryPort = {
     list: vi.fn(async () => ({ records: [], problems: [] })),
     read: vi.fn(),
-    readPlan: vi.fn(async () => ({
-      document: plan,
-      revision,
-      planRef: material().planRef,
-      source: {
-        kind: 'committed' as const,
-        sourceCommit: '1'.repeat(40),
-        baselineCommit: '1'.repeat(40),
-        baselineRef: 'project-baseline'
-      }
-    }))
+    readPlan: vi.fn(
+      readPlan ??
+        (async () => ({
+          document: plan,
+          revision,
+          planRef: material().planRef,
+          source: {
+            kind: 'committed' as const,
+            sourceCommit: '1'.repeat(40),
+            baselineCommit: '1'.repeat(40),
+            baselineRef: 'project-baseline'
+          }
+        }))
+    )
   }
   function Harness() {
     board = useAcceptanceBoard({ context, history, recoveryKey: 'test:acceptance' })
     return null
   }
   await act(async () => root.render(<Harness />))
-  expect(board.plan?.document).toEqual(plan)
+  if (!readPlan) {
+    expect(board.plan?.document).toEqual(plan)
+  }
   return { history, associateVersion }
 }
 
 describe('acceptance draft transitions', () => {
+  it.each(['mismatch', 'unavailable'] as const)(
+    'shows a failed fixed plan in red and clears that error for a new reference: %s',
+    async (failure) => {
+      const later = Promise.withResolvers<VersionHistoryPlan>()
+      let reads = 0
+      await renderBoard(Promise.resolve(null), async () => {
+        if (reads++) {
+          return later.promise
+        }
+        if (failure === 'unavailable') {
+          throw new Error('宿主读取失败')
+        }
+        return {
+          document: plan,
+          revision: `sha256:${'b'.repeat(64)}`,
+          planRef: material().planRef,
+          source: {
+            kind: 'committed',
+            sourceCommit: '1'.repeat(40),
+            baselineCommit: '1'.repeat(40),
+            baselineRef: 'project-baseline'
+          }
+        }
+      })
+      expect(board.plan).toBeNull()
+      expect(board.error).toContain(failure === 'mismatch' ? '计划来源已改变' : '宿主读取失败')
+      expect(board.journey.preparation.kind).toBe('failed')
+      await act(async () => {
+        const document = board.controller.value!.document
+        board.controller.edit({
+          ...document,
+          planRef: { ...document.planRef, revision: `sha256:${'c'.repeat(64)}` }
+        })
+      })
+      expect(board.plan).toBeNull()
+      expect(board.error).toBeNull()
+      expect(board.journey.preparation.kind).toBe('pending')
+    }
+  )
   it.each([false, true])(
     'preserves an intervening input when another version read returns; missing=%s',
     async (missing) => {

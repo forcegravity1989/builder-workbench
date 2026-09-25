@@ -158,6 +158,49 @@ describe('version acceptance evidence', () => {
     expect(document.results.find((result) => result.goalId === 'g1')!.decision!.outcome).toBe('met')
   })
 
+  it('rechecks every goal when a candidate package changes even with the same source commit', async () => {
+    const original = draft()
+    original.preparedArtifacts = [
+      {
+        artifactId: 'release',
+        kind: 'package',
+        location: 'release.zip',
+        candidateRef: original.candidateRef!,
+        generatedAt: '2026-09-25T01:00:00Z',
+        checksum: 'sha256:first'
+      }
+    ]
+    const first = await recordHumanDecision({
+      document: original,
+      plan,
+      goalId: 'g1',
+      outcome: 'met',
+      source: '验收界面',
+      reason: '已展示',
+      recordedAt: '2026-09-25T02:00:00Z'
+    })
+    const second = await recordHumanDecision({
+      document: first,
+      plan,
+      goalId: 'g2',
+      outcome: 'met',
+      source: '验收界面',
+      reason: '已展示',
+      recordedAt: '2026-09-25T02:00:00Z'
+    })
+    expect(second.results.every((result) => !result.deliveries.length)).toBe(true)
+    const changed = structuredClone(second)
+    changed.preparedArtifacts[0].checksum = 'sha256:replacement'
+    expect(changed.candidateRef).toEqual(second.candidateRef)
+    for (const goalId of ['g1', 'g2']) {
+      expect(await decisionFreshness(second, plan, goalId)).toBe('current')
+      expect(await decisionFreshness(changed, plan, goalId)).toBe('changed')
+      expect(changed.results.find((result) => result.goalId === goalId)?.decision?.outcome).toBe(
+        'met'
+      )
+    }
+  })
+
   it('invalidates prior evidence after either candidate or fixed plan changes', async () => {
     const original = await decide()
     const changedCandidate = structuredClone(original)

@@ -58,39 +58,40 @@ export function useFixedAcceptancePlan(
   reference: PlanReference | undefined
 ) {
   const key = reference ? JSON.stringify(reference) : ''
-  const [result, setResult] = useState<{
-    key: string
-    plan: VersionHistoryPlan
-    checkedAt: string
-  } | null>(null)
-  const [error, setError] = useState<string | null>(null)
+  const [result, setResult] = useState<
+    | { key: string; kind: 'verified'; plan: VersionHistoryPlan; checkedAt: string }
+    | { key: string; kind: 'mismatch' | 'unavailable'; reason: string }
+    | null
+  >(null)
   useEffect(() => {
     if (!reference) {
       return
     }
     let current = true
+    let sourceRead = false
     void history
       .readPlan({ scope, planRef: reference })
       .then((plan) => {
+        sourceRead = true
         assertFixedPlan(reference, plan)
         if (current) {
-          setResult({ key, plan, checkedAt: new Date().toISOString() })
-          setError(null)
+          setResult({ key, kind: 'verified', plan, checkedAt: new Date().toISOString() })
         }
       })
       .catch((reason) => {
         if (current) {
-          setResult(null)
-          setError(String(reason))
+          setResult({ key, kind: sourceRead ? 'mismatch' : 'unavailable', reason: String(reason) })
         }
       })
     return () => {
       current = false
     }
   }, [history, scope, reference, key])
-  const verified = result?.key === key ? result : null
-  const verification: EvidenceCheck = verified
-    ? { kind: 'verified', checkedAt: verified.checkedAt }
-    : { kind: 'unknown', reason: error ?? '固定计划尚未读取' }
-  return { plan: verified?.plan ?? null, verification, error }
+  const current = result?.key === key ? result : null
+  const verification: EvidenceCheck = current ?? { kind: 'unknown', reason: '固定计划尚未读取' }
+  return {
+    plan: current?.kind === 'verified' ? current.plan : null,
+    verification,
+    error: current && current.kind !== 'verified' ? current.reason : null
+  }
 }

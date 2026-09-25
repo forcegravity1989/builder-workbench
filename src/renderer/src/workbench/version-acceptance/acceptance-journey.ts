@@ -19,7 +19,13 @@ export function preparationSignal(
   plan: EvidenceCheck,
   checks: PreparationChecks | null
 ): JourneySignal {
-  if (!document || (!document.candidateRef && !document.preparedArtifacts.length)) {
+  if (!document) {
+    return { kind: 'unknown', label: '未开始' }
+  }
+  if (plan.kind === 'mismatch' || plan.kind === 'unavailable') {
+    return { kind: 'failed', label: '原承诺核对失败' }
+  }
+  if (!document.candidateRef && !document.preparedArtifacts.length) {
     return { kind: 'unknown', label: '未开始' }
   }
   if (
