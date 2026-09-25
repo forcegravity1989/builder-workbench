@@ -1,5 +1,6 @@
 // @ts-nocheck -- mechanically split from OrcaRuntimeService; behavior is covered by AST equivalence and characterization tests.
 import { OrcaRuntimeWithRestoreStructuredAgentSessionTabsOnce } from './orca-runtime-restore-structured-agent-session-tabs-once'
+import { parseExecutionHostId, type ExecutionHostId } from '../../shared/execution-host'
 import { DEFAULT_WORKTREE_LIST_LIMIT } from './orca-runtime-postlude'
 import type { RuntimeWorktreeListResult } from '../../shared/runtime-types'
 import type { DetectedWorktreeListResult, Worktree } from '../../shared/worktree/types'
@@ -114,7 +115,20 @@ export class OrcaRuntimeWithListManagedWorktrees extends OrcaRuntimeWithRestoreS
     )
   }
 
-  async showManagedWorktree(worktreeSelector: string) {
+  async showManagedWorktree(worktreeSelector: string, requiredHostId?: ExecutionHostId) {
+    if (requiredHostId !== undefined) {
+      if (!worktreeSelector.startsWith('id:') || !parseExecutionHostId(requiredHostId)) {
+        throw new Error('selector_not_found')
+      }
+      const worktree = await this.resolveExplicitWorktreeIdScoped(
+        worktreeSelector.slice(3),
+        requiredHostId
+      )
+      if (!worktree) {
+        throw new Error('selector_not_found')
+      }
+      return worktree
+    }
     return await this.resolveWorktreeSelector(worktreeSelector)
   }
 
