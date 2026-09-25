@@ -126,9 +126,8 @@ export function createVersionHistoryService(host: VersionHistoryHost): VersionHi
       const baseline = await host.baseline(scope)
       SourceCommit.parse(baseline.commit)
       const log = await host.git(scope, [
-        '-c',
-        'core.quotepath=false',
         'log',
+        '-z',
         '--full-history',
         '--diff-merges=first-parent',
         '--format=%H%x00%cI',
@@ -144,13 +143,16 @@ export function createVersionHistoryService(host: VersionHistoryHost): VersionHi
       const seen = new Set<string>()
       const records: VersionHistorySource[] = []
       const problems: VersionHistoryProblem[] = []
-      for (const line of log.toString('utf8').split(/\r?\n/)) {
-        const header = /^([a-f0-9]{40}|[a-f0-9]{64})\0(.+)$/.exec(line)
-        if (header) {
-          sourceCommit = header[1]
-          committedAt = header[2]
+      const tokens = log.toString('utf8').split('\0')
+      for (let index = 0; index < tokens.length; index++) {
+        const token = tokens[index]
+        if (SourceCommit.safeParse(token).success) {
+          sourceCommit = token
+          committedAt = tokens[++index]
           continue
         }
+        // Git separates the commit header from its first raw path with one newline.
+        const line = token.replace(/^\n/, '')
         const path = /^\.bw\/planning\/([^/]+)\/(data|acceptance)\.json$/.exec(line)
         if (!path || !sourceCommit) {
           continue

@@ -260,6 +260,38 @@ it('rejects a well-formed archive proof for a different fixed commit', async () 
   ).rejects.toMatchObject({ code: 'archive-unverified' })
 })
 
+it('preserves raw Git paths containing quotes, backslashes and newlines as problems', async () => {
+  const paths = ['v"broken', 'v\\broken', 'v\nbroken'].map(
+    (version) => `.bw/planning/${version}/data.json`
+  )
+  const port = createVersionHistoryService({
+    async baseline() {
+      return { ref: 'adopted', commit: adoptedCommit }
+    },
+    async git(_scope, args) {
+      expect(args).toContain('-z')
+      return Buffer.from(`${adoptedCommit}\0${'2026-09-25T00:00:00Z'}\0\n${paths.join('\0')}\0`)
+    },
+    async readDraft() {
+      return null
+    },
+    async archiveState() {
+      throw new Error('Invalid paths must not become archive candidates')
+    }
+  })
+  const catalog = await port.list({ scope })
+  expect(catalog.records).toEqual([])
+  expect(catalog.problems).toHaveLength(3)
+  for (const [index, path] of paths.entries()) {
+    expect(catalog.problems[index]).toMatchObject({
+      sourceCommit: adoptedCommit,
+      workflow: 'plan',
+      code: 'invalid-version',
+      message: expect.stringContaining(path)
+    })
+  }
+})
+
 it('keeps a draft source explicit and rejects a changed draft revision', async () => {
   const raw = readFileSync(join(root, '.bw/planning/v1/data.json'))
   const planRef = {
