@@ -44,6 +44,15 @@ const text = (value: unknown): string => (typeof value === 'string' ? value : ''
 const array = (value: unknown): Record<string, unknown>[] =>
   Array.isArray(value) ? value.map(record) : []
 
+function matchingGoals(reference: string, goals: Record<string, unknown>[]): number[] {
+  if (!reference.trim()) {
+    return []
+  }
+  return goals.flatMap((goal, index) =>
+    text(goal.id) === reference || text(goal.label) === reference ? [index] : []
+  )
+}
+
 function legacyNotes(goal: Record<string, unknown>): string {
   const notes = [text(goal.note)]
   for (const [field, label] of [
@@ -112,28 +121,35 @@ export function previewSchema2Migration(
       continue
     }
     const goalLabel = text(task.goal).replace(`${version}/`, '')
-    const matches = oldGoals.flatMap((goal, index) =>
-      text(goal.id) === goalLabel || text(goal.label) === goalLabel ? [goals[index].goalId] : []
-    )
+    const matches = matchingGoals(goalLabel, oldGoals)
     tasks.push({
       provider: 'github',
       repository: `${parsed.hostname}/${match[1]}/${match[2]}`,
       number: Number(match[3]),
-      ...(matches.length === 1 ? { goalId: matches[0] } : {})
+      ...(matches.length === 1 ? { goalId: goals[matches[0]].goalId } : {})
     })
     if (goalLabel && matches.length !== 1) {
       warnings.push(`任务 #${match[3]} 的目标关联待核，未猜测匹配。`)
     }
   }
   const oldResults = record(legacy.results)
-  const results = array(oldResults.goals).map((goal, index) => ({
+  const resultGoals = array(oldResults.goals)
+  const results = resultGoals.map((goal, index) => ({
     goalId: text(goal.id) || text(goal.label) || `legacy-result-${index + 1}`,
     title: text(goal.title),
     note: legacyNotes(goal),
-    deliveries: array(oldResults.deliverables)
-      .filter((item) => text(item.goal) === text(goal.id) || text(item.goal) === text(goal.label))
-      .map((item) => ({ title: text(item.label), location: text(item.url) }))
+    deliveries: [] as LegacyResultDraft['deliveries']
   }))
+  for (const item of array(oldResults.deliverables)) {
+    const matches = matchingGoals(text(item.goal), resultGoals)
+    if (matches.length !== 1) {
+      warnings.push(
+        `旧交付物 ${text(item.label) || text(item.url) || '未命名'} 的目标关联缺失或有歧义，保留原件待核。`
+      )
+      continue
+    }
+    results[matches[0]].deliveries.push({ title: text(item.label), location: text(item.url) })
+  }
   if (results.length && !previousVersion) {
     warnings.push('旧结果未明确 previous_version，不能导入任何版本的验收；原件保留待核。')
   }
