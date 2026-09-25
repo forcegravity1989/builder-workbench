@@ -3,6 +3,7 @@ import {
   VersionHistoryReadSchema,
   VersionHistoryReadPlanSchema,
   type VersionHistoryPort,
+  type VersionHistoryCatalog,
   type VersionHistoryPlan
 } from '../../../shared/workbench/version-history'
 import { callMetricRuntime } from './metric-runtime-rpc'
@@ -11,7 +12,7 @@ export function nativeVersionHistoryPort(runtimeOwnerEnvironmentId?: string): Ve
   return {
     list(input) {
       const request = VersionHistoryListSchema.parse(input)
-      return callMetricRuntime(
+      return callMetricRuntime<VersionHistoryCatalog>(
         request.scope,
         runtimeOwnerEnvironmentId,
         'workbench.history.list',
