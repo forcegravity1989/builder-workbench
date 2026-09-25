@@ -36,7 +36,8 @@ export function useAutomationDraftEffects({
     setupDecisionPolicyDefaultRef,
     setupDecisionDefaultSignatureRef,
     setupDecisionTouchedRef,
-    setCreateTarget
+    setCreateTarget,
+    createHostStableKey
   } = local
   const {
     loadAutomationYamlHooksForRepo,
@@ -48,27 +49,35 @@ export function useAutomationDraftEffects({
   const { getDefaultTarget } = pageRefresh
 
   useEffect(() => {
-    if (!draft.projectId && editingAutomationId === null) {
+    if (!draft.projectId && editingAutomationId === null && !createHostStableKey) {
       const target = getDefaultTarget()
       if (!target.projectId) {
         return
       }
-      setDraft((current) => ({
-        ...current,
-        projectId: target.projectId,
-        workspaceId: target.workspaceId
-      }))
+      setDraft((current) =>
+        current.projectId
+          ? current
+          : {
+              ...current,
+              projectId: target.projectId,
+              workspaceId: target.workspaceId
+            }
+      )
     }
-  }, [draft.projectId, editingAutomationId, getDefaultTarget, setDraft])
+  }, [draft.projectId, editingAutomationId, getDefaultTarget, setDraft, createHostStableKey])
   useEffect(() => {
     if (!draft.projectId) {
       return
     }
     const defaultWorktree = getDefaultWorktree(dialogWorktrees)
-    if (!draft.workspaceId && defaultWorktree) {
-      setDraft((current) => ({ ...current, workspaceId: defaultWorktree.id }))
+    if (!draft.workspaceId && defaultWorktree && !createHostStableKey) {
+      setDraft((current) =>
+        current.workspaceId || current.projectId !== draft.projectId
+          ? current
+          : { ...current, workspaceId: defaultWorktree.id }
+      )
     }
-  }, [dialogWorktrees, draft.projectId, draft.workspaceId, setDraft])
+  }, [dialogWorktrees, draft.projectId, draft.workspaceId, setDraft, createHostStableKey])
   useEffect(() => {
     if (
       !createOpen ||
