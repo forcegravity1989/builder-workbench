@@ -1,4 +1,5 @@
 import { PlanningMaterialSchema } from '../../shared/workbench/version-material'
+import { VersionDocumentError } from '../../shared/workbench/version-document'
 import {
   previewSchema2Migration,
   VersionMigrationReadSchema,
@@ -32,6 +33,13 @@ export function createVersionMaterialMigration(
       const request = VersionMigrationApplySchema.parse(input)
       const store = await storeFor(request)
       const source = await store.readLegacy(request.version)
+      if (source.revision !== request.expectedRevision) {
+        throw new VersionDocumentError(
+          'revision-conflict',
+          '迁移源已变化，请重新预览后确认。',
+          source.revision
+        )
+      }
       const preview = previewSchema2Migration(
         source.document,
         request.version,
