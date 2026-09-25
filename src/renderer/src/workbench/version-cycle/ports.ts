@@ -57,7 +57,13 @@ export type CycleTaskSnapshot = {
 }
 export type CycleTaskRead =
   | { reference: CycleTaskReference; kind: 'ready'; task: CycleTaskSnapshot }
-  | { reference: CycleTaskReference; kind: 'unavailable'; error: string }
+  | {
+      reference: CycleTaskReference
+      kind: 'unavailable'
+      error: string
+      readAt: string
+      source?: TaskSourceContext
+    }
 
 export type TaskPort = {
   listVersion(
