@@ -30,29 +30,39 @@ export class MaterialDraftController<T extends VersionDocumentIdentity> {
     this.update(value)
   }
   edit(document: T) {
-    if (!this.value || document.version !== this.value.document.version)
+    if (!this.value || document.version !== this.value.document.version) {
       throw new Error('请先明确版本')
+    }
     this.generation++
     this.update({ ...this.value, document, dirty: true })
   }
   async refresh() {
-    if (!this.value) return
+    if (!this.value) {
+      return
+    }
     const original = this.value
     const remote = await this.port.read(original.document.version)
-    if (!this.value || this.value.document.version !== original.document.version) return
+    if (!this.value || this.value.document.version !== original.document.version) {
+      return
+    }
     if (this.value.dirty) {
-      if (remote?.revision !== this.value.expectedRevision)
+      if (remote?.revision !== this.value.expectedRevision) {
         this.update({
           ...this.value,
           remote,
           error: '材料已在其他会话修改，本地输入已保留。请核对两个版本。'
         })
-    } else if (remote)
+      }
+    } else if (remote) {
       this.update({ document: remote.document, expectedRevision: remote.revision, dirty: false })
-    else this.update({ ...this.value, error: '材料不存在，保留当前内容；未创建替代文件。' })
+    } else {
+      this.update({ ...this.value, error: '材料不存在，保留当前内容；未创建替代文件。' })
+    }
   }
   async save(): Promise<boolean> {
-    if (!this.value || this.saving) return false
+    if (!this.value || this.saving) {
+      return false
+    }
     const value = this.value
     const generation = this.generation
     this.saving = true
@@ -62,7 +72,9 @@ export class MaterialDraftController<T extends VersionDocumentIdentity> {
         document: value.document,
         expectedRevision: value.expectedRevision
       })
-      if (this.value?.document.version !== value.document.version) return true
+      if (this.value?.document.version !== value.document.version) {
+        return true
+      }
       this.update(
         this.generation === generation
           ? { document: saved.document, expectedRevision: saved.revision, dirty: false }
@@ -81,8 +93,9 @@ export class MaterialDraftController<T extends VersionDocumentIdentity> {
           ...this.value,
           error: error instanceof Error ? error.message : '保存失败，输入已保留'
         })
-        if ((error as { code?: string }).code === 'revision-conflict')
+        if ((error as { code?: string }).code === 'revision-conflict') {
           await this.refresh().catch(() => undefined)
+        }
       }
       return false
     } finally {
