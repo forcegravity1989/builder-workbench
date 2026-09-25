@@ -42,6 +42,6 @@ archiveCommit 只能在实际合入后由 provider/Git 解析，不能把尚未�
 
 先读 revision，再走同一材料服务 save(expectedRevision)；校验受信任工作树和流程白名单、路径、跨进程互斥、原子替换。不同分支不是一个写入路径。冲突保留双方输入并重读合并；不直接覆盖文件绕过服务。
 
-保存、评审、归档、目标达成和正式发布分别成立。人的决定绑定对象/修订/来源/时间，模型不代签。decision.materialRevision 是 planRef、candidateRef 与本目标证据（deliveries、readings、note、nextStep，以及本目标 deliveries.location 引用的 preparedArtifacts）的确定性 SHA-256 投影，不含 decision 自身。只改一个目标证据，仅该目标需重新确认；planRef 或 candidateRef 改变，保留已有结论但全部标记待重新确认。未被目标引用的准备材料不计入该目标证据。摘要只检测证据变化，不证明签署人的身份。归档按钮只准备未发送请求，后续执行遵从授权；不自动合入、完成 Issue 或发布。旧认可和归档不可直接覆盖新修订。
+保存、评审、归档、目标达成和正式发布分别成立。人的决定绑定对象/修订/来源/时间，模型不代签。decision.materialRevision 是 planRef、candidateRef、全局候选交付包（preparedArtifacts 中 kind=package），与本目标证据（deliveries、readings、note、nextStep，以及本目标 deliveries.location 引用的其他 preparedArtifacts）的确定性 SHA-256 投影，不含 decision 自身。只改一个目标证据，仅该目标需重新确认；planRef、candidateRef 或全局候选交付包改变，保留已有结论但全部标记待重新确认，即使源码提交相同也要核对包的真实来源。未被目标引用的其他准备材料不计入该目标证据。摘要只检测证据变化，不证明签署人的身份。归档按钮只准备未发送请求，后续执行遵从授权；不自动合入、完成 Issue 或发布。旧认可和归档不可直接覆盖新修订。
 
 schema2 一次显式迁移保留原件/提交来源；旧 results 按实际版本导入验收草稿，旧 confirmation 仅作历史依据。不能无损解释的对象保留待核。UI/CLI/提示/模板同时切换，不永久双写或失败静默回退旧流程。
