@@ -48,7 +48,7 @@ export const WORKBENCH_MATERIAL_HANDLERS: Record<string, CommandHandler> = {
       .enum(['plan', 'acceptance'])
       .parse(getRequiredStringFlag(ctx.flags, 'workflow'))
     const schema = workflow === 'plan' ? PlanningMaterialSchema : AcceptanceMaterialSchema
-    console.log(JSON.stringify(z.toJSONSchema(schema), null, 2))
+    console.log(JSON.stringify(z.toJSONSchema(schema, { io: 'input' }), null, 2))
   },
   'bw materials list': async (ctx) =>
     invoke(ctx, 'list', VersionMaterialScopeSchema.parse(scope(ctx))),
