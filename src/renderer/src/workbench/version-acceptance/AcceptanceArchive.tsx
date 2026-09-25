@@ -1,10 +1,15 @@
 import type { ArchiveStatus } from '../version-cycle/ports'
+import {
+  isArchivedMaterial,
+  type ArchivedMaterial
+} from '../../../../shared/workbench/version-archive'
 
 export function AcceptanceArchive({
   status,
   dirty,
   hasDocument,
   hasRevision,
+  material,
   readOnly,
   busy,
   onRefreshStatus,
@@ -16,6 +21,7 @@ export function AcceptanceArchive({
   dirty: boolean
   hasDocument: boolean
   hasRevision: boolean
+  material: ArchivedMaterial | null
   readOnly: boolean
   busy: boolean
   onRefreshStatus(): void
@@ -23,12 +29,19 @@ export function AcceptanceArchive({
   onSave(): void
   onPrepare(): void
 }) {
+  const archived = !dirty && material !== null && isArchivedMaterial(status, material)
   const label =
     status.kind === 'unknown'
       ? status.reason
       : status.kind === 'not-created'
         ? '尚未创建归档评审'
-        : `${status.kind === 'merged' ? '已合入' : status.kind === 'open' ? '待评审' : '已关闭'}${status.matchesRevision && !dirty ? '' : ' · 与当前材料待核对'}`
+        : status.kind === 'merged'
+          ? archived
+            ? '当前材料已归档'
+            : '评审已合入 · 当前材料待核对'
+          : status.kind === 'open'
+            ? '待评审'
+            : '已关闭'
   return (
     <footer className="va-footer" id="acceptance-archive">
       <span>

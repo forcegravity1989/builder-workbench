@@ -77,6 +77,13 @@ export function AcceptancePreparation({
     } catch (reason) {
       if (current()) {
         setError(String(reason))
+        const candidate: CandidateCheck = {
+          candidate: document.candidateRef,
+          kind: 'unavailable',
+          reason: String(reason)
+        }
+        setVerification({ key: sourceKey, candidate, artifacts: [] })
+        onCandidateCheck(candidate, [])
       }
     } finally {
       if (current()) {

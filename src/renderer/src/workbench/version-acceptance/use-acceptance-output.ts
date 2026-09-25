@@ -6,18 +6,52 @@ import type { ArchiveStatus, CycleTaskRead } from '../version-cycle/ports'
 import type { VersionCycleContext } from '../version-cycle/VersionCycleShell'
 import type { ArtifactCheck, CandidateCheck } from './acceptance-candidate-port'
 import { decisionFreshness } from './acceptance-decision'
-import { preparationKey, sameAcceptanceSource } from './acceptance-model'
+import { preparationKey, sameAcceptanceSource, type EvidenceCheck } from './acceptance-model'
 import { deriveAcceptanceReport } from './acceptance-report'
 import { captureTaskSnapshot } from './acceptance-task-evidence'
+import type { ArchivedMaterial } from '../../../../shared/workbench/version-archive'
+import { archiveSignal, decisionSignal, preparationSignal } from './acceptance-journey'
+import type { DecisionFreshness } from './acceptance-decision'
 
 export function useAcceptanceOutput(
   context: VersionCycleContext,
   controller: MaterialDraftController<AcceptanceMaterial>,
   draft: MaterialDraft<AcceptanceMaterial> | null,
   plan: VersionHistoryPlan | null,
+  planVerification: EvidenceCheck,
   onError: (error: string) => void
 ) {
   const document = draft?.document
+  const [decisionResult, setDecisionResult] = useState<{
+    document: AcceptanceMaterial
+    plan: VersionHistoryPlan
+    states: Record<string, DecisionFreshness>
+  } | null>(null)
+  useEffect(() => {
+    if (!document || !plan) {
+      return
+    }
+    let current = true
+    void Promise.all(
+      plan.document.goals.map(
+        async (goal) =>
+          [goal.goalId, await decisionFreshness(document, plan.document, goal.goalId)] as const
+      )
+    )
+      .then((states) => {
+        if (current) {
+          setDecisionResult({ document, plan, states: Object.fromEntries(states) })
+        }
+      })
+      .catch(() => {
+        if (current) {
+          setDecisionResult(null)
+        }
+      })
+    return () => {
+      current = false
+    }
+  }, [document, plan])
   const [checks, setChecks] = useState<{
     key: string
     candidate: CandidateCheck
@@ -43,6 +77,20 @@ export function useAcceptanceOutput(
     archiveResult?.key === archiveKey
       ? archiveResult.status
       : { kind: 'unknown', reason: '归档状态未读取' }
+  const archiveMaterial: ArchivedMaterial | null =
+    document && draft?.expectedRevision
+      ? {
+          workflow: 'acceptance',
+          version: document.version,
+          cycleId: document.cycleId,
+          revision: draft.expectedRevision
+        }
+      : null
+  const verified = document && checks?.key === preparationKey(document) ? checks : null
+  const decisionStates =
+    decisionResult?.document === document && decisionResult?.plan === plan
+      ? (decisionResult?.states ?? null)
+      : null
   function onChecks(
     source: AcceptanceMaterial,
     candidate: CandidateCheck,
@@ -108,7 +156,7 @@ export function useAcceptanceOutput(
         plan: plan.document,
         revision: draft?.dirty ? '未保存草稿' : (draft?.expectedRevision ?? '未保存'),
         verification: {
-          plan: { kind: 'verified', checkedAt: new Date().toISOString() },
+          plan: planVerification,
           candidate: verified?.candidate ?? { kind: 'unknown', reason: '候选尚未核对' },
           artifacts: verified?.artifacts,
           decisions
@@ -129,6 +177,12 @@ export function useAcceptanceOutput(
   }
   return {
     archive,
+    archiveMaterial,
+    journey: {
+      preparation: preparationSignal(document, planVerification, verified),
+      decisions: decisionSignal(document, plan?.document, decisionStates),
+      archive: archiveSignal(archive, archiveMaterial, draft?.dirty ?? false)
+    },
     archiveStatus,
     onChecks,
     saveTaskSnapshot,

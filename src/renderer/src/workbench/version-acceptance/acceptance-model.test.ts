@@ -6,6 +6,8 @@ import {
   createAcceptanceMaterial
 } from './acceptance-model'
 import { decisionFreshness, goalEvidenceRevision, recordHumanDecision } from './acceptance-decision'
+import { archiveSignal, decisionSignal, preparationSignal } from './acceptance-journey'
+import type { ArchiveStatus } from '../../../../shared/workbench/version-archive'
 
 const plan: PlanningMaterial = {
   schema_version: 3,
@@ -48,6 +50,93 @@ async function decide() {
 }
 
 describe('version acceptance evidence', () => {
+  it('keeps a failed human outcome red when its report is archived, and dirty material is never archived green', async () => {
+    const document = await recordHumanDecision({
+      document: draft(),
+      plan,
+      goalId: 'g1',
+      outcome: 'not-met',
+      source: '验收界面',
+      reason: '交付缺口',
+      recordedAt: '2026-09-25T01:00:00Z'
+    })
+    const material = {
+      workflow: 'acceptance' as const,
+      version: document.version,
+      cycleId: document.cycleId,
+      revision: planSnapshot.revision
+    }
+    const reference = {
+      provider: 'github',
+      repository: 'github.com/acme/project',
+      number: 1,
+      materialRevision: material.revision
+    }
+    const status: ArchiveStatus = {
+      kind: 'merged',
+      reference,
+      url: 'https://github.com/acme/project/pull/1',
+      checkedAt: '2026-09-25T01:00:00Z',
+      checks: 'passed',
+      review: 'approved',
+      mergeCommit: '4'.repeat(40),
+      proof: {
+        kind: 'verified',
+        value: {
+          reference,
+          mergeCommit: '4'.repeat(40),
+          material,
+          checkedAt: '2026-09-25T01:00:00Z'
+        }
+      }
+    }
+    expect(decisionSignal(document, plan, { g1: 'current', g2: 'unrecorded' }).kind).toBe('failed')
+    expect(archiveSignal(status, material, false).kind).toBe('complete')
+    expect(archiveSignal(status, material, true).kind).toBe('pending')
+    expect(decisionSignal(document, plan, { g1: 'changed', g2: 'unrecorded' }).kind).toBe('pending')
+    expect(document.results.find((item) => item.goalId === 'g1')?.decision?.outcome).toBe('not-met')
+    expect(
+      archiveSignal(
+        { ...status, proof: { kind: 'unknown', reason: '合入文件未读回' } },
+        material,
+        false
+      ).kind
+    ).toBe('pending')
+  })
+
+  it('does not turn delivery preparation green for a candidate alone or unverified execution', () => {
+    const document = draft()
+    const verified = { kind: 'verified' as const, checkedAt: '2026-09-25T01:00:00Z' }
+    const candidate = { ...verified, candidate: document.candidateRef! }
+    expect(preparationSignal(undefined, verified, null).kind).toBe('unknown')
+    expect(preparationSignal(document, verified, { candidate, artifacts: [] }).kind).toBe('pending')
+    document.preparedArtifacts = [
+      {
+        artifactId: 'demo',
+        kind: 'showcase',
+        location: 'demo.html',
+        candidateRef: document.candidateRef!,
+        generatedAt: verified.checkedAt
+      }
+    ]
+    const artifact = {
+      artifactId: 'demo',
+      candidate: verified,
+      availability: verified,
+      execution: { kind: 'unknown' as const, reason: '未核对执行记录' }
+    }
+    expect(preparationSignal(document, verified, { candidate, artifacts: [artifact] }).kind).toBe(
+      'pending'
+    )
+    expect(
+      preparationSignal(document, verified, {
+        candidate,
+        artifacts: [{ ...artifact, execution: verified }]
+      }).kind
+    ).toBe('complete')
+    document.candidateRef = { ...document.candidateRef!, commit: '5'.repeat(40) }
+    expect(preparationSignal(document, verified, null).kind).toBe('failed')
+  })
   it('starts a separate cycle while retaining fixed plan identity and promises', () => {
     const document = draft()
     expect(document.cycleId).not.toBe(plan.cycleId)

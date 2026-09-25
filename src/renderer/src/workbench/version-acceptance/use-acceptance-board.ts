@@ -7,6 +7,7 @@ import {
 import type { VersionDocumentPort } from '../../../../shared/workbench/version-document'
 import type { MetricRef } from '../../../../shared/workbench/metrics'
 import { metricRefKey } from '../../../../shared/workbench/metrics'
+import { isArchivedMaterial } from '../../../../shared/workbench/version-archive'
 import { useAcceptanceDraft } from './use-acceptance-draft'
 import { createAcceptanceMaterial, emptyGoalResult, sameAcceptanceSource } from './acceptance-model'
 import type { AcceptanceBoardProps } from './AcceptanceBoard'
@@ -52,10 +53,10 @@ export function useAcceptanceBoard({
   const document = draft?.document
   const fixed = useFixedAcceptancePlan(history, metricScope, document?.planRef)
   const plan = fixed.plan
-  const output = useAcceptanceOutput(context, controller, draft, plan, setError)
+  const output = useAcceptanceOutput(context, controller, draft, plan, fixed.verification, setError)
   const archive = output.archive
   const sameRun = document?.cycleId === session.cycleId
-  const readOnly = !sameRun || !plan
+  const readOnly = busy || !sameRun || !plan
   useEffect(
     () => () => {
       generation.current++
@@ -77,12 +78,21 @@ export function useAcceptanceBoard({
     }
   }, [document?.version, recoveryKey])
   async function loadVersion(value: string) {
+    const original = controller.value
+    if (original?.dirty) {
+      setError('当前草稿尚未保存，请先保存再切换版本。')
+      return
+    }
     cancelAutomaticRead()
     const token = ++generation.current
     setBusy(true)
     try {
       const saved = await port.read(value)
       if (token !== generation.current) {
+        return
+      }
+      if (controller.value !== original) {
+        setError('切换期间材料已变化，已保留当前输入；请保存后重新选择版本。')
         return
       }
       setVersion(value)
@@ -119,7 +129,14 @@ export function useAcceptanceBoard({
     if (
       draft &&
       draft.document.cycleId !== session.cycleId &&
-      (draft.dirty || !(archive.kind === 'merged' && archive.matchesRevision))
+      (draft.dirty ||
+        !draft.expectedRevision ||
+        !isArchivedMaterial(archive, {
+          workflow: 'acceptance',
+          version: draft.document.version,
+          cycleId: draft.document.cycleId,
+          revision: draft.expectedRevision
+        }))
     ) {
       setError('上次验收尚未核对已归档；请先继续原会话归档，保留原材料。')
       return

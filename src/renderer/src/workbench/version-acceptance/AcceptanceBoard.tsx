@@ -9,6 +9,7 @@ import { useAcceptanceMetricWindow } from './AcceptanceMetricWindow'
 import { AcceptanceContext } from './AcceptanceContext'
 import { AcceptanceTasks } from './AcceptanceTasks'
 import { AcceptanceArchive } from './AcceptanceArchive'
+import { AcceptanceJourney } from './AcceptanceJourney'
 import { prepareAcceptanceRequest } from './acceptance-model'
 import type { AcceptanceCandidatePort } from './acceptance-candidate-port'
 import { useAcceptanceBoard } from './use-acceptance-board'
@@ -77,6 +78,8 @@ function ReadyAcceptanceBoard({
     busy,
     report,
     archive,
+    archiveMaterial,
+    journey,
     onChecks,
     saveTaskSnapshot,
     scroll,
@@ -136,11 +139,7 @@ function ReadyAcceptanceBoard({
         </button>
       </header>
       <div className="va-content">
-        <nav className="va-journey" aria-label="验收流程">
-          <a href="#acceptance-preparation">准备交付</a>
-          <a href="#acceptance-results">Showcase 与验收</a>
-          <a href="#acceptance-archive">归档</a>
-        </nav>
+        <AcceptanceJourney {...journey} />
         <div
           className="va-scroll"
           ref={scroll}
@@ -361,6 +360,7 @@ function ReadyAcceptanceBoard({
         dirty={draft?.dirty ?? false}
         hasDocument={Boolean(document)}
         hasRevision={Boolean(draft?.expectedRevision)}
+        material={archiveMaterial}
         readOnly={readOnly}
         busy={busy}
         onRefreshStatus={() => void archiveStatus()}

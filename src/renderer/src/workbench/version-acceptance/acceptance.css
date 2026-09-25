@@ -62,6 +62,19 @@
 .va-journey a:hover {
   color: var(--color-accent);
 }
+.va-journey small {
+  display: block;
+  font-size: 0.65rem;
+}
+.va-journey .va-signal-pending {
+  color: var(--color-warning-deep);
+}
+.va-journey .va-signal-failed {
+  color: var(--color-danger-deep);
+}
+.va-journey .va-signal-complete {
+  color: var(--color-success-deep);
+}
 .va-scroll {
   flex: 1;
   min-width: 0;

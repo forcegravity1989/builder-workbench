@@ -6,7 +6,7 @@ import type {
   VersionHistorySource
 } from '../../../../shared/workbench/version-history'
 import type { MetricScope } from '../../../../shared/workbench/metrics'
-import type { PlanReference } from './acceptance-model'
+import type { EvidenceCheck, PlanReference } from './acceptance-model'
 import { assertFixedPlan } from './acceptance-model'
 import type { nativeVersionMaterialPort } from '../version-material-port'
 
@@ -58,7 +58,11 @@ export function useFixedAcceptancePlan(
   reference: PlanReference | undefined
 ) {
   const key = reference ? JSON.stringify(reference) : ''
-  const [result, setResult] = useState<{ key: string; plan: VersionHistoryPlan } | null>(null)
+  const [result, setResult] = useState<{
+    key: string
+    plan: VersionHistoryPlan
+    checkedAt: string
+  } | null>(null)
   const [error, setError] = useState<string | null>(null)
   useEffect(() => {
     if (!reference) {
@@ -70,7 +74,7 @@ export function useFixedAcceptancePlan(
       .then((plan) => {
         assertFixedPlan(reference, plan)
         if (current) {
-          setResult({ key, plan })
+          setResult({ key, plan, checkedAt: new Date().toISOString() })
           setError(null)
         }
       })
@@ -84,5 +88,9 @@ export function useFixedAcceptancePlan(
       current = false
     }
   }, [history, scope, reference, key])
-  return { plan: result?.key === key ? result.plan : null, error }
+  const verified = result?.key === key ? result : null
+  const verification: EvidenceCheck = verified
+    ? { kind: 'verified', checkedAt: verified.checkedAt }
+    : { kind: 'unknown', reason: error ?? '固定计划尚未读取' }
+  return { plan: verified?.plan ?? null, verification, error }
 }

@@ -69,7 +69,7 @@ export function useAcceptanceDraft(
         }
       })
       .catch((reason) => {
-        if (current) {
+        if (current && request === recovery.request) {
           setRecoveryError(String(reason))
         }
       })
