@@ -23,6 +23,15 @@ const CANONICAL_GUIDE_NAMES = [
   'orchestration'
 ]
 
+// BW keeps one source of truth in standard/; the native guide distributor owns packaging.
+const WORKBENCH_GUIDE_SOURCES = Object.fromEntries(
+  ['week-planning', 'version-acceptance', 'metrics-refresh'].map((name) => [
+    name,
+    `standard/skills/${name}/SKILL.md`
+  ])
+)
+const WORKBENCH_COMMON_REFERENCES = ['version-records', 'metrics', 'issue-state']
+
 // Why: old discovery stubs can outlive a rename indefinitely, so aliases are
 // a compatibility ledger: add entries for renames, but never remove them.
 const GUIDE_ALIASES = {
@@ -34,6 +43,9 @@ const GUIDE_ALIASES = {
   'orca-linear': [],
   'orca-per-workspace-env': [],
   orchestration: []
+}
+for (const name of Object.keys(WORKBENCH_GUIDE_SOURCES)) {
+  GUIDE_ALIASES[name] = []
 }
 
 // Why: a stubbed topic ships a hybrid discovery stub as its installable projection while
@@ -233,6 +245,55 @@ async function readGuideReferences(repoRoot, guideName) {
   )
 }
 
+async function readWorkbenchReferences(repoRoot, name) {
+  const sources = WORKBENCH_COMMON_REFERENCES.map((reference) => ({
+    name: reference,
+    source: `standard/system-prompt/references/${reference}.md`
+  }))
+  const ownDirectory = `standard/skills/${name}`
+  for (const directory of ['references', 'assets']) {
+    const root = path.join(repoRoot, ownDirectory, directory)
+    let entries = []
+    try {
+      entries = await readdir(root, { withFileTypes: true })
+    } catch (error) {
+      if (error.code !== 'ENOENT') {
+        throw error
+      }
+    }
+    for (const entry of entries.filter((item) => item.isFile() && item.name.endsWith('.md'))) {
+      // meeting belongs to the retired three-screen flow, not the current guide.
+      if (entry.name !== 'meeting.md') {
+        sources.push({
+          name: entry.name.slice(0, -3),
+          source: `${ownDirectory}/${directory}/${entry.name}`
+        })
+      }
+    }
+  }
+  if (new Set(sources.map((entry) => entry.name)).size !== sources.length) {
+    throw new Error(`Workbench reference names collide: ${name}`)
+  }
+  return sources.sort((a, b) => a.name.localeCompare(b.name, 'en'))
+}
+
+function renderWorkbenchGuide(markdown, source, name, references) {
+  return normalizeMarkdown(markdown).replace(/\[([^\]]+)\]\(([^)]+)\)/gu, (link, label, target) => {
+    if (/^(?:[a-z]+:|#)/iu.test(target)) {
+      return link
+    }
+    const resolved = path.posix.normalize(
+      path.posix.join(path.posix.dirname(source), target.split('#')[0])
+    )
+    const topic = Object.entries(WORKBENCH_GUIDE_SOURCES).find(([, file]) => file === resolved)?.[0]
+    const reference = references.find((entry) => entry.source === resolved)
+    if (!topic && !reference) {
+      throw new Error(`Unbundled Workbench guide link: ${source} -> ${target}`)
+    }
+    return `${label}（\`orca skills get ${topic ?? name}${reference ? ` --reference ${reference.name}` : ''}\`）`
+  })
+}
+
 function assertAliasContract(guides) {
   const canonicalNames = new Set(guides.map((guide) => guide.name))
   const seenAliases = new Set()
@@ -302,17 +363,41 @@ async function buildArtifacts(repoRoot = REPO_ROOT) {
   const sharedBlocks = stubTopics.size > 0 ? await readSharedStubBlocks(repoRoot) : new Map()
   const guides = []
   const projections = []
-  for (const name of expectedNames) {
-    const sourcePath = path.join(guideRoot, `${name}.md`)
+  for (const name of [...expectedNames, ...Object.keys(WORKBENCH_GUIDE_SOURCES)].sort((a, b) =>
+    a.localeCompare(b, 'en')
+  )) {
+    const workbenchSource = WORKBENCH_GUIDE_SOURCES[name]
+    const sourcePath = workbenchSource
+      ? path.join(repoRoot, workbenchSource)
+      : path.join(guideRoot, `${name}.md`)
     // Why: Git may render text with native EOLs despite repository policy; the
     // embedded guide and generated projection must have one platform-neutral identity.
-    const markdown = normalizeMarkdown(await readFile(sourcePath, 'utf8'))
+    const sourceMarkdown = normalizeMarkdown(await readFile(sourcePath, 'utf8'))
+    const workbenchReferences = workbenchSource
+      ? await readWorkbenchReferences(repoRoot, name)
+      : null
+    const markdown = workbenchSource
+      ? renderWorkbenchGuide(sourceMarkdown, workbenchSource, name, workbenchReferences)
+      : sourceMarkdown
     const frontmatter = parseFrontmatter(markdown, toPosixRelativePath(repoRoot, sourcePath))
     if (frontmatter.name !== name) {
       throw new Error(`Guide source ${name}.md declares mismatched name ${frontmatter.name}`)
     }
     const aliases = GUIDE_ALIASES[name]
-    const references = await readGuideReferences(repoRoot, name)
+    const references = workbenchReferences
+      ? await Promise.all(
+          workbenchReferences.map(async (reference) => ({
+            name: reference.name,
+            relativePath: `references/${reference.name}.md`,
+            markdown: renderWorkbenchGuide(
+              await readFile(path.join(repoRoot, reference.source), 'utf8'),
+              reference.source,
+              name,
+              workbenchReferences
+            )
+          }))
+        )
+      : await readGuideReferences(repoRoot, name)
     // Why: the embedded table always carries the full guide (served by `skills get`);
     // only the installable projection thins to a stub once a topic is in STUB_TOPICS.
     guides.push({
@@ -395,6 +480,7 @@ if (process.argv[1] && path.resolve(process.argv[1]) === import.meta.filename) {
 
 export {
   CANONICAL_GUIDE_NAMES,
+  WORKBENCH_GUIDE_SOURCES,
   GUIDE_ALIASES,
   STUB_TOPICS,
   assertAliasContract,
