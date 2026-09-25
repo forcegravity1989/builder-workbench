@@ -8,7 +8,7 @@
 
 正本为项目 .bw/metrics.toml，schema_version=2。没有文件表示未配置，解析失败表示错误。项目名片属于 project.toml，不复制过来。
 
-北极星可缺席；结构为可选 [north_star]、[[lagging]]、[[leading]]。每条包含 name、def、target、collect。feature 空归“主要”，有值归对应特性；引领的 leads 指明关联滞后指标，缺省仅在同组无歧义时采用第一条，错误或歧义需修正。
+北极星可缺席；结构为可选 [north_star]、[[lagging]]、[[leading]]。每条包含 name、def、target、collect；可选 unit 标明读数单位，缺省为空，不推测单位。feature 空归“主要”，有值归对应特性；引领的 leads 指明关联滞后指标，缺省仅在同组恰有一个滞后指标时采用，错误或歧义需修正。
 
 只支持 collect.kind=script，run 是非空 argv，不经 shell 拼接。目标是用户约定，实际数字不能手填。模板默认不创建空北极星或无脚本指标。
 
