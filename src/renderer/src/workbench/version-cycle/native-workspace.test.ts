@@ -35,30 +35,33 @@ it('keeps equal path ids on different hosts distinct regardless of active focus'
   expect(findNamedWorktree(scope, 'bw/week-plan')).toBe(b)
 })
 
-it('refreshes creation on the captured host after focus changes', async () => {
-  const created = row('runtime:b', 'b')
-  const rows: Worktree[] = []
-  const fetchWorktrees = vi.fn(async () => {
-    rows.push(created)
-    return true
-  })
-  test.state = { repos: [], allWorktrees: () => rows, fetchWorktrees }
-  test.rpc.mockImplementation(async () => {
-    test.state.activeWorkspaceExecutionHostId = 'runtime:a'
-    return { worktree: created }
-  })
-  const scope = {
-    projectId: 'project',
-    repoId: 'repo',
-    hostId: 'runtime:b' as const,
-    runtimeOwnerEnvironmentId: 'b'
+it.each(['runtime:b', 'ssh:nested'] as const)(
+  'refreshes creation through the captured runtime for %s after focus changes',
+  async (hostId) => {
+    const created = row(hostId, 'b')
+    const rows: Worktree[] = []
+    const fetchWorktrees = vi.fn(async () => {
+      rows.push(created)
+      return true
+    })
+    test.state = { repos: [], allWorktrees: () => rows, fetchWorktrees }
+    test.rpc.mockImplementation(async () => {
+      test.state.activeWorkspaceExecutionHostId = 'runtime:a'
+      return { worktree: created }
+    })
+    const scope = {
+      projectId: 'project',
+      repoId: 'repo',
+      hostId,
+      runtimeOwnerEnvironmentId: 'b'
+    }
+    await expect(ensureNamedWorktree(scope, 'bw/week-plan', 'week-plan')).resolves.toBe(created)
+    expect(test.rpc).toHaveBeenCalledWith(
+      { kind: 'environment', environmentId: 'b' },
+      'worktree.create',
+      expect.objectContaining({ repo: 'id:repo', branchNameOverride: 'bw/week-plan' }),
+      expect.anything()
+    )
+    expect(fetchWorktrees).toHaveBeenCalledWith('repo', { executionHostId: 'runtime:b' })
   }
-  await expect(ensureNamedWorktree(scope, 'bw/week-plan', 'week-plan')).resolves.toBe(created)
-  expect(test.rpc).toHaveBeenCalledWith(
-    { kind: 'environment', environmentId: 'b' },
-    'worktree.create',
-    expect.objectContaining({ repo: 'id:repo', branchNameOverride: 'bw/week-plan' }),
-    expect.anything()
-  )
-  expect(fetchWorktrees).toHaveBeenCalledWith('repo', { executionHostId: 'runtime:b' })
-})
+)
