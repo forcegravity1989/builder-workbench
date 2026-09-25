@@ -44,7 +44,6 @@ export type {
 // PTY (matching how xterm forwards Escape). The richer interrupt-intent
 // inference (agent-interrupt-intent.ts) is driven by the existing PTY input
 // observers, so writing ESC through the same send path feeds that machinery.
-const ESC = '\x1b'
 
 /**
  * Rich native input for the chat view. Sends prompts into the running agent
@@ -145,9 +144,8 @@ const NativeChatComposerPane = forwardRef<NativeChatComposerHandle, NativeChatCo
       return { ptyId: targetPtyId, settings: getSettingsForAgentTabRuntimeOwner(terminalTabId) }
     }, [targetPtyId, terminalTabId])
 
-    const [hasPty, disabled] = structuredTransport
-      ? [true, !canSend]
-      : [targetPtyId !== null, targetPtyId === null || !canSend]
+    const hasPty = Boolean(structuredTransport) || targetPtyId !== null
+    const disabled = !hasPty || !canSend
 
     const syncCaret = useCallback((el: NativeChatComposerInput) => {
       setCaret(el.selectionStart ?? el.value.length)
@@ -191,6 +189,8 @@ const NativeChatComposerPane = forwardRef<NativeChatComposerHandle, NativeChatCo
 
     const { insertTypedText, focus } = useNativeChatTypedInsertion({
       textareaRef,
+      isComposing: imeEnterGesture.isComposing,
+      draftTarget: { tabId: terminalTabId, paneKey },
       caret,
       draft,
       setDraft,
@@ -315,7 +315,7 @@ const NativeChatComposerPane = forwardRef<NativeChatComposerHandle, NativeChatCo
       if (!target) {
         return
       }
-      sendRuntimePtyInput(target.settings, target.ptyId, ESC)
+      sendRuntimePtyInput(target.settings, target.ptyId, '\x1b')
     }, [cancelPendingSends, isWorking, onStop, resolveTarget])
 
     const dispatchPtyPickerCommand = useNativeChatPickerCommandDispatch({
