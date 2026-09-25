@@ -26,6 +26,8 @@ BW 自用的 managed-projects.py、其名单和远端读取依赖要逐项核对
 
 VersionHistoryPort.list 返回 records 与 problems：前者为可读取的固定提交记录，后者保留旧格式、损坏或不可读材料的版本、提交、流程、时间和原因。单条坏记录不抹去其他有效历史；无法验证的 cycleId 不补造。read 按明确版本、周期、流程与提交读取；readPlan 按已保存的计划引用核对内容修订，并区分已合入来源与明确选择的工作树草案，不回退到最新材料。接口位于 shared/workbench/version-history.ts，renderer 原生 RPC 客户端保持相同返回形状。
 
+历史目录沿项目指定基线的第一父提交链读取材料变更，合并采用合入提交的材料快照；维护分支评审前的中间草稿不各算一次归档。内容修订按 Git 中的原始字节计算，同版本多周期分别保留。读取服务接受明确的基线与原生宿主适配，不在核心层猜测默认分支。
+
 ## 采集、存储与窗口
 
 沿 metrics schema2，不顺带升级全项目协议。MetricDefinition 保留 name/def/target/collect/feature/leads。MetricReading 带 value、window、granularity、collectedAt、source、definitionHash、collectorRevision/执行指纹；版本材料引用读数的稳定标识/快照，证据缓存可以重建，不引入 BW 业务数据库。
