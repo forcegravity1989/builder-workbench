@@ -3,6 +3,8 @@ import type { ExecutionHostId } from '../../../../shared/execution-host'
 import type { TaskSourceContext } from '../../../../shared/task-source-context'
 import type { VersionWorkflow } from '../../../../shared/workbench/version-document'
 import type { PlanningMaterial, VersionGoal } from '../../../../shared/workbench/version-material'
+import type { ArchiveReference, ArchiveStatus } from '../../../../shared/workbench/version-archive'
+export type { ArchiveReference, ArchiveStatus } from '../../../../shared/workbench/version-archive'
 
 /** Native identity, not a path-derived project or a title-derived run. */
 export type CycleScope = {
@@ -74,24 +76,6 @@ export type TaskPort = {
   openDetail(task: CycleTaskSnapshot, origin: TaskOrigin): Promise<void>
 }
 
-export type ArchiveReference = {
-  provider: string
-  repository: string
-  number: number
-  materialRevision: string
-}
-export type ArchiveStatus =
-  | { kind: 'unknown'; reason: string }
-  | { kind: 'not-created'; checkedAt: string }
-  | {
-      kind: 'open' | 'merged' | 'closed'
-      reference: ArchiveReference
-      url: string
-      checkedAt: string
-      checks: 'unknown' | 'pending' | 'passed' | 'failed'
-      review: 'unknown' | 'pending' | 'approved' | 'changes-requested'
-      matchesRevision: boolean
-    }
 export type ArchiveInput = CycleScope & {
   worktreeId: string
   version: string
