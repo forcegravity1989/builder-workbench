@@ -7,6 +7,7 @@ import { cycleScopeKey } from '../version-cycle/native-cycle-workspace'
 import { usePlanningMaterial, planningDraftKey } from './use-planning-material'
 import { derivePlanMinutes } from './plan-summary'
 import { usePlanMetrics } from './use-plan-metrics'
+import { usePlanVersionSelection } from './use-plan-version-selection'
 import { PlanningGoals } from './PlanningGoals'
 import { PlanningMigration } from './PlanningMigration'
 import { PlanningTasks } from './PlanningTasks'
@@ -43,6 +44,8 @@ function PlanningBoardContent({ context, prepareMetrics }: PlanningBoardProps) {
   const plan = material.draft?.document
   const [newVersion, setNewVersion] = useState('')
   const [creating, setCreating] = useState(false)
+  const selection = usePlanVersionSelection(material, context.associateVersion)
+  const selecting = selection.busy
   const [minutesOpen, setMinutesOpen] = useState(false)
   const [tasksOpen, setTasksOpen] = useState(false)
   const [view, setView] = useState<PlanView & { key: string }>({ ...emptyView, key: '' })
@@ -71,6 +74,12 @@ function PlanningBoardContent({ context, prepareMetrics }: PlanningBoardProps) {
   const contextKey = JSON.stringify([scopeKey, session?.sessionId, session?.cycleId])
   const currentContext = useRef(contextKey)
   currentContext.current = contextKey
+  useEffect(
+    () => () => {
+      currentContext.current = ''
+    },
+    []
+  )
   const associatedVersion = session?.version
   const selectMaterial = material.select
   const clearMaterial = material.clear
@@ -137,19 +146,18 @@ function PlanningBoardContent({ context, prepareMetrics }: PlanningBoardProps) {
     }
   }
   const selectVersion = async (version: string, create = false) => {
-    const selected = await material.select(version, create)
-    if (selected && currentContext.current === contextKey) {
-      await context.associateVersion(version)
-      if (currentContext.current === contextKey) {
-        setCreating(false)
-        setNewVersion('')
-      }
+    if (await selection.select(version, create)) {
+      setCreating(false)
+      setNewVersion('')
     }
   }
   const edit = (next: PlanningMaterial) =>
     material.edit({ ...next, cycleId: session?.cycleId ?? next.cycleId })
   const requestArchive = () =>
     act(async () => {
+      if (selection.inProgress()) {
+        throw new Error('正在关联版本与会话，请稍后再归档。')
+      }
       if (!scope || !worktreeId || !plan || !material.draft?.expectedRevision) {
         throw new Error('请先选择版本并保存计划。')
       }
@@ -201,7 +209,7 @@ function PlanningBoardContent({ context, prepareMetrics }: PlanningBoardProps) {
           <select
             aria-label="计划版本"
             value={plan?.version ?? ''}
-            disabled={!materialPort || material.busy}
+            disabled={!materialPort || material.busy || selecting}
             onChange={(event) => {
               if (event.target.value) {
                 void act(() => selectVersion(event.target.value))
@@ -223,7 +231,7 @@ function PlanningBoardContent({ context, prepareMetrics }: PlanningBoardProps) {
           </select>
           <button
             className="wb-btn wb-btn-ghost wb-btn-sm"
-            disabled={!materialPort}
+            disabled={!materialPort || selecting}
             onClick={() => setCreating((value) => !value)}
           >
             新建版本
@@ -248,15 +256,15 @@ function PlanningBoardContent({ context, prepareMetrics }: PlanningBoardProps) {
               required
             />
           </label>
-          <button className="wb-btn wb-btn-sm" disabled={material.busy || !session}>
+          <button className="wb-btn wb-btn-sm" disabled={material.busy || selecting || !session}>
             创建计划草稿
           </button>
           {!session && <span>先选择或开启本次会话</span>}
         </form>
       )}
-      {(material.error || notice) && (
+      {(material.error || notice || selection.error) && (
         <p className="vp-notice" role="status">
-          {material.error || notice}
+          {selection.error || material.error || notice}
         </p>
       )}
       {materialPort && (
@@ -271,7 +279,7 @@ function PlanningBoardContent({ context, prepareMetrics }: PlanningBoardProps) {
           }}
         />
       )}
-      <div className="vp-body">
+      <div className="vp-body" inert={selecting} aria-busy={selecting}>
         <nav className="vp-journey" aria-label="计划流程">
           <button
             onClick={() =>
@@ -374,7 +382,7 @@ function PlanningBoardContent({ context, prepareMetrics }: PlanningBoardProps) {
         </div>
       </div>
       <PlanningSaveFooter
-        material={material}
+        material={{ ...material, busy: material.busy || selecting }}
         archive={archive}
         onAct={act}
         onMinutes={() => setMinutesOpen(true)}

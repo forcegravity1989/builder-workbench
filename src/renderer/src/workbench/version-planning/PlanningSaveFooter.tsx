@@ -53,11 +53,16 @@ export function PlanningSaveFooter({
                 <pre>{JSON.stringify(plan, null, 2)}</pre>
                 <pre>{JSON.stringify(material.draft.remote.document, null, 2)}</pre>
               </div>
-              <button className="wb-btn wb-btn-sm" onClick={material.useRemote}>
+              <button
+                className="wb-btn wb-btn-sm"
+                disabled={material.busy}
+                onClick={material.useRemote}
+              >
                 采用文件内容
               </button>
               <button
                 className="wb-btn wb-btn-sm"
+                disabled={material.busy}
                 onClick={() => {
                   if (plan) {
                     material.useMerged(plan)
@@ -76,7 +81,7 @@ export function PlanningSaveFooter({
         </span>
         <button
           className="wb-btn wb-btn-ghost wb-btn-sm"
-          disabled={!plan}
+          disabled={!plan || material.busy}
           onClick={() =>
             void onAct(async () => {
               await material.refresh()
@@ -100,14 +105,14 @@ export function PlanningSaveFooter({
         </button>
         <button
           className="wb-btn wb-btn-ghost wb-btn-sm"
-          disabled={!plan}
+          disabled={!plan || material.busy}
           onClick={() => onMinutes()}
         >
           评审纪要
         </button>
         <button
           className="wb-btn wb-btn-primary wb-btn-sm"
-          disabled={!plan}
+          disabled={!plan || material.busy}
           onClick={() => void onArchive()}
         >
           归档
