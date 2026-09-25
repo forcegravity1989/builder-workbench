@@ -59,7 +59,7 @@ export async function resolveWorkbenchPromptAssets(scope: WorkbenchPromptScope) 
     category: '',
     references,
     skill: workflowStubs[topic],
-    version_context: `宿主已确认的执行上下文：\n${JSON.stringify(context, null, 2)}\n${topic === 'metrics-refresh' ? '这是独立指标配置任务，使用原生项目与工作区上下文。' : `材料工具：ORCA bw materials schema --workflow ${workflow}；ORCA bw materials --help。\n版本尚未明确，先列候选并与人确认，不写默认版本。`}`
+    version_context: `宿主已确认的执行上下文：\n${JSON.stringify(context, null, 2)}\n${topic === 'metrics-refresh' ? '这是独立指标配置任务，使用原生项目与工作区上下文。' : `材料工具：ORCA bw materials schema --workflow ${workflow}；参数查看 ORCA bw materials list --help、ORCA bw materials read --help、ORCA bw materials save --help。\n版本尚未明确，先列候选并与人确认，不写默认版本。`}`
   }
   const prompt = systemTemplate.replace(/\{\{([a-z_]+)\}\}/g, (_match, key: string) => {
     if (!(key in values)) {
