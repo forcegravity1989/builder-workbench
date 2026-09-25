@@ -3,6 +3,7 @@ const call = vi.hoisted(() => vi.fn())
 vi.mock('../runtime/runtime-rpc-client', () => ({ callRuntimeRpc: call }))
 import { nativeMetricsPort } from './metrics-port'
 import { nativeVersionHistoryPort } from './version-history-port'
+import type { VersionHistoryCatalog } from '../../../shared/workbench/version-history'
 
 const ref = { name: 'count', definitionHash: 'definition', configurationCommit: 'a'.repeat(40) }
 const scope = { repoId: 'repo', worktreeId: 'tree', hostId: 'local' }
@@ -79,4 +80,40 @@ it('normalizes a paired draft source for the owner and returns its caller-visibl
   )
   expect(result.planRef).toEqual(planRef)
   expect(result.source).toMatchObject({ sourceHostId: 'runtime:paired' })
+})
+
+it('returns valid history alongside unreadable records through the native owner', async () => {
+  const value: VersionHistoryCatalog = {
+    records: [
+      {
+        version: 'v1',
+        cycleId: 'cycle',
+        sourceCommit: 'a'.repeat(40),
+        revision: `sha256:${'b'.repeat(64)}`,
+        workflow: 'plan',
+        committedAt: '2026-09-24T10:00:00Z'
+      }
+    ],
+    problems: [
+      {
+        version: 'v0',
+        sourceCommit: 'c'.repeat(40),
+        workflow: 'acceptance',
+        committedAt: '2026-09-17T10:00:00Z',
+        code: 'migration-required',
+        message: '此记录使用旧版材料格式'
+      }
+    ]
+  }
+  call.mockResolvedValue({ ok: true, value })
+  const result = await nativeVersionHistoryPort().list({
+    scope: { ...scope, hostId: 'runtime:paired' }
+  })
+  expect(call).toHaveBeenCalledWith(
+    { kind: 'environment', environmentId: 'paired' },
+    'workbench.history.list',
+    { scope },
+    undefined
+  )
+  expect(result).toEqual(value)
 })

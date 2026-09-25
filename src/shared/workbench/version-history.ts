@@ -3,6 +3,7 @@ import { MetricScopeSchema } from './metrics'
 import {
   PlanReferenceSchema,
   SourceCommit,
+  MaterialVersion,
   type PlanningMaterial,
   type AcceptanceMaterial
 } from './version-material'
@@ -15,7 +16,7 @@ export const VersionHistoryReadPlanSchema = z.strictObject({
 export const VersionHistoryReadSchema = z.strictObject({
   scope: MetricScopeSchema,
   sourceCommit: SourceCommit,
-  version: z.string().min(1),
+  version: MaterialVersion,
   cycleId: z.string().min(1),
   workflow: z.enum(['plan', 'acceptance'])
 })
@@ -27,6 +28,15 @@ export type VersionHistorySource = {
   workflow: 'plan' | 'acceptance'
   committedAt: string
 }
+export type VersionHistoryProblem = Pick<
+  VersionHistorySource,
+  'version' | 'sourceCommit' | 'workflow' | 'committedAt'
+> & { code: string; message: string }
+export type VersionHistoryCatalog = {
+  records: VersionHistorySource[]
+  /** Unreadable entries remain visible without hiding the valid records. */
+  problems: VersionHistoryProblem[]
+}
 export type VersionHistoryPlan = {
   document: PlanningMaterial
   revision: string
@@ -37,7 +47,7 @@ export type VersionHistoryPlan = {
     | { kind: 'draft'; sourceHostId: string; sourceWorktreeId: string }
 }
 export type VersionHistoryPort = {
-  list(input: z.infer<typeof VersionHistoryListSchema>): Promise<VersionHistorySource[]>
+  list(input: z.infer<typeof VersionHistoryListSchema>): Promise<VersionHistoryCatalog>
   read(input: z.infer<typeof VersionHistoryReadSchema>): Promise<{
     document: PlanningMaterial | AcceptanceMaterial
     revision: string
