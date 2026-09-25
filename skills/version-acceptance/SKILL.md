@@ -7,21 +7,32 @@ metadata:
 
 # 版本验收
 
-协助 Builder 完成“准备交付 → Showcase 与验收 → 归档”。典型是周五上午准备、下午展示后归档；版本与项目要求优先，不把时钟当门禁。
+This discovery stub loads the version-matched Workbench acceptance guide.
 
-通过宿主的 `orca skills get version-acceptance` 读取本流程；`--references` 列出可用引用，`--reference <名称>` 按需读取。只使用实际下发的身份、材料命令和原生执行能力，普通项目无需检出 BW 源码。入口正在接入，实际覆盖与验证由对应版本交付说明确认。
+## Resolve the CLI for this session
 
-## 执行流程
+Choose the executable once and reuse it for every later command:
 
-1. **恢复本次验收。** 先展示完整流程和已有进度，再核对场外要求、实际项目与固定 bw/week-acceptance 工作树。版本未明确时先列候选，与人明确版本后才写材料；固定计划来源，未合入计划只能明确标为草案预验收。工作树目录由 Orca 原生创建与登记。新周运行新会话，同次上午/下午与重试继续原会话，不混用 bw/week-plan。
-2. **准备交付。** 确定候选提交，读取项目已有出包/测试/交付入口，按已有授权执行并独立核对结果。先查本次原生任务和进程是否仍在运行，再恢复或重试；保持源码执行区检出的提交与候选一致，不能从验收树旧 HEAD 打包。整理项目需要的交付件、报告和 showcase 材料；没有包要求就不造包要求，缺入口明确说明。生成时记录实际命令、工作区、候选、时间与适用的校验值，不凭文件名判断来源。
-3. **核对事实。** 原目标、约定交付、验收说明与指标目标保持只读；指标只运行真实采集脚本，任务通过 Orca provider 刷新。实际材料能打开，失败与缺口显式保留。
-4. **Showcase 与判断。** 沿原目标打开同一候选的材料，由人判断达成、未达或待核，记录人的来源而不代签。需要方法时读 证据与后续（`orca skills get version-acceptance --reference evidence-and-follow-up`）。补某目标的材料只使该目标待重新核对；更换计划修订或源码候选使所有目标待重新核对，保留原结论文字。未达项在原卡写原因和安排，不自动进入下版承诺。Issue 只核对真实状态，不在验收中再次拆任务。
-5. **归档接续。** 验收纪要由当前结构化材料派生，核对版本/周次/修订/来源及当时的任务快照后，按项目流程和授权提 PR。归档按钮只是准备本次会话的未发送请求。人合入后从项目实际采用基线读回，总览可回看多周记录；补证形成新修订。出包、合入、Issue 完成和正式发布不互相代替。首用时记录材料找不到、候选不一致、重复录入和未达无安排等实际问题，不预填改善结果。
+- If the `ORCA_CLI_COMMAND` environment variable is set, use its value. Orca exports this
+  for managed WSL sessions.
+- Otherwise, in a dev checkout whose session exposes `ORCA_DEV_REPO_ROOT`, use `orca-dev`.
+- Otherwise, on Linux outside an Orca-managed terminal, use `orca-ide`. Never run bare
+  `orca` there — outside Orca's terminals it normally resolves to the
+  GNOME Orca screen reader (`/usr/bin/orca`) and starts speech on the user's machine.
+- Otherwise, use `orca`.
 
-## 需要时读取
+Below, `ORCA` is a placeholder for the executable you resolved. Substitute it before
+running anything; do not create a shell variable or run `ORCA` literally. This works the
+same way in POSIX shells, PowerShell, and cmd.exe.
 
-- 版本材料（`orca skills get version-acceptance --reference version-records`）：跨树读取、候选、修订、保存与归档。
-- 指标（`orca skills get version-acceptance --reference metrics`）、Issue（`orca skills get version-acceptance --reference issue-state`）：涉及对应事实与远端写入。
+If the selected executable cannot run, report its exact error and stop. Do not fall through
+to another executable, which could silently target a different Orca build.
 
-失败保留草稿和原来源；先核对仍在运行的任务再重试，不能重复开构建、覆写脏树、伪造新读数或替人确认。
+```text
+ORCA skills get version-acceptance
+```
+
+Prefer `--json`. Use the selected executable's `--help` for commands or flags the guide does
+not cover. If a command reports that Orca is not running, start it with `ORCA open --json`
+and retry. If `skills get` is unknown, explain that updating Orca restores the guide; use
+`--help` for read-only discovery and do not guess unsupported commands.

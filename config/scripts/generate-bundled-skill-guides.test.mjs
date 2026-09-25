@@ -86,14 +86,22 @@ describe('bundled skill guide generator', () => {
   it('projects stub topics as hybrid discovery stubs that reuse the guide frontmatter', async () => {
     expect(STUB_TOPICS.length).toBeGreaterThan(0)
     for (const name of STUB_TOPICS) {
-      const source = await readFile(path.join(projectDir, 'skill-guides', `${name}.md`), 'utf8')
+      const source = await readFile(
+        WORKBENCH_GUIDE_SOURCES[name]
+          ? path.join(projectDir, WORKBENCH_GUIDE_SOURCES[name])
+          : path.join(projectDir, 'skill-guides', `${name}.md`),
+        'utf8'
+      )
       const projection = await readFile(path.join(projectDir, 'skills', name, 'SKILL.md'), 'utf8')
 
       // The routing frontmatter is the unchanged discovery surface.
       expect(projection.startsWith(frontmatterBlock(source, `${name}.md`))).toBe(true)
       // The stub is a thin hybrid pointer, not the full guide.
       expect(projection).not.toEqual(source)
-      expect(projection.length).toBeLessThan(source.length)
+      const fullSource = WORKBENCH_GUIDE_SOURCES[name]
+        ? BUNDLED_SKILL_GUIDES.find((guide) => guide.name === name).fullMarkdown
+        : source
+      expect(projection.length).toBeLessThan(fullSource.length)
       expect(projection).toContain('discovery stub')
       expect(projection).toContain(`skills get ${name}`)
     }
@@ -211,10 +219,19 @@ describe('bundled skill guide generator', () => {
     for (const guide of BUNDLED_SKILL_GUIDES) {
       if (WORKBENCH_GUIDE_SOURCES[guide.name]) {
         // Source links must resolve through native CLI references in projects without standard/.
-        expect(guide.markdown).toContain(`orca skills get ${guide.name} --reference`)
+        expect(guide.markdown).toContain(`ORCA skills get ${guide.name} --reference`)
+        expect(guide.markdown).toContain('the executable you resolved in the stub')
+        expect(guide.fullMarkdown).not.toMatch(/\borca (?:skills|bw)\b/u)
+        const projection = await readFile(
+          path.join(projectDir, 'skills', guide.name, 'SKILL.md'),
+          'utf8'
+        )
+        const shared = await readSharedStubBlocks(projectDir)
+        expect(projection).toContain(shared.get('resolver').text)
+        expect(projection).toContain(shared.get('no-guessing').text)
         expect(guide.fullMarkdown).not.toMatch(/\]\((?:\.\.\/|references\/|assets\/)/u)
         for (const match of guide.fullMarkdown.matchAll(
-          /orca skills get ([a-z-]+) --reference ([a-z-]+)/gu
+          /ORCA skills get ([a-z-]+) --reference ([a-z-]+)/gu
         )) {
           const target = BUNDLED_SKILL_GUIDES.find((item) => item.name === match[1])
           expect(target?.references.some((reference) => reference.name === match[2])).toBe(true)

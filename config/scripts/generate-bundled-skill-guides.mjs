@@ -61,7 +61,8 @@ const STUB_TOPICS = [
   'orca-emulator-android',
   'orca-linear',
   'orca-per-workspace-env',
-  'orchestration'
+  'orchestration',
+  ...Object.keys(WORKBENCH_GUIDE_SOURCES)
 ]
 
 function normalizeMarkdown(markdown) {
@@ -278,20 +279,32 @@ async function readWorkbenchReferences(repoRoot, name) {
 }
 
 function renderWorkbenchGuide(markdown, source, name, references) {
-  return normalizeMarkdown(markdown).replace(/\[([^\]]+)\]\(([^)]+)\)/gu, (link, label, target) => {
-    if (/^(?:[a-z]+:|#)/iu.test(target)) {
-      return link
-    }
-    const resolved = path.posix.normalize(
-      path.posix.join(path.posix.dirname(source), target.split('#')[0])
-    )
-    const topic = Object.entries(WORKBENCH_GUIDE_SOURCES).find(([, file]) => file === resolved)?.[0]
-    const reference = references.find((entry) => entry.source === resolved)
-    if (!topic && !reference) {
-      throw new Error(`Unbundled Workbench guide link: ${source} -> ${target}`)
-    }
-    return `${label}（\`orca skills get ${topic ?? name}${reference ? ` --reference ${reference.name}` : ''}\`）`
-  })
+  const normalized = normalizeMarkdown(markdown)
+  const guide =
+    source === WORKBENCH_GUIDE_SOURCES[name]
+      ? normalized.replace(
+          frontmatterBlock(normalized, source),
+          `${frontmatterBlock(normalized, source)}\nUse \`ORCA\` for the executable you resolved in the stub; reuse it for all commands below.\n`
+        )
+      : normalized
+  return guide
+    .replace(/\borca(?= (?:skills|bw)\b)/gu, 'ORCA')
+    .replace(/\[([^\]]+)\]\(([^)]+)\)/gu, (link, label, target) => {
+      if (/^(?:[a-z]+:|#)/iu.test(target)) {
+        return link
+      }
+      const resolved = path.posix.normalize(
+        path.posix.join(path.posix.dirname(source), target.split('#')[0])
+      )
+      const topic = Object.entries(WORKBENCH_GUIDE_SOURCES).find(
+        ([, file]) => file === resolved
+      )?.[0]
+      const reference = references.find((entry) => entry.source === resolved)
+      if (!topic && !reference) {
+        throw new Error(`Unbundled Workbench guide link: ${source} -> ${target}`)
+      }
+      return `${label}（\`ORCA skills get ${topic ?? name}${reference ? ` --reference ${reference.name}` : ''}\`）`
+    })
 }
 
 function assertAliasContract(guides) {
@@ -331,7 +344,7 @@ async function assertStubSourcesMatchTopics(repoRoot) {
     )
   }
   for (const name of STUB_TOPICS) {
-    if (!CANONICAL_GUIDE_NAMES.includes(name)) {
+    if (!CANONICAL_GUIDE_NAMES.includes(name) && !Object.hasOwn(WORKBENCH_GUIDE_SOURCES, name)) {
       throw new Error(`Stub topic is not a canonical guide: ${name}`)
     }
   }

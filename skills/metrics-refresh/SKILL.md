@@ -7,19 +7,32 @@ metadata:
 
 # 配置与核对指标
 
-帮助用户形成能支持判断、能真实采集的指标。正常刷新由服务执行；配置工作复用 Orca 原生项目任务，不占用某周计划会话。
+This discovery stub loads the version-matched Workbench metrics guide.
 
-> 新宿主入口尚待接入；先核对实际提供的项目、工作区、任务身份和工具，不编造路径。
+## Resolve the CLI for this session
 
-## 执行流程
+Choose the executable once and reuse it for every later command:
 
-1. **让全程可见。** “明确用途 → 核对来源与归属 → 准备脚本 → 实跑验证 → 交付接入”。恢复本次指标配置任务，已有输入不重问，不因再次打开入口重复创建任务。
-2. **明确与核对。** 读取项目约定和现有定义，仅追问缺失的用途、口径、特性归属及引领对象。检查真实来源，优先采用能按时间查历史的脚本，至少能查当前值；不支持手填实际数。
-3. **准备与验证。** 按 指标协议（`orca skills get metrics-refresh --reference metrics`） 补定义/脚本，用实际窗口执行、独立核对输出和失败。缺凭据或项目入口如实报告；不能把脚本存在说成可采集。
-4. **交付与接续。** 定义和脚本按项目分支/PR 流程交付，返回总览识别目录及能力。计划/验收继续引用同一来源；仅当前值不能冒充历史区间。人的目标、合入和完成权限沿项目约定。
+- If the `ORCA_CLI_COMMAND` environment variable is set, use its value. Orca exports this
+  for managed WSL sessions.
+- Otherwise, in a dev checkout whose session exposes `ORCA_DEV_REPO_ROOT`, use `orca-dev`.
+- Otherwise, on Linux outside an Orca-managed terminal, use `orca-ide`. Never run bare
+  `orca` there — outside Orca's terminals it normally resolves to the
+  GNOME Orca screen reader (`/usr/bin/orca`) and starts speech on the user's machine.
+- Otherwise, use `orca`.
 
-## 边界
+Below, `ORCA` is a placeholder for the executable you resolved. Substitute it before
+running anything; do not create a shell variable or run `ORCA` literally. This works the
+same way in POSIX shells, PowerShell, and cmd.exe.
 
-宿主为配置任务加载通用 SYSTEM、项目约定和本 Skill，不附带 week-planning SOP。指标使用独立固定维护分支与工作树，创建、目录、登记和宿主定位复用 Orca 原生能力，与计划、验收一致；不硬编码物理目录或项目主分支。首次新任务；返回同一关联任务继续；新的配置意图可新建原生会话并复用维护树，保留未完成改动。不建立永久指标会话或每日采集自动化。维护位置与正式读取来源分别核对，试采草稿不自动变成三屏已采用定义。
+If the selected executable cannot run, report its exact error and stop. Do not fall through
+to another executable, which could silently target a different Orca build.
 
-失败保留已有定义和真实错误；没有数据保持未知。材料/读数证据引用读 版本材料（`orca skills get metrics-refresh --reference version-records`），不维护人工数和每日账本。
+```text
+ORCA skills get metrics-refresh
+```
+
+Prefer `--json`. Use the selected executable's `--help` for commands or flags the guide does
+not cover. If a command reports that Orca is not running, start it with `ORCA open --json`
+and retry. If `skills get` is unknown, explain that updating Orca restores the guide; use
+`--help` for read-only discovery and do not guess unsupported commands.
