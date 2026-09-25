@@ -5,7 +5,10 @@ import { afterEach, expect, it } from 'vitest'
 import { createVersionDocumentStore } from './version-document-store'
 import { createVersionMaterialMigration } from './version-material-migration'
 import { PlanningMaterialSchema } from '../../shared/workbench/version-material'
-import { importLegacyAcceptanceResults } from '../../shared/workbench/version-material-migration'
+import {
+  importLegacyAcceptanceResults,
+  previewSchema2Migration
+} from '../../shared/workbench/version-material-migration'
 
 const roots: string[] = []
 afterEach(async () => {
@@ -109,4 +112,63 @@ it('refuses a changed legacy source without replacing it or creating a backup', 
   ).rejects.toMatchObject({ code: 'revision-conflict' })
   expect(await readFile(file, 'utf8')).toBe(changed)
   expect(await readdir(directory)).toEqual(['data.json'])
+})
+
+it('rejects converting an unreviewed source even when the reviewed bytes return before the write', async () => {
+  const { file, directory, original, store, service, scope } = await fixture()
+  const preview = await service.previewMigration(scope)
+  const racingService = createVersionMaterialMigration(async () => ({
+    ...store,
+    async readLegacy(version, revision) {
+      await writeFile(
+        file,
+        JSON.stringify({
+          schema_version: 2,
+          version: 'v2',
+          plan: { goals: [{ id: 'other', title: 'unreviewed' }] }
+        })
+      )
+      const source = await store.readLegacy(version, revision)
+      await writeFile(file, original)
+      return source
+    }
+  }))
+  await expect(
+    racingService.migrate({ ...scope, expectedRevision: preview.sourceRevision })
+  ).rejects.toMatchObject({ code: 'revision-conflict' })
+  expect(await readFile(file, 'utf8')).toBe(original)
+  expect(await readdir(directory)).toEqual(['data.json'])
+})
+
+it('imports deliveries only through a nonempty unique goal reference', () => {
+  const preview = previewSchema2Migration(
+    {
+      schema_version: 2,
+      version: 'v2',
+      previous_version: 'v1',
+      plan: { goals: [] },
+      results: {
+        goals: [
+          { id: 'one', title: 'first' },
+          { id: 'two', label: 'shared', title: 'second' },
+          { id: 'three', label: 'shared', title: 'third' }
+        ],
+        deliverables: [
+          { goal: '', label: 'missing', url: 'https://example.com/missing' },
+          { goal: 'shared', label: 'ambiguous', url: 'https://example.com/ambiguous' },
+          { goal: 'one', label: 'exact', url: 'https://example.com/exact' }
+        ]
+      }
+    },
+    'v2',
+    'cycle',
+    `sha256:${'a'.repeat(64)}`
+  )
+  expect(preview.results.map((result) => result.deliveries)).toEqual([
+    [{ title: 'exact', location: 'https://example.com/exact' }],
+    [],
+    []
+  ])
+  expect(preview.warnings.some((warning) => warning.includes('missing'))).toBe(true)
+  expect(preview.warnings.some((warning) => warning.includes('ambiguous'))).toBe(true)
 })
