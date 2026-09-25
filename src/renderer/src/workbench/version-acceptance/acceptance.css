@@ -1,0 +1,318 @@
+.va-board {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+  color: var(--color-text);
+  background: var(--color-bg);
+}
+.va-head,
+.va-footer,
+.va-section-head,
+.va-decision,
+.va-result-row,
+.va-window {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+}
+.va-head,
+.va-footer {
+  flex: none;
+  padding: var(--space-3) var(--space-4);
+  border-bottom: 1px solid var(--color-divider);
+}
+.va-head h1 {
+  margin: 0;
+  font-size: 1.1rem;
+  font-weight: 600;
+}
+.va-head > button {
+  margin-left: auto;
+}
+.va-head > span,
+.va-muted,
+.va-footer,
+.va-window,
+.va-task time {
+  color: var(--color-neutral-600);
+  font-size: 0.8rem;
+}
+.va-content {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+}
+.va-journey {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
+  flex: 0 0 5rem;
+  border-right: 1px solid var(--color-divider);
+  padding: var(--space-4) var(--space-2);
+}
+.va-journey a {
+  color: var(--color-neutral-600);
+  font-size: 0.75rem;
+  text-align: center;
+  text-decoration: none;
+  line-height: 1.7;
+}
+.va-journey a:hover {
+  color: var(--color-accent);
+}
+.va-scroll {
+  flex: 1;
+  min-width: 0;
+  overflow-y: auto;
+  padding: var(--space-4);
+  scroll-behavior: smooth;
+}
+.va-board section,
+.va-board details {
+  scroll-margin-block-start: var(--space-3);
+}
+.va-preparation,
+.va-tasks,
+.va-source-picker {
+  padding: var(--space-3);
+  margin-bottom: var(--space-3);
+  border: 1px solid var(--color-divider);
+  border-radius: var(--radius-md);
+  background: var(--color-card);
+}
+.va-section-head h2 {
+  margin: 0 auto 0 0;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+.va-candidate {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: 0.8rem;
+  margin-top: var(--space-2);
+}
+.va-board code {
+  font-family: var(--font-mono);
+  overflow-wrap: anywhere;
+}
+.va-artifact {
+  margin-top: var(--space-2);
+  font-size: 0.8rem;
+}
+.va-board details > summary {
+  cursor: pointer;
+  padding-block: var(--space-1);
+  overflow-wrap: anywhere;
+}
+.va-board p {
+  margin-block: var(--space-2);
+}
+.va-result {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  column-gap: var(--space-2);
+  border: 0;
+  padding: 0;
+  margin: 0;
+  min-width: 0;
+}
+.va-result > * {
+  grid-column: 1 / -1;
+}
+.va-result > .va-note {
+  grid-column: 1;
+}
+.va-result > .va-delivery-details {
+  grid-column: 2;
+  align-self: center;
+}
+.va-result > .va-delivery-details[open] {
+  grid-column: 1 / -1;
+}
+.va-result label,
+.va-window label {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: 0.8rem;
+  color: var(--color-neutral-600);
+}
+.va-result-row > label {
+  margin-bottom: 0;
+  white-space: nowrap;
+}
+.va-primary-delivery {
+  flex: 1;
+}
+.va-note {
+  padding-top: var(--space-1);
+}
+.va-delivery-details {
+  color: var(--color-neutral-600);
+  font-size: 0.75rem;
+}
+.va-board .vc-goal {
+  padding: var(--space-2) var(--space-3);
+  font-size: 0.8rem;
+}
+.va-board .vc-goal p {
+  margin-top: var(--space-1);
+}
+.va-board .va-result > label {
+  margin: var(--space-1) 0 0;
+}
+.va-board .vc-goal-result {
+  border-top: 0;
+  padding-top: 0;
+  margin-top: var(--space-2);
+}
+.va-board .vc-goal-metrics {
+  margin-top: var(--space-1);
+  padding-top: var(--space-1);
+}
+#acceptance-results {
+  border: 1px solid var(--color-divider);
+  border-radius: var(--radius-md);
+  background: var(--color-card);
+  margin-bottom: var(--space-3);
+}
+.va-result > label,
+.va-decision {
+  margin-top: var(--space-2);
+}
+.va-result input,
+.va-result textarea,
+.va-board select,
+.va-window input {
+  min-width: 0;
+  background: var(--color-card);
+  border: 1px solid var(--color-divider);
+  border-radius: var(--radius-sm);
+  padding: var(--space-1) var(--space-2);
+  color: var(--color-text);
+  font: inherit;
+}
+.va-result input,
+.va-result textarea {
+  flex: 1;
+}
+.va-result textarea {
+  resize: vertical;
+}
+.va-delivery {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin-block: var(--space-2);
+}
+.va-delivery label {
+  flex: 1 1 12rem;
+}
+.va-decision label:first-child {
+  flex: 1 1 14rem;
+}
+.va-warning {
+  color: var(--color-warning-deep);
+  font-size: 0.8rem;
+}
+.va-error {
+  color: var(--color-danger-deep);
+  font-size: 0.8rem;
+}
+.va-metric {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: 0.8rem;
+}
+.va-metric > details,
+.va-metric > p {
+  flex-basis: 100%;
+}
+.va-window,
+.va-source {
+  margin-block: var(--space-1);
+}
+.va-context-row {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+  margin-bottom: var(--space-2);
+  font-size: 0.75rem;
+  color: var(--color-neutral-600);
+}
+.va-context-row > details[open] {
+  flex-basis: 100%;
+}
+.va-source {
+  font-size: 0.8rem;
+}
+.va-task {
+  display: flex;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+  align-items: center;
+  padding-block: var(--space-2);
+  border-top: 1px solid var(--color-divider);
+  font-size: 0.8rem;
+}
+.va-task-title {
+  background: none;
+  border: 0;
+  color: var(--color-accent-700);
+  cursor: pointer;
+  text-align: left;
+}
+.va-task time {
+  flex-basis: 100%;
+}
+.va-footer {
+  border-top: 1px solid var(--color-divider);
+  border-bottom: 0;
+}
+.va-footer > span {
+  margin-right: auto;
+}
+.va-report pre,
+.va-conflict pre {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  font: inherit;
+  font-size: 0.8rem;
+  line-height: 1.7;
+  background: var(--color-surface);
+  padding: var(--space-3);
+}
+.va-empty {
+  padding: var(--space-6);
+  color: var(--color-neutral-600);
+}
+.va-empty h1 {
+  font-size: 1.1rem;
+  color: var(--color-text);
+}
+.va-board :focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+}
+.va-board :disabled {
+  opacity: 0.6;
+}
+.va-board select.va-outcome-met {
+  color: var(--color-success-deep);
+  background: var(--color-success-soft);
+}
+.va-board select.va-outcome-not-met {
+  color: var(--color-danger-deep);
+  background: var(--color-danger-soft);
+}
+.va-board select.va-outcome-pending {
+  color: var(--color-warning-deep);
+  background: var(--color-warning-soft);
+}
