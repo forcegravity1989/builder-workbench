@@ -8,9 +8,14 @@ import {
   VersionMaterialScopeSchema
 } from '../../shared/workbench/version-material-request'
 
+import {
+  VersionMigrationReadSchema,
+  VersionMigrationApplySchema
+} from '../../shared/workbench/version-material-migration'
+
 const Command = z.strictObject({
   target: z.strictObject({ repoPath: z.string().min(1), worktreePath: z.string().min(1) }),
-  operation: z.enum(['list', 'read', 'save']),
+  operation: z.enum(['list', 'read', 'save', 'previewMigration', 'migrate']),
   request: z.unknown()
 })
 
@@ -20,6 +25,12 @@ export function registerVersionMaterialRelay(dispatcher: Pick<RelayDispatcher, '
     const { target, operation, request } = Command.parse(params)
     const workspace = createVersionMaterialWorkspace(target)
     switch (operation) {
+      case 'previewMigration':
+        return materialResult(() =>
+          workspace.previewMigration(VersionMigrationReadSchema.parse(request))
+        )
+      case 'migrate':
+        return materialResult(() => workspace.migrate(VersionMigrationApplySchema.parse(request)))
       case 'list':
         return materialResult(() => workspace.list(VersionMaterialScopeSchema.parse(request)))
       case 'read':

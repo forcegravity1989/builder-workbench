@@ -5,6 +5,24 @@ const scopeFlags = ['repo-id', 'worktree-id', 'host-id', 'workflow']
 const scopeUsage = '--repo-id <id> --worktree-id <id> --workflow plan|acceptance [--host-id <id>]'
 export const WORKBENCH_MATERIAL_COMMAND_SPECS: CommandSpec[] = [
   {
+    path: ['bw', 'materials', 'migration-preview'],
+    summary: 'Preview explicit schema 2 migration without writing files',
+    usage: `orca bw materials migration-preview ${scopeUsage} --version <version> --cycle-id <id> [--source-revision <preserved-revision>] [--json]`,
+    allowedFlags: [...GLOBAL_FLAGS, ...scopeFlags, 'version', 'cycle-id', 'source-revision'],
+    notes: [
+      'Only the plan workflow contains legacy schema 2 data. A preserved source revision may be read again after migration.'
+    ]
+  },
+  {
+    path: ['bw', 'materials', 'migrate'],
+    summary: 'Preserve the original and explicitly migrate schema 2 planning material',
+    usage: `orca bw materials migrate ${scopeUsage} --version <version> --cycle-id <id> --expected-revision <preview-revision> [--json]`,
+    allowedFlags: [...GLOBAL_FLAGS, ...scopeFlags, 'version', 'cycle-id', 'expected-revision'],
+    notes: [
+      'Review migration-preview first. Old results are returned for the explicitly named previous version; importing acceptance requires its real plan reference and never imports a decision.'
+    ]
+  },
+  {
     path: ['bw', 'materials', 'schema'],
     summary: 'Print the bundled schema 3 document format without a running app',
     usage: 'orca bw materials schema --workflow plan|acceptance [--json]',

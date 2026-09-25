@@ -7,6 +7,10 @@ import {
   PlanningMaterialSchema
 } from '../../shared/workbench/version-material'
 import type { CommandHandler, HandlerContext } from '../dispatch'
+import {
+  VersionMigrationReadSchema,
+  VersionMigrationApplySchema
+} from '../../shared/workbench/version-material-migration'
 import { getOptionalStringFlag, getRequiredStringFlag } from '../flags'
 import { printResult } from '../format'
 import { RuntimeClientError } from '../runtime/types'
@@ -43,6 +47,28 @@ async function invoke(ctx: HandlerContext, operation: string, params: unknown): 
 }
 
 export const WORKBENCH_MATERIAL_HANDLERS: Record<string, CommandHandler> = {
+  'bw materials migration-preview': async (ctx) =>
+    invoke(
+      ctx,
+      'previewMigration',
+      VersionMigrationReadSchema.parse({
+        ...scope(ctx),
+        version: getRequiredStringFlag(ctx.flags, 'version'),
+        cycleId: getRequiredStringFlag(ctx.flags, 'cycle-id'),
+        sourceRevision: getOptionalStringFlag(ctx.flags, 'source-revision')
+      })
+    ),
+  'bw materials migrate': async (ctx) =>
+    invoke(
+      ctx,
+      'migrate',
+      VersionMigrationApplySchema.parse({
+        ...scope(ctx),
+        version: getRequiredStringFlag(ctx.flags, 'version'),
+        cycleId: getRequiredStringFlag(ctx.flags, 'cycle-id'),
+        expectedRevision: getRequiredStringFlag(ctx.flags, 'expected-revision')
+      })
+    ),
   'bw materials schema': async (ctx) => {
     const workflow = z
       .enum(['plan', 'acceptance'])

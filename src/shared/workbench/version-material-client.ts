@@ -1,5 +1,6 @@
 import type { VersionDocumentSnapshot } from './version-document'
 import type { VersionMaterial } from './version-material'
+import type { VersionMigrationPreview } from './version-material-migration'
 import type {
   VersionMaterialScope,
   VersionMaterialSave,
@@ -39,6 +40,18 @@ export function createVersionMaterialPort(scope: VersionMaterialScope, call: Mat
     return result.value
   }
   return {
+    previewMigration: (version: string, cycleId: string, sourceRevision?: string) =>
+      invoke<VersionMigrationPreview>('previewMigration', {
+        ...scope,
+        version,
+        cycleId,
+        sourceRevision
+      }),
+    migrate: (version: string, cycleId: string, expectedRevision: string) =>
+      invoke<VersionMigrationPreview & { snapshot: VersionDocumentSnapshot<VersionMaterial> }>(
+        'migrate',
+        { ...scope, version, cycleId, expectedRevision }
+      ),
     list: () => invoke<VersionMaterialCandidate[]>('list', scope),
     read: (version: string) =>
       invoke<VersionDocumentSnapshot<VersionMaterial> | null>('read', { ...scope, version }),
