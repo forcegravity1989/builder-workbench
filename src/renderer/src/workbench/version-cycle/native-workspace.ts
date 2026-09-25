@@ -22,7 +22,9 @@ export function nativeWorkspaceRuntimeTarget(scope: NativeWorkspaceScope) {
     hostId: scope.hostId,
     runtimeOwnerEnvironmentId: scope.runtimeOwnerEnvironmentId
   })
-  if (!route) throw new Error('工作树宿主身份不可用')
+  if (!route) {
+    throw new Error('工作树宿主身份不可用')
+  }
   return route.runtimeEnvironmentId
     ? { kind: 'environment' as const, environmentId: route.runtimeEnvironmentId }
     : { kind: 'local' as const }
@@ -30,7 +32,9 @@ export function nativeWorkspaceRuntimeTarget(scope: NativeWorkspaceScope) {
 export function nativeWorkspaceScope(worktree: Worktree): NativeWorkspaceScope {
   const state = useAppStore.getState()
   const hostId = getExecutionHostIdForWorktree(state, worktree.id)
-  if (!hostId) throw new Error('无法确定工作树所属宿主')
+  if (!hostId) {
+    throw new Error('无法确定工作树所属宿主')
+  }
   return {
     projectId: worktree.projectId || worktree.repoId,
     repoId: worktree.repoId,
@@ -48,7 +52,9 @@ export function findNamedWorktree(scope: NativeWorkspaceScope, branch: string): 
         worktree.branch === branch &&
         nativeWorkspaceScopeKey(nativeWorkspaceScope(worktree)) === nativeWorkspaceScopeKey(scope)
     )
-  if (found.length > 1) throw new Error('存在多个同分支工作树，请在原生项目中核对登记')
+  if (found.length > 1) {
+    throw new Error('存在多个同分支工作树，请在原生项目中核对登记')
+  }
   return found[0] ?? null
 }
 const creating = new Map<string, Promise<Worktree>>()
@@ -58,10 +64,14 @@ export async function ensureNamedWorktree(
   name: string
 ): Promise<Worktree> {
   const existing = findNamedWorktree(scope, branch)
-  if (existing) return existing
+  if (existing) {
+    return existing
+  }
   const key = `${nativeWorkspaceScopeKey(scope)}:${branch}`
   const pending = creating.get(key)
-  if (pending) return pending
+  if (pending) {
+    return pending
+  }
   const create = (async () => {
     const result = await callRuntimeRpc<CreateWorktreeResult>(
       nativeWorkspaceRuntimeTarget(scope),
@@ -75,11 +85,14 @@ export async function ensureNamedWorktree(
       },
       { timeoutMs: 600_000 }
     )
-    if (result.worktree.branch !== branch) throw new Error('原生创建未返回约定分支，请检查工作树')
+    if (result.worktree.branch !== branch) {
+      throw new Error('原生创建未返回约定分支，请检查工作树')
+    }
     await useAppStore.getState().fetchWorktrees(scope.repoId)
     const registered = findNamedWorktree(scope, branch)
-    if (!registered || registered.id !== result.worktree.id)
+    if (!registered || registered.id !== result.worktree.id) {
       throw new Error('工作树已创建，等待所属宿主的原生登记刷新后重试')
+    }
     return registered
   })()
   creating.set(key, create)
