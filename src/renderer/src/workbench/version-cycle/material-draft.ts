@@ -61,12 +61,14 @@ export class MaterialDraftController<T extends VersionDocumentIdentity> {
       return
     }
     if (this.value.dirty) {
-      if (remote?.revision !== this.value.expectedRevision) {
+      if ((remote?.revision ?? null) !== this.value.expectedRevision) {
         this.update({
           ...this.value,
           remote,
           error: '材料已在其他会话修改，本地输入已保留。请核对两个版本。'
         })
+      } else if (this.value.remote !== undefined) {
+        this.update({ ...this.value, remote: undefined, error: undefined })
       }
     } else if (remote) {
       this.update({ document: remote.document, expectedRevision: remote.revision, dirty: false })
