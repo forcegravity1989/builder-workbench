@@ -38,7 +38,9 @@ export function PlanningSaveFooter({
         : archived
           ? '当前修订已合入'
           : archive.kind === 'merged'
-            ? '有待归档变化'
+            ? archive.proof.kind === 'unknown'
+              ? '已合入，当前材料待核'
+              : '有待归档变化'
             : archive.kind === 'closed'
               ? '归档 PR 已关闭'
               : '归档 PR 待评审'

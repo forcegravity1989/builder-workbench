@@ -17,7 +17,7 @@ it('injects bundled discovery assets and the selected owner into an ordinary pro
       runtimeOwnerEnvironmentId: 'owner',
       path: '/projects/ordinary-plan',
       branch: 'bw/week-plan'
-    } as Worktree
+    } as unknown as Worktree
   ]
   const result = await resolveWorkbenchPromptAssets({
     projectId: 'project',

@@ -157,12 +157,6 @@
   display: flex;
   align-items: center;
 }
-.vp-metric small {
-  display: block;
-  color: var(--color-neutral-600);
-  font-size: 11px;
-  overflow-wrap: anywhere;
-}
 .vp-metrics .vp-inline {
   margin-top: var(--space-2);
 }

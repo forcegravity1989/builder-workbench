@@ -1,6 +1,8 @@
 import { metricRefKey } from '../../../../shared/workbench/metrics'
 import type { VersionGoal } from '../../../../shared/workbench/version-material'
 import type { usePlanMetrics } from './use-plan-metrics'
+import { MetricSelector } from '../metrics/MetricSelector'
+import { MetricEvidenceView } from '../metrics/MetricEvidenceView'
 
 export function PlanGoalMetrics({
   goal,
@@ -41,23 +43,8 @@ export function PlanGoalMetrics({
                 移除
               </button>
             </div>
-            {value?.status === 'ready' ? (
-              value.readings.map((reading) => (
-                <p
-                  key={`${reading.collectedAt}:${reading.source}:${JSON.stringify(reading.observation)}`}
-                >
-                  当前：{String(reading.value)} {reading.unit}
-                  <small>
-                    采集于 {reading.collectedAt} · {reading.source}
-                  </small>
-                </p>
-              ))
-            ) : (
-              <p className="vp-muted">
-                当前未知 · 数值目标为草案
-                {value ? `：${value.reason.message}` : ''}
-              </p>
-            )}
+            <MetricEvidenceView result={value} />
+            {value?.status !== 'ready' && <p className="vp-muted">当前未知 · 数值目标为草案</p>}
             <label>
               本版目标
               <input
@@ -83,39 +70,24 @@ export function PlanGoalMetrics({
         )
       })}
       <div className="vp-inline">
-        <select
-          aria-label={`为 ${goal.title || '目标'} 选择指标`}
-          value=""
-          onChange={(event) => {
-            const definition = metrics.catalog?.definitions.find(
-              (item) => metricRefKey(item.ref) === event.target.value
-            )
-            if (definition) {
-              onChange({
-                ...goal,
-                metricTargets: [...goal.metricTargets, { ref: definition.ref, target: '' }]
-              })
-            }
-          }}
-        >
-          <option value="">选择项目指标</option>
-          {metrics.catalog?.definitions
-            .filter(
-              (item) =>
-                !goal.metricTargets.some(
-                  (target) => metricRefKey(target.ref) === metricRefKey(item.ref)
-                )
-            )
-            .map((item) => (
-              <option key={metricRefKey(item.ref)} value={metricRefKey(item.ref)}>
-                {item.name}
-              </option>
-            ))}
-        </select>
+        <MetricSelector
+          label={`为 ${goal.title || '目标'} 选择指标`}
+          definitions={metrics.catalog?.definitions ?? []}
+          selected={goal.metricTargets.map((item) => item.ref)}
+          onSelect={(definition) =>
+            onChange({
+              ...goal,
+              metricTargets: [...goal.metricTargets, { ref: definition.ref, target: '' }]
+            })
+          }
+        />
         <button className="wb-btn wb-btn-ghost wb-btn-sm" onClick={prepare}>
           配置指标
         </button>
       </div>
+      {metrics.catalog?.definitions.length === 0 && (
+        <p className="vp-muted">项目尚未配置业务指标，可先配置，也可继续讨论目标。</p>
+      )}
       {metrics.error && <p className="vp-muted">指标未知：{metrics.error}</p>}
     </details>
   )
