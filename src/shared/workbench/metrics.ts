@@ -132,7 +132,8 @@ export function metricRefKey(ref: MetricRef): string {
   return JSON.stringify([ref.name, ref.definitionHash, ref.configurationCommit])
 }
 
-export function comparableMetricEvidence(
+/** Matching provenance alone does not establish comparable periods or normalized statistics. */
+export function sameMetricDefinition(
   left: MetricReadingEvidence,
   right: MetricReadingEvidence
 ): boolean {
@@ -141,13 +142,6 @@ export function comparableMetricEvidence(
     left.ref.definitionHash === right.ref.definitionHash &&
     left.collectorRevision === right.collectorRevision &&
     left.unit === right.unit &&
-    left.source === right.source &&
-    left.observation.kind === right.observation.kind &&
-    typeof left.value === 'number' &&
-    typeof right.value === 'number' &&
-    (left.observation.kind !== 'window' ||
-      (right.observation.kind === 'window' &&
-        left.observation.timezone === right.observation.timezone &&
-        left.observation.granularity === right.observation.granularity))
+    left.source === right.source
   )
 }
