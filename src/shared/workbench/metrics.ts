@@ -44,6 +44,12 @@ export const MetricWindowSchema = z.discriminatedUnion('kind', [
       timezone: Timezone
     })
     .refine((value) => value.since < value.until, 'Window must be left-closed, right-open')
+    .refine(
+      (value) =>
+        value.granularity !== 'week' ||
+        [value.since, value.until].every((day) => new Date(`${day}T00:00:00Z`).getUTCDay() === 1),
+      '按周采集需使用周一到周一的完整周日期边界；任意日期范围请按日查询'
+    )
 ])
 export type MetricWindow = z.infer<typeof MetricWindowSchema>
 export type MetricRange = Extract<MetricWindow, { kind: 'range' }>

@@ -12,7 +12,17 @@ const CurrentOutput = z.object({
   value: Value,
   observed_at: z.iso.datetime({ offset: true }).optional()
 })
-const Point = z.object({ value: Value, week: z.string().optional(), day: z.string().optional() })
+const Point = z.object({
+  value: Value,
+  week: z.string().optional(),
+  day: z.string().optional(),
+  coverage: z
+    .object({
+      start: z.iso.datetime({ offset: true }),
+      end: z.iso.datetime({ offset: true })
+    })
+    .optional()
+})
 const HistoryOutput = z.object({ points: z.array(Point) })
 
 export class MetricCollectorError extends Error {
@@ -105,7 +115,7 @@ export function decodeMetricOutput(input: {
       return MetricReadingEvidenceSchema.parse({
         ...evidence,
         value: point.value,
-        observation: metricBucketWindow(day, window, collectedAt)
+        observation: metricBucketWindow(day, window, collectedAt, point.coverage)
       })
     } catch (error) {
       throw new MetricCollectorError(
