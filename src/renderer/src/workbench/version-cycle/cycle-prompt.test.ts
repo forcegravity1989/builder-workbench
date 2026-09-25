@@ -39,6 +39,9 @@ it('injects bundled discovery assets and the selected owner into an ordinary pro
   expect(result.prompt).toContain('ORCA skills get week-planning')
   expect(result.prompt).toContain('ORCA bw materials schema --workflow plan')
   expect(result.prompt).not.toContain('{{')
+  expect(result.prompt).not.toContain(String.fromCharCode(92, 110))
+  expect(result.prompt).toContain('ORCA bw materials --help')
+  expect(result.prompt).not.toContain('list/read/save --help')
   expect(result.prompt).not.toContain('/projects/ordinary-plan/standard/')
   expect(result.prompt).not.toMatch(/\borca (?:skills|bw)\b/u)
   await expect(
