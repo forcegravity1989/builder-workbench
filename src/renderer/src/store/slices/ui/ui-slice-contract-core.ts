@@ -1,4 +1,5 @@
 import type { StateCreator } from 'zustand'
+import type { AutomationEditorRequest } from '@/components/automations/automation-editor-request'
 import type { AppState } from '../../types'
 import type { GitHubWorkItem } from '../../../../../shared/github/work-item-types'
 import type { GitLabWorkItem } from '../../../../../shared/gitlab-types'
@@ -174,6 +175,9 @@ export type UISliceCore = {
   setPendingAutomationRunNavigation: (
     navigation: { automationId: string; runId: string | null; hostId?: ExecutionHostId } | null
   ) => void
+  pendingAutomationEditorRequest: AutomationEditorRequest | null
+  consumeAutomationEditorRequest: (request: AutomationEditorRequest) => void
+  openAutomationEditor: (request: AutomationEditorRequest) => void
   openAutomationsPage: () => void
   closeAutomationsPage: () => void
   openSpacePage: () => void

@@ -90,6 +90,7 @@ export function useAutomationsPageDestinationState({
     catalog: hostCatalog.catalog,
     entries: hostCatalog.entries,
     filterStableKey: hostCatalog.resolution.entry?.stableKey ?? null,
+    initialStableKey: local.createHostStableKey,
     activeWorkspaceStableKey: activeWorkspaceHostStableKey,
     repoTables,
     projects: repos

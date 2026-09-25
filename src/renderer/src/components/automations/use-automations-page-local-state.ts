@@ -60,6 +60,7 @@ export function useAutomationsPageLocalState(store: AutomationsPageStoreState) {
   const [listFilter, setListFilter] = useState<AutomationListFilter>(EMPTY_AUTOMATION_LIST_FILTER)
   const [listSort, setListSort] = useState<AutomationListSort | null>(null)
   const [createOpen, setCreateOpen] = useState(false)
+  const [createHostStableKey, setCreateHostStableKey] = useState<string | null>(null)
   const [createTarget, setCreateTarget] = useState<AutomationCreateTarget>('orca')
   const [editingAutomationId, setEditingAutomationId] = useState<string | null>(null)
   const [editingRowKey, setEditingRowKey] = useState<string | null>(null)
@@ -188,6 +189,8 @@ export function useAutomationsPageLocalState(store: AutomationsPageStoreState) {
     setListSort,
     createOpen,
     setCreateOpen,
+    createHostStableKey,
+    setCreateHostStableKey,
     createTarget,
     setCreateTarget,
     editingAutomationId,
