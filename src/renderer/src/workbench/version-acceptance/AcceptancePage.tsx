@@ -1,11 +1,12 @@
 import { useMemo } from 'react'
-import { VersionCycleShell, type VersionCycleContext } from '../version-cycle/VersionCycleShell'
+import type { VersionCycleContext } from '../version-cycle/cycle-context'
 import { nativeMetricsPort } from '../metrics-port'
 import { nativeVersionHistoryPort } from '../version-history-port'
 import { nativeAcceptanceCandidatePort } from './acceptance-candidate-port'
 import { AcceptanceBoard } from './AcceptanceBoard'
 
-function ConnectedAcceptanceBoard({ context }: { context: VersionCycleContext }) {
+/** The native cycle shell supplies its real session and adapters at the navigation boundary. */
+export function AcceptancePage({ context }: { context: VersionCycleContext }) {
   const owner = context.scope?.runtimeOwnerEnvironmentId
   const metrics = useMemo(() => nativeMetricsPort(owner), [owner])
   const history = useMemo(() => nativeVersionHistoryPort(owner), [owner])
@@ -27,13 +28,5 @@ function ConnectedAcceptanceBoard({ context }: { context: VersionCycleContext })
   }
   return (
     <AcceptanceBoard context={context} history={history} metrics={metrics} candidate={candidate} />
-  )
-}
-
-export function AcceptancePage() {
-  return (
-    <VersionCycleShell workflow="acceptance">
-      {(context) => <ConnectedAcceptanceBoard context={context} />}
-    </VersionCycleShell>
   )
 }

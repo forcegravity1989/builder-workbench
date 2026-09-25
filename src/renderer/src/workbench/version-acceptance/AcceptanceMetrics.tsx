@@ -11,6 +11,7 @@ import type {
   MetricReadingEvidence,
   VersionGoal
 } from '../../../../shared/workbench/version-material'
+import { MetricEvidenceView } from '../metrics/MetricEvidenceView'
 
 export function AcceptanceMetrics({
   goal,
@@ -95,6 +96,14 @@ export function AcceptanceMetrics({
         )
         const freshlyRead =
           result?.status === 'ready' && JSON.stringify(result.readings) === JSON.stringify(evidence)
+        const visibleResult: MetricReading | undefined =
+          result?.status === 'ready'
+            ? freshlyRead
+              ? result
+              : undefined
+            : result
+              ? { status: result.status, reason: result.reason, run: result.run }
+              : undefined
         return (
           <div className="va-metric" key={`${target.ref.name}:${target.ref.definitionHash}`}>
             <span>
@@ -113,27 +122,18 @@ export function AcceptanceMetrics({
             >
               {busy === key ? '采集中…' : '刷新实测'}
             </button>
-            {result && result.status !== 'ready' && (
-              <p className="va-warning">
-                {result.reason.message}；已有记录保留原时间，不作为新读数。
-              </p>
-            )}
-            {evidence.map((item, readingIndex) => (
-              <details key={readingIndex}>
+            {(evidence.length > 0 || (visibleResult && visibleResult.status !== 'ready')) && (
+              <details open={Boolean(visibleResult && visibleResult.status !== 'ready')}>
                 <summary>
-                  {item.observation.kind === 'instant'
-                    ? `当前值 · ${item.observation.observedAt}`
-                    : `区间 · ${item.observation.start} 至 ${item.observation.end}`}
+                  {visibleResult?.status === 'error'
+                    ? '本次采集失败'
+                    : visibleResult?.status === 'unknown'
+                      ? '本次无有效读数'
+                      : '读数来源与时间'}
                 </summary>
-                <p>
-                  来源：{item.source} · 采集：{item.collectedAt} · 脚本：{item.collectorRevision}
-                </p>
-                {item.observation.kind === 'instant' && (
-                  <p className="va-warning">当前值不能证明历史周或区间目标已完成。</p>
-                )}
-                {!freshlyRead && <p className="va-muted">记录读数，采集源尚未重新核对。</p>}
+                <MetricEvidenceView result={visibleResult} saved={evidence} />
               </details>
-            ))}
+            )}
           </div>
         )
       })}

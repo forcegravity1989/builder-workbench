@@ -1,5 +1,30 @@
 import { useEffect, useState } from 'react'
 import type { MetricsPort, MetricScope, MetricWindow } from '../../../../shared/workbench/metrics'
+import { MetricWindowSchema } from '../../../../shared/workbench/metrics'
+
+function windowError(window: MetricWindow): string | null {
+  const checked = MetricWindowSchema.safeParse(window)
+  if (checked.success) {
+    return null
+  }
+  if (checked.error.issues.some((issue) => issue.path.includes('timezone'))) {
+    return '项目时区无效，请检查指标配置。'
+  }
+  if (
+    checked.error.issues.some(
+      (issue) => issue.path.includes('since') || issue.path.includes('until')
+    )
+  ) {
+    return '请选择有效的开始和结束日期，结束日期不包含在区间内。'
+  }
+  return checked.error.issues
+    .map((issue) =>
+      issue.message === 'Window must be left-closed, right-open'
+        ? '开始日期应早于结束日期，结束日期不包含在区间内。'
+        : issue.message
+    )
+    .join('；')
+}
 
 export function useAcceptanceMetricWindow(port: MetricsPort, scope: MetricScope, needed: boolean) {
   const [window, setWindow] = useState<MetricWindow | null>(null)
@@ -44,6 +69,7 @@ export function AcceptanceMetricWindow({
   if (!window) {
     return <p className="va-warning">{error ?? '正在读取项目指标配置…'}</p>
   }
+  const invalid = windowError(window)
   return (
     <div className="va-window">
       <label>
@@ -61,7 +87,7 @@ export function AcceptanceMetricWindow({
                     since: '',
                     until: '',
                     timezone: window.timezone,
-                    granularity: 'week'
+                    granularity: 'day'
                   }
             )
           }
@@ -72,6 +98,17 @@ export function AcceptanceMetricWindow({
       </label>
       {window.kind === 'range' && (
         <>
+          <select
+            aria-label="指标采集粒度"
+            disabled={disabled}
+            value={window.granularity}
+            onChange={(event) =>
+              onChange({ ...window, granularity: event.target.value === 'week' ? 'week' : 'day' })
+            }
+          >
+            <option value="day">按日</option>
+            <option value="week">按周</option>
+          </select>
           <input
             type="date"
             disabled={disabled}
@@ -89,6 +126,11 @@ export function AcceptanceMetricWindow({
         </>
       )}
       <span>{window.timezone}</span>
+      {invalid && (
+        <p className="va-warning" role="alert">
+          {invalid}
+        </p>
+      )}
     </div>
   )
 }

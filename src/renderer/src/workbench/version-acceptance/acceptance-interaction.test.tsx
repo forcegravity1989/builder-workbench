@@ -1,9 +1,10 @@
 // @vitest-environment happy-dom
-import { act } from 'react'
+import { act, useState } from 'react'
 import { createRoot, type Root } from 'react-dom/client'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type {
   AcceptanceMaterial,
+  MetricReadingEvidence,
   PlanningMaterial
 } from '../../../../shared/workbench/version-material'
 import { AcceptanceGoalResult } from './AcceptanceGoalResult'
@@ -12,6 +13,9 @@ import { AcceptanceTasks } from './AcceptanceTasks'
 import type { TaskOrigin, TaskPort } from '../version-cycle/ports'
 import { recordHumanDecision } from './acceptance-decision'
 import type { AcceptanceCandidatePort, CandidateCheck } from './acceptance-candidate-port'
+import { AcceptanceMetricWindow } from './AcceptanceMetricWindow'
+import { AcceptanceMetrics } from './AcceptanceMetrics'
+import type { MetricWindow, MetricsPort } from '../../../../shared/workbench/metrics'
 
 const plan: PlanningMaterial = {
   schema_version: 3,
@@ -57,6 +61,133 @@ afterEach(() => {
 })
 
 describe('acceptance interactions', () => {
+  it('keeps adopted metric evidence canonical when old refresh results or previous readings remain cached', async () => {
+    const ref = {
+      name: '交付数量',
+      definitionHash: `sha256:${'a'.repeat(64)}`,
+      configurationCommit: '1'.repeat(40)
+    }
+    const reading = (value: number): MetricReadingEvidence => ({
+      ref,
+      value,
+      unit: '项',
+      source: '真实采集入口',
+      collectedAt: '2026-09-25T01:00:00Z',
+      collectorRevision: '2'.repeat(40),
+      observation: { kind: 'instant', observedAt: '2026-09-25T01:00:00Z' }
+    })
+    const ready = {
+      status: 'ready' as const,
+      readings: [reading(10)],
+      run: {
+        runId: 'run',
+        startedAt: '2026-09-25T01:00:00Z',
+        finishedAt: '2026-09-25T01:00:00Z',
+        collectorRevision: '2'.repeat(40),
+        dataTarget: { repository: 'github.com/team/repo', commit: '2'.repeat(40), hostId: 'local' }
+      }
+    }
+    const refresh = vi
+      .fn()
+      .mockResolvedValueOnce(ready)
+      .mockResolvedValueOnce({
+        status: 'error',
+        reason: { code: 'offline', message: '采集源不可用' },
+        previous: ready
+      })
+    const port: MetricsPort = { list: vi.fn(), read: vi.fn(), refresh }
+    const props = {
+      goal: { ...plan.goals[0], metricTargets: [{ ref, target: '12' }] },
+      materialKey: 'test',
+      port,
+      scope: { repoId: 'repo', worktreeId: 'tree', hostId: 'local' },
+      window: { kind: 'current' as const, timezone: 'Asia/Shanghai' },
+      disabled: false,
+      onReadings: vi.fn()
+    }
+    await act(async () => root.render(<AcceptanceMetrics {...props} readings={[]} />))
+    await act(async () => container.querySelector('button')!.click())
+    await act(async () => root.render(<AcceptanceMetrics {...props} readings={[reading(3)]} />))
+    expect(container.textContent).toContain('3 项')
+    expect(container.textContent).not.toContain('10 项')
+    expect(container.querySelector('.wb-metric-value')?.textContent).toBe('3项')
+    await act(async () => container.querySelector('button')!.click())
+    expect(container.textContent).toContain('采集源不可用')
+    expect(container.querySelector('.wb-metric-value')?.textContent).toBe('3项')
+    expect(container.textContent).toContain('保留原采集时间')
+  })
+  it('explains invalid weekly boundaries and allows the same date range to be collected by day', async () => {
+    const refresh = vi.fn(async () => ({
+      status: 'unknown' as const,
+      reason: { code: 'no-data', message: '暂无数据' }
+    }))
+    const port: MetricsPort = { list: vi.fn(), read: vi.fn(), refresh }
+    const goal = {
+      ...plan.goals[0],
+      metricTargets: [
+        {
+          ref: {
+            name: '交付数量',
+            definitionHash: `sha256:${'a'.repeat(64)}`,
+            configurationCommit: '1'.repeat(40)
+          },
+          target: '1'
+        }
+      ]
+    }
+    function WindowAndReading() {
+      const [window, setWindow] = useState<MetricWindow>({
+        kind: 'range',
+        since: '2026-09-23',
+        until: '2026-09-25',
+        granularity: 'week',
+        timezone: 'Asia/Shanghai'
+      })
+      return (
+        <>
+          <AcceptanceMetricWindow
+            window={window}
+            onChange={setWindow}
+            disabled={false}
+            error={null}
+          />
+          <AcceptanceMetrics
+            goal={goal}
+            materialKey="test"
+            readings={[]}
+            port={port}
+            scope={{ repoId: 'repo', worktreeId: 'tree', hostId: 'local' }}
+            window={window}
+            disabled={false}
+            onReadings={vi.fn()}
+          />
+        </>
+      )
+    }
+    await act(async () => root.render(<WindowAndReading />))
+    expect(container.querySelector('[role="alert"]')?.textContent).toContain('周一到周一')
+    const refreshButton = Array.from(container.querySelectorAll('button')).find(
+      (button) => button.textContent === '刷新实测'
+    )!
+    expect(refreshButton.disabled).toBe(true)
+    await act(async () => {
+      const select = container.querySelector<HTMLSelectElement>('[aria-label="指标采集粒度"]')!
+      select.value = 'day'
+      select.dispatchEvent(new Event('change', { bubbles: true }))
+    })
+    expect(container.querySelector('[role="alert"]')).toBeNull()
+    expect(refreshButton.disabled).toBe(false)
+    await act(async () => refreshButton.click())
+    expect(refresh).toHaveBeenCalledWith(
+      expect.objectContaining({
+        window: expect.objectContaining({
+          granularity: 'day',
+          since: '2026-09-23',
+          until: '2026-09-25'
+        })
+      })
+    )
+  })
   it('retains the selected conclusion and asks for a new human confirmation after a candidate change', async () => {
     const original = await recordHumanDecision({
       document: material(),

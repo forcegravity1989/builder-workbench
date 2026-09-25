@@ -6,7 +6,7 @@ import type {
   AcceptanceMaterial,
   PlanningMaterial
 } from '../../../../shared/workbench/version-material'
-import type { VersionCycleContext } from '../version-cycle/VersionCycleShell'
+import type { VersionCycleContext } from '../version-cycle/cycle-context'
 import type {
   VersionHistoryPort,
   VersionHistoryPlan

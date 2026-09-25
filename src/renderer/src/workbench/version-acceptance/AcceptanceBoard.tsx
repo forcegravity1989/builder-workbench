@@ -1,6 +1,6 @@
 import type { MetricsPort } from '../../../../shared/workbench/metrics'
 import type { VersionHistoryPort } from '../../../../shared/workbench/version-history'
-import type { VersionCycleContext } from '../version-cycle/VersionCycleShell'
+import type { VersionCycleContext } from '../version-cycle/cycle-context'
 import { VersionGoalCard } from '../version-cycle/VersionGoalCard'
 import { AcceptanceGoalResult } from './AcceptanceGoalResult'
 import { AcceptancePreparation } from './AcceptancePreparation'

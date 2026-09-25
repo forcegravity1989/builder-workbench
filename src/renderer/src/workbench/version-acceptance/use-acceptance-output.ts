@@ -3,7 +3,7 @@ import type { AcceptanceMaterial } from '../../../../shared/workbench/version-ma
 import type { VersionHistoryPlan } from '../../../../shared/workbench/version-history'
 import type { MaterialDraft, MaterialDraftController } from '../version-cycle/material-draft'
 import type { ArchiveStatus, CycleTaskRead } from '../version-cycle/ports'
-import type { VersionCycleContext } from '../version-cycle/VersionCycleShell'
+import type { VersionCycleContext } from '../version-cycle/cycle-context'
 import type { ArtifactCheck, CandidateCheck } from './acceptance-candidate-port'
 import { decisionFreshness } from './acceptance-decision'
 import { preparationKey, sameAcceptanceSource, type EvidenceCheck } from './acceptance-model'
