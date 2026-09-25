@@ -94,6 +94,7 @@ export function useNativeChatTypedInsertion(args: {
     if (tabId && paneKey) {
       return registerNativeChatDraftTarget({ tabId, paneKey }, appendDraftText)
     }
+    return undefined
   }, [tabId, paneKey, appendDraftText])
 
   return { insertTypedText, appendDraftText, focus }
