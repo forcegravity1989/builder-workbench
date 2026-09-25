@@ -3,6 +3,42 @@ import { MaterialDraftController } from './material-draft'
 
 const base = { schema_version: 3 as const, version: 'v1', cycleId: 'one', title: 'initial' }
 describe('material draft concurrency', () => {
+  it('keeps an unsaved new document editable while no file exists', async () => {
+    let remote: { document: typeof base; revision: string } | null = null
+    const controller = new MaterialDraftController<typeof base>(
+      {
+        read: async () => remote,
+        save: async (input) => ({ document: input.document, revision: 'saved' })
+      },
+      () => {}
+    )
+    controller.restore({ document: base, expectedRevision: null, dirty: true })
+    await controller.refresh()
+    expect(controller.value?.remote).toBeUndefined()
+    expect(controller.value?.error).toBeUndefined()
+    remote = { document: { ...base, title: 'another writer' }, revision: 'other' }
+    await controller.refresh()
+    expect(controller.value?.remote?.document.title).toBe('another writer')
+    remote = null
+    await controller.refresh()
+    expect(controller.value).toMatchObject({ document: base, expectedRevision: null, dirty: true })
+    expect(controller.value?.remote).toBeUndefined()
+    expect(controller.value?.error).toBeUndefined()
+  })
+  it('reports deletion of an existing document without treating it as new', async () => {
+    const controller = new MaterialDraftController<typeof base>(
+      {
+        read: async () => null,
+        save: async (input) => ({ document: input.document, revision: 'saved' })
+      },
+      () => {}
+    )
+    controller.restore({ document: base, expectedRevision: 'existing', dirty: true })
+    await controller.refresh()
+    expect(controller.value?.remote).toBeNull()
+    expect(controller.value?.expectedRevision).toBe('existing')
+    expect(controller.value?.error).toBeTruthy()
+  })
   it('invalidates reads even when a cached object is restored again', async () => {
     let finish!: (value: { document: typeof base; revision: string }) => void
     const controller = new MaterialDraftController<typeof base>(
