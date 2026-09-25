@@ -1,7 +1,5 @@
-import { createHash } from 'node:crypto'
 import type { MetricScope } from '../../shared/workbench/metrics'
 import {
-  AcceptanceMaterialSchema,
   PlanningMaterialSchema,
   SourceCommit,
   MaterialVersion,
@@ -16,16 +14,12 @@ import {
   type VersionHistoryProblem
 } from '../../shared/workbench/version-history'
 import type { VersionDocumentSnapshot } from '../../shared/workbench/version-document'
-
-export class HistorySourceError extends Error {
-  constructor(
-    readonly code: string,
-    message: string
-  ) {
-    super(message)
-    this.name = 'HistorySourceError'
-  }
-}
+import {
+  ArchiveMergeProofSchema,
+  type ArchiveMergeProof
+} from '../../shared/workbench/version-archive'
+import { decodeHistorySnapshot, HistorySourceError } from './version-history-snapshot'
+export { HistorySourceError } from './version-history-snapshot'
 
 /** Each dependency authorizes native repository/host/worktree IDs; callers never supply paths. */
 export type VersionHistoryHost = {
@@ -35,39 +29,22 @@ export type VersionHistoryHost = {
     scope: MetricScope,
     version: string
   ): Promise<VersionDocumentSnapshot<PlanningMaterial> | null>
-}
-
-function decodeSnapshot(raw: Buffer, version: string, workflow: 'plan' | 'acceptance') {
-  try {
-    const value: unknown = JSON.parse(raw.toString('utf8'))
-    if (
-      value &&
-      typeof value === 'object' &&
-      'schema_version' in value &&
-      value.schema_version === 2
-    ) {
-      throw new HistorySourceError(
-        'migration-required',
-        '此记录使用旧版材料格式，需明确迁移后才能按本版口径读取'
-      )
+  /** Native archive/provider evidence, never inferred only from Git reachability or topology. */
+  archiveState(
+    scope: MetricScope,
+    candidate: {
+      baseline: { ref: string; commit: string }
+      sourceCommit: string
+      version: string
+      cycleId: string
+      workflow: 'plan' | 'acceptance'
+      revision: string
     }
-    const document =
-      workflow === 'plan'
-        ? PlanningMaterialSchema.parse(value)
-        : AcceptanceMaterialSchema.parse(value)
-    if (document.version !== version) {
-      throw new Error('Material version differs from its path')
-    }
-    return { document, revision: `sha256:${createHash('sha256').update(raw).digest('hex')}` }
-  } catch (error) {
-    if (error instanceof HistorySourceError) {
-      throw error
-    }
-    throw new HistorySourceError(
-      'invalid-history',
-      `历史材料 ${version} 无法核对：${error instanceof Error ? error.message : String(error)}`
-    )
-  }
+  ): Promise<
+    | { kind: 'adopted'; proof: ArchiveMergeProof }
+    | { kind: 'draft' }
+    | { kind: 'unknown'; message: string }
+  >
 }
 
 export function createVersionHistoryService(host: VersionHistoryHost): VersionHistoryPort {
@@ -85,6 +62,47 @@ export function createVersionHistoryService(host: VersionHistoryHost): VersionHi
     return baseline
   }
 
+  async function archiveState(
+    scope: MetricScope,
+    candidate: Parameters<VersionHistoryHost['archiveState']>[1]
+  ) {
+    try {
+      const state = await host.archiveState(scope, candidate)
+      if (state.kind === 'adopted') {
+        const parsed = ArchiveMergeProofSchema.safeParse(state.proof)
+        if (
+          !parsed.success ||
+          parsed.data.mergeCommit !== candidate.sourceCommit ||
+          parsed.data.material.workflow !== candidate.workflow ||
+          parsed.data.material.version !== candidate.version ||
+          parsed.data.material.cycleId !== candidate.cycleId ||
+          parsed.data.material.revision !== candidate.revision
+        ) {
+          return { kind: 'unknown' as const, message: '归档依据与所选提交或材料修订不一致' }
+        }
+      }
+      return state
+    } catch (error) {
+      return {
+        kind: 'unknown' as const,
+        message: error instanceof Error ? error.message : '归档来源暂不可核对'
+      }
+    }
+  }
+
+  async function requireArchive(
+    scope: MetricScope,
+    candidate: Parameters<VersionHistoryHost['archiveState']>[1]
+  ) {
+    const state = await archiveState(scope, candidate)
+    if (state.kind !== 'adopted') {
+      throw new HistorySourceError(
+        'archive-unverified',
+        state.kind === 'unknown' ? state.message : '所选材料是工作中草稿，尚未成为归档记录'
+      )
+    }
+  }
+
   async function readSnapshot(
     scope: MetricScope,
     sourceCommit: string,
@@ -99,7 +117,7 @@ export function createVersionHistoryService(host: VersionHistoryHost): VersionHi
     } catch {
       throw new HistorySourceError('history-unavailable', `无法读取固定提交中的 ${path}`)
     }
-    return decodeSnapshot(raw, version, workflow)
+    return decodeHistorySnapshot(raw, version, workflow)
   }
 
   return {
@@ -107,12 +125,11 @@ export function createVersionHistoryService(host: VersionHistoryHost): VersionHi
       const { scope } = VersionHistoryListSchema.parse(input)
       const baseline = await host.baseline(scope)
       SourceCommit.parse(baseline.commit)
-      // Record snapshots adopted on the baseline, not every earlier draft from a merged branch.
       const log = await host.git(scope, [
         '-c',
         'core.quotepath=false',
         'log',
-        '--first-parent',
+        '--full-history',
         '--diff-merges=first-parent',
         '--format=%H%x00%cI',
         '--name-only',
@@ -135,10 +152,21 @@ export function createVersionHistoryService(host: VersionHistoryHost): VersionHi
           continue
         }
         const path = /^\.bw\/planning\/([^/]+)\/(data|acceptance)\.json$/.exec(line)
-        if (!path || !sourceCommit || !MaterialVersion.safeParse(path[1]).success) {
+        if (!path || !sourceCommit) {
           continue
         }
         const workflow = path[2] === 'data' ? 'plan' : 'acceptance'
+        if (!MaterialVersion.safeParse(path[1]).success) {
+          problems.push({
+            version: path[1],
+            sourceCommit,
+            workflow,
+            committedAt,
+            code: 'invalid-version',
+            message: `历史路径 ${line} 的版本目录不符合材料约定，未作为有效版本读取`
+          })
+          continue
+        }
         let snapshot: Awaited<ReturnType<typeof readSnapshot>>
         try {
           snapshot = await readSnapshot(scope, sourceCommit, path[1], workflow)
@@ -153,6 +181,28 @@ export function createVersionHistoryService(host: VersionHistoryHost): VersionHi
             committedAt,
             code: error.code,
             message: error.message
+          })
+          continue
+        }
+        const adopted = await archiveState(scope, {
+          baseline,
+          sourceCommit,
+          version: path[1],
+          workflow,
+          revision: snapshot.revision,
+          cycleId: snapshot.document.cycleId
+        })
+        if (adopted.kind === 'draft') {
+          continue
+        }
+        if (adopted.kind === 'unknown') {
+          problems.push({
+            version: path[1],
+            sourceCommit,
+            workflow,
+            committedAt,
+            code: 'archive-unverified',
+            message: adopted.message
           })
           continue
         }
@@ -174,7 +224,7 @@ export function createVersionHistoryService(host: VersionHistoryHost): VersionHi
     },
     async read(input) {
       const request = VersionHistoryReadSchema.parse(input)
-      await verifySource(request.scope, request.sourceCommit)
+      const baseline = await verifySource(request.scope, request.sourceCommit)
       const snapshot = await readSnapshot(
         request.scope,
         request.sourceCommit,
@@ -184,6 +234,14 @@ export function createVersionHistoryService(host: VersionHistoryHost): VersionHi
       if (snapshot.document.cycleId !== request.cycleId) {
         throw new HistorySourceError('history-identity-mismatch', '固定提交中的周期与所选记录不同')
       }
+      await requireArchive(request.scope, {
+        baseline,
+        sourceCommit: request.sourceCommit,
+        version: request.version,
+        cycleId: request.cycleId,
+        workflow: request.workflow,
+        revision: snapshot.revision
+      })
       return { ...snapshot, sourceCommit: request.sourceCommit }
     },
     async readPlan(input) {
@@ -209,6 +267,16 @@ export function createVersionHistoryService(host: VersionHistoryHost): VersionHi
           'history-identity-mismatch',
           '计划引用的内容、版本或周期已变化，请核对原承诺'
         )
+      }
+      if (planRef.kind === 'committed' && baseline) {
+        await requireArchive(scope, {
+          baseline,
+          sourceCommit: planRef.sourceCommit,
+          version: planRef.version,
+          cycleId: planRef.cycleId,
+          workflow: 'plan',
+          revision: snapshot.revision
+        })
       }
       return {
         document: PlanningMaterialSchema.parse(snapshot.document),

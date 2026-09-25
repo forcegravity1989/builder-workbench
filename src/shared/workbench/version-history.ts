@@ -41,7 +41,7 @@ export type VersionHistoryPlan = {
   document: PlanningMaterial
   revision: string
   planRef: z.infer<typeof PlanReferenceSchema>
-  /** Only a verified ancestor of the project's adopted baseline is committed evidence. */
+  /** Committed evidence requires both baseline reachability and verified archive adoption. */
   source:
     | { kind: 'committed'; sourceCommit: string; baselineCommit: string; baselineRef: string }
     | { kind: 'draft'; sourceHostId: string; sourceWorktreeId: string }
