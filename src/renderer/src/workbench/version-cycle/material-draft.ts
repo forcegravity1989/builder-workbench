@@ -15,6 +15,8 @@ export type MaterialDraft<T> = {
 /** Only UI recovery data; the host material transaction remains the authoritative writer. */
 export class MaterialDraftController<T extends VersionDocumentIdentity> {
   private generation = 0
+  private selection = 0
+  private refreshRequest = 0
   private saving = false
   value: MaterialDraft<T> | null = null
   constructor(
@@ -26,6 +28,7 @@ export class MaterialDraftController<T extends VersionDocumentIdentity> {
     this.publish(value)
   }
   restore(value: MaterialDraft<T>) {
+    this.selection++
     this.generation++
     this.update(value)
   }
@@ -37,12 +40,13 @@ export class MaterialDraftController<T extends VersionDocumentIdentity> {
     this.update({ ...this.value, document, dirty: true })
   }
   async refresh() {
-    if (!this.value) {
+    if (!this.value || this.saving) {
       return
     }
     const original = this.value
+    const request = ++this.refreshRequest
     const remote = await this.port.read(original.document.version)
-    if (!this.value || this.value.document.version !== original.document.version) {
+    if (this.value !== original || request !== this.refreshRequest) {
       return
     }
     if (this.value.dirty) {
@@ -65,6 +69,8 @@ export class MaterialDraftController<T extends VersionDocumentIdentity> {
     }
     const value = this.value
     const generation = this.generation
+    const selection = this.selection
+    this.refreshRequest++
     this.saving = true
     try {
       const saved = await this.port.save({
@@ -72,7 +78,7 @@ export class MaterialDraftController<T extends VersionDocumentIdentity> {
         document: value.document,
         expectedRevision: value.expectedRevision
       })
-      if (this.value?.document.version !== value.document.version) {
+      if (selection !== this.selection) {
         return true
       }
       this.update(
@@ -88,12 +94,13 @@ export class MaterialDraftController<T extends VersionDocumentIdentity> {
       )
       return true
     } catch (error) {
-      if (this.value?.document.version === value.document.version) {
+      if (selection === this.selection) {
         this.update({
           ...this.value,
           error: error instanceof Error ? error.message : '保存失败，输入已保留'
         })
         if ((error as { code?: string }).code === 'revision-conflict') {
+          this.saving = false
           await this.refresh().catch(() => undefined)
         }
       }
