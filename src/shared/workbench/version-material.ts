@@ -71,7 +71,14 @@ const TaskSnapshotSource = z
     hostId: Id.refine((value) => normalizeExecutionHostId(value) !== null)
   })
   .passthrough()
-  .pipe(TaskSourceContextSchema)
+  .transform((value, ctx) => {
+    const source = TaskSourceContextSchema.safeParse(value)
+    if (!source.success) {
+      ctx.addIssue({ code: 'custom', message: 'Invalid task source context' })
+      return z.NEVER
+    }
+    return source.data
+  })
 
 export const VersionTaskSnapshotSchema = z
   .discriminatedUnion('kind', [
