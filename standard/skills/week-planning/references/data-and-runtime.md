@@ -6,7 +6,7 @@
 
 核对项目根、工作区、版本、流程和实际工具路径。已有文件先读修订再改，不依靠宿主 cwd 推断项目。模型与右侧编辑器必须调用同一材料服务，以 expectedRevision 保存；冲突保留双方输入，不能用直接写文件绕开校验。
 
-使用 `orca bw materials schema/list/read/save`，参数与修订约束以版本材料 reference 及命令 `--help` 为准。宿主未提供入口时，报告缺失、可以讨论并保留草稿建议，但不能编造命令或宣称已保存。自动化只创建/恢复 Orca 运行，不代替用户认可。
+结构使用 `orca bw materials schema --workflow plan|acceptance --json` 读取；列举、读取与保存的参数分别查看 `orca bw materials list --help`、`orca bw materials read --help`、`orca bw materials save --help`，修订约束以版本材料 reference 为准。宿主未提供入口时，报告缺失、可以讨论并保留草稿建议，但不能编造命令或宣称已保存。自动化只创建/恢复 Orca 运行，不代替用户认可。
 
 ## 显式迁移旧材料
 

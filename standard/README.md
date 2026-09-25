@@ -49,7 +49,8 @@
 | `REVIEW.md.tmpl` | 评审会话主提示词 | 已收录,尚未派发 |
 | `references/issue-state.md` | issue 状态机、版本标签语义、程序/模型写入边界 | 所有 Issue |
 | `references/metrics.md` | 脚本指标协议 | 指标配置及两个版本流程按需读取 |
-| `references/week-plan-comment.md` | 更新指标与版本计划 Issue 评论三标题 + 周五每周进展 | 更新指标与版本计划 Issue 发布评论前过校验脚本;资产盘点只追加每周进展 |
+| `references/week-plan-comment.md` | 旧计划 Issue 评论三标题 | 仅供历史评论核对、修复和导入 |
+| `references/version-records.md` | 版本计划 / 验收材料及修订契约 | 两个版本流程与资产盘点写入明确版本进展时按需读取 |
 | `references/build.md` | 改仓:分支 / MR / 合并是人 / 0 提交不装前进 | 构建类 + 资产盘点 Issue |
 | `references/bw-assets.md` | `.bw` 现行格式 + 样例 | 资产盘点 Issue |
 | `references/review.md` | 独立评审 | 尚未派发 |
