@@ -10,6 +10,12 @@ import {
   type VersionMaterialSave
 } from '../../shared/workbench/version-material-request'
 import { MaterialScopeError } from './version-material-error'
+import {
+  VersionMigrationReadSchema,
+  VersionMigrationApplySchema,
+  type VersionMigrationRead,
+  type VersionMigrationApply
+} from '../../shared/workbench/version-material-migration'
 import type {
   createVersionMaterialWorkspace,
   VersionMaterialWorkspace
@@ -68,6 +74,14 @@ export function createVersionMaterialService(
     })
   }
   return {
+    async previewMigration(input: VersionMigrationRead) {
+      const request = VersionMigrationReadSchema.parse(input)
+      return (await workspace(request)).previewMigration(request)
+    },
+    async migrate(input: VersionMigrationApply) {
+      const request = VersionMigrationApplySchema.parse(input)
+      return (await workspace(request)).migrate(request)
+    },
     async list(input: VersionMaterialScope) {
       const scope = VersionMaterialScopeSchema.parse(input)
       return (await workspace(scope)).list(scope)

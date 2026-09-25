@@ -24,6 +24,7 @@ import { MaterialScopeError } from './version-material-error'
 import { resolveWorktreeHostPath } from '../../shared/git-metadata-path'
 import { createVersionDocumentStore } from './version-document-store'
 import { isMissingFile, resolveVersionPlanningRoot } from './version-document-path'
+import { createVersionMaterialMigration } from './version-material-migration'
 
 /** Runs on the filesystem owner; paths come from the authenticated native inventory adapter. */
 export type VersionMaterialWorkspace = { repoPath: string; worktreePath: string }
@@ -69,6 +70,7 @@ export function createVersionMaterialWorkspace(
   }
 
   return {
+    ...createVersionMaterialMigration(storeFor),
     async list(input: VersionMaterialScope): Promise<VersionMaterialCandidate[]> {
       const scope = VersionMaterialScopeSchema.parse(input)
       const root = await authorize(scope)

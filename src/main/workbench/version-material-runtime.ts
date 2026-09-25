@@ -44,6 +44,8 @@ export const executeVersionMaterial: VersionMaterialExecutor = (target, reauthor
     return result.value
   }
   return {
+    previewMigration: (request) => call('previewMigration', request),
+    migrate: (request) => call('migrate', request),
     list: (request) => call('list', request),
     read: (request) => call('read', request),
     save: (request) => call('save', request)
