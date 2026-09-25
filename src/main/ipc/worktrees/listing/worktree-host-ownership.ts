@@ -26,7 +26,9 @@ export type RepoOwnershipEvidence =
   | { status: 'malformed' }
   | { status: 'contradictory' }
 
-export function resolveRepoOwnershipEvidence(repo: Repo): RepoOwnershipEvidence {
+export function resolveRepoOwnershipEvidence(
+  repo: Pick<Repo, 'connectionId' | 'executionHostId'>
+): RepoOwnershipEvidence {
   const hasExplicitHost = repo.executionHostId !== null && repo.executionHostId !== undefined
   const explicitHost = hasExplicitHost ? parseExecutionHostId(repo.executionHostId) : null
   if (hasExplicitHost && !explicitHost) {

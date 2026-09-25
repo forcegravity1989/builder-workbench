@@ -1,20 +1,13 @@
 import { VersionDocumentError } from '../../shared/workbench/version-document'
 import type { VersionMaterialResult } from '../../shared/workbench/version-material-request'
 
-export class MaterialScopeError extends Error {
-  constructor(
-    readonly code: string,
-    message: string
-  ) {
-    super(message)
-  }
-}
+import { WorkspaceScopeError } from './workspace-scope-error'
 
 export async function materialResult<T>(run: () => Promise<T>): Promise<VersionMaterialResult<T>> {
   try {
     return { ok: true, value: await run() }
   } catch (error) {
-    if (error instanceof VersionDocumentError || error instanceof MaterialScopeError) {
+    if (error instanceof VersionDocumentError || error instanceof WorkspaceScopeError) {
       return {
         ok: false,
         error: {

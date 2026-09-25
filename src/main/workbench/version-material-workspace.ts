@@ -20,7 +20,7 @@ import {
 } from '../../shared/workbench/version-material-request'
 import { resolveGitDir } from '../git/source-control/resolve-git-dir'
 import { resolveGitCommonDir } from '../git/source-control/resolve-git-common-dir'
-import { MaterialScopeError } from './version-material-error'
+import { WorkspaceScopeError } from './workspace-scope-error'
 import { resolveWorktreeHostPath } from '../../shared/git-metadata-path'
 import { createVersionDocumentStore } from './version-document-store'
 import { isMissingFile, resolveVersionPlanningRoot } from './version-document-path'
@@ -43,11 +43,11 @@ export function createVersionMaterialWorkspace(
       readFile(join(gitDir, 'HEAD'), 'utf8')
     ])
     if (repoCommon !== treeCommon) {
-      throw new MaterialScopeError('invalid-scope', '工作树不属于所选 Git 项目')
+      throw new WorkspaceScopeError('invalid-scope', '工作树不属于所选 Git 项目')
     }
     const branch = scope.workflow === 'plan' ? 'bw/week-plan' : 'bw/week-acceptance'
     if (head.trim() !== `ref: refs/heads/${branch}`) {
-      throw new MaterialScopeError('wrong-branch', `请使用 ${branch} 工作树`)
+      throw new WorkspaceScopeError('wrong-branch', `请使用 ${branch} 工作树`)
     }
     return root
   }
@@ -63,7 +63,7 @@ export function createVersionMaterialWorkspace(
           : AcceptanceMaterialSchema.parse(value),
       beforeCommit: async () => {
         if ((await authorize(scope)) !== root) {
-          throw new MaterialScopeError('invalid-scope', '工作树位置已改变，请重新打开')
+          throw new WorkspaceScopeError('invalid-scope', '工作树位置已改变，请重新打开')
         }
       }
     })
