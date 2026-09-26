@@ -61,7 +61,7 @@ describe('material draft concurrency', () => {
   })
   it('keeps edits made during save dirty against the returned revision', async () => {
     let finish!: (value: { document: typeof base; revision: string }) => void
-    const controller = new MaterialDraftController(
+    const controller = new MaterialDraftController<typeof base>(
       {
         read: async () => null,
         save: () =>
