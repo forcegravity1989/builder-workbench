@@ -35,6 +35,7 @@ export const AUTOMATION_EDITOR_SEGMENTED_ITEM_CLASS =
   'h-7 rounded-sm border-0 bg-transparent shadow-none hover:bg-card/70 data-[state=on]:bg-card data-[state=on]:text-card-foreground data-[state=on]:shadow-xs'
 
 export type AutomationDraft = {
+  creationKey?: string
   name: string
   prompt: string
   agentId: TuiAgent

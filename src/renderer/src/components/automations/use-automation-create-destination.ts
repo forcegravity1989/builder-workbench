@@ -50,6 +50,8 @@ export type AutomationCreateDestinationInput = {
   entries: readonly AutomationHostCatalogEntry[]
   /** Non-null only when the list is filtered to one concrete host. */
   filterStableKey: string | null
+  /** An explicit caller target must never fall back to the active workspace. */
+  initialStableKey?: string | null
   activeWorkspaceStableKey: string | null
   repoTables: AutomationAuthorityRepoTables
   projects: readonly Repo[]
@@ -91,26 +93,31 @@ export function useAutomationCreateDestination(
     catalog,
     entries,
     filterStableKey,
+    initialStableKey,
     activeWorkspaceStableKey,
     repoTables,
     projects
   } = input
   const [captured, setCaptured] = useState<AutomationCreateDestination | null>(null)
+  const [selectedStableKey, setSelectedStableKey] = useState<string | null>(null)
   const [reason, setReason] = useState<AutomationCreateDestinationChoiceReason>('unselected')
 
   // Adjusted during render rather than in an effect, so no frame paints the
   // previous dialog's capture. Each branch is guarded on an actual change, so
   // the re-render this schedules converges immediately.
-  if (!open && (captured !== null || reason !== 'unselected')) {
+  if (!open && (captured !== null || reason !== 'unselected' || selectedStableKey !== null)) {
+    setSelectedStableKey(null)
     setCaptured(null)
     setReason('unselected')
   }
   if (open && !captured) {
     // Re-resolves until it first captures: a catalog still hydrating must not lock
     // the form into "choose a host" once the host it would have picked arrives.
-    const entry =
-      preselectAutomationCreateHost(entries, filterStableKey, activeWorkspaceStableKey) ??
-      soleAutomationCreateHost(entries, catalog.hydration)
+    const explicitKey = selectedStableKey ?? initialStableKey
+    const entry = explicitKey
+      ? entries.find((candidate) => candidate.stableKey === explicitKey)
+      : (preselectAutomationCreateHost(entries, filterStableKey, activeWorkspaceStableKey) ??
+        soleAutomationCreateHost(entries, catalog.hydration))
     const resolved = resolveAutomationCreateDestination(entry)
     if (resolved.status === 'ready') {
       setCaptured(resolved)
@@ -121,6 +128,7 @@ export function useAutomationCreateDestination(
 
   const onSelect = useCallback(
     (stableKey: string) => {
+      setSelectedStableKey(stableKey)
       const resolved = resolveAutomationCreateDestination(
         entries.find((entry) => entry.stableKey === stableKey)
       )

@@ -7,6 +7,7 @@ import { afterEach, describe, expect, it } from 'vitest'
 import { BUNDLED_SKILL_GUIDES } from '../../src/cli/bundled-skill-guides'
 import {
   CANONICAL_GUIDE_NAMES,
+  WORKBENCH_GUIDE_SOURCES,
   GUIDE_ALIASES,
   STUB_TOPICS,
   assertAliasContract,
@@ -69,6 +70,7 @@ async function createFixture() {
       recursive: true
     }),
     cp(path.join(projectDir, 'skills'), path.join(root, 'skills'), { recursive: true }),
+    cp(path.join(projectDir, 'standard'), path.join(root, 'standard'), { recursive: true }),
     mkdir(path.join(root, 'src', 'cli'), { recursive: true })
   ])
   return root
@@ -84,14 +86,22 @@ describe('bundled skill guide generator', () => {
   it('projects stub topics as hybrid discovery stubs that reuse the guide frontmatter', async () => {
     expect(STUB_TOPICS.length).toBeGreaterThan(0)
     for (const name of STUB_TOPICS) {
-      const source = await readFile(path.join(projectDir, 'skill-guides', `${name}.md`), 'utf8')
+      const source = await readFile(
+        WORKBENCH_GUIDE_SOURCES[name]
+          ? path.join(projectDir, WORKBENCH_GUIDE_SOURCES[name])
+          : path.join(projectDir, 'skill-guides', `${name}.md`),
+        'utf8'
+      )
       const projection = await readFile(path.join(projectDir, 'skills', name, 'SKILL.md'), 'utf8')
 
       // The routing frontmatter is the unchanged discovery surface.
       expect(projection.startsWith(frontmatterBlock(source, `${name}.md`))).toBe(true)
       // The stub is a thin hybrid pointer, not the full guide.
       expect(projection).not.toEqual(source)
-      expect(projection.length).toBeLessThan(source.length)
+      const fullSource = WORKBENCH_GUIDE_SOURCES[name]
+        ? BUNDLED_SKILL_GUIDES.find((guide) => guide.name === name).fullMarkdown
+        : source
+      expect(projection.length).toBeLessThan(fullSource.length)
       expect(projection).toContain('discovery stub')
       expect(projection).toContain(`skills get ${name}`)
     }
@@ -201,21 +211,44 @@ describe('bundled skill guide generator', () => {
 
   it('embeds compact guides, version-matched reference packages, and append-only aliases', async () => {
     expect(BUNDLED_SKILL_GUIDES.map((guide) => guide.name)).toEqual(
-      [...CANONICAL_GUIDE_NAMES].sort((left, right) => left.localeCompare(right, 'en'))
+      [...CANONICAL_GUIDE_NAMES, ...Object.keys(WORKBENCH_GUIDE_SOURCES)].sort((left, right) =>
+        left.localeCompare(right, 'en')
+      )
     )
 
     for (const guide of BUNDLED_SKILL_GUIDES) {
+      if (WORKBENCH_GUIDE_SOURCES[guide.name]) {
+        // Source links must resolve through native CLI references in projects without standard/.
+        expect(guide.markdown).toContain(`ORCA skills get ${guide.name} --reference`)
+        expect(guide.markdown).toContain('the executable you resolved in the stub')
+        expect(guide.fullMarkdown).not.toMatch(/\borca (?:skills|bw)\b/u)
+        const projection = await readFile(
+          path.join(projectDir, 'skills', guide.name, 'SKILL.md'),
+          'utf8'
+        )
+        const shared = await readSharedStubBlocks(projectDir)
+        expect(projection).toContain(shared.get('resolver').text)
+        expect(projection).toContain(shared.get('no-guessing').text)
+        expect(guide.fullMarkdown).not.toMatch(/\]\((?:\.\.\/|references\/|assets\/)/u)
+        for (const match of guide.fullMarkdown.matchAll(
+          /ORCA skills get ([a-z-]+) --reference ([a-z-]+)/gu
+        )) {
+          const target = BUNDLED_SKILL_GUIDES.find((item) => item.name === match[1])
+          expect(target?.references.some((reference) => reference.name === match[2])).toBe(true)
+        }
+        continue
+      }
       const source = await readFile(
         path.join(projectDir, 'skill-guides', `${guide.name}.md`),
         'utf8'
       )
       const frontmatter = parseFrontmatter(source, `${guide.name}.md`)
       expect(guide.description).toBe(frontmatter.description)
-      expect(guide.markdown).toBe(source)
+      expect(guide.markdown).toBe(normalizeMarkdown(source))
       expect(guide.aliases).toEqual(GUIDE_ALIASES[guide.name])
       const references = GUIDE_REFERENCES[guide.name]
       if (!references) {
-        expect(guide.fullMarkdown).toBe(source)
+        expect(guide.fullMarkdown).toBe(normalizeMarkdown(source))
         expect(guide.references).toEqual([])
         continue
       }
@@ -242,14 +275,16 @@ describe('bundled skill guide generator', () => {
       }
       expect(guide.fullMarkdown).not.toBe(guide.markdown)
       expect(guide.fullMarkdown.length).toBeGreaterThan(guide.markdown.length)
-      expect(guide.fullMarkdown.startsWith(source.trimEnd())).toBe(true)
+      expect(guide.fullMarkdown.startsWith(normalizeMarkdown(source).trimEnd())).toBe(true)
       for (const reference of references) {
         const marker = `<!-- bundled-reference: references/${reference} -->`
         expect(guide.fullMarkdown.split(marker)).toHaveLength(2)
         expect(guide.fullMarkdown).toContain(
-          await readFile(
-            path.join(projectDir, 'skill-guides', guide.name, 'references', reference),
-            'utf8'
+          normalizeMarkdown(
+            await readFile(
+              path.join(projectDir, 'skill-guides', guide.name, 'references', reference),
+              'utf8'
+            )
           )
         )
       }
@@ -295,20 +330,20 @@ describe('bundled skill guide generator', () => {
     for (const name of CANONICAL_GUIDE_NAMES) {
       const sourcePath = path.join(root, 'skill-guides', `${name}.md`)
       const source = await readFile(sourcePath, 'utf8')
-      await writeFile(sourcePath, source.replaceAll('\n', '\r\n'))
+      await writeFile(sourcePath, normalizeMarkdown(source).replaceAll('\n', '\r\n'))
     }
     for (const name of STUB_TOPICS) {
       const stubPath = path.join(root, 'skill-stubs', `${name}.md`)
       const stubSource = await readFile(stubPath, 'utf8')
-      await writeFile(stubPath, stubSource.replaceAll('\n', '\r\n'))
+      await writeFile(stubPath, normalizeMarkdown(stubSource).replaceAll('\n', '\r\n'))
     }
     const sharedStubPath = path.join(root, ...SHARED_STUB_SOURCE.split('/'))
     const sharedStubSource = await readFile(sharedStubPath, 'utf8')
-    await writeFile(sharedStubPath, sharedStubSource.replaceAll('\n', '\r\n'))
+    await writeFile(sharedStubPath, normalizeMarkdown(sharedStubSource).replaceAll('\n', '\r\n'))
     for (const [guide, reference] of GUIDE_REFERENCE_PATHS) {
       const referencePath = path.join(root, 'skill-guides', guide, 'references', reference)
       const source = await readFile(referencePath, 'utf8')
-      await writeFile(referencePath, source.replaceAll('\n', '\r\n'))
+      await writeFile(referencePath, normalizeMarkdown(source).replaceAll('\n', '\r\n'))
     }
 
     const actual = await buildArtifacts(root)

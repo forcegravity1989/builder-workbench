@@ -1,4 +1,5 @@
 import { useCallback, useMemo } from 'react'
+import { hostStableKey } from '../../../../shared/automation-owner-key'
 import { getWorktreePathBasenameFromId } from '../../../../shared/worktree/id'
 import { buildExternalAutomationListEntries } from './external-automation-list-entries'
 import { externalAutomationScopeEntries } from './external-automation-scope-gating'
@@ -40,7 +41,12 @@ export function useAutomationsPageListState({
     setSelectedAutomationRunPageId,
     setSelectedRowKey
   } = local
-  const hostCatalog = useAutomationHostCatalog({ failedAuthorityKeys })
+  const requestHost = store.pendingAutomationEditorRequest?.host
+  const referencedStableKeys = useMemo(
+    () => (requestHost ? [hostStableKey(requestHost)] : []),
+    [requestHost]
+  )
+  const hostCatalog = useAutomationHostCatalog({ failedAuthorityKeys, referencedStableKeys })
   const externalScopeEntries = useMemo(
     () => externalAutomationScopeEntries(hostCatalog.entries, hostCatalog.resolution),
     [hostCatalog.entries, hostCatalog.resolution]

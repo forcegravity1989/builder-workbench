@@ -12,7 +12,7 @@
 
 | 指标 | 引/滞 | 一句话口径 | 脚本(`.bw/scripts/`) |
 |---|---|---|---|
-| 每周提交数 | 引领 | 当前分支提交时刻落在本周的提交数 | `git-commits.py` |
+| 每周提交数 | 引领 | 指定 Git 提交可达历史中、时刻落在明确时区与真实覆盖范围内的提交数 | `git-commits.py` |
 | 每周合入的 PR 数 | 引领 | 远端 merged 时刻落在本周的 PR 数 | `github-merged-prs.py` |
 | 评审等待 | 引领 | 本周合入的 PR,开出→合入的中位时长(小时) | `github-review-wait.py` |
 | 首过率 | 引领 | 本周合入的 PR 里,开出后零追加提交的占比(%) | `github-first-pass.py` |

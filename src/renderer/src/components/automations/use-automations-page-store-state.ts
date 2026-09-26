@@ -40,6 +40,9 @@ export function useAutomationsPageStoreState() {
   const setSelectedId = useAppStore((s) => s.setSelectedAutomationId)
   const pendingAutomationRunNavigation = useAppStore((s) => s.pendingAutomationRunNavigation)
   const setPendingAutomationRunNavigation = useAppStore((s) => s.setPendingAutomationRunNavigation)
+  const automationHostFilter = useAppStore((s) => s.automationHostFilter)
+  const pendingAutomationEditorRequest = useAppStore((s) => s.pendingAutomationEditorRequest)
+  const consumeAutomationEditorRequest = useAppStore((s) => s.consumeAutomationEditorRequest)
   const repoMap = useRepoMap()
   const worktreeMap = useWorktreeMap()
   const repoForRow = useCallback(
@@ -87,6 +90,9 @@ export function useAutomationsPageStoreState() {
     settings,
     selectedId,
     setSelectedId,
+    automationHostFilter,
+    pendingAutomationEditorRequest,
+    consumeAutomationEditorRequest,
     pendingAutomationRunNavigation,
     setPendingAutomationRunNavigation,
     repoMap,
