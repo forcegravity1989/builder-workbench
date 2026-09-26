@@ -144,7 +144,7 @@ test('BW cycle main chain: fixed trees, version material save and independent re
   await expect(orcaPage.getByRole('heading', { name: '总览', exact: true })).toBeVisible({
     timeout: 60_000
   })
-  await expect(orcaPage.getByText(/未配置北极星指标|目录未知|指标目录：|北极星/)).toBeVisible({
+  await expect(orcaPage.getByText(/未配置北极星指标|目录未知|指标目录：/).first()).toBeVisible({
     timeout: 60_000
   })
   await orcaPage.screenshot({ path: testInfo.outputPath('bw-overview-real.png') })
