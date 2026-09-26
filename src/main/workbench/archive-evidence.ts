@@ -1,6 +1,6 @@
 import type { ArchiveMergeProof, ArchivedMaterial } from '../../shared/workbench/version-archive'
 import { SourceCommit } from '../../shared/workbench/version-material'
-import { historySnapshotRevision, planningMaterialGitPath } from './version-history-snapshot'
+import { decodeHistorySnapshot, planningMaterialGitPath } from './version-history-snapshot'
 
 export type ArchiveCandidate = {
   sourceCommit: string
@@ -102,7 +102,12 @@ export function createArchiveEvidenceReader(repoKey: string, deps: ArchiveEviden
     return facts
   }
 
-  async function mergedRevisionAt(mergeCommit: string, material: ArchiveProofMaterial) {
+  /**
+   * The merged commit's material is decoded, not just hashed: a proof must bind
+   * the claimed cycle to the bytes' own identity, or a fresh cycleId over an old
+   * revision would inherit the previous round's archived green.
+   */
+  async function mergedMaterialAt(mergeCommit: string, material: ArchiveProofMaterial) {
     return cached(
       `bytes:${repoKey}:${mergeCommit}:${material.workflow}:${material.version}`,
       DEFINITIVE_TTL_MS,
@@ -111,7 +116,11 @@ export function createArchiveEvidenceReader(repoKey: string, deps: ArchiveEviden
           mergeCommit,
           planningMaterialGitPath(material.version, material.workflow)
         )
-        return raw === null ? null : historySnapshotRevision(raw)
+        if (raw === null) {
+          return null
+        }
+        const decoded = decodeHistorySnapshot(raw, material.version, material.workflow)
+        return { revision: decoded.revision, cycleId: decoded.document.cycleId }
       }
     )
   }
@@ -162,11 +171,13 @@ export function createArchiveEvidenceReader(repoKey: string, deps: ArchiveEviden
         return { kind: 'draft' }
       }
       let sawMerged = false
+      let sawReadFailure = false
       for (const entry of entries) {
         let facts: PullMergeFacts
         try {
           facts = await pullFacts(entry.number)
         } catch {
+          sawReadFailure = true
           continue
         }
         if (!facts.merged || !facts.mergeCommit) {
@@ -174,10 +185,16 @@ export function createArchiveEvidenceReader(repoKey: string, deps: ArchiveEviden
         }
         sawMerged = true
         try {
-          if ((await mergedRevisionAt(facts.mergeCommit, material)) === candidate.revision) {
+          const merged = await mergedMaterialAt(facts.mergeCommit, material)
+          if (
+            merged &&
+            merged.revision === candidate.revision &&
+            merged.cycleId === candidate.cycleId
+          ) {
             return { kind: 'adopted', proof: proofFor(entry.number, facts.mergeCommit, material) }
           }
         } catch {
+          sawReadFailure = true
           continue
         }
       }
@@ -185,7 +202,9 @@ export function createArchiveEvidenceReader(repoKey: string, deps: ArchiveEviden
         kind: 'unknown',
         message: sawMerged
           ? '已合入评审的提交内容与所选材料修订不一致'
-          : '关联评审尚未合入，无法证明归档'
+          : sawReadFailure
+            ? '关联评审状态暂不可读回，无法证明归档'
+            : '关联评审尚未合入，无法证明归档'
       }
     },
 
@@ -211,9 +230,9 @@ export function createArchiveEvidenceReader(repoKey: string, deps: ArchiveEviden
           proof: { kind: 'unknown', reason: '该评审没有 provider 返回的真实合入提交' }
         }
       }
-      let merged: string | null
+      let merged: { revision: string; cycleId: string } | null
       try {
-        merged = await mergedRevisionAt(facts.mergeCommit, material)
+        merged = await mergedMaterialAt(facts.mergeCommit, material)
       } catch (error) {
         return {
           mergeCommit: facts.mergeCommit,
@@ -223,10 +242,16 @@ export function createArchiveEvidenceReader(repoKey: string, deps: ArchiveEviden
           }
         }
       }
-      if (merged !== material.revision) {
+      if (merged === null || merged.revision !== material.revision) {
         return {
           mergeCommit: facts.mergeCommit,
           proof: { kind: 'unknown', reason: '合入提交中的材料与所选修订不一致' }
+        }
+      }
+      if (merged.cycleId !== material.cycleId) {
+        return {
+          mergeCommit: facts.mergeCommit,
+          proof: { kind: 'unknown', reason: '合入提交中的材料属于其他周期，本轮尚未归档' }
         }
       }
       return {

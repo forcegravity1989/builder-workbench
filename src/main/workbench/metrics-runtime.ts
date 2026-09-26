@@ -103,7 +103,10 @@ export async function executeMetricsOperation(
   return result.value
 }
 
-function interpretOutcome(outcome: MetricProcessOutcome, timeoutMs: number): { stdout: string } {
+export function interpretOutcome(
+  outcome: MetricProcessOutcome,
+  timeoutMs: number
+): { stdout: string } {
   if (outcome.timedOut) {
     throw new MetricCollectorError(
       'collector-timeout',

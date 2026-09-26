@@ -44,7 +44,7 @@ export async function resolveAdoptedBaseline(
 }
 
 const SHA = '(?:[a-f0-9]{40}|[a-f0-9]{64})'
-const MATERIAL_PATH = String.raw`\.bw\/planning\/[^/\0]+\/(?:data|acceptance)\.json`
+const MATERIAL_PATH = String.raw`\.bw\/planning\/(?!\.+$)[^/\0]+\/(?:data|acceptance)\.json`
 
 /**
  * Exact read-only argv allowlists the history service issues. The SSH relay accepts

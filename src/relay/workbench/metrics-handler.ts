@@ -33,7 +33,13 @@ const ConfigurationRequest = z.strictObject({
 })
 const FingerprintRequest = z.strictObject({ configurationCommit: Sha, run: Argv })
 const CollectRequest = z.strictObject({
-  checkoutRoot: z.string().min(1),
+  // Prepared checkouts live under the host's temp roots; refuse traversal and
+  // relative paths so the wire value cannot point the executor at arbitrary trees.
+  checkoutRoot: z
+    .string()
+    .min(1)
+    .refine((value) => /^[A-Za-z]:[/\\]/.test(value) || value.startsWith('/'))
+    .refine((value) => !value.split(/[/\\]/).includes('..')),
   configurationCommit: Sha,
   run: Argv,
   args: z.tuple([
@@ -53,6 +59,17 @@ const CollectRequest = z.strictObject({
  * runs (fixed-revision checkout, argv spawn, finally-discard), mounted on
  * Orca's authenticated relay. No generic remote exec is exposed — operations
  * are fixed, argv is validated, and env crosses only as BW_METRICS_* values.
+ *
+ * Trust model (declared, not implied): `collect.run` argv and `checkoutRoot`
+ * arrive over the authenticated relay channel and are shape-validated only;
+ * the normal product path derives them from the pinned .bw/metrics.toml on the
+ * calling host, but this executor does not re-derive them from the commit.
+ * That is not a privilege escalation today — the same relay session already
+ * exposes an interactive PTY and the repoPath trust model matches
+ * version-material-handler — yet any future channel caller would inherit raw
+ * argv execution. Re-deriving `run` from configurationCommit here (name +
+ * definitionHash on the wire) is the registered follow-up; do not treat this
+ * handler as a general remote-exec boundary.
  */
 export function registerMetricsRelay(dispatcher: Pick<RelayDispatcher, 'onRequest'>) {
   dispatcher.onRequest('workbench.metrics.execute', async (params) => {

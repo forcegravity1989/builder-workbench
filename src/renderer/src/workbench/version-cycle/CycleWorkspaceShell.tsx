@@ -8,8 +8,6 @@ import AiVaultPanel from '@/components/right-sidebar/AiVaultPanel'
 import type { TuiAgent } from '../../../../shared/tui-agent'
 import type { AiVaultSession } from '../../../../shared/ai-vault-types'
 import type { VersionWorkflow } from '../../../../shared/workbench/version-document'
-import type { StableAutomationHostRef } from '../../../../shared/automation-owner-ref'
-import { parseExecutionHostId } from '../../../../shared/execution-host'
 import {
   ensureNamedWorktree,
   nativeWorkspaceScope,
@@ -25,6 +23,7 @@ import {
   startCycleSession
 } from './native-session'
 import { useWorkflowVersion } from './use-workflow-version'
+import { useCycleAutomationDraft } from './use-cycle-automation-draft'
 import { CycleChat } from './CycleChat'
 import type { CycleScope, CycleSession } from './ports'
 import type { VersionCycleContext } from './cycle-context'
@@ -40,21 +39,6 @@ import './version-cycle.css'
 const METRICS_BRANCH = 'bw/metrics-refresh'
 const METRICS_WORKTREE_NAME = 'metrics-refresh'
 
-/** Automation ownership follows the worktree's native host identity, never the current focus. */
-function cycleAutomationHost(scope: CycleScope): StableAutomationHostRef {
-  if (scope.runtimeOwnerEnvironmentId) {
-    return {
-      authority: { kind: 'runtime', environmentId: scope.runtimeOwnerEnvironmentId },
-      selector: { kind: 'self' }
-    }
-  }
-  const host = parseExecutionHostId(scope.hostId)
-  if (host?.kind === 'ssh') {
-    return { authority: { kind: 'desktop' }, selector: { kind: 'ssh', targetId: host.targetId } }
-  }
-  return { authority: { kind: 'desktop' }, selector: { kind: 'self' } }
-}
-
 /**
  * Production shell for one BW cycle workflow: formally selects the fixed native
  * worktree (host routing and history stay Orca-owned), then renders the native
@@ -69,7 +53,13 @@ export function CycleWorkspaceShell({ workflow }: { workflow: VersionWorkflow })
   useEffect(() => {
     if (activeRepoId && !repoWorktrees && fetchedRepo.current !== activeRepoId) {
       fetchedRepo.current = activeRepoId
-      void useAppStore.getState().fetchWorktrees(activeRepoId)
+      void useAppStore
+        .getState()
+        .fetchWorktrees(activeRepoId)
+        .catch(() => {
+          // Allow a later render (focus/poll) to retry instead of staying empty.
+          fetchedRepo.current = null
+        })
     }
   }, [activeRepoId, repoWorktrees])
 
@@ -87,6 +77,8 @@ export function CycleWorkspaceShell({ workflow }: { workflow: VersionWorkflow })
 
   const [fixedId, setFixedId] = useState<string | null>(null)
   const [setupError, setSetupError] = useState<string | null>(null)
+  /** While a metrics-setup handoff moves the selection, the re-select effect must stand down. */
+  const metricsHandoff = useRef(false)
   // While the BW page stays mounted, its workspace is the fixed tree: if the user
   // activates another worktree from the native sidebar, re-select the fixed one so
   // history and host routing keep matching the boards.
@@ -101,12 +93,18 @@ export function CycleWorkspaceShell({ workflow }: { workflow: VersionWorkflow })
     const scope: CycleScope = { ...baseScope, workflow }
     void (async () => {
       try {
+        if (metricsHandoff.current) {
+          return
+        }
         const fixed = await ensureCycleWorktree(scope)
         if (!current) {
           return
         }
         setFixedId(fixed.id)
         const state = useAppStore.getState()
+        if (metricsHandoff.current) {
+          return
+        }
         if (state.activeWorktreeId !== fixed.id) {
           // Formal selection keeps the BW page: activation never rewrites activeView.
           state.setActiveWorktree(fixed.id, scope.hostId)
@@ -136,7 +134,9 @@ export function CycleWorkspaceShell({ workflow }: { workflow: VersionWorkflow })
       .getState()
       .allWorktrees()
       .find((item) => item.id === fixedId)
-    return fixed ? cycleScopeForWorktree(fixed, workflow) : { ...baseScope, workflow }
+    // Wait for the native registration refresh instead of silently re-scoping
+    // to the main worktree, which would route materials to the wrong tree.
+    return fixed ? cycleScopeForWorktree(fixed, workflow) : null
   }, [baseScope, fixedId, workflow])
 
   const [session, setSessionState] = useState<CycleSession | null>(null)
@@ -305,57 +305,45 @@ export function CycleWorkspaceShell({ workflow }: { workflow: VersionWorkflow })
     if (!agent) {
       throw new Error('未检测到可用会话工具，请先在设置中配置')
     }
-    const maintenance = await ensureNamedWorktree(baseScope, METRICS_BRANCH, METRICS_WORKTREE_NAME)
-    const assets = await resolveWorkbenchPromptAssets({
-      ...baseScope,
-      workflow: 'metrics-refresh',
-      worktreeId: maintenance.id
-    })
-    const state = useAppStore.getState()
-    state.setActiveWorktree(maintenance.id, baseScope.hostId)
-    if (baseScope.runtimeOwnerEnvironmentId) {
-      await activateWebRuntimeSessionWorktree({
-        worktreeId: maintenance.id,
-        environmentId: baseScope.runtimeOwnerEnvironmentId
+    metricsHandoff.current = true
+    try {
+      const maintenance = await ensureNamedWorktree(
+        baseScope,
+        METRICS_BRANCH,
+        METRICS_WORKTREE_NAME
+      )
+      const assets = await resolveWorkbenchPromptAssets({
+        ...baseScope,
+        workflow: 'metrics-refresh',
+        worktreeId: maintenance.id
       })
+      const state = useAppStore.getState()
+      state.setActiveWorktree(maintenance.id, baseScope.hostId)
+      if (baseScope.runtimeOwnerEnvironmentId) {
+        await activateWebRuntimeSessionWorktree({
+          worktreeId: maintenance.id,
+          environmentId: baseScope.runtimeOwnerEnvironmentId
+        })
+      }
+      launchAgentInNewTab({
+        agent,
+        worktreeId: maintenance.id,
+        prompt: assets.prompt,
+        activate: true,
+        promptDelivery: 'auto-submit'
+      })
+    } finally {
+      metricsHandoff.current = false
     }
-    launchAgentInNewTab({
-      agent,
-      worktreeId: maintenance.id,
-      prompt: assets.prompt,
-      activate: true,
-      promptDelivery: 'auto-submit'
-    })
   }, [baseScope, agent])
 
   /** 配置自动化：预填原生编辑器（固定树 existing、每次运行新会话）；启用与时间由人确认。 */
-  const configureAutomation = useCallback(async () => {
-    if (!cycleScope || !fixedId) {
-      setNotice('固定工作树尚未就绪，请稍后重试。')
-      return
-    }
-    setBusy(true)
-    try {
-      const prompt = await buildCyclePrompt(cycleScope, fixedId)
-      useAppStore.getState().openAutomationEditor({
-        kind: 'create',
-        host: cycleAutomationHost(cycleScope),
-        draft: {
-          name: workflow === 'plan' ? '每周版本计划' : '每周版本验收',
-          prompt,
-          projectId: cycleScope.projectId,
-          workspaceId: fixedId,
-          workspaceMode: 'existing',
-          reuseSession: false
-        }
-      })
-      setNotice(null)
-    } catch (reason) {
-      setNotice(reason instanceof Error ? reason.message : String(reason))
-    } finally {
-      setBusy(false)
-    }
-  }, [cycleScope, fixedId, workflow])
+  const configureAutomation = useCycleAutomationDraft({
+    cycleScope,
+    fixedId,
+    workflow,
+    onError: setNotice
+  })
 
   const resize = usePlanColumnResize()
   return (
@@ -387,7 +375,10 @@ export function CycleWorkspaceShell({ workflow }: { workflow: VersionWorkflow })
               className="wb-btn wb-btn-ghost wb-btn-sm"
               disabled={busy || !fixedId}
               title="预填原生自动化编辑器：固定工作树、每次运行新会话；启用与时间由你确认"
-              onClick={() => void configureAutomation()}
+              onClick={() => {
+                setBusy(true)
+                void configureAutomation().finally(() => setBusy(false))
+              }}
             >
               配置自动化
             </button>

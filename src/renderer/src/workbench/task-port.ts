@@ -181,12 +181,11 @@ async function openDetail(
   if (!repo) {
     throw new Error(`未在已登记项目中找到引用仓库 ${task.reference.repository}`)
   }
-  // Why: returnToPreviousView keeps the BW screen as the Back target; returnOrigin
-  // rides on the history entry so the BW container can restore version/draft/scroll.
+  // Why: returnToPreviousView keeps the BW screen as the Back target; the BW
+  // container restores version/draft/scroll from its own persisted view state.
   const options = {
     recordTasksInteraction: false,
-    returnToPreviousView: true,
-    returnOrigin: { ...origin }
+    returnToPreviousView: true
   }
   if (task.reference.provider === 'github') {
     const sourceContext = requireSourceContext(repo, 'github')

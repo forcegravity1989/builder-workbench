@@ -12,7 +12,6 @@ import type { LaunchSource } from '../../../../../shared/telemetry-events'
 import type { TaskSourceContext } from '../../../../../shared/task-source-context'
 import type { ExecutionHostId } from '../../../../../shared/execution-host'
 import type { TaskResumeState, TopLevelView } from '../../../../../shared/ui-chrome-types'
-import type { TaskReturnOrigin } from '../worktree-nav-history'
 
 export type PendingSidebarWorktreeReveal = {
   worktreeId: string
@@ -168,8 +167,6 @@ export type UISliceCore = {
       recordTasksInteraction?: boolean
       /** Skip the 'tasks' sentinel before a detail entry so Back returns to the actual origin view (e.g. a Workbench screen), not the Tasks list. */
       returnToPreviousView?: boolean
-      /** Opaque Workbench origin recorded on the detail history entry for the BW container to restore after Back. */
-      returnOrigin?: TaskReturnOrigin
     }
   ) => void
   closeTaskPage: () => void

@@ -562,12 +562,11 @@ describe('createUISlice page navigation history', () => {
     store.getState().openArtifactsPage()
     expect(store.getState().worktreeNavHistory).toEqual(['a', 'artifacts'])
 
-    const returnOrigin = { page: 'plan', version: 'v0.5', draftKey: 'bw:plan:draft:x' }
     store
       .getState()
       .openTaskPage(
         { taskSource: 'github', openGitHubWorkItem: workItem },
-        { recordTasksInteraction: false, returnToPreviousView: true, returnOrigin }
+        { recordTasksInteraction: false, returnToPreviousView: true }
       )
 
     // No 'tasks' sentinel: the detail sits directly on the origin view.
@@ -579,8 +578,7 @@ describe('createUISlice page navigation history', () => {
         source: 'github',
         workItem,
         sourceContext: undefined,
-        initialTab: undefined,
-        returnOrigin
+        initialTab: undefined
       }
     ])
 
@@ -649,21 +647,18 @@ describe('createUISlice page navigation history', () => {
         project: 'team/project'
       }
     }
-    const returnOrigin = { page: 'acceptance', version: 'v0.5' }
-
     store
       .getState()
       .openTaskPage(
         { taskSource: 'codehub', openCodeHubTask: task, openCodeHubSourceContext: sourceContext },
-        { recordTasksInteraction: false, returnToPreviousView: true, returnOrigin }
+        { recordTasksInteraction: false, returnToPreviousView: true }
       )
 
     expect(store.getState().worktreeNavHistory.at(-1)).toEqual({
       kind: 'task-detail',
       source: 'codehub',
       task,
-      sourceContext,
-      returnOrigin
+      sourceContext
     })
     expect(store.getState().taskPageData.openCodeHubTask).toEqual(task)
   })

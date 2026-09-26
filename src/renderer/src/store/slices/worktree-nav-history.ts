@@ -23,12 +23,7 @@ const SIMPLE_VIEW_ENTRIES: readonly WorktreeNavHistorySimpleViewEntry[] = [
   'artifacts',
   'skills'
 ]
-/** Opaque Workbench screen origin (see workbench/version-cycle/ports TaskOrigin) carried on a
- * task-detail entry so Back can hand it to the BW container; the native layer never reads it. */
-export type TaskReturnOrigin = Record<string, unknown>
-export type WorktreeNavHistoryTaskDetailEntry = WorktreeNavHistoryTaskDetailSourceEntry & {
-  returnOrigin?: TaskReturnOrigin
-}
+export type WorktreeNavHistoryTaskDetailEntry = WorktreeNavHistoryTaskDetailSourceEntry
 type WorktreeNavHistoryTaskDetailSourceEntry =
   | {
       kind: 'task-detail'

@@ -101,8 +101,32 @@ describe('workbench.metrics.execute relay executor', () => {
     await expect(send({ ...base, args: ['--since', '2026-09-21'] })).rejects.toThrow()
     await expect(send({ ...base, args: [...base.args, 'extra'] })).rejects.toThrow()
     await expect(send({ ...base, args: [...base.args.slice(0, 5), 'month'] })).rejects.toThrow()
+    await expect(send({ ...base, checkoutRoot: 'relative/path' })).rejects.toThrow()
+    await expect(send({ ...base, checkoutRoot: '/srv/../etc' })).rejects.toThrow()
+    await expect(send({ ...base, checkoutRoot: 'C:tmp' })).rejects.toThrow()
     await expect(call({ target, operation: 'collect', request: base, extra: 1 })).rejects.toThrow()
     expect(executeMetricCollection).not.toHaveBeenCalled()
+  })
+
+  it('accepts absolute checkout roots on posix and windows shapes', async () => {
+    executeMetricCollection.mockResolvedValue({ stdout: '{"points":[]}', code: 0 })
+    const base = {
+      configurationCommit: sha,
+      run: ['node', '.bw/scripts/x.js'],
+      args: ['--since', '2026-09-21', '--until', '2026-09-28', '--granularity', 'week'],
+      env: {},
+      timeoutMs: 60_000
+    }
+    await expect(
+      call({
+        target,
+        operation: 'collect',
+        request: { ...base, checkoutRoot: 'C:\\\\srv\\\\work' }
+      })
+    ).resolves.toMatchObject({ ok: true })
+    await expect(
+      call({ target, operation: 'collect', request: { ...base, checkoutRoot: '/srv/work' } })
+    ).resolves.toMatchObject({ ok: true })
   })
 
   it('surfaces core failures as typed error envelopes', async () => {

@@ -10,7 +10,31 @@ const mergeCommit = 'b'.repeat(40)
 const sourceCommit = 'a'.repeat(40)
 const revisionOf = (raw: string) =>
   `sha256:${createHash('sha256').update(Buffer.from(raw)).digest('hex')}`
-const materialBytes = Buffer.from('{"schema_version":3}')
+const materialDocument = {
+  schema_version: 3,
+  version: 'v1',
+  cycleId: 'cycle-1',
+  summary: { progress: '', risks: '' },
+  goals: [],
+  tasks: []
+}
+const materialBytes = Buffer.from(JSON.stringify(materialDocument))
+const acceptanceDocument = {
+  schema_version: 3,
+  version: 'v1',
+  cycleId: 'cycle-1',
+  planRef: {
+    kind: 'committed',
+    version: 'v1',
+    cycleId: 'cycle-1',
+    sourceCommit,
+    revision: `sha256:${'c'.repeat(64)}`
+  },
+  preparedArtifacts: [],
+  results: []
+}
+const acceptanceBytes = Buffer.from(JSON.stringify(acceptanceDocument))
+const acceptanceRevision = revisionOf(JSON.stringify(acceptanceDocument))
 const revision = revisionOf(materialBytes.toString())
 const candidate = {
   sourceCommit,
@@ -111,12 +135,15 @@ describe('archive evidence from provider facts', () => {
   })
 
   it('proves a merged review only when its commit tree matches the revision', async () => {
-    const reader = createArchiveEvidenceReader('owner/project', deps())
+    const reader = createArchiveEvidenceReader(
+      'owner/project',
+      deps({ readMaterialAt: vi.fn(async () => acceptanceBytes) })
+    )
     const verified = await reader.archiveProofForReview(7, {
       workflow: 'acceptance',
       version: 'v1',
       cycleId: 'cycle-1',
-      revision
+      revision: acceptanceRevision
     })
     expect(verified.mergeCommit).toBe(mergeCommit)
     expect(verified.proof.kind).toBe('verified')
@@ -135,6 +162,28 @@ describe('archive evidence from provider facts', () => {
     expect(pending).toEqual({
       mergeCommit: null,
       proof: { kind: 'unknown', reason: '该评审没有 provider 返回的真实合入提交' }
+    })
+  })
+
+  it('refuses to let a new cycle inherit an archived green over old bytes', async () => {
+    const state = await createArchiveEvidenceReader(
+      'owner/project',
+      deps()
+    ).archiveStateForCandidate({ ...candidate, cycleId: 'cycle-2' })
+    expect(state).toMatchObject({ kind: 'unknown' })
+    expect(state).not.toMatchObject({ kind: 'adopted' })
+    const proof = await createArchiveEvidenceReader(
+      'owner/project',
+      deps()
+    ).archiveProofForReview(7, {
+      workflow: 'plan',
+      version: 'v1',
+      cycleId: 'cycle-2',
+      revision
+    })
+    expect(proof.proof).toEqual({
+      kind: 'unknown',
+      reason: '合入提交中的材料属于其他周期，本轮尚未归档'
     })
   })
 })

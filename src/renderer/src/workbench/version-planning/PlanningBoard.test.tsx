@@ -189,9 +189,14 @@ it('keeps a confirmed plan archive read-only over a stale dirty draft and offers
     ...context(vi.fn()),
     archivePort: { readStatus: () => gate.promise, prepareRequest: unexpected }
   }
+  const saveButton = () =>
+    [...container.querySelectorAll<HTMLButtonElement>('button')].find(
+      (button) => button.textContent === '保存草稿'
+    )!
   await mount(value)
   expect(progress()?.value).toBe('unsaved A')
   expect(container.querySelector('.vp-preparation')?.hasAttribute('inert')).toBe(true)
+  expect(saveButton().disabled).toBe(true)
   const reference = {
     provider: 'github',
     repository: 'github.com/team/repo',
@@ -221,6 +226,7 @@ it('keeps a confirmed plan archive read-only over a stale dirty draft and offers
   expect(container.querySelector('.vp-preparation')?.hasAttribute('inert')).toBe(true)
   expect(container.textContent).toContain('本轮计划已归档，未保存的本地修改不能写入。')
   expect(container.textContent).toContain('开始下一轮计划')
+  expect(saveButton().disabled).toBe(true)
   const discard = [...container.querySelectorAll<HTMLButtonElement>('button')].find((button) =>
     button.textContent?.includes('放弃本地修改')
   )!

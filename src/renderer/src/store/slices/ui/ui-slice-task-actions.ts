@@ -95,10 +95,7 @@ export function createUiTaskActions(set: UISliceSet, get: UISliceGet): Partial<U
                     sourceContext: data.openJiraSourceContext
                   } as const)
                 : null
-      const detailEntry =
-        sourceDetailEntry && options.returnOrigin
-          ? { ...sourceDetailEntry, returnOrigin: options.returnOrigin }
-          : sourceDetailEntry
+      const detailEntry = sourceDetailEntry
       const currentEntry = get().worktreeNavHistory[get().worktreeNavHistoryIndex]
       const currentIsTaskStack =
         currentEntry === 'tasks' ||

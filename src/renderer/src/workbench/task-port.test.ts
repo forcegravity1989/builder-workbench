@@ -228,14 +228,7 @@ describe('createTaskPort openDetail', () => {
       }),
       {
         recordTasksInteraction: false,
-        returnToPreviousView: true,
-        returnOrigin: expect.objectContaining({
-          page: 'plan',
-          version: 'v0.5',
-          cycleId: 'c1',
-          scrollTop: 120,
-          draftKey: 'bw:plan:draft:x'
-        })
+        returnToPreviousView: true
       }
     )
   })

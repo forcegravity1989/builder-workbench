@@ -99,7 +99,12 @@ export function PlanningSaveFooter({
         <button
           className="wb-btn wb-btn-sm"
           disabled={
-            !plan || material.busy || !material.draft?.dirty || Boolean(material.draft.remote)
+            !plan ||
+            material.busy ||
+            !material.draft?.dirty ||
+            Boolean(material.draft.remote) ||
+            archived ||
+            archivePending
           }
           onClick={() =>
             void onAct(async () => {

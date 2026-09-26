@@ -272,6 +272,28 @@ describe('acceptance draft transitions', () => {
     expect(board.archived).toBe(true)
   })
 
+  it('invalidates the human preparation review when the material changes afterwards', async () => {
+    await renderBoard(Promise.resolve(null))
+    await act(async () => {
+      await board.reviewPreparation(true)
+    })
+    for (let i = 0; i < 10 && board.journey.preparation.kind !== 'complete'; i++) {
+      await act(async () => {})
+    }
+    expect(board.journey.preparation).toMatchObject({ kind: 'complete' })
+    await act(async () => {
+      const document = board.controller.value!.document
+      board.controller.edit({
+        ...document,
+        candidateRef: { ...document.candidateRef!, commit: '3'.repeat(40) }
+      })
+    })
+    for (let i = 0; i < 10 && board.journey.preparation.kind !== 'pending'; i++) {
+      await act(async () => {})
+    }
+    expect(board.journey.preparation).toMatchObject({ kind: 'pending' })
+  })
+
   it('reopens editing when the first archive read fails, without claiming any archive state', async () => {
     await renderBoard(Promise.resolve(null), undefined, async () => {
       throw new Error('CodeHub 不可用')
