@@ -1,0 +1,109 @@
+import { useEffect, useMemo, useRef, useState } from 'react'
+import type { VersionDocumentPort } from '../../../../shared/workbench/version-document'
+import {
+  AcceptanceMaterialSchema,
+  type AcceptanceMaterial
+} from '../../../../shared/workbench/version-material'
+import { MaterialDraftController, type MaterialDraft } from '../version-cycle/material-draft'
+
+/** Session recovery is disposable; all authoritative writes still use the host CAS transaction. */
+export function useAcceptanceDraft(
+  key: string,
+  port: VersionDocumentPort<AcceptanceMaterial>,
+  sessionVersion?: string
+) {
+  const [draft, setDraft] = useState<MaterialDraft<AcceptanceMaterial> | null>(null)
+  const [recoveryError, setRecoveryError] = useState<string | null>(null)
+  const [recoveryText, setRecoveryText] = useState<string | null>(null)
+  const recovery = useRef({ present: false, writable: true, request: 0 }).current
+  const controller = useMemo(() => new MaterialDraftController(port, setDraft), [port])
+  useEffect(() => {
+    try {
+      const saved = sessionStorage.getItem(key)
+      if (!saved) {
+        return
+      }
+      recovery.present = true
+      setRecoveryText(saved)
+      const value = JSON.parse(saved) as MaterialDraft<AcceptanceMaterial>
+      const document = AcceptanceMaterialSchema.parse(value.document)
+      if (
+        value.expectedRevision !== null &&
+        !/^sha256:[a-f0-9]{64}$/.test(value.expectedRevision)
+      ) {
+        throw new Error('草稿修订无效')
+      }
+      controller.restore({
+        document,
+        expectedRevision: value.expectedRevision,
+        dirty: value.dirty === true
+      })
+      setRecoveryText(null)
+    } catch {
+      try {
+        const original = sessionStorage.getItem(key)
+        if (original) {
+          sessionStorage.setItem(`${key}:unreadable`, original)
+        }
+      } catch {
+        recovery.writable = false
+      }
+      setRecoveryError('本机恢复草稿无法读取，原件保留。可从宿主读取材料，或先复制恢复内容。')
+    }
+  }, [controller, key, recovery])
+  useEffect(() => {
+    if (controller.value || !sessionVersion || recovery.present) {
+      return
+    }
+    let current = true
+    const request = ++recovery.request
+    void port
+      .read(sessionVersion)
+      .then((saved) => {
+        if (current && request === recovery.request && !controller.value && saved) {
+          controller.restore({
+            document: saved.document,
+            expectedRevision: saved.revision,
+            dirty: false
+          })
+        }
+      })
+      .catch((reason) => {
+        if (current && request === recovery.request) {
+          setRecoveryError(String(reason))
+        }
+      })
+    return () => {
+      current = false
+    }
+  }, [controller, port, sessionVersion, recovery])
+  useEffect(() => {
+    if (!draft || !recovery.writable) {
+      return
+    }
+    try {
+      sessionStorage.setItem(key, JSON.stringify(draft))
+      setRecoveryError(null)
+    } catch {
+      setRecoveryError('本机草稿恢复不可用，请保持页面打开并保存到宿主。')
+    }
+  }, [draft, key, recovery])
+  return {
+    draft,
+    controller,
+    recoveryError,
+    recoveryText,
+    cancelAutomaticRead() {
+      recovery.request++
+    },
+    clear() {
+      recovery.request++
+      controller.clear()
+      try {
+        sessionStorage.removeItem(key)
+      } catch {
+        setRecoveryError('本机恢复内容无法清除，请保持页面打开并保存到宿主。')
+      }
+    }
+  }
+}
