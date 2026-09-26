@@ -86,18 +86,30 @@ export async function ensureNamedWorktree(
     return pending
   }
   const create = (async () => {
-    const result = await callRuntimeRpc<CreateWorktreeResult>(
-      nativeWorkspaceRuntimeTarget(scope),
-      'worktree.create',
-      {
-        repo: `id:${scope.repoId}`,
-        name,
-        branchNameOverride: branch,
-        activate: false,
-        setupDecision: 'inherit'
-      },
-      { timeoutMs: 600_000 }
-    )
+    const target = nativeWorkspaceRuntimeTarget(scope)
+    // Local creation must use the direct IPC path: the RPC channel carries the
+    // renderer client context, which the worktree-create provenance gate
+    // rejects without a paired device identity. Runtime hosts keep the RPC route.
+    const result =
+      target.kind === 'local'
+        ? await window.api.worktrees.create({
+            repoId: scope.repoId,
+            name,
+            branchNameOverride: branch,
+            setupDecision: 'inherit'
+          })
+        : await callRuntimeRpc<CreateWorktreeResult>(
+            target,
+            'worktree.create',
+            {
+              repo: `id:${scope.repoId}`,
+              name,
+              branchNameOverride: branch,
+              activate: false,
+              setupDecision: 'inherit'
+            },
+            { timeoutMs: 600_000 }
+          )
     if (result.worktree.branch.replace(/^refs\/heads\//, '') !== branch) {
       throw new Error('原生创建未返回约定分支，请检查工作树')
     }
