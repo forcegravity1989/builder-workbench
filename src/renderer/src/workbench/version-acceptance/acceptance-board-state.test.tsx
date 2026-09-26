@@ -80,13 +80,13 @@ async function renderBoard(
       sessionId: 'session',
       tabId: 'tab',
       kind: 'structured',
-      title: '验收',
-      cycleId: 'acceptance',
-      version: 'v0.5'
+      title: '验收'
     },
-    sessions: [],
-    associateVersion,
+    version: 'v0.5',
+    selectVersion: associateVersion,
     materialPort: {
+      context: vi.fn(),
+      select: vi.fn(),
       read,
       list: vi.fn(async () => []),
       save: vi.fn(),
@@ -94,12 +94,7 @@ async function renderBoard(
       migrate: vi.fn()
     },
     sessionPort: {
-      list: vi.fn(),
-      start: vi.fn(),
-      continue: vi.fn(),
-      associate: vi.fn(),
-      prepareRequest: vi.fn(),
-      configureAutomation: vi.fn()
+      prepareRequest: vi.fn()
     },
     taskPort: { listVersion: vi.fn(), refresh: vi.fn(), openDetail: vi.fn() },
     archivePort: { readStatus: vi.fn(), prepareRequest: vi.fn() }

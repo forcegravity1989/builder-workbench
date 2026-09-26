@@ -3,7 +3,7 @@ import type { PlanningMaterial } from '../../../../shared/workbench/version-mate
 import { derivePlanMinutes } from './plan-summary'
 
 describe('derived plan minutes', () => {
-  it('preserves every promise and never substitutes a stored baseline for a current reading', () => {
+  it('preserves every promise and renders the adopted baseline as historical evidence', () => {
     const plan: PlanningMaterial = {
       schema_version: 3,
       version: 'v1',
@@ -28,7 +28,7 @@ describe('derived plan minutes', () => {
     const minutes = derivePlanMinutes(plan)
     expect(minutes.match(/^## /gm)).toHaveLength(3)
     expect(minutes).toContain('4. 结果 3')
-    expect(minutes).toContain('当前 待核')
+    expect(minutes).toContain('计划基线 待核')
     expect(minutes).toContain('目标草案')
     expect(minutes).not.toContain('已确认')
     plan.goals[0].title = '修订后的承诺'

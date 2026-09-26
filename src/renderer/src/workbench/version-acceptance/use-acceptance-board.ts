@@ -20,7 +20,7 @@ export function useAcceptanceBoard({
   recoveryKey
 }: Pick<AcceptanceBoardProps, 'context' | 'history'> & { recoveryKey: string }) {
   const scope = context.scope!
-  const session = context.session!
+  const session = context.session
   const worktreeId = context.worktreeId!
   const materialPort = context.materialPort!
   const metricScope = useMemo(
@@ -40,11 +40,11 @@ export function useAcceptanceBoard({
     }),
     [materialPort]
   )
-  const { draft, controller, recoveryError, recoveryText, clear, cancelAutomaticRead } =
-    useAcceptanceDraft(recoveryKey, port, session.version)
+  const { draft, controller, recoveryError, recoveryText, cancelAutomaticRead } =
+    useAcceptanceDraft(recoveryKey, port, context.version ?? undefined)
   const catalog = useAcceptanceSources(history, materialPort, metricScope)
   const { versions, sources } = catalog
-  const [version, setVersion] = useState('')
+  const [version, setVersion] = useState(context.version ?? '')
   const [planChoice, setPlanChoice] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
@@ -55,8 +55,13 @@ export function useAcceptanceBoard({
   const plan = fixed.plan
   const output = useAcceptanceOutput(context, controller, draft, plan, fixed.verification, setError)
   const archive = output.archive
-  const sameRun = document?.cycleId === session.cycleId
-  const readOnly = busy || !sameRun || !plan
+  const associated = Boolean(document && document.version === context.version)
+  const archived = Boolean(document && draft?.expectedRevision && !draft.dirty &&
+    isArchivedMaterial(archive, {
+      workflow: 'acceptance', version: document.version,
+      cycleId: document.cycleId, revision: draft.expectedRevision
+    }))
+  const readOnly = busy || !associated || !plan || archived
   useEffect(
     () => () => {
       generation.current++
@@ -64,10 +69,8 @@ export function useAcceptanceBoard({
     []
   )
   useEffect(() => {
-    if (document?.version) {
-      setVersion(document.version)
-    }
-  }, [document?.version])
+    setVersion(document?.version ?? context.version ?? '')
+  }, [document?.version, context.version])
   useEffect(() => {
     if (scroll.current) {
       try {
@@ -87,7 +90,7 @@ export function useAcceptanceBoard({
     const token = ++generation.current
     setBusy(true)
     try {
-      const saved = await port.read(value)
+      await port.read(value)
       if (token !== generation.current) {
         return
       }
@@ -95,20 +98,7 @@ export function useAcceptanceBoard({
         setError('切换期间材料已变化，已保留当前输入；请保存后重新选择版本。')
         return
       }
-      setVersion(value)
-      setPlanChoice('')
-      if (saved) {
-        controller.restore({
-          document: saved.document,
-          expectedRevision: saved.revision,
-          dirty: false
-        })
-        setError(null)
-      } else {
-        clear()
-        setError('此版本尚无验收材料。请选择固定计划，明确开始本次验收。')
-      }
-      await context.associateVersion(value)
+      await context.selectVersion(value)
     } catch (reason) {
       if (token === generation.current) {
         setError(String(reason))
@@ -123,12 +113,11 @@ export function useAcceptanceBoard({
     const source = sources.find(
       (item) => `${item.sourceCommit}:${item.version}:${item.cycleId}` === planChoice
     )
-    if (!source) {
+    if (!source || source.version !== context.version) {
       return
     }
     if (
       draft &&
-      draft.document.cycleId !== session.cycleId &&
       (draft.dirty ||
         !draft.expectedRevision ||
         !isArchivedMaterial(archive, {
@@ -138,7 +127,7 @@ export function useAcceptanceBoard({
           revision: draft.expectedRevision
         }))
     ) {
-      setError('上次验收尚未核对已归档；请先继续原会话归档，保留原材料。')
+      setError('本轮验收尚未归档，请继续当前材料；归档后可开始下一轮。')
       return
     }
     const token = ++generation.current
@@ -156,14 +145,13 @@ export function useAcceptanceBoard({
       if (token !== generation.current || controller.value !== original) {
         return
       }
-      const next = createAcceptanceMaterial({ planRef, plan: selected, cycleId: session.cycleId })
+      const next = createAcceptanceMaterial({ planRef, plan: selected, cycleId: crypto.randomUUID() })
       controller.restore({
         document: next,
         expectedRevision: draft?.expectedRevision ?? null,
         dirty: true
       })
       setError(null)
-      await context.associateVersion(source.version)
     } catch (reason) {
       if (token === generation.current) {
         setError(String(reason))
@@ -176,6 +164,7 @@ export function useAcceptanceBoard({
   }
   async function prepare(text: string) {
     try {
+      if (!session) throw new Error('请先选择或开启左侧会话。')
       await context.sessionPort.prepareRequest(session, text)
       setError(null)
     } catch (reason) {
@@ -188,7 +177,7 @@ export function useAcceptanceBoard({
     if (
       !current ||
       !result ||
-      current.cycleId !== session.cycleId ||
+      readOnly || current.version !== context.version ||
       !sameAcceptanceSource(current, next)
     ) {
       setError('验收来源已变化，输入未覆盖新材料，请重新核对。')
@@ -249,7 +238,7 @@ export function useAcceptanceBoard({
     scroll,
     document,
     plan,
-    sameRun,
+    archived,
     readOnly,
     loadVersion,
     begin,

@@ -11,7 +11,7 @@ import type { RuntimeTerminalCreate } from '../../../shared/runtime-types'
 import type { TuiAgent } from '../../../shared/tui-agent'
 
 export type WebRuntimeTerminalCreateOutcome =
-  | { status: 'created' }
+  | { status: 'created'; hostTabId?: string }
   | { status: 'failed'; message: string }
 
 export type CreateWebRuntimeSessionTerminalArgs = {

@@ -29,6 +29,7 @@ export function launchAiVaultSessionInNewTab(args: {
   providerSession?: AgentProviderSessionMetadata
   targetGroupId?: string
   splitDirection?: TabSplitDirection
+  activate?: boolean
 }): LaunchAiVaultSessionInNewTabResult {
   const store = useAppStore.getState()
   let targetGroupId = args.targetGroupId
@@ -47,10 +48,11 @@ export function launchAiVaultSessionInNewTab(args: {
       ...(args.launchConfig ? { launchConfig: args.launchConfig } : {}),
       ...(args.providerSession ? { providerSession: args.providerSession } : {}),
       ...(args.launchConfig ? { agentArgs: args.launchConfig.agentArgs } : {}),
-      activate: true
+      activate: args.activate !== false,
+      selectWorktree: args.activate !== false
     })
     const observedRuntimeLaunch = runtimeLaunch.then((outcome) => {
-      if (outcome.status === 'created') {
+      if (outcome.status === 'created' && args.activate !== false) {
         useAppStore.getState().setActiveTabType('terminal')
       }
       return outcome
@@ -68,9 +70,10 @@ export function launchAiVaultSessionInNewTab(args: {
       targetGroupId
   }
 
-  const tab = args.cwd
-    ? store.createTab(args.worktreeId, targetGroupId, undefined, { startupCwd: args.cwd })
-    : store.createTab(args.worktreeId, targetGroupId)
+  const tab = store.createTab(args.worktreeId, targetGroupId, undefined, {
+    ...(args.cwd ? { startupCwd: args.cwd } : {}),
+    ...(args.activate === false ? { activate: false } : {})
+  })
   store.queueTabStartupCommand(tab.id, {
     command: args.command,
     ...(args.env ? { env: args.env } : {}),
@@ -83,7 +86,7 @@ export function launchAiVaultSessionInNewTab(args: {
       request_kind: 'resume'
     }
   })
-  store.setActiveTabType('terminal')
+  if (args.activate !== false) store.setActiveTabType('terminal')
 
   const fresh = useAppStore.getState()
   const termIds = (fresh.tabsByWorktree[args.worktreeId] ?? []).map((t) => t.id)

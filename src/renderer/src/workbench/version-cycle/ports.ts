@@ -23,17 +23,10 @@ export type CycleSession = CycleScope & {
   kind: 'terminal' | 'structured'
   title: string
   runId?: string
-  cycleId: string
-  version?: string
 }
 
 export type CycleSessionPort = {
-  list(scope: CycleScope): Promise<CycleSession[]>
-  start(scope: CycleScope): Promise<CycleSession>
-  continue(session: CycleSession): Promise<CycleSession>
-  associate(session: CycleSession, version: string): Promise<CycleSession>
   prepareRequest(session: CycleSession, text: string): Promise<void>
-  configureAutomation(scope: CycleScope): Promise<void>
 }
 
 export type TaskOrigin = CycleScope & {

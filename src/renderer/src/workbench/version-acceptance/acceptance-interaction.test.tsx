@@ -95,7 +95,7 @@ describe('acceptance interactions', () => {
         reason: { code: 'offline', message: '采集源不可用' },
         previous: ready
       })
-    const port: MetricsPort = { list: vi.fn(), read: vi.fn(), refresh }
+    const port: MetricsPort = { list: vi.fn(async () => ({ scope: { repoId: 'repo', worktreeId: 'tree', hostId: 'local' }, configurationCommit: ref.configurationCommit, configurationRef: 'main', timezone: 'Asia/Shanghai', problems: [], definitions: [{ ref, name: ref.name, role: 'lagging', def: 'count', target: '', unit: '项', feature: '', collect: { kind: 'script', run: ['node', 'collect.mjs'], retro: false } }] })), read: vi.fn(), refresh }
     const props = {
       goal: { ...plan.goals[0], metricTargets: [{ ref, target: '12' }] },
       materialKey: 'test',
@@ -121,7 +121,6 @@ describe('acceptance interactions', () => {
       status: 'unknown' as const,
       reason: { code: 'no-data', message: '暂无数据' }
     }))
-    const port: MetricsPort = { list: vi.fn(), read: vi.fn(), refresh }
     const goal = {
       ...plan.goals[0],
       metricTargets: [
@@ -135,6 +134,7 @@ describe('acceptance interactions', () => {
         }
       ]
     }
+    const port: MetricsPort = { list: vi.fn(async () => ({ scope: { repoId: 'repo', worktreeId: 'tree', hostId: 'local' }, configurationCommit: goal.metricTargets[0].ref.configurationCommit, configurationRef: 'main', timezone: 'Asia/Shanghai', problems: [], definitions: [{ ref: goal.metricTargets[0].ref, name: '交付数量', role: 'lagging', def: 'count', target: '', unit: '项', feature: '', collect: { kind: 'script', run: ['node', 'collect.mjs'], retro: true } }] })), read: vi.fn(), refresh }
     function WindowAndReading() {
       const [window, setWindow] = useState<MetricWindow>({
         kind: 'range',
@@ -249,7 +249,7 @@ describe('acceptance interactions', () => {
     }
     await act(async () => {
       root.render(
-        <AcceptancePreparation
+        <AcceptancePreparation reviewed={false} readOnly={false} onReview={async () => {}}
           document={original}
           port={port}
           onPrepare={vi.fn()}
@@ -259,7 +259,7 @@ describe('acceptance interactions', () => {
     })
     act(() => {
       Array.from(container.querySelectorAll('button'))
-        .find((button) => button.textContent === '核对材料来源')!
+        .find((button) => button.textContent === '检查文件与候选')!
         .click()
     })
     const changed = {
@@ -268,7 +268,7 @@ describe('acceptance interactions', () => {
     }
     await act(async () => {
       root.render(
-        <AcceptancePreparation
+        <AcceptancePreparation reviewed={false} readOnly={false} onReview={async () => {}}
           document={changed}
           port={port}
           onPrepare={vi.fn()}
@@ -352,3 +352,4 @@ describe('acceptance interactions', () => {
     expect(container.textContent).not.toContain('刷新时的标题')
   })
 })
+

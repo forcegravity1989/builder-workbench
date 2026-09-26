@@ -5,7 +5,7 @@ import {
   assertFixedPlan,
   createAcceptanceMaterial
 } from './acceptance-model'
-import { decisionFreshness, goalEvidenceRevision, recordHumanDecision } from './acceptance-decision'
+import { decisionFreshness, goalEvidenceRevision, recordHumanDecision, preparationEvidenceRevision } from './acceptance-decision'
 import { archiveSignal, decisionSignal, preparationSignal } from './acceptance-journey'
 import type { ArchiveStatus } from '../../../../shared/workbench/version-archive'
 
@@ -50,6 +50,14 @@ async function decide() {
 }
 
 describe('version acceptance evidence', () => {
+  it('invalidates readiness only when prepared material changes', async () => {
+    const document = draft()
+    const revision = await preparationEvidenceRevision(document)
+    document.results[0].note = '讨论记录'
+    expect(await preparationEvidenceRevision(document)).toBe(revision)
+    document.results[0].deliveries.push({ title: '新报告', location: 'report.md' })
+    expect(await preparationEvidenceRevision(document)).not.toBe(revision)
+  })
   it('keeps a failed human outcome red when its report is archived, and dirty material is never archived green', async () => {
     const document = await recordHumanDecision({
       document: draft(),
@@ -104,7 +112,7 @@ describe('version acceptance evidence', () => {
     ).toBe('pending')
   })
 
-  it('does not turn delivery preparation green for a candidate alone or unverified execution', () => {
+  it('requires human preparation review while keeping machine mismatches visible', () => {
     const document = draft()
     const verified = { kind: 'verified' as const, checkedAt: '2026-09-25T01:00:00Z' }
     const candidate = { ...verified, candidate: document.candidateRef! }
@@ -133,7 +141,8 @@ describe('version acceptance evidence', () => {
         candidate,
         artifacts: [{ ...artifact, execution: verified }]
       }).kind
-    ).toBe('complete')
+    ).toBe('pending')
+    expect(preparationSignal(document, verified, { candidate, artifacts: [artifact] }, true).kind).toBe('complete')
     document.candidateRef = { ...document.candidateRef!, commit: '5'.repeat(40) }
     expect(preparationSignal(document, verified, null).kind).toBe('failed')
   })

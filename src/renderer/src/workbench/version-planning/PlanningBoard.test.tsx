@@ -28,7 +28,7 @@ function material(version: string): PlanningMaterial {
 const unexpected = async (): Promise<never> => {
   throw new Error('unexpected operation')
 }
-function context(associateVersion: VersionCycleContext['associateVersion']): VersionCycleContext {
+function context(selectVersion: VersionCycleContext['selectVersion']): VersionCycleContext {
   const scope = {
     projectId: 'project',
     repoId: 'repo',
@@ -44,18 +44,11 @@ function context(associateVersion: VersionCycleContext['associateVersion']): Ver
       sessionId: 'session',
       tabId: 'tab',
       kind: 'terminal',
-      title: 'Plan',
-      cycleId: 'cycle',
-      version: 'A'
+      title: 'Plan'
     },
-    sessions: [],
+    version: 'A',
     sessionPort: {
-      list: unexpected,
-      start: unexpected,
-      continue: unexpected,
-      associate: unexpected,
-      prepareRequest: unexpected,
-      configureAutomation: unexpected
+      prepareRequest: unexpected
     },
     taskPort: { listVersion: async () => [], refresh: unexpected, openDetail: unexpected },
     archivePort: {
@@ -63,6 +56,8 @@ function context(associateVersion: VersionCycleContext['associateVersion']): Ver
       prepareRequest: unexpected
     },
     materialPort: {
+      context: unexpected,
+      select: unexpected,
       list: async () => ['A', 'B', 'C'].map((version) => ({ version, state: 'ready' })),
       read: async (version) => ({ document: material(version), revision }),
       save: unexpected,
@@ -70,7 +65,7 @@ function context(associateVersion: VersionCycleContext['associateVersion']): Ver
       previewMigration: unexpected
     },
     error: null,
-    associateVersion
+    selectVersion
   }
 }
 let root: Root
@@ -100,7 +95,7 @@ async function select(version: string) {
   })
 }
 
-it('keeps version selection locked until its native session association completes', async () => {
+it('keeps version selection locked until the workflow preference is saved', async () => {
   let finish!: () => void
   const associate = vi.fn(async (version: string) => {
     if (version === 'B') {
@@ -124,10 +119,10 @@ it('keeps version selection locked until its native session association complete
   expect(associate.mock.calls).toEqual([['B']])
   expect(progress()?.value).toBe('B progress')
   await act(async () => finish())
-  await mount({ ...value, session: { ...value.session!, version: 'B' } })
+  await mount({ ...value, version: 'B' })
   expect(selector().disabled).toBe(false)
   await select('C')
-  await mount({ ...value, session: { ...value.session!, version: 'C' } })
+  await mount({ ...value, version: 'C' })
   expect(associate.mock.calls).toEqual([['B'], ['C']])
   expect(selector().value).toBe('C')
   expect(progress()?.value).toBe('C progress')
@@ -151,6 +146,23 @@ it('clears the editable view but retains the draft when association fails', asyn
   expect(selector().disabled).toBe(false)
   expect(selector().value).toBe('')
   expect(progress()).toBeNull()
-  expect(container.textContent).toContain('版本与会话关联失败')
+  expect(container.textContent).toContain('选版未保存')
   expect(localStorage.getItem(planningDraftKey('test-project', 'B'))).toContain('unsaved B')
+})
+
+it('keeps the selected version and draft when native history changes or the chat closes', async () => {
+  localStorage.setItem(planningDraftKey('test-project', 'A'), JSON.stringify({
+    document: { ...material('A'), summary: { progress: 'unsaved A', risks: '' } },
+    expectedRevision: revision, dirty: true
+  }))
+  const value = context(vi.fn())
+  await mount(value)
+  const originalInput = progress()
+  await mount({ ...value, session: { ...value.session!, sessionId: 'older-session', tabId: 'older-tab' } })
+  expect(progress()).toBe(originalInput)
+  expect(progress()?.value).toBe('unsaved A')
+  expect(selector().value).toBe('A')
+  await mount({ ...value, session: null })
+  expect(progress()).toBe(originalInput)
+  expect(progress()?.value).toBe('unsaved A')
 })

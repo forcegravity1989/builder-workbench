@@ -5,7 +5,7 @@ import type { MaterialDraft, MaterialDraftController } from '../version-cycle/ma
 import type { ArchiveStatus, CycleTaskRead } from '../version-cycle/ports'
 import type { VersionCycleContext } from '../version-cycle/cycle-context'
 import type { ArtifactCheck, CandidateCheck } from './acceptance-candidate-port'
-import { decisionFreshness } from './acceptance-decision'
+import { decisionFreshness, preparationEvidenceRevision } from './acceptance-decision'
 import { preparationKey, sameAcceptanceSource, type EvidenceCheck } from './acceptance-model'
 import { deriveAcceptanceReport } from './acceptance-report'
 import { captureTaskSnapshot } from './acceptance-task-evidence'
@@ -26,6 +26,7 @@ export function useAcceptanceOutput(
     document: AcceptanceMaterial
     plan: VersionHistoryPlan
     states: Record<string, DecisionFreshness>
+    preparationReviewed: boolean
   } | null>(null)
   useEffect(() => {
     if (!document || !plan) {
@@ -38,9 +39,11 @@ export function useAcceptanceOutput(
           [goal.goalId, await decisionFreshness(document, plan.document, goal.goalId)] as const
       )
     )
-      .then((states) => {
+      .then(async (states) => {
+        const preparationReviewed = Boolean(document.preparationReview &&
+          document.preparationReview.materialRevision === await preparationEvidenceRevision(document))
         if (current) {
-          setDecisionResult({ document, plan, states: Object.fromEntries(states) })
+          setDecisionResult({ document, plan, states: Object.fromEntries(states), preparationReviewed })
         }
       })
       .catch(() => {
@@ -91,6 +94,22 @@ export function useAcceptanceOutput(
     decisionResult?.document === document && decisionResult?.plan === plan
       ? (decisionResult?.states ?? null)
       : null
+  const preparationReviewed = decisionResult?.document === document &&
+    decisionResult?.plan === plan && decisionResult?.preparationReviewed === true
+  async function reviewPreparation(checked: boolean) {
+    const current = controller.value?.document
+    if (!current) return
+    const review = checked ? {
+      source: '用户在验收屏核对',
+      recordedAt: new Date().toISOString(),
+      materialRevision: await preparationEvidenceRevision(current)
+    } : undefined
+    if (controller.value?.document !== current) {
+      onError('材料已变化，请重新核对。')
+      return
+    }
+    controller.edit({ ...current, preparationReview: review })
+  }
   function onChecks(
     source: AcceptanceMaterial,
     candidate: CandidateCheck,
@@ -105,7 +124,7 @@ export function useAcceptanceOutput(
     const current = controller.value?.document
     if (
       !current ||
-      current.cycleId !== context.session?.cycleId ||
+      current.version !== context.version ||
       !sameAcceptanceSource(source, current)
     ) {
       throw new Error('验收来源已变化，任务快照未覆盖新材料。')
@@ -178,8 +197,10 @@ export function useAcceptanceOutput(
   return {
     archive,
     archiveMaterial,
+    preparationReviewed,
+    reviewPreparation,
     journey: {
-      preparation: preparationSignal(document, planVerification, verified),
+      preparation: preparationSignal(document, planVerification, verified, preparationReviewed),
       decisions: decisionSignal(document, plan?.document, decisionStates),
       archive: archiveSignal(archive, archiveMaterial, draft?.dirty ?? false)
     },

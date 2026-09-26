@@ -27,12 +27,10 @@ type PlanningBoardProps = {
   prepareMetrics(): Promise<void>
 }
 export function PlanningBoard(props: PlanningBoardProps) {
-  const { scope, worktreeId, session } = props.context
+  const { scope, worktreeId } = props.context
   const identity = JSON.stringify([
     scope && cycleScopeKey(scope),
-    worktreeId,
-    session?.sessionId,
-    session?.cycleId
+    worktreeId
   ])
   return <PlanningBoardContent key={identity} {...props} />
 }
@@ -40,11 +38,11 @@ export function PlanningBoard(props: PlanningBoardProps) {
 function PlanningBoardContent({ context, prepareMetrics }: PlanningBoardProps) {
   const { scope, session, worktreeId, materialPort, taskPort, archivePort } = context
   const scopeKey = scope ? cycleScopeKey(scope) : ''
-  const material = usePlanningMaterial(materialPort, scopeKey, session?.cycleId)
+  const material = usePlanningMaterial(materialPort, scopeKey)
   const plan = material.draft?.document
   const [newVersion, setNewVersion] = useState('')
   const [creating, setCreating] = useState(false)
-  const selection = usePlanVersionSelection(material, context.associateVersion)
+  const selection = usePlanVersionSelection(material, context.selectVersion)
   const selecting = selection.busy
   const [minutesOpen, setMinutesOpen] = useState(false)
   const [tasksOpen, setTasksOpen] = useState(false)
@@ -58,7 +56,7 @@ function PlanningBoardContent({ context, prepareMetrics }: PlanningBoardProps) {
     [scope, worktreeId]
   )
   const metrics = usePlanMetrics(metricScope, scope?.runtimeOwnerEnvironmentId, plan)
-  const minutes = plan ? derivePlanMinutes(plan, metrics.readings) : ''
+  const minutes = plan ? derivePlanMinutes(plan) : ''
   const selectionKey = JSON.stringify([scopeKey, plan?.version, plan?.cycleId])
   const { goalFilter, notice, archive } = view.key === selectionKey ? view : emptyView
   const updateView = useCallback(
@@ -71,7 +69,7 @@ function PlanningBoardContent({ context, prepareMetrics }: PlanningBoardProps) {
     },
     [selectionKey]
   )
-  const contextKey = JSON.stringify([scopeKey, session?.sessionId, session?.cycleId])
+  const contextKey = JSON.stringify([scopeKey, worktreeId])
   const currentContext = useRef(contextKey)
   currentContext.current = contextKey
   useEffect(
@@ -80,7 +78,7 @@ function PlanningBoardContent({ context, prepareMetrics }: PlanningBoardProps) {
     },
     []
   )
-  const associatedVersion = session?.version
+  const selectedVersion = context.version
   const selectMaterial = material.select
   const clearMaterial = material.clear
   const version = plan?.version
@@ -99,11 +97,12 @@ function PlanningBoardContent({ context, prepareMetrics }: PlanningBoardProps) {
   )
 
   useEffect(() => {
-    clearMaterial()
-    if (associatedVersion) {
-      void selectMaterial(associatedVersion)
+    if (selectedVersion) {
+      void selectMaterial(selectedVersion)
+    } else {
+      clearMaterial()
     }
-  }, [contextKey, associatedVersion, selectMaterial, clearMaterial])
+  }, [contextKey, selectedVersion, selectMaterial, clearMaterial])
 
   useEffect(() => {
     let current = true
@@ -151,12 +150,17 @@ function PlanningBoardContent({ context, prepareMetrics }: PlanningBoardProps) {
       setNewVersion('')
     }
   }
-  const edit = (next: PlanningMaterial) =>
-    material.edit({ ...next, cycleId: session?.cycleId ?? next.cycleId })
+  const edit = (next: PlanningMaterial) => {
+    if (!archived) material.edit(next)
+  }
+  const beginNextRound = () => {
+    if (!plan || !archived || material.busy || selecting) return
+    material.edit({ ...plan, cycleId: crypto.randomUUID() })
+  }
   const requestArchive = () =>
     act(async () => {
       if (selection.inProgress()) {
-        throw new Error('正在关联版本与会话，请稍后再归档。')
+        throw new Error('正在选择版本，请稍后再归档。')
       }
       if (!scope || !worktreeId || !plan || !material.draft?.expectedRevision) {
         throw new Error('请先选择版本并保存计划。')
@@ -236,6 +240,12 @@ function PlanningBoardContent({ context, prepareMetrics }: PlanningBoardProps) {
           >
             新建版本
           </button>
+          {archived && (
+            <button className="wb-btn wb-btn-ghost wb-btn-sm"
+              disabled={material.busy || selecting} onClick={beginNextRound}>
+              开始下一轮计划
+            </button>
+          )}
         </div>
       </header>
       {creating && (
@@ -256,10 +266,9 @@ function PlanningBoardContent({ context, prepareMetrics }: PlanningBoardProps) {
               required
             />
           </label>
-          <button className="wb-btn wb-btn-sm" disabled={material.busy || selecting || !session}>
+          <button className="wb-btn wb-btn-sm" disabled={material.busy || selecting}>
             创建计划草稿
           </button>
-          {!session && <span>先选择或开启本次会话</span>}
         </form>
       )}
       {(material.error || notice || selection.error) && (
@@ -269,10 +278,9 @@ function PlanningBoardContent({ context, prepareMetrics }: PlanningBoardProps) {
       )}
       {materialPort && (
         <PlanningMigration
-          key={`${scopeKey}:${session?.cycleId ?? ''}`}
+          key={scopeKey}
           port={materialPort}
           versions={material.versions}
-          cycleId={session?.cycleId}
           onMigrated={async (version) => {
             await material.list()
             await selectVersion(version)
@@ -335,7 +343,7 @@ function PlanningBoardContent({ context, prepareMetrics }: PlanningBoardProps) {
             </div>
           ) : (
             <>
-              <section className="vp-preparation" ref={preparation}>
+              <section className="vp-preparation" ref={preparation} inert={archived}>
                 <label>
                   {plan.version} · 版本进展
                   <textarea
@@ -359,13 +367,13 @@ function PlanningBoardContent({ context, prepareMetrics }: PlanningBoardProps) {
                   />
                 </details>
               </section>
-              <PlanningGoals
+              <div inert={archived}><PlanningGoals
                 plan={plan}
                 edit={edit}
                 metrics={metrics}
                 sectionRef={goals}
                 prepare={() => void act(prepareMetrics)}
-              />
+              /></div>
               <PlanningTasks
                 scope={scope}
                 plan={plan}

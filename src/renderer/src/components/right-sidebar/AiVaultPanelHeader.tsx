@@ -13,6 +13,7 @@ import type { AiVaultHostScopeOption } from './ai-vault-host-scope'
 import type { AiVaultSessionLimit } from './ai-vault-session-limit'
 
 type AiVaultPanelHeaderProps = {
+  workspaceOnly?: boolean
   query: string
   loading: boolean
   shownCount: number
@@ -43,6 +44,7 @@ type AiVaultPanelHeaderProps = {
 }
 
 export function AiVaultPanelHeader({
+  workspaceOnly = false,
   query,
   loading,
   shownCount,
@@ -114,11 +116,11 @@ export function AiVaultPanelHeader({
           </div>
         </div>
         <div className="flex shrink-0 items-center gap-1 @max-[300px]/ai-vault:gap-0.5">
-          <VaultHostScopeMenu
+          {!workspaceOnly && <VaultHostScopeMenu
             executionHostScope={executionHostScope}
             hostOptions={hostScopeOptions}
             onExecutionHostScopeChange={onExecutionHostScopeChange}
-          />
+          />}
           <VaultViewMenu
             agents={agents}
             sort={sort}
@@ -156,14 +158,14 @@ export function AiVaultPanelHeader({
         </div>
       </div>
 
-      <div className="mt-2">
+      {!workspaceOnly && <div className="mt-2">
         <VaultScopeSwitch
           scope={scope}
           workspaceAvailable={Boolean(activeWorktreePath)}
           projectAvailable={Boolean(activeProjectKey)}
           onScopeChange={onScopeChange}
         />
-      </div>
+      </div>}
 
       <div className="mt-2 flex h-8 items-center gap-1.5 rounded-md border border-sidebar-border bg-input/50 px-2 focus-within:border-sidebar-ring focus-within:ring-[2px] focus-within:ring-sidebar-ring/30">
         <Search className="size-3.5 shrink-0 text-muted-foreground" />

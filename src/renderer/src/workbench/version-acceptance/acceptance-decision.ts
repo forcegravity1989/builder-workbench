@@ -66,11 +66,28 @@ export async function goalEvidenceRevision(
   plan: PlanningMaterial,
   goalId: string
 ): Promise<string> {
+  return evidenceRevision(goalEvidenceText(document, plan, goalId))
+}
+
+async function evidenceRevision(text: string): Promise<string> {
   const hash = await crypto.subtle.digest(
     'SHA-256',
-    new TextEncoder().encode(goalEvidenceText(document, plan, goalId))
+    new TextEncoder().encode(text)
   )
   return `sha256:${Array.from(new Uint8Array(hash), (byte) => byte.toString(16).padStart(2, '0')).join('')}`
+}
+
+/** Human readiness covers the listed materials, independently of build provenance checks. */
+export function preparationEvidenceRevision(document: AcceptanceMaterial): Promise<string> {
+  return evidenceRevision(JSON.stringify(stableValue({
+    version: document.version,
+    cycleId: document.cycleId,
+    planRef: document.planRef,
+    candidateRef: document.candidateRef,
+    artifacts: [...document.preparedArtifacts].sort((a, b) => a.artifactId.localeCompare(b.artifactId)),
+    deliveries: document.results.map(({ goalId, deliveries }) => ({ goalId, deliveries }))
+      .sort((a, b) => a.goalId.localeCompare(b.goalId))
+  })))
 }
 
 export type DecisionFreshness = 'unrecorded' | 'current' | 'changed'

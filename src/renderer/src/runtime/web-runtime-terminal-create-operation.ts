@@ -273,7 +273,7 @@ export async function createWebRuntimeSessionTerminalResult(
       )
     }
     return {
-      outcome: { status: 'created' },
+      outcome: { status: 'created', hostTabId: createdTabId },
       ...(createdTabId ? { hostTabId: createdTabId } : {})
     }
   } catch (error) {
@@ -298,7 +298,7 @@ export async function createWebRuntimeSessionTerminalResult(
     // Why: once the host accepted creation, reporting failure invites the user
     // to retry with a new operation ID and can duplicate a fresh agent.
     return {
-      outcome: hostCreated ? { status: 'created' } : { status: 'failed', message },
+      outcome: hostCreated ? { status: 'created', hostTabId: createdTabId } : { status: 'failed', message },
       ...(createdTabId ? { hostTabId: createdTabId } : {})
     }
   }

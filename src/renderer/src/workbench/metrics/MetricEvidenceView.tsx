@@ -1,12 +1,15 @@
 import type { MetricReading, MetricReadingEvidence } from '../../../../shared/workbench/metrics'
 import './metric-evidence.css'
+import { addCalendarDays, calendarDayStart, dayInTimezone } from '../../../../shared/workbench/metric-windows'
 const NO_EVIDENCE: readonly MetricReadingEvidence[] = []
 
 function observationText(reading: MetricReadingEvidence): string {
   const observation = reading.observation
-  return observation.kind === 'instant'
-    ? `当前值 · 观测于 ${observation.observedAt}`
-    : `区间读数 · ${observation.start} 至 ${observation.end}（不含结束时刻，${observation.timezone}）`
+  if (observation.kind === 'instant') return `当前值 · ${observation.observedAt}`
+  const day = dayInTimezone(observation.start, observation.timezone)
+  const bucketEnd = calendarDayStart(addCalendarDays(day, observation.granularity === 'week' ? 7 : 1), observation.timezone)
+  const partial = Date.parse(observation.end) < Date.parse(bucketEnd)
+  return `${partial ? '截至采集时刻' : '区间读数'} · ${observation.start} 至 ${observation.end}（${observation.timezone}）`
 }
 
 /** The caller owns targets and decisions; this view only presents collected or saved evidence. */

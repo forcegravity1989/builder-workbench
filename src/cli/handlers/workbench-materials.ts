@@ -47,6 +47,10 @@ async function invoke(ctx: HandlerContext, operation: string, params: unknown): 
 }
 
 export const WORKBENCH_MATERIAL_HANDLERS: Record<string, CommandHandler> = {
+  'bw materials context': async (ctx) => invoke(ctx, 'context', VersionMaterialScopeSchema.parse(scope(ctx))),
+  'bw materials select': async (ctx) => invoke(ctx, 'select', VersionMaterialReadSchema.parse({
+    ...scope(ctx), version: getRequiredStringFlag(ctx.flags, 'version')
+  })),
   'bw materials migration-preview': async (ctx) =>
     invoke(
       ctx,

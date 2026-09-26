@@ -15,6 +15,8 @@ export const HANDLER_GROUPS: readonly HandlerGroup[] = [
   {
     name: 'workbench-materials',
     keys: [
+      'bw materials context',
+      'bw materials select',
       'bw materials schema',
       'bw materials list',
       'bw materials read',

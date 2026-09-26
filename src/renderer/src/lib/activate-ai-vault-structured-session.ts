@@ -230,7 +230,7 @@ export async function revealStructuredSession(target: {
 
 type AgentSessionRevealReply = { ok?: boolean; refusal?: { code?: string } }
 
-async function refreshStructuredSessionTabs(worktreeId: string): Promise<void> {
+export async function refreshStructuredSessionTabs(worktreeId: string): Promise<void> {
   const state = useAppStore.getState()
   const environmentId = getRuntimeEnvironmentIdForWorktree(state, worktreeId)
   // Every other caller that applies an inventory fences it on the sync generation. Structured chat

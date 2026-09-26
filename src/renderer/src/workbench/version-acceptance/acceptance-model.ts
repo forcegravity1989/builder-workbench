@@ -55,7 +55,7 @@ export function assertFixedPlan(
   return plan
 }
 
-/** A new run can use the same plan; the acceptance cycle belongs to its native session. */
+/** A material round can span multiple native sessions while keeping its fixed promise. */
 export function createAcceptanceMaterial(input: {
   planRef: PlanReference
   plan: { document: PlanningMaterial; revision: string }

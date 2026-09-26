@@ -15,7 +15,6 @@ const workflowStubs = {
 export type WorkbenchPromptScope = Omit<CycleScope, 'workflow'> & {
   workflow: 'week-planning' | 'version-acceptance' | 'metrics-refresh'
   worktreeId: string
-  cycleId?: string
 }
 
 /** Bundled raw template is compiled into the product; ordinary projects supply no standard/. */
@@ -44,7 +43,6 @@ export async function resolveWorkbenchPromptAssets(scope: WorkbenchPromptScope) 
     worktreeId: scope.worktreeId,
     workspacePath: worktree.path,
     workflow: scope.workflow === 'metrics-refresh' ? scope.workflow : workflow,
-    cycleId: scope.cycleId,
     version: null
   }
   const values: Record<string, string> = {
@@ -59,7 +57,7 @@ export async function resolveWorkbenchPromptAssets(scope: WorkbenchPromptScope) 
     category: '',
     references,
     skill: workflowStubs[topic],
-    version_context: `宿主已确认的执行上下文：\n${JSON.stringify(context, null, 2)}\n${topic === 'metrics-refresh' ? '这是独立指标配置任务，使用原生项目与工作区上下文。' : `材料工具：ORCA bw materials schema --workflow ${workflow}；参数查看 ORCA bw materials list --help、ORCA bw materials read --help、ORCA bw materials save --help。\n版本尚未明确，先列候选并与人确认，不写默认版本。`}`
+    version_context: `宿主已确认的执行上下文：\n${JSON.stringify(context, null, 2)}\n${topic === 'metrics-refresh' ? '这是独立指标配置任务，使用原生项目与工作区上下文。' : `材料工具：ORCA bw materials schema --workflow ${workflow}；参数查看 ORCA bw materials context --help、ORCA bw materials select --help、ORCA bw materials list --help、ORCA bw materials read --help、ORCA bw materials save --help。\n先读取当前流程选版与候选，向用户确认本次版本；确认后用 select 同步右侧选版，不按会话标题或日期推断。历史会话不绑定版本，恢复后重新核对当前选版。未明确版本前不写材料，选版本身不创建材料。`}`
   }
   const prompt = systemTemplate.replace(/\{\{([a-z_]+)\}\}/g, (_match, key: string) => {
     if (!(key in values)) {
@@ -75,13 +73,12 @@ export async function resolveWorkbenchPromptAssets(scope: WorkbenchPromptScope) 
   }
 }
 
-export async function buildCyclePrompt(scope: CycleScope, worktreeId: string, cycleId: string) {
+export async function buildCyclePrompt(scope: CycleScope, worktreeId: string) {
   return (
     await resolveWorkbenchPromptAssets({
       ...scope,
       workflow: scope.workflow === 'plan' ? 'week-planning' : 'version-acceptance',
-      worktreeId,
-      cycleId
+      worktreeId
     })
   ).prompt
 }

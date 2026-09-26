@@ -6,11 +6,11 @@ export type VersionCycleContext = {
   scope: CycleScope | null
   worktreeId: string | null
   session: CycleSession | null
-  sessions: CycleSession[]
+  version: string | null
   sessionPort: CycleSessionPort
   taskPort: TaskPort
   archivePort: ArchivePort
   materialPort: ReturnType<typeof createVersionMaterialPort> | null
   error: string | null
-  associateVersion(version: string): Promise<void>
+  selectVersion(version: string): Promise<void>
 }

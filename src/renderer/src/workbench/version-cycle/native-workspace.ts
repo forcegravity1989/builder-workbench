@@ -62,7 +62,7 @@ export function findNamedWorktree(scope: NativeWorkspaceScope, branch: string): 
     .filter(
       (worktree) =>
         worktree.repoId === scope.repoId &&
-        worktree.branch === branch &&
+        worktree.branch.replace(/^refs\/heads\//, '') === branch &&
         nativeWorkspaceScopeKey(nativeWorkspaceScope(worktree)) === nativeWorkspaceScopeKey(scope)
     )
   if (found.length > 1) {
@@ -98,7 +98,7 @@ export async function ensureNamedWorktree(
       },
       { timeoutMs: 600_000 }
     )
-    if (result.worktree.branch !== branch) {
+    if (result.worktree.branch.replace(/^refs\/heads\//, '') !== branch) {
       throw new Error('原生创建未返回约定分支，请检查工作树')
     }
     // A paired runtime owns its nested SSH registration; do not redirect refresh to client SSH.

@@ -17,7 +17,8 @@ export type PreparationChecks = { candidate: CandidateCheck; artifacts: Artifact
 export function preparationSignal(
   document: AcceptanceMaterial | undefined,
   plan: EvidenceCheck,
-  checks: PreparationChecks | null
+  checks: PreparationChecks | null,
+  humanReviewed = false
 ): JourneySignal {
   if (!document) {
     return { kind: 'unknown', label: '未开始' }
@@ -25,7 +26,7 @@ export function preparationSignal(
   if (plan.kind === 'mismatch' || plan.kind === 'unavailable') {
     return { kind: 'failed', label: '原承诺核对失败' }
   }
-  if (!document.candidateRef && !document.preparedArtifacts.length) {
+  if (!humanReviewed && !document.preparationReview && !document.candidateRef && !document.preparedArtifacts.length) {
     return { kind: 'unknown', label: '未开始' }
   }
   if (
@@ -40,21 +41,14 @@ export function preparationSignal(
     ? [
         plan,
         checks.candidate,
-        ...checks.artifacts.flatMap((item) => [item.candidate, item.availability, item.execution])
+        ...checks.artifacts.flatMap((item) => [item.candidate, item.availability])
       ]
     : [plan]
   if (evidence.some((item) => item.kind === 'mismatch' || item.kind === 'unavailable')) {
     return { kind: 'failed', label: '来源核对失败' }
   }
-  if (
-    checks &&
-    document.preparedArtifacts.length > 0 &&
-    document.preparedArtifacts.every((artifact) =>
-      checks.artifacts.some((item) => item.artifactId === artifact.artifactId)
-    ) &&
-    evidence.every((item) => item.kind === 'verified')
-  ) {
-    return { kind: 'complete', label: '材料已核对' }
+  if (humanReviewed) {
+    return { kind: 'complete', label: '材料已备齐' }
   }
   return { kind: 'pending', label: '材料待核对' }
 }

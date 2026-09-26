@@ -12,6 +12,7 @@ import type {
   VersionGoal
 } from '../../../../shared/workbench/version-material'
 import { MetricEvidenceView } from '../metrics/MetricEvidenceView'
+import { metricWindowForDefinition } from '../../../../shared/workbench/metric-windows'
 
 export function AcceptanceMetrics({
   goal,
@@ -55,7 +56,14 @@ export function AcceptanceMetrics({
     const current = () => token === request.sequence && latestKey.current === sourceKey
     setBusy(key)
     try {
-      const value = await port.refresh({ scope, ref: target.ref, window })
+      const catalog = await port.list(scope)
+      if (!current()) return
+      const definition = catalog.definitions.find((item) => metricRefKey(item.ref) === key)
+      if (!definition) throw new Error('指标配置已变化，请核对计划采用的来源')
+      const value = await port.refresh({
+        scope, ref: target.ref,
+        window: metricWindowForDefinition(definition, catalog.timezone, window)
+      })
       if (!current()) {
         return
       }
@@ -109,6 +117,7 @@ export function AcceptanceMetrics({
             <span>
               {target.ref.name} · 本版目标 {target.target}
             </span>
+            {target.baseline && <span>计划基线 {target.baseline.value} {target.baseline.unit}</span>}
             <span>
               {freshlyRead || !evidence.length ? '实测' : '已存读数'}{' '}
               {evidence.length

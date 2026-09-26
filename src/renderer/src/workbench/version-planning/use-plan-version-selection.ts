@@ -1,10 +1,10 @@
 import { useEffect, useRef, useState } from 'react'
 import type { usePlanningMaterial } from './use-planning-material'
 
-/** Reading a version and associating the native session form one selection. */
+/** Selection belongs to the workflow, independently of the displayed native session. */
 export function usePlanVersionSelection(
   material: ReturnType<typeof usePlanningMaterial>,
-  associate: (version: string) => Promise<void>
+  selectVersion: (version: string) => Promise<void>
 ) {
   const lock = useRef(false)
   const mounted = useRef(true)
@@ -33,12 +33,12 @@ export function usePlanVersionSelection(
         if (!selected || !mounted.current) {
           return false
         }
-        await associate(version)
+        await selectVersion(version)
         return mounted.current
       } catch (reason) {
         if (mounted.current) {
           material.clear()
-          setError(`版本与会话关联失败，草稿已保留，请重选版本后继续：${String(reason)}`)
+          setError(`选版未保存，草稿已保留，请重选版本后继续：${String(reason)}`)
         }
         return false
       } finally {

@@ -40,6 +40,8 @@ export function createVersionMaterialPort(scope: VersionMaterialScope, call: Mat
     return result.value
   }
   return {
+    context: () => invoke<{ version: string | null }>('context', scope),
+    select: (version: string) => invoke<{ version: string | null }>('select', { ...scope, version }),
     previewMigration: (version: string, cycleId: string, sourceRevision?: string) =>
       invoke<VersionMigrationPreview>('previewMigration', {
         ...scope,

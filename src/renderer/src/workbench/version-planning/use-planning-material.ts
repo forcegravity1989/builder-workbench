@@ -14,8 +14,7 @@ export function planningDraftKey(scopeKey: string, version: string) {
 
 export function usePlanningMaterial(
   port: ReturnType<typeof nativeVersionMaterialPort> | null,
-  scopeKey: string,
-  cycleId?: string
+  scopeKey: string
 ) {
   const [versions, setVersions] = useState<VersionMaterialCandidate[]>([])
   const [draft, setDraft] = useState<MaterialDraft<PlanningMaterial> | null>(null)
@@ -122,9 +121,6 @@ export function usePlanningMaterial(
         if (create && snapshot) {
           throw new Error('该版本已存在，请选择已有版本。')
         }
-        if (create && !cycleId) {
-          throw new Error('先开启或选择本次计划会话。')
-        }
         let restored: MaterialDraft<PlanningMaterial> | null = null
         const raw = localStorage.getItem(planningDraftKey(scopeKey, version))
         if (raw) {
@@ -153,7 +149,7 @@ export function usePlanningMaterial(
           : {
               schema_version: 3,
               version,
-              cycleId: cycleId!,
+              cycleId: crypto.randomUUID(),
               summary: { progress: '', risks: '' },
               goals: [],
               tasks: []
@@ -183,7 +179,7 @@ export function usePlanningMaterial(
         }
       }
     },
-    [port, controller, cycleId, scopeKey, isCurrent]
+    [port, controller, scopeKey, isCurrent]
   )
 
   const selectedVersion = draft?.document.version

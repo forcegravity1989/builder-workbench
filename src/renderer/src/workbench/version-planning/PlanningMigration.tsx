@@ -6,12 +6,10 @@ import type { nativeVersionMaterialPort } from '../version-material-port'
 export function PlanningMigration({
   port,
   versions,
-  cycleId,
   onMigrated
 }: {
   port: ReturnType<typeof nativeVersionMaterialPort>
   versions: VersionMaterialCandidate[]
-  cycleId?: string
   onMigrated(version: string): Promise<void>
 }) {
   const [preview, setPreview] = useState<VersionMigrationPreview | null>(null)
@@ -26,13 +24,10 @@ export function PlanningMigration({
   }, [])
 
   const prepare = async (version: string) => {
-    if (!cycleId) {
-      return
-    }
     setBusy(true)
     setError(null)
     try {
-      const result = await port.previewMigration(version, cycleId)
+      const result = await port.previewMigration(version, crypto.randomUUID())
       if (mounted.current) {
         setPreview(result)
       }
@@ -47,13 +42,13 @@ export function PlanningMigration({
     }
   }
   const migrate = async () => {
-    if (!preview || !cycleId) {
+    if (!preview) {
       return
     }
     setBusy(true)
     setError(null)
     try {
-      await port.migrate(preview.plan.version, cycleId, preview.sourceRevision)
+      await port.migrate(preview.plan.version, preview.plan.cycleId, preview.sourceRevision)
       if (mounted.current) {
         setPreview(null)
         await onMigrated(preview.plan.version)
@@ -79,14 +74,13 @@ export function PlanningMigration({
           <span>{item.version} · 旧版材料</span>
           <button
             className="wb-btn wb-btn-ghost wb-btn-sm"
-            disabled={busy || !cycleId}
+            disabled={busy}
             onClick={() => void prepare(item.version)}
           >
             预览迁移
           </button>
         </div>
       ))}
-      {!cycleId && <p className="vp-muted">先选择本次会话，再预览旧材料的迁移。</p>}
       {error && !preview && <p role="alert">{error}</p>}
       {preview && (
         <div className="vp-modal-backdrop">

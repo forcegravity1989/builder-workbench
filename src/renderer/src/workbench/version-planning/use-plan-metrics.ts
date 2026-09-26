@@ -7,6 +7,7 @@ import {
   type MetricScope
 } from '../../../../shared/workbench/metrics'
 import { nativeMetricsPort } from '../metrics-port'
+import { metricWindowForDefinition } from '../../../../shared/workbench/metric-windows'
 import type { PlanningMaterial } from '../../../../shared/workbench/version-material'
 
 export function usePlanMetrics(
@@ -60,10 +61,14 @@ export function usePlanMetrics(
       }))
       let value: MetricReading
       try {
+        const definition = catalog.definitions.find((item) => metricRefKey(item.ref) === key)
+        if (!definition) {
+          throw new Error('已保存的指标配置不在当前目录中，请核对来源后重新选择')
+        }
         value = await port[refresh ? 'refresh' : 'read']({
           scope,
           ref,
-          window: { kind: 'current', timezone: catalog.timezone }
+          window: metricWindowForDefinition(definition, catalog.timezone)
         })
       } catch (reason) {
         value = { status: 'error', reason: { code: 'read-failed', message: String(reason) } }

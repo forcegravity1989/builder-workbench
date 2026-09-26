@@ -5,6 +5,16 @@ const scopeFlags = ['repo-id', 'worktree-id', 'host-id', 'workflow']
 const scopeUsage = '--repo-id <id> --worktree-id <id> --workflow plan|acceptance [--host-id <id>]'
 export const WORKBENCH_MATERIAL_COMMAND_SPECS: CommandSpec[] = [
   {
+    path: ['bw', 'materials', 'context'], summary: 'Read the workflow current version selection',
+    usage: `orca bw materials context ${scopeUsage} [--json]`, allowedFlags: [...GLOBAL_FLAGS, ...scopeFlags]
+  },
+  {
+    path: ['bw', 'materials', 'select'], summary: 'Select the explicitly confirmed version without creating material',
+    usage: `orca bw materials select ${scopeUsage} --version <version> [--json]`,
+    allowedFlags: [...GLOBAL_FLAGS, ...scopeFlags, 'version'],
+    notes: ['Select only after user confirmation. History conversation selection does not change this workflow selection.']
+  },
+  {
     path: ['bw', 'materials', 'migration-preview'],
     summary: 'Preview explicit schema 2 migration without writing files',
     usage: `orca bw materials migration-preview ${scopeUsage} --version <version> --cycle-id <id> [--source-revision <preserved-revision>] [--json]`,

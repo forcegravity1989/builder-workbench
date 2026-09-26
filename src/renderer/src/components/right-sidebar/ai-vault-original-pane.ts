@@ -203,11 +203,13 @@ export function findAiVaultSessionLiveState(
 
 export function findOriginalAiVaultSessionPane(
   state: OriginalPaneState,
-  session: AiVaultSession
+  session: AiVaultSession,
+  options: { worktreeId?: string; allowPromptFallback?: boolean } = {}
 ): AiVaultOriginalPaneTarget | null {
   const promptMatchedTargets: AiVaultOriginalPaneTarget[] = []
 
   for (const entry of Object.values(state.agentStatusByPaneKey)) {
+    if (options.worktreeId && entry.worktreeId !== options.worktreeId) continue
     if (
       agentMatches(session, entry.agentType) &&
       providerSessionMatches(session, entry.providerSession?.id)
@@ -223,7 +225,7 @@ export function findOriginalAiVaultSessionPane(
       }
     }
     if (
-      agentMatches(session, entry.agentType) &&
+      options.allowPromptFallback !== false && agentMatches(session, entry.agentType) &&
       entry.providerSession === undefined &&
       promptsMatchSession(session, entry)
     ) {
@@ -240,6 +242,7 @@ export function findOriginalAiVaultSessionPane(
   }
 
   for (const retained of Object.values(state.retainedAgentsByPaneKey)) {
+    if (options.worktreeId && retained.worktreeId !== options.worktreeId) continue
     if (
       agentMatches(session, retained.agentType) &&
       providerSessionMatches(session, retained.entry.providerSession?.id)
@@ -255,7 +258,7 @@ export function findOriginalAiVaultSessionPane(
       }
     }
     if (
-      agentMatches(session, retained.agentType) &&
+      options.allowPromptFallback !== false && agentMatches(session, retained.agentType) &&
       retained.entry.providerSession === undefined &&
       promptsMatchSession(session, retained.entry)
     ) {
@@ -272,6 +275,7 @@ export function findOriginalAiVaultSessionPane(
   }
 
   for (const record of Object.values(state.sleepingAgentSessionsByPaneKey)) {
+    if (options.worktreeId && record.worktreeId !== options.worktreeId) continue
     if (
       agentMatches(session, record.agent) &&
       providerSessionMatches(session, record.providerSession.id)

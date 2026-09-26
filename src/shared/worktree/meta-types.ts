@@ -15,6 +15,8 @@ import type { DiffComment, MobileDiffReviewState } from '../diff-comment-types'
 
 // ─── Worktree metadata (persisted user-authored fields only) ─────────
 export type WorktreeMeta = {
+  /** BW workflow selection only; native session history does not change the selected material. */
+  workbenchSelectedVersion?: string
   /** Immutable per-workspace-instance ID used to reject stale lineage after path reuse. */
   instanceId?: string
   /** See Worktree.projectId. Persisted for project-first workspace ownership. */

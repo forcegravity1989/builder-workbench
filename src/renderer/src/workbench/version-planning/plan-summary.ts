@@ -1,6 +1,5 @@
 import type {
   PlanningMaterial,
-  MetricReadingEvidence,
   MetricReference
 } from '../../../../shared/workbench/version-material'
 
@@ -12,11 +11,8 @@ export function sameMetricReference(a: MetricReference, b: MetricReference): boo
   )
 }
 
-/** Readers provide current, verified evidence. A saved baseline is not a current reading. */
-export function derivePlanMinutes(
-  plan: PlanningMaterial,
-  readings: readonly MetricReadingEvidence[] = []
-): string {
+/** Minutes reflect the adopted material, so archived summaries cannot drift with live reads. */
+export function derivePlanMinutes(plan: PlanningMaterial): string {
   const goals = plan.goals.map((goal, index) => `${index + 1}. ${goal.title.trim() || '待明确'}`)
   const deliveries = plan.goals.map(
     (goal, index) =>
@@ -24,8 +20,8 @@ export function derivePlanMinutes(
   )
   const metrics = plan.goals.flatMap((goal, index) =>
     goal.metricTargets.map((target) => {
-      const reading = readings.find((item) => sameMetricReference(item.ref, target.ref))
-      return `- G${index + 1} · ${target.ref.name}：当前 ${reading ? `${reading.value}${reading.unit}` : '待核'} → 版本目标 ${target.target.trim() || '待明确'}${reading ? `（${reading.collectedAt}；${reading.source}）` : '（目标草案，尚无可信采集）'}`
+      const reading = target.baseline
+      return `- G${index + 1} · ${target.ref.name}：计划基线 ${reading ? `${reading.value}${reading.unit}` : '待核'} → 版本目标 ${target.target.trim() || '待明确'}${reading ? `（${reading.collectedAt}；${reading.source}）` : '（目标草案，尚无可信采集）'}`
     })
   )
   return [
@@ -40,10 +36,7 @@ export function derivePlanMinutes(
   ].join('\n')
 }
 
-export function derivePlanSummary(
-  plan: PlanningMaterial,
-  readings: readonly MetricReadingEvidence[] = []
-) {
+export function derivePlanSummary(plan: PlanningMaterial) {
   return {
     version: plan.version,
     cycleId: plan.cycleId,
@@ -55,6 +48,6 @@ export function derivePlanSummary(
       deliverable: goal.deliverable ?? ''
     })),
     taskCount: plan.tasks.length,
-    minutes: derivePlanMinutes(plan, readings)
+    minutes: derivePlanMinutes(plan)
   }
 }

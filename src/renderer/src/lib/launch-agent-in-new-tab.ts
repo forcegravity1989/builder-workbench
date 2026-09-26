@@ -64,6 +64,7 @@ export type LaunchAgentInNewTabResult = {
   /** The host will publish and focus a structured tab asynchronously. */
   focusAfterMenuClose?: 'structured-session'
   promptDeliveryResult?: Promise<{ delivered: boolean; failureNotified: boolean }>
+  runtimeLaunch?: ReturnType<typeof launchAgentInWebHostTab>
   /** Structured route only: what the launch did once it settled, including whether the terminal
    *  fallback ran. The call itself stays synchronous. */
   structuredSettlement?: Promise<StructuredAgentLaunchSettlement>
@@ -187,12 +188,14 @@ function launchAgentInNewTabInternal(
       // Why: omission means terminal locally, but would let a paired host apply
       // its own default; send the client's resolved terminal choice explicitly.
       viewMode: initialViewModeProps.viewMode ?? 'terminal',
+      activate,
       onPromptDelivered
     })
     return {
       tabId: null,
       startupPlan,
       pasteDraftAfterLaunch: pasteDraftAfterLaunch !== null,
+      runtimeLaunch: webHostDelivery,
       ...(pasteDraftAfterLaunch !== null && promptDelivery === 'submit-after-ready'
         ? { promptDeliveryResult: webHostDelivery }
         : {})

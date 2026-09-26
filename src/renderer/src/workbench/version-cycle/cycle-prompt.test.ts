@@ -25,14 +25,12 @@ it('injects bundled discovery assets and the selected owner into an ordinary pro
     hostId: 'ssh:host',
     runtimeOwnerEnvironmentId: 'owner',
     worktreeId: 'tree',
-    workflow: 'week-planning',
-    cycleId: 'cycle'
+    workflow: 'week-planning'
   })
   expect(result.context).toMatchObject({
     workspacePath: '/projects/ordinary-plan',
     runtimeOwnerEnvironmentId: 'owner',
     hostId: 'ssh:host',
-    cycleId: 'cycle',
     version: null
   })
   expect(result.prompt).toContain('ORCA_CLI_COMMAND')
@@ -41,6 +39,9 @@ it('injects bundled discovery assets and the selected owner into an ordinary pro
   expect(result.prompt).not.toContain('{{')
   expect(result.prompt).not.toContain(String.fromCharCode(92, 110))
   expect(result.prompt).toContain('ORCA bw materials list --help')
+  expect(result.prompt).toContain('ORCA bw materials context --help')
+  expect(result.prompt).toContain('ORCA bw materials select --help')
+  expect(result.context).not.toHaveProperty('cycleId')
   expect(result.prompt).toContain('ORCA bw materials read --help')
   expect(result.prompt).toContain('ORCA bw materials save --help')
   expect(result.prompt).not.toContain('ORCA bw materials --help')
@@ -53,8 +54,7 @@ it('injects bundled discovery assets and the selected owner into an ordinary pro
       repoId: 'repo',
       hostId: 'ssh:other',
       worktreeId: 'tree',
-      workflow: 'week-planning',
-      cycleId: 'cycle'
+      workflow: 'week-planning'
     })
   ).rejects.toThrow('原生工作树不可用')
 })
