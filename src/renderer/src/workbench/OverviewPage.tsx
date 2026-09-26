@@ -279,7 +279,7 @@ export function OverviewPage(): React.JSX.Element {
           <div className="card-head">
             <div className="row-between">
               <h6>版本计划与验收</h6>
-              {version === currentVersion && (
+              {version !== null && version === currentVersion && (
                 <span className="wb-tag wb-tag-warning">当前选版</span>
               )}
             </div>
