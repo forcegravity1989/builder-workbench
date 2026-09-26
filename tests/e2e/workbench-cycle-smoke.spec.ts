@@ -1,7 +1,4 @@
-import { execFileSync } from 'node:child_process'
-import { mkdirSync, readFileSync, realpathSync, writeFileSync, rmSync, existsSync } from 'node:fs'
-import { mkdtemp } from 'node:fs/promises'
-import os from 'node:os'
+import { readFileSync, existsSync } from 'node:fs'
 import path from 'node:path'
 import { test, expect } from './helpers/orca-app'
 import type { Page } from '@playwright/test'
@@ -17,58 +14,12 @@ import type { Page } from '@playwright/test'
  * build` time (the E2E globalSetup build picks it up from the environment).
  */
 test.use({
-  seedTestRepo: false,
   orcaAppExtraEnv: {
     WORKBENCH_SHELL: '1',
     VITE_WORKBENCH_SHELL: '1',
     ORCA_PRODUCT_NAME: 'Workbench'
   }
 })
-
-const tempRoots: string[] = []
-
-async function createProjectFixture(): Promise<string> {
-  const rootPath = realpathSync(await mkdtemp(path.join(os.tmpdir(), 'bw-cycle-smoke-')))
-  tempRoots.push(rootPath)
-  const repoPath = path.join(rootPath, 'project')
-  mkdirSync(repoPath, { recursive: true })
-  execFileSync('git', ['init', '-b', 'main'], { cwd: repoPath, stdio: 'pipe' })
-  execFileSync('git', ['config', 'user.email', 'e2e@test.local'], { cwd: repoPath, stdio: 'pipe' })
-  execFileSync('git', ['config', 'user.name', 'E2E Test'], { cwd: repoPath, stdio: 'pipe' })
-  writeFileSync(path.join(repoPath, 'README.md'), '# BW smoke project\n')
-  execFileSync('git', ['add', 'README.md'], { cwd: repoPath, stdio: 'pipe' })
-  execFileSync('git', ['commit', '-m', 'Initial commit'], { cwd: repoPath, stdio: 'pipe' })
-  return repoPath
-}
-
-async function addRepoAndWaitWorktrees(page: Page, repoPath: string): Promise<string> {
-  const repoId = await page.evaluate(async (repo) => {
-    const store = window.__store
-    if (!store) {
-      throw new Error('window.__store is not available')
-    }
-    const added = await store.getState().addRepoPath(repo)
-    if (!added) {
-      throw new Error(`repo not added: ${repo}`)
-    }
-    return added.id as string
-  }, repoPath)
-  await expect
-    .poll(
-      () =>
-        page.evaluate(async (id) => {
-          const store = window.__store
-          if (!store) {
-            throw new Error('window.__store is not available')
-          }
-          await store.getState().fetchWorktrees(id)
-          return (store.getState().worktreesByRepo[id] ?? []).length
-        }, repoId),
-      { timeout: 60_000 }
-    )
-    .toBeGreaterThan(0)
-  return repoId
-}
 
 async function waitForFixedWorktree(page: Page, branch: string): Promise<string> {
   await expect
@@ -104,25 +55,16 @@ async function waitForFixedWorktree(page: Page, branch: string): Promise<string>
   }, branch)
 }
 
-test.afterAll(() => {
-  for (const root of tempRoots) {
-    try {
-      rmSync(root, { recursive: true, force: true })
-    } catch {
-      // Best-effort cleanup; git worktree metadata may lock files briefly.
-    }
-  }
-})
-
 test('BW cycle main chain: fixed trees, version material save and independent read-back', async ({
-  orcaPage
+  orcaPage,
+  testRepoPath
 }, testInfo) => {
   test.setTimeout(900_000)
-  const repoPath = await createProjectFixture()
+  void testRepoPath
 
-  // The workbench chrome is the readiness signal for the BW shell.
+  // The workbench chrome is the readiness signal for the BW shell; the helper
+  // already seeded the project repo and its worktrees.
   await expect(orcaPage.locator('[data-workbench-nav]')).toBeVisible({ timeout: 180_000 })
-  await addRepoAndWaitWorktrees(orcaPage, repoPath)
 
   // ---- 计划屏：固定树正式选择 + 明确新建版本 + 保存 + 磁盘独立读回 ----
   await orcaPage.getByRole('button', { name: '计划', exact: true }).click()
