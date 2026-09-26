@@ -10,11 +10,11 @@ export async function versionSelection(runtime: OrcaRuntimeService, scope: Versi
   const { target, reauthorize } = await createWorkbenchWorkspaceResolver(nativeWorkbenchWorkspaceHost(runtime)).resolve(scope)
   const worktree = await runtime.showManagedWorktree(`id:${scope.worktreeId}`, target.hostId)
   const branch = scope.workflow === 'plan' ? 'bw/week-plan' : 'bw/week-acceptance'
-  if (!branchSelectorMatches(worktree.branch, branch)) throw new WorkspaceScopeError('wrong-branch', `请使用 ${branch} 工作树`)
+  if (!branchSelectorMatches(worktree.branch, branch)) {throw new WorkspaceScopeError('wrong-branch', `请使用 ${branch} 工作树`)}
   if (version !== undefined) {
     MaterialVersion.parse(version)
     await reauthorize()
-    if (!worktree.identity?.key) throw new WorkspaceScopeError('workspace-unavailable', '工作树身份不可用，请刷新后重试')
+    if (!worktree.identity?.key) {throw new WorkspaceScopeError('workspace-unavailable', '工作树身份不可用，请刷新后重试')}
     await runtime.updateManagedWorktreeMeta(`identity:${worktree.identity.key}`, { workbenchSelectedVersion: version })
   }
   return { version: version ?? worktree.workbenchSelectedVersion ?? null }

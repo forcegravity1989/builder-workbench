@@ -90,6 +90,8 @@ export type WslResult = {
   stdout: string
   stderr: string
   timedOut: boolean
+  /** Passthrough of the underlying runProcess flag: captured output hit the byte cap. */
+  outputTruncated: boolean
 }
 
 export const DEFAULT_WSL_TIMEOUT_MS = 30_000
@@ -255,6 +257,7 @@ export async function runWslProcess(spec: WslSpec): Promise<WslResult> {
     code: result.code,
     stdout: result.stdout,
     stderr: result.stderr,
-    timedOut: result.timedOut
+    timedOut: result.timedOut,
+    outputTruncated: result.outputTruncated === true
   }
 }

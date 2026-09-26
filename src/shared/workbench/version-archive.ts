@@ -45,6 +45,30 @@ export type ArchiveStatus =
       proof: { kind: 'verified'; value: ArchiveMergeProof } | { kind: 'unknown'; reason: string }
     }
 
+/** Asks the owning runtime to prove one merged review against fixed material bytes. */
+export const ArchiveProofRequestSchema = z.strictObject({
+  repoId: z.string().min(1),
+  worktreeId: z.string().min(1),
+  hostId: z.string().min(1),
+  workflow: z.enum(['plan', 'acceptance']),
+  provider: z.string().min(1),
+  repository: z.string().min(1),
+  number: z.number().int().positive(),
+  version: MaterialVersion,
+  cycleId: z.string().min(1),
+  revision: MaterialRevision
+})
+export type ArchiveProofRequest = z.infer<typeof ArchiveProofRequestSchema>
+
+export const ArchiveProofResultSchema = z.strictObject({
+  mergeCommit: SourceCommit.nullable(),
+  proof: z.union([
+    z.strictObject({ kind: z.literal('verified'), value: ArchiveMergeProofSchema }),
+    z.strictObject({ kind: z.literal('unknown'), reason: z.string().min(1) })
+  ])
+})
+export type ArchiveProofResult = z.infer<typeof ArchiveProofResultSchema>
+
 export function isArchivedMaterial(status: ArchiveStatus, material: ArchivedMaterial): boolean {
   if (status.kind !== 'merged' || status.proof.kind !== 'verified') {
     return false

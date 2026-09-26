@@ -33,7 +33,16 @@ export type VersionMaterialSave = z.infer<typeof VersionMaterialSaveSchema>
 
 export type VersionMaterialResult<T> =
   | { ok: true; value: T }
-  | { ok: false; error: { code: string; message: string; currentRevision?: string | null } }
+  | {
+      ok: false
+      error: {
+        code: string
+        message: string
+        currentRevision?: string | null
+        /** Process exit status when the failure came from a narrow remote executor. */
+        exitCode?: number | null
+      }
+    }
 
 export type VersionMaterialCandidate = {
   version: string

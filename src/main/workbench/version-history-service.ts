@@ -2,8 +2,7 @@ import type { MetricScope } from '../../shared/workbench/metrics'
 import {
   PlanningMaterialSchema,
   SourceCommit,
-  MaterialVersion,
-  type PlanningMaterial
+  MaterialVersion
 } from '../../shared/workbench/version-material'
 import {
   VersionHistoryListSchema,
@@ -14,11 +13,13 @@ import {
   type VersionHistoryProblem
 } from '../../shared/workbench/version-history'
 import type { VersionDocumentSnapshot } from '../../shared/workbench/version-document'
+import type { PlanningMaterial } from '../../shared/workbench/version-material'
+import { createArchiveStateChecker, type ArchiveCandidate } from './version-history-archive-check'
 import {
-  ArchiveMergeProofSchema,
-  type ArchiveMergeProof
-} from '../../shared/workbench/version-archive'
-import { decodeHistorySnapshot, HistorySourceError } from './version-history-snapshot'
+  decodeHistorySnapshot,
+  planningMaterialGitPath,
+  HistorySourceError
+} from './version-history-snapshot'
 export { HistorySourceError } from './version-history-snapshot'
 
 /** Each dependency authorizes native repository/host/worktree IDs; callers never supply paths. */
@@ -32,22 +33,15 @@ export type VersionHistoryHost = {
   /** Native archive/provider evidence, never inferred only from Git reachability or topology. */
   archiveState(
     scope: MetricScope,
-    candidate: {
-      baseline: { ref: string; commit: string }
-      sourceCommit: string
-      version: string
-      cycleId: string
-      workflow: 'plan' | 'acceptance'
-      revision: string
-    }
+    candidate: ArchiveCandidate
   ): Promise<
-    | { kind: 'adopted'; proof: ArchiveMergeProof }
-    | { kind: 'draft' }
-    | { kind: 'unknown'; message: string }
+    { kind: 'adopted'; proof: unknown } | { kind: 'draft' } | { kind: 'unknown'; message: string }
   >
 }
 
 export function createVersionHistoryService(host: VersionHistoryHost): VersionHistoryPort {
+  const { archiveState, requireArchive } = createArchiveStateChecker(host)
+
   async function verifySource(scope: MetricScope, sourceCommit: string) {
     const baseline = await host.baseline(scope)
     SourceCommit.parse(baseline.commit)
@@ -62,47 +56,6 @@ export function createVersionHistoryService(host: VersionHistoryHost): VersionHi
     return baseline
   }
 
-  async function archiveState(
-    scope: MetricScope,
-    candidate: Parameters<VersionHistoryHost['archiveState']>[1]
-  ) {
-    try {
-      const state = await host.archiveState(scope, candidate)
-      if (state.kind === 'adopted') {
-        const parsed = ArchiveMergeProofSchema.safeParse(state.proof)
-        if (
-          !parsed.success ||
-          parsed.data.mergeCommit !== candidate.sourceCommit ||
-          parsed.data.material.workflow !== candidate.workflow ||
-          parsed.data.material.version !== candidate.version ||
-          parsed.data.material.cycleId !== candidate.cycleId ||
-          parsed.data.material.revision !== candidate.revision
-        ) {
-          return { kind: 'unknown' as const, message: '归档依据与所选提交或材料修订不一致' }
-        }
-      }
-      return state
-    } catch (error) {
-      return {
-        kind: 'unknown' as const,
-        message: error instanceof Error ? error.message : '归档来源暂不可核对'
-      }
-    }
-  }
-
-  async function requireArchive(
-    scope: MetricScope,
-    candidate: Parameters<VersionHistoryHost['archiveState']>[1]
-  ) {
-    const state = await archiveState(scope, candidate)
-    if (state.kind !== 'adopted') {
-      throw new HistorySourceError(
-        'archive-unverified',
-        state.kind === 'unknown' ? state.message : '所选材料是工作中草稿，尚未成为归档记录'
-      )
-    }
-  }
-
   async function readSnapshot(
     scope: MetricScope,
     sourceCommit: string,
@@ -110,7 +63,7 @@ export function createVersionHistoryService(host: VersionHistoryHost): VersionHi
     workflow: 'plan' | 'acceptance'
   ) {
     MaterialVersion.parse(version)
-    const path = `.bw/planning/${version}/${workflow === 'plan' ? 'data' : 'acceptance'}.json`
+    const path = planningMaterialGitPath(version, workflow)
     let raw: Buffer
     try {
       raw = await host.git(scope, ['show', `${sourceCommit}:${path}`])

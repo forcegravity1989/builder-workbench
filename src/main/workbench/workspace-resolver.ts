@@ -14,8 +14,19 @@ export type WorkbenchWorkspaceTarget = {
   repoPath: string
   worktreePath: string
 }
+/** Registered repo facts a BW host adapter needs beyond the resolved paths. */
+export type WorkbenchWorkspaceRepo = Pick<
+  Repo,
+  | 'id'
+  | 'path'
+  | 'kind'
+  | 'connectionId'
+  | 'executionHostId'
+  | 'worktreeBaseRef'
+  | 'worktreeBasePath'
+>
 export type WorkbenchWorkspaceHost = {
-  listRepos(): Pick<Repo, 'id' | 'path' | 'kind' | 'connectionId' | 'executionHostId'>[]
+  listRepos(): WorkbenchWorkspaceRepo[]
   listWorktrees(
     scope: WorkbenchWorkspaceScope
   ): Promise<
@@ -28,7 +39,10 @@ export type WorkbenchWorkspaceHost = {
 
 /** Resolve registered identity on its owner runtime; executors retain Git and workflow checks. */
 export function createWorkbenchWorkspaceResolver(host: WorkbenchWorkspaceHost) {
-  async function authorize(scope: WorkbenchWorkspaceScope): Promise<WorkbenchWorkspaceTarget> {
+  async function authorize(scope: WorkbenchWorkspaceScope): Promise<{
+    target: WorkbenchWorkspaceTarget
+    repo: WorkbenchWorkspaceRepo
+  }> {
     const hostId = parseExecutionHostId(scope.hostId)
     if (!hostId || hostId.kind === 'runtime') {
       throw new WorkspaceScopeError('invalid-scope', '请通过工作树所属的 Orca runtime 访问')
@@ -57,7 +71,10 @@ export function createWorkbenchWorkspaceResolver(host: WorkbenchWorkspaceHost) {
     if (trees.length !== 1 || trees[0].isArchived) {
       throw new WorkspaceScopeError('invalid-scope', '工作树身份不存在、已归档或不唯一')
     }
-    return { hostId: hostId.id, repoPath: repo.path, worktreePath: trees[0].path }
+    return {
+      target: { hostId: hostId.id, repoPath: repo.path, worktreePath: trees[0].path },
+      repo
+    }
   }
   return {
     async resolve(scope: WorkbenchWorkspaceScope) {
@@ -66,14 +83,17 @@ export function createWorkbenchWorkspaceResolver(host: WorkbenchWorkspaceHost) {
         worktreeId: scope.worktreeId,
         hostId: scope.hostId
       }
-      const target = Object.freeze(await authorize(capturedScope))
+      const resolved = await authorize(capturedScope)
+      const target = Object.freeze(resolved.target)
+      const repo = Object.freeze(resolved.repo)
       return {
         target,
+        repo,
         async reauthorize() {
           const current = await authorize(capturedScope)
           if (
-            current.repoPath !== target.repoPath ||
-            current.worktreePath !== target.worktreePath
+            current.target.repoPath !== target.repoPath ||
+            current.target.worktreePath !== target.worktreePath
           ) {
             throw new WorkspaceScopeError('invalid-scope', '工作树位置已改变，请重新打开')
           }

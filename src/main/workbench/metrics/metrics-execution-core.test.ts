@@ -1,0 +1,199 @@
+import { execFileSync } from 'node:child_process'
+import { mkdtempSync, mkdirSync, writeFileSync, rmSync } from 'node:fs'
+import { tmpdir } from 'node:os'
+import { basename, dirname, join, resolve } from 'node:path'
+import { afterAll, beforeAll, expect, it } from 'vitest'
+import {
+  computeMetricsCheckoutRoot,
+  executeMetricCollection,
+  fingerprintMetricCollector,
+  readMetricConfiguration
+} from './metrics-execution-core'
+
+let root: string
+let emptyCommit: string
+let configCommit: string
+let draftCommit: string
+let scriptCommit: string
+const collectScript = [
+  'const args = process.argv.slice(2);',
+  'const at = (flag) => args[args.indexOf(flag) + 1];',
+  'console.error(JSON.stringify({',
+  '  tz: process.env.BW_METRICS_TIMEZONE,',
+  '  root: process.env.BW_METRICS_DATA_ROOT,',
+  '  commit: process.env.BW_METRICS_DATA_COMMIT,',
+  '  since: at("--since"), until: at("--until"), granularity: at("--granularity"),',
+  '  cwdIsCheckout: process.cwd() !== process.env.BW_METRICS_DATA_ROOT',
+  '}));',
+  'console.log(JSON.stringify({ points: [{ day: at("--since"), value: 1 }] }));'
+].join('\n')
+const toml = [
+  'schema_version = 2',
+  '[[lagging]]',
+  'name = "commits"',
+  'def = "weekly commits"',
+  'collect = { kind = "script", run = ["node", ".bw/scripts/collect.js"], retro = true }'
+].join('\n')
+
+const git = (args: string[]) => execFileSync('git', args, { cwd: root, stdio: 'pipe' })
+const head = () => git(['rev-parse', 'HEAD']).toString().trim()
+const write = (relative: string, content: string) => {
+  const target = join(root, relative)
+  mkdirSync(dirname(target), { recursive: true })
+  writeFileSync(target, content)
+  git(['add', relative])
+}
+const commit = (message: string) => {
+  git(['commit', '-m', message])
+  return head()
+}
+
+beforeAll(() => {
+  root = mkdtempSync(join(tmpdir(), 'bw-metrics-core-'))
+  git(['init', '--initial-branch=main'])
+  git(['config', 'user.name', 'Test'])
+  git(['config', 'user.email', 'test@example.invalid'])
+  git(['config', 'core.autocrlf', 'false'])
+  write('README.md', 'data repo')
+  emptyCommit = commit('empty base')
+  write('.bw/metrics.toml', toml)
+  write('.bw/scripts/collect.js', collectScript)
+  configCommit = commit('adopted configuration')
+  git(['switch', '-c', 'draft-config'])
+  write(
+    '.bw/metrics.toml',
+    `${toml}\n[[leading]]\nname = "draft"\ndef = "d"\ncollect = { kind = "script", run = ["node", ".bw/scripts/collect.js"] }`
+  )
+  draftCommit = commit('draft configuration')
+  git(['switch', 'main'])
+  write('.bw/scripts/collect.js', `${collectScript}\n// revised collector`)
+  scriptCommit = commit('revised script')
+}, 30_000)
+
+afterAll(() => {
+  if (root) {
+    const target = resolve(root)
+    if (dirname(target) !== resolve(tmpdir()) || !basename(target).startsWith('bw-metrics-core-')) {
+      throw new Error('Unexpected test repository location')
+    }
+    rmSync(target, { recursive: true, force: true })
+  }
+})
+
+it('reads the configuration from the adopted source pinned to a real SHA', async () => {
+  const snapshot = await readMetricConfiguration({ repoPath: root, adoptedRef: null })
+  expect(snapshot.configurationRef).toBe('main')
+  expect(snapshot.configurationCommit).toBe(scriptCommit)
+  expect(snapshot.dataCommit).toBe(scriptCommit)
+  expect(snapshot.toml).toContain('schema_version = 2')
+  expect(snapshot.timezone.length).toBeGreaterThan(0)
+  const missing = await readMetricConfiguration({
+    repoPath: root,
+    adoptedRef: null,
+    configurationCommit: emptyCommit
+  })
+  expect(missing.toml).toBeNull()
+})
+
+it('reports an invalid registered adopted ref instead of switching branches', async () => {
+  await expect(
+    readMetricConfiguration({ repoPath: root, adoptedRef: 'release' })
+  ).rejects.toMatchObject({ code: 'baseline-invalid' })
+})
+
+it('refuses a configuration draft that never reached the adopted source', async () => {
+  await expect(
+    readMetricConfiguration({ repoPath: root, adoptedRef: null, configurationCommit: draftCommit })
+  ).rejects.toMatchObject({ code: 'configuration-not-adopted' })
+})
+
+it('fingerprints the pinned script content, not the interpreter token', async () => {
+  const run = ['node', '.bw/scripts/collect.js']
+  const atConfig = await fingerprintMetricCollector({
+    repoPath: root,
+    configurationCommit: configCommit,
+    run
+  })
+  const again = await fingerprintMetricCollector({
+    repoPath: root,
+    configurationCommit: configCommit,
+    run
+  })
+  const atScript = await fingerprintMetricCollector({
+    repoPath: root,
+    configurationCommit: scriptCommit,
+    run
+  })
+  expect(atConfig).toMatch(/^sha256:[a-f0-9]{64}$/)
+  expect(again).toBe(atConfig)
+  expect(atScript).not.toBe(atConfig)
+})
+
+it('runs the collector in the fixed checkout with protocol env and discards it', async () => {
+  const outcome = await executeMetricCollection({
+    repoPath: root,
+    checkoutRoot: computeMetricsCheckoutRoot(root),
+    configurationCommit: scriptCommit,
+    run: [process.execPath, '.bw/scripts/collect.js'],
+    args: ['--since', '2026-09-21', '--until', '2026-09-28', '--granularity', 'week'],
+    env: {
+      BW_METRICS_TIMEZONE: 'Asia/Shanghai',
+      BW_METRICS_DATA_ROOT: root,
+      BW_METRICS_DATA_COMMIT: scriptCommit
+    },
+    timeoutMs: 60_000
+  })
+  expect(outcome.code).toBe(0)
+  expect(outcome.timedOut).toBe(false)
+  expect(outcome.outputTruncated).toBe(false)
+  expect(JSON.parse(outcome.stdout)).toEqual({
+    points: [{ day: '2026-09-21', value: 1 }]
+  })
+  const diagnostics = JSON.parse(outcome.stderr)
+  expect(diagnostics).toMatchObject({
+    tz: 'Asia/Shanghai',
+    root: root,
+    commit: scriptCommit,
+    since: '2026-09-21',
+    until: '2026-09-28',
+    granularity: 'week',
+    cwdIsCheckout: true
+  })
+  const worktrees = git(['worktree', 'list']).toString()
+  expect(worktrees).not.toContain('.orca-preparing')
+}, 60_000)
+
+it('reports a failing collector exit without inventing a reading', async () => {
+  write('.bw/scripts/fail.js', 'console.error("collector exploded"); process.exit(3)')
+  const failCommit = commit('failing collector')
+  const outcome = await executeMetricCollection({
+    repoPath: root,
+    checkoutRoot: computeMetricsCheckoutRoot(root),
+    configurationCommit: failCommit,
+    run: [process.execPath, '.bw/scripts/fail.js'],
+    args: ['--since', '2026-09-21', '--until', '2026-09-22', '--granularity', 'day'],
+    env: {},
+    timeoutMs: 60_000
+  })
+  expect(outcome.code).toBe(3)
+  expect(outcome.stderr).toContain('collector exploded')
+  const worktrees = git(['worktree', 'list']).toString()
+  expect(worktrees).not.toContain('.orca-preparing')
+}, 60_000)
+
+it('kills a hung collector at its timeout and still cleans the checkout up', async () => {
+  write('.bw/scripts/hang.js', 'setTimeout(() => {}, 30000)')
+  const hangCommit = commit('hanging collector')
+  const outcome = await executeMetricCollection({
+    repoPath: root,
+    checkoutRoot: computeMetricsCheckoutRoot(root),
+    configurationCommit: hangCommit,
+    run: [process.execPath, '.bw/scripts/hang.js'],
+    args: ['--since', '2026-09-21', '--until', '2026-09-22', '--granularity', 'day'],
+    env: {},
+    timeoutMs: 1_500
+  })
+  expect(outcome.timedOut).toBe(true)
+  const worktrees = git(['worktree', 'list']).toString()
+  expect(worktrees).not.toContain('.orca-preparing')
+}, 60_000)
