@@ -1,97 +1,103 @@
 #!/usr/bin/env python3
-"""每周提交数 —— Workbench 铺的现成采集脚本(可回溯,retro = true)。
+"""按明确时区统计指定 Git 提交可达的提交数，输出实际覆盖窗口。
 
-口径:**当前分支**上,提交时刻落在 `[周一 00:00, 下周一 00:00)`(本机时区)
-的提交数。
+BW_METRICS_TIMEZONE 必须显式设置为 IANA 时区；服务另传
+BW_METRICS_DATA_ROOT / BW_METRICS_DATA_COMMIT，避免把采集脚本工作树
+当成被统计分支。独立运行时数据源默认为当前目录的 HEAD，开始时固定为 SHA。
+设置上述环境变量后复算：python git-commits.py --since 2026-03-02 --until 2026-03-09 --granularity week
 
-**故意不带 `--all`。** 带上它会把 remote-tracking 分支和别的工作目录的提交都
-算进来,于是一次 `git fetch` 就能把这个数字刷上去 —— 那就成了可以造假的数。
-
-**故意不用 `git log --since/--until` 截窗口**,而是把提交时刻全取回来自己按
-时间戳过滤。两个理由都是真踩出来的:
-
-1. `--until=<下周一>` 会把下周一那一整天算进来(git 用 approxidate 解析这类
-   不带时刻的日期),于是每一周都多算下一周的第一天。
-2. `--since` 会提前停止遍历 —— 提交时刻不严格单调(rebase、cherry-pick、机器
-   时钟)时会漏掉一批,同一条命令隔几分钟跑结果都可能不一样。
-
-自己复算某一周(s / u 是那一周的起止 unix 秒):
-
-    git log --pretty=format:%ct | awk -v s=<s> -v u=<u> '$1>=s && $1<u' | wc -l
-
-铺一次就归这个项目,Workbench 之后再也不覆盖它 —— 要改口径直接改这里。
+不带 --all；不使用会提前停止遍历的 git log --since。读取全部可达提交时刻，
+按真实日历边界和本次观测截止时刻过滤。铺入项目后由项目维护，不自动覆盖。
 """
 
 import argparse
-import datetime
+import datetime as dt
 import json
+import os
 import subprocess
 import sys
+from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
 
-def weeks_in(since: datetime.date, until: datetime.date):
-    """窗口内的 ISO 周,旧的在前。until 是开区间右端。"""
-    out, cur = [], since - datetime.timedelta(days=since.weekday())
-    while cur < until:
-        y, w, _ = cur.isocalendar()
-        out.append((f"{y}-W{w:02d}", cur))
-        cur += datetime.timedelta(days=7)
-    return out
+def calendar_start(day, timezone):
+    """当地日期首次出现的秒；支持重复/跳过午夜，整日不存在则拒绝。"""
+    nominal = int(dt.datetime.combine(day, dt.time.min, dt.timezone.utc).timestamp())
+    for sample in range(nominal - 172800, nominal + 172801, 3600):
+        if dt.datetime.fromtimestamp(sample, timezone).date() != day:
+            continue
+        before, inside = sample - 3600, sample
+        while inside - before > 1:
+            middle = (before + inside) // 2
+            if dt.datetime.fromtimestamp(middle, timezone).date() == day:
+                inside = middle
+            else:
+                before = middle
+        return inside
+    raise ValueError(f"时区中的日期不存在：{day}")
 
 
-def days_in(since: datetime.date, until: datetime.date):
-    """窗口内的日历日,旧的在前。until 是开区间右端。"""
-    out, cur = [], since
-    while cur < until:
-        out.append((cur.isoformat(), cur))
-        cur += datetime.timedelta(days=1)
-    return out
+def collect_points(stamps, since, until, granularity, timezone, observed_until):
+    step = 7 if granularity == "week" else 1
+    points, day = [], since
+    while day < until:
+        end_day = day + dt.timedelta(days=step)
+        start = calendar_start(day, timezone)
+        end = min(calendar_start(end_day, timezone), observed_until)
+        if end > start:
+            year, week, _ = day.isocalendar()
+            label = f"{year}-W{week:02d}" if granularity == "week" else day.isoformat()
+            points.append({
+                granularity: label,
+                "value": sum(1 for stamp in stamps if start <= stamp < end),
+                "coverage": {
+                    "start": dt.datetime.fromtimestamp(start, dt.timezone.utc).isoformat(),
+                    "end": dt.datetime.fromtimestamp(end, dt.timezone.utc).isoformat(),
+                },
+            })
+        day = end_day
+    return points
 
 
-def main() -> int:
-    ap = argparse.ArgumentParser()
-    ap.add_argument("--since", required=True)
-    ap.add_argument("--until", required=True)
-    ap.add_argument("--granularity", default="week")
-    args = ap.parse_args()
-
-    if args.granularity not in ("week", "day"):
-        print(f"只支持 --granularity week|day,收到 {args.granularity}", file=sys.stderr)
-        return 2
-
+def main():
+    sys.stdout.reconfigure(encoding="utf-8")
+    sys.stderr.reconfigure(encoding="utf-8")
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--since", required=True)
+    parser.add_argument("--until", required=True)
+    parser.add_argument("--granularity", choices=("week", "day"), default="week")
+    args = parser.parse_args()
     try:
-        proc = subprocess.run(
-            ["git", "log", "--pretty=format:%ct"],
-            capture_output=True,
-            text=True,
-            check=True,
-        )
-    except FileNotFoundError:
-        print("本机没有 git,或者不在 PATH 里", file=sys.stderr)
-        return 2
-    except subprocess.CalledProcessError as e:
-        print(f"git log 失败:{e.stderr.strip()}", file=sys.stderr)
-        return 2
+        since = dt.date.fromisoformat(args.since)
+        until = dt.date.fromisoformat(args.until)
+        if since >= until:
+            raise ValueError("since 必须早于 until，结束日期不包含在内")
+        if args.granularity == "week" and (since.weekday() != 0 or until.weekday() != 0):
+            raise ValueError("周查询须使用周一到周一边界；任意日期范围请按 day 查询")
+        timezone_name = os.environ.get("BW_METRICS_TIMEZONE")
+        if not timezone_name:
+            raise ValueError("请显式设置 BW_METRICS_TIMEZONE；不猜测本机时区")
+        timezone = dt.timezone.utc if timezone_name == "UTC" else ZoneInfo(timezone_name)
+        root = os.environ.get("BW_METRICS_DATA_ROOT", os.getcwd())
+        requested_ref = os.environ.get("BW_METRICS_DATA_COMMIT", "HEAD")
+        observed_until = dt.datetime.now(dt.timezone.utc).timestamp()
 
-    stamps = [int(x) for x in proc.stdout.split() if x.isdigit()]
-    tz = datetime.datetime.now().astimezone().tzinfo
-    since = datetime.date.fromisoformat(args.since)
-    until = datetime.date.fromisoformat(args.until)
+        def git(*arguments):
+            return subprocess.run(
+                ["git", "-C", root, *arguments], capture_output=True,
+                text=True, check=True, encoding="utf-8",
+            ).stdout.strip()
 
-    points = []
-    if args.granularity == "day":
-        for label, day in days_in(since, until):
-            lo = datetime.datetime.combine(day, datetime.time(0, 0), tz).timestamp()
-            hi = lo + 24 * 3600
-            points.append({"day": label, "value": sum(1 for t in stamps if lo <= t < hi)})
-    else:
-        for label, monday in weeks_in(since, until):
-            lo = datetime.datetime.combine(monday, datetime.time(0, 0), tz).timestamp()
-            hi = lo + 7 * 24 * 3600
-            points.append({"week": label, "value": sum(1 for t in stamps if lo <= t < hi)})
-
-    json.dump({"points": points}, sys.stdout, ensure_ascii=False)
-    return 0
+        commit = git("rev-parse", "--verify", "--end-of-options", f"{requested_ref}^{{commit}}")
+        stamps = [int(value) for value in git("log", "--pretty=format:%ct", commit).split()]
+        points = collect_points(stamps, since, until, args.granularity, timezone, observed_until)
+        json.dump({"points": points}, sys.stdout, ensure_ascii=False)
+        return 0
+    except ZoneInfoNotFoundError:
+        print("Python 无法读取指定 IANA 时区；请核对时区名和此宿主的时区数据。", file=sys.stderr)
+    except (ValueError, OSError, subprocess.CalledProcessError) as error:
+        detail = error.stderr.strip() if isinstance(error, subprocess.CalledProcessError) else str(error)
+        print(f"采集失败：{detail}", file=sys.stderr)
+    return 2
 
 
 if __name__ == "__main__":

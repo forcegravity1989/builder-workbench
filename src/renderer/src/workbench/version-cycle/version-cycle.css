@@ -1,0 +1,61 @@
+.vc-goal {
+  display: flex;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  border-bottom: 1px solid var(--color-divider);
+}
+.vc-goal:last-child {
+  border-bottom: 0;
+}
+.vc-goal-number {
+  font-family: var(--font-mono);
+  color: var(--color-neutral-600);
+  padding-top: var(--space-1);
+}
+.vc-goal-content {
+  flex: 1;
+  min-width: 0;
+}
+.vc-goal-heading {
+  display: flex;
+  gap: var(--space-2);
+  align-items: baseline;
+  justify-content: space-between;
+}
+.vc-goal-heading h3 {
+  margin: 0;
+  font-size: inherit;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+.vc-goal p {
+  margin: var(--space-2) 0 0;
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+}
+.vc-label {
+  color: var(--color-neutral-600);
+  margin-right: var(--space-4);
+}
+.vc-goal label {
+  display: grid;
+  gap: var(--space-1);
+  margin-bottom: var(--space-2);
+  color: var(--color-neutral-600);
+}
+.vc-goal input,
+.vc-goal textarea {
+  width: 100%;
+  padding: var(--space-2);
+  border: 1px solid var(--color-divider);
+  border-radius: var(--radius-md);
+  background: var(--color-bg);
+  color: var(--color-text);
+  font: inherit;
+}
+.vc-goal-metrics,
+.vc-goal-result {
+  margin-top: var(--space-3);
+  padding-top: var(--space-3);
+  border-top: 1px solid var(--color-divider);
+}

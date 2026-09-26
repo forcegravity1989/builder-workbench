@@ -24,6 +24,10 @@ BW 自用的 managed-projects.py、其名单和远端读取依赖要逐项核对
 
 拟冻结 MetricsPort.list(project)、read(ref,window)、refresh(ref,window)；刷新返回可追溯 run/状态，读取返回 value 或 Unknown 及原因，不能仅用 null 吞掉失败。MetricRef 包含项目、指标名称与定义指纹，名称不唯一须先消歧；leads 是声明关系，不自动证明因果。
 
+VersionHistoryPort.list 返回 records 与 problems：前者为可读取的固定提交记录，后者保留旧格式、损坏或不可读材料的版本、提交、流程、时间和原因。单条坏记录不抹去其他有效历史；无法验证的 cycleId 不补造。read 按明确版本、周期、流程与提交读取；readPlan 按已保存的计划引用核对内容修订，并区分已合入来源与明确选择的工作树草案，不回退到最新材料。接口位于 shared/workbench/version-history.ts，renderer 原生 RPC 客户端保持相同返回形状。
+
+历史目录从项目指定基线 Git 历史发现材料候选，内容修订按原始字节计算；可达关系、第一父链或合并方式均不单独证明归档。宿主以原生归档/provider 来源核验该提交和材料修订：已采用才进入正式记录，已证明的工作中草稿不列为归档，无法证明则进入待核 problems。非法版本目录也保留已知路径与提交问题，不放宽材料输入校验。固定 committed 引用读取执行相同核验；同版本多周期分别保留。读取服务接受明确的基线与原生宿主适配，不在核心层猜测默认分支。
+
 ## 采集、存储与窗口
 
 沿 metrics schema2，不顺带升级全项目协议。MetricDefinition 保留 name/def/target/collect/feature/leads。MetricReading 带 value、window、granularity、collectedAt、source、definitionHash、collectorRevision/执行指纹；版本材料引用读数的稳定标识/快照，证据缓存可以重建，不引入 BW 业务数据库。
@@ -44,7 +48,7 @@ retro=true 从脚本按日/周重算，缺点留缺；retro=false 仅查询当�
 
 ## 配置任务与采用
 
-“配置指标”经共享 MetricSetupPort 手动启动原生项目任务，使用 Orca 默认隔离工作区策略，呈现于原生项目会话屏，不增加 BW 右侧配置页或指标自动化。指标模块提供业务提示并实现 MetricSetupPort，复用原生 taskId 关联及总览版本/指标筛选恢复；公共注册钩子由协调窗口按实际依赖接入。同次返回继续未完成任务，显式新配置新建任务，不进入 bw/week-plan 或验收会话。提示加载项目约定、通用 SYSTEM、metrics-refresh 及当前定义/错误；普通项目的 Skill 由产品资产解析。配置任务形成定义和脚本的可评审改动，通过原生 PR 进入项目指定配置基线。目录读取固定配置提交；试采草案只在配置上下文有效，不自动成为三屏正式引用。刷新按钮直接调用 MetricsPort，不启动模型。
+“配置指标”经共享 MetricSetupPort 手动启动原生项目任务，使用独立固定的指标维护分支与工作树，呈现于原生项目会话屏，不增加 BW 右侧配置页或指标自动化。工作树复用计划/验收同一原生定位与创建适配，以项目、宿主和分支查登记；实际目录与创建起点听 Orca 项目设置，不硬编码 .bw 路径、main 或 bw-orca，不删除重建已有工作树。指标模块提供业务提示并实现 MetricSetupPort，复用原生 taskId 关联及总览版本/指标筛选恢复；公共注册钩子由协调窗口按实际依赖接入。同次返回继续未完成任务，显式新配置新建会话并复用维护树，不进入 bw/week-plan 或验收会话。已有未完成改动保留，不因新会话重置维护树。提示加载项目约定、通用 SYSTEM、metrics-refresh 及当前定义/错误；普通项目的 Skill 由产品资产解析。配置任务形成定义和脚本的可评审改动，通过原生 PR 进入项目指定配置基线。目录读取固定配置提交；试采草案只在配置上下文有效，不自动成为三屏正式引用。刷新按钮直接调用 MetricsPort，不启动模型。
 
 ## 三屏呈现与迁移
 

@@ -6,6 +6,7 @@ schema_version = 2
 # feature 空归“主要”，有值归对应特性；leads 关联明确滞后指标。
 # collect 只支持 script；run 为非空 argv。实际读数不可手填。
 # retro=true 按 day/week 查询真实 points；retro=false 只给当前 value。
+# week 的起止日期均为周一；未结束日/周的 points 必须带真实 coverage.start/end。
 # 不登记每日采集，不创建 bw/ledger，不追加日采账本。
 # 示例需按项目实际脚本填写后再启用：
 # [[lagging]]
