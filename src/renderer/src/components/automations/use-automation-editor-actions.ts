@@ -1,4 +1,6 @@
 import { useCallback } from 'react'
+import { hostStableKey } from '../../../../shared/automation-owner-key'
+import type { AutomationEditorRequest } from './automation-editor-request'
 import type {
   ExternalAutomationJob,
   ExternalAutomationManager
@@ -51,9 +53,14 @@ export function useAutomationEditorActions({
   const { getDefaultTarget, automationDispatchContext, rowRecoveryHost } = destination
   const { destinationForProject, editHostResolution } = destinationForm
 
-  const openCreateDialog = (template?: AutomationTemplate): void => {
+  const openCreateDialog = (
+    template?: AutomationTemplate,
+    request?: Extract<AutomationEditorRequest, { kind: 'create' }>
+  ): void => {
     editRequestRef.current += 1
-    const target = getDefaultTarget()
+    const target = request?.draft ?? getDefaultTarget()
+    local.setCreateHostStableKey(request ? hostStableKey(request.host) : null)
+    setEditingRowKey(null)
     setEditingAutomationId(null)
     setEditingExternalTarget(null)
     setEditingDestination(null)
@@ -91,12 +98,14 @@ export function useAutomationEditorActions({
           missedRunGraceMinutes: template.missedRunGraceMinutes ?? baseDraft.missedRunGraceMinutes
         }
       : baseDraft
-    setDraft(nextDraft)
-    setDraftAtOpen(nextDraft)
+    const seededDraft = request ? { ...nextDraft, ...request.draft } : nextDraft
+    setDraft(seededDraft)
+    setDraftAtOpen(seededDraft)
     setCreateOpen(true)
   }
 
   const openEditDialog = async (row: AutomationListRow): Promise<void> => {
+    local.setCreateHostStableKey(null)
     const requestId = (editRequestRef.current += 1)
     setEditingExternalTarget(null)
     setCreateTarget('orca')

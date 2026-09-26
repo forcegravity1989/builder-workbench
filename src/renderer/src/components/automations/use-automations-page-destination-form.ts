@@ -60,7 +60,8 @@ export function useAutomationsPageDestinationForm({
     setEditingDestination,
     setDraft,
     draft,
-    draftRef
+    draftRef,
+    createHostStableKey
   } = local
   const { visibleRows, hostCatalog, capturedAutomationOwners } = list
   const { automationHostTarget, automationHostTargetForRowKey, repoTables, editorProjects } = base
@@ -168,7 +169,12 @@ export function useAutomationsPageDestinationForm({
   // A destination change can strand the chosen project on another host; clear
   // it so the draft/default-target effect can select a project the host owns.
   useEffect(() => {
-    if (!createOpen || editingAutomationId !== null || createTarget !== 'orca') {
+    if (
+      !createOpen ||
+      editingAutomationId !== null ||
+      createTarget !== 'orca' ||
+      createHostStableKey
+    ) {
       return
     }
     setDraft((current) =>
@@ -176,7 +182,7 @@ export function useAutomationsPageDestinationForm({
         ? current
         : { ...current, projectId: '', workspaceId: '', baseBranch: '' }
     )
-  }, [createOpen, createTarget, editingAutomationId, editorProjects, setDraft])
+  }, [createOpen, createTarget, editingAutomationId, editorProjects, setDraft, createHostStableKey])
 
   const dialogWorktrees = useMemo(() => {
     const candidates = worktreesByRepo[draft.projectId] ?? []

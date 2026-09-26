@@ -174,6 +174,7 @@ export async function saveOrcaAutomation(
     updates.dtstart = time.now
   }
   const createInput: AutomationCreateInput = {
+    ...(draft.creationKey ? { creationKey: draft.creationKey } : {}),
     name: draft.name,
     prompt: draft.prompt,
     precheck,

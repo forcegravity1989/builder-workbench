@@ -49,7 +49,7 @@ export function TaskPageCodeHubFilters({
   const projectUrl =
     codehubRepos.length === 1 ? (codehubRepos[0]?.gitRemoteIdentity?.remoteUrl ?? null) : null
   const workbench = isWorkbenchShell()
-  const presets =
+  const presets: readonly (readonly ['open' | 'mine' | 'review', string])[] =
     codehubView === 'mrs'
       ? ([
           ['open', translate('auto.components.TaskPage.606a85c774', 'Open')],
