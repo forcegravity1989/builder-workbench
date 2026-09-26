@@ -8,7 +8,7 @@
 
 AcceptancePage 是 BW 业务页，复用原生项目/工作树/会话、Tasks 详情与正文编辑、Automations、现有文件打开和命令执行能力。右侧顶部用轻量准备摘要展示候选与包/报告/展示材料，下方使用共享目标卡和 Issue 状态区；不建通用发布控制台。
 
-共享组件只提供承诺区及结果槽位，业务字段由本页拥有。旧 PlanResultsPane 可提取展示能力，但旧跨版本 results 流程不并行维护。TaskPort/CycleSessionPort/ArchivePort/VersionDocumentPort 与计划共用，MetricsPort 由指标线提供。
+共享组件只提供承诺区及结果槽位，业务字段由本页拥有。旧 PlanResultsPane 已随旧三屏链条退役删除，跨版本 results 流程不再并行维护。TaskPort/CycleSessionPort/ArchivePort/VersionDocumentPort 与计划共用（已按当前接线落地），MetricsPort 由指标线提供。页面经 artifacts 槽与计划共用 `version-cycle/CycleWorkspaceShell.tsx`，进入即确保 bw/week-acceptance 固定工作树并正式选择。
 
 ## 两个常驻工作树
 
@@ -48,7 +48,7 @@ candidateRef 保存项目、完整 commit SHA、版本与来源；preparedArtifa
 
 使用材料核心的 expectedRevision/原子写入/跨进程互斥；冲突保留输入。文件链接绑定可信材料根或明确外部来源，失效错误有恢复入口。跨树、跨项目返回核对宿主身份。
 
-旧 results 按其明确说明的上一版本导入，不能按目录名误认当前验收；旧 confirmation 仅历史证据。新实现一次切换所有读写消费者，再退役旧三屏/CLI 路径。
+旧 results 按其明确说明的上一版本导入，不能按目录名误认当前验收；旧 confirmation 仅历史证据。新实现已一次切换所有读写消费者，旧三屏/CLI 路径（含 planning.py）已退役删除。
 
 固定计划的展开区可将核对旧结果的请求追加到本次原生会话。会话读取共享迁移预览和保留原件，按实际上一版与唯一目标对应通过普通验收保存接口合并；不在验收页再建一套迁移算法，不自动覆盖本次已编辑结果。
 

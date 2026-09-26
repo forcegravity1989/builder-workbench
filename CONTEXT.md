@@ -41,7 +41,8 @@
 | 迭代 / Iteration | 围绕一组目标完成规划、交付与反馈的周期，时长由项目决定，不等于固定的一周 | [产品主张][claim] |
 | Issue | 一件工作，状态、计划、类别由远端及标签承载；“卡片”只是界面形态。author 是提出人，assignee 是负责人 | [Issue 协议][issue] |
 | 周期工作 | 更新指标与版本计划、资产盘点等按周期进行的工作，仍由 Issue 承载；不再称“运作活①／②” | [整体架构][arch] |
-| 周一屏 / Monday screen | 版本计划特性的通行名：计划页签原生三屏完成上周总结与本版本规划，归档在项目仓 `.bw/planning/<版本>/`；有归档件不等于已开会评审 | [版本计划规格][plan-spec] |
+| 周一屏 / Monday screen | 版本计划特性的通行名：计划屏单页完成上周总结与本版本规划，归档在项目仓 `.bw/planning/<版本>/`；有归档件不等于已开会评审 | [版本计划规格][plan-spec] |
+| 流程选版 | 计划/验收流程本次明确选择的版本；偏好存于原生工作树元数据 `workbenchSelectedVersion`，UI 与 CLI 共享同一偏好，不按会话标题、日期或上次打开项推断，切换历史会话不自动切换材料 | [版本计划规格][plan-spec] |
 | 计划版本 / 里程碑 | 计划版本是计划交付范围，Issue 可纳入多个版本；里程碑是平台对象，可补日期；均不等于已发布 | [Issue 协议][issue] |
 | 在研版本 | 当前正在推进的计划版本，不由里程碑日期单独决定；选择规则只在架构及实现维护 | [整体架构][arch] |
 | 版本目标 / 每周进展 | 版本希望达成的结果，与某周实际进展分开；都不是指标的每周数值目标 | [版本评论格式][week] |
@@ -73,6 +74,7 @@
 | 读数 / Reading | 某个时间点或窗口内的实际值；无读数不等于零 | [指标协议][metrics] |
 | 引领指标 / 滞后指标 | 前者是可控制的先行量，后者衡量结果；工程活动量不能直接证明业务健康 | [指标协议][metrics] |
 | 可回溯采集 / 当前值采集 / 手填 | 分别从历史算窗口值、采集此刻并保存、手工提供真实值；工程文档 A/B/C 类依次对应，手填不是 mock | [指标协议][metrics] |
+| 指标维护树 / bw/metrics-refresh | 「配置指标」任务所在的独立固定分支与工作树（树名 metrics-refresh），与计划 bw/week-plan、验收 bw/week-acceptance 同由原生规则创建登记；固定树不等于永久复用同一会话 | [总览指标规格][metrics-spec] |
 | 健康信号 / Signal | 从事实推导的绿、黄、红或未知结论，不能手动设置 | [整体架构][arch] |
 | 未知 / Unknown | 健康信号的一种，表示数据不足无法判断；界面显示灰色，不等于正常或失败 | [整体架构][arch] |
 | 指标记录 / Readings ledger | 保存无法回溯的历史读数；同日同指标再次写入会更新，不是永久只追加 | [指标协议][metrics] |
@@ -116,4 +118,5 @@
 [metrics]: standard/system-prompt/references/metrics.md
 [week]: standard/system-prompt/references/week-plan-comment.md
 [plan-spec]: docs/05-features/version-planning/spec.md
+[metrics-spec]: docs/05-features/overview-metrics/spec.md
 [skill-spec]: standard/skills/SKILL-MD-SPEC.md

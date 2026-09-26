@@ -67,7 +67,7 @@ git merge orca-upstream/main
 
 | 取舍 | 落点 |
 |---|---|
-| 独立「会话 / 配置」导航不建 | `src/renderer/src/workbench/` 四屏导航 |
+| 独立「会话 / 配置」导航不建 | `src/renderer/src/workbench/` 多屏导航（总览 / 计划 / 任务 / 验收 / 自动化 / 知识库） |
 | Feature wall 营销向导尽量跳过 | 壳路由 / bootstrap |
 | 左栏 Artifacts / Skills 并列入口收起 | `WorkbenchSidebarNav` 等 |
 | 项目导航不再重复设置 / 帮助 | `WorkbenchSidebarNav`。壳里只留侧栏底栏那一对；Orca 底栏菜单不改 |
@@ -85,6 +85,24 @@ git merge orca-upstream/main
 BW 业务契约与材料服务分别位于 `src/shared/workbench/`、`src/main/workbench/`，宿主侧事务复用入口位于 `src/relay/workbench/`。叠层外仅保留 RPC/CLI 注册和 relay 组合挂载；复用原生身份、配对路由与 SSH 通道，具体业务不进入 Orca 工作树类。
 
 **未删的 upstream 执行核**（合并时优先保 upstream，除非叠层钩子）：TaskPage、Automations、terminal/PTY、worktree、Explorer/SC/Diff、`src/main` runtime。
+
+### v0.5 版本周期特性对 Orca 原生文件的扩点
+
+以下改动均为薄挂载 / 扩展点性质，BW 业务不进 Orca 内核；合并 upstream 时保留这些扩点：
+
+| 类别 | 落点 | 说明 |
+|---|---|---|
+| 壳槽位 | `AppWorkspaceShell` | BW 壳下 artifacts 槽挂 `workbench/CycleWorkspacePage`（计划/验收共用） |
+| 历史面板嵌入 | `AiVaultPanel` / Header / VirtualList / VirtualRow、`ai-vault-original-pane` | 新增嵌入 props，供 CycleWorkspaceShell 展示固定树历史并精确身份恢复 |
+| 开工链 | `launch-agent-in-new-tab` / `launch-ai-vault-session` / `launch-agent-web-host-tab` | `activate:false` 后台启动不抢页面、selectWorktree、hostTabId 透出 |
+| 会话/终端类型 | `web-runtime-session-types`、`web-runtime-terminal-create-operation`、`activate-ai-vault-structured-session` 导出 | 结构化会话激活与终端创建操作扩点 |
+| 任务详情与返回 | `task-page-source-context`、`use-task-page-detail-routing`、`use-task-page-provider-state`、codehub detail hook、`worktree-nav-view-history-replay`、`ui-slice-contract-core`（TaskPageData / openTaskPage options）、`ui-slice-task-actions`（tasks 哨兵跳过 / returnOrigin）、`worktree-nav-history`（codehub 变体） | BW 来源编码进原生导航历史；CodeHub 外部详情入口 / source context / history replay 接通 |
+| 工作树元数据 | `runtime-managed-worktree-metadata`、`worktree-metadata-merge` | 承载 `workbenchSelectedVersion` 流程选版偏好 |
+| WSL | `wsl-runner` | outputTruncated 透传 |
+| Mobile 残留清理 | settings 死簇 20 文件删除、`settings-navigation-types` / `capability-sections` 移除 'mobile' key、i18n 单 key 修正 | mobile-emulator 保留；配对协议残留仍见上文「源码」节 |
+| 配置 | `tsconfig.cli` include、`oxlint-dead-classes.json` 对 workbench 子树关闭 Tailwind 类审计（BW 自有 CSS 设计系统，与既有 feature-wall-* allow 同机制）、`reliability-gates.jsonc` 清 671 行死登记（4 条纯 mobile gate 删除、3 条混合 gate 修剪）、ci-shard-timings | 门禁登记与实际文件面对齐 |
+
+**本 PR 遗留（待人决策，不是已完成）**：`verify:localization-coverage` 对 BW 中文叠层报 457 个候选（选项：豁免 / allowlist / 国际化）；showMobileButton 死开关链；store 'mobile' activeView 残留；`check-readme-local-links` 基线即失败（见下文「待迁移的工程边界」）。
 
 ### CodeHub（`codehub-cli`，任务来源与 GitHub / GitLab 并列）
 
@@ -118,7 +136,7 @@ CodeHub 不是 `HostedReviewProvider`，也不走 `gh` / `glab`。调用 PATH �
 |---|---|---|
 | 产品文档正本 | 仓根 `AGENTS.md` / `CONTEXT.md` / `README.md` 与 `docs/` | 已换入 |
 | 壳叠层（Orca 上新写，非 Rust 直译） | `src/renderer/src/workbench/` | 已在本分支 |
-| **`standard/`（系统提示词 / skill / templates）** | 仓根 `standard/` | 已从 `main` 合入。计划页新开会话注入 `SYSTEM.md.tmpl` 与 week-planning 指针；main 上 `crates/bw` 的 `ensure_*` / `agent_system_prompt` 全量注入仍未在 Electron 复刻。 |
+| **`standard/`（系统提示词 / skill / templates）** | 仓根 `standard/` | 已从 `main` 合入。计划/验收屏与「配置指标」开工注入渲染后 SYSTEM.md.tmpl 与对应 Skill 发现 Stub（week-planning / version-acceptance / metrics-refresh，投影在根级 `skills/`）；planning.py 等旧周一屏脚本已退役删除。main 上 `crates/bw` 的 `ensure_*` / `agent_system_prompt` 全量注入不复刻。 |
 
 BW 自有模块留在 renderer/main/shared/relay 各自的 `workbench/` 目录，不另开 npm / workspace 包。`standard/` 合入后仍是内容目录（提示词与技能），不是运行时包。
 
@@ -138,7 +156,7 @@ BW 自有模块留在 renderer/main/shared/relay 各自的 `workbench/` 目录�
 
 ```bash
 pnpm run dev:workbench
-# 冒烟：总览 / 计划 / 知识库 / 项目墙；计划页 week-plan 会话仍钉在专用会话
+# 冒烟：总览 / 计划 / 任务 / 验收 / 知识库 / 项目墙；计划、验收屏固定树会话仍按各自身份恢复
 ```
 
 ## 待迁移的工程边界

@@ -10,16 +10,16 @@
 |---|---|---|
 | intent | ● 已确认 | 设计 PR #264 已合入，用户授权按三特性边界实施 |
 | spec | ● 实施输入 | v8 高保真与规格已合入；新增或拿不准的行为仍逐项找用户确认 |
-| 实现设计 | ◐ 部分 | 详细设计未逐项细审；各窗口先说明落地计划，未决项必须人工确认 |
-| TDD | ◐ 部分 | 材料事务核心及 runtime/CLI 接线已有定向测试。2026-09-25 验收业务 5 文件共 25 项定向测试通过，覆盖目标证据、同源码换候选包、候选来源边界、Issue 快照报告及交互，以及切版本时保留新输入、报告保留真实计划读取时间、计划来源失败与三阶段分别推导信号、指标日期边界及读回证据优先于旧缓存；候选 RPC 为替身，页面交互为 DOM 环境，不能代表真实宿主、provider 或 Electron 旅程 |
-| 验收点 E2E | ○ 缺 | A01–A10 已定义，拟注册位置在仓外计划；尚未注册/运行 |
-| 用户旅程 E2E | ○ 缺 | AJ01/AJ02 已定义；真实 Electron、会话、文件和 provider 读回未运行 |
+| 实现设计 | ◐ 部分 | 设计主体已按当前接线落地，取舍差异回写 design；详细设计仍未逐项细审，未决项必须人工确认 |
+| TDD | ◐ 部分 | 单测/组件测试全绿（渲染端大套件 388 文件 3477 项，main/workbench + relay 38 文件 203 项；三套 tsc 0 错）。验收业务覆盖目标证据、同源码换候选包、候选来源边界、Issue 快照报告及交互、切版本保留新输入、报告保留真实计划读取时间、计划来源失败与三阶段分别推导信号、指标日期边界及读回证据优先于旧缓存；归档判定覆盖脏草稿不绕过已确认归档、provider 合入提交树内字节核对（FF/rebase 多提交不漏记）。候选 RPC 为替身，页面交互为 DOM 环境，不能代表真实宿主、provider 或 Electron 旅程 |
+| 验收点 E2E | ◐ 部分 | 真壳 Playwright 烟测 `tests/e2e/workbench-cycle-smoke.spec.ts` 含验收树创建与总览读回，已编写，执行结果见 PR；A01–A10 完整验收点尚未逐项运行 |
+| 用户旅程 E2E | ○ 缺 | AJ01/AJ02 已定义；真实出包/验证、模型会话、provider 归档全链、自动化到点与重启核对未运行 |
 
 [第八版高保真评审包](https://github.com/forcegravity1989/builder-workbench/archive/f20f04ae57d510178c710c71216b9b734082c28e.zip) 及包内浏览器检查只证明原型交互，未接远端写回/真实采集/自动化。下载评审包后解压打开 index.html，侧栏切换三屏；需具有同仓访问权限。执行步骤与并行分工位于本任务仓外 plans，不在仓内新增 plan.md。
 
-验收页面与业务消费层已在 `src/renderer/src/workbench/version-acceptance/` 实施：固定计划与候选、逐目标结论及证据变化、指标只读消费、Issue 快照和派生报告。`AcceptancePage` 显式接收原生 `VersionCycleContext`；共享会话外壳、导航和真实历史/指标/归档服务仍需在公共集成中接入，当前页面尚无产品入口，不能宣称可在真壳中运行。旧 results/confirmation 只能作为带来源的历史输入，不能自动升级为新验收认可。
+验收已接入生产入口：侧栏「验收」独立入口与计划共用 artifacts 槽的 `version-cycle/CycleWorkspaceShell.tsx`（`cycle-view-state.ts` 区分子视图），进入即确保 bw/week-acceptance 固定工作树并正式选择；左侧当前会话 + 固定树历史（精确身份恢复），右侧 `version-acceptance/AcceptancePage`。归档状态按材料身份（workflow/version/cycleId/revision）自动读取：首读未决短暂禁编辑，失败如实 Unknown 不锁死；archived 判定不受 dirty 影响，脏草稿不能绕过已确认归档，界面提供「放弃本地修改，重读宿主材料」。归档证明为 provider 真实合入提交在采用基线上且合入提交树内材料字节等于修订；CodeHub 无真实合入证据一律 Unknown，正文编辑延期。目标卡交付件可直接打开（URL 走系统浏览器、路径走原生打开、凭据链接拒绝）；Issue 摘要为真实状态分布加快照时间，未知不显示 0/0。旧 results/confirmation 只能作为带来源的历史输入，不能自动升级为新验收认可。
 
-本轮按用户调整的交付顺序先提交 Draft PR。两条基础 Electron E2E 尚未运行：固定计划与同候选材料/人的结果保存读回、真实 CodeHub Issue 正文编辑及返回验收版本。它们依赖公共外壳、原生详情及 provider 接线；仓外组件示例不计为 E2E。完整旅程后续统一调度。
+未验证项如实保留：真壳烟测 `tests/e2e/workbench-cycle-smoke.spec.ts` 已编写（含验收树与总览读回），执行结果见 PR；真实出包/验证入口、CodeHub Issue 正文编辑及返回验收版本、SSH/WSL 与配对宿主、真实到点自动化、真实 provider 归档全链均未运行。仓外组件示例不计为 E2E，完整旅程后续统一调度。
 
 2026-09-25 已完成实际组件的仓外示例数据视觉核对：按 v8 对齐紧凑目标卡，在约 920px 右栏宽度下展示三项目标与 Issue 汇总。该检查没有连接 Electron、原生会话、采集脚本或真实 provider，不能计为验收点 E2E。完整旅程与真实到点触发仍按本轮分工留待后续协调验证。
 
