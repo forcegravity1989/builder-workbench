@@ -31,7 +31,7 @@ export function getAutomationSourceDisplay(
   return { label, title }
 }
 
-function getProviderLabel(provider: TaskSourceContext['provider']): string {
+export function getProviderLabel(provider: TaskSourceContext['provider']): string {
   switch (provider) {
     case 'github':
       return 'GitHub'

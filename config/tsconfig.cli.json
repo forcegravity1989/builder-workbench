@@ -142,7 +142,10 @@
     "../src/main/startup/cli-command-names.ts",
     "../src/main/runtime/runtime-metadata.ts",
     "../src/main/sqlite/sync-database.ts",
-    "../src/main/win32-utils.ts"
+    "../src/main/win32-utils.ts",
+    // Import-free stdin-forwarding rule shared by the remote CLI bridge; the
+    // workbench-materials handler test asserts the same contract.
+    "../src/relay/remote-cli-stdin.ts"
   ],
   "compilerOptions": {
     "composite": true,

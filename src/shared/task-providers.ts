@@ -69,7 +69,7 @@ export function ensureDefaultedTaskProvider(
   }
   const next = [...providers]
   const afterIndex = next.indexOf(after)
-  next.splice(afterIndex >= 0 ? afterIndex + 1 : next.length, 0, provider)
+  next.splice(afterIndex !== -1 ? afterIndex + 1 : next.length, 0, provider)
   return next
 }
 

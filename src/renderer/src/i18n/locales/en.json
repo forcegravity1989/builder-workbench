@@ -2270,7 +2270,46 @@
         "linearWorktreesColumn": "Workspaces",
         "codehubNoLoadedMatches": "No matches in loaded tasks",
         "codehubLoadedScope": "Search and filters apply to loaded tasks",
-        "codehubLoadMore": "Load more"
+        "codehubLoadMore": "Load more",
+        "codehubAssigned": "Assignee updated",
+        "codehubAssignee": "Assignee username",
+        "codehubAssign": "Assign",
+        "codehubReviewersSet": "Reviewers updated",
+        "codehubReviewers": "Reviewers, comma-separated",
+        "codehubSetReviewers": "Set reviewers",
+        "codehubMerged": "Merge requested",
+        "codehubMerge": "Merge",
+        "codehubMrClosed": "Merge request closed",
+        "codehubCloseMr": "Close",
+        "codehubAutoMerge": "Merge when the pipeline succeeds",
+        "codehubAutoMergeButton": "Auto-merge",
+        "codehubChecks": "Pipelines",
+        "codehubNoPipelines": "No pipelines",
+        "codehubNoDescription": "No description",
+        "codehubDeleteComment": "Delete comment",
+        "codehubComment": "Write a comment",
+        "codehubCommentSubmit": "Comment",
+        "codehubCreateIssue": "Create issue",
+        "codehubIssueCreated": "Issue created",
+        "codehubIssueTitle": "New issue title",
+        "codehubIssueBody": "Description",
+        "codehubOpen": "Open in CodeHub",
+        "codehubSaveTitle": "Save",
+        "codehubCancelTitle": "Cancel",
+        "codehubEditTitle": "Edit title",
+        "codehubReopen": "Reopen",
+        "codehubCloseCompleted": "Close as completed",
+        "codehubCloseNotPlanned": "Close as not planned",
+        "codehubDuplicateOf": "#",
+        "codehubCloseDuplicate": "Close as duplicate",
+        "codehubOpenProject": "Open project in CodeHub",
+        "codehubRefresh": "Refresh CodeHub",
+        "codehubEmptyMrs": "No CodeHub merge requests",
+        "codehubEmptyIssues": "No CodeHub issues",
+        "codehubTitleSaved": "Title updated",
+        "codehubIssueReopened": "Issue reopened",
+        "codehubIssueClosed": "Issue closed",
+        "codehubSource": "CodeHub"
       },
       "Terminal": {
         "73768427cf": "Close",
@@ -8498,7 +8537,9 @@
           "integrationsHint": "Credentials for all providers also live under",
           "integrationsLink": "Integrations",
           "skillHint": ". After Linear is connected, usage examples stay under Settings → Linear.",
-          "incompleteBannerBodyWithLinear": "Hide providers you do not use, or expand a card and finish its steps. For Linear: API access, the agent skill, and Show in Tasks."
+          "incompleteBannerBodyWithLinear": "Hide providers you do not use, or expand a card and finish its steps. For Linear: API access, the agent skill, and Show in Tasks.",
+          "codehubLabel": "CodeHub",
+          "codehubDescription": "Browse CodeHub issues and merge requests when codehub-cli is on PATH."
         },
         "TerminalAppearanceSection": {
           "a14a427ae4": "Thickness of the pane divider line.",
@@ -11709,7 +11750,7 @@
           "signInAgain": "Sign in again",
           "signIn": "Sign in to Orca",
           "title": "Orca Account",
-          "description": "Share work instantly and reach your desktop from Orca Mobile wherever you are.",
+          "description": "Sign in to extend Orca with cloud features, including Artifacts and Orca Relay.",
           "searchDescription": "Sign in or out of the account used by Artifacts and Orca Relay.",
           "benefitsTitle": "Included with your account",
           "artifactsTitle": "Artifact sharing",
@@ -16251,6 +16292,9 @@
         "AutomationsPageBreadcrumb": {
           "ariaLabel": "Automations breadcrumb",
           "runDetails": "Run details"
+        },
+        "editorRequest": {
+          "unavailable": "Could not open this automation on its host. Refresh or reconnect, then try again."
         }
       },
       "agent": {
