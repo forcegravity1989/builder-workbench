@@ -9,6 +9,9 @@ import {
   type VersionMaterialHost
 } from './version-material-service'
 import type { PlanningMaterial, AcceptanceMaterial } from '../../shared/workbench/version-material'
+import { eraseRpcMethods } from '../runtime/rpc/core'
+import { WORKBENCH_MATERIAL_METHODS } from '../runtime/rpc/methods/workbench-materials'
+import type { VersionMaterialResult } from '../../shared/workbench/version-material-request'
 import { createVersionMaterialPort } from '../../shared/workbench/version-material-client'
 
 import { executeVersionMaterial } from './version-material-runtime'
@@ -226,6 +229,68 @@ describe('native version material service', () => {
     ).toEqual(changed)
     expect(await readdir(join(planning, '.bw/planning/v0.5'))).toEqual(['data.json'])
   })
+  it.each(['local', 'ssh:server'])(
+    'migrates through the registered RPC and host transaction on %s',
+    async (hostId) => {
+      const handlers = new Map<string, MethodHandler>()
+      registerVersionMaterialRelay({
+        onRequest: (name, handler) => {
+          handlers.set(name, handler)
+        }
+      })
+      const request = vi.fn(async (name: string, params: Record<string, unknown>) =>
+        handlers.get(name)!(params, {} as never)
+      )
+      setSshActiveMultiplexerResolver((id) =>
+        id === 'server' ? ({ request } as unknown as SshChannelMultiplexer) : undefined
+      )
+      const trees = await host.listWorktrees(scope)
+      const runtime = {
+        listRepos: () => [{ id: 'repo', path: repo, kind: 'git', executionHostId: hostId }],
+        showManagedWorktree: async (selector: string) => {
+          expect(selector).toBe('id:plan')
+          return { ...trees.find((tree) => tree.id === 'plan')!, hostId }
+        }
+      }
+      const methods = eraseRpcMethods(WORKBENCH_MATERIAL_METHODS)
+      const port = createVersionMaterialPort({ ...scope, hostId }, async ({ method, params }) => {
+        const registered = methods.find((entry) => entry.name === method)!
+        return (await registered.handler(registered.params!.parse(params), {
+          runtime
+        } as never)) as VersionMaterialResult<unknown>
+      })
+      const directory = join(planning, '.bw/planning/v0.5')
+      await mkdir(directory, { recursive: true })
+      const file = join(directory, 'data.json')
+      const original = JSON.stringify({
+        schema_version: 2,
+        version: 'v0.5',
+        plan: { goals: [{ id: 'one', title: 'Existing commitment' }], tasks: [] },
+        summary: { progress: '', risks: '' }
+      })
+      await writeFile(file, original)
+      const preview = await port.previewMigration('v0.5', 'new-cycle')
+      expect(await readFile(file, 'utf8')).toBe(original)
+      expect(await readdir(directory)).toEqual(['data.json'])
+      await expect(
+        port.migrate('v0.5', 'new-cycle', `sha256:${'0'.repeat(64)}`)
+      ).rejects.toMatchObject({ code: 'revision-conflict' })
+      const migrated = await port.migrate('v0.5', 'new-cycle', preview.sourceRevision)
+      expect(migrated.snapshot.document).toEqual(preview.plan)
+      expect(await readFile(join(directory, preview.backupName), 'utf8')).toBe(original)
+      expect((await port.read('v0.5'))?.document).toEqual(preview.plan)
+      if (hostId === 'ssh:server') {
+        expect(request).toHaveBeenCalledWith(
+          'workbench.materials.execute',
+          expect.objectContaining({ operation: 'previewMigration' })
+        )
+        expect(request).toHaveBeenCalledWith(
+          'workbench.materials.execute',
+          expect.objectContaining({ operation: 'migrate' })
+        )
+      }
+    }
+  )
   it('uses the native SSH channel and the same host transaction, preserving conflicts and offline state', async () => {
     const handlers = new Map<string, MethodHandler>()
     registerVersionMaterialRelay({

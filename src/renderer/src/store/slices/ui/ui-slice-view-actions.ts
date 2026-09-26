@@ -19,10 +19,21 @@ export function createUiViewActions(set: UISliceSet, get: UISliceGet): Partial<U
     pendingAutomationRunNavigation: null,
     setPendingAutomationRunNavigation: (navigation) =>
       set({ pendingAutomationRunNavigation: navigation }),
+    pendingAutomationEditorRequest: null,
+    consumeAutomationEditorRequest: (request) => {
+      if (get().pendingAutomationEditorRequest === request) {
+        set({ pendingAutomationEditorRequest: null })
+      }
+    },
+    openAutomationEditor: (request) => {
+      get().openAutomationsPage()
+      set({ pendingAutomationEditorRequest: { ...request } })
+    },
     openAutomationsPage: () => {
       get().recordViewVisit('automations')
       set((state) => ({
         activeView: 'automations',
+        pendingAutomationEditorRequest: null,
         previousViewBeforeAutomations:
           state.activeView === 'automations'
             ? state.previousViewBeforeAutomations

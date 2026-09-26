@@ -1,4 +1,6 @@
 import { z } from 'zod'
+import { TaskSourceContextSchema } from '../task-source-context-schema'
+import { normalizeExecutionHostId } from '../execution-host'
 import { validatePlanningVersion } from './version-document'
 
 const Id = z.string().trim().min(1)
@@ -59,6 +61,63 @@ export const VersionTaskReferenceSchema = z.strictObject({
   number: z.number().int().positive(),
   goalId: Id.optional()
 })
+
+// Require an explicit host before native normalization; absence is not the local host.
+const TaskSnapshotSource = z
+  .object({
+    kind: z.literal('task-source'),
+    provider: z.enum(['github', 'gitlab', 'codehub', 'linear', 'jira']),
+    projectId: Id,
+    hostId: Id.refine((value) => normalizeExecutionHostId(value) !== null)
+  })
+  .passthrough()
+  .transform((value, context) => {
+    const result = TaskSourceContextSchema.safeParse(value)
+    if (result.success) {
+      return result.data
+    }
+    for (const issue of result.error.issues) {
+      context.addIssue({ ...issue })
+    }
+    return z.NEVER
+  })
+
+export const VersionTaskSnapshotSchema = z
+  .discriminatedUnion('kind', [
+    z.strictObject({
+      kind: z.literal('ready'),
+      reference: VersionTaskReferenceSchema,
+      source: TaskSnapshotSource,
+      iid: z.number().int().positive(),
+      title: z.string(),
+      state: Id,
+      url: Id,
+      readAt: z.iso.datetime({ offset: true })
+    }),
+    z.strictObject({
+      kind: z.literal('unavailable'),
+      reference: VersionTaskReferenceSchema,
+      source: TaskSnapshotSource.optional(),
+      readAt: z.iso.datetime({ offset: true }),
+      error: Id
+    })
+  ])
+  .superRefine((snapshot, context) => {
+    if (snapshot.source && snapshot.source.provider !== snapshot.reference.provider) {
+      context.addIssue({
+        code: 'custom',
+        message: 'Task source provider differs from reference',
+        path: ['source']
+      })
+    }
+    if (snapshot.kind === 'ready' && snapshot.iid !== snapshot.reference.number) {
+      context.addIssue({
+        code: 'custom',
+        message: 'Task number differs from reference',
+        path: ['iid']
+      })
+    }
+  })
 
 const Identity = {
   schema_version: z.literal(3),
@@ -139,6 +198,8 @@ export const AcceptanceMaterialSchema = z
     planRef: PlanReferenceSchema,
     candidateRef: CandidateReferenceSchema.optional(),
     preparedArtifacts: z.array(Artifact),
+    // Absent means not recorded, while [] records an empty task set.
+    taskSnapshot: z.array(VersionTaskSnapshotSchema).optional(),
     results: z.array(
       z.strictObject({
         goalId: Id,
@@ -173,3 +234,6 @@ export type VersionMaterial = PlanningMaterial | AcceptanceMaterial
 export type VersionGoal = z.infer<typeof VersionGoalSchema>
 export type MetricReference = z.infer<typeof MetricReferenceSchema>
 export type MetricReadingEvidence = z.infer<typeof MetricReadingEvidenceSchema>
+
+export type VersionTaskReference = z.infer<typeof VersionTaskReferenceSchema>
+export type VersionTaskSnapshot = z.infer<typeof VersionTaskSnapshotSchema>

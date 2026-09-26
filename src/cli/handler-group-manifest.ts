@@ -14,7 +14,14 @@ export type HandlerGroup = {
 export const HANDLER_GROUPS: readonly HandlerGroup[] = [
   {
     name: 'workbench-materials',
-    keys: ['bw materials schema', 'bw materials list', 'bw materials read', 'bw materials save'],
+    keys: [
+      'bw materials schema',
+      'bw materials list',
+      'bw materials read',
+      'bw materials save',
+      'bw materials migration-preview',
+      'bw materials migrate'
+    ],
     load: async () =>
       (await import('./handlers/workbench-materials.js')).WORKBENCH_MATERIAL_HANDLERS
   },
