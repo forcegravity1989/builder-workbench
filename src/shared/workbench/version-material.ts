@@ -77,7 +77,7 @@ const TaskSnapshotSource = z
       return result.data
     }
     for (const issue of result.error.issues) {
-      context.addIssue(issue)
+      context.addIssue({ ...issue })
     }
     return z.NEVER
   })

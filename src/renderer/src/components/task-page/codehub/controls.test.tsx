@@ -58,7 +58,7 @@ it('keeps filter transitions and issue creation connected after extracting the c
       <TaskPageCodeHubFilters model={model} />
     </TooltipProvider>
   )
-  fireEvent.click(screen.getByRole('button', { name: 'Issues', exact: true }))
+  fireEvent.click(screen.getByRole('button', { name: 'Issues' }))
   expect(setState).toHaveBeenCalledWith('opened')
   expect(setPreset).toHaveBeenCalledWith('open')
   view.rerender(
@@ -66,7 +66,7 @@ it('keeps filter transitions and issue creation connected after extracting the c
       <TaskPageCodeHubFilters model={{ ...model, codehubView: 'issues', codehubState: 'opened' }} />
     </TooltipProvider>
   )
-  fireEvent.click(screen.getByRole('button', { name: 'Create issue', exact: true }))
+  fireEvent.click(screen.getByRole('button', { name: 'Create issue' }))
   fireEvent.change(screen.getByPlaceholderText('New issue title'), {
     target: { value: 'New work' }
   })
