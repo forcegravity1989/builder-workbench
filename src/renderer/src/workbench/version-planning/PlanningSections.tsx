@@ -1,4 +1,44 @@
 import type { RefObject } from 'react'
+import type { VersionMaterialCandidate } from '../../../../shared/workbench/version-material-request'
+
+/** Version chooser over host-listed candidates; unreadable/migration states stay visible but disabled. */
+export function PlanningVersionSelect({
+  currentVersion,
+  versions,
+  disabled,
+  onSelect
+}: {
+  currentVersion: string
+  versions: VersionMaterialCandidate[]
+  disabled: boolean
+  onSelect(version: string): void
+}) {
+  return (
+    <select
+      aria-label="计划版本"
+      value={currentVersion}
+      disabled={disabled}
+      onChange={(event) => {
+        if (event.target.value) {
+          onSelect(event.target.value)
+        }
+      }}
+    >
+      <option value="">待选择版本</option>
+      {versions.map((item) => (
+        <option key={item.version} value={item.version} disabled={item.state !== 'ready'}>
+          {item.version}
+          {item.state !== 'ready'
+            ? ` · ${item.state === 'migration-required' ? '需迁移' : '无法读取'}`
+            : ''}
+        </option>
+      ))}
+      {currentVersion && !versions.some((item) => item.version === currentVersion) && (
+        <option value={currentVersion}>{currentVersion} · 新草稿</option>
+      )}
+    </select>
+  )
+}
 
 /** Explicit new-version draft creation; the page never auto-creates material. */
 export function PlanningCreateForm({

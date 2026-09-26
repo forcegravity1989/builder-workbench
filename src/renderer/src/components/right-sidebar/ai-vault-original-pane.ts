@@ -209,7 +209,7 @@ export function findOriginalAiVaultSessionPane(
   const promptMatchedTargets: AiVaultOriginalPaneTarget[] = []
 
   for (const entry of Object.values(state.agentStatusByPaneKey)) {
-    if (options.worktreeId && entry.worktreeId !== options.worktreeId) continue
+    if (options.worktreeId && entry.worktreeId !== options.worktreeId) {continue}
     if (
       agentMatches(session, entry.agentType) &&
       providerSessionMatches(session, entry.providerSession?.id)
@@ -242,7 +242,7 @@ export function findOriginalAiVaultSessionPane(
   }
 
   for (const retained of Object.values(state.retainedAgentsByPaneKey)) {
-    if (options.worktreeId && retained.worktreeId !== options.worktreeId) continue
+    if (options.worktreeId && retained.worktreeId !== options.worktreeId) {continue}
     if (
       agentMatches(session, retained.agentType) &&
       providerSessionMatches(session, retained.entry.providerSession?.id)
@@ -275,7 +275,7 @@ export function findOriginalAiVaultSessionPane(
   }
 
   for (const record of Object.values(state.sleepingAgentSessionsByPaneKey)) {
-    if (options.worktreeId && record.worktreeId !== options.worktreeId) continue
+    if (options.worktreeId && record.worktreeId !== options.worktreeId) {continue}
     if (
       agentMatches(session, record.agent) &&
       providerSessionMatches(session, record.providerSession.id)

@@ -71,17 +71,17 @@ pnpm run typecheck
 
 旧 Dioxus 壳的 `cargo run -p app-shell`、`bw-dev` 深链与 `.bw/release/pack` 出包协议针对已删除的三 crate，不能用来解释本分支。现有 Electron 构建入口以 SYNC 和 package.json 为准；BW 的 CI/CD、评审与正式出包链随迁移任务验证，不能据此宣称已完成 v0.5 交付。
 
-计划页签开工注入 SYSTEM + week-planning 指针；真实执行依赖 Claude Code、工作树及仓库权限。路径与失败处理见 [会话与执行](docs/06-module/会话与执行.md)。
+计划/验收屏与「配置指标」开工注入 SYSTEM + 对应工作流 Skill 指针（`version-cycle/cycle-prompt.ts`，正源 `standard/`）；真实执行依赖本机设置的会话工具、固定工作树及仓库权限。路径与失败处理见 [会话与执行](docs/06-module/会话与执行.md)。
 
 ### 提交前门禁
 
 每个 commit 前过 husky `lint-staged`（oxlint / oxfmt）。改叠层或注入逻辑时再跑受影响的 Vitest，例如：
 
 ```bash
-pnpm exec vitest run --config config/vitest.config.ts src/renderer/src/workbench/plan-week-planning-prompt.test.ts
+pnpm exec vitest run --config config/vitest.config.ts src/renderer/src/workbench/version-planning/PlanningBoard.test.tsx
 ```
 
-PR 检查以 [`.github/workflows/pr.yml`](.github/workflows/pr.yml) 为准。行为正确性仍靠真壳（计划三屏、会话注入、远端/Git/文件读回）及 code review；已有单测随改维护，不把新增回归大坝当交付物。
+PR 检查以 [`.github/workflows/pr.yml`](.github/workflows/pr.yml) 为准。行为正确性仍靠真壳（计划/验收两屏、会话注入、远端/Git/文件读回）及 code review；已有单测随改维护，不把新增回归大坝当交付物。
 
 ## 修改与交付
 

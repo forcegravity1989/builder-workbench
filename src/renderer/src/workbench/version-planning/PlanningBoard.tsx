@@ -13,7 +13,8 @@ import { PlanningMigration } from './PlanningMigration'
 import { PlanningTasks } from './PlanningTasks'
 import { PlanningMinutes } from './PlanningMinutes'
 import { PlanningSaveFooter } from './PlanningSaveFooter'
-import { PlanningCreateForm, PlanningJourneyNav } from './PlanningSections'
+import { PlanningCreateForm, PlanningJourneyNav, PlanningVersionSelect } from './PlanningSections'
+import { usePlanningViewMemory } from './use-planning-view-memory'
 import './version-planning.css'
 
 type PlanView = {
@@ -73,6 +74,18 @@ function PlanningBoardContent({ context, prepareMetrics }: PlanningBoardProps) {
     [selectionKey]
   )
   const contextKey = JSON.stringify([scopeKey, worktreeId])
+  const restoreGoalFilter = useCallback(
+    (value: string) => {
+      updateView({ goalFilter: value })
+    },
+    [updateView]
+  )
+  const viewMemory = usePlanningViewMemory(
+    plan ? selectionKey : null,
+    goalFilter,
+    restoreGoalFilter,
+    content
+  )
   const currentContext = useRef(contextKey)
   currentContext.current = contextKey
   useEffect(
@@ -231,29 +244,12 @@ function PlanningBoardContent({ context, prepareMetrics }: PlanningBoardProps) {
           <span className="vp-muted">准备 → 目标 → 评审 → 拆解 → 归档</span>
         </div>
         <div className="vp-inline">
-          <select
-            aria-label="计划版本"
-            value={plan?.version ?? ''}
+          <PlanningVersionSelect
+            currentVersion={plan?.version ?? ''}
+            versions={material.versions}
             disabled={!materialPort || material.busy || selecting}
-            onChange={(event) => {
-              if (event.target.value) {
-                void act(() => selectVersion(event.target.value))
-              }
-            }}
-          >
-            <option value="">待选择版本</option>
-            {material.versions.map((item) => (
-              <option key={item.version} value={item.version} disabled={item.state !== 'ready'}>
-                {item.version}
-                {item.state !== 'ready'
-                  ? ` · ${item.state === 'migration-required' ? '需迁移' : '无法读取'}`
-                  : ''}
-              </option>
-            ))}
-            {plan && !material.versions.some((item) => item.version === plan.version) && (
-              <option value={plan.version}>{plan.version} · 新草稿</option>
-            )}
-          </select>
+            onSelect={(version) => void act(() => selectVersion(version))}
+          />
           <button
             className="wb-btn wb-btn-ghost wb-btn-sm"
             disabled={!materialPort || selecting}
@@ -312,7 +308,7 @@ function PlanningBoardContent({ context, prepareMetrics }: PlanningBoardProps) {
           }}
           onArchive={() => void requestArchive()}
         />
-        <div className="vp-content" ref={content}>
+        <div className="vp-content" ref={content} onScroll={viewMemory.onScroll}>
           {!plan ? (
             <div className="vp-empty">
               <h2>待选择版本</h2>

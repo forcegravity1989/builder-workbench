@@ -79,7 +79,7 @@ describe('launchAiVaultSessionInNewTab', () => {
       command: 'claude --resume session-1'
     })
 
-    expect(mockCreateTab).toHaveBeenCalledWith('wt-1', 'group-1')
+    expect(mockCreateTab).toHaveBeenCalledWith('wt-1', 'group-1', undefined, {})
     expect(mockQueueTabStartupCommand).toHaveBeenCalledWith('tab-1', {
       command: 'claude --resume session-1',
       telemetry: {
@@ -141,7 +141,7 @@ describe('launchAiVaultSessionInNewTab', () => {
     })
 
     expect(mockCreateEmptySplitGroup).toHaveBeenCalledWith('wt-1', 'group-1', 'right')
-    expect(mockCreateTab).toHaveBeenCalledWith('wt-1', 'group-new')
+    expect(mockCreateTab).toHaveBeenCalledWith('wt-1', 'group-new', undefined, {})
   })
 
   it('creates runtime-hosted resume terminals through the paired host', async () => {
@@ -169,6 +169,7 @@ describe('launchAiVaultSessionInNewTab', () => {
       environmentId: 'env-1',
       targetGroupId: 'group-1',
       agentSessionKind: 'resume',
+      selectWorktree: true,
       launchAgent: 'codex',
       command: "codex resume 'session-1'",
       env: { CODEX_PROFILE: 'runtime' },

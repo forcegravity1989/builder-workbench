@@ -1,7 +1,7 @@
 export { isWorkbenchShell } from './is-workbench-shell'
 export { WorkbenchShellBootstrap } from './WorkbenchShellBootstrap'
 export { WorkbenchSidebarNav } from './WorkbenchSidebarNav'
-export { PlanJourneyShell } from './PlanJourneyShell'
+export { CycleWorkspacePage } from './CycleWorkspacePage'
 export { OverviewPage } from './OverviewPage'
 export { KnowledgePage } from './KnowledgePage'
 export { ProjectWallOverlay } from './ProjectWallOverlay'

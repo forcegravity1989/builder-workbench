@@ -1,0 +1,428 @@
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useAppStore } from '@/store'
+import { useAgentDetectionTargetForWorktree } from '@/hooks/useAgentDetectionTarget'
+import { useDetectedAgents } from '@/hooks/useDetectedAgents'
+import { launchAgentInNewTab } from '@/lib/launch-agent-in-new-tab'
+import { activateWebRuntimeSessionWorktree } from '@/runtime/web-runtime-worktree-activation'
+import AiVaultPanel from '@/components/right-sidebar/AiVaultPanel'
+import type { TuiAgent } from '../../../../shared/tui-agent'
+import type { AiVaultSession } from '../../../../shared/ai-vault-types'
+import type { VersionWorkflow } from '../../../../shared/workbench/version-document'
+import type { StableAutomationHostRef } from '../../../../shared/automation-owner-ref'
+import { parseExecutionHostId } from '../../../../shared/execution-host'
+import {
+  ensureNamedWorktree,
+  nativeWorkspaceScope,
+  nativeWorkspaceScopeKey,
+  type NativeWorkspaceScope
+} from './native-workspace'
+import { cycleScopeForWorktree, cycleScopeKey, ensureCycleWorktree } from './native-cycle-workspace'
+import { buildCyclePrompt, resolveWorkbenchPromptAssets } from './cycle-prompt'
+import {
+  bindCycleTab,
+  openCycleHistory,
+  prepareCycleRequest,
+  startCycleSession
+} from './native-session'
+import { useWorkflowVersion } from './use-workflow-version'
+import { CycleChat } from './CycleChat'
+import type { CycleScope, CycleSession } from './ports'
+import type { VersionCycleContext } from './cycle-context'
+import { nativeVersionMaterialPort } from '../version-material-port'
+import { nativeTaskPort } from '../task-port'
+import { nativeArchivePort } from '../archive-port'
+import { PlanningBoard } from '../version-planning/PlanningBoard'
+import { AcceptancePage } from '../version-acceptance/AcceptancePage'
+import { usePlanColumnResize } from '../use-plan-column-resize'
+import './version-cycle.css'
+
+/** Fixed maintenance tree for metric definitions/scripts; opened as a native project session. */
+const METRICS_BRANCH = 'bw/metrics-refresh'
+const METRICS_WORKTREE_NAME = 'metrics-refresh'
+
+/** Automation ownership follows the worktree's native host identity, never the current focus. */
+function cycleAutomationHost(scope: CycleScope): StableAutomationHostRef {
+  if (scope.runtimeOwnerEnvironmentId) {
+    return {
+      authority: { kind: 'runtime', environmentId: scope.runtimeOwnerEnvironmentId },
+      selector: { kind: 'self' }
+    }
+  }
+  const host = parseExecutionHostId(scope.hostId)
+  if (host?.kind === 'ssh') {
+    return { authority: { kind: 'desktop' }, selector: { kind: 'ssh', targetId: host.targetId } }
+  }
+  return { authority: { kind: 'desktop' }, selector: { kind: 'self' } }
+}
+
+/**
+ * Production shell for one BW cycle workflow: formally selects the fixed native
+ * worktree (host routing and history stay Orca-owned), then renders the native
+ * session on the left and the material board on the right.
+ */
+export function CycleWorkspaceShell({ workflow }: { workflow: VersionWorkflow }) {
+  const activeRepoId = useAppStore((s) => s.activeRepoId ?? s.repos[0]?.id ?? null)
+  const repoWorktrees = useAppStore((s) =>
+    activeRepoId ? s.worktreesByRepo[activeRepoId] : undefined
+  )
+  const fetchedRepo = useRef<string | null>(null)
+  useEffect(() => {
+    if (activeRepoId && !repoWorktrees && fetchedRepo.current !== activeRepoId) {
+      fetchedRepo.current = activeRepoId
+      void useAppStore.getState().fetchWorktrees(activeRepoId)
+    }
+  }, [activeRepoId, repoWorktrees])
+
+  const baseScope = useMemo<NativeWorkspaceScope | null>(() => {
+    if (!activeRepoId || !repoWorktrees?.length) {
+      return null
+    }
+    const home = repoWorktrees.find((item) => item.isMainWorktree) ?? repoWorktrees[0]
+    try {
+      return nativeWorkspaceScope(home)
+    } catch {
+      return null
+    }
+  }, [activeRepoId, repoWorktrees])
+
+  const [fixedId, setFixedId] = useState<string | null>(null)
+  const [setupError, setSetupError] = useState<string | null>(null)
+  // While the BW page stays mounted, its workspace is the fixed tree: if the user
+  // activates another worktree from the native sidebar, re-select the fixed one so
+  // history and host routing keep matching the boards.
+  const activeWorktreeId = useAppStore((s) => s.activeWorktreeId)
+  useEffect(() => {
+    let current = true
+    setSetupError(null)
+    if (!baseScope) {
+      setFixedId(null)
+      return
+    }
+    const scope: CycleScope = { ...baseScope, workflow }
+    void (async () => {
+      try {
+        const fixed = await ensureCycleWorktree(scope)
+        if (!current) {
+          return
+        }
+        setFixedId(fixed.id)
+        const state = useAppStore.getState()
+        if (state.activeWorktreeId !== fixed.id) {
+          // Formal selection keeps the BW page: activation never rewrites activeView.
+          state.setActiveWorktree(fixed.id, scope.hostId)
+          if (scope.runtimeOwnerEnvironmentId) {
+            await activateWebRuntimeSessionWorktree({
+              worktreeId: fixed.id,
+              environmentId: scope.runtimeOwnerEnvironmentId
+            })
+          }
+        }
+      } catch (reason) {
+        if (current) {
+          setSetupError(reason instanceof Error ? reason.message : String(reason))
+        }
+      }
+    })()
+    return () => {
+      current = false
+    }
+  }, [baseScope, workflow, activeWorktreeId])
+
+  const cycleScope = useMemo<CycleScope | null>(() => {
+    if (!baseScope || !fixedId) {
+      return null
+    }
+    const fixed = useAppStore
+      .getState()
+      .allWorktrees()
+      .find((item) => item.id === fixedId)
+    return fixed ? cycleScopeForWorktree(fixed, workflow) : { ...baseScope, workflow }
+  }, [baseScope, fixedId, workflow])
+
+  const [session, setSessionState] = useState<CycleSession | null>(null)
+  useEffect(() => {
+    setSessionState((value) => (value && value.worktreeId === fixedId ? value : null))
+  }, [fixedId])
+  /** Tasks round-trips remount this shell; the bound native session identity survives in sessionStorage. */
+  const sessionStoreKey = cycleScope ? `bw:cycle:session:${cycleScopeKey(cycleScope)}` : null
+  const setSession = useCallback(
+    (value: CycleSession | null) => {
+      setSessionState(value)
+      if (!sessionStoreKey) {
+        return
+      }
+      try {
+        if (value) {
+          sessionStorage.setItem(sessionStoreKey, JSON.stringify(value))
+        } else {
+          sessionStorage.removeItem(sessionStoreKey)
+        }
+      } catch {
+        /* Session restore is best-effort; history stays the authoritative entry. */
+      }
+    },
+    [sessionStoreKey]
+  )
+  const restoredSessionKey = useRef<string | null>(null)
+  useEffect(() => {
+    if (!cycleScope || !fixedId || session || !sessionStoreKey) {
+      return
+    }
+    if (restoredSessionKey.current === sessionStoreKey) {
+      return
+    }
+    restoredSessionKey.current = sessionStoreKey
+    try {
+      const raw = sessionStorage.getItem(sessionStoreKey)
+      if (!raw) {
+        return
+      }
+      const saved = JSON.parse(raw) as CycleSession
+      if (saved.worktreeId !== fixedId) {
+        sessionStorage.removeItem(sessionStoreKey)
+        return
+      }
+      // bindCycleTab re-resolves the live tab identity and throws when it is gone.
+      setSession(bindCycleTab(cycleScope, fixedId, saved.tabId))
+    } catch {
+      try {
+        sessionStorage.removeItem(sessionStoreKey)
+      } catch {
+        /* Keep the entry; a later explicit choice overwrites it. */
+      }
+    }
+  }, [cycleScope, fixedId, session, sessionStoreKey, setSession])
+  const [busy, setBusy] = useState(false)
+  const [notice, setNotice] = useState<string | null>(null)
+
+  const detectionTarget = useAgentDetectionTargetForWorktree(fixedId)
+  const { detectedIds: detectedAgents } = useDetectedAgents(detectionTarget)
+  const detectedIds = useMemo(() => detectedAgents ?? [], [detectedAgents])
+  const defaultAgentSetting = useAppStore((s) => s.settings?.defaultTuiAgent)
+  const defaultAgent =
+    defaultAgentSetting && defaultAgentSetting !== 'blank' ? defaultAgentSetting : null
+  const [chosenAgent, setChosenAgent] = useState<TuiAgent | null>(null)
+  const agentOptions = useMemo(() => {
+    const ids = [
+      ...new Set([...detectedIds, defaultAgent, chosenAgent].filter(Boolean))
+    ] as TuiAgent[]
+    return ids
+  }, [detectedIds, defaultAgent, chosenAgent])
+  const agent = chosenAgent ?? defaultAgent ?? detectedIds[0] ?? null
+
+  const newSession = useCallback(async () => {
+    if (!cycleScope || !fixedId) {
+      setNotice('固定工作树尚未就绪，请稍后重试。')
+      return
+    }
+    if (!agent) {
+      setNotice('未检测到可用会话工具，请先在设置中配置。')
+      return
+    }
+    setBusy(true)
+    try {
+      const prompt = await buildCyclePrompt(cycleScope, fixedId)
+      const bound = await startCycleSession(cycleScope, fixedId, agent, prompt)
+      setSession(bound)
+      setNotice(null)
+    } catch (reason) {
+      setNotice(reason instanceof Error ? reason.message : String(reason))
+    } finally {
+      setBusy(false)
+    }
+  }, [cycleScope, fixedId, agent])
+
+  const openHistory = useCallback(
+    async (item: AiVaultSession) => {
+      if (!cycleScope || !fixedId) {
+        return
+      }
+      setBusy(true)
+      try {
+        const bound = await openCycleHistory(cycleScope, fixedId, item)
+        setSession(bound)
+        setNotice(null)
+      } catch (reason) {
+        setNotice(reason instanceof Error ? reason.message : String(reason))
+      } finally {
+        setBusy(false)
+      }
+    },
+    [cycleScope, fixedId]
+  )
+
+  const materialScopeKey =
+    cycleScope && fixedId ? `${nativeWorkspaceScopeKey(cycleScope)}:${fixedId}:${workflow}` : ''
+  const materialPort = useMemo(() => {
+    if (!cycleScope || !fixedId) {
+      return null
+    }
+    try {
+      return nativeVersionMaterialPort(
+        { repoId: cycleScope.repoId, worktreeId: fixedId, hostId: cycleScope.hostId, workflow },
+        cycleScope.runtimeOwnerEnvironmentId
+      )
+    } catch {
+      return null
+    }
+    // materialScopeKey encodes scope identity + fixedId + workflow for memo stability.
+  }, [materialScopeKey])
+  const workflowVersion = useWorkflowVersion(materialPort)
+  const selectVersion = useCallback(
+    async (version: string) => {
+      await workflowVersion.selectVersion(version)
+    },
+    [workflowVersion.selectVersion]
+  )
+
+  const ownerEnvironmentId = cycleScope?.runtimeOwnerEnvironmentId
+  const taskPort = useMemo(() => nativeTaskPort(), [])
+  const archivePort = useMemo(() => nativeArchivePort(ownerEnvironmentId), [ownerEnvironmentId])
+  const sessionPort = useMemo(
+    () => ({
+      prepareRequest: (target: CycleSession, text: string) => prepareCycleRequest(target, text)
+    }),
+    []
+  )
+  const context: VersionCycleContext = {
+    scope: cycleScope,
+    worktreeId: fixedId,
+    session,
+    version: workflowVersion.version,
+    sessionPort,
+    taskPort,
+    archivePort,
+    materialPort,
+    error: setupError ?? workflowVersion.error,
+    selectVersion
+  }
+
+  /** 配置指标：独立固定维护树 + 原生项目会话（metrics-refresh），不借计划/验收树。 */
+  const prepareMetrics = useCallback(async () => {
+    if (!baseScope) {
+      throw new Error('项目工作区尚未就绪')
+    }
+    if (!agent) {
+      throw new Error('未检测到可用会话工具，请先在设置中配置')
+    }
+    const maintenance = await ensureNamedWorktree(baseScope, METRICS_BRANCH, METRICS_WORKTREE_NAME)
+    const assets = await resolveWorkbenchPromptAssets({
+      ...baseScope,
+      workflow: 'metrics-refresh',
+      worktreeId: maintenance.id
+    })
+    const state = useAppStore.getState()
+    state.setActiveWorktree(maintenance.id, baseScope.hostId)
+    if (baseScope.runtimeOwnerEnvironmentId) {
+      await activateWebRuntimeSessionWorktree({
+        worktreeId: maintenance.id,
+        environmentId: baseScope.runtimeOwnerEnvironmentId
+      })
+    }
+    launchAgentInNewTab({
+      agent,
+      worktreeId: maintenance.id,
+      prompt: assets.prompt,
+      activate: true,
+      promptDelivery: 'auto-submit'
+    })
+  }, [baseScope, agent])
+
+  /** 配置自动化：预填原生编辑器（固定树 existing、每次运行新会话）；启用与时间由人确认。 */
+  const configureAutomation = useCallback(async () => {
+    if (!cycleScope || !fixedId) {
+      setNotice('固定工作树尚未就绪，请稍后重试。')
+      return
+    }
+    setBusy(true)
+    try {
+      const prompt = await buildCyclePrompt(cycleScope, fixedId)
+      useAppStore.getState().openAutomationEditor({
+        kind: 'create',
+        host: cycleAutomationHost(cycleScope),
+        draft: {
+          name: workflow === 'plan' ? '每周版本计划' : '每周版本验收',
+          prompt,
+          projectId: cycleScope.projectId,
+          workspaceId: fixedId,
+          workspaceMode: 'existing',
+          reuseSession: false
+        }
+      })
+      setNotice(null)
+    } catch (reason) {
+      setNotice(reason instanceof Error ? reason.message : String(reason))
+    } finally {
+      setBusy(false)
+    }
+  }, [cycleScope, fixedId, workflow])
+
+  const resize = usePlanColumnResize()
+  return (
+    <div className="vc-workspace">
+      <div className="vc-body" ref={resize.bodyRef}>
+        <div className="vc-chat-col" ref={resize.chatColRef}>
+          <div className="vc-chat-toolbar">
+            <select
+              aria-label="会话工具"
+              value={agent ?? ''}
+              disabled={busy || !fixedId || agentOptions.length === 0}
+              onChange={(event) => setChosenAgent((event.target.value || null) as TuiAgent | null)}
+            >
+              {agentOptions.length === 0 && <option value="">无可用工具</option>}
+              {agentOptions.map((id) => (
+                <option key={id} value={id}>
+                  {id}
+                </option>
+              ))}
+            </select>
+            <button
+              className="wb-btn wb-btn-sm"
+              disabled={busy || !fixedId || !agent}
+              onClick={() => void newSession()}
+            >
+              新建本次会话
+            </button>
+            <button
+              className="wb-btn wb-btn-ghost wb-btn-sm"
+              disabled={busy || !fixedId}
+              title="预填原生自动化编辑器：固定工作树、每次运行新会话；启用与时间由你确认"
+              onClick={() => void configureAutomation()}
+            >
+              配置自动化
+            </button>
+          </div>
+          {(notice || setupError) && (
+            <p role="alert" className="vc-notice">
+              {notice ?? setupError}
+            </p>
+          )}
+          <CycleChat session={session} />
+          {cycleScope && fixedId && (
+            <div className="vc-history">
+              <AiVaultPanel
+                workspaceHost={cycleScope.hostId}
+                onOpenSession={(item) => void openHistory(item)}
+              />
+            </div>
+          )}
+        </div>
+        <div
+          className={`vc-split${resize.isResizing ? ' is-on' : ''}`}
+          role="separator"
+          aria-orientation="vertical"
+          aria-label="调整左右栏宽度"
+          title="左右拖动调整宽度"
+          onMouseDown={resize.onResizeStart}
+        />
+        <div className="vc-board-col">
+          {workflow === 'plan' ? (
+            <PlanningBoard context={context} prepareMetrics={prepareMetrics} />
+          ) : (
+            <AcceptancePage context={context} />
+          )}
+        </div>
+      </div>
+    </div>
+  )
+}

@@ -86,7 +86,7 @@ export function launchAiVaultSessionInNewTab(args: {
       request_kind: 'resume'
     }
   })
-  if (args.activate !== false) store.setActiveTabType('terminal')
+  if (args.activate !== false) {store.setActiveTabType('terminal')}
 
   const fresh = useAppStore.getState()
   const termIds = (fresh.tabsByWorktree[args.worktreeId] ?? []).map((t) => t.id)
