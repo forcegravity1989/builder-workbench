@@ -1,6 +1,7 @@
 import type { StateCreator } from 'zustand'
 import type { AutomationEditorRequest } from '@/components/automations/automation-editor-request'
 import type { AppState } from '../../types'
+import type { CodeHubTaskItem } from '../../../../../shared/codehub-tasks'
 import type { GitHubWorkItem } from '../../../../../shared/github/work-item-types'
 import type { GitLabWorkItem } from '../../../../../shared/gitlab-types'
 import type { JiraIssue } from '../../../../../shared/jira-types'
@@ -11,6 +12,7 @@ import type { LaunchSource } from '../../../../../shared/telemetry-events'
 import type { TaskSourceContext } from '../../../../../shared/task-source-context'
 import type { ExecutionHostId } from '../../../../../shared/execution-host'
 import type { TaskResumeState, TopLevelView } from '../../../../../shared/ui-chrome-types'
+import type { TaskReturnOrigin } from '../worktree-nav-history'
 
 export type PendingSidebarWorktreeReveal = {
   worktreeId: string
@@ -59,6 +61,8 @@ export type TaskPageData = {
   openGitHubWorkItem?: GitHubWorkItem
   openGitHubSourceContext?: TaskSourceContext | null
   openGitHubInitialTab?: 'conversation' | 'checks' | 'files'
+  openCodeHubTask?: CodeHubTaskItem
+  openCodeHubSourceContext?: TaskSourceContext | null
   openGitLabWorkItem?: GitLabWorkItem
   openGitLabSourceContext?: TaskSourceContext | null
   openLinearIssue?: LinearIssue
@@ -160,7 +164,13 @@ export type UISliceCore = {
   newWorkspaceDraft: NewWorkspaceDraft | null
   openTaskPage: (
     data?: UISliceCore['taskPageData'],
-    options?: { recordTasksInteraction?: boolean }
+    options?: {
+      recordTasksInteraction?: boolean
+      /** Skip the 'tasks' sentinel before a detail entry so Back returns to the actual origin view (e.g. a Workbench screen), not the Tasks list. */
+      returnToPreviousView?: boolean
+      /** Opaque Workbench origin recorded on the detail history entry for the BW container to restore after Back. */
+      returnOrigin?: TaskReturnOrigin
+    }
   ) => void
   closeTaskPage: () => void
   openActivityPage: () => void

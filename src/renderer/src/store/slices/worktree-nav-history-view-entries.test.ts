@@ -1,6 +1,7 @@
 import { createStore, type StoreApi } from 'zustand/vanilla'
 import { afterEach, describe, expect, it } from 'vitest'
 import type { AppState } from '../types'
+import type { CodeHubTaskItem } from '../../../../shared/codehub-tasks'
 import type { GitHubWorkItem } from '../../../../shared/github/work-item-types'
 import type { JiraIssue } from '../../../../shared/jira-types'
 import type { Worktree } from '../../../../shared/worktree/types'
@@ -11,7 +12,8 @@ import {
   findPrevLiveWorktreeHistoryIndex,
   setWorktreeNavActivator,
   setWorktreeNavViewActivator,
-  type WorktreeNavHistorySimpleViewEntry
+  type WorktreeNavHistorySimpleViewEntry,
+  type WorktreeNavHistoryTaskDetailEntry
 } from './worktree-nav-history'
 
 type MinimalState = Pick<
@@ -79,6 +81,25 @@ function makeGitLabWorkItem(overrides: Partial<GitLabWorkItem> = {}): GitLabWork
     updatedAt: '2026-05-20T00:00:00.000Z',
     author: 'gitlab-user',
     repoId: 'repo-1',
+    ...overrides
+  }
+}
+
+function makeCodeHubTaskItem(overrides: Partial<CodeHubTaskItem> = {}): CodeHubTaskItem {
+  return {
+    type: 'issue',
+    iid: 12,
+    title: 'CodeHub 任务',
+    state: 'opened',
+    url: 'https://codehub.example.com/team/project/-/issues/12',
+    author: 'ada',
+    assignees: [],
+    reviewers: [],
+    updatedAt: '2026-09-20T00:00:00.000Z',
+    repoId: 'repo-1',
+    repoPath: '/repo',
+    host: 'codehub.example.com',
+    project: 'team/project',
     ...overrides
   }
 }
@@ -312,5 +333,53 @@ describe('worktree-nav-history slice: view entries', () => {
 
     expect(store.getState().worktreeNavHistory).toHaveLength(2)
     expect(store.getState().worktreeNavHistoryIndex).toBe(1)
+  })
+
+  it('replays CodeHub task detail entries through the shared back/forward stack', () => {
+    const store = createHistoryStore(['a'])
+    const detail = {
+      kind: 'task-detail',
+      source: 'codehub',
+      task: makeCodeHubTaskItem()
+    } as const
+    const viewed: unknown[] = []
+    setWorktreeNavViewActivator((v) => {
+      viewed.push(v)
+    })
+
+    store.getState().recordWorktreeVisit('a')
+    store.getState().recordViewVisit('tasks')
+    store.getState().recordViewVisit(detail)
+    expect(store.getState().worktreeNavHistoryIndex).toBe(2)
+
+    store.getState().goBackWorktree()
+    expect(viewed).toEqual(['tasks'])
+    store.getState().goForwardWorktree()
+    expect(viewed[1]).toMatchObject({ source: 'codehub' })
+    expect(store.getState().worktreeNavHistoryIndex).toBe(2)
+  })
+
+  it('dedupes an identical CodeHub detail against the current entry', () => {
+    const store = createHistoryStore(['a'])
+    const detail: WorktreeNavHistoryTaskDetailEntry = {
+      kind: 'task-detail',
+      source: 'codehub',
+      task: makeCodeHubTaskItem(),
+      sourceContext: {
+        kind: 'task-source',
+        provider: 'codehub',
+        projectId: 'project-1',
+        hostId: 'local',
+        providerIdentity: {
+          provider: 'codehub',
+          host: 'codehub.example.com',
+          project: 'team/project'
+        }
+      }
+    }
+
+    store.getState().recordViewVisit(detail)
+    store.getState().recordViewVisit(detail)
+    expect(store.getState().worktreeNavHistory).toHaveLength(1)
   })
 })

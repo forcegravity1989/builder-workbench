@@ -6,6 +6,33 @@ import type {
 import type { CycleTaskRead, TaskOrigin, TaskPort } from '../version-cycle/ports'
 import { taskReferenceKey } from './acceptance-task-evidence'
 
+/** One derivation for the list and the board header: counts come only from real reads;
+ * unread or failed items never collapse into a completion-style 0/0 fraction. */
+export function taskSnapshotFacts(snapshot: VersionTaskSnapshot[], referenced: number) {
+  const states = new Map<string, number>()
+  let readAt: string | null = null
+  for (const item of snapshot) {
+    const state = item.kind === 'ready' ? item.state : '读取失败'
+    states.set(state, (states.get(state) ?? 0) + 1)
+    if (readAt === null || item.readAt > readAt) {
+      readAt = item.readAt
+    }
+  }
+  return { states, unread: Math.max(0, referenced - snapshot.length), readAt }
+}
+
+export function taskSnapshotSummary(snapshot: VersionTaskSnapshot[], referenced: number): string {
+  const facts = taskSnapshotFacts(snapshot, referenced)
+  const parts = [...facts.states].map(([state, count]) => `${state} ${count}`)
+  if (facts.unread > 0) {
+    parts.push(`待读取 ${facts.unread}`)
+  }
+  if (facts.readAt) {
+    parts.push(`快照 ${facts.readAt}`)
+  }
+  return `Issue ${parts.length > 0 ? parts.join(' · ') : `待读取 ${referenced} 项`}`
+}
+
 export function AcceptanceTasks({
   plan,
   port,
@@ -50,12 +77,7 @@ export function AcceptanceTasks({
     snapshot?.map((item) =>
       item.kind === 'ready' ? { kind: 'ready', reference: item.reference, task: item } : item
     ) ?? null
-  const states = new Map<string, number>()
-  for (const task of tasks ?? []) {
-    const state = task.kind === 'ready' ? task.task.state : '读取失败'
-    states.set(state, (states.get(state) ?? 0) + 1)
-  }
-  const unread = Math.max(0, plan.tasks.length - (tasks?.length ?? 0))
+  const facts = taskSnapshotFacts(snapshot ?? [], plan.tasks.length)
   async function refresh() {
     if (disabled) {
       return
@@ -84,8 +106,8 @@ export function AcceptanceTasks({
     <details className="va-tasks" id="acceptance-tasks">
       <summary>
         Issue 状态核对 · {plan.tasks.length} 项引用
-        {[...states].map(([state, count]) => ` · ${state} ${count}`)}
-        {unread > 0 && ` · 待读取 ${unread}`}
+        {[...facts.states].map(([state, count]) => ` · ${state} ${count}`)}
+        {facts.unread > 0 && ` · 待读取 ${facts.unread}`}
       </summary>
       <button
         className="wb-btn wb-btn-ghost wb-btn-sm"

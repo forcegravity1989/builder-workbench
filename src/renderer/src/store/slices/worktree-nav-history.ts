@@ -1,6 +1,7 @@
 import type { StateCreator } from 'zustand'
 import type { AppState } from '../types'
 import { findWorktreeById } from './worktree-helpers'
+import type { CodeHubTaskItem } from '../../../../shared/codehub-tasks'
 import type { GitHubWorkItem } from '../../../../shared/github/work-item-types'
 import type { JiraIssue } from '../../../../shared/jira-types'
 import type { LinearIssue } from '../../../../shared/linear/issue-types'
@@ -22,7 +23,19 @@ const SIMPLE_VIEW_ENTRIES: readonly WorktreeNavHistorySimpleViewEntry[] = [
   'artifacts',
   'skills'
 ]
-export type WorktreeNavHistoryTaskDetailEntry =
+/** Opaque Workbench screen origin (see workbench/version-cycle/ports TaskOrigin) carried on a
+ * task-detail entry so Back can hand it to the BW container; the native layer never reads it. */
+export type TaskReturnOrigin = Record<string, unknown>
+export type WorktreeNavHistoryTaskDetailEntry = WorktreeNavHistoryTaskDetailSourceEntry & {
+  returnOrigin?: TaskReturnOrigin
+}
+type WorktreeNavHistoryTaskDetailSourceEntry =
+  | {
+      kind: 'task-detail'
+      source: 'codehub'
+      task: CodeHubTaskItem
+      sourceContext?: TaskSourceContext | null
+    }
   | {
       kind: 'task-detail'
       source: 'github'
@@ -104,6 +117,13 @@ function isTaskStackEntry(entry: WorktreeNavHistoryEntry): boolean {
 function getHistoryEntryKey(entry: WorktreeNavHistoryEntry): string {
   if (typeof entry === 'string') {
     return isSimpleViewEntry(entry) ? `view:${entry}` : `worktree:${entry}`
+  }
+  if (entry.source === 'codehub') {
+    const sourceScope =
+      entry.sourceContext?.provider === 'codehub'
+        ? getTaskSourceCacheScope(entry.sourceContext)
+        : 'legacy'
+    return `view:task-detail:codehub:${sourceScope}:${entry.task.repoId}:${entry.task.host}:${entry.task.project}:${entry.task.type}:${entry.task.iid}`
   }
   if (entry.source === 'github') {
     const sourceScope =

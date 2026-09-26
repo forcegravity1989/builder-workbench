@@ -7,7 +7,7 @@ import { AcceptancePreparation } from './AcceptancePreparation'
 import { AcceptanceMetrics } from './AcceptanceMetrics'
 import { useAcceptanceMetricWindow } from './AcceptanceMetricWindow'
 import { AcceptanceContext } from './AcceptanceContext'
-import { AcceptanceTasks } from './AcceptanceTasks'
+import { AcceptanceTasks, taskSnapshotSummary } from './AcceptanceTasks'
 import { AcceptanceArchive } from './AcceptanceArchive'
 import { AcceptanceSourcePicker } from './AcceptanceSourcePicker'
 import { AcceptanceJourney } from './AcceptanceJourney'
@@ -138,7 +138,7 @@ function ReadyAcceptanceBoard({
             {plan.document.goals.length} 项目标 ·{' '}
             {plan.document.tasks.length
               ? document?.taskSnapshot
-                ? `Issue 快照 ${document.taskSnapshot.filter((item) => item.kind === 'ready').length}/${plan.document.tasks.length}`
+                ? taskSnapshotSummary(document.taskSnapshot, plan.document.tasks.length)
                 : 'Issue 待读取'
               : '未关联 Issue'}
           </span>

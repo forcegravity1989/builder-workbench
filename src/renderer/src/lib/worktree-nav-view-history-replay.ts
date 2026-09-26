@@ -16,6 +16,31 @@ export function applyWorktreeNavViewEntry(entry: WorktreeNavHistoryViewEntry): v
         openGitHubWorkItem: undefined,
         openGitHubSourceContext: undefined,
         openGitHubInitialTab: undefined,
+        openCodeHubTask: undefined,
+        openCodeHubSourceContext: undefined,
+        openGitLabWorkItem: undefined,
+        openGitLabSourceContext: undefined,
+        openLinearIssue: undefined,
+        openLinearSourceContext: undefined,
+        openJiraIssue: undefined,
+        openJiraSourceContext: undefined
+      }
+    }))
+    return
+  }
+  if (entry.source === 'codehub') {
+    useAppStore.setState((state) => ({
+      activeView: 'tasks',
+      githubTaskDrawerWorkItem: null,
+      taskPageData: {
+        ...state.taskPageData,
+        taskSource: 'codehub',
+        preselectedRepoId: entry.task.repoId,
+        openCodeHubTask: entry.task,
+        openCodeHubSourceContext: entry.sourceContext,
+        openGitHubWorkItem: undefined,
+        openGitHubSourceContext: undefined,
+        openGitHubInitialTab: undefined,
         openGitLabWorkItem: undefined,
         openGitLabSourceContext: undefined,
         openLinearIssue: undefined,
@@ -36,6 +61,8 @@ export function applyWorktreeNavViewEntry(entry: WorktreeNavHistoryViewEntry): v
         openGitHubWorkItem: entry.workItem,
         openGitHubSourceContext: entry.sourceContext,
         openGitHubInitialTab: entry.initialTab,
+        openCodeHubTask: undefined,
+        openCodeHubSourceContext: undefined,
         openGitLabWorkItem: undefined,
         openGitLabSourceContext: undefined,
         openLinearIssue: undefined,
@@ -57,6 +84,8 @@ export function applyWorktreeNavViewEntry(entry: WorktreeNavHistoryViewEntry): v
         openGitHubWorkItem: undefined,
         openGitHubSourceContext: undefined,
         openGitHubInitialTab: undefined,
+        openCodeHubTask: undefined,
+        openCodeHubSourceContext: undefined,
         openGitLabWorkItem: entry.workItem,
         openGitLabSourceContext: entry.sourceContext,
         openLinearIssue: undefined,
@@ -77,6 +106,8 @@ export function applyWorktreeNavViewEntry(entry: WorktreeNavHistoryViewEntry): v
         openGitHubWorkItem: undefined,
         openGitHubSourceContext: undefined,
         openGitHubInitialTab: undefined,
+        openCodeHubTask: undefined,
+        openCodeHubSourceContext: undefined,
         openGitLabWorkItem: undefined,
         openGitLabSourceContext: undefined,
         openLinearIssue: undefined,
@@ -96,6 +127,8 @@ export function applyWorktreeNavViewEntry(entry: WorktreeNavHistoryViewEntry): v
       openGitHubWorkItem: undefined,
       openGitHubSourceContext: undefined,
       openGitHubInitialTab: undefined,
+      openCodeHubTask: undefined,
+      openCodeHubSourceContext: undefined,
       openGitLabWorkItem: undefined,
       openGitLabSourceContext: undefined,
       openLinearIssue: entry.issue,

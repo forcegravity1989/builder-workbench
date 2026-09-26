@@ -2,6 +2,7 @@ import type { GitLabTaskFilter, GitLabIssueFilter } from '@/components/task-page
 import type { GitHubWorkItem } from '../../../shared/github/work-item-types'
 import type { GitLabProjectRef, GitLabWorkItem } from '../../../shared/gitlab-types'
 import type { JiraIssue } from '../../../shared/jira-types'
+import { parseCodeHubRemote } from '../../../shared/codehub'
 import type { Repo } from '../../../shared/repo-types'
 import { getLinkedWorkItemWorkspaceName, getLinkedWorkItemSuggestedName } from '@/lib/new-workspace'
 import {
@@ -65,7 +66,7 @@ export function getJiraIssueWorkspaceSeed(issue: JiraIssue): string {
 }
 export function getTaskPageRepoSourceContext(
   repo: Repo | null | undefined,
-  provider: 'github' | 'gitlab',
+  provider: 'github' | 'gitlab' | 'codehub',
   gitlabProjectRef?: GitLabProjectRef | null
 ): TaskSourceContext | null {
   if (!repo) {
@@ -74,12 +75,20 @@ export function getTaskPageRepoSourceContext(
   const projection = projectHostSetupProjectionFromRepos([repo])
   const project = projection.projects[0]
   const setup = projection.setups[0]
+  // Why: CodeHub identity lives on the repo's git remote, not on a project-host setup record.
+  const codehub =
+    provider === 'codehub'
+      ? (parseCodeHubRemote(repo.gitRemoteIdentity?.remoteUrl) ??
+        parseCodeHubRemote(repo.gitRemoteIdentity?.canonicalKey))
+      : null
   const providerIdentity =
     provider === 'github' && project?.providerIdentity?.provider === 'github'
       ? project.providerIdentity
       : provider === 'gitlab' && gitlabProjectRef
         ? buildGitLabProviderIdentity(gitlabProjectRef)
-        : null
+        : codehub
+          ? { provider: 'codehub' as const, ...codehub }
+          : null
   return normalizeTaskSourceContext({
     provider,
     projectId: setup?.projectId ?? project?.id ?? repo.id,
