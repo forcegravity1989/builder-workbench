@@ -21,7 +21,7 @@ export class MaterialDraftController<T extends VersionDocumentIdentity> {
   value: MaterialDraft<T> | null = null
   constructor(
     private port: VersionDocumentPort<T>,
-    private publish: (value: MaterialDraft<T>) => void
+    private publish: (value: MaterialDraft<T> | null) => void
   ) {}
   private update(value: MaterialDraft<T>) {
     this.value = value
@@ -30,7 +30,15 @@ export class MaterialDraftController<T extends VersionDocumentIdentity> {
   restore(value: MaterialDraft<T>) {
     this.selection++
     this.generation++
+    this.refreshRequest++
     this.update(value)
+  }
+  clear() {
+    this.selection++
+    this.generation++
+    this.refreshRequest++
+    this.value = null
+    this.publish(null)
   }
   edit(document: T) {
     if (!this.value || document.version !== this.value.document.version) {
@@ -39,8 +47,11 @@ export class MaterialDraftController<T extends VersionDocumentIdentity> {
     this.generation++
     this.update({ ...this.value, document, dirty: true })
   }
-  async refresh() {
-    if (!this.value || this.saving) {
+  refresh() {
+    return this.refreshFromPort(false)
+  }
+  private async refreshFromPort(insideSave: boolean) {
+    if (!this.value || (this.saving && !insideSave)) {
       return
     }
     const original = this.value
@@ -50,12 +61,14 @@ export class MaterialDraftController<T extends VersionDocumentIdentity> {
       return
     }
     if (this.value.dirty) {
-      if (remote?.revision !== this.value.expectedRevision) {
+      if ((remote?.revision ?? null) !== this.value.expectedRevision) {
         this.update({
           ...this.value,
           remote,
           error: '材料已在其他会话修改，本地输入已保留。请核对两个版本。'
         })
+      } else if (this.value.remote !== undefined) {
+        this.update({ ...this.value, remote: undefined, error: undefined })
       }
     } else if (remote) {
       this.update({ document: remote.document, expectedRevision: remote.revision, dirty: false })
@@ -100,8 +113,7 @@ export class MaterialDraftController<T extends VersionDocumentIdentity> {
           error: error instanceof Error ? error.message : '保存失败，输入已保留'
         })
         if ((error as { code?: string }).code === 'revision-conflict') {
-          this.saving = false
-          await this.refresh().catch(() => undefined)
+          await this.refreshFromPort(true).catch(() => undefined)
         }
       }
       return false

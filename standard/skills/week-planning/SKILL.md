@@ -2,14 +2,14 @@
 name: week-planning
 description: Use when 在 BW 计划屏协助用户制定、评审和归档版本计划，或对应 Orca 周期运行启动。验收已有版本使用 version-acceptance。
 metadata:
-  version: 0.2.0-design
+  version: 0.3.0
 ---
 
 # 版本计划
 
 帮助 Builder 与 Leader 形成清楚、有依据的版本目标，并连接真实任务和归档。目标由人决定；不要根据不完整仓库信息先替人写完。
 
-> 本版为新单页流程的配套设计稿，需与宿主提示、材料服务、UI 一起接入。旧三屏注入与 CLI 尚未切换时先报告能力差异，不假称新流程可运行。
+宿主下发原生项目、工作树与运行身份。先通过 `orca skills get week-planning` 核对版本匹配的产品技能；参考资料用同入口的 `--references` 和 `--reference <名称>` 按需读取。命令或权限不可用时保留讨论内容并报告真实错误。
 
 ## 执行流程
 

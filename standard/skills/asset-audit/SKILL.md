@@ -7,11 +7,11 @@ description: Use when 「资产盘点」Issue 开工(Orca 周五 15:00,或人在
 
 ## 1. 核心目标
 
-周五没人在场时盘资产、盘项目,再总结当周进展。产出是资产盘点 Issue 的报告，以及周一屏同版本 JSON 的执行进展;本场对 `.bw/` 有真改动才开 MR。项目知识文档的问题只写评论。能做先做,不等回复。
+周五没人在场时盘资产、盘项目,再总结当周进展。产出是资产盘点 Issue 的报告，以及明确版本材料的执行进展;本场对 `.bw/` 有真改动才开 MR。项目知识文档的问题只写评论。能做先做,不等回复。
 
 ## 2. When to Use / When NOT to Use
 
-- 用:workflow=`资产盘点`。已注入 `bw-assets.md`、`build.md`、`week-plan-comment.md`。
+- 用:workflow=`资产盘点`。读取 `bw-assets.md`、`build.md`、`version-records.md`。
 - 不用:更新指标与版本计划、业务 Issue、项目约定。不重写名片意图、不重定北极星。
 - `mode: first` 本轮不跑(不打标签、不写 `AGENTS.md`、不叫 project-handbook)。评论写一句「说明里是首次模式,已按每周流程处理」。没有 `mode:` 或写了 `weekly` 走下面。
 
@@ -34,7 +34,9 @@ description: Use when 「资产盘点」Issue 开工(Orca 周五 15:00,或人在
 走到审查。过一遍本周默认分支上的提交、以及还开着的业务 MR。建议只写进这个资产盘点 Issue 的评论,不改业务代码,不为审查另开 MR。找真风险、真回归、真缺口。没有就写「无」。需要动业务逻辑或公开接口的,只写建议。
 
 **第 4 步 · 总结当周进展**
-走到总结。按已注入的 `week-plan-comment.md` 版本执行进展约定，核对在研版本，在已登记的 bw/week-plan 工作树读写同版本 JSON 的 progress_updates；用安装的 week-planning 读写脚本做修订检查，保留人的草稿。写这一版实际走到哪，没发生就写没发生；缺数据在盘点报告说明，不新造历史计划。事实写回不等于确认计划，不跨树提交用户草稿。
+走到总结。先从本次任务已明确的版本和真实来源核对事实，不按日期、mtime、最新未发布项或上次打开的版本猜。按 [版本材料契约](../../system-prompt/references/version-records.md)，在原生登记的 bw/week-plan 工作树读取同版本材料与 revision，把有来源的当周事实融入 `summary.progress`，写明所述版本并保留当前盘点 Issue / 报告及证据链接。同一盘点来源重跑时更新对应事实，不重复追加，也不把事实进展写成完成确认。
+
+保留其他字段和已有进展，使用宿主材料服务及刚读到的 expectedRevision 保存。遇到修订冲突，重读并核对；不能确认哪段可替换时保留原文，在报告说明冲突。版本未明确、原生规划工作树不可用、材料缺失或仍为旧格式时，只在盘点报告列出待补事实，不自动迁移或初始化版本，不直接改 JSON 或调用旧脚本绕开服务。归档交计划会话，不跨树提交人的草稿。
 
 **第 5 步 · 报告**  
 走到交付。当前资产盘点 Issue 的评论四个标题,缺了就写「无」:
@@ -55,7 +57,7 @@ description: Use when 「资产盘点」Issue 开工(Orca 周五 15:00,或人在
 
 - `bw-assets.md`(已注入):现行 `.bw` 清单。写第 1 步前读。只管 `.bw/`。
 - `build.md`(已注入):改仓落点。有仓改动时读。
-- `week-plan-comment.md`(已注入):第 4 步每周进展怎么写。
+- [version-records.md](../../system-prompt/references/version-records.md):第 4 步使用的版本材料与修订协议。
 - `metrics.md`:只在升指标格式时读(本次提示词未必预注入,按资产目录 `system-prompt/references/metrics.md`)。
 - `project-handbook`:本场不读。
 
@@ -70,7 +72,7 @@ description: Use when 「资产盘点」Issue 开工(Orca 周五 15:00,或人在
 
 ## 7. 示例
 
-Orca 周五 15:00。对照 `bw-assets.md` 删掉 `.bw/PROJECT.md`,补上 `.bw/.gitignore` 的 `worktrees/`。第 2 步查出项目设计文档还提已删的模块、词表一条交叉引用 § 号旧了,都写进报告不替改。在 bw/week-plan 的 v0.3 JSON 更新本次盘点的 progress_updates，并在报告附数据路径。本周提交没有真风险,项目审查写「无」。资产盘点 Issue 挂四标题评论,开一份只含这两处 `.bw` 改动的 MR。
+Orca 周五 15:00。对照 `bw-assets.md` 删掉 `.bw/PROJECT.md`,补上 `.bw/.gitignore` 的 `worktrees/`。第 2 步查出项目设计文档还提已删的模块、词表一条交叉引用 § 号旧了,都写进报告不替改。任务已明确本次总结 v0.3，于是在原生登记的 bw/week-plan 工作树读回该版本材料，把实际进展与盘点 Issue 链接融入 `summary.progress`，按刚读到的 revision 保存，并在报告附数据路径。本周提交没有真风险,项目审查写「无」。资产盘点 Issue 挂四标题评论,开一份只含这两处 `.bw` 改动的 MR。
 
 ## 8. 纪律表
 

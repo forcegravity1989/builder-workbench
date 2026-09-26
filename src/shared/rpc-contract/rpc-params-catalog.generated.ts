@@ -554,6 +554,10 @@ import {
   SkillUploadCommitRequestSchema
 } from '../skill-upload-session-contract'
 import {
+  VersionMigrationApplySchema,
+  VersionMigrationReadSchema
+} from '../workbench/version-material-migration'
+import {
   VersionMaterialReadSchema,
   VersionMaterialSaveSchema,
   VersionMaterialScopeSchema
@@ -1170,6 +1174,8 @@ export const RPC_PARAMS_BY_METHOD = {
   'updater.getStatus': null,
   'updater.install': null,
   'workbench.materials.list': VersionMaterialScopeSchema,
+  'workbench.materials.migrate': VersionMigrationApplySchema,
+  'workbench.materials.previewMigration': VersionMigrationReadSchema,
   'workbench.materials.read': VersionMaterialReadSchema,
   'workbench.materials.save': VersionMaterialSaveSchema,
   'workspacePorts.kill': WorkspacePortKillParams,

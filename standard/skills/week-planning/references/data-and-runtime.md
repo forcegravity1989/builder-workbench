@@ -6,13 +6,13 @@
 
 核对项目根、工作区、版本、流程和实际工具路径。已有文件先读修订再改，不依靠宿主 cwd 推断项目。模型与右侧编辑器必须调用同一材料服务，以 expectedRevision 保存；冲突保留双方输入，不能用直接写文件绕开校验。
 
-新材料服务及其 CLI/工具尚在设计中。宿主未提供时，报告缺失、可以讨论并保留草稿建议，但不能编造命令或宣称已保存。自动化只创建/恢复 Orca 运行，不代替用户认可。
+结构使用 `orca bw materials schema --workflow plan|acceptance --json` 读取；列举、读取与保存的参数分别查看 `orca bw materials list --help`、`orca bw materials read --help`、`orca bw materials save --help`，修订约束以版本材料 reference 为准。宿主未提供入口时，报告缺失、可以讨论并保留草稿建议，但不能编造命令或宣称已保存。自动化只创建/恢复 Orca 运行，不代替用户认可。
 
-## 当前旧实现的只读诊断
+## 显式迁移旧材料
 
-当前 planning.py 属于 schema2 三屏实现；需要检查历史时可使用实际存在的 read / collect-issues 能力，显式提供工作区、版本和仓库。先查看脚本 --help，不把旧 confirm/results/review_ready/plan 或 submit-confirmed 当成新流程授权。
+候选显示需迁移时，使用宿主明确的计划工作树、版本与 cycleId 调用 `orca bw materials migration-preview`。预览不写文件；展示旧目标、待核来源与 warnings，再根据人的明确迁移指令调用 `migrate --expected-revision <预览的 sourceRevision>`。旧文件在同版本目录以 `schema2-<原字节哈希>.json` 完整保留，之后仍可用 `migration-preview --source-revision <原修订>` 读回。冲突停止，不重试覆盖。
 
-既有资产盘点仍可能通过该脚本更新 schema2 的 progress_updates；它必须保留现有修订和目标，不处理 schema3，不能根据本轮设计稿自行升级。新实现切换时这些消费方一起迁移，随后退役旧写入路径。
+旧 results 只归入其 previous_version。先在验收流程选定并核对该版本的真实 planRef，再展示旧目标与现有 goalId 的对应；得到明确对应后通过普通验收 save 写无认可草稿。缺少真实计划、版本含糊或对应冲突时保留原件待核，不伪造 planRef。旧状态与手填读数只能写入带来源的说明，不能升级为采集证据。
 
 旧 results 属于其明确指出的上版，不按当前目录名猜；旧确认保留历史身份，不自动升级为新计划或验收确认。迁移保持原件/提交来源，错误时停止该对象写入，不替换成空数据。
 

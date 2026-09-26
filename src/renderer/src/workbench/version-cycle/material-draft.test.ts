@@ -3,6 +3,106 @@ import { MaterialDraftController } from './material-draft'
 
 const base = { schema_version: 3 as const, version: 'v1', cycleId: 'one', title: 'initial' }
 describe('material draft concurrency', () => {
+  it('keeps an unsaved new document editable while no file exists', async () => {
+    let remote: { document: typeof base; revision: string } | null = null
+    const controller = new MaterialDraftController<typeof base>(
+      {
+        read: async () => remote,
+        save: async (input) => ({ document: input.document, revision: 'saved' })
+      },
+      () => {}
+    )
+    controller.restore({ document: base, expectedRevision: null, dirty: true })
+    await controller.refresh()
+    expect(controller.value?.remote).toBeUndefined()
+    expect(controller.value?.error).toBeUndefined()
+    remote = { document: { ...base, title: 'another writer' }, revision: 'other' }
+    await controller.refresh()
+    expect(controller.value?.remote?.document.title).toBe('another writer')
+    remote = null
+    await controller.refresh()
+    expect(controller.value).toMatchObject({ document: base, expectedRevision: null, dirty: true })
+    expect(controller.value?.remote).toBeUndefined()
+    expect(controller.value?.error).toBeUndefined()
+  })
+  it('reports deletion of an existing document without treating it as new', async () => {
+    const controller = new MaterialDraftController<typeof base>(
+      {
+        read: async () => null,
+        save: async (input) => ({ document: input.document, revision: 'saved' })
+      },
+      () => {}
+    )
+    controller.restore({ document: base, expectedRevision: 'existing', dirty: true })
+    await controller.refresh()
+    expect(controller.value?.remote).toBeNull()
+    expect(controller.value?.expectedRevision).toBe('existing')
+    expect(controller.value?.error).toBeTruthy()
+  })
+  it('invalidates reads even when a cached object is restored again', async () => {
+    let finish!: (value: { document: typeof base; revision: string }) => void
+    const controller = new MaterialDraftController<typeof base>(
+      {
+        read: () =>
+          new Promise((resolve) => {
+            finish = resolve
+          }),
+        save: async (input) => ({ document: input.document, revision: 'saved' })
+      },
+      () => {}
+    )
+    const cached = { document: base, expectedRevision: 'old', dirty: false }
+    controller.restore(cached)
+    const refresh = controller.refresh()
+    controller.restore({ ...cached, document: { ...base, cycleId: 'two' } })
+    controller.restore(cached)
+    finish({ document: { ...base, cycleId: 'two' }, revision: 'wrong-cycle' })
+    await refresh
+    expect(controller.value).toBe(cached)
+  })
+  it('holds the save lock until conflict readback finishes', async () => {
+    let finish!: (value: { document: typeof base; revision: string }) => void
+    let saves = 0
+    const controller = new MaterialDraftController<typeof base>(
+      {
+        read: () =>
+          new Promise((resolve) => {
+            finish = resolve
+          }),
+        save: async () => {
+          saves++
+          throw Object.assign(new Error('conflict'), { code: 'revision-conflict' })
+        }
+      },
+      () => {}
+    )
+    controller.restore({ document: base, expectedRevision: 'old', dirty: true })
+    const first = controller.save()
+    await Promise.resolve()
+    expect(await controller.save()).toBe(false)
+    finish({ document: base, revision: 'remote' })
+    await first
+    expect(saves).toBe(1)
+  })
+  it('clears selection without letting an in-flight read restore it', async () => {
+    let finish!: (value: { document: typeof base; revision: string }) => void
+    const controller = new MaterialDraftController<typeof base>(
+      {
+        read: () =>
+          new Promise((resolve) => {
+            finish = resolve
+          }),
+        save: async (input) => ({ document: input.document, revision: 'saved' })
+      },
+      () => {}
+    )
+    controller.restore({ document: base, expectedRevision: 'old', dirty: false })
+    const refresh = controller.refresh()
+    controller.clear()
+    finish({ document: base, revision: 'old' })
+    await refresh
+    expect(controller.value).toBeNull()
+  })
   it('ignores an old refresh after a newer edit has been saved', async () => {
     let finishRead!: (value: { document: typeof base; revision: string }) => void
     const controller = new MaterialDraftController<typeof base>(
