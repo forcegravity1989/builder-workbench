@@ -469,3 +469,22 @@
     border-top: 1px solid var(--color-divider);
   }
 }
+
+/* Real overview: derived minutes and honest snapshots. */
+.wb-ov .wb-pre {
+  margin: 0 0 6px;
+  font-size: 12px;
+  line-height: 1.55;
+  white-space: pre-wrap;
+  word-break: break-word;
+  font-family: inherit;
+}
+.wb-ov .wb-ov-result {
+  margin: 0 0 6px;
+  font-size: 12.5px;
+  line-height: 1.5;
+}
+.wb-ov .wb-muted {
+  font-size: 12px;
+  opacity: 0.65;
+}

@@ -1,15 +1,28 @@
 import type { MetricReading, MetricReadingEvidence } from '../../../../shared/workbench/metrics'
 import './metric-evidence.css'
-import { addCalendarDays, calendarDayStart, dayInTimezone } from '../../../../shared/workbench/metric-windows'
+import {
+  addCalendarDays,
+  calendarDayStart,
+  dayInTimezone
+} from '../../../../shared/workbench/metric-windows'
 const NO_EVIDENCE: readonly MetricReadingEvidence[] = []
 
 function observationText(reading: MetricReadingEvidence): string {
   const observation = reading.observation
-  if (observation.kind === 'instant') return `当前值 · ${observation.observedAt}`
+  if (observation.kind === 'instant') {return `当前值 · ${observation.observedAt}`}
   const day = dayInTimezone(observation.start, observation.timezone)
-  const bucketEnd = calendarDayStart(addCalendarDays(day, observation.granularity === 'week' ? 7 : 1), observation.timezone)
+  const bucketEnd = calendarDayStart(
+    addCalendarDays(day, observation.granularity === 'week' ? 7 : 1),
+    observation.timezone
+  )
   const partial = Date.parse(observation.end) < Date.parse(bucketEnd)
-  return `${partial ? '截至采集时刻' : '区间读数'} · ${observation.start} 至 ${observation.end}（${observation.timezone}）`
+  // An unfinished bucket is "so far"; a finished bucket with a gap is missing coverage, not "so far".
+  const label = partial
+    ? Date.parse(bucketEnd) > Date.now()
+      ? '截至采集时刻'
+      : '区间覆盖不全'
+    : '区间读数'
+  return `${label} · ${observation.start} 至 ${observation.end}（${observation.timezone}）`
 }
 
 /** The caller owns targets and decisions; this view only presents collected or saved evidence. */

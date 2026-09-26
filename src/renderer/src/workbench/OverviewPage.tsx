@@ -1,51 +1,16 @@
-import React, { useEffect, useState } from 'react'
+import React, { useCallback, useEffect, useMemo, useState } from 'react'
 import { useAppStore } from '@/store'
-import { OVERVIEW_DEMO } from './overview-demo-data'
 import { openProjectOnboard } from './project-onboard-state'
 import { readProjectCharter, type ProjectCharter } from './project-charter'
+import { nativeWorkspaceScope, type NativeWorkspaceScope } from './version-cycle/native-workspace'
+import { nativeMetricsPort } from './metrics-port'
+import { nativeVersionHistoryPort } from './version-history-port'
+import { nativeVersionMaterialPort } from './version-material-port'
+import { metricWindowForDefinition } from '../../../shared/workbench/metric-windows'
+import type { MetricCatalog, MetricReading } from '../../../shared/workbench/metrics'
+import type { VersionHistoryCatalog } from '../../../shared/workbench/version-history'
+import { taskDistribution, useVersionMinutes } from './use-version-minutes'
 import './workbench-overview.css'
-
-function ProgressBar(props: {
-  todo: number
-  doing: number
-  review: number
-  done: number
-  blocked: number
-}): React.JSX.Element {
-  const total = props.todo + props.doing + props.review + props.done + props.blocked || 1
-  const pct = (n: number) => `${(n / total) * 100}%`
-  return (
-    <div className="stack">
-      <div className="prog" aria-hidden>
-        <span className="prog-done" style={{ width: pct(props.done) }} />
-        <span className="prog-review" style={{ width: pct(props.review) }} />
-        <span className="prog-doing" style={{ width: pct(props.doing) }} />
-        <span className="prog-todo" style={{ width: pct(props.todo) }} />
-        <span
-          className="prog-doing"
-          style={{ width: pct(props.blocked), background: 'var(--color-danger)' }}
-        />
-      </div>
-      <div className="counts">
-        <span>
-          待办 <b>{props.todo}</b>
-        </span>
-        <span>
-          进行中 <b>{props.doing}</b>
-        </span>
-        <span>
-          待评审 <b>{props.review}</b>
-        </span>
-        <span>
-          完成 <b>{props.done}</b>
-        </span>
-        <span>
-          阻塞 <b>{props.blocked}</b>
-        </span>
-      </div>
-    </div>
-  )
-}
 
 function charterRows(
   projectName: string,
@@ -60,17 +25,44 @@ function charterRows(
   ]
 }
 
-/** Scoreboard: charter from `.bw/project.toml` when present; versions still demo. */
+/** Overview reads real metrics and real archive records; no data stays Unknown, never demo. */
 export function OverviewPage(): React.JSX.Element {
   const openArtifactsPage = useAppStore((s) => s.openArtifactsPage)
   const repos = useAppStore((s) => s.repos)
   const activeRepoId = useAppStore((s) => s.activeRepoId ?? s.repos[0]?.id ?? null)
-  const activeRepo = repos.find((r) => r.id === activeRepoId) ?? repos[0]
-  const [charter, setCharter] = useState<ProjectCharter | null>(null)
-  const [verId, setVerId] = useState<(typeof OVERVIEW_DEMO.versions)[number]['id']>(
-    OVERVIEW_DEMO.versions[0].id
+  const repoWorktrees = useAppStore((s) =>
+    activeRepoId ? s.worktreesByRepo[activeRepoId] : undefined
   )
-  const version = OVERVIEW_DEMO.versions.find((v) => v.id === verId) ?? OVERVIEW_DEMO.versions[0]
+  const activeRepo = repos.find((r) => r.id === activeRepoId) ?? repos[0]
+
+  /** Metrics/history read from the project's main worktree: the configuration baseline tree. */
+  const baseScope = useMemo<NativeWorkspaceScope | null>(() => {
+    if (!activeRepoId || !repoWorktrees?.length) {
+      return null
+    }
+    const home = repoWorktrees.find((item) => item.isMainWorktree) ?? repoWorktrees[0]
+    try {
+      return nativeWorkspaceScope(home)
+    } catch {
+      return null
+    }
+  }, [activeRepoId, repoWorktrees])
+  const baseWorktreeId = useMemo(() => {
+    if (!baseScope || !repoWorktrees?.length) {
+      return null
+    }
+    const home = repoWorktrees.find((item) => item.isMainWorktree) ?? repoWorktrees[0]
+    return home.id
+  }, [baseScope, repoWorktrees])
+
+  const [charter, setCharter] = useState<ProjectCharter | null>(null)
+  const [catalog, setCatalog] = useState<MetricCatalog | null>(null)
+  const [northReading, setNorthReading] = useState<MetricReading | null>(null)
+  const [history, setHistory] = useState<VersionHistoryCatalog | null>(null)
+  const [currentVersion, setCurrentVersion] = useState<string | null>(null)
+  const [selectedVersion, setSelectedVersion] = useState<string | null>(null)
+  const [notice, setNotice] = useState<string | null>(null)
+  const [busy, setBusy] = useState(false)
 
   useEffect(() => {
     if (!activeRepo?.path) {
@@ -87,6 +79,90 @@ export function OverviewPage(): React.JSX.Element {
       cancelled = true
     }
   }, [activeRepo?.path])
+
+  const load = useCallback(async () => {
+    if (!baseScope || !baseWorktreeId) {
+      return
+    }
+    const scope = {
+      repoId: baseScope.repoId,
+      worktreeId: baseWorktreeId,
+      hostId: baseScope.hostId
+    }
+    const owner = baseScope.runtimeOwnerEnvironmentId
+    setBusy(true)
+    const problems: string[] = []
+    try {
+      const metrics = nativeMetricsPort(owner)
+      const historyPort = nativeVersionHistoryPort(owner)
+      const material = nativeVersionMaterialPort({ ...scope, workflow: 'plan' }, owner)
+      const [nextCatalog, nextHistory, context] = await Promise.all([
+        metrics.list(scope).catch((reason) => {
+          problems.push(`指标目录：${reason instanceof Error ? reason.message : String(reason)}`)
+          return null
+        }),
+        historyPort.list({ scope }).catch((reason) => {
+          problems.push(`归档记录：${reason instanceof Error ? reason.message : String(reason)}`)
+          return null
+        }),
+        material.context().catch(() => ({ version: null }))
+      ])
+      setCatalog(nextCatalog)
+      setHistory(nextHistory)
+      setCurrentVersion(context.version)
+      if (nextCatalog) {
+        const north = nextCatalog.definitions.find((item) => item.role === 'north_star')
+        if (north) {
+          const reading = await metrics
+            .read({
+              scope,
+              ref: north.ref,
+              window: metricWindowForDefinition(north, nextCatalog.timezone)
+            })
+            .catch((reason) => {
+              problems.push(
+                `北极星读数：${reason instanceof Error ? reason.message : String(reason)}`
+              )
+              return null
+            })
+          setNorthReading(reading)
+        } else {
+          setNorthReading(null)
+        }
+      }
+    } finally {
+      setBusy(false)
+    }
+    setNotice(problems.length ? problems.join('；') : null)
+  }, [baseScope, baseWorktreeId])
+
+  useEffect(() => {
+    setCatalog(null)
+    setHistory(null)
+    setNorthReading(null)
+    setSelectedVersion(null)
+    void load()
+  }, [load])
+
+  const versions = useMemo(() => {
+    const found = new Set<string>()
+    for (const record of history?.records ?? []) {
+      found.add(record.version)
+    }
+    if (currentVersion) {
+      found.add(currentVersion)
+    }
+    return [...found]
+  }, [history, currentVersion])
+  const version = selectedVersion ?? currentVersion ?? versions[0] ?? null
+
+  const minutes = useVersionMinutes({
+    baseScope,
+    baseWorktreeId,
+    history,
+    currentVersion,
+    version
+  })
 
   if (!activeRepo) {
     return (
@@ -113,15 +189,35 @@ export function OverviewPage(): React.JSX.Element {
     )
   }
 
-  const projectName = charter?.name?.trim() || activeRepo.displayName || OVERVIEW_DEMO.projectName
+  const projectName = charter?.name?.trim() || activeRepo.displayName || activeRepo.id
   const rows = charterRows(projectName, charter)
+  const north = catalog?.definitions.find((item) => item.role === 'north_star')
+  const northValue =
+    northReading?.status === 'ready' ? (northReading.readings[0]?.value ?? null) : null
+  const northLabel = !baseScope
+    ? '工作区未就绪'
+    : !catalog
+      ? '目录未知'
+      : !north
+        ? '未配置北极星指标'
+        : northReading === null
+          ? '未读取'
+          : northReading.status === 'ready'
+            ? `采集于 ${northReading.readings[0]?.collectedAt ?? ''}`
+            : `未知：${northReading.reason.message}`
+  const distribution = minutes?.acceptance ? taskDistribution(minutes.acceptance.document) : []
 
   return (
     <div className="wb-ov">
       <header className="page-head">
         <h1>总览</h1>
         <div style={{ display: 'flex', gap: 8 }}>
-          <button type="button" className="wb-btn wb-btn-secondary wb-btn-sm">
+          <button
+            type="button"
+            className="wb-btn wb-btn-secondary wb-btn-sm"
+            disabled={busy}
+            onClick={() => void load()}
+          >
             刷新
           </button>
           <button
@@ -135,20 +231,22 @@ export function OverviewPage(): React.JSX.Element {
       </header>
 
       <div className="content">
+        {notice && (
+          <p role="status" className="wb-muted">
+            {notice}
+          </p>
+        )}
         <div className="row-2">
           <section className="card" id="project-card">
             <div className="row-between">
               <div className="row-start">
                 <span className="card-title">{projectName}</span>
-                <span className="status" title="北极星指标无读数，健康信号保持未知">
+                <span className="status" title="健康信号只从北极星读数推导；无读数保持未知">
                   <span className="status-dot" />
-                  {OVERVIEW_DEMO.healthLabel}
+                  {northValue === null ? '未知' : '有读数'}
                 </span>
-                <span className="wb-tag wb-tag-outline wb-mono">{OVERVIEW_DEMO.versionChip}</span>
+                {version && <span className="wb-tag wb-tag-outline wb-mono">{version}</span>}
               </div>
-              <button type="button" className="wb-btn wb-btn-ghost wb-btn-sm">
-                编辑
-              </button>
             </div>
             <div className="detail-grid">
               {rows.map((row) => (
@@ -165,13 +263,14 @@ export function OverviewPage(): React.JSX.Element {
           <section className="card">
             <span className="card-kicker">北极星指标</span>
             <span className="card-title">
-              {charter?.opportunity?.trim() ||
-                (charter ? '（还没填目标方向）' : OVERVIEW_DEMO.northStar.name)}
+              {north?.name ?? (charter?.opportunity?.trim() || '（未配置）')}
             </span>
             <div className="row-start">
-              <h2 className="metric-value">{OVERVIEW_DEMO.northStar.value}</h2>
-              <span className="metric-target">{OVERVIEW_DEMO.northStar.target}</span>
-              <span className="wb-tag wb-tag-neutral">{OVERVIEW_DEMO.northStar.status}</span>
+              <h2 className="metric-value">
+                {northValue === null ? '—' : `${northValue}${north?.unit ?? ''}`}
+              </h2>
+              {north?.target && <span className="metric-target">目标 {north.target}</span>}
+              <span className="wb-tag wb-tag-neutral">{northLabel}</span>
             </div>
           </section>
         </div>
@@ -179,39 +278,83 @@ export function OverviewPage(): React.JSX.Element {
         <section className="card" id="version-card">
           <div className="card-head">
             <div className="row-between">
-              <h6>版本计划与进展</h6>
-              <span
-                className={`wb-tag ${version.state === '进行中' ? 'wb-tag-warning' : 'wb-tag-success'}`}
-              >
-                {version.state}
-              </span>
+              <h6>版本计划与验收</h6>
+              {version === currentVersion && (
+                <span className="wb-tag wb-tag-warning">当前选版</span>
+              )}
             </div>
             <div className="tabs" role="tablist" aria-label="版本">
-              {OVERVIEW_DEMO.versions.map((v) => (
+              {versions.map((item) => (
                 <button
-                  key={v.id}
+                  key={item}
                   type="button"
                   className="tab"
                   role="tab"
-                  aria-selected={v.id === verId}
-                  onClick={() => setVerId(v.id)}
+                  aria-selected={item === version}
+                  onClick={() => setSelectedVersion(item)}
                 >
-                  {v.label}
+                  {item}
                 </button>
               ))}
             </div>
           </div>
-          <div className="goal-week">
-            <div>
-              <span className="card-kicker">版本目标</span>
-              <div className="text-box">{version.goal}</div>
+          {!version ? (
+            <p className="wb-muted">尚无版本材料或归档记录。</p>
+          ) : (
+            <div className="goal-week">
+              <div>
+                <span className="card-kicker">计划纪要</span>
+                <div className="text-box">
+                  {minutes?.plan ? (
+                    <>
+                      <pre className="wb-pre">{minutes.plan.text}</pre>
+                      <span className="wb-muted">{minutes.plan.source}</span>
+                    </>
+                  ) : (
+                    <span className="wb-muted">该版本无计划归档记录</span>
+                  )}
+                </div>
+              </div>
+              <div>
+                <span className="card-kicker">验收纪要</span>
+                <div className="text-box">
+                  {minutes?.acceptance ? (
+                    <>
+                      {minutes.acceptance.document.results.map((result) => {
+                        const goal = minutes.planDocument?.goals.find(
+                          (item) => item.goalId === result.goalId
+                        )
+                        return (
+                          <p key={result.goalId} className="wb-ov-result">
+                            <b>{goal?.title ?? result.goalId}</b>
+                            {result.decision
+                              ? ` · ${
+                                  result.decision.outcome === 'met'
+                                    ? '达成'
+                                    : result.decision.outcome === 'not-met'
+                                      ? '未达'
+                                      : '待决'
+                                }（${result.decision.recordedAt}）`
+                              : ' · 未结论'}
+                            {result.note ? `：${result.note}` : ''}
+                          </p>
+                        )
+                      })}
+                      {distribution.length > 0 && (
+                        <p className="wb-muted">
+                          Issue 快照：
+                          {distribution.map(([state, count]) => `${state} ${count}`).join(' · ')}
+                        </p>
+                      )}
+                      <span className="wb-muted">{minutes.acceptance.source}</span>
+                    </>
+                  ) : (
+                    <span className="wb-muted">该版本无验收归档记录</span>
+                  )}
+                </div>
+              </div>
             </div>
-            <div>
-              <span className="card-kicker">每周进展</span>
-              <div className="text-box">{version.weekNote}</div>
-            </div>
-          </div>
-          <ProgressBar {...version.counts} />
+          )}
         </section>
       </div>
     </div>
