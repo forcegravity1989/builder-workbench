@@ -13,13 +13,19 @@ import { PlanningMigration } from './PlanningMigration'
 import { PlanningTasks } from './PlanningTasks'
 import { PlanningMinutes } from './PlanningMinutes'
 import { PlanningSaveFooter } from './PlanningSaveFooter'
+import { PlanningCreateForm, PlanningJourneyNav } from './PlanningSections'
 import './version-planning.css'
 
-type PlanView = { goalFilter: string; notice: string | null; archive: ArchiveStatus }
+type PlanView = {
+  goalFilter: string
+  notice: string | null
+  /** Keyed by the material identity it was read for; stale reads never decide `archived`. */
+  archiveRead: { key: string; status: ArchiveStatus } | null
+}
 const emptyView: PlanView = {
   goalFilter: '',
   notice: null,
-  archive: { kind: 'unknown', reason: '尚未读取' }
+  archiveRead: null
 }
 
 type PlanningBoardProps = {
@@ -28,10 +34,7 @@ type PlanningBoardProps = {
 }
 export function PlanningBoard(props: PlanningBoardProps) {
   const { scope, worktreeId } = props.context
-  const identity = JSON.stringify([
-    scope && cycleScopeKey(scope),
-    worktreeId
-  ])
+  const identity = JSON.stringify([scope && cycleScopeKey(scope), worktreeId])
   return <PlanningBoardContent key={identity} {...props} />
 }
 
@@ -58,7 +61,7 @@ function PlanningBoardContent({ context, prepareMetrics }: PlanningBoardProps) {
   const metrics = usePlanMetrics(metricScope, scope?.runtimeOwnerEnvironmentId, plan)
   const minutes = plan ? derivePlanMinutes(plan) : ''
   const selectionKey = JSON.stringify([scopeKey, plan?.version, plan?.cycleId])
-  const { goalFilter, notice, archive } = view.key === selectionKey ? view : emptyView
+  const { goalFilter, notice, archiveRead } = view.key === selectionKey ? view : emptyView
   const updateView = useCallback(
     (patch: Partial<PlanView>) => {
       setView((current) => ({
@@ -84,11 +87,20 @@ function PlanningBoardContent({ context, prepareMetrics }: PlanningBoardProps) {
   const version = plan?.version
   const planCycleId = plan?.cycleId
   const revision = material.draft?.expectedRevision
+  const archiveIdentity =
+    version && planCycleId && revision ? JSON.stringify([version, planCycleId, revision]) : null
+  const resolvedArchive =
+    archiveIdentity && archiveRead?.key === archiveIdentity ? archiveRead.status : null
+  /** First archive read for the opened material is in flight; editing stays disabled until it settles. */
+  const archivePending = archiveIdentity !== null && archiveRead === null
+  const archive: ArchiveStatus = resolvedArchive ??
+    archiveRead?.status ?? { kind: 'unknown', reason: '尚未读取' }
+  /** Host truth for the saved revision; a stale dirty draft cannot bypass a confirmed archive. */
   const archived = Boolean(
     plan &&
     revision &&
-    !material.draft?.dirty &&
-    isArchivedMaterial(archive, {
+    resolvedArchive &&
+    isArchivedMaterial(resolvedArchive, {
       workflow: 'plan',
       version: plan.version,
       cycleId: plan.cycleId,
@@ -106,7 +118,7 @@ function PlanningBoardContent({ context, prepareMetrics }: PlanningBoardProps) {
 
   useEffect(() => {
     let current = true
-    if (!scope || !worktreeId || !version || !planCycleId || !revision) {
+    if (!scope || !worktreeId || !version || !planCycleId || !revision || !archiveIdentity) {
       return
     }
     void archivePort
@@ -120,19 +132,24 @@ function PlanningBoardContent({ context, prepareMetrics }: PlanningBoardProps) {
       .then(
         (result) => {
           if (current) {
-            updateView({ archive: result })
+            updateView({ archiveRead: { key: archiveIdentity, status: result } })
           }
         },
         (reason) => {
           if (current) {
-            updateView({ archive: { kind: 'unknown', reason: String(reason) } })
+            updateView({
+              archiveRead: {
+                key: archiveIdentity,
+                status: { kind: 'unknown', reason: String(reason) }
+              }
+            })
           }
         }
       )
     return () => {
       current = false
     }
-  }, [scope, worktreeId, version, planCycleId, revision, archivePort, updateView])
+  }, [scope, worktreeId, version, planCycleId, revision, archiveIdentity, archivePort, updateView])
 
   const act = async (operation: () => Promise<unknown>) => {
     updateView({ notice: null })
@@ -151,10 +168,14 @@ function PlanningBoardContent({ context, prepareMetrics }: PlanningBoardProps) {
     }
   }
   const edit = (next: PlanningMaterial) => {
-    if (!archived) material.edit(next)
+    if (!archived && !archivePending) {
+      material.edit(next)
+    }
   }
   const beginNextRound = () => {
-    if (!plan || !archived || material.busy || selecting) return
+    if (!plan || !archived || material.busy || selecting) {
+      return
+    }
     material.edit({ ...plan, cycleId: crypto.randomUUID() })
   }
   const requestArchive = () =>
@@ -241,35 +262,23 @@ function PlanningBoardContent({ context, prepareMetrics }: PlanningBoardProps) {
             新建版本
           </button>
           {archived && (
-            <button className="wb-btn wb-btn-ghost wb-btn-sm"
-              disabled={material.busy || selecting} onClick={beginNextRound}>
+            <button
+              className="wb-btn wb-btn-ghost wb-btn-sm"
+              disabled={material.busy || selecting}
+              onClick={beginNextRound}
+            >
               开始下一轮计划
             </button>
           )}
         </div>
       </header>
       {creating && (
-        <form
-          className="vp-create"
-          onSubmit={(event) => {
-            event.preventDefault()
-            void act(() => selectVersion(newVersion.trim(), true))
-          }}
-        >
-          <label>
-            版本名称
-            <input
-              autoFocus
-              value={newVersion}
-              onChange={(event) => setNewVersion(event.target.value)}
-              placeholder="例如 v0.5"
-              required
-            />
-          </label>
-          <button className="wb-btn wb-btn-sm" disabled={material.busy || selecting}>
-            创建计划草稿
-          </button>
-        </form>
+        <PlanningCreateForm
+          newVersion={newVersion}
+          busy={material.busy || selecting}
+          onNewVersion={setNewVersion}
+          onCreate={(version) => void act(() => selectVersion(version, true))}
+        />
       )}
       {(material.error || notice || selection.error) && (
         <p className="vp-notice" role="status">
@@ -288,42 +297,21 @@ function PlanningBoardContent({ context, prepareMetrics }: PlanningBoardProps) {
         />
       )}
       <div className="vp-body" inert={selecting} aria-busy={selecting}>
-        <nav className="vp-journey" aria-label="计划流程">
-          <button
-            onClick={() =>
-              preparation.current?.scrollIntoView({ block: 'start', behavior: 'smooth' })
-            }
-          >
-            <span className={`vp-dot ${plan ? 'pending' : ''}`} />
-            准备
-          </button>
-          <button
-            onClick={() => goals.current?.scrollIntoView({ block: 'start', behavior: 'smooth' })}
-          >
-            <span className={`vp-dot ${plan?.goals.length ? 'pending' : ''}`} />
-            目标
-          </button>
-          <button disabled={!plan} onClick={() => setMinutesOpen(true)}>
-            <span className="vp-dot" />
-            评审
-          </button>
-          <button
-            disabled={!plan}
-            onClick={() => {
-              setTasksOpen(true)
-              tasksSection.current?.scrollIntoView({ block: 'end', behavior: 'smooth' })
-            }}
-          >
-            <span className={`vp-dot ${plan?.tasks.length ? 'pending' : ''}`} />
-            拆解
-          </button>
-          <button disabled={!plan} onClick={() => void requestArchive()}>
-            <span
-              className={`vp-dot ${archived ? 'done' : archive.kind === 'open' ? 'pending' : ''}`}
-            />
-            归档
-          </button>
-        </nav>
+        <PlanningJourneyNav
+          hasPlan={Boolean(plan)}
+          goalCount={plan?.goals.length ?? 0}
+          taskCount={plan?.tasks.length ?? 0}
+          archived={archived}
+          archiveOpen={archive.kind === 'open'}
+          preparationRef={preparation}
+          goalsRef={goals}
+          onMinutes={() => setMinutesOpen(true)}
+          onTasks={() => {
+            setTasksOpen(true)
+            tasksSection.current?.scrollIntoView({ block: 'end', behavior: 'smooth' })
+          }}
+          onArchive={() => void requestArchive()}
+        />
         <div className="vp-content" ref={content}>
           {!plan ? (
             <div className="vp-empty">
@@ -343,7 +331,11 @@ function PlanningBoardContent({ context, prepareMetrics }: PlanningBoardProps) {
             </div>
           ) : (
             <>
-              <section className="vp-preparation" ref={preparation} inert={archived}>
+              <section
+                className="vp-preparation"
+                ref={preparation}
+                inert={archived || archivePending}
+              >
                 <label>
                   {plan.version} · 版本进展
                   <textarea
@@ -367,13 +359,15 @@ function PlanningBoardContent({ context, prepareMetrics }: PlanningBoardProps) {
                   />
                 </details>
               </section>
-              <div inert={archived}><PlanningGoals
-                plan={plan}
-                edit={edit}
-                metrics={metrics}
-                sectionRef={goals}
-                prepare={() => void act(prepareMetrics)}
-              /></div>
+              <div inert={archived || archivePending}>
+                <PlanningGoals
+                  plan={plan}
+                  edit={edit}
+                  metrics={metrics}
+                  sectionRef={goals}
+                  prepare={() => void act(prepareMetrics)}
+                />
+              </div>
               <PlanningTasks
                 scope={scope}
                 plan={plan}
@@ -392,6 +386,8 @@ function PlanningBoardContent({ context, prepareMetrics }: PlanningBoardProps) {
       <PlanningSaveFooter
         material={{ ...material, busy: material.busy || selecting }}
         archive={archive}
+        archived={archived}
+        archivePending={archivePending}
         onAct={act}
         onMinutes={() => setMinutesOpen(true)}
         onArchive={requestArchive}

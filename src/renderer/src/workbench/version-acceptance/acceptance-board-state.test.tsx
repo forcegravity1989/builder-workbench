@@ -12,6 +12,7 @@ import type {
   VersionHistoryPlan
 } from '../../../../shared/workbench/version-history'
 import type { VersionDocumentSnapshot } from '../../../../shared/workbench/version-document'
+import type { ArchiveStatus } from '../../../../shared/workbench/version-archive'
 import { useAcceptanceBoard } from './use-acceptance-board'
 
 const revision = `sha256:${'a'.repeat(64)}`
@@ -58,7 +59,8 @@ afterEach(() => {
 })
 async function renderBoard(
   pending: Promise<VersionDocumentSnapshot<AcceptanceMaterial> | null>,
-  readPlan?: VersionHistoryPort['readPlan']
+  readPlan?: VersionHistoryPort['readPlan'],
+  readStatus?: () => Promise<ArchiveStatus>
 ) {
   const scope = {
     projectId: 'project',
@@ -97,7 +99,15 @@ async function renderBoard(
       prepareRequest: vi.fn()
     },
     taskPort: { listVersion: vi.fn(), refresh: vi.fn(), openDetail: vi.fn() },
-    archivePort: { readStatus: vi.fn(), prepareRequest: vi.fn() }
+    archivePort: {
+      readStatus:
+        readStatus ??
+        vi.fn(async () => ({
+          kind: 'not-created' as const,
+          checkedAt: '2026-09-25T01:00:00Z'
+        })),
+      prepareRequest: vi.fn()
+    }
   }
   const history: VersionHistoryPort = {
     list: vi.fn(async () => ({ records: [], problems: [] })),
@@ -205,5 +215,70 @@ describe('acceptance draft transitions', () => {
     expect(history.readPlan).toHaveBeenCalledOnce()
     expect(board.report).toContain('计划来源核对：已核对（2026-09-25T01:00:00.000Z）')
     expect(board.report).not.toContain('2026-09-25T02:00:00.000Z')
+  })
+
+  it('blocks editing during the first archive read and never lets a dirty draft bypass a confirmed archive', async () => {
+    const gate = Promise.withResolvers<ArchiveStatus>()
+    await renderBoard(Promise.resolve(null), undefined, () => gate.promise)
+    expect(board.document!.version).toBe('v0.5')
+    expect(board.archivePending).toBe(true)
+    expect(board.readOnly).toBe(true)
+    const reference = {
+      provider: 'github',
+      repository: 'github.com/team/repo',
+      number: 7,
+      materialRevision: revision
+    }
+    const merged: ArchiveStatus = {
+      kind: 'merged',
+      reference,
+      url: 'https://github.com/team/repo/pull/7',
+      checkedAt: '2026-09-25T01:00:00Z',
+      checks: 'passed',
+      review: 'approved',
+      mergeCommit: '4'.repeat(40),
+      proof: {
+        kind: 'verified',
+        value: {
+          reference,
+          mergeCommit: '4'.repeat(40),
+          material: { workflow: 'acceptance', version: 'v0.5', cycleId: 'acceptance', revision },
+          checkedAt: '2026-09-25T01:00:00Z'
+        }
+      }
+    }
+    await act(async () => {
+      gate.resolve(merged)
+    })
+    expect(board.archivePending).toBe(false)
+    expect(board.archived).toBe(true)
+    expect(board.readOnly).toBe(true)
+    expect(board.journey.archive.kind).toBe('complete')
+    await act(async () => {
+      const document = board.controller.value!.document
+      board.controller.edit({
+        ...document,
+        results: [{ ...document.results[0], note: '陈旧本机草稿' }]
+      })
+    })
+    expect(board.draft!.dirty).toBe(true)
+    expect(board.archived).toBe(true)
+    expect(board.readOnly).toBe(true)
+    await act(async () => {
+      await board.discardLocal()
+    })
+    expect(board.draft!.dirty).toBe(false)
+    expect(board.document!.results[0].note).toBe('')
+    expect(board.archived).toBe(true)
+  })
+
+  it('reopens editing when the first archive read fails, without claiming any archive state', async () => {
+    await renderBoard(Promise.resolve(null), undefined, async () => {
+      throw new Error('CodeHub 不可用')
+    })
+    expect(board.archivePending).toBe(false)
+    expect(board.archived).toBe(false)
+    expect(board.archive.kind).toBe('unknown')
+    expect(board.readOnly).toBe(false)
   })
 })

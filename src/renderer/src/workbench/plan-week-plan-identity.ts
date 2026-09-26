@@ -1,9 +1,11 @@
-import { makePaneKey, isTerminalLeafId } from '../../../shared/stable-pane-id'
 import type { Tab } from '../../../shared/tab-types'
-import type { TerminalLayoutSnapshot, TerminalTab } from '../../../shared/terminal-tab-types'
-import { singlePaneLayoutSnapshot } from '@/store/slices/terminal-helpers'
-import { mintStablePaneId } from '@/lib/pane-manager/mint-stable-pane-id'
-import { resolveRootlessTerminalLayoutLeafId } from '@/components/terminal-pane/terminal-layout-leaf-ids'
+import type { TerminalTab } from '../../../shared/terminal-tab-types'
+
+/** Legacy aliases; the single implementation lives in version-cycle/terminal-pane-layout. */
+export {
+  resolveTerminalPaneKey as resolveWeekPlanPaneKey,
+  seedTerminalLayoutIfNeeded as seedWeekPlanLayoutIfNeeded
+} from './version-cycle/terminal-pane-layout'
 
 export const WEEK_PLAN_SESSION_LABEL = 'bw/week-plan'
 
@@ -136,26 +138,6 @@ export function findWeekPlanStructuredTabInProject(args: {
   return undefined
 }
 
-export function resolveWeekPlanPaneKey(
-  tabId: string,
-  layout: TerminalLayoutSnapshot | undefined
-): string | null {
-  const leafId = leafIdFromLayout(layout)
-  return leafId ? makePaneKey(tabId, leafId) : null
-}
-
-export function seedWeekPlanLayoutIfNeeded(
-  tabId: string,
-  layout: TerminalLayoutSnapshot | undefined
-): { paneKey: string; snapshot: TerminalLayoutSnapshot | null } {
-  const existing = resolveWeekPlanPaneKey(tabId, layout)
-  if (existing) {
-    return { paneKey: existing, snapshot: null }
-  }
-  const leafId = mintStablePaneId()
-  return { paneKey: makePaneKey(tabId, leafId), snapshot: singlePaneLayoutSnapshot(leafId) }
-}
-
 export function weekPlanProjectKey(
   worktree: { repoId?: string } | null | undefined,
   worktreeId: string
@@ -205,20 +187,4 @@ function isWeekPlanLabelValue(value: string | null | undefined): boolean {
     trimmed.startsWith(`${WEEK_PLAN_SESSION_LABEL} -`) ||
     trimmed.startsWith(`${WEEK_PLAN_SESSION_LABEL}-`)
   )
-}
-
-function leafIdFromLayout(layout: TerminalLayoutSnapshot | undefined): string | null {
-  if (!layout) {
-    return null
-  }
-  if (layout.activeLeafId && isTerminalLeafId(layout.activeLeafId)) {
-    return layout.activeLeafId
-  }
-  const rootless = resolveRootlessTerminalLayoutLeafId(layout)
-  if (rootless) {
-    return rootless
-  }
-  return layout.root?.type === 'leaf' && isTerminalLeafId(layout.root.leafId)
-    ? layout.root.leafId
-    : null
 }

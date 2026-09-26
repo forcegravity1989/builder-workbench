@@ -1,37 +1,29 @@
 import type { ArchiveStatus } from '../version-cycle/ports'
-import { isArchivedMaterial } from '../../../../shared/workbench/version-archive'
 import type { usePlanningMaterial } from './use-planning-material'
 
 export function PlanningSaveFooter({
   material,
   archive,
+  archived,
+  archivePending,
   onAct,
   onMinutes,
   onArchive
 }: {
   material: ReturnType<typeof usePlanningMaterial>
   archive: ArchiveStatus
+  archived: boolean
+  archivePending: boolean
   onAct(operation: () => Promise<unknown>): Promise<void>
   onMinutes(): void
   onArchive(): Promise<void>
 }) {
   const plan = material.draft?.document
-  const revision = material.draft?.expectedRevision
-  const archived = Boolean(
-    plan &&
-    revision &&
-    !material.draft?.dirty &&
-    isArchivedMaterial(archive, {
-      workflow: 'plan',
-      version: plan.version,
-      cycleId: plan.cycleId,
-      revision
-    })
-  )
   const hasArchive =
     archive.kind === 'open' || archive.kind === 'merged' || archive.kind === 'closed'
-  const archiveLabel =
-    archive.kind === 'unknown'
+  const archiveLabel = archivePending
+    ? '正在读取归档状态…'
+    : archive.kind === 'unknown'
       ? `状态未知：${archive.reason}`
       : archive.kind === 'not-created'
         ? '尚未创建归档 PR'
@@ -46,6 +38,18 @@ export function PlanningSaveFooter({
               : '归档 PR 待评审'
   return (
     <>
+      {archived && material.draft?.dirty && (
+        <p className="vp-notice" role="alert">
+          本轮计划已归档，未保存的本地修改不能写入。
+          <button
+            className="wb-btn wb-btn-sm"
+            disabled={material.busy}
+            onClick={() => void onAct(() => material.discardLocal())}
+          >
+            放弃本地修改，重读已归档材料
+          </button>
+        </p>
+      )}
       {material.draft?.error && (
         <details className="vp-conflict" open>
           <summary>{material.draft.error}</summary>

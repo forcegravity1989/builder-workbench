@@ -12,10 +12,10 @@ export function useWorkflowVersion(port: ReturnType<typeof createVersionMaterial
   useEffect(() => {
     setVersion(null)
     setError(null)
-    if (!port) return
+    if (!port) {return}
     let disposed = false
     const read = async () => {
-      if (selecting.current) return
+      if (selecting.current) {return}
       const request = ++sequence.current
       try {
         const result = await port.context()
@@ -24,7 +24,7 @@ export function useWorkflowVersion(port: ReturnType<typeof createVersionMaterial
           setError(null)
         }
       } catch (reason) {
-        if (!disposed && request === sequence.current) setError(String(reason))
+        if (!disposed && request === sequence.current) {setError(String(reason))}
       }
     }
     void read()
@@ -37,8 +37,8 @@ export function useWorkflowVersion(port: ReturnType<typeof createVersionMaterial
     }
   }, [port])
   const selectVersion = useCallback(async (value: string) => {
-    if (!port) throw new Error('工作区尚未就绪')
-    if (selecting.current) throw new Error('正在选择版本，请稍后重试')
+    if (!port) {throw new Error('工作区尚未就绪')}
+    if (selecting.current) {throw new Error('正在选择版本，请稍后重试')}
     selecting.current = true
     const request = ++sequence.current
     try {

@@ -24,7 +24,7 @@ export function CycleChat({ session }: { session: CycleSession | null }) {
     return () => setActivityTerminalPortals([])
   }, [portals])
   useEffect(() => {
-    if (portals.length) window.dispatchEvent(new Event(SYNC_FIT_PANES_EVENT))
+    if (portals.length) {window.dispatchEvent(new Event(SYNC_FIT_PANES_EVENT))}
   }, [portals])
   return <div className="chat-session-host" ref={setHost}>
     {visible && session?.kind === 'structured' && tab && isAgentSessionHandleProvider(tab.agentSessionAgent) &&

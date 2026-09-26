@@ -26,7 +26,12 @@ export function preparationSignal(
   if (plan.kind === 'mismatch' || plan.kind === 'unavailable') {
     return { kind: 'failed', label: '原承诺核对失败' }
   }
-  if (!humanReviewed && !document.preparationReview && !document.candidateRef && !document.preparedArtifacts.length) {
+  if (
+    !humanReviewed &&
+    !document.preparationReview &&
+    !document.candidateRef &&
+    !document.preparedArtifacts.length
+  ) {
     return { kind: 'unknown', label: '未开始' }
   }
   if (
@@ -83,12 +88,12 @@ export function decisionSignal(
   return { kind: 'pending', label: '待核对' }
 }
 
+/** Host truth for the saved revision; a stale local dirty draft cannot un-archive or bypass it. */
 export function archiveSignal(
   status: ArchiveStatus,
-  material: ArchivedMaterial | null,
-  dirty: boolean
+  material: ArchivedMaterial | null
 ): JourneySignal {
-  if (!dirty && material && isArchivedMaterial(status, material)) {
+  if (material && isArchivedMaterial(status, material)) {
     return { kind: 'complete', label: '已归档' }
   }
   if (status.kind === 'unknown' || status.kind === 'not-created') {

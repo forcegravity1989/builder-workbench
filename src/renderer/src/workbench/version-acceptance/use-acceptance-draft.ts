@@ -27,7 +27,7 @@ export function useAcceptanceDraft(
       setRecoveryText(saved)
       const value = JSON.parse(saved) as MaterialDraft<AcceptanceMaterial>
       const document = AcceptanceMaterialSchema.parse(value.document)
-      if (document.version !== selectedVersion) throw new Error('草稿不属于当前版本')
+      if (document.version !== selectedVersion) {throw new Error('草稿不属于当前版本')}
       if (
         value.expectedRevision !== null &&
         !/^sha256:[a-f0-9]{64}$/.test(value.expectedRevision)

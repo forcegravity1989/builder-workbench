@@ -3,6 +3,7 @@ import { act } from 'react'
 import { createRoot, type Root } from 'react-dom/client'
 import { afterEach, beforeEach, expect, it, vi } from 'vitest'
 import type { PlanningMaterial } from '../../../../shared/workbench/version-material'
+import type { ArchiveStatus } from '../../../../shared/workbench/version-archive'
 import type { VersionCycleContext } from '../version-cycle/cycle-context'
 import { planningDraftKey } from './use-planning-material'
 
@@ -151,18 +152,82 @@ it('clears the editable view but retains the draft when association fails', asyn
 })
 
 it('keeps the selected version and draft when native history changes or the chat closes', async () => {
-  localStorage.setItem(planningDraftKey('test-project', 'A'), JSON.stringify({
-    document: { ...material('A'), summary: { progress: 'unsaved A', risks: '' } },
-    expectedRevision: revision, dirty: true
-  }))
+  localStorage.setItem(
+    planningDraftKey('test-project', 'A'),
+    JSON.stringify({
+      document: { ...material('A'), summary: { progress: 'unsaved A', risks: '' } },
+      expectedRevision: revision,
+      dirty: true
+    })
+  )
   const value = context(vi.fn())
   await mount(value)
   const originalInput = progress()
-  await mount({ ...value, session: { ...value.session!, sessionId: 'older-session', tabId: 'older-tab' } })
+  await mount({
+    ...value,
+    session: { ...value.session!, sessionId: 'older-session', tabId: 'older-tab' }
+  })
   expect(progress()).toBe(originalInput)
   expect(progress()?.value).toBe('unsaved A')
   expect(selector().value).toBe('A')
   await mount({ ...value, session: null })
   expect(progress()).toBe(originalInput)
   expect(progress()?.value).toBe('unsaved A')
+})
+
+it('keeps a confirmed plan archive read-only over a stale dirty draft and offers host re-read', async () => {
+  localStorage.setItem(
+    planningDraftKey('test-project', 'A'),
+    JSON.stringify({
+      document: { ...material('A'), summary: { progress: 'unsaved A', risks: '' } },
+      expectedRevision: revision,
+      dirty: true
+    })
+  )
+  const gate = Promise.withResolvers<ArchiveStatus>()
+  const value: VersionCycleContext = {
+    ...context(vi.fn()),
+    archivePort: { readStatus: () => gate.promise, prepareRequest: unexpected }
+  }
+  await mount(value)
+  expect(progress()?.value).toBe('unsaved A')
+  expect(container.querySelector('.vp-preparation')?.hasAttribute('inert')).toBe(true)
+  const reference = {
+    provider: 'github',
+    repository: 'github.com/team/repo',
+    number: 3,
+    materialRevision: revision
+  }
+  await act(async () => {
+    gate.resolve({
+      kind: 'merged',
+      reference,
+      url: 'https://github.com/team/repo/pull/3',
+      checkedAt: '2026-09-25T01:00:00Z',
+      checks: 'passed',
+      review: 'approved',
+      mergeCommit: '4'.repeat(40),
+      proof: {
+        kind: 'verified',
+        value: {
+          reference,
+          mergeCommit: '4'.repeat(40),
+          material: { workflow: 'plan', version: 'A', cycleId: 'cycle', revision },
+          checkedAt: '2026-09-25T01:00:00Z'
+        }
+      }
+    })
+  })
+  expect(container.querySelector('.vp-preparation')?.hasAttribute('inert')).toBe(true)
+  expect(container.textContent).toContain('本轮计划已归档，未保存的本地修改不能写入。')
+  expect(container.textContent).toContain('开始下一轮计划')
+  const discard = [...container.querySelectorAll<HTMLButtonElement>('button')].find((button) =>
+    button.textContent?.includes('放弃本地修改')
+  )!
+  await act(async () => {
+    discard.click()
+  })
+  expect(progress()?.value).toBe('A progress')
+  expect(container.textContent).not.toContain('放弃本地修改')
+  expect(container.querySelector('.vp-preparation')?.hasAttribute('inert')).toBe(true)
 })

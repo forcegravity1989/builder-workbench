@@ -40,7 +40,7 @@ export function useAcceptanceBoard({
     }),
     [materialPort]
   )
-  const { draft, controller, recoveryError, recoveryText, cancelAutomaticRead } =
+  const { draft, controller, recoveryError, recoveryText, cancelAutomaticRead, clear } =
     useAcceptanceDraft(recoveryKey, port, context.version ?? undefined)
   const catalog = useAcceptanceSources(history, materialPort, metricScope)
   const { versions, sources } = catalog
@@ -56,12 +56,18 @@ export function useAcceptanceBoard({
   const output = useAcceptanceOutput(context, controller, draft, plan, fixed.verification, setError)
   const archive = output.archive
   const associated = Boolean(document && document.version === context.version)
-  const archived = Boolean(document && draft?.expectedRevision && !draft.dirty &&
+  /** Host truth for the saved revision; a stale dirty draft cannot bypass a confirmed archive. */
+  const archived = Boolean(
+    document &&
+    draft?.expectedRevision &&
     isArchivedMaterial(archive, {
-      workflow: 'acceptance', version: document.version,
-      cycleId: document.cycleId, revision: draft.expectedRevision
-    }))
-  const readOnly = busy || !associated || !plan || archived
+      workflow: 'acceptance',
+      version: document.version,
+      cycleId: document.cycleId,
+      revision: draft.expectedRevision
+    })
+  )
+  const readOnly = busy || !associated || !plan || archived || output.archivePending
   useEffect(
     () => () => {
       generation.current++
@@ -109,6 +115,40 @@ export function useAcceptanceBoard({
       }
     }
   }
+  /** Escape hatch for a stale dirty draft over a confirmed archive: re-read host truth. */
+  async function discardLocal() {
+    const current = controller.value
+    if (!current) {
+      return
+    }
+    cancelAutomaticRead()
+    const token = ++generation.current
+    setBusy(true)
+    try {
+      const saved = await port.read(current.document.version)
+      if (token !== generation.current) {
+        return
+      }
+      if (saved) {
+        controller.restore({
+          document: saved.document,
+          expectedRevision: saved.revision,
+          dirty: false
+        })
+      } else {
+        clear()
+      }
+      setError(null)
+    } catch (reason) {
+      if (token === generation.current) {
+        setError(String(reason))
+      }
+    } finally {
+      if (token === generation.current) {
+        setBusy(false)
+      }
+    }
+  }
   async function begin() {
     const source = sources.find(
       (item) => `${item.sourceCommit}:${item.version}:${item.cycleId}` === planChoice
@@ -116,19 +156,24 @@ export function useAcceptanceBoard({
     if (!source || source.version !== context.version) {
       return
     }
-    if (
-      draft &&
-      (draft.dirty ||
-        !draft.expectedRevision ||
-        !isArchivedMaterial(archive, {
+    if (draft) {
+      const confirmed = Boolean(
+        draft.expectedRevision &&
+        isArchivedMaterial(archive, {
           workflow: 'acceptance',
           version: draft.document.version,
           cycleId: draft.document.cycleId,
           revision: draft.expectedRevision
-        }))
-    ) {
-      setError('本轮验收尚未归档，请继续当前材料；归档后可开始下一轮。')
-      return
+        })
+      )
+      if (confirmed && draft.dirty) {
+        setError('本轮验收已归档，未保存的本地修改不能写入；请放弃本地修改后开始下一轮。')
+        return
+      }
+      if (!confirmed) {
+        setError('本轮验收尚未归档，请继续当前材料；归档后可开始下一轮。')
+        return
+      }
     }
     const token = ++generation.current
     const original = controller.value
@@ -145,7 +190,11 @@ export function useAcceptanceBoard({
       if (token !== generation.current || controller.value !== original) {
         return
       }
-      const next = createAcceptanceMaterial({ planRef, plan: selected, cycleId: crypto.randomUUID() })
+      const next = createAcceptanceMaterial({
+        planRef,
+        plan: selected,
+        cycleId: crypto.randomUUID()
+      })
       controller.restore({
         document: next,
         expectedRevision: draft?.expectedRevision ?? null,
@@ -164,7 +213,7 @@ export function useAcceptanceBoard({
   }
   async function prepare(text: string) {
     try {
-      if (!session) throw new Error('请先选择或开启左侧会话。')
+      if (!session) {throw new Error('请先选择或开启左侧会话。')}
       await context.sessionPort.prepareRequest(session, text)
       setError(null)
     } catch (reason) {
@@ -177,7 +226,8 @@ export function useAcceptanceBoard({
     if (
       !current ||
       !result ||
-      readOnly || current.version !== context.version ||
+      readOnly ||
+      current.version !== context.version ||
       !sameAcceptanceSource(current, next)
     ) {
       setError('验收来源已变化，输入未覆盖新材料，请重新核对。')
@@ -241,6 +291,7 @@ export function useAcceptanceBoard({
     archived,
     readOnly,
     loadVersion,
+    discardLocal,
     begin,
     prepare,
     editGoal,

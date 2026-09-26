@@ -40,10 +40,18 @@ export function useAcceptanceOutput(
       )
     )
       .then(async (states) => {
-        const preparationReviewed = Boolean(document.preparationReview &&
-          document.preparationReview.materialRevision === await preparationEvidenceRevision(document))
+        const preparationReviewed = Boolean(
+          document.preparationReview &&
+          document.preparationReview.materialRevision ===
+            (await preparationEvidenceRevision(document))
+        )
         if (current) {
-          setDecisionResult({ document, plan, states: Object.fromEntries(states), preparationReviewed })
+          setDecisionResult({
+            document,
+            plan,
+            states: Object.fromEntries(states),
+            preparationReviewed
+          })
         }
       })
       .catch(() => {
@@ -89,21 +97,40 @@ export function useAcceptanceOutput(
           revision: draft.expectedRevision
         }
       : null
+  /** First read for the opened material is in flight; editing stays disabled until it settles. */
+  const archivePending = Boolean(archiveMaterial) && archiveResult === null
+  const hasArchiveIdentity = archiveMaterial !== null
+  const autoArchiveKey = useRef<string | null>(null)
+  const archiveRead = useRef(archiveStatus)
+  archiveRead.current = archiveStatus
+  useEffect(() => {
+    if (!hasArchiveIdentity || autoArchiveKey.current === archiveKey) {
+      return
+    }
+    autoArchiveKey.current = archiveKey
+    void archiveRead.current()
+  }, [archiveKey, hasArchiveIdentity])
   const verified = document && checks?.key === preparationKey(document) ? checks : null
   const decisionStates =
     decisionResult?.document === document && decisionResult?.plan === plan
       ? (decisionResult?.states ?? null)
       : null
-  const preparationReviewed = decisionResult?.document === document &&
-    decisionResult?.plan === plan && decisionResult?.preparationReviewed === true
+  const preparationReviewed =
+    decisionResult?.document === document &&
+    decisionResult?.plan === plan &&
+    decisionResult?.preparationReviewed === true
   async function reviewPreparation(checked: boolean) {
     const current = controller.value?.document
-    if (!current) return
-    const review = checked ? {
-      source: '用户在验收屏核对',
-      recordedAt: new Date().toISOString(),
-      materialRevision: await preparationEvidenceRevision(current)
-    } : undefined
+    if (!current) {
+      return
+    }
+    const review = checked
+      ? {
+          source: '用户在验收屏核对',
+          recordedAt: new Date().toISOString(),
+          materialRevision: await preparationEvidenceRevision(current)
+        }
+      : undefined
     if (controller.value?.document !== current) {
       onError('材料已变化，请重新核对。')
       return
@@ -122,11 +149,7 @@ export function useAcceptanceOutput(
   }
   function saveTaskSnapshot(source: AcceptanceMaterial, reads: CycleTaskRead[]) {
     const current = controller.value?.document
-    if (
-      !current ||
-      current.version !== context.version ||
-      !sameAcceptanceSource(source, current)
-    ) {
+    if (!current || current.version !== context.version || !sameAcceptanceSource(source, current)) {
       throw new Error('验收来源已变化，任务快照未覆盖新材料。')
     }
     controller.edit({
@@ -148,7 +171,10 @@ export function useAcceptanceOutput(
         revision: draft.expectedRevision
       })
       if (lifetime.active && request === lifetime.archiveRequest) {
-        setArchiveResult({ key: archiveKey, status })
+        setArchiveResult({
+          key: archiveKey,
+          status: status ?? { kind: 'unknown', reason: '归档读取没有返回状态' }
+        })
       }
     } catch (reason) {
       if (lifetime.active && request === lifetime.archiveRequest) {
@@ -197,12 +223,13 @@ export function useAcceptanceOutput(
   return {
     archive,
     archiveMaterial,
+    archivePending,
     preparationReviewed,
     reviewPreparation,
     journey: {
       preparation: preparationSignal(document, planVerification, verified, preparationReviewed),
       decisions: decisionSignal(document, plan?.document, decisionStates),
-      archive: archiveSignal(archive, archiveMaterial, draft?.dirty ?? false)
+      archive: archiveSignal(archive, archiveMaterial)
     },
     archiveStatus,
     onChecks,

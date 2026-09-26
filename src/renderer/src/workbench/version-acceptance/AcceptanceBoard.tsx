@@ -9,6 +9,7 @@ import { useAcceptanceMetricWindow } from './AcceptanceMetricWindow'
 import { AcceptanceContext } from './AcceptanceContext'
 import { AcceptanceTasks } from './AcceptanceTasks'
 import { AcceptanceArchive } from './AcceptanceArchive'
+import { AcceptanceSourcePicker } from './AcceptanceSourcePicker'
 import { AcceptanceJourney } from './AcceptanceJourney'
 import { prepareAcceptanceRequest } from './acceptance-model'
 import type { AcceptanceCandidatePort } from './acceptance-candidate-port'
@@ -88,8 +89,10 @@ function ReadyAcceptanceBoard({
     document,
     plan,
     archived,
+    archivePending,
     readOnly,
     loadVersion,
+    discardLocal,
     begin,
     prepare,
     editGoal,
@@ -121,7 +124,15 @@ function ReadyAcceptanceBoard({
         <button className="wb-btn wb-btn-ghost wb-btn-sm" onClick={refreshCatalog}>
           刷新版本
         </button>
-        <span>{draft?.dirty ? '草稿未保存' : document ? '已保存材料' : '待选择'}</span>
+        <span>
+          {draft?.dirty
+            ? '草稿未保存'
+            : archivePending
+              ? '正在读取归档状态…'
+              : document
+                ? '已保存材料'
+                : '待选择'}
+        </span>
         {plan && (
           <span>
             {plan.document.goals.length} 项目标 ·{' '}
@@ -214,38 +225,28 @@ function ReadyAcceptanceBoard({
               </button>
             </details>
           )}
-          {(!document || archived) && version && (
-            <section className="va-source-picker">
-              <p>
-                {document
-                  ? '本轮验收已归档，可选择计划开始下一轮。'
-                  : '选择已合入的计划修订作为原承诺。草案预验收可在本次会话中明确来源。'}
-              </p>
-              <select
-                aria-label="固定计划修订"
-                value={planChoice}
-                onChange={(event) => setPlanChoice(event.target.value)}
-              >
-                <option value="">选择计划修订</option>
-                {sources
-                  .filter((item) => item.version === version)
-                  .map((item) => (
-                    <option
-                      key={`${item.sourceCommit}:${item.cycleId}`}
-                      value={`${item.sourceCommit}:${item.version}:${item.cycleId}`}
-                    >
-                      {item.version} · {item.cycleId} · {item.sourceCommit.slice(0, 12)}
-                    </option>
-                  ))}
-              </select>
+          {archived && draft?.dirty && (
+            <p role="alert" className="va-error">
+              本轮验收已归档，未保存的本地修改不能写入。
               <button
                 className="wb-btn wb-btn-sm"
-                disabled={!planChoice || busy}
-                onClick={() => void begin()}
+                disabled={busy}
+                onClick={() => void discardLocal()}
               >
-                {document ? '开始下一轮验收' : '开始本次验收'}
+                放弃本地修改，重读已归档材料
               </button>
-            </section>
+            </p>
+          )}
+          {(!document || archived) && version && (
+            <AcceptanceSourcePicker
+              hasDocument={Boolean(document)}
+              version={version}
+              sources={sources}
+              planChoice={planChoice}
+              busy={busy}
+              onPlanChoice={setPlanChoice}
+              onBegin={() => void begin()}
+            />
           )}
           {!document && (
             <button

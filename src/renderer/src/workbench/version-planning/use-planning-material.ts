@@ -237,6 +237,42 @@ export function usePlanningMaterial(
         controller?.useRemote(draft.remote)
       }
     },
+    /** Escape hatch for a stale dirty draft over a confirmed archive: re-read host truth. */
+    discardLocal: async () => {
+      if (!port || !controller?.value) {
+        return
+      }
+      const version = controller.value.document.version
+      setBusy(true)
+      try {
+        const snapshot = await port.read(version)
+        if (!isCurrent()) {
+          return
+        }
+        if (snapshot) {
+          controller.restore({
+            document: PlanningMaterialSchema.parse(snapshot.document),
+            expectedRevision: snapshot.revision,
+            dirty: false
+          })
+        } else {
+          controller.clear()
+          try {
+            localStorage.removeItem(planningDraftKey(scopeKey, version))
+          } catch {
+            /* The recovery flow keeps the original text on failure. */
+          }
+        }
+      } catch (reason) {
+        if (isCurrent()) {
+          setError(reason instanceof Error ? reason.message : '无法重读材料')
+        }
+      } finally {
+        if (isCurrent()) {
+          setBusy(false)
+        }
+      }
+    },
     useMerged: (document: PlanningMaterial) => {
       if (draft?.remote) {
         controller?.useMerged(document, draft.remote.revision)

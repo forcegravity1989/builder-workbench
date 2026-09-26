@@ -57,9 +57,9 @@ export function AcceptanceMetrics({
     setBusy(key)
     try {
       const catalog = await port.list(scope)
-      if (!current()) return
+      if (!current()) {return}
       const definition = catalog.definitions.find((item) => metricRefKey(item.ref) === key)
-      if (!definition) throw new Error('指标配置已变化，请核对计划采用的来源')
+      if (!definition) {throw new Error('指标配置已变化，请核对计划采用的来源')}
       const value = await port.refresh({
         scope, ref: target.ref,
         window: metricWindowForDefinition(definition, catalog.timezone, window)
