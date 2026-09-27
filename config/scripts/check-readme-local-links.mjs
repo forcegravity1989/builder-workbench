@@ -14,7 +14,17 @@ const HTML_ATTRIBUTE = /\b(?:src|srcset|href)\s*=\s*(?:"([^"]*)"|'([^']*)')/g
 const MARKDOWN_LINK = /!?\[[^\]]*\]\(([^)\s]+)(?:\s+"[^"]*")?\)/g
 
 function readmeFiles(root) {
-  const translated = readdirSync(path.join(root, TRANSLATED_README_DIR))
+  // Why: upstream ships translated READMEs under docs/readme/; the BW overlay removed that
+  // tree, so a missing directory means "no translated READMEs to check", not a failure.
+  let names = []
+  try {
+    names = readdirSync(path.join(root, TRANSLATED_README_DIR))
+  } catch (error) {
+    if (error.code !== 'ENOENT') {
+      throw error
+    }
+  }
+  const translated = names
     .filter((name) => name.endsWith('.md'))
     .sort()
     .map((name) => path.posix.join('docs', 'readme', name))

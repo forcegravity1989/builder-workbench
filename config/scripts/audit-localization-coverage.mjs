@@ -501,6 +501,7 @@ function parseArgs(argv) {
   const options = {
     allowlistPath: path.join('config', 'localization-coverage-allowlist.json'),
     check: false,
+    exclusionsPath: path.join('config', 'localization-coverage-exclusions.json'),
     format: 'summary',
     outputPath: null,
     sourceRoot: path.join('src', 'renderer', 'src')
@@ -514,6 +515,9 @@ function parseArgs(argv) {
       options.format = 'markdown'
     } else if (arg === '--check') {
       options.check = true
+    } else if (arg === '--exclusions') {
+      options.exclusionsPath = argv[index + 1] ?? options.exclusionsPath
+      index += 1
     } else if (arg === '--allowlist') {
       options.allowlistPath = argv[index + 1] ?? options.allowlistPath
       index += 1
@@ -551,6 +555,34 @@ async function readAllowlist(root, allowlistPath) {
   const absolutePath = path.resolve(root, allowlistPath)
   const raw = await fs.readFile(absolutePath, 'utf8')
   return JSON.parse(raw)
+}
+
+// Why: the BW overlay is Chinese-first and exempt from Orca i18n extraction as a whole subtree;
+// per-string allowlisting would need a reviewed entry for every copy change. Reasons required.
+async function readExclusions(root, exclusionsPath) {
+  const absolutePath = path.resolve(root, exclusionsPath)
+  const raw = await fs.readFile(absolutePath, 'utf8').catch((error) => {
+    if (error.code !== 'ENOENT') {
+      throw error
+    }
+    return '[]'
+  })
+  const exclusions = JSON.parse(raw)
+  for (const entry of exclusions) {
+    if (!entry?.pathPrefix) {
+      throw new Error(`${exclusionsPath}: every exclusion needs a non-empty pathPrefix`)
+    }
+    if (!entry?.reason) {
+      throw new Error(`${exclusionsPath}: exclusion ${entry.pathPrefix} needs a documented reason`)
+    }
+  }
+  return exclusions
+}
+
+function applyExclusions(reports, exclusions) {
+  return reports.filter(
+    (report) => !exclusions.some((entry) => report.filePath.startsWith(entry.pathPrefix))
+  )
 }
 
 function findNewCandidates(reports, allowlist) {
@@ -593,8 +625,10 @@ export async function main(root = process.cwd(), argv = process.argv.slice(2)) {
   }
 
   if (options.check) {
+    const exclusions = await readExclusions(root, options.exclusionsPath)
+    const checked = applyExclusions(reports, exclusions)
     const allowlist = await readAllowlist(root, options.allowlistPath)
-    const newCandidates = findNewCandidates(reports, allowlist)
+    const newCandidates = findNewCandidates(checked, allowlist)
     if (newCandidates.length > 0) {
       console.error('New unlocalized renderer strings were found.')
       console.error('Localize them or add a reviewed exclusion to the localization allowlist.')
@@ -602,7 +636,10 @@ export async function main(root = process.cwd(), argv = process.argv.slice(2)) {
       console.error(formatReports(root, newCandidates))
       return 1
     }
-    console.log(`Localization coverage check passed with ${reports.length} allowlisted candidates.`)
+    console.log(
+      `Localization coverage check passed with ${checked.length} candidates ` +
+        `(${reports.length - checked.length} excluded via ${options.exclusionsPath}).`
+    )
     return 0
   }
 
