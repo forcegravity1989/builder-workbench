@@ -24,7 +24,8 @@ import {
 import { useWorkflowVersion } from './use-workflow-version'
 import { useCycleAutomationDraft } from './use-cycle-automation-draft'
 import { CycleChat } from './CycleChat'
-import { CycleBasePathNotice, CycleHistoryPane } from './cycle-history-pane'
+import { CycleHistoryPane } from './cycle-history-pane'
+import { useAutoWorktreeBase } from './use-auto-worktree-base'
 import type { CycleScope, CycleSession } from './ports'
 import type { VersionCycleContext } from './cycle-context'
 import { nativeVersionMaterialPort } from '../version-material-port'
@@ -87,7 +88,6 @@ export function CycleWorkspaceShell({ workflow }: { workflow: VersionWorkflow })
     const id = s.activeRepoId ?? s.repos[0]?.id ?? null
     return s.repos.find((item) => item.id === id)?.worktreeBasePath?.trim() || null
   })
-  const workspaceDir = useAppStore((s) => s.settings?.workspaceDir ?? '')
   useEffect(() => {
     let current = true
     setSetupError(null)
@@ -199,6 +199,7 @@ export function CycleWorkspaceShell({ workflow }: { workflow: VersionWorkflow })
   }, [cycleScope, fixedId, session, sessionStoreKey, setSession])
   const [busy, setBusy] = useState(false)
   const [notice, setNotice] = useState<string | null>(null)
+  useAutoWorktreeBase(activeRepoId, repoWorktreeBasePath, setNotice)
 
   const detectionTarget = useAgentDetectionTargetForWorktree(fixedId)
   const { detectedIds: detectedAgents } = useDetectedAgents(detectionTarget)
@@ -392,9 +393,6 @@ export function CycleWorkspaceShell({ workflow }: { workflow: VersionWorkflow })
             <p role="alert" className="vc-notice">
               {notice ?? setupError}
             </p>
-          )}
-          {!setupError && baseScope && !repoWorktreeBasePath && (
-            <CycleBasePathNotice workspaceDir={workspaceDir} />
           )}
           <CycleChat session={session} />
           {cycleScope && fixedId && (

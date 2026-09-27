@@ -6,11 +6,11 @@ import { nativeWorkspaceScope, type NativeWorkspaceScope } from './version-cycle
 import { nativeMetricsPort } from './metrics-port'
 import { nativeVersionHistoryPort } from './version-history-port'
 import { nativeVersionMaterialPort } from './version-material-port'
-import { metricWindowForDefinition } from '../../../shared/workbench/metric-windows'
 import type { MetricCatalog, MetricReading } from '../../../shared/workbench/metrics'
 import type { VersionHistoryCatalog } from '../../../shared/workbench/version-history'
 import { taskDistribution, useVersionMinutes } from './use-version-minutes'
 import { OverviewMetricZones } from './overview-metric-zones'
+import { readAllMetricReadings, refreshMetricReadings } from './overview-metric-readings'
 import './workbench-overview.css'
 
 function charterRows(
@@ -118,50 +118,13 @@ export function OverviewPage(): React.JSX.Element {
       setHistory(nextHistory)
       setCurrentVersion(context.version)
       if (nextCatalog) {
-        const north = nextCatalog.definitions.find((item) => item.role === 'north_star')
-        if (north) {
-          const reading = await metrics
-            .read({
-              scope,
-              ref: north.ref,
-              window: metricWindowForDefinition(north, nextCatalog.timezone)
-            })
-            .catch((reason) => {
-              problems.push(
-                `北极星读数：${reason instanceof Error ? reason.message : String(reason)}`
-              )
-              return null
-            })
-          if (epoch !== loadEpoch.current) {
-            return
-          }
-          setNorthReading(reading)
-        } else {
-          setNorthReading(null)
+        const result = await readAllMetricReadings({ scope, owner, catalog: nextCatalog })
+        if (epoch !== loadEpoch.current) {
+          return
         }
-        // Lagging/leading zones: same honest read path as the north star, grouped
-        // by the definition's feature tab; failures stay Unknown, never zero.
-        const zoneDefs = nextCatalog.definitions.filter((item) => item.role !== 'north_star')
-        const zoneEntries = await Promise.all(
-          zoneDefs.map(async (def) => {
-            const reading = await metrics
-              .read({
-                scope,
-                ref: def.ref,
-                window: metricWindowForDefinition(def, nextCatalog.timezone)
-              })
-              .catch((reason) => {
-                problems.push(
-                  `${def.name} 读数：${reason instanceof Error ? reason.message : String(reason)}`
-                )
-                return null
-              })
-            return [def.ref.definitionHash, reading] as const
-          })
-        )
-        if (epoch === loadEpoch.current) {
-          setZoneReadings(Object.fromEntries(zoneEntries))
-        }
+        setNorthReading(result.north)
+        setZoneReadings(result.map)
+        problems.push(...result.problems)
       } else if (epoch === loadEpoch.current) {
         setZoneReadings({})
       }
@@ -172,6 +135,32 @@ export function OverviewPage(): React.JSX.Element {
     }
     setNotice(problems.length ? problems.join('；') : null)
   }, [baseScope, baseWorktreeId])
+
+  /** 刷新读数=真实执行采集脚本后重读，不是只查缓存；按钮跟着指标卡片走。 */
+  const refreshReadings = useCallback(async () => {
+    if (!baseScope || !baseWorktreeId || !catalog) {
+      return
+    }
+    const epoch = ++loadEpoch.current
+    setBusy(true)
+    try {
+      const result = await refreshMetricReadings({
+        scope: { repoId: baseScope.repoId, worktreeId: baseWorktreeId, hostId: baseScope.hostId },
+        owner: baseScope.runtimeOwnerEnvironmentId,
+        catalog
+      })
+      if (epoch !== loadEpoch.current) {
+        return
+      }
+      setZoneReadings(result.map)
+      setNorthReading(result.north)
+      setNotice(result.problems.length ? result.problems.join('；') : null)
+    } finally {
+      if (epoch === loadEpoch.current) {
+        setBusy(false)
+      }
+    }
+  }, [baseScope, baseWorktreeId, catalog])
 
   useEffect(() => {
     setCatalog(null)
@@ -249,16 +238,6 @@ export function OverviewPage(): React.JSX.Element {
     <div className="wb-ov">
       <header className="page-head">
         <h1>总览</h1>
-        <div style={{ display: 'flex', gap: 8 }}>
-          <button
-            type="button"
-            className="wb-btn wb-btn-secondary wb-btn-sm"
-            disabled={busy}
-            onClick={() => void load()}
-          >
-            刷新
-          </button>
-        </div>
       </header>
 
       <div className="content">
@@ -292,7 +271,18 @@ export function OverviewPage(): React.JSX.Element {
           </section>
 
           <section className="card">
-            <span className="card-kicker">北极星指标</span>
+            <div className="row-between">
+              <span className="card-kicker">北极星指标</span>
+              <button
+                type="button"
+                className="wb-btn wb-btn-ghost wb-btn-sm"
+                disabled={busy}
+                title="执行登记采集脚本后重读全部指标（含滞后/引领）"
+                onClick={() => void refreshReadings()}
+              >
+                刷新读数
+              </button>
+            </div>
             <span className="card-title">
               {north?.name ?? (charter?.opportunity?.trim() || '（未配置）')}
             </span>
@@ -310,6 +300,15 @@ export function OverviewPage(): React.JSX.Element {
           <div className="card-head">
             <div className="row-between">
               <h6>版本计划与验收</h6>
+              <button
+                type="button"
+                className="wb-btn wb-btn-ghost wb-btn-sm"
+                disabled={busy}
+                title="重读归档记录与当前选版纪要"
+                onClick={() => void load()}
+              >
+                刷新归档
+              </button>
               {version !== null && version === currentVersion && (
                 <span className="wb-tag wb-tag-warning">当前选版</span>
               )}
@@ -388,7 +387,14 @@ export function OverviewPage(): React.JSX.Element {
           )}
         </section>
 
-        {catalog ? <OverviewMetricZones catalog={catalog} readings={zoneReadings} /> : null}
+        {catalog ? (
+          <OverviewMetricZones
+            catalog={catalog}
+            readings={zoneReadings}
+            busy={busy}
+            onRefresh={() => void refreshReadings()}
+          />
+        ) : null}
       </div>
     </div>
   )

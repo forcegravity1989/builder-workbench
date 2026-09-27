@@ -37,10 +37,14 @@ function readingLabel(reading: MetricReading | null): string {
  */
 export function OverviewMetricZones({
   catalog,
-  readings
+  readings,
+  busy,
+  onRefresh
 }: {
   catalog: MetricCatalog
   readings: Record<string, MetricReading | null>
+  busy: boolean
+  onRefresh: () => void
 }) {
   const groups = groupZoneDefs(catalog)
   if (groups.length === 0) {
@@ -51,6 +55,15 @@ export function OverviewMetricZones({
       <div className="card-head">
         <h6>滞后与引领指标</h6>
         <span className="wb-tag wb-tag-neutral">按特性页签分组 · 读数如实</span>
+        <button
+          type="button"
+          className="wb-btn wb-btn-ghost wb-btn-sm"
+          disabled={busy}
+          title="执行登记采集脚本后重读"
+          onClick={onRefresh}
+        >
+          刷新读数
+        </button>
       </div>
       {groups.map((group) => (
         <div key={group.feature} className="wb-mz-group">

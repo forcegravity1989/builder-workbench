@@ -44,14 +44,3 @@ export function CycleHistoryPane({
     </div>
   )
 }
-
-/** Honest hint when the project has no per-repo worktree base configured. */
-export function CycleBasePathNotice({ workspaceDir }: { workspaceDir: string }) {
-  return (
-    <p className="vc-notice vc-notice-info">
-      本项目未配置单仓工作树基址，固定树按 Orca 全局默认落在 {workspaceDir || '默认工作区目录'}{' '}
-      下；如需放入项目目录，可在 设置 &gt; Repository worktree defaults 设相对路径（如
-      `.bw/worktrees`），下次建树生效。
-    </p>
-  )
-}
