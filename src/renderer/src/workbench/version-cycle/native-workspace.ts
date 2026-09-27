@@ -74,7 +74,13 @@ export function findNamedWorktree(scope: NativeWorkspaceScope, branch: string): 
   }
   return found[0] ?? null
 }
-const creating = new Map<string, Promise<Worktree>>()
+// Why: HMR/remounts create fresh module instances; a module-local in-flight map would
+// allow two parallel creates of the same fixed tree (the loser gets a uniquified
+// branch). Share the lock across module instances via a global key.
+const creatingRegistryKey = '__bwCreatingWorktrees' as const
+type CreatingMap = Map<string, Promise<Worktree>>
+const globalStore = globalThis as typeof globalThis & { [creatingRegistryKey]?: CreatingMap }
+const creating: CreatingMap = (globalStore[creatingRegistryKey] ??= new Map())
 async function removeWorktreeBestEffort(
   scope: NativeWorkspaceScope,
   target: { kind: 'local' } | { kind: 'environment'; environmentId: string },
@@ -192,6 +198,18 @@ export async function ensureNamedWorktree(
       // checked out elsewhere (e.g. a tree left by an older toolchain). Roll the stray
       // tree back so retries cannot accumulate orphans; removal is best-effort.
       const rolledBack = await removeWorktreeBestEffort(scope, target, result.worktree.id)
+      // A parallel create (remounted module instance, double mount) may have won the
+      // branch while this one was in flight: adopt the winner instead of surfacing an
+      // error for a race the user cannot see.
+      await useAppStore.getState().fetchWorktrees(scope.repoId, {
+        executionHostId: scope.runtimeOwnerEnvironmentId
+          ? toRuntimeExecutionHostId(scope.runtimeOwnerEnvironmentId)
+          : scope.hostId
+      })
+      const winner = findNamedWorktree(scope, branch)
+      if (winner) {
+        return winner
+      }
       throw new Error(
         `原生创建未返回约定分支 ${branch}（实际 ${createdBranch}），误建工作树${
           rolledBack ? '已回滚删除' : '回滚失败，请手动清理'
