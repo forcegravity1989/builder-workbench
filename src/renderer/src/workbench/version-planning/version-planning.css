@@ -95,6 +95,10 @@
   background: #dba847;
   border-color: #bd8731;
 }
+.vp-dot.failed {
+  background: var(--color-danger, #c15f4d);
+  border-color: var(--color-danger-deep, #883324);
+}
 .vp-dot.done {
   background: #558f72;
   border-color: #397451;
@@ -308,4 +312,8 @@
   .vp-header {
     padding: var(--space-3);
   }
+}
+.vp-notice ul {
+  margin: 4px 0 0;
+  padding-left: 18px;
 }

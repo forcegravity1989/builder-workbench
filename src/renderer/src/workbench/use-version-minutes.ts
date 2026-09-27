@@ -7,6 +7,7 @@ import type {
   VersionHistorySource
 } from '../../../shared/workbench/version-history'
 import {
+  AcceptanceMaterialSchema,
   PlanningMaterialSchema,
   type AcceptanceMaterial,
   type PlanningMaterial
@@ -118,6 +119,23 @@ export function useVersionMinutes({
           acceptanceColumn = {
             document: read.document as AcceptanceMaterial,
             source: `归档 ${acceptanceRecord.sourceCommit.slice(0, 12)} · ${acceptanceRecord.committedAt}`
+          }
+        } catch {
+          acceptanceColumn = null
+        }
+      } else if (version === currentVersion) {
+        // Mirror the plan column: an in-progress version reads its live acceptance material
+        // instead of reporting "no archive record" while work is underway.
+        try {
+          const live = await nativeVersionMaterialPort(
+            { ...scope, workflow: 'acceptance' },
+            owner
+          ).read(version)
+          if (live) {
+            acceptanceColumn = {
+              document: AcceptanceMaterialSchema.parse(live.document),
+              source: '当前材料（未归档）'
+            }
           }
         } catch {
           acceptanceColumn = null

@@ -57,7 +57,7 @@ export function createUiTaskActions(set: UISliceSet, get: UISliceGet): Partial<U
         get().recordFeatureInteraction?.('jira-tasks')
       }
       // Why: record a Tasks visit in shared back/forward history; all task-source variants collapse to one deduped 'tasks' entry.
-      const sourceDetailEntry = data.openCodeHubTask
+      const detailEntry = data.openCodeHubTask
         ? ({
             kind: 'task-detail',
             source: 'codehub',
@@ -94,12 +94,11 @@ export function createUiTaskActions(set: UISliceSet, get: UISliceGet): Partial<U
                     sourceContext: data.openJiraSourceContext
                   } as const)
                 : null
-      const detailEntry = sourceDetailEntry
       const currentEntry = get().worktreeNavHistory[get().worktreeNavHistoryIndex]
       const currentIsTaskStack =
         currentEntry === 'tasks' ||
         (typeof currentEntry === 'object' && currentEntry.kind === 'task-detail')
-      // Why: with returnToPreviousView the detail is opened from another screen (e.g. Workbench plan/acceptance);
+      // Why: with returnToPreviousView the detail is opened from another screen;
       // inserting the 'tasks' sentinel would make Back land on the Tasks list instead of the actual origin.
       if (!detailEntry || (!currentIsTaskStack && !options.returnToPreviousView)) {
         get().recordViewVisit('tasks')

@@ -1,9 +1,24 @@
 import { expect, it, vi } from 'vitest'
 import type { Worktree } from '../../../../shared/worktree/types'
+import type { MetricCatalog } from '../../../../shared/workbench/metrics'
 
 const fixture = vi.hoisted(() => ({ worktrees: [] as Worktree[] }))
+const metrics = vi.hoisted(() => ({
+  catalog: { definitions: [], problems: [] } as unknown as MetricCatalog,
+  error: null as Error | null
+}))
 vi.mock('@/store', () => ({
   useAppStore: { getState: () => ({ repos: [], allWorktrees: () => fixture.worktrees }) }
+}))
+vi.mock('../metrics-port', () => ({
+  nativeMetricsPort: () => ({
+    list: async () => {
+      if (metrics.error) {
+        throw metrics.error
+      }
+      return metrics.catalog
+    }
+  })
 }))
 import { resolveWorkbenchPromptAssets } from './cycle-prompt'
 
@@ -70,6 +85,18 @@ it('routes metric setup to its own native guide without material-write commands'
       branch: 'bw/metrics'
     } as Worktree
   ]
+  metrics.catalog = {
+    definitions: [
+      {
+        name: '周活跃用户',
+        role: 'north_star',
+        target: '>= 100',
+        unit: '人'
+      } as never
+    ],
+    problems: [{ code: 'collector-required', message: '指标缺少采集配置', name: '构建时长' }]
+  } as unknown as MetricCatalog
+  metrics.error = null
   const result = await resolveWorkbenchPromptAssets({
     projectId: 'project',
     repoId: 'repo',
@@ -81,4 +108,30 @@ it('routes metric setup to its own native guide without material-write commands'
   expect(result.prompt).not.toContain('ORCA skills get week-planning')
   expect(result.prompt).not.toContain('ORCA bw materials')
   expect(result.context.workflow).toBe('metrics-refresh')
+  expect(result.prompt).toContain('当前指标目录')
+  expect(result.prompt).toContain('周活跃用户：角色 north_star，目标 >= 100，单位 人')
+  expect(result.prompt).toContain('构建时长：指标缺少采集配置（collector-required）')
+})
+
+it('keeps an unreadable metric catalog honest in the setup prompt', async () => {
+  fixture.worktrees = [
+    {
+      id: 'metrics',
+      repoId: 'repo',
+      projectId: 'project',
+      hostId: 'local',
+      path: '/projects/metrics',
+      branch: 'bw/metrics'
+    } as Worktree
+  ]
+  metrics.error = new Error('目录读取失败')
+  const result = await resolveWorkbenchPromptAssets({
+    projectId: 'project',
+    repoId: 'repo',
+    hostId: 'local',
+    worktreeId: 'metrics',
+    workflow: 'metrics-refresh'
+  })
+  expect(result.prompt).toContain('指标目录暂不可读：目录读取失败')
+  expect(result.prompt).not.toContain('（尚无已登记定义）')
 })

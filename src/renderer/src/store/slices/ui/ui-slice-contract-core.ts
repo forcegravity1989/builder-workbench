@@ -163,7 +163,7 @@ export type UISliceCore = {
     data?: UISliceCore['taskPageData'],
     options?: {
       recordTasksInteraction?: boolean
-      /** Skip the 'tasks' sentinel before a detail entry so Back returns to the actual origin view (e.g. a Workbench screen), not the Tasks list. */
+      /** Skip the 'tasks' sentinel before a detail entry so Back returns to the actual origin view, not the Tasks list. */
       returnToPreviousView?: boolean
     }
   ) => void

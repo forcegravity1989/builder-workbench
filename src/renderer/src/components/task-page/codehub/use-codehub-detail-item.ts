@@ -6,7 +6,7 @@ import type { TaskPageSourceAvailabilityModel } from '../../use-task-page-source
 
 /**
  * The CodeHub detail lives in taskPageData (not local state) so external opens —
- * deep links, Workbench plan/acceptance screens — replay through the shared nav
+ * deep links and other screens — replay through the shared nav
  * history like every other provider's detail entry.
  */
 export function useCodeHubDetailItem(model: TaskPageSourceAvailabilityModel) {

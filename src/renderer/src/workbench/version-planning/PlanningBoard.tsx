@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { PlanningMaterial } from '../../../../shared/workbench/version-material'
 import { isArchivedMaterial } from '../../../../shared/workbench/version-archive'
+import { metricProblemText } from '../../../../shared/workbench/metrics'
+import { MetricProblemsPanel } from '../metric-problems-panel'
 import type { ArchiveStatus, CycleTaskRead } from '../version-cycle/ports'
 import type { VersionCycleContext } from '../version-cycle/cycle-context'
 import { cycleScopeKey } from '../version-cycle/native-cycle-workspace'
@@ -13,7 +15,7 @@ import { PlanningMigration } from './PlanningMigration'
 import { PlanningTasks } from './PlanningTasks'
 import { PlanningMinutes } from './PlanningMinutes'
 import { PlanningSaveFooter } from './PlanningSaveFooter'
-import { PlanningCreateForm, PlanningJourneyNav, PlanningVersionSelect } from './PlanningSections'
+import { PlanningCreateForm, PlanningHeader, PlanningJourneyNav } from './PlanningSections'
 import { usePlanningViewMemory } from './use-planning-view-memory'
 import './version-planning.css'
 
@@ -238,36 +240,17 @@ function PlanningBoardContent({ context, prepareMetrics }: PlanningBoardProps) {
 
   return (
     <div className="vp-board">
-      <header className="vp-header">
-        <div>
-          <h1>版本计划</h1>
-          <span className="vp-muted">准备 → 目标 → 评审 → 拆解 → 归档</span>
-        </div>
-        <div className="vp-inline">
-          <PlanningVersionSelect
-            currentVersion={plan?.version ?? ''}
-            versions={material.versions}
-            disabled={!materialPort || material.busy || selecting}
-            onSelect={(version) => void act(() => selectVersion(version))}
-          />
-          <button
-            className="wb-btn wb-btn-ghost wb-btn-sm"
-            disabled={!materialPort || selecting}
-            onClick={() => setCreating((value) => !value)}
-          >
-            新建版本
-          </button>
-          {archived && (
-            <button
-              className="wb-btn wb-btn-ghost wb-btn-sm"
-              disabled={material.busy || selecting}
-              onClick={beginNextRound}
-            >
-              开始下一轮计划
-            </button>
-          )}
-        </div>
-      </header>
+      <PlanningHeader
+        currentVersion={plan?.version ?? ''}
+        versions={material.versions}
+        portReady={Boolean(materialPort)}
+        materialBusy={material.busy}
+        selecting={selecting}
+        archived={archived}
+        onToggleCreate={() => setCreating((value) => !value)}
+        onSelect={(version) => void act(() => selectVersion(version))}
+        onNextRound={beginNextRound}
+      />
       {creating && (
         <PlanningCreateForm
           newVersion={newVersion}
@@ -280,6 +263,12 @@ function PlanningBoardContent({ context, prepareMetrics }: PlanningBoardProps) {
         <p className="vp-notice" role="status">
           {selection.error || material.error || notice}
         </p>
+      )}
+      {metrics.catalog && metrics.catalog.problems.length > 0 && (
+        <MetricProblemsPanel
+          className="vp-notice"
+          problems={metrics.catalog.problems.map(metricProblemText)}
+        />
       )}
       {materialPort && (
         <PlanningMigration
@@ -298,7 +287,7 @@ function PlanningBoardContent({ context, prepareMetrics }: PlanningBoardProps) {
           goalCount={plan?.goals.length ?? 0}
           taskCount={plan?.tasks.length ?? 0}
           archived={archived}
-          archiveOpen={archive.kind === 'open'}
+          archive={archive}
           preparationRef={preparation}
           goalsRef={goals}
           onMinutes={() => setMinutesOpen(true)}

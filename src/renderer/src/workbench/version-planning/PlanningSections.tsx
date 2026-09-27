@@ -1,5 +1,9 @@
 import type { RefObject } from 'react'
 import type { VersionMaterialCandidate } from '../../../../shared/workbench/version-material-request'
+import {
+  archiveJourneyLamp,
+  type ArchiveStatus
+} from '../../../../shared/workbench/version-archive'
 
 /** Version chooser over host-listed candidates; unreadable/migration states stay visible but disabled. */
 export function PlanningVersionSelect({
@@ -37,6 +41,62 @@ export function PlanningVersionSelect({
         <option value={currentVersion}>{currentVersion} · 新草稿</option>
       )}
     </select>
+  )
+}
+
+/** Board header: version chooser plus the explicit create / next-round actions. */
+export function PlanningHeader({
+  currentVersion,
+  versions,
+  portReady,
+  materialBusy,
+  selecting,
+  archived,
+  onToggleCreate,
+  onSelect,
+  onNextRound
+}: {
+  currentVersion: string
+  versions: VersionMaterialCandidate[]
+  portReady: boolean
+  materialBusy: boolean
+  selecting: boolean
+  archived: boolean
+  onToggleCreate(): void
+  onSelect(version: string): void
+  onNextRound(): void
+}) {
+  return (
+    <header className="vp-header">
+      <div>
+        <h1>版本计划</h1>
+        <span className="vp-muted">准备 → 目标 → 评审 → 拆解 → 归档</span>
+      </div>
+      <div className="vp-inline">
+        <PlanningVersionSelect
+          currentVersion={currentVersion}
+          versions={versions}
+          disabled={!portReady || materialBusy || selecting}
+          onSelect={onSelect}
+        />
+        <button
+          className="wb-btn wb-btn-ghost wb-btn-sm"
+          disabled={!portReady || selecting}
+          onClick={onToggleCreate}
+        >
+          新建版本
+        </button>
+        {archived && (
+          <button
+            className="wb-btn wb-btn-ghost wb-btn-sm"
+            disabled={materialBusy || selecting}
+            onClick={onNextRound}
+          >
+            开始下一轮计划
+          </button>
+        )}
+      </div>
+    </header>
   )
 }
 
@@ -83,7 +143,7 @@ export function PlanningJourneyNav({
   goalCount,
   taskCount,
   archived,
-  archiveOpen,
+  archive,
   preparationRef,
   goalsRef,
   onMinutes,
@@ -94,13 +154,22 @@ export function PlanningJourneyNav({
   goalCount: number
   taskCount: number
   archived: boolean
-  archiveOpen: boolean
+  archive: ArchiveStatus
   preparationRef: RefObject<HTMLElement | null>
   goalsRef: RefObject<HTMLElement | null>
   onMinutes(): void
   onTasks(): void
   onArchive(): void
 }) {
+  const lamp = archiveJourneyLamp(archive, archived)
+  const archiveDot =
+    lamp === 'complete'
+      ? 'done'
+      : lamp === 'failed'
+        ? 'failed'
+        : lamp === 'pending'
+          ? 'pending'
+          : ''
   return (
     <nav className="vp-journey" aria-label="计划流程">
       <button
@@ -126,7 +195,7 @@ export function PlanningJourneyNav({
         拆解
       </button>
       <button disabled={!hasPlan} onClick={onArchive}>
-        <span className={`vp-dot ${archived ? 'done' : archiveOpen ? 'pending' : ''}`} />
+        <span className={`vp-dot ${archiveDot}`} />
         归档
       </button>
     </nav>

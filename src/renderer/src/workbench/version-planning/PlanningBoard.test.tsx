@@ -4,14 +4,16 @@ import { createRoot, type Root } from 'react-dom/client'
 import { afterEach, beforeEach, expect, it, vi } from 'vitest'
 import type { PlanningMaterial } from '../../../../shared/workbench/version-material'
 import type { ArchiveStatus } from '../../../../shared/workbench/version-archive'
+import type { MetricCatalog } from '../../../../shared/workbench/metrics'
 import type { VersionCycleContext } from '../version-cycle/cycle-context'
 import { planningDraftKey } from './use-planning-material'
 
 vi.mock('../version-cycle/native-cycle-workspace', () => ({
   cycleScopeKey: () => 'test-project'
 }))
+const metricsFixture = vi.hoisted(() => ({ catalog: null as MetricCatalog | null }))
 vi.mock('./use-plan-metrics', () => ({
-  usePlanMetrics: () => ({ catalog: null, values: {}, readings: [], error: null })
+  usePlanMetrics: () => ({ catalog: metricsFixture.catalog, values: {}, readings: [], error: null })
 }))
 import { PlanningBoard } from './PlanningBoard'
 
@@ -73,6 +75,7 @@ let root: Root
 let container: HTMLDivElement
 beforeEach(() => {
   localStorage.clear()
+  metricsFixture.catalog = null
   container = document.createElement('div')
   document.body.append(container)
   root = createRoot(container)
@@ -236,4 +239,67 @@ it('keeps a confirmed plan archive read-only over a stale dirty draft and offers
   expect(progress()?.value).toBe('A progress')
   expect(container.textContent).not.toContain('放弃本地修改')
   expect(container.querySelector('.vp-preparation')?.hasAttribute('inert')).toBe(true)
+})
+
+it('renders catalog problems as fixable errors instead of swallowing them', async () => {
+  metricsFixture.catalog = {
+    definitions: [],
+    problems: [{ code: 'collector-required', message: '指标缺少采集配置', name: '构建时长' }]
+  } as unknown as MetricCatalog
+  await mount(context(vi.fn()))
+  expect(container.textContent).toContain('存在待修复问题')
+  expect(container.textContent).toContain('构建时长：指标缺少采集配置')
+})
+
+it('derives the archive journey lamp from provider-confirmed states', async () => {
+  const reference = {
+    provider: 'github',
+    repository: 'github.com/team/repo',
+    number: 3,
+    materialRevision: revision
+  }
+  const archiveDot = () => container.querySelector('.vp-journey button:last-child .vp-dot')!
+  const closedValue: VersionCycleContext = {
+    ...context(vi.fn()),
+    archivePort: {
+      readStatus: async () =>
+        ({
+          kind: 'closed',
+          reference,
+          url: 'https://github.com/team/repo/pull/3',
+          checkedAt: '2026-09-25T01:00:00Z',
+          checks: 'passed',
+          review: 'pending',
+          mergeCommit: null,
+          proof: { kind: 'unknown', reason: '评审尚未合入' }
+        }) as ArchiveStatus,
+      prepareRequest: unexpected
+    }
+  }
+  await mount(closedValue)
+  await act(async () => {})
+  expect(archiveDot().className).toContain('failed')
+  expect(container.textContent).toContain('归档 PR 已关闭')
+
+  const mergedUnprovenValue: VersionCycleContext = {
+    ...context(vi.fn()),
+    archivePort: {
+      readStatus: async () =>
+        ({
+          kind: 'merged',
+          reference,
+          url: 'https://github.com/team/repo/pull/3',
+          checkedAt: '2026-09-25T01:00:00Z',
+          checks: 'passed',
+          review: 'approved',
+          mergeCommit: '4'.repeat(40),
+          proof: { kind: 'unknown', reason: '合入文件未读回' }
+        }) as ArchiveStatus,
+      prepareRequest: unexpected
+    }
+  }
+  await mount(mergedUnprovenValue)
+  await act(async () => {})
+  expect(archiveDot().className).toContain('pending')
+  expect(container.textContent).toContain('已合入，当前材料待核')
 })

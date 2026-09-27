@@ -7,11 +7,17 @@ import { nativeMetricsPort } from './metrics-port'
 import { nativeVersionHistoryPort } from './version-history-port'
 import { nativeVersionMaterialPort } from './version-material-port'
 import type { MetricCatalog, MetricReading } from '../../../shared/workbench/metrics'
+import { metricProblemText } from '../../../shared/workbench/metrics'
 import type { VersionHistoryCatalog } from '../../../shared/workbench/version-history'
 import { taskDistribution, useVersionMinutes } from './use-version-minutes'
 import { OverviewMetricZones } from './overview-metric-zones'
+import { MetricProblemsPanel } from './metric-problems-panel'
 import { readAllMetricReadings, refreshMetricReadings } from './overview-metric-readings'
 import './workbench-overview.css'
+
+function catalogProblems(catalog: MetricCatalog | null): string[] {
+  return (catalog?.problems ?? []).map(metricProblemText)
+}
 
 function charterRows(
   projectName: string,
@@ -62,7 +68,7 @@ export function OverviewPage(): React.JSX.Element {
   const [history, setHistory] = useState<VersionHistoryCatalog | null>(null)
   const [currentVersion, setCurrentVersion] = useState<string | null>(null)
   const [selectedVersion, setSelectedVersion] = useState<string | null>(null)
-  const [notice, setNotice] = useState<string | null>(null)
+  const [problems, setProblems] = useState<string[]>([])
   const [busy, setBusy] = useState(false)
   /** Generation guard: a stale project's late responses must not overwrite a newer load. */
   const loadEpoch = useRef(0)
@@ -117,6 +123,9 @@ export function OverviewPage(): React.JSX.Element {
       setCatalog(nextCatalog)
       setHistory(nextHistory)
       setCurrentVersion(context.version)
+      // Catalog-level problems (collector-required/invalid-definition/ambiguous-*) are
+      // fixable configuration errors; they must render, not be swallowed as "not configured".
+      problems.push(...catalogProblems(nextCatalog))
       if (nextCatalog) {
         const result = await readAllMetricReadings({ scope, owner, catalog: nextCatalog })
         if (epoch !== loadEpoch.current) {
@@ -133,7 +142,7 @@ export function OverviewPage(): React.JSX.Element {
         setBusy(false)
       }
     }
-    setNotice(problems.length ? problems.join('；') : null)
+    setProblems(problems)
   }, [baseScope, baseWorktreeId])
 
   /** 刷新读数=真实执行采集脚本后重读，不是只查缓存；按钮跟着指标卡片走。 */
@@ -154,7 +163,7 @@ export function OverviewPage(): React.JSX.Element {
       }
       setZoneReadings(result.map)
       setNorthReading(result.north)
-      setNotice(result.problems.length ? result.problems.join('；') : null)
+      setProblems([...catalogProblems(catalog), ...result.problems])
     } finally {
       if (epoch === loadEpoch.current) {
         setBusy(false)
@@ -168,6 +177,8 @@ export function OverviewPage(): React.JSX.Element {
     setNorthReading(null)
     setZoneReadings({})
     setSelectedVersion(null)
+    // Clear the previous project's problems so a stale list never renders over a fresh load.
+    setProblems([])
     void load()
   }, [load])
 
@@ -241,11 +252,7 @@ export function OverviewPage(): React.JSX.Element {
       </header>
 
       <div className="content">
-        {notice && (
-          <p role="status" className="wb-muted">
-            {notice}
-          </p>
-        )}
+        <MetricProblemsPanel className="wb-muted" problems={problems} />
         <div className="row-2">
           <section className="card" id="project-card">
             <div className="row-between">

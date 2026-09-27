@@ -87,3 +87,27 @@ export function isArchivedMaterial(status: ArchiveStatus, material: ArchivedMate
     proof.material.revision === material.revision
   )
 }
+
+export type ArchiveJourneyLamp = 'unknown' | 'failed' | 'pending' | 'complete'
+
+/**
+ * One lamp rule for every journey axis: red only from provider-confirmed bad
+ * states (closed / changes-requested / checks failed); merged but unproven
+ * material stays yellow; absent data stays unknown, never green.
+ */
+export function archiveJourneyLamp(status: ArchiveStatus, archived: boolean): ArchiveJourneyLamp {
+  if (archived) {
+    return 'complete'
+  }
+  if (status.kind === 'unknown' || status.kind === 'not-created') {
+    return 'unknown'
+  }
+  if (
+    status.kind === 'closed' ||
+    status.checks === 'failed' ||
+    status.review === 'changes-requested'
+  ) {
+    return 'failed'
+  }
+  return 'pending'
+}

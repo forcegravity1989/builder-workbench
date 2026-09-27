@@ -1,5 +1,6 @@
 import type { ArchiveStatus } from '../version-cycle/ports'
 import type { usePlanningMaterial } from './use-planning-material'
+import { archiveStatusLabel } from './archive-label'
 
 export function PlanningSaveFooter({
   material,
@@ -21,21 +22,7 @@ export function PlanningSaveFooter({
   const plan = material.draft?.document
   const hasArchive =
     archive.kind === 'open' || archive.kind === 'merged' || archive.kind === 'closed'
-  const archiveLabel = archivePending
-    ? '正在读取归档状态…'
-    : archive.kind === 'unknown'
-      ? `状态未知：${archive.reason}`
-      : archive.kind === 'not-created'
-        ? '尚未创建归档 PR'
-        : archived
-          ? '当前修订已合入'
-          : archive.kind === 'merged'
-            ? archive.proof.kind === 'unknown'
-              ? '已合入，当前材料待核'
-              : '有待归档变化'
-            : archive.kind === 'closed'
-              ? '归档 PR 已关闭'
-              : '归档 PR 待评审'
+  const archiveLabel = archiveStatusLabel(archive, archived, archivePending)
   return (
     <>
       {archived && material.draft?.dirty && (

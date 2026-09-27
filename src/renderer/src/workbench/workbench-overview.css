@@ -503,3 +503,9 @@
   flex: 1;
   min-width: 0;
 }
+
+/* Fixable metric problems render as a list, distinct from the muted single-line hints. */
+.wb-ov .wb-muted ul {
+  margin: 4px 0 0;
+  padding-left: 18px;
+}

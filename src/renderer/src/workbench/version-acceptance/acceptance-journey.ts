@@ -3,6 +3,7 @@ import type {
   PlanningMaterial
 } from '../../../../shared/workbench/version-material'
 import {
+  archiveJourneyLamp,
   isArchivedMaterial,
   type ArchivedMaterial,
   type ArchiveStatus
@@ -93,18 +94,15 @@ export function archiveSignal(
   status: ArchiveStatus,
   material: ArchivedMaterial | null
 ): JourneySignal {
-  if (material && isArchivedMaterial(status, material)) {
-    return { kind: 'complete', label: '已归档' }
+  const archived = Boolean(material && isArchivedMaterial(status, material))
+  switch (archiveJourneyLamp(status, archived)) {
+    case 'complete':
+      return { kind: 'complete', label: '已归档' }
+    case 'unknown':
+      return { kind: 'unknown', label: status.kind === 'unknown' ? '状态未知' : '未创建' }
+    case 'failed':
+      return { kind: 'failed', label: '归档待处理' }
+    case 'pending':
+      return { kind: 'pending', label: status.kind === 'merged' ? '当前材料待核对' : '待评审' }
   }
-  if (status.kind === 'unknown' || status.kind === 'not-created') {
-    return { kind: 'unknown', label: status.kind === 'unknown' ? '状态未知' : '未创建' }
-  }
-  if (
-    status.kind === 'closed' ||
-    status.checks === 'failed' ||
-    status.review === 'changes-requested'
-  ) {
-    return { kind: 'failed', label: '归档待处理' }
-  }
-  return { kind: 'pending', label: status.kind === 'merged' ? '当前材料待核对' : '待评审' }
 }

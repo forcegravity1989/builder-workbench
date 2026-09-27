@@ -36,6 +36,7 @@ export function AcceptanceContext({
         <p>{document.planRef.revision}</p>
         <button
           className="wb-btn wb-btn-ghost wb-btn-sm"
+          disabled={disabled}
           onClick={() =>
             onPrepare(
               `请核对当前 ${document.version} 验收固定计划与项目基线的新计划差异。先向我展示变化，由我明确是否换引用；保留原结果，更换后所有原结论待重新核对。`
