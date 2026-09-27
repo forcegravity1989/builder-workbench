@@ -19,7 +19,7 @@
 
 生产入口已切换：AppWorkspaceShell 的 artifacts 槽挂 `workbench/CycleWorkspacePage.tsx` → `version-cycle/CycleWorkspaceShell.tsx`（计划/验收共用容器，`cycle-view-state.ts` 区分子视图，侧栏「计划」「验收」独立入口）。旧三屏计划链（PlanJourneyShell / PlanWeekBoard / PlanWeekPlanChat / plan-week-* / workbench-plan.css / overview-demo-data.ts）已全部删除；standard/ 的 planning.py、version-plan.html、data-template.json 与会议 reference 在消费方切换的同一交付内退役删除，check-week-comment.py 与 week-plan-comment.md 保留作历史评论修复协议。
 
-进入计划屏即确保 bw/week-plan 固定工作树并正式选择；左侧当前会话 + 固定树历史面板（精确身份恢复，不按标题猜），右侧 PlanningBoard 单页。开工注入渲染后的 SYSTEM 与 week-planning Skill（`version-cycle/cycle-prompt.ts`），工具按本机 agent 检测选择，不写死 Claude。「配置自动化」预填原生自动化编辑器（existing 固定树、reuseSession=false，prompt 不含 cycleId），启用与时间由人确认。流程选版存原生工作树偏好 `workbenchSelectedVersion`，UI 与 `ORCA bw materials context/select` CLI 共享；历史会话切换只换左侧聊天，不自动切右侧材料。Tasks 往返：会话绑定与目标筛选/滚动存 sessionStorage 重挂复活；任务详情返回经原生 openTaskPage 的 returnToPreviousView / returnOrigin 保留来源。
+进入计划屏即确保 bw/week-plan 固定工作树并正式选择；左侧当前会话 + 固定树历史面板（精确身份恢复，不按标题猜），右侧 PlanningBoard 单页。开工注入渲染后的 SYSTEM 与 week-planning Skill（`version-cycle/cycle-prompt.ts`），工具按本机 agent 检测选择，不写死 Claude。「配置自动化」预填原生自动化编辑器（existing 固定树、reuseSession=false，prompt 不含 cycleId），启用与时间由人确认。流程选版存原生工作树偏好 `workbenchSelectedVersion`，UI 与 `ORCA bw materials context/select` CLI 共享；历史会话切换只换左侧聊天，不自动切右侧材料。Tasks 往返：会话绑定与目标筛选/滚动存 sessionStorage 重挂复活；任务详情返回经原生 openTaskPage 的 returnToPreviousView（跳过 tasks 哨兵）保留来源，屏内上下文由 cycle-view-state 与 view-memory 恢复。
 
 未验证项如实保留：真壳烟测已编写，执行结果见 PR；SSH/WSL、配对宿主、真实到点自动化、真实 provider 归档全链未验证。归档状态按材料身份自动读取，归档证明要求 provider 真实合入提交在采用基线上且合入提交树内材料字节与修订一致；CodeHub 无真实合入证据一律 Unknown，正文编辑延期。跨周有限场景按 spec：同版本计划/验收各只一轮活动材料，归档后由人明确开下一轮。
 
@@ -38,10 +38,10 @@
 | P03 指标与总览同定义/窗口/来源；刷新/失败/未知/旧值区分 | ✅ | use-plan-metrics + metrics runtime（4709ba8b2）+ MetricEvidenceView 文案修正 | 单测+runtime 测试；真实脚本全链待人/环境 |
 | P04 纪要三段模板派生、复制一致、不补造事实 | ✅ | derivePlanMinutes + PlanningMinutes 复制 | plan-summary 测试 |
 | P05 Issue 创建/复用真实回显；详情编辑返回保留上下文 | ◐ | task-port + 原生 returnToPreviousView 跳过哨兵（528dce0f8） | ui-page-navigation 测试；真实 provider 往返待人 |
-| P06 计划/验收分树分身份；先会话后明确版本；跨周新会话；同次恢复 | ✅ | ensureCycleWorktree+setActiveWorktree+AiVault 历史+session 复活 | 烟测覆盖固定树/选版/重载；自动化同次恢复待人 |
-| P07 自动化登记去重、保留设置、真实到点可追溯 | ○ | 仅「配置自动化」预填原生编辑器入口（人确认启用） | 登记/到点触发未接，待人配置与真实到点 |
+| P06 计划/验收分树分身份；先会话后明确版本；跨周新会话；同次恢复 | ✅ | ensureCycleWorktree+setActiveWorktree+AiVault 历史+session 复活 | 烟测覆盖固定树/选版/重载；会话同次恢复已接通。拆分标注：「自动化同次恢复」子判据依赖 P07 的自动化登记（○ 未实现），该子项随之未实现，不能只记「待人」 |
+| P07 自动化登记去重、保留设置、真实到点可追溯 | ◐ | 默认关闭态注册（ensure-cycle-automation：creationKey 去重、只创建不更新、人启用才到点）+「配置自动化」预填/编辑入口 | 真实到点与跨重启去重待人启用后验证 |
 | P08 并发保存冲突处理；重启/切项目/切版本读回一致 | ✅ | CAS expectedRevision+冲突 UI+view-memory+sessionStorage 复活 | material-draft 测试+烟测重载读回 |
-| P09 归档只准备会话请求；PR 真实状态定灯色 | ✅ | archivePort.prepareRequest→composer；archive 状态自动读取+灯色语义 | archive-port 测试+board-state 测试 |
+| P09 归档只准备会话请求；PR 真实状态定灯色 | ◐ | archivePort.prepareRequest→composer；archive 状态自动读取+灯色语义 | archive-port 测试+board-state 测试；归档标签现只呈现 state/合入类别，未展示 checks/review（代码批在补），补齐前不算齐 |
 | P10 总览按版本/多周/固定修订读摘要；往返保草稿；坏历史不伪造 | ◐ | use-version-minutes+OverviewPage 双栏+problems 列表 | 组件级+烟测总览；多周真实归档回看待人 |
 
 | 旅程 | 状态 | 覆盖 |

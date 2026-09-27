@@ -14,7 +14,7 @@
 | 左侧 CycleChat + AiVaultPanel | 当前会话（terminal portal 全局单发布者）+ workspaceHost 固定树历史，onOpenSession=openCycleHistory 精确身份恢复；不创建 BW 聊天存储。会话绑定存 sessionStorage（`bw:cycle:session:<scopeKey>`）重挂复活 |
 | main/workbench/version-document-store + `workbench.materials.*` RPC / `ORCA bw materials` CLI | 跨进程 CAS 统一写入；renderer 直接 writeFile 的旧链路已删除 |
 | TaskPageContent → GitHubItemDialog → ConversationTabDescription / GitHubMarkdownComposer | 直接复用页面、正文编辑及 runWorkItemBodyUpdate；BW 不复制详情组件 |
-| use-task-page-detail-routing 的 worktreeNavHistory / goBackWorktree | 导航历史携带 BW 来源；openTaskPage 新增 returnToPreviousView（跳过 tasks 哨兵）与 returnOrigin（编码进历史条目）。计划屏 goalFilter+滚动存 sessionStorage（use-planning-view-memory） |
+| use-task-page-detail-routing 的 worktreeNavHistory / goBackWorktree | 导航历史携带 BW 来源；openTaskPage 新增 returnToPreviousView（跳过 tasks 哨兵，返回 BW 来源视图），BW 子视图与屏内上下文由 cycle-view-state 和 use-planning-view-memory 恢复。计划屏 goalFilter+滚动存 sessionStorage（use-planning-view-memory） |
 | shared/automations-types | 复用原生登记和运行记录；「配置自动化」按钮预填原生自动化编辑器：host 按工作树宿主身份，existing 固定树、reuseSession=false、prompt 不含 cycleId，启用/时间由人确认 |
 
 ## 共享边界
@@ -29,7 +29,7 @@ BW 业务放在 renderer/workbench 下的 version-cycle、version-planning、ver
 | 指标 | 定义、窗口、采集和读数；详见 [指标设计](../overview-metrics/design.md) | 版本目标值和验收结论 |
 | Orca | Tasks、工作树、会话、Automations、项目/宿主身份、通用文件与命令权限 | BW 的业务规则 |
 
-共享接口已按职责落地为 renderer 端口 + 原生 RPC：VersionHistoryPort.list/read/readPlan（version-history-port，按固定 Git 提交发现及读取多周记录）、MetricSetupPort（「配置指标」进入 bw/metrics-refresh 固定维护树原生会话，提示由指标模块提供）、VersionDocumentPort.read/save(expectedRevision)（version-material-port）、TaskPort.listVersion/openDetail(origin)/refresh（task-port，github.workItem / codehub.viewTask 复用原生读取层，单条失败 kind:'unavailable'）、CycleSessionPort.list/start/continue（version-cycle/ports + native-session）、ArchivePort.readStatus（archive-port）、MetricsPort.list/read/refresh（metrics-port，指标端定义）。底层仍调用原生能力，不另建存储。
+共享接口已按职责落地为 renderer 端口 + 原生 RPC：VersionHistoryPort.list/read/readPlan（version-history-port，按固定 Git 提交发现及读取多周记录）、「配置指标」经 CycleWorkspaceShell 直接进入 bw/metrics-refresh 固定维护树原生会话（提示由指标模块提供；不设端口抽象，原死契约 MetricSetupPort 已随收尾代码批删除）、VersionDocumentPort.read/save(expectedRevision)（version-material-port）、TaskPort.listVersion/openDetail(origin)/refresh（task-port，github.workItem / codehub.viewTask 复用原生读取层，单条失败 kind:'unavailable'）、CycleSessionPort.list/start/continue（version-cycle/ports + native-session）、ArchivePort.readStatus（archive-port）、MetricsPort.list/read/refresh（metrics-port，指标端定义）。底层仍调用原生能力，不另建存储。
 
 ## 版本材料与写入
 
@@ -53,7 +53,7 @@ schema2 通过一次显式迁移转为新计划；原文件/提交保留来源�
 
 ## 会话、任务导航与自动化
 
-计划固定 bw/week-plan，验收固定 bw/week-acceptance，各复用一棵 Orca 原生登记工作树。目录由 Orca 项目设置与原生创建规则选择，实际登记路径为准，不强制 .bw/worktrees，也不为这两个入口改全局目录设置；沿用原生项目、宿主与工作区身份。创建基线遵从被管项目的原生配置与默认分支，不硬编码 BW 开发分支；不按路径字符串或标题猜项目归属。运行身份由项目、宿主、流程（plan / acceptance）与 Orca runId 定位，周期作为上下文；版本是选定后附加的材料关联，不是启动或去重的前提。自动触发可以先创建未关联版本的会话，Skill 列候选并与人确认；选版本不再开会话，恢复已确认的同次运行沿用真实关联。手动继续引用已有原生运行或会话。每次新的周期运行用 existing 工作区且 reuseSession=false，同次重试遵循原生运行身份，不换新树、不重开一条无人可找的会话。
+计划固定 bw/week-plan，验收固定 bw/week-acceptance，各复用一棵 Orca 原生登记工作树。目录由 Orca 项目设置与原生创建规则选择，实际登记路径为准，不强制 .bw/worktrees，也不为这两个入口改全局目录设置；沿用原生项目、宿主与工作区身份。创建基线遵从被管项目的原生配置与默认分支，不硬编码 BW 开发分支；不按路径字符串或标题猜项目归属。运行身份由项目、宿主、流程（plan / acceptance）与 Orca runId 定位，周期作为上下文；版本是选定后附加的材料关联，不是启动或去重的前提。自动触发可以先创建未关联版本的会话，Skill 列候选并与人确认；选版本不再开会话，恢复已确认的同次运行沿用真实关联。手动继续引用已有原生运行或会话。每次新的周期运行用 existing 工作区且 reuseSession=false，同次重试遵循原生运行身份，不换新树、不重开一条无人可找的会话。现状说明：BW 计划/验收页挂载期间，用户从原生侧栏激活其他工作树会被持续纠正回本屏固定树（CycleWorkspaceShell 的固定树 effect 依赖 activeWorktreeId，变化即重新 setActiveWorktree），这是保持材料与会话同树的有意行为，不是导航缺陷；离开 BW 页后原生切树不受影响。
 
 原生历史列表是会话正本，BW 仅保存业务关联；关联缺失时仍可选择真实会话，不伪造标题。计划与验收各登记一条 Orca 自动化，以 creationKey 防重复，首次设置复用原生配置界面，保留用户的启停和时间；技能正文与 SYSTEM 指针从实际产品资产解析，覆盖没有 standard/ 的普通项目，不能只在 BW 自己仓里成功。
 
