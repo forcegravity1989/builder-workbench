@@ -7,7 +7,11 @@ import {
   toRuntimeExecutionHostId
 } from '../../../../shared/execution-host'
 import type { CreateWorktreeResult } from '../../../../shared/worktree/create-types'
-import type { Worktree } from '../../../../shared/worktree/types'
+import type {
+  DetectedWorktree,
+  DetectedWorktreeListResult,
+  Worktree
+} from '../../../../shared/worktree/types'
 import type { CycleScope } from './ports'
 
 export type NativeWorkspaceScope = Omit<CycleScope, 'workflow'>
@@ -96,6 +100,37 @@ async function removeWorktreeBestEffort(
     return false
   }
 }
+async function detectedTrees(
+  scope: NativeWorkspaceScope,
+  target: ReturnType<typeof nativeWorkspaceRuntimeTarget>
+): Promise<DetectedWorktree[]> {
+  try {
+    const result = await callRuntimeRpc<DetectedWorktreeListResult>(
+      target,
+      'worktree.detectedList',
+      { repo: `id:${scope.repoId}` }
+    )
+    return result?.worktrees ?? []
+  } catch {
+    return []
+  }
+}
+
+/** Register an externally-created tree through the native inbox import surface. */
+async function importExternalTree(scope: NativeWorkspaceScope, treePath: string): Promise<boolean> {
+  try {
+    const state = useAppStore.getState()
+    await state.updateRepo(scope.repoId, { importedExternalWorktreePaths: [treePath] })
+    await state.fetchWorktrees(scope.repoId, {
+      executionHostId: scope.runtimeOwnerEnvironmentId
+        ? toRuntimeExecutionHostId(scope.runtimeOwnerEnvironmentId)
+        : scope.hostId
+    })
+    return true
+  } catch {
+    return false
+  }
+}
 export async function ensureNamedWorktree(
   scope: NativeWorkspaceScope,
   branch: string,
@@ -112,6 +147,22 @@ export async function ensureNamedWorktree(
   }
   const create = (async () => {
     const target = nativeWorkspaceRuntimeTarget(scope)
+    // A git-level scan sees trees the store has not registered yet (external or
+    // in-flight). Adopting an existing holder — or failing before create — is what
+    // stops native create from uniquifying name+branch into orphan trees.
+    const holder = (await detectedTrees(scope, target)).find(
+      (item) => item.branch.replace(/^refs\/heads\//, '') === branch
+    )
+    if (holder) {
+      const imported = await importExternalTree(scope, holder.path)
+      const adopted = imported ? findNamedWorktree(scope, branch) : null
+      if (adopted) {
+        return adopted
+      }
+      throw new Error(
+        `分支 ${branch} 已被工作树 ${holder.path} 占用（导入登记未成功），请在 Orca 侧栏收件箱登记或手动清理后重试`
+      )
+    }
     // Local creation must use the direct IPC path: the RPC channel carries the
     // renderer client context, which the worktree-create provenance gate
     // rejects without a paired device identity. Runtime hosts keep the RPC route.

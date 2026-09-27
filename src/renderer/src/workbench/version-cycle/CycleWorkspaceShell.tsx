@@ -76,6 +76,8 @@ export function CycleWorkspaceShell({ workflow }: { workflow: VersionWorkflow })
       return null
     }
   }, [activeRepoId, repoWorktrees])
+  /** Stable identity for effect deps: store refreshes must not retrigger setup. */
+  const baseScopeKey = baseScope ? nativeWorkspaceScopeKey(baseScope) : null
 
   const [fixedId, setFixedId] = useState<string | null>(null)
   const [setupError, setSetupError] = useState<string | null>(null)
@@ -89,10 +91,19 @@ export function CycleWorkspaceShell({ workflow }: { workflow: VersionWorkflow })
     const id = s.activeRepoId ?? s.repos[0]?.id ?? null
     return s.repos.find((item) => item.id === id)?.worktreeBasePath?.trim() || null
   })
+  const [busy, setBusy] = useState(false)
+  const [notice, setNotice] = useState<string | null>(null)
+  const baseSettled = useAutoWorktreeBase(activeRepoId, repoWorktreeBasePath, setNotice)
+  const ensureFailures = useRef<Record<string, number>>({})
   useEffect(() => {
     let current = true
+    const breakerKey = `${baseScopeKey}:${workflow}`
+    if ((ensureFailures.current[breakerKey] ?? 0) >= 2) {
+      setSetupError('固定树准备连续失败，已停止自动重试；重进本屏或按提示清理/登记占用工作树后再试。')
+      return
+    }
     setSetupError(null)
-    if (!baseScope) {
+    if (!baseScope || !baseSettled) {
       setFixedId(null)
       return
     }
@@ -123,6 +134,7 @@ export function CycleWorkspaceShell({ workflow }: { workflow: VersionWorkflow })
         }
       } catch (reason) {
         if (current) {
+          ensureFailures.current[breakerKey] = (ensureFailures.current[breakerKey] ?? 0) + 1
           setSetupError(reason instanceof Error ? reason.message : String(reason))
         }
       }
@@ -130,7 +142,7 @@ export function CycleWorkspaceShell({ workflow }: { workflow: VersionWorkflow })
     return () => {
       current = false
     }
-  }, [baseScope, workflow, activeWorktreeId])
+  }, [baseScopeKey, baseSettled, workflow, activeWorktreeId])
 
   const cycleScope = useMemo<CycleScope | null>(() => {
     if (!baseScope || !fixedId) {
@@ -198,9 +210,25 @@ export function CycleWorkspaceShell({ workflow }: { workflow: VersionWorkflow })
       }
     }
   }, [cycleScope, fixedId, session, sessionStoreKey, setSession])
-  const [busy, setBusy] = useState(false)
-  const [notice, setNotice] = useState<string | null>(null)
-  useAutoWorktreeBase(activeRepoId, repoWorktreeBasePath, setNotice)
+  // A history restore reveals the session in the native view first; if that reveal
+  // remounts this shell, the bound session must be re-read from the live tabs or the
+  // chat column stays empty while the native screen shows the session.
+  useEffect(() => {
+    if (session || !cycleScope || !fixedId) {
+      return
+    }
+    const live = useAppStore
+      .getState()
+      .unifiedTabsByWorktree[fixedId]?.find((tab) => tab.contentType === 'agent-session')
+    if (live) {
+      try {
+        // bindCycleTab re-resolves the live tab identity into a full CycleSession.
+        setSessionState(bindCycleTab(cycleScope, fixedId, live.id))
+      } catch {
+        /* Tab gone between reveal and resync; stay empty and honest. */
+      }
+    }
+  }, [cycleScope, fixedId, session])
 
   const detectionTarget = useAgentDetectionTargetForWorktree(fixedId)
   const { detectedIds: detectedAgents } = useDetectedAgents(detectionTarget)
