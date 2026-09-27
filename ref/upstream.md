@@ -99,10 +99,11 @@ BW 业务契约与材料服务分别位于 `src/shared/workbench/`、`src/main/w
 | 任务详情与返回 | `task-page-source-context`、`use-task-page-detail-routing`、`use-task-page-provider-state`、codehub detail hook、`worktree-nav-view-history-replay`、`ui-slice-contract-core`（TaskPageData / openTaskPage options）、`ui-slice-task-actions`（tasks 哨兵跳过 / returnOrigin）、`worktree-nav-history`（codehub 变体） | BW 来源编码进原生导航历史；CodeHub 外部详情入口 / source context / history replay 接通 |
 | 工作树元数据 | `runtime-managed-worktree-metadata`、`worktree-metadata-merge` | 承载 `workbenchSelectedVersion` 流程选版偏好 |
 | WSL | `wsl-runner` | outputTruncated 透传 |
-| Mobile 残留清理 | settings 死簇 20 文件删除、`settings-navigation-types` / `capability-sections` 移除 'mobile' key、i18n 单 key 修正 | mobile-emulator 保留；配对协议残留仍见上文「源码」节 |
+| Mobile 残留清理 | settings 死簇 20 文件删除、`settings-navigation-types` / `capability-sections` 移除 'mobile' key、i18n 单 key 修正；**2026-09-27 第二批（用户决策「不遗留」）**：showMobileButton 全链（`global-settings-types` / `default-global-settings` / app menu / IPC settings 白名单 / Appearance 项与搜索目录 / SidebarNav 谓词）、TopLevelView `'mobile'` 成员全链（`top-level-view` lookup、`client-ui-params` zod enum、right-sidebar-visibility、openMobilePage/closeMobilePage/previousViewBeforeMobile、hydration）、`mobile-page.css`、feature-interaction `'mobile-pairing'` 死 id、362 个死 catalog 键 × 6 语言、29 条死 locale 规则 | 活体保留：mobileClientTabSelectionsByDeviceId（client-session-tab-selection 活链）、MobileEmulator/emulator-pane、relay/pairing、`driver.kind==='mobile'`、设置页指活配对功能的 Relay 文案。合并 upstream 时 `'mobile'` 视图成员与 showMobileButton 以本分支删除为准 |
 | 配置 | `tsconfig.cli` include、`oxlint-dead-classes.json` 对 workbench 子树关闭 Tailwind 类审计（BW 自有 CSS 设计系统，与既有 feature-wall-* allow 同机制）、`reliability-gates.jsonc` 清 671 行死登记（4 条纯 mobile gate 删除、3 条混合 gate 修剪）、ci-shard-timings | 门禁登记与实际文件面对齐 |
+| 门禁脚本 | `config/scripts/check-readme-local-links.mjs`、`config/scripts/audit-localization-coverage.mjs` | 前者把 `docs/readme/` 缺失视为「无翻译 README」而非 ENOENT 崩溃；后者新增目录级豁免机制（`config/localization-coverage-exclusions.json`，entry 必须带 pathPrefix+reason），合并 upstream 时保留 |
 
-**本 PR 遗留（待人决策，不是已完成）**：`verify:localization-coverage` 对 BW 中文叠层报 457 个候选（选项：豁免 / allowlist / 国际化）；showMobileButton 死开关链；store 'mobile' activeView 残留；`check-readme-local-links` 基线即失败（见下文「待迁移的工程边界」）。
+**遗留项裁决（2026-09-26 用户决策）**：`verify:localization-coverage` 对 BW 中文叠层的 457 个候选走目录级豁免（`config/localization-coverage-exclusions.json`，workbench 子树，条目必须带 reason；原生组件里的专名 `codehub-cli` 与 BW 壳侧栏「任务」标签走 allowlist 复核条目 2 条）；`check-readme-local-links` 已容错 `docs/readme/` 缺失（见「待迁移的工程边界」）；showMobileButton 死开关链、store `'mobile'` activeView 残留、MobilePane 死簇与 i18n 孤儿键按用户决策「不遗留」在本批删除（见上表 Mobile 残留清理行）。**仍登记的后续任务**：relay collect 信任面重推导（wire 只传 name+definitionHash，远端从 configurationCommit 重解 run；需 SSH 实机验证配套，见 `src/relay/workbench/metrics-handler.ts` 注释）。
 
 ### CodeHub（`codehub-cli`，任务来源与 GitHub / GitLab 并列）
 
@@ -161,6 +162,6 @@ pnpm run dev:workbench
 
 ## 待迁移的工程边界
 
-- `.github/workflows/docs.yml` 仍指向已删的 `docs/site`；`config/scripts/check-readme-local-links.mjs` 仍要求已删的 `docs/readme`，在本分支基线上会报 ENOENT。二者交由 CI/CD 迁移处理，不能作为 BW 文档与检查链已就绪的证据。
+- `.github/workflows/docs.yml` 仍指向已删的 `docs/site`，交由 CI/CD 迁移处理，不能作为 BW 文档链已就绪的证据。（`config/scripts/check-readme-local-links.mjs` 已容错 `docs/readme/` 缺失，在本分支通过。）
 - BW 的 CI/CD、独立评审与正式出包链需按 Electron 验证；源码中保留旧入口不代表已经可交付。
 - `standard/` 的路径解析只覆盖部分入口，知识库分类、保存与工作树来源仍需在对应特性迁移时重新决策；当前行为边界见 [architecture](../docs/architecture.md)。
