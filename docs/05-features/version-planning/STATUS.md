@@ -26,3 +26,25 @@
 没有产品 TDD、真壳 E2E、独立验证 Review 或使用效果证据时，保持缺口；不预填齐全、通过或改善比例。
 
 本轮设计/文档及仓外计划经过独立 subagent 初审与复审，发现项已修正；[任务评审记录](https://github.com/forcegravity1989/builder-workbench/blob/f20f04ae57d510178c710c71216b9b734082c28e/verification/design-review.md)。这是静态制品评审，不替代实施后的独立代码/行为 Review，不替代尚未逐项确认的详细设计决定。
+
+## 验收点与旅程矩阵（截至 PR #272 合入前，2026-09-26）
+
+> 本节是上方六环表环 5/环 6 的逐点明细，不替代六环表。口径：✅ = 已实现且有自动化/真壳证据（单测/组件测试/真壳 Playwright 烟测）；◐ = 主行为已实现，关键路径待真人体验或需远端环境（SSH/真实 PR/真实 provider）；○ = 未实现（如实标注，不冒充）。本表自仓外过程稿 feature-matrix-20260926.md 并入仓内落为正文明细，此后改动随引发它的 PR 同批提交，不记流水；特性级总览见 [../README.md](../README.md)。
+
+| 验收点 | 状态 | 实现落点 | 证据 / 缺口 |
+|---|---|---|---|
+| P01 计划独立单页、开场 SOP、一屏核心、旅程轴无独立滚动 | ✅ | CycleWorkspaceShell+PlanningBoard；cycle-prompt 注入 SOP 与 Skill 指针 | 组件测试+烟测挂载/编辑/保存；1365/1280 视觉细节待人体验 |
+| P02 场外要求进目标、三情形交流引导、不强制填齐 | ◐ | Skill references（goal-guidance）+ 计划单页可选字段 | 模型会话交互待人体验 |
+| P03 指标与总览同定义/窗口/来源；刷新/失败/未知/旧值区分 | ✅ | use-plan-metrics + metrics runtime（4709ba8b2）+ MetricEvidenceView 文案修正 | 单测+runtime 测试；真实脚本全链待人/环境 |
+| P04 纪要三段模板派生、复制一致、不补造事实 | ✅ | derivePlanMinutes + PlanningMinutes 复制 | plan-summary 测试 |
+| P05 Issue 创建/复用真实回显；详情编辑返回保留上下文 | ◐ | task-port + 原生 returnToPreviousView 跳过哨兵（528dce0f8） | ui-page-navigation 测试；真实 provider 往返待人 |
+| P06 计划/验收分树分身份；先会话后明确版本；跨周新会话；同次恢复 | ✅ | ensureCycleWorktree+setActiveWorktree+AiVault 历史+session 复活 | 烟测覆盖固定树/选版/重载；自动化同次恢复待人 |
+| P07 自动化登记去重、保留设置、真实到点可追溯 | ○ | 仅「配置自动化」预填原生编辑器入口（人确认启用） | 登记/到点触发未接，待人配置与真实到点 |
+| P08 并发保存冲突处理；重启/切项目/切版本读回一致 | ✅ | CAS expectedRevision+冲突 UI+view-memory+sessionStorage 复活 | material-draft 测试+烟测重载读回 |
+| P09 归档只准备会话请求；PR 真实状态定灯色 | ✅ | archivePort.prepareRequest→composer；archive 状态自动读取+灯色语义 | archive-port 测试+board-state 测试 |
+| P10 总览按版本/多周/固定修订读摘要；往返保草稿；坏历史不伪造 | ◐ | use-version-minutes+OverviewPage 双栏+problems 列表 | 组件级+烟测总览；多周真实归档回看待人 |
+
+| 旅程 | 状态 | 覆盖 |
+|---|---|---|
+| PJ01 计划周流程（开会话→明确版本→目标→纪要→拆解→归档请求） | ◐ | 烟测覆盖到「保存+读回+重载」；会话模型交互/归档请求发送待人 |
+| PJ02 周中执行与返回（Tasks 详情往返、筛选滚动保留） | ◐ | 导航/恢复单测；真人往返待人 |

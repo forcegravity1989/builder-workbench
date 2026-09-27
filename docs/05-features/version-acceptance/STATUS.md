@@ -26,3 +26,24 @@
 没有产品 TDD、真壳 E2E、独立验证 Review 或使用效果证据时，保持缺口；不预填齐全、通过或改善比例。
 
 本轮设计/文档及仓外计划经过独立 subagent 初审与复审，发现项已修正；[任务评审记录](https://github.com/forcegravity1989/builder-workbench/blob/f20f04ae57d510178c710c71216b9b734082c28e/verification/design-review.md)。这是静态制品评审，不替代实施后的独立代码/行为 Review，不替代尚未逐项确认的详细设计决定。
+
+## 验收点与旅程矩阵（截至 PR #272 合入前，2026-09-26）
+
+> 本节是上方六环表环 5/环 6 的逐点明细，不替代六环表。口径：✅ = 已实现且有自动化/真壳证据（单测/组件测试/真壳 Playwright 烟测）；◐ = 主行为已实现，关键路径待真人体验或需远端环境（SSH/真实 PR/真实 provider）；○ = 未实现（如实标注，不冒充）。本表自仓外过程稿 feature-matrix-20260926.md 并入仓内落为正文明细，此后改动随引发它的 PR 同批提交，不记流水；特性级总览见 [../README.md](../README.md)。
+
+| 验收点 | 状态 | 实现落点 | 证据 / 缺口 |
+|---|---|---|---|
+| A01 独立树/原生会话/单页三阶段；核心信息可读 | ✅ | 验收入口+AcceptanceBoard 三阶段 | 烟测挂载；真人三阶段体验待人 |
+| A02 固定计划修订正确、承诺只读；跨树/草案不混淆 | ✅ | planRef 固定+readPlan+useFixedAcceptancePlan 测试 | acceptance 测试 |
+| A03 真实入口准备交付；材料可打开绑候选；失败可见不假报 | ◐ | AcceptancePreparation+candidate-port+交付件打开（528dce0f8） | 真实出包旅程待人 |
+| A04 脚本实测不可手填、同源；历史/当前区分 | ✅ | metrics runtime+窗口语义+baseline 落盘 | runtime/组件测试 |
+| A05 Issue 真实状态可刷新、无拆解入口、关闭数≠达成 | ✅ | AcceptanceTasks 快照分布+灯色守卫 | board-state/acceptance 测试 |
+| A06 原生详情编辑后按来源返回、保留版本/会话/草稿 | ◐ | returnToPreviousView+view-memory/session 复活 | 导航测试；真实 CodeHub/GitHub 往返待人 |
+| A07 同一候选展示、人逐目标判断、未达可保存带入会话 | ✅ | AcceptanceGoalResult decision 流+prepare 文本 | acceptance-interaction 测试 |
+| A08 纪要可复制含候选/来源/待核/未达；归档后总览回看 | ◐ | deriveAcceptanceReport+总览双栏 | report 测试；真实归档回看待人 |
+| A09 跨树隔离/并发/重启/脏树不丢输入；包证不符不沿完成态 | ◐ | draft recovery+candidate 核对失效逻辑 | 恢复测试；脏树真机待人 |
+| A10 原生自动化真实到点、新周期新会话、入口不重复 | ○ | 仅预填入口（reuseSession=false 预填） | 到点/去重待人配置验证 |
+
+| 旅程 | 状态 | 覆盖 |
+|---|---|---|
+| 验收旅程（准备交付→showcase→核对→归档→回看，AJ01/AJ02） | ◐ | 组件级全链测试；真人+真实 PR 待人 |

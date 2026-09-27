@@ -21,7 +21,7 @@
 
 ## 与现行壳的关系
 
-**已接线到 Electron 叠层。** 计划页签与旅程皮肤用 `src/renderer/src/workbench/workbench-tokens.css` 及各屏 CSS，取值尽量 `var(--*)`。本目录 `styles.css` 仍是设计系统正本；旧 Dioxus 壳 `crates/app-shell` 的编译期 `include_str!` 已不在本分支。八屏的版式与旅程仍看 [docs/hifi/](../hifi/)（历史原型）；视觉语言以本目录为准。
+**已接线到 Electron 叠层。** 计划/验收两屏与总览的皮肤用 `src/renderer/src/workbench/workbench-tokens.css` 及各屏 CSS，取值尽量 `var(--*)`。本目录 `styles.css` 仍是设计系统正本；旧 Dioxus 壳 `crates/app-shell` 的编译期 `include_str!` 已不在本分支。八屏的版式与旅程仍看 [docs/hifi/](../hifi/)（历史原型）；视觉语言以本目录为准。
 
 改 token / 组件类 → 改本目录 `styles.css` 与叠层 CSS；改旅程骨架 → 改 `src/renderer/src/workbench/`，不回推设计项目。
 
