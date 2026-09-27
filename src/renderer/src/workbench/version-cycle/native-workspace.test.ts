@@ -85,7 +85,7 @@ it('rolls back a stray tree when native create uniquifies an occupied branch', a
   const scope = {
     projectId: 'project',
     repoId: 'repo',
-    hostId: 'runtime:b' as 'runtime:b',
+    hostId: 'runtime:b' as const,
     runtimeOwnerEnvironmentId: 'b'
   }
   await expect(ensureNamedWorktree(scope, 'bw/week-plan', 'week-plan')).rejects.toThrow(/回滚删除/)
