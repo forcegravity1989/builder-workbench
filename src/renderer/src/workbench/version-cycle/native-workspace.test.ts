@@ -65,3 +65,33 @@ it.each(['runtime:b', 'ssh:nested'] as const)(
     expect(fetchWorktrees).toHaveBeenCalledWith('repo', { executionHostId: 'runtime:b' })
   }
 )
+
+it('rolls back a stray tree when native create uniquifies an occupied branch', async () => {
+  const stray = { ...row('runtime:b', 'b'), id: 'repo::/stray', branch: 'bw/week-plan-2' }
+  test.state = {
+    repos: [],
+    allWorktrees: () => [],
+    fetchWorktrees: vi.fn(async () => true)
+  }
+  test.rpc.mockImplementation(async (_target, method: string) => {
+    if (method === 'worktree.create') {
+      return { worktree: stray }
+    }
+    if (method === 'worktree.rm') {
+      return {}
+    }
+    throw new Error(`unexpected ${method}`)
+  })
+  const scope = {
+    projectId: 'project',
+    repoId: 'repo',
+    hostId: 'runtime:b' as 'runtime:b',
+    runtimeOwnerEnvironmentId: 'b'
+  }
+  await expect(ensureNamedWorktree(scope, 'bw/week-plan', 'week-plan')).rejects.toThrow(/回滚删除/)
+  expect(test.rpc).toHaveBeenCalledWith(
+    { kind: 'environment', environmentId: 'b' },
+    'worktree.rm',
+    expect.objectContaining({ worktreeId: stray.id, force: true })
+  )
+})

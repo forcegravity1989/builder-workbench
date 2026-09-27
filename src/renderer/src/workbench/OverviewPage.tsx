@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react'
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useAppStore } from '@/store'
 import { openProjectOnboard } from './project-onboard-state'
 import { readProjectCharter, type ProjectCharter } from './project-charter'
@@ -10,6 +10,7 @@ import { metricWindowForDefinition } from '../../../shared/workbench/metric-wind
 import type { MetricCatalog, MetricReading } from '../../../shared/workbench/metrics'
 import type { VersionHistoryCatalog } from '../../../shared/workbench/version-history'
 import { taskDistribution, useVersionMinutes } from './use-version-minutes'
+import { OverviewMetricZones } from './overview-metric-zones'
 import './workbench-overview.css'
 
 function charterRows(
@@ -27,7 +28,6 @@ function charterRows(
 
 /** Overview reads real metrics and real archive records; no data stays Unknown, never demo. */
 export function OverviewPage(): React.JSX.Element {
-  const openArtifactsPage = useAppStore((s) => s.openArtifactsPage)
   const repos = useAppStore((s) => s.repos)
   const activeRepoId = useAppStore((s) => s.activeRepoId ?? s.repos[0]?.id ?? null)
   const repoWorktrees = useAppStore((s) =>
@@ -58,11 +58,14 @@ export function OverviewPage(): React.JSX.Element {
   const [charter, setCharter] = useState<ProjectCharter | null>(null)
   const [catalog, setCatalog] = useState<MetricCatalog | null>(null)
   const [northReading, setNorthReading] = useState<MetricReading | null>(null)
+  const [zoneReadings, setZoneReadings] = useState<Record<string, MetricReading | null>>({})
   const [history, setHistory] = useState<VersionHistoryCatalog | null>(null)
   const [currentVersion, setCurrentVersion] = useState<string | null>(null)
   const [selectedVersion, setSelectedVersion] = useState<string | null>(null)
   const [notice, setNotice] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
+  /** Generation guard: a stale project's late responses must not overwrite a newer load. */
+  const loadEpoch = useRef(0)
 
   useEffect(() => {
     if (!activeRepo?.path) {
@@ -90,6 +93,7 @@ export function OverviewPage(): React.JSX.Element {
       hostId: baseScope.hostId
     }
     const owner = baseScope.runtimeOwnerEnvironmentId
+    const epoch = ++loadEpoch.current
     setBusy(true)
     const problems: string[] = []
     try {
@@ -107,6 +111,9 @@ export function OverviewPage(): React.JSX.Element {
         }),
         material.context().catch(() => ({ version: null }))
       ])
+      if (epoch !== loadEpoch.current) {
+        return
+      }
       setCatalog(nextCatalog)
       setHistory(nextHistory)
       setCurrentVersion(context.version)
@@ -125,13 +132,43 @@ export function OverviewPage(): React.JSX.Element {
               )
               return null
             })
+          if (epoch !== loadEpoch.current) {
+            return
+          }
           setNorthReading(reading)
         } else {
           setNorthReading(null)
         }
+        // Lagging/leading zones: same honest read path as the north star, grouped
+        // by the definition's feature tab; failures stay Unknown, never zero.
+        const zoneDefs = nextCatalog.definitions.filter((item) => item.role !== 'north_star')
+        const zoneEntries = await Promise.all(
+          zoneDefs.map(async (def) => {
+            const reading = await metrics
+              .read({
+                scope,
+                ref: def.ref,
+                window: metricWindowForDefinition(def, nextCatalog.timezone)
+              })
+              .catch((reason) => {
+                problems.push(
+                  `${def.name} 读数：${reason instanceof Error ? reason.message : String(reason)}`
+                )
+                return null
+              })
+            return [def.ref.definitionHash, reading] as const
+          })
+        )
+        if (epoch === loadEpoch.current) {
+          setZoneReadings(Object.fromEntries(zoneEntries))
+        }
+      } else if (epoch === loadEpoch.current) {
+        setZoneReadings({})
       }
     } finally {
-      setBusy(false)
+      if (epoch === loadEpoch.current) {
+        setBusy(false)
+      }
     }
     setNotice(problems.length ? problems.join('；') : null)
   }, [baseScope, baseWorktreeId])
@@ -140,6 +177,7 @@ export function OverviewPage(): React.JSX.Element {
     setCatalog(null)
     setHistory(null)
     setNorthReading(null)
+    setZoneReadings({})
     setSelectedVersion(null)
     void load()
   }, [load])
@@ -219,13 +257,6 @@ export function OverviewPage(): React.JSX.Element {
             onClick={() => void load()}
           >
             刷新
-          </button>
-          <button
-            type="button"
-            className="wb-btn wb-btn-primary wb-btn-sm"
-            onClick={() => openArtifactsPage()}
-          >
-            去计划屏
           </button>
         </div>
       </header>
@@ -356,6 +387,8 @@ export function OverviewPage(): React.JSX.Element {
             </div>
           )}
         </section>
+
+        {catalog ? <OverviewMetricZones catalog={catalog} readings={zoneReadings} /> : null}
       </div>
     </div>
   )

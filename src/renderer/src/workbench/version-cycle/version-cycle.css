@@ -139,3 +139,35 @@
   min-height: 0;
   overflow: hidden auto;
 }
+/* Why: the board roots size to content by default; wide windows left the rest of
+   the column as dead space. Stretch whichever board is mounted. */
+.vc-board-col > * {
+  flex: 1;
+  min-width: 0;
+}
+.vc-history-toggle {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  padding: 6px 10px;
+  border: 0;
+  border-top: 1px solid var(--color-border, rgba(128, 128, 128, 0.2));
+  background: transparent;
+  color: var(--color-neutral-600, inherit);
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+  text-align: left;
+}
+.vc-history.is-collapsed {
+  flex: 0 0 auto;
+  min-height: 0;
+  overflow: hidden;
+}
+.vc-history.is-collapsed > *:not(.vc-history-toggle) {
+  display: none;
+}
+.vc-notice-info {
+  color: var(--color-neutral-600, inherit);
+}

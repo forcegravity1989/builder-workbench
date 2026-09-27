@@ -312,6 +312,7 @@ function PlanningBoardContent({ context, prepareMetrics }: PlanningBoardProps) {
           {!plan ? (
             <div className="vp-empty">
               <h2>待选择版本</h2>
+              {context.error && <p role="alert">{context.error}</p>}
               <p>选择已有版本，或明确新建版本。可以先在左侧讨论，本页不会自动创建计划。</p>
               {!materialPort && <p>先开启计划会话，创建或恢复项目的计划工作树。</p>}
               {material.versions

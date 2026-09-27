@@ -71,6 +71,31 @@ export function findNamedWorktree(scope: NativeWorkspaceScope, branch: string): 
   return found[0] ?? null
 }
 const creating = new Map<string, Promise<Worktree>>()
+async function removeWorktreeBestEffort(
+  scope: NativeWorkspaceScope,
+  target: { kind: 'local' } | { kind: 'environment'; environmentId: string },
+  worktreeId: string
+): Promise<boolean> {
+  try {
+    await (target.kind === 'local'
+      ? window.api.worktrees.remove({
+          worktreeId,
+          hostId: scope.hostId,
+          force: true,
+          skipArchive: true,
+          allowFailedArchiveHook: true,
+          allowUnverifiedPtyStop: true
+        })
+      : callRuntimeRpc(target, 'worktree.rm', {
+          worktreeId,
+          force: true,
+          skipArchive: true
+        }))
+    return true
+  } catch {
+    return false
+  }
+}
 export async function ensureNamedWorktree(
   scope: NativeWorkspaceScope,
   branch: string,
@@ -110,8 +135,17 @@ export async function ensureNamedWorktree(
             },
             { timeoutMs: 600_000 }
           )
-    if (result.worktree.branch.replace(/^refs\/heads\//, '') !== branch) {
-      throw new Error('原生创建未返回约定分支，请检查工作树')
+    const createdBranch = result.worktree.branch.replace(/^refs\/heads\//, '')
+    if (createdBranch !== branch) {
+      // Native create uniquifies name+branch when the requested branch is already
+      // checked out elsewhere (e.g. a tree left by an older toolchain). Roll the stray
+      // tree back so retries cannot accumulate orphans; removal is best-effort.
+      const rolledBack = await removeWorktreeBestEffort(scope, target, result.worktree.id)
+      throw new Error(
+        `原生创建未返回约定分支 ${branch}（实际 ${createdBranch}），误建工作树${
+          rolledBack ? '已回滚删除' : '回滚失败，请手动清理'
+        }。该分支可能被仓内既有工作树占用（旧版工具链遗留或外部创建），清理或在 Orca 收件箱登记后重试`
+      )
     }
     // A paired runtime owns its nested SSH registration; do not redirect refresh to client SSH.
     await useAppStore.getState().fetchWorktrees(scope.repoId, {

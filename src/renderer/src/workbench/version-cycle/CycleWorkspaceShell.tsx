@@ -4,7 +4,6 @@ import { useAgentDetectionTargetForWorktree } from '@/hooks/useAgentDetectionTar
 import { useDetectedAgents } from '@/hooks/useDetectedAgents'
 import { launchAgentInNewTab } from '@/lib/launch-agent-in-new-tab'
 import { activateWebRuntimeSessionWorktree } from '@/runtime/web-runtime-worktree-activation'
-import AiVaultPanel from '@/components/right-sidebar/AiVaultPanel'
 import type { TuiAgent } from '../../../../shared/tui-agent'
 import type { AiVaultSession } from '../../../../shared/ai-vault-types'
 import type { VersionWorkflow } from '../../../../shared/workbench/version-document'
@@ -25,6 +24,7 @@ import {
 import { useWorkflowVersion } from './use-workflow-version'
 import { useCycleAutomationDraft } from './use-cycle-automation-draft'
 import { CycleChat } from './CycleChat'
+import { CycleBasePathNotice, CycleHistoryPane } from './cycle-history-pane'
 import type { CycleScope, CycleSession } from './ports'
 import type { VersionCycleContext } from './cycle-context'
 import { nativeVersionMaterialPort } from '../version-material-port'
@@ -83,6 +83,11 @@ export function CycleWorkspaceShell({ workflow }: { workflow: VersionWorkflow })
   // activates another worktree from the native sidebar, re-select the fixed one so
   // history and host routing keep matching the boards.
   const activeWorktreeId = useAppStore((s) => s.activeWorktreeId)
+  const repoWorktreeBasePath = useAppStore((s) => {
+    const id = s.activeRepoId ?? s.repos[0]?.id ?? null
+    return s.repos.find((item) => item.id === id)?.worktreeBasePath?.trim() || null
+  })
+  const workspaceDir = useAppStore((s) => s.settings?.workspaceDir ?? '')
   useEffect(() => {
     let current = true
     setSetupError(null)
@@ -388,14 +393,16 @@ export function CycleWorkspaceShell({ workflow }: { workflow: VersionWorkflow })
               {notice ?? setupError}
             </p>
           )}
+          {!setupError && baseScope && !repoWorktreeBasePath && (
+            <CycleBasePathNotice workspaceDir={workspaceDir} />
+          )}
           <CycleChat session={session} />
           {cycleScope && fixedId && (
-            <div className="vc-history">
-              <AiVaultPanel
-                workspaceHost={cycleScope.hostId}
-                onOpenSession={(item) => void openHistory(item)}
-              />
-            </div>
+            <CycleHistoryPane
+              scope={cycleScope}
+              workflow={workflow}
+              onOpenSession={(item) => void openHistory(item)}
+            />
           )}
         </div>
         <div
