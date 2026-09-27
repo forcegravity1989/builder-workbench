@@ -54,7 +54,9 @@ export function bindCycleTab(scope: CycleScope, worktreeId: string, tabId: strin
   }
   const tab = state.tabsByWorktree[worktreeId]?.find((item) => item.id === tabId)
   if (!tab) {
-    throw new Error('会话已创建，等待原生工作区同步后从历史中打开')
+    // Also the remount-restore path's only signal: a saved binding lands here once its tab was
+    // closed (its PTY exited), and naming that is what keeps the failure from reading as "no tab yet".
+    throw new Error('会话标签页不存在或已关闭，请从历史中重新打开')
   }
   const { paneKey, snapshot } = seedTerminalLayoutIfNeeded(
     tabId,
@@ -147,7 +149,14 @@ export async function openCycleHistory(
     if (!existing) {
       const outcome = await revealStructuredSession({ worktreeId, sessionId: pointer.sessionId })
       if (outcome !== 'revealed') {
-        throw new Error(`原生会话暂不可打开：${outcome}`)
+        // Why spelled out: the outcome is a protocol value; each maps to a remedy the user can act on.
+        throw new Error(
+          outcome === 'gone'
+            ? '该会话已不在宿主上，无法重新打开'
+            : outcome === 'host-cannot-open'
+              ? '宿主无法打开该会话，请升级 Orca 后重试'
+              : '宿主暂时不可达，请稍后重试'
+        )
       }
       await (environmentId
         ? refreshWebRuntimeSessionTabsSnapshot(environmentId, worktreeId, {
