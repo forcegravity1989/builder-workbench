@@ -14,6 +14,8 @@ import { OverviewMetricZones } from './overview-metric-zones'
 import { NorthStarCard } from './overview-north-star-card'
 import { MetricProblemsPanel } from './metric-problems-panel'
 import { readAllMetricReadings, refreshMetricReadings } from './overview-metric-readings'
+import type { OverviewReadResult } from './overview-metric-readings'
+import { useOverviewZoneGranularity } from './use-overview-zone-granularity'
 import { useMetricsSetup } from './version-cycle/metrics-setup'
 import './workbench-overview.css'
 
@@ -74,6 +76,24 @@ export function OverviewPage(): React.JSX.Element {
   const [busy, setBusy] = useState(false)
   /** Generation guard: a stale project's late responses must not overwrite a newer load. */
   const loadEpoch = useRef(0)
+  const applyZoneResult = useCallback(
+    (result: OverviewReadResult) => {
+      setNorthReading(result.north)
+      setZoneReadings(result.map)
+      setProblems([...catalogProblems(catalog), ...result.problems])
+    },
+    [catalog]
+  )
+  /** 日/周粒度：切换后按新窗口经既有 read RPC 重读一次；未采集窗口如实保持未知。 */
+  const zones = useOverviewZoneGranularity({
+    catalog,
+    baseScope,
+    baseWorktreeId,
+    loadEpoch,
+    setBusy,
+    apply: applyZoneResult
+  })
+  const { currentGranularity, markRead } = zones
 
   useEffect(() => {
     if (!activeRepo?.path) {
@@ -129,7 +149,14 @@ export function OverviewPage(): React.JSX.Element {
       // fixable configuration errors; they must render, not be swallowed as "not configured".
       problems.push(...catalogProblems(nextCatalog))
       if (nextCatalog) {
-        const result = await readAllMetricReadings({ scope, owner, catalog: nextCatalog })
+        const granularity = currentGranularity()
+        markRead(granularity)
+        const result = await readAllMetricReadings({
+          scope,
+          owner,
+          catalog: nextCatalog,
+          granularity
+        })
         if (epoch !== loadEpoch.current) {
           return
         }
@@ -145,7 +172,7 @@ export function OverviewPage(): React.JSX.Element {
       }
     }
     setProblems(problems)
-  }, [baseScope, baseWorktreeId])
+  }, [baseScope, baseWorktreeId, currentGranularity, markRead])
 
   /** 刷新读数=真实执行采集脚本后重读，不是只查缓存；按钮跟着指标卡片走。 */
   const refreshReadings = useCallback(async () => {
@@ -158,7 +185,8 @@ export function OverviewPage(): React.JSX.Element {
       const result = await refreshMetricReadings({
         scope: { repoId: baseScope.repoId, worktreeId: baseWorktreeId, hostId: baseScope.hostId },
         owner: baseScope.runtimeOwnerEnvironmentId,
-        catalog
+        catalog,
+        granularity: currentGranularity()
       })
       if (epoch !== loadEpoch.current) {
         return
@@ -171,7 +199,7 @@ export function OverviewPage(): React.JSX.Element {
         setBusy(false)
       }
     }
-  }, [baseScope, baseWorktreeId, catalog])
+  }, [baseScope, baseWorktreeId, catalog, currentGranularity])
 
   useEffect(() => {
     setCatalog(null)
@@ -237,17 +265,6 @@ export function OverviewPage(): React.JSX.Element {
   const north = catalog?.definitions.find((item) => item.role === 'north_star')
   const northValue =
     northReading?.status === 'ready' ? (northReading.readings[0]?.value ?? null) : null
-  const northLabel = !baseScope
-    ? '工作区未就绪'
-    : !catalog
-      ? '目录未知'
-      : !north
-        ? '未配置北极星指标'
-        : northReading === null
-          ? '未读取'
-          : northReading.status === 'ready'
-            ? `采集于 ${northReading.readings[0]?.collectedAt ?? ''}`
-            : `未知：${northReading.reason.message}`
   const distribution = minutes?.acceptance ? taskDistribution(minutes.acceptance.document) : []
 
   return (
@@ -289,9 +306,10 @@ export function OverviewPage(): React.JSX.Element {
 
           <NorthStarCard
             north={north}
+            northReading={northReading}
+            hasCatalog={catalog !== null}
+            workspaceReady={baseScope !== null}
             fallbackTitle={charter?.opportunity?.trim() || '（未配置）'}
-            value={northValue}
-            label={northLabel}
             busy={busy}
             metricsSetup={metricsSetup}
             onRefresh={() => void refreshReadings()}
@@ -395,6 +413,8 @@ export function OverviewPage(): React.JSX.Element {
             readings={zoneReadings}
             busy={busy}
             onRefresh={() => void refreshReadings()}
+            granularity={zones.granularity}
+            onGranularityChange={zones.setGranularity}
           />
         ) : null}
       </div>
