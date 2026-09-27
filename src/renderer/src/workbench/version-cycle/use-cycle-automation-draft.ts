@@ -22,23 +22,43 @@ export function cycleAutomationHost(scope: CycleScope): StableAutomationHostRef 
 }
 
 /**
- * Prefills the native automation editor for one cycle workflow: existing fixed
- * tree, a fresh session per run, and a prompt without any frozen cycleId.
+ * Opens the native automation editor for one cycle workflow. When BW already
+ * registered an entry (existingId), it opens that record for editing — BW never
+ * re-prefills over human-owned fields. Otherwise it prefills a create draft:
+ * existing fixed tree, a fresh session per run, a prompt without any frozen
+ * cycleId, and the BW creationKey so a manual save dedupes with `ensureCycleAutomation`.
  * Enablement, time and tool stay human-confirmed in the native editor.
  */
 export function useCycleAutomationDraft({
   cycleScope,
   fixedId,
   workflow,
+  existingId,
+  creationKey,
   onError
 }: {
   cycleScope: CycleScope | null
   fixedId: string | null
   workflow: VersionWorkflow
+  existingId: string | null
+  creationKey: string | null
   onError(message: string | null): void
 }) {
   return useCallback(async () => {
-    if (!cycleScope || !fixedId) {
+    if (!cycleScope) {
+      onError('固定工作树尚未就绪，请稍后重试。')
+      return
+    }
+    if (existingId) {
+      useAppStore.getState().openAutomationEditor({
+        kind: 'edit',
+        host: cycleAutomationHost(cycleScope),
+        automationId: existingId
+      })
+      onError(null)
+      return
+    }
+    if (!fixedId) {
       onError('固定工作树尚未就绪，请稍后重试。')
       return
     }
@@ -53,12 +73,13 @@ export function useCycleAutomationDraft({
           projectId: cycleScope.projectId,
           workspaceId: fixedId,
           workspaceMode: 'existing',
-          reuseSession: false
+          reuseSession: false,
+          ...(creationKey ? { creationKey } : {})
         }
       })
       onError(null)
     } catch (reason) {
       onError(reason instanceof Error ? reason.message : String(reason))
     }
-  }, [cycleScope, fixedId, workflow, onError])
+  }, [cycleScope, fixedId, workflow, existingId, creationKey, onError])
 }

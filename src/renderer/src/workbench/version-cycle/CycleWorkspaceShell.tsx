@@ -23,6 +23,7 @@ import {
 } from './native-session'
 import { useWorkflowVersion } from './use-workflow-version'
 import { useCycleAutomationDraft } from './use-cycle-automation-draft'
+import { useEnsureCycleAutomation } from './ensure-cycle-automation'
 import { CycleChat } from './CycleChat'
 import { CycleHistoryPane } from './cycle-history-pane'
 import { useAutoWorktreeBase } from './use-auto-worktree-base'
@@ -216,6 +217,15 @@ export function CycleWorkspaceShell({ workflow }: { workflow: VersionWorkflow })
   }, [detectedIds, defaultAgent, chosenAgent])
   const agent = chosenAgent ?? defaultAgent ?? detectedIds[0] ?? null
 
+  /** 固定树就绪后注册一次周期自动化（默认关闭，人启用后才到点）；失败非致命，只提示。 */
+  const cycleAutomation = useEnsureCycleAutomation({
+    cycleScope,
+    fixedId,
+    workflow,
+    agent,
+    onNotice: setNotice
+  })
+
   const newSession = useCallback(async () => {
     if (!cycleScope || !fixedId) {
       setNotice('固定工作树尚未就绪，请稍后重试。')
@@ -343,11 +353,13 @@ export function CycleWorkspaceShell({ workflow }: { workflow: VersionWorkflow })
     }
   }, [baseScope, agent])
 
-  /** 配置自动化：预填原生编辑器（固定树 existing、每次运行新会话）；启用与时间由人确认。 */
+  /** 配置自动化：已有 BW 身份条目则打开编辑该条；缺失则预填原生编辑器新建（固定树 existing、每次运行新会话）；启用与时间由人确认。 */
   const configureAutomation = useCycleAutomationDraft({
     cycleScope,
     fixedId,
     workflow,
+    existingId: cycleAutomation.automationId,
+    creationKey: cycleAutomation.creationKey,
     onError: setNotice
   })
 
@@ -380,7 +392,7 @@ export function CycleWorkspaceShell({ workflow }: { workflow: VersionWorkflow })
             <button
               className="wb-btn wb-btn-ghost wb-btn-sm"
               disabled={busy || !fixedId}
-              title="预填原生自动化编辑器：固定工作树、每次运行新会话；启用与时间由你确认"
+              title="打开原生自动化编辑器：已有 BW 注册条目则编辑该条，否则预填新建；启用与时间由你确认"
               onClick={() => {
                 setBusy(true)
                 void configureAutomation().finally(() => setBusy(false))
