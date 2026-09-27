@@ -199,7 +199,10 @@ export function CycleWorkspaceShell({ workflow }: { workflow: VersionWorkflow })
       }
       // bindCycleTab re-resolves the live tab identity and throws when it is gone.
       setSession(bindCycleTab(cycleScope, fixedId, saved.tabId))
-    } catch {
+    } catch (reason) {
+      // The remount-restore path must surface native-session's honest failure (tab
+      // gone / PTY exited) instead of swallowing it into a silent empty column.
+      setNotice(reason instanceof Error ? reason.message : String(reason))
       try {
         sessionStorage.removeItem(sessionStoreKey)
       } catch {
