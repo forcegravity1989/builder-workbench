@@ -16,16 +16,13 @@ const mocks = vi.hoisted(() => ({
   openTaskPage: vi.fn(),
   openAutomationsPage: vi.fn(),
   openActivityPage: vi.fn(),
-  openMobilePage: vi.fn(),
   openArtifactsPage: vi.fn(),
   openModal: vi.fn(),
   updateSettings: vi.fn(),
   refreshPreflightStatus: vi.fn(),
   checkLinearConnection: vi.fn(),
-  hasPairedMobileDevice: false,
   agentBucketCounts: { attention: 0, working: 0, done: 0, idle: 0 },
   getAgentBucketCounts: vi.fn(),
-  dismissMobileOnboardingBadge: vi.fn(),
   setSetupGuideSidebarDismissed: vi.fn()
 }))
 
@@ -83,7 +80,6 @@ import SidebarNav, {
   getSetupGuideSidebarEntryReady,
   shouldShowAutomationsButton,
   shouldShowArtifactsButton,
-  shouldShowMobileButton,
   shouldShowSetupGuideEntry
 } from './SidebarNav'
 
@@ -123,7 +119,6 @@ function setSidebarState({
     openTaskPage: mocks.openTaskPage,
     openAutomationsPage: mocks.openAutomationsPage,
     openActivityPage: mocks.openActivityPage,
-    openMobilePage: mocks.openMobilePage,
     openArtifactsPage: mocks.openArtifactsPage,
     openModal: mocks.openModal,
     updateSettings: mocks.updateSettings,
@@ -205,7 +200,6 @@ describe('SidebarNav', () => {
   beforeEach(async () => {
     vi.clearAllMocks()
     await i18n.changeLanguage('en')
-    mocks.hasPairedMobileDevice = false
     mocks.agentBucketCounts = { attention: 0, working: 0, done: 0, idle: 0 }
     setSidebarState()
   })
@@ -257,12 +251,6 @@ describe('SidebarNav', () => {
     expect(idle?.querySelector('svg')).toBeNull()
   })
 
-  it('does not show the Mobile entry', () => {
-    expect(shouldShowMobileButton(null)).toBe(false)
-    expect(shouldShowMobileButton({})).toBe(false)
-    expect(shouldShowMobileButton({ showMobileButton: true })).toBe(false)
-  })
-
   it('hides the Artifacts entry by default for older settings', () => {
     expect(shouldShowArtifactsButton(null)).toBe(false)
     expect(shouldShowArtifactsButton({})).toBe(false)
@@ -298,14 +286,12 @@ describe('SidebarNav', () => {
     const container = await renderSidebarNav()
 
     expect(queryButtonByText(container, 'Automations')).not.toBeNull()
-    expect(queryButtonByText(container, 'Orca Mobile')).toBeNull()
 
     await act(async () => {
       await i18n.changeLanguage('zh')
     })
 
     expect(queryButtonByText(container, '自动化')).not.toBeNull()
-    expect(queryButtonByText(container, 'Orca 手机端')).toBeNull()
   })
 
   it('updates labels when pseudo-localization is enabled after mount', async () => {
@@ -316,7 +302,6 @@ describe('SidebarNav', () => {
     })
 
     expect(queryButtonByText(container, '[Automations]')).not.toBeNull()
-    expect(queryButtonByText(container, '[Orca Mobile]')).toBeNull()
   })
 
   it('shows the Automations entry by default for older settings', () => {

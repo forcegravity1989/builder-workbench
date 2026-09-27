@@ -19,7 +19,6 @@
       "4f08ae8311": "tasks",
       "62ca9895a7": "space",
       "844eb0f4f4": "activity",
-      "9f0152563e": "mobile",
       "ca6c6eece7": "skills",
       "d54e66004c": "terminal"
     },
@@ -607,233 +606,6 @@
           }
         }
       },
-      "mobile": {
-        "CustomNetworkAddressDialog": {
-          "cancel": "Cancel",
-          "confirmationError": "This address could not produce a scannable pairing code. Check the address and try again.",
-          "description": "Advertise an address your phone can reach — for example a Tailscale hostname, IP address, or reverse-proxy URL.",
-          "hint": "Enter an IPv4/IPv6 address, hostname, or full HTTP(S)/WebSocket URL. Ports are optional.",
-          "label": "Address",
-          "placeholder": "home.example.com:8443 or https://example.com/orca",
-          "title": "Custom network address",
-          "use": "Use address"
-        },
-        "MobileHero": {
-          "010dddcf27": "Copy pairing code",
-          "051978a785": "Your phone is paired.",
-          "0d9b33299e": "Get the app.",
-          "10d27b4cba": "Get started",
-          "266c18c105": "Open Orca Mobile to pick up where you left off, or pair another device.",
-          "27735e5f4e": "Pairing QR",
-          "2f077ef4eb": ", and scan the code.",
-          "3241f3c26a": "Install QR",
-          "34f878d04f": "Revoke {{value0}}",
-          "3960f5c339": "Step 2 of 2",
-          "3aa7bb2d8b": "Pair Desktop",
-          "3f90dbd274": "Done",
-          "4c1df4eba7": "Can't scan?",
-          "5410d55d79": "Orca Mobile",
-          "65b3f2e8bc": "Generating…",
-          "711e6f4b47": "iOS",
-          "79d2f480da": "Network interface to advertise",
-          "7af266b80d": "Install QR code",
-          "85067b9e06": "Refresh network interfaces",
-          "92ddfdfa1f": "Step 1 of 2",
-          "94829abdb1": "Paired",
-          "a6cffbbb0b": "Generate code",
-          "a8fb43cf1c": "Continue",
-          "aa97420ba4": "Copy install link",
-          "ac1eb64952": "Android",
-          "androidHelp": {
-            "guide": "Install guide"
-          },
-          "b4ccce5cb7": "Control Orca from your phone. Check on agents, review changes, and kick off tasks while you're away from your desk.",
-          "b622eba64d": "Back",
-          "bb0074ce11": "Pairing QR code",
-          "ca85e595a7": "No interfaces found",
-          "cd4e5e816f": "Your workspaces, in your pocket.",
-          "channel": {
-            "group": "Release channel",
-            "preview": "Preview",
-            "stable": "Stable"
-          },
-          "d0b52871ce": "Your phones are paired.",
-          "d1495e5e64": "Open Orca Mobile, tap",
-          "da1d5e5ed0": "Available on",
-          "dfd2aa9d5d": "Network",
-          "directAddressDisclosure": "Also use a faster local path",
-          "directAddressHint": "Optional. Pick the Wi‑Fi or Tailscale address your phone should use when nearby — usually faster than Relay. Relay still works when you’re away.",
-          "e59a252eca": "Regenerate code",
-          "e75647ace0": "Scan the QR with your phone or open the install link to grab Orca Mobile.",
-          "ec0607bf66": "Supported mobile platforms",
-          "f9cbf4bb53": "Revoke device",
-          "ff48d9d520": "Pair another device",
-          "noPairingCode": "No pairing code available",
-          "noRelayCode": "No pairing code available",
-          "pairThisComputer": "Pair this computer.",
-          "pairThisMac": "Pair this Mac.",
-          "pairThisPc": "Pair this PC.",
-          "pairingCodeReady": "Pairing code ready",
-          "pairingQrError": "This pairing code couldn’t be rendered as a QR code. Copy it into Orca Mobile instead.",
-          "qrGeneratePrompt": "Generate a pairing code to continue",
-          "qrRenderFailed": "QR couldn’t be rendered — copy the code below",
-          "qrSignInRequired": "Sign in to create a Relay pairing code",
-          "relayDegradedNotice": "Relay couldn’t be reached — this code only works on your LAN or Tailscale."
-        },
-        "MobilePage": {
-          "1b4509a8a1": "paired",
-          "255372e6e8": "Device revoked",
-          "3c1f7168bb": "Pairing code copied",
-          "4c8bd11c1a": "Failed to generate pairing code",
-          "4e1eb5d55c": "Failed to revoke device",
-          "6a66e38943": "Failed to copy pairing code",
-          "b353e18de1": "WebSocket transport is not running",
-          "baea63c445": "Failed to copy link",
-          "c5909374cf": "intro",
-          "diagnosticsCopied": "Diagnostics copied",
-          "diagnosticsCopyFailed": "Failed to copy diagnostics",
-          "e17393c6a3": "Phone preview",
-          "fad833de8d": "Install link copied"
-        },
-        "MobilePageToolbar": {
-          "9883b58693": "Close Orca Mobile",
-          "a4f8c2d91e": "Hide from sidebar",
-          "ad2284a9e2": "Close · Esc",
-          "b7e3d1c84a": "Show in sidebar",
-          "c669abcf8f": "Hide from sidebar",
-          "e1c7b4a92d": "Configure in Settings > Mobile.",
-          "f3d8e5b71a": "Adds the shortcut back to the sidebar.",
-          "fb5f28330e": "Show in sidebar"
-        },
-        "MobileRelayMintFailureNotice": {
-          "body": "Retry, or use LAN to pair over Tailscale or the same Wi‑Fi.",
-          "copyDiagnostics": "Copy diagnostics",
-          "reconnectBody": "Sign in again to use Orca Relay, or use LAN to pair over Tailscale or the same Wi‑Fi.",
-          "reconnectTitle": "Your Orca account session expired.",
-          "retry": "Retry Relay",
-          "retrying": "Retrying…",
-          "retryingBody": "Creating a new pairing code. This can take a moment over a remote connection.",
-          "retryingTitle": "Retrying Orca Relay…",
-          "title": "Couldn’t create a Relay pairing code.",
-          "unavailableBody": "Use LAN to pair over Tailscale or the same Wi‑Fi.",
-          "unavailableTitle": "Orca Relay isn’t available on this desktop.",
-          "useLan": "Use LAN"
-        },
-        "NetworkInterfacePicker": {
-          "add-custom": "Add custom address…",
-          "custom-option": "{{address}} (custom)",
-          "custom-section": "Custom",
-          "no-address-selected": "No address selected",
-          "remove-custom": "Remove {{address}}",
-          "trigger-label": "Network address to advertise"
-        },
-        "PhoneCarousel": {
-          "89c7713645": "Orca Mobile home screen",
-          "93217b41c1": "Worktree list",
-          "96d651cb87": "Terminal session"
-        },
-        "WindowsFirewallNotice": {
-          "allow": "Allow phone connections",
-          "blocked-description": "An existing inbound Block rule can override the pairing exception. Repair removes conflicting TCP rules for this Orca app, then allows port {{port}} on Private networks.",
-          "blocked-title": "Windows may be blocking Orca Mobile",
-          "missing-description": "Windows may block the pairing server. Add a rule for this Orca app and TCP port {{port}} on Private networks.",
-          "missing-title": "Allow phone connections through Windows Firewall",
-          "open-settings": "Open network settings",
-          "public-description": "Change this trusted Wi-Fi network to Private before allowing Orca Mobile connections.",
-          "public-title": "Windows marks this network as public",
-          "relay-note": "Pairing still works over Orca Relay — allowing this only adds the faster local connection.",
-          "repair": "Repair firewall access",
-          "repair-failed": "Could not update the Windows Firewall rules",
-          "repair-success": "Windows Firewall now allows Orca Mobile on private networks",
-          "repair-unverified": "Windows Firewall access could not be verified",
-          "waiting": "Waiting for Windows…"
-        },
-        "mobile": {
-          "platform": {
-            "copy": {
-              "2a532d6fd7": "Scan with your Android camera to download the latest APK from GitHub Releases.",
-              "432db52b73": "Scan with your iPhone camera to open the App Store.",
-              "preview": {
-                "tagline": "Newest features, updated daily."
-              },
-              "stable": {
-                "tagline": "The public release, updated weekly."
-              }
-            }
-          }
-        },
-        "slides": {
-          "HomeSlide": {
-            "00a6903322": "Agents spawned",
-            "091355da3d": "M1 Mini · home",
-            "0b00c98506": "Quick Actions",
-            "0bad5b07c8": "GitHub and Linear",
-            "0bc1881bc4": "Connected · 40 worktrees · 5 active",
-            "156db8a68a": "PRs created",
-            "19c212e25e": "MacBook Pro",
-            "25d6e8a491": "feat/mobile-page",
-            "2f1a1d10c4": "Desktops",
-            "4405f3c440": "Pair Desktop",
-            "4a40af029b": "Agent time",
-            "5d94e8ddcc": "Orca",
-            "8a350a4784": "Account usage",
-            "a3d5476811": "5h",
-            "a4c3f7b7aa": "Tasks",
-            "a7d9e2c44d": "7d",
-            "af761a0c0d": "Settings",
-            "c0e2e9dcd9": "Welcome back",
-            "c791677f2f": "Resume",
-            "cf3f98fa3f": "Disconnected",
-            "d047197480": "GitHub · Linear",
-            "d33d7a9c29": "orca  ·  feat/mobile-page",
-            "e27fdaee51": "New Workspace"
-          },
-          "TerminalSlide": {
-            "0bb39f8fe6": "Send",
-            "1d448b69f7": "PASS",
-            "21b67dfc92": "Bash",
-            "29f2d13839": "Type a command…",
-            "2c10d43745": "claude",
-            "2defc05141": "dev@mac",
-            "336c0e070e": "mobile/orca-mobile-sidebar-mock-v3.html",
-            "3ce3e8c892": "14 passed, 1 skipped (1.8s)",
-            "4930eaaae7": "Esc",
-            "4b3666f9a9": "src/cache/worktree-cache.test.ts",
-            "53ff909568": "Tab",
-            "58a9ee6003": "tool-call formatting. Want me to add the diff next?",
-            "606aa93192": "Files",
-            "69334b4b10": "Voice dictation",
-            "6d4ebd5833": "Edit",
-            "80cc356591": "Read",
-            "817090af40": "Ctrl+C",
-            "8432787c4e": "feat/mobile-page",
-            "8d6516312d": "2 terminals · claude active",
-            "8fd998acd3": "Back",
-            "94febb0976": "Source control",
-            "985373052e": "Switch to phone mode",
-            "a6e7cdc688": "pnpm test --filter mobile",
-            "aa64b519c6": "terminal screen. Tokyonight palette, Menlo, real claude",
-            "d39445686a": "src/transport/host-store.test.ts",
-            "d6d1041a1c": "⎿ Replaced pair-scan slide with terminal session",
-            "da121ba48d": "PLAN.md",
-            "e0f98be657": "orca/feat-mobile-page",
-            "e4befee569": "shell",
-            "e75112c834": "I've replaced the pair-scan slide with a high-fidelity",
-            "fa22927f13": "Paste",
-            "fc83e0d5ef": "⎿ Read 2103 lines"
-          },
-          "WorktreeListSlide": {
-            "0e3e809a4b": "Filter",
-            "17f9e0d226": "Recent",
-            "22971156df": "Repo",
-            "357a519567": "Active",
-            "79a24ff530": "Pinned",
-            "b4271864bd": "MacBook Pro",
-            "c5ad56786d": "spinner",
-            "cefd048225": "Back"
-          }
-        }
-      },
       "new": {
         "workspace": {
           "SmartWorkspaceNameField": {
@@ -1292,7 +1064,6 @@
           "2df8f79aa5": "Show Orca in the titlebar.",
           "42554f615f": "Choose the font used by the Orca interface.",
           "4de76f6902": "Control what appears in the application titlebar.",
-          "5db6ba961f": "Show the Orca Mobile button at the top of the left sidebar.",
           "622e1c3465": "Scale the entire application interface.",
           "661942ab7f": "Show the Tasks button at the top of the left sidebar.",
           "6a272ca553": "Titlebar",
@@ -1502,119 +1273,6 @@
           "536026130e": "Emulator SDKs",
           "dde0ec1cd8": "Toolchains Orca uses to run emulators. Android works on any OS via the Android SDK; iOS Simulators need Xcode on macOS."
         },
-        "MobileNetworkInterfaceSection": {
-          "1dc87a7fbc": "Tailscale",
-          "1e64659126": "Regenerate",
-          "1f7c26d36a": "Sign in to the same tailnet on both devices.",
-          "39fad211d9": "Connect outside your Wi-Fi with a tailnet",
-          "406a35121c": "Network Interface",
-          "51d29927eb": "Install",
-          "63d5e4ae1e": "Regenerate the QR code and scan it from the Orca mobile app.",
-          "668016be7a": "on your computer and phone.",
-          "87985ba6f5": "In this Network Interface menu, choose the Tailscale address, usually a 100.x.y.z IP.",
-          "9fc5d203ff": "Orca Mobile connects directly to this computer. To use it away from the same LAN, put your computer and phone on the same private overlay network, then generate the QR code with that network address selected.",
-          "a9db5d771d": "Refresh network interfaces",
-          "b2c384cfd6": "No interfaces found",
-          "c541f67790": "Generate QR Code",
-          "d536b5e20d": "Choose which network address to advertise in the QR code. Use your LAN address for same-network pairing, or an overlay network address (Tailscale, ZeroTier) for cross-network access."
-        },
-        "MobilePairingConnectionOptions": {
-          "anywhereDescription": "Phone can be on cellular or any Wi‑Fi. Sign-in required for Relay only.",
-          "anywhereTitle": "Orca Relay",
-          "available": "Available",
-          "connecting": "Connecting",
-          "localDescription": "Phone must be on this Wi‑Fi or connected through Tailscale. No account needed.",
-          "localTitle": "LAN",
-          "pathGroup": "How the phone reaches this computer",
-          "ready": "Ready",
-          "reconnecting": "Reconnecting",
-          "relayCell": "Relay cell",
-          "relayUnavailable": "Orca Relay isn’t available in this build. Use LAN.",
-          "retrying": "Retrying",
-          "signIn": "Sign in for Relay",
-          "signInAgain": "Sign in again for Relay",
-          "signInRequired": "Relay only — LAN does not need an account.",
-          "unavailable": "Unavailable"
-        },
-        "MobilePairingSetupSection": {
-          "generate": "Generate QR code",
-          "overview": "Generate a QR code, then scan it in Orca Mobile under Pair Desktop.",
-          "refresh": "Refresh network interfaces",
-          "regenerate": "Regenerate QR code",
-          "step1Title": "Connection",
-          "step2LocalDescription": "The phone must be able to reach this address on Tailscale or Wi‑Fi.",
-          "step2RelayDescription": "Optional. Pick the Wi‑Fi or Tailscale address your phone should use when nearby — usually faster than Relay. Relay still works when you’re away.",
-          "step2RelayDisclosure": "Also use a faster local path",
-          "step2Title": "This computer’s address",
-          "title": "Pair a phone"
-        },
-        "MobilePane": {
-          "1592afcc7a": "No devices paired yet. Scan the QR code with the Orca mobile app.",
-          "1b1b70279a": "No devices paired yet.",
-          "254a6d09e4": "Paired",
-          "2e3dd0bc29": "Device revoked",
-          "310924ad2c": "Scan this code with the Orca mobile app. Each code creates a unique device token.",
-          "35100bca5d": "While you're using a terminal on your phone, Orca shrinks it to fit your phone screen. When you close the app or switch away, this controls whether it stays at phone size (so interactive CLI tools don't reflow) or resizes back to your desktop. You can always use Restore this terminal or Restore all terminals on the banner to resize manually.",
-          "3939fd062c": "Revoking a device disconnects it immediately.",
-          "6436e56546": "QR Code for mobile pairing",
-          "711231348f": "Failed to copy pairing code",
-          "870e1b5ca5": "Failed to revoke device",
-          "aa1263e881": "Keep at phone size (default)",
-          "c474aa09d8": "After 1 minute",
-          "cb9067c1c1": "WebSocket transport is not running",
-          "copyPairingCode": "Copy pairing code",
-          "d4ba07d914": "After 5 minutes",
-          "d714614dbf": "Failed to refresh network interfaces",
-          "d7ce676270": "Paired Devices",
-          "dd3cd78d04": "Scan with Orca Mobile",
-          "diagnosticsCopied": "Diagnostics copied",
-          "diagnosticsCopyFailed": "Failed to copy diagnostics",
-          "e3c427e020": "Failed to generate QR code",
-          "e778ecb209": "Or paste this code in the mobile app:",
-          "ee56f1c7e4": "When you leave the mobile app",
-          "ff865419dc": "After 30 minutes",
-          "pairingCodeReady": "Pairing code ready",
-          "pairingQrError": "This pairing code couldn’t be rendered as a QR code. Copy it into Orca Mobile instead.",
-          "relayDegradedNotice": "Relay couldn’t be reached — this code only works on your LAN or Tailscale. Regenerate to try again."
-        },
-        "MobileRelayBetaAvailability": {
-          "about": "About the Orca Relay beta",
-          "androidApk": "Android APK",
-          "availability": "Available on",
-          "beta": "Beta",
-          "testFlight": "TestFlight"
-        },
-        "MobileRelayBetaNotice": {
-          "notice": "Orca Relay is in beta."
-        },
-        "MobileRelayStatusSection": {
-          "automatic": "Connect from anywhere when a phone is paired",
-          "connecting": "Connecting",
-          "directNeedsNoAccount": "LAN and Tailscale pairing still work without an account.",
-          "directStillAvailable": "LAN and Tailscale connections remain available.",
-          "offline": "Offline",
-          "reconnecting": "Reconnecting",
-          "registered": "Registered",
-          "signIn": "Sign in",
-          "signInPrompt": "Sign in on this desktop to connect from anywhere",
-          "standby": "Standby — no relay devices",
-          "title": "Orca Relay",
-          "unavailable": "Unavailable"
-        },
-        "MobileSettingsPane": {
-          "174f4a3c6d": "Control terminals and agents from your phone.",
-          "1de96ec8a6": "Show Orca Mobile Button",
-          "682293cadf": "Show the Orca Mobile button at the top of the left sidebar.",
-          "9a3c280e49": "GitHub Releases",
-          "androidApkLabel": "Android APK",
-          "b0088412a1": "or the Android APK from",
-          "b5a2ed83ff": "App Store",
-          "c8491c17ef": "Control Orca from your phone by scanning a QR code. Beta / early preview - expect bugs and breaking changes. Get the iOS app from the",
-          "d4f2b65f30": "Show the Orca Mobile shortcut in the sidebar.",
-          "e7a3ae8c4e": "Mobile",
-          "installIntro": "Install Orca Mobile from the",
-          "installOutro": ", then pair below."
-        },
         "NotificationsPane": {
           "274af61bc0": "system",
           "d3756cf5bc": "disabled"
@@ -1714,11 +1372,8 @@
           "23c6874fdf": "AI Capabilities",
           "8bd117d669": "Interface",
           "9abb9be3bc": "Set Up",
-          "c40dadaac8": "Mobile",
-          "c6c01ac209": "Control terminals and agents from your phone.",
           "dd72ed437a": "Choose which task providers appear in the Tasks page and sidebar.",
-          "e1578cd4bc": "Workflows",
-          "mobile_group": "Mobile"
+          "e1578cd4bc": "Workflows"
         },
         "SettingsFormControls": {
           "3119c012a5": "string",
@@ -1970,77 +1625,6 @@
             }
           }
         },
-        "mobile": {
-          "pane": {
-            "search": {
-              "126afc5dbd": "remote",
-              "13419718b3": "Manage paired mobile devices.",
-              "16bff559a0": "tailnet",
-              "1802188b5d": "wifi",
-              "1e711aca11": "When you leave the mobile app",
-              "1f70d63998": "ip",
-              "2128a21096": "scan",
-              "3190ef67a4": "Choose which network address to use for mobile pairing.",
-              "356c31d6dc": "width",
-              "3a5e31e84b": "leave",
-              "3c1807a81a": "qr",
-              "4a0c826f3d": "code",
-              "5e8fda4d7f": "paired",
-              "6cd2bfdb0e": "restore",
-              "6db86f445f": "mobile",
-              "707fc78052": "Choose what happens to terminals you were viewing on mobile after you close the app or switch away.",
-              "70f505f3c3": "lan",
-              "7b37c2e557": "network",
-              "7d01f93ec0": "connected",
-              "7fb728fb2b": "Pair a mobile device by scanning a QR code.",
-              "8015fd9523": "hold",
-              "82783d9b71": "devices",
-              "87711f4b8f": "vpn",
-              "905c65a308": "revoke",
-              "9d3a9397ba": "Connected Devices",
-              "9e16be01d6": "background",
-              "a023683767": "interface",
-              "aa3f736042": "resize",
-              "ad08035c5f": "phone",
-              "b34ad5b3a7": "terminal",
-              "c690e3ee38": "tailscale",
-              "d0c89bc4a9": "overlay",
-              "d49925710a": "Mobile Pairing",
-              "d96c315227": "Network Interface",
-              "dbccde3a60": "close",
-              "dd6e671aa9": "address",
-              "e518cbd61c": "pair",
-              "fadcbfdd99": "fit"
-            }
-          },
-          "settings": {
-            "search": {
-              "0b7e585cb9": "scan",
-              "1de96ec8a6": "Show Orca Mobile Button",
-              "59b1d75fd1": "code",
-              "5bff6a2ef0": "sidebar",
-              "5d5af8e041": "iphone",
-              "5e5b8878bf": "phone",
-              "648eeada79": "hide",
-              "671eb4173c": "Control terminals and agents from your phone.",
-              "682293cadf": "Show the Orca Mobile button at the top of the left sidebar.",
-              "6bfa001752": "apk",
-              "6cf5f54ce1": "button",
-              "74618577c7": "mobile",
-              "7e801801ac": "remote",
-              "87816d1c59": "qr",
-              "8d4ba0ef09": "beta",
-              "a7eececc1d": "android",
-              "ac79fe4a04": "show",
-              "b730ff7049": "experimental",
-              "cf2c93b479": "pair",
-              "e4f4daea0e": "relay",
-              "f213400800": "mobile",
-              "f4ed142753": "phone",
-              "ffd52a96e4": "Mobile"
-            }
-          }
-        },
         "providerAccountScope": {
           "localMac": "Local Mac"
         },
@@ -2211,9 +1795,7 @@
           "scopedTo": "{{value0}} visible"
         },
         "SidebarNav": {
-          "1b5c41caee": "Orca Mobile",
-          "9c95e1ce91": "Agents",
-          "c86d83b5c3": "New"
+          "9c95e1ce91": "Agents"
         },
         "SidebarSettingsHelpMenu": {
           "d396773ef0": "checking"
@@ -2885,9 +2467,7 @@
         "f6300deb8b": "New Browser Tab"
       },
       "useSettingsNavigationMetadata": {
-        "1cd25673df": "Mobile",
-        "5235c215ca": "Choose which task providers appear in the Tasks page and sidebar.",
-        "95a1886d94": "Control terminals and agents from your phone."
+        "5235c215ca": "Choose which task providers appear in the Tasks page and sidebar."
       }
     },
     "lib": {

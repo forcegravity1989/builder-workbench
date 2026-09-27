@@ -17,12 +17,6 @@ import { WorkbenchSidebarNav } from '@/workbench/WorkbenchSidebarNav'
 
 export { getSetupGuideSidebarEntryReady, shouldShowSetupGuideEntry } from './SetupGuideSidebarEntry'
 
-export function shouldShowMobileButton(
-  _settings: Partial<Pick<GlobalSettings, 'showMobileButton'>> | null | undefined
-): boolean {
-  return false
-}
-
 export function shouldShowAutomationsButton(
   settings: Partial<Pick<GlobalSettings, 'showAutomationsButton'>> | null | undefined
 ): boolean {

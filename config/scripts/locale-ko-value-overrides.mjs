@@ -216,8 +216,6 @@ export const KO_VALUE_OVERRIDES = {
     '에이전트를 시작하기 전에 전체 명령 입력을 리뷰하고 편집하세요.',
   'Create a {{value0}} to start checks and review.':
     '체크와 리뷰를 시작하려면 {{value0}}을(를) 만드세요.',
-  "Control Orca from your phone. Check on agents, review changes, and kick off tasks while you're away from your desk.":
-    '휴대폰에서 Orca를 제어하세요. 자리를 비운 동안 에이전트를 확인하고, 변경 사항을 리뷰하고, 작업을 시작하세요.',
   'Skill command copied and inserted below for review.':
     '리뷰를 위해 스킬 명령을 아래에 복사하여 삽입했습니다.',
   'X finishes, send it the review task.”': 'X가 끝나면 리뷰 작업을 보냅니다.”',
@@ -266,7 +264,6 @@ export const KO_VALUE_OVERRIDES = {
   'Take back': '제어권 가져오기',
   Android: 'Android',
   Network: '네트워크',
-  'Available on': '지원 플랫폼',
   'Git Bash': 'Git Bash',
   Set: '설정',
   Test: '테스트',

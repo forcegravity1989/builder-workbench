@@ -16,11 +16,6 @@ const BASE_LOCALE_KEY_OVERRIDES = {
   // because the skills-dialog chip shares the English string but reads as a noun.
   'auto.components.right.sidebar.FileExplorerRow.0fec99bfd7': { zh: '创建副本' },
   'menu.reportCrash': { ko: '크래시 신고...', zh: '报告崩溃...', ja: 'クラッシュを報告...' },
-  'menu.showMobileButton': {
-    ko: 'Orca 모바일 버튼 표시',
-    zh: '显示 Orca Mobile 按钮',
-    ja: 'Orca Mobile ボタンを表示'
-  },
   'menu.toggleLeftSidebar': {
     ko: '왼쪽 사이드바 표시/숨기기',
     zh: '显示/隐藏左侧边栏',
@@ -48,11 +43,6 @@ const BASE_LOCALE_KEY_OVERRIDES = {
     ko: '외관',
     zh: '外观',
     ja: '外観'
-  },
-  'auto.hooks.useSettingsNavigationMetadata.1cd25673df': {
-    ko: '모바일',
-    zh: '移动端',
-    ja: 'モバイル'
   },
   'auto.hooks.useSettingsNavigationMetadata.6a50cdcd7c': {
     ko: '음성',
@@ -178,12 +168,6 @@ const BASE_LOCALE_KEY_OVERRIDES = {
     ko: 'Linear 작업 열기',
     zh: '打开 Linear 任务',
     ja: 'Linear タスクを開く'
-  },
-  // Onboarding pill beside Orca Mobile: "New" marks a new feature, not a create action.
-  'auto.components.sidebar.SidebarNav.c86d83b5c3': {
-    ko: '신규',
-    zh: '新功能',
-    ja: '新機能'
   },
   'auto.components.sidebar.SidebarSettingsHelpMenu.eb9884e55b': {
     ko: 'Discord',
@@ -335,18 +319,12 @@ const BASE_LOCALE_KEY_OVERRIDES = {
     zh: '立即重启',
     ja: '今すぐ再起動'
   },
-  'auto.App.9f0152563e': { ko: '모바일', zh: '移动端', ja: 'モバイル' },
   'auto.App.ca6c6eece7': { ko: '스킬', zh: '技能', ja: 'スキル' },
   'auto.App.62ca9895a7': { ko: '스페이스', zh: '空间', ja: 'スペース' },
   'settings.appearance.statusBar.kimiToggleDescription': {
     ko: '활성 워크스페이스의 Kimi 구독 사용량을 표시합니다.',
     zh: '显示当前工作区的 Kimi 订阅使用情况。',
     ja: 'アクティブなワークスペースの Kimi サブスクリプション使用状況を表示します。'
-  },
-  'auto.components.mobile.MobileHero.cd4e5e816f': {
-    ko: '주머니 속의 워크스페이스.',
-    zh: '您的工作区就在您的口袋里。',
-    ja: 'ワークスペースをポケットに。'
   },
   'auto.components.GitHubItemDialog.dbe5e2448e': {
     ko: 'PR이 병합되었습니다',
@@ -528,11 +506,6 @@ const BASE_LOCALE_KEY_OVERRIDES = {
     zh: '查看议题',
     ja: 'イシューを表示'
   },
-  'auto.components.mobile.MobilePage.e17393c6a3': {
-    ko: '전화 미리보기',
-    zh: '手机预览',
-    ja: 'スマートフォンプレビュー'
-  },
   'auto.components.editor.EditorContent.e4b074749d': {
     ko: '머리말',
     zh: '前言',
@@ -582,11 +555,6 @@ const BASE_LOCALE_KEY_OVERRIDES = {
     ko: '예: feature',
     zh: '例如 feature',
     ja: '例: feature'
-  },
-  'auto.components.mobile.slides.TerminalSlide.985373052e': {
-    ko: '휴대폰 모드로 전환',
-    zh: '切换到手机模式',
-    ja: 'スマートフォンモードに切り替え'
   },
   'auto.components.GitHubItemDialog.a341343303': {
     ko: '리뷰 댓글이 추가되었습니다.',

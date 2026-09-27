@@ -1424,51 +1424,6 @@
   "auto.components.linear.scope.selector.89f6580dbf": {
     "ko": "팀 검색..."
   },
-  "auto.components.mobile.MobilePage.1b4509a8a1": {
-    "ko": "페어링됨"
-  },
-  "auto.components.mobile.MobilePage.e17393c6a3": {
-    "ko": "휴대폰 미리보기"
-  },
-  "auto.components.mobile.PhoneCarousel.93217b41c1": {
-    "ko": "워크트리 목록"
-  },
-  "auto.components.mobile.slides.HomeSlide.0bad5b07c8": {
-    "ko": "GitHub 및 Linear"
-  },
-  "auto.components.mobile.slides.HomeSlide.0bc1881bc4": {
-    "ko": "연결됨 · 워크트리 40개 · 활성 5개"
-  },
-  "auto.components.mobile.slides.HomeSlide.c0e2e9dcd9": {
-    "ko": "다시 오신 것을 환영합니다"
-  },
-  "auto.components.mobile.slides.TerminalSlide.2defc05141": {
-    "ko": "dev@mac"
-  },
-  "auto.components.mobile.slides.TerminalSlide.53ff909568": {
-    "ko": "Tab"
-  },
-  "auto.components.mobile.slides.TerminalSlide.58a9ee6003": {
-    "ko": "도구 호출 형식. 다음으로 diff를 추가할까요?"
-  },
-  "auto.components.mobile.slides.TerminalSlide.80cc356591": {
-    "ko": "읽기"
-  },
-  "auto.components.mobile.slides.TerminalSlide.8d6516312d": {
-    "ko": "terminals 2개 · claude 활성"
-  },
-  "auto.components.mobile.slides.TerminalSlide.a6e7cdc688": {
-    "ko": "pnpm test --filter mobile"
-  },
-  "auto.components.mobile.slides.TerminalSlide.e0f98be657": {
-    "ko": "orca/feat-mobile-page"
-  },
-  "auto.components.mobile.slides.TerminalSlide.e4befee569": {
-    "ko": "셸"
-  },
-  "auto.components.mobile.slides.WorktreeListSlide.17f9e0d226": {
-    "ko": "최근"
-  },
   "auto.components.new.workspace.ProjectCombobox.empty": {
     "ko": "검색과 일치하는 프로젝트가 없습니다."
   },
@@ -2344,12 +2299,6 @@
   },
   "auto.components.settings.MobileEmulatorSettingsPane.ae1612c58c": {
     "ko": "가용성"
-  },
-  "auto.components.settings.MobilePane.35100bca5d": {
-    "ko": "휴대폰에서 terminals을 사용하는 동안 Orca는 휴대폰 화면에 맞게 terminals을 축소합니다. 앱을 닫거나 다른 곳으로 전환하면 terminals이 휴대폰 크기로 유지되는지(대화형 CLI 도구가 리플로우되지 않음) 또는 데스크탑으로 다시 크기가 조정되는지 여부가 제어됩니다. 배너에서 '이 terminals 복원' 또는 '모든 terminals 복원'을 사용해 언제든지 수동으로 크기를 조정할 수 있습니다."
-  },
-  "auto.components.settings.MobileSettingsPane.b0088412a1": {
-    "ko": "또는 다음에서 Android APK를 받으세요"
   },
   "auto.components.settings.NotificationsPane.274af61bc0": {
     "ko": "시스템"
@@ -3448,51 +3397,6 @@
   },
   "auto.components.settings.mobile.emulator.search.ea1f51b980": {
     "ko": "Xcode, simctl, serve-sim 및 에뮬레이터 장치가 준비되었는지 확인하세요."
-  },
-  "auto.components.settings.mobile.pane.search.16bff559a0": {
-    "ko": "tailnet"
-  },
-  "auto.components.settings.mobile.pane.search.1f70d63998": {
-    "ko": "IP"
-  },
-  "auto.components.settings.mobile.pane.search.2128a21096": {
-    "ko": "스캔"
-  },
-  "auto.components.settings.mobile.pane.search.3a5e31e84b": {
-    "ko": "나가기"
-  },
-  "auto.components.settings.mobile.pane.search.4a0c826f3d": {
-    "ko": "코드"
-  },
-  "auto.components.settings.mobile.pane.search.5e8fda4d7f": {
-    "ko": "페어링됨"
-  },
-  "auto.components.settings.mobile.pane.search.70f505f3c3": {
-    "ko": "LAN"
-  },
-  "auto.components.settings.mobile.pane.search.7b37c2e557": {
-    "ko": "네트워크"
-  },
-  "auto.components.settings.mobile.pane.search.8015fd9523": {
-    "ko": "유지"
-  },
-  "auto.components.settings.mobile.pane.search.d0c89bc4a9": {
-    "ko": "오버레이"
-  },
-  "auto.components.settings.mobile.pane.search.e518cbd61c": {
-    "ko": "페어링"
-  },
-  "auto.components.settings.mobile.pane.search.fadcbfdd99": {
-    "ko": "맞춤"
-  },
-  "auto.components.settings.mobile.settings.search.0b7e585cb9": {
-    "ko": "스캔"
-  },
-  "auto.components.settings.mobile.settings.search.59b1d75fd1": {
-    "ko": "코드"
-  },
-  "auto.components.settings.mobile.settings.search.cf2c93b479": {
-    "ko": "페어링"
   },
   "auto.components.settings.notifications.search.3014ad1b8f": {
     "ko": "딩"

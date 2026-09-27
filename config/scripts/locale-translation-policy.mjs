@@ -159,7 +159,6 @@ export const NEVER_TRANSLATE_VALUES = new Set([
   '/path/to/destination',
   '.orca/issue-command',
   'PLAN.md',
-  'feat/mobile-page',
   'sk-...',
   'main',
   'master',

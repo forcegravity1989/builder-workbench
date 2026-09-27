@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest'
 import { repairTranslatedValue } from './locale-translation-policy.mjs'
 
 describe('locale-translation-policy zh round 5', () => {
-  it('fixes brand spacing, hosted review, and Orca Mobile regressions', () => {
+  it('fixes brand spacing and hosted review regressions', () => {
     expect(
       repairTranslatedValue({
         key: 'auto.components.stats.ShareUsageCard.0eb31e79ee',
@@ -36,14 +36,6 @@ describe('locale-translation-policy zh round 5', () => {
         locale: 'zh'
       })
     ).toBe('Codex 账户')
-    expect(
-      repairTranslatedValue({
-        key: 'menu.showMobileButton',
-        enValue: 'Show Orca Mobile Button',
-        localeValue: '显示 Orca 移动按钮',
-        locale: 'zh'
-      })
-    ).toBe('显示 Orca Mobile 按钮')
     expect(
       repairTranslatedValue({
         key: 'auto.hooks.useSettingsNavigationMetadata.ab4b21b58e',
