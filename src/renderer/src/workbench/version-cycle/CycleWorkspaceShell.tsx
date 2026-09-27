@@ -2,19 +2,18 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useAppStore } from '@/store'
 import { useAgentDetectionTargetForWorktree } from '@/hooks/useAgentDetectionTarget'
 import { useDetectedAgents } from '@/hooks/useDetectedAgents'
-import { launchAgentInNewTab } from '@/lib/launch-agent-in-new-tab'
 import { activateWebRuntimeSessionWorktree } from '@/runtime/web-runtime-worktree-activation'
 import type { TuiAgent } from '../../../../shared/tui-agent'
 import type { AiVaultSession } from '../../../../shared/ai-vault-types'
 import type { VersionWorkflow } from '../../../../shared/workbench/version-document'
 import {
-  ensureNamedWorktree,
   nativeWorkspaceScope,
   nativeWorkspaceScopeKey,
   type NativeWorkspaceScope
 } from './native-workspace'
 import { cycleScopeForWorktree, cycleScopeKey, ensureCycleWorktree } from './native-cycle-workspace'
-import { buildCyclePrompt, resolveWorkbenchPromptAssets } from './cycle-prompt'
+import { buildCyclePrompt } from './cycle-prompt'
+import { prepareMetricsSession } from './metrics-setup'
 import {
   bindCycleTab,
   openCycleHistory,
@@ -36,10 +35,6 @@ import { PlanningBoard } from '../version-planning/PlanningBoard'
 import { AcceptancePage } from '../version-acceptance/AcceptancePage'
 import { usePlanColumnResize } from '../use-plan-column-resize'
 import './version-cycle.css'
-
-/** Fixed maintenance tree for metric definitions/scripts; opened as a native project session. */
-const METRICS_BRANCH = 'bw/metrics-refresh'
-const METRICS_WORKTREE_NAME = 'metrics-refresh'
 
 /**
  * Production shell for one BW cycle workflow: formally selects the fixed native
@@ -99,7 +94,9 @@ export function CycleWorkspaceShell({ workflow }: { workflow: VersionWorkflow })
     let current = true
     const breakerKey = `${baseScopeKey}:${workflow}`
     if ((ensureFailures.current[breakerKey] ?? 0) >= 2) {
-      setSetupError('固定树准备连续失败，已停止自动重试；重进本屏或按提示清理/登记占用工作树后再试。')
+      setSetupError(
+        '固定树准备连续失败，已停止自动重试；重进本屏或按提示清理/登记占用工作树后再试。'
+      )
       return
     }
     setSetupError(null)
@@ -349,36 +346,7 @@ export function CycleWorkspaceShell({ workflow }: { workflow: VersionWorkflow })
     if (!agent) {
       throw new Error('未检测到可用会话工具，请先在设置中配置')
     }
-    metricsHandoff.current = true
-    try {
-      const maintenance = await ensureNamedWorktree(
-        baseScope,
-        METRICS_BRANCH,
-        METRICS_WORKTREE_NAME
-      )
-      const assets = await resolveWorkbenchPromptAssets({
-        ...baseScope,
-        workflow: 'metrics-refresh',
-        worktreeId: maintenance.id
-      })
-      const state = useAppStore.getState()
-      state.setActiveWorktree(maintenance.id, baseScope.hostId)
-      if (baseScope.runtimeOwnerEnvironmentId) {
-        await activateWebRuntimeSessionWorktree({
-          worktreeId: maintenance.id,
-          environmentId: baseScope.runtimeOwnerEnvironmentId
-        })
-      }
-      launchAgentInNewTab({
-        agent,
-        worktreeId: maintenance.id,
-        prompt: assets.prompt,
-        activate: true,
-        promptDelivery: 'auto-submit'
-      })
-    } finally {
-      metricsHandoff.current = false
-    }
+    await prepareMetricsSession({ baseScope, agent, handoff: metricsHandoff })
   }, [baseScope, agent])
 
   /** 配置自动化：已有 BW 身份条目则打开编辑该条；缺失则预填原生编辑器新建（固定树 existing、每次运行新会话）；启用与时间由人确认。 */

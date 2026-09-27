@@ -509,3 +509,12 @@
   margin: 4px 0 0;
   padding-left: 18px;
 }
+
+/* Action failure for the overview's own buttons (e.g. 配置指标); honest text, not a silent skip. */
+.wb-ov .wb-ov-alert {
+  margin: 0;
+  padding: 6px 10px;
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--color-danger, #c0392b);
+}

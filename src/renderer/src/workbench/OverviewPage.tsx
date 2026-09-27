@@ -11,8 +11,10 @@ import { metricProblemText } from '../../../shared/workbench/metrics'
 import type { VersionHistoryCatalog } from '../../../shared/workbench/version-history'
 import { taskDistribution, useVersionMinutes } from './use-version-minutes'
 import { OverviewMetricZones } from './overview-metric-zones'
+import { NorthStarCard } from './overview-north-star-card'
 import { MetricProblemsPanel } from './metric-problems-panel'
 import { readAllMetricReadings, refreshMetricReadings } from './overview-metric-readings'
+import { useMetricsSetup } from './version-cycle/metrics-setup'
 import './workbench-overview.css'
 
 function catalogProblems(catalog: MetricCatalog | null): string[] {
@@ -202,6 +204,9 @@ export function OverviewPage(): React.JSX.Element {
     version
   })
 
+  /** 配置指标：与计划屏同一条固定维护树管线；错误经页面提示浮现，不静默。 */
+  const metricsSetup = useMetricsSetup({ baseScope, worktreeId: baseWorktreeId })
+
   if (!activeRepo) {
     return (
       <div className="wb-ov">
@@ -253,6 +258,11 @@ export function OverviewPage(): React.JSX.Element {
 
       <div className="content">
         <MetricProblemsPanel className="wb-muted" problems={problems} />
+        {metricsSetup.notice && (
+          <p role="alert" className="wb-ov-alert">
+            {metricsSetup.notice}
+          </p>
+        )}
         <div className="row-2">
           <section className="card" id="project-card">
             <div className="row-between">
@@ -277,30 +287,15 @@ export function OverviewPage(): React.JSX.Element {
             </div>
           </section>
 
-          <section className="card">
-            <div className="row-between">
-              <span className="card-kicker">北极星指标</span>
-              <button
-                type="button"
-                className="wb-btn wb-btn-ghost wb-btn-sm"
-                disabled={busy}
-                title="执行登记采集脚本后重读全部指标（含滞后/引领）"
-                onClick={() => void refreshReadings()}
-              >
-                刷新读数
-              </button>
-            </div>
-            <span className="card-title">
-              {north?.name ?? (charter?.opportunity?.trim() || '（未配置）')}
-            </span>
-            <div className="row-start">
-              <h2 className="metric-value">
-                {northValue === null ? '—' : `${northValue}${north?.unit ?? ''}`}
-              </h2>
-              {north?.target && <span className="metric-target">目标 {north.target}</span>}
-              <span className="wb-tag wb-tag-neutral">{northLabel}</span>
-            </div>
-          </section>
+          <NorthStarCard
+            north={north}
+            fallbackTitle={charter?.opportunity?.trim() || '（未配置）'}
+            value={northValue}
+            label={northLabel}
+            busy={busy}
+            metricsSetup={metricsSetup}
+            onRefresh={() => void refreshReadings()}
+          />
         </div>
 
         <section className="card" id="version-card">
