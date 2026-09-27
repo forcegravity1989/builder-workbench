@@ -666,6 +666,64 @@
   margin: 6px 0 0;
   line-height: 1.6;
 }
+
+/* 项目指标 · SDLC：三卡并排，独立刷新；只用页面滚动，图表不套滚动容器。 */
+.wb-sdlc-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0;
+  margin-top: var(--space-3, 12px);
+}
+.wb-sdlc-cell {
+  min-width: 0;
+  padding-right: var(--space-4, 16px);
+}
+.wb-sdlc-cell + .wb-sdlc-cell {
+  padding-left: var(--space-4, 16px);
+  border-left: 1px solid var(--color-divider, rgba(128, 128, 128, 0.25));
+}
+.wb-sdlc-cell:last-child {
+  padding-right: 0;
+}
+.wb-sdlc-head {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-2, 8px);
+  min-height: 28px;
+}
+.wb-sdlc-head .wb-sdlc-name {
+  font-size: 13px;
+  font-weight: 500;
+}
+.wb-sdlc-head .wb-sdlc-val {
+  margin-left: auto;
+  font-weight: 600;
+  font-size: 15px;
+}
+.wb-sdlc-snapshot {
+  min-height: 120px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 4px;
+}
+.wb-sdlc-line {
+  margin: 4px 0 0;
+  font-size: 12px;
+  line-height: 1.5;
+  color: color-mix(in srgb, var(--color-text, #333) 62%, transparent);
+}
+@media (max-width: 1100px) {
+  .wb-sdlc-grid {
+    grid-template-columns: 1fr;
+  }
+  .wb-sdlc-cell + .wb-sdlc-cell {
+    padding-left: 0;
+    border-left: 0;
+    padding-top: var(--space-3, 12px);
+    border-top: 1px solid var(--color-divider, rgba(128, 128, 128, 0.25));
+  }
+}
 @media (max-width: 1100px) {
   .wb-mz-plots.is-multi {
     grid-template-columns: 1fr;

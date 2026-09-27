@@ -11,7 +11,9 @@ import { metricProblemText } from '../../../shared/workbench/metrics'
 import type { VersionHistoryCatalog } from '../../../shared/workbench/version-history'
 import { taskDistribution, useVersionMinutes } from './use-version-minutes'
 import { OverviewMetricZones } from './overview-metric-zones'
+import { OverviewSdlcZones } from './overview-sdlc-zones'
 import { NorthStarCard } from './overview-north-star-card'
+import { ProjectCard } from './overview-project-card'
 import { MetricProblemsPanel } from './metric-problems-panel'
 import { readAllMetricReadings, refreshMetricReadings } from './overview-metric-readings'
 import type { OverviewReadResult } from './overview-metric-readings'
@@ -21,19 +23,6 @@ import './workbench-overview.css'
 
 function catalogProblems(catalog: MetricCatalog | null): string[] {
   return (catalog?.problems ?? []).map(metricProblemText)
-}
-
-function charterRows(
-  projectName: string,
-  c: ProjectCharter | null
-): { k: string; v: string; mono?: boolean }[] {
-  return [
-    { k: '想做什么', v: c?.brief?.trim() || '(还没填)' },
-    { k: '对标', v: c?.benchmark?.trim() || '(还没填)', mono: true },
-    { k: '目标方向', v: c?.opportunity?.trim() || '(还没填)' },
-    { k: '项目群', v: '（未配置）' },
-    { k: '项目名', v: c?.name?.trim() || projectName, mono: true }
-  ]
 }
 
 /** Overview reads real metrics and real archive records; no data stays Unknown, never demo. */
@@ -57,13 +46,13 @@ export function OverviewPage(): React.JSX.Element {
       return null
     }
   }, [activeRepoId, repoWorktrees])
-  const baseWorktreeId = useMemo(() => {
+  const baseWorktree = useMemo(() => {
     if (!baseScope || !repoWorktrees?.length) {
       return null
     }
-    const home = repoWorktrees.find((item) => item.isMainWorktree) ?? repoWorktrees[0]
-    return home.id
+    return repoWorktrees.find((item) => item.isMainWorktree) ?? repoWorktrees[0] ?? null
   }, [baseScope, repoWorktrees])
+  const baseWorktreeId = baseWorktree?.id ?? null
 
   const [charter, setCharter] = useState<ProjectCharter | null>(null)
   const [catalog, setCatalog] = useState<MetricCatalog | null>(null)
@@ -261,7 +250,6 @@ export function OverviewPage(): React.JSX.Element {
   }
 
   const projectName = charter?.name?.trim() || activeRepo.displayName || activeRepo.id
-  const rows = charterRows(projectName, charter)
   const north = catalog?.definitions.find((item) => item.role === 'north_star')
   const northValue =
     northReading?.status === 'ready' ? (northReading.readings[0]?.value ?? null) : null
@@ -281,28 +269,12 @@ export function OverviewPage(): React.JSX.Element {
           </p>
         )}
         <div className="row-2">
-          <section className="card" id="project-card">
-            <div className="row-between">
-              <div className="row-start">
-                <span className="card-title">{projectName}</span>
-                <span className="status" title="健康信号只从北极星读数推导；无读数保持未知">
-                  <span className="status-dot" />
-                  {northValue === null ? '未知' : '有读数'}
-                </span>
-                {version && <span className="wb-tag wb-tag-outline wb-mono">{version}</span>}
-              </div>
-            </div>
-            <div className="detail-grid">
-              {rows.map((row) => (
-                <React.Fragment key={row.k}>
-                  <div className="detail-k">{row.k}</div>
-                  <div className={`detail-v${'mono' in row && row.mono ? ' mono' : ''}`}>
-                    {row.v}
-                  </div>
-                </React.Fragment>
-              ))}
-            </div>
-          </section>
+          <ProjectCard
+            projectName={projectName}
+            charter={charter}
+            hasReading={northValue !== null}
+            version={version}
+          />
 
           <NorthStarCard
             north={north}
@@ -417,6 +389,14 @@ export function OverviewPage(): React.JSX.Element {
             onGranularityChange={zones.setGranularity}
           />
         ) : null}
+
+        <OverviewSdlcZones
+          repo={activeRepo}
+          baseScope={baseScope}
+          baseWorktreeId={baseWorktreeId}
+          baseWorktreePath={baseWorktree?.path ?? null}
+          timezone={catalog?.timezone}
+        />
       </div>
     </div>
   )
