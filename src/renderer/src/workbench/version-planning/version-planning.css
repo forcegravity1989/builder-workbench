@@ -289,19 +289,6 @@
   line-height: 1.7;
   font: inherit;
 }
-.vp-migration {
-  padding: var(--space-2) var(--space-4);
-  border-bottom: 1px solid var(--color-divider);
-}
-.vp-migration-preview {
-  overflow: auto;
-  white-space: pre-wrap;
-  overflow-wrap: anywhere;
-  line-height: 1.7;
-}
-.vp-migration-preview h3 {
-  font-size: 14px;
-}
 @media (max-width: 1100px) {
   .vp-content {
     padding: var(--space-3);

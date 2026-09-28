@@ -38,7 +38,7 @@ import {
 import { useAiVaultSessionRowActions } from './ai-vault-session-row-actions'
 import { useAiVaultOriginalPaneActions } from './ai-vault-original-pane-actions'
 import type { AiVaultScope, AiVaultSession } from '../../../../shared/ai-vault-types'
-import type { ExecutionHostId } from '../../../../shared/execution-host'
+
 import { AiVaultPanelHeader } from './AiVaultPanelHeader'
 import { AiVaultSessionVirtualList } from './AiVaultSessionVirtualList'
 import { useAiVaultSessionRefresh } from './ai-vault-session-refresh'
@@ -52,14 +52,7 @@ import { AgentSessionContinuationDialog } from '@/components/agent-session-conti
 import { AiVaultScanIssueBanners } from './AiVaultScanIssueBanners'
 import { useAiVaultSessionDeleteAction } from './ai-vault-session-delete-action'
 
-export default function AiVaultPanel({
-  workspaceHost,
-  onOpenSession
-}: {
-  workspaceHost?: ExecutionHostId
-  onOpenSession?: (session: AiVaultSession) => void
-} = {}): React.JSX.Element {
-  const workspaceOnly = workspaceHost !== undefined
+export default function AiVaultPanel(): React.JSX.Element {
   const activeWorktreeId = useActiveWorktreeId()
   const activeWorktree = useActiveWorktree()
   const activeRepo = useActiveRepo()
@@ -81,8 +74,7 @@ export default function AiVaultPanel({
     useAiVaultOriginalPaneActions()
   const [query, setQuery] = useState('')
   // Why: scope depends on current workspace/project availability, so only stable view options persist.
-  const [selectedScope, setScope] = useState<AiVaultScope>(DEFAULT_AI_VAULT_SCOPE)
-  const scope = workspaceOnly ? 'workspace' : selectedScope
+  const [scope, setScope] = useState<AiVaultScope>(DEFAULT_AI_VAULT_SCOPE)
   const {
     agents,
     sort,
@@ -109,16 +101,12 @@ export default function AiVaultPanel({
     () => runtimeHostOptions.map((option) => option.id),
     [runtimeHostOptions]
   )
-  const {
-    executionHostScope: selectedHostScope,
-    activeExecutionHostScope,
-    onExecutionHostScopeChange
-  } = useAiVaultExecutionHostScope({
-    activeWorktreeId: activeWorktreeId ?? null,
-    resumeTargetState,
-    availableExecutionHostScopes
-  })
-  const executionHostScope = workspaceHost ?? selectedHostScope
+  const { executionHostScope, activeExecutionHostScope, onExecutionHostScopeChange } =
+    useAiVaultExecutionHostScope({
+      activeWorktreeId: activeWorktreeId ?? null,
+      resumeTargetState,
+      availableExecutionHostScopes
+    })
   const hostScopeOptions = useMemo(
     () =>
       buildAiVaultHostScopeOptions({
@@ -157,7 +145,7 @@ export default function AiVaultPanel({
     [activeProjectKey, activeWorktree, allWorktrees, projectHostSetupProjection]
   )
   const { error, loading, refresh, scanResult, sessions } = useAiVaultSessionRefresh(
-    workspaceOnly ? activeWorktreePaths : scopePaths,
+    scopePaths,
     executionHostScope,
     sessionLimit
   )
@@ -204,9 +192,6 @@ export default function AiVaultPanel({
 
   // Workspace is the preferred default, but unavailable context still falls back to All.
   useEffect(() => {
-    if (workspaceOnly) {
-      return
-    }
     const normalizedScope = normalizeAiVaultScopeForContext({
       scope,
       activeProjectKey,
@@ -215,12 +200,9 @@ export default function AiVaultPanel({
     if (normalizedScope !== scope) {
       setScope(normalizedScope)
     }
-  }, [activeProjectKey, activeWorktreePath, scope, workspaceOnly])
+  }, [activeProjectKey, activeWorktreePath, scope])
 
   useEffect(() => {
-    if (workspaceOnly) {
-      return
-    }
     const restorableScope = getRestorableAiVaultScope({
       scope,
       activeProjectKey,
@@ -231,7 +213,7 @@ export default function AiVaultPanel({
     if (restorableScope) {
       setScope(restorableScope)
     }
-  }, [activeProjectKey, activeWorktreePath, scope, workspaceOnly])
+  }, [activeProjectKey, activeWorktreePath, scope])
 
   const filteredSessions = useMemo(
     () =>
@@ -339,7 +321,6 @@ export default function AiVaultPanel({
   return (
     <div className="@container/ai-vault flex h-full min-h-0 flex-col bg-sidebar">
       <AiVaultPanelHeader
-        workspaceOnly={workspaceOnly}
         query={query}
         loading={loading}
         shownCount={filteredSessions.length}
@@ -393,14 +374,12 @@ export default function AiVaultPanel({
         getSessionLiveState={getSessionLiveState}
         getWorktreeInfo={getSessionWorktreeInfo}
         onToggleGroup={toggleGroup}
-        onJumpToOriginalPane={onOpenSession ?? jumpToOriginalPane}
-        onJumpToWorktree={workspaceOnly ? undefined : jumpToWorktree}
-        onResume={onOpenSession ?? launchActions.handleResume}
+        onJumpToOriginalPane={jumpToOriginalPane}
+        onJumpToWorktree={jumpToWorktree}
+        onResume={launchActions.handleResume}
         getSessionResumeInChat={getSessionResumeInChat}
-        onContinueInNewSession={
-          workspaceOnly ? undefined : launchActions.handleContinueInNewSession
-        }
-        onResumeInNewChat={workspaceOnly ? undefined : launchActions.handleResumeInNewChat}
+        onContinueInNewSession={launchActions.handleContinueInNewSession}
+        onResumeInNewChat={launchActions.handleResumeInNewChat}
         onCopyResume={rowActions.onCopyResume}
         onCopyId={rowActions.onCopyId}
         onCopyPath={rowActions.onCopyPath}

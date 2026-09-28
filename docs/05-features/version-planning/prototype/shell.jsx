@@ -1,23 +1,18 @@
 import { React } from 'react'
 import {
-  ArrowUp,
   BookOpen,
   CalendarClock,
   CalendarRange,
-  ChevronDown,
   CircleHelp,
   ClipboardCheck,
   GitBranch,
-  History,
   LayoutDashboard,
   ListTodo,
   MessageSquare,
-  Plus,
   Presentation
 } from 'lucide-react'
-import { Field } from './shared.jsx'
 
-function PrototypeSidebar({ branch, go, setModal, setSelectedIssue, view }) {
+function PrototypeSidebar({ go, setModal, setSelectedIssue, view }) {
   return (
     <aside className="app-sidebar sidebar">
       <div className="brand">
@@ -56,24 +51,6 @@ function PrototypeSidebar({ branch, go, setModal, setSelectedIssue, view }) {
           </button>
         ))}
       </nav>
-      <div className="sidebar-section">项目</div>
-      <div className="repo-node">
-        <ChevronDown />
-        <span>builder-workbench</span>
-      </div>
-      <button
-        className="branch-node"
-        disabled={view === 'metricsetup'}
-        onClick={() =>
-          setModal({
-            type: 'sessions',
-            title: `${branch} · 会话`
-          })
-        }
-      >
-        <GitBranch />
-        <span>{view === 'metricsetup' ? '配置任务 · 工作区待创建' : branch}</span>
-      </button>
       <div className="sidebar-spacer" />
       <button
         className="sidebar-item source-action"
@@ -90,104 +67,39 @@ function PrototypeSidebar({ branch, go, setModal, setSelectedIssue, view }) {
     </aside>
   )
 }
-function PrototypeSession({
-  branch,
-  composer,
-  configId,
-  draft,
-  session,
-  sessionFlow,
-  setDraft,
-  setModal,
-  setNotice,
-  setSession,
-  view,
-  weekly
-}) {
+function PrototypeSession({ branch, composer, draft, setDraft, setNotice, view }) {
+  const label = view === 'friday' ? '验收' : '计划'
   return (
-    <section className="session-pane" aria-label="分支会话">
+    <section className="session-pane" aria-label="Orca 原生会话工作区">
       <header className="session-head">
         <GitBranch />
-        <strong>{view === 'metricsetup' ? '指标配置任务' : branch}</strong>
-        {weekly && (
-          <button
-            className="btn btn-icon btn-ghost"
-            aria-label="查看分支会话"
-            onClick={() =>
-              setModal({
-                type: 'sessions',
-                title: `${branch} · 会话`
-              })
-            }
-          >
-            <History />
-          </button>
-        )}{' '}
-        {weekly && (
-          <button
-            className="btn btn-icon btn-ghost"
-            aria-label="开始新会话"
-            onClick={() => {
-              setSession('新会话')
-              setDraft('')
-            }}
-          >
-            <Plus />
-          </button>
-        )}
+        <strong>{branch}</strong>
+        <button
+          className="btn btn-secondary"
+          onClick={() => {
+            setDraft('')
+            setNotice(
+              `原型说明：通过已登记自动化手动开始本次${label}，在原生工作区显示新会话；不改变定时开关。`
+            )
+          }}
+        >
+          新建{label}
+        </button>
       </header>
-      {view !== 'metricsetup' && (
-        <div className="session-tabs" role="tablist" aria-label="分支会话列表">
-          {[
-            ['W39', 'v0.5'],
-            ['W38', 'v0.4']
-          ].map(([w, v]) => (
-            <button
-              role="tab"
-              aria-selected={session === w}
-              key={w}
-              aria-label={`${v} · ${w} 会话`}
-              onClick={() => setSession(w)}
-            >
-              <span>Claude Code</span>
-              <small>
-                {v} · {w}
-              </small>
-            </button>
-          ))}
-        </div>
+      <div className="native-workspace-placeholder">
+        <MessageSquare />
+        <h2>复用 Orca 会话工作区</h2>
+        <p>原生新建会话、Agent 选择、标签和分屏保持原样。</p>
+        <p>资源管理器、智能体历史等工具侧栏沿用 Orca，可收起。</p>
+        <p>本页仅固定项目与分支；已有会话在两处是同一组。</p>
+        <small>此区域只标识复用边界，不另设计 BW 会话 UI。</small>
+      </div>
+      {draft && (
+        <details className="prototype-request" open ref={composer}>
+          <summary>业务按钮交给原生会话的内容（原型示意）</summary>
+          <pre>{draft}</pre>
+        </details>
       )}
-      <div className="session-caption">
-        <MessageSquare />
-        <span>
-          {view === 'metricsetup'
-            ? `配置任务 · ${configId}`
-            : `${session === 'W38' ? 'v0.4' : 'v0.5'} · ${session} · ${sessionFlow}`}
-        </span>
-      </div>
-      <div className="session-empty">
-        <MessageSquare />
-        <span>会话记录待接入</span>
-      </div>
-      <div className="composer" ref={composer}>
-        <Field
-          label="会话输入"
-          value={draft}
-          onChange={setDraft}
-          rows={3}
-          placeholder="与会话讨论，或直接编辑右侧…"
-        />
-        <div>
-          <span>Claude Code</span>
-          <button
-            className="btn btn-icon btn-ghost"
-            aria-label="发送（原型未接入）"
-            onClick={() => setNotice('会话尚未连接；输入已保留，未发送')}
-          >
-            <ArrowUp />
-          </button>
-        </div>
-      </div>
     </section>
   )
 }

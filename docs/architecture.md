@@ -15,7 +15,7 @@
 | 用户要做的事 | 当前承载 | 当前边界 |
 |---|---|---|
 | 打开或接入项目 | 项目墙、接入覆盖层与 Orca 仓库列表 | 接入可写工作区的 `.bw/project.toml`；尚未实现旧 Rust 的项目约定常驻 worktree + Issue + MR 完整旅程 |
-| 核对结果、拟目标、拆版本工作 | 计划屏：artifacts 槽 CycleWorkspaceShell 左侧固定树会话、右侧材料单页 | 经材料 RPC 读写 `.bw/planning/<版本>/`；开工注入渲染后 SYSTEM 与 week-planning Skill 指针，来源和覆盖边界见 §2 ③ |
+| 核对结果、拟目标、拆版本工作 | 计划屏：原生 terminal 固定工作区 + 右侧材料单页 | 经材料 RPC 读写 `.bw/planning/<版本>/`；开工注入渲染后 SYSTEM 与 week-planning Skill 指针，来源和覆盖边界见 §2 ③ |
 | 核对交付、逐目标验收、归档 | 验收屏：与计划共用容器，独立固定树 bw/week-acceptance | 归档状态按材料身份与 provider 合入证据推导；CodeHub 无真实合入证据一律 Unknown，正文编辑延期 |
 | 执行工作与管理任务 | Orca 终端、Tasks、worktree | 复用执行核；不能据规划会话可打开就认定所有 Issue 开工都已接 BW 纪律 |
 | 设置定时工作 | Orca Automations | 调度能力在执行核；「配置自动化」按钮预填原生编辑器，启用与时间由人确认；真实到点触发与旧自动配置迁移须逐项验证 |
@@ -35,7 +35,7 @@ Issue 与标签是工作状态正本，版本计划内容由仓内 JSON 承载�
 
 ### ② 会话与执行（执行层）
 
-复用 Orca 的终端、agent、Tasks、Automations 与 worktree。计划/验收屏进入即确保对应固定工作树（bw/week-plan / bw/week-acceptance）并正式选择，左侧创建或接回该树会话；新开会话才递交 BW 提示，接回不重递交。「配置指标」进入独立固定维护树 bw/metrics-refresh 的原生会话。开工工具按本机 agent 检测选择，不写死 Claude。能打开窗口、能找到工具和已经完成真实执行分别取证。详见 [会话与执行](06-module/会话与执行.md)。
+计划与验收完整复用 Orca 原生会话工作区：顶部新建会话和 Agent 控件、标签/分屏、资源管理器、智能体历史及可收起的工具侧栏均由 Orca 拥有。隐藏原生左侧项目/工作树列表，保留 BW 导航。BW 只在右侧提供业务板，在原生标签栏增加“新建计划”或“新建验收”；不另建聊天、历史或会话绑定。进入计划/验收只准备并选择固定工作树，随后使用原生 terminal；专用新建按钮调用已登记自动化，普通原生新建不注入业务提示。数据问题入口新建原生会话并自动发送具体请求；归档只插入当前 composer 草稿。“配置指标”使用独立 bw/metrics-refresh 工作树。真实执行证据仍需逐项核对。详见 [会话与执行](06-module/会话与执行.md)。
 
 ### ③ 系统提示词与渐进加载（执行规范）
 
@@ -55,7 +55,7 @@ Issue 与标签是工作状态正本，版本计划内容由仓内 JSON 承载�
 
 ### Orca 执行核与 BW 叠层
 
-Orca 执行核提供终端、会话、worktree、Tasks、Automations 和 Explorer。BW 叠层通过 `WORKBENCH_SHELL=1` / `VITE_WORKBENCH_SHELL=1` 启用。壳内槽位：总览=activity 槽 OverviewPage（真实数据），任务=tasks 槽原生 TaskPage，计划/验收=artifacts 槽共用 `CycleWorkspacePage` → `version-cycle/CycleWorkspaceShell`（`cycle-view-state.ts` 区分子视图，侧栏两个独立入口，不扩 TopLevelView union），自动化/知识库照旧。叠层外改动保持明确钩子边界；上游身份和同步纪律见 [ref/upstream](../ref/upstream.md)，不要将 BW 的 `origin/main` 合并当作 Orca 升级。
+Orca 执行核提供终端、会话、worktree、Tasks、Automations 和 Explorer。BW 叠层通过 `WORKBENCH_SHELL=1` / `VITE_WORKBENCH_SHELL=1` 启用。壳内槽位：总览=activity 槽 OverviewPage（真实数据），任务=tasks 槽原生 TaskPage，计划/验收=artifacts 准备入口 → 原生 terminal 固定工作区旁的 `CycleWorkspaceShell` 右板（`cycle-view-state.ts` 仅指明准备流程，侧栏两个独立入口，不扩 TopLevelView union），自动化/知识库照旧。叠层外改动保持明确钩子边界；上游身份和同步纪律见 [ref/upstream](../ref/upstream.md)，不要将 BW 的 `origin/main` 合并当作 Orca 升级。
 
 BW 的业务契约在 `src/shared/workbench/`，材料事务、指标与历史 runtime 及宿主适配在 `src/main/workbench/`，界面在 `src/renderer/src/workbench/`；`src/relay/workbench/` 只在原生 SSH relay 上调用同一材料事务。主 RPC 方法族为 `workbench.materials.*`（材料事务读写）与 `workbench.metrics.{list,read,refresh}`、`workbench.history.{list,read,readPlan}`、`workbench.archive.proof`（注册在 `src/main/runtime/rpc/methods/workbench-*.ts`）；SSH 宿主的采集与历史命令走窄执行器 `workbench.metrics.execute` / `workbench.history.execute`，不扩 provider.exec 白名单。Orca RPC/CLI 注册处及 relay 组合入口保持薄挂载，工作树、连接、调度和会话内核不承载 BW 业务。Web/配对是访问方式，SSH/WSL 是执行位置，均复用原生身份与路由；不另加本机专属开关。
 

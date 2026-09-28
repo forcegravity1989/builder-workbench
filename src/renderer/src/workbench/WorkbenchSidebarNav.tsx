@@ -55,9 +55,13 @@ function WorkbenchNavItem({
   )
 }
 
+/** BW navigation follows the native fixed workspace; ordinary execution has no workflow highlight. */
 export function WorkbenchSidebarNav(): React.JSX.Element | null {
   const activeView = useAppStore((s) => s.activeView)
   const projectPage = useProjectPage()
+  const activeWorktree = useAppStore((s) =>
+    s.activeWorktreeId ? s.getKnownWorktreeById(s.activeWorktreeId) : null
+  )
   const openArtifactsPage = useAppStore((s) => s.openArtifactsPage)
   const openAutomationsPage = useAppStore((s) => s.openAutomationsPage)
   const openActivityPage = useAppStore((s) => s.openActivityPage)
@@ -73,7 +77,7 @@ export function WorkbenchSidebarNav(): React.JSX.Element | null {
     return null
   }
 
-  const activeNav = projectPage ? null : resolveWorkbenchNav(activeView)
+  const activeNav = projectPage ? null : resolveWorkbenchNav(activeView, activeWorktree)
 
   const go = (id: WorkbenchNavId) => {
     if (id === 'overview') {

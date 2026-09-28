@@ -13,6 +13,9 @@ import type { AppChromeLayout } from './use-app-chrome-layout'
 import type { FloatingWorkspacePanelState } from './use-floating-workspace-panel'
 import { isWorkbenchShell } from '../workbench/is-workbench-shell'
 import { useProjectPage } from '../workbench/project-page-state'
+import { CycleWorkspaceProvider } from '../workbench/version-cycle/CycleWorkspaceProvider'
+import { useCycleWorkspace } from '../workbench/version-cycle/cycle-workspace-context'
+import { usePlanColumnResize } from '../workbench/use-plan-column-resize'
 
 const Landing = lazy(() => import('../components/Landing'))
 const WorktreeCreationPanel = lazy(
@@ -95,13 +98,7 @@ function ActivePage({ layout }: { layout: AppChromeLayout }): React.JSX.Element 
     <>
       {activeView === 'settings' ? <Settings /> : null}
       {activeView === 'skills' ? <SkillsPage /> : null}
-      {activeView === 'artifacts' ? (
-        isWorkbenchShell() ? (
-          <CycleWorkspacePage />
-        ) : (
-          <ArtifactsPage />
-        )
-      ) : null}
+      {activeView === 'artifacts' ? isWorkbenchShell() ? null : <ArtifactsPage /> : null}
       {activeView === 'tasks' ? <TaskPage /> : null}
       {activeView === 'automations' ? <AutomationsPage /> : null}
       {activeView === 'activity' ? (
@@ -134,7 +131,23 @@ export function AppWorkspaceShell(props: {
   layout: AppChromeLayout
   floatingWorkspace: FloatingWorkspacePanelState
 }): React.JSX.Element {
+  if (!isWorkbenchShell()) {
+    return <AppWorkspaceContent {...props} />
+  }
+  return (
+    <CycleWorkspaceProvider>
+      <AppWorkspaceContent {...props} />
+    </CycleWorkspaceProvider>
+  )
+}
+
+function AppWorkspaceContent(props: {
+  layout: AppChromeLayout
+  floatingWorkspace: FloatingWorkspacePanelState
+}): React.JSX.Element {
   const { layout, floatingWorkspace } = props
+  const cycle = useCycleWorkspace()
+  const resize = usePlanColumnResize(Boolean(cycle?.context.worktreeId))
   const titlebarLeftControls = <TitlebarLeftControls layout={layout} />
   const titlebarMainStrip = <TitlebarMainStrip layout={layout} />
   // Why: keep virtualized scroll memory above the sidebar's workspace/landing remount so the left list doesn't restart at scrollTop 0.
@@ -217,42 +230,68 @@ export function AppWorkspaceShell(props: {
                     {layout.showRightSidebarControls ? <RightSidebarToggle /> : null}
                   </div>
                 )}
-                <div className="flex flex-1 min-w-0 min-h-0 flex-col">
-                  {layout.shouldMountTerminalWorkbench ? (
-                    <TerminalWorkbenchContainer isVisible={layout.terminalWorkbenchVisible}>
+                <div className="flex flex-1 min-w-0 min-h-0" ref={resize.bodyRef}>
+                  <div
+                    className="flex min-w-0 min-h-0 flex-col"
+                    ref={resize.chatColRef}
+                    style={
+                      !cycle
+                        ? { flex: 1, width: '100%' }
+                        : !cycle.context.worktreeId
+                          ? { display: 'none' }
+                          : undefined
+                    }
+                  >
+                    {layout.shouldMountTerminalWorkbench ? (
+                      <TerminalWorkbenchContainer isVisible={layout.terminalWorkbenchVisible}>
+                        <Suspense fallback={null}>
+                          <RecoverableRenderErrorBoundary
+                            boundaryId="terminal.workbench"
+                            surface="terminal-workbench"
+                            resetKey="terminal"
+                            title={translate(
+                              'auto.App.5a9519aef0',
+                              'The workspace workbench hit an error.'
+                            )}
+                            description={translate(
+                              'auto.App.98d4ea2823',
+                              'Terminal, browser, or editor rendering failed in this workspace. Retry to remount it.'
+                            )}
+                          >
+                            <Terminal />
+                          </RecoverableRenderErrorBoundary>
+                        </Suspense>
+                      </TerminalWorkbenchContainer>
+                    ) : null}
+                    <Suspense fallback={null}>
+                      <RecoverableRenderErrorBoundary
+                        boundaryId={`page.${layout.activeView}`}
+                        surface="page"
+                        resetKey={layout.activeView}
+                        title={translate('auto.App.b7a714db1e', 'This page hit an error.')}
+                        description={translate(
+                          'auto.App.03a14f6b5b',
+                          'Retry the page or navigate to another Orca surface.'
+                        )}
+                      >
+                        <ActivePage layout={layout} />
+                      </RecoverableRenderErrorBoundary>
+                    </Suspense>
+                  </div>
+                  {cycle && (
+                    <>
+                      <div
+                        className="vc-split"
+                        role="separator"
+                        aria-orientation="vertical"
+                        aria-label="调整左右栏宽度"
+                        onMouseDown={resize.onResizeStart}
+                      />
                       <Suspense fallback={null}>
-                        <RecoverableRenderErrorBoundary
-                          boundaryId="terminal.workbench"
-                          surface="terminal-workbench"
-                          resetKey="terminal"
-                          title={translate(
-                            'auto.App.5a9519aef0',
-                            'The workspace workbench hit an error.'
-                          )}
-                          description={translate(
-                            'auto.App.98d4ea2823',
-                            'Terminal, browser, or editor rendering failed in this workspace. Retry to remount it.'
-                          )}
-                        >
-                          <Terminal />
-                        </RecoverableRenderErrorBoundary>
+                        <CycleWorkspacePage />
                       </Suspense>
-                    </TerminalWorkbenchContainer>
-                  ) : null}
-                  <Suspense fallback={null}>
-                    <RecoverableRenderErrorBoundary
-                      boundaryId={`page.${layout.activeView}`}
-                      surface="page"
-                      resetKey={layout.activeView}
-                      title={translate('auto.App.b7a714db1e', 'This page hit an error.')}
-                      description={translate(
-                        'auto.App.03a14f6b5b',
-                        'Retry the page or navigate to another Orca surface.'
-                      )}
-                    >
-                      <ActivePage layout={layout} />
-                    </RecoverableRenderErrorBoundary>
-                  </Suspense>
+                    </>
+                  )}
                 </div>
                 {floatingWorkspace.showToggleButton ? (
                   <FloatingTerminalToggleButton

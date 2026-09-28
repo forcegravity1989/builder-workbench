@@ -13,13 +13,6 @@ export const METRICS_BRANCH = 'bw/metrics-refresh'
 export const METRICS_WORKTREE_NAME = 'metrics-refresh'
 
 /**
- * Handoff coordination for callers with a fixed-tree re-select effect: while the
- * setup moves the native selection, that effect must stand down instead of
- * re-selecting its own tree. Screens without such an effect omit it.
- */
-export type MetricsHandoffRef = { current: boolean }
-
-/**
  * The one「配置指标」pipeline shared by the plan board and the overview: ensure the
  * fixed maintenance tree, inject the metrics-refresh prompt with the live catalog,
  * move the native selection to that tree, then launch an auto-submit project
@@ -28,39 +21,29 @@ export type MetricsHandoffRef = { current: boolean }
 export async function prepareMetricsSession(args: {
   baseScope: NativeWorkspaceScope
   agent: TuiAgent
-  handoff?: MetricsHandoffRef
 }): Promise<void> {
-  const { baseScope, agent, handoff } = args
-  if (handoff) {
-    handoff.current = true
-  }
-  try {
-    const maintenance = await ensureNamedWorktree(baseScope, METRICS_BRANCH, METRICS_WORKTREE_NAME)
-    const assets = await resolveWorkbenchPromptAssets({
-      ...baseScope,
-      workflow: 'metrics-refresh',
-      worktreeId: maintenance.id
-    })
-    const state = useAppStore.getState()
-    state.setActiveWorktree(maintenance.id, baseScope.hostId)
-    if (baseScope.runtimeOwnerEnvironmentId) {
-      await activateWebRuntimeSessionWorktree({
-        worktreeId: maintenance.id,
-        environmentId: baseScope.runtimeOwnerEnvironmentId
-      })
-    }
-    launchAgentInNewTab({
-      agent,
+  const { baseScope, agent } = args
+  const maintenance = await ensureNamedWorktree(baseScope, METRICS_BRANCH, METRICS_WORKTREE_NAME)
+  const assets = await resolveWorkbenchPromptAssets({
+    ...baseScope,
+    workflow: 'metrics-refresh',
+    worktreeId: maintenance.id
+  })
+  const state = useAppStore.getState()
+  state.setActiveWorktree(maintenance.id, baseScope.hostId)
+  if (baseScope.runtimeOwnerEnvironmentId) {
+    await activateWebRuntimeSessionWorktree({
       worktreeId: maintenance.id,
-      prompt: assets.prompt,
-      activate: true,
-      promptDelivery: 'auto-submit'
+      environmentId: baseScope.runtimeOwnerEnvironmentId
     })
-  } finally {
-    if (handoff) {
-      handoff.current = false
-    }
   }
+  launchAgentInNewTab({
+    agent,
+    worktreeId: maintenance.id,
+    prompt: assets.prompt,
+    activate: true,
+    promptDelivery: 'auto-submit'
+  })
 }
 
 /**

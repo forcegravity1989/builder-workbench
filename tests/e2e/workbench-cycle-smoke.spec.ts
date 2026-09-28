@@ -71,6 +71,13 @@ test('BW cycle main chain: fixed trees, version material save and independent re
   await expect(orcaPage.getByRole('heading', { name: '版本计划' })).toBeVisible({ timeout: 60_000 })
   const planTreePath = await waitForFixedWorktree(orcaPage, 'bw/week-plan')
   await expect
+    .poll(() => orcaPage.evaluate(() => window.__store?.getState().activeView))
+    .toBe('terminal')
+  await expect(
+    orcaPage.getByRole('button', { name: '新建计划', exact: true }).first()
+  ).toBeVisible()
+  await expect(orcaPage.locator('.vc-chat')).toHaveCount(0)
+  await expect
     .poll(
       () =>
         orcaPage.evaluate(() => {
@@ -137,6 +144,12 @@ test('BW cycle main chain: fixed trees, version material save and independent re
   await orcaPage.getByRole('button', { name: '验收', exact: true }).click()
   await expect(orcaPage.getByRole('heading', { name: '版本验收' })).toBeVisible({ timeout: 60_000 })
   await waitForFixedWorktree(orcaPage, 'bw/week-acceptance')
+  await expect
+    .poll(() => orcaPage.evaluate(() => window.__store?.getState().activeView))
+    .toBe('terminal')
+  await expect(
+    orcaPage.getByRole('button', { name: '新建验收', exact: true }).first()
+  ).toBeVisible()
   await orcaPage.screenshot({ path: testInfo.outputPath('bw-acceptance-mounted.png') })
 
   // ---- 总览：真实数据，未配置保持 Unknown，无演示值 ----

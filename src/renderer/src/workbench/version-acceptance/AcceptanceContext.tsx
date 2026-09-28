@@ -1,7 +1,6 @@
 import type { AcceptanceMaterial } from '../../../../shared/workbench/version-material'
 import type { MetricWindow } from '../../../../shared/workbench/metrics'
 import { AcceptanceMetricWindow } from './AcceptanceMetricWindow'
-import { prepareLegacyAcceptanceRequest } from './acceptance-model'
 
 export function AcceptanceContext({
   document,
@@ -44,13 +43,6 @@ export function AcceptanceContext({
           }
         >
           核对计划更新
-        </button>
-        <button
-          className="wb-btn wb-btn-ghost wb-btn-sm"
-          disabled={disabled}
-          onClick={() => onPrepare(prepareLegacyAcceptanceRequest(document))}
-        >
-          在会话中核对旧结果
         </button>
       </details>
       {hasMetrics && (

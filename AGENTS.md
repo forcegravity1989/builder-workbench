@@ -71,7 +71,7 @@ pnpm run typecheck
 
 旧 Dioxus 壳的 `cargo run -p app-shell`、`bw-dev` 深链与 `.bw/release/pack` 出包协议针对已删除的三 crate，不能用来解释本分支。现有 Electron 构建入口以 SYNC 和 package.json 为准；BW 的 CI/CD、评审与正式出包链随迁移任务验证，不能据此宣称已完成 v0.5 交付。
 
-计划/验收屏与「配置指标」开工注入 SYSTEM + 对应工作流 Skill 指针（`version-cycle/cycle-prompt.ts`，正源 `standard/`）；真实执行依赖本机设置的会话工具、固定工作树及仓库权限。路径与失败处理见 [会话与执行](docs/06-module/会话与执行.md)。
+计划/验收工作流入口（已登记自动化、数据问题处理）与「配置指标」携带 SYSTEM + 对应 Skill 指针；普通原生新建会话不额外注入 BW 提示（`version-cycle/cycle-prompt.ts`，正源 `standard/`）；真实执行依赖本机设置的会话工具、固定工作树及仓库权限。路径与失败处理见 [会话与执行](docs/06-module/会话与执行.md)。
 
 ### 提交前门禁
 

@@ -8,6 +8,7 @@ import { OverviewV8 } from '../../overview-metrics/prototype/screen.jsx'
 import { metrics } from './snapshot.js'
 import { PrototypeTasks } from './tasks.jsx'
 import { PrototypeDialogs } from './dialogs.jsx'
+import { PrototypeMaterialNotice } from './material-notice.jsx'
 
 function PrototypeLayout({
   active,
@@ -121,6 +122,12 @@ function PrototypeLayout({
         />
         {weekly ? (
           <>
+            <PrototypeMaterialNotice
+              key={view}
+              view={view}
+              setDraft={setDraft}
+              setNotice={setNotice}
+            />
             <div className="work-area">
               <nav className="journey" aria-label="工作旅程">
                 {steps.map(([Icon, label, tone, hint], i) => (

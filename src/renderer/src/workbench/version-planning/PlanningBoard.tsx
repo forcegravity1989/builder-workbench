@@ -11,7 +11,7 @@ import { derivePlanMinutes } from './plan-summary'
 import { usePlanMetrics } from './use-plan-metrics'
 import { usePlanVersionSelection } from './use-plan-version-selection'
 import { PlanningGoals } from './PlanningGoals'
-import { PlanningMigration } from './PlanningMigration'
+import { MaterialProblemNotice } from '../version-cycle/MaterialProblemNotice'
 import { PlanningTasks } from './PlanningTasks'
 import { PlanningMinutes } from './PlanningMinutes'
 import { PlanningSaveFooter } from './PlanningSaveFooter'
@@ -97,6 +97,7 @@ function PlanningBoardContent({ context, prepareMetrics }: PlanningBoardProps) {
     []
   )
   const selectedVersion = context.version
+  const selectedState = material.versions.find((item) => item.version === selectedVersion)?.state
   const selectMaterial = material.select
   const clearMaterial = material.clear
   const version = plan?.version
@@ -129,7 +130,7 @@ function PlanningBoardContent({ context, prepareMetrics }: PlanningBoardProps) {
     } else {
       clearMaterial()
     }
-  }, [contextKey, selectedVersion, selectMaterial, clearMaterial])
+  }, [contextKey, selectedVersion, selectedState, selectMaterial, clearMaterial])
 
   useEffect(() => {
     let current = true
@@ -270,17 +271,11 @@ function PlanningBoardContent({ context, prepareMetrics }: PlanningBoardProps) {
           problems={metrics.catalog.problems.map(metricProblemText)}
         />
       )}
-      {materialPort && (
-        <PlanningMigration
-          key={scopeKey}
-          port={materialPort}
-          versions={material.versions}
-          onMigrated={async (version) => {
-            await material.list()
-            await selectVersion(version)
-          }}
-        />
-      )}
+      <MaterialProblemNotice
+        versions={material.versions}
+        workflow="plan"
+        startRequest={context.startRequest}
+      />
       <div className="vp-body" inert={selecting} aria-busy={selecting}>
         <PlanningJourneyNav
           hasPlan={Boolean(plan)}
@@ -303,17 +298,7 @@ function PlanningBoardContent({ context, prepareMetrics }: PlanningBoardProps) {
               <h2>待选择版本</h2>
               {context.error && <p role="alert">{context.error}</p>}
               <p>选择已有版本，或明确新建版本。可以先在左侧讨论，本页不会自动创建计划。</p>
-              {!materialPort && <p>先开启计划会话，创建或恢复项目的计划工作树。</p>}
-              {material.versions
-                .filter((item) => item.state !== 'ready')
-                .map((item) => (
-                  <p key={item.version}>
-                    {item.version}：
-                    {item.state === 'migration-required'
-                      ? '旧版材料需要显式迁移，原文件保持不变。'
-                      : '材料无法读取，请核对原文件。'}
-                  </p>
-                ))}
+              {!materialPort && <p>正在准备项目的计划工作区。</p>}
             </div>
           ) : (
             <>

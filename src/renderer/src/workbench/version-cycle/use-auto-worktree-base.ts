@@ -14,14 +14,12 @@ export function useAutoWorktreeBase(
   onNotice: (message: string) => void
 ): boolean {
   const tried = useRef<string | null>(null)
-  const [settled, setSettled] = useState(Boolean(configuredBase) || !activeRepoId)
+  const [settledRepo, setSettledRepo] = useState<string | null>(null)
   useEffect(() => {
     if (!activeRepoId) {
-      setSettled(true)
       return
     }
     if (configuredBase) {
-      setSettled(true)
       return
     }
     if (tried.current === activeRepoId) {
@@ -32,17 +30,17 @@ export function useAutoWorktreeBase(
       .getState()
       .updateRepo(activeRepoId, { worktreeBasePath: '.bw/worktrees' })
       .then(() => {
-        setSettled(true)
+        setSettledRepo(activeRepoId)
         onNotice(
           '已为本项目设单仓工作树基址 `.bw/worktrees`（工作树落项目目录内），可在 设置 > Repository worktree defaults 修改或清空'
         )
       })
       .catch(() => {
-        setSettled(true)
+        setSettledRepo(activeRepoId)
         onNotice(
           '单仓工作树基址设置失败，固定树仍按 Orca 全局默认；可在 设置 > Repository worktree defaults 手动设置'
         )
       })
   }, [activeRepoId, configuredBase, onNotice])
-  return settled
+  return !activeRepoId || Boolean(configuredBase) || settledRepo === activeRepoId
 }

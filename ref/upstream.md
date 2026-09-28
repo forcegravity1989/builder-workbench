@@ -92,8 +92,8 @@ BW 业务契约与材料服务分别位于 `src/shared/workbench/`、`src/main/w
 
 | 类别 | 落点 | 说明 |
 |---|---|---|
-| 壳槽位 | `AppWorkspaceShell` | BW 壳下 artifacts 槽挂 `workbench/CycleWorkspacePage`（计划/验收共用） |
-| 历史面板嵌入 | `AiVaultPanel` / Header / VirtualList / VirtualRow、`ai-vault-original-pane`、`right-sidebar/ai-vault-session-row-actions.ts` | 新增嵌入 props，供 CycleWorkspaceShell 展示固定树历史并精确身份恢复；行级复制/打开/删除 handler 拆入 `ai-vault-session-row-actions.ts`（嵌入后 AiVaultPanel 过文件行数门禁，行为不变） |
+| 壳槽位 | AppWorkspaceShell / sidebar/index / tab-bar-surface | BW 下 artifacts 仅准备固定树，terminal 原生工作区旁挂 CycleWorkspaceShell 右板；隐藏原生项目列表；TabBar 薄挂新建计划/验收按钮。原生 Terminal 保持唯一挂载，RightSidebar 全部复用 |
+| 原生历史面板 | AiVaultPanel / Header / VirtualList、ai-vault-session-row-actions | BW 专用 workspaceHost/onOpenSession 嵌入 props 已移除，直接复用原生侧栏；行级复制/打开/删除 handler 抽取仍由原生列表使用 |
 | 开工链 | `launch-agent-in-new-tab` / `launch-ai-vault-session` / `launch-agent-web-host-tab` | `activate:false` 后台启动不抢页面、selectWorktree、hostTabId 透出 |
 | 会话/终端类型 | `web-runtime-session-types`、`web-runtime-terminal-create-operation`、`activate-ai-vault-structured-session` 导出 | 结构化会话激活与终端创建操作扩点 |
 | 自动化编辑器预填 | `AutomationEditorDialog`、`automation-editor-request`、`use-automation-editor-request`、`use-automation-create-destination` / `use-automation-draft-effects` / `use-automation-editor-actions`、`ui-slice-contract-core` / `ui-slice-view-actions`（openAutomationEditor）等 14+ 原生文件 | 特性批之前的提交 0e25e81b7（feat(automations): open the native editor with an explicit target，2026-09-25）落定 openAutomationEditor 显式 target/draft 契约；本分支 `version-cycle/use-cycle-automation-draft.ts`（「配置自动化」预填）依赖该契约。合并 upstream 时保留显式 target/draft 扩点与请求形状 |

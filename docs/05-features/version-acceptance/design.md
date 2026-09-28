@@ -8,7 +8,7 @@
 
 AcceptancePage 是 BW 业务页，复用原生项目/工作树/会话、Tasks 详情与正文编辑、Automations、现有文件打开和命令执行能力。右侧顶部用轻量准备摘要展示候选与包/报告/展示材料，下方使用共享目标卡和 Issue 状态区；不建通用发布控制台。
 
-共享组件只提供承诺区及结果槽位，业务字段由本页拥有。旧 PlanResultsPane 已随旧三屏链条退役删除，跨版本 results 流程不再并行维护。TaskPort/CycleSessionPort/ArchivePort/VersionDocumentPort 与计划共用（已按当前接线落地），MetricsPort 由指标线提供。页面经 artifacts 槽与计划共用 `version-cycle/CycleWorkspaceShell.tsx`，进入即确保 bw/week-acceptance 固定工作树并正式选择。
+共享组件只提供承诺区及结果槽位，业务字段由本页拥有。旧 PlanResultsPane 已随旧三屏链条退役删除，跨版本 results 流程不再并行维护。TaskPort/CycleSessionPort/ArchivePort/VersionDocumentPort 与计划共用（已按当前接线落地），MetricsPort 由指标线提供。页面经 artifacts 准备入口确保 bw/week-acceptance 后进入原生 terminal，右板由 CycleWorkspaceShell 挂载；会话、标签/分屏、历史和工具侧栏完整沿用原生工作区，边界见计划设计。
 
 ## 两个常驻工作树
 
@@ -18,7 +18,9 @@ AcceptancePage 是 BW 业务页，复用原生项目/工作树/会话、Tasks �
 
 验收树从项目实际采用的基线创建；运行时不硬编码 bw-orca 或 main。每次新运行刷新远端并检查树的干净状态、前次归档与基线差异（现状注：脏树/未归档提交检查为提示级，由会话承担，无代码强制校验落点）。已有脏改动/未归档提交不 reset、不搬树、不强推，恢复该次工作或呈现冲突。基线同步通过正常 Git 合并/项目流程，已有同分支其他路径提示真实路径，不擅自删除重建。
 
-运行身份包含 projectId、hostId、workflow=acceptance 与 Orca runId；cycleId 为周期上下文，version 为另行核对的材料关联，不作为运行去重前提。恢复使用真实关联 ID，不用标题匹配。新周期 existing 工作区、reuseSession=false；上午/下午共用该运行，计划会话不能被验收恢复选中。
+运行身份包含 projectId、hostId、workflow=acceptance 与 Orca runId；cycleId 为周期上下文，version 为另行核对的材料关联，不作为运行去重前提。运行与历史恢复由 Orca 管理，BW 不保存会话绑定或按标题匹配；专用“新建验收”复用已登记自动化的手动运行。新周期 existing 工作区、reuseSession=false；上午/下午共用该运行，计划会话不能被验收恢复选中。
+
+旧格式或损坏材料只在右板顶部显示一行提示，点明实际版本与计划/验收数据文件，并附“在会话中处理”。点击新建原生会话，携带 SYSTEM、对应 Skill、具体文件和读取问题，沿原生就绪后发送通道自动递交；即使当前没有会话也可使用。模型先读文件、说明问题与备份/迁移方案，经用户确认后执行，不把点击按钮当成同意改数据。页面不保留专用迁移预览/确认弹窗或额外的旧结果入口；迁移工具及安全约束仍由材料服务和 Skill reference 承担。
 
 ## 候选与材料
 

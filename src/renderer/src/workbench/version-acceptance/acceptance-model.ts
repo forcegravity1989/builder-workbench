@@ -128,7 +128,3 @@ export function prepareAcceptanceRequest(document?: AcceptanceMaterial): string 
     : '尚未选择版本。先列出真实版本与已合入计划来源，与我明确本次版本和候选，再写入材料。'
   return `请继续本次版本验收，准备交付。${context}\n读取已下发的 version-acceptance Skill 与项目约定，使用项目现有交付、验证和材料入口。先查询仍在运行的原生任务与已有产物，避免重复启动。源码执行区必须属于当前项目并检出固定候选，不从 bw/week-acceptance 的旧 HEAD 出包。核对产物与报告来源，刷新指标和 Issue；缺入口或候选请说明。保留未完成材料，不替我发布、合入或确认 Issue 完成。`
 }
-
-export function prepareLegacyAcceptanceRequest(document: AcceptanceMaterial): string {
-  return `请核对并整理本次 ${document.version} 验收可采用的旧结果，验收周期 ${document.cycleId}，固定计划 ${document.planRef.kind === 'committed' ? document.planRef.sourceCommit : document.planRef.sourceWorktreeId}，修订 ${document.planRef.revision}。通过本项目原生登记的 bw/week-plan 工作树与材料迁移预览读取 schema2 原件或保留的备份，先列明来源目录版本、previous_version、原字节修订及警告；不可按目录名把上版结果当本版。只导入 previous_version 明确属于本版且 goalId 与目标句唯一匹配的旧内容，保留备份名和修订。旧状态、确认与人工读数仅作为待核说明，不生成 decision 或 readings；有歧义或缺真实计划时保留原件待核。已有本次验收内容不自动覆盖，先展示差异；读到最新修订后通过普通验收材料保存接口合并，保持当前候选与其他目标证据。`
-}

@@ -1,22 +1,9 @@
 import { React } from 'react'
-import { Check, ChevronRight, Copy, MessageSquare, Plus, X } from 'lucide-react'
+import { Check, Copy, Plus, X } from 'lucide-react'
 import { Field, Lamp, lampNames } from './shared.jsx'
 import { metrics, remote } from './snapshot.js'
 
-function PrototypeDialogs({
-  copied,
-  copyText,
-  go,
-  goals,
-  metricPrep,
-  modal,
-  sessionFlow,
-  setModal,
-  setSession,
-  setSessionFlow,
-  update,
-  weekly
-}) {
+function PrototypeDialogs({ copied, copyText, goals, metricPrep, modal, setModal, update }) {
   return (
     <div className="dialog-backdrop" onClick={() => setModal(null)}>
       <section
@@ -93,38 +80,6 @@ function PrototypeDialogs({
                 </div>
               )
             })()}
-          {modal.type === 'sessions' && (
-            <div className="list">
-              {[
-                ['W39', 'v0.5'],
-                ['W38', 'v0.4']
-              ].flatMap(([week, v]) =>
-                [sessionFlow].map((flow) => (
-                  <button
-                    className="list-row"
-                    key={week + flow}
-                    onClick={() => {
-                      setSession(week)
-                      setSessionFlow(flow)
-                      if (!weekly) {
-                        go(flow === '计划' ? 'monday' : 'friday')
-                      }
-                      setModal(null)
-                    }}
-                  >
-                    <MessageSquare />
-                    <span className="row-title">
-                      Claude Code
-                      <small className="session-metadata">
-                        {v} · {week} · {flow}
-                      </small>
-                    </span>
-                    <ChevronRight />
-                  </button>
-                ))
-              )}
-            </div>
-          )}
           {modal.type === 'scope' && (
             <div className="source-copy">
               <p>

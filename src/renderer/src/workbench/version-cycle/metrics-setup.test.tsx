@@ -8,7 +8,6 @@ import type { NativeWorkspaceScope } from './native-workspace'
 const fixture = vi.hoisted(() => ({
   maintenanceId: 'tree-metrics',
   prompt: 'PROMPT',
-  handoffDuringEnsure: null as boolean | null,
   launchOrder: [] as string[],
   ensureShouldFail: false,
   defaultTuiAgent: null as TuiAgent | 'blank' | null,
@@ -46,7 +45,6 @@ vi.mock('@/runtime/web-runtime-worktree-activation', () => ({
 }))
 vi.mock('./native-workspace', () => ({
   ensureNamedWorktree: vi.fn(async () => {
-    fixture.handoffDuringEnsure = handoffProbe.current
     if (fixture.ensureShouldFail) {
       throw new Error('分支被占用')
     }
@@ -67,12 +65,8 @@ import {
   METRICS_WORKTREE_NAME,
   prepareMetricsSession,
   useMetricsSetup,
-  useMetricsSetupAgent,
-  type MetricsHandoffRef
+  useMetricsSetupAgent
 } from './metrics-setup'
-
-/** The shell's re-select effect stands down while the handoff ref is set. */
-const handoffProbe: MetricsHandoffRef = { current: false }
 
 const baseScope: NativeWorkspaceScope = {
   projectId: 'project',
@@ -85,12 +79,10 @@ let root: Root
 let container: HTMLDivElement
 beforeEach(() => {
   vi.clearAllMocks()
-  fixture.handoffDuringEnsure = null
   fixture.launchOrder = []
   fixture.ensureShouldFail = false
   fixture.defaultTuiAgent = null
   fixture.detectedIds = null
-  handoffProbe.current = false
   container = document.createElement('div')
   document.body.append(container)
   root = createRoot(container)
@@ -146,23 +138,11 @@ it('paired runtime 宿主先激活会话工作树再启动，顺序与壳一致'
   ])
 })
 
-it('handoff 引用在管线执行期间置位，结束后复位', async () => {
-  await prepareMetricsSession({
-    baseScope,
-    agent: 'claude' as TuiAgent,
-    handoff: handoffProbe
-  })
-  expect(fixture.handoffDuringEnsure).toBe(true)
-  expect(handoffProbe.current).toBe(false)
-})
-
-it('管线失败时 handoff 仍复位并原样抛出，由调用屏的提示浮现', async () => {
+it('管线失败原样抛出，由调用屏的提示浮现', async () => {
   fixture.ensureShouldFail = true
-  handoffProbe.current = false
-  await expect(
-    prepareMetricsSession({ baseScope, agent: 'claude' as TuiAgent, handoff: handoffProbe })
-  ).rejects.toThrow('分支被占用')
-  expect(handoffProbe.current).toBe(false)
+  await expect(prepareMetricsSession({ baseScope, agent: 'claude' as TuiAgent })).rejects.toThrow(
+    '分支被占用'
+  )
   expect(launchAgentInNewTab).not.toHaveBeenCalled()
 })
 
