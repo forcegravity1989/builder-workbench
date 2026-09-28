@@ -2,7 +2,11 @@
 
 > 给设计、实现与验收者读取；本文管目标行为与判据，工程边界见 [design](design.md)，价值见 [intent](intent.md)，执行证据见 [STATUS](STATUS.md)。行为变化时改对应主题，不记录开发流水。
 >
-> 状态：已合入并作为实施输入；新增或不确定行为须人工确认，实施证据见 STATUS。[第八版高保真评审包](https://github.com/forcegravity1989/builder-workbench/archive/f20f04ae57d510178c710c71216b9b734082c28e.zip) 下载后解压并打开 index.html，使用 BW 的真实版本材料；仅演示交互，不证明持久化、远端写回或自动化已实现。原型发布在永不合入的独立分支，链接固定提交。
+> 状态：已合入并作为实施输入；新增或不确定行为须人工确认，实施证据见 STATUS。[第八版交互原型](prototype.html) 是历史评审输入，使用 BW 当时的版本材料快照；不表示持久化、远端写回或自动化等能力已交付。
+
+三屏均从各自特性目录的 `prototype.html` 离线打开，入口汇总见[特性清单](../README.md)。本屏可编辑界面位于 [prototype/screen.jsx](prototype/screen.jsx)，会话外框、任务演示和控件由计划目录的 `prototype/` 共用；验收与总览的界面源码各归其特性目录。修改 JSX 后运行 `node docs/05-features/version-planning/prototype/build.cjs` 更新共用运行文件；`--check` 核对生成物一致性。HTML 必须和相邻源码目录、设计系统资源一起保留，不再是可单独搬走的自包含文件。
+
+拆分基线为固定提交 `f20f04ae57d510178c710c71216b9b734082c28e`：运行依赖与历史数据从固定 HTML 提取，界面源码与该版本核对后按职责拆开；源码、只读快照与生成物分别维护，不手改 `vendor.js`、`runtime.js` 或历史快照。4 处历史附件保持固定 GitHub 提交链接，需要联网及仓库访问权限；完整历史 JSON、报告和图片仍从[原始评审包](https://github.com/forcegravity1989/builder-workbench/archive/f20f04ae57d510178c710c71216b9b734082c28e.zip) 取得。原型仅在内存演示，尚未据本轮反馈修改产品行为；现行行为与交付证据以 spec、STATUS 为准。
 
 ## 范围与入口
 

@@ -115,7 +115,8 @@ docs/01-principles/  ──约束──►  docs/05-features/<id>/intent.md | sp
 ```text
 docs/05-features/<change-id>/
   intent.md    # 要什么 / 为何 / 约束 / 开放问题（意图 gate）
-  spec.md      # 需求+设计；必须含可点原型的链接与操作逻辑（规格 gate；原型文件不进仓）
+  spec.md      # 需求+设计；必须含可点原型的链接与操作逻辑（规格 gate）
+  prototype.html # 本特性可点入口；可编辑源码和本地资源位于同目录 prototype/
   plan.md      # 改哪些文件、顺序、风险、如何证明——默认自动跑用；仅大风险升 gate
   STATUS.md    # draft | accepted | building | in_review | shipped | rejected
 ```
@@ -123,7 +124,7 @@ docs/05-features/<change-id>/
 **人 gate（必须过）：**
 
 1. **意图 gate** —— 批 `intent.md`（做不做、是否落在周目标/03 飞轮里）。  
-2. **规格 gate** —— 批 `spec.md`：**缺可点原型或操作逻辑 → 直接退回**，不许「先做着」。**非 UI 变更**（纯脚本/规范包）豁免「可点原型」：仍须有操作逻辑（脚本协议 / 输入输出契约 / 样例输出当原型替代），但不必是可点的界面原型。**原型文件不进仓**：`spec.md` 里写的是链接（artifact 或一条永不合入的分支），仓里不留 `prototype.html`——落点规矩见 [02 §3.2](02-working-backwards.md)。
+2. **规格 gate** —— 批 `spec.md`：**缺可点原型或操作逻辑 → 直接退回**，不许「先做着」。**非 UI 变更**（纯脚本/规范包）豁免「可点原型」：仍须有操作逻辑（脚本协议 / 输入输出契约 / 样例输出当原型替代），但不必是可点的界面原型。特性原型归入所属特性目录，各屏源码归属对应特性，共用资源或整份原型通过引用复用——落点与身份说明见 [02 §3.2](02-working-backwards.md)。
 
 **默认不进 gate：**
 
