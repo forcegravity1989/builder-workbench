@@ -2901,3 +2901,26 @@ input::placeholder {
   font-size: 12px;
   margin-top: 4px;
 }
+.prototype-session-state {
+  max-width: 380px;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+}
+.prototype-first-entry {
+  max-width: 480px;
+  margin: 36px auto;
+  line-height: 1.8;
+  color: var(--text-2);
+}
+.prototype-first-entry h2 {
+  font-size: 18px;
+}
+.prototype-first-entry small {
+  display: block;
+  margin-top: 20px;
+}
+.journey button:disabled {
+  cursor: default;
+  opacity: 0.5;
+}

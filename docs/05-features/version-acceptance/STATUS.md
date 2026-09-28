@@ -41,7 +41,7 @@
 | A04 脚本实测不可手填、同源；历史/当前区分 | ✅ | metrics runtime+窗口语义+baseline 落盘 | runtime/组件测试 |
 | A05 Issue 真实状态可刷新、无拆解入口、关闭数≠达成 | ✅ | AcceptanceTasks 快照分布+灯色守卫 | board-state/acceptance 测试 |
 | A06 原生详情编辑后按来源返回、保留版本/会话/草稿 | ◐ | returnToPreviousView+view-memory 与原生工作区恢复 | 导航测试；真实 CodeHub/GitHub 往返待人 |
-| A07 同一候选展示、人逐目标判断、未达可保存带入会话 | ✅ | AcceptanceGoalResult decision 流+prepare 文本 | acceptance-interaction 测试；CLI save 通道人工字段守卫代码批在补，此前仅提示级（模型可经 CLI 直写人工字段，无代码拦截） |
+| A07 同一候选展示、人逐目标判断、未达可保存带入会话 | ✅ | AcceptanceGoalResult decision 流+prepare 文本；材料 RPC save 通过 material-human-guard 拦截 CLI 对人工结论字段的新增、修改与删除 | acceptance-interaction/material-human-guard 测试；真实模型会话与人工核对旅程待验 |
 | A08 纪要可复制含候选/来源/待核/未达；归档后总览回看 | ◐ | deriveAcceptanceReport+总览双栏 | report 测试；真实归档回看待人 |
 | A09 跨树隔离/并发/重启/脏树不丢输入；包证不符不沿完成态 | ◐ | draft recovery+candidate 核对失效逻辑 | 恢复测试；脏树真机待人；脏树/未归档提交检查为提示级（会话承担），无代码落点 |
 | A10 原生自动化真实到点、新周期新会话、入口不重复 | ◐ | 默认关闭态注册（creationKey 去重、reuseSession=false、只创建不更新） | 新建验收的手动运行、原生恢复和真实到点均待真壳验证 |

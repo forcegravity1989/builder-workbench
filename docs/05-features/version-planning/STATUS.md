@@ -43,7 +43,7 @@
 | P06 分树、全部原生会话复用、专用新建与数据处理入口 | ◐ | CycleWorkspaceProvider + 原生 Terminal/TabBar/RightSidebar | 焦点、宿主隔离及请求递交有替身测试；多标签/分屏/历史与空会话首次处理待真壳验证 |
 | P07 自动化登记去重、保留设置、真实到点可追溯 | ◐ | 默认关闭态注册（ensure-cycle-automation：creationKey 去重、只创建不更新、人启用才到点）+「配置自动化」预填/编辑入口 | 真实到点与跨重启去重待人启用后验证 |
 | P08 并发保存冲突处理；重启/切项目/切版本读回一致 | ✅ | CAS expectedRevision+冲突 UI+view-memory | material-draft 测试+烟测重载读回 |
-| P09 归档只准备会话请求；PR 真实状态定灯色 | ◐ | archivePort.prepareRequest→composer；archive 状态自动读取+灯色语义 | archive-port 测试+board-state 测试；归档标签现只呈现 state/合入类别，未展示 checks/review（代码批在补），补齐前不算齐 |
+| P09 归档只准备会话请求；PR 真实状态定灯色 | ◐ | archivePort.prepareRequest→composer；archive 状态自动读取+灯色语义；archive-label 呈现请求修改与检查失败 | archive-port/board-state/archive-label 测试；新原生焦点接线、真实 PR 状态与归档请求仍待真壳及 provider 旅程验证 |
 | P10 总览按版本/多周/固定修订读摘要；往返保草稿；坏历史不伪造 | ◐ | use-version-minutes+OverviewPage 双栏+problems 列表 | 组件级+烟测总览；多周真实归档回看待人 |
 
 | 旅程 | 状态 | 覆盖 |

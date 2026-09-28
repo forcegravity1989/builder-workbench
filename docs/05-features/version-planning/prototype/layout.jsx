@@ -1,4 +1,4 @@
-import { React } from 'react'
+import { React, useState } from 'react'
 import { PrototypeHeader, PrototypeSession, PrototypeSidebar } from './shell.jsx'
 import { Field, Lamp, archiveTone } from './shared.jsx'
 import { PlanningContent } from './screen.jsx'
@@ -78,6 +78,27 @@ function PrototypeLayout({
   view,
   weekly
 }) {
+  const [scenarios, setScenarios] = useState({ monday: 'first', friday: 'first' })
+  const [sessionStates, setSessionStates] = useState({ monday: 'empty', friday: 'empty' })
+  const firstEntry = weekly && scenarios[view] === 'first'
+  const setSessionState = (state) => setSessionStates((current) => ({ ...current, [view]: state }))
+  const onScenario = (value) => {
+    setScenarios((current) => ({ ...current, [view]: value }))
+    setSessionState(value === 'first' ? 'empty' : 'existing')
+    setVersion('v0.5')
+    setDraft('')
+    setNotice('')
+  }
+  const startRequest = (text) => {
+    setDraft(text)
+    setSessionState('request')
+    setNotice('原型示意：已新建并聚焦原生会话，处理请求已自动发送；尚未迁移或改写文件。')
+  }
+  const openSelectedVersion = (target) => {
+    setScenarios((current) => ({ ...current, [target]: 'selected' }))
+    setSessionStates((current) => ({ ...current, [target]: 'existing' }))
+    go(target)
+  }
   return (
     <div className="app-shell">
       <PrototypeSidebar
@@ -91,24 +112,25 @@ function PrototypeLayout({
       />
       {chatVisible && (
         <PrototypeSession
+          sessionState={sessionStates[view]}
+          onStart={() => {
+            setDraft('')
+            setSessionState('workflow')
+            setNotice(
+              '原型示意：手动运行已登记自动化并打开、聚焦本次原生会话；定时运行仍在后台，不改变定时开关。'
+            )
+          }}
           {...{
             branch,
             composer,
-            configId,
             draft,
-            session,
-            sessionFlow,
-            setDraft,
-            setModal,
-            setNotice,
-            setSession,
-            view,
-            weekly
+            view
           }}
         />
       )}
       <main className={`main-pane ${!chatVisible ? 'wide-page' : ''}`}>
         <PrototypeHeader
+          firstEntry={firstEntry}
           {...{
             review,
             setExpanded,
@@ -125,33 +147,45 @@ function PrototypeLayout({
             <PrototypeMaterialNotice
               key={view}
               view={view}
-              setDraft={setDraft}
-              setNotice={setNotice}
+              firstEntry={firstEntry}
+              onScenario={onScenario}
+              onStartRequest={startRequest}
             />
             <div className="work-area">
               <nav className="journey" aria-label="工作旅程">
                 {steps.map(([Icon, label, tone, hint], i) => (
                   <button
                     key={label}
-                    data-tone={tone}
+                    data-tone={firstEntry ? 'gray' : tone}
                     aria-current={active === i ? 'step' : undefined}
                     aria-label={label}
-                    onClick={() => stageGo(i)}
-                    title={`${label} · ${hint}`}
+                    onClick={() => {
+                      if (!firstEntry) stageGo(i)
+                    }}
+                    disabled={firstEntry && i > (view === 'monday' ? 1 : 0)}
+                    title={`${label} · ${firstEntry ? '待选择版本' : hint}`}
                   >
                     <span>
                       <Icon />
-                      <Lamp tone={tone} label={hint} />
+                      <Lamp
+                        tone={firstEntry ? 'gray' : tone}
+                        label={firstEntry ? '待选择版本' : hint}
+                      />
                     </span>
                     <strong>{label}</strong>
                   </button>
                 ))}
               </nav>
               <div className="content-scroll">
-                {view === 'monday' ? (
+                {firstEntry ? (
+                  <section className="prototype-first-entry">
+                    <h2>待选择版本</h2>
+                    <p>处理上方文件问题后，可在版本列表中选择版本。</p>
+                    <small>原型不读写真实材料。切换“已选版本”场景可继续查看右侧业务板示例。</small>
+                  </section>
+                ) : view === 'monday' ? (
                   <PlanningContent
                     {...{
-                      go,
                       goals,
                       progress,
                       refreshMetrics,
@@ -163,6 +197,7 @@ function PrototypeLayout({
                       update,
                       versionTasks
                     }}
+                    go={openSelectedVersion}
                   />
                 ) : (
                   <AcceptanceContent
@@ -243,14 +278,14 @@ function PrototypeLayout({
             setOverviewUI={setOverviewUI}
             selection={overviewSelection}
             setSelection={setOverviewSelection}
-            onPlan={() => go('monday')}
+            onPlan={() => openSelectedVersion('monday')}
             onAcceptance={(v, w) => {
               setVersion(v)
               setSessions((x) => ({
                 ...x,
                 验收: w
               }))
-              go('friday')
+              openSelectedVersion('friday')
             }}
             onPrepare={metricPrep}
           />

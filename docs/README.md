@@ -36,7 +36,7 @@
 | [workbench-release](../.claude/skills/workbench-release/SKILL.md) | Windows Workbench 出包与 GitHub Release 发布；正式发布须用户明确授权 |
 | [ref/](../ref/upstream.md) | 按需读取的 Orca 工程参考；修改对应执行核、协议或同步上游时读，不覆盖 BW 产品正本 |
 | [standard/](../standard/README.md) | Workbench 给被管项目提供的规范资产，不等于本仓研发知识库 |
-| `src/renderer/src/workbench/` | Workbench Electron 叠层（导航、计划三屏、项目墙）；工程验证读 AGENTS |
+| `src/renderer/src/workbench/` | Workbench Electron 叠层（导航、计划/验收业务板、总览、项目墙）；工程验证读 AGENTS |
 | `config/scripts/`、`scripts/` | Orca 构建检查与 BW 开发辅助脚本；实际入口以 AGENTS / package.json 为准 |
 | `.bw/` | 本项目的约定和计划等仓内材料；具体以在用文件为准，不把 main 的 release 工具链视为已迁入 |
 

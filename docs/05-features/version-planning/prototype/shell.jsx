@@ -67,28 +67,29 @@ function PrototypeSidebar({ go, setModal, setSelectedIssue, view }) {
     </aside>
   )
 }
-function PrototypeSession({ branch, composer, draft, setDraft, setNotice, view }) {
+function PrototypeSession({ branch, composer, draft, sessionState, onStart, view }) {
   const label = view === 'friday' ? '验收' : '计划'
   return (
     <section className="session-pane" aria-label="Orca 原生会话工作区">
       <header className="session-head">
         <GitBranch />
         <strong>{branch}</strong>
-        <button
-          className="btn btn-secondary"
-          onClick={() => {
-            setDraft('')
-            setNotice(
-              `原型说明：通过已登记自动化手动开始本次${label}，在原生工作区显示新会话；不改变定时开关。`
-            )
-          }}
-        >
+        <button className="btn btn-secondary" onClick={onStart}>
           新建{label}
         </button>
       </header>
       <div className="native-workspace-placeholder">
         <MessageSquare />
         <h2>复用 Orca 会话工作区</h2>
+        <p className="prototype-session-state" role="status">
+          {sessionState === 'empty'
+            ? '此固定工作区尚未打开会话。右侧“在会话中处理”可直接新建并自动发送。'
+            : sessionState === 'request'
+              ? '原型示意：已新建并聚焦原生会话，处理请求已自动发送；等待模型说明，再由人确认是否修改文件。'
+              : sessionState === 'workflow'
+                ? `原型示意：已运行登记的${label}自动化，并打开、聚焦本次原生会话。`
+                : '原型示意：此固定工作区已有原生会话。'}
+        </p>
         <p>原生新建会话、Agent 选择、标签和分屏保持原样。</p>
         <p>资源管理器、智能体历史等工具侧栏沿用 Orca，可收起。</p>
         <p>本页仅固定项目与分支；已有会话在两处是同一组。</p>
@@ -111,7 +112,8 @@ function PrototypeHeader({
   setVersion,
   version,
   view,
-  weekly
+  weekly,
+  firstEntry
 }) {
   return (
     <header className="page-header">
@@ -126,7 +128,22 @@ function PrototypeHeader({
           }[view]
         }
       </h1>
-      {view === 'monday' ? (
+      {weekly && firstEntry ? (
+        <select
+          className="input version-select"
+          aria-label={`${view === 'monday' ? '计划' : '验收'}版本`}
+          value=""
+          onChange={() => {}}
+        >
+          <option value="">待选择版本</option>
+          <option value="v0.3" disabled>
+            v0.3 · 无法读取
+          </option>
+          <option value="v0.4" disabled>
+            v0.4 · 无法读取
+          </option>
+        </select>
+      ) : view === 'monday' ? (
         <span className="tag tag-outline">v0.5</span>
       ) : view === 'friday' ? (
         <select
@@ -146,10 +163,10 @@ function PrototypeHeader({
       ) : (
         <span className="page-state">builder-workbench</span>
       )}
-      {weekly && <span className="page-state">草稿</span>}
+      {weekly && !firstEntry && <span className="page-state">草稿</span>}
       <span className="header-spacer" />
       {weekly && (
-        <button className="btn btn-ghost" onClick={review}>
+        <button className="btn btn-ghost" onClick={review} disabled={firstEntry}>
           {view === 'monday' ? <Presentation /> : <ClipboardCheck />}
           {view === 'monday' ? '评审纪要' : '验收报告'}
         </button>
