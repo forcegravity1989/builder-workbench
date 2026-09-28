@@ -1,0 +1,186 @@
+{
+  "name": "overview-1280",
+  "file": "E:\\zhuyu\\code\\builder-workbench\\.bw\\worktrees\\orca-window-layout\\out\\layout-audit\\evidence\\overview-1280.png",
+  "native": {
+    "bounds": {
+      "x": 20,
+      "y": 30,
+      "width": 1282,
+      "height": 802
+    },
+    "contentBounds": {
+      "x": 20,
+      "y": 30,
+      "width": 1280,
+      "height": 801
+    },
+    "maximized": false
+  },
+  "layout": {
+    "viewport": {
+      "width": 1280,
+      "height": 802,
+      "dpr": 1.25
+    },
+    "view": "activity",
+    "headings": [
+      "总览",
+      "—"
+    ],
+    "elements": {
+      ".wb-ov": [
+        {
+          "x": 280,
+          "y": 36,
+          "width": 1000,
+          "height": 741.6000366210938,
+          "right": 1280,
+          "bottom": 777.6000366210938,
+          "display": "flex",
+          "region": "none",
+          "maxWidth": "none",
+          "padding": "0px",
+          "overflow": "visible",
+          "clientWidth": 1000,
+          "scrollWidth": 1000
+        }
+      ],
+      ".wb-ov .content": [
+        {
+          "x": 280,
+          "y": 84.80000305175781,
+          "width": 1000,
+          "height": 692.7999877929688,
+          "right": 1280,
+          "bottom": 777.5999908447266,
+          "display": "flex",
+          "region": "none",
+          "maxWidth": "1120px",
+          "padding": "16px 24px 24px",
+          "overflow": "auto",
+          "clientWidth": 1000,
+          "scrollWidth": 1000
+        }
+      ],
+      ".wb-kb": [],
+      ".wb-wall-overlay": [],
+      ".wb-wall": [],
+      ".wb-onboard-overlay": [],
+      ".wb-onboard": [],
+      "[data-workbench-cycle-workspace]": [],
+      ".bw-cycle-workspace": [],
+      ".vc-shell": [],
+      ".titlebar": [
+        {
+          "x": 280,
+          "y": 0,
+          "width": 1000,
+          "height": 36,
+          "right": 1280,
+          "bottom": 36,
+          "display": "flex",
+          "region": "drag",
+          "maxWidth": "none",
+          "padding": "0px",
+          "overflow": "visible",
+          "clientWidth": 1000,
+          "scrollWidth": 1000
+        }
+      ],
+      ".titlebar-left": [
+        {
+          "x": 0,
+          "y": 0,
+          "width": 280,
+          "height": 36,
+          "right": 280,
+          "bottom": 36,
+          "display": "flex",
+          "region": "drag",
+          "maxWidth": "none",
+          "padding": "0px",
+          "overflow": "hidden",
+          "clientWidth": 280,
+          "scrollWidth": 280
+        }
+      ],
+      ".window-controls": [
+        {
+          "x": 1142,
+          "y": 0,
+          "width": 138,
+          "height": 36,
+          "right": 1280,
+          "bottom": 36,
+          "display": "flex",
+          "region": "no-drag",
+          "maxWidth": "none",
+          "padding": "0px",
+          "overflow": "visible",
+          "clientWidth": 138,
+          "scrollWidth": 138
+        }
+      ],
+      "[data-workbench-nav]": [
+        {
+          "x": 0,
+          "y": 36,
+          "width": 280,
+          "height": 259,
+          "right": 280,
+          "bottom": 295,
+          "display": "flex",
+          "region": "none",
+          "maxWidth": "none",
+          "padding": "8px 8px 4px",
+          "overflow": "visible",
+          "clientWidth": 280,
+          "scrollWidth": 280
+        }
+      ],
+      ".app-layout": [
+        {
+          "x": 0,
+          "y": 0,
+          "width": 1280,
+          "height": 801.6000366210938,
+          "right": 1280,
+          "bottom": 801.6000366210938,
+          "display": "flex",
+          "region": "none",
+          "maxWidth": "none",
+          "padding": "0px",
+          "overflow": "hidden",
+          "clientWidth": 1280,
+          "scrollWidth": 1280
+        }
+      ]
+    },
+    "top": [
+      {
+        "x": 200,
+        "tag": "DIV",
+        "class": "flex h-full shrink-0 items-center w-full",
+        "region": "none"
+      },
+      {
+        "x": 400,
+        "tag": "SPAN",
+        "class": "inline-flex w-fit shrink-0 items-center justify-center gap-1 overflow-hidden rounded-full border border-transparent py-0.5 whitespace-nowrap transition-[color,box-shadow] focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 aria-invalid:border-destructive aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 [&>svg]:pointer-events-none [&>svg]:size-3 bg-secondary text-secondary-foreground [a&]:hover:bg-secondary/90 h-5 px-1.5 text-[11px] font-normal",
+        "region": "none"
+      },
+      {
+        "x": 600,
+        "tag": "DIV",
+        "class": "flex h-full min-w-0 flex-1 items-center gap-3 border-l border-border px-3",
+        "region": "none"
+      },
+      {
+        "x": 900,
+        "tag": "DIV",
+        "class": "flex h-full min-w-0 flex-1 items-center gap-3 border-l border-border px-3",
+        "region": "none"
+      }
+    ]
+  }
+}

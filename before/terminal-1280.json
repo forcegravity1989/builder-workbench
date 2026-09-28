@@ -1,0 +1,153 @@
+{
+  "name": "terminal-1280",
+  "file": "E:\\zhuyu\\code\\builder-workbench\\.bw\\worktrees\\orca-window-layout\\out\\layout-audit\\evidence\\terminal-1280.png",
+  "native": {
+    "bounds": {
+      "x": 20,
+      "y": 30,
+      "width": 1282,
+      "height": 802
+    },
+    "contentBounds": {
+      "x": 20,
+      "y": 30,
+      "width": 1280,
+      "height": 801
+    },
+    "maximized": false
+  },
+  "layout": {
+    "viewport": {
+      "width": 1280,
+      "height": 802,
+      "dpr": 1.25
+    },
+    "view": "terminal",
+    "headings": [
+      "ORCA"
+    ],
+    "elements": {
+      ".wb-ov": [],
+      ".wb-ov .content": [],
+      ".wb-kb": [],
+      ".wb-wall-overlay": [],
+      ".wb-wall": [],
+      ".wb-onboard-overlay": [],
+      ".wb-onboard": [],
+      "[data-workbench-cycle-workspace]": [],
+      ".bw-cycle-workspace": [],
+      ".vc-shell": [],
+      ".titlebar": [
+        {
+          "x": 280,
+          "y": 0,
+          "width": 650,
+          "height": 36,
+          "right": 930,
+          "bottom": 36,
+          "display": "flex",
+          "region": "drag",
+          "maxWidth": "none",
+          "padding": "0px",
+          "overflow": "visible",
+          "clientWidth": 650,
+          "scrollWidth": 650
+        }
+      ],
+      ".titlebar-left": [
+        {
+          "x": 0,
+          "y": 0,
+          "width": 280,
+          "height": 36,
+          "right": 280,
+          "bottom": 36,
+          "display": "flex",
+          "region": "drag",
+          "maxWidth": "none",
+          "padding": "0px",
+          "overflow": "hidden",
+          "clientWidth": 280,
+          "scrollWidth": 280
+        }
+      ],
+      ".window-controls": [
+        {
+          "x": 1142,
+          "y": 0,
+          "width": 138,
+          "height": 36,
+          "right": 1280,
+          "bottom": 36,
+          "display": "flex",
+          "region": "no-drag",
+          "maxWidth": "none",
+          "padding": "0px",
+          "overflow": "visible",
+          "clientWidth": 138,
+          "scrollWidth": 138
+        }
+      ],
+      "[data-workbench-nav]": [
+        {
+          "x": 0,
+          "y": 36,
+          "width": 280,
+          "height": 259,
+          "right": 280,
+          "bottom": 295,
+          "display": "flex",
+          "region": "none",
+          "maxWidth": "none",
+          "padding": "8px 8px 4px",
+          "overflow": "visible",
+          "clientWidth": 280,
+          "scrollWidth": 280
+        }
+      ],
+      ".app-layout": [
+        {
+          "x": 0,
+          "y": 0,
+          "width": 1280,
+          "height": 801.6000366210938,
+          "right": 1280,
+          "bottom": 801.6000366210938,
+          "display": "flex",
+          "region": "none",
+          "maxWidth": "none",
+          "padding": "0px",
+          "overflow": "hidden",
+          "clientWidth": 1280,
+          "scrollWidth": 1280
+        }
+      ]
+    },
+    "top": [
+      {
+        "x": 200,
+        "tag": "DIV",
+        "class": "flex h-full shrink-0 items-center w-full",
+        "region": "none"
+      },
+      {
+        "x": 400,
+        "tag": "DIV",
+        "class": "titlebar",
+        "region": "drag"
+      },
+      {
+        "x": 600,
+        "tag": "DIV",
+        "class": "titlebar",
+        "region": "drag"
+      },
+      {
+        "x": 900,
+        "tag": "DIV",
+        "class": "titlebar",
+        "region": "drag"
+      }
+    ]
+  }
+}
