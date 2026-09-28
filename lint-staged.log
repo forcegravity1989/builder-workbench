@@ -1,0 +1,36 @@
+[STARTED] Backing up original state...
+[COMPLETED] Backed up original state (e480dfef2)
+[STARTED] Running tasks for staged files...
+[STARTED] package.json — 23 files (chunk 1/2)...
+[STARTED] package.json — 23 files (chunk 2/2)...
+[STARTED] {*.{ts,tsx,js,jsx,mjs,mts,cts},!(cloud)/**/*.{ts,tsx,js,jsx,mjs,mts,cts}} — 18 files
+[STARTED] {*.{json,css},!(cloud)/**/*.{json,css}} — 1 file
+[STARTED] {*.{ts,tsx,js,jsx,mjs,mts,cts},!(cloud)/**/*.{ts,tsx,js,jsx,mjs,mts,cts}} — 22 files
+[STARTED] {*.{json,css},!(cloud)/**/*.{json,css}} — 1 file
+[STARTED] oxlint
+[STARTED] oxfmt --write
+[STARTED] oxlint
+[STARTED] oxfmt --write
+[COMPLETED] oxfmt --write
+[COMPLETED] {*.{json,css},!(cloud)/**/*.{json,css}} — 1 file
+[COMPLETED] oxfmt --write
+[COMPLETED] {*.{json,css},!(cloud)/**/*.{json,css}} — 1 file
+[COMPLETED] oxlint
+[STARTED] oxlint --config config/oxlint-react-doctor.json
+[COMPLETED] oxlint
+[STARTED] oxlint --config config/oxlint-react-doctor.json
+[COMPLETED] oxlint --config config/oxlint-react-doctor.json
+[STARTED] oxfmt --write
+[COMPLETED] oxlint --config config/oxlint-react-doctor.json
+[STARTED] oxfmt --write
+[COMPLETED] oxfmt --write
+[COMPLETED] {*.{ts,tsx,js,jsx,mjs,mts,cts},!(cloud)/**/*.{ts,tsx,js,jsx,mjs,mts,cts}} — 22 files
+[COMPLETED] package.json — 23 files (chunk 2/2)...
+[COMPLETED] oxfmt --write
+[COMPLETED] {*.{ts,tsx,js,jsx,mjs,mts,cts},!(cloud)/**/*.{ts,tsx,js,jsx,mjs,mts,cts}} — 18 files
+[COMPLETED] package.json — 23 files (chunk 1/2)...
+[COMPLETED] Running tasks for staged files...
+[STARTED] Applying modifications from tasks...
+[COMPLETED] Applying modifications from tasks...
+[STARTED] Cleaning up temporary files...
+[COMPLETED] Cleaning up temporary files...

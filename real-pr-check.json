@@ -1,0 +1,8 @@
+{
+  "layer": "read-only GitHub CLI + product mapper; not Electron/provider runtime E2E",
+  "query": "merged:2026-08-30..2026-10-05",
+  "count": 59,
+  "completePage": true,
+  "validMergedAt": true,
+  "differentFromUpdatedAt": 30
+}

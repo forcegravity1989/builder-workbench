@@ -1,0 +1,9 @@
+{
+  "layer": "real local git, read only; not Electron",
+  "since": "2026-08-31T00:00:00Z",
+  "revision": "3eeb93eb1b40691a30b7897d1ba27005cd173003",
+  "pages": 8,
+  "expected": 1577,
+  "actual": 1577,
+  "mismatches": 0
+}

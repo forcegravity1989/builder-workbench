@@ -1,0 +1,45 @@
+{
+  "results": [
+    {
+      "width": 1280,
+      "overflow": 0,
+      "firstRow": 165.9375,
+      "minutes": [
+        {
+          "height": 256,
+          "scroll": 655
+        },
+        {
+          "height": 256,
+          "scroll": 1056
+        }
+      ],
+      "charts": 4,
+      "setupStyle": {
+        "border": "1px",
+        "background": "rgb(246, 243, 239)"
+      }
+    },
+    {
+      "width": 1920,
+      "overflow": 0,
+      "firstRow": 165.9375,
+      "minutes": [
+        {
+          "height": 256,
+          "scroll": 468
+        },
+        {
+          "height": 256,
+          "scroll": 869
+        }
+      ],
+      "charts": 4,
+      "setupStyle": {
+        "border": "1px",
+        "background": "rgb(246, 243, 239)"
+      }
+    }
+  ],
+  "errors": []
+}

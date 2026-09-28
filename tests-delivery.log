@@ -1,0 +1,10 @@
+
+ RUN  v4.1.11 E:/zhuyu/code/builder-workbench/.bw/worktrees/overview-journey
+
+Switched to a new branch 'you/Nautilus'
+
+ Test Files  17 passed (17)
+      Tests  171 passed (171)
+   Start at  08:00:38
+   Duration  31.25s (transform 9.04s, setup 556ms, import 15.51s, tests 6.63s, environment 3.79s)
+
