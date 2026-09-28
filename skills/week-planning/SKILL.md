@@ -2,7 +2,7 @@
 name: week-planning
 description: Use when 在 BW 计划屏协助用户制定、评审和归档版本计划，或对应 Orca 周期运行启动。验收已有版本使用 version-acceptance。
 metadata:
-  version: 0.3.1
+  version: 0.3.2
 ---
 
 # 版本计划

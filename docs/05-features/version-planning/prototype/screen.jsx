@@ -1,4 +1,4 @@
-import { React } from 'react'
+import { React, useEffect, useState } from 'react'
 import { Field } from './shared.jsx'
 import {
   ChartNoAxesCombined,
@@ -10,7 +10,7 @@ import {
 import { metrics } from './snapshot.js'
 
 function PlanningContent({
-  go,
+  disabled,
   goals,
   metricPrep,
   progress,
@@ -22,7 +22,7 @@ function PlanningContent({
   setNotice,
   setProgress,
   setRisk,
-  setVersion,
+  openSource,
   update,
   versionTasks
 }) {
@@ -50,13 +50,7 @@ function PlanningContent({
         <div className="planning-field">
           <div className="planning-brief-head">
             <label htmlFor="planning-progress">版本进展</label>
-            <button
-              className="btn btn-secondary"
-              onClick={() => {
-                go('friday')
-                setVersion('v0.4')
-              }}
-            >
+            <button className="btn btn-secondary" disabled={disabled} onClick={openSource}>
               上版验收
               <ChevronRight />
             </button>
@@ -68,6 +62,7 @@ function PlanningContent({
             value={progress}
             onChange={setProgress}
             rows={2}
+            disabled={disabled}
           />
         </div>
         <div className="planning-field">
@@ -80,18 +75,20 @@ function PlanningContent({
             onChange={setRisk}
             placeholder="有风险时填写"
             rows={2}
+            disabled={disabled}
           />
         </div>
       </section>
       <div className="section-heading">
         <h2>当前版本目标</h2>
         <span>Top 3</span>
-        <button className="btn btn-secondary" onClick={review}>
+        <button className="btn btn-secondary" onClick={review} disabled={disabled}>
           <Presentation />
           预览纪要
         </button>
       </div>
       <section className="goal-sheet">
+        {disabled && <p className="goal-row">选择已有版本，或在左侧“新建计划”中明确本版目标。</p>}
         {goals.map((g) => {
           const m = metrics.find((x) => x.id === g.metricId)
           return (
@@ -185,12 +182,13 @@ function PlanningContent({
           )
         })}
       </section>
-      {versionTasks(prepareRequest)}
+      {versionTasks(prepareRequest, disabled)}
       <section className="card planning-archive" aria-label="计划归档">
         <GitPullRequest />
         <p>核对目标与 Issue，发起 PR 供 Leader 评审。</p>
         <button
           className="btn btn-secondary"
+          disabled={disabled}
           onClick={() => {
             prepareRequest(
               '请核对当前 v0.5 计划是否已由 Builder 评审、目标对应的 Issue 是否拆解完毕，列出待确认项；经我确认后保存计划材料并发起归档 PR，提供 PR 链接供 Leader 检视合入。不要替人确认评审通过或合入 PR。'
@@ -203,4 +201,37 @@ function PlanningContent({
     </>
   )
 }
-export { PlanningContent }
+
+function usePlanningDemo({ setModal, setNotice }) {
+  const [source, setSource] = useState(null)
+  const [editRevision, setEditRevision] = useState(0)
+  const [saveState, setSaveState] = useState('已保存')
+  useEffect(() => {
+    if (!editRevision) {
+      return
+    }
+    setSaveState('编辑中…')
+    const timer = setTimeout(() => setSaveState('已保存'), 700)
+    return () => clearTimeout(timer)
+  }, [editRevision])
+  const edited =
+    (write) =>
+    (...args) => {
+      write(...args)
+      setEditRevision((value) => value + 1)
+    }
+  const openSource = () =>
+    setModal({
+      type: 'planning-source',
+      title: '上版验收',
+      source,
+      onSource: (selected) => {
+        setSource(selected)
+        setEditRevision((value) => value + 1)
+        setNotice('原型示意：已明确选择进展来源；原有进展未改写，未保存真实文件。')
+        setModal(null)
+      }
+    })
+  return { saveState, edited, openSource }
+}
+export { PlanningContent, usePlanningDemo }

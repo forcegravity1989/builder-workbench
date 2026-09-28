@@ -125,10 +125,23 @@ const Identity = {
   cycleId: Id
 }
 
+/** Fixed acceptance material explicitly chosen as the source of planning progress. */
+export const PlanningProgressSourceSchema = z.strictObject({
+  version: MaterialVersion,
+  cycleId: Id,
+  sourceCommit: SourceCommit,
+  revision: MaterialRevision
+})
+export type PlanningProgressSource = z.infer<typeof PlanningProgressSourceSchema>
+
 export const PlanningMaterialSchema = z
   .strictObject({
     ...Identity,
-    summary: z.strictObject({ progress: z.string(), risks: z.string() }),
+    summary: z.strictObject({
+      progress: z.string(),
+      risks: z.string(),
+      progressSource: PlanningProgressSourceSchema.optional()
+    }),
     goals: z.array(VersionGoalSchema),
     tasks: z.array(VersionTaskReferenceSchema)
   })

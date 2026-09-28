@@ -8,6 +8,14 @@
 
 结构使用 `orca bw materials schema --workflow plan|acceptance --json` 读取；列举、读取与保存的参数分别查看 `orca bw materials list --help`、`orca bw materials read --help`、`orca bw materials save --help`，修订约束以版本材料 reference 为准。宿主未提供入口时，报告缺失、可以讨论并保留草稿建议，但不能编造命令或宣称已保存。自动化只创建/恢复 Orca 运行，不代替用户认可。
 
+## 进展的验收来源
+
+版本进展取自用户明确的上版验收材料，引用结构见[版本材料](../../../system-prompt/references/version-records.md)。先读取计划已保存的 `summary.progressSource`；没有来源时，可请用户在进展卡片的“上版验收”中选择已核验归档记录，或在会话明确可独立核对的固定来源。版本名大小、提交日期和列表第一项都不能代替这个决定。无来源时不制造成绩，也不清空用户已有进展。
+
+从所选固定提交读取验收 JSON，并沿其 planRef 核对当时的计划，不能拿当前验收树或最新计划替代。页面提供由固定材料派生的只读纪要及原始验收 JSON；没有独立历史 Markdown 原文接口。宿主 CLI 当前只提供材料 list/read/save 等入口，不存在 `orca bw history`，不能编造历史命令；会话可用项目已有 Git 能力核对固定提交，但无法核验归档时应明确待核。
+
+整理进展时保留所述版本及依据，复述真实结果、未达项与后续，不把旧人工读数当本期实测。已有编辑先与人核对，按既有授权合并内容，不自动覆盖；用刚读取的 expectedRevision 经材料 save 同时保存 `summary.progress` 与对应 `summary.progressSource`。界面明确选择来源只改变引用，不替模型重写进展。
+
 ## 显式迁移旧材料
 
 页面“在会话中处理”会新建原生会话并自动发送具体文件问题；这仅授权开始讨论，不代表同意改写或迁移文件。先核对请求列出的版本、实际文件与读取错误，区分旧格式和损坏数据，向用户简要说明改动、原件备份及风险，得到明确确认后再写入。

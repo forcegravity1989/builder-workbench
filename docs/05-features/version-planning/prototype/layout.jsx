@@ -1,7 +1,7 @@
 import { React, useState } from 'react'
 import { PrototypeHeader, PrototypeSession, PrototypeSidebar, PrototypeSplitter } from './shell.jsx'
 import { Field, Lamp, archiveTone } from './shared.jsx'
-import { PlanningContent } from './screen.jsx'
+import { PlanningContent, usePlanningDemo } from './screen.jsx'
 import { AcceptanceContent } from '../../version-acceptance/prototype/screen.jsx'
 import { ArrowLeft, ArrowUp, GitPullRequest, MessageSquare, Plus } from 'lucide-react'
 import { OverviewV8 } from '../../overview-metrics/prototype/screen.jsx'
@@ -74,9 +74,10 @@ function PrototypeLayout({
   view,
   weekly
 }) {
-  const [scenarios, setScenarios] = useState({ monday: 'selected', friday: 'first' })
+  const [scenarios, setScenarios] = useState({ monday: 'first', friday: 'first' })
   const [sessionStates, setSessionStates] = useState({ monday: 'empty', friday: 'empty' })
   const [sessionWidth, setSessionWidth] = useState(undefined)
+  const planning = usePlanningDemo({ setModal, setNotice })
   const firstEntry = weekly && scenarios[view] === 'first'
   const setSessionState = (state) => setSessionStates((current) => ({ ...current, [view]: state }))
   const onScenario = (value) => {
@@ -132,6 +133,16 @@ function PrototypeLayout({
       >
         <PrototypeHeader
           firstEntry={firstEntry}
+          planningSaveState={planning.saveState}
+          selectPlanVersion={(value) => {
+            setScenarios((current) => ({ ...current, monday: value ? 'selected' : 'first' }))
+            if (value) {
+              setVersion(value)
+            }
+            setNotice('')
+            setExpanded(false)
+            setTaskFilter('')
+          }}
           {...{
             review,
             setExpanded,
@@ -180,7 +191,7 @@ function PrototypeLayout({
                 ))}
               </nav>
               <div className="content-scroll">
-                {firstEntry ? (
+                {view !== 'monday' && firstEntry ? (
                   <section className="prototype-first-entry">
                     <h2>待选择版本</h2>
                     <p>处理上方文件问题后，可在版本列表中选择版本。</p>
@@ -189,22 +200,22 @@ function PrototypeLayout({
                 ) : view === 'monday' ? (
                   <PlanningContent
                     sessionAvailable={sessionStates.monday !== 'empty'}
+                    disabled={firstEntry}
+                    goals={firstEntry ? [] : goals}
+                    progress={firstEntry ? '' : progress}
+                    risk={firstEntry ? '' : risk}
+                    setProgress={planning.edited(setProgress)}
+                    setRisk={planning.edited(setRisk)}
+                    update={planning.edited(update)}
+                    openSource={planning.openSource}
                     {...{
-                      goals,
                       metricPrep,
-                      progress,
                       promptConversation,
                       refreshMetrics,
                       review,
-                      risk,
                       setNotice,
-                      setProgress,
-                      setRisk,
-                      setVersion,
-                      update,
                       versionTasks
                     }}
-                    go={openSelectedVersion}
                   />
                 ) : (
                   <AcceptanceContent

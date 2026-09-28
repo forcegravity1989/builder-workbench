@@ -1,203 +1,134 @@
+import { BrainCircuit, ClipboardList, GitPullRequest, Presentation, Target } from 'lucide-react'
 import type { RefObject } from 'react'
 import type { VersionMaterialCandidate } from '../../../../shared/workbench/version-material-request'
 import {
   archiveJourneyLamp,
   type ArchiveStatus
 } from '../../../../shared/workbench/version-archive'
-
-/** Version chooser over host-listed candidates; unreadable/migration states stay visible but disabled. */
-export function PlanningVersionSelect({
+export function PlanningHeader({
   currentVersion,
   versions,
   disabled,
+  state,
   onSelect
 }: {
   currentVersion: string
   versions: VersionMaterialCandidate[]
   disabled: boolean
+  state: string
   onSelect(version: string): void
-}) {
-  return (
-    <select
-      aria-label="计划版本"
-      value={currentVersion}
-      disabled={disabled}
-      onChange={(event) => {
-        if (event.target.value) {
-          onSelect(event.target.value)
-        }
-      }}
-    >
-      <option value="">待选择版本</option>
-      {versions.map((item) => (
-        <option key={item.version} value={item.version} disabled={item.state !== 'ready'}>
-          {item.version}
-          {item.state !== 'ready'
-            ? ` · ${item.state === 'migration-required' ? '需迁移' : '无法读取'}`
-            : ''}
-        </option>
-      ))}
-      {currentVersion && !versions.some((item) => item.version === currentVersion) && (
-        <option value={currentVersion}>{currentVersion} · 新草稿</option>
-      )}
-    </select>
-  )
-}
-
-/** Board header: version chooser plus the explicit create / next-round actions. */
-export function PlanningHeader({
-  currentVersion,
-  versions,
-  portReady,
-  materialBusy,
-  selecting,
-  archived,
-  onToggleCreate,
-  onSelect,
-  onNextRound
-}: {
-  currentVersion: string
-  versions: VersionMaterialCandidate[]
-  portReady: boolean
-  materialBusy: boolean
-  selecting: boolean
-  archived: boolean
-  onToggleCreate(): void
-  onSelect(version: string): void
-  onNextRound(): void
 }) {
   return (
     <header className="vp-header">
-      <div>
-        <h1>版本计划</h1>
-        <span className="vp-muted">准备 → 目标 → 评审 → 拆解 → 归档</span>
-      </div>
-      <div className="vp-inline">
-        <PlanningVersionSelect
-          currentVersion={currentVersion}
-          versions={versions}
-          disabled={!portReady || materialBusy || selecting}
-          onSelect={onSelect}
-        />
-        <button
-          className="wb-btn wb-btn-ghost wb-btn-sm"
-          disabled={!portReady || selecting}
-          onClick={onToggleCreate}
-        >
-          新建版本
-        </button>
-        {archived && (
-          <button
-            className="wb-btn wb-btn-ghost wb-btn-sm"
-            disabled={materialBusy || selecting}
-            onClick={onNextRound}
-          >
-            开始下一轮计划
-          </button>
+      <h1>版本计划</h1>
+      <select
+        aria-label="计划版本"
+        value={currentVersion}
+        disabled={disabled}
+        onChange={(event) => {
+          if (event.target.value) {
+            onSelect(event.target.value)
+          }
+        }}
+      >
+        <option value="">待选择版本</option>
+        {versions.map((item) => (
+          <option key={item.version} value={item.version} disabled={item.state !== 'ready'}>
+            {item.version}
+            {item.state !== 'ready' ? ' · 暂无法读取' : ''}
+          </option>
+        ))}
+        {currentVersion && !versions.some((item) => item.version === currentVersion) && (
+          <option value={currentVersion}>{currentVersion}</option>
         )}
-      </div>
+      </select>
+      <span className="vp-muted" role="status">
+        {state}
+      </span>
     </header>
   )
 }
-
-/** Explicit new-version draft creation; the page never auto-creates material. */
-export function PlanningCreateForm({
-  newVersion,
-  busy,
-  onNewVersion,
-  onCreate
-}: {
-  newVersion: string
-  busy: boolean
-  onNewVersion(value: string): void
-  onCreate(version: string): void
-}) {
-  return (
-    <form
-      className="vp-create"
-      onSubmit={(event) => {
-        event.preventDefault()
-        onCreate(newVersion.trim())
-      }}
-    >
-      <label>
-        版本名称
-        <input
-          autoFocus
-          value={newVersion}
-          onChange={(event) => onNewVersion(event.target.value)}
-          placeholder="例如 v0.5"
-          required
-        />
-      </label>
-      <button className="wb-btn wb-btn-sm" disabled={busy}>
-        创建计划草稿
-      </button>
-    </form>
-  )
-}
-
-/** Journey axis: dots derive from current data; the axis itself never scrolls. */
+/** The rail locates sections. Review, decomposition and archive actions live in their cards. */
 export function PlanningJourneyNav({
-  hasPlan,
+  hasProgress,
   goalCount,
   taskCount,
   archived,
   archive,
   preparationRef,
   goalsRef,
-  onMinutes,
-  onTasks,
-  onArchive
+  tasksRef,
+  archiveRef
 }: {
-  hasPlan: boolean
+  hasProgress: boolean
   goalCount: number
   taskCount: number
   archived: boolean
   archive: ArchiveStatus
   preparationRef: RefObject<HTMLElement | null>
   goalsRef: RefObject<HTMLElement | null>
-  onMinutes(): void
-  onTasks(): void
-  onArchive(): void
+  tasksRef: RefObject<HTMLElement | null>
+  archiveRef: RefObject<HTMLElement | null>
 }) {
   const lamp = archiveJourneyLamp(archive, archived)
-  const archiveDot =
-    lamp === 'complete'
-      ? 'done'
-      : lamp === 'failed'
-        ? 'failed'
-        : lamp === 'pending'
-          ? 'pending'
-          : ''
+  const steps = [
+    {
+      label: '准备',
+      Icon: ClipboardList,
+      ref: preparationRef,
+      tone: hasProgress ? 'pending' : '',
+      hint: hasProgress ? '已填写版本进展' : '待填写版本进展'
+    },
+    {
+      label: '目标',
+      Icon: Target,
+      ref: goalsRef,
+      tone: goalCount ? 'pending' : '',
+      hint: goalCount ? '已填写目标，待评审核对' : '待明确目标'
+    },
+    {
+      label: '评审',
+      Icon: Presentation,
+      ref: goalsRef,
+      tone: '',
+      hint: '与 PL 评审并直接修改目标；此处不代替人的评审结论'
+    },
+    {
+      label: '拆解',
+      Icon: BrainCircuit,
+      ref: tasksRef,
+      tone: taskCount ? 'pending' : '',
+      hint: taskCount ? '已关联 Issue，状态以任务读回为准' : '在版本任务卡片中准备拆解请求'
+    },
+    {
+      label: '归档',
+      Icon: GitPullRequest,
+      ref: archiveRef,
+      tone:
+        lamp === 'complete'
+          ? 'done'
+          : lamp === 'failed'
+            ? 'failed'
+            : lamp === 'pending'
+              ? 'pending'
+              : '',
+      hint: '查看归档 PR 状态'
+    }
+  ]
   return (
     <nav className="vp-journey" aria-label="计划流程">
-      <button
-        onClick={() =>
-          preparationRef.current?.scrollIntoView({ block: 'start', behavior: 'smooth' })
-        }
-      >
-        <span className={`vp-dot ${hasPlan ? 'pending' : ''}`} />
-        准备
-      </button>
-      <button
-        onClick={() => goalsRef.current?.scrollIntoView({ block: 'start', behavior: 'smooth' })}
-      >
-        <span className={`vp-dot ${goalCount ? 'pending' : ''}`} />
-        目标
-      </button>
-      <button disabled={!hasPlan} onClick={onMinutes}>
-        <span className="vp-dot" />
-        评审
-      </button>
-      <button disabled={!hasPlan} onClick={onTasks}>
-        <span className={`vp-dot ${taskCount ? 'pending' : ''}`} />
-        拆解
-      </button>
-      <button disabled={!hasPlan} onClick={onArchive}>
-        <span className={`vp-dot ${archiveDot}`} />
-        归档
-      </button>
+      {steps.map(({ label, Icon, ref, tone, hint }) => (
+        <button
+          key={label}
+          title={hint}
+          onClick={() => ref.current?.scrollIntoView({ block: 'start', behavior: 'smooth' })}
+        >
+          <span className={`vp-step-icon ${tone}`}>
+            <Icon size={16} />
+          </span>
+          <span>{label}</span>
+        </button>
+      ))}
     </nav>
   )
 }

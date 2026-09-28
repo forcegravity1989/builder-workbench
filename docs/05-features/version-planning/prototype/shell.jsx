@@ -187,7 +187,9 @@ function PrototypeHeader({
   version,
   view,
   weekly,
-  firstEntry
+  firstEntry,
+  selectPlanVersion,
+  planningSaveState
 }) {
   return (
     <header className="page-header">
@@ -202,7 +204,23 @@ function PrototypeHeader({
           }[view]
         }
       </h1>
-      {weekly && firstEntry ? (
+      {view === 'monday' ? (
+        <select
+          className="input version-select"
+          aria-label="计划版本"
+          value={firstEntry ? '' : version}
+          onChange={(event) => selectPlanVersion(event.target.value)}
+        >
+          <option value="">待选择版本</option>
+          <option value="v0.5">v0.5</option>
+          <option value="v0.3" disabled>
+            v0.3 · 无法读取
+          </option>
+          <option value="v0.4" disabled>
+            v0.4 · 无法读取
+          </option>
+        </select>
+      ) : weekly && firstEntry ? (
         <select
           className="input version-select"
           aria-label={`${view === 'monday' ? '计划' : '验收'}版本`}
@@ -217,8 +235,6 @@ function PrototypeHeader({
             v0.4 · 无法读取
           </option>
         </select>
-      ) : view === 'monday' ? (
-        <span className="tag tag-outline">v0.5</span>
       ) : view === 'friday' ? (
         <select
           className="input version-select"
@@ -237,7 +253,17 @@ function PrototypeHeader({
       ) : (
         <span className="page-state">builder-workbench</span>
       )}
-      {weekly && !firstEntry && <span className="page-state">草稿</span>}
+      {weekly && !firstEntry && (
+        <span
+          className="page-state"
+          role="status"
+          title={
+            view === 'monday' ? '仅模拟自动保存状态；编辑保留在原型内存，未写入文件' : undefined
+          }
+        >
+          {view === 'monday' ? planningSaveState : '草稿'}
+        </span>
+      )}
       <span className="header-spacer" />
       {view === 'friday' && (
         <button className="btn btn-ghost" onClick={review} disabled={firstEntry}>

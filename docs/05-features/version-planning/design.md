@@ -15,7 +15,7 @@
 | main/workbench/version-document-store + `workbench.materials.*` RPC / `ORCA bw materials` CLI | 跨进程 CAS 统一写入；renderer 直接 writeFile 的旧链路已删除 |
 | TaskPageContent → GitHubItemDialog → ConversationTabDescription / GitHubMarkdownComposer | 直接复用页面、正文编辑及 runWorkItemBodyUpdate；BW 不复制详情组件 |
 | use-task-page-detail-routing 的 worktreeNavHistory / goBackWorktree | 导航历史携带 BW 来源；openTaskPage 新增 returnToPreviousView（跳过 tasks 哨兵，返回 BW 来源视图），BW 子视图与屏内上下文由 cycle-view-state 和 use-planning-view-memory 恢复。计划屏 goalFilter+滚动存 sessionStorage（use-planning-view-memory） |
-| shared/automations-types | 复用原生登记和运行记录；「配置自动化」按钮预填原生自动化编辑器：host 按工作树宿主身份，existing 固定树、reuseSession=false、prompt 不含 cycleId，启用/时间由人确认 |
+| shared/automations-types | 复用原生登记和运行记录；「配置自动化」按钮打开原生编辑器：host 按工作树宿主身份，首次登记 existing 固定树、reuseSession=false、prompt 不含 cycleId，后续尊重用户保存的配置 |
 
 ## 共享边界
 
@@ -33,7 +33,11 @@ BW 业务放在 renderer/workbench 下的 version-cycle、version-planning、ver
 
 ## 版本材料与写入
 
-保留 .bw/planning/<version>/data.json，目标 schema_version=3；原结构里的 plan.goals 演进为稳定 goalId 对应的结果承诺、可选交付说明/验收说明、可选 metricRef 与版本目标。风险和进展保持 summary 语义；版本进展以上版验收纪要为来源，标明所述版本，不把上版结果冒称本版成绩。现行 UI 仅读取已保存的 summary.progress，上版纪要的来源读取与带入尚待落地，不能以 v8 示例摘要证明自动带入已经实现。版本周期不由自然周推断。计划入口初态为待选择版本，列举候选不写盘；用户在 UI 或会话明确选择后才加载可编辑材料，明确新建后才创建。禁用 mtime 推断当前版本与自动 init default；加载失败不能新建替代物。
+PlanningBoard 保留未选版本与已选版本的同一骨架：顶部明确选版，正文依次为进展/风险、目标、页内任务和一行归档入口。PlanningJourneyNav 只滚动定位正文，不发起请求、不以点击标记评审完成。VersionGoalCard 的计划分支直接编辑目标、交付件和可选验收说明；验收只读分支不变。PlanGoalMetrics 逐条编辑可选指标承诺，完整保留多指标，定义和采集依据按需展开。预览纪要在目标标题旁，拆解在任务标题栏；取消目标补充弹窗和常规保存栏。计划样式在 version-planning.css、planning-fields.css 和 planning-dialogs.css 内限定，不改变总览。
+
+usePlanningMaterial 继续复用 MaterialDraftController 的本地草稿、远端修订与 CAS，不新增材料副本。usePlanningAutosave 对连续编辑去抖并串行写入；写入期间的新编辑继续保留，在显式 flush 时排空到最新修订后才返回。版本切换及拆解/归档请求先 flush，写入前复核当前范围、材料身份与归档状态。冲突、远端删除或错误暂停自动写入，由 PlanningPersistenceNotice 提供保留双方内容、重读或明确重试；不以自动重试覆盖模型编辑。轮询只发现材料变化；归档状态尚未核实或已归档时不允许写入。组件/控制器检查不替代真壳输入、重启及真实模型并发验证。
+
+保留 .bw/planning/<version>/data.json，目标 schema_version=3；原结构里的 plan.goals 演进为稳定 goalId 对应的结果承诺、可选交付说明/验收说明、可选 metricRef 与版本目标。风险和进展保持 summary 语义；版本进展以上版验收纪要为来源，标明所述版本，不把上版结果冒称本版成绩。可选 summary.progressSource 保存明确选定验收的 version/cycleId/sourceCommit/revision，不推断版本顺序。PlanningProgressSource 懒读 VersionHistoryPort.list/read/readPlan，经固定修订核对后用 deriveAcceptanceReport 生成只读纪要，并提供原始 JSON；来源失败不回退，异步结果受工作区及材料身份约束。选择引用不覆盖 summary.progress，内容由会话按授权整理，经同一 CAS 保存；既有 schema3 无引用仍可读，未真实验证模型带入行为。版本周期不由自然周推断。计划入口初态为待选择版本，列举候选不写盘；用户在 UI 或会话明确选择后才加载可编辑材料，明确新建后才创建。禁用 mtime 推断当前版本与自动 init default；加载失败不能新建替代物。
 
 任务只保存 provider/repo/number 与 goalId 的引用，展示状态从 Orca provider 读回；缓存有读取时间，离线不是空任务。三段纪要从目标纯函数生成，不再存 live_notes、transcript、独立可编辑 minutes。协议细节的唯一模型参考是 [version-records](../../../standard/system-prompt/references/version-records.md)。
 
@@ -57,7 +61,7 @@ schema2 通过一次显式迁移转为新计划；原文件/提交保留来源�
 
 计划与验收完整复用 Orca 原生会话工作区：顶部新建会话和 Agent 控件、标签/分屏、资源管理器、智能体历史及可收起的工具侧栏均由 Orca 拥有。隐藏原生左侧项目/工作树列表，保留 BW 导航。BW 只在右侧提供业务板，在原生标签栏增加“新建计划”或“新建验收”；不另建聊天、历史或会话绑定。
 
-“新建计划／验收”调用对应已登记自动化的原生手动运行，使用用户当前保存的提示、工具和模型，并自动打开、聚焦本次原生会话；定时运行仍在后台。普通原生新建会话不自动注入 BW Skill。首次登记默认关闭定时，按 creationKey 去重，已有条目不覆盖；“配置自动化”打开原生编辑器。每次新运行使用固定工作区、reuseSession=false，历史恢复和运行打开完全沿用 Orca。
+“新建计划／验收”调用对应已登记自动化的原生手动运行，使用用户当前保存的提示、工具和模型，并自动打开、聚焦本次原生会话；定时运行仍在后台。普通原生新建会话不自动注入 BW Skill。首次登记默认关闭定时、使用固定工作区且 reuseSession=false，按 creationKey 去重，已有条目不覆盖；后续运行尊重用户保存的会话复用配置。“配置自动化”打开原生编辑器，历史恢复和运行打开完全沿用 Orca。
 
 自动化运行与历史恢复继续打开原生 terminal；识别当前固定树后自然显示右板，不再保存 BW run/session 恢复映射。native-session 只读取当前聚焦的结构化会话或终端叶子，并在插入业务草稿前复核宿主、工作树和焦点；不创建布局、选择历史或恢复聊天。
 

@@ -294,7 +294,7 @@ function App() {
       />
     )
   }
-  function versionTasks(prepareRequest = promptConversation) {
+  function versionTasks(prepareRequest = promptConversation, disabled = false) {
     return (
       <PrototypeVersionTasks
         {...{
@@ -303,11 +303,12 @@ function App() {
           setExpanded,
           setNotice,
           setTaskFilter,
-          shownTasks,
+          shownTasks: disabled ? [] : shownTasks,
           taskFilter,
           taskList,
           taskSection,
-          tasks,
+          tasks: disabled ? [] : tasks,
+          disabled,
           version,
           view
         }}

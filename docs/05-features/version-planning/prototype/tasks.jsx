@@ -164,6 +164,7 @@ function PrototypeTaskList({ items, openIssue }) {
   )
 }
 function PrototypeVersionTasks({
+  disabled = false,
   expanded,
   promptConversation,
   setExpanded,
@@ -188,10 +189,12 @@ function PrototypeVersionTasks({
     >
       <ListTodo />
       <strong>{view === 'friday' ? 'Issue 状态核对' : '版本任务'}</strong>
-      <span>{tasks.length} 项 Issue</span>
-      <span className="issue-progress">
-        完成 {done(tasks)} / {tasks.length}
-      </span>
+      <span>{disabled ? '待选择版本' : `${tasks.length} 项 Issue`}</span>
+      {!disabled && (
+        <span className="issue-progress">
+          完成 {done(tasks)} / {tasks.length}
+        </span>
+      )}
       {expanded ? <ChevronDown /> : <ChevronRight />}
     </button>
   )
@@ -202,6 +205,7 @@ function PrototypeVersionTasks({
           {summary}
           <button
             className="btn btn-secondary"
+            disabled={disabled}
             onClick={() =>
               promptConversation(
                 `请根据 ${version} 当前目标核对任务拆解，与我确认后创建或更新 Issue，并关联版本及目标。`

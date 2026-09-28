@@ -84,6 +84,7 @@ afterEach(() => {
   act(() => root.unmount())
   container.remove()
   localStorage.clear()
+  vi.useRealTimers()
 })
 const selector = () => container.querySelector<HTMLSelectElement>('[aria-label="计划版本"]')!
 const progress = () => container.querySelector<HTMLTextAreaElement>('.vp-preparation textarea')
@@ -97,6 +98,16 @@ async function select(version: string) {
     selector().value = version
     selector().dispatchEvent(new Event('change', { bubbles: true }))
   })
+}
+function cacheDraft(version: string, progress: string) {
+  localStorage.setItem(
+    planningDraftKey('test-project', version),
+    JSON.stringify({
+      document: { ...material(version), summary: { progress, risks: '' } },
+      expectedRevision: revision,
+      dirty: true
+    })
+  )
 }
 
 it('keeps version selection locked until the workflow preference is saved', async () => {
@@ -114,11 +125,8 @@ it('keeps version selection locked until the workflow preference is saved', asyn
   expect(progress()?.value).toBe('B progress')
   expect(selector().disabled).toBe(true)
   expect(container.querySelector('.vp-body')?.hasAttribute('inert')).toBe(true)
-  expect(
-    [...container.querySelectorAll<HTMLButtonElement>('.vp-footer button')].every(
-      (button) => button.disabled
-    )
-  ).toBe(true)
+  expect(progress()?.disabled).toBe(true)
+  expect(container.querySelector<HTMLFieldSetElement>('.vp-goals')?.disabled).toBe(true)
   await select('C')
   expect(associate.mock.calls).toEqual([['B']])
   expect(progress()?.value).toBe('B progress')
@@ -133,14 +141,7 @@ it('keeps version selection locked until the workflow preference is saved', asyn
 })
 
 it('clears the editable view but retains the draft when association fails', async () => {
-  localStorage.setItem(
-    planningDraftKey('test-project', 'B'),
-    JSON.stringify({
-      document: { ...material('B'), summary: { progress: 'unsaved B', risks: '' } },
-      expectedRevision: revision,
-      dirty: true
-    })
-  )
+  cacheDraft('B', 'unsaved B')
   await mount(
     context(async () => {
       throw new Error('host unavailable')
@@ -149,20 +150,16 @@ it('clears the editable view but retains the draft when association fails', asyn
   await select('B')
   expect(selector().disabled).toBe(false)
   expect(selector().value).toBe('')
-  expect(progress()).toBeNull()
+  expect(progress()?.value).toBe('')
+  expect(progress()?.disabled).toBe(true)
+  expect(container.querySelector('.vp-tasks')).not.toBeNull()
+  expect(container.querySelector('.vp-archive-card')).not.toBeNull()
   expect(container.textContent).toContain('选版未保存')
   expect(localStorage.getItem(planningDraftKey('test-project', 'B'))).toContain('unsaved B')
 })
 
 it('keeps the selected version and draft when native history changes or the chat closes', async () => {
-  localStorage.setItem(
-    planningDraftKey('test-project', 'A'),
-    JSON.stringify({
-      document: { ...material('A'), summary: { progress: 'unsaved A', risks: '' } },
-      expectedRevision: revision,
-      dirty: true
-    })
-  )
+  cacheDraft('A', 'unsaved A')
   const value = context(vi.fn())
   await mount(value)
   const originalInput = progress()
@@ -179,27 +176,16 @@ it('keeps the selected version and draft when native history changes or the chat
 })
 
 it('keeps a confirmed plan archive read-only over a stale dirty draft and offers host re-read', async () => {
-  localStorage.setItem(
-    planningDraftKey('test-project', 'A'),
-    JSON.stringify({
-      document: { ...material('A'), summary: { progress: 'unsaved A', risks: '' } },
-      expectedRevision: revision,
-      dirty: true
-    })
-  )
+  cacheDraft('A', 'unsaved A')
   const gate = Promise.withResolvers<ArchiveStatus>()
   const value: VersionCycleContext = {
     ...context(vi.fn()),
     archivePort: { readStatus: () => gate.promise, prepareRequest: unexpected }
   }
-  const saveButton = () =>
-    [...container.querySelectorAll<HTMLButtonElement>('button')].find(
-      (button) => button.textContent === '保存草稿'
-    )!
   await mount(value)
   expect(progress()?.value).toBe('unsaved A')
-  expect(container.querySelector('.vp-preparation')?.hasAttribute('inert')).toBe(true)
-  expect(saveButton().disabled).toBe(true)
+  expect(progress()?.disabled).toBe(true)
+  expect(container.querySelector('.vp-footer')).toBeNull()
   const reference = {
     provider: 'github',
     repository: 'github.com/team/repo',
@@ -226,10 +212,8 @@ it('keeps a confirmed plan archive read-only over a stale dirty draft and offers
       }
     })
   })
-  expect(container.querySelector('.vp-preparation')?.hasAttribute('inert')).toBe(true)
-  expect(container.textContent).toContain('本轮计划已归档，未保存的本地修改不能写入。')
-  expect(container.textContent).toContain('开始下一轮计划')
-  expect(saveButton().disabled).toBe(true)
+  expect(progress()?.disabled).toBe(true)
+  expect(container.textContent).toContain('本轮计划已归档，本地修改已保留，不能写入。')
   const discard = [...container.querySelectorAll<HTMLButtonElement>('button')].find((button) =>
     button.textContent?.includes('放弃本地修改')
   )!
@@ -238,7 +222,40 @@ it('keeps a confirmed plan archive read-only over a stale dirty draft and offers
   })
   expect(progress()?.value).toBe('A progress')
   expect(container.textContent).not.toContain('放弃本地修改')
-  expect(container.querySelector('.vp-preparation')?.hasAttribute('inert')).toBe(true)
+  expect(progress()?.disabled).toBe(true)
+})
+
+it('retains a deleted-file draft on cache failure, then discards it explicitly and allows switching', async () => {
+  cacheDraft('A', 'unsaved A')
+  const associate = vi.fn(async () => {})
+  const value = context(associate)
+  value.materialPort = {
+    ...value.materialPort!,
+    read: async (version) => (version === 'A' ? null : { document: material(version), revision })
+  }
+  await mount(value)
+  await select('B')
+  expect(associate).not.toHaveBeenCalled()
+  expect(progress()?.value).toBe('unsaved A')
+  const discard = [...container.querySelectorAll<HTMLButtonElement>('button')].find((button) =>
+    button.textContent?.includes('放弃本地修改并重读')
+  )!
+  const remove = vi.spyOn(localStorage, 'removeItem').mockImplementationOnce(() => {
+    throw new Error('storage unavailable')
+  })
+  try {
+    await act(async () => discard.click())
+    expect(progress()?.value).toBe('unsaved A')
+    expect(container.textContent).toContain('无法清理本机草稿，输入已保留')
+    expect(localStorage.getItem(planningDraftKey('test-project', 'A'))).toContain('unsaved A')
+    await act(async () => discard.click())
+    expect(localStorage.getItem(planningDraftKey('test-project', 'A'))).toBeNull()
+    await select('B')
+    expect(associate).toHaveBeenCalledWith('B')
+    expect(progress()?.value).toBe('B progress')
+  } finally {
+    remove.mockRestore()
+  }
 })
 
 it('renders catalog problems as fixable errors instead of swallowing them', async () => {
@@ -258,7 +275,7 @@ it('derives the archive journey lamp from provider-confirmed states', async () =
     number: 3,
     materialRevision: revision
   }
-  const archiveDot = () => container.querySelector('.vp-journey button:last-child .vp-dot')!
+  const archiveDot = () => container.querySelector('.vp-journey button:last-child .vp-step-icon')!
   const closedValue: VersionCycleContext = {
     ...context(vi.fn()),
     archivePort: {
@@ -302,4 +319,64 @@ it('derives the archive journey lamp from provider-confirmed states', async () =
   await act(async () => {})
   expect(archiveDot().className).toContain('pending')
   expect(container.textContent).toContain('已合入，当前材料待核')
+})
+
+it('flushes newer edits through the next archive check before switching versions', async () => {
+  vi.useFakeTimers()
+  const revisionB = `sha256:${'b'.repeat(64)}`
+  const revisionC = `sha256:${'c'.repeat(64)}`
+  const savedFirst = Promise.withResolvers<{ document: PlanningMaterial; revision: string }>()
+  const archiveB = Promise.withResolvers<ArchiveStatus>()
+  const associate = vi.fn(async () => {})
+  const value = context(associate)
+  const save = vi
+    .fn(value.materialPort!.save)
+    .mockImplementationOnce(() => savedFirst.promise)
+    .mockImplementation(async (input) => ({ document: input.document, revision: revisionC }))
+  const readStatus = vi.fn(async (input: { revision: string }): Promise<ArchiveStatus> =>
+    input.revision === revisionB
+      ? archiveB.promise
+      : { kind: 'not-created', checkedAt: '2026-09-28T12:00:00Z' }
+  )
+  value.materialPort = { ...value.materialPort!, save }
+  value.archivePort = { readStatus, prepareRequest: unexpected }
+  const change = (text: string) =>
+    act(() => {
+      Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype, 'value')!.set!.call(
+        progress(),
+        text
+      )
+      progress()!.dispatchEvent(new Event('input', { bubbles: true }))
+    })
+  await mount(value)
+  change('first edit')
+  await act(async () => {
+    await vi.advanceTimersByTimeAsync(600)
+  })
+  expect(save).toHaveBeenCalledOnce()
+  change('newer edit')
+  await act(async () => {
+    savedFirst.resolve({
+      document: save.mock.calls[0]![0].document as PlanningMaterial,
+      revision: revisionB
+    })
+  })
+  expect(save).toHaveBeenCalledOnce()
+  expect(progress()?.disabled).toBe(false)
+  change('latest edit while archive check is pending')
+  await act(async () => {
+    await vi.advanceTimersByTimeAsync(600)
+  })
+  expect(save).toHaveBeenCalledOnce()
+  await select('B')
+  expect(associate).not.toHaveBeenCalled()
+  await act(async () => {
+    archiveB.resolve({ kind: 'not-created', checkedAt: '2026-09-28T12:00:01Z' })
+  })
+  expect(save).toHaveBeenCalledTimes(2)
+  expect(save.mock.calls[1]?.[0]).toMatchObject({
+    expectedRevision: revisionB,
+    document: { summary: { progress: 'latest edit while archive check is pending' } }
+  })
+  expect(associate).toHaveBeenCalledWith('B')
 })
