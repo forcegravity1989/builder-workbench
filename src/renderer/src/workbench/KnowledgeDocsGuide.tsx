@@ -12,7 +12,7 @@ import {
 } from './knowledge-demo-data'
 import type { KnowledgeMapStatus } from './knowledge-map'
 import { gapMark } from './knowledge-gap-utils'
-import { openProjectOnboard } from './project-onboard-state'
+import { openProjectOnboard } from './project-page-state'
 
 type Props = {
   audience: KbAudience

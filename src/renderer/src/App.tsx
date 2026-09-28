@@ -32,8 +32,6 @@ import { usePersistedUIWriter } from './app-shell/use-persisted-ui-writer'
 import { useRuntimeGraphSync } from './app-shell/use-runtime-graph-sync'
 import { useWindowVisibilityEffects } from './app-shell/use-window-visibility-effects'
 import { WorkbenchShellBootstrap } from './workbench/WorkbenchShellBootstrap'
-import { ProjectWallOverlay } from './workbench/ProjectWallOverlay'
-import { OnboardProjectOverlay } from './workbench/OnboardProjectOverlay'
 
 function App(): React.JSX.Element {
   const layout = useAppChromeLayout()
@@ -103,8 +101,6 @@ function App(): React.JSX.Element {
               floatingWorkspace={floatingWorkspace}
               onboardingGate={onboardingGate}
             />
-            <ProjectWallOverlay />
-            <OnboardProjectOverlay />
             <BrowserWebAuthnAccountDialog />
           </LinkRoutingPreferenceDialogProvider>
         </ConfirmationDialogProvider>

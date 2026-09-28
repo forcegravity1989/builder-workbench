@@ -1,13 +1,7 @@
-import React, { useEffect, useMemo, useState } from 'react'
+import React, { useMemo, useState } from 'react'
 import { useAppStore } from '@/store'
 import { getDefaultCloneParent } from '@/components/sidebar/clone-defaults'
-import { isWorkbenchShell } from './is-workbench-shell'
-import {
-  closeProjectOnboard,
-  useProjectOnboardOpen,
-  useProjectOnboardOptions
-} from './project-onboard-state'
-import { openProjectWall } from './project-wall-state'
+import { closeProjectPage, openProjectWall, type ProjectOnboardOptions } from './project-page-state'
 import { authorizeWorkbenchLocalPath } from './authorize-workbench-local-path'
 import {
   joinFsPath,
@@ -21,12 +15,11 @@ import './workbench-onboard.css'
 
 type Step = 1 | 2
 
-/**
- * Full onboard: 打开本地仓 / 克隆远端仓 → 基础信息 → repo.add + `.bw/project.toml`.
- */
-export function OnboardProjectOverlay(): React.JSX.Element | null {
-  const open = useProjectOnboardOpen()
-  const options = useProjectOnboardOptions()
+export function OnboardProjectPage({
+  options
+}: {
+  options: ProjectOnboardOptions
+}): React.JSX.Element {
   const workspaceDir = useAppStore((s) => s.settings?.workspaceDir ?? '')
   const attaching = Boolean(options.attachToGroupId)
 
@@ -37,7 +30,7 @@ export function OnboardProjectOverlay(): React.JSX.Element | null {
   const [cloneParent, setCloneParent] = useState(
     () => getDefaultCloneParent(workspaceDir || '') || ''
   )
-  const [name, setName] = useState('')
+  const [name, setName] = useState(options.seedName ?? '')
   const [brief, setBrief] = useState('')
   const [benchmark, setBenchmark] = useState('')
   const [opportunity, setOpportunity] = useState('')
@@ -46,13 +39,6 @@ export function OnboardProjectOverlay(): React.JSX.Element | null {
   const [log, setLog] = useState<OnboardLogLine[]>([])
   const [busy, setBusy] = useState(false)
   const [checking, setChecking] = useState(false)
-
-  useEffect(() => {
-    if (!open || !options.seedName) {
-      return
-    }
-    setName((prev) => prev || options.seedName || '')
-  }, [open, options.seedName])
 
   const targetPath = useMemo(() => {
     if (localRepo) {
@@ -69,28 +55,6 @@ export function OnboardProjectOverlay(): React.JSX.Element | null {
   const canNext = localRepo
     ? workspace.trim().length > 0
     : remote.trim().length > 0 && cloneParent.trim().length > 0
-
-  const reset = () => {
-    setStep(1)
-    setLocalRepo(true)
-    setWorkspace('')
-    setRemote('')
-    setCloneParent(getDefaultCloneParent(workspaceDir || '') || '')
-    setName('')
-    setBrief('')
-    setBenchmark('')
-    setOpportunity('')
-    setProbeNote(null)
-    setStepError(null)
-    setLog([])
-    setBusy(false)
-    setChecking(false)
-  }
-
-  const close = () => {
-    reset()
-    closeProjectOnboard()
-  }
 
   const goStep2 = async () => {
     if (!canNext || checking) {
@@ -155,7 +119,7 @@ export function OnboardProjectOverlay(): React.JSX.Element | null {
     setBusy(true)
     setLog([])
     try {
-      const result = await submitProjectOnboard({
+      await submitProjectOnboard({
         localRepo,
         workspace,
         remote,
@@ -164,14 +128,6 @@ export function OnboardProjectOverlay(): React.JSX.Element | null {
         attachToGroupId: options.attachToGroupId,
         onLog: (line) => setLog((prev) => [...prev, line])
       })
-      if (result.ok) {
-        const reopenWall = result.attached
-        reset()
-        closeProjectOnboard()
-        if (reopenWall) {
-          openProjectWall()
-        }
-      }
     } catch (e) {
       setLog((prev) => [
         ...prev,
@@ -182,15 +138,9 @@ export function OnboardProjectOverlay(): React.JSX.Element | null {
     }
   }
 
-  if (!isWorkbenchShell() || !open) {
-    return null
-  }
-
   return (
     <div
-      className="wb-onboard-overlay"
-      role="dialog"
-      aria-modal="true"
+      className="wb-onboard-page"
       aria-label={attaching ? '增加代码仓' : '接入项目'}
       data-screen="onboard"
     >
@@ -209,13 +159,12 @@ export function OnboardProjectOverlay(): React.JSX.Element | null {
               type="button"
               className="wb-btn wb-btn-secondary"
               onClick={() => {
-                close()
                 openProjectWall()
               }}
             >
               ← 项目墙
             </button>
-            <button type="button" className="wb-btn wb-btn-ghost" onClick={close}>
+            <button type="button" className="wb-btn wb-btn-ghost" onClick={closeProjectPage}>
               关闭
             </button>
           </div>

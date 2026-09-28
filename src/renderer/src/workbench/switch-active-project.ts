@@ -1,8 +1,7 @@
 import { toast } from 'sonner'
 import { useAppStore } from '@/store'
 import { activateAndRevealWorktree } from '@/lib/worktree-activation'
-import { closeProjectWall } from './project-wall-state'
-import { closeProjectOnboard } from './project-onboard-state'
+import { closeProjectPage } from './project-page-state'
 
 /** Switch active project from the wall / after onboard, then land on 总览. */
 export async function switchActiveProject(repoId: string): Promise<boolean> {
@@ -22,8 +21,7 @@ export async function switchActiveProject(repoId: string): Promise<boolean> {
   }
 
   activateAndRevealWorktree(main.id, { revealInSidebar: true })
-  closeProjectWall()
-  closeProjectOnboard()
+  closeProjectPage()
   useAppStore.getState().openActivityPage()
   return true
 }

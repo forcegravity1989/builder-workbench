@@ -6,6 +6,8 @@
 
 总览 / 知识库挂在现有 `activity` / `space` 槽位；计划与验收共用 `artifacts` 槽位（BW 子视图状态 `cycle-view-state.ts` 区分两屏，侧栏两个独立入口）；任务挂 `tasks`（均不扩 `TopLevelView`）。知识库已对齐 V7「文档 / 代码 / 对账」。
 
+项目墙与接入页在 `activity` 内容槽内切换，共用 Orca 的侧栏、标题栏和窗口控件。新增 BW 屏的宽度与窗口拖动约束见 [桌面壳](../../../../docs/06-module/桌面壳.md#bw-屏幕接入规范)。
+
 Workbench 自有 Skill 保持 main 原路径（`.claude/skills/`、`standard/skills/`），不并入 Orca `skills/` 打包清单；不迁 `crates/` 与 `standard/vendor`。
 
 ## 原则

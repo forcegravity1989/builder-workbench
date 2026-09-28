@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useAppStore } from '@/store'
-import { openProjectOnboard } from './project-onboard-state'
+import { openProjectOnboard } from './project-page-state'
 import { readProjectCharter, type ProjectCharter } from './project-charter'
 import { nativeWorkspaceScope, type NativeWorkspaceScope } from './version-cycle/native-workspace'
 import { nativeMetricsPort } from './metrics-port'

@@ -1,8 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react'
 import { useAppStore } from '@/store'
-import { closeProjectWall, useProjectWallOpen } from './project-wall-state'
-import { openProjectOnboard } from './project-onboard-state'
-import { isWorkbenchShell } from './is-workbench-shell'
+import { closeProjectPage, openProjectOnboard } from './project-page-state'
 import { readProjectCharter, type ProjectCharter } from './project-charter'
 import { switchActiveProject } from './switch-active-project'
 import { buildWallProjects, type WallProject, type WallRepoSlot } from './workbench-wall-projects'
@@ -63,7 +61,6 @@ async function startAddRepoSlot(project: WallProject): Promise<void> {
   if (!groupId) {
     return
   }
-  closeProjectWall()
   openProjectOnboard({
     attachToGroupId: groupId,
     seedName: project.name,
@@ -71,9 +68,7 @@ async function startAddRepoSlot(project: WallProject): Promise<void> {
   })
 }
 
-/** Top-layer project wall — loop-buddy screens/wall; open from project icon. */
-export function ProjectWallOverlay(): React.JSX.Element | null {
-  const open = useProjectWallOpen()
+export function ProjectWallPage(): React.JSX.Element {
   const repos = useAppStore((s) => s.repos)
   const projectGroups = useAppStore((s) => s.projectGroups)
   const activeRepoId = useAppStore((s) => s.activeRepoId)
@@ -88,7 +83,7 @@ export function ProjectWallOverlay(): React.JSX.Element | null {
   )
 
   useEffect(() => {
-    if (!open || wallProjects.length === 0) {
+    if (wallProjects.length === 0) {
       return
     }
     let cancelled = false
@@ -112,7 +107,7 @@ export function ProjectWallOverlay(): React.JSX.Element | null {
     return () => {
       cancelled = true
     }
-  }, [open, wallProjects, repos])
+  }, [wallProjects, repos])
 
   const cards = useMemo((): WallCard[] => {
     return wallProjects.map((p) => {
@@ -138,18 +133,8 @@ export function ProjectWallOverlay(): React.JSX.Element | null {
     return { green: n('green'), amber: n('amber'), red: n('red'), unknown: n('unknown') }
   }, [cards])
 
-  if (!isWorkbenchShell() || !open) {
-    return null
-  }
-
   return (
-    <div
-      className="wb-wall-overlay"
-      role="dialog"
-      aria-modal="true"
-      aria-label="项目墙"
-      data-screen="wall"
-    >
+    <div className="wb-wall-page" aria-label="项目墙" data-screen="wall">
       <div className="wb-wall">
         <header className="page-head">
           <h1>项目墙</h1>
@@ -169,17 +154,12 @@ export function ProjectWallOverlay(): React.JSX.Element | null {
               className="wb-btn wb-btn-primary"
               data-workbench-onboard
               onClick={() => {
-                closeProjectWall()
                 openProjectOnboard()
               }}
             >
               + 接入项目
             </button>
-            <button
-              type="button"
-              className="wb-btn wb-btn-ghost"
-              onClick={() => closeProjectWall()}
-            >
+            <button type="button" className="wb-btn wb-btn-ghost" onClick={closeProjectPage}>
               关闭
             </button>
           </div>
@@ -228,7 +208,6 @@ export function ProjectWallOverlay(): React.JSX.Element | null {
                 type="button"
                 className="wb-btn wb-btn-primary"
                 onClick={() => {
-                  closeProjectWall()
                   openProjectOnboard()
                 }}
               >
