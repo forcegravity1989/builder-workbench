@@ -94,7 +94,10 @@ export class GitHandlerReadOperations extends GitHandlerOperationContext {
     const worktreePath = params.worktreePath as string
     return loadGitHistoryFromExecutor(this.git.bind(this), worktreePath, {
       limit: typeof params.limit === 'number' ? params.limit : undefined,
-      baseRef: typeof params.baseRef === 'string' ? params.baseRef : null
+      baseRef: typeof params.baseRef === 'string' ? params.baseRef : null,
+      since: typeof params.since === 'string' ? params.since : undefined,
+      skip: typeof params.skip === 'number' ? params.skip : undefined,
+      revision: typeof params.revision === 'string' ? params.revision : undefined
     })
   }
 

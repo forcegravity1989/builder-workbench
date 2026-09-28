@@ -6,11 +6,6 @@ import { isGitHubBackedRepo } from '../../../shared/project-host-setup-projectio
 
 export type SdlcProvider = 'github' | 'codehub'
 
-/** One page per series; a full page (or hasMore) is flagged as truncation, never silently counted. */
-export const SDLC_ISSUE_LIMIT = 100
-/** Native git history hard cap; truncation beyond it stays visible in the series note. */
-export const SDLC_COMMIT_LIMIT = 200
-
 export function sdlcProviderOf(
   repo: Pick<Repo, 'upstream' | 'repoIcon' | 'gitRemoteIdentity'> | null | undefined
 ): SdlcProvider | null {
@@ -32,12 +27,6 @@ export type CommitBuckets = {
   truncated: boolean
 }
 
-/**
- * Count real commits into the span's buckets by their own timestamps. A bucket
- * with no reachable commit is a true zero only when the history is complete;
- * with the 200-commit cap, every bucket up to and including the cutoff day is
- * left null because earlier same-bucket commits may have been cut.
- */
 export function bucketCommitCounts(
   items: CommitPoint[],
   range: MetricRange,
@@ -51,14 +40,10 @@ export function bucketCommitCounts(
   }
   const dated = items
     .map((item) => (typeof item.timestamp === 'number' ? item.timestamp : null))
-    .filter((timestamp): timestamp is number => timestamp !== null)
-  const cutoffDay =
-    hasMore && dated.length > 0
-      ? dayInTimezone(new Date(Math.min(...dated)).toISOString(), timezone)
-      : null
+    .filter((timestamp): timestamp is number => timestamp !== null && Number.isFinite(timestamp))
   const counts = buckets.map((bucketStart) => {
     const bucketEnd = addCalendarDays(bucketStart, step)
-    if (cutoffDay !== null && bucketStart <= cutoffDay) {
+    if (hasMore || dated.length !== items.length) {
       return null
     }
     return dated.filter((timestamp) => {
@@ -69,11 +54,12 @@ export function bucketCommitCounts(
   return { counts, truncated: hasMore }
 }
 
-export type SdlcSnapshot = { count: number; truncated: boolean; readAt: string }
+export type SdlcSnapshot = { count: number; truncated: boolean; readAt: string; source?: string }
 export type SdlcSeries<T> = { kind: 'ready'; value: T } | { kind: 'error'; message: string }
 
 export type SdlcCommits = {
   items: CommitPoint[]
   hasMore: boolean
   readAt: string
+  source?: string
 }

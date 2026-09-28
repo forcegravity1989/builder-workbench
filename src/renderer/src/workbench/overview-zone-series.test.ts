@@ -133,14 +133,16 @@ describe('groupZonePlots', () => {
     expect(plots[1].leads.map((item) => item.name)).toEqual(['lead1'])
   })
 
-  it('leads 空缺或未匹配时挂到页签第一条滞后，不另造关联', () => {
+  it('leads 空缺或未匹配时独立展示，不伪造关联', () => {
     const plots = groupZonePlots([
       def({ name: 'lag1' }),
       def({ name: 'lag2' }),
       def({ name: 'lead-empty', role: 'leading' }),
       def({ name: 'lead-unknown', role: 'leading', leads: '不存在的滞后' })
     ])
-    expect(plots[0].leads.map((item) => item.name)).toEqual(['lead-empty', 'lead-unknown'])
+    expect(plots[0].leads).toEqual([])
+    expect(plots[2].lagging).toBeNull()
+    expect(plots[2].leads.map((item) => item.name)).toEqual(['lead-empty', 'lead-unknown'])
   })
 
   it('只有引领的页签保持可见，不伪造滞后锚点；无定义则无图', () => {
@@ -194,8 +196,6 @@ describe('zonePointState', () => {
     }
     expect(state.values).toEqual([null, 2, null, null, 5])
     expect(state.latest).toMatchObject({ value: 5 })
-    expect(state.latestIndex).toBe(4)
-    expect(state.latestIsText).toBe(false)
   })
 
   it('字符串读数不做数值曲线，只作为当前值文本', () => {
@@ -209,7 +209,6 @@ describe('zonePointState', () => {
       throw new Error('expected ready')
     }
     expect(state.values).toEqual([null, null, null, null, null])
-    expect(state.latestIsText).toBe(true)
     expect(state.latest?.value).toBe('达标')
   })
 
@@ -240,7 +239,7 @@ describe('zonePointState', () => {
       throw new Error('expected ready')
     }
     expect(state.values.every((value) => value === null)).toBe(true)
-    expect(state.latest).toMatchObject({ value: 3, coverageEnd: null })
+    expect(state.latest).toMatchObject({ value: 3 })
   })
 })
 

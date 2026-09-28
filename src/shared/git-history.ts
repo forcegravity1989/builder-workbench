@@ -170,7 +170,19 @@ export async function loadGitHistoryFromExecutor(
   options: GitHistoryOptions = {}
 ): Promise<GitHistoryResult> {
   const limit = clampHistoryLimit(options.limit)
-  const headOid = await resolveCommit(git, cwd, 'HEAD')
+  if (options.revision && !/^[0-9a-f]{40,64}$/i.test(options.revision)) {
+    throw new Error('Invalid history revision')
+  }
+  if (options.since && !Number.isFinite(Date.parse(options.since))) {
+    throw new Error('Invalid history start')
+  }
+  if (options.skip !== undefined && (!Number.isSafeInteger(options.skip) || options.skip < 0)) {
+    throw new Error('Invalid history offset')
+  }
+  const headOid = await resolveCommit(git, cwd, options.revision ?? 'HEAD')
+  if (!headOid && options.revision) {
+    throw new Error('History revision is no longer available')
+  }
   if (!headOid) {
     return {
       items: [],
@@ -214,6 +226,9 @@ export async function loadGitHistoryFromExecutor(
       '--topo-order',
       '--decorate=full',
       `-n${limit + 1}`,
+      // Filter without stopping at an old timestamp: commit dates need not follow topology.
+      ...(options.since ? [`--since-as-filter=${options.since}`] : []),
+      ...(options.skip ? [`--skip=${options.skip}`] : []),
       ...historyRevisions
     ],
     cwd

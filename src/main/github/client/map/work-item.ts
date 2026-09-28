@@ -65,6 +65,14 @@ export function mapPullRequestWorkItem(
   return {
     id: `pr:${String(item.number)}`,
     type: 'pr',
+    ...('mergedAt' in item || 'merged_at' in item
+      ? {
+          mergedAt:
+            typeof (item.mergedAt ?? item.merged_at) === 'string'
+              ? String(item.mergedAt ?? item.merged_at)
+              : null
+        }
+      : {}),
     number: Number(item.number),
     title: String(item.title ?? ''),
     state:

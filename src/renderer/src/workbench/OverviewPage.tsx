@@ -2,14 +2,18 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useAppStore } from '@/store'
 import { openProjectOnboard } from './project-page-state'
 import { readProjectCharter, type ProjectCharter } from './project-charter'
-import { nativeWorkspaceScope, type NativeWorkspaceScope } from './version-cycle/native-workspace'
+import {
+  nativeWorkspaceScope,
+  nativeWorkspaceScopeKey,
+  type NativeWorkspaceScope
+} from './version-cycle/native-workspace'
 import { nativeMetricsPort } from './metrics-port'
 import { nativeVersionHistoryPort } from './version-history-port'
 import { nativeVersionMaterialPort } from './version-material-port'
 import type { MetricCatalog, MetricReading } from '../../../shared/workbench/metrics'
 import { metricProblemText } from '../../../shared/workbench/metrics'
 import type { VersionHistoryCatalog } from '../../../shared/workbench/version-history'
-import { taskDistribution, useVersionMinutes } from './use-version-minutes'
+import { useVersionMinutes } from './use-version-minutes'
 import { OverviewMetricZones } from './overview-metric-zones'
 import { OverviewSdlcZones } from './overview-sdlc-zones'
 import { NorthStarCard } from './overview-north-star-card'
@@ -19,13 +23,15 @@ import { readAllMetricReadings, refreshMetricReadings } from './overview-metric-
 import type { OverviewReadResult } from './overview-metric-readings'
 import { useOverviewZoneGranularity } from './use-overview-zone-granularity'
 import { useMetricsSetup } from './version-cycle/metrics-setup'
+import { findCycleWorktree } from './version-cycle/native-cycle-workspace'
+import { OverviewVersionMinutes } from './overview-version-minutes'
+import { useOverviewViewState } from './overview-view-state'
 import './workbench-overview.css'
 
 function catalogProblems(catalog: MetricCatalog | null): string[] {
   return (catalog?.problems ?? []).map(metricProblemText)
 }
 
-/** Overview reads real metrics and real archive records; no data stays Unknown, never demo. */
 export function OverviewPage(): React.JSX.Element {
   const repos = useAppStore((s) => s.repos)
   const activeRepoId = useAppStore((s) => s.activeRepoId ?? s.repos[0]?.id ?? null)
@@ -54,17 +60,41 @@ export function OverviewPage(): React.JSX.Element {
   }, [baseScope, repoWorktrees])
   const baseWorktreeId = baseWorktree?.id ?? null
 
-  const [charter, setCharter] = useState<ProjectCharter | null>(null)
+  const charterKey = JSON.stringify([activeRepo?.id, activeRepo?.path])
+  const [charterState, setCharter] = useState<{
+    key: string
+    value: ProjectCharter | null
+  } | null>(null)
+  const charter = charterState?.key === charterKey ? charterState.value : null
   const [catalog, setCatalog] = useState<MetricCatalog | null>(null)
   const [northReading, setNorthReading] = useState<MetricReading | null>(null)
   const [zoneReadings, setZoneReadings] = useState<Record<string, MetricReading | null>>({})
   const [history, setHistory] = useState<VersionHistoryCatalog | null>(null)
   const [currentVersion, setCurrentVersion] = useState<string | null>(null)
-  const [selectedVersion, setSelectedVersion] = useState<string | null>(null)
+  const identity = baseScope ? nativeWorkspaceScopeKey(baseScope) : (activeRepoId ?? 'none')
+  const [view, setView] = useOverviewViewState(identity)
+  const [minutesRetry, setMinutesRetry] = useState(0)
+  const fixedTrees = useMemo(() => {
+    if (!baseScope) {
+      return { plan: null, acceptance: null, error: null }
+    }
+    try {
+      return {
+        plan: findCycleWorktree({ ...baseScope, workflow: 'plan' })?.id ?? null,
+        acceptance: findCycleWorktree({ ...baseScope, workflow: 'acceptance' })?.id ?? null,
+        error: null
+      }
+    } catch (error) {
+      return { plan: null, acceptance: null, error: String(error) }
+    }
+  }, [baseScope])
   const [problems, setProblems] = useState<string[]>([])
   const [busy, setBusy] = useState(false)
   /** Generation guard: a stale project's late responses must not overwrite a newer load. */
   const loadEpoch = useRef(0)
+  const invalidate = useCallback(() => {
+    loadEpoch.current++
+  }, [])
   const applyZoneResult = useCallback(
     (result: OverviewReadResult) => {
       setNorthReading(result.north)
@@ -73,8 +103,8 @@ export function OverviewPage(): React.JSX.Element {
     },
     [catalog]
   )
-  /** 日/周粒度：切换后按新窗口经既有 read RPC 重读一次；未采集窗口如实保持未知。 */
   const zones = useOverviewZoneGranularity({
+    identity,
     catalog,
     baseScope,
     baseWorktreeId,
@@ -92,13 +122,13 @@ export function OverviewPage(): React.JSX.Element {
     let cancelled = false
     void readProjectCharter(activeRepo.path).then((r) => {
       if (!cancelled) {
-        setCharter(r.charter)
+        setCharter({ key: charterKey, value: r.charter })
       }
     })
     return () => {
       cancelled = true
     }
-  }, [activeRepo?.path])
+  }, [activeRepo?.path, charterKey])
 
   const load = useCallback(async () => {
     if (!baseScope || !baseWorktreeId) {
@@ -116,7 +146,10 @@ export function OverviewPage(): React.JSX.Element {
     try {
       const metrics = nativeMetricsPort(owner)
       const historyPort = nativeVersionHistoryPort(owner)
-      const material = nativeVersionMaterialPort({ ...scope, workflow: 'plan' }, owner)
+      const material = nativeVersionMaterialPort(
+        { ...scope, worktreeId: fixedTrees.plan ?? baseWorktreeId, workflow: 'plan' },
+        owner
+      )
       const [nextCatalog, nextHistory, context] = await Promise.all([
         metrics.list(scope).catch((reason) => {
           problems.push(`指标目录：${reason instanceof Error ? reason.message : String(reason)}`)
@@ -134,8 +167,6 @@ export function OverviewPage(): React.JSX.Element {
       setCatalog(nextCatalog)
       setHistory(nextHistory)
       setCurrentVersion(context.version)
-      // Catalog-level problems (collector-required/invalid-definition/ambiguous-*) are
-      // fixable configuration errors; they must render, not be swallowed as "not configured".
       problems.push(...catalogProblems(nextCatalog))
       if (nextCatalog) {
         const granularity = currentGranularity()
@@ -161,9 +192,8 @@ export function OverviewPage(): React.JSX.Element {
       }
     }
     setProblems(problems)
-  }, [baseScope, baseWorktreeId, currentGranularity, markRead])
+  }, [baseScope, baseWorktreeId, currentGranularity, markRead, fixedTrees.plan])
 
-  /** 刷新读数=真实执行采集脚本后重读，不是只查缓存；按钮跟着指标卡片走。 */
   const refreshReadings = useCallback(async () => {
     if (!baseScope || !baseWorktreeId || !catalog) {
       return
@@ -195,11 +225,11 @@ export function OverviewPage(): React.JSX.Element {
     setHistory(null)
     setNorthReading(null)
     setZoneReadings({})
-    setSelectedVersion(null)
-    // Clear the previous project's problems so a stale list never renders over a fresh load.
+    setCurrentVersion(null)
     setProblems([])
     void load()
-  }, [load])
+    return invalidate
+  }, [load, invalidate])
 
   const versions = useMemo(() => {
     const found = new Set<string>()
@@ -211,17 +241,37 @@ export function OverviewPage(): React.JSX.Element {
     }
     return [...found]
   }, [history, currentVersion])
-  const version = selectedVersion ?? currentVersion ?? versions[0] ?? null
+  const version =
+    view.version && versions.includes(view.version)
+      ? view.version
+      : (currentVersion ?? versions[0] ?? null)
+  const cycles = useMemo(() => {
+    const archived = [
+      ...new Set(
+        (history?.records ?? [])
+          .filter((item) => item.version === version)
+          .sort((a, b) => b.committedAt.localeCompare(a.committedAt))
+          .map((item) => item.cycleId)
+      )
+    ]
+    return version === currentVersion ? ['current', ...archived] : archived
+  }, [history, version, currentVersion])
+  const cycle = view.cycle && cycles.includes(view.cycle) ? view.cycle : (cycles[0] ?? 'current')
 
-  const minutes = useVersionMinutes({
-    baseScope,
-    baseWorktreeId,
-    history,
-    currentVersion,
-    version
-  })
+  const minutes = useVersionMinutes(
+    {
+      baseScope,
+      baseWorktreeId,
+      planWorktreeId: fixedTrees.plan,
+      acceptanceWorktreeId: fixedTrees.acceptance,
+      history,
+      currentVersion,
+      version,
+      cycle
+    },
+    minutesRetry
+  )
 
-  /** 配置指标：与计划屏同一条固定维护树管线；错误经页面提示浮现，不静默。 */
   const metricsSetup = useMetricsSetup({ baseScope, worktreeId: baseWorktreeId })
 
   if (!activeRepo) {
@@ -251,9 +301,6 @@ export function OverviewPage(): React.JSX.Element {
 
   const projectName = charter?.name?.trim() || activeRepo.displayName || activeRepo.id
   const north = catalog?.definitions.find((item) => item.role === 'north_star')
-  const northValue =
-    northReading?.status === 'ready' ? (northReading.readings[0]?.value ?? null) : null
-  const distribution = minutes?.acceptance ? taskDistribution(minutes.acceptance.document) : []
 
   return (
     <div className="wb-ov">
@@ -262,7 +309,10 @@ export function OverviewPage(): React.JSX.Element {
       </header>
 
       <div className="content">
-        <MetricProblemsPanel className="wb-muted" problems={problems} />
+        <MetricProblemsPanel
+          className="wb-muted"
+          problems={fixedTrees.error ? [...problems, fixedTrees.error] : problems}
+        />
         {metricsSetup.notice && (
           <p role="alert" className="wb-ov-alert">
             {metricsSetup.notice}
@@ -272,7 +322,7 @@ export function OverviewPage(): React.JSX.Element {
           <ProjectCard
             projectName={projectName}
             charter={charter}
-            hasReading={northValue !== null}
+            remote={activeRepo.gitRemoteIdentity?.canonicalKey ?? null}
             version={version}
           />
 
@@ -282,115 +332,35 @@ export function OverviewPage(): React.JSX.Element {
             hasCatalog={catalog !== null}
             workspaceReady={baseScope !== null}
             fallbackTitle={charter?.opportunity?.trim() || '（未配置）'}
-            busy={busy}
-            metricsSetup={metricsSetup}
-            onRefresh={() => void refreshReadings()}
           />
         </div>
 
-        <section className="card" id="version-card">
-          <div className="card-head">
-            <div className="row-between">
-              <h6>版本计划与验收</h6>
-              <button
-                type="button"
-                className="wb-btn wb-btn-ghost wb-btn-sm"
-                disabled={busy}
-                title="重读归档记录与当前选版纪要"
-                onClick={() => void load()}
-              >
-                刷新归档
-              </button>
-              {version !== null && version === currentVersion && (
-                <span className="wb-tag wb-tag-warning">当前选版</span>
-              )}
-            </div>
-            <div className="tabs" role="tablist" aria-label="版本">
-              {versions.map((item) => (
-                <button
-                  key={item}
-                  type="button"
-                  className="tab"
-                  role="tab"
-                  aria-selected={item === version}
-                  onClick={() => setSelectedVersion(item)}
-                >
-                  {item}
-                </button>
-              ))}
-            </div>
-          </div>
-          {!version ? (
-            <p className="wb-muted">尚无版本材料或归档记录。</p>
-          ) : (
-            <div className="goal-week">
-              <div>
-                <span className="card-kicker">计划纪要</span>
-                <div className="text-box">
-                  {minutes?.plan ? (
-                    <>
-                      <pre className="wb-pre">{minutes.plan.text}</pre>
-                      <span className="wb-muted">{minutes.plan.source}</span>
-                    </>
-                  ) : (
-                    <span className="wb-muted">该版本无计划归档记录</span>
-                  )}
-                </div>
-              </div>
-              <div>
-                <span className="card-kicker">验收纪要</span>
-                <div className="text-box">
-                  {minutes?.acceptance ? (
-                    <>
-                      {minutes.acceptance.document.results.map((result) => {
-                        const goal = minutes.planDocument?.goals.find(
-                          (item) => item.goalId === result.goalId
-                        )
-                        return (
-                          <p key={result.goalId} className="wb-ov-result">
-                            <b>{goal?.title ?? result.goalId}</b>
-                            {result.decision
-                              ? ` · ${
-                                  result.decision.outcome === 'met'
-                                    ? '达成'
-                                    : result.decision.outcome === 'not-met'
-                                      ? '未达'
-                                      : '待决'
-                                }（${result.decision.recordedAt}）`
-                              : ' · 未结论'}
-                            {result.note ? `：${result.note}` : ''}
-                          </p>
-                        )
-                      })}
-                      {distribution.length > 0 && (
-                        <p className="wb-muted">
-                          Issue 快照：
-                          {distribution.map(([state, count]) => `${state} ${count}`).join(' · ')}
-                        </p>
-                      )}
-                      <span className="wb-muted">{minutes.acceptance.source}</span>
-                    </>
-                  ) : (
-                    <span className="wb-muted">该版本无验收归档记录</span>
-                  )}
-                </div>
-              </div>
-            </div>
-          )}
-        </section>
-
-        {catalog ? (
-          <OverviewMetricZones
-            catalog={catalog}
-            readings={zoneReadings}
-            busy={busy}
-            onRefresh={() => void refreshReadings()}
-            granularity={zones.granularity}
-            onGranularityChange={zones.setGranularity}
-          />
-        ) : null}
+        <OverviewVersionMinutes
+          versions={versions}
+          version={version}
+          onVersion={(value) => setView({ version: value, cycle: null })}
+          cycles={cycles}
+          cycle={cycle}
+          onCycle={(value) => setView({ cycle: value })}
+          minutes={minutes}
+          historyProblems={history?.problems ?? []}
+          onRetry={() => void load().then(() => setMinutesRetry((value) => value + 1))}
+        />
+        <OverviewMetricZones
+          catalog={catalog}
+          readings={zoneReadings}
+          busy={busy}
+          onRefresh={() => void refreshReadings()}
+          granularity={zones.granularity}
+          onGranularityChange={zones.setGranularity}
+          identity={identity}
+          setupBusy={metricsSetup.busy || !baseScope}
+          onSetup={() => void metricsSetup.prepareMetrics()}
+        />
 
         <OverviewSdlcZones
+          key={identity}
+          identity={identity}
           repo={activeRepo}
           baseScope={baseScope}
           baseWorktreeId={baseWorktreeId}

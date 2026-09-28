@@ -1,98 +1,105 @@
-import { React } from 'react'
-import { ArrowUpRight, X } from 'lucide-react'
+import { React, useEffect, useRef } from 'react'
+import { X } from 'lucide-react'
 import { facts } from './snapshot.js'
 
 function MetricDetails({ detail, onPrepare, setDetail }) {
+  const dialog = useRef(null)
+  useEffect(() => {
+    const previous = document.activeElement
+    dialog.current.showModal()
+    return () => previous?.focus()
+  }, [])
+  const titles = { commits: '提交', prs: '合入 PR', issues: '开放 Issue', source: '数据来源' }
   return (
-    <div className="dialog-backdrop" onClick={() => setDetail(null)}>
-      <section
-        className="dialog ov6-detail"
-        role="dialog"
-        aria-modal="true"
-        aria-label="指标详情"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <header>
-          <h2>{detail.metric?.name || '指标来源与口径'}</h2>
+    <dialog
+      ref={dialog}
+      className="dialog ov-details"
+      aria-label={detail.metric?.name || titles[detail.kind]}
+      onCancel={() => setDetail(null)}
+      onClick={(event) => {
+        if (event.target === dialog.current) {
+          setDetail(null)
+        }
+      }}
+    >
+      <header>
+        <h2>{detail.metric?.name || titles[detail.kind]}</h2>
+        <button
+          autoFocus
+          className="btn btn-ghost btn-icon"
+          aria-label="关闭详情"
+          onClick={() => setDetail(null)}
+        >
+          <X />
+        </button>
+      </header>
+      {detail.metric ? (
+        <>
+          <dl>
+            <dt>定义</dt>
+            <dd>{detail.metric.definition}</dd>
+            <dt>归属</dt>
+            <dd>
+              {detail.metric.feature || '主要'} ·{' '}
+              {detail.metric.type === 'leading' ? '引领指标' : '滞后指标'}
+            </dd>
+            {detail.metric.leads && (
+              <>
+                <dt>引领对象</dt>
+                <dd>{detail.metric.leads}</dd>
+              </>
+            )}
+            <dt>长期目标</dt>
+            <dd>{detail.metric.target || '未设置'}</dd>
+            <dt>最近读数</dt>
+            <dd>
+              {detail.metric.latest
+                ? `${detail.metric.latest.value} · ${detail.metric.latest.day}`
+                : '未采集'}
+            </dd>
+            <dt>采集脚本</dt>
+            <dd>
+              <code>{detail.metric.script || '未设置'}</code>
+            </dd>
+          </dl>
           <button
-            className="btn btn-icon btn-ghost"
-            aria-label="关闭指标详情"
-            onClick={() => setDetail(null)}
+            className="btn btn-secondary"
+            onClick={() => {
+              const metric = detail.metric
+              setDetail(null)
+              onPrepare(metric)
+            }}
           >
-            <X />
+            设置此指标
           </button>
-        </header>
-        {detail.metric ? (
-          <>
-            <dl>
-              <dt>类别</dt>
-              <dd>业务指标 · {detail.metric.type === 'leading' ? '引领' : '滞后'}</dd>
-              <dt>归属</dt>
-              <dd>{detail.metric.feature ? `${detail.metric.feature}特性` : '主要'}</dd>
-              {detail.metric.leads && (
-                <>
-                  <dt>引领对象</dt>
-                  <dd>{detail.metric.leads}</dd>
-                </>
-              )}
-              <dt>定义</dt>
-              <dd>{detail.metric.definition}</dd>
-              <dt>长期目标</dt>
-              <dd>{detail.metric.target}</dd>
-              <dt>采集来源</dt>
-              <dd>
-                <code>{detail.metric.script || '脚本实测'}</code>
-              </dd>
-              <dt>本期值</dt>
-              <dd>未采集</dd>
-              {detail.metric.latest && (
-                <>
-                  <dt>历史查询</dt>
-                  <dd>
-                    {detail.metric.latest.value} · {detail.metric.latest.day} ·
-                    脚本实测，与本期脚本采集分开
-                  </dd>
-                </>
-              )}
-            </dl>
-            <button
-              className="btn btn-secondary"
-              onClick={() => {
-                const m = detail.metric
-                setDetail(null)
-                onPrepare(m)
-              }}
-            >
-              在会话中准备采集
-              <ArrowUpRight />
-            </button>
-          </>
-        ) : (
-          <div className="ov6-source">
+        </>
+      ) : (
+        <div className="ov-source-detail">
+          {(detail.kind === 'commits' || detail.kind === 'source') && (
             <p>
-              业务指标来自 main 的 .bw/metrics.toml，保留 feature 归属、leads
-              关系和采集定义。北极星仍为占位，本期脚本数据未采集。
+              <b>提交</b>　bw-orca 可达历史，按提交时间统计，包含合并提交。
             </p>
+          )}
+          {(detail.kind === 'prs' || detail.kind === 'source') && (
             <p>
-              提交来自 bw-orca 调查提交 {facts.commit.slice(0, 12)} 的 Git
-              历史，按提交时间统计可达提交，包含合并提交及上游历史；不当作团队产出或效率评分。
+              <b>合入 PR</b>　GitHub 全仓已合入 PR，按真实合入时间统计。
             </p>
+          )}
+          {(detail.kind === 'issues' || detail.kind === 'source') && (
             <p>
-              合入 PR 来自 GitHub 仓库全部基线的真实 mergedAt。未处理 Issue 是当前开放 Issue
-              快照（不含 PR）；历史快照尚无数据，仅画一个实际点，不反推历史。
+              <b>开放 Issue</b>　排除 PR。此快照只有当前数量，历史点留空。
             </p>
+          )}
+          {detail.kind === 'source' && (
             <p>
-              窗口为 UTC、左闭右开；本周/今日只截至采集时刻。时间：{facts.readAt}
-              。刷新按钮只演示入口，不修改文件或远端。
+              <b>业务指标</b>　沿用原评审包的定义，暂无实测读数。北极星待定义。
             </p>
-            <p>
-              本页复用 main
-              总览的项目卡、北极星、版本进展、业务指标与项目指标分区，用当前设计系统呈现。项目群与配置不在本次改动范围。
-            </p>
-          </div>
-        )}
-      </section>
-    </div>
+          )}
+          <p>UTC · {facts.readAt.slice(0, 16).replace('T', ' ')} · 本期截至采集时刻。</p>
+          <p>原型使用历史快照；实时采集在产品实施后验证。</p>
+        </div>
+      )}
+    </dialog>
   )
 }
 export { MetricDetails }
