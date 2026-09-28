@@ -45,8 +45,9 @@ export function launchAgentInWebHostTab(args: {
   submitPastedPrompt: boolean
   agentArgs?: string | null
   viewMode?: Tab['viewMode']
+  activate?: boolean
   onPromptDelivered?: () => void
-}): Promise<{ delivered: boolean; failureNotified: boolean }> {
+}): Promise<{ delivered: boolean; failureNotified: boolean; hostTabId?: string }> {
   const {
     agent,
     worktreeId,
@@ -71,7 +72,8 @@ export function launchAgentInWebHostTab(args: {
     worktreeId,
     environmentId,
     targetGroupId: groupId,
-    activate: true,
+    activate: args.activate !== false,
+    selectWorktree: args.activate !== false,
     ...(cwd?.trim() ? { cwd } : {}),
     ...(viewMode ? { viewMode } : {}),
     agentSessionKind: 'fresh',
@@ -100,7 +102,7 @@ export function launchAgentInWebHostTab(args: {
   }: {
     outcome: Awaited<ReturnType<typeof createWebRuntimeSessionTerminal>>
     promptDelivered: boolean
-  }): { delivered: boolean; failureNotified: boolean } => {
+  }): { delivered: boolean; failureNotified: boolean; hostTabId?: string } => {
     // Why: created means the host accepted the launch, not that a local tab
     // exists; keep pruning stale local rows until the snapshot mirrors.
     removeStaleLocalAgentTabsForWebHostLaunch(worktreeId)
@@ -115,11 +117,13 @@ export function launchAgentInWebHostTab(args: {
       )
       return { delivered: false, failureNotified: true }
     }
-    useAppStore.getState().setActiveTabType('terminal')
+    if (args.activate !== false) {
+      useAppStore.getState().setActiveTabType('terminal')
+    }
     if (hasPrompt && promptDelivered) {
       onPromptDelivered?.()
     }
-    return { delivered: promptDelivered, failureNotified: false }
+    return { delivered: promptDelivered, failureNotified: false, hostTabId: outcome.hostTabId }
   }
 
   if (pastePromptAfterReady !== null) {

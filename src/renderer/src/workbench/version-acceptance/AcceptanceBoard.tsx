@@ -7,8 +7,9 @@ import { AcceptancePreparation } from './AcceptancePreparation'
 import { AcceptanceMetrics } from './AcceptanceMetrics'
 import { useAcceptanceMetricWindow } from './AcceptanceMetricWindow'
 import { AcceptanceContext } from './AcceptanceContext'
-import { AcceptanceTasks } from './AcceptanceTasks'
+import { AcceptanceTasks, taskSnapshotSummary } from './AcceptanceTasks'
 import { AcceptanceArchive } from './AcceptanceArchive'
+import { AcceptanceSourcePicker } from './AcceptanceSourcePicker'
 import { AcceptanceJourney } from './AcceptanceJourney'
 import { prepareAcceptanceRequest } from './acceptance-model'
 import type { AcceptanceCandidatePort } from './acceptance-candidate-port'
@@ -24,11 +25,11 @@ export type AcceptanceBoardProps = {
 
 export function AcceptanceBoard(props: AcceptanceBoardProps) {
   const { context } = props
-  if (!context.scope || !context.worktreeId || !context.materialPort || !context.session) {
+  if (!context.scope || !context.worktreeId || !context.materialPort) {
     return (
       <div className="va-empty">
         <h1>版本验收</h1>
-        <p>选择或新建本次原生验收会话，再明确版本与计划来源。</p>
+        <p>打开验收工作区，再明确版本与计划来源。</p>
         {context.error && <p role="alert">{context.error}</p>}
       </div>
     )
@@ -39,7 +40,7 @@ export function AcceptanceBoard(props: AcceptanceBoardProps) {
     context.scope.hostId,
     context.scope.runtimeOwnerEnvironmentId,
     context.worktreeId,
-    context.session.cycleId
+    context.version
   ])
   return (
     <ReadyAcceptanceBoard
@@ -80,14 +81,18 @@ function ReadyAcceptanceBoard({
     archive,
     archiveMaterial,
     journey,
+    preparationReviewed,
+    reviewPreparation,
     onChecks,
     saveTaskSnapshot,
     scroll,
     document,
     plan,
-    sameRun,
+    archived,
+    archivePending,
     readOnly,
     loadVersion,
+    discardLocal,
     begin,
     prepare,
     editGoal,
@@ -119,13 +124,21 @@ function ReadyAcceptanceBoard({
         <button className="wb-btn wb-btn-ghost wb-btn-sm" onClick={refreshCatalog}>
           刷新版本
         </button>
-        <span>{draft?.dirty ? '草稿未保存' : document ? '已保存材料' : '待选择'}</span>
+        <span>
+          {draft?.dirty
+            ? '草稿未保存'
+            : archivePending
+              ? '正在读取归档状态…'
+              : document
+                ? '已保存材料'
+                : '待选择'}
+        </span>
         {plan && (
           <span>
             {plan.document.goals.length} 项目标 ·{' '}
             {plan.document.tasks.length
               ? document?.taskSnapshot
-                ? `Issue 快照 ${document.taskSnapshot.filter((item) => item.kind === 'ready').length}/${plan.document.tasks.length}`
+                ? taskSnapshotSummary(document.taskSnapshot, plan.document.tasks.length)
                 : 'Issue 待读取'
               : '未关联 Issue'}
           </span>
@@ -212,38 +225,28 @@ function ReadyAcceptanceBoard({
               </button>
             </details>
           )}
-          {(!document || !sameRun) && version && (
-            <section className="va-source-picker">
-              <p>
-                {document
-                  ? `当前材料属于 ${document.cycleId}。开始新周期前先核对上一记录已归档。`
-                  : '选择已合入的计划修订作为原承诺。草案预验收可在本次会话中明确来源。'}
-              </p>
-              <select
-                aria-label="固定计划修订"
-                value={planChoice}
-                onChange={(event) => setPlanChoice(event.target.value)}
-              >
-                <option value="">选择计划修订</option>
-                {sources
-                  .filter((item) => item.version === version)
-                  .map((item) => (
-                    <option
-                      key={`${item.sourceCommit}:${item.cycleId}`}
-                      value={`${item.sourceCommit}:${item.version}:${item.cycleId}`}
-                    >
-                      {item.version} · {item.cycleId} · {item.sourceCommit.slice(0, 12)}
-                    </option>
-                  ))}
-              </select>
+          {archived && draft?.dirty && (
+            <p role="alert" className="va-error">
+              本轮验收已归档，未保存的本地修改不能写入。
               <button
                 className="wb-btn wb-btn-sm"
-                disabled={!planChoice || busy}
-                onClick={() => void begin()}
+                disabled={busy}
+                onClick={() => void discardLocal()}
               >
-                开始本次验收
+                放弃本地修改，重读已归档材料
               </button>
-            </section>
+            </p>
+          )}
+          {(!document || archived) && version && (
+            <AcceptanceSourcePicker
+              hasDocument={Boolean(document)}
+              version={version}
+              sources={sources}
+              planChoice={planChoice}
+              busy={busy}
+              onPlanChoice={setPlanChoice}
+              onBegin={() => void begin()}
+            />
           )}
           {!document && (
             <button
@@ -256,6 +259,9 @@ function ReadyAcceptanceBoard({
           {document && (
             <>
               <AcceptancePreparation
+                reviewed={preparationReviewed}
+                onReview={reviewPreparation}
+                readOnly={readOnly}
                 document={document}
                 port={candidate}
                 onPrepare={() => void prepare(prepareAcceptanceRequest(document))}
@@ -303,7 +309,7 @@ function ReadyAcceptanceBoard({
                         }
                         result={
                           <AcceptanceGoalResult
-                            decisionSource={`验收界面选择 · 会话 ${session.sessionId}`}
+                            decisionSource="验收界面人工确认"
                             document={document}
                             plan={plan.document}
                             goal={goal}
@@ -327,7 +333,7 @@ function ReadyAcceptanceBoard({
                       version: document.version,
                       cycleId: document.cycleId,
                       worktreeId,
-                      sessionId: session.sessionId,
+                      sessionId: session?.sessionId,
                       scrollTop: scroll.current?.scrollTop ?? 0,
                       draftKey: recoveryKey
                     }}
@@ -367,7 +373,9 @@ function ReadyAcceptanceBoard({
         onReload={() => void controller.refresh().catch((reason) => setError(String(reason)))}
         onSave={() => void controller.save()}
         onPrepare={() => {
-          if (document && draft?.expectedRevision) {
+          if (!session) {
+            setError('请先选择或开启左侧会话，再准备归档请求。')
+          } else if (document && draft?.expectedRevision) {
             void context.archivePort
               .prepareRequest(
                 {

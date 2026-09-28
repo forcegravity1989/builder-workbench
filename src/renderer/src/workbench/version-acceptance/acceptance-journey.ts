@@ -3,6 +3,7 @@ import type {
   PlanningMaterial
 } from '../../../../shared/workbench/version-material'
 import {
+  archiveJourneyLamp,
   isArchivedMaterial,
   type ArchivedMaterial,
   type ArchiveStatus
@@ -17,7 +18,8 @@ export type PreparationChecks = { candidate: CandidateCheck; artifacts: Artifact
 export function preparationSignal(
   document: AcceptanceMaterial | undefined,
   plan: EvidenceCheck,
-  checks: PreparationChecks | null
+  checks: PreparationChecks | null,
+  humanReviewed = false
 ): JourneySignal {
   if (!document) {
     return { kind: 'unknown', label: '未开始' }
@@ -25,7 +27,12 @@ export function preparationSignal(
   if (plan.kind === 'mismatch' || plan.kind === 'unavailable') {
     return { kind: 'failed', label: '原承诺核对失败' }
   }
-  if (!document.candidateRef && !document.preparedArtifacts.length) {
+  if (
+    !humanReviewed &&
+    !document.preparationReview &&
+    !document.candidateRef &&
+    !document.preparedArtifacts.length
+  ) {
     return { kind: 'unknown', label: '未开始' }
   }
   if (
@@ -40,21 +47,14 @@ export function preparationSignal(
     ? [
         plan,
         checks.candidate,
-        ...checks.artifacts.flatMap((item) => [item.candidate, item.availability, item.execution])
+        ...checks.artifacts.flatMap((item) => [item.candidate, item.availability])
       ]
     : [plan]
   if (evidence.some((item) => item.kind === 'mismatch' || item.kind === 'unavailable')) {
     return { kind: 'failed', label: '来源核对失败' }
   }
-  if (
-    checks &&
-    document.preparedArtifacts.length > 0 &&
-    document.preparedArtifacts.every((artifact) =>
-      checks.artifacts.some((item) => item.artifactId === artifact.artifactId)
-    ) &&
-    evidence.every((item) => item.kind === 'verified')
-  ) {
-    return { kind: 'complete', label: '材料已核对' }
+  if (humanReviewed) {
+    return { kind: 'complete', label: '材料已备齐' }
   }
   return { kind: 'pending', label: '材料待核对' }
 }
@@ -89,23 +89,20 @@ export function decisionSignal(
   return { kind: 'pending', label: '待核对' }
 }
 
+/** Host truth for the saved revision; a stale local dirty draft cannot un-archive or bypass it. */
 export function archiveSignal(
   status: ArchiveStatus,
-  material: ArchivedMaterial | null,
-  dirty: boolean
+  material: ArchivedMaterial | null
 ): JourneySignal {
-  if (!dirty && material && isArchivedMaterial(status, material)) {
-    return { kind: 'complete', label: '已归档' }
+  const archived = Boolean(material && isArchivedMaterial(status, material))
+  switch (archiveJourneyLamp(status, archived)) {
+    case 'complete':
+      return { kind: 'complete', label: '已归档' }
+    case 'unknown':
+      return { kind: 'unknown', label: status.kind === 'unknown' ? '状态未知' : '未创建' }
+    case 'failed':
+      return { kind: 'failed', label: '归档待处理' }
+    case 'pending':
+      return { kind: 'pending', label: status.kind === 'merged' ? '当前材料待核对' : '待评审' }
   }
-  if (status.kind === 'unknown' || status.kind === 'not-created') {
-    return { kind: 'unknown', label: status.kind === 'unknown' ? '状态未知' : '未创建' }
-  }
-  if (
-    status.kind === 'closed' ||
-    status.checks === 'failed' ||
-    status.review === 'changes-requested'
-  ) {
-    return { kind: 'failed', label: '归档待处理' }
-  }
-  return { kind: 'pending', label: status.kind === 'merged' ? '当前材料待核对' : '待评审' }
 }

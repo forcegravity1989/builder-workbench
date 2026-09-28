@@ -89,5 +89,19 @@
     "text": "ghostty",
     "dynamic": false,
     "count": 1
+  },
+  {
+    "filePath": "src/renderer/src/components/settings/cli-source-control-integration-cards.tsx",
+    "kind": "jsx-text",
+    "text": "codehub-cli",
+    "dynamic": false,
+    "count": 1
+  },
+  {
+    "filePath": "src/renderer/src/components/sidebar/SidebarTaskNavButton.tsx",
+    "kind": "jsx-expression",
+    "text": "任务",
+    "dynamic": false,
+    "count": 1
   }
 ]

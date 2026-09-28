@@ -22,12 +22,3 @@ html[data-skin='ds'] .pane-title-input {
   font-family: inherit;
   font-size: 12px;
 }
-
-html[data-skin='ds'] .wb-plan .chat-session-host {
-  --orca-pane-title-height: 0px;
-  background: var(--color-card);
-}
-
-html[data-skin='ds'] .wb-plan .chat-session-host .pane-title-overlay-layer {
-  display: none;
-}

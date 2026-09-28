@@ -8,17 +8,18 @@
 
 ### 顶层旅程 · 五站
 
-**项目版本 → 构建交付 → 治理 → 反馈 → 进化**是产品目标，主张以原则 03 为准。五站不是五个已完成模块；导航也不是验收结果。当前导航为总览、计划、任务、自动化、知识库，另有项目墙、接入和设置入口。
+**项目版本 → 构建交付 → 治理 → 反馈 → 进化**是产品目标，主张以原则 03 为准。五站不是五个已完成模块；导航也不是验收结果。当前导航为总览、计划、任务、验收、自动化、知识库，另有项目墙、接入和设置入口。
 
 ### 当前入口与边界
 
 | 用户要做的事 | 当前承载 | 当前边界 |
 |---|---|---|
 | 打开或接入项目 | 项目墙、接入覆盖层与 Orca 仓库列表 | 接入可写工作区的 `.bw/project.toml`；尚未实现旧 Rust 的项目约定常驻 worktree + Issue + MR 完整旅程 |
-| 核对结果、拟目标、拆版本工作 | 计划页签右侧原生三屏，左侧规划会话 | 读写 `.bw/planning/<版本>/data.json`；新建 Claude 会话解析 SYSTEM 与 week-planning 指针，文件来源和覆盖边界见 §2 ③ |
+| 核对结果、拟目标、拆版本工作 | 计划屏：artifacts 槽 CycleWorkspaceShell 左侧固定树会话、右侧材料单页 | 经材料 RPC 读写 `.bw/planning/<版本>/`；开工注入渲染后 SYSTEM 与 week-planning Skill 指针，来源和覆盖边界见 §2 ③ |
+| 核对交付、逐目标验收、归档 | 验收屏：与计划共用容器，独立固定树 bw/week-acceptance | 归档状态按材料身份与 provider 合入证据推导；CodeHub 无真实合入证据一律 Unknown，正文编辑延期 |
 | 执行工作与管理任务 | Orca 终端、Tasks、worktree | 复用执行核；不能据规划会话可打开就认定所有 Issue 开工都已接 BW 纪律 |
-| 设置定时工作 | Orca Automations | 调度能力在执行核；旧 BW 的周一、周五、每日采集自动配置须在迁移中逐项验证 |
-| 查看项目概况 | 总览与项目墙 | 部分名片、计划材料来自仓文件；总览和健康展示仍含演示数据，不能当真实指标结论 |
+| 设置定时工作 | Orca Automations | 调度能力在执行核；「配置自动化」按钮预填原生编辑器，启用与时间由人确认；真实到点触发与旧自动配置迁移须逐项验证 |
+| 查看项目概况 | 总览与项目墙 | OverviewPage 呈现真实北极星读数、归档记录版本页签与页内计划/验收双栏纪要，无数据 Unknown；完整业务/项目两区、特性关联与引领/滞后展示未实现，不能当完整指标结论 |
 | 查看和编辑项目知识 | 知识库文档、代码、对账页签 | 文档树与正文已读真实仓库；代码页仍为占位，对账与建议仍有固定演示数据；保存和来源边界见 §3 |
 | 独立评审、出包与发布 | 保留的 reviewer-agent / version-planning 资料、现有 Orca 构建工具 | Electron 的 BW CI/CD、评审与正式交付链待对应任务迁移验证；旧 Rust Release/出包按钮与 ADR 不作为本分支操作说明 |
 
@@ -34,11 +35,11 @@ Issue 与标签是工作状态正本，版本计划内容由仓内 JSON 承载�
 
 ### ② 会话与执行（执行层）
 
-复用 Orca 的终端、agent、Tasks、Automations 与 worktree。计划页签左侧创建或接回规划会话；新开会话才递交 BW 提示，接回不重递交。能打开窗口、能找到工具和已经完成真实执行分别取证。详见 [会话与执行](06-module/会话与执行.md)。
+复用 Orca 的终端、agent、Tasks、Automations 与 worktree。计划/验收屏进入即确保对应固定工作树（bw/week-plan / bw/week-acceptance）并正式选择，左侧创建或接回该树会话；新开会话才递交 BW 提示，接回不重递交。「配置指标」进入独立固定维护树 bw/metrics-refresh 的原生会话。开工工具按本机 agent 检测选择，不写死 Claude。能打开窗口、能找到工具和已经完成真实执行分别取证。详见 [会话与执行](06-module/会话与执行.md)。
 
 ### ③ 系统提示词与渐进加载（执行规范）
 
-`standard/` 保存 BW 的提示词、reference、技能与样例。当前 `plan-week-planning-prompt.ts` 只在规划工作树和主项目中查找文件，向新建 Claude 会话提供存在的绝对路径；被管项目没有这些文件时会缺指针。它没有把整套资产随安装包派发，也没有在此入口替换 `SYSTEM.md.tmpl` 的占位符。路径存在、递交指针、模型读取正文和遵守规范是四种证据。
+`standard/` 保存 BW 的提示词、reference、技能与样例。`version-cycle/cycle-prompt.ts` 在计划/验收/指标配置开工时渲染内置 SYSTEM.md.tmpl 并内嵌对应 Skill 发现 Stub（week-planning / version-acceptance / metrics-refresh；Stub 投影位于根级 `skills/`，正源在 `standard/skills/`），完整指南与 reference 经 `ORCA skills get` 命令按需读取；模板占位符未解析即抛错。提示资产随产品打包，没有 `standard/` 的普通被管项目也能获得完整提示。路径存在、递交指针、模型读取正文和遵守规范是四种证据。
 
 完整维护对照和缺口见 [系统提示词与渐进加载](06-module/系统提示词与渐进加载.md)；正文职责见 [standard/README](../standard/README.md)。修正文不等于修复运行时分发。
 
@@ -48,21 +49,21 @@ Issue 与标签是工作状态正本，版本计划内容由仓内 JSON 承载�
 
 ### ⑤ 桌面壳（交互层）
 
-`src/renderer/src/workbench/` 承载 BW 导航、计划三屏、项目墙、接入与知识库；Orca 执行面在原组件中复用。主进程 / preload 提供文件、窗口和会话能力。详见 [桌面壳](06-module/桌面壳.md)，逐项源码清单见 [INVENTORY](../src/renderer/src/workbench/INVENTORY.md)。
+`src/renderer/src/workbench/` 承载 BW 导航、计划/验收两屏、总览、项目墙、接入与知识库；Orca 执行面在原组件中复用。主进程 / preload 提供文件、窗口和会话能力。详见 [桌面壳](06-module/桌面壳.md)，逐项源码清单见 [INVENTORY](../src/renderer/src/workbench/INVENTORY.md)。
 
 ## §3 · 实现架构与数据流
 
 ### Orca 执行核与 BW 叠层
 
-Orca 执行核提供终端、会话、worktree、Tasks、Automations 和 Explorer。BW 叠层通过 `WORKBENCH_SHELL=1` / `VITE_WORKBENCH_SHELL=1` 启用。叠层外改动保持明确钩子边界；上游身份和同步纪律见 [ref/upstream](../ref/upstream.md)，不要将 BW 的 `origin/main` 合并当作 Orca 升级。
+Orca 执行核提供终端、会话、worktree、Tasks、Automations 和 Explorer。BW 叠层通过 `WORKBENCH_SHELL=1` / `VITE_WORKBENCH_SHELL=1` 启用。壳内槽位：总览=activity 槽 OverviewPage（真实数据），任务=tasks 槽原生 TaskPage，计划/验收=artifacts 槽共用 `CycleWorkspacePage` → `version-cycle/CycleWorkspaceShell`（`cycle-view-state.ts` 区分子视图，侧栏两个独立入口，不扩 TopLevelView union），自动化/知识库照旧。叠层外改动保持明确钩子边界；上游身份和同步纪律见 [ref/upstream](../ref/upstream.md)，不要将 BW 的 `origin/main` 合并当作 Orca 升级。
 
-BW 的业务契约在 `src/shared/workbench/`，材料事务及宿主适配在 `src/main/workbench/`，界面在 `src/renderer/src/workbench/`；`src/relay/workbench/` 只在原生 SSH relay 上调用同一材料事务。Orca RPC/CLI 注册处及 relay 组合入口保持薄挂载，工作树、连接、调度和会话内核不承载 BW 业务。Web/配对是访问方式，SSH/WSL 是执行位置，均复用原生身份与路由；不另加本机专属开关。
+BW 的业务契约在 `src/shared/workbench/`，材料事务、指标与历史 runtime 及宿主适配在 `src/main/workbench/`，界面在 `src/renderer/src/workbench/`；`src/relay/workbench/` 只在原生 SSH relay 上调用同一材料事务。主 RPC 方法族为 `workbench.materials.*`（材料事务读写）与 `workbench.metrics.{list,read,refresh}`、`workbench.history.{list,read,readPlan}`、`workbench.archive.proof`（注册在 `src/main/runtime/rpc/methods/workbench-*.ts`）；SSH 宿主的采集与历史命令走窄执行器 `workbench.metrics.execute` / `workbench.history.execute`，不扩 provider.exec 白名单。Orca RPC/CLI 注册处及 relay 组合入口保持薄挂载，工作树、连接、调度和会话内核不承载 BW 业务。Web/配对是访问方式，SSH/WSL 是执行位置，均复用原生身份与路由；不另加本机专属开关。
 
 产品知识继续在 `docs/`，Orca 工程参考按需读 `ref/`。`ref/` 不覆盖产品原则；旧 `crates/` 不存在于现行分支。
 
-### 计划材料
+### 版本材料与选版
 
-右侧三屏通过文件接口读写规划工作树的 `.bw/planning/<版本>/data.json`，会话用 `planning.py` 的 read / update / confirm 处理同一份材料。归档读主项目，已登记的同版本规划草稿可覆盖显示；这不是另一份 Issue 状态正本。完成、合入与发布仍需人决定。
+计划/验收两屏经 `workbench.materials.*` RPC 与 `ORCA bw materials` CLI 读写固定工作树的 `.bw/planning/<版本>/` 材料，共用同一材料事务核心（version-document-store：expectedRevision、跨进程互斥、原子替换）；会话内的模型经 CLI 操作同一份材料，旧 planning.py 写入器已退役删除。流程选版是原生 worktree 偏好 `workbenchSelectedVersion`（main/workbench/version-selection.ts），context 只读、select 只写偏好，CLI 与 UI 共享；不按会话标题、日期或上次打开项推断版本。归档读采用基线上的 provider 真实合入证据，已登记的同版本草稿可覆盖显示；这不是另一份 Issue 状态正本。完成、合入与发布仍需人决定。
 
 ### 知识库材料
 
@@ -78,6 +79,6 @@ BW 的业务契约在 `src/shared/workbench/`，材料事务及宿主适配在 `
 
 以上是待迁移边界，当前知识基线清理只校准说明与入口，不修改运行时。每项由对应特性任务按六环重新决策和验证，不能把本篇的说明修订当成实现已完成。
 
-## 待实施的版本协作与指标边界
+## 版本协作与指标边界
 
-用户已选择三个特性：[版本计划](05-features/version-planning/design.md)、[版本验收](05-features/version-acceptance/design.md)、[总览指标](05-features/overview-metrics/design.md)。三者的 intent/spec 已认可并授权实施；详细设计未决项仍须人工确认，旧页面当前实现描述仍有效。BW 拥有版本材料、目标/验收业务与指标服务；Orca 保持会话、任务详情/编辑、工作树、调度和 provider 正本。通过薄适配复用，不能在各屏分别建任务编辑器、会话存储或采集器。实现落地后替换相应当前描述并同步模块，不能只靠本节宣称迁移完成。
+三个特性已接入生产入口：[版本计划](05-features/version-planning/design.md)、[版本验收](05-features/version-acceptance/design.md)、[总览指标](05-features/overview-metrics/design.md)。BW 拥有版本材料、目标/验收业务与指标服务；Orca 保持会话、任务详情/编辑、工作树、调度和 provider 正本，通过薄适配复用（原生文件扩点清单见 [ref/upstream](../ref/upstream.md)），不在各屏分别建任务编辑器、会话存储或采集器。旧三屏计划链与 planning.py 已退役删除。剩余缺口以各特性 STATUS 为准：真壳烟测已编写待执行，SSH/WSL 与配对实机、真实到点自动化、真实 provider 归档全链、总览完整业务/项目两区与特性关联未验证或未实现；不能只靠本节宣称迁移完成。

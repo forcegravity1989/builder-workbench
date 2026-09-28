@@ -1,15 +1,23 @@
 import React from 'react'
-import { BookOpen, CalendarClock, CalendarRange, LayoutDashboard } from 'lucide-react'
+import {
+  BookOpen,
+  CalendarClock,
+  CalendarRange,
+  ClipboardCheck,
+  LayoutDashboard
+} from 'lucide-react'
 import { useAppStore } from '@/store'
 import { cn } from '@/lib/utils'
 import { SidebarTaskNavButton } from '@/components/sidebar/SidebarTaskNavButton'
 import { isWorkbenchShell } from './is-workbench-shell'
 import { openProjectWall } from './project-wall-state'
+import { setCycleView, useCycleView } from './cycle-view-state'
 import { resolveWorkbenchNav, type WorkbenchNavId } from './workbench-nav'
 
 const NAV_BEFORE_TASKS: { id: WorkbenchNavId; label: string; icon: typeof LayoutDashboard }[] = [
   { id: 'overview', label: '总览', icon: LayoutDashboard },
-  { id: 'plan', label: '计划', icon: CalendarRange }
+  { id: 'plan', label: '计划', icon: CalendarRange },
+  { id: 'acceptance', label: '验收', icon: ClipboardCheck }
 ]
 const NAV_AFTER_TASKS: { id: WorkbenchNavId; label: string; icon: typeof LayoutDashboard }[] = [
   { id: 'automations', label: '自动化', icon: CalendarClock },
@@ -56,6 +64,8 @@ export function WorkbenchSidebarNav(): React.JSX.Element | null {
   const openSpacePage = useAppStore((s) => s.openSpacePage)
   const repos = useAppStore((s) => s.repos)
   const activeRepoId = useAppStore((s) => s.activeRepoId ?? s.repos[0]?.id ?? null)
+  // Subscribes so the plan/acceptance highlight follows the shared artifacts slot.
+  useCycleView()
   const activeRepo = repos.find((r) => r.id === activeRepoId) ?? repos[0]
   const projectName = activeRepo?.displayName ?? 'Workbench'
 
@@ -69,6 +79,10 @@ export function WorkbenchSidebarNav(): React.JSX.Element | null {
     if (id === 'overview') {
       openActivityPage()
     } else if (id === 'plan') {
+      setCycleView('plan')
+      openArtifactsPage()
+    } else if (id === 'acceptance') {
+      setCycleView('acceptance')
       openArtifactsPage()
     } else if (id === 'automations') {
       openAutomationsPage()

@@ -553,6 +553,13 @@ import {
   SkillUploadChunkRequestSchema,
   SkillUploadCommitRequestSchema
 } from '../skill-upload-session-contract'
+import { MetricReadRequestSchema, MetricScopeSchema } from '../workbench/metrics'
+import { ArchiveProofRequestSchema } from '../workbench/version-archive'
+import {
+  VersionHistoryListSchema,
+  VersionHistoryReadPlanSchema,
+  VersionHistoryReadSchema
+} from '../workbench/version-history'
 import {
   VersionMigrationApplySchema,
   VersionMigrationReadSchema
@@ -1173,11 +1180,20 @@ export const RPC_PARAMS_BY_METHOD = {
   'updater.download': null,
   'updater.getStatus': null,
   'updater.install': null,
+  'workbench.archive.proof': ArchiveProofRequestSchema,
+  'workbench.history.list': VersionHistoryListSchema,
+  'workbench.history.read': VersionHistoryReadSchema,
+  'workbench.history.readPlan': VersionHistoryReadPlanSchema,
+  'workbench.materials.context': VersionMaterialScopeSchema,
   'workbench.materials.list': VersionMaterialScopeSchema,
   'workbench.materials.migrate': VersionMigrationApplySchema,
   'workbench.materials.previewMigration': VersionMigrationReadSchema,
   'workbench.materials.read': VersionMaterialReadSchema,
   'workbench.materials.save': VersionMaterialSaveSchema,
+  'workbench.materials.select': VersionMaterialReadSchema,
+  'workbench.metrics.list': MetricScopeSchema,
+  'workbench.metrics.read': MetricReadRequestSchema,
+  'workbench.metrics.refresh': MetricReadRequestSchema,
   'workspacePorts.kill': WorkspacePortKillParams,
   'workspacePorts.scan': WorkspacePortScanParams,
   'worktree.activate': WorktreeActivate,

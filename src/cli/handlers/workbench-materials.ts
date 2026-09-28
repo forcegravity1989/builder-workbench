@@ -47,6 +47,17 @@ async function invoke(ctx: HandlerContext, operation: string, params: unknown): 
 }
 
 export const WORKBENCH_MATERIAL_HANDLERS: Record<string, CommandHandler> = {
+  'bw materials context': async (ctx) =>
+    invoke(ctx, 'context', VersionMaterialScopeSchema.parse(scope(ctx))),
+  'bw materials select': async (ctx) =>
+    invoke(
+      ctx,
+      'select',
+      VersionMaterialReadSchema.parse({
+        ...scope(ctx),
+        version: getRequiredStringFlag(ctx.flags, 'version')
+      })
+    ),
   'bw materials migration-preview': async (ctx) =>
     invoke(
       ctx,
@@ -87,6 +98,9 @@ export const WORKBENCH_MATERIAL_HANDLERS: Record<string, CommandHandler> = {
         version: getRequiredStringFlag(ctx.flags, 'version')
       })
     ),
+  // Human-only conclusion fields (decision/preparationReview) are guarded on the owning
+  // runtime by caller channel; this CLI channel may only round-trip them unchanged.
+  // See main/workbench/material-human-guard.ts.
   'bw materials save': async (ctx) => {
     const target = scope(ctx)
     const create = ctx.flags.get('create')

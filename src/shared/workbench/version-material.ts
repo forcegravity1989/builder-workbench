@@ -198,6 +198,13 @@ export const AcceptanceMaterialSchema = z
     planRef: PlanReferenceSchema,
     candidateRef: CandidateReferenceSchema.optional(),
     preparedArtifacts: z.array(Artifact),
+    preparationReview: z
+      .strictObject({
+        source: Id,
+        recordedAt: z.iso.datetime({ offset: true }),
+        materialRevision: MaterialRevision
+      })
+      .optional(),
     // Absent means not recorded, while [] records an empty task set.
     taskSnapshot: z.array(VersionTaskSnapshotSchema).optional(),
     results: z.array(

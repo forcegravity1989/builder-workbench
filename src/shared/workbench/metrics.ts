@@ -73,6 +73,11 @@ export type MetricDefinition = {
   collect: { kind: 'script'; run: string[]; retro: boolean }
 }
 export type MetricProblem = { code: string; message: string; name?: string }
+
+/** Render one catalog problem as fixable-error text; a problem is never shown as "not configured". */
+export function metricProblemText(problem: MetricProblem): string {
+  return problem.name ? `${problem.name}：${problem.message}` : problem.message
+}
 export type MetricCatalog = {
   scope: MetricScope
   configurationCommit: string
@@ -123,16 +128,6 @@ export const MetricConfigurationSchema = z.strictObject({
   scope: MetricScopeSchema,
   configurationCommit: SourceCommit
 })
-
-export type MetricSetupContext = {
-  scope: MetricScope
-  runtimeOwnerEnvironmentId?: string
-  problems: MetricProblem[]
-  returnTo: { version?: string; cycleId?: string; feature?: string }
-}
-export type MetricSetupPort = {
-  open(context: MetricSetupContext, mode: 'resume' | 'new'): Promise<{ taskId: string }>
-}
 
 export function metricRefKey(ref: MetricRef): string {
   return JSON.stringify([ref.name, ref.definitionHash, ref.configurationCommit])

@@ -1,4 +1,19 @@
-import type { MetricRange } from './metrics'
+import type { MetricRange, MetricWindow, MetricDefinition } from './metrics'
+
+/** Weekly collectors report their actual coverage when the current week is incomplete. */
+export function currentMetricWeek(timezone: string, now = new Date().toISOString()): MetricRange {
+  const today = dayInTimezone(now, timezone)
+  const since = addCalendarDays(today, -((new Date(`${today}T12:00:00Z`).getUTCDay() + 6) % 7))
+  return { kind: 'range', since, until: addCalendarDays(since, 7), granularity: 'week', timezone }
+}
+
+export function metricWindowForDefinition(
+  definition: MetricDefinition,
+  timezone: string,
+  range: MetricWindow = currentMetricWeek(timezone)
+): MetricWindow {
+  return definition.collect.retro ? range : { kind: 'current', timezone }
+}
 
 export function dayInTimezone(instant: string, timezone: string): string {
   const parts = new Intl.DateTimeFormat('en-CA', {

@@ -11,8 +11,6 @@ const JA_AUDIT_OVERRIDES = {
   'Choose a sound': 'サウンドを選択',
   'Pick your default agent': 'デフォルトの Agent を選択',
   'Complete {{artifact_url}}': '{{artifact_url}} を完了',
-  'Control terminals and agents from your phone.':
-    'スマートフォンからターミナルと Agent を操作します。',
   'Add reviewer': 'レビュアーを追加',
   Reviewer: 'レビュアー',
   Reviewers: 'レビュアー',
@@ -68,8 +66,6 @@ const JA_AUDIT_OVERRIDES = {
   'Review requested': 'レビュー依頼済み',
   'Request reviewer {{value0}}': 'レビュアーをリクエスト {{value0}}',
   'Unrequest reviewer {{value0}}': 'レビュアーのリクエストを取り消す {{value0}}',
-  'Phone preview': 'スマートフォンプレビュー',
-  'Switch to phone mode': 'スマートフォンモードに切り替え',
   phone: 'スマートフォン',
   'Front Matter': 'フロントマター',
   'Publish Branch': 'ブランチを公開',
@@ -101,7 +97,6 @@ const JA_AUDIT_OVERRIDES = {
   Actions: '操作',
   action: '操作',
   'More actions': 'その他の操作',
-  'Quick Actions': 'クイック操作',
   'Actions & Settings': '操作と設定',
   'More PR actions': 'その他の PR 操作',
   'More PR workspace actions': 'PR ワークスペースのその他の操作',
@@ -526,7 +521,6 @@ const JA_AUDIT_OVERRIDES = {
   'Reopening...': '再オープン中…',
   'Thinking…': '思考中…',
   'Hide from sidebar': 'サイドバーから非表示',
-  'Show in sidebar': 'サイドバーに表示',
   'Recent or tab strip.': '「最近」またはタブストリップ。',
   // Settings-search keywords: proper nouns keep their canonical spelling, and the rest were
   // translated in the wrong sense (windows→窓, gitignore→ギティ無視, component→成分).

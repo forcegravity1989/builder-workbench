@@ -23,7 +23,6 @@ export function createUiTaskActions(set: UISliceSet, get: UISliceGet): Partial<U
     previousViewBeforeSkills: 'terminal',
     pendingSkillShareId: null,
     pendingSkillsSharedView: false,
-    previousViewBeforeMobile: 'terminal',
     previousViewBeforeArtifacts: 'terminal',
     setActiveView: (view) => set({ activeView: view }),
     taskPageData: {},
@@ -58,41 +57,50 @@ export function createUiTaskActions(set: UISliceSet, get: UISliceGet): Partial<U
         get().recordFeatureInteraction?.('jira-tasks')
       }
       // Why: record a Tasks visit in shared back/forward history; all task-source variants collapse to one deduped 'tasks' entry.
-      const detailEntry = data.openGitHubWorkItem
+      const detailEntry = data.openCodeHubTask
         ? ({
             kind: 'task-detail',
-            source: 'github',
-            workItem: data.openGitHubWorkItem,
-            sourceContext: data.openGitHubSourceContext,
-            initialTab: data.openGitHubInitialTab
+            source: 'codehub',
+            task: data.openCodeHubTask,
+            sourceContext: data.openCodeHubSourceContext
           } as const)
-        : data.openGitLabWorkItem
+        : data.openGitHubWorkItem
           ? ({
               kind: 'task-detail',
-              source: 'gitlab',
-              workItem: data.openGitLabWorkItem,
-              sourceContext: data.openGitLabSourceContext
+              source: 'github',
+              workItem: data.openGitHubWorkItem,
+              sourceContext: data.openGitHubSourceContext,
+              initialTab: data.openGitHubInitialTab
             } as const)
-          : data.openLinearIssue
+          : data.openGitLabWorkItem
             ? ({
                 kind: 'task-detail',
-                source: 'linear',
-                issue: data.openLinearIssue,
-                sourceContext: data.openLinearSourceContext
+                source: 'gitlab',
+                workItem: data.openGitLabWorkItem,
+                sourceContext: data.openGitLabSourceContext
               } as const)
-            : data.openJiraIssue
+            : data.openLinearIssue
               ? ({
                   kind: 'task-detail',
-                  source: 'jira',
-                  issue: data.openJiraIssue,
-                  sourceContext: data.openJiraSourceContext
+                  source: 'linear',
+                  issue: data.openLinearIssue,
+                  sourceContext: data.openLinearSourceContext
                 } as const)
-              : null
+              : data.openJiraIssue
+                ? ({
+                    kind: 'task-detail',
+                    source: 'jira',
+                    issue: data.openJiraIssue,
+                    sourceContext: data.openJiraSourceContext
+                  } as const)
+                : null
       const currentEntry = get().worktreeNavHistory[get().worktreeNavHistoryIndex]
       const currentIsTaskStack =
         currentEntry === 'tasks' ||
         (typeof currentEntry === 'object' && currentEntry.kind === 'task-detail')
-      if (!detailEntry || !currentIsTaskStack) {
+      // Why: with returnToPreviousView the detail is opened from another screen;
+      // inserting the 'tasks' sentinel would make Back land on the Tasks list instead of the actual origin.
+      if (!detailEntry || (!currentIsTaskStack && !options.returnToPreviousView)) {
         get().recordViewVisit('tasks')
       }
       if (detailEntry) {

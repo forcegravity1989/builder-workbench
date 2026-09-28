@@ -7,7 +7,11 @@ import {
   toRuntimeExecutionHostId
 } from '../../../../shared/execution-host'
 import type { CreateWorktreeResult } from '../../../../shared/worktree/create-types'
-import type { Worktree } from '../../../../shared/worktree/types'
+import type {
+  DetectedWorktree,
+  DetectedWorktreeListResult,
+  Worktree
+} from '../../../../shared/worktree/types'
 import type { CycleScope } from './ports'
 
 export type NativeWorkspaceScope = Omit<CycleScope, 'workflow'>
@@ -62,7 +66,7 @@ export function findNamedWorktree(scope: NativeWorkspaceScope, branch: string): 
     .filter(
       (worktree) =>
         worktree.repoId === scope.repoId &&
-        worktree.branch === branch &&
+        worktree.branch.replace(/^refs\/heads\//, '') === branch &&
         nativeWorkspaceScopeKey(nativeWorkspaceScope(worktree)) === nativeWorkspaceScopeKey(scope)
     )
   if (found.length > 1) {
@@ -70,7 +74,69 @@ export function findNamedWorktree(scope: NativeWorkspaceScope, branch: string): 
   }
   return found[0] ?? null
 }
-const creating = new Map<string, Promise<Worktree>>()
+// Why: HMR/remounts create fresh module instances; a module-local in-flight map would
+// allow two parallel creates of the same fixed tree (the loser gets a uniquified
+// branch). Share the lock across module instances via a global key.
+const creatingRegistryKey = '__bwCreatingWorktrees' as const
+type CreatingMap = Map<string, Promise<Worktree>>
+const globalStore = globalThis as typeof globalThis & { [creatingRegistryKey]?: CreatingMap }
+const creating: CreatingMap = (globalStore[creatingRegistryKey] ??= new Map())
+async function removeWorktreeBestEffort(
+  scope: NativeWorkspaceScope,
+  target: { kind: 'local' } | { kind: 'environment'; environmentId: string },
+  worktreeId: string
+): Promise<boolean> {
+  try {
+    await (target.kind === 'local'
+      ? window.api.worktrees.remove({
+          worktreeId,
+          hostId: scope.hostId,
+          force: true,
+          skipArchive: true,
+          allowFailedArchiveHook: true,
+          allowUnverifiedPtyStop: true
+        })
+      : callRuntimeRpc(target, 'worktree.rm', {
+          worktreeId,
+          force: true,
+          skipArchive: true
+        }))
+    return true
+  } catch {
+    return false
+  }
+}
+async function detectedTrees(
+  scope: NativeWorkspaceScope,
+  target: ReturnType<typeof nativeWorkspaceRuntimeTarget>
+): Promise<DetectedWorktree[]> {
+  try {
+    const result = await callRuntimeRpc<DetectedWorktreeListResult>(
+      target,
+      'worktree.detectedList',
+      { repo: `id:${scope.repoId}` }
+    )
+    return result?.worktrees ?? []
+  } catch {
+    return []
+  }
+}
+
+/** Register an externally-created tree through the native inbox import surface. */
+async function importExternalTree(scope: NativeWorkspaceScope, treePath: string): Promise<boolean> {
+  try {
+    const state = useAppStore.getState()
+    await state.updateRepo(scope.repoId, { importedExternalWorktreePaths: [treePath] })
+    await state.fetchWorktrees(scope.repoId, {
+      executionHostId: scope.runtimeOwnerEnvironmentId
+        ? toRuntimeExecutionHostId(scope.runtimeOwnerEnvironmentId)
+        : scope.hostId
+    })
+    return true
+  } catch {
+    return false
+  }
+}
 export async function ensureNamedWorktree(
   scope: NativeWorkspaceScope,
   branch: string,
@@ -86,20 +152,69 @@ export async function ensureNamedWorktree(
     return pending
   }
   const create = (async () => {
-    const result = await callRuntimeRpc<CreateWorktreeResult>(
-      nativeWorkspaceRuntimeTarget(scope),
-      'worktree.create',
-      {
-        repo: `id:${scope.repoId}`,
-        name,
-        branchNameOverride: branch,
-        activate: false,
-        setupDecision: 'inherit'
-      },
-      { timeoutMs: 600_000 }
+    const target = nativeWorkspaceRuntimeTarget(scope)
+    // A git-level scan sees trees the store has not registered yet (external or
+    // in-flight). Adopting an existing holder — or failing before create — is what
+    // stops native create from uniquifying name+branch into orphan trees.
+    const holder = (await detectedTrees(scope, target)).find(
+      (item) => item.branch.replace(/^refs\/heads\//, '') === branch
     )
-    if (result.worktree.branch !== branch) {
-      throw new Error('原生创建未返回约定分支，请检查工作树')
+    if (holder) {
+      const imported = await importExternalTree(scope, holder.path)
+      const adopted = imported ? findNamedWorktree(scope, branch) : null
+      if (adopted) {
+        return adopted
+      }
+      throw new Error(
+        `分支 ${branch} 已被工作树 ${holder.path} 占用（导入登记未成功），请在 Orca 侧栏收件箱登记或手动清理后重试`
+      )
+    }
+    // Local creation must use the direct IPC path: the RPC channel carries the
+    // renderer client context, which the worktree-create provenance gate
+    // rejects without a paired device identity. Runtime hosts keep the RPC route.
+    const result =
+      target.kind === 'local'
+        ? await window.api.worktrees.create({
+            repoId: scope.repoId,
+            name,
+            branchNameOverride: branch,
+            setupDecision: 'inherit'
+          })
+        : await callRuntimeRpc<CreateWorktreeResult>(
+            target,
+            'worktree.create',
+            {
+              repo: `id:${scope.repoId}`,
+              name,
+              branchNameOverride: branch,
+              activate: false,
+              setupDecision: 'inherit'
+            },
+            { timeoutMs: 600_000 }
+          )
+    const createdBranch = result.worktree.branch.replace(/^refs\/heads\//, '')
+    if (createdBranch !== branch) {
+      // Native create uniquifies name+branch when the requested branch is already
+      // checked out elsewhere (e.g. a tree left by an older toolchain). Roll the stray
+      // tree back so retries cannot accumulate orphans; removal is best-effort.
+      const rolledBack = await removeWorktreeBestEffort(scope, target, result.worktree.id)
+      // A parallel create (remounted module instance, double mount) may have won the
+      // branch while this one was in flight: adopt the winner instead of surfacing an
+      // error for a race the user cannot see.
+      await useAppStore.getState().fetchWorktrees(scope.repoId, {
+        executionHostId: scope.runtimeOwnerEnvironmentId
+          ? toRuntimeExecutionHostId(scope.runtimeOwnerEnvironmentId)
+          : scope.hostId
+      })
+      const winner = findNamedWorktree(scope, branch)
+      if (winner) {
+        return winner
+      }
+      throw new Error(
+        `原生创建未返回约定分支 ${branch}（实际 ${createdBranch}），误建工作树${
+          rolledBack ? '已回滚删除' : '回滚失败，请手动清理'
+        }。该分支可能被仓内既有工作树占用（旧版工具链遗留或外部创建），清理或在 Orca 收件箱登记后重试`
+      )
     }
     // A paired runtime owns its nested SSH registration; do not redirect refresh to client SSH.
     await useAppStore.getState().fetchWorktrees(scope.repoId, {

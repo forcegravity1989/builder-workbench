@@ -270,7 +270,6 @@ export const JA_PHRASE_FIXES = [
     whenEnIncludes: 'actionable issues'
   },
   { pattern: /アクションレシピ/g, replacement: '操作レシピ', whenEnIncludes: 'Action recipes' },
-  { pattern: /クイックアクション/g, replacement: 'クイック操作', whenEnIncludes: 'Quick Actions' },
   { pattern: /さらなるアクション/g, replacement: 'その他の操作', whenEnIncludes: 'More actions' },
   {
     pattern: /その他の PR アクション/g,

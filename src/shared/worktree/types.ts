@@ -102,6 +102,7 @@ export type Worktree = {
   linkedGiteaPR?: number | null
   linkedWorkItem?: WorkspaceLinkedItem | null
   linkedTaskSourceContext?: TaskSourceContext | null
+  workbenchSelectedVersion?: string
   isArchived: boolean
   isUnread: boolean
   isPinned: boolean

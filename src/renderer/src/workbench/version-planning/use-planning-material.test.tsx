@@ -22,6 +22,8 @@ const unavailable = async (): Promise<never> => {
 }
 function makePort(overrides: Partial<Port> = {}): Port {
   return {
+    context: unavailable,
+    select: unavailable,
     list: async () => [],
     read: async () => null,
     save: unavailable,
@@ -34,7 +36,7 @@ let root: Root
 let container: HTMLDivElement
 let latest: Model
 function Harness({ port, scope }: { port: Port; scope: string }) {
-  latest = usePlanningMaterial(port, scope, 'cycle')
+  latest = usePlanningMaterial(port, scope)
   return null
 }
 async function mount(port: Port, scope: string) {
@@ -118,3 +120,4 @@ it('recovers an explicitly selected unsaved version and preserves conflicting fi
   expect(latest.draft?.remote?.document.summary.progress).toBe('saved')
   expect(latest.draft?.error).toBeTruthy()
 })
+

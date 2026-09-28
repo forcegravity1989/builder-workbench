@@ -263,13 +263,10 @@ async function readWorkbenchReferences(repoRoot, name) {
       }
     }
     for (const entry of entries.filter((item) => item.isFile() && item.name.endsWith('.md'))) {
-      // meeting belongs to the retired three-screen flow, not the current guide.
-      if (entry.name !== 'meeting.md') {
-        sources.push({
-          name: entry.name.slice(0, -3),
-          source: `${ownDirectory}/${directory}/${entry.name}`
-        })
-      }
+      sources.push({
+        name: entry.name.slice(0, -3),
+        source: `${ownDirectory}/${directory}/${entry.name}`
+      })
     }
   }
   if (new Set(sources.map((entry) => entry.name)).size !== sources.length) {

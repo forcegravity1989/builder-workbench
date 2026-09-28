@@ -182,7 +182,7 @@ def render_overview(data):
 def render_goals(data):
     goals = data.get('goals') or []
     if not goals:
-        return absent('本版目标未登记。报告引用本版计划 plan.goals，不另写一份承诺；'
+        return absent('本版目标未登记。报告引用本版计划 goals（schema 3），不另写一份承诺；'
                       '缺计划数据时先补计划，不在报告里编目标。')
     out = []
     for goal in goals:
@@ -210,7 +210,7 @@ def render_goals(data):
 def render_tasks(data):
     tasks = data.get('tasks') or []
     if not tasks:
-        return absent('本版任务未登记。任务清单来自本版计划 plan.tasks，'
+        return absent('本版任务未登记。任务清单来自本版计划 tasks（schema 3 结构化引用），'
                       '状态用 gh 读回每个 Issue 的当前值。')
     rows = []
     for task in tasks:

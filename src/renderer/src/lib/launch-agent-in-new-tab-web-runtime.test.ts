@@ -92,6 +92,7 @@ describe('launchAgentInNewTab paired web runtime', () => {
       targetGroupId: 'group-1',
       activate: true,
       agentSessionKind: 'fresh',
+      selectWorktree: true,
       agent: 'claude',
       viewMode: 'terminal'
     })
@@ -120,6 +121,7 @@ describe('launchAgentInNewTab paired web runtime', () => {
       targetGroupId: 'group-1',
       activate: true,
       agentSessionKind: 'fresh',
+      selectWorktree: true,
       launchAgent: 'codex',
       command: "codex '--model' 'gpt-5' '--reasoning-effort' 'high' 'fix the spinner'",
       env: { CODEX_PROFILE: 'captured' },

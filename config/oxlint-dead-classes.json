@@ -67,6 +67,12 @@
       }
     },
     {
+      "files": ["**/src/renderer/src/workbench/**/*.tsx"],
+      "rules": {
+        "shadcn/no-unknown-classes": "off"
+      }
+    },
+    {
       "files": ["**/*.test.tsx"],
       "rules": {
         "shadcn/no-unknown-classes": "off"

@@ -5,7 +5,6 @@ export const JA_UNIFIED_VALUES = {
   "Can't reach {{value0}}": '{{value0}} に接続できません',
   'Copy Address': 'アドレスをコピー',
   'Open Externally': '外部で開く',
-  'Show Orca Mobile Button': 'Orca Mobile ボタンを表示',
   Paste: '貼り付け',
   'WSL default': 'WSL のデフォルト',
   'Unable to open the workspace attached to this issue.':
@@ -129,8 +128,6 @@ export const JA_UNIFIED_VALUES = {
   Replace: '置換',
   'Account scope': 'アカウントスコープ',
   'Agent Permissions': 'Agent の権限',
-  'Show the Orca Mobile button at the top of the left sidebar.':
-    '左サイドバー上部に Orca Mobile ボタンを表示します。',
   'Enable Orca CLI': 'Orca CLI を有効化',
   'Registered the Orca CLI in PATH.': 'Orca CLI を PATH に登録しました。',
   'Failed to load CLI status.': 'CLI ステータスの読み込みに失敗しました。',
@@ -166,7 +163,6 @@ export const JA_UNIFIED_VALUES = {
   'Pull requests and build statuses via Bitbucket Cloud API tokens.':
     'Bitbucket Cloud API トークン経由の PR とビルドステータス。',
   'Reload from Disk': 'ディスクから再読み込み',
-  'Refresh network interfaces': 'ネットワークインターフェースを更新',
   'CLI arguments': 'CLI 引数',
   Created: '作成日時',
   Switch: '切り替え',
@@ -192,7 +188,6 @@ export const JA_UNIFIED_VALUES = {
   'Client default': 'クライアントのデフォルト',
   'Select distro': 'ディストリビューションを選択',
   'Sign out': 'サインアウト',
-  'Available on': 'で利用可能',
   'Update this server manually once to enable remote updates.':
     'リモート更新を有効にするには、このサーバーを一度手動で更新してください。',
   Official: '公式',

@@ -2,7 +2,7 @@
 
 > 给实现与技术评审者读取；本文管指标数据流、采集与边界，不写分步排期。行为见 [spec](spec.md)，共享消费方见 [计划设计](../version-planning/design.md#共享边界)。取舍变化时更新，落地后同步关键信息维护模块。
 >
-> 状态：已授权实施；详细设计未逐项细审，未决项须人工确认，实施证据见 STATUS。架构定位：architecture §1 项目概况与版本判断，§2 ①事实、⑤壳；当前 OverviewPage 的 OVERVIEW_DEMO 不是指标数据源。
+> 状态：已授权实施；详细设计未逐项细审，未决项须人工确认，实施证据见 STATUS。架构定位：architecture §1 项目概况与版本判断，§2 ①事实、⑤壳；OVERVIEW_DEMO 已删除，OverviewPage 经 nativeMetricsPort 读真实指标服务。
 
 ## 迁入什么
 
@@ -34,6 +34,8 @@ VersionHistoryPort.list 返回 records 与 problems：前者为可读取的固�
 
 项目时区与版本约定明确解析为左闭右开窗口；同一 ref+定义指纹+执行指纹+数据目标+窗口+宿主的刷新合并执行，不让过期请求覆盖后发结果。主进程用 argv 执行已登记采集，不经 shell 拼接；默认超时遵循协议，输出只接收一个合法 JSON，标准错误用于诊断，不当读数。
 
+当前接线：能力注册为 main RPC（workbench.metrics.list/read/refresh、workbench.history.list/read/readPlan、workbench.archive.proof）；SSH 宿主经窄执行器 workbench.metrics.execute / workbench.history.execute 运行采集与历史命令，不扩 provider.exec 白名单。定义唯一正源为 .bw/metrics.toml，按固定修订读取；脚本在隔离 checkout 内执行（preparation lock，finally 清理），BW_METRICS_TIMEZONE / BW_METRICS_DATA_ROOT / BW_METRICS_DATA_COMMIT 显式传递。默认窗口「本周截至采集时刻」标真实覆盖，仅实时指标返回当前值；计划采用 baseline 落盘，历史纪要只用保存基线。
+
 retro=true 从脚本按日/周重算，缺点留缺；retro=false 仅查询当前时点，不承诺历史窗口。移除 manual 现行来源，不迁每日自动化、bw/ledger 或 readings 每日写回。原有人工记录只保留历史身份，不自动删原件。当前读数可短期缓存；计划/验收归档固定采用的证据，不积累独立时序台账。缓存按项目、定义指纹、窗口/时点区分，不能当事实正本。
 
 定义变更让旧读数保持历史身份；跨定义不可自动比较。刷新失败时返回错误与旧记录的时间，不给旧记录换新时间。计算改善幅度前检查数值/单位/口径；字符串只展示，不把非数字硬转 0。
@@ -48,7 +50,7 @@ retro=true 从脚本按日/周重算，缺点留缺；retro=false 仅查询当�
 
 ## 配置任务与采用
 
-“配置指标”经共享 MetricSetupPort 手动启动原生项目任务，使用独立固定的指标维护分支与工作树，呈现于原生项目会话屏，不增加 BW 右侧配置页或指标自动化。工作树复用计划/验收同一原生定位与创建适配，以项目、宿主和分支查登记；实际目录与创建起点听 Orca 项目设置，不硬编码 .bw 路径、main 或 bw-orca，不删除重建已有工作树。指标模块提供业务提示并实现 MetricSetupPort，复用原生 taskId 关联及总览版本/指标筛选恢复；公共注册钩子由协调窗口按实际依赖接入。同次返回继续未完成任务，显式新配置新建会话并复用维护树，不进入 bw/week-plan 或验收会话。已有未完成改动保留，不因新会话重置维护树。提示加载项目约定、通用 SYSTEM、metrics-refresh 及当前定义/错误；普通项目的 Skill 由产品资产解析。配置任务形成定义和脚本的可评审改动，通过原生 PR 进入项目指定配置基线。目录读取固定配置提交；试采草案只在配置上下文有效，不自动成为三屏正式引用。刷新按钮直接调用 MetricsPort，不启动模型。
+“配置指标”经共享 MetricSetupPort 手动启动原生项目任务，使用独立固定的指标维护分支与工作树 **bw/metrics-refresh**（协议值，树名 metrics-refresh），呈现于原生项目会话屏并注入 metrics-refresh Skill 提示（cycle-prompt 以 workflow='metrics-refresh' 渲染），不增加 BW 右侧配置页或指标自动化。工作树复用计划/验收同一原生定位与创建适配，以项目、宿主和分支查登记；实际目录与创建起点听 Orca 项目设置，不硬编码 .bw 路径、main 或 bw-orca，不删除重建已有工作树。指标模块提供业务提示并实现 MetricSetupPort，复用原生 taskId 关联及总览版本/指标筛选恢复。同次返回继续未完成任务，显式新配置新建会话并复用维护树，不进入 bw/week-plan 或验收会话。已有未完成改动保留，不因新会话重置维护树。提示加载项目约定、通用 SYSTEM、metrics-refresh 及当前定义/错误；普通项目的 Skill 经产品内置发现 Stub 与原生 guide 分发解析，不依赖项目自带 standard/。配置任务形成定义和脚本的可评审改动，通过原生 PR 进入项目指定配置基线。目录读取固定配置提交；试采草案只在配置上下文有效，不自动成为三屏正式引用。刷新按钮直接调用 MetricsPort，不启动模型。
 
 ## 三屏呈现与迁移
 

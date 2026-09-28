@@ -5,6 +5,7 @@ import type { GitLabTaskFilter, GitLabIssueFilter } from '@/components/task-page
 import type { GitLabWorkItem, GitLabTodo } from '../../../shared/gitlab-types'
 import { getRepoBackedTaskEmptyState } from '@/components/task-page-empty-state'
 import { isGitLabIssueFilter, isGitLabMRFilter } from './task-page-source-context'
+import { useCodeHubDetailItem } from './task-page/codehub/use-codehub-detail-item'
 import { isCodeHubGitRemote } from '../../../shared/codehub'
 import type { CodeHubTaskItem } from '../../../shared/codehub-tasks'
 export function useTaskPageProviderState(model: TaskPageSourceAvailabilityModel) {
@@ -148,7 +149,7 @@ export function useTaskPageProviderState(model: TaskPageSourceAvailabilityModel)
   const [codehubLoading, setCodehubLoading] = useState(false)
   const [codehubError, setCodehubError] = useState<string | null>(null)
   const [codehubRefreshNonce, setCodehubRefreshNonce] = useState(0)
-  const [codehubDetailItem, setCodehubDetailItem] = useState<CodeHubTaskItem | null>(null)
+  const { codehubDetailItem, setCodehubDetailItem } = useCodeHubDetailItem(model)
   const [codehubQuery, setCodehubQuery] = useState('')
   const [codehubPreset, setCodehubPreset] = useState<'open' | 'mine' | 'review'>('open')
   const [codehubAuthor, setCodehubAuthor] = useState('')

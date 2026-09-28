@@ -4,14 +4,14 @@
 
 目标分支是 `bw-orca`。交互迁移须按当前 BW 意图重新决策；旧 Rust main 与原型只能提供历史参考，不能视为现行实现正本。
 
-总览 / 知识库挂在现有 `activity` / `space` 槽位；计划挂 `artifacts`；任务挂 `tasks`（均不扩 `TopLevelView`）。知识库已对齐 V7「文档 / 代码 / 对账」。
+总览 / 知识库挂在现有 `activity` / `space` 槽位；计划与验收共用 `artifacts` 槽位（BW 子视图状态 `cycle-view-state.ts` 区分两屏，侧栏两个独立入口）；任务挂 `tasks`（均不扩 `TopLevelView`）。知识库已对齐 V7「文档 / 代码 / 对账」。
 
 Workbench 自有 Skill 保持 main 原路径（`.claude/skills/`、`standard/skills/`），不并入 Orca `skills/` 打包清单；不迁 `crates/` 与 `standard/vendor`。
 
 ## 原则
 
 1. **upstream 核不动**：TaskPage、Automations、terminal/PTY、worktree、Explorer/SC/Diff、main runtime — 只挂载，不大段改写。
-2. **改动落叠层**：界面进入 `src/renderer/src/workbench/`；BW 契约、材料事务及宿主适配进入 `src/shared/workbench/`、`src/main/workbench/`；SSH 宿主侧挂载进入 `src/relay/workbench/`。
+2. **改动落叠层**：界面进入 `src/renderer/src/workbench/`；BW 契约、材料事务及宿主适配进入 `src/shared/workbench/`、`src/main/workbench/`；SSH 宿主侧挂载进入 `src/relay/workbench/`。BW 界面类名走自己的设计系统 CSS（`workbench-tokens.css` 等，非 Tailwind），`config/oxlint-dead-classes.json` 对 workbench 子树关闭 Tailwind 类审计（与既有 `feature-wall-*` allow 同一机制，改动经 PR 评审）。Orca i18n coverage 审计（`verify:localization-coverage`）经 `config/localization-coverage-exclusions.json` 对 workbench 子树目录级豁免——BW 是中文优先产品面，不走 i18n 抽取；豁免条目必须带 reason，BW 国际化时移除。原生组件里个别专名/BW 壳标签走 allowlist 复核条目。
 3. **原文件只留薄挂载**：界面用 `isWorkbenchShell()` 条件分支；RPC/CLI 注册与 relay 组合只登记 BW 入口，不向 Orca 工作树、连接、调度类塞入业务。Web/配对、SSH/WSL 沿用原生路由，BW 不重建连接层。
 4. **参考源**：产品意图与现行结构读 `docs/`；Orca 工程参考按需读 `ref/`；旧 Rust 旅程在迁移时重新决策。
 

@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import type { MetricsPort, MetricScope, MetricWindow } from '../../../../shared/workbench/metrics'
 import { MetricWindowSchema } from '../../../../shared/workbench/metrics'
+import { currentMetricWeek } from '../../../../shared/workbench/metric-windows'
 
 function windowError(window: MetricWindow): string | null {
   const checked = MetricWindowSchema.safeParse(window)
@@ -39,7 +40,7 @@ export function useAcceptanceMetricWindow(port: MetricsPort, scope: MetricScope,
       .list(scope)
       .then((catalog) => {
         if (current) {
-          setWindow({ kind: 'current', timezone: catalog.timezone })
+          setWindow(currentMetricWeek(catalog.timezone))
           setError(null)
         }
       })

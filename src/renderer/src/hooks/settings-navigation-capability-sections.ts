@@ -131,7 +131,7 @@ export function buildSetupSettingsSections({
             title: translate('auto.components.settings.orcaAccount.title', 'Orca Account'),
             description: translate(
               'auto.components.settings.orcaAccount.description',
-              'Share work instantly and reach your desktop from Orca Mobile wherever you are.'
+              'Sign in to extend Orca with cloud features, including Artifacts and Orca Relay.'
             ),
             icon: CircleUserRound,
             searchEntries: getOrcaAccountSettingsSearchEntries(),

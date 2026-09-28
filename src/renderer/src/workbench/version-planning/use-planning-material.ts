@@ -14,8 +14,7 @@ export function planningDraftKey(scopeKey: string, version: string) {
 
 export function usePlanningMaterial(
   port: ReturnType<typeof nativeVersionMaterialPort> | null,
-  scopeKey: string,
-  cycleId?: string
+  scopeKey: string
 ) {
   const [versions, setVersions] = useState<VersionMaterialCandidate[]>([])
   const [draft, setDraft] = useState<MaterialDraft<PlanningMaterial> | null>(null)
@@ -122,9 +121,6 @@ export function usePlanningMaterial(
         if (create && snapshot) {
           throw new Error('该版本已存在，请选择已有版本。')
         }
-        if (create && !cycleId) {
-          throw new Error('先开启或选择本次计划会话。')
-        }
         let restored: MaterialDraft<PlanningMaterial> | null = null
         const raw = localStorage.getItem(planningDraftKey(scopeKey, version))
         if (raw) {
@@ -153,7 +149,7 @@ export function usePlanningMaterial(
           : {
               schema_version: 3,
               version,
-              cycleId: cycleId!,
+              cycleId: crypto.randomUUID(),
               summary: { progress: '', risks: '' },
               goals: [],
               tasks: []
@@ -183,7 +179,7 @@ export function usePlanningMaterial(
         }
       }
     },
-    [port, controller, cycleId, scopeKey, isCurrent]
+    [port, controller, scopeKey, isCurrent]
   )
 
   const selectedVersion = draft?.document.version
@@ -239,6 +235,42 @@ export function usePlanningMaterial(
     useRemote: () => {
       if (draft?.remote) {
         controller?.useRemote(draft.remote)
+      }
+    },
+    /** Escape hatch for a stale dirty draft over a confirmed archive: re-read host truth. */
+    discardLocal: async () => {
+      if (!port || !controller?.value) {
+        return
+      }
+      const version = controller.value.document.version
+      setBusy(true)
+      try {
+        const snapshot = await port.read(version)
+        if (!isCurrent()) {
+          return
+        }
+        if (snapshot) {
+          controller.restore({
+            document: PlanningMaterialSchema.parse(snapshot.document),
+            expectedRevision: snapshot.revision,
+            dirty: false
+          })
+        } else {
+          controller.clear()
+          try {
+            localStorage.removeItem(planningDraftKey(scopeKey, version))
+          } catch {
+            /* The recovery flow keeps the original text on failure. */
+          }
+        }
+      } catch (reason) {
+        if (isCurrent()) {
+          setError(reason instanceof Error ? reason.message : '无法重读材料')
+        }
+      } finally {
+        if (isCurrent()) {
+          setBusy(false)
+        }
       }
     },
     useMerged: (document: PlanningMaterial) => {

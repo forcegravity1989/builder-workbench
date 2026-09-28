@@ -40,11 +40,11 @@
 
 ## goals（01 目标卡片 + 首屏状态 chip）
 
-来自本版 `.bw/planning/<版本>/data.json` 的 `plan.goals`，报告不另写一份承诺。每条：`label`（如 G1）、`title`、`metric / target`（指标定义与目标值）、`state`、`deliverable {label, url}`（该目标的本版交付条目：url 为仓内相对链接，空串渲染纯文本，如「本报告（本页）」）、`note`。`state ∈ passed / passed_with_debt / failed / not_run / not_applicable`，渲染映射达成 / 部分达成 / 未达成 / 未验收 / 不适用。首屏 chip 只渲染 label、状态与目标值（不重复 title）；指标、交付件与 note 只在 01 卡片出现。**不设 baseline / reading 字段**：目标值与状态已足够表达进度，读数依据写进 PR 正文与收尾会话，不进报告数据。卡片默认只放计划正本的目标内容与进度：`note` 留空不渲染，收尾解读（快照、过程说明）在会话里向人说，不堆进卡片。计划缺失时留空数组，渲染显示留空说明。
+来自本版 `.bw/planning/<版本>/data.json` 的 `goals`（计划文档 schema 3；schema 2 的 `plan.goals` 旧形状已随显式迁移退役），报告不另写一份承诺。`label` 取 `goalId`，`title` 用原文，`metric / target` 来自 `metricTargets`（定义名与目标值；未绑定时如实留空，不从旧待核文本凑数）。每条：`label`（如 G1）、`title`、`metric / target`（指标定义与目标值）、`state`、`deliverable {label, url}`（该目标的本版交付条目：url 为仓内相对链接，空串渲染纯文本，如「本报告（本页）」）、`note`。`state ∈ passed / passed_with_debt / failed / not_run / not_applicable`，渲染映射达成 / 部分达成 / 未达成 / 未验收 / 不适用。首屏 chip 只渲染 label、状态与目标值（不重复 title）；指标、交付件与 note 只在 01 卡片出现。**不设 baseline / reading 字段**：目标值与状态已足够表达进度，读数依据写进 PR 正文与收尾会话，不进报告数据。卡片默认只放计划正本的目标内容与进度：`note` 留空不渲染，收尾解读（快照、过程说明）在会话里向人说，不堆进卡片。计划缺失时留空数组，渲染显示留空说明。
 
 ## tasks（02 任务表）
 
-来自本版计划 `plan.tasks`；每条 `number`（Issue 号，无则用 `id`）、`url`、`title`、`goal`（对齐目标 label）、`status {label, tone}`、`note`。状态用 `gh` 读回每个 Issue 的当前值，不凭记忆写。`tone ∈ accent / success / warning / danger / neutral / outline`。
+来自本版计划 `tasks`（schema 3 结构化引用：`provider / repository / number / goalId?`）；每条 `number`（Issue 号）、`url`（由 provider、repository、number 组装或从 provider 读回）、`title`（从 provider 读回，计划文档不存标题文本）、`goal`（对齐目标 goalId/label）、`status {label, tone}`、`note`。状态与标题用 `gh` 或 provider 读回每个 Issue 的当前值，不凭记忆写。`tone ∈ accent / success / warning / danger / neutral / outline`。
 
 ## cases（03 目标验收 + 附录基础用例）
 

@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { getDefaultSettings } from '../../../../shared/constants'
+import type { CodeHubTaskItem } from '../../../../shared/codehub-tasks'
 import type { GitHubWorkItem } from '../../../../shared/github/work-item-types'
 import type { LinearIssue } from '../../../../shared/linear/issue-types'
 import type { GitLabWorkItem } from '../../../../shared/gitlab-types'
@@ -9,6 +10,7 @@ import type { TaskSourceContext } from '../../../../shared/task-source-context'
 import type { AppState } from '../types'
 import type { JiraIssue } from '../../../../shared/jira-types'
 import { createUIStore, makePersistedUI } from './ui-slice-test-harness'
+import { setWorktreeNavViewActivator } from './worktree-nav-history'
 
 const mocks = vi.hoisted(() => ({
   sendNotesToActiveAgentSession: vi.fn(),
@@ -545,6 +547,120 @@ describe('createUISlice page navigation history', () => {
     store.getState().closeTaskPage()
     expect(store.getState().activeView).toBe('terminal')
     expect(store.getState().worktreeNavHistoryIndex).toBe(0)
+  })
+
+  it('returns to the actual origin view when a detail open asks for returnToPreviousView', () => {
+    const store = createUIStore()
+    const workItem = makeGitHubWorkItem()
+    const viewed: unknown[] = []
+    setWorktreeNavViewActivator((entry) => {
+      viewed.push(entry)
+    })
+    store.setState({ worktreesByRepo: { 'repo-1': [makeWorktree('a')] } })
+
+    store.getState().recordWorktreeVisit('a')
+    store.getState().openArtifactsPage()
+    expect(store.getState().worktreeNavHistory).toEqual(['a', 'artifacts'])
+
+    store
+      .getState()
+      .openTaskPage(
+        { taskSource: 'github', openGitHubWorkItem: workItem },
+        { recordTasksInteraction: false, returnToPreviousView: true }
+      )
+
+    // No 'tasks' sentinel: the detail sits directly on the origin view.
+    expect(store.getState().worktreeNavHistory).toEqual([
+      'a',
+      'artifacts',
+      {
+        kind: 'task-detail',
+        source: 'github',
+        workItem,
+        sourceContext: undefined,
+        initialTab: undefined
+      }
+    ])
+
+    store.getState().goBackWorktree()
+    expect(viewed).toEqual(['artifacts'])
+    expect(store.getState().worktreeNavHistoryIndex).toBe(1)
+
+    setWorktreeNavViewActivator(null)
+  })
+
+  it('closeTaskPage from a returnToPreviousView detail rewinds to the origin view, not Tasks', () => {
+    const store = createUIStore()
+    const workItem = makeGitHubWorkItem()
+    store.setState({ worktreesByRepo: { 'repo-1': [makeWorktree('a')] } })
+
+    store.getState().recordWorktreeVisit('a')
+    store.getState().openArtifactsPage()
+    store
+      .getState()
+      .openTaskPage(
+        { taskSource: 'github', openGitHubWorkItem: workItem },
+        { recordTasksInteraction: false, returnToPreviousView: true }
+      )
+
+    store.getState().closeTaskPage()
+    expect(store.getState().activeView).toBe('artifacts')
+    expect(store.getState().worktreeNavHistoryIndex).toBe(1)
+  })
+
+  it('keeps the Tasks sentinel for detail opens without returnToPreviousView', () => {
+    const store = createUIStore()
+    const workItem = makeGitHubWorkItem()
+    store.setState({ worktreesByRepo: { 'repo-1': [makeWorktree('a')] } })
+
+    store.getState().recordWorktreeVisit('a')
+    store.getState().openTaskPage({ taskSource: 'github', openGitHubWorkItem: workItem })
+    expect(store.getState().worktreeNavHistory[1]).toBe('tasks')
+  })
+
+  it('records CodeHub detail opens with source context and return origin in history', () => {
+    const store = createUIStore()
+    const task: CodeHubTaskItem = {
+      type: 'issue',
+      iid: 12,
+      title: 'CodeHub 任务',
+      state: 'opened',
+      url: 'https://codehub.example.com/team/project/-/issues/12',
+      author: 'ada',
+      assignees: [],
+      reviewers: [],
+      updatedAt: '2026-09-20T00:00:00.000Z',
+      repoId: 'repo-1',
+      repoPath: '/repo',
+      host: 'codehub.example.com',
+      project: 'team/project'
+    }
+    const sourceContext: TaskSourceContext = {
+      kind: 'task-source',
+      provider: 'codehub',
+      projectId: 'project-1',
+      hostId: 'local',
+      repoId: 'repo-1',
+      providerIdentity: {
+        provider: 'codehub',
+        host: 'codehub.example.com',
+        project: 'team/project'
+      }
+    }
+    store
+      .getState()
+      .openTaskPage(
+        { taskSource: 'codehub', openCodeHubTask: task, openCodeHubSourceContext: sourceContext },
+        { recordTasksInteraction: false, returnToPreviousView: true }
+      )
+
+    expect(store.getState().worktreeNavHistory.at(-1)).toEqual({
+      kind: 'task-detail',
+      source: 'codehub',
+      task,
+      sourceContext
+    })
+    expect(store.getState().taskPageData.openCodeHubTask).toEqual(task)
   })
 
   it('records and rewinds Automations visits on close', () => {

@@ -168,25 +168,6 @@ export const getSidebarEntries = createLocalizedCatalog((): SettingsSearchEntry[
       ...translateSearchKeyword('auto.components.settings.appearance.search.ac79fe4a04', 'show')
     ]
   },
-  {
-    title: translate(
-      'auto.components.settings.appearance.search.1de96ec8a6',
-      'Show Orca Mobile Button'
-    ),
-    description: translate(
-      'auto.components.settings.appearance.search.682293cadf',
-      'Show the Orca Mobile button at the top of the left sidebar.'
-    ),
-    keywords: [
-      ...translateSearchKeyword('auto.components.settings.appearance.search.74618577c7', 'mobile'),
-      ...translateSearchKeyword('auto.components.settings.appearance.search.5e5b8878bf', 'phone'),
-      ...translateSearchKeyword('auto.components.settings.appearance.search.5bff6a2ef0', 'sidebar'),
-      ...translateSearchKeyword('auto.components.settings.appearance.search.6cf5f54ce1', 'button'),
-      ...translateSearchKeyword('auto.components.settings.appearance.search.648eeada79', 'hide'),
-      ...translateSearchKeyword('auto.components.settings.appearance.search.ac79fe4a04', 'show'),
-      ...translateSearchKeyword('auto.components.settings.appearance.search.839fb1e3ed', 'toolbox')
-    ]
-  },
   getWorkspaceCardLayoutEntry(),
   getLeftSidebarAppearanceEntry(),
   getShowPinnedWorktreesInGroupsEntry()

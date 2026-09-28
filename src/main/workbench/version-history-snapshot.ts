@@ -14,6 +14,16 @@ export class HistorySourceError extends Error {
   }
 }
 
+/** The one Git path a workflow's material lives at, shared by scans, reads and proof checks. */
+export function planningMaterialGitPath(version: string, workflow: 'plan' | 'acceptance'): string {
+  return `.bw/planning/${version}/${workflow === 'plan' ? 'data' : 'acceptance'}.json`
+}
+
+/** Content revision of raw material bytes; the same digest everywhere a revision is compared. */
+export function historySnapshotRevision(raw: Buffer): string {
+  return `sha256:${createHash('sha256').update(raw).digest('hex')}`
+}
+
 export function decodeHistorySnapshot(
   raw: Buffer,
   version: string,
@@ -39,7 +49,7 @@ export function decodeHistorySnapshot(
     if (document.version !== version) {
       throw new Error('Material version differs from its path')
     }
-    return { document, revision: `sha256:${createHash('sha256').update(raw).digest('hex')}` }
+    return { document, revision: historySnapshotRevision(raw) }
   } catch (error) {
     if (error instanceof HistorySourceError) {
       throw error

@@ -1,6 +1,7 @@
 import type { StateCreator } from 'zustand'
 import type { AutomationEditorRequest } from '@/components/automations/automation-editor-request'
 import type { AppState } from '../../types'
+import type { CodeHubTaskItem } from '../../../../../shared/codehub-tasks'
 import type { GitHubWorkItem } from '../../../../../shared/github/work-item-types'
 import type { GitLabWorkItem } from '../../../../../shared/gitlab-types'
 import type { JiraIssue } from '../../../../../shared/jira-types'
@@ -59,6 +60,8 @@ export type TaskPageData = {
   openGitHubWorkItem?: GitHubWorkItem
   openGitHubSourceContext?: TaskSourceContext | null
   openGitHubInitialTab?: 'conversation' | 'checks' | 'files'
+  openCodeHubTask?: CodeHubTaskItem
+  openCodeHubSourceContext?: TaskSourceContext | null
   openGitLabWorkItem?: GitLabWorkItem
   openGitLabSourceContext?: TaskSourceContext | null
   openLinearIssue?: LinearIssue
@@ -113,7 +116,6 @@ export type UiViewHistory =
   | 'space'
   | 'skills'
   | 'artifacts'
-  | 'mobile'
 
 export type UISliceCore = {
   sidebarOpen: boolean
@@ -147,7 +149,6 @@ export type UISliceCore = {
   previousViewBeforeAutomations: Exclude<UiViewHistory, 'automations'>
   previousViewBeforeSpace: Exclude<UiViewHistory, 'space'>
   previousViewBeforeSkills: Exclude<UiViewHistory, 'skills'>
-  previousViewBeforeMobile: Exclude<UiViewHistory, 'mobile'>
   previousViewBeforeArtifacts: Exclude<UiViewHistory, 'artifacts'>
   setActiveView: (view: UISliceCore['activeView']) => void
   taskPageData: TaskPageData
@@ -160,7 +161,11 @@ export type UISliceCore = {
   newWorkspaceDraft: NewWorkspaceDraft | null
   openTaskPage: (
     data?: UISliceCore['taskPageData'],
-    options?: { recordTasksInteraction?: boolean }
+    options?: {
+      recordTasksInteraction?: boolean
+      /** Skip the 'tasks' sentinel before a detail entry so Back returns to the actual origin view, not the Tasks list. */
+      returnToPreviousView?: boolean
+    }
   ) => void
   closeTaskPage: () => void
   openActivityPage: () => void
@@ -193,8 +198,6 @@ export type UISliceCore = {
   clearPendingSkillsSharedView: () => void
   openArtifactsPage: () => void
   closeArtifactsPage: () => void
-  openMobilePage: () => void
-  closeMobilePage: () => void
   setNewWorkspaceDraft: (draft: NonNullable<UISliceCore['newWorkspaceDraft']>) => void
   clearNewWorkspaceDraft: () => void
   pendingRevealWorktree: PendingSidebarWorktreeReveal | null

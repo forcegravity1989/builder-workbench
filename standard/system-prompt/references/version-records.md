@@ -16,7 +16,9 @@
 
 两个固定分支分别由原生项目/宿主/worktree 身份定位；物理目录由 Orca 原生创建和登记，不硬编码 .bw/worktrees 下的路径。冲突目录不得自动搬移/删除。同步基线前检查未归档修改，不 reset 脏树；跨树读取用固定提交，不把另一树的工作中草稿当正式材料。
 
-运行身份由项目、宿主、流程与原生 runId 定位；cycleId 是可区分多周/重复运行的稳定上下文，版本是明确后附加的材料关联。计划运行可先有会话、后由人选已有版本或明确新建，未选择时不新建或修改计划；不能用日期、mtime 或未发布状态代定版本。新周期新会话，选版本不新开运行，同次恢复沿用真实关联，不能按标题判断身份。有关联时显示版本在前周次在后。工作文件代表当前编辑修订，历史通过下述不可变归档恢复。
+运行身份由项目、宿主、流程与原生会话或 runId 定位。会话可先启动，后由人选已有版本或明确新建；未选择时不新建或修改计划，不能用日期、mtime 或未发布状态代定版本。新周新会话，同次恢复沿用原生身份，不能按标题判断身份。命名沿用 Orca 默认规则；需要人为命名时，版本在前、周次在后。工作文件代表当前编辑修订，历史通过下述不可变归档恢复。
+
+cycleId 标识材料轮次，不是自然周、原生会话或自动化 runId。同一版本的计划、验收各自只有一轮活动材料，新周新会话可继续关联该轮；不要因编辑或换会话改 cycleId。该流程归档后才可明确开下一轮，未达结果也能如实归档；不自动迁移或承诺遗留目标。历史按实际归档留存，不补造每周快照。
 
 ## 来源与历史
 
@@ -32,6 +34,8 @@ candidateRef 仅保存 repository/version/commit，commit 是完整 SHA。prepar
 
 archiveCommit 只能在实际合入后由 provider/Git 解析，不能把尚未知的提交写进自身。提交内容保存 cycleId、sourceRevision 等元数据，PR 关联及合入提交由真实来源补全。新归档记录的发现与提交定位由共享层统一实现，两个特性提供纯派生摘要，不各做一套 Git 扫描。
 
+preparationReview 可记录人的材料备齐核对，包含 source、recordedAt、materialRevision。修订覆盖版本、轮次、固定计划、候选、准备材料和各目标交付件；这些内容变动后重新核对，不因日历跨周作废。它不证明命令执行或目标达成，模型不得代人勾选。
+
 ## 写入与人的决定
 
 连接和执行沿用 Orca；宿主提供 repoId/worktreeId/hostId，分别绑定 bw/week-plan、bw/week-acceptance，页面还使用原生 runtimeOwnerEnvironmentId 选择配对宿主。不能由模型传文件根替代原生身份，也不把 SSH 路径交给客户端本机文件 API。
@@ -42,6 +46,9 @@ archiveCommit 只能在实际合入后由 provider/Git 解析，不能把尚未�
 
 先读 revision，再走同一材料服务 save(expectedRevision)；校验受信任工作树和流程白名单、路径、跨进程互斥、原子替换。不同分支不是一个写入路径。冲突保留双方输入并重读合并；不直接覆盖文件绕过服务。
 
-保存、评审、归档、目标达成和正式发布分别成立。人的决定绑定对象/修订/来源/时间，模型不代签。decision.materialRevision 是 planRef、candidateRef、全局候选交付包（preparedArtifacts 中 kind=package），与本目标证据（deliveries、readings、note、nextStep，以及本目标 deliveries.location 引用的其他 preparedArtifacts）的确定性 SHA-256 投影，不含 decision 自身。只改一个目标证据，仅该目标需重新确认；planRef、candidateRef 或全局候选交付包改变，保留已有结论但全部标记待重新确认，即使源码提交相同也要核对包的真实来源。未被目标引用的其他准备材料不计入该目标证据。摘要只检测证据变化，不证明签署人的身份。归档按钮只准备未发送请求，后续执行遵从授权；不自动合入、完成 Issue 或发布。旧认可和归档不可直接覆盖新修订。
+保存、评审、归档、目标达成和正式发布分别成立。人的决定绑定对象/修订/来源/时间，模型不代签。decision.materialRevision 是版本、验收周期、planRef、candidateRef、全局候选交付包（preparedArtifacts 中 kind=package）、固定计划中本目标的承诺与本目标采用证据的确定性 SHA-256 投影，不含 decision 自身。证据包括 deliveries/readings/note/nextStep、本目标 deliveries.location 引用的其他准备材料，以及固定计划关联到该目标的 Issue 快照。只改一个目标证据，仅该目标需重新确认；planRef、candidateRef 或全局候选交付包改变，保留已有结论但全部标记待重新确认，即使源码提交相同也要核对包的真实来源。未被目标引用的其他准备材料不计入该目标证据。摘要只检测证据变化，不证明签署人的身份，Issue 关闭数不自动决定目标达成。归档按钮只准备未发送请求，后续执行遵从授权；不自动合入、完成 Issue 或发布。旧认可和归档不可直接覆盖新修订。
+
+Issue 关联以固定 plan.tasks 的完整任务身份与 goalId 为准，不能仅凭快照自己声明的 goalId。快照指纹按任务身份稳定排序，保留来源、标题、状态、链接或失败事实，排除仅 readAt 变化；同事实刷新或列表重排不触发重新确认。未关联目标的 Issue 仍进入报告，不影响单目标结论；未记录与已记录空集分别呈现。
 
 schema2 一次显式迁移保留原件/提交来源；旧 results 按实际版本导入验收草稿，旧 confirmation 仅作历史依据。不能无损解释的对象保留待核。UI/CLI/提示/模板同时切换，不永久双写或失败静默回退旧流程。
+

@@ -47,10 +47,5 @@ export const ZH_PHRASE_FIXES_ROUND5 = [
     pattern: /可操作的问题/g,
     replacement: '需处理的问题',
     whenEnIncludes: 'actionable issues'
-  },
-  {
-    pattern: /显示 Orca 移动按钮/g,
-    replacement: '显示 Orca Mobile 按钮',
-    whenEnIncludes: 'Show Orca Mobile Button'
   }
 ]

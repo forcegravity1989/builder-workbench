@@ -6,11 +6,11 @@ import {
 } from '../../../../shared/workbench/version-material'
 import { MaterialDraftController, type MaterialDraft } from '../version-cycle/material-draft'
 
-/** Session recovery is disposable; all authoritative writes still use the host CAS transaction. */
+/** Version-scoped UI recovery is disposable; authoritative writes use the host CAS transaction. */
 export function useAcceptanceDraft(
   key: string,
   port: VersionDocumentPort<AcceptanceMaterial>,
-  sessionVersion?: string
+  selectedVersion?: string
 ) {
   const [draft, setDraft] = useState<MaterialDraft<AcceptanceMaterial> | null>(null)
   const [recoveryError, setRecoveryError] = useState<string | null>(null)
@@ -27,6 +27,7 @@ export function useAcceptanceDraft(
       setRecoveryText(saved)
       const value = JSON.parse(saved) as MaterialDraft<AcceptanceMaterial>
       const document = AcceptanceMaterialSchema.parse(value.document)
+      if (document.version !== selectedVersion) {throw new Error('草稿不属于当前版本')}
       if (
         value.expectedRevision !== null &&
         !/^sha256:[a-f0-9]{64}$/.test(value.expectedRevision)
@@ -50,15 +51,15 @@ export function useAcceptanceDraft(
       }
       setRecoveryError('本机恢复草稿无法读取，原件保留。可从宿主读取材料，或先复制恢复内容。')
     }
-  }, [controller, key, recovery])
+  }, [controller, key, recovery, selectedVersion])
   useEffect(() => {
-    if (controller.value || !sessionVersion || recovery.present) {
+    if (controller.value || !selectedVersion || recovery.present) {
       return
     }
     let current = true
     const request = ++recovery.request
     void port
-      .read(sessionVersion)
+      .read(selectedVersion)
       .then((saved) => {
         if (current && request === recovery.request && !controller.value && saved) {
           controller.restore({
@@ -76,9 +77,9 @@ export function useAcceptanceDraft(
     return () => {
       current = false
     }
-  }, [controller, port, sessionVersion, recovery])
+  }, [controller, port, selectedVersion, recovery])
   useEffect(() => {
-    if (!draft || !recovery.writable) {
+    if (!draft || !recovery.writable || draft.document.version !== selectedVersion) {
       return
     }
     try {
@@ -87,7 +88,7 @@ export function useAcceptanceDraft(
     } catch {
       setRecoveryError('本机草稿恢复不可用，请保持页面打开并保存到宿主。')
     }
-  }, [draft, key, recovery])
+  }, [draft, key, recovery, selectedVersion])
   return {
     draft,
     controller,

@@ -31,8 +31,8 @@ const OverviewPage = lazy(() =>
 const KnowledgePage = lazy(() =>
   import('../workbench/KnowledgePage').then((m) => ({ default: m.KnowledgePage }))
 )
-const PlanJourneyShell = lazy(() =>
-  import('../workbench/PlanJourneyShell').then((m) => ({ default: m.PlanJourneyShell }))
+const CycleWorkspacePage = lazy(() =>
+  import('../workbench/CycleWorkspacePage').then((m) => ({ default: m.CycleWorkspacePage }))
 )
 
 type WorktreeSidebarScrollRefs = {
@@ -81,7 +81,7 @@ function ActivePage({ layout }: { layout: AppChromeLayout }): React.JSX.Element 
       {activeView === 'skills' ? <SkillsPage /> : null}
       {activeView === 'artifacts' ? (
         isWorkbenchShell() ? (
-          <PlanJourneyShell />
+          <CycleWorkspacePage />
         ) : (
           <ArtifactsPage />
         )

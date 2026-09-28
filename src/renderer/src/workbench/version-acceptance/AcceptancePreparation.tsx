@@ -23,11 +23,17 @@ export function AcceptancePreparation({
   document,
   port,
   onPrepare,
+  reviewed,
+  readOnly,
+  onReview,
   onCandidateCheck
 }: {
   document: AcceptanceMaterial
   port: AcceptanceCandidatePort
   onPrepare(): void
+  reviewed: boolean
+  readOnly: boolean
+  onReview(checked: boolean): Promise<void>
   onCandidateCheck(check: CandidateCheck, artifacts: ArtifactCheck[]): void
 }) {
   const [verification, setVerification] = useState<{
@@ -95,6 +101,11 @@ export function AcceptancePreparation({
     <section className="va-preparation" aria-label="交付准备" id="acceptance-preparation">
       <div className="va-section-head">
         <h2>交付准备</h2>
+        <label>
+          <input type="checkbox" checked={reviewed} disabled={readOnly}
+            onChange={(event) => void onReview(event.target.checked).catch((reason) => setError(String(reason)))} />
+          材料已备齐
+        </label>
         <button className="wb-btn wb-btn-ghost wb-btn-sm" onClick={onPrepare}>
           准备交付
         </button>
@@ -103,7 +114,7 @@ export function AcceptancePreparation({
           disabled={!document.candidateRef || busy}
           onClick={() => void inspect()}
         >
-          {busy ? '核对中…' : '核对材料来源'}
+          {busy ? '检查中…' : '检查文件与候选'}
         </button>
       </div>
       <div className="va-candidate">

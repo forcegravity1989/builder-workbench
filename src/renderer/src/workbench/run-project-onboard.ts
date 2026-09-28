@@ -142,6 +142,17 @@ export async function submitProjectOnboard(args: {
 
   if (repoId) {
     await updateRepo(repoId, { displayName: intent.name })
+    // Why: BW fixed trees (bw/week-plan / bw/week-acceptance) follow Orca's per-repo
+    // worktree base; without one they land under the global workspaceDir, often on
+    // another drive than the project. Set the project-local convention once, visibly.
+    const registered = useAppStore.getState().repos.find((r) => r.id === repoId)
+    if (registered && !registered.worktreeBasePath?.trim()) {
+      await updateRepo(repoId, { worktreeBasePath: '.bw/worktrees' })
+      onLog({
+        kind: 'ok',
+        text: '已设单仓工作树基址 `.bw/worktrees`（工作树落在项目目录内）；可在 设置 > Repository worktree defaults 修改或清空'
+      })
+    }
     await fetchWorktrees(repoId)
   }
 

@@ -77,10 +77,10 @@ export function AiVaultVirtualRow({
   onToggleGroup: (key: string) => void
   onToggleSessionDetails: (sessionId: string) => void
   onJumpToOriginalPane: (session: AiVaultSession) => void
-  onJumpToWorktree: (worktreeId: string) => void
+  onJumpToWorktree?: (worktreeId: string) => void
   onResume: (session: AiVaultSession, worktreeId: string) => void
-  onContinueInNewSession: (session: AiVaultSession, worktreeId: string) => void
-  onResumeInNewChat: (session: AiVaultSession, worktreeId: string) => void
+  onContinueInNewSession?: (session: AiVaultSession, worktreeId: string) => void
+  onResumeInNewChat?: (session: AiVaultSession, worktreeId: string) => void
   onCopyResume: (session: AiVaultSession, worktreeId?: string | null) => void
   onCopyId: (session: AiVaultSession) => void
   onCopyPath: (session: AiVaultSession) => void
@@ -166,7 +166,7 @@ export function AiVaultVirtualRow({
             originalPaneTarget ? () => onJumpToOriginalPane(row.session) : undefined
           }
           showJumpToWorktree={showJumpToWorktree}
-          onJumpToWorktree={worktreeJumpId ? () => onJumpToWorktree(worktreeJumpId) : undefined}
+          onJumpToWorktree={worktreeJumpId && onJumpToWorktree ? () => onJumpToWorktree(worktreeJumpId) : undefined}
           subagentResume={{ getState: getSessionResumeState, onResume }}
           onResume={() => {
             if (resumeState?.worktreeId) {
@@ -175,12 +175,12 @@ export function AiVaultVirtualRow({
           }}
           onContinueInNewSession={
             continuationWorktreeId
-              ? () => onContinueInNewSession(row.session, continuationWorktreeId)
+              && onContinueInNewSession ? () => onContinueInNewSession(row.session, continuationWorktreeId)
               : undefined
           }
           onResumeInNewChat={
             resumeInChat?.available
-              ? () => onResumeInNewChat(row.session, resumeInChat.workspaceId)
+              && onResumeInNewChat ? () => onResumeInNewChat(row.session, resumeInChat.workspaceId)
               : undefined
           }
           onResumeInWorktree={() => {

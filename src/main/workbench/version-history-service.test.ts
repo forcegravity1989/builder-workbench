@@ -17,8 +17,12 @@ let ffCommit: string
 let rebaseCommit: string
 let unknownCommit: string
 let firstRevision: string
+let ffMultiMaterialCommit: string
+let ffMultiHeadCommit: string
 const adopted = new Set<string>()
 const drafts = new Set<string>()
+/** Provider-reported merge commit per material commit; FF/rebase PRs merge at a later commit. */
+const mergeOf = new Map<string, string>()
 const plan: PlanningMaterial = {
   schema_version: 3,
   version: 'v1',
@@ -126,6 +130,22 @@ beforeAll(() => {
   git(['switch', 'adopted'])
   git(['merge', '--ff-only', 'rebased'])
   adoptedCommit = rebaseCommit
+  git(['switch', '-c', 'ff-multi'])
+  writeFileSync(
+    join(root, '.bw/planning/v1/data.json'),
+    JSON.stringify({ ...plan, cycleId: 'sixth-cycle' })
+  )
+  ffMultiMaterialCommit = commit('ff-multi material')
+  adopted.add(ffMultiMaterialCommit)
+  writeFileSync(join(root, 'README.md'), 'ff-multi head touches no material')
+  git(['add', 'README.md'])
+  git(['commit', '-m', 'ff-multi head'])
+  ffMultiHeadCommit = git(['rev-parse', 'HEAD']).toString().trim()
+  adopted.add(ffMultiHeadCommit)
+  mergeOf.set(ffMultiMaterialCommit, ffMultiHeadCommit)
+  git(['switch', 'adopted'])
+  git(['merge', '--ff-only', 'ff-multi'])
+  adoptedCommit = ffMultiHeadCommit
 }, 20_000)
 afterAll(() => {
   if (root) {
@@ -137,7 +157,11 @@ afterAll(() => {
   }
 })
 
-function service(mismatchedProof = false) {
+function service(proofMergeCommit?: (candidate: { sourceCommit: string }) => string) {
+  const mergeCommitFor =
+    proofMergeCommit ??
+    ((candidate: { sourceCommit: string }) =>
+      mergeOf.get(candidate.sourceCommit) ?? candidate.sourceCommit)
   return createVersionHistoryService({
     async git(_scope, args) {
       return git(args)
@@ -156,7 +180,7 @@ function service(mismatchedProof = false) {
               number: 1,
               materialRevision: candidate.revision
             },
-            mergeCommit: mismatchedProof ? '0'.repeat(40) : candidate.sourceCommit,
+            mergeCommit: mergeCommitFor(candidate),
             material: {
               workflow: candidate.workflow,
               version: candidate.version,
@@ -201,13 +225,15 @@ it('uses explicit archive evidence across no-ff, ff and rebase history while pre
   })
   const catalog = await port.list({ scope })
   expect(catalog.records.map((record) => record.cycleId)).toEqual([
+    'sixth-cycle',
     'fifth-cycle',
     'fourth-cycle',
     'third-cycle',
     'second-cycle',
     'first-cycle'
   ])
-  expect(catalog.records.slice(0, 3).map((record) => record.sourceCommit)).toEqual([
+  expect(catalog.records.slice(0, 4).map((record) => record.sourceCommit)).toEqual([
+    ffMultiMaterialCommit,
     rebaseCommit,
     ffCommit,
     mergeCommit
@@ -250,7 +276,7 @@ it('uses explicit archive evidence across no-ff, ff and rebase history while pre
 
 it('rejects a well-formed archive proof for a different fixed commit', async () => {
   await expect(
-    service(true).read({
+    service(() => '0'.repeat(40)).read({
       scope,
       sourceCommit: firstCommit,
       version: 'v1',
@@ -258,6 +284,30 @@ it('rejects a well-formed archive proof for a different fixed commit', async () 
       workflow: 'plan'
     })
   ).rejects.toMatchObject({ code: 'archive-unverified' })
+})
+
+it('rejects a real merge commit whose tree does not carry the candidate revision', async () => {
+  await expect(
+    service(() => adoptedCommit).read({
+      scope,
+      sourceCommit: firstCommit,
+      version: 'v1',
+      cycleId: 'first-cycle',
+      workflow: 'plan'
+    })
+  ).rejects.toMatchObject({ code: 'archive-unverified' })
+})
+
+it('reads a fast-forwarded material commit through its later PR merge commit', async () => {
+  const result = await service().read({
+    scope,
+    sourceCommit: ffMultiMaterialCommit,
+    version: 'v1',
+    cycleId: 'sixth-cycle',
+    workflow: 'plan'
+  })
+  expect(result.document.cycleId).toBe('sixth-cycle')
+  expect(result.sourceCommit).toBe(ffMultiMaterialCommit)
 })
 
 it('preserves raw Git paths containing quotes, backslashes and newlines as problems', async () => {
@@ -297,7 +347,7 @@ it('keeps a draft source explicit and rejects a changed draft revision', async (
   const planRef = {
     kind: 'draft' as const,
     version: 'v1',
-    cycleId: 'fifth-cycle',
+    cycleId: 'sixth-cycle',
     revision: digest(raw),
     sourceHostId: 'local',
     sourceWorktreeId: 'plan-tree'

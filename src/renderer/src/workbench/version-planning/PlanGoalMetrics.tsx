@@ -43,7 +43,14 @@ export function PlanGoalMetrics({
                 移除
               </button>
             </div>
-            <MetricEvidenceView result={value} />
+            <MetricEvidenceView result={value} saved={target.baseline ? [target.baseline] : []} />
+            {target.baseline && <span className="vp-muted">计划基线：{target.baseline.value} {target.baseline.unit}</span>}
+            {value?.status === 'ready' && value.readings.length === 1 && (
+              <button className="wb-btn wb-btn-ghost wb-btn-sm" onClick={() =>
+                onChange({ ...goal, metricTargets: goal.metricTargets.map((item, i) =>
+                  i === index ? { ...item, baseline: value.readings[0] } : item) })
+              }>采用为计划基线</button>
+            )}
             {value?.status !== 'ready' && <p className="vp-muted">当前未知 · 数值目标为草案</p>}
             <label>
               本版目标

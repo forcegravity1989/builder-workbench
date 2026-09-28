@@ -19,7 +19,6 @@
       "4f08ae8311": "tasks",
       "62ca9895a7": "space",
       "844eb0f4f4": "activity",
-      "9f0152563e": "mobile",
       "ca6c6eece7": "skills",
       "d54e66004c": "terminal"
     },
@@ -172,15 +171,13 @@
         "closeAsDuplicateDescription": "Duplicate of another issue in this repository",
         "closeAsDuplicateSubmit": "Close duplicate",
         "closeAsNotPlannedDescription": "Won't fix, can't repro, stale",
+        "codehubDuplicateOf": "#",
         "d079be2dc8": "No assigned issues. Try searching for something.",
         "d0e3c8f933": "No matching GitHub work",
         "d6d08c1650": "Select a project to see GitLab work items.",
         "duplicateIssueNumberPlaceholder": "Issue number",
         "f294c500ef": "No GitLab work matches this filter.",
-        "fe28c9821f": "view",
-        "codehubNoLoadedMatches": "No matches in loaded tasks",
-        "codehubLoadedScope": "Search and filters apply to loaded tasks",
-        "codehubLoadMore": "Load more"
+        "fe28c9821f": "view"
       },
       "Terminal": {
         "cdc9ac4b2d": "editor"
@@ -606,36 +603,6 @@
               "2c4b1c2c08": "number",
               "7616c986c6": "Open {{value0}} issues"
             }
-          }
-        }
-      },
-      "mobile": {
-        "MobileHero": {
-          "79d2f480da": "Network interface to advertise",
-          "7af266b80d": "Install QR code",
-          "bb0074ce11": "Pairing QR code",
-          "ca85e595a7": "No interfaces found",
-          "relayDegradedNotice": "Relay couldn’t be reached — this code only works on your LAN or Tailscale."
-        },
-        "MobilePage": {
-          "1b4509a8a1": "paired",
-          "c5909374cf": "intro"
-        },
-        "MobilePageToolbar": {
-          "a4f8c2d91e": "Hide from sidebar",
-          "b7e3d1c84a": "Show in sidebar"
-        },
-        "mobile": {
-          "platform": {
-            "copy": {
-              "2a532d6fd7": "Scan with your Android camera to download the latest APK from GitHub Releases.",
-              "432db52b73": "Scan with your iPhone camera to open the App Store."
-            }
-          }
-        },
-        "slides": {
-          "WorktreeListSlide": {
-            "c5ad56786d": "spinner"
           }
         }
       },
@@ -1097,7 +1064,6 @@
           "2df8f79aa5": "Show Orca in the titlebar.",
           "42554f615f": "Choose the font used by the Orca interface.",
           "4de76f6902": "Control what appears in the application titlebar.",
-          "5db6ba961f": "Show the Orca Mobile button at the top of the left sidebar.",
           "622e1c3465": "Scale the entire application interface.",
           "661942ab7f": "Show the Tasks button at the top of the left sidebar.",
           "6a272ca553": "Titlebar",
@@ -1307,50 +1273,6 @@
           "536026130e": "Emulator SDKs",
           "dde0ec1cd8": "Toolchains Orca uses to run emulators. Android works on any OS via the Android SDK; iOS Simulators need Xcode on macOS."
         },
-        "MobileNetworkInterfaceSection": {
-          "1dc87a7fbc": "Tailscale",
-          "1e64659126": "Regenerate",
-          "1f7c26d36a": "Sign in to the same tailnet on both devices.",
-          "39fad211d9": "Connect outside your Wi-Fi with a tailnet",
-          "406a35121c": "Network Interface",
-          "51d29927eb": "Install",
-          "63d5e4ae1e": "Regenerate the QR code and scan it from the Orca mobile app.",
-          "668016be7a": "on your computer and phone.",
-          "87985ba6f5": "In this Network Interface menu, choose the Tailscale address, usually a 100.x.y.z IP.",
-          "9fc5d203ff": "Orca Mobile connects directly to this computer. To use it away from the same LAN, put your computer and phone on the same private overlay network, then generate the QR code with that network address selected.",
-          "a9db5d771d": "Refresh network interfaces",
-          "c541f67790": "Generate QR Code",
-          "d536b5e20d": "Choose which network address to advertise in the QR code. Use your LAN address for same-network pairing, or an overlay network address (Tailscale, ZeroTier) for cross-network access."
-        },
-        "MobilePane": {
-          "relayDegradedNotice": "Relay couldn’t be reached — this code only works on your LAN or Tailscale. Regenerate to try again."
-        },
-        "MobileRelayBetaAvailability": {
-          "about": "About the Orca Relay beta",
-          "androidApk": "Android APK",
-          "availability": "Available on",
-          "beta": "Beta",
-          "testFlight": "TestFlight"
-        },
-        "MobileRelayStatusSection": {
-          "automatic": "Connect from anywhere when a phone is paired",
-          "connecting": "Connecting",
-          "directNeedsNoAccount": "LAN and Tailscale pairing still work without an account.",
-          "directStillAvailable": "LAN and Tailscale connections remain available.",
-          "offline": "Offline",
-          "reconnecting": "Reconnecting",
-          "registered": "Registered",
-          "signIn": "Sign in",
-          "signInPrompt": "Sign in on this desktop to connect from anywhere",
-          "standby": "Standby — no relay devices",
-          "title": "Orca Relay",
-          "unavailable": "Unavailable"
-        },
-        "MobileSettingsPane": {
-          "9a3c280e49": "GitHub Releases",
-          "b0088412a1": "or the Android APK from",
-          "c8491c17ef": "Control Orca from your phone by scanning a QR code. Beta / early preview - expect bugs and breaking changes. Get the iOS app from the"
-        },
         "NotificationsPane": {
           "274af61bc0": "system",
           "d3756cf5bc": "disabled"
@@ -1451,8 +1373,7 @@
           "8bd117d669": "Interface",
           "9abb9be3bc": "Set Up",
           "dd72ed437a": "Choose which task providers appear in the Tasks page and sidebar.",
-          "e1578cd4bc": "Workflows",
-          "mobile_group": "Mobile"
+          "e1578cd4bc": "Workflows"
         },
         "SettingsFormControls": {
           "3119c012a5": "string",
@@ -1701,13 +1622,6 @@
               "eaffa454e9": "Update",
               "efaab83c5d": "Add site",
               "fb854902d9": "connecting"
-            }
-          }
-        },
-        "mobile": {
-          "settings": {
-            "search": {
-              "b730ff7049": "experimental"
             }
           }
         },
@@ -2547,7 +2461,9 @@
         "dropPartiallyAttached_other": "{{failureCount}} of {{count}} items could not be attached."
       },
       "useIpcEvents": {
+        "11992d0337": "If this was your phone or another Orca client, re-pair it from Settings → Mobile.",
         "60428567b4": "Local terminal reveal is unavailable while a remote runtime is active",
+        "6573cfe955": "Open Mobile Settings",
         "f6300deb8b": "New Browser Tab"
       },
       "useSettingsNavigationMetadata": {
@@ -2621,9 +2537,6 @@
   },
   "components": {
     "native-chat": {
-      "approval": {
-        "cancel": "Cancel"
-      },
       "composer": {
         "effort": "Effort"
       },

@@ -83,14 +83,6 @@ describe('locale-translation-policy', () => {
     ).toBe('失敗したチェックに対して AI Agent を開始しました。')
     expect(
       repairTranslatedValue({
-        key: 'auto.hooks.useSettingsNavigationMetadata.95a1886d94',
-        enValue: 'Control terminals and agents from your phone.',
-        localeValue: '電話機からターミナルとエージェントを制御します。',
-        locale: 'ja'
-      })
-    ).toBe('スマートフォンからターミナルと Agent を操作します。')
-    expect(
-      repairTranslatedValue({
         key: 'auto.components.GitHubItemDialog.934add88b6',
         enValue: 'Reviewer',
         localeValue: '査読者',
@@ -442,14 +434,6 @@ describe('locale-translation-policy', () => {
     ).toBe('GitHub CLI をインストールして PR、Issue、チェックを有効にします。')
     expect(
       repairTranslatedValue({
-        key: 'auto.components.mobile.MobilePage.e17393c6a3',
-        enValue: 'Phone preview',
-        localeValue: '電話プレビュー',
-        locale: 'ja'
-      })
-    ).toBe('スマートフォンプレビュー')
-    expect(
-      repairTranslatedValue({
         key: 'auto.components.GitHubItemDialog.8c45901789',
         enValue: 'Request reviewer {{value0}}',
         localeValue: 'レビュアー {{value0}} をリクエスト',
@@ -475,14 +459,6 @@ describe('locale-translation-policy', () => {
         locale: 'zh'
       })
     ).toBe('手机')
-    expect(
-      repairTranslatedValue({
-        key: 'auto.components.mobile.slides.TerminalSlide.985373052e',
-        enValue: 'Switch to phone mode',
-        localeValue: '切换到电话模式',
-        locale: 'zh'
-      })
-    ).toBe('切换到手机模式')
     expect(
       repairTranslatedValue({
         key: 'auto.components.settings.GitPane.b559bf9899',

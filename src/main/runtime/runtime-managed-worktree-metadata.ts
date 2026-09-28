@@ -99,7 +99,7 @@ export async function updateRuntimeManagedWorktreeMetadata(args: {
   // Why: CLI callers need an explicit push for metadata changed outside the renderer's optimistic update path.
   args.ports.invalidateResolved()
   args.ports.notifyChanged(worktree.repoId)
-  return args.ports.showWorktree(`id:${worktree.id}`)
+  return args.ports.showWorktree(worktree.identity?.key ? `identity:${worktree.identity.key}` : `id:${worktree.id}`)
 }
 
 export function persistRuntimeManagedWorktreeSortOrder(args: {
