@@ -10,7 +10,7 @@ import { useAppStore } from '@/store'
 import { cn } from '@/lib/utils'
 import { SidebarTaskNavButton } from '@/components/sidebar/SidebarTaskNavButton'
 import { isWorkbenchShell } from './is-workbench-shell'
-import { openProjectWall } from './project-wall-state'
+import { closeProjectPage, openProjectWall, useProjectPage } from './project-page-state'
 import { setCycleView, useCycleView } from './cycle-view-state'
 import { resolveWorkbenchNav, type WorkbenchNavId } from './workbench-nav'
 
@@ -55,9 +55,9 @@ function WorkbenchNavItem({
   )
 }
 
-/** V6-style nav; execution dimms all items. Projects stay in Orca sidebar below. */
 export function WorkbenchSidebarNav(): React.JSX.Element | null {
   const activeView = useAppStore((s) => s.activeView)
+  const projectPage = useProjectPage()
   const openArtifactsPage = useAppStore((s) => s.openArtifactsPage)
   const openAutomationsPage = useAppStore((s) => s.openAutomationsPage)
   const openActivityPage = useAppStore((s) => s.openActivityPage)
@@ -73,7 +73,7 @@ export function WorkbenchSidebarNav(): React.JSX.Element | null {
     return null
   }
 
-  const activeNav = resolveWorkbenchNav(activeView)
+  const activeNav = projectPage ? null : resolveWorkbenchNav(activeView)
 
   const go = (id: WorkbenchNavId) => {
     if (id === 'overview') {
@@ -108,7 +108,11 @@ export function WorkbenchSidebarNav(): React.JSX.Element | null {
         </span>
       </button>
 
-      <nav className="flex flex-col gap-0.5" aria-label="项目内导航">
+      <nav
+        className="flex flex-col gap-0.5"
+        aria-label="项目内导航"
+        onClickCapture={closeProjectPage}
+      >
         {NAV_BEFORE_TASKS.map((item) => (
           <WorkbenchNavItem key={item.id} item={item} active={activeNav === item.id} onGo={go} />
         ))}

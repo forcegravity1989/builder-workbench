@@ -12,6 +12,7 @@ import { RightSidebarToggle, TitlebarMainStrip } from './TitlebarMainStrip'
 import type { AppChromeLayout } from './use-app-chrome-layout'
 import type { FloatingWorkspacePanelState } from './use-floating-workspace-panel'
 import { isWorkbenchShell } from '../workbench/is-workbench-shell'
+import { useProjectPage } from '../workbench/project-page-state'
 
 const Landing = lazy(() => import('../components/Landing'))
 const WorktreeCreationPanel = lazy(
@@ -33,6 +34,12 @@ const KnowledgePage = lazy(() =>
 )
 const CycleWorkspacePage = lazy(() =>
   import('../workbench/CycleWorkspacePage').then((m) => ({ default: m.CycleWorkspacePage }))
+)
+const ProjectWallPage = lazy(() =>
+  import('../workbench/ProjectWallPage').then((m) => ({ default: m.ProjectWallPage }))
+)
+const OnboardProjectPage = lazy(() =>
+  import('../workbench/OnboardProjectPage').then((m) => ({ default: m.OnboardProjectPage }))
 )
 
 type WorktreeSidebarScrollRefs = {
@@ -75,6 +82,15 @@ function WorktreeSidebar({
 
 function ActivePage({ layout }: { layout: AppChromeLayout }): React.JSX.Element {
   const { activeView, activeWorktreeId, activePendingCreationId, creationLayoutActive } = layout
+  const projectPage = useProjectPage()
+  if (isWorkbenchShell() && activeView === 'activity') {
+    if (projectPage?.kind === 'wall') {
+      return <ProjectWallPage />
+    }
+    if (projectPage?.kind === 'onboard') {
+      return <OnboardProjectPage options={projectPage.options} />
+    }
+  }
   return (
     <>
       {activeView === 'settings' ? <Settings /> : null}
@@ -180,10 +196,9 @@ export function AppWorkspaceShell(props: {
               )
             ) : null}
             <div className="flex flex-col flex-1 min-w-0 min-h-0 overflow-hidden">
-              {/* Why: automations/artifacts own their page headers; the stacked titlebar would be an empty 36px stripe. */}
               {layout.stackedSidebarOpen &&
-              layout.activeView !== 'automations' &&
-              layout.activeView !== 'artifacts' ? (
+              (isWorkbenchShell() ||
+                (layout.activeView !== 'automations' && layout.activeView !== 'artifacts')) ? (
                 <div className="titlebar">{titlebarMainStrip}</div>
               ) : null}
               <div className="relative flex flex-1 min-w-0 min-h-0 overflow-hidden">

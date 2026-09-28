@@ -12,7 +12,7 @@
 | Explorer / SC / Diff | right-sidebar | 执行面右栏 |
 | **Tasks** | `components/task-page/` | 独立「任务」页签；原样挂载 Orca TaskPage；叠层按当前墙项目收窄同步仓 |
 | Automations | `components/automations/` | 自动化屏 |
-| Settings | `components/settings/` | 设置（覆盖层形态后续收） |
+| Settings | `components/settings/` | 设置 |
 | main / shared runtime | `src/main`, `src/shared` | 业务语义 |
 
 ## 当前源码（叠层）
@@ -27,8 +27,8 @@
 | 端口与 runtime | `task-port.ts` / `archive-port.ts` / `metrics-port.ts` / `version-material-port.ts` / `version-history-port.ts` / `metric-runtime-rpc.ts` | 消费 `src/main/workbench/` RPC（materials / metrics / history / archive.proof）；任务读取复用原生 github.workItem / codehub.viewTask，单条失败 kind:'unavailable'；openDetail 经原生 openTaskPage（returnToPreviousView 跳过 tasks 哨兵，来源上下文由 cycle-view-state / view-memory 恢复） |
 | 总览 | `OverviewPage.tsx` + `overview-north-star-card.tsx` / `overview-project-card.tsx` / `overview-metric-zones.tsx`（图表区）/ `overview-metric-chart.tsx`（手写 SVG 折线）/ `overview-zone-series.ts`（窗口与桶逻辑）/ `overview-sdlc-zones.tsx` + `use-overview-sdlc.ts`（项目区）/ `overview-metric-readings.ts` + `use-overview-zone-granularity.ts`（读取与粒度）+ `metrics/`（MetricSelector、MetricEvidenceView）+ `use-version-minutes.ts` | 真实北极星读数（nativeMetricsPort，无数据 Unknown / 未配置如实）；「配置指标」入口经 `version-cycle/metrics-setup` 与计划屏共管线；业务区=滞后/引领图表（特性页签、显隐、日/周、长定义 details，诚实规则见测试）；项目区 SDLC=提交真实时间桶（git.history 上限 200、截断留空）/开放 Issue 时点存量/合入 PR 诚实空态（无 mergedAt 通道）；版本页签=真实归档记录∪当前选版；页内计划/验收双栏纪要（归档 history.read 优先、当前选版回落 live 材料）；OVERVIEW_DEMO 已删 |
 | 知识库保真 | `KnowledgePage` + `use-knowledge-repo` + `knowledge-demo-data` | 文档树与正文读 activeRepo，编辑直接保存该仓；代码占位，对账与建议含演示数据 |
-| 项目墙覆盖层 | `ProjectWallOverlay`；按 `ProjectGroup` 聚合多仓；卡片展示仓链接；`+ 代码仓` / 删除 | `screens/wall` |
-| 接入项目 | `OnboardProjectOverlay`：本地仓 / 克隆 + 名片 → `repo.add` + `.bw/project.toml` | `screens/onboard` + architecture §1 |
+| 项目墙 | `ProjectWallPage` + `project-page-state`；在 activity 内容槽展示；按 `ProjectGroup` 聚合多仓；卡片展示仓链接；`+ 代码仓` / 删除 | Orca 外壳内切换项目 |
+| 接入项目 | `OnboardProjectPage`：在 activity 内容槽展示；本地仓 / 克隆 + 名片 → `repo.add` + `.bw/project.toml` | architecture §1 |
 | 皮肤 token | `workbench-tokens.css` + `workbench-overview.css` + `version-planning/version-planning.css`、`version-acceptance/acceptance.css`、`metrics/metric-evidence.css` | `bw-tokens` / hifi-overview；workbench-plan.css 与旧三屏链条已删除 |
 | 热加载调试 | `pnpm run dev:workbench`（electron-vite HMR；独立 `workbench-dev` profile） | — |
 | 品牌打包 | `ORCA_PRODUCT_NAME` / `build:mac:workbench` | — |
@@ -49,6 +49,5 @@
 - 总览合入 PR 趋势（需 Orca 原生透出真实 mergedAt，未授权不做）；提交历史完整分页与提交时间口径（%ct 需原生解析扩展）；Issue 历史存量（需完整事件源）；同版本多周总览切换；返回恢复总览筛选；项目墙健康灯
 - 知识库真实对账（名片已读 `.bw/project.toml`）
 - 项目约定完整路径：`bw/project` 常驻 worktree + MR（现 MVP 写工作区 `.bw/`）
-- 设置改为顶层覆盖层（对照 `screens/settings`）
 - 知识库文档树已读真实仓库；工作树来源、保存评审边界、ref 分类覆盖、codegraph 与真实对账待对应特性重新决策
 - CodeHub 分区列仓对等 GitHub 克隆体验；CodeHub Issue 正文编辑（本轮延期）

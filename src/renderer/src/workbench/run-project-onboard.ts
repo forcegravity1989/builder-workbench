@@ -174,7 +174,7 @@ export async function submitProjectOnboard(args: {
   onLog({ kind: 'ok', text: attached ? '完成，返回项目墙…' : '完成，正在打开项目墙…' })
   const switched = await switchActiveProject(repoId)
   if (switched) {
-    const { openProjectWall } = await import('./project-wall-state')
+    const { openProjectWall } = await import('./project-page-state')
     openProjectWall()
   }
   return { ok: switched, repoId, attached }
