@@ -18,9 +18,9 @@
 
 | # | 特性 | 目录 | 分诊 | intent | spec | 实现设计 | TDD | 验收点E2E | 旅程E2E |
 |---|---|---|---|:--:|:--:|:--:|:--:|:--:|:--:|
-| 1 | 版本计划 | [version-planning/](version-planning/) | 在用·本轮交付（v0.5 收尾） | ● | ● | ◐ | ◐ | ◐(P01–P10 未逐项) | ○(PJ01/PJ02 已定义) |
-| 2 | 版本验收 | [version-acceptance/](version-acceptance/) | 在用·本轮交付（v0.5 收尾） | ● | ● | ◐ | ◐ | ◐(A01–A10 未逐项) | ○(AJ01/AJ02 已定义) |
-| 3 | 总览指标 | [overview-metrics/](overview-metrics/) | 在用·本轮交付（v0.5 收尾） | ● | ● | ◐ | ◐ | ◐(M01–M10 未逐项，M02 缺) | ○(MJ01/MJ02 已定义) |
+| 1 | 版本计划 | [version-planning/](version-planning/) · [原型](version-planning/prototype.html) | 在用·本轮交付（v0.5 收尾） | ● | ● | ◐ | ◐ | ◐(P01–P10 未逐项) | ○(PJ01/PJ02 已定义) |
+| 2 | 版本验收 | [version-acceptance/](version-acceptance/) · [原型](version-acceptance/prototype.html) | 在用·本轮交付（v0.5 收尾） | ● | ● | ◐ | ◐ | ◐(A01–A10 未逐项) | ○(AJ01/AJ02 已定义) |
+| 3 | 总览指标 | [overview-metrics/](overview-metrics/) · [原型](overview-metrics/prototype.html) | 在用·本轮交付（v0.5 收尾） | ● | ● | ◐ | ◐ | ◐(M01–M10 未逐项，M02 缺) | ○(MJ01/MJ02 已定义) |
 | 4 | PR 评审召唤制（reviewer-agent） | [reviewer-agent/](reviewer-agent/) | 开发方法资产·历史记录¹ | ● | ● | ●¹ | ◐¹ | ●¹ | ○(台内路径 defer) |
 
 ¹ 第 4 行六环值为历史证据转述（2026-08/09 Rust 与 main 侧交付：GitHub CI 自动评审路径已交付并实测闭环）；本叠层分支不含其 workflow、未复核，不作为 Electron 叠层交付证明。台内「请评审」按钮路径规范件在仓但未接线，defer。明细见其 [STATUS](reviewer-agent/STATUS.md) 历史头部。

@@ -15,7 +15,7 @@
 | 验收点 E2E | ◐ 部分 | 真壳 Playwright 烟测 `tests/e2e/workbench-cycle-smoke.spec.ts` 含验收树创建与总览读回，已编写，执行结果见 PR；A01–A10 完整验收点尚未逐项运行 |
 | 用户旅程 E2E | ○ 缺 | AJ01/AJ02 已定义；真实出包/验证、模型会话、provider 归档全链、自动化到点与重启核对未运行 |
 
-[第八版原型索引](prototype.md) 指向计划目录共用原型的验收入口；来源与离线使用见[版本计划规格](../version-planning/spec.md)，完整历史附件保留在[原始评审包](https://github.com/forcegravity1989/builder-workbench/archive/f20f04ae57d510178c710c71216b9b734082c28e.zip)。原型与包内浏览器检查只证明交互演示，未接远端写回/真实采集/自动化，不表示能力已交付。执行步骤与并行分工位于本任务仓外 plans，不在仓内新增 plan.md。
+[第八版交互原型](prototype.html) 是本特性的独立入口；来源与离线使用见[版本计划规格](../version-planning/spec.md)，完整历史附件保留在[原始评审包](https://github.com/forcegravity1989/builder-workbench/archive/f20f04ae57d510178c710c71216b9b734082c28e.zip)。原型与包内浏览器检查只证明交互演示，未接远端写回/真实采集/自动化，不表示能力已交付。执行步骤与并行分工位于本任务仓外 plans，不在仓内新增 plan.md。
 
 验收已接入生产入口：侧栏「验收」独立入口与计划共用 artifacts 槽的 `version-cycle/CycleWorkspaceShell.tsx`（`cycle-view-state.ts` 区分子视图），进入即确保 bw/week-acceptance 固定工作树并正式选择；左侧当前会话 + 固定树历史（精确身份恢复），右侧 `version-acceptance/AcceptancePage`。归档状态按材料身份（workflow/version/cycleId/revision）自动读取：首读未决短暂禁编辑，失败如实 Unknown 不锁死；archived 判定不受 dirty 影响，脏草稿不能绕过已确认归档，界面提供「放弃本地修改，重读宿主材料」。归档证明为 provider 真实合入提交在采用基线上且合入提交树内材料字节等于修订；CodeHub 无真实合入证据一律 Unknown，正文编辑延期。目标卡交付件可直接打开（URL 走系统浏览器、路径走原生打开、凭据链接拒绝）；Issue 摘要为真实状态分布加快照时间，未知不显示 0/0。旧 results/confirmation 只能作为带来源的历史输入，不能自动升级为新验收认可。
 

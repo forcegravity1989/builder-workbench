@@ -15,7 +15,7 @@
 | 验收点 E2E | ◐ 部分 | 真壳 Playwright 烟测 `tests/e2e/workbench-cycle-smoke.spec.ts`（固定树创建→选版→保存→磁盘读回→重载恢复→验收树→总览）已编写，执行结果见 PR；P01–P10 完整验收点尚未逐项运行 |
 | 用户旅程 E2E | ○ 缺 | PJ01/PJ02 已定义；真实模型会话、provider 归档全链、自动化到点与重启独立读回未运行 |
 
-[第八版交互原型](prototype.html#monday) 已归入本特性目录，作为三屏共用的历史评审输入；来源、离线使用与[原始评审包](https://github.com/forcegravity1989/builder-workbench/archive/f20f04ae57d510178c710c71216b9b734082c28e.zip) 的区别见 [spec](spec.md)。原型与包内浏览器检查只证明交互演示，未接远端写回/真实采集/自动化，不表示能力已交付。执行步骤与并行分工位于本任务仓外 plans，不在仓内新增 plan.md。
+[第八版交互原型](prototype.html) 是本特性的独立入口，作为历史评审输入；三屏界面源码各归所属特性，共用资源仅保留一份；来源、离线使用与[原始评审包](https://github.com/forcegravity1989/builder-workbench/archive/f20f04ae57d510178c710c71216b9b734082c28e.zip) 的区别见 [spec](spec.md)。原型与包内浏览器检查只证明交互演示，未接远端写回/真实采集/自动化，不表示能力已交付。执行步骤与并行分工位于本任务仓外 plans，不在仓内新增 plan.md。
 
 生产入口已切换：AppWorkspaceShell 的 artifacts 槽挂 `workbench/CycleWorkspacePage.tsx` → `version-cycle/CycleWorkspaceShell.tsx`（计划/验收共用容器，`cycle-view-state.ts` 区分子视图，侧栏「计划」「验收」独立入口）。旧三屏计划链（PlanJourneyShell / PlanWeekBoard / PlanWeekPlanChat / plan-week-* / workbench-plan.css / overview-demo-data.ts）已全部删除；standard/ 的 planning.py、version-plan.html、data-template.json 与会议 reference 在消费方切换的同一交付内退役删除，check-week-comment.py 与 week-plan-comment.md 保留作历史评论修复协议。
 
