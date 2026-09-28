@@ -114,18 +114,24 @@ afterEach(() => {
   container.remove()
 })
 
-function Probe({ repo }: { repo: Repo | null }): null {
+function Probe({
+  repo,
+  requestedRange
+}: {
+  repo: Repo | null
+  requestedRange: typeof range
+}): null {
   api = useOverviewSdlc({
     repo,
     baseScope,
     baseWorktreeId: 'tree',
     baseWorktreePath: '/repo',
-    range
+    range: requestedRange
   })
   return null
 }
-async function renderHook(repo: Repo | null): Promise<void> {
-  await act(async () => root.render(<Probe repo={repo} />))
+async function renderHook(repo: Repo | null, requestedRange = range): Promise<void> {
+  await act(async () => root.render(<Probe repo={repo} requestedRange={requestedRange} />))
   await act(async () => {
     await new Promise((resolve) => setTimeout(resolve, 0))
   })
@@ -180,21 +186,36 @@ it('GitHub uses the owning runtime and reports merge timestamps, not update time
 })
 it('GitHub follows pages and refuses missing timestamps or a per-source permission error', async () => {
   const source = { owner: 'o', repo: 'r' }
-  fixture.ghList = async ({ page }) => ({
-    sources: { prs: source },
-    items:
-      page === 1
-        ? Array.from({ length: 100 }, (_, id) => ({
-            id: String(id),
-            mergedAt: '2026-09-24T10:00:00Z'
-          }))
-        : []
-  })
-  const result = await readSdlcRemote(githubRepo, 'github', 'pr', range, () => true)
+  const searchRange = {
+    ...range,
+    since: '2026-09-24',
+    until: '2026-09-26',
+    granularity: 'day' as const,
+    timezone: 'Asia/Shanghai'
+  }
+  const requests: { query: string; page: number }[] = []
+  fixture.ghList = async ({ page, query }) => {
+    requests.push({ page, query })
+    return {
+      sources: { prs: source },
+      items:
+        page === 1
+          ? Array.from({ length: 100 }, (_, id) => ({
+              id: String(id),
+              mergedAt: '2026-09-24T10:00:00Z'
+            }))
+          : []
+    }
+  }
+  const result = await readSdlcRemote(githubRepo, 'github', 'pr', searchRange, () => true)
   if (result.kind !== 'ready') {
     throw new Error('expected ready')
   }
   expect(result.value.items).toHaveLength(100)
+  expect(requests).toEqual([
+    { page: 1, query: 'is:pr is:merged merged:2026-09-23..2026-09-26' },
+    { page: 2, query: 'is:pr is:merged merged:2026-09-23..2026-09-26' }
+  ])
   fixture.ghList = async () => ({
     sources: { prs: source },
     items: [{ id: 'pr:1', updatedAt: '2026-09-24T10:00:00Z' }]
@@ -236,9 +257,7 @@ it('one failed channel does not hide the other sources, and refresh re-reads the
   expect(api.commits).toEqual({ kind: 'error', message: 'git unavailable' })
   expect(api.issues).toMatchObject({ kind: 'ready', value: { count: 0 } })
   fixture.history = historyOk
-  await act(async () => {
-    await api.refresh()
-  })
+  await renderHook(codehubRepo, { ...range })
   expect(api.commits?.kind).toBe('ready')
 })
 it('unrecognized provider leaves remote metrics unknown while preserving git', async () => {

@@ -196,8 +196,6 @@ describe('zonePointState', () => {
     }
     expect(state.values).toEqual([null, 2, null, null, 5])
     expect(state.latest).toMatchObject({ value: 5 })
-    expect(state.latestIndex).toBe(4)
-    expect(state.latestIsText).toBe(false)
   })
 
   it('字符串读数不做数值曲线，只作为当前值文本', () => {
@@ -211,7 +209,6 @@ describe('zonePointState', () => {
       throw new Error('expected ready')
     }
     expect(state.values).toEqual([null, null, null, null, null])
-    expect(state.latestIsText).toBe(true)
     expect(state.latest?.value).toBe('达标')
   })
 
@@ -242,7 +239,7 @@ describe('zonePointState', () => {
       throw new Error('expected ready')
     }
     expect(state.values.every((value) => value === null)).toBe(true)
-    expect(state.latest).toMatchObject({ value: 3, coverageEnd: null })
+    expect(state.latest).toMatchObject({ value: 3 })
   })
 })
 

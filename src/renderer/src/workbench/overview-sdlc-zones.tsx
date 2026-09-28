@@ -135,7 +135,10 @@ export function OverviewSdlcZones({
           <OverviewGrain
             label="项目指标粒度"
             value={view.repoGranularity}
-            onChange={(value) => setView({ repoGranularity: value })}
+            onChange={(value) => {
+              setAnchor(new Date().toISOString())
+              setView({ repoGranularity: value })
+            }}
           />
           <OverviewRefresh
             label="刷新项目指标"

@@ -17,8 +17,8 @@ BW 自用的 managed-projects.py、其名单和远端读取依赖要逐项核对
 | 层                            | 责任                                                                                       |
 | ----------------------------- | ------------------------------------------------------------------------------------------ |
 | shared/workbench metrics 契约 | MetricDefinition、MetricRef、MetricReading、窗口/错误模型与可比较性                        |
-| BW 主进程指标服务             | 可信项目定位、业务定义/脚本与项目 Git/provider 统计两种来源、任务去重、输出校验、证据/缓存 |
-| renderer/workbench/metrics    | 原总览两块指标、业务特性页签/关系、系列显隐、当前/历史图表、刷新与选择器                   |
+| BW 主进程指标服务             | 可信项目定位、业务定义/脚本读取与执行、任务去重、输出校验、证据/缓存 |
+| renderer/workbench           | 业务指标消费 MetricsPort；项目统计编排原生 Git/provider 读取、分页、窗口落桶与请求隔离；两区共用图表呈现 |
 | 计划 / 验收                   | 保存选定 metricRef 和版本目标 / 引用真实 readingRef；不另跑脚本、不保存一份手填实际数      |
 | Orca                          | 项目/宿主身份、权限与通用进程/文件基础设施；不装 BW 指标业务                               |
 
@@ -46,7 +46,7 @@ retro=true 从脚本按日/周重算，缺点留缺；retro=false 仅查询当�
 
 ## 项目研发指标
 
-参考 main 的 trend.rs 与 vm_derive::collect_repo_stats：默认最近五周／十四天；调用 Orca 现有项目定位、Git 与 provider 读取能力，不另写 GitHub 登录或 PR/Issue 抓取栈。主进程提供项目统计读取/刷新，窗口、去重、异常模型与指标服务复用，但不把这些内建统计伪装为 metrics.toml 业务定义。
+参考 main 的 trend.rs 与 vm_derive::collect_repo_stats：默认最近五周／十四天；调用 Orca 现有项目定位、Git 与 provider 读取能力，不另写 GitHub 登录或 PR/Issue 抓取栈。renderer 的 overview-sdlc-readings 编排原生读取与分页，use-overview-sdlc 管理刷新及过期请求隔离，overview-sdlc 按共享窗口函数落桶并保留各来源的失败状态；原生主进程/runtime 负责执行与宿主路由。这些内建统计不经过业务 MetricsPort，也不伪装为 metrics.toml 业务定义。
 
 提交计数明确所选工作树/分支和完整窗口，PR 合入按远端 mergedAt，开放 Issue 为时点存量。旧 main 口径与代码需要逐项核对，尤其重开事件、分页上限和本期非完整窗口；有完整事件历史才重建，只有当前快照就只返回该点。Git 成功不替代远端成功。项目 stats 保留来源与时刻，不能把切日/周后的旧数字重标为新窗口。
 
@@ -59,7 +59,7 @@ Electron 的 GitHub PR 列表／详情与 CodeHub MR 映射现已透传 mergedAt
 
 ## 配置任务与采用
 
-“设置指标”经共享 metrics-setup 管线手动启动原生项目任务，使用独立固定的指标维护分支与工作树 **bw/metrics-refresh**（协议值，树名 metrics-refresh），呈现于原生项目会话屏并注入 metrics-refresh Skill 提示（cycle-prompt 以 workflow='metrics-refresh' 渲染），不增加 BW 右侧配置页或指标自动化。工作树复用计划/验收同一原生定位与创建适配，以项目、宿主和分支查登记；实际目录与创建起点听 Orca 项目设置，不硬编码 .bw 路径、main 或 bw-orca，不删除重建已有工作树。指标模块提供业务提示；任务续接与总览版本/指标筛选恢复沿用原生身份，不重新引入已删除的 MetricSetupPort。同次返回继续未完成任务，显式新配置新建会话并复用维护树，不进入 bw/week-plan 或验收会话。已有未完成改动保留，不因新会话重置维护树。提示加载项目约定、通用 SYSTEM、metrics-refresh 及当前定义/错误；普通项目的 Skill 经产品内置发现 Stub 与原生 guide 分发解析，不依赖项目自带 standard/。配置任务形成定义和脚本的可评审改动，通过原生 PR 进入项目指定配置基线。目录读取固定配置提交；试采草案只在配置上下文有效，不自动成为三屏正式引用。刷新按钮直接调用 MetricsPort，不启动模型。
+“设置指标”经共享 metrics-setup 管线手动启动原生项目任务，使用独立固定的指标维护分支与工作树 **bw/metrics-refresh**（协议值，树名 metrics-refresh），呈现于原生项目会话屏并注入 metrics-refresh Skill 提示（cycle-prompt 以 workflow='metrics-refresh' 渲染），不增加 BW 右侧配置页或指标自动化。工作树复用计划/验收同一原生定位与创建适配，以项目、宿主和分支查登记；实际目录与创建起点听 Orca 项目设置，不硬编码 .bw 路径、main 或 bw-orca，不删除重建已有工作树。指标模块提供业务提示；总览版本/指标筛选按项目与宿主恢复。目标行为仍是按原生任务身份续接同次未完成配置，显式新配置新建会话并复用维护树，不进入 bw/week-plan 或验收会话；当前入口每次新建会话，续接交互待复审和实现。已有未完成改动保留，不因新会话重置维护树。提示加载项目约定、通用 SYSTEM、metrics-refresh 及当前定义/错误；普通项目的 Skill 经产品内置发现 Stub 与原生 guide 分发解析，不依赖项目自带 standard/。配置任务形成定义和脚本的可评审改动，通过原生 PR 进入项目指定配置基线。目录读取固定配置提交；试采草案只在配置上下文有效，不自动成为三屏正式引用。刷新按钮直接调用 MetricsPort，不启动模型。
 
 ## 三屏呈现与迁移
 
@@ -73,4 +73,4 @@ Electron 的 GitHub PR 列表／详情与 CodeHub MR 映射现已透传 mergedAt
 
 TDD 覆盖窗口/时区、定义指纹、真实零与 Unknown、坏输出、去重与过期结果、历史不补值、关系消歧、项目统计的提交/合入/存量口径、Issue 重开与分页截断、重启读回。模拟执行器用于错误分支单测，真实脚本和 Electron 用于 M01–M10/MJ01/MJ02。
 
-主要风险是旧采集口径随新计划 schema 漂移、项目/宿主混用和缓存伪装当前值。指标线先公布 MetricsPort 与固定输入向量，计划/验收线可用契约 fixture 并行开发，再接真实读数；共享接口和文件所有权由总计划约束，执行计划在仓外。VersionHistoryPort 与总览版本记录区域由指标线拥有，计划/验收提供同源摘要纯函数；协调窗口只承接公共注册与跨线集成，避免并行文件冲突。
+主要风险是采集口径随版本材料 schema 漂移、项目/宿主混用和缓存伪装当前值。契约 fixture 只用于局部验证；真实脚本、宿主路由与跨屏采用仍须独立读回，证据与未验证项见 [STATUS](STATUS.md)。

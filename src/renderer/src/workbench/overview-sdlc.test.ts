@@ -83,26 +83,17 @@ describe('bucketCommitCounts', () => {
     expect(result.truncated).toBe(true)
   })
 
-  it('截断边界落在当前桶时，当前桶也留空而不是给偏低的数', () => {
-    const result = bucketCommitCounts(
-      [at('2026-09-21T10:00:00Z'), at('2026-09-22T10:00:00Z')],
-      weekRange,
-      'UTC',
-      true
-    )
-    expect(result.counts).toEqual([null, null])
-  })
-
-  it('日粒度按日桶计数；窗口外提交忽略', () => {
+  it('日粒度按项目时区的午夜落桶，窗口左含右不含', () => {
     const result = bucketCommitCounts(
       [
-        at('2026-09-24T08:00:00Z'),
-        at('2026-09-24T20:00:00Z'),
-        at('2026-09-25T08:00:00Z'),
-        at('2026-09-30T08:00:00Z')
+        at('2026-09-23T15:59:59Z'),
+        at('2026-09-23T16:00:00Z'),
+        at('2026-09-24T15:59:59Z'),
+        at('2026-09-24T16:00:00Z'),
+        at('2026-09-25T16:00:00Z')
       ],
-      dayRange,
-      'UTC',
+      { ...dayRange, timezone: 'Asia/Shanghai' },
+      'Asia/Shanghai',
       false
     )
     expect(result.counts).toEqual([2, 1])

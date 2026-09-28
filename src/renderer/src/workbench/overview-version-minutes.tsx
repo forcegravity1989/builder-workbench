@@ -2,6 +2,7 @@ import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import type { VersionMinutes } from './use-version-minutes'
 import { taskDistribution } from './use-version-minutes'
+import type { VersionHistoryProblem } from '../../../shared/workbench/version-history'
 
 function acceptanceText(minutes: VersionMinutes): string {
   const document = minutes.acceptance!.document
@@ -42,6 +43,7 @@ export function OverviewVersionMinutes({
   cycle,
   onCycle,
   minutes,
+  historyProblems,
   onRetry
 }: {
   versions: string[]
@@ -51,6 +53,7 @@ export function OverviewVersionMinutes({
   cycle: string
   onCycle(cycle: string): void
   minutes: VersionMinutes | null
+  historyProblems: VersionHistoryProblem[]
   onRetry(): void
 }) {
   const columns = [
@@ -95,8 +98,28 @@ export function OverviewVersionMinutes({
           </select>
         )}
       </header>
+      {historyProblems.length > 0 && (
+        <details className="wb-ov-section-body">
+          <summary>无法读取的归档（{historyProblems.length}）</summary>
+          <ul>
+            {historyProblems.map((problem) => (
+              <li
+                key={`${problem.sourceCommit}:${problem.workflow}:${problem.version}:${problem.code}`}
+              >
+                {problem.version} · {problem.workflow === 'plan' ? '计划' : '验收'} ·{' '}
+                {problem.sourceCommit.slice(0, 12)}：{problem.message}
+              </li>
+            ))}
+          </ul>
+          <button type="button" className="wb-btn wb-btn-secondary wb-btn-sm" onClick={onRetry}>
+            重试
+          </button>
+        </details>
+      )}
       {!version ? (
-        <p className="wb-muted wb-ov-section-body">尚无版本材料</p>
+        <p className="wb-muted wb-ov-section-body">
+          {historyProblems.length ? '暂无可读取的版本材料' : '尚无版本材料'}
+        </p>
       ) : (
         <div className="goal-week">
           {columns.map((column) => (

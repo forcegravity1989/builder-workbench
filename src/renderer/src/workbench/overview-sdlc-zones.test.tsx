@@ -46,7 +46,6 @@ function stateOf(overrides: Partial<OverviewSdlcState> = {}): OverviewSdlcState 
       value: { count: 11, truncated: false, readAt: new Date().toISOString() }
     },
     busy: false,
-    refresh: vi.fn(async () => {}),
     ...overrides
   }
 }
@@ -61,6 +60,7 @@ beforeEach(() => {
 afterEach(() => {
   act(() => root.unmount())
   container.remove()
+  vi.useRealTimers()
 })
 
 async function renderZones(state: OverviewSdlcState): Promise<void> {
@@ -88,6 +88,18 @@ it('renders three charts with real bucket counts and only one current Issue poin
   expect(charts[0].values.filter((value: number) => value > 0)).toHaveLength(2)
   expect(charts[1].values.every((value: number) => value === 0)).toBe(true)
   expect(charts[2].values.filter((value: unknown) => value !== null)).toEqual([11])
+  vi.useFakeTimers({ toFake: ['Date'] })
+  vi.setSystemTime(Date.now() + 8 * 86_400_000)
+  await act(async () =>
+    (
+      container.querySelector('[aria-label="项目指标粒度"] button:last-child') as HTMLButtonElement
+    ).click()
+  )
+  await renderZones(stateOf())
+  const currentIssues = JSON.parse(
+    container.querySelectorAll('[data-series]')[2].getAttribute('data-series')!
+  )[0]
+  expect(currentIssues.values.at(-1)).toBe(11)
 })
 it('a failed merge source does not hide commits or Issues', async () => {
   await renderZones(stateOf({ merges: { kind: 'error', message: '合入时间缺失' } }))

@@ -17,7 +17,6 @@ export type OverviewSdlcState = {
   merges: SdlcSeries<SdlcCommits> | null
   issues: SdlcSeries<SdlcSnapshot> | null
   busy: boolean
-  refresh(): Promise<void>
 }
 export function useOverviewSdlc(args: {
   repo: Repo | null
@@ -75,7 +74,6 @@ export function useOverviewSdlc(args: {
   return {
     provider,
     ...(data.key === key ? data : { commits: null, merges: null, issues: null }),
-    busy,
-    refresh: load
+    busy
   }
 }

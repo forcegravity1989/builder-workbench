@@ -60,7 +60,12 @@ export function OverviewPage(): React.JSX.Element {
   }, [baseScope, repoWorktrees])
   const baseWorktreeId = baseWorktree?.id ?? null
 
-  const [charter, setCharter] = useState<ProjectCharter | null>(null)
+  const charterKey = JSON.stringify([activeRepo?.id, activeRepo?.path])
+  const [charterState, setCharter] = useState<{
+    key: string
+    value: ProjectCharter | null
+  } | null>(null)
+  const charter = charterState?.key === charterKey ? charterState.value : null
   const [catalog, setCatalog] = useState<MetricCatalog | null>(null)
   const [northReading, setNorthReading] = useState<MetricReading | null>(null)
   const [zoneReadings, setZoneReadings] = useState<Record<string, MetricReading | null>>({})
@@ -117,13 +122,13 @@ export function OverviewPage(): React.JSX.Element {
     let cancelled = false
     void readProjectCharter(activeRepo.path).then((r) => {
       if (!cancelled) {
-        setCharter(r.charter)
+        setCharter({ key: charterKey, value: r.charter })
       }
     })
     return () => {
       cancelled = true
     }
-  }, [activeRepo?.path])
+  }, [activeRepo?.path, charterKey])
 
   const load = useCallback(async () => {
     if (!baseScope || !baseWorktreeId) {
@@ -221,7 +226,6 @@ export function OverviewPage(): React.JSX.Element {
     setNorthReading(null)
     setZoneReadings({})
     setCurrentVersion(null)
-    // Clear the previous project's problems so a stale list never renders over a fresh load.
     setProblems([])
     void load()
     return invalidate
@@ -339,7 +343,8 @@ export function OverviewPage(): React.JSX.Element {
           cycle={cycle}
           onCycle={(value) => setView({ cycle: value })}
           minutes={minutes}
-          onRetry={() => setMinutesRetry((value) => value + 1)}
+          historyProblems={history?.problems ?? []}
+          onRetry={() => void load().then(() => setMinutesRetry((value) => value + 1))}
         />
         <OverviewMetricZones
           catalog={catalog}
@@ -354,6 +359,7 @@ export function OverviewPage(): React.JSX.Element {
         />
 
         <OverviewSdlcZones
+          key={identity}
           identity={identity}
           repo={activeRepo}
           baseScope={baseScope}

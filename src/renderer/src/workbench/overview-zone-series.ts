@@ -99,11 +99,7 @@ export type ZonePointState =
       /** Numeric curve values; string readings never become points. */
       values: (number | null)[]
       /** Most recent evidence regardless of type, for the row's current value. */
-      latest: { value: string | number; collectedAt: string; coverageEnd: string | null } | null
-      /** Index of the newest bucketed point on the axis, when it lands inside the span. */
-      latestIndex: number | null
-      /** True when the newest evidence value is a string reading (row shows text, no curve). */
-      latestIsText: boolean
+      latest: { value: string | number; collectedAt: string } | null
     }
 
 function staleOf(reading: MetricReading): { value: string | number; collectedAt: string } | null {
@@ -132,28 +128,22 @@ export function zonePointState(
   }
   const values: (number | null)[] = labels.map(() => null)
   let latest: Extract<ZonePointState, { kind: 'ready' }>['latest'] = null
-  let latestIndex: number | null = null
   for (const point of reading.readings) {
     latest = {
       value: point.value,
-      collectedAt: point.collectedAt,
-      coverageEnd: point.observation.kind === 'window' ? point.observation.end : null
+      collectedAt: point.collectedAt
     }
-    latestIndex = null
     if (range && point.observation.kind === 'window' && typeof point.value === 'number') {
       const index = bucketIndexOf(dayInTimezone(point.observation.start, timezone), range)
       if (index !== null && index < values.length) {
         values[index] = point.value
-        latestIndex = index
       }
     }
   }
   return {
     kind: 'ready',
     values,
-    latest,
-    latestIndex,
-    latestIsText: latest !== null && typeof latest.value === 'string'
+    latest
   }
 }
 

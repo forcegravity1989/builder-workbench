@@ -123,6 +123,25 @@ it('keeps a non-current version honest: no archive record means no acceptance co
 })
 
 it('reads the selected archive cycle independently of live material', async () => {
+  const newerRevision = `sha256:${'c'.repeat(64)}`
+  const adoptedPlan: PlanningMaterial = {
+    ...planDocument,
+    goals: [{ goalId: 'g1', title: '验收采用的目标', metricTargets: [] }]
+  }
+  const newerPlan: PlanningMaterial = {
+    ...planDocument,
+    goals: [{ goalId: 'g1', title: '后来调整的目标', metricTargets: [] }]
+  }
+  const archivedAcceptance: AcceptanceMaterial = {
+    ...acceptanceDocument,
+    planRef: {
+      kind: 'committed',
+      version: 'v1',
+      cycleId: 'cycle',
+      revision,
+      sourceCommit: 'a'.repeat(40)
+    }
+  }
   const record: VersionHistorySource = {
     version: 'v1',
     workflow: 'acceptance',
@@ -131,18 +150,46 @@ it('reads the selected archive cycle independently of live material', async () =
     revision,
     committedAt: '2026-09-25T00:00:00Z'
   }
-  fixture.historyRead = async () => ({ document: acceptanceDocument })
+  fixture.historyRead = async (input) =>
+    (input as { workflow: string }).workflow === 'plan'
+      ? { document: newerPlan, revision: newerRevision }
+      : { document: archivedAcceptance, revision }
+  const readPlan = vi.fn(async () => ({
+    document: adoptedPlan,
+    revision,
+    source: { kind: 'committed', sourceCommit: 'a'.repeat(40) }
+  }))
+  fixture.readPlan = readPlan
   await render({
     baseScope,
     baseWorktreeId: 'tree',
     planWorktreeId: 'plan-tree',
     acceptanceWorktreeId: 'accept-tree',
-    history: { records: [record], problems: [] },
+    history: {
+      records: [
+        record,
+        {
+          ...record,
+          workflow: 'plan',
+          sourceCommit: 'c'.repeat(40),
+          revision: newerRevision,
+          committedAt: '2026-09-26T00:00:00Z'
+        }
+      ],
+      problems: []
+    },
     cycle: 'cycle',
     currentVersion: 'v1',
     version: 'v1'
   })
   expect(latest?.acceptance?.source).toContain('归档 bbbbbbbbbbbb')
+  expect(readPlan).toHaveBeenCalledExactlyOnceWith({
+    scope: { repoId: 'r', worktreeId: 'tree', hostId: 'local' },
+    planRef: archivedAcceptance.planRef
+  })
+  expect(latest?.planDocument).toEqual(adoptedPlan)
+  expect(latest?.plan?.text).toContain('验收采用的目标')
+  expect(latest?.plan?.text).not.toContain('后来调整的目标')
 })
 
 it('reports no acceptance column when the live material is invalid', async () => {

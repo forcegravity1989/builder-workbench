@@ -19,7 +19,7 @@
 | 核对交付、逐目标验收、归档 | 验收屏：与计划共用容器，独立固定树 bw/week-acceptance | 归档状态按材料身份与 provider 合入证据推导；CodeHub 无真实合入证据一律 Unknown，正文编辑延期 |
 | 执行工作与管理任务 | Orca 终端、Tasks、worktree | 复用执行核；不能据规划会话可打开就认定所有 Issue 开工都已接 BW 纪律 |
 | 设置定时工作 | Orca Automations | 调度能力在执行核；「配置自动化」按钮预填原生编辑器，启用与时间由人确认；真实到点触发与旧自动配置迁移须逐项验证 |
-| 查看项目概况 | 总览与项目墙 | OverviewPage 呈现真实北极星读数、归档记录版本页签与页内计划/验收双栏纪要，无数据 Unknown；完整业务/项目两区、特性关联与引领/滞后展示未实现，不能当完整指标结论 |
+| 查看项目概况 | 总览与项目墙 | 总览已接北极星、业务/项目指标两区与版本/轮次纪要；业务按特性及引领/滞后关系展示，项目读取提交及合入 PR/MR 趋势，开放 Issue 只显示当前快照。缺数据保持 Unknown；真实数据与 Electron 旅程待验，见[总览指标 STATUS](05-features/overview-metrics/STATUS.md) |
 | 查看和编辑项目知识 | 知识库文档、代码、对账页签 | 文档树与正文已读真实仓库；代码页仍为占位，对账与建议仍有固定演示数据；保存和来源边界见 §3 |
 | 独立评审、出包与发布 | 保留的 reviewer-agent / version-planning 资料、现有 Orca 构建工具 | Electron 的 BW CI/CD、评审与正式交付链待对应任务迁移验证；旧 Rust Release/出包按钮与 ADR 不作为本分支操作说明 |
 
@@ -81,4 +81,4 @@ BW 的业务契约在 `src/shared/workbench/`，材料事务、指标与历史 r
 
 ## 版本协作与指标边界
 
-三个特性已接入生产入口：[版本计划](05-features/version-planning/design.md)、[版本验收](05-features/version-acceptance/design.md)、[总览指标](05-features/overview-metrics/design.md)。BW 拥有版本材料、目标/验收业务与指标服务；Orca 保持会话、任务详情/编辑、工作树、调度和 provider 正本，通过薄适配复用（原生文件扩点清单见 [ref/upstream](../ref/upstream.md)），不在各屏分别建任务编辑器、会话存储或采集器。旧三屏计划链与 planning.py 已退役删除。剩余缺口以各特性 STATUS 为准：真壳烟测已编写待执行，SSH/WSL 与配对实机、真实到点自动化、真实 provider 归档全链、总览完整业务/项目两区与特性关联未验证或未实现；不能只靠本节宣称迁移完成。
+三个特性已接入生产入口：[版本计划](05-features/version-planning/design.md)、[版本验收](05-features/version-acceptance/design.md)、[总览指标](05-features/overview-metrics/design.md)。BW 拥有版本材料、目标/验收业务与指标服务；Orca 保持会话、任务详情/编辑、工作树、调度和 provider 正本，通过薄适配复用（原生文件扩点清单见 [ref/upstream](../ref/upstream.md)），不在各屏分别建任务编辑器、会话存储或采集器。剩余缺口以各特性 STATUS 为准：SSH/WSL 与配对实机、真实到点自动化、真实 provider 归档全链、总览真实数据与 Electron 旅程仍待验证；配置指标的会话续接尚未实现。源码接入不能代替迁移验收。

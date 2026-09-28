@@ -49,6 +49,7 @@ type ZoneRow = {
   statusText: string
   staleText: string | null
   currentOnly: boolean
+  readingNote: string | null
 }
 
 function buildRows(
@@ -92,7 +93,15 @@ function buildRows(
         state.kind === 'unknown' && state.stale
           ? `陈旧读数 ${state.stale.value}（采集于 ${state.stale.collectedAt}）`
           : null,
-      currentOnly: !def.collect.retro
+      currentOnly: !def.collect.retro,
+      readingNote:
+        state.kind === 'ready' && state.latest
+          ? !def.collect.retro
+            ? '仅当前值，见指标详情'
+            : typeof state.latest.value === 'string'
+              ? '文本读数，见指标详情'
+              : null
+          : null
     }
   })
 }
@@ -135,7 +144,12 @@ function PlotCard({
               onToggle(row.def.ref.definitionHash, !visible)
             }
           }}
-          emptyText="本窗口暂无读数"
+          emptyText={
+            rows.find(
+              (row) =>
+                row.readingNote && chart.some((item) => item.on && item.name === row.def.name)
+            )?.readingNote ?? '本窗口暂无读数'
+          }
           hiddenText="未选择指标"
           ariaLabel={`${plot.lagging?.name ?? '引领指标'} 趋势`}
         />
@@ -196,8 +210,8 @@ export function OverviewMetricZones({
   const [view, setView] = useOverviewViewState(identity)
   const active = groups.find((group) => group.feature === view.feature) ?? groups[0]
   const timezone = catalog?.timezone ?? Intl.DateTimeFormat().resolvedOptions().timeZone
-  const range = useMemo(() => zoneChartRange(granularity, timezone), [granularity, timezone])
-  const labels = useMemo(() => zoneBucketLabels(range), [range])
+  const range = zoneChartRange(granularity, timezone)
+  const labels = zoneBucketLabels(range)
   const plots = useMemo(() => (active ? groupZonePlots(active.defs) : []), [active])
   return (
     <section className="card wb-ov-section" id="metrics-zones" aria-label="业务指标">

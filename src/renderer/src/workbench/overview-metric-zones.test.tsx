@@ -14,9 +14,14 @@ import { OverviewMetricZones } from './overview-metric-zones'
 vi.mock('./overview-metric-chart', () => ({
   MetricLineChart: (props: {
     series: { name: string; values: (number | null)[]; on: boolean }[]
+    emptyText: string
     onToggle(name: string, visible: boolean): void
   }) => (
-    <div data-testid="chart" data-series={JSON.stringify(props.series)}>
+    <div
+      data-testid="chart"
+      data-series={JSON.stringify(props.series)}
+      data-empty={props.emptyText}
+    >
       {props.series.map((item) => (
         <button key={item.name} onClick={() => props.onToggle(item.name, !item.on)}>
           {item.name}
@@ -127,6 +132,7 @@ beforeEach(() => {
 afterEach(() => {
   act(() => root.unmount())
   container.remove()
+  vi.useRealTimers()
 })
 
 async function renderZones(args: {
@@ -187,6 +193,22 @@ it('charts history while leaving string and current-only readings in details', a
   expect(text()).toContain('3次')
   expect(text()).toContain('仅当前值')
   expect(series().every((item) => item.values.every((value: unknown) => value === null))).toBe(true)
+  expect(
+    [...container.querySelectorAll('[data-empty]')].map((el) => el.getAttribute('data-empty'))
+  ).toEqual(['文本读数，见指标详情', '仅当前值，见指标详情'])
+  await act(async () =>
+    (container.querySelector('[data-testid="chart"] button') as HTMLButtonElement).click()
+  )
+  expect(container.querySelector('[data-empty]')?.getAttribute('data-empty')).toBe('本窗口暂无读数')
+})
+it('refresh after a week boundary places new readings on the current axis', async () => {
+  vi.useFakeTimers({ toFake: ['Date'] })
+  vi.setSystemTime(new Date('2026-09-27T12:00:00Z'))
+  await renderZones({ readings: { 'hash-滞后A': weekReading([{ day: '2026-09-21', value: 5 }]) } })
+  expect(series()[0].values.at(-1)).toBe(5)
+  vi.setSystemTime(new Date('2026-09-28T12:00:00Z'))
+  await renderZones({ readings: { 'hash-滞后A': weekReading([{ day: '2026-09-28', value: 8 }]) } })
+  expect(series()[0].values.at(-1)).toBe(8)
 })
 it('preserves metric selection across remount and routes visible controls', async () => {
   const onRefresh = vi.fn()
