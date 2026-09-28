@@ -1,4 +1,5 @@
 import { React, useEffect, useRef, useState } from 'react'
+import { ChevronRight } from 'lucide-react'
 import { facts } from './snapshot.js'
 
 const dayMs = 86400000,
@@ -51,6 +52,75 @@ const segments = (xs, pick) => {
   }
   return list
 }
+function MetricLegend({ series, hidden, onToggle }) {
+  const viewport = useRef(null)
+  const [edges, setEdges] = useState({ start: true, end: true })
+  const names = series.map((item) => item.id).join('|')
+  const update = () => {
+    const el = viewport.current
+    setEdges({
+      start: el.scrollLeft < 2,
+      end: el.scrollLeft + el.clientWidth >= el.scrollWidth - 2
+    })
+  }
+  useEffect(() => {
+    const el = viewport.current
+    el.scrollLeft = 0
+    const observer = new ResizeObserver(update)
+    observer.observe(el)
+    update()
+    return () => observer.disconnect()
+  }, [names])
+  const overflow = !edges.start || !edges.end
+  return (
+    <div className="ov-legend" role="group" aria-label="指标图例">
+      {overflow && (
+        <button
+          className="btn btn-secondary btn-icon ov-legend-prev"
+          aria-label="前面的指标"
+          disabled={edges.start}
+          onClick={() =>
+            viewport.current.scrollBy({
+              left: -viewport.current.clientWidth * 0.8,
+              behavior: 'smooth'
+            })
+          }
+        >
+          <ChevronRight />
+        </button>
+      )}
+      <div className="ov-legend-items" ref={viewport} onScroll={update}>
+        {series.map((item) => (
+          <button
+            key={item.id}
+            className="ov-legend-item"
+            aria-pressed={!hidden.includes(item.id)}
+            title={item.name}
+            onClick={() => onToggle(item.id)}
+          >
+            <i style={{ borderColor: item.color, borderStyle: item.dashed ? 'dashed' : 'solid' }} />
+            <span>{item.name}</span>
+          </button>
+        ))}
+      </div>
+      {overflow && (
+        <button
+          className="btn btn-secondary btn-icon"
+          aria-label="后面的指标"
+          disabled={edges.end}
+          onClick={() =>
+            viewport.current.scrollBy({
+              left: viewport.current.clientWidth * 0.8,
+              behavior: 'smooth'
+            })
+          }
+        >
+          <ChevronRight />
+        </button>
+      )}
+    </div>
+  )
+}
 function Trend({ bins, series, label, compact = false }) {
   const [hover, setHover] = useState(null),
     [size, setSize] = useState({
@@ -90,6 +160,11 @@ function Trend({ bins, series, label, compact = false }) {
       ref={chartRef}
       className={`ov6-trend ${compact ? 'compact' : ''}`}
       onMouseLeave={() => setHover(null)}
+      onBlur={(event) => {
+        if (!event.currentTarget.contains(event.relatedTarget)) {
+          setHover(null)
+        }
+      }}
     >
       <svg
         viewBox={`0 0 ${w} ${h}`}
@@ -97,6 +172,32 @@ function Trend({ bins, series, label, compact = false }) {
         role="img"
         aria-label={label}
         className="ov6-chart"
+        tabIndex={0}
+        onKeyDown={(event) => {
+          if (event.key === 'Escape') {
+            setHover(null)
+          } else if (event.key === 'ArrowLeft' || event.key === 'ArrowRight') {
+            event.preventDefault()
+            setHover((current) =>
+              Math.max(
+                0,
+                Math.min(bins.length - 1, (current ?? -1) + (event.key === 'ArrowRight' ? 1 : -1))
+              )
+            )
+          }
+        }}
+        onMouseMove={(event) => {
+          const box = event.currentTarget.getBoundingClientRect()
+          setHover(
+            Math.max(
+              0,
+              Math.min(
+                bins.length - 1,
+                Math.round(((event.clientX - box.left - l) / (w - l - r)) * (bins.length - 1))
+              )
+            )
+          )
+        }}
       >
         {[0, 0.5, 1].map((t) => (
           <g key={t}>
@@ -120,16 +221,17 @@ function Trend({ bins, series, label, compact = false }) {
                 {b.label}
               </text>
             )}
-            <rect
-              x={px(i) - (w - l - r) / bins.length / 2}
-              y={top}
-              width={(w - l - r) / bins.length}
-              height={h - top - bottom}
-              fill="transparent"
-              onMouseEnter={() => setHover(i)}
-            />
           </g>
         ))}
+        {hover !== null && (
+          <line
+            className="ov-axis-pointer"
+            x1={px(hover)}
+            x2={px(hover)}
+            y1={top}
+            y2={h - bottom}
+          />
+        )}
         {series.map((s) => (
           <g
             key={s.name}
@@ -151,6 +253,7 @@ function Trend({ bins, series, label, compact = false }) {
                 fill="none"
                 stroke="currentColor"
                 strokeWidth="2"
+                strokeDasharray={s.dashed ? '6 3' : undefined}
                 vectorEffect="non-scaling-stroke"
               />
             ))}
@@ -176,9 +279,21 @@ function Trend({ bins, series, label, compact = false }) {
           </g>
         ))}
       </svg>
-      {!real && <div className="ov6-empty-chart">暂无该窗口的读数</div>}
+      {!real && (
+        <div className="ov6-empty-chart">{series.length ? '暂无该窗口的读数' : '未选择指标'}</div>
+      )}
       {hover !== null && (
-        <div className="ov6-chart-tooltip">
+        <div
+          className="ov6-chart-tooltip"
+          tabIndex={0}
+          role="group"
+          aria-label={`${bins[hover].key} 读数`}
+          onKeyDown={(event) => {
+            if (event.key === 'Escape') {
+              setHover(null)
+            }
+          }}
+        >
           <strong>{bins[hover].key}</strong>
           {series.map((s) => (
             <span key={s.name}>
@@ -187,7 +302,7 @@ function Trend({ bins, series, label, compact = false }) {
                   background: s.color
                 }}
               />
-              {s.name}
+              <em>{s.name}</em>
               <b>{s.values[hover] ?? '—'}</b>
             </span>
           ))}
@@ -215,4 +330,4 @@ function Grain({ name, value, onChange }) {
     </div>
   )
 }
-export { dayMs, clock, today, isoWeek, windows, segments, Trend, Grain }
+export { dayMs, clock, today, isoWeek, windows, segments, Trend, Grain, MetricLegend }

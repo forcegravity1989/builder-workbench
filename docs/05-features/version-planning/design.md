@@ -33,7 +33,7 @@ BW 业务放在 renderer/workbench 下的 version-cycle、version-planning、ver
 
 ## 版本材料与写入
 
-保留 .bw/planning/<version>/data.json，目标 schema_version=3；原结构里的 plan.goals 演进为稳定 goalId 对应的结果承诺、可选交付说明/验收说明、可选 metricRef 与版本目标。风险和进展保持 summary 语义，进展标明所述版本，不把上版结果冒称本版成绩。版本周期不由自然周推断。计划入口初态为待选择版本，列举候选不写盘；用户在 UI 或会话明确选择后才加载可编辑材料，明确新建后才创建。禁用 mtime 推断当前版本与自动 init default；加载失败不能新建替代物。
+保留 .bw/planning/<version>/data.json，目标 schema_version=3；原结构里的 plan.goals 演进为稳定 goalId 对应的结果承诺、可选交付说明/验收说明、可选 metricRef 与版本目标。风险和进展保持 summary 语义；版本进展以上版验收纪要为来源，标明所述版本，不把上版结果冒称本版成绩。现行 UI 仅读取已保存的 summary.progress，上版纪要的来源读取与带入尚待落地，不能以 v8 示例摘要证明自动带入已经实现。版本周期不由自然周推断。计划入口初态为待选择版本，列举候选不写盘；用户在 UI 或会话明确选择后才加载可编辑材料，明确新建后才创建。禁用 mtime 推断当前版本与自动 init default；加载失败不能新建替代物。
 
 任务只保存 provider/repo/number 与 goalId 的引用，展示状态从 Orca provider 读回；缓存有读取时间，离线不是空任务。三段纪要从目标纯函数生成，不再存 live_notes、transcript、独立可编辑 minutes。协议细节的唯一模型参考是 [version-records](../../../standard/system-prompt/references/version-records.md)。
 
@@ -69,7 +69,7 @@ TaskOrigin 携带项目、页面、版本、目标筛选、滚动和草稿引用
 
 ## 评审、归档与灯色
 
-评审纪要为纯派生输出；复制不确认计划，打开弹窗不写批准。人的决定绑定内容修订；保存、评审、PR 待审、PR 合入分别判断。归档按钮向现有 composer 写入可编辑请求，由用户发送；没有可用原生聊天输入框先提示选择/开启，不私下创建 PR。
+会议纪要为评审后填写纪要时使用的纯派生输出；PL 与 Builder 在评审会上直接修改目标原件。预览和复制不设置任务拆解或 PR 合入前置，不确认计划，打开弹窗不写批准。人的决定绑定内容修订；保存、评审、PR 待审、PR 合入分别判断。归档按钮向现有 composer 写入可编辑请求，由用户发送；没有可用原生聊天输入框先提示选择/开启，不私下创建 PR。
 
 PR 关联存 provider/repo/number 和对应文档修订，实际 state/check/review 从原生 provider 读取。合入后的内容与当前草稿修订不同，则提示待归档变化，不能沿用旧绿灯。颜色规则来自 spec，按数据纯函数推导。
 

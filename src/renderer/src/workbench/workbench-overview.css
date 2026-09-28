@@ -1,751 +1,425 @@
-/* Adapted from loop-buddy hifi-overview.css — scoped to .wb-ov */
-/* 由 tools/extract-overview.mjs 从 docs/hifi/overview.html 生成，别手改 */
-.wb-ov .content {
-  flex: 1;
-  overflow: auto;
-  padding: var(--space-4) var(--space-6) var(--space-6);
+.wb-ov {
   display: flex;
   flex-direction: column;
-  gap: var(--space-3);
+  height: 100%;
+  min-height: 0;
+  min-width: 0;
+  color: var(--color-text);
+}
+.wb-ov .page-head {
+  display: flex;
+  align-items: center;
+  min-height: 48px;
+  padding: 0 24px;
+  flex-shrink: 0;
+  border-bottom: 1px solid var(--color-divider);
+}
+.wb-ov .page-head h1 {
+  font-size: 16px;
+  font-weight: 600;
+  margin: 0;
+}
+.wb-ov .content {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  padding: 16px 24px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  max-width: none;
+}
+.wb-ov .content > * {
+  flex-shrink: 0;
+}
+.wb-ov .card {
+  background: var(--color-card);
+  border: 1px solid var(--color-divider);
+  border-radius: var(--radius-md);
+  padding: 12px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
 }
 .wb-ov .row-2 {
   display: grid;
   grid-template-columns: minmax(0, 1.2fr) minmax(0, 0.8fr);
-  gap: var(--space-3);
+  gap: 12px;
 }
-.wb-ov .row-between {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--space-3);
-}
+.wb-ov .row-between,
 .wb-ov .row-start {
   display: flex;
   align-items: center;
-  gap: var(--space-2);
+  gap: 8px;
   min-width: 0;
   flex-wrap: wrap;
 }
-.wb-ov .stack {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-2);
+.wb-ov .row-between {
+  justify-content: space-between;
+}
+.wb-ov .card-title {
+  font-size: 16px;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+.wb-ov .card-kicker {
+  color: var(--color-neutral-600);
+  font-size: 12px;
+}
+.wb-ov .status {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--color-neutral-600);
+  font-size: 12px;
+}
+.wb-ov .status-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--color-neutral-400);
+}
+.wb-ov .detail-grid {
+  display: grid;
+  grid-template-columns: max-content minmax(0, 1fr);
+  gap: 4px 16px;
+  padding-top: 8px;
+  line-height: 1.4;
+  border-top: 1px solid var(--color-divider);
+}
+.wb-ov .detail-k {
+  color: var(--color-neutral-600);
+  font-size: 12px;
+}
+.wb-ov .detail-v {
+  font-size: 13px;
+  overflow-wrap: anywhere;
 }
 .wb-ov .mono {
   font-family: var(--font-mono);
 }
 .wb-ov .metric-value {
-  font-family: var(--font-mono);
-  font-weight: 600;
-  line-height: 1.2;
+  font: 600 28px/1.5 var(--font-mono);
   margin: 0;
 }
 .wb-ov .metric-target {
-  font-family: var(--font-mono);
   font-size: 12px;
-  color: color-mix(in srgb, var(--color-text) 50%, transparent);
+  color: var(--color-neutral-600);
 }
-.wb-ov .btn-sm {
-  height: var(--space-6);
-  padding: 0 var(--space-2);
-}
-.wb-ov .detail-grid {
-  display: grid;
-  grid-template-columns: max-content 1fr;
-  gap: var(--space-2) var(--space-4);
-  padding-top: var(--space-3);
-  border-top: 1px solid var(--color-divider);
-}
-.wb-ov .detail-k {
-  font-size: 11px;
-  font-weight: 600;
-  letter-spacing: 0.04em;
-  color: color-mix(in srgb, var(--color-text) 50%, transparent);
-}
-.wb-ov .detail-v {
-  font-size: 13px;
-}
-.wb-ov .prog {
-  display: flex;
-  height: 6px;
-  border-radius: 999px;
-  overflow: hidden;
-  background: var(--color-neutral-100);
-}
-.wb-ov .prog > span {
-  display: block;
-  min-width: 0;
-}
-.wb-ov .prog-todo {
-  background: var(--color-neutral-300);
-}
-.wb-ov .prog-doing {
-  background: var(--color-warning);
-}
-.wb-ov .prog-review {
-  background: var(--color-accent-2);
-}
-.wb-ov .prog-done {
-  background: var(--color-success);
-}
-.wb-ov .counts {
-  display: flex;
-  gap: var(--space-4);
+.wb-ov .wb-muted {
+  color: var(--color-neutral-600);
   font-size: 12px;
-  color: color-mix(in srgb, var(--color-text) 70%, transparent);
+  overflow-wrap: anywhere;
 }
-.wb-ov .counts b {
-  font-family: var(--font-mono);
-  color: var(--color-text);
-}
-.wb-ov .empty {
-  color: color-mix(in srgb, var(--color-text) 50%, transparent);
-  font-size: 13px;
-}
-.wb-ov .text-box {
-  box-sizing: border-box;
-  min-height: calc(13px * 1.7 * 6);
-  font-size: 13px;
-  line-height: 1.7;
-}
-.wb-ov h6 {
-  margin: 0;
-}
-.wb-ov .card-head {
-  display: flex;
-  flex-direction: column;
+.wb-ov .wb-ov-section {
+  padding: 0;
   gap: 0;
 }
-.wb-ov .card-head .tabs {
-  margin: 0;
-}
-.wb-ov .card-head .tab {
-  padding-top: 4px;
-}
-.wb-ov .goal-week {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-  gap: 0;
-}
-.wb-ov .goal-week > div {
-  min-width: 0;
-  padding-right: var(--space-4);
-}
-.wb-ov .goal-week > div + div {
-  padding-right: 0;
-  padding-left: var(--space-4);
-  border-left: 1px solid var(--color-divider);
-}
-.wb-ov .plots {
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: var(--space-4);
-}
-.wb-ov .plots.is-multi {
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-}
-.wb-ov .plot {
-  min-width: 0;
-}
-.wb-ov .plots.is-multi .plot + .plot {
-  padding-left: var(--space-4);
-  border-left: 1px solid var(--color-divider);
-}
-.wb-ov .series {
-  display: flex;
-  flex-direction: column;
-}
-.wb-ov .series-row {
+.wb-ov .wb-ov-section-head {
   display: flex;
   align-items: center;
-  gap: var(--space-2);
-  min-height: 36px;
-  width: 100%;
-  margin: 0;
-  padding: 0 var(--space-1);
-  color: var(--color-text);
-  border-radius: var(--radius-sm);
-}
-.wb-ov .series-toggle {
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
-  flex: 1;
-  min-width: 0;
-  cursor: pointer;
-}
-.wb-ov .series-row:hover {
-  background: color-mix(in srgb, var(--color-text) 3.5%, transparent);
-}
-.wb-ov .series-toggle:focus-within {
-  outline: 2px solid var(--color-accent);
-  outline-offset: 2px;
-  border-radius: var(--radius-sm);
-}
-.wb-ov .series-row input {
-  appearance: none;
-  width: 12px;
-  height: 12px;
-  flex: none;
-  margin: 0;
-  border-radius: 2px;
-  border: 1px solid color-mix(in srgb, var(--color-text) 28%, transparent);
-  background: var(--color-card);
-  cursor: pointer;
-}
-.wb-ov .series-row input:checked {
-  background: var(--swatch, var(--color-accent));
-  border-color: var(--swatch, var(--color-accent));
-  box-shadow: inset 0 0 0 2px var(--color-card);
-}
-.wb-ov .series-row:not(:has(input:checked)) {
-  color: color-mix(in srgb, var(--color-text) 40%, transparent);
-}
-.wb-ov .series-row .swatch {
-  width: 14px;
-  height: 2px;
-  flex: none;
-  border-radius: 1px;
-  background: var(--swatch, var(--color-accent));
-}
-.wb-ov .series-row:not(:has(input:checked)) .swatch {
-  background: color-mix(in srgb, var(--color-text) 22%, transparent);
-}
-.wb-ov .series-row .name {
-  flex: 1;
-  min-width: 0;
-  font-size: 13px;
-  font-weight: 500;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-.wb-ov .series-row .kind {
-  flex: none;
-  font-size: 11px;
-  color: color-mix(in srgb, var(--color-text) 45%, transparent);
-}
-.wb-ov .series-row .val {
-  flex: none;
-  font-family: var(--font-mono);
-  font-weight: 600;
-  font-size: 14px;
-}
-.wb-ov .series-row .tgt {
-  flex: none;
-  width: 48px;
-  text-align: right;
-  font-family: var(--font-mono);
-  font-size: 12px;
-  color: color-mix(in srgb, var(--color-text) 50%, transparent);
-}
-.wb-ov .series-row .manual-slot {
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
-  flex: none;
-}
-.wb-ov .series-row .manual-slot .input {
-  width: 72px;
-}
-.wb-ov .chart-wrap {
-  position: relative;
-  width: 100%;
-  height: calc(var(--space-8) * 4 + var(--space-4));
-}
-.wb-ov .chart-wrap svg {
-  width: 100%;
-  height: 100%;
-  display: block;
-}
-.wb-ov .chart-tip {
-  position: absolute;
-  z-index: 4;
-  pointer-events: none;
-  min-width: calc(var(--space-8) * 4);
-  padding: var(--space-2) var(--space-3);
-  border-radius: var(--radius-md);
-  background: var(--color-neutral-900);
-  color: var(--color-neutral-100);
-  font-size: 12px;
-  line-height: 1.45;
-  box-shadow: var(--shadow-lg);
-  transform: translate(-50%, calc(-100% - var(--space-2)));
-}
-.wb-ov .chart-tip .wk {
-  font-family: var(--font-mono);
-  font-weight: 600;
-}
-.wb-ov .chart-tip .vl {
-  font-family: var(--font-mono);
-  opacity: 0.8;
-}
-.wb-ov .field-help {
-  font-size: 11px;
-  color: color-mix(in srgb, var(--color-text) 50%, transparent);
-  margin-top: 4px;
-}
-.wb-ov .field-help {
-  font-size: 11px;
-  color: color-mix(in srgb, var(--color-text) 50%, transparent);
-}
-.wb-ov .sdlc-grid {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 0;
-}
-.wb-ov .sdlc-cell {
-  min-width: 0;
-  padding-right: var(--space-4);
-}
-.wb-ov .sdlc-cell + .sdlc-cell {
-  padding-left: var(--space-4);
-  border-left: 1px solid var(--color-divider);
-}
-.wb-ov .sdlc-cell:last-child {
-  padding-right: 0;
-}
-.wb-ov .sdlc-head {
-  display: flex;
-  align-items: baseline;
-  gap: var(--space-2);
-  min-height: 28px;
-}
-.wb-ov .sdlc-head .name {
-  font-size: 13px;
-  font-weight: 500;
-}
-.wb-ov .sdlc-head .val {
-  margin-left: auto;
-  font-family: var(--font-mono);
-  font-weight: 600;
-  font-size: 15px;
-}
-.wb-ov .head-tools {
-  display: flex;
-  align-items: center;
-  gap: var(--space-3);
-}
-.wb-ov .toast-host {
-  position: fixed;
-  right: var(--space-4);
-  bottom: var(--space-4);
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-2);
-  z-index: 80;
-  align-items: flex-end;
-}
-.wb-ov .hidden {
-  display: none !important;
-}
-@media (max-width: 1100px) {
-  .wb-ov .row-2,
-  .wb-ov .goal-week,
-  .wb-ov .sdlc-grid,
-  .wb-ov .plots.is-multi {
-    grid-template-columns: 1fr;
-  }
-  .wb-ov .goal-week > div + div,
-  .wb-ov .sdlc-cell + .sdlc-cell,
-  .wb-ov .plots.is-multi .plot + .plot {
-    padding-left: 0;
-    border-left: 0;
-    padding-top: var(--space-3);
-    border-top: 1px solid var(--color-divider);
-  }
-}
-
-.wb-ov {
-  height: 100%;
-  min-height: 0;
-  display: flex;
-  flex-direction: column;
-  background: var(--color-bg);
-  color: var(--color-text);
-}
-.wb-ov .page-head {
-  flex: none;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  padding: 12px 24px;
+  flex-wrap: wrap;
+  gap: 16px;
+  padding: 8px 16px;
   border-bottom: 1px solid var(--color-divider);
+  min-width: 0;
 }
-.wb-ov .page-head h1 {
+.wb-ov .wb-ov-section-head h2 {
+  font-size: 14px;
+  font-weight: 600;
   margin: 0;
-  font-size: 16px;
-  font-weight: 600;
-}
-.wb-ov .content {
-  flex: 1;
-  overflow: auto;
-  padding: var(--space-4) var(--space-6) var(--space-6);
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-3);
-}
-.wb-ov .card {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-2);
-  padding: var(--space-4);
-  border-radius: var(--radius-md);
-  background: var(--color-card);
-  border: 1px solid var(--color-divider);
-}
-.wb-ov .card-title {
-  font-size: 15px;
-  font-weight: 600;
-}
-.wb-ov .card-kicker {
-  font-size: 10px;
-  font-weight: 600;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: var(--color-accent);
 }
 .wb-ov .tabs {
   display: flex;
-  gap: var(--space-4);
-  border-bottom: 1px solid var(--color-divider);
+  min-width: 0;
+  overflow-x: auto;
+  gap: 4px;
 }
 .wb-ov .tab {
-  appearance: none;
-  background: none;
+  background: transparent;
   border: 0;
-  font: inherit;
-  font-size: 13px;
-  font-weight: 500;
-  color: color-mix(in srgb, var(--color-text) 55%, transparent);
-  padding: var(--space-2) 2px 9px;
-  margin-bottom: -1px;
   border-bottom: 2px solid transparent;
+  color: var(--color-neutral-600);
+  padding: 8px 12px;
+  white-space: nowrap;
   cursor: pointer;
 }
 .wb-ov .tab[aria-selected='true'] {
+  border-color: var(--color-accent);
   color: var(--color-text);
-  border-bottom-color: var(--color-accent);
+  font-weight: 600;
 }
-.wb-ov .status {
-  display: inline-flex;
+.wb-ov .wb-ov-tools {
+  display: flex;
+  flex-wrap: wrap;
   align-items: center;
-  gap: 6px;
-  font-size: 12px;
-  color: color-mix(in srgb, var(--color-text) 55%, transparent);
+  gap: 8px;
+  margin-left: auto;
 }
-.wb-ov .status-dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background: var(--color-neutral-400);
+.wb-ov .wb-btn-secondary {
+  background: var(--color-card);
+  color: var(--color-text);
+  border: 1px solid var(--color-neutral-300);
+  box-shadow: 0 1px 2px #0000000a;
+}
+.wb-ov .wb-btn-secondary:hover {
+  background: var(--color-neutral-100);
+}
+.wb-ov .wb-btn {
+  white-space: nowrap;
+}
+.wb-ov .wb-btn:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+.wb-ov .wb-mz-seg {
+  display: flex;
+  gap: 2px;
+  border: 1px solid var(--color-divider);
+  border-radius: var(--radius-sm);
+  padding: 2px;
+}
+.wb-ov .wb-mz-seg button {
+  background: transparent;
+  border: 0;
+  color: var(--color-neutral-600);
+  border-radius: var(--radius-sm);
+  padding: 3px 8px;
+  cursor: pointer;
+}
+.wb-ov .wb-mz-seg button[aria-pressed='true'] {
+  color: var(--color-text);
+  background: var(--color-neutral-100);
+  font-weight: 600;
+}
+.wb-ov .wb-ov-cycle {
+  background: var(--color-card);
+  color: var(--color-text);
+  border: 1px solid var(--color-divider);
+  border-radius: var(--radius-sm);
+  padding: 4px 8px;
+  max-width: 100%;
+}
+.wb-ov .wb-ov-section-body {
+  padding: 12px 16px;
 }
 .wb-ov .goal-week {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
 }
-.wb-ov .goal-week > div {
+.wb-ov .goal-week > article {
   min-width: 0;
-  padding-right: var(--space-4);
+  padding: 12px 16px;
 }
-.wb-ov .goal-week > div + div {
-  padding-right: 0;
-  padding-left: var(--space-4);
+.wb-ov .goal-week > article + article {
   border-left: 1px solid var(--color-divider);
 }
-@media (max-width: 860px) {
-  .wb-ov .row-2,
-  .wb-ov .goal-week {
-    grid-template-columns: 1fr;
-  }
-  .wb-ov .goal-week > div + div {
-    padding-left: 0;
-    border-left: 0;
-    padding-top: var(--space-3);
-    border-top: 1px solid var(--color-divider);
-  }
-}
-
-/* Real overview: derived minutes and honest snapshots. */
-.wb-ov .wb-pre {
-  margin: 0 0 6px;
-  font-size: 12px;
-  line-height: 1.55;
-  white-space: pre-wrap;
-  word-break: break-word;
-  font-family: inherit;
-}
-.wb-ov .wb-ov-result {
-  margin: 0 0 6px;
-  font-size: 12.5px;
-  line-height: 1.5;
-}
-.wb-ov .wb-muted {
-  font-size: 12px;
-  opacity: 0.65;
-}
-
-/* Lagging/leading zone block: feature tabs, series rows with show/hide, SVG trend charts.
-   Charts live in the page flow — only the page scrolls, never an inner chart container. */
-.wb-mz-seg {
-  display: inline-flex;
-  gap: 2px;
-  padding: 2px;
-  border-radius: var(--radius-sm, 6px);
-  background: var(--color-surface, #f0eee6);
-  border: 1px solid var(--color-divider, rgba(128, 128, 128, 0.25));
-}
-.wb-mz-seg .seg-opt {
-  display: inline-flex;
-  align-items: center;
-  padding: 2px 10px;
-  border-radius: calc(var(--radius-sm, 6px) - 2px);
-  font-size: 12px;
-  font-weight: 500;
-  cursor: pointer;
-  color: color-mix(in srgb, var(--color-text, #333) 65%, transparent);
-}
-.wb-mz-seg .seg-opt input {
-  position: absolute;
-  opacity: 0;
-  pointer-events: none;
-}
-.wb-mz-seg .seg-opt:has(input:checked) {
-  background: var(--color-card, #fff);
-  color: var(--color-text, #333);
-  box-shadow: 0 1px 2px color-mix(in srgb, var(--color-text, #333) 8%, transparent);
-}
-.wb-mz-plots {
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: var(--space-4, 16px);
-}
-.wb-mz-plots.is-multi {
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-}
-.wb-mz-plots.is-multi .wb-mz-plot + .wb-mz-plot {
-  padding-left: var(--space-4, 16px);
-  border-left: 1px solid var(--color-divider, rgba(128, 128, 128, 0.25));
-}
-.wb-mz-plot {
-  min-width: 0;
-}
-.wb-mz-series {
-  display: flex;
-  flex-direction: column;
-}
-.wb-mz-series-row {
+.wb-ov .wb-ov-minutes-head {
   display: flex;
   align-items: center;
-  gap: var(--space-2, 8px);
-  flex-wrap: wrap;
+  gap: 8px;
   min-height: 32px;
-  padding: 0 var(--space-1, 4px);
-  border-radius: var(--radius-sm, 6px);
 }
-.wb-mz-series-row:hover {
-  background: color-mix(in srgb, var(--color-text, #333) 3.5%, transparent);
-}
-.wb-mz-toggle {
-  display: flex;
-  align-items: center;
-  gap: var(--space-2, 8px);
-  flex: 1;
-  min-width: 0;
-  cursor: pointer;
-}
-.wb-mz-toggle input {
-  appearance: none;
-  width: 12px;
-  height: 12px;
-  flex: none;
+.wb-ov .wb-ov-minutes-head h3 {
+  font-size: 13px;
+  font-weight: 600;
   margin: 0;
-  border-radius: 2px;
-  border: 1px solid color-mix(in srgb, var(--color-text, #333) 28%, transparent);
-  background: var(--color-card, #fff);
-  cursor: pointer;
 }
-.wb-mz-toggle input:checked {
-  background: var(--swatch, var(--color-accent, #d97757));
-  border-color: var(--swatch, var(--color-accent, #d97757));
-  box-shadow: inset 0 0 0 2px var(--color-card, #fff);
+.wb-ov .wb-ov-minutes-body {
+  height: 16rem;
+  overflow-y: auto;
+  scrollbar-gutter: stable;
+  overscroll-behavior: contain;
+  padding-right: 12px;
+  margin-top: 8px;
+  font-size: 13px;
+  line-height: 1.8;
+  overflow-wrap: anywhere;
 }
-.wb-mz-swatch {
-  width: 14px;
-  height: 2px;
-  flex: none;
-  border-radius: 1px;
-  background: var(--swatch, var(--color-accent, #d97757));
+.wb-ov .wb-ov-minutes-body > * {
+  margin: 0;
 }
-.wb-mz-series-row:has(input:not(:checked)) {
-  color: color-mix(in srgb, var(--color-text, #333) 40%, transparent);
+.wb-ov .wb-ov-minutes-body > * + * {
+  margin-top: 12px;
 }
-.wb-mz-series-row:has(input:not(:checked)) .wb-mz-swatch {
-  background: color-mix(in srgb, var(--color-text, #333) 22%, transparent);
+.wb-ov .wb-ov-minutes-body h1,
+.wb-ov .wb-ov-minutes-body h2,
+.wb-ov .wb-ov-minutes-body h3 {
+  font-size: 13px;
+  font-weight: 600;
 }
-.wb-mz-name {
-  flex: 1;
+.wb-ov .wb-ov-minutes-body ul,
+.wb-ov .wb-ov-minutes-body ol {
+  padding-left: 20px;
+}
+.wb-ov .wb-ov-minutes-body pre {
+  white-space: pre-wrap;
+}
+.wb-ov .wb-ov-minutes-body table {
+  width: 100%;
+  table-layout: fixed;
+}
+.wb-ov .wb-ov-minutes-body a {
+  color: var(--color-accent);
+  text-decoration: underline;
+}
+.wb-ov .wb-ov-minutes-body::-webkit-scrollbar {
+  width: 8px;
+}
+.wb-ov .wb-ov-minutes-body::-webkit-scrollbar-track {
+  background: var(--color-bg);
+}
+.wb-ov .wb-ov-minutes-body::-webkit-scrollbar-thumb {
+  background: var(--color-neutral-300);
+  border-radius: var(--radius-sm);
+}
+.wb-ov .wb-mz-plots {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 30rem), 1fr));
+  gap: 16px;
+  padding: 12px 16px;
+}
+.wb-ov .wb-mz-plot {
   min-width: 0;
-  font-size: 13px;
-  font-weight: 500;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
 }
-.wb-mz-kind {
-  flex: none;
-  font-size: 11px;
-  color: color-mix(in srgb, var(--color-text, #333) 45%, transparent);
-}
-.wb-mz-val {
-  flex: none;
-  font-weight: 600;
-  font-size: 13.5px;
-}
-.wb-mz-tgt {
-  flex: none;
-  font-family: var(--font-mono);
-  font-size: 12px;
-  color: color-mix(in srgb, var(--color-text, #333) 50%, transparent);
-}
-.wb-mz-stale {
-  flex-basis: 100%;
-  font-size: 11px;
-  color: var(--color-warning-deep, #774a03);
-}
-.wb-mz-chart {
+.wb-ov .wb-mz-chart {
   position: relative;
-  width: 100%;
   height: 160px;
+  min-width: 0;
 }
-.wb-mz-chart svg {
+.wb-ov .wb-mz-chart[data-legend] {
+  height: 210px;
+}
+.wb-ov .wb-mz-canvas {
+  height: 100%;
   width: 100%;
-  height: 100%;
-  display: block;
 }
-.wb-mz-tip {
+.wb-ov .wb-mz-empty {
   position: absolute;
-  z-index: 4;
+  inset: 24px 16px;
+  display: grid;
+  place-items: center;
+  color: var(--color-neutral-600);
+  font-size: 12px;
   pointer-events: none;
-  min-width: 128px;
-  padding: var(--space-2, 8px) var(--space-3, 12px);
-  border-radius: var(--radius-md, 8px);
-  background: var(--color-neutral-900, #262421);
-  color: var(--color-neutral-100, #f6f3ef);
-  font-size: 12px;
-  line-height: 1.45;
-  transform: translate(-50%, calc(-100% - var(--space-2, 8px)));
+  text-align: center;
 }
-.wb-mz-tip .wk {
-  font-family: var(--font-mono);
-  font-weight: 600;
-}
-.wb-mz-tip .vl {
-  font-family: var(--font-mono);
-  opacity: 0.8;
-}
-.wb-mz-empty {
-  height: 100%;
-  min-height: 120px;
-  display: flex;
-  align-items: center;
-  font-size: 13px;
-  color: color-mix(in srgb, var(--color-text, #333) 50%, transparent);
-}
-.wb-mz-defs {
-  margin-top: var(--space-2, 8px);
-  font-size: 12px;
-}
-.wb-mz-defs summary {
-  cursor: pointer;
-  color: color-mix(in srgb, var(--color-text, #333) 55%, transparent);
-}
-.wb-mz-defs .wb-mz-def {
-  margin: 6px 0 0;
-  line-height: 1.6;
+.wb-ov .wb-mz-chart[data-legend] .wb-mz-empty {
+  top: 54px;
 }
 
-/* 项目指标 · SDLC：三卡并排，独立刷新；只用页面滚动，图表不套滚动容器。 */
-.wb-sdlc-grid {
+.wb-ov .wb-mz-defs {
+  margin-top: 8px;
+  font-size: 12px;
+  color: var(--color-neutral-600);
+  max-height: 16rem;
+  overflow: auto;
+}
+.wb-ov summary {
+  cursor: pointer;
+  width: fit-content;
+}
+.wb-ov .wb-mz-def {
+  padding: 8px 0;
+  border-bottom: 1px solid var(--color-divider);
+  overflow-wrap: anywhere;
+}
+.wb-ov .wb-mz-def strong {
+  color: var(--color-text);
+}
+.wb-ov .wb-mz-def p {
+  margin: 4px 0;
+}
+.wb-ov .wb-mz-stale,
+.wb-ov .wb-ov-alert {
+  color: var(--color-warning);
+  font-size: 12px;
+  overflow-wrap: anywhere;
+  margin: 4px 0;
+}
+.wb-ov .wb-sdlc-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 0;
-  margin-top: var(--space-3, 12px);
+  padding: 12px 0;
 }
-.wb-sdlc-cell {
+.wb-ov .wb-sdlc-cell {
   min-width: 0;
-  padding-right: var(--space-4, 16px);
+  padding: 0 16px;
 }
-.wb-sdlc-cell + .wb-sdlc-cell {
-  padding-left: var(--space-4, 16px);
-  border-left: 1px solid var(--color-divider, rgba(128, 128, 128, 0.25));
+.wb-ov .wb-sdlc-cell + .wb-sdlc-cell {
+  border-left: 1px solid var(--color-divider);
 }
-.wb-sdlc-cell:last-child {
-  padding-right: 0;
-}
-.wb-sdlc-head {
+.wb-ov .wb-sdlc-head {
   display: flex;
   align-items: baseline;
-  gap: var(--space-2, 8px);
-  min-height: 28px;
+  gap: 8px;
 }
-.wb-sdlc-head .wb-sdlc-name {
+.wb-ov .wb-sdlc-name {
+  border: 0;
+  background: transparent;
+  color: var(--color-text);
+  padding: 0;
+  cursor: pointer;
   font-size: 13px;
-  font-weight: 500;
-}
-.wb-sdlc-head .wb-sdlc-val {
-  margin-left: auto;
   font-weight: 600;
-  font-size: 15px;
 }
-.wb-sdlc-snapshot {
-  min-height: 120px;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  gap: 4px;
+.wb-ov .wb-sdlc-val {
+  margin-left: auto;
+  font: 600 24px var(--font-mono);
 }
-.wb-sdlc-line {
-  margin: 4px 0 0;
-  font-size: 12px;
-  line-height: 1.5;
-  color: color-mix(in srgb, var(--color-text, #333) 62%, transparent);
+.wb-ov .wb-sdlc-cell .wb-mz-chart {
+  height: 128px;
 }
-@media (max-width: 1100px) {
-  .wb-sdlc-grid {
-    grid-template-columns: 1fr;
-  }
-  .wb-sdlc-cell + .wb-sdlc-cell {
-    padding-left: 0;
-    border-left: 0;
-    padding-top: var(--space-3, 12px);
-    border-top: 1px solid var(--color-divider, rgba(128, 128, 128, 0.25));
-  }
+.wb-ov .wb-sdlc-name:hover {
+  color: var(--color-accent);
 }
-@media (max-width: 1100px) {
-  .wb-mz-plots.is-multi {
-    grid-template-columns: 1fr;
-  }
-  .wb-mz-plots.is-multi .wb-mz-plot + .wb-mz-plot {
-    padding-left: 0;
-    border-left: 0;
-    padding-top: var(--space-3, 12px);
-    border-top: 1px solid var(--color-divider, rgba(128, 128, 128, 0.25));
-  }
+.wb-ov .wb-ov-source {
+  width: min(38rem, calc(100vw - 32px));
+  max-height: 80vh;
+  overflow: auto;
+  padding: 24px;
+  color: var(--color-text);
+  background: var(--color-card);
+  border: 1px solid var(--color-divider);
+  border-radius: var(--radius-md);
 }
-
-/* Fixable metric problems render as a list, distinct from the muted single-line hints. */
-.wb-ov .wb-muted ul {
-  margin: 4px 0 0;
-  padding-left: 18px;
+.wb-ov .wb-ov-source::backdrop {
+  background: #0004;
 }
-
-/* Action failure for the overview's own buttons (e.g. 配置指标); honest text, not a silent skip. */
-.wb-ov .wb-ov-alert {
+.wb-ov .wb-ov-source h2 {
   margin: 0;
-  padding: 6px 10px;
-  font-size: 12px;
-  line-height: 1.5;
-  color: var(--color-danger, #c0392b);
+  font-size: 16px;
+}
+.wb-ov .wb-ov-source p {
+  margin: 12px 0;
+  overflow-wrap: anywhere;
+}
+
+.wb-ov :focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+}
+@media (max-width: 65rem) {
+  .wb-ov .content {
+    padding: 12px;
+  }
+  .wb-ov .wb-ov-section-head {
+    gap: 8px;
+  }
+}
+@media (max-width: 48rem) {
+  .wb-ov .row-2,
+  .wb-ov .goal-week,
+  .wb-ov .wb-sdlc-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .wb-ov .goal-week > article + article,
+  .wb-ov .wb-sdlc-cell + .wb-sdlc-cell {
+    border-left: 0;
+    border-top: 1px solid var(--color-divider);
+  }
+  .wb-ov .wb-sdlc-cell {
+    padding: 12px 16px;
+  }
 }

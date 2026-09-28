@@ -99,11 +99,7 @@ export type ZonePointState =
       /** Numeric curve values; string readings never become points. */
       values: (number | null)[]
       /** Most recent evidence regardless of type, for the row's current value. */
-      latest: { value: string | number; collectedAt: string; coverageEnd: string | null } | null
-      /** Index of the newest bucketed point on the axis, when it lands inside the span. */
-      latestIndex: number | null
-      /** True when the newest evidence value is a string reading (row shows text, no curve). */
-      latestIsText: boolean
+      latest: { value: string | number; collectedAt: string } | null
     }
 
 function staleOf(reading: MetricReading): { value: string | number; collectedAt: string } | null {
@@ -132,40 +128,28 @@ export function zonePointState(
   }
   const values: (number | null)[] = labels.map(() => null)
   let latest: Extract<ZonePointState, { kind: 'ready' }>['latest'] = null
-  let latestIndex: number | null = null
   for (const point of reading.readings) {
     latest = {
       value: point.value,
-      collectedAt: point.collectedAt,
-      coverageEnd: point.observation.kind === 'window' ? point.observation.end : null
+      collectedAt: point.collectedAt
     }
-    latestIndex = null
     if (range && point.observation.kind === 'window' && typeof point.value === 'number') {
       const index = bucketIndexOf(dayInTimezone(point.observation.start, timezone), range)
       if (index !== null && index < values.length) {
         values[index] = point.value
-        latestIndex = index
       }
     }
   }
   return {
     kind: 'ready',
     values,
-    latest,
-    latestIndex,
-    latestIsText: latest !== null && typeof latest.value === 'string'
+    latest
   }
 }
 
 export type ZonePlot = { lagging: MetricDefinition | null; leads: MetricDefinition[] }
 
-/**
- * One chart = one lagging metric plus its leads. A lead naming an existing
- * lagging metric joins it; an empty or unmatched `leads` attaches to the tab's
- * first lagging metric (hi-fi grouping) — the row still shows the raw leads text,
- * and catalog-level ambiguity problems surface separately, so nothing is silently
- * re-associated. A tab with only leads keeps them visible without a fake anchor.
- */
+/** Only explicit matching leads share a plot; unresolved relationships stay separate. */
 export function groupZonePlots(defs: MetricDefinition[]): ZonePlot[] {
   const lagging = defs.filter((def) => def.role === 'lagging')
   const leads = defs.filter((def) => def.role === 'leading')
@@ -175,12 +159,15 @@ export function groupZonePlots(defs: MetricDefinition[]): ZonePlot[] {
   const plots = new Map<string, ZonePlot>(
     lagging.map((def) => [def.name, { lagging: def, leads: [] }])
   )
-  const first = plots.get(lagging[0].name)!
+  const unlinked: ZonePlot = { lagging: null, leads: [] }
   for (const lead of leads) {
-    const target = plots.get(lead.leads?.trim() ?? '') ?? first
+    const target = plots.get(lead.leads?.trim() ?? '') ?? unlinked
     target.leads.push(lead)
   }
-  return lagging.map((def) => plots.get(def.name)!)
+  return [
+    ...lagging.map((def) => plots.get(def.name)!),
+    ...(unlinked.leads.length ? [unlinked] : [])
+  ]
 }
 
 /** Numeric target lines only when the target is a bare number; "≥3"-style text stays a row label. */

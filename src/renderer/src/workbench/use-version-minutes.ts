@@ -2,10 +2,7 @@ import { useEffect, useState } from 'react'
 import type { NativeWorkspaceScope } from './version-cycle/native-workspace'
 import { nativeVersionHistoryPort } from './version-history-port'
 import { nativeVersionMaterialPort } from './version-material-port'
-import type {
-  VersionHistoryCatalog,
-  VersionHistorySource
-} from '../../../shared/workbench/version-history'
+import type { VersionHistoryCatalog } from '../../../shared/workbench/version-history'
 import {
   AcceptanceMaterialSchema,
   PlanningMaterialSchema,
@@ -14,140 +11,209 @@ import {
 } from '../../../shared/workbench/version-material'
 import { derivePlanMinutes } from './version-planning/plan-summary'
 
-/** Minutes of one archived/live version, derived from the stored material — never re-collected. */
 export type VersionMinutes = {
   version: string
-  plan: { text: string; source: string } | null
-  acceptance: {
-    document: AcceptanceMaterial
-    source: string
-  } | null
+  cycle: string
+  loading: boolean
+  plan: { text: string; source: string; draft: boolean } | null
+  acceptance: { document: AcceptanceMaterial; source: string; draft: boolean } | null
   planDocument: PlanningMaterial | null
+  planError: string | null
+  acceptanceError: string | null
 }
-
-export function taskDistribution(document: AcceptanceMaterial): [string, number][] {
-  const counts = new Map<string, number>()
-  for (const item of document.taskSnapshot ?? []) {
-    if (item.kind !== 'ready') {
-      continue
-    }
-    counts.set(item.state, (counts.get(item.state) ?? 0) + 1)
-  }
-  return [...counts.entries()]
-}
-
-/** Loads the stored plan/acceptance material for one version: archive record first, live material for the current selection. */
-export function useVersionMinutes({
-  baseScope,
-  baseWorktreeId,
-  history,
-  currentVersion,
-  version
-}: {
+export type MinutesInput = {
   baseScope: NativeWorkspaceScope | null
   baseWorktreeId: string | null
+  planWorktreeId: string | null
+  acceptanceWorktreeId: string | null
   history: VersionHistoryCatalog | null
   currentVersion: string | null
   version: string | null
-}): VersionMinutes | null {
-  const [minutes, setMinutes] = useState<VersionMinutes | null>(null)
-  useEffect(() => {
-    if (!baseScope || !baseWorktreeId || !version) {
-      setMinutes(null)
-      return
+  cycle: string
+}
+export function taskDistribution(document: AcceptanceMaterial): [string, number][] {
+  const counts = new Map<string, number>()
+  for (const item of document.taskSnapshot ?? []) {
+    if (item.kind === 'ready') {
+      counts.set(item.state, (counts.get(item.state) ?? 0) + 1)
     }
-    const scope = {
-      repoId: baseScope.repoId,
-      worktreeId: baseWorktreeId,
-      hostId: baseScope.hostId
-    }
-    const owner = baseScope.runtimeOwnerEnvironmentId
-    let cancelled = false
-    const latest = (workflow: 'plan' | 'acceptance'): VersionHistorySource | undefined =>
-      (history?.records ?? [])
-        .filter((item) => item.version === version && item.workflow === workflow)
-        .sort((a, b) => b.committedAt.localeCompare(a.committedAt))[0]
-    void (async () => {
-      const historyPort = nativeVersionHistoryPort(owner)
-      const planRecord = latest('plan')
-      const acceptanceRecord = latest('acceptance')
-      let planDocument: PlanningMaterial | null = null
-      let planColumn: VersionMinutes['plan'] = null
-      if (planRecord) {
-        try {
-          const read = await historyPort.read({
+  }
+  return [...counts.entries()]
+}
+function emptyMinutes(version: string, cycle: string): VersionMinutes {
+  return {
+    version,
+    cycle,
+    loading: true,
+    plan: null,
+    acceptance: null,
+    planDocument: null,
+    planError: null,
+    acceptanceError: null
+  }
+}
+const message = (error: unknown) => (error instanceof Error ? error.message : String(error))
+export async function readVersionMinutes(input: MinutesInput): Promise<VersionMinutes | null> {
+  const { baseScope, baseWorktreeId, version, cycle, history } = input
+  if (!baseScope || !baseWorktreeId || !version) {
+    return null
+  }
+  const result = emptyMinutes(version, cycle)
+  const owner = baseScope.runtimeOwnerEnvironmentId
+  const scope = { repoId: baseScope.repoId, worktreeId: baseWorktreeId, hostId: baseScope.hostId }
+  const port = nativeVersionHistoryPort(owner)
+  const records = (history?.records ?? [])
+    .filter((item) => item.version === version && item.cycleId === cycle)
+    .sort((a, b) => b.committedAt.localeCompare(a.committedAt))
+  const planRecord = records.find((item) => item.workflow === 'plan')
+  const acceptanceRecord = records.find((item) => item.workflow === 'acceptance')
+  const live = cycle === 'current' && version === input.currentVersion
+  let revision: string | null = null
+  try {
+    const snapshot = live
+      ? input.planWorktreeId
+        ? await nativeVersionMaterialPort(
+            { ...scope, worktreeId: input.planWorktreeId, workflow: 'plan' },
+            owner
+          ).read(version)
+        : null
+      : planRecord
+        ? await port.read({
             scope,
             sourceCommit: planRecord.sourceCommit,
             version,
             cycleId: planRecord.cycleId,
-            workflow: 'plan'
+            workflow: planRecord.workflow
           })
-          planDocument = read.document as PlanningMaterial
-          planColumn = {
-            text: derivePlanMinutes(planDocument),
-            source: `归档 ${planRecord.sourceCommit.slice(0, 12)} · ${planRecord.committedAt}`
-          }
-        } catch {
-          planColumn = null
-        }
-      } else if (version === currentVersion) {
-        try {
-          const live = await nativeVersionMaterialPort({ ...scope, workflow: 'plan' }, owner).read(
-            version
-          )
-          if (live) {
-            planDocument = PlanningMaterialSchema.parse(live.document)
-            planColumn = {
-              text: derivePlanMinutes(planDocument),
-              source: '当前材料（未归档）'
-            }
-          }
-        } catch {
-          planColumn = null
-        }
+        : null
+    if (snapshot) {
+      result.planDocument = PlanningMaterialSchema.parse(snapshot.document)
+      revision = snapshot.revision
+      result.plan = {
+        text: derivePlanMinutes(result.planDocument),
+        draft: live,
+        source: live
+          ? '当前材料（未归档）'
+          : `归档 ${planRecord!.sourceCommit.slice(0, 12)} · ${planRecord!.committedAt}`
       }
-      let acceptanceColumn: VersionMinutes['acceptance'] = null
-      if (acceptanceRecord) {
-        try {
-          const read = await historyPort.read({
+    }
+  } catch (error) {
+    result.planError = message(error)
+  }
+  try {
+    const snapshot = live
+      ? input.acceptanceWorktreeId
+        ? await nativeVersionMaterialPort(
+            { ...scope, worktreeId: input.acceptanceWorktreeId, workflow: 'acceptance' },
+            owner
+          ).read(version)
+        : null
+      : acceptanceRecord
+        ? await port.read({
             scope,
             sourceCommit: acceptanceRecord.sourceCommit,
             version,
             cycleId: acceptanceRecord.cycleId,
-            workflow: 'acceptance'
+            workflow: acceptanceRecord.workflow
           })
-          acceptanceColumn = {
-            document: read.document as AcceptanceMaterial,
-            source: `归档 ${acceptanceRecord.sourceCommit.slice(0, 12)} · ${acceptanceRecord.committedAt}`
-          }
-        } catch {
-          acceptanceColumn = null
+        : null
+    if (snapshot) {
+      const document = AcceptanceMaterialSchema.parse(snapshot.document)
+      if (live && revision && document.planRef.revision !== revision) {
+        result.acceptanceError = '现有验收对应较早计划，本轮尚无对应验收'
+      } else {
+        const adopted = await port.readPlan({ scope, planRef: document.planRef })
+        const plan = PlanningMaterialSchema.parse(adopted.document)
+        if (
+          adopted.revision !== document.planRef.revision ||
+          plan.version !== version ||
+          plan.cycleId !== document.planRef.cycleId
+        ) {
+          throw new Error('验收引用的计划身份或修订不一致')
         }
-      } else if (version === currentVersion) {
-        // Mirror the plan column: an in-progress version reads its live acceptance material
-        // instead of reporting "no archive record" while work is underway.
-        try {
-          const live = await nativeVersionMaterialPort(
-            { ...scope, workflow: 'acceptance' },
-            owner
-          ).read(version)
-          if (live) {
-            acceptanceColumn = {
-              document: AcceptanceMaterialSchema.parse(live.document),
-              source: '当前材料（未归档）'
-            }
-          }
-        } catch {
-          acceptanceColumn = null
+        result.planDocument = plan
+        result.planError = null
+        result.plan = {
+          text: derivePlanMinutes(plan),
+          draft: adopted.source.kind === 'draft',
+          source:
+            adopted.source.kind === 'committed'
+              ? `验收所用计划 · ${adopted.source.sourceCommit.slice(0, 12)}`
+              : '验收所用计划（草稿）'
+        }
+        result.acceptance = {
+          document,
+          draft: live,
+          source: live
+            ? '当前材料（未归档）'
+            : `归档 ${acceptanceRecord!.sourceCommit.slice(0, 12)} · ${acceptanceRecord!.committedAt}`
         }
       }
+    }
+  } catch (error) {
+    result.acceptanceError = message(error)
+    // An unrelated latest plan cannot stand beside an acceptance whose reference failed.
+    if (acceptanceRecord) {
+      result.plan = null
+      result.planDocument = null
+      result.planError = '无法核对验收所用计划'
+    }
+  }
+  result.loading = false
+  return result
+}
+export function useVersionMinutes(input: MinutesInput, retry = 0): VersionMinutes | null {
+  const {
+    baseScope,
+    baseWorktreeId,
+    planWorktreeId,
+    acceptanceWorktreeId,
+    history,
+    currentVersion,
+    version,
+    cycle
+  } = input
+  const [state, setState] = useState<{ key: string; minutes: VersionMinutes | null } | null>(null)
+  const key = JSON.stringify([
+    baseScope,
+    baseWorktreeId,
+    planWorktreeId,
+    acceptanceWorktreeId,
+    currentVersion,
+    version,
+    cycle,
+    history,
+    retry
+  ])
+  useEffect(() => {
+    let cancelled = false
+    void readVersionMinutes({
+      baseScope,
+      baseWorktreeId,
+      planWorktreeId,
+      acceptanceWorktreeId,
+      history,
+      currentVersion,
+      version,
+      cycle
+    }).then((minutes) => {
       if (!cancelled) {
-        setMinutes({ version, plan: planColumn, acceptance: acceptanceColumn, planDocument })
+        setState({ key, minutes })
       }
-    })()
+    })
     return () => {
       cancelled = true
     }
-  }, [baseScope, baseWorktreeId, history, currentVersion, version])
-  return minutes
+  }, [
+    key,
+    baseScope,
+    baseWorktreeId,
+    planWorktreeId,
+    acceptanceWorktreeId,
+    history,
+    currentVersion,
+    version,
+    cycle
+  ])
+  return state?.key === key ? state.minutes : version ? emptyMinutes(version, cycle) : null
 }

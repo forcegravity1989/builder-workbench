@@ -15,7 +15,6 @@ export function journeySteps({
   version,
   view,
   progress,
-  reviewOpened,
   tasks,
   goalIssues
 }) {
@@ -52,7 +51,7 @@ export function journeySteps({
             progress ? '已提供版本进展' : '待填写版本进展'
           ],
           [Target, '目标', goalTone, goalTone === 'yellow' ? '指标待采集核对' : '目标内容已填写'],
-          [Presentation, '评审', reviewOpened ? 'yellow' : 'gray', '待会话记录评审结论'],
+          [Presentation, '评审', 'gray', '与 PL 讨论并直接修改目标；评审结论未读取'],
           [
             BrainCircuit,
             '拆解',

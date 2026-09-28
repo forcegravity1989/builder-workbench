@@ -367,3 +367,33 @@ describe('symbolic full-name resolution', () => {
     expect(result.baseRef).toMatchObject({ category: 'commits' })
   })
 })
+
+it('preserves both author and committer dates', () => {
+  const record = logRecord({ hash: HEAD_OID, message: 'commit' }).split('\n')
+  record[4] = '1800000000'
+  const [item] = parseGitHistoryLog(record.join('\n'))
+  expect(item.timestamp).toBe(1700000000000)
+  expect(item.committedAt).toBe(1800000000000)
+})
+it('supports stable paged window reads and rejects unsafe history arguments', async () => {
+  const { executor, calls } = createHistoryExecutor()
+  const pinned = async (args: string[], cwd: string) =>
+    args[0] === 'rev-parse' && args.includes(`${HEAD_OID}^{commit}`)
+      ? { stdout: HEAD_OID }
+      : executor(args, cwd)
+  await loadGitHistoryFromExecutor(pinned, '/repo', {
+    limit: 200,
+    skip: 200,
+    since: '2026-09-01T00:00:00Z',
+    revision: HEAD_OID
+  })
+  expect(calls.find((args) => args[0] === 'log')).toEqual(
+    expect.arrayContaining(['--skip=200', '--since-as-filter=2026-09-01T00:00:00Z', HEAD_OID])
+  )
+  await expect(
+    loadGitHistoryFromExecutor(executor, '/repo', { revision: '--all' })
+  ).rejects.toThrow('Invalid history revision')
+  await expect(loadGitHistoryFromExecutor(executor, '/repo', { skip: -1 })).rejects.toThrow(
+    'Invalid history offset'
+  )
+})

@@ -1,332 +1,228 @@
-import { useState } from 'react'
+import { useEffect, useRef } from 'react'
+import { init, use as registerCharts, type EChartsType, type ComposeOption } from 'echarts/core'
+import { LineChart, type LineSeriesOption } from 'echarts/charts'
+import {
+  GridComponent,
+  LegendComponent,
+  TooltipComponent,
+  AriaComponent,
+  MarkLineComponent,
+  type GridComponentOption,
+  type LegendComponentOption,
+  type TooltipComponentOption,
+  type AriaComponentOption,
+  type MarkLineComponentOption
+} from 'echarts/components'
+import { SVGRenderer } from 'echarts/renderers'
+
+registerCharts([
+  LineChart,
+  GridComponent,
+  LegendComponent,
+  TooltipComponent,
+  AriaComponent,
+  MarkLineComponent,
+  SVGRenderer
+])
 
 export type MetricChartSeries = {
   name: string
-  /** Bucketed values; null is a real gap and is never drawn or zero-filled. */
   values: (number | null)[]
   color: string
   unit: string
-  fill?: boolean
+  solid?: boolean
   target?: number | null
   on: boolean
 }
-
-const VW = 640
-const VH = 148
-const PAD_T = 10
-const PAD_B = 22
-const PAD_L = 34
-const PAD_R = 8
-const PAD_R_AXIS = 34
-const TICKS = 3
-
-function knownValues(series: MetricChartSeries[]): number[] {
-  const values: number[] = []
-  for (const item of series) {
-    for (const value of item.values) {
-      if (value !== null) {
-        values.push(value)
-      }
-    }
-    if (item.target !== null && item.target !== undefined) {
-      values.push(item.target)
-    }
-  }
-  return values
-}
-
-function extentOf(series: MetricChartSeries[]): [number, number] {
-  const known = knownValues(series)
-  if (known.length === 0) {
-    return [0, 1]
-  }
-  const min = Math.min(0, ...known)
-  const max = Math.max(...known, min + 1)
-  return [min, max]
-}
-
-/** Consecutive known points form one polyline; gaps break the line instead of bridging or dropping to zero. */
-function segmentsOf(values: (number | null)[]): [number, number][][] {
-  const segments: [number, number][][] = []
-  let current: [number, number][] = []
-  values.forEach((value, index) => {
-    if (value === null) {
-      if (current.length > 0) {
-        segments.push(current)
-        current = []
-      }
-      return
-    }
-    current.push([index, value])
-  })
-  if (current.length > 0) {
-    segments.push(current)
-  }
-  return segments
-}
-
-function formatAxis(value: number): string {
-  return Number.isInteger(value) ? String(value) : String(Math.round(value * 10) / 10)
-}
-
-function formatValue(value: number | null, unit: string): string {
-  return value === null ? '—' : `${value}${unit}`
-}
-
-/**
- * Hand-rolled SVG line chart in the hi-fi drawChart style — no chart dependency.
- * Same-unit series share the left axis, a second unit gets the right axis; the
- * newest bucket can be marked so the current point states its collection time.
- */
-export function MetricLineChart({
-  labels,
-  series,
-  emptyText,
-  hiddenText,
-  ariaLabel,
-  currentIndex = null,
-  currentNote = null
-}: {
+type ChartOption = ComposeOption<
+  | LineSeriesOption
+  | GridComponentOption
+  | LegendComponentOption
+  | TooltipComponentOption
+  | AriaComponentOption
+  | MarkLineComponentOption
+>
+type ChartProps = {
   labels: string[]
   series: MetricChartSeries[]
   emptyText: string
   hiddenText: string
   ariaLabel: string
-  currentIndex?: number | null
-  currentNote?: string | null
-}) {
-  const [hover, setHover] = useState<number | null>(null)
-  const visible = series.filter((item) => item.on)
-  if (visible.length === 0) {
-    return <div className="wb-mz-empty">{hiddenText}</div>
-  }
-  if (!visible.some((item) => item.values.some((value) => value !== null))) {
-    return <div className="wb-mz-empty">{emptyText}</div>
-  }
+  integer?: boolean
+  legend?: boolean
+  onToggle?(name: string, visible: boolean): void
+}
 
-  const leftUnit = visible[0].unit
-  const left = visible.filter((item) => item.unit === leftUnit)
-  const right = visible.filter((item) => item.unit !== leftUnit)
-  const hasRight = right.length > 0
-  const padR = hasRight ? PAD_R_AXIS : PAD_R
-  const iw = VW - PAD_L - padR
-  const ih = VH - PAD_T - PAD_B
-  const leftExtent = extentOf(left)
-  const rightExtent = hasRight ? extentOf(right) : leftExtent
-  const xAt = (index: number) =>
-    PAD_L + (labels.length === 1 ? iw / 2 : (iw * index) / (labels.length - 1))
-  const yAt = (value: number, [min, max]: [number, number]) =>
-    PAD_T + ih - ((value - min) / (max - min)) * ih
-  const extentFor = (item: MetricChartSeries) => (item.unit === leftUnit ? leftExtent : rightExtent)
+export function metricChartOption(
+  props: ChartProps,
+  color: (value: string) => string
+): ChartOption {
+  const units = [...new Set(props.series.map((item) => item.unit))]
+  const text = color('var(--color-text)')
+  const muted = color('var(--color-neutral-500)')
+  const divider = color('var(--color-divider)')
+  return {
+    animation: false,
+    aria: { enabled: true },
+    grid: { top: props.legend ? 54 : 18, bottom: 24, left: 42, right: units.length > 1 ? 42 : 16 },
+    legend: {
+      show: props.legend ?? false,
+      type: 'scroll',
+      top: 0,
+      left: 0,
+      right: 0,
+      selected: Object.fromEntries(props.series.map((item) => [item.name, item.on])),
+      textStyle: { color: text, width: 220, overflow: 'truncate', fontSize: 12 },
+      tooltip: { show: true, confine: true },
+      pageTextStyle: { color: muted },
+      pageIconColor: text,
+      pageIconInactiveColor: divider
+    },
+    tooltip: {
+      trigger: 'axis',
+      confine: true,
+      enterable: true,
+      axisPointer: { type: 'line', lineStyle: { color: muted, type: 'dashed' } },
+      backgroundColor: color('var(--color-card)'),
+      borderColor: divider,
+      textStyle: { color: text, fontSize: 12 },
+      extraCssText: 'max-width:min(420px,90%);max-height:160px;overflow:auto;white-space:normal;'
+    },
+    xAxis: {
+      type: 'category',
+      data: props.labels,
+      boundaryGap: false,
+      axisLine: { lineStyle: { color: divider } },
+      axisTick: { show: false },
+      axisLabel: { color: muted, fontSize: 10, hideOverlap: true }
+    },
+    yAxis: units.map((unit, index) => ({
+      type: 'value',
+      name: unit,
+      position: index === 0 ? 'left' : 'right',
+      nameTextStyle: { color: muted },
+      axisLabel: { color: muted, fontSize: 10 },
+      splitNumber: 3,
+      minInterval: props.integer ? 1 : undefined,
+      splitLine: { show: index === 0, lineStyle: { color: divider, type: 'dashed' } }
+    })),
+    series: props.series.map((item) => ({
+      name: item.name,
+      type: 'line',
+      data: item.values,
+      yAxisIndex: units.indexOf(item.unit),
+      connectNulls: false,
+      smooth: false,
+      showSymbol: true,
+      symbolSize: 6,
+      lineStyle: { color: color(item.color), width: 2, type: item.solid ? 'solid' : 'dashed' },
+      itemStyle: { color: color(item.color) },
+      emphasis: { focus: 'series' },
+      tooltip: {
+        valueFormatter: (value) => (value == null || value === '-' ? '—' : `${value}${item.unit}`)
+      },
+      markLine:
+        item.target == null
+          ? undefined
+          : {
+              silent: true,
+              symbol: 'none',
+              data: [{ yAxis: item.target }],
+              lineStyle: { color: color(item.color), type: 'dashed' },
+              label: { position: 'insideEndBottom', formatter: `目标 ${item.target}${item.unit}` }
+            }
+    }))
+  }
+}
 
-  const gridLines = Array.from({ length: TICKS + 1 }, (_, tick) => {
-    const y = PAD_T + (ih * tick) / TICKS
-    const ratio = 1 - tick / TICKS
-    return {
-      y,
-      left: formatAxis(leftExtent[0] + (leftExtent[1] - leftExtent[0]) * ratio),
-      right: hasRight
-        ? formatAxis(rightExtent[0] + (rightExtent[1] - rightExtent[0]) * ratio)
-        : null
+function chartColors(element: HTMLElement) {
+  const style = getComputedStyle(element)
+  return (value: string) => {
+    const match = /^var\((--[^,)]+)(?:,\s*([^)]*))?\)$/.exec(value)
+    return match ? style.getPropertyValue(match[1]).trim() || match[2] || '#888' : value
+  }
+}
+
+export function MetricLineChart(props: ChartProps) {
+  const container = useRef<HTMLDivElement>(null)
+  const chart = useRef<EChartsType | null>(null)
+  const latest = useRef(props)
+  latest.current = props
+  const activeIndex = useRef(-1)
+  useEffect(() => {
+    const element = container.current!
+    const instance = init(element, undefined, { renderer: 'svg' })
+    chart.current = instance
+    const redraw = () => {
+      instance.setOption(metricChartOption(latest.current, chartColors(element)), {
+        notMerge: true
+      })
     }
-  })
-  const labelStep = labels.length > 10 ? 3 : 1
-
-  const hovered = hover
-  const tooltipRows =
-    hovered === null
-      ? []
-      : visible.map((item) => ({
-          name: item.name,
-          text: formatValue(item.values[hovered] ?? null, item.unit)
-        }))
-  const tooltipAt =
-    hovered === null
-      ? null
-      : (() => {
-          const ys = visible
-            .map((item) => {
-              const value = item.values[hovered]
-              return value === null ? null : yAt(value, extentFor(item))
-            })
-            .filter((y): y is number => y !== null)
-          return { x: xAt(hovered), y: ys.length > 0 ? Math.min(...ys) : PAD_T }
-        })()
-
+    redraw()
+    const resize = new ResizeObserver(() => instance.resize())
+    resize.observe(element)
+    const theme = new MutationObserver(redraw)
+    theme.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ['class', 'style', 'data-theme']
+    })
+    instance.on('legendselectchanged', (event: unknown) => {
+      const selection = event as { name: string; selected: Record<string, boolean> }
+      latest.current.onToggle?.(selection.name, selection.selected[selection.name])
+    })
+    return () => {
+      resize.disconnect()
+      theme.disconnect()
+      instance.dispose()
+      chart.current = null
+    }
+  }, [])
+  useEffect(() => {
+    const element = container.current!
+    const instance = chart.current
+    if (instance) {
+      const previous = instance.getOption().legend as { scrollDataIndex?: number }[] | undefined
+      const option = metricChartOption(props, chartColors(element))
+      Object.assign(option.legend!, { scrollDataIndex: previous?.[0]?.scrollDataIndex ?? 0 })
+      instance.setOption(option, { notMerge: true })
+    }
+    activeIndex.current = -1
+  }, [props])
+  const visible = props.series.filter((item) => item.on)
+  const known = visible.some((item) => item.values.some((value) => value !== null))
   return (
-    <div className="wb-mz-chart">
-      <svg viewBox={`0 0 ${VW} ${VH}`} role="img" aria-label={ariaLabel} preserveAspectRatio="none">
-        {gridLines.map((line, index) => (
-          <g key={`grid-${index}`}>
-            <line
-              x1={PAD_L}
-              y1={line.y}
-              x2={VW - padR}
-              y2={line.y}
-              style={{ stroke: 'var(--color-divider, rgba(128,128,128,0.25))' }}
-              strokeWidth={1}
-            />
-            {(index === 0 || index === TICKS) && (
-              <>
-                <text
-                  x={PAD_L - 6}
-                  y={line.y + 3}
-                  textAnchor="end"
-                  fontSize={10}
-                  style={{ fill: 'var(--color-neutral-500, #888)', fontFamily: 'var(--font-mono)' }}
-                >
-                  {line.left}
-                </text>
-                {line.right !== null && (
-                  <text
-                    x={VW - padR + 6}
-                    y={line.y + 3}
-                    textAnchor="start"
-                    fontSize={10}
-                    style={{
-                      fill: 'var(--color-neutral-500, #888)',
-                      fontFamily: 'var(--font-mono)'
-                    }}
-                  >
-                    {line.right}
-                  </text>
-                )}
-              </>
-            )}
-          </g>
-        ))}
-        {visible.map((item) =>
-          item.target === null || item.target === undefined ? null : (
-            <line
-              key={`target-${item.name}`}
-              x1={PAD_L}
-              y1={yAt(item.target, extentFor(item))}
-              x2={VW - padR}
-              y2={yAt(item.target, extentFor(item))}
-              style={{ stroke: item.color }}
-              strokeWidth={1}
-              strokeDasharray="3 3"
-              opacity={0.4}
-            />
-          )
-        )}
-        {labels.map((label, index) =>
-          index % labelStep !== 0 && index !== labels.length - 1 ? null : (
-            <text
-              key={`label-${label}-${index}`}
-              x={xAt(index)}
-              y={VH - 6}
-              textAnchor="middle"
-              fontSize={10}
-              style={{
-                fill:
-                  index === currentIndex
-                    ? 'var(--color-text, #333)'
-                    : 'var(--color-neutral-600, #666)',
-                fontFamily: 'var(--font-mono)',
-                fontWeight: index === currentIndex ? 600 : 400
-              }}
-            >
-              {label.replace(/^\d{4}-/, '')}
-            </text>
-          )
-        )}
-        {tooltipAt && (
-          <line
-            x1={tooltipAt.x}
-            y1={PAD_T}
-            x2={tooltipAt.x}
-            y2={PAD_T + ih}
-            style={{ stroke: 'var(--color-neutral-500, #888)' }}
-            strokeWidth={1}
-            opacity={0.35}
-          />
-        )}
-        {visible.map((item, seriesIndex) => {
-          const extent = extentFor(item)
-          const segments = segmentsOf(item.values)
-          return (
-            <g key={`series-${item.name}`}>
-              {item.fill &&
-                segments.map((segment) =>
-                  segment.length < 2 ? null : (
-                    <path
-                      key={`fill-${segment[0][0]}`}
-                      d={`${segment
-                        .map(
-                          ([index, value], point) =>
-                            `${point ? 'L' : 'M'}${xAt(index)} ${yAt(value, extent)}`
-                        )
-                        .join(
-                          ' '
-                        )} L${xAt(segment.at(-1)![0])} ${PAD_T + ih} L${xAt(segment[0][0])} ${PAD_T + ih} Z`}
-                      style={{ fill: item.color }}
-                      opacity={0.12}
-                      stroke="none"
-                    />
-                  )
-                )}
-              {segments.map((segment) =>
-                segment.length < 2 ? null : (
-                  <path
-                    key={`line-${segment[0][0]}`}
-                    d={segment
-                      .map(
-                        ([index, value], point) =>
-                          `${point ? 'L' : 'M'}${xAt(index)} ${yAt(value, extent)}`
-                      )
-                      .join(' ')}
-                    fill="none"
-                    style={{ stroke: item.color }}
-                    strokeWidth={seriesIndex === 0 ? 2 : 1.6}
-                    strokeLinejoin="round"
-                  />
-                )
-              )}
-              {item.values.map((value, index) =>
-                value === null ? null : (
-                  <circle
-                    key={`dot-${index}`}
-                    cx={xAt(index)}
-                    cy={yAt(value, extent)}
-                    r={index === currentIndex ? 4.5 : item.fill ? 4 : 3.5}
-                    style={
-                      index === currentIndex
-                        ? { fill: item.color, stroke: 'var(--color-card, #fff)', strokeWidth: 1.5 }
-                        : { fill: 'var(--color-card, #fff)', stroke: item.color, strokeWidth: 2 }
-                    }
-                  />
-                )
-              )}
-            </g>
-          )
-        })}
-        {labels.map((label, index) => (
-          <rect
-            key={`hit-${label}-${index}`}
-            x={xAt(index) - iw / Math.max(labels.length - 1, 1) / 2}
-            y={PAD_T}
-            width={iw / Math.max(labels.length - 1, 1)}
-            height={ih}
-            fill="transparent"
-            onMouseEnter={() => setHover(index)}
-            onMouseLeave={() => setHover(null)}
-          />
-        ))}
-      </svg>
-      {tooltipAt && (
-        <div
-          className="wb-mz-tip"
-          style={{ left: `${(tooltipAt.x / VW) * 100}%`, top: `${(tooltipAt.y / VH) * 100}%` }}
-        >
-          <div className="wk">{labels[hovered ?? 0]}</div>
-          {tooltipRows.map((row) => (
-            <div className="vl" key={row.name}>
-              {row.name} · {row.text}
-            </div>
-          ))}
-          {hovered === currentIndex && currentNote && <div className="vl">{currentNote}</div>}
-        </div>
+    <div className="wb-mz-chart" data-legend={props.legend || undefined}>
+      <div
+        ref={container}
+        className="wb-mz-canvas"
+        role="img"
+        aria-label={props.ariaLabel}
+        tabIndex={0}
+        onKeyDown={(event) => {
+          if (event.key === 'Escape') {
+            chart.current?.dispatchAction({ type: 'hideTip' })
+          } else if (event.key === 'ArrowLeft' || event.key === 'ArrowRight') {
+            event.preventDefault()
+            activeIndex.current = Math.max(
+              0,
+              Math.min(
+                props.labels.length - 1,
+                activeIndex.current + (event.key === 'ArrowRight' ? 1 : -1)
+              )
+            )
+            chart.current?.dispatchAction({
+              type: 'showTip',
+              seriesIndex: Math.max(
+                0,
+                props.series.findIndex((item) => item.on)
+              ),
+              dataIndex: activeIndex.current
+            })
+          }
+        }}
+      />
+      {!known && (
+        <div className="wb-mz-empty">{visible.length ? props.emptyText : props.hiddenText}</div>
       )}
     </div>
   )

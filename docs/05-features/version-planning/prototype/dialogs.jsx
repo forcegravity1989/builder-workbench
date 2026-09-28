@@ -1,9 +1,9 @@
 import { React } from 'react'
-import { Check, Copy, Plus, X } from 'lucide-react'
-import { Field, Lamp, lampNames } from './shared.jsx'
-import { metrics, remote } from './snapshot.js'
+import { Check, Copy, X } from 'lucide-react'
+import { Lamp, lampNames } from './shared.jsx'
+import { remote } from './snapshot.js'
 
-function PrototypeDialogs({ copied, copyText, goals, metricPrep, modal, setModal, update }) {
+function PrototypeDialogs({ copied, copyText, modal, setModal }) {
   return (
     <div className="dialog-backdrop" onClick={() => setModal(null)}>
       <section
@@ -31,55 +31,6 @@ function PrototypeDialogs({ copied, copyText, goals, metricPrep, modal, setModal
         </header>
         <div className="dialog-content">
           {modal.type === 'text' && <pre>{modal.text}</pre>}
-          {modal.type === 'goal' &&
-            (() => {
-              const g = goals.find((x) => x.id === modal.id)
-              return (
-                <div className="goal-editor">
-                  <label>
-                    交付件
-                    <Field
-                      label="补充交付件"
-                      value={g.delivery}
-                      onChange={(v) => update(g.id, 'delivery', v)}
-                      rows={2}
-                    />
-                  </label>
-                  <label>
-                    验收标准
-                    <Field
-                      label="验收标准"
-                      value={g.criteria}
-                      onChange={(v) => update(g.id, 'criteria', v)}
-                      rows={3}
-                      placeholder="验收点、旅程或质量要求"
-                    />
-                  </label>
-                  <label>
-                    关联指标
-                    <select
-                      className="input"
-                      aria-label="关联指标"
-                      value={g.metricId}
-                      onChange={(e) => update(g.id, 'metricId', e.target.value)}
-                    >
-                      <option value="">不承诺指标</option>
-                      {metrics
-                        .filter((m) => m.kind === 'script')
-                        .map((m) => (
-                          <option key={m.id} value={m.id}>
-                            {m.name}
-                          </option>
-                        ))}
-                    </select>
-                  </label>
-                  <button className="btn btn-ghost" onClick={() => metricPrep(null)}>
-                    <Plus />
-                    准备新指标
-                  </button>
-                </div>
-              )
-            })()}
           {modal.type === 'scope' && (
             <div className="source-copy">
               <p>

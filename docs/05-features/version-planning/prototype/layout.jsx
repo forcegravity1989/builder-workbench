@@ -1,5 +1,5 @@
 import { React, useState } from 'react'
-import { PrototypeHeader, PrototypeSession, PrototypeSidebar } from './shell.jsx'
+import { PrototypeHeader, PrototypeSession, PrototypeSidebar, PrototypeSplitter } from './shell.jsx'
 import { Field, Lamp, archiveTone } from './shared.jsx'
 import { PlanningContent } from './screen.jsx'
 import { AcceptanceContent } from '../../version-acceptance/prototype/screen.jsx'
@@ -45,8 +45,6 @@ function PrototypeLayout({
   returnTo,
   review,
   risk,
-  session,
-  sessionFlow,
   setConfigId,
   setDraft,
   setDrafts,
@@ -61,8 +59,6 @@ function PrototypeLayout({
   setProgress,
   setRisk,
   setSelectedIssue,
-  setSession,
-  setSessionFlow,
   setSessions,
   setTaskFilter,
   setVersion,
@@ -78,8 +74,9 @@ function PrototypeLayout({
   view,
   weekly
 }) {
-  const [scenarios, setScenarios] = useState({ monday: 'first', friday: 'first' })
+  const [scenarios, setScenarios] = useState({ monday: 'selected', friday: 'first' })
   const [sessionStates, setSessionStates] = useState({ monday: 'empty', friday: 'empty' })
+  const [sessionWidth, setSessionWidth] = useState(undefined)
   const firstEntry = weekly && scenarios[view] === 'first'
   const setSessionState = (state) => setSessionStates((current) => ({ ...current, [view]: state }))
   const onScenario = (value) => {
@@ -112,6 +109,7 @@ function PrototypeLayout({
       />
       {chatVisible && (
         <PrototypeSession
+          width={sessionWidth}
           sessionState={sessionStates[view]}
           onStart={() => {
             setDraft('')
@@ -128,7 +126,10 @@ function PrototypeLayout({
           }}
         />
       )}
-      <main className={`main-pane ${!chatVisible ? 'wide-page' : ''}`}>
+      {chatVisible && <PrototypeSplitter onResize={setSessionWidth} />}
+      <main
+        className={`main-pane ${!chatVisible ? 'wide-page' : ''}${view === 'monday' ? ' planning-pane' : ''}`}
+      >
         <PrototypeHeader
           firstEntry={firstEntry}
           {...{
@@ -160,7 +161,9 @@ function PrototypeLayout({
                     aria-current={active === i ? 'step' : undefined}
                     aria-label={label}
                     onClick={() => {
-                      if (!firstEntry) stageGo(i)
+                      if (!firstEntry) {
+                        stageGo(i)
+                      }
                     }}
                     disabled={firstEntry && i > (view === 'monday' ? 1 : 0)}
                     title={`${label} · ${firstEntry ? '待选择版本' : hint}`}
@@ -185,12 +188,16 @@ function PrototypeLayout({
                   </section>
                 ) : view === 'monday' ? (
                   <PlanningContent
+                    sessionAvailable={sessionStates.monday !== 'empty'}
                     {...{
                       goals,
+                      metricPrep,
                       progress,
+                      promptConversation,
                       refreshMetrics,
+                      review,
                       risk,
-                      setModal,
+                      setNotice,
                       setProgress,
                       setRisk,
                       setVersion,
@@ -367,16 +374,8 @@ function PrototypeLayout({
           {...{
             copied,
             copyText,
-            go,
-            goals,
-            metricPrep,
             modal,
-            sessionFlow,
-            setModal,
-            setSession,
-            setSessionFlow,
-            update,
-            weekly
+            setModal
           }}
         />
       )}

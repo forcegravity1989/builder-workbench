@@ -177,55 +177,68 @@ function PrototypeVersionTasks({
   version,
   view
 }) {
+  const summary = (
+    <button
+      className="issue-summary"
+      aria-expanded={expanded}
+      onClick={() => {
+        setTaskFilter('')
+        setExpanded(!expanded)
+      }}
+    >
+      <ListTodo />
+      <strong>{view === 'friday' ? 'Issue 状态核对' : '版本任务'}</strong>
+      <span>{tasks.length} 项 Issue</span>
+      <span className="issue-progress">
+        完成 {done(tasks)} / {tasks.length}
+      </span>
+      {expanded ? <ChevronDown /> : <ChevronRight />}
+    </button>
+  )
   return (
     <section className="version-tasks" ref={taskSection}>
-      <button
-        className="issue-summary"
-        aria-expanded={expanded}
-        onClick={() => {
-          setTaskFilter('')
-          setExpanded(!expanded)
-        }}
-      >
-        <ListTodo />
-        <strong>{view === 'friday' ? 'Issue 状态核对' : '版本任务'}</strong>
-        <span>{tasks.length} 项 Issue</span>
-        <span className="issue-progress">
-          完成 {done(tasks)} / {tasks.length}
-        </span>
-        {expanded ? <ChevronDown /> : <ChevronRight />}
-      </button>
+      {view === 'monday' ? (
+        <div className="planning-task-header" data-expanded={expanded}>
+          {summary}
+          <button
+            className="btn btn-secondary"
+            onClick={() =>
+              promptConversation(
+                `请根据 ${version} 当前目标核对任务拆解，与我确认后创建或更新 Issue，并关联版本及目标。`
+              )
+            }
+          >
+            <BrainCircuit />
+            在会话中拆解
+          </button>
+        </div>
+      ) : (
+        summary
+      )}
       {expanded && (
         <div className="embedded-tasks">
-          <div className="tasks-toolbar">
-            <span>{taskFilter ? `${taskFilter} 关联任务` : '当前版本关联任务'}</span>
-            {taskFilter && (
-              <button className="btn btn-ghost" onClick={() => setTaskFilter('')}>
-                显示全部
-              </button>
-            )}
-            {view === 'monday' ? (
-              <button
-                className="btn btn-ghost"
-                onClick={() =>
-                  promptConversation(
-                    `请根据 ${version} 当前目标核对任务拆解，与我确认后创建或更新 Issue，并关联版本及目标。`
-                  )
-                }
-              >
-                <BrainCircuit />
-                在会话中拆解
-              </button>
-            ) : (
-              <button
-                className="btn btn-ghost"
-                onClick={() => setNotice('原型未连接远端；保留上次读取的 Issue 状态。')}
-              >
-                <RefreshCw />
-                刷新状态
-              </button>
-            )}
-          </div>
+          {(view !== 'monday' || taskFilter) && (
+            <div className="tasks-toolbar">
+              <span>{taskFilter ? `${taskFilter} 关联任务` : '当前版本关联任务'}</span>
+              {taskFilter && (
+                <button
+                  className={`btn ${view === 'monday' ? 'btn-secondary' : 'btn-ghost'}`}
+                  onClick={() => setTaskFilter('')}
+                >
+                  显示全部
+                </button>
+              )}
+              {view !== 'monday' && (
+                <button
+                  className="btn btn-ghost"
+                  onClick={() => setNotice('原型未连接远端；保留上次读取的 Issue 状态。')}
+                >
+                  <RefreshCw />
+                  刷新状态
+                </button>
+              )}
+            </div>
+          )}
           {taskList(shownTasks)}
         </div>
       )}

@@ -22,6 +22,7 @@ export type GitHubWorkItem = {
   url: string
   labels: string[]
   updatedAt: string
+  mergedAt?: string | null
   author: string | null
   // Why: GHE user logins don't exist on github.com, so the github.com/{login}.png
   // fallback 404s. Carry the API-provided avatar_url so github.com + Enterprise

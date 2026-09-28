@@ -19,7 +19,6 @@ vi.mock('./overview-metric-readings', () => ({
   )
 }))
 
-import { readAllMetricReadings } from './overview-metric-readings'
 import { useOverviewZoneGranularity } from './use-overview-zone-granularity'
 
 const catalog = {
@@ -36,6 +35,7 @@ function resultOf(granularity: ZoneGranularity): OverviewReadResult {
   return { north: null, map: { [granularity]: null }, problems: [] }
 }
 
+let identity = 0
 const view = { catalog: catalog as MetricCatalog | null }
 let root: Root
 let container: HTMLDivElement
@@ -46,6 +46,7 @@ let api: ReturnType<typeof useOverviewZoneGranularity>
 
 function Probe(): null {
   api = useOverviewZoneGranularity({
+    identity: `grain-test-${identity}`,
     catalog: view.catalog,
     baseScope,
     baseWorktreeId: 'tree',
@@ -61,6 +62,7 @@ async function render(): Promise<void> {
 }
 
 beforeEach(() => {
+  identity++
   vi.clearAllMocks()
   fixture.calls.length = 0
   view.catalog = catalog
@@ -97,8 +99,10 @@ it('页面已用当前粒度读过时（markRead 先于目录到达），不重�
 
 it('切换粒度按新窗口重读一次；重复设置同粒度不再读', async () => {
   await render()
+  expect(api.currentGranularity()).toBe('week')
   await act(async () => fixture.calls[0].resolve(resultOf('week')))
   await act(async () => api.setGranularity('day'))
+  expect(api.currentGranularity()).toBe('day')
   expect(fixture.calls.map((call) => call.granularity)).toEqual(['week', 'day'])
   await act(async () => fixture.calls[1].resolve(resultOf('day')))
   expect(apply).toHaveBeenLastCalledWith(resultOf('day'))
@@ -120,12 +124,4 @@ it('过期响应被世代守卫拦下：只有最新一次读取落到屏幕', a
   await act(async () => latest.resolve(resultOf('week')))
   expect(apply).toHaveBeenCalledTimes(1)
   expect(setBusy).toHaveBeenLastCalledWith(false)
-})
-
-it('currentGranularity 读取当前选择，供页面稳定的 load/refresh 回调使用', async () => {
-  await render()
-  expect(api.currentGranularity()).toBe('week')
-  await act(async () => api.setGranularity('day'))
-  expect(api.currentGranularity()).toBe('day')
-  expect(readAllMetricReadings).toHaveBeenCalled()
 })

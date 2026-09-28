@@ -76,7 +76,13 @@ export const GitCommitCompare = WorktreeSelector.extend({
 
 export const GitHistory = WorktreeSelector.extend({
   limit: z.number().int().min(1).max(200).optional(),
-  baseRef: z.string().nullable().optional()
+  baseRef: z.string().nullable().optional(),
+  since: z.iso.datetime().optional(),
+  skip: z.number().int().nonnegative().optional(),
+  revision: z
+    .string()
+    .regex(/^[0-9a-f]{40,64}$/i)
+    .optional()
 })
 
 export const GitBranchDiff = GitFilePath.extend({
