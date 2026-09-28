@@ -1,0 +1,9 @@
+
+ RUN  v4.1.11 E:/zhuyu/code/builder-workbench/.bw/worktrees/overview-journey
+
+
+ Test Files  7 passed (7)
+      Tests  45 passed (45)
+   Start at  08:27:23
+   Duration  7.57s (transform 482ms, setup 286ms, import 1.33s, tests 450ms, environment 3.53s)
+

@@ -24,16 +24,46 @@ const assert=require('node:assert/strict')
    await page.getByRole('group',{name:'业务指标粒度'}).getByRole('button',{name:'天',exact:true}).click()
    await page.getByRole('group',{name:'项目指标粒度'}).getByRole('button',{name:'天',exact:true}).click()
    await page.reload();await page.locator('.wb-mz-canvas svg').first().waitFor();assert.equal(await page.getByRole('tab',{name:'v0.4',exact:true}).getAttribute('aria-selected'),'true');assert.equal(await page.getByRole('group',{name:'业务指标粒度'}).getByRole('button',{name:'天',exact:true}).getAttribute('aria-pressed'),'true')
-   results.push({width,...metrics,setupStyle})
+   assert.equal(await page.getByLabel('纪要轮次').inputValue(),'C2')
+   assert.equal(await page.getByRole('group',{name:'项目指标粒度'}).getByRole('button',{name:'天',exact:true}).getAttribute('aria-pressed'),'true')
+   results.push({width,...metrics,setupStyle,restored:{version:'v0.4',cycle:'C2',businessGrain:'day',projectGrain:'day'}})
   }
   await page.goto(pathToFileURL(path.resolve('out/overview-review/product.html')).href+'?many=1');await page.locator('.wb-mz-canvas svg').first().waitFor();await page.locator('#metrics-zones').scrollIntoViewIfNeeded()
   const legend=page.locator('#metrics-zones svg text').filter({hasText:/^每周有效交付数$/});await legend.click();
   assert.equal(await page.evaluate(()=>Object.values(JSON.parse(sessionStorage.getItem(Object.keys(sessionStorage).find(k=>k.startsWith('bw:overview:')))).hidden)[0]),true);
+  await page.reload();await page.locator('.wb-mz-canvas svg').first().waitFor()
+  await page.waitForFunction(()=>window.chartSnapshots()[0]?.legend[0].selected['每周有效交付数']===false)
+  await page.locator('#metrics-zones').scrollIntoViewIfNeeded()
   const box=await page.locator('#metrics-zones .wb-mz-canvas').boundingBox();await page.mouse.click(box.x+box.width-10,box.y+16);
   assert((await page.locator('#metrics-zones .wb-mz-canvas svg').textContent()).includes('2/2'));
   await page.locator('#metrics-zones .wb-mz-canvas').focus();await page.keyboard.press('ArrowRight');await page.waitForTimeout(100);await page.screenshot({path:'out/overview-review/product-many-1920.png'})
   assert.equal(await page.evaluate(()=>document.querySelector('.wb-ov .content').scrollWidth-document.querySelector('.wb-ov .content').clientWidth),0)
-  assert.deepEqual(errors,[]);fs.writeFileSync('out/overview-review/product-check.json',JSON.stringify({results,errors},null,2));console.log(JSON.stringify({results,errors}))
+  const tooltip=await page.locator('#metrics-zones .wb-mz-canvas').evaluate(el=>{
+   const tip=[...el.querySelectorAll('div')].find(node=>node.style.maxHeight==='160px')
+   const assertTip=tip&&getComputedStyle(tip).visibility!=='hidden'
+   return tip?{visible:assertTip,height:tip.getBoundingClientRect().height,scrollHeight:tip.scrollHeight,clientHeight:tip.clientHeight,width:tip.getBoundingClientRect().width,chartWidth:el.clientWidth}:null
+  })
+  assert(tooltip?.visible);assert(tooltip.height<=180);assert(tooltip.scrollHeight>tooltip.clientHeight);assert(tooltip.width<=tooltip.chartWidth)
+  await page.goto(pathToFileURL(path.resolve('out/overview-review/product.html')).href+'?broken=1')
+  await page.getByText('无法读取的归档（1）',{exact:true}).click()
+  assert((await page.locator('#version-card').textContent()).includes('v0.3 · 计划 · cccccccccccc：材料无法解析'))
+  assert((await page.locator('#version-card').textContent()).includes('暂无可读取的版本材料'))
+  await page.getByRole('button',{name:'重试',exact:true}).click()
+  await page.screenshot({path:'out/overview-review/product-unreadable-archive.png'})
+  await page.evaluate(()=>window.switchFixtureProject())
+  await page.waitForFunction(()=>typeof window.resolveCharter==='function')
+  assert((await page.locator('.row-2').textContent()).includes('第二项目'))
+  assert(!(await page.locator('.row-2').textContent()).includes('Builders’ Workbench'))
+  await page.screenshot({path:'out/overview-review/product-project-switch.png'})
+  await page.evaluate(()=>window.resolveCharter())
+  await page.getByText('第二项目名片',{exact:true}).waitFor()
+  await page.goto(pathToFileURL(path.resolve('out/overview-review/product.html')).href+'?current=1')
+  await page.getByText('仅当前值，见指标详情',{exact:true}).first().waitFor()
+  await page.getByText('文本读数，见指标详情',{exact:true}).waitFor()
+  await page.locator('#metrics-zones').screenshot({path:'out/overview-review/product-current-readings.png'})
+  assert.deepEqual(errors,[])
+  const report={results,tooltip,legendRestored:true,unreadableArchiveVisible:true,projectCharterIsolated:true,currentAndTextReadingsVisible:true,errors}
+  fs.writeFileSync('out/overview-review/product-check.json',JSON.stringify(report,null,2));console.log(JSON.stringify(report))
  } finally {await browser.close()}
 })().catch(e=>{console.error(e);process.exitCode=1})
 

@@ -18,6 +18,12 @@
       "setupStyle": {
         "border": "1px",
         "background": "rgb(246, 243, 239)"
+      },
+      "restored": {
+        "version": "v0.4",
+        "cycle": "C2",
+        "businessGrain": "day",
+        "projectGrain": "day"
       }
     },
     {
@@ -38,8 +44,26 @@
       "setupStyle": {
         "border": "1px",
         "background": "rgb(246, 243, 239)"
+      },
+      "restored": {
+        "version": "v0.4",
+        "cycle": "C2",
+        "businessGrain": "day",
+        "projectGrain": "day"
       }
     }
   ],
+  "tooltip": {
+    "visible": true,
+    "height": 160,
+    "scrollHeight": 274,
+    "clientHeight": 158,
+    "width": 236.84375,
+    "chartWidth": 1599
+  },
+  "legendRestored": true,
+  "unreadableArchiveVisible": true,
+  "projectCharterIsolated": true,
+  "currentAndTextReadingsVisible": true,
   "errors": []
 }

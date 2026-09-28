@@ -1,0 +1,580 @@
+{
+  "schemaVersion": 1,
+  "root": "E:\\zhuyu\\code\\builder-workbench\\.bw\\worktrees\\overview-journey",
+  "generatedAt": "2026-09-28T12:28:23.064Z",
+  "files": [
+    {
+      "file": "CONTEXT.md",
+      "sha256": "73f8c001c5f2cced128a9f0a6131a79c70b1fc999affeeafbd3c5a4cf3e01747",
+      "links": [
+        {
+          "line": 7,
+          "kind": "inline",
+          "target": "AGENTS.md",
+          "status": "exists",
+          "resolved": "AGENTS.md"
+        },
+        {
+          "line": 11,
+          "kind": "inline",
+          "target": "AGENTS.md",
+          "status": "exists",
+          "resolved": "AGENTS.md"
+        },
+        {
+          "line": 50,
+          "kind": "inline",
+          "target": "AGENTS.md",
+          "status": "exists",
+          "resolved": "AGENTS.md"
+        },
+        {
+          "line": 64,
+          "kind": "inline",
+          "target": "AGENTS.md",
+          "status": "exists",
+          "resolved": "AGENTS.md"
+        },
+        {
+          "line": 90,
+          "kind": "inline",
+          "target": "AGENTS.md",
+          "status": "exists",
+          "resolved": "AGENTS.md"
+        },
+        {
+          "line": 97,
+          "kind": "inline",
+          "target": "standard/README.md",
+          "status": "exists",
+          "resolved": "standard/README.md"
+        },
+        {
+          "line": 100,
+          "kind": "inline",
+          "target": "docs/README.md",
+          "status": "exists",
+          "resolved": "docs/README.md"
+        },
+        {
+          "line": 101,
+          "kind": "inline",
+          "target": "AGENTS.md",
+          "status": "exists",
+          "resolved": "AGENTS.md"
+        },
+        {
+          "line": 102,
+          "kind": "inline",
+          "target": "AGENTS.md",
+          "status": "exists",
+          "resolved": "AGENTS.md"
+        },
+        {
+          "line": 106,
+          "kind": "reference-definition",
+          "target": "docs/01-principles/03-press-release-faq-flywheel.md",
+          "status": "exists",
+          "resolved": "docs/01-principles/03-press-release-faq-flywheel.md"
+        },
+        {
+          "line": 107,
+          "kind": "reference-definition",
+          "target": "docs/01-principles/01-document-organization.md",
+          "status": "exists",
+          "resolved": "docs/01-principles/01-document-organization.md"
+        },
+        {
+          "line": 108,
+          "kind": "reference-definition",
+          "target": "docs/01-principles/02-working-backwards.md",
+          "status": "exists",
+          "resolved": "docs/01-principles/02-working-backwards.md"
+        },
+        {
+          "line": 109,
+          "kind": "reference-definition",
+          "target": "docs/architecture.md",
+          "status": "exists",
+          "resolved": "docs/architecture.md"
+        },
+        {
+          "line": 110,
+          "kind": "reference-definition",
+          "target": "docs/06-module/桌面壳.md",
+          "status": "exists",
+          "resolved": "docs/06-module/桌面壳.md"
+        },
+        {
+          "line": 111,
+          "kind": "reference-definition",
+          "target": "docs/06-module/会话与执行.md",
+          "status": "exists",
+          "resolved": "docs/06-module/会话与执行.md"
+        },
+        {
+          "line": 112,
+          "kind": "reference-definition",
+          "target": "docs/06-module/技能与蒸馏.md",
+          "status": "exists",
+          "resolved": "docs/06-module/技能与蒸馏.md"
+        },
+        {
+          "line": 113,
+          "kind": "reference-definition",
+          "target": "docs/06-module/系统提示词与渐进加载.md",
+          "status": "exists",
+          "resolved": "docs/06-module/系统提示词与渐进加载.md"
+        },
+        {
+          "line": 114,
+          "kind": "reference-definition",
+          "target": "docs/06-module/关键信息维护.md",
+          "status": "exists",
+          "resolved": "docs/06-module/关键信息维护.md"
+        },
+        {
+          "line": 115,
+          "kind": "reference-definition",
+          "target": "standard/system-prompt/references/issue-state.md",
+          "status": "exists",
+          "resolved": "standard/system-prompt/references/issue-state.md"
+        },
+        {
+          "line": 116,
+          "kind": "reference-definition",
+          "target": "standard/system-prompt/references/metrics.md",
+          "status": "exists",
+          "resolved": "standard/system-prompt/references/metrics.md"
+        },
+        {
+          "line": 117,
+          "kind": "reference-definition",
+          "target": "standard/system-prompt/references/week-plan-comment.md",
+          "status": "exists",
+          "resolved": "standard/system-prompt/references/week-plan-comment.md"
+        },
+        {
+          "line": 118,
+          "kind": "reference-definition",
+          "target": "docs/05-features/version-planning/spec.md",
+          "status": "exists",
+          "resolved": "docs/05-features/version-planning/spec.md"
+        },
+        {
+          "line": 119,
+          "kind": "reference-definition",
+          "target": "docs/05-features/overview-metrics/spec.md",
+          "status": "exists",
+          "resolved": "docs/05-features/overview-metrics/spec.md"
+        },
+        {
+          "line": 120,
+          "kind": "reference-definition",
+          "target": "standard/skills/SKILL-MD-SPEC.md",
+          "status": "exists",
+          "resolved": "standard/skills/SKILL-MD-SPEC.md"
+        }
+      ]
+    },
+    {
+      "file": "docs/architecture.md",
+      "sha256": "e4e38930a5b8955fc0d7a3566046e3bbc6cf2ab077bb8c706d9ef79a5636185b",
+      "links": [
+        {
+          "line": 3,
+          "kind": "inline",
+          "target": "../AGENTS.md",
+          "status": "exists",
+          "resolved": "AGENTS.md"
+        },
+        {
+          "line": 3,
+          "kind": "inline",
+          "target": "06-module/README.md",
+          "status": "exists",
+          "resolved": "docs/06-module/README.md"
+        },
+        {
+          "line": 3,
+          "kind": "inline",
+          "target": "04-design-system/README.md",
+          "status": "exists",
+          "resolved": "docs/04-design-system/README.md"
+        },
+        {
+          "line": 3,
+          "kind": "inline",
+          "target": "hifi/",
+          "status": "exists",
+          "resolved": "docs/hifi"
+        },
+        {
+          "line": 3,
+          "kind": "inline",
+          "target": "01-principles/03-press-release-faq-flywheel.md",
+          "status": "exists",
+          "resolved": "docs/01-principles/03-press-release-faq-flywheel.md"
+        },
+        {
+          "line": 22,
+          "kind": "inline",
+          "target": "05-features/overview-metrics/STATUS.md",
+          "status": "exists",
+          "resolved": "docs/05-features/overview-metrics/STATUS.md"
+        },
+        {
+          "line": 26,
+          "kind": "inline",
+          "target": "01-principles/02-working-backwards.md#62-六环交付链",
+          "status": "exists",
+          "resolved": "docs/01-principles/02-working-backwards.md",
+          "uncheckedPart": "anchor-or-query"
+        },
+        {
+          "line": 34,
+          "kind": "inline",
+          "target": "06-module/关键信息维护.md",
+          "status": "exists",
+          "resolved": "docs/06-module/关键信息维护.md"
+        },
+        {
+          "line": 38,
+          "kind": "inline",
+          "target": "06-module/会话与执行.md",
+          "status": "exists",
+          "resolved": "docs/06-module/会话与执行.md"
+        },
+        {
+          "line": 44,
+          "kind": "inline",
+          "target": "06-module/系统提示词与渐进加载.md",
+          "status": "exists",
+          "resolved": "docs/06-module/系统提示词与渐进加载.md"
+        },
+        {
+          "line": 44,
+          "kind": "inline",
+          "target": "../standard/README.md",
+          "status": "exists",
+          "resolved": "standard/README.md"
+        },
+        {
+          "line": 48,
+          "kind": "inline",
+          "target": "06-module/技能与蒸馏.md",
+          "status": "exists",
+          "resolved": "docs/06-module/技能与蒸馏.md"
+        },
+        {
+          "line": 52,
+          "kind": "inline",
+          "target": "06-module/桌面壳.md",
+          "status": "exists",
+          "resolved": "docs/06-module/桌面壳.md"
+        },
+        {
+          "line": 52,
+          "kind": "inline",
+          "target": "../src/renderer/src/workbench/INVENTORY.md",
+          "status": "exists",
+          "resolved": "src/renderer/src/workbench/INVENTORY.md"
+        },
+        {
+          "line": 58,
+          "kind": "inline",
+          "target": "../ref/upstream.md",
+          "status": "exists",
+          "resolved": "ref/upstream.md"
+        },
+        {
+          "line": 84,
+          "kind": "inline",
+          "target": "05-features/version-planning/design.md",
+          "status": "exists",
+          "resolved": "docs/05-features/version-planning/design.md"
+        },
+        {
+          "line": 84,
+          "kind": "inline",
+          "target": "05-features/version-acceptance/design.md",
+          "status": "exists",
+          "resolved": "docs/05-features/version-acceptance/design.md"
+        },
+        {
+          "line": 84,
+          "kind": "inline",
+          "target": "05-features/overview-metrics/design.md",
+          "status": "exists",
+          "resolved": "docs/05-features/overview-metrics/design.md"
+        },
+        {
+          "line": 84,
+          "kind": "inline",
+          "target": "../ref/upstream.md",
+          "status": "exists",
+          "resolved": "ref/upstream.md"
+        }
+      ]
+    },
+    {
+      "file": "ref/upstream.md",
+      "sha256": "04697101f4d175422fddd8d95403b7a41dcccac27f750c90c40ec2a65c1a761a",
+      "links": [
+        {
+          "line": 4,
+          "kind": "inline",
+          "target": "../AGENTS.md",
+          "status": "exists",
+          "resolved": "AGENTS.md"
+        },
+        {
+          "line": 151,
+          "kind": "inline",
+          "target": "../AGENTS.md",
+          "status": "exists",
+          "resolved": "AGENTS.md"
+        },
+        {
+          "line": 172,
+          "kind": "inline",
+          "target": "../docs/architecture.md",
+          "status": "exists",
+          "resolved": "docs/architecture.md"
+        }
+      ]
+    },
+    {
+      "file": "src/renderer/src/workbench/INVENTORY.md",
+      "sha256": "af64d2f072ff0841a43d1f9b63388469aa3907b8125b4e9608f4039c03cbfb26",
+      "links": [
+        {
+          "line": 3,
+          "kind": "inline",
+          "target": "../../../../docs/architecture.md",
+          "status": "exists",
+          "resolved": "docs/architecture.md"
+        },
+        {
+          "line": 3,
+          "kind": "inline",
+          "target": "SYNC.md",
+          "status": "exists",
+          "resolved": "src/renderer/src/workbench/SYNC.md"
+        },
+        {
+          "line": 28,
+          "kind": "inline",
+          "target": "../../../../docs/05-features/overview-metrics/STATUS.md",
+          "status": "exists",
+          "resolved": "docs/05-features/overview-metrics/STATUS.md"
+        },
+        {
+          "line": 49,
+          "kind": "inline",
+          "target": "../../../../docs/05-features/overview-metrics/STATUS.md",
+          "status": "exists",
+          "resolved": "docs/05-features/overview-metrics/STATUS.md"
+        }
+      ]
+    },
+    {
+      "file": "docs/05-features/overview-metrics/spec.md",
+      "sha256": "227e49ed092df692744d240cd33a239caaa37746034fba78b84584026c33e37c",
+      "links": [
+        {
+          "line": 3,
+          "kind": "inline",
+          "target": "intent.md",
+          "status": "exists",
+          "resolved": "docs/05-features/overview-metrics/intent.md"
+        },
+        {
+          "line": 3,
+          "kind": "inline",
+          "target": "design.md",
+          "status": "exists",
+          "resolved": "docs/05-features/overview-metrics/design.md"
+        },
+        {
+          "line": 3,
+          "kind": "inline",
+          "target": "STATUS.md",
+          "status": "exists",
+          "resolved": "docs/05-features/overview-metrics/STATUS.md"
+        },
+        {
+          "line": 5,
+          "kind": "inline",
+          "target": "prototype.html",
+          "status": "exists",
+          "resolved": "docs/05-features/overview-metrics/prototype.html"
+        },
+        {
+          "line": 7,
+          "kind": "inline",
+          "target": "prototype/screen.jsx",
+          "status": "exists",
+          "resolved": "docs/05-features/overview-metrics/prototype/screen.jsx"
+        },
+        {
+          "line": 7,
+          "kind": "inline",
+          "target": "prototype/history.jsx",
+          "status": "exists",
+          "resolved": "docs/05-features/overview-metrics/prototype/history.jsx"
+        },
+        {
+          "line": 7,
+          "kind": "inline",
+          "target": "prototype/style.css",
+          "status": "exists",
+          "resolved": "docs/05-features/overview-metrics/prototype/style.css"
+        },
+        {
+          "line": 7,
+          "kind": "inline",
+          "target": "../version-planning/spec.md",
+          "status": "exists",
+          "resolved": "docs/05-features/version-planning/spec.md"
+        },
+        {
+          "line": 27,
+          "kind": "inline",
+          "target": "../../../standard/system-prompt/references/metrics.md",
+          "status": "exists",
+          "resolved": "standard/system-prompt/references/metrics.md"
+        },
+        {
+          "line": 43,
+          "kind": "inline",
+          "target": "https://echarts.apache.org/handbook/zh/concepts/legend/",
+          "status": "unchecked",
+          "reason": "external-or-uri"
+        },
+        {
+          "line": 43,
+          "kind": "inline",
+          "target": "https://echarts.apache.org/handbook/zh/concepts/axis/",
+          "status": "unchecked",
+          "reason": "external-or-uri"
+        },
+        {
+          "line": 80,
+          "kind": "inline",
+          "target": "STATUS.md",
+          "status": "exists",
+          "resolved": "docs/05-features/overview-metrics/STATUS.md"
+        }
+      ]
+    },
+    {
+      "file": "docs/05-features/overview-metrics/design.md",
+      "sha256": "598dad40ff108ef3fd6ebac3f2e680839b6b3cf127735ec88f171ba430ae9e99",
+      "links": [
+        {
+          "line": 3,
+          "kind": "inline",
+          "target": "spec.md",
+          "status": "exists",
+          "resolved": "docs/05-features/overview-metrics/spec.md"
+        },
+        {
+          "line": 3,
+          "kind": "inline",
+          "target": "../version-planning/design.md#共享边界",
+          "status": "exists",
+          "resolved": "docs/05-features/version-planning/design.md",
+          "uncheckedPart": "anchor-or-query"
+        },
+        {
+          "line": 68,
+          "kind": "inline",
+          "target": "https://echarts.apache.org/handbook/en/basics/import/",
+          "status": "unchecked",
+          "reason": "external-or-uri"
+        },
+        {
+          "line": 68,
+          "kind": "inline",
+          "target": "https://echarts.apache.org/handbook/en/concepts/chart-size/",
+          "status": "unchecked",
+          "reason": "external-or-uri"
+        },
+        {
+          "line": 76,
+          "kind": "inline",
+          "target": "STATUS.md",
+          "status": "exists",
+          "resolved": "docs/05-features/overview-metrics/STATUS.md"
+        }
+      ]
+    },
+    {
+      "file": "docs/05-features/overview-metrics/STATUS.md",
+      "sha256": "3be8fe9561afbcfe8ded83861d8b76bd6f1b06ea104c6a5d575e4015065f3517",
+      "links": [
+        {
+          "line": 3,
+          "kind": "inline",
+          "target": "intent.md",
+          "status": "exists",
+          "resolved": "docs/05-features/overview-metrics/intent.md"
+        },
+        {
+          "line": 3,
+          "kind": "inline",
+          "target": "spec.md",
+          "status": "exists",
+          "resolved": "docs/05-features/overview-metrics/spec.md"
+        },
+        {
+          "line": 3,
+          "kind": "inline",
+          "target": "design.md",
+          "status": "exists",
+          "resolved": "docs/05-features/overview-metrics/design.md"
+        },
+        {
+          "line": 5,
+          "kind": "inline",
+          "target": "prototype.html",
+          "status": "exists",
+          "resolved": "docs/05-features/overview-metrics/prototype.html"
+        },
+        {
+          "line": 5,
+          "kind": "inline",
+          "target": "https://github.com/forcegravity1989/builder-workbench/pull/277",
+          "status": "unchecked",
+          "reason": "external-or-uri"
+        },
+        {
+          "line": 5,
+          "kind": "inline",
+          "target": "https://github.com/forcegravity1989/builder-workbench/pull/272",
+          "status": "unchecked",
+          "reason": "external-or-uri"
+        },
+        {
+          "line": 29,
+          "kind": "inline",
+          "target": "https://github.com/forcegravity1989/builder-workbench/pull/277#pullrequestreview-5338370499",
+          "status": "unchecked",
+          "reason": "external-or-uri"
+        }
+      ]
+    }
+  ],
+  "summary": {
+    "files": 7,
+    "references": 74,
+    "errors": 0,
+    "unchecked": 9
+  },
+  "limits": [
+    "Only selected Markdown files; no inbound or whole-repository scan.",
+    "Heading anchors, external URLs, HTML and complex Markdown are not validated.",
+    "Existence is not semantic correctness, actual loading, test execution or feature value."
+  ]
+}

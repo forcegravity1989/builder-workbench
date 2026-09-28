@@ -1,49 +1,62 @@
-# 总览实施验证
+# 总览实施与独立检视验证
 
-候选：0d180a9507afe7d28ca9751b3f057a12c6820d07；基线：b16e4a04f5ef1e4aebf06479e36e5eec52486e22。截图分支永不合入。
+候选：8f7ce60f8cbd95746afb2ad170c45cdffefd5d32；基线：b16e4a04f。shots/codex/overview-journey 永不合入。
 
-证据分层：截图来自无界面 Edge 中的实际总览 React/ECharts 组件，端口使用替身，左侧明确标识“非 Electron”。真实本地 Git、真实 GitHub CLI 分别独立核对。用户因内存不足要求暂缓 Electron，因此没有真壳截图或真壳通过结论。
+截图来自无界面 Edge 中的实际 React/ECharts 组件，端口使用替身，不是 Electron。用户因内存不足要求暂缓真壳；脚本不操作用户正在使用的窗口。
+
+## 独立检视结论
+
+三位 subagent 分别检视顶层/特性文档资产、实现调用链、测试与证据；根代理核对和修复，代码代理复核。
+- 同步架构、特性规格、源码清单中的旧 SVG、PR 不可采集、分页/筛选未实现等错误说明；词表删除 ledger/手填/每日覆盖语义。
+- 校正业务 MetricsPort 与 renderer SDLC 的真实职责，删除过期施工安排，上游扩点表登记 Git 分页及 mergedAt。
+- 修复跨日/周后业务横轴与刷新窗口脱节、SDLC 切粒度/项目沿用旧日期。
+- 不可读归档保留版本/来源/原因和重试，不再表达为没有材料。
+- 有效当前值/文本读数使用准确空态，不画伪历史；隐藏系列不影响可见空态。
+- 项目名片按项目身份隔离，切项目时不显示上一项目内容。
+- 删除无消费者的图表返回字段、仅测试调用的刷新API。合并两项重复用例，增加一项跨周回归，未新增测试套件。
+- 补强原浏览器脚本的重载恢复及tooltip断言，修正证据文字强于实际断言的问题。
+
+文档头部职责未变；不另建台账。未修改共用工作区壳、计划/验收产品实现或hifi；已有原型快照仍被原型使用，保留明确的原型身份。
 
 ## 用例与截图
 
-| 用例 | 执行路径 | 期望 / 结果 | 截图 |
+| 用例 | 执行路径 | 期望/结果 | 证据 |
 |---|---|---|---|
-| 双卡与全文纪要 | 总览 → 当前材料 → 切版本 / 轮次 | 1280 / 1920 无横向溢出；双卡约 166px；两栏正文各 256px，完整正文独立滚动；切换复位 | product-top-1280.png / product-top-1920.png |
-| 业务及项目图表 | 总览向下滚动 → 日/周 → 提交标题 → Escape | 四个真实 ECharts 容器；三组 SDLC 图；Issue 仅当前点；标题打开来源，Escape 关闭 | product-metrics-1280.png / product-metrics-1920.png |
-| 多指标 | 12 条长名称 → 点击图例 → 下一页 → 键盘右箭头 | 单行图例 2 页，隐藏选择保存；日期提示有界可滚动，无页面横向溢出 | product-many-1920.png |
-| 返回恢复与按钮 | 选历史版本 / 轮次 / 两区日粒度 → 设置入口 → 重挂载 | 筛选恢复；设置按钮有 1px 边框及底色，入口回调一次 | product-check.json；设置入口用替身，不证明原生会话创建 |
+| 双卡与全文 | 当前材料 → 版本/轮次 → 两栏滚动 | 1280×800、1920×1080无横溢，首行约166px，两栏正文各256px独立滚动、切换复位 | product-top-1280.png / product-top-1920.png |
+| 业务/项目图 | 天/周 → 提交标题 → Escape | 四个ECharts容器；Issue仅当前点；来源弹窗开关 | product-metrics-1280.png / product-metrics-1920.png |
+| 多指标与恢复 | 12条长名称 → 隐藏 → 重载 → 下一页 → 键盘右箭头 | 实际ECharts显隐恢复；两页图例；tooltip高160px、内容可滚动、不超容器 | product-many-1920.png |
+| 视图与入口 | 选版本、C2、两区天粒度 → 设置 → 重载 | 版本/轮次/两区粒度恢复；按钮有边框/底色且回调一次；只证明入口回调 | product-check.json |
+| 不可读归档 | 仅有坏归档 → 展开 → 重试 | 显示版本、提交、原因和“暂无可读取的版本材料” | product-unreadable-archive.png |
+| 项目名片隔离 | A → B，延迟B响应 → 释放响应 | 等待时不显示A名片，完成后显示B名片 | product-project-switch.png |
+| 当前值/文本 | 注入当前数值及文本替身 | 准确提示当前/文本，不伪造历史 | product-current-readings.png |
 
-## 已执行
+## 已执行与证据版本
 
-- 提交前 lint-staged：oxlint、react-doctor、oxfmt 均通过。见 lint-staged.log。
-- 针对性 Vitest：17 文件、171 项通过；最终来源弹窗调整后受影响 2 项复跑通过。见 tests-delivery.log、tests-source-dialog.log。
-- 图表、窗口序列、视图偏好、Git 历史定向 strict 类型检查通过。见 typecheck-focused.log（空文件表示无诊断）。
-- RPC 参数目录与原型构建一致性 --check、git diff --check 通过。
-- 两宽度产品组件检查及 12 系列图例，脚本错误 0，横向溢出 0。见 product-check.json。
-- 真 Git：固定修订 3eeb93eb1b40691a30b7897d1ba27005cd173003，自 2026-08-31 起读取 8 页 / 1,577 条，对照独立 git log 的 id 与 %ct，0 差异。见 real-git-check.json。
-- 真 GitHub CLI：窗口内 59 条已合入 PR，全部真实 mergedAt 由产品 mapper 保留；30 条 mergedAt 与 updatedAt 不同。见 real-pr-check.json。不是原生 provider/runtime E2E。
+- 当前候选受影响的7个Vitest文件、45项通过：tests-audit.log。强化已有planRef/不同修订、UTC+8午夜、GitHub查询扩日、跨周窗口与隐藏空态用例；总用例数相对原提交净减少1项。
+- 提交前lint-staged（oxlint/react-doctor/oxfmt）及diff-check通过：lint-staged-audit.log。
+- 7份改动文档文件链接检查无错误；外链/锚点不在检查器覆盖内：doc-links-audit.json。
+- 浏览器两宽度、新错误态、名片隔离及当前/文本场景通过，页面错误0：product-check.json。
+- 初始候选0d180a950的17文件171项、来源弹窗2项复跑、定向strict类型检查、RPC catalog与原型构建检查是基线证据，保留于tests-delivery.log/tests-source-dialog.log/typecheck-focused.log；不是当前候选的全库通过结论。
+- 真实Git固定修订3eeb93eb1自2026-08-31读取8页/1,577条，与独立git log身份及%ct一致；GitHub只读59条PR的mergedAt映射一致，30条不同于updatedAt。本轮未改这些适配，保留real-git-check.json/real-pr-check.json，只证明只读来源与映射。
 
 ## 复现
 
-在候选工作树安装依赖后，将 reproduce/ 内脚本复制到该树 out/overview-review/（忽略目录），运行：
+安装候选依赖，将reproduce/脚本复制到out/overview-review/后运行（需Edge及Playwright）：
 
 ```powershell
 node out/overview-review/build-product.cjs
 node out/overview-review/check-product.cjs
-node out/overview-review/check-real-git.cjs
-node config/scripts/generate-rpc-params-catalog.mjs --check
-node docs/05-features/version-planning/prototype/build.cjs --check
-pnpm exec vitest run --config config/vitest.config.ts --maxWorkers=1 src/renderer/src/workbench/overview-metric-chart.test.tsx src/renderer/src/workbench/overview-metric-zones.test.tsx src/renderer/src/workbench/overview-sdlc.test.ts src/renderer/src/workbench/overview-sdlc-zones.test.tsx src/renderer/src/workbench/overview-zone-series.test.ts src/renderer/src/workbench/use-version-minutes.test.tsx src/renderer/src/workbench/use-overview-zone-granularity.test.tsx src/renderer/src/workbench/use-overview-sdlc.test.tsx src/renderer/src/workbench/overview-metric-readings.test.ts src/shared/git-history.test.ts src/main/codehub/work-items.test.ts src/main/github/client/map/work-item-merged-at.test.ts src/main/github/client-work-items-query-paging.test.ts src/main/github/client-work-items.test.ts src/main/github/client-issue-source.test.ts src/main/runtime/rpc/methods/git.test.ts src/relay/git-handler.test.ts
-pnpm exec tsc --ignoreConfig --singleThreaded --noEmit --skipLibCheck --strict --target ES2022 --module ESNext --moduleResolution Bundler --jsx react-jsx --types node,react src/renderer/src/workbench/overview-metric-chart.tsx src/renderer/src/workbench/overview-zone-series.ts src/renderer/src/workbench/overview-view-state.ts src/shared/git-history.ts
+pnpm exec vitest run --config config/vitest.config.ts --maxWorkers=1 --no-file-parallelism src/renderer/src/workbench/overview-metric-zones.test.tsx src/renderer/src/workbench/overview-sdlc-zones.test.tsx src/renderer/src/workbench/overview-sdlc.test.ts src/renderer/src/workbench/overview-zone-series.test.ts src/renderer/src/workbench/use-overview-sdlc.test.tsx src/renderer/src/workbench/use-overview-zone-granularity.test.tsx src/renderer/src/workbench/use-version-minutes.test.tsx
 ```
 
-浏览器检查需要本机 Edge 与 Playwright。上述脚本不启动 Electron，不操作用户已打开的窗口。真实 Git 检查在执行时的 HEAD 固定修订上复算，候选多了实现提交，数量可与记录略有不同。GitHub 原始查询可用 gh pr list --repo forcegravity1989/builder-workbench --state merged --limit 100 --json number,mergedAt,updatedAt --search 'merged:2026-08-30..2026-10-05'；该窗口快照随远端变化，不是冻结业务台账。
+图表、归档、延迟名片是明确替身，不证明native provider/runtime、真实模型配置或采集。真实Git脚本按执行时HEAD复算，数量可能随提交变化。
 
-## 未验证边界
+## 剩余边界
 
-- 真 Electron、macOS、SSH/WSL/配对宿主；真实 CodeHub；真实配置模型及采集脚本 → PR 采用 → 三屏消费 → 重启全旅程。
-- 完整 web 类型检查因 VirtualAlloc errno=1455 / out of memory 退出，单检查器亦无法完成；没有类型检查通过结论。完整 node/web 构建与其余全库门禁未运行，不能用定向检查替代。
-- 远端 CI 欠费按用户要求不阻塞本轮提交，实际运行状态在 PR Checks 中核对。
-- Git 窗口与 CodeHub 上限 10,000；GitHub 搜索上限 1,000；达到上限保持未知。远端列表是读取时快照，不保证跨页事务隔离。Issue 不伪造历史。
-- 指标配置当前每次新建原生会话，“继续同次 / 显式新建”未实现；本 PR 只恢复总览筛选，不改变共享会话管线。
+- Electron/macOS、SSH/WSL/配对宿主、真实CodeHub、配置模型/试采/PR采用/三屏消费/重启旅程未验。
+- 名片既有入口只读本机文件，远端宿主适配未完成；本轮仅修复切换项目串名片。
+- 配置指标仍每次新建原生会话，续接未实现；无指标每日自动化/读数账本，定义/脚本/采用证据仍保存。
+- 完整web类型检查此前因VirtualAlloc errno1455/内存不足退出，完整构建及其余全库门禁待资源充足环境；本轮没有重试大内存检查。
+- 最新[PR Checks](https://github.com/forcegravity1989/builder-workbench/actions/runs/36422183914)和[PR test LoC](https://github.com/forcegravity1989/builder-workbench/actions/runs/36422183291)因账户付款/额度不足未启动，按用户要求不处理账户问题、不记通过。
+- Git/CodeHub窗口上限10,000、GitHub搜索上限1,000；截断保持未知，远端列表不保证跨页事务快照，Issue不伪造历史。
 
