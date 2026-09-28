@@ -6,7 +6,7 @@
  * 四铁律：定时任务真实到点触发，且由人启用后才到点，BW 不代启。
  */
 
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useAppStore } from '@/store'
 import type { Automation, AutomationCreateInput } from '../../../../shared/automations-types'
 import type {
@@ -203,17 +203,10 @@ export function useEnsureCycleAutomation({
   agent: TuiAgent | null
   onNotice(message: string): void
 }): { automationId: string | null; creationKey: string | null } {
-  const [automationId, setAutomationId] = useState<string | null>(null)
+  const [registered, setRegistered] = useState<{ key: string; id: string } | null>(null)
   const scopeKey = cycleScope && fixedId ? `${cycleScopeKey(cycleScope)}:${fixedId}` : null
   useEffect(() => {
-    setAutomationId(null)
-  }, [scopeKey])
-  const ensuredKey = useRef<string | null>(null)
-  useEffect(() => {
     if (!cycleScope || !fixedId || !scopeKey) {
-      return
-    }
-    if (ensuredKey.current === scopeKey) {
       return
     }
     if (!agent) {
@@ -221,7 +214,6 @@ export function useEnsureCycleAutomation({
       return
     }
     let active = true
-    ensuredKey.current = scopeKey
     void (async () => {
       try {
         const result = await ensureCycleAutomation(cycleScope, fixedId, agent)
@@ -232,7 +224,7 @@ export function useEnsureCycleAutomation({
           onNotice(result.reason)
           return
         }
-        setAutomationId(result.automationId)
+        setRegistered({ key: scopeKey, id: result.automationId })
         if (result.status === 'created') {
           onNotice(
             workflow === 'plan'
@@ -254,7 +246,7 @@ export function useEnsureCycleAutomation({
     }
   }, [scopeKey, cycleScope, fixedId, workflow, agent, onNotice])
   return {
-    automationId,
+    automationId: registered?.key === scopeKey ? registered.id : null,
     creationKey: cycleScope ? cycleAutomationCreationKey(cycleScope) : null
   }
 }

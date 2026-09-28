@@ -6,6 +6,19 @@ import { nativeWorkspaceScope } from './native-workspace'
 import { cycleScopeForWorktree, ensureCycleWorktree } from './native-cycle-workspace'
 import { cycleWorkflowForWorktree } from '../workbench-nav'
 import type { VersionWorkflow } from '../../../../shared/workbench/version-document'
+import type { CycleScope } from './ports'
+
+/** Native HEAD/unread updates must not reset the material ports or workflow selection. */
+function useStableCycleScope(value: CycleScope | null) {
+  const { projectId, repoId, hostId, runtimeOwnerEnvironmentId, workflow } = value ?? {}
+  return useMemo(
+    () =>
+      projectId && repoId && hostId && workflow
+        ? { projectId, repoId, hostId, runtimeOwnerEnvironmentId, workflow }
+        : null,
+    [projectId, repoId, hostId, runtimeOwnerEnvironmentId, workflow]
+  )
+}
 
 /** Navigation prepares a native workspace once; it never owns or reselects its sessions. */
 export function useCycleWorkspaceTarget(
@@ -89,9 +102,10 @@ export function useCycleWorkspaceTarget(
       return { scope: null, error: String(reason) }
     }
   }, [worktree, workflow])
+  const scope = useStableCycleScope(resolved.scope)
   return {
     worktree: resolved.scope ? worktree : null,
-    scope: resolved.scope,
+    scope,
     error: error ?? resolved.error ?? (preparing ? base.error : null)
   }
 }
