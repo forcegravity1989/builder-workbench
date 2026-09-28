@@ -2,7 +2,7 @@
 
 > 给实现与技术评审者读取；本文管指标数据流、采集与边界，不写分步排期。行为见 [spec](spec.md)，共享消费方见 [计划设计](../version-planning/design.md#共享边界)。取舍变化时更新，落地后同步关键信息维护模块。
 >
-> 状态：已授权实施；详细设计未逐项细审，未决项须人工确认，实施证据见 STATUS。架构定位：architecture §1 项目概况与版本判断，§2 ①事实、⑤壳；OVERVIEW_DEMO 已删除，OverviewPage 经 nativeMetricsPort 读真实指标服务。
+> 状态：现有指标服务已接入；2026-09-28 用户确认总览原型并授权实施，ECharts 作为此次图表落地方案。架构定位：architecture §1 项目概况与版本判断，§2 ①事实、⑤壳。现行实现与未验证项见 STATUS。
 
 ## 迁入什么
 
@@ -14,17 +14,19 @@ BW 自用的 managed-projects.py、其名单和远端读取依赖要逐项核对
 
 ## 责任与接口
 
-| 层 | 责任 |
-|---|---|
-| shared/workbench metrics 契约 | MetricDefinition、MetricRef、MetricReading、窗口/错误模型与可比较性 |
-| BW 主进程指标服务 | 可信项目定位、业务定义/脚本与项目 Git/provider 统计两种来源、任务去重、输出校验、证据/缓存 |
-| renderer/workbench/metrics | 原总览两块指标、业务特性页签/关系、系列显隐、当前/历史图表、刷新与选择器 |
-| 计划 / 验收 | 保存选定 metricRef 和版本目标 / 引用真实 readingRef；不另跑脚本、不保存一份手填实际数 |
-| Orca | 项目/宿主身份、权限与通用进程/文件基础设施；不装 BW 指标业务 |
+| 层                            | 责任                                                                                       |
+| ----------------------------- | ------------------------------------------------------------------------------------------ |
+| shared/workbench metrics 契约 | MetricDefinition、MetricRef、MetricReading、窗口/错误模型与可比较性                        |
+| BW 主进程指标服务             | 可信项目定位、业务定义/脚本与项目 Git/provider 统计两种来源、任务去重、输出校验、证据/缓存 |
+| renderer/workbench/metrics    | 原总览两块指标、业务特性页签/关系、系列显隐、当前/历史图表、刷新与选择器                   |
+| 计划 / 验收                   | 保存选定 metricRef 和版本目标 / 引用真实 readingRef；不另跑脚本、不保存一份手填实际数      |
+| Orca                          | 项目/宿主身份、权限与通用进程/文件基础设施；不装 BW 指标业务                               |
 
-拟冻结 MetricsPort.list(project)、read(ref,window)、refresh(ref,window)；刷新返回可追溯 run/状态，读取返回 value 或 Unknown 及原因，不能仅用 null 吞掉失败。MetricRef 包含项目、指标名称与定义指纹，名称不唯一须先消歧；leads 是声明关系，不自动证明因果。
+复用 MetricsPort.list(project)、read(ref,window)、refresh(ref,window)；刷新返回可追溯 run/状态，读取返回 value 或 Unknown 及原因，不能仅用 null 吞掉失败。MetricRef 包含项目、指标名称与定义指纹，名称不唯一须先消歧；leads 是声明关系，不自动证明因果。
 
 VersionHistoryPort.list 返回 records 与 problems：前者为可读取的固定提交记录，后者保留旧格式、损坏或不可读材料的版本、提交、流程、时间和原因。单条坏记录不抹去其他有效历史；无法验证的 cycleId 不补造。read 按明确版本、周期、流程与提交读取；readPlan 按已保存的计划引用核对内容修订，并区分已合入来源与明确选择的工作树草案，不回退到最新材料。接口位于 shared/workbench/version-history.ts，renderer 原生 RPC 客户端保持相同返回形状。
+
+总览按版本及材料轮次选择记录。已有验收经 planRef/readPlan 获取其对应计划，不能分别取各 workflow 的最新归档再并排；在研版本的更新计划如无对应验收，明确保留验收空态。界面区分加载、无记录、读取失败和已加载内容，切换时旧轮次内容不能冒充新选择。只消费现有材料与摘要，不修改计划/验收实现、选版存储或共用工作区壳。轮次用真实 cycleId 标识；原型中的 W36/W37/W39 是既有快照标签，不作为运行时固定周规则。
 
 历史目录从项目指定基线 Git 历史发现材料候选，内容修订按原始字节计算；可达关系、第一父链或合并方式均不单独证明归档。宿主以原生归档/provider 来源核验该提交和材料修订：已采用才进入正式记录，已证明的工作中草稿不列为归档，无法证明则进入待核 problems。非法版本目录也保留已知路径与提交问题，不放宽材料输入校验。固定 committed 引用读取执行相同核验；同版本多周期分别保留。读取服务接受明确的基线与原生宿主适配，不在核心层猜测默认分支。
 
@@ -48,13 +50,19 @@ retro=true 从脚本按日/周重算，缺点留缺；retro=false 仅查询当�
 
 提交计数明确所选工作树/分支和完整窗口，PR 合入按远端 mergedAt，开放 Issue 为时点存量。旧 main 口径与代码需要逐项核对，尤其重开事件、分页上限和本期非完整窗口；有完整事件历史才重建，只有当前快照就只返回该点。Git 成功不替代远端成功。项目 stats 保留来源与时刻，不能把切日/周后的旧数字重标为新窗口。
 
+现有链路核对：旧 main 的 `crates/bw/src/trend.rs` 经 `merged_mr_times` 按真实合入时间分桶；GitHub 实现请求 `mergedAt`，CodeHub 实现请求 `merged_at`。当前 Electron 的 `src/main/github/client/map/work-item.ts` 与 `src/main/codehub/work-items.ts` 只向任务模型传递 updatedAt；总览 `use-overview-sdlc.ts` 尚未请求合入 PR。这里是迁移接线缺口，不能写成平台不可采。实施应在现有 provider、宿主路由和权限路径上透传真实合入时间并补齐窗口内分页，不重建登录/抓取栈，不用 updatedAt 代替 mergedAt。该适配涉及共享数据模型和 provider 映射，须向主窗口标明文件依赖；与其工作区壳和计划/验收交互保持隔离。
+
+提交历史目前只返回最近 200 条，解析层将 timestamp 映射为作者时间；应明确提交时间口径并完整读取所选窗口。旧 main 的 Issue 历史按 createdAt/closedAt 相减，没有重开事件，不能直接当成精确存量算法照搬；保留折线容器，只有可证明的时点才绘点，补完整历史需核对事件和分页。平台限流、权限失败、分页不全须返回该系列的缺口，不能得到假零或假连续曲线。
+
 ## 配置任务与采用
 
-“配置指标”经共享 MetricSetupPort 手动启动原生项目任务，使用独立固定的指标维护分支与工作树 **bw/metrics-refresh**（协议值，树名 metrics-refresh），呈现于原生项目会话屏并注入 metrics-refresh Skill 提示（cycle-prompt 以 workflow='metrics-refresh' 渲染），不增加 BW 右侧配置页或指标自动化。工作树复用计划/验收同一原生定位与创建适配，以项目、宿主和分支查登记；实际目录与创建起点听 Orca 项目设置，不硬编码 .bw 路径、main 或 bw-orca，不删除重建已有工作树。指标模块提供业务提示并实现 MetricSetupPort，复用原生 taskId 关联及总览版本/指标筛选恢复。同次返回继续未完成任务，显式新配置新建会话并复用维护树，不进入 bw/week-plan 或验收会话。已有未完成改动保留，不因新会话重置维护树。提示加载项目约定、通用 SYSTEM、metrics-refresh 及当前定义/错误；普通项目的 Skill 经产品内置发现 Stub 与原生 guide 分发解析，不依赖项目自带 standard/。配置任务形成定义和脚本的可评审改动，通过原生 PR 进入项目指定配置基线。目录读取固定配置提交；试采草案只在配置上下文有效，不自动成为三屏正式引用。刷新按钮直接调用 MetricsPort，不启动模型。
+“设置指标”经共享 metrics-setup 管线手动启动原生项目任务，使用独立固定的指标维护分支与工作树 **bw/metrics-refresh**（协议值，树名 metrics-refresh），呈现于原生项目会话屏并注入 metrics-refresh Skill 提示（cycle-prompt 以 workflow='metrics-refresh' 渲染），不增加 BW 右侧配置页或指标自动化。工作树复用计划/验收同一原生定位与创建适配，以项目、宿主和分支查登记；实际目录与创建起点听 Orca 项目设置，不硬编码 .bw 路径、main 或 bw-orca，不删除重建已有工作树。指标模块提供业务提示；任务续接与总览版本/指标筛选恢复沿用原生身份，不重新引入已删除的 MetricSetupPort。同次返回继续未完成任务，显式新配置新建会话并复用维护树，不进入 bw/week-plan 或验收会话。已有未完成改动保留，不因新会话重置维护树。提示加载项目约定、通用 SYSTEM、metrics-refresh 及当前定义/错误；普通项目的 Skill 经产品内置发现 Stub 与原生 guide 分发解析，不依赖项目自带 standard/。配置任务形成定义和脚本的可评审改动，通过原生 PR 进入项目指定配置基线。目录读取固定配置提交；试采草案只在配置上下文有效，不自动成为三屏正式引用。刷新按钮直接调用 MetricsPort，不启动模型。
 
 ## 三屏呈现与迁移
 
-总览负责定义与源数据，计划使用目标编辑模式，验收使用目标只读+实际读数模式，复用同一个 MetricBinding/Reading 组件和 selector。总览继续 main 的业务／项目分区；业务使用特性 tabs、同组滞后/引领与系列显隐，项目三组趋势并排，各自日/周与刷新。版本区域参考 main 的 overview/version.rs：版本页签下并排呈现计划与验收摘要，同源纪要在页内展开，缺失保持空态，不引入模态历史浏览器或里程碑模型。以现有前端图表能力和设计系统实现，新增依赖先查已有库；同轴必须同单位，不同单位采用明确独立刻度或对齐图。日/周切换不篡改采集精度；无真实点显示无数据。
+总览负责定义与源数据，计划使用目标编辑模式，验收使用目标只读+实际读数模式，复用同一指标契约和 selector。项目名片与北极星沿用既有高保真双卡结构，只引用样式与字段组织，不修改 hifi。总览保留业务／项目分区；业务使用特性 tabs、同组滞后/引领与系列显隐，单行可滚动图例配合同日期 tooltip，定义与长期目标按需打开。图例溢出控件、键盘焦点与有界 tooltip 不得增加页面横向溢出。项目三组折线图并排；业务和项目两区分别切日/周与刷新。业务刷新覆盖北极星，北极星不重复挂按钮；“设置指标”和刷新使用现有次按钮，继续调用已有 metrics-setup 管线。版本全文与来源直接在等高左右栏内回看，Markdown 正文独立滚动，以版本和轮次重置滚动位置；移除展开、去计划和去验收控件，不改工作区导航。以现有前端图表能力和设计系统实现；同轴必须同单位，不同单位采用明确独立刻度或对齐图。日/周切换不篡改采集精度；无真实点显示无数据。
+
+图表实现采用 ECharts。当前产品与原型仍为手写 SVG，依赖清单尚未引入 ECharts。Electron 的 React 渲染端可直接加载 JavaScript 图表；按需打包折线、图例、提示及坐标系，使用本地资源，不依赖 CDN。沿用设计系统颜色与文字，容器变化时 resize、卸载时 dispose；业务读数与 SDLC 共用总览内的图表适配，替换后删除被替代的手写交互，不保留双实现。库只负责呈现，缺测断点、来源、统计窗口和失败语义仍由 BW 数据层提供。接入与容器生命周期参考 [官方导入说明](https://echarts.apache.org/handbook/en/basics/import/)和[容器尺寸说明](https://echarts.apache.org/handbook/en/concepts/chart-size/)。
 
 从 main 定向选择有效 .bw 资产，不覆盖目标分支已有项目约定、计划、runtime 和本机路径。北极星占位不成为已注册业务指标；保留缺口。迁移后的 BW 自用数据只是首个验收项目，还要验证不含源码 standard/ 的普通项目。
 
