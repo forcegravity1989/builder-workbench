@@ -1,23 +1,18 @@
 import { React } from 'react'
 import {
-  ArrowUp,
   BookOpen,
   CalendarClock,
   CalendarRange,
-  ChevronDown,
   CircleHelp,
   ClipboardCheck,
   GitBranch,
-  History,
   LayoutDashboard,
   ListTodo,
   MessageSquare,
-  Plus,
   Presentation
 } from 'lucide-react'
-import { Field } from './shared.jsx'
 
-function PrototypeSidebar({ branch, go, setModal, setSelectedIssue, view }) {
+function PrototypeSidebar({ go, setModal, setSelectedIssue, view }) {
   return (
     <aside className="app-sidebar sidebar">
       <div className="brand">
@@ -56,24 +51,6 @@ function PrototypeSidebar({ branch, go, setModal, setSelectedIssue, view }) {
           </button>
         ))}
       </nav>
-      <div className="sidebar-section">项目</div>
-      <div className="repo-node">
-        <ChevronDown />
-        <span>builder-workbench</span>
-      </div>
-      <button
-        className="branch-node"
-        disabled={view === 'metricsetup'}
-        onClick={() =>
-          setModal({
-            type: 'sessions',
-            title: `${branch} · 会话`
-          })
-        }
-      >
-        <GitBranch />
-        <span>{view === 'metricsetup' ? '配置任务 · 工作区待创建' : branch}</span>
-      </button>
       <div className="sidebar-spacer" />
       <button
         className="sidebar-item source-action"
@@ -90,104 +67,40 @@ function PrototypeSidebar({ branch, go, setModal, setSelectedIssue, view }) {
     </aside>
   )
 }
-function PrototypeSession({
-  branch,
-  composer,
-  configId,
-  draft,
-  session,
-  sessionFlow,
-  setDraft,
-  setModal,
-  setNotice,
-  setSession,
-  view,
-  weekly
-}) {
+function PrototypeSession({ branch, composer, draft, sessionState, onStart, view }) {
+  const label = view === 'friday' ? '验收' : '计划'
   return (
-    <section className="session-pane" aria-label="分支会话">
+    <section className="session-pane" aria-label="Orca 原生会话工作区">
       <header className="session-head">
         <GitBranch />
-        <strong>{view === 'metricsetup' ? '指标配置任务' : branch}</strong>
-        {weekly && (
-          <button
-            className="btn btn-icon btn-ghost"
-            aria-label="查看分支会话"
-            onClick={() =>
-              setModal({
-                type: 'sessions',
-                title: `${branch} · 会话`
-              })
-            }
-          >
-            <History />
-          </button>
-        )}{' '}
-        {weekly && (
-          <button
-            className="btn btn-icon btn-ghost"
-            aria-label="开始新会话"
-            onClick={() => {
-              setSession('新会话')
-              setDraft('')
-            }}
-          >
-            <Plus />
-          </button>
-        )}
+        <strong>{branch}</strong>
+        <button className="btn btn-secondary" onClick={onStart}>
+          新建{label}
+        </button>
       </header>
-      {view !== 'metricsetup' && (
-        <div className="session-tabs" role="tablist" aria-label="分支会话列表">
-          {[
-            ['W39', 'v0.5'],
-            ['W38', 'v0.4']
-          ].map(([w, v]) => (
-            <button
-              role="tab"
-              aria-selected={session === w}
-              key={w}
-              aria-label={`${v} · ${w} 会话`}
-              onClick={() => setSession(w)}
-            >
-              <span>Claude Code</span>
-              <small>
-                {v} · {w}
-              </small>
-            </button>
-          ))}
-        </div>
+      <div className="native-workspace-placeholder">
+        <MessageSquare />
+        <h2>复用 Orca 会话工作区</h2>
+        <p className="prototype-session-state" role="status">
+          {sessionState === 'empty'
+            ? '此固定工作区尚未打开会话。右侧“在会话中处理”可直接新建并自动发送。'
+            : sessionState === 'request'
+              ? '原型示意：已新建并聚焦原生会话，处理请求已自动发送；等待模型说明，再由人确认是否修改文件。'
+              : sessionState === 'workflow'
+                ? `原型示意：已运行登记的${label}自动化，并打开、聚焦本次原生会话。`
+                : '原型示意：此固定工作区已有原生会话。'}
+        </p>
+        <p>原生新建会话、Agent 选择、标签和分屏保持原样。</p>
+        <p>资源管理器、智能体历史等工具侧栏沿用 Orca，可收起。</p>
+        <p>本页仅固定项目与分支；已有会话在两处是同一组。</p>
+        <small>此区域只标识复用边界，不另设计 BW 会话 UI。</small>
+      </div>
+      {draft && (
+        <details className="prototype-request" open ref={composer}>
+          <summary>业务按钮交给原生会话的内容（原型示意）</summary>
+          <pre>{draft}</pre>
+        </details>
       )}
-      <div className="session-caption">
-        <MessageSquare />
-        <span>
-          {view === 'metricsetup'
-            ? `配置任务 · ${configId}`
-            : `${session === 'W38' ? 'v0.4' : 'v0.5'} · ${session} · ${sessionFlow}`}
-        </span>
-      </div>
-      <div className="session-empty">
-        <MessageSquare />
-        <span>会话记录待接入</span>
-      </div>
-      <div className="composer" ref={composer}>
-        <Field
-          label="会话输入"
-          value={draft}
-          onChange={setDraft}
-          rows={3}
-          placeholder="与会话讨论，或直接编辑右侧…"
-        />
-        <div>
-          <span>Claude Code</span>
-          <button
-            className="btn btn-icon btn-ghost"
-            aria-label="发送（原型未接入）"
-            onClick={() => setNotice('会话尚未连接；输入已保留，未发送')}
-          >
-            <ArrowUp />
-          </button>
-        </div>
-      </div>
     </section>
   )
 }
@@ -199,7 +112,8 @@ function PrototypeHeader({
   setVersion,
   version,
   view,
-  weekly
+  weekly,
+  firstEntry
 }) {
   return (
     <header className="page-header">
@@ -214,7 +128,22 @@ function PrototypeHeader({
           }[view]
         }
       </h1>
-      {view === 'monday' ? (
+      {weekly && firstEntry ? (
+        <select
+          className="input version-select"
+          aria-label={`${view === 'monday' ? '计划' : '验收'}版本`}
+          value=""
+          onChange={() => {}}
+        >
+          <option value="">待选择版本</option>
+          <option value="v0.3" disabled>
+            v0.3 · 无法读取
+          </option>
+          <option value="v0.4" disabled>
+            v0.4 · 无法读取
+          </option>
+        </select>
+      ) : view === 'monday' ? (
         <span className="tag tag-outline">v0.5</span>
       ) : view === 'friday' ? (
         <select
@@ -234,10 +163,10 @@ function PrototypeHeader({
       ) : (
         <span className="page-state">builder-workbench</span>
       )}
-      {weekly && <span className="page-state">草稿</span>}
+      {weekly && !firstEntry && <span className="page-state">草稿</span>}
       <span className="header-spacer" />
       {weekly && (
-        <button className="btn btn-ghost" onClick={review}>
+        <button className="btn btn-ghost" onClick={review} disabled={firstEntry}>
           {view === 'monday' ? <Presentation /> : <ClipboardCheck />}
           {view === 'monday' ? '评审纪要' : '验收报告'}
         </button>

@@ -1,17 +1,33 @@
+// @vitest-environment happy-dom
+import { act, createElement } from 'react'
+import { createRoot } from 'react-dom/client'
 import { beforeEach, expect, it, vi } from 'vitest'
 import type { Automation } from '../../../../shared/automations-types'
 import type { ProjectHostSetup } from '../../../../shared/project-types'
 import type { Repo } from '../../../../shared/repo-types'
 import type { CycleScope } from './ports'
 
-const test = vi.hoisted(() => ({ state: {} as Record<string, unknown>, rpc: vi.fn() }))
+const test = vi.hoisted(() => ({
+  state: {} as Record<string, unknown>,
+  rpc: vi.fn(),
+  openRun: vi.fn()
+}))
 vi.mock('@/store', () => ({ useAppStore: { getState: () => test.state } }))
 vi.mock('@/runtime/runtime-rpc-client', () => ({
   callRuntimeRpc: test.rpc,
   getRuntimeEnvironmentStatus: vi.fn()
 }))
 vi.mock('./cycle-prompt', () => ({ buildCyclePrompt: vi.fn(async () => 'CYCLE-PROMPT') }))
-import { cycleAutomationCreationKey, ensureCycleAutomation } from './ensure-cycle-automation'
+vi.mock('./start-material-request', () => ({ assertCurrentCycleWorkspace: vi.fn() }))
+vi.mock('@/components/automations/automation-run-workspace-action', () => ({
+  openAutomationRunTerminal: test.openRun
+}))
+import {
+  cycleAutomationCreationKey,
+  ensureCycleAutomation,
+  useEnsureCycleAutomation
+} from './ensure-cycle-automation'
+import { startCycleAutomation } from './start-cycle-automation'
 
 const scope: CycleScope = {
   projectId: 'project',
@@ -156,4 +172,79 @@ it('creates once when concurrent callers share one identity', async () => {
   expect(first).toEqual({ status: 'created', automationId: 'auto-new' })
   expect(second).toEqual(first)
   expect(createCalls()).toHaveLength(1)
+})
+
+it('restores the registered automation after leaving and returning to the same workflow', async () => {
+  rpcWith([{ id: 'a1', creationKey: KEY, workspaceId: FIXED_ID }])
+  const container = document.createElement('div')
+  const root = createRoot(container)
+  const onNotice = vi.fn()
+  function Probe({ cycleScope }: { cycleScope: CycleScope | null }) {
+    const { automationId } = useEnsureCycleAutomation({
+      cycleScope,
+      fixedId: cycleScope ? FIXED_ID : null,
+      workflow: 'plan',
+      agent: 'claude',
+      onNotice
+    })
+    return createElement('span', null, automationId ?? 'none')
+  }
+  try {
+    await act(async () => root.render(createElement(Probe, { cycleScope: scope })))
+    expect(container.textContent).toBe('a1')
+    await act(async () => root.render(createElement(Probe, { cycleScope: null })))
+    expect(container.textContent).toBe('none')
+    await act(async () => root.render(createElement(Probe, { cycleScope: { ...scope } })))
+    expect(container.textContent).toBe('a1')
+    expect(createCalls()).toHaveLength(0)
+  } finally {
+    act(() => root.unmount())
+  }
+})
+
+it('runs the saved automation with its SSH owner and opens only the matching run when ready', async () => {
+  vi.useFakeTimers()
+  setState({ sshTargetGenerations: new Map([['server', 7]]) })
+  const automation = { id: 'a1', workspaceMode: 'existing', workspaceId: FIXED_ID }
+  const pending = { id: 'run-1', automationId: 'a1', status: 'pending', workspaceId: FIXED_ID }
+  const ready = { ...pending, status: 'dispatched', terminalPaneKey: 'pane', terminalPtyId: 'pty' }
+  test.openRun.mockImplementation((run) => run === ready)
+  test.rpc.mockImplementation(async (_target, method) => {
+    if (method === 'automation.list') {
+      return {
+        automations: [automation],
+        items: [
+          {
+            automationId: 'a1',
+            selector: { kind: 'ssh', targetId: 'server', targetGeneration: 7 }
+          }
+        ]
+      }
+    }
+    if (method === 'automation.runNow') {
+      return { run: pending }
+    }
+    if (method === 'automation.runs') {
+      return { runs: [{ ...ready, id: 'unrelated-run' }, ready] }
+    }
+    throw new Error(`unexpected ${method}`)
+  })
+  try {
+    const running = startCycleAutomation({ ...scope, hostId: 'ssh:server' }, FIXED_ID, 'a1')
+    await vi.advanceTimersByTimeAsync(1000)
+    await running
+    expect(test.rpc).toHaveBeenCalledWith(
+      { kind: 'local' },
+      'automation.runNow',
+      {
+        id: 'a1',
+        expectedOwner: { selector: { kind: 'ssh', targetId: 'server', targetGeneration: 7 } }
+      },
+      expect.anything()
+    )
+    expect(test.openRun).toHaveBeenLastCalledWith(ready, 'ssh:server')
+    expect(test.rpc.mock.calls.filter((call) => call[1] === 'automation.runNow')).toHaveLength(1)
+  } finally {
+    vi.useRealTimers()
+  }
 })

@@ -1,209 +1,73 @@
 import { useAppStore } from '@/store'
-import { launchAgentInNewTab } from '@/lib/launch-agent-in-new-tab'
-import { launchAiVaultSessionInNewTab } from '@/lib/launch-ai-vault-session'
-import { prepareAiVaultSessionForResume } from '@/lib/ai-vault-session-resume-preparation'
-import { buildAiVaultResumeStartupForWorktree } from '@/lib/ai-vault-resume-command'
-import {
-  revealStructuredSession,
-  refreshStructuredSessionTabs
-} from '@/lib/activate-ai-vault-structured-session'
-import { findOriginalAiVaultSessionPane } from '@/components/right-sidebar/ai-vault-original-pane'
-import { requestBackgroundTerminalWorktreeMount } from '@/components/terminal/background-terminal-worktree-mount'
-import { toWebTerminalSurfaceTabId } from '@/runtime/web-terminal-surface-id'
-import { refreshWebRuntimeSessionTabsSnapshot } from '@/runtime/web-runtime-session'
-import { getRuntimeEnvironmentRevision } from '@/runtime/runtime-environment-revision'
+import type { AppState } from '@/store/types'
 import { insertNativeChatDraft } from '@/lib/native-chat-draft-insertion'
 import { structuredAgentSessionPaneKey } from '../../../../shared/structured-agent-session-projection'
-import type { TuiAgent } from '../../../../shared/tui-agent'
-import type { AiVaultSession } from '../../../../shared/ai-vault-types'
+import { makePaneKey, isTerminalLeafId } from '../../../../shared/stable-pane-id'
+import { resolveRootlessTerminalLayoutLeafId } from '@/components/terminal-pane/terminal-layout-leaf-ids'
 import type { CycleScope, CycleSession } from './ports'
-import { seedTerminalLayoutIfNeeded } from './terminal-pane-layout'
 import { cycleScopeForWorktree, cycleScopeKey } from './native-cycle-workspace'
 
-/** Launch routing is native: the fixed worktree is the actual selected workspace. */
-export function assertCycleWorkspace(scope: CycleScope, worktreeId: string) {
-  const state = useAppStore.getState()
+/** Only project/host identity and the currently focused native composer cross into BW. */
+export function getActiveCycleSession(
+  state: AppState,
+  scope: CycleScope | null,
+  worktreeId: string | null
+): CycleSession | null {
+  if (!scope || !worktreeId || state.activeWorktreeId !== worktreeId) {
+    return null
+  }
   const worktree = state.getKnownWorktreeById(
     worktreeId,
     state.activeWorkspaceExecutionHostId ?? undefined
   )
-  if (
-    !worktree ||
-    state.activeWorktreeId !== worktreeId ||
-    cycleScopeKey(cycleScopeForWorktree(worktree, scope.workflow)) !== cycleScopeKey(scope)
-  ) {
-    throw new Error('工作区已切换，请回到对应流程后重试')
+  if (!worktree) {
+    return null
   }
-}
-
-export function bindCycleTab(scope: CycleScope, worktreeId: string, tabId: string): CycleSession {
-  const state = useAppStore.getState()
-  const structured = state.unifiedTabsByWorktree[worktreeId]?.find(
-    (tab) => tab.id === tabId && tab.contentType === 'agent-session'
-  )
-  if (structured) {
+  try {
+    if (cycleScopeKey(cycleScopeForWorktree(worktree, scope.workflow)) !== cycleScopeKey(scope)) {
+      return null
+    }
+  } catch {
+    return null
+  }
+  const tab = state.getActiveTab(worktreeId)
+  if (tab?.contentType === 'agent-session') {
     return {
       ...scope,
       worktreeId,
-      tabId,
-      sessionId: structured.entityId,
-      paneKey: structuredAgentSessionPaneKey(tabId, structured.entityId),
+      tabId: tab.id,
+      sessionId: tab.entityId,
+      paneKey: structuredAgentSessionPaneKey(tab.id, tab.entityId),
       kind: 'structured',
-      title: structured.customLabel || structured.label
+      title: tab.customLabel || tab.label
     }
   }
-  const tab = state.tabsByWorktree[worktreeId]?.find((item) => item.id === tabId)
-  if (!tab) {
-    // Also the remount-restore path's only signal: a saved binding lands here once its tab was
-    // closed (its PTY exited), and naming that is what keeps the failure from reading as "no tab yet".
-    throw new Error('会话标签页不存在或已关闭，请从历史中重新打开')
+  if (tab && tab.contentType !== 'terminal') {
+    return null
   }
-  const { paneKey, snapshot } = seedTerminalLayoutIfNeeded(
-    tabId,
-    state.terminalLayoutsByTabId[tabId]
-  )
-  if (snapshot) {
-    state.setTabLayout(tabId, snapshot)
+  const tabId = tab?.entityId ?? state.activeTabId
+  const terminal = state.tabsByWorktree[worktreeId]?.find((item) => item.id === tabId)
+  if (!terminal) {
+    return null
   }
-  requestBackgroundTerminalWorktreeMount({ worktreeId, tabIds: [tabId] })
+  const layout = state.terminalLayoutsByTabId[terminal.id]
+  const leafId = layout?.activeLeafId ?? (layout && resolveRootlessTerminalLayoutLeafId(layout))
   return {
     ...scope,
     worktreeId,
-    tabId,
-    paneKey,
+    tabId: terminal.id,
+    sessionId: terminal.id,
+    paneKey: leafId && isTerminalLeafId(leafId) ? makePaneKey(terminal.id, leafId) : undefined,
     kind: 'terminal',
-    sessionId: tabId,
-    title: tab.customTitle || tab.title || '会话'
+    title: terminal.customTitle || terminal.title || '会话'
   }
-}
-
-function bindStructured(scope: CycleScope, worktreeId: string, sessionId: string) {
-  const tab = useAppStore
-    .getState()
-    .unifiedTabsByWorktree[worktreeId]?.find(
-      (item) => item.contentType === 'agent-session' && item.entityId === sessionId
-    )
-  if (!tab) {
-    throw new Error('原生会话尚未同步，请从历史中重试打开')
-  }
-  return bindCycleTab(scope, worktreeId, tab.id)
-}
-
-export async function startCycleSession(
-  scope: CycleScope,
-  worktreeId: string,
-  agent: TuiAgent,
-  prompt: string
-) {
-  assertCycleWorkspace(scope, worktreeId)
-  const launched = launchAgentInNewTab({
-    agent,
-    worktreeId,
-    prompt,
-    activate: false,
-    promptDelivery: 'auto-submit'
-  })
-  if (!launched) {
-    throw new Error('无法准备会话启动请求')
-  }
-  if (launched.tabId) {
-    return bindCycleTab(scope, worktreeId, launched.tabId)
-  }
-  if (launched.structuredSettlement) {
-    const result = await launched.structuredSettlement
-    if (result.kind === 'structured') {
-      return bindStructured(scope, worktreeId, result.sessionId)
-    }
-    if (result.kind === 'refused-then-legacy' && result.primaryTabId) {
-      return bindCycleTab(scope, worktreeId, result.primaryTabId)
-    }
-    throw new Error(
-      result.kind === 'failed' ? String(result.error) : '会话启动尚未确认，请核对原生会话历史'
-    )
-  }
-  const result = await launched.runtimeLaunch
-  if (!result?.hostTabId) {
-    throw new Error('未收到宿主会话身份，请核对原生会话历史')
-  }
-  return bindCycleTab(scope, worktreeId, toWebTerminalSurfaceTabId(result.hostTabId))
-}
-
-export async function openCycleHistory(
-  scope: CycleScope,
-  worktreeId: string,
-  session: AiVaultSession
-) {
-  assertCycleWorkspace(scope, worktreeId)
-  const environmentId = scope.runtimeOwnerEnvironmentId
-  const pairingRevision = environmentId ? getRuntimeEnvironmentRevision(environmentId) : undefined
-  if (session.structuredSession) {
-    const pointer = session.structuredSession
-    if (pointer.workspaceId !== worktreeId) {
-      throw new Error('历史会话不属于当前工作区')
-    }
-    const existing = useAppStore
-      .getState()
-      .unifiedTabsByWorktree[worktreeId]?.some(
-        (tab) => tab.contentType === 'agent-session' && tab.entityId === pointer.sessionId
-      )
-    if (!existing) {
-      const outcome = await revealStructuredSession({ worktreeId, sessionId: pointer.sessionId })
-      if (outcome !== 'revealed') {
-        // Why spelled out: the outcome is a protocol value; each maps to a remedy the user can act on.
-        throw new Error(
-          outcome === 'gone'
-            ? '该会话已不在宿主上，无法重新打开'
-            : outcome === 'host-cannot-open'
-              ? '宿主无法打开该会话，请升级 Orca 后重试'
-              : '宿主暂时不可达，请稍后重试'
-        )
-      }
-      await (environmentId
-        ? refreshWebRuntimeSessionTabsSnapshot(environmentId, worktreeId, {
-            expectedEnvironmentPairingRevision: pairingRevision,
-            acceptCurrentSnapshot: true,
-            afterCurrentInFlight: true,
-            errorMode: 'throw'
-          })
-        : refreshStructuredSessionTabs(worktreeId))
-    }
-    assertCycleWorkspace(scope, worktreeId)
-    return bindStructured(scope, worktreeId, pointer.sessionId)
-  }
-  const state = useAppStore.getState()
-  const pane = findOriginalAiVaultSessionPane(state, session, {
-    worktreeId,
-    allowPromptFallback: false
-  })
-  if (pane && pane.worktreeId === worktreeId) {
-    return { ...bindCycleTab(scope, worktreeId, pane.tabId), paneKey: pane.paneKey }
-  }
-  const prepared = await prepareAiVaultSessionForResume(session)
-  assertCycleWorkspace(scope, worktreeId)
-  const startup = buildAiVaultResumeStartupForWorktree({
-    state: useAppStore.getState(),
-    worktreeId,
-    session: prepared,
-    commandOverride: state.settings?.agentCmdOverrides?.[session.agent]
-  })
-  const result = launchAiVaultSessionInNewTab({
-    ...startup,
-    agent: session.agent,
-    worktreeId,
-    activate: false
-  })
-  if (result.tabId !== null) {
-    return bindCycleTab(scope, worktreeId, result.tabId)
-  }
-  const created = await result.runtimeLaunch
-  if (created.status !== 'created' || !created.hostTabId) {
-    throw new Error('恢复结果尚未确认，请从原生历史核对')
-  }
-  return bindCycleTab(scope, worktreeId, toWebTerminalSurfaceTabId(created.hostTabId))
 }
 
 export async function prepareCycleRequest(session: CycleSession, text: string) {
-  assertCycleWorkspace(session, session.worktreeId)
+  const current = getActiveCycleSession(useAppStore.getState(), session, session.worktreeId)
+  if (!current || current.tabId !== session.tabId || current.paneKey !== session.paneKey) {
+    throw new Error('会话焦点已改变，请选择目标会话后重试。')
+  }
   if (
     !session.paneKey ||
     !insertNativeChatDraft({ tabId: session.tabId, paneKey: session.paneKey, text })

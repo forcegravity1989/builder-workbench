@@ -25,6 +25,7 @@ import { renderTabBarItems } from './tab-bar-item-surface'
 import { TabBarStaticCreateMenu } from './tab-bar-static-create-menu'
 import ClientHostedBrowserTabRows from './ClientHostedBrowserTabRows'
 import type { ClientHostedBrowserRow } from '../../../../shared/client-hosted-browser-rows'
+import { CycleStartButton } from '@/workbench/version-cycle/CycleStartButton'
 
 const EMPTY_CLIENT_HOSTED_ROWS: readonly ClientHostedBrowserRow[] = []
 
@@ -196,6 +197,7 @@ export function renderTabBarSurface({
           </TooltipContent>
         </Tooltip>
       ) : null}
+      <CycleStartButton worktreeId={worktreeId} />
       <DropdownMenu
         open={newTabMenuOpen}
         onOpenChange={setNewTabMenuOpen}

@@ -9,6 +9,7 @@ import type { MetricScope } from '../../../../shared/workbench/metrics'
 import type { EvidenceCheck, PlanReference } from './acceptance-model'
 import { assertFixedPlan } from './acceptance-model'
 import type { nativeVersionMaterialPort } from '../version-material-port'
+import type { VersionMaterialCandidate } from '../../../../shared/workbench/version-material-request'
 
 export function useAcceptanceSources(
   history: VersionHistoryPort,
@@ -17,12 +18,21 @@ export function useAcceptanceSources(
 ) {
   const [sources, setSources] = useState<VersionHistorySource[]>([])
   const [versions, setVersions] = useState<string[]>([])
+  const [materialProblems, setMaterialProblems] = useState<VersionMaterialCandidate[]>([])
   const [error, setError] = useState<string | null>(null)
   const [problems, setProblems] = useState<VersionHistoryProblem[]>([])
   const [refreshKey, setRefreshKey] = useState(0)
   useEffect(() => {
     let current = true
-    void Promise.all([material.list(), history.list({ scope })])
+    void Promise.all([
+      material.list().then((items) => {
+        if (current) {
+          setMaterialProblems(items.filter((item) => item.state !== 'ready'))
+        }
+        return items
+      }),
+      history.list({ scope })
+    ])
       .then(([materials, catalog]) => {
         if (!current) {
           return
@@ -49,7 +59,14 @@ export function useAcceptanceSources(
       current = false
     }
   }, [history, material, scope, refreshKey])
-  return { sources, versions, error, problems, refresh: () => setRefreshKey((value) => value + 1) }
+  return {
+    sources,
+    versions,
+    error,
+    problems,
+    materialProblems,
+    refresh: () => setRefreshKey((value) => value + 1)
+  }
 }
 
 export function useFixedAcceptancePlan(

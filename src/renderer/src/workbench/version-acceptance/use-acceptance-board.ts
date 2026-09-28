@@ -213,7 +213,9 @@ export function useAcceptanceBoard({
   }
   async function prepare(text: string) {
     try {
-      if (!session) {throw new Error('请先选择或开启左侧会话。')}
+      if (!session) {
+        throw new Error('请先选择或开启左侧会话。')
+      }
       await context.sessionPort.prepareRequest(session, text)
       setError(null)
     } catch (reason) {
@@ -277,6 +279,7 @@ export function useAcceptanceBoard({
     versions,
     sources,
     historyProblems: catalog.problems,
+    materialProblems: catalog.materialProblems,
     refreshCatalog: catalog.refresh,
     version,
     planChoice,

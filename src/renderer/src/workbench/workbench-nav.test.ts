@@ -25,4 +25,13 @@ describe('resolveWorkbenchNav', () => {
   it('leaves execution dimmed', () => {
     expect(resolveWorkbenchNav('terminal')).toBe(null)
   })
+
+  it('restores the board through native automation/history workspace navigation', () => {
+    expect(resolveWorkbenchNav('terminal', { branch: 'bw/week-plan' })).toBe('plan')
+    expect(resolveWorkbenchNav('terminal', { branch: 'refs/heads/bw/week-acceptance' })).toBe(
+      'acceptance'
+    )
+    expect(resolveWorkbenchNav('terminal', { branch: 'bw/metrics-refresh' })).toBe(null)
+    expect(resolveWorkbenchNav('tasks', { branch: 'bw/week-plan' })).toBe('tasks')
+  })
 })

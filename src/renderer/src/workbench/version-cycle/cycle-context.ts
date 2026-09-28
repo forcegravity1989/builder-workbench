@@ -13,4 +13,5 @@ export type VersionCycleContext = {
   materialPort: ReturnType<typeof createVersionMaterialPort> | null
   error: string | null
   selectVersion(version: string): Promise<void>
+  startRequest?(text: string): Promise<void>
 }

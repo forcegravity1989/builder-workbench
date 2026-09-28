@@ -2,7 +2,7 @@
 
 > **维护约定**：给修改 BW 产品执行规范的人和模型读取；只写各层职责、目录与当前加载边界，内容或分发入口变化时更新。实际用户旅程与执行覆盖见模块设计，不把文件存在写成已经派发。
 
-本目录是 Workbench 执行规范的源码，面向被管项目的业务会话，不是 BW 研发知识库或 Orca 工程参考。当前计划页签新开 Claude 会话仅在规划工作树和主项目中搜索 SYSTEM、week-planning 及部分 references，再注入存在的绝对路径；未找到时报告缺失。此入口不渲染模板占位符，也不证明整套资产已随安装包分发。
+本目录是 Workbench 执行规范的源码，面向被管项目的业务会话，不是 BW 研发知识库或 Orca 工程参考。SYSTEM 模板与计划、验收、指标配置的 Skill 发现 Stub 随产品打包，由工作流入口渲染提示；指南与 references 经原生 `ORCA skills get` 按需读取，普通被管项目无需拥有本目录。普通原生新建会话与历史恢复不额外注入 BW 提示；自动化登记后使用用户已保存的配置。提示递交、正文读取和模型遵守分别验证，入口与证据边界见模块说明。
 
 `standard/vendor/` 未迁入本分支；旧开发环境的复制机制和默认 workflow 派发承诺不适用于这里。
 
@@ -25,8 +25,8 @@
 | 路径 | 干什么 | 决策 |
 |---|---|---|
 | `templates/` | `.bw` 格式样例 | 接入时不复制。指标定义由独立指标配置任务讨论、试采并按项目规则采用 |
-| `system-prompt/` | 开工注入的主提示词 + 任务规范 | 不进项目仓;提示词只给路径,正文按需读 |
-| `skills/` | Workbench 技能与历史 workflow 入口内容 | 当前仅部分规划路径提供指针；不能视作整包派发 |
+| `system-prompt/` | 开工注入的主提示词 + 任务规范 | SYSTEM 渲染后进入工作流提示，references 给读取命令；不复制到项目仓 |
+| `skills/` | Workbench 技能与历史 workflow 入口内容 | 计划、验收、指标配置的 Stub 与指南已接入原生分发；其余资产按实际入口核对 |
 | `vendor/`（未迁入） | 旧业界 workflow 依赖 | 不存在，相关入口不能按已安装使用 |
 
 仓根 `AGENTS.md` / `CLAUDE.md` 是项目自己的,不在这套里,盘点不代写。项目知识文档的归属与落点沿该入口及其引用确定；BW 研发知识库的编号目录不作为被管项目的默认目录模板。
@@ -45,7 +45,7 @@
 
 | 文件 | 干什么 | 决策 |
 |---|---|---|
-| `SYSTEM.md.tmpl` | Issue 主提示词:身份 + 读 `AGENTS.md` + 按任务加载 reference + 纪律（含计划页签不另开 HTML） | 计划页签新开会话注入指针；接回已有会话不重递交。覆盖边界见模块说明 |
+| `SYSTEM.md.tmpl` | 主提示词:身份 + 读 `AGENTS.md` + 按任务加载 reference + 纪律（含计划页签不另开 HTML） | 计划/验收自动化首次登记、数据问题处理及指标配置时渲染；普通新建与历史恢复不注入。覆盖边界见模块说明 |
 | `REVIEW.md.tmpl` | 评审会话主提示词 | 已收录,尚未派发 |
 | `references/issue-state.md` | issue 状态机、版本标签语义、程序/模型写入边界 | 所有 Issue |
 | `references/metrics.md` | 脚本指标协议 | 指标配置及两个版本流程按需读取 |
@@ -57,7 +57,7 @@
 
 ## skills/
 
-清单与适用任务见 [`skills/README.md`](skills/README.md)。文件的业务用途与运行时覆盖分别说明；当前可确认的解析入口是计划页签的 week-planning 指针，其他入口须逐项验证。week-planning、version-acceptance、metrics-refresh 的新正文是单页流程配套设计稿，实际提示/CLI/材料服务尚未切换，须与实现一起交付。`mr-review` 与 `REVIEW.md.tmpl` 的存在不代表独立评审已经接入。
+清单与适用任务见 [`skills/README.md`](skills/README.md)。week-planning、version-acceptance、metrics-refresh 的正文与 references 由 `config/scripts/generate-bundled-skill-guides.mjs` 生成原生指南，根级 `skills/` 保留发现 Stub；两个版本流程经 `ORCA bw materials` 与界面读写同一材料服务。实际加载与模型遵守仍需对应会话证据；`mr-review` 与 `REVIEW.md.tmpl` 的存在不代表独立评审已经接入。
 
 ## 外部 workflow 的边界
 

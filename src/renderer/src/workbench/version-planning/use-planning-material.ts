@@ -76,7 +76,9 @@ export function usePlanningMaterial(
     try {
       const items = await port.list()
       if (isCurrent() && request === listRequest.current.value) {
-        setVersions(items)
+        setVersions((previous) =>
+          JSON.stringify(previous) === JSON.stringify(items) ? previous : items
+        )
       }
     } catch (reason) {
       if (isCurrent() && request === listRequest.current.value) {
@@ -94,9 +96,11 @@ export function usePlanningMaterial(
     setPersistError(null)
     setBusy(false)
     void list()
+    const timer = setInterval(() => void list(), 5000)
     const selections = selection.current
     const lists = listRequest.current
     return () => {
+      clearInterval(timer)
       selections.value++
       lists.value++
       controller?.clear()

@@ -15,6 +15,7 @@ import { prepareAcceptanceRequest } from './acceptance-model'
 import type { AcceptanceCandidatePort } from './acceptance-candidate-port'
 import { useAcceptanceBoard } from './use-acceptance-board'
 import './acceptance.css'
+import { MaterialProblemNotice } from '../version-cycle/MaterialProblemNotice'
 
 export type AcceptanceBoardProps = {
   context: VersionCycleContext
@@ -70,6 +71,7 @@ function ReadyAcceptanceBoard({
     versions,
     sources,
     historyProblems,
+    materialProblems,
     refreshCatalog,
     version,
     planChoice,
@@ -151,6 +153,11 @@ function ReadyAcceptanceBoard({
           验收报告
         </button>
       </header>
+      <MaterialProblemNotice
+        versions={materialProblems}
+        workflow="acceptance"
+        startRequest={context.startRequest}
+      />
       <div className="va-content">
         <AcceptanceJourney {...journey} />
         <div

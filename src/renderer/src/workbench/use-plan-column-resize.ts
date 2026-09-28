@@ -10,7 +10,7 @@ import {
   writePlanChatRatio
 } from './plan-column-resize'
 
-export function usePlanColumnResize(): {
+export function usePlanColumnResize(enabled = true): {
   bodyRef: React.RefObject<HTMLDivElement | null>
   chatColRef: React.RefObject<HTMLDivElement | null>
   isResizing: boolean
@@ -40,7 +40,7 @@ export function usePlanColumnResize(): {
     isResizing,
     onResizeStart
   } = useSidebarResize<HTMLDivElement>({
-    isOpen: true,
+    isOpen: enabled,
     width: chatWidth,
     minWidth: PLAN_CHAT_MIN_PX,
     maxWidth,
