@@ -1,4 +1,5 @@
 import type { AutomationRun } from '../../../../shared/automations-types'
+import type { ExecutionHostId } from '../../../../shared/execution-host'
 import { toast } from 'sonner'
 import { translate } from '@/i18n/i18n'
 import { activateAndRevealWorktree } from '@/lib/worktree-activation'
@@ -10,6 +11,34 @@ import {
 } from './automation-run-open-target'
 import { getAutomationRunViewState } from './automation-run-view-state'
 import type { AutomationsPageActionContext } from './automations-page-action-context'
+
+/** Focus the exact live pane recorded by a run; never substitute another session. */
+export function openAutomationRunTerminal(
+  run: AutomationRun,
+  executionHostId?: ExecutionHostId
+): boolean {
+  const state = useAppStore.getState()
+  const tabId = getAutomationRunOpenTabId(run)
+  const currentLayout = tabId ? state.terminalLayoutsByTabId[tabId] : null
+  const target = resolveAutomationRunOpenTarget({
+    run,
+    terminalTabExists: Boolean(tabId && state.getTab(tabId)?.worktreeId === run.workspaceId),
+    currentLayout,
+    livePtyIds: tabId ? (state.ptyIdsByTabId[tabId] ?? []) : []
+  })
+  if (!run.workspaceId || !target || !currentLayout) {
+    return false
+  }
+  if (
+    !activateAndRevealWorktree(run.workspaceId, { executionHostId, providesInitialSurface: true })
+  ) {
+    return false
+  }
+  state.setTabLayout(target.tabId, buildAutomationRunOpenLayout({ target, currentLayout }))
+  state.setActiveTab(target.tabId)
+  state.setActiveTabType('terminal')
+  return true
+}
 
 /** Opens the original run terminal when its host-qualified workspace is alive. */
 export function createAutomationRunWorkspaceAction({ store, list }: AutomationsPageActionContext) {
@@ -44,18 +73,11 @@ export function createAutomationRunWorkspaceAction({ store, list }: AutomationsP
       toast.error(runViewState.statusLabel)
       return
     }
-    if (terminalTarget && currentLayout) {
-      appStore.setTabLayout(
-        terminalTarget.tabId,
-        buildAutomationRunOpenLayout({ target: terminalTarget, currentLayout })
-      )
-      if (activateAndRevealWorktree(run.workspaceId)) {
-        appStore.setActiveTab(terminalTarget.tabId)
-        appStore.setActiveTabType('terminal')
-        return
-      }
+    const hostId = runWorktree.hostId ?? runWorktree.identity?.executionHostId
+    if (terminalTarget && openAutomationRunTerminal(run, hostId)) {
+      return
     }
-    if (!activateAndRevealWorktree(run.workspaceId)) {
+    if (!activateAndRevealWorktree(run.workspaceId, { executionHostId: hostId })) {
       toast.error(
         translate(
           'auto.components.automations.AutomationsPage.e1bf9b1512',

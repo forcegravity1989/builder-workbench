@@ -2,11 +2,8 @@ import { useCallback, useMemo, useState, type ReactNode } from 'react'
 import { toast } from 'sonner'
 import { useShallow } from 'zustand/react/shallow'
 import { useAppStore } from '@/store'
-import {
-  listAutomationsForTarget,
-  runAutomationNowForTarget
-} from '@/components/automations/automation-host-client'
 import { assertCurrentCycleWorkspace, startMaterialRequest } from './start-material-request'
+import { startCycleAutomation } from './start-cycle-automation'
 import { prepareMetricsSession, useMetricsSetupAgent } from './metrics-setup'
 import { getActiveCycleSession, prepareCycleRequest } from './native-session'
 import { useWorkflowVersion } from './use-workflow-version'
@@ -70,31 +67,22 @@ export function CycleWorkspaceProvider({ children }: { children: ReactNode }) {
       if (!scope || !fixedId || !automation.automationId) {
         throw new Error('周期自动化尚未就绪，请在自动化页核对配置。')
       }
-      const target = owner
-        ? { kind: 'environment' as const, environmentId: owner }
-        : { kind: 'local' as const }
-      const record = (await listAutomationsForTarget(target)).find(
-        (item) => item.id === automation.automationId
-      )
-      if (!record) {
-        throw new Error('周期自动化已不存在，请在自动化页重新配置。')
-      }
-      if (record.workspaceMode !== 'existing' || record.workspaceId !== fixedId) {
-        throw new Error('此自动化的工作区已改变，请在自动化页核对后启动。')
-      }
-      assertCurrentCycleWorkspace(scope, fixedId)
-      const run = await runAutomationNowForTarget(record, target)
-      if (run.error || run.status.startsWith('skipped') || run.status === 'dispatch_failed') {
-        throw new Error(run.error ?? '自动化未能启动，请在自动化页查看运行记录。')
-      }
-      toast.message('已请求开始本次运行，会话由 Orca 创建。')
+      await startCycleAutomation(scope, fixedId, automation.automationId)
+      toast.message('已打开本次运行的会话。')
       setNotice(null)
     } catch (reason) {
+      if (scope && fixedId) {
+        try {
+          assertCurrentCycleWorkspace(scope, fixedId)
+        } catch {
+          return
+        }
+      }
       setNotice(reason instanceof Error ? reason.message : String(reason))
     } finally {
       setBusy(false)
     }
-  }, [scope, fixedId, automation.automationId, owner])
+  }, [scope, fixedId, automation.automationId])
   const startRequest = useCallback(
     async (text: string) => {
       if (!scope || !fixedId || !agent) {

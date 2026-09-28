@@ -11,6 +11,7 @@ import { useAppStore } from '@/store'
 import type { Automation, AutomationCreateInput } from '../../../../shared/automations-types'
 import type {
   AutomationAuthorityRef,
+  AutomationOwnerRef,
   StableAutomationHostRef
 } from '../../../../shared/automation-owner-ref'
 import type { AutomationDestination } from '../../../../shared/automation-owner-precondition'
@@ -94,6 +95,16 @@ function destinationFor(host: StableAutomationHostRef): AutomationDestination | 
   return targetGeneration === undefined
     ? null
     : { selector: { kind: 'ssh', targetId: host.selector.targetId, targetGeneration } }
+}
+
+export function cycleAutomationOwner(scope: CycleScope): AutomationOwnerRef {
+  const host = cycleAutomationHost(scope)
+  const authority = pinnedAuthority(host)
+  const destination = destinationFor(host)
+  if (!authority || !destination) {
+    throw new Error('自动化宿主登记未就绪，请在自动化页核对连接。')
+  }
+  return { authority, selector: destination.selector }
 }
 
 // 同一身份并发只发一次创建；后到者共享在途结果（仿 native-workspace.ts）。
