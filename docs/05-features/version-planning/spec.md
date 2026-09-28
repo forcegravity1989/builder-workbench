@@ -2,7 +2,9 @@
 
 > 给设计、实现与验收者读取；本文管目标行为与判据，工程边界见 [design](design.md)，价值见 [intent](intent.md)，执行证据见 [STATUS](STATUS.md)。行为变化时改对应主题，不记录开发流水。
 >
-> 状态：已合入并作为实施输入；新增或不确定行为须人工确认，实施证据见 STATUS。[第八版高保真评审包](https://github.com/forcegravity1989/builder-workbench/archive/f20f04ae57d510178c710c71216b9b734082c28e.zip) 下载后解压并打开 index.html，使用 BW 的真实版本材料；仅演示交互，不证明持久化、远端写回或自动化已实现。原型发布在永不合入的独立分支，链接固定提交。
+> 状态：已合入并作为实施输入；新增或不确定行为须人工确认，实施证据见 STATUS。[第八版交互原型](prototype.html#monday) 是历史评审输入，使用 BW 当时的版本材料快照；不表示持久化、远端写回或自动化等能力已交付。
+
+原型来源为固定提交 `f20f04ae57d510178c710c71216b9b734082c28e` 的 `prototype.html`，仓内仅将 4 处历史附件相对引用改为该提交的 GitHub 链接。计划、验收、总览共用这一份 HTML；本地浏览器直接打开即可离线交互，侧栏可切换三屏。历史 JSON、报告和图片需联网及仓库访问权限；报告 HTML 的 GitHub 页面显示源文件，需要离线查看完整报告时下载[原始评审包](https://github.com/forcegravity1989/builder-workbench/archive/f20f04ae57d510178c710c71216b9b734082c28e.zip)，解压后打开 index.html。原型只在内存演示，不连接产品服务；现行行为以各特性 spec 为准，交付证据以 STATUS 为准。
 
 ## 范围与入口
 
