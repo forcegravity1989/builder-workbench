@@ -72,15 +72,14 @@ describe('bucketCommitCounts', () => {
     expect(bucketCommitCounts([], weekRange, 'UTC', false).counts).toEqual([0, 0])
   })
 
-  it('截断历史：截止日之前的桶留空（可能被截掉），之后按真实计数', () => {
+  it('截断历史：所有桶留空，拓扑顺序不能证明较新桶已完整', () => {
     const result = bucketCommitCounts(
       [at('2026-09-16T10:00:00Z'), at('2026-09-22T10:00:00Z'), at('2026-09-23T10:00:00Z')],
       weekRange,
       'UTC',
       true
     )
-    // Cutoff day = 2026-09-16 → the 09-14 bucket may be undercounted → null.
-    expect(result.counts).toEqual([null, 2])
+    expect(result.counts).toEqual([null, null])
     expect(result.truncated).toBe(true)
   })
 
@@ -94,14 +93,13 @@ describe('bucketCommitCounts', () => {
     expect(result.counts).toEqual([null, null])
   })
 
-  it('日粒度按日桶计数；窗口外提交忽略；缺时间戳的提交不落桶', () => {
+  it('日粒度按日桶计数；窗口外提交忽略', () => {
     const result = bucketCommitCounts(
       [
         at('2026-09-24T08:00:00Z'),
         at('2026-09-24T20:00:00Z'),
         at('2026-09-25T08:00:00Z'),
-        at('2026-09-30T08:00:00Z'),
-        { timestamp: undefined }
+        at('2026-09-30T08:00:00Z')
       ],
       dayRange,
       'UTC',
@@ -109,4 +107,9 @@ describe('bucketCommitCounts', () => {
     )
     expect(result.counts).toEqual([2, 1])
   })
+})
+
+it('missing timestamps and truncated empty results cannot become zero', () => {
+  expect(bucketCommitCounts([{}], dayRange, 'UTC', false).counts).toEqual([null, null])
+  expect(bucketCommitCounts([], dayRange, 'UTC', true).counts).toEqual([null, null])
 })

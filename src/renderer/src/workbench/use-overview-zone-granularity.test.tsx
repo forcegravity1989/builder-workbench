@@ -36,6 +36,7 @@ function resultOf(granularity: ZoneGranularity): OverviewReadResult {
   return { north: null, map: { [granularity]: null }, problems: [] }
 }
 
+let identity = 0
 const view = { catalog: catalog as MetricCatalog | null }
 let root: Root
 let container: HTMLDivElement
@@ -46,6 +47,7 @@ let api: ReturnType<typeof useOverviewZoneGranularity>
 
 function Probe(): null {
   api = useOverviewZoneGranularity({
+    identity: `grain-test-${identity}`,
     catalog: view.catalog,
     baseScope,
     baseWorktreeId: 'tree',
@@ -61,6 +63,7 @@ async function render(): Promise<void> {
 }
 
 beforeEach(() => {
+  identity++
   vi.clearAllMocks()
   fixture.calls.length = 0
   view.catalog = catalog

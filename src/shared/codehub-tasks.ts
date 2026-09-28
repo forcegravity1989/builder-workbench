@@ -8,6 +8,7 @@ export type CodeHubTaskItem = {
   assignees: string[]
   reviewers: string[]
   updatedAt: string
+  mergedAt?: string | null
   repoId?: string
   repoPath?: string
   host?: string

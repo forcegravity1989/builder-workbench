@@ -1,6 +1,7 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef } from 'react'
 import type { MetricCatalog } from '../../../shared/workbench/metrics'
 import { readAllMetricReadings, type OverviewReadResult } from './overview-metric-readings'
+import { useOverviewViewState } from './overview-view-state'
 import type { ZoneGranularity } from './overview-zone-series'
 import type { NativeWorkspaceScope } from './version-cycle/native-workspace'
 
@@ -12,6 +13,7 @@ import type { NativeWorkspaceScope } from './version-cycle/native-workspace'
  * current selection without re-creating on every switch.
  */
 export function useOverviewZoneGranularity(args: {
+  identity: string
   catalog: MetricCatalog | null
   baseScope: NativeWorkspaceScope | null
   baseWorktreeId: string | null
@@ -21,7 +23,12 @@ export function useOverviewZoneGranularity(args: {
   apply(result: OverviewReadResult): void
 }) {
   const { catalog, baseScope, baseWorktreeId, loadEpoch, setBusy, apply } = args
-  const [granularity, setGranularity] = useState<ZoneGranularity>('week')
+  const [view, setView] = useOverviewViewState(args.identity)
+  const granularity = view.granularity
+  const setGranularity = useCallback(
+    (value: ZoneGranularity) => setView({ granularity: value }),
+    [setView]
+  )
   const current = useRef(granularity)
   current.current = granularity
   /** Granularity the on-screen zone readings were read with; guards duplicate reloads. */

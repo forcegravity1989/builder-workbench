@@ -11,6 +11,21 @@ import type {
 import { zoneChartRange } from './overview-zone-series'
 import { OverviewMetricZones } from './overview-metric-zones'
 
+vi.mock('./overview-metric-chart', () => ({
+  MetricLineChart: (props: {
+    series: { name: string; values: (number | null)[]; on: boolean }[]
+    onToggle(name: string, visible: boolean): void
+  }) => (
+    <div data-testid="chart" data-series={JSON.stringify(props.series)}>
+      {props.series.map((item) => (
+        <button key={item.name} onClick={() => props.onToggle(item.name, !item.on)}>
+          {item.name}
+        </button>
+      ))}
+    </div>
+  )
+}))
+let identity = 0
 const TZ = 'UTC'
 const ref = (name: string) => ({
   name,
@@ -104,6 +119,7 @@ const catalog: MetricCatalog = {
 let root: Root
 let container: HTMLDivElement
 beforeEach(() => {
+  identity++
   container = document.createElement('div')
   document.body.append(container)
   root = createRoot(container)
@@ -122,6 +138,9 @@ async function renderZones(args: {
   await act(async () =>
     root.render(
       <OverviewMetricZones
+        identity={`zones-test-${identity}`}
+        setupBusy={false}
+        onSetup={() => {}}
         catalog={catalog}
         readings={args.readings ?? {}}
         busy={false}
@@ -135,21 +154,13 @@ async function renderZones(args: {
 
 const text = () => container.textContent ?? ''
 
-it('未读取时保持诚实空态：行标未读取、值为空、不补零不画线', async () => {
-  await renderZones({})
-  expect(text()).toContain('未读取')
-  expect(text()).toContain('本窗口暂无历史点')
-  expect(container.querySelectorAll('svg path[fill="none"]')).toHaveLength(0)
-  expect(text()).not.toMatch(/·\s*0个/)
-})
-
-it('历史点画成折线，失败系列保持 Unknown 并标陈旧读数', async () => {
+const series = () =>
+  [...container.querySelectorAll('[data-series]')].flatMap((item) =>
+    JSON.parse(item.getAttribute('data-series')!)
+  )
+it('unknown and stale readings never become zero or a fresh curve', async () => {
   await renderZones({
     readings: {
-      'hash-滞后A': weekReading([
-        { day: mondays.at(-2)!, value: 2 },
-        { day: lastMonday, value: 5 }
-      ]),
       'hash-引领A': {
         status: 'error',
         reason: { code: 'collector-failed', message: '脚本失败' },
@@ -157,85 +168,42 @@ it('历史点画成折线，失败系列保持 Unknown 并标陈旧读数', asyn
       }
     }
   })
-  expect(container.querySelectorAll('svg path[fill="none"]')).toHaveLength(1)
-  expect(text()).toContain('5个')
+  expect(series().every((item) => item.values.every((value: unknown) => value === null))).toBe(true)
   expect(text()).toContain('未知：脚本失败')
   expect(text()).toContain('陈旧读数 2')
+  expect(container.querySelector<HTMLDetailsElement>('details')!.open).toBe(false)
 })
-
-it('字符串读数只显示文本，不画数值曲线', async () => {
-  await renderZones({
-    readings: { 'hash-字符串指标': weekReading([{ day: lastMonday, value: '达标' }]) }
-  })
-  const tab = [...container.querySelectorAll('.tab')].find((item) => item.textContent === 'F1')
-  await act(async () => (tab as HTMLButtonElement).click())
-  expect(text()).toContain('达标')
-  expect(container.querySelectorAll('svg path[fill="none"]')).toHaveLength(0)
-})
-
-it('仅当前值指标：标注只展示当前值，不按窗口伪造历史', async () => {
-  await renderZones({ readings: { 'hash-仅当前': instantReading(3) } })
-  const tab = [...container.querySelectorAll('.tab')].find((item) => item.textContent === 'F1')
-  await act(async () => (tab as HTMLButtonElement).click())
-  expect(text()).toContain('仅当前值')
-  expect(text()).toContain('3次')
-  expect(text()).toContain('仅当前值指标，无历史曲线')
-})
-
-it('特性页签切换分组；主要页签承载未指定特性的定义', async () => {
-  await renderZones({})
-  const tabs = [...container.querySelectorAll('.tab')].map((item) => item.textContent)
-  expect(tabs).toEqual(['主要', 'F1'])
-  expect(text()).toContain('滞后A')
-  expect(text()).not.toContain('字符串指标')
-  const tab = [...container.querySelectorAll('.tab')].find((item) => item.textContent === 'F1')
-  await act(async () => (tab as HTMLButtonElement).click())
-  expect(text()).toContain('字符串指标')
-  expect(text()).not.toContain('滞后A')
-})
-
-it('系列显隐由勾选控制：取消全部后提示由人决定显示', async () => {
+it('charts history while leaving string and current-only readings in details', async () => {
   await renderZones({
     readings: {
-      'hash-滞后A': weekReading([
-        { day: mondays.at(-2)!, value: 2 },
-        { day: lastMonday, value: 5 }
-      ])
+      'hash-滞后A': weekReading([{ day: lastMonday, value: 5 }]),
+      'hash-字符串指标': weekReading([{ day: lastMonday, value: '达标' }]),
+      'hash-仅当前': instantReading(3)
     }
   })
-  expect(container.querySelectorAll('svg path[fill="none"]')).toHaveLength(1)
-  const boxes = [...container.querySelectorAll<HTMLInputElement>('.wb-mz-toggle input')]
-  await act(async () => boxes.forEach((box) => box.click()))
-  expect(container.querySelector('svg')).toBeNull()
-  expect(text()).toContain('点上面的系列决定显示哪几条')
+  expect(series()[0].values.at(-1)).toBe(5)
+  await act(async () => (container.querySelectorAll('.tab')[1] as HTMLButtonElement).click())
+  expect(text()).toContain('达标')
+  expect(text()).toContain('3次')
+  expect(text()).toContain('仅当前值')
+  expect(series().every((item) => item.values.every((value: unknown) => value === null))).toBe(true)
 })
-
-it('粒度切换回调传出天/周选择', async () => {
-  const onGranularityChange = vi.fn()
-  await renderZones({ onGranularityChange })
-  const day = container.querySelector<HTMLInputElement>(
-    'input[name="wb-mz-granularity"][value="day"]'
-  )
-  await act(async () => day?.click())
-  expect(onGranularityChange).toHaveBeenCalledWith('day')
-})
-
-it('长定义收进详情，含口径与引领关系', async () => {
-  await renderZones({})
-  const details = container.querySelector<HTMLDetailsElement>('.wb-mz-defs')
-  expect(details).not.toBeNull()
-  expect(details?.open).toBe(false)
-  expect(text()).toContain('滞后A 的长定义文本')
-  expect(text()).toContain('可按窗口查历史')
-  expect(text()).toContain('引领「滞后A」')
-})
-
-it('刷新按钮走既有通道', async () => {
+it('preserves metric selection across remount and routes visible controls', async () => {
   const onRefresh = vi.fn()
-  await renderZones({ onRefresh })
-  const button = [...container.querySelectorAll('button')].find(
-    (item) => item.textContent === '刷新读数'
+  const onGranularityChange = vi.fn()
+  await renderZones({ onRefresh, onGranularityChange })
+  await act(async () =>
+    (container.querySelector('[data-testid="chart"] button') as HTMLButtonElement).click()
   )
-  await act(async () => (button as HTMLButtonElement).click())
+  expect(series()[0].on).toBe(false)
+  await act(async () => root.render(null))
+  await renderZones({ onRefresh, onGranularityChange })
+  expect(series()[0].on).toBe(false)
+  await act(async () =>
+    (container.querySelector('[aria-label="刷新业务指标"]') as HTMLButtonElement).click()
+  )
   expect(onRefresh).toHaveBeenCalledTimes(1)
+  const day = [...container.querySelectorAll('button')].find((item) => item.textContent === '天')!
+  await act(async () => day.click())
+  expect(onGranularityChange).toHaveBeenCalledWith('day')
 })

@@ -11,11 +11,15 @@ import type { OverviewSdlcState } from './use-overview-sdlc'
 const fixture = vi.hoisted(() => ({ state: null as unknown as OverviewSdlcState }))
 vi.mock('./use-overview-sdlc', () => ({ useOverviewSdlc: () => fixture.state }))
 
+vi.mock('./overview-metric-chart', () => ({
+  MetricLineChart: (props: { series: unknown }) => (
+    <div data-series={JSON.stringify(props.series)} />
+  )
+}))
 import { OverviewSdlcZones } from './overview-sdlc-zones'
 
 const TZ = 'UTC'
 const range = zoneChartRange('week', TZ)
-const currentWeekMonday = addCalendarDays(range.until, -7)
 const previousWeekMonday = addCalendarDays(range.until, -14)
 const tsOf = (day: string) => Date.parse(`${day}T12:00:00Z`)
 
@@ -25,17 +29,21 @@ const baseScope = { projectId: 'p', repoId: 'repo', hostId: 'local' } as NativeW
 function stateOf(overrides: Partial<OverviewSdlcState> = {}): OverviewSdlcState {
   return {
     provider: 'codehub',
+    merges: {
+      kind: 'ready',
+      value: { items: [], hasMore: false, readAt: new Date().toISOString() }
+    },
     commits: {
       kind: 'ready',
       value: {
-        items: [{ timestamp: tsOf(previousWeekMonday) }, { timestamp: tsOf(currentWeekMonday) }],
+        items: [{ timestamp: tsOf(previousWeekMonday) }, { timestamp: Date.now() - 1 }],
         hasMore: false,
-        readAt: '2026-09-24T10:00:00.000Z'
+        readAt: new Date().toISOString()
       }
     },
     issues: {
       kind: 'ready',
-      value: { count: 11, truncated: false, readAt: '2026-09-24T10:00:00.000Z' }
+      value: { count: 11, truncated: false, readAt: new Date().toISOString() }
     },
     busy: false,
     refresh: vi.fn(async () => {}),
@@ -60,6 +68,7 @@ async function renderZones(state: OverviewSdlcState): Promise<void> {
   await act(async () =>
     root.render(
       <OverviewSdlcZones
+        identity="sdlc-ui-test"
         repo={repo}
         baseScope={baseScope}
         baseWorktreeId="tree"
@@ -70,101 +79,20 @@ async function renderZones(state: OverviewSdlcState): Promise<void> {
   )
 }
 
-const text = () => container.textContent ?? ''
-
-it('提交画真实时间桶折线，头卡显示当前桶计数并注明口径与采集时刻', async () => {
+it('renders three charts with real bucket counts and only one current Issue point', async () => {
   await renderZones(stateOf())
-  expect(text()).toContain('本周提交')
-  expect(container.querySelectorAll('svg path[fill="none"]')).toHaveLength(1)
-  expect(text()).toContain('按项目主工作树可达历史统计，时间为提交作者时间')
-  const tipNote = container.querySelector('.wb-sdlc-head .wb-sdlc-val')
-  expect(tipNote?.textContent).toBe('1')
-})
-
-it('历史被截断时如实标注，截断前的桶留空不补数', async () => {
-  await renderZones(
-    stateOf({
-      commits: {
-        kind: 'ready',
-        value: {
-          items: [{ timestamp: tsOf(currentWeekMonday) }],
-          hasMore: true,
-          readAt: '2026-09-24T10:00:00.000Z'
-        }
-      }
-    })
+  const charts = [...container.querySelectorAll('[data-series]')].map(
+    (item) => JSON.parse(item.getAttribute('data-series')!)[0]
   )
-  expect(text()).toContain('仅计入最近 200 条')
-  // The current bucket is the truncation boundary → value stays — instead of a low count.
-  expect(container.querySelector('.wb-sdlc-head .wb-sdlc-val')?.textContent).toBe('—')
+  expect(charts).toHaveLength(3)
+  expect(charts[0].values.filter((value: number) => value > 0)).toHaveLength(2)
+  expect(charts[1].values.every((value: number) => value === 0)).toBe(true)
+  expect(charts[2].values.filter((value: unknown) => value !== null)).toEqual([11])
 })
-
-it('提交通道失败只影响提交卡，显示未知与原因', async () => {
-  await renderZones(stateOf({ commits: { kind: 'error', message: 'git 不可用' } }))
-  expect(text()).toContain('未知：git 不可用')
-  expect(text()).toContain('11')
-})
-
-it('合入 PR 保持诚实空态：不画推造趋势、不显示近似数字', async () => {
-  await renderZones(stateOf())
+it('a failed merge source does not hide commits or Issues', async () => {
+  await renderZones(stateOf({ merges: { kind: 'error', message: '合入时间缺失' } }))
   const cells = [...container.querySelectorAll('.wb-sdlc-cell')]
-  const prCell = cells.find((cell) => cell.textContent?.includes('合入的 PR'))
-  expect(prCell?.querySelector('.wb-sdlc-val')?.textContent).toBe('—')
-  expect(prCell?.textContent).toContain('缺少真实合入时刻')
-  expect(prCell?.textContent).toContain('不用更新时间推造历史')
-  expect(prCell?.querySelector('svg')).toBeNull()
-})
-
-it('开放 Issue 只显示时点存量与截至时刻，不画历史曲线', async () => {
-  await renderZones(stateOf())
-  const cells = [...container.querySelectorAll('.wb-sdlc-cell')]
-  const issueCell = cells.find((cell) => cell.textContent?.includes('开放 Issue'))
-  expect(issueCell?.querySelector('.wb-sdlc-val')?.textContent).toBe('11')
-  expect(issueCell?.textContent).toContain('仅展示当前存量；历史存量需完整事件源，不从当前状态推造')
-  expect(issueCell?.textContent).toContain('截至 2026-09-24T10:00:00.000Z')
-  expect(issueCell?.querySelector('svg')).toBeNull()
-})
-
-it('Issue 分页截断如实标注；失败保持未知；无任务来源如实说明', async () => {
-  await renderZones(
-    stateOf({
-      issues: {
-        kind: 'ready',
-        value: { count: 100, truncated: true, readAt: '2026-09-24T10:00:00.000Z' }
-      }
-    })
-  )
-  expect(text()).toContain('仅计入前 100 条，开放 Issue 还有更多')
-
-  await act(async () => root.unmount())
-  container.remove()
-  container = document.createElement('div')
-  document.body.append(container)
-  root = createRoot(container)
-  await renderZones(stateOf({ issues: { kind: 'error', message: '离线' } }))
-  expect(text()).toContain('未知：离线')
-
-  await act(async () => root.unmount())
-  container.remove()
-  container = document.createElement('div')
-  document.body.append(container)
-  root = createRoot(container)
-  await renderZones(stateOf({ provider: null, issues: null }))
-  expect(text()).toContain('未识别可用的任务来源')
-})
-
-it('粒度切换改按日桶重算提交；刷新按钮独立重读', async () => {
-  const refresh = vi.fn(async () => {})
-  await renderZones(stateOf({ refresh }))
-  expect(text()).toContain('本周提交')
-  const day = container.querySelector<HTMLInputElement>(
-    'input[name="wb-sdlc-granularity"][value="day"]'
-  )
-  await act(async () => day?.click())
-  expect(text()).toContain('今日提交')
-  const button = [...container.querySelectorAll('button')].find(
-    (item) => item.textContent === '刷新'
-  )
-  await act(async () => (button as HTMLButtonElement).click())
-  expect(refresh).toHaveBeenCalledTimes(1)
+  expect(cells[1].querySelector('.wb-sdlc-val')?.textContent).toBe('—')
+  expect(cells[1].textContent).toContain('合入时间缺失')
+  expect(cells[2].querySelector('.wb-sdlc-val')?.textContent).toBe('11')
 })

@@ -159,13 +159,7 @@ export function zonePointState(
 
 export type ZonePlot = { lagging: MetricDefinition | null; leads: MetricDefinition[] }
 
-/**
- * One chart = one lagging metric plus its leads. A lead naming an existing
- * lagging metric joins it; an empty or unmatched `leads` attaches to the tab's
- * first lagging metric (hi-fi grouping) — the row still shows the raw leads text,
- * and catalog-level ambiguity problems surface separately, so nothing is silently
- * re-associated. A tab with only leads keeps them visible without a fake anchor.
- */
+/** Only explicit matching leads share a plot; unresolved relationships stay separate. */
 export function groupZonePlots(defs: MetricDefinition[]): ZonePlot[] {
   const lagging = defs.filter((def) => def.role === 'lagging')
   const leads = defs.filter((def) => def.role === 'leading')
@@ -175,12 +169,15 @@ export function groupZonePlots(defs: MetricDefinition[]): ZonePlot[] {
   const plots = new Map<string, ZonePlot>(
     lagging.map((def) => [def.name, { lagging: def, leads: [] }])
   )
-  const first = plots.get(lagging[0].name)!
+  const unlinked: ZonePlot = { lagging: null, leads: [] }
   for (const lead of leads) {
-    const target = plots.get(lead.leads?.trim() ?? '') ?? first
+    const target = plots.get(lead.leads?.trim() ?? '') ?? unlinked
     target.leads.push(lead)
   }
-  return lagging.map((def) => plots.get(def.name)!)
+  return [
+    ...lagging.map((def) => plots.get(def.name)!),
+    ...(unlinked.leads.length ? [unlinked] : [])
+  ]
 }
 
 /** Numeric target lines only when the target is a bare number; "≥3"-style text stays a row label. */

@@ -1,4 +1,6 @@
-import { useMemo, useState, type CSSProperties } from 'react'
+import { useMemo } from 'react'
+import { OverviewGrain, OverviewRefresh } from './overview-controls'
+import { useOverviewViewState } from './overview-view-state'
 import type {
   MetricCatalog,
   MetricDefinition,
@@ -42,12 +44,11 @@ type ZoneRow = {
   color: string
   values: (number | null)[]
   unit: string
-  fill: boolean
+  solid: boolean
   valueText: string
   statusText: string
   staleText: string | null
   currentOnly: boolean
-  plottable: boolean
 }
 
 function buildRows(
@@ -74,7 +75,7 @@ function buildRows(
       color,
       values: state.kind === 'ready' ? state.values : labels.map(() => null),
       unit: def.unit,
-      fill: def.role === 'lagging',
+      solid: def.role === 'lagging',
       valueText:
         state.kind === 'ready' && state.latest
           ? `${state.latest.value}${typeof state.latest.value === 'number' ? def.unit : ''}`
@@ -91,8 +92,7 @@ function buildRows(
         state.kind === 'unknown' && state.stale
           ? `陈旧读数 ${state.stale.value}（采集于 ${state.stale.collectedAt}）`
           : null,
-      currentOnly: !def.collect.retro,
-      plottable: def.collect.retro && state.kind === 'ready'
+      currentOnly: !def.collect.retro
     }
   })
 }
@@ -102,206 +102,151 @@ function PlotCard({
   rows,
   labels,
   hidden,
-  onToggle,
-  currentIndex,
-  currentNote
+  onToggle
 }: {
   plot: ZonePlot
   rows: ZoneRow[]
   labels: string[]
   hidden: Record<string, boolean>
   onToggle(hash: string, next: boolean): void
-  currentIndex: number
-  currentNote: string | null
 }) {
-  const title = plot.lagging?.name ?? '引领指标'
   const series: MetricChartSeries[] = rows.map((row) => ({
     name: row.def.name,
     values: row.values,
     color: row.color,
     unit: row.unit,
-    fill: row.fill,
+    solid: row.solid,
     target: numericTarget(row.def.target),
     on: hidden[row.def.ref.definitionHash] !== true
   }))
   const charts = splitSeriesByAxis(series)
-  const anyRetro = rows.some((row) => !row.currentOnly)
-  const emptyText = anyRetro
-    ? '本窗口暂无历史点；刷新读数执行采集（不补零）'
-    : '仅当前值指标，无历史曲线'
+  const failures = rows.filter((row) => row.statusText.startsWith('未知'))
   return (
     <div className="wb-mz-plot">
-      <div className="wb-mz-series" role="list">
-        {rows.map((row) => (
-          <div
-            key={row.def.ref.definitionHash}
-            className="wb-mz-series-row"
-            role="listitem"
-            style={{ '--swatch': row.color } as CSSProperties}
-          >
-            <label className="wb-mz-toggle">
-              <input
-                type="checkbox"
-                checked={hidden[row.def.ref.definitionHash] !== true}
-                aria-label={`显示或隐藏 ${row.def.name}`}
-                onChange={(event) => onToggle(row.def.ref.definitionHash, !event.target.checked)}
-              />
-              <i className="wb-mz-swatch" />
-              <span className="wb-mz-name">{row.def.name}</span>
-            </label>
-            {row.currentOnly && <span className="wb-tag wb-tag-neutral">仅当前值</span>}
-            <span className="wb-mz-kind">
-              {row.def.role === 'leading'
-                ? `引领${row.def.leads ? `→${row.def.leads}` : ''}`
-                : '滞后'}
-            </span>
-            <span className="wb-mz-val wb-mono">{row.valueText}</span>
-            {row.def.target && <span className="wb-mz-tgt">目标 {row.def.target}</span>}
-            <span className="wb-tag wb-tag-neutral">{row.statusText}</span>
-            {row.staleText && <span className="wb-mz-stale">{row.staleText}</span>}
-          </div>
-        ))}
-      </div>
       {charts.map((chart) => (
         <MetricLineChart
-          key={`${title}-chart-${chart[0]?.unit ?? 'unit'}`}
+          key={chart[0]?.unit ?? ''}
           labels={labels}
           series={chart}
-          emptyText={emptyText}
-          hiddenText="点上面的系列决定显示哪几条"
-          ariaLabel={`${title} 趋势${charts.length > 1 ? `（单位 ${chart[0].unit || '无'}）` : ''}`}
-          currentIndex={currentIndex}
-          currentNote={currentNote}
+          legend
+          onToggle={(name, visible) => {
+            const row = rows.find((item) => item.def.name === name)
+            if (row) {
+              onToggle(row.def.ref.definitionHash, !visible)
+            }
+          }}
+          emptyText="本窗口暂无读数"
+          hiddenText="未选择指标"
+          ariaLabel={`${plot.lagging?.name ?? '引领指标'} 趋势`}
         />
       ))}
+      {failures.length > 0 && (
+        <p className="wb-ov-alert" role="status">
+          {failures.length} 项指标读取失败，详情中可查看原因
+        </p>
+      )}
       <details className="wb-mz-defs">
-        <summary>指标定义与采集口径</summary>
+        <summary>指标详情</summary>
         {rows.map((row) => (
-          <p key={row.def.ref.definitionHash} className="wb-mz-def">
-            <b>{row.def.name}</b>：{row.def.def.trim() || '（未提供定义文本）'}
+          <div key={row.def.ref.definitionHash} className="wb-mz-def">
+            <strong>{row.def.name}</strong>
             <span className="wb-muted">
-              （{row.def.role === 'leading' ? '引领' : '滞后'} · 单位 {row.def.unit || '无'} ·{' '}
-              {row.def.collect.retro ? '可按窗口查历史' : '仅当前值'}
-              {row.def.leads ? ` · 引领「${row.def.leads}」` : ''}）
+              {' '}
+              · {row.def.role === 'leading' ? '引领' : '滞后'}
+              {row.currentOnly ? ' · 仅当前值' : ''}
             </span>
-          </p>
+            <p>{row.def.def.trim() || '未提供定义'}</p>
+            <p>
+              最近读数 <b>{row.valueText}</b> · 长期目标 {row.def.target || '未设置'}
+            </p>
+            <p className="wb-muted">
+              {row.statusText}
+              {row.def.leads ? ` · 引领对象：${row.def.leads}` : ''}
+            </p>
+            {row.staleText && <p className="wb-mz-stale">{row.staleText}</p>}
+          </div>
         ))}
       </details>
     </div>
   )
 }
 
-/**
- * Overview lagging/leading zones (hi-fi target block): feature tabs, one chart per
- * lagging metric plus its leads, series show/hide, day/week granularity through the
- * existing window protocol, long definitions in details. Failures stay Unknown with
- * identifiable stale evidence; gaps stay empty; string readings never become curves.
- */
 export function OverviewMetricZones({
   catalog,
   readings,
   busy,
   onRefresh,
   granularity,
-  onGranularityChange
+  onGranularityChange,
+  identity,
+  setupBusy,
+  onSetup
 }: {
-  catalog: MetricCatalog
+  catalog: MetricCatalog | null
   readings: Record<string, MetricReading | null>
   busy: boolean
-  onRefresh: () => void
+  onRefresh(): void
   granularity: ZoneGranularity
-  onGranularityChange(granularity: ZoneGranularity): void
+  onGranularityChange(value: ZoneGranularity): void
+  identity: string
+  setupBusy: boolean
+  onSetup(): void
 }) {
   const groups = useMemo(() => groupZoneDefs(catalog), [catalog])
-  const [tab, setTab] = useState<string | null>(null)
-  const [hidden, setHidden] = useState<Record<string, boolean>>({})
-  const active = groups.find((group) => group.feature === tab) ?? groups[0]
-  const range = useMemo(
-    () => zoneChartRange(granularity, catalog.timezone),
-    [granularity, catalog.timezone]
-  )
+  const [view, setView] = useOverviewViewState(identity)
+  const active = groups.find((group) => group.feature === view.feature) ?? groups[0]
+  const timezone = catalog?.timezone ?? Intl.DateTimeFormat().resolvedOptions().timeZone
+  const range = useMemo(() => zoneChartRange(granularity, timezone), [granularity, timezone])
   const labels = useMemo(() => zoneBucketLabels(range), [range])
   const plots = useMemo(() => (active ? groupZonePlots(active.defs) : []), [active])
-  const currentIndex = labels.length - 1
-  if (groups.length === 0) {
-    return null
-  }
   return (
-    <section className="card" id="metrics-zones">
-      <div className="card-head">
-        <div className="row-between">
-          <h6>滞后与引领指标</h6>
-          <span className="row-start">
-            <span className="seg wb-mz-seg" role="group" aria-label="业务指标粒度">
-              <label className="seg-opt">
-                <input
-                  type="radio"
-                  name="wb-mz-granularity"
-                  value="week"
-                  checked={granularity === 'week'}
-                  onChange={() => onGranularityChange('week')}
-                />
-                周
-              </label>
-              <label className="seg-opt">
-                <input
-                  type="radio"
-                  name="wb-mz-granularity"
-                  value="day"
-                  checked={granularity === 'day'}
-                  onChange={() => onGranularityChange('day')}
-                />
-                天
-              </label>
-            </span>
+    <section className="card wb-ov-section" id="metrics-zones" aria-label="业务指标">
+      <header className="wb-ov-section-head">
+        <h2>业务指标</h2>
+        <nav className="tabs" role="tablist" aria-label="指标范围">
+          {groups.map((group) => (
             <button
+              key={group.feature}
               type="button"
-              className="wb-btn wb-btn-ghost wb-btn-sm"
-              disabled={busy}
-              title="执行登记采集脚本后按当前粒度窗口重读"
-              onClick={onRefresh}
+              className="tab"
+              role="tab"
+              aria-selected={group.feature === active?.feature}
+              onClick={() => setView({ feature: group.feature })}
             >
-              刷新读数
+              {group.feature}
             </button>
-          </span>
+          ))}
+        </nav>
+        <div className="wb-ov-tools">
+          <OverviewGrain label="业务指标粒度" value={granularity} onChange={onGranularityChange} />
+          <button
+            type="button"
+            className="wb-btn wb-btn-secondary wb-btn-sm"
+            disabled={setupBusy}
+            onClick={onSetup}
+          >
+            设置指标
+          </button>
+          <OverviewRefresh label="刷新业务指标" busy={busy || !catalog} onClick={onRefresh} />
         </div>
-        {groups.length > 1 && (
-          <div className="tabs" role="tablist" aria-label="指标范围">
-            {groups.map((group) => (
-              <button
-                key={group.feature}
-                type="button"
-                className="tab"
-                role="tab"
-                aria-selected={group.feature === active?.feature}
-                onClick={() => setTab(group.feature)}
-              >
-                {group.feature}
-              </button>
-            ))}
-          </div>
-        )}
-      </div>
-      <div className={`wb-mz-plots${plots.length > 1 ? ' is-multi' : ''}`}>
+      </header>
+      <div className="wb-mz-plots">
         {plots.map((plot) => {
-          const rows = buildRows(plot, readings, labels, range, catalog.timezone)
-          const latest = rows
-            .filter((row) => row.plottable)
-            .map((row) => row.statusText)
-            .find((text) => text.startsWith('采集于'))
+          const rows = buildRows(plot, readings, labels, range, timezone)
           return (
             <PlotCard
               key={plot.lagging?.ref.definitionHash ?? plot.leads[0].ref.definitionHash}
               plot={plot}
               rows={rows}
               labels={labels}
-              hidden={hidden}
-              onToggle={(hash, next) => setHidden((current) => ({ ...current, [hash]: next }))}
-              currentIndex={currentIndex}
-              currentNote={latest ? `截至${latest.slice('采集于'.length)}` : null}
+              hidden={view.hidden}
+              onToggle={(hash, next) => setView({ hidden: { ...view.hidden, [hash]: next } })}
             />
           )
         })}
+        {!plots.length && (
+          <p className="wb-muted">{catalog ? '尚未设置业务指标' : '指标目录未就绪'}</p>
+        )}
       </div>
     </section>
   )

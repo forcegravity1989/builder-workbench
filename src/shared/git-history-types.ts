@@ -50,6 +50,8 @@ export type GitHistoryItem = {
   authorEmail?: string
   /** Epoch milliseconds (git %at seconds × 1000). */
   timestamp?: number
+  /** Epoch milliseconds from the committer date (%ct), distinct from author time. */
+  committedAt?: number
   statistics?: GitHistoryItemStatistics
   references?: GitHistoryItemRef[]
 }
@@ -57,6 +59,9 @@ export type GitHistoryItem = {
 export type GitHistoryOptions = {
   limit?: number
   baseRef?: string | null
+  since?: string
+  skip?: number
+  revision?: string
 }
 
 export type GitHistoryResult = {

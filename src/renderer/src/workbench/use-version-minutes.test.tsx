@@ -13,10 +13,12 @@ const revision = `sha256:${'a'.repeat(64)}`
 const fixture = vi.hoisted(() => ({
   planRead: null as ((version: string) => Promise<unknown>) | null,
   acceptanceRead: null as ((version: string) => Promise<unknown>) | null,
+  readPlan: null as ((input: unknown) => Promise<unknown>) | null,
   historyRead: null as ((input: unknown) => Promise<unknown>) | null
 }))
 vi.mock('./version-history-port', () => ({
   nativeVersionHistoryPort: () => ({
+    readPlan: (input: unknown) => fixture.readPlan!(input),
     read: async (input: unknown) => {
       if (!fixture.historyRead) {
         throw new Error('unexpected history read')
@@ -82,6 +84,7 @@ beforeEach(() => {
   fixture.planRead = async () => ({ document: planDocument, revision })
   fixture.acceptanceRead = async () => null
   fixture.historyRead = null
+  fixture.readPlan = async () => ({ document: planDocument, revision, source: { kind: 'draft' } })
 })
 afterEach(() => {
   act(() => root.unmount())
@@ -93,6 +96,9 @@ it('falls back to live acceptance material for the in-progress version', async (
   await render({
     baseScope,
     baseWorktreeId: 'tree',
+    planWorktreeId: 'plan-tree',
+    acceptanceWorktreeId: 'accept-tree',
+    cycle: 'current',
     history: { records: [], problems: [] },
     currentVersion: 'v1',
     version: 'v1'
@@ -106,6 +112,9 @@ it('keeps a non-current version honest: no archive record means no acceptance co
   await render({
     baseScope,
     baseWorktreeId: 'tree',
+    planWorktreeId: 'plan-tree',
+    acceptanceWorktreeId: 'accept-tree',
+    cycle: 'current',
     history: { records: [], problems: [] },
     currentVersion: 'v2',
     version: 'v1'
@@ -113,7 +122,7 @@ it('keeps a non-current version honest: no archive record means no acceptance co
   expect(latest?.acceptance).toBeNull()
 })
 
-it('prefers the archive record over live material', async () => {
+it('reads the selected archive cycle independently of live material', async () => {
   const record: VersionHistorySource = {
     version: 'v1',
     workflow: 'acceptance',
@@ -126,7 +135,10 @@ it('prefers the archive record over live material', async () => {
   await render({
     baseScope,
     baseWorktreeId: 'tree',
+    planWorktreeId: 'plan-tree',
+    acceptanceWorktreeId: 'accept-tree',
     history: { records: [record], problems: [] },
+    cycle: 'cycle',
     currentVersion: 'v1',
     version: 'v1'
   })
@@ -138,9 +150,60 @@ it('reports no acceptance column when the live material is invalid', async () =>
   await render({
     baseScope,
     baseWorktreeId: 'tree',
+    planWorktreeId: 'plan-tree',
+    acceptanceWorktreeId: 'accept-tree',
+    cycle: 'current',
     history: { records: [], problems: [] },
     currentVersion: 'v1',
     version: 'v1'
   })
   expect(latest?.acceptance).toBeNull()
+})
+
+it('does not pair an older acceptance with a newer live plan', async () => {
+  fixture.planRead = async () => ({ document: planDocument, revision: `sha256:${'c'.repeat(64)}` })
+  fixture.acceptanceRead = async () => ({ document: acceptanceDocument, revision })
+  await render({
+    baseScope,
+    baseWorktreeId: 'tree',
+    planWorktreeId: 'plan-tree',
+    acceptanceWorktreeId: 'accept-tree',
+    cycle: 'current',
+    history: null,
+    currentVersion: 'v1',
+    version: 'v1'
+  })
+  expect(latest?.plan).not.toBeNull()
+  expect(latest?.acceptance).toBeNull()
+  expect(latest?.acceptanceError).toContain('较早计划')
+})
+it('reports the exact plan-reference read failure rather than pairing unrelated archives', async () => {
+  fixture.readPlan = async () => {
+    throw new Error('reference missing')
+  }
+  fixture.historyRead = async () => ({ document: acceptanceDocument, revision })
+  await render({
+    baseScope,
+    baseWorktreeId: 'tree',
+    planWorktreeId: null,
+    acceptanceWorktreeId: null,
+    cycle: 'cycle',
+    history: {
+      records: [
+        {
+          version: 'v1',
+          cycleId: 'cycle',
+          workflow: 'acceptance',
+          revision,
+          sourceCommit: 'b'.repeat(40),
+          committedAt: '2026-09-25T00:00:00Z'
+        }
+      ],
+      problems: []
+    },
+    currentVersion: null,
+    version: 'v1'
+  })
+  expect(latest?.acceptanceError).toBe('reference missing')
+  expect(latest?.plan).toBeNull()
 })

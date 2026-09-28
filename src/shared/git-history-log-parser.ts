@@ -132,6 +132,7 @@ export function parseGitHistoryLog(stdout: string): GitHistoryItem[] {
     const authorName = lines[1] ?? ''
     const authorEmail = lines[2] ?? ''
     const authorDateSeconds = Number.parseInt(lines[3] ?? '', 10)
+    const committerDateSeconds = Number.parseInt(lines[4] ?? '', 10)
     const parents = (lines[5] ?? '').trim()
     const decorateField = lines[6] ?? ''
     const isLegacyGit = decorateField === UNEXPANDED_DECORATE_PLACEHOLDER
@@ -147,6 +148,7 @@ export function parseGitHistoryLog(stdout: string): GitHistoryItem[] {
       authorEmail: authorEmail || undefined,
       displayId: shortGitHash(hash),
       timestamp: Number.isFinite(authorDateSeconds) ? authorDateSeconds * 1000 : undefined,
+      committedAt: Number.isFinite(committerDateSeconds) ? committerDateSeconds * 1000 : undefined,
       references: parseGitDecorationRefs(
         decorations,
         hash,

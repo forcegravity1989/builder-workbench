@@ -95,7 +95,7 @@ vi.mock('./github-api-repository', async (importOriginal) => {
 import { countWorkItems, getWorkItem, listWorkItems, _resetOwnerRepoCache } from './client'
 
 const PR_LIST_FIELDS =
-  'number,title,state,url,labels,updatedAt,author,isDraft,headRefName,baseRefName,headRefOid,headRepositoryOwner,reviewRequests'
+  'number,title,state,url,labels,updatedAt,mergedAt,author,isDraft,headRefName,baseRefName,headRefOid,headRepositoryOwner,reviewRequests'
 
 function issueSearchArgs(
   ownerRepo: string,

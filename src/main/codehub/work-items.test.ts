@@ -74,3 +74,19 @@ describe('listCodeHubTasks', () => {
     ])
   })
 })
+
+it('preserves merged_at separately from updated_at', async () => {
+  runCodeHubCliMock.mockResolvedValue(
+    JSON.stringify([
+      {
+        iid: 8,
+        state: 'merged',
+        merged_at: '2026-09-21T00:00:00Z',
+        updated_at: '2026-09-24T00:00:00Z'
+      }
+    ])
+  )
+  const [item] = await listCodeHubTasks({ remote, kind: 'mr', state: 'merged' })
+  expect(item.mergedAt).toBe('2026-09-21T00:00:00Z')
+  expect(item.updatedAt).toBe('2026-09-24T00:00:00Z')
+})

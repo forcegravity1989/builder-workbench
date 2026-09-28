@@ -76,7 +76,15 @@ function mapRow(
     author: loginOf(record.author),
     assignees: namesOf(record.assignees ?? record.assignee),
     reviewers: namesOf(record.reviewers ?? record.approval_reviewers),
-    updatedAt: String(record.updated_at ?? record.updatedAt ?? record.created_at ?? '')
+    updatedAt: String(record.updated_at ?? record.updatedAt ?? record.created_at ?? ''),
+    ...(type === 'mr'
+      ? {
+          mergedAt:
+            typeof (record.merged_at ?? record.mergedAt) === 'string'
+              ? String(record.merged_at ?? record.mergedAt)
+              : null
+        }
+      : {})
   }
 }
 
