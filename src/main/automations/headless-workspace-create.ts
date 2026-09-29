@@ -1,5 +1,6 @@
 import type { Automation, AutomationRun } from '../../shared/automations-types'
 import { buildAutomationWorkspaceProvenance } from '../../shared/automation-workspace-provenance'
+import { combineAutomationRunPrompt } from '../../shared/automation-run-prompt'
 import type { Repo } from '../../shared/repo-types'
 import type { OrcaRuntimeService } from '../runtime/orca-runtime'
 
@@ -25,12 +26,15 @@ export function buildHeadlessAutomationWorktreeCreateArgs({
   automation,
   run,
   repo,
-  createdAt = Date.now()
+  createdAt = Date.now(),
+  oneShotPrompt
 }: {
   automation: Automation
   run: HeadlessAutomationRunForWorkspace
   repo: Repo
   createdAt?: number
+  /** This run's one-shot context; merged into the startup delivery only, provenance keeps the record identity. */
+  oneShotPrompt?: string
 }): RuntimeCreateManagedWorktreeArgs {
   return {
     repoSelector: repo.id,
@@ -40,7 +44,7 @@ export function buildHeadlessAutomationWorktreeCreateArgs({
     activate: false,
     createdWithAgent: automation.agentId,
     startupAgent: automation.agentId,
-    startupPrompt: automation.prompt,
+    startupPrompt: combineAutomationRunPrompt(automation.prompt, oneShotPrompt),
     telemetrySource: 'unknown',
     automationProvenance: buildAutomationWorkspaceProvenance(automation, run, repo, createdAt)
   }

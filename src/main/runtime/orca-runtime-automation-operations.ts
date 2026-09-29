@@ -131,10 +131,11 @@ export class OrcaRuntimeWithAutomationOperations extends OrcaRuntimeWithPtyForeg
 
   runAutomationNow(
     id: string,
-    expectedOwner?: AutomationOwnerPrecondition
+    expectedOwner?: AutomationOwnerPrecondition,
+    oneShotPrompt?: string
   ): Promise<AutomationRun> {
     return this.automation.withExternalProbePriority(() =>
-      this.automation.runNow(id, expectedOwner as never)
+      this.automation.runNow(id, expectedOwner as never, oneShotPrompt)
     )
   }
 

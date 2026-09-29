@@ -61,7 +61,7 @@ export function journeySteps({
           [GitPullRequest, '归档', archiveTone(archiveState), '归档 PR 状态未读取']
         ]
       : [
-          [PackageCheck, '准备交付', deliveryTone, '候选、出包、验收与展示材料'],
+          [PackageCheck, '准备交付', deliveryTone, '在会话中准备交付，在目标卡核对材料'],
           [
             Presentation,
             '展示验收',

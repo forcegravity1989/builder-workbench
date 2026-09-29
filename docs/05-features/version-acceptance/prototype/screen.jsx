@@ -1,84 +1,58 @@
-import { React, useState } from 'react'
-import {
-  ChartNoAxesCombined,
-  ChevronRight,
-  ExternalLink,
-  ListTodo,
-  MessageSquare,
-  PackageCheck,
-  RefreshCw
-} from 'lucide-react'
+import { React } from 'react'
+import { ChevronRight, ClipboardCheck, ExternalLink, ListTodo, MessageSquare } from 'lucide-react'
 import { Field, done } from '../../version-planning/prototype/shared.jsx'
-import { files, metrics, original } from '../../version-planning/prototype/snapshot.js'
+import { files, original } from '../../version-planning/prototype/snapshot.js'
+import { AcceptanceMetricEvidence } from './metric-evidence.jsx'
 
 function AcceptanceContent({
+  disabled = false,
   current,
   goalIssues,
   hasGap,
   openIssues,
-  prepareDelivery,
   promptConversation,
   refreshMetrics,
+  review,
   setModal,
   tasks,
   updateResult,
   version,
   versionTasks
 }) {
-  const [chosenMetrics, setChosenMetrics] = useState({})
   return (
     <>
-      <div className="acceptance-summary">
-        <span>
-          <strong>{current.length}</strong> 项目标
-        </span>
-        <button onClick={() => openIssues()}>
-          <ListTodo />
-          Issue 完成{' '}
-          <strong>
-            {done(tasks)} / {tasks.length}
-          </strong>
-          <ChevronRight />
-        </button>
-        <span className="pending-count">
-          {current.filter((g) => g.decision === '待核对').length} 项待核对
-          {current.some(hasGap) ? ` · ${current.filter(hasGap).length} 项未达` : ''}
-        </span>
-      </div>
-      <section className="preparation-strip" aria-label="交付准备">
-        <div className="preparation-title">
-          <strong>
-            <PackageCheck />
-            交付准备
-          </strong>
-          <button className="btn btn-ghost" onClick={prepareDelivery}>
-            <MessageSquare />
-            准备交付
+      {!disabled && (
+        <div className="acceptance-summary">
+          <span>
+            <strong>{current.length}</strong> 项目标
+          </span>
+          <button onClick={() => openIssues()}>
+            <ListTodo />
+            Issue 完成{' '}
+            <strong>
+              {done(tasks)} / {tasks.length}
+            </strong>
+            <ChevronRight />
           </button>
+          <span className="pending-count">
+            {current.filter((g) => g.decision === '待核对').length} 项待核对
+            {current.some(hasGap) ? ` · ${current.filter(hasGap).length} 项未达` : ''}
+          </span>
         </div>
-        <div className="preparation-items">
-          <div>
-            <span>候选提交</span>
-            <b>待固定</b>
-          </div>
-          <div>
-            <span>交付 / 出包</span>
-            <b>待准备</b>
-          </div>
-          <div>
-            <span>验证报告</span>
-            <b>待关联</b>
-          </div>
-          <div>
-            <span>Showcase</span>
-            <b>待关联</b>
-          </div>
-        </div>
-      </section>
+      )}
+      <div className="section-heading acceptance-goals-heading">
+        <h2>本版目标验收</h2>
+        <button className="btn btn-secondary" onClick={review} disabled={disabled}>
+          <ClipboardCheck />
+          预览纪要
+        </button>
+      </div>
       <section className="acceptance-sheet aligned-goals">
+        {disabled && (
+          <p className="goal-row">尚未选择版本。新建验收，与 Agent 一起确认要核对的版本。</p>
+        )}
         {current.map((g) => {
-          const m = metrics.find((x) => x.id === (chosenMetrics[g.id] || g.metricId)),
-            related = goalIssues(g)
+          const related = goalIssues(g)
           return (
             <article className="acceptance-row" data-goal={g.id} key={g.id}>
               <div className="acceptance-heading">
@@ -100,44 +74,14 @@ function AcceptanceContent({
                   <p>{g.criteria}</p>
                 </div>
               )}
-              <div className="metric-row acceptance-metric">
-                <label>
-                  <ChartNoAxesCombined />
-                  <select
-                    aria-label={`${g.label} 验收指标`}
-                    value={m?.id || ''}
-                    onChange={(event) =>
-                      setChosenMetrics((current) => ({ ...current, [g.id]: event.target.value }))
-                    }
-                  >
-                    <option value="">选择验收指标</option>
-                    {metrics.map((metric) => (
-                      <option key={metric.id} value={metric.id}>
-                        {metric.name}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-                <div className="metric-target">
-                  <span>
-                    计划目标 ·{' '}
-                    {metrics.find((metric) => metric.id === g.metricId)?.name || '未约定'}
-                  </span>
-                  <strong>{g.target || '未约定'}</strong>
-                </div>
-                <div className="metric-value">
-                  <span>实际</span>
-                  <strong title="本期尚未采集">{m?.current ?? '—'}</strong>
-                </div>
-                <button
-                  className="btn btn-ghost metric-collect"
-                  aria-label={`${g.label} 刷新指标`}
-                  onClick={refreshMetrics}
-                >
-                  <RefreshCw />
-                  刷新
-                </button>
-              </div>
+              <AcceptanceMetricEvidence
+                goal={g}
+                updateResult={updateResult}
+                refreshMetrics={refreshMetrics}
+                onWindowChange={(window) =>
+                  current.forEach((goal) => updateResult(goal.id, 'acceptanceMetricWindow', window))
+                }
+              />
               {version === 'v0.4' && (
                 <div className="historic-reading">
                   历史约定 {g.target} · 原记录 {g.reading}
@@ -198,7 +142,11 @@ function AcceptanceContent({
                   label={`${g.label} 验收说明`}
                   value={g.reason}
                   onChange={(v) => updateResult(g.id, 'reason', v)}
-                  placeholder={hasGap(g) ? '哪些约定未达到，原因是什么' : '判断依据'}
+                  placeholder={
+                    hasGap(g)
+                      ? '哪些约定未达到，原因是什么'
+                      : '判断依据；指标口径变化时说明是否可比'
+                  }
                 />
               </div>
               {hasGap(g) && (
@@ -229,7 +177,7 @@ function AcceptanceContent({
           )
         })}
       </section>
-      {versionTasks()}
+      {!disabled && versionTasks()}
     </>
   )
 }

@@ -5,12 +5,7 @@ import {
   assertFixedPlan,
   createAcceptanceMaterial
 } from './acceptance-model'
-import {
-  decisionFreshness,
-  goalEvidenceRevision,
-  recordHumanDecision,
-  preparationEvidenceRevision
-} from './acceptance-decision'
+import { decisionFreshness, goalEvidenceRevision, recordHumanDecision } from './acceptance-decision'
 import { archiveSignal, decisionSignal, preparationSignal } from './acceptance-journey'
 import type { ArchiveStatus } from '../../../../shared/workbench/version-archive'
 
@@ -55,14 +50,6 @@ async function decide() {
 }
 
 describe('version acceptance evidence', () => {
-  it('invalidates readiness only when prepared material changes', async () => {
-    const document = draft()
-    const revision = await preparationEvidenceRevision(document)
-    document.results[0].note = '讨论记录'
-    expect(await preparationEvidenceRevision(document)).toBe(revision)
-    document.results[0].deliveries.push({ title: '新报告', location: 'report.md' })
-    expect(await preparationEvidenceRevision(document)).not.toBe(revision)
-  })
   it('keeps a failed human outcome red when its report is archived, and unproven merges stay pending', async () => {
     const document = await recordHumanDecision({
       document: draft(),
@@ -113,12 +100,13 @@ describe('version acceptance evidence', () => {
     ).toBe('pending')
   })
 
-  it('requires human preparation review while keeping machine mismatches visible', () => {
+  it('derives preparation from recorded evidence while keeping machine mismatches visible', () => {
     const document = draft()
     const verified = { kind: 'verified' as const, checkedAt: '2026-09-25T01:00:00Z' }
     const candidate = { ...verified, candidate: document.candidateRef! }
     expect(preparationSignal(undefined, verified, null).kind).toBe('unknown')
-    expect(preparationSignal(document, verified, { candidate, artifacts: [] }).kind).toBe('pending')
+    // A fixed candidate alone is not delivery evidence.
+    expect(preparationSignal(document, verified, { candidate, artifacts: [] }).kind).toBe('unknown')
     document.preparedArtifacts = [
       {
         artifactId: 'demo',
@@ -134,20 +122,34 @@ describe('version acceptance evidence', () => {
       availability: verified,
       execution: { kind: 'unknown' as const, reason: '未核对执行记录' }
     }
+    // Recorded material without per-goal deliveries stays pending — no checkbox shortcut.
+    expect(preparationSignal(document, verified, { candidate, artifacts: [artifact] }).kind).toBe(
+      'pending'
+    )
+    for (const result of document.results) {
+      result.deliveries.push({ title: '实际交付', location: 'out/app' })
+    }
+    // Complete requires the fixed plan's goals to be covered, not just the present results.
     expect(preparationSignal(document, verified, { candidate, artifacts: [artifact] }).kind).toBe(
       'pending'
     )
     expect(
-      preparationSignal(document, verified, {
-        candidate,
-        artifacts: [{ ...artifact, execution: verified }]
-      }).kind
-    ).toBe('pending')
-    expect(
-      preparationSignal(document, verified, { candidate, artifacts: [artifact] }, true).kind
+      preparationSignal(document, verified, { candidate, artifacts: [artifact] }, plan.goals).kind
     ).toBe('complete')
+    // A schema-valid round missing one planned goal's result never turns green.
+    const partial = { ...document, results: document.results.slice(0, 1) }
+    expect(
+      preparationSignal(partial, verified, { candidate, artifacts: [artifact] }, plan.goals).kind
+    ).toBe('pending')
+    // Repacking the same source invalidates the declared material match.
     document.candidateRef = { ...document.candidateRef!, commit: '5'.repeat(40) }
-    expect(preparationSignal(document, verified, null).kind).toBe('failed')
+    expect(preparationSignal(document, verified, null, plan.goals).kind).toBe('failed')
+    // A candidate from another version fails even without machine checks.
+    document.candidateRef = { ...document.candidateRef!, version: 'v0.4' }
+    expect(preparationSignal(document, verified, null, plan.goals)).toMatchObject({
+      kind: 'failed',
+      label: '候选不匹配'
+    })
   })
   it('starts a separate cycle while retaining fixed plan identity and promises', () => {
     const document = draft()

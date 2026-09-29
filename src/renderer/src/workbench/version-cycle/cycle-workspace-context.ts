@@ -7,10 +7,17 @@ export type CycleWorkspace = {
   context: VersionCycleContext
   busy: boolean
   notice: string | null
-  start(): Promise<void>
+  /** Runs the registered native automation; `oneShot` rides with the saved prompt, once. */
+  start(oneShot?: string): Promise<void>
   configure(): Promise<void>
   prepareMetrics(): Promise<void>
 }
+
+/** The launch/configure surface the boards' first-row collaboration card consumes. */
+export type CycleEntry = Pick<
+  CycleWorkspace,
+  'workflow' | 'busy' | 'notice' | 'start' | 'configure'
+>
 
 export const CycleWorkspaceContext = createContext<CycleWorkspace | null>(null)
 export const useCycleWorkspace = () => useContext(CycleWorkspaceContext)

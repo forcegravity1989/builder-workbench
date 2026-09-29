@@ -1,9 +1,16 @@
+import { GitPullRequest } from 'lucide-react'
 import type { ArchiveStatus } from '../version-cycle/ports'
 import {
+  archiveJourneyLamp,
   isArchivedMaterial,
   type ArchivedMaterial
 } from '../../../../shared/workbench/version-archive'
 
+/**
+ * Acceptance keeps its explicit save (unlike the plan board's autosave): saving,
+ * human acceptance, PR merge and release are different facts. The archive request
+ * itself is prepared from the journey's archive node, not duplicated here.
+ */
 export function AcceptanceArchive({
   status,
   dirty,
@@ -14,8 +21,7 @@ export function AcceptanceArchive({
   busy,
   onRefreshStatus,
   onReload,
-  onSave,
-  onPrepare
+  onSave
 }: {
   status: ArchiveStatus
   dirty: boolean
@@ -27,9 +33,9 @@ export function AcceptanceArchive({
   onRefreshStatus(): void
   onReload(): void
   onSave(): void
-  onPrepare(): void
 }) {
   const archived = !dirty && material !== null && isArchivedMaterial(status, material)
+  const tone = archiveJourneyLamp(status, archived)
   const label =
     status.kind === 'unknown'
       ? status.reason
@@ -44,7 +50,9 @@ export function AcceptanceArchive({
             : '已关闭'
   return (
     <footer className="va-footer" id="acceptance-archive">
-      <span>
+      <span className="va-archive-state">
+        <GitPullRequest size={14} aria-hidden="true" />
+        <span className={`va-lamp va-lamp-${tone}`} aria-hidden="true" />
         {label}
         {'url' in status && (
           <>
@@ -72,13 +80,6 @@ export function AcceptanceArchive({
         onClick={onSave}
       >
         保存结果
-      </button>
-      <button
-        className="wb-btn wb-btn-sm"
-        disabled={!hasDocument || !hasRevision || dirty || readOnly}
-        onClick={onPrepare}
-      >
-        准备归档请求
       </button>
     </footer>
   )

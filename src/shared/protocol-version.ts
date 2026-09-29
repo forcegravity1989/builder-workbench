@@ -227,6 +227,11 @@ export const AUTOMATION_OWNER_FENCING_UPDATE_REQUIRED_MESSAGE =
   'Editing automations on this host requires a newer Orca server. Update the HUB and try again.'
 export const AUTOMATION_CREATE_IDEMPOTENCY_RUNTIME_CAPABILITY =
   'automation.create-idempotency.v1' as const
+// Why: older hosts strip automation.runNow's oneShotPrompt (zod objects drop unknown
+// keys), so a manual run would silently launch with only the saved prompt and the
+// caller could not tell the context was lost. Gate one-shot runs on this capability.
+export const AUTOMATION_RUN_ONE_SHOT_PROMPT_RUNTIME_CAPABILITY =
+  'automation.run-now-one-shot-prompt.v1' as const
 // Hosts without this capability have no notifications.registerPush RPC.
 export const NOTIFICATIONS_REMOTE_PUSH_RUNTIME_CAPABILITY = 'notifications.remote-push.v1' as const
 
@@ -333,6 +338,7 @@ export const RUNTIME_CAPABILITIES = [
   AUTOMATION_LIST_HOST_SCOPE_RUNTIME_CAPABILITY,
   AUTOMATION_OWNER_FENCING_RUNTIME_CAPABILITY,
   AUTOMATION_CREATE_IDEMPOTENCY_RUNTIME_CAPABILITY,
+  AUTOMATION_RUN_ONE_SHOT_PROMPT_RUNTIME_CAPABILITY,
   NOTIFICATIONS_REMOTE_PUSH_RUNTIME_CAPABILITY
 ] as const
 

@@ -2,8 +2,8 @@ import { useCallback, useMemo, useState, type ReactNode } from 'react'
 import { toast } from 'sonner'
 import { useShallow } from 'zustand/react/shallow'
 import { useAppStore } from '@/store'
-import { assertCurrentCycleWorkspace, startMaterialRequest } from './start-material-request'
 import { startCycleAutomation } from './start-cycle-automation'
+import { assertCurrentCycleWorkspace } from './current-cycle-workspace'
 import { prepareMetricsSession, useMetricsSetupAgent } from './metrics-setup'
 import { getActiveCycleSession, prepareCycleRequest } from './native-session'
 import { useWorkflowVersion } from './use-workflow-version'
@@ -61,36 +61,30 @@ export function CycleWorkspaceProvider({ children }: { children: ReactNode }) {
     creationKey: automation.creationKey,
     onError: setNotice
   })
-  const start = useCallback(async () => {
-    setBusy(true)
-    try {
-      if (!scope || !fixedId || !automation.automationId) {
-        throw new Error('周期自动化尚未就绪，请在自动化页核对配置。')
-      }
-      await startCycleAutomation(scope, fixedId, automation.automationId)
-      toast.message('已打开本次运行的会话。')
-      setNotice(null)
-    } catch (reason) {
-      if (scope && fixedId) {
-        try {
-          assertCurrentCycleWorkspace(scope, fixedId)
-        } catch {
-          return
+  const start = useCallback(
+    async (oneShot?: string) => {
+      setBusy(true)
+      try {
+        if (!scope || !fixedId || !automation.automationId) {
+          throw new Error('周期自动化尚未就绪，请在自动化页核对配置。')
         }
+        await startCycleAutomation(scope, fixedId, automation.automationId, oneShot)
+        toast.message('已打开本次运行的会话。')
+        setNotice(null)
+      } catch (reason) {
+        if (scope && fixedId) {
+          try {
+            assertCurrentCycleWorkspace(scope, fixedId)
+          } catch {
+            return
+          }
+        }
+        setNotice(reason instanceof Error ? reason.message : String(reason))
+      } finally {
+        setBusy(false)
       }
-      setNotice(reason instanceof Error ? reason.message : String(reason))
-    } finally {
-      setBusy(false)
-    }
-  }, [scope, fixedId, automation.automationId])
-  const startRequest = useCallback(
-    async (text: string) => {
-      if (!scope || !fixedId || !agent) {
-        throw new Error('工作区或会话工具尚未就绪。')
-      }
-      await startMaterialRequest(scope, fixedId, agent, text)
     },
-    [scope, fixedId, agent]
+    [scope, fixedId, automation.automationId]
   )
   const prepareMetrics = useCallback(async () => {
     if (!scope || !agent) {
@@ -114,7 +108,6 @@ export function CycleWorkspaceProvider({ children }: { children: ReactNode }) {
               session,
               version: version.version,
               selectVersion: version.selectVersion,
-              startRequest,
               materialPort,
               sessionPort,
               taskPort,
@@ -136,7 +129,6 @@ export function CycleWorkspaceProvider({ children }: { children: ReactNode }) {
       version.version,
       version.selectVersion,
       version.error,
-      startRequest,
       materialPort,
       sessionPort,
       taskPort,

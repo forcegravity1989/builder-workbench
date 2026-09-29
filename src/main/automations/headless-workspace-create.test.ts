@@ -103,4 +103,20 @@ describe('headless automation workspace create args', () => {
 
     expect(args.setupDecision).toBe('skip')
   })
+
+  it('merges one-shot context into the startup delivery without touching provenance', () => {
+    const args = buildHeadlessAutomationWorktreeCreateArgs({
+      automation,
+      run: {
+        id: 'run-1',
+        title: 'Nightly review run',
+        scheduledFor: Date.UTC(2026, 0, 2, 3, 4, 5)
+      },
+      repo,
+      oneShotPrompt: '本次处理请求：修复 v0.3'
+    })
+
+    expect(args.startupPrompt).toBe('Review changes\n\n本次处理请求：修复 v0.3')
+    expect(args.automationProvenance).toMatchObject({ automationId: 'automation-1' })
+  })
 })

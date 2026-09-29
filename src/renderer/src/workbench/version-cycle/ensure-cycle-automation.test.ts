@@ -18,7 +18,7 @@ vi.mock('@/runtime/runtime-rpc-client', () => ({
   getRuntimeEnvironmentStatus: vi.fn()
 }))
 vi.mock('./cycle-prompt', () => ({ buildCyclePrompt: vi.fn(async () => 'CYCLE-PROMPT') }))
-vi.mock('./start-material-request', () => ({ assertCurrentCycleWorkspace: vi.fn() }))
+vi.mock('./current-cycle-workspace', () => ({ assertCurrentCycleWorkspace: vi.fn() }))
 vi.mock('@/components/automations/automation-run-workspace-action', () => ({
   openAutomationRunTerminal: test.openRun
 }))
@@ -247,4 +247,46 @@ it('runs the saved automation with its SSH owner and opens only the matching run
   } finally {
     vi.useRealTimers()
   }
+})
+
+it('forwards one-shot context into the saved automation run params', async () => {
+  setState({ sshTargetGenerations: new Map([['server', 7]]) })
+  const automation = { id: 'a1', workspaceMode: 'existing', workspaceId: FIXED_ID }
+  const ready = {
+    id: 'run-1',
+    automationId: 'a1',
+    status: 'dispatched',
+    workspaceId: FIXED_ID,
+    terminalPaneKey: 'pane',
+    terminalPtyId: 'pty'
+  }
+  test.openRun.mockImplementation((run) => run === ready)
+  test.rpc.mockImplementation(async (_target, method) => {
+    if (method === 'automation.list') {
+      return {
+        automations: [automation],
+        items: [
+          {
+            automationId: 'a1',
+            selector: { kind: 'ssh', targetId: 'server', targetGeneration: 7 }
+          }
+        ]
+      }
+    }
+    if (method === 'automation.runNow') {
+      return { run: ready }
+    }
+    throw new Error(`unexpected ${method}`)
+  })
+  await startCycleAutomation(
+    { ...scope, hostId: 'ssh:server' },
+    FIXED_ID,
+    'a1',
+    '本次处理请求：修复 v0.3 数据文件'
+  )
+  const runNowCall = test.rpc.mock.calls.find((call) => call[1] === 'automation.runNow')
+  expect(runNowCall?.[2]).toMatchObject({
+    id: 'a1',
+    oneShotPrompt: '本次处理请求：修复 v0.3 数据文件'
+  })
 })

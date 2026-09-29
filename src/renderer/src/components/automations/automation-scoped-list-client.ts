@@ -40,6 +40,7 @@ import {
   assertAuthorityCapability,
   assertOwnerFencingSupported,
   assertAutomationCreateIdempotencySupported,
+  assertAutomationRunOneShotPromptSupported,
   AUTOMATION_LIST_HOST_SCOPE_RUNTIME_CAPABILITY,
   AUTOMATION_LIST_HOST_SCOPE_UPDATE_REQUIRED_MESSAGE,
   AutomationHostScopeUnsupportedError,
@@ -300,13 +301,19 @@ export async function listOrphanAutomationRunsPage(
 
 export async function runAutomationNowForOwner(
   owner: AutomationOwnerRef,
-  id: string
+  id: string,
+  oneShotPrompt?: string
 ): Promise<AutomationRun> {
   await assertOwnerFencingSupported(owner.authority)
+  if (oneShotPrompt) {
+    // An older host would strip the field and launch without the context; fail honestly instead.
+    await assertAutomationRunOneShotPromptSupported(owner.authority)
+  }
   const expectedOwner = ownerPrecondition(owner)
   const result = await callAuthority<{ run: AutomationRun }>(owner.authority, 'automation.runNow', {
     id,
-    expectedOwner
+    expectedOwner,
+    ...(oneShotPrompt ? { oneShotPrompt } : {})
   })
   return result.run
 }

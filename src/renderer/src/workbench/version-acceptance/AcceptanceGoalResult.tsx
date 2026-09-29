@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { MessageSquare } from 'lucide-react'
 import type {
   AcceptanceMaterial,
   PlanningMaterial,
@@ -31,6 +32,7 @@ export function AcceptanceGoalResult({
 }) {
   const result =
     document.results.find((item) => item.goalId === goal.goalId) ?? emptyGoalResult(goal.goalId)
+  const gap = result.decision?.outcome === 'not-met'
   const [assessment, setAssessment] = useState<{
     document: AcceptanceMaterial
     freshness: DecisionFreshness
@@ -141,11 +143,11 @@ export function AcceptanceGoalResult({
           </button>
         )}
       </div>
-      <label className="va-note">
-        验收依据
+      <label className={gap ? 'va-note va-gap' : 'va-note'}>
+        {gap ? '未达项' : '验收依据'}
         <input
           value={result.note}
-          placeholder="判断依据、未达原因或待补证内容"
+          placeholder={gap ? '哪些约定未达到，原因是什么' : '判断依据；指标口径变化时说明是否可比'}
           onChange={(event) => edit({ note: event.target.value })}
         />
       </label>
@@ -177,16 +179,17 @@ export function AcceptanceGoalResult({
       {result.decision?.outcome === 'not-met' && !result.nextStep.trim() && (
         <p className="va-warning">未达项的后续安排待补充</p>
       )}
-      {result.nextStep && (
+      {(gap || result.nextStep) && (
         <button
-          className="wb-btn wb-btn-ghost wb-btn-sm"
+          className="wb-btn wb-btn-ghost wb-btn-sm va-followup-btn"
           onClick={() =>
             onFollowUp(
-              `请继续讨论 ${document.version} 的目标「${goal.title}」。原承诺：${goal.deliverable ?? goal.title}。验收说明：${result.note}。后续候选：${result.nextStep}。先核对安排，不自动承诺下版、排期或确认 Issue 完成。`
+              `请继续讨论 ${document.version} 的目标「${goal.title}」。原承诺：${goal.deliverable ?? goal.title}。验收说明：${result.note}。后续候选：${result.nextStep || '请与我讨论安排'}。先核对安排，不自动承诺下版、排期或确认 Issue 完成。`
             )
           }
         >
-          带入本次会话
+          <MessageSquare size={14} aria-hidden="true" />
+          交给会话
         </button>
       )}
       {error && (

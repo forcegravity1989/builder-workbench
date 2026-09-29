@@ -227,6 +227,8 @@ export type AutomationDispatchRequest = {
   automation: Automation
   run: AutomationRun
   dispatchToken: string
+  /** This run's one-shot context, appended to the saved prompt at dispatch. Never written back to the record. */
+  oneShotPrompt?: string | null
 }
 
 export type AutomationDispatchResult = {

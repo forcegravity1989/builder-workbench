@@ -194,7 +194,11 @@ export class RuntimeAutomationController {
     return { removed: true, id }
   }
 
-  async runNow(id: string, expectedOwner?: AutomationOwnerPrecondition): Promise<AutomationRun> {
+  async runNow(
+    id: string,
+    expectedOwner?: AutomationOwnerPrecondition,
+    oneShotPrompt?: string
+  ): Promise<AutomationRun> {
     if (!this.service) {
       throw new Error('runtime_unavailable')
     }
@@ -202,6 +206,7 @@ export class RuntimeAutomationController {
     return await runAutomationNowFenced({
       automationId: id,
       service,
+      ...(oneShotPrompt ? { oneShotPrompt } : {}),
       fence: () => {
         if (!this.store?.assertAutomationOwnerFence) {
           if (expectedOwner) {

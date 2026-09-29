@@ -36,7 +36,7 @@ candidateRef 仅保存 repository/version/commit，commit 是完整 SHA。prepar
 
 archiveCommit 只能在实际合入后由 provider/Git 解析，不能把尚未知的提交写进自身。提交内容保存 cycleId、sourceRevision 等元数据，PR 关联及合入提交由真实来源补全。新归档记录的发现与提交定位由共享层统一实现，两个特性提供纯派生摘要，不各做一套 Git 扫描。
 
-preparationReview 可记录人的材料备齐核对，包含 source、recordedAt、materialRevision。修订覆盖版本、轮次、固定计划、候选、准备材料和各目标交付件；这些内容变动后重新核对，不因日历跨周作废。它不证明命令执行或目标达成，模型不得代人勾选。
+preparationReview 是可选的人工材料备齐核对记录，包含 source、recordedAt、materialRevision；修订覆盖版本、轮次、固定计划、候选、准备材料和各目标交付件。它是历史保留字段：验收屏已移除“材料备齐”勾选，准备灯改由各目标已记录的实际交付证据推导，不再由此字段驱动。字段仍受人工守卫保护（模型/CLI 不得代人写入或篡改），旧材料读回时保留原值，不因日历跨周作废，也不证明命令执行或目标达成。
 
 ## 写入与人的决定
 

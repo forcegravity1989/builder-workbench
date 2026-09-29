@@ -25,6 +25,8 @@ const SSH_OWNER = {
   selector: { kind: 'ssh', targetId: 'ssh-1', targetGeneration: 7 }
 } as const
 
+// Deliberately missing AUTOMATION_RUN_ONE_SHOT_PROMPT_RUNTIME_CAPABILITY: it stands
+// for an older host, and the one-shot refusal test below depends on that absence.
 const ALL_CAPABILITIES = {
   capabilities: [
     AUTOMATION_LIST_HOST_SCOPE_RUNTIME_CAPABILITY,
@@ -283,6 +285,17 @@ describe('owner-fenced mutations', () => {
     })
     await expect(
       updateAutomationForOwner(SSH_OWNER, 'a1', { enabled: false })
+    ).rejects.toBeInstanceOf(AutomationHostScopeUnsupportedError)
+    expect(callRuntimeRpc).not.toHaveBeenCalled()
+  })
+
+  // An older host strips oneShotPrompt (zod drops unknown keys), so a one-shot run
+  // must fail before the RPC instead of silently launching without its context.
+  it('refuses to carry one-shot context to a host that would silently strip it', async () => {
+    const { runAutomationNowForOwner, AutomationHostScopeUnsupportedError } = await client()
+    getRuntimeEnvironmentStatus.mockResolvedValue(ALL_CAPABILITIES)
+    await expect(
+      runAutomationNowForOwner(SSH_OWNER, 'a1', '本次处理请求：修复 v0.3 数据文件')
     ).rejects.toBeInstanceOf(AutomationHostScopeUnsupportedError)
     expect(callRuntimeRpc).not.toHaveBeenCalled()
   })

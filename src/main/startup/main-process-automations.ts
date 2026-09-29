@@ -2,6 +2,7 @@ import { AutomationService } from '../automations/service'
 import { createHeadlessAutomationOutputSnapshotBuffer } from '../automations/headless-dispatch'
 import { buildHeadlessAutomationWorktreeCreateArgs } from '../automations/headless-workspace-create'
 import { createRuntimeAutomationRunTerminalObserver } from '../automations/runtime-terminal-run-observer'
+import { combineAutomationRunPrompt } from '../../shared/automation-run-prompt'
 import { mainProcessState as state } from './main-process-state'
 
 export function initializeMainProcessAutomations(): AutomationService {
@@ -20,7 +21,7 @@ export function initializeMainProcessAutomations(): AutomationService {
     // Why: desktop clients mirror remote-host automations, but only a server process should execute remote_host_service-owned schedules.
     allowRemoteHostScheduling: state.isServeMode,
     headlessDispatcher: state.isServeMode
-      ? async ({ automation, run, target }) => {
+      ? async ({ automation, run, target, oneShotPrompt }) => {
           const terminalSnapshotLimit = 2_000
           let terminalHandle: string
           let terminalSessionId: string | null = null
@@ -30,7 +31,12 @@ export function initializeMainProcessAutomations(): AutomationService {
           let workspaceDisplayName: string | null = null
           if (automation.workspaceMode === 'new_per_run') {
             const created = await runtime.createManagedWorktree(
-              buildHeadlessAutomationWorktreeCreateArgs({ automation, run, repo: target.repo })
+              buildHeadlessAutomationWorktreeCreateArgs({
+                automation,
+                run,
+                repo: target.repo,
+                ...(oneShotPrompt ? { oneShotPrompt } : {})
+              })
             )
             terminalHandle = created.startupTerminal?.handle ?? ''
             terminalSessionId = created.startupTerminal?.tabId ?? null
@@ -50,7 +56,7 @@ export function initializeMainProcessAutomations(): AutomationService {
             }
             const terminal = await runtime.launchAgentTerminal(`id:${automation.workspaceId}`, {
               agent: automation.agentId,
-              prompt: automation.prompt,
+              prompt: combineAutomationRunPrompt(automation.prompt, oneShotPrompt),
               title: run.title
             })
             terminalHandle = terminal.handle

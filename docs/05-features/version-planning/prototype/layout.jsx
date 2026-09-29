@@ -8,7 +8,7 @@ import { OverviewV8 } from '../../overview-metrics/prototype/screen.jsx'
 import { metrics } from './snapshot.js'
 import { PrototypeTasks } from './tasks.jsx'
 import { PrototypeDialogs } from './dialogs.jsx'
-import { PrototypeMaterialNotice } from './material-notice.jsx'
+import { cycleStartRequest, PrototypeNotes, PrototypeStartCard } from './cycle-entry.jsx'
 
 function PrototypeLayout({
   active,
@@ -37,7 +37,6 @@ function PrototypeLayout({
   openIssues,
   overviewSelection,
   overviewUI,
-  prepareDelivery,
   progress,
   promptConversation,
   refreshMetrics,
@@ -72,23 +71,24 @@ function PrototypeLayout({
   view,
   weekly
 }) {
-  const [scenarios, setScenarios] = useState({ monday: 'first', friday: 'first' })
-  const [sessionStates, setSessionStates] = useState({ monday: 'empty', friday: 'empty' })
+  const [scenarios, setScenarios] = useState({ monday: 'selected', friday: 'selected' })
+  const [sessionStates, setSessionStates] = useState({ monday: 'existing', friday: 'existing' })
   const [sessionWidth, setSessionWidth] = useState(undefined)
   const planning = usePlanningDemo({ setModal, setNotice })
-  const firstEntry = weekly && scenarios[view] === 'first'
+  const firstEntry = weekly && ['empty', 'problem'].includes(scenarios[view])
+  const hasProblems = weekly && ['problem', 'partial'].includes(scenarios[view])
   const setSessionState = (state) => setSessionStates((current) => ({ ...current, [view]: state }))
   const onScenario = (value) => {
     setScenarios((current) => ({ ...current, [view]: value }))
-    setSessionState(value === 'first' ? 'empty' : 'existing')
+    setSessionState(['empty', 'problem'].includes(value) ? 'empty' : 'existing')
     setVersion('v0.5')
     setDraft('')
     setNotice('')
   }
-  const startRequest = (text) => {
-    setDraft(text)
-    setSessionState('request')
-    setNotice('原型示意：已新建并聚焦原生会话，处理请求已自动发送；尚未迁移或改写文件。')
+  const startWorkflow = () => {
+    setDraft(cycleStartRequest({ view, firstEntry, hasProblems, version }))
+    setSessionState('workflow')
+    setNotice('')
   }
   const openSelectedVersion = (target) => {
     setScenarios((current) => ({ ...current, [target]: 'selected' }))
@@ -110,18 +110,9 @@ function PrototypeLayout({
         <PrototypeSession
           width={sessionWidth}
           sessionState={sessionStates[view]}
-          onStart={() => {
-            setDraft('')
-            setSessionState('workflow')
-            setNotice(
-              '原型示意：手动运行已登记自动化并打开、聚焦本次原生会话；定时运行仍在后台，不改变定时开关。'
-            )
-          }}
           {...{
-            branch,
             composer,
-            draft,
-            view
+            draft
           }}
         />
       )}
@@ -132,21 +123,15 @@ function PrototypeLayout({
         <PrototypeHeader
           firstEntry={firstEntry}
           planningSaveState={planning.saveState}
-          selectPlanVersion={(value) => {
-            setScenarios((current) => ({ ...current, monday: value ? 'selected' : 'first' }))
-            if (value) {
-              setVersion(value)
-            }
+          selectVersion={(value) => {
+            setVersion(value)
             setNotice('')
             setExpanded(false)
             setTaskFilter('')
           }}
           {...{
-            review,
-            setExpanded,
-            setNotice,
-            setTaskFilter,
-            setVersion,
+            branch,
+            hasProblems,
             version,
             view,
             weekly
@@ -154,13 +139,6 @@ function PrototypeLayout({
         />
         {weekly ? (
           <>
-            <PrototypeMaterialNotice
-              key={view}
-              view={view}
-              firstEntry={firstEntry}
-              onScenario={onScenario}
-              onStartRequest={startRequest}
-            />
             <div className="work-area">
               <nav className="journey" aria-label="工作旅程">
                 {steps.map(([Icon, label, tone, hint], i) => (
@@ -170,11 +148,11 @@ function PrototypeLayout({
                     aria-current={active === i ? 'step' : undefined}
                     aria-label={label}
                     onClick={() => {
-                      if (!firstEntry) {
+                      if (!firstEntry || i === 0) {
                         stageGo(i)
                       }
                     }}
-                    disabled={firstEntry && i > (view === 'monday' ? 1 : 0)}
+                    disabled={firstEntry && i > 0}
                     title={`${label} · ${firstEntry ? '待选择版本' : hint}`}
                   >
                     <span>
@@ -189,13 +167,19 @@ function PrototypeLayout({
                 ))}
               </nav>
               <div className="content-scroll">
-                {view !== 'monday' && firstEntry ? (
-                  <section className="prototype-first-entry">
-                    <h2>待选择版本</h2>
-                    <p>处理上方文件问题后，可在版本列表中选择版本。</p>
-                    <small>原型不读写真实材料。切换“已选版本”场景可继续查看右侧业务板示例。</small>
-                  </section>
-                ) : view === 'monday' ? (
+                <PrototypeStartCard
+                  view={view}
+                  hasProblems={hasProblems}
+                  onStart={startWorkflow}
+                  onConfigure={() =>
+                    setModal({
+                      type: 'native-automation',
+                      title: '配置自动化',
+                      workflow: view === 'monday' ? '计划' : '验收'
+                    })
+                  }
+                />
+                {view === 'monday' ? (
                   <PlanningContent
                     sessionAvailable={sessionStates.monday !== 'empty'}
                     disabled={firstEntry}
@@ -217,14 +201,15 @@ function PrototypeLayout({
                   />
                 ) : (
                   <AcceptanceContent
+                    disabled={firstEntry}
+                    current={firstEntry ? [] : current}
                     {...{
-                      current,
                       goalIssues,
                       hasGap,
                       openIssues,
-                      prepareDelivery,
                       promptConversation,
                       refreshMetrics,
+                      review,
                       setModal,
                       tasks,
                       updateResult,
@@ -233,6 +218,7 @@ function PrototypeLayout({
                     }}
                   />
                 )}
+                <PrototypeNotes scenario={scenarios[view]} onScenario={onScenario} />
               </div>
             </div>
             <footer className="page-footer">
@@ -244,6 +230,18 @@ function PrototypeLayout({
               <span className="notice" role="status">
                 {notice}
               </span>
+              <button
+                className="prototype-notes-link"
+                title="仅供原型验看，不属于最终界面"
+                onClick={() => {
+                  const notes = document.getElementById('prototype-notes')
+                  notes.open = true
+                  notes.scrollIntoView({ behavior: 'smooth', block: 'start' })
+                  notes.querySelector('select')?.focus({ preventScroll: true })
+                }}
+              >
+                原型场景<sup>1</sup>
+              </button>
             </footer>
           </>
         ) : view === 'overview' ? (

@@ -5,6 +5,7 @@ import { launchAgentBackgroundSession } from '@/lib/launch-agent-background-sess
 import { observeExistingAutomationSession } from '@/lib/automation-session-observer'
 import { findReusableAutomationSession } from '@/lib/automation-session-reuse'
 import type { AutomationTerminalOwnership } from '@/lib/automation-terminal-ownership'
+import { combineAutomationRunPrompt } from '../../../shared/automation-run-prompt'
 import { useAppStore } from '@/store'
 import type {
   AutomationDispatchRequest,
@@ -29,8 +30,11 @@ function acquireReuseDispatchTab(tabId: string): (() => void) | null {
 export async function handleAutomationDispatchRequest({
   automation,
   run,
-  dispatchToken
+  dispatchToken,
+  oneShotPrompt
 }: AutomationDispatchRequest): Promise<void> {
+  // One-shot context rides with the saved prompt as a single delivery; the record stays untouched.
+  const runPrompt = combineAutomationRunPrompt(automation.prompt, oneShotPrompt)
   const markDispatchResult = async (result: AutomationDispatchResult): Promise<void> => {
     // Deliberately no local emit: the write publishes its own host-scoped event
     // (automation-run-writer.ts) before this reply returns, and an unscoped one
@@ -111,7 +115,7 @@ export async function handleAutomationDispatchRequest({
             const submitted = await submitPromptToAgentPty({
               tabId: reusableSession.tabId,
               ptyId: reusableSession.ptyId,
-              content: automation.prompt
+              content: runPrompt
             })
             if (!submitted) {
               completion.cleanupRunObservers()
@@ -167,7 +171,7 @@ export async function handleAutomationDispatchRequest({
     const result = await launchAgentBackgroundSession({
       agent: automation.agentId,
       worktreeId: worktree.id,
-      prompt: automation.prompt,
+      prompt: runPrompt,
       launchSource: 'unknown',
       title: run.title,
       onData: completion.appendOutput,

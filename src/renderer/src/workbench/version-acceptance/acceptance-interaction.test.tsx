@@ -8,7 +8,7 @@ import type {
   PlanningMaterial
 } from '../../../../shared/workbench/version-material'
 import { AcceptanceGoalResult } from './AcceptanceGoalResult'
-import { AcceptancePreparation } from './AcceptancePreparation'
+import { AcceptanceSources } from './AcceptanceSources'
 import { AcceptanceTasks } from './AcceptanceTasks'
 import type { TaskOrigin, TaskPort } from '../version-cycle/ports'
 import { recordHumanDecision } from './acceptance-decision'
@@ -355,22 +355,28 @@ describe('acceptance interactions', () => {
   it('does not show or propagate verification returned for a replaced candidate', async () => {
     const pending = Promise.withResolvers<CandidateCheck>()
     const original = material()
-    const onCandidateCheck = vi.fn()
-    const port: AcceptanceCandidatePort = {
+    const onChecks = vi.fn()
+    const candidatePort: AcceptanceCandidatePort = {
       check: () => pending.promise,
-      inspect: vi.fn(),
+      inspect: vi.fn(async () => ({
+        artifactId: 'a',
+        candidate: { kind: 'unknown', reason: '' },
+        availability: { kind: 'unknown', reason: '' },
+        execution: { kind: 'unknown', reason: '' }
+      })),
       openFile: vi.fn()
     }
+    const metricWindow = { window: null, setWindow: () => {}, error: null }
     await act(async () => {
       root.render(
-        <AcceptancePreparation
-          reviewed={false}
-          readOnly={false}
-          onReview={async () => {}}
+        <AcceptanceSources
           document={original}
-          port={port}
+          hasMetrics={false}
+          metricWindow={metricWindow}
+          disabled={false}
           onPrepare={vi.fn()}
-          onCandidateCheck={onCandidateCheck}
+          candidatePort={candidatePort}
+          onChecks={onChecks}
         />
       )
     })
@@ -385,14 +391,14 @@ describe('acceptance interactions', () => {
     }
     await act(async () => {
       root.render(
-        <AcceptancePreparation
-          reviewed={false}
-          readOnly={false}
-          onReview={async () => {}}
+        <AcceptanceSources
           document={changed}
-          port={port}
+          hasMetrics={false}
+          metricWindow={metricWindow}
+          disabled={false}
           onPrepare={vi.fn()}
-          onCandidateCheck={onCandidateCheck}
+          candidatePort={candidatePort}
+          onChecks={onChecks}
         />
       )
     })
@@ -403,7 +409,7 @@ describe('acceptance interactions', () => {
         checkedAt: '2026-09-25T01:00:00Z'
       })
     })
-    expect(onCandidateCheck).not.toHaveBeenCalled()
+    expect(onChecks).not.toHaveBeenCalled()
     expect(container.textContent).not.toContain('已核对')
     expect(container.textContent).toContain(changed.candidateRef.commit)
   })

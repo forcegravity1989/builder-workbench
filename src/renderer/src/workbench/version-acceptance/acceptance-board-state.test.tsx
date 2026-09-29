@@ -175,7 +175,7 @@ describe('acceptance draft transitions', () => {
       })
       expect(board.plan).toBeNull()
       expect(board.error).toBeNull()
-      expect(board.journey.preparation.kind).toBe('pending')
+      expect(board.journey.preparation.kind).toBe('unknown')
     }
   )
   it.each([false, true])(
@@ -272,26 +272,32 @@ describe('acceptance draft transitions', () => {
     expect(board.archived).toBe(true)
   })
 
-  it('invalidates the human preparation review when the material changes afterwards', async () => {
+  it('derives the preparation lamp from recorded delivery evidence, not a checkbox', async () => {
     await renderBoard(Promise.resolve(null))
-    await act(async () => {
-      await board.reviewPreparation(true)
-    })
-    for (let i = 0; i < 10 && board.journey.preparation.kind !== 'complete'; i++) {
-      await act(async () => {})
-    }
-    expect(board.journey.preparation).toMatchObject({ kind: 'complete' })
+    // No delivery evidence yet: preparation stays unknown even though a candidate is fixed.
+    expect(board.journey.preparation.kind).toBe('unknown')
     await act(async () => {
       const document = board.controller.value!.document
       board.controller.edit({
         ...document,
-        candidateRef: { ...document.candidateRef!, commit: '3'.repeat(40) }
+        results: [
+          {
+            ...document.results[0],
+            deliveries: [{ title: '安装包', location: '.bw/out/app.exe' }]
+          }
+        ]
       })
     })
-    for (let i = 0; i < 10 && board.journey.preparation.kind !== 'pending'; i++) {
-      await act(async () => {})
-    }
-    expect(board.journey.preparation).toMatchObject({ kind: 'pending' })
+    expect(board.journey.preparation.kind).toBe('complete')
+    // A candidate that no longer matches the acceptance version fails the lamp.
+    await act(async () => {
+      const document = board.controller.value!.document
+      board.controller.edit({
+        ...document,
+        candidateRef: { ...document.candidateRef!, version: 'v0.4' }
+      })
+    })
+    expect(board.journey.preparation).toMatchObject({ kind: 'failed', label: '候选不匹配' })
   })
 
   it('reopens editing when the first archive read fails, without claiming any archive state', async () => {

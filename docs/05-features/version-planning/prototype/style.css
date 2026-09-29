@@ -2303,53 +2303,6 @@ input::placeholder {
   overflow: hidden;
   text-overflow: ellipsis;
 }
-.preparation-strip {
-  border: 1px solid var(--color-divider);
-  border-radius: var(--radius-md);
-  padding: 10px 12px;
-  margin-bottom: 12px;
-  background: var(--color-card);
-}
-.preparation-title {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  font-size: 12px;
-}
-.preparation-title strong,
-.preparation-title .btn {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-.preparation-title svg {
-  width: 15px;
-  height: 15px;
-}
-.preparation-title .btn {
-  font-size: 11px;
-  padding: 2px 6px;
-}
-.preparation-items {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 12px;
-  margin-top: 8px;
-}
-.preparation-items > div {
-  display: flex;
-  gap: 6px;
-  flex-direction: column;
-}
-.preparation-items span {
-  font-size: 10px;
-  color: var(--color-neutral-500);
-}
-.preparation-items b {
-  font-size: 12px;
-  font-weight: 500;
-  color: var(--color-neutral-600);
-}
 .journey button strong {
   font-size: 10px;
 }
@@ -2495,14 +2448,6 @@ input::placeholder {
   height: 14px;
 }
 @media (max-height: 760px) {
-  .preparation-strip {
-    padding: 8px 10px;
-    margin-bottom: 8px;
-  }
-  .preparation-items {
-    margin-top: 5px;
-    gap: 8px;
-  }
   .aligned-goals .acceptance-row {
     padding: 8px 10px;
   }
@@ -2517,18 +2462,6 @@ input::placeholder {
   }
 }
 
-.preparation-strip {
-  padding: 8px 12px;
-  margin-bottom: 8px;
-}
-.preparation-items > div {
-  flex-direction: row;
-  align-items: center;
-  gap: 8px;
-}
-.preparation-items {
-  margin-top: 8px;
-}
 .aligned-goals .acceptance-row {
   padding: 9px 12px;
 }
@@ -2854,76 +2787,130 @@ input::placeholder {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 28px;
+  padding: var(--space-6);
   text-align: center;
-  gap: 12px;
-  color: var(--text-2);
+  gap: var(--space-3);
+  color: var(--color-neutral-500);
 }
 .native-workspace-placeholder h2 {
-  font-size: 16px;
+  font-size: var(--space-4);
+  font-weight: 500;
   margin: 0;
 }
 .native-workspace-placeholder p {
   margin: 0;
-  font-size: 13px;
+  font-size: inherit;
   line-height: 1.7;
 }
-.native-workspace-placeholder small {
-  line-height: 1.6;
-  opacity: 0.7;
+.native-workspace-placeholder sup,
+.prototype-request sup {
+  margin-left: var(--space-1);
+  font-size: 0.7em;
 }
 .prototype-request {
-  padding: 12px;
-  border-top: 1px solid var(--line);
-  font-size: 12px;
+  padding: var(--space-3);
+  border-top: 1px solid var(--color-divider);
+  font-size: inherit;
 }
 .prototype-request pre {
   white-space: pre-wrap;
   overflow-wrap: anywhere;
-  max-height: 180px;
+  max-height: calc(var(--space-8) * 6);
   overflow: auto;
-}
-.prototype-material-scenario {
-  font-size: 11px;
-  padding: 4px 16px;
-  color: var(--text-2);
-}
-.prototype-material-scenario label {
-  display: flex;
-  gap: 6px;
-  align-items: center;
-}
-.material-problem {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 8px;
-  color: #b42318;
-  font-size: 12px;
-  margin-top: 4px;
-}
-.prototype-session-state {
-  max-width: 380px;
-  padding: 12px;
-  border: 1px solid var(--line);
-  border-radius: 8px;
-}
-.prototype-first-entry {
-  max-width: 480px;
-  margin: 36px auto;
-  line-height: 1.8;
-  color: var(--text-2);
-}
-.prototype-first-entry h2 {
-  font-size: 18px;
-}
-.prototype-first-entry small {
-  display: block;
-  margin-top: 20px;
 }
 .journey button:disabled {
   cursor: default;
   opacity: 0.5;
+}
+.page-branch {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  min-width: 0;
+  max-width: 40%;
+  color: var(--color-neutral-500);
+  font: 0.85em var(--font-mono);
+}
+.page-branch > span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.cycle-start-card {
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-3);
+  margin-bottom: var(--space-3);
+}
+.cycle-start-line {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+.cycle-start-line p {
+  flex: 1;
+  min-width: 0;
+  color: var(--color-neutral-600);
+}
+.cycle-material-problem {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-2);
+  padding-top: var(--space-2);
+  border-top: 1px solid var(--color-divider);
+  color: var(--color-danger-deep);
+  font-size: 0.9em;
+  line-height: 1.7;
+}
+.cycle-material-problem svg {
+  margin-top: var(--space-1);
+}
+.prototype-notes {
+  margin-top: var(--space-6);
+  padding-top: var(--space-3);
+  border-top: 1px solid var(--color-divider);
+  color: var(--color-neutral-500);
+  font-size: 0.85em;
+  line-height: 1.8;
+}
+.prototype-notes summary {
+  cursor: pointer;
+}
+.prototype-notes label {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin: var(--space-3) 0;
+}
+.prototype-notes select {
+  width: auto;
+  max-width: 100%;
+}
+.prototype-notes p + p {
+  margin-top: var(--space-2);
+}
+.prototype-notes-link {
+  flex: none;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--color-neutral-500);
+  font-size: 0.85em;
+  text-decoration: underline;
+}
+.prototype-notes-link sup {
+  margin-left: var(--space-1);
+}
+.prototype-native-editor {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+.prototype-native-editor small {
+  margin-top: var(--space-3);
+  padding-top: var(--space-3);
+  border-top: 1px solid var(--color-divider);
+  color: var(--color-neutral-500);
 }
 .planning-pane .planning-brief {
   gap: var(--space-3);
@@ -2952,7 +2939,10 @@ input::placeholder {
   resize: vertical;
   overflow: auto;
 }
-.planning-pane .btn {
+.planning-pane .btn,
+.acceptance-goals-heading .btn,
+.acceptance-metric-evidence .btn,
+.cycle-start-card .btn {
   height: calc(var(--space-6) + var(--space-1));
   padding: 0 var(--space-2);
   font-size: inherit;
@@ -2964,7 +2954,10 @@ input::placeholder {
   width: calc(var(--space-6) + var(--space-1));
   padding: 0;
 }
-.planning-pane .btn svg {
+.planning-pane .btn svg,
+.acceptance-goals-heading .btn svg,
+.acceptance-metric-evidence .btn svg,
+.cycle-start-card .btn svg {
   width: var(--space-4);
   height: var(--space-4);
 }
@@ -2974,34 +2967,55 @@ input::placeholder {
   padding: var(--space-2) var(--space-3);
   margin-top: var(--space-3);
 }
+.planning-pane .planning-configure-metrics + .btn {
+  margin-left: 0;
+}
+.acceptance-metric-plan {
+  margin-top: var(--space-2);
+  color: var(--color-neutral-600);
+  font-size: 0.9em;
+}
+.acceptance-metric-evidence .metric-row {
+  margin-left: 0;
+}
+.acceptance-metric-source {
+  margin: var(--space-1) 0 var(--space-2);
+  color: var(--color-neutral-600);
+  font-size: 0.85em;
+  line-height: 1.7;
+}
+.acceptance-metric-source summary {
+  cursor: pointer;
+}
+.acceptance-metric-source p {
+  margin-top: var(--space-2);
+}
+.acceptance-metric-window {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  gap: var(--space-2);
+  margin-top: var(--space-2);
+}
+.acceptance-metric-window label {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+.acceptance-metric-window .input {
+  width: auto;
+  min-width: 0;
+  height: var(--space-8);
+  padding: var(--space-1) var(--space-2);
+  font-size: inherit;
+}
+.acceptance-metric-source .metric-window-error {
+  color: var(--color-danger-deep);
+}
 .planning-pane .planning-archive p {
   flex: 1;
   min-width: 0;
   color: var(--color-neutral-600);
-}
-.planning-pane .prototype-material-scenario {
-  padding: var(--space-2) var(--space-4);
-  color: var(--color-neutral-600);
-  font-size: inherit;
-}
-.planning-pane .prototype-material-scenario > label {
-  gap: var(--space-2);
-}
-.planning-pane .prototype-material-scenario select {
-  width: auto;
-}
-.planning-pane .material-problem {
-  gap: var(--space-2);
-  margin-top: var(--space-2);
-  padding: var(--space-2) var(--space-3);
-  border: 1px solid var(--color-danger-soft);
-  border-radius: var(--radius-sm);
-  background: var(--color-danger-soft);
-  color: var(--color-danger-deep);
-  font-size: inherit;
-}
-.planning-pane .material-problem > span {
-  flex: 1;
 }
 .planning-pane .planning-task-header {
   display: flex;

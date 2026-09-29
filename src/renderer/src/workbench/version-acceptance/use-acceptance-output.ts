@@ -5,7 +5,7 @@ import type { MaterialDraft, MaterialDraftController } from '../version-cycle/ma
 import type { ArchiveStatus, CycleTaskRead } from '../version-cycle/ports'
 import type { VersionCycleContext } from '../version-cycle/cycle-context'
 import type { ArtifactCheck, CandidateCheck } from './acceptance-candidate-port'
-import { decisionFreshness, preparationEvidenceRevision } from './acceptance-decision'
+import { decisionFreshness } from './acceptance-decision'
 import { preparationKey, sameAcceptanceSource, type EvidenceCheck } from './acceptance-model'
 import { deriveAcceptanceReport } from './acceptance-report'
 import { captureTaskSnapshot } from './acceptance-task-evidence'
@@ -26,7 +26,6 @@ export function useAcceptanceOutput(
     document: AcceptanceMaterial
     plan: VersionHistoryPlan
     states: Record<string, DecisionFreshness>
-    preparationReviewed: boolean
   } | null>(null)
   useEffect(() => {
     if (!document || !plan) {
@@ -39,18 +38,12 @@ export function useAcceptanceOutput(
           [goal.goalId, await decisionFreshness(document, plan.document, goal.goalId)] as const
       )
     )
-      .then(async (states) => {
-        const preparationReviewed = Boolean(
-          document.preparationReview &&
-          document.preparationReview.materialRevision ===
-            (await preparationEvidenceRevision(document))
-        )
+      .then((states) => {
         if (current) {
           setDecisionResult({
             document,
             plan,
-            states: Object.fromEntries(states),
-            preparationReviewed
+            states: Object.fromEntries(states)
           })
         }
       })
@@ -115,28 +108,6 @@ export function useAcceptanceOutput(
     decisionResult?.document === document && decisionResult?.plan === plan
       ? (decisionResult?.states ?? null)
       : null
-  const preparationReviewed =
-    decisionResult?.document === document &&
-    decisionResult?.plan === plan &&
-    decisionResult?.preparationReviewed === true
-  async function reviewPreparation(checked: boolean) {
-    const current = controller.value?.document
-    if (!current) {
-      return
-    }
-    const review = checked
-      ? {
-          source: '用户在验收屏核对',
-          recordedAt: new Date().toISOString(),
-          materialRevision: await preparationEvidenceRevision(current)
-        }
-      : undefined
-    if (controller.value?.document !== current) {
-      onError('材料已变化，请重新核对。')
-      return
-    }
-    controller.edit({ ...current, preparationReview: review })
-  }
   function onChecks(
     source: AcceptanceMaterial,
     candidate: CandidateCheck,
@@ -182,9 +153,10 @@ export function useAcceptanceOutput(
       }
     }
   }
-  async function buildReport() {
+  /** Returns the derived markdown, or null when nothing honest could be produced. */
+  async function buildReport(): Promise<string | null> {
     if (!document || !plan) {
-      return
+      return null
     }
     try {
       const decisions = Object.fromEntries(
@@ -213,21 +185,40 @@ export function useAcceptanceOutput(
           revision: draft?.expectedRevision ?? null,
           markdown: output.markdown
         })
+        return output.markdown
       }
+      return null
     } catch (reason) {
       if (lifetime.active) {
         onError(String(reason))
       }
+      return null
     }
   }
+  const decisionSummary = (() => {
+    if (!document || !plan) {
+      return { goals: 0, pending: 0, notMet: 0 }
+    }
+    let pending = 0
+    let notMet = 0
+    for (const goal of plan.document.goals) {
+      const result = document.results.find((item) => item.goalId === goal.goalId)
+      const freshness = decisionStates?.[goal.goalId] ?? null
+      if (!result?.decision || result.decision.outcome === 'pending' || freshness === 'changed') {
+        pending++
+      } else if (result.decision.outcome === 'not-met') {
+        notMet++
+      }
+    }
+    return { goals: plan.document.goals.length, pending, notMet }
+  })()
   return {
     archive,
     archiveMaterial,
     archivePending,
-    preparationReviewed,
-    reviewPreparation,
+    decisionSummary,
     journey: {
-      preparation: preparationSignal(document, planVerification, verified, preparationReviewed),
+      preparation: preparationSignal(document, planVerification, verified, plan?.document.goals),
       decisions: decisionSignal(document, plan?.document, decisionStates),
       archive: archiveSignal(archive, archiveMaterial)
     },

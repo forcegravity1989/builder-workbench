@@ -4,6 +4,10 @@
 
 目标平台为 bw-orca 的 Electron/Orca 叠层。2026-09-24 用户合入 [设计 PR #264](https://github.com/forcegravity1989/builder-workbench/pull/264)，基线为 ba3955e6a9fa0dbf144096f5cb0609f2a89f39cb，并明确授权开工；产品方向与 v8 高保真作为实施输入，详细设计未逐项细审，未决项必须由实施窗口直接请用户确认。
 
+用户已确认本轮高保真并要求提交特性资产：计划与验收统一在右板首行提供协作卡片、“配置自动化”与启动按钮，原生标签栏不增加 BW 按钮；分支名移至页头，异常文件随同一启动入口带入会话。原型说明、首次/异常场景选择集中到页面末尾并明确不进入最终界面。该入口迁移已在 PR #279 实施：CycleStartCard 落地两屏首行，tab-bar-surface 的 CycleStartButton 薄挂载与 startMaterialRequest 独立通道已退役删除；数据问题上下文经 automation.runNow 的可选 oneShotPrompt 随保存提示单次合并递交（capability 门控）。组件/契约测试与静态检查通过，真壳未运行，不能视为真壳验证通过。
+
+指标窗口确认的历史脚本限制、每次配置新建会话和“对话气泡＋”图标已同步本屏原型与规格；生产指标接线已随 [PR #278](https://github.com/forcegravity1989/builder-workbench/pull/278) 合入，本线不重复实施。原型配置会话仍为内存演示，不作为采集或模型注入通过的证据。
+
 已明确的旅程：Builder 制定目标后与 PL 评审并现场修改目标，纪要预览/复制服务评审后的填写整理，通常在任务拆解与 PR 合入后，也允许在拆解前；复制不代表评审通过。对应 intent/spec/design 与 week-planning 已同步。生产计划板已采用进展/风险共卡片、目标直接编辑、可选多指标、任务标题栏拆解和一行归档入口；上版验收在进展卡片内，预览纪要在目标标题旁。未选版本保留同一布局，各区为空且不写材料；下拉明确选版，旅程轴只滚动定位。目标补充弹窗及常规保存栏已移除，计划样式限定本屏。整体结构已接线，实际视觉密度、键盘/缩放和原生双栏效果仍待真壳验证。
 
 直接编辑已接自动保存，复用原材料控制器与 CAS；连续写入串行处理，切版、拆解及归档请求先等待当前修改落盘。冲突和写入错误停止自动写入并保留输入，明确处理后才继续；归档状态核对限制写入。相关自动保存、冲突及请求接线的本轮检查结果见交付 PR，历史烟测不能替代新路径的重启与模型并发证据。
@@ -12,14 +16,14 @@
 
 本轮验证安排：用户授权各特性窗口先做少量基础 E2E，可合并场景覆盖多个验收点；完整验收点与用户旅程由用户后续协调助手 Agent。2026-09-25 用户调整为优先提交各线 PR，允许难协调的接线遗留。本轮统一收尾已把计划业务接入生产入口并退役旧三屏链条，基础 Electron E2E 仍未全部完成，不代表后两环已齐。
 
-当前会话边界按用户确认改为完整原生工作区复用，原型同步表达复用范围和紧凑数据问题提示。CycleChat、专用历史嵌入、sessionStorage 会话绑定及迁移弹窗已移除；新建计划/验收走现有自动化，数据问题新建会话并自动递交，归档只插入当前原生 composer 草稿。计划右板已按认可结构调整，最终视觉与交互仍需结合实际数据逐项验看。本次按用户要求先做代码与静态验证，未启动 Electron；此前烟测及类型检查不能作为新接线通过的证据，最新结果与资源限制见交付 PR。
+当前会话边界按用户确认改为完整原生工作区复用，原型同步表达复用范围和紧凑数据问题提示。CycleChat、专用历史嵌入、sessionStorage 会话绑定及迁移弹窗已移除；新建计划/验收走现有自动化，数据问题当时经独立新建会话自动递交（该通道后由 #279 的 oneShotPrompt 单次递交替代），归档只插入当前原生 composer 草稿。计划右板已按认可结构调整，最终视觉与交互仍需结合实际数据逐项验看。上述为此前 [PR #275](https://github.com/forcegravity1989/builder-workbench/pull/275) 的会话复用实施，验证范围与资源限制见该 PR；历史烟测及类型检查不能作为本轮新入口通过的证据。
 
 | 环 | 状态 | 证据或已知债 |
 |---|---|---|
-| intent | ● 已确认 | 设计 PR #264 已合入，用户授权按三特性边界实施 |
-| spec | ● 实施输入 | v8 高保真与规格已合入；新增或拿不准的行为仍逐项找用户确认 |
+| intent | ● 已确认 | 沿用三特性边界，用户确认本轮计划/验收共用协作入口与资产同步 |
+| spec | ● 实施输入 | 本轮高保真已获用户确认；新入口已按该高保真实施（组件/契约测试为上限，真壳未验），新增或拿不准的行为仍需确认 |
 | 实现设计 | ◐ 部分 | 设计主体已按当前接线落地，取舍差异回写 design；详细设计仍未逐项细审，未决项必须人工确认 |
-| TDD | ◐ 部分 | 以下为 PR #272 前历史证据，不含当前会话复用接线：单测/组件测试全绿：渲染端大套件 388 文件 3477 项，main/workbench + relay 38 文件 203 项，另有 store、launch/settings/hooks 等；三套 tsc 0 错；RPC catalog/投影/manifest 校验绿。覆盖材料事务、CAS 读写、显式迁移、草稿冲突和恢复、派生纪要、流程选版与会话绑定。真实 Git 工作树与文件在测试内创建；SSH/会话/provider 端口使用测试替身，不能视为真实远端与 Electron 旅程 |
+| TDD | ◐ 部分 | 以下为 PR #272 前历史证据，不含当前会话复用接线：单测/组件测试全绿：渲染端大套件 388 文件 3477 项，main/workbench + relay 38 文件 203 项，另有 store、launch/settings/hooks 等；三套 tsc 0 错；RPC catalog/投影/manifest 校验绿。覆盖材料事务、CAS 读写、显式迁移、草稿冲突和恢复、派生纪要、流程选版与会话绑定。真实 Git 工作树与文件在测试内创建；SSH/会话/provider 端口使用测试替身，不能视为真实远端与 Electron 旅程。本轮（#279）新增证据：协作卡片入口、one-shot 转发/门控/派发载荷与既有 8 项计划板测试全绿；tsc 因本机内存限制未能运行，缺口如实记入 PR |
 | 验收点 E2E | ◐ 部分 | 真壳 Playwright 烟测 `tests/e2e/workbench-cycle-smoke.spec.ts`（固定树创建→选版→保存→磁盘读回→重载恢复→验收树→总览）已编写，执行结果见 PR；P01–P10 完整验收点尚未逐项运行 |
 | 用户旅程 E2E | ○ 缺 | PJ01/PJ02 已定义；真实模型会话、provider 归档全链、自动化到点与重启独立读回未运行 |
 
@@ -33,7 +37,7 @@
 
 没有产品 TDD、真壳 E2E、独立验证 Review 或使用效果证据时，保持缺口；不预填齐全、通过或改善比例。
 
-本轮设计/文档及仓外计划经过独立 subagent 初审与复审，发现项已修正；[任务评审记录](https://github.com/forcegravity1989/builder-workbench/blob/f20f04ae57d510178c710c71216b9b734082c28e/verification/design-review.md)。这是静态制品评审，不替代实施后的独立代码/行为 Review，不替代尚未逐项确认的详细设计决定。
+原始 v8 设计曾经过独立 subagent 初审与复审；[历史设计评审记录](https://github.com/forcegravity1989/builder-workbench/blob/f20f04ae57d510178c710c71216b9b734082c28e/verification/design-review.md)。该固定提交记录不覆盖本轮资产；本轮验证见本次 PR，不替代实施后的独立代码/行为 Review 或真实旅程。
 
 ## 验收点与旅程矩阵
 
@@ -46,7 +50,7 @@
 | P03 指标与总览同定义/窗口/来源；刷新/失败/未知/旧值区分 | ◐ | use-plan-metrics + metrics runtime + PlanGoalMetrics 可选多指标与依据展开 | 既有采集/证据单测与 runtime 测试；新目标行及真实脚本全链待真壳/环境 |
 | P04 纪要三段模板派生、复制一致、不补造事实 | ✅ | derivePlanMinutes + PlanningMinutes 复制 | plan-summary 测试 |
 | P05 Issue 创建/复用真实回显；详情编辑返回保留上下文 | ◐ | task-port + 原生 returnToPreviousView 跳过哨兵（528dce0f8） | ui-page-navigation 测试；真实 provider 往返待人 |
-| P06 分树、全部原生会话复用、专用新建与数据处理入口 | ◐ | CycleWorkspaceProvider + 原生 Terminal/TabBar/RightSidebar | 焦点、宿主隔离及请求递交有替身测试；多标签/分屏/历史与空会话首次处理待真壳验证 |
+| P06 分树、全部原生会话复用、专用新建与数据处理入口 | ◐ | CycleWorkspaceProvider + CycleStartCard（首行协作卡片）+ 原生 Terminal/RightSidebar；数据问题随 runNow oneShotPrompt 单次递交 | CycleStartCard/one-shot 转发组件与契约测试通过；多标签/分屏/历史与真实手动运行仍待真壳验证 |
 | P07 自动化登记去重、保留设置、真实到点可追溯 | ◐ | 默认关闭态注册（ensure-cycle-automation：creationKey 去重、只创建不更新、人启用才到点）+「配置自动化」预填/编辑入口 | 真实到点与跨重启去重待人启用后验证 |
 | P08 并发保存冲突处理；重启/切项目/切版本读回一致 | ◐ | usePlanningAutosave + MaterialDraftController CAS + PlanningPersistenceNotice + view-memory | 本轮自动保存检查见 PR；既有控制器测试/烟测不能替代新路径的真实并发及重启读回 |
 | P09 归档只准备会话请求；PR 真实状态定灯色 | ◐ | archivePort.prepareRequest→composer；archive 状态自动读取+灯色语义；archive-label 呈现请求修改与检查失败 | archive-port/board-state/archive-label 测试；新原生焦点接线、真实 PR 状态与归档请求仍待真壳及 provider 旅程验证 |

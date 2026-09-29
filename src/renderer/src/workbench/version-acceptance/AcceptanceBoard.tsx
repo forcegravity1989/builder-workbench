@@ -1,27 +1,31 @@
+import { useEffect, useRef, useState } from 'react'
+import { ClipboardCheck, GitBranch } from 'lucide-react'
 import type { MetricsPort } from '../../../../shared/workbench/metrics'
 import type { VersionHistoryPort } from '../../../../shared/workbench/version-history'
 import type { VersionCycleContext } from '../version-cycle/cycle-context'
-import { VersionGoalCard } from '../version-cycle/VersionGoalCard'
-import { AcceptanceGoalResult } from './AcceptanceGoalResult'
-import { AcceptancePreparation } from './AcceptancePreparation'
-import { AcceptanceMetrics } from './AcceptanceMetrics'
+import type { CycleEntry } from '../version-cycle/cycle-workspace-context'
+import { cycleBranch } from '../version-cycle/native-cycle-workspace'
+import { CycleStartCard } from '../version-cycle/CycleStartCard'
+import { AcceptanceGoalCards } from './AcceptanceGoalCards'
+import { AcceptanceSources } from './AcceptanceSources'
+import { AcceptanceSummary } from './AcceptanceSummary'
+import { AcceptanceNotices } from './AcceptanceNotices'
 import { useAcceptanceMetricWindow } from './AcceptanceMetricWindow'
-import { AcceptanceContext } from './AcceptanceContext'
 import { AcceptanceTasks, taskSnapshotSummary } from './AcceptanceTasks'
 import { AcceptanceArchive } from './AcceptanceArchive'
 import { AcceptanceSourcePicker } from './AcceptanceSourcePicker'
 import { AcceptanceJourney } from './AcceptanceJourney'
-import { prepareAcceptanceRequest } from './acceptance-model'
+import { AcceptanceReportDialog } from './AcceptanceReportDialog'
 import type { AcceptanceCandidatePort } from './acceptance-candidate-port'
 import { useAcceptanceBoard } from './use-acceptance-board'
 import './acceptance.css'
-import { MaterialProblemNotice } from '../version-cycle/MaterialProblemNotice'
 
 export type AcceptanceBoardProps = {
   context: VersionCycleContext
   history: VersionHistoryPort
   metrics: MetricsPort
   candidate: AcceptanceCandidatePort
+  entry: CycleEntry
 }
 
 export function AcceptanceBoard(props: AcceptanceBoardProps) {
@@ -57,6 +61,7 @@ function ReadyAcceptanceBoard({
   history,
   metrics,
   candidate,
+  entry,
   recoveryKey
 }: AcceptanceBoardProps & { recoveryKey: string }) {
   const {
@@ -83,8 +88,7 @@ function ReadyAcceptanceBoard({
     archive,
     archiveMaterial,
     journey,
-    preparationReviewed,
-    reviewPreparation,
+    decisionSummary,
     onChecks,
     saveTaskSnapshot,
     scroll,
@@ -104,6 +108,82 @@ function ReadyAcceptanceBoard({
   } = useAcceptanceBoard({ context, history, recoveryKey })
   const hasMetrics = (plan?.document.goals.length ?? 0) > 0
   const metricWindow = useAcceptanceMetricWindow(metrics, metricScope, hasMetrics)
+  const [reportOpen, setReportOpen] = useState(false)
+  const [actionNotice, setActionNotice] = useState<string | null>(null)
+  const [taskGoalFilter, setTaskGoalFilter] = useState<{ goalId: string; title: string } | null>(
+    null
+  )
+  const startCard = useRef<HTMLElement>(null)
+  const results = useRef<HTMLElement>(null)
+  const tasks = useRef<HTMLDetailsElement>(null)
+  const branch = cycleBranch(entry)
+  // Render-time validity: a round or plan change under the same identity drops a
+  // filter whose goal no longer exists in the fixed plan — no stale empty list.
+  const activeGoalFilter =
+    taskGoalFilter && plan?.document.goals.some((goal) => goal.goalId === taskGoalFilter.goalId)
+      ? taskGoalFilter
+      : null
+  /** Locate the snapshot section expanded, optionally narrowed to one goal's references. */
+  const openTasks = (goal?: { goalId: string; title: string } | null) => {
+    setTaskGoalFilter(goal ?? null)
+    if (tasks.current) {
+      tasks.current.open = true
+    }
+    tasks.current?.scrollIntoView({ block: 'start', behavior: 'smooth' })
+  }
+  useEffect(() => {
+    if (!report) {
+      setReportOpen(false)
+    }
+  }, [report])
+  const prepareArchive = () => {
+    setActionNotice(null)
+    if (archived) {
+      setError('本轮验收已归档；如需补充材料，请从来源选择开始下一轮。')
+      return
+    }
+    if (!session) {
+      setError('请先选择或开启左侧会话，再准备归档请求。')
+      return
+    }
+    if (!document || !draft?.expectedRevision) {
+      setError('请先保存验收结果，再准备归档请求。')
+      return
+    }
+    if (draft.dirty) {
+      setError('有未保存的修改；请先保存结果，再准备归档请求。')
+      return
+    }
+    if (readOnly) {
+      setError('归档状态尚未核实或材料只读，请稍后重试。')
+      return
+    }
+    void context.archivePort
+      .prepareRequest(
+        {
+          ...scope,
+          worktreeId,
+          version: document.version,
+          cycleId: document.cycleId,
+          revision: draft.expectedRevision
+        },
+        session
+      )
+      .then(() => {
+        setError(null)
+        setActionNotice('归档请求已放入会话输入框，请核对后发送。')
+      })
+      .catch((reason) => setError(String(reason)))
+  }
+  const openReport = () => {
+    // Only open on a real derivation; a failure surfaces in the board's error
+    // area instead of trapping the user behind a modal "generating…" spinner.
+    void buildReport().then((markdown) => {
+      if (markdown !== null) {
+        setReportOpen(true)
+      }
+    })
+  }
   return (
     <main className="va-board" lang="zh">
       <header className="va-head">
@@ -118,7 +198,7 @@ function ReadyAcceptanceBoard({
             }
           }}
         >
-          <option value="">请选择版本</option>
+          <option value="">待选择版本</option>
           {[...new Set([...versions, ...(version ? [version] : [])])].map((item) => (
             <option key={item}>{item}</option>
           ))}
@@ -135,31 +215,20 @@ function ReadyAcceptanceBoard({
                 ? '已保存材料'
                 : '待选择'}
         </span>
-        {plan && (
-          <span>
-            {plan.document.goals.length} 项目标 ·{' '}
-            {plan.document.tasks.length
-              ? document?.taskSnapshot
-                ? taskSnapshotSummary(document.taskSnapshot, plan.document.tasks.length)
-                : 'Issue 待读取'
-              : '未关联 Issue'}
-          </span>
-        )}
-        <button
-          className="wb-btn wb-btn-ghost wb-btn-sm"
-          disabled={!document || !plan}
-          onClick={() => void buildReport()}
-        >
-          验收报告
-        </button>
+        <span className="vc-branch" title={branch}>
+          <GitBranch size={13} aria-hidden="true" />
+          <span>{branch}</span>
+        </span>
       </header>
-      <MaterialProblemNotice
-        versions={materialProblems}
-        workflow="acceptance"
-        startRequest={context.startRequest}
-      />
       <div className="va-content">
-        <AcceptanceJourney {...journey} />
+        <AcceptanceJourney
+          preparation={journey.preparation}
+          decisions={journey.decisions}
+          archive={journey.archive}
+          startRef={startCard}
+          resultsRef={results}
+          onArchive={prepareArchive}
+        />
         <div
           className="va-scroll"
           ref={scroll}
@@ -174,76 +243,29 @@ function ReadyAcceptanceBoard({
             }
           }}
         >
-          {(error || recoveryError || draft?.error) && (
-            <p role="alert" className="va-error">
-              {error ?? recoveryError ?? draft?.error}
+          <CycleStartCard
+            entry={entry}
+            problems={materialProblems}
+            version={context.version}
+            sectionRef={startCard}
+          />
+          {(actionNotice || entry.notice) && (
+            <p className="va-notice" role="status">
+              {actionNotice ?? entry.notice}
             </p>
           )}
-          {recoveryText && (
-            <details className="va-conflict">
-              <summary>保留的本机恢复原文</summary>
-              <button
-                className="wb-btn wb-btn-sm"
-                onClick={() =>
-                  void navigator.clipboard
-                    .writeText(recoveryText)
-                    .catch((reason) => setError(String(reason)))
-                }
-              >
-                复制恢复原文
-              </button>
-              <pre>{recoveryText}</pre>
-            </details>
-          )}
-          {historyProblems.length > 0 && (
-            <details className="va-source va-warning">
-              <summary>{historyProblems.length} 条历史材料待核，可用计划仍可选择</summary>
-              {historyProblems.map((item) => (
-                <p key={`${item.sourceCommit}:${item.workflow}:${item.version}`}>
-                  {item.version} · {item.workflow === 'plan' ? '计划' : '验收'} ·{' '}
-                  {item.sourceCommit.slice(0, 12)} · {item.committedAt}：{item.message}
-                </p>
-              ))}
-            </details>
-          )}
-          {draft?.remote && (
-            <details className="va-conflict">
-              <summary>远端材料已变化，本地输入已保留</summary>
-              <pre>{JSON.stringify(draft.remote.document, null, 2)}</pre>
-              <button
-                className="wb-btn wb-btn-sm"
-                onClick={() => {
-                  if (draft.remote) {
-                    navigator.clipboard
-                      .writeText(JSON.stringify(draft.document, null, 2))
-                      .then(() => {
-                        if (controller.value !== draft) {
-                          throw new Error(
-                            '复制期间草稿已变化，保留当前输入；请重新复制后采用远端。'
-                          )
-                        }
-                        controller.useRemote(draft.remote!)
-                      })
-                      .catch((reason) => setError(String(reason)))
-                  }
-                }}
-              >
-                复制本地草稿并采用远端
-              </button>
-            </details>
-          )}
-          {archived && draft?.dirty && (
-            <p role="alert" className="va-error">
-              本轮验收已归档，未保存的本地修改不能写入。
-              <button
-                className="wb-btn wb-btn-sm"
-                disabled={busy}
-                onClick={() => void discardLocal()}
-              >
-                放弃本地修改，重读已归档材料
-              </button>
-            </p>
-          )}
+          <AcceptanceNotices
+            error={error}
+            recoveryError={recoveryError}
+            recoveryText={recoveryText}
+            historyProblems={historyProblems}
+            draft={draft}
+            controller={controller}
+            archived={archived}
+            busy={busy}
+            setError={setError}
+            onDiscardLocal={() => void discardLocal()}
+          />
           {(!document || archived) && version && (
             <AcceptanceSourcePicker
               hasDocument={Boolean(document)}
@@ -255,83 +277,64 @@ function ReadyAcceptanceBoard({
               onBegin={() => void begin()}
             />
           )}
-          {!document && (
-            <button
-              className="wb-btn wb-btn-primary"
-              onClick={() => void prepare(prepareAcceptanceRequest())}
-            >
-              在会话中准备交付
-            </button>
-          )}
-          {document && (
+          {document ? (
             <>
-              <AcceptancePreparation
-                reviewed={preparationReviewed}
-                onReview={reviewPreparation}
-                readOnly={readOnly}
-                document={document}
-                port={candidate}
-                onPrepare={() => void prepare(prepareAcceptanceRequest(document))}
-                onCandidateCheck={(check, artifacts) => onChecks(document, check, artifacts)}
-              />
-              <AcceptanceContext
+              {plan && (
+                <AcceptanceSummary
+                  goals={decisionSummary.goals}
+                  pending={decisionSummary.pending}
+                  notMet={decisionSummary.notMet}
+                  issueSummary={
+                    plan.document.tasks.length > 0
+                      ? taskSnapshotSummary(document.taskSnapshot ?? [], plan.document.tasks.length)
+                      : null
+                  }
+                  onIssues={() => openTasks()}
+                />
+              )}
+              <AcceptanceSources
                 document={document}
                 hasMetrics={hasMetrics}
                 metricWindow={metricWindow}
                 disabled={readOnly}
                 onPrepare={(text) => void prepare(text)}
+                candidatePort={candidate}
+                onChecks={onChecks}
               />
               {plan && (
                 <>
-                  <section id="acceptance-results" aria-label="Showcase 与验收">
-                    {plan.document.goals.map((goal, index) => (
-                      <VersionGoalCard
-                        key={goal.goalId}
-                        goal={goal}
-                        index={index}
-                        readOnly
-                        metrics={
-                          <AcceptanceMetrics
-                            goal={goal}
-                            materialKey={JSON.stringify([
-                              document.version,
-                              document.cycleId,
-                              document.planRef,
-                              document.candidateRef
-                            ])}
-                            readings={
-                              document.results.find((item) => item.goalId === goal.goalId)
-                                ?.readings ?? []
-                            }
-                            port={metrics}
-                            scope={metricScope}
-                            window={metricWindow.window}
-                            disabled={readOnly}
-                            onReadings={(ref, readings) =>
-                              editReadings(document, goal.goalId, ref, readings)
-                            }
-                          />
-                        }
-                        result={
-                          <AcceptanceGoalResult
-                            decisionSource="验收界面人工确认"
-                            document={document}
-                            plan={plan.document}
-                            goal={goal}
-                            disabled={readOnly}
-                            onChange={(value) => editGoal(value, goal.goalId)}
-                            onFollowUp={(text) => void prepare(text)}
-                          />
-                        }
-                      />
-                    ))}
-                  </section>
+                  <div className="va-section-heading">
+                    <h2>本版目标验收</h2>
+                    <button className="wb-btn wb-btn-secondary wb-btn-sm" onClick={openReport}>
+                      <ClipboardCheck size={14} aria-hidden="true" />
+                      预览纪要
+                    </button>
+                  </div>
+                  <AcceptanceGoalCards
+                    plan={plan.document}
+                    document={document}
+                    metrics={metrics}
+                    metricScope={metricScope}
+                    metricWindow={metricWindow.window}
+                    readOnly={readOnly}
+                    sectionRef={results}
+                    onOpenIssues={(goalId, title) => openTasks({ goalId, title })}
+                    onReadings={(goalId, ref, readings) =>
+                      editReadings(document, goalId, ref, readings)
+                    }
+                    onGoalChange={(value, goalId) => editGoal(value, goalId)}
+                    onFollowUp={(text) => void prepare(text)}
+                  />
                   <AcceptanceTasks
+                    ref={tasks}
                     plan={plan.document}
                     port={context.taskPort}
                     snapshot={document.taskSnapshot}
                     disabled={readOnly}
                     getScrollTop={() => scroll.current?.scrollTop ?? 0}
+                    goalFilter={activeGoalFilter?.goalId ?? null}
+                    goalFilterLabel={activeGoalFilter?.title ?? null}
+                    onClearGoalFilter={() => setTaskGoalFilter(null)}
                     origin={{
                       ...scope,
                       page: 'acceptance',
@@ -346,22 +349,28 @@ function ReadyAcceptanceBoard({
                   />
                 </>
               )}
-              {report && (
-                <details open className="va-report">
-                  <summary>验收报告</summary>
-                  <button
-                    className="wb-btn wb-btn-sm"
-                    onClick={() =>
-                      void navigator.clipboard
-                        .writeText(report)
-                        .catch((reason) => setError(String(reason)))
-                    }
-                  >
-                    复制纪要
-                  </button>
-                  <pre>{report}</pre>
-                </details>
-              )}
+            </>
+          ) : (
+            <>
+              <div className="va-section-heading">
+                <h2>本版目标验收</h2>
+                <button className="wb-btn wb-btn-secondary wb-btn-sm" disabled>
+                  <ClipboardCheck size={14} aria-hidden="true" />
+                  预览纪要
+                </button>
+              </div>
+              <section
+                id="acceptance-results"
+                ref={results}
+                aria-label="展示验收"
+                className="va-results-empty"
+              >
+                <p>
+                  {version
+                    ? '选择已合入的计划修订开始本次验收，或从上方“新建验收”与 Agent 一起确认版本与候选。'
+                    : '尚未选择版本。从上方“新建验收”与 Agent 一起确认要核对的版本。'}
+                </p>
+              </section>
             </>
           )}
         </div>
@@ -377,25 +386,20 @@ function ReadyAcceptanceBoard({
         onRefreshStatus={() => void archiveStatus()}
         onReload={() => void controller.refresh().catch((reason) => setError(String(reason)))}
         onSave={() => void controller.save()}
-        onPrepare={() => {
-          if (!session) {
-            setError('请先选择或开启左侧会话，再准备归档请求。')
-          } else if (document && draft?.expectedRevision) {
-            void context.archivePort
-              .prepareRequest(
-                {
-                  ...scope,
-                  worktreeId,
-                  version: document.version,
-                  cycleId: document.cycleId,
-                  revision: draft.expectedRevision
-                },
-                session
-              )
-              .catch((reason) => setError(String(reason)))
-          }
-        }}
       />
+      {reportOpen && (
+        <AcceptanceReportDialog
+          report={report}
+          onClose={() => setReportOpen(false)}
+          onCopy={async () => {
+            if (report) {
+              await navigator.clipboard
+                .writeText(report)
+                .catch((reason) => setError(String(reason)))
+            }
+          }}
+        />
+      )}
     </main>
   )
 }

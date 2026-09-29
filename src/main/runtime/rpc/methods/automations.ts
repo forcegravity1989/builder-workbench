@@ -5,6 +5,7 @@ import {
   AutomationCreate,
   AutomationId,
   AutomationList,
+  AutomationRunNow,
   AutomationRuns,
   AutomationUpdate
 } from './automation-schemas'
@@ -72,11 +73,12 @@ export const AUTOMATION_METHODS = [
   }),
   defineMethod({
     name: 'automation.runNow',
-    params: AutomationId,
+    params: AutomationRunNow,
     handler: async (params, context) => ({
       run: await context.runtime.runAutomationNow(
         params.id,
-        mutationOwner(params.id, params.expectedOwner, context)
+        mutationOwner(params.id, params.expectedOwner, context),
+        params.oneShotPrompt
       )
     })
   }),
