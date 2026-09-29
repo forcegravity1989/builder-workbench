@@ -6,13 +6,14 @@ import { MetricProblemsPanel } from '../metric-problems-panel'
 import type { CycleTaskRead } from '../version-cycle/ports'
 import type { MaterialDraft } from '../version-cycle/material-draft'
 import type { VersionCycleContext } from '../version-cycle/cycle-context'
-import { cycleScopeKey } from '../version-cycle/native-cycle-workspace'
+import type { CycleEntry } from '../version-cycle/cycle-workspace-context'
+import { CycleStartCard } from '../version-cycle/CycleStartCard'
+import { cycleBranch, cycleScopeKey } from '../version-cycle/native-cycle-workspace'
 import { usePlanningMaterial, planningDraftKey } from './use-planning-material'
 import { derivePlanMinutes } from './plan-summary'
 import { usePlanMetrics } from './use-plan-metrics'
 import { usePlanVersionSelection } from './use-plan-version-selection'
 import { PlanningGoals } from './PlanningGoals'
-import { MaterialProblemNotice } from '../version-cycle/MaterialProblemNotice'
 import { PlanningTasks } from './PlanningTasks'
 import { PlanningMinutes } from './PlanningMinutes'
 import { PlanningPersistenceNotice } from './PlanningPersistenceNotice'
@@ -23,13 +24,17 @@ import { usePlanningArchive } from './use-planning-archive'
 import { archiveStatusLabel } from './archive-label'
 import './version-planning.css'
 
-type PlanningBoardProps = { context: VersionCycleContext; prepareMetrics(): Promise<void> }
+type PlanningBoardProps = {
+  context: VersionCycleContext
+  prepareMetrics(): Promise<void>
+  entry: CycleEntry
+}
 export function PlanningBoard(props: PlanningBoardProps) {
   const { scope, worktreeId } = props.context
   const identity = JSON.stringify([scope && cycleScopeKey(scope), worktreeId])
   return <PlanningBoardContent key={identity} {...props} />
 }
-function PlanningBoardContent({ context, prepareMetrics }: PlanningBoardProps) {
+function PlanningBoardContent({ context, prepareMetrics, entry }: PlanningBoardProps) {
   const { scope, session, worktreeId, materialPort, taskPort, archivePort } = context
   const scopeKey = scope ? cycleScopeKey(scope) : ''
   const saveGate = useRef<{
@@ -210,18 +215,14 @@ function PlanningBoardContent({ context, prepareMetrics }: PlanningBoardProps) {
         versions={material.versions}
         disabled={!materialPort || selecting}
         state={state}
+        branch={cycleBranch(entry)}
         onSelect={(version) => void selection.select(version)}
       />
-      {(material.error || notice || selection.error || context.error) && (
+      {(material.error || notice || selection.error || context.error || entry.notice) && (
         <p className="vp-notice" role="status">
-          {material.error || selection.error || context.error || notice}
+          {material.error || selection.error || context.error || notice || entry.notice}
         </p>
       )}
-      <MaterialProblemNotice
-        versions={material.versions}
-        workflow="plan"
-        startRequest={context.startRequest}
-      />
       <PlanningPersistenceNotice material={material} archived={archive.archived} onAct={act} />
       {metrics.catalog && metrics.catalog.problems.length > 0 && (
         <MetricProblemsPanel
@@ -242,6 +243,11 @@ function PlanningBoardContent({ context, prepareMetrics }: PlanningBoardProps) {
           archiveRef={archiveSection}
         />
         <div className="vp-content" ref={content} onScroll={viewMemory.onScroll}>
+          <CycleStartCard
+            entry={entry}
+            problems={material.versions.filter((item) => item.state !== 'ready')}
+            version={context.version}
+          />
           <section className="vp-preparation" ref={preparation}>
             <div className="vp-brief-head">
               <label htmlFor="planning-progress">版本进展</label>

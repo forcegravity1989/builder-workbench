@@ -6,10 +6,12 @@ import type { PlanningMaterial } from '../../../../shared/workbench/version-mate
 import type { ArchiveStatus } from '../../../../shared/workbench/version-archive'
 import type { MetricCatalog } from '../../../../shared/workbench/metrics'
 import type { VersionCycleContext } from '../version-cycle/cycle-context'
+import type { CycleEntry } from '../version-cycle/cycle-workspace-context'
 import { planningDraftKey } from './use-planning-material'
 
 vi.mock('../version-cycle/native-cycle-workspace', () => ({
-  cycleScopeKey: () => 'test-project'
+  cycleScopeKey: () => 'test-project',
+  cycleBranch: () => 'bw/week-plan'
 }))
 const metricsFixture = vi.hoisted(() => ({ catalog: null as MetricCatalog | null }))
 vi.mock('./use-plan-metrics', () => ({
@@ -88,9 +90,16 @@ afterEach(() => {
 })
 const selector = () => container.querySelector<HTMLSelectElement>('[aria-label="计划版本"]')!
 const progress = () => container.querySelector<HTMLTextAreaElement>('.vp-preparation textarea')
+const entry: CycleEntry = {
+  workflow: 'plan',
+  busy: false,
+  notice: null,
+  start: vi.fn(async () => {}),
+  configure: vi.fn(async () => {})
+}
 async function mount(value: VersionCycleContext) {
   await act(async () => {
-    root.render(<PlanningBoard context={value} prepareMetrics={unexpected} />)
+    root.render(<PlanningBoard context={value} prepareMetrics={unexpected} entry={entry} />)
   })
 }
 async function select(version: string) {

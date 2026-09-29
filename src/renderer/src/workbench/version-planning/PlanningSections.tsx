@@ -1,4 +1,11 @@
-import { BrainCircuit, ClipboardList, GitPullRequest, Presentation, Target } from 'lucide-react'
+import {
+  BrainCircuit,
+  ClipboardList,
+  GitBranch,
+  GitPullRequest,
+  Presentation,
+  Target
+} from 'lucide-react'
 import type { RefObject } from 'react'
 import type { VersionMaterialCandidate } from '../../../../shared/workbench/version-material-request'
 import {
@@ -10,12 +17,14 @@ export function PlanningHeader({
   versions,
   disabled,
   state,
+  branch,
   onSelect
 }: {
   currentVersion: string
   versions: VersionMaterialCandidate[]
   disabled: boolean
   state: string
+  branch: string
   onSelect(version: string): void
 }) {
   return (
@@ -44,6 +53,10 @@ export function PlanningHeader({
       </select>
       <span className="vp-muted" role="status">
         {state}
+      </span>
+      <span className="vc-branch" title={branch}>
+        <GitBranch size={13} aria-hidden="true" />
+        <span>{branch}</span>
       </span>
     </header>
   )

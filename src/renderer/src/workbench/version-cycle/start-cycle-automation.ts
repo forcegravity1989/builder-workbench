@@ -8,13 +8,18 @@ import { openAutomationRunTerminal } from '@/components/automations/automation-r
 import { ownerKey } from '../../../../shared/automation-owner-key'
 import type { CycleScope } from './ports'
 import { cycleAutomationOwner } from './ensure-cycle-automation'
-import { assertCurrentCycleWorkspace } from './start-material-request'
+import { assertCurrentCycleWorkspace } from './current-cycle-workspace'
 
-/** Manual workflow launches use the saved native automation and reveal only that run. */
+/**
+ * Manual workflow launches use the saved native automation and reveal only that run.
+ * `oneShotPrompt` is this run's additional context (e.g. material problems): the host
+ * appends it to the saved prompt in one delivery and never writes it back to the record.
+ */
 export async function startCycleAutomation(
   scope: CycleScope,
   worktreeId: string,
-  automationId: string
+  automationId: string,
+  oneShotPrompt?: string
 ) {
   const requestedOwner = cycleAutomationOwner(scope)
   const listed = await listAutomationsForOwner(requestedOwner)
@@ -35,7 +40,7 @@ export async function startCycleAutomation(
     }
   }
   assertCurrent()
-  let run = await runAutomationNowForOwner(owner, automation.id)
+  let run = await runAutomationNowForOwner(owner, automation.id, oneShotPrompt)
   const runId = run.id
   const deadline = Date.now() + 30_000
   while (true) {
