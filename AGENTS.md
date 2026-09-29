@@ -81,7 +81,7 @@ pnpm run typecheck
 pnpm exec vitest run --config config/vitest.config.ts src/renderer/src/workbench/version-cycle/cycle-prompt.test.ts
 ```
 
-PR 检查以 [`.github/workflows/pr.yml`](.github/workflows/pr.yml) 为准。行为正确性仍靠真壳（计划/验收两屏、会话注入、远端/Git/文件读回）及 code review；已有单测随改维护，不把新增回归大坝当交付物；新增单测按 [02 环 4](docs/01-principles/02-working-backwards.md) 负面清单——只覆盖核心推导与四铁律守护，UI/文案/装配默认不新增；验收点与旅程 E2E 特性初期控量，稳定后专项回补。
+PR 检查以 [`.github/workflows/pr.yml`](.github/workflows/pr.yml) 为准。行为正确性仍靠真壳（计划/验收两屏、会话注入、远端/Git/文件读回）及 code review；已有单测随改维护，不把新增回归大坝当交付物；新增单测按 [02 环 4](docs/01-principles/02-working-backwards.md) 测试用例规范只立两类看护——核心算法函数、与 E2E 强相关的数据协议（单特性新增默认 ≤15 例），UI/文案/装配不新增；验收点与旅程 E2E 特性初期控量，稳定后专项回补。
 
 ## 修改与交付
 
