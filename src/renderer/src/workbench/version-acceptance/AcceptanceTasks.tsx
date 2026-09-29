@@ -129,7 +129,7 @@ export function AcceptanceTasks({
       {!plan.tasks.length && (
         <p className="va-muted">固定计划未引用 Issue；不由此推断目标已达成。</p>
       )}
-      {goalFilter && (
+      {goalFilter && tasks && (
         <p className="va-task-filter">
           仅显示{goalFilterLabel ? `「${goalFilterLabel}」` : '该目标'}关联的
           Issue；状态汇总仍为全部引用

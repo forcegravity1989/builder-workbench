@@ -117,6 +117,12 @@ function ReadyAcceptanceBoard({
   const results = useRef<HTMLElement>(null)
   const tasks = useRef<HTMLDetailsElement>(null)
   const branch = cycleBranch(entry)
+  // Render-time validity: a round or plan change under the same identity drops a
+  // filter whose goal no longer exists in the fixed plan — no stale empty list.
+  const activeGoalFilter =
+    taskGoalFilter && plan?.document.goals.some((goal) => goal.goalId === taskGoalFilter.goalId)
+      ? taskGoalFilter
+      : null
   /** Locate the snapshot section expanded, optionally narrowed to one goal's references. */
   const openTasks = (goal?: { goalId: string; title: string } | null) => {
     setTaskGoalFilter(goal ?? null)
@@ -326,8 +332,8 @@ function ReadyAcceptanceBoard({
                     snapshot={document.taskSnapshot}
                     disabled={readOnly}
                     getScrollTop={() => scroll.current?.scrollTop ?? 0}
-                    goalFilter={taskGoalFilter?.goalId ?? null}
-                    goalFilterLabel={taskGoalFilter?.title ?? null}
+                    goalFilter={activeGoalFilter?.goalId ?? null}
+                    goalFilterLabel={activeGoalFilter?.title ?? null}
                     onClearGoalFilter={() => setTaskGoalFilter(null)}
                     origin={{
                       ...scope,
