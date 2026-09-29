@@ -223,6 +223,9 @@ async function openDetail(
       author: detail.author,
       assignees: detail.assignees,
       reviewers: detail.reviewers,
+      labels: detail.labels,
+      sourceBranch: detail.sourceBranch,
+      targetBranch: detail.targetBranch,
       // Why: viewTask carries no updated timestamp; leave empty rather than pass readAt off as one.
       updatedAt: '',
       repoId: repo.id,

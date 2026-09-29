@@ -1728,6 +1728,8 @@
         "6ffa6be99f": "刷新 GitHub 工作",
         "b15ceb409d": "搜索 GitHub 议题...",
         "eee4df4c66": "搜索 GitHub PR...",
+        "codehubSearchIssues": "搜索 codehub 议题",
+        "codehubSearchMrs": "搜索 codehub PR",
         "e592d99051": "所有 Jira 站点",
         "d09b7631b7": "切换 Jira 站点失败。",
         "8029e2bd4d": "选择一个 Linear 团队以在 Linear 中打开",

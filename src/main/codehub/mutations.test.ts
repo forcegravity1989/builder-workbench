@@ -135,8 +135,29 @@ describe('codehub mutations', () => {
       url: 'https://example/4',
       author: 'ada',
       assignees: ['bob'],
-      reviewers: []
+      reviewers: [],
+      labels: [],
+      sourceBranch: null,
+      targetBranch: null
     })
+  })
+
+  it('reads a nested issue body and merge request branches', async () => {
+    runCodeHubCliMock.mockResolvedValue(
+      JSON.stringify({
+        merge_request: {
+          content: 'Actual body',
+          labels: [{ name: 'bug' }],
+          source_branch: 'feat/task-style',
+          target_branch: 'main'
+        }
+      })
+    )
+    const detail = await viewCodeHubTask({ remote, kind: 'mr', iid: 3 })
+    expect(detail.description).toBe('Actual body')
+    expect(detail.labels).toEqual(['bug'])
+    expect(detail.sourceBranch).toBe('feat/task-style')
+    expect(detail.targetBranch).toBe('main')
   })
 
   it('lists merge request pipelines', async () => {

@@ -99,6 +99,10 @@ it('loads the detail and removes a deleted comment from the displayed conversati
   } as unknown as TaskPageComposerActionsModel
   render(<TaskPageCodeHubDetail model={model} />)
   await screen.findByText('Review comment')
+  expect(screen.getByText('Body')).toBeTruthy()
+  expect(screen.queryByText('No description')).toBeNull()
+  expect(screen.queryByPlaceholderText('Assignee username')).toBeNull()
+  expect(screen.queryByRole('button', { name: 'Close as completed' })).toBeNull()
   fireEvent.click(screen.getByRole('button', { name: 'Delete comment' }))
   await waitFor(() => expect(screen.queryByText('Review comment')).toBeNull())
   expect(api.deleteComment).toHaveBeenCalledWith({
@@ -108,4 +112,40 @@ it('loads the detail and removes a deleted comment from the displayed conversati
     iid: 12,
     commentId: 'c1'
   })
+})
+
+it('shows a merge request branch and copy control without the old action form', async () => {
+  const model = {
+    codehubDetailItem: {
+      type: 'mr',
+      iid: 8,
+      title: 'Merge me',
+      state: 'opened',
+      repoId: 'r1',
+      repoPath: '/repo',
+      assignees: [],
+      reviewers: [],
+      labels: [],
+      sourceBranch: 'feat/task-style',
+      targetBranch: 'main',
+      url: 'https://codehub.example.com/team/project/merge_requests/8',
+      updatedAt: ''
+    },
+    setCodehubDetailItem: vi.fn(),
+    handleUseCodeHubItem: vi.fn(),
+    setCodehubRefreshNonce: vi.fn()
+  } as unknown as TaskPageComposerActionsModel
+  render(<TaskPageCodeHubDetail model={model} />)
+  expect(await screen.findByText('feat/task-style → main')).toBeTruthy()
+  expect(screen.getByRole('button', { name: 'Copy GitHub link' })).toBeTruthy()
+  expect(screen.getByRole('button', { name: 'Merge' })).toBeTruthy()
+  expect(screen.getByRole('button', { name: 'Close pull request' })).toBeTruthy()
+  expect(screen.getByText('Assignees')).toBeTruthy()
+  expect(screen.getByText('Reviewers')).toBeTruthy()
+  expect(screen.getByRole('tab', { name: 'Checks' })).toBeTruthy()
+  expect(screen.queryByPlaceholderText('Reviewers, comma-separated')).toBeNull()
+  expect(screen.queryByRole('button', { name: 'Set reviewers' })).toBeNull()
+  expect(screen.queryByRole('button', { name: 'Auto-merge' })).toBeNull()
+  fireEvent.click(screen.getByRole('tab', { name: 'Checks' }))
+  expect(screen.queryByText('Pipelines')).toBeNull()
 })

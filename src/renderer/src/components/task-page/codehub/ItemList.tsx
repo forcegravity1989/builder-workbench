@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import type { TaskPageComposerActionsModel } from '../../use-task-page-composer-actions'
 import { cn } from '@/lib/utils'
 import { translate } from '@/i18n/i18n'
@@ -9,6 +10,15 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger
 } from '@/components/ui/dropdown-menu'
+import { codehubApi } from '@/lib/codehub-api'
+import { toast } from 'sonner'
+import { CodeHubIssueStatusMenu } from './IssueStatusMenu'
+import { TaskPageGitHubWorkItemStateBadge } from '@/components/task-page-github-work-item-status-badge'
+import {
+  getTaskPageGitHubPRIconTone,
+  type GitHubWorkItemStatusItem
+} from '@/components/task-page-github-work-item-status'
+import type { CodeHubTaskItem } from '../../../../../shared/codehub-tasks'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import {
   ArrowRight,
@@ -29,6 +39,56 @@ import {
   GITHUB_TASK_STICKY_TITLE_HEADER_CLASS
 } from '../../task-page-source-context'
 
+function githubStateOf(item: CodeHubTaskItem): GitHubWorkItemStatusItem {
+  return {
+    type: item.type === 'mr' ? 'pr' : 'issue',
+    state: item.state === 'opened' ? 'open' : item.state
+  }
+}
+
+function CodeHubIssueListStatus({
+  item,
+  onChanged
+}: {
+  item: CodeHubTaskItem
+  onChanged: () => void
+}): React.JSX.Element {
+  const [busy, setBusy] = useState(false)
+  return (
+    <CodeHubIssueStatusMenu
+      closed={item.state !== 'opened'}
+      busy={busy}
+      onSetState={(state, stateReason, duplicateOf) => {
+        if (!item.repoPath || busy) {
+          return
+        }
+        setBusy(true)
+        void codehubApi
+          .setIssueState({
+            repoPath: item.repoPath,
+            repoId: item.repoId,
+            iid: item.iid,
+            state,
+            stateReason,
+            duplicateOf: stateReason === 'duplicate' ? (duplicateOf ?? null) : null
+          })
+          .then(() => {
+            toast.success(
+              state === 'open'
+                ? translate('auto.components.TaskPage.codehubIssueReopened', 'Issue reopened')
+                : translate('auto.components.TaskPage.codehubIssueClosed', 'Issue closed')
+            )
+            onChanged()
+          })
+          .catch((reason: unknown) => {
+            toast.error(reason instanceof Error ? reason.message : String(reason))
+          })
+          .finally(() => setBusy(false))
+      }}
+    />
+  )
+}
+
 export function TaskPageCodeHubItemList({
   model
 }: {
@@ -42,11 +102,10 @@ export function TaskPageCodeHubItemList({
     codehubQuery,
     codehubAuthor,
     codehubAssignee,
-    codehubHasMore,
-    loadMoreCodehub,
     selectedRepos,
     setCodehubDetailItem,
-    handleUseCodeHubItem
+    handleUseCodeHubItem,
+    setCodehubRefreshNonce
   } = model
   const mrView = codehubView === 'mrs'
   const gridClass = mrView ? GITHUB_PR_TASK_GRID_CLASS : GITHUB_TASK_GRID_CLASS
@@ -54,7 +113,13 @@ export function TaskPageCodeHubItemList({
   const authorFilter = codehubView === 'issues' ? codehubAuthor.trim().toLowerCase() : ''
   const assigneeFilter = codehubView === 'issues' ? codehubAssignee.trim().toLowerCase() : ''
   const visibleItems = codehubItems.filter((item) => {
-    if (query && !`${item.iid} ${item.title} ${item.author ?? ''}`.toLowerCase().includes(query)) {
+    if (
+      !mrView &&
+      query &&
+      !`${item.iid} ${item.title} ${item.author ?? ''} ${(item.labels ?? []).join(' ')}`
+        .toLowerCase()
+        .includes(query)
+    ) {
       return false
     }
     if (authorFilter && (item.author ?? '').toLowerCase() !== authorFilter) {
@@ -65,14 +130,6 @@ export function TaskPageCodeHubItemList({
     }
     return true
   })
-  const stateLabel = (state: string): string =>
-    state === 'opened'
-      ? translate('auto.components.TaskPage.606a85c774', 'Open')
-      : state === 'merged'
-        ? translate('auto.components.TaskPage.37a82eaaf8', 'Merged')
-        : state === 'closed'
-          ? translate('auto.components.TaskPage.d09bf34db7', 'Closed')
-          : state
   return (
     <div className="flex min-h-0 min-w-0 max-h-full flex-col overflow-hidden rounded-md rounded-t-none border border-t-0 border-border/50 bg-background shadow-sm">
       <div className="min-h-0 flex-initial overflow-auto scrollbar-sleek scrollbar-sleek-lg">
@@ -126,17 +183,12 @@ export function TaskPageCodeHubItemList({
         {!codehubLoading && visibleItems.length === 0 && !codehubError ? (
           <div className="px-4 py-12 text-center">
             <p className="text-base font-medium text-foreground">
-              {codehubHasMore
+              {mrView
                 ? translate(
-                    'auto.components.TaskPage.codehubNoLoadedMatches',
-                    'No matches in loaded tasks'
+                    'auto.components.TaskPage.codehubEmptyMrs',
+                    'No CodeHub merge requests'
                   )
-                : mrView
-                  ? translate(
-                      'auto.components.TaskPage.codehubEmptyMrs',
-                      'No CodeHub merge requests'
-                    )
-                  : translate('auto.components.TaskPage.codehubEmptyIssues', 'No CodeHub issues')}
+                : translate('auto.components.TaskPage.codehubEmptyIssues', 'No CodeHub issues')}
             </p>
           </div>
         ) : null}
@@ -161,21 +213,41 @@ export function TaskPageCodeHubItemList({
               )}
             >
               <div className={GITHUB_TASK_STICKY_ID_CELL_CLASS}>
-                <span className="inline-flex items-center gap-1 rounded-full border border-border/60 bg-background px-1.5 py-0.5 text-muted-foreground">
+                <span className="inline-flex items-center gap-1 rounded-md border border-border/40 px-1.5 py-0.5 text-muted-foreground">
                   {item.type === 'mr' ? (
-                    <GitPullRequest className="size-3" aria-hidden />
+                    <GitPullRequest
+                      className={cn('size-3', getTaskPageGitHubPRIconTone(githubStateOf(item)))}
+                      aria-hidden
+                    />
                   ) : (
                     <CircleDot className="size-3" aria-hidden />
                   )}
-                  <span className="font-mono text-[11px]">#{item.iid}</span>
+                  <span className="font-mono text-[11px] font-normal">#{item.iid}</span>
                 </span>
               </div>
               <div className={GITHUB_TASK_STICKY_TITLE_CELL_CLASS}>
                 <h3 className="truncate text-[13px] font-medium text-foreground">{item.title}</h3>
-                <div className="mt-0.5 truncate text-[12px] text-muted-foreground">
-                  {item.author ??
-                    translate('auto.components.TaskPage.6430594b18', 'unknown author')}
-                  {repo ? ` · ${repo.displayName}` : ''}
+                <div className="mt-0.5 flex min-w-0 flex-wrap items-center gap-x-2 gap-y-0.5 text-[12px] text-muted-foreground">
+                  <span className="truncate">
+                    {item.author ??
+                      translate('auto.components.TaskPage.6430594b18', 'unknown author')}
+                    {repo ? ` · ${repo.displayName}` : ''}
+                  </span>
+                  {item.type === 'issue'
+                    ? (item.labels ?? []).slice(0, 3).map((label) => (
+                        <span
+                          key={label}
+                          className="rounded-full border border-border/40 bg-muted/30 px-1.5 py-0 text-[10px] text-muted-foreground"
+                        >
+                          {label}
+                        </span>
+                      ))
+                    : null}
+                  {item.type === 'mr' && item.sourceBranch && item.targetBranch ? (
+                    <span className="truncate font-mono text-[11px]">
+                      {item.sourceBranch} → {item.targetBranch}
+                    </span>
+                  ) : null}
                 </div>
               </div>
               {mrView ? (
@@ -184,8 +256,8 @@ export function TaskPageCodeHubItemList({
                     {item.reviewers.join(', ') || '—'}
                   </span>
                   <span className="flex items-center text-[12px] text-muted-foreground">—</span>
-                  <span className="flex items-center text-[12px] text-muted-foreground">
-                    {stateLabel(item.state)}
+                  <span className="flex items-center">
+                    <TaskPageGitHubWorkItemStateBadge item={githubStateOf(item)} />
                   </span>
                 </>
               ) : (
@@ -193,8 +265,11 @@ export function TaskPageCodeHubItemList({
                   <span className="flex min-w-0 items-center truncate text-[12px] text-muted-foreground">
                     {item.assignees.join(', ') || '—'}
                   </span>
-                  <span className="flex items-center text-[12px] text-muted-foreground">
-                    {stateLabel(item.state)}
+                  <span className="flex items-center">
+                    <CodeHubIssueListStatus
+                      item={item}
+                      onChanged={() => setCodehubRefreshNonce((nonce) => nonce + 1)}
+                    />
                   </span>
                 </>
               )}
@@ -267,17 +342,19 @@ export function TaskPageCodeHubItemList({
                     </Button>
                     <DropdownMenu modal={false}>
                       <DropdownMenuTrigger asChild>
-                        <button
+                        <Button
                           type="button"
+                          variant="outline"
+                          size="icon-xs"
                           onClick={(event) => event.stopPropagation()}
-                          className="rounded-lg p-1.5 text-muted-foreground transition hover:bg-muted/60 hover:text-foreground"
+                          className="bg-background/80"
                           aria-label={translate(
                             'auto.components.TaskPage.66ae7330f6',
                             'More actions'
                           )}
                         >
-                          <EllipsisVertical className="size-4" />
-                        </button>
+                          <EllipsisVertical className="size-3" />
+                        </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end" onClick={(event) => event.stopPropagation()}>
                         <DropdownMenuItem onSelect={() => window.api.shell.openUrl(item.url)}>
@@ -293,19 +370,6 @@ export function TaskPageCodeHubItemList({
           )
         })}
       </div>
-      {codehubHasMore ? (
-        <div className="flex items-center justify-between gap-3 border-t border-border px-3 py-2 text-xs text-muted-foreground">
-          <span>
-            {translate(
-              'auto.components.TaskPage.codehubLoadedScope',
-              'Search and filters apply to loaded tasks'
-            )}
-          </span>
-          <Button variant="outline" size="sm" disabled={codehubLoading} onClick={loadMoreCodehub}>
-            {translate('auto.components.TaskPage.codehubLoadMore', 'Load more')}
-          </Button>
-        </div>
-      ) : null}
     </div>
   )
 }

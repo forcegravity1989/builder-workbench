@@ -69,6 +69,9 @@ describe('listCodeHubTasks', () => {
         author: 'ada',
         assignees: [],
         reviewers: [],
+        labels: [],
+        sourceBranch: null,
+        targetBranch: null,
         updatedAt: '2026-09-24T00:00:00Z'
       }
     ])
@@ -89,4 +92,22 @@ it('preserves merged_at separately from updated_at', async () => {
   const [item] = await listCodeHubTasks({ remote, kind: 'mr', state: 'merged' })
   expect(item.mergedAt).toBe('2026-09-21T00:00:00Z')
   expect(item.updatedAt).toBe('2026-09-24T00:00:00Z')
+})
+
+it('keeps issue labels and merge request branches from the CLI JSON', async () => {
+  runCodeHubCliMock.mockResolvedValue(
+    JSON.stringify([
+      {
+        iid: 3,
+        title: 'Branch',
+        labels: [{ name: 'bug' }, 'docs'],
+        source_branch: 'feat/task-style',
+        target_branch: 'main'
+      }
+    ])
+  )
+  const [item] = await listCodeHubTasks({ remote, kind: 'mr', state: 'opened' })
+  expect(item.labels).toEqual(['bug', 'docs'])
+  expect(item.sourceBranch).toBe('feat/task-style')
+  expect(item.targetBranch).toBe('main')
 })

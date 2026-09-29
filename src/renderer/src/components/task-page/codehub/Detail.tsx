@@ -2,7 +2,9 @@ import { useCodeHubDetail } from './use-codehub-detail'
 import { CodeHubConversation } from './Conversation'
 import type { TaskPageComposerActionsModel } from '../../use-task-page-composer-actions'
 import { translate } from '@/i18n/i18n'
+import { useAppStore } from '@/store'
 import { Button } from '@/components/ui/button'
+import { CodeHubIssueStatusMenu } from './IssueStatusMenu'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import {
   ArrowRight,
@@ -12,6 +14,7 @@ import {
   CircleDot,
   Copy,
   ExternalLink,
+  FolderKanban,
   GitPullRequest,
   ListChecks,
   LoaderCircle,
@@ -19,16 +22,119 @@ import {
   Pencil
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { getWorktreeAttachmentLabel } from '@/lib/worktree-attachment-label'
+import { TaskPageGitHubWorkItemStateBadge } from '@/components/task-page-github-work-item-status-badge'
 import { formatRelativeTime } from '../../task-page-source-context'
-import { TaskPageCodeHubActions } from './Actions'
+import type { CodeHubTaskItem } from '../../../../../shared/codehub-tasks'
+import type { Worktree } from '../../../../../shared/worktree/types'
+
+const NO_WORKTREES: readonly Worktree[] = []
+
+function attachedCodeHubWorkspace(
+  worktrees: readonly Worktree[],
+  item: CodeHubTaskItem
+): Worktree | null {
+  const kind = item.type === 'mr' ? 'mr' : 'issue'
+  return (
+    worktrees.find(
+      (worktree) =>
+        !worktree.isArchived &&
+        worktree.repoId === item.repoId &&
+        worktree.linkedWorkItem?.provider === 'codehub' &&
+        worktree.linkedWorkItem.type === kind &&
+        worktree.linkedWorkItem.number === item.iid
+    ) ?? null
+  )
+}
+
+function CodeHubIssueProperties({
+  closed,
+  stateBusy,
+  setIssueState,
+  assignees,
+  labels,
+  workspaceLabel
+}: {
+  closed: boolean
+  stateBusy: boolean
+  setIssueState: (
+    state: 'open' | 'closed',
+    stateReason?: 'completed' | 'not_planned' | 'duplicate',
+    duplicateOf?: number
+  ) => void
+  assignees: string[]
+  labels: string[]
+  workspaceLabel: string | null
+}): React.JSX.Element {
+  return (
+    <aside className="grid grid-cols-2 gap-x-6 gap-y-5 border-b border-border/60 px-6 py-5 text-[13px] sm:grid-cols-4">
+      <section className="min-w-0">
+        <div className="mb-2 text-[11px] font-semibold uppercase tracking-[0.05em] text-muted-foreground">
+          {translate('auto.components.GitHubItemDialog.00ccdf9b5a', 'Status')}
+        </div>
+        <CodeHubIssueStatusMenu closed={closed} busy={stateBusy} onSetState={setIssueState} />
+      </section>
+      <section className="min-w-0">
+        <div className="mb-2 text-[11px] font-semibold uppercase tracking-[0.05em] text-muted-foreground">
+          {translate('auto.components.TaskPage.8aba10579d', 'Assignees')}
+        </div>
+        <div className="text-[12px] text-muted-foreground">
+          {assignees.length > 0
+            ? assignees.join(', ')
+            : translate('auto.components.GitHubItemDialog.886a64b081', 'None yet')}
+        </div>
+      </section>
+      <section className="min-w-0">
+        <div className="mb-2 text-[11px] font-semibold uppercase tracking-[0.05em] text-muted-foreground">
+          {translate('auto.components.GitHubItemDialog.217e55d87c', 'Labels')}
+        </div>
+        {labels.length > 0 ? (
+          <div className="flex flex-wrap gap-1">
+            {labels.map((label) => (
+              <span
+                key={label}
+                className="rounded-full border border-border/40 bg-muted/30 px-1.5 py-0 text-[10px] text-muted-foreground"
+              >
+                {label}
+              </span>
+            ))}
+          </div>
+        ) : (
+          <div className="text-[12px] text-muted-foreground">
+            {translate('auto.components.GitHubItemDialog.886a64b081', 'None yet')}
+          </div>
+        )}
+      </section>
+      <section className="min-w-0">
+        <div className="mb-2 text-[11px] font-semibold uppercase tracking-[0.05em] text-muted-foreground">
+          {translate('auto.components.GitHubItemDialog.2e4d806c92', 'Workspace')}
+        </div>
+        {workspaceLabel ? (
+          <div className="flex min-w-0 items-center gap-1.5 text-[12px] text-muted-foreground">
+            <FolderKanban className="size-3.5 shrink-0" />
+            <span className="truncate">{workspaceLabel}</span>
+          </div>
+        ) : (
+          <div className="text-[12px] text-muted-foreground">
+            {translate('auto.components.GitHubItemDialog.886a64b081', 'None yet')}
+          </div>
+        )}
+      </section>
+    </aside>
+  )
+}
 
 export function TaskPageCodeHubDetail({
   model
 }: {
   model: TaskPageComposerActionsModel
 }): React.JSX.Element | null {
-  const state = useCodeHubDetail(model)
-  if (!state) {
+  const repoId = model.codehubDetailItem?.repoId ?? null
+  const repoWorktrees = useAppStore((state) =>
+    repoId ? (state.worktreesByRepo[repoId] ?? NO_WORKTREES) : NO_WORKTREES
+  )
+  const detailState = useCodeHubDetail(model)
+  if (!detailState) {
     return null
   }
   const {
@@ -44,9 +150,6 @@ export function TaskPageCodeHubDetail({
     setTitleDraft,
     savingTitle,
     stateBusy,
-    duplicateOf,
-    setDuplicateOf,
-    reloadDetail,
     title,
     closed,
     actionItem,
@@ -56,8 +159,16 @@ export function TaskPageCodeHubDetail({
     setIssueState,
     setCodehubDetailItem,
     handleUseCodeHubItem
-  } = state
-  const conversation = <CodeHubConversation state={state} />
+  } = detailState
+  const attached = attachedCodeHubWorkspace(repoWorktrees, item)
+  const workspaceLabel = attached ? getWorktreeAttachmentLabel(attached) : null
+  const sourceBranch = detail?.sourceBranch ?? item.sourceBranch
+  const targetBranch = detail?.targetBranch ?? item.targetBranch
+  const branchLabel =
+    sourceBranch && targetBranch
+      ? `${sourceBranch} → ${targetBranch}`
+      : (sourceBranch ?? targetBranch)
+  const conversation = <CodeHubConversation state={detailState} />
   return (
     <div className="flex h-full min-h-0 flex-col overflow-hidden rounded-md border border-border/50 bg-background">
       {item.type === 'issue' ? (
@@ -203,74 +314,23 @@ export function TaskPageCodeHubDetail({
               <span>
                 {translate('auto.components.GitHubItemDialog.55962099bc', 'opened this issue')}
               </span>
-              {closed ? (
-                <Button
-                  size="sm"
-                  variant="outline"
-                  disabled={stateBusy}
-                  onClick={() => setIssueState('open')}
-                >
-                  {translate('auto.components.TaskPage.codehubReopen', 'Reopen')}
-                </Button>
-              ) : (
-                <>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    disabled={stateBusy}
-                    onClick={() => setIssueState('closed', 'completed')}
-                  >
-                    {translate(
-                      'auto.components.TaskPage.codehubCloseCompleted',
-                      'Close as completed'
-                    )}
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    disabled={stateBusy}
-                    onClick={() => setIssueState('closed', 'not_planned')}
-                  >
-                    {translate(
-                      'auto.components.TaskPage.codehubCloseNotPlanned',
-                      'Close as not planned'
-                    )}
-                  </Button>
-                  <form
-                    className="flex items-center gap-1"
-                    onSubmit={(event) => {
-                      event.preventDefault()
-                      setIssueState('closed', 'duplicate')
-                    }}
-                  >
-                    <input
-                      value={duplicateOf}
-                      onChange={(event) => setDuplicateOf(event.target.value)}
-                      inputMode="numeric"
-                      placeholder={translate('auto.components.TaskPage.codehubDuplicateOf', '#')}
-                      aria-label={translate(
-                        'auto.components.TaskPage.codehubDuplicateOf',
-                        'Duplicate of issue number'
-                      )}
-                      className="h-8 w-16 rounded-md border border-border/60 bg-background px-2 text-xs"
-                    />
-                    <Button
-                      size="sm"
-                      type="submit"
-                      variant="outline"
-                      disabled={stateBusy || !duplicateOf.trim()}
-                    >
-                      {translate(
-                        'auto.components.TaskPage.codehubCloseDuplicate',
-                        'Close as duplicate'
-                      )}
-                    </Button>
-                  </form>
-                </>
-              )}
+              {item.updatedAt ? (
+                <span className="text-muted-foreground/80">
+                  {translate('auto.components.GitHubItemDialog.10ef1afb8e', '· updated')}{' '}
+                  {formatRelativeTime(item.updatedAt)}
+                </span>
+              ) : null}
             </div>
           </div>
           <div className="min-h-0 flex-1 overflow-y-auto scrollbar-sleek bg-background">
+            <CodeHubIssueProperties
+              closed={closed}
+              stateBusy={stateBusy}
+              setIssueState={setIssueState}
+              assignees={detail?.assignees?.length ? detail.assignees : item.assignees}
+              labels={detail?.labels?.length ? detail.labels : (item.labels ?? [])}
+              workspaceLabel={workspaceLabel}
+            />
             {conversation}
           </div>
         </>
@@ -293,37 +353,70 @@ export function TaskPageCodeHubDetail({
               </div>
               <div className="min-w-0 flex-1 space-y-1">
                 <div className="flex flex-wrap items-center gap-2 text-[11px] text-muted-foreground">
-                  <span
-                    className={cn(
-                      'inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-medium',
-                      closed ? 'bg-rose-600 text-white' : 'bg-emerald-600 text-white'
-                    )}
-                  >
-                    {detail?.state || item.state}
-                  </span>
+                  <TaskPageGitHubWorkItemStateBadge
+                    item={{
+                      type: 'pr',
+                      state: actionItem.state === 'opened' ? 'open' : actionItem.state
+                    }}
+                  />
                   <span className="font-mono">#{item.iid}</span>
                   <span>
                     {translate('auto.components.GitHubItemDialog.a2495e4784', 'Pull request')}
                   </span>
                 </div>
                 <h2 className="text-[15px] font-semibold leading-snug text-foreground">{title}</h2>
-                <div className="text-[11px] text-muted-foreground">
-                  {detail?.author ||
-                    item.author ||
-                    translate('auto.components.GitHubItemDialog.773ff70035', 'unknown')}
-                  {item.updatedAt
-                    ? ` · ${translate('auto.components.GitHubItemDialog.8223320f8d', 'updated')} ${formatRelativeTime(item.updatedAt)}`
-                    : ''}
+                <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-[11px] text-muted-foreground">
+                  <span>
+                    {detail?.author ||
+                      item.author ||
+                      translate('auto.components.GitHubItemDialog.773ff70035', 'unknown')}
+                  </span>
+                  {item.updatedAt ? (
+                    <span>
+                      {translate('auto.components.GitHubItemDialog.8223320f8d', 'updated')}{' '}
+                      {formatRelativeTime(item.updatedAt)}
+                    </span>
+                  ) : null}
+                  {branchLabel ? (
+                    <span className="max-w-full truncate rounded-md border border-border/50 bg-muted/40 px-1.5 py-0.5 font-mono text-[10px] text-muted-foreground">
+                      {branchLabel}
+                    </span>
+                  ) : null}
                 </div>
               </div>
               <Button
                 type="button"
                 size="sm"
-                className="gap-1.5"
+                className="gap-1.5 whitespace-nowrap"
                 onClick={() => handleUseCodeHubItem(item)}
+                aria-label={translate(
+                  'auto.components.GitHubItemDialog.0caac1a18f',
+                  'Start workspace from PR'
+                )}
               >
-                {translate('auto.components.TaskPage.7d08e8be0f', 'Start')}
+                {translate('auto.components.GitHubItemDialog.0caac1a18f', 'Start workspace from PR')}
                 <ArrowRight className="size-3.5" />
+              </Button>
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon-sm"
+                aria-label={translate(
+                  'auto.components.GitHubItemDialog.c43fe79ee0',
+                  'Copy GitHub link'
+                )}
+                onClick={() => {
+                  void navigator.clipboard.writeText(detail?.url || item.url).then(() => {
+                    setCopied(true)
+                    window.setTimeout(() => setCopied(false), 1200)
+                  })
+                }}
+              >
+                {copied ? (
+                  <Check className="size-4 text-emerald-500" />
+                ) : (
+                  <Copy className="size-4" />
+                )}
               </Button>
               <Button
                 variant="ghost"
@@ -353,9 +446,7 @@ export function TaskPageCodeHubDetail({
               <TabsContent value="conversation" className="mt-0">
                 {conversation}
               </TabsContent>
-              <TabsContent value="checks" className="mt-0 px-6 py-4">
-                <TaskPageCodeHubActions item={actionItem} onChanged={reloadDetail} />
-              </TabsContent>
+              <TabsContent value="checks" className="mt-0" />
             </div>
           </Tabs>
         </>

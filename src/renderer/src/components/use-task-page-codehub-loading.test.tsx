@@ -1,11 +1,11 @@
 // @vitest-environment happy-dom
-import { act, renderHook, waitFor } from '@testing-library/react'
+import { renderHook, waitFor } from '@testing-library/react'
 import { expect, it, vi } from 'vitest'
 const { listTasks } = vi.hoisted(() => ({ listTasks: vi.fn() }))
 vi.mock('@/lib/codehub-api', () => ({ codehubApi: { listTasks } }))
 import { useTaskPageCodeHubLoading } from './use-task-page-codehub-loading'
 
-it('loads beyond the initial 30 and resets the window when the repository changes', async () => {
+it('fetches one bounded list and keeps issue search on the client', async () => {
   const setItems = vi.fn()
   listTasks.mockImplementation(async ({ limit }: { limit: number }) => ({
     remote: { host: 'codehub.example.com', project: 'team/project' },
@@ -26,7 +26,7 @@ it('loads beyond the initial 30 and resets the window when the repository change
     taskSource: 'codehub',
     codehubView: 'issues',
     codehubState: 'opened',
-    codehubPreset: 'all',
+    codehubPreset: 'open',
     codehubQuery: 'Issue 35',
     codehubAuthor: '',
     codehubAssignee: '',
@@ -35,16 +35,8 @@ it('loads beyond the initial 30 and resets the window when the repository change
     setCodehubLoading: vi.fn(),
     setCodehubError: vi.fn()
   } as unknown as Parameters<typeof useTaskPageCodeHubLoading>[0]
-  const { result, rerender } = renderHook(({ input }) => useTaskPageCodeHubLoading(input), {
-    initialProps: { input: model }
-  })
-  await waitFor(() => expect(result.current.codehubHasMore).toBe(true))
-  expect(setItems.mock.lastCall?.[0]).toHaveLength(30)
-  act(() => result.current.loadMoreCodehub())
-  await waitFor(() => expect(result.current.codehubHasMore).toBe(false))
-  expect(setItems.mock.lastCall?.[0].at(-1)?.iid).toBe(35)
-  rerender({ input: { ...model, selectedRepos: [{ ...model.selectedRepos[0], id: 'r2' }] } })
-  await waitFor(() =>
-    expect(listTasks.mock.lastCall?.[0]).toMatchObject({ repoId: 'r2', limit: 30 })
-  )
+  renderHook(() => useTaskPageCodeHubLoading(model))
+  await waitFor(() => expect(setItems).toHaveBeenCalled())
+  expect(listTasks.mock.lastCall?.[0]).toMatchObject({ limit: 250, search: undefined })
+  expect(setItems.mock.lastCall?.[0]).toHaveLength(35)
 })

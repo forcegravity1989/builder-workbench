@@ -2074,6 +2074,8 @@
         "6ffa6be99f": "Refreshing GitHub work",
         "b15ceb409d": "Search GitHub issues...",
         "eee4df4c66": "Search GitHub PRs...",
+        "codehubSearchIssues": "Search CodeHub issues",
+        "codehubSearchMrs": "Search CodeHub PRs",
         "e592d99051": "All Jira sites",
         "d09b7631b7": "Failed to switch Jira site.",
         "8029e2bd4d": "Select one Linear team to open in Linear",

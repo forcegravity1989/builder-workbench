@@ -3,9 +3,10 @@ import { toast } from 'sonner'
 import { translate } from '@/i18n/i18n'
 import { Button } from '@/components/ui/button'
 import { LoaderCircle, Trash2 } from 'lucide-react'
+import CommentMarkdown from '@/components/sidebar/CommentMarkdown'
 import { formatRelativeTime } from '../../task-page-source-context'
-import { TaskPageCodeHubActions } from './Actions'
 import type { CodeHubDetailState } from './use-codehub-detail'
+import { CodeHubPrSidebar } from './PrSidebar'
 
 export function CodeHubConversation({ state }: { state: CodeHubDetailState }) {
   const {
@@ -15,15 +16,13 @@ export function CodeHubConversation({ state }: { state: CodeHubDetailState }) {
     commentError,
     comments,
     setComments,
-    reloadDetail,
     draft,
     setDraft,
     posting,
-    postComment,
-    actionItem
+    postComment
   } = state
-  return (
-    <div className="w-full px-2 py-6">
+  const thread = (
+    <>
       <div className="rounded-lg border border-border/50 bg-card/50 shadow-xs">
         <div className="flex items-center gap-2 border-b border-border/50 px-3 py-2 text-[12px] text-muted-foreground">
           <span className="font-medium text-foreground">
@@ -36,13 +35,24 @@ export function CodeHubConversation({ state }: { state: CodeHubDetailState }) {
             {item.updatedAt ? formatRelativeTime(item.updatedAt) : ''}
           </span>
         </div>
-        <div className="whitespace-pre-wrap px-4 py-3 text-sm text-foreground">
+        <div className="px-4 py-4 text-[14px] leading-relaxed text-foreground">
           {error ? <p className="text-destructive">{error}</p> : null}
-          {!detail && !error ? <LoaderCircle className="size-4 animate-spin" /> : null}
-          {detail?.description ||
-            (detail
-              ? translate('auto.components.TaskPage.codehubNoDescription', 'No description')
-              : '')}
+          {!detail && !error ? (
+            <div className="flex items-center justify-center py-5">
+              <LoaderCircle className="size-4 animate-spin text-muted-foreground" />
+            </div>
+          ) : null}
+          {detail?.description?.trim() ? (
+            <CommentMarkdown
+              content={detail.description}
+              variant="document"
+              className="min-w-0 max-w-full overflow-hidden break-words text-[14px] leading-relaxed [&_a]:break-all [&_code]:break-words [&_pre]:max-w-full"
+            />
+          ) : detail ? (
+            <span className="italic text-muted-foreground">
+              {translate('auto.components.GitHubItemDialog.9b9cb55994', 'No description provided.')}
+            </span>
+          ) : null}
         </div>
       </div>
       <div className="mt-4 flex flex-col gap-3 px-4">
@@ -95,8 +105,16 @@ export function CodeHubConversation({ state }: { state: CodeHubDetailState }) {
             {translate('auto.components.TaskPage.codehubCommentSubmit', 'Comment')}
           </Button>
         </div>
-        <TaskPageCodeHubActions item={actionItem} onChanged={reloadDetail} />
       </div>
-    </div>
+    </>
   )
+  if (item.type === 'mr') {
+    return (
+      <div className="grid min-w-0 grid-cols-[minmax(0,1fr)_300px] gap-5 px-4 py-4">
+        <div className="flex min-w-0 flex-col gap-4">{thread}</div>
+        <CodeHubPrSidebar state={state} />
+      </div>
+    )
+  }
+  return <div className="w-full px-2 py-6">{thread}</div>
 }
