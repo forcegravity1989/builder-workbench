@@ -88,36 +88,17 @@ function weekReading(
   }
 }
 
-function instantReading(value: number | string): MetricReading {
-  const base = weekReading([{ day: lastMonday, value }])
-  return {
-    ...base,
-    readings: [
-      {
-        ...base.readings[0],
-        observation: { kind: 'instant', observedAt: `${lastMonday}T12:00:00.000Z` }
-      }
-    ]
-  }
-}
-
 const defs = {
   lag: def({ name: '滞后A', unit: '个', target: '≥3' }),
   lead: def({ name: '引领A', role: 'leading', leads: '滞后A', unit: '个' }),
-  text: def({ name: '字符串指标', feature: 'F1' }),
-  current: def({
-    name: '仅当前',
-    feature: 'F1',
-    unit: '次',
-    collect: { kind: 'script', run: [], retro: false }
-  })
+  text: def({ name: '字符串指标', feature: 'F1' })
 }
 const catalog: MetricCatalog = {
   scope: { repoId: 'repo', worktreeId: 'tree', hostId: 'local' },
   configurationCommit: 'c'.repeat(40),
   configurationRef: 'main',
   timezone: TZ,
-  definitions: [defs.lag, defs.lead, defs.text, defs.current],
+  definitions: [defs.lag, defs.lead, defs.text],
   problems: []
 }
 
@@ -179,23 +160,20 @@ it('unknown and stale readings never become zero or a fresh curve', async () => 
   expect(text()).toContain('陈旧读数 2')
   expect(container.querySelector<HTMLDetailsElement>('details')!.open).toBe(false)
 })
-it('charts history while leaving string and current-only readings in details', async () => {
+it('charts numeric history while leaving text readings in details', async () => {
   await renderZones({
     readings: {
       'hash-滞后A': weekReading([{ day: lastMonday, value: 5 }]),
-      'hash-字符串指标': weekReading([{ day: lastMonday, value: '达标' }]),
-      'hash-仅当前': instantReading(3)
+      'hash-字符串指标': weekReading([{ day: lastMonday, value: '达标' }])
     }
   })
   expect(series()[0].values.at(-1)).toBe(5)
   await act(async () => (container.querySelectorAll('.tab')[1] as HTMLButtonElement).click())
   expect(text()).toContain('达标')
-  expect(text()).toContain('3次')
-  expect(text()).toContain('仅当前值')
   expect(series().every((item) => item.values.every((value: unknown) => value === null))).toBe(true)
   expect(
     [...container.querySelectorAll('[data-empty]')].map((el) => el.getAttribute('data-empty'))
-  ).toEqual(['文本读数，见指标详情', '仅当前值，见指标详情'])
+  ).toEqual(['文本读数，见指标详情'])
   await act(async () =>
     (container.querySelector('[data-testid="chart"] button') as HTMLButtonElement).click()
   )

@@ -67,24 +67,6 @@ it.each([
   expect(() => decodeMetricOutput({ ...input, stdout })).toThrow()
 })
 
-it('keeps current strings as timestamped observations and refuses to relabel them as history', () => {
-  const current = {
-    ...input,
-    definition: { ...definition, collect: { ...definition.collect, retro: false } }
-  }
-  const stdout = '{"value":"准备中","observed_at":"2026-03-15T10:00:00Z"}'
-  expect(() => decodeMetricOutput({ ...current, stdout })).toThrow('无法补采历史窗口')
-  const [reading] = decodeMetricOutput({
-    ...current,
-    stdout,
-    window: { kind: 'current', timezone: 'UTC' }
-  })
-  expect(reading).toMatchObject({
-    value: '准备中',
-    observation: { kind: 'instant', observedAt: '2026-03-15T10:00:00Z' }
-  })
-})
-
 it('requires the source to declare its actual coverage for an in-progress bucket', () => {
   const current = { ...input, collectedAt: '2026-03-08T12:00:00Z' }
   expect(() =>

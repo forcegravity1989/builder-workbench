@@ -3,7 +3,7 @@ import { PrototypeHeader, PrototypeSession, PrototypeSidebar, PrototypeSplitter 
 import { Field, Lamp, archiveTone } from './shared.jsx'
 import { PlanningContent, usePlanningDemo } from './screen.jsx'
 import { AcceptanceContent } from '../../version-acceptance/prototype/screen.jsx'
-import { ArrowLeft, ArrowUp, GitPullRequest, MessageSquare, Plus } from 'lucide-react'
+import { ArrowLeft, ArrowUp, GitPullRequest, MessageSquare } from 'lucide-react'
 import { OverviewV8 } from '../../overview-metrics/prototype/screen.jsx'
 import { metrics } from './snapshot.js'
 import { PrototypeTasks } from './tasks.jsx'
@@ -44,9 +44,7 @@ function PrototypeLayout({
   returnTo,
   review,
   risk,
-  setConfigId,
   setDraft,
-  setDrafts,
   setEditingIssue,
   setExpanded,
   setIssueDraft,
@@ -313,21 +311,6 @@ function PrototypeLayout({
                 返回总览
               </button>
               <span>配置指标 · 任务 {configId}</span>
-              <button
-                className="btn btn-ghost"
-                onClick={() => {
-                  const id = configId + 1
-                  setConfigId(id)
-                  setDrafts((x) => ({
-                    ...x,
-                    [`配置-${id}`]:
-                      '请加载项目约定、通用 SYSTEM 与 metrics-refresh，与我明确这次新指标的口径及真实来源，按定义、脚本、试采、评审采用的流程配置。'
-                  }))
-                }}
-              >
-                <Plus />
-                新建配置任务
-              </button>
             </div>
             <div className="native-session-body">
               <div className="session-empty">

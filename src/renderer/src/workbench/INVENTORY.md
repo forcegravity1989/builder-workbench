@@ -26,7 +26,7 @@
 | 计划材料与来源 | `version-planning/`（use-planning-material、use-planning-autosave、use-planning-archive、PlanningProgressSource、planning-progress-source） | 自动保存复用 MaterialDraftController 与材料 CAS，失败和冲突由 PlanningPersistenceNotice 呈现；归档状态仍按保存修订读取。上版验收可预览并明确绑定固定提交、版本、轮次与修订，不自动改读最新记录；实现与验证边界见[版本计划 STATUS](../../../../docs/05-features/version-planning/STATUS.md) |
 | 验收业务 | `version-acceptance/`（AcceptancePage、AcceptanceBoard、AcceptanceSourcePicker、AcceptanceJourney、AcceptancePreparation / GoalResult / Metrics / Tasks / Archive、use-acceptance-*） | 固定计划与候选、逐目标结论与证据变化、Issue 快照、派生报告；归档状态按材料身份自动读取，脏草稿不绕过已确认归档 |
 | 端口与 runtime | `task-port.ts` / `archive-port.ts` / `metrics-port.ts` / `version-material-port.ts` / `version-history-port.ts` / `metric-runtime-rpc.ts` | 消费 `src/main/workbench/` RPC（materials / metrics / history / archive.proof）；任务读取复用原生 github.workItem / codehub.viewTask，单条失败 kind:'unavailable'；openDetail 经原生 openTaskPage（returnToPreviousView 跳过 tasks 哨兵，来源上下文由 cycle-view-state / view-memory 恢复） |
-| 总览 | `OverviewPage.tsx`、`overview-project-card.tsx`、`overview-north-star-card.tsx`；`overview-metric-zones.tsx`、`overview-metric-chart.tsx`、`overview-zone-series.ts`；`overview-sdlc-zones.tsx`、`overview-sdlc-readings.ts`、`use-overview-sdlc.ts`；`overview-version-minutes.tsx`、`use-version-minutes.ts`、`overview-view-state.ts` | 北极星与业务指标经 nativeMetricsPort 读取；ECharts 共用图表支持特性、显隐、日/周及详情。项目统计沿原生 Git/provider 读取，提交按固定修订分页和 %ct 落桶，PR/MR 按 mergedAt，Issue 只绘当前点；截断或失败保持未知。版本/轮次纪要按 planRef 配对并独立滚动，筛选按项目/宿主恢复。「设置指标」复用 `version-cycle/metrics-setup` 固定树管线；验证边界见[总览指标 STATUS](../../../../docs/05-features/overview-metrics/STATUS.md) |
+| 总览 | `OverviewPage.tsx`、`overview-project-card.tsx`、`overview-north-star-card.tsx`；`overview-metric-zones.tsx`、`overview-metric-chart.tsx`、`overview-zone-series.ts`；`overview-sdlc-zones.tsx`、`overview-sdlc-readings.ts`、`use-overview-sdlc.ts`；`overview-version-minutes.tsx`、`use-version-minutes.ts`、`overview-view-state.ts` | 北极星与业务指标经 nativeMetricsPort 读取；ECharts 共用图表支持特性、显隐、日/周及详情。项目统计沿原生 Git/provider 读取，提交按固定修订分页和 %ct 落桶，PR/MR 按 mergedAt，Issue 只绘当前点；截断或失败保持未知。版本/轮次纪要按 planRef 配对并独立滚动，筛选按项目/宿主恢复。「配置指标」复用 `version-cycle/metrics-setup` 固定树管线，每次新建会话；指标闭环实施与验证边界见[总览指标 STATUS](../../../../docs/05-features/overview-metrics/STATUS.md) |
 | 知识库保真 | `KnowledgePage` + `use-knowledge-repo` + `knowledge-demo-data` | 文档树与正文读 activeRepo，编辑直接保存该仓；代码占位，对账与建议含演示数据 |
 | 项目墙 | `ProjectWallPage` + `project-page-state`；在 activity 内容槽展示；按 `ProjectGroup` 聚合多仓；卡片展示仓链接；`+ 代码仓` / 删除 | Orca 外壳内切换项目 |
 | 接入项目 | `OnboardProjectPage`：在 activity 内容槽展示；本地仓 / 克隆 + 名片 → `repo.add` + `.bw/project.toml` | architecture §1 |
@@ -45,9 +45,9 @@
 - **Orca Mobile 产品已删**（`mobile/`、桌面 Mobile 页、手机设置页）；配对协议仍在执行核里，见 `ref/upstream.md`
 - `.omc/**` 不进产品提交
 
-## 下一轮（未做）
+## 待完成
 
-- 总览配置会话续接；Issue 历史存量（需完整事件源）；总览真实数据与 Electron 旅程验证（见[总览指标 STATUS](../../../../docs/05-features/overview-metrics/STATUS.md)）；项目墙健康灯
+- 指标真实项目来源与 Electron 完整旅程待验，边界见[总览指标 STATUS](../../../../docs/05-features/overview-metrics/STATUS.md)；Issue 历史存量需完整事件源；项目墙健康灯
 - 知识库真实对账（名片已读 `.bw/project.toml`）
 - 项目约定完整路径：`bw/project` 常驻 worktree + MR（现 MVP 写工作区 `.bw/`）
 - 知识库文档树已读真实仓库；工作树来源、保存评审边界、ref 分类覆盖、codegraph 与真实对账待对应特性重新决策

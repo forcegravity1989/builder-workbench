@@ -1,5 +1,5 @@
 import { execFileSync } from 'node:child_process'
-import { mkdtempSync, mkdirSync, writeFileSync, rmSync } from 'node:fs'
+import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { basename, dirname, join, resolve } from 'node:path'
 import { afterAll, beforeAll, expect, it } from 'vitest'
@@ -135,7 +135,7 @@ it('runs the collector in the fixed checkout with protocol env and discards it',
     checkoutRoot: computeMetricsCheckoutRoot(root),
     configurationCommit: scriptCommit,
     run: [process.execPath, '.bw/scripts/collect.js'],
-    args: ['--since', '2026-09-21', '--until', '2026-09-28', '--granularity', 'week'],
+    args: ['--since', '2026-09-21', '--until', '2026-09-22', '--granularity', 'day'],
     env: {
       BW_METRICS_TIMEZONE: 'Asia/Shanghai',
       BW_METRICS_DATA_ROOT: root,
@@ -155,8 +155,8 @@ it('runs the collector in the fixed checkout with protocol env and discards it',
     root: root,
     commit: scriptCommit,
     since: '2026-09-21',
-    until: '2026-09-28',
-    granularity: 'week',
+    until: '2026-09-22',
+    granularity: 'day',
     cwdIsCheckout: true
   })
   const worktrees = git(['worktree', 'list']).toString()
@@ -196,4 +196,39 @@ it('kills a hung collector at its timeout and still cleans the checkout up', asy
   expect(outcome.timedOut).toBe(true)
   const worktrees = git(['worktree', 'list']).toString()
   expect(worktrees).not.toContain('.orca-preparing')
+}, 60_000)
+
+it('fetches newly adopted metrics while leaving the old checkout and its draft untouched', async () => {
+  const remote = join(root, 'remote.git')
+  const author = join(root, 'author')
+  git(['init', '--bare', remote])
+  git(['remote', 'add', 'origin', remote])
+  git(['push', '--set-upstream', 'origin', 'main'])
+  git(['clone', '--branch', 'main', remote, author])
+  const authorGit = (args: string[]) => execFileSync('git', args, { cwd: author, stdio: 'pipe' })
+  authorGit(['config', 'user.name', 'Test'])
+  authorGit(['config', 'user.email', 'test@example.invalid'])
+  writeFileSync(join(author, '.bw/metrics.toml'), toml.replace('commits', 'new metric'))
+  authorGit(['add', '.bw/metrics.toml'])
+  authorGit(['commit', '-m', 'adopt new metric'])
+  authorGit(['push', 'origin', 'main'])
+  const adopted = authorGit(['rev-parse', 'HEAD']).toString().trim()
+  const before = head()
+  writeFileSync(join(root, 'README.md'), 'unfinished plan work')
+  const snapshot = await readMetricConfiguration({
+    repoPath: root,
+    adoptedRef: 'main',
+    synchronize: true
+  })
+  expect(snapshot.configurationCommit).toBe(adopted)
+  expect(snapshot.toml).toContain('new metric')
+  expect(head()).toBe(before)
+  expect(readFileSync(join(root, 'README.md'), 'utf8')).toBe('unfinished plan work')
+  const pinned = await readMetricConfiguration({
+    repoPath: root,
+    adoptedRef: 'main',
+    configurationCommit: configCommit
+  })
+  expect(pinned.configurationCommit).toBe(configCommit)
+  expect(pinned.dataCommit).toBe(adopted)
 }, 60_000)

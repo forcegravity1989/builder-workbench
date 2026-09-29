@@ -81,4 +81,4 @@ BW 的业务契约在 `src/shared/workbench/`，材料事务、指标与历史 r
 
 ## 版本协作与指标边界
 
-三个特性已接入生产入口：[版本计划](05-features/version-planning/design.md)、[版本验收](05-features/version-acceptance/design.md)、[总览指标](05-features/overview-metrics/design.md)。BW 拥有版本材料、目标/验收业务与指标服务；Orca 保持会话、任务详情/编辑、工作树、调度和 provider 正本，通过薄适配复用（原生文件扩点清单见 [ref/upstream](../ref/upstream.md)），不在各屏分别建任务编辑器、会话存储或采集器。剩余缺口以各特性 STATUS 为准：SSH/WSL 与配对实机、真实到点自动化、真实 provider 归档全链、总览真实数据与 Electron 旅程仍待验证；配置指标的会话续接尚未实现。源码接入不能代替迁移验收。
+三个特性已接入生产入口：[版本计划](05-features/version-planning/design.md)、[版本验收](05-features/version-acceptance/design.md)、[总览指标](05-features/overview-metrics/design.md)。BW 拥有版本材料、目标/验收业务与指标服务；Orca 保持会话、任务详情/编辑、工作树、调度和 provider 正本，通过薄适配复用（原生文件扩点清单见 [ref/upstream](../ref/upstream.md)），不在各屏分别建任务编辑器、会话存储或采集器。业务指标仅采用按日/周可回溯的脚本，源数据及存储由用户项目或服务负责；目录同步最新已合入来源，每次采集固定本次来源，旧计划与验收证据原样留查。“配置指标”每次在固定维护树中新建原生会话。该指标闭环已接入；SSH/WSL 与配对实机、真实到点自动化、真实 provider 归档全链和 Electron 旅程的验证边界见各特性 STATUS，源码接入不能代替验收。

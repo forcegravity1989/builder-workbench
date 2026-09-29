@@ -13,7 +13,6 @@ import {
   type MetricRun,
   type MetricReadRequest
 } from '../../../shared/workbench/metrics'
-import { addCalendarDays, dayInTimezone } from '../../../shared/workbench/metric-windows'
 import { decodeMetricOutput, MetricCollectorError } from './collector-output'
 
 export type MetricCollectorContext = {
@@ -122,21 +121,7 @@ export function createMetricsService(
           dataTarget: context.dataTarget
         }
         try {
-          if (context.definition.collect.retro !== (request.window.kind === 'range')) {
-            throw new MetricCollectorError(
-              'window-incompatible',
-              context.definition.collect.retro
-                ? '可回溯指标需要明确查询窗口'
-                : '此指标只有当前值，不能补采历史窗口'
-            )
-          }
-          const since =
-            request.window.kind === 'range'
-              ? request.window.since
-              : dayInTimezone(startedAt, request.window.timezone)
-          const until =
-            request.window.kind === 'range' ? request.window.until : addCalendarDays(since, 1)
-          const granularity = request.window.kind === 'range' ? request.window.granularity : 'day'
+          const { since, until, granularity } = request.window
           const output = await context.run(
             ['--since', since, '--until', until, '--granularity', granularity],
             request.window.timezone

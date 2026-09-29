@@ -10,7 +10,7 @@
 |---|---|---|
 | 计划 | bw/week-plan 工作树的 .bw/planning/<version>/data.json | summary、稳定 goalId、承诺/可选交付与验收说明、metricRef/目标、任务引用 |
 | 验收 | bw/week-acceptance 工作树的同目录 acceptance.json | 固定 planRef、候选、材料、readingRef、人的结论与下一步；不改计划 |
-| 指标 | 项目配置基线中的 .bw/metrics.toml 及真实采集源 | 两流程引用同一配置修订；不以常驻树旧文件当最新配置 |
+| 指标 | 项目最新已合入配置中的 .bw/metrics.toml 及真实历史采集源 | 新采集固定本次采用的定义/脚本修订；旧 baseline 和归档证据保留，不以常驻树旧文件或旧引用锁住目录 |
 | Issue/会话/PR | 原生 provider / Orca | 材料只存引用，不另建正文、聊天或状态正本 |
 | 纪要/报告 | 从明确材料修订派生 | 无第二份手填会议正文 |
 
@@ -26,7 +26,7 @@ cycleId 标识材料轮次，不是自然周、原生会话或自动化 runId。
 
 planRef 的共同字段为 kind/version/cycleId/revision。kind=committed 时另有 sourceCommit；kind=draft 时另有 sourceWorktreeId/sourceHostId。项目身份由请求的原生项目上下文约束，材料路径从 version 推导为 .bw/planning/<version>/data.json，revision 本身是 sha256 字节摘要，不再重复写 project/path/hash。正式验收须固定项目指定基线已合入的计划，草案预验收明确标示；来源解析与核验由验收接线实现，保存 schema 本身不能证明来源。
 
-指标 ref 保存 name/definitionHash/configurationCommit；readingEvidence 保存 ref/value/unit/source/collectedAt/collectorRevision，observation 区分 instant 的 observedAt 与 window 的 start/end/granularity/timezone。不另建每日台账，采集真实性和可比较性由指标服务及消费方核验。
+指标 ref 保存 name/definitionHash/configurationCommit；readingEvidence 保存 ref/value/unit/source/collectedAt/collectorRevision。新业务采集只使用日/周历史窗口，observation 记录 start/end/granularity/timezone；既有 instant/observedAt 只保留为历史证据的解释，不恢复当前值采集。计划 baseline 不被新采集覆盖，验收可以选择最新目录的新指标补充 readings；新旧配置不同不阻止采集。证据详情显示来源、采集时间、配置提交与脚本修订，定义指纹保留在材料中；由人追溯核对可比性，不自动改原承诺或判断达成。不另建每日台账，来源真实性由指标服务及消费方核验。
 
 taskSnapshot 保存验收当时逐项读取的 Issue 状态。每项 ready 含 reference/source/iid/title/state/url/readAt；unavailable 含 reference/readAt/error，可保留已解析 source。source 复用原生 TaskSourceContext，执行宿主 hostId 与 providerIdentity 的平台 host/project 分开，不存页面返回、滚动或草稿状态。缺少 taskSnapshot 表示尚未记录，空数组才表示当时没有关联任务；历史报告展示快照及读取时间，不能拿实时状态替换历史事实。快照不是 Issue 状态正本，也不授权自动完成任务。
 

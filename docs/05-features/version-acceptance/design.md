@@ -38,7 +38,7 @@ candidateRef 保存项目、完整 commit SHA、版本与来源；preparedArtifa
 
 采集值只来自支持按日／周查询历史的脚本；刷新同步项目正式来源、重读目录后采用最新已合入定义与脚本，不更新固定计划引用或合并业务树。原计划指标与基线只读，验收可另选当前目录指标，不能用旧 configurationCommit/definitionHash 不同直接阻止采集。归档保存实际采用的定义指纹、历史窗口、结果及来源，人的验收依据说明可比性；保留证据不是建立 BW 日采账本。Issue 快照附 provider/repo/number/state/readAt，不是可编辑任务正本。
 
-指标窗口负责 AcceptanceMetrics.tsx 与 AcceptanceMetricWindow.tsx；验收线保持其 props，负责外层布局及父级接线。现有 AcceptanceBoard 的 hasMetrics、goal.metricTargets.length 挂载限制，以及 AcceptanceContext 的窗口显隐条件，需改为允许无原指标的目标选用当前目录；不能只改子组件而使入口仍被父级隐藏。此处为待实施接口约束，未代表当前产品已经接通。
+指标采集与选择已随 PR #278 合入：AcceptanceMetrics.tsx、AcceptanceMetricWindow.tsx 及 acceptance.css 的指标样式继续复用。AcceptanceBoard 的 hasMetrics 已按是否有目标判断，逐目标指标组件不再要求原计划存在 metricTargets；无原指标的目标可以选择当前目录。后续验收布局须保留这两个显示条件、共享窗口与现有 props，不再实施一套选择或采集路径。AcceptanceContext 的旧 current 文案分支只作存量来源核对，不据此恢复仅当前值的采集入口。
 
 验收纪要由对应修订确定性生成，预览/复制/归档采用同一函数。已合入记录以目标基线的 commit + 文档路径 + cycleId 为历史身份；总览读取摘要，能打开对应只读原文及来源。每周和补证归档都是可追溯修订，缓存可重建，不另建里程碑表或历史业务数据库。
 

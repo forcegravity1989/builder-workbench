@@ -12,7 +12,7 @@ collect = { kind = "script", run = ["python", "collect.py"], retro = true }
 [[leading]]
 name = "投入"
 def = "真实计数"
-collect = { kind = "script", run = ["python", "leading.py"], retro = false }
+collect = { kind = "script", run = ["python", "leading.py"], retro = true }
 `
 
 it('decodes schema2 and resolves only an unambiguous leading relationship', () => {
@@ -39,6 +39,9 @@ it('separates missing configuration, malformed files and manual definitions', ()
   )
   expect(manual.definitions).toEqual([])
   expect(manual.problems[0].code).toBe('collector-required')
+  const current = decodeMetricDefinitions(raw.replaceAll('retro = true', 'retro = false'), commit)
+  expect(current.definitions).toEqual([])
+  expect(current.problems.every((problem) => problem.code === 'history-required')).toBe(true)
 })
 
 it('excludes duplicate metric names and ambiguous implicit leading relationships', () => {
@@ -46,7 +49,7 @@ it('excludes duplicate metric names and ambiguous implicit leading relationships
   expect(duplicate.definitions).toEqual([])
   expect(duplicate.problems.every((problem) => problem.code === 'ambiguous-name')).toBe(true)
   const ambiguous = decodeMetricDefinitions(
-    `${raw}\n[[lagging]]\nname="另一结果"\ndef="真实计数"\ncollect={kind="script",run=["node","other.js"]}`,
+    `${raw}\n[[lagging]]\nname="另一结果"\ndef="真实计数"\ncollect={kind="script",run=["node","other.js"],retro=true}`,
     commit
   )
   expect(ambiguous.definitions.map((metric) => metric.name)).toEqual(['结果', '另一结果'])

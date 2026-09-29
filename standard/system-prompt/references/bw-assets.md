@@ -39,9 +39,9 @@ worktrees/
 
 ## `.bw/metrics.toml`（可选）
 
-目标协议沿 schema_version=2，正式定义只采用有依据的脚本来源；可回溯优先，仅当前查询明确能力限制。完整格式见 [metrics](metrics.md) 与 [模板](../../templates/metrics.toml.tmpl)。此目标契约尚待 Electron 运行时接入，盘点不能仅凭模板变化就删除仍被旧运行时使用的资产。
+协议沿 schema_version=2，正式业务定义只采用 script + retro=true 的日/周历史来源。完整格式见 [metrics](metrics.md) 与 [模板](../../templates/metrics.toml.tmpl)。指标目录读取最新已合入来源，配置草稿与正式目录分开；盘点不替模型配置指标，也不自动合并材料工作树。
 
-manual 或空北极星标需要配置采集，不代写数字、定义或目标。旧 readings/ledger 只作历史识别，不恢复每日自动化、记账分支或日写回；不自动删除历史记录。计划/验收归档保留采用的实测证据。改变口径走独立“配置指标”任务，由人确认；盘点只报告缺口。
+manual、retro=false 或空北极星标需要配置历史采集，不代写数字、定义或目标。源数据及存储由用户项目或服务拥有。旧 readings/ledger 只作历史识别，不恢复每日自动化、记账分支或日写回；不自动删除历史记录。计划 baseline 与验收归档证据原样保留，新采集不锁旧配置。改变口径走独立“配置指标”会话，由人确认；盘点只报告缺口。
 
 ## `.bw/scripts/` · `.bw/process-catalog.md`
 

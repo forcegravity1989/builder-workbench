@@ -10,7 +10,7 @@
 
 用户已确认本轮验收高保真并要求提交特性资产：移除独立“交付准备”卡片及固定材料占位，材料在原生会话中准备、在目标卡核对；“预览纪要”在目标区标题旁。与计划屏一起将“新建验收”移到右板首行协作卡片，与“配置自动化”并列；分支名在页头，异常文件经同一启动入口带入。说明与场景选择集中到末尾并明确不进入最终界面。当前提交仅含特性文档与原型，生产仍使用原生标签栏扩展入口和旧验收板，不能视为实现或真壳验证通过。
 
-指标窗口的新规则已同步规格与原型：只接历史脚本，采用当前目录采集并保留原计划承诺，由人说明可比性。生产指标组件由 codex/metrics-loop 实施；本线仅更新验收原型与入口图标，尚未改两个指标组件及其 props，父级挂载条件调整待后续协调接线。
+指标规则已随 [PR #278](https://github.com/forcegravity1989/builder-workbench/pull/278) 合入并同步本树：只接历史脚本，采用当前目录采集并保留原计划承诺，由人说明可比性。两个指标组件、指标样式及 AcceptanceBoard 两处显示条件沿用已合入实现；本线仅处理资产冲突，不重写生产指标能力。后续验收布局须保留这些接线，指标既有证据见总览指标 STATUS，本轮真壳未验。
 
 | 环 | 状态 | 证据或已知债 |
 |---|---|---|
@@ -42,7 +42,7 @@
 | A01 独立树、完整原生工作区、单页三阶段 | ◐ | CycleWorkspaceProvider + AcceptanceBoard | 右板协作入口和目标布局已确认原型，尚未产品接线；三阶段信息密度和侧栏开合待真壳伴飞 |
 | A02 固定计划修订正确、承诺只读；跨树/草案不混淆 | ✅ | planRef 固定+readPlan+useFixedAcceptancePlan 测试 | acceptance 测试 |
 | A03 真实入口准备交付；材料可打开绑候选；失败可见不假报 | ◐ | 现有 AcceptancePreparation + candidate-port + 交付件打开 | 独立准备卡待移除，来源及核对守卫仍须保留；真实项目交付准备旅程未验 |
-| A04 日／周脚本实测、当前目录选指标、原计划承诺保留 | ◐ | 指标组件由 codex/metrics-loop 实施，验收父级接线待调整 | 原有 runtime/组件测试不覆盖新规则；原型已同步，产品与真壳待验 |
+| A04 选择当前目录的历史脚本指标，旧计划基线保留 | ◐ | 已接入最新目录与历史采集；无计划指标也可选择，旧 ref 不阻断新采集 | 本轮定向测试及浏览器组件检查通过；真实 Electron 与完整旅程边界见[总览指标 STATUS](../overview-metrics/STATUS.md) |
 | A05 Issue 真实状态可刷新、无拆解入口、关闭数≠达成 | ✅ | AcceptanceTasks 快照分布+灯色守卫 | board-state/acceptance 测试 |
 | A06 原生详情编辑后按来源返回、保留版本/会话/草稿 | ◐ | returnToPreviousView+view-memory 与原生工作区恢复 | 导航测试；真实 CodeHub/GitHub 往返待人 |
 | A07 同一候选展示、人逐目标判断、未达可保存带入会话 | ✅ | AcceptanceGoalResult decision 流+prepare 文本；材料 RPC save 通过 material-human-guard 拦截 CLI 对人工结论字段的新增、修改与删除 | acceptance-interaction/material-human-guard 测试；真实模型会话与人工核对旅程待验 |

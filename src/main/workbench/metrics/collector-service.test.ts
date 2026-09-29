@@ -10,12 +10,18 @@ const definition: MetricDefinition = {
   target: '',
   unit: '个',
   feature: '',
-  collect: { kind: 'script', run: ['python', 'collect.py'], retro: false }
+  collect: { kind: 'script', run: ['python', 'collect.py'], retro: true }
 }
 const request: MetricReadRequest = {
   scope: { repoId: 'repo', worktreeId: 'plan-tree', hostId: 'local' },
   ref: definition.ref,
-  window: { kind: 'current', timezone: 'UTC' }
+  window: {
+    kind: 'range',
+    since: '2026-09-01',
+    until: '2026-09-02',
+    granularity: 'day',
+    timezone: 'UTC'
+  }
 }
 const context = (run: MetricCollectorContext['run']): MetricCollectorContext => ({
   definition,
@@ -46,7 +52,7 @@ it('deduplicates the same source across plan and acceptance worktrees', async ()
     scope: { ...request.scope, worktreeId: 'acceptance-tree' }
   })
   await vi.waitFor(() => expect(run).toHaveBeenCalledOnce())
-  finish({ stdout: '{"value":0}' })
+  finish({ stdout: '{"points":[{"day":"2026-09-01","value":0}]}' })
   const [first, second] = await Promise.all([plan, acceptance])
   expect(first).toEqual(second)
   expect(first).toMatchObject({ status: 'ready', readings: [{ value: 0 }] })
@@ -58,7 +64,7 @@ it('preserves the original evidence time on execution and preparation failures',
   let unavailable = false
   const run = vi
     .fn()
-    .mockResolvedValueOnce({ stdout: '{"value":0}' })
+    .mockResolvedValueOnce({ stdout: '{"points":[{"day":"2026-09-01","value":0}]}' })
     .mockRejectedValue(new Error('timed out'))
   const service = createMetricsService(
     {
@@ -87,7 +93,7 @@ it('preserves the original evidence time on execution and preparation failures',
 })
 
 it('does not reuse a result when script revision or data target changes', async () => {
-  let current = context(async () => ({ stdout: '{"value":1}' }))
+  let current = context(async () => ({ stdout: '{"points":[{"day":"2026-09-01","value":1}]}' }))
   const service = createMetricsService({ catalog: unusedCatalog, prepare: async () => current })
   await service.refresh(request)
   current = { ...current, collectorRevision: 'new-script' }
@@ -120,10 +126,10 @@ it('does not let a late old run replace the latest evidence used after a disconn
   current = {
     ...current,
     collectorRevision: 'new-script',
-    run: async () => ({ stdout: '{"value":2}' })
+    run: async () => ({ stdout: '{"points":[{"day":"2026-09-01","value":2}]}' })
   }
   await service.refresh(request)
-  finish({ stdout: '{"value":1}' })
+  finish({ stdout: '{"points":[{"day":"2026-09-01","value":1}]}' })
   await old
   unavailable = true
   expect(await service.read(request)).toMatchObject({

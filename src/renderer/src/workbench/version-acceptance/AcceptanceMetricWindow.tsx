@@ -73,59 +73,31 @@ export function AcceptanceMetricWindow({
   const invalid = windowError(window)
   return (
     <div className="va-window">
-      <label>
-        指标取值
-        <select
-          aria-label="指标取值范围"
-          value={window.kind}
-          disabled={disabled}
-          onChange={(event) =>
-            onChange(
-              event.target.value === 'current'
-                ? { kind: 'current', timezone: window.timezone }
-                : {
-                    kind: 'range',
-                    since: '',
-                    until: '',
-                    timezone: window.timezone,
-                    granularity: 'day'
-                  }
-            )
-          }
-        >
-          <option value="current">当前值</option>
-          <option value="range">指定历史区间</option>
-        </select>
-      </label>
-      {window.kind === 'range' && (
-        <>
-          <select
-            aria-label="指标采集粒度"
-            disabled={disabled}
-            value={window.granularity}
-            onChange={(event) =>
-              onChange({ ...window, granularity: event.target.value === 'week' ? 'week' : 'day' })
-            }
-          >
-            <option value="day">按日</option>
-            <option value="week">按周</option>
-          </select>
-          <input
-            type="date"
-            disabled={disabled}
-            aria-label="区间开始"
-            value={window.since}
-            onChange={(event) => onChange({ ...window, since: event.target.value })}
-          />
-          <input
-            type="date"
-            disabled={disabled}
-            aria-label="区间结束（不含）"
-            value={window.until}
-            onChange={(event) => onChange({ ...window, until: event.target.value })}
-          />
-        </>
-      )}
+      <select
+        aria-label="指标采集粒度"
+        disabled={disabled}
+        value={window.granularity}
+        onChange={(event) =>
+          onChange({ ...window, granularity: event.target.value === 'week' ? 'week' : 'day' })
+        }
+      >
+        <option value="day">按日</option>
+        <option value="week">按周</option>
+      </select>
+      <input
+        type="date"
+        disabled={disabled}
+        aria-label="区间开始"
+        value={window.since}
+        onChange={(event) => onChange({ ...window, since: event.target.value })}
+      />
+      <input
+        type="date"
+        disabled={disabled}
+        aria-label="区间结束（不含）"
+        value={window.until}
+        onChange={(event) => onChange({ ...window, until: event.target.value })}
+      />
       <span>{window.timezone}</span>
       {invalid && (
         <p className="va-warning" role="alert">

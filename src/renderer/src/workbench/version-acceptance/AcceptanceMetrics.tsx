@@ -1,18 +1,19 @@
 import { useEffect, useRef, useState } from 'react'
-import { metricRefKey, MetricWindowSchema } from '../../../../shared/workbench/metrics'
-import type {
-  MetricReading,
-  MetricRef,
-  MetricsPort,
-  MetricScope,
-  MetricWindow
+import { RefreshCw } from 'lucide-react'
+import {
+  MetricWindowSchema,
+  type MetricCatalog,
+  type MetricReading,
+  type MetricRef,
+  type MetricsPort,
+  type MetricScope,
+  type MetricWindow
 } from '../../../../shared/workbench/metrics'
 import type {
   MetricReadingEvidence,
   VersionGoal
 } from '../../../../shared/workbench/version-material'
 import { MetricEvidenceView } from '../metrics/MetricEvidenceView'
-import { metricWindowForDefinition } from '../../../../shared/workbench/metric-windows'
 
 export function AcceptanceMetrics({
   goal,
@@ -33,119 +34,150 @@ export function AcceptanceMetrics({
   disabled: boolean
   onReadings(ref: MetricRef, readings: MetricReadingEvidence[]): void
 }) {
-  const [results, setResults] = useState<Record<string, MetricReading>>({})
-  const [busy, setBusy] = useState<string | null>(null)
-  const sourceKey = JSON.stringify([materialKey, goal, scope, window, disabled])
-  const latestKey = useRef(sourceKey)
-  latestKey.current = sourceKey
-  const request = useRef({ sequence: 0 }).current
+  const [catalog, setCatalog] = useState<MetricCatalog | null>(null)
+  const [selected, setSelected] = useState('')
+  const [result, setResult] = useState<MetricReading | undefined>()
+  const [busy, setBusy] = useState(false)
+  const identity = JSON.stringify([materialKey, scope, goal.goalId, window, disabled])
+  const latest = useRef(identity)
+  latest.current = identity
+  const sequence = useRef(0)
   useEffect(() => {
-    setResults({})
-    setBusy(null)
+    let active = true
+    const requests = sequence
+    const token = ++requests.current
+    setCatalog(null)
+    setSelected('')
+    setResult(undefined)
+    setBusy(false)
+    void port.list(scope).then(
+      (value) => {
+        if (active && token === requests.current) {
+          setCatalog(value)
+        }
+      },
+      (error) => {
+        if (active && token === requests.current) {
+          setResult({ status: 'error', reason: { code: 'catalog-failed', message: String(error) } })
+        }
+      }
+    )
     return () => {
-      request.sequence++
+      active = false
+      requests.current++
     }
-  }, [sourceKey, port, request])
-  async function refresh(index: number) {
-    if (!window || disabled || !MetricWindowSchema.safeParse(window).success) {
-      return
-    }
-    const target = goal.metricTargets[index]
-    const key = metricRefKey(target.ref)
-    const token = ++request.sequence
-    const current = () => token === request.sequence && latestKey.current === sourceKey
-    setBusy(key)
+  }, [port, scope, materialKey, goal.goalId])
+  const name =
+    selected ||
+    catalog?.definitions.find((item) => item.name === goal.metricTargets[0]?.ref.name)?.name ||
+    catalog?.definitions[0]?.name ||
+    ''
+  async function refresh(collect: boolean) {
+    const token = ++sequence.current
+    const current = () => token === sequence.current && identity === latest.current
+    setBusy(true)
+    setResult(undefined)
     try {
-      const catalog = await port.list(scope)
-      if (!current()) {return}
-      const definition = catalog.definitions.find((item) => metricRefKey(item.ref) === key)
-      if (!definition) {throw new Error('指标配置已变化，请核对计划采用的来源')}
+      const next = await port.list(scope)
+      if (!current()) {
+        return
+      }
+      setCatalog(next)
+      if (!collect) {
+        return
+      }
+      const definition = next.definitions.find((item) => item.name === name)
+      if (!definition) {
+        throw new Error('请选择当前目录中的指标')
+      }
       const value = await port.refresh({
-        scope, ref: target.ref,
-        window: metricWindowForDefinition(definition, catalog.timezone, window)
+        scope,
+        ref: definition.ref,
+        window: MetricWindowSchema.parse(window)
       })
       if (!current()) {
         return
       }
-      setResults((current) => ({ ...current, [key]: value }))
+      setResult(value)
       if (value.status === 'ready') {
-        onReadings(target.ref, value.readings)
+        const previous = readings.find((item) => item.ref.name === definition.name)
+        onReadings(previous?.ref ?? definition.ref, value.readings)
       }
     } catch (error) {
-      if (!current()) {
-        return
-      }
-      setResults((current) => ({
-        ...current,
-        [key]: {
-          status: 'error',
-          reason: {
-            code: 'read-failed',
-            message: error instanceof Error ? error.message : String(error)
-          }
-        }
-      }))
-    } finally {
       if (current()) {
-        setBusy(null)
+        setResult({ status: 'error', reason: { code: 'read-failed', message: String(error) } })
+      }
+    } finally {
+      if (token === sequence.current) {
+        setBusy(false)
       }
     }
   }
   return (
-    <>
-      {goal.metricTargets.map((target, index) => {
-        const key = metricRefKey(target.ref)
-        const result = results[key]
-        const evidence = readings.filter(
-          (item) =>
-            item.ref.name === target.ref.name &&
-            item.ref.definitionHash === target.ref.definitionHash &&
-            item.ref.configurationCommit === target.ref.configurationCommit
-        )
-        const freshlyRead =
-          result?.status === 'ready' && JSON.stringify(result.readings) === JSON.stringify(evidence)
-        const visibleResult: MetricReading | undefined =
-          result?.status === 'ready'
-            ? freshlyRead
-              ? result
-              : undefined
-            : result
-              ? { status: result.status, reason: result.reason, run: result.run }
-              : undefined
-        return (
-          <div className="va-metric" key={`${target.ref.name}:${target.ref.definitionHash}`}>
-            <span>
-              {target.ref.name} · 本版目标 {target.target}
-            </span>
-            {target.baseline && <span>计划基线 {target.baseline.value} {target.baseline.unit}</span>}
-            <span>
-              {freshlyRead || !evidence.length ? '实测' : '已存读数'}{' '}
-              {evidence.length
-                ? evidence.map((item) => `${item.value} ${item.unit}`).join('；')
-                : '未知'}
-            </span>
-            <button
-              className="wb-btn wb-btn-ghost wb-btn-sm"
-              disabled={disabled || busy !== null || !MetricWindowSchema.safeParse(window).success}
-              onClick={() => void refresh(index)}
-            >
-              {busy === key ? '采集中…' : '刷新实测'}
-            </button>
-            {(evidence.length > 0 || (visibleResult && visibleResult.status !== 'ready')) && (
-              <details open={Boolean(visibleResult && visibleResult.status !== 'ready')}>
-                <summary>
-                  {visibleResult?.status === 'error'
-                    ? '本次采集失败'
-                    : visibleResult?.status === 'unknown'
-                      ? '本次无有效读数'
-                      : '读数来源与时间'}
-                </summary>
-                <MetricEvidenceView result={visibleResult} saved={evidence} />
-              </details>
-            )}
-          </div>
-        )
-      })}
-    </>
+    <div className="va-metric">
+      {goal.metricTargets.map((target) => (
+        <p key={target.ref.name}>
+          {target.ref.name} · 计划目标 {target.target || '未填写'}
+          {target.baseline && (
+            <>
+              {' '}
+              · 计划基线 {target.baseline.value}
+              {target.baseline.unit}
+            </>
+          )}
+        </p>
+      ))}
+      <div className="va-metric-controls">
+        <select
+          aria-label={`${goal.title || '目标'} 验收指标`}
+          value={name}
+          disabled={disabled || busy}
+          onChange={(event) => {
+            sequence.current++
+            setSelected(event.target.value)
+            setResult(undefined)
+          }}
+        >
+          <option value="">选择验收指标</option>
+          {catalog?.definitions.map((item) => (
+            <option key={item.name} value={item.name}>
+              {item.name}
+            </option>
+          ))}
+        </select>
+        <button
+          className="wb-btn wb-btn-secondary wb-btn-sm"
+          disabled={disabled || busy}
+          onClick={() => void refresh(false)}
+          title="刷新指标目录"
+          aria-label="刷新指标目录"
+        >
+          <RefreshCw size={14} />
+        </button>
+        <button
+          className="wb-btn wb-btn-secondary wb-btn-sm"
+          disabled={disabled || busy || !name || !MetricWindowSchema.safeParse(window).success}
+          onClick={() => void refresh(true)}
+        >
+          {busy ? '读取中…' : '采集'}
+        </button>
+      </div>
+      {catalog?.problems.map((problem) => (
+        <p
+          className="va-warning"
+          key={JSON.stringify([problem.name, problem.code, problem.message])}
+        >
+          {problem.name ? `${problem.name}：` : ''}
+          {problem.message}
+        </p>
+      ))}
+      {result && result.status !== 'ready' && <p className="va-warning">{result.reason.message}</p>}
+      {[...new Set(readings.map((reading) => reading.ref.name))].map((metric) => (
+        <div key={metric}>
+          <strong>{metric}</strong>
+          <MetricEvidenceView saved={readings.filter((reading) => reading.ref.name === metric)} />
+        </div>
+      ))}
+    </div>
   )
 }

@@ -1,6 +1,6 @@
 import { React } from 'react'
 import { CalendarClock, Info } from 'lucide-react'
-import { NewConversationIcon } from './shared.jsx'
+import { ModelSessionIcon } from './shared.jsx'
 
 export function cycleStartRequest({ view, firstEntry, hasProblems, version }) {
   const label = view === 'monday' ? '计划' : '验收'
@@ -29,7 +29,7 @@ export function PrototypeStartCard({ view, hasProblems, onStart, onConfigure }) 
           title={`新建会话，${view === 'monday' ? '制定版本计划' : '核对版本交付'}`}
           onClick={onStart}
         >
-          <NewConversationIcon />
+          <ModelSessionIcon />
           新建{label}
         </button>
       </div>

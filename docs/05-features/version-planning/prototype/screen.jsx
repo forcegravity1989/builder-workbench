@@ -1,5 +1,5 @@
 import { React, useEffect, useState } from 'react'
-import { Field, NewConversationIcon } from './shared.jsx'
+import { Field, ModelSessionIcon } from './shared.jsx'
 import {
   ChartNoAxesCombined,
   ChevronRight,
@@ -83,7 +83,7 @@ function PlanningContent({
           title="新建会话，配置指标"
           onClick={() => metricPrep(null)}
         >
-          <NewConversationIcon />
+          <ModelSessionIcon />
           配置指标
         </button>
         <button className="btn btn-secondary" onClick={review} disabled={disabled}>

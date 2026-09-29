@@ -43,7 +43,6 @@ export function MetricSelector({
             .map((item) => (
               <option key={metricRefKey(item.ref)} value={metricRefKey(item.ref)} title={item.def}>
                 {item.name}
-                {item.collect.retro ? '' : '（仅当前值）'}
               </option>
             ))}
         </optgroup>
