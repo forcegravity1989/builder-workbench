@@ -78,10 +78,10 @@ pnpm run typecheck
 每个 commit 前过 husky `lint-staged`（oxlint / oxfmt）。改叠层或注入逻辑时再跑受影响的 Vitest，例如：
 
 ```bash
-pnpm exec vitest run --config config/vitest.config.ts src/renderer/src/workbench/version-planning/PlanningBoard.test.tsx
+pnpm exec vitest run --config config/vitest.config.ts src/renderer/src/workbench/version-cycle/cycle-prompt.test.ts
 ```
 
-PR 检查以 [`.github/workflows/pr.yml`](.github/workflows/pr.yml) 为准。行为正确性仍靠真壳（计划/验收两屏、会话注入、远端/Git/文件读回）及 code review；已有单测随改维护，不把新增回归大坝当交付物。
+PR 检查以 [`.github/workflows/pr.yml`](.github/workflows/pr.yml) 为准。行为正确性仍靠真壳（计划/验收两屏、会话注入、远端/Git/文件读回）及 code review；已有单测随改维护，不把新增回归大坝当交付物；新增单测按 [02 环 4](docs/01-principles/02-working-backwards.md) 负面清单——只覆盖核心推导与四铁律守护，UI/文案/装配默认不新增；验收点与旅程 E2E 特性初期控量，稳定后专项回补。
 
 ## 修改与交付
 
@@ -94,7 +94,7 @@ PR 检查以 [`.github/workflows/pr.yml`](.github/workflows/pr.yml) 为准。行
 
 ### commit 与 PR
 
-每件独立提交、在分支和独立工作树上。**默认继续交付 PR**：完成门禁、对应 E2E 和自检后，提交、push、开 PR 并补验证 Review；人明确说「只本地」时才停止在本地。不自动合入 PR、关闭 Issue 或正式发版本，除非人已明确授权该动作。标题应让人不查文档也懂改了什么，正文如实说明原因、取舍与偏差；变化与证据写进 commit/PR，当前知识写回正本。
+每件独立提交、在分支和独立工作树上。**默认继续交付 PR**：完成门禁、对应 E2E 和推前 subagent 全方位检视（四维与 TODO 步骤见 [02 §6.2 横切站 B](docs/01-principles/02-working-backwards.md)）后，提交、push、开 PR 并补验证 Review；人明确说「只本地」时才停止在本地。不自动合入 PR、关闭 Issue 或正式发版本，除非人已明确授权该动作。标题应让人不查文档也懂改了什么，正文如实说明原因、取舍与偏差；变化与证据写进 commit/PR，当前知识写回正本。
 
 PR 展示实际改动、知识去向、验证结果和未验证项；文档改动按上节给出内容去向与头部变化。稳定规则写回正本，不把提交流水重新养成一份常驻文档。
 
