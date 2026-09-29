@@ -16,7 +16,8 @@ export function nativeMetricsPort(runtimeOwnerEnvironmentId?: string): MetricsPo
         scope,
         runtimeOwnerEnvironmentId,
         'workbench.metrics.list',
-        (ownerScope) => ownerScope
+        (ownerScope) => ownerScope,
+        90_000
       )
       return { ...catalog, scope }
     },

@@ -237,15 +237,16 @@
   font-size: 0.8rem;
 }
 .va-metric {
+  display: grid;
+  gap: var(--space-2);
+  font-size: 0.8rem;
+  min-width: 0;
+}
+.va-metric-controls {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   gap: var(--space-2);
-  font-size: 0.8rem;
-}
-.va-metric > details,
-.va-metric > p {
-  flex-basis: 100%;
 }
 .va-window,
 .va-source {

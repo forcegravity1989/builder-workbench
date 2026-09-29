@@ -1,10 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { addCalendarDays } from '../../../shared/workbench/metric-windows'
-import type {
-  MetricDefinition,
-  MetricRange,
-  MetricReading
-} from '../../../shared/workbench/metrics'
+import type { MetricDefinition, MetricReading } from '../../../shared/workbench/metrics'
 import {
   groupZonePlots,
   isoWeekLabel,
@@ -13,7 +9,6 @@ import {
   zoneBucketLabels,
   zoneChartRange,
   zonePointState,
-  zoneWindowForDefinition,
   ZONE_DAY_BUCKETS,
   ZONE_WEEK_BUCKETS
 } from './overview-zone-series'
@@ -107,20 +102,6 @@ describe('isoWeekLabel', () => {
   })
 })
 
-describe('zoneWindowForDefinition', () => {
-  it('retro 定义按粒度取图表窗口；仅当前值定义保持 instant 窗口', () => {
-    const retro = def({ name: 'a' })
-    const current = def({ name: 'b', collect: { kind: 'script', run: [], retro: false } })
-    const range = zoneWindowForDefinition(retro, TZ, 'day', NOW) as MetricRange
-    expect(range.kind).toBe('range')
-    expect(range.granularity).toBe('day')
-    expect(zoneWindowForDefinition(current, TZ, 'day', NOW)).toEqual({
-      kind: 'current',
-      timezone: TZ
-    })
-  })
-})
-
 describe('groupZonePlots', () => {
   it('一图一滞后：leads 按名字挂到对应滞后', () => {
     const plots = groupZonePlots([
@@ -210,36 +191,6 @@ describe('zonePointState', () => {
     }
     expect(state.values).toEqual([null, null, null, null, null])
     expect(state.latest?.value).toBe('达标')
-  })
-
-  it('仅当前值指标（无窗口）不落桶，只保留 instant 当前值', () => {
-    const reading: MetricReading = {
-      status: 'ready',
-      readings: [
-        {
-          ref: { name: 'm', definitionHash: 'h', configurationCommit: 'a'.repeat(40) },
-          value: 3,
-          unit: '',
-          collectedAt: NOW,
-          source: 'repo@a',
-          collectorRevision: 'rev',
-          observation: { kind: 'instant', observedAt: NOW }
-        }
-      ],
-      run: {
-        runId: 'r',
-        startedAt: NOW,
-        finishedAt: NOW,
-        collectorRevision: 'rev',
-        dataTarget: { repository: 'repo', commit: 'b'.repeat(40), hostId: 'local' }
-      }
-    }
-    const state = zonePointState(reading, labels, null, TZ)
-    if (state.kind !== 'ready') {
-      throw new Error('expected ready')
-    }
-    expect(state.values.every((value) => value === null)).toBe(true)
-    expect(state.latest).toMatchObject({ value: 3 })
   })
 })
 

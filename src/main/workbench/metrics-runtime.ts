@@ -36,6 +36,7 @@ import { WorkspaceScopeError } from './workspace-scope-error'
 export type MetricsConfigurationRequest = {
   adoptedRef: string | null
   configurationCommit?: string
+  synchronize?: boolean
 }
 export type MetricsFingerprintRequest = { configurationCommit: string; run: string[] }
 export type MetricsCollectRequest = {
@@ -94,7 +95,7 @@ export async function executeMetricsOperation(
     'workbench.metrics.execute',
     { target: { repoPath: target.repoPath }, ...operation },
     {
-      timeoutMs: operation.operation === 'collect' ? COLLECT_RPC_TIMEOUT_MS : undefined
+      timeoutMs: operation.operation === 'collect' ? COLLECT_RPC_TIMEOUT_MS : 75_000
     }
   )) as VersionMaterialResult<unknown>
   if (!result.ok) {
@@ -138,7 +139,7 @@ export function nativeMetricsHost(runtime: {
       const execOptions = resolveWorkbenchGitExecOptions(runtime, repo)
       const snapshot = (await executeMetricsOperation(target, execOptions, {
         operation: 'configuration',
-        request: { adoptedRef: repo.worktreeBaseRef?.trim() || null }
+        request: { adoptedRef: repo.worktreeBaseRef?.trim() || null, synchronize: true }
       })) as MetricConfigurationSnapshot
       const { definitions, problems } = decodeMetricDefinitions(
         snapshot.toml,

@@ -195,16 +195,26 @@ export function OverviewPage(): React.JSX.Element {
   }, [baseScope, baseWorktreeId, currentGranularity, markRead, fixedTrees.plan])
 
   const refreshReadings = useCallback(async () => {
-    if (!baseScope || !baseWorktreeId || !catalog) {
+    if (!baseScope || !baseWorktreeId) {
       return
     }
     const epoch = ++loadEpoch.current
     setBusy(true)
     try {
+      const scope = {
+        repoId: baseScope.repoId,
+        worktreeId: baseWorktreeId,
+        hostId: baseScope.hostId
+      }
+      const nextCatalog = await nativeMetricsPort(baseScope.runtimeOwnerEnvironmentId).list(scope)
+      if (epoch !== loadEpoch.current) {
+        return
+      }
+      setCatalog(nextCatalog)
       const result = await refreshMetricReadings({
         scope: { repoId: baseScope.repoId, worktreeId: baseWorktreeId, hostId: baseScope.hostId },
         owner: baseScope.runtimeOwnerEnvironmentId,
-        catalog,
+        catalog: nextCatalog,
         granularity: currentGranularity()
       })
       if (epoch !== loadEpoch.current) {
@@ -212,13 +222,17 @@ export function OverviewPage(): React.JSX.Element {
       }
       setZoneReadings(result.map)
       setNorthReading(result.north)
-      setProblems([...catalogProblems(catalog), ...result.problems])
+      setProblems([...catalogProblems(nextCatalog), ...result.problems])
+    } catch (reason) {
+      if (epoch === loadEpoch.current) {
+        setProblems([`刷新指标失败：${String(reason)}`])
+      }
     } finally {
       if (epoch === loadEpoch.current) {
         setBusy(false)
       }
     }
-  }, [baseScope, baseWorktreeId, catalog, currentGranularity])
+  }, [baseScope, baseWorktreeId, currentGranularity])
 
   useEffect(() => {
     setCatalog(null)

@@ -8,10 +8,6 @@ import { MetricReadingEvidenceSchema } from '../../../shared/workbench/version-m
 import { isoWeekStart, metricBucketWindow } from '../../../shared/workbench/metric-windows'
 
 const Value = z.union([z.number().finite(), z.string().trim().min(1)])
-const CurrentOutput = z.object({
-  value: Value,
-  observed_at: z.iso.datetime({ offset: true }).optional()
-})
 const Point = z.object({
   value: Value,
   week: z.string().optional(),
@@ -57,32 +53,6 @@ export function decodeMetricOutput(input: {
     collectedAt,
     collectorRevision: input.collectorRevision,
     source: input.source
-  }
-  if (!definition.collect.retro) {
-    if (window.kind !== 'current') {
-      throw new MetricCollectorError(
-        'history-unavailable',
-        '此来源只能查询当前值，无法补采历史窗口'
-      )
-    }
-    const parsed = CurrentOutput.safeParse(raw)
-    if (!parsed.success) {
-      throw new MetricCollectorError('invalid-output', '当前值脚本没有返回有效 value')
-    }
-    const observedAt = parsed.data.observed_at ?? collectedAt
-    if (Date.parse(observedAt) > Date.parse(collectedAt)) {
-      throw new MetricCollectorError('invalid-output', '脚本观测时间晚于本次采集时间')
-    }
-    return [
-      MetricReadingEvidenceSchema.parse({
-        ...evidence,
-        value: parsed.data.value,
-        observation: { kind: 'instant', observedAt }
-      })
-    ]
-  }
-  if (window.kind !== 'range') {
-    throw new MetricCollectorError('window-required', '可回溯指标需要明确的查询窗口')
   }
   const parsed = HistoryOutput.safeParse(raw)
   if (!parsed.success) {

@@ -1,3 +1,4 @@
+import { MessageSquarePlus } from 'lucide-react'
 import { useMemo } from 'react'
 import { OverviewGrain, OverviewRefresh } from './overview-controls'
 import { useOverviewViewState } from './overview-view-state'
@@ -48,7 +49,6 @@ type ZoneRow = {
   valueText: string
   statusText: string
   staleText: string | null
-  currentOnly: boolean
   readingNote: string | null
 }
 
@@ -61,12 +61,7 @@ function buildRows(
 ): ZoneRow[] {
   const defs = plot.lagging ? [plot.lagging, ...plot.leads] : plot.leads
   return defs.map((def, index) => {
-    const state = zonePointState(
-      readings[def.ref.definitionHash] ?? null,
-      labels,
-      def.collect.retro ? range : null,
-      timezone
-    )
+    const state = zonePointState(readings[def.ref.definitionHash] ?? null, labels, range, timezone)
     const color =
       def.role === 'lagging'
         ? ZONE_LAG_COLOR
@@ -93,14 +88,11 @@ function buildRows(
         state.kind === 'unknown' && state.stale
           ? `陈旧读数 ${state.stale.value}（采集于 ${state.stale.collectedAt}）`
           : null,
-      currentOnly: !def.collect.retro,
       readingNote:
         state.kind === 'ready' && state.latest
-          ? !def.collect.retro
-            ? '仅当前值，见指标详情'
-            : typeof state.latest.value === 'string'
-              ? '文本读数，见指标详情'
-              : null
+          ? typeof state.latest.value === 'string'
+            ? '文本读数，见指标详情'
+            : null
           : null
     }
   })
@@ -164,11 +156,7 @@ function PlotCard({
         {rows.map((row) => (
           <div key={row.def.ref.definitionHash} className="wb-mz-def">
             <strong>{row.def.name}</strong>
-            <span className="wb-muted">
-              {' '}
-              · {row.def.role === 'leading' ? '引领' : '滞后'}
-              {row.currentOnly ? ' · 仅当前值' : ''}
-            </span>
+            <span className="wb-muted"> · {row.def.role === 'leading' ? '引领' : '滞后'}</span>
             <p>{row.def.def.trim() || '未提供定义'}</p>
             <p>
               最近读数 <b>{row.valueText}</b> · 长期目标 {row.def.target || '未设置'}
@@ -238,10 +226,11 @@ export function OverviewMetricZones({
             className="wb-btn wb-btn-secondary wb-btn-sm"
             disabled={setupBusy}
             onClick={onSetup}
+            title="新建会话，配置指标"
           >
-            设置指标
+            <MessageSquarePlus size={14} aria-hidden="true" /> 配置指标
           </button>
-          <OverviewRefresh label="刷新业务指标" busy={busy || !catalog} onClick={onRefresh} />
+          <OverviewRefresh label="刷新业务指标" busy={busy} onClick={onRefresh} />
         </div>
       </header>
       <div className="wb-mz-plots">

@@ -1,8 +1,7 @@
 import type {
   MetricDefinition,
   MetricRange,
-  MetricReading,
-  MetricWindow
+  MetricReading
 } from '../../../shared/workbench/metrics'
 import {
   addCalendarDays,
@@ -44,18 +43,6 @@ export function zoneChartRange(
     granularity: 'day',
     timezone
   }
-}
-
-/** retro definitions are queried over the chart span; current-only sources keep the instant window. */
-export function zoneWindowForDefinition(
-  definition: MetricDefinition,
-  timezone: string,
-  granularity: ZoneGranularity,
-  now = new Date().toISOString()
-): MetricWindow {
-  return definition.collect.retro
-    ? zoneChartRange(granularity, timezone, now)
-    : { kind: 'current', timezone }
 }
 
 /** ISO week of a Monday bucket, e.g. 2026-08-31 → "2026-W36"; the week's Thursday owns the year. */
@@ -117,7 +104,7 @@ function staleOf(reading: MetricReading): { value: string | number; collectedAt:
 export function zonePointState(
   reading: MetricReading | null,
   labels: string[],
-  range: MetricRange | null,
+  range: MetricRange,
   timezone: string
 ): ZonePointState {
   if (reading === null) {
@@ -133,7 +120,7 @@ export function zonePointState(
       value: point.value,
       collectedAt: point.collectedAt
     }
-    if (range && point.observation.kind === 'window' && typeof point.value === 'number') {
+    if (point.observation.kind === 'window' && typeof point.value === 'number') {
       const index = bucketIndexOf(dayInTimezone(point.observation.start, timezone), range)
       if (index !== null && index < values.length) {
         values[index] = point.value

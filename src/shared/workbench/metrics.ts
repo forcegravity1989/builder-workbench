@@ -1,9 +1,5 @@
 import { z } from 'zod'
-import {
-  MetricReferenceSchema,
-  type MetricReadingEvidenceSchema,
-  SourceCommit
-} from './version-material'
+import { MetricReferenceSchema, type MetricReadingEvidenceSchema } from './version-material'
 
 export const MetricScopeSchema = z.strictObject({
   repoId: z.string().min(1),
@@ -33,24 +29,21 @@ const Day = z
     return Number.isFinite(date.getTime()) && date.toISOString().slice(0, 10) === value
   }, 'Invalid calendar date')
 
-export const MetricWindowSchema = z.discriminatedUnion('kind', [
-  z.strictObject({ kind: z.literal('current'), timezone: Timezone }),
-  z
-    .strictObject({
-      kind: z.literal('range'),
-      since: Day,
-      until: Day,
-      granularity: z.enum(['day', 'week']),
-      timezone: Timezone
-    })
-    .refine((value) => value.since < value.until, 'Window must be left-closed, right-open')
-    .refine(
-      (value) =>
-        value.granularity !== 'week' ||
-        [value.since, value.until].every((day) => new Date(`${day}T00:00:00Z`).getUTCDay() === 1),
-      '按周采集需使用周一到周一的完整周日期边界；任意日期范围请按日查询'
-    )
-])
+export const MetricWindowSchema = z
+  .strictObject({
+    kind: z.literal('range'),
+    since: Day,
+    until: Day,
+    granularity: z.enum(['day', 'week']),
+    timezone: Timezone
+  })
+  .refine((value) => value.since < value.until, 'Window must be left-closed, right-open')
+  .refine(
+    (value) =>
+      value.granularity !== 'week' ||
+      [value.since, value.until].every((day) => new Date(`${day}T00:00:00Z`).getUTCDay() === 1),
+    '按周采集需使用周一到周一的完整周日期边界；任意日期范围请按日查询'
+  )
 export type MetricWindow = z.infer<typeof MetricWindowSchema>
 export type MetricRange = Extract<MetricWindow, { kind: 'range' }>
 
@@ -70,7 +63,7 @@ export type MetricDefinition = {
   unit: string
   feature: string
   leads?: string
-  collect: { kind: 'script'; run: string[]; retro: boolean }
+  collect: { kind: 'script'; run: string[]; retro: true }
 }
 export type MetricProblem = { code: string; message: string; name?: string }
 
@@ -111,38 +104,6 @@ export type MetricsPort = {
   refresh(request: MetricReadRequest): Promise<MetricReading>
 }
 
-export const ProjectMetricsRequestSchema = z.strictObject({
-  scope: MetricScopeSchema,
-  window: MetricWindowSchema
-})
-export type ProjectMetricsRequest = z.infer<typeof ProjectMetricsRequestSchema>
-export type ProjectMetricKey = 'commits' | 'merged-prs' | 'open-issues'
-export type ProjectMetrics = {
-  scope: MetricScope
-  branch: string
-  dataCommit: string
-  series: Record<ProjectMetricKey, MetricReading>
-}
-
-export const MetricConfigurationSchema = z.strictObject({
-  scope: MetricScopeSchema,
-  configurationCommit: SourceCommit
-})
-
 export function metricRefKey(ref: MetricRef): string {
   return JSON.stringify([ref.name, ref.definitionHash, ref.configurationCommit])
-}
-
-/** Matching provenance alone does not establish comparable periods or normalized statistics. */
-export function sameMetricDefinition(
-  left: MetricReadingEvidence,
-  right: MetricReadingEvidence
-): boolean {
-  return (
-    left.ref.name === right.ref.name &&
-    left.ref.definitionHash === right.ref.definitionHash &&
-    left.collectorRevision === right.collectorRevision &&
-    left.unit === right.unit &&
-    left.source === right.source
-  )
 }

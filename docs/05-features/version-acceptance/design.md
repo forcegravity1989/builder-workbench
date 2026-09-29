@@ -36,7 +36,7 @@ candidateRef 保存项目、完整 commit SHA、版本与来源；preparedArtifa
 
 记录 version、cycleId、planRef、candidateRef、preparedArtifacts、goalId 对应实际交付/readingRef/结论/依据/下一步、人的确认来源与修订。可保存只读承诺快照作为草案/离线证据，不能编辑为另一份计划。
 
-采集值只来自脚本，归档保存采用的定义指纹、窗口或 observedAt、结果及来源；保留证据不是建立日采账本。Issue 快照附 provider/repo/number/state/readAt，不是可编辑任务正本。
+新采集只来自可查日／周历史的脚本，用户从最新已合入目录选择指标，归档保存本次定义指纹、窗口、结果及来源。计划基线和旧时点证据保留历史身份，不阻止新采集；保留证据不是建立日采账本。Issue 快照附 provider/repo/number/state/readAt，不是可编辑任务正本。
 
 验收纪要由对应修订确定性生成，预览/复制/归档采用同一函数。已合入记录以目标基线的 commit + 文档路径 + cycleId 为历史身份；总览读取摘要，能打开对应只读原文及来源。每周和补证归档都是可追溯修订，缓存可重建，不另建里程碑表或历史业务数据库。
 

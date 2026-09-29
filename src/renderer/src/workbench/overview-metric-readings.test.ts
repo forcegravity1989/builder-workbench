@@ -9,7 +9,8 @@ import { zoneChartRange } from './overview-zone-series'
 
 const requests = vi.hoisted(() => ({
   read: [] as MetricReadRequest[],
-  refresh: [] as MetricReadRequest[]
+  refresh: [] as MetricReadRequest[],
+  failedName: null as string | null
 }))
 vi.mock('./metrics-port', () => ({
   nativeMetricsPort: () => ({
@@ -18,6 +19,9 @@ vi.mock('./metrics-port', () => ({
     },
     read: async (request: MetricReadRequest) => {
       requests.read.push(request)
+      if (request.ref.name === requests.failedName) {
+        throw new Error('来源不可用')
+      }
       return { status: 'unknown', reason: { code: 'not-collected', message: '尚未采集' } }
     },
     refresh: async (request: MetricReadRequest) => {
@@ -54,17 +58,14 @@ const catalog: MetricCatalog = {
   configurationCommit: 'c'.repeat(40),
   configurationRef: 'main',
   timezone: TZ,
-  definitions: [
-    def({ name: 'north', role: 'north_star' }),
-    def({ name: 'zone-retro' }),
-    def({ name: 'zone-current', collect: { kind: 'script', run: [], retro: false } })
-  ],
+  definitions: [def({ name: 'north', role: 'north_star' }), def({ name: 'zone-retro' })],
   problems: []
 }
 
 beforeEach(() => {
   requests.read.length = 0
   requests.refresh.length = 0
+  requests.failedName = null
 })
 
 function windowFor(list: MetricReadRequest[], name: string): MetricReadRequest['window'] {
@@ -72,11 +73,10 @@ function windowFor(list: MetricReadRequest[], name: string): MetricReadRequest['
 }
 
 describe('readAllMetricReadings windows', () => {
-  it('北极星保持单周当前窗口；滞后/引领按粒度取图表窗口；仅当前值定义保持 instant', async () => {
+  it('北极星保持单周当前窗口；滞后/引领按粒度取图表窗口', async () => {
     await readAllMetricReadings({ scope, owner: undefined, catalog, granularity: 'week' })
     expect(windowFor(requests.read, 'north')).toEqual(currentMetricWeek(TZ))
     expect(windowFor(requests.read, 'zone-retro')).toEqual(zoneChartRange('week', TZ))
-    expect(windowFor(requests.read, 'zone-current')).toEqual({ kind: 'current', timezone: TZ })
   })
 
   it('日粒度切换后，可回溯定义改按日窗口经同一 read RPC 重读', async () => {
@@ -88,10 +88,15 @@ describe('readAllMetricReadings windows', () => {
   })
 
   it('单个定义读取失败落入 problems，其余定义不受影响', async () => {
+    requests.failedName = 'zone-retro'
     const result = await readAllMetricReadings({ scope, owner: undefined, catalog })
-    expect(result.problems).toEqual([])
-    expect(Object.keys(result.map)).toHaveLength(3)
-    expect(result.north).not.toBeNull()
+    expect(result.problems).toEqual(['zone-retro 读数：来源不可用'])
+    expect(result.map['h-zone-retro']).toBeNull()
+    expect(result.north).toEqual({
+      status: 'unknown',
+      reason: { code: 'not-collected', message: '尚未采集' }
+    })
+    expect(result.map['h-north']).toBe(result.north)
   })
 })
 
@@ -100,6 +105,6 @@ describe('refreshMetricReadings windows', () => {
     await refreshMetricReadings({ scope, owner: undefined, catalog, granularity: 'week' })
     expect(windowFor(requests.refresh, 'zone-retro')).toEqual(zoneChartRange('week', TZ))
     expect(windowFor(requests.refresh, 'north')).toEqual(currentMetricWeek(TZ))
-    expect(requests.read).toHaveLength(3)
+    expect(requests.read).toHaveLength(2)
   })
 })
