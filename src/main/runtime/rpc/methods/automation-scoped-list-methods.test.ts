@@ -136,7 +136,7 @@ describe('owner preconditions', () => {
     expect(runtime.showAutomation).toHaveBeenCalledWith('a1', SSH_OWNER)
     expect(runtime.listAutomationRuns).toHaveBeenCalledWith('a1', SSH_OWNER)
     expect(runtime.deleteAutomation).toHaveBeenCalledWith('a1', SSH_OWNER)
-    expect(runtime.runAutomationNow).toHaveBeenCalledWith('a1', SSH_OWNER)
+    expect(runtime.runAutomationNow).toHaveBeenCalledWith('a1', SSH_OWNER, undefined)
   })
 
   // Why: a client with no SSH target registry of its own — the CLI — can only satisfy
@@ -220,7 +220,7 @@ describe('owner preconditions', () => {
       { expectedOwner: SSH_OWNER, destination: undefined }
     )
     expect(runtime.deleteAutomation).toHaveBeenCalledWith('a1', SSH_OWNER)
-    expect(runtime.runAutomationNow).toHaveBeenCalledWith('a1', SSH_OWNER)
+    expect(runtime.runAutomationNow).toHaveBeenCalledWith('a1', SSH_OWNER, undefined)
     expect(runtime.listAutomationRuns).toHaveBeenCalledWith(undefined, undefined)
   })
 

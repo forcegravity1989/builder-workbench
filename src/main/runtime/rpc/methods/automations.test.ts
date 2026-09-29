@@ -101,8 +101,24 @@ describe('automation RPC methods', () => {
       { expectedOwner: undefined, destination: undefined }
     )
     expect(runtime.deleteAutomation).toHaveBeenCalledWith('auto-1', undefined)
-    expect(runtime.runAutomationNow).toHaveBeenCalledWith('auto-1', undefined)
+    expect(runtime.runAutomationNow).toHaveBeenCalledWith('auto-1', undefined, undefined)
     expect(runtime.listAutomationRuns).toHaveBeenCalledWith('auto-1', undefined)
+  })
+
+  it('forwards a one-shot prompt on runNow without touching the stored record', async () => {
+    const runtime = {
+      getRuntimeId: () => 'test-runtime',
+      runAutomationNow: vi.fn().mockResolvedValue({ id: 'run-1' })
+    } as unknown as OrcaRuntimeService
+    const dispatcher = new RpcDispatcher({ runtime, methods: AUTOMATION_METHODS })
+    await dispatcher.dispatch(
+      makeRequest('automation.runNow', { id: 'auto-1', oneShotPrompt: '本次处理请求：修复 v0.3' })
+    )
+    expect(runtime.runAutomationNow).toHaveBeenCalledWith(
+      'auto-1',
+      undefined,
+      '本次处理请求：修复 v0.3'
+    )
   })
 
   it('returns a cursor page when the caller requests a bounded run history', async () => {

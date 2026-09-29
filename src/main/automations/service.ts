@@ -138,13 +138,14 @@ export class AutomationService {
     this.timer = null
   }
 
-  async runNow(automationId: string): Promise<AutomationRun> {
+  async runNow(automationId: string, oneShotPrompt?: string): Promise<AutomationRun> {
     const automation = this.store.listAutomations().find((entry) => entry.id === automationId)
     if (!automation) {
       throw new Error('Automation not found.')
     }
     const run = this.runs.createRun(automation, Date.now(), 'manual')
-    return await this.requestDispatch(automation, run, this.resolveTarget(automation))
+    const target = this.resolveTarget(automation)
+    return await this.requestDispatch(automation, run, target, oneShotPrompt)
   }
 
   /** The run-history row doc:94 pairs with the typed refusal an execute fence throws. */
@@ -292,7 +293,8 @@ export class AutomationService {
   private async requestDispatch(
     automation: Automation,
     run: AutomationRun,
-    target: AutomationRunTargetResult
+    target: AutomationRunTargetResult,
+    oneShotPrompt?: string
   ): Promise<AutomationRun> {
     if (!target.ok) {
       return this.runs.updateRun({
@@ -308,6 +310,7 @@ export class AutomationService {
           automation,
           run,
           target,
+          ...(oneShotPrompt ? { oneShotPrompt } : {}),
           dispatcher: this.headlessDispatcher,
           runs: this.runs,
           runPrecheck: () => this.runPrecheck(automation.id, run.id),
@@ -331,7 +334,8 @@ export class AutomationService {
     const payload: AutomationDispatchRequest = {
       automation,
       run: updated,
-      dispatchToken: createAutomationDispatchToken(automation.id, updated.id)
+      dispatchToken: createAutomationDispatchToken(automation.id, updated.id),
+      ...(oneShotPrompt ? { oneShotPrompt } : {})
     }
     return sendRendererDispatch(this.webContents, payload, this.runs, updated)
   }

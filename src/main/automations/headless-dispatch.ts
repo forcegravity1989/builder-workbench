@@ -24,6 +24,8 @@ export type HeadlessAutomationDispatcher = (request: {
   automation: Automation
   run: AutomationRun
   target: Extract<AutomationRunTargetResult, { ok: true }>
+  /** This run's one-shot context; combine with the saved prompt, never persist it. */
+  oneShotPrompt?: string
 }) => Promise<HeadlessAutomationDispatchLaunch>
 
 export function createHeadlessAutomationOutputSnapshotBuffer(): {

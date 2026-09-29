@@ -16,6 +16,7 @@ export type HeadlessAutomationDispatchContext = {
   automation: Automation
   run: AutomationRun
   target: Extract<AutomationRunTargetResult, { ok: true }>
+  oneShotPrompt?: string
   dispatcher: HeadlessAutomationDispatcher
   runs: AutomationRunWriter
   runPrecheck: () => Promise<AutomationPrecheckResult | null>
@@ -43,7 +44,12 @@ export async function runHeadlessAutomationDispatch(
     })
   }
   try {
-    const launch = await ctx.dispatcher({ automation, run, target })
+    const launch = await ctx.dispatcher({
+      automation,
+      run,
+      target,
+      ...(ctx.oneShotPrompt ? { oneShotPrompt: ctx.oneShotPrompt } : {})
+    })
     const launchRunTarget = {
       workspaceId: launch.workspaceId,
       workspaceDisplayName: launch.workspaceDisplayName ?? null,

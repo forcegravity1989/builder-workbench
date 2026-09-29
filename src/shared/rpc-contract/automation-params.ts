@@ -183,6 +183,20 @@ export const AutomationId = z.object({
   expectedOwner: ExpectedOwner
 })
 
+/**
+ * runNow only: `oneShotPrompt` is this run's additional context, appended to the
+ * saved prompt at dispatch. It never reaches the automation record, so the field
+ * is bounded — a runaway client must not smuggle an unbounded payload through it.
+ */
+export const MAX_AUTOMATION_ONE_SHOT_PROMPT_CHARS = 32_000
+
+export const AutomationRunNow = AutomationId.extend({
+  oneShotPrompt: OptionalPlainString.refine(
+    (value) => value === undefined || value.length <= MAX_AUTOMATION_ONE_SHOT_PROMPT_CHARS,
+    { message: 'One-shot prompt is too large' }
+  )
+})
+
 export const AutomationRuns = z.object({
   automationId: OptionalString,
   expectedOwner: ExpectedOwner,

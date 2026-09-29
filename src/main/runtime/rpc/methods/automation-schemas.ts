@@ -3,6 +3,7 @@ export {
   AutomationCreate,
   AutomationId,
   AutomationList,
+  AutomationRunNow,
   AutomationRuns,
   AutomationUpdate,
   Destination,
