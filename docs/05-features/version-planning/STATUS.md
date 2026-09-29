@@ -4,7 +4,7 @@
 
 目标平台为 bw-orca 的 Electron/Orca 叠层。2026-09-24 用户合入 [设计 PR #264](https://github.com/forcegravity1989/builder-workbench/pull/264)，基线为 ba3955e6a9fa0dbf144096f5cb0609f2a89f39cb，并明确授权开工；产品方向与 v8 高保真作为实施输入，详细设计未逐项细审，未决项必须由实施窗口直接请用户确认。
 
-用户已确认本轮高保真并要求提交特性资产：计划与验收统一在右板首行提供协作卡片、“配置自动化”与启动按钮，原生标签栏不增加 BW 按钮；分支名移至页头，异常文件随同一启动入口带入会话。原型说明、首次/异常场景选择集中到页面末尾并明确不进入最终界面。当前提交仅含特性文档与原型；生产仍使用原生 TabBar 的 CycleStartButton，新入口尚未落地，也未运行真壳。
+用户已确认本轮高保真并要求提交特性资产：计划与验收统一在右板首行提供协作卡片、“配置自动化”与启动按钮，原生标签栏不增加 BW 按钮；分支名移至页头，异常文件随同一启动入口带入会话。原型说明、首次/异常场景选择集中到页面末尾并明确不进入最终界面。该入口迁移已在 PR #279 实施：CycleStartCard 落地两屏首行，tab-bar-surface 的 CycleStartButton 薄挂载与 startMaterialRequest 独立通道已退役删除；数据问题上下文经 automation.runNow 的可选 oneShotPrompt 随保存提示单次合并递交（capability 门控）。组件/契约测试与静态检查通过，真壳未运行，不能视为真壳验证通过。
 
 指标窗口确认的历史脚本限制、每次配置新建会话和“对话气泡＋”图标已同步本屏原型与规格；生产指标接线已随 [PR #278](https://github.com/forcegravity1989/builder-workbench/pull/278) 合入，本线不重复实施。原型配置会话仍为内存演示，不作为采集或模型注入通过的证据。
 
@@ -50,7 +50,7 @@
 | P03 指标与总览同定义/窗口/来源；刷新/失败/未知/旧值区分 | ◐ | use-plan-metrics + metrics runtime + PlanGoalMetrics 可选多指标与依据展开 | 既有采集/证据单测与 runtime 测试；新目标行及真实脚本全链待真壳/环境 |
 | P04 纪要三段模板派生、复制一致、不补造事实 | ✅ | derivePlanMinutes + PlanningMinutes 复制 | plan-summary 测试 |
 | P05 Issue 创建/复用真实回显；详情编辑返回保留上下文 | ◐ | task-port + 原生 returnToPreviousView 跳过哨兵（528dce0f8） | ui-page-navigation 测试；真实 provider 往返待人 |
-| P06 分树、全部原生会话复用、专用新建与数据处理入口 | ◐ | CycleWorkspaceProvider + 原生 Terminal/TabBar/RightSidebar | 右板首行统一入口已确认但尚未接线；既有替身测试不替代新路径与多标签/分屏/历史真壳验证 |
+| P06 分树、全部原生会话复用、专用新建与数据处理入口 | ◐ | CycleWorkspaceProvider + CycleStartCard（首行协作卡片）+ 原生 Terminal/RightSidebar；数据问题随 runNow oneShotPrompt 单次递交 | CycleStartCard/one-shot 转发组件与契约测试通过；多标签/分屏/历史与真实手动运行仍待真壳验证 |
 | P07 自动化登记去重、保留设置、真实到点可追溯 | ◐ | 默认关闭态注册（ensure-cycle-automation：creationKey 去重、只创建不更新、人启用才到点）+「配置自动化」预填/编辑入口 | 真实到点与跨重启去重待人启用后验证 |
 | P08 并发保存冲突处理；重启/切项目/切版本读回一致 | ◐ | usePlanningAutosave + MaterialDraftController CAS + PlanningPersistenceNotice + view-memory | 本轮自动保存检查见 PR；既有控制器测试/烟测不能替代新路径的真实并发及重启读回 |
 | P09 归档只准备会话请求；PR 真实状态定灯色 | ◐ | archivePort.prepareRequest→composer；archive 状态自动读取+灯色语义；archive-label 呈现请求修改与检查失败 | archive-port/board-state/archive-label 测试；新原生焦点接线、真实 PR 状态与归档请求仍待真壳及 provider 旅程验证 |

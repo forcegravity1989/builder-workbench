@@ -8,16 +8,16 @@
 
 本轮已完成入口切换：旧三屏链条（PlanJourneyShell / PlanWeekBoard / PlanWeekPlanChat / plan-week-* / workbench-plan.css）已退役删除，以下为当前接线。
 
-本轮已确认的待实施边界：启动按钮由原生 TabBar 移至 BW 右板首行协作卡片，与“配置自动化”并列；分支信息留在右板页头，原生会话控件不增加 BW 按钮。异常文件与当前版本经同一启动入口带入会话；实际接线须保留用户保存的自动化提示、工具和模型，并补齐本次上下文，不能只移动按钮或另建会话实现。下表的 CycleStartButton 接线仍是生产现状，原型不作为已完成迁移的证据。
+本轮已完成入口迁移：启动按钮由原生 TabBar 移至 BW 右板首行协作卡片（CycleStartCard），与“配置自动化”并列；分支信息留在右板页头，原生会话控件不含 BW 按钮（tab-bar-surface 的薄挂载已撤除）。异常文件与当前选版经同一启动入口带入会话：手动运行已登记自动化时作为一次性上下文（automation.runNow 的 oneShotPrompt，capability 门控）随保存提示在派发端合并单次递交，保留用户保存的提示、工具、模型与会话复用配置，不另建会话、不覆盖自动化记录；独立的 startMaterialRequest 通道已退役删除。
 
 | 落点 | 采用方式 |
 |---|---|
 | AppWorkspaceShell → CycleWorkspaceProvider / CycleWorkspaceShell | artifacts 只作固定树准备入口；ensureCycleWorktree 后正式选择并切到 terminal，paired 宿主先激活。terminal 当前树为 bw/week-plan 或 bw/week-acceptance 时，在唯一原生 Terminal 旁挂右板；不扩 TopLevelView |
-| 原生 Terminal / TabBar / RightSidebar | 完整复用会话、标签/分屏、资源管理器与历史；TabBar 薄挂 CycleStartButton，隐藏固定树工作区的原生项目列表。移除 CycleChat、历史嵌入、portal 重发布和 sessionStorage 会话绑定 |
+| 原生 Terminal / TabBar / RightSidebar | 完整复用会话、标签/分屏、资源管理器与历史；TabBar 不挂 BW 按钮（原 CycleStartButton 薄挂载已撤除），隐藏固定树工作区的原生项目列表。移除 CycleChat、历史嵌入、portal 重发布和 sessionStorage 会话绑定 |
 | main/workbench/version-document-store + `workbench.materials.*` RPC / `ORCA bw materials` CLI | 跨进程 CAS 统一写入；renderer 直接 writeFile 的旧链路已删除 |
 | TaskPageContent → GitHubItemDialog → ConversationTabDescription / GitHubMarkdownComposer | 直接复用页面、正文编辑及 runWorkItemBodyUpdate；BW 不复制详情组件 |
 | use-task-page-detail-routing 的 worktreeNavHistory / goBackWorktree | 导航历史携带 BW 来源；openTaskPage 新增 returnToPreviousView（跳过 tasks 哨兵，返回 BW 来源视图），BW 子视图与屏内上下文由 cycle-view-state 和 use-planning-view-memory 恢复。计划屏 goalFilter+滚动存 sessionStorage（use-planning-view-memory） |
-| shared/automations-types | 复用原生登记和运行记录；「配置自动化」按钮打开原生编辑器：host 按工作树宿主身份，首次登记 existing 固定树、reuseSession=false、prompt 不含 cycleId，后续尊重用户保存的配置 |
+| shared/automations-types | 复用原生登记和运行记录；「配置自动化」按钮打开原生编辑器：host 按工作树宿主身份，首次登记 existing 固定树、reuseSession=false、prompt 不含 cycleId，后续尊重用户保存的配置。手动运行的一次性上下文走 automation.runNow 可选 oneShotPrompt（派发端合并、capability 门控），接缝登记见 [upstream](../../../ref/upstream.md) |
 
 ## 共享边界
 
@@ -67,7 +67,7 @@ schema2 通过一次显式迁移转为新计划；原文件/提交保留来源�
 
 自动化运行与历史恢复继续打开原生 terminal；识别当前固定树后自然显示右板，不再保存 BW run/session 恢复映射。native-session 只读取当前聚焦的结构化会话或终端叶子，并在插入业务草稿前复核宿主、工作树和焦点；不创建布局、选择历史或恢复聊天。
 
-旧格式或损坏材料在首行协作卡片内紧凑提示，点明实际版本与计划/验收数据文件；正常的“新建计划／验收”统一携带 SYSTEM、对应 Skill、当前明确选版、具体文件和读取问题，沿既有原生启动及就绪后发送通道自动递交。首次没有会话仍可使用，其他版本异常不阻塞当前有效版本。不保留额外的“在会话中处理”启动按钮，也不永久改写用户保存的自动化提示。模型先读文件、说明问题与备份/迁移方案，经用户确认后执行，不把点击按钮当成同意改数据。页面不保留专用迁移预览/确认弹窗或额外的旧结果入口；迁移工具及安全约束仍由材料服务和 Skill reference 承担。
+旧格式或损坏材料在首行协作卡片内紧凑提示，点明实际版本与计划/验收数据文件；“新建计划／验收”手动运行已登记自动化，把当前明确选版、具体文件和读取问题作为一次性上下文（automation.runNow 的可选 oneShotPrompt，`automation.run-now-one-shot-prompt.v1` capability 门控），由派发端与已保存的 SYSTEM/Skill 提示合并为单次递交，不临时改写自动化记录，也不新建第二条会话通道。首次没有会话仍可使用，其他版本异常不阻塞当前有效版本。不保留额外的“在会话中处理”启动按钮。模型先读文件、说明问题与备份/迁移方案，经用户确认后执行，不把点击按钮当成同意改数据。页面不保留专用迁移预览/确认弹窗或额外的旧结果入口；迁移工具及安全约束仍由材料服务和 Skill reference 承担。
 
 执行呈现只有原生会话与 BW 双栏两类：指标配置和普通任务执行用原生会话；版本计划/验收用原生会话加对应业务 UI。总览是查看、刷新和进入上述工作的汇总入口，不另立第三条执行流程。配置指标是手动原生任务，细节见指标设计。
 
