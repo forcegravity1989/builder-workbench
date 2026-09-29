@@ -38,7 +38,7 @@
 **已澄清（2026-09-29 用户，作为认可来源直接复用）**：
 - 特性命名与 id 定稿：`project-intake`「纳入项目与项目信息记录」；
 - 名片 toml 必须经 PR 落被管项目仓并由 builders 合入，防止后来接入者重复建名片、重复起 PR。**该行为在 main v0.4 是已交付正本**（`crates/bw/src/app/project.rs`：create_project——名片只写项目约定 Issue 的专属工作树、主检出不动，仓里已有名片则 adopt 只补空字段、不重复开约定，约定未合入时总览横幅提示；edit_project_card——charter Issue → 专属 worktree → 写名片 → commit → `push_and_open_mr`「项目信息改动，等人评审合入」→ Issue 转 InReview）。bw-orca 现行 MVP 只写本地工作区，属迁移中丢失的继承行为；列为 spec 必做与验收点，实现在 Orca 上重新决策（复用原生工作树与 gh/codehub-cli 执行链，不照搬 Rust 代码）；
-- 存量旧仓已有 toml（main v0.4 起写入），v0.5 兼容读取旧字段（`north_star`），**无需补录**；
+- 存量旧仓已有 toml（main v0.4 起写入，字段为 `opportunity`，经 v0.4.0 `crates/bw/src/repo/project_file.rs` 核实），**无需补录**；bw-orca 读取端另兼容更早的 `north_star` 字段（`project-charter.ts`，属历史数据，与 v0.4 主线无关）；
 - 克隆远端中断的残留场景暂不处理，看实际用户反馈再定；
 - 墙卡占位区（版本/周目标/健康）暂不细设计，随版本周期数据接入时再看。
 
