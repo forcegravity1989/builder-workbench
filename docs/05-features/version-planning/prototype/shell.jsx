@@ -1,4 +1,4 @@
-import { React } from 'react'
+import { React, useEffect, useRef, useState } from 'react'
 import {
   BookOpen,
   CalendarClock,
@@ -8,8 +8,7 @@ import {
   GitBranch,
   LayoutDashboard,
   ListTodo,
-  MessageSquare,
-  Presentation
+  MessageSquare
 } from 'lucide-react'
 
 function PrototypeSidebar({ go, setModal, setSelectedIssue, view }) {
@@ -67,10 +66,10 @@ function PrototypeSidebar({ go, setModal, setSelectedIssue, view }) {
     </aside>
   )
 }
-function PrototypeSession({ branch, composer, draft, sessionState, onStart, view }) {
+function PrototypeSession({ branch, composer, draft, sessionState, onStart, view, width }) {
   const label = view === 'friday' ? '验收' : '计划'
   return (
-    <section className="session-pane" aria-label="Orca 原生会话工作区">
+    <section className="session-pane" style={{ width }} aria-label="Orca 原生会话工作区">
       <header className="session-head">
         <GitBranch />
         <strong>{branch}</strong>
@@ -83,7 +82,7 @@ function PrototypeSession({ branch, composer, draft, sessionState, onStart, view
         <h2>复用 Orca 会话工作区</h2>
         <p className="prototype-session-state" role="status">
           {sessionState === 'empty'
-            ? '此固定工作区尚未打开会话。右侧“在会话中处理”可直接新建并自动发送。'
+            ? `尚未打开会话。点击上方“新建${label}”即可开始。`
             : sessionState === 'request'
               ? '原型示意：已新建并聚焦原生会话，处理请求已自动发送；等待模型说明，再由人确认是否修改文件。'
               : sessionState === 'workflow'
@@ -104,6 +103,81 @@ function PrototypeSession({ branch, composer, draft, sessionState, onStart, view
     </section>
   )
 }
+function PrototypeSplitter({ onResize }) {
+  const separator = useRef(null)
+  const dragging = useRef(false)
+  const [position, setPosition] = useState(0)
+  useEffect(() => {
+    const element = separator.current
+    const observer = new ResizeObserver(() => {
+      const left = element.previousElementSibling.getBoundingClientRect().width
+      const right = element.nextElementSibling.getBoundingClientRect().width
+      if (left + right) {
+        setPosition(Math.round((left / (left + right)) * 100))
+      }
+    })
+    observer.observe(element.previousElementSibling)
+    observer.observe(element.nextElementSibling)
+    return () => observer.disconnect()
+  }, [])
+  function resize(element, offset) {
+    const left = element.previousElementSibling.getBoundingClientRect().width
+    const right = element.nextElementSibling.getBoundingClientRect().width
+    const available = left + right
+    onResize(Math.max(available * 0.2, Math.min(available * 0.6, offset)))
+  }
+  return (
+    <div
+      ref={separator}
+      className="prototype-splitter"
+      role="separator"
+      aria-label="调整会话与业务板宽度"
+      aria-orientation="vertical"
+      aria-valuemin={20}
+      aria-valuemax={60}
+      aria-valuenow={position}
+      tabIndex={0}
+      title="左右拖动调整宽度；双击恢复默认"
+      onPointerDown={(event) => {
+        if (event.button !== 0) {
+          return
+        }
+        event.preventDefault()
+        dragging.current = true
+        event.currentTarget.setPointerCapture(event.pointerId)
+      }}
+      onPointerMove={(event) => {
+        if (!dragging.current) {
+          return
+        }
+        const left = event.currentTarget.previousElementSibling.getBoundingClientRect()
+        resize(event.currentTarget, event.clientX - left.left)
+      }}
+      onPointerUp={(event) => {
+        dragging.current = false
+        if (event.currentTarget.hasPointerCapture(event.pointerId)) {
+          event.currentTarget.releasePointerCapture(event.pointerId)
+        }
+      }}
+      onLostPointerCapture={() => {
+        dragging.current = false
+      }}
+      onDoubleClick={() => onResize(undefined)}
+      onKeyDown={(event) => {
+        if (!['ArrowLeft', 'ArrowRight'].includes(event.key)) {
+          return
+        }
+        event.preventDefault()
+        const left = event.currentTarget.previousElementSibling.getBoundingClientRect().width
+        const right = event.currentTarget.nextElementSibling.getBoundingClientRect().width
+        resize(
+          event.currentTarget,
+          left + (left + right) * (event.key === 'ArrowRight' ? 0.05 : -0.05)
+        )
+      }}
+    />
+  )
+}
 function PrototypeHeader({
   review,
   setExpanded,
@@ -113,7 +187,9 @@ function PrototypeHeader({
   version,
   view,
   weekly,
-  firstEntry
+  firstEntry,
+  selectPlanVersion,
+  planningSaveState
 }) {
   return (
     <header className="page-header">
@@ -128,7 +204,23 @@ function PrototypeHeader({
           }[view]
         }
       </h1>
-      {weekly && firstEntry ? (
+      {view === 'monday' ? (
+        <select
+          className="input version-select"
+          aria-label="计划版本"
+          value={firstEntry ? '' : version}
+          onChange={(event) => selectPlanVersion(event.target.value)}
+        >
+          <option value="">待选择版本</option>
+          <option value="v0.5">v0.5</option>
+          <option value="v0.3" disabled>
+            v0.3 · 无法读取
+          </option>
+          <option value="v0.4" disabled>
+            v0.4 · 无法读取
+          </option>
+        </select>
+      ) : weekly && firstEntry ? (
         <select
           className="input version-select"
           aria-label={`${view === 'monday' ? '计划' : '验收'}版本`}
@@ -143,8 +235,6 @@ function PrototypeHeader({
             v0.4 · 无法读取
           </option>
         </select>
-      ) : view === 'monday' ? (
-        <span className="tag tag-outline">v0.5</span>
       ) : view === 'friday' ? (
         <select
           className="input version-select"
@@ -163,15 +253,25 @@ function PrototypeHeader({
       ) : (
         <span className="page-state">builder-workbench</span>
       )}
-      {weekly && !firstEntry && <span className="page-state">草稿</span>}
+      {weekly && !firstEntry && (
+        <span
+          className="page-state"
+          role="status"
+          title={
+            view === 'monday' ? '仅模拟自动保存状态；编辑保留在原型内存，未写入文件' : undefined
+          }
+        >
+          {view === 'monday' ? planningSaveState : '草稿'}
+        </span>
+      )}
       <span className="header-spacer" />
-      {weekly && (
+      {view === 'friday' && (
         <button className="btn btn-ghost" onClick={review} disabled={firstEntry}>
-          {view === 'monday' ? <Presentation /> : <ClipboardCheck />}
-          {view === 'monday' ? '评审纪要' : '验收报告'}
+          <ClipboardCheck />
+          验收报告
         </button>
       )}
     </header>
   )
 }
-export { PrototypeSidebar, PrototypeSession, PrototypeHeader }
+export { PrototypeSidebar, PrototypeSession, PrototypeHeader, PrototypeSplitter }

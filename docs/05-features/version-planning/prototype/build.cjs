@@ -2,6 +2,7 @@
 // The frozen v8 dependency bundle is deliberately separate from editable UI.
 const fs = require('node:fs')
 const path = require('node:path')
+const { pathToFileURL } = require('node:url')
 const esbuild = require('esbuild')
 
 const output = path.join(__dirname, 'runtime.js')
@@ -48,6 +49,41 @@ const dependencies = {
   ]
 }
 
+async function checkStartup(runtime) {
+  const { Window } = await import(pathToFileURL(require.resolve('happy-dom')).href)
+  const vendor = fs.readFileSync(path.join(__dirname, 'vendor.js'), 'utf8')
+  for (const [screen, title] of Object.entries({
+    monday: '版本计划',
+    friday: '版本验收',
+    overview: '总览'
+  })) {
+    // Execute the shipped bundles without a browser or network access.
+    const window = new Window({ url: 'https://prototype.invalid/' })
+    const errors = []
+    window.addEventListener('error', (event) => errors.push(event.message))
+    window.addEventListener('unhandledrejection', (event) => errors.push(String(event.reason)))
+    try {
+      window.document.body.dataset.screen = screen
+      window.document.body.innerHTML = '<div id="root"></div>'
+      window.eval(vendor)
+      for (const name of Object.values(dependencies).flat()) {
+        if (window.BWPrototypeDependencies?.[name] === undefined) {
+          throw new Error(`Missing frozen dependency: ${name}`)
+        }
+      }
+      window.eval(runtime)
+      await window.happyDOM.whenAsyncComplete()
+      const heading = window.document.querySelector('#root h1')?.textContent
+      if (errors.length || heading !== title) {
+        throw new Error(`${screen} startup failed: ${errors.join('; ') || 'page did not render'}`)
+      }
+      console.log(`${screen} synthetic DOM startup passed.`)
+    } finally {
+      await window.happyDOM.close()
+    }
+  }
+}
+
 esbuild
   .build({
     entryPoints: [path.join(__dirname, 'app.jsx')],
@@ -83,13 +119,14 @@ esbuild
       }
     ]
   })
-  .then((result) => {
+  .then(async (result) => {
     const text = result.outputFiles[0].text
     if (check) {
       if (fs.readFileSync(output, 'utf8') !== text) {
         throw new Error('Prototype runtime is stale; rebuild it.')
       }
       console.log('Prototype runtime matches its sources.')
+      await checkStartup(text)
     } else {
       fs.writeFileSync(output, text)
       console.log('Rebuilt prototype/runtime.js for all three offline entries.')

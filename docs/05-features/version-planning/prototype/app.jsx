@@ -60,7 +60,6 @@ function App() {
     [issueDraft, setIssueDraft] = useState(''),
     [editingIssue, setEditingIssue] = useState(false),
     [returnTo, setReturnTo] = useState('tasks'),
-    [reviewOpened, setReviewOpened] = useState(false),
     [copied, setCopied] = useState(false)
   const [overviewSelection, setOverviewSelection] = useState({
       version: 'v0.5',
@@ -79,11 +78,6 @@ function App() {
     chatVisible = weekly,
     branch = sessionFlow === '验收' ? 'bw/week-acceptance' : 'bw/week-plan',
     session = sessions[sessionFlow],
-    setSession = (v) =>
-      setSessions((x) => ({
-        ...x,
-        [sessionFlow]: v
-      })),
     draftKey = view === 'metricsetup' ? `配置-${configId}` : `${sessionFlow}-${session}`,
     draft = drafts[draftKey] || '',
     setDraft = (v) =>
@@ -165,10 +159,9 @@ function App() {
   }
   function review() {
     setCopied(false)
-    setReviewOpened(true)
     setModal({
       type: 'text',
-      title: view === 'monday' ? '三段式评审纪要' : '版本验收报告',
+      title: view === 'monday' ? '预览纪要' : '版本验收报告',
       text: view === 'monday' ? minutes() : report()
     })
   }
@@ -252,7 +245,6 @@ function App() {
     version,
     view,
     progress,
-    reviewOpened,
     tasks,
     goalIssues
   })
@@ -267,11 +259,13 @@ function App() {
       return
     }
     if (i === steps.length - 1) {
+      if (view === 'monday') {
+        document
+          .querySelector('.planning-archive')
+          ?.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
+        return
+      }
       archive()
-      return
-    }
-    if (view === 'monday' && i === 2) {
-      review()
       return
     }
     if (view === 'monday' && i === 3) {
@@ -280,7 +274,7 @@ function App() {
     }
     document
       .querySelector(
-        view === 'monday' ? (i === 0 ? '.briefs' : '.goal-sheet') : '.acceptance-sheet'
+        view === 'monday' ? (i === 0 ? '.planning-brief' : '.goal-sheet') : '.acceptance-sheet'
       )
       ?.scrollIntoView({
         behavior: 'smooth',
@@ -300,20 +294,21 @@ function App() {
       />
     )
   }
-  function versionTasks() {
+  function versionTasks(prepareRequest = promptConversation, disabled = false) {
     return (
       <PrototypeVersionTasks
         {...{
           expanded,
-          promptConversation,
+          promptConversation: prepareRequest,
           setExpanded,
           setNotice,
           setTaskFilter,
-          shownTasks,
+          shownTasks: disabled ? [] : shownTasks,
           taskFilter,
           taskList,
           taskSection,
-          tasks,
+          tasks: disabled ? [] : tasks,
+          disabled,
           version,
           view
         }}
@@ -358,7 +353,6 @@ function App() {
         review,
         risk,
         session,
-        sessionFlow,
         setConfigId,
         setDraft,
         setDrafts,
@@ -373,8 +367,6 @@ function App() {
         setProgress,
         setRisk,
         setSelectedIssue,
-        setSession,
-        setSessionFlow,
         setSessions,
         setTaskFilter,
         setVersion,

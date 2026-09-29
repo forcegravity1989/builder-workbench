@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState, type Ref } from 'react'
+import { BrainCircuit, ChevronDown, ChevronRight } from 'lucide-react'
 import type { PlanningMaterial } from '../../../../shared/workbench/version-material'
 import type { CycleScope, CycleTaskRead, CycleTaskSnapshot, TaskPort } from '../version-cycle/ports'
 import { cycleScopeKey } from '../version-cycle/native-cycle-workspace'
@@ -12,10 +13,11 @@ export function PlanningTasks({
   onOpen,
   goalFilter,
   onFilter,
-  onTask
+  onTask,
+  onDecompose
 }: {
   scope: CycleScope | null
-  plan: PlanningMaterial
+  plan?: PlanningMaterial
   taskPort: TaskPort
   sectionRef: Ref<HTMLElement>
   open: boolean
@@ -23,17 +25,18 @@ export function PlanningTasks({
   goalFilter: string
   onFilter(value: string): void
   onTask(task: CycleTaskSnapshot): Promise<void>
+  onDecompose(): void
 }) {
   const [refresh, setRefresh] = useState(0)
-  const referenceKey = JSON.stringify(plan.tasks)
+  const referenceKey = JSON.stringify(plan?.tasks ?? [])
   const references = useMemo(
     () => JSON.parse(referenceKey) as PlanningMaterial['tasks'],
     [referenceKey]
   )
   const key = JSON.stringify([
     scope && cycleScopeKey(scope),
-    plan.version,
-    plan.cycleId,
+    plan?.version,
+    plan?.cycleId,
     referenceKey,
     refresh
   ])
@@ -65,10 +68,16 @@ export function PlanningTasks({
   const current = result?.key === key ? result : null
   return (
     <section ref={sectionRef} className="vp-tasks">
-      <button className="vp-task-summary" onClick={() => onOpen(!open)}>
-        {open ? '▾' : '▸'} 版本任务 <strong>{plan.tasks.length}</strong>
-        <span className="vp-muted">展开核对真实状态</span>
-      </button>
+      <div className="vp-section-heading">
+        <button className="vp-task-summary" aria-expanded={open} onClick={() => onOpen(!open)}>
+          {open ? <ChevronDown size={14} /> : <ChevronRight size={14} />}版本任务{' '}
+          <span className="vp-muted">{plan?.tasks.length ?? 0}</span>
+        </button>
+        <button className="wb-btn wb-btn-sm" disabled={!plan} onClick={onDecompose}>
+          <BrainCircuit size={14} />
+          在会话中拆解
+        </button>
+      </div>
       {open && (
         <>
           <div className="vp-inline">
@@ -78,7 +87,7 @@ export function PlanningTasks({
               onChange={(event) => onFilter(event.target.value)}
             >
               <option value="">所有目标</option>
-              {plan.goals.map((goal, index) => (
+              {plan?.goals.map((goal, index) => (
                 <option value={goal.goalId} key={goal.goalId}>
                   G{index + 1} {goal.title}
                 </option>
@@ -115,7 +124,7 @@ export function PlanningTasks({
                 )}
               </div>
             ))}
-          {!plan.tasks.length && (
+          {!plan?.tasks.length && (
             <p className="vp-muted">尚未关联任务；可在会话中核对已有工作并拆解。</p>
           )}
         </>

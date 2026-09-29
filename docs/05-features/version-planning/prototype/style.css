@@ -177,11 +177,35 @@ button {
 .session-head strong {
   font: 500 0.85em var(--font-mono);
   margin-right: auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 .session-head .btn {
-  padding: var(--space-1);
+  padding: var(--space-1) var(--space-2);
   height: var(--space-6);
-  width: var(--space-6);
+  width: auto;
+  flex: none;
+  white-space: nowrap;
+}
+.prototype-splitter {
+  position: relative;
+  flex: 0 0 0;
+  cursor: col-resize;
+  touch-action: none;
+  z-index: 1;
+}
+.prototype-splitter::before {
+  content: '';
+  position: absolute;
+  inset-block: 0;
+  left: calc(-1 * var(--space-1));
+  width: var(--space-2);
+}
+.prototype-splitter:focus-visible::before {
+  outline: 2px solid var(--color-accent);
+  outline-offset: calc(-1 * var(--space-1));
 }
 .session-head .btn svg {
   width: var(--space-3);
@@ -879,29 +903,6 @@ input::placeholder {
   text-align: left;
   padding: var(--space-3);
   gap: var(--space-2);
-}
-.goal-editor {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-4);
-}
-.goal-editor > label {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-2);
-  font-size: 0.9em;
-  color: var(--color-neutral-600);
-}
-.goal-editor textarea {
-  width: 100%;
-  border: 1px solid var(--color-divider);
-  border-radius: var(--radius-sm);
-  padding: var(--space-2);
-  background: var(--color-bg);
-  color: var(--color-text);
-}
-.goal-editor .btn {
-  align-self: flex-start;
 }
 .metric-catalog article {
   padding: var(--space-3) 0 var(--space-4);
@@ -2923,4 +2924,134 @@ input::placeholder {
 .journey button:disabled {
   cursor: default;
   opacity: 0.5;
+}
+.planning-pane .planning-brief {
+  gap: var(--space-3);
+  padding: var(--space-3);
+}
+.planning-pane .planning-field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+.planning-pane .planning-field label {
+  font-weight: 500;
+  color: var(--color-text);
+}
+.planning-pane .planning-brief-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--space-2);
+}
+.planning-pane .planning-field textarea {
+  height: calc(var(--space-6) * 2 + var(--space-1));
+  min-height: calc(var(--space-6) * 2 + var(--space-1));
+  padding: var(--space-1) var(--space-2);
+  field-sizing: fixed;
+  resize: vertical;
+  overflow: auto;
+}
+.planning-pane .btn {
+  height: calc(var(--space-6) + var(--space-1));
+  padding: 0 var(--space-2);
+  font-size: inherit;
+  white-space: nowrap;
+  flex: none;
+  color: var(--color-text);
+}
+.planning-pane .btn-icon {
+  width: calc(var(--space-6) + var(--space-1));
+  padding: 0;
+}
+.planning-pane .btn svg {
+  width: var(--space-4);
+  height: var(--space-4);
+}
+.planning-pane .planning-archive {
+  flex-direction: row;
+  align-items: center;
+  padding: var(--space-2) var(--space-3);
+  margin-top: var(--space-3);
+}
+.planning-pane .planning-archive p {
+  flex: 1;
+  min-width: 0;
+  color: var(--color-neutral-600);
+}
+.planning-pane .prototype-material-scenario {
+  padding: var(--space-2) var(--space-4);
+  color: var(--color-neutral-600);
+  font-size: inherit;
+}
+.planning-pane .prototype-material-scenario > label {
+  gap: var(--space-2);
+}
+.planning-pane .prototype-material-scenario select {
+  width: auto;
+}
+.planning-pane .material-problem {
+  gap: var(--space-2);
+  margin-top: var(--space-2);
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--color-danger-soft);
+  border-radius: var(--radius-sm);
+  background: var(--color-danger-soft);
+  color: var(--color-danger-deep);
+  font-size: inherit;
+}
+.planning-pane .material-problem > span {
+  flex: 1;
+}
+.planning-pane .planning-task-header {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin-top: var(--space-3);
+  border: 1px solid var(--color-divider);
+  border-radius: var(--radius-md);
+  background: var(--color-card);
+}
+.planning-pane .planning-task-header[data-expanded='true'] {
+  border-radius: var(--radius-md) var(--radius-md) 0 0;
+}
+.planning-pane .planning-task-header .issue-summary {
+  flex: 1;
+  min-width: 0;
+  margin: 0;
+  border: 0;
+  background: transparent;
+  flex-wrap: wrap;
+}
+.planning-pane .planning-task-header > .btn {
+  margin-right: var(--space-3);
+}
+.planning-pane .criteria-row textarea {
+  flex: 1;
+  min-height: var(--space-6);
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  padding: 0 var(--space-1);
+  background: transparent;
+  font-size: 0.92em;
+  color: var(--color-text);
+}
+.planning-pane .criteria-row textarea:hover {
+  border-color: var(--color-divider);
+  background: var(--color-bg);
+}
+.planning-pane .metric-add {
+  margin: var(--space-2) 0 0 calc(var(--space-6) + var(--space-1));
+}
+.planning-pane .metric-add select {
+  width: auto;
+  max-width: 100%;
+  min-height: calc(var(--space-6) + var(--space-1));
+  font-size: inherit;
+  padding-block: var(--space-1);
+}
+@media (max-width: 960px) {
+  .planning-pane .metric-add {
+    margin-left: 0;
+  }
 }

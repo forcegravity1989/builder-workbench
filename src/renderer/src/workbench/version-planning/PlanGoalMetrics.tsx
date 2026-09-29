@@ -1,9 +1,8 @@
+import { ChartNoAxesCombined, RefreshCw } from 'lucide-react'
 import { metricRefKey } from '../../../../shared/workbench/metrics'
 import type { VersionGoal } from '../../../../shared/workbench/version-material'
 import type { usePlanMetrics } from './use-plan-metrics'
-import { MetricSelector } from '../metrics/MetricSelector'
 import { MetricEvidenceView } from '../metrics/MetricEvidenceView'
-
 export function PlanGoalMetrics({
   goal,
   onChange,
@@ -15,87 +14,145 @@ export function PlanGoalMetrics({
   metrics: ReturnType<typeof usePlanMetrics>
   prepare(): void
 }) {
+  const definitions = metrics.catalog?.definitions ?? []
+  const selected = new Set(goal.metricTargets.map((item) => metricRefKey(item.ref)))
+  const available = definitions.filter((item) => !selected.has(metricRefKey(item.ref)))
+  const changeMetric = (index: number, key: string) => {
+    if (!key) {
+      onChange({ ...goal, metricTargets: goal.metricTargets.filter((_, i) => i !== index) })
+      return
+    }
+    const definition = definitions.find((item) => metricRefKey(item.ref) === key)
+    if (definition) {
+      // A different definition must not inherit the old target or adopted baseline.
+      onChange({
+        ...goal,
+        metricTargets: goal.metricTargets.map((item, i) =>
+          i === index ? { ref: definition.ref, target: '' } : item
+        )
+      })
+    }
+  }
   return (
-    <details className="vp-metrics" open={goal.metricTargets.length > 0 ? true : undefined}>
-      <summary>
-        指标 {goal.metricTargets.length > 0 ? `· ${goal.metricTargets.length}` : '（可选）'}
-      </summary>
+    <div className="vp-metrics">
       {goal.metricTargets.map((target, index) => {
         const key = metricRefKey(target.ref)
-        const definition = metrics.catalog?.definitions.find(
-          (item) => metricRefKey(item.ref) === key
-        )
+        const definition = definitions.find((item) => metricRefKey(item.ref) === key)
         const value = metrics.values[key]
+        const reading =
+          value?.status === 'ready' && value.readings.length === 1 ? value.readings[0] : null
         return (
           <div className="vp-metric" key={key}>
-            <div>
-              <strong>{target.ref.name}</strong>
-              <span className="vp-muted"> 项目长期目标：{definition?.target || '未定义'}</span>
+            <div className="vp-metric-row">
+              <label className="vp-metric-name">
+                <ChartNoAxesCombined size={14} />
+                <select
+                  aria-label={`${goal.title || '目标'} 指标 ${index + 1}`}
+                  value={key}
+                  onChange={(event) => changeMetric(index, event.target.value)}
+                >
+                  <option value="">移除指标承诺</option>
+                  <option value={key}>
+                    {target.ref.name}
+                    {!definition ? '（定义待核对）' : ''}
+                  </option>
+                  {available.map((item) => (
+                    <option value={metricRefKey(item.ref)} key={metricRefKey(item.ref)}>
+                      {item.name}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <div className="vp-metric-value">
+                <span>当前</span>
+                <strong title={reading ? reading.collectedAt : '此来源和窗口尚无可信读数'}>
+                  {reading ? `${reading.value}${reading.unit}` : '—'}
+                </strong>
+              </div>
+              <label className="vp-metric-target">
+                <span>{reading ? '目标' : '目标草案'}</span>
+                <input
+                  aria-label={`${target.ref.name} 本版目标`}
+                  value={target.target}
+                  onChange={(event) =>
+                    onChange({
+                      ...goal,
+                      metricTargets: goal.metricTargets.map((item, i) =>
+                        i === index ? { ...item, target: event.target.value } : item
+                      )
+                    })
+                  }
+                />
+              </label>
               <button
-                className="wb-btn wb-btn-ghost wb-btn-sm"
-                onClick={() =>
-                  onChange({
-                    ...goal,
-                    metricTargets: goal.metricTargets.filter((_, i) => i !== index)
-                  })
-                }
+                className="wb-btn wb-btn-sm"
+                disabled={!definition}
+                onClick={() => void metrics.refresh(target.ref)}
               >
-                移除
+                <RefreshCw size={14} />
+                采集
               </button>
             </div>
-            <MetricEvidenceView result={value} saved={target.baseline ? [target.baseline] : []} />
-            {target.baseline && <span className="vp-muted">计划基线：{target.baseline.value} {target.baseline.unit}</span>}
-            {value?.status === 'ready' && value.readings.length === 1 && (
-              <button className="wb-btn wb-btn-ghost wb-btn-sm" onClick={() =>
-                onChange({ ...goal, metricTargets: goal.metricTargets.map((item, i) =>
-                  i === index ? { ...item, baseline: value.readings[0] } : item) })
-              }>采用为计划基线</button>
-            )}
-            {value?.status !== 'ready' && <p className="vp-muted">当前未知 · 数值目标为草案</p>}
-            <label>
-              本版目标
-              <input
-                value={target.target}
-                onChange={(event) =>
-                  onChange({
-                    ...goal,
-                    metricTargets: goal.metricTargets.map((item, i) =>
-                      i === index ? { ...item, target: event.target.value } : item
-                    )
-                  })
-                }
-              />
-            </label>
-            <button
-              className="wb-btn wb-btn-ghost wb-btn-sm"
-              disabled={!metrics.catalog}
-              onClick={() => void metrics.refresh(target.ref)}
-            >
-              刷新读数
-            </button>
+            <details className="vp-metric-evidence">
+              <summary>定义与采集依据{target.baseline ? ' · 已采用计划基线' : ''}</summary>
+              {definition && (
+                <p>
+                  {definition.def} · 项目长期目标：{definition.target || '未定义'}
+                </p>
+              )}
+              <MetricEvidenceView result={value} saved={target.baseline ? [target.baseline] : []} />
+              {target.baseline && (
+                <p>
+                  计划基线：{target.baseline.value}
+                  {target.baseline.unit}
+                </p>
+              )}
+              {reading && (
+                <button
+                  className="wb-btn wb-btn-sm"
+                  onClick={() =>
+                    onChange({
+                      ...goal,
+                      metricTargets: goal.metricTargets.map((item, i) =>
+                        i === index ? { ...item, baseline: reading } : item
+                      )
+                    })
+                  }
+                >
+                  采用为计划基线
+                </button>
+              )}
+            </details>
           </div>
         )
       })}
-      <div className="vp-inline">
-        <MetricSelector
-          label={`为 ${goal.title || '目标'} 选择指标`}
-          definitions={metrics.catalog?.definitions ?? []}
-          selected={goal.metricTargets.map((item) => item.ref)}
-          onSelect={(definition) =>
+      <select
+        className="vp-metric-add"
+        aria-label={`${goal.title || '目标'} 添加指标承诺（可选）`}
+        value=""
+        onChange={(event) => {
+          if (event.target.value === '__configure__') {
+            prepare()
+            return
+          }
+          const definition = available.find((item) => metricRefKey(item.ref) === event.target.value)
+          if (definition) {
             onChange({
               ...goal,
               metricTargets: [...goal.metricTargets, { ref: definition.ref, target: '' }]
             })
           }
-        />
-        <button className="wb-btn wb-btn-ghost wb-btn-sm" onClick={prepare}>
-          配置指标
-        </button>
-      </div>
-      {metrics.catalog?.definitions.length === 0 && (
-        <p className="vp-muted">项目尚未配置业务指标，可先配置，也可继续讨论目标。</p>
-      )}
+        }}
+      >
+        <option value="">添加指标承诺（可选）</option>
+        {available.map((item) => (
+          <option value={metricRefKey(item.ref)} key={metricRefKey(item.ref)}>
+            {item.name}
+          </option>
+        ))}
+        <option value="__configure__">配置新指标…</option>
+      </select>
       {metrics.error && <p className="vp-muted">指标未知：{metrics.error}</p>}
-    </details>
+    </div>
   )
 }

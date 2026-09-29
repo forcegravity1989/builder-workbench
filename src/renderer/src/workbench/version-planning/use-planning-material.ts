@@ -7,6 +7,7 @@ import { validatePlanningVersion } from '../../../../shared/workbench/version-do
 import type { VersionMaterialCandidate } from '../../../../shared/workbench/version-material-request'
 import type { nativeVersionMaterialPort } from '../version-material-port'
 import { MaterialDraftController, type MaterialDraft } from '../version-cycle/material-draft'
+import { usePlanningAutosave, type PlanningAutosaveOptions } from './use-planning-autosave'
 
 export function planningDraftKey(scopeKey: string, version: string) {
   return `workbench.plan.draft:${scopeKey}:${encodeURIComponent(version)}`
@@ -14,7 +15,8 @@ export function planningDraftKey(scopeKey: string, version: string) {
 
 export function usePlanningMaterial(
   port: ReturnType<typeof nativeVersionMaterialPort> | null,
-  scopeKey: string
+  scopeKey: string,
+  autosave?: PlanningAutosaveOptions
 ) {
   const [versions, setVersions] = useState<VersionMaterialCandidate[]>([])
   const [draft, setDraft] = useState<MaterialDraft<PlanningMaterial> | null>(null)
@@ -108,7 +110,7 @@ export function usePlanningMaterial(
   }, [list, controller])
 
   const select = useCallback(
-    async (version: string, create = false) => {
+    async (version: string) => {
       if (!port || !controller) {
         return undefined
       }
@@ -121,9 +123,6 @@ export function usePlanningMaterial(
         const snapshot = await port.read(version)
         if (!isCurrent() || token !== selection.current.value) {
           return undefined
-        }
-        if (create && snapshot) {
-          throw new Error('该版本已存在，请选择已有版本。')
         }
         let restored: MaterialDraft<PlanningMaterial> | null = null
         const raw = localStorage.getItem(planningDraftKey(scopeKey, version))
@@ -145,31 +144,27 @@ export function usePlanningMaterial(
             throw new Error('本机草稿格式无法读取，保留原草稿待核。')
           }
         }
-        if (!create && !snapshot && !restored?.dirty) {
+        if (!snapshot && !restored?.dirty) {
           throw new Error('该版本材料不存在；未创建替代文件。')
         }
-        const document: PlanningMaterial = snapshot
+        const document = snapshot
           ? PlanningMaterialSchema.parse(snapshot.document)
-          : {
-              schema_version: 3,
-              version,
-              cycleId: crypto.randomUUID(),
-              summary: { progress: '', risks: '' },
-              goals: [],
-              tasks: []
-            }
+          : restored?.document
+        if (!document) {
+          throw new Error('该版本材料不存在；未创建替代文件。')
+        }
         controller.restore(
           restored?.dirty
             ? {
                 ...restored,
-                ...((snapshot?.revision ?? null) !== restored.expectedRevision
+                ...(!snapshot || snapshot.revision !== restored.expectedRevision
                   ? {
                       remote: snapshot ? { ...snapshot, document } : null,
                       error: '文件与待保存草稿不同，请核对。'
                     }
                   : {})
               }
-            : { document, expectedRevision: snapshot?.revision ?? null, dirty: create }
+            : { document, expectedRevision: snapshot?.revision ?? null, dirty: false }
         )
         return controller.value?.document
       } catch (reason) {
@@ -208,71 +203,72 @@ export function usePlanningMaterial(
     return () => clearInterval(timer)
   }, [controller, selectedVersion, isCurrent])
 
+  const saving = usePlanningAutosave({
+    controller,
+    draft,
+    options: autosave,
+    isCurrent,
+    selection,
+    onSaved: list
+  })
+
   return {
     versions,
     draft,
     error: error ?? persistError,
-    busy,
+    busy: busy || saving.saving,
     select,
     clear,
     list,
     edit: (document: PlanningMaterial) => controller?.edit(document),
     refresh: () => controller?.refresh(),
-    save: async () => {
-      if (!controller) {
-        return false
-      }
-      const token = selection.current.value
-      setBusy(true)
-      try {
-        const saved = await controller.save()
-        if (saved && isCurrent() && token === selection.current.value) {
-          await list()
-        }
-        return saved
-      } finally {
-        if (isCurrent() && token === selection.current.value) {
-          setBusy(false)
-        }
-      }
-    },
+    save: saving.save,
+    flush: saving.flush,
     useRemote: () => {
       if (draft?.remote) {
         controller?.useRemote(draft.remote)
       }
     },
-    /** Escape hatch for a stale dirty draft over a confirmed archive: re-read host truth. */
+    /** Explicitly discard a stale draft only after host read and cache removal both succeed. */
     discardLocal: async () => {
       if (!port || !controller?.value) {
         return
       }
-      const version = controller.value.document.version
+      const original = controller.value
+      const version = original.document.version
+      const token = selection.current.value
       setBusy(true)
+      setError(null)
       try {
         const snapshot = await port.read(version)
-        if (!isCurrent()) {
+        if (!isCurrent() || token !== selection.current.value) {
           return
         }
-        if (snapshot) {
+        if (controller.value !== original) {
+          throw new Error('读取期间内容已变化，本地输入已保留，请核对后重试。')
+        }
+        const document = snapshot ? PlanningMaterialSchema.parse(snapshot.document) : null
+        try {
+          localStorage.removeItem(planningDraftKey(scopeKey, version))
+        } catch {
+          throw new Error('无法清理本机草稿，输入已保留，请重试。')
+        }
+        setPersistError(null)
+        if (snapshot && document) {
           controller.restore({
-            document: PlanningMaterialSchema.parse(snapshot.document),
+            document,
             expectedRevision: snapshot.revision,
             dirty: false
           })
         } else {
           controller.clear()
-          try {
-            localStorage.removeItem(planningDraftKey(scopeKey, version))
-          } catch {
-            /* The recovery flow keeps the original text on failure. */
-          }
         }
       } catch (reason) {
-        if (isCurrent()) {
+        if (isCurrent() && token === selection.current.value) {
           setError(reason instanceof Error ? reason.message : '无法重读材料')
         }
       } finally {
-        if (isCurrent()) {
+        if (isCurrent() && token === selection.current.value) {
           setBusy(false)
         }
       }

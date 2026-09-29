@@ -1,11 +1,11 @@
-import { readFileSync, existsSync } from 'node:fs'
+import { readFileSync, existsSync, mkdirSync, writeFileSync } from 'node:fs'
 import path from 'node:path'
 import { test, expect } from './helpers/orca-app'
 import type { Page } from '@playwright/test'
 
 /**
  * BW main-chain smoke: the workbench shell must formally select the fixed
- * plan/acceptance worktrees, create and save version material through the real
+ * plan/acceptance worktrees, select a real file fixture and autosave edits through
  * host RPC, persist the workflow version preference, and read everything back
  * independently from disk after a renderer reload. Metrics stay honestly
  * Unknown without configuration — no demo values may appear.
@@ -66,7 +66,7 @@ test('BW cycle main chain: fixed trees, version material save and independent re
   // already seeded the project repo and its worktrees.
   await expect(orcaPage.locator('[data-workbench-nav]')).toBeVisible({ timeout: 180_000 })
 
-  // ---- 计划屏：固定树正式选择 + 明确新建版本 + 保存 + 磁盘独立读回 ----
+  // ---- 计划屏：固定树正式选择 + 选择真实文件材料 + 自动保存 + 磁盘独立读回 ----
   await orcaPage.getByRole('button', { name: '计划', exact: true }).click()
   await expect(orcaPage.getByRole('heading', { name: '版本计划' })).toBeVisible({ timeout: 60_000 })
   const planTreePath = await waitForFixedWorktree(orcaPage, 'bw/week-plan')
@@ -91,15 +91,37 @@ test('BW cycle main chain: fixed trees, version material save and independent re
     )
     .not.toBeNull()
 
-  await orcaPage.getByRole('button', { name: '新建版本' }).click()
-  await orcaPage.getByPlaceholder('例如 v0.5').fill('v9.9')
-  await orcaPage.getByRole('button', { name: '创建计划草稿' }).click()
+  // The conversation/CLI creates materials in product use. Seed only this test
+  // version on the real fixed tree; listing, selection and editing remain UI work.
+  const materialDirectory = path.join(planTreePath, '.bw', 'planning', 'v9.9')
+  mkdirSync(materialDirectory, { recursive: true })
+  writeFileSync(
+    path.join(materialDirectory, 'data.json'),
+    JSON.stringify({
+      schema_version: 3,
+      version: 'v9.9',
+      cycleId: 'smoke-plan',
+      summary: { progress: '', risks: '' },
+      goals: [
+        {
+          goalId: 'smoke-goal',
+          title: '验证计划材料保存',
+          deliverable: '文件独立读回',
+          metricTargets: []
+        }
+      ],
+      tasks: []
+    }),
+    'utf8'
+  )
+  const versionSelect = orcaPage.getByLabel('计划版本')
+  await expect(versionSelect.locator('option[value="v9.9"]')).toBeAttached({ timeout: 30_000 })
+  await versionSelect.selectOption('v9.9')
 
   const progress = orcaPage.locator('.vp-preparation textarea').first()
   await expect(progress).toBeEnabled({ timeout: 60_000 })
   await progress.fill('烟测进展：主链接通')
-  await orcaPage.getByRole('button', { name: '保存草稿' }).click()
-  await expect(orcaPage.getByText('草稿已保存')).toBeVisible({ timeout: 60_000 })
+  await expect(orcaPage.getByRole('button', { name: '保存草稿', exact: true })).toHaveCount(0)
 
   // Iron-law read-back: the material exists on the fixed worktree's own disk path.
   await expect

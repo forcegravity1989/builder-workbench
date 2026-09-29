@@ -1,7 +1,7 @@
 import { React, useState } from 'react'
-import { PrototypeHeader, PrototypeSession, PrototypeSidebar } from './shell.jsx'
+import { PrototypeHeader, PrototypeSession, PrototypeSidebar, PrototypeSplitter } from './shell.jsx'
 import { Field, Lamp, archiveTone } from './shared.jsx'
-import { PlanningContent } from './screen.jsx'
+import { PlanningContent, usePlanningDemo } from './screen.jsx'
 import { AcceptanceContent } from '../../version-acceptance/prototype/screen.jsx'
 import { ArrowLeft, ArrowUp, GitPullRequest, MessageSquare, Plus } from 'lucide-react'
 import { OverviewV8 } from '../../overview-metrics/prototype/screen.jsx'
@@ -45,8 +45,6 @@ function PrototypeLayout({
   returnTo,
   review,
   risk,
-  session,
-  sessionFlow,
   setConfigId,
   setDraft,
   setDrafts,
@@ -61,8 +59,6 @@ function PrototypeLayout({
   setProgress,
   setRisk,
   setSelectedIssue,
-  setSession,
-  setSessionFlow,
   setSessions,
   setTaskFilter,
   setVersion,
@@ -80,6 +76,8 @@ function PrototypeLayout({
 }) {
   const [scenarios, setScenarios] = useState({ monday: 'first', friday: 'first' })
   const [sessionStates, setSessionStates] = useState({ monday: 'empty', friday: 'empty' })
+  const [sessionWidth, setSessionWidth] = useState(undefined)
+  const planning = usePlanningDemo({ setModal, setNotice })
   const firstEntry = weekly && scenarios[view] === 'first'
   const setSessionState = (state) => setSessionStates((current) => ({ ...current, [view]: state }))
   const onScenario = (value) => {
@@ -112,6 +110,7 @@ function PrototypeLayout({
       />
       {chatVisible && (
         <PrototypeSession
+          width={sessionWidth}
           sessionState={sessionStates[view]}
           onStart={() => {
             setDraft('')
@@ -128,9 +127,22 @@ function PrototypeLayout({
           }}
         />
       )}
-      <main className={`main-pane ${!chatVisible ? 'wide-page' : ''}`}>
+      {chatVisible && <PrototypeSplitter onResize={setSessionWidth} />}
+      <main
+        className={`main-pane ${!chatVisible ? 'wide-page' : ''}${view === 'monday' ? ' planning-pane' : ''}`}
+      >
         <PrototypeHeader
           firstEntry={firstEntry}
+          planningSaveState={planning.saveState}
+          selectPlanVersion={(value) => {
+            setScenarios((current) => ({ ...current, monday: value ? 'selected' : 'first' }))
+            if (value) {
+              setVersion(value)
+            }
+            setNotice('')
+            setExpanded(false)
+            setTaskFilter('')
+          }}
           {...{
             review,
             setExpanded,
@@ -160,7 +172,9 @@ function PrototypeLayout({
                     aria-current={active === i ? 'step' : undefined}
                     aria-label={label}
                     onClick={() => {
-                      if (!firstEntry) stageGo(i)
+                      if (!firstEntry) {
+                        stageGo(i)
+                      }
                     }}
                     disabled={firstEntry && i > (view === 'monday' ? 1 : 0)}
                     title={`${label} · ${firstEntry ? '待选择版本' : hint}`}
@@ -177,7 +191,7 @@ function PrototypeLayout({
                 ))}
               </nav>
               <div className="content-scroll">
-                {firstEntry ? (
+                {view !== 'monday' && firstEntry ? (
                   <section className="prototype-first-entry">
                     <h2>待选择版本</h2>
                     <p>处理上方文件问题后，可在版本列表中选择版本。</p>
@@ -185,19 +199,23 @@ function PrototypeLayout({
                   </section>
                 ) : view === 'monday' ? (
                   <PlanningContent
+                    sessionAvailable={sessionStates.monday !== 'empty'}
+                    disabled={firstEntry}
+                    goals={firstEntry ? [] : goals}
+                    progress={firstEntry ? '' : progress}
+                    risk={firstEntry ? '' : risk}
+                    setProgress={planning.edited(setProgress)}
+                    setRisk={planning.edited(setRisk)}
+                    update={planning.edited(update)}
+                    openSource={planning.openSource}
                     {...{
-                      goals,
-                      progress,
+                      metricPrep,
+                      promptConversation,
                       refreshMetrics,
-                      risk,
-                      setModal,
-                      setProgress,
-                      setRisk,
-                      setVersion,
-                      update,
+                      review,
+                      setNotice,
                       versionTasks
                     }}
-                    go={openSelectedVersion}
                   />
                 ) : (
                   <AcceptanceContent
@@ -367,16 +385,8 @@ function PrototypeLayout({
           {...{
             copied,
             copyText,
-            go,
-            goals,
-            metricPrep,
             modal,
-            sessionFlow,
-            setModal,
-            setSession,
-            setSessionFlow,
-            update,
-            weekly
+            setModal
           }}
         />
       )}

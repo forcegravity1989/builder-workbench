@@ -1,4 +1,5 @@
 import { React } from 'react'
+import { Info } from 'lucide-react'
 
 export function PrototypeMaterialNotice({ view, firstEntry, onScenario, onStartRequest }) {
   const label = view === 'monday' ? '计划' : '验收'
@@ -7,6 +8,7 @@ export function PrototypeMaterialNotice({ view, firstEntry, onScenario, onStartR
       <label>
         原型场景
         <select
+          className={view === 'monday' ? 'input' : undefined}
           value={firstEntry ? 'first' : 'selected'}
           onChange={(event) => onScenario(event.target.value)}
         >
@@ -15,10 +17,11 @@ export function PrototypeMaterialNotice({ view, firstEntry, onScenario, onStartR
         </select>
       </label>
       {firstEntry && (
-        <div className="material-problem">
+        <div className="material-problem" role="alert">
+          {view === 'monday' && <Info />}
           <span>v0.3、v0.4 的{label}数据文件格式有问题，暂无法读取。</span>
           <button
-            className="btn btn-ghost"
+            className={`btn ${view === 'monday' ? 'btn-secondary' : 'btn-ghost'}`}
             onClick={() => {
               const file = view === 'monday' ? 'data.json' : 'acceptance.json'
               onStartRequest(

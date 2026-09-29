@@ -21,7 +21,7 @@ export function usePlanVersionSelection(
     busy,
     error,
     inProgress: () => lock.current,
-    async select(version: string, create = false) {
+    async select(version: string) {
       if (lock.current) {
         return false
       }
@@ -29,7 +29,16 @@ export function usePlanVersionSelection(
       setBusy(true)
       setError(null)
       try {
-        const selected = await material.select(version, create)
+        if (material.draft?.dirty && !(await material.flush())) {
+          if (mounted.current) {
+            setError('当前修改尚未保存，请先处理保存提示，再选择其他版本。')
+          }
+          return false
+        }
+        if (!mounted.current) {
+          return false
+        }
+        const selected = await material.select(version)
         if (!selected || !mounted.current) {
           return false
         }

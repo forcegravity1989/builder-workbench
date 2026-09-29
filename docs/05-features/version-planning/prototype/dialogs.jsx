@@ -1,9 +1,55 @@
-import { React } from 'react'
-import { Check, Copy, Plus, X } from 'lucide-react'
-import { Field, Lamp, lampNames } from './shared.jsx'
-import { metrics, remote } from './snapshot.js'
+import { React, useState } from 'react'
+import { Check, Copy, X } from 'lucide-react'
+import { Lamp, lampNames } from './shared.jsx'
+import { original, remote } from './snapshot.js'
 
-function PrototypeDialogs({ copied, copyText, goals, metricPrep, modal, setModal, update }) {
+function PlanningSourcePreview({ modal }) {
+  const snapshotCommit = 'f20f04ae57d510178c710c71216b9b734082c28e'
+  const [selected, setSelected] = useState(modal.source || '')
+  const excerpt = `# ${original.results.version_label} 验收记录摘录\n\n${original.results.task_summary}\n${original.results.goals.map((goal) => `\n## ${goal.label} ${goal.title}\n${goal.note}\n历史记录读数：${goal.reading || '未取得'}（非本期脚本实测）`).join('\n')}`
+  return (
+    <div className="source-copy">
+      <p>
+        原型示意：使用固定评审快照演示来源选择；未连接真实归档，也不表示快照已通过生产归档核验。
+      </p>
+      <p>请选择本次进展的依据；仅关联来源，不覆盖已写进展。</p>
+      <select
+        className="input"
+        aria-label="进展来源验收记录"
+        value={selected}
+        onChange={(event) => setSelected(event.target.value)}
+      >
+        <option value="" disabled>
+          尚未关联来源
+        </option>
+        <option value={snapshotCommit}>
+          {original.results.version_label} · f20f04ae · 固定评审快照示例
+        </option>
+      </select>
+      {selected ? (
+        <>
+          <p>
+            来源：{original.results.version_label} · {snapshotCommit}（只读）
+          </p>
+          <pre>{excerpt}</pre>
+          <details>
+            <summary>原始材料（历史快照）</summary>
+            <pre>{JSON.stringify(original.results, null, 2)}</pre>
+          </details>
+          {selected !== modal.source && (
+            <button className="btn btn-secondary" onClick={() => modal.onSource(selected)}>
+              作为进展来源（演示）
+            </button>
+          )}
+        </>
+      ) : (
+        <p>尚未关联来源。生产中由人选择可核验的归档记录；缺少材料时保持未关联。</p>
+      )}
+    </div>
+  )
+}
+
+function PrototypeDialogs({ copied, copyText, modal, setModal }) {
   return (
     <div className="dialog-backdrop" onClick={() => setModal(null)}>
       <section
@@ -31,55 +77,7 @@ function PrototypeDialogs({ copied, copyText, goals, metricPrep, modal, setModal
         </header>
         <div className="dialog-content">
           {modal.type === 'text' && <pre>{modal.text}</pre>}
-          {modal.type === 'goal' &&
-            (() => {
-              const g = goals.find((x) => x.id === modal.id)
-              return (
-                <div className="goal-editor">
-                  <label>
-                    交付件
-                    <Field
-                      label="补充交付件"
-                      value={g.delivery}
-                      onChange={(v) => update(g.id, 'delivery', v)}
-                      rows={2}
-                    />
-                  </label>
-                  <label>
-                    验收标准
-                    <Field
-                      label="验收标准"
-                      value={g.criteria}
-                      onChange={(v) => update(g.id, 'criteria', v)}
-                      rows={3}
-                      placeholder="验收点、旅程或质量要求"
-                    />
-                  </label>
-                  <label>
-                    关联指标
-                    <select
-                      className="input"
-                      aria-label="关联指标"
-                      value={g.metricId}
-                      onChange={(e) => update(g.id, 'metricId', e.target.value)}
-                    >
-                      <option value="">不承诺指标</option>
-                      {metrics
-                        .filter((m) => m.kind === 'script')
-                        .map((m) => (
-                          <option key={m.id} value={m.id}>
-                            {m.name}
-                          </option>
-                        ))}
-                    </select>
-                  </label>
-                  <button className="btn btn-ghost" onClick={() => metricPrep(null)}>
-                    <Plus />
-                    准备新指标
-                  </button>
-                </div>
-              )
-            })()}
+          {modal.type === 'planning-source' && <PlanningSourcePreview modal={modal} />}
           {modal.type === 'scope' && (
             <div className="source-copy">
               <p>
