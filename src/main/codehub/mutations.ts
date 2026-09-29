@@ -152,29 +152,98 @@ export function loginOfDetail(value: unknown): string | null {
   return null
 }
 
+function plainText(record: Record<string, unknown>, keys: string[]): string | null {
+  for (const key of keys) {
+    const value = record[key]
+    if (typeof value === 'string' && value.trim()) {
+      return value.trim()
+    }
+    if (value && typeof value === 'object' && !Array.isArray(value)) {
+      const nested = plainText(value as Record<string, unknown>, [
+        'markdown',
+        'raw',
+        'text',
+        'body',
+        'content',
+        'description'
+      ])
+      if (nested) {
+        return nested
+      }
+    }
+  }
+  return null
+}
+
+function detailRecord(parsed: unknown): Record<string, unknown> {
+  if (typeof parsed === 'string') {
+    const trimmed = parsed.trim()
+    if (!trimmed) {
+      return {}
+    }
+    if (trimmed.startsWith('{') || trimmed.startsWith('[')) {
+      try {
+        return detailRecord(JSON.parse(trimmed) as unknown)
+      } catch {
+        return { description: trimmed }
+      }
+    }
+    return { description: trimmed }
+  }
+  if (Array.isArray(parsed)) {
+    return detailRecord(parsed[0])
+  }
+  if (!parsed || typeof parsed !== 'object') {
+    return {}
+  }
+  const record = parsed as Record<string, unknown>
+  for (const key of ['issue', 'merge_request', 'data', 'result']) {
+    const nested = record[key]
+    if (!nested || typeof nested !== 'object' || Array.isArray(nested)) {
+      continue
+    }
+    const inner = nested as Record<string, unknown>
+    if (
+      inner.title !== undefined ||
+      inner.description !== undefined ||
+      inner.body !== undefined ||
+      inner.content !== undefined ||
+      inner.iid !== undefined
+    ) {
+      return { ...record, ...inner }
+    }
+  }
+  return record
+}
+
 export async function viewCodeHubTask(args: {
   remote: CodeHubRemote
   execOptions?: CodeHubExecOptions
   kind: 'issue' | 'mr'
   iid: number
 }): Promise<CodeHubTaskDetail> {
-  const parsed = parseJson(
-    await runCodeHubCli(
-      [args.kind, 'view', String(args.iid), ...projectArgs(args.remote), '-f', 'json'],
-      args.execOptions
+  const record = detailRecord(
+    parseJson(
+      await runCodeHubCli(
+        [args.kind, 'view', String(args.iid), ...projectArgs(args.remote), '-f', 'json'],
+        args.execOptions
+      )
     )
   )
-  const record = parsed && typeof parsed === 'object' ? (parsed as Record<string, unknown>) : {}
   const url = record.web_url ?? record.html_url ?? record.url
   return {
     iid: args.iid,
     title: String(record.title ?? ''),
-    description: String(record.description ?? record.body ?? ''),
+    description:
+      plainText(record, ['description', 'body', 'content', 'desc', 'markdown', 'note']) ?? '',
     state: String(record.state ?? 'opened'),
     url: typeof url === 'string' ? url : null,
     author: loginOfDetail(record.author),
     assignees: namesOf(record.assignees ?? record.assignee),
-    reviewers: namesOf(record.reviewers ?? record.approval_reviewers)
+    reviewers: namesOf(record.reviewers ?? record.approval_reviewers),
+    labels: namesOf(record.labels),
+    sourceBranch: plainText(record, ['source_branch', 'sourceBranch']),
+    targetBranch: plainText(record, ['target_branch', 'targetBranch'])
   }
 }
 

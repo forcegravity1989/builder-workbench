@@ -7,6 +7,9 @@ export type CodeHubTaskItem = {
   author: string | null
   assignees: string[]
   reviewers: string[]
+  labels: string[]
+  sourceBranch: string | null
+  targetBranch: string | null
   updatedAt: string
   mergedAt?: string | null
   repoId?: string
@@ -24,6 +27,9 @@ export type CodeHubTaskDetail = {
   author: string | null
   assignees: string[]
   reviewers: string[]
+  labels: string[]
+  sourceBranch: string | null
+  targetBranch: string | null
 }
 
 export type CodeHubComment = {

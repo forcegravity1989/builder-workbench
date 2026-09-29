@@ -1,6 +1,6 @@
 import { CodeHubFilterPopover } from './FilterPopover'
 import { CodeHubCreateIssueDialog } from './CreateIssueDialog'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import type { TaskPageComposerActionsModel } from '../../use-task-page-composer-actions'
 import { cn } from '@/lib/utils'
 import { translate } from '@/i18n/i18n'
@@ -9,7 +9,7 @@ import { Input } from '@/components/ui/input'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import TaskProjectSourceCombobox from '@/components/task-project-source-combobox'
 import { normalizeTaskRepoSelection } from '@/components/task-page-default-repo-selection'
-import { ExternalLink, LoaderCircle, Plus, RefreshCw, Search, X } from 'lucide-react'
+import { LoaderCircle, Plus, RefreshCw, Search, X } from 'lucide-react'
 import { toast } from 'sonner'
 import { isCodeHubGitRemote } from '../../../../../shared/codehub'
 import { isWorkbenchShell } from '@/workbench/is-workbench-shell'
@@ -46,8 +46,10 @@ export function TaskPageCodeHubFilters({
   const [createOpen, setCreateOpen] = useState(false)
   const codehubRepos = selectedRepos.filter((repo) => isCodeHubGitRemote(repo.gitRemoteIdentity))
   const codehubRepo = codehubRepos[0]
-  const projectUrl =
-    codehubRepos.length === 1 ? (codehubRepos[0]?.gitRemoteIdentity?.remoteUrl ?? null) : null
+  const [searchDraft, setSearchDraft] = useState(codehubQuery)
+  useEffect(() => {
+    setSearchDraft(codehubQuery)
+  }, [codehubQuery])
   const workbench = isWorkbenchShell()
   const presets: readonly (readonly ['open' | 'mine' | 'review', string])[] =
     codehubView === 'mrs'
@@ -135,31 +137,6 @@ export function TaskPageCodeHubFilters({
             triggerClassName="h-8 w-auto max-w-[220px] rounded-md border border-border/50 bg-muted/50 px-2 text-xs font-medium shadow-sm transition hover:bg-muted/50 focus:ring-2 focus:ring-ring/20 focus:outline-none"
           />
         </div>
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Button
-              type="button"
-              variant="outline"
-              size="icon"
-              disabled={!projectUrl}
-              aria-label={translate(
-                'auto.components.TaskPage.codehubOpenProject',
-                'Open project in CodeHub'
-              )}
-              className="size-8 rounded-md border-border/50 bg-muted/50 text-foreground shadow-sm hover:bg-muted/50"
-              onClick={() => {
-                if (projectUrl) {
-                  void window.api.shell.openUrl(projectUrl)
-                }
-              }}
-            >
-              <ExternalLink className="size-3.5" />
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent side="bottom" sideOffset={6}>
-            {translate('auto.components.TaskPage.codehubOpenProject', 'Open project in CodeHub')}
-          </TooltipContent>
-        </Tooltip>
         {workbench ? <span className="h-4 w-px shrink-0 bg-border/80" aria-hidden /> : null}
         <div className="flex shrink-0 flex-wrap gap-1.5">
           {presets.map(([id, label]) => (
@@ -192,20 +169,38 @@ export function TaskPageCodeHubFilters({
           <div className="relative min-w-0 flex-1 basis-64">
             <Search className="pointer-events-none absolute left-2.5 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground" />
             <Input
-              value={codehubQuery}
-              onChange={(event) => setCodehubQuery(event.target.value)}
+              value={searchDraft}
+              onChange={(event) => {
+                const value = event.target.value
+                setSearchDraft(value)
+                if (codehubView !== 'mrs') {
+                  setCodehubQuery(value)
+                }
+              }}
+              onKeyDown={(event) => {
+                if (event.key === 'Enter') {
+                  event.preventDefault()
+                  setCodehubQuery(searchDraft)
+                }
+              }}
               placeholder={
                 codehubView === 'mrs'
-                  ? translate('auto.components.TaskPage.eee4df4c66', 'Search GitHub PRs...')
-                  : translate('auto.components.TaskPage.b15ceb409d', 'Search GitHub issues...')
+                  ? translate('auto.components.TaskPage.codehubSearchMrs', 'Search CodeHub PRs')
+                  : translate(
+                      'auto.components.TaskPage.codehubSearchIssues',
+                      'Search CodeHub issues'
+                    )
               }
               className="h-8 rounded-md border-border/60 bg-background pl-8 pr-8 text-xs text-foreground shadow-xs"
             />
-            {codehubQuery ? (
+            {searchDraft ? (
               <button
                 type="button"
                 aria-label={translate('auto.components.TaskPage.b797bdd7c3', 'Clear search')}
-                onClick={() => setCodehubQuery('')}
+                onClick={() => {
+                  setSearchDraft('')
+                  setCodehubQuery('')
+                }}
                 className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground transition hover:text-foreground"
               >
                 <X className="size-4" />

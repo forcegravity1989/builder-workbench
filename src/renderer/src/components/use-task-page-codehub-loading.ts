@@ -1,8 +1,10 @@
 import { codehubApi } from '@/lib/codehub-api'
 import type { TaskPageGitLabLoadingModel } from './use-task-page-gitlab-loading'
-import { useEffect, useState } from 'react'
+import { useEffect } from 'react'
 import { isCodeHubGitRemote } from '../../../shared/codehub'
 import type { CodeHubTaskItem } from '../../../shared/codehub-tasks'
+
+const CODEHUB_LIST_LIMIT = 250
 
 export function useTaskPageCodeHubLoading(model: TaskPageGitLabLoadingModel) {
   const {
@@ -19,19 +21,9 @@ export function useTaskPageCodeHubLoading(model: TaskPageGitLabLoadingModel) {
     setCodehubLoading,
     setCodehubError
   } = model
-  const scopeKey = JSON.stringify([
-    selectedRepos.map((repo) => [repo.id, repo.path, repo.executionHostId, repo.gitRemoteIdentity]),
-    codehubView,
-    codehubState,
-    codehubPreset,
-    codehubQuery,
-    codehubAuthor,
-    codehubAssignee
-  ])
-  const [page, setPage] = useState({ scopeKey, limit: 30 })
-  const limit = page.scopeKey === scopeKey ? page.limit : 30
-  const loadKey = `${scopeKey}:${limit}`
-  const [more, setMore] = useState({ loadKey: '', hasMore: false })
+  const serverQuery = codehubView === 'mrs' ? codehubQuery : ''
+  const serverAuthor = codehubView === 'mrs' ? codehubAuthor : ''
+  const serverAssignee = codehubView === 'mrs' ? codehubAssignee : ''
   useEffect(() => {
     if (taskSource !== 'codehub') {
       return
@@ -63,22 +55,19 @@ export function useTaskPageCodeHubLoading(model: TaskPageGitLabLoadingModel) {
           repoId: repo.id,
           kind,
           state,
-          limit,
+          limit: CODEHUB_LIST_LIMIT,
           scope,
-          search: kind === 'mr' ? codehubQuery : undefined,
-          author: kind === 'mr' ? codehubAuthor : undefined,
-          assignee: kind === 'mr' ? codehubAssignee : undefined
+          search: serverQuery || undefined,
+          author: serverAuthor || undefined,
+          assignee: serverAssignee || undefined
         })
-        return {
-          hasMore: listed.hasMore,
-          items: listed.items.map((item) => ({
-            ...item,
-            repoId: repo.id,
-            repoPath: repo.path,
-            host: listed.remote.host,
-            project: listed.remote.project
-          }))
-        }
+        return listed.items.map((item) => ({
+          ...item,
+          repoId: repo.id,
+          repoPath: repo.path,
+          host: listed.remote.host,
+          project: listed.remote.project
+        }))
       })
     )
       .then((results) => {
@@ -87,7 +76,6 @@ export function useTaskPageCodeHubLoading(model: TaskPageGitLabLoadingModel) {
         }
         const items: CodeHubTaskItem[] = []
         const errors: string[] = []
-        let hasMore = false
         for (const result of results) {
           if (result.status !== 'fulfilled') {
             errors.push(
@@ -95,12 +83,10 @@ export function useTaskPageCodeHubLoading(model: TaskPageGitLabLoadingModel) {
             )
             continue
           }
-          items.push(...result.value.items)
-          hasMore ||= result.value.hasMore
+          items.push(...result.value)
         }
         setCodehubItems(items)
         setCodehubError(errors[0] ?? null)
-        setMore({ loadKey, hasMore })
       })
       .finally(() => {
         if (!stale) {
@@ -111,12 +97,10 @@ export function useTaskPageCodeHubLoading(model: TaskPageGitLabLoadingModel) {
       stale = true
     }
   }, [
-    limit,
-    loadKey,
-    codehubAssignee,
-    codehubAuthor,
+    serverAssignee,
+    serverAuthor,
+    serverQuery,
     codehubPreset,
-    codehubQuery,
     codehubRefreshNonce,
     codehubState,
     codehubView,
@@ -126,11 +110,7 @@ export function useTaskPageCodeHubLoading(model: TaskPageGitLabLoadingModel) {
     setCodehubLoading,
     taskSource
   ])
-  return {
-    ...model,
-    codehubHasMore: more.loadKey === loadKey && more.hasMore,
-    loadMoreCodehub: () => setPage({ scopeKey, limit: limit + 30 })
-  }
+  return model
 }
 
 export type TaskPageCodeHubLoadingModel = ReturnType<typeof useTaskPageCodeHubLoading>

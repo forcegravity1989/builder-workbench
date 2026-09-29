@@ -21,7 +21,6 @@ export function useCodeHubDetail(model: TaskPageComposerActionsModel) {
   const [titleDraft, setTitleDraft] = useState('')
   const [savingTitle, setSavingTitle] = useState(false)
   const [stateBusy, setStateBusy] = useState(false)
-  const [duplicateOf, setDuplicateOf] = useState('')
   const reloadDetail = (): void => {
     if (!item?.repoPath) {
       return
@@ -167,13 +166,13 @@ export function useCodeHubDetail(model: TaskPageComposerActionsModel) {
   }
   const setIssueState = (
     state: 'open' | 'closed',
-    stateReason?: 'completed' | 'not_planned' | 'duplicate'
+    stateReason?: 'completed' | 'not_planned' | 'duplicate',
+    duplicateNumber?: number
   ): void => {
     if (!item.repoPath || stateBusy) {
       return
     }
-    const duplicate = Number(duplicateOf)
-    if (stateReason === 'duplicate' && !Number.isInteger(duplicate)) {
+    if (stateReason === 'duplicate' && !Number.isInteger(duplicateNumber)) {
       return
     }
     setStateBusy(true)
@@ -184,7 +183,7 @@ export function useCodeHubDetail(model: TaskPageComposerActionsModel) {
         iid: item.iid,
         state,
         stateReason,
-        duplicateOf: stateReason === 'duplicate' ? duplicate : null
+        duplicateOf: stateReason === 'duplicate' ? (duplicateNumber ?? null) : null
       })
       .then(() => {
         toast.success(
@@ -219,8 +218,6 @@ export function useCodeHubDetail(model: TaskPageComposerActionsModel) {
     setTitleDraft,
     savingTitle,
     stateBusy,
-    duplicateOf,
-    setDuplicateOf,
     reloadDetail,
     title,
     closed,

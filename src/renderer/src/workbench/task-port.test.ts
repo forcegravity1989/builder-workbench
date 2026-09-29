@@ -83,7 +83,10 @@ const chDetail: CodeHubTaskDetail = {
   url: null,
   author: 'ada',
   assignees: [],
-  reviewers: []
+  reviewers: [],
+  labels: [],
+  sourceBranch: null,
+  targetBranch: null
 }
 
 function makeDeps(overrides: Partial<TaskPortDeps> = {}): TaskPortDeps {

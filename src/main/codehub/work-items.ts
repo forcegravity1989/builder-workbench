@@ -21,6 +21,32 @@ function loginOf(value: unknown): string | null {
   return null
 }
 
+function labelsOf(value: unknown): string[] {
+  if (!Array.isArray(value)) {
+    return []
+  }
+  return value.flatMap((entry) => {
+    if (typeof entry === 'string' && entry.trim()) {
+      return [entry.trim()]
+    }
+    if (!entry || typeof entry !== 'object') {
+      return []
+    }
+    const name = (entry as Record<string, unknown>).name
+    return typeof name === 'string' && name.trim() ? [name.trim()] : []
+  })
+}
+
+function textOf(record: Record<string, unknown>, keys: string[]): string | null {
+  for (const key of keys) {
+    const value = record[key]
+    if (typeof value === 'string' && value.trim()) {
+      return value.trim()
+    }
+  }
+  return null
+}
+
 function namesOf(value: unknown): string[] {
   if (Array.isArray(value)) {
     return value.flatMap((entry) => {
@@ -76,6 +102,9 @@ function mapRow(
     author: loginOf(record.author),
     assignees: namesOf(record.assignees ?? record.assignee),
     reviewers: namesOf(record.reviewers ?? record.approval_reviewers),
+    labels: labelsOf(record.labels),
+    sourceBranch: textOf(record, ['source_branch', 'sourceBranch']),
+    targetBranch: textOf(record, ['target_branch', 'targetBranch']),
     updatedAt: String(record.updated_at ?? record.updatedAt ?? record.created_at ?? ''),
     ...(type === 'mr'
       ? {
