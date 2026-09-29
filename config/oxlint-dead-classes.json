@@ -59,6 +59,7 @@
               "scrollbar-sleek-lg",
               "scrollbar-sleek-parent",
               "toaster",
+              "vc-*",
               "worktree-sidebar-scrollbar",
               "xterm-*"
             ]
