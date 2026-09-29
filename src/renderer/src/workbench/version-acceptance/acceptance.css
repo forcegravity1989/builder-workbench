@@ -348,6 +348,19 @@
 .va-task time {
   flex-basis: 100%;
 }
+.va-task-filter {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  padding-block: var(--space-2);
+  border-top: 1px solid var(--color-divider);
+  color: var(--color-neutral-600);
+  font-size: 0.8rem;
+}
+.va-task-filter > button {
+  margin-left: auto;
+}
 .va-footer {
   border-top: 1px solid var(--color-divider);
   border-bottom: 0;

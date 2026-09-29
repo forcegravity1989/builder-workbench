@@ -31,7 +31,12 @@ export function initializeMainProcessAutomations(): AutomationService {
           let workspaceDisplayName: string | null = null
           if (automation.workspaceMode === 'new_per_run') {
             const created = await runtime.createManagedWorktree(
-              buildHeadlessAutomationWorktreeCreateArgs({ automation, run, repo: target.repo })
+              buildHeadlessAutomationWorktreeCreateArgs({
+                automation,
+                run,
+                repo: target.repo,
+                ...(oneShotPrompt ? { oneShotPrompt } : {})
+              })
             )
             terminalHandle = created.startupTerminal?.handle ?? ''
             terminalSessionId = created.startupTerminal?.tabId ?? null

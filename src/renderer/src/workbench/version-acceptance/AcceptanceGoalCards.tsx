@@ -28,7 +28,7 @@ export function AcceptanceGoalCards({
   metricWindow,
   readOnly,
   sectionRef,
-  onScrollToTasks,
+  onOpenIssues,
   onReadings,
   onGoalChange,
   onFollowUp
@@ -40,7 +40,7 @@ export function AcceptanceGoalCards({
   metricWindow: MetricWindow | null
   readOnly: boolean
   sectionRef: Ref<HTMLElement>
-  onScrollToTasks(): void
+  onOpenIssues(goalId: string, title: string): void
   onReadings(goalId: string, ref: MetricRef, readings: MetricReadingEvidence[]): void
   onGoalChange(next: AcceptanceMaterial, goalId: string): void
   onFollowUp(text: string): void
@@ -60,7 +60,7 @@ export function AcceptanceGoalCards({
                 <button
                   className="va-goal-issues"
                   title="核对关联 Issue 状态"
-                  onClick={onScrollToTasks}
+                  onClick={() => onOpenIssues(goal.goalId, goal.title)}
                 >
                   <ListTodo size={13} aria-hidden="true" />
                   Issue {relatedIssues}

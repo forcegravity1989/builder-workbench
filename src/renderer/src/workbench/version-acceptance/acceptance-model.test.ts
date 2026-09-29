@@ -129,15 +129,24 @@ describe('version acceptance evidence', () => {
     for (const result of document.results) {
       result.deliveries.push({ title: '实际交付', location: 'out/app' })
     }
+    // Complete requires the fixed plan's goals to be covered, not just the present results.
     expect(preparationSignal(document, verified, { candidate, artifacts: [artifact] }).kind).toBe(
-      'complete'
+      'pending'
     )
+    expect(
+      preparationSignal(document, verified, { candidate, artifacts: [artifact] }, plan.goals).kind
+    ).toBe('complete')
+    // A schema-valid round missing one planned goal's result never turns green.
+    const partial = { ...document, results: document.results.slice(0, 1) }
+    expect(
+      preparationSignal(partial, verified, { candidate, artifacts: [artifact] }, plan.goals).kind
+    ).toBe('pending')
     // Repacking the same source invalidates the declared material match.
     document.candidateRef = { ...document.candidateRef!, commit: '5'.repeat(40) }
-    expect(preparationSignal(document, verified, null).kind).toBe('failed')
+    expect(preparationSignal(document, verified, null, plan.goals).kind).toBe('failed')
     // A candidate from another version fails even without machine checks.
     document.candidateRef = { ...document.candidateRef!, version: 'v0.4' }
-    expect(preparationSignal(document, verified, null)).toMatchObject({
+    expect(preparationSignal(document, verified, null, plan.goals)).toMatchObject({
       kind: 'failed',
       label: '候选不匹配'
     })

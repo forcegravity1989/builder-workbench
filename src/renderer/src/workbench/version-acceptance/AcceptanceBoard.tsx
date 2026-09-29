@@ -110,11 +110,21 @@ function ReadyAcceptanceBoard({
   const metricWindow = useAcceptanceMetricWindow(metrics, metricScope, hasMetrics)
   const [reportOpen, setReportOpen] = useState(false)
   const [actionNotice, setActionNotice] = useState<string | null>(null)
+  const [taskGoalFilter, setTaskGoalFilter] = useState<{ goalId: string; title: string } | null>(
+    null
+  )
   const startCard = useRef<HTMLElement>(null)
   const results = useRef<HTMLElement>(null)
   const tasks = useRef<HTMLDetailsElement>(null)
   const branch = cycleBranch(entry)
-  const scrollToTasks = () => tasks.current?.scrollIntoView({ block: 'start', behavior: 'smooth' })
+  /** Locate the snapshot section expanded, optionally narrowed to one goal's references. */
+  const openTasks = (goal?: { goalId: string; title: string } | null) => {
+    setTaskGoalFilter(goal ?? null)
+    if (tasks.current) {
+      tasks.current.open = true
+    }
+    tasks.current?.scrollIntoView({ block: 'start', behavior: 'smooth' })
+  }
   useEffect(() => {
     if (!report) {
       setReportOpen(false)
@@ -273,7 +283,7 @@ function ReadyAcceptanceBoard({
                       ? taskSnapshotSummary(document.taskSnapshot ?? [], plan.document.tasks.length)
                       : null
                   }
-                  onIssues={scrollToTasks}
+                  onIssues={() => openTasks()}
                 />
               )}
               <AcceptanceSources
@@ -302,7 +312,7 @@ function ReadyAcceptanceBoard({
                     metricWindow={metricWindow.window}
                     readOnly={readOnly}
                     sectionRef={results}
-                    onScrollToTasks={scrollToTasks}
+                    onOpenIssues={(goalId, title) => openTasks({ goalId, title })}
                     onReadings={(goalId, ref, readings) =>
                       editReadings(document, goalId, ref, readings)
                     }
@@ -316,6 +326,9 @@ function ReadyAcceptanceBoard({
                     snapshot={document.taskSnapshot}
                     disabled={readOnly}
                     getScrollTop={() => scroll.current?.scrollTop ?? 0}
+                    goalFilter={taskGoalFilter?.goalId ?? null}
+                    goalFilterLabel={taskGoalFilter?.title ?? null}
+                    onClearGoalFilter={() => setTaskGoalFilter(null)}
                     origin={{
                       ...scope,
                       page: 'acceptance',

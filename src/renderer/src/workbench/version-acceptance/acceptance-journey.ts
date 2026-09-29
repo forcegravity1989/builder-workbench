@@ -22,12 +22,16 @@ function hasDeliveryEvidence(result: AcceptanceMaterial['results'][number]): boo
 /**
  * The preparation lamp derives from recorded evidence only — the retired
  * "materials complete" checkbox no longer gates it, and machine checks stay
- * honest: unknown is unknown, never green.
+ * honest: unknown is unknown, never green. Completeness is measured against
+ * the fixed plan's goals: a material round missing goal results is
+ * schema-valid, so checking only the present results could turn green while
+ * planned goals still lack any delivery.
  */
 export function preparationSignal(
   document: AcceptanceMaterial | undefined,
   plan: EvidenceCheck,
-  checks: PreparationChecks | null
+  checks: PreparationChecks | null,
+  planGoals?: PlanningMaterial['goals'] | null
 ): JourneySignal {
   if (!document) {
     return { kind: 'unknown', label: '未开始' }
@@ -53,11 +57,14 @@ export function preparationSignal(
   if (evidence.some((item) => item.kind === 'mismatch' || item.kind === 'unavailable')) {
     return { kind: 'failed', label: '来源核对失败' }
   }
-  const results = document.results
-  if (results.length > 0 && results.every(hasDeliveryEvidence)) {
+  const evidenceFor = (goalId: string) => {
+    const result = document.results.find((item) => item.goalId === goalId)
+    return result !== undefined && hasDeliveryEvidence(result)
+  }
+  if (planGoals && planGoals.length > 0 && planGoals.every((goal) => evidenceFor(goal.goalId))) {
     return { kind: 'complete', label: '实际交付已记录' }
   }
-  if (results.some(hasDeliveryEvidence) || document.preparedArtifacts.length > 0) {
+  if (document.results.some(hasDeliveryEvidence) || document.preparedArtifacts.length > 0) {
     return { kind: 'pending', label: '材料待补齐' }
   }
   return { kind: 'unknown', label: '未开始' }

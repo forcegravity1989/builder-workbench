@@ -41,6 +41,9 @@ export function AcceptanceTasks({
   disabled,
   getScrollTop,
   onSnapshot,
+  goalFilter,
+  goalFilterLabel,
+  onClearGoalFilter,
   ref
 }: {
   plan: PlanningMaterial
@@ -50,6 +53,9 @@ export function AcceptanceTasks({
   disabled: boolean
   getScrollTop(): number
   onSnapshot(tasks: CycleTaskRead[]): void
+  goalFilter?: string | null
+  goalFilterLabel?: string | null
+  onClearGoalFilter?(): void
   ref?: Ref<HTMLDetailsElement>
 }) {
   const [busy, setBusy] = useState(false)
@@ -79,6 +85,8 @@ export function AcceptanceTasks({
     snapshot?.map((item) =>
       item.kind === 'ready' ? { kind: 'ready', reference: item.reference, task: item } : item
     ) ?? null
+  const visible =
+    goalFilter && tasks ? tasks.filter((item) => item.reference.goalId === goalFilter) : tasks
   const facts = taskSnapshotFacts(snapshot ?? [], plan.tasks.length)
   async function refresh() {
     if (disabled) {
@@ -121,7 +129,17 @@ export function AcceptanceTasks({
       {!plan.tasks.length && (
         <p className="va-muted">固定计划未引用 Issue；不由此推断目标已达成。</p>
       )}
-      {tasks?.map((item) => (
+      {goalFilter && (
+        <p className="va-task-filter">
+          仅显示{goalFilterLabel ? `「${goalFilterLabel}」` : '该目标'}关联的
+          Issue；状态汇总仍为全部引用
+          <button className="wb-btn wb-btn-ghost wb-btn-sm" onClick={onClearGoalFilter}>
+            显示全部
+          </button>
+        </p>
+      )}
+      {goalFilter && visible?.length === 0 && <p className="va-muted">该目标暂无关联任务引用。</p>}
+      {visible?.map((item) => (
         <div
           className="va-task"
           key={`${taskReferenceKey(item.reference)}:${item.reference.goalId ?? ''}`}

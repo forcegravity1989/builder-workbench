@@ -218,7 +218,7 @@ export function useAcceptanceOutput(
     archivePending,
     decisionSummary,
     journey: {
-      preparation: preparationSignal(document, planVerification, verified),
+      preparation: preparationSignal(document, planVerification, verified, plan?.document.goals),
       decisions: decisionSignal(document, plan?.document, decisionStates),
       archive: archiveSignal(archive, archiveMaterial)
     },
