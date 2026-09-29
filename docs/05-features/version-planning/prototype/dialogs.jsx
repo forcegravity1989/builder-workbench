@@ -78,6 +78,18 @@ function PrototypeDialogs({ copied, copyText, modal, setModal }) {
         <div className="dialog-content">
           {modal.type === 'text' && <pre>{modal.text}</pre>}
           {modal.type === 'planning-source' && <PlanningSourcePreview modal={modal} />}
+          {modal.type === 'native-automation' && (
+            <div className="prototype-native-editor">
+              <h3>
+                Orca 原生自动化编辑器<sup>1</sup>
+              </h3>
+              <p>每周版本{modal.workflow}</p>
+              <p>定时运行：关闭</p>
+              <small>
+                ¹ 此处为原型占位，展示首次登记状态；正式界面复用 Orca 编辑器，后续尊重已保存的配置。
+              </small>
+            </div>
+          )}
           {modal.type === 'scope' && (
             <div className="source-copy">
               <p>

@@ -1,5 +1,5 @@
 import { React, useEffect, useState } from 'react'
-import { Field } from './shared.jsx'
+import { Field, NewConversationIcon } from './shared.jsx'
 import {
   ChartNoAxesCombined,
   ChevronRight,
@@ -27,10 +27,6 @@ function PlanningContent({
   versionTasks
 }) {
   function changeMetric(goal, metricId) {
-    if (metricId === '__configure__') {
-      metricPrep(null)
-      return
-    }
     if (metricId === goal.metricId) {
       return
     }
@@ -82,13 +78,23 @@ function PlanningContent({
       <div className="section-heading">
         <h2>当前版本目标</h2>
         <span>Top 3</span>
+        <button
+          className="btn btn-secondary planning-configure-metrics"
+          title="新建会话，配置指标"
+          onClick={() => metricPrep(null)}
+        >
+          <NewConversationIcon />
+          配置指标
+        </button>
         <button className="btn btn-secondary" onClick={review} disabled={disabled}>
           <Presentation />
           预览纪要
         </button>
       </div>
       <section className="goal-sheet">
-        {disabled && <p className="goal-row">选择已有版本，或在左侧“新建计划”中明确本版目标。</p>}
+        {disabled && (
+          <p className="goal-row">尚未选择版本。新建计划，与 Agent 一起明确本版目标。</p>
+        )}
         {goals.map((g) => {
           const m = metrics.find((x) => x.id === g.metricId)
           return (
@@ -174,7 +180,6 @@ function PlanningContent({
                           {metric.name}
                         </option>
                       ))}
-                    <option value="__configure__">配置新指标…</option>
                   </select>
                 </div>
               )}

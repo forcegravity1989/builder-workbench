@@ -51,52 +51,40 @@ function PrototypeSidebar({ go, setModal, setSelectedIssue, view }) {
         ))}
       </nav>
       <div className="sidebar-spacer" />
-      <button
-        className="sidebar-item source-action"
-        onClick={() =>
-          setModal({
-            type: 'source',
-            title: '原型与来源'
-          })
-        }
-      >
-        <CircleHelp />
-        <span>交互原型 · 来源</span>
-      </button>
+      {!['monday', 'friday'].includes(view) && (
+        <button
+          className="sidebar-item source-action"
+          onClick={() =>
+            setModal({
+              type: 'source',
+              title: '原型与来源'
+            })
+          }
+        >
+          <CircleHelp />
+          <span>交互原型 · 来源</span>
+        </button>
+      )}
     </aside>
   )
 }
-function PrototypeSession({ branch, composer, draft, sessionState, onStart, view, width }) {
-  const label = view === 'friday' ? '验收' : '计划'
+function PrototypeSession({ composer, draft, sessionState, width }) {
   return (
     <section className="session-pane" style={{ width }} aria-label="Orca 原生会话工作区">
-      <header className="session-head">
-        <GitBranch />
-        <strong>{branch}</strong>
-        <button className="btn btn-secondary" onClick={onStart}>
-          新建{label}
-        </button>
-      </header>
       <div className="native-workspace-placeholder">
         <MessageSquare />
-        <h2>复用 Orca 会话工作区</h2>
+        <h2>
+          Orca 原生会话<sup>1</sup>
+        </h2>
         <p className="prototype-session-state" role="status">
-          {sessionState === 'empty'
-            ? `尚未打开会话。点击上方“新建${label}”即可开始。`
-            : sessionState === 'request'
-              ? '原型示意：已新建并聚焦原生会话，处理请求已自动发送；等待模型说明，再由人确认是否修改文件。'
-              : sessionState === 'workflow'
-                ? `原型示意：已运行登记的${label}自动化，并打开、聚焦本次原生会话。`
-                : '原型示意：此固定工作区已有原生会话。'}
+          {sessionState === 'empty' ? '尚未打开会话' : '会话已打开'}
         </p>
-        <p>原生新建会话、Agent 选择、标签和分屏保持原样。</p>
-        <p>资源管理器、智能体历史等工具侧栏沿用 Orca，可收起。</p>
-        <p>本页仅固定项目与分支；已有会话在两处是同一组。</p>
-        <small>此区域只标识复用边界，不另设计 BW 会话 UI。</small>
       </div>
       {draft && (
         <details className="prototype-request" open ref={composer}>
-          <summary>业务按钮交给原生会话的内容（原型示意）</summary>
+          <summary>
+            会话内容<sup>1</sup>
+          </summary>
           <pre>{draft}</pre>
         </details>
       )}
@@ -179,16 +167,13 @@ function PrototypeSplitter({ onResize }) {
   )
 }
 function PrototypeHeader({
-  review,
-  setExpanded,
-  setNotice,
-  setTaskFilter,
-  setVersion,
+  branch,
   version,
   view,
   weekly,
   firstEntry,
-  selectPlanVersion,
+  selectVersion,
+  hasProblems,
   planningSaveState
 }) {
   return (
@@ -204,72 +189,43 @@ function PrototypeHeader({
           }[view]
         }
       </h1>
-      {view === 'monday' ? (
+      {weekly ? (
         <select
           className="input version-select"
-          aria-label="计划版本"
+          aria-label={view === 'monday' ? '计划版本' : '验收版本'}
           value={firstEntry ? '' : version}
-          onChange={(event) => selectPlanVersion(event.target.value)}
+          onChange={(event) => selectVersion(event.target.value)}
         >
-          <option value="">待选择版本</option>
-          <option value="v0.5">v0.5</option>
-          <option value="v0.3" disabled>
-            v0.3 · 无法读取
+          <option value="" disabled>
+            待选择版本
           </option>
-          <option value="v0.4" disabled>
-            v0.4 · 无法读取
-          </option>
-        </select>
-      ) : weekly && firstEntry ? (
-        <select
-          className="input version-select"
-          aria-label={`${view === 'monday' ? '计划' : '验收'}版本`}
-          value=""
-          onChange={() => {}}
-        >
-          <option value="">待选择版本</option>
-          <option value="v0.3" disabled>
-            v0.3 · 无法读取
-          </option>
-          <option value="v0.4" disabled>
-            v0.4 · 无法读取
-          </option>
-        </select>
-      ) : view === 'friday' ? (
-        <select
-          className="input version-select"
-          aria-label="验收版本"
-          value={version}
-          onChange={(e) => {
-            setVersion(e.target.value)
-            setNotice('')
-            setTaskFilter('')
-            setExpanded(false)
-          }}
-        >
-          <option>v0.5</option>
-          <option>v0.4</option>
+          {!firstEntry && <option value="v0.5">v0.5</option>}
+          {!firstEntry && !hasProblems && view === 'friday' && <option value="v0.4">v0.4</option>}
+          {hasProblems && (
+            <>
+              <option value="v0.3" disabled>
+                v0.3 · 无法读取
+              </option>
+              <option value="v0.4" disabled>
+                v0.4 · 无法读取
+              </option>
+            </>
+          )}
         </select>
       ) : (
         <span className="page-state">builder-workbench</span>
       )}
       {weekly && !firstEntry && (
-        <span
-          className="page-state"
-          role="status"
-          title={
-            view === 'monday' ? '仅模拟自动保存状态；编辑保留在原型内存，未写入文件' : undefined
-          }
-        >
+        <span className="page-state" role="status">
           {view === 'monday' ? planningSaveState : '草稿'}
         </span>
       )}
       <span className="header-spacer" />
-      {view === 'friday' && (
-        <button className="btn btn-ghost" onClick={review} disabled={firstEntry}>
-          <ClipboardCheck />
-          验收报告
-        </button>
+      {weekly && (
+        <span className="page-branch" title={branch}>
+          <GitBranch />
+          <span>{branch}</span>
+        </span>
       )}
     </header>
   )

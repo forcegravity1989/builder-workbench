@@ -51,7 +51,7 @@ function App() {
       (location.hash || `#${document.body.dataset.screen}`) === '#friday' ? '验收' : '计划'
     ),
     [drafts, setDrafts] = useState({}),
-    [configId, setConfigId] = useState(1),
+    [configId, setConfigId] = useState(0),
     [notice, setNotice] = useState('')
   const [issues, setIssues] = useState(remote.issues),
     [expanded, setExpanded] = useState(false),
@@ -161,7 +161,7 @@ function App() {
     setCopied(false)
     setModal({
       type: 'text',
-      title: view === 'monday' ? '预览纪要' : '版本验收报告',
+      title: view === 'monday' ? '预览纪要' : '验收纪要',
       text: view === 'monday' ? minutes() : report()
     })
   }
@@ -183,13 +183,13 @@ function App() {
     }
   }
   function metricPrep(m) {
+    const nextId = configId + 1
+    setConfigId(nextId)
     setDrafts((x) => ({
       ...x,
-      [`配置-${configId}`]:
-        x[`配置-${configId}`] ||
-        `请读取项目约定、通用 SYSTEM 和 metrics-refresh Skill。先展示定义口径 → 查真实来源 → 实现脚本 → 试采验证 → 评审采用的流程，与我核对场外要求。配置指标：${
-          m?.name || '项目指标'
-        }。优先可查历史的脚本，只能查当前则明确限制；不手填实际值，不新增每日采集或记账分支。复用已有定义与脚本，按项目约定在独立原生任务内修改资产，采用后返回总览。不启动版本计划流程。`
+      [`配置-${nextId}`]: `请读取项目约定、通用 SYSTEM 和 metrics-refresh Skill。先展示定义口径 → 查真实来源 → 实现脚本 → 试采验证 → 评审采用的流程，与我核对场外要求。配置指标：${
+        m?.name || '项目指标'
+      }。仅接入支持按日或按周查询历史的脚本，数据存储由项目负责；不手填实际值，不增加 BW 采样、存储或指标自动化。每次配置在固定指标工作区新建原生会话；复用已有定义与脚本，按项目约定修改资产并评审采用。不启动版本计划流程。`
     }))
     go('metricsetup')
   }
@@ -225,13 +225,6 @@ function App() {
   function refreshMetrics() {
     setNotice('原型未接入采集；未修改读数。正式界面刷新同一指标来源。')
   }
-  function prepareDelivery() {
-    promptConversation(
-      `请在 bw/week-acceptance 的 ${version} · ${
-        session
-      } 本次验收中准备交付。先固定正式计划修订及源码候选提交，核对项目已有出包/验证入口与授权，从候选源码执行，不从验收树旧 HEAD 打包。整理包、验证报告和 showcase 材料，记录候选与来源，刷新指标并核对 Issue。缺工具或候选请与我确认，不假报成功，不自动发布。`
-    )
-  }
   function archive() {
     promptConversation(
       `请在当前固定分支的本次会话中，根据右侧当前 ${version} ${view === 'monday' ? '版本计划' : '版本验收结论'}核对并保存归档材料，列出待确认项；内容确认后发起 PR，并回显链接、检查和合入状态。不要替人合入 PR${view === 'friday' ? '，也不要自动把 Issue 标为完成' : ''}。`
@@ -251,8 +244,8 @@ function App() {
 
   function stageGo(i) {
     setActive(i)
-    if (view === 'friday' && i === 0) {
-      document.querySelector('.preparation-strip')?.scrollIntoView({
+    if (i === 0) {
+      document.querySelector('.cycle-start-card')?.scrollIntoView({
         behavior: 'smooth',
         block: 'nearest'
       })
@@ -344,7 +337,6 @@ function App() {
         openIssues,
         overviewSelection,
         overviewUI,
-        prepareDelivery,
         progress,
         promptConversation,
         refreshMetrics,

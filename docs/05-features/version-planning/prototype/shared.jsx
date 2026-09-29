@@ -1,4 +1,5 @@
 import { React } from 'react'
+import { MessageSquare } from 'lucide-react'
 import { metrics, original } from './snapshot.js'
 
 const currentTitles = [
@@ -24,6 +25,15 @@ const initial = original.plan.goals.map((g, i) => ({
   next: ''
 }))
 const done = (tasks) => tasks.filter((x) => x.state === 'CLOSED').length
+// The frozen v8 bundle lacks MessageSquarePlus; these plus paths match Orca's Lucide icon.
+export function NewConversationIcon() {
+  return (
+    <MessageSquare>
+      <path d="M12 8v6" />
+      <path d="M9 11h6" />
+    </MessageSquare>
+  )
+}
 const titleForTask = (t) => t.title.replace(/^【[^】]*】/, '').trim()
 const Field = ({ label, value, onChange, placeholder, rows = 1, ...props }) => (
   <textarea
