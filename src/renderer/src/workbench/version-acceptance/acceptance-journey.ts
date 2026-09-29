@@ -15,25 +15,25 @@ import { artifactCandidateCheck, type EvidenceCheck } from './acceptance-model'
 export type JourneySignal = { kind: 'unknown' | 'pending' | 'failed' | 'complete'; label: string }
 export type PreparationChecks = { candidate: CandidateCheck; artifacts: ArtifactCheck[] }
 
+function hasDeliveryEvidence(result: AcceptanceMaterial['results'][number]): boolean {
+  return result.deliveries.some((item) => item.title.trim() || item.location.trim())
+}
+
+/**
+ * The preparation lamp derives from recorded evidence only — the retired
+ * "materials complete" checkbox no longer gates it, and machine checks stay
+ * honest: unknown is unknown, never green.
+ */
 export function preparationSignal(
   document: AcceptanceMaterial | undefined,
   plan: EvidenceCheck,
-  checks: PreparationChecks | null,
-  humanReviewed = false
+  checks: PreparationChecks | null
 ): JourneySignal {
   if (!document) {
     return { kind: 'unknown', label: '未开始' }
   }
   if (plan.kind === 'mismatch' || plan.kind === 'unavailable') {
     return { kind: 'failed', label: '原承诺核对失败' }
-  }
-  if (
-    !humanReviewed &&
-    !document.preparationReview &&
-    !document.candidateRef &&
-    !document.preparedArtifacts.length
-  ) {
-    return { kind: 'unknown', label: '未开始' }
   }
   if (
     (document.candidateRef && document.candidateRef.version !== document.version) ||
@@ -53,10 +53,14 @@ export function preparationSignal(
   if (evidence.some((item) => item.kind === 'mismatch' || item.kind === 'unavailable')) {
     return { kind: 'failed', label: '来源核对失败' }
   }
-  if (humanReviewed) {
-    return { kind: 'complete', label: '材料已备齐' }
+  const results = document.results
+  if (results.length > 0 && results.every(hasDeliveryEvidence)) {
+    return { kind: 'complete', label: '实际交付已记录' }
   }
-  return { kind: 'pending', label: '材料待核对' }
+  if (results.some(hasDeliveryEvidence) || document.preparedArtifacts.length > 0) {
+    return { kind: 'pending', label: '材料待补齐' }
+  }
+  return { kind: 'unknown', label: '未开始' }
 }
 
 export function decisionSignal(

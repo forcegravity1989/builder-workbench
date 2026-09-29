@@ -121,10 +121,3 @@ export function acceptanceSourceProblems(
   }
   return problems
 }
-
-export function prepareAcceptanceRequest(document?: AcceptanceMaterial): string {
-  const context = document
-    ? `版本 ${document.version}，本次验收 ${document.cycleId}。固定计划 ${document.planRef.kind === 'draft' ? '草案预验收' : document.planRef.sourceCommit}，修订 ${document.planRef.revision}。源码候选 ${document.candidateRef?.commit ?? '待明确'}。`
-    : '尚未选择版本。先列出真实版本与已合入计划来源，与我明确本次版本和候选，再写入材料。'
-  return `请继续本次版本验收，准备交付。${context}\n读取已下发的 version-acceptance Skill 与项目约定，使用项目现有交付、验证和材料入口。先查询仍在运行的原生任务与已有产物，避免重复启动。源码执行区必须属于当前项目并检出固定候选，不从 bw/week-acceptance 的旧 HEAD 出包。核对产物与报告来源，刷新指标和 Issue；缺入口或候选请说明。保留未完成材料，不替我发布、合入或确认 Issue 完成。`
-}

@@ -3,12 +3,12 @@
   flex-direction: column;
   height: 100%;
   min-height: 0;
+  font-size: 13px;
   color: var(--color-text);
   background: var(--color-bg);
 }
 .va-head,
 .va-footer,
-.va-section-head,
 .va-decision,
 .va-result-row,
 .va-window {
@@ -27,11 +27,9 @@
   margin: 0;
   font-size: 1.1rem;
   font-weight: 600;
+  white-space: nowrap;
 }
-.va-head > button {
-  margin-left: auto;
-}
-.va-head > span,
+.va-head > span:not(.vc-branch),
 .va-muted,
 .va-footer,
 .va-window,
@@ -44,36 +42,61 @@
   flex: 1;
   min-height: 0;
 }
+
+/* Journey rail: icon + connector line, shared visual language with the plan board. */
 .va-journey {
+  width: 68px;
+  flex-shrink: 0;
+  padding: var(--space-6) 0;
   display: flex;
   flex-direction: column;
-  gap: var(--space-6);
-  flex: 0 0 5rem;
+  align-items: center;
   border-right: 1px solid var(--color-divider);
-  padding: var(--space-4) var(--space-2);
+  background: var(--color-card);
 }
-.va-journey a {
+.va-journey button {
+  position: relative;
+  display: grid;
+  justify-items: center;
+  gap: var(--space-1);
+  padding: 0 0 var(--space-6);
+  background: transparent;
+  border: 0;
   color: var(--color-neutral-600);
-  font-size: 0.75rem;
-  text-align: center;
-  text-decoration: none;
-  line-height: 1.7;
+  cursor: pointer;
+  font: inherit;
+  font-size: 11px;
+  width: 100%;
 }
-.va-journey a:hover {
-  color: var(--color-accent);
+.va-journey button:not(:last-child)::after {
+  content: '';
+  position: absolute;
+  top: 48px;
+  bottom: var(--space-1);
+  width: 1px;
+  background: var(--color-divider);
 }
-.va-journey small {
-  display: block;
-  font-size: 0.65rem;
+.va-step-icon {
+  width: 28px;
+  height: 28px;
+  display: grid;
+  place-items: center;
+  border-radius: var(--radius-sm);
+  background: var(--color-neutral-100);
+  border: 1px solid var(--color-divider);
+  color: var(--color-neutral-500);
 }
-.va-journey .va-signal-pending {
+.va-step-icon.pending {
   color: var(--color-warning-deep);
+  background: var(--color-warning-soft);
 }
-.va-journey .va-signal-failed {
+.va-step-icon.failed {
   color: var(--color-danger-deep);
+  background: var(--color-danger-soft);
 }
-.va-journey .va-signal-complete {
+.va-step-icon.done {
   color: var(--color-success-deep);
+  background: var(--color-success-soft);
 }
 .va-scroll {
   flex: 1;
@@ -86,7 +109,6 @@
 .va-board details {
   scroll-margin-block-start: var(--space-3);
 }
-.va-preparation,
 .va-tasks,
 .va-source-picker {
   padding: var(--space-3);
@@ -95,10 +117,50 @@
   border-radius: var(--radius-md);
   background: var(--color-card);
 }
-.va-section-head h2 {
-  margin: 0 auto 0 0;
-  font-size: 0.85rem;
+.va-summary {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  margin-bottom: var(--space-3);
+  font-size: 12px;
+  color: var(--color-neutral-600);
+}
+.va-summary strong {
+  font-family: var(--font-mono);
+  font-weight: 500;
+  color: var(--color-text);
+}
+.va-summary-issues {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  border: 0;
+  background: transparent;
+  padding: 0;
+  color: var(--color-neutral-600);
+  font: inherit;
+  cursor: pointer;
+}
+.va-summary-issues:hover {
+  color: var(--color-accent-700);
+}
+.va-pending-count {
+  margin-left: auto;
+  color: var(--color-neutral-500);
+}
+.va-section-heading {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin: var(--space-3) 0 var(--space-1);
+}
+.va-section-heading h2 {
+  margin: 0;
+  font-size: 14px;
   font-weight: 600;
+}
+.va-section-heading > .wb-btn {
+  margin-left: auto;
 }
 .va-candidate {
   display: flex;
@@ -293,8 +355,8 @@
 .va-footer > span {
   margin-right: auto;
 }
-.va-report pre,
-.va-conflict pre {
+.va-conflict pre,
+.va-modal pre {
   white-space: pre-wrap;
   overflow-wrap: anywhere;
   font: inherit;
@@ -310,6 +372,16 @@
 .va-empty h1 {
   font-size: 1.1rem;
   color: var(--color-text);
+}
+.va-empty-hint {
+  padding: var(--space-3);
+}
+.va-notice {
+  margin: 0 0 var(--space-2);
+  color: var(--color-neutral-700);
+  font-size: 12px;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
 }
 .va-board :focus-visible {
   outline: 2px solid var(--color-accent);
@@ -329,4 +401,52 @@
 .va-board select.va-outcome-pending {
   color: var(--color-warning-deep);
   background: var(--color-warning-soft);
+}
+
+/* Derived-minutes dialog; mirrors the plan board's preview modal. */
+.va-dialog-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  background: color-mix(in srgb, var(--color-text) 35%, transparent);
+}
+.va-modal {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  translate: -50% -50%;
+  z-index: 61;
+  font-size: 13px;
+  background: var(--color-card);
+  color: var(--color-text);
+  width: min(700px, 95vw);
+  max-width: min(700px, 95vw);
+  max-height: 85vh;
+  overflow: auto;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  border: 1px solid var(--color-divider);
+  border-radius: var(--radius-md);
+  box-shadow: 0 var(--space-3) var(--space-6) color-mix(in srgb, var(--color-text) 20%, transparent);
+}
+.va-modal header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--space-3);
+}
+.va-modal h2 {
+  font-size: 16px;
+  margin: 0;
+}
+.va-modal pre {
+  overflow: auto;
+  min-height: 0;
+  flex: 1 1 auto;
+}
+.va-modal :is(button, summary):focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
 }

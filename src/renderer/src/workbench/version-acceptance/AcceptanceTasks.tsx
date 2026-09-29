@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState, type Ref } from 'react'
 import type {
   PlanningMaterial,
   VersionTaskSnapshot
@@ -40,7 +40,8 @@ export function AcceptanceTasks({
   snapshot,
   disabled,
   getScrollTop,
-  onSnapshot
+  onSnapshot,
+  ref
 }: {
   plan: PlanningMaterial
   port: TaskPort
@@ -49,6 +50,7 @@ export function AcceptanceTasks({
   disabled: boolean
   getScrollTop(): number
   onSnapshot(tasks: CycleTaskRead[]): void
+  ref?: Ref<HTMLDetailsElement>
 }) {
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -103,7 +105,7 @@ export function AcceptanceTasks({
     }
   }
   return (
-    <details className="va-tasks" id="acceptance-tasks">
+    <details className="va-tasks" id="acceptance-tasks" ref={ref}>
       <summary>
         Issue 状态核对 · {plan.tasks.length} 项引用
         {[...facts.states].map(([state, count]) => ` · ${state} ${count}`)}
