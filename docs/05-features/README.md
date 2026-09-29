@@ -21,11 +21,11 @@
 | 1 | 版本计划 | [version-planning/](version-planning/) · [原型](version-planning/prototype.html) | 在用·本轮交付（v0.5 收尾） | ● | ● | ◐ | ◐ | ◐(P01–P10 未逐项) | ○(PJ01/PJ02 已定义) |
 | 2 | 版本验收 | [version-acceptance/](version-acceptance/) · [原型](version-acceptance/prototype.html) | 在用·本轮交付（v0.5 收尾） | ● | ● | ◐ | ◐ | ◐(A01–A10 未逐项) | ○(AJ01/AJ02 已定义) |
 | 3 | 总览指标 | [overview-metrics/](overview-metrics/) · [原型](overview-metrics/prototype.html) | 在用·本轮交付（v0.5 收尾） | ● | ● | ◐ | ◐ | ◐(M01–M10 未逐项) | ○(MJ01/MJ02 已定义) |
-| 4 | PR 评审召唤制（reviewer-agent） | [reviewer-agent/](reviewer-agent/) | 开发方法资产·历史记录¹ | ● | ● | ●¹ | ◐¹ | ●¹ | ○(台内路径 defer) |
+| 4 | PR 评审召唤制（reviewer-agent） | [reviewer-agent/](reviewer-agent/) | 开发方法资产·在用（已迁 bw-orca）¹ | ● | ● | ● | ◐¹ | ◐¹ | ○(台内路径 defer) |
 | 5 | 纳入项目与项目信息记录 | [project-intake/](project-intake/)² | 在用·补链中 | ◐(草案待gate) | ○ | ◐ | ◐ | ○ | ○(候选主旅程已记) |
 | 6 | 任务 CodeHub 支持 | 待建（同事在办）² | 在用·补链中 | ○ | ○ | ◐ | ◐ | ○ | ○ |
 
-¹ 第 4 行六环值为历史证据转述（2026-08/09 Rust 与 main 侧交付：GitHub CI 自动评审路径已交付并实测闭环）；本叠层分支不含其 workflow、未复核，不作为 Electron 叠层交付证明。台内「请评审」按钮路径规范件在仓但未接线，defer。明细见其 [STATUS](reviewer-agent/STATUS.md) 历史头部。
+¹ 第 4 行：GitHub CI 路径 2026-08/09 在 main 侧交付并实测闭环（PR #132 及后续召唤）；2026-09-29 用户拍板迁入 bw-orca——workflow 与回执脚本（`.github/scripts/check-pr-review.mjs`）已落本分支，实现设计 ●。验收点 ◐：默认分支仍为 main 期间召唤执行 main 的定义、bw-orca head 回执链依赖本分支脚本；迁移 PR 自身修改 workflow 文件，按 #132 先例（时为 pull_request 触发下的防篡改跳过）保守不自召——该校验在现行 issue_comment 触发模型下是否适用未复核；bw-orca head 首场真实召唤待迁移合入后的下一条合格 PR 实测，未实测不判过。TDD ◐：回执脚本无单测，以召唤实测为准。台内「请评审」按钮路径规范件在仓但未接线，defer。明细见其 [STATUS](reviewer-agent/STATUS.md) 迁移节。
 
 ² 第 5–6 行为 v0.5 收尾补登记（2026-09-29 用户拍板带入）：能力已交付在用，但特性链在 v0.5 准备阶段清旧矩阵时未重建，intent/spec 缺、按 [02 §6.3](../01-principles/02-working-backwards.md) 补草案后过人 gate。工程与行为记录暂以 [architecture](../architecture.md)（项目墙、接入覆盖层、`.bw/project.toml`）与 [ref/upstream.md](../../ref/upstream.md)（CodeHub 节）及对应 PR 为据。第 5 行补链由本仓会话推进；第 6 行链文档由同事补，改动前先对分工、不重复建目录。实现设计 ◐ = 有散落记录、无特性级 design；TDD ◐ = 有存量单测（项目墙/charter 解析；CodeHub 注册仓库、RPC 路由、列表范围），按 02 环 4 新口径待重盘。
 

@@ -144,6 +144,7 @@ CodeHub 不是 `HostedReviewProvider`，也不走 `gh` / `glab`。调用 PATH �
 | 产品文档正本 | 仓根 `AGENTS.md` / `CONTEXT.md` / `README.md` 与 `docs/` | 已换入 |
 | 壳叠层（Orca 上新写，非 Rust 直译） | `src/renderer/src/workbench/` | 已在本分支 |
 | **`standard/`（系统提示词 / skill / templates）** | 仓根 `standard/` | 已从 `main` 合入。计划/验收屏与「配置指标」开工注入渲染后 SYSTEM.md.tmpl 与对应 Skill 发现 Stub（week-planning / version-acceptance / metrics-refresh，投影在根级 `skills/`）；planning.py 等旧周一屏脚本已退役删除。main 上 `crates/bw` 的 `ensure_*` / `agent_system_prompt` 全量注入不复刻。BW 四技能（bw-knowledge-docs / metrics-refresh / version-acceptance / week-planning）已登记进原生 `resources/skills/current-manifest.json` 与 `snapshot-registry.json`（b41b4ca78），合并 upstream 时保留该登记 |
+| reviewer-agent 召唤制 CI | `.github/workflows/claude-code-review.yml`、`.github/scripts/check-pr-review.mjs` | 2026-09-29 用户拍板迁入（main 将被 bw-orca 覆盖，独立评审机制不随覆盖丢失）。脚本原文照迁，回执路径兼容 main 现行触发定义；默认分支仍为 main 期间召唤走 main 定义、检出本分支 head 后跑本分支脚本，bw-orca 成默认分支后接管。改 workflow 的 PR 被防篡改校验跳过，首场真实召唤待合入后下一条合格 PR。明细见 [reviewer-agent STATUS](../docs/05-features/reviewer-agent/STATUS.md) |
 
 BW 自有模块留在 renderer/main/shared/relay 各自的 `workbench/` 目录，不另开 npm / workspace 包；例外是 CLI 业务 handler 与内嵌指南生成（`src/cli/handlers|specs/workbench-materials.ts`、`src/cli/bundled-skill-guides.ts`、`config/scripts/generate-bundled-skill-guides.mjs`），位于原生 CLI 与 config 树内，见上文「产品面」。`standard/` 合入后仍是内容目录（提示词与技能），不是运行时包。
 
