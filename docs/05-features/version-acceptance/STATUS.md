@@ -38,7 +38,7 @@
 | A01 独立树、完整原生工作区、单页三阶段 | ◐ | CycleWorkspaceProvider + AcceptanceBoard | 新接线未跑真壳；三阶段信息密度和侧栏开合待伴飞 |
 | A02 固定计划修订正确、承诺只读；跨树/草案不混淆 | ✅ | planRef 固定+readPlan+useFixedAcceptancePlan 测试 | acceptance 测试 |
 | A03 真实入口准备交付；材料可打开绑候选；失败可见不假报 | ◐ | AcceptancePreparation+candidate-port+交付件打开（528dce0f8） | 真实出包旅程待人 |
-| A04 脚本实测不可手填、同源；历史/当前区分 | ✅ | metrics runtime+窗口语义+baseline 落盘 | runtime/组件测试 |
+| A04 选择当前目录的历史脚本指标，旧计划基线保留 | ◐ | 已接入最新目录与历史采集；无计划指标也可选择，旧 ref 不阻断新采集 | 本轮定向测试及浏览器组件检查通过；真实 Electron 与完整旅程边界见[总览指标 STATUS](../overview-metrics/STATUS.md) |
 | A05 Issue 真实状态可刷新、无拆解入口、关闭数≠达成 | ✅ | AcceptanceTasks 快照分布+灯色守卫 | board-state/acceptance 测试 |
 | A06 原生详情编辑后按来源返回、保留版本/会话/草稿 | ◐ | returnToPreviousView+view-memory 与原生工作区恢复 | 导航测试；真实 CodeHub/GitHub 往返待人 |
 | A07 同一候选展示、人逐目标判断、未达可保存带入会话 | ✅ | AcceptanceGoalResult decision 流+prepare 文本；材料 RPC save 通过 material-human-guard 拦截 CLI 对人工结论字段的新增、修改与删除 | acceptance-interaction/material-human-guard 测试；真实模型会话与人工核对旅程待验 |

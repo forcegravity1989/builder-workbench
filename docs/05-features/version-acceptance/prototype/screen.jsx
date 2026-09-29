@@ -1,4 +1,4 @@
-import { React } from 'react'
+import { React, useState } from 'react'
 import {
   ChartNoAxesCombined,
   ChevronRight,
@@ -25,6 +25,7 @@ function AcceptanceContent({
   version,
   versionTasks
 }) {
+  const [chosenMetrics, setChosenMetrics] = useState({})
   return (
     <>
       <div className="acceptance-summary">
@@ -76,7 +77,7 @@ function AcceptanceContent({
       </section>
       <section className="acceptance-sheet aligned-goals">
         {current.map((g) => {
-          const m = metrics.find((x) => x.id === g.metricId),
+          const m = metrics.find((x) => x.id === (chosenMetrics[g.id] || g.metricId)),
             related = goalIssues(g)
           return (
             <article className="acceptance-row" data-goal={g.id} key={g.id}>
@@ -99,30 +100,44 @@ function AcceptanceContent({
                   <p>{g.criteria}</p>
                 </div>
               )}
-              {m && (
-                <div className="metric-row acceptance-metric">
-                  <label>
-                    <ChartNoAxesCombined />
-                    <span>{m.name}</span>
-                  </label>
-                  <div className="metric-target">
-                    <span>本版目标</span>
-                    <strong>{g.target || '未约定'}</strong>
-                  </div>
-                  <div className="metric-value">
-                    <span>实际</span>
-                    <strong title="本期尚未采集">{m.current ?? '—'}</strong>
-                  </div>
-                  <button
-                    className="btn btn-ghost metric-collect"
-                    aria-label={`${g.label} 刷新指标`}
-                    onClick={refreshMetrics}
+              <div className="metric-row acceptance-metric">
+                <label>
+                  <ChartNoAxesCombined />
+                  <select
+                    aria-label={`${g.label} 验收指标`}
+                    value={m?.id || ''}
+                    onChange={(event) =>
+                      setChosenMetrics((current) => ({ ...current, [g.id]: event.target.value }))
+                    }
                   >
-                    <RefreshCw />
-                    刷新
-                  </button>
+                    <option value="">选择验收指标</option>
+                    {metrics.map((metric) => (
+                      <option key={metric.id} value={metric.id}>
+                        {metric.name}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <div className="metric-target">
+                  <span>
+                    计划目标 ·{' '}
+                    {metrics.find((metric) => metric.id === g.metricId)?.name || '未约定'}
+                  </span>
+                  <strong>{g.target || '未约定'}</strong>
                 </div>
-              )}
+                <div className="metric-value">
+                  <span>实际</span>
+                  <strong title="本期尚未采集">{m?.current ?? '—'}</strong>
+                </div>
+                <button
+                  className="btn btn-ghost metric-collect"
+                  aria-label={`${g.label} 刷新指标`}
+                  onClick={refreshMetrics}
+                >
+                  <RefreshCw />
+                  刷新
+                </button>
+              </div>
               {version === 'v0.4' && (
                 <div className="historic-reading">
                   历史约定 {g.target} · 原记录 {g.reading}

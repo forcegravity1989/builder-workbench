@@ -1,3 +1,4 @@
+import { ModelSessionIcon } from '../../version-planning/prototype/shared.jsx'
 import { React, useEffect, useRef } from 'react'
 import { X } from 'lucide-react'
 import { facts } from './snapshot.js'
@@ -70,7 +71,7 @@ function MetricDetails({ detail, onPrepare, setDetail }) {
               onPrepare(metric)
             }}
           >
-            设置此指标
+            <ModelSessionIcon /> 配置指标
           </button>
         </>
       ) : (

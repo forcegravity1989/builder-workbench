@@ -91,10 +91,18 @@ export function decodeMetricDefinitions(
       })
       continue
     }
+    if (!collect.retro) {
+      problems.push({
+        code: 'history-required',
+        name: definition.name,
+        message: '需配置能按日、周查询历史的采集脚本'
+      })
+      continue
+    }
     candidates.push({
       role: entry.role,
       ...definition,
-      collect: { kind: 'script', run: collect.run, retro: collect.retro }
+      collect: { kind: 'script', run: collect.run, retro: true }
     })
   }
   const unique = candidates.filter((definition) => {

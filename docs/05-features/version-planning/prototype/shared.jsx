@@ -71,3 +71,22 @@ export {
   Lamp,
   archiveTone
 }
+
+export function ModelSessionIcon() {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      width="16"
+      height="16"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <path d="M4 3h16a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H7l-5 3V5a2 2 0 0 1 2-2Z" />
+      <path d="M12 8v6M9 11h6" />
+    </svg>
+  )
+}

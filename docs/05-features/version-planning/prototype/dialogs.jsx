@@ -118,7 +118,7 @@ function PrototypeDialogs({ copied, copyText, modal, setModal }) {
               </p>
               <p>
                 指标定义和脚本来自 main 的
-                .bw。尚无本期读数；旧人工读数不进入当前目录和趋势。旧计划基线不当作当前值。总览指标迁移作为新增独立特性走六环，已形成待确认设计，尚未实现。
+                .bw。尚无本期读数；旧人工读数不进入当前目录和趋势。旧计划基线不当作当前值。此原型使用历史快照，不执行实际采集。
               </p>
               <p>
                 Issue 状态与正文读取于 {remote.readAt}。关闭 Issue 不自动等于目标达成。归档 PR

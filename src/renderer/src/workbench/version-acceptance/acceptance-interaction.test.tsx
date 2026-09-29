@@ -61,12 +61,18 @@ afterEach(() => {
 })
 
 describe('acceptance interactions', () => {
-  it('keeps adopted metric evidence canonical when old refresh results or previous readings remain cached', async () => {
+  it('collects current and newly added metrics without rewriting adopted evidence or plan baselines', async () => {
     const ref = {
       name: '交付数量',
       definitionHash: `sha256:${'a'.repeat(64)}`,
       configurationCommit: '1'.repeat(40)
     }
+    const currentRef = {
+      ...ref,
+      definitionHash: `sha256:${'b'.repeat(64)}`,
+      configurationCommit: '2'.repeat(40)
+    }
+    const addedRef = { ...currentRef, name: '验收数量', definitionHash: `sha256:${'c'.repeat(64)}` }
     const reading = (value: number): MetricReadingEvidence => ({
       ref,
       value,
@@ -78,7 +84,19 @@ describe('acceptance interactions', () => {
     })
     const ready = {
       status: 'ready' as const,
-      readings: [reading(10)],
+      readings: [
+        {
+          ...reading(10),
+          ref: currentRef,
+          observation: {
+            kind: 'window' as const,
+            start: '2026-08-31T16:00:00Z',
+            end: '2026-09-01T16:00:00Z',
+            granularity: 'day' as const,
+            timezone: 'Asia/Shanghai'
+          }
+        }
+      ],
       run: {
         runId: 'run',
         startedAt: '2026-09-25T01:00:00Z',
@@ -95,48 +113,100 @@ describe('acceptance interactions', () => {
         reason: { code: 'offline', message: '采集源不可用' },
         previous: ready
       })
+      .mockResolvedValueOnce({
+        ...ready,
+        readings: [{ ...ready.readings[0], ref: addedRef, value: 7 }]
+      })
+    const currentCatalog: MetricCatalog = {
+      scope: { repoId: 'repo', worktreeId: 'tree', hostId: 'local' },
+      configurationCommit: currentRef.configurationCommit,
+      configurationRef: 'main',
+      timezone: 'Asia/Shanghai',
+      problems: [],
+      definitions: [
+        {
+          ref: currentRef,
+          name: currentRef.name,
+          role: 'lagging',
+          def: 'count',
+          target: '',
+          unit: '项',
+          feature: '',
+          collect: { kind: 'script', run: ['node', 'collect.mjs'], retro: true }
+        }
+      ]
+    }
+    const list = vi.fn(async (): Promise<MetricCatalog> => currentCatalog)
     const port: MetricsPort = {
-      list: vi.fn(async (): Promise<MetricCatalog> => ({
-        scope: { repoId: 'repo', worktreeId: 'tree', hostId: 'local' },
-        configurationCommit: ref.configurationCommit,
-        configurationRef: 'main',
-        timezone: 'Asia/Shanghai',
-        problems: [],
-        definitions: [
-          {
-            ref,
-            name: ref.name,
-            role: 'lagging',
-            def: 'count',
-            target: '',
-            unit: '项',
-            feature: '',
-            collect: { kind: 'script', run: ['node', 'collect.mjs'], retro: false }
-          }
-        ]
-      })),
+      list,
       read: vi.fn(),
       refresh
     }
     const props = {
-      goal: { ...plan.goals[0], metricTargets: [{ ref, target: '12' }] },
+      goal: { ...plan.goals[0], metricTargets: [{ ref, target: '12', baseline: reading(3) }] },
       materialKey: 'test',
       port,
       scope: { repoId: 'repo', worktreeId: 'tree', hostId: 'local' },
-      window: { kind: 'current' as const, timezone: 'Asia/Shanghai' },
+      window: {
+        kind: 'range' as const,
+        since: '2026-09-01',
+        until: '2026-09-02',
+        granularity: 'day' as const,
+        timezone: 'Asia/Shanghai'
+      },
       disabled: false,
       onReadings: vi.fn()
     }
-    await act(async () => root.render(<AcceptanceMetrics {...props} readings={[]} />))
-    await act(async () => container.querySelector('button')!.click())
+    const savedGoal = structuredClone(props.goal)
     await act(async () => root.render(<AcceptanceMetrics {...props} readings={[reading(3)]} />))
-    expect(container.textContent).toContain('3 项')
-    expect(container.textContent).not.toContain('10 项')
+    await act(async () =>
+      [...container.querySelectorAll('button')].find((item) => item.textContent === '采集')!.click()
+    )
+    expect(refresh).toHaveBeenNthCalledWith(1, {
+      scope: props.scope,
+      ref: currentRef,
+      window: props.window
+    })
+    expect(props.onReadings).toHaveBeenCalledExactlyOnceWith(ref, ready.readings)
+    await act(async () => root.render(<AcceptanceMetrics {...props} readings={[reading(3)]} />))
+    expect(container.textContent).toContain('3项')
     expect(container.querySelector('.wb-metric-value')?.textContent).toBe('3项')
-    await act(async () => container.querySelector('button')!.click())
+    await act(async () =>
+      [...container.querySelectorAll('button')].find((item) => item.textContent === '采集')!.click()
+    )
     expect(container.textContent).toContain('采集源不可用')
     expect(container.querySelector('.wb-metric-value')?.textContent).toBe('3项')
-    expect(container.textContent).toContain('保留原采集时间')
+    expect(container.textContent).toContain('2026-09-25')
+    expect(props.onReadings).toHaveBeenCalledTimes(1)
+
+    list.mockResolvedValue({
+      ...currentCatalog,
+      definitions: [
+        ...currentCatalog.definitions,
+        { ...currentCatalog.definitions[0], ref: addedRef, name: addedRef.name }
+      ]
+    })
+    await act(async () =>
+      container.querySelector<HTMLButtonElement>('[aria-label="刷新指标目录"]')!.click()
+    )
+    const select = container.querySelector<HTMLSelectElement>('[aria-label="交付展示 验收指标"]')!
+    expect([...select.options].map((option) => option.value)).toContain(addedRef.name)
+    await act(async () => {
+      select.value = addedRef.name
+      select.dispatchEvent(new Event('change', { bubbles: true }))
+    })
+    await act(async () =>
+      [...container.querySelectorAll('button')].find((item) => item.textContent === '采集')!.click()
+    )
+    expect(refresh).toHaveBeenLastCalledWith({
+      scope: props.scope,
+      ref: addedRef,
+      window: props.window
+    })
+    expect(props.onReadings).toHaveBeenLastCalledWith(addedRef, [
+      { ...ready.readings[0], ref: addedRef, value: 7 }
+    ])
+    expect(props.goal).toEqual(savedGoal)
   })
   it('explains invalid weekly boundaries and allows the same date range to be collected by day', async () => {
     const refresh = vi.fn(async () => ({
@@ -211,7 +281,7 @@ describe('acceptance interactions', () => {
     await act(async () => root.render(<WindowAndReading />))
     expect(container.querySelector('[role="alert"]')?.textContent).toContain('周一到周一')
     const refreshButton = Array.from(container.querySelectorAll('button')).find(
-      (button) => button.textContent === '刷新实测'
+      (button) => button.textContent === '采集'
     )!
     expect(refreshButton.disabled).toBe(true)
     await act(async () => {

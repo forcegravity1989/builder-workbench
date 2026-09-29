@@ -1,3 +1,4 @@
+import { ModelSessionIcon } from '../../version-planning/prototype/shared.jsx'
 import { React, useState } from 'react'
 import { RefreshCw, X } from 'lucide-react'
 import { windows, Grain, Trend, MetricLegend } from './charts.jsx'
@@ -147,7 +148,7 @@ function OverviewV8({
                 onChange={(value) => setUI('grain', value)}
               />
               <button className="btn btn-secondary btn-sm" onClick={() => onPrepare(null)}>
-                设置指标
+                <ModelSessionIcon /> 配置指标
               </button>
               <button
                 className="btn btn-secondary btn-icon"

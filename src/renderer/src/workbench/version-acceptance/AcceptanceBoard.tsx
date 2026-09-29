@@ -102,7 +102,7 @@ function ReadyAcceptanceBoard({
     archiveStatus,
     buildReport
   } = useAcceptanceBoard({ context, history, recoveryKey })
-  const hasMetrics = plan?.document.goals.some((goal) => goal.metricTargets.length > 0) ?? false
+  const hasMetrics = (plan?.document.goals.length ?? 0) > 0
   const metricWindow = useAcceptanceMetricWindow(metrics, metricScope, hasMetrics)
   return (
     <main className="va-board" lang="zh">
@@ -291,28 +291,26 @@ function ReadyAcceptanceBoard({
                         index={index}
                         readOnly
                         metrics={
-                          goal.metricTargets.length ? (
-                            <AcceptanceMetrics
-                              goal={goal}
-                              materialKey={JSON.stringify([
-                                document.version,
-                                document.cycleId,
-                                document.planRef,
-                                document.candidateRef
-                              ])}
-                              readings={
-                                document.results.find((item) => item.goalId === goal.goalId)
-                                  ?.readings ?? []
-                              }
-                              port={metrics}
-                              scope={metricScope}
-                              window={metricWindow.window}
-                              disabled={readOnly}
-                              onReadings={(ref, readings) =>
-                                editReadings(document, goal.goalId, ref, readings)
-                              }
-                            />
-                          ) : undefined
+                          <AcceptanceMetrics
+                            goal={goal}
+                            materialKey={JSON.stringify([
+                              document.version,
+                              document.cycleId,
+                              document.planRef,
+                              document.candidateRef
+                            ])}
+                            readings={
+                              document.results.find((item) => item.goalId === goal.goalId)
+                                ?.readings ?? []
+                            }
+                            port={metrics}
+                            scope={metricScope}
+                            window={metricWindow.window}
+                            disabled={readOnly}
+                            onReadings={(ref, readings) =>
+                              editReadings(document, goal.goalId, ref, readings)
+                            }
+                          />
                         }
                         result={
                           <AcceptanceGoalResult

@@ -183,13 +183,13 @@ function App() {
     }
   }
   function metricPrep(m) {
+    const id = configId + 1
+    setConfigId(id)
     setDrafts((x) => ({
       ...x,
-      [`配置-${configId}`]:
-        x[`配置-${configId}`] ||
-        `请读取项目约定、通用 SYSTEM 和 metrics-refresh Skill。先展示定义口径 → 查真实来源 → 实现脚本 → 试采验证 → 评审采用的流程，与我核对场外要求。配置指标：${
-          m?.name || '项目指标'
-        }。优先可查历史的脚本，只能查当前则明确限制；不手填实际值，不新增每日采集或记账分支。复用已有定义与脚本，按项目约定在独立原生任务内修改资产，采用后返回总览。不启动版本计划流程。`
+      [`配置-${id}`]: `请读取项目约定、通用 SYSTEM 和 metrics-refresh Skill。先展示定义口径 → 查真实来源 → 实现脚本 → 试采验证 → 评审采用的流程，与我核对场外要求。配置指标：${
+        m?.name || '项目指标'
+      }。只接入能按日、周查询历史的脚本；历史存储由项目负责；不手填实际值，不新增每日采集或记账分支。复用已有定义与脚本，按项目约定在独立原生任务内修改资产，采用后返回总览。不启动版本计划流程。`
     }))
     go('metricsetup')
   }
@@ -353,9 +353,7 @@ function App() {
         review,
         risk,
         session,
-        setConfigId,
         setDraft,
-        setDrafts,
         setEditingIssue,
         setExpanded,
         setIssueDraft,

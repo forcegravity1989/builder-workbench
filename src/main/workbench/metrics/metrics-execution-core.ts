@@ -17,7 +17,7 @@ import {
 } from '../../../shared/worktree/create-preparation'
 import type { GitWorktreeExecOptions } from '../../git/worktree-operation-options'
 import { MetricCollectorError } from './collector-output'
-import { resolveAdoptedBaseline } from '../history-git-core'
+import { adoptedMetricsSource } from './adopted-source'
 
 export const METRICS_CONFIGURATION_PATH = '.bw/metrics.toml'
 /** Protocol default for collector scripts; must stay below the renderer's 910s RPC budget. */
@@ -70,11 +70,17 @@ export async function readMetricConfiguration(input: {
   repoPath: string
   adoptedRef: string | null
   configurationCommit?: string
+  synchronize?: boolean
   execOptions?: MetricsExecOptions
 }): Promise<MetricConfigurationSnapshot> {
   const { repoPath, execOptions = {} } = input
   const exec = repoExec(repoPath, execOptions)
-  const baseline = await resolveAdoptedBaseline(exec, input.adoptedRef)
+  const baseline = await adoptedMetricsSource(
+    repoPath,
+    input.adoptedRef,
+    execOptions,
+    input.synchronize
+  )
   let configurationCommit = baseline.commit
   if (input.configurationCommit) {
     configurationCommit = input.configurationCommit

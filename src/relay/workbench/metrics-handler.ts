@@ -29,7 +29,8 @@ const Command = z.strictObject({
 
 const ConfigurationRequest = z.strictObject({
   adoptedRef: z.string().min(1).nullable(),
-  configurationCommit: Sha.optional()
+  configurationCommit: Sha.optional(),
+  synchronize: z.boolean().optional()
 })
 const FingerprintRequest = z.strictObject({ configurationCommit: Sha, run: Argv })
 const CollectRequest = z.strictObject({

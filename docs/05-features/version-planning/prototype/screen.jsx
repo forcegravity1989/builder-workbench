@@ -1,5 +1,5 @@
 import { React, useEffect, useState } from 'react'
-import { Field } from './shared.jsx'
+import { Field, ModelSessionIcon } from './shared.jsx'
 import {
   ChartNoAxesCombined,
   ChevronRight,
@@ -27,10 +27,6 @@ function PlanningContent({
   versionTasks
 }) {
   function changeMetric(goal, metricId) {
-    if (metricId === '__configure__') {
-      metricPrep(null)
-      return
-    }
     if (metricId === goal.metricId) {
       return
     }
@@ -174,10 +170,27 @@ function PlanningContent({
                           {metric.name}
                         </option>
                       ))}
-                    <option value="__configure__">配置新指标…</option>
                   </select>
                 </div>
               )}
+              <div className="metric-add">
+                <button
+                  className="btn btn-secondary"
+                  title="刷新指标目录"
+                  aria-label="刷新指标目录"
+                  onClick={refreshMetrics}
+                >
+                  <RefreshCw />
+                </button>
+                <button
+                  className="btn btn-secondary"
+                  title="新建会话，配置指标"
+                  onClick={() => metricPrep(null)}
+                >
+                  <ModelSessionIcon />
+                  配置指标
+                </button>
+              </div>
             </article>
           )
         })}

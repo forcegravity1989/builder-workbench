@@ -1,6 +1,6 @@
 import { nativeMetricsPort } from './metrics-port'
-import { metricWindowForDefinition } from '../../../shared/workbench/metric-windows'
-import { zoneWindowForDefinition, type ZoneGranularity } from './overview-zone-series'
+import { currentMetricWeek } from '../../../shared/workbench/metric-windows'
+import { zoneChartRange, type ZoneGranularity } from './overview-zone-series'
 import type { MetricCatalog, MetricReading } from '../../../shared/workbench/metrics'
 
 export type OverviewReadScope = { repoId: string; worktreeId: string; hostId: string }
@@ -21,8 +21,8 @@ function windowFor(args: {
   granularity: ZoneGranularity
 }) {
   return args.def.role === 'north_star'
-    ? metricWindowForDefinition(args.def, args.catalog.timezone)
-    : zoneWindowForDefinition(args.def, args.catalog.timezone, args.granularity)
+    ? currentMetricWeek(args.catalog.timezone)
+    : zoneChartRange(args.granularity, args.catalog.timezone)
 }
 
 /** Read north star + every zone definition honestly; failures land in problems, never zero. */

@@ -24,7 +24,7 @@ it.each([
       target,
       'workbench.metrics.list',
       { ...scope, hostId: ownerHost },
-      undefined
+      { timeoutMs: 90_000 }
     )
     expect(result.scope).toEqual(input)
   }
@@ -37,14 +37,34 @@ it('preserves an unavailable source and previous evidence without turning it int
   }
   call.mockResolvedValue({ ok: true, value })
   expect(
-    await nativeMetricsPort().read({ scope, ref, window: { kind: 'current', timezone: 'UTC' } })
+    await nativeMetricsPort().read({
+      scope,
+      ref,
+      window: {
+        kind: 'range',
+        since: '2026-09-01',
+        until: '2026-09-02',
+        granularity: 'day',
+        timezone: 'UTC'
+      }
+    })
   ).toEqual(value)
   call.mockResolvedValue({
     ok: false,
     error: { code: 'host-unavailable', message: 'Disconnected' }
   })
   await expect(
-    nativeMetricsPort().refresh({ scope, ref, window: { kind: 'current', timezone: 'UTC' } })
+    nativeMetricsPort().refresh({
+      scope,
+      ref,
+      window: {
+        kind: 'range',
+        since: '2026-09-01',
+        until: '2026-09-02',
+        granularity: 'day',
+        timezone: 'UTC'
+      }
+    })
   ).rejects.toMatchObject({ code: 'host-unavailable', message: 'Disconnected' })
 })
 
