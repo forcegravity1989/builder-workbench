@@ -25,6 +25,8 @@ const SSH_OWNER = {
   selector: { kind: 'ssh', targetId: 'ssh-1', targetGeneration: 7 }
 } as const
 
+// Deliberately missing AUTOMATION_RUN_ONE_SHOT_PROMPT_RUNTIME_CAPABILITY: it stands
+// for an older host, and the one-shot refusal test below depends on that absence.
 const ALL_CAPABILITIES = {
   capabilities: [
     AUTOMATION_LIST_HOST_SCOPE_RUNTIME_CAPABILITY,

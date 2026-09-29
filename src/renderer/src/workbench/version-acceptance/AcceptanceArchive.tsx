@@ -1,5 +1,7 @@
+import { GitPullRequest } from 'lucide-react'
 import type { ArchiveStatus } from '../version-cycle/ports'
 import {
+  archiveJourneyLamp,
   isArchivedMaterial,
   type ArchivedMaterial
 } from '../../../../shared/workbench/version-archive'
@@ -33,6 +35,7 @@ export function AcceptanceArchive({
   onSave(): void
 }) {
   const archived = !dirty && material !== null && isArchivedMaterial(status, material)
+  const tone = archiveJourneyLamp(status, archived)
   const label =
     status.kind === 'unknown'
       ? status.reason
@@ -47,7 +50,9 @@ export function AcceptanceArchive({
             : '已关闭'
   return (
     <footer className="va-footer" id="acceptance-archive">
-      <span>
+      <span className="va-archive-state">
+        <GitPullRequest size={14} aria-hidden="true" />
+        <span className={`va-lamp va-lamp-${tone}`} aria-hidden="true" />
         {label}
         {'url' in status && (
           <>

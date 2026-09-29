@@ -176,6 +176,11 @@ export function AcceptanceSources({
                   入口：<code>{artifact.command}</code>
                 </p>
               )}
+              {artifact.executionRoot && (
+                <p>
+                  工作区：<code>{artifact.executionRoot}</code>
+                </p>
+              )}
               <p>
                 生成时间：{artifact.generatedAt}
                 {artifact.checksum && ` · 校验值：${artifact.checksum}`}

@@ -9,19 +9,22 @@ const TONES: Record<JourneySignal['kind'], string> = {
 }
 
 /**
- * The rail locates body sections; the archive node is the acceptance archive
- * entry and prepares the request in the focused native composer (never sends).
+ * The rail locates body sections: 准备交付 returns to the collaboration card,
+ * 展示验收 to the goal cards. The archive node is the acceptance archive entry
+ * and prepares the request in the focused native composer (never sends).
  */
 export function AcceptanceJourney({
   preparation,
   decisions,
   archive,
+  startRef,
   resultsRef,
   onArchive
 }: {
   preparation: JourneySignal
   decisions: JourneySignal
   archive: JourneySignal
+  startRef: { current: HTMLElement | null }
   resultsRef: { current: HTMLElement | null }
   onArchive(): void
 }) {
@@ -42,7 +45,8 @@ export function AcceptanceJourney({
               onArchive()
               return
             }
-            resultsRef.current?.scrollIntoView({ block: 'start', behavior: 'smooth' })
+            const target = id === 'preparation' ? startRef.current : resultsRef.current
+            target?.scrollIntoView({ block: 'start', behavior: 'smooth' })
           }}
         >
           <span className={`va-step-icon ${TONES[signal.kind]}`}>

@@ -373,8 +373,54 @@
   font-size: 1.1rem;
   color: var(--color-text);
 }
-.va-empty-hint {
+.va-results-empty {
   padding: var(--space-3);
+}
+.va-results-empty p {
+  margin: 0;
+  color: var(--color-neutral-600);
+}
+.va-goal-issues {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  border: 0;
+  background: transparent;
+  padding: var(--space-1);
+  color: var(--color-neutral-500);
+  font: 11px var(--font-mono);
+  white-space: nowrap;
+  cursor: pointer;
+}
+.va-goal-issues:hover {
+  color: var(--color-accent-700);
+}
+.va-gap {
+  color: var(--color-danger-deep);
+}
+.va-followup-btn {
+  color: var(--color-accent-700);
+}
+.va-archive-state {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+.va-lamp {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--color-neutral-400);
+  flex: none;
+}
+.va-lamp-pending {
+  background: var(--color-warning);
+}
+.va-lamp-failed {
+  background: var(--color-danger);
+}
+.va-lamp-complete {
+  background: var(--color-success);
 }
 .va-notice {
   margin: 0 0 var(--space-2);

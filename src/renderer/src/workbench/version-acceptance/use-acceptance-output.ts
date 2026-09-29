@@ -153,9 +153,10 @@ export function useAcceptanceOutput(
       }
     }
   }
-  async function buildReport() {
+  /** Returns the derived markdown, or null when nothing honest could be produced. */
+  async function buildReport(): Promise<string | null> {
     if (!document || !plan) {
-      return
+      return null
     }
     try {
       const decisions = Object.fromEntries(
@@ -184,11 +185,14 @@ export function useAcceptanceOutput(
           revision: draft?.expectedRevision ?? null,
           markdown: output.markdown
         })
+        return output.markdown
       }
+      return null
     } catch (reason) {
       if (lifetime.active) {
         onError(String(reason))
       }
+      return null
     }
   }
   const decisionSummary = (() => {
