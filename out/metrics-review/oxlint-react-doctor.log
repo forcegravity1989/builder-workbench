@@ -1,0 +1,2 @@
+src/renderer/src/workbench/version-acceptance/AcceptanceMetrics.tsx:166:35: warning react-doctor(no-array-index-as-key): Your users can see & submit the wrong data when this list reorders or filters, so use a stable id like `key={item.id}`, not the array index "index".
+src/renderer/src/workbench/metrics/MetricEvidenceView.tsx:51:48: warning react-doctor(no-array-index-as-key): Your users can see & submit the wrong data when this list reorders or filters, so use a stable id like `key={item.id}`, not the array index "index".

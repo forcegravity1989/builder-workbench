@@ -1,0 +1,16 @@
+{
+  "layer": "actual components with fixture ports in headless Edge; not Electron",
+  "results": [
+    {
+      "width": 1280,
+      "overflow": false,
+      "selected": "完成验收的目标数"
+    },
+    {
+      "width": 1920,
+      "overflow": false,
+      "selected": "完成验收的目标数"
+    }
+  ],
+  "errors": []
+}
