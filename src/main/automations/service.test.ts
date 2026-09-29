@@ -120,14 +120,15 @@ describe('AutomationService', () => {
     } as never)
     service.setRendererReady()
 
-    const run = await service.runNow(automation.id)
+    const run = await service.runNow(automation.id, '一次性上下文')
 
     expect(run.status).toBe('dispatching')
     expect(store.listAutomationRuns(automation.id)[0]?.status).toBe('dispatching')
     expect(send).toHaveBeenCalledWith(
       'automations:dispatchRequested',
       expect.objectContaining({
-        run: expect.objectContaining({ id: run.id, status: 'dispatching' })
+        run: expect.objectContaining({ id: run.id, status: 'dispatching' }),
+        oneShotPrompt: '一次性上下文'
       })
     )
   })

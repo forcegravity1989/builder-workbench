@@ -121,6 +121,10 @@ function ReadyAcceptanceBoard({
   }, [report])
   const prepareArchive = () => {
     setActionNotice(null)
+    if (archived) {
+      setError('本轮验收已归档；如需补充材料，请从来源选择开始下一轮。')
+      return
+    }
     if (!session) {
       setError('请先选择或开启左侧会话，再准备归档请求。')
       return
@@ -129,8 +133,12 @@ function ReadyAcceptanceBoard({
       setError('请先保存验收结果，再准备归档请求。')
       return
     }
-    if (draft.dirty || readOnly || busy) {
-      setError('存在未保存修改或材料只读，请先处理后再准备归档请求。')
+    if (draft.dirty) {
+      setError('有未保存的修改；请先保存结果，再准备归档请求。')
+      return
+    }
+    if (readOnly || busy) {
+      setError('归档状态尚未核实或材料只读，请稍后重试。')
       return
     }
     void context.archivePort
@@ -243,25 +251,27 @@ function ReadyAcceptanceBoard({
           )}
           {document ? (
             <>
-              <div className="va-summary">
-                <span>
-                  <strong>{decisionSummary.goals}</strong> 项目标
-                </span>
-                {plan && plan.document.tasks.length > 0 && (
-                  <button
-                    className="va-summary-issues"
-                    onClick={() =>
-                      tasks.current?.scrollIntoView({ block: 'start', behavior: 'smooth' })
-                    }
-                  >
-                    {taskSnapshotSummary(document.taskSnapshot ?? [], plan.document.tasks.length)}
-                  </button>
-                )}
-                <span className="va-pending-count">
-                  {decisionSummary.pending} 项待核对
-                  {decisionSummary.notMet > 0 ? ` · ${decisionSummary.notMet} 项未达` : ''}
-                </span>
-              </div>
+              {plan && (
+                <div className="va-summary">
+                  <span>
+                    <strong>{decisionSummary.goals}</strong> 项目标
+                  </span>
+                  {plan.document.tasks.length > 0 && (
+                    <button
+                      className="va-summary-issues"
+                      onClick={() =>
+                        tasks.current?.scrollIntoView({ block: 'start', behavior: 'smooth' })
+                      }
+                    >
+                      {taskSnapshotSummary(document.taskSnapshot ?? [], plan.document.tasks.length)}
+                    </button>
+                  )}
+                  <span className="va-pending-count">
+                    {decisionSummary.pending} 项待核对
+                    {decisionSummary.notMet > 0 ? ` · ${decisionSummary.notMet} 项未达` : ''}
+                  </span>
+                </div>
+              )}
               <AcceptanceSources
                 document={document}
                 hasMetrics={hasMetrics}

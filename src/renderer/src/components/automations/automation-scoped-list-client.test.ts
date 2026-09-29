@@ -287,6 +287,17 @@ describe('owner-fenced mutations', () => {
     expect(callRuntimeRpc).not.toHaveBeenCalled()
   })
 
+  // An older host strips oneShotPrompt (zod drops unknown keys), so a one-shot run
+  // must fail before the RPC instead of silently launching without its context.
+  it('refuses to carry one-shot context to a host that would silently strip it', async () => {
+    const { runAutomationNowForOwner, AutomationHostScopeUnsupportedError } = await client()
+    getRuntimeEnvironmentStatus.mockResolvedValue(ALL_CAPABILITIES)
+    await expect(
+      runAutomationNowForOwner(SSH_OWNER, 'a1', '本次处理请求：修复 v0.3 数据文件')
+    ).rejects.toBeInstanceOf(AutomationHostScopeUnsupportedError)
+    expect(callRuntimeRpc).not.toHaveBeenCalled()
+  })
+
   it('fences a desktop mutation over the local runtime target with the same precondition', async () => {
     const { deleteAutomationForOwner, updateAutomationForOwner } = await client()
     callRuntimeRpc.mockResolvedValue({ automation: { id: 'a1' } })
