@@ -37,4 +37,4 @@ feature = ""
 leads = "纳入 workbench 管理的项目数"
 def = "远端上 closed 时刻落在这一周的 issue 数;本机合并提交 / MR 合入不算(口径不同)。反映『有人提活 + 项目自己闭环快』,对采纳滞后有预测性。"
 target = "≥1"
-collect = { kind = "script", run = ["python", ".bw/scripts/codehub-closed-issues.py"], retro = true }
+collect = { kind = "script", run = ["python", ".bw/scripts/closed-issues.py"], retro = true }
