@@ -87,7 +87,6 @@ function ReadyAcceptanceBoard({
     busy,
     report,
     archive,
-    archiveMaterial,
     journey,
     decisionSummary,
     onChecks,
@@ -116,6 +115,7 @@ function ReadyAcceptanceBoard({
   )
   const startCard = useRef<HTMLElement>(null)
   const results = useRef<HTMLElement>(null)
+  const archiveSection = useRef<HTMLElement>(null)
   const tasks = useRef<HTMLDetailsElement>(null)
   const branch = cycleBranch(entry)
   // Render-time validity: a round or plan change under the same identity drops a
@@ -144,7 +144,7 @@ function ReadyAcceptanceBoard({
       return
     }
     if (!session) {
-      setError('请先选择或开启左侧会话，再准备归档请求。')
+      setError('请先在左侧新建或打开会话。')
       return
     }
     if (!document || !draft?.expectedRevision) {
@@ -172,7 +172,7 @@ function ReadyAcceptanceBoard({
       )
       .then(() => {
         setError(null)
-        setActionNotice('归档请求已放入会话输入框，请核对后发送。')
+        setActionNotice('归档请求已贴进左侧当前终端，请核对后发送。')
       })
       .catch((reason) => setError(String(reason)))
   }
@@ -229,7 +229,7 @@ function ReadyAcceptanceBoard({
           archive={journey.archive}
           startRef={startCard}
           resultsRef={results}
-          onArchive={prepareArchive}
+          archiveRef={archiveSection}
         />
         <div
           className="va-scroll"
@@ -383,9 +383,11 @@ function ReadyAcceptanceBoard({
         dirty={draft?.dirty ?? false}
         hasDocument={Boolean(document)}
         hasRevision={Boolean(draft?.expectedRevision)}
-        material={archiveMaterial}
         readOnly={readOnly}
         busy={busy}
+        archived={archived}
+        sectionRef={archiveSection}
+        onArchive={prepareArchive}
         onRefreshStatus={() => void archiveStatus()}
         onReload={() => void controller.refresh().catch((reason) => setError(String(reason)))}
         onSave={() => void controller.save()}
