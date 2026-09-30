@@ -34,7 +34,8 @@ export async function submitProjectCharter(
   firstTime: boolean
 ): Promise<CharterSubmitOutcome> {
   return callMetricRuntime<CharterSubmitOutcome>(
-    scope,
+    // wire 契约是 strictObject:只上送三键,调用方 spread 进来的 projectId 等会被 zod 拒。
+    { repoId: scope.repoId, worktreeId: scope.worktreeId, hostId: scope.hostId },
     runtimeOwnerEnvironmentId,
     'workbench.charter.submit',
     (ownerScope) => ({ scope: ownerScope, intent, firstTime }),

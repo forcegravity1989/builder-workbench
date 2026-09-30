@@ -58,15 +58,26 @@ export async function fetchCodeHubRepoFileRaw(args: {
   }
 }
 
-/** 项目是否存在且可读（区分「仓不在/没权限」与「文件不存在」时用）。 */
-export async function probeCodeHubProject(args: {
+/** 项目是否存在且可读,顺带取默认分支(main 正本 project_default_branch 对等)。 */
+export async function viewCodeHubProject(args: {
   remote: CodeHubRemote
   execOptions?: CodeHubExecOptions
-}): Promise<{ exists: boolean; error: string | null }> {
+}): Promise<{ exists: boolean; defaultBranch: string | null; error: string | null }> {
   try {
-    await runCodeHubCli(['project', 'view', ...projectArgs(args.remote)], args.execOptions)
-    return { exists: true, error: null }
-  } catch (e) {
-    return { exists: false, error: e instanceof Error ? e.message : String(e) }
+    const stdout = await runCodeHubCli(
+      ['project', 'view', ...projectArgs(args.remote), '--jq', '.default_branch'],
+      args.execOptions
+    )
+    const text = stdout.trim()
+    return { exists: true, defaultBranch: text && text !== 'null' ? text : null, error: null }
+  } catch (first) {
+    // --jq 形态不可用或查询失败:退回裸 project view(main 正本 probe_repo)判存在性。
+    try {
+      await runCodeHubCli(['project', 'view', ...projectArgs(args.remote)], args.execOptions)
+      return { exists: true, defaultBranch: null, error: null }
+    } catch {
+      const message = first instanceof Error ? first.message : String(first)
+      return { exists: false, defaultBranch: null, error: message }
+    }
   }
 }

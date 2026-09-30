@@ -48,7 +48,10 @@ export function useCharterPrStatus(
     }
     setUpdatingMain(true)
     try {
-      await window.api.git.fastForward({ worktreePath: activeRepo.path })
+      await window.api.git.fastForward({
+        worktreePath: activeRepo.path,
+        ...(activeRepo.connectionId ? { connectionId: activeRepo.connectionId } : {})
+      })
       const r = await readProjectCharter(activeRepo.path)
       onCharterReloaded(r.charter)
       setCharterStatusState(null)

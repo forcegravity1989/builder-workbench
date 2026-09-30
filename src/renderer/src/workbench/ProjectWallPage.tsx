@@ -79,6 +79,7 @@ export function ProjectWallPage(): React.JSX.Element {
   const fetchRepos = useAppStore((s) => s.fetchRepos)
   const [charters, setCharters] = useState<Record<string, ProjectCharter | null>>({})
   const [charterStatuses, setCharterStatuses] = useState<Record<string, CharterStatus | null>>({})
+  const [charterToken, setCharterToken] = useState(0)
   const [statusToken, setStatusToken] = useState(0)
   const [updatingRepoId, setUpdatingRepoId] = useState<string | null>(null)
   const [switchingKey, setSwitchingKey] = useState<string | null>(null)
@@ -96,7 +97,6 @@ export function ProjectWallPage(): React.JSX.Element {
     let cancelled = false
     void (async () => {
       const next: Record<string, ProjectCharter | null> = {}
-      const nextStatuses: Record<string, CharterStatus | null> = {}
       for (const p of wallProjects) {
         const primary = repos.find((r) => r.id === p.primaryRepoId)
         if (!primary) {
@@ -107,29 +107,72 @@ export function ProjectWallPage(): React.JSX.Element {
           return
         }
         next[p.key] = result.charter
-        if (!result.charter) {
-          // 主检出没有名片才查 PR 状态:待合入 / 已合入未更新 / 没查成。
-          nextStatuses[p.key] = await readCharterPrStatus(primary)
-          if (cancelled) {
-            return
-          }
-        }
       }
       if (!cancelled) {
         setCharters(next)
-        setCharterStatuses(nextStatuses)
       }
     })()
     return () => {
       cancelled = true
     }
-  }, [wallProjects, repos, statusToken])
+  }, [wallProjects, repos, charterToken])
 
-  const updateMainCheckout = async (repoPath: string, repoId: string): Promise<void> => {
-    setUpdatingRepoId(repoId)
+  // 名片缺失的项目才查 PR 状态;并行、不阻塞名片渲染,查询集合不变不重查。
+  const statusQueryKey = useMemo(() => {
+    return JSON.stringify(
+      wallProjects
+        .filter((p) => charters[p.key] === null)
+        .map((p) => {
+          const primary = repos.find((r) => r.id === p.primaryRepoId)
+          return primary ? `${p.key}|${primary.id}|${primary.path}` : null
+        })
+        .filter(Boolean)
+    )
+  }, [wallProjects, repos, charters])
+
+  useEffect(() => {
+    const targets: { key: string; repoId: string }[] = JSON.parse(statusQueryKey || '[]').map(
+      (entry: string) => {
+        const [key, repoId] = entry.split('|')
+        return { key, repoId }
+      }
+    )
+    if (targets.length === 0) {
+      setCharterStatuses({})
+      return
+    }
+    let cancelled = false
+    void Promise.all(
+      targets.map(async (t) => {
+        const repo = useAppStore.getState().repos.find((r) => r.id === t.repoId)
+        if (!repo) {
+          return [t.key, null] as const
+        }
+        return [t.key, await readCharterPrStatus(repo)] as const
+      })
+    ).then((entries) => {
+      if (!cancelled) {
+        setCharterStatuses(Object.fromEntries(entries))
+      }
+    })
+    return () => {
+      cancelled = true
+    }
+  }, [statusQueryKey, statusToken])
+
+  const updateMainCheckout = async (repo: {
+    id: string
+    path: string
+    connectionId?: string | null
+  }): Promise<void> => {
+    setUpdatingRepoId(repo.id)
     try {
-      await window.api.git.fastForward({ worktreePath: repoPath })
+      await window.api.git.fastForward({
+        worktreePath: repo.path,
+        ...(repo.connectionId ? { connectionId: repo.connectionId } : {})
+      })
       toast.success('主检出已拉到最新')
+      setCharterToken((n) => n + 1)
       setStatusToken((n) => n + 1)
     } catch (e) {
       toast.error(`没拉动：${e instanceof Error ? e.message : String(e)}`)
@@ -294,9 +337,7 @@ export function ProjectWallPage(): React.JSX.Element {
                         variant="wall"
                         updating={updatingRepoId === p.project.primaryRepoId}
                         onUpdateMain={
-                          primaryRepo
-                            ? () => void updateMainCheckout(primaryRepo.path, primaryRepo.id)
-                            : undefined
+                          primaryRepo ? () => void updateMainCheckout(primaryRepo) : undefined
                         }
                       />
                     ) : null}

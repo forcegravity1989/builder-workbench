@@ -1,10 +1,17 @@
-import { normalizeCloneUrl, parseProjectToml, PROJECT_TOML_REL } from '../../shared/workbench/project-charter'
+import { readFile } from 'node:fs/promises'
+import {
+  normalizeCloneUrl,
+  parseProjectToml,
+  PROJECT_TOML_REL,
+  type ProjectCharter
+} from '../../shared/workbench/project-charter'
+import type { CharterIntent } from '../../shared/workbench/charter'
 import { parseCodeHubRemote } from '../../shared/codehub'
 import type { CharterProbeRequest, CharterRemoteProbe } from '../../shared/workbench/charter'
 import { acquire, extractExecError, ghExecFileAsync, release } from '../github/gh-utils'
 import { parseGitHubRemoteIdentity } from '../github/github-remote-identity-parsing'
 import { githubHostExecOptions } from '../github/github-repository-host'
-import { fetchCodeHubRepoFileRaw, probeCodeHubProject } from '../codehub/repo-reads'
+import { fetchCodeHubRepoFileRaw, viewCodeHubProject } from '../codehub/repo-reads'
 
 export function oneLine(value: string): string {
   return value.replace(/\s+/g, ' ').trim()
@@ -30,10 +37,20 @@ export async function probeRemoteCharter(params: CharterProbeRequest): Promise<C
   }
   const codehubRemote = parseCodeHubRemote(normalized)
   if (codehubRemote) {
+    // 先解默认分支(内源仓多为 master;main 正本 project_default_branch),兼作存在性探测。
+    const view = await viewCodeHubProject({ remote: codehubRemote })
+    if (!view.exists) {
+      const error = view.error ?? '仓库不存在或没有权限'
+      if (error.toLowerCase().includes('not installed')) {
+        return { kind: 'failed', error }
+      }
+      return { kind: 'no-repo', error }
+    }
+    const ref = view.defaultBranch || 'main'
     const read = await fetchCodeHubRepoFileRaw({
       remote: codehubRemote,
       filePath: PROJECT_TOML_REL,
-      ref: 'main'
+      ref
     })
     if (read.kind === 'content') {
       return { kind: 'adopted', charter: parseProjectToml(read.content) }
@@ -41,16 +58,13 @@ export async function probeRemoteCharter(params: CharterProbeRequest): Promise<C
     if (read.kind === 'ref-missing') {
       return {
         kind: 'failed',
-        error: '远端 main 分支不存在(默认分支可能是别的名字),接入前没查成;克隆后仍以已有名片为准只补空字段'
+        error: `远端 ${ref} 分支读不到(默认分支可能另有其名),接入前没查成;克隆后仍以已有名片为准只补空字段`
       }
     }
     if (read.kind === 'failed') {
       return { kind: 'failed', error: read.error }
     }
-    const probe = await probeCodeHubProject({ remote: codehubRemote })
-    return probe.exists
-      ? { kind: 'absent' }
-      : { kind: 'no-repo', error: probe.error ?? '仓库不存在或没有权限' }
+    return { kind: 'absent' }
   }
   const ghIdentity = parseGitHubRemoteIdentity(normalized)
   if (!ghIdentity) {
@@ -109,5 +123,33 @@ export async function probeRemoteCharter(params: CharterProbeRequest): Promise<C
     }
   } finally {
     release()
+  }
+}
+
+export function trimmedIntent(intent: CharterIntent): ProjectCharter {
+  return {
+    name: intent.name.trim(),
+    kind: intent.kind.trim(),
+    brief: intent.brief.trim(),
+    benchmark: intent.benchmark.trim(),
+    opportunity: intent.opportunity.trim()
+  }
+}
+
+export async function readTextFileGuarded(
+  filePath: string
+): Promise<{ raw: string | null; error: string | null }> {
+  try {
+    const buffer = await readFile(filePath)
+    if (buffer.includes(0)) {
+      return { raw: null, error: '名片不是文本文件,未覆盖' }
+    }
+    return { raw: buffer.toString('utf8'), error: null }
+  } catch (e) {
+    const code = (e as NodeJS.ErrnoException)?.code
+    if (code === 'ENOENT') {
+      return { raw: null, error: null }
+    }
+    return { raw: null, error: `名片不可读,未覆盖：${execMessage(e)}` }
   }
 }

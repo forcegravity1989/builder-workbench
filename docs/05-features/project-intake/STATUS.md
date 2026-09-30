@@ -15,7 +15,7 @@
 
 **已知债**：
 1. **名片 PR 全链真实远端未验**——实现已落（bw/project 固定树提交 + push + gh/codehub-cli 开 PR + 待合入提示 + 更新主目录 + 编辑名片补录），但 gh/codehub-cli 登录态、GHES、WSL 仓、配对宿主、CodeHub 实机均未端到端跑过；未验前不宣称团队共享已可用。本机真壳受环境限制（node-pty 重建失败）未拉起。
-2. **CodeHub 侧「已合入未更新」无检测**——status 只查开放 MR（codehub-cli mr list opened）；GitHub 有 merged 态可提示「更新主目录」，CodeHub 合入后要等主检出读到名片才消失提示缺口。
+2. **CodeHub 侧「已合入未更新」无检测、chip 无跳转**——status 只查开放 MR（codehub-cli mr list opened）；GitHub 有 merged 态可提示「更新主目录」，CodeHub 合入后要等主检出读到名片才消失提示缺口，且 MR 无 web 链接可推时 chip 只显示号码、无「查看」入口。
 3. **CodeHub MR 目标分支兜底 master**——沿 main 隐含假设（origin/HEAD 符号引用缺失时），已加 getRepoDefaultBranchName 兜底；内源默认分支为 master 的假设需实机复核。
 4. 墙卡版本/周目标/健康为占位 Unknown（用户拍板暂不细设计）；「本机环境」探测条已删除，真实探测清单（claude/cursor-agent/gh/codehub-cli，三态，不探不会起的东西）随墙健康灯重新决策——main 正本证据：环境条 6 格与三态语义（`crates/app-shell/src/screens/wall/mod.rs` env_bar、`bridge/vm_build.rs probe_env`）、假红修复 07e076ff4（Windows PATHEXT）、假绿修复 e23e3e4ce（探的名字必须等于真起的进程）。
 5. 克隆中断残留暂不处理（用户拍板，看实际反馈）。

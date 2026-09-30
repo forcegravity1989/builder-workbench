@@ -51,11 +51,11 @@ export type CharterPrRef = {
 /** submit 结果:失败是值不是异常——项目已接入,失败只影响名片环节。 */
 export type CharterSubmitOutcome =
   | { mode: 'pr'; pr: CharterPrRef; filled: string[] }
-  /** 树内名片与意图一致,无可提交内容。 */
-  | { mode: 'noop'; filled: string[] }
+  /** 树内名片与意图一致且远端已同步、无开放 PR。note 说明真实态(已合入/PR 被关)。 */
+  | { mode: 'noop'; filled: string[]; note?: string }
   /** 没有可识别远端/读不到远端身份:调用方就地写主检出并如实说明。 */
   | { mode: 'local-only'; reason: string }
-  | { mode: 'failed'; stage: 'read' | 'validate' | 'commit' | 'push' | 'pr'; error: string; filled: string[] }
+  | { mode: 'failed'; stage: 'read' | 'validate' | 'write' | 'commit' | 'push' | 'pr'; error: string; filled: string[] }
 
 export const CharterStatusRequestSchema = z.strictObject({
   repoId: z.string().min(1),

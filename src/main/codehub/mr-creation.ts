@@ -27,7 +27,11 @@ export async function openCodeHubMrForBranch(args: {
     return null
   }
   const iid = Number(text)
-  return Number.isFinite(iid) ? iid : null
+  if (!Number.isFinite(iid)) {
+    // 垃圾输出不静默当「无开放 MR」,否则会重复建 MR(main 正本 Parse 错语义)。
+    throw new Error(`无法解析 codehub MR 列表输出：${text}`)
+  }
+  return iid
 }
 
 /**

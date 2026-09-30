@@ -141,6 +141,7 @@ export async function submitProjectOnboard(args: {
 const CHARTER_STAGE_TEXT = {
   read: '名片文件读不了',
   validate: '信息不完整',
+  write: '写固定树没成',
   commit: '提交没成',
   push: '推分支没成',
   pr: 'PR 没开成'
@@ -233,7 +234,7 @@ export async function applyCharterOutcome(args: {
       break
     }
     case 'noop':
-      onLog({ kind: 'ok', text: '仓里已有合入的名片，没有可补的空字段，未改动' })
+      onLog({ kind: 'ok', text: outcome.note ?? '名片没有可补的新内容，未改动' })
       break
     case 'local-only':
       await writeCharterLocally(repoPath, intent, outcome.reason, onLog)
