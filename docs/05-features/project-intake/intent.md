@@ -44,4 +44,4 @@
 
 ## 实现落点（现状取证，供 gate 对照）
 
-`src/renderer/src/workbench/`：`ProjectWallPage` / `OnboardProjectPage` / `OnboardCharterStep` / `run-project-onboard` / `project-charter`（toml 读写，字段 name/kind/brief/benchmark/opportunity，读取兼容 north_star）/ `workbench-wall-projects`（聚合）/ `switch-active-project` / `wall-project-repo-actions`（组升级/连带删组）。散落文档：architecture 用例表与 §3、06-module/桌面壳。存量合规单测：project-charter（解析/回写/归一化）、workbench-wall-projects（远端链接/聚合/回退标签）。
+`src/renderer/src/workbench/`：`ProjectWallPage` / `OnboardProjectPage` / `OnboardCharterStep` / `run-project-onboard` / `project-charter`（toml 读写，字段 name/kind/brief/benchmark/opportunity，读取兼容 north_star）/ `workbench-wall-projects`（聚合）/ `switch-active-project` / `wall-project-repo-actions`（组升级/连带删组）。散落文档：architecture 用例表与 §3、06-module/桌面壳。存量合规单测：project-charter（解析/回写/归一化）、workbench-wall-projects（组聚合；展示类用例已随 2026-09-30 环 4 盘点删除）。

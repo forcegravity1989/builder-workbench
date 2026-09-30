@@ -1,10 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import {
-  classifyKbDocGroup,
-  draftKnowledgeMapFromPaths,
-  sortKbDocs
-} from './knowledge-doc-classify'
-import type { KbDoc } from './knowledge-doc-registry'
+import { classifyKbDocGroup, draftKnowledgeMapFromPaths } from './knowledge-doc-classify'
 
 describe('classifyKbDocGroup', () => {
   it('classifies user and engineering roles with generic heuristics', () => {
@@ -58,29 +53,5 @@ describe('draftKnowledgeMapFromPaths', () => {
     expect(byRole['eng-contract']).toEqual(['docs/architecture.md'])
     expect(byRole['eng-features']).toEqual(['docs/05-features/a/'])
     expect(byRole['eng-bw']).toContain('.bw/project.toml')
-  })
-})
-
-describe('sortKbDocs', () => {
-  it('orders by KB group then registry path', () => {
-    const docs: KbDoc[] = [
-      {
-        id: 'b',
-        group: 'eng-features',
-        name: 'b',
-        path: 'docs/05-features/z.md',
-        lede: '',
-        body: ''
-      },
-      {
-        id: 'a',
-        group: 'eng-contract',
-        name: 'a',
-        path: 'docs/architecture.md',
-        lede: '',
-        body: ''
-      }
-    ]
-    expect(sortKbDocs(docs).map((d) => d.id)).toEqual(['a', 'b'])
   })
 })

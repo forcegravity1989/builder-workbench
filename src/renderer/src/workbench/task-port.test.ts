@@ -19,7 +19,7 @@ vi.mock('@/lib/github-work-item-source-lookup', () => ({
 }))
 vi.mock('@/lib/codehub-api', () => ({ codehubApi: { viewTask: mocks.viewTask } }))
 
-import { createTaskPort, nativeTaskPort } from './task-port'
+import { createTaskPort } from './task-port'
 
 const githubRepo = {
   id: 'repo-gh',
@@ -289,16 +289,5 @@ describe('createTaskPort openDetail', () => {
       '无法打开详情'
     )
     expect(mocks.storeState.openTaskPage).not.toHaveBeenCalled()
-  })
-})
-
-describe('nativeTaskPort', () => {
-  it('wires the store repos and native provider wrappers', async () => {
-    mocks.lookupGitHub.mockResolvedValue(ghItem)
-    const [read] = await nativeTaskPort().listVersion(scope, [ghReference])
-    expect(read?.kind).toBe('ready')
-    expect(mocks.lookupGitHub).toHaveBeenCalledWith(
-      expect.objectContaining({ repoId: 'repo-gh', repoPath: '/repos/bw' })
-    )
   })
 })

@@ -9,7 +9,7 @@
 | 1 intent | ◐ | 草案在本目录 [intent.md](intent.md)，待 gate；带入来源 = 2026-09-29 用户拍板补登记 |
 | 2 spec | ○ | intent 过 gate 后开写；现行行为依据暂散落 architecture 用例表与源码（落点清单见 intent 文末） |
 | 3 实现设计 | ◐ | architecture「打开或接入项目 / 查看项目概况」与 06-module/桌面壳 有散落记录，无特性级 design |
-| 4 TDD | ◐ | 合规存量：project-charter（toml 解析/回写/简写归一化）、workbench-wall-projects（远端链接/组聚合/回退标签）；project-page-state 等 UI 页面态测试已列入环 4 规范裁剪名单，裁剪在 PR #282 进行中（未合入前本分支文件仍在） |
+| 4 TDD | ◐ | 合规存量：project-charter（toml 解析/回写/简写归一化）、workbench-wall-projects（组聚合喂数据作用域推导；2026-09-30 环 4 盘点删远端链接/回退标签展示例）；project-page-state 等 UI 页面态测试已随 PR #282 裁剪 |
 | 5 验收点E2E | ○ | 待 spec 定验收点后逐项注册；暂无以「看见有用例」反推的覆盖 |
 | 6 旅程E2E | ○ | 候选主旅程 =「接入项目 → 墙上见名片 → 切换进总览 → 重启读回一致」，待 spec 定稿注册后真壳执行 |
 
