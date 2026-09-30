@@ -113,6 +113,27 @@ function runSuite(root, reportPath) {
   }
 }
 
+// Read and remove the JSON report; both entry points (main check and
+// --init/--prune measure) report a missing/corrupt report the same clean way.
+function readReport(reportPath) {
+  try {
+    return JSON.parse(fs.readFileSync(reportPath, 'utf8'))
+  } catch (reason) {
+    console.error(
+      `::error::vitest JSON report missing/unreadable at ${reportPath}: ${reason instanceof Error ? reason.message : String(reason)}`
+    )
+    return null
+  }
+}
+
+function cleanupReport(reportPath) {
+  try {
+    fs.rmSync(reportPath, { force: true })
+  } catch {
+    /* best effort */
+  }
+}
+
 function printSummary(s, elapsedMs, baseline) {
   console.log(
     `vitest count: ${s.total} executed case(s) in ${s.perFile.length} file(s), ${(elapsedMs / 1000).toFixed(1)}s`
@@ -177,20 +198,10 @@ export function main(root = process.cwd()) {
   const started = Date.now()
   const green = runSuite(root, reportPath)
   const elapsed = Date.now() - started
-  let report
-  try {
-    report = JSON.parse(fs.readFileSync(reportPath, 'utf8'))
-  } catch (reason) {
-    console.error(
-      `::error::vitest JSON report missing/unreadable at ${reportPath}: ${reason instanceof Error ? reason.message : String(reason)}`
-    )
+  const report = readReport(reportPath)
+  cleanupReport(reportPath)
+  if (report === null) {
     return 1
-  } finally {
-    try {
-      fs.rmSync(reportPath, { force: true })
-    } catch {
-      /* best effort */
-    }
   }
   const s = summarize(report, root)
   printSummary(s, elapsed, baseline)
@@ -224,11 +235,10 @@ function measure(root) {
   const reportPath = path.join(os.tmpdir(), `vitest-count-ratchet-${process.pid}.json`)
   const started = Date.now()
   const green = runSuite(root, reportPath)
-  const report = JSON.parse(fs.readFileSync(reportPath, 'utf8'))
-  try {
-    fs.rmSync(reportPath, { force: true })
-  } catch {
-    /* best effort */
+  const report = readReport(reportPath)
+  cleanupReport(reportPath)
+  if (report === null) {
+    process.exit(1)
   }
   const s = summarize(report, root)
   printSummary(s, Date.now() - started, null)
