@@ -159,6 +159,17 @@
   text-transform: uppercase;
   color: color-mix(in srgb, var(--color-text) 50%, transparent);
 }
+.wb-wall .pcard-charter-note {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 12px;
+  padding: 4px 8px;
+  border-radius: var(--radius-sm);
+  background: color-mix(in srgb, var(--color-accent) 8%, transparent);
+  border: 1px solid color-mix(in srgb, var(--color-accent) 25%, transparent);
+}
 .wb-wall .pcard-repo-list {
   list-style: none;
   margin: 0;
