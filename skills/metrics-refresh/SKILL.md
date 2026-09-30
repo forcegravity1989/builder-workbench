@@ -2,12 +2,12 @@
 name: metrics-refresh
 description: Use when 从总览配置指标，或计划/验收发现指标定义、特性归属、脚本与实际读数有缺口，需要准备或修复采集能力。
 metadata:
-  version: 0.4.0
+  version: 0.5.0
 ---
 
 # 配置与核对指标
 
-This discovery stub loads the version-matched Workbench metrics guide.
+This discovery stub loads the version-matched Workbench metrics guide. Run the command below and read the full guide plus the metrics protocol **before** touching any definition or script — this stub is a pointer, not the SOP, and collector scripts written without the protocol will not be compliant. `--full` returns the guide and its references in one hop.
 
 ## Resolve the CLI for this session
 
@@ -29,7 +29,7 @@ If the selected executable cannot run, report its exact error and stop. Do not f
 to another executable, which could silently target a different Orca build.
 
 ```text
-ORCA skills get metrics-refresh
+ORCA skills get metrics-refresh --full
 ```
 
 Prefer `--json`. Use the selected executable's `--help` for commands or flags the guide does
