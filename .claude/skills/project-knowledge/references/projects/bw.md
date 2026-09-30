@@ -31,7 +31,7 @@
 
 目标分支的删除决定按真实计划/PR 与工作树核对。已批准退役的 `docs/02-adr/`、`docs/03-guide/`、`docs/metrics.md` 或特性目录不因旧链接、扫描清单和历史方法而恢复，也不为保留空目录造占位文件。有价值且仍适用的内容先找现有正本，职责扩展按已有授权处理；历史从固定 Git 提交追溯，不复制一套新归档。
 
-`docs/05-features/` 中保留的 `reviewer-agent/`、`version-planning/` 只是可定位的材料，不证明六环齐全、平台迁移完成或产品特性全集已确定。不要从 main 搬旧矩阵、旧绿灯或过去的 STATUS；实际处理某特性时再按目标分支原则 02 补链。
+`docs/05-features/` 中保留的 `reviewer-agent/`、`version-planning/` 只是可定位的材料，不证明六环齐全、平台迁移完成或产品特性全集已确定。不要从旧 main（`archive/main-pre-orca`）搬旧矩阵、旧绿灯或过去的 STATUS；实际处理某特性时再按目标分支原则 02 补链。
 
 迁移时在现有 spec/STATUS/PR 分开记录：
 
