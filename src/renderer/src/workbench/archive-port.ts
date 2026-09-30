@@ -1,7 +1,7 @@
 import type { HostedReviewInfo } from '../../../shared/hosted-review'
 import type { PRReviewDecision } from '../../../shared/github/pull-request-types'
 import { githubRepoIdentityKey } from '../../../shared/github/repository-identity-key'
-import { isCodeHubUrl } from '../../../shared/codehub'
+import { isCodeHubGitRemote } from '../../../shared/codehub'
 import type { Repo } from '../../../shared/repo-types'
 import {
   CODEHUB_ARCHIVE_UNPROVABLE_REASON,
@@ -88,7 +88,7 @@ export function nativeArchivePort(runtimeOwnerEnvironmentId?: string): ArchivePo
           { repo: ownerScope.repoId },
           { timeoutMs: 30_000 }
         )
-        if (isCodeHubUrl(repo.gitRemoteIdentity?.remoteUrl)) {
+        if (isCodeHubGitRemote(repo.gitRemoteIdentity)) {
           return {
             kind: 'unknown',
             reason: CODEHUB_ARCHIVE_UNPROVABLE_REASON

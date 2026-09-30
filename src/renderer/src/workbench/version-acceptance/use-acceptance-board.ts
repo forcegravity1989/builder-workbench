@@ -14,8 +14,7 @@ import { startAcceptanceRound } from './acceptance-round'
 import type { AcceptanceBoardProps } from './AcceptanceBoard'
 import {
   useAcceptanceSources,
-  useFixedAcceptancePlan,
-  useOpenAcceptanceRound
+  useFixedAcceptancePlan
 } from './use-acceptance-plan'
 import { useAcceptanceOutput } from './use-acceptance-output'
 
@@ -160,7 +159,6 @@ export function useAcceptanceBoard({
       planChoice,
       contextVersion: context.version,
       draft,
-      archive,
       history,
       scope: metricScope,
       controller,
@@ -169,15 +167,6 @@ export function useAcceptanceBoard({
       setError
     })
   }
-  useOpenAcceptanceRound({
-    document,
-    busy,
-    contextVersion: context.version,
-    sources,
-    planChoice,
-    loadVersion,
-    begin
-  })
   async function prepare(text: string) {
     try {
       if (!session) {

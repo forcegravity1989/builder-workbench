@@ -6,6 +6,8 @@
 
 用户已确认本轮高保真并要求提交特性资产：计划与验收统一在右板首行提供协作卡片、“配置自动化”与启动按钮，原生标签栏不增加 BW 按钮；分支名移至页头，异常文件随同一启动入口带入会话。原型说明、首次/异常场景选择集中到页面末尾并明确不进入最终界面。该入口迁移已在 PR #279 实施：CycleStartCard 落地两屏首行，tab-bar-surface 的 CycleStartButton 薄挂载与 startMaterialRequest 独立通道已退役删除；数据问题上下文经 automation.runNow 的可选 oneShotPrompt 随保存提示单次合并递交（capability 门控）。组件/契约测试与静态检查通过，真壳未运行，不能视为真壳验证通过。
 
+2026-09-30 PR #283 返工批（用户在返工会话逐项拍板）：①「配置自动化」从卡片首行移至右板页头分支名旁（一次性配置不占每周主操作区），卡片只留启动入口；②登记语义改为覆盖同步——已有条目按当前 BW 版本刷新 BW 所有的提示词，用户所有设置（开关/时间/模型/复用）保留，同步失败如实提示不阻断；③手动启动保持 runNow 直接递交（曾一度被 #283 改为新会话草稿递交，经用户核对属无依据变更，已恢复）；④两屏进屏先把采用分支最新拉进固定分支（workbench.cycle.syncTrunk），失败/冲突如实提示、不阻断、不换数据源；⑤计划屏顶部指标报错面板与归档旁评审状态文本移除（#283 体验修复，经用户确认保留；归档灯与逐指标未知态仍在）。
+
 指标窗口确认的历史脚本限制、每次配置新建会话和“对话气泡＋”图标已同步本屏原型与规格；生产指标接线已随 [PR #278](https://github.com/forcegravity1989/builder-workbench/pull/278) 合入，本线不重复实施。原型配置会话仍为内存演示，不作为采集或模型注入通过的证据。
 
 已明确的旅程：Builder 制定目标后与 PL 评审并现场修改目标，纪要预览/复制服务评审后的填写整理，通常在任务拆解与 PR 合入后，也允许在拆解前；复制不代表评审通过。对应 intent/spec/design 与 week-planning 已同步。生产计划板已采用进展/风险共卡片、目标直接编辑、可选多指标、任务标题栏拆解和一行归档入口；上版验收在进展卡片内，预览纪要在目标标题旁。未选版本保留同一布局，各区为空且不写材料；下拉明确选版，旅程轴只滚动定位。目标补充弹窗及常规保存栏已移除，计划样式限定本屏。整体结构已接线，实际视觉密度、键盘/缩放和原生双栏效果仍待真壳验证。
@@ -23,7 +25,7 @@
 | intent | ● 已确认 | 沿用三特性边界，用户确认本轮计划/验收共用协作入口与资产同步 |
 | spec | ● 实施输入 | 本轮高保真已获用户确认；新入口已按该高保真实施（组件/契约测试为上限，真壳未验），新增或拿不准的行为仍需确认 |
 | 实现设计 | ◐ 部分 | 设计主体已按当前接线落地，取舍差异回写 design；详细设计仍未逐项细审，未决项必须人工确认 |
-| TDD | ◐ 部分 | 以下为 PR #272 前历史证据，不含当前会话复用接线：单测/组件测试全绿：渲染端大套件 388 文件 3477 项，main/workbench + relay 38 文件 203 项，另有 store、launch/settings/hooks 等；三套 tsc 0 错；RPC catalog/投影/manifest 校验绿。覆盖材料事务、CAS 读写、显式迁移、草稿冲突和恢复、派生纪要、流程选版与会话绑定。真实 Git 工作树与文件在测试内创建；SSH/会话/provider 端口使用测试替身，不能视为真实远端与 Electron 旅程。本轮（#279）新增证据：协作卡片入口、one-shot 转发/门控/派发载荷与既有 8 项计划板测试全绿；tsc 因本机内存限制未能运行，缺口如实记入 PR |
+| TDD | ◐ 部分 | 以下为 PR #272 前历史证据，不含当前会话复用接线：单测/组件测试全绿：渲染端大套件 388 文件 3477 项，main/workbench + relay 38 文件 203 项，另有 store、launch/settings/hooks 等；三套 tsc 0 错；RPC catalog/投影/manifest 校验绿。覆盖材料事务、CAS 读写、显式迁移、草稿冲突和恢复、派生纪要、流程选版与会话绑定。真实 Git 工作树与文件在测试内创建；SSH/会话/provider 端口使用测试替身，不能视为真实远端与 Electron 旅程。本轮（#279）新增证据：协作卡片入口、one-shot 转发/门控/派发载荷与既有 8 项计划板测试全绿；tsc 因本机内存限制未能运行，缺口如实记入 PR。2026-09-30 返工批证据：ensure 覆盖同步 3 例、trunkPullTarget 解析 3 例、历史服务（自有分支 treePlans/归档信号化/白名单扩展）真实 Git 仓测试全绿、开轮门控 3 例；受触测试文件 vitest 全过；tsc 仍因本机内存未能运行，如实记录 |
 | 验收点 E2E | ◐ 部分 | 真壳 Playwright 烟测 `tests/e2e/workbench-cycle-smoke.spec.ts`（固定树创建→选版→保存→磁盘读回→重载恢复→验收树→总览）已编写，执行结果见 PR；P01–P10 完整验收点尚未逐项运行 |
 | 用户旅程 E2E | ○ 缺 | PJ01/PJ02 已定义；真实模型会话、provider 归档全链、自动化到点与重启独立读回未运行 |
 
@@ -33,7 +35,7 @@
 
 进入计划屏确保 bw/week-plan；原生会话、历史和工具直接复用。流程选版仍存 workbenchSelectedVersion，UI 与材料 CLI 共享；会话切换不改变选版。Tasks 返回依赖原生工作区历史，目标筛选和滚动由 view-memory 保留。
 
-未验证项如实保留：真壳烟测已编写，执行结果见 PR；SSH/WSL、配对宿主、真实到点自动化、真实 provider 归档全链未验证。归档状态按材料身份自动读取，归档证明要求 provider 真实合入提交在采用基线上且合入提交树内材料字节与修订一致；CodeHub 无真实合入证据一律 Unknown，正文编辑延期。跨周有限场景按 spec：同版本计划/验收各只一轮活动材料，归档后由人明确开下一轮。
+未验证项如实保留：真壳烟测已编写，执行结果见 PR；SSH/WSL、配对宿主、真实到点自动化、真实 provider 归档全链未验证。归档状态按材料身份自动读取，归档证明要求 provider 真实合入提交在采用基线上且合入提交树内材料字节与修订一致；归档与合入状态只作提醒信号，不阻塞开轮与历史读取。CodeHub 无真实合入证据一律 Unknown：归档证据读取现为诚实空函数（registeredCodeHubArchiveReason 接缝），待专项接 codehub-cli 读回真实合入状态（2026-09-30 用户拍板记债）。远程 SSH 工作树暂不自动同步主干（只读中继边界），记债待专项。跨周有限场景按 spec：同版本计划/验收各只一轮活动材料，下一轮不被未归档阻塞，唯一开轮门是当前轮未保存修改。
 
 没有产品 TDD、真壳 E2E、独立验证 Review 或使用效果证据时，保持缺口；不预填齐全、通过或改善比例。
 
@@ -51,9 +53,9 @@
 | P04 纪要三段模板派生、复制一致、不补造事实 | ✅ | derivePlanMinutes + PlanningMinutes 复制 | plan-summary 测试 |
 | P05 Issue 创建/复用真实回显；详情编辑返回保留上下文 | ◐ | task-port + 原生 returnToPreviousView 跳过哨兵（528dce0f8） | ui-page-navigation 测试；真实 provider 往返待人 |
 | P06 分树、全部原生会话复用、专用新建与数据处理入口 | ◐ | CycleWorkspaceProvider + CycleStartCard（首行协作卡片）+ 原生 Terminal/RightSidebar；数据问题随 runNow oneShotPrompt 单次递交 | CycleStartCard/one-shot 转发组件与契约测试通过；多标签/分屏/历史与真实手动运行仍待真壳验证 |
-| P07 自动化登记去重、保留设置、真实到点可追溯 | ◐ | 默认关闭态注册（ensure-cycle-automation：creationKey 去重、只创建不更新、人启用才到点）+「配置自动化」预填/编辑入口 | 真实到点与跨重启去重待人启用后验证 |
+| P07 自动化登记去重、BW 提示覆盖同步、用户设置保留、真实到点可追溯 | ◐ | 默认关闭态注册（ensure-cycle-automation：creationKey 去重、已有条目覆盖同步提示词、用户设置保留、人启用才到点）+ 页头「配置自动化」预填/编辑入口 | 去重/覆盖同步/同步失败放行单测；真实到点与跨重启去重待人启用后验证 |
 | P08 并发保存冲突处理；重启/切项目/切版本读回一致 | ◐ | usePlanningAutosave + MaterialDraftController CAS + PlanningPersistenceNotice + view-memory | 本轮自动保存检查见 PR；既有控制器测试/烟测不能替代新路径的真实并发及重启读回 |
-| P09 归档只准备会话请求；PR 真实状态定灯色 | ◐ | archivePort.prepareRequest→composer；archive 状态自动读取+灯色语义；archive-label 呈现请求修改与检查失败 | archive-port/board-state/archive-label 测试；新原生焦点接线、真实 PR 状态与归档请求仍待真壳及 provider 旅程验证 |
+| P09 归档只准备会话请求；PR 真实状态定灯色 | ◐ | archivePort.prepareRequest→composer；archive 状态自动读取+灯色语义（信号不阻断）；归档旁评审状态文本已移除（2026-09-30 返工批，灯保留），archive-label 已删 | archive-port 测试；UI 呈现交验收点 E2E 与真壳 Review；新原生焦点接线、真实 PR 状态与归档请求仍待真壳及 provider 旅程验证 |
 | P10 总览按版本/多周/固定修订读摘要；往返保草稿；坏历史不伪造 | ◐ | use-version-minutes+OverviewPage 双栏+problems 列表 | 组件级+烟测总览；多周真实归档回看待人 |
 
 | 旅程 | 状态 | 覆盖 |

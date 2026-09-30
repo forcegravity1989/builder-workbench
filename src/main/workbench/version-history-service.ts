@@ -8,9 +8,11 @@ import {
   VersionHistoryListSchema,
   VersionHistoryReadSchema,
   VersionHistoryReadPlanSchema,
+  VersionTreePlansSchema,
   type VersionHistoryPort,
   type VersionHistorySource,
-  type VersionHistoryProblem
+  type VersionHistoryProblem,
+  type VersionTreePlan
 } from '../../shared/workbench/version-history'
 import type { VersionDocumentSnapshot } from '../../shared/workbench/version-document'
 import type { PlanningMaterial } from '../../shared/workbench/version-material'
@@ -26,6 +28,10 @@ export { HistorySourceError } from './version-history-snapshot'
 export type VersionHistoryHost = {
   git(scope: MetricScope, args: string[]): Promise<Buffer>
   baseline(scope: MetricScope): Promise<{ ref: string; commit: string }>
+  /** The cycle worktree's own HEAD — the branch its board session works in. */
+  worktreeHead(scope: MetricScope): Promise<string>
+  /** Folder names under `.bw/planning` at a commit; a missing folder lists empty, not an error. */
+  listPlanningDirs(scope: MetricScope, commit: string): Promise<string[]>
   readDraft(
     scope: MetricScope,
     version: string
@@ -40,7 +46,7 @@ export type VersionHistoryHost = {
 }
 
 export function createVersionHistoryService(host: VersionHistoryHost): VersionHistoryPort {
-  const { archiveState, requireArchive } = createArchiveStateChecker(host)
+  const { archiveState } = createArchiveStateChecker(host)
 
   async function verifySource(scope: MetricScope, sourceCommit: string) {
     const baseline = await host.baseline(scope)
@@ -73,41 +79,43 @@ export function createVersionHistoryService(host: VersionHistoryHost): VersionHi
     return decodeHistorySnapshot(raw, version, workflow)
   }
 
-  async function listTreePlans(
-    scope: MetricScope,
-    baseline: { ref: string; commit: string }
-  ): Promise<VersionHistorySource[]> {
-    let listed: Buffer
-    try {
-      listed = await host.git(scope, [
-        'ls-tree',
-        '-z',
-        '--name-only',
-        `${baseline.commit}:.bw/planning`
-      ])
-    } catch {
-      return []
-    }
-    const plans: VersionHistorySource[] = []
-    for (const name of listed.toString('utf8').split('\0')) {
-      if (!name || name.includes('/') || !MaterialVersion.safeParse(name).success) {
+  async function listTreePlans(scope: MetricScope): Promise<{
+    head: string
+    plans: VersionTreePlan[]
+    problems: { version: string; code: string; message: string }[]
+  }> {
+    const head = await host.worktreeHead(scope)
+    SourceCommit.parse(head)
+    const names = await host.listPlanningDirs(scope, head)
+    const plans: VersionTreePlan[] = []
+    const problems: { version: string; code: string; message: string }[] = []
+    for (const name of names) {
+      if (!MaterialVersion.safeParse(name).success) {
+        problems.push({
+          version: name,
+          code: 'invalid-version',
+          message: `版本目录 ${name} 不符合材料约定，未作为有效版本读取`
+        })
         continue
       }
       try {
-        const snapshot = await readSnapshot(scope, baseline.commit, name, 'plan')
+        const snapshot = await readSnapshot(scope, head, name, 'plan')
         plans.push({
           version: snapshot.document.version,
           cycleId: snapshot.document.cycleId,
-          sourceCommit: baseline.commit,
+          sourceCommit: head,
           revision: snapshot.revision,
-          workflow: 'plan',
-          committedAt: ''
+          workflow: 'plan'
         })
-      } catch {
-        continue
+      } catch (error) {
+        problems.push({
+          version: name,
+          code: error instanceof HistorySourceError ? error.code : 'history-unavailable',
+          message: error instanceof Error ? error.message : String(error)
+        })
       }
     }
-    return plans
+    return { head, plans, problems }
   }
 
   return {
@@ -188,6 +196,7 @@ export function createVersionHistoryService(host: VersionHistoryHost): VersionHi
           continue
         }
         if (adopted.kind === 'unknown') {
+          // 归档状态是信号不是可见性门：记录仍列出、仍可读，灯与问题如实呈现未证明。
           problems.push({
             version: path[1],
             sourceCommit,
@@ -196,7 +205,6 @@ export function createVersionHistoryService(host: VersionHistoryHost): VersionHi
             code: 'archive-unverified',
             message: adopted.message
           })
-          continue
         }
         const key = JSON.stringify([path[1], workflow, snapshot.revision])
         if (seen.has(key)) {
@@ -212,11 +220,15 @@ export function createVersionHistoryService(host: VersionHistoryHost): VersionHi
           committedAt
         })
       }
-      return { records, problems, treePlans: await listTreePlans(scope, baseline) }
+      return { records, problems }
+    },
+    async listTreePlans(input) {
+      const { scope } = VersionTreePlansSchema.parse(input)
+      return listTreePlans(scope)
     },
     async read(input) {
       const request = VersionHistoryReadSchema.parse(input)
-      const baseline = await verifySource(request.scope, request.sourceCommit)
+      await verifySource(request.scope, request.sourceCommit)
       const snapshot = await readSnapshot(
         request.scope,
         request.sourceCommit,
@@ -226,14 +238,6 @@ export function createVersionHistoryService(host: VersionHistoryHost): VersionHi
       if (snapshot.document.cycleId !== request.cycleId) {
         throw new HistorySourceError('history-identity-mismatch', '固定提交中的周期与所选记录不同')
       }
-      await requireArchive(request.scope, {
-        baseline,
-        sourceCommit: request.sourceCommit,
-        version: request.version,
-        cycleId: request.cycleId,
-        workflow: request.workflow,
-        revision: snapshot.revision
-      })
       return { ...snapshot, sourceCommit: request.sourceCommit }
     },
     async readPlan(input) {

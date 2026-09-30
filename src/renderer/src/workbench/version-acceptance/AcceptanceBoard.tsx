@@ -5,6 +5,7 @@ import type { VersionHistoryPort } from '../../../../shared/workbench/version-hi
 import type { VersionCycleContext } from '../version-cycle/cycle-context'
 import type { CycleEntry } from '../version-cycle/cycle-workspace-context'
 import { cycleBranch } from '../version-cycle/native-cycle-workspace'
+import { AutomationConfigureButton } from '../version-cycle/AutomationConfigureButton'
 import { CycleStartCard } from '../version-cycle/CycleStartCard'
 import { AcceptanceGoalCards } from './AcceptanceGoalCards'
 import { AcceptanceSources } from './AcceptanceSources'
@@ -219,6 +220,7 @@ function ReadyAcceptanceBoard({
           <GitBranch size={13} aria-hidden="true" />
           <span>{branch}</span>
         </span>
+        <AutomationConfigureButton onConfigure={() => void entry.configure()} />
       </header>
       <div className="va-content">
         <AcceptanceJourney

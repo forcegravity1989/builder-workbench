@@ -55,7 +55,7 @@ function exactIdentityMatch(repo: Repo, repository: string): boolean {
   return candidates.some((candidate) => candidate === repository)
 }
 
-/** CodeHub is matched on its own project path, never by trying a GitHub owner/repo key first. */
+/** CodeHub prefers its own project path, falling back to identity-key equality. */
 function codeHubIdentityMatches(repo: Repo, repository: string): boolean {
   const remote =
     parseCodeHubRemote(repo.gitRemoteIdentity?.remoteUrl) ??

@@ -213,6 +213,7 @@ function PlanningBoardContent({ context, prepareMetrics, entry }: PlanningBoardP
         state={state}
         branch={cycleBranch(entry)}
         onSelect={(version) => void selection.select(version)}
+        onConfigure={() => void entry.configure()}
       />
       {(material.error || notice || selection.error || context.error || entry.notice) && (
         <p className="vp-notice" role="status">

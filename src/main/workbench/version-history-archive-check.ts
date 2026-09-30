@@ -2,8 +2,7 @@ import type { MetricScope } from '../../shared/workbench/metrics'
 import { ArchiveMergeProofSchema } from '../../shared/workbench/version-archive'
 import {
   historySnapshotRevision,
-  planningMaterialGitPath,
-  HistorySourceError
+  planningMaterialGitPath
 } from './version-history-snapshot'
 
 export type ArchiveCandidate = {
@@ -85,15 +84,5 @@ export function createArchiveStateChecker(host: ArchiveCheckHost) {
     }
   }
 
-  async function requireArchive(scope: MetricScope, candidate: ArchiveCandidate): Promise<void> {
-    const state = await archiveState(scope, candidate)
-    if (state.kind !== 'adopted') {
-      throw new HistorySourceError(
-        'archive-unverified',
-        state.kind === 'unknown' ? state.message : '所选材料是工作中草稿，尚未成为归档记录'
-      )
-    }
-  }
-
-  return { archiveState, requireArchive }
+  return { archiveState }
 }

@@ -74,21 +74,25 @@ type RemoteHistoryError = HistorySourceError & { exitCode?: number | null }
  * Runs the shared read-only Git core where the repository lives: in-process for
  * local/WSL hosts, through the narrow `workbench.history.execute` relay executor
  * for SSH hosts. provider.exec is never extended and agent.exec never borrowed.
+ * `atPath` selects the working tree the command runs in: the repo root for
+ * commit-addressed reads, the cycle worktree for own-branch HEAD reads.
  */
 async function runHistoryGit(
   target: WorkbenchWorkspaceTarget,
   execOptions: { wslDistro?: string },
-  args: readonly string[]
+  args: readonly string[],
+  atPath: 'repo' | 'worktree' = 'repo'
 ): Promise<HistoryGitOutcome> {
   const host = parseExecutionHostId(target.hostId)
+  const path = atPath === 'worktree' ? target.worktreePath : target.repoPath
   if (host?.kind === 'local') {
-    return runReadOnlyHistoryGit(target.repoPath, args, execOptions)
+    return runReadOnlyHistoryGit(path, args, execOptions)
   }
   if (host?.kind !== 'ssh') {
     throw new WorkspaceScopeError('invalid-scope', '请通过工作树所属的 Orca runtime 读取历史')
   }
   try {
-    const value = await requestRemote<{ stdout: string }>(host, target, {
+    const value = await requestRemote<{ stdout: string }>(host, { ...target, repoPath: path }, {
       operation: 'git',
       args: [...args]
     })
@@ -153,6 +157,38 @@ export function nativeVersionHistoryHost(runtime: HistoryRuntime): VersionHistor
         operation: 'baseline',
         adoptedRef
       })
+    },
+    async worktreeHead(scope) {
+      const { target, repo } = await workspaceFor(scope)
+      const outcome = await runHistoryGit(
+        target,
+        resolveWorkbenchGitExecOptions(runtime, repo),
+        ['rev-parse', 'HEAD'],
+        'worktree'
+      )
+      if (!outcome.ok) {
+        throw new HistorySourceError(outcome.code, outcome.message)
+      }
+      return outcome.stdout.toString('utf8').trim()
+    },
+    async listPlanningDirs(scope, commit) {
+      const { target, repo } = await workspaceFor(scope)
+      const outcome = await runHistoryGit(
+        target,
+        resolveWorkbenchGitExecOptions(runtime, repo),
+        ['ls-tree', '-z', '--name-only', `${commit}:.bw/planning`],
+        'worktree'
+      )
+      if (outcome.ok) {
+        return outcome.stdout.toString('utf8').split('\0').filter(Boolean)
+      }
+      // Git exit 128 proves `.bw/planning` is absent from that tree — a cycle
+      // branch before its first pull legitimately has no plans yet. Anything
+      // else is a read failure and must not masquerade as an empty list.
+      if (outcome.exitCode === 128) {
+        return []
+      }
+      throw new HistorySourceError(outcome.code, outcome.message)
     },
     async readDraft(scope, version) {
       const snapshot = await materials.read({ ...scope, workflow: 'plan', version })

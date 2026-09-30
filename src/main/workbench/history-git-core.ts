@@ -97,6 +97,24 @@ export function assertReadOnlyHistoryGitArgs(args: readonly string[]): void {
       }
       return
     }
+    case 'rev-parse': {
+      // Own-branch reads pin the cycle worktree HEAD; no other rev is accepted.
+      if (args.length !== 2 || args[1] !== 'HEAD') {
+        invalid()
+      }
+      return
+    }
+    case 'ls-tree': {
+      if (
+        args.length !== 4 ||
+        args[1] !== '-z' ||
+        args[2] !== '--name-only' ||
+        !new RegExp(`^${SHA}:\\.bw/planning$`).test(args[3])
+      ) {
+        invalid()
+      }
+      return
+    }
     default:
       invalid()
   }

@@ -5,10 +5,11 @@ import type { CycleEntry } from './cycle-workspace-context'
 import { materialProblemRequest } from './cycle-start-request'
 
 /**
- * First content row of both cycle boards: one collaboration sentence, the native
- * automation editor, and the single launch entry. Material problems live inside
- * the same card and ride along with the launch as one-shot context — no second
- * start button and no separate migration dialog.
+ * First content row of both cycle boards: one collaboration sentence and the
+ * single launch entry. The automation editor entry lives in each board's page
+ * header — one-off configuration stays off the weekly action row. Material
+ * problems live inside the same card and ride along with the launch as one-shot
+ * context — no second start button and no separate migration dialog.
  */
 export function CycleStartCard({
   entry,

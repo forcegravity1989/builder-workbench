@@ -25,7 +25,10 @@ import {
   getAutomationAuthorityTarget,
   listAutomationsForTarget
 } from '@/components/automations/automation-host-client'
-import { createAutomationForDestination } from '@/components/automations/automation-scoped-list-client'
+import {
+  createAutomationForDestination,
+  updateAutomationForOwner
+} from '@/components/automations/automation-scoped-list-client'
 import { automationRuntimePairingRevision } from '@/components/automations/automation-authority-identity'
 import { buildAutomationRunContextForRepo } from '@/components/automations/automation-run-context'
 import type { CycleScope } from './ports'
@@ -50,7 +53,7 @@ export function cycleAutomationCreationKey(scope: CycleScope): string {
 }
 
 export type EnsureCycleAutomationResult =
-  | { status: 'exists'; automationId: string }
+  | { status: 'exists'; automationId: string; syncError?: string }
   | { status: 'created'; automationId: string }
   | { status: 'skipped'; reason: string }
 
@@ -152,7 +155,23 @@ async function runEnsure(
     fixedId
   )
   if (existing) {
-    return { status: 'exists', automationId: existing.id }
+    // BW 持续演进：提示词是 BW 所有字段，每次进屏覆盖同步为当前版本；
+    // 人所有字段（启用开关、触发时间、模型、会话复用）永不触碰。
+    const prompt = await buildCyclePrompt(scope, fixedId)
+    if (existing.prompt === prompt) {
+      return { status: 'exists', automationId: existing.id }
+    }
+    try {
+      await updateAutomationForOwner(cycleAutomationOwner(scope), existing.id, { prompt })
+      return { status: 'exists', automationId: existing.id }
+    } catch (reason) {
+      // 同步失败不阻断：已有条目仍可手动运行，如实提示让人核对。
+      return {
+        status: 'exists',
+        automationId: existing.id,
+        syncError: reason instanceof Error ? reason.message : String(reason)
+      }
+    }
   }
   if (!agent) {
     return { status: 'skipped', reason: '未检测到可用会话工具，未注册周期自动化。' }
@@ -198,8 +217,9 @@ async function runEnsure(
 }
 
 /**
- * 壳层接线：固定树就绪后按身份注册一次；返回已存在/新建条目的 id 与身份键，
- * 供「配置自动化」按钮决定编辑还是预填。跳过与失败都非致命，只经 onNotice 诚实提示。
+ * 壳层接线：固定树就绪后按身份注册，已有条目覆盖同步 BW 所有的提示词；
+ * 返回已存在/新建条目的 id 与身份键，供「配置自动化」按钮决定编辑还是预填。
+ * 跳过与失败都非致命，只经 onNotice 诚实提示。
  */
 export function useEnsureCycleAutomation({
   cycleScope,
@@ -242,6 +262,9 @@ export function useEnsureCycleAutomation({
               ? '已注册每周版本计划自动化（默认关闭）：在自动化页启用后，每周一 09:00 触发。'
               : '已注册每周版本验收自动化（默认关闭）：在自动化页启用后，每周五 16:00 触发。'
           )
+        }
+        if (result.status === 'exists' && result.syncError) {
+          onNotice(`同步周期自动化提示词失败：${result.syncError}`)
         }
       } catch (reason) {
         // 注册失败不打断本页：会话与看板照常，「配置自动化」仍可手工预填创建。

@@ -169,6 +169,15 @@ function service(proofMergeCommit?: (candidate: { sourceCommit: string }) => str
     async baseline() {
       return { ref: 'adopted', commit: adoptedCommit }
     },
+    async worktreeHead() {
+      return git(['rev-parse', 'HEAD']).toString().trim()
+    },
+    async listPlanningDirs(_scope, commit) {
+      return git(['ls-tree', '-z', '--name-only', `${commit}:.bw/planning`])
+        .toString()
+        .split('\0')
+        .filter(Boolean)
+    },
     async archiveState(_scope, candidate) {
       if (adopted.has(candidate.sourceCommit)) {
         return {
@@ -229,6 +238,8 @@ it('uses explicit archive evidence across no-ff, ff and rebase history while pre
     'fifth-cycle',
     'fourth-cycle',
     'third-cycle',
+    // 归档状态是信号不是可见性门：证明缺失的记录仍列出，由问题与灯如实呈现。
+    'first-cycle',
     'second-cycle',
     'first-cycle'
   ])
@@ -254,15 +265,14 @@ it('uses explicit archive evidence across no-ff, ff and rebase history while pre
     ])
   )
   expect(catalog.problems).toHaveLength(3)
-  await expect(
-    port.read({
-      scope,
-      sourceCommit: unknownCommit,
-      version: 'unverified',
-      cycleId: 'first-cycle',
-      workflow: 'plan'
-    })
-  ).rejects.toMatchObject({ code: 'archive-unverified' })
+  const unverifiedRead = await port.read({
+    scope,
+    sourceCommit: unknownCommit,
+    version: 'unverified',
+    cycleId: 'first-cycle',
+    workflow: 'plan'
+  })
+  expect(unverifiedRead.document.version).toBe('unverified')
   await expect(
     port.readPlan({ scope, planRef: { ...planRef, sourceCommit: unmergedCommit } })
   ).rejects.toMatchObject({ code: 'unverified-source' })
@@ -274,28 +284,23 @@ it('uses explicit archive evidence across no-ff, ff and rebase history while pre
   ).rejects.toMatchObject({ code: 'history-identity-mismatch' })
 })
 
-it('rejects a well-formed archive proof for a different fixed commit', async () => {
-  await expect(
-    service(() => '0'.repeat(40)).read({
-      scope,
-      sourceCommit: firstCommit,
-      version: 'v1',
-      cycleId: 'first-cycle',
-      workflow: 'plan'
-    })
-  ).rejects.toMatchObject({ code: 'archive-unverified' })
+it('flags a well-formed archive proof for a different fixed commit while keeping the record listed', async () => {
+  const catalog = await service(() => '0'.repeat(40)).list({ scope })
+  expect(
+    catalog.problems.find(
+      (item) => item.sourceCommit === firstCommit && item.code === 'archive-unverified'
+    )
+  ).toBeDefined()
+  expect(catalog.records.some((record) => record.sourceCommit === firstCommit)).toBe(true)
 })
 
-it('rejects a real merge commit whose tree does not carry the candidate revision', async () => {
-  await expect(
-    service(() => adoptedCommit).read({
-      scope,
-      sourceCommit: firstCommit,
-      version: 'v1',
-      cycleId: 'first-cycle',
-      workflow: 'plan'
-    })
-  ).rejects.toMatchObject({ code: 'archive-unverified' })
+it('flags a real merge commit whose tree does not carry the candidate revision', async () => {
+  const catalog = await service(() => adoptedCommit).list({ scope })
+  expect(
+    catalog.problems.find(
+      (item) => item.sourceCommit === firstCommit && item.code === 'archive-unverified'
+    )
+  ).toBeDefined()
 })
 
 it('reads a fast-forwarded material commit through its later PR merge commit', async () => {
@@ -310,13 +315,22 @@ it('reads a fast-forwarded material commit through its later PR merge commit', a
   expect(result.sourceCommit).toBe(ffMultiMaterialCommit)
 })
 
-it('lists version folders from data.json on the adopted baseline without a provider merge', async () => {
+it('lists version folders from data.json committed on the cycle branch itself', async () => {
   const port = createVersionHistoryService({
     async git(_scope, args) {
       return git(args)
     },
     async baseline() {
       return { ref: 'adopted', commit: adoptedCommit }
+    },
+    async worktreeHead() {
+      return git(['rev-parse', 'HEAD']).toString().trim()
+    },
+    async listPlanningDirs(_scope, commit) {
+      return git(['ls-tree', '-z', '--name-only', `${commit}:.bw/planning`])
+        .toString()
+        .split('\0')
+        .filter(Boolean)
     },
     async archiveState() {
       return { kind: 'unknown', message: 'no provider merge proof' }
@@ -325,15 +339,23 @@ it('lists version folders from data.json on the adopted baseline without a provi
       return null
     }
   })
-  const catalog = await port.list({ scope })
-  const current = catalog.treePlans?.find((item) => item.version === 'v1')
+  const catalog = await port.listTreePlans({ scope })
+  expect(catalog.head).toBe(adoptedCommit)
+  const current = catalog.plans.find((item) => item.version === 'v1')
   expect(current).toMatchObject({
     version: 'v1',
     cycleId: 'sixth-cycle',
     sourceCommit: adoptedCommit,
     workflow: 'plan'
   })
-  expect(catalog.treePlans?.some((item) => item.version === 'template')).toBe(false)
+  expect(catalog.plans.some((item) => item.version === 'template')).toBe(false)
+  // 合规目录即候选（unverified 也列出，归档状态与此无关）；不合规目录不静默消失。
+  expect(catalog.plans.map((item) => item.version)).toEqual(
+    expect.arrayContaining(['v1', 'unverified'])
+  )
+  expect(catalog.problems.map((item) => item.version)).toEqual(
+    expect.arrayContaining(['legacy', 'template'])
+  )
   const loaded = await port.readPlan({
     scope,
     planRef: {
@@ -354,6 +376,12 @@ it('preserves raw Git paths containing quotes, backslashes and newlines as probl
   const port = createVersionHistoryService({
     async baseline() {
       return { ref: 'adopted', commit: adoptedCommit }
+    },
+    async worktreeHead() {
+      return adoptedCommit
+    },
+    async listPlanningDirs() {
+      return []
     },
     async git(_scope, args) {
       if (args[0] === 'ls-tree' || args[0] === 'show') {

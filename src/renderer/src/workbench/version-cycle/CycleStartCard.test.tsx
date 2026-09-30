@@ -12,6 +12,7 @@ function entry(overrides: Partial<CycleEntry> = {}): CycleEntry {
     busy: false,
     notice: null,
     start: vi.fn(async () => {}),
+    configure: vi.fn(async () => {}),
     ...overrides
   }
 }
