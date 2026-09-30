@@ -24,6 +24,7 @@ export type WorkbenchWorkspaceRepo = Pick<
   | 'executionHostId'
   | 'worktreeBaseRef'
   | 'worktreeBasePath'
+  | 'gitRemoteIdentity'
 >
 export type WorkbenchWorkspaceHost = {
   listRepos(): WorkbenchWorkspaceRepo[]

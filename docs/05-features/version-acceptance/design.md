@@ -16,7 +16,7 @@ AcceptancePage 是 BW 业务页，复用原生项目/工作树/会话、Tasks �
 
 计划固定 bw/week-plan，验收固定 bw/week-acceptance，目录由 Orca 原生创建与登记策略确定，不强制 .bw 物理目录。通过 Orca 项目/宿主和分支查真实工作区，不仅替换标签，不新增聊天日志或 BW 调度器。
 
-验收树从项目实际采用的基线创建；运行时不硬编码 bw-orca 或 main。每次新运行刷新远端并检查树的干净状态、前次归档与基线差异（现状注：脏树/未归档提交检查为提示级，由会话承担，无代码强制校验落点）。已有脏改动/未归档提交不 reset、不搬树、不强推，恢复该次工作或呈现冲突。基线同步通过正常 Git 合并/项目流程，已有同分支其他路径提示真实路径，不擅自删除重建。
+验收树从项目实际采用的基线创建；运行时不硬编码 bw-orca 或 main。每次新运行刷新远端并检查树的干净状态、前次归档与基线差异（现状注：脏树/未归档提交检查为提示级，由会话承担，无代码强制校验落点）。已有脏改动/未归档提交不 reset、不搬树、不强推，恢复该次工作或呈现冲突。进屏先经 workbench.cycle.syncTrunk 把采用分支最新拉进验收分支（本地宿主 gitPull；失败/冲突如实提示、不阻断、不 reset，由用户在会话中带模型处理；远程 SSH 树暂不自动同步，属只读中继边界，记债待专项），已有同分支其他路径提示真实路径，不擅自删除重建。
 
 运行身份包含 projectId、hostId、workflow=acceptance 与 Orca runId；cycleId 为周期上下文，version 为另行核对的材料关联，不作为运行去重前提。运行与历史恢复由 Orca 管理，BW 不保存会话绑定或按标题匹配；专用“新建验收”复用已登记自动化的手动运行并自动打开、聚焦本次原生会话，定时运行仍在后台。首次登记默认 existing 固定工作区、reuseSession=false；后续尊重用户保存的会话复用配置。上午/下午可继续同一运行，计划与验收按各自固定工作区定位。
 
@@ -24,7 +24,7 @@ AcceptancePage 是 BW 业务页，复用原生项目/工作树/会话、Tasks �
 
 ## 候选与材料
 
-acceptance.json 在验收工作树保存，planRef 从指定基线固定提交读取；草案预验收显式带源树、修订及 draft 标识。共享写入核心按项目/流程映射允许写入的树和对象，验收不得修改 plan.data.json。
+acceptance.json 在验收工作树保存，planRef 从验收分支 HEAD 的固定提交读取（worktreeHead + ls-tree/show，只读白名单命令；进屏同步保证已合入主干的计划在分支上可见），看板与会话在同一工作树看到同一份文件；草案预验收显式带源树、修订及 draft 标识。共享写入核心按项目/流程映射允许写入的树和对象，验收不得修改 plan.data.json。
 
 candidateRef 保存项目、完整 commit SHA、版本与来源；preparedArtifacts 保存类别（交付件/包/验证/showcase）、可打开位置、候选、执行入口/工作区、生成时刻及适用时的 hash。项目没有包要求时直接采用其约定交付。数据字段唯一参考是 [version-records](../../../standard/system-prompt/references/version-records.md)。
 

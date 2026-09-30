@@ -1,0 +1,37 @@
+schema_version = 2
+
+# 北极星 1 条;滞后 / 引领各 ≤3。字段:name / def / target / collect / feature / leads。
+# feature 空 = 主要页签;有值 = 「XX特性」页签。
+# leads 只写在引领上,值是它盯的那条滞后的 name。空 = 挂到同页签第一条滞后。
+# collect 两种:{ kind = "script", run = ["python", ".bw/scripts/x.py"], retro = true|false }
+#             或 { kind = "manual" }
+# retro=true 吐 {"points":[{"week":"YYYY-Www","value":…}]};false 吐 {"value":…}。
+# 窗口由 Workbench 传。失败不写 0。协议见 references/metrics.md。
+
+[north_star]
+name = "(还没填)被 Workbench 纳入的项目是否又快又好"
+def = "(还没填)方向是『被纳入管理的项目,其运作是否比纳入前更快、质量更好』,当前无用户效果数据可采。等外部项目纳入能采到周期/回滚数据再 formalize。"
+target = ""
+collect = { kind = "manual" }
+
+[[lagging]]
+name = "纳入 workbench 管理的项目数"
+feature = ""
+def = "白名单(.bw/managed-projects.toml)在册、且项目仓 .bw/ 真实落盘的项目去重计数;纳入周按条目 since 起累计归属,除名即删条目。只挂链接但仓里没落 .bw/ 的不算。"
+target = "≥3"
+collect = { kind = "script", run = ["python", ".bw/scripts/managed-projects.py", "--metric", "adoption"], retro = true }
+
+[[lagging]]
+name = "使用周一屏的被管理项目数"
+feature = "周一屏"
+def = "白名单内项目,其仓 .bw/planning/<版本>/data.json 在 Git 历史(当前 HEAD)中出现过的 updated_at/confirmation 时间戳落在这一周的去重计数;历史不可变,读数不随后续编辑漂移;仅 progress_updates 的自动化更新不计;重建数据(时间戳全空)不计;未合入 HEAD 的草稿不计,归档为准。"
+target = "≥3"
+collect = { kind = "script", run = ["python", ".bw/scripts/managed-projects.py", "--metric", "monday-screen"], retro = true }
+
+[[leading]]
+name = "每周闭环的 issue 数"
+feature = ""
+leads = "纳入 workbench 管理的项目数"
+def = "远端上 closed 时刻落在这一周的 issue 数;本机合并提交 / MR 合入不算(口径不同)。反映『有人提活 + 项目自己闭环快』,对采纳滞后有预测性。"
+target = "≥1"
+collect = { kind = "script", run = ["python", ".bw/scripts/codehub-closed-issues.py"], retro = true }

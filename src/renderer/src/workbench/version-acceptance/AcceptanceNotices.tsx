@@ -1,6 +1,6 @@
 import type { AcceptanceMaterial } from '../../../../shared/workbench/version-material'
 import type { MaterialDraft, MaterialDraftController } from '../version-cycle/material-draft'
-import type { VersionHistoryProblem } from '../../../../shared/workbench/version-history'
+import type { TreePlanProblem } from './use-acceptance-plan'
 
 /**
  * Conflict, recovery and history notices above the goal cards. Kept honest: a
@@ -22,7 +22,7 @@ export function AcceptanceNotices({
   error: string | null
   recoveryError: string | null
   recoveryText: string | null
-  historyProblems: VersionHistoryProblem[]
+  historyProblems: TreePlanProblem[]
   draft: MaterialDraft<AcceptanceMaterial> | null
   controller: MaterialDraftController<AcceptanceMaterial>
   archived: boolean
@@ -55,11 +55,10 @@ export function AcceptanceNotices({
       )}
       {historyProblems.length > 0 && (
         <details className="va-source va-warning">
-          <summary>{historyProblems.length} 条历史材料待核，可用计划仍可选择</summary>
+          <summary>{historyProblems.length} 条计划目录待核，可用计划仍可选择</summary>
           {historyProblems.map((item) => (
-            <p key={`${item.sourceCommit}:${item.workflow}:${item.version}`}>
-              {item.version} · {item.workflow === 'plan' ? '计划' : '验收'} ·{' '}
-              {item.sourceCommit.slice(0, 12)} · {item.committedAt}：{item.message}
+            <p key={`${item.code}:${item.version}`}>
+              {item.version}：{item.message}
             </p>
           ))}
         </details>

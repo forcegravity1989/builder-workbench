@@ -1,4 +1,5 @@
-import type { VersionHistorySource } from '../../../../shared/workbench/version-history'
+import { useEffect } from 'react'
+import type { VersionTreePlan } from '../../../../shared/workbench/version-history'
 
 /** Chooses the fixed plan revision that anchors an acceptance round; shown before the first round and after archiving. */
 export function AcceptanceSourcePicker({
@@ -12,18 +13,25 @@ export function AcceptanceSourcePicker({
 }: {
   hasDocument: boolean
   version: string
-  sources: VersionHistorySource[]
+  sources: VersionTreePlan[]
   planChoice: string
   busy: boolean
   onPlanChoice(value: string): void
   onBegin(): void
 }) {
+  useEffect(() => {
+    const matches = sources.filter((item) => item.version === version)
+    if (matches.length !== 1) {
+      return
+    }
+    onPlanChoice(`${matches[0].sourceCommit}:${matches[0].version}:${matches[0].cycleId}`)
+  }, [sources, version, onPlanChoice])
   return (
     <section className="va-source-picker">
       <p>
         {hasDocument
-          ? '本轮验收已归档，可选择计划开始下一轮。'
-          : '选择已合入的计划修订作为原承诺。草案预验收可在本次会话中明确来源。'}
+          ? '已有本轮验收材料，可选择版本目录中的计划开始下一轮；上一轮是否已合入见归档提示，不阻塞开轮。'
+          : '选择本分支该版本目录里的当前计划作为原承诺。'}
       </p>
       <select
         aria-label="固定计划修订"

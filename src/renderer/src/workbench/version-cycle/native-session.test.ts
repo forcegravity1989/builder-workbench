@@ -4,7 +4,10 @@ import type { CycleScope } from './ports'
 import { structuredAgentSessionPaneKey } from '../../../../shared/structured-agent-session-projection'
 const mocks = vi.hoisted(() => ({ state: {} as AppState, insert: vi.fn(() => true) }))
 vi.mock('@/store', () => ({ useAppStore: { getState: () => mocks.state } }))
-vi.mock('@/lib/native-chat-draft-insertion', () => ({ insertNativeChatDraft: mocks.insert }))
+vi.mock('@/lib/native-chat-draft-insertion', () => ({
+  insertNativeChatDraft: mocks.insert,
+  insertNativeChatDraftForTab: () => false
+}))
 vi.mock('./native-cycle-workspace', () => ({
   cycleScopeForWorktree: (tree: { hostId: string }, workflow: string) => ({
     projectId: 'p',

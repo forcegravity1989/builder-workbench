@@ -5,6 +5,7 @@ import type { VersionHistoryPort } from '../../../../shared/workbench/version-hi
 import type { VersionCycleContext } from '../version-cycle/cycle-context'
 import type { CycleEntry } from '../version-cycle/cycle-workspace-context'
 import { cycleBranch } from '../version-cycle/native-cycle-workspace'
+import { AutomationConfigureButton } from '../version-cycle/AutomationConfigureButton'
 import { CycleStartCard } from '../version-cycle/CycleStartCard'
 import { AcceptanceGoalCards } from './AcceptanceGoalCards'
 import { AcceptanceSources } from './AcceptanceSources'
@@ -219,6 +220,7 @@ function ReadyAcceptanceBoard({
           <GitBranch size={13} aria-hidden="true" />
           <span>{branch}</span>
         </span>
+        <AutomationConfigureButton onConfigure={() => void entry.configure()} />
       </header>
       <div className="va-content">
         <AcceptanceJourney
@@ -266,7 +268,8 @@ function ReadyAcceptanceBoard({
             setError={setError}
             onDiscardLocal={() => void discardLocal()}
           />
-          {(!document || archived) && version && (
+          {/* 归档只是信号不是可见性门（决定 6）：干净草稿即可开下一轮；未保存修改时收起，避免必然被门拒的空点。 */}
+          {(!document || archived || !draft?.dirty) && version && (
             <AcceptanceSourcePicker
               hasDocument={Boolean(document)}
               version={version}

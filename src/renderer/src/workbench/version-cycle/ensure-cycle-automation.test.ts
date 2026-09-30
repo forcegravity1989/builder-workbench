@@ -65,6 +65,9 @@ function rpcWith(automations: unknown[]): void {
     if (method === 'automation.create') {
       return { automation: { id: 'auto-new' } }
     }
+    if (method === 'automation.update') {
+      return { automation: { id: 'a1' } }
+    }
     throw new Error(`unexpected ${method}`)
   })
 }
@@ -72,6 +75,12 @@ function rpcWith(automations: unknown[]): void {
 function createCalls(): Record<string, unknown>[] {
   return test.rpc.mock.calls
     .filter((call: unknown[]) => call[1] === 'automation.create')
+    .map((call: unknown[]) => call[2] as Record<string, unknown>)
+}
+
+function updateCalls(): Record<string, unknown>[] {
+  return test.rpc.mock.calls
+    .filter((call: unknown[]) => call[1] === 'automation.update')
     .map((call: unknown[]) => call[2] as Record<string, unknown>)
 }
 
@@ -84,20 +93,58 @@ it('identity key embeds the cycle scope and workflow', () => {
   expect(KEY).toBe(`bw-cycle:${JSON.stringify(['project', 'repo', 'local', '', 'plan'])}:plan`)
 })
 
-it('keeps a human-edited entry: creationKey match is never recreated or updated', async () => {
-  rpcWith([{ id: 'a1', creationKey: KEY, name: '被人改过名', workspaceId: null } as Automation])
+it('refreshes a stale BW-owned prompt in place and never recreates the entry', async () => {
+  rpcWith([
+    {
+      id: 'a1',
+      creationKey: KEY,
+      name: '被人改过名',
+      prompt: '旧版 BW 提示',
+      workspaceId: null
+    } as Automation
+  ])
   await expect(ensureCycleAutomation(scope, FIXED_ID, 'claude')).resolves.toEqual({
     status: 'exists',
     automationId: 'a1'
   })
   expect(createCalls()).toHaveLength(0)
-  expect(test.rpc.mock.calls.every((call: unknown[]) => call[1] !== 'automation.update')).toBe(true)
+  const [params] = updateCalls()
+  expect(params).toMatchObject({ id: 'a1' })
+  // 覆盖同步只动 BW 所有的提示词，人所有的字段（名字、开关、时间、模型）不出现在更新里。
+  expect(params.updates).toEqual({ prompt: 'CYCLE-PROMPT' })
+})
+
+it('keeps an up-to-date entry untouched', async () => {
+  rpcWith([
+    { id: 'a1', creationKey: KEY, name: '被人改过名', prompt: 'CYCLE-PROMPT', workspaceId: null } as Automation
+  ])
+  await expect(ensureCycleAutomation(scope, FIXED_ID, 'claude')).resolves.toEqual({
+    status: 'exists',
+    automationId: 'a1'
+  })
+  expect(createCalls()).toHaveLength(0)
+  expect(updateCalls()).toHaveLength(0)
+})
+
+it('reports a failed prompt sync without blocking the registered entry', async () => {
+  test.rpc.mockImplementation(async (_target: unknown, method: string) => {
+    if (method === 'automation.list') {
+      return { automations: [{ id: 'a1', creationKey: KEY, prompt: '旧版', workspaceId: null }] }
+    }
+    if (method === 'automation.update') {
+      throw new Error('宿主拒绝了更新')
+    }
+    throw new Error(`unexpected ${method}`)
+  })
+  const result = await ensureCycleAutomation(scope, FIXED_ID, 'claude')
+  expect(result).toMatchObject({ status: 'exists', automationId: 'a1' })
+  expect((result as { syncError?: string }).syncError).toContain('宿主拒绝了更新')
 })
 
 it('falls back to the same-name entry on the same fixed tree, not another tree', async () => {
   rpcWith([
     { id: 'elsewhere', name: '每周版本计划', workspaceId: 'another-tree' },
-    { id: 'a2', name: '每周版本计划', workspaceId: FIXED_ID }
+    { id: 'a2', name: '每周版本计划', prompt: 'CYCLE-PROMPT', workspaceId: FIXED_ID }
   ] as unknown as Automation[])
   await expect(ensureCycleAutomation(scope, FIXED_ID, 'claude')).resolves.toEqual({
     status: 'exists',
@@ -175,7 +222,7 @@ it('creates once when concurrent callers share one identity', async () => {
 })
 
 it('restores the registered automation after leaving and returning to the same workflow', async () => {
-  rpcWith([{ id: 'a1', creationKey: KEY, workspaceId: FIXED_ID }])
+  rpcWith([{ id: 'a1', creationKey: KEY, prompt: 'CYCLE-PROMPT', workspaceId: FIXED_ID }])
   const container = document.createElement('div')
   const root = createRoot(container)
   const onNotice = vi.fn()

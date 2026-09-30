@@ -253,11 +253,6 @@ html[data-skin='ds'] .vp-board .wb-btn:hover:not(:disabled) {
   color: var(--color-neutral-600);
   flex-shrink: 0;
 }
-.vp-archive-status {
-  color: var(--color-neutral-600);
-  font-size: 11px;
-  overflow-wrap: anywhere;
-}
 .vp-notice {
   margin: 0;
   padding: var(--space-2) var(--space-4);

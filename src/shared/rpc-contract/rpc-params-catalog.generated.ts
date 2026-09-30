@@ -560,12 +560,14 @@ import {
   CharterStatusRequestSchema,
   CharterSubmitRequestSchema
 } from '../workbench/charter'
+import { CycleSyncSchema } from '../workbench/cycle-sync'
 import { MetricReadRequestSchema } from '../workbench/metrics'
 import { ArchiveProofRequestSchema } from '../workbench/version-archive'
 import {
   VersionHistoryListSchema,
   VersionHistoryReadPlanSchema,
-  VersionHistoryReadSchema
+  VersionHistoryReadSchema,
+  VersionTreePlansSchema
 } from '../workbench/version-history'
 import {
   VersionMigrationApplySchema,
@@ -1191,7 +1193,9 @@ export const RPC_PARAMS_BY_METHOD = {
   'workbench.charter.probeRemote': CharterProbeRequestSchema,
   'workbench.charter.status': CharterStatusRequestSchema,
   'workbench.charter.submit': CharterSubmitRequestSchema,
+  'workbench.cycle.syncTrunk': CycleSyncSchema,
   'workbench.history.list': VersionHistoryListSchema,
+  'workbench.history.listTreePlans': VersionTreePlansSchema,
   'workbench.history.read': VersionHistoryReadSchema,
   'workbench.history.readPlan': VersionHistoryReadPlanSchema,
   'workbench.materials.context': VersionMaterialScopeSchema,

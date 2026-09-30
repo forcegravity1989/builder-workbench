@@ -18,7 +18,6 @@ import { useWorkspaceRevealBodyRedirect } from './use-workspace-reveal-body-redi
 import { resolveLeftSidebarStyleVariables } from '@/lib/left-sidebar-appearance'
 import { useSystemPrefersDark } from '@/components/terminal-pane/use-system-prefers-dark'
 import { lazyWithRetry } from '@/lib/lazy-with-retry'
-import { useCycleWorkspace } from '@/workbench/version-cycle/cycle-workspace-context'
 
 // Why lazy: the Agents list pulls the whole activity pipeline (virtualizer, markdown
 // previews, thread derivation); users on the workspace view should not load or render any of it.
@@ -49,7 +48,6 @@ function Sidebar({
   worktreeScrollOffsetRef,
   worktreeScrollAnchorRef
 }: SidebarProps): React.JSX.Element {
-  const cycleWorkspace = useCycleWorkspace()
   const sidebarOpen = useAppStore((s) => s.sidebarOpen)
   const sidebarWidth = useAppStore((s) => s.sidebarWidth)
   const setSidebarWidth = useAppStore((s) => s.setSidebarWidth)
@@ -163,40 +161,34 @@ function Sidebar({
           <>
             {/* Fixed controls */}
             <SidebarNav />
-            {cycleWorkspace ? (
-              <div className="flex-1" />
-            ) : (
-              <>
-                <SidebarHeader
-                  onWorkspaceBoardMenuOpenChange={setWorkspaceBoardMenuOpen}
-                  activityOptionsTarget={setAgentOptionsTarget}
-                />
-                {sidebarBody === 'agents' ? (
-                  <React.Suspense fallback={<div className="min-h-0 flex-1" />}>
-                    <ActivityThreadCollapseContext.Provider value={agentsCollapseState}>
-                      <SidebarAgentsList
-                        readFilter={agentReadFilter}
-                        setReadFilter={setAgentReadFilter}
-                        groupBy={agentGroupBy}
-                        setGroupBy={setAgentGroupBy}
-                        query={agentQuery}
-                        setQuery={setAgentQuery}
-                        optionsTarget={agentOptionsTarget}
-                        scrollTopRef={agentsScrollTopRef}
-                      />
-                    </ActivityThreadCollapseContext.Provider>
-                  </React.Suspense>
-                ) : (
-                  <WorktreeList
-                    scrollOffsetRef={worktreeScrollOffsetRef}
-                    scrollAnchorRef={worktreeScrollAnchorRef}
-                    workspaceBoardOpen={workspaceBoardOpen}
-                    onWorkspaceBoardDragPreviewStart={previewWorkspaceBoardFromDrag}
-                    onWorkspaceBoardDragPreviewCommit={solidifyWorkspaceBoardFromDrag}
-                    onWorkspaceBoardDragPreviewCancel={cancelWorkspaceBoardDragPreview}
+            <SidebarHeader
+              onWorkspaceBoardMenuOpenChange={setWorkspaceBoardMenuOpen}
+              activityOptionsTarget={setAgentOptionsTarget}
+            />
+            {sidebarBody === 'agents' ? (
+              <React.Suspense fallback={<div className="min-h-0 flex-1" />}>
+                <ActivityThreadCollapseContext.Provider value={agentsCollapseState}>
+                  <SidebarAgentsList
+                    readFilter={agentReadFilter}
+                    setReadFilter={setAgentReadFilter}
+                    groupBy={agentGroupBy}
+                    setGroupBy={setAgentGroupBy}
+                    query={agentQuery}
+                    setQuery={setAgentQuery}
+                    optionsTarget={agentOptionsTarget}
+                    scrollTopRef={agentsScrollTopRef}
                   />
-                )}
-              </>
+                </ActivityThreadCollapseContext.Provider>
+              </React.Suspense>
+            ) : (
+              <WorktreeList
+                scrollOffsetRef={worktreeScrollOffsetRef}
+                scrollAnchorRef={worktreeScrollAnchorRef}
+                workspaceBoardOpen={workspaceBoardOpen}
+                onWorkspaceBoardDragPreviewStart={previewWorkspaceBoardFromDrag}
+                onWorkspaceBoardDragPreviewCommit={solidifyWorkspaceBoardFromDrag}
+                onWorkspaceBoardDragPreviewCancel={cancelWorkspaceBoardDragPreview}
+              />
             )}
 
             <div className="relative shrink-0">

@@ -1,8 +1,6 @@
 import { GitPullRequest } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { PlanningMaterial } from '../../../../shared/workbench/version-material'
-import { metricProblemText } from '../../../../shared/workbench/metrics'
-import { MetricProblemsPanel } from '../metric-problems-panel'
 import type { CycleTaskRead } from '../version-cycle/ports'
 import type { MaterialDraft } from '../version-cycle/material-draft'
 import type { VersionCycleContext } from '../version-cycle/cycle-context'
@@ -21,7 +19,6 @@ import { PlanningHeader, PlanningJourneyNav } from './PlanningSections'
 import { PlanningProgressSource } from './PlanningProgressSource'
 import { usePlanningViewMemory } from './use-planning-view-memory'
 import { usePlanningArchive } from './use-planning-archive'
-import { archiveStatusLabel } from './archive-label'
 import './version-planning.css'
 
 type PlanningBoardProps = {
@@ -196,7 +193,6 @@ function PlanningBoardContent({ context, prepareMetrics, entry }: PlanningBoardP
       draftKey: planningDraftKey(scopeKey, plan.version)
     })
   }
-  const archiveLabel = archiveStatusLabel(archive.status, archive.archived, archive.pending)
   const state = !plan
     ? ''
     : archive.archived
@@ -217,6 +213,7 @@ function PlanningBoardContent({ context, prepareMetrics, entry }: PlanningBoardP
         state={state}
         branch={cycleBranch(entry)}
         onSelect={(version) => void selection.select(version)}
+        onConfigure={() => void entry.configure()}
       />
       {(material.error || notice || selection.error || context.error || entry.notice) && (
         <p className="vp-notice" role="status">
@@ -224,12 +221,6 @@ function PlanningBoardContent({ context, prepareMetrics, entry }: PlanningBoardP
         </p>
       )}
       <PlanningPersistenceNotice material={material} archived={archive.archived} onAct={act} />
-      {metrics.catalog && metrics.catalog.problems.length > 0 && (
-        <MetricProblemsPanel
-          className="vp-notice"
-          problems={metrics.catalog.problems.map(metricProblemText)}
-        />
-      )}
       <div className="vp-body" inert={selecting} aria-busy={selecting}>
         <PlanningJourneyNav
           hasProgress={Boolean(plan?.summary.progress.trim())}
@@ -326,17 +317,6 @@ function PlanningBoardContent({ context, prepareMetrics, entry }: PlanningBoardP
             >
               归档
             </button>
-            {plan && (
-              <span className="vp-archive-status">
-                {'url' in archive.status ? (
-                  <a href={archive.status.url} target="_blank" rel="noreferrer">
-                    {archiveLabel}
-                  </a>
-                ) : (
-                  archiveLabel
-                )}
-              </span>
-            )}
           </section>
         </div>
       </div>

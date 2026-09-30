@@ -1,9 +1,11 @@
 import { useEffect, useMemo, useState } from 'react'
+import { toast } from 'sonner'
 import { useAppStore } from '@/store'
 import { activateWebRuntimeSessionWorktree } from '@/runtime/web-runtime-worktree-activation'
 import { useAutoWorktreeBase } from './use-auto-worktree-base'
 import { nativeWorkspaceScope } from './native-workspace'
-import { cycleScopeForWorktree, ensureCycleWorktree } from './native-cycle-workspace'
+import { cycleBranch, cycleScopeForWorktree, ensureCycleWorktree } from './native-cycle-workspace'
+import { syncCycleTrunk } from './cycle-sync-port'
 import { cycleWorkflowForWorktree } from '../workbench-nav'
 import type { VersionWorkflow } from '../../../../shared/workbench/version-document'
 import type { CycleScope } from './ports'
@@ -68,6 +70,28 @@ export function useCycleWorkspaceTarget(
         if (!current) {
           return
         }
+        // 进屏先把采用分支最新拉进固定分支：看板与会话在同一工作树看到同一份文件。
+        // 失败或冲突不换数据源、不阻断进入——如实提示，由人在会话里带模型处理。
+        try {
+          const sync = await syncCycleTrunk(
+            { repoId: baseScope.repoId, worktreeId: fixed.id, hostId: baseScope.hostId },
+            baseScope.runtimeOwnerEnvironmentId
+          )
+          if (!sync.synced && current) {
+            const reason = sync.reason ?? '原因未知'
+            toast.message(`${cycleBranch({ workflow })} 未能同步主干最新：${reason}`)
+            onNotice(`主干同步未完成：${reason}`)
+          }
+        } catch (reason) {
+          if (current) {
+            const message = reason instanceof Error ? reason.message : String(reason)
+            toast.message(`${cycleBranch({ workflow })} 未能同步主干最新：${message}`)
+            onNotice(`主干同步未完成：${message}`)
+          }
+        }
+        if (!current) {
+          return
+        }
         if (baseScope.runtimeOwnerEnvironmentId) {
           await activateWebRuntimeSessionWorktree({
             worktreeId: fixed.id,
@@ -89,7 +113,7 @@ export function useCycleWorkspaceTarget(
     return () => {
       current = false
     }
-  }, [preparing, baseScope, baseSettled, workflow])
+  }, [preparing, baseScope, baseSettled, workflow, onNotice])
   const worktree =
     !preparing && workflow && cycleWorkflowForWorktree(selected) === workflow ? selected : null
   const resolved = useMemo(() => {
