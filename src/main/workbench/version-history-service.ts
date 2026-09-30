@@ -62,6 +62,31 @@ export function createVersionHistoryService(host: VersionHistoryHost): VersionHi
     return baseline
   }
 
+  /**
+   * Reachability gate for committed plan refs: the commit must sit on the cycle
+   * branch's own history (its HEAD or an ancestor) or on the adopted baseline.
+   * Dangling commits are still refused, but "merged" is not a precondition —
+   * the branch reads its own HEAD, and archive state is a signal, not a gate.
+   */
+  async function verifyPlanSource(scope: MetricScope, sourceCommit: string) {
+    const baseline = await host.baseline(scope)
+    SourceCommit.parse(baseline.commit)
+    const head = await host.worktreeHead(scope)
+    SourceCommit.parse(head)
+    for (const tip of [head, baseline.commit]) {
+      try {
+        await host.git(scope, ['merge-base', '--is-ancestor', sourceCommit, tip])
+        return baseline
+      } catch {
+        // not on this tip; the other one may still carry it
+      }
+    }
+    throw new HistorySourceError(
+      'unverified-source',
+      '材料提交不在本分支或采用分支历史上；没有改读最新材料'
+    )
+  }
+
   async function readSnapshot(
     scope: MetricScope,
     sourceCommit: string,
@@ -243,7 +268,7 @@ export function createVersionHistoryService(host: VersionHistoryHost): VersionHi
     async readPlan(input) {
       const { scope, planRef } = VersionHistoryReadPlanSchema.parse(input)
       const baseline =
-        planRef.kind === 'committed' ? await verifySource(scope, planRef.sourceCommit) : null
+        planRef.kind === 'committed' ? await verifyPlanSource(scope, planRef.sourceCommit) : null
       const snapshot =
         planRef.kind === 'committed'
           ? await readSnapshot(scope, planRef.sourceCommit, planRef.version, 'plan')

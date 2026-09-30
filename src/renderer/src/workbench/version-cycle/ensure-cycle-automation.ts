@@ -1,9 +1,10 @@
 /**
  * BW 周期自动化注册：每个 workflow 恰有一条 BW 标识的自动化，默认关闭。
  *
- * 身份是 creationKey（`bw-cycle:<scopeKey>:<workflow>`）；BW 只创建、永不更新——
- * 条目注册后归人所有，人改过的字段（启用、时间、提示词、工具）不被覆盖。
- * 四铁律：定时任务真实到点触发，且由人启用后才到点，BW 不代启。
+ * 身份是 creationKey（`bw-cycle:<scopeKey>:<workflow>`）。字段按归属分治：
+ * BW 所有的提示词每次进屏覆盖同步为当前 BW 版本（BW 持续演进，定时与手动
+ * 跑的必须始终是新版提示）；人所有的字段（启用、时间、模型、会话复用）注册
+ * 后永不触碰。四铁律：定时任务真实到点触发，且由人启用后才到点，BW 不代启。
  */
 
 import { useEffect, useState } from 'react'

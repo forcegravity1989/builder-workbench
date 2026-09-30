@@ -430,3 +430,29 @@ it('keeps a draft source explicit and rejects a changed draft revision', async (
     service().readPlan({ scope, planRef: { ...planRef, revision: firstRevision } })
   ).rejects.toMatchObject({ code: 'history-identity-mismatch' })
 })
+
+it('reads a committed plan from a cycle branch HEAD that diverged from the adopted baseline', async () => {
+  // 真实周五旅程：验收分支自有提交（或同步产生的 merge 提交）使 HEAD 领先/偏离
+  // 基线——自有分支上的计划必须可读，「已合入基线」不再是读取前提。
+  git(['switch', 'unmerged'])
+  try {
+    const port = service()
+    const catalog = await port.listTreePlans({ scope })
+    expect(catalog.head).toBe(unmergedCommit)
+    const current = catalog.plans.find((item) => item.version === 'v1')
+    expect(current).toMatchObject({ cycleId: 'unmerged-cycle', sourceCommit: unmergedCommit })
+    const loaded = await port.readPlan({
+      scope,
+      planRef: {
+        kind: 'committed',
+        version: 'v1',
+        cycleId: current!.cycleId,
+        revision: current!.revision,
+        sourceCommit: current!.sourceCommit
+      }
+    })
+    expect(loaded.document.cycleId).toBe('unmerged-cycle')
+  } finally {
+    git(['switch', 'adopted'])
+  }
+})

@@ -182,9 +182,10 @@ export function nativeVersionHistoryHost(runtime: HistoryRuntime): VersionHistor
       if (outcome.ok) {
         return outcome.stdout.toString('utf8').split('\0').filter(Boolean)
       }
-      // Git exit 128 proves `.bw/planning` is absent from that tree — a cycle
-      // branch before its first pull legitimately has no plans yet. Anything
-      // else is a read failure and must not masquerade as an empty list.
+      // A cycle branch before its first pull legitimately has no `.bw/planning`
+      // yet; Git fatals with exit 128 on the missing path. The commit is pinned
+      // from this same worktree's HEAD moments earlier, so other 128 fatals are
+      // not expected here; anything else surfaces as a read failure.
       if (outcome.exitCode === 128) {
         return []
       }

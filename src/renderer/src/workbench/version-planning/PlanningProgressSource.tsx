@@ -164,7 +164,7 @@ function ProgressSourceContent({ scope, worktreeId, plan, disabled, onSource }: 
                   }}
                 >
                   <option value="" disabled>
-                    选择已归档验收
+                    选择历史验收记录
                   </option>
                   {records.map((record, index) => (
                     <option
@@ -177,7 +177,7 @@ function ProgressSourceContent({ scope, worktreeId, plan, disabled, onSource }: 
                   ))}
                 </select>
               ) : (
-                <p>暂无可核验的已归档验收记录。可先在会话中核对来源，当前进展保留。</p>
+                <p>暂无可核验的历史验收记录。可先在会话中核对来源，当前进展保留。</p>
               )}
               {problems.length > 0 && (
                 <details>

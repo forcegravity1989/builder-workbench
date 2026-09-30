@@ -19,8 +19,10 @@ type CycleSyncRuntime = {
 }
 
 /**
- * Splits the resolved adopted ref into a pull source. A ref without a remote
- * part falls back to origin; the adopted source itself never silently switches
+ * Splits the resolved adopted ref into a pull source. Handles the registered
+ * short forms (origin/master, master) and the probe's full ref forms
+ * (refs/remotes/origin/main, refs/heads/main); a ref without a remote part
+ * falls back to origin. The adopted source itself never silently switches
  * (resolveAdoptedBaseline owns that rule).
  */
 export function trunkPullTarget(adoptedRef: string): {
@@ -31,11 +33,17 @@ export function trunkPullTarget(adoptedRef: string): {
   if (!ref) {
     return null
   }
-  const slash = ref.indexOf('/')
-  if (slash > 0 && slash < ref.length - 1) {
-    return { remoteName: ref.slice(0, slash), branchName: ref.slice(slash + 1) }
+  const remoteRef = /^refs\/remotes\/([^/]+)\/(.+)$/.exec(ref)
+  if (remoteRef) {
+    return { remoteName: remoteRef[1], branchName: remoteRef[2] }
   }
-  return { remoteName: 'origin', branchName: ref }
+  const headRef = /^refs\/heads\/(.+)$/.exec(ref)
+  const bare = headRef ? headRef[1] : ref
+  const slash = bare.indexOf('/')
+  if (slash > 0 && slash < bare.length - 1) {
+    return { remoteName: bare.slice(0, slash), branchName: bare.slice(slash + 1) }
+  }
+  return { remoteName: 'origin', branchName: bare }
 }
 
 export function createCycleSyncService(runtime: CycleSyncRuntime) {

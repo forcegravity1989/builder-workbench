@@ -17,6 +17,17 @@ describe('trunkPullTarget 采用分支拉取来源解析', () => {
     expect(trunkPullTarget('main')).toEqual({ remoteName: 'origin', branchName: 'main' })
   })
 
+  it('解析默认分支探针返回的完整 ref 形态', () => {
+    expect(trunkPullTarget('refs/remotes/origin/main')).toEqual({
+      remoteName: 'origin',
+      branchName: 'main'
+    })
+    expect(trunkPullTarget('refs/heads/release')).toEqual({
+      remoteName: 'origin',
+      branchName: 'release'
+    })
+  })
+
   it('空 ref 无拉取来源', () => {
     expect(trunkPullTarget('')).toBeNull()
     expect(trunkPullTarget('   ')).toBeNull()

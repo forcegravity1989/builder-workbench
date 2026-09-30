@@ -268,7 +268,8 @@ function ReadyAcceptanceBoard({
             setError={setError}
             onDiscardLocal={() => void discardLocal()}
           />
-          {(!document || archived) && version && (
+          {/* 归档只是信号不是可见性门（决定 6）：干净草稿即可开下一轮；未保存修改时收起，避免必然被门拒的空点。 */}
+          {(!document || archived || !draft?.dirty) && version && (
             <AcceptanceSourcePicker
               hasDocument={Boolean(document)}
               version={version}
