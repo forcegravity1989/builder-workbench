@@ -423,3 +423,11 @@
     padding: 12px 16px;
   }
 }
+
+.project-card-notice {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 6px 0 2px;
+  font-size: 12px;
+}

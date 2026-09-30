@@ -554,8 +554,14 @@ import {
   SkillUploadChunkRequestSchema,
   SkillUploadCommitRequestSchema
 } from '../skill-upload-session-contract'
+import {
+  CharterProbeRequestSchema,
+  CharterScopeSchema,
+  CharterStatusRequestSchema,
+  CharterSubmitRequestSchema
+} from '../workbench/charter'
 import { CycleSyncSchema } from '../workbench/cycle-sync'
-import { MetricReadRequestSchema, MetricScopeSchema } from '../workbench/metrics'
+import { MetricReadRequestSchema } from '../workbench/metrics'
 import { ArchiveProofRequestSchema } from '../workbench/version-archive'
 import {
   VersionHistoryListSchema,
@@ -1184,6 +1190,9 @@ export const RPC_PARAMS_BY_METHOD = {
   'updater.getStatus': null,
   'updater.install': null,
   'workbench.archive.proof': ArchiveProofRequestSchema,
+  'workbench.charter.probeRemote': CharterProbeRequestSchema,
+  'workbench.charter.status': CharterStatusRequestSchema,
+  'workbench.charter.submit': CharterSubmitRequestSchema,
   'workbench.cycle.syncTrunk': CycleSyncSchema,
   'workbench.history.list': VersionHistoryListSchema,
   'workbench.history.listTreePlans': VersionTreePlansSchema,
@@ -1196,7 +1205,7 @@ export const RPC_PARAMS_BY_METHOD = {
   'workbench.materials.read': VersionMaterialReadSchema,
   'workbench.materials.save': VersionMaterialSaveSchema,
   'workbench.materials.select': VersionMaterialReadSchema,
-  'workbench.metrics.list': MetricScopeSchema,
+  'workbench.metrics.list': CharterScopeSchema,
   'workbench.metrics.read': MetricReadRequestSchema,
   'workbench.metrics.refresh': MetricReadRequestSchema,
   'workspacePorts.kill': WorkspacePortKillParams,

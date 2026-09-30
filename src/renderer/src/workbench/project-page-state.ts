@@ -7,7 +7,16 @@ export type ProjectOnboardOptions = {
   attachLabel?: string
 }
 
-type ProjectPage = { kind: 'wall' } | { kind: 'onboard'; options: ProjectOnboardOptions } | null
+export type CharterEditOptions = {
+  repoId: string
+  seedName?: string
+}
+
+type ProjectPage =
+  | { kind: 'wall' }
+  | { kind: 'onboard'; options: ProjectOnboardOptions }
+  | { kind: 'charter'; options: CharterEditOptions }
+  | null
 
 let projectPage: ProjectPage = null
 const listeners = new Set<() => void>()
@@ -27,6 +36,12 @@ export function openProjectWall(): void {
 export function openProjectOnboard(options: ProjectOnboardOptions = {}): void {
   useAppStore.getState().openActivityPage()
   setProjectPage({ kind: 'onboard', options: { ...options } })
+}
+
+/** 名片补录/编辑入口(spec 规则 2):复用 bw/project 固定树与 PR 流。 */
+export function openCharterEdit(options: CharterEditOptions): void {
+  useAppStore.getState().openActivityPage()
+  setProjectPage({ kind: 'charter', options: { ...options } })
 }
 
 export function closeProjectPage(): void {

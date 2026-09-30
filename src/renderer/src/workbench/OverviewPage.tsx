@@ -1,6 +1,8 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useAppStore } from '@/store'
 import { openProjectOnboard } from './project-page-state'
+import { CharterPrNotice } from './charter-pr-notice'
+import { useCharterPrStatus } from './use-charter-pr-status'
 import { readProjectCharter, type ProjectCharter } from './project-charter'
 import {
   nativeWorkspaceScope,
@@ -129,6 +131,14 @@ export function OverviewPage(): React.JSX.Element {
       cancelled = true
     }
   }, [activeRepo?.path, charterKey])
+
+  // 主检出没有名片才查 PR 状态:待合入 / 已合入未更新 / 没查成(spec 规则 2)。
+  const { charterStatus, updatingMain, updateMainCheckout } = useCharterPrStatus(
+    activeRepo,
+    Boolean(charter),
+    charterKey,
+    (value) => setCharter({ key: charterKey, value })
+  )
 
   const load = useCallback(async () => {
     if (!baseScope || !baseWorktreeId) {
@@ -338,6 +348,16 @@ export function OverviewPage(): React.JSX.Element {
             charter={charter}
             remote={activeRepo.gitRemoteIdentity?.canonicalKey ?? null}
             version={version}
+            notice={
+              !charter ? (
+                <CharterPrNotice
+                  status={charterStatus}
+                  variant="overview"
+                  updating={updatingMain}
+                  onUpdateMain={() => void updateMainCheckout()}
+                />
+              ) : undefined
+            }
           />
 
           <NorthStarCard

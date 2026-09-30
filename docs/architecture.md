@@ -14,7 +14,7 @@
 
 | 用户要做的事 | 当前承载 | 当前边界 |
 |---|---|---|
-| 打开或接入项目 | 项目墙、接入覆盖层与 Orca 仓库列表 | 接入可写工作区的 `.bw/project.toml`；尚未实现旧 Rust 的项目约定常驻 worktree + Issue + MR 完整旅程 |
+| 打开或接入项目 | 项目墙、接入覆盖层与 Orca 仓库列表 | 名片保真合并只补空字段、坏文件不覆盖；经固定分支 `bw/project` PR 合入被管仓、克隆前远端预探测与同远端去重已实现（真实远端未验），行为见 [project-intake spec](05-features/project-intake/spec.md)；旧 Rust 的项目约定常驻 worktree + Issue 运作完整旅程不在范围 |
 | 核对结果、拟目标、拆版本工作 | 计划屏：原生 terminal 固定工作区 + 右侧材料单页 | 经材料 RPC 读写 `.bw/planning/<版本>/`；开工注入渲染后 SYSTEM 与 week-planning Skill 指针，来源和覆盖边界见 §2 ③ |
 | 核对交付、逐目标验收、归档 | 验收屏：与计划共用容器，独立固定树 bw/week-acceptance | 归档状态按材料身份与 provider 合入证据推导；CodeHub 无真实合入证据一律 Unknown，正文编辑延期 |
 | 执行工作与管理任务 | Orca 终端、Tasks、worktree | 复用执行核；不能据规划会话可打开就认定所有 Issue 开工都已接 BW 纪律 |
@@ -69,7 +69,7 @@ BW 的业务契约在 `src/shared/workbench/`，材料事务、指标与历史 r
 
 `knowledge-repo-loader.ts` 与 `use-knowledge-repo.ts` 从 `activeRepo.path` 扫描、分类和读写文档；当前编辑保存直接写该路径下的文件，没有自动创建评审工作树或 PR。选中的执行 worktree 不会自动改变该来源。若注册的是 main 检出目录，知识页仍读 main 文档，而非当前执行会话的 bw-orca。
 
-分类可由项目 `.bw/knowledge-map.toml` 指定；没有映射时走默认规则，规则并不覆盖全部 `ref/` 工程参考。`skills/bw-knowledge-docs` 指导这类映射，不等同于仓内 project-knowledge 的治理方法。代码页、对账及建议中的演示项不是真实扫描结论。
+分类走内置规则，规则并不覆盖全部 `ref/` 工程参考；单仓分类地图（`.bw/knowledge-map.toml`）能力已删除，归知识库独立特性重新决策。`skills/bw-knowledge-docs` 是被管项目侧剧本，不等同于仓内 project-knowledge 的治理方法。代码页、对账及建议中的演示项不是真实扫描结论。
 
 ### 随特性迁移重新决策的边界
 

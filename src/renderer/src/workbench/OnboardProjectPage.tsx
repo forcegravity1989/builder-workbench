@@ -1,8 +1,10 @@
-import React, { useMemo, useState } from 'react'
+import React, { useMemo, useRef, useState } from 'react'
 import { useAppStore } from '@/store'
 import { getDefaultCloneParent } from '@/components/sidebar/clone-defaults'
+import { normalizeGitRemoteUrl } from '../../../shared/git-remote-identity'
 import { closeProjectPage, openProjectWall, type ProjectOnboardOptions } from './project-page-state'
 import { authorizeWorkbenchLocalPath } from './authorize-workbench-local-path'
+import { probeRemoteCharter } from './charter-port'
 import {
   joinFsPath,
   normalizeCloneUrl,
@@ -56,6 +58,44 @@ export function OnboardProjectPage({
     ? workspace.trim().length > 0
     : remote.trim().length > 0 && cloneParent.trim().length > 0
 
+  // 探测回执竞态防护（spec 规则 3）：读的过程中用户换了地址，过期回执不应用。
+  const probeSeq = useRef(0)
+  const runRemoteProbe = async (requested: string, repoName: string): Promise<void> => {
+    const seq = ++probeSeq.current
+    const stale = () => probeSeq.current !== seq
+    const applyNote = (note: string) => {
+      if (!stale()) {
+        setProbeNote(note)
+      }
+    }
+    try {
+      const result = await probeRemoteCharter(requested)
+      if (stale()) {
+        return
+      }
+      if (result.kind === 'adopted') {
+        // 人打过的格子以人为准，探测值只填空。
+        setName((prev) => prev.trim() || result.charter.name || repoName)
+        setBrief((prev) => prev.trim() || result.charter.brief)
+        setBenchmark((prev) => prev.trim() || result.charter.benchmark)
+        setOpportunity((prev) => prev.trim() || result.charter.opportunity)
+        setProbeNote('远端已发现名片，已带入；你填过的格子以你为准，确认后只补空字段。')
+      } else if (result.kind === 'absent') {
+        setProbeNote('远端还没有名片，确认后经 PR 新建。')
+      } else if (result.kind === 'no-repo') {
+        setProbeNote(`读不到该仓：${result.error}（仓不存在或没有权限）。仍可继续，克隆时会再验证。`)
+      } else {
+        applyNote(
+          `远端名片没查成：${result.error} —— 不代表仓里没有名片；克隆后以已有名片为准，只补空字段。`
+        )
+      }
+    } catch (e) {
+      applyNote(
+        `远端名片没查成：${e instanceof Error ? e.message : String(e)} —— 不代表仓里没有名片；克隆后以已有名片为准，只补空字段。`
+      )
+    }
+  }
+
   const goStep2 = async () => {
     if (!canNext || checking) {
       return
@@ -86,12 +126,26 @@ export function OnboardProjectPage({
           setStepError(`父文件夹不存在：${parent}`)
           return
         }
-        const repo = repoNameFromRemote(normalizeCloneUrl(remote) || remote)
+        const normalized = normalizeCloneUrl(remote)
+        const repo = repoNameFromRemote(normalized || remote)
+        // 同远端去重（spec 规则 4）：归一化身份已注册就引导复用，不克隆第二份。
+        // canonicalKey 与 normalizeGitRemoteUrl 同一产生器,等值比较即既有先例口径。
+        const key = normalizeGitRemoteUrl(normalized) ?? normalized
+        const duplicate = useAppStore
+          .getState()
+          .repos.find((r) => r.gitRemoteIdentity?.canonicalKey === key)
+        if (duplicate) {
+          setStepError(
+            `这个远端已经作为「${duplicate.displayName || duplicate.path}」接入过（${duplicate.path}）。要用它请直接打开该项目；换个文件夹再克隆只会得到重复项目。`
+          )
+          return
+        }
         setName(repo)
         setBrief('')
         setBenchmark('')
         setOpportunity('')
-        setProbeNote('克隆成功后会读远端名片；没有则按下面字段新建。')
+        setProbeNote('正在读远端名片…')
+        void runRemoteProbe(remote.trim(), repo)
       }
       setStep(2)
     } catch (e) {

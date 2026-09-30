@@ -34,7 +34,6 @@ export function KnowledgePage(): React.JSX.Element {
     savedBodies,
     loading,
     error,
-    mapStatus,
     reload,
     saveDoc
   } = useKnowledgeRepo()
@@ -235,7 +234,6 @@ export function KnowledgePage(): React.JSX.Element {
             notes={notes}
             loading={loading}
             hasRepo={Boolean(activeRepo)}
-            mapStatus={mapStatus}
             onAudienceChange={pickAudience}
             onPickGroup={pickGroup}
             onOpenDoc={openDoc}
