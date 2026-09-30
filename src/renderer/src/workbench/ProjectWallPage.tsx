@@ -1,6 +1,10 @@
 import React, { useEffect, useMemo, useState } from 'react'
+import { toast } from 'sonner'
 import { useAppStore } from '@/store'
-import { closeProjectPage, openProjectOnboard } from './project-page-state'
+import type { CharterStatus } from '../../../shared/workbench/charter'
+import { closeProjectPage, openCharterEdit, openProjectOnboard } from './project-page-state'
+import { readCharterPrStatus } from './charter-port'
+import { CharterPrNotice } from './charter-pr-notice'
 import { readProjectCharter, type ProjectCharter } from './project-charter'
 import { switchActiveProject } from './switch-active-project'
 import { buildWallProjects, type WallProject, type WallRepoSlot } from './workbench-wall-projects'
@@ -74,6 +78,10 @@ export function ProjectWallPage(): React.JSX.Element {
   const activeRepoId = useAppStore((s) => s.activeRepoId)
   const fetchRepos = useAppStore((s) => s.fetchRepos)
   const [charters, setCharters] = useState<Record<string, ProjectCharter | null>>({})
+  const [charterStatuses, setCharterStatuses] = useState<Record<string, CharterStatus | null>>({})
+  const [charterToken, setCharterToken] = useState(0)
+  const [statusToken, setStatusToken] = useState(0)
+  const [updatingRepoId, setUpdatingRepoId] = useState<string | null>(null)
   const [switchingKey, setSwitchingKey] = useState<string | null>(null)
   const [busyRepoId, setBusyRepoId] = useState<string | null>(null)
 
@@ -107,7 +115,71 @@ export function ProjectWallPage(): React.JSX.Element {
     return () => {
       cancelled = true
     }
-  }, [wallProjects, repos])
+  }, [wallProjects, repos, charterToken])
+
+  // 名片缺失的项目才查 PR 状态;并行、不阻塞名片渲染,查询集合不变不重查。
+  const statusQueryKey = useMemo(() => {
+    return JSON.stringify(
+      wallProjects
+        .filter((p) => charters[p.key] === null)
+        .map((p) => {
+          const primary = repos.find((r) => r.id === p.primaryRepoId)
+          return primary ? `${p.key}|${primary.id}|${primary.path}` : null
+        })
+        .filter(Boolean)
+    )
+  }, [wallProjects, repos, charters])
+
+  useEffect(() => {
+    const targets: { key: string; repoId: string }[] = JSON.parse(statusQueryKey || '[]').map(
+      (entry: string) => {
+        const [key, repoId] = entry.split('|')
+        return { key, repoId }
+      }
+    )
+    if (targets.length === 0) {
+      setCharterStatuses({})
+      return
+    }
+    let cancelled = false
+    void Promise.all(
+      targets.map(async (t) => {
+        const repo = useAppStore.getState().repos.find((r) => r.id === t.repoId)
+        if (!repo) {
+          return [t.key, null] as const
+        }
+        return [t.key, await readCharterPrStatus(repo)] as const
+      })
+    ).then((entries) => {
+      if (!cancelled) {
+        setCharterStatuses(Object.fromEntries(entries))
+      }
+    })
+    return () => {
+      cancelled = true
+    }
+  }, [statusQueryKey, statusToken])
+
+  const updateMainCheckout = async (repo: {
+    id: string
+    path: string
+    connectionId?: string | null
+  }): Promise<void> => {
+    setUpdatingRepoId(repo.id)
+    try {
+      await window.api.git.fastForward({
+        worktreePath: repo.path,
+        ...(repo.connectionId ? { connectionId: repo.connectionId } : {})
+      })
+      toast.success('主检出已拉到最新')
+      setCharterToken((n) => n + 1)
+      setStatusToken((n) => n + 1)
+    } catch (e) {
+      toast.error(`没拉动：${e instanceof Error ? e.message : String(e)}`)
+    } finally {
+      setUpdatingRepoId(null)
+    }
+  }
 
   const cards = useMemo((): WallCard[] => {
     return wallProjects.map((p) => {
@@ -165,18 +237,6 @@ export function ProjectWallPage(): React.JSX.Element {
           </div>
         </header>
 
-        <div className="envbar">
-          <span className="bar-label">本机环境</span>
-          <span className="env-item">
-            <span className="dot dot-green" />
-            Git · 可用
-          </span>
-          <span className="env-item">
-            <span className="dot dot-green" />
-            Node · 可用
-          </span>
-        </div>
-
         <div className="healthbar">
           <span className="bar-label">健康概览</span>
           <span className="health-group">
@@ -224,6 +284,8 @@ export function ProjectWallPage(): React.JSX.Element {
                   ? '版本目标:还没定'
                   : `版本目标:${p.weekGoal.trim().slice(0, 30)}${p.weekGoal.trim().length > 30 ? '…' : ''}`
               const key = p.project.key
+              const primaryRepo = repos.find((r) => r.id === p.project.primaryRepoId)
+              const charterStatus = charterStatuses[key]
               return (
                 <div
                   key={key}
@@ -269,6 +331,16 @@ export function ProjectWallPage(): React.JSX.Element {
 
                   <div className="pcard-repos" data-workbench-repo-slots>
                     <div className="pcard-repos-head">代码仓</div>
+                    {!charters[key] ? (
+                      <CharterPrNotice
+                        status={charterStatus}
+                        variant="wall"
+                        updating={updatingRepoId === p.project.primaryRepoId}
+                        onUpdateMain={
+                          primaryRepo ? () => void updateMainCheckout(primaryRepo) : undefined
+                        }
+                      />
+                    ) : null}
                     <ul className="pcard-repo-list">
                       {p.project.slots.map((slot) => (
                         <li
@@ -313,6 +385,16 @@ export function ProjectWallPage(): React.JSX.Element {
                       }}
                     >
                       + 代码仓
+                    </button>
+                    <button
+                      type="button"
+                      className="wb-btn wb-btn-secondary pcard-add-repo"
+                      data-workbench-edit-charter
+                      onClick={() =>
+                        openCharterEdit({ repoId: p.project.primaryRepoId, seedName: p.displayName })
+                      }
+                    >
+                      编辑名片
                     </button>
                   </div>
                 </div>

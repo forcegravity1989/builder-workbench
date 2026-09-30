@@ -1,3 +1,4 @@
+import type { RefObject } from 'react'
 import { GitPullRequest, PackageCheck, Presentation } from 'lucide-react'
 import type { JourneySignal } from './acceptance-journey'
 
@@ -9,9 +10,8 @@ const TONES: Record<JourneySignal['kind'], string> = {
 }
 
 /**
- * The rail locates body sections: 准备交付 returns to the collaboration card,
- * 展示验收 to the goal cards. The archive node is the acceptance archive entry
- * and prepares the request in the focused native composer (never sends).
+ * The rail locates body sections, including the archive footer. The archive
+ * request itself is the button in that footer, same as the plan board.
  */
 export function AcceptanceJourney({
   preparation,
@@ -19,14 +19,14 @@ export function AcceptanceJourney({
   archive,
   startRef,
   resultsRef,
-  onArchive
+  archiveRef
 }: {
   preparation: JourneySignal
   decisions: JourneySignal
   archive: JourneySignal
-  startRef: { current: HTMLElement | null }
-  resultsRef: { current: HTMLElement | null }
-  onArchive(): void
+  startRef: RefObject<HTMLElement | null>
+  resultsRef: RefObject<HTMLElement | null>
+  archiveRef: RefObject<HTMLElement | null>
 }) {
   const steps = [
     { id: 'preparation', title: '准备交付', Icon: PackageCheck, signal: preparation },
@@ -41,11 +41,12 @@ export function AcceptanceJourney({
           type="button"
           title={`${title} · ${signal.label}`}
           onClick={() => {
-            if (id === 'archive') {
-              onArchive()
-              return
-            }
-            const target = id === 'preparation' ? startRef.current : resultsRef.current
+            const target =
+              id === 'archive'
+                ? archiveRef.current
+                : id === 'preparation'
+                  ? startRef.current
+                  : resultsRef.current
             target?.scrollIntoView({ block: 'start', behavior: 'smooth' })
           }}
         >

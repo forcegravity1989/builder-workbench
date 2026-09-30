@@ -1,8 +1,8 @@
 # intent — 纳入项目与项目信息记录（project-intake）
 
-> **状态：草案，待人 gate**（2026-09-29 用户拍板补登记；来源：特性矩阵第 5 行、architecture 用例「打开或接入项目」、03 主张现行主路径）。特性 id 与中文名 `project-intake`「纳入项目与项目信息记录」已经用户确认（2026-09-29）；余一项待决见末节。
+> **状态：已 gate**（2026-09-29 用户拍板补登记并确认命名，同日 gate 遗留决定收口：字段维持选填、knowledge-map 草稿能力删除、名片 PR 化本轮实施、本机环境条删除）。行为细节与验收点见 [spec.md](spec.md)（已确认，2026-09-30）；链状态在 [STATUS.md](STATUS.md)。
 >
-> **维护约定**：本篇管价值与范围（02 §3.1 骨架）；行为细节与验收点待 gate 过后写 `spec.md`；链状态在 [STATUS.md](STATUS.md)。gate 结论改写本篇正文，不追加聊天流水。
+> **维护约定**：本篇管价值与范围（02 §3.1 骨架）；gate 结论改写正文，不追加聊天流水。
 
 ## 用户与问题
 
@@ -18,30 +18,29 @@
 
 ## 目标体验
 
-侧栏顶部项目名进入**项目墙**：每项目一张卡（名称、简述、对标、目标方向；多仓项目聚合为一张卡，组内增删仓自动建组/收组）。「+ 接入项目」两步——①选本地仓或克隆远端（`owner/repo` 简写归一化为 GitHub 地址）；②填项目名片。提交即完成一串：写 `.bw/project.toml` **并经 PR 落入被管项目仓、由其 builders 合入**（合入后其他成员接入同一项目时直接读到已有名片、只补空字段，不重复建名片重复起 PR）；生成知识库地图草稿、设单仓工作树基址 `.bw/worktrees`、可选挂入项目分组、激活项目落到总览。点卡切项目；总览项目卡展示名片的对标/目标方向。
+侧栏顶部项目名进入**项目墙**：每项目一张卡（名称、简述、对标、目标方向；多仓项目聚合为一张卡，组内增删仓自动建组/收组）。「+ 接入项目」两步——①选本地仓或克隆远端（`owner/repo` 简写归一化为 GitHub 地址；远端在填表前经平台 API 预读已有名片回填，「没查成」不冒充「没接管过」）；②填项目名片。提交即完成一串：写 `.bw/project.toml` **并经 PR 落入被管项目仓、由其 builders 合入**（合入后其他成员接入同一项目时直接读到已有名片、只补空字段，不重复建名片重复起 PR；主检出不留脏文件）；设单仓工作树基址 `.bw/worktrees`、可选挂入项目分组、激活项目落到总览。点卡切项目；总览项目卡展示名片的对标/目标方向。
 
-> 现状与目标的差距：MVP 只把 toml 写进本地工作区（源码注「完整 MR 约定后续接」），**toml 经 PR 落仓是 spec 必做项与验收点**（2026-09-29 用户澄清），已记 STATUS 债。
+> 现状与目标的差距：名片保真合并、落点总览、knowledge-map 与环境条删除、名片经 PR 落仓（`bw/project` 固定树 + 待合入提示 + 更新主目录 + 编辑名片补录）、远端预探测与同远端去重均已实施（PR #285）；真实远端端到端与真壳未验，边界见 [STATUS](STATUS.md)。
 
 ## 范围与边界
 
-- **做**：项目接入（本地/克隆）、名片信息记录与读回展示、名片 toml 经 PR 落被管仓并由 builders 合入、项目墙聚合与切换、仓库分组。
-- **不做（现行边界，可追溯）**：旧 Rust 项目约定完整旅程中除名片 MR 之外的部分（常驻 worktree 供 Issue 运作、三条运作自动化随接入写入等）——名片 MR 本身是必做项（见「已澄清」），其余不在本特性当前范围；无专门可写性探测（仅路径授权 + 存在性 + git 校验）；墙上版本/周目标/健康为占位 Unknown，不装绿，暂不细设计（用户拍板，随版本周期数据接入再看）。
-- **相邻特性**：总览指标（项目区读名片与仓库数据）、版本计划/验收（在接入的项目上跑周期）、知识库（接入产出地图草稿）。
+- **做**：项目接入（本地/克隆）、名片信息记录与读回展示、名片 toml 经 PR 落被管仓并由 builders 合入、远端克隆前名片预探测、项目墙聚合与切换、仓库分组。
+- **不做（现行边界，可追溯）**：旧 Rust 项目约定完整旅程中除名片 PR 之外的部分（常驻 worktree 供 Issue 运作、三条运作自动化随接入写入等——后者归 F5 定时工作执行裁决）；知识库分类地图（`.bw/knowledge-map.toml`）能力已删除（2026-09-29 用户拍板：知识库未成熟，归独立特性重新决策）；「本机环境」探测条已删除（2026-09-29 用户拍板：不探产品不会调用的工具；将来随墙健康灯按 main 正本清单——claude/cursor-agent/gh/codehub-cli、三态、灰不装绿——重新决策）；无专门可写性探测（仅路径授权 + 存在性 + git 校验）；墙上版本/周目标/健康为占位 Unknown，不装绿，暂不细设计（用户拍板，随版本周期数据接入再看）。
+- **相邻特性**：总览指标（项目区读名片与仓库数据）、版本计划/验收（在接入的项目上跑周期）、知识库（接入产出仅名片；地图能力已移出本特性）。
 
-## 成功判据与待决问题
+## 成功判据与已定决定
 
 **判据**：Builder 无文档能完成接入 → 墙上看到自己项目名片 → 切进总览；杀进程重开后名片与墙读回一致（铁律一）。
 
-**待决（需 gate 拍板）**：
-1. 名片字段（对标/成功标准）是否必填——现状选填；建议维持选填：名片本就要经 builders 的 PR 合入，字段完整性在 PR 里协商，03 主张的「接入时问」以预填引导落实。
+**已定决定（gate 结论）**：
+- 名片字段（对标/成功标准）维持**选填**：接入门槛低，字段完整性在 PR 评审里协商，「接入时问」以预填引导落实（2026-09-29）。
+- 名片 toml **必须经 PR 落被管仓并由 builders 合入**，本轮实施（2026-09-29 确认必要旅程；否则后来者重复填名片、本地留脏文件）。main v0.4 已交付正本：`crates/bw/src/app/project.rs`（create_project——名片只写项目约定专属工作树、主检出不动，已有名片 adopt 只补空字段；edit_project_card——专属 worktree → 写名片 → commit → `push_and_open_mr` → Issue 转 InReview）；实现在 Orca 上重新决策（复用固定树管线与 gh/codehub-cli 执行链，不照搬 Rust）。
+- knowledge-map 草稿能力从本特性**删除**（2026-09-29），归知识库独立特性。
+- 存量旧仓已有 toml（main v0.4 起写入，字段 `opportunity`）**无需补录**；读取端兼容更早的 `north_star` 字段。
+- 克隆远端中断的残留场景暂不处理，看实际用户反馈再定。
 
-**已澄清（2026-09-29 用户，作为认可来源直接复用）**：
-- 特性命名与 id 定稿：`project-intake`「纳入项目与项目信息记录」；
-- 名片 toml 必须经 PR 落被管项目仓并由 builders 合入，防止后来接入者重复建名片、重复起 PR。**该行为在 main v0.4 是已交付正本**（`crates/bw/src/app/project.rs`：create_project——名片只写项目约定 Issue 的专属工作树、主检出不动，仓里已有名片则 adopt 只补空字段、不重复开约定，约定未合入时总览横幅提示；edit_project_card——charter Issue → 专属 worktree → 写名片 → commit → `push_and_open_mr`「项目信息改动，等人评审合入」→ Issue 转 InReview）。bw-orca 现行 MVP 只写本地工作区，属迁移中丢失的继承行为；列为 spec 必做与验收点，实现在 Orca 上重新决策（复用原生工作树与 gh/codehub-cli 执行链，不照搬 Rust 代码）；
-- 存量旧仓已有 toml（main v0.4 起写入，字段为 `opportunity`，经 v0.4.0 `crates/bw/src/repo/project_file.rs` 核实），**无需补录**；bw-orca 读取端另兼容更早的 `north_star` 字段（`project-charter.ts`，属历史数据，与 v0.4 主线无关）；
-- 克隆远端中断的残留场景暂不处理，看实际用户反馈再定；
-- 墙卡占位区（版本/周目标/健康）暂不细设计，随版本周期数据接入时再看。
+## 实现落点（现状取证）
 
-## 实现落点（现状取证，供 gate 对照）
+## 实现落点（现状取证）
 
-`src/renderer/src/workbench/`：`ProjectWallPage` / `OnboardProjectPage` / `OnboardCharterStep` / `run-project-onboard` / `project-charter`（toml 读写，字段 name/kind/brief/benchmark/opportunity，读取兼容 north_star）/ `workbench-wall-projects`（聚合）/ `switch-active-project` / `wall-project-repo-actions`（组升级/连带删组）。散落文档：architecture 用例表与 §3、06-module/桌面壳。存量合规单测：project-charter（解析/回写/归一化）、workbench-wall-projects（远端链接/聚合/回退标签）。
+`src/renderer/src/workbench/`：`ProjectWallPage` / `OnboardProjectPage` / `OnboardCharterStep` / `EditCharterPage`（名片补录）/ `run-project-onboard` / `charter-port` / `charter-pr-notice` + `use-charter-pr-status`（待合入 chip）/ `project-charter`（renderer fs 包装）/ `workbench-wall-projects`（聚合）/ `switch-active-project` / `wall-project-repo-actions`（组升级/连带删组）；`src/shared/workbench/project-charter.ts`（纯函数核心：解析/渲染/保真补空 `fillBlankCharterInToml`，兼容 north_star）与 `charter.ts`（RPC 契约）；`src/main/workbench/charter-runtime.ts` + `charter-remote-probe.ts` + `charter-pr-status.ts`（bw/project 树提交与 PR、克隆前预探测、状态查询）；`src/main/codehub/mr-creation.ts` + `repo-reads.ts`（CodeHub MR 与远端 raw 读，命令形态按 main 正本）。散落文档：architecture 用例表与 §3、06-module/桌面壳与关键信息维护。存量合规单测：project-charter（shared：解析/回写/保真补空/归一化）、workbench-wall-projects（组聚合；展示类用例已随 2026-09-30 环 4 盘点删除）。

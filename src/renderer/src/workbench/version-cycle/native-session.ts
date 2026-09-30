@@ -1,16 +1,13 @@
 import { useAppStore } from '@/store'
 import type { AppState } from '@/store/types'
-import {
-  insertNativeChatDraft,
-  insertNativeChatDraftForTab
-} from '@/lib/native-chat-draft-insertion'
+import { pasteDraftToAgentPtyWhenReady } from '@/lib/agent-paste-draft'
 import { structuredAgentSessionPaneKey } from '../../../../shared/structured-agent-session-projection'
-import { makePaneKey, isTerminalLeafId } from '../../../../shared/stable-pane-id'
+import { makePaneKey, isTerminalLeafId, parsePaneKey } from '../../../../shared/stable-pane-id'
 import { resolveRootlessTerminalLayoutLeafId } from '@/components/terminal-pane/terminal-layout-leaf-ids'
 import type { CycleScope, CycleSession } from './ports'
 import { cycleScopeForWorktree, cycleScopeKey } from './native-cycle-workspace'
 
-/** Only project/host identity and the currently focused native composer cross into BW. */
+/** The session shown on the left is the only target for a cycle request. */
 export function getActiveCycleSession(
   state: AppState,
   scope: CycleScope | null,
@@ -66,16 +63,40 @@ export function getActiveCycleSession(
   }
 }
 
+/** Unsent paste into the leaf on screen. Later requests must paste even when the agent prefills only at launch. */
+async function pasteDraftIntoVisibleTerminal(
+  state: AppState,
+  current: CycleSession,
+  text: string
+): Promise<boolean> {
+  const leafId = current.paneKey ? parsePaneKey(current.paneKey)?.leafId : undefined
+  const layout = state.terminalLayoutsByTabId[current.tabId]
+  const ptyId =
+    (leafId && layout?.ptyIdsByLeafId?.[leafId]) || state.ptyIdsByTabId[current.tabId]?.[0]
+  if (!ptyId) {
+    return false
+  }
+  const terminal = state.tabsByWorktree[current.worktreeId]?.find(
+    (item) => item.id === current.tabId
+  )
+  return pasteDraftToAgentPtyWhenReady({
+    tabId: current.tabId,
+    ptyId,
+    content: text,
+    agent: terminal?.launchAgent,
+    submit: false,
+    forcePaste: true
+  })
+}
+
 export async function prepareCycleRequest(session: CycleSession, text: string) {
-  const current = getActiveCycleSession(useAppStore.getState(), session, session.worktreeId)
-  if (!current || current.tabId !== session.tabId) {
+  const state = useAppStore.getState()
+  const current = getActiveCycleSession(state, session, session.worktreeId)
+  if (!current || current.tabId !== session.tabId || current.paneKey !== session.paneKey) {
     throw new Error('会话焦点已改变，请选择目标会话后重试。')
   }
-  const exact =
-    current.paneKey != null &&
-    insertNativeChatDraft({ tabId: current.tabId, paneKey: current.paneKey, text })
-  if (exact || insertNativeChatDraftForTab(current.tabId, text)) {
+  if (current.kind === 'terminal' && (await pasteDraftIntoVisibleTerminal(state, current, text))) {
     return
   }
-  throw new Error('请先切换到此会话的聊天输入框，再准备请求')
+  throw new Error('无法把请求写入左侧当前会话，请确认该会话仍打开后重试。')
 }

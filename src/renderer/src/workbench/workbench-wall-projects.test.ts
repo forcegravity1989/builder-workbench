@@ -1,12 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import type { ProjectGroup } from '../../../shared/project-group-types'
 import type { Repo } from '../../../shared/repo-types'
-import {
-  buildWallProjects,
-  remoteUrlToWebHref,
-  repoLinkLabel,
-  toWallRepoSlot
-} from './workbench-wall-projects'
+import { buildWallProjects } from './workbench-wall-projects'
 
 function repo(partial: Partial<Repo> & Pick<Repo, 'id' | 'path' | 'displayName'>): Repo {
   return {
@@ -29,18 +24,6 @@ function group(partial: Partial<ProjectGroup> & Pick<ProjectGroup, 'id' | 'name'
     ...partial
   }
 }
-
-describe('remoteUrlToWebHref', () => {
-  it('converts scp-style git remotes', () => {
-    expect(remoteUrlToWebHref('git@github.com:acme/app.git')).toBe('https://github.com/acme/app')
-  })
-
-  it('keeps https remotes without .git', () => {
-    expect(remoteUrlToWebHref('https://gitlab.com/acme/app.git')).toBe(
-      'https://gitlab.com/acme/app'
-    )
-  })
-})
 
 describe('buildWallProjects', () => {
   it('keeps ungrouped repos as solo cards', () => {
@@ -82,16 +65,6 @@ describe('buildWallProjects', () => {
     const platform = projects.find((p) => p.key === 'group:g1')
     expect(platform?.name).toBe('Platform')
     expect(platform?.repoIds).toEqual(['a', 'b'])
-    expect(platform?.slots[0].href).toBe('https://github.com/acme/core')
-    expect(platform?.slots[0].linkLabel).toBe('acme/core')
     expect(projects.find((p) => p.key === 'solo:c')?.name).toBe('Solo')
-  })
-})
-
-describe('toWallRepoSlot', () => {
-  it('falls back to path label without remote', () => {
-    const slot = toWallRepoSlot(repo({ id: 'x', path: '/tmp/x', displayName: 'Local' }))
-    expect(slot.href).toBeNull()
-    expect(repoLinkLabel(repo({ id: 'x', path: '/tmp/x', displayName: 'Local' }))).toBe('Local')
   })
 })

@@ -51,7 +51,8 @@ export function useWorkspaceIdentityState(input: WorkspaceIdentityStateInput) {
     }
     if (
       initialLinkedWorkItem?.type === 'issue' &&
-      getLinkedWorkItemProvider(initialLinkedWorkItem) === 'github'
+      (getLinkedWorkItemProvider(initialLinkedWorkItem) === 'github' ||
+        getLinkedWorkItemProvider(initialLinkedWorkItem) === 'codehub')
     ) {
       return String(initialLinkedWorkItem.number)
     }

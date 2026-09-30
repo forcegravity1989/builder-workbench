@@ -1,10 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import {
-  classifyKbDocGroup,
-  draftKnowledgeMapFromPaths,
-  sortKbDocs
-} from './knowledge-doc-classify'
-import type { KbDoc } from './knowledge-doc-registry'
+import { classifyKbDocGroup } from './knowledge-doc-classify'
 
 describe('classifyKbDocGroup', () => {
   it('classifies user and engineering roles with generic heuristics', () => {
@@ -38,49 +33,3 @@ describe('classifyKbDocGroup', () => {
   })
 })
 
-describe('draftKnowledgeMapFromPaths', () => {
-  it('builds a draft map grouped by role', () => {
-    const map = draftKnowledgeMapFromPaths([
-      'README.md',
-      'AGENTS.md',
-      'docs/architecture.md',
-      'docs/05-features/a/intent.md',
-      'docs/05-features/a/spec.md',
-      'docs/reference/howto.md',
-      'docs/review-evidence/x/README.md',
-      '.bw/project.toml'
-    ])
-    expect(map.status).toBe('draft')
-    expect(map.exclude).toContain('docs/review-evidence/')
-    const byRole = Object.fromEntries(map.sections.map((s) => [s.role, s.paths]))
-    expect(byRole['user-readme']).toEqual(['README.md'])
-    expect(byRole['eng-agents']).toEqual(['AGENTS.md'])
-    expect(byRole['eng-contract']).toEqual(['docs/architecture.md'])
-    expect(byRole['eng-features']).toEqual(['docs/05-features/a/'])
-    expect(byRole['eng-bw']).toContain('.bw/project.toml')
-  })
-})
-
-describe('sortKbDocs', () => {
-  it('orders by KB group then registry path', () => {
-    const docs: KbDoc[] = [
-      {
-        id: 'b',
-        group: 'eng-features',
-        name: 'b',
-        path: 'docs/05-features/z.md',
-        lede: '',
-        body: ''
-      },
-      {
-        id: 'a',
-        group: 'eng-contract',
-        name: 'a',
-        path: 'docs/architecture.md',
-        lede: '',
-        body: ''
-      }
-    ]
-    expect(sortKbDocs(docs).map((d) => d.id)).toEqual(['a', 'b'])
-  })
-})

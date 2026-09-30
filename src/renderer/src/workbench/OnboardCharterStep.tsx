@@ -10,6 +10,9 @@ type Props = {
   opportunity: string
   log: readonly OnboardLogLine[]
   busy: boolean
+  /** 提交按钮文案;接入默认「确认接入」,编辑名片传「提交 PR」。 */
+  submitLabel?: string
+  busyLabel?: string
   onName: (value: string) => void
   onBrief: (value: string) => void
   onBenchmark: (value: string) => void
@@ -28,6 +31,8 @@ export function OnboardCharterStep({
   opportunity,
   log,
   busy,
+  submitLabel,
+  busyLabel,
   onName,
   onBrief,
   onBenchmark,
@@ -101,7 +106,7 @@ export function OnboardCharterStep({
           disabled={busy || !name.trim()}
           onClick={onSubmit}
         >
-          {busy ? '接入中…' : '确认接入'}
+          {busy ? (busyLabel ?? '接入中…') : (submitLabel ?? '确认接入')}
         </button>
       </div>
     </>
