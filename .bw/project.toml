@@ -1,7 +1,10 @@
-name = "orca"
+name = "workbench"
 kind = ""
-brief = ""
-benchmark = "orca"
-opportunity = ""
+brief = "1、所有项目都一样。 2、加速并规范项目运作。3、一张工作台打通所有系统，集成各种好用组件和工作流"
+benchmark = "workbuddy"
+opportunity = "更多的项目纳入到workbench管理"
 
-# 项目群没配。配了就在这里加一段 [chat]。
+[chat]
+provider = "welink"
+group_id = "996840920634630304"
+notify = ["merged", "release"]
