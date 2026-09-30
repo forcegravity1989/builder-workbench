@@ -146,12 +146,8 @@ export function nativeArchivePort(runtimeOwnerEnvironmentId?: string): ArchivePo
     async prepareRequest(input: ArchiveInput, session: CycleSession): Promise<void> {
       const branch = WORKFLOW_BRANCH[input.workflow]
       const text = [
-        `请按项目流程归档本轮${WORKFLOW_NAME[input.workflow]}材料：`,
-        `- 版本：${input.version}；周期：${input.cycleId}`,
-        `- 材料：.bw/planning/${input.version}/${MATERIAL_FILE[input.workflow]}（修订 ${input.revision}）`,
-        `- 分支：${branch}，目标为项目正式采用基线`,
-        '请先核对材料修订与上述一致，再按项目门禁与授权提交 PR/MR，回显链接与实际状态。',
-        '合入由人决定；不自动合入、不代关 Issue、不把合入当作目标达成。'
+        `请把当前这一版${WORKFLOW_NAME[input.workflow]}提交评审，给出链接。合入由人决定，不要自动合入，不要代关 Issue，也不要把合入当成目标达成。`,
+        `核对：版本 ${input.version}；周期 ${input.cycleId}；材料 .bw/planning/${input.version}/${MATERIAL_FILE[input.workflow]}；修订 ${input.revision}；分支 ${branch}。先核对修订与上面一致，再按项目门禁提 PR。`
       ].join('\n')
       await prepareCycleRequest(session, text)
     }
