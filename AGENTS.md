@@ -81,7 +81,7 @@ pnpm run typecheck
 pnpm exec vitest run --config config/vitest.config.ts src/renderer/src/workbench/version-cycle/cycle-prompt.test.ts
 ```
 
-PR 检查以 [`.github/workflows/pr.yml`](.github/workflows/pr.yml) 为准。行为正确性仍靠真壳（计划/验收两屏、会话注入、远端/Git/文件读回）及 code review；已有单测随改维护，不把新增回归大坝当交付物；新增单测按 [02 环 4](docs/01-principles/02-working-backwards.md) 测试用例规范只立两类看护——核心算法函数、与 E2E 强相关的数据协议（单特性新增默认 ≤10 例），UI/文案/装配不新增；验收点与旅程 E2E 特性初期控量，稳定后专项回补。
+PR 检查以 [`.github/workflows/pr.yml`](.github/workflows/pr.yml) 为准。行为正确性仍靠真壳（计划/验收两屏、会话注入、远端/Git/文件读回）及 code review；已有单测随改维护，不把新增回归大坝当交付物；新增单测按 [02 环 4](docs/01-principles/02-working-backwards.md) 测试用例规范只立两类看护——核心算法函数、与 E2E 强相关的数据协议（单特性新增默认 ≤10 例），UI/文案/装配不新增；叠层单测存量总量受执行例数 ratchet 约束（`pnpm run check:vitest-count-ratchet`，基线 `config/vitest-count-baseline.txt`，只减不增，新增须同一交付内对冲删除）；验收点与旅程 E2E 特性初期控量，稳定后专项回补。
 
 ## 修改与交付
 
