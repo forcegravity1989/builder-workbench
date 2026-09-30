@@ -423,3 +423,35 @@
     padding: 12px 16px;
   }
 }
+
+/* 手动刷新指标期间阻塞总览:采集可能耗时,不允许在半新半旧的读数上继续点。
+   后台自动补采(缓存未命中)不挂这层,只转刷新按钮的图标。 */
+.wb-ov-refresh-block {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.32);
+  cursor: progress;
+}
+.wb-ov-refresh-card {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+  background: var(--color-card);
+  border: 1px solid var(--color-divider);
+  border-radius: var(--radius-md);
+  color: var(--color-text);
+  font-size: 13px;
+}
+.wb-ov-refresh-spin {
+  animation: wb-ov-refresh-spin 1s linear infinite;
+}
+@keyframes wb-ov-refresh-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
