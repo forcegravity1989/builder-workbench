@@ -44,7 +44,7 @@ function errorMessage(reason: unknown): string {
   return reason instanceof Error ? reason.message : String(reason)
 }
 
-function repoMatchesReference(repo: Repo, repository: string): boolean {
+function exactIdentityMatch(repo: Repo, repository: string): boolean {
   const identity = repo.gitRemoteIdentity
   const candidates = [
     identity?.canonicalKey,
@@ -55,6 +55,34 @@ function repoMatchesReference(repo: Repo, repository: string): boolean {
   return candidates.some((candidate) => candidate === repository)
 }
 
+/** CodeHub is matched on its own project path, never by trying a GitHub owner/repo key first. */
+function codeHubIdentityMatches(repo: Repo, repository: string): boolean {
+  const remote =
+    parseCodeHubRemote(repo.gitRemoteIdentity?.remoteUrl) ??
+    parseCodeHubRemote(repo.gitRemoteIdentity?.canonicalKey)
+  if (!remote) {
+    return false
+  }
+  const wanted = repository.trim().replace(/\.git$/i, '').replace(/^\/+/, '')
+  return wanted === remote.project || wanted === `${remote.host}/${remote.project}`
+}
+
+function repoMatchesReference(repo: Repo, reference: CycleTaskReference): boolean {
+  if (reference.provider === 'codehub') {
+    return codeHubIdentityMatches(repo, reference.repository) || exactIdentityMatch(repo, reference.repository)
+  }
+  if (reference.provider === 'github') {
+    if (
+      parseCodeHubRemote(repo.gitRemoteIdentity?.remoteUrl) ||
+      parseCodeHubRemote(repo.gitRemoteIdentity?.canonicalKey)
+    ) {
+      return false
+    }
+    return exactIdentityMatch(repo, reference.repository)
+  }
+  return exactIdentityMatch(repo, reference.repository)
+}
+
 /** Resolve the registered repo a material reference points at; scope's own repo/host wins on ties. */
 export function resolveReferenceRepo(
   deps: Pick<TaskPortDeps, 'repos'>,
@@ -62,7 +90,7 @@ export function resolveReferenceRepo(
   reference: CycleTaskReference
 ): Repo | null {
   const wanted = normalizeGitRemoteUrl(reference.repository) ?? reference.repository
-  const matches = deps.repos().filter((repo) => repo.path && repoMatchesReference(repo, wanted))
+  const matches = deps.repos().filter((repo) => repo.path && repoMatchesReference(repo, { ...reference, repository: wanted }))
   if (matches.length === 0) {
     return null
   }

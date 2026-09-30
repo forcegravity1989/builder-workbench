@@ -12,7 +12,6 @@ function entry(overrides: Partial<CycleEntry> = {}): CycleEntry {
     busy: false,
     notice: null,
     start: vi.fn(async () => {}),
-    configure: vi.fn(async () => {}),
     ...overrides
   }
 }
@@ -87,18 +86,3 @@ it('builds plan-workflow requests against the plan data file and keeps ready ver
   expect(text).toContain('ORCA skills get week-planning --reference data-and-runtime')
 })
 
-it('opens the native automation editor from the card without launching a session', async () => {
-  const configure = vi.fn(async () => {})
-  const start = vi.fn(async () => {})
-  const { host, unmount } = await render(
-    <CycleStartCard entry={entry({ configure, start })} problems={[]} version={null} />
-  )
-  await act(async () => {
-    ;[...host.querySelectorAll('button')]
-      .find((b) => b.textContent?.includes('配置自动化'))!
-      .click()
-  })
-  expect(configure).toHaveBeenCalledOnce()
-  expect(start).not.toHaveBeenCalled()
-  await unmount()
-})

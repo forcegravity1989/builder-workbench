@@ -73,6 +73,43 @@ export function createVersionHistoryService(host: VersionHistoryHost): VersionHi
     return decodeHistorySnapshot(raw, version, workflow)
   }
 
+  async function listTreePlans(
+    scope: MetricScope,
+    baseline: { ref: string; commit: string }
+  ): Promise<VersionHistorySource[]> {
+    let listed: Buffer
+    try {
+      listed = await host.git(scope, [
+        'ls-tree',
+        '-z',
+        '--name-only',
+        `${baseline.commit}:.bw/planning`
+      ])
+    } catch {
+      return []
+    }
+    const plans: VersionHistorySource[] = []
+    for (const name of listed.toString('utf8').split('\0')) {
+      if (!name || name.includes('/') || !MaterialVersion.safeParse(name).success) {
+        continue
+      }
+      try {
+        const snapshot = await readSnapshot(scope, baseline.commit, name, 'plan')
+        plans.push({
+          version: snapshot.document.version,
+          cycleId: snapshot.document.cycleId,
+          sourceCommit: baseline.commit,
+          revision: snapshot.revision,
+          workflow: 'plan',
+          committedAt: ''
+        })
+      } catch {
+        continue
+      }
+    }
+    return plans
+  }
+
   return {
     async list(input) {
       const { scope } = VersionHistoryListSchema.parse(input)
@@ -175,7 +212,7 @@ export function createVersionHistoryService(host: VersionHistoryHost): VersionHi
           committedAt
         })
       }
-      return { records, problems }
+      return { records, problems, treePlans: await listTreePlans(scope, baseline) }
     },
     async read(input) {
       const request = VersionHistoryReadSchema.parse(input)
@@ -222,16 +259,6 @@ export function createVersionHistoryService(host: VersionHistoryHost): VersionHi
           'history-identity-mismatch',
           '计划引用的内容、版本或周期已变化，请核对原承诺'
         )
-      }
-      if (planRef.kind === 'committed' && baseline) {
-        await requireArchive(scope, {
-          baseline,
-          sourceCommit: planRef.sourceCommit,
-          version: planRef.version,
-          cycleId: planRef.cycleId,
-          workflow: 'plan',
-          revision: snapshot.revision
-        })
       }
       return {
         document: PlanningMaterialSchema.parse(snapshot.document),

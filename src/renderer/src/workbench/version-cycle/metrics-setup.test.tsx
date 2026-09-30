@@ -19,7 +19,9 @@ vi.mock('@/store', () => {
     get settings() {
       return { defaultTuiAgent: fixture.defaultTuiAgent }
     },
-    setActiveWorktree: vi.fn()
+    activeView: 'activity' as string,
+    setActiveWorktree: vi.fn(),
+    setActiveView: vi.fn()
   }
   const useAppStore = Object.assign((selector: (s: typeof state) => unknown) => selector(state), {
     getState: () => state
@@ -83,6 +85,7 @@ beforeEach(() => {
   fixture.ensureShouldFail = false
   fixture.defaultTuiAgent = null
   fixture.detectedIds = null
+  useAppStore.getState().activeView = 'activity'
   container = document.createElement('div')
   document.body.append(container)
   root = createRoot(container)
@@ -122,6 +125,13 @@ it('走固定维护树管线：确保树→注入提示→移动选择→自动�
     activate: true,
     promptDelivery: 'auto-submit'
   })
+  expect(useAppStore.getState().setActiveView).toHaveBeenCalledWith('terminal')
+})
+
+it('已在终端工作区时不重复切换顶层视图', async () => {
+  useAppStore.getState().activeView = 'terminal'
+  await prepareMetricsSession({ baseScope, agent: 'claude' as TuiAgent })
+  expect(useAppStore.getState().setActiveView).not.toHaveBeenCalled()
 })
 
 it('paired runtime 宿主先激活会话工作树再启动，顺序与壳一致', async () => {

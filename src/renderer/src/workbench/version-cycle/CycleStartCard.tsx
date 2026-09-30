@@ -1,4 +1,4 @@
-import { CalendarClock, Info, MessageSquarePlus } from 'lucide-react'
+import { Info, MessageSquarePlus } from 'lucide-react'
 import type { Ref } from 'react'
 import type { VersionMaterialCandidate } from '../../../../shared/workbench/version-material-request'
 import type { CycleEntry } from './cycle-workspace-context'
@@ -21,21 +21,13 @@ export function CycleStartCard({
   version: string | null
   sectionRef?: Ref<HTMLElement>
 }) {
-  const { workflow, busy, start, configure } = entry
+  const { workflow, busy, start } = entry
   const label = workflow === 'plan' ? '计划' : '验收'
   const file = workflow === 'plan' ? 'data.json' : 'acceptance.json'
   return (
     <section className="vc-start-card" aria-label={`${label}会话入口`} ref={sectionRef}>
       <div className="vc-start-line">
         <p>与 Agent 一起{workflow === 'plan' ? '制定版本计划' : '核对版本交付'}</p>
-        <button
-          className="wb-btn wb-btn-secondary"
-          title="打开原生自动化编辑器"
-          onClick={() => void configure()}
-        >
-          <CalendarClock size={14} aria-hidden="true" />
-          配置自动化
-        </button>
         <button
           className="wb-btn wb-btn-secondary"
           title={`新建会话，${workflow === 'plan' ? '制定版本计划' : '核对版本交付'}`}

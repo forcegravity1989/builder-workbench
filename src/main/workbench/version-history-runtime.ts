@@ -18,10 +18,12 @@ import { resolveWorkbenchGitExecOptions } from './project-git-routing'
 import { createVersionHistoryService, type VersionHistoryHost } from './version-history-service'
 import { HistorySourceError } from './version-history-snapshot'
 import { createNativeArchiveEvidence } from './archive-evidence-runtime'
+import { registeredCodeHubArchiveReason } from './archive-source-gap'
 import { nativeVersionMaterialService } from './version-material-runtime'
 import {
   createWorkbenchWorkspaceResolver,
   nativeWorkbenchWorkspaceHost,
+  type WorkbenchWorkspaceRepo,
   type WorkbenchWorkspaceTarget
 } from './workspace-resolver'
 import { WorkspaceScopeError } from './workspace-scope-error'
@@ -164,19 +166,41 @@ export function nativeVersionHistoryHost(runtime: HistoryRuntime): VersionHistor
     },
     async archiveState(scope, candidate) {
       const { target, repo } = await workspaceFor(scope)
-      const evidence = await createNativeArchiveEvidence(
+      const opened = await openArchiveEvidence(
         repo,
-        materialReaderFor(target, resolveWorkbenchGitExecOptions(runtime, repo))
+        target,
+        resolveWorkbenchGitExecOptions(runtime, repo)
       )
-      if (!evidence) {
-        return {
-          kind: 'unknown' as const,
-          message: '未解析项目的 GitHub 归档来源，无法核对真实合入'
-        }
+      if (!opened.evidence) {
+        return { kind: 'unknown' as const, message: opened.gap }
       }
-      return evidence.reader.archiveStateForCandidate(candidate)
+      return opened.evidence.reader.archiveStateForCandidate(candidate)
     }
   }
+}
+
+const GITHUB_ARCHIVE_SOURCE_UNRESOLVED = '未解析项目的 GitHub 归档来源，无法核对真实合入'
+
+async function openArchiveEvidence(
+  repo: WorkbenchWorkspaceRepo,
+  target: WorkbenchWorkspaceTarget,
+  execOptions: { wslDistro?: string }
+): Promise<
+  | {
+      evidence: NonNullable<Awaited<ReturnType<typeof createNativeArchiveEvidence>>>
+      gap: null
+    }
+  | { evidence: null; gap: string }
+> {
+  const codeHub = registeredCodeHubArchiveReason(repo.gitRemoteIdentity)
+  if (codeHub) {
+    return { evidence: null, gap: codeHub }
+  }
+  const evidence = await createNativeArchiveEvidence(repo, materialReaderFor(target, execOptions))
+  if (!evidence) {
+    return { evidence: null, gap: GITHUB_ARCHIVE_SOURCE_UNRESOLVED }
+  }
+  return { evidence, gap: null }
 }
 
 function materialReaderFor(target: WorkbenchWorkspaceTarget, execOptions: { wslDistro?: string }) {
@@ -213,13 +237,15 @@ export async function readArchiveProof(
     mergeCommit: null,
     proof: { kind: 'unknown', reason }
   })
-  const evidence = await createNativeArchiveEvidence(
+  const opened = await openArchiveEvidence(
     repo,
-    materialReaderFor(target, resolveWorkbenchGitExecOptions(runtime, repo))
+    target,
+    resolveWorkbenchGitExecOptions(runtime, repo)
   )
-  if (!evidence) {
-    return unavailable('未解析项目的 GitHub 归档来源，无法核对真实合入')
+  if (!opened.evidence) {
+    return unavailable(opened.gap)
   }
+  const evidence = opened.evidence
   if (
     params.provider !== 'github' ||
     params.repository !== githubRepoIdentityKey(evidence.ownerRepo)

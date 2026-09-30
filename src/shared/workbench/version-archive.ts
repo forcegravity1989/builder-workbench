@@ -1,6 +1,9 @@
 import { z } from 'zod'
 import { MaterialRevision, MaterialVersion, SourceCommit } from './version-material'
 
+/** CodeHub has no provider merge-commit channel; archive stays Unknown instead of a GitHub miss. */
+export const CODEHUB_ARCHIVE_UNPROVABLE_REASON = 'CodeHub 合入证据暂无法读回，归档状态保持不可证明'
+
 export const ArchiveReferenceSchema = z.strictObject({
   provider: z.string().min(1),
   repository: z.string().min(1),

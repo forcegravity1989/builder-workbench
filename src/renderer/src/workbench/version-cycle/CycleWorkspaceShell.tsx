@@ -6,8 +6,8 @@ export function CycleWorkspaceShell() {
   if (!workspace) {
     return null
   }
-  const { workflow, context, prepareMetrics, busy, notice, start, configure } = workspace
-  const entry = { workflow, busy, notice, start, configure }
+  const { workflow, context, prepareMetrics, busy, notice, start } = workspace
+  const entry = { workflow, busy, notice, start }
   return (
     <section className="vc-board-col" aria-label={workflow === 'plan' ? '计划材料' : '验收材料'}>
       {!context.worktreeId ? (

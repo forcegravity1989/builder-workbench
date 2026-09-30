@@ -162,6 +162,15 @@ describe('createTaskPort reads', () => {
     }
   })
 
+  it('reads a CodeHub issue when the plan only stored the project path', async () => {
+    mocks.viewTask.mockResolvedValueOnce({ ...chDetail, iid: 12, url: null })
+    const [read] = await createTaskPort(makeDeps()).listVersion(scope, [
+      { provider: 'codehub', repository: 'team/project', number: 12 }
+    ])
+    expect(read?.kind).toBe('ready')
+    expect(mocks.viewTask).toHaveBeenCalledWith(expect.objectContaining({ kind: 'issue', iid: 12 }))
+  })
+
   it('reads codehub as issue first, then mr, and derives the web url when the CLI omits it', async () => {
     mocks.viewTask
       .mockRejectedValueOnce(new Error('issue not found'))

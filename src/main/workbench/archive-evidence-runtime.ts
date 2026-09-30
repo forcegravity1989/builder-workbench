@@ -22,7 +22,7 @@ type RestPull = { state?: unknown; merged_at?: unknown; merge_commit_sha?: unkno
  * GitHub archive evidence for one registered repo, built only from documented
  * provider returns: commits/{oid}/pulls for the commit→PR association and
  * pulls/{n} for merged_at plus merge_commit_sha. Repos without a resolvable
- * GitHub identity (including CodeHub) get no reader — their archive state stays
+ * GitHub identity get no reader. Callers name CodeHub separately; other gaps stay
  * an honest Unknown instead of a guessed CLI shape.
  */
 export async function createNativeArchiveEvidence(

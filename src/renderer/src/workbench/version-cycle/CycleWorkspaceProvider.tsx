@@ -2,13 +2,12 @@ import { useCallback, useMemo, useState, type ReactNode } from 'react'
 import { toast } from 'sonner'
 import { useShallow } from 'zustand/react/shallow'
 import { useAppStore } from '@/store'
-import { startCycleAutomation } from './start-cycle-automation'
+import { launchAgentInNewTab } from '@/lib/launch-agent-in-new-tab'
 import { assertCurrentCycleWorkspace } from './current-cycle-workspace'
+import { buildCyclePrompt } from './cycle-prompt'
 import { prepareMetricsSession, useMetricsSetupAgent } from './metrics-setup'
 import { getActiveCycleSession, prepareCycleRequest } from './native-session'
 import { useWorkflowVersion } from './use-workflow-version'
-import { useCycleAutomationDraft } from './use-cycle-automation-draft'
-import { useEnsureCycleAutomation } from './ensure-cycle-automation'
 import { useCycleWorkspaceWorkflow } from './cycle-workspace-view'
 import { useCycleWorkspaceTarget } from './use-cycle-workspace-target'
 import { CycleWorkspaceContext } from './cycle-workspace-context'
@@ -46,30 +45,26 @@ export function CycleWorkspaceProvider({ children }: { children: ReactNode }) {
   const taskPort = useMemo(() => nativeTaskPort(), [])
   const archivePort = useMemo(() => nativeArchivePort(owner), [owner])
   const sessionPort = useMemo(() => ({ prepareRequest: prepareCycleRequest }), [])
-  const automation = useEnsureCycleAutomation({
-    cycleScope: scope,
-    fixedId,
-    workflow: workflow ?? 'plan',
-    agent,
-    onNotice: setNotice
-  })
-  const configure = useCycleAutomationDraft({
-    cycleScope: scope,
-    fixedId,
-    workflow: workflow ?? 'plan',
-    existingId: automation.automationId,
-    creationKey: automation.creationKey,
-    onError: setNotice
-  })
   const start = useCallback(
     async (oneShot?: string) => {
       setBusy(true)
       try {
-        if (!scope || !fixedId || !automation.automationId) {
-          throw new Error('周期自动化尚未就绪，请在自动化页核对配置。')
+        if (!scope || !fixedId) {
+          throw new Error('固定工作树尚未就绪，请稍后重试。')
         }
-        await startCycleAutomation(scope, fixedId, automation.automationId, oneShot)
-        toast.message('已打开本次运行的会话。')
+        if (!agent) {
+          throw new Error('未检测到可用会话工具，请先在设置中配置')
+        }
+        assertCurrentCycleWorkspace(scope, fixedId)
+        const prompt = await buildCyclePrompt(scope, fixedId)
+        launchAgentInNewTab({
+          agent,
+          worktreeId: fixedId,
+          prompt: oneShot ? `${prompt}\n\n${oneShot}` : prompt,
+          activate: true,
+          promptDelivery: 'draft'
+        })
+        toast.message('已打开本次会话，提示在左侧输入框，尚未发送。')
         setNotice(null)
       } catch (reason) {
         if (scope && fixedId) {
@@ -84,7 +79,7 @@ export function CycleWorkspaceProvider({ children }: { children: ReactNode }) {
         setBusy(false)
       }
     },
-    [scope, fixedId, automation.automationId]
+    [scope, fixedId, agent]
   )
   const prepareMetrics = useCallback(async () => {
     if (!scope || !agent) {
@@ -100,7 +95,6 @@ export function CycleWorkspaceProvider({ children }: { children: ReactNode }) {
             busy,
             notice,
             start,
-            configure,
             prepareMetrics,
             context: {
               scope,
@@ -121,7 +115,6 @@ export function CycleWorkspaceProvider({ children }: { children: ReactNode }) {
       busy,
       notice,
       start,
-      configure,
       prepareMetrics,
       scope,
       fixedId,

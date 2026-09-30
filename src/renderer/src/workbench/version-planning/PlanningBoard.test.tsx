@@ -94,8 +94,7 @@ const entry: CycleEntry = {
   workflow: 'plan',
   busy: false,
   notice: null,
-  start: vi.fn(async () => {}),
-  configure: vi.fn(async () => {})
+  start: vi.fn(async () => {})
 }
 async function mount(value: VersionCycleContext) {
   await act(async () => {
@@ -267,14 +266,14 @@ it('retains a deleted-file draft on cache failure, then discards it explicitly a
   }
 })
 
-it('renders catalog problems as fixable errors instead of swallowing them', async () => {
+it('keeps metric catalog problems off the plan board', async () => {
   metricsFixture.catalog = {
     definitions: [],
     problems: [{ code: 'collector-required', message: '指标缺少采集配置', name: '构建时长' }]
   } as unknown as MetricCatalog
   await mount(context(vi.fn()))
-  expect(container.textContent).toContain('存在待修复问题')
-  expect(container.textContent).toContain('构建时长：指标缺少采集配置')
+  expect(container.textContent).not.toContain('存在待修复问题')
+  expect(container.textContent).not.toContain('构建时长：指标缺少采集配置')
 })
 
 it('derives the archive journey lamp from provider-confirmed states', async () => {
@@ -305,7 +304,7 @@ it('derives the archive journey lamp from provider-confirmed states', async () =
   await mount(closedValue)
   await act(async () => {})
   expect(archiveDot().className).toContain('failed')
-  expect(container.textContent).toContain('归档 PR 已关闭')
+  expect(container.textContent).not.toContain('归档 PR 已关闭')
 
   const mergedUnprovenValue: VersionCycleContext = {
     ...context(vi.fn()),
@@ -327,7 +326,7 @@ it('derives the archive journey lamp from provider-confirmed states', async () =
   await mount(mergedUnprovenValue)
   await act(async () => {})
   expect(archiveDot().className).toContain('pending')
-  expect(container.textContent).toContain('已合入，当前材料待核')
+  expect(container.textContent).not.toContain('已合入，当前材料待核')
 })
 
 it('flushes newer edits through the next archive check before switching versions', async () => {

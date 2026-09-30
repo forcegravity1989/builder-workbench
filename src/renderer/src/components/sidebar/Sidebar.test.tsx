@@ -100,6 +100,7 @@ vi.mock('./useWorkspaceBoardPanel', () => ({
   })
 }))
 
+import { CycleWorkspaceContext } from '@/workbench/version-cycle/cycle-workspace-context'
 import Sidebar from './index'
 
 function setSidebarState(settings: GlobalSettings, statusBarVisible = true): void {
@@ -141,6 +142,18 @@ beforeEach(() => {
 afterEach(cleanup)
 
 describe('Sidebar', () => {
+  it('keeps the project list on plan and acceptance workspaces', () => {
+    setSidebarState(getDefaultSettings(tmpdir()))
+    const view = render(
+      <CycleWorkspaceContext.Provider value={{ workflow: 'plan' } as never}>
+        {sidebarElement()}
+      </CycleWorkspaceContext.Provider>
+    )
+
+    expect(view.getByTestId('sidebar-header')).toBeTruthy()
+    expect(view.getByTestId('worktree-list')).toBeTruthy()
+  })
+
   it('anchors the setup script popup to the bottom toolbar', () => {
     setSidebarState(getDefaultSettings(tmpdir()))
     const view = render(sidebarElement())

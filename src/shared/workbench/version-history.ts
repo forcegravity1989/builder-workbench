@@ -36,12 +36,18 @@ export type VersionHistoryCatalog = {
   records: VersionHistorySource[]
   /** Unreadable entries remain visible without hiding the valid records. */
   problems: VersionHistoryProblem[]
+  /**
+   * Plan files present in the adopted baseline tree. One folder under
+   * `.bw/planning` with `data.json` is one version; this does not consult a
+   * provider merge.
+   */
+  treePlans?: VersionHistorySource[]
 }
 export type VersionHistoryPlan = {
   document: PlanningMaterial
   revision: string
   planRef: z.infer<typeof PlanReferenceSchema>
-  /** Committed evidence requires both baseline reachability and verified archive adoption. */
+  /** A committed plan is the data.json bytes on the adopted baseline, not a provider merge record. */
   source:
     | { kind: 'committed'; sourceCommit: string; baselineCommit: string; baselineRef: string }
     | { kind: 'draft'; sourceHostId: string; sourceWorktreeId: string }

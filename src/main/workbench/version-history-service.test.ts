@@ -310,6 +310,43 @@ it('reads a fast-forwarded material commit through its later PR merge commit', a
   expect(result.sourceCommit).toBe(ffMultiMaterialCommit)
 })
 
+it('lists version folders from data.json on the adopted baseline without a provider merge', async () => {
+  const port = createVersionHistoryService({
+    async git(_scope, args) {
+      return git(args)
+    },
+    async baseline() {
+      return { ref: 'adopted', commit: adoptedCommit }
+    },
+    async archiveState() {
+      return { kind: 'unknown', message: 'no provider merge proof' }
+    },
+    async readDraft() {
+      return null
+    }
+  })
+  const catalog = await port.list({ scope })
+  const current = catalog.treePlans?.find((item) => item.version === 'v1')
+  expect(current).toMatchObject({
+    version: 'v1',
+    cycleId: 'sixth-cycle',
+    sourceCommit: adoptedCommit,
+    workflow: 'plan'
+  })
+  expect(catalog.treePlans?.some((item) => item.version === 'template')).toBe(false)
+  const loaded = await port.readPlan({
+    scope,
+    planRef: {
+      kind: 'committed',
+      version: 'v1',
+      cycleId: current!.cycleId,
+      revision: current!.revision,
+      sourceCommit: current!.sourceCommit
+    }
+  })
+  expect(loaded.document.cycleId).toBe('sixth-cycle')
+})
+
 it('preserves raw Git paths containing quotes, backslashes and newlines as problems', async () => {
   const paths = ['v"broken', 'v\\broken', 'v\nbroken'].map(
     (version) => `.bw/planning/${version}/data.json`
@@ -319,6 +356,9 @@ it('preserves raw Git paths containing quotes, backslashes and newlines as probl
       return { ref: 'adopted', commit: adoptedCommit }
     },
     async git(_scope, args) {
+      if (args[0] === 'ls-tree' || args[0] === 'show') {
+        return Buffer.from('')
+      }
       expect(args).toContain('-z')
       return Buffer.from(`${adoptedCommit}\0${'2026-09-25T00:00:00Z'}\0\n${paths.join('\0')}\0`)
     },

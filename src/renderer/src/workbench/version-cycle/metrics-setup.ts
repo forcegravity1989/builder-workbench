@@ -15,8 +15,9 @@ export const METRICS_WORKTREE_NAME = 'metrics-refresh'
 /**
  * The one「配置指标」pipeline shared by the plan board and the overview: ensure the
  * fixed maintenance tree, inject the metrics-refresh prompt with the live catalog,
- * move the native selection to that tree, then launch an auto-submit project
- * session. Errors are thrown unchanged; each screen surfaces them in its own notice.
+ * move the native selection to that tree, launch an auto-submit project
+ * session, then leave the overview so that session is the visible workspace.
+ * Errors are thrown unchanged; each screen surfaces them in its own notice.
  */
 export async function prepareMetricsSession(args: {
   baseScope: NativeWorkspaceScope
@@ -44,6 +45,12 @@ export async function prepareMetricsSession(args: {
     activate: true,
     promptDelivery: 'auto-submit'
   })
+  // Why: overview is the activity page. Selecting the maintenance tree and
+  // opening a tab does not leave it, so the new session stays hidden.
+  const view = useAppStore.getState()
+  if (view.activeView !== 'terminal') {
+    view.setActiveView('terminal')
+  }
 }
 
 /**
