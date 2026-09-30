@@ -2,8 +2,7 @@ import { useEffect, useState } from 'react'
 import type {
   VersionHistoryPlan,
   VersionHistoryPort,
-  VersionHistoryProblem,
-  VersionHistorySource
+  VersionTreePlan
 } from '../../../../shared/workbench/version-history'
 import type { MetricScope } from '../../../../shared/workbench/metrics'
 import type { EvidenceCheck, PlanReference } from './acceptance-model'
@@ -11,16 +10,36 @@ import { assertFixedPlan } from './acceptance-model'
 import type { nativeVersionMaterialPort } from '../version-material-port'
 import type { VersionMaterialCandidate } from '../../../../shared/workbench/version-material-request'
 
+/**
+ * Names for the acceptance version menu: local acceptance files, plus version
+ * folders committed on the cycle branch itself (its HEAD tree, kept current by
+ * the trunk sync on screen entry). One folder with data.json is one version;
+ * provider merges are signals, never the source of the candidate list.
+ */
+export function acceptanceVersionChoices(input: {
+  materials: readonly { version: string }[]
+  treePlans: readonly Pick<VersionTreePlan, 'version'>[]
+}): string[] {
+  return [
+    ...new Set([
+      ...input.materials.map((item) => item.version),
+      ...input.treePlans.map((item) => item.version)
+    ])
+  ].sort()
+}
+
+export type TreePlanProblem = { version: string; code: string; message: string }
+
 export function useAcceptanceSources(
   history: VersionHistoryPort,
   material: ReturnType<typeof nativeVersionMaterialPort>,
   scope: MetricScope
 ) {
-  const [sources, setSources] = useState<VersionHistorySource[]>([])
+  const [sources, setSources] = useState<VersionTreePlan[]>([])
   const [versions, setVersions] = useState<string[]>([])
   const [materialProblems, setMaterialProblems] = useState<VersionMaterialCandidate[]>([])
   const [error, setError] = useState<string | null>(null)
-  const [problems, setProblems] = useState<VersionHistoryProblem[]>([])
+  const [problems, setProblems] = useState<TreePlanProblem[]>([])
   const [refreshKey, setRefreshKey] = useState(0)
   useEffect(() => {
     let current = true
@@ -31,23 +50,15 @@ export function useAcceptanceSources(
         }
         return items
       }),
-      history.list({ scope })
+      history.listTreePlans({ scope })
     ])
       .then(([materials, catalog]) => {
         if (!current) {
           return
         }
-        const records = catalog.records
-        setSources(records.filter((item) => item.workflow === 'plan'))
+        setSources(catalog.plans)
         setProblems(catalog.problems)
-        setVersions(
-          [
-            ...new Set([
-              ...materials.map((item) => item.version),
-              ...records.filter((item) => item.workflow === 'plan').map((item) => item.version)
-            ])
-          ].sort()
-        )
+        setVersions(acceptanceVersionChoices({ materials, treePlans: catalog.plans }))
         setError(null)
       })
       .catch((reason) => {

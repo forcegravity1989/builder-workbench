@@ -2,9 +2,11 @@ import {
   VersionHistoryListSchema,
   VersionHistoryReadSchema,
   VersionHistoryReadPlanSchema,
+  VersionTreePlansSchema,
   type VersionHistoryPort,
   type VersionHistoryCatalog,
-  type VersionHistoryPlan
+  type VersionHistoryPlan,
+  type VersionTreePlanCatalog
 } from '../../../shared/workbench/version-history'
 import { callMetricRuntime } from './metric-runtime-rpc'
 
@@ -16,6 +18,15 @@ export function nativeVersionHistoryPort(runtimeOwnerEnvironmentId?: string): Ve
         request.scope,
         runtimeOwnerEnvironmentId,
         'workbench.history.list',
+        (scope) => ({ ...request, scope })
+      )
+    },
+    listTreePlans(input) {
+      const request = VersionTreePlansSchema.parse(input)
+      return callMetricRuntime<VersionTreePlanCatalog>(
+        request.scope,
+        runtimeOwnerEnvironmentId,
+        'workbench.history.listTreePlans',
         (scope) => ({ ...request, scope })
       )
     },

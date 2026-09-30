@@ -18,10 +18,12 @@ import { resolveWorkbenchGitExecOptions } from './project-git-routing'
 import { createVersionHistoryService, type VersionHistoryHost } from './version-history-service'
 import { HistorySourceError } from './version-history-snapshot'
 import { createNativeArchiveEvidence } from './archive-evidence-runtime'
+import { registeredCodeHubArchiveReason } from './archive-source-gap'
 import { nativeVersionMaterialService } from './version-material-runtime'
 import {
   createWorkbenchWorkspaceResolver,
   nativeWorkbenchWorkspaceHost,
+  type WorkbenchWorkspaceRepo,
   type WorkbenchWorkspaceTarget
 } from './workspace-resolver'
 import { WorkspaceScopeError } from './workspace-scope-error'
@@ -72,21 +74,25 @@ type RemoteHistoryError = HistorySourceError & { exitCode?: number | null }
  * Runs the shared read-only Git core where the repository lives: in-process for
  * local/WSL hosts, through the narrow `workbench.history.execute` relay executor
  * for SSH hosts. provider.exec is never extended and agent.exec never borrowed.
+ * `atPath` selects the working tree the command runs in: the repo root for
+ * commit-addressed reads, the cycle worktree for own-branch HEAD reads.
  */
 async function runHistoryGit(
   target: WorkbenchWorkspaceTarget,
   execOptions: { wslDistro?: string },
-  args: readonly string[]
+  args: readonly string[],
+  atPath: 'repo' | 'worktree' = 'repo'
 ): Promise<HistoryGitOutcome> {
   const host = parseExecutionHostId(target.hostId)
+  const path = atPath === 'worktree' ? target.worktreePath : target.repoPath
   if (host?.kind === 'local') {
-    return runReadOnlyHistoryGit(target.repoPath, args, execOptions)
+    return runReadOnlyHistoryGit(path, args, execOptions)
   }
   if (host?.kind !== 'ssh') {
     throw new WorkspaceScopeError('invalid-scope', '请通过工作树所属的 Orca runtime 读取历史')
   }
   try {
-    const value = await requestRemote<{ stdout: string }>(host, target, {
+    const value = await requestRemote<{ stdout: string }>(host, { ...target, repoPath: path }, {
       operation: 'git',
       args: [...args]
     })
@@ -152,6 +158,39 @@ export function nativeVersionHistoryHost(runtime: HistoryRuntime): VersionHistor
         adoptedRef
       })
     },
+    async worktreeHead(scope) {
+      const { target, repo } = await workspaceFor(scope)
+      const outcome = await runHistoryGit(
+        target,
+        resolveWorkbenchGitExecOptions(runtime, repo),
+        ['rev-parse', 'HEAD'],
+        'worktree'
+      )
+      if (!outcome.ok) {
+        throw new HistorySourceError(outcome.code, outcome.message)
+      }
+      return outcome.stdout.toString('utf8').trim()
+    },
+    async listPlanningDirs(scope, commit) {
+      const { target, repo } = await workspaceFor(scope)
+      const outcome = await runHistoryGit(
+        target,
+        resolveWorkbenchGitExecOptions(runtime, repo),
+        ['ls-tree', '-z', '--name-only', `${commit}:.bw/planning`],
+        'worktree'
+      )
+      if (outcome.ok) {
+        return outcome.stdout.toString('utf8').split('\0').filter(Boolean)
+      }
+      // A cycle branch before its first pull legitimately has no `.bw/planning`
+      // yet; Git fatals with exit 128 on the missing path. The commit is pinned
+      // from this same worktree's HEAD moments earlier, so other 128 fatals are
+      // not expected here; anything else surfaces as a read failure.
+      if (outcome.exitCode === 128) {
+        return []
+      }
+      throw new HistorySourceError(outcome.code, outcome.message)
+    },
     async readDraft(scope, version) {
       const snapshot = await materials.read({ ...scope, workflow: 'plan', version })
       if (!snapshot) {
@@ -164,19 +203,41 @@ export function nativeVersionHistoryHost(runtime: HistoryRuntime): VersionHistor
     },
     async archiveState(scope, candidate) {
       const { target, repo } = await workspaceFor(scope)
-      const evidence = await createNativeArchiveEvidence(
+      const opened = await openArchiveEvidence(
         repo,
-        materialReaderFor(target, resolveWorkbenchGitExecOptions(runtime, repo))
+        target,
+        resolveWorkbenchGitExecOptions(runtime, repo)
       )
-      if (!evidence) {
-        return {
-          kind: 'unknown' as const,
-          message: '未解析项目的 GitHub 归档来源，无法核对真实合入'
-        }
+      if (!opened.evidence) {
+        return { kind: 'unknown' as const, message: opened.gap }
       }
-      return evidence.reader.archiveStateForCandidate(candidate)
+      return opened.evidence.reader.archiveStateForCandidate(candidate)
     }
   }
+}
+
+const GITHUB_ARCHIVE_SOURCE_UNRESOLVED = '未解析项目的 GitHub 归档来源，无法核对真实合入'
+
+async function openArchiveEvidence(
+  repo: WorkbenchWorkspaceRepo,
+  target: WorkbenchWorkspaceTarget,
+  execOptions: { wslDistro?: string }
+): Promise<
+  | {
+      evidence: NonNullable<Awaited<ReturnType<typeof createNativeArchiveEvidence>>>
+      gap: null
+    }
+  | { evidence: null; gap: string }
+> {
+  const codeHub = registeredCodeHubArchiveReason(repo.gitRemoteIdentity)
+  if (codeHub) {
+    return { evidence: null, gap: codeHub }
+  }
+  const evidence = await createNativeArchiveEvidence(repo, materialReaderFor(target, execOptions))
+  if (!evidence) {
+    return { evidence: null, gap: GITHUB_ARCHIVE_SOURCE_UNRESOLVED }
+  }
+  return { evidence, gap: null }
 }
 
 function materialReaderFor(target: WorkbenchWorkspaceTarget, execOptions: { wslDistro?: string }) {
@@ -213,13 +274,15 @@ export async function readArchiveProof(
     mergeCommit: null,
     proof: { kind: 'unknown', reason }
   })
-  const evidence = await createNativeArchiveEvidence(
+  const opened = await openArchiveEvidence(
     repo,
-    materialReaderFor(target, resolveWorkbenchGitExecOptions(runtime, repo))
+    target,
+    resolveWorkbenchGitExecOptions(runtime, repo)
   )
-  if (!evidence) {
-    return unavailable('未解析项目的 GitHub 归档来源，无法核对真实合入')
+  if (!opened.evidence) {
+    return unavailable(opened.gap)
   }
+  const evidence = opened.evidence
   if (
     params.provider !== 'github' ||
     params.repository !== githubRepoIdentityKey(evidence.ownerRepo)

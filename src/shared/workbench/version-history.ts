@@ -9,6 +9,7 @@ import {
 } from './version-material'
 
 export const VersionHistoryListSchema = z.strictObject({ scope: MetricScopeSchema })
+export const VersionTreePlansSchema = z.strictObject({ scope: MetricScopeSchema })
 export const VersionHistoryReadPlanSchema = z.strictObject({
   scope: MetricScopeSchema,
   planRef: PlanReferenceSchema
@@ -37,17 +38,35 @@ export type VersionHistoryCatalog = {
   /** Unreadable entries remain visible without hiding the valid records. */
   problems: VersionHistoryProblem[]
 }
+/**
+ * A plan committed on the cycle branch itself (its HEAD tree), not on the
+ * adopted baseline: the acceptance board reads the same branch its session
+ * works in. No commit timestamp — tree entries carry none, and consumers
+ * must not invent one.
+ */
+export type VersionTreePlan = Omit<VersionHistorySource, 'committedAt'>
+export type VersionTreePlanCatalog = {
+  /** The cycle branch HEAD the plans were listed from. */
+  head: string
+  plans: VersionTreePlan[]
+  /** Unreadable or malformed plan folders stay visible next to the valid ones. */
+  problems: { version: string; code: string; message: string }[]
+}
 export type VersionHistoryPlan = {
   document: PlanningMaterial
   revision: string
   planRef: z.infer<typeof PlanReferenceSchema>
-  /** Committed evidence requires both baseline reachability and verified archive adoption. */
+  /** A committed plan is the data.json bytes on the adopted baseline, not a provider merge record. */
   source:
     | { kind: 'committed'; sourceCommit: string; baselineCommit: string; baselineRef: string }
     | { kind: 'draft'; sourceHostId: string; sourceWorktreeId: string }
 }
 export type VersionHistoryPort = {
   list(input: z.infer<typeof VersionHistoryListSchema>): Promise<VersionHistoryCatalog>
+  /** Lists plan folders on the cycle branch HEAD; one folder with data.json is one version. */
+  listTreePlans(
+    input: z.infer<typeof VersionTreePlansSchema>
+  ): Promise<VersionTreePlanCatalog>
   read(input: z.infer<typeof VersionHistoryReadSchema>): Promise<{
     document: PlanningMaterial | AcceptanceMaterial
     revision: string

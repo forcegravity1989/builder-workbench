@@ -1,12 +1,13 @@
 import type { HostedReviewInfo } from '../../../shared/hosted-review'
 import type { PRReviewDecision } from '../../../shared/github/pull-request-types'
 import { githubRepoIdentityKey } from '../../../shared/github/repository-identity-key'
-import { isCodeHubUrl } from '../../../shared/codehub'
+import { isCodeHubGitRemote } from '../../../shared/codehub'
 import type { Repo } from '../../../shared/repo-types'
-import type {
-  ArchiveProofResult,
-  ArchiveReference,
-  ArchiveStatus
+import {
+  CODEHUB_ARCHIVE_UNPROVABLE_REASON,
+  type ArchiveProofResult,
+  type ArchiveReference,
+  type ArchiveStatus
 } from '../../../shared/workbench/version-archive'
 import type { ArchiveInput, ArchivePort, CycleSession } from './version-cycle/ports'
 import { prepareCycleRequest } from './version-cycle/native-session'
@@ -87,10 +88,10 @@ export function nativeArchivePort(runtimeOwnerEnvironmentId?: string): ArchivePo
           { repo: ownerScope.repoId },
           { timeoutMs: 30_000 }
         )
-        if (isCodeHubUrl(repo.gitRemoteIdentity?.remoteUrl)) {
+        if (isCodeHubGitRemote(repo.gitRemoteIdentity)) {
           return {
             kind: 'unknown',
-            reason: 'CodeHub 合入证据暂无法读回，归档状态保持不可证明'
+            reason: CODEHUB_ARCHIVE_UNPROVABLE_REASON
           }
         }
         return { kind: 'not-created', checkedAt }

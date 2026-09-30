@@ -21,7 +21,9 @@ describe('read-only history git allowlist', () => {
     ['the fixed history log', logTemplate],
     ['a material blob read', ['show', `${sha}:.bw/planning/v1/data.json`]],
     ['an acceptance blob read', ['show', `${sha}:.bw/planning/v0.5/acceptance.json`]],
-    ['an ancestry proof', ['merge-base', '--is-ancestor', sha, 'b'.repeat(40)]]
+    ['an ancestry proof', ['merge-base', '--is-ancestor', sha, 'b'.repeat(40)]],
+    ['the cycle worktree head pin', ['rev-parse', 'HEAD']],
+    ['a planning folder listing', ['ls-tree', '-z', '--name-only', `${sha}:.bw/planning`]]
   ])('accepts %s', (_name, args) => {
     expect(() => assertReadOnlyHistoryGitArgs(args)).not.toThrow()
   })
@@ -29,7 +31,10 @@ describe('read-only history git allowlist', () => {
   it.each([
     ['writes', ['push', 'origin', 'main']],
     ['config mutations', ['config', 'core.sshCommand', 'evil']],
-    ['generic rev-parse', ['rev-parse', 'HEAD']],
+    ['generic rev-parse targets', ['rev-parse', 'main']],
+    ['rev-parse with extra args', ['rev-parse', 'HEAD', '--extra']],
+    ['ls-tree outside planning', ['ls-tree', '-z', '--name-only', `${sha}:.bw`]],
+    ['ls-tree with recursion flags', ['ls-tree', '-r', '-z', '--name-only', `${sha}:.bw/planning`]],
     ['symbolic-ref moves', ['symbolic-ref', 'HEAD', 'refs/heads/x']],
     ['external diff hooks', ['log', '--ext-diff', sha]],
     ['arbitrary show targets', ['show', `${sha}:../../etc/passwd`]],

@@ -554,12 +554,14 @@ import {
   SkillUploadChunkRequestSchema,
   SkillUploadCommitRequestSchema
 } from '../skill-upload-session-contract'
+import { CycleSyncSchema } from '../workbench/cycle-sync'
 import { MetricReadRequestSchema, MetricScopeSchema } from '../workbench/metrics'
 import { ArchiveProofRequestSchema } from '../workbench/version-archive'
 import {
   VersionHistoryListSchema,
   VersionHistoryReadPlanSchema,
-  VersionHistoryReadSchema
+  VersionHistoryReadSchema,
+  VersionTreePlansSchema
 } from '../workbench/version-history'
 import {
   VersionMigrationApplySchema,
@@ -1182,7 +1184,9 @@ export const RPC_PARAMS_BY_METHOD = {
   'updater.getStatus': null,
   'updater.install': null,
   'workbench.archive.proof': ArchiveProofRequestSchema,
+  'workbench.cycle.syncTrunk': CycleSyncSchema,
   'workbench.history.list': VersionHistoryListSchema,
+  'workbench.history.listTreePlans': VersionTreePlansSchema,
   'workbench.history.read': VersionHistoryReadSchema,
   'workbench.history.readPlan': VersionHistoryReadPlanSchema,
   'workbench.materials.context': VersionMaterialScopeSchema,

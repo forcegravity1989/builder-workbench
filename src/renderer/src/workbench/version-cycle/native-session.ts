@@ -1,6 +1,9 @@
 import { useAppStore } from '@/store'
 import type { AppState } from '@/store/types'
-import { insertNativeChatDraft } from '@/lib/native-chat-draft-insertion'
+import {
+  insertNativeChatDraft,
+  insertNativeChatDraftForTab
+} from '@/lib/native-chat-draft-insertion'
 import { structuredAgentSessionPaneKey } from '../../../../shared/structured-agent-session-projection'
 import { makePaneKey, isTerminalLeafId } from '../../../../shared/stable-pane-id'
 import { resolveRootlessTerminalLayoutLeafId } from '@/components/terminal-pane/terminal-layout-leaf-ids'
@@ -65,13 +68,14 @@ export function getActiveCycleSession(
 
 export async function prepareCycleRequest(session: CycleSession, text: string) {
   const current = getActiveCycleSession(useAppStore.getState(), session, session.worktreeId)
-  if (!current || current.tabId !== session.tabId || current.paneKey !== session.paneKey) {
+  if (!current || current.tabId !== session.tabId) {
     throw new Error('会话焦点已改变，请选择目标会话后重试。')
   }
-  if (
-    !session.paneKey ||
-    !insertNativeChatDraft({ tabId: session.tabId, paneKey: session.paneKey, text })
-  ) {
-    throw new Error('请先切换到此会话的聊天输入框，再准备请求')
+  const exact =
+    current.paneKey != null &&
+    insertNativeChatDraft({ tabId: current.tabId, paneKey: current.paneKey, text })
+  if (exact || insertNativeChatDraftForTab(current.tabId, text)) {
+    return
   }
+  throw new Error('请先切换到此会话的聊天输入框，再准备请求')
 }

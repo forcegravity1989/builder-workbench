@@ -8,6 +8,7 @@ import {
 } from 'lucide-react'
 import type { RefObject } from 'react'
 import type { VersionMaterialCandidate } from '../../../../shared/workbench/version-material-request'
+import { AutomationConfigureButton } from '../version-cycle/AutomationConfigureButton'
 import {
   archiveJourneyLamp,
   type ArchiveStatus
@@ -18,7 +19,8 @@ export function PlanningHeader({
   disabled,
   state,
   branch,
-  onSelect
+  onSelect,
+  onConfigure
 }: {
   currentVersion: string
   versions: VersionMaterialCandidate[]
@@ -26,6 +28,7 @@ export function PlanningHeader({
   state: string
   branch: string
   onSelect(version: string): void
+  onConfigure(): void
 }) {
   return (
     <header className="vp-header">
@@ -58,6 +61,7 @@ export function PlanningHeader({
         <GitBranch size={13} aria-hidden="true" />
         <span>{branch}</span>
       </span>
+      <AutomationConfigureButton onConfigure={onConfigure} />
     </header>
   )
 }

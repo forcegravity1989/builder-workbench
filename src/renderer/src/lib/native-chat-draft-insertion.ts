@@ -24,12 +24,45 @@ export function registerNativeChatDraftTarget(
   }
 }
 
+function soleWriter(writers: Set<InsertDraft> | undefined): InsertDraft | null {
+  if (!writers || writers.size !== 1) {
+    return null
+  }
+  return writers.values().next().value ?? null
+}
+
 /** Append without submitting; a missing or ambiguous mounted target is a failure. */
 export function insertNativeChatDraft(request: NativeChatDraftTarget & { text: string }): boolean {
-  const writers = targets.get(targetKey(request))
-  if (!request.text.trim() || writers?.size !== 1) {
+  if (!request.text.trim()) {
     return false
   }
-  const writer = writers.values().next().value
+  const writer = soleWriter(targets.get(targetKey(request)))
   return writer?.(request.text) === true
+}
+
+/** One mounted composer on this tab is enough; several panes stay a failure. */
+export function insertNativeChatDraftForTab(tabId: string, text: string): boolean {
+  if (!text.trim()) {
+    return false
+  }
+  const writers: InsertDraft[] = []
+  for (const [key, registered] of targets) {
+    let parsed: unknown
+    try {
+      parsed = JSON.parse(key)
+    } catch {
+      continue
+    }
+    if (!Array.isArray(parsed) || parsed[0] !== tabId) {
+      continue
+    }
+    const writer = soleWriter(registered)
+    if (writer) {
+      writers.push(writer)
+    }
+  }
+  if (writers.length !== 1) {
+    return false
+  }
+  return writers[0](text) === true
 }

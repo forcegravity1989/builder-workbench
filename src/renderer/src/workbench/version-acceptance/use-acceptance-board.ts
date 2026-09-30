@@ -9,9 +9,13 @@ import type { MetricRef } from '../../../../shared/workbench/metrics'
 import { metricRefKey } from '../../../../shared/workbench/metrics'
 import { isArchivedMaterial } from '../../../../shared/workbench/version-archive'
 import { useAcceptanceDraft } from './use-acceptance-draft'
-import { createAcceptanceMaterial, emptyGoalResult, sameAcceptanceSource } from './acceptance-model'
+import { emptyGoalResult, sameAcceptanceSource } from './acceptance-model'
+import { startAcceptanceRound } from './acceptance-round'
 import type { AcceptanceBoardProps } from './AcceptanceBoard'
-import { useAcceptanceSources, useFixedAcceptancePlan } from './use-acceptance-plan'
+import {
+  useAcceptanceSources,
+  useFixedAcceptancePlan
+} from './use-acceptance-plan'
 import { useAcceptanceOutput } from './use-acceptance-output'
 
 export function useAcceptanceBoard({
@@ -149,67 +153,19 @@ export function useAcceptanceBoard({
       }
     }
   }
-  async function begin() {
-    const source = sources.find(
-      (item) => `${item.sourceCommit}:${item.version}:${item.cycleId}` === planChoice
-    )
-    if (!source || source.version !== context.version) {
-      return
-    }
-    if (draft) {
-      const confirmed = Boolean(
-        draft.expectedRevision &&
-        isArchivedMaterial(archive, {
-          workflow: 'acceptance',
-          version: draft.document.version,
-          cycleId: draft.document.cycleId,
-          revision: draft.expectedRevision
-        })
-      )
-      if (confirmed && draft.dirty) {
-        setError('本轮验收已归档，未保存的本地修改不能写入；请放弃本地修改后开始下一轮。')
-        return
-      }
-      if (!confirmed) {
-        setError('本轮验收尚未归档，请继续当前材料；归档后可开始下一轮。')
-        return
-      }
-    }
-    const token = ++generation.current
-    const original = controller.value
-    setBusy(true)
-    try {
-      const planRef = {
-        kind: 'committed' as const,
-        version: source.version,
-        cycleId: source.cycleId,
-        revision: source.revision,
-        sourceCommit: source.sourceCommit
-      }
-      const selected = await history.readPlan({ scope: metricScope, planRef })
-      if (token !== generation.current || controller.value !== original) {
-        return
-      }
-      const next = createAcceptanceMaterial({
-        planRef,
-        plan: selected,
-        cycleId: crypto.randomUUID()
-      })
-      controller.restore({
-        document: next,
-        expectedRevision: draft?.expectedRevision ?? null,
-        dirty: true
-      })
-      setError(null)
-    } catch (reason) {
-      if (token === generation.current) {
-        setError(String(reason))
-      }
-    } finally {
-      if (token === generation.current) {
-        setBusy(false)
-      }
-    }
+  function begin() {
+    return startAcceptanceRound({
+      sources,
+      planChoice,
+      contextVersion: context.version,
+      draft,
+      history,
+      scope: metricScope,
+      controller,
+      generation,
+      setBusy,
+      setError
+    })
   }
   async function prepare(text: string) {
     try {
