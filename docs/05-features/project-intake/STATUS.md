@@ -2,21 +2,21 @@
 
 > **维护约定**：本篇记录本特性六环链现状与证据，格式按 [02 §6.2](../../01-principles/02-working-backwards.md)「STATUS 格式」；更新触发：任一环状态或证据变化，随引发它的 PR 同批提交，不记流水。
 
-**现状（2026-09-30）**：intent 已 gate；spec 已确认（PR 简化形态、CodeHub 经 codehub-cli 开 MR、同远端去重做、原型豁免、单批交付）；保真合并/落点/删除批已实施，PR 化与远端预探测实施中。
+**现状（2026-09-30）**：intent 已 gate；spec 已确认（PR 简化形态、CodeHub 经 codehub-cli 开 MR、同远端去重做、原型豁免、单批交付）；名片 PR 化、远端预探测、去重、编辑名片入口已实现（PR #285），**真壳与真实远端端到端未验**。
 
 | 环 | 状态 | 证据或已知债 |
 |---|---|---|
 | 1 intent | ● | [intent.md](intent.md) 已 gate（2026-09-29 遗留决定收口）；带入来源 = 2026-09-29 用户拍板补登记 |
 | 2 spec | ● | [spec.md](spec.md) 已确认（2026-09-30 用户 gate；原型豁免——在用补链特性以真壳与 PR 截图为对照） |
-| 3 实现设计 | ◐ | architecture「打开或接入项目 / 查看项目概况」与 06-module/桌面壳 有散落记录，无特性级 design；PR 化工程设计（固定树 bw/project 复用周期管线）随实施补 |
-| 4 TDD | ◐ | 合规存量：project-charter 7 例（解析回写/保真补空含 [chat] 与尾换行保留/north_star 别名/无空可补不动/归一化；「坏文件不覆盖」守卫在编排层、无单测，以验收点 P-02 为据）、workbench-wall-projects（远端链接/组聚合/回退标签）；knowledge-map 相关测试随能力删除；PR 化协议测试随实施补 |
+| 3 实现设计 | ◐ | architecture「打开或接入项目 / 查看项目概况」有散落记录；工程实现全部复用既有件（ensureNamedWorktree 固定树管线、workspace-resolver、createGitHubPullRequest、codehub mutations、hostedReview.forBranch、git.fastForward、normalizeGitRemoteUrl），无特性级 design 文档 |
+| 4 TDD | ◐ | 合规存量：project-charter 7 例（shared，解析回写/保真补空含 [chat] 与尾换行保留/north_star 别名/无空可补不动/归一化）、workbench-wall-projects；charter RPC 协议与 CodeHub 原语**无单测**（2026-09-30 用户冻结新增 vitest，待清理后回补）；「坏文件不覆盖」守卫以验收点 P-02 为据 |
 | 5 验收点E2E | 待建 | 点位已定（spec P-01–P-07）；用例注册按 2026-09-29 用户拍板暂缓，稳定后专项回补 |
 | 6 旅程E2E | 待建 | 候选主旅程已定义：「接入项目 → 墙上见名片 → 切换进总览 → 重启读回一致」；同上暂缓 |
 
 **已知债**：
-1. **名片 toml 仅写本地工作区，未经 PR 落被管仓**——spec 必做项（规则 2），待 spec 确认后实施；实施前「接入一次全链读回」只对单机成立，主检出留有未提交名片文件。main v0.4 正本取证见 intent「已定决定」。
-2. **远端克隆前预探测缺失**——远端旅程填表时看不到仓里已有名片，冲突字段在合并时被静默丢弃（数据不丢但不可见）；spec 规则 3 / P-03 已定行为，待实施。main 4f9d93107 教训：「没查成」≠「没接管过」。
-3. **名片补录/编辑入口缺失**——写失败「可稍后补」暂无承接入口；随 PR 化一并实施（spec 规则 2）。
-4. **同远端身份去重未实施**——同一 URL 换父文件夹克隆会得到两张墙卡（Orca 去重按路径）；spec 规则 4 提案待确认。
-5. 墙卡版本/周目标/健康为占位 Unknown（用户拍板暂不细设计）；「本机环境」探测条已删除，真实探测清单（claude/cursor-agent/gh/codehub-cli，三态，不探不会起的东西）随墙健康灯重新决策——main 正本证据：环境条 6 格与三态语义（`crates/app-shell/src/screens/wall/mod.rs` env_bar、`bridge/vm_build.rs probe_env`）、假红修复 07e076ff4（Windows PATHEXT）、假绿修复 e23e3e4ce（探的名字必须等于真起的进程）。
-6. 克隆中断残留暂不处理（用户拍板，看实际反馈）。
+1. **名片 PR 全链真实远端未验**——实现已落（bw/project 固定树提交 + push + gh/codehub-cli 开 PR + 待合入提示 + 更新主目录 + 编辑名片补录），但 gh/codehub-cli 登录态、GHES、WSL 仓、配对宿主、CodeHub 实机均未端到端跑过；未验前不宣称团队共享已可用。本机真壳受环境限制（node-pty 重建失败）未拉起。
+2. **CodeHub 侧「已合入未更新」无检测**——status 只查开放 MR（codehub-cli mr list opened）；GitHub 有 merged 态可提示「更新主目录」，CodeHub 合入后要等主检出读到名片才消失提示缺口。
+3. **CodeHub MR 目标分支兜底 master**——沿 main 隐含假设（origin/HEAD 符号引用缺失时），已加 getRepoDefaultBranchName 兜底；内源默认分支为 master 的假设需实机复核。
+4. 墙卡版本/周目标/健康为占位 Unknown（用户拍板暂不细设计）；「本机环境」探测条已删除，真实探测清单（claude/cursor-agent/gh/codehub-cli，三态，不探不会起的东西）随墙健康灯重新决策——main 正本证据：环境条 6 格与三态语义（`crates/app-shell/src/screens/wall/mod.rs` env_bar、`bridge/vm_build.rs probe_env`）、假红修复 07e076ff4（Windows PATHEXT）、假绿修复 e23e3e4ce（探的名字必须等于真起的进程）。
+5. 克隆中断残留暂不处理（用户拍板，看实际反馈）。
+6. 远端预探测对 GHES 主机走 githubHostExecOptions 的 host 限定，未实测。

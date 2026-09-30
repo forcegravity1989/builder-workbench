@@ -4,6 +4,7 @@ import { useAppStore } from '@/store'
 import type { CharterStatus } from '../../../shared/workbench/charter'
 import { closeProjectPage, openCharterEdit, openProjectOnboard } from './project-page-state'
 import { readCharterPrStatus } from './charter-port'
+import { CharterPrNotice } from './charter-pr-notice'
 import { readProjectCharter, type ProjectCharter } from './project-charter'
 import { switchActiveProject } from './switch-active-project'
 import { buildWallProjects, type WallProject, type WallRepoSlot } from './workbench-wall-projects'
@@ -287,41 +288,17 @@ export function ProjectWallPage(): React.JSX.Element {
 
                   <div className="pcard-repos" data-workbench-repo-slots>
                     <div className="pcard-repos-head">代码仓</div>
-                    {!charters[key] && charterStatus?.pr?.state === 'open' ? (
-                      <div className="pcard-charter-note" data-workbench-charter-pr>
-                        <span>
-                          名片待合入 · {charterStatus.pr.provider === 'github' ? 'PR' : 'MR'} #
-                          {charterStatus.pr.number}
-                        </span>
-                        {charterStatus.pr.url ? (
-                          <button
-                            type="button"
-                            className="wb-btn wb-btn-ghost wb-btn-sm"
-                            onClick={() => void window.api.shell.openUrl(charterStatus.pr!.url!)}
-                          >
-                            查看
-                          </button>
-                        ) : null}
-                      </div>
-                    ) : null}
-                    {!charters[key] &&
-                    charterStatus?.pr?.state === 'merged' &&
-                    !charterStatus.headHasCharter &&
-                    primaryRepo ? (
-                      <div className="pcard-charter-note" data-workbench-charter-merged>
-                        <span>名片 PR 已合入</span>
-                        <button
-                          type="button"
-                          className="wb-btn wb-btn-secondary wb-btn-sm"
-                          disabled={updatingRepoId === primaryRepo.id}
-                          onClick={() => void updateMainCheckout(primaryRepo.path, primaryRepo.id)}
-                        >
-                          更新主目录
-                        </button>
-                      </div>
-                    ) : null}
-                    {!charters[key] && charterStatus?.queryFailed ? (
-                      <div className="pcard-charter-note wb-muted">名片 PR 状态没读到</div>
+                    {!charters[key] ? (
+                      <CharterPrNotice
+                        status={charterStatus}
+                        variant="wall"
+                        updating={updatingRepoId === p.project.primaryRepoId}
+                        onUpdateMain={
+                          primaryRepo
+                            ? () => void updateMainCheckout(primaryRepo.path, primaryRepo.id)
+                            : undefined
+                        }
+                      />
                     ) : null}
                     <ul className="pcard-repo-list">
                       {p.project.slots.map((slot) => (

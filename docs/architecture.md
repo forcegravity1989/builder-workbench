@@ -14,7 +14,7 @@
 
 | 用户要做的事 | 当前承载 | 当前边界 |
 |---|---|---|
-| 打开或接入项目 | 项目墙、接入覆盖层与 Orca 仓库列表 | 接入写 `.bw/project.toml`（保真合并只补空字段、坏文件不覆盖）；名片经固定分支 `bw/project` PR 合入与远端克隆前预探测见 [project-intake spec](05-features/project-intake/spec.md)（草案待确认后实施）；旧 Rust 的项目约定常驻 worktree + Issue 运作完整旅程不在范围 |
+| 打开或接入项目 | 项目墙、接入覆盖层与 Orca 仓库列表 | 名片保真合并只补空字段、坏文件不覆盖；经固定分支 `bw/project` PR 合入被管仓、克隆前远端预探测与同远端去重已实现（真实远端未验），行为见 [project-intake spec](05-features/project-intake/spec.md)；旧 Rust 的项目约定常驻 worktree + Issue 运作完整旅程不在范围 |
 | 核对结果、拟目标、拆版本工作 | 计划屏：原生 terminal 固定工作区 + 右侧材料单页 | 经材料 RPC 读写 `.bw/planning/<版本>/`；开工注入渲染后 SYSTEM 与 week-planning Skill 指针，来源和覆盖边界见 §2 ③ |
 | 核对交付、逐目标验收、归档 | 验收屏：与计划共用容器，独立固定树 bw/week-acceptance | 归档状态按材料身份与 provider 合入证据推导；CodeHub 无真实合入证据一律 Unknown，正文编辑延期 |
 | 执行工作与管理任务 | Orca 终端、Tasks、worktree | 复用执行核；不能据规划会话可打开就认定所有 Issue 开工都已接 BW 纪律 |

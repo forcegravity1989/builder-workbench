@@ -18,12 +18,15 @@ export function ProjectCard({
   projectName,
   charter,
   remote,
-  version
+  version,
+  notice
 }: {
   projectName: string
   charter: ProjectCharter | null
   remote: string | null
   version: string | null
+  /** 名片 PR 状态行(待合入/已合入未更新/没读到);无状态时不渲染。 */
+  notice?: React.ReactNode
 }) {
   const rows = charterRows(remote, charter)
   return (
@@ -38,6 +41,7 @@ export function ProjectCard({
           {version && <span className="wb-tag wb-tag-outline wb-mono">{version}</span>}
         </div>
       </div>
+      {notice}
       <div className="detail-grid">
         {rows.map((row) => (
           <React.Fragment key={row.k}>
