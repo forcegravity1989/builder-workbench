@@ -19,6 +19,21 @@ describe('composer issue command', () => {
     })
   })
 
+  it('renders a trusted CodeHub issue command from the issue link', () => {
+    expect(
+      buildTrustedComposerIssueCommand({
+        enabled: true,
+        provider: 'codehub',
+        issueNumber: 35,
+        template: 'Complete {{artifact_url}}',
+        artifactUrl: 'https://codehub.example/team/app/issues/35',
+        trustDecision: 'run'
+      })
+    ).toEqual({
+      command: 'Complete https://codehub.example/team/app/issues/35'
+    })
+  })
+
   it('skips untrusted, disabled, PR, and empty commands', () => {
     expect(
       buildTrustedComposerIssueCommand({ ...readyInput, trustDecision: 'skip' })

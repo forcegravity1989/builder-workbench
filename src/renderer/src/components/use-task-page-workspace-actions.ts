@@ -147,6 +147,7 @@ export function useTaskPageWorkspaceActions(model: TaskPageSearchActionsModel) {
         }),
         prefilledName: getLinkedWorkItemSuggestedName({ title: item.title }),
         initialRepoId: item.repoId,
+        enableIssueAutomation: item.type === 'issue',
         telemetrySource: 'sidebar'
       })
     },

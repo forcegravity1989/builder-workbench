@@ -1,6 +1,6 @@
 import type { MetricScope } from '../../../../shared/workbench/metrics'
 import type { CycleSyncResult } from '../../../../shared/workbench/cycle-sync'
-import { callMetricRuntime } from './metric-runtime-rpc'
+import { callMetricRuntime } from '../metric-runtime-rpc'
 
 /** Pulls the adopted trunk into the cycle branch on screen entry (owner-routed). */
 export function syncCycleTrunk(

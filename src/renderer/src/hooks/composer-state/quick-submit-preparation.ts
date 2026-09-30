@@ -6,7 +6,8 @@ import { settleComposerSubmit } from '@/lib/composer-submit-cancellation'
 import {
   getSetupConfig,
   getLinkedWorkItemProvider,
-  canUseIssueCommandForLinkedItemProvider
+  canUseIssueCommandForLinkedItemProvider,
+  DEFAULT_ISSUE_COMMAND_TEMPLATE
 } from '@/lib/new-workspace'
 import {
   ensureHooksConfirmed,
@@ -183,7 +184,10 @@ export function useQuickSubmitPreparation(input: QuickSubmitPreparationInput) {
         enabled: enableIssueAutomation && selectedRepoIsGit,
         provider: submitLinkedWorkItemProvider,
         issueNumber: submitLinkedIssueNumber,
-        template: submitIssueCommandTemplate,
+        template:
+          issueCommandTrustDecision === 'run'
+            ? submitIssueCommandTemplate.trim() || DEFAULT_ISSUE_COMMAND_TEMPLATE
+            : submitIssueCommandTemplate,
         artifactUrl: submitLinkedWorkItem?.url ?? null
       }
 

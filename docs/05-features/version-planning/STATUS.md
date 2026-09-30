@@ -18,7 +18,7 @@
 
 本轮验证安排：用户授权各特性窗口先做少量基础 E2E，可合并场景覆盖多个验收点；完整验收点与用户旅程由用户后续协调助手 Agent。2026-09-25 用户调整为优先提交各线 PR，允许难协调的接线遗留。本轮统一收尾已把计划业务接入生产入口并退役旧三屏链条，基础 Electron E2E 仍未全部完成，不代表后两环已齐。
 
-当前会话边界按用户确认改为完整原生工作区复用，原型同步表达复用范围和紧凑数据问题提示。CycleChat、专用历史嵌入、sessionStorage 会话绑定及迁移弹窗已移除；新建计划/验收走现有自动化，数据问题当时经独立新建会话自动递交（该通道后由 #279 的 oneShotPrompt 单次递交替代），归档只插入当前原生 composer 草稿。计划右板已按认可结构调整，最终视觉与交互仍需结合实际数据逐项验看。上述为此前 [PR #275](https://github.com/forcegravity1989/builder-workbench/pull/275) 的会话复用实施，验证范围与资源限制见该 PR；历史烟测及类型检查不能作为本轮新入口通过的证据。
+当前会话边界按用户确认改为完整原生工作区复用，原型同步表达复用范围和紧凑数据问题提示。CycleChat、专用历史嵌入、sessionStorage 会话绑定及迁移弹窗已移除；新建计划/验收走现有自动化，数据问题当时经独立新建会话自动递交（该通道后由 #279 的 oneShotPrompt 单次递交替代），归档把未发送请求贴进左半屏当前显示的终端会话。计划右板已按认可结构调整，最终视觉与交互仍需结合实际数据逐项验看。上述为此前 [PR #275](https://github.com/forcegravity1989/builder-workbench/pull/275) 的会话复用实施，验证范围与资源限制见该 PR；历史烟测及类型检查不能作为本轮新入口通过的证据。
 
 | 环 | 状态 | 证据或已知债 |
 |---|---|---|
@@ -55,7 +55,7 @@
 | P06 分树、全部原生会话复用、专用新建与数据处理入口 | ◐ | CycleWorkspaceProvider + CycleStartCard（首行协作卡片）+ 原生 Terminal/RightSidebar；数据问题随 runNow oneShotPrompt 单次递交 | CycleStartCard/one-shot 转发组件与契约测试通过；多标签/分屏/历史与真实手动运行仍待真壳验证 |
 | P07 自动化登记去重、BW 提示覆盖同步、用户设置保留、真实到点可追溯 | ◐ | 默认关闭态注册（ensure-cycle-automation：creationKey 去重、已有条目覆盖同步提示词、用户设置保留、人启用才到点）+ 页头「配置自动化」预填/编辑入口 | 去重/覆盖同步/同步失败放行单测；真实到点与跨重启去重待人启用后验证 |
 | P08 并发保存冲突处理；重启/切项目/切版本读回一致 | ◐ | usePlanningAutosave + MaterialDraftController CAS + PlanningPersistenceNotice + view-memory | 本轮自动保存检查见 PR；既有控制器测试/烟测不能替代新路径的真实并发及重启读回 |
-| P09 归档只准备会话请求；PR 真实状态定灯色 | ◐ | archivePort.prepareRequest→composer；archive 状态自动读取+灯色语义（信号不阻断）；归档旁评审状态文本已移除（2026-09-30 返工批，灯保留），archive-label 已删 | archive-port 测试；UI 呈现交验收点 E2E 与真壳 Review；新原生焦点接线、真实 PR 状态与归档请求仍待真壳及 provider 旅程验证 |
+| P09 归档只准备会话请求；PR 真实状态定灯色 | ◐ | archivePort.prepareRequest 贴进左半屏当前终端会话，不自动发送；archive 状态自动读取+灯色语义（信号不阻断）；归档旁评审状态文本已移除（2026-09-30 返工批，灯保留），archive-label 已删 | archive-port 测试；UI 呈现交验收点 E2E 与真壳 Review；真实 PR 状态与归档请求仍待真壳及 provider 旅程验证 |
 | P10 总览按版本/多周/固定修订读摘要；往返保草稿；坏历史不伪造 | ◐ | use-version-minutes+OverviewPage 双栏+problems 列表 | 组件级+烟测总览；多周真实归档回看待人 |
 
 | 旅程 | 状态 | 覆盖 |
