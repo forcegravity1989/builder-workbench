@@ -84,6 +84,17 @@ north_star = ""
     expect(content).not.toContain('opportunity =')
   })
 
+  it('inserts missing keys before the trailing newline when there is no table', () => {
+    const raw = `name = "a"\n`
+    const { content, filled } = fillBlankCharterInToml(raw, {
+      ...EMPTY_CHARTER,
+      name: 'a',
+      brief: 'b'
+    })
+    expect(filled).toEqual(['brief'])
+    expect(content).toBe(`name = "a"\nbrief = "b"\n`)
+  })
+
   it('returns content untouched when nothing is blank to fill', () => {
     const raw = `name = "a"\r\nbrief = "b"\r\n`
     const { content, filled } = fillBlankCharterInToml(raw, {

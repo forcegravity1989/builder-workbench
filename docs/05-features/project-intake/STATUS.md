@@ -6,10 +6,10 @@
 
 | 环 | 状态 | 证据或已知债 |
 |---|---|---|
-| 1 intent | ● | [intent.md](intent.md) 已 gate（2026-09-30 遗留决定收口）；带入来源 = 2026-09-29 用户拍板补登记 |
+| 1 intent | ● | [intent.md](intent.md) 已 gate（2026-09-29 遗留决定收口）；带入来源 = 2026-09-29 用户拍板补登记 |
 | 2 spec | ◐ | [spec.md](spec.md) 草案待人确认；**原型缺口**（在用补链特性无 prototype.html，spec gate 硬要求，待拍板补做或豁免） |
 | 3 实现设计 | ◐ | architecture「打开或接入项目 / 查看项目概况」与 06-module/桌面壳 有散落记录，无特性级 design；PR 化工程设计（固定树 bw/project 复用周期管线）随实施补 |
-| 4 TDD | ◐ | 合规存量：project-charter 6 例（解析回写/保真补空含 [chat] 保留/north_star 别名/坏路径不动/归一化）、workbench-wall-projects（远端链接/组聚合/回退标签）；knowledge-map 相关测试随能力删除；PR 化协议测试随实施补 |
+| 4 TDD | ◐ | 合规存量：project-charter 7 例（解析回写/保真补空含 [chat] 与尾换行保留/north_star 别名/无空可补不动/归一化；「坏文件不覆盖」守卫在编排层、无单测，以验收点 P-02 为据）、workbench-wall-projects（远端链接/组聚合/回退标签）；knowledge-map 相关测试随能力删除；PR 化协议测试随实施补 |
 | 5 验收点E2E | 待建 | 点位已定（spec P-01–P-07）；用例注册按 2026-09-29 用户拍板暂缓，稳定后专项回补 |
 | 6 旅程E2E | 待建 | 候选主旅程已定义：「接入项目 → 墙上见名片 → 切换进总览 → 重启读回一致」；同上暂缓 |
 

@@ -110,7 +110,7 @@ export async function submitProjectOnboard(args: {
       text:
         charter.filled.length > 0
           ? `仓里已有名片，只补了 ${charter.filled.length} 个空字段，其余内容未动`
-          : '仓里已有名片，字段齐全，未改动'
+          : '仓里已有名片，没有可补的空字段，未改动'
     })
   } else {
     onLog({

@@ -110,7 +110,8 @@ export function fillBlankCharterInToml(
   const lines = raw.split(/\r?\n/)
   let tableStart = lines.findIndex((l) => l.trim().startsWith('['))
   if (tableStart < 0) {
-    tableStart = lines.length
+    // 无表头时插到结尾换行产生的末尾空行之前，保住文件的收尾换行。
+    tableStart = lines.at(-1) === '' ? lines.length - 1 : lines.length
   }
   const filled: string[] = []
   for (const { field, keys } of CHARTER_FIELD_KEYS) {
@@ -178,8 +179,9 @@ export async function readProjectCharter(repoPath: string): Promise<{
   error: string | null
 }> {
   const filePath = joinFsPath(repoPath, PROJECT_TOML_REL)
+  let exists = false
   try {
-    const exists = await window.api.fs.pathExists({ filePath })
+    exists = await window.api.fs.pathExists({ filePath })
     if (!exists) {
       return { charter: null, raw: null, existed: false, error: null }
     }
@@ -189,10 +191,11 @@ export async function readProjectCharter(repoPath: string): Promise<{
     }
     return { charter: parseProjectToml(content), raw: content, existed: true, error: null }
   } catch (e) {
+    // 文件存在但读取抛异常时保持 existed=true：写入侧据此拒写，不当成新文件覆盖。
     return {
       charter: null,
       raw: null,
-      existed: false,
+      existed: exists,
       error: e instanceof Error ? e.message : String(e)
     }
   }
@@ -212,8 +215,9 @@ export async function writeProjectCharter(
   const gitignorePath = joinFsPath(repoPath, BW_GITIGNORE_REL)
   try {
     const prior = await readProjectCharter(repoPath)
-    if (prior.existed && prior.raw === null) {
-      return { wrote: false, adopted: true, filled: [], error: prior.error ?? '名片不可读' }
+    if (prior.raw === null && prior.error !== null) {
+      // 文件存在但不可读（二进制/IO 异常）：不覆盖，如实报错。
+      return { wrote: false, adopted: prior.existed, filled: [], error: prior.error }
     }
     let wrote = false
     let filled: string[] = []
