@@ -2,7 +2,7 @@
 
 > 给接手开发、评审和验收的人读取。只记录认可、实现和证据缺口；有真实认可或运行结果时更新。价值见 [intent](intent.md)，行为见 [spec](spec.md)，工程设计见 [design](design.md)。
 
-目标平台为 bw-orca 的 Electron/Orca 叠层。本轮指标闭环已实现：业务只支持日／周历史脚本，每次配置新建原生会话，目录同步最新已合入来源，新采集不被旧计划配置锁定，验收可选择新指标。定向测试、真实 Git 与 Node 历史脚本集成、实际组件的替身端口浏览器检查已运行；真实 Electron 与模型完整旅程尚未验证。既有总览与服务证据见 [PR #277](https://github.com/forcegravity1989/builder-workbench/pull/277)和 [PR #272](https://github.com/forcegravity1989/builder-workbench/pull/272)；它们不替代本轮证据。
+目标平台为主干 main（原 bw-orca，2026-09-30 扶正）的 Electron/Orca 叠层。本轮指标闭环已实现：业务只支持日／周历史脚本，每次配置新建原生会话，目录同步最新已合入来源，新采集不被旧计划配置锁定，验收可选择新指标。定向测试、真实 Git 与 Node 历史脚本集成、实际组件的替身端口浏览器检查已运行；真实 Electron 与模型完整旅程尚未验证。既有总览与服务证据见 [PR #277](https://github.com/forcegravity1989/builder-workbench/pull/277)和 [PR #272](https://github.com/forcegravity1989/builder-workbench/pull/272)；它们不替代本轮证据。
 
 ## 当前实现
 

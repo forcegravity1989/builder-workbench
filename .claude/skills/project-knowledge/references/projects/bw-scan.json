@@ -2,7 +2,7 @@
   "id": "bw-knowledge-pilot",
   "version": "0.4.0-pilot",
   "status": "仓内试用映射；不作为全仓规范门禁",
-  "scopeNote": "按目标 bw-orca 实际目录生成只读全景；BW 产品知识、按需 Orca 工程参考、本仓开发方法分列。standard 属于产品分发资产，本 profile 不扫描。退役目录不是必须恢复的清单；结构字段仅作候选提示。",
+  "scopeNote": "按目标主干 main（原 bw-orca，2026-09-30 扶正）实际目录生成只读全景；BW 产品知识、按需 Orca 工程参考、本仓开发方法分列。standard 属于产品分发资产，本 profile 不扫描。退役目录不是必须恢复的清单；结构字段仅作候选提示。",
   "suggestedSessions": [
     "核对目标树与方法版本，用实际维护任务检查入口。",
     "实际带入一个特性时按原则 02 补六环，不预填历史绿灯。",

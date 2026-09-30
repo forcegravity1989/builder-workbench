@@ -2,7 +2,7 @@
 
 > **维护约定**：给维护 Electron 叠层和同步 Orca 的开发者读；只管代码边界、同步与运行入口。产品目标见 [architecture](../../../../docs/architecture.md)，上游身份与删迁记录见 [ref/upstream.md](../../../../ref/upstream.md)；边界或命令变化时更新。
 
-目标分支是 `bw-orca`。交互迁移须按当前 BW 意图重新决策；旧 Rust main 与原型只能提供历史参考，不能视为现行实现正本。
+目标分支是主干 `main`（原 `bw-orca`，2026-09-30 扶正）。交互迁移须按当前 BW 意图重新决策；旧 Rust main（`archive/main-pre-orca`）与原型只能提供历史参考，不能视为现行实现正本。
 
 总览 / 知识库挂在现有 `activity` / `space` 槽位；计划与验收从 `artifacts` 准备固定树后进入原生 `terminal`，在唯一工作区旁挂业务板（侧栏两个独立入口，隐藏原生项目列表，原生会话/工具侧栏不另实现）；任务挂 `tasks`（均不扩 `TopLevelView`）。知识库已对齐 V7「文档 / 代码 / 对账」。
 
@@ -19,7 +19,7 @@ Workbench 开发方法保留在 `.claude/skills/`；产品 Skill 正源在 `stan
 
 ## 同步上游
 
-`origin` 是 BW 仓，`origin/main` 是在用的 Rust 版本；不是 Orca 上游。身份核对、独立分支与同步步骤统一见 [upstream 同步说明](../../../../ref/upstream.md#upstream-仓)。不得按旧 workbench 分支说明把 origin/main 整支合入。
+`origin` 是 BW 仓，`origin/main` 是产品主干（原 `bw-orca`，非 Rust 版本）；不是 Orca 上游。身份核对、独立分支与同步步骤统一见 [upstream 同步说明](../../../../ref/upstream.md#upstream-仓)。不得把 BW 的 `origin/main` 当作 Orca 上游 `main` 整支合入。
 
 ## 日常调试（热加载）
 

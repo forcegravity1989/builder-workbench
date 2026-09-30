@@ -89,7 +89,7 @@ design-docs/
 # Machine-local agent hook endpoint files may contain auth tokens.
 /agent-hooks/
 
-# bw-orca: product docs come from Workbench main (`docs/`, AGENTS.md, …).
+# Product docs came from Workbench's old main (now archived as archive/main-pre-orca): `docs/`, AGENTS.md, …
 # Upstream Orca engineering notes that we still need for sync live under `ref/`.
 # See ref/upstream.md. Do not reinstate the old docs/** allow-list.
 
