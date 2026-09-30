@@ -27,9 +27,9 @@
 | 验收业务 | `version-acceptance/`（AcceptancePage、AcceptanceBoard、AcceptanceSourcePicker、AcceptanceJourney、AcceptanceSources / Notices / GoalResult / Metrics / MetricWindow / ReportDialog / Tasks / Archive、use-acceptance-*） | 首行协作卡片下围绕 G1/G2/G3：固定计划与候选、紧凑来源与材料行（含按需核对）、逐目标结论与证据变化、Issue 快照、标题旁预览纪要弹窗；独立“交付准备”卡与“材料备齐”勾选已退役，准备灯由已记录交付证据推导；归档请求由旅程轴归档节点插入 composer，页脚保留显式保存/重读/刷新归档。归档状态按材料身份自动读取，脏草稿不绕过已确认归档 |
 | 端口与 runtime | `task-port.ts` / `archive-port.ts` / `metrics-port.ts` / `version-material-port.ts` / `version-history-port.ts` / `metric-runtime-rpc.ts` | 消费 `src/main/workbench/` RPC（materials / metrics / history / archive.proof）；任务读取复用原生 github.workItem / codehub.viewTask，单条失败 kind:'unavailable'；openDetail 经原生 openTaskPage（returnToPreviousView 跳过 tasks 哨兵，来源上下文由 cycle-view-state / view-memory 恢复） |
 | 总览 | `OverviewPage.tsx`、`overview-project-card.tsx`、`overview-north-star-card.tsx`；`overview-metric-zones.tsx`、`overview-metric-chart.tsx`、`overview-zone-series.ts`；`overview-sdlc-zones.tsx`、`overview-sdlc-readings.ts`、`use-overview-sdlc.ts`；`overview-version-minutes.tsx`、`use-version-minutes.ts`、`overview-view-state.ts` | 北极星与业务指标经 nativeMetricsPort 读取；ECharts 共用图表支持特性、显隐、日/周及详情。项目统计沿原生 Git/provider 读取，提交按固定修订分页和 %ct 落桶，PR/MR 按 mergedAt，Issue 只绘当前点；截断或失败保持未知。版本/轮次纪要按 planRef 配对并独立滚动，筛选按项目/宿主恢复。「配置指标」复用 `version-cycle/metrics-setup` 固定树管线，每次新建会话；指标闭环实施与验证边界见[总览指标 STATUS](../../../../docs/05-features/overview-metrics/STATUS.md) |
-| 知识库保真 | `KnowledgePage` + `use-knowledge-repo` + `knowledge-demo-data` | 文档树与正文读 activeRepo，编辑直接保存该仓；代码占位，对账与建议含演示数据 |
+| 知识库保真 | `KnowledgePage` + `use-knowledge-repo` + `knowledge-demo-data` | 文档树与正文读 activeRepo，编辑直接保存该仓；分类走内置规则（单仓分类地图能力已删）；代码占位，对账与建议含演示数据 |
 | 项目墙 | `ProjectWallPage` + `project-page-state`；在 activity 内容槽展示；按 `ProjectGroup` 聚合多仓；卡片展示仓链接；`+ 代码仓` / 删除 | Orca 外壳内切换项目 |
-| 接入项目 | `OnboardProjectPage`：在 activity 内容槽展示；本地仓 / 克隆 + 名片 → `repo.add` + `.bw/project.toml` | architecture §1 |
+| 接入项目 | `OnboardProjectPage`：在 activity 内容槽展示；本地仓 / 克隆 + 名片（保真合并只补空字段）→ `repo.add` + `.bw/project.toml`；成功落总览 | architecture §1、[project-intake spec](../../../../docs/05-features/project-intake/spec.md) |
 | 皮肤 token | `workbench-tokens.css` + `workbench-overview.css`；`version-planning/` 下 version-planning.css（布局）、planning-fields.css（字段）、planning-dialogs.css（对话框）；`version-acceptance/acceptance.css`、`metrics/metric-evidence.css` | `bw-tokens` / hifi-overview；workbench-plan.css 与旧三屏链条已删除 |
 | 热加载调试 | `pnpm run dev:workbench`（electron-vite HMR；独立 `workbench-dev` profile） | — |
 | 品牌打包 | `ORCA_PRODUCT_NAME` / `build:mac:workbench` | — |
@@ -47,8 +47,8 @@
 
 ## 待完成
 
-- 指标真实项目来源与 Electron 完整旅程待验，边界见[总览指标 STATUS](../../../../docs/05-features/overview-metrics/STATUS.md)；Issue 历史存量需完整事件源；项目墙健康灯
+- 指标真实项目来源与 Electron 完整旅程待验，边界见[总览指标 STATUS](../../../../docs/05-features/overview-metrics/STATUS.md)；Issue 历史存量需完整事件源；项目墙健康灯与真实环境探测（硬编码环境条已删，探测清单见 [project-intake STATUS](../../../../docs/05-features/project-intake/STATUS.md)）
 - 知识库真实对账（名片已读 `.bw/project.toml`）
-- 项目约定完整路径：`bw/project` 常驻 worktree + MR（现 MVP 写工作区 `.bw/`）
+- 名片 PR 化与远端预探测：`bw/project` 固定树 + PR 合入、克隆前读远端名片回填（[project-intake spec](../../../../docs/05-features/project-intake/spec.md) 草案待确认；现名片写工作区 `.bw/`）
 - 知识库文档树已读真实仓库；工作树来源、保存评审边界、ref 分类覆盖、codegraph 与真实对账待对应特性重新决策
 - CodeHub 分区列仓对等 GitHub 克隆体验；CodeHub Issue 正文编辑（本轮延期）

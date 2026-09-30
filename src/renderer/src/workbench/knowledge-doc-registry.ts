@@ -81,10 +81,6 @@ export const KB_ROLE_KEYS = [
 
 export type KbRoleKey = (typeof KB_ROLE_KEYS)[number]
 
-export function isKbRoleKey(value: string): value is KbRoleKey {
-  return (KB_ROLE_KEYS as readonly string[]).includes(value)
-}
-
 export const KB_GROUPS: KbGroup[] = [
   {
     key: 'user-docs',
@@ -168,7 +164,7 @@ export const KB_GROUPS: KbGroup[] = [
   }
 ]
 
-/** 已知文档槽位：路径与展示名；仓库里存在才出现在清单（展示用，分类以 knowledge-map 为准）。 */
+/** 已知文档槽位：路径与展示名；仓库里存在才出现在清单（展示用，分类按内置规则）。 */
 export const KB_REGISTRY_DOCS: Omit<KbDoc, 'body'>[] = [
   {
     id: 'org',

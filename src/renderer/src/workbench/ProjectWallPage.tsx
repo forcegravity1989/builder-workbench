@@ -165,18 +165,6 @@ export function ProjectWallPage(): React.JSX.Element {
           </div>
         </header>
 
-        <div className="envbar">
-          <span className="bar-label">本机环境</span>
-          <span className="env-item">
-            <span className="dot dot-green" />
-            Git · 可用
-          </span>
-          <span className="env-item">
-            <span className="dot dot-green" />
-            Node · 可用
-          </span>
-        </div>
-
         <div className="healthbar">
           <span className="bar-label">健康概览</span>
           <span className="health-group">

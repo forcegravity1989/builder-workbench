@@ -102,41 +102,20 @@ export async function submitProjectOnboard(args: {
   if (charter.error) {
     onLog({
       kind: 'fail',
-      text: `名片未写完：${charter.error} —— 项目已接入，可稍后补`
+      text: `名片未写入：${charter.error} —— 项目已接入，可稍后补`
+    })
+  } else if (charter.adopted) {
+    onLog({
+      kind: 'ok',
+      text:
+        charter.filled.length > 0
+          ? `仓里已有名片，只补了 ${charter.filled.length} 个空字段，其余内容未动`
+          : '仓里已有名片，字段齐全，未改动'
     })
   } else {
     onLog({
       kind: 'ok',
-      text: charter.adopted
-        ? '仓里已有名片，只补了空字段'
-        : '已写入 `.bw/project.toml`（MVP 落在工作区；完整 MR 约定后续接）'
-    })
-  }
-
-  onLog({ kind: 'doing', text: '写入知识库地图草稿…' })
-  try {
-    const { draftKnowledgeMapFromPaths } = await import('./knowledge-doc-classify')
-    const { writeKnowledgeMap } = await import('./knowledge-map')
-    const markdowns = await window.api.fs.listMarkdownDocuments({ rootPath: repoPath })
-    const draft = draftKnowledgeMapFromPaths([
-      '.bw/project.toml',
-      ...markdowns.map((m) => m.relativePath)
-    ])
-    const mapWrite = await writeKnowledgeMap(repoPath, draft, { overwrite: false })
-    if (mapWrite.error) {
-      onLog({ kind: 'fail', text: `知识库地图未写完：${mapWrite.error}` })
-    } else if (mapWrite.existed && !mapWrite.wrote) {
-      onLog({ kind: 'ok', text: '仓里已有知识库地图，未覆盖' })
-    } else {
-      onLog({
-        kind: 'ok',
-        text: '已写 `.bw/knowledge-map.toml` 草稿；可用 bw-knowledge-docs Skill 审阅'
-      })
-    }
-  } catch (e) {
-    onLog({
-      kind: 'fail',
-      text: `知识库地图跳过：${e instanceof Error ? e.message : String(e)}`
+      text: '已写入 `.bw/project.toml`（落在工作区；经 PR 落仓正在接）'
     })
   }
 
@@ -171,11 +150,7 @@ export async function submitProjectOnboard(args: {
     }
   }
 
-  onLog({ kind: 'ok', text: attached ? '完成，返回项目墙…' : '完成，正在打开项目墙…' })
+  onLog({ kind: 'ok', text: '完成，正在进入总览…' })
   const switched = await switchActiveProject(repoId)
-  if (switched) {
-    const { openProjectWall } = await import('./project-page-state')
-    openProjectWall()
-  }
   return { ok: switched, repoId, attached }
 }

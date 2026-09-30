@@ -2,15 +2,21 @@
 
 > **维护约定**：本篇记录本特性六环链现状与证据，格式按 [02 §6.2](../../01-principles/02-working-backwards.md)「STATUS 格式」；更新触发：任一环状态或证据变化，随引发它的 PR 同批提交，不记流水。
 
-**现状（2026-09-29）**：补登记特性——能力已实现在用（v0.5 收尾期），链文档按 02 §6.3 补齐中；intent 草案已入仓，**待人 gate**（待决问题清单见 intent 末节）。
+**现状（2026-09-30）**：intent 已 gate（字段选填、knowledge-map 删除、名片 PR 化本轮必做、环境条删除）；spec 草案已入仓待人确认；保真合并/落点/删除批已实施，PR 化与远端预探测待 spec 确认后实施。
 
 | 环 | 状态 | 证据或已知债 |
 |---|---|---|
-| 1 intent | ◐ | 草案在本目录 [intent.md](intent.md)，待 gate；带入来源 = 2026-09-29 用户拍板补登记 |
-| 2 spec | ○ | intent 过 gate 后开写；现行行为依据暂散落 architecture 用例表与源码（落点清单见 intent 文末） |
-| 3 实现设计 | ◐ | architecture「打开或接入项目 / 查看项目概况」与 06-module/桌面壳 有散落记录，无特性级 design |
-| 4 TDD | ◐ | 合规存量：project-charter（toml 解析/回写/简写归一化）、workbench-wall-projects（远端链接/组聚合/回退标签）；project-page-state 等 UI 页面态测试已列入环 4 规范裁剪名单，裁剪在 PR #282 进行中（未合入前本分支文件仍在） |
-| 5 验收点E2E | ○ | 待 spec 定验收点后逐项注册；暂无以「看见有用例」反推的覆盖 |
-| 6 旅程E2E | ○ | 候选主旅程 =「接入项目 → 墙上见名片 → 切换进总览 → 重启读回一致」，待 spec 定稿注册后真壳执行 |
+| 1 intent | ● | [intent.md](intent.md) 已 gate（2026-09-30 遗留决定收口）；带入来源 = 2026-09-29 用户拍板补登记 |
+| 2 spec | ◐ | [spec.md](spec.md) 草案待人确认；**原型缺口**（在用补链特性无 prototype.html，spec gate 硬要求，待拍板补做或豁免） |
+| 3 实现设计 | ◐ | architecture「打开或接入项目 / 查看项目概况」与 06-module/桌面壳 有散落记录，无特性级 design；PR 化工程设计（固定树 bw/project 复用周期管线）随实施补 |
+| 4 TDD | ◐ | 合规存量：project-charter 6 例（解析回写/保真补空含 [chat] 保留/north_star 别名/坏路径不动/归一化）、workbench-wall-projects（远端链接/组聚合/回退标签）；knowledge-map 相关测试随能力删除；PR 化协议测试随实施补 |
+| 5 验收点E2E | 待建 | 点位已定（spec P-01–P-07）；用例注册按 2026-09-29 用户拍板暂缓，稳定后专项回补 |
+| 6 旅程E2E | 待建 | 候选主旅程已定义：「接入项目 → 墙上见名片 → 切换进总览 → 重启读回一致」；同上暂缓 |
 
-**已知债**：**名片 toml 仅写本地工作区，未经 PR 落被管仓并由 builders 合入**——main v0.4 为已交付行为（`crates/bw/src/app/project.rs`：名片写项目约定树 + `push_and_open_mr` + Issue 转 InReview + 未合入横幅提示；已有名片 adopt 只补空字段），bw-orca 迁移中丢失；2026-09-29 用户确认为必要旅程（否则后来者重复建名片起 PR），进 spec 必做与验收点，实现在 Orca 上重新决策。项目约定完整旅程的其余部分（常驻 worktree、运作自动化随接入写入）暂不在本特性范围；墙卡版本/周目标/健康为占位 Unknown（用户拍板暂不细设计）；接入无可写性专门探测，名片写失败只记「可稍后补」且暂无补录入口（main 的 EditProjectCard 命令即补录正本，随 toml PR 化一并进 spec）。存量旧仓无需补录（v0.4 起已有 toml、字段为 `opportunity`，经 v0.4.0 `crates/bw/src/repo/project_file.rs` 核实；bw-orca 读取端另兼容更早的 `north_star` 字段，属历史数据、与 v0.4 主线无关）；克隆中断残留暂不处理，看实际用户反馈。
+**已知债**：
+1. **名片 toml 仅写本地工作区，未经 PR 落被管仓**——spec 必做项（规则 2），待 spec 确认后实施；实施前「接入一次全链读回」只对单机成立，主检出留有未提交名片文件。main v0.4 正本取证见 intent「已定决定」。
+2. **远端克隆前预探测缺失**——远端旅程填表时看不到仓里已有名片，冲突字段在合并时被静默丢弃（数据不丢但不可见）；spec 规则 3 / P-03 已定行为，待实施。main 4f9d93107 教训：「没查成」≠「没接管过」。
+3. **名片补录/编辑入口缺失**——写失败「可稍后补」暂无承接入口；随 PR 化一并实施（spec 规则 2）。
+4. **同远端身份去重未实施**——同一 URL 换父文件夹克隆会得到两张墙卡（Orca 去重按路径）；spec 规则 4 提案待确认。
+5. 墙卡版本/周目标/健康为占位 Unknown（用户拍板暂不细设计）；「本机环境」探测条已删除，真实探测清单（claude/cursor-agent/gh/codehub-cli，三态，不探不会起的东西）随墙健康灯重新决策——main 正本证据：环境条 6 格与三态语义（`crates/app-shell/src/screens/wall/mod.rs` env_bar、`bridge/vm_build.rs probe_env`）、假红修复 07e076ff4（Windows PATHEXT）、假绿修复 e23e3e4ce（探的名字必须等于真起的进程）。
+6. 克隆中断残留暂不处理（用户拍板，看实际反馈）。

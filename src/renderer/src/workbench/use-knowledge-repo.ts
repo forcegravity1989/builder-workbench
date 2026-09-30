@@ -1,7 +1,6 @@
 import { useEffect, useState, type Dispatch, type SetStateAction } from 'react'
 import { useAppStore } from '@/store'
 import type { KbDoc } from './knowledge-doc-registry'
-import type { KnowledgeMapStatus } from './knowledge-map'
 import {
   loadKnowledgeFromRepo,
   writeKnowledgeDocToRepo,
@@ -16,7 +15,6 @@ export function useKnowledgeRepo(): {
   savedBodies: Record<string, string>
   loading: boolean
   error: string | null
-  mapStatus: KnowledgeMapStatus | 'missing'
   reload: () => void
   saveDoc: (docId: string, content?: string) => Promise<WriteKnowledgeDocResult>
 } {
@@ -28,7 +26,6 @@ export function useKnowledgeRepo(): {
   const [savedBodies, setSavedBodies] = useState<Record<string, string>>({})
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [mapStatus, setMapStatus] = useState<KnowledgeMapStatus | 'missing'>('missing')
   const [reloadToken, setReloadToken] = useState(0)
 
   useEffect(() => {
@@ -37,7 +34,6 @@ export function useKnowledgeRepo(): {
       setBodies({})
       setSavedBodies({})
       setError(null)
-      setMapStatus('missing')
       setLoading(false)
       return
     }
@@ -52,7 +48,6 @@ export function useKnowledgeRepo(): {
         setDocs(snapshot.docs)
         setBodies(snapshot.bodies)
         setSavedBodies(snapshot.bodies)
-        setMapStatus(snapshot.mapStatus)
         setLoading(false)
       })
       .catch((cause: unknown) => {
@@ -62,7 +57,6 @@ export function useKnowledgeRepo(): {
         setDocs([])
         setBodies({})
         setSavedBodies({})
-        setMapStatus('missing')
         setLoading(false)
         setError(cause instanceof Error ? cause.message : String(cause))
       })
@@ -104,7 +98,6 @@ export function useKnowledgeRepo(): {
     savedBodies,
     loading,
     error,
-    mapStatus,
     reload: () => setReloadToken((n) => n + 1),
     saveDoc
   }

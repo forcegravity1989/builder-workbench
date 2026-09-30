@@ -10,7 +10,6 @@ import {
   type KbGroup,
   type KbNote
 } from './knowledge-demo-data'
-import type { KnowledgeMapStatus } from './knowledge-map'
 import { gapMark } from './knowledge-gap-utils'
 import { openProjectOnboard } from './project-page-state'
 
@@ -26,7 +25,6 @@ type Props = {
   notes: KbNote[]
   loading: boolean
   hasRepo: boolean
-  mapStatus: KnowledgeMapStatus | 'missing'
   onAudienceChange: (audience: KbAudience) => void
   onPickGroup: (key: string) => void
   onOpenDoc: (id: string) => void
@@ -54,7 +52,6 @@ export function KnowledgeDocsGuide(props: Props): React.JSX.Element {
     notes,
     loading,
     hasRepo,
-    mapStatus,
     onAudienceChange,
     onPickGroup,
     onOpenDoc
@@ -87,15 +84,6 @@ export function KnowledgeDocsGuide(props: Props): React.JSX.Element {
     onPickGroup(key)
   }
 
-  const mapHint =
-    mapStatus === 'reviewed'
-      ? null
-      : mapStatus === 'draft'
-        ? '分类地图为草稿（.bw/knowledge-map.toml），可用 bw-knowledge-docs Skill 审阅。'
-        : hasRepo
-          ? '还没有分类地图；接入时会写草稿，也可用 bw-knowledge-docs Skill 生成。'
-          : null
-
   return (
     <div className="kb-guide">
       <div className="wb-card kb-logic">
@@ -117,7 +105,6 @@ export function KnowledgeDocsGuide(props: Props): React.JSX.Element {
             ? '用户文档：产品帮助与对外 README。给访客看，不进工程对账。'
             : '工程文档：愿景/契约约束当前活跃特性与实现。对账只盯工程契约与活跃特性；参考与 Agent 入口在侧栏。'}
         </p>
-        {mapHint ? <p className="kb-logic-lede kb-map-hint">{mapHint}</p> : null}
         {audience === 'eng' ? (
           <div className="kb-flow">
             {mains.map((g, i) => (
@@ -207,7 +194,7 @@ export function KnowledgeDocsGuide(props: Props): React.JSX.Element {
           <p className="kb-doc-lede">
             {audience === 'user'
               ? '仓库里还没有用户文档（docs/site/content/docs/ 或 README）。'
-              : '仓库里还没有纳入工程线的文档。可放在 docs/、活跃特性目录或仓根 AGENTS.md；接入时会写 knowledge-map 草稿。'}
+              : '仓库里还没有纳入工程线的文档。可放在 docs/、活跃特性目录或仓根 AGENTS.md。'}
           </p>
         ) : (
           <table className="kb-table">

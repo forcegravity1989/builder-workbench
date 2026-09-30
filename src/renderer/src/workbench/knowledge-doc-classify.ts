@@ -3,24 +3,18 @@ import {
   KB_REGISTRY_DOCS,
   ROOT_ENG_BASENAMES,
   ROOT_USER_BASENAMES,
-  isKbRoleKey,
   normalizeKbRelativePath,
   registryMetaForPath,
-  type KbDoc,
-  type KbRoleKey
+  type KbDoc
 } from './knowledge-doc-registry'
-import { compactPathsForRole, type KnowledgeMap, type KnowledgeMapSection } from './knowledge-map'
 
 const DEFAULT_EXCLUDE_PREFIXES = ['docs/review-evidence/'] as const
-
-/** Avoid treating the map file itself as a markdown doc path in drafts. */
-const KNOWLEDGE_MAP_SENTINEL = '.bw/knowledge-map.toml'
 
 function basenameOf(norm: string): string {
   return norm.split('/').pop() ?? norm
 }
 
-/** 跨仓通用角色启发式（草稿用）；单仓真相以 `.bw/knowledge-map.toml` 为准。 */
+/** 知识库屏内置分类规则（跨仓通用启发式）。 */
 export function classifyKbDocGroup(relativePath: string): string | null {
   const norm = normalizeKbRelativePath(relativePath)
   const base = basenameOf(norm)
@@ -79,61 +73,6 @@ export function classifyKbDocGroup(relativePath: string): string | null {
     return 'eng-reference'
   }
   return null
-}
-
-/** Build a draft map by classifying paths with role heuristics. */
-export function draftKnowledgeMapFromPaths(paths: readonly string[]): KnowledgeMap {
-  const byRole = new Map<KbRoleKey, string[]>()
-  const exclude: string[] = []
-  const seenExclude = new Set<string>()
-
-  for (const raw of paths) {
-    const norm = normalizeKbRelativePath(raw)
-    if (!norm || norm === KNOWLEDGE_MAP_SENTINEL) {
-      continue
-    }
-    const role = classifyKbDocGroup(norm)
-    if (!role) {
-      if (norm.startsWith('docs/review-evidence/') && !seenExclude.has('docs/review-evidence/')) {
-        exclude.push('docs/review-evidence/')
-        seenExclude.add('docs/review-evidence/')
-      }
-      continue
-    }
-    if (!isKbRoleKey(role)) {
-      continue
-    }
-    const list = byRole.get(role) ?? []
-    list.push(norm)
-    byRole.set(role, list)
-  }
-
-  // Always keep machine charter visible.
-  if (!byRole.has('eng-bw')) {
-    byRole.set('eng-bw', ['.bw/project.toml'])
-  }
-
-  const sections: KnowledgeMapSection[] = []
-  for (const group of KB_GROUPS) {
-    if (!isKbRoleKey(group.key)) {
-      continue
-    }
-    const members = byRole.get(group.key)
-    if (!members || members.length === 0) {
-      continue
-    }
-    sections.push({
-      role: group.key,
-      paths: compactPathsForRole(members)
-    })
-  }
-
-  return {
-    version: 1,
-    status: 'draft',
-    sections,
-    exclude
-  }
 }
 
 export function kbDocIdFromPath(relativePath: string): string {
