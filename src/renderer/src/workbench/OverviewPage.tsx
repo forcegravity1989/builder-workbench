@@ -21,12 +21,12 @@ import { OverviewSdlcZones } from './overview-sdlc-zones'
 import { NorthStarCard } from './overview-north-star-card'
 import { ProjectCard } from './overview-project-card'
 import { MetricProblemsPanel } from './metric-problems-panel'
+import { hasUncollectedReadings, readAllMetricReadings } from './overview-metric-readings'
+import type { OverviewReadResult } from './overview-metric-readings'
 import {
-  hasUncollectedReadings,
-  readAllMetricReadings,
-  refreshMetricReadings
-} from './overview-metric-readings'
-import type { OverviewAutoCollect, OverviewReadResult } from './overview-metric-readings'
+  useOverviewAutoCollect,
+  useOverviewManualRefresh
+} from './use-overview-metric-collection'
 import { useOverviewZoneGranularity } from './use-overview-zone-granularity'
 import { useMetricsSetup } from './version-cycle/metrics-setup'
 import { findCycleWorktree } from './version-cycle/native-cycle-workspace'
@@ -97,10 +97,6 @@ export function OverviewPage(): React.JSX.Element {
   }, [baseScope])
   const [problems, setProblems] = useState<string[]>([])
   const [busy, setBusy] = useState(false)
-  /** Background auto-collect for cache misses: readings arrive later, page stays operable. */
-  const [collecting, setCollecting] = useState(false)
-  /** Manual refresh blocks the overview: no clicking around on half-old readings. */
-  const [refreshing, setRefreshing] = useState(false)
   /** Generation guard: a stale project's late responses must not overwrite a newer load. */
   const loadEpoch = useRef(0)
   const invalidate = useCallback(() => {
@@ -114,39 +110,19 @@ export function OverviewPage(): React.JSX.Element {
     },
     [catalog]
   )
-  /**
-   * Cache miss → one background collection pass, non-blocking: numbers land when
-   * the scripts finish. Only 'not-collected' readings trigger this (see
-   * hasUncollectedReadings) — a failing collector surfaces as an error reading and
-   * must not loop. The epoch guard keeps a stale pass from overwriting newer loads.
-   */
-  const autoCollect = useCallback<OverviewAutoCollect>(
-    async ({ scope, owner, catalog: nextCatalog, granularity, epoch }) => {
-      setCollecting(true)
-      try {
-        const result = await refreshMetricReadings({
-          scope,
-          owner,
-          catalog: nextCatalog,
-          granularity
-        })
-        if (epoch !== loadEpoch.current) {
-          return
-        }
-        setNorthReading(result.north)
-        setZoneReadings(result.map)
-        setProblems([...catalogProblems(nextCatalog), ...result.problems])
-      } catch {
-        // Port-level failure keeps the Unknown readings on screen; honest, no fake
-        // numbers, and no retry loop — the next load or manual refresh tries again.
-      } finally {
-        if (epoch === loadEpoch.current) {
-          setCollecting(false)
-        }
-      }
+  const applyCollected = useCallback(
+    (result: OverviewReadResult, collectedCatalog: MetricCatalog) => {
+      setNorthReading(result.north)
+      setZoneReadings(result.map)
+      setProblems([...catalogProblems(collectedCatalog), ...result.problems])
     },
     []
   )
+  /** Cache miss → one background collection pass; see the hook for the stuck-flag guard. */
+  const { collecting, autoCollect } = useOverviewAutoCollect({
+    loadEpoch,
+    apply: applyCollected
+  })
   const zones = useOverviewZoneGranularity({
     identity,
     catalog,
@@ -250,48 +226,16 @@ export function OverviewPage(): React.JSX.Element {
     setProblems(problems)
   }, [baseScope, baseWorktreeId, currentGranularity, markRead, fixedTrees.plan, autoCollect])
 
-  const refreshReadings = useCallback(async () => {
-    if (!baseScope || !baseWorktreeId) {
-      return
-    }
-    const epoch = ++loadEpoch.current
-    setBusy(true)
-    setRefreshing(true)
-    try {
-      const scope = {
-        repoId: baseScope.repoId,
-        worktreeId: baseWorktreeId,
-        hostId: baseScope.hostId
-      }
-      const nextCatalog = await nativeMetricsPort(baseScope.runtimeOwnerEnvironmentId).list(scope)
-      if (epoch !== loadEpoch.current) {
-        return
-      }
-      setCatalog(nextCatalog)
-      const result = await refreshMetricReadings({
-        scope: { repoId: baseScope.repoId, worktreeId: baseWorktreeId, hostId: baseScope.hostId },
-        owner: baseScope.runtimeOwnerEnvironmentId,
-        catalog: nextCatalog,
-        granularity: currentGranularity()
-      })
-      if (epoch !== loadEpoch.current) {
-        return
-      }
-      setZoneReadings(result.map)
-      setNorthReading(result.north)
-      setProblems([...catalogProblems(nextCatalog), ...result.problems])
-    } catch (reason) {
-      if (epoch === loadEpoch.current) {
-        setProblems([`刷新指标失败：${String(reason)}`])
-      }
-    } finally {
-      // Unconditional: a superseded refresh must not leave the blocking overlay stuck.
-      setRefreshing(false)
-      if (epoch === loadEpoch.current) {
-        setBusy(false)
-      }
-    }
-  }, [baseScope, baseWorktreeId, currentGranularity])
+  const { refreshing, refreshReadings } = useOverviewManualRefresh({
+    baseScope,
+    baseWorktreeId,
+    currentGranularity,
+    loadEpoch,
+    setBusy,
+    setCatalog,
+    setProblems,
+    apply: applyCollected
+  })
 
   useEffect(() => {
     setCatalog(null)

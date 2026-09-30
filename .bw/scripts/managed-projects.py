@@ -314,6 +314,9 @@ def main() -> int:
     except ValueError as e:
         print(f"--since/--until 要 YYYY-MM-DD:{e}", file=sys.stderr)
         return 2
+    if until <= since:
+        print(f"窗口左闭右开,--until 必须晚于 --since:{since}..{until}", file=sys.stderr)
+        return 2
 
     tz_name = os.environ.get("BW_METRICS_TIMEZONE", "").strip()
     if not tz_name:

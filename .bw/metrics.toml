@@ -4,9 +4,9 @@ schema_version = 2
 # 滞后 / 引领各 ≤3。字段:name / def / target / collect / feature / leads / unit。
 # feature 空 = 主要页签;有值 = 「XX特性」页签。
 # leads 只写在引领上,值是它盯的那条滞后的 name。空 = 挂到同页签第一条滞后。
-# collect 两种:{ kind = "script", run = ["python", ".bw/scripts/x.py"], retro = true|false }
-#             或 { kind = "manual" }
-# retro=true 吐 {"points":[{"week":"YYYY-Www","value":…}]};false 吐 {"value":…}。
+# collect 只支持 { kind = "script", run = ["python", ".bw/scripts/x.py"], retro = true };
+# manual 与 retro=false 现行协议不支持(见 references/metrics.md),不写回目录。
+# 脚本 stdout 吐 {"points":[{"week":"YYYY-Www","value":…}]}(day 粒度吐 day)。
 # 窗口由 Workbench 传。失败不写 0。协议见 references/metrics.md。
 
 [[lagging]]
