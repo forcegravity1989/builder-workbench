@@ -1,18 +1,13 @@
 schema_version = 2
 
-# 北极星 1 条;滞后 / 引领各 ≤3。字段:name / def / target / collect / feature / leads。
+# 北极星可缺席(BW 自身尚未定义清楚北极星,不硬立;等外部项目周期数据再议);
+# 滞后 / 引领各 ≤3。字段:name / def / target / collect / feature / leads / unit。
 # feature 空 = 主要页签;有值 = 「XX特性」页签。
 # leads 只写在引领上,值是它盯的那条滞后的 name。空 = 挂到同页签第一条滞后。
 # collect 两种:{ kind = "script", run = ["python", ".bw/scripts/x.py"], retro = true|false }
 #             或 { kind = "manual" }
 # retro=true 吐 {"points":[{"week":"YYYY-Www","value":…}]};false 吐 {"value":…}。
 # 窗口由 Workbench 传。失败不写 0。协议见 references/metrics.md。
-
-[north_star]
-name = "(还没填)被 Workbench 纳入的项目是否又快又好"
-def = "(还没填)方向是『被纳入管理的项目,其运作是否比纳入前更快、质量更好』,当前无用户效果数据可采。等外部项目纳入能采到周期/回滚数据再 formalize。"
-target = ""
-collect = { kind = "manual" }
 
 [[lagging]]
 name = "纳入 workbench 管理的项目数"
@@ -25,8 +20,16 @@ collect = { kind = "script", run = ["python", ".bw/scripts/managed-projects.py",
 name = "使用周一屏的被管理项目数"
 feature = "周一屏"
 def = "白名单内项目,其仓 .bw/planning/<版本>/data.json 在 Git 历史(当前 HEAD)中出现过的 updated_at/confirmation 时间戳落在这一周的去重计数;历史不可变,读数不随后续编辑漂移;仅 progress_updates 的自动化更新不计;重建数据(时间戳全空)不计;未合入 HEAD 的草稿不计,归档为准。"
-target = "≥3"
+target = "≥6"
 collect = { kind = "script", run = ["python", ".bw/scripts/managed-projects.py", "--metric", "monday-screen"], retro = true }
+
+[[lagging]]
+name = "计划制定时长"
+feature = "周一屏"
+def = "白名单项目在窗口内合入的 PR,从该 ISO 周周一 09:00(BW_METRICS_TIMEZONE)到合入时刻(provider 真源 mergedAt)的时长中位数(小时);测周交付节奏。合入事件由项目侧预采集每日落 .bw/metrics/daily-observation.jsonl(bw/daily-observation/v1,collect-daily-observation.py 维护,day=合入日 UTC,remote+pr 幂等);协议脚本只读本地事件账,秒级。没有合入事件的周不出点、不补 0;早于周一 09:00 合入的负时长如实保留;被窗口或当前时刻截断的部分周声明 coverage。"
+target = ""
+unit = "小时"
+collect = { kind = "script", run = ["python", ".bw/scripts/plan-cycle-hours.py"], retro = true }
 
 [[leading]]
 name = "每周闭环的 issue 数"
