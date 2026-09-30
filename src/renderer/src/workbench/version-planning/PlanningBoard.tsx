@@ -160,7 +160,7 @@ function PlanningBoardContent({ context, prepareMetrics, entry }: PlanningBoardP
         session
       )
       if (currentSelection.current === selectionKey) {
-        updateView({ notice: '归档请求已放入会话输入框，请核对后发送。' })
+        updateView({ notice: '归档请求已贴进左侧当前终端，请核对后发送。' })
       }
     })
   const requestDecomposition = () =>
@@ -174,7 +174,7 @@ function PlanningBoardContent({ context, prepareMetrics, entry }: PlanningBoardP
         `请基于已保存的 ${saved.document.version} 计划（cycleId=${saved.document.cycleId}，revision=${saved.revision}）核对评审后的目标与已有 Issue，避免重复，提出版本任务拆解并关联目标；列出需要我确认的事项，经我确认后执行。不要替人确认评审通过、完成 Issue 或合入 PR。`
       )
       if (currentSelection.current === selectionKey) {
-        updateView({ notice: '拆解请求已放入会话输入框，请核对后发送。' })
+        updateView({ notice: '拆解请求已贴进左侧当前终端，请核对后发送。' })
       }
     })
   const openTask = async (task: Extract<CycleTaskRead, { kind: 'ready' }>['task']) => {

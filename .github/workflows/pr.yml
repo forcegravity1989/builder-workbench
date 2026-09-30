@@ -185,6 +185,12 @@ jobs:
       - name: Enforce runtime Electron-import ratchet
         run: pnpm run check:runtime-electron-ratchet
 
+      # Why here: the BW-overlay unit-test count is capped by 环 4 (two kinds of
+      # tests only). The check runs the workbench suite itself and compares the
+      # executed case count against config/vitest-count-baseline.txt (shrink only).
+      - name: Enforce BW vitest count ratchet
+        run: pnpm run check:vitest-count-ratchet
+
       # Why both: the ratchet proves nothing reachable from the runtime imports electron,
       # which is a property of the import graph. This proves the Node artifact it enables
       # actually boots, pairs, creates a worktree and round-trips a real PTY.

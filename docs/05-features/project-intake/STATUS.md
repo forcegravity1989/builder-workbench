@@ -8,8 +8,8 @@
 |---|---|---|
 | 1 intent | ● | [intent.md](intent.md) 已 gate（2026-09-29 遗留决定收口）；带入来源 = 2026-09-29 用户拍板补登记 |
 | 2 spec | ● | [spec.md](spec.md) 已确认（2026-09-30 用户 gate；原型豁免——在用补链特性以真壳与 PR 截图为对照） |
-| 3 实现设计 | ◐ | architecture「打开或接入项目 / 查看项目概况」有散落记录；工程实现全部复用既有件（ensureNamedWorktree 固定树管线、workspace-resolver、createGitHubPullRequest、codehub mutations、hostedReview.forBranch、git.fastForward、normalizeGitRemoteUrl），无特性级 design 文档 |
-| 4 TDD | ◐ | 合规存量：project-charter 7 例（shared，解析回写/保真补空含 [chat] 与尾换行保留/north_star 别名/无空可补不动/归一化）、workbench-wall-projects；charter RPC 协议与 CodeHub 原语**无单测**（2026-09-30 用户冻结新增 vitest，待清理后回补）；「坏文件不覆盖」守卫以验收点 P-02 为据 |
+| 3 实现设计 | ◐ | architecture「打开或接入项目 / 查看项目概况」与 06-module/关键信息维护 有散落记录；工程实现全部复用既有件（ensureNamedWorktree 固定树管线、workspace-resolver、createGitHubPullRequest、codehub cli 执行器、hostedReview.forBranch、git.fastForward、normalizeGitRemoteUrl），无特性级 design 文档 |
+| 4 TDD | ◐ | 合规存量：project-charter 7 例（shared，解析回写/保真补空含 [chat] 与尾换行保留/north_star 别名/无空可补不动/归一化）、workbench-wall-projects（组聚合；展示类用例已随 2026-09-30 环 4 盘点删除）；charter RPC 协议与 CodeHub 原语**无单测**（2026-09-30 用户冻结新增 vitest、总量 ratchet 门禁已立，待清理后回补）；「坏文件不覆盖」守卫以验收点 P-02 为据 |
 | 5 验收点E2E | 待建 | 点位已定（spec P-01–P-07）；用例注册按 2026-09-29 用户拍板暂缓，稳定后专项回补 |
 | 6 旅程E2E | 待建 | 候选主旅程已定义：「接入项目 → 墙上见名片 → 切换进总览 → 重启读回一致」；同上暂缓 |
 

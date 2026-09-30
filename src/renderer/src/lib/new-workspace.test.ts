@@ -107,6 +107,7 @@ describe('linked-item issue commands', () => {
   it('keeps Jira and Linear sentinel numbers out of repository issue templates', () => {
     expect(canUseIssueCommandForLinkedItemProvider('github')).toBe(true)
     expect(canUseIssueCommandForLinkedItemProvider('gitlab')).toBe(true)
+    expect(canUseIssueCommandForLinkedItemProvider('codehub')).toBe(true)
     expect(canUseIssueCommandForLinkedItemProvider('jira')).toBe(false)
     expect(canUseIssueCommandForLinkedItemProvider('linear')).toBe(false)
   })

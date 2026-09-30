@@ -41,4 +41,6 @@
 
 ## 实现落点（现状取证）
 
-`src/renderer/src/workbench/`：`ProjectWallPage` / `OnboardProjectPage` / `OnboardCharterStep` / `run-project-onboard` / `project-charter`（toml 读写与保真合并 `fillBlankCharterInToml`，字段 name/kind/brief/benchmark/opportunity，读取兼容 north_star）/ `workbench-wall-projects`（聚合）/ `switch-active-project` / `wall-project-repo-actions`（组升级/连带删组）。散落文档：architecture 用例表与 §3、06-module/桌面壳。存量合规单测：project-charter（解析/回写/保真补空/归一化）、workbench-wall-projects（远端链接/聚合/回退标签）。
+## 实现落点（现状取证）
+
+`src/renderer/src/workbench/`：`ProjectWallPage` / `OnboardProjectPage` / `OnboardCharterStep` / `EditCharterPage`（名片补录）/ `run-project-onboard` / `charter-port` / `charter-pr-notice` + `use-charter-pr-status`（待合入 chip）/ `project-charter`（renderer fs 包装）/ `workbench-wall-projects`（聚合）/ `switch-active-project` / `wall-project-repo-actions`（组升级/连带删组）；`src/shared/workbench/project-charter.ts`（纯函数核心：解析/渲染/保真补空 `fillBlankCharterInToml`，兼容 north_star）与 `charter.ts`（RPC 契约）；`src/main/workbench/charter-runtime.ts` + `charter-remote-probe.ts` + `charter-pr-status.ts`（bw/project 树提交与 PR、克隆前预探测、状态查询）；`src/main/codehub/mr-creation.ts` + `repo-reads.ts`（CodeHub MR 与远端 raw 读，命令形态按 main 正本）。散落文档：architecture 用例表与 §3、06-module/桌面壳与关键信息维护。存量合规单测：project-charter（shared：解析/回写/保真补空/归一化）、workbench-wall-projects（组聚合；展示类用例已随 2026-09-30 环 4 盘点删除）。

@@ -30,6 +30,7 @@ export function normalizeWorkspaceLinkedItem(value: unknown): WorkspaceLinkedIte
   if (
     raw.provider !== 'github' &&
     raw.provider !== 'gitlab' &&
+    raw.provider !== 'codehub' &&
     raw.provider !== 'linear' &&
     raw.provider !== 'jira'
   ) {

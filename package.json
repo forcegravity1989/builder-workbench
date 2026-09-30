@@ -37,6 +37,7 @@
     "check:max-lines-ratchet": "node config/scripts/check-max-lines-ratchet.mjs",
     "check:ts-nocheck-ratchet": "node config/scripts/check-ts-nocheck-ratchet.mjs",
     "check:runtime-electron-ratchet": "node config/scripts/check-runtime-electron-ratchet.mjs",
+    "check:vitest-count-ratchet": "node config/scripts/check-vitest-count-ratchet.mjs",
     "check:readme-local-links": "node config/scripts/check-readme-local-links.mjs",
     "build:orcad": "node config/scripts/build-orcad.mjs",
     "build:orcad-prebuilds": "node config/scripts/build-orcad-prebuilds.mjs",

@@ -43,7 +43,7 @@ export type LinkedWorkItemSummary = Omit<FolderWorkspaceLinkedTask, 'provider'> 
 export function canUseIssueCommandForLinkedItemProvider(
   provider: FolderWorkspaceLinkedTask['provider'] | null
 ): boolean {
-  return provider === 'github' || provider === 'gitlab'
+  return provider === 'github' || provider === 'gitlab' || provider === 'codehub'
 }
 
 // Why: when a repo has no `orca.yaml` issueCommand and no per-user override,
