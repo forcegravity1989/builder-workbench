@@ -45,9 +45,19 @@
 损坏不阻断当前采集)。窗口内某周真实为 0(当周没纳入/没归档活动)是有效测量,
 正常出点。
 
-自己复算(cwd = 仓根,BW 自己走本地读盘):
+服务运行(bw-orca 采集执行器):BW_METRICS_DATA_ROOT / BW_METRICS_DATA_COMMIT
+给出已解析的数据目标,不能把采集器 cwd(配置隔离检出)当数据分支——白名单、
+条目 local 相对路径、BW 自身的 Git 历史遍历都以数据目标为准(历史钉在
+DATA_COMMIT);其余白名单项目是外部数据源,各按其自身 HEAD。BW_METRICS_TIMEZONE
+必须显式为 IANA 时区(归周边界),不设即报错不猜。未结束的本周/本日或被
+--since/--until 截断的部分窗口,点位带 coverage={start,end},value 按真实覆盖
+范围计算;完整且已结束的自然周不声明。依赖:Python ≥ 3.11;Windows 的 Python
+无系统时区库,需 `pip install tzdata`。
 
-    python .bw/scripts/managed-projects.py --metric monday-screen \
+自己复算(在仓根,数据目标缺省即当前目录 HEAD):
+
+    BW_METRICS_TIMEZONE=Asia/Shanghai BW_METRICS_DATA_ROOT=. \
+        python .bw/scripts/managed-projects.py --metric monday-screen \
         --since 2026-08-31 --until 2026-09-21 --granularity week
 """
 
@@ -61,6 +71,7 @@ import subprocess
 import sys
 import tempfile
 from pathlib import Path
+from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
 try:
     import tomllib  # Python ≥ 3.11 标准库
@@ -140,13 +151,17 @@ def load_whitelist(path: Path):
     return entries, None
 
 
-def resolve_repo(entry: dict, clones: list):
+def resolve_repo(entry: dict, clones: list, data_root: Path):
     """取条目指向的项目仓。返回 (路径, 是否远端克隆, 错误话)。
+    local 相对路径按数据目标(BW_METRICS_DATA_ROOT)解析,不按采集器 cwd——
+    服务运行时 cwd 是配置隔离检出,不是被统计的树。
     远端用 --filter=blob:none --no-checkout:monday-screen 要历史提交,不需要
     工作区;adoption 对远端查 HEAD 树。克隆目录登记进 clones 待清理。"""
     name = entry["name"]
     if entry["local"]:
         p = Path(entry["local"])
+        if not p.is_absolute():
+            p = data_root / p
         if not p.is_dir():
             return None, False, f"{name} 的 local 路径不存在:{p} —— 不静默跳过"
         return p, False, None
@@ -214,11 +229,12 @@ def parse_stamp(raw, where: str, stamps: set):
     stamps.add(dt.timestamp())
 
 
-def planning_stamps(repo: Path, name: str):
-    """沿 HEAD 的 Git 历史收 data.json 出现过的全部有效时间戳。
+def planning_stamps(repo: Path, name: str, ref: str = "HEAD"):
+    """沿 ref(服务运行钉 BW_METRICS_DATA_COMMIT,独立运行 HEAD)的 Git 历史
+    收 data.json 出现过的全部有效时间戳。
     返回 (stamps 集合, 错误话)。历史不可变 ⇒ 读数不随后续编辑漂移。"""
     try:
-        proc = run(["git", "-c", "core.quotepath=off", "log",
+        proc = run(["git", "-c", "core.quotepath=off", "log", ref,
                     "--format=%x1e%H", "--name-only", "--diff-filter=ACMR",
                     "--", ".bw/planning"], cwd=repo)
     except FileNotFoundError:
@@ -285,7 +301,8 @@ def main() -> int:
     ap.add_argument("--until", required=True)
     ap.add_argument("--granularity", default="week")
     ap.add_argument("--whitelist", default=WHITELIST_DEFAULT,
-                    help="沙箱测试用的白名单路径覆盖;Workbench 注册的 argv 不带它")
+                    help="沙箱测试用的白名单路径覆盖(相对路径按数据目标解析);"
+                         "Workbench 注册的 argv 不带它")
     args = ap.parse_args()
 
     if args.granularity not in ("week", "day"):
@@ -298,7 +315,23 @@ def main() -> int:
         print(f"--since/--until 要 YYYY-MM-DD:{e}", file=sys.stderr)
         return 2
 
-    entries, err = load_whitelist(Path(args.whitelist))
+    tz_name = os.environ.get("BW_METRICS_TIMEZONE", "").strip()
+    if not tz_name:
+        print("BW_METRICS_TIMEZONE 未设置:归周边界必须是明确时区,不猜", file=sys.stderr)
+        return 2
+    try:
+        tz = ZoneInfo(tz_name)
+    except ZoneInfoNotFoundError:
+        print(f"BW_METRICS_TIMEZONE 不是有效 IANA 时区:{tz_name}"
+              f"(Windows 的 Python 无系统时区库,需 pip install tzdata)", file=sys.stderr)
+        return 2
+    data_root = Path(os.environ.get("BW_METRICS_DATA_ROOT") or Path.cwd()).resolve()
+    data_commit = os.environ.get("BW_METRICS_DATA_COMMIT", "").strip()
+
+    whitelist_path = Path(args.whitelist)
+    if not whitelist_path.is_absolute():
+        whitelist_path = data_root / whitelist_path
+    entries, err = load_whitelist(whitelist_path)
     if err:
         print(err, file=sys.stderr)
         return 2
@@ -307,7 +340,7 @@ def main() -> int:
     try:
         projects = []
         for entry in entries:
-            repo, remote, err = resolve_repo(entry, clones)
+            repo, remote, err = resolve_repo(entry, clones, data_root)
             if err:
                 print(err, file=sys.stderr)
                 return 2
@@ -322,7 +355,10 @@ def main() -> int:
                     print(f"警告:{entry['name']} 在白名单在册,但 {repo} 的 .bw/ 未落盘 —— 不计入纳入数",
                           file=sys.stderr)
             else:
-                stamps, err = planning_stamps(repo, entry["name"])
+                # 数据提交只钉 BW 自身(仓库=数据根);其余白名单项目是外部
+                # 数据源,BW 的 DATA_COMMIT 对它们的仓没有意义,各按自身 HEAD
+                ref = data_commit if (data_commit and repo.resolve() == data_root) else "HEAD"
+                stamps, err = planning_stamps(repo, entry["name"], ref)
                 if err:
                     print(err, file=sys.stderr)
                     return 2
@@ -332,7 +368,17 @@ def main() -> int:
         for d in clones:
             shutil.rmtree(d, ignore_errors=True)
 
-    tz = datetime.datetime.now().astimezone().tzinfo
+    now = datetime.datetime.now(tz)
+
+    def coverage_if_partial(span_start, span_end, natural_start, natural_end):
+        """点位窗口与自然窗口不一致(被 --since/--until 截断)或尚未结束时返回
+        coverage;完整且已结束的自然窗口返回 None。部分窗口不得伪装成完整周/日。"""
+        if span_start == natural_start and span_end == natural_end and span_end <= now:
+            return None
+        end = max(min(span_end, now), span_start)
+        return {"start": span_start.isoformat(timespec="seconds"),
+                "end": end.isoformat(timespec="seconds")}
+
     if args.metric == "adoption":
         # 状态量:纳入日早于桶末就计入(累计);除名 = 从白名单删条目
         def value_in(lo: datetime.date, hi: datetime.date) -> int:
@@ -347,12 +393,28 @@ def main() -> int:
     if args.granularity == "day":
         cur = since
         while cur < until:
-            points.append({"day": cur.isoformat(),
-                           "value": value_in(cur, cur + datetime.timedelta(days=1))})
-            cur += datetime.timedelta(days=1)
+            nxt = cur + datetime.timedelta(days=1)
+            natural_start = datetime.datetime.combine(cur, datetime.time.min, tz)
+            natural_end = datetime.datetime.combine(nxt, datetime.time.min, tz)
+            point = {"day": cur.isoformat(), "value": value_in(cur, nxt)}
+            cov = coverage_if_partial(natural_start, natural_end, natural_start, natural_end)
+            if cov:
+                point["coverage"] = cov
+            points.append(point)
+            cur = nxt
     else:
         for label, monday in weeks_in(since, until):
-            points.append({"week": label, "value": value_in(monday, monday + datetime.timedelta(days=7))})
+            week_end = monday + datetime.timedelta(days=7)
+            lo, hi = max(monday, since), min(week_end, until)
+            natural_start = datetime.datetime.combine(monday, datetime.time.min, tz)
+            natural_end = datetime.datetime.combine(week_end, datetime.time.min, tz)
+            span_start = datetime.datetime.combine(lo, datetime.time.min, tz)
+            span_end = datetime.datetime.combine(hi, datetime.time.min, tz)
+            point = {"week": label, "value": value_in(lo, hi)}
+            cov = coverage_if_partial(span_start, span_end, natural_start, natural_end)
+            if cov:
+                point["coverage"] = cov
+            points.append(point)
 
     json.dump({"points": points}, sys.stdout, ensure_ascii=False)
     return 0
