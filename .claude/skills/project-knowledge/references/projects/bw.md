@@ -6,7 +6,7 @@
 
 核对目标仓根、分支/HEAD、远端 URL 与 PR base，再读该树的 AGENTS、docs 地图和 `ref/upstream.md`。Skill 的加载目录仅定位方法；另一工作树的内容不是本次业务工作目录。并行任务记录所用版本，不覆盖别人的未提交内容。
 
-`bw-orca` 是 Electron/Orca 叠层；`main` 是另一条 Rust 路线，按需用固定提交读历史意图或方法来源，不合并来覆盖目标树。两者同属 BW 也不能互换命令、实现结论或验收证据。Orca upstream 与 BW origin 先核对 URL，不把 `origin/main` 默认解释为 Orca 上游。
+主干 `main`（原 `bw-orca`，2026-09-30 扶正）是 Electron/Orca 叠层；旧 Rust 路线已归档为 `archive/main-pre-orca`，按需用固定提交读历史意图或方法来源，不合并来覆盖目标树。两条路线同属 BW 也不能互换命令、实现结论或验收证据。Orca upstream 与 BW origin 先核对 URL，不把 `origin/main` 默认解释为 Orca 上游。
 
 开发命令和门禁读当前 AGENTS、package.json 与 `.github/workflows/pr.yml`；壳与出包入口读 `src/renderer/src/workbench/SYNC.md`。按当前实现定位 `tests/e2e/`、`tests/playwright.config.ts` 和受影响 Vitest，不能将 Rust 的 `.bw/release/verify`、suite 或 WebView2 深链当 Electron 验证设施。
 

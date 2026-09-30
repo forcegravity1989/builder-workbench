@@ -2,7 +2,7 @@
 
 > **30 秒导读与维护约定**：给判断产品旅程、接手模块与维护知识的人和模型读取。只写 BW 整体用例、逻辑能力、Electron 叠层与数据流；结构为 §1 旅程 → §2 能力 → §3 实现与待迁移边界。整体旅程、能力或实现边界变化时更新。开发规则见 [AGENTS](../AGENTS.md)，模块取舍见 [06-module](06-module/README.md)，视觉与原型见 [设计系统](04-design-system/README.md) / [hifi](hifi/)，产品主张见 [原则 03](01-principles/03-press-release-faq-flywheel.md)。不写开发流水或把原型当已交付能力。
 
-本篇描述 `bw-orca` 的 Orca Electron 路线。`main` 的 Rust 版本仍服务用户，两者不是同一套实现；旧 main 可以提供用户意图和历史证据，不能直接证明这里已经交付。当前能力按源码边界描述，实际可用性仍需对应特性的真壳验收。
+本篇描述主干 `main`（原 `bw-orca`，2026-09-30 扶正）的 Orca Electron 路线。旧 Rust 版本已退出主干、归档为 `archive/main-pre-orca`，可以提供用户意图和历史证据，不能直接证明这里已经交付。当前能力按源码边界描述，实际可用性仍需对应特性的真壳验收。
 
 ## §1 · 用例与旅程
 
@@ -67,7 +67,7 @@ BW 的业务契约在 `src/shared/workbench/`，材料事务、指标与历史 r
 
 ### 知识库材料
 
-`knowledge-repo-loader.ts` 与 `use-knowledge-repo.ts` 从 `activeRepo.path` 扫描、分类和读写文档；当前编辑保存直接写该路径下的文件，没有自动创建评审工作树或 PR。选中的执行 worktree 不会自动改变该来源。若注册的是 main 检出目录，知识页仍读 main 文档，而非当前执行会话的 bw-orca。
+`knowledge-repo-loader.ts` 与 `use-knowledge-repo.ts` 从 `activeRepo.path` 扫描、分类和读写文档；当前编辑保存直接写该路径下的文件，没有自动创建评审工作树或 PR。选中的执行 worktree 不会自动改变该来源。若注册的是其他分支的检出目录（如 `archive/main-pre-orca` 旧 main 归档），知识页仍读该目录下的文档，而非当前执行会话的工作树。
 
 分类走内置规则，规则并不覆盖全部 `ref/` 工程参考；单仓分类地图（`.bw/knowledge-map.toml`）能力已删除，归知识库独立特性重新决策。`skills/bw-knowledge-docs` 是被管项目侧剧本，不等同于仓内 project-knowledge 的治理方法。代码页、对账及建议中的演示项不是真实扫描结论。
 

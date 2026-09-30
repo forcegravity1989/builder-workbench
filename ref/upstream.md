@@ -1,8 +1,8 @@
 # Upstream Orca — 同步说明
 
 > **本篇维护约定**
-> - **读者与时机**：在 `bw-orca` 分支上合并 / rebase upstream Orca、排查二次开发冲突时读取。仓外会话从 [AGENTS.md](../AGENTS.md) 的任务表进到这里。
-> - **职责与边界**：只记 upstream 仓身份、本分支相对 upstream 的删/藏/迁、从 Workbench `main` 合入了什么、以及明确的遗留；不写 Workbench 产品正本（那在仓根与 `docs/`）。
+> - **读者与时机**：在主干 `main`（原 `bw-orca`，2026-09-30 扶正）上合并 / rebase upstream Orca、排查二次开发冲突时读取。仓外会话从 [AGENTS.md](../AGENTS.md) 的任务表进到这里。
+> - **职责与边界**：只记 upstream 仓身份、本分支相对 upstream 的删/藏/迁、从 Workbench 旧 `main`（现 `archive/main-pre-orca`）合入了什么、以及明确的遗留；不写 Workbench 产品正本（那在仓根与 `docs/`）。
 > - **更新触发**：换 upstream 基线、增删叠层钩子、再删/迁文档或源码、或遗留项落地时更新。
 
 ## Upstream 仓
@@ -10,21 +10,21 @@
 | 项 | 值 |
 |---|---|
 | GitHub | https://github.com/stablyai/orca |
-| BW 仓远程 | `origin` = `https://github.com/forcegravity1989/builder-workbench.git`；`origin/main` 是 Rust 路线 |
+| BW 仓远程 | `origin` = `https://github.com/forcegravity1989/builder-workbench.git`；`origin/main` 是产品主干（原 `bw-orca`），旧 Rust 路线归档在 `archive/main-pre-orca` |
 | Orca 远程建议名 | `orca-upstream`；需先核对 URL，不能把 `origin` 当作上游 Orca |
 | 本分支基线 commit | `caa465d1da886b2697c85c18bf36f79f2d3b9e68`（`fix(automations): stop tick latency counting against the missed-run grace (#20819)`，2026-09-15） |
-| 本仓分支 | `bw-orca`（由本地 `workbench` 二次开发叠层落成） |
+| 本仓分支 | `main`（原 `bw-orca`，由本地 `workbench` 二次开发叠层落成；2026-09-30 替换旧 Rust main 扶正，旧 main 归档为 `archive/main-pre-orca`） |
 
-同步 Orca 前先检查 `git remote -v`；若 `orca-upstream` 尚未配置，添加为上表 Orca GitHub URL，已有同名远程则先核对身份。同步在从最新 `bw-orca` 创建的独立分支上完成并评审：
+同步 Orca 前先检查 `git remote -v`；若 `orca-upstream` 尚未配置，添加为上表 Orca GitHub URL，已有同名远程则先核对身份。同步在从最新 `main` 创建的独立分支上完成并评审：
 
 ```bash
-git fetch origin bw-orca
+git fetch origin main
 git remote get-url orca-upstream
 git fetch orca-upstream main
 git merge orca-upstream/main
 ```
 
-这些是明确开展 Orca 升级时的步骤；`origin/main` 不能代替 `orca-upstream/main`。从 Rust main 带入特性或方法时做定向迁移和重新决策，不整支合并。
+这些是明确开展 Orca 升级时的步骤；BW 的 `origin/main` 不能代替 `orca-upstream/main`。从旧 Rust main（`archive/main-pre-orca`）带入特性或方法时做定向迁移和重新决策，不整支合并。
 
 冲突取舍见下文「同步注意事项」。
 
@@ -45,7 +45,7 @@ git merge orca-upstream/main
 
 ### 文档（本轮 `bw-orca` 落仓）
 
-产品文档已换成 **Workbench `main`**（导入时 tip：`25f38bc80211f9656e229ef31b0e5a10ae28226a`），正本在仓根 `AGENTS.md` / `CONTEXT.md` / `README.md` / `CLAUDE.md` 与 `docs/`。
+产品文档已换成 **Workbench 旧 `main`**（导入时 tip：`25f38bc80211f9656e229ef31b0e5a10ae28226a`；该路线现归档为 `archive/main-pre-orca`），正本在仓根 `AGENTS.md` / `CONTEXT.md` / `README.md` / `CLAUDE.md` 与 `docs/`。
 
 从 upstream Orca 文档树中：
 
@@ -137,14 +137,14 @@ CodeHub 不是 `HostedReviewProvider`，也不走 `gh` / `glab`。调用 PATH �
 
 合并时保留独立 CodeHub provider 与薄挂载，GitHub 更新路径沿用 upstream。改预检探测顺序时，同步 `preflight-host-cli-status.test.ts` 的命令 mock 次序。
 
-## 从 Workbench `main` 增加了什么
+## 从 Workbench 旧 `main`（现 `archive/main-pre-orca`）增加了什么
 
 | 类别 | 落点 | 状态 |
 |---|---|---|
 | 产品文档正本 | 仓根 `AGENTS.md` / `CONTEXT.md` / `README.md` 与 `docs/` | 已换入 |
 | 壳叠层（Orca 上新写，非 Rust 直译） | `src/renderer/src/workbench/` | 已在本分支 |
-| **`standard/`（系统提示词 / skill / templates）** | 仓根 `standard/` | 已从 `main` 合入。计划/验收屏与「配置指标」开工注入渲染后 SYSTEM.md.tmpl 与对应 Skill 发现 Stub（week-planning / version-acceptance / metrics-refresh，投影在根级 `skills/`）；planning.py 等旧周一屏脚本已退役删除。main 上 `crates/bw` 的 `ensure_*` / `agent_system_prompt` 全量注入不复刻。BW 四技能（bw-knowledge-docs / metrics-refresh / version-acceptance / week-planning）已登记进原生 `resources/skills/current-manifest.json` 与 `snapshot-registry.json`（b41b4ca78），合并 upstream 时保留该登记 |
-| reviewer-agent 召唤制 CI | `.github/workflows/claude-code-review.yml`、`.github/scripts/check-pr-review.mjs` | 2026-09-29 用户拍板迁入（main 将被 bw-orca 覆盖，独立评审机制不随覆盖丢失）。脚本原文照迁，回执路径兼容 main 现行触发定义；默认分支仍为 main 期间召唤走 main 定义、检出本分支 head 后跑本分支脚本，bw-orca 成默认分支后接管。改 workflow 的 PR 被防篡改校验跳过，首场真实召唤待合入后下一条合格 PR。明细见 [reviewer-agent STATUS](../docs/05-features/reviewer-agent/STATUS.md) |
+| **`standard/`（系统提示词 / skill / templates）** | 仓根 `standard/` | 已从旧 `main` 合入。计划/验收屏与「配置指标」开工注入渲染后 SYSTEM.md.tmpl 与对应 Skill 发现 Stub（week-planning / version-acceptance / metrics-refresh，投影在根级 `skills/`）；planning.py 等旧周一屏脚本已退役删除。旧 main 上 `crates/bw` 的 `ensure_*` / `agent_system_prompt` 全量注入不复刻。BW 四技能（bw-knowledge-docs / metrics-refresh / version-acceptance / week-planning）已登记进原生 `resources/skills/current-manifest.json` 与 `snapshot-registry.json`（b41b4ca78），合并 upstream 时保留该登记 |
+| reviewer-agent 召唤制 CI | `.github/workflows/claude-code-review.yml`、`.github/scripts/check-pr-review.mjs` | 2026-09-29 用户拍板迁入（旧 main 将被产品分支覆盖，独立评审机制不随覆盖丢失）。脚本原文照迁；2026-09-30 扶正落地：`main` 已被产品分支内容替换，本定义即默认分支上的定义，`/code-review` 召唤直接执行它，不再经旧 main 定义中转。改 workflow 的 PR 被防篡改校验跳过，首场真实召唤待下一条合格 PR。明细见 [reviewer-agent STATUS](../docs/05-features/reviewer-agent/STATUS.md) |
 
 BW 自有模块留在 renderer/main/shared/relay 各自的 `workbench/` 目录，不另开 npm / workspace 包；例外是 CLI 业务 handler 与内嵌指南生成（`src/cli/handlers|specs/workbench-materials.ts`、`src/cli/bundled-skill-guides.ts`、`config/scripts/generate-bundled-skill-guides.mjs`），位于原生 CLI 与 config 树内，见上文「产品面」。`standard/` 合入后仍是内容目录（提示词与技能），不是运行时包。
 
