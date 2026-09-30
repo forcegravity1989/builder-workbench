@@ -20,5 +20,5 @@ export function materialProblemRequest(
         `- .bw/planning/${item.version}/${file}：${item.error ?? (item.state === 'migration-required' ? '旧格式，需要迁移' : '格式无法读取')}`
     )
   const selected = version ? `右侧当前选中的版本：${version}。` : '右侧当前未选择版本。'
-  return `本次处理请求：\n请处理以下${workflow === 'plan' ? '计划' : '验收'}数据文件：\n${files.join('\n')}\n${selected}\n先读取实际文件及 ORCA skills get week-planning --reference data-and-runtime，说明问题、备份与修复/迁移方案，等我确认后执行。按该 reference 与版本材料协议处理；完成后用材料工具重新读取并同步当前选版。`
+  return `本次处理请求：\n下面这些${workflow === 'plan' ? '计划' : '验收'}文件还打不开：\n${files.join('\n')}\n${selected}\n先说明旅程仍是准备 → 目标 → 评审 → 拆解 → 归档。这些文件只是旧格式：把旧字段收成新计划，对不上的目标问我，等我确认后执行，不留旧文件副本。按 ORCA skills get week-planning --reference data-and-runtime 转换；完成后重新读取并同步当前选版。`
 }
