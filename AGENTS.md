@@ -8,13 +8,13 @@
 
 ## 按任务读取
 
-本仓开发 Builders' Workbench（Workbench / BW）。**`bw-orca` 分支**是 Orca Electron 执行核上的产品叠层，不是 Rust 三 crate 桌面；叠层 `src/renderer/src/workbench/`，规范 `standard/`。相对 upstream 删了什么、从 `main` 合入了什么、以及遗留项读 [ref/upstream.md](ref/upstream.md)。给人介绍产品从 [README.md](README.md) 开始，完整文档地图在 [docs/README.md](docs/README.md)。
+本仓开发 Builders' Workbench（Workbench / BW）。**主干 `main`**（原 `bw-orca`，2026-09-30 扶正）是 Orca Electron 执行核上的产品叠层，不是 Rust 三 crate 桌面；旧 Rust main 已归档为 `archive/main-pre-orca`。叠层 `src/renderer/src/workbench/`，规范 `standard/`。相对 upstream 删了什么、从旧 main 合入了什么、以及遗留项读 [ref/upstream.md](ref/upstream.md)。给人介绍产品从 [README.md](README.md) 开始，完整文档地图在 [docs/README.md](docs/README.md)。
 
 **[docs/01-principles/](docs/01-principles/README.md) 是最慢变的原则正本**，不得用草稿实现或聊天结论推翻。按任务读取对应资料，不把所有正文堆进入口：
 
 | 任务 | 读取路径与动作 |
 |---|---|
-| `bw-orca` 叠层 / 与 Orca、main 的差异 | 读 [ref/upstream.md](ref/upstream.md)。Orca Mobile 产品已删；`standard/` 已从 `main` 合入。叠层 UI 在 `src/renderer/src/workbench/` |
+| 叠层 / 与 Orca、旧 main 的差异 | 读 [ref/upstream.md](ref/upstream.md)。主干 `main` 即叠层（原 `bw-orca`）；Orca Mobile 产品已删；`standard/` 已从旧 main（现 `archive/main-pre-orca`）合入。叠层 UI 在 `src/renderer/src/workbench/` |
 | 仓外 IDE 新会话 | 本篇 → [workbench-start](.claude/skills/workbench-start/SKILL.md)，按意图与影响分流开发、验证和交付；相关设计读 [architecture](docs/architecture.md)、术语读 [CONTEXT](CONTEXT.md)。Workbench 发起的项目执行会话读产品传入提示与被管项目的 AGENTS，不自动叠加本仓起手 Skill |
 | 特性级变更 | 对齐 [03 产品主张与飞轮](docs/01-principles/03-press-release-faq-flywheel.md) → 按 [02 逆向工作法](docs/01-principles/02-working-backwards.md) 开/改 `docs/05-features/<id>/intent.md` 与带原型链接的 `spec.md`；二者由人确认，`plan.md` 仅大风险升 gate。交付按 02 §6.2 六环链，新工作先过 §6.3 带入三问；迁移在 Orca 上重新决策，按实际改动补链 |
 | 小 bug、文案、无新增用户价值的整理 | 先确认所属特性与已有行为依据；依据齐备则直接修、验证、commit/PR 留痕，不为小修新立特性。所属独立特性的必要文档缺失时，按 [02 §6.3](docs/01-principles/02-working-backwards.md) 补齐本次定义并完成缺失决定的人确认，再改依赖这些决定的代码；粒度听 [01](docs/01-principles/01-document-organization.md) |
@@ -54,7 +54,7 @@ Superpowers / grill-me 可用于发散、质询和计划草稿，特性产出仍
 - 入口层不写业务正本；计划 JSON 与 Issue 标签是各自的事实源。
 - 先查清 Orca 已有代码、提示词和真实调用链，核对能力归属、宿主路由、权限及扩展点，再比较复用与最小适配；不把尚未摸清能力当成产品限制，不另造平行实现、平行规范或特殊通道。具体边界读 [architecture](docs/architecture.md) 与 [upstream](ref/upstream.md)。
 - 方案纠正或重做时，同一交付内清除被替代的尝试代码、错误文档、配置及入口引用，必要的测试随正确行为更新；不为错误方案留兼容层、回退或双路径。现行正本只写有效方案，历史由 Git 追溯，不另建错误尝试台账；不扩 scope，未建如实标未建。
-- V3 与旧 Rust 三 crate 已不在本分支；不能用已删除的 `crates/` 解释现行 Electron 壳。历史在 `v3` 分支与旧 main，必要时看 [旧模块挪移记录](docs/10-reference/v3-and-module-migration.md)。
+- V3 与旧 Rust 三 crate 已不在本分支；不能用已删除的 `crates/` 解释现行 Electron 壳。历史在 `v3` 分支与 `archive/main-pre-orca`（旧 main 归档），必要时看 [旧模块挪移记录](docs/10-reference/v3-and-module-migration.md)。
 
 ## 构建、运行与验证
 

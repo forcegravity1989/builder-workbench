@@ -38,6 +38,6 @@
 | [standard/](../standard/README.md) | Workbench 给被管项目提供的规范资产，不等于本仓研发知识库 |
 | `src/renderer/src/workbench/` | Workbench Electron 叠层（导航、计划/验收业务板、总览、项目墙）；工程验证读 AGENTS |
 | `config/scripts/`、`scripts/` | Orca 构建检查与 BW 开发辅助脚本；实际入口以 AGENTS / package.json 为准 |
-| `.bw/` | 本项目的约定和计划等仓内材料；具体以在用文件为准，不把 main 的 release 工具链视为已迁入 |
+| `.bw/` | 本项目的约定和计划等仓内材料；具体以在用文件为准，不把旧 main 的 release 工具链视为已迁入 |
 
 变更原因与验证证据查 commit/PR，历史查 Git；设计直接读 architecture，不另设仓根设计指针或变更流水。

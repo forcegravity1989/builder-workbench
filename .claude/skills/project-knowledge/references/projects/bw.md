@@ -6,7 +6,7 @@
 
 核对目标仓根、分支/HEAD、远端 URL 与 PR base，再读该树的 AGENTS、docs 地图和 `ref/upstream.md`。Skill 的加载目录仅定位方法；另一工作树的内容不是本次业务工作目录。并行任务记录所用版本，不覆盖别人的未提交内容。
 
-`bw-orca` 是 Electron/Orca 叠层；`main` 是另一条 Rust 路线，按需用固定提交读历史意图或方法来源，不合并来覆盖目标树。两者同属 BW 也不能互换命令、实现结论或验收证据。Orca upstream 与 BW origin 先核对 URL，不把 `origin/main` 默认解释为 Orca 上游。
+主干 `main`（原 `bw-orca`，2026-09-30 扶正）是 Electron/Orca 叠层；旧 Rust 路线已归档为 `archive/main-pre-orca`，按需用固定提交读历史意图或方法来源，不合并来覆盖目标树。两条路线同属 BW 也不能互换命令、实现结论或验收证据。Orca upstream 与 BW origin 先核对 URL，不把 `origin/main` 默认解释为 Orca 上游。
 
 开发命令和门禁读当前 AGENTS、package.json 与 `.github/workflows/pr.yml`；壳与出包入口读 `src/renderer/src/workbench/SYNC.md`。按当前实现定位 `tests/e2e/`、`tests/playwright.config.ts` 和受影响 Vitest，不能将 Rust 的 `.bw/release/verify`、suite 或 WebView2 深链当 Electron 验证设施。
 
@@ -31,7 +31,7 @@
 
 目标分支的删除决定按真实计划/PR 与工作树核对。已批准退役的 `docs/02-adr/`、`docs/03-guide/`、`docs/metrics.md` 或特性目录不因旧链接、扫描清单和历史方法而恢复，也不为保留空目录造占位文件。有价值且仍适用的内容先找现有正本，职责扩展按已有授权处理；历史从固定 Git 提交追溯，不复制一套新归档。
 
-`docs/05-features/` 中保留的 `reviewer-agent/`、`version-planning/` 只是可定位的材料，不证明六环齐全、平台迁移完成或产品特性全集已确定。不要从 main 搬旧矩阵、旧绿灯或过去的 STATUS；实际处理某特性时再按目标分支原则 02 补链。
+`docs/05-features/` 中保留的 `reviewer-agent/`、`version-planning/` 只是可定位的材料，不证明六环齐全、平台迁移完成或产品特性全集已确定。不要从旧 main（`archive/main-pre-orca`）搬旧矩阵、旧绿灯或过去的 STATUS；实际处理某特性时再按目标分支原则 02 补链。
 
 迁移时在现有 spec/STATUS/PR 分开记录：
 

@@ -8,7 +8,7 @@
 
 项目连接、宿主路由、文件与命令执行沿用 Orca 原生能力；BW 不按本机、Web/配对或 SSH/WSL 另设产品限制。操作在工作树所属宿主执行，连接或权限不可用时呈现原生失败，不切换到其他机器读写。
 
-参考 main 的 crates/app-shell/src/screens/overview/metrics.rs、crates/bw/src/repo/metrics_file.rs 与 .bw 指标资产：BizMetrics 的定义解析、feature/leads 页签及引领/滞后图表，SdlcMetrics 的提交/合入 PR/开放 Issue 图表，以及两者的日/周、刷新、历史与错误语义。保留协议、测试向量和有效业务资产，重写 Electron 适配；不迁 Rust crate 或旧 bridge。
+参考旧 main（现 `archive/main-pre-orca`）的 crates/app-shell/src/screens/overview/metrics.rs、crates/bw/src/repo/metrics_file.rs 与 .bw 指标资产：BizMetrics 的定义解析、feature/leads 页签及引领/滞后图表，SdlcMetrics 的提交/合入 PR/开放 Issue 图表，以及两者的日/周、刷新、历史与错误语义。保留协议、测试向量和有效业务资产，重写 Electron 适配；不迁 Rust crate 或旧 bridge。
 
 BW 自用的 managed-projects.py、其名单和远端读取依赖要逐项核对；monday-screen 口径目前依赖旧 data.json/confirmation 历史，必须在新版本材料落地时更新采集解析并保持历史定义可解释。不能复制脚本后宣称新周一屏已有使用指标。旧 codehub-closed-issues.py 也须核对实际 provider，不能因文件名就假定适用 GitHub。
 
@@ -46,7 +46,7 @@ VersionHistoryPort.list 返回 records 与 problems：前者为可读取的固�
 
 ## 项目研发指标
 
-参考 main 的 trend.rs 与 vm_derive::collect_repo_stats：默认最近五周／十四天；调用 Orca 现有项目定位、Git 与 provider 读取能力，不另写 GitHub 登录或 PR/Issue 抓取栈。renderer 的 overview-sdlc-readings 编排原生读取与分页，use-overview-sdlc 管理刷新及过期请求隔离，overview-sdlc 按共享窗口函数落桶并保留各来源的失败状态；原生主进程/runtime 负责执行与宿主路由。这些内建统计不经过业务 MetricsPort，也不伪装为 metrics.toml 业务定义。
+参考旧 main（现 `archive/main-pre-orca`）的 trend.rs 与 vm_derive::collect_repo_stats：默认最近五周／十四天；调用 Orca 现有项目定位、Git 与 provider 读取能力，不另写 GitHub 登录或 PR/Issue 抓取栈。renderer 的 overview-sdlc-readings 编排原生读取与分页，use-overview-sdlc 管理刷新及过期请求隔离，overview-sdlc 按共享窗口函数落桶并保留各来源的失败状态；原生主进程/runtime 负责执行与宿主路由。这些内建统计不经过业务 MetricsPort，也不伪装为 metrics.toml 业务定义。
 
 提交计数明确所选工作树/分支和完整窗口，PR 合入按远端 mergedAt，开放 Issue 为时点存量。旧 main 口径与代码需要逐项核对，尤其重开事件、分页上限和本期非完整窗口；有完整事件历史才重建，只有当前快照就只返回该点。Git 成功不替代远端成功。项目 stats 保留来源与时刻，不能把切日/周后的旧数字重标为新窗口。
 
@@ -69,7 +69,7 @@ Electron 的 GitHub PR 列表／详情与 CodeHub MR 映射现已透传 mergedAt
 
 图表实现采用 ECharts。产品按需依赖 ECharts 6；原型保留其现有静态交互实现。Electron 的 React 渲染端可直接加载 JavaScript 图表；按需打包折线、图例、提示及坐标系，使用本地资源，不依赖 CDN。沿用设计系统颜色与文字，容器变化时 resize、卸载时 dispose；业务读数与 SDLC 共用总览内的图表适配；旧产品手写 SVG 与系列行表已删除。库只负责呈现，缺测断点、来源、统计窗口和失败语义仍由 BW 数据层提供。接入与容器生命周期参考 [官方导入说明](https://echarts.apache.org/handbook/en/basics/import/)和[容器尺寸说明](https://echarts.apache.org/handbook/en/concepts/chart-size/)。
 
-从 main 定向选择有效 .bw 资产，不覆盖目标分支已有项目约定、计划、runtime 和本机路径。北极星占位不成为已注册业务指标；保留缺口。迁移后的 BW 自用数据只是首个验收项目，还要验证不含源码 standard/ 的普通项目。
+从旧 main（`archive/main-pre-orca`）定向选择有效 .bw 资产，不覆盖目标分支已有项目约定、计划、runtime 和本机路径。北极星占位不成为已注册业务指标；保留缺口。迁移后的 BW 自用数据只是首个验收项目，还要验证不含源码 standard/ 的普通项目。
 
 ## 验证与代价
 

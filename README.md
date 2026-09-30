@@ -12,7 +12,7 @@
 
 给独立构建者的 AI 时代桌面工作台：一个人从想法负责到持续运营。你判断方向、审阅结果并确认完成；已被现有做法覆盖的工作交给 AI，其他工作由人与 AI 协作完成。
 
-![CI](https://github.com/forcegravity1989/builder-workbench/actions/workflows/pr.yml/badge.svg?branch=bw-orca)
+![CI](https://github.com/forcegravity1989/builder-workbench/actions/workflows/pr.yml/badge.svg?branch=main)
 
 ## 当前可用范围
 
