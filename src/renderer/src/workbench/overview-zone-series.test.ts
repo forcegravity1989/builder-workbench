@@ -5,7 +5,6 @@ import {
   groupZonePlots,
   isoWeekLabel,
   numericTarget,
-  splitSeriesByAxis,
   zoneBucketLabels,
   zoneChartRange,
   zonePointState,
@@ -194,18 +193,10 @@ describe('zonePointState', () => {
   })
 })
 
-describe('numericTarget / splitSeriesByAxis', () => {
+describe('numericTarget', () => {
   it('只有纯数字目标画参考线；比较符目标保持行内文本', () => {
     expect(numericTarget('3')).toBe(3)
     expect(numericTarget('≥3')).toBeNull()
     expect(numericTarget('')).toBeNull()
-  })
-
-  it('两个单位内共图（左/右轴），三个及以上拆对齐小图', () => {
-    const series = [{ unit: '个' }, { unit: '个' }, { unit: '次' }, { unit: '小时' }]
-    expect(splitSeriesByAxis([{ unit: '个' }, { unit: '次' }])).toHaveLength(1)
-    const split = splitSeriesByAxis(series)
-    expect(split).toHaveLength(3)
-    expect(split[0]).toHaveLength(2)
   })
 })

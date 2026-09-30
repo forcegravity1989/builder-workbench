@@ -52,7 +52,7 @@
 | P03 指标与总览同定义/窗口/来源；刷新/失败/未知/旧值区分 | ◐ | use-plan-metrics + metrics runtime + PlanGoalMetrics 可选多指标与依据展开 | 既有采集/证据单测与 runtime 测试；新目标行及真实脚本全链待真壳/环境 |
 | P04 纪要三段模板派生、复制一致、不补造事实 | ✅ | derivePlanMinutes + PlanningMinutes 复制 | plan-summary 测试 |
 | P05 Issue 创建/复用真实回显；详情编辑返回保留上下文 | ◐ | task-port + 原生 returnToPreviousView 跳过哨兵（528dce0f8） | ui-page-navigation 测试；真实 provider 往返待人 |
-| P06 分树、全部原生会话复用、专用新建与数据处理入口 | ◐ | CycleWorkspaceProvider + CycleStartCard（首行协作卡片）+ 原生 Terminal/RightSidebar；数据问题随 runNow oneShotPrompt 单次递交 | CycleStartCard/one-shot 转发组件与契约测试通过；多标签/分屏/历史与真实手动运行仍待真壳验证 |
+| P06 分树、全部原生会话复用、专用新建与数据处理入口 | ◐ | CycleWorkspaceProvider + CycleStartCard（首行协作卡片）+ 原生 Terminal/RightSidebar；数据问题随 runNow oneShotPrompt 单次递交 | cycle-start-request 契约测试与 one-shot 转发/登记协议测试通过（2026-09-30 环 4 盘点：CycleStartCard 的 UI 渲染/交互用例已删，卡片行为归验收点 E2E 与真壳）；多标签/分屏/历史与真实手动运行仍待真壳验证 |
 | P07 自动化登记去重、BW 提示覆盖同步、用户设置保留、真实到点可追溯 | ◐ | 默认关闭态注册（ensure-cycle-automation：creationKey 去重、已有条目覆盖同步提示词、用户设置保留、人启用才到点）+ 页头「配置自动化」预填/编辑入口 | 去重/覆盖同步/同步失败放行单测；真实到点与跨重启去重待人启用后验证 |
 | P08 并发保存冲突处理；重启/切项目/切版本读回一致 | ◐ | usePlanningAutosave + MaterialDraftController CAS + PlanningPersistenceNotice + view-memory | 本轮自动保存检查见 PR；既有控制器测试/烟测不能替代新路径的真实并发及重启读回 |
 | P09 归档只准备会话请求；PR 真实状态定灯色 | ◐ | archivePort.prepareRequest→composer；archive 状态自动读取+灯色语义（信号不阻断）；归档旁评审状态文本已移除（2026-09-30 返工批，灯保留），archive-label 已删 | archive-port 测试；UI 呈现交验收点 E2E 与真壳 Review；新原生焦点接线、真实 PR 状态与归档请求仍待真壳及 provider 旅程验证 |
