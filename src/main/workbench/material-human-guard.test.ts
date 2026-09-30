@@ -1,6 +1,9 @@
 import { expect, it } from 'vitest'
 import type { AcceptanceMaterial, PlanningMaterial } from '../../shared/workbench/version-material'
-import type { VersionMaterialSave } from '../../shared/workbench/version-material-request'
+import {
+  VersionMaterialReadSchema,
+  type VersionMaterialSave
+} from '../../shared/workbench/version-material-request'
 import { WorkspaceScopeError } from './workspace-scope-error'
 import {
   assertHumanFieldsUntouched,
@@ -147,4 +150,19 @@ it('leaves human channels and plan saves untouched', async () => {
     })
   ).resolves.toBeUndefined()
   await expect(assertHumanFieldsUntouched(read, planSave(), {})).resolves.toBeUndefined()
+})
+
+it('feeds the guard read a payload the strict ReadSchema accepts', async () => {
+  const seen: unknown[] = []
+  const read = async (input: unknown) => {
+    seen.push(input)
+    VersionMaterialReadSchema.parse(input)
+    return { document: material() }
+  }
+  await expect(
+    assertHumanFieldsUntouched(read, acceptanceSave(material()), {})
+  ).resolves.toBeUndefined()
+  expect(seen).toEqual([
+    { repoId: 'repo', worktreeId: 'tree', hostId: 'local', workflow: 'acceptance', version: 'v1' }
+  ])
 })
