@@ -679,8 +679,8 @@ module.exports = {
   npmRebuild: true,
   publish: {
     provider: 'github',
-    owner: 'stablyai',
-    repo: devChannelRepo ?? 'orca',
+    owner: productName === 'Workbench' ? 'forcegravity1989' : 'stablyai',
+    repo: productName === 'Workbench' ? 'builder-workbench' : (devChannelRepo ?? 'orca'),
     releaseType: devChannelRepo ? 'prerelease' : 'release'
   }
 }

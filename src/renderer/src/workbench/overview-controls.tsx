@@ -42,7 +42,7 @@ export function OverviewRefresh({
       disabled={busy}
       onClick={onClick}
     >
-      <RefreshCw size={14} />
+      <RefreshCw size={14} className={busy ? 'wb-ov-refresh-spin' : undefined} />
     </button>
   )
 }

@@ -43,7 +43,7 @@ worktrees/
 
 manual、retro=false 或空北极星标需要配置历史采集，不代写数字、定义或目标。源数据及存储由用户项目或服务拥有。旧 readings/ledger 只作历史识别，不恢复每日自动化、记账分支或日写回；不自动删除历史记录。计划 baseline 与验收归档证据原样保留，新采集不锁旧配置。改变口径走独立“配置指标”会话，由人确认；盘点只报告缺口。
 
-## `.bw/scripts/` · `.bw/process-catalog.md`
+## `.bw/scripts/`
 
 有指标才有。脚本对不上上面的协议:能改到能跑就改;会动口径的停手,交独立指标配置任务由人确认。
 
@@ -57,7 +57,7 @@ manual、retro=false 或空北极星标需要配置历史采集，不代写数�
 
 对照现行格式,这些整份可删(不要瘦一圈再写回去):
 
-`.bw/standard.toml` · `.bw/managed.toml` · `.bw/PROJECT.md` · `.bw/issue-policy.toml` · `.bw/connectors.toml` · `.bw/plan/` · `.bw/scripts/` 中已确认没人再跑的旧采集脚本
+`.bw/standard.toml` · `.bw/managed.toml` · `.bw/PROJECT.md` · `.bw/issue-policy.toml` · `.bw/connectors.toml` · `.bw/plan/` · `.bw/process-catalog.md`(旧过程指标目录,产品已不再分发) · `.bw/scripts/` 中已确认没人再跑的旧采集脚本
 
 项目中的 `docs/Workbench/`、`docs/plan/` 等知识文档目录只报告，不因目录名相同就删除。它们是否仍承担项目用途须另行确认；资产盘点的修改和提交范围仅为本场的 `.bw/` 改动。
 

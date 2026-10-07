@@ -21,13 +21,18 @@ import { OverviewSdlcZones } from './overview-sdlc-zones'
 import { NorthStarCard } from './overview-north-star-card'
 import { ProjectCard } from './overview-project-card'
 import { MetricProblemsPanel } from './metric-problems-panel'
-import { readAllMetricReadings, refreshMetricReadings } from './overview-metric-readings'
+import { hasUncollectedReadings, readAllMetricReadings } from './overview-metric-readings'
 import type { OverviewReadResult } from './overview-metric-readings'
+import {
+  useOverviewAutoCollect,
+  useOverviewManualRefresh
+} from './use-overview-metric-collection'
 import { useOverviewZoneGranularity } from './use-overview-zone-granularity'
 import { useMetricsSetup } from './version-cycle/metrics-setup'
 import { findCycleWorktree } from './version-cycle/native-cycle-workspace'
 import { OverviewVersionMinutes } from './overview-version-minutes'
 import { useOverviewViewState } from './overview-view-state'
+import { RefreshCw } from 'lucide-react'
 import './workbench-overview.css'
 
 function catalogProblems(catalog: MetricCatalog | null): string[] {
@@ -105,6 +110,19 @@ export function OverviewPage(): React.JSX.Element {
     },
     [catalog]
   )
+  const applyCollected = useCallback(
+    (result: OverviewReadResult, collectedCatalog: MetricCatalog) => {
+      setNorthReading(result.north)
+      setZoneReadings(result.map)
+      setProblems([...catalogProblems(collectedCatalog), ...result.problems])
+    },
+    []
+  )
+  /** Cache miss → one background collection pass; see the hook for the stuck-flag guard. */
+  const { collecting, autoCollect } = useOverviewAutoCollect({
+    loadEpoch,
+    apply: applyCollected
+  })
   const zones = useOverviewZoneGranularity({
     identity,
     catalog,
@@ -112,7 +130,8 @@ export function OverviewPage(): React.JSX.Element {
     baseWorktreeId,
     loadEpoch,
     setBusy,
-    apply: applyZoneResult
+    apply: applyZoneResult,
+    autoCollect
   })
   const { currentGranularity, markRead } = zones
 
@@ -193,6 +212,9 @@ export function OverviewPage(): React.JSX.Element {
         setNorthReading(result.north)
         setZoneReadings(result.map)
         problems.push(...result.problems)
+        if (hasUncollectedReadings(result)) {
+          void autoCollect({ scope, owner, catalog: nextCatalog, granularity, epoch })
+        }
       } else if (epoch === loadEpoch.current) {
         setZoneReadings({})
       }
@@ -202,47 +224,18 @@ export function OverviewPage(): React.JSX.Element {
       }
     }
     setProblems(problems)
-  }, [baseScope, baseWorktreeId, currentGranularity, markRead, fixedTrees.plan])
+  }, [baseScope, baseWorktreeId, currentGranularity, markRead, fixedTrees.plan, autoCollect])
 
-  const refreshReadings = useCallback(async () => {
-    if (!baseScope || !baseWorktreeId) {
-      return
-    }
-    const epoch = ++loadEpoch.current
-    setBusy(true)
-    try {
-      const scope = {
-        repoId: baseScope.repoId,
-        worktreeId: baseWorktreeId,
-        hostId: baseScope.hostId
-      }
-      const nextCatalog = await nativeMetricsPort(baseScope.runtimeOwnerEnvironmentId).list(scope)
-      if (epoch !== loadEpoch.current) {
-        return
-      }
-      setCatalog(nextCatalog)
-      const result = await refreshMetricReadings({
-        scope: { repoId: baseScope.repoId, worktreeId: baseWorktreeId, hostId: baseScope.hostId },
-        owner: baseScope.runtimeOwnerEnvironmentId,
-        catalog: nextCatalog,
-        granularity: currentGranularity()
-      })
-      if (epoch !== loadEpoch.current) {
-        return
-      }
-      setZoneReadings(result.map)
-      setNorthReading(result.north)
-      setProblems([...catalogProblems(nextCatalog), ...result.problems])
-    } catch (reason) {
-      if (epoch === loadEpoch.current) {
-        setProblems([`刷新指标失败：${String(reason)}`])
-      }
-    } finally {
-      if (epoch === loadEpoch.current) {
-        setBusy(false)
-      }
-    }
-  }, [baseScope, baseWorktreeId, currentGranularity])
+  const { refreshing, refreshReadings } = useOverviewManualRefresh({
+    baseScope,
+    baseWorktreeId,
+    currentGranularity,
+    loadEpoch,
+    setBusy,
+    setCatalog,
+    setProblems,
+    apply: applyCollected
+  })
 
   useEffect(() => {
     setCatalog(null)
@@ -383,7 +376,7 @@ export function OverviewPage(): React.JSX.Element {
         <OverviewMetricZones
           catalog={catalog}
           readings={zoneReadings}
-          busy={busy}
+          busy={busy || collecting}
           onRefresh={() => void refreshReadings()}
           granularity={zones.granularity}
           onGranularityChange={zones.setGranularity}
@@ -402,6 +395,14 @@ export function OverviewPage(): React.JSX.Element {
           timezone={catalog?.timezone}
         />
       </div>
+      {refreshing && (
+        <div className="wb-ov-refresh-block" role="status" aria-live="polite">
+          <div className="wb-ov-refresh-card">
+            <RefreshCw size={16} className="wb-ov-refresh-spin" />
+            <span>正在重新采集指标读数…</span>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

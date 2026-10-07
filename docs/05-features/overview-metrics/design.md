@@ -10,7 +10,9 @@
 
 参考旧 main（现 `archive/main-pre-orca`）的 crates/app-shell/src/screens/overview/metrics.rs、crates/bw/src/repo/metrics_file.rs 与 .bw 指标资产：BizMetrics 的定义解析、feature/leads 页签及引领/滞后图表，SdlcMetrics 的提交/合入 PR/开放 Issue 图表，以及两者的日/周、刷新、历史与错误语义。保留协议、测试向量和有效业务资产，重写 Electron 适配；不迁 Rust crate 或旧 bridge。
 
-BW 自用的 managed-projects.py、其名单和远端读取依赖要逐项核对；monday-screen 口径目前依赖旧 data.json/confirmation 历史，必须在新版本材料落地时更新采集解析并保持历史定义可解释。不能复制脚本后宣称新周一屏已有使用指标。旧 codehub-closed-issues.py 也须核对实际 provider，不能因文件名就假定适用 GitHub。
+BW 自用的 managed-projects.py 按已合入来源的 Git 历史统计计划活动：schema3 的非空计划创建、目标/任务/进展/轮次实质变更按提交时间归周，纯格式迁移和空计划不计；旧 data.json/confirmation 时间戳保留历史解释。这是已归档计划活动，不等同页面点击。白名单、本仓计划历史及事件账固定读取 BW_METRICS_DATA_COMMIT，脏工作区不参与。codehub-closed-issues.py 的前提「本仓远端是 codehub」不成立（BW Issue 正本在 GitHub），已删除并由 closed-issues.py（gh 采集）接替。
+
+来源直查太慢的指标走两层架构：项目侧预采集落仓内事件账（daily-observation.jsonl），协议脚本只读已备好的源——「计划制定时长」按此实现，归属条款见指标协议。成功查询（包括零新增）按项目记录真实 coverage；失败、截断及旧账缺覆盖证明时不扩大覆盖。读数只采用全部白名单项目共同可信的连续覆盖，部分窗口声明实际边界，没有事件不出点。时长按绝对时间差计算，保留负值与夏令时语义。
 
 ## 责任与接口
 

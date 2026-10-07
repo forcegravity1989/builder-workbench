@@ -2,7 +2,7 @@
 
 > **参考资料范围（2026-09-11）**：下文保留 2026-08-25 的外部资料转述及当时的 BW 对照；其中原目录、旧称和交付状态仅作历史参考，不覆盖当前 [原则](../01-principles/README.md)、[架构](../architecture.md) 与 [词表](../../CONTEXT.md)。SDLC 开发阶段与工作类别 Category 是不同概念。
 
-> **30 秒导读**:这是什么——Anthropic《The AI-Native SDLC Playbook》的**转述提炼,不是原文**(原文有版权,仓里只存链接:<https://claude.com/blog/the-ai-native-sdlc-playbook>,2026-08-25 取读)。按「它主张什么 → BW 怎么用 / 为什么不用」组织,每段都落到我们自己的实现或活号。给谁看——做过程指标后续施工与相关设计的会话。现在作数吗——**作数**(2026-08-25 用户拍板「playbook 是重要信息来源之一,提炼后入仓」,活 #127)。**指标那一半不在这里**:26 条引领/滞后指标已逐条翻成 BW 统计方式,正本是过程指标总账(随 PR #125 落在 `standard/templates/process-catalog.md`,铺进被管项目为 `.bw/process-catalog.md`),本篇只留指针、不写第二份。
+> **30 秒导读**:这是什么——Anthropic《The AI-Native SDLC Playbook》的**转述提炼,不是原文**(原文有版权,仓里只存链接:<https://claude.com/blog/the-ai-native-sdlc-playbook>,2026-08-25 取读)。按「它主张什么 → BW 怎么用 / 为什么不用」组织,每段都落到我们自己的实现或活号。给谁看——做过程指标后续施工与相关设计的会话。现在作数吗——**作数**(2026-08-25 用户拍板「playbook 是重要信息来源之一,提炼后入仓」,活 #127)。**指标那一半不在这里**:26 条引领/滞后指标曾逐条翻成 BW 统计方式,过程指标总账随 PR #125 落 `standard/templates/process-catalog.md`——该总账与配套脚本模板已退役删除(2026-09-30:采集分发通道从未打通,过程统计由总览原生 SDLC 区与「内建研发统计不重复定义为业务指标」协议承接),历史从 Git 找回,本篇只留指针、不写第二份。
 
 ## 一句话主张
 
@@ -63,6 +63,6 @@
 ## 引用与施工状态(2026-08-25)
 
 - 原文:<https://claude.com/blog/the-ai-native-sdlc-playbook>(本篇为转述,复核以原文为准)
-- 指标 26 条的 BW 统计方式 → 过程指标总账(随 PR #125 落 `standard/templates/process-catalog.md`)
+- 指标 26 条的 BW 统计方式 → 过程指标总账(曾随 PR #125 落 `standard/templates/process-catalog.md`,已退役删除,历史从 Git 找)
 - 产物链原则 → [`01-principles/01-document-organization.md`](../01-principles/01-document-organization.md)(特性级走 `05-features/<id>/`,小 bug 直修)
 - 施工追踪:#118 规范包(PR #125,按 `standard/templates/` 新布局改造)· #119 指标见红(main 已接读数流水路线,PR #126 补具名理由与判读修正)· #120 过程指标块 · #121 先计划后动手 · #122 评审剧本 · #123 手册回路 · #124 事件触发(MVP 后)

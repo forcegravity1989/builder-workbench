@@ -17,6 +17,7 @@ import { createUpdaterDiagnosticLogger } from '../linux-package-install-diagnost
 import { registerAutoUpdaterHandlers } from '../updater-events'
 import { getServeUpdateHandoffFailure } from '../serve-update-handoff'
 import { recordUpdaterLifecycle } from '../updater-lifecycle-diagnostics'
+import { isWorkbenchProduct } from '../startup/workbench-product'
 import { AUTO_UPDATE_CHECK_INTERVAL_MS } from './updater-state'
 import { UpdaterDownloadInstall } from './updater-download-install'
 import type { UpdateInstallMode } from './updater-state'
@@ -35,19 +36,39 @@ export type UpdaterSetupOptions = {
 
 /** Initializes electron-updater and attaches lifecycle/event bridges. */
 export class UpdaterSetup extends UpdaterDownloadInstall {
+  private requireManualWorkbenchUpdate(): boolean {
+    if (!isWorkbenchProduct()) {
+      return false
+    }
+    this.sendErrorStatus('Workbench 当前版本请使用提供的安装包手动更新。', true)
+    return true
+  }
+
   checkForUpdates(): void {
+    if (isWorkbenchProduct()) {
+      return
+    }
     this.checkForUpdatesInBackground()
   }
 
   checkForUpdatesFromMenu(options?: UpdateCheckOptions): void {
+    if (this.requireManualWorkbenchUpdate()) {
+      return
+    }
     super.checkForUpdatesFromMenu(options)
   }
 
   downloadUpdate(): void {
+    if (this.requireManualWorkbenchUpdate()) {
+      return
+    }
     super.downloadUpdate()
   }
 
   quitAndInstall(): void {
+    if (this.requireManualWorkbenchUpdate()) {
+      return
+    }
     super.quitAndInstall()
   }
 
@@ -95,6 +116,9 @@ export class UpdaterSetup extends UpdaterDownloadInstall {
   }
 
   async listAvailableReleaseBuilds(channel: ReleaseChannel): Promise<ReleaseBuild[]> {
+    if (isWorkbenchProduct()) {
+      return []
+    }
     return super.listAvailableReleaseBuilds(channel)
   }
 
@@ -108,6 +132,10 @@ export class UpdaterSetup extends UpdaterDownloadInstall {
 
   setupAutoUpdater(mainWindow: BrowserWindow, opts?: UpdaterSetupOptions): void {
     this.mainWindowRef = mainWindow
+    // Workbench's release pipeline is pending; Orca feeds must never replace this product.
+    if (isWorkbenchProduct()) {
+      return
+    }
     this.onBeforeQuitCleanup = opts?.onBeforeQuit ?? null
     this.persistLastUpdateCheckAt = opts?.setLastUpdateCheckAt ?? null
     this._getLastUpdateCheckAt = opts?.getLastUpdateCheckAt ?? null

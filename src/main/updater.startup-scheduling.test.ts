@@ -34,6 +34,31 @@ describe('updater', () => {
     vi.useFakeTimers()
   })
 
+  it('keeps Workbench manual updates isolated from every Orca update entry', async () => {
+    vi.stubEnv('WORKBENCH_SHELL', '1')
+    try {
+      const updater = await loadUpdaterModule()
+      updater.setupAutoUpdater({ webContents: { send: vi.fn() } } as never)
+      updater.checkForUpdates()
+      updater.checkForUpdatesFromMenu()
+      updater.downloadUpdate()
+      updater.quitAndInstall()
+      expect(await updater.listAvailableReleaseBuilds('stable')).toEqual([])
+      expect(updater.getRemoteServerUpdateSupport().automatic).toBe(false)
+      expect(() => updater.checkForRemoteServerUpdate('runtime')).toThrow()
+      expect(updater.getUpdateStatus()).toMatchObject({ state: 'error', userInitiated: true })
+      expect(autoUpdaterMock.setFeedURL).not.toHaveBeenCalled()
+      expect(autoUpdaterMock.checkForUpdates).not.toHaveBeenCalled()
+      expect(autoUpdaterMock.downloadUpdate).not.toHaveBeenCalled()
+      expect(autoUpdaterMock.quitAndInstall).not.toHaveBeenCalled()
+      expect(fetchNudgeMock).not.toHaveBeenCalled()
+      expect(powerMonitorOnMock).not.toHaveBeenCalled()
+      expect(vi.getTimerCount()).toBe(0)
+    } finally {
+      vi.unstubAllEnvs()
+    }
+  })
+
   it('does not load or configure electron-updater during dev setup', async () => {
     isMock.dev = true
     const mainWindow = { webContents: { send: vi.fn() } }

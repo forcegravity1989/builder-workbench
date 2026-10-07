@@ -9,6 +9,24 @@ export type OverviewReadResult = {
   map: Record<string, MetricReading | null>
   problems: string[]
 }
+export type OverviewAutoCollect = (args: {
+  scope: OverviewReadScope
+  owner: string | undefined
+  catalog: MetricCatalog
+  granularity: ZoneGranularity
+  epoch: number
+}) => void
+
+/**
+ * True when any reading is a pure cache miss ('not-collected'). Only misses
+ * trigger the background auto-collect — error readings must not loop: a failing
+ * collector stays a visible failure instead of re-running on every load.
+ */
+export function hasUncollectedReadings(result: OverviewReadResult): boolean {
+  const missed = (reading: MetricReading | null) =>
+    reading !== null && reading.status === 'unknown' && reading.reason.code === 'not-collected'
+  return missed(result.north) || Object.values(result.map).some(missed)
+}
 
 /**
  * North star keeps its single-week current window; zone definitions are read over
