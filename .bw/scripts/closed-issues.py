@@ -23,7 +23,7 @@ origin,解析出 GitHub owner/repo;不是 GitHub 远端则如实报错,不猜。
   value 按真实覆盖范围计数;完整且已结束的自然周不声明。
 - gh 未认证 / 调用失败 / 输出坏 JSON / 远端不是 GitHub / 时区未设 →
   退出码 2、stdout 无 JSON:「没采到」而不是写 0。
-- 拉满 --limit 上限即警告可能截断(需要更深历史时分窗口补采)。
+- 拉满 --limit 上限即失败,不把可能截断的结果显示为精确计数。
 
 依赖:Python ≥ 3.11;gh 已认证;Windows 需 `pip install tzdata`。
 自己复算(在仓根):
@@ -55,10 +55,6 @@ def die(msg: str) -> None:
     sys.exit(2)
 
 
-def warn(msg: str) -> None:
-    print(f"警告:{msg}", file=sys.stderr)
-
-
 def resolve_repo(data_root: Path) -> str:
     proc = subprocess.run(
         ["git", "-C", str(data_root), "remote", "get-url", "origin"],
@@ -82,24 +78,33 @@ def fetch_closed(repo: str, since: dt.date, until: dt.date) -> list[dt.datetime]
         "--search", f"closed:{lo}..{hi}",
         "--json", "number,closedAt", "--limit", str(FETCH_LIMIT),
     ]
-    proc = subprocess.run(cmd, capture_output=True, text=True, encoding="utf-8")
+    try:
+        proc = subprocess.run(cmd, capture_output=True, text=True, encoding="utf-8",
+                              stdin=subprocess.DEVNULL)
+    except OSError as error:
+        die(f"gh 无法启动:{error}")
     if proc.returncode != 0:
         die(f"gh 调用失败(未认证或网络不通):{(proc.stderr or proc.stdout).strip()[:300]}")
     try:
         items = json.loads(proc.stdout)
     except json.JSONDecodeError:
         die("gh 输出不是合法 JSON")
+    if not isinstance(items, list) or any(not isinstance(item, dict) for item in items):
+        die("gh 输出不是 Issue 数组")
     if len(items) >= FETCH_LIMIT:
-        warn(f"拉满 {FETCH_LIMIT} 条,可能有截断;需要更深历史时分窗口补采")
+        die(f"达到 {FETCH_LIMIT} 条上限,无法证明窗口完整;请缩小查询窗口后重采")
     out = []
     for it in items:
         raw = it.get("closedAt")
         if not isinstance(raw, str) or not raw:
-            continue  # closedAt 缺失的条目无法归周,如实跳过
+            die(f"issue #{it.get('number')} 没有 closedAt,无法证明窗口完整")
         try:
-            out.append(dt.datetime.fromisoformat(raw.replace("Z", "+00:00")))
+            when = dt.datetime.fromisoformat(raw.replace("Z", "+00:00"))
         except ValueError:
-            warn(f"issue #{it.get('number')} closedAt 解析失败,跳过:{raw}")
+            die(f"issue #{it.get('number')} closedAt 解析失败:{raw}")
+        if when.tzinfo is None:
+            die(f"issue #{it.get('number')} closedAt 没有明确时区:{raw}")
+        out.append(when)
     return out
 
 
@@ -144,16 +149,18 @@ def main() -> int:
 
     data_root = Path(os.environ.get("BW_METRICS_DATA_ROOT") or SCRIPT_ROOT)
     repo = resolve_repo(data_root)
-    closed = [m.astimezone(tz) for m in fetch_closed(repo, since, until)]
+    now = dt.datetime.now(tz)
+    closed = [m.astimezone(tz) for m in fetch_closed(repo, since, until) if m < now]
     print(f"{repo}:窗口拉回 closed issue {len(closed)} 条(含放宽日,归桶时精确过滤)",
           file=sys.stderr)
 
-    now = dt.datetime.now(tz)
     points: list[dict] = []
 
     def emit(label_key: str, label: str, count: int,
              span_start: dt.datetime, span_end: dt.datetime,
              natural_start: dt.datetime, natural_end: dt.datetime) -> None:
+        if span_start >= min(span_end, now):
+            return
         point: dict = {label_key: label, "value": count}
         coverage = coverage_if_partial(span_start, span_end, natural_start, natural_end, now)
         if coverage:

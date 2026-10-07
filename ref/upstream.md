@@ -170,5 +170,5 @@ pnpm run dev:workbench
 ## 待迁移的工程边界
 
 - `.github/workflows/docs.yml` 仍指向已删的 `docs/site`，交由 CI/CD 迁移处理，不能作为 BW 文档链已就绪的证据。（`config/scripts/check-readme-local-links.mjs` 已容错 `docs/readme/` 缺失，在本分支通过。）
-- BW 的 CI/CD、独立评审与正式出包链需按 Electron 验证；源码中保留旧入口不代表已经可交付。
+- BW 的 CI/CD、独立评审与正式出包链需按 Electron 验证；源码中保留旧入口不代表已经可交付。Workbench 安装版暂用安装包手动更新，更新服务按产品身份阻断 Orca 的自动检查、版本选择、下载和安装；打包更新元数据指向 BW 仓。独立自动更新链仍随交付自动化遗留项处理。
 - `standard/` 的路径解析只覆盖部分入口，知识库分类、保存与工作树来源仍需在对应特性迁移时重新决策；当前行为边界见 [architecture](../docs/architecture.md)。

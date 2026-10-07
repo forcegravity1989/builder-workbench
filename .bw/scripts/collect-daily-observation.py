@@ -17,6 +17,9 @@
 - 只记事实,不算数值。中位数、周去重等计算全在指标脚本,信号只能从数据推导。
 - day = 事件 merged_at 的 UTC 日期(合入日归属);首跑回填会重建真实的历史逐日行。
   周/日读数归属由指标脚本按 BW_METRICS_TIMEZONE 从 merged_at 现算,不依赖 day。
+- 成功查询当天的项目对象另记 coverage=[{start,end}]:start=null 表示已完整查
+  全历史,否则为真实查询下界;end 是发起该项目请求前的 UTC 时刻。零新增也更新;
+  项目失败不延长覆盖。事件行上的 ran_at 仅为写入时刻,不是覆盖证明。
 - (remote, pr) 是全局幂等键,跨行去重;merged_at 一律取 provider 真源
   (GitHub mergedAt / CodeHub MR 合入时刻),不用 updatedAt 之类代替。
 - v1 只采 pr_merges 信号(「计划制定时长」指标的唯一数据依赖)。其他特性要用没
@@ -24,7 +27,7 @@
 - 不做老化;文件膨胀成为真问题时再决策。
 
 增量策略:对每个 remote,取文件内已有 merged_at 最大值往前重叠 7 天作为拉取下界;
-文件里没有该项目事件时全量回填(--limit 1000,拉满即警告可能截断)。漏跑几天
+文件里没有该项目覆盖证明时全量回填(--limit 1000,拉满即失败不记完整覆盖)。漏跑几天
 下次自愈(重叠窗口兜底),不需要精确调度;--full 忽略水位强制重拉。
 
 provider 路径:
@@ -39,7 +42,8 @@ CLI 缺失)→ stderr 警告并跳过,采到多少记多少;全部项目失败 �
 采不到不造数据,文件宁可缺也不掺假。
 
 --commit 时:先 git pull --ff-only(单写者前提下保持线性),写入后 commit+push;
-无新增事件则静默退出、不产生空提交。定时自动化用 --commit;本机试跑不加,
+仅提交事件账路径,保留其他已暂存文件;成功零新增仍提交真实观察水位。
+定时自动化用 --commit;本机试跑不加,
 只写工作区文件,由人检视后随分支提交。
 
 自己复算(cwd 任意,路径按脚本所在位置解析仓根):
@@ -101,7 +105,7 @@ def load_whitelist() -> list[dict]:
 def parse_instant(text: str) -> dt.datetime | None:
     try:
         when = dt.datetime.fromisoformat(text.replace("Z", "+00:00"))
-    except ValueError:
+    except (ValueError, AttributeError):
         return None
     return when if when.tzinfo else when.replace(tzinfo=dt.timezone.utc)
 
@@ -119,11 +123,11 @@ def load_observation() -> tuple[dict[str, dict], dict[str, set[int]], dict[str, 
         try:
             row = json.loads(raw)
         except json.JSONDecodeError:
-            warn(f"数据文件第 {lineno} 行损坏,本行按缺失处理(其余行保留原样重写)")
-            continue
+            die(f"数据文件第 {lineno} 行损坏,先修复后再采集,不丢弃已有数据")
         if row.get("schema") != SCHEMA or not row.get("day"):
-            warn(f"数据文件第 {lineno} 行 schema/day 异常,按缺失处理")
-            continue
+            die(f"数据文件第 {lineno} 行 schema/day 异常")
+        if row["day"] in lines:
+            die(f"数据文件 day 重复:{row['day']},先修复后再采集")
         lines[row["day"]] = row
         for project in row.get("projects") or []:
             remote = project.get("remote")
@@ -140,7 +144,29 @@ def load_observation() -> tuple[dict[str, dict], dict[str, set[int]], dict[str, 
 
 
 def run(cmd: list[str]) -> subprocess.CompletedProcess:
-    return subprocess.run(cmd, capture_output=True, text=True, encoding="utf-8")
+    try:
+        return subprocess.run(cmd, capture_output=True, text=True, encoding="utf-8",
+                              stdin=subprocess.DEVNULL)
+    except OSError as error:
+        return subprocess.CompletedProcess(cmd, 127, "", str(error))
+
+
+def parse_items(proc, label: str):
+    if proc.returncode:
+        warn(f"{label}:调用失败:{(proc.stderr or proc.stdout).strip()[:300]}")
+        return None
+    try:
+        items = json.loads(proc.stdout)
+    except json.JSONDecodeError:
+        warn(f"{label}:输出不是合法 JSON")
+        return None
+    if not isinstance(items, list) or any(not isinstance(item, dict) for item in items):
+        warn(f"{label}:输出不是事件数组")
+        return None
+    if len(items) >= FETCH_LIMIT:
+        warn(f"{label}:达到 {FETCH_LIMIT} 条上限,未证明完整,本项目本次不落账或延长覆盖")
+        return None
+    return items
 
 
 def fetch_github(remote: str, lower: dt.datetime | None) -> list[tuple[int, str]] | None:
@@ -151,22 +177,16 @@ def fetch_github(remote: str, lower: dt.datetime | None) -> list[tuple[int, str]
     ]
     if lower is not None:
         cmd += ["--search", f"merged:>={lower.date().isoformat()}"]
-    proc = run(cmd)
-    if proc.returncode != 0:
-        warn(f"github {remote}:gh 调用失败:{(proc.stderr or proc.stdout).strip()[:300]}")
+    items = parse_items(run(cmd), f"github {remote}")
+    if items is None:
         return None
-    try:
-        items = json.loads(proc.stdout)
-    except json.JSONDecodeError:
-        warn(f"github {remote}:gh 输出不是合法 JSON")
-        return None
-    if len(items) >= FETCH_LIMIT:
-        warn(f"github {remote}:拉满 {FETCH_LIMIT} 条,可能有截断;需要更深历史时分窗口补采")
     out = []
     for it in items:
         number, merged = it.get("number"), it.get("mergedAt")
-        if isinstance(number, int) and isinstance(merged, str) and parse_instant(merged):
-            out.append((number, merged))
+        if not isinstance(number, int) or not isinstance(merged, str) or not parse_instant(merged):
+            warn(f"github {remote}:合入事件缺编号或真实合入时刻,本次不延长覆盖")
+            return None
+        out.append((number, merged))
     return out
 
 
@@ -178,28 +198,65 @@ def fetch_codehub(project: dict, lower: dt.datetime | None) -> list[tuple[int, s
     ]
     if project.get("host"):
         cmd += ["-H", project["host"]]
-    proc = run(cmd)
-    if proc.returncode != 0:
-        warn(
-            f"codehub {project['remote']}:codehub-cli 调用失败(本机可能没有该 CLI,"
-            f"或命令形状有出入——此路径未在内网核实):"
-            f"{(proc.stderr or proc.stdout).strip()[:300]}"
-        )
-        return None
-    try:
-        items = json.loads(proc.stdout)
-    except json.JSONDecodeError:
-        warn(f"codehub {project['remote']}:输出不是合法 JSON")
+    items = parse_items(run(cmd), f"codehub {project['remote']}")
+    if items is None:
         return None
     out = []
     for it in items:
         iid, merged = it.get("iid"), it.get("merged_at")
         when = parse_instant(merged) if isinstance(merged, str) else None
-        if isinstance(iid, int) and when:
-            if lower is not None and when < lower:
-                continue
-            out.append((iid, merged))
+        if not isinstance(iid, int) or not when:
+            warn(f"codehub {project['remote']}:合入事件缺编号或真实合入时刻,本次不延长覆盖")
+            return None
+        if lower is not None and when < lower:
+            continue
+        out.append((iid, merged))
     return out
+
+
+def record_coverage(lines: dict, project: dict, start: dt.datetime | None,
+                    end: dt.datetime) -> None:
+    """Successful zero-event reads still prove coverage; failed reads never call this."""
+    day = end.astimezone(dt.timezone.utc).date().isoformat()
+    row = lines.setdefault(day, {"schema": SCHEMA, "day": day, "projects": []})
+    row["ran_at"] = end.isoformat(timespec="seconds")
+    entry = next((p for p in row["projects"] if p.get("remote") == project["remote"]), None)
+    if entry is None:
+        entry = {key: project[key] for key in ("name", "remote", "provider")}
+        entry["signals"] = {"pr_merges": []}
+        row["projects"].append(entry)
+    ranges = []
+    for span in entry.get("coverage", []):
+        lo = parse_instant(span.get("start")) if span.get("start") is not None else None
+        hi = parse_instant(span.get("end"))
+        if hi is None or (span.get("start") is not None and lo is None):
+            die(f"{project['remote']}:已有覆盖边界无效,不覆盖原记录")
+        ranges.append((lo, hi))
+    ranges.append((start, end))
+    floor = dt.datetime.min.replace(tzinfo=dt.timezone.utc)
+    merged = []
+    for lo, hi in sorted(ranges, key=lambda span: span[0] or floor):
+        if hi is None or (lo is not None and lo >= hi):
+            die(f"{project['remote']}:已有覆盖边界无效,不覆盖原记录")
+        if merged and (lo is None or lo <= merged[-1][1]):
+            merged[-1] = (merged[-1][0], max(merged[-1][1], hi))
+        else:
+            merged.append((lo, hi))
+    entry["coverage"] = [{"start": lo.isoformat(timespec="seconds") if lo else None,
+                          "end": hi.isoformat(timespec="seconds")} for lo, hi in merged]
+
+
+def commit_observation(written: int) -> None:
+    rel = OBSERVATION.relative_to(ROOT).as_posix()
+    for cmd in (
+        ["git", "-C", str(ROOT), "add", "--", rel],
+        ["git", "-C", str(ROOT), "commit", "--only", "-m",
+         f"chore(metrics): 每日观测更新覆盖并采集 {written} 条 PR 合入事件", "--", rel],
+        ["git", "-C", str(ROOT), "push"],
+    ):
+        proc = run(cmd)
+        if proc.returncode != 0:
+            die(f"git 操作失败:{(proc.stderr or proc.stdout).strip()[:300]}")
 
 
 def merge_into_lines(
@@ -259,20 +316,25 @@ def main() -> int:
                     help="忽略水位,按 provider 全量重拉(仍按 (remote,pr) 去重)")
     args = ap.parse_args()
 
-    projects = load_whitelist()
     if args.commit:
         proc = run(["git", "-C", str(ROOT), "pull", "--ff-only"])
         if proc.returncode != 0:
             die(f"git pull --ff-only 失败,先人工核对分支状态:{proc.stderr.strip()[:300]}")
+    projects = load_whitelist()
     lines, seen, newest = load_observation()
 
     new_by_remote: dict[str, list[tuple[int, str]]] = {}
     failed = 0
     for project in projects:
         remote, provider = project["remote"], project["provider"]
-        lower = None if args.full else newest.get(remote)
+        has_coverage = any(p.get("remote") == remote and p.get("coverage")
+                           for row in lines.values() for p in row.get("projects", []))
+        lower = newest.get(remote) if has_coverage and not args.full else None
         if lower is not None:
-            lower = lower - dt.timedelta(days=OVERLAP_DAYS)
+            lower = dt.datetime.combine(
+                (lower.astimezone(dt.timezone.utc) - dt.timedelta(days=OVERLAP_DAYS)).date(),
+                dt.time.min, dt.timezone.utc)
+        observed_until = dt.datetime.now(dt.timezone.utc).replace(microsecond=0)
         fetched = (
             fetch_github(remote, lower) if provider == "github"
             else fetch_codehub(project, lower)
@@ -285,6 +347,7 @@ def main() -> int:
         for pr, _ in fresh:
             known.add(pr)
         new_by_remote[remote] = fresh
+        record_coverage(lines, project, lower, observed_until)
         print(f"{provider} {remote}:拉到 {len(fetched)} 条,新增 {len(fresh)} 条")
 
     if failed == len(projects):
@@ -292,24 +355,12 @@ def main() -> int:
 
     ran_at = dt.datetime.now(dt.timezone.utc).isoformat(timespec="seconds")
     written = merge_into_lines(lines, projects, new_by_remote, ran_at)
-    if written == 0:
-        print("无新增事件,数据文件不变")
-        return 0
     write_observation(lines)
     print(f"写入 {written} 条事件,共 {len(lines)} 个 day 行 → "
           f"{OBSERVATION.relative_to(ROOT).as_posix()}")
 
     if args.commit:
-        rel = OBSERVATION.relative_to(ROOT).as_posix()
-        for cmd in (
-            ["git", "-C", str(ROOT), "add", rel],
-            ["git", "-C", str(ROOT), "commit", "-m",
-             f"chore(metrics): 每日观测预采集 +{written} 条 PR 合入事件"],
-            ["git", "-C", str(ROOT), "push"],
-        ):
-            proc = run(cmd)
-            if proc.returncode != 0:
-                die(f"git 操作失败:{(proc.stderr or proc.stdout).strip()[:300]}")
+        commit_observation(written)
         print("已提交并推送")
     return 0
 

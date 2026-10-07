@@ -60,8 +60,11 @@ export async function assertHumanFieldsUntouched(
     return
   }
   // The acceptance-workflow store decodes with AcceptanceMaterialSchema, so the stored
-  // document for this scope is acceptance material.
-  const current = ((await read(params))?.document ?? null) as AcceptanceMaterial | null
+  // document for this scope is acceptance material. The save params carry
+  // expectedRevision/document on top of the read scope; the store's read path validates
+  // with the strict VersionMaterialReadSchema, so strip the save-only keys first.
+  const { expectedRevision: _expectedRevision, document: _document, ...readInput } = params
+  const current = ((await read(readInput))?.document ?? null) as AcceptanceMaterial | null
   const changes = humanFieldChanges(current, params.document)
   if (changes.length > 0) {
     throw new WorkspaceScopeError(

@@ -13,17 +13,17 @@
   克隆查 HEAD 树(新克隆二者等价)。周归属按条目 `since`(纳入日)起累计逐周
   计入;在册但 `.bw/` 未落盘不计,stderr 给警告(这是可读到的真实反例,不算
   采集失败)。
-- monday-screen:沿仓库当前 HEAD 的 **Git 历史**提取各项目
-  `.bw/planning/<版本>/data.json` 每个已提交版本里的顶层 `updated_at` 与
-  `confirmation.{results,review_ready,plan}.at`;任一时间戳落在某周,该项目该周
-  计 1(同项目同周去重)。为什么读历史不读工作区文件:这两个字段是「最后一次
-  写入」的可变值(week-planning 的 save 每次覆写 updated_at,内容变更会清空
-  confirmation),读当前文件会让同一窗口的历史读数随后续编辑漂移;Git 历史
-  不可变,同一命令永远复算出同一组周值。三条推论,都是口径的一部分:
+- monday-screen:沿数据目标的 **Git 历史**读取各项目
+  `.bw/planning/<版本>/data.json`。schema3 以已合入的非空计划创建、目标/任务/
+  进展或轮次实质变更为使用记录,按该提交的提交时间归周;旧格式转 schema3
+  的首次迁移不计一次新使用。旧材料仍读其 `updated_at` 与
+  `confirmation.{results,review_ready,plan}.at` 解释历史。任一记录落在某周,
+  该项目该周计 1(同项目同周去重)。这衡量已归档计划活动,不声称统计页面点击。
+  读取不可变 Git 历史,避免后续编辑覆盖旧周事实。三条推论:
     * 仅 progress_updates + updated_at 变化的提交不计 —— 那是资产盘点等
       自动化写入(planning.py 的 replace 造不出人的 confirmation),自动化
       使用不等于人使用周一屏;
-    * 重建数据(如本仓 v0.3)时间戳全为 null,归不到任何周 —— 重建不等于使用;
+    * 旧材料重建后时间戳全为 null、纯格式迁移、空计划不计 —— 重建不等于使用;
     * 未合入 HEAD 的草稿(如常驻规划工作树上的当周编辑)不计,归档为准 ——
       这保证任何机器克隆默认分支都复算出同一读数,代价是当周使用要等归档
       后才出现在读数里。
@@ -73,6 +73,8 @@ import tempfile
 from pathlib import Path
 from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
+from metric_source import read_source_text
+
 try:
     import tomllib  # Python ≥ 3.11 标准库
 except ModuleNotFoundError:  # pragma: no cover
@@ -110,14 +112,11 @@ def weeks_in(since: datetime.date, until: datetime.date):
     return out
 
 
-def load_whitelist(path: Path):
+def load_whitelist(path: Path, data_root: Path):
     """解析并校验白名单。返回 (entries, 错误话);错误话非 None = 没采到。"""
-    if not path.is_file():
-        return None, f"白名单不存在:{path}(正本应在仓内 {WHITELIST_DEFAULT},由人维护)"
     try:
-        with path.open("rb") as f:
-            data = tomllib.load(f)
-    except (tomllib.TOMLDecodeError, OSError) as e:
+        data = tomllib.loads(read_source_text(data_root, path))
+    except (tomllib.TOMLDecodeError, OSError, RuntimeError) as e:
         return None, f"白名单读不出来:{path}:{e}"
     raw = data.get("projects")
     if not isinstance(raw, list) or not raw:
@@ -198,20 +197,18 @@ def resolve_repo(entry: dict, clones: list, data_root: Path):
     return dest, True, None
 
 
-def check_adopted(repo: Path, remote: bool, name: str):
+def check_adopted(repo: Path, remote: bool, name: str, ref: str = "HEAD"):
     """`.bw/` 是否真实存在:本地查磁盘(工作区事实),远端查 HEAD 树(新克隆等价)。
     返回 (adopted, 错误话)。"""
     if not remote:
         return (repo / ".bw").is_dir(), None
     try:
-        proc = run(["git", "cat-file", "-e", "HEAD:.bw"], cwd=repo)
+        proc = run(["git", "ls-tree", "--name-only", ref, "--", ".bw"], cwd=repo)
     except FileNotFoundError:
         return False, f"本机没有 git 或不在 PATH,核验不了 {name} 的 .bw/"
-    if proc.returncode != 0 and proc.stderr.strip():
-        # 区分「对象不存在」(未纳入,正常)与 git 本身出错(没采到)
-        if "fatal" in proc.stderr and "HEAD:.bw" not in proc.stderr:
-            return False, f"{name} 的 HEAD 树读不出来:{proc.stderr.strip()}"
-    return proc.returncode == 0, None
+    if proc.returncode != 0:
+        return False, f"{name} 的 {ref} 树读不出来:{proc.stderr.strip()}"
+    return bool(proc.stdout.strip()), None
 
 
 def parse_stamp(raw, where: str, stamps: set):
@@ -235,7 +232,7 @@ def planning_stamps(repo: Path, name: str, ref: str = "HEAD"):
     返回 (stamps 集合, 错误话)。历史不可变 ⇒ 读数不随后续编辑漂移。"""
     try:
         proc = run(["git", "-c", "core.quotepath=off", "log", ref,
-                    "--format=%x1e%H", "--name-only", "--diff-filter=ACMR",
+                    "--format=%x1e%H%x09%cI", "--name-only", "--diff-filter=ACMR",
                     "--", ".bw/planning"], cwd=repo)
     except FileNotFoundError:
         return None, f"本机没有 git 或不在 PATH,读不了 {name} 的归档历史"
@@ -244,11 +241,13 @@ def planning_stamps(repo: Path, name: str, ref: str = "HEAD"):
                       f" —— 周一屏使用无法复算,这次不给数")
     # 输出是「␞<sha>」行后跟该提交动过的路径行;git log 新提交在前
     versions: dict = {}  # path -> [sha, …] 新在前(git log 序),遍历时 reversed
+    committed_at: dict[str, str] = {}
     sha = None
     # 不能用 splitlines():它把 \x1e 本身也当行边界,sha 行会丢前缀
     for line in proc.stdout.split("\n"):
         if line.startswith("\x1e"):
-            sha = line[1:]
+            sha, stamp = line[1:].split("\t", 1)
+            committed_at[sha] = stamp
         elif line.strip() and sha and DATA_JSON_RE.match(line.strip()):
             versions.setdefault(line.strip(), []).append(sha)
     stamps: set = set()
@@ -267,6 +266,24 @@ def planning_stamps(repo: Path, name: str, ref: str = "HEAD"):
                 continue
             if not isinstance(data, dict):
                 print(f"警告:{name} 的 {s[:9]}:{path} 不是 JSON 对象,跳过该版本", file=sys.stderr)
+                continue
+            if data.get("schema_version") == 3:
+                # 旧格式迁入不等于一次新使用；已有 schema3 的实质修改与
+                # 新建非空计划按进入采用分支的提交时间计，草稿不在 ref 历史内。
+                migrating = prev is not None and prev.get("schema_version") != 3
+                content = _schema3_content(data)
+                if not isinstance(data.get("goals"), list) or not isinstance(data.get("tasks"), list) or not isinstance(data.get("summary"), dict):
+                    print(f"警告:{s[:9]}:{path} 的 schema3 材料字段不完整,跳过", file=sys.stderr)
+                    continue
+                populated = any(
+                    isinstance(goal, dict) and str(goal.get("title") or "").strip()
+                    for goal in data["goals"]
+                ) or bool(data["tasks"]) or any(data["summary"].values())
+                if not migrating and populated and (
+                    prev is None or _schema3_content(prev) != content
+                ):
+                    parse_stamp(committed_at[s], f"{s[:9]}:{path}", stamps)
+                prev = data
                 continue
             conf = data.get("confirmation")
             if conf is not None and not isinstance(conf, dict):
@@ -289,6 +306,22 @@ def _content(data: dict):
     """去掉自动化/易变字段后的内容指纹,用于识别「仅 progress_updates 变化」。"""
     return json.dumps({k: v for k, v in data.items() if k not in AUTO_ONLY_IGNORED},
                       sort_keys=True, ensure_ascii=False)
+
+
+def _schema3_content(data: dict):
+    return {key: data.get(key) for key in ("cycleId", "summary", "goals", "tasks")}
+
+
+def count_in_window(metric, projects, lo, hi, tz, observed_at):
+    """Only facts within the declared observation cutoff may enter the reading."""
+    if metric == "adoption":
+        observed_day = observed_at.astimezone(tz).date()
+        return sum(1 for p in projects
+                   if p["adopted"] and p["since"] < hi and p["since"] <= observed_day)
+    lo_ts = datetime.datetime.combine(lo, datetime.time.min, tz).timestamp()
+    hi_ts = min(datetime.datetime.combine(hi, datetime.time.min, tz).timestamp(),
+                observed_at.timestamp())
+    return sum(1 for p in projects if any(lo_ts <= t < hi_ts for t in p["stamps"]))
 
 
 def main() -> int:
@@ -329,12 +362,12 @@ def main() -> int:
               f"(Windows 的 Python 无系统时区库,需 pip install tzdata)", file=sys.stderr)
         return 2
     data_root = Path(os.environ.get("BW_METRICS_DATA_ROOT") or Path.cwd()).resolve()
-    data_commit = os.environ.get("BW_METRICS_DATA_COMMIT", "").strip()
+    data_commit = os.environ.get("BW_METRICS_DATA_COMMIT", "").strip() or "HEAD"
 
     whitelist_path = Path(args.whitelist)
     if not whitelist_path.is_absolute():
         whitelist_path = data_root / whitelist_path
-    entries, err = load_whitelist(whitelist_path)
+    entries, err = load_whitelist(whitelist_path, data_root)
     if err:
         print(err, file=sys.stderr)
         return 2
@@ -348,8 +381,10 @@ def main() -> int:
                 print(err, file=sys.stderr)
                 return 2
             proj = {"since": entry["since"], "adopted": False, "stamps": set()}
+            pinned = repo.resolve() == data_root
+            ref = data_commit if pinned else "HEAD"
             if args.metric == "adoption":
-                adopted, err = check_adopted(repo, remote, entry["name"])
+                adopted, err = check_adopted(repo, remote or pinned, entry["name"], ref)
                 if err:
                     print(err, file=sys.stderr)
                     return 2
@@ -360,7 +395,6 @@ def main() -> int:
             else:
                 # 数据提交只钉 BW 自身(仓库=数据根);其余白名单项目是外部
                 # 数据源,BW 的 DATA_COMMIT 对它们的仓没有意义,各按自身 HEAD
-                ref = data_commit if (data_commit and repo.resolve() == data_root) else "HEAD"
                 stamps, err = planning_stamps(repo, entry["name"], ref)
                 if err:
                     print(err, file=sys.stderr)
@@ -382,15 +416,8 @@ def main() -> int:
         return {"start": span_start.isoformat(timespec="seconds"),
                 "end": end.isoformat(timespec="seconds")}
 
-    if args.metric == "adoption":
-        # 状态量:纳入日早于桶末就计入(累计);除名 = 从白名单删条目
-        def value_in(lo: datetime.date, hi: datetime.date) -> int:
-            return sum(1 for p in projects if p["adopted"] and p["since"] < hi)
-    else:
-        def value_in(lo: datetime.date, hi: datetime.date) -> int:
-            lo_ts = datetime.datetime.combine(lo, datetime.time(0, 0), tz).timestamp()
-            hi_ts = datetime.datetime.combine(hi, datetime.time(0, 0), tz).timestamp()
-            return sum(1 for p in projects if any(lo_ts <= t < hi_ts for t in p["stamps"]))
+    def value_in(lo: datetime.date, hi: datetime.date) -> int:
+        return count_in_window(args.metric, projects, lo, hi, tz, now)
 
     points = []
     if args.granularity == "day":

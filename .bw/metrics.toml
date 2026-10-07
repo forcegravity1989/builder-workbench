@@ -19,14 +19,14 @@ collect = { kind = "script", run = ["python", ".bw/scripts/managed-projects.py",
 [[lagging]]
 name = "使用周一屏的被管理项目数"
 feature = "周一屏"
-def = "白名单内项目,其仓 .bw/planning/<版本>/data.json 在 Git 历史(当前 HEAD)中出现过的 updated_at/confirmation 时间戳落在这一周的去重计数;历史不可变,读数不随后续编辑漂移;仅 progress_updates 的自动化更新不计;重建数据(时间戳全空)不计;未合入 HEAD 的草稿不计,归档为准。"
+def = "白名单内项目已合入数据来源的计划活动按周去重计数。schema3 以非空计划创建或目标/任务/进展/轮次实质变更的提交时间归周,纯格式迁移、空计划和未合入草稿不计;旧材料按 Git 历史中的 updated_at/confirmation 解释历史,仅 progress_updates 更新不计。衡量已归档计划活动,不等同页面点击;后续编辑不覆盖旧周事实。"
 target = "≥6"
 collect = { kind = "script", run = ["python", ".bw/scripts/managed-projects.py", "--metric", "monday-screen"], retro = true }
 
 [[lagging]]
 name = "计划制定时长"
 feature = "周一屏"
-def = "白名单项目在窗口内合入的 PR,从该 ISO 周周一 09:00(BW_METRICS_TIMEZONE)到合入时刻(provider 真源 mergedAt)的时长中位数(小时);测周交付节奏。合入事件由项目侧预采集每日落 .bw/metrics/daily-observation.jsonl(bw/daily-observation/v1,collect-daily-observation.py 维护,day=合入日 UTC,remote+pr 幂等);协议脚本只读本地事件账,秒级。没有合入事件的周不出点、不补 0;早于周一 09:00 合入的负时长如实保留;被窗口或当前时刻截断的部分周声明 coverage。"
+def = "白名单项目在窗口内合入的 PR,从该 ISO 周周一 09:00(BW_METRICS_TIMEZONE)到合入时刻(provider 真源 mergedAt)的时长中位数(小时);测周交付节奏。合入事件由项目侧预采集落 .bw/metrics/daily-observation.jsonl(bw/daily-observation/v1,day=合入日 UTC,remote+pr 幂等);协议脚本固定读取 DATA_COMMIT 的白名单和事件账。只采用全部白名单项目共同可信的连续采集覆盖,被查询范围、当前时刻或真实采集覆盖截断的部分周声明 coverage;旧账无覆盖证明保持未知。没有合入事件的周不出点、不补 0;负时长如实保留,跨夏令时按绝对时间差计算。"
 target = ""
 unit = "小时"
 collect = { kind = "script", run = ["python", ".bw/scripts/plan-cycle-hours.py"], retro = true }

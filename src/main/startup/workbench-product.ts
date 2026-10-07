@@ -10,7 +10,9 @@ export function isWorkbenchProduct(env: NodeJS.ProcessEnv = process.env): boolea
   if (env.ORCA_PRODUCT_NAME === 'Workbench' || env.WORKBENCH_SHELL === '1') {
     return true
   }
-  return WORKBENCH_SHELL !== undefined && WORKBENCH_SHELL === '1'
+  // The build constant is absent in plain Node entry points and source-level tests.
+  // oxlint-disable-next-line unicorn/no-typeof-undefined
+  return typeof WORKBENCH_SHELL !== 'undefined' && WORKBENCH_SHELL === '1'
 }
 
 export const WORKBENCH_APP_NAME = 'Workbench'

@@ -1,351 +1,97 @@
 {
-  "schema_version": 2,
-  "template_version": "se-v7-1-pilot-1",
+  "schema_version": 3,
   "version": "v0.5",
-  "project": "Builders’ Workbench",
-  "header": {
-    "version_pair": "v0.4 → v0.5",
-    "context": "BW · 版本规划"
+  "cycleId": "664aa8c6-d407-43e7-9d60-e99096f1f2db",
+  "summary": {
+    "progress": "v0.4进展：\nv0.4 已发布（tag v0.4.0）。G1 周一屏功能交付：验收 11/11、用例 16/16 全过，5 条任务 Issue 全关，达成；G2 本机 v0.4 交付归档：计划 JSON/纪要/交付件/任务 Issue/归档 PR 齐套，达成。",
+    "risks": ""
   },
-  "provenance": {
-    "kind": "session_draft",
-    "notice": "第一屏草稿由会话从 v0.4 已确认 JSON（origin/main 归档）plan.goals + v0.4 收尾报告 import；结果标签为候选，待 Builder 确认"
-  },
-  "previous_version": {
-    "version": "v0.4",
-    "kind": "archived_plan_json",
-    "url": "https://github.com/forcegravity1989/builder-workbench/issues/180"
-  },
-  "sources": [
+  "goals": [
     {
-      "id": "v04-plan-issue",
-      "kind": "issue",
-      "url": "https://github.com/forcegravity1989/builder-workbench/issues/180",
-      "verified_at": "2026-09-20"
+      "goalId": "G1",
+      "title": "orca-bw重构版上线, 补齐XX高优先级特性六环(intent\\spec\\design\\TDD\\验收E2E\\旅程E2E)。",
+      "deliverable": "计划屏\\验收屏\\总览\\指标\\任务验证报告",
+      "acceptance": "",
+      "metricTargets": []
     },
     {
-      "id": "v04-report",
-      "kind": "archived_report",
-      "url": "https://github.com/forcegravity1989/builder-workbench/blob/6d0aaf27/.bw/planning/v0.4/report.html",
-      "verified_at": "2026-09-20"
+      "goalId": "G2",
+      "title": "对齐袁健勾勾表，逐步补齐BW PR|上线的自动化流程缺失部分。",
+      "deliverable": "勾勾表bw的现状",
+      "acceptance": "",
+      "metricTargets": []
     },
     {
-      "id": "v04-g2-snapshot",
-      "kind": "deliverable",
-      "url": "https://github.com/forcegravity1989/builder-workbench/blob/af924a9d/.bw/planning/v0.4/deliverables/v04-g2-monday-screen.png",
-      "verified_at": "2026-09-20"
+      "goalId": "G3",
+      "title": "优化上版本周一屏特性，清理 周一屏 特性 Issue。构建看护指标：使用该特性项目数",
+      "deliverable": "可观测的忠实指标",
+      "acceptance": "",
+      "metricTargets": [
+        {
+          "ref": {
+            "name": "使用周一屏的被管理项目数",
+            "definitionHash": "sha256:1055d880ea8dd09228d2cccffe71ebdcf6e1f86cedd461901f968b40e11886b9",
+            "configurationCommit": "29dc314cf5587dfb212633f48b51487074d7baec"
+          },
+          "target": "6"
+        }
+      ]
     }
   ],
-  "results": {
-    "version_label": "v0.4",
-    "task_summary": "5 条任务 Issue 全部关闭，验收 11/11 通过、用例 16/16 通过；G1/G2 候选达成待确认。",
-    "goals": [
-      {
-        "id": "G1",
-        "label": "G1",
-        "title": "[周一屏]需求功能交付：支持周一上午 builder 完成上周信息总结、本周版本规划，下午 PL/builder 计划对齐握手，输出交付件和周任务（需要整理会议纪要）",
-        "metric": "约定验收项通过数（上午总结、本版规划成稿、下午 PL/builder 握手、纪要+交付件+任务 Issue 归档）",
-        "target": "4",
-        "baseline": "0",
-        "reading": "4",
-        "progress": null,
-        "deadline": "",
-        "owner": "",
-        "status": {
-          "label": "达成",
-          "tone": "success"
-        },
-        "note": "会话候选：v0.4 收尾报告验收 11/11、用例 16/16 全过，5 条任务 Issue 全关，周一屏功能交付完成；四项验收项未见逐项留痕，按整体验收标注，待确认。",
-        "sources": [
-          "v04-report",
-          "v04-plan-issue"
-        ]
-      },
-      {
-        "id": "G2",
-        "label": "G2",
-        "title": "[周一屏]本机项目完成 v0.4 规划交付归档：计划数据、会议纪要、交付件、任务 Issue 全部落仓可读回",
-        "metric": "归档要件齐套数（计划 JSON、纪要、交付件、任务 Issue、归档 PR 合入）",
-        "target": "5",
-        "baseline": "0",
-        "reading": "5",
-        "progress": null,
-        "deadline": "",
-        "owner": "",
-        "status": {
-          "label": "达成",
-          "tone": "success"
-        },
-        "note": "会话候选：计划 JSON、纪要、交付件（report.html/report.json/快照）、任务 Issue、归档 PR（#220/#228/#231）齐套且 origin/main 读回。",
-        "sources": [
-          "v04-report",
-          "v04-g2-snapshot",
-          "v04-plan-issue"
-        ]
-      }
-    ],
-    "tasks": [
-      {
-        "id": "issue-207",
-        "number": 207,
-        "url": "https://github.com/forcegravity1989/builder-workbench/issues/207",
-        "title": "【v0.4|W38|G1】周一屏实战：BW 本周特性、指标与 E2E 验收",
-        "kind": "feature",
-        "goal": "v0.4/G1",
-        "progress_note": "已关闭（09-19）：BW 本周特性/指标/E2E 验收随 #227/#229 落地，验收 16 用例全过。",
-        "sources": []
-      },
-      {
-        "id": "issue-176",
-        "number": 176,
-        "url": "https://github.com/forcegravity1989/builder-workbench/issues/176",
-        "title": "【v0.4|W38|G1】规范收为 harness 系统提示词与 skill",
-        "kind": "feature",
-        "goal": "v0.4/G1",
-        "progress_note": "已关闭（09-18）：规范收进 harness（#213/#215 相关 PR），issue-state/metrics 注入生效。",
-        "sources": []
-      },
-      {
-        "id": "issue-217",
-        "number": 217,
-        "url": "https://github.com/forcegravity1989/builder-workbench/issues/217",
-        "title": "【v0.4|W38|G1】新增采集脚本：统计使用周一屏的被管理项目数",
-        "kind": "feature",
-        "goal": "v0.4/G1",
-        "progress_note": "已关闭（09-18）：白名单被管项目指标采集上线（#225），纳入数与周一屏使用数脚本化。",
-        "sources": []
-      },
-      {
-        "id": "issue-219",
-        "number": 219,
-        "url": "https://github.com/forcegravity1989/builder-workbench/issues/219",
-        "title": "【v0.4|W38|G1】周一屏纪要：会议语音转文字并生成纪要",
-        "kind": "feature",
-        "goal": "v0.4/G1",
-        "progress_note": "已关闭（09-18）：内置 eMeeting 转写脚本与三节纪要模板（#221）。",
-        "sources": []
-      },
-      {
-        "id": "issue-218",
-        "number": 218,
-        "url": "https://github.com/forcegravity1989/builder-workbench/issues/218",
-        "title": "【v0.4|W38|G2】补跑 2026-W38 周一屏并入库归档",
-        "kind": "feature",
-        "goal": "v0.4/G2",
-        "progress_note": "已关闭（09-19）：v0.4 规划数据、纪要、交付件、报告全部落仓（#220/#228/#231）。",
-        "sources": []
-      }
-    ],
-    "session_label": "未取得",
-    "session_kind": "原始记录",
-    "session_meta": "本仓 Orca 适配尚无可用会话列表读取接口，不以聊天摘录代替列表。",
-    "sessions": [],
-    "deliverables": [
-      {
-        "id": "D1",
-        "label": "v0.4 最终版本报告（report.html）",
-        "goal": "G1",
-        "url": ".bw/planning/v0.4/report.html"
-      },
-      {
-        "id": "D2",
-        "label": "v0.4 周一屏第一屏快照交付件",
-        "goal": "G2",
-        "url": ".bw/planning/v0.4/deliverables/v04-g2-monday-screen.png"
-      }
-    ]
-  },
-  "summary": {
-    "overview": "v0.5 版本目标评审：orca-bw 版本交付 + BW 自动化流程对齐（袁健勾勾表）+ 周一屏特性优化与看护指标",
-    "risks": "",
-    "progress": "v0.4 已发布（tag v0.4.0）。G1 周一屏功能交付：验收 11/11、用例 16/16 全过，5 条任务 Issue 全关，达成；G2 本机 v0.4 交付归档：计划 JSON/纪要/交付件/任务 Issue/归档 PR 齐套，达成。",
-    "badges": [
-      [
-        "待核对",
-        "待讨论"
-      ],
-      [
-        "待核对"
-      ]
-    ]
-  },
-  "review": {
-    "live_notes": "## 本周 Top3 目标\n1、orca-bw重构版上线, 补齐XX高优先级特性六环(intent\\spec\\design\\TDD\\验收E2E\\旅程E2E)。\n2、对齐袁健勾勾表，逐步补齐BW PR|上线的自动化流程缺失部分。\n3、优化上版本周一屏特性，清理 周一屏 特性 Issue。构建特性看护指标：XX项目使用XX次监测\n## 周五交付件\n1、v0.5版本验收报告（包含六环特性矩阵自动化验证报告），XX验收点E2E用例、XX冒烟用户旅程用例。\n2、BW CI\\CD 在勾勾表现状，并往前推进1+项。\n3、周一屏 特性issue全部闭环；\n## 数字指标变化\n{周一屏} 项目数 1 -> 6\n",
-    "meeting_url": "",
-    "transcript": {
-      "path": "",
-      "sha256": "",
-      "text": "",
-      "source_url": ""
+  "tasks": [
+    {
+      "provider": "github",
+      "repository": "github.com/forcegravity1989/builder-workbench",
+      "number": 247,
+      "goalId": "G1"
     },
-    "minutes": {
-      "state": "manual",
-      "markdown": "## 本周 Top3 目标\n1、orca-bw重构版上线, 补齐XX高优先级特性六环(intent\\spec\\design\\TDD\\验收E2E\\旅程E2E)。\n2、对齐袁健勾勾表，逐步补齐BW PR|上线的自动化流程缺失部分。\n3、优化上版本周一屏特性，清理 周一屏 特性 Issue。构建特性看护指标：XX项目使用XX次监测\n## 周五交付件\n1、v0.5版本验收报告（包含六环特性矩阵自动化验证报告），XX验收点E2E用例、XX冒烟用户旅程用例。\n2、BW CI\\CD 在勾勾表现状，并往前推进1+项。\n3、周一屏 特性issue全部闭环；\n## 数字指标变化\n{周一屏} 项目数 1 -> 6\n"
+    {
+      "provider": "github",
+      "repository": "github.com/forcegravity1989/builder-workbench",
+      "number": 248,
+      "goalId": "G1"
     },
-    "decisions": [
-      "目标定为最新三条：G1 orca-bw 重构版上线并补齐六环、G2 对齐袁健勾勾表逐步补齐 BW PR/上线自动化流程、G3 优化周一屏特性并构建看护指标。",
-      "项目助手（#199）不纳入本版三条目标。",
-      "G3 看护指标确认为使用该特性项目数，1→6（1=BW 自身，6=组内当前项目总数）。",
-      "G1/G2 指标与目标值暂以 XX 占位，待与相关方对齐后再敲定。",
-      "风险不写入 JSON，由用户单独记录。"
-    ]
-  },
-  "plan": {
-    "task_summary": "三条目标 9 条任务 Issue 拆解完成：G1 orca-bw 重构版上线·六环补齐（umbrella+F1–F5，6 条）；G2 工具链迁移与勾勾表盘点（2 条）；G3 周一屏看护指标（1 条）。系统入口 #246 挂 bw:plan:v0.5。",
-    "goals": [
-      {
-        "id": "G1",
-        "label": "G1",
-        "title": "orca-bw重构版上线, 补齐XX高优先级特性六环(intent\\spec\\design\\TDD\\验收E2E\\旅程E2E)。",
-        "metric": "",
-        "target": "",
-        "baseline": "bw-orca 77530a2fe fork 未合入；现矩阵 F4 归属待定",
-        "reading": "",
-        "deadline": "",
-        "owner": "",
-        "progress": null,
-        "status": {
-          "label": "草案",
-          "tone": "neutral"
-        },
-        "note": "指标/目标值暂以 XX 占位：补齐的高优先级特性数、六环 ● 覆盖、管道 E2E 通过；待与 Orca 组对齐后再敲定。",
-        "sources": []
-      },
-      {
-        "id": "G2",
-        "label": "G2",
-        "title": "对齐袁健勾勾表，逐步补齐BW PR|上线的自动化流程缺失部分。",
-        "metric": "",
-        "target": "",
-        "baseline": "袁健勾勾表现状待盘点（BW PR/上线自动化流程缺失项）",
-        "reading": "",
-        "deadline": "",
-        "owner": "",
-        "progress": null,
-        "status": {
-          "label": "草案",
-          "tone": "neutral"
-        },
-        "note": "指标/目标值暂以 XX 占位，待与袁健对齐后再敲定；本版不覆盖 #199 项目助手。",
-        "sources": []
-      },
-      {
-        "id": "G3",
-        "label": "G3",
-        "title": "优化上版本周一屏特性，清理 周一屏 特性 Issue。构建看护指标：使用该特性项目数",
-        "metric": "使用该特性（周一屏）的项目数",
-        "target": "6",
-        "baseline": "1（仅 BW 自身当前使用）",
-        "reading": "",
-        "deadline": "",
-        "owner": "",
-        "progress": null,
-        "status": {
-          "label": "草案",
-          "tone": "neutral"
-        },
-        "note": "看护指标由 Builder 确认（2026-09-21）：使用该特性项目数 1→6（1=BW 自身，6=组内当前项目总数）。",
-        "sources": []
-      }
-    ],
-    "tasks": [
-      {
-        "id": "issue-247",
-        "number": 247,
-        "url": "https://github.com/forcegravity1989/builder-workbench/issues/247",
-        "title": "【v0.5|W39|G1】orca-bw 重构版上线：F1–F5 特性六环补齐与版本交付整体跟踪",
-        "kind": "feature",
-        "goal": "v0.5/G1",
-        "sources": []
-      },
-      {
-        "id": "issue-248",
-        "number": 248,
-        "url": "https://github.com/forcegravity1989/builder-workbench/issues/248",
-        "title": "【v0.5|W39|G1】orca-bw 六环补齐 · F1 项目接入与项目约定",
-        "kind": "feature",
-        "goal": "v0.5/G1",
-        "sources": []
-      },
-      {
-        "id": "issue-249",
-        "number": 249,
-        "url": "https://github.com/forcegravity1989/builder-workbench/issues/249",
-        "title": "【v0.5|W39|G1】orca-bw 六环补齐 · F2 版本目标与计划（周一屏·参考实现）",
-        "kind": "feature",
-        "goal": "v0.5/G1",
-        "sources": []
-      },
-      {
-        "id": "issue-250",
-        "number": 250,
-        "url": "https://github.com/forcegravity1989/builder-workbench/issues/250",
-        "title": "【v0.5|W39|G1】orca-bw 六环补齐 · F3 Issue 进度与人工完成",
-        "kind": "feature",
-        "goal": "v0.5/G1",
-        "sources": []
-      },
-      {
-        "id": "issue-251",
-        "number": 251,
-        "url": "https://github.com/forcegravity1989/builder-workbench/issues/251",
-        "title": "【v0.5|W39|G1】orca-bw 六环补齐 · F4 AI 任务开工与会话续接",
-        "kind": "feature",
-        "goal": "v0.5/G1",
-        "sources": []
-      },
-      {
-        "id": "issue-252",
-        "number": 252,
-        "url": "https://github.com/forcegravity1989/builder-workbench/issues/252",
-        "title": "【v0.5|W39|G1】orca-bw 六环补齐 · F5 定时工作执行",
-        "kind": "feature",
-        "goal": "v0.5/G1",
-        "sources": []
-      },
-      {
-        "id": "issue-253",
-        "number": 253,
-        "url": "https://github.com/forcegravity1989/builder-workbench/issues/253",
-        "title": "【v0.5|W39|G2】BW 开发方法资产迁移至 orca-bw：CI/门禁/verify 入口、PR 评审召唤制、发布自用工具链",
-        "kind": "feature",
-        "goal": "v0.5/G2",
-        "sources": []
-      },
-      {
-        "id": "issue-254",
-        "number": 254,
-        "url": "https://github.com/forcegravity1989/builder-workbench/issues/254",
-        "title": "【v0.5|W39|G2】按运维全景勾勾表盘点 BW 自身现状并新增 1+ 项落地",
-        "kind": "feature",
-        "goal": "v0.5/G2",
-        "sources": []
-      },
-      {
-        "id": "issue-255",
-        "number": 255,
-        "url": "https://github.com/forcegravity1989/builder-workbench/issues/255",
-        "title": "【v0.5|W39|G3】构建周一屏看护指标：使用该特性项目数白名单采集（1→6）",
-        "kind": "feature",
-        "goal": "v0.5/G3",
-        "sources": []
-      }
-    ]
-  },
-  "confirmation": {
-    "results": {
-      "at": "2026-09-21T06:23:50Z",
-      "actor": "user"
+    {
+      "provider": "github",
+      "repository": "github.com/forcegravity1989/builder-workbench",
+      "number": 249,
+      "goalId": "G1"
     },
-    "review_ready": {
-      "at": "2026-09-21T12:24:48Z",
-      "actor": "user"
+    {
+      "provider": "github",
+      "repository": "github.com/forcegravity1989/builder-workbench",
+      "number": 250,
+      "goalId": "G1"
     },
-    "plan": {
-      "at": "2026-09-22T11:48:31Z",
-      "actor": "user"
+    {
+      "provider": "github",
+      "repository": "github.com/forcegravity1989/builder-workbench",
+      "number": 251,
+      "goalId": "G1"
+    },
+    {
+      "provider": "github",
+      "repository": "github.com/forcegravity1989/builder-workbench",
+      "number": 252,
+      "goalId": "G1"
+    },
+    {
+      "provider": "github",
+      "repository": "github.com/forcegravity1989/builder-workbench",
+      "number": 253,
+      "goalId": "G2"
+    },
+    {
+      "provider": "github",
+      "repository": "github.com/forcegravity1989/builder-workbench",
+      "number": 254,
+      "goalId": "G2"
+    },
+    {
+      "provider": "github",
+      "repository": "github.com/forcegravity1989/builder-workbench",
+      "number": 255,
+      "goalId": "G3"
     }
-  },
-  "updated_at": "2026-09-22T11:48:31Z",
-  "progress_updates": []
+  ]
 }
