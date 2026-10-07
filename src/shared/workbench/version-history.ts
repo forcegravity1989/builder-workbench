@@ -8,8 +8,15 @@ import {
   type AcceptanceMaterial
 } from './version-material'
 
-export const VersionHistoryListSchema = z.strictObject({ scope: MetricScopeSchema })
-export const VersionTreePlansSchema = z.strictObject({ scope: MetricScopeSchema })
+export const VersionHistoryListSchema = z.strictObject({
+  scope: MetricScopeSchema,
+  /** Overview reads one current file per version; explicit progress history keeps all revisions. */
+  currentOnly: z.boolean().optional()
+})
+export const VersionTreePlansSchema = z.strictObject({
+  scope: MetricScopeSchema,
+  adoptedCommit: SourceCommit.optional()
+})
 export const VersionHistoryReadPlanSchema = z.strictObject({
   scope: MetricScopeSchema,
   planRef: PlanReferenceSchema
@@ -34,6 +41,7 @@ export type VersionHistoryProblem = Pick<
   'version' | 'sourceCommit' | 'workflow' | 'committedAt'
 > & { code: string; message: string }
 export type VersionHistoryCatalog = {
+  baselineCommit?: string
   records: VersionHistorySource[]
   /** Unreadable entries remain visible without hiding the valid records. */
   problems: VersionHistoryProblem[]
@@ -46,6 +54,7 @@ export type VersionHistoryCatalog = {
  */
 export type VersionTreePlan = Omit<VersionHistorySource, 'committedAt'>
 export type VersionTreePlanCatalog = {
+  alignment?: 'aligned' | 'unverified'
   /** The cycle branch HEAD the plans were listed from. */
   head: string
   plans: VersionTreePlan[]
@@ -64,9 +73,7 @@ export type VersionHistoryPlan = {
 export type VersionHistoryPort = {
   list(input: z.infer<typeof VersionHistoryListSchema>): Promise<VersionHistoryCatalog>
   /** Lists plan folders on the cycle branch HEAD; one folder with data.json is one version. */
-  listTreePlans(
-    input: z.infer<typeof VersionTreePlansSchema>
-  ): Promise<VersionTreePlanCatalog>
+  listTreePlans(input: z.infer<typeof VersionTreePlansSchema>): Promise<VersionTreePlanCatalog>
   read(input: z.infer<typeof VersionHistoryReadSchema>): Promise<{
     document: PlanningMaterial | AcceptanceMaterial
     revision: string

@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import React, { useEffect, useMemo, useState } from 'react'
 import { useAppStore } from '@/store'
 import { openProjectOnboard } from './project-page-state'
 import { CharterPrNotice } from './charter-pr-notice'
@@ -9,35 +9,21 @@ import {
   nativeWorkspaceScopeKey,
   type NativeWorkspaceScope
 } from './version-cycle/native-workspace'
-import { nativeMetricsPort } from './metrics-port'
-import { nativeVersionHistoryPort } from './version-history-port'
-import { nativeVersionMaterialPort } from './version-material-port'
-import type { MetricCatalog, MetricReading } from '../../../shared/workbench/metrics'
-import { metricProblemText } from '../../../shared/workbench/metrics'
-import type { VersionHistoryCatalog } from '../../../shared/workbench/version-history'
 import { useVersionMinutes } from './use-version-minutes'
 import { OverviewMetricZones } from './overview-metric-zones'
 import { OverviewSdlcZones } from './overview-sdlc-zones'
 import { NorthStarCard } from './overview-north-star-card'
 import { ProjectCard } from './overview-project-card'
 import { MetricProblemsPanel } from './metric-problems-panel'
-import { hasUncollectedReadings, readAllMetricReadings } from './overview-metric-readings'
-import type { OverviewReadResult } from './overview-metric-readings'
-import {
-  useOverviewAutoCollect,
-  useOverviewManualRefresh
-} from './use-overview-metric-collection'
-import { useOverviewZoneGranularity } from './use-overview-zone-granularity'
+import { useOverviewMetricCollection } from './use-overview-metric-collection'
+import { useOverviewHistory } from './use-overview-history'
 import { useMetricsSetup } from './version-cycle/metrics-setup'
 import { findCycleWorktree } from './version-cycle/native-cycle-workspace'
 import { OverviewVersionMinutes } from './overview-version-minutes'
 import { useOverviewViewState } from './overview-view-state'
 import { RefreshCw } from 'lucide-react'
 import './workbench-overview.css'
-
-function catalogProblems(catalog: MetricCatalog | null): string[] {
-  return (catalog?.problems ?? []).map(metricProblemText)
-}
+const versionCollator = new Intl.Collator(undefined, { numeric: true })
 
 export function OverviewPage(): React.JSX.Element {
   const repos = useAppStore((s) => s.repos)
@@ -73,14 +59,8 @@ export function OverviewPage(): React.JSX.Element {
     value: ProjectCharter | null
   } | null>(null)
   const charter = charterState?.key === charterKey ? charterState.value : null
-  const [catalog, setCatalog] = useState<MetricCatalog | null>(null)
-  const [northReading, setNorthReading] = useState<MetricReading | null>(null)
-  const [zoneReadings, setZoneReadings] = useState<Record<string, MetricReading | null>>({})
-  const [history, setHistory] = useState<VersionHistoryCatalog | null>(null)
-  const [currentVersion, setCurrentVersion] = useState<string | null>(null)
   const identity = baseScope ? nativeWorkspaceScopeKey(baseScope) : (activeRepoId ?? 'none')
   const [view, setView] = useOverviewViewState(identity)
-  const [minutesRetry, setMinutesRetry] = useState(0)
   const fixedTrees = useMemo(() => {
     if (!baseScope) {
       return { plan: null, acceptance: null, error: null }
@@ -95,45 +75,31 @@ export function OverviewPage(): React.JSX.Element {
       return { plan: null, acceptance: null, error: String(error) }
     }
   }, [baseScope])
-  const [problems, setProblems] = useState<string[]>([])
-  const [busy, setBusy] = useState(false)
-  /** Generation guard: a stale project's late responses must not overwrite a newer load. */
-  const loadEpoch = useRef(0)
-  const invalidate = useCallback(() => {
-    loadEpoch.current++
-  }, [])
-  const applyZoneResult = useCallback(
-    (result: OverviewReadResult) => {
-      setNorthReading(result.north)
-      setZoneReadings(result.map)
-      setProblems([...catalogProblems(catalog), ...result.problems])
-    },
-    [catalog]
-  )
-  const applyCollected = useCallback(
-    (result: OverviewReadResult, collectedCatalog: MetricCatalog) => {
-      setNorthReading(result.north)
-      setZoneReadings(result.map)
-      setProblems([...catalogProblems(collectedCatalog), ...result.problems])
-    },
-    []
-  )
-  /** Cache miss → one background collection pass; see the hook for the stuck-flag guard. */
-  const { collecting, autoCollect } = useOverviewAutoCollect({
-    loadEpoch,
-    apply: applyCollected
-  })
-  const zones = useOverviewZoneGranularity({
+  const dataIdentity = JSON.stringify([
     identity,
-    catalog,
+    activeRepo?.path,
+    activeRepo?.connectionId,
+    activeRepo?.worktreeBaseRef,
+    activeRepo?.upstream,
+    activeRepo?.gitRemoteIdentity,
+    baseWorktree?.path
+  ])
+  const metrics = useOverviewMetricCollection({
     baseScope,
     baseWorktreeId,
-    loadEpoch,
-    setBusy,
-    apply: applyZoneResult,
-    autoCollect
+    identity: dataIdentity,
+    granularity: view.granularity
   })
-  const { currentGranularity, markRead } = zones
+  const { catalog, northReading, zoneReadings, busy, refreshing, refreshReadings } = metrics
+  const historyState = useOverviewHistory({
+    baseScope,
+    baseWorktreeId,
+    planWorktreeId: fixedTrees.plan,
+    acceptanceWorktreeId: fixedTrees.acceptance,
+    identity: dataIdentity
+  })
+  const { history, currentVersion } = historyState
+  const problems = [...metrics.problems, ...(historyState.problem ? [historyState.problem] : [])]
 
   useEffect(() => {
     if (!activeRepo?.path) {
@@ -159,134 +125,34 @@ export function OverviewPage(): React.JSX.Element {
     (value) => setCharter({ key: charterKey, value })
   )
 
-  const load = useCallback(async () => {
-    if (!baseScope || !baseWorktreeId) {
-      return
-    }
-    const scope = {
-      repoId: baseScope.repoId,
-      worktreeId: baseWorktreeId,
-      hostId: baseScope.hostId
-    }
-    const owner = baseScope.runtimeOwnerEnvironmentId
-    const epoch = ++loadEpoch.current
-    setBusy(true)
-    const problems: string[] = []
-    try {
-      const metrics = nativeMetricsPort(owner)
-      const historyPort = nativeVersionHistoryPort(owner)
-      const material = nativeVersionMaterialPort(
-        { ...scope, worktreeId: fixedTrees.plan ?? baseWorktreeId, workflow: 'plan' },
-        owner
-      )
-      const [nextCatalog, nextHistory, context] = await Promise.all([
-        metrics.list(scope).catch((reason) => {
-          problems.push(`指标目录：${reason instanceof Error ? reason.message : String(reason)}`)
-          return null
-        }),
-        historyPort.list({ scope }).catch((reason) => {
-          problems.push(`归档记录：${reason instanceof Error ? reason.message : String(reason)}`)
-          return null
-        }),
-        material.context().catch(() => ({ version: null }))
-      ])
-      if (epoch !== loadEpoch.current) {
-        return
-      }
-      setCatalog(nextCatalog)
-      setHistory(nextHistory)
-      setCurrentVersion(context.version)
-      problems.push(...catalogProblems(nextCatalog))
-      if (nextCatalog) {
-        const granularity = currentGranularity()
-        markRead(granularity)
-        const result = await readAllMetricReadings({
-          scope,
-          owner,
-          catalog: nextCatalog,
-          granularity
-        })
-        if (epoch !== loadEpoch.current) {
-          return
-        }
-        setNorthReading(result.north)
-        setZoneReadings(result.map)
-        problems.push(...result.problems)
-        if (hasUncollectedReadings(result)) {
-          void autoCollect({ scope, owner, catalog: nextCatalog, granularity, epoch })
-        }
-      } else if (epoch === loadEpoch.current) {
-        setZoneReadings({})
-      }
-    } finally {
-      if (epoch === loadEpoch.current) {
-        setBusy(false)
-      }
-    }
-    setProblems(problems)
-  }, [baseScope, baseWorktreeId, currentGranularity, markRead, fixedTrees.plan, autoCollect])
-
-  const { refreshing, refreshReadings } = useOverviewManualRefresh({
-    baseScope,
-    baseWorktreeId,
-    currentGranularity,
-    loadEpoch,
-    setBusy,
-    setCatalog,
-    setProblems,
-    apply: applyCollected
-  })
-
-  useEffect(() => {
-    setCatalog(null)
-    setHistory(null)
-    setNorthReading(null)
-    setZoneReadings({})
-    setCurrentVersion(null)
-    setProblems([])
-    void load()
-    return invalidate
-  }, [load, invalidate])
-
   const versions = useMemo(() => {
     const found = new Set<string>()
     for (const record of history?.records ?? []) {
       found.add(record.version)
     }
+    for (const problem of history?.problems ?? []) {
+      found.add(problem.version)
+    }
     if (currentVersion) {
       found.add(currentVersion)
     }
-    return [...found]
+    return [...found].sort((a, b) => versionCollator.compare(b, a))
   }, [history, currentVersion])
   const version =
     view.version && versions.includes(view.version)
       ? view.version
       : (currentVersion ?? versions[0] ?? null)
-  const cycles = useMemo(() => {
-    const archived = [
-      ...new Set(
-        (history?.records ?? [])
-          .filter((item) => item.version === version)
-          .sort((a, b) => b.committedAt.localeCompare(a.committedAt))
-          .map((item) => item.cycleId)
-      )
-    ]
-    return version === currentVersion ? ['current', ...archived] : archived
-  }, [history, version, currentVersion])
-  const cycle = view.cycle && cycles.includes(view.cycle) ? view.cycle : (cycles[0] ?? 'current')
-
   const minutes = useVersionMinutes(
     {
       baseScope,
       baseWorktreeId,
-      planWorktreeId: fixedTrees.plan,
-      acceptanceWorktreeId: fixedTrees.acceptance,
+      planWorktreeId: historyState.planWorktreeId,
+      acceptanceWorktreeId: historyState.acceptanceWorktreeId,
       history,
       currentVersion,
-      version,
-      cycle
+      version
     },
-    minutesRetry
+    historyState.retry
   )
 
   const metricsSetup = useMetricsSetup({ baseScope, worktreeId: baseWorktreeId })
@@ -365,21 +231,20 @@ export function OverviewPage(): React.JSX.Element {
         <OverviewVersionMinutes
           versions={versions}
           version={version}
-          onVersion={(value) => setView({ version: value, cycle: null })}
-          cycles={cycles}
-          cycle={cycle}
-          onCycle={(value) => setView({ cycle: value })}
+          onVersion={(value) => setView({ version: value })}
           minutes={minutes}
           historyProblems={history?.problems ?? []}
-          onRetry={() => void load().then(() => setMinutesRetry((value) => value + 1))}
+          busy={historyState.busy}
+          onRetry={historyState.reload}
         />
         <OverviewMetricZones
           catalog={catalog}
           readings={zoneReadings}
-          busy={busy || collecting}
+          busy={busy}
           onRefresh={() => void refreshReadings()}
-          granularity={zones.granularity}
-          onGranularityChange={zones.setGranularity}
+          granularity={view.granularity}
+          anchor={metrics.anchor}
+          onGranularityChange={(granularity) => setView({ granularity })}
           identity={identity}
           setupBusy={metricsSetup.busy || !baseScope}
           onSetup={() => void metricsSetup.prepareMetrics()}
@@ -387,12 +252,13 @@ export function OverviewPage(): React.JSX.Element {
 
         <OverviewSdlcZones
           key={identity}
-          identity={identity}
+          identity={dataIdentity}
           repo={activeRepo}
           baseScope={baseScope}
           baseWorktreeId={baseWorktreeId}
           baseWorktreePath={baseWorktree?.path ?? null}
           timezone={catalog?.timezone}
+          ready={catalog !== null || metrics.loaded}
         />
       </div>
       {refreshing && (

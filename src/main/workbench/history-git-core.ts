@@ -82,6 +82,14 @@ export function assertReadOnlyHistoryGitArgs(args: readonly string[]): void {
       return
     }
     case 'show': {
+      if (
+        args.length === 4 &&
+        args[1] === '-s' &&
+        args[2] === '--format=%cI' &&
+        new RegExp(`^${SHA}$`).test(args[3])
+      ) {
+        return
+      }
       if (args.length !== 2 || !new RegExp(`^${SHA}:${MATERIAL_PATH}$`).test(args[1])) {
         invalid()
       }
@@ -105,6 +113,17 @@ export function assertReadOnlyHistoryGitArgs(args: readonly string[]): void {
       return
     }
     case 'ls-tree': {
+      if (
+        args.length === 7 &&
+        args[1] === '-r' &&
+        args[2] === '-z' &&
+        args[3] === '--name-only' &&
+        new RegExp(`^${SHA}$`).test(args[4]) &&
+        args[5] === '--' &&
+        args[6] === '.bw/planning'
+      ) {
+        return
+      }
       if (
         args.length !== 4 ||
         args[1] !== '-z' ||

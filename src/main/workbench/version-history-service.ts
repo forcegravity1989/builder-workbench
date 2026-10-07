@@ -1,3 +1,4 @@
+import { readCurrentVersionCatalog, withVersionTreeAlignment } from './version-current-catalog'
 import type { MetricScope } from '../../shared/workbench/metrics'
 import {
   PlanningMaterialSchema,
@@ -62,12 +63,7 @@ export function createVersionHistoryService(host: VersionHistoryHost): VersionHi
     return baseline
   }
 
-  /**
-   * Reachability gate for committed plan refs: the commit must sit on the cycle
-   * branch's own history (its HEAD or an ancestor) or on the adopted baseline.
-   * Dangling commits are still refused, but "merged" is not a precondition —
-   * the branch reads its own HEAD, and archive state is a signal, not a gate.
-   */
+  /** A fixed plan must be reachable from its own branch or adopted baseline; archive is a signal. */
   async function verifyPlanSource(scope: MetricScope, sourceCommit: string) {
     const baseline = await host.baseline(scope)
     SourceCommit.parse(baseline.commit)
@@ -145,9 +141,12 @@ export function createVersionHistoryService(host: VersionHistoryHost): VersionHi
 
   return {
     async list(input) {
-      const { scope } = VersionHistoryListSchema.parse(input)
+      const { scope, currentOnly = false } = VersionHistoryListSchema.parse(input)
       const baseline = await host.baseline(scope)
       SourceCommit.parse(baseline.commit)
+      if (currentOnly) {
+        return readCurrentVersionCatalog(scope, baseline.commit, host.git, readSnapshot)
+      }
       const log = await host.git(scope, [
         'log',
         '-z',
@@ -248,8 +247,8 @@ export function createVersionHistoryService(host: VersionHistoryHost): VersionHi
       return { records, problems }
     },
     async listTreePlans(input) {
-      const { scope } = VersionTreePlansSchema.parse(input)
-      return listTreePlans(scope)
+      const { scope, adoptedCommit } = VersionTreePlansSchema.parse(input)
+      return withVersionTreeAlignment(scope, adoptedCommit, await listTreePlans(scope), host.git)
     },
     async read(input) {
       const request = VersionHistoryReadSchema.parse(input)

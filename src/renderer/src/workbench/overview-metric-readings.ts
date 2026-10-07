@@ -9,25 +9,6 @@ export type OverviewReadResult = {
   map: Record<string, MetricReading | null>
   problems: string[]
 }
-export type OverviewAutoCollect = (args: {
-  scope: OverviewReadScope
-  owner: string | undefined
-  catalog: MetricCatalog
-  granularity: ZoneGranularity
-  epoch: number
-}) => void
-
-/**
- * True when any reading is a pure cache miss ('not-collected'). Only misses
- * trigger the background auto-collect — error readings must not loop: a failing
- * collector stays a visible failure instead of re-running on every load.
- */
-export function hasUncollectedReadings(result: OverviewReadResult): boolean {
-  const missed = (reading: MetricReading | null) =>
-    reading !== null && reading.status === 'unknown' && reading.reason.code === 'not-collected'
-  return missed(result.north) || Object.values(result.map).some(missed)
-}
-
 /**
  * North star keeps its single-week current window; zone definitions are read over
  * the chart span for the selected granularity through the same read RPC — the
@@ -37,10 +18,11 @@ function windowFor(args: {
   def: MetricCatalog['definitions'][number]
   catalog: MetricCatalog
   granularity: ZoneGranularity
+  now?: string
 }) {
   return args.def.role === 'north_star'
-    ? currentMetricWeek(args.catalog.timezone)
-    : zoneChartRange(args.granularity, args.catalog.timezone)
+    ? currentMetricWeek(args.catalog.timezone, args.now)
+    : zoneChartRange(args.granularity, args.catalog.timezone, args.now)
 }
 
 /** Read north star + every zone definition honestly; failures land in problems, never zero. */
@@ -49,6 +31,7 @@ export async function readAllMetricReadings(args: {
   owner: string | undefined
   catalog: MetricCatalog
   granularity?: ZoneGranularity
+  now?: string
 }): Promise<OverviewReadResult> {
   const { scope, catalog } = args
   const granularity = args.granularity ?? 'week'
@@ -60,7 +43,7 @@ export async function readAllMetricReadings(args: {
         .read({
           scope,
           ref: def.ref,
-          window: windowFor({ def, catalog, granularity })
+          window: windowFor({ def, catalog, granularity, now: args.now })
         })
         .catch((reason) => {
           problems.push(
@@ -76,32 +59,64 @@ export async function readAllMetricReadings(args: {
   return { north: north ? (map[north.ref.definitionHash] ?? null) : null, map, problems }
 }
 
-/** Refresh = run the registered collect scripts, then read again — not a cache lookup. */
+/** Consume refresh results without repeating source preparation for a second read. */
 export async function refreshMetricReadings(args: {
   scope: OverviewReadScope
   owner: string | undefined
   catalog: MetricCatalog
   granularity?: ZoneGranularity
+  now?: string
+  previous?: OverviewReadResult
+  onlyMissing?: boolean
+  sharedNorth?: MetricReading | null
 }): Promise<OverviewReadResult> {
   const { scope, catalog } = args
   const granularity = args.granularity ?? 'week'
   const metrics = nativeMetricsPort(args.owner)
   const problems: string[] = []
-  await Promise.all(
-    catalog.definitions.map((def) =>
-      metrics
-        .refresh({
-          scope,
-          ref: def.ref,
-          window: windowFor({ def, catalog, granularity })
-        })
-        .catch((reason) => {
-          problems.push(
-            `刷新 ${def.name}：${reason instanceof Error ? reason.message : String(reason)}`
-          )
-        })
-    )
-  )
-  const read = await readAllMetricReadings(args)
-  return { ...read, problems: [...problems, ...read.problems] }
+  const map: OverviewReadResult['map'] = {}
+  // Each script owns an isolated checkout; serialize to bound disk and memory pressure.
+  for (const def of catalog.definitions) {
+    const previous = args.previous?.map[def.ref.definitionHash]
+    if (def.role === 'north_star' && args.sharedNorth !== undefined) {
+      map[def.ref.definitionHash] = args.sharedNorth
+      continue
+    }
+    if (
+      args.onlyMissing &&
+      !(previous?.status === 'unknown' && previous.reason.code === 'not-collected')
+    ) {
+      map[def.ref.definitionHash] = previous ?? null
+      continue
+    }
+    try {
+      const reading = await metrics.refresh({
+        scope,
+        ref: def.ref,
+        window: windowFor({ def, catalog, granularity, now: args.now })
+      })
+      map[def.ref.definitionHash] =
+        reading.status === 'ready'
+          ? reading
+          : {
+              ...reading,
+              previous:
+                reading.previous ?? (previous?.status === 'ready' ? previous : previous?.previous)
+            }
+    } catch (reason) {
+      const message = `刷新 ${def.name}：${reason instanceof Error ? reason.message : String(reason)}`
+      problems.push(message)
+      map[def.ref.definitionHash] = {
+        status: 'error',
+        reason: { code: 'collection-failed', message },
+        previous: previous?.status === 'ready' ? previous : previous?.previous
+      }
+    }
+  }
+  const north = catalog.definitions.find((item) => item.role === 'north_star')
+  return {
+    north: north ? (map[north.ref.definitionHash] ?? null) : null,
+    map,
+    problems: [...(args.onlyMissing ? (args.previous?.problems ?? []) : []), ...problems]
+  }
 }

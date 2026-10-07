@@ -55,9 +55,12 @@ export function bucketCommitCounts(
 }
 
 export type SdlcSnapshot = { count: number; truncated: boolean; readAt: string; source?: string }
-export type SdlcSeries<T> = { kind: 'ready'; value: T } | { kind: 'error'; message: string }
+export type SdlcSeries<T> =
+  | { kind: 'ready'; value: T }
+  | { kind: 'error'; message: string; previous?: T }
 
 export type SdlcCommits = {
+  since?: string
   items: CommitPoint[]
   hasMore: boolean
   readAt: string

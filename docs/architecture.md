@@ -19,7 +19,7 @@
 | 核对交付、逐目标验收、归档 | 验收屏：与计划共用容器，独立固定树 bw/week-acceptance | 归档状态按材料身份与 provider 合入证据推导；CodeHub 无真实合入证据一律 Unknown，正文编辑延期 |
 | 执行工作与管理任务 | Orca 终端、Tasks、worktree | 复用执行核；不能据规划会话可打开就认定所有 Issue 开工都已接 BW 纪律 |
 | 设置定时工作 | Orca Automations | 调度能力在执行核；「配置自动化」入口（右板页头）打开原生编辑器：已登记条目直接编辑，未登记预填创建；BW 提示词随进屏覆盖同步为当前版本、用户设置保留，启用与时间由人确认；真实到点触发与旧自动配置迁移须逐项验证 |
-| 查看项目概况 | 总览与项目墙 | 总览已接北极星、业务/项目指标两区与版本/轮次纪要；业务按特性及引领/滞后关系展示，项目读取提交及合入 PR/MR 趋势，开放 Issue 只显示当前快照。缺数据保持 Unknown；真实数据与 Electron 旅程待验，见[总览指标 STATUS](05-features/overview-metrics/STATUS.md) |
+| 查看项目概况 | 总览与项目墙 | 总览已接北极星、业务/项目指标两区与各版本当前材料；业务按特性及引领/滞后关系展示，项目读取提交及合入 PR/MR 趋势，开放 Issue 只显示当前快照。缺数据保持 Unknown；真实数据与 Electron 旅程待验，见[总览指标 STATUS](05-features/overview-metrics/STATUS.md) |
 | 查看和编辑项目知识 | 知识库文档、代码、对账页签 | 文档树与正文已读真实仓库；代码页仍为占位，对账与建议仍有固定演示数据；保存和来源边界见 §3 |
 | 独立评审、出包与发布 | 保留的 reviewer-agent / version-planning 资料、现有 Orca 构建工具 | Electron 的 BW CI/CD、评审与正式交付链待对应任务迁移验证；旧 Rust Release/出包按钮与 ADR 不作为本分支操作说明 |
 

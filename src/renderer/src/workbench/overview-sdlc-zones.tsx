@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from 'react'
+import { useMemo, useRef } from 'react'
 import type { Repo } from '../../../shared/repo-types'
 import type { MetricRange } from '../../../shared/workbench/metrics'
 import { addCalendarDays, dayInTimezone } from '../../../shared/workbench/metric-windows'
@@ -10,16 +10,24 @@ import { zoneBucketLabels, zoneChartRange } from './overview-zone-series'
 import { OverviewGrain, OverviewRefresh } from './overview-controls'
 import { useOverviewViewState } from './overview-view-state'
 
+function evidence<T>(state: SdlcSeries<T> | null): T | undefined {
+  return state?.kind === 'ready' ? state.value : state?.previous
+}
 function counts(state: SdlcSeries<SdlcCommits> | null, range: MetricRange): (number | null)[] {
-  return state?.kind === 'ready'
+  const value = evidence(state)
+  return value
     ? bucketCommitCounts(
-        state.value.items.filter(
-          (item) => (item.timestamp ?? Infinity) <= Date.parse(state.value.readAt)
-        ),
+        value.items.filter((item) => (item.timestamp ?? Infinity) <= Date.parse(value.readAt)),
         range,
         range.timezone,
-        state.value.hasMore
-      ).counts
+        value.hasMore
+      ).counts.map((count, index) => {
+        const start = addCalendarDays(range.since, index * (range.granularity === 'week' ? 7 : 1))
+        return start > dayInTimezone(value.readAt, range.timezone) ||
+          (value.since && start < value.since)
+          ? null
+          : count
+      })
     : zoneBucketLabels(range).map(() => null)
 }
 function SdlcSource({
@@ -32,6 +40,7 @@ function SdlcSource({
   data: SdlcSeries<{ readAt: string; source?: string }> | null
 }) {
   const dialog = useRef<HTMLDialogElement>(null)
+  const value = evidence(data)
   return (
     <>
       <button
@@ -45,10 +54,10 @@ function SdlcSource({
       <dialog ref={dialog} className="wb-ov-source" aria-label={`${name}数据来源`}>
         <h2>{name}</h2>
         <p>{detail}</p>
-        {data?.kind === 'ready' && (
+        {value && (
           <>
-            <p>{data.value.source}</p>
-            <p>截至 {data.value.readAt}</p>
+            <p>{value.source}</p>
+            <p>截至 {value.readAt}</p>
           </>
         )}
         {data?.kind === 'error' && <p role="alert">{data.message}</p>}
@@ -71,7 +80,8 @@ export function OverviewSdlcZones({
   baseScope,
   baseWorktreeId,
   baseWorktreePath,
-  timezone
+  timezone,
+  ready
 }: {
   identity: string
   repo: Repo | null
@@ -79,28 +89,36 @@ export function OverviewSdlcZones({
   baseWorktreeId: string | null
   baseWorktreePath: string | null
   timezone?: string
+  ready: boolean
 }) {
   const [view, setView] = useOverviewViewState(identity)
-  const [anchor, setAnchor] = useState(() => new Date().toISOString())
   const tz = timezone ?? Intl.DateTimeFormat().resolvedOptions().timeZone
+  const state = useOverviewSdlc({
+    repo,
+    baseScope,
+    baseWorktreeId,
+    baseWorktreePath,
+    timezone: tz,
+    ready
+  })
   const range = useMemo(
-    () => zoneChartRange(view.repoGranularity, tz, anchor),
-    [view.repoGranularity, tz, anchor]
+    () => zoneChartRange(view.repoGranularity, tz, state.anchor),
+    [view.repoGranularity, tz, state.anchor]
   )
   const labels = useMemo(() => zoneBucketLabels(range), [range])
-  const state = useOverviewSdlc({ repo, baseScope, baseWorktreeId, baseWorktreePath, range })
   const commits = counts(state.commits, range)
   const merges = counts(state.merges, range)
+  const issueEvidence = evidence(state.issues)
   const issues = labels.map((_, index) => {
-    if (state.issues?.kind !== 'ready' || state.issues.value.truncated) {
+    if (!issueEvidence || issueEvidence.truncated) {
       return null
     }
     const start = addCalendarDays(range.since, index * (range.granularity === 'week' ? 7 : 1))
     const end = addCalendarDays(start, range.granularity === 'week' ? 7 : 1)
-    const date = dayInTimezone(state.issues.value.readAt, tz)
-    return date >= start && date < end ? state.issues.value.count : null
+    const date = dayInTimezone(issueEvidence.readAt, tz)
+    return date >= start && date < end ? issueEvidence.count : null
   })
-  const period = view.repoGranularity === 'week' ? '本周' : '今日'
+  const period = labels.at(-1) ?? '—'
   const cells = [
     {
       name: '提交',
@@ -120,7 +138,7 @@ export function OverviewSdlcZones({
     },
     {
       name: '开放 Issue',
-      period: '当前',
+      period: issueEvidence ? dayInTimezone(issueEvidence.readAt, tz) : '未采集',
       values: issues,
       data: state.issues,
       color: 'var(--color-success)',
@@ -136,15 +154,10 @@ export function OverviewSdlcZones({
             label="项目指标粒度"
             value={view.repoGranularity}
             onChange={(value) => {
-              setAnchor(new Date().toISOString())
               setView({ repoGranularity: value })
             }}
           />
-          <OverviewRefresh
-            label="刷新项目指标"
-            busy={state.busy}
-            onClick={() => setAnchor(new Date().toISOString())}
-          />
+          <OverviewRefresh label="刷新项目指标" busy={state.busy} onClick={state.refresh} />
         </div>
       </header>
       <div className="wb-sdlc-grid">
@@ -155,6 +168,12 @@ export function OverviewSdlcZones({
               <span className="wb-muted">{cell.period}</span>
               <strong className="wb-sdlc-val">{cell.values.at(-1) ?? '—'}</strong>
             </div>
+            {cell.data?.kind === 'error' && (
+              <p className="wb-muted" role="alert">
+                {cell.data.message}
+                {cell.data.previous ? '（保留上次采集数据，详见来源）' : ''}
+              </p>
+            )}
             <MetricLineChart
               integer
               labels={labels}
