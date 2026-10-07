@@ -191,6 +191,9 @@ module.exports = {
     buildResources: 'resources/build'
   },
   files: [
+    // Package only runtime inputs; electron-builder adds package.json and production dependencies.
+    'out/**/*',
+    'resources/**/*',
     '!**/.vscode/*',
     // Why: these repo-only inputs are either bundled into out/ or copied via
     // extraResources. Shipping them in app.asar bloats the desktop bundle.
