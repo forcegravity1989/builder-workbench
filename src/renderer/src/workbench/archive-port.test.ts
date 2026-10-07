@@ -48,6 +48,17 @@ const proofValue = {
 }
 
 function route(byMethod: Record<string, unknown>) {
+  byMethod = {
+    'workbench.archive.proof': {
+      ok: true,
+      value: {
+        mergeCommit: null,
+        changed: true,
+        proof: { kind: 'unknown', reason: '当前材料有改动待归档' }
+      }
+    },
+    ...byMethod
+  }
   call.mockImplementation(async (_target: unknown, requested: string) => {
     if (!(requested in byMethod)) {
       throw new Error(`unexpected method ${requested}`)
@@ -71,14 +82,8 @@ it('proves a merged GitHub review only with matching material bytes', async () =
   })
   const status = await nativeArchivePort().readStatus(input)
   expect(status.kind).toBe('merged')
-  expect(status).toMatchObject({ checks: 'passed', review: 'approved', mergeCommit })
+  expect(status).toMatchObject({ checks: 'unknown', review: 'unknown', mergeCommit })
   expect(isArchivedMaterial(status, proofValue.material)).toBe(true)
-  expect(call).toHaveBeenCalledWith(
-    { kind: 'local' },
-    'hostedReview.forBranch',
-    { repo: 'repo', branch: 'bw/week-plan' },
-    { timeoutMs: 30_000 }
-  )
   expect(call).toHaveBeenCalledWith(
     { kind: 'local' },
     'workbench.archive.proof',
@@ -87,9 +92,6 @@ it('proves a merged GitHub review only with matching material bytes', async () =
       worktreeId: 'tree',
       hostId: 'local',
       workflow: 'plan',
-      provider: 'github',
-      repository: 'forcegravity1989/builder-workbench',
-      number: 269,
       version: 'v0.5',
       cycleId: 'cycle-1',
       revision
@@ -113,14 +115,14 @@ it('keeps an open review yellow without inventing a merge commit', async () => {
   expect(isArchivedMaterial(status, proofValue.material)).toBe(false)
 })
 
-it('answers not-created only for readable non-CodeHub forges and stays Unknown for CodeHub', async () => {
+it('keeps changed material pending and stays Unknown for CodeHub', async () => {
   route({
     'hostedReview.forBranch': null,
     'repo.show': {
       repo: { id: 'repo', gitRemoteIdentity: { remoteUrl: 'https://github.com/o/r.git' } }
     }
   })
-  expect(await nativeArchivePort().readStatus(input)).toMatchObject({ kind: 'not-created' })
+  expect(await nativeArchivePort().readStatus(input)).toMatchObject({ kind: 'changed' })
   route({
     'hostedReview.forBranch': null,
     'repo.show': {
@@ -148,7 +150,7 @@ it('routes through the owning runtime and forwards a recorded GitHub reference',
     hostId: 'ssh:server',
     reference: {
       provider: 'github',
-      repository: 'forcegravity1989/builder-workbench',
+      repository: 'owner/project',
       number: 269,
       materialRevision: revision
     }
@@ -180,9 +182,6 @@ it('prepares an editable archive request into the native session composer', asyn
   const [preparedSession, text] = prepare.mock.calls[0] as [CycleSession, string]
   expect(preparedSession).toBe(session)
   expect(text).toContain('v0.5')
-  expect(text).toContain('cycle-1')
-  expect(text).toContain(revision)
-  expect(text).toContain('bw/week-plan')
   expect(text).toContain('.bw/planning/v0.5/data.json')
-  expect(text).toContain('合入由人决定')
+  expect(text).toContain('按项目约定提交 PR')
 })

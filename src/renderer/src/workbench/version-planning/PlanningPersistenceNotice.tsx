@@ -3,30 +3,14 @@ import type { usePlanningMaterial } from './use-planning-material'
 /** Normal saves stay quiet; conflicts require explicit comparison before any replacement. */
 export function PlanningPersistenceNotice({
   material,
-  archived,
   onAct
 }: {
   material: ReturnType<typeof usePlanningMaterial>
-  archived: boolean
   onAct(operation: () => Promise<unknown>): Promise<void>
 }) {
   const draft = material.draft
   if (!draft) {
     return null
-  }
-  if (archived && draft.dirty) {
-    return (
-      <div className="vp-notice" role="alert">
-        本轮计划已归档，本地修改已保留，不能写入。
-        <button
-          className="wb-btn wb-btn-sm"
-          disabled={material.busy}
-          onClick={() => void onAct(material.discardLocal)}
-        >
-          放弃本地修改并重读
-        </button>
-      </div>
-    )
   }
   if (!draft.error) {
     return null
@@ -79,7 +63,7 @@ export function PlanningPersistenceNotice({
       ) : (
         <button
           className="wb-btn wb-btn-sm"
-          disabled={material.busy || archived}
+          disabled={material.busy}
           onClick={() => void onAct(material.save)}
         >
           重试保存

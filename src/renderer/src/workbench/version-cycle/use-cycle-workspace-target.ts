@@ -176,7 +176,6 @@ export function useCycleWorkspaceTarget(
     worktree: resolved.scope ? worktree : null,
     scope,
     syncing: sync?.busy ?? false,
-    syncProblem: sync?.problem ? `主干同步未完成：${sync.problem}` : null,
     materialRefresh: sync?.revision ?? 0,
     error: error ?? resolved.error ?? (preparing ? base.error : null)
   }

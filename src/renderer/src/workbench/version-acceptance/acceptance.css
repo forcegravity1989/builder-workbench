@@ -8,17 +8,14 @@
   background: var(--color-bg);
 }
 .va-head,
-.va-footer,
 .va-decision,
-.va-result-row,
-.va-window {
+.va-result-row {
   display: flex;
   align-items: center;
   gap: var(--space-2);
   flex-wrap: wrap;
 }
-.va-head,
-.va-footer {
+.va-head {
   flex: none;
   padding: var(--space-3) var(--space-4);
   border-bottom: 1px solid var(--color-divider);
@@ -30,10 +27,7 @@
   white-space: nowrap;
 }
 .va-head > span:not(.vc-branch),
-.va-muted,
-.va-footer,
-.va-window,
-.va-task time {
+.va-muted {
   color: var(--color-neutral-600);
   font-size: 0.8rem;
 }
@@ -41,9 +35,8 @@
   display: flex;
   flex: 1;
   min-height: 0;
-}
-
-/* Journey rail: icon + connector line, shared visual language with the plan board. */
+} /* Journey rail: icon + connector line,
+shared visual language with the plan board. */
 .va-journey {
   width: 68px;
   flex-shrink: 0;
@@ -108,14 +101,6 @@
 .va-board section,
 .va-board details {
   scroll-margin-block-start: var(--space-3);
-}
-.va-tasks,
-.va-source-picker {
-  padding: var(--space-3);
-  margin-bottom: var(--space-3);
-  border: 1px solid var(--color-divider);
-  border-radius: var(--radius-md);
-  background: var(--color-card);
 }
 .va-summary {
   display: flex;
@@ -208,8 +193,7 @@
 .va-result > .va-delivery-details[open] {
   grid-column: 1 / -1;
 }
-.va-result label,
-.va-window label {
+.va-result label {
   display: flex;
   align-items: center;
   gap: var(--space-2);
@@ -261,8 +245,7 @@
 }
 .va-result input,
 .va-result textarea,
-.va-board select,
-.va-window input {
+.va-board select {
   min-width: 0;
   background: var(--color-card);
   border: 1px solid var(--color-divider);
@@ -297,76 +280,6 @@
 .va-error {
   color: var(--color-danger-deep);
   font-size: 0.8rem;
-}
-.va-metric {
-  display: grid;
-  gap: var(--space-2);
-  font-size: 0.8rem;
-  min-width: 0;
-}
-.va-metric-controls {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: var(--space-2);
-}
-.va-window,
-.va-source {
-  margin-block: var(--space-1);
-}
-.va-context-row {
-  display: flex;
-  justify-content: space-between;
-  gap: var(--space-3);
-  flex-wrap: wrap;
-  margin-bottom: var(--space-2);
-  font-size: 0.75rem;
-  color: var(--color-neutral-600);
-}
-.va-context-row > details[open] {
-  flex-basis: 100%;
-}
-.va-source {
-  font-size: 0.8rem;
-}
-.va-task {
-  display: flex;
-  gap: var(--space-2);
-  flex-wrap: wrap;
-  align-items: center;
-  padding-block: var(--space-2);
-  border-top: 1px solid var(--color-divider);
-  font-size: 0.8rem;
-}
-.va-task-title {
-  background: none;
-  border: 0;
-  color: var(--color-accent-700);
-  cursor: pointer;
-  text-align: left;
-}
-.va-task time {
-  flex-basis: 100%;
-}
-.va-task-filter {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: var(--space-2);
-  padding-block: var(--space-2);
-  border-top: 1px solid var(--color-divider);
-  color: var(--color-neutral-600);
-  font-size: 0.8rem;
-}
-.va-task-filter > button {
-  margin-left: auto;
-}
-.va-footer {
-  border-top: 1px solid var(--color-divider);
-  border-bottom: 0;
-}
-.va-footer > span {
-  margin-right: auto;
 }
 .va-conflict pre,
 .va-modal pre {
@@ -414,27 +327,6 @@
 .va-followup-btn {
   color: var(--color-accent-700);
 }
-.va-archive-state {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--space-2);
-}
-.va-lamp {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background: var(--color-neutral-400);
-  flex: none;
-}
-.va-lamp-pending {
-  background: var(--color-warning);
-}
-.va-lamp-failed {
-  background: var(--color-danger);
-}
-.va-lamp-complete {
-  background: var(--color-success);
-}
 .va-notice {
   margin: 0 0 var(--space-2);
   color: var(--color-neutral-700);
@@ -460,9 +352,7 @@
 .va-board select.va-outcome-pending {
   color: var(--color-warning-deep);
   background: var(--color-warning-soft);
-}
-
-/* Derived-minutes dialog; mirrors the plan board's preview modal. */
+} /* Derived-minutes dialog; mirrors the plan board's preview modal. */
 .va-dialog-overlay {
   position: fixed;
   inset: 0;

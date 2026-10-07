@@ -36,6 +36,7 @@ export type ArchiveMergeProof = z.infer<typeof ArchiveMergeProofSchema>
 export type ArchiveStatus =
   | { kind: 'unknown'; reason: string }
   | { kind: 'not-created'; checkedAt: string }
+  | { kind: 'changed'; reason: string }
   | {
       kind: 'open' | 'merged' | 'closed'
       reference: ArchiveReference
@@ -54,9 +55,9 @@ export const ArchiveProofRequestSchema = z.strictObject({
   worktreeId: z.string().min(1),
   hostId: z.string().min(1),
   workflow: z.enum(['plan', 'acceptance']),
-  provider: z.string().min(1),
-  repository: z.string().min(1),
-  number: z.number().int().positive(),
+  provider: z.string().min(1).optional(),
+  repository: z.string().min(1).optional(),
+  number: z.number().int().positive().optional(),
   version: MaterialVersion,
   cycleId: z.string().min(1),
   revision: MaterialRevision
@@ -65,6 +66,7 @@ export type ArchiveProofRequest = z.infer<typeof ArchiveProofRequestSchema>
 
 export const ArchiveProofResultSchema = z.strictObject({
   mergeCommit: SourceCommit.nullable(),
+  changed: z.boolean().optional(),
   proof: z.union([
     z.strictObject({ kind: z.literal('verified'), value: ArchiveMergeProofSchema }),
     z.strictObject({ kind: z.literal('unknown'), reason: z.string().min(1) })
@@ -104,6 +106,9 @@ export function archiveJourneyLamp(status: ArchiveStatus, archived: boolean): Ar
   }
   if (status.kind === 'unknown' || status.kind === 'not-created') {
     return 'unknown'
+  }
+  if (status.kind === 'changed') {
+    return 'pending'
   }
   if (
     status.kind === 'closed' ||

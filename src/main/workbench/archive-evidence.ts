@@ -1,6 +1,10 @@
 import type { ArchiveMergeProof, ArchivedMaterial } from '../../shared/workbench/version-archive'
 import { SourceCommit } from '../../shared/workbench/version-material'
-import { decodeHistorySnapshot, planningMaterialGitPath } from './version-history-snapshot'
+import {
+  decodeHistorySnapshot,
+  materialContentRevision,
+  planningMaterialGitPath
+} from './version-history-snapshot'
 
 export type ArchiveCandidate = {
   sourceCommit: string
@@ -120,7 +124,11 @@ export function createArchiveEvidenceReader(repoKey: string, deps: ArchiveEviden
           return null
         }
         const decoded = decodeHistorySnapshot(raw, material.version, material.workflow)
-        return { revision: decoded.revision, cycleId: decoded.document.cycleId }
+        return {
+          revision: decoded.revision,
+          contentRevision: materialContentRevision(raw),
+          cycleId: decoded.document.cycleId
+        }
       }
     )
   }
@@ -188,7 +196,8 @@ export function createArchiveEvidenceReader(repoKey: string, deps: ArchiveEviden
           const merged = await mergedMaterialAt(facts.mergeCommit, material)
           if (
             merged &&
-            merged.revision === candidate.revision &&
+            (merged.revision === candidate.revision ||
+              merged.contentRevision === candidate.revision) &&
             merged.cycleId === candidate.cycleId
           ) {
             return { kind: 'adopted', proof: proofFor(entry.number, facts.mergeCommit, material) }
@@ -242,7 +251,10 @@ export function createArchiveEvidenceReader(repoKey: string, deps: ArchiveEviden
           }
         }
       }
-      if (merged === null || merged.revision !== material.revision) {
+      if (
+        merged === null ||
+        (merged.revision !== material.revision && merged.contentRevision !== material.revision)
+      ) {
         return {
           mergeCommit: facts.mergeCommit,
           proof: { kind: 'unknown', reason: '合入提交中的材料与所选修订不一致' }

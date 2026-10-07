@@ -2,6 +2,7 @@ import type { MetricScope } from '../../shared/workbench/metrics'
 import { ArchiveMergeProofSchema } from '../../shared/workbench/version-archive'
 import {
   historySnapshotRevision,
+  materialContentRevision,
   planningMaterialGitPath
 } from './version-history-snapshot'
 
@@ -72,7 +73,10 @@ export function createArchiveStateChecker(host: ArchiveCheckHost) {
       } catch {
         return { kind: 'unknown', message: '无法在归档合入提交中读回材料' }
       }
-      if (historySnapshotRevision(merged) !== candidate.revision) {
+      if (
+        historySnapshotRevision(merged) !== candidate.revision &&
+        materialContentRevision(merged) !== candidate.revision
+      ) {
         return { kind: 'unknown', message: '归档合入提交中的材料与所选修订不一致' }
       }
       return { kind: 'adopted', proof }

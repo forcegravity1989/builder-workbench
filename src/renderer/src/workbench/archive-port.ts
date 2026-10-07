@@ -57,7 +57,10 @@ function mapReview(
  * exact requested revision, so anything unverifiable stays Unknown instead of
  * turning green.
  */
-export function nativeArchivePort(runtimeOwnerEnvironmentId?: string): ArchivePort {
+export function nativeArchivePort(
+  runtimeOwnerEnvironmentId?: string,
+  prepare = prepareCycleRequest
+): ArchivePort {
   return {
     async readStatus(input: ArchiveInput): Promise<ArchiveStatus> {
       const scope = {
@@ -67,6 +70,34 @@ export function nativeArchivePort(runtimeOwnerEnvironmentId?: string): ArchivePo
       }
       const owner = input.runtimeOwnerEnvironmentId ?? runtimeOwnerEnvironmentId
       const { target, ownerScope } = metricRuntimeRoute(scope, owner)
+      const adopted = await callMetricRuntime<ArchiveProofResult>(
+        scope,
+        owner,
+        'workbench.archive.proof',
+        () => ({
+          ...ownerScope,
+          workflow: input.workflow,
+          version: input.version,
+          cycleId: input.cycleId,
+          revision: input.revision
+        }),
+        60_000
+      )
+      if (adopted.proof.kind === 'verified') {
+        const proof = adopted.proof.value
+        const parts = proof.reference.repository.split('/')
+        const host = parts.length === 3 ? parts.shift()! : 'github.com'
+        return {
+          kind: 'merged',
+          reference: proof.reference,
+          url: `https://${host}/${parts.join('/')}/pull/${proof.reference.number}`,
+          checkedAt: proof.checkedAt,
+          checks: 'unknown',
+          review: 'unknown',
+          mergeCommit: adopted.mergeCommit,
+          proof: adopted.proof
+        }
+      }
       const branch = WORKFLOW_BRANCH[input.workflow]
       const review = await callRuntimeRpc<HostedReviewInfo | null>(
         target,
@@ -94,7 +125,9 @@ export function nativeArchivePort(runtimeOwnerEnvironmentId?: string): ArchivePo
             reason: CODEHUB_ARCHIVE_UNPROVABLE_REASON
           }
         }
-        return { kind: 'not-created', checkedAt }
+        return adopted.changed
+          ? { kind: 'changed', reason: adopted.proof.reason }
+          : { kind: 'unknown', reason: adopted.proof.reason }
       }
       if (review.provider !== 'github' || !review.githubRepository) {
         return {
@@ -144,12 +177,8 @@ export function nativeArchivePort(runtimeOwnerEnvironmentId?: string): ArchivePo
     },
 
     async prepareRequest(input: ArchiveInput, session: CycleSession): Promise<void> {
-      const branch = WORKFLOW_BRANCH[input.workflow]
-      const text = [
-        `请把当前这一版${WORKFLOW_NAME[input.workflow]}提交评审，给出链接。合入由人决定，不要自动合入，不要代关 Issue，也不要把合入当成目标达成。`,
-        `核对：版本 ${input.version}；周期 ${input.cycleId}；材料 .bw/planning/${input.version}/${MATERIAL_FILE[input.workflow]}；修订 ${input.revision}；分支 ${branch}。先核对修订与上面一致，再按项目门禁提 PR。`
-      ].join('\n')
-      await prepareCycleRequest(session, text)
+      const text = `请核对并归档 ${input.version} 当前已保存的${WORKFLOW_NAME[input.workflow]}（.bw/planning/${input.version}/${MATERIAL_FILE[input.workflow]}），按项目约定提交 PR，给我链接。`
+      await prepare(session, text)
     }
   }
 }

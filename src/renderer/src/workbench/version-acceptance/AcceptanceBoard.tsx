@@ -12,9 +12,9 @@ import { AcceptanceSources } from './AcceptanceSources'
 import { AcceptanceSummary } from './AcceptanceSummary'
 import { AcceptanceNotices } from './AcceptanceNotices'
 import { useAcceptanceMetricWindow } from './AcceptanceMetricWindow'
-import { AcceptanceTasks, taskSnapshotSummary } from './AcceptanceTasks'
-import { AcceptanceArchive } from './AcceptanceArchive'
-import { AcceptanceSourcePicker } from './AcceptanceSourcePicker'
+import { taskSnapshotSummary } from './AcceptanceTasks'
+import { CycleTasks } from '../version-cycle/CycleTasks'
+import { CycleArchive } from '../version-cycle/CycleArchive'
 import { AcceptanceJourney } from './AcceptanceJourney'
 import { AcceptanceReportDialog } from './AcceptanceReportDialog'
 import type { AcceptanceCandidatePort } from './acceptance-candidate-port'
@@ -75,13 +75,10 @@ function ReadyAcceptanceBoard({
     recoveryError,
     recoveryText,
     versions,
-    sources,
-    historyProblems,
     materialProblems,
-    refreshCatalog,
+    hasPlanSource,
+    sourcesLoaded,
     version,
-    planChoice,
-    setPlanChoice,
     error,
     setError,
     busy,
@@ -95,18 +92,23 @@ function ReadyAcceptanceBoard({
     document,
     plan,
     archived,
-    archivePending,
     readOnly,
     loadVersion,
-    discardLocal,
-    begin,
     prepare,
     editGoal,
     editReadings,
-    archiveStatus,
-    buildReport
+    buildReport,
+    refreshData,
+    flush,
+    saving,
+    retrySave,
+    useRemoteDeletion,
+    initializationSuppressed
   } = useAcceptanceBoard({ context, history, recoveryKey })
-  const hasMetrics = (plan?.document.goals.length ?? 0) > 0
+  const hasMetrics = Boolean(
+    plan?.document.goals.some((goal) => goal.metricTargets.length > 0) ||
+    document?.results.some((result) => result.readings.length > 0)
+  )
   const metricWindow = useAcceptanceMetricWindow(metrics, metricScope, hasMetrics)
   const [reportOpen, setReportOpen] = useState(false)
   const [actionNotice, setActionNotice] = useState<string | null>(null)
@@ -116,7 +118,8 @@ function ReadyAcceptanceBoard({
   const startCard = useRef<HTMLElement>(null)
   const results = useRef<HTMLElement>(null)
   const archiveSection = useRef<HTMLElement>(null)
-  const tasks = useRef<HTMLDetailsElement>(null)
+  const tasks = useRef<HTMLElement>(null)
+  const [tasksOpen, setTasksOpen] = useState(false)
   const branch = cycleBranch(entry)
   // Render-time validity: a round or plan change under the same identity drops a
   // filter whose goal no longer exists in the fixed plan — no stale empty list.
@@ -127,9 +130,7 @@ function ReadyAcceptanceBoard({
   /** Locate the snapshot section expanded, optionally narrowed to one goal's references. */
   const openTasks = (goal?: { goalId: string; title: string } | null) => {
     setTaskGoalFilter(goal ?? null)
-    if (tasks.current) {
-      tasks.current.open = true
-    }
+    setTasksOpen(true)
     tasks.current?.scrollIntoView({ block: 'start', behavior: 'smooth' })
   }
   useEffect(() => {
@@ -137,44 +138,34 @@ function ReadyAcceptanceBoard({
       setReportOpen(false)
     }
   }, [report])
-  const prepareArchive = () => {
+  const prepareArchive = async () => {
     setActionNotice(null)
-    if (archived) {
-      setError('本轮验收已归档；如需补充材料，请从来源选择开始下一轮。')
-      return
-    }
-    if (!session) {
-      setError('请先在左侧新建或打开会话。')
-      return
-    }
-    if (!document || !draft?.expectedRevision) {
-      setError('请先保存验收结果，再准备归档请求。')
-      return
-    }
-    if (draft.dirty) {
-      setError('有未保存的修改；请先保存结果，再准备归档请求。')
-      return
-    }
-    if (readOnly) {
-      setError('归档状态尚未核实或材料只读，请稍后重试。')
-      return
-    }
-    void context.archivePort
-      .prepareRequest(
+    try {
+      if (!session) {
+        throw new Error('请先在左侧新建或打开会话。')
+      }
+      if (readOnly) {
+        throw new Error('材料正在读取，请稍后重试。')
+      }
+      const saved = await flush()
+      if (!saved) {
+        throw new Error('修改尚未保存，请先处理保存提示。')
+      }
+      await context.archivePort.prepareRequest(
         {
           ...scope,
           worktreeId,
-          version: document.version,
-          cycleId: document.cycleId,
-          revision: draft.expectedRevision
+          version: saved.document.version,
+          cycleId: saved.document.cycleId,
+          revision: saved.revision
         },
         session
       )
-      .then(() => {
-        setError(null)
-        setActionNotice('归档请求已贴进左侧当前终端，请核对后发送。')
-      })
-      .catch((reason) => setError(String(reason)))
+      setError(null)
+      setActionNotice('归档请求已贴进左侧当前终端，请核对后发送。')
+    } catch (reason) {
+      setError(String(reason))
+    }
   }
   const openReport = () => {
     // Only open on a real derivation; a failure surfaces in the board's error
@@ -192,7 +183,7 @@ function ReadyAcceptanceBoard({
         <select
           aria-label="验收版本"
           value={version}
-          disabled={busy || draft?.dirty}
+          disabled={busy}
           onChange={(event) => {
             if (event.target.value) {
               void loadVersion(event.target.value)
@@ -204,18 +195,19 @@ function ReadyAcceptanceBoard({
             <option key={item}>{item}</option>
           ))}
         </select>
-        <button className="wb-btn wb-btn-ghost wb-btn-sm" onClick={refreshCatalog}>
-          刷新版本
+        <button
+          className="wb-btn wb-btn-ghost wb-btn-sm"
+          disabled={busy || saving}
+          onClick={() => {
+            metricWindow.refresh()
+            void refreshData()
+          }}
+        >
+          刷新数据
         </button>
-        <span>
-          {draft?.dirty
-            ? '草稿未保存'
-            : archivePending
-              ? '正在读取归档状态…'
-              : document
-                ? '已保存材料'
-                : '待选择'}
-        </span>
+        {(saving || draft?.dirty) && (
+          <span role="status">{saving ? '正在保存…' : '有改动待保存'}</span>
+        )}
         <span className="vc-branch" title={branch}>
           <GitBranch size={13} aria-hidden="true" />
           <span>{branch}</span>
@@ -257,29 +249,16 @@ function ReadyAcceptanceBoard({
             </p>
           )}
           <AcceptanceNotices
-            error={error}
+            error={error ?? metricWindow.error}
             recoveryError={recoveryError}
             recoveryText={recoveryText}
-            historyProblems={historyProblems}
             draft={draft}
             controller={controller}
-            archived={archived}
             busy={busy}
             setError={setError}
-            onDiscardLocal={() => void discardLocal()}
+            onRetrySave={() => void retrySave()}
+            onRemoteDeleted={useRemoteDeletion}
           />
-          {/* 归档只是信号不是可见性门（决定 6）：干净草稿即可开下一轮；未保存修改时收起，避免必然被门拒的空点。 */}
-          {(!document || archived || !draft?.dirty) && version && (
-            <AcceptanceSourcePicker
-              hasDocument={Boolean(document)}
-              version={version}
-              sources={sources}
-              planChoice={planChoice}
-              busy={busy}
-              onPlanChoice={setPlanChoice}
-              onBegin={() => void begin()}
-            />
-          )}
           {document ? (
             <>
               {plan && (
@@ -297,10 +276,6 @@ function ReadyAcceptanceBoard({
               )}
               <AcceptanceSources
                 document={document}
-                hasMetrics={hasMetrics}
-                metricWindow={metricWindow}
-                disabled={readOnly}
-                onPrepare={(text) => void prepare(text)}
                 candidatePort={candidate}
                 onChecks={onChecks}
               />
@@ -328,26 +303,41 @@ function ReadyAcceptanceBoard({
                     onGoalChange={(value, goalId) => editGoal(value, goalId)}
                     onFollowUp={(text) => void prepare(text)}
                   />
-                  <AcceptanceTasks
-                    ref={tasks}
+                  <CycleTasks
+                    sectionRef={tasks}
                     plan={plan.document}
-                    port={context.taskPort}
-                    snapshot={document.taskSnapshot}
+                    scope={scope}
+                    taskPort={context.taskPort}
                     disabled={readOnly}
-                    getScrollTop={() => scroll.current?.scrollTop ?? 0}
-                    goalFilter={activeGoalFilter?.goalId ?? null}
-                    goalFilterLabel={activeGoalFilter?.title ?? null}
-                    onClearGoalFilter={() => setTaskGoalFilter(null)}
-                    origin={{
-                      ...scope,
-                      page: 'acceptance',
-                      version: document.version,
-                      cycleId: document.cycleId,
-                      worktreeId,
-                      sessionId: session?.sessionId,
-                      scrollTop: scroll.current?.scrollTop ?? 0,
-                      draftKey: recoveryKey
-                    }}
+                    open={tasksOpen}
+                    onOpen={setTasksOpen}
+                    goalFilter={activeGoalFilter?.goalId ?? ''}
+                    onFilter={(goalId) =>
+                      setTaskGoalFilter(
+                        goalId
+                          ? {
+                              goalId,
+                              title:
+                                plan.document.goals.find((goal) => goal.goalId === goalId)?.title ??
+                                ''
+                            }
+                          : null
+                      )
+                    }
+                    onTask={(task) =>
+                      context.taskPort.openDetail(task, {
+                        ...scope,
+                        page: 'acceptance',
+                        version: document.version,
+                        cycleId: document.cycleId,
+                        worktreeId,
+                        sessionId: session?.sessionId,
+                        scrollTop: scroll.current?.scrollTop ?? 0,
+                        draftKey: recoveryKey,
+                        goalId: task.reference.goalId
+                      })
+                    }
+                    snapshot={document.taskSnapshot}
                     onSnapshot={(reads) => saveTaskSnapshot(document, reads)}
                   />
                 </>
@@ -370,7 +360,11 @@ function ReadyAcceptanceBoard({
               >
                 <p>
                   {version
-                    ? '选择已合入的计划修订开始本次验收，或从上方“新建验收”与 Agent 一起确认版本与候选。'
+                    ? initializationSuppressed
+                      ? '本版验收材料已删除，当前输入已复制；可在会话中重新准备。'
+                      : sourcesLoaded && !hasPlanSource
+                        ? '本版还没有可用计划，请在左侧会话中核对或准备计划材料。'
+                        : '正在读取本版计划与验收材料…'
                     : '尚未选择版本。从上方“新建验收”与 Agent 一起确认要核对的版本。'}
                 </p>
               </section>
@@ -378,19 +372,12 @@ function ReadyAcceptanceBoard({
           )}
         </div>
       </div>
-      <AcceptanceArchive
+      <CycleArchive
         status={archive}
-        dirty={draft?.dirty ?? false}
-        hasDocument={Boolean(document)}
-        hasRevision={Boolean(draft?.expectedRevision)}
-        readOnly={readOnly}
-        busy={busy}
         archived={archived}
+        disabled={!document || readOnly || saving}
         sectionRef={archiveSection}
-        onArchive={prepareArchive}
-        onRefreshStatus={() => void archiveStatus()}
-        onReload={() => void controller.refresh().catch((reason) => setError(String(reason)))}
-        onSave={() => void controller.save()}
+        onArchive={() => void prepareArchive()}
       />
       {reportOpen && (
         <AcceptanceReportDialog

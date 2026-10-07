@@ -1,8 +1,7 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { RefreshCw } from 'lucide-react'
 import {
   MetricWindowSchema,
-  type MetricCatalog,
   type MetricReading,
   type MetricRef,
   type MetricsPort,
@@ -34,61 +33,37 @@ export function AcceptanceMetrics({
   disabled: boolean
   onReadings(ref: MetricRef, readings: MetricReadingEvidence[]): void
 }) {
-  const [catalog, setCatalog] = useState<MetricCatalog | null>(null)
-  const [selected, setSelected] = useState('')
-  const [result, setResult] = useState<MetricReading | undefined>()
-  const [busy, setBusy] = useState(false)
-  const identity = JSON.stringify([materialKey, scope, goal.goalId, window, disabled])
+  const namesKey = JSON.stringify([
+    ...new Set([
+      ...goal.metricTargets.map((target) => target.ref.name),
+      ...readings.map((reading) => reading.ref.name)
+    ])
+  ])
+  const names = useMemo(() => JSON.parse(namesKey) as string[], [namesKey])
+  const identity = JSON.stringify([materialKey, scope, goal.goalId, window, namesKey])
   const latest = useRef(identity)
   latest.current = identity
-  const sequence = useRef(0)
+  const requests = useRef(new Map<string, number>())
+  const [values, setValues] = useState<Record<string, MetricReading>>({})
+  const [busy, setBusy] = useState<string | null>(null)
   useEffect(() => {
-    let active = true
-    const requests = sequence
-    const token = ++requests.current
-    setCatalog(null)
-    setSelected('')
-    setResult(undefined)
-    setBusy(false)
-    void port.list(scope).then(
-      (value) => {
-        if (active && token === requests.current) {
-          setCatalog(value)
-        }
-      },
-      (error) => {
-        if (active && token === requests.current) {
-          setResult({ status: 'error', reason: { code: 'catalog-failed', message: String(error) } })
-        }
-      }
-    )
-    return () => {
-      active = false
-      requests.current++
+    setValues({})
+    setBusy(null)
+    requests.current.clear()
+  }, [identity])
+  async function refresh(name: string) {
+    if (disabled || busy) {
+      return
     }
-  }, [port, scope, materialKey, goal.goalId])
-  const name =
-    selected ||
-    catalog?.definitions.find((item) => item.name === goal.metricTargets[0]?.ref.name)?.name ||
-    catalog?.definitions[0]?.name ||
-    ''
-  async function refresh(collect: boolean) {
-    const token = ++sequence.current
-    const current = () => token === sequence.current && identity === latest.current
-    setBusy(true)
-    setResult(undefined)
+    const token = (requests.current.get(name) ?? 0) + 1
+    requests.current.set(name, token)
+    const current = () => latest.current === identity && requests.current.get(name) === token
+    setBusy(name)
     try {
-      const next = await port.list(scope)
-      if (!current()) {
-        return
-      }
-      setCatalog(next)
-      if (!collect) {
-        return
-      }
-      const definition = next.definitions.find((item) => item.name === name)
+      const catalog = await port.list(scope)
+      const definition = catalog.definitions.find((item) => item.name === name)
       if (!definition) {
-        throw new Error('请选择当前目录中的指标')
+        throw new Error('当前目录没有此指标，请在会话中核对指标配置。')
       }
       const value = await port.refresh({
         scope,
@@ -98,86 +73,74 @@ export function AcceptanceMetrics({
       if (!current()) {
         return
       }
-      setResult(value)
+      setValues((previous) => ({ ...previous, [name]: value }))
       if (value.status === 'ready') {
-        const previous = readings.find((item) => item.ref.name === definition.name)
-        onReadings(previous?.ref ?? definition.ref, value.readings)
+        onReadings(definition.ref, value.readings)
       }
-    } catch (error) {
+    } catch (reason) {
       if (current()) {
-        setResult({ status: 'error', reason: { code: 'read-failed', message: String(error) } })
+        setValues((previous) => ({
+          ...previous,
+          [name]: {
+            status: 'error',
+            reason: { code: 'read-failed', message: String(reason) }
+          }
+        }))
       }
     } finally {
-      if (token === sequence.current) {
-        setBusy(false)
+      if (current()) {
+        setBusy(null)
       }
     }
   }
+  if (!names.length) {
+    return null
+  }
   return (
-    <div className="va-metric">
-      {goal.metricTargets.map((target) => (
-        <p key={target.ref.name}>
-          {target.ref.name} · 计划目标 {target.target || '未填写'}
-          {target.baseline && (
-            <>
-              {' '}
-              · 计划基线 {target.baseline.value}
-              {target.baseline.unit}
-            </>
-          )}
-        </p>
-      ))}
-      <div className="va-metric-controls">
-        <select
-          aria-label={`${goal.title || '目标'} 验收指标`}
-          value={name}
-          disabled={disabled || busy}
-          onChange={(event) => {
-            sequence.current++
-            setSelected(event.target.value)
-            setResult(undefined)
-          }}
-        >
-          <option value="">选择验收指标</option>
-          {catalog?.definitions.map((item) => (
-            <option key={item.name} value={item.name}>
-              {item.name}
-            </option>
-          ))}
-        </select>
-        <button
-          className="wb-btn wb-btn-secondary wb-btn-sm"
-          disabled={disabled || busy}
-          onClick={() => void refresh(false)}
-          title="刷新指标目录"
-          aria-label="刷新指标目录"
-        >
-          <RefreshCw size={14} />
-        </button>
-        <button
-          className="wb-btn wb-btn-secondary wb-btn-sm"
-          disabled={disabled || busy || !name || !MetricWindowSchema.safeParse(window).success}
-          onClick={() => void refresh(true)}
-        >
-          {busy ? '读取中…' : '采集'}
-        </button>
-      </div>
-      {catalog?.problems.map((problem) => (
-        <p
-          className="va-warning"
-          key={JSON.stringify([problem.name, problem.code, problem.message])}
-        >
-          {problem.name ? `${problem.name}：` : ''}
-          {problem.message}
-        </p>
-      ))}
-      {result && result.status !== 'ready' && <p className="va-warning">{result.reason.message}</p>}
-      {[...new Set(readings.map((reading) => reading.ref.name))].map((metric) => (
-        <div key={metric}>
-          <strong>{metric}</strong>
-          <MetricEvidenceView saved={readings.filter((reading) => reading.ref.name === metric)} />
-        </div>
-      ))}
+    <div className="vp-metrics">
+      {names.map((name) => {
+        const target = goal.metricTargets.find((item) => item.ref.name === name)
+        const saved = readings.filter((reading) => reading.ref.name === name)
+        const value = values[name]
+        const actual = value && value.status !== 'ready' ? [] : saved
+        const reading = actual.length === 1 ? actual[0] : null
+        return (
+          <div className="vp-metric" key={name}>
+            <div className="vp-metric-row">
+              <strong className="vp-metric-name">{name}</strong>
+              {target && <span>目标 {target.target || '待明确'}</span>}
+              <div className="vp-metric-value">
+                <span>实际</span>
+                <strong>{reading ? `${reading.value}${reading.unit}` : '—'}</strong>
+              </div>
+              <button
+                className="wb-btn wb-btn-sm"
+                disabled={disabled || busy !== null || !window}
+                onClick={() => void refresh(name)}
+              >
+                <RefreshCw size={14} />
+                {busy === name ? '读取中…' : '刷新指标'}
+              </button>
+            </div>
+            {value && value.status !== 'ready' && (
+              <p className="va-warning">{value.reason.message}</p>
+            )}
+            <details className="vp-metric-evidence">
+              <summary>采集依据</summary>
+              {target?.baseline && (
+                <p>
+                  计划基线：{target.baseline.value}
+                  {target.baseline.unit}
+                </p>
+              )}
+              <MetricEvidenceView
+                result={value?.status === 'ready' ? undefined : value}
+                saved={saved}
+              />
+            </details>
+          </div>
+        )
+      })}
     </div>
   )
 }

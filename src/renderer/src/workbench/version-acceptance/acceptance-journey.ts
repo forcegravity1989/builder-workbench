@@ -59,7 +59,22 @@ export function preparationSignal(
   }
   const evidenceFor = (goalId: string) => {
     const result = document.results.find((item) => item.goalId === goalId)
-    return result !== undefined && hasDeliveryEvidence(result)
+    const goal = planGoals?.find((item) => item.goalId === goalId)
+    if (!result) {
+      return false
+    }
+    if (goal?.deliverable?.trim() && !hasDeliveryEvidence(result)) {
+      return false
+    }
+    if (
+      goal?.metricTargets.length &&
+      !goal.metricTargets.every((target) =>
+        result.readings.some((reading) => reading.ref.name === target.ref.name)
+      )
+    ) {
+      return false
+    }
+    return hasDeliveryEvidence(result) || result.readings.length > 0 || Boolean(result.note.trim())
   }
   if (planGoals && planGoals.length > 0 && planGoals.every((goal) => evidenceFor(goal.goalId))) {
     return { kind: 'complete', label: '实际交付已记录' }
@@ -114,6 +129,14 @@ export function archiveSignal(
     case 'failed':
       return { kind: 'failed', label: '归档待处理' }
     case 'pending':
-      return { kind: 'pending', label: status.kind === 'merged' ? '当前材料待核对' : '待评审' }
+      return {
+        kind: 'pending',
+        label:
+          status.kind === 'changed'
+            ? '有改动待归档'
+            : status.kind === 'merged'
+              ? '当前材料待核对'
+              : '待评审'
+      }
   }
 }

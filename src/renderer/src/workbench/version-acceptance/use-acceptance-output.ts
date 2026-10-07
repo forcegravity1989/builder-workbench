@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import type { AcceptanceMaterial } from '../../../../shared/workbench/version-material'
 import type { VersionHistoryPlan } from '../../../../shared/workbench/version-history'
 import type { MaterialDraft, MaterialDraftController } from '../version-cycle/material-draft'
-import type { ArchiveStatus, CycleTaskRead } from '../version-cycle/ports'
+import type { CycleTaskRead } from '../version-cycle/ports'
 import type { VersionCycleContext } from '../version-cycle/cycle-context'
 import type { ArtifactCheck, CandidateCheck } from './acceptance-candidate-port'
 import { decisionFreshness } from './acceptance-decision'
@@ -11,6 +11,7 @@ import { deriveAcceptanceReport } from './acceptance-report'
 import { captureTaskSnapshot } from './acceptance-task-evidence'
 import type { ArchivedMaterial } from '../../../../shared/workbench/version-archive'
 import { archiveSignal, decisionSignal, preparationSignal } from './acceptance-journey'
+import { useMaterialArchive } from '../version-cycle/use-material-archive'
 import type { DecisionFreshness } from './acceptance-decision'
 
 export function useAcceptanceOutput(
@@ -66,21 +67,16 @@ export function useAcceptanceOutput(
     revision: string | null
     markdown: string
   } | null>(null)
-  const [archiveResult, setArchiveResult] = useState<{ key: string; status: ArchiveStatus } | null>(
-    null
-  )
-  const lifetime = useRef({ active: true, archiveRequest: 0 }).current
+  const lifetime = useRef({ active: true }).current
   useEffect(() => {
     lifetime.active = true
     return () => {
       lifetime.active = false
     }
   }, [lifetime])
-  const archiveKey = JSON.stringify([document?.version, document?.cycleId, draft?.expectedRevision])
-  const archive: ArchiveStatus =
-    archiveResult?.key === archiveKey
-      ? archiveResult.status
-      : { kind: 'unknown', reason: '归档状态未读取' }
+  const archiveState = useMaterialArchive(context, draft)
+  const archive = archiveState.status
+  const archivePending = archiveState.pending
   const archiveMaterial: ArchivedMaterial | null =
     document && draft?.expectedRevision
       ? {
@@ -90,19 +86,7 @@ export function useAcceptanceOutput(
           revision: draft.expectedRevision
         }
       : null
-  /** First read for the opened material is in flight; editing stays disabled until it settles. */
-  const archivePending = Boolean(archiveMaterial) && archiveResult === null
-  const hasArchiveIdentity = archiveMaterial !== null
-  const autoArchiveKey = useRef<string | null>(null)
-  const archiveRead = useRef(archiveStatus)
-  archiveRead.current = archiveStatus
-  useEffect(() => {
-    if (!hasArchiveIdentity || autoArchiveKey.current === archiveKey) {
-      return
-    }
-    autoArchiveKey.current = archiveKey
-    void archiveRead.current()
-  }, [archiveKey, hasArchiveIdentity])
+  const archiveStatus = archiveState.refresh
   const verified = document && checks?.key === preparationKey(document) ? checks : null
   const decisionStates =
     decisionResult?.document === document && decisionResult?.plan === plan
@@ -127,31 +111,6 @@ export function useAcceptanceOutput(
       ...current,
       taskSnapshot: captureTaskSnapshot(reads)
     })
-  }
-  async function archiveStatus() {
-    if (!document || !draft?.expectedRevision) {
-      return
-    }
-    const request = ++lifetime.archiveRequest
-    try {
-      const status = await context.archivePort.readStatus({
-        ...context.scope!,
-        worktreeId: context.worktreeId!,
-        version: document.version,
-        cycleId: document.cycleId,
-        revision: draft.expectedRevision
-      })
-      if (lifetime.active && request === lifetime.archiveRequest) {
-        setArchiveResult({
-          key: archiveKey,
-          status: status ?? { kind: 'unknown', reason: '归档读取没有返回状态' }
-        })
-      }
-    } catch (reason) {
-      if (lifetime.active && request === lifetime.archiveRequest) {
-        setArchiveResult({ key: archiveKey, status: { kind: 'unknown', reason: String(reason) } })
-      }
-    }
   }
   /** Returns the derived markdown, or null when nothing honest could be produced. */
   async function buildReport(): Promise<string | null> {
@@ -214,6 +173,7 @@ export function useAcceptanceOutput(
   })()
   return {
     archive,
+    archived: archiveState.archived,
     archiveMaterial,
     archivePending,
     decisionSummary,

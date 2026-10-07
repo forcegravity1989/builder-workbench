@@ -1,4 +1,5 @@
 import { createHash } from 'node:crypto'
+import { materialContentRevision } from './version-history-snapshot'
 import { lstat, open, readFile } from 'node:fs/promises'
 import { dirname, join } from 'node:path'
 import { lock } from 'proper-lockfile'
@@ -82,7 +83,7 @@ export function createVersionDocumentStore<T extends VersionDocumentIdentity>(
   function snapshot(raw: Buffer, version: string): VersionDocumentSnapshot<T> {
     return {
       document: decode(raw.toString('utf8'), version),
-      revision: `sha256:${createHash('sha256').update(raw).digest('hex')}`
+      revision: materialContentRevision(raw)
     }
   }
 

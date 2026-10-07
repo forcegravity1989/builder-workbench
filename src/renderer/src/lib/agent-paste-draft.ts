@@ -143,6 +143,7 @@ export async function pasteDraftToAgentPtyWhenReady(args: {
   forcePaste?: boolean
   timeoutMs?: number
   onTimeout?: () => void
+  canPaste?: () => boolean
 }): Promise<boolean> {
   const { tabId, ptyId, content, agent, submit, forcePaste, timeoutMs, onTimeout } = args
   const agentConfig = agent ? TUI_AGENT_CONFIG[agent] : null
@@ -154,6 +155,9 @@ export async function pasteDraftToAgentPtyWhenReady(args: {
   const settings = getSettingsForAgentTabRuntimeOwner(tabId)
   const readySignal = agentConfig?.draftPasteReadySignal ?? 'render-quiet-after-bracketed-paste'
   const budget = resolveDraftPasteReadyTimeoutMs(agent, timeoutMs)
+  if (args.canPaste && !args.canPaste()) {
+    return false
+  }
   const ready = await waitForAgentDraftInputReady(ptyId, budget, readySignal, settings)
   if (!ready) {
     const fallbackReady = agentConfig
@@ -170,7 +174,8 @@ export async function pasteDraftToAgentPtyWhenReady(args: {
     ptyId,
     content,
     submit: submit === true,
-    agent
+    agent,
+    canPaste: args.canPaste
   })
 }
 
@@ -200,6 +205,7 @@ async function sendBracketedPasteToAgent(args: {
   content: string
   submit: boolean
   agent?: TuiAgent
+  canPaste?: () => boolean
 }): Promise<boolean> {
   const { settings = useAppStore.getState().settings, ptyId, content, submit, agent } = args
   const submitRetryDelayMs = agent ? TUI_AGENT_CONFIG[agent]?.submitRetryDelayMs : undefined
@@ -207,6 +213,9 @@ async function sendBracketedPasteToAgent(args: {
     // Why: paste + Enter (+ retry Enter) must be one transaction, or a concurrent
     // paste on this PTY can slip between them and submit a half-written prompt.
     return await runTerminalPtyInputTransaction(ptyId, async () => {
+      if (args.canPaste && !args.canPaste()) {
+        return false
+      }
       const pasted = await sendAgentDraftPasteContentNow(settings, ptyId, content)
       if (!pasted || !submit) {
         return pasted

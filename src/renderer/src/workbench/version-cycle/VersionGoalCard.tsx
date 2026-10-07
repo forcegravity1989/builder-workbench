@@ -54,10 +54,12 @@ export function VersionGoalCard({
               <h3>{goal.title || '待明确目标'}</h3>
               {actions}
             </div>
-            <p>
-              <span className="vc-label">约定交付</span>
-              {goal.deliverable?.trim() ? goal.deliverable : '未约定交付件'}
-            </p>
+            {goal.deliverable?.trim() && (
+              <p>
+                <span className="vc-label">约定交付</span>
+                {goal.deliverable}
+              </p>
+            )}
             {goal.acceptance && (
               <p>
                 <span className="vc-label">验收标准</span>

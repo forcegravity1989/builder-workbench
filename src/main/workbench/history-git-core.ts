@@ -60,6 +60,16 @@ export function assertReadOnlyHistoryGitArgs(args: readonly string[]): void {
   }
   switch (args[0]) {
     case 'log': {
+      if (
+        args.length === 6 &&
+        args[1] === '-1' &&
+        args[2] === '--format=%H' &&
+        new RegExp(`^${SHA}$`).test(args[3]) &&
+        args[4] === '--' &&
+        new RegExp(`^${MATERIAL_PATH}$`).test(args[5])
+      ) {
+        return
+      }
       const logArgvPrefix = [
         'log',
         '-z',

@@ -13,6 +13,9 @@ export function useAcceptanceDraft(
   selectedVersion?: string,
   materialRefresh = 0
 ) {
+  const [initializationSuppressed, setInitializationSuppressed] = useState(false)
+  const [loadedRefresh, setLoadedRefresh] = useState(-1)
+  const [loadedVersion, setLoadedVersion] = useState<string | null>(null)
   const [draft, setDraft] = useState<MaterialDraft<AcceptanceMaterial> | null>(null)
   const [recoveryError, setRecoveryError] = useState<string | null>(null)
   const [recoveryText, setRecoveryText] = useState<string | null>(null)
@@ -70,7 +73,12 @@ export function useAcceptanceDraft(
     }
   }, [controller, key, recovery, selectedVersion])
   useEffect(() => {
-    if (controller.value || !selectedVersion || recovery.present) {
+    if (!selectedVersion) {
+      return
+    }
+    if (controller.value || recovery.present) {
+      setLoadedVersion(selectedVersion)
+      setLoadedRefresh(materialRefresh)
       return
     }
     let current = true
@@ -78,6 +86,10 @@ export function useAcceptanceDraft(
     void port
       .read(selectedVersion)
       .then((saved) => {
+        if (current && request === recovery.request) {
+          setLoadedVersion(selectedVersion)
+          setLoadedRefresh(materialRefresh)
+        }
         if (current && request === recovery.request && !controller.value && saved) {
           controller.restore({
             document: saved.document,
@@ -108,15 +120,45 @@ export function useAcceptanceDraft(
   }, [draft, key, recovery, selectedVersion])
   return {
     draft,
+    loadedVersion,
+    loadedRefresh,
+    initializationSuppressed,
     controller,
     recoveryError,
     recoveryText,
+    async refresh() {
+      if (controller.value) {
+        return controller.refresh()
+      }
+      if (!selectedVersion) {
+        return
+      }
+      const request = ++recovery.request
+      const saved = await port.read(selectedVersion)
+      if (request !== recovery.request || controller.value) {
+        return
+      }
+      setRecoveryError(null)
+      setLoadedVersion(selectedVersion)
+      setLoadedRefresh(materialRefresh)
+      if (saved) {
+        controller.restore({
+          document: saved.document,
+          expectedRevision: saved.revision,
+          dirty: false
+        })
+      }
+    },
     cancelAutomaticRead() {
       recovery.request++
     },
     clear() {
       recovery.request++
+      setInitializationSuppressed(true)
       controller.clear()
+      recovery.present = false
+      setRecoveryText(null)
+      setRecoveryError(null)
       try {
         sessionStorage.removeItem(key)
       } catch {

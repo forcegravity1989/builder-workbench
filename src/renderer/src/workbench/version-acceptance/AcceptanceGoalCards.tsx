@@ -69,23 +69,28 @@ export function AcceptanceGoalCards({
               ) : undefined
             }
             metrics={
-              <AcceptanceMetrics
-                goal={goal}
-                materialKey={JSON.stringify([
-                  document.version,
-                  document.cycleId,
-                  document.planRef,
-                  document.candidateRef
-                ])}
-                readings={
-                  document.results.find((item) => item.goalId === goal.goalId)?.readings ?? []
-                }
-                port={metrics}
-                scope={metricScope}
-                window={metricWindow}
-                disabled={readOnly}
-                onReadings={(ref, readings) => onReadings(goal.goalId, ref, readings)}
-              />
+              goal.metricTargets.length > 0 ||
+              document.results.some(
+                (item) => item.goalId === goal.goalId && item.readings.length > 0
+              ) ? (
+                <AcceptanceMetrics
+                  goal={goal}
+                  materialKey={JSON.stringify([
+                    document.version,
+                    document.cycleId,
+                    document.planRef,
+                    document.candidateRef
+                  ])}
+                  readings={
+                    document.results.find((item) => item.goalId === goal.goalId)?.readings ?? []
+                  }
+                  port={metrics}
+                  scope={metricScope}
+                  window={metricWindow}
+                  disabled={readOnly}
+                  onReadings={(ref, readings) => onReadings(goal.goalId, ref, readings)}
+                />
+              ) : undefined
             }
             result={
               <AcceptanceGoalResult

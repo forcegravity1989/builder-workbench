@@ -19,13 +19,13 @@
 | intent | ● 已确认 | 沿用三特性边界，用户确认会话准备材料、逐目标核对及本轮资产同步 |
 | spec | ● 实施输入 | 本轮高保真已获用户确认；新入口与验收布局已按该高保真实施（组件/契约测试为上限，真壳未验），新增或拿不准的行为仍需确认 |
 | 实现设计 | ◐ 部分 | 设计主体已按当前接线落地，取舍差异回写 design；详细设计仍未逐项细审，未决项必须人工确认 |
-| TDD | ◐ 部分 | 以下为 PR #272 前历史证据，不含当前会话复用接线：单测/组件测试全绿（渲染端大套件 388 文件 3477 项，main/workbench + relay 38 文件 203 项；三套 tsc 0 错）。验收业务覆盖目标证据、同源码换候选包、候选来源边界、Issue 快照报告及交互、切版本保留新输入、报告保留真实计划读取时间、计划来源失败与三阶段分别推导信号、指标日期边界及读回证据优先于旧缓存；归档判定覆盖脏草稿不绕过已确认归档、provider 合入提交树内字节核对（FF/rebase 多提交不漏记）。候选 RPC 为替身，页面交互为 DOM 环境，不能代表真实宿主、provider 或 Electron 旅程。本轮（#279）新增证据：workbench 套件 43 文件 220 项绿（协作卡片单次启动与坏文件上下文、one-shot 转发/门控/派发载荷、准备灯证据推导、陈旧候选核对不传播改造后通过）；tsc 因本机内存限制未能运行，缺口如实记入 PR。2026-09-30 返工批证据：开轮门控纯函数 3 例、历史服务自有分支读取/归档信号化（真实 Git 仓）、只读白名单扩展边界用例全绿；acceptance-round 归档门控单测已回补（环 4 正清单①状态机）；tsc 仍因本机内存未能运行，如实记录 |
+| TDD | ◐ 部分 | 以下为 PR #272 前历史证据，不含当前会话复用接线：单测/组件测试全绿（渲染端大套件 388 文件 3477 项，main/workbench + relay 38 文件 203 项；三套 tsc 0 错）。验收业务覆盖目标证据、同源码换候选包、候选来源边界、Issue 快照报告及交互、切版本保留新输入、报告保留真实计划读取时间、计划来源失败与三阶段分别推导信号、指标日期边界及读回证据优先于旧缓存；归档判定覆盖脏草稿不绕过已确认归档、provider 合入提交树内字节核对（FF/rebase 多提交不漏记）。候选 RPC 为替身，页面交互为 DOM 环境，不能代表真实宿主、provider 或 Electron 旅程。本轮（#279）新增证据：workbench 套件 43 文件 220 项绿（协作卡片单次启动与坏文件上下文、one-shot 转发/门控/派发载荷、准备灯证据推导、陈旧候选核对不传播改造后通过）；tsc 因本机内存限制未能运行，缺口如实记入 PR。2026-09-30 返工批证据：开轮门控纯函数 3 例、历史服务自有分支读取/归档信号化（真实 Git 仓）、只读白名单扩展边界用例全绿；当时开轮门控用例已随开轮入口退役删除；tsc 仍因本机内存未能运行，如实记录 |
 | 验收点 E2E | ◐ 部分 | 真壳 Playwright 烟测 `tests/e2e/workbench-cycle-smoke.spec.ts` 含验收树创建与总览读回，已编写，执行结果见 PR；A01–A10 完整验收点尚未逐项运行 |
 | 用户旅程 E2E | ○ 缺 | AJ01/AJ02 已定义；真实出包/验证、模型会话、provider 归档全链、自动化到点与重启核对未运行 |
 
 [第八版交互原型](prototype.html) 是本特性的独立入口；来源与离线使用见[版本计划规格](../version-planning/spec.md)，完整历史附件保留在[原始评审包](https://github.com/forcegravity1989/builder-workbench/archive/f20f04ae57d510178c710c71216b9b734082c28e.zip)。原型与包内浏览器检查只证明交互演示，未接远端写回/真实采集/自动化，不表示能力已交付。执行步骤与并行分工位于本任务仓外 plans，不在仓内新增 plan.md。
 
-验收进入时准备固定 bw/week-acceptance，进屏先把采用分支最新拉进本分支（失败/冲突如实提示、不阻断、不换数据源），随后切到原生 terminal；唯一原生会话工作区旁挂 AcceptancePage，标签/分屏、历史与资源工具复用 Orca。归档状态按材料身份（workflow/version/cycleId/revision）自动读取：首读未决短暂禁编辑，失败如实 Unknown 不锁死；archived 判定不受 dirty 影响，脏草稿不能绕过已确认归档，界面提供「放弃本地修改，重读宿主材料」。归档证明为 provider 真实合入提交在采用基线上且合入提交树内材料字节等于修订；归档与合入状态只作提醒信号，不阻塞开轮与历史读取。CodeHub 无真实合入证据一律 Unknown（诚实空函数接缝，待专项接 codehub-cli 读回真实合入状态，2026-09-30 记债）。目标卡交付件可直接打开（URL 走系统浏览器、路径走原生打开、凭据链接拒绝）；Issue 摘要为真实状态分布加快照时间，未知不显示 0/0。旧 results/confirmation 只能作为带来源的历史输入，不能自动升级为新验收认可。
+验收进入固定 bw/week-acceptance 后先回显原生工作区，后台同步主干；同步期间提示并暂停写入，结束重读，失败保留通知。与计划共用自动保存、任务 UI、归档卡片及可取消的请求等待。顶部选版一次，已有验收回显，无验收时基于该版当前计划初始化草稿；不再提供第二次选版或开轮按钮。归档按当前材料与采用基线的一致性及 provider 合入证明推导，CRLF/LF 不产生假差异；归档后继续编辑同一份材料，修改后显示待归档。CodeHub 无真实合入证明仍为 Unknown。指标及交付区域仅按原承诺或已有证据显示，刷新指标读回并保存实际值；Issue 共用计划样式，仍保留验收快照。相关静态与存量测试证据见伴飞修复 PR，真壳体验交用户在新包回验。
 
 未验证项如实保留：真壳烟测 `tests/e2e/workbench-cycle-smoke.spec.ts` 已编写（含验收树与总览读回），执行结果见 PR；真实出包/验证入口、CodeHub Issue 正文编辑及返回验收版本、SSH/WSL 与配对宿主、真实到点自动化、真实 provider 归档全链均未运行。仓外组件示例不计为 E2E，完整旅程后续统一调度。
 
@@ -42,10 +42,10 @@
 | 验收点 | 状态 | 实现落点 | 证据 / 缺口 |
 |---|---|---|---|
 | A01 独立树、完整原生工作区、单页三阶段 | ◐ | CycleWorkspaceProvider + AcceptanceBoard（图标旅程轴 + 首行协作卡片 + 页头分支） | 组件测试通过；三阶段信息密度和侧栏开合待真壳伴飞 |
-| A02 固定计划修订正确、承诺只读；跨树/草案不混淆 | ◐ | planRef 固定 + readPlan（固定提交字节现读，版本目录来自验收分支 HEAD）+ useFixedAcceptancePlan | version-history-service（真实 Git 仓）/acceptance-version-choices/acceptance-round 单测；交互测试已按环 4 裁剪，UI 行为交验收点 E2E 与真壳 |
+| A02 固定计划修订正确、承诺只读；跨树/草案不混淆 | ◐ | planRef 固定 + readPlan（固定提交字节现读，版本目录来自验收分支 HEAD）+ useFixedAcceptancePlan | version-history-service（真实 Git 仓）/acceptance-version-choices 单测；交互测试已按环 4 裁剪，UI 行为交验收点 E2E 与真壳 |
 | A03 真实入口准备交付；材料可打开绑候选；失败可见不假报 | ◐ | AcceptanceSources 紧凑来源行 + candidate-port（按需检查文件与候选、打开材料）+ 目标卡交付件 | 独立准备卡与备齐勾选已退役，来源及核对守卫保留；真实项目交付准备旅程未验 |
-| A04 选择当前目录的历史脚本指标，旧计划基线保留 | ◐ | 已接入最新目录与历史采集；无计划指标也可选择，旧 ref 不阻断新采集 | 本轮定向测试及浏览器组件检查通过；真实 Electron 与完整旅程边界见[总览指标 STATUS](../overview-metrics/STATUS.md) |
-| A05 Issue 真实状态可刷新、无拆解入口、关闭数≠达成 | ✅ | AcceptanceTasks 快照分布+灯色守卫 | board-state/acceptance 测试 |
+| A04 按承诺或已存证据显示指标，旧计划基线保留 | ◐ | 已接入最新目录与历史采集；仅对承诺或已有证据显示采集行，旧 ref 不阻断新采集 | 本轮定向测试及浏览器组件检查通过；真实 Electron 与完整旅程边界见[总览指标 STATUS](../overview-metrics/STATUS.md) |
+| A05 Issue 真实状态可刷新、无拆解入口、关闭数≠达成 | ✅ | CycleTasks 共用列表与验收快照+灯色守卫 | board-state/acceptance 测试 |
 | A06 原生详情编辑后按来源返回、保留版本/会话/草稿 | ◐ | returnToPreviousView+view-memory 与原生工作区恢复 | 导航测试；真实 CodeHub/GitHub 往返待人 |
 | A07 同一候选展示、人逐目标判断、未达可保存带入会话 | ✅ | AcceptanceGoalResult decision 流+prepare 文本；材料 RPC save 通过 material-human-guard 拦截 CLI 对人工结论字段的新增、修改与删除 | material-human-guard 测试（acceptance-interaction 已随环 4 裁剪，UI 交互交验收点 E2E 与真壳）；真实模型会话与人工核对旅程待验 |
 | A08 纪要可复制含候选/来源/待核/未达；归档后总览回看 | ◐ | deriveAcceptanceReport + 标题旁“预览纪要”弹窗（AcceptanceReportDialog）+ 总览双栏 | report 测试；真实归档回看待人 |

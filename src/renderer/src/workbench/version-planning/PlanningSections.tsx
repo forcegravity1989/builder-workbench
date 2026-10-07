@@ -20,7 +20,8 @@ export function PlanningHeader({
   state,
   branch,
   onSelect,
-  onConfigure
+  onConfigure,
+  onRefresh
 }: {
   currentVersion: string
   versions: VersionMaterialCandidate[]
@@ -29,6 +30,7 @@ export function PlanningHeader({
   branch: string
   onSelect(version: string): void
   onConfigure(): void
+  onRefresh(): void
 }) {
   return (
     <header className="vp-header">
@@ -54,6 +56,9 @@ export function PlanningHeader({
           <option value={currentVersion}>{currentVersion}</option>
         )}
       </select>
+      <button className="wb-btn wb-btn-ghost wb-btn-sm" disabled={disabled} onClick={onRefresh}>
+        刷新数据
+      </button>
       <span className="vp-muted" role="status">
         {state}
       </span>

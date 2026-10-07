@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import type {
   VersionHistoryPlan,
   VersionHistoryPort,
@@ -36,48 +36,50 @@ export function useAcceptanceSources(
   scope: MetricScope,
   materialRefresh = 0
 ) {
+  const [loadedRefresh, setLoadedRefresh] = useState(-1)
   const [sources, setSources] = useState<VersionTreePlan[]>([])
   const [versions, setVersions] = useState<string[]>([])
   const [materialProblems, setMaterialProblems] = useState<VersionMaterialCandidate[]>([])
   const [error, setError] = useState<string | null>(null)
   const [problems, setProblems] = useState<TreePlanProblem[]>([])
-  const [refreshKey, setRefreshKey] = useState(0)
-  useEffect(() => {
-    let current = true
-    void Promise.all([
-      material.list().then((items) => {
-        if (current) {
-          setMaterialProblems(items.filter((item) => item.state !== 'ready'))
-        }
-        return items
-      }),
-      history.listTreePlans({ scope })
-    ])
-      .then(([materials, catalog]) => {
-        if (!current) {
-          return
-        }
-        setSources(catalog.plans)
-        setProblems(catalog.problems)
-        setVersions(acceptanceVersionChoices({ materials, treePlans: catalog.plans }))
-        setError(null)
-      })
-      .catch((reason) => {
-        if (current) {
-          setError(String(reason))
-        }
-      })
-    return () => {
-      current = false
+  const sequence = useRef(0)
+  const refresh = useCallback(async () => {
+    const token = ++sequence.current
+    try {
+      const [materials, catalog] = await Promise.all([
+        material.list(),
+        history.listTreePlans({ scope })
+      ])
+      if (token !== sequence.current) {
+        return
+      }
+      setMaterialProblems(materials.filter((item) => item.state !== 'ready'))
+      setSources(catalog.plans)
+      setLoadedRefresh(materialRefresh)
+      setProblems(catalog.problems)
+      setVersions(acceptanceVersionChoices({ materials, treePlans: catalog.plans }))
+      setError(null)
+    } catch (reason) {
+      if (token === sequence.current) {
+        setError(String(reason))
+      }
     }
-  }, [history, material, scope, refreshKey, materialRefresh])
+  }, [history, material, scope, materialRefresh])
+  useEffect(() => {
+    const requests = sequence
+    void refresh()
+    return () => {
+      requests.current++
+    }
+  }, [refresh, materialRefresh])
   return {
     sources,
+    loadedRefresh,
     versions,
     error,
     problems,
     materialProblems,
-    refresh: () => setRefreshKey((value) => value + 1)
+    refresh
   }
 }
 
@@ -86,6 +88,7 @@ export function useFixedAcceptancePlan(
   scope: MetricScope,
   reference: PlanReference | undefined
 ) {
+  const [refresh, setRefresh] = useState(0)
   const key = reference ? JSON.stringify(reference) : ''
   const [result, setResult] = useState<
     | { key: string; kind: 'verified'; plan: VersionHistoryPlan; checkedAt: string }
@@ -115,10 +118,11 @@ export function useFixedAcceptancePlan(
     return () => {
       current = false
     }
-  }, [history, scope, reference, key])
+  }, [history, scope, reference, key, refresh])
   const current = result?.key === key ? result : null
   const verification: EvidenceCheck = current ?? { kind: 'unknown', reason: '固定计划尚未读取' }
   return {
+    refresh: () => setRefresh((value) => value + 1),
     plan: current?.kind === 'verified' ? current.plan : null,
     verification,
     error: current && current.kind !== 'verified' ? current.reason : null

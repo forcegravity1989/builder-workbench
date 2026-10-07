@@ -8,7 +8,7 @@
 
 本轮已完成入口切换：旧三屏链条（PlanJourneyShell / PlanWeekBoard / PlanWeekPlanChat / plan-week-* / workbench-plan.css）已退役删除，以下为当前接线。
 
-本轮已完成入口迁移：启动按钮由原生 TabBar 移至 BW 右板首行协作卡片（CycleStartCard），与“配置自动化”并列；分支信息留在右板页头，原生会话控件不含 BW 按钮（tab-bar-surface 的薄挂载已撤除）。异常文件与当前选版经同一启动入口带入会话：手动运行已登记自动化时作为一次性上下文（automation.runNow 的 oneShotPrompt，capability 门控）随保存提示在派发端合并单次递交，保留用户保存的提示、工具、模型与会话复用配置，不另建会话、不覆盖自动化记录；独立的 startMaterialRequest 通道已退役删除。
+本轮已完成入口迁移：启动按钮由原生 TabBar 移至 BW 右板首行协作卡片（CycleStartCard），“配置自动化”在页头；分支信息留在右板页头，原生会话控件不含 BW 按钮（tab-bar-surface 的薄挂载已撤除）。异常文件与当前选版经同一启动入口带入会话：手动运行已登记自动化时作为一次性上下文（automation.runNow 的 oneShotPrompt，capability 门控）随保存提示在派发端合并单次递交，保留用户保存的提示、工具、模型与会话复用配置，不另建会话、不覆盖自动化记录；独立的 startMaterialRequest 通道已退役删除。
 
 | 落点 | 采用方式 |
 |---|---|
@@ -25,7 +25,7 @@ BW 业务放在 renderer/workbench 下的 version-cycle、version-planning、ver
 
 | 所有者 | 责任 | 不拥有 |
 |---|---|---|
-| BW version-cycle 共享层 | 项目/版本上下文、版本材料读写、目标卡骨架、会话/任务/归档适配 | 调度器、聊天日志、Issue 正文和状态正本 |
+| BW version-cycle 共享层 | 项目/版本上下文、版本材料读写与自动保存、目标卡骨架、共用任务/归档 UI、会话请求等待与适配 | 调度器、聊天日志、Issue 正文和状态正本 |
 | 计划 | 版本目标、总结、任务引用、派生纪要 | 验收结论、指标采集实现 |
 | 验收 | 固定计划引用、实际交付、人的结论和后续 | 改写原承诺、自动完成 Issue |
 | 指标 | 定义、窗口、采集和读数；详见 [指标设计](../overview-metrics/design.md) | 版本目标值和验收结论 |

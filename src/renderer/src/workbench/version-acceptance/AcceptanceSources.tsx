@@ -1,13 +1,11 @@
 import { useEffect, useRef, useState } from 'react'
 import type { AcceptanceMaterial } from '../../../../shared/workbench/version-material'
-import type { MetricWindow } from '../../../../shared/workbench/metrics'
 import type {
   AcceptanceCandidatePort,
   ArtifactCheck,
   CandidateCheck
 } from './acceptance-candidate-port'
 import { artifactCandidateCheck, preparationKey, type EvidenceCheck } from './acceptance-model'
-import { AcceptanceMetricWindow } from './AcceptanceMetricWindow'
 
 function Check({ check }: { check?: EvidenceCheck }) {
   return (
@@ -35,22 +33,10 @@ const ARTIFACT_KINDS: Record<string, string> = {
  */
 export function AcceptanceSources({
   document,
-  hasMetrics,
-  metricWindow,
-  disabled,
-  onPrepare,
   candidatePort,
   onChecks
 }: {
   document: AcceptanceMaterial
-  hasMetrics: boolean
-  metricWindow: {
-    window: MetricWindow | null
-    setWindow(value: MetricWindow): void
-    error: string | null
-  }
-  disabled: boolean
-  onPrepare(text: string): void
   candidatePort: AcceptanceCandidatePort
   onChecks(source: AcceptanceMaterial, check: CandidateCheck, artifacts: ArtifactCheck[]): void
 }) {
@@ -117,32 +103,11 @@ export function AcceptanceSources({
       }
     }
   }
-  const window = metricWindow.window
+  if (!document.candidateRef && !document.preparedArtifacts.length) {
+    return null
+  }
   return (
     <div className="va-context-row">
-      <details className="va-source">
-        <summary>
-          {document.planRef.kind === 'draft' ? '草案预验收' : '固定计划'} ·{' '}
-          {document.planRef.cycleId}
-        </summary>
-        <p>
-          {document.planRef.kind === 'committed'
-            ? document.planRef.sourceCommit
-            : document.planRef.sourceWorktreeId}
-        </p>
-        <p>{document.planRef.revision}</p>
-        <button
-          className="wb-btn wb-btn-ghost wb-btn-sm"
-          disabled={disabled}
-          onClick={() =>
-            onPrepare(
-              `请核对当前 ${document.version} 验收固定计划与项目基线的新计划差异。先向我展示变化，由我明确是否换引用；保留原结果，更换后所有原结论待重新核对。`
-            )
-          }
-        >
-          核对计划更新
-        </button>
-      </details>
       <details className="va-source">
         <summary>
           候选与材料
@@ -218,24 +183,6 @@ export function AcceptanceSources({
           </p>
         )}
       </details>
-      {hasMetrics && (
-        <details className="va-window-choice">
-          <summary>
-            指标取值 ·{' '}
-            {window?.kind === 'current'
-              ? '当前值'
-              : window?.kind === 'range'
-                ? `${window.since || '开始'} 至 ${window.until || '结束'}`
-                : '待配置'}
-          </summary>
-          <AcceptanceMetricWindow
-            window={window}
-            onChange={metricWindow.setWindow}
-            error={metricWindow.error}
-            disabled={disabled}
-          />
-        </details>
-      )}
     </div>
   )
 }

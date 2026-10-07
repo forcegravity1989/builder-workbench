@@ -17,6 +17,7 @@ import {
 import { resolveWorkbenchGitExecOptions } from './project-git-routing'
 import { createVersionHistoryService, type VersionHistoryHost } from './version-history-service'
 import { HistorySourceError } from './version-history-snapshot'
+import { readCurrentMaterialArchive } from './archive-current-material'
 import { createNativeArchiveEvidence } from './archive-evidence-runtime'
 import { registeredCodeHubArchiveReason } from './archive-source-gap'
 import { nativeVersionMaterialService } from './version-material-runtime'
@@ -92,10 +93,14 @@ async function runHistoryGit(
     throw new WorkspaceScopeError('invalid-scope', '请通过工作树所属的 Orca runtime 读取历史')
   }
   try {
-    const value = await requestRemote<{ stdout: string }>(host, { ...target, repoPath: path }, {
-      operation: 'git',
-      args: [...args]
-    })
+    const value = await requestRemote<{ stdout: string }>(
+      host,
+      { ...target, repoPath: path },
+      {
+        operation: 'git',
+        args: [...args]
+      }
+    )
     return { ok: true, stdout: Buffer.from(value.stdout, 'base64') }
   } catch (error) {
     if (error instanceof HistorySourceError) {
@@ -264,6 +269,9 @@ export async function readArchiveProof(
   runtime: Parameters<typeof nativeVersionHistoryHost>[0],
   params: ArchiveProofRequest
 ): Promise<ArchiveProofResult> {
+  if (params.number === undefined) {
+    return readCurrentMaterialArchive(nativeVersionHistoryHost(runtime), params)
+  }
   const resolver = createWorkbenchWorkspaceResolver(nativeWorkbenchWorkspaceHost(runtime))
   const { target, repo } = await resolver.resolve({
     repoId: params.repoId,
