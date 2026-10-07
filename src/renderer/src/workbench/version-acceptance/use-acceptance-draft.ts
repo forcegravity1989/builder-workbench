@@ -10,13 +10,28 @@ import { MaterialDraftController, type MaterialDraft } from '../version-cycle/ma
 export function useAcceptanceDraft(
   key: string,
   port: VersionDocumentPort<AcceptanceMaterial>,
-  selectedVersion?: string
+  selectedVersion?: string,
+  materialRefresh = 0
 ) {
   const [draft, setDraft] = useState<MaterialDraft<AcceptanceMaterial> | null>(null)
   const [recoveryError, setRecoveryError] = useState<string | null>(null)
   const [recoveryText, setRecoveryText] = useState<string | null>(null)
   const recovery = useRef({ present: false, writable: true, request: 0 }).current
   const controller = useMemo(() => new MaterialDraftController(port, setDraft), [port])
+  useEffect(() => {
+    if (!materialRefresh) {
+      return
+    }
+    let current = true
+    void controller.refresh().catch((reason) => {
+      if (current) {
+        setRecoveryError(String(reason))
+      }
+    })
+    return () => {
+      current = false
+    }
+  }, [controller, materialRefresh])
   useEffect(() => {
     try {
       const saved = sessionStorage.getItem(key)
@@ -27,7 +42,9 @@ export function useAcceptanceDraft(
       setRecoveryText(saved)
       const value = JSON.parse(saved) as MaterialDraft<AcceptanceMaterial>
       const document = AcceptanceMaterialSchema.parse(value.document)
-      if (document.version !== selectedVersion) {throw new Error('草稿不属于当前版本')}
+      if (document.version !== selectedVersion) {
+        throw new Error('草稿不属于当前版本')
+      }
       if (
         value.expectedRevision !== null &&
         !/^sha256:[a-f0-9]{64}$/.test(value.expectedRevision)
@@ -77,7 +94,7 @@ export function useAcceptanceDraft(
     return () => {
       current = false
     }
-  }, [controller, port, selectedVersion, recovery])
+  }, [controller, port, selectedVersion, recovery, materialRefresh])
   useEffect(() => {
     if (!draft || !recovery.writable || draft.document.version !== selectedVersion) {
       return

@@ -12,10 +12,7 @@ import { useAcceptanceDraft } from './use-acceptance-draft'
 import { emptyGoalResult, sameAcceptanceSource } from './acceptance-model'
 import { startAcceptanceRound } from './acceptance-round'
 import type { AcceptanceBoardProps } from './AcceptanceBoard'
-import {
-  useAcceptanceSources,
-  useFixedAcceptancePlan
-} from './use-acceptance-plan'
+import { useAcceptanceSources, useFixedAcceptancePlan } from './use-acceptance-plan'
 import { useAcceptanceOutput } from './use-acceptance-output'
 
 export function useAcceptanceBoard({
@@ -45,8 +42,8 @@ export function useAcceptanceBoard({
     [materialPort]
   )
   const { draft, controller, recoveryError, recoveryText, cancelAutomaticRead, clear } =
-    useAcceptanceDraft(recoveryKey, port, context.version ?? undefined)
-  const catalog = useAcceptanceSources(history, materialPort, metricScope)
+    useAcceptanceDraft(recoveryKey, port, context.version ?? undefined, context.materialRefresh)
+  const catalog = useAcceptanceSources(history, materialPort, metricScope, context.materialRefresh)
   const { versions, sources } = catalog
   const [version, setVersion] = useState(context.version ?? '')
   const [planChoice, setPlanChoice] = useState('')
@@ -71,7 +68,8 @@ export function useAcceptanceBoard({
       revision: draft.expectedRevision
     })
   )
-  const readOnly = busy || !associated || !plan || archived || output.archivePending
+  const readOnly =
+    busy || Boolean(context.syncing) || !associated || !plan || archived || output.archivePending
   useEffect(
     () => () => {
       generation.current++

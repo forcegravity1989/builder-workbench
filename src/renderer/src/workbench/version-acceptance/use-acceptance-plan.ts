@@ -33,7 +33,8 @@ export type TreePlanProblem = { version: string; code: string; message: string }
 export function useAcceptanceSources(
   history: VersionHistoryPort,
   material: ReturnType<typeof nativeVersionMaterialPort>,
-  scope: MetricScope
+  scope: MetricScope,
+  materialRefresh = 0
 ) {
   const [sources, setSources] = useState<VersionTreePlan[]>([])
   const [versions, setVersions] = useState<string[]>([])
@@ -69,7 +70,7 @@ export function useAcceptanceSources(
     return () => {
       current = false
     }
-  }, [history, material, scope, refreshKey])
+  }, [history, material, scope, refreshKey, materialRefresh])
   return {
     sources,
     versions,

@@ -12,5 +12,7 @@ export type VersionCycleContext = {
   archivePort: ArchivePort
   materialPort: ReturnType<typeof createVersionMaterialPort> | null
   error: string | null
+  syncing?: boolean
+  materialRefresh?: number
   selectVersion(version: string): Promise<void>
 }

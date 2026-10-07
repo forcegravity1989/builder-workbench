@@ -101,17 +101,21 @@ export function usePlanningArchive(context: VersionCycleContext, draft: Draft | 
     (candidate: Draft) =>
       Boolean(
         lifetime.active &&
+        !context.syncing &&
         lifetime.read?.key === identity(candidate) &&
         !archived(lifetime.read.status, candidate)
       ),
-    [lifetime]
+    [lifetime, context.syncing]
   )
   const waitForSave = useCallback(
     async (candidate: Draft) => {
+      if (context.syncing) {
+        return false
+      }
       const result = await readStatus(candidate)
       return Boolean(lifetime.active && result && !archived(result, candidate))
     },
-    [lifetime, readStatus]
+    [lifetime, readStatus, context.syncing]
   )
   return {
     status,

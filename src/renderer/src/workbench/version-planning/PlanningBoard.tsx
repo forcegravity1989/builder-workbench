@@ -106,7 +106,13 @@ function PlanningBoardContent({ context, prepareMetrics, entry }: PlanningBoardP
     } else {
       clearMaterial()
     }
-  }, [selectedVersion, selectedState, selectMaterial, clearMaterial])
+  }, [selectedVersion, selectedState, selectMaterial, clearMaterial, context.materialRefresh])
+  const listMaterials = material.list
+  useEffect(() => {
+    if (context.materialRefresh) {
+      void listMaterials()
+    }
+  }, [context.materialRefresh, listMaterials])
 
   const act = async (operation: () => Promise<unknown>) => {
     updateView({ notice: '' })
