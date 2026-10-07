@@ -239,7 +239,7 @@ export function createArchiveEvidenceReader(repoKey: string, deps: ArchiveEviden
           proof: { kind: 'unknown', reason: '该评审没有 provider 返回的真实合入提交' }
         }
       }
-      let merged: { revision: string; cycleId: string } | null
+      let merged: Awaited<ReturnType<typeof mergedMaterialAt>>
       try {
         merged = await mergedMaterialAt(facts.mergeCommit, material)
       } catch (error) {
