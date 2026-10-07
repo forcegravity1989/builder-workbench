@@ -17,7 +17,7 @@ export function CycleArchive({
   const label = archived
     ? '当前材料已归档'
     : status.kind === 'changed'
-      ? '当前材料有改动待归档'
+      ? '当前材料待归档'
       : status.kind === 'open'
         ? '归档评审进行中'
         : status.kind === 'unknown'

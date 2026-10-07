@@ -1,8 +1,11 @@
 import { Info, MessageSquarePlus } from 'lucide-react'
 import type { Ref } from 'react'
-import type { VersionMaterialCandidate } from '../../../../shared/workbench/version-material-request'
 import type { CycleEntry } from './cycle-workspace-context'
-import { materialProblemRequest } from './cycle-start-request'
+import {
+  materialProblemFile,
+  materialProblemRequest,
+  type CycleMaterialProblem
+} from './cycle-start-request'
 
 /**
  * First content row of both cycle boards: one collaboration sentence and the
@@ -18,13 +21,12 @@ export function CycleStartCard({
   sectionRef
 }: {
   entry: CycleEntry
-  problems: VersionMaterialCandidate[]
+  problems: CycleMaterialProblem[]
   version: string | null
   sectionRef?: Ref<HTMLElement>
 }) {
   const { workflow, busy, start } = entry
   const label = workflow === 'plan' ? '计划' : '验收'
-  const file = workflow === 'plan' ? 'data.json' : 'acceptance.json'
   return (
     <section className="vc-start-card" aria-label={`${label}会话入口`} ref={sectionRef}>
       <div className="vc-start-line">
@@ -53,12 +55,12 @@ export function CycleStartCard({
           className="vc-start-problem"
           role="alert"
           title={problems
-            .map((item) => `.bw/planning/${item.version}/${file}：${item.error ?? item.state}`)
+            .map((item) => `${materialProblemFile(item, workflow)}：${item.error ?? item.state}`)
             .join('\n')}
         >
           <Info size={14} aria-hidden="true" />
           <span>
-            {problems.map((item) => item.version).join('、')} 的{label}数据文件格式
+            {[...new Set(problems.map((item) => item.version))].join('、')} 的版本材料格式
             {problems.every((item) => item.state === 'migration-required') ? '较旧' : '有问题'}
             ，暂无法读取；新建{label}时将一并带入会话。
           </span>

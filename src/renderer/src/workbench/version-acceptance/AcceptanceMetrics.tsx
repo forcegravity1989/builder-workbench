@@ -122,7 +122,7 @@ export function AcceptanceMetrics({
                 {busy === name ? '读取中…' : '刷新指标'}
               </button>
             </div>
-            {value && value.status !== 'ready' && (
+            {busy !== name && value && value.status !== 'ready' && (
               <p className="va-warning">{value.reason.message}</p>
             )}
             <details className="vp-metric-evidence">
@@ -136,6 +136,7 @@ export function AcceptanceMetrics({
               <MetricEvidenceView
                 result={value?.status === 'ready' ? undefined : value}
                 saved={saved}
+                busy={busy === name}
               />
             </details>
           </div>

@@ -222,6 +222,7 @@ export function OverviewPage(): React.JSX.Element {
           <NorthStarCard
             north={north}
             northReading={northReading}
+            busy={busy}
             hasCatalog={catalog !== null}
             workspaceReady={baseScope !== null}
             fallbackTitle={charter?.opportunity?.trim() || '（未配置）'}
