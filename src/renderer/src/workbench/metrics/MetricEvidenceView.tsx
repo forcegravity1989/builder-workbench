@@ -30,20 +30,23 @@ function observationText(reading: MetricReadingEvidence): string {
 /** The caller owns targets and decisions; this view only presents collected or saved evidence. */
 export function MetricEvidenceView({
   result,
-  saved = NO_EVIDENCE
+  saved = NO_EVIDENCE,
+  busy = false
 }: {
   result?: MetricReading
   saved?: readonly MetricReadingEvidence[]
+  busy?: boolean
 }) {
   const readings =
     result?.status === 'ready' ? result.readings : (result?.previous?.readings ?? saved)
   const historical = result && result.status !== 'ready' && readings.length > 0
   return (
     <div className="wb-metric-evidence" aria-live="polite">
-      {result && result.status !== 'ready' && (
+      {busy && <p className="wb-metric-message">正在读取…</p>}
+      {!busy && result && result.status !== 'ready' && (
         <p className="wb-metric-message">{result.reason.message}</p>
       )}
-      {!readings.length && <p className="wb-metric-message">暂无可核对的读数</p>}
+      {!busy && !readings.length && <p className="wb-metric-message">暂无可核对的读数</p>}
       {historical && (
         <p className="wb-metric-message">已有证据保留原采集时间，不作为本次新读数。</p>
       )}

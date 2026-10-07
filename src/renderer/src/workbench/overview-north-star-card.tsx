@@ -33,17 +33,22 @@ export function NorthStarCard({
   northReading,
   hasCatalog,
   workspaceReady,
-  fallbackTitle
+  fallbackTitle,
+  busy
 }: {
   north: MetricDefinition | undefined
   northReading: MetricReading | null
   hasCatalog: boolean
   workspaceReady: boolean
   fallbackTitle: string
+  busy: boolean
 }) {
   const value =
     northReading?.status === 'ready' ? (northReading.readings.at(-1)?.value ?? null) : null
-  const label = northStarLabel({ workspaceReady, hasCatalog, north, reading: northReading })
+  const label =
+    busy && workspaceReady && northReading?.status !== 'ready'
+      ? '正在读取…'
+      : northStarLabel({ workspaceReady, hasCatalog, north, reading: northReading })
   return (
     <section className="card">
       <div className="row-between">

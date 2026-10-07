@@ -8,7 +8,8 @@ import type { MetricScope } from '../../../../shared/workbench/metrics'
 import type { EvidenceCheck, PlanReference } from './acceptance-model'
 import { assertFixedPlan } from './acceptance-model'
 import type { nativeVersionMaterialPort } from '../version-material-port'
-import type { VersionMaterialCandidate } from '../../../../shared/workbench/version-material-request'
+import { MaterialVersion } from '../../../../shared/workbench/version-material'
+import type { CycleMaterialProblem } from '../version-cycle/cycle-start-request'
 
 /**
  * Names for the acceptance version menu: local acceptance files, plus version
@@ -19,11 +20,15 @@ import type { VersionMaterialCandidate } from '../../../../shared/workbench/vers
 export function acceptanceVersionChoices(input: {
   materials: readonly { version: string }[]
   treePlans: readonly Pick<VersionTreePlan, 'version'>[]
+  problems?: readonly TreePlanProblem[]
 }): string[] {
   return [
     ...new Set([
       ...input.materials.map((item) => item.version),
-      ...input.treePlans.map((item) => item.version)
+      ...input.treePlans.map((item) => item.version),
+      ...(input.problems ?? [])
+        .filter((item) => MaterialVersion.safeParse(item.version).success)
+        .map((item) => item.version)
     ])
   ].sort()
 }
@@ -39,9 +44,8 @@ export function useAcceptanceSources(
   const [loadedRefresh, setLoadedRefresh] = useState(-1)
   const [sources, setSources] = useState<VersionTreePlan[]>([])
   const [versions, setVersions] = useState<string[]>([])
-  const [materialProblems, setMaterialProblems] = useState<VersionMaterialCandidate[]>([])
+  const [materialProblems, setMaterialProblems] = useState<CycleMaterialProblem[]>([])
   const [error, setError] = useState<string | null>(null)
-  const [problems, setProblems] = useState<TreePlanProblem[]>([])
   const sequence = useRef(0)
   const refresh = useCallback(async () => {
     const token = ++sequence.current
@@ -53,11 +57,26 @@ export function useAcceptanceSources(
       if (token !== sequence.current) {
         return
       }
-      setMaterialProblems(materials.filter((item) => item.state !== 'ready'))
+      setMaterialProblems([
+        ...materials.filter((item) => item.state !== 'ready'),
+        ...catalog.problems
+          .filter((item) => MaterialVersion.safeParse(item.version).success)
+          .map((item): CycleMaterialProblem => ({
+            version: item.version,
+            workflow: 'plan',
+            state: item.code === 'migration-required' ? 'migration-required' : 'invalid',
+            error: item.message
+          }))
+      ])
       setSources(catalog.plans)
       setLoadedRefresh(materialRefresh)
-      setProblems(catalog.problems)
-      setVersions(acceptanceVersionChoices({ materials, treePlans: catalog.plans }))
+      setVersions(
+        acceptanceVersionChoices({
+          materials,
+          treePlans: catalog.plans,
+          problems: catalog.problems
+        })
+      )
       setError(null)
     } catch (reason) {
       if (token === sequence.current) {
@@ -77,7 +96,6 @@ export function useAcceptanceSources(
     loadedRefresh,
     versions,
     error,
-    problems,
     materialProblems,
     refresh
   }

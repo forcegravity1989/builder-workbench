@@ -50,6 +50,7 @@ type ZoneRow = {
   statusText: string
   staleText: string | null
   readingNote: string | null
+  failed: boolean
 }
 
 function buildRows(
@@ -57,7 +58,8 @@ function buildRows(
   readings: Record<string, MetricReading | null>,
   labels: string[],
   range: ReturnType<typeof zoneChartRange>,
-  timezone: string
+  timezone: string,
+  busy: boolean
 ): ZoneRow[] {
   const defs = plot.lagging ? [plot.lagging, ...plot.leads] : plot.leads
   return defs.map((def, index) => {
@@ -76,14 +78,17 @@ function buildRows(
         state.kind === 'ready' && state.latest
           ? `${state.latest.value}${typeof state.latest.value === 'number' ? def.unit : ''}`
           : '—',
+      failed: readings[def.ref.definitionHash]?.status === 'error',
       statusText:
-        state.kind === 'unread'
-          ? '未读取'
-          : state.kind === 'unknown'
-            ? `未知：${state.message}`
-            : state.latest
-              ? `采集于 ${state.latest.collectedAt}`
-              : '本窗口无点',
+        busy && state.kind !== 'ready'
+          ? '正在读取…'
+          : state.kind === 'unread'
+            ? '未读取'
+            : state.kind === 'unknown'
+              ? `未知：${state.message}`
+              : state.latest
+                ? `采集于 ${state.latest.collectedAt}`
+                : '本窗口无点',
       staleText:
         state.kind === 'unknown' && state.stale
           ? `陈旧读数 ${state.stale.value}（采集于 ${state.stale.collectedAt}）`
@@ -103,12 +108,14 @@ function PlotCard({
   rows,
   labels,
   hidden,
+  busy,
   onToggle
 }: {
   plot: ZonePlot
   rows: ZoneRow[]
   labels: string[]
   hidden: Record<string, boolean>
+  busy: boolean
   onToggle(hash: string, next: boolean): void
 }) {
   const series: MetricChartSeries[] = rows.map((row) => ({
@@ -121,7 +128,7 @@ function PlotCard({
     on: hidden[row.def.ref.definitionHash] !== true
   }))
   const charts = splitSeriesByAxis(series)
-  const failures = rows.filter((row) => row.statusText.startsWith('未知'))
+  const failures = rows.filter((row) => row.failed)
   return (
     <div className="wb-mz-plot">
       {charts.map((chart) => (
@@ -140,13 +147,13 @@ function PlotCard({
             rows.find(
               (row) =>
                 row.readingNote && chart.some((item) => item.on && item.name === row.def.name)
-            )?.readingNote ?? '本窗口暂无读数'
+            )?.readingNote ?? (busy ? '正在读取指标…' : '本窗口暂无读数')
           }
           hiddenText="未选择指标"
           ariaLabel={`${plot.lagging?.name ?? '引领指标'} 趋势`}
         />
       ))}
-      {failures.length > 0 && (
+      {!busy && failures.length > 0 && (
         <p className="wb-ov-alert" role="status">
           {failures.length} 项指标读取失败，详情中可查看原因
         </p>
@@ -237,7 +244,7 @@ export function OverviewMetricZones({
       </header>
       <div className="wb-mz-plots">
         {plots.map((plot) => {
-          const rows = buildRows(plot, readings, labels, range, timezone)
+          const rows = buildRows(plot, readings, labels, range, timezone, busy)
           return (
             <PlotCard
               key={plot.lagging?.ref.definitionHash ?? plot.leads[0].ref.definitionHash}
@@ -245,6 +252,7 @@ export function OverviewMetricZones({
               rows={rows}
               labels={labels}
               hidden={view.hidden}
+              busy={busy}
               onToggle={(hash, next) => setView({ hidden: { ...view.hidden, [hash]: next } })}
             />
           )
