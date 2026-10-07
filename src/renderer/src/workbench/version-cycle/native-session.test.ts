@@ -24,6 +24,7 @@ const leaf = '12345678-1234-4123-8123-123456789012'
 beforeEach(() => {
   vi.clearAllMocks()
   mocks.state = {
+    lastTerminalInputAtByPaneKey: {},
     activeWorktreeId: 'wt',
     activeTabId: 'terminal-a',
     getKnownWorktreeById: () => ({ hostId: 'local' }),
@@ -62,9 +63,7 @@ it('rejects a workspace with the same id on another host', () => {
 })
 it('does not write a cycle request into a chat composer', async () => {
   const session = getActiveCycleSession(mocks.state, scope, 'wt')!
-  await expect(prepareCycleRequest(session, '归档请求')).rejects.toThrow(
-    '无法把请求写入左侧当前会话'
-  )
+  await expect(prepareCycleRequest(session, '归档请求')).rejects.toThrow('请求未写入')
   expect(mocks.paste).not.toHaveBeenCalled()
 })
 it('pastes an unsent draft into the terminal session shown on the left', async () => {
@@ -85,7 +84,8 @@ it('pastes an unsent draft into the terminal session shown on the left', async (
     content: '归档请求',
     agent: 'claude',
     submit: false,
-    forcePaste: true
+    forcePaste: true,
+    canPaste: expect.any(Function)
   })
 })
 it('rejects a request after the left session changes', async () => {
@@ -100,8 +100,6 @@ it('reports when the visible terminal has no running session to receive the draf
   mocks.state.getActiveTab = () => ({ contentType: 'terminal', entityId: 'terminal-a' }) as never
   mocks.state.ptyIdsByTabId = {}
   const session = getActiveCycleSession(mocks.state, scope, 'wt')!
-  await expect(prepareCycleRequest(session, '归档请求')).rejects.toThrow(
-    '无法把请求写入左侧当前会话'
-  )
+  await expect(prepareCycleRequest(session, '归档请求')).rejects.toThrow('请求未写入')
   expect(mocks.paste).not.toHaveBeenCalled()
 })

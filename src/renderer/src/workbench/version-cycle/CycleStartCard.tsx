@@ -35,7 +35,12 @@ export function CycleStartCard({
           disabled={busy}
           onClick={() =>
             void start(
-              problems.length ? materialProblemRequest(problems, workflow, version) : undefined
+              [
+                version ? `本次${label}版本：${version}。请读取该版本的当前材料并继续协作。` : '',
+                problems.length ? materialProblemRequest(problems, workflow, version) : ''
+              ]
+                .filter(Boolean)
+                .join('\n') || undefined
             )
           }
         >

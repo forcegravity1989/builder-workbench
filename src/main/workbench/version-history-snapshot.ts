@@ -19,9 +19,14 @@ export function planningMaterialGitPath(version: string, workflow: 'plan' | 'acc
   return `.bw/planning/${version}/${workflow === 'plan' ? 'data' : 'acceptance'}.json`
 }
 
-/** Content revision of raw material bytes; the same digest everywhere a revision is compared. */
+/** Fixed Git references retain their original byte identity. */
 export function historySnapshotRevision(raw: Buffer): string {
   return `sha256:${createHash('sha256').update(raw).digest('hex')}`
+}
+
+/** Material revision ignores Git checkout CRLF conversion; all other content remains significant. */
+export function materialContentRevision(raw: Buffer): string {
+  return `sha256:${createHash('sha256').update(raw.toString('utf8').replace(/\r\n/g, '\n')).digest('hex')}`
 }
 
 export function decodeHistorySnapshot(

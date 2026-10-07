@@ -101,10 +101,10 @@ describe('readAllMetricReadings windows', () => {
 })
 
 describe('refreshMetricReadings windows', () => {
-  it('刷新按同一窗口协议执行采集后重读，不另造读取路径', async () => {
+  it('刷新按同一窗口协议执行采集，直接采用返回读数', async () => {
     await refreshMetricReadings({ scope, owner: undefined, catalog, granularity: 'week' })
     expect(windowFor(requests.refresh, 'zone-retro')).toEqual(zoneChartRange('week', TZ))
     expect(windowFor(requests.refresh, 'north')).toEqual(currentMetricWeek(TZ))
-    expect(requests.read).toHaveLength(2)
+    expect(requests.read).toHaveLength(0)
   })
 })

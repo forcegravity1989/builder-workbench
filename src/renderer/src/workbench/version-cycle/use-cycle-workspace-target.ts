@@ -1,10 +1,15 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { toast } from 'sonner'
 import { useAppStore } from '@/store'
 import { activateWebRuntimeSessionWorktree } from '@/runtime/web-runtime-worktree-activation'
 import { useAutoWorktreeBase } from './use-auto-worktree-base'
 import { nativeWorkspaceScope } from './native-workspace'
-import { cycleBranch, cycleScopeForWorktree, ensureCycleWorktree } from './native-cycle-workspace'
+import {
+  cycleBranch,
+  cycleScopeKey,
+  cycleScopeForWorktree,
+  ensureCycleWorktree
+} from './native-cycle-workspace'
 import { syncCycleTrunk } from './cycle-sync-port'
 import { cycleWorkflowForWorktree } from '../workbench-nav'
 import type { VersionWorkflow } from '../../../../shared/workbench/version-document'
@@ -35,6 +40,18 @@ export function useCycleWorkspaceTarget(
     state.activeWorktreeId ? state.getKnownWorktreeById(state.activeWorktreeId) : null
   )
   const [error, setError] = useState<string | null>(null)
+  const syncSequence = useRef(0)
+  const [syncStates, setSyncStates] = useState<
+    Record<
+      string,
+      {
+        sequence: number
+        busy: boolean
+        problem: string | null
+        revision: number
+      }
+    >
+  >({})
   const preparing = workflow !== null && activeView === 'artifacts'
   const baseSettled = useAutoWorktreeBase(
     preparing ? repoId : null,
@@ -57,7 +74,7 @@ export function useCycleWorkspaceTarget(
       return { scope: null, error: String(reason) }
     }
   }, [home])
-  const baseScope = base.scope
+  const baseScope = useStableCycleScope(base.scope && workflow ? { ...base.scope, workflow } : null)
   useEffect(() => {
     setError(null)
     if (!preparing || !baseScope || !baseSettled || !workflow) {
@@ -70,28 +87,6 @@ export function useCycleWorkspaceTarget(
         if (!current) {
           return
         }
-        // 进屏先把采用分支最新拉进固定分支：看板与会话在同一工作树看到同一份文件。
-        // 失败或冲突不换数据源、不阻断进入——如实提示，由人在会话里带模型处理。
-        try {
-          const sync = await syncCycleTrunk(
-            { repoId: baseScope.repoId, worktreeId: fixed.id, hostId: baseScope.hostId },
-            baseScope.runtimeOwnerEnvironmentId
-          )
-          if (!sync.synced && current) {
-            const reason = sync.reason ?? '原因未知'
-            toast.message(`${cycleBranch({ workflow })} 未能同步主干最新：${reason}`)
-            onNotice(`主干同步未完成：${reason}`)
-          }
-        } catch (reason) {
-          if (current) {
-            const message = reason instanceof Error ? reason.message : String(reason)
-            toast.message(`${cycleBranch({ workflow })} 未能同步主干最新：${message}`)
-            onNotice(`主干同步未完成：${message}`)
-          }
-        }
-        if (!current) {
-          return
-        }
         if (baseScope.runtimeOwnerEnvironmentId) {
           await activateWebRuntimeSessionWorktree({
             worktreeId: fixed.id,
@@ -101,9 +96,57 @@ export function useCycleWorkspaceTarget(
         if (!current) {
           return
         }
+        const sequence = ++syncSequence.current
+        const key = JSON.stringify([cycleScopeKey(baseScope), fixed.id])
+        setSyncStates((previous) => ({
+          ...previous,
+          [key]: {
+            sequence,
+            busy: true,
+            problem: null,
+            revision: previous[key]?.revision ?? 0
+          }
+        }))
         const state = useAppStore.getState()
         state.setActiveWorktree(fixed.id, baseScope.hostId)
         state.setActiveView('terminal')
+        // Navigation is complete before the network pull. Its completion may refresh
+        // this workspace's files, but must never navigate back after the user leaves.
+        let problem: string | null = null
+        try {
+          const sync = await syncCycleTrunk(
+            { repoId: baseScope.repoId, worktreeId: fixed.id, hostId: baseScope.hostId },
+            baseScope.runtimeOwnerEnvironmentId
+          )
+          if (!sync.synced) {
+            problem = sync.reason ?? '原因未知'
+          }
+        } catch (reason) {
+          problem = reason instanceof Error ? reason.message : String(reason)
+        }
+        setSyncStates((previous) =>
+          previous[key]?.sequence === sequence
+            ? {
+                ...previous,
+                [key]: {
+                  ...previous[key],
+                  busy: false,
+                  problem,
+                  revision: previous[key].revision + 1
+                }
+              }
+            : previous
+        )
+        const active = useAppStore.getState()
+        if (
+          problem &&
+          sequence === syncSequence.current &&
+          active.activeView === 'terminal' &&
+          active.activeWorktreeId === fixed.id &&
+          active.activeWorkspaceExecutionHostId === baseScope.hostId
+        ) {
+          toast.message(`${cycleBranch({ workflow })} 未能同步主干最新：${problem}`)
+        }
       } catch (reason) {
         if (current) {
           setError(reason instanceof Error ? reason.message : String(reason))
@@ -127,9 +170,13 @@ export function useCycleWorkspaceTarget(
     }
   }, [worktree, workflow])
   const scope = useStableCycleScope(resolved.scope)
+  const key = scope && worktree ? JSON.stringify([cycleScopeKey(scope), worktree.id]) : null
+  const sync = key ? syncStates[key] : null
   return {
     worktree: resolved.scope ? worktree : null,
     scope,
+    syncing: sync?.busy ?? false,
+    materialRefresh: sync?.revision ?? 0,
     error: error ?? resolved.error ?? (preparing ? base.error : null)
   }
 }

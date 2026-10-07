@@ -10,13 +10,31 @@ import { MaterialDraftController, type MaterialDraft } from '../version-cycle/ma
 export function useAcceptanceDraft(
   key: string,
   port: VersionDocumentPort<AcceptanceMaterial>,
-  selectedVersion?: string
+  selectedVersion?: string,
+  materialRefresh = 0
 ) {
+  const [initializationSuppressed, setInitializationSuppressed] = useState(false)
+  const [loadedRefresh, setLoadedRefresh] = useState(-1)
+  const [loadedVersion, setLoadedVersion] = useState<string | null>(null)
   const [draft, setDraft] = useState<MaterialDraft<AcceptanceMaterial> | null>(null)
   const [recoveryError, setRecoveryError] = useState<string | null>(null)
   const [recoveryText, setRecoveryText] = useState<string | null>(null)
   const recovery = useRef({ present: false, writable: true, request: 0 }).current
   const controller = useMemo(() => new MaterialDraftController(port, setDraft), [port])
+  useEffect(() => {
+    if (!materialRefresh) {
+      return
+    }
+    let current = true
+    void controller.refresh().catch((reason) => {
+      if (current) {
+        setRecoveryError(String(reason))
+      }
+    })
+    return () => {
+      current = false
+    }
+  }, [controller, materialRefresh])
   useEffect(() => {
     try {
       const saved = sessionStorage.getItem(key)
@@ -27,7 +45,9 @@ export function useAcceptanceDraft(
       setRecoveryText(saved)
       const value = JSON.parse(saved) as MaterialDraft<AcceptanceMaterial>
       const document = AcceptanceMaterialSchema.parse(value.document)
-      if (document.version !== selectedVersion) {throw new Error('草稿不属于当前版本')}
+      if (document.version !== selectedVersion) {
+        throw new Error('草稿不属于当前版本')
+      }
       if (
         value.expectedRevision !== null &&
         !/^sha256:[a-f0-9]{64}$/.test(value.expectedRevision)
@@ -53,7 +73,12 @@ export function useAcceptanceDraft(
     }
   }, [controller, key, recovery, selectedVersion])
   useEffect(() => {
-    if (controller.value || !selectedVersion || recovery.present) {
+    if (!selectedVersion) {
+      return
+    }
+    if (controller.value || recovery.present) {
+      setLoadedVersion(selectedVersion)
+      setLoadedRefresh(materialRefresh)
       return
     }
     let current = true
@@ -61,6 +86,10 @@ export function useAcceptanceDraft(
     void port
       .read(selectedVersion)
       .then((saved) => {
+        if (current && request === recovery.request) {
+          setLoadedVersion(selectedVersion)
+          setLoadedRefresh(materialRefresh)
+        }
         if (current && request === recovery.request && !controller.value && saved) {
           controller.restore({
             document: saved.document,
@@ -77,7 +106,7 @@ export function useAcceptanceDraft(
     return () => {
       current = false
     }
-  }, [controller, port, selectedVersion, recovery])
+  }, [controller, port, selectedVersion, recovery, materialRefresh])
   useEffect(() => {
     if (!draft || !recovery.writable || draft.document.version !== selectedVersion) {
       return
@@ -91,15 +120,45 @@ export function useAcceptanceDraft(
   }, [draft, key, recovery, selectedVersion])
   return {
     draft,
+    loadedVersion,
+    loadedRefresh,
+    initializationSuppressed,
     controller,
     recoveryError,
     recoveryText,
+    async refresh() {
+      if (controller.value) {
+        return controller.refresh()
+      }
+      if (!selectedVersion) {
+        return
+      }
+      const request = ++recovery.request
+      const saved = await port.read(selectedVersion)
+      if (request !== recovery.request || controller.value) {
+        return
+      }
+      setRecoveryError(null)
+      setLoadedVersion(selectedVersion)
+      setLoadedRefresh(materialRefresh)
+      if (saved) {
+        controller.restore({
+          document: saved.document,
+          expectedRevision: saved.revision,
+          dirty: false
+        })
+      }
+    },
     cancelAutomaticRead() {
       recovery.request++
     },
     clear() {
       recovery.request++
+      setInitializationSuppressed(true)
       controller.clear()
+      recovery.present = false
+      setRecoveryText(null)
+      setRecoveryError(null)
       try {
         sessionStorage.removeItem(key)
       } catch {

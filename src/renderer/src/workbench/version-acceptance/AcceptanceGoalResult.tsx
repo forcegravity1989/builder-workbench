@@ -94,22 +94,24 @@ export function AcceptanceGoalResult({
     <fieldset className="va-result" disabled={disabled || confirming}>
       <legend className="sr-only">{goal.title} 验收结果</legend>
       <div className="va-result-row">
-        <label className="va-primary-delivery">
-          实际交付
-          <input
-            aria-label={`${goal.title} 实际交付 1`}
-            value={result.deliveries[0]?.title ?? ''}
-            placeholder="填写实际交付结果或材料说明"
-            onChange={(event) =>
-              edit({
-                deliveries: [
-                  { ...(result.deliveries[0] ?? { location: '' }), title: event.target.value },
-                  ...result.deliveries.slice(1)
-                ]
-              })
-            }
-          />
-        </label>
+        {(goal.deliverable?.trim() || result.deliveries.length > 0) && (
+          <label className="va-primary-delivery">
+            实际交付
+            <input
+              aria-label={`${goal.title} 实际交付 1`}
+              value={result.deliveries[0]?.title ?? ''}
+              placeholder="填写实际交付结果或材料说明"
+              onChange={(event) =>
+                edit({
+                  deliveries: [
+                    { ...(result.deliveries[0] ?? { location: '' }), title: event.target.value },
+                    ...result.deliveries.slice(1)
+                  ]
+                })
+              }
+            />
+          </label>
+        )}
         <label>
           <span className="sr-only">人的结论</span>
           <select
@@ -151,11 +153,13 @@ export function AcceptanceGoalResult({
           onChange={(event) => edit({ note: event.target.value })}
         />
       </label>
-      <AcceptanceDeliveryDetails
-        title={goal.title}
-        result={result}
-        onChange={(deliveries) => edit({ deliveries })}
-      />
+      {(goal.deliverable?.trim() || result.deliveries.length > 0) && (
+        <AcceptanceDeliveryDetails
+          title={goal.title}
+          result={result}
+          onChange={(deliveries) => edit({ deliveries })}
+        />
+      )}
       {result.decision && (
         <p className={freshness === 'changed' ? 'va-warning' : 'va-muted'}>
           {freshness === 'changed'

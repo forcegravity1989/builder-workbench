@@ -86,7 +86,7 @@ export function PlanGoalMetrics({
               </label>
               <button className="wb-btn wb-btn-sm" onClick={() => void metrics.refresh(target.ref)}>
                 <RefreshCw size={14} />
-                采集
+                刷新指标
               </button>
             </div>
             <details className="vp-metric-evidence">

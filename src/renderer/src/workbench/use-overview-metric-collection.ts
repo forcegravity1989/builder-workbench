@@ -1,133 +1,102 @@
-import { useCallback, useRef, useState } from 'react'
-import type { MetricCatalog } from '../../../shared/workbench/metrics'
+import { useCallback, useEffect, useMemo } from 'react'
+import { metricProblemText, type MetricCatalog } from '../../../shared/workbench/metrics'
 import { nativeMetricsPort } from './metrics-port'
 import {
+  readAllMetricReadings,
   refreshMetricReadings,
-  type OverviewAutoCollect,
   type OverviewReadResult
 } from './overview-metric-readings'
-import type { ZoneGranularity } from './overview-zone-series'
 import type { NativeWorkspaceScope } from './version-cycle/native-workspace'
+import type { ZoneGranularity } from './overview-zone-series'
+import { createOverviewSnapshotCache, useOverviewSnapshot } from './overview-snapshot-cache'
 
-/**
- * Background auto-collect for cache misses: one non-blocking pass, numbers land
- * when the scripts finish. Only 'not-collected' readings trigger it (see
- * hasUncollectedReadings) — a failing collector surfaces as an error reading and
- * must not loop.
- *
- * `collecting` is cleared by the latest pass only (tracked by ref, not by the
- * page's load epoch): a pass superseded by a granularity switch or project change
- * must still clear the flag when no newer pass is running, or the refresh button
- * stays disabled forever; a newer in-flight pass must not be un-lit by an older
- * pass finishing.
- */
-export function useOverviewAutoCollect(args: {
-  /** Shared generation guard: a stale pass must never overwrite newer readings. */
-  loadEpoch: { current: number }
-  apply(result: OverviewReadResult, catalog: MetricCatalog): void
-}) {
-  const { loadEpoch, apply } = args
-  const [collecting, setCollecting] = useState(false)
-  const latestPass = useRef(0)
-  const autoCollect = useCallback<OverviewAutoCollect>(
-    async ({ scope, owner, catalog, granularity, epoch }) => {
-      latestPass.current = epoch
-      setCollecting(true)
-      try {
-        const result = await refreshMetricReadings({ scope, owner, catalog, granularity })
-        if (epoch !== loadEpoch.current) {
-          return
-        }
-        apply(result, catalog)
-      } catch {
-        // Port-level failure keeps the Unknown readings on screen; honest, no fake
-        // numbers, and no retry loop — the next load or manual refresh tries again.
-      } finally {
-        if (latestPass.current === epoch) {
-          setCollecting(false)
-        }
-      }
-    },
-    [loadEpoch, apply]
-  )
-  return { collecting, autoCollect }
-}
+const cache = createOverviewSnapshotCache(() => ({
+  catalog: null as MetricCatalog | null,
+  readings: {} as Partial<Record<ZoneGranularity, OverviewReadResult>>,
+  anchor: new Date().toISOString(),
+  loaded: false,
+  busy: false,
+  refreshing: false,
+  problems: [] as string[]
+}))
 
-/**
- * Manual 「刷新业务指标」: force re-collect and block the page while running — the
- * caller renders the blocking overlay from `refreshing`. The overlay is released
- * unconditionally in `finally`; a refresh superseded by a newer load must not
- * leave it stuck.
- */
-export function useOverviewManualRefresh(args: {
+export function useOverviewMetricCollection(args: {
   baseScope: NativeWorkspaceScope | null
   baseWorktreeId: string | null
-  currentGranularity: () => ZoneGranularity
-  loadEpoch: { current: number }
-  setBusy(busy: boolean): void
-  setCatalog(catalog: MetricCatalog | null): void
-  setProblems(problems: string[]): void
-  apply(result: OverviewReadResult, catalog: MetricCatalog): void
+  identity: string
+  granularity: ZoneGranularity
 }) {
-  const {
-    baseScope,
-    baseWorktreeId,
-    currentGranularity,
-    loadEpoch,
-    setBusy,
-    setCatalog,
-    setProblems,
-    apply
-  } = args
-  const [refreshing, setRefreshing] = useState(false)
-  const refreshReadings = useCallback(async () => {
-    if (!baseScope || !baseWorktreeId) {
-      return
-    }
-    const epoch = ++loadEpoch.current
-    setBusy(true)
-    setRefreshing(true)
-    try {
+  const { baseScope, baseWorktreeId, identity, granularity } = args
+  const key = JSON.stringify([identity, baseWorktreeId])
+  const entry = useMemo(() => cache(key), [key])
+  const snapshot = useOverviewSnapshot(entry)
+  const load = useCallback(
+    (force = false) => {
+      if (!baseScope || !baseWorktreeId || entry.pending || (!force && entry.read().loaded)) {
+        return
+      }
       const scope = {
         repoId: baseScope.repoId,
         worktreeId: baseWorktreeId,
         hostId: baseScope.hostId
       }
-      const nextCatalog = await nativeMetricsPort(baseScope.runtimeOwnerEnvironmentId).list(scope)
-      if (epoch !== loadEpoch.current) {
-        return
-      }
-      setCatalog(nextCatalog)
-      const result = await refreshMetricReadings({
-        scope,
-        owner: baseScope.runtimeOwnerEnvironmentId,
-        catalog: nextCatalog,
-        granularity: currentGranularity()
-      })
-      if (epoch !== loadEpoch.current) {
-        return
-      }
-      apply(result, nextCatalog)
-    } catch (reason) {
-      if (epoch === loadEpoch.current) {
-        setProblems([`刷新指标失败：${String(reason)}`])
-      }
-    } finally {
-      // Unconditional: a superseded refresh must not leave the blocking overlay stuck.
-      setRefreshing(false)
-      if (epoch === loadEpoch.current) {
-        setBusy(false)
-      }
-    }
-  }, [
-    baseScope,
-    baseWorktreeId,
-    currentGranularity,
-    loadEpoch,
-    setBusy,
-    setCatalog,
-    setProblems,
-    apply
-  ])
-  return { refreshing, refreshReadings }
+      const owner = baseScope.runtimeOwnerEnvironmentId
+      const now = new Date().toISOString()
+      entry.publish({ ...entry.read(), busy: true, refreshing: force })
+      entry.pending = (async () => {
+        try {
+          const catalog = await nativeMetricsPort(owner).list(scope)
+          const problems = catalog.problems.map(metricProblemText)
+          const readings: Partial<Record<ZoneGranularity, OverviewReadResult>> = {}
+          const oldReadings = entry.read().readings
+          const order: ZoneGranularity[] = [granularity, granularity === 'day' ? 'week' : 'day']
+          for (const grain of order) {
+            const request = { scope, owner, catalog, granularity: grain, now }
+            const previous = force ? oldReadings[grain] : await readAllMetricReadings(request)
+            if (!force) {
+              readings[grain] = previous
+              entry.publish({
+                ...entry.read(),
+                catalog,
+                readings: { ...oldReadings, ...readings },
+                anchor: now,
+                problems
+              })
+            }
+            readings[grain] = await refreshMetricReadings({
+              ...request,
+              previous,
+              onlyMissing: !force,
+              sharedNorth: grain === order[1] ? readings[order[0]]?.north : undefined
+            })
+            entry.publish({
+              ...entry.read(),
+              catalog,
+              readings: { ...oldReadings, ...readings },
+              anchor: now,
+              problems
+            })
+          }
+        } catch (error) {
+          entry.publish({ ...entry.read(), problems: [`指标读取失败：${String(error)}`] })
+        } finally {
+          entry.pending = null
+          entry.publish({ ...entry.read(), loaded: true, busy: false, refreshing: false })
+        }
+      })()
+    },
+    [baseScope, baseWorktreeId, entry, granularity]
+  )
+  useEffect(() => {
+    load()
+  }, [load])
+  const reading = snapshot.readings[granularity]
+  return {
+    ...snapshot,
+    northReading:
+      reading?.north ?? snapshot.readings.day?.north ?? snapshot.readings.week?.north ?? null,
+    zoneReadings: reading?.map ?? {},
+    problems: [...snapshot.problems, ...(reading?.problems ?? [])],
+    refreshReadings: () => load(true)
+  }
 }

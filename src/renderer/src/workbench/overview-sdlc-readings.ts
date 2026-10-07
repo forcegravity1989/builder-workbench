@@ -56,6 +56,7 @@ export async function readSdlcCommits(args: {
         return {
           kind: 'ready',
           value: {
+            since: args.range.since,
             items: [...items.values()],
             hasMore: false,
             readAt: new Date().toISOString(),
@@ -184,7 +185,10 @@ export async function readSdlcRemote(
       }
       return { timestamp }
     })
-    return { kind: 'ready', value: { items, hasMore: false, readAt, source: result.source } }
+    return {
+      kind: 'ready',
+      value: { items, hasMore: false, readAt, source: result.source, since: range.since }
+    }
   } catch (reason) {
     return { kind: 'error', message: message(reason) }
   }

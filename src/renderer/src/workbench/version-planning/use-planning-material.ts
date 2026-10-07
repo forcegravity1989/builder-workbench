@@ -7,7 +7,10 @@ import { validatePlanningVersion } from '../../../../shared/workbench/version-do
 import type { VersionMaterialCandidate } from '../../../../shared/workbench/version-material-request'
 import type { nativeVersionMaterialPort } from '../version-material-port'
 import { MaterialDraftController, type MaterialDraft } from '../version-cycle/material-draft'
-import { usePlanningAutosave, type PlanningAutosaveOptions } from './use-planning-autosave'
+import {
+  useMaterialAutosave,
+  type MaterialAutosaveOptions
+} from '../version-cycle/use-material-autosave'
 
 export function planningDraftKey(scopeKey: string, version: string) {
   return `workbench.plan.draft:${scopeKey}:${encodeURIComponent(version)}`
@@ -16,7 +19,7 @@ export function planningDraftKey(scopeKey: string, version: string) {
 export function usePlanningMaterial(
   port: ReturnType<typeof nativeVersionMaterialPort> | null,
   scopeKey: string,
-  autosave?: PlanningAutosaveOptions
+  autosave?: MaterialAutosaveOptions<PlanningMaterial>
 ) {
   const [versions, setVersions] = useState<VersionMaterialCandidate[]>([])
   const [draft, setDraft] = useState<MaterialDraft<PlanningMaterial> | null>(null)
@@ -203,7 +206,7 @@ export function usePlanningMaterial(
     return () => clearInterval(timer)
   }, [controller, selectedVersion, isCurrent])
 
-  const saving = usePlanningAutosave({
+  const saving = useMaterialAutosave({
     controller,
     draft,
     options: autosave,

@@ -2,7 +2,6 @@ import { useCallback, useSyncExternalStore } from 'react'
 
 export type OverviewViewState = {
   version: string | null
-  cycle: string | null
   feature: string | null
   hidden: Record<string, boolean>
   granularity: 'day' | 'week'
@@ -10,7 +9,6 @@ export type OverviewViewState = {
 }
 const empty: OverviewViewState = {
   version: null,
-  cycle: null,
   feature: null,
   hidden: {},
   granularity: 'week',
@@ -31,7 +29,6 @@ function read(key: string): OverviewViewState {
     if (saved && typeof saved === 'object') {
       value = {
         version: typeof saved.version === 'string' ? saved.version : null,
-        cycle: typeof saved.cycle === 'string' ? saved.cycle : null,
         feature: typeof saved.feature === 'string' ? saved.feature : null,
         hidden:
           saved.hidden && typeof saved.hidden === 'object'

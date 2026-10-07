@@ -5,7 +5,7 @@ import { useAppStore } from '@/store'
 import { startCycleAutomation } from './start-cycle-automation'
 import { assertCurrentCycleWorkspace } from './current-cycle-workspace'
 import { prepareMetricsSession, useMetricsSetupAgent } from './metrics-setup'
-import { getActiveCycleSession, prepareCycleRequest } from './native-session'
+import { getActiveCycleSession } from './native-session'
 import { useWorkflowVersion } from './use-workflow-version'
 import { useCycleAutomationDraft } from './use-cycle-automation-draft'
 import { useEnsureCycleAutomation } from './ensure-cycle-automation'
@@ -16,13 +16,17 @@ import { nativeVersionMaterialPort } from '../version-material-port'
 import { nativeTaskPort } from '../task-port'
 import { nativeArchivePort } from '../archive-port'
 import './version-cycle.css'
+import { useCycleRequest } from './use-cycle-request'
 
 /** BW supplies workflow assets to the existing Orca workspace, never a second session host. */
 export function CycleWorkspaceProvider({ children }: { children: ReactNode }) {
   const workflow = useCycleWorkspaceWorkflow()
   const [notice, setNotice] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
-  const { worktree, scope, error } = useCycleWorkspaceTarget(workflow, setNotice)
+  const { worktree, scope, error, syncing, materialRefresh } = useCycleWorkspaceTarget(
+    workflow,
+    setNotice
+  )
   const fixedId = worktree?.id ?? null
   const agent = useMetricsSetupAgent(fixedId)
   const session = useAppStore(useShallow((state) => getActiveCycleSession(state, scope, fixedId)))
@@ -44,8 +48,13 @@ export function CycleWorkspaceProvider({ children }: { children: ReactNode }) {
   )
   const version = useWorkflowVersion(materialPort)
   const taskPort = useMemo(() => nativeTaskPort(), [])
-  const archivePort = useMemo(() => nativeArchivePort(owner), [owner])
-  const sessionPort = useMemo(() => ({ prepareRequest: prepareCycleRequest }), [])
+  const request = useCycleRequest(JSON.stringify([scope, fixedId]))
+  const prepareRequest = request.prepareRequest
+  const archivePort = useMemo(
+    () => nativeArchivePort(owner, prepareRequest),
+    [owner, prepareRequest]
+  )
+  const sessionPort = useMemo(() => ({ prepareRequest }), [prepareRequest])
   const automation = useEnsureCycleAutomation({
     cycleScope: scope,
     fixedId,
@@ -112,7 +121,9 @@ export function CycleWorkspaceProvider({ children }: { children: ReactNode }) {
               sessionPort,
               taskPort,
               archivePort,
-              error: error ?? version.error
+              error: error ?? version.error,
+              syncing,
+              materialRefresh
             }
           }
         : null,
@@ -133,8 +144,15 @@ export function CycleWorkspaceProvider({ children }: { children: ReactNode }) {
       sessionPort,
       taskPort,
       archivePort,
-      error
+      error,
+      syncing,
+      materialRefresh
     ]
   )
-  return <CycleWorkspaceContext.Provider value={value}>{children}</CycleWorkspaceContext.Provider>
+  return (
+    <CycleWorkspaceContext.Provider value={value}>
+      {children}
+      {request.progress}
+    </CycleWorkspaceContext.Provider>
+  )
 }

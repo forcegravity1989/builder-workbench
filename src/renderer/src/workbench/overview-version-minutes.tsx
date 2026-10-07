@@ -2,6 +2,7 @@ import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import type { VersionMinutes } from './use-version-minutes'
 import { taskDistribution } from './use-version-minutes'
+import { OverviewRefresh } from './overview-controls'
 import type { VersionHistoryProblem } from '../../../shared/workbench/version-history'
 
 function acceptanceText(minutes: VersionMinutes): string {
@@ -39,20 +40,16 @@ export function OverviewVersionMinutes({
   versions,
   version,
   onVersion,
-  cycles,
-  cycle,
-  onCycle,
   minutes,
+  busy,
   historyProblems,
   onRetry
 }: {
   versions: string[]
   version: string | null
   onVersion(version: string): void
-  cycles: string[]
-  cycle: string
-  onCycle(cycle: string): void
   minutes: VersionMinutes | null
+  busy: boolean
   historyProblems: VersionHistoryProblem[]
   onRetry(): void
 }) {
@@ -83,52 +80,21 @@ export function OverviewVersionMinutes({
             </button>
           ))}
         </nav>
-        {cycles.length > 1 && (
-          <select
-            className="wb-ov-cycle"
-            aria-label="纪要轮次"
-            value={cycle}
-            onChange={(event) => onCycle(event.target.value)}
-          >
-            {cycles.map((item) => (
-              <option key={item} value={item}>
-                {item === 'current' ? '当前材料' : item}
-              </option>
-            ))}
-          </select>
-        )}
+        <OverviewRefresh label="刷新版本材料" busy={busy} onClick={onRetry} />
       </header>
-      {historyProblems.length > 0 && (
-        <details className="wb-ov-section-body">
-          <summary>无法读取的归档（{historyProblems.length}）</summary>
-          <ul>
-            {historyProblems.map((problem) => (
-              <li
-                key={`${problem.sourceCommit}:${problem.workflow}:${problem.version}:${problem.code}`}
-              >
-                {problem.version} · {problem.workflow === 'plan' ? '计划' : '验收'} ·{' '}
-                {problem.sourceCommit.slice(0, 12)}：{problem.message}
-              </li>
-            ))}
-          </ul>
-          <button type="button" className="wb-btn wb-btn-secondary wb-btn-sm" onClick={onRetry}>
-            重试
-          </button>
-        </details>
-      )}
       {!version ? (
         <p className="wb-muted wb-ov-section-body">
-          {historyProblems.length ? '暂无可读取的版本材料' : '尚无版本材料'}
+          {busy ? '读取中…' : historyProblems.length ? '暂无可读取的版本材料' : '尚无版本材料'}
         </p>
       ) : (
         <div className="goal-week">
           {columns.map((column) => (
-            <article key={`${version}:${cycle}:${column.title}`}>
+            <article key={`${version}:${column.title}`}>
               <div className="wb-ov-minutes-head">
                 <h3>{column.title}</h3>
                 {column.data && (
                   <span className="wb-tag wb-tag-outline">
-                    {column.data.draft ? '草稿' : '归档'}
+                    {column.data.draft ? '草稿' : '已提交'}
                   </span>
                 )}
               </div>

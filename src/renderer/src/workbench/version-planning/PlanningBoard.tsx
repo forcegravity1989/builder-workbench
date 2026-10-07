@@ -1,10 +1,9 @@
-import { GitPullRequest } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { PlanningMaterial } from '../../../../shared/workbench/version-material'
 import type { CycleTaskRead } from '../version-cycle/ports'
-import type { MaterialDraft } from '../version-cycle/material-draft'
 import type { VersionCycleContext } from '../version-cycle/cycle-context'
 import type { CycleEntry } from '../version-cycle/cycle-workspace-context'
+import { CycleArchive } from '../version-cycle/CycleArchive'
 import { CycleStartCard } from '../version-cycle/CycleStartCard'
 import { cycleBranch, cycleScopeKey } from '../version-cycle/native-cycle-workspace'
 import { usePlanningMaterial, planningDraftKey } from './use-planning-material'
@@ -18,7 +17,7 @@ import { PlanningPersistenceNotice } from './PlanningPersistenceNotice'
 import { PlanningHeader, PlanningJourneyNav } from './PlanningSections'
 import { PlanningProgressSource } from './PlanningProgressSource'
 import { usePlanningViewMemory } from './use-planning-view-memory'
-import { usePlanningArchive } from './use-planning-archive'
+import { useMaterialArchive } from '../version-cycle/use-material-archive'
 import './version-planning.css'
 
 type PlanningBoardProps = {
@@ -34,22 +33,10 @@ export function PlanningBoard(props: PlanningBoardProps) {
 function PlanningBoardContent({ context, prepareMetrics, entry }: PlanningBoardProps) {
   const { scope, session, worktreeId, materialPort, taskPort, archivePort } = context
   const scopeKey = scope ? cycleScopeKey(scope) : ''
-  const saveGate = useRef<{
-    canSave(draft: MaterialDraft<PlanningMaterial>): boolean
-    waitForSave(draft: MaterialDraft<PlanningMaterial>): Promise<boolean>
-  }>({ canSave: () => false, waitForSave: async () => false })
-  const canSave = useCallback(
-    (draft: MaterialDraft<PlanningMaterial>) => saveGate.current.canSave(draft),
-    []
-  )
-  const waitForSave = useCallback(
-    (draft: MaterialDraft<PlanningMaterial>) => saveGate.current.waitForSave(draft),
-    []
-  )
-  const material = usePlanningMaterial(materialPort, scopeKey, { canSave, waitForSave })
+  const canSave = useCallback(() => !context.syncing, [context.syncing])
+  const material = usePlanningMaterial(materialPort, scopeKey, { canSave })
   const plan = material.draft?.document
-  const archive = usePlanningArchive(context, material.draft)
-  saveGate.current = archive
+  const archive = useMaterialArchive(context, material.draft)
   const selection = usePlanVersionSelection(material, context.selectVersion)
   const selecting = selection.busy
   const [minutesOpen, setMinutesOpen] = useState(false)
@@ -106,7 +93,13 @@ function PlanningBoardContent({ context, prepareMetrics, entry }: PlanningBoardP
     } else {
       clearMaterial()
     }
-  }, [selectedVersion, selectedState, selectMaterial, clearMaterial])
+  }, [selectedVersion, selectedState, selectMaterial, clearMaterial, context.materialRefresh])
+  const listMaterials = material.list
+  useEffect(() => {
+    if (context.materialRefresh) {
+      void listMaterials()
+    }
+  }, [context.materialRefresh, listMaterials])
 
   const act = async (operation: () => Promise<unknown>) => {
     updateView({ notice: '' })
@@ -118,7 +111,7 @@ function PlanningBoardContent({ context, prepareMetrics, entry }: PlanningBoardP
       }
     }
   }
-  const disabled = !plan || archive.archived || archive.initialCheckPending || selecting
+  const disabled = !plan || Boolean(context.syncing) || selecting
   const edit = (next: PlanningMaterial) => {
     if (!disabled) {
       material.edit(next)
@@ -214,13 +207,20 @@ function PlanningBoardContent({ context, prepareMetrics, entry }: PlanningBoardP
         branch={cycleBranch(entry)}
         onSelect={(version) => void selection.select(version)}
         onConfigure={() => void entry.configure()}
+        onRefresh={() =>
+          void act(async () => {
+            await material.refresh()
+            await material.list()
+            await archive.refresh()
+          })
+        }
       />
       {(material.error || notice || selection.error || context.error || entry.notice) && (
         <p className="vp-notice" role="status">
           {material.error || selection.error || context.error || notice || entry.notice}
         </p>
       )}
-      <PlanningPersistenceNotice material={material} archived={archive.archived} onAct={act} />
+      <PlanningPersistenceNotice material={material} onAct={act} />
       <div className="vp-body" inert={selecting} aria-busy={selecting}>
         <PlanningJourneyNav
           hasProgress={Boolean(plan?.summary.progress.trim())}
@@ -307,17 +307,13 @@ function PlanningBoardContent({ context, prepareMetrics, entry }: PlanningBoardP
             onTask={(task) => act(() => openTask(task))}
             onDecompose={() => void requestDecomposition()}
           />
-          <section className="vp-archive-card" aria-label="计划归档" ref={archiveSection}>
-            <GitPullRequest size={16} />
-            <p>核对目标与 Issue，发起 PR 供 Leader 评审。</p>
-            <button
-              className="wb-btn wb-btn-sm"
-              disabled={!plan || archive.archived || archive.pending || selecting || material.busy}
-              onClick={() => void requestArchive()}
-            >
-              归档
-            </button>
-          </section>
+          <CycleArchive
+            status={archive.status}
+            archived={archive.archived}
+            disabled={!plan || selecting || material.busy}
+            sectionRef={archiveSection}
+            onArchive={() => void requestArchive()}
+          />
         </div>
       </div>
       {minutesOpen && (

@@ -8,7 +8,7 @@
 
 AcceptancePage 是 BW 业务页，复用原生项目/工作树/会话、Tasks 详情与正文编辑、Automations、现有文件打开和命令执行能力。右侧围绕 G1/G2/G3 目标卡展示实际交付、材料、实测与人的结论，下接 Issue 状态区；“预览纪要”在目标区标题旁。材料准备在新建或已有原生验收会话中完成，不再设独立准备摘要、固定包/报告/展示占位或“材料备齐”勾选；候选与材料来源仍保留在记录和纪要中，不建通用发布控制台。
 
-共享组件只提供承诺区及结果槽位，业务字段由本页拥有。旧 PlanResultsPane 已随旧三屏链条退役删除，跨版本 results 流程不再并行维护。TaskPort/CycleSessionPort/ArchivePort/VersionDocumentPort 与计划共用（已按当前接线落地），MetricsPort 由指标线提供。页面经 artifacts 准备入口确保 bw/week-acceptance 后进入原生 terminal，右板由 CycleWorkspaceShell 挂载；会话、标签/分屏、历史和工具侧栏完整沿用原生工作区，边界见计划设计。
+共用 CycleTasks、CycleArchive、useMaterialAutosave 和 useMaterialArchive；承诺区共用骨架，验收业务字段由本页拥有。旧 PlanResultsPane 已随旧三屏链条退役删除，跨版本 results 流程不再并行维护。TaskPort/CycleSessionPort/ArchivePort/VersionDocumentPort 与计划共用（已按当前接线落地），MetricsPort 由指标线提供。页面经 artifacts 准备入口确保 bw/week-acceptance 后进入原生 terminal，右板由 CycleWorkspaceShell 挂载；会话、标签/分屏、历史和工具侧栏完整沿用原生工作区，边界见计划设计。
 
 ## 两个常驻工作树
 
@@ -16,7 +16,7 @@ AcceptancePage 是 BW 业务页，复用原生项目/工作树/会话、Tasks �
 
 计划固定 bw/week-plan，验收固定 bw/week-acceptance，目录由 Orca 原生创建与登记策略确定，不强制 .bw 物理目录。通过 Orca 项目/宿主和分支查真实工作区，不仅替换标签，不新增聊天日志或 BW 调度器。
 
-验收树从项目实际采用的基线创建；运行时不硬编码 bw-orca 或 main。每次新运行刷新远端并检查树的干净状态、前次归档与基线差异（现状注：脏树/未归档提交检查为提示级，由会话承担，无代码强制校验落点）。已有脏改动/未归档提交不 reset、不搬树、不强推，恢复该次工作或呈现冲突。进屏先经 workbench.cycle.syncTrunk 把采用分支最新拉进验收分支（本地宿主 gitPull；失败/冲突如实提示、不阻断、不 reset，由用户在会话中带模型处理；远程 SSH 树暂不自动同步，属只读中继边界，记债待专项），已有同分支其他路径提示真实路径，不擅自删除重建。
+验收树从项目实际采用的基线创建；运行时不硬编码 bw-orca 或 main。每次新运行刷新远端并检查树的干净状态、前次归档与基线差异（现状注：脏树/未归档提交检查为提示级，由会话承担，无代码强制校验落点）。已有脏改动/未归档提交不 reset、不搬树、不强推，恢复该次工作或呈现冲突。先回显固定工作区与现有材料，再后台经 workbench.cycle.syncTrunk 把采用分支最新拉进验收分支（本地宿主 gitPull；失败/冲突如实提示、不阻断、不 reset，由用户在会话中带模型处理；远程 SSH 树暂不自动同步，属只读中继边界，记债待专项），已有同分支其他路径提示真实路径，不擅自删除重建。
 
 运行身份包含 projectId、hostId、workflow=acceptance 与 Orca runId；cycleId 为周期上下文，version 为另行核对的材料关联，不作为运行去重前提。运行与历史恢复由 Orca 管理，BW 不保存会话绑定或按标题匹配；专用“新建验收”复用已登记自动化的手动运行并自动打开、聚焦本次原生会话，定时运行仍在后台。首次登记默认 existing 固定工作区、reuseSession=false；后续尊重用户保存的会话复用配置。上午/下午可继续同一运行，计划与验收按各自固定工作区定位。
 
@@ -36,9 +36,9 @@ candidateRef 保存项目、完整 commit SHA、版本与来源；preparedArtifa
 
 记录 version、cycleId、planRef、candidateRef、preparedArtifacts、goalId 对应实际交付/readingRef/结论/依据/下一步、人的确认来源与修订。可保存只读承诺快照作为草案/离线证据，不能编辑为另一份计划。
 
-采集值只来自支持按日／周查询历史的脚本；刷新同步项目正式来源、重读目录后采用最新已合入定义与脚本，不更新固定计划引用或合并业务树。原计划指标与基线只读，验收可另选当前目录指标，不能用旧 configurationCommit/definitionHash 不同直接阻止采集。归档保存实际采用的定义指纹、历史窗口、结果及来源，人的验收依据说明可比性；保留证据不是建立 BW 日采账本。Issue 快照附 provider/repo/number/state/readAt，不是可编辑任务正本。
+采集值只来自支持按日／周查询历史的脚本；刷新同步项目正式来源、重读目录后采用最新已合入定义与脚本，不更新固定计划引用或合并业务树。原计划指标与基线只读，验收只展示原承诺或已有证据的指标，刷新采用当前目录定义，不能用旧 configurationCommit/definitionHash 不同直接阻止采集。归档保存实际采用的定义指纹、历史窗口、结果及来源，人的验收依据说明可比性；保留证据不是建立 BW 日采账本。Issue 快照附 provider/repo/number/state/readAt，不是可编辑任务正本。
 
-指标采集与选择已随 PR #278 合入：AcceptanceMetrics.tsx、AcceptanceMetricWindow.tsx 及 acceptance.css 的指标样式继续复用。AcceptanceBoard 的 hasMetrics 已按是否有目标判断，逐目标指标组件不再要求原计划存在 metricTargets；无原指标的目标可以选择当前目录。后续验收布局须保留这两个显示条件、共享窗口与现有 props，不再实施一套选择或采集路径。原 AcceptanceContext 的旧 current 文案分支已由 AcceptanceSources 的指标窗口行承接，只作存量来源核对，不据此恢复仅当前值的采集入口。
+AcceptanceMetrics 按目标的 metricTargets 与已存 readings 的名称集合显示采集行；回显已保存证据，明确刷新才采集并写入同一验收草稿。没有承诺或证据的目标不显示指标组件。当前周由项目指标时区推导，窗口与来源收进读数证据详情；不设全局窗口行。AcceptanceBoard 顶部只选一次版本，缺验收文件时固定该版本当前提交的计划后初始化草稿，已有验收不自动换 planRef。
 
 验收纪要由对应修订确定性生成，预览/复制/归档采用同一函数。已合入记录以目标基线的 commit + 文档路径 + cycleId 为历史身份；总览读取摘要，能打开对应只读原文及来源。每周和补证归档都是可追溯修订，缓存可重建，不另建里程碑表或历史业务数据库。
 

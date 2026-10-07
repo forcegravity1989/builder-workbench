@@ -179,6 +179,7 @@ export function OverviewMetricZones({
   busy,
   onRefresh,
   granularity,
+  anchor,
   onGranularityChange,
   identity,
   setupBusy,
@@ -189,6 +190,7 @@ export function OverviewMetricZones({
   busy: boolean
   onRefresh(): void
   granularity: ZoneGranularity
+  anchor?: string
   onGranularityChange(value: ZoneGranularity): void
   identity: string
   setupBusy: boolean
@@ -198,7 +200,7 @@ export function OverviewMetricZones({
   const [view, setView] = useOverviewViewState(identity)
   const active = groups.find((group) => group.feature === view.feature) ?? groups[0]
   const timezone = catalog?.timezone ?? Intl.DateTimeFormat().resolvedOptions().timeZone
-  const range = zoneChartRange(granularity, timezone)
+  const range = zoneChartRange(granularity, timezone, anchor)
   const labels = zoneBucketLabels(range)
   const plots = useMemo(() => (active ? groupZonePlots(active.defs) : []), [active])
   return (

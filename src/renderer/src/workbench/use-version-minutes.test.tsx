@@ -98,7 +98,6 @@ it('falls back to live acceptance material for the in-progress version', async (
     baseWorktreeId: 'tree',
     planWorktreeId: 'plan-tree',
     acceptanceWorktreeId: 'accept-tree',
-    cycle: 'current',
     history: { records: [], problems: [] },
     currentVersion: 'v1',
     version: 'v1'
@@ -114,7 +113,6 @@ it('keeps a non-current version honest: no archive record means no acceptance co
     baseWorktreeId: 'tree',
     planWorktreeId: 'plan-tree',
     acceptanceWorktreeId: 'accept-tree',
-    cycle: 'current',
     history: { records: [], problems: [] },
     currentVersion: 'v2',
     version: 'v1'
@@ -122,7 +120,7 @@ it('keeps a non-current version honest: no archive record means no acceptance co
   expect(latest?.acceptance).toBeNull()
 })
 
-it('reads the selected archive cycle independently of live material', async () => {
+it('keeps the current plan when the saved acceptance references an older revision', async () => {
   const newerRevision = `sha256:${'c'.repeat(64)}`
   const adoptedPlan: PlanningMaterial = {
     ...planDocument,
@@ -178,18 +176,14 @@ it('reads the selected archive cycle independently of live material', async () =
       ],
       problems: []
     },
-    cycle: 'cycle',
-    currentVersion: 'v1',
+    currentVersion: null,
     version: 'v1'
   })
-  expect(latest?.acceptance?.source).toContain('归档 bbbbbbbbbbbb')
-  expect(readPlan).toHaveBeenCalledExactlyOnceWith({
-    scope: { repoId: 'r', worktreeId: 'tree', hostId: 'local' },
-    planRef: archivedAcceptance.planRef
-  })
-  expect(latest?.planDocument).toEqual(adoptedPlan)
-  expect(latest?.plan?.text).toContain('验收采用的目标')
-  expect(latest?.plan?.text).not.toContain('后来调整的目标')
+  expect(latest?.acceptance).toBeNull()
+  expect(latest?.acceptanceError).toContain('较早计划')
+  expect(readPlan).not.toHaveBeenCalled()
+  expect(latest?.planDocument).toEqual(newerPlan)
+  expect(latest?.plan?.text).toContain('后来调整的目标')
 })
 
 it('reports no acceptance column when the live material is invalid', async () => {
@@ -199,7 +193,6 @@ it('reports no acceptance column when the live material is invalid', async () =>
     baseWorktreeId: 'tree',
     planWorktreeId: 'plan-tree',
     acceptanceWorktreeId: 'accept-tree',
-    cycle: 'current',
     history: { records: [], problems: [] },
     currentVersion: 'v1',
     version: 'v1'
@@ -215,7 +208,6 @@ it('does not pair an older acceptance with a newer live plan', async () => {
     baseWorktreeId: 'tree',
     planWorktreeId: 'plan-tree',
     acceptanceWorktreeId: 'accept-tree',
-    cycle: 'current',
     history: null,
     currentVersion: 'v1',
     version: 'v1'
@@ -234,7 +226,6 @@ it('reports the exact plan-reference read failure rather than pairing unrelated 
     baseWorktreeId: 'tree',
     planWorktreeId: null,
     acceptanceWorktreeId: null,
-    cycle: 'cycle',
     history: {
       records: [
         {
@@ -242,7 +233,7 @@ it('reports the exact plan-reference read failure rather than pairing unrelated 
           cycleId: 'cycle',
           workflow: 'acceptance',
           revision,
-          sourceCommit: 'b'.repeat(40),
+          sourceCommit: 'd'.repeat(40),
           committedAt: '2026-09-25T00:00:00Z'
         }
       ],

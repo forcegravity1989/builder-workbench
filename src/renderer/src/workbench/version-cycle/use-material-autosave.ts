@@ -1,20 +1,20 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import type { PlanningMaterial } from '../../../../shared/workbench/version-material'
+import type { VersionDocumentIdentity } from '../../../../shared/workbench/version-document'
 import type { VersionDocumentSnapshot } from '../../../../shared/workbench/version-document'
 import type { MaterialDraft, MaterialDraftController } from '../version-cycle/material-draft'
 
-export type PlanningAutosaveOptions = {
-  /** The board owns archive/selection guards; recheck them immediately before each write. */
-  canSave(draft: MaterialDraft<PlanningMaterial>): boolean
-  /** Await a pending archive read for this revision; a refusal is never retried automatically. */
-  waitForSave?(draft: MaterialDraft<PlanningMaterial>): Promise<boolean>
+export type MaterialAutosaveOptions<T extends VersionDocumentIdentity> = {
+  /** The board owns synchronization/selection guards; recheck them immediately before each write. */
+  canSave(draft: MaterialDraft<T>): boolean
+  /** Await a pending write precondition; a refusal is never retried automatically. */
+  waitForSave?(draft: MaterialDraft<T>): Promise<boolean>
   debounceMs?: number
 }
 
-type Snapshot = VersionDocumentSnapshot<PlanningMaterial>
+type Snapshot<T extends VersionDocumentIdentity> = VersionDocumentSnapshot<T>
 
 /** Serializes the existing CAS controller; no second material store or write protocol. */
-export function usePlanningAutosave({
+export function useMaterialAutosave<T extends VersionDocumentIdentity>({
   controller,
   draft,
   options,
@@ -22,9 +22,9 @@ export function usePlanningAutosave({
   selection,
   onSaved
 }: {
-  controller: MaterialDraftController<PlanningMaterial> | null
-  draft: MaterialDraft<PlanningMaterial> | null
-  options?: PlanningAutosaveOptions
+  controller: MaterialDraftController<T> | null
+  draft: MaterialDraft<T> | null
+  options?: MaterialAutosaveOptions<T>
   isCurrent(): boolean
   selection: { current: { value: number } }
   onSaved(): Promise<void>
@@ -32,12 +32,12 @@ export function usePlanningAutosave({
   const policy = useRef(options)
   policy.current = options
   const work = useMemo(
-    () => ({ controller, pending: null as Promise<Snapshot | null> | null, token: 0 }),
+    () => ({ controller, pending: null as Promise<Snapshot<T> | null> | null, token: 0 }),
     [controller]
   )
   const [saving, setSaving] = useState<{ work: typeof work; token: number } | null>(null)
 
-  const flush: () => Promise<Snapshot | null> = useCallback((): Promise<Snapshot | null> => {
+  const flush: () => Promise<Snapshot<T> | null> = useCallback((): Promise<Snapshot<T> | null> => {
     if (work.pending) {
       return work.token === selection.current.value
         ? work.pending
@@ -53,7 +53,7 @@ export function usePlanningAutosave({
       token === selection.current.value &&
       controller.value?.document.version === original.document.version &&
       controller.value?.document.cycleId === original.document.cycleId
-    const saveAll = async (): Promise<Snapshot | null> => {
+    const saveAll = async (): Promise<Snapshot<T> | null> => {
       setSaving({ work, token })
       let wrote = false
       try {
