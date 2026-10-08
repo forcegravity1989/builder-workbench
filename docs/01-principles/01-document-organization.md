@@ -28,7 +28,7 @@ docs/（BW 产品知识；编号定序，architecture 是整体设计正本）
 ├── 05-features/       特性级变更制品链——intent + 带原型的 spec 为人 gate；plan 仅大风险；小修不另立特性
 ├── 06-module/         单个模块的实现心智模型——设计面对的主要矛盾 / 取舍;不纠结实现细节
 ├── 10-reference/      外部参考的提炼版
-├── hifi/              八屏版式与旅程原型
+├── hifi/              旧 Rust 壳八屏版式与旅程原型（历史档案，不描述现行 Electron 界面）
 └── draft/             本地草稿/真实项目试用记录（不进仓）
 
 ref/                  按需引用的 Orca 工程参考，不替代 BW 产品知识
