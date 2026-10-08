@@ -106,7 +106,7 @@ describe('Windows CLI launcher', () => {
       const cliPath = join(resourcesPath, 'app.asar.unpacked', 'out', 'cli', 'index.js')
       mkdirSync(join(resourcesPath, 'bin'), { recursive: true })
       mkdirSync(dirname(cliPath), { recursive: true })
-      copyFileSync(process.execPath, join(appRoot, 'Orca.exe'))
+      copyFileSync(process.execPath, join(appRoot, 'Workbench.exe'))
       writeFileSync(
         cliPath,
         `process.stdout.write(JSON.stringify({
@@ -121,7 +121,11 @@ describe('Windows CLI launcher', () => {
       const build = spawnSync(
         process.execPath,
         ['config/scripts/build-windows-cli-launcher.mjs', '--output', launcherPath],
-        { cwd: projectRoot, encoding: 'utf8' }
+        {
+          cwd: projectRoot,
+          encoding: 'utf8',
+          env: { ...process.env, ORCA_PRODUCT_NAME: 'Workbench' }
+        }
       )
       expect(build.status, `${build.stdout}\n${build.stderr}`).toBe(0)
 
@@ -186,7 +190,7 @@ describe('Windows CLI launcher', () => {
       const build = spawnSync(
         process.execPath,
         ['config/scripts/build-windows-cli-launcher.mjs', '--output', launcherPath],
-        { cwd: projectRoot, encoding: 'utf8' }
+        { cwd: projectRoot, encoding: 'utf8', env: { ...process.env, ORCA_PRODUCT_NAME: 'Orca' } }
       )
       expect(build.status, `${build.stdout}\n${build.stderr}`).toBe(0)
 
