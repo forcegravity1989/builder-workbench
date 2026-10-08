@@ -10,3 +10,25 @@ provider = "github"                             # github | codehub
 remote = "forcegravity1989/builder-workbench"   # github: owner/repo;codehub: -p 项目路径,远端读取时另需 host = 区别名(-H)
 local = "."                                     # 本地读盘路径(相对仓根或绝对);有值优先读盘,缺省走远端部分克隆(--filter=blob:none)
 since = "2026-08-05"                            # 纳入日 YYYY-MM-DD,人填;BW 取 git 里 .bw/ 首次提交日(9d1f30c)
+
+# 以下三条为 CodeHub 绿区组内项目,纳入日取各自仓 .bw/ 首次提交日。
+[[projects]]
+name = "axodendron"
+provider = "codehub"
+remote = "z30056994/axodendron"                 # codehub-cli -p
+host = "green"                                  # codehub-cli -H 区别名(绿区)
+since = "2026-09-01"                            # .bw/ 首次提交 bee7e3f
+
+[[projects]]
+name = "gtsllm-dfx"
+provider = "codehub"
+remote = "y00652259/gtsllm-dfx"
+host = "green"
+since = "2026-08-24"                            # .bw/ 首次提交 5447e0d
+
+[[projects]]
+name = "benchmark"
+provider = "codehub"
+remote = "aipdu/benchmark"
+host = "green"
+since = "2026-08-25"                            # .bw/ 首次提交 4fc81b162
