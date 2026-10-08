@@ -21,8 +21,15 @@ export function shouldReuseCompiledWindowsCliLauncher(
   return statSync(outputPath).mtimeMs >= statSync(sourcePath).mtimeMs
 }
 
-function defaultOutputPath(projectRoot) {
-  return join(projectRoot, 'native', 'windows-cli-launcher', '.build', 'orca.exe')
+function defaultOutputPath(projectRoot, isWorkbench) {
+  return join(
+    projectRoot,
+    'native',
+    'windows-cli-launcher',
+    '.build',
+    ...(isWorkbench ? ['workbench'] : []),
+    'orca.exe'
+  )
 }
 
 function findFrameworkCompiler(env) {
@@ -53,7 +60,8 @@ if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) 
 
   const repoRoot = resolve(import.meta.dirname, '../..')
   const sourcePath = join(repoRoot, 'native', 'windows-cli-launcher', 'OrcaCliLauncher.cs')
-  const outputPath = readArg('--output') ?? defaultOutputPath(repoRoot)
+  const isWorkbench = process.env.ORCA_PRODUCT_NAME === 'Workbench'
+  const outputPath = readArg('--output') ?? defaultOutputPath(repoRoot, isWorkbench)
   const compilerPath = findFrameworkCompiler(process.env)
 
   if (!compilerPath) {
@@ -71,7 +79,15 @@ if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) 
   }
   const result = spawnSync(
     compilerPath,
-    ['/nologo', '/target:exe', '/optimize+', '/warnaserror+', `/out:${outputPath}`, sourcePath],
+    [
+      '/nologo',
+      '/target:exe',
+      '/optimize+',
+      '/warnaserror+',
+      ...(isWorkbench ? ['/define:WORKBENCH'] : []),
+      `/out:${outputPath}`,
+      sourcePath
+    ],
     { cwd: repoRoot, stdio: 'inherit' }
   )
 
