@@ -475,6 +475,9 @@ module.exports = {
     ]
   },
   nsis: {
+    ...(productName === 'Workbench'
+      ? { oneClick: false, allowToChangeInstallationDirectory: true }
+      : {}),
     artifactName: 'orca-windows-setup.${ext}',
     shortcutName: '${productName}',
     uninstallDisplayName: '${productName}',

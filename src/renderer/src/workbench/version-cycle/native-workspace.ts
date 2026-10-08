@@ -1,4 +1,6 @@
 import { useAppStore } from '@/store'
+import { findRepoForHost } from '@/store/slices/repo-host-identity'
+import { mergeExternalWorktreeInboxPaths } from '../../../../shared/external-worktree-inbox'
 import { callRuntimeRpc } from '@/runtime/runtime-rpc-client'
 import { resolveExactWorktreeRoute, routeForOwner } from '@/lib/worktree-owner-route'
 import {
@@ -126,13 +128,30 @@ async function detectedTrees(
 async function importExternalTree(scope: NativeWorkspaceScope, treePath: string): Promise<boolean> {
   try {
     const state = useAppStore.getState()
-    await state.updateRepo(scope.repoId, { importedExternalWorktreePaths: [treePath] })
-    await state.fetchWorktrees(scope.repoId, {
-      executionHostId: scope.runtimeOwnerEnvironmentId
-        ? toRuntimeExecutionHostId(scope.runtimeOwnerEnvironmentId)
-        : scope.hostId
+    const hostId = scope.runtimeOwnerEnvironmentId
+      ? toRuntimeExecutionHostId(scope.runtimeOwnerEnvironmentId)
+      : scope.hostId
+    const repo = findRepoForHost(state.repos, scope.repoId, { hostId })
+    if (!repo) {
+      return false
+    }
+    const updated = await state.updateRepo(
+      scope.repoId,
+      {
+        importedExternalWorktreePaths: mergeExternalWorktreeInboxPaths(
+          repo.importedExternalWorktreePaths,
+          [treePath]
+        )
+      },
+      { hostId }
+    )
+    if (!updated) {
+      return false
+    }
+    return await useAppStore.getState().fetchWorktrees(scope.repoId, {
+      executionHostId: hostId,
+      requireAuthoritative: true
     })
-    return true
   } catch {
     return false
   }
@@ -146,12 +165,19 @@ export async function ensureNamedWorktree(
   if (existing) {
     return existing
   }
-  const key = `${nativeWorkspaceScopeKey(scope)}:${branch}`
+  const scopePrefix = `${nativeWorkspaceScopeKey(scope)}:`
+  const key = `${scopePrefix}${branch}`
   const pending = creating.get(key)
   if (pending) {
     return pending
   }
+  // Repo imports replace one path list. Serialize sibling preparations so each
+  // appends to the latest registration instead of hiding another workflow's tree.
+  const preceding = [...creating]
+    .filter(([entryKey]) => entryKey.startsWith(scopePrefix))
+    .map(([, preparation]) => preparation)
   const create = (async () => {
+    await Promise.allSettled(preceding)
     const target = nativeWorkspaceRuntimeTarget(scope)
     // A git-level scan sees trees the store has not registered yet (external or
     // in-flight). Adopting an existing holder — or failing before create — is what

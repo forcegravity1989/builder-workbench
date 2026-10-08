@@ -54,7 +54,7 @@ ORCA_BACKGROUND_LAUNCH=1 REMOTE_DEBUGGING_PORT=9337 pnpm run dev:workbench
 
 打包：`pnpm run build:mac:workbench`（本机仅 arm64，脚本 `config/scripts/build-mac-workbench.mjs`）。
 
-Windows Workbench：`pnpm run build:win:workbench`（脚本 `config/scripts/build-win-workbench.mjs`，沿用 `electron-builder` 的 Windows/NSIS 配置）。
+Windows Workbench：`pnpm run build:win:workbench`（脚本 `config/scripts/build-win-workbench.mjs`，沿用 `electron-builder` 的 Windows/NSIS 配置）。 Workbench 使用带目录选择的安装向导，手动运行安装包时可选择安装位置；已有安装默认沿用原目录，应用内自动更新沿用原目录并跳过选择页。产品名与 appId 保持独立于官方 Orca。
 
 产物示例：
 
