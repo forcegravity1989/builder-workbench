@@ -35,9 +35,9 @@
       },
       "iid": 247,
       "title": "【v0.5|W39|G1】orca-bw 重构版上线：F1–F5 特性六环补齐与版本交付整体跟踪",
-      "state": "open",
+      "state": "closed",
       "url": "https://github.com/forcegravity1989/builder-workbench/issues/247",
-      "readAt": "2026-10-08T06:32:06.520Z"
+      "readAt": "2026-10-08T06:37:02.231Z"
     },
     {
       "kind": "ready",
@@ -65,7 +65,7 @@
       "title": "【v0.5|W39|G1】orca-bw 六环补齐 · F1 项目接入与项目约定",
       "state": "closed",
       "url": "https://github.com/forcegravity1989/builder-workbench/issues/248",
-      "readAt": "2026-10-08T06:32:06.494Z"
+      "readAt": "2026-10-08T06:37:02.267Z"
     },
     {
       "kind": "ready",
@@ -93,7 +93,7 @@
       "title": "【v0.5|W39|G1】orca-bw 六环补齐 · F2 版本目标与计划（周一屏·参考实现）",
       "state": "closed",
       "url": "https://github.com/forcegravity1989/builder-workbench/issues/249",
-      "readAt": "2026-10-08T06:32:06.505Z"
+      "readAt": "2026-10-08T06:37:02.231Z"
     },
     {
       "kind": "ready",
@@ -121,7 +121,7 @@
       "title": "【v0.5|W39|G1】orca-bw 六环补齐 · F3 Issue 进度与人工完成",
       "state": "closed",
       "url": "https://github.com/forcegravity1989/builder-workbench/issues/250",
-      "readAt": "2026-10-08T06:32:06.471Z"
+      "readAt": "2026-10-08T06:37:02.256Z"
     },
     {
       "kind": "ready",
@@ -149,7 +149,7 @@
       "title": "【v0.5|W39|G1】orca-bw 六环补齐 · F4 AI 任务开工与会话续接",
       "state": "closed",
       "url": "https://github.com/forcegravity1989/builder-workbench/issues/251",
-      "readAt": "2026-10-08T06:32:07.552Z"
+      "readAt": "2026-10-08T06:37:03.899Z"
     },
     {
       "kind": "ready",
@@ -177,7 +177,7 @@
       "title": "【v0.5|W39|G1】orca-bw 六环补齐 · F5 定时工作执行",
       "state": "closed",
       "url": "https://github.com/forcegravity1989/builder-workbench/issues/252",
-      "readAt": "2026-10-08T06:32:07.513Z"
+      "readAt": "2026-10-08T06:37:03.967Z"
     },
     {
       "kind": "ready",
@@ -205,7 +205,7 @@
       "title": "【v0.5|W39|G2】BW 开发方法资产迁移至 orca-bw：CI/门禁/verify 入口、PR 评审召唤制、发布自用工具链",
       "state": "open",
       "url": "https://github.com/forcegravity1989/builder-workbench/issues/253",
-      "readAt": "2026-10-08T06:32:07.547Z"
+      "readAt": "2026-10-08T06:37:04.369Z"
     },
     {
       "kind": "ready",
@@ -233,7 +233,7 @@
       "title": "【v0.5|W39|G2】按运维全景勾勾表盘点 BW 自身现状并新增 1+ 项落地",
       "state": "closed",
       "url": "https://github.com/forcegravity1989/builder-workbench/issues/254",
-      "readAt": "2026-10-08T06:32:07.586Z"
+      "readAt": "2026-10-08T06:37:03.899Z"
     },
     {
       "kind": "ready",
@@ -261,7 +261,7 @@
       "title": "【v0.5|W39|G3】构建周一屏看护指标：使用该特性项目数白名单采集（1→6）",
       "state": "closed",
       "url": "https://github.com/forcegravity1989/builder-workbench/issues/255",
-      "readAt": "2026-10-08T06:32:08.549Z"
+      "readAt": "2026-10-08T06:37:04.932Z"
     }
   ],
   "results": [
@@ -325,8 +325,8 @@
       "decision": {
         "outcome": "met",
         "source": "验收界面人工确认",
-        "recordedAt": "2026-10-08T06:33:41.077Z",
-        "materialRevision": "sha256:873fbdcaad82394f55da98d2472e3c3d8c75c8af16e3d5b46c7b86555ccc00d1",
+        "recordedAt": "2026-10-08T07:31:52.560Z",
+        "materialRevision": "sha256:b4f15a6d3ac93a4093ba79b9cc2bd1276fce5d1eada3a2d3ef647626abbfd3c9",
         "reason": "参见验证报告"
       },
       "note": "参见验证报告",
