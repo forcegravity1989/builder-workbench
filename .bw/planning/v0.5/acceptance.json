@@ -1,0 +1,336 @@
+{
+  "schema_version": 3,
+  "version": "v0.5",
+  "cycleId": "2fc857bd-7f76-47ef-9bf2-18a80241fed6",
+  "planRef": {
+    "kind": "committed",
+    "version": "v0.5",
+    "cycleId": "664aa8c6-d407-43e7-9d60-e99096f1f2db",
+    "revision": "sha256:4bddedd0feda0d3456866221988c4184075b973c8f1cc15cb3719e85ac3ef526",
+    "sourceCommit": "1f84e806f29dda6534e64cc2ebf0b6391118b782"
+  },
+  "preparedArtifacts": [],
+  "taskSnapshot": [
+    {
+      "kind": "ready",
+      "reference": {
+        "provider": "github",
+        "repository": "github.com/forcegravity1989/builder-workbench",
+        "number": 247,
+        "goalId": "G1"
+      },
+      "source": {
+        "kind": "task-source",
+        "provider": "github",
+        "projectId": "github:forcegravity1989/builder-workbench",
+        "hostId": "local",
+        "projectHostSetupId": "4ee197bf-54c9-4aa7-bfcd-866cb49d401c",
+        "repoId": "4ee197bf-54c9-4aa7-bfcd-866cb49d401c",
+        "providerIdentity": {
+          "provider": "github",
+          "owner": "forcegravity1989",
+          "repo": "builder-workbench"
+        },
+        "accountLabel": null
+      },
+      "iid": 247,
+      "title": "【v0.5|W39|G1】orca-bw 重构版上线：F1–F5 特性六环补齐与版本交付整体跟踪",
+      "state": "open",
+      "url": "https://github.com/forcegravity1989/builder-workbench/issues/247",
+      "readAt": "2026-10-08T06:32:06.520Z"
+    },
+    {
+      "kind": "ready",
+      "reference": {
+        "provider": "github",
+        "repository": "github.com/forcegravity1989/builder-workbench",
+        "number": 248,
+        "goalId": "G1"
+      },
+      "source": {
+        "kind": "task-source",
+        "provider": "github",
+        "projectId": "github:forcegravity1989/builder-workbench",
+        "hostId": "local",
+        "projectHostSetupId": "4ee197bf-54c9-4aa7-bfcd-866cb49d401c",
+        "repoId": "4ee197bf-54c9-4aa7-bfcd-866cb49d401c",
+        "providerIdentity": {
+          "provider": "github",
+          "owner": "forcegravity1989",
+          "repo": "builder-workbench"
+        },
+        "accountLabel": null
+      },
+      "iid": 248,
+      "title": "【v0.5|W39|G1】orca-bw 六环补齐 · F1 项目接入与项目约定",
+      "state": "closed",
+      "url": "https://github.com/forcegravity1989/builder-workbench/issues/248",
+      "readAt": "2026-10-08T06:32:06.494Z"
+    },
+    {
+      "kind": "ready",
+      "reference": {
+        "provider": "github",
+        "repository": "github.com/forcegravity1989/builder-workbench",
+        "number": 249,
+        "goalId": "G1"
+      },
+      "source": {
+        "kind": "task-source",
+        "provider": "github",
+        "projectId": "github:forcegravity1989/builder-workbench",
+        "hostId": "local",
+        "projectHostSetupId": "4ee197bf-54c9-4aa7-bfcd-866cb49d401c",
+        "repoId": "4ee197bf-54c9-4aa7-bfcd-866cb49d401c",
+        "providerIdentity": {
+          "provider": "github",
+          "owner": "forcegravity1989",
+          "repo": "builder-workbench"
+        },
+        "accountLabel": null
+      },
+      "iid": 249,
+      "title": "【v0.5|W39|G1】orca-bw 六环补齐 · F2 版本目标与计划（周一屏·参考实现）",
+      "state": "closed",
+      "url": "https://github.com/forcegravity1989/builder-workbench/issues/249",
+      "readAt": "2026-10-08T06:32:06.505Z"
+    },
+    {
+      "kind": "ready",
+      "reference": {
+        "provider": "github",
+        "repository": "github.com/forcegravity1989/builder-workbench",
+        "number": 250,
+        "goalId": "G1"
+      },
+      "source": {
+        "kind": "task-source",
+        "provider": "github",
+        "projectId": "github:forcegravity1989/builder-workbench",
+        "hostId": "local",
+        "projectHostSetupId": "4ee197bf-54c9-4aa7-bfcd-866cb49d401c",
+        "repoId": "4ee197bf-54c9-4aa7-bfcd-866cb49d401c",
+        "providerIdentity": {
+          "provider": "github",
+          "owner": "forcegravity1989",
+          "repo": "builder-workbench"
+        },
+        "accountLabel": null
+      },
+      "iid": 250,
+      "title": "【v0.5|W39|G1】orca-bw 六环补齐 · F3 Issue 进度与人工完成",
+      "state": "closed",
+      "url": "https://github.com/forcegravity1989/builder-workbench/issues/250",
+      "readAt": "2026-10-08T06:32:06.471Z"
+    },
+    {
+      "kind": "ready",
+      "reference": {
+        "provider": "github",
+        "repository": "github.com/forcegravity1989/builder-workbench",
+        "number": 251,
+        "goalId": "G1"
+      },
+      "source": {
+        "kind": "task-source",
+        "provider": "github",
+        "projectId": "github:forcegravity1989/builder-workbench",
+        "hostId": "local",
+        "projectHostSetupId": "4ee197bf-54c9-4aa7-bfcd-866cb49d401c",
+        "repoId": "4ee197bf-54c9-4aa7-bfcd-866cb49d401c",
+        "providerIdentity": {
+          "provider": "github",
+          "owner": "forcegravity1989",
+          "repo": "builder-workbench"
+        },
+        "accountLabel": null
+      },
+      "iid": 251,
+      "title": "【v0.5|W39|G1】orca-bw 六环补齐 · F4 AI 任务开工与会话续接",
+      "state": "closed",
+      "url": "https://github.com/forcegravity1989/builder-workbench/issues/251",
+      "readAt": "2026-10-08T06:32:07.552Z"
+    },
+    {
+      "kind": "ready",
+      "reference": {
+        "provider": "github",
+        "repository": "github.com/forcegravity1989/builder-workbench",
+        "number": 252,
+        "goalId": "G1"
+      },
+      "source": {
+        "kind": "task-source",
+        "provider": "github",
+        "projectId": "github:forcegravity1989/builder-workbench",
+        "hostId": "local",
+        "projectHostSetupId": "4ee197bf-54c9-4aa7-bfcd-866cb49d401c",
+        "repoId": "4ee197bf-54c9-4aa7-bfcd-866cb49d401c",
+        "providerIdentity": {
+          "provider": "github",
+          "owner": "forcegravity1989",
+          "repo": "builder-workbench"
+        },
+        "accountLabel": null
+      },
+      "iid": 252,
+      "title": "【v0.5|W39|G1】orca-bw 六环补齐 · F5 定时工作执行",
+      "state": "closed",
+      "url": "https://github.com/forcegravity1989/builder-workbench/issues/252",
+      "readAt": "2026-10-08T06:32:07.513Z"
+    },
+    {
+      "kind": "ready",
+      "reference": {
+        "provider": "github",
+        "repository": "github.com/forcegravity1989/builder-workbench",
+        "number": 253,
+        "goalId": "G2"
+      },
+      "source": {
+        "kind": "task-source",
+        "provider": "github",
+        "projectId": "github:forcegravity1989/builder-workbench",
+        "hostId": "local",
+        "projectHostSetupId": "4ee197bf-54c9-4aa7-bfcd-866cb49d401c",
+        "repoId": "4ee197bf-54c9-4aa7-bfcd-866cb49d401c",
+        "providerIdentity": {
+          "provider": "github",
+          "owner": "forcegravity1989",
+          "repo": "builder-workbench"
+        },
+        "accountLabel": null
+      },
+      "iid": 253,
+      "title": "【v0.5|W39|G2】BW 开发方法资产迁移至 orca-bw：CI/门禁/verify 入口、PR 评审召唤制、发布自用工具链",
+      "state": "open",
+      "url": "https://github.com/forcegravity1989/builder-workbench/issues/253",
+      "readAt": "2026-10-08T06:32:07.547Z"
+    },
+    {
+      "kind": "ready",
+      "reference": {
+        "provider": "github",
+        "repository": "github.com/forcegravity1989/builder-workbench",
+        "number": 254,
+        "goalId": "G2"
+      },
+      "source": {
+        "kind": "task-source",
+        "provider": "github",
+        "projectId": "github:forcegravity1989/builder-workbench",
+        "hostId": "local",
+        "projectHostSetupId": "4ee197bf-54c9-4aa7-bfcd-866cb49d401c",
+        "repoId": "4ee197bf-54c9-4aa7-bfcd-866cb49d401c",
+        "providerIdentity": {
+          "provider": "github",
+          "owner": "forcegravity1989",
+          "repo": "builder-workbench"
+        },
+        "accountLabel": null
+      },
+      "iid": 254,
+      "title": "【v0.5|W39|G2】按运维全景勾勾表盘点 BW 自身现状并新增 1+ 项落地",
+      "state": "closed",
+      "url": "https://github.com/forcegravity1989/builder-workbench/issues/254",
+      "readAt": "2026-10-08T06:32:07.586Z"
+    },
+    {
+      "kind": "ready",
+      "reference": {
+        "provider": "github",
+        "repository": "github.com/forcegravity1989/builder-workbench",
+        "number": 255,
+        "goalId": "G3"
+      },
+      "source": {
+        "kind": "task-source",
+        "provider": "github",
+        "projectId": "github:forcegravity1989/builder-workbench",
+        "hostId": "local",
+        "projectHostSetupId": "4ee197bf-54c9-4aa7-bfcd-866cb49d401c",
+        "repoId": "4ee197bf-54c9-4aa7-bfcd-866cb49d401c",
+        "providerIdentity": {
+          "provider": "github",
+          "owner": "forcegravity1989",
+          "repo": "builder-workbench"
+        },
+        "accountLabel": null
+      },
+      "iid": 255,
+      "title": "【v0.5|W39|G3】构建周一屏看护指标：使用该特性项目数白名单采集（1→6）",
+      "state": "closed",
+      "url": "https://github.com/forcegravity1989/builder-workbench/issues/255",
+      "readAt": "2026-10-08T06:32:08.549Z"
+    }
+  ],
+  "results": [
+    {
+      "goalId": "G2",
+      "deliveries": [],
+      "readings": [],
+      "decision": {
+        "outcome": "met",
+        "source": "验收界面人工确认",
+        "recordedAt": "2026-10-08T06:16:00.153Z",
+        "materialRevision": "sha256:1429532135c909a1795ee87519a4b4f6428de5ab6e60401be137c9886da3ec0f",
+        "reason": "运维全景勾勾表差距矩阵"
+      },
+      "note": "运维全景勾勾表差距矩阵",
+      "nextStep": ""
+    },
+    {
+      "goalId": "G3",
+      "deliveries": [],
+      "readings": [
+        {
+          "ref": {
+            "name": "使用周一屏的被管理项目数",
+            "definitionHash": "sha256:72c3950b0b220fff8e038c55efdd82762d4a4dc05046c86b41f7cca8912a57f2",
+            "configurationCommit": "e989dd0f7065c6046b7fb3ff2f65d9d035ac014b"
+          },
+          "value": 0,
+          "unit": "",
+          "collectedAt": "2026-10-08T03:03:33.666Z",
+          "source": "4ee197bf-54c9-4aa7-bfcd-866cb49d401c@e989dd0f7065c6046b7fb3ff2f65d9d035ac014b",
+          "collectorRevision": "sha256:ce36543bcca57340813f5b486a0e9e73e261f8548c1c451445a318ffbf64dd8e",
+          "observation": {
+            "kind": "window",
+            "start": "2026-10-05T00:00:00+08:00",
+            "end": "2026-10-08T11:03:29+08:00",
+            "granularity": "week",
+            "timezone": "Asia/Shanghai"
+          }
+        }
+      ],
+      "decision": {
+        "outcome": "not-met",
+        "source": "验收界面人工确认",
+        "recordedAt": "2026-10-08T06:16:57.032Z",
+        "materialRevision": "sha256:34c9046bbfbe32a78fd486a52edd0326a260e1d1c911a977813aaa04082836d9",
+        "reason": ""
+      },
+      "note": "",
+      "nextStep": ""
+    },
+    {
+      "goalId": "G1",
+      "deliveries": [
+        {
+          "title": "项目纳入、版本计划屏、任务屏支持codehub、版本验收屏",
+          "location": "https://github.com/forcegravity1989/builder-workbench/blob/24a3b0eef9916f0f34fe944421ea97defd578473/docs/05-features/version-acceptance/showcase-v0.5-g1.html"
+        }
+      ],
+      "readings": [],
+      "decision": {
+        "outcome": "met",
+        "source": "验收界面人工确认",
+        "recordedAt": "2026-10-08T06:33:41.077Z",
+        "materialRevision": "sha256:873fbdcaad82394f55da98d2472e3c3d8c75c8af16e3d5b46c7b86555ccc00d1",
+        "reason": "参见验证报告"
+      },
+      "note": "参见验证报告",
+      "nextStep": ""
+    }
+  ]
+}
