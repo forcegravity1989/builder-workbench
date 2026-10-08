@@ -70,8 +70,7 @@ const macExecutableName = process.env.ORCA_PRODUCT_NAME || 'Orca'
 const linuxExecutableName = process.env.ORCA_PRODUCT_NAME
   ? String(process.env.ORCA_PRODUCT_NAME).toLowerCase().replace(/\s+/g, '-')
   : 'orca-ide'
-const protocolScheme =
-  process.env.ORCA_PRODUCT_NAME === 'Workbench' ? 'workbench' : 'orca'
+const protocolScheme = process.env.ORCA_PRODUCT_NAME === 'Workbench' ? 'workbench' : 'orca'
 const featureWallResources = {
   from: 'resources/onboarding/feature-wall',
   to: 'onboarding/feature-wall'
@@ -181,9 +180,7 @@ module.exports = {
             : localBuildVersion
               ? { version: localBuildVersion }
               : {}),
-          ...(productName === 'Workbench'
-            ? { name: 'workbench', productName: 'Workbench' }
-            : {})
+          ...(productName === 'Workbench' ? { name: 'workbench', productName: 'Workbench' } : {})
         }
       }
     : {}),
@@ -460,7 +457,10 @@ module.exports = {
         to: 'bin/orca.cmd'
       },
       {
-        from: 'native/windows-cli-launcher/.build/orca.exe',
+        from:
+          productName === 'Workbench'
+            ? 'native/windows-cli-launcher/.build/workbench/orca.exe'
+            : 'native/windows-cli-launcher/.build/orca.exe',
         to: 'bin/orca.exe'
       },
       {

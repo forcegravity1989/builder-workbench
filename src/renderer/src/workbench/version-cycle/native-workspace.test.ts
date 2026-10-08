@@ -45,7 +45,14 @@ it.each(['runtime:b', 'ssh:nested'] as const)(
       return true
     })
     test.state = { repos: [], allWorktrees: () => rows, fetchWorktrees }
-    test.rpc.mockImplementation(async () => {
+    test.rpc.mockImplementation(async (_target, method: string) => {
+      if (method === 'repo.searchRefs') {
+        return {
+          refs: ['origin/bw/week-plan'],
+          refDetails: [{ refName: 'origin/bw/week-plan', localBranchName: 'bw/week-plan' }],
+          truncated: false
+        }
+      }
       test.state.activeWorkspaceExecutionHostId = 'runtime:a'
       return { worktree: created }
     })
@@ -59,7 +66,11 @@ it.each(['runtime:b', 'ssh:nested'] as const)(
     expect(test.rpc).toHaveBeenCalledWith(
       { kind: 'environment', environmentId: 'b' },
       'worktree.create',
-      expect.objectContaining({ repo: 'id:repo', branchNameOverride: 'bw/week-plan' }),
+      expect.objectContaining({
+        repo: 'id:repo',
+        branchNameOverride: 'bw/week-plan',
+        baseBranch: 'origin/bw/week-plan'
+      }),
       expect.anything()
     )
     expect(fetchWorktrees).toHaveBeenCalledWith('repo', { executionHostId: 'runtime:b' })
@@ -74,6 +85,9 @@ it('rolls back a stray tree when native create uniquifies an occupied branch', a
     fetchWorktrees: vi.fn(async () => true)
   }
   test.rpc.mockImplementation(async (_target, method: string) => {
+    if (method === 'repo.searchRefs') {
+      return { refs: [], refDetails: [], truncated: false }
+    }
     if (method === 'worktree.create') {
       return { worktree: stray }
     }
