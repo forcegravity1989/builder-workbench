@@ -25,12 +25,15 @@
 | 5 | 纳入项目与项目信息记录 | [project-intake/](project-intake/)² | 在用·补链中 | ● | ●(原型经拍板豁免) | ◐ | ◐ | 待建(P-01–P07 已定义) | 待建(主旅程已定义) |
 | 6 | CodeHub 适配 | [codehub/](codehub/)³ | 在用·补链中 | ◐ | ◐ | ◐ | ◐ | ○(C01–C08 已定义) | ○(CJ01 已定义) |
 | 7 | Windows 出包与发布 | [workbench-release/](workbench-release/)³ | 开发方法资产·补链中 | ◐ | ◐ | ◐ | ○ | ○(R01–R04 已定义) | ○(RJ01 已定义) |
+| 8 | 定时任务 | [automations/](automations/) | 在用·增强设计中（2026-10-09 带入）⁴ | ◐ | ◐ | ◐ | ○ | 待建 | 待建 |
 
 ¹ 第 4 行：GitHub CI 路径 2026-08/09 在旧 main 侧交付并实测闭环（PR #132 及后续召唤）；2026-09-29 用户拍板迁入产品分支——workflow 与回执脚本（`.github/scripts/check-pr-review.mjs`）已落，实现设计 ●。2026-09-30 扶正后本定义即默认分支 main 的定义，`/code-review` 召唤直接执行它，不再经旧 main 定义中转。验收点 ◐：迁移 PR 自身修改 workflow 文件，按 #132 先例（时为 pull_request 触发下的防篡改跳过）保守不自召——该校验在现行 issue_comment 触发模型下是否适用未复核；主干首场真实召唤待下一条合格 PR 实测，未实测不判过。TDD ◐：回执脚本无单测，以召唤实测为准。台内「请评审」按钮路径规范件在仓但未接线，defer。明细见其 [STATUS](reviewer-agent/STATUS.md) 迁移节。
 
 ² 第 5 行为 v0.5 收尾补登记（2026-09-29 用户拍板带入）：能力已交付在用，但特性链在 v0.5 准备阶段清旧矩阵时未重建，按 [02 §6.3](../01-principles/02-working-backwards.md) 补链。intent 已 gate（2026-09-29）、spec 已确认（2026-09-30，原型经拍板豁免），补链由本仓会话推进。工程与行为记录以 [architecture](../architecture.md)（项目墙、接入覆盖层、`.bw/project.toml`）及对应 PR 为据。实现设计 ◐ = 有散落记录、无特性级 design；TDD ◐ = 有存量单测（charter 解析与保真合并、项目墙组聚合；展示类用例已随 2026-09-30 环 4 盘点删除）。
 
 ³ 第 6–7 行从已落地提交回写（2026-09-30），intent/spec 为草案，待人 gate。第 6 行接上原先「任务 CodeHub 支持」的占位，目录就是 [codehub/](codehub/)，范围含任务来源与计划/验收读写；spec 缺可点原型。第 7 行是 BW 开发者的 Windows 出包与 GitHub Release，无界面，操作契约在技能。明细见各自 STATUS。
+
+⁴ 第 8 行为既有能力的增强特性（2026-10-09 设计会话带入）：调度、运行与编辑器复用 Orca 原生 Automations，BW 叠层只加生成会话编排与增量字段（一次性/间隔/次数上限、并发跳过、提示词快照、携带上次结果、通知、导入导出）。intent/spec/design 为设计会话产出，**待人 gate**；未写实现代码，本表不表示能力已交付。明细见其 [STATUS](automations/STATUS.md)。
 
 ## 裁决与明细指引
 
