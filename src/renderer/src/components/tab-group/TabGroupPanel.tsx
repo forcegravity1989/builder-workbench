@@ -341,12 +341,7 @@ export default function TabGroupPanel({
         style={bodyAnchorStyle}
       >
         {/* Why: empty anchor so the agent-sessions tour reads as a terminal-area tip, not toolbar chrome. */}
-        {isFocused ? (
-          <div
-            className="pointer-events-none absolute inset-x-0 top-1/4 h-px"
-            data-contextual-tour-target="workspace-agent-terminal-tip"
-          />
-        ) : null}
+        {isFocused ? <div className="pointer-events-none absolute inset-x-0 top-1/4 h-px" /> : null}
         {activeTab &&
           activeTab.contentType !== 'terminal' &&
           activeTab.contentType !== 'agent-session' &&

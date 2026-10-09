@@ -126,13 +126,12 @@ async function readGridSnapshot(page: Page, ptyId: string): Promise<GridSnapshot
   }, ptyId)
 }
 
-async function closeRightSidebarAndFeatureTips(page: Page): Promise<void> {
+async function closeRightSidebar(page: Page): Promise<void> {
   await page.evaluate(() => {
     const store = window.__store
     if (!store) {
       return
     }
-    store.getState().markFeatureTipsSeen(['orca-cli', 'cmd-j-palette', 'voice-dictation'])
     if (store.getState().rightSidebarOpen) {
       store.getState().setRightSidebarOpen(false)
     }
@@ -180,7 +179,7 @@ async function driveHiddenResizeRevealCycles(args: CycleDriverArgs): Promise<Cyc
   }
 
   await page.setViewportSize(VIEWPORTS[0])
-  await closeRightSidebarAndFeatureTips(page)
+  await closeRightSidebar(page)
 
   await switchToWorktree(page, secondWorktreeId)
   await ensureTerminalVisible(page)

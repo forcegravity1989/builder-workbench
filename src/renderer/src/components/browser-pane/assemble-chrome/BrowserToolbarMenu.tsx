@@ -1,9 +1,8 @@
-import { useLayoutEffect, useState } from 'react'
+import { useState } from 'react'
 import { toast } from 'sonner'
 import { emitBrowserCookieImportToast } from '@/lib/browser-cookie-import-toast'
 import { useAppStore } from '@/store'
 import { useMountedRef } from '@/hooks/useMountedRef'
-import { shouldShowBrowserImportHint } from './browser-import-hint-visibility'
 import type { BrowserViewportPresetId } from '../../../../../shared/browser-workspace-types'
 import {
   browserViewportPresetToOverride,
@@ -19,7 +18,6 @@ type BrowserToolbarMenuProps = {
   browserPageId: string
   viewportPresetId: BrowserViewportPresetId | null
   onDestroyWebview: () => void
-  isActive: boolean
 }
 
 export function BrowserToolbarMenu({
@@ -27,8 +25,7 @@ export function BrowserToolbarMenu({
   workspaceId,
   browserPageId,
   viewportPresetId,
-  onDestroyWebview,
-  isActive
+  onDestroyWebview
 }: BrowserToolbarMenuProps): React.JSX.Element {
   const browserSessionProfiles = useAppStore((s) => s.browserSessionProfiles)
   const detectedBrowsers = useAppStore((s) => s.detectedBrowsers)
@@ -39,18 +36,6 @@ export function BrowserToolbarMenu({
   const fetchDetectedBrowsers = useAppStore((s) => s.fetchDetectedBrowsers)
   const browserSessionImportState = useAppStore((s) => s.browserSessionImportState)
   const setBrowserPageViewportPreset = useAppStore((s) => s.setBrowserPageViewportPreset)
-  const browserCookieTourStepActive = useAppStore(
-    (s) => s.activeContextualTourId === 'browser' && s.activeContextualTourStepIndex === 2
-  )
-  const browserImportHintHidden = useAppStore((s) => s.browserImportHintHidden)
-  const persistedUIReady = useAppStore((s) => s.persistedUIReady)
-  // The tour prefers the always-visible Import button; only force this overflow
-  // menu open to expose Import Cookies once that hint button is dismissed.
-  const importHintVisible = shouldShowBrowserImportHint({
-    persistedUIReady,
-    browserImportHintHidden
-  })
-  const shouldForceMenuOpen = browserCookieTourStepActive && isActive && !importHintVisible
 
   const applyViewportPreset = (nextId: BrowserViewportPresetId | null): void => {
     setBrowserPageViewportPreset(browserPageId, nextId)
@@ -68,19 +53,6 @@ export function BrowserToolbarMenu({
   )
   const [menuOpen, setMenuOpen] = useState(false)
   const mountedRef = useMountedRef()
-
-  useLayoutEffect(() => {
-    // Why: step 3 falls back to the Import Cookies row inside this menu, so open
-    // it only when the tour reaches that step and the hint button is hidden.
-    setMenuOpen(shouldForceMenuOpen)
-  }, [shouldForceMenuOpen])
-
-  const handleMenuOpenChange = (open: boolean): void => {
-    if (shouldForceMenuOpen && !open) {
-      return
-    }
-    setMenuOpen(open)
-  }
 
   const handleNewProfileDialogOpenChange = (open: boolean): void => {
     setNewProfileDialogOpen(open)
@@ -234,7 +206,7 @@ export function BrowserToolbarMenu({
     <>
       <BrowserToolbarMenuDropdown
         menuOpen={menuOpen}
-        onMenuOpenChange={handleMenuOpenChange}
+        onMenuOpenChange={setMenuOpen}
         allProfiles={allProfiles}
         effectiveProfileId={effectiveProfileId}
         onSwitchProfile={handleSwitchProfile}

@@ -19,7 +19,7 @@ import { attachBrowserClientPageToViewport } from './browser-client-page-rendere
 import { useBrowserClientHostedDownloadNotices } from './browser-client-hosted-download-notices'
 import { useBrowserClientHostedPopupNotices } from './browser-client-hosted-popup-notices'
 import { useBrowserClientHostedPermissionNotices } from './browser-client-hosted-permission-notices'
-import { useClientHostedBrowserIntroTour } from './use-client-hosted-browser-intro-tour'
+import { useRecordFeatureUse } from '@/hooks/use-record-feature-use'
 import { ClientHostedBrowserUnavailableNotice } from './client-hosted-browser-unavailable-notice'
 import { watchBrowserClientPageGuestLoss } from './host-guest/browser-client-page-guest-loss'
 import { useRestoredClientHostedRecoveryWindow } from './restored-client-hosted-recovery-window'
@@ -143,9 +143,8 @@ export function ClientHostedBrowserPagePane({
   useBrowserClientHostedDownloadNotices(browserTab.id)
   useBrowserClientHostedPopupNotices(browserTab.id)
   useBrowserClientHostedPermissionNotices(browserTab.id)
-  // Why: the tour points at controls that cannot work yet, and recording the interaction is a
-  // one-way write that would burn the tour on a pane the user has not really seen.
-  useClientHostedBrowserIntroTour(isActive && !attachmentError && placement !== null)
+  // Why: an unattached pane has controls that cannot work yet, so it does not count as seen.
+  useRecordFeatureUse('client-hosted-browser', isActive && !attachmentError && placement !== null)
   useBrowserPageFindShortcuts({
     browserTabId: browserTab.id,
     workspaceId,
@@ -348,7 +347,7 @@ export function ClientHostedBrowserPagePane({
         webviewRef={webviewRef}
         onReload={() => reload.reloadWebviewOrRecoverGuest(false)}
       />
-      <div data-contextual-tour-target="client-hosted-browser-controls">
+      <div>
         <BrowserNavigationControlRow
           controls={{
             canGoBack: browserTab.canGoBack,

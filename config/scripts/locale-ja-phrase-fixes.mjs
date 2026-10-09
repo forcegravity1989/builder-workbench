@@ -98,7 +98,6 @@ export const JA_PHRASE_FIXES = [
     replacement: 'マージされています',
     whenEnIncludes: 'already merged'
   },
-  { pattern: /再起動します/g, replacement: '再起動', whenEnIncludes: 'Restart Orca' },
   { pattern: /オウムガイ/g, replacement: 'Nautilus', whenEnIncludes: 'Nautilus' },
   {
     pattern: /Kim サブスクリプション/g,

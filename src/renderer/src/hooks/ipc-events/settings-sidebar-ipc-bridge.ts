@@ -51,12 +51,6 @@ export function registerSettingsAndSidebarIpcBridge(unsubs: (() => void)[]): voi
       .catch(() => {})
   }
 
-  unsubs.push(
-    window.api.ui.onOpenSetupGuide?.(() => {
-      useAppStore.getState().openModal('setup-guide', { telemetrySource: 'help_menu' })
-    }) ?? (() => {})
-  )
-
   // Why: a phone stuck in a silent 4001 auth loop (lost device registry) reads as
   // "phone won't connect" with no clue on either end; main throttles to once per session.
   unsubs.push(
@@ -83,12 +77,6 @@ export function registerSettingsAndSidebarIpcBridge(unsubs: (() => void)[]): voi
           }
         }
       )
-    })
-  )
-
-  unsubs.push(
-    window.api.ui.onOpenFeatureTour(() => {
-      useAppStore.getState().openModal('feature-wall', { source: 'help_menu' })
     })
   )
 

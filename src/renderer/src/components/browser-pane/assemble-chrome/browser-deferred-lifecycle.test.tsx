@@ -36,9 +36,6 @@ vi.mock('@/lib/worktree-runtime-owner', () => ({
   getRuntimeEnvironmentIdForWorktree: () => null,
   getExecutionHostIdForWorktree: () => mocks.executionHostId
 }))
-vi.mock('@/components/contextual-tours/use-contextual-tour', () => ({
-  useContextualTour: () => {}
-}))
 vi.mock('../host-guest/webview-registry', () => ({ destroyPersistentWebview: mocks.destroy }))
 vi.mock('./BrowserMobileDriverOverlay', () => ({ BrowserMobileDriverOverlay: () => null }))
 vi.mock('./browser-page-pane', () => ({

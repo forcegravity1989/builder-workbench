@@ -262,7 +262,6 @@ export function TaskPageGitHubRows({
                         type="button"
                         variant={attachedWorkspace ? 'default' : 'outline'}
                         size="xs"
-                        data-contextual-tour-target="tasks-start-workspace"
                         onClick={(event) => {
                           event.stopPropagation()
                           handleOpenOrUseGitHubWorkItem(item)
@@ -323,7 +322,6 @@ export function TaskPageGitHubRows({
                     // Why: Open resumes an existing workspace — solid primary reads stronger than outline Start (new workspace).
                     variant={attachedWorkspace ? 'default' : 'outline'}
                     size="xs"
-                    data-contextual-tour-target="tasks-start-workspace"
                     onClick={(event) => {
                       event.stopPropagation()
                       handleOpenOrUseGitHubWorkItem(item)

@@ -17,8 +17,8 @@ vi.mock('@/hooks/useInstalledAgentSkills', () => ({
   notifyInstalledAgentSkillsRefreshed: mocks.skillsRefreshed
 }))
 
-vi.mock('../onboarding/OnboardingInlineCommandTerminal', () => ({
-  OnboardingInlineCommandTerminal: () => null
+vi.mock('./InlineCommandTerminal', () => ({
+  InlineCommandTerminal: () => null
 }))
 
 function inventory(eligibleUpdateNames: string[]): SkillFreshnessInventory {

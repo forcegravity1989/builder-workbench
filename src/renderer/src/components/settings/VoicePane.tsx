@@ -27,7 +27,6 @@ export function VoicePane({ settings, updateSettings }: VoicePaneProps): React.J
   const voiceSettings = settings.voice ?? defaultVoiceSettings
   const modelStates = useAppStore((s) => s.modelStates)
   const refreshModelStates = useAppStore((s) => s.refreshModelStates)
-  const markFeatureTipsSeen = useAppStore((s) => s.markFeatureTipsSeen)
   const settingsSearchQuery = useAppStore((s) => s.settingsSearchQuery ?? '')
   const [catalog, setCatalog] = useState<SpeechModelManifest[]>([])
   const [permissionPending, setPermissionPending] = useState(false)
@@ -97,7 +96,6 @@ export function VoicePane({ settings, updateSettings }: VoicePaneProps): React.J
   const toggleVoiceDictation = async (): Promise<void> => {
     await handleVoiceDictationToggle({
       voiceEnabled: voiceSettings.enabled,
-      markFeatureTipsSeen,
       updateVoiceSettings,
       requestMicrophonePermission: () =>
         window.api.developerPermissions.request({ id: 'microphone' }),

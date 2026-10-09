@@ -40,7 +40,7 @@
 - 独立「会话」导航页（执行面只靠 Projects / 开工）
 - 独立「配置」屏（能力在 Settings）
 - 原型皮肤对比开关
-- Feature wall 营销向导（壳开启时尽量跳过）
+- Feature wall 营销向导：已删除（连同首启向导、功能提示、情境引导，见 `ref/upstream.md`）
 - 左栏 Artifacts / Skills 并列入口（收进设置或隐藏）
 - **Orca Mobile 产品已删**（`mobile/`、桌面 Mobile 页、手机设置页）；配对协议仍在执行核里，见 `ref/upstream.md`
 - `.omc/**` 不进产品提交

@@ -746,27 +746,6 @@
   "auto.components.cmd.j.quick.actions.verbs.trashWorktree": {
     "ko": "워크트리 휴지통으로 이동"
   },
-  "auto.components.contextual.tours.ContextualTourProgressDots.7734cb8ad3": {
-    "ko": "중"
-  },
-  "auto.components.contextual.tours.ContextualTourProgressDots.dcd6e6b03e": {
-    "ko": "{{value1}}단계 중 {{value0}}단계"
-  },
-  "auto.components.contextual.tours.ContextualTourOverlaySurface.complete": {
-    "ko": "완료"
-  },
-  "auto.components.contextual.tours.contextual.tour.overlay.measurement.automations.intro.body": {
-    "ko": "자동화는 일정에 따라 agent 작업을 실행합니다. 이 버튼을 눌러 자동화를 추가하세요."
-  },
-  "auto.components.contextual.tours.contextual.tour.overlay.measurement.automations.intro.title": {
-    "ko": "자동화란 무엇인가요?"
-  },
-  "auto.components.contextual.tours.contextual.tour.overlay.measurement.automations.results.body": {
-    "ko": "실행 내역에서 자동화가 언제 실행되었는지, 어떤 일이 발생했는지, 출력을 어디서 확인할 수 있는지 볼 수 있습니다."
-  },
-  "auto.components.contextual.tours.contextual.tour.overlay.measurement.automations.results.title": {
-    "ko": "결과 확인"
-  },
   "auto.components.crash.report.CrashReportDialog.88fea8e84e": {
     "ko": "보내지 않음"
   },
@@ -976,183 +955,6 @@
   },
   "auto.components.emulator.pane.emulator.pane.toolbar.868c0f2938": {
     "ko": "작업 중…"
-  },
-  "auto.components.feature.tips.CliSkillSetupTerminal.1953e90447": {
-    "ko": "Enter를 눌러 agents 용 Orca CLI 오케스트레이션 스킬을 설치하세요."
-  },
-  "auto.components.feature.tips.CmdJPaletteFeatureTipVisual.379d776971": {
-    "ko": "입력 중"
-  },
-  "auto.components.feature.tips.FeatureTipActions.eb04abece8": {
-    "ko": "나중에"
-  },
-  "auto.components.feature.wall.AiCommitPrSettingsCard.1c0cb4fabb": {
-    "ko": "AI 작성자"
-  },
-  "auto.components.feature.wall.AiCommitPrSettingsCard.4b2fc4b80c": {
-    "ko": "사고 강도"
-  },
-  "auto.components.feature.wall.AiCommitPrSettingsCard.8d4152701a": {
-    "ko": "예: ollama run llama3.1 {{value0}}"
-  },
-  "auto.components.feature.wall.BrowserAnimatedVisual.0ce7c24b4d": {
-    "ko": "작업 중…"
-  },
-  "auto.components.feature.wall.BrowserAnimatedVisual.1bec24acc1": {
-    "ko": "@keyframes browserFlash { 0% { opacity: 0; } 20% { opacity: 0.85; } 100% { opacity: 0; } } @keyframes browserTabIn { from { opacity: 0; transform: translateY(-2px); } to { opacity: 1; transform: none; } } @keyframes browserViewIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }"
-  },
-  "auto.components.feature.wall.BrowserAnimatedVisual.25f15c2219": {
-    "ko": "Pro"
-  },
-  "auto.components.feature.wall.BrowserAnimatedVisual.59ae327405": {
-    "ko": "Starter"
-  },
-  "auto.components.feature.wall.BrowserAnimatedVisual.73bbb46073": {
-    "ko": "/pricing"
-  },
-  "auto.components.feature.wall.BrowserAnimatedVisual.7da6eed7bf": {
-    "ko": "localhost:3000"
-  },
-  "auto.components.feature.wall.BrowserAnimatedVisual.eb88125c6f": {
-    "ko": "✓ 검증됨 — 무료 체험판은 여전히 작동합니다."
-  },
-  "auto.components.feature.wall.BrowserAnimatedVisual.f39be6ca14": {
-    "ko": "/signup"
-  },
-  "auto.components.feature.wall.ComputerUseAnimatedVisual.6804cb356f": {
-    "ko": "클릭 전송됨"
-  },
-  "auto.components.feature.wall.ConnectIntegrationsList.33b650af52": {
-    "ko": "팀이 작업을 추적하는 서비스를 연결하세요. Orca는 이슈 제목, 링크, 컨텍스트가 이미 첨부된 워크스페이스를 시작합니다."
-  },
-  "auto.components.feature.wall.ConnectIntegrationsList.3dddb2d565": {
-    "ko": "작업용으로 연결됨"
-  },
-  "auto.components.feature.wall.ConnectIntegrationsList.5b3577a492": {
-    "ko": "리뷰 상태용으로 연결됨"
-  },
-  "auto.components.feature.wall.ConnectIntegrationsList.code_host_tasks_caption": {
-    "ko": "코드 호스트의 이슈도 작업으로 사용할 수 있습니다."
-  },
-  "auto.components.feature.wall.ConnectIntegrationsList.code_host_tasks_summary": {
-    "ko": "이슈를 작업으로 사용할 수 있음 · 팀이 Linear 또는 Jira에서 작업을 계획한다면 추가하세요"
-  },
-  "auto.components.feature.wall.ConnectIntegrationsList.list_end": {
-    "ko": ", 그리고 "
-  },
-  "auto.components.feature.wall.ConnectIntegrationsList.review_step_description": {
-    "ko": "Orca가 PR 또는 MR 상태, 체크, 리뷰를 표시할 수 있도록 리뷰 공급자를 연결하세요."
-  },
-  "auto.components.feature.wall.ConnectIntegrationsList.review_step_title": {
-    "ko": "agents가 작업하는 동안 PR 상태 보기"
-  },
-  "auto.components.feature.wall.ConnectIntegrationsList.task_step_title": {
-    "ko": "Orca를 떠나지 않고 작업에서 agents 시작"
-  },
-  "auto.components.feature.wall.EditorAnimatedVisual.22ae7b4d9d": {
-    "ko": "팀을 위한 간단한 메모 - 출시하기 전에 남은 항목을 정리합니다."
-  },
-  "auto.components.feature.wall.EditorAnimatedVisual.8521536429": {
-    "ko": "굵게 ·"
-  },
-  "auto.components.feature.wall.EditorAnimatedVisual.95f0c3a46f": {
-    "ko": "새 머신에서 설치 흐름을 스모크 테스트합니다."
-  },
-  "auto.components.feature.wall.EditorAnimatedVisual.e16479c1c5": {
-    "ko": "[data-slash-menu] [data-slash-row].slash-active { background: rgba(24,24,27,0.07); box-shadow: inset 0 0 0 1px rgba(24,24,27,0.06); } [data-md-active-line][data-role=\"active\"] { color: rgb(113 113 122); font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12.5px; } [data-md-active-line][data-role=\"h1\"] { color: inherit; font-family: inherit; font-size: 18px; font-weight: 700; letter-spacing: -0.01em; line-height: 1.2; margin-top: 6px; } [data-md-caret] { display: inline-block; width: 1.5px; height: 1em; background: currentColor; vertical-align: -2px; margin-left: 1px; animation: md-caret-blink 1.05s steps(1) infinite; } @keyframes md-caret-blink { 0%, 50% { opacity: 1 } 51%, 100% { opacity: 0 } } @keyframes md-block-in { from { opacity: 0; transform: translateY(-2px); } to { opacity: 1; transform: none; } } @keyframes md-cursor-ripple { 0% { transform: scale(0.4); opacity: 0.9; } 100% { transform: scale(1.4); opacity: 0; } } [data-clicking=\"1\"] [data-cursor-ripple] { animation: md-cursor-ripple 460ms ease-out forwards; }"
-  },
-  "auto.components.feature.wall.FeatureWallSetupChecklist.713cc529a5": {
-    "ko": "마일스톤"
-  },
-  "auto.components.feature.wall.FullDiskAccessSetupPrompt.0d6efe9cf4": {
-    "ko": "프로젝트나 워크트리가 보호된 폴더에 있는 경우 macOS에서 권장됩니다."
-  },
-  "auto.components.feature.wall.ReviewAnimatedVisual.8df4d52b68": {
-    "ko": "pr-view"
-  },
-  "auto.components.feature.wall.ReviewNotesAnimatedVisual.1eee3a397e": {
-    "ko": "src/server/migrate.ts (diff)"
-  },
-  "auto.components.feature.wall.ReviewNotesAnimatedVisual.5cb213f967": {
-    "ko": "AI 메모"
-  },
-  "auto.components.feature.wall.ReviewNotesAnimatedVisual.a7a89d8f94": {
-    "ko": "줄"
-  },
-  "auto.components.feature.wall.ReviewPRViewAnimatedVisual.2ef0b97954": {
-    "ko": "typecheck"
-  },
-  "auto.components.feature.wall.ReviewPRViewAnimatedVisual.6e3f5223c5": {
-    "ko": "탐색기"
-  },
-  "auto.components.feature.wall.ReviewPRViewAnimatedVisual.6f4c2d7cb7": {
-    "ko": "다음에 대한 커버리지 케이스 추가:"
-  },
-  "auto.components.feature.wall.ReviewPRViewAnimatedVisual.8ed213397c": {
-    "ko": "실행 중"
-  },
-  "auto.components.feature.wall.ReviewPRViewAnimatedVisual.a6c8b9e32f": {
-    "ko": "체크 통과"
-  },
-  "auto.components.feature.wall.ReviewPRViewAnimatedVisual.f4d5e1a7b2": {
-    "ko": "체크 3개"
-  },
-  "auto.components.feature.wall.ReviewShipAnimatedVisual.cd8a3a39d7": {
-    "ko": "commits 3개 앞섬"
-  },
-  "auto.components.feature.wall.TasksAnimatedVisual.b13375617e": {
-    "ko": "워크트리 선택기가 이름을 자릅니다."
-  },
-  "auto.components.feature.wall.WorkbenchAnimatedVisual.0b20782e0f": {
-    "ko": "워커 4개로 12개 테스트 실행"
-  },
-  "auto.components.feature.wall.WorkbenchAnimatedVisual.16877e038d": {
-    "ko": "아래로 분할"
-  },
-  "auto.components.feature.wall.WorkbenchAnimatedVisual.17cfdc3344": {
-    "ko": "Grep"
-  },
-  "auto.components.feature.wall.WorkbenchAnimatedVisual.4371cc9931": {
-    "ko": "pnpm playwright test"
-  },
-  "auto.components.feature.wall.WorkbenchAnimatedVisual.633a91e358": {
-    "ko": "생각 중…"
-  },
-  "auto.components.feature.wall.WorkbenchAnimatedVisual.944199e54a": {
-    "ko": "› 장바구니 합계 업데이트"
-  },
-  "auto.components.feature.wall.WorkbenchAnimatedVisual.9923847785": {
-    "ko": "Read"
-  },
-  "auto.components.feature.wall.WorkbenchAnimatedVisual.99f5224f1e": {
-    "ko": "Edit"
-  },
-  "auto.components.feature.wall.WorkbenchAnimatedVisual.a2b114dad0": {
-    "ko": "오른쪽으로 분할 ·"
-  },
-  "auto.components.feature.wall.WorkbenchAnimatedVisual.e370fa8c2b": {
-    "ko": "Terminal을 오른쪽으로 분할"
-  },
-  "auto.components.feature.wall.agents.orchestration.OrchestrationPage.30b509a467": {
-    "ko": "하위 2개"
-  },
-  "auto.components.feature.wall.agents.orchestration.StatusesPage.78f0318ac1": {
-    "ko": "실행하려고 함"
-  },
-  "auto.components.feature.wall.agents.orchestration.StatusesPage.7b26349cb2": {
-    "ko": "pnpm migrate latest"
-  },
-  "auto.components.feature.wall.agents.orchestration.UsageAccountsCard.6986b36708": {
-    "ko": "사용량 한도를 표시하고 계정을 인라인으로 전환하세요."
-  },
-  "auto.components.feature.wall.agents.orchestration.UsageAccountsCard.945865332e": {
-    "ko": "로그인 중"
-  },
-  "auto.components.feature.wall.agents.orchestration.orchestration.cards.da6f1f97c9": {
-    "ko": "작업 중"
-  },
-  "auto.components.feature.wall.review.notes.diff.rows.f621c734f8": {
-    "ko": "메모 · 줄"
   },
   "auto.components.github.CloseReasonDropdown.e1f2a3b4c5": {
     "ko": "닫기 사유 선택"
@@ -1441,39 +1243,6 @@
   },
   "auto.components.notification.sound.options.86af8d938c": {
     "ko": "봉 소리"
-  },
-  "auto.components.onboarding.AgentStep.1eee1c7bd8": {
-    "ko": "PATH에서 agents를 찾지 못했습니다. 나중에 설치할 항목을 선택하거나 빈 terminal로 계속 진행하세요."
-  },
-  "auto.components.onboarding.AgentStep.showMoreAgents": {
-    "ko": "agents {{value0}}개 더 보기→"
-  },
-  "auto.components.onboarding.AgentStep.yoloPermissionsInfo": {
-    "ko": "Agent 권한 정보"
-  },
-  "auto.components.onboarding.AgentStep.yoloPermissionsLabel": {
-    "ko": "Yolo / 권한 확인 위험하게 건너뛰기"
-  },
-  "auto.components.onboarding.AgentStep.yoloPermissionsTooltip": {
-    "ko": "중단을 줄이기 위해 agents 권한 확인을 건너뜁니다."
-  },
-  "auto.components.onboarding.IntegrationsStep.0b4a7d23ab": {
-    "ko": "로그인 중"
-  },
-  "auto.components.onboarding.OnboardingFlow.322fc50a18": {
-    "ko": "Orca는 모든 CLI agent와 함께 작동합니다. 가장 자주 사용할 agent를 선택하세요. 언제든지 전환할 수 있습니다."
-  },
-  "auto.components.onboarding.OnboardingFlow.a5e5da02f7": {
-    "ko": "연동"
-  },
-  "auto.components.onboarding.OnboardingFlow.windowsTerminalSubtitle": {
-    "ko": "새 창에서 사용할 기본 셸과 terminal에서 오른쪽 클릭이 동작하는 방식을 선택하세요."
-  },
-  "auto.components.onboarding.ThemeStep.7ee9234e54": {
-    "ko": "Ghostty 설정을 찾았습니다."
-  },
-  "auto.components.onboarding.ThemeStep.94b9dc561d": {
-    "ko": "설정 -> Terminal"
   },
   "auto.components.repo.NestedRepoChecklist.ea54c7bf8f": {
     "ko": "/"
@@ -3986,9 +3755,6 @@
   "auto.components.settings.voice.pane.search.f6e0dfa61c": {
     "ko": "클라우드"
   },
-  "auto.components.setup.guide.SetupGuideProgressRing.dac3a4724a": {
-    "ko": "설정 단계 {{value1}}개 중 {{value0}}개 완료"
-  },
   "auto.components.shared.useDaemonActions.d18f3005c2": {
     "ko": "세션 {{value0}}개{{value1}}이(가) 종료를 거부했습니다."
   },
@@ -4168,9 +3934,6 @@
   },
   "auto.components.sidebar.SetupScriptPromptCardViews.bb879db364": {
     "ko": "이 repo는 공유를 무시합니다"
-  },
-  "auto.components.sidebar.SidebarFeedbackDialog.3460258a54": {
-    "ko": "X에서 팔로우"
   },
   "auto.components.sidebar.SidebarHostScopeStrip.backToAll": {
     "ko": "모든 호스트"

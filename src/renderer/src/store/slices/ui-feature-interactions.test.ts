@@ -104,8 +104,7 @@ describe('createUISlice feature interactions', () => {
         makePersistedUI({
           featureInteractions: {
             tasks: { firstInteractedAt: 100, interactionCount: 3 }
-          },
-          contextualToursSeenIds: ['browser']
+          }
         })
       )
     )
@@ -123,8 +122,7 @@ describe('createUISlice feature interactions', () => {
       makePersistedUI({
         featureInteractions: {
           tasks: { firstInteractedAt: 100, interactionCount: 2 }
-        },
-        contextualToursSeenIds: ['tasks']
+        }
       })
     )
     setMock.mockClear()
@@ -138,7 +136,6 @@ describe('createUISlice feature interactions', () => {
       firstInteractedAt: 100,
       interactionCount: 3
     })
-    expect(store.getState().contextualToursSeenIds).toEqual(['tasks', 'browser'])
   })
 
   it('keeps newer optimistic interaction counts when persistence responses resolve out of order', async () => {

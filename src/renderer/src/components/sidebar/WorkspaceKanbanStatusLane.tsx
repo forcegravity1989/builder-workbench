@@ -115,9 +115,6 @@ function WorkspaceKanbanStatusLane({
       // Unfiltered lanes stay off this channel — the rendered scan already is the
       // full lane, and every board id in an attribute is real DOM weight.
       data-workspace-lane-full-ids={laneFullIdsAttribute}
-      data-contextual-tour-target={
-        status.id === 'completed' ? 'workspace-board-done-lane' : undefined
-      }
       className={cn(
         'group/lane',
         'relative flex h-full min-h-0 min-w-0 flex-col overflow-hidden rounded-md border border-t-2 border-worktree-sidebar-border transition-colors',

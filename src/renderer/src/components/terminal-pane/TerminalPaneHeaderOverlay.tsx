@@ -323,9 +323,6 @@ export default function TerminalPaneHeaderOverlay({
                           variant="ghost"
                           size="icon-xs"
                           className="pane-title-split-trigger"
-                          data-contextual-tour-target={
-                            isActivePane ? 'terminal-pane-split-target' : undefined
-                          }
                           aria-label={splitRightLabel}
                           onClick={(event) => {
                             event.stopPropagation()

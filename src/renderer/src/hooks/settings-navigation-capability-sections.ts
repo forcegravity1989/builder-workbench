@@ -6,7 +6,6 @@ import { getGeneralPaneSearchEntries } from '@/components/settings/general-searc
 import { getIntegrationsPaneSearchEntries } from '@/components/settings/integrations-search'
 import { getLinearAgentSkillPaneSearchEntries } from '@/components/settings/linear-agent-skill-search'
 import { getOrcaAccountSettingsSearchEntries } from '@/components/settings/orca-account-settings-search'
-import { OrcaLogoSettingsIcon } from '@/components/settings/orca-logo-settings-icon'
 import { getOrchestrationPaneSearchEntries } from '@/components/settings/orchestration-search'
 import { getVoicePaneSearchEntries } from '@/components/settings/voice-pane-search'
 import { translate } from '@/i18n/i18n'
@@ -139,39 +138,6 @@ export function buildSetupSettingsSections({
           }
         ]
       : []),
-    {
-      id: 'setup-guide',
-      title: translate(
-        'auto.hooks.useSettingsNavigationMetadata.ded9e9032f',
-        'Onboarding checklist'
-      ),
-      description: translate(
-        'auto.hooks.useSettingsNavigationMetadata.5f32ac08f3',
-        'Finish the onboarding checklist for core Orca workflows.'
-      ),
-      icon: OrcaLogoSettingsIcon,
-      searchEntries: [
-        {
-          title: translate(
-            'auto.hooks.useSettingsNavigationMetadata.ded9e9032f',
-            'Onboarding checklist'
-          ),
-          description: translate(
-            'auto.hooks.useSettingsNavigationMetadata.17005c73d4',
-            'Open the onboarding checklist for setup and milestone steps.'
-          ),
-          keywords: [
-            translate('auto.hooks.useSettingsNavigationMetadata.ea0b1bc7b8', 'setup guide'),
-            translate(
-              'auto.hooks.useSettingsNavigationMetadata.0505d0df29',
-              'get started with Orca'
-            ),
-            translate('auto.hooks.useSettingsNavigationMetadata.724c440e72', 'getting started')
-          ]
-        }
-      ],
-      group: 'setup'
-    },
     {
       id: 'general',
       title: translate('auto.hooks.useSettingsNavigationMetadata.13241992bd', 'General'),

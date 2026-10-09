@@ -43,6 +43,33 @@ git merge orca-upstream/main
 
 合并 upstream 时：不要把 `mobile/` 或 Mobile 页重新合回来。协议文件若 upstream 改了，优先取 upstream，除非叠层已摘钩子。
 
+### 源码：首启弹层与品牌残留（2026-10-09，已从本分支删除）
+
+Workbench 的第一次进入直接落在 Workbench 导航（真壳核实：计划屏准备态，无任何弹层）；Orca 的首启教育链与指向 Orca 的反馈、外链一并从 git 删除，不是壳内隐藏：
+
+| 处置 | 路径 | 说明 |
+|---|---|---|
+| **删除** | `src/renderer/src/components/onboarding/`（39 文件） | 首启 Onboarding 向导；`closedAt=null` 自动弹层、`OnboardingFlow` 懒加载、`use-onboarding-and-feature-tips`、启动时的 `onboarding.get` 读取一并删除 |
+| **删除** | `src/renderer/src/components/feature-tips/`（21） | 每次启动一条的功能提示弹窗；store 的 `featureTipsSeenIds` / `markFeatureTipsSeen` 删除 |
+| **删除** | `src/renderer/src/components/contextual-tours/`（25） | 情境引导；store 的 `activeContextualTour*` / `contextualTours*` 状态与动作、`ui-slice-tour-actions`、全部 `data-contextual-tour-target` 属性（DOM 结构不变）、浮动终端的 `tourInteractionSnapshot` 参数删除 |
+| **删除** | `src/renderer/src/components/feature-wall/`（98）、`components/setup-guide/`（11）、`resources/onboarding/`（37 文件，约 11 MB 素材） | 功能墙与入门清单（Milestones）；设置导航 `setup-guide` 目标与 `SettingsSetupGuidePane`、侧栏入门清单入口、`OrchestrationSetupCard`（仅功能墙使用） |
+| **删除** | `config/scripts/{check,vendor}-feature-wall-assets.mjs`、package.json 两条脚本、`pr.yml` 素材预算步骤、`oxlint-dead-classes.json` 的 `feature-wall-*` 放行、electron-builder 的 `onboarding/feature-wall` extraResources、`app:getFeatureWallAssetBaseUrl` IPC | 素材链路 |
+| **删除** | 应用菜单 Help → Explore Orca / Getting Started with Orca / Report Crash，及其 `ui:openFeatureTour` / `ui:openSetupGuide` / `ui:openCrashReport` 主进程发送、preload 与渲染端监听 | macOS 的 Help 菜单因此为空而不再生成；Windows/Linux Help 只剩 About 与 Check for Updates |
+| **删除** | 侧栏 Help 菜单的 Send Feedback、Milestones、Onboarding、Docs / Changelog / GitHub / Discord / X | 保留快捷键、检查更新；「Restart Orca」改为「Restart App」（同一个 `app.restart`） |
+| **删除** | `SidebarFeedbackDialog` 及图片附件 hooks、`lib/feedback-image-attachments`、preload `feedback` 桥、主进程 `feedback:submit` 处理器 | `src/main/ipc/feedback.ts` 的 `submitFeedback` 仍被崩溃报告提交使用，保留 |
+| **删除** | `Landing.tsx` 的「Star on GitHub」按钮与 `landing-github-star-state` | 主进程 star-nag 与 `gh.starOrca` 不动 |
+| **删除** | e2e：`onboarding` / `feature-wall` / `setup-guide-sidebar` / `client-hosted-browser-tooltip-preview` 四个 spec，`golden-core-flows` 的新用户首启段 | 其余 spec 的定位改用 `data-task-source`、`data-browser-chrome-address-slot`、`.pane-title-split-trigger` |
+| **改调用** | `use-app-chrome-layout.ts` | 壳开启时不显示标题栏写死的「Orca」应用名；非壳模式不变 |
+| **改调用** | `CrashReportDialog.tsx` | 只剩启动时待发崩溃报告与渲染错误边界两个入口；对话框仍只在非壳模式挂载 |
+| **新增** | `hooks/use-record-feature-use.ts` | 原先由情境引导 hook 顺带记录的功能使用计数（看板、Automations 页、浏览器、任务页等）改由它记录，`feature_interaction_usage_bucket_reached` 遥测口径不变 |
+| **改调用** | `main-process-runtime-launch.ts`、`store/repos/repo-add-actions.ts`、`NonGitFolderDialog.tsx` | 两处原本以「onboarding 已关闭 / 被跳过」为条件的逻辑随向导删除而失去触发条件：macOS 通知权限登记改为窗口显示即登记；「跳过向导后加第一个文件夹自动起默认 agent」整条删除（`lib/onboarding-folder-agent-{launch,startup}.ts`），加文件夹只激活并显示该工作区——BW 接入全程不起 agent |
+| **删除** | `lib/feedback-image-attachments.ts` 与 `feedback.ts` 的图片附件分支、`crashReports.getLatestReport` IPC 链、`integration-card-presentation` 的 setup-guide 呈现分支、`InlineCommandTerminal` 只给向导用的 props、`vite.web.config.ts` 的 `ORCA_FEATURE_WALL_ENABLED` | 半删残留；`submitFeedback` 本体仍被崩溃报告用 |
+| **未删（共享 / 主进程残留）** | `src/shared/{contextual-tours,feature-tips,feature-wall-*}.ts`、`persisted-ui-state-types` 中对应可选字段、主进程持久化归一化、遥测事件 schema（`telemetry-event-registry` 仍登记 tour / setup-guide 事件）、`window.api.onboarding` 与主进程 onboarding 状态 | 共享类型与 schema 已无生产调用方，只因与遥测事件注册表、持久化字段相互引用而留下；清理归下一批 |
+
+i18n：542 个只被上述组件引用的英文键从 6 个语言目录剪除，`en-runtime-required.json` 由 `sync:localization-runtime-catalog` 重生成；`config/scripts` 的 locale 覆盖规则同步删去指向这些键的条目。
+
+合并 upstream 时：不要把以上目录、菜单项、Help 外链、反馈链路与 `data-contextual-tour-target` 属性合回来；upstream 改到这些文件时按删除冲突处理。
+
 ### 文档（本轮原 `bw-orca` 落仓）
 
 产品文档已换成 **Workbench 旧 `main`**（导入时 tip：`25f38bc80211f9656e229ef31b0e5a10ae28226a`；该路线现归档为 `archive/main-pre-orca`），正本在仓根 `AGENTS.md` / `CONTEXT.md` / `README.md` / `CLAUDE.md` 与 `docs/`。
@@ -68,7 +95,7 @@ git merge orca-upstream/main
 | 取舍 | 落点 |
 |---|---|
 | 独立「会话 / 配置」导航不建 | `src/renderer/src/workbench/` 多屏导航（总览 / 计划 / 任务 / 验收 / 自动化 / 知识库） |
-| Feature wall 营销向导尽量跳过 | 壳路由 / bootstrap |
+| Feature wall 营销向导、首启向导、功能提示、情境引导 | **已删除**，见上文「首启弹层与品牌残留」；不是隐藏 |
 | 左栏 Artifacts / Skills 并列入口收起 | `WorkbenchSidebarNav` 等 |
 | 项目导航不再重复设置 / 帮助 | `WorkbenchSidebarNav`。壳里只留侧栏底栏那一对；Orca 底栏菜单不改 |
 | 知识库文档清单各大类默认可收起 | `KnowledgeDocsGuide`。项目约定在最上，其次 Agent 入口；每个大类默认折叠，点标题展开。分类与地图顺序不改 |
@@ -106,7 +133,7 @@ BW 业务契约与材料服务分别位于 `src/shared/workbench/`、`src/main/w
 | WSL | `wsl-runner` | outputTruncated 透传 |
 | Mobile 残留清理 | settings 死簇 20 文件删除、`settings-navigation-types` / `capability-sections` 移除 'mobile' key、i18n 单 key 修正；**2026-09-27 第二批（用户决策「不遗留」）**：showMobileButton 全链（`global-settings-types` / `default-global-settings` / app menu / IPC settings 白名单 / Appearance 项与搜索目录 / SidebarNav 谓词）、TopLevelView `'mobile'` 成员全链（`top-level-view` lookup、`client-ui-params` zod enum、right-sidebar-visibility、openMobilePage/closeMobilePage/previousViewBeforeMobile、hydration）、`mobile-page.css`、feature-interaction `'mobile-pairing'` 死 id、死 catalog 键剪枝（「362 键」为键名并集口径，各语言实删数不等：en≈365 / fr≈354 / es≈323，ja/ko/zh 与 es 接近）、死 locale 规则实测 ≈40+ 条（原记 29 条不准） | 活体保留：mobileClientTabSelectionsByDeviceId（client-session-tab-selection 活链）、MobileEmulator/emulator-pane、relay/pairing、`driver.kind==='mobile'`、设置页指活配对功能的 Relay 文案。合并 upstream 时 `'mobile'` 视图成员与 showMobileButton 以本分支删除为准 |
 | 原生清理/去重 | `task-provider-identity-label.ts`（自 task-source-context-summary 抽出）、`automation-source-display.ts` / `automation-target-availability.ts`（getProviderLabel 收敛单一实现）、`task-providers.ts`（索引检查改 lint 合规写法） | 基线门禁债清理（824ae01be）中的行为不变重构；合并 upstream 时保留 provider 标签单一实现与身份标签抽取，不把重复实现合回来 |
-| 配置 | `tsconfig.cli` include、`oxlint-dead-classes.json` 对 workbench 子树关闭 Tailwind 类审计（BW 自有 CSS 设计系统，与既有 feature-wall-* allow 同机制）、`reliability-gates.jsonc` 清 671 行死登记（4 条纯 mobile gate 删除、3 条混合 gate 修剪）、ci-shard-timings | 门禁登记与实际文件面对齐 |
+| 配置 | `tsconfig.cli` include、`oxlint-dead-classes.json` 对 workbench 子树关闭 Tailwind 类审计（BW 自有 CSS 设计系统）、`reliability-gates.jsonc` 清 671 行死登记（4 条纯 mobile gate 删除、3 条混合 gate 修剪）、ci-shard-timings | 门禁登记与实际文件面对齐 |
 | 门禁脚本 | `config/scripts/check-readme-local-links.mjs`、`config/scripts/audit-localization-coverage.mjs` | 前者把 `docs/readme/` 缺失视为「无翻译 README」而非 ENOENT 崩溃；后者新增目录级豁免机制（`config/localization-coverage-exclusions.json`，entry 必须带 pathPrefix+reason），合并 upstream 时保留 |
 
 **遗留项裁决（2026-09-26 用户决策）**：`verify:localization-coverage` 对 BW 中文叠层的 457 个候选走目录级豁免（`config/localization-coverage-exclusions.json`，workbench 子树，条目必须带 reason；原生组件里的专名 `codehub-cli` 与 BW 壳侧栏「任务」标签走 allowlist 复核条目 2 条）；`check-readme-local-links` 已容错 `docs/readme/` 缺失（见「待迁移的工程边界」）；showMobileButton 死开关链、store `'mobile'` activeView 残留、MobilePane 死簇与 i18n 孤儿键按用户决策「不遗留」在本批删除（见上表 Mobile 残留清理行）。**仍登记的后续任务**：relay collect 信任面重推导（wire 只传 name+definitionHash，远端从 configurationCommit 重解 run；需 SSH 实机验证配套，见 `src/relay/workbench/metrics-handler.ts` 注释）。

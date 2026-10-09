@@ -71,7 +71,7 @@ export function NewWorkspaceComposerNameSection({
   onReuseSelectedBranchChange
 }: NewWorkspaceComposerNameSectionProps): React.JSX.Element {
   return (
-    <div className="min-w-0 space-y-1" data-contextual-tour-target="workspace-creation-name">
+    <div className="min-w-0 space-y-1">
       <label className="block min-w-0 truncate text-xs font-medium text-muted-foreground">
         {selectedRepoIsGit
           ? translate(

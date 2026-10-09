@@ -45,9 +45,6 @@
   "menu": {
     "checkForUpdates": "检查更新...",
     "settings": "设置",
-    "exploreOrca": "探索 Orca",
-    "gettingStarted": "Orca 入门",
-    "reportCrash": "发送崩溃报告...",
     "file": "文件",
     "exit": "退出",
     "edit": "编辑",
@@ -91,9 +88,6 @@
   },
   "auto": {
     "App": {
-      "221a95ba38": "重试入门引导，或关闭后继续使用应用。",
-      "f02d37278a": "入门引导遇到错误。",
-      "acd66311dc": "如果您仍需要诊断，请在重试后使用“帮助”菜单。",
       "722d03aa62": "崩溃报告对话框出现错误。",
       "8a023cea1f": "重试状态栏以重新挂载其控件。",
       "2e8ff36f94": "状态栏出现错误。",
@@ -688,20 +682,6 @@
       },
       "pluginCommandKeybindings": {
         "group": "Plugins"
-      },
-      "feedback": {
-        "image": {
-          "attachments": {
-            "fallbackName": "图片附件",
-            "unsupportedType": "{{fileName}} 不是受支持的图片类型。",
-            "empty": "{{fileName}} 为空。",
-            "tooLarge": "{{fileName}} 大于 {{maxSize}}。",
-            "tooMany": "最多可附加 {{maxCount}} 张图片。",
-            "dimensionsTooLarge": "{{fileName}} 的尺寸过大，无法安全预览。",
-            "invalidImage": "{{fileName}} 不是有效的受支持图片。",
-            "additionalErrors": "还有 {{count}} 张图片无法附加。"
-          }
-        }
       }
     },
     "hooks": {
@@ -795,12 +775,6 @@
         "2b043783ef": "集成",
         "2cd4ea75da": "工作区默认值、应用程序设置和维护。",
         "13241992bd": "通用",
-        "724c440e72": "入门",
-        "0505d0df29": "开始使用 Orca",
-        "ea0b1bc7b8": "设置指南",
-        "17005c73d4": "打开入门清单以了解设置和里程碑步骤。",
-        "ded9e9032f": "入门清单",
-        "5f32ac08f3": "完成 Orca 核心工作流程的入门清单。",
         "8ac3de82f5": "使用设备端模型进行本地语音转文字听写。",
         "6a50cdcd7c": "语音",
         "0059bd17f3": "使智能体能够控制您计算机上的任何应用程序。",
@@ -1160,7 +1134,6 @@
         "6ca6ff404e": "ORCA",
         "520304a067": "Orca 标志",
         "ce44fad849": "缺少依赖项",
-        "c1cf168479": "隐藏",
         "00cee697c1": "在终端中运行“gh auth login”以连接您的 GitHub 账户。",
         "9f96d018b7": "GitHub CLI 未经过身份验证",
         "73e1ad4282": "Orca 使用 GitHub CLI (gh) 来显示PR、议题和检查。",
@@ -1170,9 +1143,6 @@
         "cd21242762": "添加一个项目即可开始。",
         "9c00bd4adf": "从侧边栏中选择一个工作区开始。",
         "16e9e3df89": "已加星标",
-        "0d0ace8861": "在 GitHub 上加星标",
-        "ec43b38ba7": "已在 GitHub 上加星标",
-        "157bb5ecbb": "打开 GitHub",
         "preflightDismiss": "关闭"
       },
       "LinearIssueMarkdownDescriptionEditor": {
@@ -4361,10 +4331,6 @@
         "ScrollToCurrentWorkspaceToolbarButton": {
           "23989bb663": "显示活动工作区"
         },
-        "SetupGuideSidebarEntry": {
-          "b0a7bfc34c": "从侧边栏隐藏",
-          "88d402b71d": "入门清单"
-        },
         "SetupScriptPromptCard": {
           "ff1e819a11": "添加设置脚本",
           "70715947fb": "安装脚本不能为空",
@@ -4394,28 +4360,6 @@
           "7275f674cc": "已检测的设置",
           "822ff300ad": "关闭",
           "5bfd5c8779": "关闭安装脚本"
-        },
-        "SidebarFeedbackDialog": {
-          "8bf619e4cf": "取消",
-          "8de03e23c5": "仅提交您输入的反馈，或连接“gh”以包含 GitHub 身份。",
-          "d20439c560": "检查 GitHub 身份...",
-          "5b120b9634": "匿名提交",
-          "c9e5ea0791": "GitHub：",
-          "d46ddd66fc": "我们可以改进什么？",
-          "3460258a54": "关注 X",
-          "26108d3699": "加入 Discord",
-          "d245c4ef6c": "GitHub 议题",
-          "9b33530b3d": "其他联系我们的方式",
-          "a828fa4aee": "分享什么是有效的、什么是有问题的，或者 Orca 接下来应该做什么。",
-          "0eb643f07f": "发送反馈",
-          "60b721e857": "提交反馈失败。请再试一次。",
-          "7a46c228b8": "感谢您的反馈。",
-          "a2fd890d9e": "请在提交前输入反馈。",
-          "f2e42e1307": "发送",
-          "69969ba364": "正在发送...",
-          "imageReadFailed": "无法读取附加的图片。请重新附加。",
-          "attachWhileSending": "请等待当前反馈发送完成，再附加更多图片。",
-          "imagesNotDelivered": "反馈已发送，但无法确认图片已送达。"
         },
         "SidebarFilter": {
           "e3b3898218": "添加项目",
@@ -4472,22 +4416,14 @@
           "selectedProjectsCount": "{{value0}} 个项目"
         },
         "SidebarSettingsHelpMenu": {
-          "ad3d3ed7f1": "重启 Orca",
           "29c56f30ee": "检查更新",
-          "eb9884e55b": "Discord",
-          "5687ab246a": "GitHub",
-          "5f83d86d92": "变更日志",
-          "cdc87f897e": "文档",
           "e565171a7c": "键盘快捷键",
-          "4cf5b868d7": "发送反馈",
           "a428c25998": "设置",
           "2991a0106c": "帮助",
-          "4e8f5710d3": "无法重新启动 Orca。",
-          "5161eef55d": "正在重启 Orca…",
           "d396773ef0": "检查中",
-          "f8a2c91d4e": "里程碑",
-          "b7e4d2a19c": "入门引导",
-          "c4f8e1b72a": "X"
+          "restartingApp": "正在重启应用…",
+          "restartAppFailed": "重启应用失败。",
+          "restartApp": "重启应用"
         },
         "SidebarToolbar": {
           "19e32d0e5f": "打开文件夹选择器以添加项目",
@@ -5311,11 +5247,6 @@
           "developer": "Developer",
           "parkTerminal": "Park terminal"
         },
-        "SidebarFeedbackImageAttachments": {
-          "screenshotsHint": "最多附加 {count} 张截图",
-          "attachImages": "Attach",
-          "removeImage": "Remove {{fileName}}"
-        },
         "WorkspaceKanbanSearchField": {
           "bdb753c78d": "没有匹配的工作区",
           "4d96c209d6": "{{value1}} 个工作区中有 {{value0}} 个匹配",
@@ -5354,19 +5285,6 @@
           "d9657ac204": "终端会话关闭请求已发送。",
           "e8f25bd903": "无法完成终端清理。",
           "a702d4196e": "这将关闭所有工作区中的每个终端标签页，并请求关闭其当前终端会话。任何未保存的终端工作将丢失。守护进程本身将继续运行，可以立即打开新终端。此操作不可撤销。"
-        }
-      },
-      "setup": {
-        "guide": {
-          "SetupGuideModal": {
-            "3598a3ca0c": "完成使 Orca 对于并行智能体工作有用的核心工作流程。",
-            "48a9e5ef2d": "入门",
-            "28cf59fcb4": "这将从侧边栏隐藏清单",
-            "f3b5ffb2a6": "从侧边栏隐藏清单"
-          },
-          "SetupGuideProgressRing": {
-            "dac3a4724a": "{{value1}} 设置步骤中的 {{value0}} 已完成"
-          }
         }
       },
       "settings": {
@@ -6505,10 +6423,6 @@
           "2aacdb0517": "跨切换、工作树切换和子智能体工作协调编码智能体。",
           "191ac34567": "智能体编排"
         },
-        "OrchestrationSetupCard": {
-          "e7d2a5146c": "使智能体能够通过 Orca 传递上下文并协调工作。",
-          "2777ff0fdc": "编排技能"
-        },
         "OrchestrationSkillAgentCoverage": {
           "6dec5ce2d2": "智能体覆盖范围",
           "ffe13e36fb": "缺失",
@@ -7030,8 +6944,6 @@
           "c9ca101a3b": "集成",
           "f9b77539fd": "工作区默认值、应用程序设置和维护。",
           "7807c11c4d": "通用",
-          "6855b0f77d": "完成使 Orca 对于并行智能体工作有用的核心工作流程。",
-          "6d119427ef": "入门清单",
           "eb1176a14e": "使用设备上模型进行本地语音到文本听写。",
           "5063bb47a5": "语音",
           "7118953f14": "使智能体能够控制您计算机上的任何应用程序。",
@@ -7087,8 +6999,6 @@
           "5c9669ff9c": "项目",
           "dbceaa8840": "搜索设置",
           "60f8a673a7": "返回应用",
-          "6503182299": "入门清单",
-          "82db1b7de4": "入门清单，已完成 {{value0}}/{{value1}}。显示设置指南。",
           "df38d612b7": "尚未添加项目。",
           "3e483e256b": "没有匹配的项目设置。"
         },
@@ -10182,6 +10092,9 @@
           "saveFailed": "无法保存可见性默认设置。",
           "updateServer": "请更新此服务器以配置来源默认设置。",
           "updateServerDefaults": "请更新此服务器以配置可见性默认设置。"
+        },
+        "InlineCommandTerminal": {
+          "4123609efd": "启动终端..."
         }
       },
       "right": {
@@ -11562,166 +11475,19 @@
         }
       },
       "onboarding": {
-        "AgentStep": {
-          "e6a369bd04": "热门智能体",
-          "d7b3ef168b": "在系统中已检测",
-          "9c163bb0e0": "安装说明",
-          "69af7e9c1c": "尚未加入 PATH。Orca 会将其设为默认，你可随时安装。",
-          "1eee1c7bd8": "PATH 中未检测到智能体。可选择一个稍后安装，或使用空白终端继续。",
-          "hideAgents": "隐藏智能体",
-          "showMoreAgents": "显示另外 {{value0}} 个智能体→",
-          "yoloPermissionsLabel": "Yolo / 危险地跳过权限检查",
-          "yoloPermissionsInfo": "智能体权限信息",
-          "yoloPermissionsTooltip": "跳过智能体权限检查，减少打断"
-        },
-        "FeatureSetupInlineTerminal": {
-          "789b59936e": "按 Enter 运行命令并在询问时确认 npx。您也可以稍后在“设置”中进行设置。",
-          "47fc6cc6dc": "技能设置命令",
-          "c767ab7061": "技能设置"
-        },
-        "IntegrationsStep": {
-          "277f30eb34": "Linear、GitLab、Bitbucket、Azure DevOps、Gitea 和 Jira 位于“设置”>“集成”中。",
-          "3a3e360289": "更多任务来源",
-          "80e3ce0bc9": "重新检查",
-          "04ef416712": "添加 Linear 访问",
-          "dd9c186a8b": "添加工作区访问权限",
-          "c91a5782f1": "已连接",
-          "27743304b1": "Linear",
-          "af69f42372": "按 Enter 运行 GitHub CLI 身份验证。浏览器或设备流程完成后重新检查 GitHub。",
-          "f9d2e12d17": "GitHub 登录命令",
-          "6d469169f2": "GitHub 设置",
-          "bd5d976fb2": "安装gh",
-          "50db38cf4b": "PR、议题和检查状态。",
-          "c1547656f0": "检查…",
-          "8405043962": "需要登录",
-          "5c115cb713": "CLI 未安装",
-          "217beb0658": "GitHub",
-          "4983ae7433": "使用个人 API 密钥添加 Linear 访问权限。完全访问密钥可显示密钥所有者可访问的全部团队。",
-          "b08a6ac93c": "{{value0}} 工作区{{value1}} 已链接。随时添加另一个工作区或更换受限密钥。",
-          "93f0c49ad1": "未认证",
-          "a3bcf13694": "已连接",
-          "d6e5dba05a": "登录",
-          "0b4a7d23ab": "登录",
-          "a74c6d6b18": "未安装"
-        },
         "NotificationStep": {
-          "3bede04483": "发送测试通知",
-          "dc897423e1": "选择通知声音",
-          "53aaffe49a": "通知声音",
-          "0fe570690c": "选择发送桌面通知后 Orca 播放的警报。",
-          "0af746e41f": "选择声音",
-          "8124d085a6": "打开 Mac 设置",
-          "aa36281b00": "打开系统设置并确保允许 Orca 发送通知。",
-          "d2dba86837": "在 macOS 中允许 Orca",
-          "e52aacf380": "正在加载通知设置...",
-          "3cd5374e22": "通知设置仍在加载中",
-          "b6a994e36e": "无法播放通知声音",
-          "c0692baa52": "选择自定义文件",
-          "ac80d97e02": "更改自定义文件",
           "56b836215c": "正在检查通知权限…",
           "fd84d3e9b8": "通知已启用",
           "4f7bce5644": "当代理完成或终端需要处理时，macOS 会提醒你。",
           "95d99b52fa": "允许 Orca 发送通知",
-          "94562ba367": "macOS 正在请求权限。在对话框中点按允许，此步骤会自动更新。",
           "4f6a1da718": "打开系统设置",
-          "90b5d2e363": "macOS 未送达 Orca 的通知",
-          "2c47f5465f": "在系统设置中启用 Orca 的允许通知。启用后此步骤会自动更新。"
-        },
-        "OnboardingFlow": {
-          "1b5e182e9f": "欢迎使用 Orca",
-          "4db04f2f57": "/",
-          "adaa0aa627": "前往入门步骤 {{value0}}：{{value1}}",
-          "a249f81538": "Orca",
-          "277ba45540": "Orca 入门引导",
-          "97c42cda00": "安装 GitHub CLI 以：",
-          "ae3b00ca82": "设置 GitHub 任务",
-          "ff92d15436": "Orca 会在智能体完成工作或需要帮助时通知你。",
-          "b054332836": "设置通知",
-          "04ae28d8ca": "选择你想盯着看几个小时的主题。",
-          "f396db9f20": "让这里有家的感觉",
-          "322fc50a18": "Orca 支持所有 CLI 智能体。选择你最常用的一个，随时可切换。",
-          "198b148b3c": "选择默认智能体",
-          "a5e5da02f7": "集成",
-          "35bbaf5ae0": "通知",
-          "984338477a": "主题",
-          "c47e1bd149": "智能体",
-          "windowsTerminalTitle": "设置 Windows 终端默认值",
-          "windowsTerminalSubtitle": "为新面板选择默认 Shell，以及终端中右键单击的行为。"
-        },
-        "OnboardingFooter": {
-          "ba58547306": "返回",
-          "111d3f8d92": "跳至项目设置"
-        },
-        "OnboardingInlineCommandTerminal": {
-          "4123609efd": "启动终端..."
-        },
-        "OnboardingSkipConfirmationDialog": {
-          "9f47f345a4": "不会花很长时间的！",
-          "e4726b2d50": "跳过入门引导？"
-        },
-        "ThemeStep": {
-          "a4b254779d": "macOS Option 键",
-          "6c51398942": "鼠标",
-          "8ca01945f2": "分隔线",
-          "b3a99a2d29": "窗口",
-          "86c0f1caa2": "内边距",
-          "06a24f4f2d": "颜色",
-          "c021e9dddd": "主题配色",
-          "ab2a583a97": "光标",
-          "cc1858e19e": "字体",
-          "248c812283": "导入",
-          "7ee9234e54": "已检测 Ghostty 配置。",
-          "78b6386140": "已从 Ghostty 导入。",
-          "2c3aa538f8": "正在查找 Ghostty 配置…",
-          "94b9dc561d": "设置 → 终端",
-          "dd5c16ad1b": "更多终端选项（字体、光标、配色等）见",
-          "ad192706e6": "浅色",
-          "fa7b673ea9": "深色",
-          "827ea7b4a2": "系统",
-          "699ddf83c2": "无法导入 Ghostty 设置",
-          "16a9f0446a": "找不到要导入的 Ghostty 设置",
-          "ad19e5c916": "导入中…",
-          "906c4373fe": "设置"
-        },
-        "use": {
-          "onboarding": {
-            "flow": {
-              "52acfbef51": "无法保存进度"
-            }
-          }
-        },
-        "WindowsTerminalStep": {
-          "powerShell": "PowerShell",
-          "powerShellPwsh": "在可用时使用 PowerShell 7+，否则回退到 Windows PowerShell。",
-          "powerShellInbox": "使用每个受支持的 Windows 安装中都提供的 Windows PowerShell。",
-          "commandPrompt": "命令提示符",
-          "commandPromptDescription": "以经典 cmd.exe 行为打开新的终端面板。",
-          "gitBash": "Git Bash",
-          "gitBashDescription": "使用 Git for Windows 的 bash.exe 进行 Unix 风格的 shell 工作流。",
-          "gitBashUnavailable": "已选择，但此电脑未检测到 Git Bash。",
-          "wsl": "WSL",
-          "wslDescription": "在 Windows Subsystem for Linux 的默认环境中启动新的终端面板。",
-          "wslUnavailable": "已选择，但此电脑未检测到 WSL。",
-          "rightClickPaste": "右键单击时粘贴",
-          "rightClickPasteDescription": "右键单击会粘贴剪贴板内容。Ctrl+右键单击会打开上下文菜单。",
-          "rightClickMenu": "打开上下文菜单",
-          "rightClickMenuDescription": "右键单击会打开终端菜单。可从菜单或键盘粘贴。",
-          "loading": "正在加载终端设置...",
-          "defaultShell": "默认 Shell",
-          "defaultShellDescription": "选择 Orca 在新的 Windows 终端面板中打开的 shell。",
-          "wslDistribution": "WSL 发行版",
-          "wslDistributionDescription": "使用 Windows 默认发行版，或选择一个已安装的特定发行版。",
-          "loadingDistros": "正在加载发行版",
-          "windowsDefault": "Windows 默认值",
-          "rightClickBehavior": "右键单击行为",
-          "rightClickBehaviorDescription": "选择符合你在 Windows 上使用习惯的终端鼠标行为。"
+          "90b5d2e363": "macOS 未送达 Orca 的通知"
         },
         "mac": {
           "notification": {
             "permission": {
               "card": {
                 "f696515944": "在 macOS 对话框中点按允许。",
-                "3d18cf71f9": "将自动更新。",
                 "721d2bedb6": "在系统设置中为 Orca 开启允许通知。"
               }
             }
@@ -11877,432 +11643,6 @@
             "109870e023": "最大化",
             "b5686fee1e": "恢复",
             "1e502f1284": "打开"
-          }
-        }
-      },
-      "feature": {
-        "wall": {
-          "AgentCapabilitiesSetupAction": {
-            "b8dc9dd8a2": "已安装",
-            "1b51644c2d": "让智能体控制桌面、手机光标、单击并在任何应用程序中键入。",
-            "362a07517d": "计算机控制",
-            "5e8fe5a72d": "让智能体直接访问 Orca 的浏览器，以便测试页面、捕获屏幕截图并根据所见内容执行操作。",
-            "e638da007a": "智能体浏览器使用",
-            "c61c91e642": "让智能体通过 Orca 进行协调，以确保大型、多步骤的任务顺利完成。",
-            "ac07f8887f": "智能体编排",
-            "e9eb197e12": "打开计算机使用权限",
-            "3a59452a67": "技能命令已复制并插入到下方以供评审。",
-            "c605f51f2b": "能力设置就绪",
-            "1aa657d8f4": "一些能力设置需要注意",
-            "c89534cbe9": "安装 CLI 和技能"
-          },
-          "AiCommitPrSettingsCard": {
-            "8d4152701a": "例如llama 运行 llama3.1 {{value0}}",
-            "9ee54037a4": "自定义命令",
-            "4b2fc4b80c": "思考努力",
-            "be8917699e": "模型",
-            "4d9b6d84df": "不支持。选择 Claude、Codex 或 Custom。",
-            "560d4feb00": "自定义",
-            "29d119fe95": "智能体",
-            "f9382b48a1": "启用AI作者",
-            "1c0cb4fabb": "AI 作者",
-            "bd14e9c42a": "未配置",
-            "1f9468c5c9": "{{value0}} 不支持"
-          },
-          "BrowserAnimatedVisual": {
-            "46df009982": "开始免费试用",
-            "25f15c2219": "专业版",
-            "59ae327405": "入门版",
-            "9e0f530390": "定价",
-            "0ce7c24b4d": "处理中…",
-            "f2034c4930": ">",
-            "6e4616d039": "Claude",
-            "0f8481e1a7": "发送给 Claude",
-            "3d2352f94b": "描述一下变化……",
-            "d8856b604a": "div.pricing-grid > div.card.starter:nth-of-type(1) > a.cta",
-            "7da6eed7bf": "localhost:3000",
-            "0a2bd01c02": "新浏览器选项卡",
-            "04096318ab": "终端 1",
-            "eb88125c6f": "✓ 已验证 — 免费试用仍然有效。",
-            "051c97d15a": ".pp-card[data-card=\"starter\"] .pp-cta",
-            "4fa59ca545": "✓ 更新",
-            "1bec24acc1": "@keyframes browserFlash { 0% { opacity: 0; } 20% { opacity: 0.85; } 100% { opacity: 0; } } @keyframes browserTabIn { from { opacity: 0; transform: translateY(-2px); } to { opacity: 1; transform: none; } } @keyframes browserViewIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }",
-            "73bbb46073": "/定价",
-            "f39be6ca14": "/报名"
-          },
-          "BrowserUseSkillSetupCard": {
-            "cbc45022d4": "使智能体能够在 Orca 浏览器中导航和验证页面。",
-            "d5bb1cd4ba": "浏览器使用技能"
-          },
-          "ComputerUseAnimatedVisual": {
-            "d8401975b1": "已批准",
-            "f27676a92c": "状态：",
-            "6804cb356f": "点击发送",
-            "1719b28a81": "找到“批准”",
-            "79445f7512": "批准我的应用程序中的注释",
-            "99a8624bcb": ">",
-            "2adb561b44": "Claude Code 会话已开始",
-            "94787f01f8": "Claude Code",
-            "9cddfe96b2": "本地应用程序",
-            "9634d870d1": "批准",
-            "3cc2df3671": "完成",
-            "bdd5312213": "待办的",
-            "c11dda000b": "已批准"
-          },
-          "EditorAnimatedVisual": {
-            "7a763daf2f": "斜体",
-            "8521536429": "粗体 ·",
-            "8341391520": "用于块·",
-            "3fe42a1da0": "类型",
-            "8268b2376b": "代码块",
-            "37fa4948ce": "项目符号列表",
-            "f25687c588": "引用",
-            "abbdeea15d": "基本块",
-            "a26a68d30c": "标题 2",
-            "722170663a": "标题 1",
-            "1fb29ad710": "标题",
-            "4426aab46f": "新图块落地后更新文档索引。",
-            "95f0c3a46f": "在新机器上对安装流程进行冒烟测试。",
-            "22ae7b4d9d": "给团队的一句简短说明——在发布前汇总剩余工作。",
-            "5a55c00a81": "推出计划",
-            "218503f9f3": "自动保存",
-            "cda56c5915": "笔记/launch-plan.md",
-            "e16479c1c5": "[data-slash-menu] [data-slash-row].slash-active { background: rgba(24,24,27,0.07); box-shadow: inset 0 0 0 1px rgba(24,24,27,0.06); } [data-md-active-line][data-role=\"active\"] { color: rgb(113 113 122); font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12.5px; } [data-md-active-line][data-role=\"h1\"] { color: inherit; font-family: inherit; font-size: 18px; font-weight: 700; letter-spacing: -0.01em; line-height: 1.2; margin-top: 6px; } [data-md-caret] { display: inline-block; width: 1.5px; height: 1em; background: currentColor; vertical-align: -2px; margin-left: 1px; animation: md-caret-blink 1.05s steps(1) infinite; } @keyframes md-caret-blink { 0%, 50% { opacity: 1 } 51%, 100% { opacity: 0 } } @keyframes md-block-in { from { opacity: 0; transform: translateY(-2px); } to { opacity: 1; transform: none; } } @keyframes md-cursor-ripple { 0% { transform: scale(0.4); opacity: 0.9; } 100% { transform: scale(1.4); opacity: 0; } } [data-clicking=\"1\"] [data-cursor-ripple] { animation: md-cursor-ripple 460ms ease-out forwards; }"
-          },
-          "FeatureWallBody": {
-            "25ec5356d6": "设置"
-          },
-          "FeatureWallModal": {
-            "33dca8bbbe": "Orca 的一个简短的、逐个工作流程的浏览。",
-            "3567e147c8": "了解 Orca"
-          },
-          "FeatureWallPreview": {
-            "a666384798": "也在这个工作流程中"
-          },
-          "FeatureWallRail": {
-            "69ea857689": "已完成",
-            "7593d15f94": "工作流程"
-          },
-          "FeatureWallSetupChecklist": {
-            "1a6a7d6c80": "设置",
-            "713cc529a5": "里程碑",
-            "b1f1981c5e": "查看任务",
-            "0235b268b2": "还没有完成",
-            "13294d3405": "完成"
-          },
-          "FeatureWallSetupWorkflowActions": {
-            "486c2f4d8d": "首先添加 git 项目，然后配置该存储库的安装脚本。",
-            "00078a6134": "在设置中查看",
-            "14327073cc": "保存",
-            "88469e926b": "设置脚本",
-            "5c5b65044e": "pnpm install",
-            "a7463915b6": "无法保存设置脚本",
-            "6299297dac": "设置脚本已保存",
-            "f0bbf7da77": "尝试一下",
-            "522cce9e33": "添加项目"
-          },
-          "FeatureWallTourPanel": {
-            "af7d622f6f": "可选"
-          },
-          "KeepAwakeCard": {
-            "209713d3c7": "可选"
-          },
-          "ReviewNotesAnimatedVisual": {
-            "5dbd27c4c2": "Codex",
-            "09094f25e2": "Claude Code",
-            "294aaff104": "发送注释至",
-            "ea4e45b71b": "添加备注",
-            "271ea0cbf3": "取消",
-            "a7a89d8f94": "线",
-            "5cb213f967": "AI 笔记",
-            "1eee3a397e": "src/server/migrate.ts（差异）"
-          },
-          "ReviewPRViewAnimatedVisual": {
-            "7c2808ecff": "合并前截断。",
-            "c2062da7ec": "标准错误",
-            "6f4c2d7cb7": "添加承保案例",
-            "71828fba75": "我们可以将失败的命令包含在诊断负载中吗？",
-            "fb1a856b6d": "打开",
-            "7a8b896e11": "评论",
-            "ca36f7b27c": "通过",
-            "25f6838e43": "Lint",
-            "2ef0b97954": "类型检查",
-            "8ed213397c": "执行中",
-            "d340c052fb": "核实",
-            "9a097cae12": "1 待定",
-            "2f37142229": "压缩合并",
-            "0aab7ab84a": "添加本地诊断错误跟踪",
-            "dfe313e0c9": "打开",
-            "6e3f5223c5": "资源管理器",
-            "ab2901bce6": "检查项",
-            "d7f80060ca": "源代码控制",
-            "8e715588e4": "搜索",
-            "a6c8b9e32f": "检查已通过",
-            "f4d5e1a7b2": "3 个检查"
-          },
-          "ReviewShipAnimatedVisual": {
-            "4d99496b8c": "创建PR",
-            "62544e0852": "取消",
-            "bcd5cae3c4": "PR描述",
-            "3774b80eae": "描述",
-            "07da9245cc": "PR标题",
-            "54a093c52d": "标题",
-            "3b9b96d6a6": "main",
-            "ce7d5d3a18": "基础分支",
-            "e4473d438f": "用 AI 生成",
-            "c30cd930ff": "创建PR",
-            "ea0100dd15": "查看全部",
-            "e725000cd7": "更改",
-            "a079083a6c": "提交",
-            "7347fa5839": "信息",
-            "d1a7f15876": "使用 AI 生成提交信息",
-            "cd8a3a39d7": "领先 3 个提交"
-          },
-          "TasksAnimatedVisual": {
-            "efba6f77eb": "阅读议题 #",
-            "b68c92fbdc": "启动工作区",
-            "4331c4d0f8": "打开",
-            "b13375617e": "工作树选择器截断名称",
-            "72f9e516a3": "按下",
-            "fe47c9c9e8": "工作区准备就绪",
-            "61ffda7601": "创建工作区"
-          },
-          "WorkbenchAnimatedVisual": {
-            "633a91e358": "思维…",
-            "932c4b3a97": ">",
-            "ca2cfbf188": "向下拆分终端",
-            "e370fa8c2b": "向右拆分终端",
-            "b85eab49dd": "src/auth/session.ts",
-            "99f5224f1e": "编辑",
-            "0d93c298a7": "抛出 src/auth",
-            "17cfdc3344": "格雷普",
-            "9923847785": "读",
-            "c0eb94125e": "审查授权边缘情况",
-            "431ca9842a": "Claude Code 会话已开始",
-            "000106adfe": "claude",
-            "7d9f1d5f7d": "（0.8秒）",
-            "944199e54a": "› 购物车总更新",
-            "623881d72e": "checkout.spec.ts",
-            "5c5cbd783f": "（1.2秒）",
-            "3261c6853b": "› 可以登录",
-            "defe550fe2": "login.spec.ts",
-            "0b20782e0f": "使用 4 名工作人员运行 12 项测试",
-            "4371cc9931": "pnpm playwright test",
-            "16877e038d": "向下拆分",
-            "a2b114dad0": "向右拆分 ·",
-            "0bc9ad0cd1": "同一窗格：",
-            "fc84f17fe7": "Codex 会话已开始"
-          },
-          "agent": {
-            "capability": {
-              "setup": {
-                "status": {
-                  "8eccfcb314": "已安装",
-                  "21d4f79c93": "单击安装 CLI 和技能以打开 macOS 访问设置",
-                  "5c9293e51a": "检查应用程序访问权限",
-                  "aae94eeb52": "单击安装 CLI 和技能",
-                  "aa8e143a2f": "无法检查安装",
-                  "9b33e7fb13": "检查安装",
-                  "4c8e1f92a7": "在此 Mac 上打开 Orca Desktop",
-                  "6d2b0a84e1": "此版本不可用"
-                }
-              }
-            }
-          },
-          "feature": {
-            "wall": {
-              "usage": {
-                "tracking": {
-                  "b94ec70eda": "未设置跟踪",
-                  "cc39a87288": "已连接·系统默认",
-                  "00087eecb2": "已连接 · {{value0}}"
-                }
-              }
-            }
-          },
-          "review": {
-            "animated": {
-              "visual": {
-                "shared": {
-                  "e7894927a2": "Codex",
-                  "9deecb021c": "Claude"
-                },
-                "notes": {
-                  "styles": {
-                    "db6691aa0a": ".ravs-window { position: absolute; inset: 0; --ravs-soft-surface: color-mix(in srgb, var(--foreground) 2%, var(--card)); --ravs-soft-fill: color-mix(in srgb, var(--foreground) 6%, transparent); --ravs-panel-border: color-mix(in srgb, var(--foreground) 18%, var(--border)); --ravs-emphasis-border: color-mix(in srgb, var(--foreground) 44%, var(--border)); --ravs-floating-shadow: 0 14px 30px rgb(0 0 0 / 0.22), 0 2px 6px rgb(0 0 0 / 0.12); background: var(--card); border: 1px solid var(--border); border-radius: 10px; overflow: hidden; display: flex; flex-direction: column; box-shadow: 0 1px 2px rgb(0 0 0 / 0.08); } .ravs-difftoolbar { display: flex; align-items: center; gap: 8px; padding: 6px 10px; border-bottom: 1px solid var(--border); background: var(--ravs-soft-surface); font-size: 11px; color: var(--muted-foreground); } .ravs-diff-path { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; color: var(--foreground); } .ravs-ai-chip { margin-left: auto; display: inline-flex; align-items: stretch; overflow: hidden; border-radius: 6px; border: 1px solid var(--border); background: var(--ravs-soft-surface); opacity: 0; transform: translateY(-2px); transition: opacity 320ms ease, transform 320ms ease; } .ravs-ai-chip.is-visible { opacity: 1; transform: none; } .ravs-ai-chip .ravs-count-btn, .ravs-ai-chip .ravs-send-btn { display: inline-flex; align-items: center; gap: 5px; padding: 3px 8px; font-size: 11px; color: var(--muted-foreground); background: transparent; line-height: 1; } .ravs-ai-chip .ravs-count-btn { border-right: 1px solid var(--border); } .ravs-ai-chip .ravs-send-btn { padding: 3px 7px; position: relative; } .ravs-send-glow { position: absolute; inset: 0; background: rgba(34, 197, 94, 0.18); opacity: 0; transition: opacity 280ms ease; pointer-events: none; } .ravs-ai-chip .ravs-send-btn.is-flash .ravs-send-glow { opacity: 1; } .ravs-count-num { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; color: var(--foreground); font-weight: 600; } .ravs-diffbody { flex: 1; min-height: 0; position: relative; background: var(--editor-surface, var(--card)); } .ravs-diffscroll { position: absolute; inset: 0; overflow: hidden; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 11.5px; line-height: 1.55; color: var(--foreground); padding: 4px 0 8px; transition: opacity 240ms ease; } .ravs-diffscroll.is-hidden { opacity: 0; pointer-events: none; } .ravs-term { position: absolute; inset: 0; background: var(--editor-surface, var(--card)); color: var(--foreground); font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 11px; line-height: 1.45; overflow: hidden; display: flex; flex-direction: column; opacity: 0; pointer-events: none; transition: opacity 240ms ease; z-index: 4; } .ravs-term.is-visible { opacity: 1; } .ravs-term-body { flex: 1; min-height: 0; padding: 10px 12px; overflow: hidden; display: flex; flex-direction: column; gap: 6px; } .ravs-term-line { white-space: pre-wrap; word-break: break-word; line-height: 1.45; } .ravs-term-muted { color: var(--muted-foreground); } .ravs-term-glyph { color: rgb(217 119 6); margin-right: 6px; } .ravs-term-check { color: rgb(16 185 129); font-weight: 700; margin-right: 6px; } .ravs-term-spinner { display: inline-block; width: 8px; height: 8px; margin-right: 6px; border-radius: 999px; border: 1.5px solid color-mix(in srgb, var(--foreground) 20%, transparent); border-top-color: var(--foreground); vertical-align: -1px; animation: ravs-term-spin 0.9s linear infinite; } @keyframes ravs-term-spin { to { transform: rotate(360deg) } } .ravs-hunk-header { display: grid; grid-template-columns: 36px 36px 16px minmax(0,1fr); align-items: center; padding: 1px 8px 1px 0; background: rgba(99, 102, 241, 0.06); color: var(--muted-foreground); font-size: 10.5px; border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); } .ravs-hunk-header .ravs-text { grid-column: 4 / -1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: rgb(99 102 241); font-size: 10.5px; } .ravs-diff-line { display: grid; grid-template-columns: 36px 36px 16px minmax(0,1fr); align-items: stretch; position: relative; } .ravs-ln { text-align: right; padding: 0 6px 0 0; color: var(--muted-foreground); font-size: 10.5px; user-select: none; opacity: 0.85; } .ravs-marker { text-align: center; color: var(--muted-foreground); font-weight: 700; opacity: 0.7; } .ravs-text-cell { padding-right: 8px; white-space: pre; overflow: hidden; } .ravs-tok-kw { color: #a855f7; } .ravs-tok-id { color: #2563eb; } .ravs-tok-str { color: #16a34a; } .ravs-diff-line.is-add { background: color-mix(in srgb, var(--git-decoration-added) 14%, transparent); } .ravs-diff-line.is-add .ravs-marker { color: color-mix(in srgb, var(--git-decoration-added) 72%, transparent); opacity: 1; } .ravs-diff-line.is-rem { background: color-mix(in srgb, var(--git-decoration-deleted) 14%, transparent); } .ravs-diff-line.is-rem .ravs-marker { color: color-mix(in srgb, var(--git-decoration-deleted) 72%, transparent); opacity: 1; } .ravs-add-note-btn { position: absolute; left: 4px; width: 18px; height: 18px; display: inline-flex; align-items: center; justify-content: center; padding: 0; border: 1px solid color-mix(in srgb, currentColor 22%, var(--border)); border-radius: 4px; background: var(--ravs-soft-fill); color: var(--foreground); z-index: 5; opacity: 0; box-shadow: 0 1px 2px rgb(0 0 0 / 0.14); pointer-events: none; transition: opacity 160ms ease; } .ravs-add-note-btn.is-visible { opacity: 1; } .ravs-note-row { padding: 4px 8px 4px 0; max-height: 0; overflow: hidden; opacity: 0; transition: max-height 360ms cubic-bezier(.4,0,.2,1), opacity 280ms ease 60ms, padding 360ms cubic-bezier(.4,0,.2,1); } .ravs-note-row.is-visible { max-height: 90px; opacity: 1; } .ravs-note-card { margin: 0 12px; position: relative; border: 1px solid var(--ravs-panel-border); border-left: 3px solid var(--ravs-emphasis-border); border-radius: 6px; background-color: var(--card); padding: 5px 8px 5px 10px; box-shadow: 0 1px 2px rgb(0 0 0 / 0.16); } .ravs-note-meta { font-size: 9.5px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; color: var(--muted-foreground); } .ravs-note-body { font-size: 11.5px; color: var(--foreground); line-height: 1.35; margin-top: 2px; } .ravs-popover { position: absolute; left: 12px; right: 12px; max-width: none; z-index: 20; padding: 8px 10px; border: 1px solid var(--ravs-panel-border); border-left: 3px solid var(--ravs-emphasis-border); border-radius: 6px; background-color: var(--card); color: var(--foreground); box-shadow: var(--ravs-floating-shadow); display: flex; flex-direction: column; gap: 6px; opacity: 0; transform: translateY(-4px) scale(0.985); pointer-events: none; transition: opacity 180ms ease, transform 180ms ease; } .ravs-popover.is-visible { opacity: 1; transform: none; pointer-events: auto; } .ravs-pop-label { font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; color: var(--muted-foreground); } .ravs-pop-input { min-height: 38px; max-height: 80px; padding: 6px 8px; border: 1px solid var(--border); border-radius: 4px; background: var(--editor-surface, var(--card)); font-size: 12px; line-height: 1.4; color: var(--foreground); white-space: pre-wrap; word-break: break-word; overflow: hidden; } .ravs-pop-footer { display: flex; justify-content: flex-end; gap: 6px; } .ravs-pop-btn { font-size: 11px; font-weight: 500; padding: 4px 9px; border-radius: 5px; line-height: 1; border: 1px solid transparent; display: inline-flex; align-items: center; gap: 5px; } .ravs-pop-btn.is-cancel { color: var(--muted-foreground); background: transparent; } .ravs-pop-btn.is-add { color: var(--primary-foreground); background: var(--primary); } .ravs-send-menu { position: absolute; z-index: 30; right: 8px; top: 6px; min-width: 200px; background: var(--popover); color: var(--popover-foreground); border: 1px solid var(--border); border-radius: 8px; padding: 4px; box-shadow: var(--ravs-floating-shadow); opacity: 0; transform: translateY(-4px) scale(0.985); pointer-events: none; transition: opacity 180ms ease, transform 180ms ease; } .ravs-send-menu.is-visible { opacity: 1; transform: none; pointer-events: auto; } .ravs-menu-section { padding: 4px 8px 2px; font-size: 9.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted-foreground); } .ravs-menu-row { display: grid; grid-template-columns: 16px minmax(0,1fr); align-items: center; gap: 8px; padding: 6px 8px; border-radius: 5px; font-size: 12px; color: var(--popover-foreground); } .ravs-menu-row.is-hot { background: var(--accent); box-shadow: inset 0 0 0 1px var(--border); } .ravs-cursor { position: absolute; z-index: 40; pointer-events: none; transition: transform 600ms cubic-bezier(.45,.05,.2,1), opacity 200ms ease; transform: translate(-30px, 220px); opacity: 0; } .ravs-cursor.is-visible { opacity: 1; } .ravs-cursor .ravs-ripple { position: absolute; left: -6px; top: -6px; width: 28px; height: 28px; border-radius: 999px; border: 2px solid color-mix(in srgb, var(--foreground) 52%, transparent); opacity: 0; } .ravs-cursor.is-clicking .ravs-ripple { animation: ravs-ripple 460ms ease-out forwards; } @keyframes ravs-ripple { 0% { transform: scale(0.4); opacity: 0.9; } 100% { transform: scale(1.4); opacity: 0; } } .ravs-caret { display: inline-block; width: 1.5px; height: 1em; background: currentColor; vertical-align: -2px; margin-left: 1px; animation: ravs-caret-blink 1.05s steps(1) infinite; } @keyframes ravs-caret-blink { 0%, 50% { opacity: 1 } 51%, 100% { opacity: 0 } }"
-                  }
-                },
-                "pr": {
-                  "view": {
-                    "styles": {
-                      "fc9a23c83d": ".ravpr-stage { position: absolute; inset: 0; overflow: hidden; } .ravpr-stack { position: absolute; inset: 0; display: flex; justify-content: flex-end; padding: 4px 34px 4px 2px; overflow: hidden; } .ravpr-sidebar, .ravpr-card { position: absolute; top: 4px; right: 2px; width: 464px; height: calc(100% - 8px); background: var(--card, #fff); border: 1px solid var(--border); border-radius: 10px; color: var(--foreground, #18181b); overflow: hidden; box-shadow: 0 1px 2px rgba(24,24,27,0.04); } .ravpr-sidebar { opacity: 0; transition: opacity 220ms ease; } .ravpr-sidebar.is-visible { opacity: 1; } .ravpr-sidebar.is-hiding { opacity: 0; } .ravpr-card { display: flex; flex-direction: column; min-width: 0; opacity: 0; transition: opacity 260ms ease; } .ravpr-card.is-visible { opacity: 1; } .ravpr-tabs { position: relative; display: flex; align-items: center; gap: 14px; height: 36px; padding: 0 14px; background: rgba(24,24,27,0.015); color: var(--muted-foreground, #71717a); } .ravpr-tab { position: relative; width: 18px; height: 18px; display: inline-flex; align-items: center; justify-content: center; color: var(--muted-foreground, #71717a); } .ravpr-tab.is-active, .ravpr-tab.is-hovered { color: var(--foreground, #18181b); } .ravpr-tab.is-active::after { content: ''; position: absolute; left: -5px; right: -5px; bottom: -10px; height: 1px; background: var(--foreground, #18181b); } .ravpr-tooltip { position: absolute; top: 34px; left: 106px; z-index: 6; padding: 7px 11px; border-radius: 8px; background: var(--card, #fff); color: var(--foreground, #18181b); font-size: 12px; line-height: 1; box-shadow: 0 8px 22px rgba(0,0,0,0.22); opacity: 0; transform: translateY(-3px); pointer-events: none; transition: opacity 160ms ease, transform 160ms ease; } .ravpr-tooltip.is-visible { opacity: 1; transform: translateY(0); } .ravpr-explorer { padding: 10px 12px 12px; } .ravpr-heading { color: var(--muted-foreground, #71717a); font-size: 10px; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase; } .ravpr-file-list { margin-top: 8px; display: flex; flex-direction: column; gap: 2px; } .ravpr-file { display: grid; grid-template-columns: 14px minmax(0,1fr) 22px; align-items: center; gap: 8px; min-height: 28px; padding: 4px 6px; border-radius: 6px; } .ravpr-file.is-active { background: rgba(24,24,27,0.06); box-shadow: inset 0 0 0 1px rgba(24,24,27,0.06); } .ravpr-file-icon { width: 12px; height: 12px; border-radius: 3px; background: rgba(24,24,27,0.14); } .ravpr-file-name { height: 8px; border-radius: 999px; background: rgba(24,24,27,0.14); } .ravpr-file-status { width: 14px; height: 8px; border-radius: 999px; background: rgba(24,24,27,0.12); } .ravpr-body { padding: 10px 12px 18px; display: flex; flex-direction: column; gap: 5px; min-height: 0; } .ravpr-number-row { display: flex; align-items: center; gap: 7px; } .ravpr-number { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12px; font-weight: 700; } .ravpr-open { display: inline-flex; align-items: center; justify-content: center; height: 18px; padding: 0 7px; border-radius: 5px; background: rgba(16,185,129,0.10); border: 1px solid rgba(16,185,129,0.28); color: rgb(4 120 87); font-size: 9px; font-weight: 700; line-height: 1; } .ravpr-title { font-size: 12px; font-weight: 600; line-height: 1.35; color: var(--foreground, #18181b); margin-bottom: 2px; } .ravpr-merge { display: inline-flex; align-items: center; justify-content: center; gap: 6px; height: 30px; min-height: 30px; flex: 0 0 30px; border-radius: 7px; background: rgb(22 163 74); color: #fff; font-size: 11.5px; font-weight: 700; margin-bottom: 2px; box-shadow: 0 1px 2px rgba(22,163,74,0.18); transition: box-shadow 220ms ease, filter 220ms ease; } .ravpr-merge.is-ready { box-shadow: 0 0 0 3px rgba(34,197,94,0.22), 0 1px 2px rgba(22,163,74,0.18); } .ravpr-section-row, .ravpr-check-row { display: grid; grid-template-columns: 18px minmax(0,1fr) auto; align-items: center; gap: 7px; padding: 5px 0; font-size: 11.5px; color: var(--foreground, #18181b); } .ravpr-check-row { padding: 5px 7px; font-size: 10.5px; } .ravpr-label { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; } .ravpr-meta, .ravpr-check-state { color: var(--muted-foreground, #71717a); font-size: 10.5px; } .ravpr-check-state { font-size: 10px; } .ravpr-ring { display: inline-block; width: 14px; height: 14px; border-radius: 999px; border: 2px solid rgba(245,158,11,0.35); border-top-color: rgb(245 158 11); animation: ravpr-spin 1.1s linear infinite; } .ravpr-check { width: 15px; height: 15px; border-radius: 999px; display: none; align-items: center; justify-content: center; background: rgba(34,197,94,0.14); color: rgb(22 163 74); } .ravpr-section-row.is-done .ravpr-ring, .ravpr-check-row.is-done .ravpr-ring { display: none; } .ravpr-section-row.is-done .ravpr-check, .ravpr-check-row.is-done .ravpr-check { display: inline-flex; } .ravpr-reveal { display: flex; flex-direction: column; gap: 3px; opacity: 0; transform: translateY(4px); transition: opacity 260ms ease, transform 260ms ease; pointer-events: none; } .ravpr-reveal.is-visible { opacity: 1; transform: translateY(0); pointer-events: auto; } .ravpr-check-list, .ravpr-comment-list { display: flex; flex-direction: column; gap: 4px; min-height: 0; } .ravpr-comment-card { border: 1px solid var(--border); border-radius: 8px; background: var(--card, #fff); overflow: hidden; opacity: 0; transform: translateY(4px); transition: opacity 260ms ease, transform 260ms ease; } .ravpr-comment-card.is-visible { opacity: 1; transform: translateY(0); } .ravpr-comment-head { display: grid; grid-template-columns: 18px minmax(0,1fr) auto; align-items: center; gap: 7px; padding: 5px 7px; background: rgba(24,24,27,0.015); } .ravpr-avatar { width: 16px; height: 16px; border-radius: 999px; background: rgba(24,24,27,0.16); } .ravpr-author { width: 78px; height: 8px; border-radius: 999px; background: rgba(24,24,27,0.18); } .ravpr-comment-path { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 9.5px; color: var(--muted-foreground, #71717a); } .ravpr-comment-body { padding: 5px 7px 6px; font-size: 11px; line-height: 1.32; color: var(--foreground, #18181b); } .ravpr-comment-body code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 10.5px; padding: 1px 4px; border-radius: 4px; background: rgba(24,24,27,0.06); } .ravpr-cursor { position: absolute; z-index: 40; pointer-events: none; transition: transform 600ms cubic-bezier(.45,.05,.2,1), opacity 200ms ease; transform: translate(-30px, 220px); opacity: 0; } .ravpr-cursor.is-visible { opacity: 1; } .ravpr-ripple { position: absolute; left: -6px; top: -6px; width: 28px; height: 28px; border-radius: 999px; border: 2px solid rgba(24,24,27,0.5); opacity: 0; } .ravpr-cursor.is-clicking .ravpr-ripple { animation: ravpr-ripple 460ms ease-out forwards; } @keyframes ravpr-ripple { 0% { transform: scale(0.4); opacity: 0.9; } 100% { transform: scale(1.4); opacity: 0; } } @keyframes ravpr-spin { to { transform: rotate(360deg); } }"
-                    }
-                  }
-                },
-                "ship": {
-                  "styles": {
-                    "90cdcd2ecc": ".ravs-ship-root { position: absolute; inset: 0; } .ravs-ship-stack { position: absolute; inset: 0; display: grid; grid-template-columns: 232px minmax(0,1fr); gap: 14px; padding: 4px 2px; /* Why: cards size to their content rather than stretch to the parent's full height, so the two cards don't show empty space below their content. */ align-items: start; } /* Source Control mini-sidebar — ahead-count header, commit textarea + split Commit button, then a CHANGES section with file rows. The file rows are the surface the \"reading\" pulse animates over. */ .ravs-sc-card { display: flex; flex-direction: column; background: var(--card, #fff); border: 1px solid var(--border); border-radius: 10px; overflow: hidden; box-shadow: 0 1px 2px rgba(24,24,27,0.04); } /* Both card headers share the same fixed height so the SC card and PR dialog align across the top edge regardless of header content. */ .ravs-sc-header, .ravs-pr-head { height: 36px; box-sizing: border-box; } .ravs-sc-header { display: flex; align-items: center; justify-content: space-between; padding: 0 10px; border-bottom: 1px solid var(--border); } .ravs-sc-ahead { display: inline-flex; align-items: center; gap: 5px; font-size: 11px; font-weight: 500; color: var(--foreground, #18181b); } .ravs-sc-ahead svg { color: var(--muted-foreground, #71717a); } .ravs-sc-commit-area { display: flex; flex-direction: column; gap: 6px; padding: 8px 10px; } .ravs-sc-textarea { position: relative; border: 1px solid var(--border); border-radius: 6px; background: var(--editor-surface, var(--card)); padding: 6px 26px 6px 8px; min-height: 56px; font-size: 12px; line-height: 1.45; color: var(--foreground, #18181b); white-space: pre-wrap; word-break: break-word; overflow: hidden; } .ravs-sc-textarea .ravs-placeholder { color: rgba(113,113,122,0.7); } .ravs-sc-sparkle { position: absolute; right: 6px; top: 6px; width: 20px; height: 20px; display: inline-flex; align-items: center; justify-content: center; border-radius: 4px; color: var(--muted-foreground, #71717a); background: transparent; transition: color 160ms ease, background 160ms ease; } .ravs-sc-sparkle.is-scanning { color: rgb(109 40 217); background: color-mix(in srgb, rgb(139 92 246) 18%, transparent); } .ravs-sc-split { display: flex; align-items: stretch; } /* Why: Commit + Create PR are surrounding chrome — the violet AI affordances are the focal points. Render them as quiet secondary buttons so they don't compete with the sparkle/scan signals. */ .ravs-sc-split .ravs-primary { flex: 1; display: inline-flex; align-items: center; justify-content: center; gap: 5px; padding: 5px 10px; background: var(--secondary, #f5f5f5); color: var(--secondary-foreground, #171717); font-size: 11px; font-weight: 500; border-radius: 6px 0 0 6px; border: 1px solid var(--border); transition: background 240ms ease, border-color 240ms ease, color 240ms ease; } .ravs-sc-split .ravs-chev { display: inline-flex; align-items: center; justify-content: center; width: 22px; background: var(--secondary, #f5f5f5); color: var(--muted-foreground, #71717a); border-radius: 0 6px 6px 0; border: 1px solid var(--border); border-left: 1px solid var(--border); transition: background 240ms ease, border-color 240ms ease, color 240ms ease; } /* Why: when AI has filled the commit message, tint the Commit button green to signal \"ready to commit\". Uses the same success-green family as the PR flash so the two beats rhyme. Mix is intentionally strong (~28%) — at 14% it disappeared next to the violet sparkle and PR flash, so users only saw the PR change color. */ .ravs-sc-split.is-ready .ravs-primary, .ravs-sc-split.is-ready .ravs-chev { background: color-mix(in srgb, rgb(34 197 94) 28%, var(--secondary, #f5f5f5)); border-color: rgb(34 197 94); color: rgb(21 128 61); transition: background 220ms ease, border-color 220ms ease, color 220ms ease; } .ravs-sc-split.is-ready .ravs-chev { border-left-color: rgba(34, 197, 94, 0.55); } .ravs-sc-changes-header { display: flex; align-items: center; justify-content: space-between; padding: 8px 10px 4px; font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--muted-foreground, #71717a); } .ravs-sc-changes-count { color: var(--foreground, #18181b); font-weight: 600; margin-left: 2px; } .ravs-sc-view-all { font-size: 10px; font-weight: 500; text-transform: none; letter-spacing: 0; color: var(--muted-foreground, #71717a); } .ravs-sc-files { display: flex; flex-direction: column; padding: 2px 6px 8px; flex: 1; min-height: 0; overflow: hidden; } .ravs-sc-file { display: grid; grid-template-columns: 14px minmax(0,1fr) 12px; align-items: center; gap: 6px; padding: 3px 6px; border-radius: 4px; font-size: 11px; line-height: 1.35; color: var(--foreground, #18181b); position: relative; transition: background 220ms ease; } .ravs-sc-ficon { color: rgb(180 83 9); display: inline-flex; } .ravs-sc-fname { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; } .ravs-sc-fmark { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 10px; text-align: right; color: rgb(180 83 9); } .ravs-sc-file.is-reading { background: color-mix(in srgb, rgb(139 92 246) 14%, transparent); box-shadow: inset 0 0 0 1px color-mix(in srgb, rgb(139 92 246) 28%, transparent); } /* PR dialog — matches the .ravs-sc-card chrome (same border, radius, elevation) so the two cards read as one design language. */ .ravs-pr-dialog { background: var(--card, #fff); border: 1px solid var(--border); border-radius: 10px; box-shadow: 0 1px 2px rgba(24,24,27,0.04); display: flex; flex-direction: column; min-width: 0; overflow: hidden; } .ravs-pr-head { display: flex; align-items: center; justify-content: space-between; gap: 6px; padding: 0 10px; border-bottom: 1px solid var(--border); } .ravs-pr-title-text { font-size: 11px; font-weight: 500; color: var(--foreground, #18181b); } /* Icon-only AI-assist chip — mirrors .ravs-sc-sparkle so the affordance reads identically across both cards. */ .ravs-pr-gen-btn { display: inline-flex; align-items: center; justify-content: center; width: 22px; height: 22px; padding: 0; border-radius: 4px; color: var(--muted-foreground, #71717a); background: transparent; border: 0; cursor: pointer; transition: color 160ms ease, background 160ms ease; } .ravs-pr-gen-btn:hover { background: rgba(24,24,27,0.06); color: var(--foreground, #18181b); } .ravs-pr-gen-btn.is-scanning { color: rgb(109 40 217); background: color-mix(in srgb, rgb(139 92 246) 18%, transparent); } .ravs-pr-body { display: flex; flex-direction: column; gap: 8px; padding: 10px; } .ravs-pr-field { display: flex; flex-direction: column; gap: 4px; } .ravs-pr-field-label { font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--muted-foreground, #71717a); } .ravs-pr-base { display: inline-flex; align-items: center; gap: 5px; padding: 4px 9px; border: 1px solid var(--border); border-radius: 6px; font-size: 11px; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; color: var(--foreground, #18181b); background: var(--editor-surface, var(--card)); align-self: flex-start; } .ravs-pr-base svg { color: var(--muted-foreground, #71717a); } .ravs-pr-input { position: relative; padding: 6px 8px; border: 1px solid var(--border); border-radius: 6px; background: var(--editor-surface, var(--card)); min-height: 28px; font-size: 12px; line-height: 1.45; color: var(--foreground, #18181b); white-space: pre-wrap; word-break: break-word; overflow: hidden; } .ravs-pr-input.is-body { min-height: 50px; font-size: 11px; line-height: 1.4; } .ravs-pr-input .ravs-placeholder { color: rgba(113,113,122,0.7); } .ravs-pr-footer { display: flex; align-items: center; gap: 6px; justify-content: flex-end; margin-top: 2px; } .ravs-pr-btn { font-size: 11px; font-weight: 500; padding: 5px 10px; border-radius: 6px; line-height: 1; border: 1px solid transparent; outline: none; } .ravs-pr-btn:focus, .ravs-pr-btn:focus-visible { outline: none; } /* Cancel reads as a quiet ghost button so it doesn't compete with the affirmative Create PR action. */ .ravs-pr-btn.is-outline { background: transparent; color: var(--muted-foreground, #71717a); border-color: transparent; } .ravs-pr-btn.is-outline:hover { background: rgba(24,24,27,0.05); color: var(--foreground, #18181b); } /* Quiet secondary fill — see the .ravs-sc-split note above. The flash ring still uses success-green so the \"PR created\" beat reads. The Create-PR button is slightly larger than Cancel so the affirmative action remains the bigger target. */ .ravs-pr-btn.is-solid { background: var(--secondary, #f5f5f5); color: var(--secondary-foreground, #171717); border-color: var(--border); font-size: 12px; padding: 7px 14px; transition: background 220ms ease, border-color 220ms ease, color 220ms ease, box-shadow 220ms ease; } .ravs-pr-btn.is-solid.is-ready { background: color-mix(in srgb, rgb(34 197 94) 28%, var(--secondary, #f5f5f5)); border-color: rgb(34 197 94); color: rgb(21 128 61); } .ravs-pr-btn.is-solid.is-flash { box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.30); } .ravs-cursor { position: absolute; z-index: 40; pointer-events: none; transition: transform 600ms cubic-bezier(.45,.05,.2,1), opacity 200ms ease; transform: translate(-30px, 220px); opacity: 0; } .ravs-cursor.is-visible { opacity: 1; } .ravs-cursor .ravs-ripple { position: absolute; left: -6px; top: -6px; width: 28px; height: 28px; border-radius: 999px; border: 2px solid rgba(24,24,27,0.5); opacity: 0; } .ravs-cursor.is-clicking .ravs-ripple { animation: ravs-ripple 460ms ease-out forwards; } @keyframes ravs-ripple { 0% { transform: scale(0.4); opacity: 0.9; } 100% { transform: scale(1.4); opacity: 0; } } .ravs-caret { display: inline-block; width: 1.5px; height: 1em; background: currentColor; vertical-align: -2px; margin-left: 1px; animation: ravs-caret-blink 1.05s steps(1) infinite; } @keyframes ravs-caret-blink { 0%, 50% { opacity: 1 } 51%, 100% { opacity: 0 } }"
-                  }
-                }
-              }
-            },
-            "notes": {
-              "diff": {
-                "rows": {
-                  "f621c734f8": "注释 · 行"
-                }
-              }
-            }
-          },
-          "agents": {
-            "orchestration": {
-              "OrchestrationPage": {
-                "30b509a467": "2 个子工作区",
-                "862605d066": "2 个子工作区",
-                "coordinatorName": "重新设计身份验证流程",
-                "childPr1Name": "PR 1/2: 迁移 users.sql",
-                "childPr2Name": "PR 2/2: withSession 中间件"
-              },
-              "types": {
-                "coordinatorInitial": "将身份验证重写拆分为 2 个 PR…",
-                "codexInitial": "编写 users 表迁移…",
-                "claudeInitial": "草拟 withSession 中间件…",
-                "codexBeat1": "添加 email_verified 列…",
-                "claudeBeat1": "连接 withSession 中间件…",
-                "coordinatorBeat1": "PR 1/2 就绪",
-                "coordinatorBeat2": "PR 2/2 就绪"
-              },
-              "steps": {
-                "name": "编排",
-                "subtitle": "编排",
-                "description": "让智能体管理和协调 Orca 工作区，以执行更大的任务。"
-              },
-              "StatusesPage": {
-                "2f549fc0ba": "src/auth/session.test.ts",
-                "139e3d7458": "已更新",
-                "7b26349cb2": "pnpm 迁移最新",
-                "78f0318ac1": "想跑",
-                "79971d1539": "重新设计身份验证流程"
-              },
-              "UsageAccountsCard": {
-                "6986b36708": "表面利率限制和内联掉期账户。",
-                "d90d2e1f6d": "跟踪会话和每周使用情况。",
-                "8919321417": "Codex 登录失败。",
-                "c7b90c140b": "添加了 Codex 账户。",
-                "4e71d72912": "Claude 登录失败。",
-                "9ddeb558f9": "已添加 Claude 账户。",
-                "29d0653961": "登入",
-                "945865332e": "登录"
-              },
-              "UsagePage": {
-                "64265cb295": "29% 已用 5小时",
-                "be5a165875": "切换到",
-                "277a9c65a9": "Codex 账户",
-                "4dce5ca3aa": "4d 3h后重置",
-                "05ce4ecdd3": "已用 38%",
-                "0470aaed99": "每周",
-                "f421abf962": "会话",
-                "5e45fb1238": "更新于 1 分钟前",
-                "6a4b1d3c38": "Codex"
-              },
-              "orchestration": {
-                "cards": {
-                  "da6f1f97c9": "处理中"
-                }
-              }
-            }
-          },
-          "ReviewAnimatedVisual": {
-            "8df4d52b68": "pr-view",
-            "8ab622e4d6": "笔记"
-          },
-          "FeatureWallBrowserAction": {
-            "5022c43a88": "无法打开浏览器",
-            "c9eb68b474": "此工作树尚无可用的工作区组。",
-            "c9728107c5": "试试看",
-            "25dd101f15": "浏览器设置需要处理",
-            "e02b11e6b0": "浏览器设置已就绪",
-            "d6d15077df": "技能命令已复制并插入到下方供查看。",
-            "78e65f19d9": "浏览器设置失败",
-            "b7345c18db": "发生了意外错误。",
-            "5f97caf76b": "正在安装…",
-            "c2df599513": "安装 CLI 和技能"
-          },
-          "ConnectIntegrationsList": {
-            "3dddb2d565": "已连接，可用于任务",
-            "33b650af52": "连接团队用于跟踪工作的地方。Orca 会在启动工作区时自动附上议题标题、链接和上下文。",
-            "5b3577a492": "已连接，可用于评审状态",
-            "list_end": "，以及",
-            "list_pair": " 和 ",
-            "list_mid": ", ",
-            "code_host_tasks_summary": "议题可作为任务使用 · 如果团队在 Linear 或 Jira 中规划工作，也可以添加它们",
-            "code_host_tasks_caption": "代码托管平台的议题也可以作为任务使用。",
-            "review_step_title": "在智能体工作时查看 PR 状态",
-            "review_step_description": "连接评审提供方，让 Orca 显示 PR 或 MR 状态、检查和评审。",
-            "task_step_title": "无需离开 Orca，即可让智能体处理任务"
-          },
-          "connect": {
-            "integration": {
-              "step": {
-                "0f47ff17c6": "更改",
-                "5538eb6743": "完成",
-                "open_step": "打开",
-                "close_step": "关闭"
-              }
-            }
-          },
-          "FullDiskAccessSetupPrompt": {
-            "bbb3f1e404": "检查中",
-            "48d87edcd2": "已授予",
-            "6db9a69f4e": "推荐",
-            "fa809e8ada": "已打开 macOS 隐私与安全性",
-            "bfa3402305": "无法请求权限",
-            "c566bca278": "完全磁盘访问权限",
-            "0d6efe9cf4": "当项目或工作树位于受保护文件夹时，建议在 macOS 上开启。",
-            "dac08ec03e": "正在打开...",
-            "6e3d62b816": "打开完全磁盘访问权限"
-          }
-        },
-        "tips": {
-          "CliFeatureTipVisual": {
-            "badb4fc342": ">",
-            "22e62f3bab": "Claude Code 会话已开始"
-          },
-          "CliSkillSetupTerminal": {
-            "1953e90447": "按 Enter 为您的智能体安装 Orca CLI 编排技能。",
-            "43b60ec5c3": "Orca CLI 和编排技能安装终端",
-            "84e9576dac": "技能设置",
-            "5c3aee22c0": "复制命令",
-            "5eca672aac": "复制技能安装命令",
-            "6ff813fc1d": "复制技能命令失败。",
-            "b8ad063571": "复制技能安装命令。"
-          },
-          "CmdJPaletteTipDialog": {
-            "c0bb9f869b": "设置 → 快捷键",
-            "8241897205": "随时重新绑定快捷方式"
-          },
-          "FeatureTipActions": {
-            "eb04abece8": "也许稍后"
-          },
-          "FeatureTipsModal": {
-            "c169298e4d": "完成",
-            "3c6c478462": "X 完成后，把评审任务发给它。”",
-            "298301b7a0": "工作树",
-            "864e2db28f": "当",
-            "7fc6f02099": "，并分别为每个创建 PR。",
-            "27c567a89c": "工作树",
-            "55846c7f95": "将此 PR 拆成两个",
-            "4795ac2d4a": "尝试询问：",
-            "53905bd076": "开发预览：打开技能设置终端。",
-            "1da82af45b": "Orca CLI 需要注意",
-            "ce13a742d0": "在 PATH 中注册了 `orca`。",
-            "d1a86c7eb5": "打开“设置”以完成 CLI 设置。"
-          },
-          "CmdJPaletteFeatureTipVisual": {
-            "ab94e16d44": "创建工作树“{{value0}}”",
-            "d20ccf1e61": "完成",
-            "379d776971": "打字",
-            "0418f9becc": "打开"
           }
         }
       },
@@ -13166,34 +12506,6 @@
           },
           "copy": {
             "copyFailed": "无法复制崩溃报告详细信息。"
-          }
-        }
-      },
-      "contextual": {
-        "tours": {
-          "ContextualTourControl": {
-            "186eecc34f": "根据第一条智能体消息自动命名工作区",
-            "02e8373219": "当您将此文本框留空时，会自动生成新名称。",
-            "731c5573df": "根据第一条消息自动命名"
-          },
-          "ContextualTourOverlaySurface": {
-            "4a9568f773": "返回",
-            "4f86e2a10b": "跳过导览",
-            "d974f32a83": "关闭导览",
-            "ffa4412b66": "下一步"
-          },
-          "ContextualTourProgressDots": {
-            "7734cb8ad3": "的",
-            "dcd6e6b03e": "{{value1}} 的步骤 {{value0}}"
-          },
-          "contextual": {
-            "tour": {
-              "overlay": {
-                "measurement": {
-                  "38b3155418": "下一步"
-                }
-              }
-            }
           }
         }
       },

@@ -27,7 +27,6 @@ import { useAppStartupHydration } from './app-shell/use-app-startup-hydration'
 import { useDocumentAppearance } from './app-shell/use-document-appearance'
 import { useFloatingWorkspacePanel } from './app-shell/use-floating-workspace-panel'
 import { useGlobalKeybindings } from './app-shell/use-global-keybindings'
-import { useOnboardingAndFeatureTips } from './app-shell/use-onboarding-and-feature-tips'
 import { usePersistedUIWriter } from './app-shell/use-persisted-ui-writer'
 import { useRuntimeGraphSync } from './app-shell/use-runtime-graph-sync'
 import { useWindowVisibilityEffects } from './app-shell/use-window-visibility-effects'
@@ -36,7 +35,6 @@ import { WorkbenchShellBootstrap } from './workbench/WorkbenchShellBootstrap'
 function App(): React.JSX.Element {
   const layout = useAppChromeLayout()
   const floatingWorkspace = useFloatingWorkspacePanel()
-  const onboardingGate = useOnboardingAndFeatureTips()
   const clearUnreadDockBadge = useUnreadDockBadge()
 
   // Why enabled && open: the overlay only renders while the feature is on, and its panel is
@@ -44,7 +42,7 @@ function App(): React.JSX.Element {
   useAppShellServices({
     floatingPanelVisible: floatingWorkspace.enabled && floatingWorkspace.open
   })
-  useAppStartupHydration(onboardingGate.applyStartupOnboardingState)
+  useAppStartupHydration()
   useAppSessionPersistence()
   useRuntimeGraphSync()
   usePersistedUIWriter()
@@ -97,10 +95,7 @@ function App(): React.JSX.Element {
             <WorkbenchShellBootstrap />
             <AppBackgroundServices />
             <AppWorkspaceShell layout={layout} floatingWorkspace={floatingWorkspace} />
-            <AppRootSurfaces
-              floatingWorkspace={floatingWorkspace}
-              onboardingGate={onboardingGate}
-            />
+            <AppRootSurfaces floatingWorkspace={floatingWorkspace} />
             <BrowserWebAuthnAccountDialog />
           </LinkRoutingPreferenceDialogProvider>
         </ConfirmationDialogProvider>

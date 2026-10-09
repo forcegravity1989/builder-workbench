@@ -1,13 +1,5 @@
 import os from 'node:os'
-import { app, ipcMain, net } from 'electron'
-import {
-  appendFeedbackImagesToFormData,
-  readFeedbackImagesDelivered,
-  validateFeedbackImages,
-  type FeedbackImageAttachment
-} from './feedback-image-attachments'
-
-export type { FeedbackImageAttachment }
+import { app, net } from 'electron'
 
 // Why: the production Mac build loads the renderer from a file:// origin, so a
 // cross-origin POST from fetch() triggers a CORS preflight that the feedback
@@ -29,7 +21,6 @@ export type FeedbackSubmitArgs = {
   submitAnonymously?: boolean
   githubLogin: string | null
   githubEmail: string | null
-  images?: FeedbackImageAttachment[]
 }
 
 export type FeedbackDiagnosticBundleAttachment = {
@@ -49,7 +40,6 @@ type FeedbackSubmitBody = {
   osRelease: string
   arch: string
   diagnosticBundle?: FeedbackDiagnosticBundleAttachment
-  images?: FeedbackImageAttachment[]
 }
 
 export type FeedbackRequestFailure = {
@@ -61,8 +51,6 @@ export type FeedbackSubmitResult =
   | {
       ok: true
       diagnosticBundleFailure?: FeedbackRequestFailure
-      /** Absent when nothing was attached; false when the text landed but the images did not. */
-      imagesDelivered?: boolean
     }
   | ({ ok: false } & FeedbackRequestFailure & {
         diagnosticBundleFailure?: FeedbackRequestFailure
@@ -96,10 +84,7 @@ function buildSubmitBody(args: InternalFeedbackSubmitArgs): FeedbackSubmitBody {
     arch: process.arch,
     ...(args.submissionType === 'crash' && args.diagnosticBundle
       ? { diagnosticBundle: args.diagnosticBundle }
-      : {}),
-    // Why: images are a feedback-only affordance; crash reports already carry
-    // diagnostic bundles and the server rejects images on that lane.
-    ...(args.submissionType !== 'crash' && args.images?.length ? { images: args.images } : {})
+      : {})
   }
 }
 
@@ -140,7 +125,7 @@ async function postFeedback(
 }
 
 function feedbackRequestBodyInit(body: FeedbackSubmitBody): Pick<RequestInit, 'body' | 'headers'> {
-  if (!body.diagnosticBundle && !body.images?.length) {
+  if (!body.diagnosticBundle) {
     return {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(body)
@@ -174,7 +159,6 @@ function feedbackRequestBodyInit(body: FeedbackSubmitBody): Pick<RequestInit, 'b
       `orca-diagnostics-${body.diagnosticBundle.bundleSubmissionId}.ndjson`
     )
   }
-  appendFeedbackImagesToFormData(formData, body.images ?? [])
 
   // Why: multipart avoids JSON-escaping a near-cap NDJSON bundle over the
   // backend request limit while still submitting one feedback request.
@@ -282,37 +266,7 @@ async function submitFeedbackWithDiagnosticBundle(
 export async function submitFeedback(
   args: InternalFeedbackSubmitArgs
 ): Promise<FeedbackSubmitResult> {
-  // Why: buildSubmitBody drops images on the crash lane, so validating them
-  // there would abort a crash report over attachments it never meant to send.
-  if (args.submissionType !== 'crash' && args.images !== undefined) {
-    const imageError = validateFeedbackImages(args.images)
-    if (imageError) {
-      return { ok: false, status: null, error: imageError }
-    }
-  }
   const body = buildSubmitBody(args)
-  if (body.images?.length) {
-    try {
-      let imagesDelivered = true
-      const response = await postFeedback(
-        FEEDBACK_API_URL,
-        body,
-        FEEDBACK_ATTACHMENT_REQUEST_TIMEOUT_MS,
-        async (nextResponse) => {
-          imagesDelivered = nextResponse.ok ? await readFeedbackImagesDelivered(nextResponse) : true
-        }
-      )
-      if (response.ok) {
-        return { ok: true, imagesDelivered }
-      }
-      // Why: the text lane retries 5xx, this one does not. Replaying up to
-      // 32 MiB of attachments on a flaky link costs more than it saves, and the
-      // dialog keeps the draft and thumbnails so the user can resend.
-      return { ok: false, ...responseFailure(response) }
-    } catch (error) {
-      return { ok: false, ...errorFailure(error) }
-    }
-  }
   if (body.diagnosticBundle) {
     const bodyWithoutDiagnosticBundle =
       args.feedbackWithoutDiagnosticBundle !== undefined
@@ -338,24 +292,4 @@ export async function submitFeedback(
   } catch (error) {
     return retryFeedbackOnPrimary(body, error)
   }
-}
-
-export function registerFeedbackHandlers(): void {
-  ipcMain.removeHandler('feedback:submit')
-  ipcMain.handle('feedback:submit', (_event, args: FeedbackSubmitArgs) => {
-    // Why: validate the raw clone before normalization so a tiny hostile value
-    // cannot become a large main-process typed-array allocation.
-    if (args.images !== undefined) {
-      const imageError = validateFeedbackImages(args.images)
-      if (imageError) {
-        return { ok: false, status: null, error: imageError }
-      }
-    }
-    // Why: crash submissions are main-only. A compromised renderer can invoke
-    // this channel directly, so force the public feedback lane at the boundary.
-    return submitFeedback({
-      ...args,
-      submissionType: 'feedback'
-    })
-  })
 }

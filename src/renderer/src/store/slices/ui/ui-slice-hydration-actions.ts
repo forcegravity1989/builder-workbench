@@ -13,8 +13,6 @@ import {
   normalizeVisibleExecutionHostIds
 } from '../../../../../shared/execution-host'
 import { normalizeFeatureInteractions } from '../../../../../shared/feature-interactions'
-import { normalizeContextualTourIds } from '../../../../../shared/contextual-tours'
-import { normalizeFeatureTipIds } from '../../../../../shared/feature-tips'
 import {
   DEFAULT_HIDE_SLEEPING_WORKSPACES,
   normalizeWorktreeCardProperties,
@@ -241,13 +239,7 @@ export function createUiHydrationActions(set: UISliceSet, _get: UISliceGet): Par
           browserDefaultZoomLevel: normalizeBrowserPageZoomLevel(ui.browserDefaultZoomLevel),
           browserKagiSessionLink: normalizeKagiSessionLink(ui.browserKagiSessionLink ?? ''),
           taskResumeState: sanitizeTaskResumeState(ui.taskResumeState),
-          featureTipsSeenIds: normalizeFeatureTipIds(ui.featureTipsSeenIds),
           featureInteractions: normalizeFeatureInteractions(ui.featureInteractions),
-          contextualToursSeenIds: normalizeContextualTourIds(ui.contextualToursSeenIds),
-          contextualToursAutoEligible:
-            typeof ui.contextualToursAutoEligible === 'boolean'
-              ? ui.contextualToursAutoEligible
-              : null,
           trustedOrcaHooks: hydrateTrustedOrcaHooks(ui.trustedOrcaHooks, validRepoIds),
           setupScriptPromptDismissedRepoIds:
             validRepoHostIdentities.size === 0
@@ -256,10 +248,6 @@ export function createUiHydrationActions(set: UISliceSet, _get: UISliceGet): Par
                   ui.setupScriptPromptDismissedRepoIds,
                   validRepoHostIdentities
                 ),
-          setupGuideSidebarDismissed: ui.setupGuideSidebarDismissed === true,
-          setupGuideBrowserMilestoneMigrated: ui.setupGuideBrowserMilestoneMigrated === true,
-          setupGuideBrowserMilestoneLegacyComplete:
-            ui.setupGuideBrowserMilestoneLegacyComplete === true,
           browserImportHintHidden: ui.browserImportHintHidden === true,
           mobileEmulatorTabIntroDismissed: ui.mobileEmulatorTabIntroDismissed === true,
           mobileEmulatorAgentSetupDismissed: ui.mobileEmulatorAgentSetupDismissed === true,

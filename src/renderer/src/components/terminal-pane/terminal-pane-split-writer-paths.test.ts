@@ -11,7 +11,6 @@ const mocks = vi.hoisted(() => ({
 vi.mock('@/store', () => ({
   useAppStore: {
     getState: () => ({
-      activeContextualTourId: null,
       recordFeatureInteraction: mocks.recordFeatureInteraction
     })
   }

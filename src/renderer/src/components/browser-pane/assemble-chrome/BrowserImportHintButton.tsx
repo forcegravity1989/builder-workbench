@@ -175,7 +175,6 @@ export function BrowserImportHintButton({
             'auto.components.browser.pane.BrowserImportHintButton.4f5ffaa6a1',
             'Import browser data'
           )}
-          data-contextual-tour-target="browser-import-hint"
         >
           <Import className="size-3.5" />
           {translate('auto.components.browser.pane.BrowserImportHintButton.b24fef25be', 'Import')}

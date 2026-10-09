@@ -5,9 +5,6 @@ import TimingSequencer from './scripts/ci-unit-sequencer.mjs'
 const windowsTestWorkerOptions = process.platform === 'win32' ? { maxWorkers: 4 } : {}
 
 export default defineConfig({
-  define: {
-    ORCA_FEATURE_WALL_ENABLED: 'true'
-  },
   resolve: {
     alias: {
       '@renderer': resolve('src/renderer/src'),

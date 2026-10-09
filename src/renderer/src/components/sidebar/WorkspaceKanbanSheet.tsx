@@ -85,7 +85,6 @@ export default function WorkspaceKanbanSheet({
             width: `min(calc(100vw - ${drawerLeftCss}), 1294px)`
           } as React.CSSProperties
         }
-        data-contextual-tour-target="workspace-board-surface"
         data-workspace-board-sheet=""
         data-workspace-board-drag-preview={dragPreview ? 'true' : undefined}
         onOpenAutoFocus={(event) => event.preventDefault()}

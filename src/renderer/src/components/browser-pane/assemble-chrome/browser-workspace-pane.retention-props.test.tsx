@@ -36,10 +36,6 @@ vi.mock('@/lib/worktree-runtime-owner', () => ({
   getRuntimeEnvironmentIdForWorktree: () => null
 }))
 
-vi.mock('@/components/contextual-tours/use-contextual-tour', () => ({
-  useContextualTour: () => {}
-}))
-
 vi.mock('../host-guest/webview-registry', () => ({
   destroyPersistentWebview: () => {}
 }))

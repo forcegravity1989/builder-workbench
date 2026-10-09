@@ -102,15 +102,6 @@ export function createPinnedTabCloseGuardModule(): Pick<
   }
 }
 
-export function createContextualTourModule(): Pick<
-  FloatingTerminalPanelMocks,
-  'useContextualTour'
-> {
-  return {
-    useContextualTour: mocks.useContextualTour
-  }
-}
-
 export function createTerminalSaveDialogModule() {
   return {
     useTerminalSaveDialog: () => ({

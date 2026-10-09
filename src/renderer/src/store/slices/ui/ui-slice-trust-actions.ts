@@ -56,32 +56,6 @@ export function createUiTrustActions(set: UISliceSet, _get: UISliceGet): Partial
         window.api.ui.set({ setupScriptPromptDismissedRepoIds: next }).catch(console.error)
         return { setupScriptPromptDismissedRepoIds: next }
       }),
-    setupGuideSidebarDismissed: false,
-    setSetupGuideSidebarDismissed: (dismissed) =>
-      set((s) => {
-        if (s.setupGuideSidebarDismissed === dismissed) {
-          return s
-        }
-        window.api.ui.set({ setupGuideSidebarDismissed: dismissed }).catch(console.error)
-        return { setupGuideSidebarDismissed: dismissed }
-      }),
-    setupGuideBrowserMilestoneMigrated: true,
-    setupGuideBrowserMilestoneLegacyComplete: false,
-    markSetupGuideBrowserMilestoneMigrated: (legacyComplete) =>
-      set((s) => {
-        if (
-          s.setupGuideBrowserMilestoneMigrated &&
-          s.setupGuideBrowserMilestoneLegacyComplete === legacyComplete
-        ) {
-          return s
-        }
-        const updates = {
-          setupGuideBrowserMilestoneMigrated: true,
-          setupGuideBrowserMilestoneLegacyComplete: legacyComplete
-        }
-        window.api.ui.set(updates).catch(console.error)
-        return updates
-      }),
     browserImportHintHidden: false,
     setBrowserImportHintHidden: (hidden) =>
       set((s) => {

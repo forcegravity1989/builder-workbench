@@ -12,7 +12,6 @@ const mocks = vi.hoisted(() => {
   const shortcutLabel: { current: string | null } = { current: '⌘N' }
 
   return {
-    openWorkspaceCreationComposerWithTourHandoff: vi.fn(),
     popoverContentProps,
     shortcutLabel,
     toast: vi.fn()
@@ -27,7 +26,6 @@ type MockState = {
   setSidebarBody: (body: 'workspaces' | 'agents') => void
   openModal: (modal: string, data?: unknown) => void
   updateSettings: (patch: Record<string, unknown>) => void
-  activeContextualTourId: string | null
   settings?: {
     experimentalAgentDashboardPopout?: boolean
     agentsSidebarIntroShown?: boolean
@@ -71,10 +69,6 @@ vi.mock('@/components/ui/tooltip', () => ({
   TooltipContent: ({ children }: { children: React.ReactNode }) => <>{children}</>
 }))
 
-vi.mock('../contextual-tours/workspace-creation-tour-handoff', () => ({
-  openWorkspaceCreationComposerWithTourHandoff: mocks.openWorkspaceCreationComposerWithTourHandoff
-}))
-
 vi.mock('sonner', () => ({ toast: mocks.toast }))
 
 // Deterministic popover: expose the open flag instead of relying on radix portals.
@@ -106,7 +100,6 @@ function createButton(): HTMLButtonElement {
 }
 
 beforeEach(() => {
-  mocks.openWorkspaceCreationComposerWithTourHandoff.mockClear()
   mocks.toast.mockClear()
   mocks.shortcutLabel.current = '⌘N'
   mockState = {
@@ -117,7 +110,6 @@ beforeEach(() => {
     setSidebarBody: vi.fn(),
     openModal: vi.fn(),
     updateSettings: vi.fn(),
-    activeContextualTourId: null,
     settings: {}
   }
   container = document.createElement('div')
@@ -142,7 +134,9 @@ describe('SidebarHeader', () => {
       createButton().click()
     })
 
-    expect(mocks.openWorkspaceCreationComposerWithTourHandoff).toHaveBeenCalledTimes(1)
+    expect(mockState.openModal).toHaveBeenCalledWith('new-workspace-composer', {
+      telemetrySource: 'sidebar'
+    })
   })
 
   it('opens the composer the same way once projects exist', async () => {
@@ -156,7 +150,9 @@ describe('SidebarHeader', () => {
     })
 
     expect(createButton().disabled).toBe(false)
-    expect(mocks.openWorkspaceCreationComposerWithTourHandoff).toHaveBeenCalledTimes(1)
+    expect(mockState.openModal).toHaveBeenCalledWith('new-workspace-composer', {
+      telemetrySource: 'sidebar'
+    })
   })
 
   it('reaches Add project and New workspace in one click each, with no menu', async () => {
@@ -173,7 +169,10 @@ describe('SidebarHeader', () => {
     })
 
     expect(mockState.openModal).toHaveBeenCalledWith('add-repo')
-    expect(mocks.openWorkspaceCreationComposerWithTourHandoff).not.toHaveBeenCalled()
+    expect(mockState.openModal).not.toHaveBeenCalledWith(
+      'new-workspace-composer',
+      expect.anything()
+    )
   })
 
   it('keeps the create button rightmost so the frequent action stays where it was', () => {
@@ -311,7 +310,9 @@ describe('SidebarHeader', () => {
     await act(async () => {
       createButton().click()
     })
-    expect(mocks.openWorkspaceCreationComposerWithTourHandoff).toHaveBeenCalledTimes(1)
+    expect(mockState.openModal).toHaveBeenCalledWith('new-workspace-composer', {
+      telemetrySource: 'sidebar'
+    })
   })
 
   it('does not reset a persisted agents body before settings hydrate', () => {

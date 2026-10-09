@@ -32,7 +32,6 @@ type EventContext = KeyboardHandlersDeps & {
   reconcileHeldImeEnterModifiers: Runtime['reconcileHeldImeEnterModifiers']
   getImeEnterModifier: Runtime['getImeEnterModifier']
   getModifiedEnterChord: Runtime['getModifiedEnterChord']
-  getKeyboardSplitTelemetrySource: () => 'contextual_tour' | 'keyboard'
   nativeOnlyShortcutTracker: Runtime['nativeOnlyShortcutTracker']
   optionKeyLocations: Runtime['optionKeyLocations']
   optionKittyReleases: Runtime['optionKittyReleases']
@@ -83,8 +82,7 @@ export function createTerminalKeyboardEventHandlers(context: EventContext) {
     deferredNewlineSender,
     deferredChordSender,
     modifiedEnterChordOwner,
-    observedEnterKeydownTimeStamps,
-    getKeyboardSplitTelemetrySource
+    observedEnterKeydownTimeStamps
   } = context
 
   const onKeyDown = (e: KeyboardEvent): void => {
@@ -282,7 +280,6 @@ export function createTerminalKeyboardEventHandlers(context: EventContext) {
       paneTransportsRef,
       paneCwdRef,
       managerRef,
-      getKeyboardSplitTelemetrySource,
       armNativeOnlyShortcut: (event) => nativeOnlyShortcutTracker.armKeyDown(event)
     })
   }

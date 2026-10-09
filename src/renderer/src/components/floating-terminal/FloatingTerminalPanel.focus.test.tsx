@@ -81,10 +81,6 @@ vi.mock('@/components/ui/button', async () => {
   return (await import('./floating-terminal-panel-component-stubs')).createButtonModule()
 })
 
-vi.mock('@/components/contextual-tours/use-contextual-tour', async () => {
-  return (await import('./floating-terminal-panel-test-module-mocks')).createContextualTourModule()
-})
-
 vi.mock('@/components/ui/dialog', async () => {
   return (await import('./floating-terminal-panel-component-stubs')).createDialogModule()
 })

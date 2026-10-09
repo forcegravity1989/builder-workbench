@@ -30,7 +30,6 @@ type ActionDispatchContext = {
   paneTransportsRef: React.RefObject<Map<number, PtyTransport>>
   paneCwdRef: React.RefObject<PaneCwdMap>
   managerRef: React.RefObject<PaneManager | null>
-  getKeyboardSplitTelemetrySource: () => 'contextual_tour' | 'keyboard'
   armNativeOnlyShortcut: (event: KeyboardEvent) => void
 }
 
@@ -58,7 +57,6 @@ export function dispatchTerminalShortcutAction(
     paneTransportsRef,
     paneCwdRef,
     managerRef,
-    getKeyboardSplitTelemetrySource,
     armNativeOnlyShortcut
   } = context
 
@@ -218,7 +216,7 @@ export function dispatchTerminalShortcutAction(
       fallbackCwd,
       pane,
       direction: action.direction,
-      source: getKeyboardSplitTelemetrySource()
+      source: 'keyboard'
     })
   }
 }

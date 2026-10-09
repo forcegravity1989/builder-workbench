@@ -129,11 +129,11 @@ function makeGitLabWorkItem(overrides: Partial<GitLabWorkItem> = {}): GitLabWork
 }
 
 describe('createUISlice settings navigation', () => {
-  it('accepts a host-qualified setup guide target', () => {
+  it('accepts a host-qualified settings target', () => {
     const store = createUIStore()
-    store.getState().openSettingsTarget({ pane: 'setup-guide', repoId: null, hostId: 'ssh:host-1' })
+    store.getState().openSettingsTarget({ pane: 'general', repoId: null, hostId: 'ssh:host-1' })
     expect(store.getState().settingsNavigationTarget).toEqual({
-      pane: 'setup-guide',
+      pane: 'general',
       repoId: null,
       hostId: 'ssh:host-1'
     })

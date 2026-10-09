@@ -43,10 +43,6 @@ vi.mock('@/store', () => ({
   )
 }))
 
-vi.mock('@/components/contextual-tours/use-contextual-tour', () => ({
-  useContextualTour: vi.fn()
-}))
-
 vi.mock('@/components/ui/tooltip', () => ({
   Tooltip: ({ children }: { children: React.ReactNode }) => <>{children}</>,
   TooltipContent: ({ children }: { children: React.ReactNode }) => <>{children}</>,
@@ -388,39 +384,13 @@ describe('NewWorkspaceComposerCard folder task source mode', () => {
       repoBackedSearchRepos: sourceRepos as never
     })
 
-    const projectSection = current.container.querySelector(
-      '[data-contextual-tour-target="workspace-creation-project"]'
-    )
-    const nameSection = current.container.querySelector(
-      '[data-contextual-tour-target="workspace-creation-name"]'
-    )
-    expect(projectSection?.textContent).not.toContain('Task Source')
-    expect(nameSection?.textContent).toContain("Name or 'Create From'")
+    expect(current.container.textContent).not.toContain('Task Source')
+    expect(current.container.textContent).toContain("Name or 'Create From'")
     const nameInput = current.container.querySelector('[aria-label="workspace name"]')
     expect(nameInput?.getAttribute('data-repo-backed-search-count')).toBe('2')
     expect(nameInput?.getAttribute('data-repo-backed-search-names')).toBe('Repo A,Repo B')
     expect(current.container.querySelector('[data-testid="repo-backed-source-trigger"]')).toBeNull()
     expect(current.container.querySelectorAll('[data-testid="project-combobox"]')).toHaveLength(1)
-  })
-
-  it('scopes the workspace-creation-project tour target to the project picker rather than the run target picker', () => {
-    current = renderCard({ projectHostSetupOptions: [localReadyHostOption] })
-
-    const projectTourTarget = current.container.querySelector(
-      '[data-contextual-tour-target="workspace-creation-project"]'
-    )
-    expect(projectTourTarget).toBeTruthy()
-    expect(projectTourTarget?.querySelector('[data-project-combobox-root="true"]')).toBeTruthy()
-    expect(projectTourTarget?.querySelector('[data-run-target-combobox-root="true"]')).toBeNull()
-    expect(projectTourTarget?.textContent).not.toContain('Run on')
-    expect(projectTourTarget?.querySelector('label')).toBeNull()
-    expect(projectTourTarget?.querySelector('[aria-label="Add project"]')).toBeNull()
-    expect(current.container.querySelector('[aria-label="Add project"]')).toBeTruthy()
-
-    const runTargetPicker = current.container.querySelector(
-      'div[data-run-target-combobox-root="true"]'
-    )
-    expect(runTargetPicker).toBeTruthy()
   })
 
   it('keeps the reuse-branch row collapsed until a local branch is reusable', () => {

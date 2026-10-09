@@ -267,16 +267,6 @@ async function readTerminalBoxTableWrapDiagnostics(page: Page): Promise<{
   })
 }
 
-async function closeFeatureTips(page: Page): Promise<void> {
-  await page.evaluate(() => {
-    const store = window.__store
-    store?.getState().markFeatureTipsSeen(['orca-cli', 'cmd-j-palette', 'voice-dictation'])
-    if (store?.getState().activeModal === 'feature-tips') {
-      store.getState().closeModal()
-    }
-  })
-}
-
 async function readTerminalRenderDiagnostics(page: Page): Promise<TerminalRenderDiagnostics> {
   return page.evaluate(() => {
     const store = window.__store
@@ -344,11 +334,6 @@ test.describe('Terminal long table scroll restore repro', () => {
     testRepoPath
   }, testInfo: TestInfo) => {
     await waitForSessionReady(orcaPage)
-    await orcaPage.evaluate(() => {
-      window.__store
-        ?.getState()
-        .markFeatureTipsSeen(['orca-cli', 'cmd-j-palette', 'voice-dictation'])
-    })
     const firstWorktreeId = await waitForActiveWorktree(orcaPage)
     const secondWorktreeId = (await getAllWorktreeIds(orcaPage)).find(
       (id) => id !== firstWorktreeId
@@ -384,7 +369,6 @@ test.describe('Terminal long table scroll restore repro', () => {
         .toContain(marker)
 
       await scrollActiveTerminalLikeUser(orcaPage)
-      await closeFeatureTips(orcaPage)
       const diagnostics = await readTerminalRenderDiagnostics(orcaPage)
       const restoredPane = diagnostics.allPaneStates.find((paneState) => paneState.hasMarker)
       expect(restoredPane).toBeDefined()
@@ -406,11 +390,6 @@ test.describe('Terminal long table scroll restore repro', () => {
     testRepoPath
   }, testInfo: TestInfo) => {
     await waitForSessionReady(orcaPage)
-    await orcaPage.evaluate(() => {
-      window.__store
-        ?.getState()
-        .markFeatureTipsSeen(['orca-cli', 'cmd-j-palette', 'voice-dictation'])
-    })
     const firstWorktreeId = await waitForActiveWorktree(orcaPage)
     const secondWorktreeId = (await getAllWorktreeIds(orcaPage)).find(
       (id) => id !== firstWorktreeId
@@ -448,7 +427,6 @@ test.describe('Terminal long table scroll restore repro', () => {
         .toContain(marker)
 
       await scrollActiveTerminalLikeUser(orcaPage)
-      await closeFeatureTips(orcaPage)
       const diagnostics = await readTerminalRenderDiagnostics(orcaPage)
       // Why: renderer cell metrics can land one column wider in headless runs;
       // the content and screenshot assertions below cover the actual regression.
@@ -478,12 +456,6 @@ test.describe('Terminal long table scroll restore repro', () => {
     testRepoPath
   }, testInfo: TestInfo) => {
     await waitForSessionReady(orcaPage)
-    await closeFeatureTips(orcaPage)
-    await orcaPage.evaluate(() => {
-      window.__store
-        ?.getState()
-        .markFeatureTipsSeen(['orca-cli', 'cmd-j-palette', 'voice-dictation'])
-    })
     const firstWorktreeId = await waitForActiveWorktree(orcaPage)
     const secondWorktreeId = (await getAllWorktreeIds(orcaPage)).find(
       (id) => id !== firstWorktreeId
@@ -539,7 +511,6 @@ test.describe('Terminal long table scroll restore repro', () => {
       // restored markdown-table viewport without depending on early output.
       const retainedEmojiCell = 'Peac'
       await scrollActiveTerminalToText(orcaPage, retainedEmojiCell)
-      await closeFeatureTips(orcaPage)
       await expect
         .poll(() => readActiveTerminalVisibleText(orcaPage), {
           timeout: 5_000,

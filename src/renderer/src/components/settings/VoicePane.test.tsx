@@ -69,7 +69,6 @@ function installWindowApi(
 
 async function renderVoicePane(args: {
   voiceEnabled?: boolean
-  markFeatureTipsSeen: (ids: string[]) => void
   updateSettings: (updates: Partial<GlobalSettings>) => void
   requestMicrophonePermission?: () => Promise<DeveloperPermissionRequestResult>
   recordFeatureInteraction?: (id: string) => void
@@ -84,7 +83,6 @@ async function renderVoicePane(args: {
     selector({
       modelStates: [],
       refreshModelStates,
-      markFeatureTipsSeen: args.markFeatureTipsSeen,
       recordFeatureInteraction: args.recordFeatureInteraction ?? vi.fn()
     })
   )
@@ -131,7 +129,6 @@ describe('VoicePane', () => {
   it('fetches speech data once across re-renders when voice settings are absent', async () => {
     const updateSettings = vi.fn()
     const { root, refreshModelStates } = await renderVoicePane({
-      markFeatureTipsSeen: vi.fn(),
       updateSettings
     })
 
@@ -146,7 +143,7 @@ describe('VoicePane', () => {
     expect(refreshModelStates).toHaveBeenCalledTimes(1)
   })
 
-  it('clicking the switch marks the voice tip seen before disabling voice settings', async () => {
+  it('disables voice settings without requesting microphone permission', async () => {
     const calls: string[] = []
     const requestMicrophonePermission = vi.fn()
     const updateVoiceSettings = vi.fn((updates: { enabled?: boolean }) => {
@@ -155,24 +152,22 @@ describe('VoicePane', () => {
 
     await handleVoiceDictationToggle({
       voiceEnabled: true,
-      markFeatureTipsSeen: (ids) => calls.push(`seen:${ids.join(',')}`),
       updateVoiceSettings,
       requestMicrophonePermission
     })
 
-    expect(calls).toEqual(['seen:voice-dictation', 'settings:false'])
+    expect(calls).toEqual(['settings:false'])
     expect(updateVoiceSettings).toHaveBeenCalledWith({ enabled: false })
     expect(requestMicrophonePermission).not.toHaveBeenCalled()
   })
 
-  it('clicking the switch marks the voice tip seen before the disable settings update', async () => {
+  it('clicking the switch disables voice settings', async () => {
     const calls: string[] = []
     const updateSettings = vi.fn((updates: Partial<GlobalSettings>) => {
       calls.push(`settings:${String(updates.voice?.enabled)}`)
     })
     const { button, root } = await renderVoicePane({
       voiceEnabled: true,
-      markFeatureTipsSeen: (ids) => calls.push(`seen:${ids.join(',')}`),
       updateSettings,
       requestMicrophonePermission: vi.fn(async () => deniedMicrophoneResult)
     })
@@ -180,7 +175,7 @@ describe('VoicePane', () => {
     await clickSwitch(button)
     root.unmount()
 
-    expect(calls).toEqual(['seen:voice-dictation', 'settings:false'])
+    expect(calls).toEqual(['settings:false'])
     expect(updateSettings).toHaveBeenCalledWith(
       expect.objectContaining({
         voice: expect.objectContaining({ enabled: false })
@@ -189,14 +184,13 @@ describe('VoicePane', () => {
     expect(window.api.developerPermissions.request).not.toHaveBeenCalled()
   })
 
-  it('clicking the switch marks the voice tip seen before requesting microphone permission', async () => {
+  it('clicking the switch requests microphone permission before enabling', async () => {
     const calls: string[] = []
     const updateSettings = vi.fn((updates: Partial<GlobalSettings>) => {
       calls.push(`settings:${String(updates.voice?.enabled)}`)
     })
     const { button, root } = await renderVoicePane({
       voiceEnabled: false,
-      markFeatureTipsSeen: (ids) => calls.push(`seen:${ids.join(',')}`),
       updateSettings,
       requestMicrophonePermission: async () => {
         calls.push('permission-request')
@@ -207,11 +201,11 @@ describe('VoicePane', () => {
     await clickSwitch(button)
     root.unmount()
 
-    expect(calls).toEqual(['seen:voice-dictation', 'permission-request'])
+    expect(calls).toEqual(['permission-request'])
     expect(updateSettings).not.toHaveBeenCalled()
   })
 
-  it('marks the voice tip seen before requesting microphone permission when enabling is denied', async () => {
+  it('reports a denied microphone permission when enabling', async () => {
     const calls: string[] = []
     const updateVoiceSettings = vi.fn((updates: { enabled?: boolean }) => {
       calls.push(`settings:${String(updates.enabled)}`)
@@ -219,7 +213,6 @@ describe('VoicePane', () => {
 
     await handleVoiceDictationToggle({
       voiceEnabled: false,
-      markFeatureTipsSeen: (ids) => calls.push(`seen:${ids.join(',')}`),
       updateVoiceSettings,
       requestMicrophonePermission: async () => {
         calls.push('permission-request')
@@ -230,7 +223,6 @@ describe('VoicePane', () => {
     })
 
     expect(calls).toEqual([
-      'seen:voice-dictation',
       'pending:true',
       'permission-request',
       'permission-required',
@@ -243,7 +235,6 @@ describe('VoicePane', () => {
     const recordFeatureInteraction = vi.fn()
     const { button, root } = await renderVoicePane({
       voiceEnabled: true,
-      markFeatureTipsSeen: vi.fn(),
       updateSettings: vi.fn(),
       recordFeatureInteraction
     })
@@ -264,7 +255,6 @@ describe('VoicePane', () => {
       selector({
         modelStates: [],
         refreshModelStates: vi.fn(),
-        markFeatureTipsSeen: vi.fn(),
         recordFeatureInteraction: vi.fn()
       })
     )

@@ -39,7 +39,6 @@ describe('zh technical literal / sense fixes (#9574)', () => {
 
   it('keeps CLI / product technical strings un-translated', () => {
     expect(findByKey(zh, 'fe119187bb')).toBe('--model sonnet')
-    expect(findByKey(zh, '5c5b65044e')).toBe('pnpm install')
     expect(findByKey(zh, '5af8251002')).toBe('SCSS')
     expect(findByKey(zh, '97e96cc027')).toBe('/goal')
     expect(findByKey(zh, 'f62ce91ade')).toBe('origin')

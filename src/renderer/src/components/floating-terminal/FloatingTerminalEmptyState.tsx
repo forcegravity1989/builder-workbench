@@ -45,7 +45,6 @@ export function FloatingTerminalEmptyState({
           type="button"
           variant="ghost"
           className="grid h-8 w-full grid-cols-[1rem_minmax(0,1fr)_auto] items-center gap-2.5 rounded-md px-3 py-0 text-sm font-normal text-foreground hover:bg-muted/40 hover:text-foreground"
-          data-contextual-tour-target="floating-workspace-new-terminal"
           onClick={onNewTerminal}
         >
           <TerminalSquare className="size-3.5 opacity-90" />
@@ -61,7 +60,6 @@ export function FloatingTerminalEmptyState({
           type="button"
           variant="ghost"
           className="grid h-8 w-full grid-cols-[1rem_minmax(0,1fr)_auto] items-center gap-2.5 rounded-md px-3 py-0 text-sm font-normal text-foreground hover:bg-muted/40 hover:text-foreground"
-          data-contextual-tour-target="floating-workspace-new-markdown"
           onClick={onNewMarkdown}
         >
           <FileText className="size-3.5 opacity-90" />

@@ -47,20 +47,18 @@ async function openTasksPage(page: Parameters<typeof getStoreState>[0]): Promise
 async function getRenderedTaskSources(
   page: Parameters<typeof getStoreState>[0]
 ): Promise<RenderedTaskSource[]> {
-  return page
-    .locator('[data-contextual-tour-target="tasks-source-filters"] button')
-    .evaluateAll((buttons, sourceByLabel) => {
-      return buttons.flatMap((button) => {
-        const source =
-          button.getAttribute('data-task-source') ??
-          sourceByLabel[button.getAttribute('aria-label')?.trim() ?? '']
-        if (!source) {
-          return []
-        }
-        const active = button.getAttribute('aria-pressed') === 'true'
-        return [{ source, active }]
-      })
-    }, TASK_SOURCE_BY_LABEL)
+  return page.locator('button[data-task-source]').evaluateAll((buttons, sourceByLabel) => {
+    return buttons.flatMap((button) => {
+      const source =
+        button.getAttribute('data-task-source') ??
+        sourceByLabel[button.getAttribute('aria-label')?.trim() ?? '']
+      if (!source) {
+        return []
+      }
+      const active = button.getAttribute('aria-pressed') === 'true'
+      return [{ source, active }]
+    })
+  }, TASK_SOURCE_BY_LABEL)
 }
 
 async function openMockedPaginatedGitHubTasks(

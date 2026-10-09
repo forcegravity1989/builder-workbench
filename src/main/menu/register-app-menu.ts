@@ -24,9 +24,6 @@ export function getNextDefaultOnAppearanceSettingValue(current: boolean | undefi
 
 type RegisterAppMenuOptions = {
   onOpenSettings: () => void
-  onOpenSetupGuide: (window?: Electron.BaseWindow | null) => void
-  onOpenFeatureTour: (window?: Electron.BaseWindow | null) => void
-  onOpenCrashReport: (window?: Electron.BaseWindow | null) => void
   onCheckForUpdates: (options: UpdateCheckOptions) => void
   onBeforeReload?: (options: { ignoreCache: boolean; webContentsId: number }) => void
   onZoomIn: () => void
@@ -45,9 +42,6 @@ type RegisterAppMenuOptions = {
 function buildAndApplyMenu(options: RegisterAppMenuOptions): void {
   const {
     onOpenSettings,
-    onOpenSetupGuide,
-    onOpenFeatureTour,
-    onOpenCrashReport,
     onCheckForUpdates,
     onBeforeReload,
     onZoomIn,
@@ -115,21 +109,6 @@ function buildAndApplyMenu(options: RegisterAppMenuOptions): void {
   const settingsItem: Electron.MenuItemConstructorOptions = {
     label: `${translateMain('menu.settings', 'Settings')}\t${shortcutLabel('app.settings')}`,
     click: () => onOpenSettings()
-  }
-
-  const featureTourItem: Electron.MenuItemConstructorOptions = {
-    label: translateMain('menu.exploreOrca', 'Explore Orca'),
-    click: (_menuItem, window) => onOpenFeatureTour(window)
-  }
-
-  const setupGuideItem: Electron.MenuItemConstructorOptions = {
-    label: translateMain('menu.gettingStarted', 'Getting Started with Orca'),
-    click: (_menuItem, window) => onOpenSetupGuide(window)
-  }
-
-  const crashReportItem: Electron.MenuItemConstructorOptions = {
-    label: translateMain('menu.reportCrash', 'Report Crash...'),
-    click: (_menuItem, window) => onOpenCrashReport(window)
   }
 
   // Why: the macOS app-menu (named after the app) is mandatory on darwin and
@@ -308,21 +287,11 @@ function buildAndApplyMenu(options: RegisterAppMenuOptions): void {
     submenu: [{ role: 'minimize' }, { role: 'zoom' }]
   }
 
+  // Why: About and Check for Updates already live in the macOS app menu, which
+  // would leave a macOS Help menu empty, so only Windows/Linux get one.
   const helpMenu: Electron.MenuItemConstructorOptions = {
     label: translateMain('menu.help', 'Help'),
-    submenu: [
-      crashReportItem,
-      { type: 'separator' },
-      featureTourItem,
-      setupGuideItem,
-      ...(isMac
-        ? []
-        : ([
-            { type: 'separator' },
-            { role: 'about' },
-            checkForUpdatesItem
-          ] satisfies Electron.MenuItemConstructorOptions[]))
-    ]
+    submenu: [{ role: 'about' }, checkForUpdatesItem]
   }
 
   const template: Electron.MenuItemConstructorOptions[] = [
@@ -331,7 +300,7 @@ function buildAndApplyMenu(options: RegisterAppMenuOptions): void {
     editMenu,
     viewMenu,
     windowMenu,
-    helpMenu
+    ...(isMac ? [] : [helpMenu])
   ]
 
   Menu.setApplicationMenu(Menu.buildFromTemplate(template))

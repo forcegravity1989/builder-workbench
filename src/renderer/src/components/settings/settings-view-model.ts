@@ -108,15 +108,12 @@ export function buildSettingsViewModel(
     navigation.neededSectionIds.has(sectionId)
   const isFocusedShortcutsPane =
     model.activeSectionId === 'shortcuts' && model.settingsSearchQuery.trim() === ''
-  const isFocusedSetupGuidePane =
-    model.activeSectionId === 'setup-guide' && model.settingsSearchQuery.trim() === ''
 
   return {
     generalNavGroups,
     repoNavSections,
     isSectionMounted,
-    isFocusedShortcutsPane,
-    isFocusedSetupGuidePane
+    isFocusedShortcutsPane
   }
 }
 

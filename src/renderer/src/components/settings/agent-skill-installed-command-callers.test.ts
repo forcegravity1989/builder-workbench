@@ -12,10 +12,6 @@ const updateCapableCallers = new Map<string, readonly string[]>([
     ['ORCHESTRATION_SKILL_UPDATE_COMMAND', 'installedCommand={orchestrationUpdateCommand}']
   ],
   [
-    'src/renderer/src/components/settings/OrchestrationSetupCard.tsx',
-    ['ORCHESTRATION_SKILL_UPDATE_COMMAND', 'installedCommand={updateCommand}']
-  ],
-  [
     'src/renderer/src/components/floating-terminal/FloatingTerminalOrchestrationDialog.tsx',
     ['ORCHESTRATION_SKILL_UPDATE_COMMAND', 'installedCommand={updateCommand}']
   ],
@@ -64,10 +60,6 @@ const updateCapableCallers = new Map<string, readonly string[]>([
   [
     'src/renderer/src/components/settings/BrowserUseSkillStep.tsx',
     ['installedCommand={installedCommand}']
-  ],
-  [
-    'src/renderer/src/components/feature-wall/BrowserUseSkillSetupCard.tsx',
-    ['ORCA_CLI_SKILL_UPDATE_COMMAND', 'installedCommand={updateCommand}']
   ],
   [
     // Why: the single-skill update command selection moved into
@@ -162,26 +154,6 @@ describe('AgentSkillSetupPanel installed-command call sites', () => {
     expect(source).toContain('installedCommand={orchestrationUpdateCommand}')
     expect(source).not.toContain('Copy update command')
     expect(source).not.toContain('copyUpdateCommand')
-  })
-
-  it('routes the combined feature-tip install through runtime command setup', () => {
-    const source = readRepoFile(
-      'src/renderer/src/components/feature-tips/CliSkillSetupTerminal.tsx'
-    )
-
-    expect(source).toContain('buildSkillCommandForRuntime(')
-    // Clipboard and auto-paste share the source command until the created tab
-    // resolves the shell that prepares the executable form.
-    expect(source).toContain('writeClipboardText(skillCommand)')
-    expect(source).toContain('command={skillCommand}')
-    expect(source).toContain('prepareCommandForShell={prepareCommandForShell}')
-    expect(source).toContain('shellOverride={activeSkillRuntime.terminalShellOverride}')
-    expect(source).not.toContain('command={ORCA_CLI_ORCHESTRATION_SKILL_INSTALL_COMMAND}')
-    // This terminal auto-pastes with no install gate, so a repair-required runtime
-    // must fall back to the host rather than skip the Windows npx preflight.
-    expect(source).toContain(
-      'activeSkillRuntime.installDisabledReason ? undefined : activeSkillRuntime.agentRuntime'
-    )
   })
 
   it('keeps client freshness behind resolved local runtime authority', () => {

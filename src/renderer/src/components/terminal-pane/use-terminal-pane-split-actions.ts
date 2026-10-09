@@ -8,7 +8,6 @@ import {
 } from '@/constants/terminal'
 import { recordCreatedTerminalPaneSplit } from './terminal-pane-split-completion'
 import { splitTerminalPaneWithInheritedCwd } from './terminal-pane-split-with-inherited-cwd'
-import { useAppStore } from '@/store'
 
 export function recordContextMenuCreatedTerminalPaneSplit(
   createdPane: unknown,
@@ -82,20 +81,14 @@ export function useTerminalPaneSplitActions({
         return
       }
       contextPaneIdRef.current = null
-      splitWithInheritedCwd(detail?.direction ?? 'vertical', getRequestedSplitTelemetrySource())
+      splitWithInheritedCwd(detail?.direction ?? 'vertical', 'context_menu')
     }
     window.addEventListener(REQUEST_ACTIVE_TERMINAL_PANE_SPLIT_EVENT, onRequestSplit)
     return () =>
       window.removeEventListener(REQUEST_ACTIVE_TERMINAL_PANE_SPLIT_EVENT, onRequestSplit)
     // splitWithInheritedCwd closes over live refs; re-registering keeps the
-    // tour action aligned with the current focused pane and fallback cwd.
+    // requested split aligned with the current focused pane and fallback cwd.
   }, [tabId, splitWithInheritedCwd, contextPaneIdRef])
 
   return { onSplitRight, onSplitDown }
-}
-
-function getRequestedSplitTelemetrySource(): 'contextual_tour' | 'context_menu' {
-  return useAppStore.getState().activeContextualTourId === 'workspace-agent-sessions'
-    ? 'contextual_tour'
-    : 'context_menu'
 }

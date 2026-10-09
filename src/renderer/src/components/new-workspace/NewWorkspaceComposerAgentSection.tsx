@@ -38,7 +38,7 @@ export function NewWorkspaceComposerAgentSection({
 }: NewWorkspaceComposerAgentSectionProps): React.JSX.Element {
   return (
     <>
-      <div className="min-w-0 space-y-1" data-contextual-tour-target="workspace-creation-agent">
+      <div className="min-w-0 space-y-1">
         <div className="flex items-center justify-between gap-2">
           <label className="text-xs font-medium text-muted-foreground">
             {translate('auto.components.NewWorkspaceComposerCard.01d1e8f601', 'Agent')}

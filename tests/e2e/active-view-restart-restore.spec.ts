@@ -60,11 +60,11 @@ test('restores the active top-level view (Tasks) after an app restart', async (/
     await expect
       .poll(async () => getStoreState<string>(first.page, 'activeView'), { timeout: 10_000 })
       .toBe('tasks')
-    // Locale-independent render proof: the tasks source-filter chrome is on
+    // Locale-independent render proof: the tasks source filters are on
     // screen (getByRole('Close tasks') is unusable — the label is localized).
-    await expect(
-      first.page.locator('[data-contextual-tour-target="tasks-source-filters"]')
-    ).toBeVisible({ timeout: 10_000 })
+    await expect(first.page.locator('button[data-task-source]').first()).toBeVisible({
+      timeout: 10_000
+    })
     // And the terminal grid is not the active surface.
     await expect(first.page.locator('.xterm')).not.toBeVisible({ timeout: 10_000 })
 
@@ -86,9 +86,9 @@ test('restores the active top-level view (Tasks) after an app restart', async (/
       .toBe('tasks')
     // Render-layer proof: the Tasks page chrome is on screen and the terminal
     // is not — i.e. the relaunch did not snap back to the terminal.
-    await expect(
-      second.page.locator('[data-contextual-tour-target="tasks-source-filters"]')
-    ).toBeVisible({ timeout: 10_000 })
+    await expect(second.page.locator('button[data-task-source]').first()).toBeVisible({
+      timeout: 10_000
+    })
     await expect(second.page.locator('.xterm')).not.toBeVisible({ timeout: 10_000 })
   } finally {
     // Guard each step so a failing close still runs the remaining cleanup.

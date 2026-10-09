@@ -423,14 +423,6 @@ describe('HtmlDocPreview browser chrome', () => {
     expect(button(container, 'Edit address')).not.toBeNull()
   })
 
-  // Why: the browsing tour walks anchors by name, and a preview answering to the browser pane's
-  // anchors would hand it steps about profiles and cookies that a document tab does not have.
-  it('claims none of the browsing tour anchors', async () => {
-    await renderPreview(container, root)
-
-    expect(container.querySelector('[data-contextual-tour-target]')).toBeNull()
-  })
-
   // Why the menu and no longer the chip: clicking the chip now edits the address, so the menu is
   // the one copy affordance left for the absolute path the owning machine spells.
   it('copies the absolute path the owning machine spells, not the workspace-relative one', async () => {

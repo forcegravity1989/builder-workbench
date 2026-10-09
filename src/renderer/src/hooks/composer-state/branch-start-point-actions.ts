@@ -66,7 +66,7 @@ export function useBranchStartPointActions(input: BranchStartPointActionsInput) 
     requestAnimationFrame(() => {
       document
         .querySelector<HTMLElement>(
-          '[data-contextual-tour-target="workspace-creation-project"] [data-project-combobox-root="true"][role="combobox"]'
+          '[data-workspace-composer-root="true"] [data-project-combobox-root="true"][role="combobox"]'
         )
         ?.focus()
     })

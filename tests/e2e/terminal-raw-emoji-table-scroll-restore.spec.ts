@@ -419,16 +419,6 @@ async function readTerminalRenderDiagnostics(page: Page): Promise<{
   })
 }
 
-async function closeFeatureTips(page: Page): Promise<void> {
-  await page.evaluate(() => {
-    const store = window.__store
-    store?.getState().markFeatureTipsSeen(['orca-cli', 'cmd-j-palette', 'voice-dictation'])
-    if (store?.getState().activeModal === 'feature-tips') {
-      store.getState().closeModal()
-    }
-  })
-}
-
 async function expectAutoWebgl(page: Page): Promise<boolean> {
   return page.evaluate(() => {
     const canvas = document.createElement('canvas')
@@ -480,7 +470,6 @@ test.describe('Terminal raw emoji table scroll restore repro', () => {
     orcaPage
   }) => {
     await waitForSessionReady(orcaPage)
-    await closeFeatureTips(orcaPage)
     await ensureTerminalVisible(orcaPage)
     await waitForActiveTerminalManager(orcaPage, 30_000)
     const ptyId = await waitForActivePanePtyId(orcaPage)
@@ -521,7 +510,6 @@ test.describe('Terminal raw emoji table scroll restore repro', () => {
     testRepoPath
   }, testInfo: TestInfo) => {
     await waitForSessionReady(orcaPage)
-    await closeFeatureTips(orcaPage)
     const firstWorktreeId = await waitForActiveWorktree(orcaPage)
     const secondWorktreeId = (await getAllWorktreeIds(orcaPage)).find(
       (id) => id !== firstWorktreeId
@@ -577,7 +565,6 @@ test.describe('Terminal raw emoji table scroll restore repro', () => {
         .toContain(completionMarker)
 
       await scrollActiveTerminalToText(orcaPage, 'Singer')
-      await closeFeatureTips(orcaPage)
       const expectedWebgl = await expectAutoWebgl(orcaPage)
       // Why: after the worktree switch, WebGL reattaches asynchronously (React
       // visibility effect + attach backoff) and a transient ESC[?25l during the

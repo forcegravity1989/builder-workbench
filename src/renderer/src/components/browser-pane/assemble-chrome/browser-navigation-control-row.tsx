@@ -35,7 +35,6 @@ export function BrowserNavigationControlRow({
   addressSlot,
   reloadControl,
   reloadLabel,
-  showTourAnchors = true,
   children
 }: {
   controls: BrowserNavigationControls
@@ -44,15 +43,10 @@ export function BrowserNavigationControlRow({
   reloadControl?: React.ReactNode
   /** Accessible name for the default reload button, which doubles as Stop and Retry. */
   reloadLabel?: string
-  /** Off for surfaces the browsing tour does not cover — a second anchor would steal its steps. */
-  showTourAnchors?: boolean
   children?: React.ReactNode
 }): React.JSX.Element {
   return (
-    <div
-      className="relative z-10 flex shrink-0 items-center gap-2 border-b border-border/70 bg-background/95 px-3 py-1.5"
-      {...(showTourAnchors ? { 'data-contextual-tour-target': 'browser-toolbar' } : {})}
-    >
+    <div className="relative z-10 flex shrink-0 items-center gap-2 border-b border-border/70 bg-background/95 px-3 py-1.5">
       <Button
         size="icon"
         variant="ghost"

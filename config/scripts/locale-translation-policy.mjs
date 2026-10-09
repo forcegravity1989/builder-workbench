@@ -512,29 +512,6 @@ export function repairCatalog(enCatalog, localeCatalog, locale) {
     }
   }
 
-  if (localeCatalog.menu) {
-    if (locale === 'zh') {
-      if (localeCatalog.menu.exploreOrca !== '探索 Orca') {
-        localeCatalog.menu.exploreOrca = '探索 Orca'
-        repaired += 1
-      }
-      if (localeCatalog.menu.gettingStarted !== 'Orca 入门') {
-        localeCatalog.menu.gettingStarted = 'Orca 入门'
-        repaired += 1
-      }
-    }
-    if (locale === 'ko') {
-      if (localeCatalog.menu.exploreOrca !== 'Orca 둘러보기') {
-        localeCatalog.menu.exploreOrca = 'Orca 둘러보기'
-        repaired += 1
-      }
-      if (localeCatalog.menu.gettingStarted !== 'Orca 시작하기') {
-        localeCatalog.menu.gettingStarted = 'Orca 시작하기'
-        repaired += 1
-      }
-    }
-  }
-
   return repaired
 }
 

@@ -182,10 +182,6 @@ vi.mock('@/lib/window-visibility-interval', () => ({
   installWindowVisibilityInterval: () => () => undefined
 }))
 
-vi.mock('@/components/contextual-tours/use-contextual-tour', () => ({
-  useContextualTour: () => undefined
-}))
-
 vi.mock('@/components/ui/tooltip', () => ({
   Tooltip: ({ children }: { children: ReactNode }) => <>{children}</>,
   TooltipTrigger: ({ children }: { children: ReactNode }) => <>{children}</>,

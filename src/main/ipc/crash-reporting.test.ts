@@ -237,7 +237,6 @@ describe('registerCrashReportingHandlers', () => {
     } as never)
 
     await expect(handlers.get('crashReports:getLatestPending')?.(null)).resolves.toBeNull()
-    await expect(handlers.get('crashReports:getLatestReport')?.(null)).resolves.toEqual(dismissed)
   })
 
   it('submits a pending report through feedback and marks it sent', async () => {

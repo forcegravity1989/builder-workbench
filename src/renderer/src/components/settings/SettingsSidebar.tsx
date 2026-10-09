@@ -12,9 +12,6 @@ import { RepoIconGlyph } from '../repo/repo-icon'
 import { RepoForkIndicator } from '../repo/repo-fork-indicator'
 import { Button } from '../ui/button'
 import { Input } from '../ui/input'
-import { SetupGuideProgressRing } from '../setup-guide/SetupGuideProgressRing'
-import { useSettingsSetupGuideProgress } from './settings-setup-guide-progress'
-import type { SettingsSetupGuideProgress } from './settings-setup-guide-progress'
 import { translate } from '@/i18n/i18n'
 import { resolveLeftSidebarStyleVariables } from '@/lib/left-sidebar-appearance'
 import { useSystemPrefersDark } from '../terminal-pane/use-system-prefers-dark'
@@ -105,49 +102,6 @@ function isVisibleInstallStatus(
   return status === 'update-available' || status === 'needs-attention'
 }
 
-type SettingsSetupGuideRowProps = {
-  progress: SettingsSetupGuideProgress
-  setupActive: boolean
-  onSelect: () => void
-}
-
-function SettingsSetupGuideNavRow({
-  progress,
-  setupActive,
-  onSelect
-}: SettingsSetupGuideRowProps): React.JSX.Element {
-  return (
-    <button
-      type="button"
-      aria-current={setupActive ? 'page' : undefined}
-      aria-label={translate(
-        'auto.components.settings.SettingsSidebar.82db1b7de4',
-        'Onboarding checklist, {{value0}} of {{value1}} done. Show setup guide.',
-        { value0: progress.doneCount, value1: progress.total }
-      )}
-      onClick={() => onSelect()}
-      className={cn(
-        'flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-left outline-none transition-colors focus-visible:ring-[3px] focus-visible:ring-worktree-sidebar-ring/50',
-        setupActive
-          ? 'bg-worktree-sidebar-accent font-medium text-worktree-sidebar-accent-foreground'
-          : 'text-worktree-sidebar-foreground/60 hover:bg-worktree-sidebar-foreground/8 hover:text-worktree-sidebar-foreground'
-      )}
-    >
-      <SetupGuideProgressRing
-        done={progress.doneCount}
-        total={progress.total}
-        sizeClassName="size-4"
-        tooltipLabel={`${progress.doneCount}/${progress.total} complete`}
-      />
-      <span className="flex min-w-0 flex-1 flex-col">
-        <span className="truncate text-[13px] font-medium leading-4">
-          {translate('auto.components.settings.SettingsSidebar.6503182299', 'Onboarding checklist')}
-        </span>
-      </span>
-    </button>
-  )
-}
-
 export function SettingsSidebar({
   activeSectionId,
   settings,
@@ -159,17 +113,11 @@ export function SettingsSidebar({
   onBack,
   onSelectSection
 }: SettingsSidebarProps): React.JSX.Element {
-  const setupGuideProgress = useSettingsSetupGuideProgress(true)
   const systemPrefersDark = useSystemPrefersDark()
   const leftSidebarStyle = useMemo(
     () => resolveLeftSidebarStyleVariables(settings, systemPrefersDark),
     [settings, systemPrefersDark]
   ) as CSSProperties | undefined
-  const setupActive = activeSectionId === 'setup-guide'
-  // Why: "Hide from sidebar" only hides the top-left app sidebar prompt;
-  // Settings should remain a stable place to reopen the checklist.
-  const showSetupGuideTopRow =
-    setupGuideProgress.ready && setupGuideProgress.doneCount < setupGuideProgress.total
   const navItemClassName = (isActive: boolean): string =>
     cn(
       'flex w-full items-center gap-2 rounded-lg px-3 py-1.5 text-left text-[13px] outline-none transition-colors duration-150 focus-visible:ring-[3px] focus-visible:ring-worktree-sidebar-ring/50',
@@ -213,16 +161,6 @@ export function SettingsSidebar({
 
       <SettingsSearchField searchInputRef={searchInputRef} searchAutoFocus={searchAutoFocus} />
 
-      {showSetupGuideTopRow ? (
-        <div className="border-b border-worktree-sidebar-border px-3 py-3">
-          <SettingsSetupGuideNavRow
-            progress={setupGuideProgress}
-            setupActive={setupActive}
-            onSelect={() => onSelectSection('setup-guide')}
-          />
-        </div>
-      ) : null}
-
       <div className="min-h-0 flex-1 overflow-y-auto scrollbar-sleek px-3 py-4">
         <div className="space-y-5">
           {generalGroups.map((group) => (
@@ -231,34 +169,32 @@ export function SettingsSidebar({
                 {group.title}
               </p>
               <div className="space-y-1">
-                {group.sections
-                  .filter((section) => section.id !== 'setup-guide')
-                  .map((section) => {
-                    const Icon = section.icon
-                    const isActive = activeSectionId === section.id
+                {group.sections.map((section) => {
+                  const Icon = section.icon
+                  const isActive = activeSectionId === section.id
 
-                    return (
-                      <button
-                        key={section.id}
-                        aria-current={isActive ? 'page' : undefined}
-                        data-current={isActive ? 'true' : undefined}
-                        onClick={() => onSelectSection(section.id)}
-                        className={navItemClassName(isActive)}
-                      >
-                        <Icon className="size-4 shrink-0" />
-                        <span className="truncate">{section.title}</span>
-                        {isVisibleInstallStatus(section.installStatus) ? (
-                          <span className={installStatusClassName}>
-                            {installStatusLabel(section.installStatus)}
-                          </span>
-                        ) : section.badge ? (
-                          <span className="ml-auto rounded-full bg-muted px-1.5 py-0.5 text-[9px] font-medium uppercase tracking-wider text-muted-foreground">
-                            {section.badge}
-                          </span>
-                        ) : null}
-                      </button>
-                    )
-                  })}
+                  return (
+                    <button
+                      key={section.id}
+                      aria-current={isActive ? 'page' : undefined}
+                      data-current={isActive ? 'true' : undefined}
+                      onClick={() => onSelectSection(section.id)}
+                      className={navItemClassName(isActive)}
+                    >
+                      <Icon className="size-4 shrink-0" />
+                      <span className="truncate">{section.title}</span>
+                      {isVisibleInstallStatus(section.installStatus) ? (
+                        <span className={installStatusClassName}>
+                          {installStatusLabel(section.installStatus)}
+                        </span>
+                      ) : section.badge ? (
+                        <span className="ml-auto rounded-full bg-muted px-1.5 py-0.5 text-[9px] font-medium uppercase tracking-wider text-muted-foreground">
+                          {section.badge}
+                        </span>
+                      ) : null}
+                    </button>
+                  )
+                })}
               </div>
             </div>
           ))}

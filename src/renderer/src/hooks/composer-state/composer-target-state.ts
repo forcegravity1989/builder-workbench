@@ -104,8 +104,7 @@ export function useComposerTargetState(
     selectedRepoConnectionId: runtimeTargetSelection.selectedRepoConnectionId,
     selectedRepoHookContextKey: runtimeTargetSelection.selectedRepoHookContextKey,
     selectedRepoIsGit: runtimeTargetSelection.selectedRepoIsGit,
-    selectedRepoSettings: runtimeTargetSelection.selectedRepoSettings,
-    setName: sourceContextState.setName
+    selectedRepoSettings: runtimeTargetSelection.selectedRepoSettings
   })
   const providerRuntimeSync = useComposerProviderRuntimeSync({
     promptCaretFrameRef: asyncComposerState.promptCaretFrameRef,

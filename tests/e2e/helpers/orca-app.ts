@@ -40,10 +40,9 @@ type OrcaTestFixtures = {
   registerPostElectronShutdownCleanup: (cleanup: () => Promise<void>) => void
   sharedPage: Page
   orcaPage: Page
-  // Why: every fresh userData dir paints the first-launch onboarding overlay
-  // (closedAt=null), which is `fixed inset-0 z-[100]` and intercepts pointer
-  // events for every other test. Dismiss it by default; onboarding.spec.ts
-  // opts out via `test.use({ dismissOnboarding: false })`.
+  // Why: a fresh userData dir is a brand-new profile. Seed a completed profile by
+  // default so first-run surfaces stay out of the pointer path; fresh-profile
+  // goldens opt out via `test.use({ dismissOnboarding: false })`.
   dismissOnboarding: boolean
   // Why: most E2E specs need a ready project before assertions start. Golden
   // first-run specs opt out so they can prove the zero-project onboarding path.
@@ -191,11 +190,9 @@ export const test = base.extend<OrcaTestFixtures, OrcaWorkerFixtures>({
     const userDataDir = mkdtempSync(path.join(os.tmpdir(), 'orca-e2e-userdata-'))
 
     if (dismissOnboarding) {
-      // Why: onboarding renders a fullscreen `fixed inset-0 z-[100]` overlay
-      // when persisted `closedAt` is null, which intercepts pointer events for
-      // every other test. Seed a completed-onboarding fresh-install profile:
-      // an empty file would make persistence treat the profile as an
-      // existing-user upgrade cohort and mount the telemetry notice overlay.
+      // Why: seed a completed fresh-install profile; an empty file would make
+      // persistence treat the profile as an existing-user upgrade cohort and
+      // mount the telemetry notice overlay.
       writeFileSync(
         path.join(userDataDir, 'orca-data.json'),
         `${JSON.stringify(getE2ECompletedOnboardingProfile(), null, 2)}\n`

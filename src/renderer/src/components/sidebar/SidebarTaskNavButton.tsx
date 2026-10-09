@@ -88,8 +88,7 @@ export function SidebarTaskNavButton(): React.JSX.Element | null {
         preferredVisibleTaskProviders,
         {
           gitlabInstalled: preflightStatusCurrent && preflightStatus?.glab?.installed === true,
-          codehubInstalled:
-            preflightStatusCurrent && preflightStatus?.codehub?.installed === true,
+          codehubInstalled: preflightStatusCurrent && preflightStatus?.codehub?.installed === true,
           linearConnected: linearStatus.connected === true
         },
         defaultTaskSource
@@ -164,7 +163,6 @@ export function SidebarTaskNavButton(): React.JSX.Element | null {
         onPointerEnter={handlePrefetch}
         onFocus={handlePrefetch}
         aria-current={tasksActive ? 'page' : undefined}
-        data-contextual-tour-target="sidebar-tasks"
         className={cn(
           'flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-[13px] font-medium tracking-tight transition-colors',
           tasksActive

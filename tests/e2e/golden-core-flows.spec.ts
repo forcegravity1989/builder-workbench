@@ -20,9 +20,6 @@ import {
 
 const tempRoots: string[] = []
 const SORTABLE_TAB = '[data-testid="sortable-tab"]'
-const TASK_SOURCES_HEADING = /Set up GitHub tasks|Connect your task sources/i
-const WINDOWS_TERMINAL_HEADING = /Set Windows terminal defaults/i
-const ONBOARDING_ADVANCE_LABEL = /^Continue\b|^Add your first project\b/
 test.describe.configure({ mode: 'serial' })
 test.afterAll(() => {
   for (const root of tempRoots.splice(0)) {
@@ -84,109 +81,6 @@ async function chooseFolderInNativeDialog(
     }
   }
 }
-function onboardingFooter(page: Page) {
-  return page
-    .locator('footer')
-    .filter({
-      has: page.getByRole('button', { name: /Back|Continue|Add your first project|Skip/i })
-    })
-    .first()
-}
-
-async function continueOnboarding(page: Page): Promise<void> {
-  await onboardingFooter(page).getByRole('button', { name: ONBOARDING_ADVANCE_LABEL }).click()
-}
-
-async function selectCodexAgent(page: Page): Promise<void> {
-  const codexButton = page.getByRole('button', { name: /^Codex\s/ })
-  const codexVisible = await codexButton
-    .first()
-    .waitFor({ state: 'visible', timeout: 1_000 })
-    .then(() => true)
-    .catch(() => false)
-  if (!codexVisible) {
-    await page.getByText(/Show \d+ more agents/).click()
-  }
-  await codexButton.first().click()
-  await expect(codexButton.first()).toHaveAttribute('aria-pressed', 'true')
-}
-
-async function chooseOppositeTheme(page: Page): Promise<void> {
-  await page.waitForFunction(
-    () =>
-      document.documentElement.classList.contains('dark') ||
-      document.documentElement.classList.contains('light')
-  )
-  const startingTheme = await page.evaluate(() =>
-    document.documentElement.classList.contains('dark') ? 'dark' : 'light'
-  )
-  const nextTheme = startingTheme === 'dark' ? 'light' : 'dark'
-  const tileName = nextTheme === 'light' ? /Bright & crisp/ : /Easy on the eyes/
-  await page.getByRole('button', { name: tileName }).click()
-  await expect
-    .poll(
-      () =>
-        page.evaluate(() =>
-          document.documentElement.classList.contains('dark') ? 'dark' : 'light'
-        ),
-      { timeout: 5_000 }
-    )
-    .toBe(nextTheme)
-}
-
-async function chooseNotificationSound(page: Page): Promise<void> {
-  const soundSelect = page.getByRole('combobox').first()
-  await expect(soundSelect).toContainText(/System Default/i)
-  await soundSelect.click()
-  const dingOption = page.getByRole('option', { name: /^Ding$/i })
-  await expect(dingOption).toBeVisible()
-  await dingOption.press('Enter')
-  await expect(soundSelect).toContainText(/Ding/i)
-}
-
-async function continueThroughOptionalSetupToNotifications(page: Page): Promise<void> {
-  const taskSourcesVisible = await page
-    .getByRole('heading', { name: TASK_SOURCES_HEADING })
-    .waitFor({ state: 'visible', timeout: 1_000 })
-    .then(() => true)
-    .catch(() => false)
-  if (taskSourcesVisible) {
-    await continueOnboarding(page)
-  }
-  const windowsTerminalVisible = await page
-    .getByRole('heading', { name: WINDOWS_TERMINAL_HEADING })
-    .waitFor({ state: 'visible', timeout: 1_000 })
-    .then(() => true)
-    .catch(() => false)
-  if (windowsTerminalVisible) {
-    await continueOnboarding(page)
-  }
-  await expect(page.getByRole('heading', { name: /Set up notifications/i })).toBeVisible()
-}
-
-async function continueFromNotificationsToAddProject(page: Page): Promise<void> {
-  await continueOnboarding(page)
-  const taskSourcesVisible = await page
-    .getByRole('heading', { name: TASK_SOURCES_HEADING })
-    .waitFor({ state: 'visible', timeout: 1_000 })
-    .then(() => true)
-    .catch(() => false)
-  if (taskSourcesVisible) {
-    await continueOnboarding(page)
-  }
-  const windowsTerminalVisible = await page
-    .getByRole('heading', { name: WINDOWS_TERMINAL_HEADING })
-    .waitFor({ state: 'visible', timeout: 1_000 })
-    .then(() => true)
-    .catch(() => false)
-  if (windowsTerminalVisible) {
-    await continueOnboarding(page)
-  }
-  await expect(page.getByRole('dialog', { name: /Add a project/i })).toBeVisible({
-    timeout: 15_000
-  })
-}
-
 async function waitForRepoLoaded(page: Page, repoPath: string): Promise<void> {
   await expect
     .poll(
@@ -333,75 +227,6 @@ async function splitTerminalPaneAndAssertIdentity(page: Page): Promise<void> {
   expect(snapshot.panes).toHaveLength(paneCountBefore + 1)
 }
 
-async function requestAgentSessionsTour(page: Page): Promise<void> {
-  await expect
-    .poll(
-      () =>
-        page.evaluate(() => {
-          const state = window.__store?.getState()
-          const splitTarget = document.querySelector(
-            '[data-contextual-tour-target="terminal-pane-split-target"], [data-contextual-tour-target="workspace-agent-terminal-tip"]'
-          )
-          const rect = splitTarget?.getBoundingClientRect()
-          return {
-            ready: state?.persistedUIReady === true,
-            onboardingHidden: state?.contextualToursOnboardingVisible === false,
-            noModal: state?.activeModal === 'none',
-            splitTargetMeasurable: Boolean(rect && rect.width > 0 && rect.height > 0)
-          }
-        }),
-      { timeout: 30_000 }
-    )
-    .toEqual({
-      ready: true,
-      onboardingHidden: true,
-      noModal: true,
-      splitTargetMeasurable: true
-    })
-
-  await page.evaluate(() => {
-    window.__store
-      ?.getState()
-      .requestContextualTour('workspace-agent-sessions', 'setup_guide_parallel_work', false, {
-        force: true
-      })
-  })
-  await expect(page.getByRole('dialog', { name: /Split a terminal pane/i })).toBeVisible()
-}
-
-async function completeWorkspaceCreationTour(page: Page, workspaceName: string): Promise<void> {
-  const pickProjectStep = page.getByRole('dialog', { name: /Pick a project/i })
-  await expect(pickProjectStep).toBeVisible()
-  // Why: the project picker can leave its command popover open after the tour
-  // starts. Keyboard-activate the step button so the golden verifies the tour
-  // transition instead of pointer geometry around that popover.
-  await pickProjectStep.getByRole('button', { name: /^Next$/ }).focus()
-  await page.keyboard.press('Enter')
-  const nameStep = page.getByRole('dialog', { name: /Name it, or start from existing work/i })
-  await expect(nameStep).toBeVisible()
-  const autoNameSwitch = nameStep.getByRole('switch', {
-    name: /Auto-name workspace from first agent message/i
-  })
-  const checkedBefore = await autoNameSwitch.getAttribute('aria-checked')
-  await autoNameSwitch.click()
-  await expect(autoNameSwitch).toHaveAttribute(
-    'aria-checked',
-    checkedBefore === 'true' ? 'false' : 'true'
-  )
-  await page.getByRole('button', { name: /^Next$/ }).click()
-  await expect(
-    page.getByRole('dialog', { name: /Choose what agent starts the work/i })
-  ).toBeVisible()
-  await page.getByRole('button', { name: /^Done$/ }).click()
-
-  const composer = page.getByRole('dialog', { name: /Create (Workspace|Worktree)/i })
-  await expect(composer).toBeVisible()
-  await composer.getByPlaceholder(/Type a name/i).fill(workspaceName)
-  await composer.getByRole('button', { name: /Create (Workspace|Worktree)/i }).click()
-  await expect(composer).toBeHidden({ timeout: 20_000 })
-  await expectActiveWorkspaceVisible(page, workspaceName)
-}
-
 test.describe('Existing-user golden core flow', () => {
   test('adds project, creates workspace, opens a terminal tab, and splits a pane', async ({
     electronApp,
@@ -421,64 +246,5 @@ test.describe('Existing-user golden core flow', () => {
 
     await createTerminalTabThroughMenu(orcaPage)
     await splitTerminalPaneAndAssertIdentity(orcaPage)
-  })
-})
-
-test.describe('New-user golden core flow', () => {
-  test.use({ dismissOnboarding: false, seedTestRepo: false })
-
-  test('completes onboarding, adds a project, and follows the workspace tour handoff', async ({
-    electronApp,
-    orcaPage
-  }) => {
-    await waitForSessionReady(orcaPage)
-    await expect(orcaPage.getByRole('heading', { name: /Pick your default agent/i })).toBeVisible({
-      timeout: 15_000
-    })
-
-    await selectCodexAgent(orcaPage)
-    await continueOnboarding(orcaPage)
-    await expect(orcaPage.getByRole('heading', { name: /Make it feel like home/i })).toBeVisible()
-    await chooseOppositeTheme(orcaPage)
-    await continueOnboarding(orcaPage)
-    await continueThroughOptionalSetupToNotifications(orcaPage)
-    await expect(orcaPage.getByRole('button', { name: /Send Test Notification/i })).toBeVisible()
-    await chooseNotificationSound(orcaPage)
-    await continueFromNotificationsToAddProject(orcaPage)
-
-    const repoPath = await createGitRepo('orca-e2e-golden-new-', 'golden-new-project')
-    await chooseFolderInNativeDialog(electronApp, repoPath)
-    await orcaPage
-      .getByRole('button', { name: /Browse for a folder|Open a folder|Browse folder/i })
-      .click()
-    await waitForRepoLoaded(orcaPage, repoPath)
-    await expectProjectVisible(orcaPage, repoPath)
-    await waitForActiveWorktree(orcaPage)
-    await ensureTerminalVisible(orcaPage)
-    await expectTerminalSurface(orcaPage)
-    await waitForTerminalPaneManager(orcaPage)
-
-    await requestAgentSessionsTour(orcaPage)
-    const paneCountBeforeTourSplit = await countVisibleTerminalPanes(orcaPage)
-    await orcaPage.getByRole('button', { name: /^Split terminal$/ }).click()
-    await waitForPaneCount(orcaPage, paneCountBeforeTourSplit + 1)
-    await waitForPaneIdentitySnapshot(orcaPage, paneCountBeforeTourSplit + 1)
-
-    await expect(
-      orcaPage.getByRole('dialog', { name: /Start another task in parallel/i })
-    ).toBeVisible()
-    const createControl = orcaPage
-      .locator('[data-contextual-tour-target="workspace-create-control"]')
-      .first()
-    await expect(createControl).toBeVisible()
-    await expect(createControl).toHaveAttribute('aria-label', 'New workspace')
-    const createControlBox = await createControl.boundingBox()
-    expect(createControlBox?.width ?? 0).toBeGreaterThan(0)
-    expect(createControlBox?.height ?? 0).toBeGreaterThan(0)
-    await createControl.click()
-
-    const workspaceName = `golden-new-${Date.now()}`
-    await completeWorkspaceCreationTour(orcaPage, workspaceName)
-    await expectActiveWorkspaceBelongsToRepo(orcaPage, workspaceName, repoPath)
   })
 })

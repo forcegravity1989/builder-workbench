@@ -58,8 +58,7 @@ export function BrowserChromeToolbar({
   shareControl,
   viewSource,
   openExternal,
-  overflowMenu,
-  showTourAnchors = false
+  overflowMenu
 }: {
   controls: BrowserNavigationControls
   addressSlot: React.ReactNode
@@ -73,8 +72,6 @@ export function BrowserChromeToolbar({
   viewSource: BrowserChromeToolAction | null
   openExternal: BrowserChromeToolAction | null
   overflowMenu?: React.ReactNode
-  /** Only the browsing pane anchors the contextual tour; a second anchor would steal its steps. */
-  showTourAnchors?: boolean
 }): React.JSX.Element {
   return (
     <BrowserNavigationControlRow
@@ -82,7 +79,6 @@ export function BrowserChromeToolbar({
       addressSlot={addressSlot}
       reloadControl={reloadControl}
       reloadLabel={reloadLabel}
-      showTourAnchors={showTourAnchors}
     >
       {importControl}
 
@@ -105,9 +101,6 @@ export function BrowserChromeToolbar({
                     'auto.components.browser.pane.BrowserPane.fdfc7fe0ef',
                     'Grab page element'
                   )}
-                  {...(showTourAnchors
-                    ? { 'data-contextual-tour-target': 'browser-grab-control' }
-                    : {})}
                 >
                   <Crosshair className="size-4" />
                 </Button>
@@ -140,9 +133,6 @@ export function BrowserChromeToolbar({
                     'auto.components.browser.pane.BrowserPane.fc9be38f6f',
                     'Annotate page element'
                   )}
-                  {...(showTourAnchors
-                    ? { 'data-contextual-tour-target': 'browser-annotation-control' }
-                    : {})}
                 >
                   <MessageSquarePlus className="size-4" />
                   {elementTools.annotationCount > 0 ? (

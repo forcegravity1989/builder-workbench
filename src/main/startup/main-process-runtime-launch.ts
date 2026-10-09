@@ -281,8 +281,10 @@ async function launchDesktopMode(
   // Why: macOS notification permission dialog must fire after the window is shown, else it's hidden behind the maximized window.
   win.once('show', () => {
     // Why: store can be null if init failed earlier; bail rather than throw inside an Electron event listener.
+    // Why: this fork has no first-launch onboarding dialog to wait behind, so the
+    // registration runs as soon as the window is shown.
     const store = state.store
-    if (store && store.getOnboarding().closedAt !== null) {
+    if (store) {
       triggerStartupNotificationRegistration(store)
     }
   })

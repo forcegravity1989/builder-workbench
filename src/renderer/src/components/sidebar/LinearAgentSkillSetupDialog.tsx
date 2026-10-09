@@ -156,8 +156,7 @@ export function LinearAgentSkillSetupDialog({
               onBeforeOpenTerminal={onBeforeOpenTerminal}
               onRecheck={onRecheck}
             />
-            {/* Why: permanent opt-out as a quiet EyeOff icon next to the × — matching
-                SetupGuideModal's "hide this setup surface" affordance — instead of a
+            {/* Why: permanent opt-out as a quiet EyeOff icon next to the × instead of a
                 footer button that competes with (or gets reflex-clicked over) Install.
                 Rendered last so the dialog's initial focus lands on Install, not here —
                 otherwise Enter-on-open would permanently dismiss. */}

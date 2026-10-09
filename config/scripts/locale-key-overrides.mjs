@@ -11,11 +11,9 @@ const BASE_LOCALE_KEY_OVERRIDES = {
   'auto.components.TaskPage.bb63046423': { ja: '{{value0}} に割り当て済み' },
   // Bare "Cursor" terminal/theme settings = on-screen カーソル, not the Cursor product.
   'auto.components.settings.TerminalWindowSection.c9e1fdf42f': { ja: 'カーソル' },
-  'auto.components.onboarding.ThemeStep.ab2a583a97': { ja: 'カーソル' },
   // File-row "Duplicate" is the action, and it sits beside "Copy" (复制) in the same menu; keyed
   // because the skills-dialog chip shares the English string but reads as a noun.
   'auto.components.right.sidebar.FileExplorerRow.0fec99bfd7': { zh: '创建副本' },
-  'menu.reportCrash': { ko: '크래시 신고...', zh: '报告崩溃...', ja: 'クラッシュを報告...' },
   'menu.toggleLeftSidebar': {
     ko: '왼쪽 사이드바 표시/숨기기',
     zh: '显示/隐藏左侧边栏',
@@ -31,7 +29,6 @@ const BASE_LOCALE_KEY_OVERRIDES = {
     zh: '打开工作树面板',
     ja: 'ワークツリーパレットを開く'
   },
-  'menu.exploreOrca': { ko: 'Orca 둘러보기', zh: '探索 Orca', ja: 'Orca を探索' },
   'worktreeJumpPalette.matchLabel.issue': { ko: '이슈', zh: '议题', ja: 'Issue' },
   'worktreeJumpPalette.matchLabel.comment': { ko: '댓글', zh: '评论', ja: 'コメント' },
   'auto.hooks.useSettingsNavigationMetadata.13241992bd': {
@@ -69,11 +66,6 @@ const BASE_LOCALE_KEY_OVERRIDES = {
     zh: '快捷键',
     ja: 'ショートカット'
   },
-  'auto.hooks.useSettingsNavigationMetadata.ded9e9032f': {
-    ko: '온보딩 체크리스트',
-    zh: '入门清单',
-    ja: 'オンボーディングチェックリスト'
-  },
   'auto.hooks.useSettingsNavigationMetadata.3618579df6': {
     ko: '개인정보 및 텔레메트리',
     zh: '隐私与遥测',
@@ -103,11 +95,6 @@ const BASE_LOCALE_KEY_OVERRIDES = {
     ko: '앱으로 돌아가기',
     zh: '返回应用',
     ja: 'アプリに戻る'
-  },
-  'auto.components.settings.SettingsSidebar.82db1b7de4': {
-    ko: '온보딩 체크리스트, {{value0}}/{{value1}} 완료. 설정 가이드 보기.',
-    zh: '入门清单，已完成 {{value0}}/{{value1}}。显示设置指南。',
-    ja: 'オンボーディングチェックリスト、{{value0}}/{{value1}} 完了。セットアップガイドを表示。'
   },
   'auto.components.settings.ShortcutFilterRail.02dc7d4251': {
     ko: '바로가기 검색',
@@ -168,16 +155,6 @@ const BASE_LOCALE_KEY_OVERRIDES = {
     ko: 'Linear 작업 열기',
     zh: '打开 Linear 任务',
     ja: 'Linear タスクを開く'
-  },
-  'auto.components.sidebar.SidebarSettingsHelpMenu.eb9884e55b': {
-    ko: 'Discord',
-    zh: 'Discord',
-    ja: 'Discord'
-  },
-  'auto.components.sidebar.SidebarSettingsHelpMenu.ad3d3ed7f1': {
-    ko: 'Orca 재시작',
-    zh: '重启 Orca',
-    ja: 'Orca を再起動'
   },
   'auto.components.sidebar.workspace.status.5f9ca31a84': {
     ko: '대기 중',
@@ -396,11 +373,6 @@ const BASE_LOCALE_KEY_OVERRIDES = {
     zh: '打开 {{value0}} 议题',
     ja: '{{value0}} イシューを開く'
   },
-  'auto.components.sidebar.SidebarFeedbackDialog.d245c4ef6c': {
-    ko: 'GitHub 이슈',
-    zh: 'GitHub 议题',
-    ja: 'GitHub イシュー'
-  },
   'auto.components.settings.CommitMessageAiPane.4f722a5f53': {
     ko: '사용자 지정 명령을 선택하는 커밋 메시지, PR 및 브랜치 이름 레시피에서 사용됩니다. 사용',
     zh: '由选择自定义命令的提交消息、拉取请求和分支名称配方使用。使用',
@@ -415,11 +387,6 @@ const BASE_LOCALE_KEY_OVERRIDES = {
     ko: '감지된 에이전트 없음',
     zh: '未检测到代理',
     ja: 'Agent が検出されません'
-  },
-  'auto.components.onboarding.OnboardingFlow.04ae28d8ca': {
-    ko: '몇 시간 내내 보고 싶은 테마를 선택하세요.',
-    zh: '选择你想盯着看几个小时的主题。',
-    ja: '何時間も眺めていたくなるテーマを選んでください。'
   },
   'auto.components.GitLabItemDialog.e089f62594': {
     ko: 'MR !{{value0}}을(를) 병합했습니다.',

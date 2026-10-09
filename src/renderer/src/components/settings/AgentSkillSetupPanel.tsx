@@ -3,7 +3,7 @@ import { Copy, Loader2, RefreshCw, Terminal } from 'lucide-react'
 import { toast } from 'sonner'
 import { IntegrationStatusPill } from '../integration-status-pill'
 import { SkillFreshnessStatusPill } from '../skills/SkillFreshnessStatusPill'
-import { OnboardingInlineCommandTerminal } from '../onboarding/OnboardingInlineCommandTerminal'
+import { InlineCommandTerminal } from './InlineCommandTerminal'
 import { AgentSkillSetupFailureNotice } from './AgentSkillSetupFailureNotice'
 import { createTerminalSnapshot, type SkillTerminalSnapshot } from './agent-skill-terminal-snapshot'
 import type { AgentSkillSetupPanelProps } from './agent-skill-setup-panel-props'
@@ -387,7 +387,7 @@ export function AgentSkillSetupPanel({
               </TooltipContent>
             </Tooltip>
           </div>
-          <OnboardingInlineCommandTerminal
+          <InlineCommandTerminal
             key={terminalAttempt}
             worktreeId={terminalWorktreeId}
             command={openTerminalCommand}
@@ -402,7 +402,6 @@ export function AgentSkillSetupPanel({
             shellOverride={terminalSnapshot.shellOverride}
             terminalTopMarginPx={8}
             descriptionPaddingClassName="px-4 py-2"
-            autoScrollIntoView={false}
             onTerminalExit={handleTerminalExit}
             onCommandFinished={handleSetupCommandFinished}
           />

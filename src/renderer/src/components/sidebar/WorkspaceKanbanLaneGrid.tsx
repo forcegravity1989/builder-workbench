@@ -167,7 +167,6 @@ export default function WorkspaceKanbanLaneGrid({
   return (
     <div
       className="relative h-full min-h-0 min-w-full"
-      data-contextual-tour-target="workspace-board-lanes"
       data-workspace-board-lane-grid=""
       style={{ width: `${laneVirtualizer.getTotalSize()}px` }}
       onFocusCapture={(event) => {
