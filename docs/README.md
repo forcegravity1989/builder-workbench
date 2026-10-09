@@ -22,7 +22,7 @@
 | [04-design-system/](04-design-system/README.md) | 视觉规范、样式与 token；来源和镜像方式见该入口 | 设计或修改界面视觉 |
 | [05-features/](05-features/README.md) | 特性 intent/spec/design/状态；清单与链状态矩阵正本为 [05-features/README.md](05-features/README.md)，各特性 STATUS 为二级明细：[版本计划](05-features/version-planning/STATUS.md)、[版本验收](05-features/version-acceptance/STATUS.md)、[总览指标](05-features/overview-metrics/STATUS.md)、[reviewer-agent](05-features/reviewer-agent/STATUS.md)（历史记录）、[纳入项目](05-features/project-intake/STATUS.md)（草案待 gate）、[CodeHub 适配](05-features/codehub/STATUS.md)（草案）、[Windows 出包与发布](05-features/workbench-release/STATUS.md)（草案）；执行计划为仓外过程稿，特性现状正本在 05-features/README.md | 按 [文档结构](01-principles/02-working-backwards.md#31-intent-结构为什么值得做)维护定义，按 [六环](01-principles/02-working-backwards.md#62-六环交付链)核对交付；草案不等于 Electron 验收通过 |
 | [06-module/](06-module/README.md) | 模块实现心智、主要矛盾与取舍 | 修改某一模块前 |
-| [10-reference/](10-reference/) | 外部资料提炼与历史参考，按篇区分现行/历史 | 追溯来源或理解旧概念，不作为当前实现证据 |
+| [10-reference/](10-reference/) | 外部资料提炼与历史参考，按篇区分现行/历史；[AI-native 交付研究](10-reference/ai-native-delivery-2026/README.md)（[HTML 阅读版](10-reference/ai-native-delivery-2026/index.html)） | 追溯来源或理解旧概念，不作为当前实现证据 |
 | [hifi/](hifi/) | 屏幕版式与旅程原型 | 对照交互设计；原型不是已交付界面 |
 
 模型从 AGENTS 的任务路径到达这里，再读目标文件原文头部和正文；到达链接不等于读取，更不等于已遵守。产品目标与当前实现冲突时，分别回到 03 与 architecture 核对，不能把主张或原型改写成已经交付。

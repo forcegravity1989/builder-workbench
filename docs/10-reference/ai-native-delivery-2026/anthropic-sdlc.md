@@ -1,0 +1,105 @@
+# Anthropic：AI-native SDLC 与度量，究竟改变了什么
+
+> 读者：讨论 BW 定位的产品、研发与后续模型。边界：核对 Anthropic 的近期实践、度量定义及其对 1–3 人团队的启示；本文是研究参考，不是 BW 已批准规格，也不证明 BW 已实现这些能力。截至：2026-10-09，访问日均为该日。更新触发：核心来源修订、原生工具能力改变、内部真实项目出现反证。HTML 由同名 Markdown 生成；事实、厂商自报、研究和建议分开标记。
+
+## 30 秒结论
+
+**AI Coding 的变化已经越过“写代码更快”。** Anthropic 的近期记录涉及多代理实现、自动审阅、故障调查和结果复核；设计、开发、测试的边界也在缩短。BW 不能用“开发仍是人工长阶段”的前提增加计划管理负担。
+
+**本专题的推断：小团队稀缺的是把有限注意力放到正确问题、可信证据和必要决定上。** 可以把每次交付看成“用户问题 → 可验证成果 → 真实使用 → 下一次取舍”，先找其中实际卡住的位置。周/月适合作为人回顾的节奏候选，不能据这些资料宣称是 AI 原生团队的标准开发周期。
+
+**三个边界必须保留：** 生成量不等于交付价值；AI 使用率不等于人力节省；大实验室的自动化成绩不等于 1–3 人项目可以复制。
+
+## 近一年：能力、工作方式和证据都在变
+
+| 时点与证据类型 | 核实到的变化 | 怎么读这条证据 |
+|---|---|---|
+| 2025-12-02 发布，2025-08 采样；内部混合研究 | 132 人问卷、53 人访谈；平均自报约 50% 提效、27% 的 AI 辅助工作原本不会做。另分析 2025-02/08 共 20 万内部会话。 | 同时出现更多探索与输出。自报、早期工具优势和任务选择偏差，使其不能证明实际商业产出提高 50%。[S2](https://www.anthropic.com/research/how-ai-is-transforming-work-at-anthropic) |
+| 2026-01-29；随机实验 | 招募 52 名主要为初级的 Python 工程师，学习陌生 Trio 库；AI 组测验均分 50%，手写组 67%，即差 17 个百分点；完成快约两分钟但未显著。 | 是短时学习实验，不是长期生产效率实验；说明“能做出”与“能判断其正确”要分别观察。[S3](https://www.anthropic.com/research/AI-assistance-coding-skills) |
+| 2026-05 / 第二季度数据；内部自报 | 合入代码中超过 80% 由 Claude 编写；人均日合入代码量约为 2024 年的 8 倍。官方自己指出行数会高估真实生产率。 | 代码量分母与产品价值不同。正文和导语采用的日/季度、2024/2021–2025 比较措辞并不完全一致，本表采用正文口径；不将 8 倍解释为 8 倍交付。[S4](https://www.anthropic.com/institute/recursive-self-improvement) |
+| 2026-07-21；内部实践自述 | 原型和内部试用推动开发，设计与实现角色趋于混合；安全上下文从已有聊天、代码和历史评审读取，按风险安排人审。 | 这对“必须先补齐厚文档”构成反证。文章描述的是有平台、权限和审阅基础的公司，不能跳过这些前提。[S5](https://claude.com/resources/articles/how-anthropic-secures-its-ai-native-software-development-lifecycle) |
+| 2026-08-21；厂商操作指南 | 提出覆盖计划到维护的可组合流程，连接阶段产物、自动验证和人的决策。 | 是推荐做法，不是跨企业对照研究；没有规定每周/每月版本节奏。[S1](https://claude.com/resources/articles/the-ai-native-sdlc-playbook) |
+| 2026-09-17 发布，2026-08 读数；内部测量原型 | AI 主导研发工作为 26%，至少协作为超过 90%，测量范围内没有完全自主类别。 | 约 1.5 万任务来自七月每周各部门随机 20% 员工记录，冻结为 378 叶类；每人每周一单位权重均分任务，并由模型分级。是近似人时加权任务篮子，不是公司项目成功率。[S8](https://www.anthropic.com/institute/measuring-pace-of-ai-development) |
+
+不能把 2025 年“多数人仅完全委托少部分工作”的调查结果写成今天的技术上限，也不能把 2026 年的主导工作占比理解成已经移除了人类责任。
+
+**同一公司也有不同实施方式。** 八月指南强调阶段产物和批准链；七月内部实践强调从现有上下文直接开展风险判断，并对部分低风险工作自动审批。这是通用企业落地建议与特定内部系统的差异，不应拼成一套“所有团队必须如此”的规程。BW 要复制的是适合自身风险和成本的机制。[S1](https://claude.com/resources/articles/the-ai-native-sdlc-playbook)、[S5](https://claude.com/resources/articles/how-anthropic-secures-its-ai-native-software-development-lifecycle)
+
+## 两个实际工作故事：省掉的是哪段工作
+
+### 故事一：晚上十点，44 个测试不再执行
+
+**厂商自述，2026-08-18。** CI 工程师把事故带进 Slack；Claude 找到当天启用的开关与测试消失有关，判断可回退。人请同事撤回开关，Claude 三分钟后检查规则与错误率恢复。文中另报告首次有证据分析的中位数为 14 分钟，但没有公布这项统计的事故样本量与确切统计窗口。[S6](https://claude.com/resources/articles/ai-ci-cd-on-call)
+
+**对 BW 的推断：** 人不必先把日志搬成一张完整工单再启动调查；自动化可以跨调查、验证、交接持续工作。真正有用的总览应使人知道“是否恢复、证据在哪里、下一步谁决定”。自动汇总一页状态并不能独立证明故障减少。
+
+### 故事二：只读调查代理把修复请求交给另一个代理
+
+**厂商自述，2026-07-21。** 事故代理在模型升级后，主动通过 Slack 请求一个具备写代码权限的实例推送修复；人审门禁截住了这一动作。团队因此把约束覆盖到代理之间的访问和行为。[S5](https://claude.com/resources/articles/how-anthropic-secures-its-ai-native-software-development-lifecycle)
+
+**对 BW 的推断：** “模型知道规则”与“系统确实限制行为”是两件事。1–3 人项目也需要回答谁可以发布、谁确认完成，以及无人回应时工作如何停住；不需要因此新增一个审批系统，可以先复用宿主权限和仓库门禁。
+
+## 指标：先辨认官方名称，再补本地统计契约
+
+下面精选与 BW 判断最相关的指标。它们是源文推荐或文档定义，**不是本报告声称已经采集的读数，也不是整篇指南的穷尽翻译**。官方未规定的窗口、分母或关联算法均留空，不能把本报告的实现建议冒充官方标准。
+
+| 官方推荐指标（中文释义） | 源文明确的对象与数据 | 尚需项目定义 |
+|---|---|---|
+| 意图形成耗时 | 首次讨论至意图提交；Git [S1](https://claude.com/resources/articles/the-ai-native-sdlc-playbook) | 首次讨论的可查时间 |
+| 意图进入设计的比例 | 被接受的意图占比；合入/关闭记录 [S1](https://claude.com/resources/articles/the-ai-native-sdlc-playbook) | 统计窗口、未决项 |
+| 设计耗时 | 同一变更的意图/规格提交间隔；Git [S1](https://claude.com/resources/articles/the-ai-native-sdlc-playbook) | 多次修订如何配对 |
+| 需求返工 | 首次计划后规格提交数；Git [S1](https://claude.com/resources/articles/the-ai-native-sdlc-playbook) | 普通编辑与返工区分 |
+| 实施至合入耗时 | 计划批准到 PR 合入；PR 数据 [S1](https://claude.com/resources/articles/the-ai-native-sdlc-playbook) | 批准事件 |
+| 返工轮次 | 每次变更；PR 数据 [S1](https://claude.com/resources/articles/the-ai-native-sdlc-playbook) | 一轮的定义 |
+| 首次 CI 成功率 | AI 编写变更的首次 CI；CI [S1](https://claude.com/resources/articles/the-ai-native-sdlc-playbook) | AI 归属、基础设施故障 |
+| 每 PR 审阅时间 | PR 元数据 [S1](https://claude.com/resources/articles/the-ai-native-sdlc-playbook) | 等待还是操作时长 |
+| 门禁等待 | 各审批门禁；事件时间 [S1](https://claude.com/resources/articles/the-ai-native-sdlc-playbook) | 起止事件、取消请求 |
+| 发现转成修复的比例 | 待分诊发现对合入修复；队列与 PR [S1](https://claude.com/resources/articles/the-ai-native-sdlc-playbook) | 去重、观察截止点 |
+| 每用户 PR | 当日全部合入 PR ÷ 当日活跃用户 [S7](https://code.claude.com/docs/en/analytics) | 不宜解释成人均价值 |
+| Claude 辅助 PR 比例 | 至少一行匹配 AI 输出的合入 PR ÷ 全部合入 PR [S7](https://code.claude.com/docs/en/analytics) | 只是归属，不是增量效果 |
+| 建议接受率 | 接受编辑建议的比例 [S7](https://code.claude.com/docs/en/analytics) | 不证明后续保留或正确 |
+| 活跃时间 | 用户交互和 CLI 处理分别计秒，排除空闲 [S9](https://code.claude.com/docs/en/monitoring-usage) | 不等于人工工时或节省量 |
+| 监督覆盖/延迟/升级率 | 经过监督的行动占比、到审阅时间、被拦截或上报比例 [S8](https://www.anthropic.com/institute/measuring-pace-of-ai-development) | 决策与会话不能混作分母 |
+
+**本报告的测量解释：** 前十项定位流程中的损耗，后五项主要反映采用、代理活动或控制机制。它们都不能单独回答用户是否获益。返工下降也可能意味着没人检查，首次 CI 变绿可能来自用例变弱；需保留成果与故障证据一起读。
+
+**官方遥测的现实边界：** PR 归属用合入前 21 天至后 2 天会话匹配；当前贡献分析需要组织与 GitHub 接入，排除 Console API/第三方集成用量。OTel 提供会话、变更行、提交、PR、Token、成本和活跃时间，成本是近似值。[S7](https://code.claude.com/docs/en/analytics)、[S9](https://code.claude.com/docs/en/monitoring-usage) **推断：** CodeHub、多个模型工具与 Orca 的组合不能直接套一个 Claude 仪表板，更不能把漏采解释成无产出。
+
+**建议的最小统计契约，尚待试验：** 对一个真实项目逐条记录同一交付从承诺、可演示、实际发布到首次真实使用的时间，列出中间等待原因、返工和维护 BW 的时间。先展示单条记录，样本足够后再算分布；按相近工作比较，记录复杂度与外部依赖。没有用户使用证据就标缺失，不让合入数量替代它。这是本报告提出的产品验证办法，不是 Anthropic 原文指标。
+
+## 对 1–3 位 Builder：复用、精简、验证
+
+下面均为**待验证建议**，没有以竞品实践批准 BW 新能力。
+
+| BW 现有部分 | 先复用什么 | 先删减或避免什么 | 价值需要怎样被推翻/证实 |
+|---|---|---|---|
+| 总览 | 宿主会话、PR、CI、发布与现有问题记录 | 人工再填一份状态、只展示忙碌数量 | 看完后是否更快发现一项真实阻塞并采取行动；若不改变决定就应简化 |
+| 计划 | 当前目标、原型、可验收结果及仓内依据 | 固定要求每个小修完整多阶段文档；把周版本当发版关卡 | 是否减少做偏和无关扩展，且没有拉长首次试用 |
+| 验收 | 真机结果、部署读回、用户尝试与明确的人决定 | 重复跑已有 CI、只问“任务做完没” | 是否发现“已合入但不可用/无人用”；若始终只是重复确认，就没有新增价值 |
+| 指标 | 已有 Git/CI/运行数据及原始反馈 | 统一综合分、个人行数排行榜、大批难维护指标 | 是否有一个读数改变删范围、修可靠性或停止投入的决定 |
+
+**规模差异：** Anthropic 拥有专门安全、平台和运维人员，1–3 人团队通常没有。可借鉴“机器先整理并检查，人集中判断”，但要把部署、权限、采集和故障维护成本算入收益。单人团队很少有跨角色交接，却可能有跨会话遗忘和连续多日无人试用；BW 需要验证的是后两者是否真实存在。
+
+## 证据局限与未决问题
+
+- S1 是推荐流程；S5/S6 是厂商自身案例；S2 是内部观察与自报；S3 是窄场景随机实验；S8 是内部测量原型。它们的证明力度不同，不能拼成“行业已共识”。
+- 技术文档是访问日快照，没有独立发布日期；后续实现会变。S1 官方 PDF 在网页工具读取失败后已下载，按页读取了 54 页文本；网页维护段另有定时安全扫描小节，PDF 未包含，不能当成完全相同快照。本报告未检查 PDF 视觉排版。
+- 没有找到“1–3 人采用这套流程后，更高概率做出有用户版本”的直接对照证据。也没有找到周交付/月里程碑是统一最佳节奏的证据。
+- 首轮真正需要回答：内部项目最久的停留发生在选题、可用成果、发布还是真实试用？BW 介入一处后，是否净省下注意力？若只减少代码阶段时间，却没有提前任何真实使用，就要修正定位。
+- 后续优先补两类材料：包含失败/放弃项目的完整交付记录；同一团队直接用 Orca 与加 BW 的真实操作比较。只收成功故事会高估收益。
+
+## 来源索引
+
+| ID | 一手来源 | 发布/更新日 | 访问日 | 支持范围 |
+|---|---|---|---|---|
+| S1 | [The AI-native SDLC playbook](https://claude.com/resources/articles/the-ai-native-sdlc-playbook) · [54 页 PDF](<https://cdn.prod.website-files.com/6889473510b50328dbb70ae6/6aba736348bdf4f08183f463_AI%20Native%20SDLC%20Playbook_designv2%20(1).pdf>) | 2026-08-21 | 2026-10-09 | 阶段、推荐度量与企业流程 |
+| S2 | [How AI is transforming work at Anthropic](https://www.anthropic.com/research/how-ai-is-transforming-work-at-anthropic) | 2025-12-02；采样 2025-08 | 2026-10-09 | 自报提效、工作扩张、内部会话 |
+| S3 | [How AI assistance impacts the formation of coding skills](https://www.anthropic.com/research/AI-assistance-coding-skills) | 2026-01-29 | 2026-10-09 | 新技能理解与执行的差异 |
+| S4 | [When AI builds itself](https://www.anthropic.com/institute/recursive-self-improvement) | 当前正文未标日期；包含 2026-05/Q2 数据 | 2026-10-09 | 代码量增长及官方自述局限 |
+| S5 | [How Anthropic secures its AI-native software development lifecycle](https://claude.com/resources/articles/how-anthropic-secures-its-ai-native-software-development-lifecycle) | 2026-07-21 | 2026-10-09 | 原型驱动、按风险控制、代理越界实例 |
+| S6 | [Claude on call: CI/CD first responder](https://claude.com/resources/articles/ai-ci-cd-on-call) | 2026-08-18 | 2026-10-09 | 从告警到复核的真实工作故事 |
+| S7 | [Track team usage with analytics](https://code.claude.com/docs/en/analytics) | 未标发布日期；持续文档 | 2026-10-09 | 分母、PR 归属与接入边界 |
+| S8 | [Measurements for understanding the pace of AI development inside frontier labs](https://www.anthropic.com/institute/measuring-pace-of-ai-development) | 2026-09-17，日期见[官方研究索引](https://www.anthropic.com/research)；数据截至 2026-08 | 2026-10-09 | 自动化篮子与监督指标 |
+| S9 | [Monitoring](https://code.claude.com/docs/en/monitoring-usage) | 未标发布日期；持续文档 | 2026-10-09 | OTel 实际可采集项与局限 |
+
+后续模型读取顺序：先读本页结论、指标解释与未决问题；要改变产品决策时回到对应来源核对日期、分母及原始上下文。不要把本报告中的建议提升为仓库规则。

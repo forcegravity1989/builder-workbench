@@ -1,0 +1,195 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="source-sha256" content="df9e4966fd3d225f4a1cfff822e96ad8f6e58e6df0cf62f2a2c6e5efbd89e68c">
+<title>DORA 与 METR：AI 时代怎样区分忙碌、提效与交付价值 · BW 研究</title>
+<link rel="stylesheet" href="report.css">
+</head>
+<body>
+<a class="skip" href="#content">跳到正文</a>
+<header class="masthead"><a href="index.html" class="brand">BW / RESEARCH</a><span>AI Coding 之后，项目怎样走到真实交付</span><a class="source" href="evidence-and-metrics.md">阅读 Markdown 正源</a></header>
+<div class="layout"><aside><nav aria-label="专题报告"><a href="index.html">总览与阅读地图</a>
+<a href="anthropic-sdlc.html">Claude · AI-native SDLC</a>
+<a href="workbuddy-codebuddy.html">WorkBuddy / CodeBuddy</a>
+<a href="orca.html">Orca · 执行与协作</a>
+<a href="openai-codex.html">OpenAI · 证据与反馈循环</a>
+<a href="cursor-linear.html">Cursor / Linear · 工作组织</a>
+<a href="spotify.html">Spotify · 从执行到用户反馈</a>
+<a href="evidence-and-metrics.html" aria-current="page">DORA / METR · 度量与实证</a></nav><details open class="toc"><summary>本篇目录</summary><a href="#section-1">先给判断：测量对象也被 AI 改变了</a>
+<a href="#section-2">证据怎样更新，而不是旧结论换个年份</a>
+<a href="#section-3">两个工作故事：什么会让判断发生变化</a>
+<a href="#section-6">给 BW 的四类信号：每个读数服务一个决定</a>
+<a href="#section-7">先做怎样的比较，才能决定 BW 四块是否值得保留</a>
+<a href="#section-8">证据限制与待补项</a>
+<a href="#section-9">一手来源与日期</a></details></aside>
+<main id="content"><div class="eyebrow">2026.10.09 · 外部研究参考 · 待真实项目验证</div><article><h1 id="section-0">DORA 与 METR：AI 时代怎样区分忙碌、提效与交付价值</h1>
+<blockquote>
+<p><strong>读者与时机</strong>：供 BW 产品决策者及 1–3 人 Builder 团队选择试点和度量时阅读。<strong>范围</strong>：截至 2026-10-09 的一手实证、方法与可迁移建议；优先最近一年，2025 年研究仅作为明确标注的基线。本文不是统一绩效制度、BW 已批准规格或产品效果证明。<strong>结构</strong>：结论、证据变化、两种工作故事、度量建议、试点、局限与来源。数据或试点结果变化时更新；Markdown 为正源，同名 HTML 为生成阅读版。</p>
+</blockquote>
+<h2 id="section-1">先给判断：测量对象也被 AI 改变了</h2>
+<p><strong>我们的判断：</strong> 不能只比较“过去这项开发要三天，现在三小时”。AI 会改变人选择做什么、做多少、允许多少次尝试；更低的成本既可能带来原来做不起的好产品，也可能带来更多不值得做的功能。BW 应帮助 Builder 看见从问题到实际使用的阻塞，并核对增加的产出究竟改变了什么。研究尚不能证明四块屏幕就是最佳实现。</p>
+<p>METR 2026 年 5 月明确区分旧任务的提速、新任务组合的提速，以及最终价值增益；三者可以相差很大。这是当前问题最直接的分析工具。它解释了为何“Agent 一天做了原来一个月的活”和“项目两个月仍未交付”可以同时成立。<a href="https://metr.org/blog/2026-05-08-task-substitution-and-uplift/">S1</a></p>
+<h2 id="section-2">证据怎样更新，而不是旧结论换个年份</h2>
+<table>
+<thead>
+<tr>
+<th>一手材料与时间</th>
+<th>可以采用的结论</th>
+<th>不能外推的结论</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>METR，2026-02-24 更新；跟进实验从 2025-08 开始</td>
+<td>57 名开发者、143 个仓库、800 多个任务；作者认为选择偏差和并行计时让当前提效估计不可靠</td>
+<td>不能继续用早期 2025 实验“慢 19%”判断当下，也不能把跟进点估计当今日普遍收益 <a href="https://metr.org/blog/2026-02-24-uplift-update/">S2</a></td>
+</tr>
+<tr>
+<td>METR，2026-05-08 概念研究</td>
+<td>比较前后任务组合与价值，而非只算当前任务的反事实工时；数学排序有简化假设</td>
+<td>不是一项证明 AI 提效百分比的现场实验 <a href="https://metr.org/blog/2026-05-08-task-substitution-and-uplift/">S1</a></td>
+</tr>
+<tr>
+<td>METR，2026-05-11；采样 2026-02 至 04</td>
+<td>349 名技术工作者自报价值增益中位数约 1.4–2 倍，速度约 3 倍；问法确实影响回答</td>
+<td>便利样本、邮件回应率约 2%，且只有 87 名软件工程师；自报价值不是营收或真实交付的因果测量 <a href="https://metr.org/blog/2026-05-11-ai-usage-survey/">S3</a></td>
+</tr>
+<tr>
+<td>DORA 2025 报告及配套 AI Capabilities Model</td>
+<td>把工具收益放到组织条件、数据和用户导向中研究</td>
+<td>这是 2025 研究，不能因网页后来更新就宣称 2026 新样本；相关性不能保证采用后有效 <a href="https://dora.dev/research/2025/dora-report/">S4</a>、<a href="https://dora.dev/ai/capabilities-model/report/">S5</a></td>
+</tr>
+<tr>
+<td>DORA 实践页：小批量更新 2025-12-08，用户导向更新 2026-01-12</td>
+<td>已直接讨论 AI 大量生成带来的审阅负担，以及从产出转向用户结果的实践</td>
+<td>更新后的建议仍可能依托旧研究；不等于“小团队周一计划、周五验收”已经得到验证 <a href="https://dora.dev/capabilities/working-in-small-batches/">S6</a>、<a href="https://dora.dev/capabilities/user-centric-focus/">S7</a></td>
+</tr>
+</tbody></table>
+<p><strong>为什么没有把更多数字排成排名？</strong> 各研究的对象、任务选择、分母与结果不同。官方来源值得认真读，也仍需区分推荐、观察、受控实验和厂商自身经验。这里保留影响决策的差异，不求一个“行业平均提效”。</p>
+<h2 id="section-3">两个工作故事：什么会让判断发生变化</h2>
+<p>以下为我们的分析示例，<strong>不是实验样本或已发生客户案例</strong>。</p>
+<h3 id="section-4">故事一：代码生产很快，但周五仍然没有可用版本</h3>
+<p>两名 Builder 正在做内部工单分流。Agent 很快生成分类器、看板、图表和配置页；实际使用仍卡在没有拿到真实工单权限，或者人工分流结果没有基线。此时代码量和任务完成率可以上升，用户节省的时间仍未知。</p>
+<p>按本报告建议，下一个交付缩成“取得授权的真实工单样本，让一名值班人员完成一次分流并记录纠错”，先验证是否能减少他的工作。生成了多少附加页面不计作这个目标的进展；若模型建议再做一个管理后台，应回到目标判断是否必要。这里需要的是范围取舍、权限解决与用户尝试，不必先建立完整项目管理体系。</p>
+<p>DORA 的小批量建议强调可独立交付并获得反馈，特别提醒不要把已拆小的工作又攒成大批次才测试发布。可借鉴的是缩短反馈等待；是否每天、每周或更长，仍取决于使用与部署条件。<a href="https://dora.dev/capabilities/working-in-small-batches/">S6</a></p>
+<h3 id="section-5">故事二：多出来的工作不一定浪费，也不一定有价值</h3>
+<p>一个 Builder 用 Agent 很快补出数据导入诊断工具。原先因为开发昂贵，他会直接让用户发截图；现在新工具可能让每次接入少查一个小时，也可能成为几乎没人打开的维护负担。不能只按“过去手写要两周”记两周收益。</p>
+<p>应记录被哪些用户在什么任务里用过、是否减少失败与人工补救，以及维护成本。若暂时只有一个用户，就保存一次完整操作和具体反馈，保留样本数，避免包装成稳定百分比。新能力让原本不可行的服务变得可行也是收益；评价应围绕实际服务，而非执着复刻旧任务组合。这个取舍受 METR 的任务替代理论启发，具体例子与判断方法是我们的建议。<a href="https://metr.org/blog/2026-05-08-task-substitution-and-uplift/">S1</a></p>
+<h2 id="section-6">给 BW 的四类信号：每个读数服务一个决定</h2>
+<p>以下是<strong>试点建议，不是新增指标协议或统一 KPI</strong>。一开始每类只选一项；无法可靠收集的保留 Unknown。小样本同时展示原始事件和分母，不能用综合健康分掩盖缺失。</p>
+<table>
+<thead>
+<tr>
+<th>信号</th>
+<th>最小可核对记录</th>
+<th>帮助作出的决定</th>
+<th>不能替代什么</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>用户结果</td>
+<td>某类目标用户是否完成约定任务；例如 3 位试用者中 2 位完成导入，另 1 位失败原因待核实</td>
+<td>继续、改方向、缩范围还是停止投入</td>
+<td>单次成功不能证明留存、规模收益或商业价值</td>
+</tr>
+<tr>
+<td>交付流动</td>
+<td>决定做 → 可运行 → 可访问 → 首次真实使用的时间点；停在哪一段</td>
+<td>先解权限、修部署、约试用还是继续写代码</td>
+<td>PR 合入时间不能冒充用户用上时间</td>
+</tr>
+<tr>
+<td>质量与可靠性</td>
+<td>主路径失败、回退、人工补救；BW 自身任务卡死/恢复失败</td>
+<td>是否先修可靠性，何时减少并行度</td>
+<td>CI 全绿、模型自评通过不能代替真实路径</td>
+</tr>
+<tr>
+<td>人的负担与成本</td>
+<td>主动干预分钟、等待、重复解释/录入；任务对应模型花费如能获取</td>
+<td>BW 是否净省注意力，哪些步骤可省掉</td>
+<td>Token、会话数和 Agent 数不是成功指标</td>
+</tr>
+</tbody></table>
+<p><strong>时间口径要分开。</strong> “周一到周三的经过时间”“人亲自操作的 40 分钟”和“几个 Agent 合计运行 8 小时”回答不同问题，不能直接相加成工作量。METR 新实验已遇到多代理并行导致人工计时不可靠的问题；工具升级、任务类型和验收标准也应随记录保留。<a href="https://metr.org/blog/2026-02-24-uplift-update/">S2</a></p>
+<p><strong>数据和感受可以互证。</strong> 日志告诉我们发生了什么，访谈解释为什么；日志也会受采集缺失和解释错误影响。DORA 的度量指南建议先确定要支持的决定，再选框架和数据，而非先把 SPACE、DORA 或 HEART 的所有指标搬进系统。<a href="https://dora.dev/research/2025/measurement-frameworks/">S8</a></p>
+<p><strong>用户导向可以很小。</strong> 让 Builder 亲眼看一次用户操作，保存原始反馈，并记录它是否改变下一次取舍，比铺满满意度图表更容易起步。这是对 DORA 用户反馈与产品指标建议的小团队化解释，仍需本地验证。<a href="https://dora.dev/capabilities/user-centric-focus/">S7</a></p>
+<h2 id="section-7">先做怎样的比较，才能决定 BW 四块是否值得保留</h2>
+<p>选择 2–3 个有具体使用者、能观察结果的内部项目，建议观察 2–4 周；这是探索窗口，不是统计功效保证。先还原最近一次交付，记录失败、暂停和放弃，随后在相近工作中比较“原生 Orca 加现有研发工具”和“同样基础上使用 BW”。不要求停用 AI，也不把单纯前后变化当因果效果。</p>
+<p>每个项目只钉住一个用户任务、一段可交付范围、一位决定人和一条使用证据。记录 BW 额外花费的时间，并收集它实际改变决定的时刻：删掉了什么、发现了什么错误完成、提前解决了什么等待。模型版本、团队熟练度、任务难度都可能混杂；小样本先寻找可重复的机制和反例。</p>
+<p>四块能力分别有可被推翻的判断：</p>
+<ul>
+<li><strong>总览</strong>：是否减少找阻塞和判断下一步的时间；若只是复制会话/Issue 状态，应简化。</li>
+<li><strong>指标</strong>：是否让人改变决策；若无人能解释读数与行动的关系，先减少指标。</li>
+<li><strong>计划</strong>：是否帮人收敛本次结果、排除无关扩展；若变成重复填报，应降低负担。</li>
+<li><strong>验收</strong>：是否发现已合入却不可用、未达用户结果，以及下一步无人负责；若只重复 CI，应重审。</li>
+</ul>
+<p>周交付与月里程碑可以作为人的复盘提醒，但不应让已可交付的工作等到周五，也不应把尚无用户证据的功能堆成月底“大版本”。是否将这些建议变成 BW 规则，须回到产品讨论与既有原则。</p>
+<h2 id="section-8">证据限制与待补项</h2>
+<p>这组材料没有直接回答“中国内部 1–3 人项目用了 BW 后会怎样”。METR 的受控任务与自报调查、DORA 的组织研究，均存在场景迁移限制。理论推导不是市场验证，质量和价值也难被单个指标完整表示。</p>
+<p>目前最缺的不是再选一套方法论，而是内部真实项目的完整轨迹：最初承诺、最后用户拿到什么、中途为什么扩范围、实际等待在哪里。未来模型应先读这些记录，再判断本报告的建议是否成立。关于 Spotify 的实际上下文、执行和用户实验实践，另见<a href="spotify.html">专题报告</a>。</p>
+<h2 id="section-9">一手来源与日期</h2>
+<p>所有链接于 <strong>2026-10-09</strong> 核对；无独立发布日期的页面保留未知，更新日期不冒充新实验日期。DORA 内容按站点 CC BY 4.0 许可注明来源，本文为提炼与独立建议。</p>
+<table>
+<thead>
+<tr>
+<th>ID</th>
+<th>来源</th>
+<th>原始发布／更新日期</th>
+<th>支持范围</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>S1</td>
+<td><a href="https://metr.org/blog/2026-05-08-task-substitution-and-uplift/">METR：Task Substitution and Uplift</a></td>
+<td>2026-05-08</td>
+<td>旧任务、新任务与价值增益的区别；排序假设</td>
+</tr>
+<tr>
+<td>S2</td>
+<td><a href="https://metr.org/blog/2026-02-24-uplift-update/">METR：Changing our Developer Productivity Experiment Design</a></td>
+<td>2026-02-24</td>
+<td>跟进实验、样本、选择偏差与并行计时</td>
+</tr>
+<tr>
+<td>S3</td>
+<td><a href="https://metr.org/blog/2026-05-11-ai-usage-survey/">METR：Self-Reported Impact of Early-2026 AI</a></td>
+<td>2026-05-11；调查 2026-02 至 04</td>
+<td>349 人自报调查及价值/速度区别；非因果收益</td>
+</tr>
+<tr>
+<td>S4</td>
+<td><a href="https://dora.dev/research/2025/dora-report/">DORA：State of AI-assisted Software Development 2025</a></td>
+<td>2025 年报告，早于本轮主要窗口</td>
+<td>AI 放大组织条件；不能当 2026 样本</td>
+</tr>
+<tr>
+<td>S5</td>
+<td><a href="https://dora.dev/ai/capabilities-model/report/">DORA：AI Capabilities Model</a></td>
+<td>页面最后更新 2025-11-25；未据此判定报告首发日</td>
+<td>配套实践指南的定位</td>
+</tr>
+<tr>
+<td>S6</td>
+<td><a href="https://dora.dev/capabilities/working-in-small-batches/">DORA：Working in small batches</a></td>
+<td>页面更新 2025-12-08</td>
+<td>可独立交付、缩短反馈、避免重组大批次</td>
+</tr>
+<tr>
+<td>S7</td>
+<td><a href="https://dora.dev/capabilities/user-centric-focus/">DORA：User-centric focus</a></td>
+<td>页面更新 2026-01-12</td>
+<td>用户反馈、产品指标、AI 功能生产陷阱</td>
+</tr>
+<tr>
+<td>S8</td>
+<td><a href="https://dora.dev/research/2025/measurement-frameworks/">DORA：Choosing measurement frameworks</a></td>
+<td>属 2025 研究；页面未给独立首发日期</td>
+<td>从决定选择度量、日志与自报互补</td>
+</tr>
+</tbody></table>
+<p>后续读取顺序：先读结论与证据表，再读建议和局限；引用某个数字前回原文核对样本、任务与窗口。建议、实例和来源事实不可混写成行业统一规范。</p>
+</article><footer>同内容 Markdown 为维护正源；HTML 为生成的阅读视图。外部能力、团队经验与 BW 已交付能力分别判断。</footer></main></div>
+</body>
+</html>
