@@ -90,6 +90,16 @@
 | 人机协作 / Agent Loop | 未覆盖的工作由人和 AI 协作，覆盖到的交 AI 执行、人判方向与结果；不是工作类别或界面流程名 | [产品主张][claim] |
 | mock / 测试替身 | 模拟实现须明确标识，不能冒充真实执行或真实读数 | [AGENTS](AGENTS.md) |
 
+## 语音
+
+| 术语 | 含义与边界 | 相关正本 |
+|---|---|---|
+| 听写 / Dictation | 把麦克风语音转成文字插入当前输入处；Orca 执行核自带；上屏不等于已纠正 | [语音意图][voice] |
+| 朗读 / Read aloud | 把文字合成语音播放（TTS）；本地模型或远端端点；朗读不代表 agent 已完成 | [语音意图][voice] |
+| 语音引擎 / Speech engine | 听写或朗读实际跑在哪：本机推理或远端 API 端点；端点「已配置」不等于「可用」，真实探测成功才算 | [语音设计][voice-design] |
+| 听写后处理 / Post-processing | 上屏前的确定性文本处理：清理、词典纠错、数字转写、标点风格；不含通用纠错大模型 | [语音设计][voice-design] |
+| 语音词典 / Lexicon | 术语、人名、产品名及别名表，供热词与后处理共用；全局一份、项目可加一份 | [语音意图][voice] |
+
 ## 知识与规范资产
 
 | 术语 | 含义与边界 | 相关正本 |
@@ -114,6 +124,8 @@
 [prompt]: docs/06-module/系统提示词与渐进加载.md
 [info]: docs/06-module/关键信息维护.md
 [issue]: standard/system-prompt/references/issue-state.md
+[voice]: docs/05-features/voice/intent.md
+[voice-design]: docs/05-features/voice/design.md
 [metrics]: standard/system-prompt/references/metrics.md
 [week]: standard/system-prompt/references/week-plan-comment.md
 [plan-spec]: docs/05-features/version-planning/spec.md
