@@ -9,6 +9,4 @@
 # This list only shrinks. Adding a line also requires raising the pin in
 # websocket-server-loopback-bind.test.ts, which is deliberate friction.
 
-# Deliberate, not drift: this mock is dialled by a phone on the LAN, so it has to
-# be reachable on a real interface. A loopback bind would make it unreachable.
-mobile/scripts/mock-server.ts
+# (empty: the mobile mock server that needed a LAN bind left this fork)

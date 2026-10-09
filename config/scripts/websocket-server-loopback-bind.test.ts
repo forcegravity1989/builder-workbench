@@ -29,7 +29,7 @@ const WILDCARD_BIND_ALLOWLIST: readonly string[] = readFileSync(
  * May only ever be DECREASED, and only by pinning a host. Raising it is never
  * the fix.
  */
-const WILDCARD_BIND_PIN = 1
+const WILDCARD_BIND_PIN = 0
 
 /**
  * A floor under the constructions the scanner still recognizes.

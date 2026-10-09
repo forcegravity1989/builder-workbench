@@ -5,8 +5,6 @@ on:
   # change is worth a real ibus session. A pull_request trigger here would run it on every PR.
   workflow_call:
   workflow_dispatch:
-  schedule:
-    - cron: '30 9 * * *'
 
 permissions:
   contents: read

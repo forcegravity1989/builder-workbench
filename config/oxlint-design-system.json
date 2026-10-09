@@ -50,5 +50,5 @@
       }
     }
   ],
-  "ignorePatterns": ["**/node_modules", "**/dist", "**/out", "cloud/**", "mobile/**"]
+  "ignorePatterns": ["**/node_modules", "**/dist", "**/out"]
 }

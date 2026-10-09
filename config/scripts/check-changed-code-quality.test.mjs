@@ -6,7 +6,6 @@ import {
   diagnosticTouchesAddedLines,
   isAntiSlopDirectiveUnusedWarning,
   isMovedCode,
-  isRootCodeQualityPath,
   overlapsAddedLines,
   parseAddedLineRanges
 } from './check-changed-code-quality.mjs'
@@ -55,11 +54,6 @@ describe('changed-code quality line matching', () => {
 
     expect(scan.args).not.toContain('--config')
     expect(scan.args).not.toContain('--disable-nested-config')
-  })
-
-  it('leaves Cloud source to the independent Cloud quality checks', () => {
-    expect(isRootCodeQualityPath('cloud/apps/relay/src/index.ts')).toBe(false)
-    expect(isRootCodeQualityPath('src/main/index.ts')).toBe(true)
   })
 })
 

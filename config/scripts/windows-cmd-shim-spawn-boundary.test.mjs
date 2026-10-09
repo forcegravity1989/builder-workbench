@@ -39,11 +39,9 @@ const WINDOWS_SHIM_SPAWN_ALLOWLIST = [
   'config/scripts/build-linux-local.test.mjs',
   // Benchmarks, repros and e2e drivers — developer-invoked or Linux-only in CI.
   'config/scripts/build-orcad-prebuilds.mjs',
-  'config/scripts/run-ai-vault-typing-bench.mjs',
   'config/scripts/run-ephemeral-vm-runtime-store-rollback-repro.mjs',
   'config/scripts/run-local-ssh-browser-routing-e2e.mjs',
   'config/scripts/run-multi-client-navigation-e2e.mjs',
-  'config/scripts/run-multi-workspace-typing-bench.mjs',
   'config/scripts/run-nested-runtime-ssh-e2e.mjs',
   'config/scripts/run-ssh-client-hosted-browser-drop-reconnect-e2e.mjs',
   'config/scripts/run-ssh-codex-artifacts-repro-e2e.mjs',
@@ -56,8 +54,6 @@ const WINDOWS_SHIM_SPAWN_ALLOWLIST = [
   'config/scripts/run-terminal-scale-perf-e2e.mjs',
   // Routes its shim through an explicit `cmd.exe /d /s /c`, which is the correct form.
   'config/scripts/verify-skill-update-roundtrip.mjs',
-  'tests/tools/benchmarks/startup-time-bench.mjs',
-  'tests/tools/benchmarks/worktree-deletion-dev-bench.mjs',
   'tests/tools/repro-terminal-send-submit.mjs'
 ]
 

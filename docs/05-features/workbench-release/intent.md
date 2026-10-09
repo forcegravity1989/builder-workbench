@@ -23,7 +23,7 @@ BW 仓的开发者需要一份可安装的 Windows Workbench，并在人明确�
 ## 范围与边界
 
 - **做**：本机 Windows Workbench 安装包；在明确授权下，把这次安装包发布为 GitHub Release。
-- **范围外**：Orca 的 `.github/workflows/release-cut.yml`；仓库里已有的 PR 门禁 workflow（它们不跑这条出包）；被管项目的版本材料归档（计划 / 验收）；版本收尾 HTML 报告技能 [version-report](../../../.claude/skills/version-report/SKILL.md)。后者的出包步骤仍指向 `.bw/release/pack`，和本技能不是同一条入口。
+- **范围外**：Orca 自己的发版链（`release-cut` 等 workflow 已于 2026-10-09 从本仓删除，见 [ref/upstream](../../../ref/upstream.md)）；仓库里已有的 PR 门禁 workflow（它们不跑这条出包）；被管项目的版本材料归档（计划 / 验收）；版本收尾 HTML 报告技能 [version-report](../../../.claude/skills/version-report/SKILL.md)。后者的出包步骤仍指向 `.bw/release/pack`，和本技能不是同一条入口。
 - **分层**：按 02 §6.3，这是 BW 开发团队的发布工具，不改写 [03](../../01-principles/03-press-release-faq-flywheel.md) 里 Builder 的产品主张。
 
 这里的「归档」指把安装包放进 GitHub Release。它不代替计划或验收材料的归档。

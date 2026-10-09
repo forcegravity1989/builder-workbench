@@ -55,6 +55,6 @@
 
 ## 取舍与待决问题
 
-被放弃的做法：复用 Orca `release-cut`，或恢复 `.bw/release/pack`。前者发布对象不是 Workbench 壳，后者属于已删除的 Rust 出包链。
+被放弃的做法：复用 Orca `release-cut`（该链已于 2026-10-09 从本仓删除），或恢复 `.bw/release/pack`。前者发布对象不是 Workbench 壳，后者属于已删除的 Rust 出包链。
 
 待决项与 [intent](intent.md) 相同：是否补 Actions 出包，以及 version-report 是否改走本入口。

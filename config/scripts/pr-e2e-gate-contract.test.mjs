@@ -224,13 +224,7 @@ describe('PR E2E gate contract', () => {
     // Why this still holds for terminal-ime-e2e.yml now that pr.yml runs it: pr.yml reaches it
     // through workflow_call, behind the path filter. A pull_request trigger here would run a
     // real ibus session on every PR, which is the cost the filter exists to avoid.
-    const dedicatedWorkflows = [
-      'golden-e2e-experiment.yml',
-      'linux-wayland-gpu-sandbox.yml',
-      'terminal-ime-e2e.yml',
-      'win-crash-survival-e2e.yml',
-      'windows-terminal-restart-e2e.yml'
-    ]
+    const dedicatedWorkflows = ['terminal-ime-e2e.yml']
 
     for (const file of dedicatedWorkflows) {
       const workflow = parseYaml(readFileSync(join(projectDir, '.github/workflows', file), 'utf8'))

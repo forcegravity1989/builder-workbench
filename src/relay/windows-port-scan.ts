@@ -22,8 +22,8 @@ const WINDOWS_PORT_SCAN_MAX_OUTPUT_BYTES = 4 * 1024 * 1024
  * `netstat.exe -ano` answers all of it except the process name, which comes
  * from the shared process table -- so this scan starts no PowerShell of its
  * own. One still runs on a released relay: without the optional
- * `windows-process-tree.node` addon (built only by dev-channel-win-build.yml,
- * so no release carries it) that table falls back to a CIM scan that forks one
+ * `windows-process-tree.node` addon (no CI job in this fork builds it, so no
+ * release carries it) that table falls back to a CIM scan that forks one
  * `powershell.exe`. That scan is TTL-shared with pane naming, so a relay with a
  * live pane pays nothing extra for it.
  *

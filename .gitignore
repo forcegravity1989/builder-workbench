@@ -75,10 +75,6 @@ coverage/
 # Prod release scan output (accidental adds)
 prod-release-scan-*.md
 
-# Benchmark run output
-/tests/tools/benchmarks/results/*.json
-/.bench-fixtures/
-
 # Temp
 tmp/
 .tmp/
@@ -138,9 +134,6 @@ src/renderer/src/i18n/locales/.ko-catalog-cache.json
 src/renderer/src/i18n/locales/.ja-catalog-cache.json
 src/renderer/src/i18n/locales/.es-catalog-cache.json
 src/renderer/src/i18n/locales/.fr-catalog-cache.json
-
-# Bench result JSONs are working artifacts
-tests/tools/benchmarks/results/terminal-pipeline-*.json
 
 # Old release trees the cross-version wire harness extracts on demand
 tests/e2e/.cross-version-checkouts/

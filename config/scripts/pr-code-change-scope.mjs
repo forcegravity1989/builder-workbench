@@ -9,8 +9,7 @@ const DOCS_ONLY_FILES = new Set([
   'Agents.md',
   'Claude.md',
   '.github/CONTRIBUTING.md',
-  '.github/pull_request_template.md',
-  '.github/CODEOWNERS'
+  '.github/pull_request_template.md'
 ])
 
 const DOCS_ONLY_PREFIXES = ['docs/', '.github/ISSUE_TEMPLATE/']
@@ -250,15 +249,6 @@ const WINDOWS_PACKAGE_TESTS = [
   'src/relay/windows-port-scan.win32.test.ts'
 ]
 
-const DESKTOP_IRRELEVANT_PREFIXES = [
-  'mobile/',
-  'cloud/',
-  '.github/workflows/cloud-',
-  '.github/workflows/mobile.yml',
-  '.github/workflows/mobile-ios-release.yml',
-  '.github/workflows/mobile-android-release.yml'
-]
-
 export function isDocsOnlyPath(file) {
   if (DOCS_ONLY_FILES.has(file)) {
     return true
@@ -275,11 +265,7 @@ export function shouldRunPrChecks(changedFiles) {
   if (changedFiles.length === 0) {
     return true
   }
-  return changedFiles.some((file) => !isDocsOnlyPath(file) && !isDesktopIrrelevantPath(file))
-}
-
-export function needsMobileDependencies(_changedFiles) {
-  return false
+  return changedFiles.some((file) => !isDocsOnlyPath(file))
 }
 
 export function classifyPrJobs(changedFiles) {
@@ -295,7 +281,6 @@ export function classifyPrJobs(changedFiles) {
   return {
     should_run: shouldRun,
     native_cache_changed: shouldRun && (emptyDiff || changedFiles.some(isNativeCacheInputPath)),
-    mobile_dependencies: shouldRun && needsMobileDependencies(changedFiles),
     ...jobs
   }
 }
@@ -346,10 +331,6 @@ function isProductBundlePath(file, extraPrefixes) {
 
 function isTestFile(file) {
   return /\.(?:test|spec)\.(?:js|cjs|mjs|ts|tsx)$/.test(file) || file.includes('/__tests__/')
-}
-
-function isDesktopIrrelevantPath(file) {
-  return matchesPrefix(file, DESKTOP_IRRELEVANT_PREFIXES)
 }
 
 function isNativeCacheInputPath(file) {

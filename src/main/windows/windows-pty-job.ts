@@ -163,7 +163,7 @@ export function listPtyJobProcessIds(proc: IPty): readonly number[] | null {
  * join retroactively and would not be reaped.
  *
  * Call it from the terminal daemon, not from the app: an app-main crash must
- * still leave sessions alive, which is what win-crash-survival-e2e asserts. A
+ * still leave sessions alive (the upstream crash-survival E2E asserted this). A
  * daemon death reaping its shells is the intended change (#9195, #10415).
  *
  * Returns false when the OS refuses -- an outer job that forbids nesting -- in

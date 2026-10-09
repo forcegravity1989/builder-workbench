@@ -67,7 +67,6 @@ describe('docs-only path classification', () => {
     expect(isDocsOnlyPath('.github/CONTRIBUTING.md')).toBe(true)
     expect(isDocsOnlyPath('.github/pull_request_template.md')).toBe(true)
     expect(isDocsOnlyPath('.github/ISSUE_TEMPLATE/bug_report.yml')).toBe(true)
-    expect(isDocsOnlyPath('.github/CODEOWNERS')).toBe(true)
   })
 
   it('still runs PR Checks for product markdown and CI', () => {
@@ -81,21 +80,6 @@ describe('docs-only path classification', () => {
 
   it('runs PR Checks when the diff is empty rather than skipping by accident', () => {
     expect(shouldRunPrChecks([])).toBe(true)
-  })
-
-  it('does not start desktop PR Checks for mobile-only diffs', () => {
-    expect(shouldRunPrChecks(['mobile/src/App.tsx', 'mobile/package.json'])).toBe(false)
-  })
-
-  it('does not start desktop PR Checks for cloud-only diffs', () => {
-    expect(
-      shouldRunPrChecks([
-        'cloud/apps/relay/src/index.ts',
-        'cloud/package.json',
-        'cloud/.gitleaks.toml',
-        '.github/workflows/cloud-verify.yml'
-      ])
-    ).toBe(false)
   })
 })
 
@@ -314,18 +298,6 @@ describe('per-job path classification', () => {
     ]) {
       expect(classifyPrJobs([file]).native_cache_changed, file).toBe(true)
     }
-  })
-
-  // Why: static analysis lints changed mobile files with a type-aware pass, and
-  // mobile is a separate pnpm project. Without its node_modules every mobile type
-  // resolves to an `error` type and the changed-code gate fails on phantom
-  // findings, which is exactly how a react-test-renderer union broke a PR.
-  it('never asks the desktop CI to install a deleted mobile workspace', () => {
-    expect(classifyPrJobs([]).mobile_dependencies).toBe(false)
-    expect(
-      classifyPrJobs(['src/main/index.ts', 'mobile/src/session/a.test.ts']).mobile_dependencies
-    ).toBe(false)
-    expect(classifyPrJobs(['mobile/package.json']).should_run).toBe(false)
   })
 
   it('keeps unit-test-only diffs out of packaging', () => {

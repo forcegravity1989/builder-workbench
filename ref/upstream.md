@@ -43,6 +43,21 @@ git merge orca-upstream/main
 
 合并 upstream 时：不要把 `mobile/` 或 Mobile 页重新合回来。协议文件若 upstream 改了，优先取 upstream，除非叠层已摘钩子。
 
+### 仓级资产与 CI（2026-10-09 删除）
+
+BW 不发布 Orca、不部署 Orca 的手机中继云；这些资产在 BW 仓只会被 GitHub Actions 真实触发（2026-09-30 至 10-09 约 330 次运行里 77% 来自它们）。全部从 git 删除，合并 upstream 时若重新出现，直接 `git rm`，不要合回来。
+
+| 处置 | 路径 | 说明 |
+|---|---|---|
+| **删除** | `cloud/` | Orca 手机 relay 与 push 网关的 GCP 部署工程（独立 pnpm workspace）。`src/main/runtime/push/push-host-proof-vector.json` 是从它搬出来的测试向量，随 push 链一起处置 |
+| **删除** | `.github/workflows/cloud-*.yml`（26 个）、`.github/actions/cloud-sql-rollout-lease/` | 云端部署 / 监控 / 定时 |
+| **删除** | `adhoc-mac-build` / `daily-mac-build` / `hourly-mac-build` / `dev-channel-win-build` / `release-cut` / `release-mac-build` / `release-policy` / `release-ref-validation` / `homebrew-bump` / `readme-downloads-badge` / `windows-signing-rehearsal` 共 11 个 workflow、`.github/actions/install-signpath-module/`、`Casks/`、`config/scripts/` 下 `setup-*-release-*`、`run-release-mac-build-workflow`、`create-draft-release`、`publish-complete-draft-releases`、`release-rc-history`、`replace-cached-nsis-elevate` | Orca 发版、签名与分发链；BW 的 Windows 出包按 workbench-release 特性另建 |
+| **删除** | `docs.yml`、`track-community-prs.yaml`、`issue-os-labeler.yaml`、`pullfrog.yml`、`pr-test-loc.yml`、`.github/scripts/` 下 `render-readme-downloads-badge`、`pr-test-loc-summary`、`pr-test-loc-table`、`.github/CODEOWNERS` | 文档站与社区运营机器人；此前每条 BW PR / Issue 都会触发一次失败 |
+| **删除** | `computer-e2e`、`node-next-compat`、`packaged-browser-e2e`、`linux-wayland-gpu-sandbox`、`golden-e2e-experiment`、`win-update-e2e`、`win-update-survival-e2e`、`daemon-relocation-spike`、`win-crash-survival-e2e`、`windows-terminal-restart-e2e` 共 10 个 workflow 及专用脚本（`verify-linux-wayland-gpu-sandbox` 四件、`verify-packaged-browser-participation`） | 无守卫定时与平台专项；`terminal-ime-e2e.yml` 自带的 Wayland 作业不受影响 |
+| **去 cron** | `e2e.yml`、`terminal-ime-e2e.yml`、`terminal-perf.yml`、`performance-contracts.yml` | 只保留 `pr.yml` 调用、PR 路径触发与手动触发 |
+| **删除** | `tests/tools/` 下 `benchmarks`、`relay-bench`、`win-update-e2e`、`win-crash-survival-e2e`、`daemon-relocation-spike`、`spikes`、`fish-mode2031-repro`、`freeze-repro`、`repro-watcher-crash-7547`、`terminal-garble-*.mjs`、`repro-macos-renderer-close-teardown.cjs`；`config/scripts/` 下 89 个无人引用的 benchmark 脚本；package.json 的 `bench:*`、`repro:*`、`win-update-e2e`、`win-crash-survival-e2e` 共 25 条 | 连带删掉只被它们调用的 E2E 与工具：`tests/e2e/` 的 spinner-workspace-perf、terminal-multi-workspace-typing-latency 两份 spec 及 paced / sustained 打字辅助、`tests/tools/omp-*-rendered/`（打包入口是已删的 spinner-rendering）、`config/scripts/` 的 `run-*-typing-bench`、`idle-cpu-*`、`hang-watchdog-process-metrics`、`macos-computer-helper-owner-loss-*`、`daemon-*-smoke`、`live-remote-*-freeze-repro` 与发版链残件（`adhoc/daily-build-version`、`latest-stable-release`、`generate-windows-blockmap`、`resolve-7za-path`、`run-linux-packaged-node-pty-floor-smoke`、`verify-dev-channel-packaging`、`verify-release-required-assets`）及其测试；`.github/CONTRIBUTING.md` 删掉教人用 release-cut 与 Homebrew 的两节。保留 `tests/tools/repro-orchestration-long-prompt.mjs` 与 `repro-terminal-send-submit.mjs`（仍登记在可靠性门禁里）、`zustand-selector-fanout-benchmark.mjs`（`check:zustand-selector-fanout` 用）。`ref/` 里镜像的上游工程篇（如 `windows-signing-runner-time.md`、`renderer-agent-status-performance.md`、`spinner-rendering-performance.md`、`windows-daemon-host-relocation.md`）描述的是上游 Orca 的命令，本仓已不可跑 |
+| **连带** | `unit-tests.yml` 去掉安装 `@orca-cloud/relay` 的步骤；`pr-code-change-scope.mjs` 清空 `DESKTOP_IRRELEVANT_PREFIXES`；`check-root-directory-entries.mjs` 清空 `REVIEWED_ROOT_ENTRIES`；`check-changed-code-quality.mjs` 清空 cloud 前缀；oxlint / oxfmt 配置去掉 `cloud/**`、`mobile/**` ignore；`tests/e2e/relay-region-*.unit.test.ts` 删除；读被删 workflow 的 config 测试删 25 份、改 11 份（含两条基线：Windows shim 允许名单、wildcard 绑定计数钉子）；`reliability-gates.jsonc` 删 3 条登记（relay 区域切换、Windows 主进程崩溃存活、打包浏览器混版）；`ci-shard-timings.json` 清掉已删测试 | — |
+
 ### 文档（本轮原 `bw-orca` 落仓）
 
 产品文档已换成 **Workbench 旧 `main`**（导入时 tip：`25f38bc80211f9656e229ef31b0e5a10ae28226a`；该路线现归档为 `archive/main-pre-orca`），正本在仓根 `AGENTS.md` / `CONTEXT.md` / `README.md` / `CLAUDE.md` 与 `docs/`。
@@ -169,6 +184,6 @@ pnpm run dev:workbench
 
 ## 待迁移的工程边界
 
-- `.github/workflows/docs.yml` 仍指向已删的 `docs/site`，交由 CI/CD 迁移处理，不能作为 BW 文档链已就绪的证据。（`config/scripts/check-readme-local-links.mjs` 已容错 `docs/readme/` 缺失，在本分支通过。）
+- Orca 文档站 workflow（`docs.yml`）已随「仓级资产与 CI」一节删除；BW 没有文档站链，不能把任何现存 workflow 当作文档链已就绪的证据。（`config/scripts/check-readme-local-links.mjs` 已容错 `docs/readme/` 缺失，在本分支通过。）
 - BW 的 CI/CD、独立评审与正式出包链需按 Electron 验证；源码中保留旧入口不代表已经可交付。Workbench 安装版暂用安装包手动更新，更新服务按产品身份阻断 Orca 的自动检查、版本选择、下载和安装；打包更新元数据指向 BW 仓。独立自动更新链仍随交付自动化遗留项处理。
 - `standard/` 的路径解析只覆盖部分入口，知识库分类、保存与工作树来源仍需在对应特性迁移时重新决策；当前行为边界见 [architecture](../docs/architecture.md)。

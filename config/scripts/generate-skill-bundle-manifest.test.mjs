@@ -14,7 +14,6 @@ import {
 import { tmpdir } from 'node:os'
 import path from 'node:path'
 import { afterEach, describe, expect, it } from 'vitest'
-import { parse } from 'yaml'
 import { observeSkillPackage } from '../../src/main/skills/skill-package-identity'
 import {
   appendReleaseRow,
@@ -551,45 +550,5 @@ describe('skill bundle manifest generator', () => {
     }).trim()
 
     expect(gitTreeSha(files)).toBe(expected)
-  })
-
-  // Why: every step in the cut job shares one workspace and one index, so any of
-  // them can stage the content-addressed artifacts and the bump step's own commit
-  // then carries them into the tag. Grepping the workflow cannot see a path built
-  // from an env var, a composite action, or concatenation, so the cut asserts its
-  // own index before committing; this test pins that guard and adds a tripwire
-  // for the literal spellings.
-  it('keeps the whole release-cut job off skill regeneration', async () => {
-    const workflow = parse(
-      await readFile(path.join(REPO_ROOT, '.github/workflows/release-cut.yml'), 'utf8')
-    )
-    const runSteps = workflow.jobs.cut.steps
-      .filter((step) => typeof step.run === 'string')
-      .map((step) => ({ name: step.name ?? '(unnamed)', run: step.run.replace(/^\s*#.*$/gm, '') }))
-    const bumpStep = runSteps.find((step) => step.name === 'Bump package.json and tag')
-
-    // The load-bearing check: whatever staged it and however the commit was
-    // spelled, only these two paths may ship. Asserted on the commit rather than
-    // the index because `git commit -a/-i/--only/<pathspec>` bypasses the index.
-    // -F is part of the contract; without it `.` admits a path like packageXjson.
-    // Flags pinned, not just the command: a `--diff-filter` slipped in here would
-    // silence modifications, and dropping -m makes a merge commit report nothing.
-    expect(bumpStep.run).toMatch(
-      /git diff-tree --no-commit-id --name-only -r -m --first-parent HEAD\s*\|\s*grep -vxF -e 'package\.json' -e 'resources\/skills\/release-mapping\.json'/
-    )
-    expect(bumpStep.run.indexOf('grep -vxF')).toBeLessThan(bumpStep.run.indexOf('git tag'))
-    // ...and that it aborts. A guard degraded to a warning still reads as covered.
-    // The exit must be inside the guard's own block, not borrowed from a later one.
-    expect(bumpStep.run).toMatch(
-      /if \[\[ -n "\$committed" \]\]; then(?:(?!\bfi\b)[\s\S])*exit 1[\s\S]*?fi/
-    )
-    // Tripwire only. A step that merely READS this directory may be added here;
-    // one that writes or stages it must not, and the guard above will reject it.
-    expect(runSteps.filter((s) => /resources[/\\]skills/.test(s.run)).map((s) => s.name)).toEqual([
-      'Bump package.json and tag'
-    ])
-    for (const step of runSteps) {
-      expect(step.run, step.name).not.toMatch(/--write|generate:skill-bundle-manifest/)
-    }
   })
 })

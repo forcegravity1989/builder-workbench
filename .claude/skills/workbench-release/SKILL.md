@@ -13,7 +13,7 @@ description: Use when 在 Builder Workbench 仓请求生成 Windows Workbench �
 
 - 用户说“出包”“打 Windows Workbench 包”时执行出包流程。
 - 用户说“发版本”“发布 Release”时执行发布流程。
-- 不用于 Orca 正式版的 `.github/workflows/release-cut.yml`，也不替代普通 commit、PR 或合入流程。
+- 不是 Orca 正式版发版链的替身（那条 `release-cut` 链已于 2026-10-09 从本仓删除），也不替代普通 commit、PR 或合入流程。
 
 ## 3. 前置依赖检查
 

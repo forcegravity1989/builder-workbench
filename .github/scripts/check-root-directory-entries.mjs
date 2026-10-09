@@ -13,9 +13,9 @@ function readRootEntries(sha) {
   return stdout.split('\0').filter(Boolean)
 }
 
-// Why: the Cloud workspace import is the one reviewed root addition; it stays
-// listed until it lands on main, after which the base tree carries it.
-const REVIEWED_ROOT_ENTRIES = new Set(['cloud'])
+// Why kept empty: a reviewed root addition is listed here only until it lands on
+// main; after that the base tree carries it and the entry comes out again.
+const REVIEWED_ROOT_ENTRIES = new Set()
 
 function checkRootDirectoryEntries(argv) {
   if (argv.length !== 2) {
