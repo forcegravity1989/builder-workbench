@@ -1,0 +1,265 @@
+/* 批量接入原型的壳示意与叠层增量。
+ * 颜色/间距/组件类来自 src/renderer/src/workbench/ 的三份样式表（相对路径引用，不复制）；
+ * 这里只写两类东西：① Orca 壳的静态示意（.pt-*，原型专用，不进产品）；
+ * ② 批量接入新增的叠层类（.ob-table 等，实现时并入 workbench-onboard.css）。 */
+
+html,
+body {
+  height: 100%;
+  margin: 0;
+}
+body {
+  font-family:
+    -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, "PingFang SC", "Microsoft YaHei",
+    sans-serif;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--color-text);
+  background: var(--color-bg);
+  -webkit-font-smoothing: antialiased;
+}
+button,
+input,
+textarea {
+  font: inherit;
+}
+a {
+  color: inherit;
+  text-decoration: none;
+}
+.wb-btn {
+  text-decoration: none;
+}
+
+/* ---------- ① Orca 壳示意（原型专用） ---------- */
+.pt-shell {
+  display: flex;
+  min-height: 100%;
+}
+.pt-sidebar {
+  width: 220px;
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 8px;
+  background: var(--sidebar);
+  border-right: 1px solid var(--border);
+}
+.pt-proj {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 8px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--color-text);
+  text-align: left;
+  cursor: pointer;
+}
+.pt-proj:hover {
+  background: color-mix(in srgb, var(--color-text) 8%, transparent);
+}
+.pt-avatar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  flex: none;
+  border-radius: 6px;
+  background: var(--color-accent);
+  color: #fff;
+  font-size: 12px;
+  font-weight: 600;
+}
+.pt-proj-name {
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+.pt-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.pt-nav-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 8px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: color-mix(in srgb, var(--color-text) 60%, transparent);
+  font-size: 13px;
+  font-weight: 500;
+  text-align: left;
+  cursor: pointer;
+}
+.pt-nav-item svg {
+  width: 16px;
+  height: 16px;
+  flex: none;
+  opacity: 0.45;
+}
+.pt-nav-item:hover {
+  background: color-mix(in srgb, var(--color-text) 8%, transparent);
+}
+.pt-section {
+  margin-top: 12px;
+  padding: 4px 8px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: color-mix(in srgb, var(--color-text) 45%, transparent);
+}
+.pt-repo {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 8px;
+  border-radius: 6px;
+  font-size: 12.5px;
+  color: color-mix(in srgb, var(--color-text) 80%, transparent);
+}
+.pt-repo.is-active {
+  background: var(--worktree-sidebar-accent);
+  color: var(--color-text);
+}
+.pt-repo svg {
+  width: 14px;
+  height: 14px;
+  flex: none;
+  opacity: 0.5;
+}
+.pt-main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ---------- ② 批量接入增量（实现时并入 workbench-onboard.css） ---------- */
+.wb-onboard.is-batch {
+  width: min(980px, 100%);
+}
+.wb-onboard .ob-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12.5px;
+}
+.wb-onboard .ob-table th {
+  padding: 6px 10px;
+  border-bottom: 1px solid var(--color-divider);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-align: left;
+  text-transform: uppercase;
+  color: color-mix(in srgb, var(--color-text) 55%, transparent);
+}
+.wb-onboard .ob-table td {
+  padding: 7px 10px;
+  border-bottom: 1px solid color-mix(in srgb, var(--color-text) 6%, transparent);
+  vertical-align: middle;
+}
+.wb-onboard .ob-table tr.is-muted td {
+  opacity: 0.55;
+}
+.wb-onboard .ob-table input[type="checkbox"] {
+  width: 14px;
+  height: 14px;
+  margin: 0;
+  accent-color: var(--color-accent);
+  cursor: pointer;
+}
+.wb-onboard .ob-table input[type="checkbox"]:disabled {
+  cursor: not-allowed;
+}
+.wb-onboard .ob-table .wb-ob-input {
+  min-height: 28px;
+  padding: 4px 8px;
+}
+.wb-onboard .ob-cell-name {
+  font-weight: 500;
+}
+.wb-onboard .ob-cell-sub {
+  font-size: 11px;
+  color: color-mix(in srgb, var(--color-text) 50%, transparent);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.wb-onboard .ob-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+}
+.wb-onboard .ob-status .dot {
+  width: 8px;
+  height: 8px;
+  flex: none;
+  border-radius: 50%;
+  background: var(--color-neutral-400);
+}
+.wb-onboard .ob-status.is-done .dot {
+  background: var(--color-success);
+}
+.wb-onboard .ob-status.is-doing .dot {
+  background: var(--color-warning);
+  animation: ob-pulse 1.2s ease-in-out infinite;
+}
+.wb-onboard .ob-status.is-fail .dot {
+  background: var(--color-danger);
+}
+.wb-onboard .ob-status.is-fail {
+  color: var(--color-danger-deep);
+  white-space: normal;
+}
+@keyframes ob-pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.35;
+  }
+}
+.wb-onboard .ob-row-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.wb-onboard .ob-row-head .ob-note {
+  line-height: 1.5;
+}
+.wb-onboard .ob-actions .ob-summary {
+  margin-right: auto;
+  align-self: center;
+  font-size: 12px;
+  color: color-mix(in srgb, var(--color-text) 55%, transparent);
+}
+.wb-onboard .ob-progress {
+  height: 4px;
+  border-radius: 2px;
+  overflow: hidden;
+  background: var(--color-neutral-200);
+}
+.wb-onboard .ob-progress-fill {
+  height: 100%;
+  border-radius: 2px;
+  background: var(--color-accent);
+}
+.wb-onboard .ob-table .ob-log {
+  margin-top: 6px;
+}
+.wb-onboard .ob-hint {
+  font-size: 11.5px;
+  color: color-mix(in srgb, var(--color-text) 55%, transparent);
+}

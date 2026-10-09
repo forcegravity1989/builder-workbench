@@ -1,0 +1,219 @@
+<!doctype html>
+<html lang="zh" data-skin="ds" data-theme="claude">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>BW · 项目墙（批量接入后）</title>
+  <link rel="stylesheet" href="../../../../src/renderer/src/workbench/workbench-tokens.css">
+  <link rel="stylesheet" href="../../../../src/renderer/src/workbench/workbench-onboard.css">
+  <link rel="stylesheet" href="../../../../src/renderer/src/workbench/workbench-wall.css">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="pt-shell">
+  <aside class="pt-sidebar" aria-label="Orca 侧栏示意">
+    <a class="pt-proj" href="wall.html" title="项目墙"><span class="pt-avatar">W</span><span class="pt-proj-name">Workbench</span></a>
+    <nav class="pt-nav" aria-label="项目内导航">
+      <a class="pt-nav-item" href="#overview"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><rect x="3" y="3" width="7" height="9" rx="1"></rect><rect x="14" y="3" width="7" height="5" rx="1"></rect><rect x="14" y="12" width="7" height="9" rx="1"></rect><rect x="3" y="16" width="7" height="5" rx="1"></rect></svg>总览</a>
+      <a class="pt-nav-item" href="#plan"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><rect x="3" y="4" width="18" height="17" rx="2"></rect><path d="M3 10h18M8 2v4M16 2v4"></path></svg>计划</a>
+      <a class="pt-nav-item" href="#tasks"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><path d="M9 11l2 2 4-4"></path><rect x="3" y="3" width="18" height="18" rx="2"></rect></svg>任务</a>
+      <a class="pt-nav-item" href="#acceptance"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><rect x="5" y="3" width="14" height="18" rx="2"></rect><path d="M9 3v2h6V3M9 13l2 2 4-4"></path></svg>验收</a>
+      <a class="pt-nav-item" href="#automations"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><circle cx="12" cy="12" r="9"></circle><path d="M12 7v5l3 2"></path></svg>自动化</a>
+      <a class="pt-nav-item" href="#knowledge"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><path d="M4 4h7a2 2 0 0 1 2 2v14a1 1 0 0 0-1-1H4zM20 4h-7a2 2 0 0 0-2 2v14a1 1 0 0 1 1-1h8z"></path></svg>知识库</a>
+    </nav>
+    <div class="pt-section">Projects</div>
+    <div class="pt-repo is-active"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path></svg>Workbench</div>
+    <div class="pt-repo"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path></svg>clawd</div>
+    <div class="pt-repo"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path></svg>aihot</div>
+    <div class="pt-repo"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path></svg>linkcheck-md</div>
+    <div class="pt-repo"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path></svg>workflowhub</div>
+    <div class="pt-repo"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path></svg>bw-e2e-sandbox</div>
+  </aside>
+
+  <main class="pt-main">
+    <div class="wb-wall-page" aria-label="项目墙" data-screen="wall">
+      <div class="wb-wall">
+        <header class="page-head">
+          <h1>项目墙</h1>
+          <div class="page-actions">
+            <button type="button" class="wb-btn wb-btn-secondary" title="刷新项目数据">刷新</button>
+            <a class="wb-btn wb-btn-primary" href="../prototype.html">+ 接入项目</a>
+            <button type="button" class="wb-btn wb-btn-ghost">关闭</button>
+          </div>
+        </header>
+
+        <div class="healthbar">
+          <span class="bar-label">健康概览</span>
+          <span class="health-group"><span class="dot dot-green"></span>平稳 0</span>
+          <span class="health-group"><span class="dot dot-amber"></span>需要关注 0</span>
+          <span class="health-group"><span class="dot dot-red"></span>异常 0</span>
+          <span class="health-group"><span class="dot"></span>无数据 6</span>
+          <span class="ml-auto hint">共 6 个项目</span>
+        </div>
+
+        <div class="wall-grid">
+          <div class="pcard is-active">
+            <button type="button" class="pcard-main">
+              <div class="pcard-top">
+                <span class="wb-tag wb-tag-outline wb-mono">版本未定</span>
+                <span class="wb-tag wb-tag-neutral">本周</span>
+                <span class="wb-tag wb-tag-accent">当前</span>
+                <span class="spacer" style="flex: 1"></span>
+                <span class="dot" title="无数据"></span><span>无数据</span>
+              </div>
+              <div class="pcard-name">Workbench</div>
+              <div class="pcard-oneliner">用 AI 时代的方式搭管理体系，不只是一块看板</div>
+              <div class="pcard-meta"><span>版本目标:还没定</span><span>仓里还没有发版记录</span><span>1 个代码仓</span></div>
+              <div class="pcard-bar" aria-hidden="true"><div class="pcard-bar-fill" style="width: 0%"></div></div>
+            </button>
+            <div class="pcard-repos">
+              <div class="pcard-repos-head">代码仓</div>
+              <ul class="pcard-repo-list">
+                <li class="pcard-repo-row">
+                  <button type="button" class="pcard-repo-link"><span class="pcard-repo-name">Workbench</span><span class="pcard-repo-url">forcegravity1989/builder-workbench</span></button>
+                  <button type="button" class="wb-btn wb-btn-ghost pcard-repo-remove">删除</button>
+                </li>
+              </ul>
+              <button type="button" class="wb-btn wb-btn-secondary pcard-add-repo">+ 代码仓</button>
+              <button type="button" class="wb-btn wb-btn-secondary pcard-add-repo">编辑名片</button>
+            </div>
+          </div>
+
+          <div class="pcard">
+            <button type="button" class="pcard-main">
+              <div class="pcard-top">
+                <span class="wb-tag wb-tag-outline wb-mono">版本未定</span>
+                <span class="wb-tag wb-tag-neutral">本周</span>
+                <span class="spacer" style="flex: 1"></span>
+                <span class="dot" title="无数据"></span><span>无数据</span>
+              </div>
+              <div class="pcard-name">clawd</div>
+              <div class="pcard-oneliner">桌面宠物接 Workbench 会话状态</div>
+              <div class="pcard-meta"><span>版本目标:还没定</span><span>仓里还没有发版记录</span><span>1 个代码仓</span></div>
+              <div class="pcard-bar" aria-hidden="true"><div class="pcard-bar-fill" style="width: 0%"></div></div>
+            </button>
+            <div class="pcard-repos">
+              <div class="pcard-repos-head">代码仓</div>
+              <ul class="pcard-repo-list">
+                <li class="pcard-repo-row">
+                  <button type="button" class="pcard-repo-link"><span class="pcard-repo-name">clawd</span><span class="pcard-repo-url">forcegravity1989/clawd</span></button>
+                  <button type="button" class="wb-btn wb-btn-ghost pcard-repo-remove">删除</button>
+                </li>
+              </ul>
+              <button type="button" class="wb-btn wb-btn-secondary pcard-add-repo">+ 代码仓</button>
+              <button type="button" class="wb-btn wb-btn-secondary pcard-add-repo">编辑名片</button>
+            </div>
+          </div>
+
+          <div class="pcard">
+            <button type="button" class="pcard-main">
+              <div class="pcard-top">
+                <span class="wb-tag wb-tag-outline wb-mono">版本未定</span>
+                <span class="wb-tag wb-tag-neutral">本周</span>
+                <span class="spacer" style="flex: 1"></span>
+                <span class="dot" title="无数据"></span><span>无数据</span>
+              </div>
+              <div class="pcard-name">aihot</div>
+              <div class="pcard-oneliner">AI 热点日报，每天一页</div>
+              <div class="pcard-meta"><span>版本目标:还没定</span><span>仓里还没有发版记录</span><span>1 个代码仓</span></div>
+              <div class="pcard-bar" aria-hidden="true"><div class="pcard-bar-fill" style="width: 0%"></div></div>
+            </button>
+            <div class="pcard-repos">
+              <div class="pcard-repos-head">代码仓</div>
+              <ul class="pcard-repo-list">
+                <li class="pcard-repo-row">
+                  <button type="button" class="pcard-repo-link"><span class="pcard-repo-name">aihot</span><span class="pcard-repo-url">forcegravity1989/aihot</span></button>
+                  <button type="button" class="wb-btn wb-btn-ghost pcard-repo-remove">删除</button>
+                </li>
+              </ul>
+              <button type="button" class="wb-btn wb-btn-secondary pcard-add-repo">+ 代码仓</button>
+              <button type="button" class="wb-btn wb-btn-secondary pcard-add-repo">编辑名片</button>
+            </div>
+          </div>
+
+          <div class="pcard">
+            <button type="button" class="pcard-main">
+              <div class="pcard-top">
+                <span class="wb-tag wb-tag-outline wb-mono">版本未定</span>
+                <span class="wb-tag wb-tag-neutral">本周</span>
+                <span class="spacer" style="flex: 1"></span>
+                <span class="dot" title="无数据"></span><span>无数据</span>
+              </div>
+              <div class="pcard-name">linkcheck-md</div>
+              <div class="pcard-oneliner">(还没填「想做什么」)</div>
+              <div class="pcard-meta"><span>版本目标:还没定</span><span>仓里还没有发版记录</span><span>1 个代码仓</span></div>
+              <div class="pcard-bar" aria-hidden="true"><div class="pcard-bar-fill" style="width: 0%"></div></div>
+            </button>
+            <div class="pcard-repos">
+              <div class="pcard-repos-head">代码仓</div>
+              <div class="pcard-charter-note"><span>名片待合入 · PR #7</span><button type="button" class="wb-btn wb-btn-ghost wb-btn-sm">查看</button></div>
+              <ul class="pcard-repo-list">
+                <li class="pcard-repo-row">
+                  <button type="button" class="pcard-repo-link"><span class="pcard-repo-name">linkcheck-md</span><span class="pcard-repo-url">forcegravity1989/linkcheck-md</span></button>
+                  <button type="button" class="wb-btn wb-btn-ghost pcard-repo-remove">删除</button>
+                </li>
+              </ul>
+              <button type="button" class="wb-btn wb-btn-secondary pcard-add-repo">+ 代码仓</button>
+              <button type="button" class="wb-btn wb-btn-secondary pcard-add-repo">编辑名片</button>
+            </div>
+          </div>
+
+          <div class="pcard">
+            <button type="button" class="pcard-main">
+              <div class="pcard-top">
+                <span class="wb-tag wb-tag-outline wb-mono">版本未定</span>
+                <span class="wb-tag wb-tag-neutral">本周</span>
+                <span class="spacer" style="flex: 1"></span>
+                <span class="dot" title="无数据"></span><span>无数据</span>
+              </div>
+              <div class="pcard-name">WorkflowHub</div>
+              <div class="pcard-oneliner">(还没填「想做什么」)</div>
+              <div class="pcard-meta"><span>版本目标:还没定</span><span>仓里还没有发版记录</span><span>1 个代码仓</span></div>
+              <div class="pcard-bar" aria-hidden="true"><div class="pcard-bar-fill" style="width: 0%"></div></div>
+            </button>
+            <div class="pcard-repos">
+              <div class="pcard-repos-head">代码仓</div>
+              <div class="pcard-charter-note"><span>名片待合入 · PR #8</span><button type="button" class="wb-btn wb-btn-ghost wb-btn-sm">查看</button></div>
+              <ul class="pcard-repo-list">
+                <li class="pcard-repo-row">
+                  <button type="button" class="pcard-repo-link"><span class="pcard-repo-name">WorkflowHub</span><span class="pcard-repo-url">forcegravity1989/workflowhub</span></button>
+                  <button type="button" class="wb-btn wb-btn-ghost pcard-repo-remove">删除</button>
+                </li>
+              </ul>
+              <button type="button" class="wb-btn wb-btn-secondary pcard-add-repo">+ 代码仓</button>
+              <button type="button" class="wb-btn wb-btn-secondary pcard-add-repo">编辑名片</button>
+            </div>
+          </div>
+
+          <div class="pcard">
+            <button type="button" class="pcard-main">
+              <div class="pcard-top">
+                <span class="wb-tag wb-tag-outline wb-mono">版本未定</span>
+                <span class="wb-tag wb-tag-neutral">本周</span>
+                <span class="spacer" style="flex: 1"></span>
+                <span class="dot" title="无数据"></span><span>无数据</span>
+              </div>
+              <div class="pcard-name">bw-e2e-sandbox</div>
+              <div class="pcard-oneliner">Workbench 验证用的沙箱仓</div>
+              <div class="pcard-meta"><span>版本目标:还没定</span><span>仓里还没有发版记录</span><span>1 个代码仓</span></div>
+              <div class="pcard-bar" aria-hidden="true"><div class="pcard-bar-fill" style="width: 0%"></div></div>
+            </button>
+            <div class="pcard-repos">
+              <div class="pcard-repos-head">代码仓</div>
+              <ul class="pcard-repo-list">
+                <li class="pcard-repo-row">
+                  <button type="button" class="pcard-repo-link"><span class="pcard-repo-name">bw-e2e-sandbox</span><span class="pcard-repo-url">yuzhup/bw-e2e-sandbox</span></button>
+                  <button type="button" class="wb-btn wb-btn-ghost pcard-repo-remove">删除</button>
+                </li>
+              </ul>
+              <button type="button" class="wb-btn wb-btn-secondary pcard-add-repo">+ 代码仓</button>
+              <button type="button" class="wb-btn wb-btn-secondary pcard-add-repo">编辑名片</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+</body>
+</html>
