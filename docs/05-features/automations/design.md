@@ -38,7 +38,7 @@ promptSnapshot?: string | null // 派发时快照最终递交的完整提示词
 // AutomationRunStatus 追加 'skipped_overlap'
 ```
 
-「已结束」不存储：`deriveLifecycleState(automation, now)` 现算——`onceAt + 宽限 < now`，或 `scheduledRunCount ≥ COUNT`（COUNT 从 rrule 解析）。满足四铁律「杀进程重开数字能重新计算」；`scheduledRunCount` 与 `nextRunAt` 同级，是持久化推导源。
+「已结束」不存储：`deriveLifecycleState(automation, now)` 现算——一次性：`scheduledRunCount ≥ 1`（已派发即终结，任何终态）或 `onceAt + 宽限 < now`（超宽限未跑）；循环：`scheduledRunCount ≥ COUNT`（COUNT 从 rrule 解析，无上限不因此终结）。满足四铁律「杀进程重开数字能重新计算」；`scheduledRunCount` 与 `nextRunAt` 同级，是持久化推导源。
 
 ## 调度解析与出现计算
 
@@ -51,13 +51,13 @@ promptSnapshot?: string | null // 派发时快照最终递交的完整提示词
 
 `evaluateDueRuns` 每行先过 `deriveLifecycleState`（finished 跳过）；`evaluateAutomation` 派发前：
 
-1. 一次性：`onceAt` 到点 → 复用宽限判定 → 派发或记 `skipped_missed`；不推进 `nextRunAt`（无下次）。
+1. 一次性：`onceAt` 到点 → 复用宽限判定 → 派发或记 `skipped_missed`；不推进 `nextRunAt`（无下次）。派发成功即 `scheduledRunCount = 1`，由派生状态终结；派发被拒不计次数，宽限内下个 tick 重试（同因拒绝已折叠），超宽限记 `skipped_missed` 后派生终结——错过与被拒两条路径在超宽限时统一落 `skipped_missed`，通知判定不因路径分叉。
 2. 并发：`concurrencyPolicy === 'skip'` 且该任务存在非终态运行（pending/dispatching/dispatched）→ 记 `skipped_overlap`，复用 `repeatSkip` 同因折叠；不消耗 COUNT 额度。
-3. 次数：派发成功后 `scheduledRunCount + 1`；达到 COUNT 后由派生自然终结。
+3. 次数：派发成功后 `scheduledRunCount + 1`；达到 COUNT 后由派生自然终结。改大上限复活无特殊处理：`nextRunAt` 已过期就按常规宽限判定补跑或记 `skipped_missed` 后推进。
 4. 快照：dispatch 时把最终提示词（含 oneShotPrompt 合并、含携带的上次结果）写入 `promptSnapshot`。
 5. 携带：`carryLastRunOutput` 开启时，取该任务最近一次 `completed` 运行的 `outputSnapshot` 以固定格式附于提示词末尾；无快照如实不附。
 
-手动 `runNow` 不检查并发策略、不消耗 COUNT 额度（人明确要跑）；仍写快照。
+手动 `runNow` 不检查并发策略、不递增 `scheduledRunCount`（人明确要跑；试跑不吃掉一次性机会与次数额度，启用后到点照常触发）；仍写快照。
 
 ## 生成会话编排
 
@@ -82,7 +82,7 @@ promptSnapshot?: string | null // 派发时快照最终递交的完整提示词
 
 ## 错误处理
 
-- 一次性超宽限：`skipped_missed` + 派生终结，记录保留。
+- 一次性超宽限：`skipped_missed` + 派生终结，记录保留，并按该任务通知判定告知（缺省 'all'），不静默。
 - `skipped_overlap` 同因折叠，防高频刷爆历史（沿用拒绝合并）。
 - Welink 推送失败 ≠ 运行失败，分开记录。
 - 外部 provider 不支持新字段：如实降级显示。
