@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="zh">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>客户资料导入工具 · Workbench 设计提案</title>
+    <link rel="stylesheet" href="../../../04-design-system/styles.css" />
+    <link rel="stylesheet" href="prototype.css" />
+  </head>
+  <body>
+    <div class="proposal-bar" aria-label="原型辅助工具">
+      <div class="proposal-label">
+        <span class="proposal-dot"></span><strong>设计提案</strong
+        ><span class="muted">· 示例数据</span>
+      </div>
+      <div class="proposal-controls">
+        <label for="scenario">演示场景</label
+        ><select id="scenario" class="input">
+          <option value="blocked">当前受阻 · 2 / 3</option>
+          <option value="empty">首次打开 · 无数据</option>
+          <option value="repaired">修复后 · 待人确认</option></select
+        ><button class="btn btn-ghost" data-action="reset">重置</button
+        ><button class="btn btn-ghost" data-action="design">设计说明</button>
+      </div>
+    </div>
+    <div class="app-shell">
+      <aside class="sidebar app-sidebar" aria-label="项目导航">
+        <div class="brand"><span class="brand-mark">W</span><strong>Workbench</strong></div>
+        <div class="project-switch">
+          <span class="project-icon" aria-hidden="true">客</span>
+          <div><strong>客户资料导入工具</strong><span>内部工具 · 2 位 Builder</span></div>
+        </div>
+        <div class="sidebar-section">项目</div>
+        <nav id="navigation"></nav>
+        <div class="sidebar-section worktree-label">原生执行</div>
+        <button class="sidebar-item native-entry" data-action="session">
+          <span data-icon="terminal"></span><span>导入映射修复</span><span class="count">1</span>
+        </button>
+        <div class="sidebar-bottom">
+          <span class="avatar avatar-sm">林</span>
+          <div><strong>林舟</strong><span>项目负责人</span></div>
+          <span class="mono">本地</span>
+        </div>
+      </aside>
+      <div class="workspace">
+        <header class="workspace-top">
+          <div class="breadcrumbs">
+            <span>客户资料导入工具</span><span class="muted">/</span
+            ><strong id="breadcrumb">总览</strong>
+          </div>
+          <div class="top-right">
+            <span class="version-marker">v0.3</span><span class="muted">10 月 9 日，周五</span>
+          </div>
+        </header>
+        <main id="main" tabindex="-1"></main>
+      </div>
+    </div>
+    <dialog id="modal" aria-labelledby="modal-title"><div id="modal-content"></div></dialog>
+    <div id="toast" role="status" aria-live="polite" hidden></div>
+    <script src="prototype.js"></script>
+  </body>
+</html>

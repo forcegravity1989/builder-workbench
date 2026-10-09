@@ -4,6 +4,13 @@
 >
 > **维护约定**：供人审议产品方向、未来模型恢复背景时阅读；这里只保存外部研究、仓库基线及研究假设，不替代产品原则、特性规格或验收。结构为阅读地图、用户问题、新发现、BW 对照、试点和未决问题。来源或试点结果改变时更新；研究截止 2026-10-09。Markdown 为内容正源，HTML 为可再生阅读视图；建议尚未获得产品决定授权。
 
+## 两份独立阅读文件
+
+- **[完整总报告](report.html)**：本页结论与七份专题合为一个离线 HTML，样式和阅读交互均在文件内；可先读结论，再展开专题。原始引文和钉提交的仓库证据需要联网查看。
+- **[新的高保真原型](../../05-features/overview-metrics/ai-native-delivery-proposal/prototype.html)**：独立的跨屏讨论提案，用一条虚构的资料导入交付故事，让总览、计划、验收与指标共享同一结果。可编辑范围、处理阻塞、查证据并由人记录决定；示例数据和模拟宿主能力均有标识。它不替换当前已确认的原型或规格。
+
+原型的目的是检验“是否更容易做出下一步决定”，不是预先批准新功能。单文件交付便于保存和转交；内容与可编辑原型源码仍留在仓内对应目录。
+
 ## 阅读地图：七份专题，不把一篇文章当行业共识
 
 | 专题 | 重点回答什么 | 阅读入口 |
@@ -113,11 +120,13 @@ METR 2026 年研究提醒我们，AI 会改变任务组合；当前任务做得�
 
 先读本页的用户问题、仓库线索、未决问题，再读相关专题 Markdown；涉及新决定时打开原始来源核对日期和上下文。厂商推荐、内部自述、实验结果、我们的建议，以及 BW 实际交付是不同层次。不要从截图、原型或这份研究推断产品已实现。
 
-HTML 共用 `report.css`，通过 `render.mjs` 从本目录 Markdown 生成。仓内依赖可用时：
+分篇 HTML 共用 `report.css`，通过 `render.mjs` 从本目录 Markdown 生成；独立总报告由 `bundle-report.mjs` 将同一组内容与样式打包进 `report.html`。仓内依赖可用时：
 
 ```sh
 node docs/10-reference/ai-native-delivery-2026/render.mjs
 node docs/10-reference/ai-native-delivery-2026/render.mjs --check
+node docs/10-reference/ai-native-delivery-2026/bundle-report.mjs
+node docs/10-reference/ai-native-delivery-2026/bundle-report.mjs --check
 ```
 
 独立工作树没有安装依赖时，可把本机已安装的 `marked/lib/marked.esm.js` 绝对路径作为第一个参数；不把本机路径写进内容正源。修改 Markdown 后再生成 HTML，`--check` 校验投影是否过期；头部 SHA-256 标识对应源文本，不证明事实永远有效。
