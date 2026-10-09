@@ -10,13 +10,12 @@
 
 | 层 | 位置 | 改动 |
 | --- | --- | --- |
-| 数据模型 | `src/shared/automations-types.ts` | `Automation` 追加 5 个可选字段；`AutomationRun` 追加 `promptSnapshot` 与 `skipped_overlap` 状态 |
+| 数据模型 | `src/shared/automations-types.ts` | `Automation` 追加 4 个可选字段；`AutomationRun` 追加 `promptSnapshot` 与 `skipped_overlap` 状态 |
 | 判别收口 | `src/shared/automation-schedule-kind.ts`（新） | `isOneShotAutomation`、`deriveLifecycleState` 等纯函数；「onceAt 优先于 rrule」的判断只写在这一处 |
 | 调度解析 | `automation-schedule-parsing.ts`、`automation-schedule-occurrences.ts` | RRULE 补 `FREQ=MINUTELY`、`INTERVAL`、`COUNT` 标准语义；间隔出现计算走 `dtstart + k×interval` 数学 |
 | 调度器 | `src/main/automations/service.ts`、`persistence/scheduling-automations/` | `evaluateAutomation` 收口处加生命周期/并发判断；`advanceAutomationNextRun` 扩展 |
 | 运行写入 | `automation-run-writer.ts`、`dispatch-refusal.ts` | 快照写入；`skipped_overlap` 复用拒绝合并机制 |
-| 原生编辑器 | `AutomationSchedulePicker.tsx`、`AutomationEditorDialog.tsx` | 调度选择器加一次性/每 N 分钟/每 N 小时；次数上限输入；并发/携带/通知设置项 |
-| 通知 | `src/main/automations/run-notifications.ts`（新） | 运行终态回调发 Electron 通知；Welink 推送为后续待办，不在本轮侵入面 |
+| 原生编辑器 | `AutomationSchedulePicker.tsx`、`AutomationEditorDialog.tsx` | 调度选择器加一次性/每 N 分钟/每 N 小时；次数上限输入；并发/携带设置项 |
 | 导入导出 | `src/shared/automation-portable-schema.ts`（新）+ CLI + 列表行菜单 | 纯新增 |
 | BW 叠层 | `workbench/version-cycle/ensure-composer-automation.ts`、`start-composer-session.ts`（新） | 复用 ensure/start-cycle-automation 模式 |
 | Skill | `standard/skills/automation-composer/SKILL.md`（新） | 按 `SKILL-MD-SPEC`；正源 `standard/` |
@@ -31,7 +30,6 @@ onceAt?: number                // 存在即一次性；目标时间戳；此时 
 scheduledRunCount?: number     // 已实际派发的调度次数；持久正本（历史会被保留策略裁剪，不能从 runs 数）
 concurrencyPolicy?: 'skip' | 'allow'   // 缺省 'skip'
 carryLastRunOutput?: boolean   // 缺省 false
-notifyOn?: 'none' | 'failure' | 'all'  // 缺省：一次性 'all'，循环 'failure'
 
 // AutomationRun 追加
 promptSnapshot?: string | null // 派发时快照最终递交的完整提示词
@@ -75,8 +73,7 @@ promptSnapshot?: string | null // 派发时快照最终递交的完整提示词
 
 ## 通知
 
-- 新增 `run-notifications.ts`，挂在 `markDispatchResult` 终态路径：按 `notifyOn` 判定 → 发 Electron Notification（点击跳运行详情）。通知异步发送，不阻塞状态机；发送失败写运行记录备注。
-- **Welink 群推送为后续待办**（整仓尚未接入 Welink，2026-10-09 拍板先不做）：届时加 webhook 通道与设置页 Connector 配置区，与系统通知同判定、两路都发；凭据形态届时核对，不进诊断日志。
+沿用现有会话完成通知链路（agent 完成通知：仓内悬浮窗与系统弹窗），本特性**不新建通知模块、不加字段**。按任务通知设置与 Welink webhook 为后续待办（整仓尚未接入 Welink，2026-10-09 拍板先沿用现有）：届时一并设计通知判定（失败与跳过分开算）、推送通道与设置页配置区，挂点在 `markDispatchResult` 终态路径；凭据形态届时核对，不进诊断日志。
 
 ## 导入导出
 
@@ -88,7 +85,6 @@ promptSnapshot?: string | null // 派发时快照最终递交的完整提示词
 
 - 一次性超宽限：`skipped_missed` + 派生终结，记录保留，并按该任务通知判定告知（缺省「每次都通知」），不静默。
 - `skipped_overlap` 同因折叠，防高频任务刷爆历史（沿用拒绝合并机制）。
-- 通知发送失败 ≠ 运行失败，分开记录。
 - 外部 provider 不支持新字段：如实降级显示。
 - 导入文件非法：指名字段报错，不部分导入。
 
@@ -106,3 +102,4 @@ promptSnapshot?: string | null // 派发时快照最终递交的完整提示词
 - **增量字段 vs schedule union 重构**（2026-10-09 会话裁定）：三个调度缺口里两个（间隔、次数）本就是 RRULE 标准语义，补解析器即可，不动结构；只有一次性需要 `onceAt` 字段。两种方案要改的 8 处消费者相同，重构只买到类型美观，代价是全量迁移加在 upstream 最活跃的字段上制造永久分歧。差别不大，维持原结构。**重构触发点**：出现第二个装不进 rrule 的调度形态（最可能是事件触发器）时，把一次性与它一起迁入 union，一次迁移摊平两件事。
 - **并发默认 skip**：存量行为从「允许并行」变「跳过」，视为修 bug（堆叠终端从来不是用户想要的），发布说明写明。
 - **COUNT 计实际派发**：跳过与错过不消耗额度，符合「跑五次」的直觉；RFC 5545 的出现次数语义不适用于 agent 执行场景。
+- **通知不新建链路**（2026-10-09 用户拍板）：现有会话完成通知（悬浮窗与系统弹窗）已覆盖「跑完知道」；按任务通知设置与 Welink 推送随 Welink 接入一并设计，不先造判定字段。数据模型因此从 5 字段减为 4 字段。

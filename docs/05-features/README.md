@@ -33,7 +33,7 @@
 
 ³ 第 6–7 行从已落地提交回写（2026-09-30），intent/spec 为草案，待人 gate。第 6 行接上原先「任务 CodeHub 支持」的占位，目录就是 [codehub/](codehub/)，范围含任务来源与计划/验收读写；spec 缺可点原型。第 7 行是 BW 开发者的 Windows 出包与 GitHub Release，无界面，操作契约在技能。明细见各自 STATUS。
 
-⁴ 第 8 行为既有能力的增强特性（2026-10-09 设计会话带入）：调度、运行与编辑器复用 Orca 原生 Automations，BW 叠层只加生成会话编排与增量字段（一次性/间隔/次数上限、并发跳过、提示词快照、携带上次结果、通知、导入导出）。intent/spec/design 为设计会话产出，**待人 gate**；未写实现代码，本表不表示能力已交付。明细见其 [STATUS](automations/STATUS.md)。
+⁴ 第 8 行为既有能力的增强特性（2026-10-09 设计会话带入）：调度、运行与编辑器复用 Orca 原生 Automations，BW 叠层只加生成会话编排与增量字段（一次性/间隔/次数上限、并发跳过、提示词快照、携带上次结果、导入导出；通知沿用现有完成通知）。intent/spec/design 为设计会话产出，**待人 gate**；未写实现代码，本表不表示能力已交付。明细见其 [STATUS](automations/STATUS.md)。
 
 ## 裁决与明细指引
 
