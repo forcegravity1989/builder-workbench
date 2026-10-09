@@ -16,7 +16,7 @@
 | 调度器 | `src/main/automations/service.ts`、`persistence/scheduling-automations/` | `evaluateAutomation` 收口处加生命周期/并发判断；`advanceAutomationNextRun` 扩展 |
 | 运行写入 | `automation-run-writer.ts`、`dispatch-refusal.ts` | 快照写入；`skipped_overlap` 复用拒绝合并机制 |
 | 原生编辑器 | `AutomationSchedulePicker.tsx`、`AutomationEditorDialog.tsx` | 调度选择器加一次性/每 N 分钟/每 N 小时；次数上限输入；并发/携带/通知设置项 |
-| 通知 | `src/main/automations/run-notifications.ts`（新）+ 设置页 | 运行终态回调发 Electron 通知与 Welink webhook |
+| 通知 | `src/main/automations/run-notifications.ts`（新） | 运行终态回调发 Electron 通知；Welink 推送为后续待办，不在本轮侵入面 |
 | 导入导出 | `src/shared/automation-portable-schema.ts`（新）+ CLI + 列表行菜单 | 纯新增 |
 | BW 叠层 | `workbench/version-cycle/ensure-composer-automation.ts`、`start-composer-session.ts`（新） | 复用 ensure/start-cycle-automation 模式 |
 | Skill | `standard/skills/automation-composer/SKILL.md`（新） | 按 `SKILL-MD-SPEC`；正源 `standard/` |
@@ -75,9 +75,8 @@ promptSnapshot?: string | null // 派发时快照最终递交的完整提示词
 
 ## 通知
 
-- 新增 `run-notifications.ts`，挂在 `markDispatchResult` 终态路径：按 `notifyOn` 判定 → 发 Electron Notification（点击跳运行详情）和 Welink webhook POST（文本消息）。
-- Welink 群机器人是全局设置，在设置页新增 Connector 配置区；凭据形态随实施核对，不进诊断日志。
-- 推送失败写运行记录的通知备注，补试一次为上限；通知异步发送，不阻塞状态机。
+- 新增 `run-notifications.ts`，挂在 `markDispatchResult` 终态路径：按 `notifyOn` 判定 → 发 Electron Notification（点击跳运行详情）。通知异步发送，不阻塞状态机；发送失败写运行记录备注。
+- **Welink 群推送为后续待办**（整仓尚未接入 Welink，2026-10-09 拍板先不做）：届时加 webhook 通道与设置页 Connector 配置区，与系统通知同判定、两路都发；凭据形态届时核对，不进诊断日志。
 
 ## 导入导出
 
@@ -89,7 +88,7 @@ promptSnapshot?: string | null // 派发时快照最终递交的完整提示词
 
 - 一次性超宽限：`skipped_missed` + 派生终结，记录保留，并按该任务通知判定告知（缺省「每次都通知」），不静默。
 - `skipped_overlap` 同因折叠，防高频任务刷爆历史（沿用拒绝合并机制）。
-- Welink 推送失败 ≠ 运行失败，分开记录。
+- 通知发送失败 ≠ 运行失败，分开记录。
 - 外部 provider 不支持新字段：如实降级显示。
 - 导入文件非法：指名字段报错，不部分导入。
 
