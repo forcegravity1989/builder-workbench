@@ -1,35 +1,130 @@
-/* Design prototype: all edits live in this page; no project records are written. */
+/* Prototype data is fictional. All edits stay in this page. */
 ;(() => {
-  const origin = Date.UTC(2026, 9, 12)
-  const days = 42
-  const dateAt = (day) => new Date(origin + day * 86400000).toISOString().slice(0, 10)
-  const dayAt = (date) => Math.round((Date.parse(`${date}T00:00:00Z`) - origin) / 86400000)
-  const shortDate = (day) => dateAt(day).slice(5).replace('-', '/')
-  const $ = (selector) => document.querySelector(selector)
-  const grid = $('#timeline-grid')
-  const scroller = $('.timeline-scroll')
-  const dialog = $('#plan-editor')
-  const form = $('#editor-form')
-  const bulk = $('#bulk-form')
-  let state = {
-    groups: [],
-    items: [],
-    milestones: [],
-    iterations: [{ title: '迭代 1', outcome: '', start: 0, end: 41 }],
-    changes: [],
-    mode: 'empty'
+  const origin = Date.UTC(2026, 6, 1)
+  const days = 92
+  const pixels = (characters) => Math.round(7 * characters + 5)
+  const columnIndex = (letters) =>
+    [...letters].reduce((value, letter) => value * 26 + letter.charCodeAt(0) - 64, 0) - 3
+  const columnWidths = Array(days)
+  const widthGroups = [
+    [2.35546875, 'C:J,AH:AL,AO:AP,BM:BN,BQ:BR,BT:BU'],
+    [3.35546875, 'M:O,Q,T:U,X,AB:AE,AR,AU:AW,BB:BE,BH:BL,BX:BY,CD:CE,CK:CN'],
+    [12.35546875, 'K,Y'],
+    [13.5, 'R,AF,AM,AS,AZ,BO,BV,CB,CG'],
+    [17.2109375, 'S'],
+    [17.85546875, 'L,P,V:W,Z:AA,AG,AQ,AT,AX:AY,BA,BF:BG,BP'],
+    [15.35546875, 'BS,BW,BZ:CA,CC,CH:CI'],
+    [28.5, 'AN'],
+    [5.85546875, 'CF'],
+    [18.35546875, 'CJ'],
+    [14.140625, 'CO'],
+    [14.35546875, 'CP']
+  ]
+  widthGroups.forEach(([width, ranges]) =>
+    ranges.split(',').forEach((range) => {
+      const [first, last = first] = range.split(':')
+      for (let day = columnIndex(first); day <= columnIndex(last); day++) {
+        columnWidths[day] = pixels(width)
+      }
+    })
+  )
+  if (
+    columnWidths.some((width) => !Number.isFinite(width)) ||
+    columnWidths.filter(Boolean).length !== days
+  ) {
+    throw new Error('日期列宽不完整')
   }
-  const history = []
+  const columnEdges = [0]
+  columnWidths.forEach((width) => columnEdges.push(columnEdges.at(-1) + width))
+  const chartWidth = columnEdges.at(-1)
+  const rowHeights = [
+    16.5, 14.6, 14.6, 16.5, 16.5, 60.65, 16.5, 16.5, 16.5, 16.5, 16.5, 16.5, 16.5, 45.65, 27.45,
+    58.3, 34.85
+  ].map((height) => Math.max(24, Math.round((height * 4) / 3)))
+  let layoutRowHeights = [...rowHeights]
+  const dateAt = (day) => new Date(origin + day * 86400000).toISOString().slice(0, 10)
+  const date = (day) => new Date(origin + day * 86400000)
+  const $ = (query) => document.querySelector(query)
+  const grid = $('#timeline-grid')
+  const scroll = $('.sheet-scroll')
+  const status = $('#gesture-status')
+  const menu = $('#node-menu')
+  const laneNames = [
+    '月份',
+    '日期',
+    '星期',
+    '各迭代目标',
+    'B版本',
+    '版本计划',
+    '质量策划',
+    '模型训练团队',
+    '设计',
+    '开发',
+    '测试',
+    '资料开发',
+    '安全送检',
+    '业务联调',
+    '适配昇腾',
+    '适配 GDE B 版本',
+    'GDE（含 DSP）转测试计划'
+  ]
+  const colors = ['#FFFFFF', '#FFC000', '#FFFF00', '#D9D9D9']
+  let sequence = 20
+  const nextId = () => `segment-${++sequence}`
   const selected = new Set()
-  const collapsed = new Set()
-  let scale = 'week'
-  let sequence = 0
-  let editing
+  const history = []
+  let activeLane = 8
   let cancelGesture
-  const id = () => `entry-${++sequence}`
+  let activeEdit
+  let statusTimer
+  let state = {
+    version: '示例版本',
+    items: [
+      { id: 'i1', lane: 3, start: 0, end: 29, name: '迭代一', node: false },
+      { id: 'i2', lane: 3, start: 30, end: 60, name: '迭代二', node: false },
+      { id: 'i3', lane: 3, start: 61, end: 91, name: '迭代三', node: false },
+      { id: 'd1', lane: 8, start: 3, end: 10, name: '界面草稿', node: false },
+      { id: 'd2', lane: 8, start: 25, end: 31, name: '第二轮调整', node: false },
+      { id: 'dev1', lane: 9, start: 14, end: 38, name: '核心流程实现', node: false },
+      { id: 't1', lane: 10, start: 39, end: 48, name: '流程核对', node: false },
+      { id: 't2', lane: 10, start: 60, end: 69, name: '补充验证', node: false },
+      { id: 'n1', lane: 4, start: 20, end: 26, name: '示例构建', node: false, color: colors[1] },
+      {
+        id: 'n2',
+        lane: 5,
+        start: 60,
+        end: 60,
+        name: '演示节点',
+        node: true,
+        color: colors[2],
+        textColor: '#C00000'
+      }
+    ]
+  }
   const snapshot = () => structuredClone(state)
-  const feedback = (message) => {
-    $('#feedback').textContent = message
+  const scheduled = (item) => Number.isInteger(item.start) && Number.isInteger(item.end)
+  function overlapReason(proposals) {
+    const candidates = proposals.map((proposal) => ({
+      ...proposal,
+      lane: proposal.entry?.lane ?? proposal.lane,
+      id: proposal.entry?.id ?? proposal.id
+    }))
+    const movingIds = new Set(candidates.map((item) => item.id).filter(Boolean))
+    const existing = state.items.filter((item) => scheduled(item) && !movingIds.has(item.id))
+    for (let index = 0; index < candidates.length; index++) {
+      const candidate = candidates[index]
+      if (
+        [...existing, ...candidates.slice(index + 1)].some(
+          (item) =>
+            item.lane === candidate.lane &&
+            candidate.start <= item.end &&
+            candidate.end >= item.start
+        )
+      ) {
+        return '同一泳道的时段不能重叠'
+      }
+    }
+    return ''
   }
   const element = (tag, className = '', text = '') => {
     const node = document.createElement(tag)
@@ -37,46 +132,42 @@
     node.textContent = text
     return node
   }
-  const button = (className, text, action) => {
-    const node = element('button', className, text)
-    node.type = 'button'
-    if (action) {
-      node.addEventListener('click', action)
+  function feedback(text = '', error = false) {
+    clearTimeout(statusTimer)
+    status.textContent = text
+    status.hidden = !text
+    status.classList.toggle('error', error)
+    if (text && !cancelGesture) {
+      statusTimer = setTimeout(
+        () => {
+          status.hidden = true
+        },
+        error ? 4000 : 2000
+      )
     }
-    return node
   }
-  const row = (className, content) => {
-    const node = element('div', `timeline-row ${className}`)
-    const rail = element('div', 'row-rail')
-    rail.append(typeof content === 'string' ? document.createTextNode(content) : content)
-    node.append(rail)
-    grid.append(node)
-    return node
-  }
-  const scheduled = (item) => Number.isInteger(item?.start) && Number.isInteger(item?.end)
-  function commit(before, message) {
+  function commit(before) {
+    if (JSON.stringify(before) === JSON.stringify(state)) {
+      return
+    }
     history.push(before)
     if (history.length > 30) {
       history.shift()
     }
-    state.changes.push(message)
     render()
-    feedback(`${message}；可撤销。`)
   }
-  function undo() {
-    if (cancelGesture) {
-      cancelGesture()
-      return
-    }
-    if (!history.length) {
-      return
-    }
-    state = history.pop()
-    selected.clear()
-    render()
-    feedback('已撤销上一步。')
+  function refreshSelection() {
+    grid.querySelectorAll('[data-item]').forEach((node) => {
+      const isSelected = selected.has(node.dataset.item)
+      node.classList.toggle('selected', isSelected)
+      node.setAttribute('aria-pressed', String(isSelected))
+    })
+    grid.querySelectorAll('.side-b[data-lane]').forEach((node) => {
+      node.classList.toggle('active-lane', Number(node.dataset.lane) === activeLane)
+    })
   }
-  function selectItem(item, extend) {
+  function select(item, extend = false) {
+    activeLane = item.lane
     if (!extend) {
       selected.clear()
     }
@@ -87,78 +178,63 @@
     }
     refreshSelection()
   }
-  function refreshSelection() {
-    $('#selection-toolbar').hidden = !selected.size
-    $('#selection-count').textContent = `已选 ${selected.size} 项`
-    grid.querySelectorAll('[data-item]').forEach((node) => {
-      node.classList.toggle('selected', selected.has(node.dataset.item))
-      node.setAttribute('aria-pressed', String(selected.has(node.dataset.item)))
-    })
-  }
-  function positionBar(node, item) {
-    if (!node) {
-      return
-    }
-    node.style.left = `calc(${(item.start / days) * 100}% + 3px)`
-    node.style.width = `calc(${((item.end - item.start + 1) / days) * 100}% - 6px)`
-    const label = node.querySelector('.bar-label')
-    if (label) {
-      label.textContent = `${shortDate(item.start)} — ${shortDate(item.end)}`
-    }
-    node.title = `${item.name || ''}\n${dateAt(item.start)} — ${dateAt(item.end)}`
-  }
-  const pointDay = (event, track) =>
-    Math.max(
-      0,
-      Math.min(
-        days - 1,
-        Math.floor(
-          (event.clientX - track.getBoundingClientRect().left) / (track.clientWidth / days)
-        )
-      )
+  function position(node, item) {
+    node.style.left = `${columnEdges[item.start]}px`
+    node.style.width = `${columnEdges[item.end + 1] - columnEdges[item.start]}px`
+    node.style.top = `${Math.max(1, Math.round((layoutRowHeights[item.lane] - 24) / 2))}px`
+    node.style.background = item.node || item.lane === 4 ? item.color || colors[0] : colors[0]
+    node.style.color = item.textColor || '#000000'
+    node.setAttribute(
+      'aria-label',
+      `${item.name || '新时段'}，${dateAt(item.start)} 至 ${dateAt(item.end)}`
     )
-  function gesture(event, node, track, preview, message, options = {}) {
-    const {
-      cleanup = () => {},
-      onStart = () => {},
-      onComplete = () => {},
-      describe = () => message
-    } = options
-    if (event.button !== 0 || event.shiftKey || cancelGesture) {
-      cleanup()
+  }
+  const rawDay = (event, track) => {
+    const x = event.clientX - track.getBoundingClientRect().left
+    if (x < 0) {
+      return Math.floor(x / columnWidths[0])
+    }
+    if (x >= chartWidth) {
+      return days + Math.floor((x - chartWidth) / columnWidths.at(-1))
+    }
+    let low = 0
+    let high = days
+    while (low + 1 < high) {
+      const middle = Math.floor((low + high) / 2)
+      if (columnEdges[middle] <= x) {
+        low = middle
+      } else {
+        high = middle
+      }
+    }
+    return low
+  }
+  const pointDay = (event, track) => Math.max(0, Math.min(days - 1, rawDay(event, track)))
+  function gesture(event, node, track, preview, describe, options = {}) {
+    if (event.button !== 0 || event.shiftKey || cancelGesture || activeEdit) {
+      options.cleanup?.()
       return
     }
     event.preventDefault()
     event.stopPropagation()
     const before = snapshot()
     const previousSelection = [...selected]
-    const hint = $('#gesture-feedback')
-    const idleHint = hint.textContent
     const initialX = event.clientX
-    const initialScroll = scroller.scrollLeft
-    const dayWidth = track.clientWidth / days
+    const initialPoint = rawDay(event, track)
     let current = event
     let started = false
     let invalid = ''
     let frame
     let active = true
     node.setPointerCapture(event.pointerId)
-    node.classList.add('dragging')
     const update = () => {
-      const delta = Math.round(
-        (current.clientX - initialX + scroller.scrollLeft - initialScroll) / dayWidth
-      )
-      try {
-        invalid = preview(delta, pointDay(current, track)) || ''
-      } catch {
-        invalid = '无法完成调整，请重新尝试'
-      }
+      const delta = rawDay(current, track) - initialPoint
+      invalid = preview(delta, pointDay(current, track), current) || ''
       node.classList.toggle('invalid', Boolean(invalid))
-      hint.classList.toggle('invalid-preview', Boolean(invalid))
-      const text = `${describe(delta, pointDay(current, track))}${invalid ? ` · ${invalid}；松开将取消整次调整` : ''} · Esc 取消`
-      if (hint.textContent !== text) {
-        hint.textContent = text
-      }
+      feedback(
+        `${describe(delta, pointDay(current, track))}${invalid ? ` · ${invalid}` : ''}`,
+        Boolean(invalid)
+      )
     }
     const move = (next) => {
       if (next.pointerId !== event.pointerId) {
@@ -167,7 +243,8 @@
       current = next
       if (!started && Math.abs(next.clientX - initialX) > 3) {
         started = true
-        onStart()
+        node.classList.add('dragging')
+        options.onStart?.()
       }
       if (started) {
         update()
@@ -178,12 +255,12 @@
         return
       }
       if (started) {
-        const rect = scroller.getBoundingClientRect()
-        const railWidth = grid.firstChild.firstChild.clientWidth
-        if (current.clientX > rect.right - 28) {
-          scroller.scrollLeft += 10
-        } else if (current.clientX < rect.left + railWidth + 20) {
-          scroller.scrollLeft -= 10
+        const rect = scroll.getBoundingClientRect()
+        const leftRail = grid.querySelector('.side-b').getBoundingClientRect().right
+        if (current.clientX > rect.right - 24) {
+          scroll.scrollLeft += 12
+        } else if (current.clientX < leftRail + 10) {
+          scroll.scrollLeft -= 12
         }
         update()
       }
@@ -203,24 +280,20 @@
         node.releasePointerCapture(event.pointerId)
       }
       cancelGesture = undefined
-      hint.textContent = idleHint
-      hint.classList.remove('invalid-preview')
       node.classList.remove('dragging', 'invalid')
-      cleanup()
+      options.cleanup?.()
+      feedback()
       if (cancelled || invalid) {
         state = before
         selected.clear()
         previousSelection.forEach((entry) => selected.add(entry))
         render()
-        feedback(cancelled ? '已取消拖动。' : `${invalid}；整次调整已取消。`)
-      } else {
-        if (JSON.stringify(state) !== JSON.stringify(before)) {
-          node.dataset.dragged = 'true'
-          commit(before, message)
+        if (invalid && !cancelled) {
+          feedback(`${invalid}；本次调整已取消`, true)
         }
-        if (started) {
-          onComplete()
-        }
+      } else if (started) {
+        commit(before)
+        options.onComplete?.()
       }
     }
     const up = (next) => {
@@ -228,9 +301,6 @@
         return
       }
       move(next)
-      if (started) {
-        update()
-      }
       finish(false)
     }
     const cancel = (next) => {
@@ -246,768 +316,593 @@
     node.addEventListener('lostpointercapture', cancel)
     frame = requestAnimationFrame(autoScroll)
   }
-  function creationRow(group) {
-    const entry = row(group ? 'creation-row' : 'empty-row', '＋ 新交付项')
-    const track = element('div', 'bar-track creation-track')
-    track.append(element('span', 'track-hint', '拖出计划时段，松开后填写交付项名称'))
-    entry.append(track)
-    track.addEventListener('pointerdown', (event) => {
-      if (event.button !== 0 || event.shiftKey) {
+  function editName(item, draft = false) {
+    if (activeEdit || cancelGesture) {
+      return
+    }
+    const conflict = draft ? overlapReason([item]) : ''
+    if (conflict) {
+      feedback(conflict, true)
+      return
+    }
+    const track = grid.querySelector(`.track[data-lane="${item.lane}"]`)
+    let node = draft ? undefined : grid.querySelector(`.segment[data-item="${item.id}"]`)
+    if (!node) {
+      node = segmentNode(item, track, true)
+      track.append(node)
+    }
+    node.classList.add('editing')
+    const input = element('input', 'inline-name')
+    input.value = item.name || ''
+    input.maxLength = 100
+    input.setAttribute('aria-label', '时段名称')
+    node.replaceChildren(input)
+    let done = false
+    const finish = (save) => {
+      if (done) {
         return
       }
-      const anchor = pointDay(event, track)
-      const range = { start: anchor, end: anchor }
-      const ghost = element('div', 'plan-bar ghost')
-      track.append(ghost)
-      positionBar(ghost, range)
+      done = true
+      activeEdit = undefined
+      const name = input.value.trim()
+      if (save && name) {
+        const before = snapshot()
+        if (draft) {
+          state.items.push({ ...item, id: nextId(), name })
+        } else {
+          item.name = name
+        }
+        selected.clear()
+        selected.add(draft ? state.items.at(-1).id : item.id)
+        commit(before)
+      }
+      render()
+    }
+    activeEdit = { cancel: () => finish(false) }
+    input.addEventListener('keydown', (event) => {
+      if (event.key === 'Enter' || event.key === 'Escape') {
+        event.preventDefault()
+        event.stopPropagation()
+        finish(event.key === 'Enter')
+      }
+    })
+    input.addEventListener('blur', () => finish(true))
+    input.focus()
+    input.select()
+  }
+  function makeRange(event, track, lane) {
+    if (event.target.closest('.segment') || event.button !== 0 || event.shiftKey || activeEdit) {
+      return
+    }
+    activeLane = lane
+    refreshSelection()
+    const pending = state.items.find(
+      (item) => item.lane === lane && !scheduled(item) && selected.has(item.id)
+    )
+    if (lane === 5 && !pending) {
+      selected.clear()
+      refreshSelection()
+      return
+    }
+    const anchor = pointDay(event, track)
+    const range = {
+      lane,
+      start: anchor,
+      end: anchor,
+      name: pending?.name || '',
+      node: lane === 5,
+      color: pending?.color || (lane === 4 ? colors[1] : undefined)
+    }
+    const ghost = segmentNode(range, track, true)
+    ghost.classList.add('ghost')
+    track.append(ghost)
+    gesture(
+      event,
+      track,
+      track,
+      (_delta, point, current) => {
+        if (rawDay(current, track) < 0 || rawDay(current, track) >= days) {
+          return '时段超出日期范围'
+        }
+        range.start = range.node ? point : Math.min(anchor, point)
+        range.end = range.node ? point : Math.max(anchor, point)
+        const conflict = overlapReason([range])
+        if (conflict) {
+          return conflict
+        }
+        position(ghost, range)
+      },
+      (_delta, point) =>
+        range.node
+          ? dateAt(point)
+          : `${dateAt(Math.min(anchor, point))} — ${dateAt(Math.max(anchor, point))}`,
+      {
+        cleanup: () => ghost.remove(),
+        onComplete: () => {
+          if (pending) {
+            const before = snapshot()
+            Object.assign(pending, { start: range.start, end: range.end })
+            commit(before)
+          } else {
+            editName(range, true)
+          }
+        }
+      }
+    )
+  }
+  function segmentNode(item, track, preview = false) {
+    const node = element('div', `segment${item.node ? ' node' : ''}`)
+    position(node, item)
+    node.append(element('span', 'segment-name', item.name))
+    if (preview) {
+      return node
+    }
+    node.dataset.item = item.id
+    node.dataset.lane = item.lane
+    node.tabIndex = 0
+    node.setAttribute('role', 'button')
+    if (!item.node) {
+      node.append(element('span', 'resize-start'), element('span', 'resize-end'))
+    }
+    node.addEventListener('click', (event) => {
+      if (node.dataset.dragged) {
+        delete node.dataset.dragged
+        return
+      }
+      if (!activeEdit) {
+        select(item, event.shiftKey)
+      }
+    })
+    node.addEventListener('dblclick', (event) => {
+      event.stopPropagation()
+      editName(item)
+    })
+    node.addEventListener('pointerdown', (event) => {
+      if (event.button !== 0 || event.shiftKey || activeEdit) {
+        return
+      }
+      const edge = event.target.closest('.resize-start')
+        ? 'start'
+        : event.target.closest('.resize-end')
+          ? 'end'
+          : ''
+      const moving =
+        edge || !selected.has(item.id)
+          ? [item]
+          : state.items.filter((entry) => selected.has(entry.id) && scheduled(entry))
+      const originals = moving.map((entry) => ({ entry, start: entry.start, end: entry.end }))
       gesture(
         event,
+        node,
         track,
-        track,
-        (_delta, point) => {
-          range.start = Math.min(anchor, point)
-          range.end = Math.max(anchor, point)
-          positionBar(ghost, range)
+        (delta) => {
+          const proposals = originals.map(({ entry, start, end }) => ({
+            entry,
+            start: start + (edge === 'end' ? 0 : delta),
+            end: end + (edge === 'start' ? 0 : delta)
+          }))
+          if (
+            proposals.some(
+              (entry) => entry.start < 0 || entry.end >= days || entry.start > entry.end
+            )
+          ) {
+            return '时段不能倒置或超出日期范围'
+          }
+          const conflict = overlapReason(proposals)
+          if (conflict) {
+            return conflict
+          }
+          proposals.forEach(({ entry, start, end }) => {
+            Object.assign(entry, { start, end })
+            position(grid.querySelector(`.segment[data-item="${entry.id}"]`), entry)
+          })
         },
-        '新增交付项时段',
+        (delta) => {
+          const original = originals.find((entry) => entry.entry.id === item.id)
+          return `${moving.length > 1 ? `${moving.length} 项 · ` : ''}${dateAt(original.start + (edge === 'end' ? 0 : delta))} — ${dateAt(original.end + (edge === 'start' ? 0 : delta))}`
+        },
+        {
+          onStart: () => {
+            if (!selected.has(item.id)) {
+              select(item)
+            }
+            node.dataset.dragged = 'true'
+          }
+        }
+      )
+    })
+    node.addEventListener('contextmenu', (event) => {
+      if (!item.node && item.lane !== 4) {
+        return
+      }
+      event.preventDefault()
+      select(item)
+      showMenu(event.clientX, event.clientY)
+    })
+    return node
+  }
+  function backlogNode(item) {
+    const node = element('button', 'unscheduled', item.name)
+    node.type = 'button'
+    node.dataset.item = item.id
+    node.setAttribute('aria-label', `${item.name}，未排期`)
+    node.addEventListener('click', (event) => {
+      if (!activeEdit) {
+        select(item, event.shiftKey)
+      }
+    })
+    node.addEventListener('pointerdown', (event) => {
+      const track = grid.querySelector(`.track[data-lane="${item.lane}"]`)
+      const range = { ...item, start: 0, end: 0 }
+      const ghost = segmentNode(range, track, true)
+      ghost.classList.add('ghost')
+      ghost.hidden = true
+      track.append(ghost)
+      gesture(
+        event,
+        node,
+        track,
+        (_delta, point, current) => {
+          const rect = track.getBoundingClientRect()
+          if (
+            rawDay(current, track) < 0 ||
+            rawDay(current, track) >= days ||
+            current.clientY < rect.top ||
+            current.clientY > rect.bottom
+          ) {
+            ghost.hidden = true
+            return '请拖到当前泳道的日期位置'
+          }
+          range.start = point
+          range.end = point
+          const conflict = overlapReason([range])
+          if (conflict) {
+            return conflict
+          }
+          ghost.hidden = false
+          position(ghost, range)
+        },
+        (_delta, point) => `${item.name} · ${dateAt(point)}`,
         {
           cleanup: () => ghost.remove(),
-          onComplete: () => edit('item', undefined, anchor, { ...range, group: group?.id }),
-          describe: (_delta, point) =>
-            `新交付项 ${dateAt(Math.min(anchor, point))} — ${dateAt(Math.max(anchor, point))}`
+          onStart: () => select(item),
+          onComplete: () => {
+            const before = snapshot()
+            Object.assign(item, { start: range.start, end: range.end })
+            commit(before)
+          }
         }
       )
     })
+    return node
+  }
+  function cell(className, row, column) {
+    const node = element('div', className)
+    node.style.gridRow = String(row)
+    node.style.gridColumn = String(column)
+    if (row <= 6 && column > 1) {
+      node.classList.add('header-cell')
+      node.style.top = `${layoutRowHeights.slice(0, row - 1).reduce((sum, height) => sum + height, 0)}px`
+    }
+    grid.append(node)
+    return node
+  }
+  function editVersion(node) {
+    if (activeEdit || cancelGesture) {
+      return
+    }
+    const input = element('input')
+    input.value = state.version
+    input.setAttribute('aria-label', '版本名称')
+    node.replaceWith(input)
+    let done = false
+    const finish = (save) => {
+      if (done) {
+        return
+      }
+      done = true
+      activeEdit = undefined
+      if (save && input.value.trim()) {
+        const before = snapshot()
+        state.version = input.value.trim()
+        commit(before)
+      }
+      render()
+    }
+    activeEdit = { cancel: () => finish(false) }
+    input.addEventListener('keydown', (event) => {
+      if (event.key === 'Enter' || event.key === 'Escape') {
+        event.preventDefault()
+        event.stopPropagation()
+        finish(event.key === 'Enter')
+      }
+    })
+    input.addEventListener('blur', () => finish(true))
+    input.focus()
+    input.select()
   }
   function render() {
-    if (cancelGesture) {
-      cancelGesture()
+    if (cancelGesture || activeEdit) {
       return
     }
-    const { groups, iterations, items, milestones } = state
     grid.replaceChildren()
-    grid.style.setProperty('--chart', scale === 'day' ? '1344px' : '900px')
-    grid.style.setProperty('--grid-step', `${100 / (scale === 'day' ? 42 : 6)}%`)
-    const count = items.filter(scheduled).length
-    $('#item-count').textContent = `${items.length} 个交付项 · ${items.length - count} 个未排期`
-    $('#undo-plan').disabled = !history.length
-    $('#source-description').textContent =
-      state.mode === 'empty'
-        ? '空画布起步：直接拖出时段，或先粘贴交付项。'
-        : 'Agent 初稿示意：预置草案，可继续调整；未调用模型。'
-    $('#start-empty').setAttribute('aria-pressed', String(state.mode === 'empty'))
-    $('#start-draft').setAttribute('aria-pressed', String(state.mode === 'draft'))
-    const iterationRow = row('iteration-row', '目标 / 交付项')
-    const iterationTrack = element('div', 'iteration-track')
-    iterationRow.append(iterationTrack)
-    iterations.forEach((iteration, index) => {
-      const cell = element('div', 'iteration-cell')
-      cell.style.width = `${((iteration.end - iteration.start + 1) / days) * 100}%`
-      cell.append(
-        button('iteration-title', iteration.title, () => edit('iteration', iteration)),
-        element('span', '', iteration.outcome || '点击补充迭代目标')
+    layoutRowHeights = [...rowHeights]
+    grid.style.setProperty('--a', `${pixels(7.85546875)}px`)
+    grid.style.setProperty('--b', `${pixels(26)}px`)
+    grid.style.setProperty('--chart', `${chartWidth}px`)
+    grid.style.gridTemplateRows = layoutRowHeights.map((height) => `${height}px`).join(' ')
+    const iteration = cell('side-a iteration-label', 1, 1)
+    iteration.style.gridRow = '1 / 6'
+    iteration.textContent = '迭代'
+    const version = cell('side-a', 6, 1)
+    version.style.gridRow = '6 / 18'
+    const versionLabel = element('div', 'version-label', '版本')
+    const versionName = element('span', 'version-name', state.version)
+    versionName.tabIndex = 0
+    versionName.addEventListener('dblclick', () => editVersion(versionName))
+    versionLabel.append(versionName)
+    version.append(versionLabel)
+    laneNames.forEach((name, lane) => {
+      const rail = cell(
+        `side-b${lane < 5 ? ' blue-rail' : ''}${lane === 16 ? ' external-lane' : ''}`,
+        lane + 1,
+        2
       )
-      if (index < iterations.length - 1) {
-        const handle = button('iteration-handle', '', () => {})
-        handle.title = '拖动调整迭代边界；交付项日期不变'
-        handle.setAttribute('aria-label', `调整${iteration.title}边界`)
-        handle.addEventListener('dblclick', () => edit('boundary', iteration))
-        handle.addEventListener('pointerdown', (event) => {
-          const next = iterations[index + 1]
-          const originalEnd = iteration.end
-          gesture(
-            event,
-            handle,
-            iterationTrack,
-            (delta) => {
-              const end = originalEnd + delta
-              if (end < iteration.start || end >= next.end) {
-                return '每个迭代至少保留一天'
-              }
-              iteration.end = end
-              next.start = end + 1
-              cell.style.width = `${((end - iteration.start + 1) / days) * 100}%`
-              iterationTrack.children[index + 1].style.width =
-                `${((next.end - next.start + 1) / days) * 100}%`
-            },
-            '调整迭代边界（交付项日期不变）',
-            {
-              describe: (delta) =>
-                `${iteration.title}结束 ${dateAt(originalEnd + delta)} · ${next.title}开始 ${dateAt(originalEnd + delta + 1)} · 交付项日期不变`
+      rail.append(element('strong', '', name))
+      if (lane >= 3) {
+        rail.dataset.lane = lane
+        rail.addEventListener('click', () => {
+          activeLane = lane
+          refreshSelection()
+        })
+        const pending = state.items.filter((item) => item.lane === lane && !scheduled(item))
+        if (pending.length) {
+          const backlog = element('div', 'backlog')
+          pending.forEach((item) => backlog.append(backlogNode(item)))
+          rail.append(backlog)
+        }
+      }
+      const track = cell('track', lane + 1, 3)
+      if (lane === 0) {
+        track.classList.add('month-band')
+        for (const [label, count] of [
+          ['2026 年 7 月', 31],
+          ['2026 年 8 月', 31],
+          ['2026 年 9 月', 30]
+        ]) {
+          const month = element('div', '', label)
+          const start = label.includes('7 月') ? 0 : label.includes('8 月') ? 31 : 62
+          month.style.width = `${columnEdges[start + count] - columnEdges[start]}px`
+          track.append(month)
+        }
+      } else if (lane < 3) {
+        track.classList.add(lane === 1 ? 'date-band' : 'weekday-band')
+        for (let day = 0; day < days; day++) {
+          const current = date(day)
+          const dayCell = element(
+            'div',
+            [0, 6].includes(current.getUTCDay()) ? 'weekend' : '',
+            lane === 1
+              ? String(current.getUTCDate())
+              : ['日', '一', '二', '三', '四', '五', '六'][current.getUTCDay()]
+          )
+          dayCell.style.width = `${columnWidths[day]}px`
+          track.append(dayCell)
+        }
+      } else {
+        track.dataset.lane = lane
+        track.setAttribute('aria-label', `${name}泳道`)
+        for (let day = 0; day < days; day++) {
+          const shade = element('div', 'day-shade')
+          shade.style.left = `${columnEdges[day]}px`
+          shade.style.width = `${columnWidths[day]}px`
+          track.append(shade)
+        }
+        state.items
+          .filter((item) => item.lane === lane && scheduled(item))
+          .forEach((item) => track.append(segmentNode(item, track)))
+        track.addEventListener('pointerdown', (event) => makeRange(event, track, lane))
+        if (lane === 5) {
+          track.addEventListener('dblclick', (event) => {
+            if (event.target.closest('.segment') || activeEdit) {
+              return
             }
-          )
-        })
-        cell.append(handle)
-      }
-      iterationTrack.append(cell)
-    })
-    const dateRow = row('date-row', '2026 年 10 月 — 11 月')
-    const dateTrack = element('div', 'date-track')
-    for (let day = 0; day < days; day += scale === 'week' ? 7 : 1) {
-      dateTrack.append(
-        element(
-          'div',
-          '',
-          scale === 'week' ? `${shortDate(day)} — ${shortDate(day + 6)}` : shortDate(day)
-        )
-      )
-    }
-    dateRow.append(dateTrack)
-    const milestoneRow = row('milestone-row', '关键里程碑 · 双击空白处添加')
-    const milestoneTrack = element('div', 'milestone-track')
-    milestoneRow.append(milestoneTrack)
-    milestoneTrack.addEventListener('dblclick', (event) => {
-      if (!event.target.closest('button')) {
-        edit('milestone', undefined, pointDay(event, milestoneTrack))
-      }
-    })
-    if (!milestones.length) {
-      milestoneTrack.append(element('span', 'track-hint', '双击日期位置，放下一个里程碑'))
-    }
-    const laneEnds = []
-    ;[...milestones]
-      .sort((a, b) => a.day - b.day)
-      .forEach((milestone) => {
-        const marker = button('milestone-marker', '', () => {
-          if (!marker.dataset.dragged) {
-            edit('milestone', milestone)
-          }
-        })
-        marker.style.left = `${((milestone.day + 0.5) / days) * 100}%`
-        marker.classList.toggle('edge-start', milestone.day < 3)
-        marker.classList.toggle('edge-end', milestone.day > days - 4)
-        marker.append(
-          element('i', 'diamond'),
-          element('span', '', `${shortDate(milestone.day)} ${milestone.name}`)
-        )
-        marker.setAttribute(
-          'aria-label',
-          `${milestone.name}，${dateAt(milestone.day)}，点击编辑或拖动日期`
-        )
-        marker.addEventListener('pointerdown', (event) => {
-          const originalDay = milestone.day
-          gesture(
-            event,
-            marker,
-            milestoneTrack,
-            (delta) => {
-              const day = originalDay + delta
-              if (day < 0 || day >= days) {
-                return '里程碑超出版本周期'
-              }
-              milestone.day = day
-              marker.style.left = `${((day + 0.5) / days) * 100}%`
-              marker.lastChild.textContent = `${shortDate(day)} ${milestone.name}`
-            },
-            `移动里程碑「${milestone.name}」`,
-            { describe: (delta) => `「${milestone.name}」候选日期 ${dateAt(originalDay + delta)}` }
-          )
-        })
-        milestoneTrack.append(marker)
-        const position = ((milestone.day + 0.5) / days) * milestoneTrack.clientWidth
-        const width = marker.lastChild.getBoundingClientRect().width
-        const start =
-          milestone.day < 3
-            ? position
-            : milestone.day > days - 4
-              ? position - width
-              : position - width / 2
-        let lane = laneEnds.findIndex((end) => start >= end + 12)
-        if (lane < 0) {
-          lane = laneEnds.length
-        }
-        laneEnds[lane] = start + width
-        marker.style.top = `${12 + lane * 48}px`
-      })
-    milestoneTrack.style.height = `${70 + Math.max(0, laneEnds.length - 1) * 48}px`
-    groups.forEach((group) => {
-      const rail = element('div', 'group-rail')
-      const toggle = button(
-        'group-button',
-        `${collapsed.has(group.id) ? '▸' : '▾'} ${group.title}`,
-        () => {
-          if (collapsed.has(group.id)) {
-            collapsed.delete(group.id)
-          } else {
-            collapsed.add(group.id)
-          }
-          render()
-        }
-      )
-      toggle.setAttribute('aria-expanded', String(!collapsed.has(group.id)))
-      rail.append(
-        toggle,
-        button('text-action', '编辑', () => edit('group', group))
-      )
-      row('group-row', rail).append(
-        element('div', 'group-caption', group.outcome || '目标结果待补充')
-      )
-      if (collapsed.has(group.id)) {
-        return
-      }
-      items
-        .filter((item) => item.group === group.id)
-        .forEach((item) => {
-          const label = element('div')
-          const title = button('item-title', item.name, (event) => selectItem(item, event.shiftKey))
-          title.dataset.item = item.id
-          title.addEventListener('dblclick', () => edit('item', item))
-          label.append(
-            title,
-            element(
-              'span',
-              'item-meta',
-              `${scheduled(item) ? item.stage : '未排期'} · ${item.owner || '待指定负责人'}`
-            ),
-            button('item-detail', '日期 / 详情', () => edit('item', item))
-          )
-          const itemRow = row('item-row', label)
-          const track = element('div', 'bar-track')
-          itemRow.append(track)
-          iterations.slice(1).forEach((iteration) => {
-            const boundary = element('div', 'boundary')
-            boundary.style.left = `${(iteration.start / days) * 100}%`
-            track.append(boundary)
+            activeLane = lane
+            const point = pointDay(event, track)
+            const candidate = {
+              lane,
+              start: point,
+              end: point,
+              name: '',
+              node: true,
+              color: colors[1]
+            }
+            const conflict = overlapReason([candidate])
+            if (conflict) {
+              feedback(conflict, true)
+              return
+            }
+            editName(candidate, true)
           })
-          if (!scheduled(item)) {
-            const precise = element(
-              'span',
-              'unscheduled-item',
-              '在这一行拖出时段，或从左侧填写日期'
-            )
-            track.append(precise)
-            track.addEventListener('pointerdown', (event) => {
-              if (event.target.closest('button') || event.shiftKey || event.button !== 0) {
-                return
-              }
-              const anchor = pointDay(event, track)
-              const ghost = element('div', 'plan-bar ghost')
-              track.append(ghost)
-              positionBar(ghost, { start: anchor, end: anchor })
-              gesture(
-                event,
-                track,
-                track,
-                (_delta, point) => {
-                  item.start = Math.min(anchor, point)
-                  item.end = Math.max(anchor, point)
-                  positionBar(ghost, item)
-                },
-                `安排「${item.name}」`,
-                {
-                  cleanup: () => ghost.remove(),
-                  onStart: () => selectItem(item, false),
-                  describe: (_delta, point) =>
-                    `安排「${item.name}」${dateAt(Math.min(anchor, point))} — ${dateAt(Math.max(anchor, point))}`
-                }
-              )
-            })
-          } else {
-            const bar = button('plan-bar', '', (event) => {
-              if (!bar.dataset.dragged) {
-                selectItem(item, event.shiftKey)
-              }
-            })
-            bar.dataset.item = item.id
-            bar.dataset.stage = item.stage
-            bar.append(
-              element('span', 'resize-start'),
-              element('span', 'bar-label'),
-              element('span', 'resize-end')
-            )
-            positionBar(bar, item)
-            bar.setAttribute(
-              'aria-label',
-              `${item.name}，${dateAt(item.start)} 至 ${dateAt(item.end)}，双击编辑`
-            )
-            bar.addEventListener('dblclick', () => edit('item', item))
-            bar.addEventListener('pointerdown', (event) => {
-              if (event.button !== 0 || event.shiftKey) {
-                return
-              }
-              const edge = event.target.classList.contains('resize-start')
-                ? 'start'
-                : event.target.classList.contains('resize-end')
-                  ? 'end'
-                  : ''
-              const moving =
-                edge || !selected.has(item.id)
-                  ? [item]
-                  : state.items.filter((entry) => selected.has(entry.id) && scheduled(entry))
-              const originals = moving.map((entry) => ({
-                entry,
-                start: entry.start,
-                end: entry.end
-              }))
-              gesture(
-                event,
-                bar,
-                track,
-                (delta) => {
-                  const proposals = originals.map(({ entry, start, end }) => ({
-                    entry,
-                    start: start + (edge === 'end' ? 0 : delta),
-                    end: end + (edge === 'start' ? 0 : delta)
-                  }))
-                  if (
-                    proposals.some(
-                      (entry) => entry.start < 0 || entry.end >= days || entry.start > entry.end
-                    )
-                  ) {
-                    return '时段不能倒置或超出版本周期'
-                  }
-                  proposals.forEach(({ entry, start, end }) => {
-                    Object.assign(entry, { start, end })
-                    positionBar(grid.querySelector(`.plan-bar[data-item="${entry.id}"]`), entry)
-                  })
-                },
-                edge
-                  ? `调整「${item.name}」${edge === 'start' ? '开始' : '结束'}日期`
-                  : `移动 ${moving.length} 个交付项`,
-                {
-                  onStart: () => {
-                    if (!selected.has(item.id)) {
-                      selectItem(item, false)
-                    } else {
-                      refreshSelection()
-                    }
-                  },
-                  describe: (delta) => {
-                    const original = originals.find((entry) => entry.entry.id === item.id)
-                    const start = original.start + (edge === 'end' ? 0 : delta)
-                    const end = original.end + (edge === 'start' ? 0 : delta)
-                    return `${edge ? '调整' : `移动 ${moving.length} 项 ·`}「${item.name}」${dateAt(start)} — ${dateAt(end)}`
-                  }
-                }
-              )
-            })
-            track.append(bar)
-          }
-        })
-      creationRow(group)
+        }
+      }
     })
-    if (!groups.length) {
-      creationRow()
-    }
-    refreshSelection()
-  }
-  function fillGroups(select) {
-    select.replaceChildren()
-    state.groups.forEach((group) => {
-      const option = element('option', '', group.title)
-      option.value = group.id
-      select.append(option)
-    })
-  }
-  function edit(kind, value, point = 5, defaults = {}) {
-    editing = { kind, value }
-    form.reset()
-    fillGroups(form.elements.group)
-    if (kind === 'item' && !state.groups.length) {
-      const option = element('option', '', '未分组交付项（自动建立）')
-      option.value = ''
-      form.elements.group.append(option)
-    }
-    const labels = {
-      item: '交付项',
-      milestone: '里程碑',
-      group: '版本目标',
-      iteration: '迭代目标',
-      boundary: '迭代边界'
-    }
-    $('#editor-title').textContent = `${value ? '编辑' : '新增'}${labels[kind]}`
-    $('#editor-kind').textContent = '示例项目 · v0.6'
-    $('#form-error').textContent = ''
-    $('#item-fields').hidden = kind !== 'item'
-    $('#start-label').hidden = ['group', 'iteration'].includes(kind)
-    $('#end-label').hidden = kind !== 'item'
-    $('#start-label').firstChild.textContent =
-      kind === 'item' ? '开始日期' : kind === 'boundary' ? '本迭代结束日期' : '节点日期'
-    $('#outcome-label').hidden = kind === 'boundary'
-    $('#outcome-label').firstChild.textContent = kind === 'milestone' ? '达成条件' : '交付结果'
-    form.elements.start.disabled = ['group', 'iteration'].includes(kind)
-    form.elements.start.required = kind !== 'item'
-    form.elements.end.disabled = kind !== 'item'
-    form.elements.end.required = false
-    form.elements.name.value = value?.name || value?.title || ''
-    form.elements.name.disabled = kind === 'boundary'
-    form.elements.group.value = value?.group || defaults.group || state.groups[0]?.id || ''
-    form.elements.stage.value = value?.stage || '开发'
-    form.elements.owner.value = value?.owner || ''
-    form.elements.start.value = dateAt(
-      kind === 'boundary'
-        ? value.end
-        : kind === 'milestone'
-          ? (value?.day ?? point)
-          : (value?.start ?? defaults.start ?? point)
-    )
-    form.elements.end.value = dateAt(value?.end ?? defaults.end ?? point + 4)
-    if (kind === 'item' && !scheduled(value) && defaults.start === undefined) {
-      form.elements.start.value = ''
-      form.elements.end.value = ''
-    }
-    form.querySelector('.editor-note').textContent =
-      kind === 'item'
-        ? '两日期留空表示未排期；安排时段须填写完整起止日期。本页修改仅在内存。'
-        : '本页修改仅用于原型演示，刷新后恢复空画布。'
-    form.elements.outcome.value = value?.outcome || ''
-    for (const field of [form.elements.start, form.elements.end]) {
-      field.min = dateAt(0)
-      field.max = dateAt(days - 1)
-    }
-    dialog.showModal()
-    ;(kind === 'boundary' ? form.elements.start : form.elements.name).focus()
-  }
-  form.addEventListener('submit', (event) => {
-    event.preventDefault()
-    const { kind, value } = editing
-    const name = form.elements.name.value.trim()
-    const outcome = form.elements.outcome.value.trim()
-    const start = dayAt(form.elements.start.value)
-    const end = dayAt(form.elements.end.value)
-    const noDates = kind === 'item' && !form.elements.start.value && !form.elements.end.value
-    if (
-      !name ||
-      (!noDates &&
-        ['item', 'milestone', 'boundary'].includes(kind) &&
-        (!Number.isInteger(start) || start < 0 || start >= days)) ||
-      (kind === 'item' && !noDates && (!Number.isInteger(end) || end < start || end >= days))
-    ) {
-      $('#form-error').textContent = '请填写名称，并确保日期在版本周期内且结束不早于开始。'
-      return
-    }
-    if (kind === 'boundary') {
-      const next = state.iterations[state.iterations.indexOf(value) + 1]
-      if (start < value.start || start >= next.end) {
-        $('#form-error').textContent = '每个迭代至少保留一天。'
+    grid.querySelectorAll('.side-b[data-lane]').forEach((rail) => {
+      const backlog = rail.querySelector('.backlog')
+      if (!backlog) {
         return
       }
-    }
-    const before = snapshot()
-    if (kind === 'item') {
-      const fields = {
-        name,
-        outcome,
-        start: noDates ? null : start,
-        end: noDates ? null : end,
-        group: form.elements.group.value,
-        stage: form.elements.stage.value,
-        owner: form.elements.owner.value.trim()
-      }
-      if (value) {
-        Object.assign(value, fields)
-      } else {
-        if (!fields.group) {
-          fields.group = id()
-          state.groups.push({ id: fields.group, title: '未分组交付项', outcome: '' })
-        }
-        const item = { id: id(), ...fields }
-        state.items.push(item)
-        selected.clear()
-        selected.add(item.id)
-      }
-    } else if (kind === 'milestone') {
-      if (value) {
-        Object.assign(value, { name, outcome, day: start })
-      } else {
-        state.milestones.push({ id: id(), name, outcome, day: start })
-      }
-    } else if (kind === 'boundary') {
-      value.end = start
-      state.iterations[state.iterations.indexOf(value) + 1].start = start + 1
-    } else if (value) {
-      Object.assign(value, { title: name, outcome })
-    } else {
-      state.groups.push({ id: id(), title: name, outcome })
-    }
-    dialog.close()
-    commit(
-      before,
-      `${value ? '更新' : '新增'}${kind === 'item' ? '交付项' : kind === 'milestone' ? '里程碑' : kind === 'boundary' ? '迭代边界' : '目标'}「${name}」`
-    )
-  })
-  $('#add-goal').addEventListener('click', () => edit('group'))
-  $('#add-iteration').addEventListener('click', () => {
-    const last = state.iterations.at(-1)
-    if (last.end - last.start < 1) {
-      feedback('末尾迭代不足两天，无法继续拆分。')
-      return
-    }
-    const before = snapshot()
-    const end = last.end
-    last.end = Math.floor((last.start + end) / 2)
-    state.iterations.push({
-      title: `迭代 ${state.iterations.length + 1}`,
-      outcome: '',
-      start: last.end + 1,
-      end
+      const lane = Number(rail.dataset.lane)
+      const contentHeight =
+        rail.querySelector('strong').getBoundingClientRect().height +
+        backlog.getBoundingClientRect().height +
+        13
+      layoutRowHeights[lane] = Math.max(rowHeights[lane], Math.ceil(contentHeight))
     })
-    commit(before, '拆分末尾迭代；可拖动分界继续调整')
-  })
-  $('#add-item').addEventListener('click', () => {
-    bulk.reset()
-    fillGroups(bulk.elements.group)
-    if (!state.groups.length) {
-      const option = element('option', '', '未分组交付项（自动建立）')
-      option.value = ''
-      bulk.elements.group.append(option)
+    grid.style.gridTemplateRows = layoutRowHeights.map((height) => `${height}px`).join(' ')
+    grid.querySelectorAll('.header-cell').forEach((node) => {
+      const row = Number(node.style.gridRow)
+      node.style.top = `${layoutRowHeights.slice(0, row - 1).reduce((sum, height) => sum + height, 0)}px`
+    })
+    state.items
+      .filter(scheduled)
+      .forEach((item) => position(grid.querySelector(`.segment[data-item="${item.id}"]`), item))
+    refreshSelection()
+  }
+  function colorNodes(color) {
+    if (cancelGesture || activeEdit) {
+      return
     }
-    $('#bulk-preview').textContent = '等待带入内容'
-    $('#bulk-editor').showModal()
-    bulk.elements.lines.focus()
-  })
-  const lines = () =>
-    bulk.elements.lines.value
-      .split(/\r?\n/)
-      .map((line) => line.split('\t')[0].trim())
-      .filter(Boolean)
-  bulk.elements.lines.addEventListener('input', () => {
-    const entries = lines()
-    $('#bulk-preview').textContent =
-      entries.length > 100
-        ? '一次最多带入 100 项，请减少清单。'
-        : `${entries.length} 个未排期交付项：${entries.slice(0, 3).join('、')}${entries.length > 3 ? '…' : ''}`
-  })
-  bulk.addEventListener('submit', (event) => {
-    event.preventDefault()
-    const entries = lines()
-    if (!entries.length || entries.length > 100) {
-      $('#bulk-preview').textContent = '请带入 1—100 个非空交付项。'
+    const nodes = state.items.filter(
+      (item) => selected.has(item.id) && (item.node || item.lane === 4)
+    )
+    if (!nodes.length) {
       return
     }
     const before = snapshot()
-    let group = bulk.elements.group.value
-    if (!group) {
-      group = id()
-      state.groups.push({ id: group, title: '未分组交付项', outcome: '' })
+    nodes.forEach((item) => {
+      item.color = color
+    })
+    menu.hidden = true
+    commit(before)
+  }
+  function toggleTextColor() {
+    if (cancelGesture || activeEdit) {
+      return
     }
-    entries.forEach((name) =>
-      state.items.push({
-        id: id(),
+    const items = state.items.filter(
+      (item) => selected.has(item.id) && (item.node || item.lane === 4)
+    )
+    if (!items.length) {
+      return
+    }
+    const before = snapshot()
+    items.forEach((item) => {
+      item.textColor = item.textColor === '#C00000' ? '#000000' : '#C00000'
+    })
+    menu.hidden = true
+    commit(before)
+  }
+  function showMenu(x, y) {
+    menu.replaceChildren()
+    ;['白色', '橙色', '黄色', '灰色'].forEach((name, index) => {
+      const option = element('button', '', `${index + 1}  ${name}`)
+      option.type = 'button'
+      option.setAttribute('role', 'menuitem')
+      const swatch = element('i', 'swatch')
+      swatch.style.background = colors[index]
+      option.prepend(swatch)
+      option.addEventListener('click', () => colorNodes(colors[index]))
+      menu.append(option)
+    })
+    const textOption = element('button', '', '5  红字 / 黑字')
+    textOption.type = 'button'
+    textOption.setAttribute('role', 'menuitem')
+    textOption.addEventListener('click', toggleTextColor)
+    menu.append(textOption)
+    menu.style.left = `${Math.min(x, innerWidth - 140)}px`
+    menu.style.top = `${Math.min(y, innerHeight - 150)}px`
+    menu.hidden = false
+  }
+  document.addEventListener('pointerdown', (event) => {
+    if (!event.target.closest('#node-menu')) {
+      menu.hidden = true
+    }
+  })
+  document.addEventListener('paste', (event) => {
+    if (event.target.closest('input,textarea,[contenteditable]')) {
+      return
+    }
+    if (cancelGesture || activeEdit) {
+      event.preventDefault()
+      return
+    }
+    const entries =
+      event.clipboardData
+        ?.getData('text/plain')
+        .split(/\r?\n/)
+        .map((line) => line.split('\t')[0].trim())
+        .filter(Boolean) || []
+    if (!entries.length) {
+      return
+    }
+    event.preventDefault()
+    if (entries.length > 100) {
+      feedback('一次最多粘贴 100 项', true)
+      return
+    }
+    const before = snapshot()
+    state.items.push(
+      ...entries.map((name) => ({
+        id: nextId(),
+        lane: activeLane,
         name,
-        group,
-        stage: '开发',
-        owner: '',
-        outcome: '',
         start: null,
-        end: null
-      })
+        end: null,
+        node: activeLane === 5,
+        color: colors[1]
+      }))
     )
-    $('#bulk-editor').close()
-    commit(before, `带入 ${entries.length} 个未排期交付项`)
-  })
-  document.querySelectorAll('[data-scale]').forEach((control) =>
-    control.addEventListener('click', () => {
-      scale = control.dataset.scale
-      document
-        .querySelectorAll('[data-scale]')
-        .forEach((node) => node.setAttribute('aria-pressed', String(node === control)))
-      render()
-    })
-  )
-  document
-    .querySelectorAll('[data-close]')
-    .forEach((control) =>
-      control.addEventListener('click', () =>
-        document.getElementById(control.dataset.close).close()
-      )
-    )
-  ;['close-editor', 'cancel-editor'].forEach((key) =>
-    $(`#${key}`).addEventListener('click', () => dialog.close())
-  )
-  $('#undo-plan').addEventListener('click', undo)
-  $('#clear-selection').addEventListener('click', () => {
-    selected.clear()
-    refreshSelection()
-  })
-  document.querySelectorAll('[data-shift]').forEach((control) =>
-    control.addEventListener('click', () => {
-      const moving = state.items.filter((item) => selected.has(item.id) && scheduled(item))
-      if (!moving.length) {
-        feedback('所选交付项尚未排期，请先拖出时段。')
-        return
-      }
-      const delta = Number(control.dataset.shift)
-      if (moving.some((item) => item.start + delta < 0 || item.end + delta >= days)) {
-        feedback('至少一项会超出版本周期，整组未移动。')
-        return
-      }
-      const before = snapshot()
-      moving.forEach((item) => {
-        item.start += delta
-        item.end += delta
-      })
-      commit(before, `成组移动 ${moving.length} 个已排期交付项；未排期项保持待安排`)
-    })
-  )
-  $('#unschedule').addEventListener('click', () => {
-    const moving = state.items.filter((item) => selected.has(item.id) && scheduled(item))
-    if (!moving.length) {
-      feedback('所选交付项已经处于未排期区。')
-      return
-    }
-    const before = snapshot()
-    moving.forEach((item) => {
-      item.start = null
-      item.end = null
-    })
-    commit(before, `移回 ${moving.length} 个交付项到未排期区`)
-  })
-  function start(mode) {
-    const before = snapshot()
-    state = {
-      groups: [],
-      items: [],
-      milestones: [],
-      iterations: [{ title: '迭代 1', outcome: '', start: 0, end: 41 }],
-      changes: [],
-      mode
-    }
-    if (mode === 'draft') {
-      state.groups = [
-        { id: 'core', title: '核心流程可用', outcome: '完整业务流程可以独立走通' },
-        { id: 'data', title: '数据可核对', outcome: '重启后关键结果一致' },
-        { id: 'release', title: '版本可交付', outcome: '验收结论与范围一致' }
-      ]
-      state.iterations = [
-        { title: '迭代前准备', outcome: '范围对齐', start: 0, end: 4 },
-        { title: '迭代 1', outcome: '核心流程走通', start: 5, end: 16 },
-        { title: '迭代 2', outcome: '补齐与验证', start: 17, end: 30 },
-        { title: '迭代 3', outcome: '验收与交付', start: 31, end: 41 }
-      ]
-      state.items = [
-        { id: 'scope', group: 'core', name: '明确流程与验收范围', stage: '设计', start: 0, end: 4 },
-        { id: 'flow', group: 'core', name: '完成核心业务流程', stage: '开发', start: 5, end: 18 },
-        {
-          id: 'check',
-          group: 'core',
-          name: '核对主流程与异常处理',
-          stage: '验证',
-          start: 17,
-          end: 29
-        },
-        {
-          id: 'data-work',
-          group: 'data',
-          name: '完成数据读回与结果呈现',
-          stage: '开发',
-          start: 12,
-          end: 25
-        },
-        {
-          id: 'restart',
-          group: 'data',
-          name: '验证重启后的数据一致性',
-          stage: '验证',
-          start: null,
-          end: null
-        },
-        { id: 'accept', group: 'release', name: '完成版本验收', stage: '验证', start: 31, end: 38 },
-        {
-          id: 'handover',
-          group: 'release',
-          name: '准备交付材料与发布评审',
-          stage: '交付',
-          start: null,
-          end: null
-        }
-      ].map((item) => ({ owner: '', outcome: '', ...item }))
-      state.milestones = [
-        { id: 'm1', name: '范围确认', day: 4, outcome: '' },
-        { id: 'm2', name: '核心流程可用', day: 18, outcome: '' },
-        { id: 'm3', name: '版本评审', day: 41, outcome: '' }
-      ]
-    }
-    selected.clear()
-    collapsed.clear()
-    commit(before, mode === 'draft' ? '载入预置 Agent 初稿示意（未调用模型）' : '从空画布重新开始')
-  }
-  $('#start-empty').addEventListener('click', () => start('empty'))
-  $('#start-draft').addEventListener('click', () => start('draft'))
-  $('#collaborate').addEventListener('click', () => {
-    const { groups, items, iterations, milestones } = state
-    const request = [
-      '请协助完善示例项目 v0.6 的版本计划。',
-      `计划周期：${dateAt(0)} 至 ${dateAt(days - 1)}。起点：${state.mode === 'draft' ? '预置 Agent 初稿示意，未调用模型' : '空画布人工编排'}。`,
-      '\n迭代：',
-      ...iterations.map(
-        (entry) =>
-          `- ${entry.title}：${dateAt(entry.start)} 至 ${dateAt(entry.end)}；目标：${entry.outcome || '待补充'}`
-      ),
-      '\n版本目标与交付项：',
-      ...groups.flatMap((group) => [
-        `- ${group.title}；目标结果：${group.outcome || '待补充'}`,
-        ...items
-          .filter((item) => item.group === group.id)
-          .map(
-            (item) =>
-              `  - ${item.name}；${scheduled(item) ? `${dateAt(item.start)} 至 ${dateAt(item.end)}` : '未排期'}；负责人：${item.owner || '待指定'}；交付结果：${item.outcome || '待补充'}`
-          )
-      ]),
-      '\n里程碑：',
-      ...(milestones.length
-        ? milestones.map(
-            (entry) =>
-              `- ${dateAt(entry.day)} ${entry.name}；达成条件：${entry.outcome || '待补充'}`
-          )
-        : ['- 尚未制定']),
-      '\n本轮调整：',
-      ...(state.changes.length
-        ? state.changes.slice(-10).map((entry) => `- ${entry}`)
-        : ['- 尚未调整']),
-      '\n请检查缺失目标、未排期项和日期冲突，提出可解释的安排建议。缺少依据时先列出待确认问题；所有新安排由人审核，不把排期视为完成，不修改 Issue 状态。'
-    ].join('\n')
-    $('#collaboration-request').value = request
-    $('#copy-feedback').textContent = ''
-    $('#collaboration-editor').showModal()
-  })
-  $('#copy-request').addEventListener('click', async () => {
-    try {
-      await navigator.clipboard.writeText($('#collaboration-request').value)
-      $('#copy-feedback').textContent = '已复制请求，尚未发送。'
-    } catch {
-      $('#collaboration-request').select()
-      $('#copy-feedback').textContent = '浏览器未允许复制，请手动复制已选文字。'
-    }
+    commit(before)
   })
   document.addEventListener('keydown', (event) => {
-    const editingText = event.target.closest('input, textarea, select, [contenteditable]')
-    const dialogOpen = document.querySelector('dialog[open]')
+    if (event.target.closest('input,textarea,[contenteditable]')) {
+      return
+    }
+    const undoKey = (event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'z'
+    if ((cancelGesture || activeEdit) && event.key !== 'Escape' && !undoKey) {
+      event.preventDefault()
+      return
+    }
     if (event.key === 'Escape') {
       if (cancelGesture) {
-        event.preventDefault()
+        cancelGesture()
+      } else if (activeEdit) {
+        activeEdit.cancel()
+      } else {
+        selected.clear()
+        refreshSelection()
+        menu.hidden = true
+      }
+      event.preventDefault()
+    } else if (undoKey) {
+      event.preventDefault()
+      if (cancelGesture) {
         cancelGesture()
         return
       }
-      if (selected.size && !editingText && !dialogOpen) {
-        event.preventDefault()
-        selected.clear()
-        refreshSelection()
-        feedback('已取消选择，排期未改变。')
+      if (activeEdit) {
+        activeEdit.cancel()
+        return
       }
-    }
-    if (
-      (event.ctrlKey || event.metaKey) &&
-      event.key.toLowerCase() === 'z' &&
-      !editingText &&
-      !dialogOpen
-    ) {
-      event.preventDefault()
-      undo()
-    }
-  })
-  document.addEventListener(
-    'click',
-    (event) => {
-      if (!cancelGesture) {
+      if (history.length) {
+        state = history.pop()
+        selected.clear()
+        render()
+      }
+    } else if (event.key === 'Delete' || event.key === 'Backspace') {
+      const items = state.items.filter((item) => selected.has(item.id) && scheduled(item))
+      if (!items.length) {
         return
       }
       event.preventDefault()
-      event.stopImmediatePropagation()
-      cancelGesture()
-      feedback('已取消拖动，请重新选择操作。')
-    },
-    true
-  )
+      const before = snapshot()
+      items.forEach((item) => {
+        item.start = null
+        item.end = null
+      })
+      commit(before)
+    } else if (/^[1-4]$/.test(event.key) && !event.ctrlKey && !event.metaKey) {
+      colorNodes(colors[Number(event.key) - 1])
+    } else if (event.key === '5' && !event.ctrlKey && !event.metaKey) {
+      toggleTextColor()
+    } else if (event.key === 'Enter') {
+      const item = state.items.find((entry) => selected.has(entry.id) && scheduled(entry))
+      if (item) {
+        event.preventDefault()
+        editName(item)
+      }
+    }
+  })
   render()
 })()
