@@ -6,10 +6,7 @@ import { resolve } from 'node:path'
 const __dirname = import.meta.dirname
 const repoRoot = resolve(__dirname, '../..')
 
-const defaultPlists = [
-  'resources/build/entitlements.mac.plist',
-  'resources/build/entitlements.computer-use.mac.plist'
-]
+const defaultPlists = ['resources/build/entitlements.mac.plist']
 
 const plistPaths = process.argv.slice(2)
 const pathsToCheck = plistPaths.length > 0 ? plistPaths : defaultPlists

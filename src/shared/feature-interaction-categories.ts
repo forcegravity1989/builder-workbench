@@ -54,8 +54,6 @@ export const FEATURE_INTERACTION_CATEGORY_BY_ID = {
   'ai-commit-generation': 'source_control',
   'ai-pr-generation': 'source_control',
   'claude-account-switching': 'settings',
-  'computer-use-setup': 'setup',
-  'computer-use': 'agent',
   'codex-account-switching': 'settings',
   'cookie-import': 'browser',
   'floating-workspace': 'workspace',

@@ -6,7 +6,6 @@ import type { FeatureInteractionState } from './feature-interactions'
 import type { UsagePercentageDisplay } from './usage-percentage-display'
 import type { StatusBarUsageMode } from './status-bar-usage-mode'
 import type { PersistedTrustedOrcaHooks } from './orca-yaml-hook-types'
-import type { CustomPet } from './pet-types'
 import type {
   ActivityGroupBy,
   AgentActivityDisplayMode,
@@ -188,33 +187,8 @@ export type PersistedUIState = {
   _expandedWorktreeCardPropertiesDefaulted?: boolean
   /** One-shot backfill flag for 'jira-issue', which joined the defaults after the expansion migration had already stamped upgraded profiles. */
   _jiraIssueWorktreeCardPropertyDefaulted?: boolean
-  /** totalAgentsSpawned snapshot at first sighting of the current app version, so the nag counts agents since last update (not from zero). */
-  starNagBaselineAgents?: number | null
-  /** App version that set the current baseline; a version change re-captures the baseline on next spawn, restarting the nag countdown. */
-  starNagAppVersion?: string | null
-  /** Next agents-since-baseline threshold that fires the star-nag; starts at 35, doubles per dismissal without starring. */
-  starNagNextThreshold?: number
-  /** Once the user has starred Orca (any entry point), permanently suppress the nag. */
-  starNagCompleted?: boolean
-  /** Timestamp until which nonterminal dismissals suppress threshold prompts (force-show bypasses for dev/testing). */
-  starNagDeferredUntil?: number | null
-  /** App version that consumed the first value-moment ask; main-owned so remote/web clients can't spoof the once-per-version cap. */
-  starNagAgentValueMomentAppVersion?: string | null
   trustedOrcaHooks?: PersistedTrustedOrcaHooks
   setupScriptPromptDismissedRepoIds?: string[]
-  /** Pet overlay visibility, separate from the experimentalPet settings flag so "Hide pet" is a reversible dismiss; absent = true. */
-  petVisible?: boolean
-  /** Active pet id (bundled id or custom UUID); unknown ids fall back to the default on read so a removed custom pet doesn't blank the overlay. */
-  petId?: string
-  /** Metadata index for user-uploaded pet images; bytes live under legacy userData/sidekicks/custom/. */
-  customPets?: CustomPet[]
-  /** Pet overlay size in CSS pixels (square); clamped to [PET_SIZE_MIN, PET_SIZE_MAX] on read. */
-  petSize?: number
-  /** Legacy keys from before the sidekick -> pet rename; read only during migration, new writes use pet* above. */
-  sidekickVisible?: boolean
-  sidekickId?: string
-  customSidekicks?: CustomPet[]
-  sidekickSize?: number
   /** Page-position state for Tasks: only transient tabs/searches (source/repo/team/project selections use their own settings paths). */
   taskResumeState?: TaskResumeState
   workspaceCleanup?: WorkspaceCleanupUIState

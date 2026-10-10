@@ -8,6 +8,7 @@ import { buildSettingsProjectList } from '@/components/settings/settings-project
 import { getSshPaneSearchEntries } from '@/components/settings/ssh-search'
 import { translate } from '@/i18n/i18n'
 import type { SettingsNavSection } from '@/lib/settings-navigation-types'
+import { isWorkbenchShell } from '@/workbench/is-workbench-shell'
 import { getRepoKindLabel } from '../../../shared/repo-kind'
 import type { Repo } from '../../../shared/repo-types'
 import {
@@ -77,20 +78,26 @@ export function buildRemoteSettingsSections(
           }
         ]
       : []),
-    {
-      id: 'privacy',
-      title: translate(
-        'auto.hooks.useSettingsNavigationMetadata.3618579df6',
-        'Privacy & Telemetry'
-      ),
-      description: translate(
-        'auto.hooks.useSettingsNavigationMetadata.8400cfe1c1',
-        'Anonymous usage data and telemetry controls.'
-      ),
-      icon: Lock,
-      searchEntries: getPrivacyPaneSearchEntries(),
-      group: 'security'
-    },
+    // Why: telemetry and the "Send to support" diagnostic upload report to Orca's
+    // backend, which is not a Workbench destination.
+    ...(isWorkbenchShell()
+      ? []
+      : [
+          {
+            id: 'privacy',
+            title: translate(
+              'auto.hooks.useSettingsNavigationMetadata.3618579df6',
+              'Privacy & Telemetry'
+            ),
+            description: translate(
+              'auto.hooks.useSettingsNavigationMetadata.8400cfe1c1',
+              'Anonymous usage data and telemetry controls.'
+            ),
+            icon: Lock,
+            searchEntries: getPrivacyPaneSearchEntries(),
+            group: 'security'
+          }
+        ]),
     ...(showDesktopOnlySettings
       ? [
           {
@@ -137,7 +144,8 @@ export function buildRemoteSettingsSections(
       searchEntries: getExperimentalPaneSearchEntries(),
       group: 'experimental'
     },
-    ...(showDesktopOnlySettings
+    // Why: Orca plugins are an upstream extension surface the Workbench shell does not expose.
+    ...(showDesktopOnlySettings && !isWorkbenchShell()
       ? [
           {
             id: 'plugins',

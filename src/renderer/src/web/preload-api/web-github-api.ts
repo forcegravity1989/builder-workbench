@@ -125,8 +125,6 @@ export function createGitHubApi(): WebGitHubApi {
         args
       ),
     onWorkItemMutated: () => noopUnsubscribe,
-    checkOrcaStarred: () => Promise.resolve(null),
-    starOrca: () => Promise.resolve(false),
     rateLimit: (args) =>
       route<WebGitHubResult<'rateLimit'>>(GITHUB_WEB_RPC_METHODS.rateLimit, args),
     diagnoseAuth: () =>

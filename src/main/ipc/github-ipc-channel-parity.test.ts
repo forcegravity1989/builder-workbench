@@ -55,8 +55,6 @@ const EXPECTED_GITHUB_IPC_CHANNELS = [
   'gh:listLabels',
   'gh:listAssignableUsers',
   'gh:viewer',
-  'gh:checkOrcaStarred',
-  'gh:starOrca',
   'gh:rateLimit',
   'gh:diagnoseAuth',
   'gh:listAccessibleProjects',

@@ -1,5 +1,4 @@
 import type { CliStatusResult } from '../shared/runtime-types'
-import { prepareComputerCliJsonResult } from './computer-format'
 import type { RuntimeRpcSuccess } from './runtime-client'
 
 export { formatCliError, reportCliError, type CliErrorContext } from './cli-error'
@@ -15,13 +14,6 @@ export {
   formatTabShow
 } from './browser-format'
 
-export {
-  formatComputerAction,
-  formatGetAppState,
-  formatListApps,
-  formatListWindows
-} from './computer-format'
-export type { ComputerActionFollowUpTarget } from './computer-format'
 export {
   formatProjectHostSetupCreateResult,
   formatProjectHostSetupDeleteResult,
@@ -69,7 +61,7 @@ export function printResult<TResult>(
   formatter: (value: TResult) => string
 ): void {
   if (json) {
-    console.log(JSON.stringify(prepareComputerCliJsonResult(response), null, 2))
+    console.log(JSON.stringify(response, null, 2))
     return
   }
   console.log(formatter(response.result))

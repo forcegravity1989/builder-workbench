@@ -19,7 +19,6 @@ import { createWebGithubCacheApi } from './preload-api/web-github-cache-api'
 import { createGitHubApi } from './preload-api/web-github-api'
 import { createGitLabApi } from './preload-api/web-gitlab-api'
 import {
-  createComputerUsePermissionsApi,
   createDeveloperPermissionsApi,
   createPreflightApi,
   createSkillsApi
@@ -42,7 +41,6 @@ import { createRuntimeEnvironmentsApi } from './preload-api/web-runtime-environm
 import { webRuntimeState } from './preload-api/web-runtime-session'
 import { createWebSettingsApi } from './preload-api/web-settings-api'
 import { createShellApi } from './preload-api/web-shell-api'
-import { createWebStarNagApi } from './preload-api/web-star-nag-api'
 import { createWebTelemetryApi } from './preload-api/web-telemetry-api'
 import { createPtyApi, createSshApi } from './preload-api/web-terminal-api'
 import { createWebUiApi } from './preload-api/web-ui-api'
@@ -62,7 +60,6 @@ export function installWebPreloadApi(): void {
 function createWebPreloadApi(): Partial<PreloadApi> {
   return {
     ...createWebAppApi(),
-    ...createWebStarNagApi(),
     ...createWebPlatformApi(),
     ...createWebWorkspacePortsApi(),
     ...createWebOrcaProfilesApi(),
@@ -116,7 +113,6 @@ function createWebPreloadApi(): Partial<PreloadApi> {
         Promise.resolve({ state: 'synced', reason: null, systemConfigPath: '' } as const)
     },
     developerPermissions: createDeveloperPermissionsApi(),
-    computerUsePermissions: createComputerUsePermissionsApi(),
     updater: createUpdaterApi(),
     shell: createShellApi(),
     skills: createSkillsApi(),

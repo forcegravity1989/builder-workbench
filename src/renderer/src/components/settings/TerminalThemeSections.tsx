@@ -9,9 +9,6 @@ import {
 } from './SettingsFormControls'
 import { SearchableSetting } from './SearchableSetting'
 import { TerminalSettingsPreview } from './TerminalSettingsPreview'
-import { WarpThemeImportButton } from './WarpThemeImportButton'
-import { YamlThemeImportButton } from './YamlThemeImportButton'
-import type { UseWarpThemeImportReturn } from './useWarpThemeImport'
 import {
   DEFAULT_TERMINAL_THEME_DARK,
   DEFAULT_TERMINAL_THEME_LIGHT,
@@ -69,9 +66,6 @@ type TerminalThemeCatalogSectionProps = {
   setThemeSearch: Dispatch<SetStateAction<string>>
   updateSettings: (updates: Partial<GlobalSettings>) => void
   previewFontFamily: string | null
-  importedHighlightSignal: number
-  warpThemes: UseWarpThemeImportReturn
-  showThemeImport: boolean
   preferredTarget?: TerminalThemeTarget
   advancedContent?: ReactNode
 }
@@ -83,9 +77,6 @@ export function TerminalThemeCatalogSection({
   setThemeSearch,
   updateSettings,
   previewFontFamily,
-  importedHighlightSignal,
-  warpThemes,
-  showThemeImport,
   preferredTarget,
   advancedContent
 }: TerminalThemeCatalogSectionProps): React.JSX.Element {
@@ -135,14 +126,6 @@ export function TerminalThemeCatalogSection({
           'auto.components.settings.TerminalThemeSections.catalog_title',
           'Terminal Themes'
         )}
-        action={
-          showThemeImport ? (
-            <div className="flex flex-wrap items-center justify-end gap-2">
-              <WarpThemeImportButton warpThemes={warpThemes} />
-              <YamlThemeImportButton warpThemes={warpThemes} />
-            </div>
-          ) : null
-        }
       />
 
       <div className="ml-4 grid gap-4">
@@ -256,7 +239,6 @@ export function TerminalThemeCatalogSection({
                       isLightTarget ? { terminalThemeLight: theme } : { terminalThemeDark: theme }
                     )
                   }}
-                  importedHighlightSignal={importedHighlightSignal}
                 />
               </SearchableSetting>
 

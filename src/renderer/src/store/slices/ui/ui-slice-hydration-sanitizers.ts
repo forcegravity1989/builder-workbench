@@ -199,16 +199,6 @@ export function normalizeHydratedVisibleWorkspaceHostIds(
   return legacyScope === 'all' ? null : [legacyScope]
 }
 
-export function clampPetSize(
-  size: number,
-  defaults: { min: number; max: number; fallback: number }
-): number {
-  if (!Number.isFinite(size)) {
-    return defaults.fallback
-  }
-  return Math.max(defaults.min, Math.min(defaults.max, Math.round(size)))
-}
-
 export function presetToQuery(presetId: TaskViewPresetId | null): string {
   switch (presetId) {
     case 'all':

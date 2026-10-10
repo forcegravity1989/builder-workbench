@@ -10,19 +10,8 @@ export function useSettingsNavigationActions(
   model: SettingsStoreModel,
   interactions: SettingsInteractionController
 ) {
-  const {
-    activeSectionId,
-    setActiveSectionId,
-    setPendingNavRequestTick,
-    setSettingsSearchQuery,
-    settingsSearchQuery
-  } = model
-  const {
-    confirmDiscardSourceControlAiPromptChanges,
-    contentScrollRef,
-    pendingNavSectionRef,
-    pendingScrollTargetRef
-  } = interactions
+  const { activeSectionId, setActiveSectionId, setSettingsSearchQuery, settingsSearchQuery } = model
+  const { confirmDiscardSourceControlAiPromptChanges, contentScrollRef } = interactions
   const scrollToSection = useCallback(
     async (sectionId: string): Promise<void> => {
       if (sectionId !== activeSectionId && !(await confirmDiscardSourceControlAiPromptChanges())) {
@@ -48,28 +37,7 @@ export function useSettingsNavigationActions(
     ]
   )
 
-  const openComputerUseFromBrowser = useCallback(async () => {
-    if (!(await confirmDiscardSourceControlAiPromptChanges())) {
-      return
-    }
-    pendingNavSectionRef.current = 'computer-use'
-    pendingScrollTargetRef.current = 'computer-use'
-    if (settingsSearchQuery !== '') {
-      setSettingsSearchQuery('')
-      return
-    }
-    // Why: pending refs don't schedule a render; bump state to rerun the jump effect.
-    setPendingNavRequestTick((tick) => tick + 1)
-  }, [
-    confirmDiscardSourceControlAiPromptChanges,
-    pendingNavSectionRef,
-    pendingScrollTargetRef,
-    setPendingNavRequestTick,
-    setSettingsSearchQuery,
-    settingsSearchQuery
-  ])
-
-  return { scrollToSection, openComputerUseFromBrowser }
+  return { scrollToSection }
 }
 
 export type SettingsNavigationActions = ReturnType<typeof useSettingsNavigationActions>

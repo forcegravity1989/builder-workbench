@@ -114,13 +114,7 @@ export function useCloseWith({ onOnboardingChange, startTimeRef, setError }: Clo
           total_duration_ms: total
         })
       }
-      if (outcome === 'completed') {
-        // Why: closeWith updates parent state synchronously from this hook's
-        // perspective, but the modal unmounts on the next React commit.
-        window.setTimeout(() => {
-          void window.api.starNag.onboardingCompleted()
-        }, 0)
-      } else if (outcome === 'dismissed') {
+      if (outcome === 'dismissed') {
         trackOnboardingDismissed(lastStepReached, dismissedExtras)
       }
       return true

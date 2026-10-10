@@ -2120,9 +2120,6 @@
   "auto.components.settings.BrowserProfileRow.d420c43729": {
     "ko": "{{value1}}{{value2}}에서 {{value0}}개의 쿠키를 {{value3}}(으)로 가져왔습니다."
   },
-  "auto.components.settings.BrowserUseComputerUseNotice.15b5e680ba": {
-    "ko": "컴퓨터 사용 열기"
-  },
   "auto.components.settings.CliSection.8a9b784c60": {
     "ko": "오래됨"
   },
@@ -2209,12 +2206,6 @@
   },
   "auto.components.settings.GeneralPane.projectRuntimeDescription": {
     "ko": "별도로 재정의하지 않은 로컬 Windows 프로젝트의 기본 런타임입니다."
-  },
-  "auto.components.settings.GeneralSupportSection.6922c1fa2b": {
-    "ko": "GitHub에서 Orca 스타 누르기"
-  },
-  "auto.components.settings.GeneralSupportSection.964acc6bb4": {
-    "ko": "스타"
   },
   "auto.components.settings.GeneralUpdateSettingsSection.90eb7309d7": {
     "ko": "사용 불가"
@@ -2825,75 +2816,6 @@
   "auto.components.settings.VoicePane.b6536a1d12": {
     "ko": "추출 중"
   },
-  "auto.components.settings.WarpThemeImportModal.builtin_themes_hint": {
-    "ko": "Warp의 사전 로드 테마는 Warp 앱의 일부라 디스크에서 읽을 수 없습니다. Orca에는 Dracula, Gruvbox, Solarized, Tokyo Night 등 대부분의 테마가 이미 포함되어 있습니다."
-  },
-  "auto.components.settings.WarpThemeImportModal.choose_file": {
-    "ko": "파일 선택"
-  },
-  "auto.components.settings.WarpThemeImportModal.choose_folder": {
-    "ko": "폴더 선택"
-  },
-  "auto.components.settings.WarpThemeImportModal.choose_manually": {
-    "ko": "수동으로 가져올 테마 YAML 파일 또는 폴더를 선택하세요."
-  },
-  "auto.components.settings.WarpThemeImportModal.clear_all": {
-    "ko": "모두 지우기"
-  },
-  "auto.components.settings.WarpThemeImportModal.colors_only": {
-    "ko": "색상만"
-  },
-  "auto.components.settings.WarpThemeImportModal.custom_theme_yaml_hint": {
-    "ko": "사용자 지정 및 커뮤니티 테마는 자동 가져오기가 찾을 수 있도록 Warp 테마 폴더에 YAML 파일로 있어야 합니다. Warp의 공개 테마 repo를 클론했다면 Choose Folder를 사용해 해당 체크아웃을 가져오세요."
-  },
-  "auto.components.settings.WarpThemeImportModal.description": {
-    "ko": "Warp 테마를 Orca terminal 테마로 가져옵니다."
-  },
-  "auto.components.settings.WarpThemeImportModal.found_in_source": {
-    "ko": "{{value0}}에서"
-  },
-  "auto.components.settings.WarpThemeImportModal.found_theme_one": {
-    "ko": "테마 1개를 찾았습니다."
-  },
-  "auto.components.settings.WarpThemeImportModal.found_theme_other": {
-    "ko": "테마 {{value0}}개를 찾았습니다."
-  },
-  "auto.components.settings.WarpThemeImportModal.import_theme_one": {
-    "ko": "테마 1개 가져오기"
-  },
-  "auto.components.settings.WarpThemeImportModal.import_theme_other": {
-    "ko": "테마 {{value0}}개 가져오기"
-  },
-  "auto.components.settings.WarpThemeImportModal.import_themes": {
-    "ko": "테마 가져오기"
-  },
-  "auto.components.settings.WarpThemeImportModal.loading": {
-    "ko": "Warp 테마 로드 중..."
-  },
-  "auto.components.settings.WarpThemeImportModal.more_skipped_files": {
-    "ko": "건너뛴 파일 {{value0}}개 더 있음"
-  },
-  "auto.components.settings.WarpThemeImportModal.no_themes_found": {
-    "ko": "사용자 지정 Warp 테마를 찾을 수 없습니다."
-  },
-  "auto.components.settings.WarpThemeImportModal.select_all": {
-    "ko": "모두 선택"
-  },
-  "auto.components.settings.WarpThemeImportModal.skipped_files": {
-    "ko": "건너뛴 파일"
-  },
-  "auto.components.settings.WarpThemeImportModal.title": {
-    "ko": "Warp에서 테마 가져오기"
-  },
-  "auto.components.settings.WarpThemeImportModal.yaml_description": {
-    "ko": "YAML 파일(Warp 형식)을 Orca terminal 테마로 가져옵니다."
-  },
-  "auto.components.settings.WarpThemeImportModal.yaml_no_themes_found": {
-    "ko": "선택한 파일에서 테마를 찾을 수 없습니다."
-  },
-  "auto.components.settings.WarpThemeImportModal.yaml_title": {
-    "ko": "테마 YAML 가져오기"
-  },
   "auto.components.settings.WorkspaceDirectorySetting.1a2b3c4d5e": {
     "ko": "클라이언트 기본값"
   },
@@ -2923,9 +2845,6 @@
   },
   "auto.components.settings.WslCliRegistration.e49688f67f": {
     "ko": "WSL에 `{{value0}}`을(를) 등록하시겠습니까?"
-  },
-  "auto.components.settings.YamlThemeImportButton.label": {
-    "ko": "YAML에서 가져오기"
   },
   "auto.components.settings.accounts.search.042885c07c": {
     "ko": "오래됨"
@@ -3119,33 +3038,6 @@
   "auto.components.settings.commit.message.ai.search.b7d50da4d8": {
     "ko": "템플릿"
   },
-  "auto.components.settings.computerUseSkillRuntime.thisDevice": {
-    "ko": "이 기기"
-  },
-  "auto.components.settings.computerUseSummary.checkingDescription": {
-    "ko": "Orca가 Computer Use 도우미의 macOS 개인정보 보호 권한을 확인하고 있습니다."
-  },
-  "auto.components.settings.computerUseSummary.checkingTitle": {
-    "ko": "Computer Use 액세스 확인 중입니다."
-  },
-  "auto.components.settings.computerUseSummary.permissionsRequired": {
-    "ko": "agents가 앱 창을 조작하려면 먼저 {{value0}} 권한{{value1}}이 필요합니다."
-  },
-  "auto.components.settings.computerUseSummary.permissionsTitle": {
-    "ko": "로컬 앱을 사용하려면 설정을 완료하세요."
-  },
-  "auto.components.settings.computerUseSummary.readyDescription": {
-    "ko": "요청하면 Agents가 앱 창을 검사하고 조작할 수 있습니다."
-  },
-  "auto.components.settings.computerUseSummary.readyTitle": {
-    "ko": "Computer Use를 사용할 준비가 되었습니다."
-  },
-  "auto.components.settings.computerUseSummary.unavailableDescription": {
-    "ko": "{{value0}} 때문에 Computer Use 권한을 사용할 수 없습니다."
-  },
-  "auto.components.settings.computerUseSummary.unavailableTitle": {
-    "ko": "Computer Use를 사용할 수 없습니다."
-  },
   "auto.components.settings.developer.permissions.search.00e954319e": {
     "ko": "Whisper"
   },
@@ -3179,23 +3071,11 @@
   "auto.components.settings.experimental.search.268e99d957": {
     "ko": "강조 표시"
   },
-  "auto.components.settings.experimental.search.65df471ab2": {
-    "ko": "애니메이션"
-  },
   "auto.components.settings.experimental.search.7695fd30e9": {
     "ko": "알림"
   },
   "auto.components.settings.experimental.search.7b79081695": {
     "ko": "읽지 않음"
-  },
-  "auto.components.settings.experimental.search.9af7a518db": {
-    "ko": "캐릭터"
-  },
-  "auto.components.settings.experimental.search.9f5609bfb8": {
-    "ko": "오버레이"
-  },
-  "auto.components.settings.experimental.search.b54cea709b": {
-    "ko": "사이드킥"
   },
   "auto.components.settings.experimental.search.edc49480a1": {
     "ko": "패널"
@@ -3223,9 +3103,6 @@
   },
   "auto.components.settings.general.search.2f42852568": {
     "ko": "트리"
-  },
-  "auto.components.settings.general.search.36a72f0d9e": {
-    "ko": "GitHub에서 Orca에 스타 주기"
   },
   "auto.components.settings.general.search.3a73054565": {
     "ko": "우회"
@@ -3260,9 +3137,6 @@
   "auto.components.settings.general.search.aea7d2cccb": {
     "ko": "OpenClaude"
   },
-  "auto.components.settings.general.search.bdfb6dc21b": {
-    "ko": "좋아요"
-  },
   "auto.components.settings.general.search.c56cb6f1c2": {
     "ko": "네트워크"
   },
@@ -3274,9 +3148,6 @@
   },
   "auto.components.settings.general.search.e1ee631696": {
     "ko": "편집기"
-  },
-  "auto.components.settings.general.search.e4fb4516d0": {
-    "ko": "스타"
   },
   "auto.components.settings.general.search.e55d62dfa4": {
     "ko": "런치패드"
@@ -3845,18 +3716,6 @@
   "auto.components.settings.terminal.search.fffdff40a7": {
     "ko": "버퍼"
   },
-  "auto.components.settings.terminal.search.warp_import.description": {
-    "ko": "Warp 테마를 Orca terminal 테마로 가져옵니다."
-  },
-  "auto.components.settings.terminal.search.warp_import.title": {
-    "ko": "Warp에서 테마 가져오기"
-  },
-  "auto.components.settings.terminal.search.yaml_import.description": {
-    "ko": "테마 YAML 파일을 Orca terminal 테마로 가져옵니다."
-  },
-  "auto.components.settings.terminal.search.yaml_import.title": {
-    "ko": "YAML에서 가져오기"
-  },
   "auto.components.settings.terminal.windows.search.28ff08ed35": {
     "ko": "창"
   },
@@ -3946,24 +3805,6 @@
   },
   "auto.components.settings.token.source.control.integration.cards.fcbe0469fd": {
     "ko": "공개 repos는 Git 원격에서 감지됩니다. 설정하세요"
-  },
-  "auto.components.settings.useWarpThemeImport.import_failed": {
-    "ko": "테마를 가져오지 못했습니다."
-  },
-  "auto.components.settings.useWarpThemeImport.imported_one": {
-    "ko": "테마 1개를 가져왔습니다."
-  },
-  "auto.components.settings.useWarpThemeImport.imported_other": {
-    "ko": "테마 {{value0}}개를 가져왔습니다."
-  },
-  "auto.components.settings.useWarpThemeImport.over_limit_one": {
-    "ko": "이 테마를 가져오면 사용자 지정 terminal 테마 {{value0}}개 제한을 초과합니다. 새 테마 1개를 선택 해제하고 다시 시도하세요."
-  },
-  "auto.components.settings.useWarpThemeImport.over_limit_other": {
-    "ko": "이 테마들을 가져오면 사용자 지정 terminal 테마 {{value0}}개 제한을 초과합니다. 새 테마 {{value1}}개를 선택 해제하고 다시 시도하세요."
-  },
-  "auto.components.settings.useWarpThemeImport.unknown_error": {
-    "ko": "알 수 없는 오류"
   },
   "auto.components.settings.voice.pane.search.04c25a6fb0": {
     "ko": "openai"
@@ -4369,30 +4210,6 @@
   },
   "auto.components.sparse.SparseCheckoutPresetSelect.ddbcaef7be": {
     "ko": "src/renderer packages/ui"
-  },
-  "auto.components.star.nag.StarNagToastHost.body": {
-    "ko": "Orca가 마음에 드신다면 GitHub 별표가 다른 개발자가 Orca를 발견하는 데 도움이 됩니다."
-  },
-  "auto.components.star.nag.StarNagToastHost.githubOpened": {
-    "ko": "GitHub 열림"
-  },
-  "auto.components.star.nag.StarNagToastHost.onboardingCompleted": {
-    "ko": "온보딩 완료!"
-  },
-  "auto.components.star.nag.StarNagToastHost.openGithub": {
-    "ko": "GitHub 열기"
-  },
-  "auto.components.star.nag.StarNagToastHost.opening": {
-    "ko": "여는 중…"
-  },
-  "auto.components.star.nag.StarNagToastHost.starOnGithub": {
-    "ko": "GitHub에서 별표 누르기"
-  },
-  "auto.components.star.nag.StarNagToastHost.starredThanks": {
-    "ko": "별표를 눌러주셔서 감사합니다!"
-  },
-  "auto.components.star.nag.StarNagToastHost.starring": {
-    "ko": "별표 누르는 중…"
   },
   "auto.components.stats.ClaudeUsagePane.cfe2282ffa": {
     "ko": "알 수 없음"

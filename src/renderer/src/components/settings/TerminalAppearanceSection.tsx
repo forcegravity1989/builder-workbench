@@ -15,8 +15,6 @@ import {
   getTerminalLightThemeSearchEntries,
   getTerminalPaneAppearanceSearchEntries,
   getTerminalThemeTargetSearchEntries,
-  getTerminalWarpImportSearchEntries,
-  getTerminalYamlImportSearchEntries,
   getTerminalTypographySearchEntries,
   getTerminalWindowSearchEntries
 } from './terminal-search'
@@ -32,8 +30,6 @@ import { TerminalPaneAppearanceSection } from './TerminalPaneAppearanceSection'
 import { AppearanceAdvancedDisclosure } from './AppearanceAdvancedDisclosure'
 import { GhosttyImportModal } from './GhosttyImportModal'
 import type { UseGhosttyImportReturn } from './useGhosttyImport'
-import { WarpThemeImportModal } from './WarpThemeImportModal'
-import type { UseWarpThemeImportReturn } from './useWarpThemeImport'
 import { isWebClientLocation } from '@/lib/web-client-location'
 import ghosttyIcon from '../../../../../resources/ghostty.svg'
 import { translate } from '@/i18n/i18n'
@@ -45,7 +41,6 @@ type TerminalAppearanceSectionProps = {
   terminalFontSuggestions: string[]
   onRequestFontSuggestions?: () => void
   ghostty: UseGhosttyImportReturn
-  warpThemes: UseWarpThemeImportReturn
   forceVisiblePrimary?: boolean
 }
 
@@ -76,7 +71,6 @@ export function TerminalAppearanceSection({
   terminalFontSuggestions,
   onRequestFontSuggestions,
   ghostty,
-  warpThemes,
   forceVisiblePrimary = false
 }: TerminalAppearanceSectionProps): React.JSX.Element {
   const searchQuery = useAppStore((state) => state.settingsSearchQuery)
@@ -91,10 +85,7 @@ export function TerminalAppearanceSection({
   const themeCatalogSearchEntries = [
     ...getTerminalThemeTargetSearchEntries(),
     ...darkThemeSearchEntries,
-    ...lightThemeSearchEntries,
-    ...(showDesktopThemeImports
-      ? [...getTerminalWarpImportSearchEntries(), ...getTerminalYamlImportSearchEntries()]
-      : [])
+    ...lightThemeSearchEntries
   ]
   const darkThemeTargetScore = scoreThemeTargetIntent(searchQuery, darkThemeSearchEntries)
   const lightThemeTargetScore = scoreThemeTargetIntent(searchQuery, lightThemeSearchEntries)
@@ -259,40 +250,21 @@ export function TerminalAppearanceSection({
           setThemeSearch={setThemeSearch}
           updateSettings={updateSettings}
           previewFontFamily={previewFontFamily}
-          importedHighlightSignal={warpThemes.importSignal}
-          warpThemes={warpThemes}
-          showThemeImport={showDesktopThemeImports}
           preferredTarget={preferredThemeTarget}
           advancedContent={previewAdvancedContent}
         />
       ) : null}
 
       {showDesktopThemeImports ? (
-        <>
-          <GhosttyImportModal
-            open={ghostty.open}
-            onOpenChange={ghostty.handleOpenChange}
-            preview={ghostty.preview}
-            loading={ghostty.loading}
-            onApply={ghostty.handleApply}
-            applied={ghostty.applied}
-            applyError={ghostty.applyError}
-          />
-          <WarpThemeImportModal
-            open={warpThemes.open}
-            mode={warpThemes.mode}
-            preview={warpThemes.preview}
-            loading={warpThemes.loading}
-            desktopOnly={warpThemes.desktopOnly}
-            applyError={warpThemes.applyError}
-            selectedThemeIds={warpThemes.selectedThemeIds}
-            handlePreviewSource={warpThemes.handlePreviewSource}
-            handleToggleTheme={warpThemes.handleToggleTheme}
-            handleToggleAll={warpThemes.handleToggleAll}
-            handleApply={warpThemes.handleApply}
-            handleOpenChange={warpThemes.handleOpenChange}
-          />
-        </>
+        <GhosttyImportModal
+          open={ghostty.open}
+          onOpenChange={ghostty.handleOpenChange}
+          preview={ghostty.preview}
+          loading={ghostty.loading}
+          onApply={ghostty.handleApply}
+          applied={ghostty.applied}
+          applyError={ghostty.applyError}
+        />
       ) : null}
     </div>
   )

@@ -266,7 +266,6 @@ export const onboardingFeatureSetupRunSchema = z
     cli_touched: z.boolean(),
     skill_commands_copied: z.boolean(),
     skill_install_command_prepared: z.boolean(),
-    computer_use_permissions_opened: z.boolean(),
     warning_count: z.number().int().nonnegative(),
     cohort: cohortSchema
   })

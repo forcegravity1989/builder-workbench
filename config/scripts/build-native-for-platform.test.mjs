@@ -42,11 +42,11 @@ function startBuild(mode, options = {}) {
     import { appendFileSync, existsSync } from 'node:fs'
     import { spawn } from 'node:child_process'
     const name = process.argv.at(-1)
-    const delay = name.includes('computer') ? 0 : name.includes('keyboard') ? 200 : 400
+    const delay = name.includes('keyboard') ? 0 : 200
     const record = (event, extra = {}) => appendFileSync(process.env.NATIVE_BUILD_JOURNAL, JSON.stringify({ name, event, pid: process.pid, ...extra }) + '\\n')
     const finish = (signal) => { record(signal); process.exit(process.env.NATIVE_BUILD_MODE === 'failure-status' ? 9 : 0) }
     if (process.env.NATIVE_BUILD_MODE !== 'signal-default') process.on('SIGTERM', () => { if (process.env.NATIVE_BUILD_MODE !== 'ignore') setTimeout(() => finish('SIGTERM'), delay) })
-    if (process.env.NATIVE_BUILD_MODE !== 'signal-default' || !name.includes('computer')) process.on('SIGINT', () => setTimeout(() => finish('SIGINT'), delay))
+    if (process.env.NATIVE_BUILD_MODE !== 'signal-default' || !name.includes('keyboard')) process.on('SIGINT', () => setTimeout(() => finish('SIGINT'), delay))
     process.on('SIGHUP', () => setTimeout(() => finish('SIGHUP'), delay))
     record('started')
     process.stdout.write('ready ' + process.pid + '\\n')
@@ -58,7 +58,7 @@ function startBuild(mode, options = {}) {
       if (!existsSync(process.env.NATIVE_BUILD_GATE)) return
       if (process.env.NATIVE_BUILD_MODE.startsWith('output-closed-')) {
         const target = process.env.NATIVE_BUILD_MODE.endsWith('stderr') ? process.stderr : process.stdout
-        if (name.includes('computer')) target.write('compiler progress\\n')
+        if (name.includes('keyboard')) target.write('compiler progress\\n')
         return
       }
       if (process.env.NATIVE_BUILD_MODE === 'flood') {
@@ -71,7 +71,7 @@ function startBuild(mode, options = {}) {
       }
       if (['success', 'descendant-success'].includes(process.env.NATIVE_BUILD_MODE)) { record('completed'); process.exit(0) }
       if (process.env.NATIVE_BUILD_MODE === 'stalled-consumer') {
-        if (!name.includes('computer') || existsSync(process.env.NATIVE_BUILD_GATE + '-exit')) { record('completed'); process.exit(0) }
+        if (!name.includes('keyboard') || existsSync(process.env.NATIVE_BUILD_GATE + '-exit')) { record('completed'); process.exit(0) }
         if (flooding) return
         flooding = true
         // Each callback means the kernel pipe accepted the line, so it survives our exit.
@@ -79,7 +79,7 @@ function startBuild(mode, options = {}) {
         pump(1)
         return
       }
-      if (!name.includes('computer')) return
+      if (!name.includes('keyboard')) return
       record('failed')
       if (process.env.NATIVE_BUILD_MODE === 'failure-signal') process.kill(process.pid, 'SIGALRM')
       else if (process.env.NATIVE_BUILD_MODE === 'failure-sigpipe') { process.on('SIGPIPE', () => {}); process.removeAllListeners('SIGPIPE'); process.kill(process.pid, 'SIGPIPE') }
@@ -136,7 +136,7 @@ function startBuild(mode, options = {}) {
     for (const pid of pids) {
       buildPids.add(pid)
     }
-    if (pids.length === 3 && (!mode.startsWith('descendant') || descendantPids.length === 3)) {
+    if (pids.length === 2 && (!mode.startsWith('descendant') || descendantPids.length === 2)) {
       readyResolve()
     }
   })
@@ -179,10 +179,10 @@ describe.skipIf(process.platform !== 'darwin')('parallel native builds', () => {
   it('starts every independent build before any completes', async () => {
     const build = startBuild('success')
     await build.ready
-    expect(build.events().map(({ event }) => event)).toEqual(['started', 'started', 'started'])
+    expect(build.events().map(({ event }) => event)).toEqual(['started', 'started'])
     build.release()
     expect(await build.closed).toMatchObject({ code: 0, signal: null })
-    expect(build.events().filter(({ event }) => event === 'completed')).toHaveLength(3)
+    expect(build.events().filter(({ event }) => event === 'completed')).toHaveLength(2)
   })
 
   it.each(['SIGINT', 'SIGTERM', 'SIGHUP'])(
@@ -192,7 +192,7 @@ describe.skipIf(process.platform !== 'darwin')('parallel native builds', () => {
       await build.ready
       build.child.kill(signal)
       expect(await build.closed).toMatchObject({ code: null, signal })
-      expect(build.events().filter(({ event }) => event === signal)).toHaveLength(3)
+      expect(build.events().filter(({ event }) => event === signal)).toHaveLength(2)
     }
   )
 
@@ -201,7 +201,7 @@ describe.skipIf(process.platform !== 'darwin')('parallel native builds', () => {
     await build.ready
     build.release()
     expect(await build.closed).toMatchObject({ code: 7, signal: null })
-    expect(build.events().filter(({ event }) => event === 'SIGTERM')).toHaveLength(2)
+    expect(build.events().filter(({ event }) => event === 'SIGTERM')).toHaveLength(1)
   })
 
   it('reports the first failure, not the status of siblings it cancelled', async () => {
@@ -209,7 +209,7 @@ describe.skipIf(process.platform !== 'darwin')('parallel native builds', () => {
     await build.ready
     build.release()
     expect(await build.closed).toMatchObject({ code: 7, signal: null })
-    expect(build.events().filter(({ event }) => event === 'SIGTERM')).toHaveLength(2)
+    expect(build.events().filter(({ event }) => event === 'SIGTERM')).toHaveLength(1)
   })
 
   it('re-raises the signal that killed a build', async () => {
@@ -217,7 +217,7 @@ describe.skipIf(process.platform !== 'darwin')('parallel native builds', () => {
     await build.ready
     build.release()
     expect(await build.closed).toMatchObject({ code: null, signal: 'SIGALRM' })
-    expect(build.events().filter(({ event }) => event === 'SIGTERM')).toHaveLength(2)
+    expect(build.events().filter(({ event }) => event === 'SIGTERM')).toHaveLength(1)
   })
 
   it('fails when the signal that killed a build is one the launcher ignores', async () => {
@@ -225,7 +225,7 @@ describe.skipIf(process.platform !== 'darwin')('parallel native builds', () => {
     await build.ready
     build.release()
     expect(await build.closed).toMatchObject({ code: 1, signal: null })
-    expect(build.events().filter(({ event }) => event === 'SIGTERM')).toHaveLength(2)
+    expect(build.events().filter(({ event }) => event === 'SIGTERM')).toHaveLength(1)
   })
 
   it('lets siblings finish SIGINT cleanup when one child uses the default handler', async () => {
@@ -233,7 +233,7 @@ describe.skipIf(process.platform !== 'darwin')('parallel native builds', () => {
     await build.ready
     build.child.kill('SIGINT')
     expect(await build.closed).toMatchObject({ code: null, signal: 'SIGINT' })
-    expect(build.events().filter(({ event }) => event === 'SIGINT')).toHaveLength(2)
+    expect(build.events().filter(({ event }) => event === 'SIGINT')).toHaveLength(1)
   })
 
   it('forces a sibling that ignores graceful cancellation to exit', async () => {
@@ -273,7 +273,7 @@ describe.skipIf(process.platform !== 'darwin')('parallel native builds', () => {
       const result = await build.closed
       expect(result).toMatchObject({ code: 1, signal: null })
       expect(result.stderr).not.toContain('Unhandled')
-      expect(build.events().filter(({ event }) => event === 'completed')).toHaveLength(3)
+      expect(build.events().filter(({ event }) => event === 'completed')).toHaveLength(2)
     }
   )
 
@@ -297,7 +297,7 @@ describe.skipIf(process.platform !== 'darwin')('parallel native builds', () => {
     await build.ready
     build.release()
     expect(await build.closed).toMatchObject({ code: 0, signal: null })
-    expect(build.events().filter(({ event }) => event === 'completed')).toHaveLength(3)
+    expect(build.events().filter(({ event }) => event === 'completed')).toHaveLength(2)
     for (const pid of build.descendants()) {
       expect(() => process.kill(pid, 0)).toThrow()
     }
@@ -341,8 +341,8 @@ describe.skipIf(process.platform !== 'darwin')('parallel native builds', () => {
 
     const result = await build.closed
     expect(result).toMatchObject({ code: 0, signal: null })
-    const delivered = [...result.output.matchAll(/^\[computer\] line (\d+) /gm)].map((match) =>
-      Number(match[1])
+    const delivered = [...result.output.matchAll(/^\[keyboard-layout\] line (\d+) /gm)].map(
+      (match) => Number(match[1])
     )
     expect(delivered).toEqual(Array.from({ length: accepted }, (_, index) => index + 1))
   })
@@ -355,7 +355,7 @@ describe.skipIf(process.platform !== 'darwin')('parallel native builds', () => {
     expect(result.output).toContain(
       platform === 'win32'
         ? 'windows launcher only'
-        : 'no macOS native computer build required on linux'
+        : 'no macOS native helper build required on linux'
     )
   })
 })

@@ -1,13 +1,4 @@
 import type { UISlice, UISliceGet, UISliceSet } from './ui-slice-contract'
-import { revokeCustomPetBlobUrl } from '../../../components/pet/pet-blob-cache'
-import { DEFAULT_PET_ID } from '../../../components/pet/pet-models'
-import {
-  PET_SIZE_DEFAULT,
-  PET_SIZE_MAX,
-  PET_SIZE_MIN,
-  type CustomPet
-} from '../../../../../shared/pet-types'
-import { clampPetSize } from './ui-slice-hydration-sanitizers'
 
 export function createUiSurfaceActions(set: UISliceSet, _get: UISliceGet): Partial<UISlice> {
   return {
@@ -86,65 +77,6 @@ export function createUiSurfaceActions(set: UISliceSet, _get: UISliceGet): Parti
           ? state
           : { workspacePortScanRefreshing: refreshing }
       ),
-
-    // Why: default true so enabling experimentalPet shows the pet immediately (persisted; "Hide pet" flips it false).
-    petVisible: true,
-    setPetVisible: (v) => {
-      window.api.ui.set({ petVisible: v }).catch(console.error)
-      set({ petVisible: v })
-    },
-
-    petId: DEFAULT_PET_ID,
-    setPetId: (id) => {
-      window.api.ui.set({ petId: id }).catch(console.error)
-      set({ petId: id })
-    },
-
-    petSize: PET_SIZE_DEFAULT,
-    setPetSize: (size) => {
-      const clamped = clampPetSize(size, {
-        min: PET_SIZE_MIN,
-        max: PET_SIZE_MAX,
-        fallback: PET_SIZE_DEFAULT
-      })
-      window.api.ui.set({ petSize: clamped }).catch(console.error)
-      set({ petSize: clamped })
-    },
-
-    customPets: [],
-    addCustomPet: (model) =>
-      set((s) => {
-        const next = [...s.customPets.filter((m) => m.id !== model.id), model]
-        window.api.ui.set({ customPets: next }).catch(console.error)
-        return { customPets: next }
-      }),
-    removeCustomPet: (id) =>
-      set((s) => {
-        const target = s.customPets.find((m) => m.id === id)
-        if (!target) {
-          return s
-        }
-        const next = s.customPets.filter((m) => m.id !== id)
-        // Why: removing the active custom pet falls back to bundled default so the overlay isn't empty.
-        const fallback = s.petId === id ? DEFAULT_PET_ID : s.petId
-        // Why: single combined IPC update so customPets and petId persist atomically.
-        const ipcPayload: { customPets: CustomPet[]; petId?: string } = {
-          customPets: next
-        }
-        if (fallback !== s.petId) {
-          ipcPayload.petId = fallback
-        }
-        window.api.ui.set(ipcPayload).catch(console.error)
-        // Why: revoke the cached blob: URL so the Blob is released, not leaked for the session.
-        revokeCustomPetBlobUrl(id)
-        // Why: best-effort delete — bytes owned by main; fresh-UUID imports mean an orphaned file is never re-referenced.
-        window.api.pet.delete(id, target.fileName, target.kind).catch(console.error)
-        const partial: Partial<UISlice> = { customPets: next }
-        if (fallback !== s.petId) {
-          partial.petId = fallback
-        }
-        return partial
-      }),
 
     pendingRevealWorktree: null,
     pendingRevealSidebarRow: null,

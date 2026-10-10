@@ -61,11 +61,6 @@ src/main/codex/codex-app-server-posix-supervisor.ts
 src/main/codex/codex-app-server-session.ts
 src/main/codex/codex-state-db-backfill-recovery.ts
 src/main/codex/codex-wsl-hook-install-plan.ts
-src/main/computer/desktop-script-provider-bridge.ts
-src/main/computer/macos-computer-use-permission-status.ts
-src/main/computer/macos-computer-use-permissions.ts
-src/main/computer/macos-native-provider-transport.ts
-src/main/computer/sidecar-client.ts
 src/main/daemon/daemon-bash-wrapper-osc133-fixture.ts
 src/main/daemon/daemon-launched-child.ts
 src/main/daemon/daemon-process-identity-query.ts

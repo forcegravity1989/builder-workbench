@@ -237,7 +237,3 @@ export function readDeprecatedExperimentFlag(parsed: PersistedState | undefined)
       ?.experimentalAgentDashboard === true
   )
 }
-
-export function readLegacySidekickFlag(parsed: PersistedState | undefined): boolean | undefined {
-  return (parsed?.settings as { experimentalSidekick?: boolean } | undefined)?.experimentalSidekick
-}

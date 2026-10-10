@@ -32,9 +32,7 @@ const CLIENT_EXPORTS = [
   'markPRReadyForReview',
   'rerunPRChecks',
   'requestPRReviewers',
-  'removePRReviewers',
-  'checkOrcaStarred',
-  'starOrca'
+  'removePRReviewers'
 ] as const
 
 const WORK_ITEM_DETAILS_EXPORTS = ['getWorkItemDetails', 'getPRFileContents'] as const

@@ -10,9 +10,6 @@ main/agent-hooks/managed-hook-runtime.ts
 main/app-icon.ts
 main/automations/precheck-runner.ts
 main/claude-accounts/keychain.ts
-main/computer/macos-computer-use-permission-status.ts
-main/computer/macos-computer-use-permissions.ts
-main/computer/macos-native-provider-transport.ts
 main/daemon/daemon-bash-wrapper-osc133-fixture.ts
 main/daemon/daemon-process-identity-query.ts
 main/daemon/daemon-process-start-time.ts

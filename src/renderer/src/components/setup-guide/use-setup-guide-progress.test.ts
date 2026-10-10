@@ -9,7 +9,6 @@ import {
   shouldMarkBrowserMilestoneLegacyComplete
 } from './setup-guide-browser-milestone-progress'
 import {
-  getComputerUsePermissionSetupState,
   getCurrentSetupScriptProbeState,
   getSetupGuideProgressReady,
   getSetupScriptProbeSignature,
@@ -109,40 +108,6 @@ describe('browser milestone legacy setup guide progress', () => {
   })
 })
 
-describe('getComputerUsePermissionSetupState', () => {
-  it('does not treat a failed status read as unavailable setup completion', () => {
-    expect(getComputerUsePermissionSetupState(null)).toEqual({
-      ready: false,
-      unavailable: false
-    })
-  })
-
-  it('marks Computer Use ready only when permissions are granted and helper is available', () => {
-    expect(
-      getComputerUsePermissionSetupState({
-        platform: 'darwin',
-        helperAppPath: '/Applications/Orca Helper.app',
-        helperUnavailableReason: null,
-        permissions: [
-          { id: 'accessibility', status: 'granted' },
-          { id: 'screenshots', status: 'granted' }
-        ]
-      })
-    ).toEqual({ ready: true, unavailable: false })
-  })
-
-  it('marks Computer Use unavailable only for explicit helper unavailability', () => {
-    expect(
-      getComputerUsePermissionSetupState({
-        platform: 'linux',
-        helperAppPath: null,
-        helperUnavailableReason: 'unsupported-platform',
-        permissions: []
-      })
-    ).toEqual({ ready: false, unavailable: true })
-  })
-})
-
 describe('getSetupGuideProgressReady', () => {
   const readyInput = {
     refreshEnabled: true,
@@ -151,11 +116,8 @@ describe('getSetupGuideProgressReady', () => {
     linearStatusChecked: true,
     jiraStatusChecked: true,
     browserUseSkillDiscoveryLoading: false,
-    computerUseSkillDiscoveryLoading: false,
     orchestrationSkillDiscoveryLoading: false,
-    setupScriptProbeReady: true,
-    computerUseSkillInstalled: false,
-    computerUsePermissionStatusChecked: false
+    setupScriptProbeReady: true
   }
 
   it('waits for every setup-guide skill discovery scan to settle', () => {
@@ -168,41 +130,7 @@ describe('getSetupGuideProgressReady', () => {
     expect(
       getSetupGuideProgressReady({
         ...readyInput,
-        computerUseSkillDiscoveryLoading: true
-      })
-    ).toBe(false)
-    expect(
-      getSetupGuideProgressReady({
-        ...readyInput,
         orchestrationSkillDiscoveryLoading: true
-      })
-    ).toBe(false)
-  })
-
-  it('treats checked but ungranted Computer Use permissions as settled readiness', () => {
-    expect(
-      getComputerUsePermissionSetupState({
-        platform: 'darwin',
-        helperAppPath: '/Applications/Orca Helper.app',
-        helperUnavailableReason: null,
-        permissions: [{ id: 'accessibility', status: 'not-granted' }]
-      })
-    ).toEqual({ ready: false, unavailable: false })
-    expect(
-      getSetupGuideProgressReady({
-        ...readyInput,
-        computerUseSkillInstalled: true,
-        computerUsePermissionStatusChecked: true
-      })
-    ).toBe(true)
-  })
-
-  it('waits for Computer Use permission status when the skill is installed', () => {
-    expect(
-      getSetupGuideProgressReady({
-        ...readyInput,
-        computerUseSkillInstalled: true,
-        computerUsePermissionStatusChecked: false
       })
     ).toBe(false)
   })

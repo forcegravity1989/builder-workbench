@@ -29,7 +29,6 @@ import {
   clampWorkspaceBoardOpacity,
   normalizeWorkspaceStatuses
 } from '../../../../../shared/workspace-statuses'
-import { PET_SIZE_DEFAULT, PET_SIZE_MAX, PET_SIZE_MIN } from '../../../../../shared/pet-types'
 import { clampMarkdownTocPanelWidth } from '../../../../../shared/markdown-toc-panel-width'
 import { clampCombinedDiffFileTreeWidth } from '../../../../../shared/combined-diff-file-tree-width'
 import { parsePersistedAutomationHostFilter } from '../../../../../shared/automation-host-filter'
@@ -43,7 +42,6 @@ import {
   filterSetupScriptPromptDismissalsToValidRepos,
   sanitizeSetupScriptPromptDismissals
 } from '../../../lib/setup-script-prompt'
-import { isBundledPetId, DEFAULT_PET_ID } from '../../../components/pet/pet-models'
 import { getRepoHostIdentity } from '../repo-host-identity'
 import type { PersistedUIWriteBaseline } from '../persisted-ui-write-baseline'
 import {
@@ -61,8 +59,7 @@ import {
   sanitizeWorkspaceCleanupDismissals,
   sanitizePersistedSidebarWidth,
   hydratedUIPartialMatchesState,
-  migrateStatusBarItems,
-  clampPetSize
+  migrateStatusBarItems
 } from './ui-slice-hydration-sanitizers'
 import { hydrateAgentReadState, sanitizeTaskResumeState } from './ui-slice-hydration-values'
 
@@ -106,13 +103,6 @@ export function createUiHydrationActions(set: UISliceSet, _get: UISliceGet): Par
         const validRepoHostIdentities = new Set(s.repos.map(getRepoHostIdentity))
         const persistedFilterRepoIds = sanitizePersistedRepoIds(ui.filterRepoIds)
         const persistedAgentsFilterRepoIds = sanitizePersistedRepoIds(ui.agentsFilterRepoIds)
-        // Why: pre-rename builds used sidekick* keys; read as fallback only so new pet* writes win after upgrade.
-        const customPets = Array.isArray(ui.customPets)
-          ? ui.customPets
-          : Array.isArray(ui.customSidekicks)
-            ? ui.customSidekicks
-            : []
-        const petId = ui.petId ?? ui.sidekickId
         // Migration: one-shot old-'recent'→'smart' runs in main (_sortBySmartMigrated), not here, so a deliberate 'recent' choice survives restart.
         const sortBy = ui.sortBy
         const statusBarItemsWithGrok = hydrateStatusBarItems(ui)
@@ -204,28 +194,6 @@ export function createUiHydrationActions(set: UISliceSet, _get: UISliceGet): Par
           statusBarVisible: ui.statusBarVisible ?? true,
           usagePercentageDisplay: normalizeUsagePercentageDisplay(ui.usagePercentageDisplay),
           statusBarUsageMode: normalizeStatusBarUsageMode(ui.statusBarUsageMode),
-          // Why: default true so existing users see the pet on first enabling the flag; only an explicit Hide persists false.
-          petVisible: ui.petVisible ?? ui.sidekickVisible ?? true,
-          petSize: clampPetSize(ui.petSize ?? ui.sidekickSize ?? PET_SIZE_DEFAULT, {
-            min: PET_SIZE_MIN,
-            max: PET_SIZE_MAX,
-            fallback: PET_SIZE_DEFAULT
-          }),
-          customPets,
-          // Why: fall back to default when the persisted id is unknown (e.g. custom pet removed elsewhere) so the overlay renders.
-          petId: ((): string => {
-            const id = petId
-            if (typeof id !== 'string') {
-              return DEFAULT_PET_ID
-            }
-            if (isBundledPetId(id)) {
-              return id
-            }
-            if (customPets.some((m) => m.id === id)) {
-              return id
-            }
-            return DEFAULT_PET_ID
-          })(),
           dismissedUpdateVersion: ui.dismissedUpdateVersion ?? null,
           ...hydrateUnexpectedSignoutDismissal(s, ui.dismissedUnexpectedSignoutVersion),
           // Why: a persisted value from a build that knew a different channel set

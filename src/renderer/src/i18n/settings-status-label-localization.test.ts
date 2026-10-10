@@ -48,10 +48,6 @@ const REQUIRED_KEYS: Record<string, string> = {
   'auto.components.settings.DeveloperPermissionsPane.actionRequest': 'Request',
   'auto.components.settings.DeveloperPermissionsPane.actionTriggerPrompt': 'Trigger Prompt',
   'auto.components.settings.DeveloperPermissionsPane.actionOpenSettings': 'Open Settings',
-  // ComputerUsePane — permission rows
-  'auto.components.settings.ComputerUsePane.statusGranted': 'Granted',
-  'auto.components.settings.ComputerUsePane.statusUnsupported': 'macOS only',
-  'auto.components.settings.ComputerUsePane.statusNotEnabled': 'Not enabled',
   // Source-control CLI integration cards
   'auto.components.settings.cli.source.control.integration.cards.statusConnected': 'Connected',
   'auto.components.settings.cli.source.control.integration.cards.statusUnavailable': 'Unavailable',
@@ -67,9 +63,6 @@ const REQUIRED_KEYS: Record<string, string> = {
 
 const INTERPOLATED_KEYS: Record<string, string[]> = {
   'auto.components.stats.StatsPane.trackingSince': ['{{value0}}'],
-  'auto.components.settings.computerUseSummary.permissionsRequired_one': [],
-  'auto.components.settings.computerUseSummary.permissionsRequired_other': ['{{value0}}'],
-  'auto.components.settings.computerUseSummary.unavailableDescription': ['{{value0}}'],
   'auto.components.settings.OrchestrationSkillAgentCoverage.fullCoverage_one': [],
   'auto.components.settings.OrchestrationSkillAgentCoverage.fullCoverage_other': ['{{value0}}'],
   'auto.components.settings.OrchestrationSkillAgentCoverage.partialCoverage': [
@@ -79,10 +72,7 @@ const INTERPOLATED_KEYS: Record<string, string[]> = {
 }
 
 // Base keys i18next resolves through CLDR plural categories (`<key>_<suffix>`).
-const PLURAL_KEYS = [
-  'auto.components.settings.computerUseSummary.permissionsRequired',
-  'auto.components.settings.OrchestrationSkillAgentCoverage.fullCoverage'
-]
+const PLURAL_KEYS = ['auto.components.settings.OrchestrationSkillAgentCoverage.fullCoverage']
 
 function pluralCategories(locale: string): string[] {
   return [...new Intl.PluralRules(locale).resolvedOptions().pluralCategories]

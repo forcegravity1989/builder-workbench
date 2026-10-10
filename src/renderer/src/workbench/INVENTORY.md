@@ -43,6 +43,7 @@
 - Feature wall 营销向导（壳开启时尽量跳过）
 - 左栏 Artifacts / Skills 并列入口（收进设置或隐藏）
 - **Orca Mobile 产品已删**（`mobile/`、桌面 Mobile 页、手机设置页）；配对协议仍在执行核里，见 `ref/upstream.md`
+- **本机能力与后台模块已删**（Computer use、桌宠、加星服务、Warp 主题导入）；设置的 Plugins / Orchestration / Privacy & Telemetry 三页壳内隐藏，见 `ref/upstream.md`
 - `.omc/**` 不进产品提交
 
 ## 待完成

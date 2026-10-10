@@ -13,7 +13,6 @@ const SCRIPT_DIR = import.meta.dirname
 const REPO_ROOT = path.resolve(SCRIPT_DIR, '..', '..')
 
 const CANONICAL_GUIDE_NAMES = [
-  'computer-use',
   'linear-tickets',
   'orca-cli',
   'orca-emulator',
@@ -35,7 +34,6 @@ const WORKBENCH_COMMON_REFERENCES = ['version-records', 'metrics', 'issue-state'
 // Why: old discovery stubs can outlive a rename indefinitely, so aliases are
 // a compatibility ledger: add entries for renames, but never remove them.
 const GUIDE_ALIASES = {
-  'computer-use': [],
   'linear-tickets': [],
   'orca-cli': [],
   'orca-emulator': [],
@@ -54,7 +52,6 @@ for (const name of Object.keys(WORKBENCH_GUIDE_SOURCES)) {
 // landing to converge — so entries are added as skills convert, never removed. The stub
 // body lives in skill-stubs/<topic>.md; the projection reuses the guide's own frontmatter.
 const STUB_TOPICS = [
-  'computer-use',
   'linear-tickets',
   'orca-cli',
   'orca-emulator',

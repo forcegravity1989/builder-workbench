@@ -20,10 +20,6 @@ const updateCapableCallers = new Map<string, readonly string[]>([
     ['ORCHESTRATION_SKILL_UPDATE_COMMAND', 'installedCommand={updateCommand}']
   ],
   [
-    'src/renderer/src/components/settings/ComputerUseSkillSetupPanel.tsx',
-    ['COMPUTER_USE_SKILL_UPDATE_COMMAND', 'installedCommand={updateCommand}']
-  ],
-  [
     // Shared hook owns update-target resolution for Linear settings + Task Sources.
     'src/renderer/src/components/settings/use-linear-agent-skill-setup.ts',
     [

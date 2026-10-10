@@ -422,20 +422,11 @@ describe('orca root help', () => {
     logSpy.mockRestore()
   })
 
-  it('advertises computer-use capabilities discovery', async () => {
+  it('advertises project host setup commands', async () => {
     const logSpy = vi.spyOn(console, 'log').mockImplementation(() => {})
 
     await main(['--help'], '/tmp/repo')
 
-    expect(logSpy.mock.calls[0][0]).toContain(
-      'computer capabilities     Show computer-use provider capabilities'
-    )
-    expect(logSpy.mock.calls[0][0]).toContain(
-      'computer permissions      Show or open computer-use permission setup'
-    )
-    expect(logSpy.mock.calls[0][0]).toContain(
-      'computer press-key        Press a single key such as Return or Escape'
-    )
     expect(logSpy.mock.calls[0][0]).toContain(
       'project setup-existing-folder Make a project available on a host by importing an existing folder'
     )

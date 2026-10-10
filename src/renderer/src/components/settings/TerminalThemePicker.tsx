@@ -1,5 +1,4 @@
 import type React from 'react'
-import { useEffect, useRef, useState } from 'react'
 import { ScrollArea } from '../ui/scroll-area'
 import { Input } from '../ui/input'
 import { Label } from '../ui/label'
@@ -20,9 +19,6 @@ type ThemePickerProps = {
   query: string
   onQueryChange: (value: string) => void
   onSelectTheme: (theme: string) => void
-  /** Bumps when themes are imported; scrolls the Imported group into view and
-   *  briefly highlights it so freshly-imported themes are easy to find. */
-  importedHighlightSignal?: number
 }
 
 export function ThemePicker({
@@ -32,25 +28,8 @@ export function ThemePicker({
   themeOptions,
   query,
   onQueryChange,
-  onSelectTheme,
-  importedHighlightSignal
+  onSelectTheme
 }: ThemePickerProps): React.JSX.Element {
-  const importedGroupRef = useRef<HTMLDivElement | null>(null)
-  const [highlightImported, setHighlightImported] = useState(false)
-
-  // Why: imported themes render below the built-in list inside a fixed-height
-  // scroll area, so after an import they sit off-screen. On each import signal,
-  // scroll the Imported group into view and flash a highlight so it's easy to spot.
-  useEffect(() => {
-    if (!importedHighlightSignal) {
-      return
-    }
-    importedGroupRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
-    setHighlightImported(true)
-    const timer = setTimeout(() => setHighlightImported(false), 2000)
-    return () => clearTimeout(timer)
-  }, [importedHighlightSignal])
-
   const themeQuery = query.trim()
   const shouldShowThemeQueryLabel =
     themeQuery.length > 0 && !isSettingsFormOptionQueryTooLarge(themeQuery)
@@ -112,21 +91,8 @@ export function ThemePicker({
         <ScrollArea className="h-64">
           <div className="space-y-1 p-2">
             {groupedThemes.map((group) => {
-              const isImported =
-                group.label ===
-                translate(
-                  'auto.components.settings.SettingsFormControls.imported_themes',
-                  'Imported'
-                )
               return (
-                <div
-                  key={group.label}
-                  ref={isImported ? importedGroupRef : undefined}
-                  className={cn(
-                    'space-y-1 rounded-md transition-colors duration-500',
-                    isImported && highlightImported && 'bg-accent/40 ring-1 ring-accent'
-                  )}
-                >
+                <div key={group.label} className="space-y-1 rounded-md">
                   <p className="px-3 pt-2 text-[11px] font-semibold uppercase tracking-[0.05em] text-muted-foreground">
                     {group.label}
                   </p>

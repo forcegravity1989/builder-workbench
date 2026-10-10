@@ -120,21 +120,12 @@ async function installBlockedCompletedCapabilityFakes(
       return {
         skills: [
           makeSkill('orca-cli', 'e2e-orca-cli'),
-          makeSkill('computer-use', 'e2e-computer-use'),
           makeSkill('orchestration', 'e2e-orchestration')
         ],
         sources: [],
         scannedAt: Date.now()
       }
     })
-
-    ipcMain.removeHandler('computerUsePermissions:getStatus')
-    ipcMain.handle('computerUsePermissions:getStatus', async () => ({
-      platform: process.platform,
-      helperAppPath: null,
-      helperUnavailableReason: 'e2e-unavailable',
-      permissions: []
-    }))
 
     ipcMain.removeHandler('hooks:check')
     ipcMain.handle('hooks:check', async () => ({

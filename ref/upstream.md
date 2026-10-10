@@ -43,6 +43,31 @@ git merge orca-upstream/main
 
 合并 upstream 时：不要把 `mobile/` 或 Mobile 页重新合回来。协议文件若 upstream 改了，优先取 upstream，除非叠层已摘钩子。
 
+### 源码：本机能力与后台模块（2026-10-10，已从本分支删除）
+
+Workbench 不让 agent 操控桌面、不养桌宠、不向用户索要 GitHub 星标、不导入 Warp 主题；这四条链从 git 整链删除，不是壳内隐藏。设置里另有三页按壳开关隐藏（代码保留，非壳模式不变）：
+
+| 处置 | 路径 | 说明 |
+|---|---|---|
+| **删除** | `src/main/computer/`（57 文件）、`native/computer-use-{macos,windows,linux}/`（32） | Computer use 主进程 provider、sidecar 与三平台原生 helper |
+| **删除** | `src/cli/{computer-format,handlers/computer*,specs/computer*}`（11）、`src/main/runtime/rpc/methods/computer*` 与 `dispatcher-computer-errors.test`（5）、`src/main/ipc/computer-use-permissions*`、preload `computer-use-permissions-bridge`、`src/shared/computer-use-*`（6）与 `rpc-contract/computer-*-params` | `orca computer` 子命令、`computer.*` RPC、权限 IPC 与共享类型；`runtime-types` 不再导出 `COMPUTER_ERROR_CODES` 等，RPC 错误映射去掉 computer 恢复提示，`rpc-params-catalog.generated.ts` 重生成 |
+| **删除** | 设置 `ComputerUsePane` / `ComputerUseSkillSetupPanel` / `BrowserUseComputerUseNotice` / `computer-use-search`，导航目标 `computer-use`，Cmd+J 别名 | Browser 设置页不再跳转 Computer Use |
+| **删除** | `skills/computer-use/`、`skill-guides/computer-use.md`、`skill-stubs/computer-use.md` | 内置技能；`generate-bundled-skill-guides` 三张名单去掉它，`bundled-skill-guides.ts` 与 `resources/skills/current-manifest.json` 重生成 |
+| **删除** | `config/scripts/` 16 个脚本（`build-computer-macos`、`computer-use-smoke`、`verify-computer-native`、`macos-computer-helper-owner-loss-*`、`native-provider-line-gate-benchmark` 等）、`tests/e2e/computer-*` 与 `tests/e2e/vitest.config.ts`（9）、`.github/workflows/computer-e2e.yml`、`resources/build/entitlements.computer-use.mac.plist` | package.json 删 `build:computer-macos` / `smoke:computer` / `verify:computer-native` / `test:e2e:computer` / `bench:macos-computer-helper-owner-loss`，并从 `build:mac`、`build:mac:workbench`、`build:mac:release`、`build:release`、`build:release:parallel` 去掉对应步骤 |
+| **删除** | `src/renderer/src/components/pet/`（22）、`status-bar/PetStatusSegment`、`src/main/ipc/pet*`（12）、preload `pet-api` / `pet-bridge`、`src/shared/{pet-types,codex-pet-sprite-defaults}`、`resources/{claude,gremlin,opencode}.webp`、e2e `pet-status-segment-layout` | 桌宠；`experimentalPet` / `experimentalSidekick` 设置字段与加载迁移、UI 状态 `pet*` / `sidekick*` 字段（store、hydration、`ui.set` 参数 schema）、Experimental 面板宠物项、设置遥测白名单一并删除 |
+| **删除** | `src/main/star-nag/`（16）、`components/star-nag/`（4）、`StarNagCard`、`GeneralSupportSection` 与 `general-support-search`、`landing-github-star-state`、`github/client/fetch/orca-star.ts`、preload `star-nag-bridge`、web `web-star-nag-api`、`src/shared/{gh-star-source,star-nag-telemetry}` | 加星服务；`gh:starOrca` / `gh:checkOrcaStarred` IPC、`starNag*` UI 状态字段、遥测事件 `app_starred_orca` / `star_nag_outcome`、`StatsCollector.onAgentStarted`（只有加星服务订阅）一并删除；Landing 的「Star on GitHub」按钮删除 |
+| **删除** | `src/main/warp-themes/`（18）、设置 `WarpThemeImportButton` / `WarpThemeImportModal` / `YamlThemeImportButton` / `useWarpThemeImport`、`icons/WarpIcon` | Warp / YAML 主题导入（YAML 按钮走同一条 Warp 解析链）；`settings:previewWarpThemeImport` IPC、`warp-theme-parser-worker` 构建入口、主题选择器的「刚导入」高亮信号删除 |
+| **改调用** | `config/electron-builder.config.cjs`、`electron.vite.config.ts`、`config/build-plugins/plain-node-entry-guard.ts`、`config/knip.json`、`config/scripts/build-native-for-platform.mjs`、`.github/workflows/{pr,release-cut}.yml` | 去掉 computer sidecar、helper app 打包与签名、Windows/Linux runtime 脚本、deb/rpm 的 AT-SPI / xdotool 依赖（`python3`、`xclip` 仍被 hook 与剪贴板使用，保留）；macOS 原生并行构建剩键盘布局与通知状态两个 helper |
+| **改调用** | `src/main/ipc/register-core-handlers`、`main-process-{ready-runtime,state,quit}`、`stats/collector`、`ipc/github-account-handlers`、`ipc/telemetry`、`app-shell/AppRootSurfaces`、`status-bar/StatusBarSurface`、`Landing.tsx`、`GeneralPane` | 只摘掉对被删模块的挂载与调用 |
+| **改调用** | `components/{onboarding,feature-wall,setup-guide}/` 中 Computer use 选项、权限探测与进度判定，`shared/telemetry-onboarding-*` 的 `computer_use` 字段 | 首启教育链本身由「首启弹层与品牌残留」整批删除；这里只去掉对 Computer use 的引用，合并时以删除为准 |
+| **壳内隐藏** | `hooks/settings-navigation-capability-sections.ts`（Orchestration）、`hooks/settings-navigation-remote-sections.ts`（Privacy & Telemetry、Plugins） | `isWorkbenchShell()` 为真时不进设置导航与 Cmd+J；Privacy 页含「Send to support」诊断上传入口。非壳模式不变 |
+| **未删** | `terminalCustomThemes` 存储与渲染、`TerminalCustomThemeSource` 的 `'warp'` 值 | 已导入的自定义主题仍可选用；导入入口删除后已无写入方，清理归下一批 |
+| **未删** | `resources/skills/snapshot-registry.json` 中 computer-use 已发布的 8 个快照、`skill-guides/orca-emulator*.md` 中「用 `computer-use` 操作桌面」的提示 | 注册表只追加；改技能正文需随技能修订号发布，归下一批 |
+
+i18n：175 个只被上述组件引用的英文键（161 个本次失去引用 + 14 个这些命名空间里早已无引用的残键）从 6 个语言目录剪除，`en-runtime-required.json` 由 `sync:localization-runtime-catalog` 重生成；`config/scripts` 的 locale 覆盖规则同步删去指向这些键的条目。
+
+合并 upstream 时：不要把以上目录、`orca computer` 子命令、`computer.*` RPC、桌宠、加星服务与 Warp 导入合回来；upstream 改到这些文件时按删除冲突处理。Orchestration / Privacy / Plugins 三页只在导航层隐藏，upstream 对其正文的改动照常合入。
+
 ### 文档（本轮原 `bw-orca` 落仓）
 
 产品文档已换成 **Workbench 旧 `main`**（导入时 tip：`25f38bc80211f9656e229ef31b0e5a10ae28226a`；该路线现归档为 `archive/main-pre-orca`），正本在仓根 `AGENTS.md` / `CONTEXT.md` / `README.md` / `CLAUDE.md` 与 `docs/`。

@@ -14,7 +14,6 @@ import type { RateLimitService } from '../rate-limits/service'
 import type { OrcaRuntimeRpcServer } from '../runtime/runtime-rpc'
 import type { DesktopRelayService } from '../runtime/relay/desktop-relay-service'
 import type { DesktopPushService } from '../runtime/push/desktop-push-service'
-import type { StarNagService } from '../star-nag/service'
 import type { AgentAwakeService } from '../agent-awake-service'
 import type { CrashReportStore } from '../crash-reporting/crash-report-store'
 import type { AutomationService } from '../automations/service'
@@ -71,7 +70,6 @@ export const mainProcessState = {
   pendingUnpairedDeviceAuthFailure: false,
   // Why: gates whether headless serve installs the offscreen browser backend (and advertises browser pane support).
   headlessBrowserDisplayAvailable: false,
-  starNag: null as StarNagService | null,
   agentAwakeService: null as AgentAwakeService | null,
   uninstallRepoMaintenanceIdleGate: null as (() => Promise<void>) | null,
   repoMaintenanceShutdown: Promise.resolve() as Promise<void>,

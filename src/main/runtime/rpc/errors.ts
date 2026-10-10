@@ -3,8 +3,6 @@
 // format human-facing messages. Centralizing this mapping keeps the allowlist
 // auditable in one place instead of spread across per-method branches.
 import type { RpcEnvelopeMeta, RpcFailure, RpcSuccess } from './core'
-import { computerUseErrorRecoveryData } from '../../../shared/computer-use-error-recovery'
-import { COMPUTER_ERROR_CODES } from '../../../shared/runtime-types'
 import { LINEAR_ERROR_CODES } from '../../../shared/linear/agent-access'
 import { AGENT_SESSION_RPC_ERROR_CODES } from '../../../shared/agent-session-host-authority'
 import { ARTIFACT_SHARING_DISABLED_CODE } from '../../../shared/artifact-sharing-gate'
@@ -77,7 +75,6 @@ const RUNTIME_PASSTHROUGH_CODES: ReadonlySet<string> = new Set([
   ...AGENT_SESSION_RPC_ERROR_CODES
 ])
 
-const COMPUTER_PASSTHROUGH_CODES: ReadonlySet<string> = new Set(Object.values(COMPUTER_ERROR_CODES))
 const LINEAR_PASSTHROUGH_CODES: ReadonlySet<string> = new Set(LINEAR_ERROR_CODES)
 const STRUCTURED_RUNTIME_PASSTHROUGH_CODES: ReadonlySet<string> = new Set([
   'worktree_id_requires_full_path',
@@ -151,15 +148,6 @@ export function mapRuntimeError(id: string, meta: RpcEnvelopeMeta, error: unknow
     error instanceof Error &&
     'code' in error &&
     typeof (error as { code: unknown }).code === 'string' &&
-    COMPUTER_PASSTHROUGH_CODES.has((error as { code: string }).code)
-  ) {
-    const code = (error as { code: string }).code
-    return errorResponse(id, meta, code, message, computerErrorData(code, message))
-  }
-  if (
-    error instanceof Error &&
-    'code' in error &&
-    typeof (error as { code: unknown }).code === 'string' &&
     (error as { code: string }).code.startsWith('LINEAGE_')
   ) {
     return errorResponse(
@@ -216,8 +204,6 @@ export function mapRuntimeError(id: string, meta: RpcEnvelopeMeta, error: unknow
   }
   return errorResponse(id, meta, 'runtime_error', message)
 }
-
-export const computerErrorData = computerUseErrorRecoveryData
 
 // Why: browser errors carry a structured .code property (BrowserError from
 // cdp-bridge.ts) that maps directly to agent-facing error codes. We forward

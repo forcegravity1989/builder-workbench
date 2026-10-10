@@ -71,7 +71,7 @@ describe('docs-only path classification', () => {
   })
 
   it('still runs PR Checks for product markdown and CI', () => {
-    expect(isDocsOnlyPath('skills/computer-use/SKILL.md')).toBe(false)
+    expect(isDocsOnlyPath('skills/orca-cli/SKILL.md')).toBe(false)
     expect(isDocsOnlyPath('skill-guides/orca-cli.md')).toBe(false)
     expect(isDocsOnlyPath('.github/workflows/pr.yml')).toBe(false)
     expect(isDocsOnlyPath('src/main/index.ts')).toBe(false)
@@ -186,10 +186,7 @@ describe('per-job path classification', () => {
     expectClassification(['native/windows-cli-launcher/OrcaCliLauncher.cs'], {
       package_windows: true
     })
-    expectClassification(['native/computer-use-linux/runtime.py'], {
-      package: true
-    })
-    expectClassification(['native/computer-use-macos/Package.swift'], {})
+    expectClassification(['native/keyboard-layout-macos/main.swift'], {})
   })
 
   it('runs Linux packaging when an artifact contract changes', () => {

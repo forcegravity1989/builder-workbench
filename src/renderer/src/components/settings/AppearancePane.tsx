@@ -28,7 +28,6 @@ import {
 import { getTerminalAppearanceSearchEntries } from './terminal-search'
 import { TerminalAppearanceSection } from './TerminalAppearanceSection'
 import type { UseGhosttyImportReturn } from './useGhosttyImport'
-import type { UseWarpThemeImportReturn } from './useWarpThemeImport'
 import { AppIconSelector } from './AppIconSelector'
 import { normalizeAppIconId } from '../../../../shared/app-icon'
 import { getRendererAppPlatform } from '@/lib/renderer-app-platform'
@@ -51,7 +50,6 @@ type AppearancePaneProps = {
   onRequestFontSuggestions?: () => void
   systemPrefersDark: boolean
   ghostty: UseGhosttyImportReturn
-  warpThemes: UseWarpThemeImportReturn
 }
 
 type AppearanceSectionKey = 'interface' | 'terminal' | 'window'
@@ -70,8 +68,7 @@ export function AppearancePane({
   terminalFontSuggestions,
   onRequestFontSuggestions,
   systemPrefersDark,
-  ghostty,
-  warpThemes
+  ghostty
 }: AppearancePaneProps): React.JSX.Element {
   const searchQuery = useAppStore((state) => state.settingsSearchQuery)
   const appearanceAccordionDeepLink = useAppStore((state) => state.appearanceAccordionDeepLink)
@@ -254,7 +251,6 @@ export function AppearancePane({
             terminalFontSuggestions={terminalFontSuggestions}
             onRequestFontSuggestions={onRequestFontSuggestions}
             ghostty={ghostty}
-            warpThemes={warpThemes}
             forceVisiblePrimary={terminalLabelMatches}
           />
         </AppearanceSection>

@@ -134,22 +134,6 @@ import {
   SaveImageAsTempFile,
   StartImageUpload
 } from './clipboard-params'
-import { ComputerCapabilitiesParams, ComputerPermissionsStatusParams } from './computer-params'
-import {
-  Click,
-  ComputerObserveTarget,
-  ComputerPermissions,
-  Drag as DragOfComputerSchemasParams,
-  Hotkey,
-  ListApps,
-  ListWindows,
-  PasteText,
-  PerformSecondaryAction,
-  PressKey,
-  Scroll as ScrollOfComputerSchemasParams,
-  SetValue,
-  TypeText
-} from './computer-schemas-params'
 import {
   AttachParams as AttachParamsOfEmulatorParams,
   AxParams,
@@ -745,21 +729,6 @@ export const RPC_PARAMS_BY_METHOD = {
   'codehub.setReviewers': CodeHubSetReviewers,
   'codehub.updateIssueTitle': CodeHubUpdateIssueTitle,
   'codehub.viewTask': CodeHubViewTask,
-  'computer.capabilities': ComputerCapabilitiesParams,
-  'computer.click': Click,
-  'computer.drag': DragOfComputerSchemasParams,
-  'computer.getAppState': ComputerObserveTarget,
-  'computer.hotkey': Hotkey,
-  'computer.listApps': ListApps,
-  'computer.listWindows': ListWindows,
-  'computer.pasteText': PasteText,
-  'computer.performSecondaryAction': PerformSecondaryAction,
-  'computer.permissions': ComputerPermissions,
-  'computer.permissionsStatus': ComputerPermissionsStatusParams,
-  'computer.pressKey': PressKey,
-  'computer.scroll': ScrollOfComputerSchemasParams,
-  'computer.setValue': SetValue,
-  'computer.typeText': TypeText,
   'diagnostics.memory': null,
   'emulator.attach': AttachParamsOfEmulatorParams,
   'emulator.availability': EmulatorAvailabilityParams,

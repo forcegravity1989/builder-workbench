@@ -16,7 +16,6 @@ import type { UsagePercentageDisplay } from '../../../../../shared/usage-percent
 import type { AutomationHostFilter } from '../../../../../shared/automation-host-filter'
 import type { WorkspaceStatusDefinition } from '../../../../../shared/worktree/types'
 import type { WorkspacePortScanResult } from '../../../../../shared/workspace-ports'
-import type { CustomPet } from '../../../../../shared/pet-types'
 import type { ReleaseChannel } from '../../../../../shared/release-channel'
 import type { ChangelogData, UpdateStatus } from '../../../../../shared/update-status-types'
 import type { StatusBarUsageMode } from '../../../../../shared/status-bar-usage-mode'
@@ -122,19 +121,6 @@ export type UISliceSurfaces = {
   ) => void
   setWorkspacePortScanForKey: (key: string, result: WorkspacePortScanResult | null) => void
   setWorkspacePortScanRefreshing: (refreshing: boolean) => void
-  /** Whether the pet overlay is currently visible. Persisted so "Hide pet" survives reload. Independent of the experimentalPet flag (which gates whether it can render at all). */
-  petVisible: boolean
-  setPetVisible: (v: boolean) => void
-  /** Which pet is active — a bundled id or a custom UUID. Persisted via PersistedUIState. */
-  petId: string
-  setPetId: (id: string) => void
-  /** User-uploaded pet images. Metadata only — bytes live in main's userData. */
-  customPets: CustomPet[]
-  addCustomPet: (model: CustomPet) => void
-  removeCustomPet: (id: string) => void
-  /** Pet overlay size in CSS pixels (square). User-adjustable so an oversized imported sprite isn't stuck on screen. */
-  petSize: number
-  setPetSize: (size: number) => void
   pendingRevealWorktree: UISliceCore['pendingRevealWorktree']
   pendingRevealSidebarRow: UISliceCore['pendingRevealSidebarRow']
   revealWorktreeInSidebar: UISliceCore['revealWorktreeInSidebar']

@@ -2,10 +2,7 @@ import { useCallback, useMemo } from 'react'
 import { applyDocumentTheme } from '@/lib/document-theme'
 import { useSettingsNavigationMetadata } from '@/hooks/useSettingsNavigationMetadata'
 import type { SettingsNavInstallStatus } from '@/lib/settings-navigation-types'
-import {
-  COMPUTER_USE_SKILL_NAME,
-  ORCHESTRATION_SKILL_NAME
-} from '@/lib/agent-feature-install-commands'
+import { ORCHESTRATION_SKILL_NAME } from '@/lib/agent-feature-install-commands'
 import {
   getAgentSkillNavInstallStatus,
   getLinearAgentSkillNavInstallStatus
@@ -49,8 +46,6 @@ export function useSettingsNavigationModel(
     loading: linearSkillLoading,
     skills: linearSkills
   } = model.linearSkill
-  const { installed: computerUseSkillInstalled, loading: computerUseSkillLoading } =
-    model.computerUseSkill
   const capabilityInstallStatusBySectionId = useMemo(() => {
     const applicableFreshnessInventory = model.skillFreshnessApplies
       ? model.skillFreshnessInventory
@@ -77,31 +72,18 @@ export function useSettingsNavigationModel(
         })
       )
     }
-    if (model.showDesktopOnlySettings) {
+    if (model.showDesktopOnlySettings && model.settings) {
       next.set(
-        'computer-use',
-        getAgentSkillNavInstallStatus({
-          name: COMPUTER_USE_SKILL_NAME,
-          installed: computerUseSkillInstalled,
-          loading: computerUseSkillLoading,
-          inventory: applicableFreshnessInventory
-        })
+        'voice',
+        model.voiceModelStatesLoading
+          ? 'checking'
+          : hasReadyVoiceModel(model.settings, model.modelStates)
+            ? 'installed'
+            : 'install'
       )
-      if (model.settings) {
-        next.set(
-          'voice',
-          model.voiceModelStatesLoading
-            ? 'checking'
-            : hasReadyVoiceModel(model.settings, model.modelStates)
-              ? 'installed'
-              : 'install'
-        )
-      }
     }
     return next
   }, [
-    computerUseSkillInstalled,
-    computerUseSkillLoading,
     linearSkillInstalled,
     linearSkillLoading,
     linearSkills,

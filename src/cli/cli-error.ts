@@ -1,4 +1,3 @@
-import { computerUseErrorRecoveryData } from '../shared/computer-use-error-recovery'
 import {
   matchAutomationOwnerConflict,
   stripAutomationOwnerConflictCode
@@ -59,12 +58,6 @@ export function formatCliError(error: unknown, context: CliErrorContext = {}): s
     const nextSteps = nextStepsFromData(error.data)
     if (nextSteps.length > 0) {
       return formatMessageWithNextSteps(message, nextSteps)
-    }
-    if (error.code === 'invalid_argument' && context.commandPath?.[0] === 'computer') {
-      return formatMessageWithNextSteps(
-        message,
-        computerUseErrorRecoveryData('invalid_argument')?.nextSteps ?? []
-      )
     }
   }
   if (
@@ -200,13 +193,6 @@ function localCliErrorData(error: unknown, context: CliErrorContext): unknown {
   const conflict = automationOwnerConflictRecovery(matchAutomationOwnerConflict(error))
   if (conflict) {
     return conflict
-  }
-  if (
-    error instanceof RuntimeClientError &&
-    error.code === 'invalid_argument' &&
-    context.commandPath?.[0] === 'computer'
-  ) {
-    return computerUseErrorRecoveryData('invalid_argument')
   }
   return undefined
 }

@@ -36,8 +36,6 @@ export function useStatusBarController(floatingTerminalOpen: boolean) {
   // Why: gate per-CLI bars on PATH detection so an uninstalled agent isn't shown a noisy empty bar (auto re-shows when installed).
   const detectedAgentIds = useAppStore((s) => s.detectedAgentIds)
   const ensureDetectedAgents = useAppStore((s) => s.ensureDetectedAgents)
-  // Why: pet segment is driven purely by experimentalPet, not statusBarItems, to avoid double-toggling the surface (see design doc).
-  const petEnabled = useAppStore((s) => s.settings?.experimentalPet === true)
   const toggleStatusBarItem = useAppStore((s) => s.toggleStatusBarItem)
   const usageEmptyStateDismissed = useAppStore((s) => s.usageEmptyStateDismissed)
   const containerRef = useRef<HTMLDivElement>(null)
@@ -250,7 +248,6 @@ export function useStatusBarController(floatingTerminalOpen: boolean) {
     isRefreshing,
     menuOpen,
     menuPoint,
-    petEnabled,
     recordFeatureInteraction,
     rosterProviders,
     setMenuOpen,

@@ -96,9 +96,6 @@ export const DEFAULT_EDITOR_AUTO_SAVE_DELAY_MS = 1000
 export const MIN_EDITOR_AUTO_SAVE_DELAY_MS = 250
 export const MAX_EDITOR_AUTO_SAVE_DELAY_MS = 10_000
 
-// Why: first-time seed only — doubles on each dismissal without starring; later thresholds live in starNagNextThreshold.
-export const STAR_NAG_INITIAL_THRESHOLD = 35
-
 /** Synthetic worktree id for PTYs not tied to any worktree; shared so main and renderer agree on the sentinel. */
 export const ORPHAN_WORKTREE_ID = '__orphan__'
 
