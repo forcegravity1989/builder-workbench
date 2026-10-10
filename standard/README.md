@@ -47,7 +47,7 @@
 |---|---|---|
 | `SYSTEM.md.tmpl` | 主提示词:身份 + 读 `AGENTS.md` + 按任务加载 reference + 纪律（含计划页签不另开 HTML） | 计划/验收自动化首次登记、数据问题处理及指标配置时渲染；普通新建与历史恢复不注入。覆盖边界见模块说明 |
 | `REVIEW.md.tmpl` | 评审会话主提示词 | 已收录,尚未派发 |
-| `references/issue-state.md` | Issue 原生状态、正文、材料关联与人的处理边界 | 所有 Issue |
+| `references/issue-state.md` | Issue 提单格式、计划补充、材料任务关联与处理结果 | 所有 Issue |
 | `references/metrics.md` | 脚本指标协议 | 指标配置及两个版本流程按需读取 |
 | `references/week-plan-comment.md` | 旧计划 Issue 评论三标题 | 仅供历史评论核对、修复和导入 |
 | `references/version-records.md` | 版本计划 / 验收材料及修订契约 | 两个版本流程与资产盘点写入明确版本进展时按需读取 |

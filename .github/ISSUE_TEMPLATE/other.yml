@@ -8,7 +8,7 @@ body:
   - type: textarea
     id: problem
     attributes:
-      label: 问题与范围
+      label: 问题描述
       description: 什么问题需要讨论？已有事实、原始来源和范围是什么？
     validations:
       required: true
@@ -18,4 +18,4 @@ body:
       label: 验收条件
       description: 需要回答哪些问题，出现什么证据后继续、停止或作决定？未知处写待确认。
     validations:
-      required: true
+      required: false

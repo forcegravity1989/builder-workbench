@@ -49,7 +49,7 @@ Superpowers / grill-me 可用于发散、质询和计划草稿，特性产出仍
 | 完成永远由人确认，同一工作不重复记录完成结果 | Issue 关闭由人决定，原生关闭原因区分已完成、决定不做与重复；关闭不自动证明目标达成；自动化、agent、定时不得自行关闭或确认完成 |
 | 定时任务真实到点触发；自动创建的 Issue 不自动完成 | 调度在 Orca，到点开会话，不能替人确认 Done |
 
-- Issue 原生状态与关闭原因是处理结果的正本；仓文件产物通过分支和 PR/MR 评审。正文、版本关联与写入边界读 [issue-state](standard/system-prompt/references/issue-state.md)。版本/目标关联写在计划 JSON 的任务引用；不恢复旧 BW 标签状态机，不新写 `bw:status:*` / `bw:released:*` / `bw:category:*` / `bw:week:*` 或 `kind` / `tool` / `workflow` 协议标签。类型按 provider 或项目约定核对，工具与会话沿本机设置和原生入口。
+- Issue 原生状态与关闭原因是处理结果的正本；仓文件产物通过分支和 PR/MR 评审。提单格式与纳入计划时的补充见 [Issue 格式](standard/system-prompt/references/issue-state.md)，计划关联使用材料中的任务引用。不恢复已退役的状态标签或另造平行协议。工具与会话沿本机设置和原生入口。
 - Workbench MVP 本地零业务数据库。用 `gh` / `codehub-cli` / `git` / 文件独立读回；不用 V3 的 `sqlite3` 路径。项目约定和指标资产的归属读 [architecture](docs/architecture.md)，不能将资产盘点变成代写项目开发规范。
 - 入口层不写业务正本；计划 JSON 保存版本/目标与任务关联，Issue 原生字段保存实际状态。
 - 先查清 Orca 已有代码、提示词和真实调用链，核对能力归属、宿主路由、权限及扩展点，再比较复用与最小适配；不把尚未摸清能力当成产品限制，不另造平行实现、平行规范或特殊通道。具体边界读 [architecture](docs/architecture.md) 与 [upstream](ref/upstream.md)。

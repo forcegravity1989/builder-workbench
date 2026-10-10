@@ -25,14 +25,12 @@
 ## 范围与边界
 
 - **做**：CodeHub 作为与 GitHub、GitLab 并列的任务来源；任务列表、详情和已实现的写操作；计划 / 验收对 CodeHub 任务的读回和打开；CodeHub 远端的归档状态保持未知；验收版本列表改为读取采用基线上的计划目录（这条规则对所有平台生效，行为正文在[验收规格](../version-acceptance/spec.md)，本特性负责 CodeHub 上为什么必须如此）。
-- **范围外**：把 CodeHub 收成 GitHub Enterprise 或 GitLab；探测 CodeHub 登录；草稿 MR 与 Mark ready；评论表情、已读、修改评论正文；用 `bw:status:*` 标签表示 CodeHub 工作状态；发明一条 CodeHub 合入提交的读回通道。
+- **范围外**：把 CodeHub 收成 GitHub Enterprise 或 GitLab；探测 CodeHub 登录；草稿 MR 与 Mark ready；评论表情、已读、修改评论正文；发明一条 CodeHub 合入提交的读回通道。
 - **相邻**：版本计划、版本验收、总览指标各自的规格已写下侧栏项目列表和「配置指标进入会话」。那些句子属于原特性，这里不重写。
 
 ## 成功判据与待决问题
 
 **判据**：Builder 在 CodeHub 仓库上能列出并打开自己的 Issue，关闭时先有关单评论再关闭；杀进程重开后列表仍从 CLI 读回。归档不出现假的「已合入」或假的「尚未创建」。没有 `data.json` 的目录不会变成可选版本。
-
-CodeHub 和 GitHub 均以原生 Issue 状态为准，不写 `bw:status:*` 工作状态标签。CodeHub 当前以关单评论记录理由后关闭，GitHub 使用原生关闭原因；写入与人的决定边界见 [Issue 规范](../../../standard/system-prompt/references/issue-state.md)。这不是工作状态的平台差异。
 
 **待决（需 gate）**：
 

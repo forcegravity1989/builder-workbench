@@ -1,6 +1,5 @@
 name: 提出需求
 description: 提出 Workbench 的具体用户需求或改进
-title: '[Feature]: '
 type: Feature
 labels:
   - Feature
@@ -12,8 +11,8 @@ body:
   - type: textarea
     id: problem
     attributes:
-      label: 问题与范围
-      description: 为谁解决什么问题？本次处理哪些范围？可写已有替代、关联 Issue 或原型。
+      label: 问题描述
+      description: 为谁解决什么问题？可写已有替代、关联 Issue 或原型。
     validations:
       required: true
   - type: textarea
@@ -22,4 +21,4 @@ body:
       label: 验收条件
       description: 用户获得什么结果、怎样判断？需要先讨论的范围或判据写待确认。
     validations:
-      required: true
+      required: false

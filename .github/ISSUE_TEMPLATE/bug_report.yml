@@ -1,6 +1,5 @@
 name: 报告问题
 description: 报告 Workbench 当前使用中的问题
-title: '[Bug]: '
 type: Bug
 labels:
   - bug
@@ -12,8 +11,8 @@ body:
   - type: textarea
     id: problem
     attributes:
-      label: 问题与范围
-      description: 谁在哪个场景遇到了什么问题？本次要处理的范围是什么？
+      label: 问题描述
+      description: 谁在哪个场景遇到了什么问题？
     validations:
       required: true
   - type: textarea
@@ -22,18 +21,18 @@ body:
       label: 复现步骤
       description: 写明 Workbench 版本、系统、仓库/入口与操作步骤；偶发或尚未复现时如实说明。
     validations:
-      required: true
+      required: false
   - type: textarea
     id: behavior
     attributes:
       label: 预期与实际
       description: 分别说明应该发生什么、实际发生什么，可附错误和截图。
     validations:
-      required: true
+      required: false
   - type: textarea
     id: acceptance
     attributes:
       label: 验收条件
       description: 怎样核对问题已解决？还未明确的判据写待确认。
     validations:
-      required: true
+      required: false
