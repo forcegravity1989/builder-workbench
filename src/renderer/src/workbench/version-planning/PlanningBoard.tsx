@@ -207,6 +207,7 @@ function PlanningBoardContent({ context, prepareMetrics, entry }: PlanningBoardP
         branch={cycleBranch(entry)}
         onSelect={(version) => void selection.select(version)}
         onConfigure={() => void entry.configure()}
+        onCompose={(request) => void entry.compose(request)}
         onRefresh={() =>
           void act(async () => {
             await material.refresh()

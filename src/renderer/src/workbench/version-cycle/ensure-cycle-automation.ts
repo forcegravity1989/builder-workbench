@@ -78,7 +78,7 @@ function findExisting(
 }
 
 /** 请求必须钉住当前化身：镜像列表查不到的运行时宁可 skipped，不向未知修订发请求。 */
-function pinnedAuthority(host: StableAutomationHostRef): AutomationAuthorityRef | null {
+export function pinnedAuthority(host: StableAutomationHostRef): AutomationAuthorityRef | null {
   if (host.authority.kind === 'desktop') {
     return { kind: 'desktop' }
   }
@@ -91,7 +91,7 @@ function pinnedAuthority(host: StableAutomationHostRef): AutomationAuthorityRef 
     : { kind: 'runtime', environmentId: host.authority.environmentId, pairingRevision }
 }
 
-function destinationFor(host: StableAutomationHostRef): AutomationDestination | null {
+export function destinationFor(host: StableAutomationHostRef): AutomationDestination | null {
   if (host.selector.kind === 'self') {
     return { selector: { kind: 'self' } }
   }

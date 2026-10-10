@@ -3,12 +3,14 @@ import { toast } from 'sonner'
 import { useShallow } from 'zustand/react/shallow'
 import { useAppStore } from '@/store'
 import { startCycleAutomation } from './start-cycle-automation'
+import { startComposerSession } from './start-composer-session'
 import { assertCurrentCycleWorkspace } from './current-cycle-workspace'
 import { prepareMetricsSession, useMetricsSetupAgent } from './metrics-setup'
 import { getActiveCycleSession } from './native-session'
 import { useWorkflowVersion } from './use-workflow-version'
 import { useCycleAutomationDraft } from './use-cycle-automation-draft'
 import { useEnsureCycleAutomation } from './ensure-cycle-automation'
+import { useEnsureComposerAutomation } from './ensure-composer-automation'
 import { useCycleWorkspaceWorkflow } from './cycle-workspace-view'
 import { useCycleWorkspaceTarget } from './use-cycle-workspace-target'
 import { CycleWorkspaceContext } from './cycle-workspace-context'
@@ -62,6 +64,12 @@ export function CycleWorkspaceProvider({ children }: { children: ReactNode }) {
     agent,
     onNotice: setNotice
   })
+  const composer = useEnsureComposerAutomation({
+    cycleScope: scope,
+    fixedId,
+    agent,
+    onNotice: setNotice
+  })
   const configure = useCycleAutomationDraft({
     cycleScope: scope,
     fixedId,
@@ -101,6 +109,31 @@ export function CycleWorkspaceProvider({ children }: { children: ReactNode }) {
     }
     await prepareMetricsSession({ baseScope: scope, agent })
   }, [scope, agent])
+  const compose = useCallback(
+    async (request: string) => {
+      setBusy(true)
+      try {
+        if (!scope || !fixedId || !composer.automationId) {
+          throw new Error('AI 创建自动化入口尚未就绪，请稍后重试。')
+        }
+        await startComposerSession(scope, fixedId, composer.automationId, request)
+        toast.message('已打开 AI 创建自动化会话。')
+        setNotice(null)
+      } catch (reason) {
+        if (scope && fixedId) {
+          try {
+            assertCurrentCycleWorkspace(scope, fixedId)
+          } catch {
+            return
+          }
+        }
+        setNotice(reason instanceof Error ? reason.message : String(reason))
+      } finally {
+        setBusy(false)
+      }
+    },
+    [scope, fixedId, composer.automationId]
+  )
   const value = useMemo(
     () =>
       workflow
@@ -110,6 +143,7 @@ export function CycleWorkspaceProvider({ children }: { children: ReactNode }) {
             notice,
             start,
             configure,
+            compose,
             prepareMetrics,
             context: {
               scope,
@@ -133,6 +167,7 @@ export function CycleWorkspaceProvider({ children }: { children: ReactNode }) {
       notice,
       start,
       configure,
+      compose,
       prepareMetrics,
       scope,
       fixedId,

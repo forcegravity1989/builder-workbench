@@ -9,6 +9,7 @@ import {
 import type { RefObject } from 'react'
 import type { VersionMaterialCandidate } from '../../../../shared/workbench/version-material-request'
 import { AutomationConfigureButton } from '../version-cycle/AutomationConfigureButton'
+import { AutomationComposerButton } from '../version-cycle/AutomationComposerButton'
 import {
   archiveJourneyLamp,
   type ArchiveStatus
@@ -21,6 +22,7 @@ export function PlanningHeader({
   branch,
   onSelect,
   onConfigure,
+  onCompose,
   onRefresh
 }: {
   currentVersion: string
@@ -30,6 +32,7 @@ export function PlanningHeader({
   branch: string
   onSelect(version: string): void
   onConfigure(): void
+  onCompose(request: string): void
   onRefresh(): void
 }) {
   return (
@@ -67,6 +70,7 @@ export function PlanningHeader({
         <span>{branch}</span>
       </span>
       <AutomationConfigureButton onConfigure={onConfigure} />
+      <AutomationComposerButton onCompose={onCompose} />
     </header>
   )
 }

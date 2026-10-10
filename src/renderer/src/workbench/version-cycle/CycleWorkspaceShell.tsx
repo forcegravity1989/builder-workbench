@@ -6,8 +6,8 @@ export function CycleWorkspaceShell() {
   if (!workspace) {
     return null
   }
-  const { workflow, context, prepareMetrics, busy, notice, start, configure } = workspace
-  const entry = { workflow, busy, notice, start, configure }
+  const { workflow, context, prepareMetrics, busy, notice, start, configure, compose } = workspace
+  const entry = { workflow, busy, notice, start, configure, compose }
   return (
     <section
       className="vc-board-col"
