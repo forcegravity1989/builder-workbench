@@ -3,7 +3,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>版本计划 · 二维时间轴框架</title>
+    <title>版本计划 · 编排画布</title>
     <link rel="stylesheet" href="../../04-design-system/styles.css" />
     <link rel="stylesheet" href="prototype/timeline.css" />
     <script src="prototype/timeline.js" defer></script>
@@ -13,56 +13,178 @@
       <header class="page-header">
         <div>
           <div class="breadcrumb">Builders’ Workbench <span>/</span> 版本计划</div>
-          <div class="title-line"><h1>示例项目 · v0.6</h1><span class="draft-badge">草案</span></div>
-          <p class="page-description">把版本要交付的结果，安排到共同的时间轴上。</p>
+          <div class="title-line">
+            <h1>示例项目 · v0.6</h1>
+            <span class="draft-badge">草案</span>
+          </div>
+          <p class="page-description">从目标和交付项出发，在画布上编排版本节奏。</p>
         </div>
         <span class="prototype-badge">交互原型 · 示例数据</span>
       </header>
 
+      <section class="canvas-entry" aria-label="开始制定计划">
+        <div>
+          <strong>从哪里开始</strong
+          ><span id="source-description">空画布：先带入工作，再安排时段。</span>
+        </div>
+        <div class="entry-actions">
+          <button type="button" class="tl-button" id="start-empty">空画布</button
+          ><button type="button" class="tl-button" id="start-draft">Agent 初稿示意</button>
+        </div>
+      </section>
       <section class="version-context" aria-label="版本目标和范围">
         <div class="context-label">版本承诺</div>
-        <div><strong>让核心业务流程可用、可核对、可交付</strong><p>本版范围：核心流程、数据核对、交付准备。跨项目联动留待后续版本。</p></div>
-        <div class="version-period"><span>计划周期</span><strong>10 月 12 日 — 11 月 22 日</strong><small>2026 年 · 6 周</small></div>
+        <div>
+          <strong>先明确要交付的结果，再试排一版可讨论的计划</strong>
+          <p>交付项可以先不排期；结果、负责人和验收条件逐步补充。</p>
+        </div>
+        <div class="version-period">
+          <span>计划周期</span><strong>10 月 12 日 — 11 月 22 日</strong
+          ><small>2026 年 · 6 周</small>
+        </div>
       </section>
 
       <section class="plan-section" aria-labelledby="timeline-heading">
         <div class="plan-toolbar">
-          <div class="toolbar-title"><h2 id="timeline-heading">版本时间轴</h2><span id="item-count"></span></div>
+          <div class="toolbar-title">
+            <h2 id="timeline-heading">版本时间轴</h2>
+            <span id="item-count"></span>
+          </div>
           <div class="toolbar-actions">
             <div class="scale-control" role="group" aria-label="时间刻度">
               <button type="button" data-scale="week" aria-pressed="true">周</button>
               <button type="button" data-scale="day" aria-pressed="false">日</button>
             </div>
-            <button type="button" class="tl-button" id="add-milestone">＋ 里程碑</button>
-            <button type="button" class="tl-button tl-primary" id="add-item">＋ 交付项</button>
+            <button type="button" class="tl-button" id="undo-plan" disabled>撤销</button>
+            <button type="button" class="tl-button" id="add-goal">＋ 目标</button>
+            <button type="button" class="tl-button" id="add-iteration">拆分迭代</button>
+            <button type="button" class="tl-button" id="collaborate">协作请求</button>
+            <button type="button" class="tl-button tl-primary" id="add-item">粘贴交付项</button>
           </div>
+        </div>
+        <div class="selection-toolbar" id="selection-toolbar" hidden>
+          <span id="selection-count"></span
+          ><button type="button" class="tl-button" data-shift="-7">前移一周</button
+          ><button type="button" class="tl-button" data-shift="7">后移一周</button
+          ><button type="button" class="tl-button" id="unschedule">移回未排期</button
+          ><button type="button" class="tl-button" id="clear-selection">取消选择</button>
         </div>
         <div class="timeline-scroll" tabindex="0" aria-label="版本计划时间轴，可横向滚动">
           <div class="timeline-grid" id="timeline-grid"></div>
         </div>
         <div class="timeline-footer">
-          <div class="legend"><span><i class="legend-bar"></i>计划时段</span><span><i class="legend-diamond"></i>里程碑</span><span><i class="legend-boundary"></i>迭代边界</span></div>
-          <span>点击交付项或里程碑，查看与修改计划。</span>
+          <div class="legend">
+            <span><i class="legend-bar"></i>计划时段</span
+            ><span><i class="legend-diamond"></i>里程碑</span
+            ><span><i class="legend-boundary"></i>迭代边界</span>
+          </div>
+          <span>空白行拖出排期 · 拖动条目与端点 · Shift 多选 · 双击补充详情</span>
         </div>
       </section>
-      <p class="review-note">框架草案：示例日期与交付内容用于评审视图，不代表真实项目的版本承诺。</p>
+      <p class="review-note">
+        画布草案：全部操作仅在本页演示；Agent
+        初稿为预置示意，不代表模型已经制定计划。刷新恢复空画布。
+      </p>
       <div class="feedback" id="feedback" role="status" aria-live="polite"></div>
     </main>
 
     <dialog id="plan-editor" aria-labelledby="editor-title">
       <form id="editor-form">
-        <div class="editor-heading"><div><span id="editor-kind">交付项</span><h2 id="editor-title">编辑计划</h2></div><button type="button" class="close-button" id="close-editor" aria-label="关闭">×</button></div>
+        <div class="editor-heading">
+          <div>
+            <span id="editor-kind">交付项</span>
+            <h2 id="editor-title">编辑计划</h2>
+          </div>
+          <button type="button" class="close-button" id="close-editor" aria-label="关闭">×</button>
+        </div>
         <label>名称<input name="name" required maxlength="60" /></label>
         <div id="item-fields">
           <label>所属版本目标<select name="group"></select></label>
-          <div class="form-row"><label>工作类型<select name="stage"><option>设计</option><option>开发</option><option>验证</option><option>交付</option></select></label><label>负责人<input name="owner" maxlength="30" placeholder="可选" /></label></div>
+          <div class="form-row">
+            <label
+              >工作类型<select name="stage">
+                <option>设计</option>
+                <option>开发</option>
+                <option>验证</option>
+                <option>交付</option>
+              </select></label
+            ><label>负责人<input name="owner" maxlength="30" placeholder="可选" /></label>
+          </div>
         </div>
-        <div class="form-row"><label id="start-label">开始日期<input name="start" type="date" required /></label><label id="end-label">结束日期<input name="end" type="date" /></label></div>
-        <label id="outcome-label">交付结果<input name="outcome" required maxlength="160" /></label>
-        <p class="editor-note">本页修改仅用于原型演示，刷新后恢复示例。</p>
+        <div class="form-row">
+          <label id="start-label">开始日期<input name="start" type="date" required /></label
+          ><label id="end-label">结束日期<input name="end" type="date" /></label>
+        </div>
+        <label id="outcome-label"
+          >交付结果<input name="outcome" maxlength="160" placeholder="可逐步补充"
+        /></label>
+        <p class="editor-note">本页修改仅用于原型演示，刷新后恢复空画布。</p>
         <p class="form-error" id="form-error" role="alert"></p>
-        <div class="editor-actions"><button class="tl-button" type="button" id="cancel-editor">取消</button><button class="tl-button tl-primary" type="submit">更新示例计划</button></div>
+        <div class="editor-actions">
+          <button class="tl-button" type="button" id="cancel-editor">取消</button
+          ><button class="tl-button tl-primary" type="submit">应用到画布</button>
+        </div>
       </form>
+    </dialog>
+    <dialog id="bulk-editor" aria-labelledby="bulk-title">
+      <form id="bulk-form">
+        <div class="editor-heading">
+          <div>
+            <span>先收集工作，不要求立即填写日期</span>
+            <h2 id="bulk-title">带入交付项</h2>
+          </div>
+          <button
+            type="button"
+            class="close-button"
+            data-close="bulk-editor"
+            aria-label="关闭带入交付项"
+          >
+            ×
+          </button>
+        </div>
+        <label>所属目标<select name="group"></select></label>
+        <label
+          >交付项清单<textarea
+            name="lines"
+            rows="6"
+            placeholder="每行一个交付项，也可粘贴 Excel 的一列"
+            required
+          ></textarea>
+        </label>
+        <p class="editor-note">
+          每行作为一个未排期交付项。多列粘贴仅取第一列名称，不自动解释复杂 Excel 表结构。
+        </p>
+        <div class="bulk-preview" id="bulk-preview" aria-live="polite">等待带入内容</div>
+        <div class="editor-actions">
+          <button type="button" class="tl-button" data-close="bulk-editor">取消</button
+          ><button type="submit" class="tl-button tl-primary">加入未排期区</button>
+        </div>
+      </form>
+    </dialog>
+    <dialog id="collaboration-editor" aria-labelledby="collaboration-title">
+      <div class="editor-heading">
+        <div>
+          <span>把当前安排带入下一轮讨论</span>
+          <h2 id="collaboration-title">协作请求</h2>
+        </div>
+        <button
+          type="button"
+          class="close-button"
+          data-close="collaboration-editor"
+          aria-label="关闭协作请求"
+        >
+          ×
+        </button>
+      </div>
+      <p class="editor-note">
+        先核对请求内容，再由人放入真实会话。本原型只整理与复制文字，不调用或发送给 Agent。
+      </p>
+      <textarea id="collaboration-request" rows="12" readonly aria-label="协作请求内容"></textarea>
+      <div class="editor-actions">
+        <button type="button" class="tl-button" data-close="collaboration-editor">关闭</button
+        ><button type="button" class="tl-button tl-primary" id="copy-request">复制请求</button>
+      </div>
+      <p id="copy-feedback" role="status"></p>
     </dialog>
   </body>
 </html>
