@@ -25,7 +25,7 @@
 | 5 | 纳入项目与项目信息记录 | [project-intake/](project-intake/)² | 在用·补链中 | ● | ●(原型经拍板豁免) | ◐ | ◐ | 待建(P-01–P07 已定义) | 待建(主旅程已定义) |
 | 6 | CodeHub 适配 | [codehub/](codehub/)³ | 在用·补链中 | ◐ | ◐ | ◐ | ◐ | ○(C01–C08 已定义) | ○(CJ01 已定义) |
 | 7 | Windows 出包与发布 | [workbench-release/](workbench-release/)³ | 开发方法资产·补链中 | ◐ | ◐ | ◐ | ○ | ○(R01–R04 已定义) | ○(RJ01 已定义) |
-| 8 | 项目周报 | [weekly-report/](weekly-report/) · [MVP demo](weekly-report/prototype.html) | 设计草案·待人审 | ◐ | ◐ | ○ | —(仅原型) | ○(W01–W06 已定义) | ○(WJ01/WJ02 已定义) |
+| 8 | 项目报告结果 | [weekly-report/](weekly-report/) · [MVP demo](weekly-report/prototype.html) | 周五材料结果查看·草案待人审 | ◐ | ◐ | ○ | —(仅原型) | ○(W01–W07 已定义) | ○(WJ01/WJ02 已定义) |
 
 ¹ 第 4 行：GitHub CI 路径 2026-08/09 在旧 main 侧交付并实测闭环（PR #132 及后续召唤）；2026-09-29 用户拍板迁入产品分支——workflow 与回执脚本（`.github/scripts/check-pr-review.mjs`）已落，实现设计 ●。2026-09-30 扶正后本定义即默认分支 main 的定义，`/code-review` 召唤直接执行它，不再经旧 main 定义中转。验收点 ◐：迁移 PR 自身修改 workflow 文件，按 #132 先例（时为 pull_request 触发下的防篡改跳过）保守不自召——该校验在现行 issue_comment 触发模型下是否适用未复核；主干首场真实召唤待下一条合格 PR 实测，未实测不判过。TDD ◐：回执脚本无单测，以召唤实测为准。台内「请评审」按钮路径规范件在仓但未接线，defer。明细见其 [STATUS](reviewer-agent/STATUS.md) 迁移节。
 

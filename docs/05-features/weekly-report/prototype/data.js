@@ -1,11 +1,16 @@
 // 示例事实集中存放，统计与报告读取同一份数据。
 window.weeklyFixture = {
+  reportId: 'inference-weekly-20261005-1009',
+  periodLabel: '2026.10.05 — 10.09',
+  metricLabel: '压测 P95 118ms',
+  memberRole: '项目维护与开发',
+  memberResponsibilities: 'G1、G2；开发、验证与交付协调',
   project: '推理服务优化',
   version: 'v0.8',
   owner: '陈宁',
   start: '2026-10-05T00:00:00+08:00',
   endExclusive: '2026-10-10T00:00:00+08:00',
-  collected: '2026-10-10 18:00（示例）',
+  collected: '2026-10-10 09:00（示例）',
   scenarios: {
     complete: { risksLoaded: true, milestonesDefined: true, verificationLoaded: true },
     missing: { risksLoaded: false, milestonesDefined: false, verificationLoaded: false },

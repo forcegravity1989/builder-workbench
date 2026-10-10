@@ -509,6 +509,78 @@ dialog textarea {
 #evidence-content p {
   margin-top: var(--space-3);
 }
+.demo-reset {
+  border: none;
+  background: transparent;
+  color: var(--color-neutral-600);
+  text-decoration: underline;
+  margin-left: var(--space-3);
+  font-size: inherit;
+}
+.archive-index,
+.process-panel {
+  border: 1px solid var(--color-divider);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+  padding: var(--space-6);
+  margin-bottom: var(--space-6);
+}
+.archive-heading,
+.process-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+  margin-bottom: var(--space-3);
+}
+.archive-heading h2,
+.process-heading h2 {
+  font-size: 18px;
+  margin: 0;
+}
+.archive-list {
+  display: flex;
+  gap: var(--space-3);
+  overflow-x: auto;
+  padding-top: var(--space-4);
+}
+.archive-item {
+  flex: 0 0 260px;
+  text-align: left;
+  white-space: normal;
+  padding: var(--space-4);
+  background: var(--color-card);
+  border: 1px solid var(--color-divider);
+  border-radius: var(--radius-md);
+  color: var(--color-text);
+  line-height: 1.7;
+}
+.archive-item.active {
+  border-color: var(--color-accent);
+  box-shadow: inset 3px 0 var(--color-accent);
+}
+.archive-item strong,
+.archive-item small {
+  display: block;
+}
+.archive-item small {
+  color: var(--color-neutral-600);
+}
+.session-message {
+  background: var(--color-bg);
+  border-left: 3px solid var(--color-accent);
+  padding: var(--space-4);
+  margin: var(--space-4) 0;
+  line-height: 1.8;
+}
+.process-actions {
+  justify-content: flex-end;
+  margin-bottom: var(--space-4);
+}
+.storage-demo {
+  font-size: 12px;
+  color: var(--color-neutral-600);
+}
 @media (max-width: 1150px) {
   .report-layout {
     grid-template-columns: minmax(0, 1fr);
@@ -531,6 +603,11 @@ dialog textarea {
   }
   .page-header {
     align-items: flex-start;
+    flex-wrap: wrap;
+  }
+  .archive-index,
+  .process-panel {
+    padding: var(--space-4);
   }
   .report-paper {
     padding: var(--space-4);
@@ -553,6 +630,8 @@ dialog textarea {
   .app-sidebar,
   .prototype-note,
   .page-header,
+  .archive-index,
+  .process-panel,
   .setup,
   .activity,
   .report-toolbar,

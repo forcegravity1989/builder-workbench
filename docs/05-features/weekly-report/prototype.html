@@ -4,7 +4,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>项目周报 · Workbench MVP 原型</title>
+    <title>报告归档 · Workbench MVP 原型</title>
     <link rel="stylesheet" href="../../04-design-system/styles.css" />
     <link rel="stylesheet" href="prototype/style.css" />
     <script defer src="prototype/data.js"></script>
@@ -17,43 +17,54 @@
         <div class="project-name"><span class="project-icon" aria-hidden="true">推</span><div>推理服务优化<small>个人维护的项目</small></div></div>
         <nav>
           <span>总览</span><span>计划</span><span>任务</span><span>验收</span>
-          <span class="nav-active" aria-current="page">周报 <small>设计中</small></span>
-          <span>自动化</span><span>知识库</span>
+          <span>自动化</span><span class="nav-active" aria-current="page">知识库</span>
         </nav>
-        <div class="sidebar-foot">工作事实来自 CodeHub<br />报告随项目进展生成</div>
+        <div class="sidebar-foot">报告归档 · 设计中<br />收敛进展，留存结果</div>
       </aside>
       <main>
-        <div class="prototype-note">MVP 交互原型 · 示例数据 · 尚未连接 CodeHub 与大模型会话 <a href="intent.md">查看意图</a></div>
+        <div class="prototype-note">MVP 原型 · 示例数据 · 归档仅保存在此浏览器，尚未连接真实会话与 CodeHub <a href="intent.md">查看意图</a> <button id="reset-example" class="demo-reset">重置示例</button></div>
         <header class="page-header">
-          <div><h1>项目周报</h1><p>会话整理本周的目标、交付与风险，缺失信息再补充。</p></div>
-          <button id="generate" class="button primary">生成周报</button>
+          <div><h1>报告归档</h1><p>收敛周五材料，保存可独立回看的项目周报。</p></div>
+          <button id="open-process" class="button">打开周五工作会话</button>
         </header>
+        <section class="archive-index" aria-label="已归档报告">
+          <div class="archive-heading"><h2>项目周报</h2><span id="archive-count" class="muted"></span></div>
+          <p class="muted">按周期查看提炼后的结论，也可展开完整进展与依据。无需打开原会话。</p>
+          <div id="archive-list" class="archive-list"></div>
+        </section>
+        <section id="process-panel" class="process-panel" hidden>
+          <div class="process-heading"><div><span class="field-label">过程 · 既有工作区的模拟片段</span><h2>周五工作会话</h2></div><button id="close-process" class="button">收起会话</button></div>
+          <p class="muted">此处模拟从既有周五工作区生成报告。完整过程见 <a href="../version-acceptance/prototype.html">周五验收原型</a>。</p>
+          <p class="session-message">将周五验收过程中汇聚的目标、Issue、交付和验证材料提炼为本周报告。生成后保存为结果，离开会话也能查看。</p>
         <section class="setup" aria-label="报告范围">
           <div><span class="field-label">报告周期</span><strong>2026.10.05 — 10.09</strong></div>
           <div><span class="field-label">版本</span><strong>v0.8 推理服务优化</strong></div>
           <div><span class="field-label">主要来源</span><strong>CodeHub Issue / MR</strong></div>
           <label><span class="field-label">演示场景</span><select id="scenario"><option value="complete">信息齐全</option><option value="missing">缺少验证信息</option><option value="failed">CodeHub 读取失败</option></select></label>
         </section>
+        <label class="storage-demo"><input id="storage-failure-demo" type="checkbox" /> 演示：归档保存失败</label>
+        <div class="button-row process-actions"><button id="generate" class="button primary">生成周报</button></div>
         <section id="activity" class="activity" aria-label="生成会话" aria-live="polite" hidden></section>
-        <div id="empty" class="empty-state">
-          <div class="document-icon" aria-hidden="true">≡</div><h2>从本周工作中生成报告</h2>
-          <p>目标与验收标准来自版本计划。会话读取 Issue、MR 和项目材料，统计本周变化，再按项目内容组织周报。</p>
-          <div class="empty-outline"><span>目标与关键进展</span><span>风险与交付节点</span><span>需求与问题单</span><span>责任归属</span></div>
-          <p class="muted">有记录才形成结论。信息不足会列为待补充。</p>
-        </div>
         <section id="failure" class="failure" hidden>
           <h2>暂时无法读取 CodeHub</h2><p>示例会话在读取 Issue 时连接失败，本周数量和工作变化尚未取得。</p>
           <p>可以重试读取，或先用已有材料整理手动草稿；自动数据恢复后，补充说明会保留供核对。</p>
           <div class="button-row"><button id="retry" class="button primary">重试读取</button><button id="manual" class="button">手动整理草稿</button></div>
         </section>
+        </section>
+        <div id="empty" class="empty-state">
+          <div class="document-icon" aria-hidden="true">≡</div><h2>还没有报告结果</h2>
+          <p>打开周五工作会话，从已汇聚的工作材料中提炼报告。生成的结果会保存在这里。</p>
+          <div class="empty-outline"><span>目标与关键进展</span><span>风险与交付节点</span><span>需求与问题单</span><span>责任归属</span></div>
+          <p class="muted">有记录才形成结论。信息不足会列为待补充。</p>
+        </div>
         <section id="workspace" hidden>
-          <div class="report-toolbar"><div><span id="report-state" class="badge">待审阅</span><span id="generation-note" class="muted"></span></div><div class="button-row"><button id="supplement" class="button">补充说明</button><button id="confirm" class="button">确认报告</button><button id="export" class="button">导出 HTML</button></div></div>
+          <div class="report-toolbar"><div><span id="report-state" class="badge">待审阅</span><span id="generation-note" class="muted"></span></div><div class="button-row"><button id="supplement" class="button">补充或修正</button><button id="save-report" class="button">保存修订</button><button id="confirm" class="button">标记已审阅</button><button id="export" class="button">导出 HTML</button></div></div>
           <div id="attention" class="attention" hidden></div>
           <div class="report-layout">
             <article id="report" class="report-paper" aria-label="周报预览"></article>
             <aside class="report-aside">
-              <section><h3>本次取数</h3><div id="source-summary"></div></section>
-              <section><h3>生成规则</h3><p>按目标归纳关键进展，需求和问题明细引用同一份工作记录。</p><p>根据项目资料展示里程碑与支撑工作。缺少风险记录时说明未知。</p><p>确认报告只确认这份内容；目标达成仍由人验收。</p></section>
+              <section><h3>报告来源</h3><div id="source-summary"></div></section>
+              <section><h3>留存结果</h3><p>本报告保留生成时的材料与统计口径，历史修订可以独立回看。</p><p>会话继续推进项目，已有报告保持当时的结论；修正后保存新的修订。</p><p>审阅报告只确认内容。目标达成与工作完成仍由人验收。</p></section>
               <section id="manual-notes"><h3>人工补充</h3><p class="muted">暂无补充。重新生成会保留已保存的说明。</p></section>
             </aside>
           </div>

@@ -1,5 +1,7 @@
 ;(() => {
-  const data = window.weeklyFixture
+  const clone = (value) => JSON.parse(JSON.stringify(value))
+  const fixture = clone(window.weeklyFixture)
+  let data = fixture
   const $ = (id) => document.getElementById(id)
   const esc = (value) =>
     String(value).replace(
@@ -16,10 +18,10 @@
     members: '项目成员'
   }
   const steps = ['读取项目目标', '读取 Issue 与 MR', '核对期间变化', '组织内容与证据', '渲染周报']
-  const state = {
+  const initialState = () => ({
     scenario: 'complete',
     reportScenario: 'complete',
-    generated: false,
+    generated: true,
     busy: false,
     failed: false,
     reviewed: false,
@@ -28,8 +30,17 @@
     corrections: {},
     checkedAt: {},
     resolved: false,
-    revision: 0
-  }
+    revision: 1
+  })
+  let workingState = initialState()
+  let workingData = clone(fixture)
+  let state = workingState
+  const session = { busy: false, failed: false, scenario: 'complete', open: false, produced: false }
+  const storageKey = 'bw-weekly-report-archive-demo-v2'
+  let archives = []
+  let selectedId = null
+  let pinnedSelection = false
+  let storageProblem = ''
   let noticeTimer
   const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
   const inWindow = (date) =>
@@ -82,12 +93,33 @@
   }
 
   function header() {
-    return `<h2 class="report-title">${esc(data.project)}开发周报</h2><div class="report-meta"><span>2026.10.05 — 10.09</span><span>${esc(data.version)}</span><span>维护人：${esc(data.owner)}</span><span>${state.manual ? '手动草稿，自动取数未完成' : '自动生成，人工审阅'}</span></div>`
+    return `<h2 class="report-title">${esc(data.project)}开发周报</h2><div class="report-meta"><span>${esc(data.periodLabel)}</span><span>${esc(data.version)}</span><span>维护人：${esc(data.owner)}</span><span>${state.manual ? '手动草稿，自动取数未完成' : '自动生成，人工审阅'}</span></div>`
+  }
+
+  function reportBrief() {
+    const scenario = data.scenarios[state.reportScenario]
+    const issue = data.issues.find((item) => item.id === 101)
+    const closed = data.issues.filter((item) => inWindow(item.closed))
+    const automaticProgress = state.manual
+      ? '自动工作记录未取得，本周交付未知。'
+      : `本周关闭 ${closed.length} 项：${closed.map((item) => item.title).join('、')}。${issue?.events.at(0)?.text || '批处理交付记录待核对'}；${scenario.verificationLoaded ? `${data.metricLabel}，目标仍待人验收。` : '压测材料缺失，性能结论未知。'}`
+    const automaticRisk =
+      state.manual || !scenario.risksLoaded
+        ? '未取得完整风险材料，不能判断无风险。'
+        : data.risks.map((item) => item.impact).join('；') || '未发现风险记录，仍需人核对。'
+    const decision = `目标验收：${data.goals.map((goal) => `${goal.title}（${goal.acceptance}）`).join('、')}。`
+    const text = (key, automatic) =>
+      state.notes[key]
+        ? state.corrections[key]
+          ? `人工修正：${state.notes[key]}`
+          : `${automatic} 人工补充：${state.notes[key]}`
+        : automatic
+    return `<section class="report-conclusion"><h3>本周结论</h3><p><strong>核心交付：</strong>${esc(text('progress', automaticProgress))}</p><p><strong>未决风险：</strong>${esc(text('risks', automaticRisk))}</p><p><strong>待人决定：</strong>${esc(text('goals', decision))}</p><p class="source-note">结论从本份报告的示例事实与人工修订收敛；归档和审阅不替代目标验收。详细依据见下方完整报告。</p></section>`
   }
 
   function renderReport() {
     if (state.manual) {
-      return `${header()}<p class="source-note">版本目标已读取；CodeHub 尚未读回，本周工作数量未知。以下保留目标资料与人工提供的草稿内容。</p>${Object.keys(
+      return `${header()}${reportBrief()}<p class="source-note">版本目标已读取；CodeHub 尚未读回，本周工作数量未知。以下保留目标资料与人工提供的草稿内容。</p><details class="report-details"><summary>展开目标、工作明细与责任</summary>${Object.keys(
         sectionNames
       )
         .map((key) =>
@@ -101,7 +133,7 @@
                 : '<p class="muted">待补充，尚无可用记录。</p>'
           )
         )
-        .join('')}`
+        .join('')}</details>`
     }
     const issues = data.issues
     const counts = stats(issues)
@@ -109,12 +141,12 @@
     const scenario = data.scenarios[state.reportScenario]
     const progress = pending()
       ? `<li><strong>降低在线推理延迟：</strong>批处理优化已合入 ${evidenceButton('101', 'MR !53 / Issue #101')}；压测记录缺失，性能结果待核实。</li>`
-      : `<li><strong>降低在线推理延迟：</strong>批处理优化已合入 ${evidenceButton('101', 'MR !53 / Issue #101')}。${!scenario.verificationLoaded ? '验证信息见下方人工补充，目标仍待人验收。' : `${evidenceButton('metrics', '压测 P95 118ms')}；高并发试运行尚未完成，目标待人验收。`}</li>`
-    let html = header()
+      : `<li><strong>降低在线推理延迟：</strong>批处理优化已合入 ${evidenceButton('101', 'MR !53 / Issue #101')}。${!scenario.verificationLoaded ? '验证信息见下方人工补充，目标仍待人验收。' : `${evidenceButton('metrics', data.metricLabel)}；高并发试运行尚未完成，目标待人验收。`}</li>`
+    let html = `${header()}${reportBrief()}<details class="report-details"><summary>展开目标、需求、问题与责任明细</summary>`
     html += section(
       'goals',
       '一、目标',
-      `${goalTable()}<p class="source-note">依据：${evidenceButton('plan', 'v0.8 版本计划')}。目标结论独立于 Issue 状态。</p>`
+      `${goalTable()}<p class="source-note">依据：${evidenceButton('plan', data.evidence.plan.title)}。目标结论独立于 Issue 状态。</p>`
     )
     html += section(
       'progress',
@@ -196,41 +228,194 @@
       `${offset === 5 ? '七' : '六'}、项目成员`,
       table(
         ['成员', '角色与负责范围', '本周期责任'],
-        [[esc(data.owner), '项目维护与开发', 'G1、G2；开发、验证与交付协调']]
+        [[esc(data.owner), esc(data.memberRole), esc(data.memberResponsibilities)]]
       )
     )
     html +=
       '<p class="source-note">本项目没有客户／局点支撑记录，本次不展开该栏目。此报告使用示例数据，不能作为实际交付证明。</p>'
-    return html
+    return `${html}</details>`
+  }
+
+  function currentArchive() {
+    return archives.find((item) => item.id === selectedId)
+  }
+
+  function latestArchive() {
+    return archives.at(-1)
+  }
+
+  function validFacts(facts) {
+    return Boolean(
+      facts &&
+      typeof facts.project === 'string' &&
+      typeof facts.owner === 'string' &&
+      typeof facts.reportId === 'string' &&
+      typeof facts.periodLabel === 'string' &&
+      typeof facts.start === 'string' &&
+      typeof facts.endExclusive === 'string' &&
+      Array.isArray(facts.goals) &&
+      facts.goals.every((item) => item && typeof item.title === 'string') &&
+      Array.isArray(facts.issues) &&
+      facts.issues.every(
+        (item) =>
+          item &&
+          typeof item.title === 'string' &&
+          typeof item.created === 'string' &&
+          Array.isArray(item.events) &&
+          item.events.every((event) => event && typeof event.text === 'string')
+      ) &&
+      Array.isArray(facts.risks) &&
+      facts.risks.every((item) => item && typeof item.impact === 'string') &&
+      Array.isArray(facts.milestones) &&
+      facts.milestones.every((item) => item && typeof item.title === 'string') &&
+      facts.scenarios &&
+      ['complete', 'missing', 'failed'].every(
+        (key) =>
+          facts.scenarios[key] && typeof facts.scenarios[key].verificationLoaded === 'boolean'
+      ) &&
+      facts.evidence &&
+      facts.evidence.plan &&
+      facts.evidence.metrics
+    )
+  }
+
+  function validReport(report) {
+    return (
+      report &&
+      typeof report.generated === 'boolean' &&
+      typeof report.revision === 'number' &&
+      report.notes &&
+      report.corrections &&
+      report.checkedAt &&
+      ['complete', 'missing', 'failed'].includes(report.reportScenario)
+    )
+  }
+
+  function persist() {
+    const previousPersistence = archives.map((item) => item.persistence)
+    archives.forEach((item) => {
+      item.persistence = 'browser'
+    })
+    try {
+      if ($('storage-failure-demo').checked) {
+        throw new Error('模拟归档保存失败')
+      }
+      localStorage.setItem(
+        storageKey,
+        JSON.stringify({
+          schema: 2,
+          archives,
+          workingState,
+          workingData,
+          selectedId,
+          pinnedSelection
+        })
+      )
+      storageProblem = ''
+      return true
+    } catch {
+      archives.forEach((item, index) => {
+        item.persistence = previousPersistence[index] || 'page'
+      })
+      storageProblem = '浏览器未能保存本机原型档案；当前内容仅在本次页面中保留，请导出备份。'
+      return false
+    }
+  }
+
+  function storeRevision(reason) {
+    const version = archives.reduce((maximum, item) => Math.max(maximum, item.version), 0) + 1
+    const savedAt = new Date().toISOString()
+    const record = {
+      id: `weekly-demo-${version}-${Date.now()}`,
+      version,
+      savedAt,
+      reason,
+      reportId: workingData.reportId,
+      facts: clone(workingData),
+      report: clone(workingState),
+      source: '本机浏览器交互原型，模拟项目材料与 CodeHub 记录',
+      persistence: 'page'
+    }
+    archives.push(record)
+    if (!pinnedSelection) {
+      selectedId = record.id
+    }
+    persist()
+    return record
+  }
+
+  function beginEdit() {
+    const record = currentArchive()
+    if (record) {
+      workingState = clone(record.report)
+      workingData = clone(record.facts)
+      selectedId = null
+      pinnedSelection = false
+    }
+    state = workingState
+    data = workingData
+    return !session.busy
+  }
+
+  function reportLabel(report) {
+    if (report.reviewed) {
+      return '已审阅'
+    }
+    if (report.manual) {
+      return '人工草稿'
+    }
+    const unchecked = Object.keys(report.notes).some(
+      (key) => report.checkedAt[key] !== report.revision
+    )
+    return (report.reportScenario === 'missing' && !report.resolved) || unchecked
+      ? '待补充与核对'
+      : '待审阅'
+  }
+
+  function renderArchiveList() {
+    $('archive-count').textContent = String(archives.length)
+    $('archive-list').innerHTML =
+      archives
+        .toReversed()
+        .map(
+          (item) =>
+            `<button class="archive-item ${selectedId === item.id ? 'active' : ''}" data-archive="${esc(item.id)}" aria-pressed="${selectedId === item.id}"><strong>${esc(item.facts.periodLabel)} · ${esc(item.facts.version)}</strong><span>修订 ${item.version} · ${esc(reportLabel(item.report))}${item.persistence === 'page' ? ' · 仅本页，未保存' : ''}</span><small>${esc(new Date(item.savedAt).toLocaleString('zh-CN', { timeZone: 'Asia/Shanghai', hour12: false }))} · ${esc(item.reason)}</small></button>`
+        )
+        .join('') || '<p class="muted">尚无归档结果。生成或手动整理后保存。</p>'
   }
 
   function render() {
-    $('empty').hidden = state.generated || state.failed || state.busy
-    $('failure').hidden = !state.failed
+    const record = currentArchive()
+    state = record ? record.report : workingState
+    data = record ? record.facts : workingData
+    $('process-panel').hidden = !session.open
+    $('scenario').value = session.scenario
+    $('empty').hidden = state.generated || archives.length > 0 || session.busy
+    $('failure').hidden = !session.failed
     $('workspace').hidden = !state.generated
-    $('generate').disabled = state.busy
-    $('scenario').disabled = state.busy
-    $('generate').textContent = state.busy ? '正在生成…' : state.generated ? '重新生成' : '生成周报'
+    $('generate').disabled = session.busy
+    $('scenario').disabled = session.busy
+    $('reset-example').disabled = session.busy
+    $('storage-failure-demo').disabled = session.busy
+    $('retry').disabled = session.busy
+    $('manual').disabled = session.busy
+    $('save-report').disabled = session.busy || Boolean(record) || !state.generated
+    $('generate').textContent = session.busy ? '正在生成…' : '生成并归档周报'
+    renderArchiveList()
     if (!state.generated) {
       return
     }
     $('report').innerHTML = renderReport()
     const needsReview = uncheckedNotes()
-    const label = state.reviewed
-      ? '已确认报告'
-      : state.manual
-        ? '手动草稿'
-        : pending() || needsReview.length
-          ? '待补充与核对'
-          : '待审阅'
-    $('report-state').textContent = label
+    $('report-state').textContent = reportLabel(state)
     $('report-state').className =
       `badge ${state.reviewed ? 'success' : pending() || needsReview.length || state.manual ? 'warning' : ''}`
-    $('generation-note').textContent =
-      `第 ${state.revision} 次生成 · ${state.manual ? 'CodeHub 未读取' : `取数 ${data.collected}`} · ${state.failed ? (state.manual ? '自动取数失败，人工草稿' : '本次读取失败，保留上次报告') : 'Asia/Shanghai'}`
-    $('confirm').disabled = state.reviewed || pending() || needsReview.length > 0 || state.busy
-    $('supplement').disabled = state.busy
-    $('export').disabled = state.busy
+    $('generation-note').textContent = record
+      ? `${record.persistence === 'page' ? '本页结果，未保存' : '归档'} ${record.reportId} · 修订 ${record.version} · ${new Date(record.savedAt).toLocaleString('zh-CN', { timeZone: 'Asia/Shanghai', hour12: false })}（上海时间）`
+      : `当前工作稿 · 第 ${state.revision} 次生成 · ${state.manual ? 'CodeHub 未读取' : `取数 ${data.collected}`} · Asia/Shanghai`
+    $('confirm').disabled = state.reviewed || pending() || needsReview.length > 0 || session.busy
+    $('supplement').disabled = session.busy
+    $('export').disabled = false
     $('attention').hidden = !pending() && !state.manual && needsReview.length === 0
     $('attention').innerHTML = state.manual
       ? '<strong>自动数据尚未取得</strong><p>当前为人工草稿，Issue 与问题单数量未知。重试成功后，人工说明将保留供核对。</p>'
@@ -241,13 +426,13 @@
       ? '读取失败，数量未知'
       : `${data.issues.length} 项，范围完整（示例）`
     $('source-summary').innerHTML =
-      `<div class="source-row"><span>Issue / MR</span><span>${esc(source)}</span></div><div class="source-row"><span>版本目标</span><span>2 个</span></div><div class="source-row"><span>验证材料</span><span>${state.manual || !data.scenarios[state.reportScenario].verificationLoaded ? '未取得' : '1 份'}</span></div><p class="muted">真实会话需读完统计范围内的记录；分页未读完时标为不完整，不宣称全量。</p>`
+      `<div class="source-row"><span>Issue / MR</span><span>${esc(source)}</span></div><div class="source-row"><span>版本目标</span><span>${data.goals.length} 个</span></div><div class="source-row"><span>验证材料</span><span>${state.manual || !data.scenarios[state.reportScenario].verificationLoaded ? '未取得' : '1 份'}</span></div><p class="muted">统计范围：${esc(data.start)} 至 ${esc(data.endExclusive)}（结束时间不计入），Asia/Shanghai。${state.manual ? 'CodeHub 未读取' : `取数 ${esc(data.collected)}`}。</p><p class="muted">档案冻结本次示例来源，查看旧修订不会重新取数。本机浏览器原型存储，不代表生产保存或真实分页读取。</p>${storageProblem ? `<p class="muted">${esc(storageProblem)}</p>` : ''}`
     $('manual-notes').innerHTML = `<h3>人工补充</h3>${
       Object.entries(state.notes).length
         ? Object.entries(state.notes)
             .map(
               ([key, value]) =>
-                `<div class="annotation"><small>${esc(sectionNames[key])}</small><p>${esc(value)}</p></div>`
+                `<div class="annotation"><small>${esc(sectionNames[key] || key)} · ${esc(data.owner)}</small><p>${esc(value)}</p></div>`
             )
             .join('')
         : '<p class="muted">暂无补充。重新生成会保留已保存的说明。</p>'
@@ -255,42 +440,51 @@
   }
 
   async function generate(retry = false) {
-    if (state.busy) {
+    if (session.busy) {
       return
     }
-    state.busy = true
-    state.failed = false
+    session.busy = true
+    session.failed = false
+    session.open = true
+    const scenario = session.scenario
+    const previousWork = clone(workingState)
     $('activity').hidden = false
     render()
     for (let index = 0; index < steps.length; index += 1) {
       $('activity').innerHTML =
-        `<h3>生成会话 <span class="muted">模拟执行</span></h3><ol>${steps.map((text, i) => `<li class="${i < index ? 'done' : i === index ? 'current' : ''}">${i < index ? '✓ ' : ''}${esc(text)}</li>`).join('')}</ol>`
+        `<h3>周五工作会话 <span class="muted">模拟执行 · 过程件</span></h3><ol>${steps.map((text, i) => `<li class="${i < index ? 'done' : i === index ? 'current' : ''}">${i < index ? '✓ ' : ''}${esc(text)}</li>`).join('')}</ol>`
       await wait(220)
-      if (state.scenario === 'failed' && !retry && index === 1) {
-        state.busy = false
-        state.failed = true
+      if (scenario === 'failed' && !retry && index === 1) {
+        session.busy = false
+        session.failed = true
         render()
-        $('activity').innerHTML += '<p class="source-note">读取中断；本次未得到统计结果。</p>'
+        $('activity').innerHTML +=
+          '<p class="source-note">读取中断；未生成新结果，既有归档与人工修订保留。</p>'
         return
       }
     }
-    state.busy = false
-    state.generated = true
-    state.manual = false
-    state.reportScenario = state.scenario
-    state.reviewed = false
-    state.revision += 1
+    workingState = previousWork
+    workingState.generated = true
+    workingState.manual = false
+    workingState.reportScenario = scenario
+    workingState.reviewed = false
+    workingState.revision += 1
+    workingData = clone(fixture)
+    session.produced = true
+    session.busy = false
+    const generatedRecord = storeRevision('会话自动生成')
     $('activity').innerHTML =
-      `<h3>生成会话已完成 <span class="muted">模拟执行</span></h3><ol>${steps.map((text) => `<li class="done">✓ ${esc(text)}</li>`).join('')}</ol>`
+      `<h3>${generatedRecord.persistence === 'page' ? '周报已生成，未保存' : '周报结果已归档'} <span class="muted">模拟执行</span></h3><p>${generatedRecord.persistence === 'page' ? '浏览器未能保存，本次结果仅在本页保留，请导出备份。' : '会话可以收起；报告及来源已独立保存为新修订。'}${pinnedSelection ? '当前仍查看所选旧修订，请在档案列表选择新结果。' : '人工补充已保留，重新生成后需要核对。'}</p>`
     render()
-    if (retry) {
-      notify('示例读取已恢复，报告已生成；人工补充仍保留供核对。')
-    } else if (Object.keys(state.notes).length) {
-      notify('报告已重新生成，人工补充已保留。')
-    }
+    notify(storageProblem || '已生成新修订并归档；旧修订和人工补充保留。')
   }
 
   function openEditor(key = 'progress') {
+    if (session.busy) {
+      return
+    }
+    beginEdit()
+    render()
     $('note-section').value = key
     $('note-content').value = state.notes[key] || ''
     $('resolve').checked = state.resolved
@@ -328,6 +522,9 @@
 
   function exportReport() {
     const copy = $('report').cloneNode(true)
+    copy.querySelectorAll('.report-details').forEach((detail) => {
+      detail.open = true
+    })
     copy.querySelectorAll('[data-evidence]').forEach((button) => {
       const span = document.createElement('span')
       span.textContent = `${button.textContent}（示例依据）`
@@ -348,35 +545,97 @@
     if (!state.manual && data.scenarios[state.reportScenario].verificationLoaded) {
       evidenceItems.push(data.evidence.metrics)
     }
-    const sources = `<section><h3>统计范围与依据</h3><p>统计窗口：${esc(data.start)} 至 ${esc(data.endExclusive)}（结束时间不计入），时区 Asia/Shanghai。示例日期事件按整日统计，取数时间：${state.manual ? 'CodeHub 未读取' : esc(data.collected)}。</p>${state.failed ? '<p>本次读取失败。已有自动报告沿用上次成功取数，人工草稿保持未取数标识。</p>' : ''}<p>${esc(sourceSummary)}</p><p>${esc($('attention').hidden ? '' : $('attention').textContent)}</p>${evidenceItems.map((item) => `<h4>${esc(item.title)}</h4><p>${esc(item.source || 'CodeHub Issue / MR（示例）')}</p><p>${esc(item.text)}</p>`).join('')}</section>`
+    const sources = `<section><h3>统计范围与依据</h3><p>统计窗口：${esc(data.start)} 至 ${esc(data.endExclusive)}（结束时间不计入），时区 Asia/Shanghai。示例日期事件按整日统计，取数时间：${state.manual ? 'CodeHub 未读取' : esc(data.collected)}。</p>${state.manual ? '<p>自动取数失败，当前为人工草稿；来源中的工作数量保持未知。</p>' : ''}<p>${esc(sourceSummary)}</p><p>${esc($('attention').hidden ? '' : $('attention').textContent)}</p>${evidenceItems.map((item) => `<h4>${esc(item.title)}</h4><p>${esc(item.source || 'CodeHub Issue / MR（示例）')}</p><p>${esc(item.text)}</p>`).join('')}</section>`
     const css =
       "body{max-width:1100px;margin:40px auto;padding:0 24px;font:14px/1.65 'Microsoft YaHei',sans-serif;color:#292929}h2{font-size:26px}h3{margin-top:28px}table{width:100%;border-collapse:collapse;font-size:13px}td,th{padding:10px;border:1px solid #ddd;text-align:left;vertical-align:top}th{background:#f5f5f5}.report-meta{color:#666;display:flex;flex-wrap:wrap;gap:16px}.source-note,.muted,small{color:#666;font-size:12px}.annotation{border-left:3px solid #777;padding-left:12px;margin-top:14px}.annotation p{white-space:pre-wrap}.table-scroll{overflow:auto}.badge{font-size:12px}"
-    const content = `<!doctype html><html lang="zh"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${esc(data.project)}周报</title><style>${css}</style></head><body><p>交互原型示例报告 · ${state.reviewed ? '报告内容已确认' : '草稿，待审阅'} · ${state.manual ? '自动取数未完成' : '使用示例数据'}</p>${copy.innerHTML}${sources}</body></html>`
+    const archiveIdentity = currentArchive()
+    const archiveMeta = archiveIdentity
+      ? `${archiveIdentity.persistence === 'page' ? '本页结果，未保存' : '档案'} ${archiveIdentity.reportId} · 档案条目 ${archiveIdentity.id} · 修订 ${archiveIdentity.version} · 保存 ${archiveIdentity.savedAt}`
+      : `当前工作稿 · 尚未归档此修订 · 导出 ${new Date().toISOString()}`
+    const content = `<!doctype html><html lang="zh"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${esc(data.project)}周报</title><style>${css}</style></head><body><p>交互原型示例报告 · ${state.reviewed ? '报告内容已审阅' : '草稿，待审阅'} · ${state.manual ? '自动取数未完成' : '使用示例数据'}</p><p>${esc(archiveMeta)}</p><p>本机浏览器原型档案；生产保存未建。保存、审阅和导出不表示 MR 合入或目标完成。</p>${copy.innerHTML}${sources}</body></html>`
     const url = URL.createObjectURL(new Blob([content], { type: 'text/html;charset=utf-8' }))
     const link = document.createElement('a')
     link.href = url
-    link.download = `推理服务优化-周报-20261005-1009-${state.reviewed ? '已确认' : '草稿'}.html`
+    link.download = `${data.project}-周报-${data.start.slice(0, 10)}-修订${archiveIdentity?.version || '工作稿'}-${state.reviewed ? '已审阅' : '草稿'}.html`
     link.click()
     setTimeout(() => URL.revokeObjectURL(url), 1000)
     notify('已导出独立 HTML 示例报告。人工补充包含在报告中。')
   }
 
+  $('reset-example').addEventListener('click', () => {
+    if (session.busy) {
+      return
+    }
+    $('storage-failure-demo').checked = false
+    try {
+      localStorage.removeItem(storageKey)
+    } catch {
+      storageProblem = '浏览器无法清除本原型存储；当前示例将仅在页面中重置。'
+    }
+    archives = []
+    workingState = initialState()
+    workingData = clone(fixture)
+    selectedId = null
+    pinnedSelection = false
+    session.open = false
+    session.failed = false
+    session.scenario = 'complete'
+    session.produced = false
+    $('activity').hidden = true
+    $('activity').innerHTML = ''
+    $('editor').close()
+    $('evidence').close()
+    storeRevision('完整示例报告')
+    render()
+    notify(storageProblem || '仅本原型档案已重置，恢复完整示例报告。')
+  })
+  $('open-process').addEventListener('click', () => {
+    if (!session.busy) {
+      const latest = latestArchive()
+      if (latest && selectedId !== null) {
+        workingState = clone(latest.report)
+        workingData = clone(latest.facts)
+      }
+      if (!pinnedSelection) {
+        selectedId = null
+      }
+    }
+    session.open = true
+    render()
+  })
+  $('close-process').addEventListener('click', () => {
+    session.open = false
+    render()
+  })
   $('generate').addEventListener('click', () => generate())
   $('retry').addEventListener('click', () => generate(true))
   $('manual').addEventListener('click', () => {
-    if (!state.generated) {
-      state.manual = true
-      state.revision += 1
+    if (session.busy) {
+      return
     }
-    state.generated = true
-    state.reviewed = false
+    if (!session.produced) {
+      workingData = clone(fixture)
+      workingState.manual = true
+      workingState.generated = true
+      workingState.revision += 1
+    }
+    selectedId = null
+    pinnedSelection = false
     render()
     openEditor()
   })
   $('scenario').addEventListener('change', (event) => {
-    state.scenario = event.target.value
+    session.scenario = event.target.value
     $('activity').hidden = true
     render()
+  })
+  $('save-report').addEventListener('click', () => {
+    if (session.busy || selectedId !== null || !workingState.generated) {
+      return
+    }
+    storeRevision('人工保存修订')
+    render()
+    notify(storageProblem || '工作稿已保存为新修订，旧版仍在档案中。')
   })
   $('supplement').addEventListener('click', () => openEditor())
   $('note-section').addEventListener('change', (event) => {
@@ -389,6 +648,9 @@
   })
   $('edit-form').addEventListener('submit', (event) => {
     event.preventDefault()
+    if (session.busy) {
+      return
+    }
     const content = $('note-content').value.trim()
     if (!content) {
       $('note-content').setCustomValidity('请输入补充内容。')
@@ -396,28 +658,38 @@
       return
     }
     const key = $('note-section').value
-    state.notes[key] = content
-    state.corrections[key] = $('note-mode').value === 'correct'
-    state.checkedAt[key] = $('note-checked').checked ? state.revision : -1
-    if (key === 'progress' && state.reportScenario === 'missing' && !state.manual) {
-      state.resolved = $('resolve').checked
+    workingState.notes[key] = content
+    workingState.corrections[key] = $('note-mode').value === 'correct'
+    workingState.checkedAt[key] = $('note-checked').checked ? workingState.revision : -1
+    if (key === 'progress' && workingState.reportScenario === 'missing' && !workingState.manual) {
+      workingState.resolved = $('resolve').checked
     }
-    state.reviewed = false
+    workingState.reviewed = false
     $('editor').close()
+    storeRevision('人工补充或修正')
     render()
-    notify('补充已保存并标记来源；重新生成时会保留。')
+    notify(storageProblem || '人工修订已归档为新版，旧版内容保留。')
   })
   $('note-content').addEventListener('input', () => $('note-content').setCustomValidity(''))
   $('confirm').addEventListener('click', () => {
-    if (pending() || uncheckedNotes().length || state.busy) {
+    if (pending() || uncheckedNotes().length || session.busy) {
       return
     }
-    state.reviewed = true
+    beginEdit()
+    workingState.reviewed = true
+    storeRevision('标记已审阅')
     render()
-    notify('报告内容已确认。Issue 状态与目标验收结论保持原样。')
+    notify(storageProblem || '本份内容已标记审阅并保存新修订；Issue 与目标验收不变。')
   })
   $('export').addEventListener('click', exportReport)
   document.addEventListener('click', (event) => {
+    const archive = event.target.closest('[data-archive]')
+    if (archive) {
+      selectedId = archive.dataset.archive
+      pinnedSelection = true
+      persist()
+      render()
+    }
     const evidence = event.target.closest('[data-evidence]')
     if (evidence) {
       showEvidence(evidence.dataset.evidence)
@@ -431,5 +703,51 @@
       $(close.dataset.close).close()
     }
   })
+
+  try {
+    const saved = JSON.parse(localStorage.getItem(storageKey) || 'null')
+    if (saved) {
+      if (
+        saved.schema !== 2 ||
+        !Array.isArray(saved.archives) ||
+        !saved.archives.every(
+          (item) =>
+            typeof item.id === 'string' &&
+            typeof item.version === 'number' &&
+            typeof item.savedAt === 'string' &&
+            validFacts(item.facts) &&
+            validReport(item.report)
+        ) ||
+        !validFacts(saved.workingData) ||
+        !validReport(saved.workingState)
+      ) {
+        throw new Error('invalid archive')
+      }
+      archives = saved.archives
+      workingState = saved.workingState
+      workingData = saved.workingData
+      selectedId = archives.some((item) => item.id === saved.selectedId) ? saved.selectedId : null
+      pinnedSelection = Boolean(saved.pinnedSelection && selectedId)
+    } else {
+      storeRevision('完整示例报告')
+    }
+  } catch {
+    storageProblem = '无法读取本机原型档案；已保留浏览器原数据，请导出当前示例并检查浏览器存储。'
+    const version = 1
+    archives = [
+      {
+        id: `weekly-demo-recovery-${Date.now()}`,
+        version,
+        savedAt: new Date().toISOString(),
+        reason: '恢复展示示例',
+        reportId: fixture.reportId,
+        facts: clone(fixture),
+        report: clone(workingState),
+        source: '本机浏览器原型示例',
+        persistence: 'page'
+      }
+    ]
+    selectedId = archives[0].id
+  }
   render()
 })()
