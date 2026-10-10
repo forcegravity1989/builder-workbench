@@ -89,6 +89,8 @@ export function ConnectorAddPanel({
           .join('、')} 上：取消勾选，或换个名称。`
       : null
   const problem = plan ? (duplicate ?? validateInstallPlan(plan)) : null
+  // 自定义项在人填写前不报错，只禁用安装。
+  const touched = entry !== 'custom' || name.trim() !== '' || customValue.trim() !== ''
   // 有当前项目就在其目录下执行：Claude Code 的「仅当前项目」按执行目录记录。
   const commandLine =
     plan && !problem
@@ -209,7 +211,7 @@ export function ConnectorAddPanel({
               ) : null}
             </Field>
           ) : null}
-          {problem ? <p className="text-xs text-destructive">{problem}</p> : null}
+          {problem && touched ? <p className="text-xs text-destructive">{problem}</p> : null}
           {commandLine ? (
             <pre className="whitespace-pre-wrap break-all rounded bg-muted/60 p-2 font-mono text-xs">
               {commandLine}

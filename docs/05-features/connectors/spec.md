@@ -60,6 +60,7 @@
 | 读状态 | `claude mcp list` | `codex mcp list --json` |
 
 - 安装需要登录的远程服务：Claude 依次跑 add 与 login；Codex 只跑 add。
+- **Codex 命令一律显式带 `CODEX_HOME=<系统目录>`**（PowerShell 为 `$env:CODEX_HOME = '<目录>'`）。Orca 的终端把 `CODEX_HOME` 指向它托管的运行目录，并在每次起 Codex 会话前用系统目录覆盖它，不带的话装进去的 connector 下次就被冲掉。系统目录 = 主进程环境里显式的 `CODEX_HOME`，没有则是 Orca 同步来源 `~/.codex`；列表也按同一目录读。
 - 名称只允许 `A–Z a–z 0–9 _ -` 且不以 `-` 开头，地址只允许 `http(s)://`；不合规不拼命令。参数按目标 shell 加单引号：PowerShell 下 `-` 开头、含 `,` 或以 `@` 开头的都加（npm 的 `.ps1` 垫片会吞掉裸 `--`），弯单引号成对转义；POSIX 下以 `=` 开头的也加。
 - 读状态在后台非交互执行；安装、登录、移除在可见终端执行，因为两家都可能要浏览器授权并等待回调。命令由界面填入终端，人按回车才执行。
 - 前一条失败就不跑后一条：POSIX shell 用 `&&`，Windows 固定用 PowerShell，以 `$LASTEXITCODE` 串联。
@@ -93,5 +94,6 @@
 ## 7. 依据（2026-10-10 实测）
 
 - Claude Code 2.1.280：`-s user` 写 `$CLAUDE_CONFIG_DIR/.claude.json` 顶层 `mcpServers`；`-s local` 写同文件 `projects[<路径>].mcpServers`；`-s project` 写仓库 `.mcp.json`。`claude mcp list` 输出 `名称: 目标 - ✔ Connected / ! Needs authentication / ✘ Failed to connect — 原因`，8 个服务约 6.5 秒。
+- Orca：内嵌终端的 zsh 启动包装把 `CODEX_HOME` 恢复为 `<userData>/codex-runtime-home/home`；`syncSystemConfigIntoManagedCodexHome` 在起 Codex 会话前把 `~/.codex/config.toml` 同步进去（只有 /model、/approvals 一类设置会回写）。真壳里 `echo $CODEX_HOME` 实测为托管目录。
 - Codex 0.153.4：`codex mcp add` 只写 `$CODEX_HOME/config.toml` 的 `[mcp_servers.<名称>]`，无范围参数；远程地址检测到 OAuth 会打印授权地址并阻塞等待回调。`codex mcp list --json` 给出 `name / enabled / transport.type / auth_status`，不探连通。
 - 推荐目录 8 个地址均响应 MCP 初始化请求（context7 200，其余 401 带 `WWW-Authenticate`）；Claude Code 健康检查对其余 7 项报「需要登录」。GitHub 官方远程服务报「不支持动态客户端注册」，需要令牌，未进目录。
