@@ -560,6 +560,7 @@ import {
   CharterStatusRequestSchema,
   CharterSubmitRequestSchema
 } from '../workbench/charter'
+import { ConnectorListRequestSchema } from '../workbench/connector-status'
 import { CycleSyncSchema } from '../workbench/cycle-sync'
 import { MetricReadRequestSchema } from '../workbench/metrics'
 import { ArchiveProofRequestSchema } from '../workbench/version-archive'
@@ -1193,6 +1194,7 @@ export const RPC_PARAMS_BY_METHOD = {
   'workbench.charter.probeRemote': CharterProbeRequestSchema,
   'workbench.charter.status': CharterStatusRequestSchema,
   'workbench.charter.submit': CharterSubmitRequestSchema,
+  'workbench.connectors.list': ConnectorListRequestSchema,
   'workbench.cycle.syncTrunk': CycleSyncSchema,
   'workbench.history.list': VersionHistoryListSchema,
   'workbench.history.listTreePlans': VersionTreePlansSchema,

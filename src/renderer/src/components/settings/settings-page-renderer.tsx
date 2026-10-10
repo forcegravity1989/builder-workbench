@@ -1,4 +1,5 @@
 import { ActiveSettingsSectionProvider } from './SettingsSection'
+import { renderWorkbenchConnectorsSettingsSection } from '@/workbench/connectors/connectors-settings'
 import { SettingsSidebar } from './SettingsSidebar'
 import { cn } from '@/lib/utils'
 import { translate } from '@/i18n/i18n'
@@ -116,6 +117,7 @@ export function renderSettingsPage(context: SettingsRenderContext): React.JSX.El
                 {renderAgentsSettingsSection(context)}
                 {renderAccountsSettingsSection(context)}
                 {renderOrchestrationSettingsSection(context)}
+                {renderWorkbenchConnectorsSettingsSection(context)}
                 {renderLinearSettingsSection(context)}
                 {renderDesktopCapabilitySettingsSections(context)}
                 {renderOrcaAccountSettingsSection(context)}
