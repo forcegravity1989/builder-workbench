@@ -188,7 +188,7 @@ export function useAcceptanceOutput(
     buildReport,
     report:
       report?.document === document && report?.revision === draft?.expectedRevision
-        ? report?.markdown
+        ? (report?.markdown ?? null)
         : null
   }
 }
