@@ -69,6 +69,9 @@
           ><button type="button" class="tl-button" id="unschedule">移回未排期</button
           ><button type="button" class="tl-button" id="clear-selection">取消选择</button>
         </div>
+        <div class="gesture-feedback" id="gesture-feedback" role="status" aria-live="polite">
+          拖动时预览候选日期 · Shift 多选 · Esc 取消
+        </div>
         <div class="timeline-scroll" tabindex="0" aria-label="版本计划时间轴，可横向滚动">
           <div class="timeline-grid" id="timeline-grid"></div>
         </div>
@@ -78,7 +81,7 @@
             ><span><i class="legend-diamond"></i>里程碑</span
             ><span><i class="legend-boundary"></i>迭代边界</span>
           </div>
-          <span>空白行拖出排期 · 拖动条目与端点 · Shift 多选 · 双击补充详情</span>
+          <span>空白行拖出排期 · 拖动条目与端点 · Shift 多选 · Esc 取消 · 双击补充详情</span>
         </div>
       </section>
       <p class="review-note">

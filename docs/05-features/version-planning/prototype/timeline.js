@@ -117,7 +117,8 @@
         )
       )
     )
-  function gesture(event, node, track, preview, message, cleanup = () => {}) {
+  function gesture(event, node, track, preview, message, options = {}) {
+    const { cleanup = () => {}, onStart = () => {}, describe = () => message } = options
     if (event.button !== 0 || event.shiftKey || cancelGesture) {
       cleanup()
       return
@@ -125,6 +126,9 @@
     event.preventDefault()
     event.stopPropagation()
     const before = snapshot()
+    const previousSelection = [...selected]
+    const hint = $('#gesture-feedback')
+    const idleHint = hint.textContent
     const initialX = event.clientX
     const initialScroll = scroller.scrollLeft
     const dayWidth = track.clientWidth / days
@@ -145,14 +149,20 @@
         invalid = '无法完成调整，请重新尝试'
       }
       node.classList.toggle('invalid', Boolean(invalid))
+      hint.classList.toggle('invalid-preview', Boolean(invalid))
+      const text = `${describe(delta, pointDay(current, track))}${invalid ? ` · ${invalid}；松开将取消整次调整` : ''} · Esc 取消`
+      if (hint.textContent !== text) {
+        hint.textContent = text
+      }
     }
     const move = (next) => {
       if (next.pointerId !== event.pointerId) {
         return
       }
       current = next
-      if (Math.abs(next.clientX - initialX) > 3) {
+      if (!started && Math.abs(next.clientX - initialX) > 3) {
         started = true
+        onStart()
       }
       if (started) {
         update()
@@ -188,10 +198,14 @@
         node.releasePointerCapture(event.pointerId)
       }
       cancelGesture = undefined
+      hint.textContent = idleHint
+      hint.classList.remove('invalid-preview')
       node.classList.remove('dragging', 'invalid')
       cleanup()
       if (cancelled || invalid) {
         state = before
+        selected.clear()
+        previousSelection.forEach((entry) => selected.add(entry))
         render()
         feedback(cancelled ? '已取消拖动。' : `${invalid}；整次调整已取消。`)
       } else if (JSON.stringify(state) !== JSON.stringify(before)) {
@@ -273,7 +287,11 @@
               iterationTrack.children[index + 1].style.width =
                 `${((next.end - next.start + 1) / days) * 100}%`
             },
-            '调整迭代边界（交付项日期不变）'
+            '调整迭代边界（交付项日期不变）',
+            {
+              describe: (delta) =>
+                `${iteration.title}结束 ${dateAt(originalEnd + delta)} · ${next.title}开始 ${dateAt(originalEnd + delta + 1)} · 交付项日期不变`
+            }
           )
         })
         cell.append(handle)
@@ -338,7 +356,8 @@
               marker.style.left = `${((day + 0.5) / days) * 100}%`
               marker.lastChild.textContent = `${shortDate(day)} ${milestone.name}`
             },
-            `移动里程碑「${milestone.name}」`
+            `移动里程碑「${milestone.name}」`,
+            { describe: (delta) => `「${milestone.name}」候选日期 ${dateAt(originalDay + delta)}` }
           )
         })
         milestoneTrack.append(marker)
@@ -432,7 +451,12 @@
                   positionBar(ghost, item)
                 },
                 `安排「${item.name}」`,
-                () => ghost.remove()
+                {
+                  cleanup: () => ghost.remove(),
+                  onStart: () => selectItem(item, false),
+                  describe: (_delta, point) =>
+                    `安排「${item.name}」${dateAt(Math.min(anchor, point))} — ${dateAt(Math.max(anchor, point))}`
+                }
               )
             })
           } else {
@@ -455,7 +479,7 @@
             )
             bar.addEventListener('dblclick', () => edit('item', item))
             bar.addEventListener('pointerdown', (event) => {
-              if (event.shiftKey) {
+              if (event.button !== 0 || event.shiftKey) {
                 return
               }
               const edge = event.target.classList.contains('resize-start')
@@ -463,13 +487,10 @@
                 : event.target.classList.contains('resize-end')
                   ? 'end'
                   : ''
-              if (!selected.has(item.id)) {
-                selected.clear()
-                selected.add(item.id)
-              }
-              const moving = edge
-                ? [item]
-                : state.items.filter((entry) => selected.has(entry.id) && scheduled(entry))
+              const moving =
+                edge || !selected.has(item.id)
+                  ? [item]
+                  : state.items.filter((entry) => selected.has(entry.id) && scheduled(entry))
               const originals = moving.map((entry) => ({
                 entry,
                 start: entry.start,
@@ -499,7 +520,22 @@
                 },
                 edge
                   ? `调整「${item.name}」${edge === 'start' ? '开始' : '结束'}日期`
-                  : `移动 ${moving.length} 个交付项`
+                  : `移动 ${moving.length} 个交付项`,
+                {
+                  onStart: () => {
+                    if (!selected.has(item.id)) {
+                      selectItem(item, false)
+                    } else {
+                      refreshSelection()
+                    }
+                  },
+                  describe: (delta) => {
+                    const original = originals.find((entry) => entry.entry.id === item.id)
+                    const start = original.start + (edge === 'end' ? 0 : delta)
+                    const end = original.end + (edge === 'start' ? 0 : delta)
+                    return `${edge ? '调整' : `移动 ${moving.length} 项 ·`}「${item.name}」${dateAt(start)} — ${dateAt(end)}`
+                  }
+                }
               )
             })
             track.append(bar)
@@ -881,15 +917,26 @@
     }
   })
   document.addEventListener('keydown', (event) => {
-    if (event.key === 'Escape' && cancelGesture) {
-      event.preventDefault()
-      cancelGesture()
+    const editingText = event.target.closest('input, textarea, select, [contenteditable]')
+    const dialogOpen = document.querySelector('dialog[open]')
+    if (event.key === 'Escape') {
+      if (cancelGesture) {
+        event.preventDefault()
+        cancelGesture()
+        return
+      }
+      if (selected.size && !editingText && !dialogOpen) {
+        event.preventDefault()
+        selected.clear()
+        refreshSelection()
+        feedback('已取消选择，排期未改变。')
+      }
     }
     if (
       (event.ctrlKey || event.metaKey) &&
       event.key.toLowerCase() === 'z' &&
-      !event.target.closest('input, textarea, select, [contenteditable]') &&
-      !document.querySelector('dialog[open]')
+      !editingText &&
+      !dialogOpen
     ) {
       event.preventDefault()
       undo()

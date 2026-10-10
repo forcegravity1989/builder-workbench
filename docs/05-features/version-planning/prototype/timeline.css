@@ -110,7 +110,7 @@
   border: 1px solid var(--color-divider);
   border-radius: 8px;
   background: var(--color-card);
-  overflow: hidden;
+  overflow: clip;
 }
 .plan-toolbar {
   display: flex;
@@ -252,9 +252,25 @@
 .milestone-row {
   min-height: 70px;
 }
+.iteration-track,
 .milestone-track,
 .bar-track {
   position: relative;
+  isolation: isolate;
+}
+.gesture-feedback {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  padding: 10px 20px;
+  border-top: 1px solid var(--color-divider);
+  background: var(--color-surface);
+  color: var(--color-text);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
+.gesture-feedback.invalid-preview {
+  color: var(--color-accent);
 }
 .milestone-track {
   background: color-mix(in srgb, var(--color-surface) 35%, transparent);
@@ -704,8 +720,12 @@
   touch-action: none;
 }
 .dragging {
-  z-index: 5;
   cursor: grabbing !important;
+}
+.plan-bar.dragging,
+.milestone-marker.dragging,
+.iteration-handle.dragging {
+  z-index: 5;
 }
 .ghost {
   pointer-events: none;
