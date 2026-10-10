@@ -13,7 +13,11 @@ import {
 export const AUTOMATION_CRON_EXPRESSION_MAX_BYTES = 2 * 1024
 export type ParsedRrule = {
   kind: 'rrule'
-  freq: 'HOURLY' | 'DAILY' | 'WEEKLY'
+  freq: 'MINUTELY' | 'HOURLY' | 'DAILY' | 'WEEKLY'
+  /** 间隔单位数（MINUTELY→分钟，日历型恒为 1）；缺省 1，与存量表达式一致。 */
+  interval: number
+  /** RRULE COUNT；null = 无上限。 */
+  count: number | null
   byDay: string[]
   byHour: number
   byMinute: number
@@ -45,16 +49,29 @@ function parseRrule(rrule: string): ParsedRrule {
     }
   }
   const freq = entries.get('FREQ')
-  if (freq !== 'HOURLY' && freq !== 'DAILY' && freq !== 'WEEKLY') {
+  if (freq !== 'MINUTELY' && freq !== 'HOURLY' && freq !== 'DAILY' && freq !== 'WEEKLY') {
     throw new Error('Unsupported automation recurrence.')
+  }
+  const intervalRaw = entries.get('INTERVAL')
+  const interval = intervalRaw === undefined ? 1 : Number(intervalRaw)
+  if (!Number.isInteger(interval) || interval < 1) {
+    throw new Error('Invalid recurrence interval.')
+  }
+  const countRaw = entries.get('COUNT')
+  const count = countRaw === undefined ? null : Number(countRaw)
+  if (count !== null && (!Number.isInteger(count) || count < 1)) {
+    throw new Error('Invalid recurrence count.')
   }
   const byHour = Number(entries.get('BYHOUR') ?? '9')
   const byMinute = Number(entries.get('BYMINUTE') ?? '0')
-  if (!Number.isInteger(byHour) || byHour < 0 || byHour > 23) {
-    throw new Error('Invalid recurrence hour.')
-  }
-  if (!Number.isInteger(byMinute) || byMinute < 0 || byMinute > 59) {
-    throw new Error('Invalid recurrence minute.')
+  // 钟面字段只对日历型生效：间隔型出现 BYHOUR/BYMINUTE 时不读也不判。
+  if (freq !== 'MINUTELY') {
+    if (!Number.isInteger(byHour) || byHour < 0 || byHour > 23) {
+      throw new Error('Invalid recurrence hour.')
+    }
+    if (!Number.isInteger(byMinute) || byMinute < 0 || byMinute > 59) {
+      throw new Error('Invalid recurrence minute.')
+    }
   }
   const byDay = (entries.get('BYDAY') ?? '').split(',').filter(Boolean)
   if (
@@ -64,7 +81,7 @@ function parseRrule(rrule: string): ParsedRrule {
   ) {
     throw new Error('Invalid recurrence day.')
   }
-  return { kind: 'rrule', freq, byDay, byHour, byMinute }
+  return { kind: 'rrule', freq, interval, count, byDay, byHour, byMinute }
 }
 
 export function parseCronExpression(
@@ -209,16 +226,35 @@ export function parseAutomationRrule(rrule: string): {
   hour: number
   minute: number
   dayOfWeek: number
+  /** every_n_minutes/every_n_hours 的间隔（分钟）；仅间隔型返回。 */
+  intervalMinutes?: number
+  /** RRULE COUNT 读回的执行次数上限；仅存在时返回。 */
+  runCountCap?: number
 } {
   const rule = parseRrule(rrule)
+  const withCount = <
+    T extends { preset: AutomationSchedulePreset; hour: number; minute: number; dayOfWeek: number }
+  >(
+    base: T
+  ) => (rule.count !== null ? { ...base, runCountCap: rule.count } : base)
+  if (rule.freq === 'MINUTELY') {
+    const wholeHours = rule.interval % 60 === 0 && rule.interval / 60 <= 23
+    return withCount({
+      preset: wholeHours ? ('every_n_hours' as const) : ('every_n_minutes' as const),
+      hour: 9,
+      minute: 0,
+      dayOfWeek: 1,
+      intervalMinutes: rule.interval
+    })
+  }
   if (rule.freq === 'HOURLY') {
-    return { preset: 'hourly', hour: rule.byHour, minute: rule.byMinute, dayOfWeek: 1 }
+    return withCount({ preset: 'hourly', hour: rule.byHour, minute: rule.byMinute, dayOfWeek: 1 })
   }
   if (rule.freq === 'DAILY') {
-    return { preset: 'daily', hour: rule.byHour, minute: rule.byMinute, dayOfWeek: 1 }
+    return withCount({ preset: 'daily', hour: rule.byHour, minute: rule.byMinute, dayOfWeek: 1 })
   }
   if (rule.byDay.join(',') === WEEKDAY_CODES.join(',')) {
-    return { preset: 'weekdays', hour: rule.byHour, minute: rule.byMinute, dayOfWeek: 1 }
+    return withCount({ preset: 'weekdays', hour: rule.byHour, minute: rule.byMinute, dayOfWeek: 1 })
   }
   if (rule.byDay.length !== 1) {
     throw new Error('Invalid recurrence day.')
@@ -228,12 +264,12 @@ export function parseAutomationRrule(rrule: string): {
   if (dayOfWeek === -1) {
     throw new Error('Invalid recurrence day.')
   }
-  return {
+  return withCount({
     preset: 'weekly',
     hour: rule.byHour,
     minute: rule.byMinute,
     dayOfWeek
-  }
+  })
 }
 
 export function tryParseAutomationRrule(

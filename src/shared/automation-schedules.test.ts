@@ -16,6 +16,7 @@ import {
   isValidAutomationCronSchedule,
   isValidAutomationSchedule,
   parseAutomationRrule,
+  parseSchedule,
   tryParseAutomationRrule
 } from './automation-schedule-parsing'
 
@@ -278,5 +279,39 @@ describe('automation schedules', () => {
       new Date('2026-05-15T12:00:00').getTime()
     )
     expect(next).toBe(new Date('2028-02-29T00:00:00').getTime())
+  })
+
+  it('parses MINUTELY interval and COUNT rules and reverse-maps them', () => {
+    // 解析：间隔与次数是 RRULE 标准语义；BYHOUR/BYMINUTE 仅对日历型生效。
+    const parsed = parseSchedule('FREQ=MINUTELY;INTERVAL=90;COUNT=5')
+    expect(parsed).toMatchObject({ kind: 'rrule', freq: 'MINUTELY', interval: 90, count: 5 })
+
+    // 缺省：无 INTERVAL=1、无 COUNT=null，与存量表达式解析结果一致。
+    expect(parseSchedule('FREQ=DAILY;BYHOUR=9;BYMINUTE=0')).toMatchObject({
+      freq: 'DAILY',
+      interval: 1,
+      count: null
+    })
+
+    // 反映射：90 分钟不是整小时 → every_n_minutes；120 分钟 → every_n_hours。
+    expect(parseAutomationRrule('FREQ=MINUTELY;INTERVAL=90;COUNT=5')).toMatchObject({
+      preset: 'every_n_minutes',
+      intervalMinutes: 90,
+      runCountCap: 5
+    })
+    expect(parseAutomationRrule('FREQ=MINUTELY;INTERVAL=120')).toMatchObject({
+      preset: 'every_n_hours',
+      intervalMinutes: 120
+    })
+    // 日历型带 COUNT 也能读回上限。
+    expect(parseAutomationRrule('FREQ=DAILY;BYHOUR=9;BYMINUTE=0;COUNT=3')).toMatchObject({
+      preset: 'daily',
+      runCountCap: 3
+    })
+
+    // 非法值拒绝：INTERVAL/COUNT 必须是正整数。
+    expect(() => parseSchedule('FREQ=MINUTELY;INTERVAL=0')).toThrow()
+    expect(() => parseSchedule('FREQ=MINUTELY;INTERVAL=abc')).toThrow()
+    expect(() => parseSchedule('FREQ=DAILY;BYHOUR=9;BYMINUTE=0;COUNT=0')).toThrow()
   })
 })

@@ -20,6 +20,8 @@ export type AutomationScheduleDescriptor =
   | { kind: 'daily'; hour: number; minute: number }
   | { kind: 'weekdays'; hour: number; minute: number }
   | { kind: 'weekly'; hour: number; minute: number; dayOfWeek: number }
+  | { kind: 'every_n_minutes'; intervalMinutes: number }
+  | { kind: 'every_n_hours'; hours: number }
   | { kind: 'custom' }
   | { kind: 'invalid' }
 
@@ -77,6 +79,10 @@ function setContainsRange(values: Set<number>, min: number, max: number): boolea
 function formatParsedRruleSchedule(schedule: ReturnType<typeof parseAutomationRrule>): string {
   if (schedule.preset === 'hourly') {
     return `Hourly at :${String(schedule.minute).padStart(2, '0')}`
+  }
+  if (schedule.preset === 'every_n_minutes' || schedule.preset === 'every_n_hours') {
+    const minutes = schedule.intervalMinutes ?? 60
+    return minutes % 60 === 0 ? `Every ${minutes / 60} hours` : `Every ${minutes} minutes`
   }
   const time = formatTime(schedule.hour, schedule.minute)
   if (schedule.preset === 'daily') {
@@ -178,6 +184,12 @@ export function describeAutomationSchedule(
       return toScheduleDescriptor(classifyParsedCronSchedule(schedule))
     }
     const rrule = parseAutomationRrule(trimmed)
+    if (rrule.preset === 'every_n_minutes' || rrule.preset === 'every_n_hours') {
+      const minutes = rrule.intervalMinutes ?? 60
+      return minutes % 60 === 0
+        ? { kind: 'every_n_hours', hours: minutes / 60 }
+        : { kind: 'every_n_minutes', intervalMinutes: minutes }
+    }
     if (rrule.preset === 'hourly') {
       return { kind: 'hourly', minute: rrule.minute }
     }

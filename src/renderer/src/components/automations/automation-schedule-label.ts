@@ -33,6 +33,20 @@ export function formatUiAutomationScheduleDescriptor(
       { minute: String(descriptor.minute).padStart(2, '0') }
     )
   }
+  if (descriptor.kind === 'every_n_minutes') {
+    return translate(
+      'auto.components.automations.automation.schedule.label.2442f631bf',
+      'Every {{count}} minutes',
+      { count: String(descriptor.intervalMinutes) }
+    )
+  }
+  if (descriptor.kind === 'every_n_hours') {
+    return translate(
+      'auto.components.automations.automation.schedule.label.6e5092ad81',
+      'Every {{count}} hours',
+      { count: String(descriptor.hours) }
+    )
+  }
   const time = formatAutomationScheduleTime(descriptor.hour, descriptor.minute)
   if (descriptor.kind === 'daily') {
     return translate(
