@@ -12,6 +12,7 @@ Workbench 产品技能源码。一个目录一份 `SKILL.md`，全部平级。�
 | 版本验收 | [version-acceptance](version-acceptance/SKILL.md) | 验收自动化默认提示与数据问题处理入口；普通新建不额外注入 | 原承诺、真实结果、人的结论与未达安排 |
 | `资产盘点` | `asset-audit/` | 资产盘点任务；运行时派发待迁移验证 | 盘 `.bw`(对照 `bw-assets.md`) + 盘项目本周改动 + 同版本周一屏 JSON 更新执行进展 |
 | 指标准备 | [metrics-refresh](metrics-refresh/SKILL.md) | 总览/计划/验收出现定义或采集缺口时 | 复用指标协议，核对或补齐真实来源 |
+| 自动化作曲 | [automation-composer](automation-composer/SKILL.md) | 计划屏「AI 创建自动化」入口；提示词随 composer 自动化内嵌分发 | 一句话目标 → 起草、禁用创建、试跑、读回迭代；启用留人 |
 | — | `project-handbook/` | 不派发 | 写仓根 `AGENTS.md` |
 
 当前接入写工作区 `.bw/project.toml`；旧 Rust 的 `bw/project` 常驻工作树与 MR 旅程尚未迁入，不能作为现行操作要求。
