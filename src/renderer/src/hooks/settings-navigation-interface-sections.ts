@@ -5,6 +5,7 @@ import { getShortcutsPaneSearchEntries } from '@/components/settings/shortcuts-s
 import { getStatsPaneSearchEntries } from '@/components/stats/stats-search'
 import { translate } from '@/i18n/i18n'
 import type { SettingsNavSection } from '@/lib/settings-navigation-types'
+import { isWorkbenchShell } from '@/workbench/is-workbench-shell'
 import { BarChart3, Bell, Keyboard, Palette, TextCursorInput } from 'lucide-react'
 import type { SettingsNavigationBuildOptions } from './settings-navigation-build-options'
 
@@ -75,16 +76,25 @@ export function buildInterfaceSettingsSections({
       }),
       group: 'interface'
     },
-    {
-      id: 'stats',
-      title: translate('auto.hooks.useSettingsNavigationMetadata.d72a58b5b9', 'Stats & Usage'),
-      description: translate(
-        'auto.hooks.useSettingsNavigationMetadata.b351014180',
-        'Orca stats plus Claude, Codex, OpenCode token analytics and Grok subscription usage.'
-      ),
-      icon: BarChart3,
-      searchEntries: getStatsPaneSearchEntries(),
-      group: 'interface'
-    }
+    // Why: Orca's stats and token analytics are not a Workbench surface; usage tracking keeps
+    // running (Automations attribution reads it), only the page is not listed in the shell.
+    ...(isWorkbenchShell()
+      ? []
+      : [
+          {
+            id: 'stats',
+            title: translate(
+              'auto.hooks.useSettingsNavigationMetadata.d72a58b5b9',
+              'Stats & Usage'
+            ),
+            description: translate(
+              'auto.hooks.useSettingsNavigationMetadata.b351014180',
+              'Orca stats plus Claude, Codex, OpenCode token analytics and Grok subscription usage.'
+            ),
+            icon: BarChart3,
+            searchEntries: getStatsPaneSearchEntries(),
+            group: 'interface'
+          }
+        ])
   ]
 }

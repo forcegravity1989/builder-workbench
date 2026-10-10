@@ -30,6 +30,7 @@ import { ProviderLetterBadge, ProviderSegment } from './StatusBarProviderSegment
 import { useStatusBarController } from './use-status-bar-controller'
 import { StatusBarVisibilityMenu } from './StatusBarVisibilityMenu'
 import { isPairedWebClientWindow } from '@/lib/desktop-window-chrome'
+import { isWorkbenchShell } from '@/workbench/is-workbench-shell'
 
 const PetStatusSegment = lazyWithRetry(() =>
   import('./PetStatusSegment').then((module) => ({ default: module.PetStatusSegment }))
@@ -169,7 +170,8 @@ export function StatusBarSurface({
                   onSignIn={handleOpenProviderAccounts}
                   canSignIn={(provider) => getUsageProviderAccountsSectionId(provider) !== null}
                   onManageAccounts={handleManageAccounts}
-                  onUsageDetails={handleUsageDetails}
+                  // Why: the Workbench shell does not list the Stats & Usage settings page.
+                  onUsageDetails={isWorkbenchShell() ? undefined : handleUsageDetails}
                   renderRow={(p, rowNode) => {
                     // Every provider drills into its detail panel (parity with the
                     // per-provider dropdowns on main); Claude/Codex additionally get

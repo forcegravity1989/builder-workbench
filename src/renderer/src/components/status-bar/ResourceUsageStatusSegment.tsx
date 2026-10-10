@@ -16,6 +16,7 @@ import {
 } from './resource-usage-popover-body'
 import { renderResourceUsageKillDialog } from './resource-usage-kill-dialog'
 import { WorkspaceSpaceCompactPanel } from './WorkspaceSpaceCompactPanel'
+import { isWorkbenchShell } from '@/workbench/is-workbench-shell'
 
 export { SessionRow, WorktreeRow } from './resource-usage-session-rows'
 
@@ -143,7 +144,10 @@ export function ResourceUsageStatusSegment({
           orphanCount,
           handleKillOrphans
         })}
-        <WorkspaceSpaceCompactPanel onOpenFullPage={openSpaceResults} />
+        {/* Why: the Workbench shell routes the space page to its knowledge base, so the full-page link is hidden there. */}
+        <WorkspaceSpaceCompactPanel
+          onOpenFullPage={isWorkbenchShell() ? undefined : openSpaceResults}
+        />
       </PopoverContent>
       {/* Why: hoisted to a sibling of PopoverContent — nested, the Dialog unmounts with the popover mid-interaction and the kill-confirm flow disappears. */}
       {renderResourceUsageKillDialog({

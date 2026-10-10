@@ -11,6 +11,7 @@ import { getOrchestrationPaneSearchEntries } from '@/components/settings/orchest
 import { getVoicePaneSearchEntries } from '@/components/settings/voice-pane-search'
 import { translate } from '@/i18n/i18n'
 import type { SettingsNavSection } from '@/lib/settings-navigation-types'
+import { isWorkbenchShell } from '@/workbench/is-workbench-shell'
 import {
   Blocks,
   Bot,
@@ -124,7 +125,8 @@ export function buildSetupSettingsSections({
 }: SettingsNavigationBuildOptions): SettingsNavSection[] {
   const showDesktopOnlySettings = !isWebClient
   return [
-    ...(showDesktopOnlySettings
+    // Why: the Workbench shell has no Orca cloud account features (artifact links, skill sharing).
+    ...(showDesktopOnlySettings && !isWorkbenchShell()
       ? [
           {
             id: 'orca-account',

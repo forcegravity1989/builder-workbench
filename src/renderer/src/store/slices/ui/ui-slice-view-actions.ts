@@ -1,5 +1,6 @@
 import type { UISlice, UISliceGet, UISliceSet } from './ui-slice-contract'
 import { rewindHistoryIndexPastView } from '../worktree-nav-history'
+import { isWorkbenchShell } from '@/workbench/is-workbench-shell'
 
 export function createUiViewActions(set: UISliceSet, get: UISliceGet): Partial<UISlice> {
   return {
@@ -58,6 +59,11 @@ export function createUiViewActions(set: UISliceSet, get: UISliceGet): Partial<U
         activeView: state.previousViewBeforeSpace
       })),
     openSkillsPage: () => {
+      // Why: the Workbench shell renders no skills page, so switching to it (e.g. from an
+      // orca:// skill-share link) would leave the main area blank; ignore the request there.
+      if (isWorkbenchShell()) {
+        return
+      }
       get().recordViewVisit('skills')
       set((state) => ({
         activeView: 'skills',
@@ -71,6 +77,10 @@ export function createUiViewActions(set: UISliceSet, get: UISliceGet): Partial<U
         worktreeNavHistoryIndex: rewindHistoryIndexPastView(state, 'skills')
       })),
     openSkillShare: (shareId) => {
+      // Why: see openSkillsPage — no skills page in the Workbench shell.
+      if (isWorkbenchShell()) {
+        return
+      }
       get().recordViewVisit('skills')
       set((state) => ({
         activeView: 'skills',
@@ -81,6 +91,10 @@ export function createUiViewActions(set: UISliceSet, get: UISliceGet): Partial<U
     },
     clearPendingSkillShare: () => set({ pendingSkillShareId: null }),
     openSkillsSharedLinks: () => {
+      // Why: see openSkillsPage — no skills page in the Workbench shell.
+      if (isWorkbenchShell()) {
+        return
+      }
       get().recordViewVisit('skills')
       set((state) => ({
         activeView: 'skills',

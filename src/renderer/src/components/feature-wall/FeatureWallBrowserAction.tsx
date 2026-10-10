@@ -17,13 +17,16 @@ import {
   useSetupTargetWorktree
 } from './FeatureWallSetupWorkflowActions'
 import { getClientCreationActionPolicy } from '@/lib/client-creation-action-policy'
+import { isWorkbenchShell } from '@/workbench/is-workbench-shell'
 
 export function BrowserAction(props: { done: boolean }): React.JSX.Element {
   const targetWorktree = useSetupTargetWorktree()
+  // Why: the Workbench shell offers no "new browser tab" entry point, including this "Try it out".
   const browserCreationEnabled = useAppStore(
     (state) =>
+      !isWorkbenchShell() &&
       getClientCreationActionPolicy(state, targetWorktree?.id ?? null)['managed-browser'].state ===
-      'enabled'
+        'enabled'
   )
   const openModal = useAppStore((s) => s.openModal)
   const closeModal = useAppStore((s) => s.closeModal)

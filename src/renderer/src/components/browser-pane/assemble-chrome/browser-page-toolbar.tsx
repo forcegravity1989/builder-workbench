@@ -21,6 +21,7 @@ import {
 } from '@/lib/browser-page-conversion-history'
 import { convertBrowserPageToWorkspaceDoc } from '@/lib/file-preview'
 import type { GrabIntent } from '../describe-page/browser-page-types'
+import { isWorkbenchShell } from '@/workbench/is-workbench-shell'
 
 /** Binds the shared browser chrome to a browsing page: an editable address bar and session tools. */
 export function BrowserPageToolbar({
@@ -176,7 +177,7 @@ export function BrowserPageToolbar({
         canShowDiscoveryHint: isActive
       }}
       shareControl={
-        shareableArtifactFile ? (
+        shareableArtifactFile && !isWorkbenchShell() ? (
           <ArtifactPublishButton
             sourceKey={shareableArtifactFile.filePath}
             className="h-7 w-7"

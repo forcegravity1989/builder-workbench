@@ -32,6 +32,7 @@ import { usePersistedUIWriter } from './app-shell/use-persisted-ui-writer'
 import { useRuntimeGraphSync } from './app-shell/use-runtime-graph-sync'
 import { useWindowVisibilityEffects } from './app-shell/use-window-visibility-effects'
 import { WorkbenchShellBootstrap } from './workbench/WorkbenchShellBootstrap'
+import { isWorkbenchShell } from './workbench/is-workbench-shell'
 
 function App(): React.JSX.Element {
   const layout = useAppChromeLayout()
@@ -106,7 +107,7 @@ function App(): React.JSX.Element {
         </ConfirmationDialogProvider>
       </TooltipProvider>
       <Toaster closeButton toastOptions={{ className: 'font-sans text-sm' }} />
-      <SkillFreshnessNudge />
+      {isWorkbenchShell() ? null : <SkillFreshnessNudge />}
       <WorktreeBaseFallbackDialog />
       <PinnedTabCloseDialog />
       <RunningTerminalCloseDialog />

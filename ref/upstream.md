@@ -43,6 +43,29 @@ git merge orca-upstream/main
 
 合并 upstream 时：不要把 `mobile/` 或 Mobile 页重新合回来。协议文件若 upstream 改了，优先取 upstream，除非叠层已摘钩子。
 
+### 源码：全露的上游工作面（2026-10-10，壳内隐藏）
+
+Workbench 壳不提供浮动工作区、内置浏览器的「新建浏览器标签」入口与 Browser Use、技能页与技能分享、Artifact 云发布与 Orca 账号、Experimental 页、Stats & Usage 页、Agent Dashboard 弹出窗口；这些按 `isWorkbenchShell()` 在入口处隐藏，代码保留，非壳模式不变。本批不从 git 删除任何文件：
+
+| 处置 | 路径 | 说明 |
+|---|---|---|
+| **壳内隐藏** | `app-shell/use-floating-workspace-panel.ts`、`status-bar/use-status-bar-controller.ts`、`settings/KeybindingsFileActions.tsx` | 浮动工作区：壳内 `enabled` 恒为假，面板、浮动按钮、状态栏开关、Mod+Alt+A 与切换事件一并失效；设置值 `floatingTerminalEnabled` 不改。快捷键页「Edit File in Orca」在壳内换成「Open with Default App」 |
+| **壳内隐藏** | `tab-bar/use-tab-bar-runtime-model.ts`（「+」菜单与复制标签）、`cmd-j/quick-actions.ts`（New Browser Tab）、`terminal-workspace-keydown.ts` 与 `hooks/ipc-events/content-creation-ipc-bridge.ts`（Mod+Shift+B）、`settings/ShortcutsPane.tsx` 与 `hooks/useSettingsNavigationMetadata.ts`（快捷键行与搜索）、`feature-wall/FeatureWallBrowserAction.tsx`（「Try it out」） | 内置浏览器只摘新建入口；浏览器代码、标签类型、链接路由与 agent 打开的浏览器标签保留 |
+| **壳内隐藏** | `settings/BrowserPane.tsx` 与 `settings/browser-pane-search.ts`（Browser Use 块及其搜索项） | Browser 设置页本身保留：链接路由只在这页配置，链接弹层、浏览器工具栏菜单、导入提示、出口指示与导览共 5 处都跳到这页 |
+| **壳内隐藏** | `App.tsx`（`SkillFreshnessNudge`）、`app-shell/AppWorkspaceShell.tsx`（`SkillsPage`）、`store/slices/ui/ui-slice-view-actions.ts`（`openSkillsPage` / `openSkillShare` / `openSkillsSharedLinks` 壳内不切视图） | 技能页与技能更新提示；技能分享深链（argv、`ui:consumePendingSkillShare`、设置侧栏 IPC）在壳内落空，不再切到空白主区；`src/main/skills` 分发链不动，BW 自己的技能走它 |
+| **壳内隐藏** | `editor/EditorPanelHeader.tsx`、`browser-pane/assemble-chrome/browser-page-toolbar.tsx`（发布按钮）、`app-shell/AppRootSurfaces.tsx`（`UnexpectedSignoutCard`） | Artifact 云发布与 Orca 账号登录失效卡；`src/main/orca-profiles` 与 profile-cloud 代码保留（配对通道引用 `profile-cloud-auth-config.ts`） |
+| **壳内隐藏** | `status-bar/ResourceUsageStatusSegment.tsx` + `WorkspaceSpaceCompactPanel.tsx`（「Review」整页）、`terminal-pane/TerminalPaneSurface.tsx` + `TerminalSessionStateSaveFailureDialog.tsx`（「Open Disk Space Analyzer」） | 二者调 `openSpacePage`，壳内该页已改为知识库，属错路由；壳内不显示这两个入口，紧凑空间面板仍可扫描 |
+| **壳内隐藏** | `hooks/settings-navigation-workflow-sections.ts`（Artifacts、Share Skills、Floating Workspace）、`settings-navigation-capability-sections.ts`（Orca Account）、`settings-navigation-remote-sections.ts`（Experimental 整页） | 不进设置导航与 Cmd+J；ArtifactsSettingsPane「Open Artifacts」、ShareSkillsSettingsPane「Open Skills」随页面一起不可达 |
+| **壳内隐藏** | `status-bar/PetStatusSegment.tsx`（「Pet settings…」）、`settings/CloudVmSetupGuide.tsx`（「Set up environment recipes」） | 二者跳 Experimental 页，壳内不列该页，入口不渲染 |
+| **壳内隐藏** | `hooks/settings-navigation-interface-sections.ts`（`stats` 导航）、`cmd-j/palette-results.ts`（别名 `usage`）、`status-bar/StatusBarSurface.tsx` + `UsageRosterPanel.tsx`（「Usage details & history」） | Stats & Usage 页是 Claude / Codex / OpenCode 用量统计开关的唯一界面，自动化的用量归因读它，所以只藏入口不删；`components/stats/`、`store/slices/{stats,usage-provider-slices}.ts` 与主进程 `src/main/stats/`、各 `*-usage/` 照常保留 |
+| **壳内隐藏** | `hooks/ipc-events/agent-dashboard-command.ts`（快捷键）、`sidebar/AgentDashboardSidebarEntry.tsx`（侧栏入口）、`dashboard/AgentDashboardSettingsMenu.tsx`（看板菜单里的「Open as」） | Agent Dashboard 弹出窗口：壳内忽略 `experimentalAgentDashboardMode: 'popout'`，看板一律在窗口内打开，看板菜单不给弹出选项；Experimental 页里的「Open as」随整页不可达。弹出窗口的入口 HTML、主进程窗口与 IPC、preload `dashboard` 桥、快照校验、`dashboardPopoutBounds` 等全部保留 |
+| **未动** | `components/dashboard-popout/` 下约 50 个 Agent Map 文件、`shared/dashboard-snapshot.ts` 的 `DashboardSpawnAgentArgs` / `DashboardSleepWorkspaceArgs` | Agent Map 在上游已不可达，另行清理 |
+| **未动** | Mobile Emulator（设置页与「+」菜单项）、Help → Report Crash | 模拟器去留等人裁；Report Crash 由「首启弹层与品牌残留」整批删除 |
+
+i18n：本批不剪键；6 个语言目录与 `config/scripts/locale-ko-key-overrides.json` 与主干一致，`en-runtime-required.json` 由 `sync:localization-runtime-catalog` 重生成。
+
+合并 upstream 时：壳内隐藏的各项只在入口层分支，upstream 对其正文的改动照常合入。
+
 ### 文档（本轮原 `bw-orca` 落仓）
 
 产品文档已换成 **Workbench 旧 `main`**（导入时 tip：`25f38bc80211f9656e229ef31b0e5a10ae28226a`；该路线现归档为 `archive/main-pre-orca`），正本在仓根 `AGENTS.md` / `CONTEXT.md` / `README.md` / `CLAUDE.md` 与 `docs/`。

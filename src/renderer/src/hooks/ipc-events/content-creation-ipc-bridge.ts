@@ -13,6 +13,7 @@ import { translate } from '@/i18n/i18n'
 import { LOCAL_EXECUTION_HOST_ID } from '../../../../shared/execution-host'
 import { toast } from 'sonner'
 import { useAppStore } from '../../store'
+import { isWorkbenchShell } from '@/workbench/is-workbench-shell'
 
 export function registerContentCreationIpcBridge(
   unsubs: (() => void)[],
@@ -20,6 +21,10 @@ export function registerContentCreationIpcBridge(
 ): void {
   unsubs.push(
     window.api.ui.onNewBrowserTab(() => {
+      // Why: Mod+Shift+B from a focused browser guest is a "new browser tab" entry point too.
+      if (isWorkbenchShell()) {
+        return
+      }
       const store = useAppStore.getState()
       if (isFloatingWorkspacePanelFocused()) {
         void createFloatingWorkspaceBrowserTab(store).catch((error) => {

@@ -1,4 +1,5 @@
 import type { AppState } from '../../store/types'
+import { isWorkbenchShell } from '@/workbench/is-workbench-shell'
 
 export function toggleAgentDashboardFromShortcut(
   state: Pick<
@@ -17,7 +18,9 @@ export function toggleAgentDashboardFromShortcut(
   ) {
     return
   }
-  if (state.settings.experimentalAgentDashboardMode === 'popout') {
+  // Why: a profile that persisted 'popout' outside the Workbench shell must not open an Orca
+  // pop-out window inside the shell; there the dashboard always opens in-window.
+  if (!isWorkbenchShell() && state.settings.experimentalAgentDashboardMode === 'popout') {
     openPopout()
     return
   }

@@ -40,6 +40,7 @@ import { buildShortcutDefinitionCatalog } from './shortcut-definition-catalog'
 import { getClientCreationActionPolicy } from '@/lib/client-creation-action-policy'
 import { buildShortcutRowVisibility } from './shortcut-row-visibility'
 import { useMacCapturedDigitChords } from './use-mac-captured-digit-chords'
+import { isWorkbenchShell } from '@/workbench/is-workbench-shell'
 
 const isMac = navigator.userAgent.includes('Mac')
 const platform: NodeJS.Platform = isMac
@@ -68,7 +69,7 @@ export function ShortcutsPane(): React.JSX.Element {
     useShallow((state) => {
       const policy = getClientCreationActionPolicy(state, state.activeWorktreeId)
       return [
-        policy['managed-browser'].state === 'enabled',
+        !isWorkbenchShell() && policy['managed-browser'].state === 'enabled',
         policy['mobile-emulator'].state === 'enabled'
       ] as const
     })
@@ -138,6 +139,7 @@ export function ShortcutsPane(): React.JSX.Element {
         managedBrowserCreationEnabled,
         mobileEmulatorCreationEnabled,
         agentDashboardEnabled,
+        floatingWorkspaceEnabled: !isWorkbenchShell(),
         settingsSearchQuery: searchQuery,
         shortcutQuery,
         shortcutFilter

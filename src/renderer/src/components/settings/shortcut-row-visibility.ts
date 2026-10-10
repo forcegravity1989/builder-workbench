@@ -25,6 +25,9 @@ export function buildShortcutRowVisibility(options: {
   managedBrowserCreationEnabled: boolean
   mobileEmulatorCreationEnabled: boolean
   agentDashboardEnabled: boolean
+  // Why optional: the Workbench shell turns the floating workspace off, so its shortcut rows would
+  // bind actions that never fire; callers outside the shell omit it and keep every row.
+  floatingWorkspaceEnabled?: boolean
   settingsSearchQuery: string
   shortcutQuery: string
   shortcutFilter: ShortcutFilter
@@ -42,7 +45,9 @@ export function buildShortcutRowVisibility(options: {
           (options.managedBrowserCreationEnabled || item.id !== 'tab.newBrowser') &&
           (options.mobileEmulatorCreationEnabled || item.id !== 'tab.newSimulator') &&
           // Why: the toggle is inert while the experiment is off, so binding it here would silently do nothing.
-          (options.agentDashboardEnabled || item.id !== 'dashboard.toggle')
+          (options.agentDashboardEnabled || item.id !== 'dashboard.toggle') &&
+          (options.floatingWorkspaceEnabled !== false ||
+            !(item.id.startsWith('floatingWorkspace.') || item.id.startsWith('floatingTerminal.')))
       )
       .map((item) => {
         const effective = getEffectiveKeybindingsForDefinition(

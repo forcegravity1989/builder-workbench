@@ -23,6 +23,7 @@ import {
   TerminalPaneSshReconnectPortals
 } from './TerminalPaneRuntimePortals'
 import type { TerminalPaneController } from './use-terminal-pane-controller'
+import { isWorkbenchShell } from '@/workbench/is-workbench-shell'
 
 export function TerminalPaneSurface({
   controller
@@ -201,7 +202,8 @@ export function TerminalPaneSurface({
         <TerminalSessionStateSaveFailureDialog
           open={sessionStateSaveFailureOpen}
           onDismiss={() => setSessionStateSaveFailureOpen(false)}
-          onOpenSpaceAnalyzer={openDiskSpaceAnalyzer}
+          // Why: the Workbench shell routes the space page to its knowledge base, not the analyzer.
+          onOpenSpaceAnalyzer={isWorkbenchShell() ? undefined : openDiskSpaceAnalyzer}
         />
       )}
       {activePane?.container &&

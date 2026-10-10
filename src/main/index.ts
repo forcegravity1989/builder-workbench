@@ -13,6 +13,7 @@ import { initializeMainProcessReady } from './startup/main-process-ready'
 import { installMainProcessQuitHandlers } from './startup/main-process-quit'
 import { shouldActivateDesktopForSecondInstance } from './startup/single-instance-lock'
 import { resolveOpenedMarkdownDocuments } from './startup/os-opened-markdown-files'
+import { isWorkbenchProduct } from './startup/workbench-product'
 
 function openMainWindow(options: { revealOnDidFinishLoad?: boolean } = {}): BrowserWindow {
   return openMainWindowController(options)
@@ -28,7 +29,11 @@ function requestDesktopActivation(argv: readonly string[] = []): void {
   state.skillShareDeepLinks.capture(argv, (shareId) => {
     state.mainWindow?.webContents.send('ui:openSkillShare', shareId)
   })
-  state.osOpenedMarkdownFiles.capture(argv, publishOsOpenedMarkdownFiles)
+  // Why: the Workbench shell has no floating workspace to receive OS-opened Markdown, so the
+  // paths are left unclaimed instead of being swallowed.
+  if (!isWorkbenchProduct()) {
+    state.osOpenedMarkdownFiles.capture(argv, publishOsOpenedMarkdownFiles)
+  }
   // Why: a duplicate `orca serve` must not drag a headless server into opening a desktop window (#11935).
   if (!shouldActivateDesktopForSecondInstance(argv)) {
     return
@@ -91,6 +96,9 @@ if (preflightReady) {
   // Why: macOS delivers "Open With" as open-file, often before `ready`, and only to a handler
   // that claims the event. Non-markdown paths stay unclaimed so the OS default handler wins.
   app.on('open-file', (event, filePath) => {
+    if (isWorkbenchProduct()) {
+      return
+    }
     if (!state.osOpenedMarkdownFiles.captureFilePaths([filePath], publishOsOpenedMarkdownFiles)) {
       return
     }
@@ -103,7 +111,9 @@ if (preflightReady) {
   })
   state.skillShareDeepLinks.capture(process.argv)
   // Why no publish: nothing is listening this early, so the first renderer pulls these on mount.
-  state.osOpenedMarkdownFiles.capture(process.argv)
+  if (!isWorkbenchProduct()) {
+    state.osOpenedMarkdownFiles.capture(process.argv)
+  }
   registerMainProcessIpcHandlers()
   installMainProcessQuitHandlers()
   void app.whenReady().then(async () => {

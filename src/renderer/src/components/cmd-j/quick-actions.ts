@@ -9,6 +9,7 @@ import {
 import { translate } from '@/i18n/i18n'
 import { createLocalizedCatalog } from '@/i18n/localized-catalog'
 import { getNativeChatSplitQuickActions } from './native-chat-split-quick-actions'
+import { isWorkbenchShell } from '@/workbench/is-workbench-shell'
 
 export type CmdJQuickActionRunResult =
   | { status: 'ok' }
@@ -65,30 +66,36 @@ async function runWorkspaceAction(
 // Context-heavy setup flows such as Ghostty import and browser cookie import
 // stay inside their Settings panes where explanatory UI and failure states fit.
 export const getCmdJQuickActions = createLocalizedCatalog((): CmdJQuickAction[] => [
-  {
-    id: 'new-browser-tab',
-    kind: 'action',
-    title: translate('auto.components.cmd.j.quick.actions.892bfa9339', 'New Browser Tab'),
-    description: translate(
-      'auto.components.cmd.j.quick.actions.784812ca24',
-      'Open a browser tab in the active workspace.'
-    ),
-    icon: Globe,
-    verbKeywords: [
-      translate('auto.components.cmd.j.quick.actions.verbs.newBrowser', 'new browser'),
-      translate('auto.components.cmd.j.quick.actions.verbs.newBrowserTab', 'new browser tab'),
-      translate('auto.components.cmd.j.quick.actions.verbs.openBrowser', 'open browser'),
-      translate('auto.components.cmd.j.quick.actions.verbs.browserTab', 'browser tab')
-    ],
-    isAvailable: browserWorkspaceActionAvailability,
-    run: async (ctx) => {
-      const availability = browserWorkspaceActionAvailability(ctx)
-      if (!availability.available) {
-        return { status: 'unavailable', reason: availability.reason }
-      }
-      return runWorkspaceAction(ctx, ctx.openNewBrowserTab)
-    }
-  },
+  // Why: the Workbench shell keeps browser tabs that links and agents open, but offers no
+  // "new browser tab" entry point.
+  ...(isWorkbenchShell()
+    ? []
+    : [
+        {
+          id: 'new-browser-tab',
+          kind: 'action',
+          title: translate('auto.components.cmd.j.quick.actions.892bfa9339', 'New Browser Tab'),
+          description: translate(
+            'auto.components.cmd.j.quick.actions.784812ca24',
+            'Open a browser tab in the active workspace.'
+          ),
+          icon: Globe,
+          verbKeywords: [
+            translate('auto.components.cmd.j.quick.actions.verbs.newBrowser', 'new browser'),
+            translate('auto.components.cmd.j.quick.actions.verbs.newBrowserTab', 'new browser tab'),
+            translate('auto.components.cmd.j.quick.actions.verbs.openBrowser', 'open browser'),
+            translate('auto.components.cmd.j.quick.actions.verbs.browserTab', 'browser tab')
+          ],
+          isAvailable: browserWorkspaceActionAvailability,
+          run: async (ctx) => {
+            const availability = browserWorkspaceActionAvailability(ctx)
+            if (!availability.available) {
+              return { status: 'unavailable', reason: availability.reason }
+            }
+            return runWorkspaceAction(ctx, ctx.openNewBrowserTab)
+          }
+        } satisfies CmdJQuickAction
+      ]),
   {
     id: 'new-markdown-file',
     kind: 'action',

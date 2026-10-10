@@ -493,13 +493,18 @@ module.exports = {
     // Why rank Alternate: Orca joins Finder's "Open With" list for Markdown without claiming
     // LSHandlerRank ownership, so whichever editor the user already prefers stays the default.
     // Why one entry per extension: app-builder-lib globs `*.${ext}`, which an array would break.
-    fileAssociations: MARKDOWN_FILE_EXTENSIONS.map((ext) => ({
-      ext,
-      name: 'Markdown Document',
-      description: 'Markdown Document',
-      role: 'Editor',
-      rank: 'Alternate'
-    })),
+    // Why none for Workbench: OS-opened Markdown lands in the floating workspace, which the
+    // Workbench shell does not offer, so Workbench must not join the "Open With" list.
+    fileAssociations:
+      productName === 'Workbench'
+        ? []
+        : MARKDOWN_FILE_EXTENSIONS.map((ext) => ({
+            ext,
+            name: 'Markdown Document',
+            description: 'Markdown Document',
+            role: 'Editor',
+            rank: 'Alternate'
+          })),
     icon: 'resources/build/icon.icns',
     entitlements: 'resources/build/entitlements.mac.plist',
     entitlementsInherit: 'resources/build/entitlements.mac.plist',
@@ -595,7 +600,8 @@ module.exports = {
     // override. A desktop entry's MimeType only adds a handler - mimeapps.list still owns the
     // default. .mdx is deliberately absent: Ubuntu 24.04's mime database maps it to
     // application/x-genesis-32x-rom, so claiming it here would need a glob override.
-    mimeTypes: ['text/markdown'],
+    // Why none for Workbench: see the mac fileAssociations note above.
+    mimeTypes: productName === 'Workbench' ? [] : ['text/markdown'],
     // Why: Ubuntu desktop ships GNOME Orca as the `orca` package and /usr/bin/orca.
     // The Linux installer should not claim those system package/file names.
     executableName: linuxExecutableName,
