@@ -78,7 +78,6 @@ const FloatingTerminalPanel = lazy(() =>
     default: module.FloatingTerminalPanel
   }))
 )
-// Why: lazy so the WebP asset + overlay module aren't fetched unless the experimental flag is on.
 // Why: lazy so onboarding's step modules + assets aren't fetched for users past first-launch.
 const OnboardingFlow = lazy(() => import('../components/onboarding/OnboardingFlow'))
 
@@ -277,10 +276,13 @@ export function AppRootSurfaces(props: {
           </OverlayBoundary>
         </Suspense>
       </NotificationCardStack>
-      {/* Why: mount at App root to render once per session; internal cohort gate limits it to pre-telemetry users — see telemetry-plan.md §First-launch experience. */}
-      <OverlayBoundary boundaryId="overlay.telemetry-first-launch" resetKey={telemetryOptedIn}>
-        <TelemetryFirstLaunchSurface />
-      </OverlayBoundary>
+      {/* Why: mount at App root to render once per session; internal cohort gate limits it to pre-telemetry users — see telemetry-plan.md §First-launch experience.
+          The Workbench shell hides the Privacy & Telemetry page the banner points to, and its builds never ship a telemetry key, so the banner is not mounted there. */}
+      {isWorkbenchShell() ? null : (
+        <OverlayBoundary boundaryId="overlay.telemetry-first-launch" resetKey={telemetryOptedIn}>
+          <TelemetryFirstLaunchSurface />
+        </OverlayBoundary>
+      )}
       <OverlayBoundary boundaryId="overlay.zoom" resetKey={activeView}>
         <ZoomOverlay />
       </OverlayBoundary>

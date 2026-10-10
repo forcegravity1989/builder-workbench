@@ -232,6 +232,17 @@ export const UiUpdateFields = z
     projectOrderManualDefaultNoticeDismissed: z.boolean().optional(),
     usagePercentageDisplayChangeNoticeDismissed: z.boolean().optional(),
     usageEmptyStateDismissed: z.boolean().optional(),
+    // Why: the desktop pet and sidekick were removed on 2026-10-10, but UiUpdate is strict and a
+    // paired client on an older build still sends these keys; keep them parseable so its whole
+    // batch is not rejected. ui.set drops them before they reach the store.
+    petVisible: z.boolean().optional(),
+    petId: z.string().optional(),
+    customPets: UnknownRecordArray.optional(),
+    petSize: z.number().finite().optional(),
+    sidekickVisible: z.boolean().optional(),
+    sidekickId: z.string().optional(),
+    customSidekicks: UnknownRecordArray.optional(),
+    sidekickSize: z.number().finite().optional(),
     taskResumeState: TaskResumeState.optional(),
     workspaceCleanup: WorkspaceCleanup.optional(),
     featureTipsSeenIds: FeatureTipIds.optional(),

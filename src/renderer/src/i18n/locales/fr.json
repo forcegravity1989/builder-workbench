@@ -12869,21 +12869,6 @@
             "cbc45022d4": "Permet aux agents de naviguer et de vérifier des pages dans le navigateur d'Orca.",
             "d5bb1cd4ba": "Skill Browser Use"
           },
-          "ComputerUseAnimatedVisual": {
-            "d8401975b1": "approuvée",
-            "f27676a92c": "statut :",
-            "6804cb356f": "clic envoyé",
-            "1719b28a81": "trouvé « Approve »",
-            "79445f7512": "approuver la note dans mon app",
-            "99a8624bcb": ">",
-            "2adb561b44": "Session Claude Code démarrée",
-            "94787f01f8": "Claude Code",
-            "9cddfe96b2": "Application locale",
-            "9634d870d1": "Approuver",
-            "3cc2df3671": "Terminé",
-            "bdd5312213": "En attente",
-            "c11dda000b": "Approuvé"
-          },
           "EditorAnimatedVisual": {
             "7a763daf2f": "italique",
             "8521536429": "gras ·",

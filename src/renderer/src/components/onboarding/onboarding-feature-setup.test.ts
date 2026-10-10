@@ -177,6 +177,7 @@ describe('onboarding feature setup runner', () => {
     expect(onboardingFeatureSetupTelemetryFeature('browserUse')).toBe('browser_use')
     expect(onboardingFeatureSetupTelemetrySelection(selection)).toEqual({
       browser_use: true,
+      computer_use: false,
       linear_tickets: true,
       orchestration: true,
       selected_count: 2
@@ -191,12 +192,14 @@ describe('onboarding feature setup runner', () => {
       })
     ).toEqual({
       browser_use: true,
+      computer_use: false,
       linear_tickets: true,
       orchestration: true,
       selected_count: 2,
       cli_touched: true,
       skill_commands_copied: false,
       skill_install_command_prepared: true,
+      computer_use_permissions_opened: false,
       warning_count: 1
     })
   })

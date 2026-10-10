@@ -447,21 +447,6 @@
           }
         },
         "wall": {
-          "ComputerUseAnimatedVisual": {
-            "1719b28a81": "found \"Approve\"",
-            "2adb561b44": "Claude Code session started",
-            "3cc2df3671": "Done",
-            "6804cb356f": "click sent",
-            "79445f7512": "approve the note in my app",
-            "94787f01f8": "Claude Code",
-            "9634d870d1": "Approve",
-            "99a8624bcb": ">",
-            "9cddfe96b2": "Local app",
-            "bdd5312213": "Pending",
-            "c11dda000b": "Approved",
-            "d8401975b1": "approved",
-            "f27676a92c": "status:"
-          },
           "FeatureWallSetupChecklist": {
             "b1f1981c5e": "See tasks"
           },

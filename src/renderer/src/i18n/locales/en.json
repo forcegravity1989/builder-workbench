@@ -13475,21 +13475,6 @@
             "cbc45022d4": "Enables agents to navigate and verify pages in Orca's browser.",
             "d5bb1cd4ba": "Browser Use skill"
           },
-          "ComputerUseAnimatedVisual": {
-            "d8401975b1": "approved",
-            "f27676a92c": "status:",
-            "6804cb356f": "click sent",
-            "1719b28a81": "found \"Approve\"",
-            "79445f7512": "approve the note in my app",
-            "99a8624bcb": ">",
-            "2adb561b44": "Claude Code session started",
-            "94787f01f8": "Claude Code",
-            "9cddfe96b2": "Local app",
-            "9634d870d1": "Approve",
-            "3cc2df3671": "Done",
-            "bdd5312213": "Pending",
-            "c11dda000b": "Approved"
-          },
           "EditorAnimatedVisual": {
             "7a763daf2f": "italic",
             "8521536429": "bold ·",

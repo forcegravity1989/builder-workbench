@@ -30,10 +30,10 @@ describe('orca CLI skill guidance', () => {
     const description = skill.replace(/\s+/gu, ' ')
 
     expect(description).toContain(
-      'Use Computer Use only for external windows or desktop UI that needs OS-level control, and Playwright or CDP for external pages.'
+      'Use Playwright or CDP for external pages.'
     )
     expect(skill).toContain(
-      'For external Chrome/Safari/webviews or Orca app chrome/settings, use the Computer Use skill/tool only when the task requires OS/window-level control'
+      'a page-automation tool such as Playwright or CDP for external pages such as Chrome, Safari, or webviews'
     )
     expect(skill).toContain(
       "Use `orca-cli` for Orca's embedded pages and a page-automation tool such as Playwright or CDP for external pages"

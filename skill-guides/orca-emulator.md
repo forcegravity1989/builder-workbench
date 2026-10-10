@@ -100,5 +100,5 @@ ORCA emulator exec --command "ca-debug blended on" --json
 ORCA emulator kill --device "iPhone 16 Pro" --json
 ```
 
-See also: `orca-emulator-android` for Android devices, `orca-cli` for terminals, worktrees,
-and the built-in browser, and `computer-use` for desktop UI outside the simulator.
+See also: `orca-emulator-android` for Android devices and `orca-cli` for terminals, worktrees,
+and the built-in browser.

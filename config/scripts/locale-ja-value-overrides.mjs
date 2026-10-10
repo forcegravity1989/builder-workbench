@@ -533,7 +533,6 @@ const JA_AUDIT_OVERRIDES = {
   gitignore: 'gitignore',
   component: 'コンポーネント',
   compose: '特殊文字の入力',
-  sidekick: 'Sidekick',
   'api token': 'API トークン',
   'compare base': '比較ベース',
   ahead: '進んでいる'

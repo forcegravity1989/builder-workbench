@@ -133,7 +133,6 @@ export const KO_VALUE_OVERRIDES = {
   'Scanning skills': '스킬 스캔 중',
   'No local skills found': '로컬 스킬을 찾을 수 없습니다.',
   'Browser Use skill': 'Browser Use 스킬',
-  'Computer Use skill': 'Computer Use 스킬',
   'CLI skill': 'CLI 스킬',
   'Orca CLI skill': 'Orca CLI 스킬',
   'No checks reported yet': '아직 보고된 체크가 없습니다.',

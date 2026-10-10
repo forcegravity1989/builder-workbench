@@ -205,10 +205,9 @@ One site still spells `-ExecutionPolicy Bypass` with **no** encoding, the weaker
 signal: `src/main/cli/wsl-cli-scripts.ts` (`-File`, and it is a real script
 file, so the switch is not a no-op there). `src/main/system-fonts.ts` dropped it
 for plain `-Command`; `src/shared/secure-path-windows-acl.ts` no longer runs
-PowerShell at all, having moved to `icacls.exe`; and computer use now asks for
-`-ExecutionPolicy RemoteSigned` in
-`src/main/computer/windows-powershell-execution-policy.ts`, falling back to
-`Bypass` only after a policy-blocked start.
+PowerShell at all, having moved to `icacls.exe`. (Computer use, which asked for
+`-ExecutionPolicy RemoteSigned` and fell back to `Bypass` after a policy-blocked
+start, was removed from this branch on 2026-10-10; see `ref/upstream.md`.)
 
 Regenerate with `rg -- '-EncodedCommand|-ExecutionPolicy' src/` rather than
 trusting the lists above, and note that a raw grep under-reports: the hook sites
@@ -304,34 +303,12 @@ the fail-closed case #14818 exists to prevent. The encoded launcher had no such
 assumption — it was a `powershell.exe` invocation and therefore parsed anywhere.
 Before widening the direct shape to another agent, measure that consumer's host.
 
-### Computer use: screen capture, synthetic input, runtime-compiled MSIL
+### Computer use (removed 2026-10-10)
 
-`native/computer-use-windows/runtime.ps1` is a large PowerShell script.
-`src/main/computer/desktop-script-provider-bridge.ts` launches it as
-`powershell.exe -NoLogo -NoProfile -NonInteractive -ExecutionPolicy RemoteSigned
--File runtime.ps1 <operation.json>`, retrying once at `Bypass` only if the start
-comes back policy-blocked — **once per operation**, with
-`desktop-script-provider-client.ts` writing a fresh `operation.json` into a new
-temp directory each time. On every launch the script runs `Add-Type
--TypeDefinition` over inline C# that P/Invokes `SendInput` and the window APIs,
-then captures the screen through `Graphics.CopyFromScreen`.
-
-That is four separate high-signal behaviours stacked in one process:
-
-| Behaviour                                     | How it is scored                                              |
-| --------------------------------------------- | ------------------------------------------------------------- |
-| `Graphics.CopyFromScreen`                     | **MITRE T1113**, screen capture — Collection tactic           |
-| `SendInput` synthetic keyboard/mouse          | input synthesis against other applications                    |
-| `Add-Type -TypeDefinition` on every operation | MSIL compiled at runtime; incident F's "suspicious MSIL code" |
-| One `powershell.exe` per operation            | a burst of short-lived interpreters under one parent          |
-
-The bottom two rows are the two the incident text named directly, and they are
-also the two a persistent runtime host would remove: a long-lived helper compiles
-its P/Invoke stubs once and answers operations over a channel, so neither the
-MSIL recompilation nor the interpreter burst repeats. A change doing that is in
-flight and unmerged at the time of writing; check the code rather than this
-paragraph for what the shipped build does. Screen capture and `SendInput` are
-inherent to the feature and no refactor removes them.
+The Windows computer-use runtime (`native/computer-use-windows/runtime.ps1`, launched by
+`src/main/computer/desktop-script-provider-bridge.ts`) is no longer on this branch; see
+`ref/upstream.md`「本机能力与后台模块」. Its screen-capture, synthetic-input and
+runtime-compiled MSIL posture notes are kept in Git history only.
 
 ## Signing is not the gate
 

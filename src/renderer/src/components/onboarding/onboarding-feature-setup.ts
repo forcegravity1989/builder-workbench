@@ -124,6 +124,8 @@ export function onboardingFeatureSetupTelemetrySelection(
 ): EventProps<'onboarding_feature_setup_terminal_opened'> {
   return {
     browser_use: selection.browserUse,
+    // Why: Computer use was removed on 2026-10-10; the telemetry key stays with a constant value.
+    computer_use: false,
     linear_tickets: selection.linearTickets,
     orchestration: selection.orchestration,
     // Why: Linear skill setup is a recommended add-on, not onboarding progress.
@@ -146,6 +148,7 @@ export function onboardingFeatureSetupRunTelemetry(
     cli_touched: result.cliTouched,
     skill_commands_copied: result.skillCommandsCopied,
     skill_install_command_prepared: result.skillInstallCommand !== null,
+    computer_use_permissions_opened: false,
     warning_count: result.warnings.length
   }
 }

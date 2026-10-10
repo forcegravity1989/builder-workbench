@@ -1019,9 +1019,6 @@
   "auto.components.feature.wall.BrowserAnimatedVisual.f39be6ca14": {
     "ko": "/signup"
   },
-  "auto.components.feature.wall.ComputerUseAnimatedVisual.6804cb356f": {
-    "ko": "클릭 전송됨"
-  },
   "auto.components.feature.wall.ConnectIntegrationsList.33b650af52": {
     "ko": "팀이 작업을 추적하는 서비스를 연결하세요. Orca는 이슈 제목, 링크, 컨텍스트가 이미 첨부된 워크스페이스를 시작합니다."
   },

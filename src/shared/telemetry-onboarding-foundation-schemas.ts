@@ -79,12 +79,16 @@ export const onboardingFeatureSetupFeatureSchema = z.enum([
 ])
 export const onboardingFeatureSetupSelectionSchema = {
   browser_use: z.boolean(),
+  // Why: Computer use was removed on 2026-10-10; the key stays (always false) so the event keeps
+  // its shape instead of being renamed — see the versioning rule in telemetry-event-registry.ts.
+  computer_use: z.boolean(),
   linear_tickets: z.boolean(),
   orchestration: z.boolean(),
-  selected_count: z.number().int().min(0).max(2)
+  selected_count: z.number().int().min(0).max(3)
 } as const
 export type OnboardingFeatureSetupSelectionTelemetry = {
   browser_use: boolean
+  computer_use: boolean
   linear_tickets: boolean
   orchestration: boolean
   selected_count: number
@@ -98,7 +102,8 @@ export function hasMatchingOnboardingFeatureSetupSelectedCount(
   props: OnboardingFeatureSetupSelectionTelemetry
 ): boolean {
   // Why: Linear ticket setup is a recommended add-on and excluded from progress metrics.
-  const selectedCount = (props.browser_use ? 1 : 0) + (props.orchestration ? 1 : 0)
+  const selectedCount =
+    (props.browser_use ? 1 : 0) + (props.computer_use ? 1 : 0) + (props.orchestration ? 1 : 0)
   return props.selected_count === selectedCount
 }
 
