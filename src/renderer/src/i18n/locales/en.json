@@ -6775,7 +6775,7 @@
           },
           "agentDashboard": {
             "title": "Agent Dashboard",
-            "description": "Kanban board for monitoring agents across worktrees, in-window or as a pop-out.",
+            "description": "Kanban board for monitoring agents across worktrees.",
             "copy": "Adds an Agent Dashboard entry to the left sidebar. Monitor agents that need you, are working, or are done, with optional idle agents.",
             "toggleLabel": "Toggle Agent Dashboard"
           }
@@ -9124,7 +9124,7 @@
             },
             "agentDashboard": {
               "title": "Agent Dashboard",
-              "description": "Kanban board for monitoring agents across worktrees, in-window or as a pop-out.",
+              "description": "Kanban board for monitoring agents across worktrees.",
               "dashboard": "dashboard",
               "agent": "agent",
               "kanban": "kanban",

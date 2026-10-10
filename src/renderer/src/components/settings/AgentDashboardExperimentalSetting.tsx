@@ -24,7 +24,7 @@ export function AgentDashboardExperimentalSetting({
       )}
       description={translate(
         'auto.components.settings.ExperimentalPane.agentDashboard.description',
-        'Kanban board for monitoring agents across worktrees, in-window or as a pop-out.'
+        'Kanban board for monitoring agents across worktrees.'
       )}
       keywords={getExperimentalSearchEntry().agentDashboard.keywords}
       className="space-y-3 py-2"

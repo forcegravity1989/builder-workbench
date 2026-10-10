@@ -139,6 +139,7 @@ export function ShortcutsPane(): React.JSX.Element {
         managedBrowserCreationEnabled,
         mobileEmulatorCreationEnabled,
         agentDashboardEnabled,
+        floatingWorkspaceEnabled: !isWorkbenchShell(),
         settingsSearchQuery: searchQuery,
         shortcutQuery,
         shortcutFilter

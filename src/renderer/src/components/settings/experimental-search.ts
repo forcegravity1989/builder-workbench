@@ -54,7 +54,7 @@ export const getExperimentalPaneSearchEntries = createLocalizedCatalog(
       ),
       description: translate(
         'auto.components.settings.experimental.search.agentDashboard.description',
-        'Kanban board for monitoring agents across worktrees, in-window or as a pop-out.'
+        'Kanban board for monitoring agents across worktrees.'
       ),
       keywords: [
         ...translateSearchKeyword(
