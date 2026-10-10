@@ -1,0 +1,79 @@
+<!doctype html>
+<!-- 周报交互原型：示例数据与模拟会话，仅用于评审设计；不连接 CodeHub 或大模型。 -->
+<html lang="zh" data-theme="claude">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>项目周报 · Workbench MVP 原型</title>
+    <link rel="stylesheet" href="../../04-design-system/styles.css" />
+    <link rel="stylesheet" href="prototype/style.css" />
+    <script defer src="prototype/data.js"></script>
+    <script defer src="prototype/app.js"></script>
+  </head>
+  <body>
+    <div class="app-shell">
+      <aside class="app-sidebar" aria-label="项目导航">
+        <a class="brand" href="../../README.md">Builders’ Workbench</a>
+        <div class="project-name"><span class="project-icon" aria-hidden="true">推</span><div>推理服务优化<small>个人维护的项目</small></div></div>
+        <nav>
+          <span>总览</span><span>计划</span><span>任务</span><span>验收</span>
+          <span class="nav-active" aria-current="page">周报 <small>设计中</small></span>
+          <span>自动化</span><span>知识库</span>
+        </nav>
+        <div class="sidebar-foot">工作事实来自 CodeHub<br />报告随项目进展生成</div>
+      </aside>
+      <main>
+        <div class="prototype-note">MVP 交互原型 · 示例数据 · 尚未连接 CodeHub 与大模型会话 <a href="intent.md">查看意图</a></div>
+        <header class="page-header">
+          <div><h1>项目周报</h1><p>会话整理本周的目标、交付与风险，缺失信息再补充。</p></div>
+          <button id="generate" class="button primary">生成周报</button>
+        </header>
+        <section class="setup" aria-label="报告范围">
+          <div><span class="field-label">报告周期</span><strong>2026.10.05 — 10.09</strong></div>
+          <div><span class="field-label">版本</span><strong>v0.8 推理服务优化</strong></div>
+          <div><span class="field-label">主要来源</span><strong>CodeHub Issue / MR</strong></div>
+          <label><span class="field-label">演示场景</span><select id="scenario"><option value="complete">信息齐全</option><option value="missing">缺少验证信息</option><option value="failed">CodeHub 读取失败</option></select></label>
+        </section>
+        <section id="activity" class="activity" aria-label="生成会话" aria-live="polite" hidden></section>
+        <div id="empty" class="empty-state">
+          <div class="document-icon" aria-hidden="true">≡</div><h2>从本周工作中生成报告</h2>
+          <p>目标与验收标准来自版本计划。会话读取 Issue、MR 和项目材料，统计本周变化，再按项目内容组织周报。</p>
+          <div class="empty-outline"><span>目标与关键进展</span><span>风险与交付节点</span><span>需求与问题单</span><span>责任归属</span></div>
+          <p class="muted">有记录才形成结论。信息不足会列为待补充。</p>
+        </div>
+        <section id="failure" class="failure" hidden>
+          <h2>暂时无法读取 CodeHub</h2><p>示例会话在读取 Issue 时连接失败，本周数量和工作变化尚未取得。</p>
+          <p>可以重试读取，或先用已有材料整理手动草稿；自动数据恢复后，补充说明会保留供核对。</p>
+          <div class="button-row"><button id="retry" class="button primary">重试读取</button><button id="manual" class="button">手动整理草稿</button></div>
+        </section>
+        <section id="workspace" hidden>
+          <div class="report-toolbar"><div><span id="report-state" class="badge">待审阅</span><span id="generation-note" class="muted"></span></div><div class="button-row"><button id="supplement" class="button">补充说明</button><button id="confirm" class="button">确认报告</button><button id="export" class="button">导出 HTML</button></div></div>
+          <div id="attention" class="attention" hidden></div>
+          <div class="report-layout">
+            <article id="report" class="report-paper" aria-label="周报预览"></article>
+            <aside class="report-aside">
+              <section><h3>本次取数</h3><div id="source-summary"></div></section>
+              <section><h3>生成规则</h3><p>按目标归纳关键进展，需求和问题明细引用同一份工作记录。</p><p>根据项目资料展示里程碑与支撑工作。缺少风险记录时说明未知。</p><p>确认报告只确认这份内容；目标达成仍由人验收。</p></section>
+              <section id="manual-notes"><h3>人工补充</h3><p class="muted">暂无补充。重新生成会保留已保存的说明。</p></section>
+            </aside>
+          </div>
+        </section>
+        <div id="notice" class="notice" role="status" hidden></div>
+      </main>
+    </div>
+    <dialog id="editor" aria-labelledby="editor-title">
+      <form id="edit-form">
+        <div class="dialog-heading"><h2 id="editor-title">补充报告信息</h2><button type="button" class="icon-button" data-close="editor" aria-label="关闭补充窗口">×</button></div>
+        <p>只补充缺失信息或需要纠正的判断。说明会保留在重新生成的报告中，并标记为人工补充。</p>
+        <label>补充位置<select id="note-section"><option value="goals">目标</option><option value="progress">关键进展</option><option value="risks">关键风险</option><option value="milestones">里程碑</option><option value="requirements">需求详细进展</option><option value="problems">问题单进展</option><option value="members">项目成员</option></select></label>
+        <label>处理方式<select id="note-mode"><option value="append">补充本节信息</option><option value="correct">修正本节结论</option></select></label>
+        <label id="resolve-label"><input id="resolve" type="checkbox" /> 本条说明已补齐 Issue #101 的验证信息</label>
+        <label>补充内容<textarea id="note-content" rows="6" required placeholder="例如：10 月 9 日完成压测，P95 为 118ms；压测记录见项目材料。"></textarea></label>
+        <label id="checked-label"><input id="note-checked" type="checkbox" /> 已核对本条说明与当前自动资料；有差异时选择“修正本节结论”</label>
+        <div class="button-row dialog-actions"><button type="button" class="button" data-close="editor">取消</button><button type="submit" class="button primary">保存并更新报告</button></div>
+      </form>
+    </dialog>
+    <dialog id="evidence" aria-labelledby="evidence-title"><div class="dialog-heading"><h2 id="evidence-title">依据详情</h2><button class="icon-button" data-close="evidence" aria-label="关闭依据窗口">×</button></div><div id="evidence-content"></div></dialog>
+    <script type="application/json" id="prototype-identity">{"kind":"design-prototype","data":"fixture","liveIntegrations":false}</script>
+  </body>
+</html>
