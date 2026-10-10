@@ -1,5 +1,14 @@
 # Changelog
 
+## 2026-10-10 新增（codehub-cli 执行观测埋点）
+
+- **变更类型**：新增（可观测性）
+- **变更摘要**：应用内曾出现一次 bw/project 已推、MR 未开出的失败，错误信息未留存，trace 只有 git.exec，codehub-cli 调用是盲区。为 `runCodeHubCli` 包一层 `withCodeHubSpan`（与 git.exec 同口径）：记子命令、参数个数、cwd，不复制参数值；失败经 span.fail 落 stderr 到 `main.trace.ndjson`。2026-10-10 开发壳内对真实 CodeHub 仓重试未复现（mr create 2190ms 成功已入 trace），后续按此观测。
+- **涉及文件**：
+  - `src/main/observability/instrumentation.ts`（新增 `withCodeHubSpan` + 子命令解析）
+  - `src/main/codehub/cli.ts`（`runCodeHubCli` 包 span）
+- **验证**：`typecheck:node`、`oxlint`、`oxfmt` 过；开发壳实跑 13 个 `codehub.exec` span（含 1 个失败 cause 落 trace：预读 404）。提交 `92015e6a8`。
+
 ## 2026-10-10 修复（CodeHub 仓接入项目读不到名片）
 
 - **变更类型**：修复
